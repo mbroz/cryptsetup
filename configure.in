@@ -1,0 +1,125 @@
+AC_PREREQ(2.57)
+AC_INIT(cryptsetup,1.0.6)
+AC_CONFIG_SRCDIR(src/cryptsetup.c)
+
+AM_CONFIG_HEADER([config.h:config.h.in])
+AM_INIT_AUTOMAKE(dist-bzip2)
+
+if test "x$prefix" = "xNONE"; then
+	sysconfdir=/etc
+fi
+AC_PREFIX_DEFAULT(/usr)
+
+AC_CANONICAL_HOST
+AC_GNU_SOURCE
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+AC_ENABLE_STATIC(no)
+AM_PROG_LIBTOOL
+
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
+	ctype.h unistd.h locale.h)
+
+AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR('You need the uuid library (from e2fsprogs)')])
+
+saved_LIBS="$LIBS"
+AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR('You need the uuid library (from e2fsprogs)')])
+UUID_LIBS="$LIBS"
+LIBS="$saved_LIBS"
+AC_SUBST(UUID_LIBS)
+
+AC_CHECK_FUNCS(setlocale)
+
+
+AC_C_CONST
+AC_C_BIGENDIAN
+AC_TYPE_OFF_T
+AC_STRUCT_ST_RDEV
+AC_SYS_LARGEFILE
+
+AC_PROG_GCC_TRADITIONAL
+
+dnl ==========================================================================
+
+GETTEXT_PACKAGE=cryptsetup-luks
+AC_SUBST(GETTEXT_PACKAGE)
+AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",
+	[Definition for the gettext package name])
+
+AM_GNU_GETTEXT([external],[need-ngettext])
+AM_GNU_GETTEXT_VERSION([0.15])
+
+dnl ==========================================================================
+                                                                                                                   
+saved_LIBS="$LIBS"
+AC_CHECK_LIB(popt, poptConfigFileToString,,
+	AC_MSG_ERROR([You need popt 1.7 or newer to compile.]))
+POPT_LIBS="$LIBS"
+LIBS="$saved_LIBS"
+AC_SUBST(POPT_LIBS)
+
+dnl ==========================================================================
+
+AC_ARG_ENABLE(shared-library,
+[  --disable-shared-library
+                          disable building of shared cryptsetup library],,
+enable_shared_library=yes)
+AM_CONDITIONAL(STATIC_LIBRARY, test x$enable_shared_library = xno)
+
+AC_ARG_ENABLE(plugins,
+[  --enable-plugins        disable shared library plugins],,enable_plugins=no)
+if test "x$enable_plugins" = xyes; then
+	AC_DEFINE(USE_PLUGINS, 1, [Define if you wish to use the plugin loader])
+fi
+
+AC_ARG_ENABLE(, [
+Modules:
+  --with-MODULE[[=shared]]  builds the module MODULE as a shared library plugin
+],,)
+
+AC_ARG_ENABLE(all,
+[  --disable-all           disable all modules built by default],,enable_all=default)
+
+MODULE_HELPER(libgcrypt,
+[  --enable-libgcrypt      enable libgcrypt crypto functions [[default=auto]]],auto,[
+	AM_PATH_LIBGCRYPT(1.1.42,have_module=yes)
+])
+AM_CONDITIONAL(BUILD_LIBGCRYPT, test x$build_static = xyes)
+AM_CONDITIONAL(SHARED_LIBGCRYPT, test x$build_shared = xyes)
+
+MODULE_HELPER(libdevmapper,
+[  --enable-libdevmapper   enable dm-crypt backend through libdevmapper
+                          [[default=auto]]],auto,[
+	have_module=yes
+	saved_LIBS="$LIBS"
+	AC_CHECK_LIB(sepol, sepol_bool_set)
+	AC_CHECK_LIB(selinux, is_selinux_enabled)
+	AC_CHECK_LIB(devmapper, dm_task_set_name,,unset have_module)
+	AC_CHECK_HEADER(libdevmapper.h,,unset have_module)
+	LIBDEVMAPPER_LIBS="$LIBS"
+	LIBS="$saved_LIBS"
+	AC_SUBST(LIBDEVMAPPER_LIBS)
+	AC_SUBST(LIBDEVMAPPER_CFLAGS)
+])
+AM_CONDITIONAL(BUILD_LIBDEVMAPPER, test x$build_static = xyes)
+AM_CONDITIONAL(SHARED_LIBDEVMAPPER, test x$build_shared = xyes)
+
+dnl ==========================================================================
+
+AM_CONDITIONAL(STATIC_CRYPTSETUP, test x$enable_static = xyes)
+AM_CONDITIONAL(DYNAMIC_CRYPTSETUP, test x$enable_static = xno)
+
+dnl ==========================================================================
+
+AC_OUTPUT([ m4/Makefile
+Makefile
+lib/Makefile
+src/Makefile
+po/Makefile.in
+luks/Makefile
+man/Makefile
+])
