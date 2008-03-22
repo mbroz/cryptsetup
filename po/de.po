@@ -1,0 +1,543 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: cryptsetup 1.0.1.fk01\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-03-10 23:38+0100\n"
+"PO-Revision-Date: 2005-08-18 19:52+0200\n"
+"Last-Translator: Florian Knauf <i-sys@gmx.net>\n"
+"Language-Team: German <de@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-15\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: lib/setup.c:645
+msgid ""
+"This is the last keyslot. Device will become unusable after purging this key."
+msgstr ""
+"Dies ist der letzte aktive Schlüssel. Das Gerät wird nach dem Entfernen des "
+"Schlüssels unbenutzbar sein."
+
+#: luks/keyencryption.c:65
+#, c-format
+msgid "Unable to obtain sector size for %s"
+msgstr ""
+
+#: luks/keyencryption.c:129
+msgid "Failed to obtain device mapper directory."
+msgstr ""
+
+#: luks/keymanage.c:82
+#, fuzzy, c-format
+msgid "Can't open device: %s\n"
+msgstr "Fehler beim Öffnen des Geräts: %s"
+
+#: luks/keymanage.c:89
+#, c-format
+msgid "%s is not a LUKS partition\n"
+msgstr ""
+
+#: luks/keymanage.c:92
+#, fuzzy
+msgid "unknown hash spec in phdr\n"
+msgstr "Unbekannter Hash im Partitions-Header"
+
+#: luks/keymanage.c:95
+#, c-format
+msgid "unknown LUKS version %d\n"
+msgstr ""
+
+#: luks/keymanage.c:123 luks/keymanage.c:391
+#, fuzzy, c-format
+msgid "Can't open device %s"
+msgstr "Fehler beim Öffnen des Geräts: %s"
+
+#: luks/keymanage.c:213
+#, c-format
+msgid "key %d active, purge first"
+msgstr ""
+
+#: luks/keymanage.c:218
+#, c-format
+msgid "key material section %d includes too few stripes. Header manipulation?"
+msgstr ""
+
+#: luks/keymanage.c:426
+#, c-format
+msgid "Key %d not active. Can't wipe.\n"
+msgstr ""
+
+#: luks/keymanage.c:471
+#, fuzzy, c-format
+msgid "Can't open device for %s%saccess: %s\n"
+msgstr "Fehler beim Öffnen des Geräts: %s"
+
+#: luks/keymanage.c:471
+msgid "exclusive "
+msgstr ""
+
+#: luks/keymanage.c:471
+msgid "writable "
+msgstr ""
+
+#: src/cryptsetup.c:60 src/cryptsetup.c:74
+msgid "<name> <device>"
+msgstr ""
+
+#: src/cryptsetup.c:60
+msgid "create device"
+msgstr ""
+
+#: src/cryptsetup.c:61 src/cryptsetup.c:62 src/cryptsetup.c:63
+#: src/cryptsetup.c:71
+msgid "<name>"
+msgstr ""
+
+#: src/cryptsetup.c:61
+msgid "remove device"
+msgstr ""
+
+#: src/cryptsetup.c:62
+#, fuzzy
+msgid "resize active device"
+msgstr "Die Größe des Gerätes"
+
+#: src/cryptsetup.c:63
+msgid "show device status"
+msgstr ""
+
+#: src/cryptsetup.c:64 src/cryptsetup.c:66
+msgid "<device> [<new key file>]"
+msgstr ""
+
+#: src/cryptsetup.c:64
+#, fuzzy
+msgid "formats a LUKS device"
+msgstr "Kein Block-Device"
+
+#: src/cryptsetup.c:65
+msgid "<device> <name> "
+msgstr ""
+
+#: src/cryptsetup.c:65
+msgid "open LUKS device as mapping <name>"
+msgstr ""
+
+#: src/cryptsetup.c:66
+msgid "add key to LUKS device"
+msgstr ""
+
+#: src/cryptsetup.c:67
+msgid "<device> [<key file>]"
+msgstr ""
+
+#: src/cryptsetup.c:67
+msgid "removes supplied key or key file from LUKS device"
+msgstr ""
+
+#: src/cryptsetup.c:68 src/cryptsetup.c:73
+msgid "<device> <key slot>"
+msgstr ""
+
+#: src/cryptsetup.c:68
+msgid "wipes key with number <key slot> from LUKS device"
+msgstr ""
+
+#: src/cryptsetup.c:69 src/cryptsetup.c:70 src/cryptsetup.c:72
+msgid "<device>"
+msgstr ""
+
+#: src/cryptsetup.c:69
+msgid "print UUID of LUKS device"
+msgstr ""
+
+#: src/cryptsetup.c:70
+msgid "tests <device> for LUKS partition header"
+msgstr ""
+
+#: src/cryptsetup.c:71
+msgid "remove LUKS mapping"
+msgstr ""
+
+#: src/cryptsetup.c:72
+msgid "dump LUKS partition information"
+msgstr ""
+
+#: src/cryptsetup.c:73
+msgid "identical to luksKillSlot - DEPRECATED - see man page"
+msgstr ""
+
+#: src/cryptsetup.c:74
+msgid "modify active device - DEPRECATED - see man page"
+msgstr ""
+
+#: src/cryptsetup.c:124
+#, c-format
+msgid "Command successful.\n"
+msgstr ""
+
+#: src/cryptsetup.c:137
+#, c-format
+msgid "Command failed"
+msgstr "Aufruf fehlgeschlagen"
+
+#: src/cryptsetup.c:167
+#, c-format
+msgid ""
+"The reload action is deprecated. Please use \"dmsetup reload\" in case you "
+"really need this functionality.\n"
+"WARNING: do not use reload to touch LUKS devices. If that is the case, hit "
+"Ctrl-C now.\n"
+msgstr ""
+
+#: src/cryptsetup.c:266
+#, c-format
+msgid "This will overwrite data on %s irrevocably."
+msgstr "Daten auf %s werden unwiderruflich überschrieben."
+
+#: src/cryptsetup.c:267
+msgid "memory allocation error in action_luksFormat"
+msgstr "Fehler bei der Speicherallokation in action_luksFormat"
+
+#: src/cryptsetup.c:415
+#, c-format
+msgid ""
+"\n"
+"<action> is one of:\n"
+msgstr ""
+"\n"
+"<action> ist eins der Folgenden:\n"
+
+#: src/cryptsetup.c:421
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<device> is the encrypted device\n"
+"<key slot> is the LUKS key slot number to modify\n"
+"<key file> optional key file for the new key for luksAddKey action\n"
+msgstr ""
+
+#: src/cryptsetup.c:437
+msgid "Show this help message"
+msgstr "Diese Hilfemeldung anzeigen"
+
+#: src/cryptsetup.c:438
+msgid "Display brief usage"
+msgstr "Kurze Verwendungsbeschreibung anzeigen"
+
+#: src/cryptsetup.c:442
+msgid "Help options:"
+msgstr "Hilfe-Optionen:"
+
+#: src/cryptsetup.c:443
+#, fuzzy
+msgid "Shows more detailed error messages"
+msgstr "Diese Hilfemeldung anzeigen"
+
+#: src/cryptsetup.c:444
+msgid "The cipher used to encrypt the disk (see /proc/crypto)"
+msgstr "Der für die Verschlüsselung zu verwendende Cipher (siehe /proc/crypto)"
+
+#: src/cryptsetup.c:445
+msgid "The hash used to create the encryption key from the passphrase"
+msgstr ""
+"Der für die Erzeugung des Schlüssels aus der Phassphrase zu verwendende Hash"
+
+#: src/cryptsetup.c:446
+msgid "Verifies the passphrase by asking for it twice"
+msgstr "Überprüft das Paßwort durch eine Sicherheitsabfrage"
+
+#: src/cryptsetup.c:447
+msgid "Read the key from a file (can be /dev/random)"
+msgstr "Liest den Schlüssel aus einer Datei (kann /dev/random sein)"
+
+#: src/cryptsetup.c:448
+msgid "The size of the encryption key"
+msgstr "Die Größe des Schlüssels"
+
+#: src/cryptsetup.c:448
+msgid "BITS"
+msgstr "BITS"
+
+#: src/cryptsetup.c:449
+msgid "Slot number for new key (default is first free)"
+msgstr ""
+
+#: src/cryptsetup.c:450
+msgid "The size of the device"
+msgstr "Die Größe des Gerätes"
+
+#: src/cryptsetup.c:450 src/cryptsetup.c:451 src/cryptsetup.c:452
+#: src/cryptsetup.c:460
+msgid "SECTORS"
+msgstr "SEKTOREN"
+
+#: src/cryptsetup.c:451
+msgid "The start offset in the backend device"
+msgstr "Der Start-Offset im Backend-Gerät"
+
+#: src/cryptsetup.c:452
+msgid "How many sectors of the encrypted data to skip at the beginning"
+msgstr ""
+"Wieviele Sektoren der verschlüsselten Daten am Beginn übersprungen werden "
+"sollen"
+
+#: src/cryptsetup.c:453
+msgid "Create a readonly mapping"
+msgstr ""
+
+#: src/cryptsetup.c:454
+msgid "PBKDF2 iteration time for LUKS (in ms)"
+msgstr ""
+
+#: src/cryptsetup.c:455
+msgid "msecs"
+msgstr ""
+
+#: src/cryptsetup.c:456
+msgid "Do not ask for confirmation"
+msgstr "Es wird nicht nach einer Bestätigung gefragt"
+
+#: src/cryptsetup.c:457
+msgid "Print package version"
+msgstr ""
+
+#: src/cryptsetup.c:458
+msgid "Timeout for interactive passphrase prompt (in seconds)"
+msgstr "Zeit in Sekunden vor Abbruch der Abfrage des Passwort"
+
+#: src/cryptsetup.c:458
+msgid "secs"
+msgstr ""
+
+#: src/cryptsetup.c:459
+msgid "How often the input of the passphrase can be retried"
+msgstr "Wie oft die Eingabe des Passwortes wiederholt werden kann"
+
+#: src/cryptsetup.c:460
+msgid "Align payload at <n> sector boundaries - for luksFormat"
+msgstr ""
+
+#: src/cryptsetup.c:476
+#, fuzzy
+msgid "[OPTION...] <action> <action-specific>]"
+msgstr "[OPTION...] <Aktion> <Name> [<Gerät>]"
+
+#: src/cryptsetup.c:512
+msgid "Key size must be a multiple of 8 bits"
+msgstr "Schlüsselgröße muß ein Vielfaches von 8 Bit sein"
+
+#: src/cryptsetup.c:516
+msgid "Argument <action> missing."
+msgstr "Argument <Aktion> fehlt."
+
+#: src/cryptsetup.c:522
+msgid "Unknown action."
+msgstr "Unbekannte Aktion."
+
+#: src/cryptsetup.c:537
+#, c-format
+msgid "%s: requires %s as arguments"
+msgstr ""
+
+#~ msgid "Invalid offset"
+#~ msgstr "Ungültiges Offset"
+
+#~ msgid "mlockall failed"
+#~ msgstr "mlockall fehlgeschlagen"
+
+#~ msgid "WARNING!!! Using insecure memory. Are you root?"
+#~ msgstr ""
+#~ "WARNUNG!!! Möglicherweise wird unsicherer Speicher benutzt! Sind Sie root?"
+
+#~ msgid "Error opening key file: %s"
+#~ msgstr "Fehler beim Öffnen der Schlüsseldatei %s"
+
+#~ msgid "Error reading passphrase"
+#~ msgstr "Fehler beim Einlesen der Passphrase"
+
+#~ msgid "Verify passphrase: "
+#~ msgstr "Passphrase verifizieren: "
+
+#~ msgid "Passphrases do not match"
+#~ msgstr "Die Passphrasen stimmen nicht überein"
+
+#~ msgid "Can't do passphrase verification on non-tty inputs"
+#~ msgstr "Passphrase-Verifikation ist nur bei Konsoleneingabe möglich"
+
+#~ msgid "Can't stat key file"
+#~ msgstr "Konnte den Status der Schlüsseldatei nicht ermitteln"
+
+#~ msgid ""
+#~ "Warning: exhausting read requested, but key file is not a regular file, "
+#~ "function might never return."
+#~ msgstr ""
+#~ "Warnung: Die Passphrase wird von einer nicht-regulären Datei eingelesen, "
+#~ "die Funktion könnte nicht zurückkehren."
+
+#~ msgid "Not enough memory while reading passphrase"
+#~ msgstr "Nicht genug Speicher zum Einlesen der Passphrase"
+
+#~ msgid "Could not read %d bytes from key file"
+#~ msgstr "Konnte keine %d Byte aus der Schlüsseldatei lesen"
+
+#~ msgid "BLKROGET failed on device: %s"
+#~ msgstr "BLKROGET auf %s fehlgeschlagen"
+
+#~ msgid "BLKGETSIZE ioctl failed on device: %s"
+#~ msgstr "BLKGETSIZE ioctl auf %s fehlgeschlagen"
+
+#~ msgid "no known cipher-spec pattern detected"
+#~ msgstr "Keine bekannte Cipher erkannt"
+
+#~ msgid "Device already exists"
+#~ msgstr "Das Gerät existiert bereits"
+
+#~ msgid "Invalid key size"
+#~ msgstr "Ungültige Schlüssellänge"
+
+#~ msgid "Enter passphrase: "
+#~ msgstr "Geben Sie die Passphrase ein: "
+
+#~ msgid "Key reading error"
+#~ msgstr "Fehler beim Lesen des Schlüssels"
+
+#~ msgid "Key processing error"
+#~ msgstr "Fehler beim Verarbeiten des Schlüssels"
+
+#~ msgid "Device busy"
+#~ msgstr "Das Gerät wird noch benutzt"
+
+#~ msgid "Can't write phdr"
+#~ msgstr "Kann den Partitions-Header nicht schreiben"
+
+#~ msgid "Enter LUKS passphrase: "
+#~ msgstr "Geben Sie eine LUKS-Passphrase ein: "
+
+#~ msgid "Can't get device information.\n"
+#~ msgstr "Kann keine Informationen ber das Gerät auslesen.\n"
+
+#~ msgid "No key available with this passphrase."
+#~ msgstr "Es ist kein Schlüssel mit dieser Passphrase vorhanden."
+
+#~ msgid "Not a block device."
+#~ msgstr "Kein Block-Device."
+
+#~ msgid "All slots full"
+#~ msgstr "Alle Schlüsselplätze sind belegt"
+
+#~ msgid "Enter new passphrase for key slot: "
+#~ msgstr "Geben Sie eine neue Passphrase für den Schlüssel ein: "
+
+#~ msgid "No setup backend available"
+#~ msgstr "Kein Setup-Backend verfügbar"
+
+#~ msgid ""
+#~ "LUKS header information for %s\n"
+#~ "\n"
+#~ "Version:       \t%d\n"
+#~ "Cipher name:   \t%s\n"
+#~ "Cipher mode:   \t%s\n"
+#~ "Hash spec:     \t%s\n"
+#~ "Payload offset:\t%d\n"
+#~ "MK bits:       \t%d\n"
+#~ "MK digest:     \t%s\n"
+#~ "MK salt:       \t%s\n"
+#~ "               \t%s\n"
+#~ "MK iterations: \t%d\n"
+#~ "UUID:          \t%s\n"
+#~ "\n"
+#~ msgstr ""
+#~ "LUKS-Headerinformation for %s\n"
+#~ "\n"
+#~ "Version:        \t%d\n"
+#~ "Cipher:         \t%s\n"
+#~ "Cipher-Modus:   \t%s\n"
+#~ "Hash:           \t%s\n"
+#~ "Payload offset: \t%d\n"
+#~ "MK-Bits:        \t%d\n"
+#~ "MK-Digest:      \t%s\n"
+#~ "MK-Salt:        \t%s\n"
+#~ "                \t%s\n"
+#~ "MK-Iterationen: \t%d\n"
+#~ "UUID:           \t%s\n"
+#~ "\n"
+
+#~ msgid ""
+#~ "Key Slot %d: ENABLED\n"
+#~ "\tIterations:         \t%d\n"
+#~ "\tSalt:               \t%s\n"
+#~ "\t                    \t%s\n"
+#~ "\tKey material offset:\t%d\n"
+#~ "\tAF stripes:         \t%d\n"
+#~ msgstr ""
+#~ "Schlüssel %d: AKTIVIERT\n"
+#~ "\tIterationen:     \t%d\n"
+#~ "\tSalt:            \t%s\n"
+#~ "\t                 \t%s\n"
+#~ "\tSchlüssel-Offset:\t%d\n"
+#~ "\tAF stripes:      \t%d\n"
+
+#~ msgid "Key Slot %d: DISABLED\n"
+#~ msgstr "Schlüssel %d: INAKTIV\n"
+
+#~ msgid "No hash backend found"
+#~ msgstr "Kein Hash-Backend gefunden"
+
+#, fuzzy
+#~ msgid "No hash functions available"
+#~ msgstr "Kein Setup-Backend verfügbar"
+
+#, fuzzy
+#~ msgid "Error hashing passphrase"
+#~ msgstr "Fehler beim Einlesen der Passphrase"
+
+#~ msgid "Error in error handling routine."
+#~ msgstr "Fehler in der Fehlerbehandlungsroutine."
+
+#~ msgid "Memory allocation problem"
+#~ msgstr "Fehler bei der Speicherallokation"
+
+#, fuzzy
+#~ msgid "Invalid dm table"
+#~ msgstr "Ungültige Devicemapper-Tabelle"
+
+#~ msgid "Out of memory"
+#~ msgstr "Zu wenig Speicher"
+
+#~ msgid ""
+#~ "\n"
+#~ "WARNING!\n"
+#~ "========\n"
+#~ "%s\n"
+#~ "\n"
+#~ "Are you sure? (Type %s): "
+#~ msgstr ""
+#~ "\n"
+#~ "WARNUNG!\n"
+#~ "========\n"
+#~ "%s\n"
+#~ "\n"
+#~ "Sind Sie sicher? (%s eingeben): "
+
+#~ msgid "YES"
+#~ msgstr "JA"
+
+#~ msgid ""
+#~ "<name> is the device to create under %s\n"
+#~ "<device> is the encrypted device\n"
+#~ msgstr ""
+#~ "<Name> ist der Name des unter %s zu erstellenden Gerätes\n"
+#~ "<Gerät> ist das verschlüsselte Gerät\n"
+
+#~ msgid "Argument <name> missing."
+#~ msgstr "Argument <Name> fehlt."
+
+#~ msgid "Argument <device> missing."
+#~ msgstr "Argument <Gerät> fehlt."
