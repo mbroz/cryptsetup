@@ -226,6 +226,33 @@ static int parse_into_name_and_mode(const char *nameAndMode, char *name,
 #undef str
 #undef xstr
 }
+
+/* Select free keyslot or verifies that the one specified is empty */
+static int keyslot_from_option(int keySlotOption, struct luks_phdr *hdr) {
+        if(keySlotOption != -1) {
+                if(keySlotOption >= LUKS_NUMKEYS) {
+                        set_error("slot %d too high, please pick between 0 and %d", keySlotOption, LUKS_NUMKEYS);
+                        return -EINVAL;
+                } else if(hdr->keyblock[keySlotOption].active != LUKS_KEY_DISABLED) {
+                        set_error("slot %d full, please pick another one", keySlotOption);
+                        return -EINVAL;
+                } else {
+                        return keySlotOption;
+                }
+        } else {
+                int i;
+                /* Find empty key slot */
+                for(i=0; i<LUKS_NUMKEYS; i++) {
+                        if(hdr->keyblock[i].active == LUKS_KEY_DISABLED) break;
+                }
+                if(i==LUKS_NUMKEYS) {
+                        set_error("All slots full");
+                        return -EINVAL;
+                }
+                return i;
+        }
+}
+
 static int __crypt_create_device(int reload, struct setup_backend *backend,
                                  struct crypt_options *options)
 {
@@ -383,7 +410,8 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	char cipherMode[LUKS_CIPHERMODE_L];
 	int passwordLen;
 	int PBKDF2perSecond;
-	
+        int keyIndex;
+
 	if (!LUKS_device_ready(options->device, O_RDWR | O_EXCL)) {
 		set_error("Can not access device");
 		r = -ENOTBLK; goto out;
@@ -419,8 +447,10 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 		return r; 
 	}
 
+        keyIndex = keyslot_from_option(options->key_slot, &header);
+
 	PBKDF2perSecond = LUKS_benchmarkt_iterations();
-	header.keyblock[0].passwordIterations = at_least_one(PBKDF2perSecond * ((float)options->iteration_time / 1000.0));
+	header.keyblock[keyIndex].passwordIterations = at_least_one(PBKDF2perSecond * ((float)options->iteration_time / 1000.0));
 #ifdef LUKS_DEBUG
 	logger(options->icb->log,CRYPT_LOG_ERROR, "pitr %d\n", header.keyblock[0].passwordIterations);
 #endif
@@ -430,7 +460,7 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	}
 
 	/* Set key, also writes phdr */
-	r = LUKS_set_key(options->device, options->key_slot==-1?0:(unsigned int)options->key_slot, password, passwordLen, &header, mk, backend);
+	r = LUKS_set_key(options->device, keyIndex, password, passwordLen, &header, mk, backend);
 	if(r < 0) goto out; 
 
 	r = 0;
@@ -543,27 +573,8 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
 	r = LUKS_read_phdr(device, &hdr);
 	if(r < 0) return r;
 
-        if(key_slot != -1) {
-                if(key_slot >= LUKS_NUMKEYS) {
-                        set_error("slot %d too high, please pick between 0 and %d", key_slot, LUKS_NUMKEYS);
-                        return -EINVAL;
-                } else if(hdr.keyblock[key_slot].active != LUKS_KEY_DISABLED) {
-                        set_error("slot %d full, please pick another one", key_slot);
-                        return -EINVAL;
-                } else {
-                        keyIndex = key_slot;
-                }
-        } else {
-                /* Find empty key slot */
-                for(i=0; i<LUKS_NUMKEYS; i++) {
-                        if(hdr.keyblock[i].active == LUKS_KEY_DISABLED) break;
-                }
-                if(i==LUKS_NUMKEYS) {
-                        set_error("All slots full");
-                        return -EINVAL;
-                }
-                keyIndex = i;
-        }
+
+        keyIndex = keyslot_from_option(options->key_slot, &hdr);
 
 	get_key("Enter any LUKS passphrase: ",
                 &password,
