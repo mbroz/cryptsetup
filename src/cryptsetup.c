@@ -31,6 +31,7 @@ static int opt_version_mode = 0;
 static int opt_timeout = 0;
 static int opt_tries = 3;
 static int opt_align_payload = 0;
+static int opt_non_exclusive = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -289,6 +290,8 @@ static int action_luksOpen(int arg)
 	options.flags = 0;
 	if (opt_readonly)
 		options.flags |= CRYPT_FLAG_READONLY;
+	if (opt_non_exclusive)
+		options.flags |= CRYPT_FLAG_NON_EXCLUSIVE_ACCESS;
 	r = crypt_luksOpen(&options);
 	show_status(-r);
 	return r;
@@ -454,10 +457,11 @@ int main(int argc, char **argv)
 		{ "iter-time",         'i',  POPT_ARG_INT,                                &opt_iteration_time,    0, N_("PBKDF2 iteration time for LUKS (in ms)"),
 		  N_("msecs") },
 		{ "batch-mode",        'q',  POPT_ARG_NONE,                               &opt_batch_mode,        0, N_("Do not ask for confirmation"),                                     NULL },
-		{ "version",        '\0',  POPT_ARG_NONE,                               &opt_version_mode,        0, N_("Print package version"),                                     NULL },
+		{ "version",        '\0',  POPT_ARG_NONE,                                 &opt_version_mode,        0, N_("Print package version"),                                     NULL },
  		{ "timeout",           't',  POPT_ARG_INT,                                &opt_timeout,           0, N_("Timeout for interactive passphrase prompt (in seconds)"),          N_("secs") },
   		{ "tries",             'T',  POPT_ARG_INT,                                &opt_tries,             0, N_("How often the input of the passphrase can be retried"),            NULL },
- 		{ "align-payload",     '\0',  POPT_ARG_INT,                                &opt_align_payload,     0, N_("Align payload at <n> sector boundaries - for luksFormat"),         N_("SECTORS") },
+ 		{ "align-payload",     '\0',  POPT_ARG_INT,                               &opt_align_payload,     0, N_("Align payload at <n> sector boundaries - for luksFormat"),         N_("SECTORS") },
+ 		{ "non-exclusive",     '\0',  POPT_ARG_NONE,                              &opt_non_exclusive,     0, N_("Allows non-exclusive access for luksOpen, WARNING see manpage."),        NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

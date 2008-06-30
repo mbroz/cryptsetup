@@ -481,14 +481,15 @@ static int __crypt_luks_open(int arg, struct setup_backend *backend, struct cryp
 	};
 	char *dmCipherSpec;
 	int r, tries = options->tries;
-	
+	int excl = (options->flags & CRYPT_FLAG_NON_EXCLUSIVE_ACCESS) ? 0 : O_EXCL ;
+
 	r = backend->status(0, &tmp, NULL);
 	if (r >= 0) {
 		set_error("Device already exists");
 		return -EEXIST;
 	}
 
-	if (!LUKS_device_ready(options->device, O_RDONLY | O_EXCL)) {
+	if (!LUKS_device_ready(options->device, O_RDONLY | excl)) {
 		set_error("Can not access device");
 		return -ENOTBLK;
 	}
