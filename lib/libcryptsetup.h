@@ -1,5 +1,8 @@
 #ifndef _LIBCRYPTSETUP_H
 #define _LIBCRYPTSETUP_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdint.h>
 
@@ -17,6 +20,7 @@ struct interface_callbacks {
 #define CRYPT_FLAG_READONLY	        (1 << 1)
 #define	CRYPT_FLAG_VERIFY_IF_POSSIBLE	(1 << 2)
 #define	CRYPT_FLAG_VERIFY_ON_DELKEY	(1 << 3)
+#define	CRYPT_FLAG_NON_EXCLUSIVE_ACCESS	(1 << 4)
 
 struct crypt_options {
 	const char	*name;
@@ -65,4 +69,7 @@ void crypt_get_error(char *buf, size_t size);
 void crypt_put_options(struct crypt_options *options);
 const char *crypt_get_dir(void);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* _LIBCRYPTSETUP_H */

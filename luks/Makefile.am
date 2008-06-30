@@ -125,6 +125,16 @@ test:
 	@../src/cryptsetup -v remove dummy
 	@echo "success"
 
+# Non-Exclusive Open test
+	@echo Case: Non-Exclusive Open
+	echo "key0" | ../src/cryptsetup -v --readonly luksOpen $(LOOPDEV) dummy1 2>/dev/null
+# must fail
+	echo "key0" | ../src/cryptsetup -v --readonly luksOpen $(LOOPDEV) dummy2 2>/dev/null || true 
+	echo "key0" | ../src/cryptsetup -v --non-exclusive --readonly luksOpen $(LOOPDEV) dummy2 2>/dev/null
+	@../src/cryptsetup -v remove dummy1
+	@../src/cryptsetup -v remove dummy2
+
+
 # Key Slot 1 and key material section 1 must change, the rest must not
 	@echo Case: add key test for key files
 	@cp $(IMG) $(ORIG_IMG)
