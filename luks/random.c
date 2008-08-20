@@ -23,8 +23,6 @@ int openRandom() {
    closeRandom */
 int getRandom(char *buf, size_t len)
 {
-    int r = 0;
-
     if(openRandom() == -1) {
 	perror("getRandom:");
 	return -EINVAL;
@@ -37,7 +35,7 @@ int getRandom(char *buf, size_t len)
 	}
 	len-= r; buf += r;
     }
-    return r;
+    return 0;
 }
 
 void closeRandom() {

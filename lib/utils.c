@@ -243,6 +243,7 @@ ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offse
 
 		memcpy(frontPadBuf+frontHang, buf, innerCount);
 
+		lseek(fd, offset - frontHang, SEEK_SET);
 		r = write(fd,frontPadBuf,bsize);
 		if(r < 0) return -1;
 
@@ -251,7 +252,7 @@ ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offse
 	}
 	if(count <= 0) return buf - orig_buf;
 
-	return write_blockwise(fd, buf, count);
+	return write_blockwise(fd, buf, count) + innerCount;
 }
 
 /* Password reading helpers */

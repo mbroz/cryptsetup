@@ -50,6 +50,7 @@ static inline int round_up_modulo(int x, int m) {
 struct luks_masterkey *LUKS_alloc_masterkey(int keylength)
 { 
 	struct luks_masterkey *mk=malloc(sizeof(*mk) + keylength);
+	if(NULL == mk) return NULL;
 	mk->keyLength=keylength;
 	return mk;
 }
@@ -66,7 +67,13 @@ void LUKS_dealloc_masterkey(struct luks_masterkey *mk)
 struct luks_masterkey *LUKS_generate_masterkey(int keylength)
 {
 	struct luks_masterkey *mk=LUKS_alloc_masterkey(keylength);
-	getRandom(mk->key,keylength);
+	if(NULL == mk) return NULL;
+
+	int r = getRandom(mk->key,keylength);
+	if(r < 0) {
+		LUKS_dealloc_masterkey(mk);
+		return NULL;
+	}
 	return mk;
 }
 

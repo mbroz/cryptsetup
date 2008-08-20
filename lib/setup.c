@@ -418,7 +418,7 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	}
 
 	mk = LUKS_generate_masterkey(options->key_size);
-	if(NULL == mk) return -ENOMEM; 
+	if(NULL == mk) return -ENOMEM; // FIXME This may be misleading, since we don't know what went wrong
 
 #ifdef LUKS_DEBUG
 #define printoffset(entry) logger(options, CRYPT_LOG_ERROR, ("offset of " #entry " = %d\n", (char *)(&header.entry)-(char *)(&header))
