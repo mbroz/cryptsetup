@@ -54,6 +54,8 @@ endif
 libcryptsetup_la_LDFLAGS = \
 	$(_STATIC_LIBRARY)
 
+libcryptsetup_la_CFLAGS = -Wall
+
 libcryptsetup_la_LIBADD = \
 	$(_LIBDEVMAPPER_LIBADD)			\
 	$(_LIBGCRYPT_LIBADD)			\

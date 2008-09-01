@@ -87,7 +87,7 @@ int AF_split(char *src, char *dst, size_t blocksize, unsigned int blocknumbers)
 		if(r < 0) goto out;
 
 		XORblock(dst+(blocksize*i),bufblock,bufblock,blocksize);
-		diffuse(bufblock,bufblock,blocksize);
+		diffuse((unsigned char *) bufblock, (unsigned char *) bufblock, blocksize);
 	}
 	/* the last block is computed */
 	XORblock(src,bufblock,dst+(i*blocksize),blocksize);
@@ -107,7 +107,7 @@ int AF_merge(char *src, char *dst, size_t blocksize, unsigned int blocknumbers)
 	memset(bufblock,0,blocksize);
 	for(i=0; i<blocknumbers-1; i++) {
 		XORblock(src+(blocksize*i),bufblock,bufblock,blocksize);
-		diffuse(bufblock,bufblock,blocksize);
+		diffuse((unsigned char *) bufblock, (unsigned char *) bufblock, blocksize);
 	}
 	XORblock(src + blocksize * i, bufblock, dst, blocksize);
 

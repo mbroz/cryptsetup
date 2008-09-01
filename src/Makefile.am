@@ -24,4 +24,6 @@ endif
 cryptsetup_LDFLAGS = \
 	$(_STATIC_FLAGS) 
 
+cryptsetup_CFLAGS = -Wall
+
 sbin_PROGRAMS=cryptsetup

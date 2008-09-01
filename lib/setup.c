@@ -261,7 +261,7 @@ static int __crypt_create_device(int reload, struct setup_backend *backend,
 	};
 	struct device_infos infos;
 	char *key = NULL;
-	int keyLen;
+	unsigned int keyLen;
 	char *processed_key = NULL;
 	int r;
 
@@ -408,7 +408,7 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	char *password=NULL; 
 	char cipherName[LUKS_CIPHERNAME_L];
 	char cipherMode[LUKS_CIPHERMODE_L];
-	int passwordLen;
+	unsigned int passwordLen;
 	int PBKDF2perSecond;
         int keyIndex;
 
@@ -474,7 +474,8 @@ static int __crypt_luks_open(int arg, struct setup_backend *backend, struct cryp
 {
 	struct luks_masterkey *mk=NULL;
 	struct luks_phdr hdr;
-	char *password; int passwordLen;
+	char *password;
+	unsigned int passwordLen;
 	struct device_infos infos;
 	struct crypt_options tmp = {
 		.name = options->name,
