@@ -97,12 +97,13 @@ static int clear_mapping(const char *name, struct setup_backend *backend)
 /* I miss closures in C! */
 static struct setup_backend *cleaner_backend=NULL;
 static const char *cleaner_name=NULL; 
-static int devfd=0;
+static int devfd=-1;
 
 static void sigint_handler(int sig)
 {
-        if(devfd)
+        if(devfd >= 0)
                 close(devfd);
+        devfd = -1;
         if(cleaner_backend && cleaner_name) 
                 clear_mapping(cleaner_name, cleaner_backend);
         signal(SIGINT, SIG_DFL);
@@ -160,7 +161,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	r = 0;
  out3:
 	close(devfd);
-	devfd = 0;
+	devfd = -1;
  out2:
 	clear_mapping(name,backend);
  out1:
