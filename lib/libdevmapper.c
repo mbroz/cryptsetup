@@ -38,9 +38,16 @@ static void set_dm_error(int level, const char *file, int line,
 	va_end(va);
 }
 
+static int _dm_simple(int task, const char *name);
+
 static int dm_init(void)
 {
 	dm_log_init(set_dm_error);
+	if (!_dm_simple(DM_DEVICE_LIST_VERSIONS, "test")) {
+		set_error("Cannot communicate with device-mapper. Is the dm_mod module loaded?");
+		return -1;
+	}
+
 	return 1;	/* unsafe memory */
 }
 

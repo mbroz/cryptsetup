@@ -705,7 +705,10 @@ static int crypt_job(int (*job)(int arg, struct setup_backend *backend,
 
 	backend = get_setup_backend(default_backend);
 
-	setup_enter(backend,options->icb->log);
+	if (setup_enter(backend,options->icb->log) < 0) {
+		r = -ENOSYS;
+		goto out;
+	}
 
 	if (!backend) {
 		set_error("No setup backend available");
