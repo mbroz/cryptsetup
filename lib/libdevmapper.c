@@ -17,13 +17,7 @@
 #define DEVICE_DIR	"/dev"
 
 #define	CRYPT_TARGET	"crypt"
-
-#define UDEVSETTLE	"/sbin/udevsettle"
-
-static void run_udevsettle(void)
-{
-	system(UDEVSETTLE);
-}
+#define	RETRY_COUNT	5
 
 static void set_dm_error(int level, const char *file, int line,
                          const char *f, ...)
@@ -55,16 +49,6 @@ static void dm_exit(void)
 {
 	dm_log_init(NULL);
 	dm_lib_release();
-}
-
-static void flush_dm_workqueue(void)
-{
-	/* 
-	 * Unfortunately this is the only way to trigger libdevmapper's
-	 * update_nodes function 
-	 */ 
-	dm_exit(); 
-	dm_init();
 }
 
 static char *__lookup_dev(char *path, dev_t dev)
@@ -159,6 +143,89 @@ out:
 	return params;
 }
 
+/* DM helpers */
+static int _dm_simple(int task, const char *name)
+{
+	int r = 0;
+	struct dm_task *dmt;
+
+	if (!(dmt = dm_task_create(task)))
+		return 0;
+
+	if (!dm_task_set_name(dmt, name))
+		goto out;
+
+	r = dm_task_run(dmt);
+
+      out:
+	dm_task_destroy(dmt);
+	return r;
+}
+
+static int _error_device(struct crypt_options *options)
+{
+	struct dm_task *dmt;
+	int r = 0;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_RELOAD)))
+		return 0;
+
+	if (!dm_task_set_name(dmt, options->name))
+		goto error;
+
+	if (!dm_task_add_target(dmt, UINT64_C(0), options->size, "error", ""))
+		goto error;
+
+	if (!dm_task_set_ro(dmt))
+		goto error;
+
+	if (!dm_task_no_open_count(dmt))
+		goto error;
+
+	if (!dm_task_run(dmt))
+		goto error;
+
+	if (!_dm_simple(DM_DEVICE_RESUME, options->name)) {
+		_dm_simple(DM_DEVICE_CLEAR, options->name);
+		goto error;
+	}
+
+	r = 1;
+
+error:
+	dm_task_destroy(dmt);
+	return r;
+}
+
+static int _dm_remove(struct crypt_options *options, int force)
+{
+	int r = -EINVAL;
+	int retries = force ? RETRY_COUNT : 1;
+
+	/* If force flag is set, replace device with error, read-only target.
+	 * it should stop processes from reading it and also removed underlying
+	 * device from mapping, so it is usable again.
+	 * Force flag should be used only for temporary devices, which are
+	 * intended to work inside cryptsetup only!
+	 * Anyway, if some process try to read temporary cryptsetup device,
+	 * it is bug - no other process should try touch it (e.g. udev).
+	 */
+	if (force) {
+		 _error_device(options);
+		retries = RETRY_COUNT;
+	}
+
+	do {
+		r = _dm_simple(DM_DEVICE_REMOVE, options->name) ? 0 : -EINVAL;
+		if (--retries)
+			sleep(1);
+	} while (r == -EINVAL && retries);
+
+	dm_task_update_nodes();
+
+	return r;
+}
+
 static int dm_create_device(int reload, struct crypt_options *options,
                             const char *key)
 {
@@ -198,24 +265,14 @@ static int dm_create_device(int reload, struct crypt_options *options,
 	if (dmi.read_only)
 		options->flags |= CRYPT_FLAG_READONLY;
 
-	/* run udevsettle to avoid a race in libdevmapper causing busy dm devices */
-	run_udevsettle();
-
 	r = 0;
-	
 out:
 	if (r < 0 && !reload) {
 		char *error = (char *)get_error();
 		if (error)
 			error = strdup(error);
-		if (dmt)
-			dm_task_destroy(dmt);
 
-		if (!(dmt = dm_task_create(DM_DEVICE_REMOVE)))
-			goto out_restore_error;
-		if (!dm_task_set_name(dmt, options->name))
-			goto out_restore_error;
-		if (!dm_task_run(dmt))
+		if (!_dm_remove(options, 0))
 			goto out_restore_error;
 
 out_restore_error:
@@ -231,7 +288,7 @@ out_no_removal:
 		dm_task_destroy(dmt);
 	if(dmt_query)
 		dm_task_destroy(dmt_query);
-	flush_dm_workqueue();
+	dm_task_update_nodes();
 	return r;
 }
 
@@ -359,25 +416,12 @@ out:
 	return r;
 }
 
-static int dm_remove_device(struct crypt_options *options)
+static int dm_remove_device(int force, struct crypt_options *options)
 {
-	struct dm_task *dmt;
-	int r = -EINVAL;
+	if (!options || !options->name)
+		return -EINVAL;
 
-	if (!(dmt = dm_task_create(DM_DEVICE_REMOVE)))
-		goto out;
-	if (!dm_task_set_name(dmt, options->name))
-		goto out;
-	if (!dm_task_run(dmt))
-		goto out;
-
-	r = 0;
-
-out:	
-	if (dmt)
-		dm_task_destroy(dmt);
-	flush_dm_workqueue();
-	return r;
+	return _dm_remove(options, force);;
 }
 
 

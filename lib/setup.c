@@ -396,7 +396,7 @@ static int __crypt_remove_device(int arg, struct setup_backend *backend,
 		return -EBUSY;
 	}
 
-	return backend->remove(options);
+	return backend->remove(0, options);
 }
 
 static int __crypt_luks_format(int arg, struct setup_backend *backend, struct crypt_options *options)

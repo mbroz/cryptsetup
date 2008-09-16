@@ -40,7 +40,7 @@ struct setup_backend {
 			          const char *key);
 	int		(*status)(int details, struct crypt_options *options,
 			          char **key);
-	int		(*remove)(struct crypt_options *options);
+	int		(*remove)(int force, struct crypt_options *options);
 
 	const char *	(*dir)(void);
 };
