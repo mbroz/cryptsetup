@@ -514,13 +514,14 @@ start:
 	if(!password) {
 		r = -EINVAL; goto out;
 	}
-        
+
         r = LUKS_open_any_key(options->device, password, passwordLen, &hdr, &mk, backend);
-	if(r < 0) {
+	if (r == -EPERM)
 		set_error("No key available with this passphrase.\n");
+	if (r < 0)
 		goto out1;
-	} else
-                logger(options, CRYPT_LOG_NORMAL,"key slot %d unlocked.\n", r);
+
+	logger(options, CRYPT_LOG_NORMAL,"key slot %d unlocked.\n", r);
 
 	
 	options->offset = hdr.payloadOffset;
