@@ -198,6 +198,34 @@ out:
 	return ret;
 }
 
+static int wipe_device_header(const char *device, int sectors)
+{
+	char *buffer;
+	int size = sectors * SECTOR_SIZE;
+	int r = -1;
+	int devfd;
+
+	devfd = open(device, O_RDWR | O_DIRECT | O_SYNC);
+	if(devfd == -1) {
+		set_error("Can't wipe header on device %s", device);
+		return -EINVAL;
+	}
+
+	buffer = malloc(size);
+	if (!buffer) {
+		close(devfd);
+		return -ENOMEM;
+	}
+	memset(buffer, 0, size);
+
+	r = write_blockwise(devfd, buffer, size) < size ? -EIO : 0;
+
+	free(buffer);
+	close(devfd);
+
+	return r;
+}
+
 static int parse_into_name_and_mode(const char *nameAndMode, char *name,
 				    char *mode)
 {
@@ -458,6 +486,10 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	if(!password) {
 		r = -EINVAL; goto out;
 	}
+
+	/* Wipe first 8 sectors - fs magic numbers etc. */
+	r = wipe_device_header(options->device, 8);
+	if(r < 0) goto out;
 
 	/* Set key, also writes phdr */
 	r = LUKS_set_key(options->device, keyIndex, password, passwordLen, &header, mk, backend);
