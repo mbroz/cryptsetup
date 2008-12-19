@@ -595,10 +595,9 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
 	struct luks_masterkey *mk=NULL;
 	struct luks_phdr hdr;
 	char *password=NULL; unsigned int passwordLen;
-	unsigned int i; unsigned int keyIndex;
+        unsigned int keyIndex;
 	const char *device = options->device;
 	int r;
-	int key_slot = options->key_slot;
 	
 	if (!LUKS_device_ready(options->device, O_RDWR)) {
 		set_error("Can not access device");
@@ -694,22 +693,32 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
 	} 
 
 	if(options->flags & CRYPT_FLAG_VERIFY_ON_DELKEY) {
+                int r;
+
 		options->flags &= ~CRYPT_FLAG_VERIFY_ON_DELKEY;
 		get_key("Enter any remaining LUKS passphrase: ",&password,&passwordLen, 0, options->key_file, options->passphrase_fd, options->timeout, options->flags);
 		if(!password) {
 			r = -EINVAL; goto out;
 		}
-		openedIndex = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk, backend);
+
+                r = LUKS_read_phdr(device, &hdr);
+                if(r < 0) { 
+                        options->icb->log(CRYPT_LOG_ERROR,"Failed to access device.\n");
+                        r = -EIO; goto out;
+                }
+                hdr.keyblock[keyIndex].active = LUKS_KEY_DISABLED;
+
+		openedIndex = LUKS_open_any_key_with_hdr(device, password, passwordLen, &hdr, &mk, backend);
                 /* Clean up */
                 if (openedIndex >= 0) {
                         LUKS_dealloc_masterkey(mk);
                         mk = NULL;
                 }
-		if(openedIndex < 0 || keyIndex == openedIndex) {
+		if(openedIndex < 0) {
                             options->icb->log(CRYPT_LOG_ERROR,"No remaining key available with this passphrase.\n");
 			    r = -EPERM; goto out;
 		} else
-                        logger(options, CRYPT_LOG_NORMAL,"key slot %d verified.\n", keyIndex);
+                        logger(options, CRYPT_LOG_NORMAL,"key slot %d verified.\n", openedIndex);
 	}
 	r = LUKS_del_key(device, keyIndex);
 	if(r < 0) goto out;

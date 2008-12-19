@@ -331,7 +331,25 @@ out:
 	return r;
 }
 
+
+/* Tries to open any key from a given LUKS device reading the header on its own */
 int LUKS_open_any_key(const char *device, 
+		      const char *password, 
+		      size_t passwordLen,
+		      struct luks_phdr *hdr, 
+		      struct luks_masterkey **mk,
+		      struct setup_backend *backend)
+{
+	int r;
+
+	r = LUKS_read_phdr(device, hdr);
+	if(r < 0) 
+      		return r;
+        return LUKS_open_any_key_with_hdr(device,password,passwordLen,hdr,mk,backend);
+}
+
+
+int LUKS_open_any_key_with_hdr(const char *device, 
 		      const char *password, 
 		      size_t passwordLen,
 		      struct luks_phdr *hdr, 
@@ -340,10 +358,6 @@ int LUKS_open_any_key(const char *device,
 {
 	unsigned int i;
 	int r;
-
-	r = LUKS_read_phdr(device, hdr);
-	if(r < 0) 
-      		return r;
 
 	*mk=LUKS_alloc_masterkey(hdr->keyBytes);
 	for(i=0; i<LUKS_NUMKEYS; i++) {
