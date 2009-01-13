@@ -471,8 +471,8 @@ int main(int argc, char **argv)
 	const char *null_action_argv[] = {NULL};
 
 	setlocale(LC_ALL, "");
-	bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
-	textdomain(GETTEXT_PACKAGE);
+	bindtextdomain(PACKAGE, LOCALEDIR);
+	textdomain(PACKAGE);
 
 	popt_context = poptGetContext(PACKAGE, argc, (const char **)argv,
 	                              popt_options, 0);

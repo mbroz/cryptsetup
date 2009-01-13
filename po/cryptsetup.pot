@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-03-10 23:38+0100\n"
+"POT-Creation-Date: 2009-01-13 20:50+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,172 +16,172 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/setup.c:645
+#: lib/setup.c:690
 msgid ""
 "This is the last keyslot. Device will become unusable after purging this key."
 msgstr ""
 
-#: luks/keyencryption.c:65
+#: luks/keyencryption.c:70
 #, c-format
 msgid "Unable to obtain sector size for %s"
 msgstr ""
 
-#: luks/keyencryption.c:129
+#: luks/keyencryption.c:132
 msgid "Failed to obtain device mapper directory."
-msgstr ""
-
-#: luks/keymanage.c:82
-#, c-format
-msgid "Can't open device: %s\n"
 msgstr ""
 
 #: luks/keymanage.c:89
 #, c-format
+msgid "Can't open device: %s\n"
+msgstr ""
+
+#: luks/keymanage.c:96
+#, c-format
 msgid "%s is not a LUKS partition\n"
 msgstr ""
 
-#: luks/keymanage.c:92
+#: luks/keymanage.c:99
 msgid "unknown hash spec in phdr\n"
 msgstr ""
 
-#: luks/keymanage.c:95
+#: luks/keymanage.c:102
 #, c-format
 msgid "unknown LUKS version %d\n"
 msgstr ""
 
-#: luks/keymanage.c:123 luks/keymanage.c:391
+#: luks/keymanage.c:130 luks/keymanage.c:412
 #, c-format
 msgid "Can't open device %s"
 msgstr ""
 
-#: luks/keymanage.c:213
+#: luks/keymanage.c:220
 #, c-format
 msgid "key %d active, purge first"
 msgstr ""
 
-#: luks/keymanage.c:218
+#: luks/keymanage.c:225
 #, c-format
 msgid "key material section %d includes too few stripes. Header manipulation?"
 msgstr ""
 
-#: luks/keymanage.c:426
+#: luks/keymanage.c:447
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
 msgstr ""
 
-#: luks/keymanage.c:471
+#: luks/keymanage.c:492
 #, c-format
 msgid "Can't open device for %s%saccess: %s\n"
 msgstr ""
 
-#: luks/keymanage.c:471
+#: luks/keymanage.c:492
 msgid "exclusive "
 msgstr ""
 
-#: luks/keymanage.c:471
+#: luks/keymanage.c:492
 msgid "writable "
 msgstr ""
 
-#: src/cryptsetup.c:60 src/cryptsetup.c:74
+#: src/cryptsetup.c:61 src/cryptsetup.c:75
 msgid "<name> <device>"
 msgstr ""
 
-#: src/cryptsetup.c:60
+#: src/cryptsetup.c:61
 msgid "create device"
 msgstr ""
 
-#: src/cryptsetup.c:61 src/cryptsetup.c:62 src/cryptsetup.c:63
-#: src/cryptsetup.c:71
+#: src/cryptsetup.c:62 src/cryptsetup.c:63 src/cryptsetup.c:64
+#: src/cryptsetup.c:72
 msgid "<name>"
 msgstr ""
 
-#: src/cryptsetup.c:61
+#: src/cryptsetup.c:62
 msgid "remove device"
 msgstr ""
 
-#: src/cryptsetup.c:62
+#: src/cryptsetup.c:63
 msgid "resize active device"
 msgstr ""
 
-#: src/cryptsetup.c:63
+#: src/cryptsetup.c:64
 msgid "show device status"
 msgstr ""
 
-#: src/cryptsetup.c:64 src/cryptsetup.c:66
+#: src/cryptsetup.c:65 src/cryptsetup.c:67
 msgid "<device> [<new key file>]"
 msgstr ""
 
-#: src/cryptsetup.c:64
+#: src/cryptsetup.c:65
 msgid "formats a LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:65
+#: src/cryptsetup.c:66
 msgid "<device> <name> "
 msgstr ""
 
-#: src/cryptsetup.c:65
+#: src/cryptsetup.c:66
 msgid "open LUKS device as mapping <name>"
 msgstr ""
 
-#: src/cryptsetup.c:66
+#: src/cryptsetup.c:67
 msgid "add key to LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:67
+#: src/cryptsetup.c:68
 msgid "<device> [<key file>]"
 msgstr ""
 
-#: src/cryptsetup.c:67
+#: src/cryptsetup.c:68
 msgid "removes supplied key or key file from LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:68 src/cryptsetup.c:73
+#: src/cryptsetup.c:69 src/cryptsetup.c:74
 msgid "<device> <key slot>"
 msgstr ""
 
-#: src/cryptsetup.c:68
+#: src/cryptsetup.c:69
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:69 src/cryptsetup.c:70 src/cryptsetup.c:72
+#: src/cryptsetup.c:70 src/cryptsetup.c:71 src/cryptsetup.c:73
 msgid "<device>"
 msgstr ""
 
-#: src/cryptsetup.c:69
+#: src/cryptsetup.c:70
 msgid "print UUID of LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:70
+#: src/cryptsetup.c:71
 msgid "tests <device> for LUKS partition header"
 msgstr ""
 
-#: src/cryptsetup.c:71
+#: src/cryptsetup.c:72
 msgid "remove LUKS mapping"
 msgstr ""
 
-#: src/cryptsetup.c:72
+#: src/cryptsetup.c:73
 msgid "dump LUKS partition information"
 msgstr ""
 
-#: src/cryptsetup.c:73
+#: src/cryptsetup.c:74
 msgid "identical to luksKillSlot - DEPRECATED - see man page"
 msgstr ""
 
-#: src/cryptsetup.c:74
+#: src/cryptsetup.c:75
 msgid "modify active device - DEPRECATED - see man page"
 msgstr ""
 
-#: src/cryptsetup.c:124
+#: src/cryptsetup.c:125
 #, c-format
 msgid "Command successful.\n"
 msgstr ""
 
-#: src/cryptsetup.c:137
+#: src/cryptsetup.c:138
 #, c-format
 msgid "Command failed"
 msgstr ""
 
-#: src/cryptsetup.c:167
+#: src/cryptsetup.c:168
 #, c-format
 msgid ""
 "The reload action is deprecated. Please use \"dmsetup reload\" in case you "
@@ -190,23 +190,23 @@ msgid ""
 "Ctrl-C now.\n"
 msgstr ""
 
-#: src/cryptsetup.c:266
+#: src/cryptsetup.c:267
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr ""
 
-#: src/cryptsetup.c:267
+#: src/cryptsetup.c:268
 msgid "memory allocation error in action_luksFormat"
 msgstr ""
 
-#: src/cryptsetup.c:415
+#: src/cryptsetup.c:418
 #, c-format
 msgid ""
 "\n"
 "<action> is one of:\n"
 msgstr ""
 
-#: src/cryptsetup.c:421
+#: src/cryptsetup.c:424
 #, c-format
 msgid ""
 "\n"
@@ -216,120 +216,124 @@ msgid ""
 "<key file> optional key file for the new key for luksAddKey action\n"
 msgstr ""
 
-#: src/cryptsetup.c:437
+#: src/cryptsetup.c:440
 msgid "Show this help message"
 msgstr ""
 
-#: src/cryptsetup.c:438
+#: src/cryptsetup.c:441
 msgid "Display brief usage"
 msgstr ""
 
-#: src/cryptsetup.c:442
+#: src/cryptsetup.c:445
 msgid "Help options:"
 msgstr ""
 
-#: src/cryptsetup.c:443
+#: src/cryptsetup.c:446
 msgid "Shows more detailed error messages"
 msgstr ""
 
-#: src/cryptsetup.c:444
+#: src/cryptsetup.c:447
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr ""
 
-#: src/cryptsetup.c:445
+#: src/cryptsetup.c:448
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr ""
 
-#: src/cryptsetup.c:446
+#: src/cryptsetup.c:449
 msgid "Verifies the passphrase by asking for it twice"
 msgstr ""
 
-#: src/cryptsetup.c:447
+#: src/cryptsetup.c:450
 msgid "Read the key from a file (can be /dev/random)"
 msgstr ""
 
-#: src/cryptsetup.c:448
+#: src/cryptsetup.c:451
 msgid "The size of the encryption key"
 msgstr ""
 
-#: src/cryptsetup.c:448
+#: src/cryptsetup.c:451
 msgid "BITS"
 msgstr ""
 
-#: src/cryptsetup.c:449
+#: src/cryptsetup.c:452
 msgid "Slot number for new key (default is first free)"
 msgstr ""
 
-#: src/cryptsetup.c:450
+#: src/cryptsetup.c:453
 msgid "The size of the device"
 msgstr ""
 
-#: src/cryptsetup.c:450 src/cryptsetup.c:451 src/cryptsetup.c:452
-#: src/cryptsetup.c:460
+#: src/cryptsetup.c:453 src/cryptsetup.c:454 src/cryptsetup.c:455
+#: src/cryptsetup.c:463
 msgid "SECTORS"
 msgstr ""
 
-#: src/cryptsetup.c:451
+#: src/cryptsetup.c:454
 msgid "The start offset in the backend device"
 msgstr ""
 
-#: src/cryptsetup.c:452
+#: src/cryptsetup.c:455
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr ""
 
-#: src/cryptsetup.c:453
+#: src/cryptsetup.c:456
 msgid "Create a readonly mapping"
 msgstr ""
 
-#: src/cryptsetup.c:454
+#: src/cryptsetup.c:457
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr ""
 
-#: src/cryptsetup.c:455
+#: src/cryptsetup.c:458
 msgid "msecs"
 msgstr ""
 
-#: src/cryptsetup.c:456
+#: src/cryptsetup.c:459
 msgid "Do not ask for confirmation"
 msgstr ""
 
-#: src/cryptsetup.c:457
+#: src/cryptsetup.c:460
 msgid "Print package version"
 msgstr ""
 
-#: src/cryptsetup.c:458
+#: src/cryptsetup.c:461
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr ""
 
-#: src/cryptsetup.c:458
+#: src/cryptsetup.c:461
 msgid "secs"
 msgstr ""
 
-#: src/cryptsetup.c:459
+#: src/cryptsetup.c:462
 msgid "How often the input of the passphrase can be retried"
 msgstr ""
 
-#: src/cryptsetup.c:460
+#: src/cryptsetup.c:463
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr ""
 
-#: src/cryptsetup.c:476
+#: src/cryptsetup.c:464
+msgid "Allows non-exclusive access for luksOpen, WARNING see manpage."
+msgstr ""
+
+#: src/cryptsetup.c:480
 msgid "[OPTION...] <action> <action-specific>]"
 msgstr ""
 
-#: src/cryptsetup.c:512
+#: src/cryptsetup.c:516
 msgid "Key size must be a multiple of 8 bits"
 msgstr ""
 
-#: src/cryptsetup.c:516
+#: src/cryptsetup.c:520
 msgid "Argument <action> missing."
 msgstr ""
 
-#: src/cryptsetup.c:522
+#: src/cryptsetup.c:526
 msgid "Unknown action."
 msgstr ""
 
-#: src/cryptsetup.c:537
+#: src/cryptsetup.c:541
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr ""

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cryptsetup\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-03-10 23:38+0100\n"
+"POT-Creation-Date: 2009-01-13 20:50+0100\n"
 "PO-Revision-Date: 2007-09-29 20:44+0100\n"
 "Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
@@ -15,177 +15,177 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/setup.c:645
+#: lib/setup.c:690
 msgid ""
 "This is the last keyslot. Device will become unusable after purging this key."
 msgstr ""
 "Det här är sista nyckelplatsen. Enheten kommer att bli oanvändbar efter att "
 "denna nyckel tagits bort."
 
-#: luks/keyencryption.c:65
+#: luks/keyencryption.c:70
 #, c-format
 msgid "Unable to obtain sector size for %s"
 msgstr "Kunde inte få sektorstorlek för %s"
 
-#: luks/keyencryption.c:129
+#: luks/keyencryption.c:132
 msgid "Failed to obtain device mapper directory."
 msgstr "Misslyckades med att få katalog för enhetsmappare."
 
-#: luks/keymanage.c:82
+#: luks/keymanage.c:89
 #, c-format
 msgid "Can't open device: %s\n"
 msgstr "Kan inte öppna enhet: %s\n"
 
-#: luks/keymanage.c:89
+#: luks/keymanage.c:96
 #, c-format
 msgid "%s is not a LUKS partition\n"
 msgstr "%s är inte en LUKS-partition\n"
 
-#: luks/keymanage.c:92
+#: luks/keymanage.c:99
 #, fuzzy
 msgid "unknown hash spec in phdr\n"
 msgstr "okänd hash angiven i phdr"
 
-#: luks/keymanage.c:95
+#: luks/keymanage.c:102
 #, fuzzy, c-format
 msgid "unknown LUKS version %d\n"
 msgstr "okänd version %d\n"
 
-#: luks/keymanage.c:123 luks/keymanage.c:391
+#: luks/keymanage.c:130 luks/keymanage.c:412
 #, fuzzy, c-format
 msgid "Can't open device %s"
 msgstr "Kan inte öppna enhet: %s\n"
 
-#: luks/keymanage.c:213
+#: luks/keymanage.c:220
 #, fuzzy, c-format
 msgid "key %d active, purge first"
 msgstr "nyckel %d är aktiv, ta bort först.\n"
 
-#: luks/keymanage.c:218
+#: luks/keymanage.c:225
 #, fuzzy, c-format
 msgid "key material section %d includes too few stripes. Header manipulation?"
 msgstr "nyckelmaterialsektion %d inkluderar för få delar. Manipulerat huvud?\n"
 
-#: luks/keymanage.c:426
+#: luks/keymanage.c:447
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
 msgstr "Nyckel %d är inte aktiv. Kan inte rensa.\n"
 
-#: luks/keymanage.c:471
+#: luks/keymanage.c:492
 #, fuzzy, c-format
 msgid "Can't open device for %s%saccess: %s\n"
 msgstr "Kan inte öppna enhet: %s\n"
 
-#: luks/keymanage.c:471
+#: luks/keymanage.c:492
 msgid "exclusive "
 msgstr ""
 
-#: luks/keymanage.c:471
+#: luks/keymanage.c:492
 msgid "writable "
 msgstr ""
 
-#: src/cryptsetup.c:60 src/cryptsetup.c:74
+#: src/cryptsetup.c:61 src/cryptsetup.c:75
 msgid "<name> <device>"
 msgstr "<namn> <enhet>"
 
-#: src/cryptsetup.c:60
+#: src/cryptsetup.c:61
 msgid "create device"
 msgstr "skapa enhet"
 
-#: src/cryptsetup.c:61 src/cryptsetup.c:62 src/cryptsetup.c:63
-#: src/cryptsetup.c:71
+#: src/cryptsetup.c:62 src/cryptsetup.c:63 src/cryptsetup.c:64
+#: src/cryptsetup.c:72
 msgid "<name>"
 msgstr "<namn>"
 
-#: src/cryptsetup.c:61
+#: src/cryptsetup.c:62
 msgid "remove device"
 msgstr "ta bort enhet"
 
-#: src/cryptsetup.c:62
+#: src/cryptsetup.c:63
 msgid "resize active device"
 msgstr "ändra storlek på aktiv enhet"
 
-#: src/cryptsetup.c:63
+#: src/cryptsetup.c:64
 msgid "show device status"
 msgstr "visa enhetsstatus"
 
-#: src/cryptsetup.c:64 src/cryptsetup.c:66
+#: src/cryptsetup.c:65 src/cryptsetup.c:67
 msgid "<device> [<new key file>]"
 msgstr "<enhet> [<ny nyckelfil>]"
 
-#: src/cryptsetup.c:64
+#: src/cryptsetup.c:65
 msgid "formats a LUKS device"
 msgstr "formaterar en LUKS-enhet"
 
-#: src/cryptsetup.c:65
+#: src/cryptsetup.c:66
 msgid "<device> <name> "
 msgstr "<enhet> <namn> "
 
-#: src/cryptsetup.c:65
+#: src/cryptsetup.c:66
 msgid "open LUKS device as mapping <name>"
 msgstr "öppna LUKS-enhet som mappning <namn>"
 
-#: src/cryptsetup.c:66
+#: src/cryptsetup.c:67
 msgid "add key to LUKS device"
 msgstr "lägg till nyckel till LUKS-enhet"
 
-#: src/cryptsetup.c:67
+#: src/cryptsetup.c:68
 #, fuzzy
 msgid "<device> [<key file>]"
 msgstr "<enhet> [<ny nyckelfil>]"
 
-#: src/cryptsetup.c:67
+#: src/cryptsetup.c:68
 #, fuzzy
 msgid "removes supplied key or key file from LUKS device"
 msgstr "rensar nyckeln med nummer <nyckelplats> från LUKS-enhet"
 
-#: src/cryptsetup.c:68 src/cryptsetup.c:73
+#: src/cryptsetup.c:69 src/cryptsetup.c:74
 msgid "<device> <key slot>"
 msgstr "<enhet> <nyckelplats>"
 
-#: src/cryptsetup.c:68
+#: src/cryptsetup.c:69
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr "rensar nyckeln med nummer <nyckelplats> från LUKS-enhet"
 
-#: src/cryptsetup.c:69 src/cryptsetup.c:70 src/cryptsetup.c:72
+#: src/cryptsetup.c:70 src/cryptsetup.c:71 src/cryptsetup.c:73
 msgid "<device>"
 msgstr "<enhet>"
 
-#: src/cryptsetup.c:69
+#: src/cryptsetup.c:70
 msgid "print UUID of LUKS device"
 msgstr "skriv ut UUID för LUKS-enhet"
 
-#: src/cryptsetup.c:70
+#: src/cryptsetup.c:71
 msgid "tests <device> for LUKS partition header"
 msgstr "testar <enhet> för LUKS-partitionshuvud"
 
-#: src/cryptsetup.c:71
+#: src/cryptsetup.c:72
 msgid "remove LUKS mapping"
 msgstr "ta bort LUKS-mappning"
 
-#: src/cryptsetup.c:72
+#: src/cryptsetup.c:73
 msgid "dump LUKS partition information"
 msgstr "skriv ut information om LUKS-partition"
 
-#: src/cryptsetup.c:73
+#: src/cryptsetup.c:74
 msgid "identical to luksKillSlot - DEPRECATED - see man page"
 msgstr ""
 
-#: src/cryptsetup.c:74
+#: src/cryptsetup.c:75
 msgid "modify active device - DEPRECATED - see man page"
 msgstr ""
 
-#: src/cryptsetup.c:124
+#: src/cryptsetup.c:125
 #, c-format
 msgid "Command successful.\n"
 msgstr "Kommandot lyckades.\n"
 
-#: src/cryptsetup.c:137
+#: src/cryptsetup.c:138
 #, c-format
 msgid "Command failed"
 msgstr "Kommandot misslyckades"
 
-#: src/cryptsetup.c:167
+#: src/cryptsetup.c:168
 #, c-format
 msgid ""
 "The reload action is deprecated. Please use \"dmsetup reload\" in case you "
@@ -194,16 +194,16 @@ msgid ""
 "Ctrl-C now.\n"
 msgstr ""
 
-#: src/cryptsetup.c:266
+#: src/cryptsetup.c:267
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr "Det här kommer att skriva över data permanent på %s."
 
-#: src/cryptsetup.c:267
+#: src/cryptsetup.c:268
 msgid "memory allocation error in action_luksFormat"
 msgstr "minnesallokeringsfel i action_luksFormat"
 
-#: src/cryptsetup.c:415
+#: src/cryptsetup.c:418
 #, c-format
 msgid ""
 "\n"
@@ -212,7 +212,7 @@ msgstr ""
 "\n"
 "<åtgärd> är en av:\n"
 
-#: src/cryptsetup.c:421
+#: src/cryptsetup.c:424
 #, c-format
 msgid ""
 "\n"
@@ -227,121 +227,125 @@ msgstr ""
 "<nyckelplats> är LUKS-nyckelplatsens nummer att ändra\n"
 "<nyckelfil> valfri nyckelfil för den nya nyckeln för luksAddKey-åtgärd\n"
 
-#: src/cryptsetup.c:437
+#: src/cryptsetup.c:440
 msgid "Show this help message"
 msgstr "Visa det här hjälpmeddelandet"
 
-#: src/cryptsetup.c:438
+#: src/cryptsetup.c:441
 msgid "Display brief usage"
 msgstr "Visa kort information om användning"
 
-#: src/cryptsetup.c:442
+#: src/cryptsetup.c:445
 msgid "Help options:"
 msgstr "Hjälpflaggor:"
 
-#: src/cryptsetup.c:443
+#: src/cryptsetup.c:446
 msgid "Shows more detailed error messages"
 msgstr "Visar mer detaljerade felmeddelanden"
 
-#: src/cryptsetup.c:444
+#: src/cryptsetup.c:447
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Chiffret som används för att kryptera disken (se /proc/crypto)"
 
-#: src/cryptsetup.c:445
+#: src/cryptsetup.c:448
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "Hashen som används för att skapa krypteringsnyckeln från lösenfrasen"
 
-#: src/cryptsetup.c:446
+#: src/cryptsetup.c:449
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Verifierar lösenfrasen genom att fråga efter den två gånger"
 
-#: src/cryptsetup.c:447
+#: src/cryptsetup.c:450
 msgid "Read the key from a file (can be /dev/random)"
 msgstr "Läs nyckeln från en fil (kan vara /dev/random)"
 
-#: src/cryptsetup.c:448
+#: src/cryptsetup.c:451
 msgid "The size of the encryption key"
 msgstr "Storleken på krypteringsnyckeln"
 
-#: src/cryptsetup.c:448
+#: src/cryptsetup.c:451
 msgid "BITS"
 msgstr "BITAR"
 
-#: src/cryptsetup.c:449
+#: src/cryptsetup.c:452
 msgid "Slot number for new key (default is first free)"
 msgstr ""
 
-#: src/cryptsetup.c:450
+#: src/cryptsetup.c:453
 msgid "The size of the device"
 msgstr "Storleken på enheten"
 
-#: src/cryptsetup.c:450 src/cryptsetup.c:451 src/cryptsetup.c:452
-#: src/cryptsetup.c:460
+#: src/cryptsetup.c:453 src/cryptsetup.c:454 src/cryptsetup.c:455
+#: src/cryptsetup.c:463
 msgid "SECTORS"
 msgstr "SEKTORER"
 
-#: src/cryptsetup.c:451
+#: src/cryptsetup.c:454
 msgid "The start offset in the backend device"
 msgstr "Startpositionen i bakändesenheten"
 
-#: src/cryptsetup.c:452
+#: src/cryptsetup.c:455
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr ""
 "Hur många sektorer av det krypterade datat som ska hoppas över i början"
 
-#: src/cryptsetup.c:453
+#: src/cryptsetup.c:456
 msgid "Create a readonly mapping"
 msgstr "Skapa en skrivskyddad mappning"
 
-#: src/cryptsetup.c:454
+#: src/cryptsetup.c:457
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "PBKDF2-iterationstid för LUKS (i ms)"
 
-#: src/cryptsetup.c:455
+#: src/cryptsetup.c:458
 msgid "msecs"
 msgstr "ms"
 
-#: src/cryptsetup.c:456
+#: src/cryptsetup.c:459
 msgid "Do not ask for confirmation"
 msgstr "Fråga inte efter bekräftelse"
 
-#: src/cryptsetup.c:457
+#: src/cryptsetup.c:460
 msgid "Print package version"
 msgstr "Skriv ut paketversion"
 
-#: src/cryptsetup.c:458
+#: src/cryptsetup.c:461
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "Tidsgräns för interaktiv prompt för lösenfras (i sekunder)"
 
-#: src/cryptsetup.c:458
+#: src/cryptsetup.c:461
 msgid "secs"
 msgstr "sekunder"
 
-#: src/cryptsetup.c:459
+#: src/cryptsetup.c:462
 msgid "How often the input of the passphrase can be retried"
 msgstr "Hur ofta inmatning av lösenfras kan upprepas"
 
-#: src/cryptsetup.c:460
+#: src/cryptsetup.c:463
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "Justera data i <n> sektorgränser - för luksFormat"
 
-#: src/cryptsetup.c:476
+#: src/cryptsetup.c:464
+msgid "Allows non-exclusive access for luksOpen, WARNING see manpage."
+msgstr ""
+
+#: src/cryptsetup.c:480
 msgid "[OPTION...] <action> <action-specific>]"
 msgstr "[FLAGGA...] <åtgärd> <åtgärdsspecifik>]"
 
-#: src/cryptsetup.c:512
+#: src/cryptsetup.c:516
 msgid "Key size must be a multiple of 8 bits"
 msgstr "Nyckelstorleken måste vara en multipel av 8 bitar"
 
-#: src/cryptsetup.c:516
+#: src/cryptsetup.c:520
 msgid "Argument <action> missing."
 msgstr "Argumentet <åtgärd> saknas."
 
-#: src/cryptsetup.c:522
+#: src/cryptsetup.c:526
 msgid "Unknown action."
 msgstr "Okänd åtgärd."
 
-#: src/cryptsetup.c:537
+#: src/cryptsetup.c:541
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: kräver %s som argument"
