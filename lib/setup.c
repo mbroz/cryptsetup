@@ -693,8 +693,6 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
 	} 
 
 	if(options->flags & CRYPT_FLAG_VERIFY_ON_DELKEY) {
-                int r;
-
 		options->flags &= ~CRYPT_FLAG_VERIFY_ON_DELKEY;
 		get_key("Enter any remaining LUKS passphrase: ",&password,&passwordLen, 0, options->key_file, options->passphrase_fd, options->timeout, options->flags);
 		if(!password) {
