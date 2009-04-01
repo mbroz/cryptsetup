@@ -32,7 +32,9 @@ void set_error_va(const char *fmt, va_list va)
 	    error=NULL;
 	}
 
-        vasprintf(&error, fmt, va);
+	if(!fmt) return;
+
+	vasprintf(&error, fmt, va);
 }
 
 void set_error(const char *fmt, ...)
