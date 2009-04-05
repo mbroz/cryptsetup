@@ -256,13 +256,13 @@ static int parse_into_name_and_mode(const char *nameAndMode, char *name,
 }
 
 /* Select free keyslot or verifies that the one specified is empty */
-static int keyslot_from_option(int keySlotOption, struct luks_phdr *hdr) {
-        if(keySlotOption != -1) {
+static int keyslot_from_option(int keySlotOption, struct luks_phdr *hdr, struct crypt_options *options) {
+        if(keySlotOption >= 0) {
                 if(keySlotOption >= LUKS_NUMKEYS) {
-                        set_error("slot %d too high, please pick between 0 and %d", keySlotOption, LUKS_NUMKEYS);
+                        logger(options,CRYPT_LOG_ERROR,"slot %d too high, please pick between 0 and %d", keySlotOption, LUKS_NUMKEYS);
                         return -EINVAL;
                 } else if(hdr->keyblock[keySlotOption].active != LUKS_KEY_DISABLED) {
-                        set_error("slot %d full, please pick another one", keySlotOption);
+                        logger(options,CRYPT_LOG_ERROR,"slot %d full, please pick another one", keySlotOption);
                         return -EINVAL;
                 } else {
                         return keySlotOption;
@@ -274,7 +274,7 @@ static int keyslot_from_option(int keySlotOption, struct luks_phdr *hdr) {
                         if(hdr->keyblock[i].active == LUKS_KEY_DISABLED) break;
                 }
                 if(i==LUKS_NUMKEYS) {
-                        set_error("All slots full");
+                        logger(options,CRYPT_LOG_ERROR,"All slots full");
                         return -EINVAL;
                 }
                 return i;
@@ -475,7 +475,10 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 		return r; 
 	}
 
-        keyIndex = keyslot_from_option(options->key_slot, &header);
+        keyIndex = keyslot_from_option(options->key_slot, &header, options);
+        if(keyIndex == -EINVAL) {
+                r = -EINVAL; goto out;
+        }
 
 	PBKDF2perSecond = LUKS_benchmarkt_iterations();
 	header.keyblock[keyIndex].passwordIterations = at_least_one(PBKDF2perSecond * ((float)options->iteration_time / 1000.0));
@@ -608,7 +611,10 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
 	if(r < 0) return r;
 
 
-        keyIndex = keyslot_from_option(options->key_slot, &hdr);
+        keyIndex = keyslot_from_option(options->key_slot, &hdr, options);
+        if(keyIndex == -EINVAL) {
+                r = -EINVAL; goto out;
+        }
 
 	get_key("Enter any LUKS passphrase: ",
                 &password,
