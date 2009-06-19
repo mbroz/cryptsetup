@@ -15,7 +15,7 @@ cryptsetup_SOURCES = \
 
 cryptsetup_LDADD = \
 	@POPT_LIBS@				\
-	$(top_srcdir)/lib/libcryptsetup.la
+	$(top_builddir)/lib/libcryptsetup.la
 
 if STATIC_CRYPTSETUP
 _STATIC_FLAGS = -all-static
