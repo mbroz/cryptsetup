@@ -487,13 +487,24 @@ int LUKS_benchmarkt_iterations()
 
 int LUKS_device_ready(const char *device, int mode)
 {
-        int devfd = open(device, mode | O_DIRECT | O_SYNC);
-        if(devfd < 0) {
-                set_error(_("Can't open device for %s%saccess: %s\n"), (mode & O_EXCL)?_("exclusive "):"", (mode & O_RDWR)?_("writable "):"read-only ", device);
-                return 0;
-        }
-        close(devfd);
-        return 1;
+	int devfd;
+	struct stat st;
+
+	if(stat(device, &st) < 0) {
+		set_error(_("Device %s doesn't exist or access denied."), device);
+		return 0;
+	}
+
+	devfd = open(device, mode | O_DIRECT | O_SYNC);
+	if(devfd < 0) {
+		set_error(_("Can't open device %s for %s%saccess."), device,
+			  (mode & O_EXCL)?_("exclusive "):"",
+			  (mode & O_RDWR)?_("writable "):"read-only ");
+		return 0;
+	}
+	close(devfd);
+
+	return 1;
 }
 
 // Local Variables:

@@ -299,7 +299,7 @@ static int __crypt_create_device(int reload, struct setup_backend *backend,
 			return r;
 	} else {
 		if (r >= 0) {
-			set_error("Device already exists");
+			set_error("Device %s already exists.", options->name);
 			return -EEXIST;
 		}
 		if (r != -ENODEV)
@@ -440,10 +440,8 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	int PBKDF2perSecond;
         int keyIndex;
 
-	if (!LUKS_device_ready(options->device, O_RDWR | O_EXCL)) {
-		set_error("Can not access device");
-		r = -ENOTBLK; goto out;
-	}
+	if (!LUKS_device_ready(options->device, O_RDWR | O_EXCL))
+		return -ENOTBLK;
 
 	mk = LUKS_generate_masterkey(options->key_size);
 	if(NULL == mk) return -ENOMEM; // FIXME This may be misleading, since we don't know what went wrong
@@ -521,14 +519,12 @@ static int __crypt_luks_open(int arg, struct setup_backend *backend, struct cryp
 
 	r = backend->status(0, &tmp, NULL);
 	if (r >= 0) {
-		set_error("Device already exists");
+		set_error("Device %s already exists.", options->name);
 		return -EEXIST;
 	}
 
-	if (!LUKS_device_ready(options->device, O_RDONLY | excl)) {
-		set_error("Can not access device");
+	if (!LUKS_device_ready(options->device, O_RDONLY | excl))
 		return -ENOTBLK;
-	}
 
 	if (get_device_infos(options->device, &infos) < 0) {
 		set_error("Can't get device information.\n");
@@ -601,11 +597,9 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
         unsigned int keyIndex;
 	const char *device = options->device;
 	int r;
-	
-	if (!LUKS_device_ready(options->device, O_RDWR)) {
-		set_error("Can not access device");
-		r = -ENOTBLK; goto out;
-	}
+
+	if (!LUKS_device_ready(options->device, O_RDWR))
+		return -ENOTBLK;
 
 	r = LUKS_read_phdr(device, &hdr);
 	if(r < 0) return r;
@@ -671,10 +665,9 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
 	int keyIndex;
 	int openedIndex;
 	int r;
-	if (!LUKS_device_ready(options->device, O_RDWR)) {
-	    set_error("Can not access device");
-	    r = -ENOTBLK; goto out;
-	}
+
+	if (!LUKS_device_ready(options->device, O_RDWR))
+	    return -ENOTBLK;
 
 	if(supply_it) {
 	    get_key("Enter LUKS passphrase to be deleted: ",&password,&passwordLen, 0, options->new_key_file, options->passphrase_fd, options->timeout, options->flags);
