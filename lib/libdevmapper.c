@@ -6,10 +6,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
 #include <libdevmapper.h>
+#include <fcntl.h>
+#include <linux/fs.h>
 
 #include "libcryptsetup.h"
 #include "internal.h"
@@ -109,6 +112,23 @@ static char *lookup_dev(const char *dev)
 	buf[PATH_MAX] = '\0';
 
 	return __lookup_dev(buf, makedev(major, minor));
+}
+
+static int _dev_read_ahead(const char *dev, uint32_t *read_ahead)
+{
+	int fd, r = 0;
+	long read_ahead_long;
+
+	if ((fd = open(dev, O_RDONLY)) < 0)
+		return 0;
+
+	r = ioctl(fd, BLKRAGET, &read_ahead_long) ? 0 : 1;
+	close(fd);
+
+	if (r)
+		*read_ahead = (uint32_t) read_ahead_long;
+
+	return r;
 }
 
 static char *get_params(struct crypt_options *options, const char *key)
@@ -235,6 +255,7 @@ static int dm_create_device(int reload, struct crypt_options *options,
 	char *params = NULL;
 	char *error = NULL;
 	int r = -EINVAL;
+	uint32_t read_ahead = 0;
 
 	params = get_params(options, key);
 	if (!params)
@@ -248,6 +269,12 @@ static int dm_create_device(int reload, struct crypt_options *options,
                 goto out;
 	if (!dm_task_add_target(dmt, 0, options->size, CRYPT_TARGET, params))
 		goto out;
+
+#ifdef DM_READ_AHEAD_MINIMUM_FLAG
+	if (_dev_read_ahead(options->device, &read_ahead) &&
+	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
+		goto out;
+#endif
 	if (!dm_task_run(dmt))
 		goto out;
 
