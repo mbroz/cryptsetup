@@ -507,6 +507,7 @@ static int __crypt_luks_open(int arg, struct setup_backend *backend, struct cryp
 {
 	struct luks_masterkey *mk=NULL;
 	struct luks_phdr hdr;
+	char *prompt = NULL;
 	char *password;
 	unsigned int passwordLen;
 	struct device_infos infos;
@@ -534,10 +535,13 @@ static int __crypt_luks_open(int arg, struct setup_backend *backend, struct cryp
 	if (infos.readonly)
 		options->flags |= CRYPT_FLAG_READONLY;
 
+	if(asprintf(&prompt, "Enter LUKS passphrase for %s: ", options->device) < 0)
+		return -ENOMEM;
+
 start:
 	mk=NULL;
 
-	if(get_key("Enter LUKS passphrase: ",&password,&passwordLen, 0, options->key_file,  options->passphrase_fd, options->timeout, options->flags))
+	if(get_key(prompt, &password, &passwordLen, 0, options->key_file, options->passphrase_fd, options->timeout, options->flags))
 		tries--;
 	else
 		tries = 0;
@@ -582,6 +586,7 @@ start:
  out1:
 	safe_free(password);
  out:
+	free(prompt);
 	LUKS_dealloc_masterkey(mk);
 	if (r == -EPERM && tries > 0)
 		goto start;
