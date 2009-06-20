@@ -20,6 +20,8 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <linux/fs.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
@@ -79,11 +81,11 @@ struct luks_masterkey *LUKS_generate_masterkey(int keylength)
 
 int LUKS_read_phdr(const char *device, struct luks_phdr *hdr)
 {
-	int devfd = 0; 
+	int devfd = 0, r = 0; 
 	unsigned int i; 
-	int r = 0;
+	uint64_t size;
 	char luksMagic[] = LUKS_MAGIC;
-	
+
 	devfd = open(device,O_RDONLY | O_DIRECT | O_SYNC);
 	if(-1 == devfd) {
 		set_error(_("Can't open device: %s\n"), device);
@@ -114,7 +116,15 @@ int LUKS_read_phdr(const char *device, struct luks_phdr *hdr)
 		}
 	}
 
+#ifdef BLKGETSIZE64
+	if (ioctl(devfd, BLKGETSIZE64, &size) < 0 ||
+	    size < (uint64_t)hdr->payloadOffset) {
+		set_error(_("LUKS header detected but device %s is too small.\n"), device);
+		r = -EINVAL;
+	}
+#endif
 	close(devfd);
+
 	return r;
 }
 

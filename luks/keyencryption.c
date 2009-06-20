@@ -20,11 +20,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/utsname.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -85,10 +87,9 @@ static int setup_mapping(const char *cipher, const char *name,
 		options->flags |= CRYPT_FLAG_READONLY;
 	}
 
-	r = backend->create(0, options, key);
+	set_error(NULL);
 
-	if (r <= 0)
-		set_error(NULL);
+	r = backend->create(0, options, key);
 
 	return r;
 }
@@ -110,6 +111,35 @@ static void sigint_handler(int sig)
                 clear_mapping(cleaner_name, cleaner_size, cleaner_backend);
         signal(SIGINT, SIG_DFL);
         kill(getpid(), SIGINT);
+}
+
+static char *_error_hint(char *cipherName, char *cipherMode, size_t keyLength)
+{
+	char *hint = "";
+#ifdef __linux__
+	char c, tmp[4] = {0};
+	struct utsname uts;
+	int i = 0, kernel_minor;
+
+	/* Nothing to suggest here */
+	if (uname(&uts) || strncmp(uts.release, "2.6.", 4))
+		return hint;
+
+	/* Get kernel minor without suffixes */
+	while (i < 3 && (c = uts.release[i + 4]))
+		tmp[i++] = isdigit(c) ? c : '\0';
+	kernel_minor = atoi(tmp);
+
+	if (!strncmp(cipherMode, "xts", 3) && (keyLength != 256 && keyLength != 512))
+		hint = "Key size in XTS mode must be 256 or 512 bits.";
+	else if (!strncmp(cipherMode, "xts", 3) && kernel_minor < 24)
+		hint = "Block mode XTS is available since kernel 2.6.24.";
+	if (!strncmp(cipherMode, "lrw", 3) && (keyLength != 256 && keyLength != 512))
+		hint = "Key size in LRW mode must be 256 or 512 bits.";
+	else if (!strncmp(cipherMode, "lrw", 3) && kernel_minor < 20)
+		hint = "Block mode LRW is available since kernel 2.6.20.";
+#endif
+	return hint;
 }
 
 /* This function is not reentrant safe, as it installs a signal
@@ -145,11 +175,10 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 	r = setup_mapping(dmCipherSpec,name,device,hdr->payloadOffset,key,keyLength,sector,srcLength,backend,mode);
 	if(r < 0) {
-		if(!get_error())
-			set_error("Failed to setup dm-crypt key mapping.\nCheck kernel for support for the %s cipher spec and verify that %s contains at least %d sectors",
-			dmCipherSpec, 
-			device, 
-			sector + div_round_up(srcLength,SECTOR_SIZE));
+		set_error("Failed to setup dm-crypt key mapping for device %s.\n"
+			  "Check that kernel supports %s cipher (check syslog for more info).\n%s",
+			  device, dmCipherSpec,
+			  _error_hint(hdr->cipherName, hdr->cipherMode, keyLength * 8));
 		r = -EIO;
 		goto out1;
 	}

@@ -233,6 +233,7 @@ static int dm_create_device(int reload, struct crypt_options *options,
 	struct dm_task *dmt_query = NULL;
 	struct dm_info dmi;
 	char *params = NULL;
+	char *error = NULL;
 	int r = -EINVAL;
 
 	params = get_params(options, key);
@@ -268,17 +269,15 @@ static int dm_create_device(int reload, struct crypt_options *options,
 	r = 0;
 out:
 	if (r < 0 && !reload) {
-		char *error = (char *)get_error();
-		if (error)
-			error = strdup(error);
+		if (get_error())
+			error = strdup(get_error());
 
-		if (!_dm_remove(options, 0))
-			goto out_restore_error;
+		_dm_remove(options, 0);
 
-out_restore_error:
-		set_error("%s", error);
-		if (error)
+		if (error) {
+			set_error(error);
 			free(error);
+		}
 	}
 
 out_no_removal:
