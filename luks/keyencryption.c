@@ -89,7 +89,7 @@ static int setup_mapping(const char *cipher, const char *name,
 
 	set_error(NULL);
 
-	r = backend->create(0, options, key);
+	r = backend->create(0, options, key, NULL);
 
 	return r;
 }

@@ -37,7 +37,7 @@ struct setup_backend {
 	int		(*init)(void);
 	void		(*exit)(void);
 	int		(*create)(int reload, struct crypt_options *options,
-			          const char *key);
+			          const char *key, const char *uuid);
 	int		(*status)(int details, struct crypt_options *options,
 			          char **key);
 	int		(*remove)(int force, struct crypt_options *options);

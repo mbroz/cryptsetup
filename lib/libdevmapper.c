@@ -18,7 +18,7 @@
 #include "internal.h"
 
 #define DEVICE_DIR	"/dev"
-
+#define UUID_PREFIX	"CRYPT-"
 #define	CRYPT_TARGET	"crypt"
 #define	RETRY_COUNT	5
 
@@ -247,19 +247,26 @@ static int _dm_remove(struct crypt_options *options, int force)
 }
 
 static int dm_create_device(int reload, struct crypt_options *options,
-                            const char *key)
+			    const char *key, const char *uuid)
 {
 	struct dm_task *dmt = NULL;
 	struct dm_task *dmt_query = NULL;
 	struct dm_info dmi;
 	char *params = NULL;
 	char *error = NULL;
+	char dev_uuid[64];
 	int r = -EINVAL;
 	uint32_t read_ahead = 0;
 
 	params = get_params(options, key);
 	if (!params)
 		goto out_no_removal;
+ 
+	if (uuid) {
+		strcpy(dev_uuid, UUID_PREFIX);
+		strcat(dev_uuid, uuid);
+	}
+
 	if (!(dmt = dm_task_create(reload ? DM_DEVICE_RELOAD
 	                                  : DM_DEVICE_CREATE)))
 		goto out;
@@ -275,6 +282,10 @@ static int dm_create_device(int reload, struct crypt_options *options,
 	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
 		goto out;
 #endif
+
+	if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
+		goto out;
+
 	if (!dm_task_run(dmt))
 		goto out;
 
@@ -283,6 +294,8 @@ static int dm_create_device(int reload, struct crypt_options *options,
 		if (!(dmt = dm_task_create(DM_DEVICE_RESUME)))
 			goto out;
 		if (!dm_task_set_name(dmt, options->name))
+			goto out;
+		if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
 			goto out;
 		if (!dm_task_run(dmt))
 			goto out;

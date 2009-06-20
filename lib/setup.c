@@ -350,9 +350,9 @@ static int __crypt_create_device(int reload, struct setup_backend *backend,
 			set_error("Key processing error");
 		return -ENOENT;
 	}
-	
-	r = backend->create(reload, options, processed_key);
-	
+
+	r = backend->create(reload, options, processed_key, NULL);
+
 	safe_free(processed_key);
 
 	return r;
@@ -404,7 +404,7 @@ static int __crypt_resize_device(int details, struct setup_backend *backend,
 	if (infos.readonly)
 		options->flags |= CRYPT_FLAG_READONLY;
 
-	r = backend->create(1, &tmp, key);
+	r = backend->create(1, &tmp, key, NULL);
 
 	safe_free(key);
 
@@ -579,7 +579,9 @@ start:
 		r = -EINVAL; goto out2;
 	}
 	options->size -= options->offset;
-	r = backend->create(0, options, mk->key);
+	/* FIXME: code allows multiple crypt mapping, cannot use uuid then.
+	 * anyway, it is dangerous and can corrupt data. Remove it in next version! */
+	r = backend->create(0, options, mk->key, excl ? hdr.uuid : NULL);
 
  out2:
 	free(dmCipherSpec);
