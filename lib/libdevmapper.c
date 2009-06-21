@@ -16,11 +16,14 @@
 
 #include "libcryptsetup.h"
 #include "internal.h"
+#include "luks.h"
 
-#define DEVICE_DIR	"/dev"
-#define UUID_PREFIX	"CRYPT-"
-#define	CRYPT_TARGET	"crypt"
-#define	RETRY_COUNT	5
+#define DEVICE_DIR		"/dev"
+#define DM_UUID_PREFIX		"CRYPT-"
+#define DM_UUID_PREFIX_LEN	6
+#define DM_UUID_LEN		UUID_STRING_L
+#define DM_CRYPT_TARGET		"crypt"
+#define RETRY_COUNT		5
 
 static void set_dm_error(int level, const char *file, int line,
                          const char *f, ...)
@@ -254,7 +257,7 @@ static int dm_create_device(int reload, struct crypt_options *options,
 	struct dm_info dmi;
 	char *params = NULL;
 	char *error = NULL;
-	char dev_uuid[64];
+	char dev_uuid[DM_UUID_PREFIX_LEN + DM_UUID_LEN + 1] = {0};
 	int r = -EINVAL;
 	uint32_t read_ahead = 0;
 
@@ -263,8 +266,9 @@ static int dm_create_device(int reload, struct crypt_options *options,
 		goto out_no_removal;
  
 	if (uuid) {
-		strcpy(dev_uuid, UUID_PREFIX);
-		strcat(dev_uuid, uuid);
+		strncpy(dev_uuid, DM_UUID_PREFIX, DM_UUID_PREFIX_LEN);
+		strncpy(dev_uuid + DM_UUID_PREFIX_LEN, uuid, DM_UUID_LEN);
+		dev_uuid[DM_UUID_PREFIX_LEN + DM_UUID_LEN] = '\0';
 	}
 
 	if (!(dmt = dm_task_create(reload ? DM_DEVICE_RELOAD
@@ -274,7 +278,7 @@ static int dm_create_device(int reload, struct crypt_options *options,
 		goto out;
 	if (options->flags & CRYPT_FLAG_READONLY && !dm_task_set_ro(dmt))
                 goto out;
-	if (!dm_task_add_target(dmt, 0, options->size, CRYPT_TARGET, params))
+	if (!dm_task_add_target(dmt, 0, options->size, DM_CRYPT_TARGET, params))
 		goto out;
 
 #ifdef DM_READ_AHEAD_MINIMUM_FLAG
@@ -361,7 +365,7 @@ static int dm_query_device(int details, struct crypt_options *options,
 
 	next = dm_get_next_target(dmt, next, &start, &length,
 	                          &target_type, &params);
-	if (!target_type || strcmp(target_type, CRYPT_TARGET) != 0 ||
+	if (!target_type || strcmp(target_type, DM_CRYPT_TARGET) != 0 ||
 	    start != 0 || next)
 		goto out;
 
