@@ -34,7 +34,10 @@ void set_error_va(const char *fmt, va_list va)
 
 	if(!fmt) return;
 
-	vasprintf(&error, fmt, va);
+	if (vasprintf(&error, fmt, va) < 0) {
+		free(error);
+		error = NULL;
+	}
 }
 
 void set_error(const char *fmt, ...)
@@ -225,7 +228,7 @@ ssize_t read_blockwise(int fd, void *orig_buf, size_t count) {
  * is implicitly included in the read/write offset, which can not be set to non-aligned 
  * boundaries. Hence, we combine llseek with write.
  */
-   
+
 ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offset) {
 	int bsize = sector_size(fd);
 	const char *orig_buf = buf;
@@ -314,7 +317,9 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 	memcpy(&tmp, &orig, sizeof(tmp));
 	tmp.c_lflag &= ~ECHO;
 
-	write(outfd, prompt, strlen(prompt));
+	if (write(outfd, prompt, strlen(prompt)) < 0)
+		goto out_err;
+
 	tcsetattr(infd, TCSAFLUSH, &tmp);
 	if (timeout)
 		failed = timed_read(infd, pass, maxlen, timeout);
@@ -324,7 +329,7 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 
 out_err:
 	if (!failed)
-		write(outfd, "\n", 1);
+		(void)write(outfd, "\n", 1);
 	if (infd != STDIN_FILENO)
 		close(infd);
 	return failed;
@@ -379,7 +384,7 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		fd = passphrase_fd;
 		newline_stop = 1;
 		read_horizon = 0;   /* Infinite, if read from terminal or fd */
-	}	
+	}
 
 	/* Interactive case */
 	if(isatty(fd)) {

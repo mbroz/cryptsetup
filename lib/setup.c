@@ -27,15 +27,16 @@ static char *default_backend = NULL;
 #define at_least_one(a) ({ __typeof__(a) __at_least_one=(a); (__at_least_one)?__at_least_one:1; })
 
 static void logger(struct crypt_options *options, int class, char *format, ...) {
-        va_list argp;
-        char *target;
+	va_list argp;
+	char *target = NULL;
 
-        va_start(argp, format);
-        vasprintf(&target, format, argp);
-        options->icb->log(class, target);
+	va_start(argp, format);
 
-        va_end(argp);
-        free(target);
+	if (vasprintf(&target, format, argp) > 0)
+		options->icb->log(class, target);
+
+	va_end(argp);
+	free(target);
 }
 
 static void hexprintICB(struct crypt_options *options, int class, char *d, int n)
@@ -107,7 +108,7 @@ static char *process_key(struct crypt_options *options, char *pass, int passLen)
 		memcpy(key,pass,options->key_size);
 		return key;
 	}
-	
+
 	/* key is coming from tty, fd or binary stdin */
 	if (options->hash) {
 		if (hash(NULL, options->hash,
@@ -335,16 +336,16 @@ static int __crypt_create_device(int reload, struct setup_backend *backend,
 		set_error("Key reading error");
 		return -ENOENT;
 	}
-	
+
 	processed_key = process_key(options,key,keyLen);
 	safe_free(key);
-	
+
 	if (!processed_key) {
 		const char *error=get_error();
 		if(error) {
-			char *c_error_handling_sucks;
-			asprintf(&c_error_handling_sucks,"Key processing error: %s",error);
-			set_error(c_error_handling_sucks);
+			char *c_error_handling_sucks = NULL;
+			if (asprintf(&c_error_handling_sucks,"Key processing error: %s",error) > 0)
+				set_error(c_error_handling_sucks);
 			free(c_error_handling_sucks);
 		} else
 			set_error("Key processing error");
@@ -430,7 +431,7 @@ static int __crypt_remove_device(int arg, struct setup_backend *backend,
 static int __crypt_luks_format(int arg, struct setup_backend *backend, struct crypt_options *options)
 {
 	int r;
-	
+
 	struct luks_phdr header;
 	struct luks_masterkey *mk=NULL;
 	char *password=NULL; 
@@ -514,7 +515,7 @@ static int __crypt_luks_open(int arg, struct setup_backend *backend, struct cryp
 	struct crypt_options tmp = {
 		.name = options->name,
 	};
-	char *dmCipherSpec;
+	char *dmCipherSpec = NULL;
 	int r, tries = options->tries;
 	int excl = (options->flags & CRYPT_FLAG_NON_EXCLUSIVE_ACCESS) ? 0 : O_EXCL ;
 
@@ -558,10 +559,9 @@ start:
 
 	logger(options, CRYPT_LOG_NORMAL,"key slot %d unlocked.\n", r);
 
-	
+
 	options->offset = hdr.payloadOffset;
- 	asprintf(&dmCipherSpec, "%s-%s", hdr.cipherName, hdr.cipherMode);
-	if(!dmCipherSpec) {
+ 	if (asprintf(&dmCipherSpec, "%s-%s", hdr.cipherName, hdr.cipherMode) < 0) {
 		r = -ENOMEM;
 		goto out2;
 	}
@@ -585,6 +585,7 @@ start:
 
  out2:
 	free(dmCipherSpec);
+	dmCipherSpec = NULL;
  out1:
 	safe_free(password);
  out:
@@ -638,7 +639,7 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
 	        logger(options, CRYPT_LOG_NORMAL,"key slot %d unlocked.\n", r);
 
 	safe_free(password);
-	
+
 	get_key("Enter new passphrase for key slot: ",
                 &password,
                 &passwordLen,
@@ -882,7 +883,7 @@ int crypt_luksDump(struct crypt_options *options)
 
 			logger(options, CRYPT_LOG_NORMAL, "\tKey material offset:\t%d\n",hdr.keyblock[i].keyMaterialOffset);
 			logger(options, CRYPT_LOG_NORMAL, "\tAF stripes:            \t%d\n",hdr.keyblock[i].stripes);
-		}		
+		}
 		else 
 			logger(options, CRYPT_LOG_NORMAL, "Key Slot %d: DISABLED\n",i);
 	}
