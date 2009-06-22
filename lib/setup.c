@@ -588,10 +588,11 @@ start:
  out1:
 	safe_free(password);
  out:
-	free(prompt);
 	LUKS_dealloc_masterkey(mk);
 	if (r == -EPERM && tries > 0)
 		goto start;
+
+	free(prompt);
 
 	return r;
 }
