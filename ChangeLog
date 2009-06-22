@@ -1,3 +1,36 @@
+2009-06-22  Milan Broz  <mbroz@redhat.com>
+
+	* Summary of changes in subversion for 1.0.7-rc1:
+	* Various man page fixes.
+	* Set UUID in device-mapper for LUKS devices.
+	* Retain readahead of underlying device.
+	* Display device name when asking for password.
+	* Check device size when loading LUKS header. Remove misleading error message later.
+	* Add error hint if dm-crypt mapping failed.
+	* Use better error messages if device doesn't exist or is already used by other mapping.
+	* Fix make distcheck.
+	* Check if all slots are full during luksAddKey.
+	* Fix segfault in set_error.
+	* Code cleanups, remove precompiled pot files, remove unnecessary files from po directory
+	* Fix uninitialized return value variable in setup.c.
+	* Code cleanups. (thanks to Ivan Stankovic)
+	* Fix wrong output for remaining key at key deletion.
+	* Allow deletion of key slot while other keys have the same key information.
+	* Add missing AM_PROG_CC_C_O to configure.in
+	* Remove duplicate sentence in man page.
+	* Wipe start of device (possible fs signature) before LUKS-formatting.
+	* Do not process configure.in in hidden directories.
+	* Return more descriptive error in case of IO or header format error.
+	* Use remapping to error target instead of calling udevsettle for temporary crypt device.
+	* Check device mapper communication and warn user if device-mapper support missing in kernel.
+	* Fix signal handler to properly close device.
+	* write_lseek_blockwise: declare innerCount outside the if block.
+	* add -Wall to the default CFLAGS. fix some signedness issues.
+	* Error handling improvement.
+	* Add non-exclusive override to interface definition.
+	* Refactor key slot selection into keyslot_from_option.
+
+
 2007-05-01  Clemens Fruhwirth  <clemens@endorphin.org>
 
 	* lib/backends.c, man/cryptsetup.8: Apply patch from Ludwig Nussel
@@ -14,7 +47,7 @@
 	Fix hang on "-i 0".
 	Fix parenthesization error that prevented --tries from working
 	correctly.
-	
+
 
 2006-11-28  gettextize  <bug-gnu-gettext@gnu.org>
 
@@ -118,7 +151,8 @@
 	(optionsCheck) filter out CRYPT_FLAG_VERIFY and
 	CRYPT_FLAG_VERIFY_IF_POSSIBLE, so that in no case password verification is done
 	for password retrieval.
-	
+
+
 2006-08-04  Clemens Fruhwirth  <clemens@endorphin.org>
 
 	* configure.in: Merge Patch from http://bugs.gentoo.org/show_bug.cgi?id=132126 for sepol
@@ -269,7 +303,7 @@
 	(LUKS_is_last_keyslot): Added LUKS_is_last_keyslot function.
 
         * Applied patch from Bill Nottingham fixing a lot of prototypes.
-	
+
 	* src/cryptsetup.c (action_luksOpen): Add support for -r flag.
 
 	* configure.in: Version bump 1.0.1
@@ -340,7 +374,8 @@
 	* lib/setup.c: Remove unneccessary LUKS_write_phdr call, so the
 	phdr is written after passphrase reading, so the user can change
 	his mind, and not have a partial written LUKS header on it's disk.
-	
+
+
 2005-02-09  Clemens Fruhwirth  <clemens@endorphin.org>
 
 	* luks/keymanage.c (LUKS_write_phdr): converted argument phdr to
