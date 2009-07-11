@@ -84,7 +84,7 @@ For more information about LUKS, see \fBhttp://code.google.com/p/cryptsetup/wiki
 .SH OPTIONS
 .TP
 .B "\-\-hash, \-h"
-specifies hash to use for password hashing. This option is only relevant for the "create" action. The hash string is passed to libgcrypt, so all hashes accepted by gcrypt are supported. Default is "ripemd160".
+specifies hash to use for password hashing. This option is only relevant for \fIcreate\fR action. The hash string is passed to libgcrypt, so all hashes accepted by gcrypt are supported. Default is "ripemd160".
 .TP
 .B "\-\-cipher, \-c"
 set cipher specification string. For plain dm-crypt mappings, the default is "aes-cbc-plain", for LUKS mappings it's "aes-cbc-essiv:sha256". For pre-2.6.10 kernels, use "aes-plain" as they don't understand the new cipher spec strings. To use ESSIV, use "aes-cbc-essiv:sha256".
@@ -100,19 +100,22 @@ use file as key material. With LUKS, key material supplied in key files via \-d 
 If the key file is "-", stdin will be used. This is different from how cryptsetup usually reads from stdin. See section \fBNOTES ON PASSWORD PROCESSING\fR for more information.
 .TP
 .B "\-\-key-slot, \-S"
-For LUKS operations that add key material, this options allows to you specify which key slot is selected for the new key. This option can be used for luksFormat and luksAddKey.
+For LUKS operations that add key material, this options allows to you specify which key slot is selected for the new key. This option can be used for \fIluksFormat\fR and \fIluksAddKey\fR.
 .TP
 .B "\-\-key-size, \-s"
 set key size in bits. Has to be a multiple of 8 bits. The key size is limited by the used cipher. See output of /proc/crypto for more information. Can be used for \fIcreate\fR or \fIluksFormat\fR, all other LUKS actions will ignore this flag, as the key-size is specified by the partition header. Default is 128 for \fIluksFormat\fR and 256 for \fIcreate\fR.
 .TP
 .B "\-\-size, \-b"
 force the size of the underlying device in sectors.
+This option is only relevant for \fIcreate\fR and \fIresize\fR action.
 .TP
 .B "\-\-offset, \-o"
 start offset in the backend device.
+This option is only relevant for \fIcreate\fR action.
 .TP
 .B "\-\-skip, \-p"
 how many sectors of the encrypted data to skip at the beginning. This is different from the \-\-offset options with respect to IV calculations. Using \-\-offset will shift the IV calculation by the same negative amount. Hence, if \-\-offset \fIn\fR, sector \fIn\fR will be the first sector on the mapping with IV \fI0\fR. Using \-\-skip would have resulted in sector \fIn\fR being the first sector also, but with IV \fIn\fR.
+This option is only relevant for \fIcreate\fR action.
 .TP
 .B "\-\-readonly"
 set up a read-only mapping.

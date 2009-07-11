@@ -1,3 +1,7 @@
+2009-07-11  Milan Broz  <mbroz@redhat.com>
+
+	* Reject unsupported --offset and --skip options for luksFormat and update man page.
+
 2009-06-22  Milan Broz  <mbroz@redhat.com>
 
 	* Summary of changes in subversion for 1.0.7-rc1:
@@ -30,12 +34,10 @@
 	* Add non-exclusive override to interface definition.
 	* Refactor key slot selection into keyslot_from_option.
 
-
 2007-05-01  Clemens Fruhwirth  <clemens@endorphin.org>
 
 	* lib/backends.c, man/cryptsetup.8: Apply patch from Ludwig Nussel
 	<ludwig.nussel@suse.de>, for old SuSE compat hashing.
-
 
 2007-04-16  Clemens Fruhwirth  <clemens@endorphin.org>
 
@@ -47,7 +49,6 @@
 	Fix hang on "-i 0".
 	Fix parenthesization error that prevented --tries from working
 	correctly.
-
 
 2006-11-28  gettextize  <bug-gnu-gettext@gnu.org>
 
@@ -152,7 +153,6 @@
 	CRYPT_FLAG_VERIFY_IF_POSSIBLE, so that in no case password verification is done
 	for password retrieval.
 
-
 2006-08-04  Clemens Fruhwirth  <clemens@endorphin.org>
 
 	* configure.in: Merge Patch from http://bugs.gentoo.org/show_bug.cgi?id=132126 for sepol
@@ -169,7 +169,7 @@
 	  - add remark for --tries to manpage
 	  - allow more than 32 chars from standard input.
 	  - exit status fix for cryptsetup status.
-	
+
 2006-05-06  Clemens Fruhwirth  <clemens@endorphin.org>
 
 	* src/cryptsetup.c (yesDialog): Fix getline problem for 64-bit archs. 
@@ -375,7 +375,6 @@
 	phdr is written after passphrase reading, so the user can change
 	his mind, and not have a partial written LUKS header on it's disk.
 
-
 2005-02-09  Clemens Fruhwirth  <clemens@endorphin.org>
 
 	* luks/keymanage.c (LUKS_write_phdr): converted argument phdr to
@@ -441,4 +440,3 @@
 	  configure.in, setup-gettext, po/ChangeLog, po/LINGUAS,
 	  po/POTFILES.in, po/de.po, src/cryptsetup.c, src/cryptsetup.h,
 	  src/Makefile.am: Initial revision
-

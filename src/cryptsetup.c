@@ -264,6 +264,12 @@ static int action_luksFormat(int arg)
 
 	int r = 0; char *msg = NULL;
 
+	/* Avoid overwriting possibly wrong part of device than user requested by rejecting these options */
+	if (opt_offset || opt_skip) {
+		fprintf(stderr,"Options --offset and --skip are not supported for luksFormat.\n"); 
+		return -EINVAL;
+	}
+
 	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."), options.device) == -1) {
 		fputs(_("memory allocation error in action_luksFormat"), stderr);
 	} else {
