@@ -50,7 +50,7 @@ AM_GNU_GETTEXT([external],[need-ngettext])
 AM_GNU_GETTEXT_VERSION([0.15])
 
 dnl ==========================================================================
-                                                                                                                   
+
 saved_LIBS="$LIBS"
 AC_CHECK_LIB(popt, poptConfigFileToString,,
 	AC_MSG_ERROR([You need popt 1.7 or newer to compile.]))
@@ -87,16 +87,29 @@ MODULE_HELPER(libgcrypt,
 AM_CONDITIONAL(BUILD_LIBGCRYPT, test x$build_static = xyes)
 AM_CONDITIONAL(SHARED_LIBGCRYPT, test x$build_shared = xyes)
 
+AC_ARG_ENABLE(selinux,
+[  --disable-selinux       disable selinux support [[default=auto]]],[], [])
+
 MODULE_HELPER(libdevmapper,
 [  --enable-libdevmapper   enable dm-crypt backend through libdevmapper
                           [[default=auto]]],auto,[
 	have_module=yes
 	saved_LIBS="$LIBS"
-	AC_CHECK_LIB(sepol, sepol_bool_set)
-	AC_CHECK_LIB(selinux, is_selinux_enabled)
+	if test "x$enable_selinux" != xno; then
+		AC_CHECK_LIB(sepol, sepol_bool_set)
+		AC_CHECK_LIB(selinux, is_selinux_enabled)
+		# Check if we need -pthread with --enable-static and selinux
+		if test x$build_static = xyes; then
+			saved_LIBS2="$LIBS"
+			LIBS="$LIBS -static"
+			AC_SEARCH_LIBS([pthread_mutex_lock], [pthread],
+				[test "$ac_cv_search_pthread_mutex_lock" = "none required" || LIB_PTHREAD=-lpthread])
+			LIBS="$saved_LIBS2"
+		fi
+	fi
 	AC_CHECK_LIB(devmapper, dm_task_set_name,,unset have_module)
 	AC_CHECK_HEADER(libdevmapper.h,,unset have_module)
-	LIBDEVMAPPER_LIBS="$LIBS"
+	LIBDEVMAPPER_LIBS="$LIBS $LIB_PTHREAD"
 	LIBS="$saved_LIBS"
 	AC_SUBST(LIBDEVMAPPER_LIBS)
 	AC_SUBST(LIBDEVMAPPER_CFLAGS)
