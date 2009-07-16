@@ -673,7 +673,7 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
 	const char *device = options->device;
 	int keyIndex;
 	int openedIndex;
-	int r;
+	int r, last_slot;
 
 	if (!LUKS_device_ready(options->device, O_RDWR))
 	    return -ENOTBLK;
@@ -694,11 +694,10 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
 	    keyIndex = options->key_slot;
 	}
 
-	if(LUKS_is_last_keyslot(options->device, keyIndex) && 
-	   !(options->icb->yesDialog(_("This is the last keyslot. Device will become unusable after purging this key.")))) {
-		r = -EINVAL;
-		goto out;
-	} 
+	last_slot = LUKS_is_last_keyslot(options->device, keyIndex);
+	if(last_slot && !(options->icb->yesDialog(_("This is the last keyslot. Device will become unusable after purging this key.")))) {
+		r = -EINVAL; goto out;
+	}
 
 	if(options->flags & CRYPT_FLAG_VERIFY_ON_DELKEY) {
 		options->flags &= ~CRYPT_FLAG_VERIFY_ON_DELKEY;
@@ -712,7 +711,9 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
                         options->icb->log(CRYPT_LOG_ERROR,"Failed to access device.\n");
                         r = -EIO; goto out;
                 }
-                hdr.keyblock[keyIndex].active = LUKS_KEY_DISABLED;
+
+		if(!last_slot)
+			hdr.keyblock[keyIndex].active = LUKS_KEY_DISABLED;
 
 		openedIndex = LUKS_open_any_key_with_hdr(device, password, passwordLen, &hdr, &mk, backend);
                 /* Clean up */

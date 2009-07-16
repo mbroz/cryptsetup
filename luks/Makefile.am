@@ -157,7 +157,16 @@ test:
 	@../src/cryptsetup -v remove dummy
 	@echo "success"
 
-# Format test for ESSIV, and some other parameters. 
+# Delete last slot
+	@echo Case: delete last key
+	@cp $(IMG) $(ORIG_IMG)
+	@echo "key0" | ../src/cryptsetup -v luksFormat $(LOOPDEV)
+	echo "key0" | ../src/cryptsetup -v luksKillSlot $(LOOPDEV) 0
+	@sync
+	echo "key0" | ../src/cryptsetup -v luksOpen $(LOOPDEV) dummy 2>/dev/null || true
+	@echo "success"
+
+# Format test for ESSIV, and some other parameters.
 	@echo Case: parameter variation test
 	@dd if=/dev/zero of=$(IMG) count=20000
 	@cp $(IMG) $(ORIG_IMG)

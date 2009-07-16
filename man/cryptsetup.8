@@ -124,7 +124,7 @@ set up a read-only mapping.
 The number of milliseconds to spend with PBKDF2 password processing. This option is only relevant to the LUKS operations as \fIluksFormat\fR or \fIluksAddKey\fR.
 .TP
 .B "\-\-batch-mode, \-q"
-Do not ask for confirmation. This option is only relevant for \fIluksFormat\fR.
+Do not ask for confirmation. Use with care! This option is only relevant for \fIluksFormat\fR,\fIluksAddKey\fR,\fIluksRemoveKey\fR or \fIluksKillSlot\fR.
 .TP
 .B "\-\-timeout, \-t"
 The number of seconds to wait before timeout. This option is relevant every time a password is asked, like \fIcreate\fR, \fIluksOpen\fR, \fIluksFormat\fR or \fIluksAddKey\fR. It has no effect if used in conjunction with \-\-key-file.
