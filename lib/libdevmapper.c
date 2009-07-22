@@ -240,7 +240,7 @@ static int _dm_remove(struct crypt_options *options, int force)
 
 	do {
 		r = _dm_simple(DM_DEVICE_REMOVE, options->name) ? 0 : -EINVAL;
-		if (--retries)
+		if (--retries && r)
 			sleep(1);
 	} while (r == -EINVAL && retries);
 
