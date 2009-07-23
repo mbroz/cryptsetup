@@ -256,14 +256,23 @@ static int parse_into_name_and_mode(const char *nameAndMode, char *name,
 #undef xstr
 }
 
+static int keyslot_is_valid(int keySlotIndex, struct crypt_options *options)
+{
+	if(keySlotIndex >= LUKS_NUMKEYS || keySlotIndex < 0) {
+		logger(options,CRYPT_LOG_ERROR,"Key slot %d is invalid, please pick between 0 and %d.\n", keySlotIndex, LUKS_NUMKEYS - 1);
+		return 0;
+	}
+
+	return 1;
+}
+
 /* Select free keyslot or verifies that the one specified is empty */
 static int keyslot_from_option(int keySlotOption, struct luks_phdr *hdr, struct crypt_options *options) {
         if(keySlotOption >= 0) {
-                if(keySlotOption >= LUKS_NUMKEYS) {
-                        logger(options,CRYPT_LOG_ERROR,"slot %d too high, please pick between 0 and %d", keySlotOption, LUKS_NUMKEYS);
+                if(!keyslot_is_valid(keySlotOption, options))
                         return -EINVAL;
-                } else if(hdr->keyblock[keySlotOption].active != LUKS_KEY_DISABLED) {
-                        logger(options,CRYPT_LOG_ERROR,"slot %d full, please pick another one", keySlotOption);
+                else if(hdr->keyblock[keySlotOption].active != LUKS_KEY_DISABLED) {
+                        logger(options,CRYPT_LOG_ERROR,"Key slot %d is full, please pick another one", keySlotOption);
                         return -EINVAL;
                 } else {
                         return keySlotOption;
@@ -679,19 +688,26 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
 	    return -ENOTBLK;
 
 	if(supply_it) {
-	    get_key("Enter LUKS passphrase to be deleted: ",&password,&passwordLen, 0, options->new_key_file, options->passphrase_fd, options->timeout, options->flags);
-	    if(!password) {
-		    r = -EINVAL; goto out;
-	    }
-	    keyIndex = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk, backend);
-	    if(keyIndex < 0) {
-		    options->icb->log(CRYPT_LOG_ERROR,"No remaining key available with this passphrase.\n");
-		    r = -EPERM; goto out;
-	    } else
-	        logger(options, CRYPT_LOG_NORMAL,"key slot %d selected for deletion.\n", keyIndex);
-	    safe_free(password);
+		get_key("Enter LUKS passphrase to be deleted: ",&password,&passwordLen, 0, options->new_key_file,
+			options->passphrase_fd, options->timeout, options->flags);
+		if(!password) {
+			r = -EINVAL; goto out;
+		}
+
+		keyIndex = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk, backend);
+		if(keyIndex < 0) {
+			options->icb->log(CRYPT_LOG_ERROR,"No remaining key available with this passphrase.\n");
+			r = -EPERM; goto out;
+		} else
+			logger(options, CRYPT_LOG_NORMAL,"key slot %d selected for deletion.\n", keyIndex);
+
+		safe_free(password);
+		password = NULL;
 	} else {
-	    keyIndex = options->key_slot;
+		keyIndex = options->key_slot;
+		if (!keyslot_is_valid(keyIndex, options)) {
+			r = -EINVAL; goto out;
+		}
 	}
 
 	last_slot = LUKS_is_last_keyslot(options->device, keyIndex);
