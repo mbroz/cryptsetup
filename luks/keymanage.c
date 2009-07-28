@@ -142,6 +142,7 @@ int LUKS_write_phdr(const char *device, struct luks_phdr *hdr)
 	}
 
 	memcpy(&convHdr, hdr, sizeof(struct luks_phdr));
+	memset(&convHdr._padding, 0, sizeof(convHdr._padding));
 
 	/* Convert every uint16/32_t item to network byte order */
 	convHdr.version            = htons(hdr->version);

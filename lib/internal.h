@@ -11,6 +11,7 @@
 
 #define SECTOR_SHIFT		9
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
+#define DEFAULT_ALIGNMENT	4096
 
 /* private struct crypt_options flags */
 

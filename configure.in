@@ -1,6 +1,7 @@
 AC_PREREQ(2.57)
 AC_INIT(cryptsetup,1.0.7)
 AC_CONFIG_SRCDIR(src/cryptsetup.c)
+AC_CONFIG_MACRO_DIR([m4])
 
 AM_CONFIG_HEADER([config.h:config.h.in])
 AM_INIT_AUTOMAKE(dist-bzip2)
@@ -117,6 +118,7 @@ MODULE_HELPER(libdevmapper,
 AM_CONDITIONAL(BUILD_LIBDEVMAPPER, test x$build_static = xyes)
 AM_CONDITIONAL(SHARED_LIBDEVMAPPER, test x$build_shared = xyes)
 
+AC_CHECK_FUNCS([posix_memalign])
 dnl ==========================================================================
 
 AM_CONDITIONAL(STATIC_CRYPTSETUP, test x$enable_static = xyes)

@@ -116,10 +116,24 @@ char *safe_strdup(const char *s)
 	return strcpy(s2, s);
 }
 
-/* Credits go to Michal's padlock patches for this alignment code */
-
-static void *aligned_malloc(char **base, int size, int alignment) 
+static int get_alignment(int fd)
 {
+	int alignment = DEFAULT_ALIGNMENT;
+
+#ifdef _PC_REC_XFER_ALIGN
+	alignment = fpathconf(fd, _PC_REC_XFER_ALIGN);
+	if (alignment < 0)
+		alignment = DEFAULT_ALIGNMENT;
+#endif
+	return alignment;
+}
+
+static void *aligned_malloc(void **base, int size, int alignment)
+{
+#ifdef HAVE_POSIX_MEMALIGN
+	return posix_memalign(base, alignment, size) ? NULL : *base;
+#else
+/* Credits go to Michal's padlock patches for this alignment code */
 	char *ptr;
 
 	ptr  = malloc(size + alignment);
@@ -130,8 +144,8 @@ static void *aligned_malloc(char **base, int size, int alignment)
 		ptr += alignment - ((long)(ptr) & (alignment - 1));
 	}
 	return ptr;
+#endif
 }
-
 static int sector_size(int fd) 
 {
 	int bsize;
@@ -152,74 +166,100 @@ int sector_size_for_device(const char *device)
 	return r;
 }
 
-ssize_t write_blockwise(int fd, const void *orig_buf, size_t count) 
+ssize_t write_blockwise(int fd, const void *orig_buf, size_t count)
 {
-	char *padbuf; char *padbuf_base;
-	char *buf = (char *)orig_buf;
-	int r = 0;
-	int hangover; int solid; int bsize;
+	void *hangover_buf, *hangover_buf_base = NULL;
+	void *buf, *buf_base = NULL;
+	int r, hangover, solid, bsize, alignment;
+	ssize_t ret = -1;
 
 	if ((bsize = sector_size(fd)) < 0)
 		return bsize;
 
 	hangover = count % bsize;
 	solid = count - hangover;
+	alignment = get_alignment(fd);
 
-	padbuf = aligned_malloc(&padbuf_base, bsize, bsize);
-	if(padbuf == NULL) return -ENOMEM;
+	if ((long)orig_buf & (alignment - 1)) {
+		buf = aligned_malloc(&buf_base, count, alignment);
+		if (!buf)
+			goto out;
+		memcpy(buf, orig_buf, count);
+	} else
+		buf = (void *)orig_buf;
 
-	while(solid) {
-		memcpy(padbuf, buf, bsize);
-		r = write(fd, padbuf, bsize);
+	r = write(fd, buf, solid);
+	if (r < 0 || r != solid)
+		goto out;
+
+	if (hangover) {
+		hangover_buf = aligned_malloc(&hangover_buf_base, bsize, alignment);
+		if (!hangover_buf)
+			goto out;
+
+		r = read(fd, hangover_buf, bsize);
 		if(r < 0 || r != bsize) goto out;
 
-		solid -= bsize;
-		buf += bsize;
+		r = lseek(fd, -bsize, SEEK_CUR);
+		if (r < 0)
+			goto out;
+		memcpy(hangover_buf, buf + solid, hangover);
+
+		r = write(fd, hangover_buf, bsize);
+		if(r < 0 || r != bsize) goto out;
+		free(hangover_buf_base);
 	}
-	if(hangover) {
-		r = read(fd,padbuf,bsize);
-		if(r < 0 || r != bsize) goto out;
-
-		lseek(fd,-bsize,SEEK_CUR);
-		memcpy(padbuf,buf,hangover);
-
-		r = write(fd,padbuf, bsize);
-		if(r < 0 || r != bsize) goto out;
-		buf += hangover;
-	}
+	ret = count;
  out:
-	free(padbuf_base);
-	return (buf-(char *)orig_buf)?(buf-(char *)orig_buf):r;
-
+	if (buf != orig_buf)
+		free(buf_base);
+	return ret;
 }
 
 ssize_t read_blockwise(int fd, void *orig_buf, size_t count) {
-	char *padbuf; char *padbuf_base;
-	char *buf = (char *)orig_buf;
-	int r = 0;
-	int step;
-	int bsize;
+	void *hangover_buf, *hangover_buf_base;
+	void *buf, *buf_base = NULL;
+	int r, hangover, solid, bsize, alignment;
+	ssize_t ret = -1;
 
 	if ((bsize = sector_size(fd)) < 0)
 		return bsize;
 
-	padbuf = aligned_malloc(&padbuf_base, bsize, bsize);
-	if(padbuf == NULL) return -ENOMEM;
+	hangover = count % bsize;
+	solid = count - hangover;
+	alignment = get_alignment(fd);
 
-	while(count) {
-		r = read(fd,padbuf,bsize);
-		if(r < 0 || r != bsize) {
-			set_error("read failed in read_blockwise.\n");
+	if ((long)orig_buf & (alignment - 1)) {
+		buf = aligned_malloc(&buf_base, count, alignment);
+		if (!buf)
 			goto out;
-		}
-		step = count<bsize?count:bsize;
-		memcpy(buf,padbuf,step);
-		buf += step;
-		count -= step;
+	} else
+		buf = orig_buf;
+
+	r = read(fd, buf, solid);
+	if(r < 0 || r != solid) {
+		set_error("read failed in read_blockwise.\n");
+		goto out;
 	}
+
+	if (hangover) {
+		hangover_buf = aligned_malloc(&hangover_buf_base, bsize, alignment);
+		if (!hangover_buf)
+			goto out;
+		r = read(fd, hangover_buf, bsize);
+		if (r <  0 || r != bsize)
+			goto out;
+
+		memcpy(buf + solid, hangover_buf, hangover);
+		free(hangover_buf_base);
+	}
+	ret = count;
  out:
-	free(padbuf_base); 
-	return (buf-(char *)orig_buf)?(buf-(char *)orig_buf):r;
+	if (buf != orig_buf) {
+		memcpy(orig_buf, buf, count);
+		free(buf_base);
+	}
+	return ret;
 }
 
 /* 

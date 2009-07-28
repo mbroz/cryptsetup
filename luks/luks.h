@@ -63,15 +63,18 @@ struct luks_phdr {
 
 	struct {
 		uint32_t active;
-	
+
 		/* parameters used for password processing */
 		uint32_t passwordIterations;
 		char     passwordSalt[LUKS_SALTSIZE];
-		
-		/* parameters used for AF store/load */		
+
+		/* parameters used for AF store/load */
 		uint32_t keyMaterialOffset;
-		uint32_t stripes;		
+		uint32_t stripes;
 	} keyblock[LUKS_NUMKEYS];
+
+	/* Align it to 512 sector size */
+	char		_padding[432];
 };
 
 struct luks_masterkey {
