@@ -2,7 +2,7 @@ moduledir = $(libdir)/cryptsetup
 
 noinst_LTLIBRARIES = libluks.la
 
-libluks_la_CFLAGS = -I $(top_srcdir)/luks/sha -Wall
+libluks_la_CFLAGS = -Wall
 
 libluks_la_SOURCES = \
 	af.c \
@@ -11,11 +11,6 @@ libluks_la_SOURCES = \
 	keyencryption.c \
 	hexprint.c \
 	random.c \
-	sha/sha1.c \
-	sha/hmac_sha1.h \
-	sha/hmac.h \
-	sha/hmac_sha1.c \
-	sha/sha1.h \
 	pbkdf.h \
 	random.h \
 	af.h \
@@ -26,7 +21,7 @@ INCLUDES = -D_GNU_SOURCE			\
 	-D_FILE_OFFSET_BITS=64                  \
         -I$(top_srcdir)/lib
 
-EXTRA_DIST = sha/hmac.c testing/fileDiffer.py testing/compatimage.bz2
+EXTRA_DIST = testing/fileDiffer.py testing/compatimage.bz2
 
 ORIG_IMG = /tmp/luks-test-orig
 IMG = /tmp/luks-test

@@ -26,7 +26,6 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <gcrypt.h>
-#include "sha1.h"
 #include "random.h"
 
 static void XORblock(char const *src1, char const *src2, char *dst, size_t n)
