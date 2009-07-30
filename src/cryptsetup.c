@@ -79,19 +79,23 @@ static struct action_type {
 /* Interface Callbacks */
 static int yesDialog(char *msg)
 {
-	int r = 0;
+	char *answer = NULL;
+	size_t size = 0;
+	int r = 1;
+
 	if(isatty(0) && !opt_batch_mode) {
-		char *answer=NULL;
-	        size_t size=0;
-		fprintf(stderr,"\nWARNING!\n========\n");
-		fprintf(stderr,"%s\n\nAre you sure? (Type uppercase yes): ",msg);
-		if(getline(&answer,&size,stdin) == -1)
+		fprintf(stderr, "\nWARNING!\n========\n");
+		fprintf(stderr, "%s\n\nAre you sure? (Type uppercase yes): ", msg);
+		if(getline(&answer, &size, stdin) == -1) {
+			perror("getline");
+			free(answer);
 			return 0;
-		if(strcmp(answer,"YES\n") == 0)
-			r = 1;
+		}
+		if(strcmp(answer, "YES\n"))
+			r = 0;
 		free(answer);
-	} else
-		r = 1;
+	}
+
 	return r;
 }
 
