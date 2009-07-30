@@ -29,6 +29,7 @@
 #define DEFAULT_CIPHER		"aes"
 #define DEFAULT_LUKS_CIPHER     "aes-cbc-essiv:sha256"
 #define DEFAULT_HASH		"ripemd160"
+#define DEFAULT_LUKS_HASH	"sha1"
 #define DEFAULT_KEY_SIZE	256
 #define DEFAULT_LUKS_KEY_SIZE	128
 

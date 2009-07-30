@@ -81,8 +81,8 @@ struct luks_masterkey *LUKS_generate_masterkey(int keylength)
 
 int LUKS_read_phdr(const char *device, struct luks_phdr *hdr)
 {
-	int devfd = 0, r = 0; 
-	unsigned int i; 
+	int devfd = 0, r = 0;
+	unsigned int i;
 	uint64_t size;
 	char luksMagic[] = LUKS_MAGIC;
 
@@ -97,11 +97,11 @@ int LUKS_read_phdr(const char *device, struct luks_phdr *hdr)
 	} else if(memcmp(hdr->magic, luksMagic, LUKS_MAGIC_L)) { /* Check magic */
 		set_error(_("%s is not a LUKS partition\n"), device);
 		r = -EINVAL;
-	} else if(memcmp(hdr->hashSpec, "sha1", 4)) { /* Check for SHA1 - other hashspecs are not implemented ATM */
-		set_error(_("unknown hash spec in phdr\n"), stderr);
-		r = -EINVAL;
 	} else if((hdr->version = ntohs(hdr->version)) != 1) {	/* Convert every uint16/32_t item from network byte order */
 		set_error(_("unknown LUKS version %d\n"), hdr->version);
+		r = -EINVAL;
+	} else if (PBKDF2_HMAC_ready(hdr->hashSpec) < 0) {
+		set_error(_("Requested LUKS hash %s is not supported.\n"), hdr->hashSpec);
 		r = -EINVAL;
 	} else {
 		hdr->payloadOffset      = ntohl(hdr->payloadOffset);
@@ -162,9 +162,10 @@ int LUKS_write_phdr(const char *device, struct luks_phdr *hdr)
 	return r;
 }
 
-int LUKS_generate_phdr(struct luks_phdr *header, 
-		       const struct luks_masterkey *mk, const char *cipherName,
-		       const char *cipherMode, unsigned int stripes,
+int LUKS_generate_phdr(struct luks_phdr *header,
+		       const struct luks_masterkey *mk,
+		       const char *cipherName, const char *cipherMode, const char *hashSpec,
+		       unsigned int stripes,
 		       unsigned int alignPayload)
 {
 	unsigned int i=0;
@@ -184,9 +185,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	header->version=1;
 	strncpy(header->cipherName,cipherName,LUKS_CIPHERNAME_L);
 	strncpy(header->cipherMode,cipherMode,LUKS_CIPHERMODE_L);
-
-	/* This is hard coded ATM */
-	strncpy(header->hashSpec,"sha1",LUKS_HASHSPEC_L);
+	strncpy(header->hashSpec,hashSpec,LUKS_HASHSPEC_L);
 
 	header->keyBytes=mk->keyLength;
 
@@ -224,8 +223,8 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	return 0;
 }
 
-int LUKS_set_key(const char *device, unsigned int keyIndex, 
-		 const char *password, size_t passwordLen, 
+int LUKS_set_key(const char *device, unsigned int keyIndex,
+		 const char *password, size_t passwordLen,
 		 struct luks_phdr *hdr, struct luks_masterkey *mk,
 		 struct setup_backend *backend)
 {
@@ -291,11 +290,11 @@ out:
 }
 
 /* Try to open a particular key slot */
-int LUKS_open_key(const char *device, 
-		  unsigned int keyIndex, 
-		  const char *password, 
-		  size_t passwordLen, 
-		  struct luks_phdr *hdr, 
+int LUKS_open_key(const char *device,
+		  unsigned int keyIndex,
+		  const char *password,
+		  size_t passwordLen,
+		  struct luks_phdr *hdr,
 		  struct luks_masterkey *mk,
 		  struct setup_backend *backend)
 {
@@ -497,18 +496,15 @@ int LUKS_is_last_keyslot(const char *device, unsigned int keyIndex)
 	return 1;
 }
 
-
-int LUKS_benchmarkt_iterations()
+int LUKS_benchmarkt_iterations(const char *hash, unsigned int *count)
 {
-	unsigned int count;
-	char *hash = "sha1";
-
-	if (PBKDF2_performance_check(hash, &count) < 0) {
+	if (PBKDF2_performance_check(hash, count) < 0) {
 		set_error(_("Not compatible options (using hash algorithm %s)."), hash);
 		return -EINVAL;
 	}
 
-	return count/2;
+	*count /= 2;
+	return 0;
 }
 
 int LUKS_device_ready(const char *device, int mode)

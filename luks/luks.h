@@ -89,8 +89,9 @@ void LUKS_dealloc_masterkey(struct luks_masterkey *mk);
 struct luks_masterkey *LUKS_generate_masterkey(int keylength);
 
 int LUKS_generate_phdr(struct luks_phdr *header,
-		       const struct luks_masterkey *mk, const char *cipherName,
-		       const char *cipherMode, unsigned int stripes,
+		       const struct luks_masterkey *mk,
+		       const char *cipherName, const char *cipherMode, const char *hashSpec,
+		       unsigned int stripes,
 		       unsigned int alignPayload);
 
 int LUKS_read_phdr(const char *device, struct luks_phdr *hdr);
@@ -130,14 +131,14 @@ int LUKS_open_any_key_with_hdr(const char *device,
 
 int LUKS_del_key(const char *device, unsigned int keyIndex);
 int LUKS_is_last_keyslot(const char *device, unsigned int keyIndex);
-int LUKS_benchmarkt_iterations();
+int LUKS_benchmarkt_iterations(const char *hash, unsigned int *count);
 
 int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 			    struct luks_phdr *hdr,
 			    char *key, size_t keyLength,
 			    const char *device,
 			    unsigned int sector, struct setup_backend *backend);
-	
+
 int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 			      struct luks_phdr *hdr,
 			      char *key, size_t keyLength,

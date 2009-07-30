@@ -447,7 +447,7 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	char cipherName[LUKS_CIPHERNAME_L];
 	char cipherMode[LUKS_CIPHERMODE_L];
 	unsigned int passwordLen;
-	int PBKDF2perSecond;
+	unsigned int PBKDF2perSecond = 0;
         int keyIndex;
 
 	if (!LUKS_device_ready(options->device, O_RDWR | O_EXCL))
@@ -482,18 +482,17 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	r = parse_into_name_and_mode(options->cipher, cipherName, cipherMode);
 	if(r < 0) return r;
 
-	r = LUKS_generate_phdr(&header,mk,cipherName, cipherMode,LUKS_STRIPES, options->align_payload);
-	if(r < 0) {
-		set_error("Can't generate phdr");
-		return r; 
+	r = LUKS_generate_phdr(&header, mk, cipherName, cipherMode, options->hash, LUKS_STRIPES, options->align_payload);
+	if(r < 0) return r;
+
+	keyIndex = keyslot_from_option(options->key_slot, &header, options);
+	if(keyIndex == -EINVAL) {
+		r = -EINVAL; goto out;
 	}
 
-        keyIndex = keyslot_from_option(options->key_slot, &header, options);
-        if(keyIndex == -EINVAL) {
-                r = -EINVAL; goto out;
-        }
+	r = LUKS_benchmarkt_iterations(options->hash, &PBKDF2perSecond);
+	if (r < 0) goto out;
 
-	PBKDF2perSecond = LUKS_benchmarkt_iterations();
 	header.keyblock[keyIndex].passwordIterations = at_least_one(PBKDF2perSecond * ((float)options->iteration_time / 1000.0));
 #ifdef LUKS_DEBUG
 	logger(options, CRYPT_LOG_ERROR, "pitr %d\n", header.keyblock[0].passwordIterations);
@@ -617,7 +616,8 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
 	struct luks_masterkey *mk=NULL;
 	struct luks_phdr hdr;
 	char *password=NULL; unsigned int passwordLen;
-        unsigned int keyIndex;
+	unsigned int keyIndex;
+	unsigned int PBKDF2perSecond = 0;
 	const char *device = options->device;
 	int r;
 
@@ -666,9 +666,11 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
 		r = -EINVAL; goto out;
 	}
 
-	hdr.keyblock[keyIndex].passwordIterations = at_least_one(LUKS_benchmarkt_iterations() * ((float)options->iteration_time / 1000));
+	r = LUKS_benchmarkt_iterations(hdr.hashSpec, &PBKDF2perSecond);
+	if (r < 0) goto out;
+	hdr.keyblock[keyIndex].passwordIterations = at_least_one(PBKDF2perSecond * ((float)options->iteration_time / 1000));
 
-    	r = LUKS_set_key(device, keyIndex, password, passwordLen, &hdr, mk, backend);
+	r = LUKS_set_key(device, keyIndex, password, passwordLen, &hdr, mk, backend);
 	if(r < 0) goto out;
 
 	r = 0;
