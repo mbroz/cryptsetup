@@ -27,8 +27,15 @@
 #include <errno.h>
 #include <gcrypt.h>
 #include "sha1.h"
-#include "XORblock.h"
 #include "random.h"
+
+static void XORblock(char const *src1, char const *src2, char *dst, size_t n)
+{
+	size_t j;
+
+	for(j = 0; j < n; ++j)
+		dst[j] = src1[j] ^ src2[j];
+}
 
 static int hash_buf(char *src, char *dst, uint32_t iv, int len, int hash_id)
 {

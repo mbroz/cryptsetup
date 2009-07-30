@@ -35,7 +35,6 @@
 #include "pbkdf.h"
 #include "sha1.h"
 #include "random.h"
-#include "XORblock.h"
 #include <uuid/uuid.h>
 #include <../lib/internal.h>
 

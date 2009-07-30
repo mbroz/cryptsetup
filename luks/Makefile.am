@@ -16,7 +16,6 @@ libluks_la_SOURCES = \
 	sha/hmac.h \
 	sha/hmac_sha1.c \
 	sha/sha1.h \
-	XORblock.h \
 	pbkdf.h \
 	random.h \
 	af.h \
