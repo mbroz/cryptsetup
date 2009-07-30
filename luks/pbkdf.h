@@ -5,10 +5,13 @@
 
 /* */
 
-void PBKDF2_HMAC_SHA1(const char *password, size_t passwordLen, 
-		      const char *salt, size_t saltLen, unsigned int iterations, 
-		      char *dKey, size_t dKeyLen);
+int PBKDF2_HMAC(const char *hash,
+		const char *password, size_t passwordLen,
+		const char *salt, size_t saltLen, unsigned int iterations,
+		char *dKey, size_t dKeyLen);
 
-unsigned int PBKDF2_performance_check();
+
+int PBKDF2_performance_check(const char *hash, unsigned int *iter);
+int PBKDF2_HMAC_ready(const char *hash);
 
 #endif

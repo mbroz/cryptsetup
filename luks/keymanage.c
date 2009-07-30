@@ -191,14 +191,21 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	header->keyBytes=mk->keyLength;
 
 	r = getRandom(header->mkDigestSalt,LUKS_SALTSIZE);
-	if(r < 0) return r;
+	if(r < 0) {
+		set_error( _("Cannot create LUKS header: reading random salt failed."));
+		return r;
+	}
 
 	/* Compute master key digest */
 	header->mkDigestIterations = LUKS_MKD_ITER;
-	PBKDF2_HMAC_SHA1(mk->key,mk->keyLength,
-			 header->mkDigestSalt,LUKS_SALTSIZE,
-			 header->mkDigestIterations,
-			 header->mkDigest,LUKS_DIGESTSIZE);
+	r = PBKDF2_HMAC(header->hashSpec,mk->key,mk->keyLength,
+			header->mkDigestSalt,LUKS_SALTSIZE,
+			header->mkDigestIterations,
+			header->mkDigest,LUKS_DIGESTSIZE);
+	if(r < 0) {
+		set_error( _("Cannot create LUKS header: header digest failed (using hash %s)."), header->hashSpec);
+		return r;
+	}
 
 	currentSector = round_up_modulo(LUKS_PHDR_SIZE, alignSectors);
 	for(i = 0; i < LUKS_NUMKEYS; ++i) {
@@ -241,18 +248,20 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 
 //	assert((mk->keyLength % TWOFISH_BLOCKSIZE) == 0); FIXME
 
-	PBKDF2_HMAC_SHA1(password,passwordLen,
-			 hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,
-			 hdr->keyblock[keyIndex].passwordIterations,
-			 derivedKey, hdr->keyBytes);
+	r = PBKDF2_HMAC(hdr->hashSpec, password,passwordLen,
+			hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,
+			hdr->keyblock[keyIndex].passwordIterations,
+			derivedKey, hdr->keyBytes);
+	if(r < 0) return r;
+
 	/*
 	 * AF splitting, the masterkey stored in mk->key is splitted to AfMK
 	 */
 	AFEKSize = hdr->keyblock[keyIndex].stripes*mk->keyLength;
 	AfKey = (char *)malloc(AFEKSize);
 	if(AfKey == NULL) return -ENOMEM;
-	
-	r = AF_split(mk->key,AfKey,mk->keyLength,hdr->keyblock[keyIndex].stripes);
+
+	r = AF_split(mk->key,AfKey,mk->keyLength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
 	if(r < 0) goto out;
 
 	/* Encryption via dm */
@@ -305,11 +314,12 @@ int LUKS_open_key(const char *device,
 	AFEKSize = hdr->keyblock[keyIndex].stripes*mk->keyLength;
 	AfKey = (char *)malloc(AFEKSize);
 	if(AfKey == NULL) return -ENOMEM;
-	
-	PBKDF2_HMAC_SHA1(password,passwordLen,
-			 hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,
-			 hdr->keyblock[keyIndex].passwordIterations,
-			 derivedKey, hdr->keyBytes);
+
+	r = PBKDF2_HMAC(hdr->hashSpec, password,passwordLen,
+			hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,
+			hdr->keyblock[keyIndex].passwordIterations,
+			derivedKey, hdr->keyBytes);
+	if(r < 0) goto out;
 
 	r = LUKS_decrypt_from_storage(AfKey,
 				      AFEKSize,
@@ -319,23 +329,24 @@ int LUKS_open_key(const char *device,
 				      device,
 				      hdr->keyblock[keyIndex].keyMaterialOffset,
 				      backend);
-	if(r < 0) {
-		if(!get_error())
-			set_error("Failed to read from key storage");
-		goto out;
-	}
-
-	r = AF_merge(AfKey,mk->key,mk->keyLength,hdr->keyblock[keyIndex].stripes);
 	if(r < 0) goto out;
-	
-	PBKDF2_HMAC_SHA1(mk->key,mk->keyLength,
-			 hdr->mkDigestSalt,LUKS_SALTSIZE,
-			 hdr->mkDigestIterations,
-			 checkHashBuf,LUKS_DIGESTSIZE);
+
+	r = AF_merge(AfKey,mk->key,mk->keyLength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
+	if(r < 0) goto out;
+
+	r = PBKDF2_HMAC(hdr->hashSpec,mk->key,mk->keyLength,
+			hdr->mkDigestSalt,LUKS_SALTSIZE,
+			hdr->mkDigestIterations,
+			checkHashBuf,LUKS_DIGESTSIZE);
+	if(r < 0) goto out;
 
 	r = (memcmp(checkHashBuf,hdr->mkDigest, LUKS_DIGESTSIZE) == 0)?0:-EPERM;
 out:
 	free(AfKey);
+
+	if( r < 0 && !get_error())
+		set_error("Failed to read from key storage.");
+
 	return r;
 }
 
@@ -489,7 +500,15 @@ int LUKS_is_last_keyslot(const char *device, unsigned int keyIndex)
 
 int LUKS_benchmarkt_iterations()
 {
-	return PBKDF2_performance_check()/2;
+	unsigned int count;
+	char *hash = "sha1";
+
+	if (PBKDF2_performance_check(hash, &count) < 0) {
+		set_error(_("Not compatible options (using hash algorithm %s)."), hash);
+		return -EINVAL;
+	}
+
+	return count/2;
 }
 
 int LUKS_device_ready(const char *device, int mode)
