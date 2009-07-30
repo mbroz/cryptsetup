@@ -134,7 +134,7 @@ int LUKS_write_phdr(const char *device, struct luks_phdr *hdr)
 	unsigned int i; 
 	struct luks_phdr convHdr;
 	int r;
-	
+
 	devfd = open(device,O_RDWR | O_DIRECT | O_SYNC);
 	if(-1 == devfd) { 
 		set_error(_("Can't open device %s"), device);
@@ -160,7 +160,7 @@ int LUKS_write_phdr(const char *device, struct luks_phdr *hdr)
 
 	close(devfd);
 	return r;
-}	
+}
 
 int LUKS_generate_phdr(struct luks_phdr *header, 
 		       const struct luks_masterkey *mk, const char *cipherName,
@@ -226,12 +226,12 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 	char *AfKey;
 	unsigned int AFEKSize;
 	int r;
-	
+
 	if(hdr->keyblock[keyIndex].active != LUKS_KEY_DISABLED) {
 		set_error( _("key %d active, purge first"), keyIndex);
 		return -EINVAL;
 	}
-		
+
 	if(hdr->keyblock[keyIndex].stripes < LUKS_STRIPES) {
 	        set_error(_("key material section %d includes too few stripes. Header manipulation?"),keyIndex);
 	         return -EINVAL;
@@ -281,10 +281,7 @@ out:
 	return r;
 }
 
-/* Try to open a particular key slot,
-
- */
-
+/* Try to open a particular key slot */
 int LUKS_open_key(const char *device, 
 		  unsigned int keyIndex, 
 		  const char *password, 
@@ -298,11 +295,11 @@ int LUKS_open_key(const char *device,
 	size_t AFEKSize;
 	char checkHashBuf[LUKS_DIGESTSIZE];
 	int r;
-	
+
 	if(hdr->keyblock[keyIndex].active != LUKS_KEY_ENABLED) {
-		return -EINVAL;
+		return -ENOENT;
 	}
-	
+
 	// assert((mk->keyLength % TWOFISH_BLOCKSIZE) == 0); FIXME
 
 	AFEKSize = hdr->keyblock[keyIndex].stripes*mk->keyLength;
@@ -354,11 +351,10 @@ int LUKS_open_any_key(const char *device,
 	int r;
 
 	r = LUKS_read_phdr(device, hdr);
-	if(r < 0) 
-      		return r;
-        return LUKS_open_any_key_with_hdr(device,password,passwordLen,hdr,mk,backend);
+	if(r < 0)
+		return r;
+	return LUKS_open_any_key_with_hdr(device,password,passwordLen,hdr,mk,backend);
 }
-
 
 int LUKS_open_any_key_with_hdr(const char *device, 
 		      const char *password, 
@@ -372,13 +368,13 @@ int LUKS_open_any_key_with_hdr(const char *device,
 
 	*mk=LUKS_alloc_masterkey(hdr->keyBytes);
 	for(i=0; i<LUKS_NUMKEYS; i++) {
-	    r = LUKS_open_key(device, i, password, passwordLen, hdr, *mk, backend);
-	    if(r == 0) { 
-		return i; 
-	    } 
-	    /* Do not retry for errors that are no -EPERM or -EINVAL, former meaning password wrong, latter key slot inactive */
-	    if ((r != -EPERM) && (r != -EINVAL)) 
-		return r;
+		r = LUKS_open_key(device, i, password, passwordLen, hdr, *mk, backend);
+		if(r == 0)
+			return i;
+
+		/* Do not retry for errors that are no -EPERM or -ENOENT, former meaning password wrong, latter key slot inactive */
+		if ((r != -EPERM) && (r != -ENOENT)) 
+			return r;
 	}
 	/* Warning, early returns above */
 	return -EPERM;
@@ -391,7 +387,7 @@ int LUKS_open_any_key_with_hdr(const char *device,
 static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)
 {
         unsigned int i;
-	
+
         unsigned char write_modes[][3] = {
                 {"\x55\x55\x55"}, {"\xaa\xaa\xaa"}, {"\x92\x49\x24"},
                 {"\x49\x24\x92"}, {"\x24\x92\x49"}, {"\x00\x00\x00"},
@@ -403,7 +399,7 @@ static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)
                 {"\x92\x49\x24"}, {"\x49\x24\x92"}, {"\x24\x92\x49"},
                 {"\x6d\xb6\xdb"}, {"\xb6\xdb\x6d"}, {"\xdb\x6d\xb6"}
         };
-	
+
         for(i = 0; i < buffer_size / 3; ++i) {
                 memcpy(buffer, write_modes[turn], 3);
                 buffer += 3;
@@ -417,7 +413,7 @@ static int wipe(const char *device, unsigned int from, unsigned int to)
 	unsigned int i;
 	unsigned int bufLen = (to - from) * SECTOR_SIZE;
 	int r = 0;
-	
+
 	devfd = open(device, O_RDWR | O_DIRECT | O_SYNC);
 	if(devfd == -1) {
 		set_error(_("Can't open device %s"), device);
@@ -450,13 +446,13 @@ int LUKS_del_key(const char *device, unsigned int keyIndex)
 	struct luks_phdr hdr;
 	unsigned int startOffset, endOffset, stripesLen;
 	int r;
-	
+
 	r = LUKS_read_phdr(device, &hdr);
 	if(r != 0) {
 		/* placeholder */
 	} else if(keyIndex >= LUKS_NUMKEYS || hdr.keyblock[keyIndex].active != LUKS_KEY_ENABLED) {
 		set_error(_("Key %d not active. Can't wipe.\n"), keyIndex);
-		r = -1;
+		r = -ENOENT;
 	} else {
 		/* secure deletion of key material */
 		startOffset = hdr.keyblock[keyIndex].keyMaterialOffset;
@@ -479,10 +475,10 @@ int LUKS_is_last_keyslot(const char *device, unsigned int keyIndex)
 	struct luks_phdr hdr;
 	unsigned int i;
 	int r;
-	
+
 	r = LUKS_read_phdr(device, &hdr);
 	if(r < 0) return r;
-	
+
 	for(i = 0; i < LUKS_NUMKEYS; i++) {
 		if(i != keyIndex && hdr.keyblock[i].active == LUKS_KEY_ENABLED)
 			return 0;
@@ -517,8 +513,3 @@ int LUKS_device_ready(const char *device, int mode)
 
 	return 1;
 }
-
-// Local Variables:
-// c-basic-offset: 8
-// indent-tabs-mode: nil
-// End:
