@@ -78,6 +78,12 @@ test:
 	@sync
 	testing/fileDiffer.py $(IMG) $(ORIG_IMG) $(LUKS_HEADER) $(KEY_SLOT0) $(KEY_MATERIAL0)
 
+	@echo Case: format using hash sha512
+	@cp $(IMG) $(ORIG_IMG)
+	echo "key0" | ../src/cryptsetup -v -i 1000 -h sha512 -c aes-cbc-essiv:sha256 luksFormat $(LOOPDEV)
+	@sync
+	testing/fileDiffer.py $(IMG) $(ORIG_IMG) $(LUKS_HEADER) $(KEY_SLOT0) $(KEY_MATERIAL0)
+
 	@echo Case: open 
 # Image must not change
 	@cp $(IMG) $(ORIG_IMG)

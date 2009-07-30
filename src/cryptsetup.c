@@ -258,9 +258,7 @@ static int action_luksFormat(int arg)
 		.key_slot = opt_key_slot,
 		.device = action_argv[0],
 		.cipher = opt_cipher?opt_cipher:DEFAULT_LUKS_CIPHER,
-		.hash = DEFAULT_LUKS_HASH,
-		// FIXME: enable other hash use here
-		//.hash = opt_hash ?: DEFAULT_LUKS_HASH,
+		.hash = opt_hash ?: DEFAULT_LUKS_HASH,
 		.new_key_file = action_argc > 1 ? action_argv[1] : NULL,
 		.flags = opt_verify_passphrase ? CRYPT_FLAG_VERIFY : (!opt_batch_mode?CRYPT_FLAG_VERIFY_IF_POSSIBLE :  0),
 		.iteration_time = opt_iteration_time,

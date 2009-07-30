@@ -84,7 +84,14 @@ For more information about LUKS, see \fBhttp://code.google.com/p/cryptsetup/wiki
 .SH OPTIONS
 .TP
 .B "\-\-hash, \-h"
-specifies hash to use for password hashing. This option is only relevant for \fIcreate\fR action. The hash string is passed to libgcrypt, so all hashes accepted by gcrypt are supported. Default is "ripemd160".
+For \fIcreate\fR action specifies hash to use for password hashing.
+
+For \fIluksFormat\fR action specifies hash used in LUKS key setup scheme and volume key digest.
+
+\fBWARNING:\fR setting hash other than \fBsha1\fR causes LUKS device incompatible with older version of cryptsetup.
+
+The hash string is passed to libgcrypt, so all hashes accepted by gcrypt are supported.
+Default is \fB"ripemd160"\fR for \fIcreate\fR action and \fB"sha1"\fR for \fIluksFormat\fR.
 .TP
 .B "\-\-cipher, \-c"
 set cipher specification string. For plain dm-crypt mappings, the default is "aes-cbc-plain", for LUKS mappings it's "aes-cbc-essiv:sha256". For pre-2.6.10 kernels, use "aes-plain" as they don't understand the new cipher spec strings. To use ESSIV, use "aes-cbc-essiv:sha256".
