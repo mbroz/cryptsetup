@@ -457,9 +457,14 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	if(NULL == mk) return -ENOMEM; // FIXME This may be misleading, since we don't know what went wrong
 
 #ifdef LUKS_DEBUG
-#define printoffset(entry) logger(options, CRYPT_LOG_ERROR, ("offset of " #entry " = %d\n", (char *)(&header.entry)-(char *)(&header))
+#define printoffset(entry) \
+	logger(options, CRYPT_LOG_ERROR, \
+	        "offset of " #entry " = %d\n", (char *)(&header.entry)-(char *)(&header))
 
-	logger(options, CRYPT_LOG_ERROR, "sizeof phdr %d, key slot %d\n",sizeof(struct luks_phdr),sizeof(header.keyblock[0]));
+	logger(options, CRYPT_LOG_ERROR,
+		"sizeof phdr %d, sizeof key slot %d\n",
+		sizeof(struct luks_phdr),
+		sizeof(header.keyblock[0]));
 
 	printoffset(magic);
 	printoffset(version);
@@ -491,7 +496,7 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	PBKDF2perSecond = LUKS_benchmarkt_iterations();
 	header.keyblock[keyIndex].passwordIterations = at_least_one(PBKDF2perSecond * ((float)options->iteration_time / 1000.0));
 #ifdef LUKS_DEBUG
-	logger(options->icb->log,CRYPT_LOG_ERROR, "pitr %d\n", header.keyblock[0].passwordIterations);
+	logger(options, CRYPT_LOG_ERROR, "pitr %d\n", header.keyblock[0].passwordIterations);
 #endif
 	get_key("Enter LUKS passphrase: ",&password,&passwordLen, 0, options->new_key_file, options->passphrase_fd, options->timeout, options->flags);
 	if(!password) {
