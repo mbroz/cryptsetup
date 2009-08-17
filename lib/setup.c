@@ -555,7 +555,12 @@ static int __crypt_luks_open(int arg, struct setup_backend *backend, struct cryp
 start:
 	mk=NULL;
 
-	if(get_key(prompt, &password, &passwordLen, 0, options->key_file, options->passphrase_fd, options->timeout, options->flags))
+	if(options->passphrase) {
+		passwordLen = strlen(options->passphrase);
+		password = safe_alloc(passwordLen + 1);
+		strncpy(password, options->passphrase, passwordLen + 1);
+		tries = 0;
+	} else if(get_key(prompt, &password, &passwordLen, 0, options->key_file, options->passphrase_fd, options->timeout, options->flags))
 		tries--;
 	else
 		tries = 0;
