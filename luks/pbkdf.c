@@ -81,18 +81,17 @@ static int pkcs5_pbkdf2(const char *hash,
 			char *DK, int perfcheck)
 {
 	gcry_md_hd_t prf;
-	gcry_error_t err;
 	char U[MAX_PRF_BLOCK_LEN];
 	char T[MAX_PRF_BLOCK_LEN];
-	int PRF;
-	unsigned int u;
-	unsigned int hLen;
-	unsigned int l;
-	unsigned int r;
-	int rc;
+	int PRF, i, k, rc = -EINVAL;
+	unsigned int u, hLen, l, r;
 	unsigned char *p;
-	int i;
-	int k;
+	size_t tmplen = Slen + 4;
+	char *tmp;
+
+	tmp = alloca(tmplen);
+	if (tmp == NULL)
+		return -ENOMEM;
 
 	if (init_crypto())
 		return -ENOSYS;
@@ -181,9 +180,11 @@ static int pkcs5_pbkdf2(const char *hash,
 	 *
 	 */
 
-	err = gcry_md_open(&prf, PRF, GCRY_MD_FLAG_HMAC);
-	if (err)
+	if(gcry_md_open(&prf, PRF, GCRY_MD_FLAG_HMAC))
 		return -EINVAL;
+
+	if (gcry_md_setkey(prf, P, Plen))
+		goto out;
 
 	for (i = 1; (uint) i <= l; i++) {
 		memset(T, 0, hLen);
@@ -191,18 +192,7 @@ static int pkcs5_pbkdf2(const char *hash,
 		for (u = 1; u <= c ; u++) {
 			gcry_md_reset(prf);
 
-			rc = gcry_md_setkey(prf, P, Plen);
-			if (rc)
-				return -EINVAL;
-
 			if (u == 1) {
-				char *tmp;
-				size_t tmplen = Slen + 4;
-
-				tmp = alloca(tmplen);
-				if (tmp == NULL)
-					return -ENOMEM;
-
 				memcpy(tmp, S, Slen);
 				tmp[Slen + 0] = (i & 0xff000000) >> 24;
 				tmp[Slen + 1] = (i & 0x00ff0000) >> 16;
@@ -216,15 +206,17 @@ static int pkcs5_pbkdf2(const char *hash,
 
 			p = gcry_md_read(prf, PRF);
 			if (p == NULL)
-				return -EINVAL;
+				goto out;
 
 			memcpy(U, p, hLen);
 
 			for (k = 0; (uint) k < hLen; k++)
 				T[k] ^= U[k];
 
-			if (perfcheck && __PBKDF2_performance)
+			if (perfcheck && __PBKDF2_performance) {
+				rc = 0;
 				goto out;
+			}
 
 			if (perfcheck)
 				__PBKDF2_global_j--;
@@ -232,10 +224,10 @@ static int pkcs5_pbkdf2(const char *hash,
 
 		memcpy(DK + (i - 1) * hLen, T, (uint) i == l ? r : hLen);
 	}
+	rc = 0;
 out:
 	gcry_md_close(prf);
-
-	return 0;
+	return rc;
 }
 
 int PBKDF2_HMAC(const char *hash,
