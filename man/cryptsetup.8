@@ -110,7 +110,9 @@ If the key file is "-", stdin will be used. This is different from how cryptsetu
 For LUKS operations that add key material, this options allows to you specify which key slot is selected for the new key. This option can be used for \fIluksFormat\fR and \fIluksAddKey\fR.
 .TP
 .B "\-\-key-size, \-s"
-set key size in bits. Has to be a multiple of 8 bits. The key size is limited by the used cipher. See output of /proc/crypto for more information. Can be used for \fIcreate\fR or \fIluksFormat\fR, all other LUKS actions will ignore this flag, as the key-size is specified by the partition header. Default is 128 for \fIluksFormat\fR and 256 for \fIcreate\fR.
+set key size in bits. Has to be a multiple of 8 bits. The key size is limited by the used cipher. See output of /proc/crypto for more information. Can be used for \fIcreate\fR or \fIluksFormat\fR, all other LUKS actions will use key-size specified by the LUKS header. Default is 128 for \fIluksFormat\fR and 256 for \fIcreate\fR.
+
+For \fIluksOpen\fR this option specifies number of bits read from the key-file (default is exhaustive read from key-file).
 .TP
 .B "\-\-size, \-b"
 force the size of the underlying device in sectors.

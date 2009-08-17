@@ -560,7 +560,7 @@ start:
 		password = safe_alloc(passwordLen + 1);
 		strncpy(password, options->passphrase, passwordLen + 1);
 		tries = 0;
-	} else if(get_key(prompt, &password, &passwordLen, 0, options->key_file, options->passphrase_fd, options->timeout, options->flags))
+	} else if(get_key(prompt, &password, &passwordLen, options->key_size, options->key_file, options->passphrase_fd, options->timeout, options->flags))
 		tries--;
 	else
 		tries = 0;

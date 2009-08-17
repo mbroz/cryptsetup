@@ -291,6 +291,7 @@ static int action_luksOpen(int arg)
 		.name = action_argv[1],
 		.device = action_argv[0],
 		.key_file = opt_key_file,
+		.key_size = opt_key_file ? (opt_key_size / 8) : 0, /* limit bytes read from keyfile */
 		.timeout = opt_timeout,
 		.tries = opt_tries,
 		.icb = &cmd_icb,
