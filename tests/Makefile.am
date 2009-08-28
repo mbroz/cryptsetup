@@ -5,7 +5,7 @@ EXTRA_DIST = apitest fileDiffer.py compatimage.img.bz2 test
 apitest_SOURCES = apitest.c
 apitest_LDADD = ../lib/libcryptsetup.la
 apitest_LDFLAGS = -static
-apitest_CFLAGS = -g -O0
+apitest_CFLAGS = -g -O0 -I../lib/
 
 check_PROGRAMS = apitest compatimage.img test
 
@@ -28,7 +28,7 @@ KEY_SLOT1 = S256-259 S260-263 R264-295 S296-299 S300-303
 KEY_MATERIAL1 = R69632-133632
 KEY_MATERIAL1_EXT = S69632-133632
 
-LOOPDEV = /dev/loop/5
+LOOPDEV = /dev/loop5
 
 test:
 #	(cd ..; make clean; make CFLAGS=-Werror)
