@@ -65,41 +65,38 @@ static void hexprintICB(struct crypt_device *cd, char *d, int n)
 
 /*
  * Password processing behaviour matrix of process_key
- * 
+ *
  * from binary file: check if there is sufficently large key material
  * interactive & from fd: hash if requested, otherwise crop or pad with '0'
  */
-static char *process_key(struct crypt_device *cd,
-			 struct crypt_options *options,
+static char *process_key(struct crypt_device *cd, const char *hash_name,
+			 const char *key_file, size_t key_size,
 			 const char *pass, size_t passLen)
 {
-	char *key = safe_alloc(options->key_size);
-	memset(key, 0, options->key_size);
+	char *key = safe_alloc(key_size);
+	memset(key, 0, key_size);
 
 	/* key is coming from binary file */
-	if (options->key_file && strcmp(options->key_file, "-")) {
-		if(passLen < options->key_size) {
+	if (key_file && strcmp(key_file, "-")) {
+		if(passLen < key_size) {
 			log_err(cd, _("Cannot not read %d bytes from key file %s.\n"),
-				options->key_size, options->key_file);
+				key_size, key_file);
 			safe_free(key);
 			return NULL;
 		}
-		memcpy(key,pass,options->key_size);
+		memcpy(key, pass, key_size);
 		return key;
 	}
 
 	/* key is coming from tty, fd or binary stdin */
-	if (options->hash) {
-		if (hash(NULL, options->hash,
-			 key, options->key_size,
-			 pass, passLen) < 0)
-		{
+	if (hash_name) {
+		if (hash(NULL, hash_name, key, key_size, pass, passLen) < 0) {
 			log_err(cd, _("Key processing error.\n"));
 			safe_free(key);
 			return NULL;
 		}
-	} else if (passLen > options->key_size) {
-		memcpy(key, pass, options->key_size);
+	} else if (passLen > key_size) {
+		memcpy(key, pass, key_size);
 	} else {
 		memcpy(key, pass, passLen);
 	}
@@ -132,6 +129,7 @@ int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode)
 #undef xstr
 }
 
+/* keyslot helpers */
 static int keyslot_is_valid(struct crypt_device *cd, int keySlotIndex)
 {
 	if(keySlotIndex >= LUKS_NUMKEYS || keySlotIndex < 0) {
@@ -169,13 +167,44 @@ static int keyslot_from_option(struct crypt_device *cd, int keySlotOption, struc
         }
 }
 
+static int device_check_and_adjust(struct crypt_device *cd,
+				   const char *device,
+				   uint64_t *size, uint64_t *offset,
+				   int *read_only)
+{
+	struct device_infos infos;
+
+	if (get_device_infos(device, &infos, cd) < 0) {
+		log_err(cd, _("Cannot get info about device %s.\n"), device);
+		return -ENOTBLK;
+	}
+
+	if (!*size) {
+		*size = infos.size;
+		if (!*size) {
+			log_err(cd, _("Device %s has zero size.\n"), device);
+			return -ENOTBLK;
+		}
+		if (*size <= *offset) {
+			log_err(cd, _("Device %s is too small.\n"), device);
+			return -EINVAL;
+		}
+		*size -= *offset;
+	}
+
+	if (infos.readonly)
+		*read_only = 1;
+
+	return 0;
+}
+
 static int create_device_helper(int reload, struct crypt_options *options)
 {
 	struct crypt_device *cd = NULL;
-	struct device_infos infos;
 	char *key = NULL;
 	unsigned int keyLen;
 	char *processed_key = NULL;
+	int read_only;
 	int r;
 
 	r = dm_status_device(options->name);
@@ -196,24 +225,10 @@ static int create_device_helper(int reload, struct crypt_options *options)
 		return -EINVAL;
 	}
 
-	if (get_device_infos(options->device, &infos, cd) < 0)
-		return -ENOTBLK;
-
-	if (!options->size) {
-		options->size = infos.size;
-		if (!options->size) {
-			log_err(cd, "Not a block device");
-			return -ENOTBLK;
-		}
-		if (options->size <= options->offset) {
-			log_err(cd, "Invalid offset");
-			return -EINVAL;
-		}
-		options->size -= options->offset;
-	}
-
-	if (infos.readonly)
-		options->flags |= CRYPT_FLAG_READONLY;
+	read_only = (options->flags & CRYPT_FLAG_READONLY);
+	r = device_check_and_adjust(cd, options->device, &options->size, &options->offset, &read_only);
+	if (r)
+		return r;
 
 	get_key("Enter passphrase: ", &key, &keyLen, options->key_size,
 		options->key_file, options->timeout, options->flags, NULL);
@@ -222,7 +237,7 @@ static int create_device_helper(int reload, struct crypt_options *options)
 		return -ENOENT;
 	}
 
-	processed_key = process_key(cd, options, key, keyLen);
+	processed_key = process_key(cd, options->hash, options->key_file, options->key_size, key, keyLen);
 	safe_free(key);
 
 	if (!processed_key)
@@ -231,7 +246,7 @@ static int create_device_helper(int reload, struct crypt_options *options)
 	r = dm_create_device(options->name, options->device, options->cipher,
 			     NULL, options->size, options->skip, options->offset,
 			     options->key_size, processed_key,
-			     options->flags & CRYPT_FLAG_READONLY, reload);
+			     read_only, reload);
 
 	safe_free(processed_key);
 
@@ -347,32 +362,16 @@ int crypt_resize_device(struct crypt_options *options)
 	char *device, *cipher, *key = NULL;
 	uint64_t size, skip, offset;
 	int key_size, read_only, r;
-	struct device_infos infos;
 
 	r = dm_query_device(options->name, &device, &size, &skip, &offset,
 			    &cipher, &key_size, &key, &read_only);
 	if (r < 0)
 		return r;
 
-	if (get_device_infos(device, &infos, cd) < 0)
-		return -EINVAL;
-
-	if (!options->size) {
-		options->size = infos.size;
-		if (!options->size) {
-			log_err(cd, "Not a block device");
-			return -ENOTBLK;
-		}
-		if (options->size <= offset) {
-			log_err(cd, "Invalid offset");
-			return -EINVAL;
-		}
-		options->size -= offset;
-	}
 	size = options->size;
-
-	if (infos.readonly)
-		options->flags |= CRYPT_FLAG_READONLY;
+	r = device_check_and_adjust(cd, device, &size, &offset, &read_only);
+	if (r)
+		return r;
 
 	r = dm_create_device(options->name, device, cipher, NULL, size, skip, offset,
 			     key_size, key, read_only, 1);
@@ -512,8 +511,8 @@ int crypt_luksOpen(struct crypt_options *options)
 	char *prompt = NULL;
 	char *password;
 	unsigned int passwordLen;
-	struct device_infos infos;
 	char *dmCipherSpec = NULL;
+	int read_only;
 	int r, tries = options->tries;
 	int excl = (options->flags & CRYPT_FLAG_NON_EXCLUSIVE_ACCESS) ? 0 : O_EXCL ;
 
@@ -525,14 +524,6 @@ int crypt_luksOpen(struct crypt_options *options)
 
 	if (!device_ready(cd, options->device, O_RDONLY | excl))
 		return -ENOTBLK;
-
-	if (get_device_infos(options->device, &infos, cd) < 0) {
-		log_err(cd, "Can't get device information.\n");
-		return -ENOTBLK;
-	}
-
-	if (infos.readonly)
-		options->flags |= CRYPT_FLAG_READONLY;
 
 	if(asprintf(&prompt, "Enter LUKS passphrase for %s: ", options->device) < 0)
 		return -ENOMEM;
@@ -579,17 +570,13 @@ start:
 	options->cipher = dmCipherSpec;
 	options->key_size = mk->keyLength;
 	options->skip = 0;
+	options->size = 0;
 
-	options->size = infos.size;
-	if (!options->size) {
-		log_err(cd, "Not a block device.\n");
-		r = -ENOTBLK; goto out2;
-	}
-	if (options->size <= options->offset) {
-		log_err(cd, "Invalid offset");
-		r = -EINVAL; goto out2;
-	}
-	options->size -= options->offset;
+	read_only = (options->flags & CRYPT_FLAG_READONLY);
+	r = device_check_and_adjust(cd, options->device, &options->size, &options->offset, &read_only);
+	if (r)
+		return r;
+
 	/* FIXME: code allows multiple crypt mapping, cannot use uuid then.
 	 * anyway, it is dangerous and can corrupt data. Remove it in next version! */
 	r = dm_create_device(options->name, options->device, options->cipher,
