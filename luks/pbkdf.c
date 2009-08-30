@@ -29,14 +29,14 @@
 #include <sys/time.h>
 #include <gcrypt.h>
 
-static volatile unsigned int __PBKDF2_global_j = 0;
-static volatile unsigned int __PBKDF2_performance = 0;
+static volatile uint64_t __PBKDF2_global_j = 0;
+static volatile uint64_t __PBKDF2_performance = 0;
 
 static int init_crypto(void)
 {
 	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
-		if (!gcry_check_version (GCRYPT_VERSION))
-			return -ENOSYS;
+		//if (!gcry_check_version (GCRYPT_VERSION))
+		//	return -ENOSYS;
 		gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
 		gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
 		gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
@@ -219,7 +219,7 @@ static int pkcs5_pbkdf2(const char *hash,
 			}
 
 			if (perfcheck)
-				__PBKDF2_global_j--;
+				__PBKDF2_global_j++;
 		}
 
 		memcpy(DK + (i - 1) * hLen, T, (uint) i == l ? r : hLen);
@@ -255,21 +255,18 @@ int PBKDF2_HMAC_ready(const char *hash)
 
 static void sigvtalarm(int foo)
 {
-	__PBKDF2_performance = ~(0U) - __PBKDF2_global_j;
-	__PBKDF2_global_j = 0;
+	__PBKDF2_performance = __PBKDF2_global_j;
 }
 
 /* This code benchmarks PBKDF2 and returns iterations/second using wth specified hash */
-int PBKDF2_performance_check(const char *hash, unsigned int *iter)
+int PBKDF2_performance_check(const char *hash, uint64_t *iter)
 {
 	int r;
 	char buf;
 	struct itimerval it;
 
-	if(__PBKDF2_performance != 0) {
-		*iter = __PBKDF2_performance;
-		return 0;
-	}
+	if (__PBKDF2_global_j)
+		return -EBUSY;
 
 	if (!PBKDF2_HMAC_ready(hash))
 		return -EINVAL;
@@ -284,8 +281,8 @@ int PBKDF2_performance_check(const char *hash, unsigned int *iter)
 
 	r = pkcs5_pbkdf2(hash, "foo", 3, "bar", 3, ~(0U), 1, &buf, 1);
 
-	__PBKDF2_global_j = 0;
-
 	*iter = __PBKDF2_performance;
+	__PBKDF2_global_j = 0;
+	__PBKDF2_performance = 0;
 	return r;
 }

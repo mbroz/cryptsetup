@@ -11,7 +11,7 @@ int PBKDF2_HMAC(const char *hash,
 		char *dKey, size_t dKeyLen);
 
 
-int PBKDF2_performance_check(const char *hash, unsigned int *iter);
+int PBKDF2_performance_check(const char *hash, uint64_t *iter);
 int PBKDF2_HMAC_ready(const char *hash);
 
 #endif

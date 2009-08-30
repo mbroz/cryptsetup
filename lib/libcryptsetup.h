@@ -6,6 +6,11 @@ extern "C" {
 
 #include <stdint.h>
 
+struct crypt_device; /* crypt device handle */
+
+#define CRYPT_ANY_SLOT	-1
+
+typedef enum { SLOT_INVALID, SLOT_INACTIVE, SLOT_ACTIVE, SLOT_ACTIVE_LAST } crypt_keyslot_info;
 
 #define CRYPT_LOG_NORMAL 0
 #define CRYPT_LOG_ERROR  1
@@ -15,7 +20,6 @@ struct interface_callbacks {
     int (*yesDialog)(char *msg);
     void (*log)(int class, char *msg);
 };
-
 
 #define	CRYPT_FLAG_VERIFY	        (1 << 0)
 #define CRYPT_FLAG_READONLY	        (1 << 1)
@@ -33,9 +37,9 @@ struct crypt_options {
 	const char	*passphrase;
 	int		passphrase_fd;
 	const char	*key_file;
-	const char	*new_key_file;	
+	const char	*new_key_file;
 	int		key_size;
-	
+
 	unsigned int	flags;
 	int 	        key_slot;
 
@@ -43,9 +47,9 @@ struct crypt_options {
 	uint64_t	offset;
 	uint64_t	skip;
 	uint64_t        iteration_time;
- 	uint64_t	timeout;
+	uint64_t	timeout;
 
- 	uint64_t	align_payload;
+	uint64_t	align_payload;
 	int             tries;
 
 	struct interface_callbacks *icb;
@@ -63,7 +67,6 @@ int crypt_luksRemoveKey(struct crypt_options *options);
 int crypt_luksAddKey(struct crypt_options *options);
 int crypt_luksUUID(struct crypt_options *options);
 int crypt_isLuks(struct crypt_options *options);
-int crypt_luksFormat(struct crypt_options *options);
 int crypt_luksDump(struct crypt_options *options);
 
 void crypt_get_error(char *buf, size_t size);

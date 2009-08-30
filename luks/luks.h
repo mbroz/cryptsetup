@@ -5,10 +5,7 @@
  * LUKS partition header
  */
 
-#include <stddef.h>
-#include <netinet/in.h>
 #include "libcryptsetup.h"
-#include "internal.h"
 
 #define LUKS_CIPHERNAME_L 32
 #define LUKS_CIPHERMODE_L 32
@@ -78,16 +75,19 @@ struct luks_masterkey {
 	char key[];
 };
 
-struct luks_masterkey *LUKS_alloc_masterkey(int keylength);
-
+struct luks_masterkey *LUKS_alloc_masterkey(int keylength, const char *key);
 void LUKS_dealloc_masterkey(struct luks_masterkey *mk);
-
 struct luks_masterkey *LUKS_generate_masterkey(int keylength);
+int LUKS_verify_master_key(const struct luks_phdr *hdr,
+			   const struct luks_masterkey *mk);
 
 int LUKS_generate_phdr(
 	struct luks_phdr *header,
 	const struct luks_masterkey *mk,
-	const char *cipherName, const char *cipherMode, const char *hashSpec,
+	const char *cipherName,
+	const char *cipherMode,
+	const char *hashSpec,
+	const char *uuid,
 	unsigned int stripes,
 	unsigned int alignPayload,
 	struct crypt_device *ctx);
@@ -110,6 +110,8 @@ int LUKS_set_key(
 	size_t passwordLen,
 	struct luks_phdr *hdr,
 	struct luks_masterkey *mk,
+	uint32_t iteration_time_ms,
+	uint64_t *PBKDF2_per_sec,
 	struct crypt_device *ctx);
 
 int LUKS_open_key(
@@ -121,16 +123,9 @@ int LUKS_open_key(
 	struct luks_masterkey *mk,
 	struct crypt_device *ctx);
 
-int LUKS_open_any_key(
+int LUKS_open_key_with_hdr(
 	const char *device,
-	const char *password,
-	size_t passwordLen,
-	struct luks_phdr *hdr,
-	struct luks_masterkey **mk,
-	struct crypt_device *ctx);
-
-int LUKS_open_any_key_with_hdr(
-	const char *device,
+	int keyIndex,
 	const char *password,
 	size_t passwordLen,
 	struct luks_phdr *hdr,
@@ -142,8 +137,10 @@ int LUKS_del_key(
 	unsigned int keyIndex,
 	struct crypt_device *ctx);
 
-int LUKS_is_last_keyslot(const char *device, unsigned int keyIndex);
-int LUKS_benchmarkt_iterations(const char *hash, unsigned int *count);
+crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot);
+int LUKS_keyslot_find_empty(struct luks_phdr *hdr);
+int LUKS_keyslot_active_count(struct luks_phdr *hdr);
+int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable);
 
 int LUKS_encrypt_to_storage(
 	char *src, size_t srcLength,
@@ -161,5 +158,4 @@ int LUKS_decrypt_from_storage(
 	unsigned int sector,
 	struct crypt_device *ctx);
 
-int LUKS_device_ready(const char *device, int mode);
 #endif
