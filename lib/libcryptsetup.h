@@ -9,6 +9,7 @@ extern "C" {
 
 #define CRYPT_LOG_NORMAL 0
 #define CRYPT_LOG_ERROR  1
+#define CRYPT_LOG_DEBUG  -1 /* always on stdout */
 
 struct interface_callbacks { 
     int (*yesDialog)(char *msg);

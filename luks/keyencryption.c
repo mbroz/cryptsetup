@@ -55,7 +55,7 @@ static int setup_mapping(const char *cipher, const char *name,
 			 const char *device, unsigned int payloadOffset,
 			 const char *key, size_t keyLength,
 			 unsigned int sector, size_t srcLength,
-			 int mode)
+			 int mode, struct crypt_device *ctx)
 {
 	int device_sector_size = sector_size_for_device(device);
 	uint64_t size;
@@ -65,10 +65,9 @@ static int setup_mapping(const char *cipher, const char *name,
 	 * device's sector size, otherwise the mapping will be refused.
 	 */
 	if(device_sector_size < 0) {
-		set_error(_("Unable to obtain sector size for %s"),device);
+		log_err(ctx, _("Unable to obtain sector size for %s"), device);
 		return -EINVAL;
 	}
-	set_error(NULL);
 	size = round_up_modulo(srcLength,device_sector_size)/SECTOR_SIZE;
 	cleaner_size = size;
 
@@ -125,7 +124,8 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 			       const char *device, 
 			       unsigned int sector,
 			       ssize_t (*func)(int, void *, size_t),
-			       int mode)
+			       int mode,
+			       struct crypt_device *ctx)
 {
 	char *name = NULL;
 	char *fullpath = NULL;
@@ -134,7 +134,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	int r = -1;
 
 	if(dmDir == NULL) {
-		fputs(_("Failed to obtain device mapper directory."), stderr);
+		log_err(ctx, _("Failed to obtain device mapper directory."));
 		return -1;
 	}
 	if(asprintf(&name,"temporary-cryptsetup-%d",getpid())               == -1 ||
@@ -143,29 +143,31 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	        r = -ENOMEM;
 		goto out1;
         }
-	
+
 	signal(SIGINT, sigint_handler);
 	cleaner_name = name;
 
 	r = setup_mapping(dmCipherSpec, name, device, hdr->payloadOffset,
-			  key, keyLength, sector, srcLength, mode);
+			  key, keyLength, sector, srcLength, mode, ctx);
 	if(r < 0) {
-		set_error("Failed to setup dm-crypt key mapping for device %s.\n"
-			  "Check that kernel supports %s cipher (check syslog for more info).\n%s",
-			  device, dmCipherSpec,
-			  _error_hint(hdr->cipherName, hdr->cipherMode, keyLength * 8));
+		log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
+			"Check that kernel supports %s cipher (check syslog for more info).\n%s"),
+			device, dmCipherSpec,
+			_error_hint(hdr->cipherName, hdr->cipherMode, keyLength * 8));
 		r = -EIO;
 		goto out1;
 	}
 
 	devfd = open(fullpath, mode | O_DIRECT | O_SYNC);  /* devfd is a global var */
 	if(devfd == -1) {
+		log_err(ctx, _("Failed to open temporary keystore device.\n"));
 		r = -EIO;
 		goto out2;
 	}
 
 	r = func(devfd,src,srcLength);
 	if(r < 0) {
+		log_err(ctx, _("Failed to access temporary keystore device.\n"));
 		r = -EIO;
 		goto out3;
 	}
@@ -190,19 +192,21 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 			    struct luks_phdr *hdr,
 			    char *key, size_t keyLength,
 			    const char *device,
-			    unsigned int sector)
+			    unsigned int sector,
+			    struct crypt_device *ctx)
 {
 	return LUKS_endec_template(src,srcLength,hdr,key,keyLength, device, sector,
 				   (ssize_t (*)(int, void *, size_t)) write_blockwise,
-				   O_RDWR);
+				   O_RDWR, ctx);
 }
 
 int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 			      struct luks_phdr *hdr,
 			      char *key, size_t keyLength,
 			      const char *device,
-			      unsigned int sector)
+			      unsigned int sector,
+			      struct crypt_device *ctx)
 {
 	return LUKS_endec_template(dst,dstLength,hdr,key,keyLength, device,
-				   sector, read_blockwise, O_RDONLY);
+				   sector, read_blockwise, O_RDONLY, ctx);
 }

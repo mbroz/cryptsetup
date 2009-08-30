@@ -15,7 +15,8 @@
 
 #include "cryptsetup.h"
 
-static int opt_verbose = 1;
+static int opt_verbose = 0;
+static int opt_debug = 0;
 static char *opt_cipher = NULL;
 static char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
@@ -88,8 +89,8 @@ static int yesDialog(char *msg)
 	int r = 1;
 
 	if(isatty(0) && !opt_batch_mode) {
-		fprintf(stderr, "\nWARNING!\n========\n");
-		fprintf(stderr, "%s\n\nAre you sure? (Type uppercase yes): ", msg);
+		log_std("\nWARNING!\n========\n");
+		log_std("%s\n\nAre you sure? (Type uppercase yes): ", msg);
 		if(getline(&answer, &size, stdin) == -1) {
 			perror("getline");
 			free(answer);
@@ -129,12 +130,13 @@ static void show_status(int errcode)
 {
 	char error[256];
 
-	if(!errcode) {
-                fprintf(stderr, _("Command successful.\n"));
-                return;
+	if(!errcode && opt_verbose) {
+		log_std(_("Command successful.\n"));
+		return;
 	}
 
 	crypt_get_error(error, sizeof(error));
+
 	if (!opt_verbose) {
 		char *error_ = strerror_r(errcode, error, sizeof(error));
 		if (error_ != error) {
@@ -143,11 +145,11 @@ static void show_status(int errcode)
 		}
 	}
 
-	fprintf(stderr, _("Command failed"));
+	log_err(_("Command failed"));
 	if (*error)
-		fprintf(stderr, ": %s\n", error);
+		log_err(": %s\n", error);
 	else
-		fputs(".\n", stderr);
+		log_err(".\n");
 	return;
 }
 
@@ -173,7 +175,7 @@ static int action_create(int reload)
 	int r;
 
         if(reload) 
-                fprintf(stderr, _("The reload action is deprecated. Please use \"dmsetup reload\" in case you really need this functionality.\nWARNING: do not use reload to touch LUKS devices. If that is the case, hit Ctrl-C now.\n"));
+                log_err(_("The reload action is deprecated. Please use \"dmsetup reload\" in case you really need this functionality.\nWARNING: do not use reload to touch LUKS devices. If that is the case, hit Ctrl-C now.\n"));
 
 	if (options.hash && strcmp(options.hash, "plain") == 0)
 		options.hash = NULL;
@@ -225,19 +227,19 @@ static int action_status(int arg)
 
 	if (r == 0) {
 		/* inactive */
-		printf("%s/%s is inactive.\n", crypt_get_dir(), options.name);
+		log_std("%s/%s is inactive.\n", crypt_get_dir(), options.name);
 		r = 1;
 	} else {
 		/* active */
-		printf("%s/%s is active:\n", crypt_get_dir(), options.name);
-		printf("  cipher:  %s\n", options.cipher);
-		printf("  keysize: %d bits\n", options.key_size * 8);
-		printf("  device:  %s\n", options.device);
-		printf("  offset:  %" PRIu64 " sectors\n", options.offset);
-		printf("  size:    %" PRIu64 " sectors\n", options.size);
+		log_std("%s/%s is active:\n", crypt_get_dir(), options.name);
+		log_std("  cipher:  %s\n", options.cipher);
+		log_std("  keysize: %d bits\n", options.key_size * 8);
+		log_std("  device:  %s\n", options.device);
+		log_std("  offset:  %" PRIu64 " sectors\n", options.offset);
+		log_std("  size:    %" PRIu64 " sectors\n", options.size);
 		if (options.skip)
-			printf("  skipped: %" PRIu64 " sectors\n", options.skip);
-		printf("  mode:    %s\n", (options.flags & CRYPT_FLAG_READONLY)
+			log_std("  skipped: %" PRIu64 " sectors\n", options.skip);
+		log_std("  mode:    %s\n", (options.flags & CRYPT_FLAG_READONLY)
 		                           ? "readonly" : "read/write");
 		crypt_put_options(&options);
 		r = 0;
@@ -385,7 +387,7 @@ static void usage(poptContext popt_context, int exitcode,
 {
 	poptPrintUsage(popt_context, stderr, 0);
 	if (error)
-		fprintf(stderr, "%s: %s\n", more, error);
+		log_err("%s: %s\n", more, error);
 	exit(exitcode);
 }
 
@@ -395,17 +397,17 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 	if (key->shortName == '?') {
 		struct action_type *action;
 
-		fprintf(stdout, "%s\n",PACKAGE_STRING);
+		log_std("%s\n",PACKAGE_STRING);
 
 		poptPrintHelp(popt_context, stdout, 0);
 
-		printf(_("\n"
+		log_std(_("\n"
 			 "<action> is one of:\n"));
 
 		for(action = action_types; action->type; action++)
-			printf("\t%s %s - %s\n", action->type, _(action->arg_desc), _(action->desc));
-		
-		printf(_("\n"
+			log_std("\t%s %s - %s\n", action->type, _(action->arg_desc), _(action->desc));
+
+		log_std(_("\n"
 			 "<name> is the device to create under %s\n"
 			 "<device> is the encrypted device\n"
 			 "<key slot> is the LUKS key slot number to modify\n"
@@ -416,12 +418,27 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 		usage(popt_context, 0, NULL, NULL);
 }
 
+void set_debug_level(int level);
+
+static void _dbg_version_and_cmd(int argc, char **argv)
+{
+	int i;
+
+	log_std("# %s %s processing \"", PACKAGE_NAME, PACKAGE_VERSION);
+	for (i = 0; i < argc; i++) {
+		if (i)
+			log_std(" ");
+		log_std(argv[i]);
+	}
+	log_std("\"\n");
+}
+
 static int run_action(struct action_type *action)
 {
 	int r;
 
 	if (dm_init(NULL, action->required_dm_backend) < 1) {
-		fprintf(stderr,_("Cannot communicate with device-mapper. Is dm_mod kernel module loaded?\n"));
+		log_err("Cannot communicate with device-mapper. Is dm_mod kernel module loaded?\n");
 		return -ENOSYS;
 	}
 
@@ -454,6 +471,7 @@ int main(int argc, char **argv)
 	static struct poptOption popt_options[] = {
 		{ NULL,                '\0', POPT_ARG_INCLUDE_TABLE,                      popt_help_options,      0, N_("Help options:"),                                                   NULL },
 		{ "verbose",           'v',  POPT_ARG_NONE,                               &opt_verbose,           0, N_("Shows more detailed error messages"),                              NULL },
+		{ "debug",             '\0', POPT_ARG_NONE,                               &opt_debug,             0, N_("Show debug messsgages"),                                           NULL },
 		{ "cipher",            'c',  POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &opt_cipher,            0, N_("The cipher used to encrypt the disk (see /proc/crypto)"),          NULL },
 		{ "hash",              'h',  POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &opt_hash,              0, N_("The hash used to create the encryption key from the passphrase"),  NULL },
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE,                               &opt_verify_passphrase, 0, N_("Verifies the passphrase by asking for it twice"),                  NULL },
@@ -468,10 +486,10 @@ int main(int argc, char **argv)
 		  N_("msecs") },
 		{ "batch-mode",        'q',  POPT_ARG_NONE,                               &opt_batch_mode,        0, N_("Do not ask for confirmation"),                                     NULL },
 		{ "version",        '\0',  POPT_ARG_NONE,                                 &opt_version_mode,        0, N_("Print package version"),                                     NULL },
- 		{ "timeout",           't',  POPT_ARG_INT,                                &opt_timeout,           0, N_("Timeout for interactive passphrase prompt (in seconds)"),          N_("secs") },
-  		{ "tries",             'T',  POPT_ARG_INT,                                &opt_tries,             0, N_("How often the input of the passphrase can be retried"),            NULL },
- 		{ "align-payload",     '\0',  POPT_ARG_INT,                               &opt_align_payload,     0, N_("Align payload at <n> sector boundaries - for luksFormat"),         N_("SECTORS") },
- 		{ "non-exclusive",     '\0',  POPT_ARG_NONE,                              &opt_non_exclusive,     0, N_("Allows non-exclusive access for luksOpen, WARNING see manpage."),        NULL },
+		{ "timeout",           't',  POPT_ARG_INT,                                &opt_timeout,           0, N_("Timeout for interactive passphrase prompt (in seconds)"),          N_("secs") },
+		{ "tries",             'T',  POPT_ARG_INT,                                &opt_tries,             0, N_("How often the input of the passphrase canbe retried"),            NULL },
+		{ "align-payload",     '\0',  POPT_ARG_INT,                               &opt_align_payload,     0, N_("Align payload at <n> sector boundaries - for luksFormat"),         N_("SECTORS") },
+		{ "non-exclusive",     '\0',  POPT_ARG_NONE,                              &opt_non_exclusive,     0, N_("Allows non-exclusive access for luksOpen, WARNING see manpage."),        NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -479,6 +497,8 @@ int main(int argc, char **argv)
 	char *aname;
 	int r;
 	const char *null_action_argv[] = {NULL};
+
+	set_default_log(cmdLineLog);
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
@@ -517,15 +537,15 @@ int main(int argc, char **argv)
 		usage(popt_context, 1, poptStrerror(r),
 		      poptBadOption(popt_context, POPT_BADOPTION_NOALIAS));
 	if (opt_version_mode) {
-	        printf("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+		log_std("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
 		exit(0);
 	}
-	 
+
 	if (opt_key_size % 8)
 		usage(popt_context, 1,
 		      _("Key size must be a multiple of 8 bits"),
 		      poptGetInvocationName(popt_context));
-	
+
 	if (!(aname = (char *)poptGetArg(popt_context)))
 		usage(popt_context, 1, _("Argument <action> missing."),
 		      poptGetInvocationName(popt_context));
@@ -541,7 +561,7 @@ int main(int argc, char **argv)
 	/* Make return values of poptGetArgs more consistent in case of remaining argc = 0 */
 	if(!action_argv) 
 		action_argv = null_action_argv;
-	
+
 	/* Count args, somewhat unnice, change? */
 	while(action_argv[action_argc] != NULL)
 		action_argc++;
@@ -551,6 +571,12 @@ int main(int argc, char **argv)
 		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
 		usage(popt_context, 1, buf,
 		      poptGetInvocationName(popt_context));
+	}
+
+	if (opt_debug) {
+		opt_verbose = 1;
+		crypt_set_debug_level(-1);
+		_dbg_version_and_cmd(argc, argv);
 	}
 
 	return run_action(action);

@@ -84,57 +84,82 @@ void LUKS_dealloc_masterkey(struct luks_masterkey *mk);
 
 struct luks_masterkey *LUKS_generate_masterkey(int keylength);
 
-int LUKS_generate_phdr(struct luks_phdr *header,
-		       const struct luks_masterkey *mk,
-		       const char *cipherName, const char *cipherMode, const char *hashSpec,
-		       unsigned int stripes,
-		       unsigned int alignPayload);
+int LUKS_generate_phdr(
+	struct luks_phdr *header,
+	const struct luks_masterkey *mk,
+	const char *cipherName, const char *cipherMode, const char *hashSpec,
+	unsigned int stripes,
+	unsigned int alignPayload,
+	struct crypt_device *ctx);
 
-int LUKS_read_phdr(const char *device, struct luks_phdr *hdr);
+int LUKS_read_phdr(
+	const char *device,
+	struct luks_phdr *hdr,
+	int require_luks_device,
+	struct crypt_device *ctx);
 
-int LUKS_write_phdr(const char *device, struct luks_phdr *hdr);
+int LUKS_write_phdr(
+	const char *device,
+	struct luks_phdr *hdr,
+	struct crypt_device *ctx);
 
-int LUKS_set_key(const char *device, 
-					unsigned int keyIndex, 
-					const char *password, 
-					size_t passwordLen, 
-					struct luks_phdr *hdr, 
-					struct luks_masterkey *mk);
+int LUKS_set_key(
+	const char *device,
+	unsigned int keyIndex,
+	const char *password,
+	size_t passwordLen,
+	struct luks_phdr *hdr,
+	struct luks_masterkey *mk,
+	struct crypt_device *ctx);
 
-int LUKS_open_key(const char *device, 
-					unsigned int keyIndex, 
-					const char *password, 
-					size_t passwordLen, 
-					struct luks_phdr *hdr, 
-					struct luks_masterkey *mk);
+int LUKS_open_key(
+	const char *device,
+	unsigned int keyIndex,
+	const char *password,
+	size_t passwordLen,
+	struct luks_phdr *hdr,
+	struct luks_masterkey *mk,
+	struct crypt_device *ctx);
 
-int LUKS_open_any_key(const char *device, 
-					const char *password, 
-					size_t passwordLen, 
-					struct luks_phdr *hdr, 
-					struct luks_masterkey **mk);
+int LUKS_open_any_key(
+	const char *device,
+	const char *password,
+	size_t passwordLen,
+	struct luks_phdr *hdr,
+	struct luks_masterkey **mk,
+	struct crypt_device *ctx);
 
-int LUKS_open_any_key_with_hdr(const char *device, 
-					const char *password, 
-					size_t passwordLen, 
-					struct luks_phdr *hdr, 
-					struct luks_masterkey **mk);
+int LUKS_open_any_key_with_hdr(
+	const char *device,
+	const char *password,
+	size_t passwordLen,
+	struct luks_phdr *hdr,
+	struct luks_masterkey **mk,
+	struct crypt_device *ctx);
 
+int LUKS_del_key(
+	const char *device,
+	unsigned int keyIndex,
+	struct crypt_device *ctx);
 
-int LUKS_del_key(const char *device, unsigned int keyIndex);
 int LUKS_is_last_keyslot(const char *device, unsigned int keyIndex);
 int LUKS_benchmarkt_iterations(const char *hash, unsigned int *count);
 
-int LUKS_encrypt_to_storage(char *src, size_t srcLength,
-			    struct luks_phdr *hdr,
-			    char *key, size_t keyLength,
-			    const char *device,
-			    unsigned int sector);
+int LUKS_encrypt_to_storage(
+	char *src, size_t srcLength,
+	struct luks_phdr *hdr,
+	char *key, size_t keyLength,
+	const char *device,
+	unsigned int sector,
+	struct crypt_device *ctx);
 
-int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
-			      struct luks_phdr *hdr,
-			      char *key, size_t keyLength,
-			      const char *device,
-			      unsigned int sector);
+int LUKS_decrypt_from_storage(
+	char *dst, size_t dstLength,
+	struct luks_phdr *hdr,
+	char *key, size_t keyLength,
+	const char *device,
+	unsigned int sector,
+	struct crypt_device *ctx);
+
 int LUKS_device_ready(const char *device, int mode);
 #endif

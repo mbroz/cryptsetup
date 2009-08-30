@@ -21,13 +21,18 @@ static struct crypt_device *_context = NULL;
 static void set_dm_error(int level, const char *file, int line,
 			 const char *f, ...)
 {
+	char *msg = NULL;
 	va_list va;
 
-	if (level > 3)
-		return;
-
 	va_start(va, f);
-	set_error_va(f, va);
+	if (vasprintf(&msg, f, va) > 0) {
+		if (level < 4) {
+			log_err(_context, msg);
+			log_err(_context, "\n");
+		} else
+			log_dbg(msg);
+	}
+	free(msg);
 	va_end(va);
 }
 
@@ -36,6 +41,8 @@ static int _dm_simple(int task, const char *name);
 int dm_init(struct crypt_device *context, int check_kernel)
 {
 	if (!_dm_use_count++) {
+		log_dbg("Initialising device-mapper backend%s.",
+			check_kernel ? "" : " (NO kernel check requested)");
 		if (check_kernel && !_dm_simple(DM_DEVICE_LIST_VERSIONS, NULL))
 			return -1;
 		dm_log_init(set_dm_error);
@@ -51,6 +58,7 @@ int dm_init(struct crypt_device *context, int check_kernel)
 void dm_exit(void)
 {
 	if (_dm_use_count && (!--_dm_use_count)) {
+		log_dbg("Releasing device-mapper backend.");
 		dm_log_init_verbose(0);
 		dm_log_init(NULL);
 		dm_lib_release();
@@ -239,6 +247,8 @@ int dm_remove_device(const char *name, int force, uint64_t size)
 	do {
 		r = _dm_simple(DM_DEVICE_REMOVE, name) ? 0 : -EINVAL;
 		if (--retries && r) {
+			log_dbg("WARNING: other process locked internal device %s, %s.",
+				name, retries ? "retrying remove" : "giving up");
 			sleep(1);
 		}
 	} while (r == -EINVAL && retries);

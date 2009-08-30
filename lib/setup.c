@@ -15,6 +15,13 @@
 #include "internal.h"
 #include "blockdev.h"
 #include "luks.h"
+#include "internal.h"
+
+struct crypt_device {
+	/* callbacks definitions */
+	void (*log)(int class, const char *msg, void *usrptr);
+	void *log_usrptr;
+};
 
 struct device_infos {
 	uint64_t	size;
@@ -23,24 +30,52 @@ struct device_infos {
 
 #define at_least_one(a) ({ __typeof__(a) __at_least_one=(a); (__at_least_one)?__at_least_one:1; })
 
-static void logger(struct crypt_options *options, int class, char *format, ...) {
+/* Log helper */
+static void (*_default_log)(int class, char *msg) = NULL;
+static int _debug_level = 0;
+
+void crypt_set_debug_level(int level)
+{
+	_debug_level = level;
+}
+
+void set_default_log(void (*log)(int class, char *msg))
+{
+	_default_log = log;
+}
+
+void logger(struct crypt_device *cd, int class, const char *file,
+	    int line, const char *format, ...)
+{
 	va_list argp;
 	char *target = NULL;
 
 	va_start(argp, format);
 
-	if (vasprintf(&target, format, argp) > 0)
-		options->icb->log(class, target);
+	if (vasprintf(&target, format, argp) > 0) {
+		if (class >= 0) {
+			if (cd && cd->log)
+				cd->log(class, target, cd->log_usrptr);
+			else if (_default_log)
+				_default_log(class, target);
+#ifdef CRYPT_DEBUG
+		} else if (_debug_level)
+			printf("# %s:%d %s\n", file ?: "?", line, target);
+#else
+		} else if (_debug_level)
+			printf("# %s\n", target);
+#endif
+	}
 
 	va_end(argp);
 	free(target);
 }
 
-static void hexprintICB(struct crypt_options *options, int class, char *d, int n)
+static void hexprintICB(struct crypt_device *cd, char *d, int n)
 {
 	int i;
 	for(i = 0; i < n; i++)
-		logger(options, class, "%02hhx ", (char)d[i]);
+		log_std(cd, "%02hhx ", (char)d[i]);
 }
 
 /*
@@ -49,19 +84,21 @@ static void hexprintICB(struct crypt_options *options, int class, char *d, int n
  * from binary file: check if there is sufficently large key material
  * interactive & from fd: hash if requested, otherwise crop or pad with '0'
  */
-
-static char *process_key(struct crypt_options *options, char *pass, int passLen) {
+static char *process_key(struct crypt_device *cd,
+			 struct crypt_options *options,
+			 const char *pass, size_t passLen)
+{
 	char *key = safe_alloc(options->key_size);
 	memset(key, 0, options->key_size);
 
 	/* key is coming from binary file */
 	if (options->key_file && strcmp(options->key_file, "-")) {
 		if(passLen < options->key_size) {
-			set_error("Could not read %d bytes from key file",
-			          options->key_size);
+			log_err(cd, _("Cannot not read %d bytes from key file %s.\n"),
+				options->key_size, options->key_file);
 			safe_free(key);
 			return NULL;
-		} 
+		}
 		memcpy(key,pass,options->key_size);
 		return key;
 	}
@@ -72,6 +109,7 @@ static char *process_key(struct crypt_options *options, char *pass, int passLen)
 			 key, options->key_size,
 			 pass, passLen) < 0)
 		{
+			log_err(cd, _("Key processing error.\n"));
 			safe_free(key);
 			return NULL;
 		}
@@ -184,8 +222,7 @@ static int wipe_device_header(const char *device, int sectors)
 	return r;
 }
 
-static int parse_into_name_and_mode(const char *nameAndMode, char *name,
-				    char *mode)
+static int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode)
 {
 /* Token content stringification, see info cpp/stringification */
 #define str(s) #s
@@ -196,27 +233,25 @@ static int parse_into_name_and_mode(const char *nameAndMode, char *name,
 	int r;
 
 	if(sscanf(nameAndMode,scanpattern1, name, mode) != 2) {
-		if((r = sscanf(nameAndMode,scanpattern2,name)) == 1) {
+		if((r = sscanf(nameAndMode,scanpattern2,name)) == 1)
 			strncpy(mode,"cbc-plain",10);
-		} 
-		else {
-			set_error("no known cipher-spec pattern detected");
+		else
 			return -EINVAL;
-		}
 	}
 
 	return 0;
 
-#undef sp1
-#undef sp2
+#undef scanpattern1
+#undef scanpattern2
 #undef str
 #undef xstr
 }
 
-static int keyslot_is_valid(int keySlotIndex, struct crypt_options *options)
+static int keyslot_is_valid(struct crypt_device *cd, int keySlotIndex)
 {
 	if(keySlotIndex >= LUKS_NUMKEYS || keySlotIndex < 0) {
-		logger(options,CRYPT_LOG_ERROR,"Key slot %d is invalid, please pick between 0 and %d.\n", keySlotIndex, LUKS_NUMKEYS - 1);
+			log_err(cd, _("Key slot %d is invalid, please select between 0 and %d.\n"),
+				keySlotIndex, LUKS_NUMKEYS - 1);
 		return 0;
 	}
 
@@ -224,12 +259,13 @@ static int keyslot_is_valid(int keySlotIndex, struct crypt_options *options)
 }
 
 /* Select free keyslot or verifies that the one specified is empty */
-static int keyslot_from_option(int keySlotOption, struct luks_phdr *hdr, struct crypt_options *options) {
+static int keyslot_from_option(struct crypt_device *cd, int keySlotOption, struct luks_phdr *hdr) {
         if(keySlotOption >= 0) {
-                if(!keyslot_is_valid(keySlotOption, options))
+                if(!keyslot_is_valid(cd, keySlotOption))
                         return -EINVAL;
                 else if(hdr->keyblock[keySlotOption].active != LUKS_KEY_DISABLED) {
-                        logger(options,CRYPT_LOG_ERROR,"Key slot %d is full, please pick another one", keySlotOption);
+			log_err(cd, _("Key slot %d is full, please select another one.\n"),
+				keySlotOption);
                         return -EINVAL;
                 } else {
                         return keySlotOption;
@@ -241,15 +277,16 @@ static int keyslot_from_option(int keySlotOption, struct luks_phdr *hdr, struct 
                         if(hdr->keyblock[i].active == LUKS_KEY_DISABLED) break;
                 }
                 if(i==LUKS_NUMKEYS) {
-                        logger(options,CRYPT_LOG_ERROR,"All slots full");
+			log_err(cd, _("All key slots full.\n"));
                         return -EINVAL;
                 }
                 return i;
         }
 }
 
-static int __crypt_create_device(int reload, struct crypt_options *options)
+static int create_device_helper(int reload, struct crypt_options *options)
 {
+	struct crypt_device *cd = NULL;
 	struct device_infos infos;
 	char *key = NULL;
 	unsigned int keyLen;
@@ -262,7 +299,7 @@ static int __crypt_create_device(int reload, struct crypt_options *options)
 			return r;
 	} else {
 		if (r >= 0) {
-			set_error("Device %s already exists.", options->name);
+			log_err(cd, _("Device %s already exists.\n"), options->name);
 			return -EEXIST;
 		}
 		if (r != -ENODEV)
@@ -270,7 +307,7 @@ static int __crypt_create_device(int reload, struct crypt_options *options)
 	}
 
 	if (options->key_size < 0 || options->key_size > 1024) {
-		set_error("Invalid key size");
+		log_err(cd, _("Invalid key size %d.\n"), options->key_size);
 		return -EINVAL;
 	}
 
@@ -280,11 +317,11 @@ static int __crypt_create_device(int reload, struct crypt_options *options)
 	if (!options->size) {
 		options->size = infos.size;
 		if (!options->size) {
-			set_error("Not a block device");
+			log_err(cd, "Not a block device");
 			return -ENOTBLK;
 		}
 		if (options->size <= options->offset) {
-			set_error("Invalid offset");
+			log_err(cd, "Invalid offset");
 			return -EINVAL;
 		}
 		options->size -= options->offset;
@@ -293,26 +330,18 @@ static int __crypt_create_device(int reload, struct crypt_options *options)
 	if (infos.readonly)
 		options->flags |= CRYPT_FLAG_READONLY;
 
-	get_key("Enter passphrase: ", &key, &keyLen, options->key_size, options->key_file, options->passphrase_fd, options->timeout, options->flags);
+	get_key("Enter passphrase: ", &key, &keyLen, options->key_size,
+		options->key_file, options->passphrase_fd, options->timeout, options->flags, NULL);
 	if (!key) {
-		set_error("Key reading error");
+		log_err(cd, "Key reading error");
 		return -ENOENT;
 	}
 
-	processed_key = process_key(options,key,keyLen);
+	processed_key = process_key(cd, options, key, keyLen);
 	safe_free(key);
 
-	if (!processed_key) {
-		const char *error=get_error();
-		if(error) {
-			char *c_error_handling_sucks = NULL;
-			if (asprintf(&c_error_handling_sucks,"Key processing error: %s",error) > 0)
-				set_error(c_error_handling_sucks);
-			free(c_error_handling_sucks);
-		} else
-			set_error("Key processing error");
+	if (!processed_key)
 		return -ENOENT;
-	}
 
 	r = dm_create_device(options->name, options->device, options->cipher,
 			     NULL, options->size, options->skip, options->offset,
@@ -324,7 +353,147 @@ static int __crypt_create_device(int reload, struct crypt_options *options)
 	return r;
 }
 
-static int __crypt_query_device(int details, struct crypt_options *options)
+static int luks_remove_helper(struct crypt_device *cd,
+			      struct crypt_options *options, int supply_it)
+{
+	struct luks_masterkey *mk;
+	struct luks_phdr hdr;
+	char *password=NULL;
+	unsigned int passwordLen;
+	const char *device = options->device;
+	int keyIndex;
+	int openedIndex;
+	int r, last_slot;
+
+	if (!LUKS_device_ready(options->device, O_RDWR))
+	    return -ENOTBLK;
+
+	if(supply_it) {
+		get_key("Enter LUKS passphrase to be deleted: ",&password,&passwordLen, 0, options->new_key_file,
+			options->passphrase_fd, options->timeout, options->flags, cd);
+		if(!password) {
+			r = -EINVAL; goto out;
+		}
+
+		keyIndex = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk, cd);
+		if(keyIndex < 0) {
+			log_err(cd, "No remaining key available with this passphrase.\n");
+			r = -EPERM; goto out;
+		} else
+			log_std(cd ,"key slot %d selected for deletion.\n", keyIndex);
+
+		safe_free(password);
+		password = NULL;
+	} else {
+		keyIndex = options->key_slot;
+		if (!keyslot_is_valid(cd, keyIndex)) {
+			r = -EINVAL; goto out;
+		}
+	}
+
+	last_slot = LUKS_is_last_keyslot(options->device, keyIndex);
+	if(last_slot && !(options->icb->yesDialog(_("This is the last keyslot. Device will become unusable after purging this key.")))) {
+		r = -EINVAL; goto out;
+	}
+
+	if(options->flags & CRYPT_FLAG_VERIFY_ON_DELKEY) {
+		options->flags &= ~CRYPT_FLAG_VERIFY_ON_DELKEY;
+		get_key("Enter any remaining LUKS passphrase: ",&password,&passwordLen, 0, options->key_file,
+			options->passphrase_fd, options->timeout, options->flags, cd);
+		if(!password) {
+			r = -EINVAL; goto out;
+		}
+
+                r = LUKS_read_phdr(device, &hdr, 1, cd);
+                if(r < 0) {
+                        options->icb->log(CRYPT_LOG_ERROR,"Failed to access device.\n");
+                        r = -EIO; goto out;
+                }
+
+		if(!last_slot)
+			hdr.keyblock[keyIndex].active = LUKS_KEY_DISABLED;
+
+		openedIndex = LUKS_open_any_key_with_hdr(device, password, passwordLen, &hdr, &mk, cd);
+                /* Clean up */
+                if (openedIndex >= 0) {
+                        LUKS_dealloc_masterkey(mk);
+                        mk = NULL;
+                }
+		if(openedIndex < 0) {
+                            log_err(cd, "No remaining key available with this passphrase.\n");
+			    r = -EPERM; goto out;
+		} else
+                        log_std(cd, "key slot %d verified.\n", openedIndex);
+	}
+	r = LUKS_del_key(device, keyIndex, cd);
+	if(r < 0) goto out;
+
+	r = 0;
+out:
+	safe_free(password);
+	return r;
+}
+
+/* OPTIONS: name, cipher, device, hash, key_file, key_size, key_slot,
+ *          offset, size, skip, timeout, tries, passphrase_fd (ignored),
+ *          flags, icb */
+int crypt_create_device(struct crypt_options *options)
+{
+	return create_device_helper(0, options);
+}
+
+/* OPTIONS: same as create above */
+int crypt_update_device(struct crypt_options *options)
+{
+	return create_device_helper(1, options);
+}
+
+/* OPTIONS: name, size, icb */
+int crypt_resize_device(struct crypt_options *options)
+{
+	struct crypt_device *cd = NULL;
+	char *device, *cipher, *key = NULL;
+	uint64_t size, skip, offset;
+	int key_size, read_only, r;
+	struct device_infos infos;
+
+	r = dm_query_device(options->name, &device, &size, &skip, &offset,
+			    &cipher, &key_size, &key, &read_only);
+	if (r < 0)
+		return r;
+
+	if (get_device_infos(device, &infos) < 0)
+		return -EINVAL;
+
+	if (!options->size) {
+		options->size = infos.size;
+		if (!options->size) {
+			log_err(cd, "Not a block device");
+			return -ENOTBLK;
+		}
+		if (options->size <= offset) {
+			log_err(cd, "Invalid offset");
+			return -EINVAL;
+		}
+		options->size -= offset;
+	}
+	size = options->size;
+
+	if (infos.readonly)
+		options->flags |= CRYPT_FLAG_READONLY;
+
+	r = dm_create_device(options->name, device, cipher, NULL, size, skip, offset,
+			     key_size, key, read_only, 1);
+
+	safe_free(key);
+	free(cipher);
+	free(device);
+
+	return r;
+}
+
+/* OPTIONS: name, icb */
+int crypt_query_device(struct crypt_options *options)
 {
 	int read_only, r;
 
@@ -348,49 +517,8 @@ static int __crypt_query_device(int details, struct crypt_options *options)
 	return 1;
 }
 
-static int __crypt_resize_device(int details, struct crypt_options *options)
-{
-	char *device, *cipher, *key = NULL;
-	uint64_t size, skip, offset;
-	int key_size, read_only, r;
-	struct device_infos infos;
-
-	r = dm_query_device(options->name, &device, &size, &skip, &offset,
-			    &cipher, &key_size, &key, &read_only);
-	if (r < 0)
-		return r;
-
-	if (get_device_infos(device, &infos) < 0)
-		return -EINVAL;
-
-	if (!options->size) {
-		options->size = infos.size;
-		if (!options->size) {
-			set_error("Not a block device");
-			return -ENOTBLK;
-		}
-		if (options->size <= offset) {
-			set_error("Invalid offset");
-			return -EINVAL;
-		}
-		options->size -= offset;
-	}
-	size = options->size;
-
-	if (infos.readonly)
-		options->flags |= CRYPT_FLAG_READONLY;
-
-	r = dm_create_device(options->name, device, cipher, NULL, size, skip, offset,
-			     key_size, key, read_only, 1);
-
-	safe_free(key);
-	free(cipher);
-	free(device);
-
-	return r;
-}
-
-static int __crypt_remove_device(int arg, struct crypt_options *options)
+/* OPTIONS: name, icb */
+int crypt_remove_device(struct crypt_options *options)
 {
 	int r;
 
@@ -398,17 +526,18 @@ static int __crypt_remove_device(int arg, struct crypt_options *options)
 	if (r < 0)
 		return r;
 	if (r > 0) {
-		set_error("Device busy");
+		log_err(NULL, "Device busy");
 		return -EBUSY;
 	}
 
 	return dm_remove_device(options->name, 0, 0);
 }
 
-static int __crypt_luks_format(int arg, struct crypt_options *options)
+/* OPTIONS: device, cipher, hash, align_payload, key_size (master key), key_slot
+ *          new_key_file, iteration_time, timeout, flags, icb */
+int crypt_luksFormat(struct crypt_options *options)
 {
-	int r;
-
+	struct crypt_device *cd = NULL;
 	struct luks_phdr header;
 	struct luks_masterkey *mk=NULL;
 	char *password=NULL; 
@@ -416,7 +545,7 @@ static int __crypt_luks_format(int arg, struct crypt_options *options)
 	char cipherMode[LUKS_CIPHERMODE_L];
 	unsigned int passwordLen;
 	unsigned int PBKDF2perSecond = 0;
-        int keyIndex;
+        int r, keyIndex;
 
 	if (!LUKS_device_ready(options->device, O_RDWR | O_EXCL))
 		return -ENOTBLK;
@@ -429,8 +558,7 @@ static int __crypt_luks_format(int arg, struct crypt_options *options)
 	logger(options, CRYPT_LOG_ERROR, \
 	        "offset of " #entry " = %d\n", (char *)(&header.entry)-(char *)(&header))
 
-	logger(options, CRYPT_LOG_ERROR,
-		"sizeof phdr %d, sizeof key slot %d\n",
+	log_err("sizeof phdr %d, sizeof key slot %d\n",
 		sizeof(struct luks_phdr),
 		sizeof(header.keyblock[0]));
 
@@ -448,12 +576,15 @@ static int __crypt_luks_format(int arg, struct crypt_options *options)
 #endif
 
 	r = parse_into_name_and_mode(options->cipher, cipherName, cipherMode);
+	if(r < 0) {
+		log_err(cd, _("No known cipher specification pattern detected.\n"));
+		return r;
+	}
+
+	r = LUKS_generate_phdr(&header, mk, cipherName, cipherMode, options->hash, LUKS_STRIPES, options->align_payload, NULL);
 	if(r < 0) return r;
 
-	r = LUKS_generate_phdr(&header, mk, cipherName, cipherMode, options->hash, LUKS_STRIPES, options->align_payload);
-	if(r < 0) return r;
-
-	keyIndex = keyslot_from_option(options->key_slot, &header, options);
+	keyIndex = keyslot_from_option(NULL, options->key_slot, &header);
 	if(keyIndex == -EINVAL) {
 		r = -EINVAL; goto out;
 	}
@@ -465,7 +596,8 @@ static int __crypt_luks_format(int arg, struct crypt_options *options)
 #ifdef LUKS_DEBUG
 	logger(options, CRYPT_LOG_ERROR, "pitr %d\n", header.keyblock[0].passwordIterations);
 #endif
-	get_key("Enter LUKS passphrase: ",&password,&passwordLen, 0, options->new_key_file, options->passphrase_fd, options->timeout, options->flags);
+	get_key("Enter LUKS passphrase: ",&password,&passwordLen, 0, options->new_key_file,
+		options->passphrase_fd, options->timeout, options->flags, NULL);
 	if(!password) {
 		r = -EINVAL; goto out;
 	}
@@ -475,7 +607,7 @@ static int __crypt_luks_format(int arg, struct crypt_options *options)
 	if(r < 0) goto out;
 
 	/* Set key, also writes phdr */
-	r = LUKS_set_key(options->device, keyIndex, password, passwordLen, &header, mk);
+	r = LUKS_set_key(options->device, keyIndex, password, passwordLen, &header, mk, NULL);
 	if(r < 0) goto out; 
 
 	r = 0;
@@ -485,8 +617,10 @@ out:
 	return r;
 }
 
-static int __crypt_luks_open(int arg, struct crypt_options *options)
+/* OPTIONS: name, device, key_size, key_file, timeout, tries, flags, icb */
+int crypt_luksOpen(struct crypt_options *options)
 {
+	struct crypt_device *cd = NULL;
 	struct luks_masterkey *mk=NULL;
 	struct luks_phdr hdr;
 	char *prompt = NULL;
@@ -499,7 +633,7 @@ static int __crypt_luks_open(int arg, struct crypt_options *options)
 
 	r = dm_status_device(options->name);
 	if (r >= 0) {
-		set_error("Device %s already exists.", options->name);
+		log_err(cd, "Device %s already exists.", options->name);
 		return -EEXIST;
 	}
 
@@ -507,7 +641,7 @@ static int __crypt_luks_open(int arg, struct crypt_options *options)
 		return -ENOTBLK;
 
 	if (get_device_infos(options->device, &infos) < 0) {
-		set_error("Can't get device information.\n");
+		log_err(cd, "Can't get device information.\n");
 		return -ENOTBLK;
 	}
 
@@ -525,7 +659,8 @@ start:
 		password = safe_alloc(passwordLen + 1);
 		strncpy(password, options->passphrase, passwordLen + 1);
 		tries = 0;
-	} else if(get_key(prompt, &password, &passwordLen, options->key_size, options->key_file, options->passphrase_fd, options->timeout, options->flags))
+	} else if(get_key(prompt, &password, &passwordLen, options->key_size, options->key_file,
+		options->passphrase_fd, options->timeout, options->flags, cd))
 		tries--;
 	else
 		tries = 0;
@@ -534,13 +669,13 @@ start:
 		r = -EINVAL; goto out;
 	}
 
-        r = LUKS_open_any_key(options->device, password, passwordLen, &hdr, &mk);
+        r = LUKS_open_any_key(options->device, password, passwordLen, &hdr, &mk, cd);
 	if (r == -EPERM)
-		set_error("No key available with this passphrase.\n");
+		log_err(cd, "No key available with this passphrase.\n");
 	if (r < 0)
 		goto out1;
 
-	logger(options, CRYPT_LOG_NORMAL,"key slot %d unlocked.\n", r);
+	log_err(NULL, "key slot %d unlocked.\n", r);
 
 
 	options->offset = hdr.payloadOffset;
@@ -554,11 +689,11 @@ start:
 
 	options->size = infos.size;
 	if (!options->size) {
-		set_error("Not a block device.\n");
+		log_err(cd, "Not a block device.\n");
 		r = -ENOTBLK; goto out2;
 	}
 	if (options->size <= options->offset) {
-		set_error("Invalid offset");
+		log_err(cd, "Invalid offset");
 		r = -EINVAL; goto out2;
 	}
 	options->size -= options->offset;
@@ -584,8 +719,23 @@ start:
 	return r;
 }
 
-static int __crypt_luks_add_key(int arg, struct crypt_options *options)
+/* OPTIONS: device, keys_slot, key_file, timeout, flags, icb */
+int crypt_luksKillSlot(struct crypt_options *options)
 {
+	return luks_remove_helper(NULL, options, 0);
+}
+
+/* OPTIONS: device, new_key_file, key_file, timeout, flags, icb */
+int crypt_luksRemoveKey(struct crypt_options *options)
+{
+	return luks_remove_helper(NULL, options, 1);
+}
+
+/* OPTIONS: device, new_key_file, key_file, key_slot, flags,
+            iteration_time, timeout, icb */
+int crypt_luksAddKey(struct crypt_options *options)
+{
+	struct crypt_device *cd = NULL;
 	struct luks_masterkey *mk=NULL;
 	struct luks_phdr hdr;
 	char *password=NULL; unsigned int passwordLen;
@@ -597,11 +747,11 @@ static int __crypt_luks_add_key(int arg, struct crypt_options *options)
 	if (!LUKS_device_ready(options->device, O_RDWR))
 		return -ENOTBLK;
 
-	r = LUKS_read_phdr(device, &hdr);
+	r = LUKS_read_phdr(device, &hdr, 1, cd);
 	if(r < 0) return r;
 
 
-        keyIndex = keyslot_from_option(options->key_slot, &hdr, options);
+        keyIndex = keyslot_from_option(cd, options->key_slot, &hdr);
         if(keyIndex == -EINVAL) {
                 r = -EINVAL; goto out;
         }
@@ -613,18 +763,16 @@ static int __crypt_luks_add_key(int arg, struct crypt_options *options)
                 options->key_file, 
                 options->passphrase_fd, 
                 options->timeout, 
-                options->flags & ~(CRYPT_FLAG_VERIFY | CRYPT_FLAG_VERIFY_IF_POSSIBLE));
+                options->flags & ~(CRYPT_FLAG_VERIFY | CRYPT_FLAG_VERIFY_IF_POSSIBLE), cd);
 
 	if(!password) {
 		r = -EINVAL; goto out;
 	}
-	r = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk);
+	r = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk, cd);
 	if(r < 0) {
 	        options->icb->log(CRYPT_LOG_ERROR,"No key available with this passphrase.\n");
 		r = -EPERM; goto out;
-	} else
-	        logger(options, CRYPT_LOG_NORMAL,"key slot %d unlocked.\n", r);
-
+	}
 	safe_free(password);
 
 	get_key("Enter new passphrase for key slot: ",
@@ -634,7 +782,7 @@ static int __crypt_luks_add_key(int arg, struct crypt_options *options)
                 options->new_key_file,
                 options->passphrase_fd,
                 options->timeout, 
-                options->flags);
+                options->flags, cd);
 	if(!password) {
 		r = -EINVAL; goto out;
 	}
@@ -643,7 +791,7 @@ static int __crypt_luks_add_key(int arg, struct crypt_options *options)
 	if (r < 0) goto out;
 	hdr.keyblock[keyIndex].passwordIterations = at_least_one(PBKDF2perSecond * ((float)options->iteration_time / 1000));
 
-	r = LUKS_set_key(device, keyIndex, password, passwordLen, &hdr, mk);
+	r = LUKS_set_key(device, keyIndex, password, passwordLen, &hdr, mk, cd);
 	if(r < 0) goto out;
 
 	r = 0;
@@ -653,163 +801,14 @@ out:
 	return r;
 }
 
-static int luks_remove_helper(int arg, struct crypt_options *options, int supply_it)
-{
-	struct luks_masterkey *mk;
-	struct luks_phdr hdr;
-	char *password=NULL; 
-	unsigned int passwordLen;
-	const char *device = options->device;
-	int keyIndex;
-	int openedIndex;
-	int r, last_slot;
-
-	if (!LUKS_device_ready(options->device, O_RDWR))
-	    return -ENOTBLK;
-
-	if(supply_it) {
-		get_key("Enter LUKS passphrase to be deleted: ",&password,&passwordLen, 0, options->new_key_file,
-			options->passphrase_fd, options->timeout, options->flags);
-		if(!password) {
-			r = -EINVAL; goto out;
-		}
-
-		keyIndex = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk);
-		if(keyIndex < 0) {
-			options->icb->log(CRYPT_LOG_ERROR,"No remaining key available with this passphrase.\n");
-			r = -EPERM; goto out;
-		} else
-			logger(options, CRYPT_LOG_NORMAL,"key slot %d selected for deletion.\n", keyIndex);
-
-		safe_free(password);
-		password = NULL;
-	} else {
-		keyIndex = options->key_slot;
-		if (!keyslot_is_valid(keyIndex, options)) {
-			r = -EINVAL; goto out;
-		}
-	}
-
-	last_slot = LUKS_is_last_keyslot(options->device, keyIndex);
-	if(last_slot && !(options->icb->yesDialog(_("This is the last keyslot. Device will become unusable after purging this key.")))) {
-		r = -EINVAL; goto out;
-	}
-
-	if(options->flags & CRYPT_FLAG_VERIFY_ON_DELKEY) {
-		options->flags &= ~CRYPT_FLAG_VERIFY_ON_DELKEY;
-		get_key("Enter any remaining LUKS passphrase: ",&password,&passwordLen, 0, options->key_file, options->passphrase_fd, options->timeout, options->flags);
-		if(!password) {
-			r = -EINVAL; goto out;
-		}
-
-                r = LUKS_read_phdr(device, &hdr);
-                if(r < 0) { 
-                        options->icb->log(CRYPT_LOG_ERROR,"Failed to access device.\n");
-                        r = -EIO; goto out;
-                }
-
-		if(!last_slot)
-			hdr.keyblock[keyIndex].active = LUKS_KEY_DISABLED;
-
-		openedIndex = LUKS_open_any_key_with_hdr(device, password, passwordLen, &hdr, &mk);
-                /* Clean up */
-                if (openedIndex >= 0) {
-                        LUKS_dealloc_masterkey(mk);
-                        mk = NULL;
-                }
-		if(openedIndex < 0) {
-                            options->icb->log(CRYPT_LOG_ERROR,"No remaining key available with this passphrase.\n");
-			    r = -EPERM; goto out;
-		} else
-                        logger(options, CRYPT_LOG_NORMAL,"key slot %d verified.\n", openedIndex);
-	}
-	r = LUKS_del_key(device, keyIndex);
-	if(r < 0) goto out;
-
-	r = 0;
-out:
-	safe_free(password);
-	return r;
-}
-
-static int __crypt_luks_kill_slot(int arg, struct crypt_options *options) {
-	return luks_remove_helper(arg, options, 0);
-}
-
-static int __crypt_luks_remove_key(int arg, struct crypt_options *options) {
-	return luks_remove_helper(arg, options, 1);
-}
-
-static int crypt_job(int (*job)(int arg, struct crypt_options *options),
-                     int arg, struct crypt_options *options)
-{
-	int r;
-
-	r = job(arg, options);
-
-	if (r >= 0)
-		set_error(NULL);
-
-	return r;
-}
-
-int crypt_create_device(struct crypt_options *options)
-{
-	return crypt_job(__crypt_create_device, 0, options);
-}
-
-int crypt_update_device(struct crypt_options *options)
-{
-	return crypt_job(__crypt_create_device, 1, options);
-}
-
-int crypt_resize_device(struct crypt_options *options)
-{
-	return crypt_job(__crypt_resize_device, 0, options);
-}
-
-int crypt_query_device(struct crypt_options *options)
-{
-	return crypt_job(__crypt_query_device, 1, options);
-}
-
-int crypt_remove_device(struct crypt_options *options)
-{
-	return crypt_job(__crypt_remove_device, 0, options);
-
-}
-
-int crypt_luksFormat(struct crypt_options *options)
-{
-	return crypt_job(__crypt_luks_format, 0, options);
-}
-
-int crypt_luksOpen(struct crypt_options *options)
-{
-	return crypt_job(__crypt_luks_open, 0, options);
-}
-
-int crypt_luksKillSlot(struct crypt_options *options)
-{
-	return crypt_job(__crypt_luks_kill_slot, 0, options);
-}
-
-int crypt_luksRemoveKey(struct crypt_options *options)
-{
-	return crypt_job(__crypt_luks_remove_key, 0, options);
-}
-
-int crypt_luksAddKey(struct crypt_options *options)
-{
-	return crypt_job(__crypt_luks_add_key, 0, options);
-}
-
+/* OPTIONS: device, icb */
 int crypt_luksUUID(struct crypt_options *options)
 {
+	struct crypt_device *cd = NULL;
 	struct luks_phdr hdr;
 	int r;
 
-	r = LUKS_read_phdr(options->device,&hdr);
+	r = LUKS_read_phdr(options->device, &hdr, 1, cd);
 	if(r < 0) return r;
 
 	options->icb->log(CRYPT_LOG_NORMAL,hdr.uuid);
@@ -817,56 +816,64 @@ int crypt_luksUUID(struct crypt_options *options)
 	return 0;
 }
 
+/* OPTIONS: device, icb */
 int crypt_isLuks(struct crypt_options *options)
 {
+	struct crypt_device *cd = NULL;
 	struct luks_phdr hdr;
-	return LUKS_read_phdr(options->device,&hdr);
+	return LUKS_read_phdr(options->device, &hdr, 0, cd);
 }
 
+/* OPTIONS: device, icb */
 int crypt_luksDump(struct crypt_options *options)
 {
+	struct crypt_device *cd = NULL;
 	struct luks_phdr hdr;
 	int r,i;
 
-	r = LUKS_read_phdr(options->device,&hdr);
+	r = LUKS_read_phdr(options->device, &hdr, 1, cd);
 	if(r < 0) return r;
 
-	logger(options, CRYPT_LOG_NORMAL, "LUKS header information for %s\n\n",options->device);
-    	logger(options, CRYPT_LOG_NORMAL, "Version:       \t%d\n",hdr.version);
-	logger(options, CRYPT_LOG_NORMAL, "Cipher name:   \t%s\n",hdr.cipherName);
-	logger(options, CRYPT_LOG_NORMAL, "Cipher mode:   \t%s\n",hdr.cipherMode);
-	logger(options, CRYPT_LOG_NORMAL, "Hash spec:     \t%s\n",hdr.hashSpec);
-	logger(options, CRYPT_LOG_NORMAL, "Payload offset:\t%d\n",hdr.payloadOffset);
-	logger(options, CRYPT_LOG_NORMAL, "MK bits:       \t%d\n",hdr.keyBytes*8);
-	logger(options, CRYPT_LOG_NORMAL, "MK digest:     \t");
-	hexprintICB(options, CRYPT_LOG_NORMAL, hdr.mkDigest,LUKS_DIGESTSIZE);
-	logger(options, CRYPT_LOG_NORMAL, "\n");
-	logger(options, CRYPT_LOG_NORMAL, "MK salt:       \t");
-	hexprintICB(options, CRYPT_LOG_NORMAL, hdr.mkDigestSalt,LUKS_SALTSIZE/2);
-	logger(options, CRYPT_LOG_NORMAL, "\n               \t");
-	hexprintICB(options, CRYPT_LOG_NORMAL, hdr.mkDigestSalt+LUKS_SALTSIZE/2,LUKS_SALTSIZE/2);
-	logger(options, CRYPT_LOG_NORMAL, "\n");
-	logger(options, CRYPT_LOG_NORMAL, "MK iterations: \t%d\n",hdr.mkDigestIterations);
-	logger(options, CRYPT_LOG_NORMAL, "UUID:          \t%s\n\n",hdr.uuid);
-	for(i=0;i<LUKS_NUMKEYS;i++) {
+	log_std(cd, "LUKS header information for %s\n\n", options->device);
+	log_std(cd, "Version:       \t%d\n", hdr.version);
+	log_std(cd, "Cipher name:   \t%s\n", hdr.cipherName);
+	log_std(cd, "Cipher mode:   \t%s\n", hdr.cipherMode);
+	log_std(cd, "Hash spec:     \t%s\n", hdr.hashSpec);
+	log_std(cd, "Payload offset:\t%d\n", hdr.payloadOffset);
+	log_std(cd, "MK bits:       \t%d\n", hdr.keyBytes * 8);
+	log_std(cd, "MK digest:     \t");
+	hexprintICB(cd, hdr.mkDigest, LUKS_DIGESTSIZE);
+	log_std(cd, "\n");
+	log_std(cd, "MK salt:       \t");
+	hexprintICB(cd, hdr.mkDigestSalt, LUKS_SALTSIZE/2);
+	log_std(cd, "\n               \t");
+	hexprintICB(cd, hdr.mkDigestSalt+LUKS_SALTSIZE/2, LUKS_SALTSIZE/2);
+	log_std(cd, "\n");
+	log_std(cd, "MK iterations: \t%d\n", hdr.mkDigestIterations);
+	log_std(cd, "UUID:          \t%s\n\n", hdr.uuid);
+	for(i = 0; i < LUKS_NUMKEYS; i++) {
 		if(hdr.keyblock[i].active == LUKS_KEY_ENABLED) {
-			logger(options, CRYPT_LOG_NORMAL, "Key Slot %d: ENABLED\n",i);
-			logger(options, CRYPT_LOG_NORMAL, "\tIterations:         \t%d\n",hdr.keyblock[i].passwordIterations);
-			logger(options, CRYPT_LOG_NORMAL, "\tSalt:               \t");
-			hexprintICB(options, CRYPT_LOG_NORMAL, hdr.keyblock[i].passwordSalt,LUKS_SALTSIZE/2);
-			logger(options, CRYPT_LOG_NORMAL, "\n\t                      \t");
-			hexprintICB(options, CRYPT_LOG_NORMAL, hdr.keyblock[i].passwordSalt+LUKS_SALTSIZE/2,LUKS_SALTSIZE/2);
-			logger(options, CRYPT_LOG_NORMAL, "\n");
+			log_std(cd, "Key Slot %d: ENABLED\n",i);
+			log_std(cd, "\tIterations:         \t%d\n",
+				hdr.keyblock[i].passwordIterations);
+			log_std(cd, "\tSalt:               \t");
+			hexprintICB(cd, hdr.keyblock[i].passwordSalt,
+				    LUKS_SALTSIZE/2);
+			log_std(cd, "\n\t                      \t");
+			hexprintICB(cd, hdr.keyblock[i].passwordSalt +
+				    LUKS_SALTSIZE/2, LUKS_SALTSIZE/2);
+			log_std(cd, "\n");
 
-			logger(options, CRYPT_LOG_NORMAL, "\tKey material offset:\t%d\n",hdr.keyblock[i].keyMaterialOffset);
-			logger(options, CRYPT_LOG_NORMAL, "\tAF stripes:            \t%d\n",hdr.keyblock[i].stripes);
+			log_std(cd, "\tKey material offset:\t%d\n",
+				hdr.keyblock[i].keyMaterialOffset);
+			log_std(cd, "\tAF stripes:            \t%d\n",
+				hdr.keyblock[i].stripes);
 		}
 		else 
-			logger(options, CRYPT_LOG_NORMAL, "Key Slot %d: DISABLED\n",i);
+			log_std(cd, "Key Slot %d: DISABLED\n", i);
 	}
 	return 0;
 }
-
 
 void crypt_get_error(char *buf, size_t size)
 {

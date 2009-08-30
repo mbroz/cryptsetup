@@ -18,7 +18,6 @@
 #include "libcryptsetup.h"
 #include "internal.h"
 
-
 struct safe_allocation {
 	size_t	size;
 	char	data[1];
@@ -28,18 +27,24 @@ static char *error=NULL;
 
 void set_error_va(const char *fmt, va_list va)
 {
+	int r;
 
 	if(error) {
-	    free(error);
-	    error=NULL;
+		free(error);
+		error = NULL;
 	}
 
 	if(!fmt) return;
 
-	if (vasprintf(&error, fmt, va) < 0) {
+	r = vasprintf(&error, fmt, va);
+	if (r < 0) {
 		free(error);
 		error = NULL;
+		return;
 	}
+
+	if (r && error[r - 1] == '\n')
+		error[r - 1] = '\0';
 }
 
 void set_error(const char *fmt, ...)
@@ -239,10 +244,8 @@ ssize_t read_blockwise(int fd, void *orig_buf, size_t count) {
 		buf = orig_buf;
 
 	r = read(fd, buf, solid);
-	if(r < 0 || r != solid) {
-		set_error("read failed in read_blockwise.\n");
+	if(r < 0 || r != solid)
 		goto out;
-	}
 
 	if (hangover) {
 		hangover_buf = aligned_malloc(&hangover_buf_base, bsize, alignment);
@@ -331,8 +334,7 @@ static int timed_read(int fd, char *pass, size_t maxlen, long timeout)
 
 	if (select(fd+1, &fds, NULL, NULL, &t) > 0)
 		failed = untimed_read(fd, pass, maxlen);
-	else
-		set_error("Operation timed out");
+
 	return failed;
 }
 
@@ -352,10 +354,9 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 		outfd = STDERR_FILENO;
 	}
 
-	if (tcgetattr(infd, &orig)) {
-		set_error("Unable to get terminal");
+	if (tcgetattr(infd, &orig))
 		goto out_err;
-	}
+
 	memcpy(&tmp, &orig, sizeof(tmp));
 	tmp.c_lflag &= ~ECHO;
 
@@ -395,7 +396,7 @@ out_err:
  */
 
 int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
-            const char *key_file, int passphrase_fd, int timeout, int how2verify)
+            const char *key_file, int passphrase_fd, int timeout, int how2verify, struct crypt_device *cd)
 {
 	int fd;
 	const int verify = how2verify & CRYPT_FLAG_VERIFY;
@@ -412,9 +413,7 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 	} else if (key_file) {
 		fd = open(key_file, O_RDONLY);
 		if (fd < 0) {
-			char buf[128];
-			set_error("Error opening key file: %s",
-				  strerror_r(errno, buf, 128));
+			log_err(cd, "Failed to open key file %s.\n", key_file);
 			goto out_err;
 		}
 		newline_stop = 0;
@@ -423,7 +422,7 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		 * of key bytes (default or passed by -s) */
 		read_horizon = key_size;
 	} else {
-		fd = passphrase_fd;
+		fd = STDIN_FILENO;
 		newline_stop = 1;
 		read_horizon = 0;   /* Infinite, if read from terminal or fd */
 	}
@@ -432,16 +431,16 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 	if(isatty(fd)) {
 		int i;
 
-		pass = safe_alloc(512);
-		if (!pass || (i = interactive_pass(prompt, pass, 512, timeout))) {
-			set_error("Error reading passphrase");
+		pass = safe_alloc(MAX_TTY_PASSWORD_LEN);
+		if (!pass || (i = interactive_pass(prompt, pass, MAX_TTY_PASSWORD_LEN, timeout))) {
+			log_err(cd, "Error reading passphrase from terminal.\n");
 			goto out_err;
 		}
 		if (verify || verify_if_possible) {
-			char pass_verify[512];
+			char pass_verify[MAX_TTY_PASSWORD_LEN];
 			i = interactive_pass("Verify passphrase: ", pass_verify, sizeof(pass_verify), timeout);
 			if (i || strcmp(pass, pass_verify) != 0) {
-				set_error("Passphrases do not match");
+				log_err(cd, "Passphrases do not match.\n");
 				goto out_err;
 			}
 			memset(pass_verify, 0, sizeof(pass_verify));
@@ -456,7 +455,7 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		int buflen, i;
 
 		if(verify) {
-			set_error("Can't do passphrase verification on non-tty inputs");
+			log_err(cd, "Can't do passphrase verification on non-tty inputs.\n");
 			goto out_err;
 		}
 		/* The following for control loop does an exhausting
@@ -469,13 +468,13 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		if(key_file && strcmp(key_file, "-") && read_horizon == 0) {
 			struct stat st;
 			if(stat(key_file, &st) < 0) {
-		 		set_error("Can't stat key file");
+				log_err(cd, "Failed to stat key file %s.\n", key_file);
 				goto out_err;
 			}
 			if(!S_ISREG(st.st_mode)) {
-				//		 		set_error("Can't do exhausting read on non regular files");
-				// goto out_err;
-				fprintf(stderr,"Warning: exhausting read requested, but key file is not a regular file, function might never return.\n");
+				log_err(cd, "Warning: exhausting read requested, but key file %s"
+					" is not a regular file, function might never return.\n",
+					key_file);
 			}
 		}
 		buflen = 0;
@@ -484,8 +483,7 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 				buflen += 128;
 				pass = safe_realloc(pass, buflen);
 				if (!pass) {
-					set_error("Not enough memory while "
-					          "reading passphrase");
+					log_err(cd, "Out of memory while reading passphrase.\n");
 					goto out_err;
 				}
 			}
@@ -519,17 +517,18 @@ static int _memlock_count = 0;
 int memlock_inc(struct crypt_device *ctx)
 {
 	if (!_memlock_count++) {
+		log_dbg("Locking memory.");
 		if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
-			set_error(_("WARNING!!! Possibly insecure memory. Are you root?\n"));
+			log_err(ctx, _("WARNING!!! Possibly insecure memory. Are you root?\n"));
 			_memlock_count--;
 			return 0;
 		}
 		errno = 0;
 		if (((_priority = getpriority(PRIO_PROCESS, 0)) == -1) && errno)
-			set_error(_("Cannot get process priority.\n"));
+			log_err(ctx, _("Cannot get process priority.\n"));
 		else
 			if (setpriority(PRIO_PROCESS, 0, DEFAULT_PROCESS_PRIORITY))
-				set_error(_("setpriority %u failed: %s"),
+				log_err(ctx, _("setpriority %u failed: %s"),
 					DEFAULT_PROCESS_PRIORITY, strerror(errno));
 	}
 	return _memlock_count ? 1 : 0;
@@ -538,10 +537,11 @@ int memlock_inc(struct crypt_device *ctx)
 int memlock_dec(struct crypt_device *ctx)
 {
 	if (_memlock_count && (!--_memlock_count)) {
+		log_dbg("Unlocking memory.");
 		if (munlockall())
-			set_error(_("Cannot unlock memory."));
+			log_err(ctx, _("Cannot unlock memory."));
 		if (setpriority(PRIO_PROCESS, 0, _priority))
-			set_error(_("setpriority %u failed: %s"), _priority, strerror(errno));
+			log_err(ctx, _("setpriority %u failed: %s"), _priority, strerror(errno));
 	}
 	return _memlock_count ? 1 : 0;
 }

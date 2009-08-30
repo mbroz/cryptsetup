@@ -17,6 +17,8 @@
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
 #define DEFAULT_ALIGNMENT	4096
 
+#define MAX_TTY_PASSWORD_LEN	512
+
 /* private struct crypt_options flags */
 
 #define	CRYPT_FLAG_FREE_DEVICE	(1 << 24)
@@ -46,6 +48,7 @@ void *safe_alloc(size_t size);
 void safe_free(void *data);
 void *safe_realloc(void *data, size_t size);
 char *safe_strdup(const char *s);
+void set_debug_level(int level);
 
 struct hash_backend *get_hash_backend(const char *name);
 void put_hash_backend(struct hash_backend *backend);
@@ -82,7 +85,15 @@ ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offse
 
 
 int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
-            const char *key_file, int passphrase_fd, int timeout, int how2verify);
+            const char *key_file, int passphrase_fd, int timeout, int how2verify, struct crypt_device *cd);
+
+void set_default_log(void (*log)(int class, char *msg));
+void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
+#define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
+#define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
+#define log_err(c, x...) do { \
+	logger(c, CRYPT_LOG_ERROR, __FILE__, __LINE__, x); \
+	set_error(x); } while(0)
 
 int memlock_inc(struct crypt_device *ctx);
 int memlock_dec(struct crypt_device *ctx);
