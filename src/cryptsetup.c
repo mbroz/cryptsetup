@@ -21,8 +21,9 @@ static char *opt_cipher = NULL;
 static char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
 static char *opt_key_file = NULL;
+static char *opt_master_key_file = NULL;
 static unsigned int opt_key_size = 0;
-static int opt_key_slot = -1;
+static int opt_key_slot = CRYPT_ANY_SLOT;
 static uint64_t opt_size = 0;
 static uint64_t opt_offset = 0;
 static uint64_t opt_skip = 0;
@@ -163,7 +164,6 @@ static int action_create(int reload)
 		.key_file = opt_key_file,
 		.key_size = ((opt_key_size)?opt_key_size:DEFAULT_KEY_SIZE)/8,
 		.key_slot = opt_key_slot,
-		.passphrase_fd = 0,	/* stdin */
 		.flags = 0,
 		.size = opt_size,
 		.offset = opt_offset,
@@ -247,7 +247,7 @@ static int action_status(int arg)
 	return r;
 }
 
-static int action_luksFormat(int arg)
+static int _action_luksFormat_generateMK()
 {
 	struct crypt_options options = {
 		.key_size = (opt_key_size ?: DEFAULT_LUKS_KEY_SIZE) / 8,
@@ -262,16 +262,87 @@ static int action_luksFormat(int arg)
 		.align_payload = opt_align_payload,
 		.icb = &cmd_icb,
 	};
+
+	return crypt_luksFormat(&options);
+}
+
+static int _read_mk(const char *file, char **key, int keysize)
+{
+	int fd;
+
+	*key = malloc(keysize);
+	if (!*key)
+		return -ENOMEM;
+
+	fd = open(file, O_RDONLY);
+	if (fd == -1) {
+		log_err("Cannot read keyfile %s.\n", file);
+		return -EINVAL;
+	}
+	if ((read(fd, *key, keysize) != keysize)) {
+		log_err("Cannot read %d bytes from keyfile %s.\n", keysize, file);
+		close(fd);
+		memset(*key, 0, keysize);
+		free(*key);
+		return -EINVAL;
+	}
+	close(fd);
+	return 0;
+}
+
+static int _action_luksFormat_useMK()
+{
+	int r = -EINVAL, keysize;
+	char *key = NULL, cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	struct crypt_device *cd = NULL;
+	struct crypt_params_luks1 params = {
+		.hash = opt_hash ?: DEFAULT_LUKS_HASH,
+		.data_alignment = opt_align_payload,
+	};
+
+	if (parse_into_name_and_mode(opt_cipher ?: DEFAULT_LUKS_CIPHER, cipher, cipher_mode)) {
+		log_err("No known cipher specification pattern detected.\n");
+		return -EINVAL;
+	}
+
+	keysize = (opt_key_size ?: DEFAULT_LUKS_KEY_SIZE) / 8;
+	if (_read_mk(opt_master_key_file, &key, keysize) < 0)
+		return -EINVAL;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	crypt_set_password_verify(cd, 1);
+	crypt_set_timeout(cd, opt_timeout);
+	if (opt_iteration_time)
+		crypt_set_iterarion_time(cd, opt_iteration_time);
+
+	if ((r = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, keysize, &params)))
+		goto out;
+
+	r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot, key, keysize, NULL, 0);
+out:
+
+	crypt_free(cd);
+	if (key) {
+		memset(key, 0, keysize);
+		free(key);
+	}
+	return r;
+}
+
+static int action_luksFormat(int arg)
+{
 	int r = 0; char *msg = NULL;
 
 	/* Avoid overwriting possibly wrong part of device than user requested by rejecting these options */
 	if (opt_offset || opt_skip) {
-		fprintf(stderr,"Options --offset and --skip are not supported for luksFormat.\n"); 
+		log_err("Options --offset and --skip are not supported for luksFormat.\n"); 
 		return -EINVAL;
 	}
 
-	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."), options.device) == -1) {
-		fputs(_("memory allocation error in action_luksFormat"), stderr);
+	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]) == -1) {
+		log_err(_("memory allocation error in action_luksFormat"));
 		return -ENOMEM;
 	}
 	r = yesDialog(msg);
@@ -280,7 +351,10 @@ static int action_luksFormat(int arg)
 	if (!r)
 		return -EINVAL;
 
-	return crypt_luksFormat(&options);
+	if (opt_master_key_file)
+		return _action_luksFormat_useMK();
+	else
+		return _action_luksFormat_generateMK();
 }
 
 static int action_luksOpen(int arg)
@@ -304,8 +378,8 @@ static int action_luksOpen(int arg)
 
 static int action_luksDelKey(int arg)
 {
-    fprintf(stderr,"luksDelKey is a deprecated action name.\nPlease use luksKillSlot.\n"); 
-    return action_luksKillSlot(arg);
+	log_err("luksDelKey is a deprecated action name.\nPlease use luksKillSlot.\n"); 
+	return action_luksKillSlot(arg);
 }
 
 static int action_luksKillSlot(int arg)
@@ -336,6 +410,37 @@ static int action_luksRemoveKey(int arg)
 	return crypt_luksRemoveKey(&options);
 }
 
+static int _action_luksAddKey_useMK()
+{
+	int r = -EINVAL, keysize;
+	char *key = NULL;
+	struct crypt_device *cd = NULL;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	keysize = crypt_get_volume_key_size(cd);
+	crypt_set_password_verify(cd, 1);
+	crypt_set_timeout(cd, opt_timeout);
+	if (opt_iteration_time)
+		crypt_set_iterarion_time(cd, opt_iteration_time);
+
+	if (_read_mk(opt_master_key_file, &key, keysize) < 0)
+		goto out;
+
+	r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot, key, keysize, NULL, 0);
+out:
+	crypt_free(cd);
+	if (key) {
+		memset(key, 0, keysize);
+		free(key);
+	}
+	return r;
+}
+
 static int action_luksAddKey(int arg)
 {
 	struct crypt_options options = {
@@ -349,7 +454,10 @@ static int action_luksAddKey(int arg)
 		.icb = &cmd_icb,
 	};
 
-	return crypt_luksAddKey(&options);
+	if (opt_master_key_file)
+		return _action_luksAddKey_useMK();
+	else
+		return crypt_luksAddKey(&options);
 }
 
 static int action_isLuks(int arg)
@@ -406,7 +514,7 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 
 		for(action = action_types; action->type; action++)
 			log_std("\t%s %s - %s\n", action->type, _(action->arg_desc), _(action->desc));
-
+		
 		log_std(_("\n"
 			 "<name> is the device to create under %s\n"
 			 "<device> is the encrypted device\n"
@@ -443,12 +551,12 @@ static int run_action(struct action_type *action)
 	}
 
 	if (action->required_memlock)
-		memlock_inc(NULL);
+		crypt_memory_lock(NULL, 1);
 
 	r = action->handler(action->arg);
 
 	if (action->required_memlock)
-		memlock_dec(NULL);
+		crypt_memory_lock(NULL, 0);
 
 	if (action->required_dm_backend)
 		dm_exit();
@@ -476,6 +584,7 @@ int main(int argc, char **argv)
 		{ "hash",              'h',  POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &opt_hash,              0, N_("The hash used to create the encryption key from the passphrase"),  NULL },
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE,                               &opt_verify_passphrase, 0, N_("Verifies the passphrase by asking for it twice"),                  NULL },
 		{ "key-file",          'd',  POPT_ARG_STRING,                             &opt_key_file,          0, N_("Read the key from a file (can be /dev/random)"),                   NULL },
+		{ "master-key-file",  '\0',  POPT_ARG_STRING,                             &opt_master_key_file,   0, N_("Read the volume (master) key from file."),                         NULL },
 		{ "key-size",          's',  POPT_ARG_INT    | POPT_ARGFLAG_SHOW_DEFAULT, &opt_key_size,          0, N_("The size of the encryption key"),                                  N_("BITS") },
 		{ "key-slot",          'S',  POPT_ARG_INT,                                &opt_key_slot,          0, N_("Slot number for new key (default is first free)"),      NULL },
 		{ "size",              'b',  POPT_ARG_STRING,                             &popt_tmp,              1, N_("The size of the device"),                                          N_("SECTORS") },

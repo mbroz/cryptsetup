@@ -36,8 +36,6 @@
 #define MAX_CIPHER_LEN		32
 
 /* Helper funcions provided by internal libcryptsetup objects */
-struct crypt_device;
-void crypt_set_debug_level(int level);
 void set_default_log(void (*log)(int class, char *msg));
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
