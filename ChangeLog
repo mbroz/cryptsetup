@@ -5,6 +5,9 @@
 	* Add log macros and make logging modre consitent.
 	* Move command successful messages to verbose level.
 	* Introduce --debug parameter.
+	* Move device utils code and provide context parameter (for log).
+	* Keyfile now must be provided by path, only stdin file descriptor is used (api only).
+	* Do not call isatty() on closed keyfile descriptor.
 
 2009-08-17  Milan Broz  <mbroz@redhat.com>
 	* Fix PBKDF2 speed calculation for large passhrases.

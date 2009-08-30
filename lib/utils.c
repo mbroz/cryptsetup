@@ -390,13 +390,11 @@ out_err:
  * Legend: p..prompt, v..can verify, n..newline-stop, h..read horizon
  *
  * Note: --key-file=- is interpreted as a read from a binary file (stdin)
- *
- * Returns true when more keys are available (that is when password
- * reading can be retried as for interactive terminals).
  */
 
-int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
-            const char *key_file, int passphrase_fd, int timeout, int how2verify, struct crypt_device *cd)
+void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
+            const char *key_file, int timeout, int how2verify,
+	    struct crypt_device *cd)
 {
 	int fd;
 	const int verify = how2verify & CRYPT_FLAG_VERIFY;
@@ -407,7 +405,7 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 
 	if(key_file && !strcmp(key_file, "-")) {
 		/* Allow binary reading from stdin */
-		fd = passphrase_fd;
+		fd = STDIN_FILENO;
 		newline_stop = 0;
 		read_horizon = 0;
 	} else if (key_file) {
@@ -496,15 +494,129 @@ int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		*key = pass;
 		*passLen = i;
 	}
-
-	return isatty(fd); /* Return true, when password reading can be tried on interactive fds */
+	return;
 
 out_err:
 	if(pass)
 		safe_free(pass);
 	*key = NULL;
 	*passLen = 0;
-	return 0;
+}
+
+int device_ready(struct crypt_device *cd, const char *device, int mode)
+{
+	int devfd;
+	struct stat st;
+
+	if(stat(device, &st) < 0) {
+		log_err(cd, _("Device %s doesn't exist or access denied.\n"), device);
+		return 0;
+	}
+
+	if (!mode)
+		return 1;
+
+	devfd = open(device, mode | O_DIRECT | O_SYNC);
+	if(devfd < 0) {
+		log_err(cd, _("Can't open device %s for %s%s access.\n"), device,
+			(mode & O_EXCL) ? _("exclusive ") : "",
+			(mode & O_RDWR) ? _("writable") : _("read-only"));
+		return 0;
+	}
+	close(devfd);
+
+	return 1;
+}
+
+int get_device_infos(const char *device, struct device_infos *infos, struct crypt_device *cd)
+{
+	uint64_t size;
+	unsigned long size_small;
+	int readonly = 0;
+	int ret = -1;
+	int fd;
+
+	/* Try to open read-write to check whether it is a read-only device */
+	fd = open(device, O_RDWR);
+	if (fd < 0) {
+		if (errno == EROFS) {
+			readonly = 1;
+			fd = open(device, O_RDONLY);
+		}
+	} else {
+		close(fd);
+		fd = open(device, O_RDONLY);
+	}
+	if (fd < 0) {
+		log_err(cd, _("Cannot open device: %s\n"), device);
+		return -1;
+	}
+
+#ifdef BLKROGET
+	/* If the device can be opened read-write, i.e. readonly is still 0, then
+	 * check whether BKROGET says that it is read-only. E.g. read-only loop
+	 * devices may be openend read-write but are read-only according to BLKROGET
+	 */
+	if (readonly == 0 && ioctl(fd, BLKROGET, &readonly) < 0) {
+		log_err(cd, _("BLKROGET failed on device %s.\n"), device);
+		goto out;
+	}
+#else
+#error BLKROGET not available
+#endif
+
+#ifdef BLKGETSIZE64
+	if (ioctl(fd, BLKGETSIZE64, &size) >= 0) {
+		size >>= SECTOR_SHIFT;
+		ret = 0;
+		goto out;
+	}
+#endif
+
+#ifdef BLKGETSIZE
+	if (ioctl(fd, BLKGETSIZE, &size_small) >= 0) {
+		size = (uint64_t)size_small;
+		ret = 0;
+		goto out;
+	}
+#else
+#	error Need at least the BLKGETSIZE ioctl!
+#endif
+
+	log_err(cd, _("BLKGETSIZE failed on device %s.\n"), device);
+out:
+	if (ret == 0) {
+		infos->size = size;
+		infos->readonly = readonly;
+	}
+	close(fd);
+	return ret;
+}
+
+int wipe_device_header(const char *device, int sectors)
+{
+	char *buffer;
+	int size = sectors * SECTOR_SIZE;
+	int r = -1;
+	int devfd;
+
+	devfd = open(device, O_RDWR | O_DIRECT | O_SYNC);
+	if(devfd == -1)
+		return -EINVAL;
+
+	buffer = malloc(size);
+	if (!buffer) {
+		close(devfd);
+		return -ENOMEM;
+	}
+	memset(buffer, 0, size);
+
+	r = write_blockwise(devfd, buffer, size) < size ? -EIO : 0;
+
+	free(buffer);
+	close(devfd);
+
+	return r;
 }
 
 /* MEMLOCK */

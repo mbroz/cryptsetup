@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include <libintl.h>
 #include <locale.h>
@@ -26,6 +27,8 @@
 
 #define CRYPT_FLAG_PRIVATE_MASK ((unsigned int)-1 << 24)
 
+#define at_least_one(a) ({ __typeof__(a) __at_least_one=(a); (__at_least_one)?__at_least_one:1; })
+
 struct hash_type {
 	char		*name;
 	void		*private;
@@ -37,6 +40,11 @@ struct hash_backend {
 	const char		*name;
 	struct hash_type *	(*get_hashes)(void);
 	void			(*free_hashes)(struct hash_type *hashes);
+};
+
+struct device_infos {
+	uint64_t	size;
+	int		readonly;
 };
 
 struct crypt_device;
@@ -82,10 +90,15 @@ int sector_size_for_device(const char *device);
 ssize_t write_blockwise(int fd, const void *buf, size_t count);
 ssize_t read_blockwise(int fd, void *_buf, size_t count);
 ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offset);
+int device_ready(struct crypt_device *cd, const char *device, int mode);
+int get_device_infos(const char *device, struct device_infos *infos, struct crypt_device *cd);
+int wipe_device_header(const char *device, int sectors);
 
+void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
+	     const char *key_file, int timeout, int how2verify,
+	     struct crypt_device *cd);
 
-int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
-            const char *key_file, int passphrase_fd, int timeout, int how2verify, struct crypt_device *cd);
+int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode);
 
 void set_default_log(void (*log)(int class, char *msg));
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);

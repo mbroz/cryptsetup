@@ -1,19 +1,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
+#include <stdarg.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
-#include <signal.h>
-#include <assert.h>
 
 #include "libcryptsetup.h"
-#include "internal.h"
-#include "blockdev.h"
 #include "luks.h"
 #include "internal.h"
 
@@ -22,13 +14,6 @@ struct crypt_device {
 	void (*log)(int class, const char *msg, void *usrptr);
 	void *log_usrptr;
 };
-
-struct device_infos {
-	uint64_t	size;
-	int		readonly;
-};
-
-#define at_least_one(a) ({ __typeof__(a) __at_least_one=(a); (__at_least_one)?__at_least_one:1; })
 
 /* Log helper */
 static void (*_default_log)(int class, char *msg) = NULL;
@@ -122,107 +107,7 @@ static char *process_key(struct crypt_device *cd,
 	return key;
 }
 
-static int get_device_infos(const char *device, struct device_infos *infos)
-{
-	char buf[128];
-	uint64_t size;
-	unsigned long size_small;
-	int readonly = 0;
-	int ret = -1;
-	int fd;
-
-	/* Try to open read-write to check whether it is a read-only device */
-	fd = open(device, O_RDWR);
-	if (fd < 0) {
-		if (errno == EROFS) {
-			readonly = 1;
-			fd = open(device, O_RDONLY);
-		}
-	} else {
-		close(fd);
-		fd = open(device, O_RDONLY);
-	}
-	if (fd < 0) {
-		set_error("Error opening device: %s",
-		          strerror_r(errno, buf, 128));
-		return -1;
-	}
-
-#ifdef BLKROGET
-	/* If the device can be opened read-write, i.e. readonly is still 0, then
-	 * check whether BKROGET says that it is read-only. E.g. read-only loop
-	 * devices may be openend read-write but are read-only according to BLKROGET
-	 */
-	if (readonly == 0) {
-		if (ioctl(fd, BLKROGET, &readonly) < 0) {
-			set_error("BLKROGET failed on device: %s",
-			          strerror_r(errno, buf, 128));
-			return -1;
-		}
-	}
-#else
-#error BLKROGET not available
-#endif
-
-#ifdef BLKGETSIZE64
-	if (ioctl(fd, BLKGETSIZE64, &size) >= 0) {
-		size >>= SECTOR_SHIFT;
-		ret = 0;
-		goto out;
-	}
-#endif
-
-#ifdef BLKGETSIZE
-	if (ioctl(fd, BLKGETSIZE, &size_small) >= 0) {
-		size = (uint64_t)size_small;
-		ret = 0;
-		goto out;
-	}
-#else
-#	error Need at least the BLKGETSIZE ioctl!
-#endif
-
-	set_error("BLKGETSIZE ioctl failed on device: %s",
-	          strerror_r(errno, buf, 128));
-
-out:
-	if (ret == 0) {
-		infos->size = size;
-		infos->readonly = readonly;
-	}
-	close(fd);
-	return ret;
-}
-
-static int wipe_device_header(const char *device, int sectors)
-{
-	char *buffer;
-	int size = sectors * SECTOR_SIZE;
-	int r = -1;
-	int devfd;
-
-	devfd = open(device, O_RDWR | O_DIRECT | O_SYNC);
-	if(devfd == -1) {
-		set_error("Can't wipe header on device %s", device);
-		return -EINVAL;
-	}
-
-	buffer = malloc(size);
-	if (!buffer) {
-		close(devfd);
-		return -ENOMEM;
-	}
-	memset(buffer, 0, size);
-
-	r = write_blockwise(devfd, buffer, size) < size ? -EIO : 0;
-
-	free(buffer);
-	close(devfd);
-
-	return r;
-}
-
-static int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode)
+int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode)
 {
 /* Token content stringification, see info cpp/stringification */
 #define str(s) #s
@@ -311,7 +196,7 @@ static int create_device_helper(int reload, struct crypt_options *options)
 		return -EINVAL;
 	}
 
-	if (get_device_infos(options->device, &infos) < 0)
+	if (get_device_infos(options->device, &infos, cd) < 0)
 		return -ENOTBLK;
 
 	if (!options->size) {
@@ -331,7 +216,7 @@ static int create_device_helper(int reload, struct crypt_options *options)
 		options->flags |= CRYPT_FLAG_READONLY;
 
 	get_key("Enter passphrase: ", &key, &keyLen, options->key_size,
-		options->key_file, options->passphrase_fd, options->timeout, options->flags, NULL);
+		options->key_file, options->timeout, options->flags, NULL);
 	if (!key) {
 		log_err(cd, "Key reading error");
 		return -ENOENT;
@@ -370,7 +255,7 @@ static int luks_remove_helper(struct crypt_device *cd,
 
 	if(supply_it) {
 		get_key("Enter LUKS passphrase to be deleted: ",&password,&passwordLen, 0, options->new_key_file,
-			options->passphrase_fd, options->timeout, options->flags, cd);
+			options->timeout, options->flags, cd);
 		if(!password) {
 			r = -EINVAL; goto out;
 		}
@@ -399,7 +284,7 @@ static int luks_remove_helper(struct crypt_device *cd,
 	if(options->flags & CRYPT_FLAG_VERIFY_ON_DELKEY) {
 		options->flags &= ~CRYPT_FLAG_VERIFY_ON_DELKEY;
 		get_key("Enter any remaining LUKS passphrase: ",&password,&passwordLen, 0, options->key_file,
-			options->passphrase_fd, options->timeout, options->flags, cd);
+			options->timeout, options->flags, cd);
 		if(!password) {
 			r = -EINVAL; goto out;
 		}
@@ -462,7 +347,7 @@ int crypt_resize_device(struct crypt_options *options)
 	if (r < 0)
 		return r;
 
-	if (get_device_infos(device, &infos) < 0)
+	if (get_device_infos(device, &infos, cd) < 0)
 		return -EINVAL;
 
 	if (!options->size) {
@@ -597,7 +482,7 @@ int crypt_luksFormat(struct crypt_options *options)
 	logger(options, CRYPT_LOG_ERROR, "pitr %d\n", header.keyblock[0].passwordIterations);
 #endif
 	get_key("Enter LUKS passphrase: ",&password,&passwordLen, 0, options->new_key_file,
-		options->passphrase_fd, options->timeout, options->flags, NULL);
+		options->timeout, options->flags, NULL);
 	if(!password) {
 		r = -EINVAL; goto out;
 	}
@@ -640,7 +525,7 @@ int crypt_luksOpen(struct crypt_options *options)
 	if (!LUKS_device_ready(options->device, O_RDONLY | excl))
 		return -ENOTBLK;
 
-	if (get_device_infos(options->device, &infos) < 0) {
+	if (get_device_infos(options->device, &infos, cd) < 0) {
 		log_err(cd, "Can't get device information.\n");
 		return -ENOTBLK;
 	}
@@ -659,11 +544,14 @@ start:
 		password = safe_alloc(passwordLen + 1);
 		strncpy(password, options->passphrase, passwordLen + 1);
 		tries = 0;
-	} else if(get_key(prompt, &password, &passwordLen, options->key_size, options->key_file,
-		options->passphrase_fd, options->timeout, options->flags, cd))
-		tries--;
-	else
-		tries = 0;
+	} else {
+		get_key(prompt, &password, &passwordLen, options->key_size, options->key_file,
+			options->timeout, options->flags, cd);
+		if (password)
+			tries--;
+		else
+			tries = 0;
+	}
 
 	if(!password) {
 		r = -EINVAL; goto out;
@@ -761,7 +649,6 @@ int crypt_luksAddKey(struct crypt_options *options)
                 &passwordLen, 
                 0,
                 options->key_file, 
-                options->passphrase_fd, 
                 options->timeout, 
                 options->flags & ~(CRYPT_FLAG_VERIFY | CRYPT_FLAG_VERIFY_IF_POSSIBLE), cd);
 
@@ -780,7 +667,6 @@ int crypt_luksAddKey(struct crypt_options *options)
                 &passwordLen,
                 0,
                 options->new_key_file,
-                options->passphrase_fd,
                 options->timeout, 
                 options->flags, cd);
 	if(!password) {
