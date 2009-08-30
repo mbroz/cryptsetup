@@ -33,18 +33,7 @@ struct hash_backend {
 	void			(*free_hashes)(struct hash_type *hashes);
 };
 
-struct setup_backend {
-	const char	*name;
-	int		(*init)(void);
-	void		(*exit)(void);
-	int		(*create)(int reload, struct crypt_options *options,
-			          const char *key, const char *uuid);
-	int		(*status)(int details, struct crypt_options *options,
-			          char **key);
-	int		(*remove)(int force, struct crypt_options *options);
-
-	const char *	(*dir)(void);
-};
+struct crypt_device;
 
 void set_error_va(const char *fmt, va_list va);
 void set_error(const char *fmt, ...);
@@ -60,10 +49,27 @@ int hash(const char *backend_name, const char *hash_name,
          char *result, size_t size,
          const char *passphrase, size_t sizep);
 
-struct setup_backend *get_setup_backend(const char *name);
-void put_setup_backend(struct setup_backend *backend);
-
 void hexprint(char *d, int n);
+
+/* Device mapper backend */
+const char *dm_get_dir(void);
+int dm_init(struct crypt_device *context, int check_kernel);
+void dm_exit(void);
+int dm_remove_device(const char *name, int force, uint64_t size);
+int dm_status_device(const char *name);
+int dm_query_device(const char *name,
+		    char **device,
+		    uint64_t *size,
+		    uint64_t *skip,
+		    uint64_t *offset,
+		    char **cipher,
+		    int *key_size,
+		    char **key,
+		    int *read_only);
+int dm_create_device(const char *name, const char *device, const char *cipher, const char *uuid,
+		     uint64_t size, uint64_t skip, uint64_t offset,
+		     size_t key_size, const char *key,
+		     int read_only, int reload);
 
 int sector_size_for_device(const char *device);
 ssize_t write_blockwise(int fd, const void *buf, size_t count);

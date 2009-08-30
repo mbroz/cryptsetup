@@ -103,30 +103,26 @@ int LUKS_set_key(const char *device,
 					const char *password, 
 					size_t passwordLen, 
 					struct luks_phdr *hdr, 
-					struct luks_masterkey *mk,
-					struct setup_backend *backend);
+					struct luks_masterkey *mk);
 
 int LUKS_open_key(const char *device, 
 					unsigned int keyIndex, 
 					const char *password, 
 					size_t passwordLen, 
 					struct luks_phdr *hdr, 
-					struct luks_masterkey *mk,
-					struct setup_backend *backend);
+					struct luks_masterkey *mk);
 
 int LUKS_open_any_key(const char *device, 
 					const char *password, 
 					size_t passwordLen, 
 					struct luks_phdr *hdr, 
-					struct luks_masterkey **mk,
-					struct setup_backend *backend);
+					struct luks_masterkey **mk);
 
 int LUKS_open_any_key_with_hdr(const char *device, 
 					const char *password, 
 					size_t passwordLen, 
 					struct luks_phdr *hdr, 
-					struct luks_masterkey **mk,
-					struct setup_backend *backend);
+					struct luks_masterkey **mk);
 
 
 int LUKS_del_key(const char *device, unsigned int keyIndex);
@@ -137,12 +133,12 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 			    struct luks_phdr *hdr,
 			    char *key, size_t keyLength,
 			    const char *device,
-			    unsigned int sector, struct setup_backend *backend);
+			    unsigned int sector);
 
 int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 			      struct luks_phdr *hdr,
 			      char *key, size_t keyLength,
 			      const char *device,
-			      unsigned int sector, struct setup_backend *backend);
+			      unsigned int sector);
 int LUKS_device_ready(const char *device, int mode);
 #endif

@@ -1,20 +1,10 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/sysmacros.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
 #include <libdevmapper.h>
 #include <fcntl.h>
 #include <linux/fs.h>
 
-#include "libcryptsetup.h"
 #include "internal.h"
 #include "luks.h"
 
@@ -25,8 +15,11 @@
 #define DM_CRYPT_TARGET		"crypt"
 #define RETRY_COUNT		5
 
+static int _dm_use_count = 0;
+static struct crypt_device *_context = NULL;
+
 static void set_dm_error(int level, const char *file, int line,
-                         const char *f, ...)
+			 const char *f, ...)
 {
 	va_list va;
 
@@ -40,21 +33,29 @@ static void set_dm_error(int level, const char *file, int line,
 
 static int _dm_simple(int task, const char *name);
 
-static int dm_init(void)
+int dm_init(struct crypt_device *context, int check_kernel)
 {
-	dm_log_init(set_dm_error);
-	if (!_dm_simple(DM_DEVICE_LIST_VERSIONS, "test")) {
-		set_error("Cannot communicate with device-mapper. Is the dm_mod module loaded?");
-		return -1;
+	if (!_dm_use_count++) {
+		if (check_kernel && !_dm_simple(DM_DEVICE_LIST_VERSIONS, NULL))
+			return -1;
+		dm_log_init(set_dm_error);
+		dm_log_init_verbose(10);
 	}
+
+	if (context)
+		_context = context;
 
 	return 1;	/* unsafe memory */
 }
 
-static void dm_exit(void)
+void dm_exit(void)
 {
-	dm_log_init(NULL);
-	dm_lib_release();
+	if (_dm_use_count && (!--_dm_use_count)) {
+		dm_log_init_verbose(0);
+		dm_log_init(NULL);
+		dm_lib_release();
+		_context = NULL;
+	}
 }
 
 static char *__lookup_dev(char *path, dev_t dev)
@@ -134,35 +135,29 @@ static int _dev_read_ahead(const char *dev, uint32_t *read_ahead)
 	return r;
 }
 
-static char *get_params(struct crypt_options *options, const char *key)
+static char *get_params(const char *device, uint64_t skip, uint64_t offset,
+			const char *cipher, size_t key_size, const char *key)
 {
 	char *params;
 	char *hexkey;
 	int i;
 
-	hexkey = safe_alloc(options->key_size * 2 + 1);
-	if (!hexkey) {
-		set_error("Memory allocation problem");
+	hexkey = safe_alloc(key_size * 2 + 1);
+	if (!hexkey)
 		return NULL;
-	}
 
-	for(i = 0; i < options->key_size; i++)
+	for(i = 0; i < key_size; i++)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 
-	params = safe_alloc(strlen(hexkey) + strlen(options->cipher) +
-	                    strlen(options->device) + 64);
-	if (!params) {
-		set_error("Memory allocation problem");
+	params = safe_alloc(strlen(hexkey) + strlen(cipher) + strlen(device) + 64);
+	if (!params)
 		goto out;
-	}
 
 	sprintf(params, "%s %s %" PRIu64 " %s %" PRIu64,
-	        options->cipher, hexkey, options->skip,
-	        options->device, options->offset);
+	        cipher, hexkey, skip, device, offset);
 
 out:
 	safe_free(hexkey);
-
 	return params;
 }
 
@@ -175,7 +170,7 @@ static int _dm_simple(int task, const char *name)
 	if (!(dmt = dm_task_create(task)))
 		return 0;
 
-	if (!dm_task_set_name(dmt, name))
+	if (name && !dm_task_set_name(dmt, name))
 		goto out;
 
 	r = dm_task_run(dmt);
@@ -185,7 +180,7 @@ static int _dm_simple(int task, const char *name)
 	return r;
 }
 
-static int _error_device(struct crypt_options *options)
+static int _error_device(const char *name, size_t size)
 {
 	struct dm_task *dmt;
 	int r = 0;
@@ -193,10 +188,10 @@ static int _error_device(struct crypt_options *options)
 	if (!(dmt = dm_task_create(DM_DEVICE_RELOAD)))
 		return 0;
 
-	if (!dm_task_set_name(dmt, options->name))
+	if (!dm_task_set_name(dmt, name))
 		goto error;
 
-	if (!dm_task_add_target(dmt, UINT64_C(0), options->size, "error", ""))
+	if (!dm_task_add_target(dmt, UINT64_C(0), size, "error", ""))
 		goto error;
 
 	if (!dm_task_set_ro(dmt))
@@ -208,8 +203,8 @@ static int _error_device(struct crypt_options *options)
 	if (!dm_task_run(dmt))
 		goto error;
 
-	if (!_dm_simple(DM_DEVICE_RESUME, options->name)) {
-		_dm_simple(DM_DEVICE_CLEAR, options->name);
+	if (!_dm_simple(DM_DEVICE_RESUME, name)) {
+		_dm_simple(DM_DEVICE_CLEAR, name);
 		goto error;
 	}
 
@@ -220,10 +215,13 @@ error:
 	return r;
 }
 
-static int _dm_remove(struct crypt_options *options, int force)
+int dm_remove_device(const char *name, int force, uint64_t size)
 {
 	int r = -EINVAL;
 	int retries = force ? RETRY_COUNT : 1;
+
+	if (!name || (force && !size))
+		return -EINVAL;
 
 	/* If force flag is set, replace device with error, read-only target.
 	 * it should stop processes from reading it and also removed underlying
@@ -234,14 +232,15 @@ static int _dm_remove(struct crypt_options *options, int force)
 	 * it is bug - no other process should try touch it (e.g. udev).
 	 */
 	if (force) {
-		 _error_device(options);
+		 _error_device(name, size);
 		retries = RETRY_COUNT;
 	}
 
 	do {
-		r = _dm_simple(DM_DEVICE_REMOVE, options->name) ? 0 : -EINVAL;
-		if (--retries && r)
+		r = _dm_simple(DM_DEVICE_REMOVE, name) ? 0 : -EINVAL;
+		if (--retries && r) {
 			sleep(1);
+		}
 	} while (r == -EINVAL && retries);
 
 	dm_task_update_nodes();
@@ -249,8 +248,17 @@ static int _dm_remove(struct crypt_options *options, int force)
 	return r;
 }
 
-static int dm_create_device(int reload, struct crypt_options *options,
-			    const char *key, const char *uuid)
+int dm_create_device(const char *name,
+		     const char *device,
+		     const char *cipher,
+		     const char *uuid,
+		     uint64_t size,
+		     uint64_t skip,
+		     uint64_t offset,
+		     size_t key_size,
+		     const char *key,
+		     int read_only,
+		     int reload)
 {
 	struct dm_task *dmt = NULL;
 	struct dm_task *dmt_query = NULL;
@@ -261,7 +269,7 @@ static int dm_create_device(int reload, struct crypt_options *options,
 	int r = -EINVAL;
 	uint32_t read_ahead = 0;
 
-	params = get_params(options, key);
+	params = get_params(device, skip, offset, cipher, key_size, key);
 	if (!params)
 		goto out_no_removal;
  
@@ -273,31 +281,31 @@ static int dm_create_device(int reload, struct crypt_options *options,
 
 	if (!(dmt = dm_task_create(reload ? DM_DEVICE_RELOAD
 	                                  : DM_DEVICE_CREATE)))
-		goto out;
-	if (!dm_task_set_name(dmt, options->name))
-		goto out;
-	if (options->flags & CRYPT_FLAG_READONLY && !dm_task_set_ro(dmt))
-                goto out;
-	if (!dm_task_add_target(dmt, 0, options->size, DM_CRYPT_TARGET, params))
-		goto out;
+		goto out_no_removal;
+	if (!dm_task_set_name(dmt, name))
+		goto out_no_removal;
+	if (read_only && !dm_task_set_ro(dmt))
+		goto out_no_removal;
+	if (!dm_task_add_target(dmt, 0, size, DM_CRYPT_TARGET, params))
+		goto out_no_removal;
 
 #ifdef DM_READ_AHEAD_MINIMUM_FLAG
-	if (_dev_read_ahead(options->device, &read_ahead) &&
+	if (_dev_read_ahead(device, &read_ahead) &&
 	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
-		goto out;
+		goto out_no_removal;
 #endif
 
 	if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
-		goto out;
+		goto out_no_removal;
 
 	if (!dm_task_run(dmt))
-		goto out;
+		goto out_no_removal;
 
 	if (reload) {
 		dm_task_destroy(dmt);
 		if (!(dmt = dm_task_create(DM_DEVICE_RESUME)))
 			goto out;
-		if (!dm_task_set_name(dmt, options->name))
+		if (!dm_task_set_name(dmt, name))
 			goto out;
 		if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
 			goto out;
@@ -307,8 +315,6 @@ static int dm_create_device(int reload, struct crypt_options *options,
 
 	if (!dm_task_get_info(dmt, &dmi))
 		goto out;
-	if (dmi.read_only)
-		options->flags |= CRYPT_FLAG_READONLY;
 
 	r = 0;
 out:
@@ -316,7 +322,7 @@ out:
 		if (get_error())
 			error = strdup(get_error());
 
-		_dm_remove(options, 0);
+		dm_remove_device(name, 0, 0);
 
 		if (error) {
 			set_error(error);
@@ -335,8 +341,7 @@ out_no_removal:
 	return r;
 }
 
-static int dm_query_device(int details, struct crypt_options *options,
-                           char **key)
+int dm_status_device(const char *name)
 {
 	struct dm_task *dmt;
 	struct dm_info dmi;
@@ -345,10 +350,63 @@ static int dm_query_device(int details, struct crypt_options *options,
 	void *next = NULL;
 	int r = -EINVAL;
 
-	if (!(dmt = dm_task_create(details ? DM_DEVICE_TABLE
-	                                   : DM_DEVICE_STATUS)))
+	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
+		return -EINVAL;
+
+	if (!dm_task_set_name(dmt, name)) {
+		r = -EINVAL;
 		goto out;
-	if (!dm_task_set_name(dmt, options->name))
+	}
+
+	if (!dm_task_run(dmt)) {
+		r = -ENODEV;
+		goto out;
+	}
+
+	if (!dm_task_get_info(dmt, &dmi)) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (!dmi.exists) {
+		r = -ENODEV;
+		goto out;
+	}
+
+	next = dm_get_next_target(dmt, next, &start, &length,
+	                          &target_type, &params);
+	if (!target_type || strcmp(target_type, DM_CRYPT_TARGET) != 0 ||
+	    start != 0 || next)
+		r = -EINVAL;
+	else
+		r = (dmi.open_count > 0);
+out:
+	if (dmt)
+		dm_task_destroy(dmt);
+
+	return r;
+}
+
+int dm_query_device(const char *name,
+		    char **device,
+		    uint64_t *size,
+		    uint64_t *skip,
+		    uint64_t *offset,
+		    char **cipher,
+		    int *key_size,
+		    char **key,
+		    int *read_only)
+{
+	struct dm_task *dmt;
+	struct dm_info dmi;
+	uint64_t start, length, val64;
+	char *target_type, *params, *rcipher, *key_, *rdevice, *endp, buffer[3];
+	void *next = NULL;
+	int i, r = -EINVAL;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
+		goto out;
+	if (!dm_task_set_name(dmt, name))
 		goto out;
 	r = -ENODEV;
 	if (!dm_task_run(dmt))
@@ -369,116 +427,77 @@ static int dm_query_device(int details, struct crypt_options *options,
 	    start != 0 || next)
 		goto out;
 
-	options->hash = NULL;
-	options->cipher = NULL;
-	options->offset = 0;
-	options->skip = 0;
-	options->size = length;
-	if (details) {
-		char *cipher, *key_, *device;
-		uint64_t val64;
+	if (size)
+		*size = length;
 
-		set_error("Invalid dm table");
+	rcipher = strsep(&params, " ");
+	/* cipher */
+	if (cipher)
+		*cipher = strdup(rcipher);
 
-		cipher = strsep(&params, " ");
-		key_ = strsep(&params, " ");
-		if (!params)
+	/* skip */
+	key_ = strsep(&params, " ");
+	if (!params)
+		goto out;
+	val64 = strtoull(params, &params, 10);
+	if (*params != ' ')
+		goto out;
+	params++;
+	if (skip)
+		*skip = val64;
+
+	/* device */
+	rdevice = strsep(&params, " ");
+	if (device)
+		*device = lookup_dev(rdevice);
+
+	/*offset */
+	if (!params)
+		goto out;
+	val64 = strtoull(params, &params, 10);
+	if (*params)
+		goto out;
+	if (offset)
+		*offset = val64;
+
+	/* key_size */
+	if (key_size)
+		*key_size = strlen(key_) / 2;
+
+	/* key */
+	if (key_size && key) {
+		*key = safe_alloc(*key_size);
+		if (!*key) {
+			r = -ENOMEM;
 			goto out;
+		}
 
-		val64 = strtoull(params, &params, 10);
-		if (*params != ' ')
-			goto out;
-		params++;
-		options->skip = val64;
-
-		device = strsep(&params, " ");
-		if (!params)
-			goto out;
-
-		val64 = strtoull(params, &params, 10);
-		if (*params)
-			goto out;
-		options->offset = val64;
-
-		options->cipher = strdup(cipher);
-		options->key_size = strlen(key_) / 2;
-		if (key) {
-			char buffer[3];
-			char *endp;
-			int i;
-
-			*key = safe_alloc(options->key_size);
-			if (!*key) {
-				set_error("Out of memory");
-				r = -ENOMEM;
+		buffer[2] = '\0';
+		for(i = 0; i < *key_size; i++) {
+			memcpy(buffer, &key_[i * 2], 2);
+			(*key)[i] = strtoul(buffer, &endp, 16);
+			if (endp != &buffer[2]) {
+				safe_free(key);
+				*key = NULL;
 				goto out;
 			}
-
-			buffer[2] = '\0';
-			for(i = 0; i < options->key_size; i++) {
-				memcpy(buffer, &key_[i * 2], 2);
-				(*key)[i] = strtoul(buffer, &endp, 16);
-				if (endp != &buffer[2]) {
-					safe_free(key);
-					*key = NULL;
-					goto out;
-				}
-			}
 		}
-		memset(key_, 0, strlen(key_));
-		options->device = lookup_dev(device);
-
-		set_error(NULL);
 	}
+	memset(key_, 0, strlen(key_));
+
+	/* read_only */
+	if (read_only)
+		*read_only = dmi.read_only;
 
 	r = (dmi.open_count > 0);
-
 out:
 	if (dmt)
 		dm_task_destroy(dmt);
-	if (r >= 0) {
-		if (options->device)
-			options->flags |= CRYPT_FLAG_FREE_DEVICE;
-		if (options->cipher)
-			options->flags |= CRYPT_FLAG_FREE_CIPHER;
-		options->flags &= ~CRYPT_FLAG_READONLY;
-		if (dmi.read_only)
-			options->flags |= CRYPT_FLAG_READONLY;
-	} else {
-		if (options->device) {
-			free((char *)options->device);
-			options->device = NULL;
-			options->flags &= ~CRYPT_FLAG_FREE_DEVICE;
-		}
-		if (options->cipher) {
-			free((char *)options->cipher);
-			options->cipher = NULL;
-			options->flags &= ~CRYPT_FLAG_FREE_CIPHER;
-		}
-	}
+
 	return r;
 }
 
-static int dm_remove_device(int force, struct crypt_options *options)
-{
-	if (!options || !options->name)
-		return -EINVAL;
-
-	return _dm_remove(options, force);;
-}
-
-
-static const char *dm_get_dir(void)
+const char *dm_get_dir(void)
 {
 	return dm_dir();
 }
-
-struct setup_backend setup_libdevmapper_backend = {
-	.name = "dm-crypt",
-	.init = dm_init,
-	.exit = dm_exit,
-	.create = dm_create_device,
-	.status = dm_query_device,
-	.remove = dm_remove_device,
-	.dir = dm_get_dir
-};

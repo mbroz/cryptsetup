@@ -22,7 +22,6 @@ struct device_infos {
 };
 
 static int memory_unsafe = 0;
-static char *default_backend = NULL;
 
 #define at_least_one(a) ({ __typeof__(a) __at_least_one=(a); (__at_least_one)?__at_least_one:1; })
 
@@ -46,7 +45,7 @@ static void hexprintICB(struct crypt_options *options, int class, char *d, int n
 		logger(options, class, "%02hhx ", (char)d[i]);
 }
 
-static int setup_enter(struct setup_backend *backend, void (*log)(int, char *))
+static int setup_enter(void (*log)(int, char *))
 {
 	int r;
 
@@ -63,22 +62,11 @@ static int setup_enter(struct setup_backend *backend, void (*log)(int, char *))
 
 	set_error(NULL);
 
-	if (backend) {
-		r = backend->init();
-		if (r < 0)
-			return r;
-		if (r > 0)
-			memory_unsafe = 1;
-	}
-
 	return 0;
 }
 
-static int setup_leave(struct setup_backend *backend)
+static int setup_leave(void)
 {
-	if (backend)
-		backend->exit();
-
 	/* dangerous, we can't wipe all the memory */
 	if (!memory_unsafe)
 		munlockall();
@@ -291,19 +279,15 @@ static int keyslot_from_option(int keySlotOption, struct luks_phdr *hdr, struct 
         }
 }
 
-static int __crypt_create_device(int reload, struct setup_backend *backend,
-                                 struct crypt_options *options)
+static int __crypt_create_device(int reload, struct crypt_options *options)
 {
-	struct crypt_options tmp = {
-		.name = options->name,
-	};
 	struct device_infos infos;
 	char *key = NULL;
 	unsigned int keyLen;
 	char *processed_key = NULL;
 	int r;
 
-	r = backend->status(0, &tmp, NULL);
+	r = dm_status_device(options->name);
 	if (reload) {
 		if (r < 0)
 			return r;
@@ -361,40 +345,53 @@ static int __crypt_create_device(int reload, struct setup_backend *backend,
 		return -ENOENT;
 	}
 
-	r = backend->create(reload, options, processed_key, NULL);
+	r = dm_create_device(options->name, options->device, options->cipher,
+			     NULL, options->size, options->skip, options->offset,
+			     options->key_size, processed_key,
+			     options->flags & CRYPT_FLAG_READONLY, reload);
 
 	safe_free(processed_key);
 
 	return r;
 }
 
-static int __crypt_query_device(int details, struct setup_backend *backend,
-                                struct crypt_options *options)
+static int __crypt_query_device(int details, struct crypt_options *options)
 {
-	int r = backend->status(details, options, NULL);
+	int read_only, r;
+
+	r = dm_status_device(options->name);
 	if (r == -ENODEV)
 		return 0;
-	else if (r >= 0)
-		return 1;
-	else
-		return r;
-}
 
-static int __crypt_resize_device(int details, struct setup_backend *backend,
-                                struct crypt_options *options)
-{
-	struct crypt_options tmp = {
-		.name = options->name,
-	};
-	struct device_infos infos;
-	char *key = NULL;
-	int r;
+	r = dm_query_device(options->name, (char **)&options->device, &options->size,
+			    &options->skip, &options->offset, (char **)&options->cipher,
+			    &options->key_size, NULL, &read_only);
 
-	r = backend->status(1, &tmp, &key);
 	if (r < 0)
 		return r;
 
-	if (get_device_infos(tmp.device, &infos) < 0)
+	if (read_only)
+		options->flags |= CRYPT_FLAG_READONLY;
+
+	options->flags |= CRYPT_FLAG_FREE_DEVICE;
+	options->flags |= CRYPT_FLAG_FREE_CIPHER;
+
+	return 1;
+}
+
+static int __crypt_resize_device(int details, struct crypt_options *options)
+{
+	char *device, *cipher, *key = NULL;
+	uint64_t size, skip, offset;
+	int key_size, read_only, r;
+	struct device_infos infos;
+
+	r = dm_query_device(options->name, &device, &size, &skip, &offset,
+			    &cipher, &key_size, &key, &read_only);
+	if (r < 0)
+		return r;
+
+	if (get_device_infos(device, &infos) < 0)
 		return -EINVAL;
 
 	if (!options->size) {
@@ -403,30 +400,32 @@ static int __crypt_resize_device(int details, struct setup_backend *backend,
 			set_error("Not a block device");
 			return -ENOTBLK;
 		}
-		if (options->size <= tmp.offset) {
+		if (options->size <= offset) {
 			set_error("Invalid offset");
 			return -EINVAL;
 		}
-		options->size -= tmp.offset;
+		options->size -= offset;
 	}
-	tmp.size = options->size;
+	size = options->size;
 
 	if (infos.readonly)
 		options->flags |= CRYPT_FLAG_READONLY;
 
-	r = backend->create(1, &tmp, key, NULL);
+	r = dm_create_device(options->name, device, cipher, NULL, size, skip, offset,
+			     key_size, key, read_only, 1);
 
 	safe_free(key);
+	free(cipher);
+	free(device);
 
 	return r;
 }
 
-static int __crypt_remove_device(int arg, struct setup_backend *backend,
-                                 struct crypt_options *options)
+static int __crypt_remove_device(int arg, struct crypt_options *options)
 {
 	int r;
 
-	r = backend->status(0, options, NULL);
+	r = dm_status_device(options->name);
 	if (r < 0)
 		return r;
 	if (r > 0) {
@@ -434,10 +433,10 @@ static int __crypt_remove_device(int arg, struct setup_backend *backend,
 		return -EBUSY;
 	}
 
-	return backend->remove(0, options);
+	return dm_remove_device(options->name, 0, 0);
 }
 
-static int __crypt_luks_format(int arg, struct setup_backend *backend, struct crypt_options *options)
+static int __crypt_luks_format(int arg, struct crypt_options *options)
 {
 	int r;
 
@@ -507,7 +506,7 @@ static int __crypt_luks_format(int arg, struct setup_backend *backend, struct cr
 	if(r < 0) goto out;
 
 	/* Set key, also writes phdr */
-	r = LUKS_set_key(options->device, keyIndex, password, passwordLen, &header, mk, backend);
+	r = LUKS_set_key(options->device, keyIndex, password, passwordLen, &header, mk);
 	if(r < 0) goto out; 
 
 	r = 0;
@@ -517,7 +516,7 @@ out:
 	return r;
 }
 
-static int __crypt_luks_open(int arg, struct setup_backend *backend, struct crypt_options *options)
+static int __crypt_luks_open(int arg, struct crypt_options *options)
 {
 	struct luks_masterkey *mk=NULL;
 	struct luks_phdr hdr;
@@ -525,14 +524,11 @@ static int __crypt_luks_open(int arg, struct setup_backend *backend, struct cryp
 	char *password;
 	unsigned int passwordLen;
 	struct device_infos infos;
-	struct crypt_options tmp = {
-		.name = options->name,
-	};
 	char *dmCipherSpec = NULL;
 	int r, tries = options->tries;
 	int excl = (options->flags & CRYPT_FLAG_NON_EXCLUSIVE_ACCESS) ? 0 : O_EXCL ;
 
-	r = backend->status(0, &tmp, NULL);
+	r = dm_status_device(options->name);
 	if (r >= 0) {
 		set_error("Device %s already exists.", options->name);
 		return -EEXIST;
@@ -569,7 +565,7 @@ start:
 		r = -EINVAL; goto out;
 	}
 
-        r = LUKS_open_any_key(options->device, password, passwordLen, &hdr, &mk, backend);
+        r = LUKS_open_any_key(options->device, password, passwordLen, &hdr, &mk);
 	if (r == -EPERM)
 		set_error("No key available with this passphrase.\n");
 	if (r < 0)
@@ -599,7 +595,10 @@ start:
 	options->size -= options->offset;
 	/* FIXME: code allows multiple crypt mapping, cannot use uuid then.
 	 * anyway, it is dangerous and can corrupt data. Remove it in next version! */
-	r = backend->create(0, options, mk->key, excl ? hdr.uuid : NULL);
+	r = dm_create_device(options->name, options->device, options->cipher,
+			     excl ? hdr.uuid : NULL, options->size,
+			     0, options->offset, mk->keyLength, mk->key,
+			     options->flags & CRYPT_FLAG_READONLY, 0);
 
  out2:
 	free(dmCipherSpec);
@@ -616,7 +615,7 @@ start:
 	return r;
 }
 
-static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct crypt_options *options)
+static int __crypt_luks_add_key(int arg, struct crypt_options *options)
 {
 	struct luks_masterkey *mk=NULL;
 	struct luks_phdr hdr;
@@ -650,7 +649,7 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
 	if(!password) {
 		r = -EINVAL; goto out;
 	}
-	r = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk, backend);
+	r = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk);
 	if(r < 0) {
 	        options->icb->log(CRYPT_LOG_ERROR,"No key available with this passphrase.\n");
 		r = -EPERM; goto out;
@@ -675,7 +674,7 @@ static int __crypt_luks_add_key(int arg, struct setup_backend *backend, struct c
 	if (r < 0) goto out;
 	hdr.keyblock[keyIndex].passwordIterations = at_least_one(PBKDF2perSecond * ((float)options->iteration_time / 1000));
 
-	r = LUKS_set_key(device, keyIndex, password, passwordLen, &hdr, mk, backend);
+	r = LUKS_set_key(device, keyIndex, password, passwordLen, &hdr, mk);
 	if(r < 0) goto out;
 
 	r = 0;
@@ -685,7 +684,7 @@ out:
 	return r;
 }
 
-static int luks_remove_helper(int arg, struct setup_backend *backend, struct crypt_options *options, int supply_it)
+static int luks_remove_helper(int arg, struct crypt_options *options, int supply_it)
 {
 	struct luks_masterkey *mk;
 	struct luks_phdr hdr;
@@ -706,7 +705,7 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
 			r = -EINVAL; goto out;
 		}
 
-		keyIndex = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk, backend);
+		keyIndex = LUKS_open_any_key(device, password, passwordLen, &hdr, &mk);
 		if(keyIndex < 0) {
 			options->icb->log(CRYPT_LOG_ERROR,"No remaining key available with this passphrase.\n");
 			r = -EPERM; goto out;
@@ -743,7 +742,7 @@ static int luks_remove_helper(int arg, struct setup_backend *backend, struct cry
 		if(!last_slot)
 			hdr.keyblock[keyIndex].active = LUKS_KEY_DISABLED;
 
-		openedIndex = LUKS_open_any_key_with_hdr(device, password, passwordLen, &hdr, &mk, backend);
+		openedIndex = LUKS_open_any_key_with_hdr(device, password, passwordLen, &hdr, &mk);
                 /* Clean up */
                 if (openedIndex >= 0) {
                         LUKS_dealloc_masterkey(mk);
@@ -764,40 +763,28 @@ out:
 	return r;
 }
 
-static int __crypt_luks_kill_slot(int arg, struct setup_backend *backend, struct crypt_options *options) {
-	return luks_remove_helper(arg, backend, options, 0);
+static int __crypt_luks_kill_slot(int arg, struct crypt_options *options) {
+	return luks_remove_helper(arg, options, 0);
 }
 
-static int __crypt_luks_remove_key(int arg, struct setup_backend *backend, struct crypt_options *options) {
-	return luks_remove_helper(arg, backend, options, 1);
+static int __crypt_luks_remove_key(int arg, struct crypt_options *options) {
+	return luks_remove_helper(arg, options, 1);
 }
 
 
-static int crypt_job(int (*job)(int arg, struct setup_backend *backend,
-                                struct crypt_options *options),
+static int crypt_job(int (*job)(int arg, struct crypt_options *options),
                      int arg, struct crypt_options *options)
 {
-	struct setup_backend *backend;
 	int r;
 
-	backend = get_setup_backend(default_backend);
-
-	if (setup_enter(backend,options->icb->log) < 0) {
+	if (setup_enter(options->icb->log) < 0) {
 		r = -ENOSYS;
 		goto out;
 	}
 
-	if (!backend) {
-		set_error("No setup backend available");
-		r = -ENOSYS;
-		goto out;
-	}
-
-	r = job(arg, backend, options);
+	r = job(arg, options);
 out:
-	setup_leave(backend);
-	if (backend)
-		put_setup_backend(backend);
+	setup_leave();
 
 	if (r >= 0)
 		set_error(NULL);
@@ -948,33 +935,7 @@ void crypt_put_options(struct crypt_options *options)
 	}
 }
 
-void crypt_set_default_backend(const char *backend)
-{
-	if (default_backend)
-		free(default_backend);
-	if (backend) 
-		default_backend = strdup(backend);
-	else
-		default_backend = NULL;
-}
-
 const char *crypt_get_dir(void)
 {
-	struct setup_backend *backend;
-	const char *dir;
-
-	backend = get_setup_backend(default_backend);
-	if (!backend)
-		return NULL;
-
-	dir = backend->dir();
-
-	put_setup_backend(backend);
-
-	return dir;
+	return dm_get_dir();
 }
-
-// Local Variables:
-// c-basic-offset: 8
-// indent-tabs-mode: nil
-// End:

@@ -26,10 +26,12 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
 	ctype.h unistd.h locale.h)
 
-AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR('You need the uuid library (from e2fsprogs)')])
+AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR('You need the uuid library')])
+AC_CHECK_HEADER(libdevmapper.h,,[AC_MSG_ERROR('You need the device-mapper library')])
 
 saved_LIBS="$LIBS"
-AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR('You need the uuid library (from e2fsprogs)')])
+AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR('You need the uuid library')])
+AC_CHECK_LIB(devmapper, dm_task_set_name,,[AC_MSG_ERROR('You need the device-mapper library')])
 UUID_LIBS="$LIBS"
 LIBS="$saved_LIBS"
 AC_SUBST(UUID_LIBS)
@@ -91,30 +93,24 @@ AM_CONDITIONAL(SHARED_LIBGCRYPT, test x$build_shared = xyes)
 AC_ARG_ENABLE(selinux,
 [  --disable-selinux       disable selinux support [[default=auto]]],[], [])
 
-MODULE_HELPER(libdevmapper,
-[  --enable-libdevmapper   enable dm-crypt backend through libdevmapper
-                          [[default=auto]]],auto,[
-	have_module=yes
-	saved_LIBS="$LIBS"
-	if test "x$enable_selinux" != xno; then
-		AC_CHECK_LIB(sepol, sepol_bool_set)
-		AC_CHECK_LIB(selinux, is_selinux_enabled)
-		# Check if we need -pthread with --enable-static and selinux
-		if test x$build_static = xyes; then
-			saved_LIBS2="$LIBS"
-			LIBS="$LIBS -static"
-			AC_SEARCH_LIBS([pthread_mutex_lock], [pthread],
-				[test "$ac_cv_search_pthread_mutex_lock" = "none required" || LIB_PTHREAD=-lpthread])
-			LIBS="$saved_LIBS2"
-		fi
+saved_LIBS="$LIBS"
+if test "x$enable_selinux" != xno; then
+	AC_CHECK_LIB(sepol, sepol_bool_set)
+	AC_CHECK_LIB(selinux, is_selinux_enabled)
+	# Check if we need -pthread with --enable-static and selinux
+	if test x$build_static = xyes; then
+		saved_LIBS2="$LIBS"
+		LIBS="$LIBS -static"
+		AC_SEARCH_LIBS([pthread_mutex_lock], [pthread],
+			[test "$ac_cv_search_pthread_mutex_lock" = "none required" || LIB_PTHREAD=-lpthread])
+		LIBS="$saved_LIBS2"
 	fi
-	AC_CHECK_LIB(devmapper, dm_task_set_name,,unset have_module)
-	AC_CHECK_HEADER(libdevmapper.h,,unset have_module)
-	LIBDEVMAPPER_LIBS="$LIBS $LIB_PTHREAD"
-	LIBS="$saved_LIBS"
-	AC_SUBST(LIBDEVMAPPER_LIBS)
-	AC_SUBST(LIBDEVMAPPER_CFLAGS)
-])
+fi
+LIBDEVMAPPER_LIBS="$LIBS $LIB_PTHREAD"
+LIBS="$saved_LIBS"
+AC_SUBST(LIBDEVMAPPER_LIBS)
+AC_SUBST(LIBDEVMAPPER_CFLAGS)
+
 AM_CONDITIONAL(BUILD_LIBDEVMAPPER, test x$build_static = xyes)
 AM_CONDITIONAL(SHARED_LIBDEVMAPPER, test x$build_shared = xyes)
 

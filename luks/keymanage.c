@@ -223,8 +223,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 
 int LUKS_set_key(const char *device, unsigned int keyIndex,
 		 const char *password, size_t passwordLen,
-		 struct luks_phdr *hdr, struct luks_masterkey *mk,
-		 struct setup_backend *backend)
+		 struct luks_phdr *hdr, struct luks_masterkey *mk)
 {
 	char derivedKey[hdr->keyBytes];
 	char *AfKey;
@@ -268,8 +267,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 				    derivedKey,
 				    hdr->keyBytes,
 				    device,
-				    hdr->keyblock[keyIndex].keyMaterialOffset,
-				    backend);
+				    hdr->keyblock[keyIndex].keyMaterialOffset);
 	if(r < 0) {
 		if(!get_error())
 			set_error("Failed to write to key storage");
@@ -293,8 +291,7 @@ int LUKS_open_key(const char *device,
 		  const char *password,
 		  size_t passwordLen,
 		  struct luks_phdr *hdr,
-		  struct luks_masterkey *mk,
-		  struct setup_backend *backend)
+		  struct luks_masterkey *mk)
 {
 	char derivedKey[hdr->keyBytes];
 	char *AfKey;
@@ -324,8 +321,7 @@ int LUKS_open_key(const char *device,
 				      derivedKey,
 				      hdr->keyBytes,
 				      device,
-				      hdr->keyblock[keyIndex].keyMaterialOffset,
-				      backend);
+				      hdr->keyblock[keyIndex].keyMaterialOffset);
 	if(r < 0) goto out;
 
 	r = AF_merge(AfKey,mk->key,mk->keyLength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
@@ -353,30 +349,28 @@ int LUKS_open_any_key(const char *device,
 		      const char *password, 
 		      size_t passwordLen,
 		      struct luks_phdr *hdr, 
-		      struct luks_masterkey **mk,
-		      struct setup_backend *backend)
+		      struct luks_masterkey **mk)
 {
 	int r;
 
 	r = LUKS_read_phdr(device, hdr);
 	if(r < 0)
 		return r;
-	return LUKS_open_any_key_with_hdr(device,password,passwordLen,hdr,mk,backend);
+	return LUKS_open_any_key_with_hdr(device,password,passwordLen,hdr,mk);
 }
 
 int LUKS_open_any_key_with_hdr(const char *device, 
 		      const char *password, 
 		      size_t passwordLen,
 		      struct luks_phdr *hdr, 
-		      struct luks_masterkey **mk,
-		      struct setup_backend *backend)
+		      struct luks_masterkey **mk)
 {
 	unsigned int i;
 	int r;
 
 	*mk=LUKS_alloc_masterkey(hdr->keyBytes);
 	for(i=0; i<LUKS_NUMKEYS; i++) {
-		r = LUKS_open_key(device, i, password, passwordLen, hdr, *mk, backend);
+		r = LUKS_open_key(device, i, password, passwordLen, hdr, *mk);
 		if(r == 0)
 			return i;
 
