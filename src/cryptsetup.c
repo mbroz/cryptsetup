@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <assert.h>
 
 #include <libcryptsetup.h>
@@ -52,28 +53,31 @@ static int action_luksDump(int arg);
 
 static struct action_type {
 	const char *type;
- 	int (*handler)(int);
+	int (*handler)(int);
 	int arg;
 	int required_action_argc;
+	int required_dm_backend;
+	int required_memlock;
+	int show_status;
 	const char *arg_desc;
 	const char *desc;
 } action_types[] = {
-	{ "create",	action_create, 0, 2, N_("<name> <device>"), N_("create device") },
-	{ "remove",	action_remove, 0, 1, N_("<name>"), N_("remove device") },
-	{ "resize",	action_resize, 0, 1, N_("<name>"), N_("resize active device") },
-	{ "status",	action_status, 0, 1, N_("<name>"), N_("show device status") },
-	{ "luksFormat",	action_luksFormat, 0, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
-	{ "luksOpen",	action_luksOpen, 0, 2, N_("<device> <name> "), N_("open LUKS device as mapping <name>") },
-	{ "luksAddKey",	action_luksAddKey, 0, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
-	{ "luksRemoveKey", action_luksRemoveKey, 0, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
-	{ "luksKillSlot",  action_luksKillSlot, 0, 2, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
-	{ "luksUUID",	action_luksUUID, 0, 1, N_("<device>"), N_("print UUID of LUKS device") },
-	{ "isLuks",	action_isLuks, 0, 1, N_("<device>"), N_("tests <device> for LUKS partition header") },
-	{ "luksClose",	action_remove, 0, 1, N_("<name>"), N_("remove LUKS mapping") },
-	{ "luksDump",	action_luksDump, 0, 1, N_("<device>"), N_("dump LUKS partition information") },
-	{ "luksDelKey",  action_luksDelKey, 0, 2, N_("<device> <key slot>"), N_("identical to luksKillSlot - DEPRECATED - see man page") },
-	{ "reload",	action_create, 1, 2, N_("<name> <device>"), N_("modify active device - DEPRECATED - see man page") },
-	{ NULL, NULL, 0, 0, NULL }
+	{ "create",	action_create,		0, 2, 1, 1, 1, N_("<name> <device>"),N_("create device") },
+	{ "remove",	action_remove,		0, 1, 1, 0, 1, N_("<name>"), N_("remove device") },
+	{ "resize",	action_resize,		0, 1, 1, 1, 1, N_("<name>"), N_("resize active device") },
+	{ "status",	action_status,		0, 1, 1, 0, 1, N_("<name>"), N_("show device status") },
+	{ "luksFormat", action_luksFormat,	0, 1, 1, 1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
+	{ "luksOpen",	action_luksOpen,	0, 2, 1, 1, 1, N_("<device> <name> "), N_("open LUKS device as mapping <name>") },
+	{ "luksAddKey",	action_luksAddKey,	0, 1, 1, 1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
+	{ "luksRemoveKey",action_luksRemoveKey,	0, 1, 1, 1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
+	{ "luksKillSlot",  action_luksKillSlot, 0, 2, 1, 1, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
+	{ "luksUUID",	action_luksUUID,	0, 1, 0, 0, 1, N_("<device>"), N_("print UUID of LUKS device") },
+	{ "isLuks",	action_isLuks,		0, 1, 0, 0, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
+	{ "luksClose",	action_remove,		0, 1, 1, 0, 1, N_("<name>"), N_("remove LUKS mapping") },
+	{ "luksDump",	action_luksDump,	0, 1, 0, 0, 1, N_("<device>"), N_("dump LUKS partition information") },
+	{ "luksDelKey", action_luksDelKey,	0, 2, 1, 1, 1, N_("<device> <key slot>"), N_("identical to luksKillSlot - DEPRECATED - see man page") },
+	{ "reload",	action_create,		1, 2, 1, 1, 1, N_("<name> <device>"), N_("modify active device - DEPRECATED - see man page") },
+	{ NULL, NULL, 0, 0, 0, 0, 0, NULL, NULL }
 };
 
 /* Interface Callbacks */
@@ -182,8 +186,7 @@ static int action_create(int reload)
 		r = crypt_update_device(&options);
 	else
 		r = crypt_create_device(&options);
-	if (r < 0)
-		show_status(-r);
+
 	return r;
 }
 
@@ -193,12 +196,8 @@ static int action_remove(int arg)
 		.name = action_argv[0],
 		.icb = &cmd_icb,
 	};
-	int r;
 
-	r = crypt_remove_device(&options);
-	if (r < 0)
-		show_status(-r);
-	return r;
+	return crypt_remove_device(&options);
 }
 
 static int action_resize(int arg)
@@ -208,12 +207,8 @@ static int action_resize(int arg)
 		.size = opt_size,
 		.icb = &cmd_icb,
 	};
-	int r;
 
-	r = crypt_resize_device(&options);
-	if (r < 0)
-		show_status(-r);
-	return r;
+	return crypt_resize_device(&options);
 }
 
 static int action_status(int arg)
@@ -225,11 +220,10 @@ static int action_status(int arg)
 	int r;
 
 	r = crypt_query_device(&options);
-	
-	if (r < 0) {
-		/* error */
-		show_status(-r);
-	} else if (r == 0) {
+	if (r < 0)
+		return r;
+
+	if (r == 0) {
 		/* inactive */
 		printf("%s/%s is inactive.\n", crypt_get_dir(), options.name);
 		r = 1;
@@ -254,10 +248,10 @@ static int action_status(int arg)
 static int action_luksFormat(int arg)
 {
 	struct crypt_options options = {
-		.key_size = (opt_key_size != 0 ? opt_key_size : DEFAULT_LUKS_KEY_SIZE) / 8,
+		.key_size = (opt_key_size ?: DEFAULT_LUKS_KEY_SIZE) / 8,
 		.key_slot = opt_key_slot,
 		.device = action_argv[0],
-		.cipher = opt_cipher?opt_cipher:DEFAULT_LUKS_CIPHER,
+		.cipher = opt_cipher ?: DEFAULT_LUKS_CIPHER,
 		.hash = opt_hash ?: DEFAULT_LUKS_HASH,
 		.new_key_file = action_argc > 1 ? action_argv[1] : NULL,
 		.flags = opt_verify_passphrase ? CRYPT_FLAG_VERIFY : (!opt_batch_mode?CRYPT_FLAG_VERIFY_IF_POSSIBLE :  0),
@@ -266,7 +260,6 @@ static int action_luksFormat(int arg)
 		.align_payload = opt_align_payload,
 		.icb = &cmd_icb,
 	};
-
 	int r = 0; char *msg = NULL;
 
 	/* Avoid overwriting possibly wrong part of device than user requested by rejecting these options */
@@ -277,12 +270,15 @@ static int action_luksFormat(int arg)
 
 	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."), options.device) == -1) {
 		fputs(_("memory allocation error in action_luksFormat"), stderr);
-	} else {
-		r = yesDialog(msg) ? crypt_luksFormat(&options) : -EINVAL;
-		free(msg);
-		show_status(-r);
+		return -ENOMEM;
 	}
-	return r;
+	r = yesDialog(msg);
+	free(msg);
+
+	if (!r)
+		return -EINVAL;
+
+	return crypt_luksFormat(&options);
 }
 
 static int action_luksOpen(int arg)
@@ -293,20 +289,15 @@ static int action_luksOpen(int arg)
 		.key_file = opt_key_file,
 		.key_size = opt_key_file ? (opt_key_size / 8) : 0, /* limit bytes read from keyfile */
 		.timeout = opt_timeout,
-		.tries = opt_tries,
+		.tries = opt_key_file ? 1 : opt_tries, /* verify is usefull only for tty */
 		.icb = &cmd_icb,
 	};
-	int r; 
 
-	opt_verbose = 1;
-	options.flags = 0;
 	if (opt_readonly)
 		options.flags |= CRYPT_FLAG_READONLY;
 	if (opt_non_exclusive)
 		options.flags |= CRYPT_FLAG_NON_EXCLUSIVE_ACCESS;
-	r = crypt_luksOpen(&options);
-	show_status(-r);
-	return r;
+	return crypt_luksOpen(&options);
 }
 
 static int action_luksDelKey(int arg)
@@ -325,12 +316,8 @@ static int action_luksKillSlot(int arg)
 		.flags = !opt_batch_mode?CRYPT_FLAG_VERIFY_ON_DELKEY : 0,
 		.icb = &cmd_icb,
 	};
-	int r; 
 
-	opt_verbose = 1;
-	r = crypt_luksKillSlot(&options);
-	show_status(-r);
-	return r;
+	return crypt_luksKillSlot(&options);
 }
 
 static int action_luksRemoveKey(int arg)
@@ -343,12 +330,8 @@ static int action_luksRemoveKey(int arg)
 		.flags = !opt_batch_mode?CRYPT_FLAG_VERIFY_ON_DELKEY : 0,
 		.icb = &cmd_icb,
 	};
-	int r; 
 
-	opt_verbose = 1;
-	r = crypt_luksRemoveKey(&options);
-	show_status(-r);
-	return r;
+	return crypt_luksRemoveKey(&options);
 }
 
 static int action_luksAddKey(int arg)
@@ -363,12 +346,8 @@ static int action_luksAddKey(int arg)
 		.timeout = opt_timeout,
 		.icb = &cmd_icb,
 	};
-	int r; 
 
-	opt_verbose = 1;
-	r = crypt_luksAddKey(&options);
-	show_status(-r);
-	return r;
+	return crypt_luksAddKey(&options);
 }
 
 static int action_isLuks(int arg)
@@ -377,6 +356,7 @@ static int action_isLuks(int arg)
 		.device = action_argv[0],
 		.icb = &cmd_icb,
 	};
+
 	return crypt_isLuks(&options);
 }
 
@@ -386,12 +366,8 @@ static int action_luksUUID(int arg)
 		.device = action_argv[0],
 		.icb = &cmd_icb,
 	};
-	int r;
 
-	r = crypt_luksUUID(&options);
-	if (r < 0)
-		show_status(-r);
-	return r;
+	return crypt_luksUUID(&options);
 }
 
 static int action_luksDump(int arg)
@@ -400,12 +376,8 @@ static int action_luksDump(int arg)
 		.device = action_argv[0],
 		.icb = &cmd_icb,
 	};
-	int r; 
 
-	r = crypt_luksDump(&options);
-	if (r < 0)
-		show_status(-r);
-	return r;
+	return crypt_luksDump(&options);
 }
 
 static void usage(poptContext popt_context, int exitcode,
@@ -442,7 +414,33 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 		exit(0);
 	} else
 		usage(popt_context, 0, NULL, NULL);
-}                 
+}
+
+static int run_action(struct action_type *action)
+{
+	int r;
+
+	if (dm_init(NULL, action->required_dm_backend) < 1) {
+		fprintf(stderr,_("Cannot communicate with device-mapper. Is dm_mod kernel module loaded?\n"));
+		return -ENOSYS;
+	}
+
+	if (action->required_memlock)
+		memlock_inc(NULL);
+
+	r = action->handler(action->arg);
+
+	if (action->required_memlock)
+		memlock_dec(NULL);
+
+	if (action->required_dm_backend)
+		dm_exit();
+
+	if (r < 0 && (opt_verbose || action->show_status))
+		show_status(-r);
+
+	return r;
+}
 
 int main(int argc, char **argv)
 {
@@ -553,11 +551,7 @@ int main(int argc, char **argv)
 		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
 		usage(popt_context, 1, buf,
 		      poptGetInvocationName(popt_context));
-	}	
-	return action->handler(action->arg);
-}
+	}
 
-// Local Variables:
-// c-basic-offset: 8
-// indent-tabs-mode: nil
-// End:
+	return run_action(action);
+}

@@ -33,4 +33,11 @@
 #define DEFAULT_KEY_SIZE	256
 #define DEFAULT_LUKS_KEY_SIZE	128
 
+/* Helper funcions provided by internal libcryptsetup objects */
+struct crypt_device;
+extern int memlock_inc(struct crypt_device *ctx);
+extern int memlock_dec(struct crypt_device *ctx);
+extern int dm_init(struct crypt_device *context, int check_kernel);
+extern void dm_exit(void);
+
 #endif /* CRYPTSETUP_H */

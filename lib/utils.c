@@ -12,6 +12,8 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <sys/mman.h>
+#include <sys/resource.h>
 
 #include "libcryptsetup.h"
 #include "internal.h"
@@ -507,3 +509,39 @@ out_err:
 	return 0;
 }
 
+/* MEMLOCK */
+#define DEFAULT_PROCESS_PRIORITY -18
+
+static int _priority;
+static int _memlock_count = 0;
+
+// return 1 if memory is locked
+int memlock_inc(struct crypt_device *ctx)
+{
+	if (!_memlock_count++) {
+		if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+			set_error(_("WARNING!!! Possibly insecure memory. Are you root?\n"));
+			_memlock_count--;
+			return 0;
+		}
+		errno = 0;
+		if (((_priority = getpriority(PRIO_PROCESS, 0)) == -1) && errno)
+			set_error(_("Cannot get process priority.\n"));
+		else
+			if (setpriority(PRIO_PROCESS, 0, DEFAULT_PROCESS_PRIORITY))
+				set_error(_("setpriority %u failed: %s"),
+					DEFAULT_PROCESS_PRIORITY, strerror(errno));
+	}
+	return _memlock_count ? 1 : 0;
+}
+
+int memlock_dec(struct crypt_device *ctx)
+{
+	if (_memlock_count && (!--_memlock_count)) {
+		if (munlockall())
+			set_error(_("Cannot unlock memory."));
+		if (setpriority(PRIO_PROCESS, 0, _priority))
+			set_error(_("setpriority %u failed: %s"), _priority, strerror(errno));
+	}
+	return _memlock_count ? 1 : 0;
+}

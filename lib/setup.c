@@ -21,8 +21,6 @@ struct device_infos {
 	int		readonly;
 };
 
-static int memory_unsafe = 0;
-
 #define at_least_one(a) ({ __typeof__(a) __at_least_one=(a); (__at_least_one)?__at_least_one:1; })
 
 static void logger(struct crypt_options *options, int class, char *format, ...) {
@@ -43,35 +41,6 @@ static void hexprintICB(struct crypt_options *options, int class, char *d, int n
 	int i;
 	for(i = 0; i < n; i++)
 		logger(options, class, "%02hhx ", (char)d[i]);
-}
-
-static int setup_enter(void (*log)(int, char *))
-{
-	int r;
-
-	/*
-	 * from here we could have sensible data in memory
-	 * so protect it from being swapped out
-	 */
-	r = mlockall(MCL_CURRENT | MCL_FUTURE);
-	if (r < 0) {
-		perror("mlockall failed");
-		log(CRYPT_LOG_ERROR, "WARNING!!! Possibly insecure memory. Are you root?\n");
-		memory_unsafe = 1;
-	}
-
-	set_error(NULL);
-
-	return 0;
-}
-
-static int setup_leave(void)
-{
-	/* dangerous, we can't wipe all the memory */
-	if (!memory_unsafe)
-		munlockall();
-
-	return 0;
 }
 
 /*
@@ -771,20 +740,12 @@ static int __crypt_luks_remove_key(int arg, struct crypt_options *options) {
 	return luks_remove_helper(arg, options, 1);
 }
 
-
 static int crypt_job(int (*job)(int arg, struct crypt_options *options),
                      int arg, struct crypt_options *options)
 {
 	int r;
 
-	if (setup_enter(options->icb->log) < 0) {
-		r = -ENOSYS;
-		goto out;
-	}
-
 	r = job(arg, options);
-out:
-	setup_leave();
 
 	if (r >= 0)
 		set_error(NULL);

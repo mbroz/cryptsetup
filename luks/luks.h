@@ -41,10 +41,6 @@
 /* Actually we need only 37, but we don't want struct autoaligning to kick in */
 #define UUID_STRING_L 40
 
-/* We don't have gettext support in LUKS */
-
-#define _(Text) Text 
-
 /* Any integer values are stored in network byte order on disk and must be
 converted */
 

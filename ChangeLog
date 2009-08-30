@@ -1,6 +1,7 @@
-
 2009-08-30  Milan Broz  <mbroz@redhat.com>
 	* Require device device-mapper to build and do not use backend wrapper for dm calls.
+	* Move memory locking and dm initialization to command layer.
+	* Increase priority of process if memory is locked.
 
 2009-08-17  Milan Broz  <mbroz@redhat.com>
 	* Fix PBKDF2 speed calculation for large passhrases.

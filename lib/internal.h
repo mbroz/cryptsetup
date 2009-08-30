@@ -9,6 +9,10 @@
 #include <stdarg.h>
 #include <unistd.h>
 
+#include <libintl.h>
+#include <locale.h>
+#define _(String) gettext((String))
+
 #define SECTOR_SHIFT		9
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
 #define DEFAULT_ALIGNMENT	4096
@@ -79,5 +83,8 @@ ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offse
 
 int get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
             const char *key_file, int passphrase_fd, int timeout, int how2verify);
+
+int memlock_inc(struct crypt_device *ctx);
+int memlock_dec(struct crypt_device *ctx);
 
 #endif /* INTERNAL_H */
