@@ -512,17 +512,19 @@ static int wipe(const char *device, unsigned int from, unsigned int to)
 	return r;
 }
 
-int LUKS_del_key(const char *device, unsigned int keyIndex, struct crypt_device *ctx)
+int LUKS_del_key(const char *device,
+		 unsigned int keyIndex,
+		 struct luks_phdr *hdr,
+		 struct crypt_device *ctx)
 {
-	struct luks_phdr hdr;
 	unsigned int startOffset, endOffset, stripesLen;
 	int r;
 
-	r = LUKS_read_phdr(device, &hdr, 1, ctx);
+	r = LUKS_read_phdr(device, hdr, 1, ctx);
 	if (r)
 		return r;
 
-	r = LUKS_keyslot_set(&hdr, keyIndex, 0);
+	r = LUKS_keyslot_set(hdr, keyIndex, 0);
 	if (r) {
 		log_err(ctx, _("Key slot %d is invalid, please select keyslot between 0 and %d.\n"),
 			keyIndex, LUKS_NUMKEYS - 1);
@@ -530,8 +532,8 @@ int LUKS_del_key(const char *device, unsigned int keyIndex, struct crypt_device 
 	}
 
 	/* secure deletion of key material */
-	startOffset = hdr.keyblock[keyIndex].keyMaterialOffset;
-	stripesLen = hdr.keyBytes * hdr.keyblock[keyIndex].stripes;
+	startOffset = hdr->keyblock[keyIndex].keyMaterialOffset;
+	stripesLen = hdr->keyBytes * hdr->keyblock[keyIndex].stripes;
 	endOffset = startOffset + div_round_up(stripesLen, SECTOR_SIZE);
 
 	r = wipe(device, startOffset, endOffset);
@@ -540,7 +542,7 @@ int LUKS_del_key(const char *device, unsigned int keyIndex, struct crypt_device 
 		return r;
 	}
 
-	r = LUKS_write_phdr(device, &hdr, ctx);
+	r = LUKS_write_phdr(device, hdr, ctx);
 
 	return r;
 }

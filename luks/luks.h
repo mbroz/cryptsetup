@@ -135,6 +135,7 @@ int LUKS_open_key_with_hdr(
 int LUKS_del_key(
 	const char *device,
 	unsigned int keyIndex,
+	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 
 crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot);

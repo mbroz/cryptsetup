@@ -1265,13 +1265,17 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 	}
 
 	ki = crypt_keyslot_status(cd, keyslot);
-	if (ki == SLOT_INVALID)
+	if (ki == SLOT_INVALID) {
+		log_err(cd, _("Key slot %d is invalid.\n"), keyslot);
 		return -EINVAL;
+	}
 
-	if (ki == SLOT_INACTIVE)
-		return 0;
+	if (ki == SLOT_INACTIVE) {
+		log_err(cd, _("Key slot %d is not used.\n"), keyslot);
+		return -EINVAL;
+	}
 
-	return LUKS_del_key(cd->device, keyslot, cd);
+	return LUKS_del_key(cd->device, keyslot, &cd->hdr, cd);
 }
 
 // activation/deactivation of device mapping
@@ -1464,7 +1468,8 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 		case ACTIVE:	return dm_remove_device(name, 0, 0);
 		case BUSY:	log_err(cd, _("Device %s is busy."), name);
 				return -EBUSY;
-		case INACTIVE:	return -ENODEV;
+		case INACTIVE:	log_err(cd, _("Device %s is not active."), name);
+				return -ENODEV;
 		default:	log_err(cd, _("Invalid device %s."), name);
 				return -EINVAL;
 	}

@@ -54,6 +54,7 @@ static int _debug   = 0;
 static int _verbose = 1;
 
 static char global_log[4096];
+static int global_lines = 0;
 
 // Helpers
 static int _prepare_keyfile(const char *name, const char *passphrase)
@@ -109,11 +110,19 @@ static int yesDialog(char *msg)
 static void cmdLineLog(int class, char *msg)
 {
 	strncat(global_log, msg, sizeof(global_log));
+	global_lines++;
 }
+
+static void new_log(int class, const char *msg, void *usrptr)
+{
+	cmdLineLog(class, (char*)msg);
+}
+
 
 static void reset_log()
 {
 	memset(global_log, 0, sizeof(global_log));
+	global_lines = 0;
 }
 
 static struct interface_callbacks cmd_icb = {
@@ -538,6 +547,109 @@ static void AddDevicePlain(void)
 	crypt_free(cd);
 }
 
+static void UseLuksDevice(void)
+{
+	struct crypt_device *cd;
+	char key[128];
+	size_t key_size;
+	int fd;
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	EQ_(crypt_status(cd, CDEVICE_1), INACTIVE);
+	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0), "already open");
+	EQ_(crypt_status(cd, CDEVICE_1), ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	FAIL_(crypt_deactivate(cd, CDEVICE_1), "no such device");
+
+	key_size = 16;
+	OK_(strcmp("aes", crypt_get_cipher(cd)));
+	OK_(strcmp("cbc-essiv:sha256", crypt_get_cipher_mode(cd)));
+	OK_(strcmp(DEVICE_1_UUID, crypt_get_uuid(cd)));
+	EQ_(key_size, crypt_get_volume_key_size(cd));
+	EQ_(1032, crypt_get_data_offset(cd));
+
+	EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
+	OK_(crypt_volume_key_verify(cd, key, key_size));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	key[1] = ~key[1];
+	FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
+	crypt_free(cd);
+}
+
+static void AddDeviceLuks(void)
+{
+	struct crypt_device *cd;
+	struct crypt_params_luks1 params = {
+		.hash = "sha512",
+		.data_alignment = 2048, // 4M, data offset will be 4096
+	};
+	int fd;
+	unsigned char key[128], key2[128], path[128];
+
+	char *passphrase = "blabla";
+	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(mk_hex) / 2;
+	char *cipher = "aes";
+	char *cipher_mode = "cbc-essiv:sha256";
+
+	crypt_decode_key(key, mk_hex, key_size);
+
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+
+	// even with no keyslots defined it can be activated by volume key
+	OK_(crypt_volume_key_verify(cd, key, key_size));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, key, key_size, 0));
+	EQ_(crypt_status(cd, CDEVICE_2), ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_2));
+
+	// now with keyslot
+	EQ_(7, crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)));
+	EQ_(SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 7));
+	EQ_(7, crypt_activate_by_passphrase(cd, CDEVICE_2, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
+	EQ_(crypt_status(cd, CDEVICE_2), ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_2));
+
+	FAIL_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), "slot used");
+	key[1] = ~key[1];
+	FAIL_(crypt_keyslot_add_by_volume_key(cd, 6, key, key_size, passphrase, strlen(passphrase)), "key mismatch");
+	key[1] = ~key[1];
+	EQ_(6, crypt_keyslot_add_by_volume_key(cd, 6, key, key_size, passphrase, strlen(passphrase)));
+	EQ_(SLOT_ACTIVE, crypt_keyslot_status(cd, 6));
+
+	FAIL_(crypt_keyslot_destroy(cd, 8), "invalid keyslot");
+	FAIL_(crypt_keyslot_destroy(cd, CRYPT_ANY_SLOT), "invalid keyslot");
+	FAIL_(crypt_keyslot_destroy(cd, 0), "keyslot not used");
+	OK_(crypt_keyslot_destroy(cd, 7));
+	EQ_(SLOT_INACTIVE, crypt_keyslot_status(cd, 7));
+	EQ_(SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 6));
+
+	EQ_(6, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
+	OK_(crypt_volume_key_verify(cd, key2, key_size));
+
+	OK_(memcmp(key, key2, key_size));
+	OK_(strcmp(cipher, crypt_get_cipher(cd)));
+	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
+	EQ_(key_size, crypt_get_volume_key_size(cd));
+	EQ_(4096, crypt_get_data_offset(cd));
+
+	reset_log();
+	crypt_set_log_callback(cd, &new_log, NULL);
+	OK_(crypt_dump(cd));
+	OK_(!(global_lines != 0));
+	crypt_set_log_callback(cd, NULL, NULL);
+	reset_log();
+
+	FAIL_(crypt_deactivate(cd, CDEVICE_2), "not active");
+	crypt_free(cd);
+}
+
 int main (int argc, char *argv[])
 {
 	int i;
@@ -564,6 +676,9 @@ int main (int argc, char *argv[])
 	RUN_(DeviceResizeGame, "regular crypto, resize calls");
 
 	RUN_(AddDevicePlain, "plain device API creation exercise");
+	RUN_(AddDeviceLuks, "Format and use LUKS device");
+	RUN_(UseLuksDevice, "Use pre-formated LUKS device");
+
 
 	_cleanup();
 	return 0;
