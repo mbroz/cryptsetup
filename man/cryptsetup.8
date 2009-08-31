@@ -134,6 +134,9 @@ This option is only relevant for \fIcreate\fR action.
 .B "\-\-readonly"
 set up a read-only mapping.
 .TP
+.B "\-\-disable-uuid"
+Activate device without UUID. Useful for \fIluksOpen\fR to activate cloned LUKS device or its snapshot.
+.TP
 .B "\-\-iter-time, \-i"
 The number of milliseconds to spend with PBKDF2 password processing. This option is only relevant to the LUKS operations as \fIluksFormat\fR or \fIluksAddKey\fR.
 .TP
