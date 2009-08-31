@@ -76,6 +76,31 @@ static void _remove_keyfiles(void)
 	remove(KEYFILE2);
 }
 
+// Decode key from its hex representation
+static int crypt_decode_key(unsigned char *key, const char *hex, unsigned int size)
+{
+	char buffer[3];
+	char *endp;
+	unsigned int i;
+
+	buffer[2] = '\0';
+
+	for (i = 0; i < size; i++) {
+		buffer[0] = *hex++;
+		buffer[1] = *hex++;
+
+		key[i] = (unsigned char)strtoul(buffer, &endp, 16);
+
+		if (endp != &buffer[2])
+			return -1;
+	}
+
+	if (*hex != '\0')
+		return -1;
+
+	return 0;
+}
+
 static int yesDialog(char *msg)
 {
 	return 1;
@@ -456,6 +481,63 @@ void DeviceResizeGame(void)
 	_remove_keyfiles();
 }
 
+// NEW API tests
+
+static void AddDevicePlain(void)
+{
+	struct crypt_device *cd;
+	struct crypt_params_plain params = {
+		.hash = "sha1",
+		.skip = 0,
+		.offset = 0,
+	};
+	int fd;
+	unsigned char key[128], key2[128], path[128];
+
+	char *passphrase = "blabla";
+	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(mk_hex) / 2;
+	char *cipher = "aes";
+	char *cipher_mode = "cbc-essiv:sha256";
+
+	crypt_decode_key(key, mk_hex, key_size);
+
+	FAIL_(crypt_init(&cd, ""), "empty device string");
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
+
+	// device status check
+	EQ_(crypt_status(cd, CDEVICE_1), ACTIVE);
+	snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), CDEVICE_1);
+	fd = open(path, O_RDONLY);
+	EQ_(crypt_status(cd, CDEVICE_1), BUSY);
+	FAIL_(crypt_deactivate(cd, CDEVICE_1), "Device is busy");
+	close(fd);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(crypt_status(cd, CDEVICE_1), INACTIVE);
+
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), ACTIVE);
+
+	// retrieve volume key check
+	memset(key2, 0, key_size);
+	key_size--;
+	// small buffer
+	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)), "small buffer");
+	key_size++;
+	OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
+
+	OK_(memcmp(key, key2, key_size));
+	OK_(strcmp(cipher, crypt_get_cipher(cd)));
+	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
+	EQ_(key_size, crypt_get_volume_key_size(cd));
+	EQ_(0, crypt_get_data_offset(cd));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+}
+
 int main (int argc, char *argv[])
 {
 	int i;
@@ -470,9 +552,7 @@ int main (int argc, char *argv[])
 	_cleanup();
 	_setup();
 
-#ifdef CRYPT_DEBUG_ALL
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
-#endif
 
 	RUN_(LuksUUID, "luksUUID API call");
 	RUN_(IsLuks, "isLuks API call");
@@ -482,6 +562,8 @@ int main (int argc, char *argv[])
 	RUN_(LuksFormat, "luksFormat API call");
 	RUN_(LuksKeyGame, "luksAddKey, RemoveKey, KillSlot API calls");
 	RUN_(DeviceResizeGame, "regular crypto, resize calls");
+
+	RUN_(AddDevicePlain, "plain device API creation exercise");
 
 	_cleanup();
 	return 0;

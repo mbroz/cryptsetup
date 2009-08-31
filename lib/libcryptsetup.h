@@ -88,12 +88,12 @@ void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_m
 void crypt_set_password_verify(struct crypt_device *cd, int password_verify);
 
 /**
- * Helper to lock/unlock memory to avoid swapping sesitive data_alignment
+ * Helper to lock/unlock memory to avoid swap sensitive data to disk
  *
  * @cd - crypt device handle, can be NULL
  * @lock - 0 to unloct otherwise lock memory
  *
- * Return value indicated that memory is locked (function can be called multiple times).
+ * Return value indicates that memory is locked (function can be called multiple times).
  * Only root can do this. Note it locks/unlocks all process memory, not only crypt context.
  */
 int crypt_memory_lock(struct crypt_device *cd, int lock);
