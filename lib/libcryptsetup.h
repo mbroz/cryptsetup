@@ -14,11 +14,23 @@ struct crypt_device; /* crypt device handle */
  * Returns 0 on success or negative errno value otherwise.
  *
  * @cd - returns pointer to crypt device handle
+ * @device - path to device
  *
  * Note that logging is not initialized here, possible messages uses
  * default log function.
  */
 int crypt_init(struct crypt_device **cd, const char *device);
+
+/**
+ * Initialise crypt device handle from provided active device name
+ * and check if provided device exists.
+ *
+ * Returns 0 on success or negative errno value otherwise.
+ *
+ * @cd - crypt device handle
+ * @name - name of active crypt device
+ */
+int crypt_init_by_name(struct crypt_device **cd, const char *name);
 
 /**
  * Set log function.
@@ -151,6 +163,51 @@ int crypt_format(struct crypt_device *cd,
 int crypt_load(struct crypt_device *cd,
 	       const char *requested_type,
 	       void *params);
+
+/**
+ * Suspends crypt device.
+ *
+ * Returns 0 on success or negative errno value otherwise.
+ *
+ * @cd - crypt device handle, can be NULL
+ * @name - name of device to suspend
+ */
+int crypt_suspend(struct crypt_device *cd,
+		  const char *name);
+
+/**
+ * Resumes crypt device using passphrase.
+ *
+ * Returns unlocked key slot number or negative errno otherwise.
+ *
+ * @cd - crypt device handle
+ * @name - name of device to resume
+ * @keyslot - requested keyslot or CRYPT_ANY_SLOT
+ * @passphrase - passphrase used to unlock volume key, NULL for query
+ * @passphrase_size - size of @passphrase (binary data)
+ */
+int crypt_resume_by_passphrase(struct crypt_device *cd,
+			       const char *name,
+			       int keyslot,
+			       const char *passphrase,
+			       size_t passphrase_size);
+
+/**
+ * Resumes crypt device using key file.
+ *
+ * Returns unlocked key slot number or negative errno otherwise.
+ *
+ * @cd - crypt device handle
+ * @name - name of device to resume
+ * @keyslot - requested keyslot or CRYPT_ANY_SLOT
+ * @keyfile - key file used to unlock volume key, NULL for passphrase query
+ * @keyfile_size - number of bytes to read from @keyfile, 0 is unlimited
+ */
+int crypt_resume_by_keyfile(struct crypt_device *cd,
+			    const char *name,
+			    int keyslot,
+			    const char *keyfile,
+			    size_t keyfile_size);
 
 /**
  * Releases crypt device context and used memory.

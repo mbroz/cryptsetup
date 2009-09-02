@@ -52,6 +52,8 @@ static int action_luksRemoveKey(int arg);
 static int action_isLuks(int arg);
 static int action_luksUUID(int arg);
 static int action_luksDump(int arg);
+static int action_luksSuspend(int arg);
+static int action_luksResume(int arg);
 
 static struct action_type {
 	const char *type;
@@ -77,6 +79,8 @@ static struct action_type {
 	{ "isLuks",	action_isLuks,		0, 1, 0, 0, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
 	{ "luksClose",	action_remove,		0, 1, 1, 0, 1, N_("<name>"), N_("remove LUKS mapping") },
 	{ "luksDump",	action_luksDump,	0, 1, 0, 0, 1, N_("<device>"), N_("dump LUKS partition information") },
+	{ "luksSuspend",action_luksSuspend,	0, 1, 1, 1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen).") },
+	{ "luksResume",	action_luksResume,	0, 1, 1, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
 	{ "luksDelKey", action_luksDelKey,	0, 2, 1, 1, 1, N_("<device> <key slot>"), N_("identical to luksKillSlot - DEPRECATED - see man page") },
 	{ "reload",	action_create,		1, 2, 1, 1, 1, N_("<name> <device>"), N_("modify active device - DEPRECATED - see man page") },
 	{ NULL, NULL, 0, 0, 0, 0, 0, NULL, NULL }
@@ -488,6 +492,41 @@ static int action_luksDump(int arg)
 	};
 
 	return crypt_luksDump(&options);
+}
+
+static int action_luksSuspend(int arg)
+{
+	struct crypt_device *cd = NULL;
+	int r;
+
+	r = crypt_init_by_name(&cd, action_argv[0]);
+	if (!r)
+		r = crypt_suspend(cd, action_argv[0]);
+
+	crypt_free(cd);
+	return r;
+}
+
+static int action_luksResume(int arg)
+{
+	struct crypt_device *cd = NULL;
+	int r;
+
+	if ((r = crypt_init_by_name(&cd, action_argv[0])))
+		goto out;
+
+	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	if (opt_key_file)
+		r = crypt_resume_by_keyfile(cd, action_argv[0], CRYPT_ANY_SLOT,
+					    opt_key_file, opt_key_size / 8);
+	else
+		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
+					       NULL, 0);
+out:
+	crypt_free(cd);
+	return r;
 }
 
 static void usage(poptContext popt_context, int exitcode,

@@ -143,19 +143,25 @@ static int _dev_read_ahead(const char *dev, uint32_t *read_ahead)
 	return r;
 }
 
+static void hex_key(char *hexkey, size_t key_size, const char *key)
+{
+	int i;
+
+	for(i = 0; i < key_size; i++)
+		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
+}
+
 static char *get_params(const char *device, uint64_t skip, uint64_t offset,
 			const char *cipher, size_t key_size, const char *key)
 {
 	char *params;
 	char *hexkey;
-	int i;
 
 	hexkey = safe_alloc(key_size * 2 + 1);
 	if (!hexkey)
 		return NULL;
 
-	for(i = 0; i < key_size; i++)
-		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
+	hex_key(hexkey, key_size, key);
 
 	params = safe_alloc(strlen(hexkey) + strlen(cipher) + strlen(device) + 64);
 	if (!params)
@@ -405,7 +411,8 @@ int dm_query_device(const char *name,
 		    char **cipher,
 		    int *key_size,
 		    char **key,
-		    int *read_only)
+		    int *read_only,
+		    int *suspended)
 {
 	struct dm_task *dmt;
 	struct dm_info dmi;
@@ -495,15 +502,78 @@ int dm_query_device(const char *name,
 	}
 	memset(key_, 0, strlen(key_));
 
-	/* read_only */
 	if (read_only)
 		*read_only = dmi.read_only;
+
+	if (suspended)
+		*suspended = dmi.suspended;
 
 	r = (dmi.open_count > 0);
 out:
 	if (dmt)
 		dm_task_destroy(dmt);
 
+	return r;
+}
+
+static int _dm_message(const char *name, const char *msg)
+{
+	int r = 0;
+	struct dm_task *dmt;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_TARGET_MSG)))
+		return 0;
+
+	if (name && !dm_task_set_name(dmt, name))
+		goto out;
+
+	if (!dm_task_set_sector(dmt, (uint64_t) 0))
+		goto out;
+
+	if (!dm_task_set_message(dmt, msg))
+		goto out;
+
+	r = dm_task_run(dmt);
+
+      out:
+	dm_task_destroy(dmt);
+	return r;
+}
+
+int dm_suspend_and_wipe_key(const char *name)
+{
+	if (!_dm_simple(DM_DEVICE_SUSPEND, name))
+		return -EINVAL;
+
+	if (!_dm_message(name, "key wipe")) {
+		_dm_simple(DM_DEVICE_RESUME, name);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+int dm_resume_and_reinstate_key(const char *name,
+				size_t key_size,
+				const char *key)
+{
+	int msg_size = key_size * 2 + 10; // key set <key>
+	char *msg;
+	int r = 0;
+
+	msg = safe_alloc(msg_size);
+	if (!msg)
+		return -ENOMEM;
+
+	memset(msg, 0, msg_size);
+	strcpy(msg, "key set ");
+	hex_key(&msg[8], key_size, key);
+
+	if (!_dm_message(name, msg) ||
+	    !_dm_simple(DM_DEVICE_RESUME, name))
+		r = -EINVAL;
+
+	safe_free(msg);
 	return r;
 }
 

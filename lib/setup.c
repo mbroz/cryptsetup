@@ -443,6 +443,45 @@ static void key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 	}
 }
 
+static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslot,
+					     struct luks_masterkey **mk)
+{
+	char *prompt = NULL, *passphrase_read = NULL;
+	unsigned int passphrase_size_read;
+	int r = -EINVAL, tries = cd->tries;
+
+	if(asprintf(&prompt, _("Enter passphrase for %s: "), cd->device) < 0)
+		return -ENOMEM;
+
+	*mk = NULL;
+	do {
+		if (*mk)
+			LUKS_dealloc_masterkey(*mk);
+		*mk = NULL;
+
+		key_from_terminal(cd, prompt, &passphrase_read,
+				  &passphrase_size_read, 0);
+		if(!passphrase_read) {
+			r = -EINVAL;
+			break;
+		}
+
+		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
+					   passphrase_size_read, &cd->hdr, mk, cd);
+		safe_free(passphrase_read);
+		passphrase_read = NULL;
+	} while (r == -EPERM && (--tries > 0));
+
+	if (r < 0 && *mk) {
+		LUKS_dealloc_masterkey(*mk);
+		*mk = NULL;
+	}
+	free(prompt);
+
+	return r;
+
+}
+
 static void key_from_file(struct crypt_device *cd, char *msg,
 			  char **key, unsigned int *key_len,
 			  const char *key_file, size_t key_size)
@@ -572,7 +611,7 @@ int crypt_resize_device(struct crypt_options *options)
 	int key_size, read_only, r;
 
 	r = dm_query_device(options->name, &device, &size, &skip, &offset,
-			    &cipher, &key_size, &key, &read_only);
+			    &cipher, &key_size, &key, &read_only, NULL);
 	if (r < 0)
 		return r;
 
@@ -606,7 +645,7 @@ int crypt_query_device(struct crypt_options *options)
 
 	r = dm_query_device(options->name, (char **)&options->device, &options->size,
 			    &options->skip, &options->offset, (char **)&options->cipher,
-			    &options->key_size, NULL, &read_only);
+			    &options->key_size, NULL, &read_only, NULL);
 
 	if (r < 0)
 		return r;
@@ -889,6 +928,29 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	return 0;
 }
 
+int crypt_init_by_name(struct crypt_device **cd, const char *name)
+{
+	crypt_status_info ci;
+	char *device = NULL;
+	int r;
+
+	log_dbg("Allocating crypt device context by device %s.", name);
+
+	ci = crypt_status(NULL, name);
+	if (ci < ACTIVE) {
+		log_err(NULL, _("Device %s is not active.\n"), name);
+		return -EINVAL;
+	}
+
+	r = dm_query_device(name, &device, NULL, NULL, NULL,
+			    NULL, NULL, NULL, NULL, NULL);
+	if (!r)
+		r = crypt_init(cd, device);
+
+	free(device);
+	return r;
+}
+
 static int _crypt_format_plain(struct crypt_device *cd,
 			       const char *cipher,
 			       const char *cipher_mode,
@@ -1044,6 +1106,137 @@ void crypt_free(struct crypt_device *cd)
 
 		free(cd);
 	}
+}
+
+int crypt_suspend(struct crypt_device *cd,
+		  const char *name)
+{
+	crypt_status_info ci;
+	int r, suspended = 0;
+
+	log_dbg("Suspending volume %s.", name);
+
+	ci = crypt_status(NULL, name);
+	if (ci < ACTIVE) {
+		log_err(cd, _("Volume %s is not active.\n"), name);
+		return -EINVAL;
+	}
+
+	r = dm_query_device(name, NULL, NULL, NULL, NULL,
+			    NULL, NULL, NULL, NULL, &suspended);
+	if (r < 0)
+		return r;
+
+	if (suspended) {
+		log_err(cd, _("Volume %s is already suspended.\n"), name);
+		return -EINVAL;
+	}
+
+	r = dm_suspend_and_wipe_key(name);
+	if (r)
+		log_err(cd, "Error during suspending device %s.\n", name);
+
+	return r;
+}
+
+int crypt_resume_by_passphrase(struct crypt_device *cd,
+			       const char *name,
+			       int keyslot,
+			       const char *passphrase,
+			       size_t passphrase_size)
+{
+	struct luks_masterkey *mk = NULL;
+	int r, suspended = 0;
+
+	log_dbg("Resuming volume %s.", name);
+
+	if (!isLUKS(cd->type)) {
+		log_err(cd, _("This operation is supported only for LUKS device.\n"));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = dm_query_device(name, NULL, NULL, NULL, NULL,
+			    NULL, NULL, NULL, NULL, &suspended);
+	if (r < 0)
+		return r;
+
+	if (!suspended) {
+		log_err(cd, _("Volume %s is not suspended.\n"), name);
+		return -EINVAL;
+	}
+
+	if (passphrase) {
+		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase,
+					   passphrase_size, &cd->hdr, &mk, cd);
+	} else
+		r = volume_key_by_terminal_passphrase(cd, keyslot, &mk);
+
+	if (r >= 0) {
+		keyslot = r;
+		r = dm_resume_and_reinstate_key(name, mk->keyLength, mk->key);
+		if (r)
+			log_err(cd, "Error during resuming device %s.\n", name);
+	} else
+		r = keyslot;
+out:
+	LUKS_dealloc_masterkey(mk);
+	return r < 0 ? r : keyslot;
+}
+
+int crypt_resume_by_keyfile(struct crypt_device *cd,
+			    const char *name,
+			    int keyslot,
+			    const char *keyfile,
+			    size_t keyfile_size)
+{
+	struct luks_masterkey *mk = NULL;
+	char *passphrase_read = NULL;
+	unsigned int passphrase_size_read;
+	int r, suspended = 0;
+
+	log_dbg("Resuming volume %s.", name);
+
+	if (!isLUKS(cd->type)) {
+		log_err(cd, _("This operation is supported only for LUKS device.\n"));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = dm_query_device(name, NULL, NULL, NULL, NULL,
+			    NULL, NULL, NULL, NULL, &suspended);
+	if (r < 0)
+		return r;
+
+	if (!suspended) {
+		log_err(cd, _("Volume %s is not suspended.\n"), name);
+		return -EINVAL;
+	}
+
+	if (!keyfile)
+		return -EINVAL;
+
+	key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
+		      &passphrase_size_read, keyfile, keyfile_size);
+
+	if(!passphrase_read)
+		r = -EINVAL;
+	else {
+		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
+					   passphrase_size_read, &cd->hdr, &mk, cd);
+		safe_free(passphrase_read);
+	}
+
+	if (r >= 0) {
+		keyslot = r;
+		r = dm_resume_and_reinstate_key(name, mk->keyLength, mk->key);
+		if (r)
+			log_err(cd, "Error during resuming device %s.\n", name);
+	} else
+		r = keyslot;
+out:
+	LUKS_dealloc_masterkey(mk);
+	return r < 0 ? r : keyslot;
 }
 
 // slot manipulation
@@ -1288,9 +1481,8 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 {
 	crypt_status_info ci;
 	struct luks_masterkey *mk = NULL;
-	char *prompt = NULL, *passphrase_read = NULL;
-	unsigned int passphrase_size_read;
-	int r, tries = cd->tries;
+	char *prompt = NULL;
+	int r;
 
 	log_dbg("%s volume %s [keyslot %d] using %spassphrase.",
 		name ? "Activating" : "Checking", name ?: "",
@@ -1321,25 +1513,10 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 
 	/* provided passphrase, do not retry */
 	if (passphrase) {
-			r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase,
-						   passphrase_size, &cd->hdr, &mk, cd);
-	} else do {
-		if (mk)
-			LUKS_dealloc_masterkey(mk);
-		mk = NULL;
-
-		key_from_terminal(cd, prompt, &passphrase_read,
-				  &passphrase_size_read, 0);
-		if(!passphrase_read) {
-			r = -EINVAL;
-			break;
-		}
-
-		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
-					   passphrase_size_read, &cd->hdr, &mk, cd);
-		safe_free(passphrase_read);
-		passphrase_read = NULL;
-	} while (r == -EPERM && (--tries > 0));
+		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase,
+					   passphrase_size, &cd->hdr, &mk, cd);
+	} else
+		r = volume_key_by_terminal_passphrase(cd, keyslot, &mk);
 
 	if (r >= 0) {
 		keyslot = r;

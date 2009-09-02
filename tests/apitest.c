@@ -582,6 +582,35 @@ static void UseLuksDevice(void)
 	crypt_free(cd);
 }
 
+static void SuspendDevice(void)
+{
+	struct crypt_device *cd;
+	char key[128];
+	size_t key_size;
+	int fd;
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
+
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	FAIL_(crypt_suspend(cd, CDEVICE_1), "already suspended");
+
+	FAIL_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)-1), "wrong key");
+	OK_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)));
+	FAIL_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)), "not suspended");
+
+	OK_(_prepare_keyfile(KEYFILE1, KEY1));
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	FAIL_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1 "blah", 0), "wrong keyfile");
+	OK_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0));
+	FAIL_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0), "not suspended");
+	_remove_keyfiles();
+
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+}
+
 static void AddDeviceLuks(void)
 {
 	struct crypt_device *cd;
@@ -678,6 +707,7 @@ int main (int argc, char *argv[])
 	RUN_(AddDevicePlain, "plain device API creation exercise");
 	RUN_(AddDeviceLuks, "Format and use LUKS device");
 	RUN_(UseLuksDevice, "Use pre-formated LUKS device");
+	RUN_(SuspendDevice, "Suspend/Resume test");
 
 
 	_cleanup();

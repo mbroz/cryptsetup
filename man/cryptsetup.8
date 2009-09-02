@@ -50,6 +50,18 @@ opens the LUKS partition <device> and sets up a mapping <name> after successful 
 .IP
 identical to \fIremove\fR.
 .PP
+\fIluksSuspend\fR <name>
+.IP
+suspends active device (all IO operations are frozen) and wipes encryption key from kernel. Kernel version 2.6.19 or later is required.
+
+After that operation you have to use \fIluksResume\fR to reinstate encryption key (and resume device) or \fIluksClose\fR to remove mapped device.
+
+\fBWARNING:\fR never try to suspend device where is the cryptsetup binary itself.
+.PP
+\fIluksResume\fR <name>
+.IP
+Resumes suspended device and reinstates encryption key. You will need provide passphrase identical to \fIluksOpen\fR command (using prompting or key file).
+.PP
 \fIluksAddKey\fR <device> [<new key file>]
 .IP
 add a new key file/passphrase. An existing passphrase or key file (via \-\-key-file) must be supplied. The key file with the new material is supplied as a positional argument. <options> can be [\-\-key-file, \-\-key-slot].
