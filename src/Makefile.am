@@ -13,16 +13,19 @@ cryptsetup_SOURCES = \
 	cryptsetup.c				\
 	cryptsetup.h
 
-cryptsetup_LDADD = \
-	@POPT_LIBS@				\
-	$(top_builddir)/lib/libcryptsetup.la
-
 if STATIC_CRYPTSETUP
 _STATIC_FLAGS = -all-static
+_STATIC_LDADD = -lgpg-error @SELINUX_STATIC_LIBS@
 endif
 
+cryptsetup_LDADD = \
+	@POPT_LIBS@				\
+	$(top_builddir)/lib/libcryptsetup.la	\
+	$(_STATIC_LDADD)
+
+
 cryptsetup_LDFLAGS = \
-	$(_STATIC_FLAGS) 
+	$(_STATIC_FLAGS)
 
 cryptsetup_CFLAGS = -Wall
 

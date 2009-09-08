@@ -36,8 +36,7 @@ UUID_LIBS="$LIBS"
 LIBS="$saved_LIBS"
 AC_SUBST(UUID_LIBS)
 
-AC_CHECK_FUNCS(setlocale)
-
+AC_CHECK_FUNCS([setlocale, posix_memalign])
 
 AC_C_CONST
 AC_C_BIGENDIAN
@@ -104,8 +103,10 @@ if test "x$enable_selinux" != xno; then
 		AC_SEARCH_LIBS([pthread_mutex_lock], [pthread],
 			[test "$ac_cv_search_pthread_mutex_lock" = "none required" || LIB_PTHREAD=-lpthread])
 		LIBS="$saved_LIBS2"
+		SELINUX_STATIC_LIBS="-lselinux -lsepol"
 	fi
 fi
+AC_SUBST(SELINUX_STATIC_LIBS)
 LIBDEVMAPPER_LIBS="$LIBS $LIB_PTHREAD"
 LIBS="$saved_LIBS"
 AC_SUBST(LIBDEVMAPPER_LIBS)
@@ -114,7 +115,6 @@ AC_SUBST(LIBDEVMAPPER_CFLAGS)
 AM_CONDITIONAL(BUILD_LIBDEVMAPPER, test x$build_static = xyes)
 AM_CONDITIONAL(SHARED_LIBDEVMAPPER, test x$build_shared = xyes)
 
-AC_CHECK_FUNCS([posix_memalign])
 dnl ==========================================================================
 
 AM_CONDITIONAL(STATIC_CRYPTSETUP, test x$enable_static = xyes)
