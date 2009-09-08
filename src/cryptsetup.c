@@ -133,7 +133,7 @@ static struct interface_callbacks cmd_icb = {
 
 static void show_status(int errcode)
 {
-	char error[256];
+	char error[256], *error_;
 
 	if(!errcode && opt_verbose) {
 		log_std(_("Command successful.\n"));
@@ -142,11 +142,11 @@ static void show_status(int errcode)
 
 	crypt_get_error(error, sizeof(error));
 
-	if (!opt_verbose) {
-		char *error_ = strerror_r(errcode, error, sizeof(error));
+	if (!error[0]) {
+		error_ = strerror_r(errcode, error, sizeof(error));
 		if (error_ != error) {
 			strncpy(error, error_, sizeof(error));
-			error[sizeof error - 1] = '\0';
+			error[sizeof(error) - 1] = '\0';
 		}
 	}
 

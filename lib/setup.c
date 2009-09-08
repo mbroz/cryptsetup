@@ -513,7 +513,7 @@ static int _crypt_init(struct crypt_device **cd,
 		dm_exit();
 
 	if (r)
-		return r;
+		return -EINVAL;
 
 	crypt_set_log_callback(*cd, log_wrapper, options->icb->log);
 	crypt_set_confirm_callback(*cd, yesDialog_wrapper, options->icb->yesDialog);
@@ -526,7 +526,7 @@ static int _crypt_init(struct crypt_device **cd,
 	if (load && !init_by_name)
 		r = crypt_load(*cd, type, NULL);
 
-	if (type && !(*cd)->type) {
+	if (!r && type && !(*cd)->type) {
 		(*cd)->type = strdup(type);
 		if (!(*cd)->type)
 			r = -ENOMEM;
@@ -934,7 +934,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 
 	log_dbg("Allocating crypt device %s context.", device);
 
-	if (!device_ready(NULL, device, 0))
+	if (!device_ready(NULL, device, O_RDONLY))
 		return -ENOTBLK;
 
 	if (!(h = malloc(sizeof(struct crypt_device))))

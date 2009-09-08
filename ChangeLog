@@ -1,5 +1,6 @@
 2009-09-08  Milan Broz  <mbroz@redhat.com>
 	* Use dm-uuid for all crypt devices, contains device type and name now.
+	* Try to read first sector from device to properly check that device is ready.
 
 2009-09-02  Milan Broz  <mbroz@redhat.com>
 	* Add luksSuspend (freeze device and wipe key) and luksResume (with provided passphrase).

@@ -505,27 +505,36 @@ out_err:
 
 int device_ready(struct crypt_device *cd, const char *device, int mode)
 {
-	int devfd;
+	int devfd, r = 1;
+	ssize_t s;
 	struct stat st;
+	char buf[512];
 
 	if(stat(device, &st) < 0) {
 		log_err(cd, _("Device %s doesn't exist or access denied.\n"), device);
 		return 0;
 	}
 
-	if (!mode)
-		return 1;
-
+	log_dbg("Trying to open and read device %s.", device);
 	devfd = open(device, mode | O_DIRECT | O_SYNC);
 	if(devfd < 0) {
-		log_err(cd, _("Can't open device %s for %s%s access.\n"), device,
+		log_err(cd, _("Cannot open device %s for %s%s access.\n"), device,
 			(mode & O_EXCL) ? _("exclusive ") : "",
 			(mode & O_RDWR) ? _("writable") : _("read-only"));
 		return 0;
 	}
+
+	 /* Try to read first sector */
+	s = read_blockwise(devfd, buf, sizeof(buf));
+	if (s < 0 || s != sizeof(buf)) {
+		log_err(cd, _("Cannot read device %s.\n"), device);
+		r = 0;
+	}
+
+	memset(buf, 0, sizeof(buf));
 	close(devfd);
 
-	return 1;
+	return r;
 }
 
 int get_device_infos(const char *device, struct device_infos *infos, struct crypt_device *cd)
