@@ -471,7 +471,7 @@ void crypt_set_debug_level(int level);
  * Provided only for backward compatibility.
  */
 
-struct interface_callbacks { 
+struct interface_callbacks {
     int (*yesDialog)(char *msg);
     void (*log)(int class, char *msg);
 };

@@ -372,7 +372,7 @@ static int create_device_helper(struct crypt_device *cd,
 	if (!processed_key)
 		return -ENOENT;
 
-	r = dm_create_device(name, cd->device, dm_cipher ?: cipher, uuid, size, skip, offset,
+	r = dm_create_device(name, cd->device, dm_cipher ?: cipher, cd->type, uuid, size, skip, offset,
 			     key_size, processed_key, read_only, reload);
 
 	free(dm_cipher);
@@ -402,9 +402,10 @@ static int open_from_hdr_and_mk(struct crypt_device *cd,
 		     crypt_get_cipher_mode(cd)) < 0)
 		r = -ENOMEM;
 	else
-		r = dm_create_device(name, cd->device, cipher, no_uuid ? NULL : crypt_get_uuid(cd),
-				size, 0, offset, mk->keyLength, mk->key,
-				read_only, 0);
+		r = dm_create_device(name, cd->device, cipher, cd->type,
+				     no_uuid ? NULL : crypt_get_uuid(cd),
+				     size, 0, offset, mk->keyLength, mk->key,
+				     read_only, 0);
 	free(cipher);
 	return r;
 }
@@ -490,16 +491,24 @@ static void key_from_file(struct crypt_device *cd, char *msg,
 }
 
 static int _crypt_init(struct crypt_device **cd,
+		       const char *type,
 		       struct crypt_options *options,
 		       int load, int need_dm)
 {
-	int r;
+	int init_by_name, r;
+
+	/* if it is plain device and mapping table is being reloaded
+	initialize it by name*/
+	init_by_name = (type && !strcmp(type, CRYPT_PLAIN) && load);
 
 	/* Some of old API calls do not require DM in kernel,
 	   fake initialisation by initialise it with kernel_check disabled */
 	if (!need_dm)
 		(void)dm_init(NULL, 0);
-	r = crypt_init(cd, options->device);
+	if (init_by_name)
+		r = crypt_init_by_name(cd, options->name);
+	else
+		r = crypt_init(cd, options->device);
 	if (!need_dm)
 		dm_exit();
 
@@ -511,11 +520,20 @@ static int _crypt_init(struct crypt_device **cd,
 
 	crypt_set_timeout(*cd, options->timeout);
 	crypt_set_password_retry(*cd, options->tries);
-	crypt_set_iterarion_time(*cd, options->iteration_time);
+	crypt_set_iterarion_time(*cd, options->iteration_time ?: 1000);
 	crypt_set_password_verify(*cd, options->flags & CRYPT_FLAG_VERIFY);
 
-	if (load)
-		r = crypt_load(*cd, CRYPT_LUKS1, NULL);
+	if (load && !init_by_name)
+		r = crypt_load(*cd, type, NULL);
+
+	if (type && !(*cd)->type) {
+		(*cd)->type = strdup(type);
+		if (!(*cd)->type)
+			r = -ENOMEM;
+	}
+
+	if (r)
+		crypt_free(*cd);
 
 	return r;
 }
@@ -554,7 +572,7 @@ int crypt_create_device(struct crypt_options *options)
 	unsigned int keyLen;
 	int r;
 
-	r = _crypt_init(&cd, options, 0, 1);
+	r = _crypt_init(&cd, CRYPT_PLAIN, options, 0, 1);
 	if (r)
 		return r;
 
@@ -582,7 +600,7 @@ int crypt_update_device(struct crypt_options *options)
 	unsigned int keyLen;
 	int r;
 
-	r = _crypt_init(&cd, options, 0, 1);
+	r = _crypt_init(&cd, CRYPT_PLAIN, options, 1, 1);
 	if (r)
 		return r;
 
@@ -606,30 +624,43 @@ int crypt_update_device(struct crypt_options *options)
 int crypt_resize_device(struct crypt_options *options)
 {
 	struct crypt_device *cd = NULL;
-	char *device, *cipher, *key = NULL;
+	char *device = NULL, *cipher = NULL, *uuid = NULL, *key = NULL;
+	char *type = NULL;
 	uint64_t size, skip, offset;
 	int key_size, read_only, r;
 
 	r = dm_query_device(options->name, &device, &size, &skip, &offset,
-			    &cipher, &key_size, &key, &read_only, NULL);
+			    &cipher, &key_size, &key, &read_only, NULL, &uuid);
 	if (r < 0)
-		return r;
+		goto out;
 
-	r = _crypt_init(&cd, options, 0, 1);
+	/* Try to determine type of device from UUID */
+	if (uuid) {
+		if (!strncmp(uuid, CRYPT_PLAIN, strlen(CRYPT_PLAIN))) {
+			type = CRYPT_PLAIN;
+			free (uuid);
+			uuid = NULL;
+		} else if (!strncmp(uuid, CRYPT_LUKS1, strlen(CRYPT_LUKS1)))
+			type = CRYPT_LUKS1;
+	}
+
+	r = _crypt_init(&cd, type, options, 1, 1);
 	if (r)
-		return r;
+		goto out;
 
 	size = options->size;
 	r = device_check_and_adjust(cd, device, &size, &offset, &read_only);
 	if (r)
-		return r;
+		goto out;
 
-	r = dm_create_device(options->name, device, cipher, NULL, size, skip, offset,
+	r = dm_create_device(options->name, device, cipher, type,
+			     crypt_get_uuid(cd), size, skip, offset,
 			     key_size, key, read_only, 1);
-
+out:
 	safe_free(key);
 	free(cipher);
 	free(device);
+	free(uuid);
 	crypt_free(cd);
 	return r;
 }
@@ -645,7 +676,7 @@ int crypt_query_device(struct crypt_options *options)
 
 	r = dm_query_device(options->name, (char **)&options->device, &options->size,
 			    &options->skip, &options->offset, (char **)&options->cipher,
-			    &options->key_size, NULL, &read_only, NULL);
+			    &options->key_size, NULL, &read_only, NULL, NULL);
 
 	if (r < 0)
 		return r;
@@ -686,7 +717,7 @@ int crypt_luksFormat(struct crypt_options *options)
 		return r;
 	}
 
-	if ((r = _crypt_init(&cd, options, 0, 1)))
+	if ((r = _crypt_init(&cd, CRYPT_LUKS1, options, 0, 1)))
 		return r;
 
 	if (options->key_slot >= LUKS_NUMKEYS && options->key_slot != CRYPT_ANY_SLOT) {
@@ -728,7 +759,7 @@ int crypt_luksOpen(struct crypt_options *options)
 	if (!options->name)
 		return -EINVAL;
 
-	r = _crypt_init(&cd, options, 1, 1);
+	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 1);
 	if (r)
 		return r;
 
@@ -758,7 +789,7 @@ int crypt_luksKillSlot(struct crypt_options *options)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = _crypt_init(&cd, options, 1, 1);
+	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 1);
 	if (r)
 		return r;
 
@@ -775,7 +806,7 @@ int crypt_luksRemoveKey(struct crypt_options *options)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = _crypt_init(&cd, options, 1, 1);
+	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 1);
 	if (r)
 		return r;
 
@@ -794,7 +825,7 @@ int crypt_luksAddKey(struct crypt_options *options)
 	struct crypt_device *cd = NULL;
 	int r = -EINVAL;
 
-	r = _crypt_init(&cd, options, 1, 1);
+	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 1);
 	if (r)
 		return r;
 
@@ -817,7 +848,7 @@ int crypt_luksUUID(struct crypt_options *options)
 	char *uuid;
 	int r;
 
-	r = _crypt_init(&cd, options, 1, 0);
+	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 0);
 	if (r)
 		return r;
 
@@ -834,8 +865,9 @@ int crypt_isLuks(struct crypt_options *options)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = _crypt_init(&cd, options, 1, 0);
-	crypt_free(cd);
+	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 0);
+	if (!r)
+		crypt_free(cd);
 	return r;
 }
 
@@ -845,7 +877,7 @@ int crypt_luksDump(struct crypt_options *options)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = _crypt_init(&cd, options, 1, 0);
+	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 0);
 	if(r < 0)
 		return r;
 
@@ -943,7 +975,7 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 	}
 
 	r = dm_query_device(name, &device, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, NULL);
+			    NULL, NULL, NULL, NULL, NULL, NULL);
 	if (!r)
 		r = crypt_init(cd, device);
 
@@ -1123,7 +1155,7 @@ int crypt_suspend(struct crypt_device *cd,
 	}
 
 	r = dm_query_device(name, NULL, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, &suspended);
+			    NULL, NULL, NULL, NULL, &suspended, NULL);
 	if (r < 0)
 		return r;
 
@@ -1157,7 +1189,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	}
 
 	r = dm_query_device(name, NULL, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, &suspended);
+			    NULL, NULL, NULL, NULL, &suspended, NULL);
 	if (r < 0)
 		return r;
 
@@ -1204,7 +1236,7 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 	}
 
 	r = dm_query_device(name, NULL, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, &suspended);
+			    NULL, NULL, NULL, NULL, &suspended, NULL);
 	if (r < 0)
 		return r;
 

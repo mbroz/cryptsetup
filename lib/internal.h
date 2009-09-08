@@ -81,8 +81,10 @@ int dm_query_device(const char *name,
 		    int *key_size,
 		    char **key,
 		    int *read_only,
-		    int *suspended);
-int dm_create_device(const char *name, const char *device, const char *cipher, const char *uuid,
+		    int *suspended,
+		    char **uuid);
+int dm_create_device(const char *name, const char *device, const char *cipher,
+		     const char *type, const char *uuid,
 		     uint64_t size, uint64_t skip, uint64_t offset,
 		     size_t key_size, const char *key,
 		     int read_only, int reload);

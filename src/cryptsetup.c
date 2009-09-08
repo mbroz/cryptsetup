@@ -34,7 +34,7 @@ static int opt_version_mode = 0;
 static int opt_timeout = 0;
 static int opt_tries = 3;
 static int opt_align_payload = 0;
-static int opt_disable_uuid = 0;
+static int opt_non_exclusive = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -375,8 +375,8 @@ static int action_luksOpen(int arg)
 
 	if (opt_readonly)
 		options.flags |= CRYPT_FLAG_READONLY;
-	if (opt_disable_uuid) /* Abuse old flag */
-		options.flags |= CRYPT_FLAG_NON_EXCLUSIVE_ACCESS;
+	if (opt_non_exclusive)
+		log_err(_("Obsolete option --non-exclusive is ignored.\n"));
 	return crypt_luksOpen(&options);
 }
 
@@ -637,7 +637,7 @@ int main(int argc, char **argv)
 		{ "timeout",           't',  POPT_ARG_INT,                                &opt_timeout,           0, N_("Timeout for interactive passphrase prompt (in seconds)"),          N_("secs") },
 		{ "tries",             'T',  POPT_ARG_INT,                                &opt_tries,             0, N_("How often the input of the passphrase canbe retried"),            NULL },
 		{ "align-payload",     '\0',  POPT_ARG_INT,                               &opt_align_payload,     0, N_("Align payload at <n> sector boundaries - for luksFormat"),         N_("SECTORS") },
-		{ "disable-uuid",      '\0',  POPT_ARG_NONE,                              &opt_disable_uuid,      0, N_("Do not set UUID for device luksOpen."), NULL },
+		{ "non-exclusive",     '\0',  POPT_ARG_NONE,                              &opt_non_exclusive,     0, N_("Allows non-exclusive access for luksOpen, WARNING see manpage."),        NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

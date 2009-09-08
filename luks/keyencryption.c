@@ -71,7 +71,7 @@ static int setup_mapping(const char *cipher, const char *name,
 	size = round_up_modulo(srcLength,device_sector_size)/SECTOR_SIZE;
 	cleaner_size = size;
 
-	return dm_create_device(name, device, cipher, NULL, size, 0, sector,
+	return dm_create_device(name, device, cipher, "TEMP", NULL, size, 0, sector,
 				keyLength, key, (mode == O_RDONLY), 0);
 }
 

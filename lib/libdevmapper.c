@@ -2,8 +2,10 @@
 #include <dirent.h>
 #include <errno.h>
 #include <libdevmapper.h>
+#include <linux/dm-ioctl.h>
 #include <fcntl.h>
 #include <linux/fs.h>
+#include <uuid/uuid.h>
 
 #include "internal.h"
 #include "luks.h"
@@ -11,7 +13,6 @@
 #define DEVICE_DIR		"/dev"
 #define DM_UUID_PREFIX		"CRYPT-"
 #define DM_UUID_PREFIX_LEN	6
-#define DM_UUID_LEN		UUID_STRING_L
 #define DM_CRYPT_TARGET		"crypt"
 #define RETRY_COUNT		5
 
@@ -264,9 +265,42 @@ int dm_remove_device(const char *name, int force, uint64_t size)
 	return r;
 }
 
+#define UUID_LEN 37 /* 36 + \0, libuuid ... */
+/*
+ * UUID has format: CRYPT-<devicetype>-[<uuid>-]<device name>
+ * CRYPT-PLAIN-name
+ * CRYPT-LUKS1-00000000000000000000000000000000-name
+ * CRYPT-TEMP-name
+ */
+static void dm_prepare_uuid(const char *name, const char *type, const char *uuid, char *buf, size_t buflen)
+{
+	char *ptr, uuid2[UUID_LEN] = {0};
+	uuid_t uu;
+	int i = 0;
+
+	/* Remove '-' chars */
+	if (uuid && !uuid_parse(uuid, uu)) {
+		for (ptr = uuid2, i = 0; i < UUID_LEN; i++)
+			if (uuid[i] != '-') {
+				*ptr = uuid[i];
+				ptr++;
+			}
+	}
+
+	i = snprintf(buf, buflen, DM_UUID_PREFIX "%s%s%s%s%s",
+		type ?: "", type ? "-" : "",
+		uuid2[0] ? uuid2 : "", uuid2[0] ? "-" : "",
+		name);
+
+	log_dbg("DM-UUID is %s", buf);
+	if (i >= buflen)
+		log_err(NULL, _("DM-UUID for device %s was truncated.\n"), name);
+}
+
 int dm_create_device(const char *name,
 		     const char *device,
 		     const char *cipher,
+		     const char *type,
 		     const char *uuid,
 		     uint64_t size,
 		     uint64_t skip,
@@ -281,25 +315,35 @@ int dm_create_device(const char *name,
 	struct dm_info dmi;
 	char *params = NULL;
 	char *error = NULL;
-	char dev_uuid[DM_UUID_PREFIX_LEN + DM_UUID_LEN + 1] = {0};
+	char dev_uuid[DM_UUID_LEN] = {0};
 	int r = -EINVAL;
 	uint32_t read_ahead = 0;
 
 	params = get_params(device, skip, offset, cipher, key_size, key);
 	if (!params)
 		goto out_no_removal;
- 
-	if (uuid) {
-		strncpy(dev_uuid, DM_UUID_PREFIX, DM_UUID_PREFIX_LEN);
-		strncpy(dev_uuid + DM_UUID_PREFIX_LEN, uuid, DM_UUID_LEN);
-		dev_uuid[DM_UUID_PREFIX_LEN + DM_UUID_LEN] = '\0';
+
+	/* All devices must have DM_UUID, only resize on old device is exception */
+	if (reload) {
+		if (!(dmt = dm_task_create(DM_DEVICE_RELOAD)))
+			goto out_no_removal;
+
+		if (!dm_task_set_name(dmt, name))
+			goto out_no_removal;
+	} else {
+		dm_prepare_uuid(name, type, uuid, dev_uuid, sizeof(dev_uuid));
+
+		if (!(dmt = dm_task_create(DM_DEVICE_CREATE)))
+			goto out_no_removal;
+
+		if (!dm_task_set_name(dmt, name))
+			goto out_no_removal;
+
+		if (!dm_task_set_uuid(dmt, dev_uuid))
+			goto out_no_removal;
 	}
 
-	if (!(dmt = dm_task_create(reload ? DM_DEVICE_RELOAD
-	                                  : DM_DEVICE_CREATE)))
-		goto out_no_removal;
-	if (!dm_task_set_name(dmt, name))
-		goto out_no_removal;
+
 	if (read_only && !dm_task_set_ro(dmt))
 		goto out_no_removal;
 	if (!dm_task_add_target(dmt, 0, size, DM_CRYPT_TARGET, params))
@@ -310,9 +354,6 @@ int dm_create_device(const char *name,
 	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
 		goto out_no_removal;
 #endif
-
-	if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
-		goto out_no_removal;
 
 	if (!dm_task_run(dmt))
 		goto out_no_removal;
@@ -412,12 +453,13 @@ int dm_query_device(const char *name,
 		    int *key_size,
 		    char **key,
 		    int *read_only,
-		    int *suspended)
+		    int *suspended,
+		    char **uuid)
 {
 	struct dm_task *dmt;
 	struct dm_info dmi;
 	uint64_t start, length, val64;
-	char *target_type, *params, *rcipher, *key_, *rdevice, *endp, buffer[3];
+	char *target_type, *params, *rcipher, *key_, *rdevice, *endp, buffer[3], *tmp_uuid;
 	void *next = NULL;
 	int i, r = -EINVAL;
 
@@ -507,6 +549,10 @@ int dm_query_device(const char *name,
 
 	if (suspended)
 		*suspended = dmi.suspended;
+
+	if (uuid && (tmp_uuid = (char*)dm_task_get_uuid(dmt)) &&
+	    !strncmp(tmp_uuid, DM_UUID_PREFIX, DM_UUID_PREFIX_LEN))
+		*uuid = strdup(tmp_uuid + DM_UUID_PREFIX_LEN);
 
 	r = (dmi.open_count > 0);
 out:
