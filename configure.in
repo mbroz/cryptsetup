@@ -103,7 +103,7 @@ if test "x$enable_selinux" != xno; then
 		AC_SEARCH_LIBS([pthread_mutex_lock], [pthread],
 			[test "$ac_cv_search_pthread_mutex_lock" = "none required" || LIB_PTHREAD=-lpthread])
 		LIBS="$saved_LIBS2"
-		SELINUX_STATIC_LIBS="-lselinux -lsepol"
+		SELINUX_STATIC_LIBS="$LIBS"
 	fi
 fi
 AC_SUBST(SELINUX_STATIC_LIBS)
