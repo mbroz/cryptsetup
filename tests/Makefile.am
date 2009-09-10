@@ -1,13 +1,13 @@
 TESTS = apitest
 
-EXTRA_DIST = apitest fileDiffer.py compatimage.img.bz2 test
+EXTRA_DIST = fileDiffer.py compatimage.img.bz2
 
 apitest_SOURCES = apitest.c
 apitest_LDADD = ../lib/libcryptsetup.la
 apitest_LDFLAGS = -static
-apitest_CFLAGS = -g -O0 -I../lib/
+apitest_CFLAGS = -g -O0 -I$(top_srcdir)/lib/
 
-check_PROGRAMS = apitest compatimage.img test
+check_PROGRAMS = apitest
 
 compatimage.img:
 	@bzip2 -k -d compatimage.img.bz2

@@ -683,6 +683,11 @@ int main (int argc, char *argv[])
 {
 	int i;
 
+	if (getuid() != 0) {
+		printf("You must be root to run this test.\n");
+		exit(0);
+	}
+
 	for (i = 1; i < argc; i++) {
 		if (!strcmp("-v", argv[i]) || !strcmp("--verbose", argv[i]))
 			_verbose = 1;

@@ -198,19 +198,21 @@ static int verify_other_keyslot(struct crypt_device *cd,
 	if(!password)
 		return -EINVAL;
 
-	if (ki == SLOT_ACTIVE_LAST)
+	ki = crypt_keyslot_status(cd, keyIndex);
+	if (ki == SLOT_ACTIVE) /* Not last slot */
 		LUKS_keyslot_set(&cd->hdr, keyIndex, 0);
 
 	openedIndex = LUKS_open_key_with_hdr(cd->device, CRYPT_ANY_SLOT,
 					     password, passwordLen,
 					     &cd->hdr, &mk, cd);
-	if (openedIndex < 0) {
-		LUKS_keyslot_set(&cd->hdr, keyIndex, 1);
-		return -EPERM;
-	}
 
+	if (ki == SLOT_ACTIVE)
+		LUKS_keyslot_set(&cd->hdr, keyIndex, 1);
 	LUKS_dealloc_masterkey(mk);
 	safe_free(password);
+
+	if (openedIndex < 0)
+		return -EPERM;
 
 	log_std(cd, _("Key slot %d verified.\n"), openedIndex);
 	return 0;
@@ -1430,10 +1432,9 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	const char *volume_key,
 	size_t volume_key_size,
 	const char *passphrase,
-	size_t passphrase_size
-)
+	size_t passphrase_size)
 {
-	struct luks_masterkey *mk;
+	struct luks_masterkey *mk = NULL;
 	int r = -EINVAL;
 	char *new_password = NULL; unsigned int new_passwordLen;
 

@@ -8,26 +8,14 @@
 
 extern struct hash_backend hash_gcrypt_backend;
 
-#ifdef USE_PLUGINS
-static void init_plugins(void)
-{
-}
-#else /* USE_PLUGINS */
-#	define init_plugins()	do { } while(0)
-#endif /* USE_PLUGINS */
-
 static struct hash_backend *hash_backends[] = {
-#ifdef BUILTIN_GCRYPT
 	&hash_gcrypt_backend,
-#endif
 	NULL
 };
 
 struct hash_backend *get_hash_backend(const char *name)
 {
 	struct hash_backend **backend;
-
-	init_plugins();
 
 	for(backend = hash_backends; *backend; backend++)
 		if (!name || strcmp(name, (*backend)->name) == 0)
