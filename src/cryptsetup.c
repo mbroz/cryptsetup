@@ -618,7 +618,7 @@ int main(int argc, char **argv)
 	static struct poptOption popt_options[] = {
 		{ NULL,                '\0', POPT_ARG_INCLUDE_TABLE,                      popt_help_options,      0, N_("Help options:"),                                                   NULL },
 		{ "verbose",           'v',  POPT_ARG_NONE,                               &opt_verbose,           0, N_("Shows more detailed error messages"),                              NULL },
-		{ "debug",             '\0', POPT_ARG_NONE,                               &opt_debug,             0, N_("Show debug messsgages"),                                           NULL },
+		{ "debug",             '\0', POPT_ARG_NONE,                               &opt_debug,             0, N_("Show debug messages"),                                             NULL },
 		{ "cipher",            'c',  POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &opt_cipher,            0, N_("The cipher used to encrypt the disk (see /proc/crypto)"),          NULL },
 		{ "hash",              'h',  POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &opt_hash,              0, N_("The hash used to create the encryption key from the passphrase"),  NULL },
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE,                               &opt_verify_passphrase, 0, N_("Verifies the passphrase by asking for it twice"),                  NULL },
