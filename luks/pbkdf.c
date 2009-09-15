@@ -32,19 +32,7 @@
 static volatile uint64_t __PBKDF2_global_j = 0;
 static volatile uint64_t __PBKDF2_performance = 0;
 
-static int init_crypto(void)
-{
-	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
-		//if (!gcry_check_version (GCRYPT_VERSION))
-		//	return -ENOSYS;
-		gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
-		gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
-		gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
-		gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
-	}
-
-	return 0;
-}
+int init_crypto(void);
 
 /*
  * 5.2 PBKDF2

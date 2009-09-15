@@ -1108,6 +1108,12 @@ int crypt_load(struct crypt_device *cd,
 	if (requested_type && !isPLAIN(requested_type) && !isLUKS(requested_type))
 		return -EINVAL;
 
+	/* Some hash functions need initialized gcrypt library */
+	if (init_crypto()) {
+		log_err(cd, _("Cannot initialize crypto backend.\n"));
+		return -ENOSYS;
+	}
+
 	r = LUKS_read_phdr(cd->device, &hdr, 0, cd);
 
 	if (!r) {
