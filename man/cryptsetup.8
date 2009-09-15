@@ -27,7 +27,9 @@ reports the status for the mapping <name>. No options.
 .PP
 \fIresize\fR <name>
 .IP
-resizes an active mapping <name>. <options> must include \-\-size 
+resizes an active mapping <name>.
+
+If \-\-size (in sectors) is not specified, the size of the underlying block device is used.
 .PP
 .br
 .SH LUKS EXTENSION
