@@ -234,22 +234,10 @@ int dm_remove_device(const char *name, int force, uint64_t size)
 {
 	int r = -EINVAL;
 	int retries = force ? RETRY_COUNT : 1;
+	int error_target = 0;
 
 	if (!name || (force && !size))
 		return -EINVAL;
-
-	/* If force flag is set, replace device with error, read-only target.
-	 * it should stop processes from reading it and also removed underlying
-	 * device from mapping, so it is usable again.
-	 * Force flag should be used only for temporary devices, which are
-	 * intended to work inside cryptsetup only!
-	 * Anyway, if some process try to read temporary cryptsetup device,
-	 * it is bug - no other process should try touch it (e.g. udev).
-	 */
-	if (force) {
-		 _error_device(name, size);
-		retries = RETRY_COUNT;
-	}
 
 	do {
 		r = _dm_simple(DM_DEVICE_REMOVE, name) ? 0 : -EINVAL;
@@ -257,6 +245,18 @@ int dm_remove_device(const char *name, int force, uint64_t size)
 			log_dbg("WARNING: other process locked internal device %s, %s.",
 				name, retries ? "retrying remove" : "giving up");
 			sleep(1);
+			if (force && !error_target) {
+				/* If force flag is set, replace device with error, read-only target.
+				 * it should stop processes from reading it and also removed underlying
+				 * device from mapping, so it is usable again.
+				 * Force flag should be used only for temporary devices, which are
+				 * intended to work inside cryptsetup only!
+				 * Anyway, if some process try to read temporary cryptsetup device,
+				 * it is bug - no other process should try touch it (e.g. udev).
+				 */
+				_error_device(name, size);
+				error_target = 1;
+			}
 		}
 	} while (r == -EINVAL && retries);
 
