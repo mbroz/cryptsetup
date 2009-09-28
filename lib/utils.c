@@ -493,8 +493,10 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		if(key_file)
 			close(fd);
 		/* Fail if piped input dies reading nothing */
-		if(!i && !regular_file)
+		if(!i && !regular_file) {
+			log_dbg("Error reading passphrase.");
 			goto out_err;
+		}
 		pass[i] = 0;
 		*key = pass;
 		*passLen = i;
