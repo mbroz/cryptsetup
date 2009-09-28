@@ -402,6 +402,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 	char *pass = NULL;
 	int newline_stop;
 	int read_horizon;
+	int regular_file = 0;
 
 	if(key_file && !strcmp(key_file, "-")) {
 		/* Allow binary reading from stdin */
@@ -469,11 +470,12 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 				log_err(cd, "Failed to stat key file %s.\n", key_file);
 				goto out_err;
 			}
-			if(!S_ISREG(st.st_mode)) {
+			if(!S_ISREG(st.st_mode))
 				log_err(cd, "Warning: exhausting read requested, but key file %s"
 					" is not a regular file, function might never return.\n",
 					key_file);
-			}
+			else
+				regular_file = 1;
 		}
 		buflen = 0;
 		for(i = 0; read_horizon == 0 || i < read_horizon; i++) {
@@ -490,6 +492,11 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		}
 		if(key_file)
 			close(fd);
+		/* Fail if piped input dies reading nothing */
+		if(!i && !regular_file) {
+			log_err(cd, "Error reading passphrase.\n");
+			goto out_err;
+		}
 		pass[i] = 0;
 		*key = pass;
 		*passLen = i;
