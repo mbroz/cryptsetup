@@ -471,7 +471,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 				goto out_err;
 			}
 			if(!S_ISREG(st.st_mode))
-				log_err(cd, "Warning: exhausting read requested, but key file %s"
+				log_std(cd, "Warning: exhausting read requested, but key file %s"
 					" is not a regular file, function might never return.\n",
 					key_file);
 			else
@@ -493,10 +493,8 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		if(key_file)
 			close(fd);
 		/* Fail if piped input dies reading nothing */
-		if(!i && !regular_file) {
-			log_err(cd, "Error reading passphrase.\n");
+		if(!i && !regular_file)
 			goto out_err;
-		}
 		pass[i] = 0;
 		*key = pass;
 		*passLen = i;
