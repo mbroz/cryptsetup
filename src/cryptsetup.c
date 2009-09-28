@@ -22,6 +22,7 @@ static char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
 static char *opt_key_file = NULL;
 static char *opt_master_key_file = NULL;
+static char *opt_header_backup_file = NULL;
 static unsigned int opt_key_size = 0;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static uint64_t opt_size = 0;
@@ -54,6 +55,8 @@ static int action_luksUUID(int arg);
 static int action_luksDump(int arg);
 static int action_luksSuspend(int arg);
 static int action_luksResume(int arg);
+static int action_luksBackup(int arg);
+static int action_luksRestore(int arg);
 
 static struct action_type {
 	const char *type;
@@ -81,6 +84,8 @@ static struct action_type {
 	{ "luksDump",	action_luksDump,	0, 1, 0, 0, 1, N_("<device>"), N_("dump LUKS partition information") },
 	{ "luksSuspend",action_luksSuspend,	0, 1, 1, 1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen).") },
 	{ "luksResume",	action_luksResume,	0, 1, 1, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
+	{ "luksHeaderBackup",action_luksBackup,	0, 1, 1, 1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
+	{ "luksHeaderRestore",action_luksRestore,0,1, 1, 1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
 	{ "luksDelKey", action_luksDelKey,	0, 2, 1, 1, 1, N_("<device> <key slot>"), N_("identical to luksKillSlot - DEPRECATED - see man page") },
 	{ "reload",	action_create,		1, 2, 1, 1, 1, N_("<name> <device>"), N_("modify active device - DEPRECATED - see man page") },
 	{ NULL, NULL, 0, 0, 0, 0, 0, NULL, NULL }
@@ -128,6 +133,16 @@ static struct interface_callbacks cmd_icb = {
         .yesDialog = yesDialog,
         .log = cmdLineLog,
 };
+
+static void _log(int class, const char *msg, void *usrptr)
+{
+	cmdLineLog(class, (char *)msg);
+}
+
+static int _yesDialog(const char *msg, void *usrptr)
+{
+	return yesDialog((char*)msg);
+}
 
 /* End ICBs */
 
@@ -377,6 +392,7 @@ static int action_luksOpen(int arg)
 		options.flags |= CRYPT_FLAG_READONLY;
 	if (opt_non_exclusive)
 		log_err(_("Obsolete option --non-exclusive is ignored.\n"));
+
 	return crypt_luksOpen(&options);
 }
 
@@ -529,6 +545,49 @@ out:
 	return r;
 }
 
+static int action_luksBackup(int arg)
+{
+	struct crypt_device *cd = NULL;
+	int r;
+
+	if (!opt_header_backup_file) {
+		log_err(_("Option --header-bakup-file is required.\n"));
+		return -EINVAL;
+	}
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	crypt_set_log_callback(cd, _log, NULL);
+	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+
+	r = crypt_header_backup(cd, CRYPT_LUKS1, opt_header_backup_file);
+out:
+	crypt_free(cd);
+	return r;
+}
+
+static int action_luksRestore(int arg)
+{
+	struct crypt_device *cd = NULL;
+	int r = 0;
+
+	if (!opt_header_backup_file) {
+		log_err(_("Option --header-bakup-file is required.\n"));
+		return -EINVAL;
+	}
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	crypt_set_log_callback(cd, _log, NULL);
+	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	r = crypt_header_restore(cd, CRYPT_LUKS1, opt_header_backup_file);
+out:
+	crypt_free(cd);
+	return r;
+}
+
 static void usage(poptContext popt_context, int exitcode,
                   const char *error, const char *more)
 {
@@ -638,6 +697,7 @@ int main(int argc, char **argv)
 		{ "tries",             'T',  POPT_ARG_INT,                                &opt_tries,             0, N_("How often the input of the passphrase canbe retried"),            NULL },
 		{ "align-payload",     '\0',  POPT_ARG_INT,                               &opt_align_payload,     0, N_("Align payload at <n> sector boundaries - for luksFormat"),         N_("SECTORS") },
 		{ "non-exclusive",     '\0',  POPT_ARG_NONE,                              &opt_non_exclusive,     0, N_("Allows non-exclusive access for luksOpen, WARNING see manpage."),        NULL },
+		{ "header-backup-file",'\0',  POPT_ARG_STRING,                            &opt_header_backup_file,0, N_("File with LUKS header and keyslots backup."),        NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

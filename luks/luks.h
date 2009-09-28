@@ -38,6 +38,9 @@
 /* Actually we need only 37, but we don't want struct autoaligning to kick in */
 #define UUID_STRING_L 40
 
+/* Offset to align kesylot area */
+#define LUKS_ALIGN_KEYSLOTS 4096
+
 /* Any integer values are stored in network byte order on disk and must be
 converted */
 
@@ -96,6 +99,25 @@ int LUKS_read_phdr(
 	const char *device,
 	struct luks_phdr *hdr,
 	int require_luks_device,
+	struct crypt_device *ctx);
+
+int LUKS_read_phdr_backup(
+	const char *backup_file,
+	const char *device,
+	struct luks_phdr *hdr,
+	int require_luks_device,
+	struct crypt_device *ctx);
+
+int LUKS_hdr_backup(
+	const char *backup_file,
+	const char *device,
+	struct luks_phdr *hdr,
+	struct crypt_device *ctx);
+
+int LUKS_hdr_restore(
+	const char *backup_file,
+	const char *device,
+	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 
 int LUKS_write_phdr(

@@ -48,6 +48,7 @@ struct device_infos {
 };
 
 struct crypt_device;
+int crypt_confirm(struct crypt_device *cd, const char *msg);
 
 void set_error_va(const char *fmt, va_list va);
 void set_error(const char *fmt, ...);

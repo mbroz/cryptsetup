@@ -443,6 +443,32 @@ typedef enum { SLOT_INVALID, SLOT_INACTIVE, SLOT_ACTIVE, SLOT_ACTIVE_LAST } cryp
 crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot);
 
 /**
+ * Backup header and keyslots to file
+ *
+ * Returns 0 on success or negative errno value otherwise.
+ *
+ * @cd - crypt device handle
+ * @requested_type - type of header to backup
+ * @backup_file - file to backup header to
+ */
+int crypt_header_backup(struct crypt_device *cd,
+	const char *requested_type,
+	const char *backup_file);
+
+/**
+ * Restore header and keyslots from backup file
+ *
+ * Returns 0 on success or negative errno value otherwise.
+ *
+ * @cd - crypt device handle
+ * @requested_type - type of header to restore
+ * @backup_file - file to restore header from
+ */
+int crypt_header_restore(struct crypt_device *cd,
+	const char *requested_type,
+	const char *backup_file);
+
+/**
  * Receives last reported error
  *
  * @buf - buffef for message

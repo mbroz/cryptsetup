@@ -424,6 +424,14 @@ static int yesDialog_wrapper(const char *msg, void *usrptr)
 	return xyesDialog((char*)msg);
 }
 
+int crypt_confirm(struct crypt_device *cd, const char *msg)
+{
+	if (!cd || !cd->confirm)
+		return 1;
+	else
+		return cd->confirm(msg, cd->confirm_usrptr);
+}
+
 static void key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 			      unsigned int *key_len, int force_verify)
 {
@@ -1124,6 +1132,32 @@ int crypt_load(struct crypt_device *cd,
 	}
 
 	return r;
+}
+
+int crypt_header_backup(struct crypt_device *cd,
+			const char *requested_type,
+			const char *backup_file)
+{
+	if ((requested_type && !isLUKS(requested_type)) || !backup_file)
+		return -EINVAL;
+
+	log_dbg("Requested header backup of device %s (%s) to "
+		"file %s.", cd->device, requested_type, backup_file);
+
+	return LUKS_hdr_backup(backup_file, cd->device, &cd->hdr, cd);
+}
+
+int crypt_header_restore(struct crypt_device *cd,
+			 const char *requested_type,
+			 const char *backup_file)
+{
+	if (requested_type && !isLUKS(requested_type))
+		return -EINVAL;
+
+	log_dbg("Requested header restore to device %s (%s) from "
+		"file %s.", cd->device, requested_type, backup_file);
+
+	return LUKS_hdr_restore(backup_file, cd->device, &cd->hdr, cd);
 }
 
 void crypt_free(struct crypt_device *cd)
