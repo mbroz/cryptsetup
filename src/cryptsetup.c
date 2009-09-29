@@ -551,7 +551,7 @@ static int action_luksBackup(int arg)
 	int r;
 
 	if (!opt_header_backup_file) {
-		log_err(_("Option --header-bakup-file is required.\n"));
+		log_err(_("Option --header-backup-file is required.\n"));
 		return -EINVAL;
 	}
 
@@ -573,7 +573,7 @@ static int action_luksRestore(int arg)
 	int r = 0;
 
 	if (!opt_header_backup_file) {
-		log_err(_("Option --header-bakup-file is required.\n"));
+		log_err(_("Option --header-backup-file is required.\n"));
 		return -EINVAL;
 	}
 
