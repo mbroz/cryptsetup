@@ -25,7 +25,7 @@ libcryptsetup_la_DEPENDENCIES = libcryptsetup.sym
 
 libcryptsetup_la_LDFLAGS = \
 	$(_STATIC_LIBRARY) \
-	--version-script=libcryptsetup.sym \
+	-Wl,--version-script=libcryptsetup.sym \
 	-version-info 1:0:0
 
 libcryptsetup_la_CFLAGS = -Wall

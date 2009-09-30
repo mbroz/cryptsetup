@@ -35,7 +35,7 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name);
 /**
  * Set log function.
  *
- * @cd - crypt device handle
+ * @cd - crypt device handle (can be NULL to set default log function)
  * @usrptr - provided identification in callback
  * @class  - log type below (debug messages can uses other levels)
  * @msg    - log message
@@ -46,6 +46,15 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name);
 void crypt_set_log_callback(struct crypt_device *cd,
 	void (*log)(int class, const char *msg, void *usrptr),
 	void *usrptr);
+
+/**
+ * Log message through log function.
+ *
+ * @cd - crypt device handle
+ * @class  - log type
+ * @msg    - log message
+ */
+void crypt_log(struct crypt_device *cd, int class, const char *msg);
 
 /**
  * Set confirmation callback (yes/no)

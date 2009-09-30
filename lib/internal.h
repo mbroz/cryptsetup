@@ -109,7 +109,6 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 
 int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode);
 
-void set_default_log(void (*log)(int class, char *msg));
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)

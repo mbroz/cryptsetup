@@ -39,7 +39,7 @@ struct crypt_device {
 };
 
 /* Log helper */
-static void (*_default_log)(int class, char *msg) = NULL;
+static void (*_default_log)(int class, const char *msg, void *usrptr) = NULL;
 static int _debug_level = 0;
 
 void crypt_set_debug_level(int level)
@@ -47,9 +47,12 @@ void crypt_set_debug_level(int level)
 	_debug_level = level;
 }
 
-void set_default_log(void (*log)(int class, char *msg))
+void crypt_log(struct crypt_device *cd, int class, const char *msg)
 {
-	_default_log = log;
+	if (cd && cd->log)
+		cd->log(class, msg, cd->log_usrptr);
+	else if (_default_log)
+		_default_log(class, msg, NULL);
 }
 
 void logger(struct crypt_device *cd, int class, const char *file,
@@ -62,10 +65,7 @@ void logger(struct crypt_device *cd, int class, const char *file,
 
 	if (vasprintf(&target, format, argp) > 0) {
 		if (class >= 0) {
-			if (cd && cd->log)
-				cd->log(class, target, cd->log_usrptr);
-			else if (_default_log)
-				_default_log(class, target);
+			crypt_log(cd, class, target);
 #ifdef CRYPT_DEBUG
 		} else if (_debug_level)
 			printf("# %s:%d %s\n", file ?: "?", line, target);
@@ -552,8 +552,12 @@ void crypt_set_log_callback(struct crypt_device *cd,
 	void (*log)(int class, const char *msg, void *usrptr),
 	void *usrptr)
 {
-	cd->log = log;
-	cd->log_usrptr = usrptr;
+	if (!cd)
+		_default_log = log;
+	else {
+		cd->log = log;
+		cd->log_usrptr = usrptr;
+	}
 }
 
 void crypt_set_confirm_callback(struct crypt_device *cd,
@@ -703,7 +707,18 @@ int crypt_query_device(struct crypt_options *options)
 /* OPTIONS: name, icb */
 int crypt_remove_device(struct crypt_options *options)
 {
-	return crypt_deactivate(NULL, options->name);
+	struct crypt_device *cd = NULL;
+	int r;
+
+	r = crypt_init_by_name(&cd, options->name);
+	if (r)
+		return r;
+
+	r = crypt_deactivate(cd, options->name);
+
+	crypt_free(cd);
+	return r;
+
 }
 
 /* OPTIONS: device, cipher, hash, align_payload, key_size (master key), key_slot
@@ -981,12 +996,12 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 	ci = crypt_status(NULL, name);
 	if (ci < ACTIVE) {
 		log_err(NULL, _("Device %s is not active.\n"), name);
-		return -EINVAL;
+		return -ENODEV;
 	}
 
 	r = dm_query_device(name, &device, NULL, NULL, NULL,
 			    NULL, NULL, NULL, NULL, NULL, NULL);
-	if (!r)
+	if (r >= 0)
 		r = crypt_init(cd, device);
 
 	free(device);

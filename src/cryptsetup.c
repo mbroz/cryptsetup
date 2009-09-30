@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <inttypes.h>
 #include <errno.h>
 #include <unistd.h>
@@ -70,7 +71,7 @@ static struct action_type {
 	const char *desc;
 } action_types[] = {
 	{ "create",	action_create,		0, 2, 1, 1, 1, N_("<name> <device>"),N_("create device") },
-	{ "remove",	action_remove,		0, 1, 1, 0, 1, N_("<name>"), N_("remove device") },
+	{ "remove",	action_remove,		0, 1, 1, 1, 1, N_("<name>"), N_("remove device") },
 	{ "resize",	action_resize,		0, 1, 1, 1, 1, N_("<name>"), N_("resize active device") },
 	{ "status",	action_status,		0, 1, 1, 0, 1, N_("<name>"), N_("show device status") },
 	{ "luksFormat", action_luksFormat,	0, 1, 1, 1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
@@ -80,7 +81,7 @@ static struct action_type {
 	{ "luksKillSlot",  action_luksKillSlot, 0, 2, 1, 1, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
 	{ "luksUUID",	action_luksUUID,	0, 1, 0, 0, 1, N_("<device>"), N_("print UUID of LUKS device") },
 	{ "isLuks",	action_isLuks,		0, 1, 0, 0, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
-	{ "luksClose",	action_remove,		0, 1, 1, 0, 1, N_("<name>"), N_("remove LUKS mapping") },
+	{ "luksClose",	action_remove,		0, 1, 1, 1, 1, N_("<name>"), N_("remove LUKS mapping") },
 	{ "luksDump",	action_luksDump,	0, 1, 0, 0, 1, N_("<device>"), N_("dump LUKS partition information") },
 	{ "luksSuspend",action_luksSuspend,	0, 1, 1, 1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen).") },
 	{ "luksResume",	action_luksResume,	0, 1, 1, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
@@ -90,6 +91,30 @@ static struct action_type {
 	{ "reload",	action_create,		1, 2, 1, 1, 1, N_("<name> <device>"), N_("modify active device - DEPRECATED - see man page") },
 	{ NULL, NULL, 0, 0, 0, 0, 0, NULL, NULL }
 };
+
+static void clogger(struct crypt_device *cd, int class, const char *file,
+		   int line, const char *format, ...)
+{
+	va_list argp;
+	char *target = NULL;
+
+	va_start(argp, format);
+
+	if (vasprintf(&target, format, argp) > 0) {
+		if (class >= 0) {
+			crypt_log(cd, class, target);
+#ifdef CRYPT_DEBUG
+		} else if (opt_debug)
+			printf("# %s:%d %s\n", file ?: "?", line, target);
+#else
+		} else if (opt_debug)
+			printf("# %s\n", target);
+#endif
+	}
+
+	va_end(argp);
+	free(target);
+}
 
 /* Interface Callbacks */
 static int yesDialog(char *msg)
@@ -319,7 +344,9 @@ static int _action_luksFormat_useMK()
 		.data_alignment = opt_align_payload,
 	};
 
-	if (parse_into_name_and_mode(opt_cipher ?: DEFAULT_LUKS_CIPHER, cipher, cipher_mode)) {
+	if (sscanf(opt_cipher ?: DEFAULT_LUKS_CIPHER,
+		   "%" MAX_CIPHER_LEN_STR "[^-]-%" MAX_CIPHER_LEN_STR "s",
+		   cipher, cipher_mode) != 2) {
 		log_err("No known cipher specification pattern detected.\n");
 		return -EINVAL;
 	}
@@ -643,11 +670,6 @@ static int run_action(struct action_type *action)
 {
 	int r;
 
-	if (dm_init(NULL, action->required_dm_backend) < 1) {
-		log_err("Cannot communicate with device-mapper. Is dm_mod kernel module loaded?\n");
-		return -ENOSYS;
-	}
-
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 1);
 
@@ -655,9 +677,6 @@ static int run_action(struct action_type *action)
 
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 0);
-
-	if (action->required_dm_backend)
-		dm_exit();
 
 	if (r < 0 && (opt_verbose || action->show_status))
 		show_status(-r);
@@ -706,7 +725,7 @@ int main(int argc, char **argv)
 	int r;
 	const char *null_action_argv[] = {NULL};
 
-	set_default_log(cmdLineLog);
+	crypt_set_log_callback(NULL, _log, NULL);
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);

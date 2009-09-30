@@ -34,18 +34,10 @@
 #define DEFAULT_LUKS_KEY_SIZE	128
 
 #define MAX_CIPHER_LEN		32
+#define MAX_CIPHER_LEN_STR	"32"
 
-/* Helper funcions provided by internal libcryptsetup objects */
-void set_default_log(void (*log)(int class, char *msg));
-void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
-#define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
-#define log_std(x...) logger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
-#define log_err(x...) logger(NULL, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
-
-extern int memlock_inc(struct crypt_device *ctx);
-extern int memlock_dec(struct crypt_device *ctx);
-extern int dm_init(struct crypt_device *context, int check_kernel);
-extern void dm_exit(void);
-extern int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode);
+#define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
+#define log_std(x...) clogger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
+#define log_err(x...) clogger(NULL, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
 
 #endif /* CRYPTSETUP_H */
