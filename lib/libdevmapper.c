@@ -44,12 +44,15 @@ int dm_init(struct crypt_device *context, int check_kernel)
 	if (!_dm_use_count++) {
 		log_dbg("Initialising device-mapper backend%s.",
 			check_kernel ? "" : " (NO kernel check requested)");
-		if (check_kernel && !_dm_simple(DM_DEVICE_LIST_VERSIONS, NULL))
+		if (check_kernel && !_dm_simple(DM_DEVICE_LIST_VERSIONS, NULL)) {
+			log_err(context, _("Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"));
 			return -1;
+		}
 		dm_log_init(set_dm_error);
 		dm_log_init_verbose(10);
 	}
 
+	// FIXME: global context is not safe
 	if (context)
 		_context = context;
 

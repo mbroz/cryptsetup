@@ -643,6 +643,9 @@ int crypt_resize_device(struct crypt_options *options)
 	uint64_t size, skip, offset;
 	int key_size, read_only, r;
 
+	if (dm_init(NULL, 1) < 0)
+		return -ENOSYS;
+
 	r = dm_query_device(options->name, &device, &size, &skip, &offset,
 			    &cipher, &key_size, &key, &read_only, NULL, &uuid);
 	if (r < 0)
@@ -676,6 +679,7 @@ out:
 	free(device);
 	free(uuid);
 	crypt_free(cd);
+	dm_exit();
 	return r;
 }
 
@@ -684,14 +688,20 @@ int crypt_query_device(struct crypt_options *options)
 {
 	int read_only, r;
 
+	if (dm_init(NULL, 1) < 0)
+		return -ENOSYS;
+
 	r = dm_status_device(options->name);
-	if (r == -ENODEV)
+	if (r == -ENODEV) {
+		dm_exit();
 		return 0;
+	}
 
 	r = dm_query_device(options->name, (char **)&options->device, &options->size,
 			    &options->skip, &options->offset, (char **)&options->cipher,
 			    &options->key_size, NULL, &read_only, NULL, NULL);
 
+	dm_exit();
 	if (r < 0)
 		return r;
 
@@ -973,7 +983,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 		return -ENOMEM;
 	}
 
-	if (!dm_init(h, 1) < 0) {
+	if (dm_init(h, 1) < 0) {
 		free(h);
 		return -ENOSYS;
 	}
@@ -994,6 +1004,9 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 	log_dbg("Allocating crypt device context by device %s.", name);
 
 	ci = crypt_status(NULL, name);
+	if (ci == INVALID)
+		return -ENODEV;
+
 	if (ci < ACTIVE) {
 		log_err(NULL, _("Device %s is not active.\n"), name);
 		return -ENODEV;
@@ -1211,20 +1224,26 @@ int crypt_suspend(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (!cd && dm_init(NULL, 1) < 0)
+		return -ENOSYS;
+
 	r = dm_query_device(name, NULL, NULL, NULL, NULL,
 			    NULL, NULL, NULL, NULL, &suspended, NULL);
 	if (r < 0)
-		return r;
+		goto out;
 
 	if (suspended) {
 		log_err(cd, _("Volume %s is already suspended.\n"), name);
-		return -EINVAL;
+		r = -EINVAL;
+		goto out;
 	}
 
 	r = dm_suspend_and_wipe_key(name);
 	if (r)
 		log_err(cd, "Error during suspending device %s.\n", name);
-
+out:
+	if (!cd)
+		dm_exit();
 	return r;
 }
 
@@ -1724,20 +1743,33 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 
 int crypt_deactivate(struct crypt_device *cd, const char *name)
 {
+	int r;
+
 	if (!name)
 		return -EINVAL;
 
 	log_dbg("Deactivating volume %s.", name);
 
+	if (!cd && dm_init(NULL, 1) < 0)
+		return -ENOSYS;
+
 	switch (crypt_status(cd, name)) {
-		case ACTIVE:	return dm_remove_device(name, 0, 0);
+		case ACTIVE:	r = dm_remove_device(name, 0, 0);
+				break;
 		case BUSY:	log_err(cd, _("Device %s is busy."), name);
-				return -EBUSY;
+				r = -EBUSY;
+				break;
 		case INACTIVE:	log_err(cd, _("Device %s is not active."), name);
-				return -ENODEV;
+				r = -ENODEV;
+				break;
 		default:	log_err(cd, _("Invalid device %s."), name);
-				return -EINVAL;
+				r = -EINVAL;
 	}
+
+	if (!cd)
+		dm_exit();
+
+	return r;
 }
 
 // misc helper functions
@@ -1848,7 +1880,13 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 {
 	int r;
 
+	if (!cd && dm_init(NULL, 1) < 0)
+		return INVALID;
+
 	r = dm_status_device(name);
+
+	if (!cd)
+		dm_exit();
 
 	if (r < 0 && r != -ENODEV)
 		return INVALID;
