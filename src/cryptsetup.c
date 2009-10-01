@@ -65,30 +65,29 @@ static struct action_type {
 	int arg;
 	int required_action_argc;
 	int required_memlock;
-	int show_status;
 	const char *arg_desc;
 	const char *desc;
 } action_types[] = {
-	{ "create",	action_create,		0, 2, 1, 1, N_("<name> <device>"),N_("create device") },
-	{ "remove",	action_remove,		0, 1, 1, 1, N_("<name>"), N_("remove device") },
-	{ "resize",	action_resize,		0, 1, 1, 1, N_("<name>"), N_("resize active device") },
-	{ "status",	action_status,		0, 1, 0, 1, N_("<name>"), N_("show device status") },
-	{ "luksFormat", action_luksFormat,	0, 1, 1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
-	{ "luksOpen",	action_luksOpen,	0, 2, 1, 1, N_("<device> <name> "), N_("open LUKS device as mapping <name>") },
-	{ "luksAddKey",	action_luksAddKey,	0, 1, 1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
-	{ "luksRemoveKey",action_luksRemoveKey,	0, 1, 1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
-	{ "luksKillSlot",  action_luksKillSlot, 0, 2, 1, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
-	{ "luksUUID",	action_luksUUID,	0, 1, 0, 1, N_("<device>"), N_("print UUID of LUKS device") },
-	{ "isLuks",	action_isLuks,		0, 1, 0, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
-	{ "luksClose",	action_remove,		0, 1, 1, 1, N_("<name>"), N_("remove LUKS mapping") },
-	{ "luksDump",	action_luksDump,	0, 1, 0, 1, N_("<device>"), N_("dump LUKS partition information") },
-	{ "luksSuspend",action_luksSuspend,	0, 1, 1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen).") },
-	{ "luksResume",	action_luksResume,	0, 1, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
-	{ "luksHeaderBackup",action_luksBackup,	0, 1, 1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
-	{ "luksHeaderRestore",action_luksRestore,0,1, 1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
-	{ "luksDelKey", action_luksDelKey,	0, 2, 1, 1, N_("<device> <key slot>"), N_("identical to luksKillSlot - DEPRECATED - see man page") },
-	{ "reload",	action_create,		1, 2, 1, 1, N_("<name> <device>"), N_("modify active device - DEPRECATED - see man page") },
-	{ NULL, NULL, 0, 0, 0, 0, NULL, NULL }
+	{ "create",	action_create,		0, 2, 1, N_("<name> <device>"),N_("create device") },
+	{ "remove",	action_remove,		0, 1, 1, N_("<name>"), N_("remove device") },
+	{ "resize",	action_resize,		0, 1, 1, N_("<name>"), N_("resize active device") },
+	{ "status",	action_status,		0, 1, 0, N_("<name>"), N_("show device status") },
+	{ "luksFormat", action_luksFormat,	0, 1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
+	{ "luksOpen",	action_luksOpen,	0, 2, 1, N_("<device> <name> "), N_("open LUKS device as mapping <name>") },
+	{ "luksAddKey",	action_luksAddKey,	0, 1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
+	{ "luksRemoveKey",action_luksRemoveKey,	0, 1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
+	{ "luksKillSlot",  action_luksKillSlot, 0, 2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
+	{ "luksUUID",	action_luksUUID,	0, 1, 0, N_("<device>"), N_("print UUID of LUKS device") },
+	{ "isLuks",	action_isLuks,		0, 1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
+	{ "luksClose",	action_remove,		0, 1, 1, N_("<name>"), N_("remove LUKS mapping") },
+	{ "luksDump",	action_luksDump,	0, 1, 0, N_("<device>"), N_("dump LUKS partition information") },
+	{ "luksSuspend",action_luksSuspend,	0, 1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen).") },
+	{ "luksResume",	action_luksResume,	0, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
+	{ "luksHeaderBackup",action_luksBackup,	0, 1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
+	{ "luksHeaderRestore",action_luksRestore,0,1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
+	{ "luksDelKey", action_luksDelKey,	0, 2, 1, N_("<device> <key slot>"), N_("identical to luksKillSlot - DEPRECATED - see man page") },
+	{ "reload",	action_create,		1, 2, 1, N_("<name> <device>"), N_("modify active device - DEPRECATED - see man page") },
+	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
 
 static void clogger(struct crypt_device *cd, int class, const char *file,
@@ -174,7 +173,10 @@ static void show_status(int errcode)
 {
 	char error[256], *error_;
 
-	if(!errcode && opt_verbose) {
+	if(!opt_verbose)
+		return;
+
+	if(!errcode) {
 		log_std(_("Command successful.\n"));
 		return;
 	}
@@ -182,19 +184,18 @@ static void show_status(int errcode)
 	crypt_get_error(error, sizeof(error));
 
 	if (!error[0]) {
-		error_ = strerror_r(errcode, error, sizeof(error));
+		error_ = strerror_r(-errcode, error, sizeof(error));
 		if (error_ != error) {
 			strncpy(error, error_, sizeof(error));
 			error[sizeof(error) - 1] = '\0';
 		}
 	}
 
-	log_err(_("Command failed"));
+	log_err(_("Command failed with code %i"), -errcode);
 	if (*error)
 		log_err(": %s\n", error);
 	else
 		log_err(".\n");
-	return;
 }
 
 static int action_create(int reload)
@@ -677,8 +678,7 @@ static int run_action(struct action_type *action)
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 0);
 
-	if (r < 0 && (opt_verbose || action->show_status))
-		show_status(-r);
+	show_status(r);
 
 	return r;
 }

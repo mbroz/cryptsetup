@@ -269,6 +269,8 @@ static int device_check_and_adjust(struct crypt_device *cd,
 	if (infos.readonly)
 		*read_only = 1;
 
+	log_dbg("Calculated device size is %" PRIu64 " sectors (%s), offset %" PRIu64 ".",
+		*size, *read_only ? "RO" : "RW", *offset);
 	return 0;
 }
 
@@ -643,15 +645,20 @@ int crypt_resize_device(struct crypt_options *options)
 	uint64_t size, skip, offset;
 	int key_size, read_only, r;
 
+	log_dbg("Resizing device %s to %" PRIu64 " sectors.", options->name, options->size);
+
 	if (dm_init(NULL, 1) < 0)
 		return -ENOSYS;
 
 	r = dm_query_device(options->name, &device, &size, &skip, &offset,
 			    &cipher, &key_size, &key, &read_only, NULL, &uuid);
-	if (r < 0)
+	if (r < 0) {
+		log_err(NULL, _("Device %s is not active.\n"), options->name);
 		goto out;
+	}
 
 	/* Try to determine type of device from UUID */
+	type = CRYPT_PLAIN;
 	if (uuid) {
 		if (!strncmp(uuid, CRYPT_PLAIN, strlen(CRYPT_PLAIN))) {
 			type = CRYPT_PLAIN;
@@ -660,6 +667,9 @@ int crypt_resize_device(struct crypt_options *options)
 		} else if (!strncmp(uuid, CRYPT_LUKS1, strlen(CRYPT_LUKS1)))
 			type = CRYPT_LUKS1;
 	}
+
+	if (!options->device)
+		options->device = device;
 
 	r = _crypt_init(&cd, type, options, 1, 1);
 	if (r)
@@ -676,6 +686,8 @@ int crypt_resize_device(struct crypt_options *options)
 out:
 	safe_free(key);
 	free(cipher);
+	if (options->device == device)
+		options->device = NULL;
 	free(device);
 	free(uuid);
 	crypt_free(cd);
@@ -687,6 +699,8 @@ out:
 int crypt_query_device(struct crypt_options *options)
 {
 	int read_only, r;
+
+	log_dbg("Query device %s.", options->name);
 
 	if (dm_init(NULL, 1) < 0)
 		return -ENOSYS;
@@ -900,9 +914,16 @@ int crypt_isLuks(struct crypt_options *options)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 0);
-	if (!r)
-		crypt_free(cd);
+	log_dbg("Check device %s for LUKS header.", options->device);
+
+	r = crypt_init(&cd, options->device);
+	if (r < 0)
+		return -EINVAL;
+
+	/* Do print fail here, no need to crypt_load() */
+	r = LUKS_read_phdr(cd->device, &cd->hdr, 0, cd) ? -EINVAL : 0;
+
+	crypt_free(cd);
 	return r;
 }
 
@@ -1756,13 +1777,13 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 	switch (crypt_status(cd, name)) {
 		case ACTIVE:	r = dm_remove_device(name, 0, 0);
 				break;
-		case BUSY:	log_err(cd, _("Device %s is busy."), name);
+		case BUSY:	log_err(cd, _("Device %s is busy.\n"), name);
 				r = -EBUSY;
 				break;
-		case INACTIVE:	log_err(cd, _("Device %s is not active."), name);
+		case INACTIVE:	log_err(cd, _("Device %s is not active.\n"), name);
 				r = -ENODEV;
 				break;
-		default:	log_err(cd, _("Invalid device %s."), name);
+		default:	log_err(cd, _("Invalid device %s.\n"), name);
 				r = -EINVAL;
 	}
 
