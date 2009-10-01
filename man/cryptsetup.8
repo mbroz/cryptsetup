@@ -196,8 +196,6 @@ Instead, it will be zero padded (if shorter than the keysize) or truncated (if l
 If \-\-key-file=- is used for reading the key from stdin, no trailing newline is stripped from the input. Without that option, cryptsetup strips trailing newlines from stdin input.
 .SH NOTES ON PASSWORD PROCESSING FOR LUKS
 LUKS uses PBKDF2 to protect against dictionary attacks (see RFC 2898). 
-LUKS will always use SHA1 in HMAC mode, and no other mode is supported at the moment. 
-Hence, \-h is ignored.
 
 LUKS will always do an exhaustive password reading. Hence, password can not be read from /dev/random, /dev/zero or any other stream that does not terminate.
 
@@ -205,6 +203,12 @@ LUKS saves the processing options when a password is set to the respective key s
 Therefore, no options can be given to luksOpen. 
 For any password creation action (luksAddKey, or luksFormat), the user may specify how much the time the password processing should consume.
 Increasing the time will lead to a more secure password, but also will take luksOpen longer to complete. The default setting of one second is sufficient for good security.
+.SH INCOHERENT BEHAVIOUR FOR INVALID PASSWORDS/KEYS
+LUKS checks for a valid password or key when an encrypted partition is unlocked. Thus the luksOpen action fails with invalid passoword or key, contrary to the plain dm-crypt create action.
+.SH NOTES ON SUPPORTED CIPHERS, MODES, HASHES AND KEY SIZES
+The available combinations of ciphers, modes, hashes and key sizes depend on kernel support. See /proc/crypto for a list of available options. You might need to load additional kernel crypto modules in order to get more options.
+
+For --hash option all algorithms supported by gcrypt library are available.
 .SH NOTES ON PASSWORDS
 Mathematics can't be bribed. Make sure you keep your passwords safe. There are a few nice tricks for constructing a fallback, when suddenly out of (or after being) blue, your brain refuses to cooperate. These fallbacks are possible with LUKS, as it's only possible with LUKS to have multiple passwords.
 .SH AUTHORS
