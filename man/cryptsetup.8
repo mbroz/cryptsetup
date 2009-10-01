@@ -92,7 +92,7 @@ returns true, if <device> is a LUKS partition. Otherwise, false. No options.
 .IP
 dumps the header information of a LUKS partition. No options.
 .PP
-\fIluksHeaderBackup\fR <device> --header-backup-file <file>
+\fIluksHeaderBackup\fR <device> \-\-header-backup-file <file>
 .IP
 Stores binary backup of LUKS header and keyslot areas.
 
@@ -100,7 +100,7 @@ Stores binary backup of LUKS header and keyslot areas.
 
 Also note that anti-forensic splitter is not used during manipulation with backup file.
 .PP
-\fIluksHeaderRestore\fR <device> --header-backup-file <file>
+\fIluksHeaderRestore\fR <device> \-\-header-backup-file <file>
 .IP
 
 Restores binary backup of LUKS header and keyslot areas from specified file.
@@ -208,7 +208,7 @@ LUKS checks for a valid password or key when an encrypted partition is unlocked.
 .SH NOTES ON SUPPORTED CIPHERS, MODES, HASHES AND KEY SIZES
 The available combinations of ciphers, modes, hashes and key sizes depend on kernel support. See /proc/crypto for a list of available options. You might need to load additional kernel crypto modules in order to get more options.
 
-For --hash option all algorithms supported by gcrypt library are available.
+For \-\-hash option all algorithms supported by gcrypt library are available.
 .SH NOTES ON PASSWORDS
 Mathematics can't be bribed. Make sure you keep your passwords safe. There are a few nice tricks for constructing a fallback, when suddenly out of (or after being) blue, your brain refuses to cooperate. These fallbacks are possible with LUKS, as it's only possible with LUKS to have multiple passwords.
 .SH AUTHORS
