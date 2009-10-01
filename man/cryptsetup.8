@@ -204,7 +204,7 @@ Therefore, no options can be given to luksOpen.
 For any password creation action (luksAddKey, or luksFormat), the user may specify how much the time the password processing should consume.
 Increasing the time will lead to a more secure password, but also will take luksOpen longer to complete. The default setting of one second is sufficient for good security.
 .SH INCOHERENT BEHAVIOUR FOR INVALID PASSWORDS/KEYS
-LUKS checks for a valid password or key when an encrypted partition is unlocked. Thus the luksOpen action fails with invalid passoword or key, contrary to the plain dm-crypt create action.
+LUKS checks for a valid password or key when an encrypted partition is unlocked. Thus the luksOpen action fails with invalid password or key, contrary to the plain dm-crypt create action.
 .SH NOTES ON SUPPORTED CIPHERS, MODES, HASHES AND KEY SIZES
 The available combinations of ciphers, modes, hashes and key sizes depend on kernel support. See /proc/crypto for a list of available options. You might need to load additional kernel crypto modules in order to get more options.
 
