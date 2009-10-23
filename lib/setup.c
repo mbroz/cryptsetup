@@ -990,7 +990,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 
 	log_dbg("Allocating crypt device %s context.", device);
 
-	if (!device_ready(NULL, device, O_RDONLY))
+	if (device && !device_ready(NULL, device, O_RDONLY))
 		return -ENOTBLK;
 
 	if (!(h = malloc(sizeof(struct crypt_device))))
@@ -998,11 +998,14 @@ int crypt_init(struct crypt_device **cd, const char *device)
 
 	memset(h, 0, sizeof(*h));
 
-	h->device = strdup(device);
-	if (!h->device) {
-		free(h);
-		return -ENOMEM;
-	}
+	if (device) {
+		h->device = strdup(device);
+		if (!h->device) {
+			free(h);
+			return -ENOMEM;
+		}
+	} else
+		h->device = NULL;
 
 	if (dm_init(h, 1) < 0) {
 		free(h);
@@ -1085,6 +1088,11 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 {
 	int r;
 
+	if (!cd->device) {
+		log_err(cd, _("Can't format LUKS without device.\n"));
+		return -EINVAL;
+	}
+
 	r = LUKS_generate_phdr(&cd->hdr, cd->volume_key, cipher, cipher_mode,
 			       (params && params->hash) ? params->hash : "sha1",
 			       uuid, LUKS_STRIPES,
@@ -1115,7 +1123,7 @@ int crypt_format(struct crypt_device *cd,
 {
 	int r;
 
-	log_dbg("Formatting device %s as type %s.", cd->device, cd->type ?: "(none)");
+	log_dbg("Formatting device %s as type %s.", cd->device ?: "(none)", cd->type ?: "(none)");
 
 	if (!type)
 		return -EINVAL;
@@ -1160,9 +1168,12 @@ int crypt_load(struct crypt_device *cd,
 	int r;
 
 	log_dbg("Trying to load %s crypt type from device %s.",
-		requested_type ?: "any", cd->device);
+		requested_type ?: "any", cd->device ?: "(none)");
 
-	if (requested_type && !isPLAIN(requested_type) && !isLUKS(requested_type))
+	if (!cd->device)
+		return -EINVAL;
+
+	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
 
 	/* Some hash functions need initialized gcrypt library */
@@ -2010,7 +2021,7 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 int crypt_get_volume_key_size(struct crypt_device *cd)
 {
 	if (isPLAIN(cd->type))
-		return cd->volume_key->keyLength;
+		return cd->volume_key->keyLength / 8;
 
 	if (isLUKS(cd->type))
 		return cd->hdr.keyBytes;
