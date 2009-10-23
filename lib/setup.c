@@ -1893,7 +1893,7 @@ void crypt_set_password_verify(struct crypt_device *cd, int password_verify)
 
 int crypt_memory_lock(struct crypt_device *cd, int lock)
 {
-	return lock ? memlock_inc(cd) : memlock_dec(cd);
+	return lock ? crypt_memlock_inc(cd) : crypt_memlock_dec(cd);
 }
 
 // reporting

@@ -642,7 +642,7 @@ static int _priority;
 static int _memlock_count = 0;
 
 // return 1 if memory is locked
-int memlock_inc(struct crypt_device *ctx)
+int crypt_memlock_inc(struct crypt_device *ctx)
 {
 	if (!_memlock_count++) {
 		log_dbg("Locking memory.");
@@ -662,7 +662,7 @@ int memlock_inc(struct crypt_device *ctx)
 	return _memlock_count ? 1 : 0;
 }
 
-int memlock_dec(struct crypt_device *ctx)
+int crypt_memlock_dec(struct crypt_device *ctx)
 {
 	if (_memlock_count && (!--_memlock_count)) {
 		log_dbg("Unlocking memory.");

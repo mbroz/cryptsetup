@@ -116,7 +116,7 @@ void logger(struct crypt_device *cd, int class, const char *file, int line, cons
 	logger(c, CRYPT_LOG_ERROR, __FILE__, __LINE__, x); \
 	set_error(x); } while(0)
 
-int memlock_inc(struct crypt_device *ctx);
-int memlock_dec(struct crypt_device *ctx);
+int crypt_memlock_inc(struct crypt_device *ctx);
+int crypt_memlock_dec(struct crypt_device *ctx);
 
 #endif /* INTERNAL_H */
