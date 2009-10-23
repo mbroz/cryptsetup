@@ -259,7 +259,7 @@ static int device_check_and_adjust(struct crypt_device *cd,
 			log_err(cd, _("Device %s has zero size.\n"), device);
 			return -ENOTBLK;
 		}
-		if (*size <= *offset) {
+		if (*size < *offset) {
 			log_err(cd, _("Device %s is too small.\n"), device);
 			return -EINVAL;
 		}
