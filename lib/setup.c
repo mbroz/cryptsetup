@@ -2021,7 +2021,7 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 int crypt_get_volume_key_size(struct crypt_device *cd)
 {
 	if (isPLAIN(cd->type))
-		return cd->volume_key->keyLength / 8;
+		return cd->volume_key->keyLength;
 
 	if (isLUKS(cd->type))
 		return cd->hdr.keyBytes;
