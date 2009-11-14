@@ -1182,7 +1182,7 @@ int crypt_load(struct crypt_device *cd,
 		return -ENOSYS;
 	}
 
-	r = LUKS_read_phdr(cd->device, &hdr, 0, cd);
+	r = LUKS_read_phdr(cd->device, &hdr, 1, cd);
 
 	if (!r) {
 		memcpy(&cd->hdr, &hdr, sizeof(hdr));
