@@ -48,6 +48,8 @@ int dm_init(struct crypt_device *context, int check_kernel)
 			log_err(context, _("Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"));
 			return -1;
 		}
+		if (getuid() || geteuid())
+			log_dbg(("WARNING: Running as a non-root user. Functionality may be unavailable."));
 		dm_log_init(set_dm_error);
 		dm_log_init_verbose(10);
 	}
@@ -419,7 +421,7 @@ int dm_status_device(const char *name)
 	}
 
 	if (!dm_task_run(dmt)) {
-		r = -ENODEV;
+		r = -EINVAL;
 		goto out;
 	}
 
