@@ -167,11 +167,11 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 	}
 
 	switch (LUKS_keyslot_info(&cd->hdr, *keyslot)) {
-		case SLOT_INVALID:
+		case CRYPT_SLOT_INVALID:
 			log_err(cd, _("Key slot %d is invalid, please select between 0 and %d.\n"),
 				*keyslot, LUKS_NUMKEYS - 1);
 			return -EINVAL;
-		case SLOT_INACTIVE:
+		case CRYPT_SLOT_INACTIVE:
 			break;
 		default:
 			log_err(cd, _("Key slot %d is full, please select another one.\n"),
@@ -199,14 +199,14 @@ static int verify_other_keyslot(struct crypt_device *cd,
 		return -EINVAL;
 
 	ki = crypt_keyslot_status(cd, keyIndex);
-	if (ki == SLOT_ACTIVE) /* Not last slot */
+	if (ki == CRYPT_SLOT_ACTIVE) /* Not last slot */
 		LUKS_keyslot_set(&cd->hdr, keyIndex, 0);
 
 	openedIndex = LUKS_open_key_with_hdr(cd->device, CRYPT_ANY_SLOT,
 					     password, passwordLen,
 					     &cd->hdr, &mk, cd);
 
-	if (ki == SLOT_ACTIVE)
+	if (ki == CRYPT_SLOT_ACTIVE)
 		LUKS_keyslot_set(&cd->hdr, keyIndex, 1);
 	LUKS_dealloc_masterkey(mk);
 	safe_free(password);
@@ -295,19 +295,19 @@ static int luks_remove_helper(struct crypt_device *cd,
 	}
 
 	ki = crypt_keyslot_status(cd, key_slot);
-	if (ki == SLOT_INVALID) {
+	if (ki == CRYPT_SLOT_INVALID) {
 		log_err(cd, _("Key slot %d is invalid, please select between 0 and %d.\n"),
 			key_slot, LUKS_NUMKEYS - 1);
 		r = -EINVAL;
 		goto out;
 	}
-	if (ki <= SLOT_INACTIVE) {
+	if (ki <= CRYPT_SLOT_INACTIVE) {
 		log_err(cd, _("Key %d not active. Can't wipe.\n"), key_slot);
 		r = -EINVAL;
 		goto out;
 	}
 
-	if (ki == SLOT_ACTIVE_LAST && cd->confirm &&
+	if (ki == CRYPT_SLOT_ACTIVE_LAST && cd->confirm &&
 	    !(cd->confirm(_("This is the last keyslot."
 			    " Device will become unusable after purging this key."),
 			 cd->confirm_usrptr))) {
@@ -349,13 +349,13 @@ static int create_device_helper(struct crypt_device *cd,
 	int r;
 
 	ci = crypt_status(cd, name);
-	if (ci == INVALID)
+	if (ci == CRYPT_INVALID)
 		return -EINVAL;
 
-	if (reload && ci < ACTIVE)
+	if (reload && ci < CRYPT_ACTIVE)
 		return -EINVAL;
 
-	if (!reload && ci >= ACTIVE) {
+	if (!reload && ci >= CRYPT_ACTIVE) {
 		log_err(cd, _("Device %s already exists.\n"), name);
 		return -EEXIST;
 	}
@@ -1028,10 +1028,10 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 	log_dbg("Allocating crypt device context by device %s.", name);
 
 	ci = crypt_status(NULL, name);
-	if (ci == INVALID)
+	if (ci == CRYPT_INVALID)
 		return -ENODEV;
 
-	if (ci < ACTIVE) {
+	if (ci < CRYPT_ACTIVE) {
 		log_err(NULL, _("Device %s is not active.\n"), name);
 		return -ENODEV;
 	}
@@ -1251,7 +1251,7 @@ int crypt_suspend(struct crypt_device *cd,
 	log_dbg("Suspending volume %s.", name);
 
 	ci = crypt_status(NULL, name);
-	if (ci < ACTIVE) {
+	if (ci < CRYPT_ACTIVE) {
 		log_err(cd, _("Volume %s is not active.\n"), name);
 		return -EINVAL;
 	}
@@ -1597,12 +1597,12 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 	}
 
 	ki = crypt_keyslot_status(cd, keyslot);
-	if (ki == SLOT_INVALID) {
+	if (ki == CRYPT_SLOT_INVALID) {
 		log_err(cd, _("Key slot %d is invalid.\n"), keyslot);
 		return -EINVAL;
 	}
 
-	if (ki == SLOT_INACTIVE) {
+	if (ki == CRYPT_SLOT_INACTIVE) {
 		log_err(cd, _("Key slot %d is not used.\n"), keyslot);
 		return -EINVAL;
 	}
@@ -1639,9 +1639,9 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 
 	if (name) {
 		ci = crypt_status(NULL, name);
-		if (ci == INVALID)
+		if (ci == CRYPT_INVALID)
 			return -EINVAL;
-		else if (ci >= ACTIVE) {
+		else if (ci >= CRYPT_ACTIVE) {
 			log_err(cd, _("Device %s already exists.\n"), name);
 			return -EEXIST;
 		}
@@ -1692,9 +1692,9 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 
 	if (name) {
 		ci = crypt_status(NULL, name);
-		if (ci == INVALID)
+		if (ci == CRYPT_INVALID)
 			return -EINVAL;
-		else if (ci >= ACTIVE) {
+		else if (ci >= CRYPT_ACTIVE) {
 			log_err(cd, _("Device %s already exists.\n"), name);
 			return -EEXIST;
 		}
@@ -1749,9 +1749,9 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 
 	if (name) {
 		ci = crypt_status(NULL, name);
-		if (ci == INVALID)
+		if (ci == CRYPT_INVALID)
 			return -EINVAL;
-		else if (ci >= ACTIVE) {
+		else if (ci >= CRYPT_ACTIVE) {
 			log_err(cd, _("Device %s already exists.\n"), name);
 			return -EEXIST;
 		}
@@ -1786,16 +1786,20 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 		return -ENOSYS;
 
 	switch (crypt_status(cd, name)) {
-		case ACTIVE:	r = dm_remove_device(name, 0, 0);
-				break;
-		case BUSY:	log_err(cd, _("Device %s is busy.\n"), name);
-				r = -EBUSY;
-				break;
-		case INACTIVE:	log_err(cd, _("Device %s is not active.\n"), name);
-				r = -ENODEV;
-				break;
-		default:	log_err(cd, _("Invalid device %s.\n"), name);
-				r = -EINVAL;
+		case CRYPT_ACTIVE:
+			r = dm_remove_device(name, 0, 0);
+			break;
+		case CRYPT_BUSY:
+			log_err(cd, _("Device %s is busy.\n"), name);
+			r = -EBUSY;
+			break;
+		case CRYPT_INACTIVE:
+			log_err(cd, _("Device %s is not active.\n"), name);
+			r = -ENODEV;
+			break;
+		default:
+			log_err(cd, _("Invalid device %s.\n"), name);
+			r = -EINVAL;
 	}
 
 	if (!cd)
@@ -1913,7 +1917,7 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 	int r;
 
 	if (!cd && dm_init(NULL, 1) < 0)
-		return INVALID;
+		return CRYPT_INVALID;
 
 	r = dm_status_device(name);
 
@@ -1921,15 +1925,15 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 		dm_exit();
 
 	if (r < 0 && r != -ENODEV)
-		return INVALID;
+		return CRYPT_INVALID;
 
 	if (r == 0)
-		return ACTIVE;
+		return CRYPT_ACTIVE;
 
 	if (r > 0)
-		return BUSY;
+		return CRYPT_BUSY;
 
-	return INACTIVE;
+	return CRYPT_INACTIVE;
 }
 
 static void hexprintICB(struct crypt_device *cd, char *d, int n)
@@ -2044,7 +2048,7 @@ crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot)
 {
 	if (!isLUKS(cd->type)) {
 		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		return SLOT_INVALID;
+		return CRYPT_SLOT_INVALID;
 	}
 
 	return LUKS_keyslot_info(&cd->hdr, keyslot);

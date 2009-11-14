@@ -518,17 +518,17 @@ static void AddDevicePlain(void)
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
 
 	// device status check
-	EQ_(crypt_status(cd, CDEVICE_1), ACTIVE);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), CDEVICE_1);
 	fd = open(path, O_RDONLY);
-	EQ_(crypt_status(cd, CDEVICE_1), BUSY);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_BUSY);
 	FAIL_(crypt_deactivate(cd, CDEVICE_1), "Device is busy");
 	close(fd);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
-	EQ_(crypt_status(cd, CDEVICE_1), INACTIVE);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
 
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-	EQ_(crypt_status(cd, CDEVICE_1), ACTIVE);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 
 	// retrieve volume key check
 	memset(key2, 0, key_size);
@@ -556,10 +556,10 @@ static void UseLuksDevice(void)
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
-	EQ_(crypt_status(cd, CDEVICE_1), INACTIVE);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0), "already open");
-	EQ_(crypt_status(cd, CDEVICE_1), ACTIVE);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	FAIL_(crypt_deactivate(cd, CDEVICE_1), "no such device");
 
@@ -573,7 +573,7 @@ static void UseLuksDevice(void)
 	EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
 	OK_(crypt_volume_key_verify(cd, key, key_size));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-	EQ_(crypt_status(cd, CDEVICE_1), ACTIVE);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	key[1] = ~key[1];
@@ -635,14 +635,14 @@ static void AddDeviceLuks(void)
 	// even with no keyslots defined it can be activated by volume key
 	OK_(crypt_volume_key_verify(cd, key, key_size));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, key, key_size, 0));
-	EQ_(crypt_status(cd, CDEVICE_2), ACTIVE);
+	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 
 	// now with keyslot
 	EQ_(7, crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)));
-	EQ_(SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 7));
+	EQ_(CRYPT_SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 7));
 	EQ_(7, crypt_activate_by_passphrase(cd, CDEVICE_2, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
-	EQ_(crypt_status(cd, CDEVICE_2), ACTIVE);
+	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 
 	FAIL_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), "slot used");
@@ -650,14 +650,14 @@ static void AddDeviceLuks(void)
 	FAIL_(crypt_keyslot_add_by_volume_key(cd, 6, key, key_size, passphrase, strlen(passphrase)), "key mismatch");
 	key[1] = ~key[1];
 	EQ_(6, crypt_keyslot_add_by_volume_key(cd, 6, key, key_size, passphrase, strlen(passphrase)));
-	EQ_(SLOT_ACTIVE, crypt_keyslot_status(cd, 6));
+	EQ_(CRYPT_SLOT_ACTIVE, crypt_keyslot_status(cd, 6));
 
 	FAIL_(crypt_keyslot_destroy(cd, 8), "invalid keyslot");
 	FAIL_(crypt_keyslot_destroy(cd, CRYPT_ANY_SLOT), "invalid keyslot");
 	FAIL_(crypt_keyslot_destroy(cd, 0), "keyslot not used");
 	OK_(crypt_keyslot_destroy(cd, 7));
-	EQ_(SLOT_INACTIVE, crypt_keyslot_status(cd, 7));
-	EQ_(SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 6));
+	EQ_(CRYPT_SLOT_INACTIVE, crypt_keyslot_status(cd, 7));
+	EQ_(CRYPT_SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 6));
 
 	EQ_(6, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
 	OK_(crypt_volume_key_verify(cd, key2, key_size));

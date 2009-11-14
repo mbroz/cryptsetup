@@ -585,7 +585,7 @@ int LUKS_open_key(const char *device,
 
 	log_dbg("Trying to open key slot %d [%d].", keyIndex, (int)ki);
 
-	if (ki < SLOT_ACTIVE)
+	if (ki < CRYPT_SLOT_ACTIVE)
 		return -ENOENT;
 
 	// assert((mk->keyLength % TWOFISH_BLOCKSIZE) == 0); FIXME
@@ -755,19 +755,19 @@ crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot)
 	int i;
 
 	if(keyslot >= LUKS_NUMKEYS || keyslot < 0)
-		return SLOT_INVALID;
+		return CRYPT_SLOT_INVALID;
 
 	if (hdr->keyblock[keyslot].active == LUKS_KEY_DISABLED)
-		return SLOT_INACTIVE;
+		return CRYPT_SLOT_INACTIVE;
 
 	if (hdr->keyblock[keyslot].active != LUKS_KEY_ENABLED)
-		return SLOT_INVALID;
+		return CRYPT_SLOT_INVALID;
 
 	for(i = 0; i < LUKS_NUMKEYS; i++)
 		if(i != keyslot && hdr->keyblock[i].active == LUKS_KEY_ENABLED)
-			return SLOT_ACTIVE;
+			return CRYPT_SLOT_ACTIVE;
 
-	return SLOT_ACTIVE_LAST;
+	return CRYPT_SLOT_ACTIVE_LAST;
 }
 
 int LUKS_keyslot_find_empty(struct luks_phdr *hdr)
@@ -799,7 +799,7 @@ int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable)
 {
 	crypt_keyslot_info ki = LUKS_keyslot_info(hdr, keyslot);
 
-	if (ki == SLOT_INVALID)
+	if (ki == CRYPT_SLOT_INVALID)
 		return -EINVAL;
 
 	hdr->keyblock[keyslot].active = enable ? LUKS_KEY_ENABLED : LUKS_KEY_DISABLED;

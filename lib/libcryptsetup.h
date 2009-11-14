@@ -407,11 +407,16 @@ int crypt_volume_key_verify(struct crypt_device *cd,
  * @cd - crypt device handle, can be NULL
  * @name -crypt device name
  *
- * INACTIVE - no such mapped device
- * ACTIVE - device is active
- * BUSY - device is active and has open count > 0
+ * CRYPT_INACTIVE - no such mapped device
+ * CRYPT_ACTIVE - device is active
+ * CRYPT_BUSY - device is active and has open count > 0
  */
-typedef enum { INVALID, INACTIVE, ACTIVE, BUSY } crypt_status_info;
+typedef enum {
+	CRYPT_INVALID,
+	CRYPT_INACTIVE,
+	CRYPT_ACTIVE,
+	CRYPT_BUSY
+} crypt_status_info;
 crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
 
 /**
@@ -448,7 +453,12 @@ int crypt_get_volume_key_size(struct crypt_device *cd);
  * @cd - crypt device handle
  * @keyslot - requested keyslot to check or CRYPT_ANY_SLOT
  */
-typedef enum { SLOT_INVALID, SLOT_INACTIVE, SLOT_ACTIVE, SLOT_ACTIVE_LAST } crypt_keyslot_info;
+typedef enum {
+	CRYPT_SLOT_INVALID,
+	CRYPT_SLOT_INACTIVE,
+	CRYPT_SLOT_ACTIVE,
+	CRYPT_SLOT_ACTIVE_LAST
+} crypt_keyslot_info;
 crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot);
 
 /**
