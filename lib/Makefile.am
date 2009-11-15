@@ -42,6 +42,7 @@ libcryptsetup_la_SOURCES = \
 	blockdev.h				\
 	libcryptsetup.h				\
 	utils.c					\
+	utils_debug.c				\
 	backends.c				\
 	libdevmapper.c				\
 	gcrypt.c

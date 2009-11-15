@@ -47,6 +47,11 @@ void crypt_set_debug_level(int level)
 	_debug_level = level;
 }
 
+int crypt_get_debug_level()
+{
+	return _debug_level;
+}
+
 void crypt_log(struct crypt_device *cd, int class, const char *msg)
 {
 	if (cd && cd->log)
