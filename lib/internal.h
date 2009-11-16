@@ -10,9 +10,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-#include <libintl.h>
-#include <locale.h>
-#define _(String) gettext((String))
+#include "nls.h"
 
 #define SECTOR_SHIFT		9
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
