@@ -246,7 +246,11 @@ functionality, see dmsetup reload.
 identical to luksKillSlot, but deprecated action name. This option was
 renamed, as we introduced luksRemoveKey, a softer method for disabling
 password slots. To make a clear distinction that luksDelKey was more brutal than luksRemoveKey
-
+.PP
+\fI\-\-non-exclusive\fR
+.IP
+This option is ignored. Non-exclusive access to the same block device
+can cause data corruption thus this mode is no longer supported by cryptsetup.
 
 .SH "REPORTING BUGS"
 Report bugs to <dm-crypt@saout.de>.

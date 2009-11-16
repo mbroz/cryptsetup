@@ -708,13 +708,13 @@ int main(int argc, char **argv)
 		{ "skip",              'p',  POPT_ARG_STRING,                             &popt_tmp,              3, N_("How many sectors of the encrypted data to skip at the beginning"), N_("SECTORS") },
 		{ "readonly",          'r',  POPT_ARG_NONE,                               &opt_readonly,          0, N_("Create a readonly mapping"),                                       NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT,                                &opt_iteration_time,    0, N_("PBKDF2 iteration time for LUKS (in ms)"),
-		  N_("msecs") },
+		N_("msecs") },
 		{ "batch-mode",        'q',  POPT_ARG_NONE,                               &opt_batch_mode,        0, N_("Do not ask for confirmation"),                                     NULL },
-		{ "version",        '\0',  POPT_ARG_NONE,                                 &opt_version_mode,        0, N_("Print package version"),                                     NULL },
+		{ "version",           '\0',  POPT_ARG_NONE,                              &opt_version_mode,      0, N_("Print package version"),                                     NULL },
 		{ "timeout",           't',  POPT_ARG_INT,                                &opt_timeout,           0, N_("Timeout for interactive passphrase prompt (in seconds)"),          N_("secs") },
 		{ "tries",             'T',  POPT_ARG_INT,                                &opt_tries,             0, N_("How often the input of the passphrase canbe retried"),            NULL },
 		{ "align-payload",     '\0',  POPT_ARG_INT,                               &opt_align_payload,     0, N_("Align payload at <n> sector boundaries - for luksFormat"),         N_("SECTORS") },
-		{ "non-exclusive",     '\0',  POPT_ARG_NONE,                              &opt_non_exclusive,     0, N_("Allows non-exclusive access for luksOpen, WARNING see manpage."),        NULL },
+		{ "non-exclusive",     '\0',  POPT_ARG_NONE,                              &opt_non_exclusive,     0, N_("(Obsoleted, see man page.)"),        NULL },
 		{ "header-backup-file",'\0',  POPT_ARG_STRING,                            &opt_header_backup_file,0, N_("File with LUKS header and keyslots backup."),        NULL },
 		POPT_TABLEEND
 	};
