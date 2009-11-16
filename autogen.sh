@@ -2,13 +2,21 @@
 # Run this to generate all the initial makefiles, etc.
 
 srcdir=`dirname $0`
-PKG_NAME="the package."
+PKG_NAME="cryptsetup"
 
 DIE=0
 
+(autopoint --version) < /dev/null > /dev/null 2>&1 || {
+  echo
+  echo "**Error**: You must have autopoint installed."
+  echo "Download the appropriate package for your distribution,"
+  echo "or see http://www.gnu.org/software/gettext"
+  DIE=1
+}
+
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
   echo
-  echo "**Error**: You must have \`autoconf' installed to."
+  echo "**Error**: You must have autoconf installed to."
   echo "Download the appropriate package for your distribution,"
   echo "or get the source tarball at ftp://ftp.gnu.org/pub/gnu/"
   DIE=1
@@ -17,7 +25,7 @@ DIE=0
 (grep "^AM_PROG_LIBTOOL" $srcdir/configure.in >/dev/null) && {
   (libtool --version) < /dev/null > /dev/null 2>&1 || {
     echo
-    echo "**Error**: You must have \`libtool' installed."
+    echo "**Error**: You must have libtool installed."
     echo "Get ftp://ftp.gnu.org/pub/gnu/"
     echo "(or a newer version if it is available)"
     DIE=1
@@ -26,7 +34,7 @@ DIE=0
 
 (automake --version) < /dev/null > /dev/null 2>&1 || {
   echo
-  echo "**Error**: You must have \`automake' installed."
+  echo "**Error**: You must have automake installed."
   echo "Get ftp://ftp.gnu.org/pub/gnu/"
   echo "(or a newer version if it is available)"
   DIE=1
@@ -37,7 +45,7 @@ DIE=0
 # if no automake, don't bother testing for aclocal
 test -n "$NO_AUTOMAKE" || (aclocal --version) < /dev/null > /dev/null 2>&1 || {
   echo
-  echo "**Error**: Missing \`aclocal'.  The version of \`automake'"
+  echo "**Error**: Missing aclocal.  The version of automake"
   echo "installed doesn't appear recent enough."
   echo "Get ftp://ftp.gnu.org/pub/gnu/"
   echo "(or a newer version if it is available)"
@@ -49,73 +57,29 @@ if test "$DIE" -eq 1; then
 fi
 
 if test -z "$*"; then
-  echo "**Warning**: I am going to run \`configure' with no arguments."
-  echo "If you wish to pass any to it, please specify them on the"
-  echo \`$0\'" command line."
   echo
+  echo "**Warning**: I am going to run 'configure' with no arguments."
+  echo "If you wish to pass any to it, please specify them on the"
+  echo \'$0\'" command line."
 fi
 
-case $CC in
-xlc )
-  am_opt=--include-deps;;
-esac
+echo
+echo "Generate build-system by:"
+echo "   autopoint:  $(autopoint --version | head -1)"
+echo "   aclocal:    $(aclocal --version | head -1)"
+echo "   autoconf:   $(autoconf --version | head -1)"
+echo "   automake:   $(automake --version | head -1)"
+echo "   libtoolize: $(libtoolize --version | head -1)"
+echo
 
-for coin in `find $srcdir -name configure.in -a \( ! -regex '.*/\..*' \) -print`
-do 
-  dr=`dirname $coin`
-  if test -f $dr/NO-AUTO-GEN; then
-    echo skipping $dr -- flagged as no auto-gen
-  else
-    echo processing $dr
-    macrodirs=`sed -n -e 's,AM_ACLOCAL_INCLUDE(\(.*\)),\1,gp' < $coin`
-    ( cd $dr
-      aclocalinclude="$ACLOCAL_FLAGS"
-      for k in $macrodirs; do
-  	if test -d $k; then
-          aclocalinclude="$aclocalinclude -I $k"
-  	##else 
-	##  echo "**Warning**: No such directory \`$k'.  Ignored."
-        fi
-      done
-      if grep "^AM_GNU_GETTEXT" configure.in >/dev/null; then
-	if grep "sed.*POTFILES" configure.in >/dev/null; then
-	  : do nothing -- we still have an old unmodified configure.in
-	else
-	  echo "Creating $dr/aclocal.m4 ..."
-	  test -r $dr/aclocal.m4 || touch $dr/aclocal.m4
-	  echo "Running gettextize...  Ignore non-fatal messages."
-	  ./setup-gettext
-	  echo "Making $dr/aclocal.m4 writable ..."
-	  test -r $dr/aclocal.m4 && chmod u+w $dr/aclocal.m4
-        fi
-      fi
-      if grep "^AM_GNOME_GETTEXT" configure.in >/dev/null; then
-	echo "Creating $dr/aclocal.m4 ..."
-	test -r $dr/aclocal.m4 || touch $dr/aclocal.m4
-	echo "Running gettextize...  Ignore non-fatal messages."
-	./setup-gettext
-	echo "Making $dr/aclocal.m4 writable ..."
-	test -r $dr/aclocal.m4 && chmod u+w $dr/aclocal.m4
-      fi
-      if grep "^AM_PROG_LIBTOOL" configure.in >/dev/null; then
-	echo "Running libtoolize..."
-	libtoolize --force --copy
-      fi
-      echo "Running aclocal $aclocalinclude ..."
-      aclocal $aclocalinclude
-      if grep "^AM_CONFIG_HEADER" configure.in >/dev/null; then
-	echo "Running autoheader..."
-	autoheader
-      fi
-      echo "Running automake --gnu $am_opt ..."
-      automake --add-missing --gnu $am_opt
-      echo "Running autoconf ..."
-      autoconf
-    )
-  fi
-done
 
-#conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
+set -e
+autopoint --force $AP_OPTS
+libtoolize --force --copy
+aclocal -I m4 $AL_OPTS
+autoheader $AH_OPTS
+automake --add-missing --gnu $AM_OPTS
+autoconf $AC_OPTS
 
 if test x$NOCONFIGURE = x; then
   echo Running $srcdir/configure $conf_flags "$@" ...
