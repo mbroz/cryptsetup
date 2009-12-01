@@ -105,6 +105,33 @@ AC_SUBST(DEVMAPPER_LIBS)
 AC_SUBST(SELINUX_STATIC_LIBS)
 
 dnl ==========================================================================
+AC_DEFUN([CS_DEFINE],
+	[AC_DEFINE_UNQUOTED(DEFAULT_[]m4_translit([$1], [-a-z], [_A-Z]), [$2], [$3])
+])
+
+AC_DEFUN([CS_STR_WITH], [AC_ARG_WITH([$1],
+	[AS_HELP_STRING(--with-[$1], [default $2 [$3]])],
+	[CS_DEFINE([$1], ["$withval"], [$2])],
+	[CS_DEFINE([$1], ["$3"], [$2])]
+)])
+
+AC_DEFUN([CS_NUM_WITH], [AC_ARG_WITH([$1],
+	[AS_HELP_STRING(--with-[$1], [default $2 [$3]])],
+	[CS_DEFINE([$1], [$withval], [$2])],
+	[CS_DEFINE([$1], [$3], [$2])]
+)])
+
+CS_STR_WITH([plain-hash],   [password hashing function for plain mode], [ripemd160])
+CS_STR_WITH([plain-cipher], [cipher for plain mode], [aes])
+CS_STR_WITH([plain-mode],   [cipher mode for plain mode], [cbc-essiv:sha256])
+CS_NUM_WITH([plain-keybits],[key length in bits for plain mode], [256])
+
+CS_STR_WITH([luks1-hash],   [hash function for LUKS1 header], [sha1])
+CS_STR_WITH([luks1-cipher], [cipher for LUKS1], [aes])
+CS_STR_WITH([luks1-mode],   [cipher mode for LUKS1], [cbc-essiv:sha256])
+CS_NUM_WITH([luks1-keybits],[key length in bits for LUKS1], [256])
+
+dnl ==========================================================================
 
 AM_CONDITIONAL(STATIC_CRYPTSETUP, test x$enable_static = xyes)
 AM_CONDITIONAL(DYNAMIC_CRYPTSETUP, test x$enable_static = xno)

@@ -203,10 +203,10 @@ static int action_create(int reload)
 	struct crypt_options options = {
 		.name = action_argv[0],
 		.device = action_argv[1],
-		.cipher = opt_cipher?opt_cipher:DEFAULT_CIPHER,
-		.hash = opt_hash ?: DEFAULT_HASH,
+		.cipher = opt_cipher ? opt_cipher : DEFAULT_CIPHER(PLAIN),
+		.hash = opt_hash ?: DEFAULT_PLAIN_HASH,
 		.key_file = opt_key_file,
-		.key_size = ((opt_key_size)?opt_key_size:DEFAULT_KEY_SIZE)/8,
+		.key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8,
 		.key_slot = opt_key_slot,
 		.flags = 0,
 		.size = opt_size,
@@ -294,11 +294,11 @@ static int action_status(int arg)
 static int _action_luksFormat_generateMK()
 {
 	struct crypt_options options = {
-		.key_size = (opt_key_size ?: DEFAULT_LUKS_KEY_SIZE) / 8,
+		.key_size = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8,
 		.key_slot = opt_key_slot,
 		.device = action_argv[0],
-		.cipher = opt_cipher ?: DEFAULT_LUKS_CIPHER,
-		.hash = opt_hash ?: DEFAULT_LUKS_HASH,
+		.cipher = opt_cipher ?: DEFAULT_CIPHER(LUKS1),
+		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
 		.new_key_file = action_argc > 1 ? action_argv[1] : NULL,
 		.flags = opt_verify_passphrase ? CRYPT_FLAG_VERIFY : (!opt_batch_mode?CRYPT_FLAG_VERIFY_IF_POSSIBLE :  0),
 		.iteration_time = opt_iteration_time,
@@ -340,18 +340,18 @@ static int _action_luksFormat_useMK()
 	char *key = NULL, cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params = {
-		.hash = opt_hash ?: DEFAULT_LUKS_HASH,
+		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
 		.data_alignment = opt_align_payload,
 	};
 
-	if (sscanf(opt_cipher ?: DEFAULT_LUKS_CIPHER,
+	if (sscanf(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
 		   "%" MAX_CIPHER_LEN_STR "[^-]-%" MAX_CIPHER_LEN_STR "s",
 		   cipher, cipher_mode) != 2) {
 		log_err("No known cipher specification pattern detected.\n");
 		return -EINVAL;
 	}
 
-	keysize = (opt_key_size ?: DEFAULT_LUKS_KEY_SIZE) / 8;
+	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8;
 	if (_read_mk(opt_master_key_file, &key, keysize) < 0)
 		return -EINVAL;
 
@@ -646,6 +646,12 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 			 "<key slot> is the LUKS key slot number to modify\n"
 			 "<key file> optional key file for the new key for luksAddKey action\n"),
 			crypt_get_dir());
+
+		log_std(_("\nDefault compiled-in device cipher parameters:\n"
+			 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
+			 "\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s\n"),
+			 DEFAULT_CIPHER(PLAIN), DEFAULT_PLAIN_KEYBITS, DEFAULT_PLAIN_HASH,
+			 DEFAULT_CIPHER(LUKS1), DEFAULT_LUKS1_KEYBITS, DEFAULT_LUKS1_HASH);
 		exit(0);
 	} else
 		usage(popt_context, 0, NULL, NULL);
