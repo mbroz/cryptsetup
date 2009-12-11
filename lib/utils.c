@@ -413,7 +413,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 	} else if (key_file) {
 		fd = open(key_file, O_RDONLY);
 		if (fd < 0) {
-			log_err(cd, "Failed to open key file %s.\n", key_file);
+			log_err(cd, _("Failed to open key file %s.\n"), key_file);
 			goto out_err;
 		}
 		newline_stop = 0;
@@ -433,14 +433,14 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 
 		pass = safe_alloc(MAX_TTY_PASSWORD_LEN);
 		if (!pass || (i = interactive_pass(prompt, pass, MAX_TTY_PASSWORD_LEN, timeout))) {
-			log_err(cd, "Error reading passphrase from terminal.\n");
+			log_err(cd, _("Error reading passphrase from terminal.\n"));
 			goto out_err;
 		}
 		if (verify || verify_if_possible) {
 			char pass_verify[MAX_TTY_PASSWORD_LEN];
-			i = interactive_pass("Verify passphrase: ", pass_verify, sizeof(pass_verify), timeout);
+			i = interactive_pass(_("Verify passphrase: "), pass_verify, sizeof(pass_verify), timeout);
 			if (i || strcmp(pass, pass_verify) != 0) {
-				log_err(cd, "Passphrases do not match.\n");
+				log_err(cd, _("Passphrases do not match.\n"));
 				goto out_err;
 			}
 			memset(pass_verify, 0, sizeof(pass_verify));
@@ -455,7 +455,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		int buflen, i;
 
 		if(verify) {
-			log_err(cd, "Can't do passphrase verification on non-tty inputs.\n");
+			log_err(cd, _("Can't do passphrase verification on non-tty inputs.\n"));
 			goto out_err;
 		}
 		/* The following for control loop does an exhausting
@@ -468,12 +468,12 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		if(key_file && strcmp(key_file, "-") && read_horizon == 0) {
 			struct stat st;
 			if(stat(key_file, &st) < 0) {
-				log_err(cd, "Failed to stat key file %s.\n", key_file);
+				log_err(cd, _("Failed to stat key file %s.\n"), key_file);
 				goto out_err;
 			}
 			if(!S_ISREG(st.st_mode))
-				log_std(cd, "Warning: exhausting read requested, but key file %s"
-					" is not a regular file, function might never return.\n",
+				log_std(cd, _("Warning: exhausting read requested, but key file %s"
+					" is not a regular file, function might never return.\n"),
 					key_file);
 			else
 				regular_file = 1;
@@ -484,7 +484,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 				buflen += 128;
 				pass = safe_realloc(pass, buflen);
 				if (!pass) {
-					log_err(cd, "Out of memory while reading passphrase.\n");
+					log_err(cd, _("Out of memory while reading passphrase.\n"));
 					goto out_err;
 				}
 			}
