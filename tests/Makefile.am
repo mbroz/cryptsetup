@@ -64,13 +64,13 @@ test:
 	@echo Case: format
 # All headers items and first key material section must change
 	@cp $(IMG) $(ORIG_IMG)
-	echo "key0" | ../src/cryptsetup -v -i 1000 -c aes-cbc-essiv:sha256 luksFormat $(LOOPDEV)
+	echo "key0" | ../src/cryptsetup -v -i 1000 -c aes-cbc-essiv:sha256 -s 128 luksFormat $(LOOPDEV)
 	@sync
 	./fileDiffer.py $(IMG) $(ORIG_IMG) $(LUKS_HEADER) $(KEY_SLOT0) $(KEY_MATERIAL0)
 
 	@echo Case: format using hash sha512
 	@cp $(IMG) $(ORIG_IMG)
-	echo "key0" | ../src/cryptsetup -v -i 1000 -h sha512 -c aes-cbc-essiv:sha256 luksFormat $(LOOPDEV)
+	echo "key0" | ../src/cryptsetup -v -i 1000 -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksFormat $(LOOPDEV)
 	@sync
 	./fileDiffer.py $(IMG) $(ORIG_IMG) $(LUKS_HEADER) $(KEY_SLOT0) $(KEY_MATERIAL0)
 
@@ -160,7 +160,7 @@ test:
 	@echo Case: parameter variation test
 	@dd if=/dev/zero of=$(IMG) count=20000
 	@cp $(IMG) $(ORIG_IMG)
-	@../src/cryptsetup -q -v -i 1000 -c aes-cbc-essiv:sha256 luksFormat $(LOOPDEV) /tmp/key1
+	@../src/cryptsetup -q -v -i 1000 -c aes-cbc-essiv:sha256 -s 128 luksFormat $(LOOPDEV) /tmp/key1
 	@sync
 	./fileDiffer.py $(IMG) $(ORIG_IMG) $(LUKS_HEADER) $(KEY_SLOT0) $(KEY_MATERIAL0)
 	@../src/cryptsetup -d /tmp/key1 -v luksOpen $(LOOPDEV) dummy
