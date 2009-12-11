@@ -403,6 +403,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 	int newline_stop;
 	int read_horizon;
 	int regular_file = 0;
+	int r;
 
 	if(key_file && !strcmp(key_file, "-")) {
 		/* Allow binary reading from stdin */
@@ -487,7 +488,14 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 					goto out_err;
 				}
 			}
-			if(read(fd, pass + i, 1) != 1 || (newline_stop && pass[i] == '\n'))
+
+			r = read(fd, pass + i, 1);
+			if (r < 0) {
+				log_err(cd, _("Error reading passphrase.\n"));
+				goto out_err;
+			}
+
+			if(r == 0 || (newline_stop && pass[i] == '\n'))
 				break;
 		}
 		if(key_file)
