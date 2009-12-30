@@ -1,210 +1,611 @@
 # Swedish translation for cryptsetup.
-# Copyright (C) 2007 Free Software Foundation, Inc.
+# Copyright (C) 2009 Free Software Foundation, Inc.
 # This file is distributed under the same license as the cryptsetup package.
-# Daniel Nylander <po@danielnylander.se>, 2007.
+# Daniel Nylander <po@danielnylander.se>, 2009.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-01-13 20:50+0100\n"
-"PO-Revision-Date: 2007-09-29 20:44+0100\n"
+"Project-Id-Version: cryptsetup 1.1.0-rc3\n"
+"Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
+"POT-Creation-Date: 2009-11-16 21:41+0100\n"
+"PO-Revision-Date: 2009-12-23 11:26+0100\n"
 "Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/setup.c:690
-msgid ""
-"This is the last keyslot. Device will become unusable after purging this key."
-msgstr ""
-"Det här är sista nyckelplatsen. Enheten kommer att bli oanvändbar efter att "
-"denna nyckel tagits bort."
+#: lib/libdevmapper.c:48
+msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
+msgstr "Kan inte initiera device-mapper. Är kärnmodulen dm_mod inläst?\n"
 
-#: luks/keyencryption.c:70
+#: lib/libdevmapper.c:304
 #, c-format
-msgid "Unable to obtain sector size for %s"
-msgstr "Kunde inte få sektorstorlek för %s"
+msgid "DM-UUID for device %s was truncated.\n"
+msgstr "DM-UUID för enheten %s förkortades.\n"
 
-#: luks/keyencryption.c:132
-msgid "Failed to obtain device mapper directory."
-msgstr "Misslyckades med att få katalog för enhetsmappare."
-
-#: luks/keymanage.c:89
+#: lib/setup.c:103
 #, c-format
-msgid "Can't open device: %s\n"
-msgstr "Kan inte öppna enhet: %s\n"
+msgid "Cannot not read %d bytes from key file %s.\n"
+msgstr "Kan inte läsa %d byte från nyckelfilen %s.\n"
 
-#: luks/keymanage.c:96
+#: lib/setup.c:115
+msgid "Key processing error.\n"
+msgstr "Fel vid nyckelbehandling.\n"
+
+#: lib/setup.c:169
+msgid "All key slots full.\n"
+msgstr "Alla nyckelplatser är upptagna.\n"
+
+#: lib/setup.c:176 lib/setup.c:304 lib/setup.c:778
 #, c-format
-msgid "%s is not a LUKS partition\n"
-msgstr "%s är inte en LUKS-partition\n"
+msgid "Key slot %d is invalid, please select between 0 and %d.\n"
+msgstr "Nyckelplats %d är ogiltig. Välj mellan 0 och %d.\n"
 
-#: luks/keymanage.c:99
-#, fuzzy
-msgid "unknown hash spec in phdr\n"
-msgstr "okänd hash angiven i phdr"
+#: lib/setup.c:182
+#, c-format
+msgid "Key slot %d is full, please select another one.\n"
+msgstr "Nyckelplats %d är full. Välj en annan.\n"
 
-#: luks/keymanage.c:102
-#, fuzzy, c-format
-msgid "unknown LUKS version %d\n"
-msgstr "okänd version %d\n"
+#: lib/setup.c:201
+msgid "Enter any remaining LUKS passphrase: "
+msgstr "Ange eventuell återstående LUKS-lösenfras: "
 
-#: luks/keymanage.c:130 luks/keymanage.c:412
-#, fuzzy, c-format
-msgid "Can't open device %s"
-msgstr "Kan inte öppna enhet: %s\n"
+#: lib/setup.c:222
+#, c-format
+msgid "Key slot %d verified.\n"
+msgstr "Nyckelplats %d har verifierats.\n"
 
-#: luks/keymanage.c:220
-#, fuzzy, c-format
-msgid "key %d active, purge first"
-msgstr "nyckel %d är aktiv, ta bort först.\n"
+#: lib/setup.c:257
+#, c-format
+msgid "Cannot get info about device %s.\n"
+msgstr "Kan inte hämta information om enheten %s.\n"
 
-#: luks/keymanage.c:225
-#, fuzzy, c-format
-msgid "key material section %d includes too few stripes. Header manipulation?"
-msgstr "nyckelmaterialsektion %d inkluderar för få delar. Manipulerat huvud?\n"
+#: lib/setup.c:264
+#, c-format
+msgid "Device %s has zero size.\n"
+msgstr "Enheten %s har noll storlek.\n"
 
-#: luks/keymanage.c:447
+#: lib/setup.c:268
+#, c-format
+msgid "Device %s is too small.\n"
+msgstr "Enheten %s är för liten.\n"
+
+#: lib/setup.c:293
+msgid "Enter LUKS passphrase to be deleted: "
+msgstr "Ange LUKS-lösenfras att ta bort: "
+
+#: lib/setup.c:299
+#, c-format
+msgid "key slot %d selected for deletion.\n"
+msgstr "nyckeplats %d markerad för borttagning.\n"
+
+#: lib/setup.c:310
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
 msgstr "Nyckel %d är inte aktiv. Kan inte rensa.\n"
 
-#: luks/keymanage.c:492
-#, fuzzy, c-format
-msgid "Can't open device for %s%saccess: %s\n"
-msgstr "Kan inte öppna enhet: %s\n"
+#: lib/setup.c:316
+msgid "This is the last keyslot. Device will become unusable after purging this key."
+msgstr "Detta är sista nyckelplatsen. Enheten kommer att bli oanvändbar efter att denna nyckel tagits bort."
 
-#: luks/keymanage.c:492
+#: lib/setup.c:364 lib/setup.c:1650 lib/setup.c:1703 lib/setup.c:1760
+#, c-format
+msgid "Device %s already exists.\n"
+msgstr "Enheten %s finns redan.\n"
+
+#: lib/setup.c:369
+#, c-format
+msgid "Invalid key size %d.\n"
+msgstr "Ogiltig nyckelstorlek %d.\n"
+
+#: lib/setup.c:471 lib/setup.c:1655
+#, c-format
+msgid "Enter passphrase for %s: "
+msgstr "Ange lösenfras för %s: "
+
+#: lib/setup.c:600 lib/setup.c:628 lib/setup.c:1364 lib/setup.c:1711
+msgid "Enter passphrase: "
+msgstr "Ange lösenfras: "
+
+#: lib/setup.c:661 lib/setup.c:1040 lib/setup.c:1802
+#, c-format
+msgid "Device %s is not active.\n"
+msgstr "Enheten %s är inte aktiv.\n"
+
+#: lib/setup.c:770
+msgid "No known cipher specification pattern detected.\n"
+msgstr "Inget känt chifferspecifikationsmönster kunde identifieras.\n"
+
+#: lib/setup.c:784
+msgid "Enter LUKS passphrase: "
+msgstr "Ange LUKS-lösenfras: "
+
+#: lib/setup.c:1060
+msgid "Invalid plain crypt parameters.\n"
+msgstr "Ogiltiga parametrar för vanlig kryptering.\n"
+
+#: lib/setup.c:1065
+msgid "Invalid key size.\n"
+msgstr "Ogiltig nyckelstorlek.\n"
+
+#: lib/setup.c:1097
+msgid "Can't format LUKS without device.\n"
+msgstr "Kan inte formatera LUKS utan enhet.\n"
+
+#: lib/setup.c:1111
+#, c-format
+msgid "Can't wipe header on device %s.\n"
+msgstr "Kan inte rensa huvudet på enheten %s.\n"
+
+#: lib/setup.c:1153
+#, c-format
+msgid "Unkown crypt device type %s requesed.\n"
+msgstr "Okänd typ av krypteringsenhet %s begärd.\n"
+
+#: lib/setup.c:1186
+msgid "Cannot initialize crypto backend.\n"
+msgstr "Kan inte initiera krypteringsbakände.\n"
+
+#: lib/setup.c:1260
+#, c-format
+msgid "Volume %s is not active.\n"
+msgstr "Volymen %s är inte aktiv.\n"
+
+#: lib/setup.c:1273
+#, c-format
+msgid "Volume %s is already suspended.\n"
+msgstr "Volymen %s är redan i vänteläge.\n"
+
+#: lib/setup.c:1299 lib/setup.c:1346 lib/setup.c:1405 lib/setup.c:1483
+#: lib/setup.c:1555 lib/setup.c:1600 lib/setup.c:1694 lib/setup.c:1751
+#: lib/setup.c:1872 lib/setup.c:1955 lib/setup.c:2055
+msgid "This operation is supported only for LUKS device.\n"
+msgstr "Denna åtgärd stöds endast för LUKS-enheter.\n"
+
+#: lib/setup.c:1310 lib/setup.c:1357
+#, c-format
+msgid "Volume %s is not suspended.\n"
+msgstr "Volymen %s är inte i vänteläge.\n"
+
+#: lib/setup.c:1419 lib/setup.c:1497
+msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
+msgstr "Kan inte lägga till nyckelplats. Alla platser är inaktiverade och ingen volymnyckel har angivits.\n"
+
+#: lib/setup.c:1428 lib/setup.c:1503 lib/setup.c:1506
+msgid "Enter any passphrase: "
+msgstr "Ange valfri lösenfras: "
+
+#: lib/setup.c:1447 lib/setup.c:1521 lib/setup.c:1525 lib/setup.c:1578
+msgid "Enter new passphrase for key slot: "
+msgstr "Ange ny lösenfras för nyckelplats: "
+
+#: lib/setup.c:1569 lib/setup.c:1771 lib/setup.c:1883
+msgid "Volume key does not match the volume.\n"
+msgstr "Volymnyckeln stämmer inte överens med volymen.\n"
+
+#: lib/setup.c:1606
+#, c-format
+msgid "Key slot %d is invalid.\n"
+msgstr "Nyckelplats %d är ogiltig.\n"
+
+#: lib/setup.c:1611
+#, c-format
+msgid "Key slot %d is not used.\n"
+msgstr "Nyckelplats %d används inte.\n"
+
+#: lib/setup.c:1798
+#, c-format
+msgid "Device %s is busy.\n"
+msgstr "Enheten %s är upptagen.\n"
+
+#: lib/setup.c:1806
+#, c-format
+msgid "Invalid device %s.\n"
+msgstr "Ogiltig enhet %s.\n"
+
+#: lib/setup.c:1830
+msgid "Volume key buffer too small.\n"
+msgstr "Buffert för volymnyckel är för liten.\n"
+
+#: lib/setup.c:1838
+msgid "Cannot retrieve volume key for plain device.\n"
+msgstr "Kan inte hämta volymnyckel för vanlig enhet.\n"
+
+#: lib/setup.c:1860
+#, c-format
+msgid "This operation is not supported for %s crypt device.\n"
+msgstr "Denna åtgärd stöds inte för krypteringsenheter av typen %s.\n"
+
+#: lib/utils.c:521
+#, c-format
+msgid "Device %s doesn't exist or access denied.\n"
+msgstr "Enheten %s finns inte eller åtkomst nekas.\n"
+
+#: lib/utils.c:528
+#, c-format
+msgid "Cannot open device %s for %s%s access.\n"
+msgstr "Kan inte öppna enheten %s för %s%s åtkomst.\n"
+
+#: lib/utils.c:529
 msgid "exclusive "
-msgstr ""
+msgstr "exklusiv"
 
-#: luks/keymanage.c:492
-msgid "writable "
-msgstr ""
+#: lib/utils.c:530
+msgid "writable"
+msgstr "skrivbar"
 
-#: src/cryptsetup.c:61 src/cryptsetup.c:75
+#: lib/utils.c:530
+msgid "read-only"
+msgstr "skrivskyddad"
+
+#: lib/utils.c:537
+#, c-format
+msgid "Cannot read device %s.\n"
+msgstr "Kan inte läsa enheten %s.\n"
+
+#: lib/utils.c:567
+#, c-format
+msgid "Cannot open device: %s\n"
+msgstr "Kan inte öppna enheten: %s\n"
+
+#: lib/utils.c:577
+#, c-format
+msgid "BLKROGET failed on device %s.\n"
+msgstr "BLKROGET misslyckades på enheten %s.\n"
+
+#: lib/utils.c:602
+#, c-format
+msgid "BLKGETSIZE failed on device %s.\n"
+msgstr "BLKGETSIZE misslyckades på enheten %s.\n"
+
+#: lib/utils.c:650
+msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
+msgstr "VARNING!!! Potentiellt osäkert minne. Är du root?\n"
+
+#: lib/utils.c:656
+msgid "Cannot get process priority.\n"
+msgstr "Kan inte få processprioritet.\n"
+
+#: lib/utils.c:659 lib/utils.c:672
+#, c-format
+msgid "setpriority %u failed: %s"
+msgstr "setpriority %u misslyckades: %s"
+
+#: lib/utils.c:670
+msgid "Cannot unlock memory."
+msgstr "Kan inte låsa upp minne."
+
+#: luks/keyencryption.c:68
+#, c-format
+msgid "Unable to obtain sector size for %s"
+msgstr "Kunde inte läsa av sektorstorlek för %s"
+
+#: luks/keyencryption.c:137
+msgid "Failed to obtain device mapper directory."
+msgstr "Misslyckades med att läsa av katalog för enhetsmappning."
+
+#: luks/keyencryption.c:153
+#, c-format
+msgid ""
+"Failed to setup dm-crypt key mapping for device %s.\n"
+"Check that kernel supports %s cipher (check syslog for more info).\n"
+"%s"
+msgstr ""
+"Misslyckades med att konfigurera nyckelmappning för dm-crypt för\n"
+"enheten %s. Kontrollera att kärnan har stöd för chiffret %s\n"
+"(kontrollera syslog för mer information).\n"
+"%s"
+
+#: luks/keyencryption.c:163
+msgid "Failed to open temporary keystore device.\n"
+msgstr "Misslyckades med att öppna temporär nyckellagringsenhet.\n"
+
+#: luks/keyencryption.c:170
+msgid "Failed to access temporary keystore device.\n"
+msgstr "Misslyckades med att komma åt temporär nyckellagringsenhet.\n"
+
+#: luks/keymanage.c:91
+#, c-format
+msgid "Requested file %s already exist.\n"
+msgstr "Begärda filen %s finns redan.\n"
+
+#: luks/keymanage.c:111
+#, c-format
+msgid "Device %s is not LUKS device.\n"
+msgstr "Enheten %s är inte en LUKS-enhet.\n"
+
+#: luks/keymanage.c:131
+#, c-format
+msgid "Cannot write header backup file %s.\n"
+msgstr "Kan inte skriva säkerhetskopia för huvud %s.\n"
+
+#: luks/keymanage.c:158
+#, c-format
+msgid "Backup file %s doesn't exist.\n"
+msgstr "Säkerhetskopian %s finns inte.\n"
+
+#: luks/keymanage.c:166
+msgid "Backup file do not contain valid LUKS header.\n"
+msgstr "Säkerhetskopian innehåller inte något giltigt LUKS-huvud.\n"
+
+#: luks/keymanage.c:179
+#, c-format
+msgid "Cannot open header backup file %s.\n"
+msgstr "Kan inte öppna säkerhetskopia för huvud %s.\n"
+
+#: luks/keymanage.c:185
+#, c-format
+msgid "Cannot read header backup file %s.\n"
+msgstr "Kan inte läsa säkerhetskopia för huvud %s.\n"
+
+#: luks/keymanage.c:196
+msgid "Data offset or key size differs on device and backup, restore failed.\n"
+msgstr "Dataoffset eller nyckelstorlek skiljer sig på enhet och säkerhetskopia. Återställningen misslyckades.\n"
+
+#: luks/keymanage.c:204
+#, c-format
+msgid "Device %s %s%s"
+msgstr "Enhet %s %s%s"
+
+#: luks/keymanage.c:205
+msgid "does not contain LUKS header. Replacing header can destroy data on that device."
+msgstr "innehåller inget LUKS-huvud. Ersättning av huvud kan förstöra data på enheten."
+
+#: luks/keymanage.c:206
+msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
+msgstr "innehåller redan LUKS-huvud. Ersättningen av huvud kommer att förstöra befintliga nyckelplatser."
+
+#: luks/keymanage.c:207
+msgid ""
+"\n"
+"WARNING: real device header has different UUID than backup!"
+msgstr ""
+"\n"
+"VARNING: verkligt enhetshuvud har annat UUID än säkerhetskopian!"
+
+#: luks/keymanage.c:222 luks/keymanage.c:319 luks/keymanage.c:354
+#, c-format
+msgid "Cannot open device %s.\n"
+msgstr "Kan inte öppna enheten %s.\n"
+
+#: luks/keymanage.c:254
+#, c-format
+msgid "%s is not LUKS device.\n"
+msgstr "%s är inte en LUKS-enhet.\n"
+
+#: luks/keymanage.c:256
+#, c-format
+msgid "%s is not LUKS device."
+msgstr "%s är inte en LUKS-enhet."
+
+#: luks/keymanage.c:259
+#, c-format
+msgid "Unsupported LUKS version %d.\n"
+msgstr "LUKS-versionen %d stöds inte.\n"
+
+#: luks/keymanage.c:262
+#, c-format
+msgid "Requested LUKS hash %s is not supported.\n"
+msgstr "Begärd LUKS-hash %s stöds inte.\n"
+
+#: luks/keymanage.c:293
+#, c-format
+msgid "Cannot open file %s.\n"
+msgstr "Kan inte öppna filen %s.\n"
+
+#: luks/keymanage.c:331
+#, c-format
+msgid "LUKS header detected but device %s is too small.\n"
+msgstr "LUKS-huvud identifierat men enheten %s är för liten.\n"
+
+#: luks/keymanage.c:375
+#, c-format
+msgid "Error during update of LUKS header on device %s.\n"
+msgstr "Fel vid uppdatering av LUKS-huvud på enheten %s.\n"
+
+#: luks/keymanage.c:382
+#, c-format
+msgid "Error re-reading LUKS header after update on device %s.\n"
+msgstr "Fel vid omläsning av LUKS-huvud efter uppdatering på enheten %s.\n"
+
+#: luks/keymanage.c:422
+msgid "Cannot create LUKS header: reading random salt failed.\n"
+msgstr "Kan inte skapa LUKS-huvud: läsning av slumpmässigt salt misslyckades.\n"
+
+#: luks/keymanage.c:433
+#, c-format
+msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
+msgstr "Kan inte skapa LUKS-huvud: huvudsammanfattning misslyckades (använder hashen %s).\n"
+
+#: luks/keymanage.c:450
+msgid "Wrong UUID format provided, generating new one.\n"
+msgstr "Felaktigt UUID-format angavs, genererar ny.\n"
+
+#: luks/keymanage.c:475
+#, c-format
+msgid "Key slot %d active, purge first.\n"
+msgstr "Nyckelplats %d är aktiv, rensa först.\n"
+
+#: luks/keymanage.c:480
+#, c-format
+msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
+msgstr "Nyckelplats %d material inkluderar för få stripes. Har huvudet manipulerats?\n"
+
+#: luks/keymanage.c:489
+#, c-format
+msgid "Not compatible PBKDF2 options (using hash algorithm %s)."
+msgstr "Ej kompatibla PBKDF2-flaggor (använder hash-algoritmen %s)."
+
+#: luks/keymanage.c:536
+msgid "Failed to write to key storage.\n"
+msgstr "Misslyckades med att skriva till nyckellagring.\n"
+
+#: luks/keymanage.c:613
+msgid "Failed to read from key storage.\n"
+msgstr "Misslyckades med att läsa från nyckellagring.\n"
+
+#: luks/keymanage.c:622
+#, c-format
+msgid "Key slot %d unlocked.\n"
+msgstr "Nyckelplats %d är upplåst.\n"
+
+#: luks/keymanage.c:655
+msgid "No key available with this passphrase.\n"
+msgstr "Ingen nyckel finns tillgänglig med denna lösenfras.\n"
+
+#: luks/keymanage.c:732
+#, c-format
+msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
+msgstr "Nyckelplats %d är ogiltig. Välj en nyckelplats mellan 0 och %d.\n"
+
+#: luks/keymanage.c:744
+#, c-format
+msgid "Cannot wipe device %s.\n"
+msgstr "Kan inte rensa enheten %s.\n"
+
+#: src/cryptsetup.c:71 src/cryptsetup.c:89
 msgid "<name> <device>"
 msgstr "<namn> <enhet>"
 
-#: src/cryptsetup.c:61
+#: src/cryptsetup.c:71
 msgid "create device"
 msgstr "skapa enhet"
 
-#: src/cryptsetup.c:62 src/cryptsetup.c:63 src/cryptsetup.c:64
-#: src/cryptsetup.c:72
+#: src/cryptsetup.c:72 src/cryptsetup.c:73 src/cryptsetup.c:74
+#: src/cryptsetup.c:82
 msgid "<name>"
 msgstr "<namn>"
 
-#: src/cryptsetup.c:62
+#: src/cryptsetup.c:72
 msgid "remove device"
 msgstr "ta bort enhet"
 
-#: src/cryptsetup.c:63
+#: src/cryptsetup.c:73
 msgid "resize active device"
 msgstr "ändra storlek på aktiv enhet"
 
-#: src/cryptsetup.c:64
+#: src/cryptsetup.c:74
 msgid "show device status"
 msgstr "visa enhetsstatus"
 
-#: src/cryptsetup.c:65 src/cryptsetup.c:67
+#: src/cryptsetup.c:75 src/cryptsetup.c:77
 msgid "<device> [<new key file>]"
 msgstr "<enhet> [<ny nyckelfil>]"
 
-#: src/cryptsetup.c:65
+#: src/cryptsetup.c:75
 msgid "formats a LUKS device"
 msgstr "formaterar en LUKS-enhet"
 
-#: src/cryptsetup.c:66
+#: src/cryptsetup.c:76
 msgid "<device> <name> "
 msgstr "<enhet> <namn> "
 
-#: src/cryptsetup.c:66
+#: src/cryptsetup.c:76
 msgid "open LUKS device as mapping <name>"
 msgstr "öppna LUKS-enhet som mappning <namn>"
 
-#: src/cryptsetup.c:67
+#: src/cryptsetup.c:77
 msgid "add key to LUKS device"
 msgstr "lägg till nyckel till LUKS-enhet"
 
-#: src/cryptsetup.c:68
-#, fuzzy
+#: src/cryptsetup.c:78
 msgid "<device> [<key file>]"
-msgstr "<enhet> [<ny nyckelfil>]"
+msgstr "<enhet> [<nyckelfil>]"
 
-#: src/cryptsetup.c:68
-#, fuzzy
+#: src/cryptsetup.c:78
 msgid "removes supplied key or key file from LUKS device"
-msgstr "rensar nyckeln med nummer <nyckelplats> från LUKS-enhet"
+msgstr "tar bort angiven nyckel eller nyckelfil från LUKS-enhet"
 
-#: src/cryptsetup.c:69 src/cryptsetup.c:74
+#: src/cryptsetup.c:79 src/cryptsetup.c:88
 msgid "<device> <key slot>"
 msgstr "<enhet> <nyckelplats>"
 
-#: src/cryptsetup.c:69
+#: src/cryptsetup.c:79
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr "rensar nyckeln med nummer <nyckelplats> från LUKS-enhet"
 
-#: src/cryptsetup.c:70 src/cryptsetup.c:71 src/cryptsetup.c:73
+#: src/cryptsetup.c:80 src/cryptsetup.c:81 src/cryptsetup.c:83
+#: src/cryptsetup.c:84 src/cryptsetup.c:85 src/cryptsetup.c:86
+#: src/cryptsetup.c:87
 msgid "<device>"
 msgstr "<enhet>"
 
-#: src/cryptsetup.c:70
+#: src/cryptsetup.c:80
 msgid "print UUID of LUKS device"
 msgstr "skriv ut UUID för LUKS-enhet"
 
-#: src/cryptsetup.c:71
+#: src/cryptsetup.c:81
 msgid "tests <device> for LUKS partition header"
 msgstr "testar <enhet> för LUKS-partitionshuvud"
 
-#: src/cryptsetup.c:72
+#: src/cryptsetup.c:82
 msgid "remove LUKS mapping"
 msgstr "ta bort LUKS-mappning"
 
-#: src/cryptsetup.c:73
+#: src/cryptsetup.c:83
 msgid "dump LUKS partition information"
-msgstr "skriv ut information om LUKS-partition"
+msgstr "skriver ut information om LUKS-partition"
 
-#: src/cryptsetup.c:74
+#: src/cryptsetup.c:84
+msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
+msgstr "Försätt LUKS-enhet i vänteläge och rensa nyckel (alla in-/ut-åtgärder är frusna)."
+
+#: src/cryptsetup.c:85
+msgid "Resume suspended LUKS device."
+msgstr "Återuppta LUKS-enhet i vänteläge."
+
+#: src/cryptsetup.c:86
+msgid "Backup LUKS device header and keyslots"
+msgstr "Säkerhetskopiera huvud och nyckelplatser från LUKS-enhet"
+
+#: src/cryptsetup.c:87
+msgid "Restore LUKS device header and keyslots"
+msgstr "Återställ huvud och nyckelplatser för LUKS-enhet"
+
+#: src/cryptsetup.c:88
 msgid "identical to luksKillSlot - DEPRECATED - see man page"
-msgstr ""
+msgstr "identisk med luksKillSlot - FÖRÅLDRAD - se manualsida"
 
-#: src/cryptsetup.c:75
+#: src/cryptsetup.c:89
 msgid "modify active device - DEPRECATED - see man page"
-msgstr ""
+msgstr "ändra aktiv enhet - FÖRÅLDRAD - se manualsida"
 
-#: src/cryptsetup.c:125
-#, c-format
+#: src/cryptsetup.c:180
 msgid "Command successful.\n"
 msgstr "Kommandot lyckades.\n"
 
-#: src/cryptsetup.c:138
+#: src/cryptsetup.c:194
 #, c-format
-msgid "Command failed"
-msgstr "Kommandot misslyckades"
+msgid "Command failed with code %i"
+msgstr "Kommandot misslyckades med kod %i"
 
-#: src/cryptsetup.c:168
-#, c-format
+#: src/cryptsetup.c:222
 msgid ""
-"The reload action is deprecated. Please use \"dmsetup reload\" in case you "
-"really need this functionality.\n"
-"WARNING: do not use reload to touch LUKS devices. If that is the case, hit "
-"Ctrl-C now.\n"
+"The reload action is deprecated. Please use \"dmsetup reload\" in case you really need this functionality.\n"
+"WARNING: do not use reload to touch LUKS devices. If that is the case, hit Ctrl-C now.\n"
 msgstr ""
+"Omläsningsåtgärden är föråldrad. Använd \"dmsetup reload\" om du verkligen behöver denna funktion.\n"
+"VARNING: använd inte omläsning för \"touch\" på LUKS-enheter. Om så är fallet, tryck Ctrl-C nu.\n"
 
-#: src/cryptsetup.c:267
+#: src/cryptsetup.c:390
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
-msgstr "Det här kommer att skriva över data permanent på %s."
+msgstr "Detta kommer att skriva över data på %s och går inte att ångra."
 
-#: src/cryptsetup.c:268
+#: src/cryptsetup.c:391
 msgid "memory allocation error in action_luksFormat"
 msgstr "minnesallokeringsfel i action_luksFormat"
 
-#: src/cryptsetup.c:418
-#, c-format
+#: src/cryptsetup.c:421
+msgid "Obsolete option --non-exclusive is ignored.\n"
+msgstr "Föråldrad flagga --non-exclusive ignoreras.\n"
+
+#: src/cryptsetup.c:581 src/cryptsetup.c:603
+msgid "Option --header-backup-file is required.\n"
+msgstr "Flaggan --header-backup-file krävs.\n"
+
+#: src/cryptsetup.c:637
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -212,7 +613,7 @@ msgstr ""
 "\n"
 "<åtgärd> är en av:\n"
 
-#: src/cryptsetup.c:424
+#: src/cryptsetup.c:643
 #, c-format
 msgid ""
 "\n"
@@ -224,134 +625,139 @@ msgstr ""
 "\n"
 "<namn> är enheten att skapa under %s\n"
 "<enhet> är den krypterade enheten\n"
-"<nyckelplats> är LUKS-nyckelplatsens nummer att ändra\n"
-"<nyckelfil> valfri nyckelfil för den nya nyckeln för luksAddKey-åtgärd\n"
+"<nyckelplats> är numret för LUKS-nyckelplatsen att ändra\n"
+"<nyckelfil> valfri nyckelfil för den nya nyckeln för luksAddKey-åtgärden\n"
 
-#: src/cryptsetup.c:440
+#: src/cryptsetup.c:691
 msgid "Show this help message"
-msgstr "Visa det här hjälpmeddelandet"
+msgstr "Visa detta hjälpmeddelande"
 
-#: src/cryptsetup.c:441
+#: src/cryptsetup.c:692
 msgid "Display brief usage"
 msgstr "Visa kort information om användning"
 
-#: src/cryptsetup.c:445
+#: src/cryptsetup.c:696
 msgid "Help options:"
 msgstr "Hjälpflaggor:"
 
-#: src/cryptsetup.c:446
+#: src/cryptsetup.c:697
 msgid "Shows more detailed error messages"
 msgstr "Visar mer detaljerade felmeddelanden"
 
-#: src/cryptsetup.c:447
+#: src/cryptsetup.c:698
+msgid "Show debug messages"
+msgstr "Visa felsökningsmeddelanden"
+
+#: src/cryptsetup.c:699
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Chiffret som används för att kryptera disken (se /proc/crypto)"
 
-#: src/cryptsetup.c:448
+#: src/cryptsetup.c:700
 msgid "The hash used to create the encryption key from the passphrase"
-msgstr "Hashen som används för att skapa krypteringsnyckeln från lösenfrasen"
+msgstr "Hashen som används för att skapa krypteringsnyckel från lösenfras"
 
-#: src/cryptsetup.c:449
+#: src/cryptsetup.c:701
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Verifierar lösenfrasen genom att fråga efter den två gånger"
 
-#: src/cryptsetup.c:450
+#: src/cryptsetup.c:702
 msgid "Read the key from a file (can be /dev/random)"
 msgstr "Läs nyckeln från en fil (kan vara /dev/random)"
 
-#: src/cryptsetup.c:451
-msgid "The size of the encryption key"
-msgstr "Storleken på krypteringsnyckeln"
+#: src/cryptsetup.c:703
+msgid "Read the volume (master) key from file."
+msgstr "Läs volymnyckeln (master) från fil."
 
-#: src/cryptsetup.c:451
+#: src/cryptsetup.c:704
+msgid "The size of the encryption key"
+msgstr "Storleken för krypteringsnyckeln"
+
+#: src/cryptsetup.c:704
 msgid "BITS"
 msgstr "BITAR"
 
-#: src/cryptsetup.c:452
+#: src/cryptsetup.c:705
 msgid "Slot number for new key (default is first free)"
-msgstr ""
+msgstr "Platsnummer för ny nyckel (standard är första lediga)"
 
-#: src/cryptsetup.c:453
+#: src/cryptsetup.c:706
 msgid "The size of the device"
-msgstr "Storleken på enheten"
+msgstr "Storleken för enheten"
 
-#: src/cryptsetup.c:453 src/cryptsetup.c:454 src/cryptsetup.c:455
-#: src/cryptsetup.c:463
+#: src/cryptsetup.c:706 src/cryptsetup.c:707 src/cryptsetup.c:708
+#: src/cryptsetup.c:716
 msgid "SECTORS"
 msgstr "SEKTORER"
 
-#: src/cryptsetup.c:454
+#: src/cryptsetup.c:707
 msgid "The start offset in the backend device"
-msgstr "Startpositionen i bakändesenheten"
+msgstr "Startoffset i bakändesenheten"
 
-#: src/cryptsetup.c:455
+#: src/cryptsetup.c:708
 msgid "How many sectors of the encrypted data to skip at the beginning"
-msgstr ""
-"Hur många sektorer av det krypterade datat som ska hoppas över i början"
+msgstr "Hur många sektorer av krypterat data som ska hoppas över i början"
 
-#: src/cryptsetup.c:456
+#: src/cryptsetup.c:709
 msgid "Create a readonly mapping"
 msgstr "Skapa en skrivskyddad mappning"
 
-#: src/cryptsetup.c:457
+#: src/cryptsetup.c:710
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "PBKDF2-iterationstid för LUKS (i ms)"
 
-#: src/cryptsetup.c:458
+#: src/cryptsetup.c:711
 msgid "msecs"
 msgstr "ms"
 
-#: src/cryptsetup.c:459
+#: src/cryptsetup.c:712
 msgid "Do not ask for confirmation"
 msgstr "Fråga inte efter bekräftelse"
 
-#: src/cryptsetup.c:460
+#: src/cryptsetup.c:713
 msgid "Print package version"
 msgstr "Skriv ut paketversion"
 
-#: src/cryptsetup.c:461
+#: src/cryptsetup.c:714
 msgid "Timeout for interactive passphrase prompt (in seconds)"
-msgstr "Tidsgräns för interaktiv prompt för lösenfras (i sekunder)"
+msgstr "Tidsgräns för interaktiv lösenfrasprompt (i sekunder)"
 
-#: src/cryptsetup.c:461
+#: src/cryptsetup.c:714
 msgid "secs"
-msgstr "sekunder"
+msgstr "s"
 
-#: src/cryptsetup.c:462
-msgid "How often the input of the passphrase can be retried"
-msgstr "Hur ofta inmatning av lösenfras kan upprepas"
+#: src/cryptsetup.c:715
+msgid "How often the input of the passphrase canbe retried"
+msgstr "Hur ofta inmatningsförsök av lösenfrasen kan ske"
 
-#: src/cryptsetup.c:463
+#: src/cryptsetup.c:716
 msgid "Align payload at <n> sector boundaries - for luksFormat"
-msgstr "Justera data i <n> sektorgränser - för luksFormat"
+msgstr "Justera nyttolast i <n> sektorgränser - för luksFormat"
 
-#: src/cryptsetup.c:464
-msgid "Allows non-exclusive access for luksOpen, WARNING see manpage."
-msgstr ""
+#: src/cryptsetup.c:717
+msgid "(Obsoleted, see man page.)"
+msgstr "(Föråldrad, se manualsida)"
 
-#: src/cryptsetup.c:480
+#: src/cryptsetup.c:718
+msgid "File with LUKS header and keyslots backup."
+msgstr "Fil med säkerhetskopior av LUKS-huvud och nyckelplatser."
+
+#: src/cryptsetup.c:736
 msgid "[OPTION...] <action> <action-specific>]"
 msgstr "[FLAGGA...] <åtgärd> <åtgärdsspecifik>]"
 
-#: src/cryptsetup.c:516
+#: src/cryptsetup.c:772
 msgid "Key size must be a multiple of 8 bits"
-msgstr "Nyckelstorleken måste vara en multipel av 8 bitar"
+msgstr "Nyckelstorlek måste vara en multipel av 8 bitar"
 
-#: src/cryptsetup.c:520
+#: src/cryptsetup.c:776
 msgid "Argument <action> missing."
 msgstr "Argumentet <åtgärd> saknas."
 
-#: src/cryptsetup.c:526
+#: src/cryptsetup.c:782
 msgid "Unknown action."
 msgstr "Okänd åtgärd."
 
-#: src/cryptsetup.c:541
+#: src/cryptsetup.c:797
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: kräver %s som argument"
-
-#~ msgid "modify active device"
-#~ msgstr "ändra aktiv enhet"
-
-#~ msgid "key %d is disabled.\n"
-#~ msgstr "nyckel %d är inaktiverad.\n"
