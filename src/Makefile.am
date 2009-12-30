@@ -15,7 +15,7 @@ cryptsetup_SOURCES = \
 
 if STATIC_CRYPTSETUP
 _STATIC_FLAGS = -all-static
-_STATIC_LDADD = -lgpg-error @SELINUX_STATIC_LIBS@
+_STATIC_LDADD = @LIBGCRYPT_LIBS@ @SELINUX_STATIC_LIBS@
 endif
 
 cryptsetup_LDADD = \

@@ -2,7 +2,7 @@ moduledir = $(libdir)/cryptsetup
 
 noinst_LTLIBRARIES = libluks.la
 
-libluks_la_CFLAGS = -Wall
+libluks_la_CFLAGS = -Wall @LIBGCRYPT_CFLAGS@
 
 libluks_la_SOURCES = \
 	af.c \

@@ -28,7 +28,7 @@ libcryptsetup_la_LDFLAGS = \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-version-info 1:0:0
 
-libcryptsetup_la_CFLAGS = -Wall
+libcryptsetup_la_CFLAGS = -Wall @LIBGCRYPT_CFLAGS@
 
 libcryptsetup_la_LIBADD = \
 	@UUID_LIBS@				\
