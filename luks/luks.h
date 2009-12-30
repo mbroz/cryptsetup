@@ -15,10 +15,9 @@
 #define LUKS_SALTSIZE 32
 #define LUKS_NUMKEYS 8
 
-// Numbers of iterations for the master key digest
-#define LUKS_MKD_ITER 10
-
-// LUKS_KT defines Key types
+// Minimal number of iterations
+#define LUKS_MKD_ITERATIONS_MIN  1000
+#define LUKS_SLOT_ITERATIONS_MIN 1000
 
 #define LUKS_KEY_DISABLED_OLD 0
 #define LUKS_KEY_ENABLED_OLD 0xCAFE
@@ -29,7 +28,6 @@
 #define LUKS_STRIPES 4000
 
 // partition header starts with magic
-
 #define LUKS_MAGIC {'L','U','K','S', 0xba, 0xbe};
 #define LUKS_MAGIC_L 6
 
@@ -93,6 +91,8 @@ int LUKS_generate_phdr(
 	const char *uuid,
 	unsigned int stripes,
 	unsigned int alignPayload,
+	uint32_t iteration_time_ms,
+	uint64_t *PBKDF2_per_sec,
 	struct crypt_device *ctx);
 
 int LUKS_read_phdr(

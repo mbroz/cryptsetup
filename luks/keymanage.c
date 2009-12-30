@@ -385,11 +385,28 @@ int LUKS_write_phdr(const char *device,
 	return r;
 }
 
+static int LUKS_PBKDF2_performance_check(const char *hashSpec,
+					 uint64_t *PBKDF2_per_sec,
+					 struct crypt_device *ctx)
+{
+	if (!*PBKDF2_per_sec) {
+		if (PBKDF2_performance_check(hashSpec, PBKDF2_per_sec) < 0) {
+			log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s)."), hashSpec);
+			return -EINVAL;
+		}
+		log_dbg("PBKDF2: %" PRIu64 " iterations per second using hash %s.", *PBKDF2_per_sec, hashSpec);
+	}
+
+	return 0;
+}
+
 int LUKS_generate_phdr(struct luks_phdr *header,
 		       const struct luks_masterkey *mk,
 		       const char *cipherName, const char *cipherMode, const char *hashSpec,
 		       const char *uuid, unsigned int stripes,
 		       unsigned int alignPayload,
+		       uint32_t iteration_time_ms,
+		       uint64_t *PBKDF2_per_sec,
 		       struct crypt_device *ctx)
 {
 	unsigned int i=0;
@@ -423,8 +440,14 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
+	if ((r = LUKS_PBKDF2_performance_check(header->hashSpec, PBKDF2_per_sec, ctx)))
+		return r;
+
 	/* Compute master key digest */
-	header->mkDigestIterations = LUKS_MKD_ITER;
+	iteration_time_ms /= 8;
+	header->mkDigestIterations = at_least((uint32_t)(*PBKDF2_per_sec/1024) * iteration_time_ms,
+					      LUKS_MKD_ITERATIONS_MIN);
+
 	r = PBKDF2_HMAC(header->hashSpec,mk->key,mk->keyLength,
 			header->mkDigestSalt,LUKS_SALTSIZE,
 			header->mkDigestIterations,
@@ -454,7 +477,8 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		uuid_generate(partitionUuid);
         uuid_unparse(partitionUuid, header->uuid);
 
-	log_dbg("Data offset %d, UUID %s", header->payloadOffset, header->uuid);
+	log_dbg("Data offset %d, UUID %s, digest iterations %" PRIu32,
+		header->payloadOffset, header->uuid, header->mkDigestIterations);
 
 	return 0;
 }
@@ -469,6 +493,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 	char derivedKey[hdr->keyBytes];
 	char *AfKey;
 	unsigned int AFEKSize;
+	uint64_t PBKDF2_temp;
 	int r;
 
 	if(hdr->keyblock[keyIndex].active != LUKS_KEY_DISABLED) {
@@ -484,17 +509,20 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 
 	log_dbg("Calculating data for key slot %d", keyIndex);
 
-	if (!*PBKDF2_per_sec) {
-		if (PBKDF2_performance_check(hdr->hashSpec, PBKDF2_per_sec) < 0) {
-			log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s)."), hdr->hashSpec);
-			return -EINVAL;
-		}
-		log_dbg("PBKDF2: %" PRIu64 " iterations per second using hash %s.", *PBKDF2_per_sec, hdr->hashSpec);
-	}
+	if ((r = LUKS_PBKDF2_performance_check(hdr->hashSpec, PBKDF2_per_sec, ctx)))
+		return r;
 
-	/* Avoid floating point operation - don't tell anyone that second have no 1024 miliseconds :-) */
-	iteration_time_ms = at_least_one(iteration_time_ms / 1024);
-	hdr->keyblock[keyIndex].passwordIterations = at_least_one((uint32_t)(*PBKDF2_per_sec/2) * iteration_time_ms);
+	/*
+	 * Avoid floating point operation
+	 * Final iteration count is at least LUKS_SLOT_ITERATIONS_MIN
+	 */
+	PBKDF2_temp = (*PBKDF2_per_sec / 2) * (uint64_t)iteration_time_ms;
+	PBKDF2_temp /= 1024;
+	if (PBKDF2_temp > UINT32_MAX)
+		PBKDF2_temp = UINT32_MAX;
+	hdr->keyblock[keyIndex].passwordIterations = at_least((uint32_t)PBKDF2_temp,
+							      LUKS_SLOT_ITERATIONS_MIN);
+
 	log_dbg("Key slot %d use %d password iterations.", keyIndex, hdr->keyblock[keyIndex].passwordIterations);
 
 	r = getRandom(hdr->keyblock[keyIndex].passwordSalt, LUKS_SALTSIZE);

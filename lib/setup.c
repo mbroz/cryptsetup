@@ -1101,7 +1101,8 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	r = LUKS_generate_phdr(&cd->hdr, cd->volume_key, cipher, cipher_mode,
 			       (params && params->hash) ? params->hash : "sha1",
 			       uuid, LUKS_STRIPES,
-			       params ? params->data_alignment: DEFAULT_ALIGNMENT, cd);
+			       params ? params->data_alignment: DEFAULT_ALIGNMENT,
+			       cd->iteration_time, &cd->PBKDF2_per_sec, cd);
 	if(r < 0)
 		return r;
 

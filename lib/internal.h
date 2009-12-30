@@ -25,7 +25,7 @@
 
 #define CRYPT_FLAG_PRIVATE_MASK ((unsigned int)-1 << 24)
 
-#define at_least_one(a) ({ __typeof__(a) __at_least_one=(a); (__at_least_one)?__at_least_one:1; })
+#define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
 struct hash_type {
 	char		*name;
