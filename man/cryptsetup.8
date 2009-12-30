@@ -122,12 +122,24 @@ For \fIluksFormat\fR action specifies hash used in LUKS key setup scheme and vol
 \fBWARNING:\fR setting hash other than \fBsha1\fR causes LUKS device incompatible with older version of cryptsetup.
 
 The hash string is passed to libgcrypt, so all hashes accepted by gcrypt are supported.
-Default is \fB"ripemd160"\fR for \fIcreate\fR action and \fB"sha1"\fR for \fIluksFormat\fR.
+Default is set during compilation, compatible values with old version of cryptsetup are
+\fB"ripemd160"\fR for \fIcreate\fR action and \fB"sha1"\fR for \fIluksFormat\fR.
+
+Use \fIcryptsetup --help\fR to show defaults.
 .TP
 .B "\-\-cipher, \-c"
-set cipher specification string. For plain dm-crypt mappings, the default is "aes-cbc-plain", for LUKS mappings it's "aes-cbc-essiv:sha256". For pre-2.6.10 kernels, use "aes-plain" as they don't understand the new cipher spec strings. To use ESSIV, use "aes-cbc-essiv:sha256".
+set cipher specification string.
 
-For XTS mode, kernel version 2.6.24 or more recent is required. Use "aes-xts-plain" cipher specification and set key size to 256 (or 512) bits (see \-s option).
+Default mode is configurable during compilation,
+you can see compiled-in default using \fIcryptsetup --help\fR.
+If not changed, the default is for plain dm-crypt and LUKS mappings
+"aes-cbc-essiv:sha256".
+
+For pre-2.6.10 kernels, use "aes-plain" as they don't understand
+the new cipher spec strings. To use ESSIV, use "aes-cbc-essiv:sha256".
+
+For XTS mode, kernel version 2.6.24 or more recent is required.
+Use "aes-xts-plain" cipher specification and set key size to 256 (or 512) bits (see \-s option).
 .TP
 .B "\-\-verify-passphrase, \-y"
 query for passwords twice. Useful when creating a (regular) mapping for the first time, or when running \fIluksFormat\fR.
@@ -146,7 +158,13 @@ For \fIluksAddKey\fR it allows adding new passphrase with only master key knowle
 For LUKS operations that add key material, this options allows to you specify which key slot is selected for the new key. This option can be used for \fIluksFormat\fR and \fIluksAddKey\fR.
 .TP
 .B "\-\-key-size, \-s"
-set key size in bits. Has to be a multiple of 8 bits. The key size is limited by the used cipher. See output of /proc/crypto for more information. Can be used for \fIcreate\fR or \fIluksFormat\fR, all other LUKS actions will use key-size specified by the LUKS header. Default is 128 for \fIluksFormat\fR and 256 for \fIcreate\fR.
+set key size in bits.
+
+Has to be a multiple of 8 bits. The key size is limited by the used cipher. See output of /proc/crypto for more information.
+Can be used for \fIcreate\fR or \fIluksFormat\fR, all other LUKS actions will use key-size specified by the LUKS header.
+Default is set during compilation, if not changed it is 256 bits.
+
+Use \fIcryptsetup --help\fR to show defaults.
 
 For \fIluksOpen\fR this option specifies number of bits read from the key-file (default is exhaustive read from key-file).
 .TP
