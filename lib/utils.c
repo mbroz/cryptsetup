@@ -396,7 +396,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
             const char *key_file, int timeout, int how2verify,
 	    struct crypt_device *cd)
 {
-	int fd;
+	int fd = -1;
 	const int verify = how2verify & CRYPT_FLAG_VERIFY;
 	const int verify_if_possible = how2verify & CRYPT_FLAG_VERIFY_IF_POSSIBLE;
 	char *pass = NULL;
@@ -498,8 +498,6 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 			if(r == 0 || (newline_stop && pass[i] == '\n'))
 				break;
 		}
-		if(key_file)
-			close(fd);
 		/* Fail if piped input dies reading nothing */
 		if(!i && !regular_file) {
 			log_dbg("Error reading passphrase.");
@@ -509,9 +507,13 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		*key = pass;
 		*passLen = i;
 	}
+	if(fd != STDIN_FILENO)
+		close(fd);
 	return;
 
 out_err:
+	if(fd >= 0 && fd != STDIN_FILENO)
+		close(fd);
 	if(pass)
 		safe_free(pass);
 	*key = NULL;
