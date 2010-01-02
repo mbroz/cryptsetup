@@ -73,6 +73,8 @@ AC_ARG_ENABLE(selinux,
 
 saved_LIBS=$LIBS
 AC_CHECK_LIB(devmapper, dm_task_set_name,,[AC_MSG_ERROR('You need the device-mapper library')])
+AC_CHECK_LIB(devmapper, dm_task_set_message,,
+	[AC_MSG_ERROR([The device-mapper library on your system is too old.])])
 DEVMAPPER_LIBS=$LIBS
 LIBS=$saved_LIBS
 if test "x$enable_selinux" != xno; then
