@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.1.0-rc3\n"
+"Project-Id-Version: cryptsetup 1.1.0-rc4\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2009-11-16 21:41+0100\n"
-"PO-Revision-Date: 2009-12-23 11:26+0100\n"
+"POT-Creation-Date: 2009-12-30 20:09+0100\n"
+"PO-Revision-Date: 2010-01-07 18:07+0100\n"
 "Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "MIME-Version: 1.0\n"
@@ -89,7 +89,7 @@ msgstr "Nyckel %d är inte aktiv. Kan inte rensa.\n"
 msgid "This is the last keyslot. Device will become unusable after purging this key."
 msgstr "Detta är sista nyckelplatsen. Enheten kommer att bli oanvändbar efter att denna nyckel tagits bort."
 
-#: lib/setup.c:364 lib/setup.c:1650 lib/setup.c:1703 lib/setup.c:1760
+#: lib/setup.c:364 lib/setup.c:1651 lib/setup.c:1704 lib/setup.c:1761
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Enheten %s finns redan.\n"
@@ -99,16 +99,16 @@ msgstr "Enheten %s finns redan.\n"
 msgid "Invalid key size %d.\n"
 msgstr "Ogiltig nyckelstorlek %d.\n"
 
-#: lib/setup.c:471 lib/setup.c:1655
+#: lib/setup.c:471 lib/setup.c:1656
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "Ange lösenfras för %s: "
 
-#: lib/setup.c:600 lib/setup.c:628 lib/setup.c:1364 lib/setup.c:1711
+#: lib/setup.c:600 lib/setup.c:628 lib/setup.c:1365 lib/setup.c:1712
 msgid "Enter passphrase: "
 msgstr "Ange lösenfras: "
 
-#: lib/setup.c:661 lib/setup.c:1040 lib/setup.c:1802
+#: lib/setup.c:661 lib/setup.c:1040 lib/setup.c:1803
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Enheten %s är inte aktiv.\n"
@@ -133,146 +133,185 @@ msgstr "Ogiltig nyckelstorlek.\n"
 msgid "Can't format LUKS without device.\n"
 msgstr "Kan inte formatera LUKS utan enhet.\n"
 
-#: lib/setup.c:1111
+#: lib/setup.c:1112
 #, c-format
 msgid "Can't wipe header on device %s.\n"
 msgstr "Kan inte rensa huvudet på enheten %s.\n"
 
-#: lib/setup.c:1153
+#: lib/setup.c:1154
 #, c-format
-msgid "Unkown crypt device type %s requesed.\n"
+msgid "Unknown crypt device type %s requested.\n"
 msgstr "Okänd typ av krypteringsenhet %s begärd.\n"
 
-#: lib/setup.c:1186
+#: lib/setup.c:1187
 msgid "Cannot initialize crypto backend.\n"
 msgstr "Kan inte initiera krypteringsbakände.\n"
 
-#: lib/setup.c:1260
+#: lib/setup.c:1261
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Volymen %s är inte aktiv.\n"
 
-#: lib/setup.c:1273
+#: lib/setup.c:1274
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Volymen %s är redan i vänteläge.\n"
 
-#: lib/setup.c:1299 lib/setup.c:1346 lib/setup.c:1405 lib/setup.c:1483
-#: lib/setup.c:1555 lib/setup.c:1600 lib/setup.c:1694 lib/setup.c:1751
-#: lib/setup.c:1872 lib/setup.c:1955 lib/setup.c:2055
+#: lib/setup.c:1300 lib/setup.c:1347 lib/setup.c:1406 lib/setup.c:1484
+#: lib/setup.c:1556 lib/setup.c:1601 lib/setup.c:1695 lib/setup.c:1752
+#: lib/setup.c:1873 lib/setup.c:1956 lib/setup.c:2056
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Denna åtgärd stöds endast för LUKS-enheter.\n"
 
-#: lib/setup.c:1310 lib/setup.c:1357
+#: lib/setup.c:1311 lib/setup.c:1358
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Volymen %s är inte i vänteläge.\n"
 
-#: lib/setup.c:1419 lib/setup.c:1497
+#: lib/setup.c:1420 lib/setup.c:1498
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "Kan inte lägga till nyckelplats. Alla platser är inaktiverade och ingen volymnyckel har angivits.\n"
 
-#: lib/setup.c:1428 lib/setup.c:1503 lib/setup.c:1506
+#: lib/setup.c:1429 lib/setup.c:1504 lib/setup.c:1507
 msgid "Enter any passphrase: "
 msgstr "Ange valfri lösenfras: "
 
-#: lib/setup.c:1447 lib/setup.c:1521 lib/setup.c:1525 lib/setup.c:1578
+#: lib/setup.c:1448 lib/setup.c:1522 lib/setup.c:1526 lib/setup.c:1579
 msgid "Enter new passphrase for key slot: "
 msgstr "Ange ny lösenfras för nyckelplats: "
 
-#: lib/setup.c:1569 lib/setup.c:1771 lib/setup.c:1883
+#: lib/setup.c:1570 lib/setup.c:1772 lib/setup.c:1884
 msgid "Volume key does not match the volume.\n"
 msgstr "Volymnyckeln stämmer inte överens med volymen.\n"
 
-#: lib/setup.c:1606
+#: lib/setup.c:1607
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "Nyckelplats %d är ogiltig.\n"
 
-#: lib/setup.c:1611
+#: lib/setup.c:1612
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "Nyckelplats %d används inte.\n"
 
-#: lib/setup.c:1798
+#: lib/setup.c:1799
 #, c-format
 msgid "Device %s is busy.\n"
 msgstr "Enheten %s är upptagen.\n"
 
-#: lib/setup.c:1806
+#: lib/setup.c:1807
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Ogiltig enhet %s.\n"
 
-#: lib/setup.c:1830
+#: lib/setup.c:1831
 msgid "Volume key buffer too small.\n"
 msgstr "Buffert för volymnyckel är för liten.\n"
 
-#: lib/setup.c:1838
+#: lib/setup.c:1839
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Kan inte hämta volymnyckel för vanlig enhet.\n"
 
-#: lib/setup.c:1860
+#: lib/setup.c:1861
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Denna åtgärd stöds inte för krypteringsenheter av typen %s.\n"
 
-#: lib/utils.c:521
+#: lib/utils.c:416
+#, c-format
+msgid "Failed to open key file %s.\n"
+msgstr "Misslyckades med att öppna nyckelfilen %s.\n"
+
+#: lib/utils.c:436
+msgid "Error reading passphrase from terminal.\n"
+msgstr "Fel vid läsning av lösenfras från terminal.\n"
+
+#: lib/utils.c:441
+msgid "Verify passphrase: "
+msgstr "Verifiera lösenfras: "
+
+#: lib/utils.c:443
+msgid "Passphrases do not match.\n"
+msgstr "Lösenfraserna stämmer inte överens.\n"
+
+#: lib/utils.c:458
+msgid "Can't do passphrase verification on non-tty inputs.\n"
+msgstr "Kan inte verifiera lösenfras på icke-tty-ingångar.\n"
+
+#: lib/utils.c:471
+#, c-format
+msgid "Failed to stat key file %s.\n"
+msgstr "Misslyckades med att ta status på nyckelfilen %s.\n"
+
+#: lib/utils.c:475
+#, c-format
+msgid "Warning: exhausting read requested, but key file %s is not a regular file, function might never return.\n"
+msgstr "Varning: tung läsning begärd men nyckelfilen %s är inte en vanlig fil, funktionen kanske aldrig återgår.\n"
+
+#: lib/utils.c:487
+msgid "Out of memory while reading passphrase.\n"
+msgstr "Slut på minne vid läsning av lösenfras.\n"
+
+#: lib/utils.c:494
+msgid "Error reading passphrase.\n"
+msgstr "Fel vid läsning av lösenfras.\n"
+
+#: lib/utils.c:531
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Enheten %s finns inte eller åtkomst nekas.\n"
 
-#: lib/utils.c:528
+#: lib/utils.c:538
 #, c-format
 msgid "Cannot open device %s for %s%s access.\n"
 msgstr "Kan inte öppna enheten %s för %s%s åtkomst.\n"
 
-#: lib/utils.c:529
+#: lib/utils.c:539
 msgid "exclusive "
 msgstr "exklusiv"
 
-#: lib/utils.c:530
+#: lib/utils.c:540
 msgid "writable"
 msgstr "skrivbar"
 
-#: lib/utils.c:530
+#: lib/utils.c:540
 msgid "read-only"
 msgstr "skrivskyddad"
 
-#: lib/utils.c:537
+#: lib/utils.c:547
 #, c-format
 msgid "Cannot read device %s.\n"
 msgstr "Kan inte läsa enheten %s.\n"
 
-#: lib/utils.c:567
+#: lib/utils.c:577
 #, c-format
 msgid "Cannot open device: %s\n"
 msgstr "Kan inte öppna enheten: %s\n"
 
-#: lib/utils.c:577
+#: lib/utils.c:587
 #, c-format
 msgid "BLKROGET failed on device %s.\n"
 msgstr "BLKROGET misslyckades på enheten %s.\n"
 
-#: lib/utils.c:602
+#: lib/utils.c:612
 #, c-format
 msgid "BLKGETSIZE failed on device %s.\n"
 msgstr "BLKGETSIZE misslyckades på enheten %s.\n"
 
-#: lib/utils.c:650
+#: lib/utils.c:660
 msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
 msgstr "VARNING!!! Potentiellt osäkert minne. Är du root?\n"
 
-#: lib/utils.c:656
+#: lib/utils.c:666
 msgid "Cannot get process priority.\n"
 msgstr "Kan inte få processprioritet.\n"
 
-#: lib/utils.c:659 lib/utils.c:672
+#: lib/utils.c:669 lib/utils.c:682
 #, c-format
 msgid "setpriority %u failed: %s"
 msgstr "setpriority %u misslyckades: %s"
 
-#: lib/utils.c:670
+#: lib/utils.c:680
 msgid "Cannot unlock memory."
 msgstr "Kan inte låsa upp minne."
 
@@ -409,57 +448,57 @@ msgstr "Fel vid uppdatering av LUKS-huvud på enheten %s.\n"
 msgid "Error re-reading LUKS header after update on device %s.\n"
 msgstr "Fel vid omläsning av LUKS-huvud efter uppdatering på enheten %s.\n"
 
-#: luks/keymanage.c:422
-msgid "Cannot create LUKS header: reading random salt failed.\n"
-msgstr "Kan inte skapa LUKS-huvud: läsning av slumpmässigt salt misslyckades.\n"
-
-#: luks/keymanage.c:433
-#, c-format
-msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
-msgstr "Kan inte skapa LUKS-huvud: huvudsammanfattning misslyckades (använder hashen %s).\n"
-
-#: luks/keymanage.c:450
-msgid "Wrong UUID format provided, generating new one.\n"
-msgstr "Felaktigt UUID-format angavs, genererar ny.\n"
-
-#: luks/keymanage.c:475
-#, c-format
-msgid "Key slot %d active, purge first.\n"
-msgstr "Nyckelplats %d är aktiv, rensa först.\n"
-
-#: luks/keymanage.c:480
-#, c-format
-msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
-msgstr "Nyckelplats %d material inkluderar för få stripes. Har huvudet manipulerats?\n"
-
-#: luks/keymanage.c:489
+#: luks/keymanage.c:394
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s)."
 msgstr "Ej kompatibla PBKDF2-flaggor (använder hash-algoritmen %s)."
 
-#: luks/keymanage.c:536
+#: luks/keymanage.c:439
+msgid "Cannot create LUKS header: reading random salt failed.\n"
+msgstr "Kan inte skapa LUKS-huvud: läsning av slumpmässigt salt misslyckades.\n"
+
+#: luks/keymanage.c:456
+#, c-format
+msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
+msgstr "Kan inte skapa LUKS-huvud: huvudsammanfattning misslyckades (använder hashen %s).\n"
+
+#: luks/keymanage.c:473
+msgid "Wrong UUID format provided, generating new one.\n"
+msgstr "Felaktigt UUID-format angavs, genererar ny.\n"
+
+#: luks/keymanage.c:500
+#, c-format
+msgid "Key slot %d active, purge first.\n"
+msgstr "Nyckelplats %d är aktiv, rensa först.\n"
+
+#: luks/keymanage.c:505
+#, c-format
+msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
+msgstr "Nyckelplats %d material inkluderar för få stripes. Har huvudet manipulerats?\n"
+
+#: luks/keymanage.c:564
 msgid "Failed to write to key storage.\n"
 msgstr "Misslyckades med att skriva till nyckellagring.\n"
 
-#: luks/keymanage.c:613
+#: luks/keymanage.c:641
 msgid "Failed to read from key storage.\n"
 msgstr "Misslyckades med att läsa från nyckellagring.\n"
 
-#: luks/keymanage.c:622
+#: luks/keymanage.c:650
 #, c-format
 msgid "Key slot %d unlocked.\n"
 msgstr "Nyckelplats %d är upplåst.\n"
 
-#: luks/keymanage.c:655
+#: luks/keymanage.c:683
 msgid "No key available with this passphrase.\n"
 msgstr "Ingen nyckel finns tillgänglig med denna lösenfras.\n"
 
-#: luks/keymanage.c:732
+#: luks/keymanage.c:760
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
 msgstr "Nyckelplats %d är ogiltig. Välj en nyckelplats mellan 0 och %d.\n"
 
-#: luks/keymanage.c:744
+#: luks/keymanage.c:772
 #, c-format
 msgid "Cannot wipe device %s.\n"
 msgstr "Kan inte rensa enheten %s.\n"
@@ -628,136 +667,149 @@ msgstr ""
 "<nyckelplats> är numret för LUKS-nyckelplatsen att ändra\n"
 "<nyckelfil> valfri nyckelfil för den nya nyckeln för luksAddKey-åtgärden\n"
 
-#: src/cryptsetup.c:691
+#: src/cryptsetup.c:650
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in device cipher parameters:\n"
+"\tplain: %s, Key: %d bits, Password hashing: %s\n"
+"\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s\n"
+msgstr ""
+"\n"
+"Inkompilerade standardchifferparametrar för enheter:\n"
+"\tplain: %s, Nyckel: %d bitar, Lösenordshashning: %s\n"
+"\tLUKS1: %s, Nyckel: %d bitar, LUKS header-hashning: %s\n"
+
+#: src/cryptsetup.c:697
 msgid "Show this help message"
 msgstr "Visa detta hjälpmeddelande"
 
-#: src/cryptsetup.c:692
+#: src/cryptsetup.c:698
 msgid "Display brief usage"
 msgstr "Visa kort information om användning"
 
-#: src/cryptsetup.c:696
+#: src/cryptsetup.c:702
 msgid "Help options:"
 msgstr "Hjälpflaggor:"
 
-#: src/cryptsetup.c:697
+#: src/cryptsetup.c:703
 msgid "Shows more detailed error messages"
 msgstr "Visar mer detaljerade felmeddelanden"
 
-#: src/cryptsetup.c:698
+#: src/cryptsetup.c:704
 msgid "Show debug messages"
 msgstr "Visa felsökningsmeddelanden"
 
-#: src/cryptsetup.c:699
+#: src/cryptsetup.c:705
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Chiffret som används för att kryptera disken (se /proc/crypto)"
 
-#: src/cryptsetup.c:700
+#: src/cryptsetup.c:706
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "Hashen som används för att skapa krypteringsnyckel från lösenfras"
 
-#: src/cryptsetup.c:701
+#: src/cryptsetup.c:707
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Verifierar lösenfrasen genom att fråga efter den två gånger"
 
-#: src/cryptsetup.c:702
+#: src/cryptsetup.c:708
 msgid "Read the key from a file (can be /dev/random)"
 msgstr "Läs nyckeln från en fil (kan vara /dev/random)"
 
-#: src/cryptsetup.c:703
+#: src/cryptsetup.c:709
 msgid "Read the volume (master) key from file."
 msgstr "Läs volymnyckeln (master) från fil."
 
-#: src/cryptsetup.c:704
+#: src/cryptsetup.c:710
 msgid "The size of the encryption key"
 msgstr "Storleken för krypteringsnyckeln"
 
-#: src/cryptsetup.c:704
+#: src/cryptsetup.c:710
 msgid "BITS"
 msgstr "BITAR"
 
-#: src/cryptsetup.c:705
+#: src/cryptsetup.c:711
 msgid "Slot number for new key (default is first free)"
 msgstr "Platsnummer för ny nyckel (standard är första lediga)"
 
-#: src/cryptsetup.c:706
+#: src/cryptsetup.c:712
 msgid "The size of the device"
 msgstr "Storleken för enheten"
 
-#: src/cryptsetup.c:706 src/cryptsetup.c:707 src/cryptsetup.c:708
-#: src/cryptsetup.c:716
+#: src/cryptsetup.c:712 src/cryptsetup.c:713 src/cryptsetup.c:714
+#: src/cryptsetup.c:722
 msgid "SECTORS"
 msgstr "SEKTORER"
 
-#: src/cryptsetup.c:707
+#: src/cryptsetup.c:713
 msgid "The start offset in the backend device"
 msgstr "Startoffset i bakändesenheten"
 
-#: src/cryptsetup.c:708
+#: src/cryptsetup.c:714
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr "Hur många sektorer av krypterat data som ska hoppas över i början"
 
-#: src/cryptsetup.c:709
+#: src/cryptsetup.c:715
 msgid "Create a readonly mapping"
 msgstr "Skapa en skrivskyddad mappning"
 
-#: src/cryptsetup.c:710
+#: src/cryptsetup.c:716
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "PBKDF2-iterationstid för LUKS (i ms)"
 
-#: src/cryptsetup.c:711
+#: src/cryptsetup.c:717
 msgid "msecs"
 msgstr "ms"
 
-#: src/cryptsetup.c:712
+#: src/cryptsetup.c:718
 msgid "Do not ask for confirmation"
 msgstr "Fråga inte efter bekräftelse"
 
-#: src/cryptsetup.c:713
+#: src/cryptsetup.c:719
 msgid "Print package version"
 msgstr "Skriv ut paketversion"
 
-#: src/cryptsetup.c:714
+#: src/cryptsetup.c:720
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "Tidsgräns för interaktiv lösenfrasprompt (i sekunder)"
 
-#: src/cryptsetup.c:714
+#: src/cryptsetup.c:720
 msgid "secs"
 msgstr "s"
 
-#: src/cryptsetup.c:715
-msgid "How often the input of the passphrase canbe retried"
-msgstr "Hur ofta inmatningsförsök av lösenfrasen kan ske"
+#: src/cryptsetup.c:721
+msgid "How often the input of the passphrase can be retried"
+msgstr "Hur många inmatningsförsök av lösenfrasen som kan göras"
 
-#: src/cryptsetup.c:716
+#: src/cryptsetup.c:722
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "Justera nyttolast i <n> sektorgränser - för luksFormat"
 
-#: src/cryptsetup.c:717
+#: src/cryptsetup.c:723
 msgid "(Obsoleted, see man page.)"
 msgstr "(Föråldrad, se manualsida)"
 
-#: src/cryptsetup.c:718
+#: src/cryptsetup.c:724
 msgid "File with LUKS header and keyslots backup."
 msgstr "Fil med säkerhetskopior av LUKS-huvud och nyckelplatser."
 
-#: src/cryptsetup.c:736
+#: src/cryptsetup.c:742
 msgid "[OPTION...] <action> <action-specific>]"
 msgstr "[FLAGGA...] <åtgärd> <åtgärdsspecifik>]"
 
-#: src/cryptsetup.c:772
+#: src/cryptsetup.c:778
 msgid "Key size must be a multiple of 8 bits"
 msgstr "Nyckelstorlek måste vara en multipel av 8 bitar"
 
-#: src/cryptsetup.c:776
+#: src/cryptsetup.c:782
 msgid "Argument <action> missing."
 msgstr "Argumentet <åtgärd> saknas."
 
-#: src/cryptsetup.c:782
+#: src/cryptsetup.c:788
 msgid "Unknown action."
 msgstr "Okänd åtgärd."
 
-#: src/cryptsetup.c:797
+#: src/cryptsetup.c:803
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: kräver %s som argument"
