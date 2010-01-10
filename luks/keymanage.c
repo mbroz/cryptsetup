@@ -109,7 +109,7 @@ int LUKS_hdr_backup(
 
 	devfd = open(device, O_RDONLY | O_DIRECT | O_SYNC);
 	if(devfd == -1) {
-		log_err(ctx, _("Device %s is not LUKS device.\n"), device);
+		log_err(ctx, _("Device %s is not a valid LUKS device.\n"), device);
 		r = -EINVAL;
 		goto out;
 	}
@@ -252,9 +252,9 @@ static int _check_and_convert_hdr(const char *device,
 	if(memcmp(hdr->magic, luksMagic, LUKS_MAGIC_L)) { /* Check magic */
 		log_dbg("LUKS header not detected.");
 		if (require_luks_device)
-			log_err(ctx, _("%s is not LUKS device.\n"), device);
+			log_err(ctx, _("Device %s is not a valid LUKS device.\n"), device);
 		else
-			set_error(_("%s is not LUKS device."), device);
+			set_error(_("Device %s is not a valid LUKS device."), device);
 		r = -EINVAL;
 	} else if((hdr->version = ntohs(hdr->version)) != 1) {	/* Convert every uint16/32_t item from network byte order */
 		log_err(ctx, _("Unsupported LUKS version %d.\n"), hdr->version);
