@@ -1134,6 +1134,12 @@ int crypt_format(struct crypt_device *cd,
 	if (!type)
 		return -EINVAL;
 
+	/* Some hash functions need initialized gcrypt library */
+	if (init_crypto()) {
+		log_err(cd, _("Cannot initialize crypto backend.\n"));
+		return -ENOSYS;
+	}
+
 	if (volume_key)
 		cd->volume_key = LUKS_alloc_masterkey(volume_key_size, 
 						      volume_key);

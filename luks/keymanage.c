@@ -391,7 +391,7 @@ static int LUKS_PBKDF2_performance_check(const char *hashSpec,
 {
 	if (!*PBKDF2_per_sec) {
 		if (PBKDF2_performance_check(hashSpec, PBKDF2_per_sec) < 0) {
-			log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s)."), hashSpec);
+			log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"), hashSpec);
 			return -EINVAL;
 		}
 		log_dbg("PBKDF2: %" PRIu64 " iterations per second using hash %s.", *PBKDF2_per_sec, hashSpec);
