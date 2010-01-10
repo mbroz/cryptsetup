@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "luks.h"
 #include "af.h"
@@ -277,6 +278,20 @@ static int _check_and_convert_hdr(const char *device,
 	return r;
 }
 
+static void _to_lower(char *str)
+{
+	for(; *str; str++)
+		if (isupper(*str))
+			*str = tolower(*str);
+}
+
+static void LUKS_fix_header_compatible(struct luks_phdr *header)
+{
+	/* Old cryptsetup expects "sha1", gcrypt allows case insensistive names,
+	 * so always convert hash to lower case in header */
+	_to_lower(header->hashSpec);
+}
+
 int LUKS_read_phdr_backup(const char *backup_file,
 			  const char *device,
 			  struct luks_phdr *hdr,
@@ -296,8 +311,10 @@ int LUKS_read_phdr_backup(const char *backup_file,
 
 	if(read(devfd, hdr, sizeof(struct luks_phdr)) < sizeof(struct luks_phdr))
 		r = -EIO;
-	else
+	else {
+		LUKS_fix_header_compatible(hdr);
 		r = _check_and_convert_hdr(backup_file, hdr, require_luks_device, ctx);
+	}
 
 	close(devfd);
 	return r;
@@ -429,6 +446,8 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	strncpy(header->hashSpec,hashSpec,LUKS_HASHSPEC_L);
 
 	header->keyBytes=mk->keyLength;
+
+	LUKS_fix_header_compatible(header);
 
 	log_dbg("Generating LUKS header version %d using hash %s, %s, %s, MK %d bytes",
 		header->version, header->hashSpec ,header->cipherName, header->cipherMode,
