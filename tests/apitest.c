@@ -20,10 +20,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <linux/fs.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 
 #include "libcryptsetup.h"
 
@@ -78,7 +80,7 @@ static void _remove_keyfiles(void)
 }
 
 // Decode key from its hex representation
-static int crypt_decode_key(unsigned char *key, const char *hex, unsigned int size)
+static int crypt_decode_key(char *key, char *hex, unsigned int size)
 {
 	char buffer[3];
 	char *endp;
@@ -501,7 +503,7 @@ static void AddDevicePlain(void)
 		.offset = 0,
 	};
 	int fd;
-	unsigned char key[128], key2[128], path[128];
+	char key[128], key2[128], path[128];
 
 	char *passphrase = "blabla";
 	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
@@ -552,7 +554,6 @@ static void UseLuksDevice(void)
 	struct crypt_device *cd;
 	char key[128];
 	size_t key_size;
-	int fd;
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
@@ -585,9 +586,6 @@ static void UseLuksDevice(void)
 static void SuspendDevice(void)
 {
 	struct crypt_device *cd;
-	char key[128];
-	size_t key_size;
-	int fd;
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
@@ -618,8 +616,7 @@ static void AddDeviceLuks(void)
 		.hash = "sha512",
 		.data_alignment = 2048, // 4M, data offset will be 4096
 	};
-	int fd;
-	unsigned char key[128], key2[128], path[128];
+	char key[128], key2[128];
 
 	char *passphrase = "blabla";
 	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
@@ -679,6 +676,23 @@ static void AddDeviceLuks(void)
 	crypt_free(cd);
 }
 
+// Check that gcrypt is properly initialised in format
+static void NonFIPSAlg(void)
+{
+	struct crypt_device *cd;
+	struct crypt_params_luks1 params = {
+		.hash = "whirlpool",
+	};
+	char key[128] = "";
+	size_t key_size = 128;
+	char *cipher = "aes";
+	char *cipher_mode = "cbc-essiv:sha256";
+
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	crypt_free(cd);
+}
+
 int main (int argc, char *argv[])
 {
 	int i;
@@ -700,6 +714,7 @@ int main (int argc, char *argv[])
 
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 
+	RUN_(NonFIPSAlg, "Crypto is properly initialised in format"); //must be the first!
 	RUN_(LuksUUID, "luksUUID API call");
 	RUN_(IsLuks, "isLuks API call");
 	RUN_(LuksOpen, "luksOpen API call");
