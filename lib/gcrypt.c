@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include <gcrypt.h>
 
 #include "libcryptsetup.h"
@@ -12,8 +13,8 @@
 int init_crypto(void)
 {
 	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
-		//if (!gcry_check_version (GCRYPT_VERSION))
-		//	return -ENOSYS;
+		if (!gcry_check_version (GCRYPT_REQ_VERSION))
+			return -ENOSYS;
 		gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
 		gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
 		gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
