@@ -278,9 +278,9 @@ static int _check_and_convert_hdr(const char *device,
 	return r;
 }
 
-static void _to_lower(char *str)
+static void _to_lower(char *str, unsigned max_len)
 {
-	for(; *str; str++)
+	for(; *str && max_len; str++, max_len--)
 		if (isupper(*str))
 			*str = tolower(*str);
 }
@@ -289,7 +289,7 @@ static void LUKS_fix_header_compatible(struct luks_phdr *header)
 {
 	/* Old cryptsetup expects "sha1", gcrypt allows case insensistive names,
 	 * so always convert hash to lower case in header */
-	_to_lower(header->hashSpec);
+	_to_lower(header->hashSpec, LUKS_HASHSPEC_L);
 }
 
 int LUKS_read_phdr_backup(const char *backup_file,
