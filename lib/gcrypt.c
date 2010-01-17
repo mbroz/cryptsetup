@@ -15,9 +15,20 @@ int init_crypto(void)
 	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
 		if (!gcry_check_version (GCRYPT_REQ_VERSION))
 			return -ENOSYS;
+
+/* FIXME: If gcrypt compiled to support POSIX 1003.1e capabilities,
+ * it drops all privileges during secure memory initialisation.
+ * For now, the only workaround is to disable secure memory in gcrypt.
+ * cryptsetup always need at least cap_sys_admin privilege for dm-ioctl
+ * and it locks its memory space anyway.
+ */
+#if 0
+		gcry_control (GCRYCTL_DISABLE_SECMEM);
+#else
 		gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
 		gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
 		gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
+#endif
 		gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
 	}
 
