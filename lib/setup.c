@@ -1511,7 +1511,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
 				      keyfile, keyfile_size);
 		else
 			key_from_terminal(cd, _("Enter any passphrase: "),
-					&password, &passwordLen, 1);
+					&password, &passwordLen, 0);
 
 		if (!password)
 			return -EINVAL;
