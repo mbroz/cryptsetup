@@ -1213,6 +1213,12 @@ int crypt_header_backup(struct crypt_device *cd,
 	if ((requested_type && !isLUKS(requested_type)) || !backup_file)
 		return -EINVAL;
 
+	/* Some hash functions need initialized gcrypt library */
+	if (init_crypto()) {
+		log_err(cd, _("Cannot initialize crypto backend.\n"));
+		return -ENOSYS;
+	}
+
 	log_dbg("Requested header backup of device %s (%s) to "
 		"file %s.", cd->device, requested_type, backup_file);
 
@@ -1225,6 +1231,12 @@ int crypt_header_restore(struct crypt_device *cd,
 {
 	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
+
+	/* Some hash functions need initialized gcrypt library */
+	if (init_crypto()) {
+		log_err(cd, _("Cannot initialize crypto backend.\n"));
+		return -ENOSYS;
+	}
 
 	log_dbg("Requested header restore to device %s (%s) from "
 		"file %s.", cd->device, requested_type, backup_file);

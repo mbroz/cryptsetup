@@ -23,8 +23,10 @@ int init_crypto(void)
  * and it locks its memory space anyway.
  */
 #if 0
+		log_dbg("Initializing crypto backend (secure memory disabled).");
 		gcry_control (GCRYCTL_DISABLE_SECMEM);
 #else
+		log_dbg("Initializing crypto backend (using secure memory).");
 		gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
 		gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
 		gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
