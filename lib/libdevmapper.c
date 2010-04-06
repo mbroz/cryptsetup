@@ -75,7 +75,7 @@ void dm_exit(void)
 	}
 }
 
-static char *__lookup_dev(char *path, dev_t dev)
+static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_level)
 {
 	struct dirent *entry;
 	struct stat st;
@@ -83,6 +83,10 @@ static char *__lookup_dev(char *path, dev_t dev)
 	char *result = NULL;
 	DIR *dir;
 	int space;
+
+	/* Ignore strange nested directories */
+	if (dir_level > max_level)
+		return NULL;
 
 	path[PATH_MAX - 1] = '\0';
 	ptr = path + strlen(path);
@@ -95,9 +99,8 @@ static char *__lookup_dev(char *path, dev_t dev)
 		return NULL;
 
 	while((entry = readdir(dir))) {
-		if (entry->d_name[0] == '.' &&
-		    (entry->d_name[1] == '\0' || (entry->d_name[1] == '.' &&
-		                                  entry->d_name[2] == '\0')))
+		if (entry->d_name[0] == '.' ||
+		    !strncmp(entry->d_name, "..", 2))
 			continue;
 
 		strncpy(ptr, entry->d_name, space);
@@ -105,10 +108,13 @@ static char *__lookup_dev(char *path, dev_t dev)
 			continue;
 
 		if (S_ISDIR(st.st_mode)) {
-			result = __lookup_dev(path, dev);
+			result = __lookup_dev(path, dev, dir_level + 1, max_level);
 			if (result)
 				break;
 		} else if (S_ISBLK(st.st_mode)) {
+			/* workaround: ignore dm-X devices, these are internal kernel names */
+			if (dir_level == 0 && !strncmp(entry->d_name, "dm-", 3))
+				continue;
 			if (st.st_rdev == dev) {
 				result = strdup(path);
 				break;
@@ -117,22 +123,38 @@ static char *__lookup_dev(char *path, dev_t dev)
 	}
 
 	closedir(dir);
-
 	return result;
 }
 
-static char *lookup_dev(const char *dev)
+static char *lookup_dev(const char *dev_id)
 {
 	uint32_t major, minor;
-	char buf[PATH_MAX + 1];
+	dev_t dev;
+	char *result, buf[PATH_MAX + 1];
 
-	if (sscanf(dev, "%" PRIu32 ":%" PRIu32, &major, &minor) != 2)
+	if (sscanf(dev_id, "%" PRIu32 ":%" PRIu32, &major, &minor) != 2)
 		return NULL;
 
+	dev = makedev(major, minor);
 	strncpy(buf, DEVICE_DIR, PATH_MAX);
 	buf[PATH_MAX] = '\0';
 
-	return __lookup_dev(buf, makedev(major, minor));
+	/* First try low level device */
+	if ((result = __lookup_dev(buf, dev, 0, 0)))
+		return result;
+
+	/* If it is dm, try DM dir  */
+	if (dm_is_dm_major(major)) {
+		strncpy(buf, dm_dir(), PATH_MAX);
+		if ((result = __lookup_dev(buf, dev, 0, 0)))
+			return result;
+	}
+
+	strncpy(buf, DEVICE_DIR, PATH_MAX);
+	result = __lookup_dev(buf, dev, 0, 4);
+
+	/* If not found, return major:minor */
+	return result ?: strdup(dev_id);
 }
 
 static int _dev_read_ahead(const char *dev, uint32_t *read_ahead)
