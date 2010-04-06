@@ -91,15 +91,6 @@ if test "x$enable_selinux" != xno; then
 	fi
 fi
 
-if test x$enable_static = xyes; then
-	saved_LIBS2=$LIBS
-	LIBS="$LIBS -static"
-	# Check if it there is still not some missing dependency like static selinux libs
-	AC_SEARCH_LIBS([dm_set_selinux_context], [devmapper],,
-		[AC_MSG_ERROR([Your system requires SElinux libraries for static compilation.])])
-	LIBS=$saved_LIBS2
-fi
-
 LIBS=$saved_LIBS
 
 DEVMAPPER_LIBS="$DEVMAPPER_LIBS $LIB_PTHREAD"
