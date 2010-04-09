@@ -91,6 +91,7 @@ int LUKS_generate_phdr(
 	const char *uuid,
 	unsigned int stripes,
 	unsigned int alignPayload,
+	unsigned int alignOffset,
 	uint32_t iteration_time_ms,
 	uint64_t *PBKDF2_per_sec,
 	struct crypt_device *ctx);

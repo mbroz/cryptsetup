@@ -683,3 +683,57 @@ int crypt_memlock_dec(struct crypt_device *ctx)
 	}
 	return _memlock_count ? 1 : 0;
 }
+
+/* DEVICE TOPOLOGY */
+
+/* block device topology ioctls, introduced in 2.6.32 */
+#ifndef BLKIOMIN
+#define BLKIOMIN    _IO(0x12,120)
+#define BLKIOOPT    _IO(0x12,121)
+#define BLKALIGNOFF _IO(0x12,122)
+#endif
+
+void get_topology_alignment(const char *device,
+			    unsigned long *required_alignment, /* bytes */
+			    unsigned long *alignment_offset,   /* bytes */
+			    unsigned long default_alignment)
+{
+	unsigned int dev_alignment_offset = 0;
+	unsigned long min_io_size = 0, opt_io_size = 0;
+	int fd;
+
+	*required_alignment = default_alignment;
+	*alignment_offset = 0;
+
+	fd = open(device, O_RDONLY);
+	if (fd == -1)
+		return;
+
+	/* minimum io size */
+	if (ioctl(fd, BLKIOMIN, &min_io_size) == -1) {
+		log_dbg("Topology info for %s not supported, using default offset %lu bytes.",
+			device, default_alignment);
+		return;
+	}
+
+	/* optimal io size */
+	if (ioctl(fd, BLKIOOPT, &opt_io_size) == -1)
+		opt_io_size = min_io_size;
+
+	/* alignment offset, bogus -1 means misaligned/unknown */
+	if (ioctl(fd, BLKALIGNOFF, &dev_alignment_offset) == -1 || (int)dev_alignment_offset < 0)
+		dev_alignment_offset = 0;
+
+	if (*required_alignment < min_io_size)
+		*required_alignment = min_io_size;
+
+	if (*required_alignment < opt_io_size)
+		*required_alignment = opt_io_size;
+
+	*alignment_offset = (unsigned long)dev_alignment_offset;
+
+	log_dbg("Topology: IO (%lu/%lu), offset = %lu; Required alignment is %lu bytes.",
+		min_io_size, opt_io_size, *alignment_offset, *required_alignment);
+
+	(void)close(fd);
+}

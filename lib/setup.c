@@ -1092,16 +1092,25 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 			       struct crypt_params_luks1 *params)
 {
 	int r;
+	unsigned long required_alignment = DEFAULT_ALIGNMENT;
+	unsigned long alignment_offset = 0;
 
 	if (!cd->device) {
 		log_err(cd, _("Can't format LUKS without device.\n"));
 		return -EINVAL;
 	}
 
+	if (params && params->data_alignment)
+		required_alignment = params->data_alignment * SECTOR_SIZE;
+	else
+		get_topology_alignment(cd->device, &required_alignment,
+				       &alignment_offset, DEFAULT_ALIGNMENT);
+
 	r = LUKS_generate_phdr(&cd->hdr, cd->volume_key, cipher, cipher_mode,
 			       (params && params->hash) ? params->hash : "sha1",
 			       uuid, LUKS_STRIPES,
-			       params ? params->data_alignment: DEFAULT_ALIGNMENT,
+			       required_alignment / SECTOR_SIZE,
+			       alignment_offset / SECTOR_SIZE,
 			       cd->iteration_time, &cd->PBKDF2_per_sec, cd);
 	if(r < 0)
 		return r;

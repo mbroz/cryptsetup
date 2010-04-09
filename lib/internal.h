@@ -120,4 +120,9 @@ void debug_processes_using_device(const char *name);
 int crypt_memlock_inc(struct crypt_device *ctx);
 int crypt_memlock_dec(struct crypt_device *ctx);
 
+void get_topology_alignment(const char *device,
+			    unsigned long *required_alignment, /* bytes */
+			    unsigned long *alignment_offset,   /* bytes */
+			    unsigned long default_alignment);
+
 #endif /* INTERNAL_H */

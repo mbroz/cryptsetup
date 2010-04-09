@@ -424,6 +424,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       const char *cipherName, const char *cipherMode, const char *hashSpec,
 		       const char *uuid, unsigned int stripes,
 		       unsigned int alignPayload,
+		       unsigned int alignOffset,
 		       uint32_t iteration_time_ms,
 		       uint64_t *PBKDF2_per_sec,
 		       struct crypt_device *ctx)
@@ -488,7 +489,8 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	}
 	currentSector = round_up_modulo(currentSector, alignPayload);
 
-	header->payloadOffset=currentSector;
+	/* alignOffset - offset from natural device alignment provided by topology info */
+	header->payloadOffset = currentSector + alignOffset;
 
 	if (uuid && !uuid_parse(uuid, partitionUuid)) {
 		log_err(ctx, _("Wrong UUID format provided, generating new one.\n"));
