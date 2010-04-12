@@ -1,5 +1,10 @@
 AC_PREREQ(2.57)
 AC_INIT(cryptsetup,1.1.0)
+
+dnl library version from <major>.<minor>.<release>[-<suffix>]
+LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
+LIBCRYPTSETUP_VERSION_INFO=1:0:0
+
 AC_CONFIG_SRCDIR(src/cryptsetup.c)
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -94,8 +99,10 @@ fi
 LIBS=$saved_LIBS
 
 DEVMAPPER_LIBS="$DEVMAPPER_LIBS $LIB_PTHREAD"
-AC_SUBST(DEVMAPPER_LIBS)
-AC_SUBST(SELINUX_STATIC_LIBS)
+AC_SUBST([DEVMAPPER_LIBS])
+AC_SUBST([SELINUX_STATIC_LIBS])
+AC_SUBST([LIBCRYPTSETUP_VERSION])
+AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
 
 dnl ==========================================================================
 AC_DEFUN([CS_DEFINE],
