@@ -37,24 +37,24 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name);
  *
  * @cd - crypt device handle (can be NULL to set default log function)
  * @usrptr - provided identification in callback
- * @class  - log type below (debug messages can uses other levels)
+ * @level  - log level below (debug messages can uses other levels)
  * @msg    - log message
  */
 #define CRYPT_LOG_NORMAL 0
 #define CRYPT_LOG_ERROR  1
 #define CRYPT_LOG_DEBUG -1 /* always on stdout */
 void crypt_set_log_callback(struct crypt_device *cd,
-	void (*log)(int class, const char *msg, void *usrptr),
+	void (*log)(int level, const char *msg, void *usrptr),
 	void *usrptr);
 
 /**
  * Log message through log function.
  *
  * @cd - crypt device handle
- * @class  - log type
+ * @level  - log level
  * @msg    - log message
  */
-void crypt_log(struct crypt_device *cd, int class, const char *msg);
+void crypt_log(struct crypt_device *cd, int level, const char *msg);
 
 /**
  * Set confirmation callback (yes/no)
@@ -518,7 +518,7 @@ void crypt_set_debug_level(int level);
 
 struct interface_callbacks {
     int (*yesDialog)(char *msg);
-    void (*log)(int class, char *msg);
+    void (*log)(int level, char *msg);
 };
 
 #define	CRYPT_FLAG_VERIFY	        (1 << 0)

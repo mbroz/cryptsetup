@@ -30,7 +30,7 @@ struct crypt_device {
 	char *plain_uuid;
 
 	/* callbacks definitions */
-	void (*log)(int class, const char *msg, void *usrptr);
+	void (*log)(int level, const char *msg, void *usrptr);
 	void *log_usrptr;
 	int (*confirm)(const char *msg, void *usrptr);
 	void *confirm_usrptr;
@@ -39,7 +39,7 @@ struct crypt_device {
 };
 
 /* Log helper */
-static void (*_default_log)(int class, const char *msg, void *usrptr) = NULL;
+static void (*_default_log)(int level, const char *msg, void *usrptr) = NULL;
 static int _debug_level = 0;
 
 void crypt_set_debug_level(int level)
@@ -52,15 +52,15 @@ int crypt_get_debug_level()
 	return _debug_level;
 }
 
-void crypt_log(struct crypt_device *cd, int class, const char *msg)
+void crypt_log(struct crypt_device *cd, int level, const char *msg)
 {
 	if (cd && cd->log)
-		cd->log(class, msg, cd->log_usrptr);
+		cd->log(level, msg, cd->log_usrptr);
 	else if (_default_log)
-		_default_log(class, msg, NULL);
+		_default_log(level, msg, NULL);
 }
 
-void logger(struct crypt_device *cd, int class, const char *file,
+void logger(struct crypt_device *cd, int level, const char *file,
 	    int line, const char *format, ...)
 {
 	va_list argp;
@@ -69,8 +69,8 @@ void logger(struct crypt_device *cd, int class, const char *file,
 	va_start(argp, format);
 
 	if (vasprintf(&target, format, argp) > 0) {
-		if (class >= 0) {
-			crypt_log(cd, class, target);
+		if (level >= 0) {
+			crypt_log(cd, level, target);
 #ifdef CRYPT_DEBUG
 		} else if (_debug_level)
 			printf("# %s:%d %s\n", file ?: "?", line, target);
@@ -419,10 +419,10 @@ static int open_from_hdr_and_mk(struct crypt_device *cd,
 	return r;
 }
 
-static void log_wrapper(int class, const char *msg, void *usrptr)
+static void log_wrapper(int level, const char *msg, void *usrptr)
 {
-	void (*xlog)(int class, char *msg) = usrptr;
-	xlog(class, (char *)msg);
+	void (*xlog)(int level, char *msg) = usrptr;
+	xlog(level, (char *)msg);
 }
 
 static int yesDialog_wrapper(const char *msg, void *usrptr)
@@ -556,7 +556,7 @@ static int _crypt_init(struct crypt_device **cd,
 }
 
 void crypt_set_log_callback(struct crypt_device *cd,
-	void (*log)(int class, const char *msg, void *usrptr),
+	void (*log)(int level, const char *msg, void *usrptr),
 	void *usrptr)
 {
 	if (!cd)

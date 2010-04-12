@@ -90,7 +90,7 @@ static struct action_type {
 	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
 
-static void clogger(struct crypt_device *cd, int class, const char *file,
+static void clogger(struct crypt_device *cd, int level, const char *file,
 		   int line, const char *format, ...)
 {
 	va_list argp;
@@ -99,8 +99,8 @@ static void clogger(struct crypt_device *cd, int class, const char *file,
 	va_start(argp, format);
 
 	if (vasprintf(&target, format, argp) > 0) {
-		if (class >= 0) {
-			crypt_log(cd, class, target);
+		if (level >= 0) {
+			crypt_log(cd, level, target);
 #ifdef CRYPT_DEBUG
 		} else if (opt_debug)
 			printf("# %s:%d %s\n", file ?: "?", line, target);
@@ -137,8 +137,8 @@ static int yesDialog(char *msg)
 	return r;
 }
 
-static void cmdLineLog(int class, char *msg) {
-    switch(class) {
+static void cmdLineLog(int level, char *msg) {
+    switch(level) {
 
     case CRYPT_LOG_NORMAL:
             fputs(msg, stdout);
@@ -157,9 +157,9 @@ static struct interface_callbacks cmd_icb = {
         .log = cmdLineLog,
 };
 
-static void _log(int class, const char *msg, void *usrptr)
+static void _log(int level, const char *msg, void *usrptr)
 {
-	cmdLineLog(class, (char *)msg);
+	cmdLineLog(level, (char *)msg);
 }
 
 static int _yesDialog(const char *msg, void *usrptr)

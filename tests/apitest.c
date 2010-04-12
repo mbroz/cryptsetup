@@ -109,15 +109,15 @@ static int yesDialog(char *msg)
 	return 1;
 }
 
-static void cmdLineLog(int class, char *msg)
+static void cmdLineLog(int level, char *msg)
 {
 	strncat(global_log, msg, sizeof(global_log));
 	global_lines++;
 }
 
-static void new_log(int class, const char *msg, void *usrptr)
+static void new_log(int level, const char *msg, void *usrptr)
 {
-	cmdLineLog(class, (char*)msg);
+	cmdLineLog(level, (char*)msg);
 }
 
 
