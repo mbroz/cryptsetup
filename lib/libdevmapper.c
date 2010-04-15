@@ -22,6 +22,21 @@
 static int _dm_use_count = 0;
 static struct crypt_device *_context = NULL;
 
+/* Compatibility for old device-mapper without udev support */
+#ifndef HAVE_DM_TASK_SET_COOKIE
+static int dm_task_set_cookie(struct dm_task *dmt, uint32_t *cookie, uint16_t flags) { return 0; }
+static int dm_udev_wait(uint32_t cookie) { return 0; };
+#endif
+
+static int _dm_use_udev()
+{
+#ifdef USE_UDEV /* cannot be enabled if devmapper is too old */
+	return dm_udev_get_sync_support();
+#else
+	return 0;
+#endif
+}
+
 static void set_dm_error(int level, const char *file, int line,
 			 const char *f, ...)
 {
@@ -40,14 +55,15 @@ static void set_dm_error(int level, const char *file, int line,
 	va_end(va);
 }
 
-static int _dm_simple(int task, const char *name);
+static int _dm_simple(int task, const char *name, int udev_wait);
 
 int dm_init(struct crypt_device *context, int check_kernel)
 {
 	if (!_dm_use_count++) {
-		log_dbg("Initialising device-mapper backend%s.",
-			check_kernel ? "" : " (NO kernel check requested)");
-		if (check_kernel && !_dm_simple(DM_DEVICE_LIST_VERSIONS, NULL)) {
+		log_dbg("Initialising device-mapper backend%s, UDEV is %sabled.",
+			check_kernel ? "" : " (NO kernel check requested)",
+			_dm_use_udev() ? "en" : "dis");
+		if (check_kernel && !_dm_simple(DM_DEVICE_LIST_VERSIONS, NULL, 0)) {
 			log_err(context, _("Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"));
 			return -1;
 		}
@@ -207,10 +223,14 @@ out:
 }
 
 /* DM helpers */
-static int _dm_simple(int task, const char *name)
+static int _dm_simple(int task, const char *name, int udev_wait)
 {
 	int r = 0;
 	struct dm_task *dmt;
+	uint32_t cookie = 0;
+
+	if (!_dm_use_udev())
+		udev_wait = 0;
 
 	if (!(dmt = dm_task_create(task)))
 		return 0;
@@ -218,7 +238,12 @@ static int _dm_simple(int task, const char *name)
 	if (name && !dm_task_set_name(dmt, name))
 		goto out;
 
+	if (udev_wait && !dm_task_set_cookie(dmt, &cookie, 0));
+
 	r = dm_task_run(dmt);
+
+	if (r && udev_wait)
+		(void)dm_udev_wait(cookie);
 
       out:
 	dm_task_destroy(dmt);
@@ -248,8 +273,8 @@ static int _error_device(const char *name, size_t size)
 	if (!dm_task_run(dmt))
 		goto error;
 
-	if (!_dm_simple(DM_DEVICE_RESUME, name)) {
-		_dm_simple(DM_DEVICE_CLEAR, name);
+	if (!_dm_simple(DM_DEVICE_RESUME, name, 1)) {
+		_dm_simple(DM_DEVICE_CLEAR, name, 0);
 		goto error;
 	}
 
@@ -270,7 +295,7 @@ int dm_remove_device(const char *name, int force, uint64_t size)
 		return -EINVAL;
 
 	do {
-		r = _dm_simple(DM_DEVICE_REMOVE, name) ? 0 : -EINVAL;
+		r = _dm_simple(DM_DEVICE_REMOVE, name, 1) ? 0 : -EINVAL;
 		if (--retries && r) {
 			log_dbg("WARNING: other process locked internal device %s, %s.",
 				name, retries ? "retrying remove" : "giving up");
@@ -350,6 +375,7 @@ int dm_create_device(const char *name,
 	char dev_uuid[DM_UUID_LEN] = {0};
 	int r = -EINVAL;
 	uint32_t read_ahead = 0;
+	uint32_t cookie = 0;
 
 	params = get_params(device, skip, offset, cipher, key_size, key);
 	if (!params)
@@ -373,8 +399,10 @@ int dm_create_device(const char *name,
 
 		if (!dm_task_set_uuid(dmt, dev_uuid))
 			goto out_no_removal;
-	}
 
+		if (_dm_use_udev() && !dm_task_set_cookie(dmt, &cookie, 0))
+			goto out_no_removal;
+	}
 
 	if (read_only && !dm_task_set_ro(dmt))
 		goto out_no_removal;
@@ -398,9 +426,14 @@ int dm_create_device(const char *name,
 			goto out;
 		if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
 			goto out;
+		if (_dm_use_udev() && !dm_task_set_cookie(dmt, &cookie, 0))
+			goto out;
 		if (!dm_task_run(dmt))
 			goto out;
 	}
+
+	if (_dm_use_udev())
+		(void)dm_udev_wait(cookie);
 
 	if (!dm_task_get_info(dmt, &dmi))
 		goto out;
@@ -620,11 +653,11 @@ static int _dm_message(const char *name, const char *msg)
 
 int dm_suspend_and_wipe_key(const char *name)
 {
-	if (!_dm_simple(DM_DEVICE_SUSPEND, name))
+	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0))
 		return -EINVAL;
 
 	if (!_dm_message(name, "key wipe")) {
-		_dm_simple(DM_DEVICE_RESUME, name);
+		_dm_simple(DM_DEVICE_RESUME, name, 1);
 		return -EINVAL;
 	}
 
@@ -648,7 +681,7 @@ int dm_resume_and_reinstate_key(const char *name,
 	hex_key(&msg[8], key_size, key);
 
 	if (!_dm_message(name, msg) ||
-	    !_dm_simple(DM_DEVICE_RESUME, name))
+	    !_dm_simple(DM_DEVICE_RESUME, name, 1))
 		r = -EINVAL;
 
 	safe_free(msg);

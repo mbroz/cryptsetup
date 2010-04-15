@@ -42,7 +42,7 @@ LIBS=$saved_LIBS
 
 AM_PATH_LIBGCRYPT(1.1.42,,[AC_MSG_ERROR('You need the gcrypt library')])
 
-AC_CHECK_FUNCS([setlocale, posix_memalign])
+AC_CHECK_FUNCS([posix_memalign])
 
 AC_C_CONST
 AC_C_BIGENDIAN
@@ -76,10 +76,21 @@ AM_CONDITIONAL(STATIC_LIBRARY, test x$enable_shared_library = xno)
 AC_ARG_ENABLE(selinux,
 [  --disable-selinux       disable selinux support [[default=auto]]],[], [])
 
+AC_ARG_ENABLE([udev],AS_HELP_STRING([--disable-udev],[disable udev support]),[], enable_udev=yes)
+
 saved_LIBS=$LIBS
 AC_CHECK_LIB(devmapper, dm_task_set_name,,[AC_MSG_ERROR('You need the device-mapper library')])
 AC_CHECK_LIB(devmapper, dm_task_set_message,,
 	[AC_MSG_ERROR([The device-mapper library on your system is too old.])])
+
+AC_CHECK_FUNCS([dm_task_set_cookie], [have_cookie=yes], [have_cookie=no])
+if test "x$enable_udev" = xyes; then
+	if test "x$have_cookie" = xno; then
+		AC_MSG_ERROR([The device-mapper library on your system has no udev support, consider --disable-udev.])
+	fi
+	AC_DEFINE(USE_UDEV, 1, [Try to use udev synchronisation?])
+fi
+
 DEVMAPPER_LIBS=$LIBS
 LIBS=$saved_LIBS
 if test "x$enable_selinux" != xno; then
