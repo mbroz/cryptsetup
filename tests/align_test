@@ -3,11 +3,17 @@
 CRYPTSETUP="../src/cryptsetup"
 DEV=""
 
+fail()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 100
+}
+
 add_device() {
 	modprobe scsi_debug $@
-	DEV=/dev/$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 	sleep 2
-	[ -b $DEV ] || exit 100
+	DEV=/dev/$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
 cleanup() {
@@ -32,7 +38,7 @@ format() # key_bits expected [forced]
 	if [ $ALIGN -ne $2 ] ; then
 		echo "FAIL"
 		echo "Expected alignment differs: expected $2 != detected $ALIGN"
-		exit 100
+		fail
 	fi
 	echo "PASSED"
 }
