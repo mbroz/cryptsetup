@@ -371,8 +371,8 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 	tcsetattr(infd, TCSAFLUSH, &orig);
 
 out_err:
-	if (!failed)
-		(void)write(outfd, "\n", 1);
+	if (!failed && write(outfd, "\n", 1));
+
 	if (infd != STDIN_FILENO)
 		close(infd);
 	return failed;

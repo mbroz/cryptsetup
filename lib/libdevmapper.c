@@ -1,11 +1,7 @@
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
 #include <libdevmapper.h>
-#include <linux/dm-ioctl.h>
 #include <fcntl.h>
 #include <linux/fs.h>
 #include <uuid/uuid.h>
@@ -14,6 +10,7 @@
 #include "luks.h"
 
 #define DEVICE_DIR		"/dev"
+#define DM_UUID_LEN		129
 #define DM_UUID_PREFIX		"CRYPT-"
 #define DM_UUID_PREFIX_LEN	6
 #define DM_CRYPT_TARGET		"crypt"
