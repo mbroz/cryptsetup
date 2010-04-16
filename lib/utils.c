@@ -713,7 +713,7 @@ void get_topology_alignment(const char *device,
 	if (ioctl(fd, BLKIOMIN, &min_io_size) == -1) {
 		log_dbg("Topology info for %s not supported, using default offset %lu bytes.",
 			device, default_alignment);
-		return;
+		goto out;
 	}
 
 	/* optimal io size */
@@ -734,6 +734,6 @@ void get_topology_alignment(const char *device,
 
 	log_dbg("Topology: IO (%lu/%lu), offset = %lu; Required alignment is %lu bytes.",
 		min_io_size, opt_io_size, *alignment_offset, *required_alignment);
-
+out:
 	(void)close(fd);
 }

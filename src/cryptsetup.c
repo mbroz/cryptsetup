@@ -459,7 +459,7 @@ static int action_luksRemoveKey(int arg)
 
 static int _action_luksAddKey_useMK()
 {
-	int r = -EINVAL, keysize;
+	int r = -EINVAL, keysize = 0;
 	char *key = NULL;
 	struct crypt_device *cd = NULL;
 

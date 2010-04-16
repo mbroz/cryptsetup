@@ -473,7 +473,7 @@ void DeviceResizeGame(void)
 	co.size = 0;
 	co.offset = 444;
 	co.skip = 555;
-	co.cipher = "aes-cbc-benbi";
+	co.cipher = "aes-cbc-essiv:sha256";
 	OK_(crypt_update_device(&co));
 	EQ_(_get_device_size(DMDIR CDEVICE_2), (orig_size - 444));
 
@@ -481,7 +481,7 @@ void DeviceResizeGame(void)
 	co.icb = &cmd_icb,
 	co.name = CDEVICE_2;
 	EQ_(crypt_query_device(&co), 1);
-	EQ_(strcmp(co.cipher, "aes-cbc-benbi"), 0);
+	EQ_(strcmp(co.cipher, "aes-cbc-essiv:sha256"), 0);
 	EQ_(co.key_size, 128 / 8);
 	EQ_(co.offset, 444);
 	EQ_(co.skip, 555);
