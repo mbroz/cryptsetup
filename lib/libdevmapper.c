@@ -1,4 +1,6 @@
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <stdio.h>
 #include <dirent.h>
 #include <errno.h>
 #include <libdevmapper.h>
