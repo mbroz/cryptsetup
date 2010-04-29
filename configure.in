@@ -78,20 +78,28 @@ AC_ARG_ENABLE(selinux,
 
 AC_ARG_ENABLE([udev],AS_HELP_STRING([--disable-udev],[disable udev support]),[], enable_udev=yes)
 
+dnl Try to use pkg-config for devmapper, but fallback to old detection
 saved_LIBS=$LIBS
-AC_CHECK_LIB(devmapper, dm_task_set_name,,[AC_MSG_ERROR('You need the device-mapper library')])
-AC_CHECK_LIB(devmapper, dm_task_set_message,,
-	[AC_MSG_ERROR([The device-mapper library on your system is too old.])])
+if AC_RUN_LOG([pkg-config --exists --print-errors devmapper]); then
+	PKG_CHECK_MODULES([DEVMAPPER], [devmapper >= 1.02.03])
+	LIBS="$LIBS $DEVMAPPER_LIBS"
+else
+	AC_CHECK_LIB(devmapper, dm_task_set_name,,
+		[AC_MSG_ERROR('You need the device-mapper library')])
+	AC_CHECK_LIB(devmapper, dm_task_set_message,,
+		[AC_MSG_ERROR([The device-mapper library on your system is too old.])])
+	DEVMAPPER_LIBS=$LIBS
+fi
 
 AC_CHECK_FUNCS([dm_task_set_cookie], [have_cookie=yes], [have_cookie=no])
 if test "x$enable_udev" = xyes; then
 	if test "x$have_cookie" = xno; then
-		AC_MSG_ERROR([The device-mapper library on your system has no udev support, consider --disable-udev.])
+		AC_MSG_WARN([The device-mapper library on your system has no udev support, udev support disabled.])
+	else
+		AC_DEFINE(USE_UDEV, 1, [Try to use udev synchronisation?])
 	fi
-	AC_DEFINE(USE_UDEV, 1, [Try to use udev synchronisation?])
 fi
 
-DEVMAPPER_LIBS=$LIBS
 LIBS=$saved_LIBS
 if test "x$enable_selinux" != xno; then
 	AC_CHECK_LIB(sepol, sepol_bool_set)
