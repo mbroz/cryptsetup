@@ -824,7 +824,7 @@ int crypt_luksOpen(struct crypt_options *options)
 	if (options->flags & CRYPT_FLAG_NON_EXCLUSIVE_ACCESS)
 		flags |= CRYPT_ACTIVATE_NO_UUID;
 
-	if (options->key_file)
+	if (options->key_file && strcmp(options->key_file, "-"))
 		r = crypt_activate_by_keyfile(cd, options->name,
 			CRYPT_ANY_SLOT, options->key_file, options->key_size,
 			flags);
