@@ -113,7 +113,7 @@ static int yesDialog(char *msg)
 
 static void cmdLineLog(int level, char *msg)
 {
-	strncat(global_log, msg, sizeof(global_log));
+	strncat(global_log, msg, sizeof(global_log) - strlen(global_log));
 	global_lines++;
 }
 
@@ -136,41 +136,44 @@ static struct interface_callbacks cmd_icb = {
 
 static void _cleanup(void)
 {
+	int r;
 	struct stat st;
 
-	//system("udevadm settle");
+	//r = system("udevadm settle");
 
 	if (!stat(DMDIR CDEVICE_1, &st))
-		system("dmsetup remove " CDEVICE_1);
+		r = system("dmsetup remove " CDEVICE_1);
 
 	if (!stat(DMDIR CDEVICE_2, &st))
-		system("dmsetup remove " CDEVICE_2);
+		r = system("dmsetup remove " CDEVICE_2);
 
 	if (!stat(DEVICE_EMPTY, &st))
-		system("dmsetup remove " DEVICE_EMPTY_name);
+		r = system("dmsetup remove " DEVICE_EMPTY_name);
 
 	if (!stat(DEVICE_ERROR, &st))
-		system("dmsetup remove " DEVICE_ERROR_name);
+		r = system("dmsetup remove " DEVICE_ERROR_name);
 
 	if (!strncmp("/dev/loop", DEVICE_1, 9))
-		system("losetup -d " DEVICE_1);
+		r = system("losetup -d " DEVICE_1);
 
 	if (!strncmp("/dev/loop", DEVICE_2, 9))
-		system("losetup -d " DEVICE_2);
+		r = system("losetup -d " DEVICE_2);
 
-	system("rm -f " IMAGE_EMPTY);
+	r = system("rm -f " IMAGE_EMPTY);
 	_remove_keyfiles();
 }
 
 static void _setup(void)
 {
-	system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"");
-	system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"");
+	int r;
+
+	r = system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"");
+	r = system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"");
 	if (!strncmp("/dev/loop", DEVICE_1, 9))
-		system("losetup " DEVICE_1 " " IMAGE1);
+		r = system("losetup " DEVICE_1 " " IMAGE1);
 	if (!strncmp("/dev/loop", DEVICE_2, 9)) {
-		system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4");
-		system("losetup " DEVICE_2 " " IMAGE_EMPTY);
+		r = system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4");
+		r = system("losetup " DEVICE_2 " " IMAGE_EMPTY);
 	}
 
 }
@@ -517,6 +520,18 @@ static void AddDevicePlain(void)
 
 	FAIL_(crypt_init(&cd, ""), "empty device string");
 
+	// default is "plain" hash - no password hash
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, NULL));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	// FIXME: this should get key from active device?
+	//OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
+	//OK_(memcmp(key, key2, key_size));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	// Now use hashed password
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));

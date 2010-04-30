@@ -112,7 +112,8 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 	/* key is coming from tty, fd or binary stdin */
 	if (hash_name) {
 		if (hash(NULL, hash_name, key, key_size, pass, passLen) < 0) {
-			log_err(cd, _("Key processing error.\n"));
+			log_err(cd, _("Key processing error (using hash algorithm %s).\n"),
+				hash_name);
 			safe_free(key);
 			return NULL;
 		}
@@ -1056,7 +1057,7 @@ static int _crypt_format_plain(struct crypt_device *cd,
 			       const char *uuid,
 			       struct crypt_params_plain *params)
 {
-	if (!cipher || !cipher_mode || !params || !params->hash) {
+	if (!cipher || !cipher_mode) {
 		log_err(cd, _("Invalid plain crypt parameters.\n"));
 		return -EINVAL;
 	}
@@ -1072,14 +1073,13 @@ static int _crypt_format_plain(struct crypt_device *cd,
 	if (uuid)
 		cd->plain_uuid = strdup(uuid);
 
-	if (params->hash)
+	if (params && params->hash)
 		cd->plain_hdr.hash = strdup(params->hash);
 
-	cd->plain_hdr.offset = params->offset;
-	cd->plain_hdr.skip = params->skip;
+	cd->plain_hdr.offset = params ? params->offset : 0;
+	cd->plain_hdr.skip = params ? params->skip : 0;
 
-	if ((params->hash && !cd->plain_hdr.hash) ||
-	    !cd->plain_cipher || !cd->plain_cipher_mode)
+	if (!cd->plain_cipher || !cd->plain_cipher_mode)
 		return -ENOMEM;
 
 	return 0;
@@ -1863,7 +1863,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
 		return -ENOMEM;
 	}
 
-	if (isPLAIN(cd->type)) {
+	if (isPLAIN(cd->type) && cd->plain_hdr.hash) {
 		processed_key = process_key(cd, cd->plain_hdr.hash, NULL, key_len,
 					    passphrase, passphrase_size);
 		if (!processed_key) {
