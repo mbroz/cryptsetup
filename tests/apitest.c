@@ -58,6 +58,8 @@ static int _verbose = 1;
 static char global_log[4096];
 static int global_lines = 0;
 
+static int gcrypt_compatible = 0;
+
 // Helpers
 static int _prepare_keyfile(const char *name, const char *passphrase)
 {
@@ -585,13 +587,19 @@ static void UseLuksDevice(void)
 
 static void SuspendDevice(void)
 {
+	int suspend_status;
 	struct crypt_device *cd;
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 
-	OK_(crypt_suspend(cd, CDEVICE_1));
+	suspend_status = crypt_suspend(cd, CDEVICE_1);
+	if (suspend_status == -ENOTSUP) {
+		printf("WARNING: Suspend/Resume not supported, skipping test.\n");
+		goto out;
+	}
+	OK_(suspend_status);
 	FAIL_(crypt_suspend(cd, CDEVICE_1), "already suspended");
 
 	FAIL_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)-1), "wrong key");
@@ -604,7 +612,7 @@ static void SuspendDevice(void)
 	OK_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0));
 	FAIL_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0), "not suspended");
 	_remove_keyfiles();
-
+out:
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 }
@@ -688,9 +696,32 @@ static void NonFIPSAlg(void)
 	char *cipher = "aes";
 	char *cipher_mode = "cbc-essiv:sha256";
 
+	if (!gcrypt_compatible) {
+		printf("WARNING: old libgcrypt, skipping test.\n");
+		return;
+	}
 	OK_(crypt_init(&cd, DEVICE_2));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
 	crypt_free(cd);
+}
+
+
+static void _gcrypt_compatible()
+{
+	int maj, min, patch;
+	FILE *f;
+
+	if (!(f = popen("libgcrypt-config --version", "r")))
+		return;
+
+	if (fscanf(f, "%d.%d.%d", &maj, &min, &patch) == 2 &&
+	    maj >= 1 && min >= 4)
+		gcrypt_compatible = 1;
+	if (_debug)
+		printf("libgcrypt version %d.%d.%d detected.\n", maj, min, patch);
+
+	(void)fclose(f);
+	return;
 }
 
 int main (int argc, char *argv[])
@@ -711,6 +742,7 @@ int main (int argc, char *argv[])
 
 	_cleanup();
 	_setup();
+	_gcrypt_compatible();
 
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 
@@ -728,7 +760,6 @@ int main (int argc, char *argv[])
 	RUN_(AddDeviceLuks, "Format and use LUKS device");
 	RUN_(UseLuksDevice, "Use pre-formated LUKS device");
 	RUN_(SuspendDevice, "Suspend/Resume test");
-
 
 	_cleanup();
 	return 0;

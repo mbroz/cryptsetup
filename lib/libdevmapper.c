@@ -18,6 +18,8 @@
 #define DM_CRYPT_TARGET		"crypt"
 #define RETRY_COUNT		5
 
+static int _dm_crypt_wipe_key_supported = 0;
+
 static int _dm_use_count = 0;
 static struct crypt_device *_context = NULL;
 
@@ -61,16 +63,63 @@ static void set_dm_error(int level, const char *file, int line,
 
 static int _dm_simple(int task, const char *name, int udev_wait);
 
+static void _dm_set_crypt_compat(struct crypt_device *context,
+				 int maj, int min, int patch)
+{
+	log_dbg("Detected dm-crypt target of version %i.%i.%i.", maj, min, patch);
+
+	if (maj >= 1 && min >=2)
+		_dm_crypt_wipe_key_supported = 1;
+	else
+		log_dbg("Suspend and resume disabled, no wipe key support.");
+}
+
+static int _dm_check_versions(struct crypt_device *context)
+{
+	int r = 0;
+	struct dm_task *dmt;
+	struct dm_versions *target, *last_target;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_LIST_VERSIONS)))
+		goto fail_versions;
+
+	if (!dm_task_run(dmt)) {
+		dm_task_destroy(dmt);
+		goto fail_versions;
+	}
+
+	target = dm_task_get_versions(dmt);
+	do {
+		last_target = target;
+		if (!strcmp(DM_CRYPT_TARGET, target->name)) {
+			r = 1;
+			_dm_set_crypt_compat(context,
+					     (int)target->version[0],
+					     (int)target->version[1],
+					     (int)target->version[2]);
+		}
+		target = (void *) target + target->next;
+	} while (last_target != target);
+
+	if (!r)
+		log_err(context, _("Cannot find compatible device-mapper kernel modules.\n"));
+
+	dm_task_destroy(dmt);
+	return r;
+
+fail_versions:
+	log_err(context, _("Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"));
+	return 0;
+}
+
 int dm_init(struct crypt_device *context, int check_kernel)
 {
 	if (!_dm_use_count++) {
 		log_dbg("Initialising device-mapper backend%s, UDEV is %sabled.",
 			check_kernel ? "" : " (NO kernel check requested)",
 			_dm_use_udev() ? "en" : "dis");
-		if (check_kernel && !_dm_simple(DM_DEVICE_LIST_VERSIONS, NULL, 0)) {
-			log_err(context, _("Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"));
+		if (check_kernel && !_dm_check_versions(context))
 			return -1;
-		}
 		if (getuid() || geteuid())
 			log_dbg(("WARNING: Running as a non-root user. Functionality may be unavailable."));
 		dm_log_init(set_dm_error);
@@ -665,6 +714,9 @@ static int _dm_message(const char *name, const char *msg)
 
 int dm_suspend_and_wipe_key(const char *name)
 {
+	if (!_dm_crypt_wipe_key_supported)
+		return -ENOTSUP;
+
 	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0))
 		return -EINVAL;
 
@@ -683,6 +735,9 @@ int dm_resume_and_reinstate_key(const char *name,
 	int msg_size = key_size * 2 + 10; // key set <key>
 	char *msg;
 	int r = 0;
+
+	if (!_dm_crypt_wipe_key_supported)
+		return -ENOTSUP;
 
 	msg = safe_alloc(msg_size);
 	if (!msg)

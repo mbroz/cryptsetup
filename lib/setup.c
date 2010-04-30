@@ -1304,7 +1304,9 @@ int crypt_suspend(struct crypt_device *cd,
 	}
 
 	r = dm_suspend_and_wipe_key(name);
-	if (r)
+	if (r == -ENOTSUP)
+		log_err(cd, "Suspend is not supported for device %s.\n", name);
+	else if (r)
 		log_err(cd, "Error during suspending device %s.\n", name);
 out:
 	if (!cd)
@@ -1348,7 +1350,9 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	if (r >= 0) {
 		keyslot = r;
 		r = dm_resume_and_reinstate_key(name, mk->keyLength, mk->key);
-		if (r)
+		if (r == -ENOTSUP)
+			log_err(cd, "Resume is not supported for device %s.\n", name);
+		else if (r)
 			log_err(cd, "Error during resuming device %s.\n", name);
 	} else
 		r = keyslot;
