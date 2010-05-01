@@ -3,24 +3,34 @@
 CRYPTSETUP="../src/cryptsetup"
 DEV=""
 
+cleanup() {
+	udevadm settle
+	rmmod scsi_debug 2>/dev/null
+	sleep 2
+}
+
 fail()
 {
 	[ -n "$1" ] && echo "$1"
+	cleanup
 	exit 100
 }
 
 add_device() {
 	modprobe scsi_debug $@
 	sleep 2
-	DEV=/dev/$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+	DEV=$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+
+	if [ ! -e /sys/block/$DEV/alignment_offset ] ; then
+		echo "This kernel seems to not support topology info, test skipped."
+		cleanup
+		exit 0
+	fi
+
+	DEV="/dev/$DEV"
 	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
-cleanup() {
-	udevadm settle
-	rmmod scsi_debug 2>/dev/null
-	sleep 2
-}
 
 format() # key_bits expected [forced]
 {
@@ -42,6 +52,11 @@ format() # key_bits expected [forced]
 	fi
 	echo "PASSED"
 }
+
+if [ $(id -u) != 0 ]; then
+	echo "WARNING: You must be root to run this test, test skipped."
+	exit 0
+fi
 
 modprobe --dry-run scsi_debug || exit 0
 cleanup

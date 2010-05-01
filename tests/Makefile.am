@@ -1,6 +1,6 @@
-TESTS = apitest compat-test
+TESTS = apitest compat-test align-test
 
-EXTRA_DIST = fileDiffer.py compatimage.img.bz2 align_test compat-test
+EXTRA_DIST = fileDiffer.py compatimage.img.bz2 align-test compat-test
 
 apitest_SOURCES = apitest.c
 apitest_LDADD = ../lib/libcryptsetup.la
