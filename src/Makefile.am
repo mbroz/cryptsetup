@@ -19,9 +19,9 @@ _STATIC_LDADD = @LIBGCRYPT_LIBS@ -lgpg-error @SELINUX_STATIC_LIBS@
 endif
 
 cryptsetup_LDADD = \
-	@POPT_LIBS@				\
 	$(top_builddir)/lib/libcryptsetup.la	\
-	$(_STATIC_LDADD)
+	$(_STATIC_LDADD)			\
+	@POPT_LIBS@
 
 
 cryptsetup_LDFLAGS = \
