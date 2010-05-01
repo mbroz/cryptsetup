@@ -922,6 +922,11 @@ int crypt_isLuks(struct crypt_options *options)
 
 	log_dbg("Check device %s for LUKS header.", options->device);
 
+	if (init_crypto()) {
+		log_err(cd, _("Cannot initialize crypto backend.\n"));
+		return -ENOSYS;
+	}
+
 	r = crypt_init(&cd, options->device);
 	if (r < 0)
 		return -EINVAL;
