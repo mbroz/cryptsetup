@@ -169,8 +169,10 @@ static void _setup(void)
 
 	r = system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"");
 	r = system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"");
-	if (!strncmp("/dev/loop", DEVICE_1, 9))
+	if (!strncmp("/dev/loop", DEVICE_1, 9)) {
+		r = system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2");
 		r = system("losetup " DEVICE_1 " " IMAGE1);
+	}
 	if (!strncmp("/dev/loop", DEVICE_2, 9)) {
 		r = system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4");
 		r = system("losetup " DEVICE_2 " " IMAGE_EMPTY);
@@ -729,7 +731,7 @@ static void _gcrypt_compatible()
 	if (!(f = popen("libgcrypt-config --version", "r")))
 		return;
 
-	if (fscanf(f, "%d.%d.%d", &maj, &min, &patch) == 2 &&
+	if (fscanf(f, "%d.%d.%d", &maj, &min, &patch) == 3 &&
 	    maj >= 1 && min >= 4)
 		gcrypt_compatible = 1;
 	if (_debug)
