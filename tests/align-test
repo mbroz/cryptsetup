@@ -4,7 +4,7 @@ CRYPTSETUP="../src/cryptsetup"
 DEV=""
 
 cleanup() {
-	udevadm settle
+	udevadm settle 2>/dev/null 2>&1
 	rmmod scsi_debug 2>/dev/null
 	sleep 2
 }
@@ -18,6 +18,11 @@ fail()
 
 add_device() {
 	modprobe scsi_debug $@
+	if [ $? -ne 0 ] ; then
+		echo "This kernel seems to not support proper scsi_debug module, test skipped."
+		exit 0
+	fi
+
 	sleep 2
 	DEV=$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 
