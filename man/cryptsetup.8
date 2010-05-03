@@ -125,13 +125,13 @@ The hash string is passed to libgcrypt, so all hashes accepted by gcrypt are sup
 Default is set during compilation, compatible values with old version of cryptsetup are
 \fB"ripemd160"\fR for \fIcreate\fR action and \fB"sha1"\fR for \fIluksFormat\fR.
 
-Use \fIcryptsetup --help\fR to show defaults.
+Use \fIcryptsetup \-\-help\fR to show defaults.
 .TP
 .B "\-\-cipher, \-c"
 set cipher specification string.
 
 Default mode is configurable during compilation,
-you can see compiled-in default using \fIcryptsetup --help\fR.
+you can see compiled-in default using \fIcryptsetup \-\-help\fR.
 If not changed, the default is for plain dm-crypt and LUKS mappings
 "aes-cbc-essiv:sha256".
 
@@ -164,7 +164,7 @@ Has to be a multiple of 8 bits. The key size is limited by the used cipher. See 
 Can be used for \fIcreate\fR or \fIluksFormat\fR, all other LUKS actions will use key-size specified by the LUKS header.
 Default is set during compilation, if not changed it is 256 bits.
 
-Use \fIcryptsetup --help\fR to show defaults.
+Use \fIcryptsetup \-\-help\fR to show defaults.
 
 For \fIluksOpen\fR this option specifies number of bits read from the key-file (default is exhaustive read from key-file).
 .TP
