@@ -105,13 +105,13 @@ static char *_error_hint(char *cipherName, char *cipherMode, size_t keyLength)
 	kernel_minor = atoi(tmp);
 
 	if (!strncmp(cipherMode, "xts", 3) && (keyLength != 256 && keyLength != 512))
-		hint = "Key size in XTS mode must be 256 or 512 bits.";
+		hint = _("Key size in XTS mode must be 256 or 512 bits.\n");
 	else if (!strncmp(cipherMode, "xts", 3) && kernel_minor < 24)
-		hint = "Block mode XTS is available since kernel 2.6.24.";
+		hint = _("Block mode XTS is available since kernel 2.6.24.\n");
 	if (!strncmp(cipherMode, "lrw", 3) && (keyLength != 256 && keyLength != 512))
-		hint = "Key size in LRW mode must be 256 or 512 bits.";
+		hint = _("Key size in LRW mode must be 256 or 512 bits.\n");
 	else if (!strncmp(cipherMode, "lrw", 3) && kernel_minor < 20)
-		hint = "Block mode LRW is available since kernel 2.6.20.";
+		hint = _("Block mode LRW is available since kernel 2.6.20.\n");
 #endif
 	return hint;
 }
