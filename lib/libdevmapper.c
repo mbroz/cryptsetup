@@ -18,6 +18,8 @@
 #define DM_CRYPT_TARGET		"crypt"
 #define RETRY_COUNT		5
 
+/* Set if dm-crypt version was probed */
+static int _dm_crypt_checked = 0;
 static int _dm_crypt_wipe_key_supported = 0;
 
 static int _dm_use_count = 0;
@@ -63,8 +65,7 @@ static void set_dm_error(int level, const char *file, int line,
 
 static int _dm_simple(int task, const char *name, int udev_wait);
 
-static void _dm_set_crypt_compat(struct crypt_device *context,
-				 int maj, int min, int patch)
+static void _dm_set_crypt_compat(int maj, int min, int patch)
 {
 	log_dbg("Detected dm-crypt target of version %i.%i.%i.", maj, min, patch);
 
@@ -72,44 +73,39 @@ static void _dm_set_crypt_compat(struct crypt_device *context,
 		_dm_crypt_wipe_key_supported = 1;
 	else
 		log_dbg("Suspend and resume disabled, no wipe key support.");
+
+	_dm_crypt_checked = 1;
 }
 
-static int _dm_check_versions(struct crypt_device *context)
+static int _dm_check_versions(void)
 {
-	int r = 0;
 	struct dm_task *dmt;
 	struct dm_versions *target, *last_target;
 
+	if (_dm_crypt_checked)
+		return 1;
+
 	if (!(dmt = dm_task_create(DM_DEVICE_LIST_VERSIONS)))
-		goto fail_versions;
+		return 0;
 
 	if (!dm_task_run(dmt)) {
 		dm_task_destroy(dmt);
-		goto fail_versions;
+		return 0;
 	}
 
 	target = dm_task_get_versions(dmt);
 	do {
 		last_target = target;
 		if (!strcmp(DM_CRYPT_TARGET, target->name)) {
-			r = 1;
-			_dm_set_crypt_compat(context,
-					     (int)target->version[0],
+			_dm_set_crypt_compat((int)target->version[0],
 					     (int)target->version[1],
 					     (int)target->version[2]);
 		}
 		target = (void *) target + target->next;
 	} while (last_target != target);
 
-	if (!r)
-		log_err(context, _("Cannot find compatible device-mapper kernel modules.\n"));
-
 	dm_task_destroy(dmt);
-	return r;
-
-fail_versions:
-	log_err(context, _("Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"));
-	return 0;
+	return 1;
 }
 
 int dm_init(struct crypt_device *context, int check_kernel)
@@ -118,8 +114,10 @@ int dm_init(struct crypt_device *context, int check_kernel)
 		log_dbg("Initialising device-mapper backend%s, UDEV is %sabled.",
 			check_kernel ? "" : " (NO kernel check requested)",
 			_dm_use_udev() ? "en" : "dis");
-		if (check_kernel && !_dm_check_versions(context))
+		if (check_kernel && !_dm_check_versions()) {
+			log_err(context, _("Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"));
 			return -1;
+		}
 		if (getuid() || geteuid())
 			log_dbg(("WARNING: Running as a non-root user. Functionality may be unavailable."));
 		dm_log_init(set_dm_error);
@@ -714,6 +712,9 @@ static int _dm_message(const char *name, const char *msg)
 
 int dm_suspend_and_wipe_key(const char *name)
 {
+	if (!_dm_check_versions())
+		return -ENOTSUP;
+
 	if (!_dm_crypt_wipe_key_supported)
 		return -ENOTSUP;
 
@@ -735,6 +736,9 @@ int dm_resume_and_reinstate_key(const char *name,
 	int msg_size = key_size * 2 + 10; // key set <key>
 	char *msg;
 	int r = 0;
+
+	if (!_dm_check_versions())
+		return -ENOTSUP;
 
 	if (!_dm_crypt_wipe_key_supported)
 		return -ENOTSUP;
