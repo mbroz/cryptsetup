@@ -4,6 +4,7 @@ CRYPTSETUP=../src/cryptsetup
 
 LOOPDEV=/dev/loop5
 DEV_NAME=dummy
+DEV_NAME2=dummy2
 ORIG_IMG=luks-test-orig
 IMG=luks-test
 IMG1=luks-test1
@@ -20,6 +21,7 @@ KEY_MATERIAL1_EXT="S69632-133632"
 
 function remove_mapping()
 {
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $ORIG_IMG $IMG $IMG1 $KEY1 >/dev/null 2>&1
@@ -134,6 +136,14 @@ prepare "[12] parameter variation test"
 $CRYPTSETUP -q -i 1000 -c aes-cbc-essiv:sha256 -s 128 luksFormat $LOOPDEV $KEY1 || fail
 check "$LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0"
 $CRYPTSETUP -d $KEY1 luksOpen $LOOPDEV $DEV_NAME || fail
+
+prepare	"[13] open/close - stacked devices"
+echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo "key0" | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
+echo "key0" | $CRYPTSETUP -q luksFormat /dev/mapper/$DEV_NAME || fail
+echo "key0" | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME2 || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 remove_mapping
 exit 0

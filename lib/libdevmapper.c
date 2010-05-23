@@ -171,7 +171,7 @@ static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_le
 			continue;
 
 		strncpy(ptr, entry->d_name, space);
-		if (lstat(path, &st) < 0)
+		if (stat(path, &st) < 0)
 			continue;
 
 		if (S_ISDIR(st.st_mode)) {
