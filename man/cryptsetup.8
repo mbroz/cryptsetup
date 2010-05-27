@@ -204,7 +204,7 @@ in the mkfs.xfs manual page. By default, the payload is aligned at an 8 sector (
 Show the version.
 
 .SH NOTES ON PASSWORD PROCESSING
-\fIFrom a file descriptor or a terminal\fR: Password processing is new-line sensitive, meaning the reading will stop after encountering \\n. It will process the read material (without newline) with the default hash or the hash given by \-\-hash. After hashing, it will be cropped to the key size given by \-s.
+\fIFrom a terminal\fR: Password processing is new-line sensitive, meaning the reading will stop after encountering \\n. It will process the read material (without newline) with the default hash or the hash given by \-\-hash. After hashing, it will be cropped to the key size given by \-s.
 
 \fIFrom stdin\fR: Reading will continue until EOF (so using e.g. /dev/random as stdin will not work), with the trailing newline stripped. After that the read data will be hashed with the default hash or the hash given by \-\-hash and the result will be cropped to the keysize given by \-s. If "plain" is used as an argument to the hash option, the input data will not be hashed.
 Instead, it will be zero padded (if shorter than the keysize) or truncated (if longer than the keysize) and used directly as the key. No warning will be given if the amount of data read from stdin is less than the keysize.

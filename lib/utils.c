@@ -380,7 +380,7 @@ out_err:
 
 /*
  * Password reading behaviour matrix of get_key
- * 
+ * FIXME: rewrite this from scratch.
  *                    p   v   n   h
  * -----------------+---+---+---+---
  * interactive      | Y | Y | Y | Inf
@@ -400,31 +400,23 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 	const int verify = how2verify & CRYPT_FLAG_VERIFY;
 	const int verify_if_possible = how2verify & CRYPT_FLAG_VERIFY_IF_POSSIBLE;
 	char *pass = NULL;
-	int newline_stop;
 	int read_horizon;
 	int regular_file = 0;
+	int read_stdin;
 	int r;
+	struct stat st;
 
-	if(key_file && !strcmp(key_file, "-")) {
-		/* Allow binary reading from stdin */
-		fd = STDIN_FILENO;
-		newline_stop = 0;
-		read_horizon = 0;
-	} else if (key_file) {
-		fd = open(key_file, O_RDONLY);
-		if (fd < 0) {
-			log_err(cd, _("Failed to open key file %s.\n"), key_file);
-			goto out_err;
-		}
-		newline_stop = 0;
+	/* Passphrase read from stdin? */
+	read_stdin = (!key_file || !strcmp(key_file, "-")) ? 1 : 0;
 
-		/* This can either be 0 (LUKS) or the actually number
-		 * of key bytes (default or passed by -s) */
-		read_horizon = key_size;
-	} else {
-		fd = STDIN_FILENO;
-		newline_stop = 1;
-		read_horizon = 0;   /* Infinite, if read from terminal or fd */
+	/* read_horizon applies only for real keyfile, not stdin or terminal */
+	read_horizon = (key_file && !read_stdin) ? key_size : 0 /* until EOF */;
+
+	/* Setup file descriptior */
+	fd = read_stdin ? STDIN_FILENO : open(key_file, O_RDONLY);
+	if (fd < 0) {
+		log_err(cd, _("Failed to open key file %s.\n"), key_file ?: "-");
+		goto out_err;
 	}
 
 	/* Interactive case */
@@ -464,9 +456,8 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		 * should warn the user, if it's a non-regular file,
 		 * such as /dev/random, because in this case, the loop
 		 * will read forever.
-		 */ 
-		if(key_file && strcmp(key_file, "-") && read_horizon == 0) {
-			struct stat st;
+		 */
+		if(!read_stdin && read_horizon == 0) {
 			if(stat(key_file, &st) < 0) {
 				log_err(cd, _("Failed to stat key file %s.\n"), key_file);
 				goto out_err;
@@ -495,7 +486,8 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 				goto out_err;
 			}
 
-			if(r == 0 || (newline_stop && pass[i] == '\n'))
+			/* Stop on newline only if not requested read from keyfile */
+			if(r == 0 || (!key_file && pass[i] == '\n'))
 				break;
 		}
 		/* Fail if piped input dies reading nothing */
