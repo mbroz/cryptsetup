@@ -138,23 +138,27 @@ static int yesDialog(char *msg)
 }
 
 static void cmdLineLog(int level, char *msg) {
-    switch(level) {
+	switch(level) {
 
-    case CRYPT_LOG_NORMAL:
-            fputs(msg, stdout);
-            break;
-    case CRYPT_LOG_ERROR:
-            fputs(msg, stderr);
-            break;
-    default:
-            fprintf(stderr, "Internal error on logging class for msg: %s", msg);
-            break;
-    }
+	case CRYPT_LOG_NORMAL:
+		fputs(msg, stdout);
+		break;
+	case CRYPT_LOG_VERBOSE:
+		if (opt_verbose)
+			fputs(msg, stdout);
+		break;
+	case CRYPT_LOG_ERROR:
+		fputs(msg, stderr);
+		break;
+	default:
+		fprintf(stderr, "Internal error on logging class for msg: %s", msg);
+		break;
+	}
 }
 
 static struct interface_callbacks cmd_icb = {
-        .yesDialog = yesDialog,
-        .log = cmdLineLog,
+	.yesDialog = yesDialog,
+	.log = cmdLineLog,
 };
 
 static void _log(int level, const char *msg, void *usrptr)

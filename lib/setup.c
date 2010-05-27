@@ -220,7 +220,7 @@ static int verify_other_keyslot(struct crypt_device *cd,
 	if (openedIndex < 0)
 		return -EPERM;
 
-	log_std(cd, _("Key slot %d verified.\n"), openedIndex);
+	log_verbose(cd, _("Key slot %d verified.\n"), openedIndex);
 	return 0;
 }
 

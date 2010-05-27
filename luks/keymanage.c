@@ -620,7 +620,7 @@ int LUKS_verify_master_key(const struct luks_phdr *hdr,
 }
 
 /* Try to open a particular key slot */
-int LUKS_open_key(const char *device,
+static int LUKS_open_key(const char *device,
 		  unsigned int keyIndex,
 		  const char *password,
 		  size_t passwordLen,
@@ -670,7 +670,7 @@ int LUKS_open_key(const char *device,
 
 	r = LUKS_verify_master_key(hdr, mk);
 	if (r >= 0)
-		log_std(ctx, _("Key slot %d unlocked.\n"), keyIndex);
+		log_verbose(ctx, _("Key slot %d unlocked.\n"), keyIndex);
 out:
 	free(AfKey);
 	return r;

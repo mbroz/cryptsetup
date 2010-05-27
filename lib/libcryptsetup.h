@@ -42,6 +42,7 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name);
  */
 #define CRYPT_LOG_NORMAL 0
 #define CRYPT_LOG_ERROR  1
+#define CRYPT_LOG_VERBOSE  2
 #define CRYPT_LOG_DEBUG -1 /* always on stdout */
 void crypt_set_log_callback(struct crypt_device *cd,
 	void (*log)(int level, const char *msg, void *usrptr),

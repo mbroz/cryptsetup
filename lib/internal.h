@@ -110,6 +110,7 @@ int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode);
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
+#define log_verbose(c, x...) logger(c, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
 #define log_err(c, x...) do { \
 	logger(c, CRYPT_LOG_ERROR, __FILE__, __LINE__, x); \
 	set_error(x); } while(0)

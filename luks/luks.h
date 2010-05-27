@@ -137,15 +137,6 @@ int LUKS_set_key(
 	uint64_t *PBKDF2_per_sec,
 	struct crypt_device *ctx);
 
-int LUKS_open_key(
-	const char *device,
-	unsigned int keyIndex,
-	const char *password,
-	size_t passwordLen,
-	struct luks_phdr *hdr,
-	struct luks_masterkey *mk,
-	struct crypt_device *ctx);
-
 int LUKS_open_key_with_hdr(
 	const char *device,
 	int keyIndex,
