@@ -299,7 +299,7 @@ static int _action_luksFormat_generateMK()
 		.device = action_argv[0],
 		.cipher = opt_cipher ?: DEFAULT_CIPHER(LUKS1),
 		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
-		.new_key_file = action_argc > 1 ? action_argv[1] : NULL,
+		.new_key_file = opt_key_file ?: (action_argc > 1 ? action_argv[1] : NULL),
 		.flags = opt_verify_passphrase ? CRYPT_FLAG_VERIFY : (!opt_batch_mode?CRYPT_FLAG_VERIFY_IF_POSSIBLE :  0),
 		.iteration_time = opt_iteration_time,
 		.timeout = opt_timeout,
@@ -386,6 +386,9 @@ static int action_luksFormat(int arg)
 		log_err("Options --offset and --skip are not supported for luksFormat.\n"); 
 		return -EINVAL;
 	}
+
+	if (action_argc > 1 && opt_key_file)
+		log_err(_("Option --key-file takes precedence over specified key file argument.\n"));
 
 	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]) == -1) {
 		log_err(_("memory allocation error in action_luksFormat"));

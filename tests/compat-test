@@ -145,5 +145,20 @@ echo "key0" | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME2 || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
+prepare	"[14] format/open - passphrase on stdin & new line"
+# stdin defined by "-" must take even newline
+echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV - || fail
+echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+echo -n $'foo\nbar' | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME && fail
+# now also try --key-file
+echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV --key-file=- || fail
+echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+# process newline if from stdin
+echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo 'foo' | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+
 remove_mapping
 exit 0
