@@ -476,7 +476,6 @@ void DeviceResizeGame(void)
 	co.size = 0;
 	OK_(crypt_resize_device(&co));
 	EQ_(_get_device_size(DMDIR CDEVICE_2), (orig_size - 333));
-
 	co.size = 0;
 	co.offset = 444;
 	co.skip = 555;
@@ -492,9 +491,35 @@ void DeviceResizeGame(void)
 	EQ_(co.key_size, 128 / 8);
 	EQ_(co.offset, 444);
 	EQ_(co.skip, 555);
-	OK_(crypt_remove_device(&co));
-
 	crypt_put_options(&co);
+
+	// dangerous switch device still works
+	memset(&co, 0, sizeof(co));
+	co.name = CDEVICE_2,
+	co.device = DEVICE_1;
+	co.key_file = KEYFILE2;
+	co.key_size = 128 / 8;
+	co.cipher = "aes-cbc-plain";
+	co.hash = "sha1";
+	co.icb = &cmd_icb;
+	OK_(crypt_update_device(&co));
+
+	memset(&co, 0, sizeof(co));
+	co.icb = &cmd_icb,
+	co.name = CDEVICE_2;
+	EQ_(crypt_query_device(&co), 1);
+	EQ_(strcmp(co.cipher, "aes-cbc-plain"), 0);
+	EQ_(co.key_size, 128 / 8);
+	EQ_(co.offset, 0);
+	EQ_(co.skip, 0);
+	// This expect lookup returns prefered /dev/loopX
+	EQ_(strcmp(co.device, DEVICE_1), 0);
+	crypt_put_options(&co);
+
+	memset(&co, 0, sizeof(co));
+	co.icb = &cmd_icb,
+	co.name = CDEVICE_2;
+	OK_(crypt_remove_device(&co));
 
 	_remove_keyfiles();
 }

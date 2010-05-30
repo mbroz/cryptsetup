@@ -254,8 +254,9 @@ static int device_check_and_adjust(struct crypt_device *cd,
 {
 	struct device_infos infos;
 
-	if (get_device_infos(device, &infos, cd) < 0) {
-		log_err(cd, _("Cannot get info about device %s.\n"), device);
+	if (!device || get_device_infos(device, &infos, cd) < 0) {
+		log_err(cd, _("Cannot get info about device %s.\n"),
+			device ?: "[none]");
 		return -ENOTBLK;
 	}
 
@@ -587,7 +588,7 @@ void crypt_set_password_callback(struct crypt_device *cd,
 /* OPTIONS: name, cipher, device, hash, key_file, key_size, key_slot,
  *          offset, size, skip, timeout, tries, passphrase_fd (ignored),
  *          flags, icb */
-int crypt_create_device(struct crypt_options *options)
+static int crypt_create_and_update_device(struct crypt_options *options, int update)
 {
 	struct crypt_device *cd = NULL;
 	char *key = NULL;
@@ -607,39 +608,21 @@ int crypt_create_device(struct crypt_options *options)
 			options->cipher, NULL, options->key_file, key, keyLen,
 			options->key_size, options->size, options->skip,
 			options->offset, NULL, options->flags & CRYPT_FLAG_READONLY,
-			options->flags, 0);
+			options->flags, update);
 
 	safe_free(key);
 	crypt_free(cd);
 	return r;
 }
 
-/* OPTIONS: same as create above */
+int crypt_create_device(struct crypt_options *options)
+{
+	return crypt_create_and_update_device(options, 0);
+}
+
 int crypt_update_device(struct crypt_options *options)
 {
-	struct crypt_device *cd = NULL;
-	char *key = NULL;
-	unsigned int keyLen;
-	int r;
-
-	r = _crypt_init(&cd, CRYPT_PLAIN, options, 1, 1);
-	if (r)
-		return r;
-
-	get_key(_("Enter passphrase: "), &key, &keyLen, options->key_size,
-		options->key_file, cd->timeout, options->flags, cd);
-	if (!key)
-		r = -ENOENT;
-	else
-		r = create_device_helper(cd, options->name, options->hash,
-			options->cipher, NULL, options->key_file, key, keyLen,
-			options->key_size, options->size, options->skip,
-			options->offset, NULL, options->flags & CRYPT_FLAG_READONLY,
-			options->flags, 1);
-
-	safe_free(key);
-	crypt_free(cd);
-	return r;
+	return crypt_create_and_update_device(options, 1);
 }
 
 /* OPTIONS: name, size, icb */
