@@ -197,7 +197,7 @@ static char *lookup_dev(const char *dev_id)
 {
 	uint32_t major, minor;
 	dev_t dev;
-	char *result, buf[PATH_MAX + 1];
+	char *result = NULL, buf[PATH_MAX + 1];
 
 	if (sscanf(dev_id, "%" PRIu32 ":%" PRIu32, &major, &minor) != 2)
 		return NULL;
@@ -220,8 +220,8 @@ static char *lookup_dev(const char *dev_id)
 	strncpy(buf, DEVICE_DIR, PATH_MAX);
 	result = __lookup_dev(buf, dev, 0, 4);
 
-	/* If not found, return major:minor */
-	return result ?: strdup(dev_id);
+	/* If not found, return NULL */
+	return result;
 }
 
 static int _dev_read_ahead(const char *dev, uint32_t *read_ahead)

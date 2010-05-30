@@ -1,6 +1,7 @@
 2010-05-27  Milan Broz  <mbroz@redhat.com>
 	* Fix luksFormat/luksOpen reading passphrase from stdin and "-" keyfile.
 	* Add verbose log level and move unlocking message there.
+	* Remove device even if underlying device disappeared.
 
 2010-05-23  Milan Broz  <mbroz@redhat.com>
 	* Fix luksClose operation for stacked DM devices.

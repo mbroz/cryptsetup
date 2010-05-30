@@ -741,10 +741,8 @@ int crypt_remove_device(struct crypt_options *options)
 	int r;
 
 	r = crypt_init_by_name(&cd, options->name);
-	if (r)
-		return r;
-
-	r = crypt_deactivate(cd, options->name);
+	if (r == 0)
+		r = crypt_deactivate(cd, options->name);
 
 	crypt_free(cd);
 	return r;
@@ -759,7 +757,7 @@ int crypt_luksFormat(struct crypt_options *options)
 	char cipherMode[LUKS_CIPHERMODE_L];
 	char *password=NULL;
 	unsigned int passwordLen;
-	struct crypt_device *cd;
+	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 cp = {
 		.hash = options->hash,
 		.data_alignment = options->align_payload
@@ -1049,6 +1047,12 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 
 	r = dm_query_device(name, &device, NULL, NULL, NULL,
 			    NULL, NULL, NULL, NULL, NULL, NULL);
+
+	/* Underlying device disappeared but mapping still active */
+	if (r >= 0 && !device)
+		log_verbose(NULL, _("Underlying device for crypt device %s disappeared.\n"),
+			    name);
+
 	if (r >= 0)
 		r = crypt_init(cd, device);
 
