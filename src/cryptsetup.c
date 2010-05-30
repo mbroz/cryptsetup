@@ -282,7 +282,7 @@ static int action_status(int arg)
 		log_std("%s/%s is active:\n", crypt_get_dir(), options.name);
 		log_std("  cipher:  %s\n", options.cipher);
 		log_std("  keysize: %d bits\n", options.key_size * 8);
-		log_std("  device:  %s\n", options.device);
+		log_std("  device:  %s\n", options.device ?: "");
 		log_std("  offset:  %" PRIu64 " sectors\n", options.offset);
 		log_std("  size:    %" PRIu64 " sectors\n", options.size);
 		if (options.skip)
