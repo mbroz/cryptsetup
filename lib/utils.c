@@ -690,8 +690,8 @@ void get_topology_alignment(const char *device,
 			    unsigned long *alignment_offset,   /* bytes */
 			    unsigned long default_alignment)
 {
-	unsigned int dev_alignment_offset = 0;
-	unsigned long min_io_size = 0, opt_io_size = 0;
+	int dev_alignment_offset = 0;
+	unsigned int min_io_size = 0, opt_io_size = 0;
 	int fd;
 
 	*required_alignment = default_alignment;
@@ -713,18 +713,18 @@ void get_topology_alignment(const char *device,
 		opt_io_size = min_io_size;
 
 	/* alignment offset, bogus -1 means misaligned/unknown */
-	if (ioctl(fd, BLKALIGNOFF, &dev_alignment_offset) == -1 || (int)dev_alignment_offset < 0)
+	if (ioctl(fd, BLKALIGNOFF, &dev_alignment_offset) == -1 || dev_alignment_offset < 0)
 		dev_alignment_offset = 0;
 
-	if (*required_alignment < min_io_size)
-		*required_alignment = min_io_size;
+	if (*required_alignment < (unsigned long)min_io_size)
+		*required_alignment = (unsigned long)min_io_size;
 
-	if (*required_alignment < opt_io_size)
-		*required_alignment = opt_io_size;
+	if (*required_alignment < (unsigned long)opt_io_size)
+		*required_alignment = (unsigned long)opt_io_size;
 
 	*alignment_offset = (unsigned long)dev_alignment_offset;
 
-	log_dbg("Topology: IO (%lu/%lu), offset = %lu; Required alignment is %lu bytes.",
+	log_dbg("Topology: IO (%u/%u), offset = %lu; Required alignment is %lu bytes.",
 		min_io_size, opt_io_size, *alignment_offset, *required_alignment);
 out:
 	(void)close(fd);
