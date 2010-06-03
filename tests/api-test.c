@@ -550,6 +550,7 @@ static void AddDevicePlain(void)
 	// default is "plain" hash - no password hash
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, NULL));
+	FAIL_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0), "cannot verify key with plain");
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	// FIXME: this should get key from active device?
@@ -561,6 +562,8 @@ static void AddDevicePlain(void)
 	// Now use hashed password
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	FAIL_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0),
+	      "cannot verify passphrase with plain" );
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
 
 	// device status check
@@ -602,6 +605,7 @@ static void UseLuksDevice(void)
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+	OK_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0), "already open");
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
@@ -617,6 +621,7 @@ static void UseLuksDevice(void)
 
 	EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
 	OK_(crypt_volume_key_verify(cd, key, key_size));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -691,6 +696,18 @@ static void AddDeviceLuks(void)
 	EQ_(7, crypt_activate_by_passphrase(cd, CDEVICE_2, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
 	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
+
+	EQ_(1, crypt_keyslot_add_by_volume_key(cd, 1, key, key_size, KEY1, strlen(KEY1)));
+	OK_(_prepare_keyfile(KEYFILE1, KEY1));
+	OK_(_prepare_keyfile(KEYFILE2, KEY2));
+	EQ_(2, crypt_keyslot_add_by_keyfile(cd, 2, KEYFILE1, 0, KEYFILE2, 0));
+	FAIL_(crypt_activate_by_keyfile(cd, CDEVICE_2, CRYPT_ANY_SLOT, KEYFILE2, strlen(KEY2)-1, 0), "key mismatch");
+	EQ_(2, crypt_activate_by_keyfile(cd, NULL, CRYPT_ANY_SLOT, KEYFILE2, 0, 0));
+	EQ_(2, crypt_activate_by_keyfile(cd, CDEVICE_2, CRYPT_ANY_SLOT, KEYFILE2, 0, 0));
+	OK_(crypt_keyslot_destroy(cd, 1));
+	OK_(crypt_keyslot_destroy(cd, 2));
+	OK_(crypt_deactivate(cd, CDEVICE_2));
+	_remove_keyfiles();
 
 	FAIL_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), "slot used");
 	key[1] = ~key[1];

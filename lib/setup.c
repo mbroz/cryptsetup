@@ -355,6 +355,9 @@ static int create_device_helper(struct crypt_device *cd,
 	char *processed_key = NULL;
 	int r;
 
+	if (!name)
+		return -EINVAL;
+
 	ci = crypt_status(cd, name);
 	if (ci == CRYPT_INVALID)
 		return -EINVAL;
@@ -1656,9 +1659,6 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		name ? "Activating" : "Checking", name ?: "",
 		keyslot, passphrase ? "" : "[none] ");
 
-	if (!name)
-		return -EINVAL;
-
 	/* plain, use hashed passphrase */
 	if (isPLAIN(cd->type))
 		return create_device_helper(cd, name, cd->plain_hdr.hash,
@@ -1712,7 +1712,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 	int r;
 
 	log_dbg("Activating volume %s [keyslot %d] using keyfile %s.",
-		name, keyslot, keyfile ?: "[none]");
+		name ?: "", keyslot, keyfile ?: "[none]");
 
 	if (!isLUKS(cd->type)) {
 		log_err(cd, _("This operation is supported only for LUKS device.\n"));
@@ -1744,7 +1744,8 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 
 	if (r >= 0) {
 		keyslot = r;
-		r = open_from_hdr_and_mk(cd, mk, name, flags);
+		if (name)
+			r = open_from_hdr_and_mk(cd, mk, name, flags);
 	}
 
 	LUKS_dealloc_masterkey(mk);
