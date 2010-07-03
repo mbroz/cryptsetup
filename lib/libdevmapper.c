@@ -26,14 +26,16 @@ static int _dm_use_count = 0;
 static struct crypt_device *_context = NULL;
 
 /* Compatibility for old device-mapper without udev support */
-#ifndef HAVE_DM_TASK_SET_COOKIE
+#ifndef HAVE_DECL_DM_UDEV_DISABLE_DISK_RULES_FLAG
 #define CRYPT_TEMP_UDEV_FLAGS	0
-static int dm_task_set_cookie(struct dm_task *dmt, uint32_t *cookie, uint16_t flags) { return 0; }
-static int dm_udev_wait(uint32_t cookie) { return 0; };
+static int _dm_task_set_cookie(struct dm_task *dmt, uint32_t *cookie, uint16_t flags) { return 0; }
+static int _dm_udev_wait(uint32_t cookie) { return 0; };
 #else
 #define CRYPT_TEMP_UDEV_FLAGS	DM_UDEV_DISABLE_SUBSYSTEM_RULES_FLAG | \
 				DM_UDEV_DISABLE_DISK_RULES_FLAG | \
 				DM_UDEV_DISABLE_OTHER_RULES_FLAG
+#define _dm_task_set_cookie	dm_task_set_cookie
+#define _dm_udev_wait		dm_udev_wait
 #endif
 
 static int _dm_use_udev()
@@ -289,13 +291,13 @@ static int _dm_simple(int task, const char *name, int udev_wait)
 	if (name && !dm_task_set_name(dmt, name))
 		goto out;
 
-	if (udev_wait && !dm_task_set_cookie(dmt, &cookie, 0))
+	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, 0))
 		goto out;
 
 	r = dm_task_run(dmt);
 
 	if (udev_wait)
-		(void)dm_udev_wait(cookie);
+		(void)_dm_udev_wait(cookie);
 
       out:
 	dm_task_destroy(dmt);
@@ -455,7 +457,7 @@ int dm_create_device(const char *name,
 		if (!dm_task_set_uuid(dmt, dev_uuid))
 			goto out_no_removal;
 
-		if (_dm_use_udev() && !dm_task_set_cookie(dmt, &cookie, udev_flags))
+		if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
 			goto out_no_removal;
 	}
 
@@ -481,7 +483,7 @@ int dm_create_device(const char *name,
 			goto out;
 		if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
 			goto out;
-		if (_dm_use_udev() && !dm_task_set_cookie(dmt, &cookie, udev_flags))
+		if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
 			goto out;
 		if (!dm_task_run(dmt))
 			goto out;
@@ -493,7 +495,7 @@ int dm_create_device(const char *name,
 	r = 0;
 out:
 	if (_dm_use_udev()) {
-		(void)dm_udev_wait(cookie);
+		(void)_dm_udev_wait(cookie);
 		cookie = 0;
 	}
 
@@ -511,7 +513,7 @@ out:
 
 out_no_removal:
 	if (cookie && _dm_use_udev())
-		(void)dm_udev_wait(cookie);
+		(void)_dm_udev_wait(cookie);
 
 	if (params)
 		safe_free(params);

@@ -95,7 +95,7 @@ else
 	DEVMAPPER_LIBS=$LIBS
 fi
 
-AC_CHECK_FUNCS([dm_task_set_cookie], [have_cookie=yes], [have_cookie=no])
+AC_CHECK_DECLS([DM_UDEV_DISABLE_DISK_RULES_FLAG], [have_cookie=yes], [have_cookie=no], [#include <libdevmapper.h>])
 if test "x$enable_udev" = xyes; then
 	if test "x$have_cookie" = xno; then
 		AC_MSG_WARN([The device-mapper library on your system has no udev support, udev support disabled.])
