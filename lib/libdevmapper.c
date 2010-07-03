@@ -26,16 +26,16 @@ static int _dm_use_count = 0;
 static struct crypt_device *_context = NULL;
 
 /* Compatibility for old device-mapper without udev support */
-#ifndef HAVE_DECL_DM_UDEV_DISABLE_DISK_RULES_FLAG
-#define CRYPT_TEMP_UDEV_FLAGS	0
-static int _dm_task_set_cookie(struct dm_task *dmt, uint32_t *cookie, uint16_t flags) { return 0; }
-static int _dm_udev_wait(uint32_t cookie) { return 0; };
-#else
+#if HAVE_DECL_DM_UDEV_DISABLE_DISK_RULES_FLAG
 #define CRYPT_TEMP_UDEV_FLAGS	DM_UDEV_DISABLE_SUBSYSTEM_RULES_FLAG | \
 				DM_UDEV_DISABLE_DISK_RULES_FLAG | \
 				DM_UDEV_DISABLE_OTHER_RULES_FLAG
 #define _dm_task_set_cookie	dm_task_set_cookie
 #define _dm_udev_wait		dm_udev_wait
+#else
+#define CRYPT_TEMP_UDEV_FLAGS	0
+static int _dm_task_set_cookie(struct dm_task *dmt, uint32_t *cookie, uint16_t flags) { return 0; }
+static int _dm_udev_wait(uint32_t cookie) { return 0; };
 #endif
 
 static int _dm_use_udev()
