@@ -1,3 +1,4 @@
+EXTRA_DIST = FAQ
 SUBDIRS = \
 	luks \
 	lib \
