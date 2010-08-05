@@ -796,6 +796,10 @@ int LUKS_del_key(const char *device,
 		return r;
 	}
 
+	/* Wipe keyslot info */
+	memset(&hdr->keyblock[keyIndex].passwordSalt, 0, LUKS_SALTSIZE);
+	hdr->keyblock[keyIndex].passwordIterations = 0;
+
 	r = LUKS_write_phdr(device, hdr, ctx);
 
 	return r;
