@@ -125,12 +125,12 @@ char *safe_strdup(const char *s)
 
 static int get_alignment(int fd)
 {
-	int alignment = DEFAULT_ALIGNMENT;
+	int alignment = DEFAULT_MEM_ALIGNMENT;
 
 #ifdef _PC_REC_XFER_ALIGN
 	alignment = fpathconf(fd, _PC_REC_XFER_ALIGN);
 	if (alignment < 0)
-		alignment = DEFAULT_ALIGNMENT;
+		alignment = DEFAULT_MEM_ALIGNMENT;
 #endif
 	return alignment;
 }
@@ -692,6 +692,7 @@ void get_topology_alignment(const char *device,
 {
 	int dev_alignment_offset = 0;
 	unsigned int min_io_size = 0, opt_io_size = 0;
+	unsigned long temp_alignment = 0;
 	int fd;
 
 	*required_alignment = default_alignment;
@@ -715,14 +716,16 @@ void get_topology_alignment(const char *device,
 	/* alignment offset, bogus -1 means misaligned/unknown */
 	if (ioctl(fd, BLKALIGNOFF, &dev_alignment_offset) == -1 || dev_alignment_offset < 0)
 		dev_alignment_offset = 0;
-
-	if (*required_alignment < (unsigned long)min_io_size)
-		*required_alignment = (unsigned long)min_io_size;
-
-	if (*required_alignment < (unsigned long)opt_io_size)
-		*required_alignment = (unsigned long)opt_io_size;
-
 	*alignment_offset = (unsigned long)dev_alignment_offset;
+
+	temp_alignment = (unsigned long)min_io_size;
+
+	if (temp_alignment < (unsigned long)opt_io_size)
+		temp_alignment = (unsigned long)opt_io_size;
+
+	/* If calculated alignment is multiple of default, keep default */
+	if (temp_alignment && (default_alignment % temp_alignment))
+		*required_alignment = temp_alignment;
 
 	log_dbg("Topology: IO (%u/%u), offset = %lu; Required alignment is %lu bytes.",
 		min_io_size, opt_io_size, *alignment_offset, *required_alignment);

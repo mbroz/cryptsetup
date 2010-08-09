@@ -1087,7 +1087,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 			       struct crypt_params_luks1 *params)
 {
 	int r;
-	unsigned long required_alignment = DEFAULT_ALIGNMENT;
+	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
 	unsigned long alignment_offset = 0;
 
 	if (!cd->device) {
@@ -1099,7 +1099,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		required_alignment = params->data_alignment * SECTOR_SIZE;
 	else
 		get_topology_alignment(cd->device, &required_alignment,
-				       &alignment_offset, DEFAULT_ALIGNMENT);
+				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
 	r = LUKS_generate_phdr(&cd->hdr, cd->volume_key, cipher, cipher_mode,
 			       (params && params->hash) ? params->hash : "sha1",

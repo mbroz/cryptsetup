@@ -36,7 +36,7 @@
 /* Actually we need only 37, but we don't want struct autoaligning to kick in */
 #define UUID_STRING_L 40
 
-/* Offset to align kesylot area */
+/* Offset to keyslot area [in bytes] */
 #define LUKS_ALIGN_KEYSLOTS 4096
 
 /* Any integer values are stored in network byte order on disk and must be

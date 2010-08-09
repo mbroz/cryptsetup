@@ -435,9 +435,9 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	char luksMagic[] = LUKS_MAGIC;
 	uuid_t partitionUuid;
 	int currentSector;
-	int alignSectors = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
+
 	if (alignPayload == 0)
-		alignPayload = alignSectors;
+		alignPayload = DEFAULT_DISK_ALIGNMENT / SECTOR_SIZE;
 
 	memset(header,0,sizeof(struct luks_phdr));
 
@@ -480,12 +480,13 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
-	currentSector = round_up_modulo(LUKS_PHDR_SIZE, alignSectors);
+	currentSector = round_up_modulo(LUKS_PHDR_SIZE, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 	for(i = 0; i < LUKS_NUMKEYS; ++i) {
 		header->keyblock[i].active = LUKS_KEY_DISABLED;
 		header->keyblock[i].keyMaterialOffset = currentSector;
 		header->keyblock[i].stripes = stripes;
-		currentSector = round_up_modulo(currentSector + blocksPerStripeSet, alignSectors);
+		currentSector = round_up_modulo(currentSector + blocksPerStripeSet,
+						LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 	}
 	currentSector = round_up_modulo(currentSector, alignPayload);
 
