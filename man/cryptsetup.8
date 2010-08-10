@@ -220,9 +220,9 @@ The number of seconds to wait before timeout. This option is relevant every time
 How often the input of the passphrase shall be retried. This option is relevant every time a password is asked, like \fIcreate\fR, \fIluksOpen\fR, \fIluksFormat\fR or \fIluksAddKey\fR. The default is 3 tries.
 .TP
 .B "\-\-align-payload=\fIvalue\fR"
-Align payload at a boundary of \fIvalue\fR 512-byte sectors. This option is relevant for \fIluksFormat\fR.  If your block device lives on a RAID, it is
-useful to align the filesystem at full stripe boundaries so it can take advantage of the RAID's geometry.  See for instance the sunit and swidth options
-in the mkfs.xfs manual page. By default, the payload is aligned at an 8 sector (4096 byte) boundary.
+Align payload at a boundary of \fIvalue\fR 512-byte sectors. This option is relevant for \fIluksFormat\fR.
+If not specified, cryptsetup tries to use topology info provided by kernel for underlying device to get optimal alignment.
+If not available (or calculated value is multiple of default) data is by default aligned to 1 MiB boundary (2048 512-byte sectors).
 .TP
 .B "\-\-version"
 Show the version.
