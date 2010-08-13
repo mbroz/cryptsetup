@@ -698,26 +698,27 @@ int crypt_query_device(struct crypt_options *options)
 		return -ENOSYS;
 
 	r = dm_status_device(options->name);
-	if (r == -ENODEV) {
-		dm_exit();
-		return 0;
-	}
+	if (r < 0)
+		goto out;
 
 	r = dm_query_device(options->name, (char **)&options->device, &options->size,
 			    &options->skip, &options->offset, (char **)&options->cipher,
 			    &options->key_size, NULL, &read_only, NULL, NULL);
+	if (r >= 0) {
+		if (read_only)
+			options->flags |= CRYPT_FLAG_READONLY;
+
+		options->flags |= CRYPT_FLAG_FREE_DEVICE;
+		options->flags |= CRYPT_FLAG_FREE_CIPHER;
+
+		r = 1;
+	}
+out:
+	if (r == -ENODEV)
+		r = 0;
 
 	dm_exit();
-	if (r < 0)
-		return r;
-
-	if (read_only)
-		options->flags |= CRYPT_FLAG_READONLY;
-
-	options->flags |= CRYPT_FLAG_FREE_DEVICE;
-	options->flags |= CRYPT_FLAG_FREE_CIPHER;
-
-	return 1;
+	return r;
 }
 
 /* OPTIONS: name, icb */

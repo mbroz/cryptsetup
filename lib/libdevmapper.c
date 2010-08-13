@@ -534,22 +534,16 @@ int dm_status_device(const char *name)
 	int r = -EINVAL;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
-		return -EINVAL;
-
-	if (!dm_task_set_name(dmt, name)) {
-		r = -EINVAL;
 		goto out;
-	}
 
-	if (!dm_task_run(dmt)) {
-		r = -EINVAL;
+	if (!dm_task_set_name(dmt, name))
 		goto out;
-	}
 
-	if (!dm_task_get_info(dmt, &dmi)) {
-		r = -EINVAL;
+	if (!dm_task_run(dmt))
 		goto out;
-	}
+
+	if (!dm_task_get_info(dmt, &dmi))
+		goto out;
 
 	if (!dmi.exists) {
 		r = -ENODEV;

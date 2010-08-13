@@ -293,7 +293,7 @@ static void LuksOpen(void)
 
 static void query_device(void)
 {
-	struct crypt_options co = {. icb = &cmd_icb };
+	struct crypt_options co = {.icb = &cmd_icb };
 
 	co.name = CDEVICE_WRONG;
 	EQ_(crypt_query_device(&co), 0);
@@ -313,7 +313,7 @@ static void query_device(void)
 static void remove_device(void)
 {
 	int fd;
-	struct crypt_options co = {. icb = &cmd_icb };
+	struct crypt_options co = {.icb = &cmd_icb };
 
 	co.name = CDEVICE_WRONG;
 	EQ_(crypt_remove_device(&co), -ENODEV);
