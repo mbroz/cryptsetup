@@ -4,6 +4,7 @@
 	* Switch to 1MiB default alignment of data.
 	  For more info see https://bugzilla.redhat.com/show_bug.cgi?id=621684
 	* Do not query non-existent device twice (cryptsetup status /dev/nonexistent).
+	* Check if requested hash is supported before writing LUKS header.
 
 2010-07-28  Arno Wagner <arno@wagner.name>
 	* Add FAQ (Frequently Asked Questions) file to distribution.

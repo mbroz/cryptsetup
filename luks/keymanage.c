@@ -439,6 +439,11 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	if (alignPayload == 0)
 		alignPayload = DEFAULT_DISK_ALIGNMENT / SECTOR_SIZE;
 
+	if (PBKDF2_HMAC_ready(hashSpec) < 0) {
+		log_err(ctx, _("Requested LUKS hash %s is not supported.\n"), hashSpec);
+		return -EINVAL;
+	}
+
 	memset(header,0,sizeof(struct luks_phdr));
 
 	/* Set Magic */

@@ -761,6 +761,10 @@ static void NonFIPSAlg(void)
 	}
 	OK_(crypt_init(&cd, DEVICE_2));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+
+	params.hash = "md5";
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params),
+	      "MD5 unsupported, too short");
 	crypt_free(cd);
 }
 

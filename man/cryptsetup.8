@@ -140,7 +140,8 @@ For \fIluksFormat\fR action specifies hash used in LUKS key setup scheme and vol
 
 \fBWARNING:\fR setting hash other than \fBsha1\fR causes LUKS device incompatible with older version of cryptsetup.
 
-The hash string is passed to libgcrypt, so all hashes accepted by gcrypt are supported.
+The hash string is passed to libgcrypt, so all hash algorithms are supported
+(for \fIluksFormat\fR algorithm must provide at least 20 byte long hash).
 Default is set during compilation, compatible values with old version of cryptsetup are
 \fB"ripemd160"\fR for \fIcreate\fR action and \fB"sha1"\fR for \fIluksFormat\fR.
 
