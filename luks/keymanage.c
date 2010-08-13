@@ -95,7 +95,7 @@ int LUKS_hdr_backup(
 		return -EINVAL;
 	}
 
-	r = LUKS_read_phdr(device, hdr, 0, ctx);
+	r = LUKS_read_phdr(device, hdr, 1, ctx);
 	if (r)
 		return r;
 
