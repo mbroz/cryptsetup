@@ -21,16 +21,24 @@ A. Contributors
   device, ...). The latest version should usually be available at
   http://code.google.com/p/cryptsetup/wiki/FrequentlyAskedQuestions
 
+  ATTENTION: If you are going to read just one thing, make it the
+  section on Backup and Data Recovery. By far the most questions on
+  the cryptsetup mailing list are from people that just managed to
+  somehow format or overwrite the start of their LUKS partitions.
+  Usually, there is nothing that can be done to help these poor souls
+  recover their data. Make sure you understand the problem and
+  limitations imposed by the LUKS security model BEFORE you face such
+  a disaster!
+
 
   * Who wrote this?
 
-  Current FAQ maintainer is Arno Wagner <arno@wagner.name>. Wherever
-  contributions are from other people, their name should be included
-  in brackets with the respective article. If you want to contribute,
-  send your article, including a descriptive headline, to the
-  maintainer, or the dm-crypt mailing list with something like "FAQ
-  ..." in the subject. Please note that by contributing to this FAQ,
-  you accept the license described below.
+  Current FAQ maintainer is Arno Wagner <arno@wagner.name>. Other
+  contributors are listed at the end. If you want to contribute, send
+  your article, including a descriptive headline, to the maintainer,
+  or the dm-crypt mailing list with something like "FAQ ..." in the
+  subject. Please note that by contributing to this FAQ, you accept
+  the license described below.
 
   This work is under the "Attribution-Share Alike 3.0 Unported"
   license, which means distribution is unlimited, you may create
@@ -66,7 +74,7 @@ A. Contributors
   * How do I use LUKS with a loop-device?
 
   Just the same as with any block device. If you want, for example,
-  to use a 100MB file as LUKS container, do something like this:
+  to use a 100MiB file as LUKS container, do something like this:
 
       head -c 100M /dev/zero > luksfile   # create empty file
       losetup /dev/loop0 luksfile         # map luksfile to /dev/loop0
@@ -148,6 +156,11 @@ A. Contributors
   Personally, I have several instances of ext3 on dm-crypt and have
   not noticed any specific issues so far.
 
+  Update: I did run into frequent small freezes (1-2 sec) when putting
+  a vmware image on ext3 over dm-crypt. This does indicate that the
+  transactional guarantees are in place, but at a cost. When I went
+  back to ext2, the problem went away.
+
 
   * Can I use LUKS or cryptsetup with a more secure (external) medium
   for key storage, e.g. TPM or a smartcard?
@@ -174,7 +187,8 @@ A. Contributors
 
   You also need to be aware of size-based limitations. The one
   currently relevant is that aes-xts-plain should not be used for
-  encrypted container sizes larger than 2TB.
+  encrypted container sizes larger than 2TiB. Use aes-xts-plain64
+  for that.
 
 
 3. Common Problems 
@@ -331,6 +345,11 @@ A. Contributors
   data not actually being deleted at all during overwrites.
 
 
+  * What about backup? Does it compromise security?
+
+  That depends. See next section.
+
+
   * Why was the default aes-cbc-plain replaced with aes-cbc-essiv?
 
   The problem is that cbc-plain has a fingerprint vulnerability, where
@@ -366,12 +385,12 @@ A. Contributors
 
   However there are modes, like XTS, that are secure with "plain" IV.
   The next limit is that "plain" is 64 bit, with the upper 32 bit set
-  to zero. This means that on volumes larger than 2TB, the IV
+  to zero. This means that on volumes larger than 2TiB, the IV
   repeats, creating a vulnerability that potentially leaks some
   data. To avoid this, use "plain64", which uses the full sector
   number up to 64 bit. Note that "plain64" requires a kernel >=
   2.6.33. Also note that "plain64" is backwards compatible for
-  volume sizes <= 2TB, but not for those > 2TB. Finally, "plain64"
+  volume sizes <= 2TiB, but not for those > 2TiB. Finally, "plain64"
   does not cause any performance penalty compared to "plain".
 
 
@@ -384,25 +403,81 @@ A. Contributors
 
       cryptsetup -c aes-xts-plain luksFormat <device>
  
-  For volumes >2TB and kernels >= 2.6.33 use "plain64" (see FAQ item
-  on "plain" and "plain64"):
+  For volumes >2TiB and kernels >= 2.6.33 use "plain64" (see FAQ
+  item on "plain" and "plain64"):
 
       cryptsetup -c aes-xts-plain64 luksFormat <device>
  
+  There is a potential security issue with XTS mode and large blocks.
+  LUKS and dm-crypt always use 512B blocks and the issue does not
+  apply.
+
 
 5. Backup and Data Recovery 
 
 
-  * *What happens if I overwrite the start of a LUKS partition or
+  * Does a backup compromise security?
 
-    damage the LUKS header or key-slots?*
+  Depends on how you do it. First, a backup is non-optional with
+  encrypted data just the same way it is with non-encrypted data.
+  Disks do break and they do not care whether they make plain or
+  encrypted data inaccessible.
+
+  However there are risks introduced by backups. For example if you
+  change/disable a key-slot in LUKS, a binary backup of the partition
+  will still have the old key-slot. To deal with this, you have to
+  be able to change the key-slot on the backup as well, or use a
+  different set-up. One option is to have a different passphrase on
+  the backup and to make the backup with both containers open.
+  Another one is to make a backup of the original, opened container to
+  a single file, e.g. with tar, and to encrypt that file with
+  public-key-cryptography, e.g. with GnuPG. You can then keep the
+  secret key in a safe place, because it is only used to decrypt a
+  backup. The key the backup is encrypted with can be stored without
+  special security measures, as long as an attacker cannot replace
+  it with his own key.
+
+  If you use dm-crypt, backup is simpler: As there is no key
+  management, the main risk is that you cannot wipe the backup when
+  wiping the original. However wiping the original for dm-crypt
+  should consist of forgetting the passphrase and that you can do
+  without actual access to the backup.
+
+  In both cases, there is an additional (usually small) risk: An
+  attacker can see how many sectors and which ones have been changed
+  since the backup. This is not possible with the public-key method
+  though.
+
+  My personal advice is to use one USB disk (low value date) or three
+  disks (high value data) in rotating order for backups, and either
+  use different passphrases or keep them easily accessible in case
+  you need to disable a key-slot. If you do network-backup or
+  tape-backup, I strongly recommend to go the public-key path,
+  especially as you typically cannot reliably delete data in these
+  scenarios. (Well, you can burn the tape if it is under your
+  control...)
+
+
+  * What happens if I overwrite the start of a LUKS partition or
+  damage the LUKS header or key-slots?
 
   There are two critical components for decryption: The salt values
   in the header itself and the key-slots. If the salt values are
   overwritten or changed, nothing (in the cryptographically strong
   sense) can be done to access the data, unless there is a backup of
   the LUKS header. If a key-slot is damaged, the data can still be
-  read with a different keys-lot, if one is in use.
+  read with a different key-slot, if there is a remaining undamaged
+  and used key-slot. Note that in order to make a key-slot
+  unrecoverable in a cryptographically strong sense, changing about
+  4-6 bits in random locations of its 128kiB size is quite enough.
+
+
+  * What happens if I (quick) format a LUKS partition?
+
+  I have not tried the different ways to do this, but very likely you
+  will have written a new boot-sector, which in turn overwrites the
+  LUKS header, including the salts. You may also damage the key-slots
+  in part or in full. See also last item.
 
 
   * What does the on-disk structure of dm-crypt look like?
@@ -429,19 +504,20 @@ A. Contributors
   number of anti-forensic stripes and on key block alignment.
 
   With 4000 stripes (the default), each key-slot is a bit less than
-  128kB in size. Due to sector alignment of the key-slot start, that
-  means the key block 0 is at offset 0x1000-0x20400, key block 1 at
-  offset 0x21000-0x40400, and key block 7 at offset 0xc1000-0xe0400.
-  The space to the next full sector address is padded with zeros.
-  Never used key-slots are filled with what the disk originally
-  contained there, a key-slot removed with "luksRemoveKey" or
-  "luksKillSlot" gets filled with 0xff. Start of bulk data (with the
-  default 4000 stripes and 8 key-slots) is at 0x101000, i.e. at
-  1'052'672 bytes, i.e. at 1MiB + 4096 bytes from the start of the
-  partition. This is also the value given by command "luksDump" with
-  "Payload offset: 2056", just multiply by the sector size (512
-  bytes). Incidentally, "luksHeaderBackup" dumps exactly the first
-  1'052'672 bytes to file and "luksHeaderRestore" restores them.
+  128kiB in size. Due to sector alignment of the key-slot start,
+  that means the key block 0 is at offset 0x1000-0x20400, key block
+  1 at offset 0x21000-0x40400, and key block 7 at offset
+  0xc1000-0xe0400. The space to the next full sector address is
+  padded with zeros. Never used key-slots are filled with what the
+  disk originally contained there, a key-slot removed with
+  "luksRemoveKey" or "luksKillSlot" gets filled with 0xff. Start of
+  bulk data (with the default 4000 stripes and 8 key-slots) is at
+  0x101000, i.e. at 1'052'672 bytes, i.e. at 1MiB + 4096 bytes from
+  the start of the partition. This is also the value given by command
+  "luksDump" with "Payload offset: 2056", just multiply by the sector
+  size (512 bytes). Incidentally, "luksHeaderBackup" dumps exactly
+  the first 1'052'672 bytes to file and "luksHeaderRestore" restores
+  them.
 
   The exact specification of the format is here:
   http://code.google.com/p/cryptsetup/wiki/Specification
