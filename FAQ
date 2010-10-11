@@ -3,9 +3,10 @@ Sections
 1. General Questions
 2. Setup
 3. Common Problems
-4. Security Aspects
-5. Backup and Data Recovery
-6. Issues with Specific Versions of cryptsetup
+4. Troubleshooting
+5. Security Aspects
+6. Backup and Data Recovery
+7. Issues with Specific Versions of cryptsetup
 A. Contributors
 
 
@@ -82,6 +83,18 @@ A. Contributors
  
   Afterwards just use /dev/loop0 as a you would use a LUKS partition.
   To unmap the file when done, use "losetup -d /dev/loop0".
+
+
+  * When I add a new key-slot to LUKS, it asks for a passphrase but
+  then complains about there not being a key-slot with that
+  passphrase?
+
+  That is as intended. You are asked a passphrase of an existing
+  key-slot first, before you can enter the passphrase for the new
+  key-slot. Otherwise you could break the encryption by just adding a
+  new key-slot. This way, you have to know the passphrase of one of
+  the already configured key-slots in order to be able to configure a
+  new key-slot.
 
 
   * How do I read a dm-crypt key from file?
@@ -216,7 +229,7 @@ A. Contributors
   * My dm-crypt mapping suddenly stopped when upgrading cryptsetup.
 
   The default cipher, hash or mode may have changed (the mode changed
-  from 1.0.x to 1.1.x). See under "6. Issues With Specific Versions of
+  from 1.0.x to 1.1.x). See under "Issues With Specific Versions of
   cryptsetup".
 
 
@@ -283,7 +296,80 @@ A. Contributors
   flag, see http://bugs.gentoo.org/show_bug.cgi?id=283470
 
 
-4. Security Aspects 
+4. Troubleshooting 
+
+
+  * Can a bad RAM module cause problems?
+
+  LUKS and dm-crypt can give the RAM quite a workout, especially when
+  combined with software RAID. In particular the combination RAID5 +
+  LUKS + XFS seems to uncover RAM problems that never caused obvious
+  problems before. Symptoms vary, but often the problem manifest
+  itself when copying large amounts of data, typically several times
+  larger than your main memory.
+
+  Side note: One thing you should always do on large data movements is
+  to run a verify, for example with the "-d" option of "tar" or by
+  doing a set of MD5 checksums on the source or target with
+
+      find . -type f -exec md5sum \{\} \; > checksum-file
+ 
+  and then a "md5sum -c checksum-file" on the other side. If you get
+  mismatches here, RAM is the primary suspect. A lesser suspect is
+  an overclocked CPU. I have found countless hardware problems in
+  verify runs after copying or making backups. Bit errors are much
+  more common than most people think.
+
+  Some RAM issues are even worse and corrupt structures in one of the
+  layers. This typically results in lockups, CPU state dumps in the
+  system logs, kernel panic or other things. It is quite possible to
+  have the problem with an encrypted device, but not with an
+  otherwise the same unencrypted device. The reason for that is that
+  encryption has an error amplification property: You flip one bit
+  in an encrypted data block, and the decrypted version has half of
+  its bits flipped. This is an important security property for modern
+  ciphers. With the usual modes in cryptsetup (CBC, ESSIV, XTS), you
+  get up to a completely changed 512 byte block per bit error. A
+  corrupt block causes a lot more havoc than the occasionally
+  flipped single bit and can result various obscure errors.
+
+  Note however that a verify run on copying between encrypted or
+  unencrypted devices can also show you corruption when the copying
+  itself did not report any problems. If you find defect RAM, assume
+  all backups and copied data to be suspect, unless you did a verify.
+
+
+  * How do I test RAM?
+
+  First you should know that overclocking often makes memory problems
+  worse. So if you overclock (which I strongly recommend against in a
+  system holding data that has some worth), run the tests with the
+  overclocking active.
+
+  There are two good options. One is Memtest86+ and the other is
+  "memtester" by Charles Cazabon. Memtest86+ requires a reboot and
+  then takes over the machine, while memtester runs from a
+  root-shell. Both use different testing methods and I have found
+  problems fast with each one that the other needed long to find. I
+  recommend running the following procedure until the first error is
+  found:
+
+  - Run Memtest86+ for one cycle 
+  - Run memterster for one cycle (shut down as many other applications as possible)
+  - Run Memtest86+ for 24h or more
+  - Run memtester for 24h or more  
+  If all that does not produce error messages, your RAM may be sound,
+  but I have had one weak bit that Memtest86+ needed around 60 hours
+  to find. If you can reproduce the original problem reliably, a good
+  additional test may be to remove half of the RAM (if you have more
+  than one module) and try whether the problem is still there and if
+  so, try with the other half. If you just have one module, get a
+  different one and try with that. If you do overclocking, reduce
+  the settings to the most conservative ones available and try with
+  that.
+
+
+5. Security Aspects 
 
 
   * Should I initialize (overwrite) a new LUKS/dm-crypt partition?
@@ -413,7 +499,7 @@ A. Contributors
   apply.
 
 
-5. Backup and Data Recovery 
+6. Backup and Data Recovery 
 
 
   * Does a backup compromise security?
@@ -585,7 +671,7 @@ A. Contributors
   borders).
 
 
-6. Issues with Specific Versions of cryptsetup 
+7. Issues with Specific Versions of cryptsetup 
 
 
   * When using the create command for plain dm-crypt with cryptsetup
