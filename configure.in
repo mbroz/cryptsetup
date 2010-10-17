@@ -66,6 +66,7 @@ AC_SUBST(POPT_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
 dnl ==========================================================================
+saved_LIBS=$LIBS
 
 AC_ARG_ENABLE(shared-library,
 [  --disable-shared-library
@@ -79,22 +80,16 @@ AC_ARG_ENABLE(selinux,
 AC_ARG_ENABLE([udev],AS_HELP_STRING([--disable-udev],[disable udev support]),[], enable_udev=yes)
 
 dnl Try to use pkg-config for devmapper, but fallback to old detection
-saved_LIBS=$LIBS
-if AC_RUN_LOG([pkg-config --exists --print-errors devmapper]); then
-	PKG_PROG_PKG_CONFIG
-	if test x$enable_static = xyes; then
-		PKG_CONFIG="$PKG_CONFIG --static"
-	fi
-	PKG_CHECK_MODULES([DEVMAPPER], [devmapper >= 1.02.03])
-	LIBS="$LIBS $DEVMAPPER_LIBS"
-else
+PKG_CHECK_MODULES([DEVMAPPER], [devmapper >= 1.02.03],, [
 	AC_CHECK_LIB(devmapper, dm_task_set_name,,
-		[AC_MSG_ERROR('You need the device-mapper library')])
+		[AC_MSG_ERROR([You need the device-mapper library.])])
 	AC_CHECK_LIB(devmapper, dm_task_set_message,,
 		[AC_MSG_ERROR([The device-mapper library on your system is too old.])])
 	DEVMAPPER_LIBS=$LIBS
-fi
+])
+LIBS=$saved_LIBS
 
+LIBS="$LIBS $DEVMAPPER_LIBS"
 AC_CHECK_DECLS([DM_UDEV_DISABLE_DISK_RULES_FLAG], [have_cookie=yes], [have_cookie=no], [#include <libdevmapper.h>])
 if test "x$enable_udev" = xyes; then
 	if test "x$have_cookie" = xno; then
@@ -103,27 +98,44 @@ if test "x$enable_udev" = xyes; then
 		AC_DEFINE(USE_UDEV, 1, [Try to use udev synchronisation?])
 	fi
 fi
-
 LIBS=$saved_LIBS
-if test "x$enable_selinux" != xno; then
-	AC_CHECK_LIB(sepol, sepol_bool_set)
-	AC_CHECK_LIB(selinux, is_selinux_enabled)
-	if test x$enable_static = xyes; then
-		SELINUX_STATIC_LIBS=$LIBS
-		# Check if we need -pthread with --enable-static and selinux
-		saved_LIBS2=$LIBS
-		LIBS="$LIBS -static"
-		AC_SEARCH_LIBS([pthread_mutex_lock], [pthread],
-			[test "$ac_cv_search_pthread_mutex_lock" = "none required" || LIB_PTHREAD=-lpthread])
-		LIBS=$saved_LIBS2
-	fi
+
+dnl Magic for cryptsetup.static build.
+if test x$enable_static = xyes; then
+	saved_PKG_CONFIG=$PKG_CONFIG
+	PKG_CONFIG="$PKG_CONFIG --static"
+
+	LIBS="$saved_LIBS $LIBGCRYPT_LIBS -static"
+	AC_CHECK_LIB(gcrypt, gcry_check_version,,
+		AC_MSG_ERROR([Cannot find static gcrypt library.]),
+		[-lgpg-error])
+	LIBGCRYPT_STATIC_LIBS="$LIBGCRYPT_LIBS -lgpg-error"
+
+	LIBS="$saved_LIBS -static"
+	AC_CHECK_LIB(popt, poptGetContext,,
+		AC_MSG_ERROR([Cannot find static popt library.]))
+
+	dnl Try to detect needed device-mapper static libraries, try pkg-config first.
+	LIBS="$saved_LIBS -static"
+	PKG_CHECK_MODULES([DEVMAPPER_STATIC], [devmapper >= 1.02.27],,[
+		DEVMAPPER_STATIC_LIBS=$DEVMAPPER_LIBS
+		if test "x$enable_selinux" != xno; then
+			AC_CHECK_LIB(sepol, sepol_bool_set)
+			AC_CHECK_LIB(selinux, is_selinux_enabled)
+			DEVMAPPER_STATIC_LIBS="$DEVMAPPER_STATIC_LIBS $LIBS"
+		fi
+	])
+	LIBS="$saved_LIBS $DEVMAPPER_STATIC_LIBS"
+	AC_CHECK_LIB(devmapper, dm_task_set_uuid,,
+		AC_MSG_ERROR([Cannot link with static device-mapper library.]))
+
+	LIBS=$saved_LIBS
+	PKG_CONFIG=$saved_PKG_CONFIG
 fi
 
-LIBS=$saved_LIBS
-
-DEVMAPPER_LIBS="$DEVMAPPER_LIBS $LIB_PTHREAD"
 AC_SUBST([DEVMAPPER_LIBS])
-AC_SUBST([SELINUX_STATIC_LIBS])
+AC_SUBST([DEVMAPPER_STATIC_LIBS])
+AC_SUBST([LIBGCRYPT_STATIC_LIBS])
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
 
