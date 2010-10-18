@@ -17,14 +17,9 @@ INCLUDES = \
 
 lib_LTLIBRARIES = libcryptsetup.la
 
-if STATIC_LIBRARY
-_STATIC_LIBRARY = -static
-endif
-
 libcryptsetup_la_DEPENDENCIES = libcryptsetup.sym
 
 libcryptsetup_la_LDFLAGS = \
-	$(_STATIC_LIBRARY) \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-version-info @LIBCRYPTSETUP_VERSION_INFO@
 

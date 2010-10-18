@@ -2,8 +2,10 @@
 	* Add crypt_get_device_name() to API (get underlying device name).
 	* Change detection for static libraries.
 	* Fix pkg-config use in automake scripts.
-	* Build statically linked binary (cryptsetup.static) together with shared build
-	  if --enable-static is specified.
+	* Remove --disable-shared-library switch and handle static library build
+	  by common libtool logic (using --enable-static).
+	* Add --enable-static-cryptsetup option to build cryptsetup.static binary
+	  together with shared build.
 
 2010-08-05  Milan Broz  <mbroz@redhat.com>
 	* Wipe iteration and salt after KillSlot in LUKS header.
