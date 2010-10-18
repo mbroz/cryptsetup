@@ -437,12 +437,14 @@ int crypt_dump(struct crypt_device *cd);
  * cipher - used cipher, e.g. "aes" or NULL otherwise
  * cipher_mode - used cipher mode including IV, e.g. "xts-plain" or NULL otherwise
  * uuid - device UUID or NULL if not set
+ * device_name - underlying device name or NULL if not yet set
  * data_offset - device offset in sectors where real data starts on underlying device)
  * volume_key_size - size (in bytes) of volume key for crypt device
  */
 const char *crypt_get_cipher(struct crypt_device *cd);
 const char *crypt_get_cipher_mode(struct crypt_device *cd);
 const char *crypt_get_uuid(struct crypt_device *cd);
+const char *crypt_get_device_name(struct crypt_device *cd);
 uint64_t crypt_get_data_offset(struct crypt_device *cd);
 int crypt_get_volume_key_size(struct crypt_device *cd);
 

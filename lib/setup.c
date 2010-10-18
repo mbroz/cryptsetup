@@ -2020,6 +2020,9 @@ int crypt_dump(struct crypt_device *cd)
 		else 
 			log_std(cd, "Key Slot %d: DISABLED\n", i);
 	}
+
+	log_std(cd, "DNAME: %s\n", crypt_get_device_name(cd) ?: "");
+
 	return 0;
 }
 
@@ -2051,6 +2054,11 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 		return cd->hdr.uuid;
 
 	return NULL;
+}
+
+const char *crypt_get_device_name(struct crypt_device *cd)
+{
+	return cd->device;
 }
 
 int crypt_get_volume_key_size(struct crypt_device *cd)

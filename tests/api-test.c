@@ -1,7 +1,7 @@
 /*
  * cryptsetup library API check functions
  *
- * Copyright (C) 2009 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2010 Red Hat, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -731,6 +731,7 @@ static void AddDeviceLuks(void)
 	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
 	EQ_(key_size, crypt_get_volume_key_size(cd));
 	EQ_(4096, crypt_get_data_offset(cd));
+	OK_(strcmp(DEVICE_2, crypt_get_device_name(cd)));
 
 	reset_log();
 	crypt_set_log_callback(cd, &new_log, NULL);
