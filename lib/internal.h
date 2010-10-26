@@ -18,8 +18,6 @@
 #define DEFAULT_DISK_ALIGNMENT	1048576 /* 1MiB */
 #define DEFAULT_MEM_ALIGNMENT	4096
 
-#define MAX_TTY_PASSWORD_LEN	512
-
 /* private struct crypt_options flags */
 
 #define	CRYPT_FLAG_FREE_DEVICE	(1 << 24)
@@ -104,10 +102,6 @@ ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offse
 int device_ready(struct crypt_device *cd, const char *device, int mode);
 int get_device_infos(const char *device, struct device_infos *infos, struct crypt_device *cd);
 int wipe_device_header(const char *device, int sectors);
-
-void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
-	     const char *key_file, int timeout, int how2verify,
-	     struct crypt_device *cd);
 
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)

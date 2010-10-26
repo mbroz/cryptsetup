@@ -165,7 +165,6 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 
 static int verify_other_keyslot(struct crypt_device *cd,
 				const char *key_file,
-				unsigned int flags,
 				int keyIndex)
 {
 	struct volume_key *vk;
@@ -174,8 +173,8 @@ static int verify_other_keyslot(struct crypt_device *cd,
 	char *password = NULL;
 	unsigned int passwordLen;
 
-	get_key(_("Enter any remaining LUKS passphrase: "), &password,
-		&passwordLen, 0, key_file, cd->timeout, flags, cd);
+	crypt_get_key(_("Enter any remaining LUKS passphrase: "), &password,
+		      &passwordLen, 0, key_file, cd->timeout, cd->password_verify, cd);
 	if(!password)
 		return -EINVAL;
 
@@ -201,7 +200,6 @@ static int verify_other_keyslot(struct crypt_device *cd,
 
 static int find_keyslot_by_passphrase(struct crypt_device *cd,
 				      const char *key_file,
-				      unsigned int flags,
 				      char *message)
 {
 	struct volume_key *vk;
@@ -209,8 +207,8 @@ static int find_keyslot_by_passphrase(struct crypt_device *cd,
 	unsigned int passwordLen;
 	int keyIndex;
 
-	get_key(message,&password,&passwordLen, 0, key_file,
-		cd->timeout, flags, cd);
+	crypt_get_key(message,&password,&passwordLen, 0, key_file,
+		      cd->timeout, cd->password_verify, cd);
 	if(!password)
 		return -EINVAL;
 
@@ -266,14 +264,14 @@ static int luks_remove_helper(struct crypt_device *cd,
 	int r = -EINVAL;
 
 	if (key_slot == CRYPT_ANY_SLOT) {
-		key_slot = find_keyslot_by_passphrase(cd, key_file, 0,
+		key_slot = find_keyslot_by_passphrase(cd, key_file,
 				_("Enter LUKS passphrase to be deleted: "));
 		if(key_slot < 0) {
 			r = -EPERM;
 			goto out;
 		}
 
-		log_std(cd, _("key slot %d selected for deletion.\n"), key_slot);
+		log_std(cd, _("Key slot %d selected for deletion.\n"), key_slot);
 	}
 
 	ki = crypt_keyslot_status(cd, key_slot);
@@ -298,7 +296,7 @@ static int luks_remove_helper(struct crypt_device *cd,
 	}
 
 	if(verify)
-		r = verify_other_keyslot(cd, other_key_file, 0, key_slot);
+		r = verify_other_keyslot(cd, other_key_file, key_slot);
 	else
 		r = 0;
 
@@ -422,7 +420,7 @@ int crypt_confirm(struct crypt_device *cd, const char *msg)
 static void key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 			      unsigned int *key_len, int force_verify)
 {
-	int r, flags = 0;
+	int r;
 
 	if (cd->password) {
 		*key = crypt_safe_alloc(MAX_TTY_PASSWORD_LEN);
@@ -434,11 +432,9 @@ static void key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 			*key = NULL;
 		} else
 			*key_len = r;
-	} else {
-		if (force_verify || cd->password_verify)
-			flags |= CRYPT_FLAG_VERIFY_IF_POSSIBLE;
-		get_key(msg, key, key_len, 0, NULL, cd->timeout, flags, cd);
-	}
+	} else
+		crypt_get_key(msg, key, key_len, 0, NULL, cd->timeout,
+			      (force_verify || cd->password_verify), cd);
 }
 
 static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslot,
@@ -484,7 +480,7 @@ static void key_from_file(struct crypt_device *cd, char *msg,
 			  char **key, unsigned int *key_len,
 			  const char *key_file, size_t key_size)
 {
-	get_key(msg, key, key_len, key_size, key_file, cd->timeout, 0, cd);
+	crypt_get_key(msg, key, key_len, key_size, key_file, cd->timeout, 0, cd);
 }
 
 static int _crypt_init(struct crypt_device **cd,
@@ -577,8 +573,8 @@ static int crypt_create_and_update_device(struct crypt_options *options, int upd
 	if (r)
 		return r;
 
-	get_key(_("Enter passphrase: "), &key, &keyLen, options->key_size,
-		options->key_file, cd->timeout, options->flags, cd);
+	crypt_get_key(_("Enter passphrase: "), &key, &keyLen, options->key_size,
+		      options->key_file, cd->timeout, cd->password_verify, cd);
 	if (!key)
 		r = -ENOENT;
 	else
@@ -742,8 +738,8 @@ int crypt_luksFormat(struct crypt_options *options)
 		goto out;
 	}
 
-	get_key(_("Enter LUKS passphrase: "), &password, &passwordLen, 0,
-		options->new_key_file, options->timeout, options->flags, cd);
+	crypt_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen, 0,
+		      options->new_key_file, cd->timeout, cd->password_verify, cd);
 
 	if(!password) {
 		r = -EINVAL;
