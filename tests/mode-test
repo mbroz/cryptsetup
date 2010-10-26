@@ -88,6 +88,11 @@ dmcrypt()
 	fi
 }
 
+if [ $(id -u) != 0 ]; then
+	echo "WARNING: You must be root to run this test, test skipped."
+	exit 0
+fi
+
 add_device
 
 # compatibility modes
