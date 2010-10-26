@@ -42,6 +42,8 @@
 /* Any integer values are stored in network byte order on disk and must be
 converted */
 
+struct volume_key;
+
 struct luks_phdr {
 	char		magic[LUKS_MAGIC_L];
 	uint16_t	version;
@@ -71,20 +73,12 @@ struct luks_phdr {
 	char		_padding[432];
 };
 
-struct luks_masterkey {
-	size_t keyLength;
-	char key[];
-};
-
-struct luks_masterkey *LUKS_alloc_masterkey(int keylength, const char *key);
-void LUKS_dealloc_masterkey(struct luks_masterkey *mk);
-struct luks_masterkey *LUKS_generate_masterkey(int keylength);
-int LUKS_verify_master_key(const struct luks_phdr *hdr,
-			   const struct luks_masterkey *mk);
+int LUKS_verify_volume_key(const struct luks_phdr *hdr,
+			   const struct volume_key *vk);
 
 int LUKS_generate_phdr(
 	struct luks_phdr *header,
-	const struct luks_masterkey *mk,
+	const struct volume_key *vk,
 	const char *cipherName,
 	const char *cipherMode,
 	const char *hashSpec,
@@ -132,7 +126,7 @@ int LUKS_set_key(
 	const char *password,
 	size_t passwordLen,
 	struct luks_phdr *hdr,
-	struct luks_masterkey *mk,
+	struct volume_key *vk,
 	uint32_t iteration_time_ms,
 	uint64_t *PBKDF2_per_sec,
 	struct crypt_device *ctx);
@@ -143,7 +137,7 @@ int LUKS_open_key_with_hdr(
 	const char *password,
 	size_t passwordLen,
 	struct luks_phdr *hdr,
-	struct luks_masterkey **mk,
+	struct volume_key **vk,
 	struct crypt_device *ctx);
 
 int LUKS_del_key(

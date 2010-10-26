@@ -46,6 +46,14 @@ struct device_infos {
 	int		readonly;
 };
 
+struct volume_key {
+	size_t keylength;
+	char key[];
+};
+struct volume_key *crypt_alloc_volume_key(unsigned keylength, const char *key);
+struct volume_key *crypt_generate_volume_key(unsigned keylength);
+void crypt_free_volume_key(struct volume_key *mk);
+
 struct crypt_device;
 int crypt_confirm(struct crypt_device *cd, const char *msg);
 

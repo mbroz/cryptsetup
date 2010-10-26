@@ -47,38 +47,6 @@ static inline int round_up_modulo(int x, int m) {
 	return div_round_up(x, m) * m;
 }
 
-struct luks_masterkey *LUKS_alloc_masterkey(int keylength, const char *key)
-{ 
-	struct luks_masterkey *mk=malloc(sizeof(*mk) + keylength);
-	if(NULL == mk) return NULL;
-	mk->keyLength=keylength;
-	if (key)
-		memcpy(&mk->key, key, keylength);
-	return mk;
-}
-
-void LUKS_dealloc_masterkey(struct luks_masterkey *mk)
-{
-	if(NULL != mk) {
-		memset(mk->key,0,mk->keyLength);
-		mk->keyLength=0;
-		free(mk);
-	}
-}
-
-struct luks_masterkey *LUKS_generate_masterkey(int keylength)
-{
-	struct luks_masterkey *mk=LUKS_alloc_masterkey(keylength, NULL);
-	if(NULL == mk) return NULL;
-
-	int r = getRandom(mk->key,keylength);
-	if(r < 0) {
-		LUKS_dealloc_masterkey(mk);
-		return NULL;
-	}
-	return mk;
-}
-
 int LUKS_hdr_backup(
 	const char *backup_file,
 	const char *device,
@@ -420,7 +388,7 @@ static int LUKS_PBKDF2_performance_check(const char *hashSpec,
 }
 
 int LUKS_generate_phdr(struct luks_phdr *header,
-		       const struct luks_masterkey *mk,
+		       const struct volume_key *vk,
 		       const char *cipherName, const char *cipherMode, const char *hashSpec,
 		       const char *uuid, unsigned int stripes,
 		       unsigned int alignPayload,
@@ -430,7 +398,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       struct crypt_device *ctx)
 {
 	unsigned int i=0;
-	unsigned int blocksPerStripeSet = div_round_up(mk->keyLength*stripes,SECTOR_SIZE);
+	unsigned int blocksPerStripeSet = div_round_up(vk->keylength*stripes,SECTOR_SIZE);
 	int r;
 	char luksMagic[] = LUKS_MAGIC;
 	uuid_t partitionUuid;
@@ -453,7 +421,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	strncpy(header->cipherMode,cipherMode,LUKS_CIPHERMODE_L);
 	strncpy(header->hashSpec,hashSpec,LUKS_HASHSPEC_L);
 
-	header->keyBytes=mk->keyLength;
+	header->keyBytes=vk->keylength;
 
 	LUKS_fix_header_compatible(header);
 
@@ -475,7 +443,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	header->mkDigestIterations = at_least((uint32_t)(*PBKDF2_per_sec/1024) * iteration_time_ms,
 					      LUKS_MKD_ITERATIONS_MIN);
 
-	r = PBKDF2_HMAC(header->hashSpec,mk->key,mk->keyLength,
+	r = PBKDF2_HMAC(header->hashSpec,vk->key,vk->keylength,
 			header->mkDigestSalt,LUKS_SALTSIZE,
 			header->mkDigestIterations,
 			header->mkDigest,LUKS_DIGESTSIZE);
@@ -514,7 +482,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 
 int LUKS_set_key(const char *device, unsigned int keyIndex,
 		 const char *password, size_t passwordLen,
-		 struct luks_phdr *hdr, struct luks_masterkey *mk,
+		 struct luks_phdr *hdr, struct volume_key *vk,
 		 uint32_t iteration_time_ms,
 		 uint64_t *PBKDF2_per_sec,
 		 struct crypt_device *ctx)
@@ -557,7 +525,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 	r = getRandom(hdr->keyblock[keyIndex].passwordSalt, LUKS_SALTSIZE);
 	if(r < 0) return r;
 
-//	assert((mk->keyLength % TWOFISH_BLOCKSIZE) == 0); FIXME
+//	assert((vk->keylength % TWOFISH_BLOCKSIZE) == 0); FIXME
 
 	r = PBKDF2_HMAC(hdr->hashSpec, password,passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,
@@ -566,15 +534,15 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 	if(r < 0) return r;
 
 	/*
-	 * AF splitting, the masterkey stored in mk->key is splitted to AfMK
+	 * AF splitting, the masterkey stored in vk->key is splitted to AfMK
 	 */
-	AFEKSize = hdr->keyblock[keyIndex].stripes*mk->keyLength;
+	AFEKSize = hdr->keyblock[keyIndex].stripes*vk->keylength;
 	AfKey = (char *)malloc(AFEKSize);
 	if(AfKey == NULL) return -ENOMEM;
 
 	log_dbg("Using hash %s for AF in key slot %d, %d stripes",
 		hdr->hashSpec, keyIndex, hdr->keyblock[keyIndex].stripes);
-	r = AF_split(mk->key,AfKey,mk->keyLength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
+	r = AF_split(vk->key,AfKey,vk->keylength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
 	if(r < 0) goto out;
 
 	log_dbg("Updating key slot %d [0x%04x] area on device %s.", keyIndex,
@@ -607,13 +575,13 @@ out:
 	return r;
 }
 
-/* Check whether a master key is invalid. */
-int LUKS_verify_master_key(const struct luks_phdr *hdr,
-			   const struct luks_masterkey *mk)
+/* Check whether a volume key is invalid. */
+int LUKS_verify_volume_key(const struct luks_phdr *hdr,
+			   const struct volume_key *vk)
 {
 	char checkHashBuf[LUKS_DIGESTSIZE];
 
-	if (PBKDF2_HMAC(hdr->hashSpec, mk->key, mk->keyLength,
+	if (PBKDF2_HMAC(hdr->hashSpec, vk->key, vk->keylength,
 			hdr->mkDigestSalt, LUKS_SALTSIZE,
 			hdr->mkDigestIterations, checkHashBuf,
 			LUKS_DIGESTSIZE) < 0)
@@ -631,7 +599,7 @@ static int LUKS_open_key(const char *device,
 		  const char *password,
 		  size_t passwordLen,
 		  struct luks_phdr *hdr,
-		  struct luks_masterkey *mk,
+		  struct volume_key *vk,
 		  struct crypt_device *ctx)
 {
 	crypt_keyslot_info ki = LUKS_keyslot_info(hdr, keyIndex);
@@ -645,9 +613,9 @@ static int LUKS_open_key(const char *device,
 	if (ki < CRYPT_SLOT_ACTIVE)
 		return -ENOENT;
 
-	// assert((mk->keyLength % TWOFISH_BLOCKSIZE) == 0); FIXME
+	// assert((vk->keylength % TWOFISH_BLOCKSIZE) == 0); FIXME
 
-	AFEKSize = hdr->keyblock[keyIndex].stripes*mk->keyLength;
+	AFEKSize = hdr->keyblock[keyIndex].stripes*vk->keylength;
 	AfKey = (char *)malloc(AFEKSize);
 	if(AfKey == NULL) return -ENOMEM;
 
@@ -671,10 +639,10 @@ static int LUKS_open_key(const char *device,
 		goto out;
 	}
 
-	r = AF_merge(AfKey,mk->key,mk->keyLength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
+	r = AF_merge(AfKey,vk->key,vk->keylength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
 	if(r < 0) goto out;
 
-	r = LUKS_verify_master_key(hdr, mk);
+	r = LUKS_verify_volume_key(hdr, vk);
 	if (r >= 0)
 		log_verbose(ctx, _("Key slot %d unlocked.\n"), keyIndex);
 out:
@@ -687,19 +655,19 @@ int LUKS_open_key_with_hdr(const char *device,
 			   const char *password,
 			   size_t passwordLen,
 			   struct luks_phdr *hdr,
-			   struct luks_masterkey **mk,
+			   struct volume_key **vk,
 			   struct crypt_device *ctx)
 {
 	unsigned int i;
 	int r;
 
-	*mk = LUKS_alloc_masterkey(hdr->keyBytes, NULL);
+	*vk = crypt_alloc_volume_key(hdr->keyBytes, NULL);
 
 	if (keyIndex >= 0)
-		return LUKS_open_key(device, keyIndex, password, passwordLen, hdr, *mk, ctx);
+		return LUKS_open_key(device, keyIndex, password, passwordLen, hdr, *vk, ctx);
 
 	for(i = 0; i < LUKS_NUMKEYS; i++) {
-		r = LUKS_open_key(device, i, password, passwordLen, hdr, *mk, ctx);
+		r = LUKS_open_key(device, i, password, passwordLen, hdr, *vk, ctx);
 		if(r == 0)
 			return i;
 

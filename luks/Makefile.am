@@ -9,7 +9,6 @@ libluks_la_SOURCES = \
 	pbkdf.c \
 	keymanage.c \
 	keyencryption.c \
-	hexprint.c \
 	random.c \
 	pbkdf.h \
 	random.h \
