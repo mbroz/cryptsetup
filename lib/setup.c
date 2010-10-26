@@ -94,7 +94,7 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 			 const char *key_file, size_t key_size,
 			 const char *pass, size_t passLen)
 {
-	char *key = safe_alloc(key_size);
+	char *key = crypt_safe_alloc(key_size);
 	memset(key, 0, key_size);
 
 	/* key is coming from binary file */
@@ -102,7 +102,7 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 		if(passLen < key_size) {
 			log_err(cd, _("Cannot not read %d bytes from key file %s.\n"),
 				key_size, key_file);
-			safe_free(key);
+			crypt_safe_free(key);
 			return NULL;
 		}
 		memcpy(key, pass, key_size);
@@ -114,7 +114,7 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 		if (hash(NULL, hash_name, key, key_size, pass, passLen) < 0) {
 			log_err(cd, _("Key processing error (using hash algorithm %s).\n"),
 				hash_name);
-			safe_free(key);
+			crypt_safe_free(key);
 			return NULL;
 		}
 	} else if (passLen > key_size) {
@@ -190,7 +190,7 @@ static int verify_other_keyslot(struct crypt_device *cd,
 	if (ki == CRYPT_SLOT_ACTIVE)
 		LUKS_keyslot_set(&cd->hdr, keyIndex, 1);
 	crypt_free_volume_key(vk);
-	safe_free(password);
+	crypt_safe_free(password);
 
 	if (openedIndex < 0)
 		return -EPERM;
@@ -217,7 +217,7 @@ static int find_keyslot_by_passphrase(struct crypt_device *cd,
 	keyIndex = LUKS_open_key_with_hdr(cd->device, CRYPT_ANY_SLOT, password,
 					  passwordLen, &cd->hdr, &vk, cd);
 	crypt_free_volume_key(vk);
-	safe_free(password);
+	crypt_safe_free(password);
 
 	return keyIndex;
 }
@@ -365,7 +365,7 @@ static int create_device_helper(struct crypt_device *cd,
 			     key_size, processed_key, read_only, reload);
 
 	free(dm_cipher);
-	safe_free(processed_key);
+	crypt_safe_free(processed_key);
 	return r;
 }
 
@@ -425,12 +425,12 @@ static void key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 	int r, flags = 0;
 
 	if (cd->password) {
-		*key = safe_alloc(MAX_TTY_PASSWORD_LEN);
+		*key = crypt_safe_alloc(MAX_TTY_PASSWORD_LEN);
 		if (*key)
 			return;
 		r = cd->password(msg, *key, (size_t)key_len, cd->password_usrptr);
 		if (r < 0) {
-			safe_free(*key);
+			crypt_safe_free(*key);
 			*key = NULL;
 		} else
 			*key_len = r;
@@ -466,7 +466,7 @@ static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslo
 
 		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
 					   passphrase_size_read, &cd->hdr, vk, cd);
-		safe_free(passphrase_read);
+		crypt_safe_free(passphrase_read);
 		passphrase_read = NULL;
 	} while (r == -EPERM && (--tries > 0));
 
@@ -588,7 +588,7 @@ static int crypt_create_and_update_device(struct crypt_options *options, int upd
 			options->offset, NULL, options->flags & CRYPT_FLAG_READONLY,
 			options->flags, update);
 
-	safe_free(key);
+	crypt_safe_free(key);
 	crypt_free(cd);
 	return r;
 }
@@ -651,7 +651,7 @@ int crypt_resize_device(struct crypt_options *options)
 			     crypt_get_uuid(cd), size, skip, offset,
 			     key_size, key, read_only, 1);
 out:
-	safe_free(key);
+	crypt_safe_free(key);
 	free(cipher);
 	if (options->device == device)
 		options->device = NULL;
@@ -760,7 +760,7 @@ int crypt_luksFormat(struct crypt_options *options)
 					    password, passwordLen);
 out:
 	crypt_free(cd);
-	safe_free(password);
+	crypt_safe_free(password);
 	return (r < 0) ? r : 0;
 }
 
@@ -1375,7 +1375,7 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 	else {
 		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
 					   passphrase_size_read, &cd->hdr, &vk, cd);
-		safe_free(passphrase_read);
+		crypt_safe_free(passphrase_read);
 	}
 
 	if (r >= 0) {
@@ -1440,7 +1440,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 
 		r = LUKS_open_key_with_hdr(cd->device, CRYPT_ANY_SLOT, password,
 					   passwordLen, &cd->hdr, &vk, cd);
-		safe_free(password);
+		crypt_safe_free(password);
 	}
 
 	if(r < 0)
@@ -1465,7 +1465,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	r = 0;
 out:
 	if (!new_passphrase)
-		safe_free(new_password);
+		crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
 	return r ?: keyslot;
 }
@@ -1517,7 +1517,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
 
 		r = LUKS_open_key_with_hdr(cd->device, CRYPT_ANY_SLOT, password, passwordLen,
 					   &cd->hdr, &vk, cd);
-		safe_free(password);
+		crypt_safe_free(password);
 	}
 
 	if(r < 0)
@@ -1539,7 +1539,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
 	r = LUKS_set_key(cd->device, keyslot, new_password, new_passwordLen,
 			 &cd->hdr, vk, cd->iteration_time, &cd->PBKDF2_per_sec, cd);
 out:
-	safe_free(new_password);
+	crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
 }
@@ -1591,7 +1591,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 			 &cd->hdr, vk, cd->iteration_time, &cd->PBKDF2_per_sec, cd);
 out:
 	if (new_password)
-		safe_free(new_password);
+		crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
 	return r ?: keyslot;
 }
@@ -1718,7 +1718,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 	else {
 		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
 					   passphrase_size_read, &cd->hdr, &vk, cd);
-		safe_free(passphrase_read);
+		crypt_safe_free(passphrase_read);
 	}
 
 	if (r >= 0) {
@@ -1844,7 +1844,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
 		}
 		memcpy(volume_key, processed_key, key_len);
 		*volume_key_size = key_len;
-		safe_free(processed_key);
+		crypt_safe_free(processed_key);
 		return 0;
 	}
 

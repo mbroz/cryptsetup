@@ -425,7 +425,7 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
  *
  * Returns 0 on success or negative errno value otherwise.
  *
- * @cd - crypt device handle, can be NULL
+ * @cd - crypt device handle
  */
 int crypt_dump(struct crypt_device *cd);
 

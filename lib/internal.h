@@ -61,10 +61,6 @@ int crypt_confirm(struct crypt_device *cd, const char *msg);
 void set_error_va(const char *fmt, va_list va);
 void set_error(const char *fmt, ...);
 const char *get_error(void);
-void *safe_alloc(size_t size);
-void safe_free(void *data);
-void *safe_realloc(void *data, size_t size);
-char *safe_strdup(const char *s);
 void set_debug_level(int level);
 
 int init_crypto(struct crypt_device *ctx);

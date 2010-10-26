@@ -18,11 +18,6 @@
 #include "libcryptsetup.h"
 #include "internal.h"
 
-struct safe_allocation {
-	size_t	size;
-	char	data[1];
-};
-
 static char *error=NULL;
 
 void set_error_va(const char *fmt, va_list va)
@@ -59,68 +54,6 @@ void set_error(const char *fmt, ...)
 const char *get_error(void)
 {
 	return error;
-}
-
-void *safe_alloc(size_t size)
-{
-	struct safe_allocation *alloc;
-
-	if (!size)
-		return NULL;
-
-	alloc = malloc(size + offsetof(struct safe_allocation, data));
-	if (!alloc)
-		return NULL;
-
-	alloc->size = size;
-
-	return &alloc->data;
-}
-
-void safe_free(void *data)
-{
-	struct safe_allocation *alloc;
-
-	if (!data)
-		return;
-
-	alloc = data - offsetof(struct safe_allocation, data);
-
-	memset(data, 0, alloc->size);
-
-	alloc->size = 0x55aa55aa;
-	free(alloc);
-}
-
-void *safe_realloc(void *data, size_t size)
-{
-	void *new_data;
-
-	new_data = safe_alloc(size);
-
-	if (new_data && data) {
-		struct safe_allocation *alloc;
-
-		alloc = data - offsetof(struct safe_allocation, data);
-
-		if (size > alloc->size)
-			size = alloc->size;
-
-		memcpy(new_data, data, size);
-	}
-
-	safe_free(data);
-	return new_data;
-}
-
-char *safe_strdup(const char *s)
-{
-	char *s2 = safe_alloc(strlen(s) + 1);
-
-	if (!s2)
-		return NULL;
-
-	return strcpy(s2, s);
 }
 
 static int get_alignment(int fd)
@@ -423,7 +356,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 	if(isatty(fd)) {
 		int i;
 
-		pass = safe_alloc(MAX_TTY_PASSWORD_LEN);
+		pass = crypt_safe_alloc(MAX_TTY_PASSWORD_LEN);
 		if (!pass || (i = interactive_pass(prompt, pass, MAX_TTY_PASSWORD_LEN, timeout))) {
 			log_err(cd, _("Error reading passphrase from terminal.\n"));
 			goto out_err;
@@ -473,7 +406,7 @@ void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		for(i = 0; read_horizon == 0 || i < read_horizon; i++) {
 			if(i >= buflen - 1) {
 				buflen += 128;
-				pass = safe_realloc(pass, buflen);
+				pass = crypt_safe_realloc(pass, buflen);
 				if (!pass) {
 					log_err(cd, _("Out of memory while reading passphrase.\n"));
 					goto out_err;
@@ -507,7 +440,7 @@ out_err:
 	if(fd >= 0 && fd != STDIN_FILENO)
 		close(fd);
 	if(pass)
-		safe_free(pass);
+		crypt_safe_free(pass);
 	*key = NULL;
 	*passLen = 0;
 }

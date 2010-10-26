@@ -68,7 +68,7 @@ int LUKS_hdr_backup(
 		return r;
 
 	buffer_size = hdr->payloadOffset << SECTOR_SHIFT;
-	buffer = safe_alloc(buffer_size);
+	buffer = crypt_safe_alloc(buffer_size);
 	if (!buffer || buffer_size < LUKS_ALIGN_KEYSLOTS) {
 		r = -ENOMEM;
 		goto out;
@@ -109,7 +109,7 @@ int LUKS_hdr_backup(
 out:
 	if (devfd != -1)
 		close(devfd);
-	safe_free(buffer);
+	crypt_safe_free(buffer);
 	return r;
 }
 
@@ -139,7 +139,7 @@ int LUKS_hdr_restore(
 		goto out;
 	}
 
-	buffer = safe_alloc(buffer_size);
+	buffer = crypt_safe_alloc(buffer_size);
 	if (!buffer) {
 		r = -ENOMEM;
 		goto out;
@@ -206,7 +206,7 @@ int LUKS_hdr_restore(
 out:
 	if (devfd != -1)
 		close(devfd);
-	safe_free(buffer);
+	crypt_safe_free(buffer);
 	return r;
 }
 

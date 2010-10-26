@@ -6,4 +6,8 @@
 
 int crypt_parse_name_and_mode(const char *s, char *cipher, char *cipher_mode);
 
+void *crypt_safe_alloc(size_t size);
+void crypt_safe_free(void *data);
+void *crypt_safe_realloc(void *data, size_t size);
+
 #endif /* _UTILS_CRYPT_H */
