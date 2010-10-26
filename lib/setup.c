@@ -126,31 +126,6 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 	return key;
 }
 
-int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode)
-{
-/* Token content stringification, see info cpp/stringification */
-#define str(s) #s
-#define xstr(s) str(s)
-#define scanpattern1 "%" xstr(LUKS_CIPHERNAME_L) "[^-]-%" xstr(LUKS_CIPHERMODE_L)  "s"
-#define scanpattern2 "%" xstr(LUKS_CIPHERNAME_L) "[^-]"
-
-	int r;
-
-	if(sscanf(nameAndMode,scanpattern1, name, mode) != 2) {
-		if((r = sscanf(nameAndMode,scanpattern2,name)) == 1)
-			strncpy(mode,"cbc-plain",10);
-		else
-			return -EINVAL;
-	}
-
-	return 0;
-
-#undef scanpattern1
-#undef scanpattern2
-#undef str
-#undef xstr
-}
-
 static int isPLAIN(const char *type)
 {
 	return (type && !strcmp(CRYPT_PLAIN, type));
@@ -751,7 +726,7 @@ int crypt_luksFormat(struct crypt_options *options)
 	};
 	int r;
 
-	r = parse_into_name_and_mode(options->cipher, cipherName, cipherMode);
+	r = crypt_parse_name_and_mode(options->cipher, cipherName, cipherMode);
 	if(r < 0) {
 		log_err(cd, _("No known cipher specification pattern detected.\n"));
 		return r;

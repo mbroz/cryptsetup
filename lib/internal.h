@@ -11,6 +11,7 @@
 #include <inttypes.h>
 
 #include "nls.h"
+#include "utils_crypt.h"
 
 #define SECTOR_SHIFT		9
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
@@ -73,8 +74,6 @@ int hash(const char *backend_name, const char *hash_name,
          char *result, size_t size,
          const char *passphrase, size_t sizep);
 
-void hexprint(char *d, int n);
-
 /* Device mapper backend */
 const char *dm_get_dir(void);
 int dm_init(struct crypt_device *context, int check_kernel);
@@ -113,8 +112,6 @@ int wipe_device_header(const char *device, int sectors);
 void get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 	     const char *key_file, int timeout, int how2verify,
 	     struct crypt_device *cd);
-
-int parse_into_name_and_mode(const char *nameAndMode, char *name, char *mode);
 
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)

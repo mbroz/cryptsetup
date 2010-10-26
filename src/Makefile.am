@@ -10,6 +10,7 @@ INCLUDES = \
 	-D_GNU_SOURCE
 
 cryptsetup_SOURCES = \
+	$(top_builddir)/lib/utils_crypt.c	\
 	cryptsetup.c				\
 	cryptsetup.h
 

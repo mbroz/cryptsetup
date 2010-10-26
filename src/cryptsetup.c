@@ -348,11 +348,11 @@ static int _action_luksFormat_useMK()
 		.data_alignment = opt_align_payload,
 	};
 
-	if (sscanf(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
-		   "%" MAX_CIPHER_LEN_STR "[^-]-%" MAX_CIPHER_LEN_STR "s",
-		   cipher, cipher_mode) != 2) {
+	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
+				      cipher, cipher_mode);
+	if (r < 0) {
 		log_err("No known cipher specification pattern detected.\n");
-		return -EINVAL;
+		return r;
 	}
 
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8;

@@ -1,0 +1,110 @@
+#!/bin/bash
+
+#
+# Test mode compatibility, check input + kernel and cryptsetup cipher status
+#
+# FIXME: add checkum test of data
+#
+
+CRYPTSETUP="../src/cryptsetup.static"
+DEV_NAME=dmc_test
+LOOPDEV=/dev/loop5
+HEADER_IMG=mode-test.img
+PASSWORD=3xrododenron
+
+# cipher-chainmode-ivopts:ivmode
+CIPHERS="aes twofish serpent"
+MODES="cbc lrw xts"
+IVMODES="null benbi plain plain64 essiv:sha256"
+
+cleanup() {
+	for dev in $(dmsetup status --target crypt | sed s/\:\ .*// | grep "^$DEV_NAME"_); do
+		dmsetup remove $dev
+	done
+	udevadm settle 2>/dev/null 2>&1
+	sleep 2
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	losetup -d $LOOPDEV >/dev/null 2>&1
+	rm -f $HEADER_IMG >/dev/null 2>&1
+}
+
+fail()
+{
+	[ -n "$1" ] && echo "$1"
+	cleanup
+	exit 100
+}
+
+add_device() {
+	dd if=/dev/zero of=$HEADER_IMG bs=1M count=6 >/dev/null 2>&1
+	sync
+	losetup $LOOPDEV $HEADER_IMG >/dev/null 2>&1
+	dmsetup create $DEV_NAME --table "0 10240 linear $LOOPDEV 8" >/dev/null 2>&1
+}
+
+dmcrypt_check() # device outstring
+{
+	X=$(dmsetup table $1 2>/dev/null | cut -d' '  -f 4)
+	if [ $X = $2 ] ; then
+		echo -n "OK]"
+	else
+		echo -n "FAIL]"
+		echo " Expecting $2 got $X."
+		fail
+	fi
+
+	X=$($CRYPTSETUP status $1 | grep cipher | sed s/\.\*cipher:\\s*//)
+	if [ $X = $2 ] ; then
+		echo " [OK]"
+	else
+		echo " [FAIL]"
+		echo " Expecting $2 got $X."
+		fail
+	fi
+}
+
+dmcrypt()
+{
+	OUT=$2
+	[ -z "$OUT" ] && OUT=$1
+
+	echo -n -e "TESTING(PLAIN): $1 ["
+	echo $PASSWORD | $CRYPTSETUP create -c $1 -s 256 "$DEV_NAME"_"$1" /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+		dmcrypt_check "$DEV_NAME"_"$1" $OUT
+		dmsetup remove "$DEV_NAME"_"$1" >/dev/null 2>&1
+	else
+		echo "SKIPPED]"
+	fi
+
+	echo -n -e "TESTING(LUKS): $1 ["
+	echo $PASSWORD | $CRYPTSETUP luksFormat -i 1 -c $1 -s 256 /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+		echo $PASSWORD | $CRYPTSETUP luksOpen /dev/mapper/$DEV_NAME "$DEV_NAME"_"$1" >/dev/null 2>&1
+		dmcrypt_check "$DEV_NAME"_"$1" $OUT
+		dmsetup remove "$DEV_NAME"_"$1" >/dev/null 2>&1
+	else
+		echo "SKIPPED]"
+	fi
+}
+
+add_device
+
+# compatibility modes
+dmcrypt aes aes-cbc-plain
+dmcrypt aes-plain aes-cbc-plain
+
+# codebook doesn't support IV at all
+for cipher in $CIPHERS ; do
+	dmcrypt "$cipher-ecb"
+done
+
+for cipher in $CIPHERS ; do
+	for mode in $MODES ; do
+		for ivmode in $IVMODES ; do
+			dmcrypt "$cipher-$mode-$ivmode"
+		done
+	done
+done
+
+cleanup
