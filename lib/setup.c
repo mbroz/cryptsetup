@@ -907,10 +907,9 @@ int crypt_isLuks(struct crypt_options *options)
 
 	log_dbg("Check device %s for LUKS header.", options->device);
 
-	if (init_crypto()) {
-		log_err(cd, _("Cannot initialize crypto backend.\n"));
-		return -ENOSYS;
-	}
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
 
 	r = crypt_init(&cd, options->device);
 	if (r < 0)
@@ -1155,11 +1154,9 @@ int crypt_format(struct crypt_device *cd,
 	if (!type)
 		return -EINVAL;
 
-	/* Some hash functions need initialized gcrypt library */
-	if (init_crypto()) {
-		log_err(cd, _("Cannot initialize crypto backend.\n"));
-		return -ENOSYS;
-	}
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
 
 	if (isPLAIN(type))
 		r = _crypt_format_plain(cd, cipher, cipher_mode,
@@ -1200,11 +1197,9 @@ int crypt_load(struct crypt_device *cd,
 	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
 
-	/* Some hash functions need initialized gcrypt library */
-	if (init_crypto()) {
-		log_err(cd, _("Cannot initialize crypto backend.\n"));
-		return -ENOSYS;
-	}
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
 
 	r = LUKS_read_phdr(cd->device, &hdr, 1, cd);
 
@@ -1222,14 +1217,14 @@ int crypt_header_backup(struct crypt_device *cd,
 			const char *requested_type,
 			const char *backup_file)
 {
+	int r;
+
 	if ((requested_type && !isLUKS(requested_type)) || !backup_file)
 		return -EINVAL;
 
-	/* Some hash functions need initialized gcrypt library */
-	if (init_crypto()) {
-		log_err(cd, _("Cannot initialize crypto backend.\n"));
-		return -ENOSYS;
-	}
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
 
 	log_dbg("Requested header backup of device %s (%s) to "
 		"file %s.", cd->device, requested_type, backup_file);
@@ -1241,14 +1236,15 @@ int crypt_header_restore(struct crypt_device *cd,
 			 const char *requested_type,
 			 const char *backup_file)
 {
+	int r;
+
 	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
 
 	/* Some hash functions need initialized gcrypt library */
-	if (init_crypto()) {
-		log_err(cd, _("Cannot initialize crypto backend.\n"));
-		return -ENOSYS;
-	}
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
 
 	log_dbg("Requested header restore to device %s (%s) from "
 		"file %s.", cd->device, requested_type, backup_file);

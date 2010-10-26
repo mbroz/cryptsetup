@@ -66,7 +66,7 @@ void *safe_realloc(void *data, size_t size);
 char *safe_strdup(const char *s);
 void set_debug_level(int level);
 
-int init_crypto(void);
+int init_crypto(struct crypt_device *ctx);
 struct hash_backend *get_hash_backend(const char *name);
 void put_hash_backend(struct hash_backend *backend);
 int hash(const char *backend_name, const char *hash_name,

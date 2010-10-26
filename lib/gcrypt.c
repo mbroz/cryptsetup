@@ -10,11 +10,15 @@
 #define MAX_DIGESTS		64
 #define GCRYPT_REQ_VERSION	"1.1.42"
 
-int init_crypto(void)
+int init_crypto(struct crypt_device *ctx)
 {
+	int r;
+
 	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
-		if (!gcry_check_version (GCRYPT_REQ_VERSION))
-			return -ENOSYS;
+		if (!gcry_check_version (GCRYPT_REQ_VERSION)) {
+			r = -ENOSYS;
+			goto fail;
+		}
 
 /* FIXME: If gcrypt compiled to support POSIX 1003.1e capabilities,
  * it drops all privileges during secure memory initialisation.
@@ -35,6 +39,9 @@ int init_crypto(void)
 	}
 
 	return 0;
+fail:
+	log_err(ctx, _("Cannot initialize crypto backend.\n"));
+	return r;
 }
 
 static int gcrypt_hash(void *data, int size, char *key,
