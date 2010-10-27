@@ -26,7 +26,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <gcrypt.h>
-#include "random.h"
+#include <../lib/internal.h>
 
 static void XORblock(char const *src1, char const *src2, char *dst, size_t n)
 {
@@ -99,7 +99,7 @@ int AF_split(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, 
 
 	/* process everything except the last block */
 	for(i=0; i<blocknumbers-1; i++) {
-		r = getRandom(dst+(blocksize*i),blocksize);
+		r = crypt_random_get(NULL, dst+(blocksize*i), blocksize, CRYPT_RND_NORMAL);
 		if(r < 0) goto out;
 
 		XORblock(dst+(blocksize*i),bufblock,bufblock,blocksize);

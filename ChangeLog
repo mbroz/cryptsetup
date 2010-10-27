@@ -1,6 +1,9 @@
 2010-10-27  Milan Broz  <mbroz@redhat.com>
 	* Rewrite cryptsetup luksFormat, luksOpen, luksAddKey to use new API
 	  to allow adding new features.
+	* Implement --use-random and --use-urandom for luksFormat to allow
+	  setting of RNG for volume key generator.
+	* Add crypt_set_rng_type() and crypt_get_rng_type() to API.
 
 2010-10-17  Milan Broz  <mbroz@redhat.com>
 	* Add crypt_get_device_name() to API (get underlying device name).

@@ -44,6 +44,7 @@ libcryptsetup_la_SOURCES = \
 	backends.c				\
 	libdevmapper.c				\
 	volumekey.c				\
+	random.c				\
 	gcrypt.c
 
 include_HEADERS = libcryptsetup.h

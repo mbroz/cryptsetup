@@ -33,7 +33,6 @@
 #include "luks.h"
 #include "af.h"
 #include "pbkdf.h"
-#include "random.h"
 #include <uuid/uuid.h>
 #include <../lib/internal.h>
 
@@ -429,7 +428,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		header->version, header->hashSpec ,header->cipherName, header->cipherMode,
 		header->keyBytes);
 
-	r = getRandom(header->mkDigestSalt,LUKS_SALTSIZE);
+	r = crypt_random_get(ctx, header->mkDigestSalt, LUKS_SALTSIZE, CRYPT_RND_NORMAL);
 	if(r < 0) {
 		log_err(ctx,  _("Cannot create LUKS header: reading random salt failed.\n"));
 		return r;
@@ -522,7 +521,8 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 
 	log_dbg("Key slot %d use %d password iterations.", keyIndex, hdr->keyblock[keyIndex].passwordIterations);
 
-	r = getRandom(hdr->keyblock[keyIndex].passwordSalt, LUKS_SALTSIZE);
+	r = crypt_random_get(ctx, hdr->keyblock[keyIndex].passwordSalt,
+		       LUKS_SALTSIZE, CRYPT_RND_NORMAL);
 	if(r < 0) return r;
 
 //	assert((vk->keylength % TWOFISH_BLOCKSIZE) == 0); FIXME
@@ -723,9 +723,9 @@ static int wipe(const char *device, unsigned int from, unsigned int to)
 	if(!buffer) return -ENOMEM;
 
 	for(i = 0; i < 39; ++i) {
-		if     (i >=  0 && i <  5) getRandom(buffer, bufLen);
+		if     (i >=  0 && i <  5) crypt_random_get(NULL, buffer, bufLen, CRYPT_RND_NORMAL);
 		else if(i >=  5 && i < 32) wipeSpecial(buffer, bufLen, i - 5);
-		else if(i >= 32 && i < 38) getRandom(buffer, bufLen);
+		else if(i >= 32 && i < 38) crypt_random_get(NULL, buffer, bufLen, CRYPT_RND_NORMAL);
 		else if(i >= 38 && i < 39) memset(buffer, 0xFF, bufLen);
 
 		if(write_lseek_blockwise(devfd, buffer, bufLen, from * SECTOR_SIZE) < 0) {

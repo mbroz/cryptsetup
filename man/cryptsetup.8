@@ -43,7 +43,7 @@ These are valid LUKS actions:
 initializes a LUKS partition and sets the initial key, either via prompting or via <key file>.
 
 \fB<options>\fR can be [\-\-cipher, \-\-verify-passphrase, \-\-key-size, \-\-key-slot,
-\-\-key-file (takes precedence over optional second argument)].
+\-\-key-file (takes precedence over optional second argument), \-\-use-random | \-\-use-urandom].
 
 .PP
 \fIluksOpen\fR <device> <name>
@@ -179,6 +179,13 @@ Use pre-generated master key stored in file. For \fIluksFormat\fR it allows LUKS
 
 For \fIluksAddKey\fR it allows adding new passphrase with only master key knowledge.
 .TP
+.B "\-\-use-random"
+.TP
+.B "\-\-use-urandom"
+For \fIluksFormat\fR it defines which kernel random number generator will be used for long-term key (volume key).
+
+See \fBNOTES ON RNG\fR for more information. Use \fIcryptsetup \-\-help\fR to show default RNG.
+.TP
 .B "\-\-key-slot, \-S"
 For LUKS operations that add key material, this options allows to you specify which key slot is selected for the new key. This option can be used for \fIluksFormat\fR and \fIluksAddKey\fR.
 .TP
@@ -254,6 +261,20 @@ The available combinations of ciphers, modes, hashes and key sizes depend on ker
 For \-\-hash option all algorithms supported by gcrypt library are available.
 .SH NOTES ON PASSWORDS
 Mathematics can't be bribed. Make sure you keep your passwords safe. There are a few nice tricks for constructing a fallback, when suddenly out of (or after being) blue, your brain refuses to cooperate. These fallbacks are possible with LUKS, as it's only possible with LUKS to have multiple passwords.
+.SH NOTES ON RNG
+Random Number Generator (RNG) used in cryptsetup always uses kernel RNG without
+any modifications or additions to data stream procudes by kernel (like internal
+random pool operations or mixing with the other random sources).
+
+There are two types of randomness cryptsetup/LUKS needs. One type (which always
+uses /dev/urandom) is used for salt, AF splitter and for wiping removed
+keyslot.
+
+Second type is used for volume (master) key. You can switch between
+using /dev/random and /dev/urandom  here, see \fP--use-random\fR and \fP--use-urandom\fR
+options. Using /dev/random on system without enough entropy sources
+can cause \fPluksFormat\fR to block until the requested amount of random data is gathered.
+See \fPurandom(4)\fR for more information.
 .SH AUTHORS
 cryptsetup is written by Christophe Saout <christophe@saout.de>
 .br

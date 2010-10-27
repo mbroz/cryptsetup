@@ -14,6 +14,10 @@ int init_crypto(struct crypt_device *ctx)
 {
 	int r;
 
+	r = crypt_random_init(ctx);
+	if (r < 0)
+		goto fail;
+
 	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
 		if (!gcry_check_version (GCRYPT_REQ_VERSION)) {
 			r = -ENOSYS;

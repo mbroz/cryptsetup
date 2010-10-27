@@ -110,6 +110,27 @@ void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_m
 void crypt_set_password_verify(struct crypt_device *cd, int password_verify);
 
 /**
+ * Set which RNG (random number generator) is used for generating long term key
+ * @cd - crypt device handle
+ * @rng_type - kernel random number generator to use
+ *
+ * CRYPT_RNG_URANDOM - use /dev/urandom
+ * CRYPT_RNG_RANDOM  - use /dev/random (waits if no entropy in system)
+ */
+#define CRYPT_RNG_URANDOM 0
+#define CRYPT_RNG_RANDOM  1
+void crypt_set_rng_type(struct crypt_device *cd, int rng_type);
+
+/**
+ * Get which RNG (random number generator) is used for generating long term key
+ *
+ * Returns RNG type on success or negative errno value otherwise.
+ *
+ * @cd - crypt device handle
+ */
+int crypt_get_rng_type(struct crypt_device *cd);
+
+/**
  * Helper to lock/unlock memory to avoid swap sensitive data to disk
  *
  * @cd - crypt device handle, can be NULL

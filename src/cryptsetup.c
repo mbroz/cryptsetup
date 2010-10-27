@@ -37,6 +37,8 @@ static int opt_timeout = 0;
 static int opt_tries = 3;
 static int opt_align_payload = 0;
 static int opt_non_exclusive = 0;
+static int opt_random = 0;
+static int opt_urandom = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -377,6 +379,11 @@ static int action_luksFormat(int arg)
 	if (opt_iteration_time)
 		crypt_set_iterarion_time(cd, opt_iteration_time);
 
+	if (opt_random)
+		crypt_set_rng_type(cd, CRYPT_RNG_RANDOM);
+	else if (opt_urandom)
+		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
+
 	if (opt_master_key_file) {
 		r = _read_mk(opt_master_key_file, &key, keysize);
 		if (r < 0)
@@ -677,9 +684,10 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 
 		log_std(_("\nDefault compiled-in device cipher parameters:\n"
 			 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
-			 "\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s\n"),
+			 "\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"),
 			 DEFAULT_CIPHER(PLAIN), DEFAULT_PLAIN_KEYBITS, DEFAULT_PLAIN_HASH,
-			 DEFAULT_CIPHER(LUKS1), DEFAULT_LUKS1_KEYBITS, DEFAULT_LUKS1_HASH);
+			 DEFAULT_CIPHER(LUKS1), DEFAULT_LUKS1_KEYBITS, DEFAULT_LUKS1_HASH,
+			 DEFAULT_RNG);
 		exit(0);
 	} else
 		usage(popt_context, 0, NULL, NULL);
@@ -749,6 +757,8 @@ int main(int argc, char **argv)
 		{ "align-payload",     '\0', POPT_ARG_INT, &opt_align_payload,          0, N_("Align payload at <n> sector boundaries - for luksFormat"), N_("SECTORS") },
 		{ "non-exclusive",     '\0', POPT_ARG_NONE, &opt_non_exclusive,         0, N_("(Obsoleted, see man page.)"), NULL },
 		{ "header-backup-file",'\0', POPT_ARG_STRING, &opt_header_backup_file,  0, N_("File with LUKS header and keyslots backup."), NULL },
+		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
+		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -820,6 +830,13 @@ int main(int argc, char **argv)
 			break;
 	if (!action->type)
 		usage(popt_context, 1, _("Unknown action."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_random && opt_urandom)
+		usage(popt_context, 1, _("Only one of --use-[u]random options is allowed."),
+		      poptGetInvocationName(popt_context));
+	if ((opt_random || opt_urandom) && strcmp(aname, "luksFormat"))
+		usage(popt_context, 1, _("Option --use-[u]random is allowed only for luksFormat."),
 		      poptGetInvocationName(popt_context));
 
 	action_argc = 0;

@@ -11,7 +11,6 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <termios.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 

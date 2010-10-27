@@ -18,6 +18,7 @@ struct crypt_device {
 	uint64_t iteration_time;
 	int tries;
 	int password_verify;
+	int rng_type;
 
 	/* used in CRYPT_LUKS1 */
 	struct luks_phdr hdr;
@@ -981,6 +982,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	h->iteration_time = 1000;
 	h->password_verify = 0;
 	h->tries = 3;
+	h->rng_type = crypt_random_default_key_rng();
 	*cd = h;
 	return 0;
 }
@@ -1077,7 +1079,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		cd->volume_key = crypt_alloc_volume_key(volume_key_size,
 						      volume_key);
 	else
-		cd->volume_key = crypt_generate_volume_key(volume_key_size);
+		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size);
 
 	if(!cd->volume_key)
 		return -ENOMEM;
@@ -1909,6 +1911,24 @@ void crypt_set_password_verify(struct crypt_device *cd, int password_verify)
 {
 	log_dbg("Password verification %s.", password_verify ? "enabled" : "disabled");
 	cd->password_verify = password_verify ? 1 : 0;
+}
+
+void crypt_set_rng_type(struct crypt_device *cd, int rng_type)
+{
+	switch (rng_type) {
+	case CRYPT_RNG_URANDOM:
+	case CRYPT_RNG_RANDOM:
+		log_dbg("RNG set to %d (%s).", rng_type, rng_type ? "random" : "urandom");
+		cd->rng_type = rng_type;
+	}
+}
+
+int crypt_get_rng_type(struct crypt_device *cd)
+{
+	if (!cd)
+		return -EINVAL;
+
+	return cd->rng_type;
 }
 
 int crypt_memory_lock(struct crypt_device *cd, int lock)

@@ -27,6 +27,8 @@
 
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
+struct crypt_device;
+
 struct hash_type {
 	char		*name;
 	void		*private;
@@ -49,11 +51,11 @@ struct volume_key {
 	size_t keylength;
 	char key[];
 };
-struct volume_key *crypt_alloc_volume_key(unsigned keylength, const char *key);
-struct volume_key *crypt_generate_volume_key(unsigned keylength);
-void crypt_free_volume_key(struct volume_key *mk);
 
-struct crypt_device;
+struct volume_key *crypt_alloc_volume_key(unsigned keylength, const char *key);
+struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, unsigned keylength);
+void crypt_free_volume_key(struct volume_key *vk);
+
 int crypt_confirm(struct crypt_device *cd, const char *msg);
 
 void set_error_va(const char *fmt, va_list va);
@@ -121,5 +123,11 @@ void get_topology_alignment(const char *device,
 			    unsigned long *required_alignment, /* bytes */
 			    unsigned long *alignment_offset,   /* bytes */
 			    unsigned long default_alignment);
+
+enum { CRYPT_RND_NORMAL = 0, CRYPT_RND_KEY = 1 };
+int crypt_random_init(struct crypt_device *ctx);
+int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int quality);
+void crypt_random_exit(void);
+int crypt_random_default_key_rng(void);
 
 #endif /* INTERNAL_H */

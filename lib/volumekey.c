@@ -23,8 +23,6 @@
 
 #include "internal.h"
 
-int getRandom(char *buf, size_t len);
-
 struct volume_key *crypt_alloc_volume_key(unsigned keylength, const char *key)
 {
 	struct volume_key *vk = malloc(sizeof(*vk) + keylength);
@@ -48,7 +46,7 @@ void crypt_free_volume_key(struct volume_key *vk)
 	}
 }
 
-struct volume_key *crypt_generate_volume_key(unsigned keylength)
+struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, unsigned keylength)
 {
 	int r;
 	struct volume_key *vk;
@@ -57,11 +55,10 @@ struct volume_key *crypt_generate_volume_key(unsigned keylength)
 	if (!vk)
 		return NULL;
 
-	r = getRandom(vk->key, keylength);
+	r = crypt_random_get(cd, vk->key, keylength, CRYPT_RND_KEY);
 	if(r < 0) {
 		crypt_free_volume_key(vk);
 		return NULL;
 	}
 	return vk;
 }
-
