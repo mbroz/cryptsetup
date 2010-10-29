@@ -1186,6 +1186,30 @@ int crypt_load(struct crypt_device *cd,
 	return r;
 }
 
+int crypt_set_uuid(struct crypt_device *cd, const char *uuid)
+{
+	if (!isLUKS(cd->type)) {
+		log_err(cd, _("This operation is not supported for this device type.\n"));
+		return  -EINVAL;
+	}
+
+	if (uuid && !strncmp(uuid, cd->hdr.uuid, sizeof(cd->hdr.uuid))) {
+		log_dbg("UUID is the same as requested (%s) for device %s.",
+			uuid, cd->device);
+		return 0;
+	}
+
+	if (uuid)
+		log_dbg("Requested new UUID change to %s for %s.", uuid, cd->device);
+	else
+		log_dbg("Requested new UUID refresh for %s.", cd->device);
+
+	if (!crypt_confirm(cd, _("Do you really want to change UUID of device?")))
+		return -EPERM;
+
+	return LUKS_hdr_uuid_set(cd->device, &cd->hdr, uuid, cd);
+}
+
 int crypt_header_backup(struct crypt_device *cd,
 			const char *requested_type,
 			const char *backup_file)
@@ -2014,8 +2038,6 @@ int crypt_dump(struct crypt_device *cd)
 		else 
 			log_std(cd, "Key Slot %d: DISABLED\n", i);
 	}
-
-	log_std(cd, "DNAME: %s\n", crypt_get_device_name(cd) ?: "");
 
 	return 0;
 }

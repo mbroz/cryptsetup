@@ -24,6 +24,7 @@ static int opt_verify_passphrase = 0;
 static char *opt_key_file = NULL;
 static char *opt_master_key_file = NULL;
 static char *opt_header_backup_file = NULL;
+static char *opt_uuid = NULL;
 static unsigned int opt_key_size = 0;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static uint64_t opt_size = 0;
@@ -390,7 +391,7 @@ static int action_luksFormat(int arg)
 			goto out;
 
 		r = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode,
-				 NULL, key, keysize, &params);
+				 opt_uuid, key, keysize, &params);
 		if (r < 0)
 			goto out;
 
@@ -400,7 +401,7 @@ static int action_luksFormat(int arg)
 		crypt_get_key(_("Enter LUKS passphrase: "),
 			      &password, &passwordLen, 0,
 			      key_file, opt_timeout,
-			      opt_verify_passphrase && !opt_batch_mode,
+			      opt_batch_mode ? 0 : 1, /* always verify */
 			      cd);
 
 		if(!password) {
@@ -409,7 +410,7 @@ static int action_luksFormat(int arg)
 		}
 
 		r = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode,
-				 NULL, NULL, keysize, &params);
+				 opt_uuid, NULL, keysize, &params);
 		if (r < 0)
 			goto out;
 
@@ -554,12 +555,30 @@ static int action_isLuks(int arg)
 
 static int action_luksUUID(int arg)
 {
-	struct crypt_options options = {
-		.device = action_argv[0],
-		.icb = &cmd_icb,
-	};
+	struct crypt_device *cd = NULL;
+	const char *existing_uuid = NULL;
+	int r;
 
-	return crypt_luksUUID(&options);
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	crypt_set_log_callback(cd, _log, NULL);
+	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+
+	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	if (opt_uuid)
+		r = crypt_set_uuid(cd, opt_uuid);
+	else {
+		existing_uuid = crypt_get_uuid(cd);
+		log_std("%s\n", existing_uuid ?: "");
+		r = existing_uuid ? 0 : 1;
+	}
+out:
+	crypt_free(cd);
+	return r;
+
 }
 
 static int action_luksDump(int arg)
@@ -759,6 +778,7 @@ int main(int argc, char **argv)
 		{ "header-backup-file",'\0', POPT_ARG_STRING, &opt_header_backup_file,  0, N_("File with LUKS header and keyslots backup."), NULL },
 		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
 		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },
+		{ "uuid",              '\0',  POPT_ARG_STRING, &opt_uuid,               0, N_("UUID for device to use."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -837,6 +857,10 @@ int main(int argc, char **argv)
 		      poptGetInvocationName(popt_context));
 	if ((opt_random || opt_urandom) && strcmp(aname, "luksFormat"))
 		usage(popt_context, 1, _("Option --use-[u]random is allowed only for luksFormat."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_uuid && strcmp(aname, "luksFormat") && strcmp(aname, "luksUUID"))
+		usage(popt_context, 1, _("Option --uuid is allowed only for luksFormat and luksUUID."),
 		      poptGetInvocationName(popt_context));
 
 	action_argc = 0;

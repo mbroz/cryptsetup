@@ -183,6 +183,17 @@ int crypt_format(struct crypt_device *cd,
 	void *params);
 
 /**
+ * Set new UUID for already existing device (if format supports it)
+ *
+ * Returns 0 on success or negative errno value otherwise.
+ *
+ * @cd - crypt device handle
+ * @uuid - requested UUID or NULL if it should be generated
+ */
+int crypt_set_uuid(struct crypt_device *cd,
+		   const char *uuid);
+
+/**
  * Load crypt device parameters from on-disk header
  *
  * Returns 0 on success or negative errno value otherwise.

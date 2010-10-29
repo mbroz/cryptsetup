@@ -103,6 +103,12 @@ int LUKS_read_phdr_backup(
 	int require_luks_device,
 	struct crypt_device *ctx);
 
+int LUKS_hdr_uuid_set(
+	const char *device,
+	struct luks_phdr *hdr,
+	const char *uuid,
+	struct crypt_device *ctx);
+
 int LUKS_hdr_backup(
 	const char *backup_file,
 	const char *device,

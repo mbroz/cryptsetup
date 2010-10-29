@@ -411,6 +411,13 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return -EINVAL;
 	}
 
+	if (uuid && uuid_parse(uuid, partitionUuid) == -1) {
+		log_err(ctx, _("Wrong LUKS UUID format provided.\n"));
+		return -EINVAL;
+	}
+	if (!uuid)
+		uuid_generate(partitionUuid);
+
 	memset(header,0,sizeof(struct luks_phdr));
 
 	/* Set Magic */
@@ -465,18 +472,32 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	/* alignOffset - offset from natural device alignment provided by topology info */
 	header->payloadOffset = currentSector + alignOffset;
 
-	if (uuid && !uuid_parse(uuid, partitionUuid)) {
-		log_err(ctx, _("Wrong UUID format provided, generating new one.\n"));
-		uuid = NULL;
-	}
-	if (!uuid)
-		uuid_generate(partitionUuid);
         uuid_unparse(partitionUuid, header->uuid);
 
 	log_dbg("Data offset %d, UUID %s, digest iterations %" PRIu32,
 		header->payloadOffset, header->uuid, header->mkDigestIterations);
 
 	return 0;
+}
+
+int LUKS_hdr_uuid_set(
+	const char *device,
+	struct luks_phdr *hdr,
+	const char *uuid,
+	struct crypt_device *ctx)
+{
+	uuid_t partitionUuid;
+
+	if (uuid && uuid_parse(uuid, partitionUuid) == -1) {
+		log_err(ctx, _("Wrong LUKS UUID format provided.\n"));
+		return -EINVAL;
+	}
+	if (!uuid)
+		uuid_generate(partitionUuid);
+
+	uuid_unparse(partitionUuid, hdr->uuid);
+
+	return LUKS_write_phdr(device, hdr, ctx);
 }
 
 int LUKS_set_key(const char *device, unsigned int keyIndex,

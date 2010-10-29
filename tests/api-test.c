@@ -52,6 +52,8 @@
 #define KEYFILE2 "key2.file"
 #define KEY2 "0123456789abcdef"
 
+#define DEVICE_TEST_UUID "12345678-1234-1234-1234-123456789abc"
+
 static int _debug   = 0;
 static int _verbose = 1;
 
@@ -739,6 +741,10 @@ static void AddDeviceLuks(void)
 	OK_(!(global_lines != 0));
 	crypt_set_log_callback(cd, NULL, NULL);
 	reset_log();
+
+	FAIL_(crypt_set_uuid(cd, "blah"), "wrong UUID format");
+	OK_(crypt_set_uuid(cd, DEVICE_TEST_UUID));
+	OK_(strcmp(DEVICE_TEST_UUID, crypt_get_uuid(cd)));
 
 	FAIL_(crypt_deactivate(cd, CDEVICE_2), "not active");
 	crypt_free(cd);

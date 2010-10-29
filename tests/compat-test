@@ -18,6 +18,8 @@ KEY_SLOT1="S256-259 S260-263 R264-295 A296-299 A300-303"
 KEY_MATERIAL1="R69632-133632"
 KEY_MATERIAL1_EXT="S69632-133632"
 
+TEST_UUID="12345678-1234-1234-1234-123456789abc"
+
 function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
@@ -172,6 +174,16 @@ $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
 echo 'foo' | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
+
+prepare "[15] UUID - use and report provided UUID" wipe
+echo "key0" | $CRYPTSETUP -q luksFormat --uuid blah $LOOPDEV 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP -q luksFormat --uuid $TEST_UUID $LOOPDEV || fail
+tst=$($CRYPTSETUP -q luksUUID $LOOPDEV)
+[ "$tst"x = "$TEST_UUID"x ] || fail
+echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+$CRYPTSETUP -q luksUUID --uuid $TEST_UUID $LOOPDEV || fail
+tst=$($CRYPTSETUP -q luksUUID $LOOPDEV)
+[ "$tst"x = "$TEST_UUID"x ] || fail
 
 remove_mapping
 exit 0

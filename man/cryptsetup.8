@@ -43,7 +43,7 @@ These are valid LUKS actions:
 initializes a LUKS partition and sets the initial key, either via prompting or via <key file>.
 
 \fB<options>\fR can be [\-\-cipher, \-\-verify-passphrase, \-\-key-size, \-\-key-slot,
-\-\-key-file (takes precedence over optional second argument), \-\-use-random | \-\-use-urandom].
+\-\-key-file (takes precedence over optional second argument), \-\-use-random | \-\-use-urandom, \-\-uuid].
 
 .PP
 \fIluksOpen\fR <device> <name>
@@ -96,6 +96,8 @@ identical to luksKillSlot, but deprecated action name.
 \fIluksUUID\fR <device>
 .IP
 print UUID, if <device> has a LUKS header.
+
+set new UUID if \fI\-\-uuid\fR option is specified.
 .PP
 \fIisLuks\fR <device>
 .IP
@@ -231,6 +233,11 @@ How often the input of the passphrase shall be retried. This option is relevant 
 Align payload at a boundary of \fIvalue\fR 512-byte sectors. This option is relevant for \fIluksFormat\fR.
 If not specified, cryptsetup tries to use topology info provided by kernel for underlying device to get optimal alignment.
 If not available (or calculated value is multiple of default) data is by default aligned to 1 MiB boundary (2048 512-byte sectors).
+.TP
+.B "\-\-uuid=\fIUUID\fR"
+Use provided \fIUUID\fR in \fIluksFormat\fR command instead of generating new one or change existing UUID in \fIluksUUID\fR command.
+
+The UUID must be provided in standard UUID format (e.g. 12345678-1234-1234-1234-123456789abc).
 .TP
 .B "\-\-version"
 Show the version.
