@@ -26,6 +26,8 @@ static char *opt_master_key_file = NULL;
 static char *opt_header_backup_file = NULL;
 static char *opt_uuid = NULL;
 static unsigned int opt_key_size = 0;
+static unsigned int opt_keyfile_size = 0;
+static unsigned int opt_new_keyfile_size = 0;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static uint64_t opt_size = 0;
 static uint64_t opt_offset = 0;
@@ -399,8 +401,9 @@ static int action_luksFormat(int arg)
 						    key, keysize, NULL, 0);
 	} else {
 		crypt_get_key(_("Enter LUKS passphrase: "),
-			      &password, &passwordLen, 0,
-			      key_file, opt_timeout,
+			      &password, &passwordLen,
+			      opt_keyfile_size, key_file,
+			      opt_timeout,
 			      opt_batch_mode ? 0 : 1, /* always verify */
 			      cd);
 
@@ -453,9 +456,8 @@ static int action_luksOpen(int arg)
 
 	if (opt_key_file) {
 		crypt_set_password_retry(cd, 1);
-		/* limit bytes read from keyfile using opt_key_size*/
 		r = crypt_activate_by_keyfile(cd, action_argv[1],
-			CRYPT_ANY_SLOT, opt_key_file, opt_key_size / 8,
+			CRYPT_ANY_SLOT, opt_key_file, opt_keyfile_size,
 			flags);
 	} else
 		r = crypt_activate_by_passphrase(cd, action_argv[1],
@@ -530,8 +532,8 @@ static int action_luksAddKey(int arg)
 						    key, keysize, NULL, 0);
 	} else if (opt_key_file || opt_new_key_file) {
 		r = crypt_keyslot_add_by_keyfile(cd, opt_key_slot,
-						 opt_key_file, 0,
-						 opt_new_key_file, 0);
+						 opt_key_file, opt_keyfile_size,
+						 opt_new_key_file, opt_new_keyfile_size);
 	} else {
 		r = crypt_keyslot_add_by_passphrase(cd, opt_key_slot,
 						    NULL, 0, NULL, 0);
@@ -617,7 +619,7 @@ static int action_luksResume(int arg)
 
 	if (opt_key_file)
 		r = crypt_resume_by_keyfile(cd, action_argv[0], CRYPT_ANY_SLOT,
-					    opt_key_file, opt_key_size / 8);
+					    opt_key_file, opt_keyfile_size);
 	else
 		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
 					       NULL, 0);
@@ -760,9 +762,11 @@ int main(int argc, char **argv)
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE, &opt_verify_passphrase,     0, N_("Verifies the passphrase by asking for it twice"), NULL },
-		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file (can be /dev/random)"), NULL },
+		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
 		{ "master-key-file",  '\0',  POPT_ARG_STRING, &opt_master_key_file,     0, N_("Read the volume (master) key from file."), NULL },
 		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
+		{ "keyfile-size",      'l',  POPT_ARG_INT, &opt_keyfile_size,           0, N_("Limits the read from keyfile"), N_("bytes") },
+		{ "new-keyfile-size", '\0',  POPT_ARG_INT, &opt_new_keyfile_size,       0, N_("Limits the read from newly added keyfile"), N_("bytes") },
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Slot number for new key (default is first free)"), NULL },
 		{ "size",              'b',  POPT_ARG_STRING, &popt_tmp,                1, N_("The size of the device"), N_("SECTORS") },
 		{ "offset",            'o',  POPT_ARG_STRING, &popt_tmp,                2, N_("The start offset in the backend device"), N_("SECTORS") },
@@ -830,6 +834,25 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
+	if (!(aname = (char *)poptGetArg(popt_context)))
+		usage(popt_context, 1, _("Argument <action> missing."),
+		      poptGetInvocationName(popt_context));
+	for(action = action_types; action->type; action++)
+		if (strcmp(action->type, aname) == 0)
+			break;
+	if (!action->type)
+		usage(popt_context, 1, _("Unknown action."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_key_size &&
+	   strcmp(aname, "luksFormat") &&
+	   strcmp(aname, "create")) {
+		usage(popt_context, 1,
+		      _("Option --key-size is allowed only for luksFormat and create.\n"
+		        "To limit read from keyfile use --keyfile-size=(bytes)."),
+		      poptGetInvocationName(popt_context));
+	}
+
 	if (opt_key_size % 8)
 		usage(popt_context, 1,
 		      _("Key size must be a multiple of 8 bits"),
@@ -841,16 +864,6 @@ int main(int argc, char **argv)
 		usage(popt_context, 1, _("Key slot is invalid."),
 		      poptGetInvocationName(popt_context));
 	}
-
-	if (!(aname = (char *)poptGetArg(popt_context)))
-		usage(popt_context, 1, _("Argument <action> missing."),
-		      poptGetInvocationName(popt_context));
-	for(action = action_types; action->type; action++)
-		if (strcmp(action->type, aname) == 0)
-			break;
-	if (!action->type)
-		usage(popt_context, 1, _("Unknown action."),
-		      poptGetInvocationName(popt_context));
 
 	if (opt_random && opt_urandom)
 		usage(popt_context, 1, _("Only one of --use-[u]random options is allowed."),

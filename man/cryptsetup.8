@@ -43,14 +43,14 @@ These are valid LUKS actions:
 initializes a LUKS partition and sets the initial key, either via prompting or via <key file>.
 
 \fB<options>\fR can be [\-\-cipher, \-\-verify-passphrase, \-\-key-size, \-\-key-slot,
-\-\-key-file (takes precedence over optional second argument), \-\-use-random | \-\-use-urandom, \-\-uuid].
+\-\-key-file (takes precedence over optional second argument), \-\-keyfile-size, \-\-use-random | \-\-use-urandom, \-\-uuid].
 
 .PP
 \fIluksOpen\fR <device> <name>
 .IP
 opens the LUKS partition <device> and sets up a mapping <name> after successful verification of the supplied key material (either via key file by \-\-key-file, or via prompting).
 
-\fB<options>\fR can be [\-\-key-file, \-\-readonly].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly].
 .PP
 \fIluksClose\fR <name>
 .IP
@@ -69,14 +69,14 @@ After that operation you have to use \fIluksResume\fR to reinstate encryption ke
 Resumes suspended device and reinstates encryption key. You will need provide passphrase
 identical to \fIluksOpen\fR command (using prompting or key file).
 
-\fB<options>\fR can be [\-\-key-file]
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size]
 .PP
 \fIluksAddKey\fR <device> [<new key file>]
 .IP
 add a new key file/passphrase. An existing passphrase or key file (via \-\-key-file) must be supplied.
 The key file with the new material is supplied as a positional argument.
 
-\fB<options>\fR can be [\-\-key-file, \-\-key-slot].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-new-keyfile-size, \-\-key-slot].
 .PP
 \fIluksRemoveKey\fR <device> [<key file>] 
 .IP
@@ -87,7 +87,7 @@ remove supplied key or key file from LUKS device
 wipe key with number <key slot> from LUKS device. A remaining passphrase or
 key file (via \-\-key-file) must be supplied.
 
-\fB<options>\fR can be [\-\-key-file].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size].
 .PP
 \fIluksDelKey\fR <device> <key slot number>
 .IP
@@ -176,6 +176,14 @@ If you want to set a new key via a key file, you have to use a positional arg to
 If the key file is "-", stdin will be used. With the "-" key file reading will
 not stop when new line character is detected. See section \fBNOTES ON PASSWORD PROCESSING\fR for more information.
 .TP
+.B "\-\-keyfile-size, \-d \fIvalue\fR"
+Limits read from keyfile to \fIvalue\fR bytes.
+Usable together with all comands using key file.
+.TP
+.B "\-\-new-keyfile-size  \fIvalue\fR"
+Limits read from new keyfile to \fIvalue\fR bytes in \fIluksAddKey\fR when adding new key file.
+Default is exhaustive read from key file.
+.TP
 .B "\-\-master-key-file"
 Use pre-generated master key stored in file. For \fIluksFormat\fR it allows LUKS header reformatting with the same master key (if all other parameters are the same existing encrypted data remains intact).
 
@@ -199,8 +207,6 @@ Can be used for \fIcreate\fR or \fIluksFormat\fR, all other LUKS actions will us
 Default is set during compilation, if not changed it is 256 bits.
 
 Use \fIcryptsetup \-\-help\fR to show defaults.
-
-For \fIluksOpen\fR this option specifies number of bits read from the key-file (default is exhaustive read from key-file).
 .TP
 .B "\-\-size, \-b"
 force the size of the underlying device in sectors.

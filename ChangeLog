@@ -6,6 +6,8 @@
 	* Add crypt_set_rng_type() and crypt_get_rng_type() to API.
 	* Add crypt_set_uuid() to API.
 	* Allow UUID setting in luksFormat and luksUUID (--uuid parameter).
+	* Add --keyfile-size and --new-keyfile-size (in bytes) size and disallow overloading
+	  of --key-size for limiting keyfile reads.
 
 2010-10-17  Milan Broz  <mbroz@redhat.com>
 	* Add crypt_get_device_name() to API (get underlying device name).
