@@ -92,7 +92,7 @@ echo "compatkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 check_exists
 
 prepare "[2] open - compat image - denial check" new
-echo "wrongkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME && fail
+echo "wrongkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 check
 
 # All headers items and first key material section must change
@@ -116,7 +116,7 @@ echo "key1" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 
 # Unsuccessful Key Delete - nothing may change
 prepare "[7] unsuccessful delete"
-echo "invalid" | $CRYPTSETUP luksKillSlot $LOOPDEV 1 && fail
+echo "invalid" | $CRYPTSETUP luksKillSlot $LOOPDEV 1 2>/dev/null && fail
 check
 
 # Delete Key Test
@@ -124,7 +124,7 @@ check
 prepare "[8] successful delete"
 $CRYPTSETUP -q luksKillSlot $LOOPDEV 1 || fail
 check "$KEY_SLOT1 $KEY_MATERIAL1_EXT"
-echo "key1" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME && fail
+echo "key1" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2> /dev/null && fail
 echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 
 # Key Slot 1 and key material section 1 must change, the rest must not
@@ -137,14 +137,14 @@ $CRYPTSETUP -d $KEY1 luksOpen $LOOPDEV $DEV_NAME || fail
 prepare "[10] delete key test with key1 as remaining key"
 $CRYPTSETUP -d $KEY1 luksKillSlot $LOOPDEV 0 || fail
 check "$KEY_SLOT0 $KEY_MATERIAL0_EXT"
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME && fail
+echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 
 # Delete last slot
 prepare "[11] delete last key" wipe
 echo "key0" | $CRYPTSETUP luksFormat $LOOPDEV || fail
 echo "key0" | $CRYPTSETUP luksKillSlot $LOOPDEV 0 || fail
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME && fail
+echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 
 # Format test for ESSIV, and some other parameters.
 prepare "[12] parameter variation test" wipe
@@ -165,7 +165,7 @@ prepare	"[14] format/open - passphrase on stdin & new line" wipe
 echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV - || fail
 echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
-echo -n $'foo\nbar' | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME && fail
+echo -n $'foo\nbar' | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 # now also try --key-file
 echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV --key-file=- || fail
 echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
@@ -184,6 +184,13 @@ echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
 $CRYPTSETUP -q luksUUID --uuid $TEST_UUID $LOOPDEV || fail
 tst=$($CRYPTSETUP -q luksUUID $LOOPDEV)
 [ "$tst"x = "$TEST_UUID"x ] || fail
+
+prepare "[16] luksFormat" wipe
+echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV || fail
+echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV -d $KEY1 || fail
+$CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 128 --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
+$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 remove_mapping
 exit 0

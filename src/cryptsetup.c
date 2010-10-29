@@ -311,16 +311,19 @@ static int _read_mk(const char *file, char **key, int keysize)
 	fd = open(file, O_RDONLY);
 	if (fd == -1) {
 		log_err("Cannot read keyfile %s.\n", file);
-		return -EINVAL;
+		goto fail;
 	}
 	if ((read(fd, *key, keysize) != keysize)) {
 		log_err("Cannot read %d bytes from keyfile %s.\n", keysize, file);
 		close(fd);
-		crypt_safe_free(*key);
-		return -EINVAL;
+		goto fail;
 	}
 	close(fd);
 	return 0;
+fail:
+	crypt_safe_free(*key);
+	*key = NULL;
+	return -EINVAL;
 }
 
 static int action_luksFormat(int arg)
@@ -336,13 +339,6 @@ static int action_luksFormat(int arg)
 		.data_alignment = opt_align_payload,
 	};
 
-	/* Avoid overwriting possibly wrong part of device than user requested by rejecting these options */
-	if (opt_offset || opt_skip) {
-		log_err("Options --offset and --skip are not supported for luksFormat.\n");
-		r = -EINVAL;
-		goto out;;
-	}
-
 	if (action_argc > 1) {
 		key_file = action_argv[1];
 		if (opt_key_file)
@@ -355,13 +351,10 @@ static int action_luksFormat(int arg)
 		r = -ENOMEM;
 		goto out;
 	}
-	r = yesDialog(msg);
+	r = yesDialog(msg) ? 0 : -EINVAL;
 	free(msg);
-
-	if (!r) {
-		r = -EINVAL;
+	if (r < 0)
 		goto out;
-	}
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
 				      cipher, cipher_mode);
@@ -387,40 +380,30 @@ static int action_luksFormat(int arg)
 	else if (opt_urandom)
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
+	r = -EINVAL;
+	crypt_get_key(_("Enter LUKS passphrase: "),
+		      &password, &passwordLen,
+		      opt_keyfile_size, key_file,
+		      opt_timeout,
+		      opt_batch_mode ? 0 : 1, /* always verify */
+		      cd);
+	if(!password)
+		goto out;
+
 	if (opt_master_key_file) {
 		r = _read_mk(opt_master_key_file, &key, keysize);
 		if (r < 0)
 			goto out;
-
-		r = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode,
-				 opt_uuid, key, keysize, &params);
-		if (r < 0)
-			goto out;
-
-		r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
-						    key, keysize, NULL, 0);
-	} else {
-		crypt_get_key(_("Enter LUKS passphrase: "),
-			      &password, &passwordLen,
-			      opt_keyfile_size, key_file,
-			      opt_timeout,
-			      opt_batch_mode ? 0 : 1, /* always verify */
-			      cd);
-
-		if(!password) {
-			r = -EINVAL;
-			goto out;
-		}
-
-		r = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode,
-				 opt_uuid, NULL, keysize, &params);
-		if (r < 0)
-			goto out;
-
-		/* Add keyslot using internally stored volume key generated during format */
-		r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
-						    NULL, 0, password, passwordLen);
 	}
+
+	r = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode,
+			 opt_uuid, key, keysize, &params);
+	if (r < 0)
+		goto out;
+
+	r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
+					    key, keysize,
+					    password, passwordLen);
 out:
 	crypt_free(cd);
 	crypt_safe_free(key);
@@ -874,6 +857,10 @@ int main(int argc, char **argv)
 
 	if (opt_uuid && strcmp(aname, "luksFormat") && strcmp(aname, "luksUUID"))
 		usage(popt_context, 1, _("Option --uuid is allowed only for luksFormat and luksUUID."),
+		      poptGetInvocationName(popt_context));
+
+	if ((opt_offset || opt_skip) && strcmp(aname, "create"))
+		usage(popt_context, 1, _("Options --offset and --skip are supported only for create command.\n"),
 		      poptGetInvocationName(popt_context));
 
 	action_argc = 0;
