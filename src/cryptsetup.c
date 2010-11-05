@@ -178,6 +178,16 @@ static int _yesDialog(const char *msg, void *usrptr)
 
 /* End ICBs */
 
+static int check_slot(int key_slot)
+{
+	/* FIXME: use per format define here */
+	if (key_slot != CRYPT_ANY_SLOT && (key_slot < 0 || key_slot > 8))
+		return 0;
+
+	return 1;
+}
+
+
 static void show_status(int errcode)
 {
 	char error[256], *error_;
@@ -366,8 +376,6 @@ static int action_luksFormat(int arg)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_log_callback(cd, _log, NULL);
-
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8;
 
 	crypt_set_password_verify(cd, 1);
@@ -421,8 +429,6 @@ static int action_luksOpen(int arg)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_log_callback(cd, _log, NULL);
-
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
@@ -461,7 +467,7 @@ static int action_luksKillSlot(int arg)
 {
 	struct crypt_options options = {
 		.device = action_argv[0],
-		.key_slot = atoi(action_argv[1]),
+		.key_slot = opt_key_slot,
 		.key_file = opt_key_file,
 		.timeout = opt_timeout,
 		.flags = !opt_batch_mode?CRYPT_FLAG_VERIFY_ON_DELKEY : 0,
@@ -495,7 +501,6 @@ static int action_luksAddKey(int arg)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_log_callback(cd, _log, NULL);
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
@@ -530,12 +535,16 @@ out:
 
 static int action_isLuks(int arg)
 {
-	struct crypt_options options = {
-		.device = action_argv[0],
-		.icb = &cmd_icb,
-	};
+	struct crypt_device *cd = NULL;
+	int r;
 
-	return crypt_isLuks(&options);
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	r = crypt_load(cd, CRYPT_LUKS1, NULL);
+out:
+	crypt_free(cd);
+	return r;
 }
 
 static int action_luksUUID(int arg)
@@ -547,7 +556,6 @@ static int action_luksUUID(int arg)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_log_callback(cd, _log, NULL);
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
@@ -568,12 +576,19 @@ out:
 
 static int action_luksDump(int arg)
 {
-	struct crypt_options options = {
-		.device = action_argv[0],
-		.icb = &cmd_icb,
-	};
+	struct crypt_device *cd = NULL;
+	int r;
 
-	return crypt_luksDump(&options);
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	r = crypt_dump(cd);
+out:
+	crypt_free(cd);
+	return r;
 }
 
 static int action_luksSuspend(int arg)
@@ -624,7 +639,6 @@ static int action_luksBackup(int arg)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_log_callback(cd, _log, NULL);
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
 
 	r = crypt_header_backup(cd, CRYPT_LUKS1, opt_header_backup_file);
@@ -646,7 +660,6 @@ static int action_luksRestore(int arg)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_log_callback(cd, _log, NULL);
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
 	r = crypt_header_restore(cd, CRYPT_LUKS1, opt_header_backup_file);
 out:
@@ -715,6 +728,9 @@ static void _dbg_version_and_cmd(int argc, char **argv)
 static int run_action(struct action_type *action)
 {
 	int r;
+
+	/* set default log */
+	crypt_set_log_callback(NULL, _log, NULL);
 
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 1);
@@ -827,6 +843,25 @@ int main(int argc, char **argv)
 		usage(popt_context, 1, _("Unknown action."),
 		      poptGetInvocationName(popt_context));
 
+	action_argc = 0;
+	action_argv = poptGetArgs(popt_context);
+	/* Make return values of poptGetArgs more consistent in case of remaining argc = 0 */
+	if(!action_argv)
+		action_argv = null_action_argv;
+
+	/* Count args, somewhat unnice, change? */
+	while(action_argv[action_argc] != NULL)
+		action_argc++;
+
+	if(action_argc < action->required_action_argc) {
+		char buf[128];
+		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
+		usage(popt_context, 1, buf,
+		      poptGetInvocationName(popt_context));
+	}
+
+	/* FIXME: rewrite this from scratch */
+
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&
 	   strcmp(aname, "create")) {
@@ -841,12 +876,11 @@ int main(int argc, char **argv)
 		      _("Key size must be a multiple of 8 bits"),
 		      poptGetInvocationName(popt_context));
 
-	/* FIXME: use per format define here */
-	if (opt_key_slot != CRYPT_ANY_SLOT &&
-	   (opt_key_slot < 0 || opt_key_slot > 8)) {
+	if (!strcmp(aname, "luksKillSlot"))
+		opt_key_slot = atoi(action_argv[1]);
+	if (!check_slot(opt_key_slot))
 		usage(popt_context, 1, _("Key slot is invalid."),
 		      poptGetInvocationName(popt_context));
-	}
 
 	if (opt_random && opt_urandom)
 		usage(popt_context, 1, _("Only one of --use-[u]random options is allowed."),
@@ -862,23 +896,6 @@ int main(int argc, char **argv)
 	if ((opt_offset || opt_skip) && strcmp(aname, "create"))
 		usage(popt_context, 1, _("Options --offset and --skip are supported only for create command.\n"),
 		      poptGetInvocationName(popt_context));
-
-	action_argc = 0;
-	action_argv = poptGetArgs(popt_context);
-	/* Make return values of poptGetArgs more consistent in case of remaining argc = 0 */
-	if(!action_argv) 
-		action_argv = null_action_argv;
-
-	/* Count args, somewhat unnice, change? */
-	while(action_argv[action_argc] != NULL)
-		action_argc++;
-
-	if(action_argc < action->required_action_argc) {
-		char buf[128];
-		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
-		usage(popt_context, 1, buf,
-		      poptGetInvocationName(popt_context));
-	}
 
 	if (opt_debug) {
 		opt_verbose = 1;
