@@ -39,7 +39,6 @@ static int opt_version_mode = 0;
 static int opt_timeout = 0;
 static int opt_tries = 3;
 static int opt_align_payload = 0;
-static int opt_non_exclusive = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
 
@@ -90,8 +89,6 @@ static struct action_type {
 	{ "luksResume",	action_luksResume,	0, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
 	{ "luksHeaderBackup",action_luksBackup,	0, 1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
 	{ "luksHeaderRestore",action_luksRestore,0,1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
-	{ "luksDelKey", action_luksDelKey,	0, 2, 1, N_("<device> <key slot>"), N_("identical to luksKillSlot - DEPRECATED - see man page") },
-	{ "reload",	action_create,		1, 2, 1, N_("<name> <device>"), N_("modify active device - DEPRECATED - see man page") },
 	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
 
@@ -217,7 +214,7 @@ static void show_status(int errcode)
 		log_err(".\n");
 }
 
-static int action_create(int reload)
+static int action_create(int arg)
 {
 	struct crypt_options options = {
 		.name = action_argv[0],
@@ -235,10 +232,6 @@ static int action_create(int reload)
 		.tries = opt_tries,
 		.icb = &cmd_icb,
 	};
-	int r;
-
-        if(reload) 
-                log_err(_("The reload action is deprecated. Please use \"dmsetup reload\" in case you really need this functionality.\nWARNING: do not use reload to touch LUKS devices. If that is the case, hit Ctrl-C now.\n"));
 
 	if (options.hash && strcmp(options.hash, "plain") == 0)
 		options.hash = NULL;
@@ -247,12 +240,7 @@ static int action_create(int reload)
 	if (opt_readonly)
 		options.flags |= CRYPT_FLAG_READONLY;
 
-	if (reload)
-		r = crypt_update_device(&options);
-	else
-		r = crypt_create_device(&options);
-
-	return r;
+	return crypt_create_device(&options);
 }
 
 static int action_remove(int arg)
@@ -440,9 +428,6 @@ static int action_luksOpen(int arg)
 	if (opt_readonly)
 		flags |= CRYPT_ACTIVATE_READONLY;
 
-	if (opt_non_exclusive)
-		log_err(_("Obsolete option --non-exclusive is ignored.\n"));
-
 	if (opt_key_file) {
 		crypt_set_password_retry(cd, 1);
 		r = crypt_activate_by_keyfile(cd, action_argv[1],
@@ -457,12 +442,6 @@ out:
 }
 
 /* FIXME: keyslot operation needs better get_key() implementation. Use old API for now */
-static int action_luksDelKey(int arg)
-{
-	log_err("luksDelKey is a deprecated action name.\nPlease use luksKillSlot.\n"); 
-	return action_luksKillSlot(arg);
-}
-
 static int action_luksKillSlot(int arg)
 {
 	struct crypt_options options = {
@@ -729,9 +708,6 @@ static int run_action(struct action_type *action)
 {
 	int r;
 
-	/* set default log */
-	crypt_set_log_callback(NULL, _log, NULL);
-
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 1);
 
@@ -777,7 +753,6 @@ int main(int argc, char **argv)
 		{ "timeout",           't',  POPT_ARG_INT, &opt_timeout,                0, N_("Timeout for interactive passphrase prompt (in seconds)"), N_("secs") },
 		{ "tries",             'T',  POPT_ARG_INT, &opt_tries,                  0, N_("How often the input of the passphrase can be retried"), NULL },
 		{ "align-payload",     '\0', POPT_ARG_INT, &opt_align_payload,          0, N_("Align payload at <n> sector boundaries - for luksFormat"), N_("SECTORS") },
-		{ "non-exclusive",     '\0', POPT_ARG_NONE, &opt_non_exclusive,         0, N_("(Obsoleted, see man page.)"), NULL },
 		{ "header-backup-file",'\0', POPT_ARG_STRING, &opt_header_backup_file,  0, N_("File with LUKS header and keyslots backup."), NULL },
 		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
 		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },

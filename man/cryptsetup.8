@@ -89,10 +89,6 @@ key file (via \-\-key-file) must be supplied.
 
 \fB<options>\fR can be [\-\-key-file, \-\-keyfile-size].
 .PP
-\fIluksDelKey\fR <device> <key slot number>
-.IP
-identical to luksKillSlot, but deprecated action name.
-.PP
 \fIluksUUID\fR <device>
 .IP
 print UUID, if <device> has a LUKS header.
@@ -292,41 +288,14 @@ See \fPurandom(4)\fR for more information.
 cryptsetup is written by Christophe Saout <christophe@saout.de>
 .br
 LUKS extensions, and man page by Clemens Fruhwirth <clemens@endorphin.org>
-.SH "COMPATABILITY WITH OLD SUSE TWOFISH PARTITIONS"
-To read images created with SuSE Linux 9.2's loop_fish2 use \-\-cipher
-twofish-cbc-null \-s 256 \-h sha512, for images created with even
-older SuSE Linux use \-\-cipher twofish-cbc-null \-s 192 \-h
-ripemd160:20
-
 .SH DEPRECATED ACTIONS
 .PP
-\fIreload\fR <name> <device>
-.IP
-modifies an active mapping <name>. Same options as for
-create. 
-.B WARNING:
-Do not use this for LUKS devices, as the semantics
-are identical to the create action, which are totally incompatible
-with the LUKS key setup. 
-
-This action is deprected because it proved to be rarely useful.  It is
-uncommon to change the underlying device, key, or offset on the
-fly. In case, you really want to do this, you certainly know what you
-are doing and then you are probably better off with the swiss knive
-tool for device mapper, namely dmsetup. It provides you with the same
-functionality, see dmsetup reload.
+The \fIreload\fR action is no longer supported.
+Please use \fIdmsetup(8)\fR if you need to
+directly manipulate with the device mapping table.
 .PP
-\fIluksDelKey\fR <device> <key slot number>
-.IP
-identical to luksKillSlot, but deprecated action name. This option was
-renamed, as we introduced luksRemoveKey, a softer method for disabling
-password slots. To make a clear distinction that luksDelKey was more brutal than luksRemoveKey
+The \fIluksDelKey\fR was replaced with \fIluksKillSlot\fR.
 .PP
-\fI\-\-non-exclusive\fR
-.IP
-This option is ignored. Non-exclusive access to the same block device
-can cause data corruption thus this mode is no longer supported by cryptsetup.
-
 .SH "REPORTING BUGS"
 Report bugs to <dm-crypt@saout.de> or Issues section on LUKS website.
 Please attach output of failed command with added \-\-debug option.
@@ -341,8 +310,4 @@ This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 .SH "SEE ALSO"
 
-dm-crypt website, \fBhttp://www.saout.de/misc/dm-crypt/\fR
-
 LUKS website, \fBhttp://code.google.com/p/cryptsetup/\fR
-
-dm-crypt TWiki, \fBhttp://www.saout.de/tikiwiki/tiki-index.php\fR
