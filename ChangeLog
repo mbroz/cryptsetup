@@ -7,6 +7,8 @@
 	* Fix luksRemoveKey to behave as documented (do not ask
 	for remaining keyslot passphrase).
 	* Add more regression tests for commands.
+	* Disallow mapping of device which is already in use (mapped or mounted).
+	* Disallow luksFormat on device in use.
 
 2010-10-27  Milan Broz  <mbroz@redhat.com>
 	* Rewrite cryptsetup luksFormat, luksOpen, luksAddKey to use new API

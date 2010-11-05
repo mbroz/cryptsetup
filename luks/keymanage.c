@@ -743,7 +743,10 @@ static int wipe(const char *device, unsigned int from, unsigned int to)
 		return -EINVAL;
 
 	buffer = (char *) malloc(bufLen);
-	if(!buffer) return -ENOMEM;
+	if(!buffer) {
+		close(devfd);
+		return -ENOMEM;
+	}
 
 	for(i = 0; i < 39; ++i) {
 		if     (i >=  0 && i <  5) crypt_random_get(NULL, buffer, bufLen, CRYPT_RND_NORMAL);

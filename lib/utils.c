@@ -270,81 +270,93 @@ int device_ready(struct crypt_device *cd, const char *device, int mode)
 	return r;
 }
 
-int get_device_infos(const char *device, struct device_infos *infos, struct crypt_device *cd)
+int get_device_infos(const char *device,
+		     int open_exclusive,
+		     int *readonly,
+		     uint64_t *size)
 {
-	uint64_t size;
+	struct stat st;
 	unsigned long size_small;
-	int readonly = 0;
-	int ret = -1;
-	int fd;
+	int fd, r = -1;
+	int flags = 0;
+
+	*readonly = 0;
+	*size = 0;
+
+	if (stat(device, &st) < 0)
+		return -EINVAL;
+
+	/* never wipe header on mounted device */
+	if (open_exclusive && S_ISBLK(st.st_mode))
+		flags |= O_EXCL;
 
 	/* Try to open read-write to check whether it is a read-only device */
-	fd = open(device, O_RDWR);
-	if (fd < 0) {
-		if (errno == EROFS) {
-			readonly = 1;
-			fd = open(device, O_RDONLY);
-		}
-	} else {
-		close(fd);
-		fd = open(device, O_RDONLY);
+	fd = open(device, O_RDWR | flags);
+	if (fd == -1 && errno == EROFS) {
+		*readonly = 1;
+		fd = open(device, O_RDONLY | flags);
 	}
-	if (fd < 0) {
-		log_err(cd, _("Cannot open device: %s\n"), device);
-		return -1;
-	}
+
+	if (fd == -1 && open_exclusive && errno == EBUSY)
+		return -EBUSY;
+
+	if (fd == -1)
+		return -EINVAL;
 
 #ifdef BLKROGET
 	/* If the device can be opened read-write, i.e. readonly is still 0, then
 	 * check whether BKROGET says that it is read-only. E.g. read-only loop
 	 * devices may be openend read-write but are read-only according to BLKROGET
 	 */
-	if (readonly == 0 && ioctl(fd, BLKROGET, &readonly) < 0) {
-		log_err(cd, _("BLKROGET failed on device %s.\n"), device);
+	if (*readonly == 0 && (r = ioctl(fd, BLKROGET, readonly)) < 0)
 		goto out;
-	}
 #else
 #error BLKROGET not available
 #endif
 
 #ifdef BLKGETSIZE64
-	if (ioctl(fd, BLKGETSIZE64, &size) >= 0) {
-		size >>= SECTOR_SHIFT;
-		ret = 0;
+	if (ioctl(fd, BLKGETSIZE64, size) >= 0) {
+		*size >>= SECTOR_SHIFT;
+		r = 0;
 		goto out;
 	}
 #endif
 
 #ifdef BLKGETSIZE
 	if (ioctl(fd, BLKGETSIZE, &size_small) >= 0) {
-		size = (uint64_t)size_small;
-		ret = 0;
+		*size = (uint64_t)size_small;
+		r = 0;
 		goto out;
 	}
+
 #else
 #	error Need at least the BLKGETSIZE ioctl!
 #endif
-
-	log_err(cd, _("BLKGETSIZE failed on device %s.\n"), device);
+	r = -EINVAL;
 out:
-	if (ret == 0) {
-		infos->size = size;
-		infos->readonly = readonly;
-	}
 	close(fd);
-	return ret;
+	return r;
 }
 
 int wipe_device_header(const char *device, int sectors)
 {
+	struct stat st;
 	char *buffer;
 	int size = sectors * SECTOR_SIZE;
 	int r = -1;
 	int devfd;
+	int flags = O_RDWR | O_DIRECT | O_SYNC;
 
-	devfd = open(device, O_RDWR | O_DIRECT | O_SYNC);
-	if(devfd == -1)
+	if (stat(device, &st) < 0)
 		return -EINVAL;
+
+	/* never wipe header on mounted device */
+	if (S_ISBLK(st.st_mode))
+		flags |= O_EXCL;
+
+	devfd = open(device, flags);
+	if(devfd == -1)
+		return errno == EBUSY ? -EBUSY : -EINVAL;
 
 	buffer = malloc(size);
 	if (!buffer) {

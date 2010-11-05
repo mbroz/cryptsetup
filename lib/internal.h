@@ -42,11 +42,6 @@ struct hash_backend {
 	void			(*free_hashes)(struct hash_type *hashes);
 };
 
-struct device_infos {
-	uint64_t	size;
-	int		readonly;
-};
-
 struct volume_key {
 	size_t keylength;
 	char key[];
@@ -102,7 +97,10 @@ ssize_t write_blockwise(int fd, const void *buf, size_t count);
 ssize_t read_blockwise(int fd, void *_buf, size_t count);
 ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offset);
 int device_ready(struct crypt_device *cd, const char *device, int mode);
-int get_device_infos(const char *device, struct device_infos *infos, struct crypt_device *cd);
+int get_device_infos(const char *device,
+		     int open_exclusive,
+		     int *readonly,
+		     uint64_t *size);
 int wipe_device_header(const char *device, int sectors);
 
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);

@@ -535,7 +535,6 @@ out:
 static int action_luksRemoveKey(int arg)
 {
 	struct crypt_device *cd = NULL;
-	crypt_keyslot_info ki;
 	char *password = NULL;
 	unsigned int passwordLen;
 	int r;

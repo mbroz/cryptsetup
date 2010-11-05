@@ -256,5 +256,16 @@ $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d blah 2>/dev/null && fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 
+prepare "[20] Disallow open/create if already mapped." wipe
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
+$CRYPTSETUP create $DEV_NAME2 $LOOPDEV -d $KEY1 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV 2>/dev/null && fail
+$CRYPTSETUP remove  $DEV_NAME || fail
+echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
+echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME2 2>/dev/null && fail
+$CRYPTSETUP  luksClose  $DEV_NAME || fail
+
 remove_mapping
 exit 0

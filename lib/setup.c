@@ -223,19 +223,31 @@ static int find_keyslot_by_passphrase(struct crypt_device *cd,
 
 static int device_check_and_adjust(struct crypt_device *cd,
 				   const char *device,
-				   uint64_t *size, uint64_t *offset,
+				   int open_exclusive,
+				   uint64_t *size,
+				   uint64_t *offset,
 				   int *read_only)
 {
-	struct device_infos infos;
+	int r, real_readonly;
+	uint64_t real_size;
 
-	if (!device || get_device_infos(device, &infos, cd) < 0) {
-		log_err(cd, _("Cannot get info about device %s.\n"),
-			device ?: "[none]");
+	if (!device)
 		return -ENOTBLK;
+
+	r = get_device_infos(device, open_exclusive, &real_readonly, &real_size);
+	if (r < 0) {
+		if (r == -EBUSY)
+			log_err(cd, _("Cannot use device %s which is in use "
+				      "(already mapped or mounted).\n"),
+				      device);
+		else
+			log_err(cd, _("Cannot get info about device %s.\n"),
+				device);
+		return r;
 	}
 
 	if (!*size) {
-		*size = infos.size;
+		*size = real_size;
 		if (!*size) {
 			log_err(cd, _("Device %s has zero size.\n"), device);
 			return -ENOTBLK;
@@ -247,7 +259,7 @@ static int device_check_and_adjust(struct crypt_device *cd,
 		*size -= *offset;
 	}
 
-	if (infos.readonly)
+	if (real_readonly)
 		*read_only = 1;
 
 	log_dbg("Calculated device size is %" PRIu64 " sectors (%s), offset %" PRIu64 ".",
@@ -349,7 +361,7 @@ static int create_device_helper(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = device_check_and_adjust(cd, cd->device, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, cd->device, !reload, &size, &offset, &read_only);
 	if (r)
 		return r;
 
@@ -382,7 +394,7 @@ static int open_from_hdr_and_vk(struct crypt_device *cd,
 	read_only = flags & CRYPT_ACTIVATE_READONLY;
 	no_uuid = flags & CRYPT_ACTIVATE_NO_UUID;
 
-	r = device_check_and_adjust(cd, cd->device, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, cd->device, 1, &size, &offset, &read_only);
 	if (r)
 		return r;
 
@@ -640,7 +652,7 @@ int crypt_resize_device(struct crypt_options *options)
 		goto out;
 
 	size = options->size;
-	r = device_check_and_adjust(cd, device, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, device, 0, &size, &offset, &read_only);
 	if (r)
 		goto out;
 
@@ -1131,7 +1143,13 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	/* Wipe first 8 sectors - fs magic numbers etc. */
 	r = wipe_device_header(cd->device, 8);
 	if(r < 0) {
-		log_err(cd, _("Can't wipe header on device %s.\n"), cd->device);
+		if (r == -EBUSY)
+			log_err(cd, _("Cannot format device %s which is still in use.\n"),
+				cd->device);
+		else
+			log_err(cd, _("Cannot wipe header on device %s.\n"),
+				cd->device);
+
 		return r;
 	}
 
@@ -1237,7 +1255,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		goto out;
 	}
 
-	r = device_check_and_adjust(cd, device, &new_size, &offset, &read_only);
+	r = device_check_and_adjust(cd, device, 0, &new_size, &offset, &read_only);
 	if (r)
 		goto out;
 
