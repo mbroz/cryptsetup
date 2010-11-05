@@ -990,8 +990,11 @@ int crypt_init(struct crypt_device **cd, const char *device)
 int crypt_init_by_name(struct crypt_device **cd, const char *name)
 {
 	crypt_status_info ci;
-	char *device = NULL;
-	int r;
+	struct crypt_active_device cad;
+	char *device = NULL, *cipher_full = NULL, *device_uuid = NULL;
+	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	int key_size = 0, r;
+
 
 	log_dbg("Allocating crypt device context by device %s.", name);
 
@@ -1004,8 +1007,9 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 		return -ENODEV;
 	}
 
-	r = dm_query_device(name, &device, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, NULL, NULL);
+	r = dm_query_device(name, &device, &cad.size, &cad.iv_offset, &cad.offset,
+			    &cipher_full, &key_size, NULL, NULL, NULL,
+			    &device_uuid);
 
 	/* Underlying device disappeared but mapping still active */
 	if (r >= 0 && !device)
@@ -1015,7 +1019,32 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 	if (r >= 0)
 		r = crypt_init(cd, device);
 
+	/* Try to initialise basic parameters from active device */
+	if (!r && *device_uuid) {
+		if (!strncmp(CRYPT_PLAIN, device_uuid, sizeof(CRYPT_PLAIN)-1)) {
+			(*cd)->type = strdup(CRYPT_PLAIN);
+			(*cd)->plain_uuid = strdup(device_uuid);
+			(*cd)->plain_hdr.hash = NULL; /* no way to get this */
+			(*cd)->plain_hdr.offset = cad.offset;
+			(*cd)->plain_hdr.skip = cad.iv_offset;
+			(*cd)->volume_key = crypt_alloc_volume_key(key_size, NULL);
+			if (!(*cd)->volume_key)
+				r = -ENOMEM;
+
+			r = crypt_parse_name_and_mode(cipher_full, cipher, cipher_mode);
+			if (!r) {
+				(*cd)->plain_cipher = strdup(cipher);
+				(*cd)->plain_cipher_mode = strdup(cipher_mode);
+			}
+		} else if (!strncmp(CRYPT_LUKS1, device_uuid, sizeof(CRYPT_LUKS1)-1)) {
+			if (device)
+				r = crypt_load(*cd, CRYPT_LUKS1, NULL);
+		}
+	}
+
 	free(device);
+	free(cipher_full);
+	free(device_uuid);
 	return r;
 }
 
@@ -1182,6 +1211,53 @@ int crypt_load(struct crypt_device *cd,
 		if (!cd->type)
 			r = -ENOMEM;
 	}
+
+	return r;
+}
+
+int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
+{
+	char *device = NULL, *cipher = NULL, *uuid = NULL, *key = NULL;
+	uint64_t size, skip, offset;
+	int key_size, read_only, r;
+
+	/* Device context type must be initialised */
+	if (!cd->type || !crypt_get_uuid(cd))
+		return -EINVAL;
+
+	r = dm_query_device(name, &device, &size, &skip, &offset,
+			    &cipher, &key_size, &key, &read_only, NULL, &uuid);
+	if (r < 0) {
+		log_err(NULL, _("Device %s is not active.\n"), name);
+		goto out;
+	}
+
+	if (!uuid) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = device_check_and_adjust(cd, device, &new_size, &offset, &read_only);
+	if (r)
+		goto out;
+
+	if (new_size == size) {
+		log_dbg("Device has already requested size %" PRIu64
+			" sectors.", size);
+		r = 0;
+		goto out;
+	}
+
+	log_dbg("Resizing device %s to %" PRIu64 " sectors.", name, new_size);
+
+	r = dm_create_device(name, device, cipher, cd->type,
+			     crypt_get_uuid(cd), new_size, skip, offset,
+			     key_size, key, read_only, 1);
+out:
+	crypt_safe_free(key);
+	free(cipher);
+	free(device);
+	free(uuid);
 
 	return r;
 }
@@ -2069,6 +2145,9 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 	if (isLUKS(cd->type))
 		return cd->hdr.uuid;
 
+	if (isPLAIN(cd->type))
+		return cd->plain_uuid;
+
 	return NULL;
 }
 
@@ -2079,7 +2158,7 @@ const char *crypt_get_device_name(struct crypt_device *cd)
 
 int crypt_get_volume_key_size(struct crypt_device *cd)
 {
-	if (isPLAIN(cd->type))
+	if (isPLAIN(cd->type) && cd->volume_key)
 		return cd->volume_key->keylength;
 
 	if (isLUKS(cd->type))
@@ -2107,4 +2186,33 @@ crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot)
 	}
 
 	return LUKS_keyslot_info(&cd->hdr, keyslot);
+}
+
+int crypt_keyslot_max(const char *type)
+{
+	if (type && isLUKS(type))
+		return LUKS_NUMKEYS;
+
+	return -EINVAL;
+}
+
+const char *crypt_get_type(struct crypt_device *cd)
+{
+	return cd->type;
+}
+
+int crypt_get_active_device(struct crypt_device *cd,
+			    const char *name,
+			    struct crypt_active_device *cad)
+{
+	int r, readonly;
+
+	r = dm_query_device(name, NULL, &cad->size, &cad->iv_offset, &cad->offset,
+			    NULL, NULL, NULL, &readonly, NULL, NULL);
+	if (r < 0)
+		return r;
+
+	cad->flags = readonly ? CRYPT_ACTIVATE_READONLY : 0;
+
+	return 0;
 }

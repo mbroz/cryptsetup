@@ -664,7 +664,7 @@ static int LUKS_open_key(const char *device,
 	if(r < 0) goto out;
 
 	r = LUKS_verify_volume_key(hdr, vk);
-	if (r >= 0)
+	if (!r)
 		log_verbose(ctx, _("Key slot %d unlocked.\n"), keyIndex);
 out:
 	free(AfKey);
@@ -684,8 +684,10 @@ int LUKS_open_key_with_hdr(const char *device,
 
 	*vk = crypt_alloc_volume_key(hdr->keyBytes, NULL);
 
-	if (keyIndex >= 0)
-		return LUKS_open_key(device, keyIndex, password, passwordLen, hdr, *vk, ctx);
+	if (keyIndex >= 0) {
+		r = LUKS_open_key(device, keyIndex, password, passwordLen, hdr, *vk, ctx);
+		return (r < 0) ? r : keyIndex;
+	}
 
 	for(i = 0; i < LUKS_NUMKEYS; i++) {
 		r = LUKS_open_key(device, i, password, passwordLen, hdr, *vk, ctx);

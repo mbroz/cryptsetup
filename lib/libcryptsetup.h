@@ -144,6 +144,15 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
 #define CRYPT_PLAIN "PLAIN" /* regular crypt device, no on-disk header */
 #define CRYPT_LUKS1 "LUKS1" /* LUKS version 1 header on-disk */
 
+/**
+ * Get device type
+ *
+ * @cd - crypt device handle
+ *
+ * Return string according to device type or NULL if not known.
+ */
+const char *crypt_get_type(struct crypt_device *cd);
+
 struct crypt_params_plain {
 	const char *hash; /* password hash function */
 	uint64_t offset;  /* offset in sectors */
@@ -205,6 +214,19 @@ int crypt_set_uuid(struct crypt_device *cd,
 int crypt_load(struct crypt_device *cd,
 	       const char *requested_type,
 	       void *params);
+
+/**
+ * Resize crypt device
+ *
+ * Returns 0 on success or negative errno value otherwise.
+ *
+ * @cd - crypt device handle
+ * @name - name of device to resize
+ * @new_size - new device size in sectors or 0 to use underlying device size
+ */
+int crypt_resize(struct crypt_device *cd,
+		 const char *name,
+		 uint64_t new_size);
 
 /**
  * Suspends crypt device.
@@ -279,6 +301,16 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	size_t new_passphrase_size);
 
 /**
+ * Get number of keyslots supported for device type.
+ *
+ * Returns slot count or negative errno otherwise if device
+ * doesn't not support keyslots.
+ *
+ * @type - crypt device type
+ */
+int crypt_keyslot_max(const char *type);
+
+/**
 * Add key slot using provided key file path
  *
  * Returns allocated key slot number or negative errno otherwise.
@@ -335,6 +367,32 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
  */
 #define CRYPT_ACTIVATE_READONLY (1 << 0)
 #define CRYPT_ACTIVATE_NO_UUID  (1 << 1)
+
+/**
+ * Active device runtime attributes
+ */
+struct crypt_active_device {
+	uint64_t offset;	/* offset in sectors */
+	uint64_t iv_offset;	/* IV initilisation sector */
+	uint64_t size;		/* active device size */
+	uint32_t flags;		/* activation flags */
+};
+
+/**
+ * Receives runtime attributes of active crypt device
+ *
+ * Returns 0 on success or negative errno value otherwise.
+ *
+ * @cd - crypt device handle
+ * @name - name of active device
+ * @cad - preallocated active device attributes to fill
+ *
+ * Note that this is old API function using global context.
+ * All error messages are reported also through log callback.
+ */
+int crypt_get_active_device(struct crypt_device *cd,
+			    const char *name,
+			    struct crypt_active_device *cad);
 
 /**
  * Activate device or check passphrase

@@ -52,7 +52,6 @@ static int action_status(int arg);
 static int action_luksFormat(int arg);
 static int action_luksOpen(int arg);
 static int action_luksAddKey(int arg);
-static int action_luksDelKey(int arg);
 static int action_luksKillSlot(int arg);
 static int action_luksRemoveKey(int arg);
 static int action_isLuks(int arg);
@@ -116,8 +115,7 @@ static void clogger(struct crypt_device *cd, int level, const char *file,
 	free(target);
 }
 
-/* Interface Callbacks */
-static int yesDialog(char *msg)
+static int _yesDialog(const char *msg, void *usrptr)
 {
 	char *answer = NULL;
 	size_t size = 0;
@@ -139,7 +137,8 @@ static int yesDialog(char *msg)
 	return r;
 }
 
-static void cmdLineLog(int level, char *msg) {
+static void _log(int level, const char *msg, void *usrptr)
+{
 	switch(level) {
 
 	case CRYPT_LOG_NORMAL:
@@ -157,33 +156,6 @@ static void cmdLineLog(int level, char *msg) {
 		break;
 	}
 }
-
-static struct interface_callbacks cmd_icb = {
-	.yesDialog = yesDialog,
-	.log = cmdLineLog,
-};
-
-static void _log(int level, const char *msg, void *usrptr)
-{
-	cmdLineLog(level, (char *)msg);
-}
-
-static int _yesDialog(const char *msg, void *usrptr)
-{
-	return yesDialog((char*)msg);
-}
-
-/* End ICBs */
-
-static int check_slot(int key_slot)
-{
-	/* FIXME: use per format define here */
-	if (key_slot != CRYPT_ANY_SLOT && (key_slot < 0 || key_slot > 8))
-		return 0;
-
-	return 1;
-}
-
 
 static void show_status(int errcode)
 {
@@ -216,85 +188,125 @@ static void show_status(int errcode)
 
 static int action_create(int arg)
 {
-	struct crypt_options options = {
-		.name = action_argv[0],
-		.device = action_argv[1],
-		.cipher = opt_cipher ? opt_cipher : DEFAULT_CIPHER(PLAIN),
+	struct crypt_device *cd = NULL;
+	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	struct crypt_params_plain params = {
 		.hash = opt_hash ?: DEFAULT_PLAIN_HASH,
-		.key_file = opt_key_file,
-		.key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8,
-		.key_slot = opt_key_slot,
-		.flags = 0,
-		.size = opt_size,
-		.offset = opt_offset,
 		.skip = opt_skip,
-		.timeout = opt_timeout,
-		.tries = opt_tries,
-		.icb = &cmd_icb,
+		.offset = opt_offset,
 	};
+	char *password = NULL;
+	unsigned int passwordLen;
+	int r;
 
-	if (options.hash && strcmp(options.hash, "plain") == 0)
-		options.hash = NULL;
-	if (opt_verify_passphrase)
-		options.flags |= CRYPT_FLAG_VERIFY;
-	if (opt_readonly)
-		options.flags |= CRYPT_FLAG_READONLY;
+	if (params.hash && !strcmp(params.hash, "plain"))
+		params.hash = NULL;
 
-	return crypt_create_device(&options);
+	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
+				      cipher, cipher_mode);
+	if (r < 0) {
+		log_err("No known cipher specification pattern detected.\n");
+		goto out;
+	}
+
+	if ((r = crypt_init(&cd, action_argv[1])))
+		goto out;
+
+	crypt_set_timeout(cd, opt_timeout);
+	crypt_set_password_retry(cd, opt_tries);
+
+	r = crypt_format(cd, CRYPT_PLAIN,
+			 cipher, cipher_mode,
+			 NULL, NULL,
+			 (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8,
+			 &params);
+	if (r < 0)
+		goto out;
+
+	crypt_get_key(_("Enter passphrase: "),
+		      &password, &passwordLen,
+		      opt_keyfile_size, opt_key_file,
+		      opt_timeout,
+		      opt_batch_mode ? 0 : opt_verify_passphrase,
+		      cd);
+
+	r = crypt_activate_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
+					 password, passwordLen,
+					 opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+out:
+	crypt_free(cd);
+	crypt_safe_free(password);
+
+	return (r < 0) ? r : 0;
 }
 
 static int action_remove(int arg)
 {
-	struct crypt_options options = {
-		.name = action_argv[0],
-		.icb = &cmd_icb,
-	};
+	struct crypt_device *cd = NULL;
+	int r;
 
-	return crypt_remove_device(&options);
+	r = crypt_init_by_name(&cd, action_argv[0]);
+	if (r == 0)
+		r = crypt_deactivate(cd, action_argv[0]);
+
+	crypt_free(cd);
+	return r;
 }
 
 static int action_resize(int arg)
 {
-	struct crypt_options options = {
-		.name = action_argv[0],
-		.size = opt_size,
-		.icb = &cmd_icb,
-	};
+	struct crypt_device *cd = NULL;
+	int r;
 
-	return crypt_resize_device(&options);
+	r = crypt_init_by_name(&cd, action_argv[0]);
+	if (r == 0)
+		r = crypt_resize(cd, action_argv[0], opt_size);
+
+	crypt_free(cd);
+	return r;
 }
 
 static int action_status(int arg)
 {
-	struct crypt_options options = {
-		.name = action_argv[0],
-		.icb = &cmd_icb,
-	};
-	int r;
+	crypt_status_info ci;
+	struct crypt_active_device cad;
+	struct crypt_device *cd = NULL;
+	int r = 0;
 
-	r = crypt_query_device(&options);
-	if (r < 0)
-		return r;
+	ci = crypt_status(NULL, action_argv[0]);
+	switch (ci) {
+	case CRYPT_INVALID:
+		r = -ENODEV;
+		break;
+	case CRYPT_INACTIVE:
+		log_std("%s/%s is inactive.\n", crypt_get_dir(), action_argv[0]);
+		break;
+	case CRYPT_ACTIVE:
+	case CRYPT_BUSY:
+		log_std("%s/%s is active%s.\n", crypt_get_dir(), action_argv[0],
+			ci == CRYPT_BUSY ? " and is in use" : "");
+		r = crypt_init_by_name(&cd, action_argv[0]);
+		if (r < 0 || !crypt_get_type(cd))
+			goto out;
 
-	if (r == 0) {
-		/* inactive */
-		log_std("%s/%s is inactive.\n", crypt_get_dir(), options.name);
-		r = 1;
-	} else {
-		/* active */
-		log_std("%s/%s is active:\n", crypt_get_dir(), options.name);
-		log_std("  cipher:  %s\n", options.cipher);
-		log_std("  keysize: %d bits\n", options.key_size * 8);
-		log_std("  device:  %s\n", options.device ?: "");
-		log_std("  offset:  %" PRIu64 " sectors\n", options.offset);
-		log_std("  size:    %" PRIu64 " sectors\n", options.size);
-		if (options.skip)
-			log_std("  skipped: %" PRIu64 " sectors\n", options.skip);
-		log_std("  mode:    %s\n", (options.flags & CRYPT_FLAG_READONLY)
-		                           ? "readonly" : "read/write");
-		crypt_put_options(&options);
-		r = 0;
+		log_std("  type:  %s\n", crypt_get_type(cd));
+
+		r = crypt_get_active_device(cd, action_argv[0], &cad);
+		if (r < 0)
+			goto out;
+
+		log_std("  cipher:  %s-%s\n", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
+		log_std("  keysize: %d bits\n", crypt_get_volume_key_size(cd) * 8);
+		log_std("  device:  %s\n", crypt_get_device_name(cd));
+		log_std("  offset:  %" PRIu64 " sectors\n", cad.offset);
+		log_std("  size:    %" PRIu64 " sectors\n", cad.size);
+		if (cad.iv_offset)
+			log_std("  skipped: %" PRIu64 " sectors\n", cad.iv_offset);
+		log_std("  mode:    %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
+					   "readonly" : "read/write");
 	}
+out:
+	crypt_free(cd);
 	return r;
 }
 
@@ -328,7 +340,6 @@ static int action_luksFormat(int arg)
 {
 	int r = -EINVAL, keysize;
 	char *msg = NULL, *key = NULL, cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
-	const char *key_file = NULL;
 	char *password = NULL;
 	unsigned int passwordLen;
 	struct crypt_device *cd = NULL;
@@ -337,19 +348,12 @@ static int action_luksFormat(int arg)
 		.data_alignment = opt_align_payload,
 	};
 
-	if (action_argc > 1) {
-		key_file = action_argv[1];
-		if (opt_key_file)
-			log_err(_("Option --key-file takes precedence over specified key file argument.\n"));
-	} else
-		key_file = opt_key_file;
-
 	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]) == -1) {
 		log_err(_("memory allocation error in action_luksFormat"));
 		r = -ENOMEM;
 		goto out;
 	}
-	r = yesDialog(msg) ? 0 : -EINVAL;
+	r = _yesDialog(msg, NULL) ? 0 : -EINVAL;
 	free(msg);
 	if (r < 0)
 		goto out;
@@ -379,7 +383,7 @@ static int action_luksFormat(int arg)
 	r = -EINVAL;
 	crypt_get_key(_("Enter LUKS passphrase: "),
 		      &password, &passwordLen,
-		      opt_keyfile_size, key_file,
+		      opt_keyfile_size, opt_key_file,
 		      opt_timeout,
 		      opt_batch_mode ? 0 : 1, /* always verify */
 		      cd);
@@ -441,33 +445,143 @@ out:
 	return (r < 0) ? r : 0;
 }
 
-/* FIXME: keyslot operation needs better get_key() implementation. Use old API for now */
+static int verify_keyslot(struct crypt_device *cd, int key_slot,
+			  char *msg_last, char *msg_pass,
+			  const char *key_file, int keyfile_size)
+{
+	crypt_keyslot_info ki;
+	char *password = NULL;
+	unsigned int passwordLen, i;
+	int r = -EPERM;
+
+	ki = crypt_keyslot_status(cd, key_slot);
+	if (ki == CRYPT_SLOT_ACTIVE_LAST && msg_last && !_yesDialog(msg_last, NULL))
+		return -EPERM;
+
+	crypt_get_key(msg_pass, &password, &passwordLen,
+		      keyfile_size, key_file,
+		      opt_timeout,
+		      opt_batch_mode ? 0 : opt_verify_passphrase,
+		      cd);
+	if(!password)
+		return -EINVAL;
+
+	if (ki == CRYPT_SLOT_ACTIVE_LAST) {
+		/* check the last keyslot */
+		r = crypt_activate_by_passphrase(cd, NULL, key_slot,
+						 password, passwordLen, 0);
+	} else {
+		/* try all other keyslots */
+		for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS1); i++) {
+			if (i == key_slot)
+				continue;
+			ki = crypt_keyslot_status(cd, key_slot);
+			if (ki == CRYPT_SLOT_ACTIVE)
+			r = crypt_activate_by_passphrase(cd, NULL, i,
+							 password, passwordLen, 0);
+			if (r == i)
+				break;
+		}
+	}
+
+	if (r < 0)
+		log_err(_("No key available with this passphrase.\n"));
+
+	crypt_safe_free(password);
+	return r;
+}
+
 static int action_luksKillSlot(int arg)
 {
-	struct crypt_options options = {
-		.device = action_argv[0],
-		.key_slot = opt_key_slot,
-		.key_file = opt_key_file,
-		.timeout = opt_timeout,
-		.flags = !opt_batch_mode?CRYPT_FLAG_VERIFY_ON_DELKEY : 0,
-		.icb = &cmd_icb,
-	};
+	struct crypt_device *cd = NULL;
+	int r;
 
-	return crypt_luksKillSlot(&options);
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	crypt_set_timeout(cd, opt_timeout);
+
+	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	switch (crypt_keyslot_status(cd, opt_key_slot)) {
+	case CRYPT_SLOT_ACTIVE_LAST:
+	case CRYPT_SLOT_ACTIVE:
+		log_verbose(_("Key slot %d selected for deletion.\n"), opt_key_slot);
+		break;
+	case CRYPT_SLOT_INACTIVE:
+		log_err(_("Key %d not active. Can't wipe.\n"), opt_key_slot);
+	case CRYPT_SLOT_INVALID:
+		goto out;
+	}
+
+	if (!opt_batch_mode) {
+		r = verify_keyslot(cd, opt_key_slot,
+			_("This is the last keyslot. Device will become unusable after purging this key."),
+			_("Enter any remaining LUKS passphrase: "),
+			opt_key_file, opt_keyfile_size);
+		if (r < 0)
+			goto out;
+	}
+
+	r = crypt_keyslot_destroy(cd, opt_key_slot);
+out:
+	crypt_free(cd);
+
+	return (r < 0) ? r : 0;
 }
 
 static int action_luksRemoveKey(int arg)
 {
-	struct crypt_options options = {
-		.device = action_argv[0],
-		.new_key_file = action_argc>1?action_argv[1]:NULL,
-		.key_file = opt_key_file,
-		.timeout = opt_timeout,
-		.flags = !opt_batch_mode?CRYPT_FLAG_VERIFY_ON_DELKEY : 0,
-		.icb = &cmd_icb,
-	};
+	struct crypt_device *cd = NULL;
+	crypt_keyslot_info ki;
+	char *password = NULL;
+	unsigned int passwordLen;
+	int r;
 
-	return crypt_luksRemoveKey(&options);
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	crypt_set_timeout(cd, opt_timeout);
+
+	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	crypt_get_key(_("Enter LUKS passphrase to be deleted: "),
+		      &password, &passwordLen,
+		      opt_keyfile_size, opt_key_file,
+		      opt_timeout,
+		      opt_batch_mode ? 0 : opt_verify_passphrase,
+		      cd);
+	if(!password) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT,
+					 password, passwordLen, 0);
+	if (r < 0)
+		goto out;
+
+	opt_key_slot = r;
+	log_verbose(_("Key slot %d selected for deletion.\n"), opt_key_slot);
+
+	if (crypt_keyslot_status(cd, opt_key_slot) == CRYPT_SLOT_ACTIVE_LAST &&
+	    !_yesDialog(_("This is the last keyslot. "
+			  "Device will become unusable after purging this key."),
+			NULL)) {
+		r = -EPERM;
+		goto out;
+	}
+
+	r = crypt_keyslot_destroy(cd, opt_key_slot);
+out:
+	crypt_safe_free(password);
+	crypt_free(cd);
+
+	return (r < 0) ? r : 0;
 }
 
 static int action_luksAddKey(int arg)
@@ -853,9 +967,19 @@ int main(int argc, char **argv)
 
 	if (!strcmp(aname, "luksKillSlot"))
 		opt_key_slot = atoi(action_argv[1]);
-	if (!check_slot(opt_key_slot))
+	if (opt_key_slot != CRYPT_ANY_SLOT &&
+	    (opt_key_slot < 0 || opt_key_slot > crypt_keyslot_max(CRYPT_LUKS1)))
 		usage(popt_context, 1, _("Key slot is invalid."),
 		      poptGetInvocationName(popt_context));
+
+	if ((!strcmp(aname, "luksRemoveKey") ||
+	     !strcmp(aname, "luksFormat")) &&
+	     action_argc > 1) {
+		if (opt_key_file)
+			log_err(_("Option --key-file takes precedence over specified key file argument.\n"));
+		else
+			opt_key_file = (char*)action_argv[1];
+	}
 
 	if (opt_random && opt_urandom)
 		usage(popt_context, 1, _("Only one of --use-[u]random options is allowed."),

@@ -8,6 +8,7 @@ DEV_NAME2=dummy2
 ORIG_IMG=luks-test-orig
 IMG=luks-test
 KEY1=key1
+KEY2=key2
 
 LUKS_HEADER="S0-5 S6-7 S8-39 S40-71 S72-103 S104-107 S108-111 R112-131 R132-163 S164-167 S168-207 A0-591"
 KEY_SLOT0="S208-211 S212-215 R216-247 A248-251 A251-255"
@@ -25,7 +26,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $KEY1 >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 >/dev/null 2>&1
 }
 
 function fail()
@@ -61,6 +62,10 @@ function prepare()
 
 	if [ ! -e $KEY1 ]; then
 		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
+	fi
+
+	if [ ! -e $KEY2 ]; then
+		dd if=/dev/urandom of=$KEY2 count=1 bs=16 >/dev/null 2>&1
 	fi
 
 	cp $IMG $ORIG_IMG
@@ -191,6 +196,65 @@ echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV 
 $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 128 --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
+
+prepare "[17] AddKey passphrase and keyfile" wipe
+# [0]key0 [1]key1 [2]$KEY1/1 [3]$KEY1 [4]$KEY2
+$CRYPTSETUP -q luksFormat $LOOPDEV $KEY1 --key-slot 3 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 3 2>/dev/null && fail
+# keyfile/keyfile
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 4 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: ENABLED" || fail
+# passphrase/keyfile
+echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 --key-slot 0 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: ENABLED" || fail
+# passphrase/passphrase
+echo -e "key0\nkey1\n" | $CRYPTSETUP luksAddKey $LOOPDEV --key-slot 1 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: ENABLED" || fail
+# keyfile/passphrase
+echo -e "key1\n" | $CRYPTSETUP luksAddKey $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 1 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: ENABLED" || fail
+
+prepare "[18] RemoveKey passphrase and keyfile" reuse
+$CRYPTSETUP luksRemoveKey $LOOPDEV $KEY1 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: DISABLED" || fail
+$CRYPTSETUP luksRemoveKey $LOOPDEV $KEY1 2>/dev/null && fail
+$CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 --keyfile-size 1 2>/dev/null && fail
+$CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: DISABLED" || fail
+# kill slot using passphrase from 1
+echo "key1" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: DISABLED" || fail
+# remove key0 / slot 0
+echo "key0" | $CRYPTSETUP luksRemoveKey $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: DISABLED" || fail
+# last keyslot, in batch mode no passphrase needed...
+$CRYPTSETUP luksKillSlot -q $LOOPDEV 1 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
+
+prepare "[19] create & status & resize" wipe
+echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash xxx 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --cipher aes-cbc-essiv:sha256 --offset 3 --skip 4 --readonly || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "offset:" | grep -q "3 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "skipped:" | grep -q "4 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "mode:" | grep -q "readonly" || fail
+$CRYPTSETUP -q resize  $DEV_NAME --size 100 || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q resize  $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "19997 sectors" || fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV || fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
+echo "key0" | $CRYPTSETUP -q create $DEV_NAME $LOOPDEV || fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
+# verify is ignored on non-tty input
+echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --verify-passphrase || fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size 255 2>/dev/null && fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d blah 2>/dev/null && fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
 
 remove_mapping
 exit 0

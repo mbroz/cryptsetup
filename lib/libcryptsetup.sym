@@ -14,6 +14,7 @@ CRYPTSETUP_1.0 {
 		crypt_memory_lock;
 		crypt_format;
 		crypt_load;
+		crypt_resize;
 		crypt_suspend;
 		crypt_resume_by_passphrase;
 		crypt_resume_by_keyfile;
@@ -38,9 +39,13 @@ CRYPTSETUP_1.0 {
 		crypt_get_volume_key_size;
 		crypt_get_device_name;
 
+		crypt_get_type;
+		crypt_get_active_device;
+
 		crypt_set_rng_type;
 		crypt_get_rng_type;
 
+		crypt_keyslot_max;
 		crypt_keyslot_status;
 		crypt_get_error;
 		crypt_get_dir;
