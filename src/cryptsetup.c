@@ -223,12 +223,11 @@ static int action_create(int arg)
 	if (r < 0)
 		goto out;
 
-	crypt_get_key(_("Enter passphrase: "),
-		      &password, &passwordLen,
-		      opt_keyfile_size, opt_key_file,
-		      opt_timeout,
-		      opt_batch_mode ? 0 : opt_verify_passphrase,
-		      cd);
+	r = crypt_get_key(_("Enter passphrase: "), &password, &passwordLen,
+			  opt_keyfile_size, opt_key_file, opt_timeout,
+			  opt_batch_mode ? 0 : opt_verify_passphrase, cd);
+	if (r < 0)
+		goto out;
 
 	r = crypt_activate_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
 					 password, passwordLen,
@@ -380,14 +379,10 @@ static int action_luksFormat(int arg)
 	else if (opt_urandom)
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
-	r = -EINVAL;
-	crypt_get_key(_("Enter LUKS passphrase: "),
-		      &password, &passwordLen,
-		      opt_keyfile_size, opt_key_file,
-		      opt_timeout,
-		      opt_batch_mode ? 0 : 1, /* always verify */
-		      cd);
-	if(!password)
+	r = crypt_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
+			  opt_keyfile_size, opt_key_file, opt_timeout,
+			  opt_batch_mode ? 0 : 1 /* always verify */, cd);
+	if (r < 0)
 		goto out;
 
 	if (opt_master_key_file) {
@@ -452,19 +447,17 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 	crypt_keyslot_info ki;
 	char *password = NULL;
 	unsigned int passwordLen, i;
-	int r = -EPERM;
+	int r;
 
 	ki = crypt_keyslot_status(cd, key_slot);
 	if (ki == CRYPT_SLOT_ACTIVE_LAST && msg_last && !_yesDialog(msg_last, NULL))
 		return -EPERM;
 
-	crypt_get_key(msg_pass, &password, &passwordLen,
-		      keyfile_size, key_file,
-		      opt_timeout,
-		      opt_batch_mode ? 0 : opt_verify_passphrase,
-		      cd);
-	if(!password)
-		return -EINVAL;
+	r = crypt_get_key(msg_pass, &password, &passwordLen,
+			  keyfile_size, key_file, opt_timeout,
+			  opt_batch_mode ? 0 : opt_verify_passphrase, cd);
+	if(r < 0)
+		goto out;
 
 	if (ki == CRYPT_SLOT_ACTIVE_LAST) {
 		/* check the last keyslot */
@@ -486,7 +479,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 
 	if (r < 0)
 		log_err(_("No key available with this passphrase.\n"));
-
+out:
 	crypt_safe_free(password);
 	return r;
 }
@@ -548,16 +541,14 @@ static int action_luksRemoveKey(int arg)
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
-	crypt_get_key(_("Enter LUKS passphrase to be deleted: "),
+	r = crypt_get_key(_("Enter LUKS passphrase to be deleted: "),
 		      &password, &passwordLen,
 		      opt_keyfile_size, opt_key_file,
 		      opt_timeout,
 		      opt_batch_mode ? 0 : opt_verify_passphrase,
 		      cd);
-	if(!password) {
-		r = -EINVAL;
+	if(r < 0)
 		goto out;
-	}
 
 	r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT,
 					 password, passwordLen, 0);

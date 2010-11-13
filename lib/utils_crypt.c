@@ -175,9 +175,9 @@ out_err:
  * Note: --key-file=- is interpreted as a read from a binary file (stdin)
  */
 
-void crypt_get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
-		   const char *key_file, int timeout, int verify,
-		   struct crypt_device *cd)
+int crypt_get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
+		  const char *key_file, int timeout, int verify,
+		  struct crypt_device *cd)
 {
 	int fd = -1;
 	char *pass = NULL;
@@ -282,7 +282,7 @@ void crypt_get_key(char *prompt, char **key, unsigned int *passLen, int key_size
 	}
 	if(fd != STDIN_FILENO)
 		close(fd);
-	return;
+	return 0;
 
 out_err:
 	if(fd >= 0 && fd != STDIN_FILENO)
@@ -291,4 +291,5 @@ out_err:
 		crypt_safe_free(pass);
 	*key = NULL;
 	*passLen = 0;
+	return -EINVAL;
 }

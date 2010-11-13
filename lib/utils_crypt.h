@@ -10,9 +10,9 @@ struct crypt_device;
 
 int crypt_parse_name_and_mode(const char *s, char *cipher, char *cipher_mode);
 
-void crypt_get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
-		   const char *key_file, int timeout, int how2verify,
-		   struct crypt_device *cd);
+int crypt_get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
+		  const char *key_file, int timeout, int how2verify,
+		  struct crypt_device *cd);
 
 void *crypt_safe_alloc(size_t size);
 void crypt_safe_free(void *data);
