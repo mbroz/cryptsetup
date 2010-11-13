@@ -88,7 +88,7 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
  * - Note that if this function is defined, verify option is ignored
  *   (caller whch provided callback is responsible fo password verification)
  * - Only zero terminated passwords can be enteted this way, for complex
- *   API functions directly.
+ *   use API functions directly.
  * - Maximal length of password is limited to @length-1 (minimal 511 chars)
  */
 void crypt_set_password_callback(struct crypt_device *cd,

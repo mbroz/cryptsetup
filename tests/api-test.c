@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <linux/fs.h>
 #include <errno.h>
+#include <assert.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
@@ -51,6 +52,8 @@
 
 #define KEYFILE2 "key2.file"
 #define KEY2 "0123456789abcdef"
+
+#define PASSPHRASE "blabla"
 
 #define DEVICE_TEST_UUID "12345678-1234-1234-1234-123456789abc"
 
@@ -539,7 +542,7 @@ static void AddDevicePlain(void)
 	int fd;
 	char key[128], key2[128], path[128];
 
-	char *passphrase = "blabla";
+	char *passphrase = PASSPHRASE;
 	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
 	char *cipher = "aes";
@@ -595,6 +598,64 @@ static void AddDevicePlain(void)
 	EQ_(key_size, crypt_get_volume_key_size(cd));
 	EQ_(0, crypt_get_data_offset(cd));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+}
+
+#define CALLBACK_ERROR "calback_error xyz"
+static int pass_callback_err(const char *msg, char *buf, size_t length, void *usrptr)
+{
+	struct crypt_device *cd = usrptr;
+
+	assert(cd);
+	assert(length);
+	assert(msg);
+
+	crypt_log(cd, CRYPT_LOG_ERROR, CALLBACK_ERROR);
+	return -EINVAL;
+}
+
+static int pass_callback_ok(const char *msg, char *buf, size_t length, void *usrptr)
+{
+	assert(length);
+	assert(msg);
+	strcpy(buf, PASSPHRASE);
+	return strlen(buf);
+}
+
+static void CallbacksTest(void)
+{
+	struct crypt_device *cd;
+	struct crypt_params_plain params = {
+		.hash = "sha1",
+		.skip = 0,
+		.offset = 0,
+	};
+
+	size_t key_size = 256 / 8;
+	char *cipher = "aes";
+	char *cipher_mode = "cbc-essiv:sha256";
+	char *passphrase = PASSPHRASE;
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	crypt_set_log_callback(cd, &new_log, NULL);
+	//crypt_set_log_callback(cd, NULL, NULL);
+
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+
+	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	reset_log();
+	crypt_set_password_callback(cd, pass_callback_err, cd);
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, NULL, 0, 0), "callback fails");
+	EQ_(strncmp(global_log, CALLBACK_ERROR, strlen(CALLBACK_ERROR)), 0);
+
+	crypt_set_password_callback(cd, pass_callback_ok, NULL);
+	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, NULL, 0, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
 	crypt_free(cd);
 }
 
@@ -817,6 +878,7 @@ int main (int argc, char *argv[])
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 
 	RUN_(NonFIPSAlg, "Crypto is properly initialised in format"); //must be the first!
+
 	RUN_(LuksUUID, "luksUUID API call");
 	RUN_(IsLuks, "isLuks API call");
 	RUN_(LuksOpen, "luksOpen API call");
@@ -830,6 +892,8 @@ int main (int argc, char *argv[])
 	RUN_(AddDeviceLuks, "Format and use LUKS device");
 	RUN_(UseLuksDevice, "Use pre-formated LUKS device");
 	RUN_(SuspendDevice, "Suspend/Resume test");
+
+	RUN_(CallbacksTest, "API callbacks test");
 
 	_cleanup();
 	return 0;

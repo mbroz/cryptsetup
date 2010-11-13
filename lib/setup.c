@@ -95,7 +95,12 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 			 const char *key_file, size_t key_size,
 			 const char *pass, size_t passLen)
 {
-	char *key = crypt_safe_alloc(key_size);
+	char *key;
+
+	if (!key_size)
+		return NULL;
+
+	key = crypt_safe_alloc(key_size);
 	memset(key, 0, key_size);
 
 	/* key is coming from binary file */
@@ -369,12 +374,14 @@ static int create_device_helper(struct crypt_device *cd,
 		return -ENOMEM;
 
 	processed_key = process_key(cd, hash, key_file, key_size, key, keyLen);
-	if (!processed_key)
-		return -ENOENT;
+	if (!processed_key) {
+		r = -ENOENT;
+		goto out;
+	}
 
 	r = dm_create_device(name, cd->device, dm_cipher ?: cipher, cd->type, uuid, size, skip, offset,
 			     key_size, processed_key, read_only, reload);
-
+out:
 	free(dm_cipher);
 	crypt_safe_free(processed_key);
 	return r;
@@ -433,13 +440,24 @@ int crypt_confirm(struct crypt_device *cd, const char *msg)
 static void key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 			      unsigned int *key_len, int force_verify)
 {
+	char *prompt = NULL;
 	int r;
+
+	*key = NULL;
+	if(!msg && asprintf(&prompt, _("Enter passphrase for %s: "),
+			    cd->device) < 0)
+		return;
+
+	if (!msg)
+		msg = prompt;
 
 	if (cd->password) {
 		*key = crypt_safe_alloc(MAX_TTY_PASSWORD_LEN);
-		if (*key)
+		if (!*key) {
+			free(prompt);
 			return;
-		r = cd->password(msg, *key, (size_t)key_len, cd->password_usrptr);
+		}
+		r = cd->password(msg, *key, MAX_TTY_PASSWORD_LEN, cd->password_usrptr);
 		if (r < 0) {
 			crypt_safe_free(*key);
 			*key = NULL;
@@ -448,17 +466,16 @@ static void key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 	} else
 		crypt_get_key(msg, key, key_len, 0, NULL, cd->timeout,
 			      (force_verify || cd->password_verify), cd);
+
+	free(prompt);
 }
 
 static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslot,
 					     struct volume_key **vk)
 {
-	char *prompt = NULL, *passphrase_read = NULL;
+	char *passphrase_read = NULL;
 	unsigned int passphrase_size_read;
 	int r = -EINVAL, tries = cd->tries;
-
-	if(asprintf(&prompt, _("Enter passphrase for %s: "), cd->device) < 0)
-		return -ENOMEM;
 
 	*vk = NULL;
 	do {
@@ -466,7 +483,7 @@ static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslo
 			crypt_free_volume_key(*vk);
 		*vk = NULL;
 
-		key_from_terminal(cd, prompt, &passphrase_read,
+		key_from_terminal(cd, NULL, &passphrase_read,
 				  &passphrase_size_read, 0);
 		if(!passphrase_read) {
 			r = -EINVAL;
@@ -483,10 +500,8 @@ static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslo
 		crypt_free_volume_key(*vk);
 		*vk = NULL;
 	}
-	free(prompt);
 
 	return r;
-
 }
 
 static void key_from_file(struct crypt_device *cd, char *msg,
@@ -1747,19 +1762,12 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 {
 	crypt_status_info ci;
 	struct volume_key *vk = NULL;
-	char *prompt = NULL;
+	char *read_passphrase = NULL;
 	int r;
 
 	log_dbg("%s volume %s [keyslot %d] using %spassphrase.",
 		name ? "Activating" : "Checking", name ?: "",
 		keyslot, passphrase ? "" : "[none] ");
-
-	/* plain, use hashed passphrase */
-	if (isPLAIN(cd->type))
-		return create_device_helper(cd, name, cd->plain_hdr.hash,
-			cd->plain_cipher, cd->plain_cipher_mode, NULL, passphrase, passphrase_size,
-			cd->volume_key->keylength, 0, cd->plain_hdr.skip,
-			cd->plain_hdr.offset, cd->plain_uuid, flags & CRYPT_ACTIVATE_READONLY, 0, 0);
 
 	if (name) {
 		ci = crypt_status(NULL, name);
@@ -1771,24 +1779,43 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		}
 	}
 
-	if(asprintf(&prompt, _("Enter passphrase for %s: "), cd->device) < 0)
-		return -ENOMEM;
+	/* plain, use hashed passphrase */
+	if (isPLAIN(cd->type)) {
+		if (!passphrase) {
+			key_from_terminal(cd, NULL, &read_passphrase,
+					  &passphrase_size, 0);
+			if (!read_passphrase) {
+				r = -EINVAL;
+				goto out;
+			}
+			passphrase = read_passphrase;
+		}
+		r = create_device_helper(cd, name, cd->plain_hdr.hash,
+					 cd->plain_cipher, cd->plain_cipher_mode,
+					 NULL, passphrase, passphrase_size,
+					 cd->volume_key->keylength, 0,
+					 cd->plain_hdr.skip, cd->plain_hdr.offset,
+					 cd->plain_uuid,
+					 flags & CRYPT_ACTIVATE_READONLY, 0, 0);
+		keyslot = 0;
+	} else if (isLUKS(cd->type)) {
+		/* provided passphrase, do not retry */
+		if (passphrase) {
+			r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase,
+						   passphrase_size, &cd->hdr, &vk, cd);
+		} else
+			r = volume_key_by_terminal_passphrase(cd, keyslot, &vk);
 
-	/* provided passphrase, do not retry */
-	if (passphrase) {
-		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase,
-					   passphrase_size, &cd->hdr, &vk, cd);
+		if (r >= 0) {
+			keyslot = r;
+			if (name)
+				r = open_from_hdr_and_vk(cd, vk, name, flags);
+		}
 	} else
-		r = volume_key_by_terminal_passphrase(cd, keyslot, &vk);
-
-	if (r >= 0) {
-		keyslot = r;
-		if (name)
-			r = open_from_hdr_and_vk(cd, vk, name, flags);
-	}
-
+		r = -EINVAL;
+out:
+	crypt_safe_free(read_passphrase);
 	crypt_free_volume_key(vk);
-	free(prompt);
 
 	return r < 0  ? r : keyslot;
 }
@@ -1859,6 +1886,9 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	int r;
 
 	log_dbg("Activating volume %s by volume key.", name);
+
+	if (!volume_key_size)
+		return -EINVAL;
 
 	/* use key directly, no hash */
 	if (isPLAIN(cd->type))
