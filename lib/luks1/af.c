@@ -3,7 +3,7 @@
  * Copyright 2004, Clemens Fruhwirth <clemens@endorphin.org>
  * Copyright (C) 2009 Red Hat, Inc. All rights reserved.
  *
- * AFsplitter diffuses information over a large stripe of data, 
+ * AFsplitter diffuses information over a large stripe of data,
  * therefor supporting secure data destruction.
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
- 
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <netinet/in.h>
 #include <errno.h>
 #include <gcrypt.h>
-#include <../lib/internal.h>
+#include "internal.h"
 
 static void XORblock(char const *src1, char const *src2, char *dst, size_t n)
 {
@@ -81,7 +81,7 @@ static int diffuse(char *src, char *dst, size_t size, int hash_id)
 
 /*
  * Information splitting. The amount of data is multiplied by
- * blocknumbers. The same blocksize and blocknumbers values 
+ * blocknumbers. The same blocksize and blocknumbers values
  * must be supplied to AF_merge to recover information.
  */
 

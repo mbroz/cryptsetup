@@ -3,8 +3,6 @@
 
 #include <stddef.h>
 
-/* */
-
 int PBKDF2_HMAC(const char *hash,
 		const char *password, size_t passwordLen,
 		const char *salt, size_t saltLen, unsigned int iterations,

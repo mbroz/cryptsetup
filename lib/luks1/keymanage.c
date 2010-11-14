@@ -1,5 +1,5 @@
 /*
- * LUKS - Linux Unified Key Setup 
+ * LUKS - Linux Unified Key Setup
  *
  * Copyright (C) 2004-2006, Clemens Fruhwirth <clemens@endorphin.org>
  *
@@ -29,12 +29,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <uuid/uuid.h>
 
 #include "luks.h"
 #include "af.h"
 #include "pbkdf.h"
-#include <uuid/uuid.h>
-#include <../lib/internal.h>
+#include "internal.h"
 
 #define div_round_up(a,b) ({           \
 	typeof(a) __a = (a);          \
@@ -327,8 +327,8 @@ int LUKS_write_phdr(const char *device,
 		    struct luks_phdr *hdr,
 		    struct crypt_device *ctx)
 {
-	int devfd = 0; 
-	unsigned int i; 
+	int devfd = 0;
+	unsigned int i;
 	struct luks_phdr convHdr;
 	int r;
 
@@ -336,7 +336,7 @@ int LUKS_write_phdr(const char *device,
 		sizeof(struct luks_phdr), device);
 
 	devfd = open(device,O_RDWR | O_DIRECT | O_SYNC);
-	if(-1 == devfd) { 
+	if(-1 == devfd) {
 		log_err(ctx, _("Cannot open device %s.\n"), device);
 		return -EINVAL;
 	}
@@ -696,7 +696,7 @@ int LUKS_open_key_with_hdr(const char *device,
 
 		/* Do not retry for errors that are no -EPERM or -ENOENT,
 		   former meaning password wrong, latter key slot inactive */
-		if ((r != -EPERM) && (r != -ENOENT)) 
+		if ((r != -EPERM) && (r != -ENOENT))
 			return r;
 	}
 	/* Warning, early returns above */

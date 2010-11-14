@@ -1,8 +1,8 @@
 /*
- * LUKS - Linux Unified Key Setup 
+ * LUKS - Linux Unified Key Setup
  *
  * Copyright (C) 2004-2006, Clemens Fruhwirth <clemens@endorphin.org>
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 2 as published by the Free Software Foundation.
@@ -33,9 +33,7 @@
 #include <signal.h>
 
 #include "luks.h"
-//#include "../lib/libcryptsetup.h"
-#include "../lib/internal.h"
-//#include "../lib/blockdev.h"
+#include "internal.h"
 
 #define div_round_up(a,b) ({          \
 	typeof(a) __a = (a);          \
@@ -80,7 +78,7 @@ static void sigint_handler(int sig)
 	if(devfd >= 0)
 		close(devfd);
 	devfd = -1;
-	if(cleaner_name) 
+	if(cleaner_name)
 		dm_remove_device(cleaner_name, 1, cleaner_size);
 
 	signal(SIGINT, SIG_DFL);
@@ -118,10 +116,10 @@ static char *_error_hint(char *cipherName, char *cipherMode, size_t keyLength)
 
 /* This function is not reentrant safe, as it installs a signal
    handler and global vars for cleaning */
-static int LUKS_endec_template(char *src, size_t srcLength, 
-			       struct luks_phdr *hdr, 
-			       char *key, size_t keyLength, 
-			       const char *device, 
+static int LUKS_endec_template(char *src, size_t srcLength,
+			       struct luks_phdr *hdr,
+			       char *key, size_t keyLength,
+			       const char *device,
 			       unsigned int sector,
 			       ssize_t (*func)(int, void *, size_t),
 			       int mode,
@@ -130,7 +128,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	char *name = NULL;
 	char *fullpath = NULL;
 	char *dmCipherSpec = NULL;
-	const char *dmDir = dm_get_dir(); 
+	const char *dmDir = dm_get_dir();
 	int r = -1;
 
 	if(dmDir == NULL) {

@@ -1,10 +1,10 @@
 moduledir = $(libdir)/cryptsetup
 
-noinst_LTLIBRARIES = libluks.la
+noinst_LTLIBRARIES = libluks1.la
 
-libluks_la_CFLAGS = -Wall @LIBGCRYPT_CFLAGS@
+libluks1_la_CFLAGS = -Wall @LIBGCRYPT_CFLAGS@
 
-libluks_la_SOURCES = \
+libluks1_la_SOURCES = \
 	af.c \
 	pbkdf.c \
 	keymanage.c \

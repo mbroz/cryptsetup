@@ -1,3 +1,5 @@
+SUBDIRS = luks1
+
 moduledir = $(libdir)/cryptsetup
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -5,7 +7,7 @@ pkgconfig_DATA = libcryptsetup.pc
 
 INCLUDES = \
 	-I$(top_srcdir)				\
-	-I$(top_srcdir)/luks			\
+	-I$(top_srcdir)/lib/luks1		\
 	-DDATADIR=\""$(datadir)"\"		\
 	-DLIBDIR=\""$(libdir)"\"		\
 	-DPREFIX=\""$(prefix)"\"		\
@@ -29,7 +31,7 @@ libcryptsetup_la_LIBADD = \
 	@UUID_LIBS@				\
 	@DEVMAPPER_LIBS@			\
 	@LIBGCRYPT_LIBS@			\
-	../luks/libluks.la
+	luks1/libluks1.la
 
 libcryptsetup_la_SOURCES = \
 	setup.c					\
