@@ -811,6 +811,68 @@ static void AddDeviceLuks(void)
 	crypt_free(cd);
 }
 
+static void UseTempVolumes(void)
+{
+	struct crypt_device *cd;
+	struct crypt_params_plain params = {
+		.hash = "sha1",
+		.skip = 0,
+		.offset = 0,
+	};
+
+	// Tepmporary device without keyslot but with on-disk LUKS header
+	OK_(crypt_init(&cd, DEVICE_2));
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "not yet formatted");
+	OK_(crypt_format(cd, CRYPT_LUKS1, "aes", "cbc-essiv:sha256", NULL, NULL, 16, NULL));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0));
+	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
+	crypt_free(cd);
+
+	// Volume key is properly initialised from active device
+	OK_(crypt_init_by_name(&cd, CDEVICE_2));
+	OK_(crypt_deactivate(cd, CDEVICE_2));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0));
+	OK_(crypt_deactivate(cd, CDEVICE_2));
+	crypt_free(cd);
+
+	// Dirty checks: device without UUID
+	// we should be able to remove it but not manuipulate with it
+	system("dmsetup create " CDEVICE_2 " --table \""
+	       "0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
+	       DEVICE_2 " 2048\"");
+	OK_(crypt_init_by_name(&cd, CDEVICE_2));
+	OK_(crypt_deactivate(cd, CDEVICE_2));
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "No known device type");
+	crypt_free(cd);
+
+	// Dirty checks: device with UUID but LUKS header key fingerprint must fail)
+	system("dmsetup create " CDEVICE_2 " --table \""
+	       "0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
+	       DEVICE_2 " 2048\" "
+	       "-u CRYPT-LUKS1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-ctest1");
+	OK_(crypt_init_by_name(&cd, CDEVICE_2));
+	OK_(crypt_deactivate(cd, CDEVICE_2));
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "wrong volume key");
+	crypt_free(cd);
+
+	// No slots
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "volume key is lost");
+	crypt_free(cd);
+
+	// Plain device
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, NULL));
+	FAIL_(crypt_activate_by_volume_key(cd, NULL, "xxx", 3, 0), "cannot verify key with plain");
+	FAIL_(crypt_volume_key_verify(cd, "xxx", 3), "cannot verify key with plain");
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, "xxx", 3, 0), "wrong key lenght");
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, "volumekeyvolumek", 16, 0));
+	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_2));
+	crypt_free(cd);
+}
+
 // Check that gcrypt is properly initialised in format
 static void NonFIPSAlg(void)
 {
@@ -892,6 +954,7 @@ int main (int argc, char *argv[])
 	RUN_(AddDeviceLuks, "Format and use LUKS device");
 	RUN_(UseLuksDevice, "Use pre-formated LUKS device");
 	RUN_(SuspendDevice, "Suspend/Resume test");
+	RUN_(UseTempVolumes, "Format and use temporary encrypted device");
 
 	RUN_(CallbacksTest, "API callbacks test");
 

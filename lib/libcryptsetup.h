@@ -175,7 +175,7 @@ struct crypt_params_luks1 {
  * @cipher_mode - including IV specification (e.g. "xts-plain")
  * @uuid - requested UUID or NULL if it should be generated
  * @volume_key - pre-generated volume key or NULL if it should be generated (only for LUKS)
- * @volume_key_size - size og volume key in bytes.
+ * @volume_key_size - size of volume key in bytes.
  * @params - crypt type specific parameters
  *
  * Note that crypt_format do not enable any keyslot, but it stores volume key internally
@@ -439,9 +439,12 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  *
  * @cd - crypt device handle
  * @name - name of device to create, if NULL only check volume key
- * @volume_key - provided volume key
+ * @volume_key - provided volume key (or NULL to use internal)
  * @volume_key_size - size of @volume_key
  * @flags - activation flags
+ *
+ * If NULL is used for volume_key, device has to be initialized
+ * by previous operation (like crypt_format() or crypt_init_by_name())
  */
 int crypt_activate_by_volume_key(struct crypt_device *cd,
 	const char *name,
