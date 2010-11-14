@@ -37,7 +37,7 @@ static int random_fd = -1;
 /* Read random chunk - gathered data usually appears with this granularity */
 #define RANDOM_DEVICE_CHUNK	8
 
-/* Timeout after the warning is printed when there is random data (entropy) */
+/* Timeout to print warning if no random data (entropy) */
 #define RANDOM_DEVICE_TIMEOUT	5
 
 /* URANDOM_DEVICE access */
