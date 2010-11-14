@@ -102,6 +102,17 @@ returns true, if <device> is a LUKS partition. Otherwise, false.
 \fIluksDump\fR <device>
 .IP
 dumps the header information of a LUKS partition.
+
+If \-\-dump-master-key option is used, the volume (master) key is dumped instead of keyslot info.
+Because this information can be used to access encrypted device without passphrase knowledge
+(even without LUKS header) use this option very carefully.
+
+Dump with volume key (either printed or stored to file) should be always stored encrypted
+and on safe place.
+
+LUKS passphrase or key file is required for volume key dump.
+
+\fB<options>\fR can be [\-\-dump-master-key, \-\-key-file, \-\-keyfile-size].
 .PP
 \fIluksHeaderBackup\fR <device> \-\-header-backup-file <file>
 .IP
@@ -184,6 +195,12 @@ Default is exhaustive read from key file.
 Use pre-generated master key stored in file. For \fIluksFormat\fR it allows LUKS header reformatting with the same master key (if all other parameters are the same existing encrypted data remains intact).
 
 For \fIluksAddKey\fR it allows adding new passphrase with only master key knowledge.
+.TP
+.B "\-\-dump-master-key"
+For \fIluksDump\fR it allows LUKS header dump including volume (master) key.
+Use with care (this information allows access to device without passphrase knowledge).
+
+See \fIluksDump\fR for more info.
 .TP
 .B "\-\-use-random"
 .TP

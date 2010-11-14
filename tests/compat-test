@@ -267,5 +267,14 @@ echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME2 2>/dev/null && fail
 $CRYPTSETUP  luksClose  $DEV_NAME || fail
 
+prepare "[21] luksDump" wipe
+echo "key0" | $CRYPTSETUP -q luksFormat --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
+echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: ENABLED" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q $TEST_UUID || fail
+echo "bad" | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || fail
+$CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || fail
+
 remove_mapping
 exit 0

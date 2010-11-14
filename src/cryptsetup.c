@@ -41,6 +41,7 @@ static int opt_tries = 3;
 static int opt_align_payload = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
+static int opt_dump_master_key = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -657,6 +658,57 @@ out:
 
 }
 
+static int luksDump_with_volume_key(struct crypt_device *cd)
+{
+	char *vk = NULL, *password = NULL;
+	unsigned int passwordLen = 0;
+	size_t vk_size;
+	int i, r;
+
+	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	if (!_yesDialog(
+	    _("LUKS header dump with volume key is sensitive information\n"
+	      "which allows access to encrypted partition without passphrase.\n"
+	      "This dump should be always stored encrypted on safe place."),
+	      NULL))
+		return -EPERM;
+
+	vk_size = crypt_get_volume_key_size(cd);
+	vk = crypt_safe_alloc(vk_size);
+	if (!vk)
+		return -ENOMEM;
+
+	r = crypt_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
+			  opt_keyfile_size, opt_key_file, opt_timeout, 0, cd);
+	if (r < 0)
+		goto out;
+
+	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size,
+				 password, passwordLen);
+	if (r < 0)
+		goto out;
+
+	log_std("LUKS header information for %s\n", crypt_get_device_name(cd));
+	log_std("Cipher name:   \t%s\n", crypt_get_cipher(cd));
+	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
+	log_std("Payload offset:\t%d\n", crypt_get_data_offset(cd));
+	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
+	log_std("MK bits:       \t%d\n", vk_size * 8);
+	log_std("MK dump:\t");
+
+	for(i = 0; i < vk_size; i++) {
+		if (i && !(i % 16))
+			log_std("\n\t\t");
+		log_std("%02hhx ", (char)vk[i]);
+	}
+	log_std("\n");
+
+out:
+	crypt_safe_free(password);
+	crypt_safe_free(vk);
+	return r;
+}
+
 static int action_luksDump(int arg)
 {
 	struct crypt_device *cd = NULL;
@@ -668,7 +720,10 @@ static int action_luksDump(int arg)
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
-	r = crypt_dump(cd);
+	if (opt_dump_master_key)
+		r = luksDump_with_volume_key(cd);
+	else
+		r = crypt_dump(cd);
 out:
 	crypt_free(cd);
 	return r;
@@ -836,6 +891,7 @@ int main(int argc, char **argv)
 	};
 	static struct poptOption popt_options[] = {
 		{ NULL,                '\0', POPT_ARG_INCLUDE_TABLE, popt_help_options, 0, N_("Help options:"), NULL },
+		{ "version",           '\0', POPT_ARG_NONE, &opt_version_mode,          0, N_("Print package version"), NULL },
 		{ "verbose",           'v',  POPT_ARG_NONE, &opt_verbose,               0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",             '\0', POPT_ARG_NONE, &opt_debug,                 0, N_("Show debug messages"), NULL },
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
@@ -843,6 +899,7 @@ int main(int argc, char **argv)
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE, &opt_verify_passphrase,     0, N_("Verifies the passphrase by asking for it twice"), NULL },
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
 		{ "master-key-file",  '\0',  POPT_ARG_STRING, &opt_master_key_file,     0, N_("Read the volume (master) key from file."), NULL },
+		{ "dump-master-key",  '\0',  POPT_ARG_NONE, &opt_dump_master_key,       0, N_("Dump volume (master) key instead of keyslots info."), NULL },
 		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
 		{ "keyfile-size",      'l',  POPT_ARG_INT, &opt_keyfile_size,           0, N_("Limits the read from keyfile"), N_("bytes") },
 		{ "new-keyfile-size", '\0',  POPT_ARG_INT, &opt_new_keyfile_size,       0, N_("Limits the read from newly added keyfile"), N_("bytes") },
@@ -853,7 +910,6 @@ int main(int argc, char **argv)
 		{ "readonly",          'r',  POPT_ARG_NONE, &opt_readonly,              0, N_("Create a readonly mapping"), NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF2 iteration time for LUKS (in ms)"), N_("msecs") },
 		{ "batch-mode",        'q',  POPT_ARG_NONE, &opt_batch_mode,            0, N_("Do not ask for confirmation"), NULL },
-		{ "version",           '\0', POPT_ARG_NONE, &opt_version_mode,          0, N_("Print package version"), NULL },
 		{ "timeout",           't',  POPT_ARG_INT, &opt_timeout,                0, N_("Timeout for interactive passphrase prompt (in seconds)"), N_("secs") },
 		{ "tries",             'T',  POPT_ARG_INT, &opt_tries,                  0, N_("How often the input of the passphrase can be retried"), NULL },
 		{ "align-payload",     '\0', POPT_ARG_INT, &opt_align_payload,          0, N_("Align payload at <n> sector boundaries - for luksFormat"), N_("SECTORS") },
