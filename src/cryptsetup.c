@@ -237,7 +237,7 @@ out:
 	crypt_free(cd);
 	crypt_safe_free(password);
 
-	return (r < 0) ? r : 0;
+	return r;
 }
 
 static int action_remove(int arg)
@@ -405,7 +405,7 @@ out:
 	crypt_safe_free(key);
 	crypt_safe_free(password);
 
-	return (r < 0) ? r : 0;
+	return r;
 }
 
 static int action_luksOpen(int arg)
@@ -438,7 +438,7 @@ static int action_luksOpen(int arg)
 			CRYPT_ANY_SLOT, NULL, 0, flags);
 out:
 	crypt_free(cd);
-	return (r < 0) ? r : 0;
+	return r;
 }
 
 static int verify_keyslot(struct crypt_device *cd, int key_slot,
@@ -522,8 +522,7 @@ static int action_luksKillSlot(int arg)
 	r = crypt_keyslot_destroy(cd, opt_key_slot);
 out:
 	crypt_free(cd);
-
-	return (r < 0) ? r : 0;
+	return r;
 }
 
 static int action_luksRemoveKey(int arg)
@@ -571,8 +570,7 @@ static int action_luksRemoveKey(int arg)
 out:
 	crypt_safe_free(password);
 	crypt_free(cd);
-
-	return (r < 0) ? r : 0;
+	return r;
 }
 
 static int action_luksAddKey(int arg)
@@ -613,8 +611,7 @@ static int action_luksAddKey(int arg)
 out:
 	crypt_free(cd);
 	crypt_safe_free(key);
-
-	return (r < 0) ? r : 0;
+	return r;
 }
 
 static int action_isLuks(int arg)
@@ -655,7 +652,6 @@ static int action_luksUUID(int arg)
 out:
 	crypt_free(cd);
 	return r;
-
 }
 
 static int luksDump_with_volume_key(struct crypt_device *cd)
@@ -843,9 +839,9 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 			 DEFAULT_CIPHER(PLAIN), DEFAULT_PLAIN_KEYBITS, DEFAULT_PLAIN_HASH,
 			 DEFAULT_CIPHER(LUKS1), DEFAULT_LUKS1_KEYBITS, DEFAULT_LUKS1_HASH,
 			 DEFAULT_RNG);
-		exit(0);
+		exit(EXIT_SUCCESS);
 	} else
-		usage(popt_context, 0, NULL, NULL);
+		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
 }
 
 void set_debug_level(int level);
@@ -875,8 +871,26 @@ static int run_action(struct action_type *action)
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 0);
 
+	/* Some functions returns keyslot # */
+	if (r > 0)
+		r = 0;
+
 	show_status(r);
 
+	/* Translate exit code to simple codes */
+	switch (r) {
+	case 0: 	r = EXIT_SUCCESS; break;
+	case -EEXIST:
+	case -EBUSY:	r = 5; break;
+	case -ENOTBLK:
+	case -ENODEV:	r = 4; break;
+	case -ENOMEM:	r = 3; break;
+	case -EPERM:	r = 2; break;
+	case -EINVAL:
+	case -ENOENT:
+	case -ENOSYS:
+	default:	r = EXIT_FAILURE;
+	}
 	return r;
 }
 
@@ -961,21 +975,21 @@ int main(int argc, char **argv)
 	}
 
 	if (r < -1)
-		usage(popt_context, 1, poptStrerror(r),
+		usage(popt_context, EXIT_FAILURE, poptStrerror(r),
 		      poptBadOption(popt_context, POPT_BADOPTION_NOALIAS));
 	if (opt_version_mode) {
 		log_std("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 
 	if (!(aname = (char *)poptGetArg(popt_context)))
-		usage(popt_context, 1, _("Argument <action> missing."),
+		usage(popt_context, EXIT_FAILURE, _("Argument <action> missing."),
 		      poptGetInvocationName(popt_context));
 	for(action = action_types; action->type; action++)
 		if (strcmp(action->type, aname) == 0)
 			break;
 	if (!action->type)
-		usage(popt_context, 1, _("Unknown action."),
+		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
 		      poptGetInvocationName(popt_context));
 
 	action_argc = 0;
@@ -991,7 +1005,7 @@ int main(int argc, char **argv)
 	if(action_argc < action->required_action_argc) {
 		char buf[128];
 		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
-		usage(popt_context, 1, buf,
+		usage(popt_context, EXIT_FAILURE, buf,
 		      poptGetInvocationName(popt_context));
 	}
 
@@ -1000,14 +1014,14 @@ int main(int argc, char **argv)
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&
 	   strcmp(aname, "create")) {
-		usage(popt_context, 1,
+		usage(popt_context, EXIT_FAILURE,
 		      _("Option --key-size is allowed only for luksFormat and create.\n"
 		        "To limit read from keyfile use --keyfile-size=(bytes)."),
 		      poptGetInvocationName(popt_context));
 	}
 
 	if (opt_key_size % 8)
-		usage(popt_context, 1,
+		usage(popt_context, EXIT_FAILURE,
 		      _("Key size must be a multiple of 8 bits"),
 		      poptGetInvocationName(popt_context));
 
@@ -1015,7 +1029,7 @@ int main(int argc, char **argv)
 		opt_key_slot = atoi(action_argv[1]);
 	if (opt_key_slot != CRYPT_ANY_SLOT &&
 	    (opt_key_slot < 0 || opt_key_slot > crypt_keyslot_max(CRYPT_LUKS1)))
-		usage(popt_context, 1, _("Key slot is invalid."),
+		usage(popt_context, EXIT_FAILURE, _("Key slot is invalid."),
 		      poptGetInvocationName(popt_context));
 
 	if ((!strcmp(aname, "luksRemoveKey") ||
@@ -1028,18 +1042,18 @@ int main(int argc, char **argv)
 	}
 
 	if (opt_random && opt_urandom)
-		usage(popt_context, 1, _("Only one of --use-[u]random options is allowed."),
+		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
 		      poptGetInvocationName(popt_context));
 	if ((opt_random || opt_urandom) && strcmp(aname, "luksFormat"))
-		usage(popt_context, 1, _("Option --use-[u]random is allowed only for luksFormat."),
+		usage(popt_context, EXIT_FAILURE, _("Option --use-[u]random is allowed only for luksFormat."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_uuid && strcmp(aname, "luksFormat") && strcmp(aname, "luksUUID"))
-		usage(popt_context, 1, _("Option --uuid is allowed only for luksFormat and luksUUID."),
+		usage(popt_context, EXIT_FAILURE, _("Option --uuid is allowed only for luksFormat and luksUUID."),
 		      poptGetInvocationName(popt_context));
 
 	if ((opt_offset || opt_skip) && strcmp(aname, "create"))
-		usage(popt_context, 1, _("Options --offset and --skip are supported only for create command.\n"),
+		usage(popt_context, EXIT_FAILURE, _("Options --offset and --skip are supported only for create command.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
