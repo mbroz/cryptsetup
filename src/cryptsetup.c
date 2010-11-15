@@ -826,7 +826,7 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 
 		for(action = action_types; action->type; action++)
 			log_std("\t%s %s - %s\n", action->type, _(action->arg_desc), _(action->desc));
-		
+
 		log_std(_("\n"
 			 "<name> is the device to create under %s\n"
 			 "<device> is the encrypted device\n"
@@ -844,8 +844,6 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 	} else
 		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
 }
-
-void set_debug_level(int level);
 
 static void _dbg_version_and_cmd(int argc, char **argv)
 {

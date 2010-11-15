@@ -56,7 +56,6 @@ int crypt_confirm(struct crypt_device *cd, const char *msg);
 void set_error_va(const char *fmt, va_list va);
 void set_error(const char *fmt, ...);
 const char *get_error(void);
-void set_debug_level(int level);
 
 int init_crypto(struct crypt_device *ctx);
 struct hash_backend *get_hash_backend(const char *name);
