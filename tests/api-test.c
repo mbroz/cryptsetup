@@ -134,6 +134,12 @@ static void reset_log()
 	global_lines = 0;
 }
 
+static void _system(const char *command, int warn)
+{
+	if (system(command) < 0 && warn)
+		printf("System command failed: %s", command);
+}
+
 static struct interface_callbacks cmd_icb = {
 	.yesDialog = yesDialog,
 	.log = cmdLineLog,
@@ -141,46 +147,43 @@ static struct interface_callbacks cmd_icb = {
 
 static void _cleanup(void)
 {
-	int r;
 	struct stat st;
 
-	//r = system("udevadm settle");
+	//_system("udevadm settle", 0);
 
 	if (!stat(DMDIR CDEVICE_1, &st))
-		r = system("dmsetup remove " CDEVICE_1);
+		_system("dmsetup remove " CDEVICE_1, 0);
 
 	if (!stat(DMDIR CDEVICE_2, &st))
-		r = system("dmsetup remove " CDEVICE_2);
+		_system("dmsetup remove " CDEVICE_2, 0);
 
 	if (!stat(DEVICE_EMPTY, &st))
-		r = system("dmsetup remove " DEVICE_EMPTY_name);
+		_system("dmsetup remove " DEVICE_EMPTY_name, 0);
 
 	if (!stat(DEVICE_ERROR, &st))
-		r = system("dmsetup remove " DEVICE_ERROR_name);
+		_system("dmsetup remove " DEVICE_ERROR_name, 0);
 
 	if (!strncmp("/dev/loop", DEVICE_1, 9))
-		r = system("losetup -d " DEVICE_1);
+		_system("losetup -d " DEVICE_1, 0);
 
 	if (!strncmp("/dev/loop", DEVICE_2, 9))
-		r = system("losetup -d " DEVICE_2);
+		_system("losetup -d " DEVICE_2, 0);
 
-	r = system("rm -f " IMAGE_EMPTY);
+	_system("rm -f " IMAGE_EMPTY, 0);
 	_remove_keyfiles();
 }
 
 static void _setup(void)
 {
-	int r;
-
-	r = system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"");
-	r = system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"");
+	_system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"", 1);
+	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
 	if (!strncmp("/dev/loop", DEVICE_1, 9)) {
-		r = system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2");
-		r = system("losetup " DEVICE_1 " " IMAGE1);
+		_system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2", 1);
+		_system("losetup " DEVICE_1 " " IMAGE1, 1);
 	}
 	if (!strncmp("/dev/loop", DEVICE_2, 9)) {
-		r = system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4");
-		r = system("losetup " DEVICE_2 " " IMAGE_EMPTY);
+		_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4", 1);
+		_system("losetup " DEVICE_2 " " IMAGE_EMPTY, 1);
 	}
 
 }
@@ -814,11 +817,6 @@ static void AddDeviceLuks(void)
 static void UseTempVolumes(void)
 {
 	struct crypt_device *cd;
-	struct crypt_params_plain params = {
-		.hash = "sha1",
-		.skip = 0,
-		.offset = 0,
-	};
 
 	// Tepmporary device without keyslot but with on-disk LUKS header
 	OK_(crypt_init(&cd, DEVICE_2));
@@ -837,19 +835,19 @@ static void UseTempVolumes(void)
 
 	// Dirty checks: device without UUID
 	// we should be able to remove it but not manuipulate with it
-	system("dmsetup create " CDEVICE_2 " --table \""
-	       "0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
-	       DEVICE_2 " 2048\"");
+	_system("dmsetup create " CDEVICE_2 " --table \""
+		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
+		DEVICE_2 " 2048\"", 1);
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "No known device type");
 	crypt_free(cd);
 
 	// Dirty checks: device with UUID but LUKS header key fingerprint must fail)
-	system("dmsetup create " CDEVICE_2 " --table \""
-	       "0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
-	       DEVICE_2 " 2048\" "
-	       "-u CRYPT-LUKS1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-ctest1");
+	_system("dmsetup create " CDEVICE_2 " --table \""
+		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
+		DEVICE_2 " 2048\" "
+		"-u CRYPT-LUKS1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-ctest1", 1);
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "wrong volume key");
