@@ -53,8 +53,10 @@ static int _get_urandom(struct crypt_device *ctx, char *buf, size_t len)
 		r = read(urandom_fd, buf, len);
 		if (r == -1 && errno != EINTR)
 			return -EINVAL;
-		len -= r;
-		buf += r;
+		if (r > 0) {
+			len -= r;
+			buf += r;
+		}
 	}
 
 	assert(len == 0);
@@ -111,15 +113,17 @@ static int _get_random(struct crypt_device *ctx, char *buf, size_t len)
 
 			r = read(random_fd, buf, n);
 
-			if (r == -1 && errno == EINTR)
+			if (r == -1 && errno == EINTR) {
+				r = 0;
 				continue;
+			}
 
 			/* bogus read? */
 			if(r > (int)n)
 				return -EINVAL;
 
 			/* random device is opened with O_NONBLOCK, EAGAIN is expected */
-			if (r == -1 && (errno != EAGAIN || errno != EWOULDBLOCK))
+			if (r == -1 && (errno != EAGAIN && errno != EWOULDBLOCK))
 				return -EINVAL;
 
 			if (r > 0) {
