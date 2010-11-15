@@ -124,7 +124,8 @@ int AF_merge(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, 
 	if (!(hash_id = gcry_md_map_name(hash)))
 		return -EINVAL;
 
-	if((bufblock = calloc(blocksize, 1)) == NULL) return -ENOMEM;
+	if((bufblock = calloc(blocksize, 1)) == NULL)
+		return -ENOMEM;
 
 	memset(bufblock,0,blocksize);
 	for(i=0; i<blocknumbers-1; i++) {
@@ -136,5 +137,5 @@ int AF_merge(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, 
 	r = 0;
 out:
 	free(bufblock);
-	return 0;
+	return r;
 }

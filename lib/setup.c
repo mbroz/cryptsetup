@@ -932,7 +932,7 @@ int crypt_luksDump(struct crypt_options *options)
 	r = crypt_dump(cd);
 
 	crypt_free(cd);
-	return 0;
+	return r;
 }
 
 void crypt_get_error(char *buf, size_t size)
@@ -1263,7 +1263,7 @@ int crypt_load(struct crypt_device *cd,
 
 	if (!r) {
 		memcpy(&cd->hdr, &hdr, sizeof(hdr));
-		cd->type = strdup(requested_type);
+		cd->type = strdup(CRYPT_LUKS1);
 		if (!cd->type)
 			r = -ENOMEM;
 	}
@@ -1776,6 +1776,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 	crypt_status_info ci;
 	struct volume_key *vk = NULL;
 	char *read_passphrase = NULL;
+	unsigned int passphraseLen = 0;
 	int r;
 
 	log_dbg("%s volume %s [keyslot %d] using %spassphrase.",
@@ -1796,10 +1797,11 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 	if (isPLAIN(cd->type)) {
 		if (!passphrase) {
 			r = key_from_terminal(cd, NULL, &read_passphrase,
-					      &passphrase_size, 0);
+					      &passphraseLen, 0);
 			if (r < 0)
 				goto out;
 			passphrase = read_passphrase;
+			passphrase_size = passphraseLen;
 		}
 		r = create_device_helper(cd, name, cd->plain_hdr.hash,
 					 cd->plain_cipher, cd->plain_cipher_mode,

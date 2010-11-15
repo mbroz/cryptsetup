@@ -801,8 +801,9 @@ out:
 	return r;
 }
 
-static void usage(poptContext popt_context, int exitcode,
-                  const char *error, const char *more)
+static __attribute__ ((noreturn)) void usage(poptContext popt_context,
+					     int exitcode, const char *error,
+					     const char *more)
 {
 	poptPrintUsage(popt_context, stderr, 0);
 	if (error)
@@ -1025,7 +1026,7 @@ int main(int argc, char **argv)
 		      _("Key size must be a multiple of 8 bits"),
 		      poptGetInvocationName(popt_context));
 
-	if (!strcmp(aname, "luksKillSlot"))
+	if (!strcmp(aname, "luksKillSlot") && action_argc > 1)
 		opt_key_slot = atoi(action_argv[1]);
 	if (opt_key_slot != CRYPT_ANY_SLOT &&
 	    (opt_key_slot < 0 || opt_key_slot > crypt_keyslot_max(CRYPT_LUKS1)))

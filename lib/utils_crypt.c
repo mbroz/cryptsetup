@@ -154,7 +154,7 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 	tcsetattr(infd, TCSAFLUSH, &orig);
 
 out_err:
-	if (!failed && write(outfd, "\n", 1));
+	if (!failed && write(outfd, "\n", 1)) {};
 
 	if (infd != STDIN_FILENO)
 		close(infd);
@@ -206,7 +206,7 @@ int crypt_get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		int i;
 
 		pass = crypt_safe_alloc(MAX_TTY_PASSWORD_LEN);
-		if (!pass || (i = interactive_pass(prompt, pass, MAX_TTY_PASSWORD_LEN, timeout))) {
+		if (!pass || interactive_pass(prompt, pass, MAX_TTY_PASSWORD_LEN, timeout)) {
 			crypt_log(cd, CRYPT_LOG_ERROR,
 				  _("Error reading passphrase from terminal.\n"));
 			goto out_err;

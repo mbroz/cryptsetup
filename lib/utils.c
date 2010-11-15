@@ -171,7 +171,7 @@ ssize_t read_blockwise(int fd, void *orig_buf, size_t count) {
 	if ((long)orig_buf & (alignment - 1)) {
 		buf = aligned_malloc(&buf_base, count, alignment);
 		if (!buf)
-			goto out;
+			return -1;
 	} else
 		buf = orig_buf;
 
