@@ -86,8 +86,8 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
  * @length - size of buffer
  *
  * - Note that if this function is defined, verify option is ignored
- *   (caller whch provided callback is responsible fo password verification)
- * - Only zero terminated passwords can be enteted this way, for complex
+ *   (caller which provided callback is responsible for password verification)
+ * - Only zero terminated passwords can be entered this way, for complex
  *   use API functions directly.
  * - Maximal length of password is limited to @length-1 (minimal 511 chars)
  */
@@ -99,7 +99,7 @@ void crypt_set_password_callback(struct crypt_device *cd,
  * Various crypt device parameters
  *
  * @cd - crypt device handle
- * @timeout - timeout in secons for password entry if compiled-in function used
+ * @timeout - timeout in seconds for password entry if compiled-in function used
  * @password_retry - number of tries for password if not verified
  * @iteration_time - iteration time for LUKS header in miliseconds
  * @password_verify - for compiled-in password query always verify passwords twice
@@ -149,7 +149,7 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
  *
  * @cd - crypt device handle
  *
- * Return string according to device type or NULL if not known.
+ * Returns string according to device type or NULL if not known.
  */
 const char *crypt_get_type(struct crypt_device *cd);
 
@@ -178,9 +178,8 @@ struct crypt_params_luks1 {
  * @volume_key_size - size of volume key in bytes.
  * @params - crypt type specific parameters
  *
- * Note that crypt_format do not enable any keyslot, but it stores volume key internally
+ * Note that crypt_format does not enable any keyslot, but it stores volume key internally
  * and subsequent crypt_keyslot_add_* calls can be used.
- * (It is the only situation when crypt_keyslot_add_* do not require active key slots.)
  */
 int crypt_format(struct crypt_device *cd,
 	const char *type,
@@ -383,12 +382,9 @@ struct crypt_active_device {
  *
  * Returns 0 on success or negative errno value otherwise.
  *
- * @cd - crypt device handle
+ * @cd - crypt device handle (can be NULL)
  * @name - name of active device
  * @cad - preallocated active device attributes to fill
- *
- * Note that this is old API function using global context.
- * All error messages are reported also through log callback.
  */
 int crypt_get_active_device(struct crypt_device *cd,
 			    const char *name,
