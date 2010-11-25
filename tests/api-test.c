@@ -601,6 +601,15 @@ static void AddDevicePlain(void)
 	EQ_(key_size, crypt_get_volume_key_size(cd));
 	EQ_(0, crypt_get_data_offset(cd));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// now with keyfile
+	OK_(_prepare_keyfile(KEYFILE1, KEY1));
+	FAIL_(crypt_activate_by_keyfile(cd, NULL, CRYPT_ANY_SLOT, KEYFILE1, 0, 0), "cannot verify key with plain");
+	EQ_(0, crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	_remove_keyfiles();
+
 	crypt_free(cd);
 }
 

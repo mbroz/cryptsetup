@@ -1849,11 +1849,6 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 	log_dbg("Activating volume %s [keyslot %d] using keyfile %s.",
 		name ?: "", keyslot, keyfile ?: "[none]");
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		return -EINVAL;
-	}
-
 	if (name) {
 		ci = crypt_status(NULL, name);
 		if (ci == CRYPT_INVALID)
@@ -1872,14 +1867,28 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
-				   passphrase_size_read, &cd->hdr, &vk, cd);
-	if (r < 0)
-		goto out;
+	if (isPLAIN(cd->type)) {
+		r = create_device_helper(cd, name, cd->plain_hdr.hash,
+					 cd->plain_cipher, cd->plain_cipher_mode,
+					 NULL, passphrase_read, passphrase_size_read,
+					 cd->volume_key->keylength, 0,
+					 cd->plain_hdr.skip, cd->plain_hdr.offset,
+					 cd->plain_uuid,
+					 flags & CRYPT_ACTIVATE_READONLY, 0, 0);
+		keyslot = 0;
+	} else if (isLUKS(cd->type)) {
+		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
+					   passphrase_size_read, &cd->hdr, &vk, cd);
+		if (r < 0)
+			goto out;
 
-	keyslot = r;
-	if (name)
-		r = open_from_hdr_and_vk(cd, vk, name, flags);
+		keyslot = r;
+
+		if (name)
+			r = open_from_hdr_and_vk(cd, vk, name, flags);
+	} else
+		r = -EINVAL;
+
 out:
 	crypt_safe_free(passphrase_read);
 	crypt_free_volume_key(vk);
