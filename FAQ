@@ -25,9 +25,9 @@ A. Contributors
   ATTENTION: If you are going to read just one thing, make it the
   section on Backup and Data Recovery. By far the most questions on
   the cryptsetup mailing list are from people that just managed to
-  somehow format or overwrite the start of their LUKS partitions.
-  Usually, there is nothing that can be done to help these poor souls
-  recover their data. Make sure you understand the problem and
+  somehow format or overwrite the start of their LUKS partitions. In
+  most cases, there is nothing that can be done to help these poor
+  souls recover their data. Make sure you understand the problem and
   limitations imposed by the LUKS security model BEFORE you face such
   a disaster!
 
@@ -52,6 +52,30 @@ A. Contributors
   Side note: I did text license research some time ago and I think
   this license is best suited for the purpose at hand and creates the
   least problems.
+
+
+  * Where is the project website?
+
+  There is the project website at http://code.google.com/p/cryptsetup/
+  Please do not post questions there, nobody will read them.    Use
+  the mailing-list instead.
+
+
+  * Is there a mailing-list?
+
+  Instructions on how to subscribe to the mailing-list are at on the
+  project website. People are generally helpful and friendly on the
+  list.
+
+  The question of how to unsubscribe from the list does crop up
+  sometimes. For this you need your list management URL, which is
+  sent to you initially and once at the start of each month. Go to
+  the URL mentioned in the email and select "unsubscribe". This page
+  also allows you to request a password reminder.
+
+  Alternatively, you can send an Email to dm-crypt-request@saout.de
+  with just the word "help" in the subject or message body. Make sure
+  to send it from your list address.
 
 
 2. Setup 
@@ -157,7 +181,7 @@ A. Contributors
   * If I map a journaled file system using dm-crypt/LUKS, does it
   still provide its usual transactional guarantees?
 
-  As far as I know you do (but I may be wrong), but please note that
+  As far as I know it does (but I may be wrong), but please note that
   these "guarantees" are far weaker than they appear to be. For
   example, you not not get a hard flush to disk surface even on a
   call to fsync. In addition, the HDD itself may do independent
@@ -167,12 +191,14 @@ A. Contributors
   things worse.
 
   Personally, I have several instances of ext3 on dm-crypt and have
-  not noticed any specific issues so far.
+  not noticed any specific problems.
 
   Update: I did run into frequent small freezes (1-2 sec) when putting
   a vmware image on ext3 over dm-crypt. This does indicate that the
   transactional guarantees are in place, but at a cost. When I went
-  back to ext2, the problem went away.
+  back to ext2, the problem went away. This also seems to have gotten
+  better with kernel 2.6.36 and the reworking of filesystem flush
+  locking. Kernel 2.6.37 is expected to improve this even further.
 
 
   * Can I use LUKS or cryptsetup with a more secure (external) medium
@@ -248,22 +274,27 @@ A. Contributors
 
   * Unlocking a LUKS device takes very long. Why?
 
-  The iteration time for every key-slot (iteration is needed to
-  prevent dictionary attacks) is calculated during the luksFormat
-  operation. By default it is 1 second on the machine where the
-  format operation is done. If you format a device on a fast machine
-  and then unlock it on a slow machine, the unlocking time can be
-  much more longer. Also take into account that up to 8 key-slots
-  have to be tried in order to find the right one.
+  The iteration time for a key-slot (see Section 5 for an explanation
+  what iteration does) is calculated when setting a passphrase. By
+  default it is 1 second on the machine where the passphrase is set.
+  If you set a passphrase on a fast machine and then unlock it on a
+  slow machine, the unlocking time can be much longer. Also take into
+  account that up to 8 key-slots have to be tried in order to find the
+  right one.
 
   If this is problem, you can add another key-slot using the slow
   machine with the same passphrase and then remove the old key-slot.
   The new key-slot will have an iteration count adjusted to 1 second
   on the slow machine. Use luksKeyAdd and then luksKillSlot or
-  luksRemoveKey. However, this operation will not change volume key
-  iteration count. In order to change that, you will have to backup
-  the data in the LUKS container, luksFormat on the slow machine and
-  restore the data.
+  luksRemoveKey.
+
+  However, this operation will not change volume key iteration count
+  (MK iterations in output of "cryptsetup luksDump"). In order to
+  change that, you will have to backup the data in the LUKS
+  container, luksFormat on the slow machine and restore the data.
+  Note that in the original LUKS specification this value was fixed
+  to 10, but it is now derived from the PBKDF2 benchmark as well and
+  set to iterations in 0.125 sec or 1000, whichever is larger.
 
 
   * "blkid" sees a LUKS UUID and an ext2/swap UUID on the same device.
@@ -394,14 +425,16 @@ A. Contributors
   * How do I securely erase a LUKS (or other) partition?
 
   For LUKS, if you are in a desperate hurry, overwrite the first few
-  kilobytes of the LUKS partition. This erases the salts and makes
-  access impossible. However a LUKS header backup or full backup will
-  still grant access to most or all data.
+  kilobytes of the LUKS partition. This erases the master key salt
+  and makes access impossible. However a LUKS header backup or full
+  backup will still grant access to most or all data, so make sure
+  that an attacker does not have access to backups or destroy them as
+  well.
 
   To do this right, overwrite the whole LUKS partition with a single
-  pass of zeros. This is enough for current HDDs. For SDDs you may
+  pass of zeros. This is enough for current HDDs. For SSDs you may
   want to erase the whole drive several times to be sure data is not
-  retained by wear leveling. This is possibly insecure as SDD
+  retained by wear leveling. This is possibly still insecure as SSD
   technology is not fully understood in this regard. Still, due to
   the anti-forensic properties of the LUKS key-slots, a single
   overwrite of an SSD could be enough. If in doubt, use physical
@@ -434,6 +467,192 @@ A. Contributors
   * What about backup? Does it compromise security?
 
   That depends. See next section.
+
+
+  * Why is all my data gone if I overwrite the LUKS header?
+
+  Overwriting the LUKS header in part or in full is the most common
+  reason why access to LUKS containers is lost permanently.
+  Overwriting can be done in a number of fashions, like creating a
+  new filesystem on the raw LUKS partition, making the raw partition
+  part of a raid array and just writing to the raw partition.
+
+  The LUKS header contains a 256 bit "salt" value and without that no
+  decryption is possible. While the salt is not secret, it is
+  key-grade material and cannot be reconstructed. This is a
+  cryptographically strong "cannot". From observations on the
+  cryptsetup mailing-list, people typically go though the usual
+  stages of grief (Denial, Anger, Bargaining, Depression, Acceptance)
+  when this happens to them. Observed times vary between 1 day and 2
+  weeks to complete the cycle. Seeking help on the mailing-list is
+  fine. Even if we usually cannot help with getting back your data,
+  most people found the feedback comforting.
+
+  If your header does not contain an intact salt, best go directly
+  to the last one ("Acceptance") and think about what to do now.
+  There is one exception that I know of: If your LUKS container is
+  still open, then it may be possible to extract the master key from
+  the running system. Ask on the mailing-list on how to do that and
+  make sure nobody switches off the machine.
+
+
+  * What is a "salt"?
+
+  A salt is a random key-grade value added to the passphrase before
+  it is processed. It is not kept secret. The reason for using salts
+  is as follows: If an attacker wants to crack the password for a
+  single LUKS container, then every possible passphrase has to be
+  tried. Typically an attacker will not try every binary value, but
+  will try words and sentences from a dictionary.
+
+  If an attacker wants to attack several LUKS containers with the
+  same dictionary, then a different approach makes sense: Compute the
+  resulting slot-key for each dictionary element and store it on
+  disk. Then the test for each entry is just the slow unlocking with
+  the slot key (say 0.00001 sec) instead of calculating the slot-key
+  first (1 sec). For a single attack, this does not help. But if you
+  have more than one container to attack, this helps tremendously,
+  also because you can prepare your table before you even have the
+  container to attack! The calculation is also very simple to
+  parallelize. You could, for example, use the night-time unused CPU
+  power of your desktop PCs for this.
+
+  This is where the salt comes in. If the salt is combined with the
+  passphrase (in the simplest form, just appended to it), you
+  suddenly need a separate table for each salt value. With a
+  reasonably-sized salt value (256 bit, e.g.) this is quite
+  infeasible.
+
+
+  * Is LUKS secure with a low-entropy (bad) passphrase?
+
+  This needs a bit of theory. The quality of your passphrase is
+  directly related to its entropy (information theoretic, not
+  thermodynamic). The entropy says how many bits of "uncertainty" or
+  "randomness" are in you passphrase. In other words, that is how
+  difficult guessing the passphrase is.
+
+  Example: A random English sentence has about 1 bit of entropy per
+  character. A random lowercase (or uppercase) character has about
+  4.7 bit of entropy.
+
+  Now, if n is the number of bits of entropy in your passphrase and t
+  is the time it takes to process a passphrase in order to open the
+  LUKS container, then an attacker has to spend at maximum
+
+  attack_time_max = 2^n * t 
+ 
+  time for a successful attack and on average half that. There is no
+  way getting around that relationship. However, there is one thing
+  that does help, namely increasing t, the time it takes to use a
+  passphrase, see next FAQ item.
+
+  Still, if you want good security, a high-entropy passphrase is the
+  only option. Use at least 64 bits for secret stuff. That is 64
+  characters of English text (but only if randomly chosen) or a
+  combination of 12 truly random letters and digits.
+
+  For passphrase generation, do not use lines from very well-known
+  texts (religious texts, Harry potter, etc.) as they are to easy to
+  guess. For example, the total Harry Potter has about 1'500'000
+  words (my estimation). Trying every 64 character sequence starting
+  and ending at a word boundary would take only something like 20
+  days on a single CPU and is entirely feasible.
+
+  On the other hand, choosing 1.5 lines from, say, the Wheel of Time
+  is in itself not more secure, but the book selection adds quite a
+  bit of entropy. (Now that I have mentioned it here, don't use tWoT
+  either!) If you add 2 or 3 typos or switch some words around, then
+  this is good passphrase material.
+
+
+  * What is "iteration count" and why is decreasing it a bad idea?
+
+  Iteration count is the number of PBKDF2 iterations a passphrase is
+  put through before it is used to unlock a key-slot. Iterations are
+  done with the explicit purpose to increase the time that it takes
+  to unlock a key-slot. This provides some protection against use of
+  low-entropy passphrases.
+
+  The idea is that an attacker has to try all possible passphrases.
+  Even if the attacker knows the passphrase is low-entropy (see last
+  item), it is possible to make each individual try take longer. The
+  way to do this is to repeatedly hash the passphrase for a certain
+  time. The attacker then has to spend the same time (given the same
+  computing power) as the user per try. With LUKS, the default is 1
+  second of PBKDF2 hashing.
+
+  Example 1: Lets assume we have a really bad passphrase (e.g. a
+  girlfriends name) with 10 bits of entropy. With the same CPU, an
+  attacker would need to spend around 500 seconds on average to
+  break that passphrase. Without iteration, it would be more like
+  0.0001 seconds on a modern CPU.
+
+  Example 2: The user did a bit better and has 32 chars of English
+  text. That would give use about 32 bits of entropy. With 1 second
+  iteration, that means an attacker on the same CPU needs around 136
+  years. That is pretty impressive for such a weak passphrase.
+  Without the iterations, it would be more like 50 days on a modern
+  CPU, and possibly far less.
+
+  In addition, the attacker can both parallelize and use special
+  hardware like GPUs to speed up the attack. The attack can also
+  happen quite some time after the luksFormat operation and CPUs can
+  have become faster and cheaper. For that reason you want a bit of
+  extra security. Anyways, in Example 1 your are screwed. In example
+  2, not necessarily. Even if the attack is faster, it still has a
+  certain cost associated with it, say 10000 EUR/USD with iteration
+  and 1 EUR/USD without iteration. The first can be prohibitively
+  expensive, while the second is something you try even without
+  solid proof that the decryption will yield something useful.
+
+  The numbers above are mostly made up, but show the idea. Of course
+  the best thing is to have a high-entropy passphrase.
+
+  Would a 100 sec iteration time be even better? Yes and no.
+  Cryptographically it would be a lot better, namely 100 times better.
+  However, usability is a very important factor for security
+  technology and one that gets overlooked surprisingly often. For
+  LUKS, if you have to wait 2 minutes to unlock the LUKS container,
+  most people will not bother and use less secure storage instead. It
+  is better to have less protection against low-entropy passphrases
+  and people actually use LUKS, than having them do without
+  encryption altogether.
+
+  Now, what about decreasing the iteration time? This is generally a
+  very bad idea, unless you know and can enforce that the users only
+  use high-entropy passphrases. If you decrease the iteration time
+  without ensuring that, then you put your users at increased risk,
+  and considering how often LUKS containers are unlocked in a
+  typical work-flow, you do so without a good reason. Don't do it.
+  The iteration time is already low enough that some users will
+  still chose passphrases with entropy low enough that they are
+  vulnerable. Lowering it even further increases this danger
+  significantly.
+
+
+  * Is LUKS with default parameters less secure on a slow CPU?
+
+  Unfortunately, yes. However the only aspect affected is the
+  protection for low-entropy passphrase or master-key. All other
+  security aspects are independent of CPU speed.
+
+  The master key is less critical, as you really have to work at it
+  to give it low entropy. One possibility is to supply the master key
+  yourself. If that key is low-entropy, then you get what you
+  deserve. The other known possibility is to use /dev/urandom for
+  key generation in an entropy-startved situation (e.g. automatic
+  installation on an embedded device without network and other entropy
+  sources).
+
+  For the passphrase, don't use a low-entropy passphrase. If your
+  passphrase is good, then a slow CPU will not matter. If you insist
+  on a low-entropy passphrase on a slow CPU, use something like
+  "--iter-time=10" or higher and wait a long time on each LUKS unlock
+  and pray that the attacker does not find out in which way exactly
+  your passphrase is low entropy. This also applies to low-entropy
+  passphrases on fast CPUs. Technology can do only so much to
+  compensate for problems in front of the keyboard.
 
 
   * Why was the default aes-cbc-plain replaced with aes-cbc-essiv?
