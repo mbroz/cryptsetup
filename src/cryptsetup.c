@@ -204,7 +204,8 @@ static int action_create(int arg)
 	if (params.hash && !strcmp(params.hash, "plain"))
 		params.hash = NULL;
 
-	if (opt_key_file)
+	/* FIXME: temporary hack */
+	if (opt_key_file && strcmp(opt_key_file, "-"))
 		params.hash = NULL;
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
