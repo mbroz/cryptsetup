@@ -255,6 +255,8 @@ $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d blah 2>/dev/null && fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d /dev/urandom || fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
 
 prepare "[20] Disallow open/create if already mapped." wipe
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail

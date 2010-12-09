@@ -198,9 +198,13 @@ static int action_create(int arg)
 	};
 	char *password = NULL;
 	unsigned int passwordLen;
+	unsigned int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	int r;
 
 	if (params.hash && !strcmp(params.hash, "plain"))
+		params.hash = NULL;
+
+	if (opt_key_file)
 		params.hash = NULL;
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
@@ -219,20 +223,28 @@ static int action_create(int arg)
 	r = crypt_format(cd, CRYPT_PLAIN,
 			 cipher, cipher_mode,
 			 NULL, NULL,
-			 (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8,
+			 key_size,
 			 &params);
 	if (r < 0)
 		goto out;
 
-	r = crypt_get_key(_("Enter passphrase: "), &password, &passwordLen,
-			  opt_keyfile_size, opt_key_file, opt_timeout,
-			  opt_batch_mode ? 0 : opt_verify_passphrase, cd);
-	if (r < 0)
-		goto out;
+	if (opt_key_file)
+		r = crypt_activate_by_keyfile(cd, action_argv[0],
+			CRYPT_ANY_SLOT, opt_key_file, key_size,
+			opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+	else {
+		r = crypt_get_key(_("Enter passphrase: "),
+				  &password, &passwordLen, 0, NULL,
+				  opt_timeout,
+				  opt_batch_mode ? 0 : opt_verify_passphrase,
+				  cd);
+		if (r < 0)
+			goto out;
 
-	r = crypt_activate_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
-					 password, passwordLen,
-					 opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+		r = crypt_activate_by_passphrase(cd, action_argv[0],
+			CRYPT_ANY_SLOT, password, passwordLen,
+			 opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+	}
 out:
 	crypt_free(cd);
 	crypt_safe_free(password);
