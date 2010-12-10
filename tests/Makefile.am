@@ -1,6 +1,6 @@
-TESTS = api-test compat-test align-test mode-test
+TESTS = api-test compat-test align-test mode-test password-hash-test
 
-EXTRA_DIST = compatimage.img.bz2 align-test compat-test mode-test
+EXTRA_DIST = compatimage.img.bz2 align-test compat-test mode-test password-hash-test
 
 differ_SOURCES = differ.c
 differ_CFLAGS = -Wall -O2
