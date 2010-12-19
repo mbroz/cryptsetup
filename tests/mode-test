@@ -13,13 +13,17 @@ CIPHERS="aes twofish serpent"
 MODES="cbc lrw xts"
 IVMODES="null benbi plain plain64 essiv:sha256"
 
+dmremove() { # device
+	udevadm settle 2>/dev/null 2>&1
+	dmsetup remove $1 2>/dev/null 2>&1
+}
+
 cleanup() {
 	for dev in $(dmsetup status --target crypt | sed s/\:\ .*// | grep "^$DEV_NAME"_); do
-		dmsetup remove $dev
+		dmremove $dev
 	done
-	udevadm settle 2>/dev/null 2>&1
 	sleep 2
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $HEADER_IMG >/dev/null 2>&1
 }
@@ -58,7 +62,7 @@ dmcrypt_check() # device outstring
 		fail
 	fi
 
-	dmsetup remove $1 >/dev/null 2>&1
+	dmremove $1
 }
 
 dmcrypt_check_sum() # cipher device outstring
@@ -67,7 +71,7 @@ dmcrypt_check_sum() # cipher device outstring
 	# Fill device with zeroes and reopen it
 	dd if=/dev/zero of=/dev/mapper/$2 bs=1M count=6 >/dev/null 2>&1
 	sync
-	dmsetup remove $2
+	dmremove $2
 	echo $PASSWORD | $CRYPTSETUP create -c $1 -s 256 $2 /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	ret=$?
 	VSUM=$(sha256sum /dev/mapper/$2 | cut -d' ' -f 1)
@@ -79,7 +83,7 @@ dmcrypt_check_sum() # cipher device outstring
 		fail
 	fi
 
-	dmsetup remove $2 >/dev/null 2>&1
+	dmremove $2
 }
 
 dmcrypt()
