@@ -1,7 +1,8 @@
 /*
  * AFsplitter - Anti forensic information splitter
- * Copyright 2004, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009 Red Hat, Inc. All rights reserved.
+ *
+ * Copyright (C) 2004 Clemens Fruhwirth <clemens@endorphin.org>
+ * Copyright (C) 2009-2010 Red Hat, Inc. All rights reserved.
  *
  * AFsplitter diffuses information over a large stripe of data,
  * therefor supporting secure data destruction.
@@ -25,10 +26,10 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <errno.h>
-#include <gcrypt.h>
+#include "crypto_backend.h"
 #include "internal.h"
 
-static void XORblock(char const *src1, char const *src2, char *dst, size_t n)
+static void XORblock(const char *src1, const char *src2, char *dst, size_t n)
 {
 	size_t j;
 
@@ -36,19 +37,19 @@ static void XORblock(char const *src1, char const *src2, char *dst, size_t n)
 		dst[j] = src1[j] ^ src2[j];
 }
 
-static int hash_buf(char *src, char *dst, uint32_t iv, int len, int hash_id)
+static int hash_buf(const char *src, char *dst, uint32_t iv,
+		    size_t len, const char *hash_name)
 {
-	gcry_md_hd_t hd;
-	unsigned char *digest;
+	struct crypt_hash *hd = NULL;
+	char *iv_char = (char *)&iv;
 
 	iv = htonl(iv);
-	if (gcry_md_open(&hd, hash_id, 0))
+	if (crypt_hash_init(&hd, hash_name))
 		return 1;
-	gcry_md_write(hd, (unsigned char *)&iv, sizeof(iv));
-	gcry_md_write(hd, src, len);
-	digest = gcry_md_read(hd, hash_id);
-	memcpy(dst, digest, len);
-	gcry_md_close(hd);
+	crypt_hash_write(hd, iv_char, sizeof(uint32_t));
+	crypt_hash_write(hd, src, len);
+	crypt_hash_final(hd, dst, len);
+	crypt_hash_destroy(hd);
 	return 0;
 }
 
@@ -56,9 +57,9 @@ static int hash_buf(char *src, char *dst, uint32_t iv, int len, int hash_id)
  * the help of hash function.
  */
 
-static int diffuse(char *src, char *dst, size_t size, int hash_id)
+static int diffuse(char *src, char *dst, size_t size, const char *hash_name)
 {
-	unsigned int digest_size = gcry_md_get_algo_dlen(hash_id);
+	unsigned int digest_size = crypt_hash_size(hash_name);
 	unsigned int i, blocks, padding;
 
 	blocks = size / digest_size;
@@ -67,13 +68,13 @@ static int diffuse(char *src, char *dst, size_t size, int hash_id)
 	for (i = 0; i < blocks; i++)
 		if(hash_buf(src + digest_size * i,
 			    dst + digest_size * i,
-			    i, digest_size, hash_id))
+			    i, (size_t)digest_size, hash_name))
 			return 1;
 
 	if(padding)
 		if(hash_buf(src + digest_size * i,
 			    dst + digest_size * i,
-			    i, padding, hash_id))
+			    i, (size_t)padding, hash_name))
 			return 1;
 
 	return 0;
@@ -85,15 +86,12 @@ static int diffuse(char *src, char *dst, size_t size, int hash_id)
  * must be supplied to AF_merge to recover information.
  */
 
-int AF_split(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, const char *hash)
+int AF_split(char *src, char *dst, size_t blocksize,
+	     unsigned int blocknumbers, const char *hash)
 {
 	unsigned int i;
 	char *bufblock;
 	int r = -EINVAL;
-	int hash_id;
-
-	if (!(hash_id = gcry_md_map_name(hash)))
-		return -EINVAL;
 
 	if((bufblock = calloc(blocksize, 1)) == NULL) return -ENOMEM;
 
@@ -103,7 +101,7 @@ int AF_split(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, 
 		if(r < 0) goto out;
 
 		XORblock(dst+(blocksize*i),bufblock,bufblock,blocksize);
-		if(diffuse(bufblock, bufblock, blocksize, hash_id))
+		if(diffuse(bufblock, bufblock, blocksize, hash))
 			goto out;
 	}
 	/* the last block is computed */
@@ -114,15 +112,12 @@ out:
 	return r;
 }
 
-int AF_merge(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, const char *hash)
+int AF_merge(char *src, char *dst, size_t blocksize,
+	     unsigned int blocknumbers, const char *hash)
 {
 	unsigned int i;
 	char *bufblock;
 	int r = -EINVAL;
-	int hash_id;
-
-	if (!(hash_id = gcry_md_map_name(hash)))
-		return -EINVAL;
 
 	if((bufblock = calloc(blocksize, 1)) == NULL)
 		return -ENOMEM;
@@ -130,7 +125,7 @@ int AF_merge(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, 
 	memset(bufblock,0,blocksize);
 	for(i=0; i<blocknumbers-1; i++) {
 		XORblock(src+(blocksize*i),bufblock,bufblock,blocksize);
-		if(diffuse(bufblock, bufblock, blocksize, hash_id))
+		if(diffuse(bufblock, bufblock, blocksize, hash))
 			goto out;
 	}
 	XORblock(src + blocksize * i, bufblock, dst, blocksize);

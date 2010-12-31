@@ -8,6 +8,7 @@
 #include "libcryptsetup.h"
 #include "luks.h"
 #include "internal.h"
+#include "crypto_backend.h"
 
 struct crypt_device {
 	char *type;
@@ -85,6 +86,23 @@ void logger(struct crypt_device *cd, int level, const char *file,
 	free(target);
 }
 
+static int init_crypto(struct crypt_device *ctx)
+{
+	int r;
+
+	r = crypt_random_init(ctx);
+	if (r < 0) {
+		log_err(ctx, _("Cannot initialize crypto RNG backend.\n"));
+		return r;
+	}
+
+	r = crypt_backend_init();
+	if (r < 0)
+		log_err(ctx, _("Cannot initialize crypto backend.\n"));
+
+	return r;
+}
+
 /*
  * Password processing behaviour matrix of process_key
  *
@@ -117,7 +135,7 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 
 	/* key is coming from tty, fd or binary stdin */
 	if (hash_name) {
-		if (hash(NULL, hash_name, key, key_size, pass, passLen) < 0) {
+		if (crypt_plain_hash(cd, hash_name, key, key_size, pass, passLen) < 0) {
 			log_err(cd, _("Key processing error (using hash algorithm %s).\n"),
 				hash_name);
 			crypt_safe_free(key);

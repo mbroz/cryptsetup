@@ -45,11 +45,10 @@ libcryptsetup_la_SOURCES = \
 	utils_crypt.c				\
 	utils_crypt.h				\
 	utils_debug.c				\
-	backends.c				\
 	libdevmapper.c				\
 	volumekey.c				\
 	random.c				\
-	gcrypt.c				\
+	crypt_plain.c				\
 	crypto_backend.h
 
 include_HEADERS = libcryptsetup.h

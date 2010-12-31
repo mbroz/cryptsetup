@@ -57,13 +57,6 @@ void set_error_va(const char *fmt, va_list va);
 void set_error(const char *fmt, ...);
 const char *get_error(void);
 
-int init_crypto(struct crypt_device *ctx);
-struct hash_backend *get_hash_backend(const char *name);
-void put_hash_backend(struct hash_backend *backend);
-int hash(const char *backend_name, const char *hash_name,
-         char *result, size_t size,
-         const char *passphrase, size_t sizep);
-
 /* Device mapper backend */
 const char *dm_get_dir(void);
 int dm_init(struct crypt_device *context, int check_kernel);
@@ -126,5 +119,9 @@ int crypt_random_init(struct crypt_device *ctx);
 int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int quality);
 void crypt_random_exit(void);
 int crypt_random_default_key_rng(void);
+
+int crypt_plain_hash(struct crypt_device *ctx, const char *hash_name,
+		     char *result, size_t size,
+		     const char *passphrase, size_t sizep);
 
 #endif /* INTERNAL_H */
