@@ -63,8 +63,6 @@ static int _verbose = 1;
 static char global_log[4096];
 static int global_lines = 0;
 
-static int gcrypt_compatible = 0;
-
 // Helpers
 static int _prepare_keyfile(const char *name, const char *passphrase)
 {
@@ -884,44 +882,29 @@ static void UseTempVolumes(void)
 static void NonFIPSAlg(void)
 {
 	struct crypt_device *cd;
-	struct crypt_params_luks1 params = {
-		.hash = "whirlpool",
-	};
+	struct crypt_params_luks1 params = {0};
 	char key[128] = "";
 	size_t key_size = 128;
 	char *cipher = "aes";
 	char *cipher_mode = "cbc-essiv:sha256";
+	int ret;
 
-	if (!gcrypt_compatible) {
-		printf("WARNING: old libgcrypt, skipping test.\n");
+	OK_(crypt_init(&cd, DEVICE_2));
+	params.hash = "sha256";
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+
+	params.hash = "whirlpool";
+	ret = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params);
+	if (ret < 0) {
+		printf("WARNING: whirlpool not supported, skipping test.\n");
+		crypt_free(cd);
 		return;
 	}
-	OK_(crypt_init(&cd, DEVICE_2));
-	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
 
 	params.hash = "md5";
 	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params),
 	      "MD5 unsupported, too short");
 	crypt_free(cd);
-}
-
-
-static void _gcrypt_compatible()
-{
-	int maj, min, patch;
-	FILE *f;
-
-	if (!(f = popen("libgcrypt-config --version", "r")))
-		return;
-
-	if (fscanf(f, "%d.%d.%d", &maj, &min, &patch) == 3 &&
-	    maj >= 1 && min >= 4)
-		gcrypt_compatible = 1;
-	if (_debug)
-		printf("libgcrypt version %d.%d.%d detected.\n", maj, min, patch);
-
-	(void)fclose(f);
-	return;
 }
 
 int main (int argc, char *argv[])
@@ -942,7 +925,6 @@ int main (int argc, char *argv[])
 
 	_cleanup();
 	_setup();
-	_gcrypt_compatible();
 
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 

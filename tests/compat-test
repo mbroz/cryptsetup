@@ -243,15 +243,15 @@ $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
 $CRYPTSETUP -q resize  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "19997 sectors" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
-echo "key0" | $CRYPTSETUP -q create $DEV_NAME $LOOPDEV || fail
+echo "key0" | $CRYPTSETUP -q create $DEV_NAME --hash sha1 $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 # verify is ignored on non-tty input
-echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --verify-passphrase || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --verify-passphrase || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size 255 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1  || fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d blah 2>/dev/null && fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail

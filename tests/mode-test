@@ -72,7 +72,8 @@ dmcrypt_check_sum() # cipher device outstring
 	dd if=/dev/zero of=/dev/mapper/$2 bs=1M count=6 >/dev/null 2>&1
 	sync
 	dmremove $2
-	echo $PASSWORD | $CRYPTSETUP create -c $1 -s 256 $2 /dev/mapper/$DEV_NAME >/dev/null 2>&1
+
+	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 $2 /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	ret=$?
 	VSUM=$(sha256sum /dev/mapper/$2 | cut -d' ' -f 1)
 	if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
@@ -92,7 +93,7 @@ dmcrypt()
 	[ -z "$OUT" ] && OUT=$1
 	printf "%-25s" "$1"
 
-	echo $PASSWORD | $CRYPTSETUP create -c $1 -s 256 "$DEV_NAME"_"$1" /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 "$DEV_NAME"_"$1" /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
 		echo -n -e "PLAIN:"
 		dmcrypt_check "$DEV_NAME"_"$1" $OUT
@@ -108,7 +109,7 @@ dmcrypt()
 	fi
 
 	# repeated device creation must return the same checksum
-	echo $PASSWORD | $CRYPTSETUP create -c $1 -s 256 "$DEV_NAME"_"$1" /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 "$DEV_NAME"_"$1" /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
 		echo -n -e " CHECKSUM:"
 		dmcrypt_check_sum "$1" "$DEV_NAME"_"$1"
