@@ -1,4 +1,4 @@
-SUBDIRS = luks1
+SUBDIRS = crypto_backend luks1
 
 moduledir = $(libdir)/cryptsetup
 
@@ -7,6 +7,7 @@ pkgconfig_DATA = libcryptsetup.pc
 
 INCLUDES = \
 	-I$(top_srcdir)				\
+	-I$(top_srcdir)/lib/crypto_backend	\
 	-I$(top_srcdir)/lib/luks1		\
 	-DDATADIR=\""$(datadir)"\"		\
 	-DLIBDIR=\""$(libdir)"\"		\
@@ -25,12 +26,13 @@ libcryptsetup_la_LDFLAGS = \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-version-info @LIBCRYPTSETUP_VERSION_INFO@
 
-libcryptsetup_la_CFLAGS = -Wall @LIBGCRYPT_CFLAGS@
+libcryptsetup_la_CFLAGS = -Wall @CRYPTO_CFLAGS@
 
 libcryptsetup_la_LIBADD = \
 	@UUID_LIBS@				\
 	@DEVMAPPER_LIBS@			\
-	@LIBGCRYPT_LIBS@			\
+	@CRYPTO_LIBS@				\
+	crypto_backend/libcrypto_backend.la	\
 	luks1/libluks1.la
 
 libcryptsetup_la_SOURCES = \
@@ -47,7 +49,8 @@ libcryptsetup_la_SOURCES = \
 	libdevmapper.c				\
 	volumekey.c				\
 	random.c				\
-	gcrypt.c
+	gcrypt.c				\
+	crypto_backend.h
 
 include_HEADERS = libcryptsetup.h
 

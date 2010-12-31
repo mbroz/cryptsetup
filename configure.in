@@ -39,9 +39,6 @@ AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR('You need the uuid library')])
 AC_SUBST(UUID_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
-
-AM_PATH_LIBGCRYPT(1.1.42,,[AC_MSG_ERROR('You need the gcrypt library')])
-
 AC_CHECK_FUNCS([posix_memalign])
 
 AC_C_CONST
@@ -63,6 +60,62 @@ AC_CHECK_LIB(popt, poptConfigFileToString,,
 	[AC_MSG_ERROR([You need popt 1.7 or newer to compile.])])
 AC_SUBST(POPT_LIBS, $LIBS)
 LIBS=$saved_LIBS
+
+dnl ==========================================================================
+dnl Crypto backend functions
+
+AC_DEFUN([CONFIGURE_GCRYPT], [
+	AM_PATH_LIBGCRYPT(1.1.42,,[AC_MSG_ERROR('You need the gcrypt library')])
+
+	if test x$enable_static_cryptsetup = xyes; then
+		saved_LIBS=$LIBS
+		LIBS="$saved_LIBS $LIBGCRYPT_LIBS -static"
+		AC_CHECK_LIB(gcrypt, gcry_check_version,,
+			AC_MSG_ERROR([Cannot find static gcrypt library.]),
+			[-lgpg-error])
+		LIBGCRYPT_STATIC_LIBS="$LIBGCRYPT_LIBS -lgpg-error"
+		LIBS=$saved_LIBS
+        fi
+
+	CRYPTO_CFLAGS=$LIBGCRYPT_CFLAGS
+	CRYPTO_LIBS=$LIBGCRYPT_LIBS
+	CRYPTO_STATIC_LIBS=$LIBGCRYPT_STATIC_LIBS
+])
+
+AC_DEFUN([CONFIGURE_OPENSSL], [
+	PKG_CHECK_MODULES([OPENSSL], [openssl >= 0.9.8],,
+		AC_MSG_ERROR('You need openssl library'))
+	CRYPTO_CFLAGS=$OPENSSL_CFLAGS
+	CRYPTO_LIBS=$OPENSSL_LIBS
+
+	if test x$enable_static_cryptsetup = xyes; then
+		saved_PKG_CONFIG=$PKG_CONFIG
+		PKG_CONFIG="$PKG_CONFIG --static"
+		PKG_CHECK_MODULES([OPENSSL], [openssl])
+		CRYPTO_STATIC_LIBS=$OPENSSL_LIBS
+		PKG_CONFIG=$saved_PKG_CONFIG
+	fi
+])
+
+AC_DEFUN([CONFIGURE_NSS], [
+	if test x$enable_static_cryptsetup = xyes; then
+		AC_MSG_ERROR([Static build of cryptsetup is not supported with NSS.]),
+	fi
+
+	PKG_CHECK_MODULES([NSS], [nss],,
+		AC_MSG_ERROR('You need nss library'))
+	CRYPTO_CFLAGS=$NSS_CFLAGS
+	CRYPTO_LIBS=$NSS_LIBS
+])
+
+AC_DEFUN([CONFIGURE_KERNEL], [
+	AC_CHECK_HEADERS(linux/if_alg.h,,
+		[AC_MSG_ERROR('You need Linux kernel with userspace crypto interface.')])
+#	AC_CHECK_DECLS([AF_ALG],,
+#		[AC_MSG_ERROR('You need Linux kernel with userspace crypto interface.')],
+#		[#include <sys/socket.h>])
+
+])
 
 dnl ==========================================================================
 saved_LIBS=$LIBS
@@ -106,16 +159,27 @@ if test "x$enable_udev" = xyes; then
 fi
 LIBS=$saved_LIBS
 
+dnl Crypto backend configuration.
+AC_ARG_WITH([crypto_backend],
+	AS_HELP_STRING([--with-crypto_backend], [crypto backend (gcrypt/openssl/nss/kernel) [gcrypt]]),
+	[], with_crypto_backend=gcrypt
+)
+case $with_crypto_backend in
+	gcrypt)  CONFIGURE_GCRYPT([]) ;;
+	openssl) CONFIGURE_OPENSSL([]) ;;
+	nss)     CONFIGURE_NSS([]) ;;
+	kernel)  CONFIGURE_KERNEL([]) ;;
+	*) AC_MSG_ERROR([Unknown crypto backend.]) ;;
+esac
+AM_CONDITIONAL(CRYPTO_BACKEND_GCRYPT,  test $with_crypto_backend = gcrypt)
+AM_CONDITIONAL(CRYPTO_BACKEND_OPENSSL, test $with_crypto_backend = openssl)
+AM_CONDITIONAL(CRYPTO_BACKEND_NSS,     test $with_crypto_backend = nss)
+AM_CONDITIONAL(CRYPTO_BACKEND_KERNEL,  test $with_crypto_backend = kernel)
+
 dnl Magic for cryptsetup.static build.
 if test x$enable_static_cryptsetup = xyes; then
 	saved_PKG_CONFIG=$PKG_CONFIG
 	PKG_CONFIG="$PKG_CONFIG --static"
-
-	LIBS="$saved_LIBS $LIBGCRYPT_LIBS -static"
-	AC_CHECK_LIB(gcrypt, gcry_check_version,,
-		AC_MSG_ERROR([Cannot find static gcrypt library.]),
-		[-lgpg-error])
-	LIBGCRYPT_STATIC_LIBS="$LIBGCRYPT_LIBS -lgpg-error"
 
 	LIBS="$saved_LIBS -static"
 	AC_CHECK_LIB(popt, poptGetContext,,
@@ -141,7 +205,11 @@ fi
 
 AC_SUBST([DEVMAPPER_LIBS])
 AC_SUBST([DEVMAPPER_STATIC_LIBS])
-AC_SUBST([LIBGCRYPT_STATIC_LIBS])
+
+AC_SUBST([CRYPTO_CFLAGS])
+AC_SUBST([CRYPTO_LIBS])
+AC_SUBST([CRYPTO_STATIC_LIBS])
+
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
 
@@ -184,6 +252,7 @@ dnl ==========================================================================
 AC_CONFIG_FILES([ Makefile
 lib/Makefile
 lib/libcryptsetup.pc
+lib/crypto_backend/Makefile
 lib/luks1/Makefile
 src/Makefile
 po/Makefile.in
