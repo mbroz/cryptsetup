@@ -11,7 +11,7 @@ int crypt_backend_init(void);
 
 #define CRYPT_BACKEND_KERNEL (1 << 0)	/* Crypto uses kernel part, for benchmark */
 
-uint32_t crypt_backend_flags();
+uint32_t crypt_backend_flags(void);
 
 /* HASH */
 int crypt_hash_size(const char *name);

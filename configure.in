@@ -102,6 +102,8 @@ AC_DEFUN([CONFIGURE_NSS], [
 		AC_MSG_ERROR([Static build of cryptsetup is not supported with NSS.]),
 	fi
 
+	AC_MSG_WARN([NSS backend does NOT provide backward compatibility (missing ripemd160 hash).])
+
 	PKG_CHECK_MODULES([NSS], [nss],,
 		AC_MSG_ERROR('You need nss library'))
 	CRYPTO_CFLAGS=$NSS_CFLAGS
@@ -161,7 +163,7 @@ LIBS=$saved_LIBS
 
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
-	AS_HELP_STRING([--with-crypto_backend], [crypto backend (gcrypt/openssl/nss/kernel) [gcrypt]]),
+	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel) [gcrypt]]),
 	[], with_crypto_backend=gcrypt
 )
 case $with_crypto_backend in
