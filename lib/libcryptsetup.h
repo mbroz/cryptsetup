@@ -85,6 +85,9 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
  * @buf - buffer for password
  * @length - size of buffer
  *
+ * Calback should return length of password in buffer
+ * or negative errno value in case of error.
+ *
  * - Note that if this function is defined, verify option is ignored
  *   (caller which provided callback is responsible for password verification)
  * - Only zero terminated passwords can be entered this way, for complex
