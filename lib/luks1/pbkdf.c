@@ -72,7 +72,7 @@ static int pkcs5_pbkdf2(const char *hash,
 	char T[MAX_PRF_BLOCK_LEN];
 	int i, k, rc = -EINVAL;
 	unsigned int u, hLen, l, r;
-	size_t tmplen = Slen + 4, fLen;
+	size_t tmplen = Slen + 4;
 	char *tmp;
 
 	tmp = alloca(tmplen);
@@ -180,13 +180,7 @@ static int pkcs5_pbkdf2(const char *hash,
 				crypt_hmac_write(hmac, U, hLen);
 			}
 
-			//p = gcry_md_read(prf, PRF);
-			//if (p == NULL)
-			//	goto out;
-
-			fLen = hLen;
-			crypt_hmac_final(hmac, U, fLen);
-			//memcpy(U, p, hLen);
+			crypt_hmac_final(hmac, U, hLen);
 
 			for (k = 0; (uint) k < hLen; k++)
 				T[k] ^= U[k];
