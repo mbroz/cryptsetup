@@ -33,6 +33,8 @@
 #define SOL_ALG 279
 #endif
 
+static int crypto_backend_initialised = 0;
+
 struct hash_alg {
 	const char *name;
 	const char *kernel_name;
@@ -97,6 +99,9 @@ int crypt_backend_init(void)
 	};
 	int tfmfd = -1, opfd = -1;
 
+	if (crypto_backend_initialised)
+		return 0;
+
 	log_dbg("Initialising kernel crypto API backend.");
 
 	if (uname(&uts) == -1 || strcmp(uts.sysname, "Linux"))
@@ -108,6 +113,8 @@ int crypt_backend_init(void)
 
 	close(tfmfd);
 	close(opfd);
+
+	crypto_backend_initialised = 1;
 	return 0;
 }
 

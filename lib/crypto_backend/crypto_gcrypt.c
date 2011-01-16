@@ -19,10 +19,13 @@
 
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 #include <gcrypt.h>
 #include "crypto_backend.h"
 
 #define GCRYPT_REQ_VERSION "1.1.42"
+
+static int crypto_backend_initialised = 0;
 
 struct crypt_hash {
 	gcry_md_hd_t hd;
@@ -38,6 +41,9 @@ struct crypt_hmac {
 
 int crypt_backend_init(void)
 {
+	if (crypto_backend_initialised)
+		return 0;
+
 	log_dbg("Initialising gcrypt crypto backend.");
 	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
 		if (!gcry_check_version (GCRYPT_REQ_VERSION)) {
@@ -62,6 +68,7 @@ int crypt_backend_init(void)
 		gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
 	}
 
+	crypto_backend_initialised = 1;
 	return 0;
 }
 
@@ -73,8 +80,11 @@ uint32_t crypt_backend_flags(void)
 /* HASH */
 int crypt_hash_size(const char *name)
 {
-	int hash_id = gcry_md_map_name(name);
+	int hash_id;
 
+	assert(crypto_backend_initialised);
+
+	hash_id = gcry_md_map_name(name);
 	if (!hash_id)
 		return -EINVAL;
 
@@ -84,6 +94,8 @@ int crypt_hash_size(const char *name)
 int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 {
 	struct crypt_hash *h;
+
+	assert(crypto_backend_initialised);
 
 	h = malloc(sizeof(*h));
 	if (!h)
@@ -150,6 +162,8 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		    const void *buffer, size_t length)
 {
 	struct crypt_hmac *h;
+
+	assert(crypto_backend_initialised);
 
 	h = malloc(sizeof(*h));
 	if (!h)

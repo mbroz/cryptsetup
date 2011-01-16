@@ -23,6 +23,8 @@
 #include <nss/pk11pub.h>
 #include "crypto_backend.h"
 
+static int crypto_backend_initialised = 0;
+
 struct hash_alg {
 	const char *name;
 	SECOidTag oid;
@@ -65,10 +67,14 @@ static struct hash_alg *_get_alg(const char *name)
 
 int crypt_backend_init(void)
 {
+	if (crypto_backend_initialised)
+		return 0;
+
 	log_dbg("Initialising NSS crypto backend.");
 	if (NSS_NoDB_Init(".") != SECSuccess)
 		return -EINVAL;
 
+	crypto_backend_initialised = 1;
 	return 0;
 }
 

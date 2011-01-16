@@ -23,6 +23,8 @@
 #include <openssl/hmac.h>
 #include "crypto_backend.h"
 
+static int crypto_backend_initialised = 0;
+
 struct crypt_hash {
 	EVP_MD_CTX md;
 	const EVP_MD *hash_id;
@@ -37,8 +39,13 @@ struct crypt_hmac {
 
 int crypt_backend_init(void)
 {
+	if (crypto_backend_initialised)
+		return 0;
+
 	OpenSSL_add_all_digests();
 	log_dbg("OpenSSL crypto backend initialized.");
+
+	crypto_backend_initialised = 1;
 	return 0;
 }
 

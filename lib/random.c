@@ -144,6 +144,9 @@ static int _get_random(struct crypt_device *ctx, char *buf, size_t len)
 /* Initialisation of both RNG file descriptors is mandatory */
 int crypt_random_init(struct crypt_device *ctx)
 {
+	if (random_initialised)
+		return 0;
+
 	/* Used for CRYPT_RND_NORMAL */
 	if(urandom_fd == -1)
 		urandom_fd = open(URANDOM_DEVICE, O_RDONLY);

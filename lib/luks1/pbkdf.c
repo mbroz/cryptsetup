@@ -240,13 +240,14 @@ int PBKDF2_performance_check(const char *hash, uint64_t *iter)
 	/* If crypto backend is not implemented in userspace,
 	 * but uses some kernel part, we must measure also time
 	 * spent in kernel. */
-	if (crypt_backend_flags() & CRYPT_BACKEND_KERNEL)
+	if (crypt_backend_flags() & CRYPT_BACKEND_KERNEL) {
 		timer_type = ITIMER_PROF;
-	else
+		signal(SIGPROF,sigvtalarm);
+	} else {
 		timer_type = ITIMER_VIRTUAL;
+		signal(SIGVTALRM,sigvtalarm);
+	}
 
-	signal(SIGVTALRM,sigvtalarm);
-	signal(SIGPROF,sigvtalarm);
 	it.it_interval.tv_usec = 0;
 	it.it_interval.tv_sec = 0;
 	it.it_value.tv_usec = 0;
