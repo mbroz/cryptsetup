@@ -7,7 +7,7 @@
 struct crypt_hash;
 struct crypt_hmac;
 
-int crypt_backend_init(void);
+int crypt_backend_init(struct crypt_device *ctx);
 
 #define CRYPT_BACKEND_KERNEL (1 << 0)	/* Crypto uses kernel part, for benchmark */
 

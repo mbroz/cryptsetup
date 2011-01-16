@@ -88,7 +88,7 @@ bad:
 	return -EINVAL;
 }
 
-int crypt_backend_init(void)
+int crypt_backend_init(struct crypt_device *ctx)
 {
 	struct utsname uts;
 

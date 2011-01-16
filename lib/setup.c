@@ -96,7 +96,7 @@ static int init_crypto(struct crypt_device *ctx)
 		return r;
 	}
 
-	r = crypt_backend_init();
+	r = crypt_backend_init(ctx);
 	if (r < 0)
 		log_err(ctx, _("Cannot initialize crypto backend.\n"));
 
