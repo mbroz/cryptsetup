@@ -209,7 +209,7 @@ static int action_create(int arg)
 		params.hash = NULL;
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
-				      cipher, cipher_mode);
+				      cipher, NULL, cipher_mode);
 	if (r < 0) {
 		log_err("No known cipher specification pattern detected.\n");
 		goto out;
@@ -302,7 +302,7 @@ static int action_status(int arg)
 		if (r < 0 || !crypt_get_type(cd))
 			goto out;
 
-		log_std("  type:  %s\n", crypt_get_type(cd));
+		log_std("  type:    %s\n", crypt_get_type(cd));
 
 		r = crypt_get_active_device(cd, action_argv[0], &cad);
 		if (r < 0)
@@ -372,7 +372,7 @@ static int action_luksFormat(int arg)
 		goto out;
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
-				      cipher, cipher_mode);
+				      cipher, NULL, cipher_mode);
 	if (r < 0) {
 		log_err("No known cipher specification pattern detected.\n");
 		goto out;
@@ -874,6 +874,8 @@ static void _dbg_version_and_cmd(int argc, char **argv)
 static int run_action(struct action_type *action)
 {
 	int r;
+
+	log_dbg("Running command %s.", action->type);
 
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 1);

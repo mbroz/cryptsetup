@@ -722,7 +722,7 @@ int crypt_luksFormat(struct crypt_options *options)
 	};
 	int r;
 
-	r = crypt_parse_name_and_mode(options->cipher, cipherName, cipherMode);
+	r = crypt_parse_name_and_mode(options->cipher, cipherName, NULL, cipherMode);
 	if(r < 0) {
 		log_err(cd, _("No known cipher specification pattern detected.\n"));
 		return r;
@@ -1035,7 +1035,7 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 				goto out;
 			}
 
-			r = crypt_parse_name_and_mode(cipher_full, cipher, cipher_mode);
+			r = crypt_parse_name_and_mode(cipher_full, cipher, NULL, cipher_mode);
 			if (!r) {
 				(*cd)->plain_cipher = strdup(cipher);
 				(*cd)->plain_cipher_mode = strdup(cipher_mode);
@@ -1179,10 +1179,10 @@ int crypt_format(struct crypt_device *cd,
 {
 	int r;
 
-	log_dbg("Formatting device %s as type %s.", cd->device ?: "(none)", cd->type ?: "(none)");
-
 	if (!type)
 		return -EINVAL;
+
+	log_dbg("Formatting device %s as type %s.", cd->device ?: "(none)", type);
 
 	r = init_crypto(cd);
 	if (r < 0)
@@ -1834,12 +1834,11 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 	if (!keyfile)
 		return -EINVAL;
 
-	r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
-			  &passphrase_size_read, keyfile, keyfile_size);
-	if (r < 0)
-		goto out;
-
 	if (isPLAIN(cd->type)) {
+		r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
+				  &passphrase_size_read, keyfile, keyfile_size);
+		if (r < 0)
+			goto out;
 		r = create_device_helper(cd, name, cd->plain_hdr.hash,
 					 cd->plain_cipher, cd->plain_cipher_mode,
 					 NULL, passphrase_read, passphrase_size_read,
@@ -1847,17 +1846,23 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 					 cd->plain_hdr.skip, cd->plain_hdr.offset,
 					 cd->plain_uuid,
 					 flags & CRYPT_ACTIVATE_READONLY, 0, 0);
-		keyslot = 0;
 	} else if (isLUKS(cd->type)) {
+		r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
+			  &passphrase_size_read, keyfile, keyfile_size);
+		if (r < 0)
+			goto out;
 		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
 					   passphrase_size_read, &cd->hdr, &vk, cd);
 		if (r < 0)
 			goto out;
-
 		keyslot = r;
 
-		if (name)
+		if (name) {
 			r = open_from_hdr_and_vk(cd, vk, name, flags);
+			if (r < 0)
+				goto out;
+		}
+		r = keyslot;
 	} else
 		r = -EINVAL;
 
@@ -1865,7 +1870,7 @@ out:
 	crypt_safe_free(passphrase_read);
 	crypt_free_volume_key(vk);
 
-	return r < 0 ? r : keyslot;
+	return r;
 }
 
 int crypt_activate_by_volume_key(struct crypt_device *cd,

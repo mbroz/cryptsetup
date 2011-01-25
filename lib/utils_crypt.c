@@ -18,17 +18,27 @@ struct safe_allocation {
 	char	data[0];
 };
 
-int crypt_parse_name_and_mode(const char *s, char *cipher, char *cipher_mode)
+int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
+			      char *cipher_mode)
 {
 	if (sscanf(s, "%" MAX_CIPHER_LEN_STR "[^-]-%" MAX_CIPHER_LEN_STR "s",
 		   cipher, cipher_mode) == 2) {
 		if (!strcmp(cipher_mode, "plain"))
 			strncpy(cipher_mode, "cbc-plain", 10);
+		if (key_nums) {
+			char *tmp = strchr(cipher, ':');
+			*key_nums = tmp ? atoi(++tmp) : 1;
+			if (!*key_nums)
+				return -EINVAL;
+		}
+
 		return 0;
 	}
 
 	if (sscanf(s, "%" MAX_CIPHER_LEN_STR "[^-]", cipher) == 1) {
 		strncpy(cipher_mode, "cbc-plain", 10);
+		if (key_nums)
+			*key_nums = 1;
 		return 0;
 	}
 
@@ -143,7 +153,7 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 	memcpy(&tmp, &orig, sizeof(tmp));
 	tmp.c_lflag &= ~ECHO;
 
-	if (write(outfd, prompt, strlen(prompt)) < 0)
+	if (prompt && write(outfd, prompt, strlen(prompt)) < 0)
 		goto out_err;
 
 	tcsetattr(infd, TCSAFLUSH, &tmp);

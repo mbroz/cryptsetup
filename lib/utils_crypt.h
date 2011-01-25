@@ -8,7 +8,8 @@
 
 struct crypt_device;
 
-int crypt_parse_name_and_mode(const char *s, char *cipher, char *cipher_mode);
+int crypt_parse_name_and_mode(const char *s, char *cipher,
+			      int *key_nums, char *cipher_mode);
 
 int crypt_get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
 		  const char *key_file, int timeout, int how2verify,
