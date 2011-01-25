@@ -246,52 +246,6 @@ out:
 	return r;
 }
 
-static int device_check_and_adjust(struct crypt_device *cd,
-				   const char *device,
-				   int open_exclusive,
-				   uint64_t *size,
-				   uint64_t *offset,
-				   int *read_only)
-{
-	int r, real_readonly;
-	uint64_t real_size;
-
-	if (!device)
-		return -ENOTBLK;
-
-	r = get_device_infos(device, open_exclusive, &real_readonly, &real_size);
-	if (r < 0) {
-		if (r == -EBUSY)
-			log_err(cd, _("Cannot use device %s which is in use "
-				      "(already mapped or mounted).\n"),
-				      device);
-		else
-			log_err(cd, _("Cannot get info about device %s.\n"),
-				device);
-		return r;
-	}
-
-	if (!*size) {
-		*size = real_size;
-		if (!*size) {
-			log_err(cd, _("Device %s has zero size.\n"), device);
-			return -ENOTBLK;
-		}
-		if (*size < *offset) {
-			log_err(cd, _("Device %s is too small.\n"), device);
-			return -EINVAL;
-		}
-		*size -= *offset;
-	}
-
-	if (real_readonly)
-		*read_only = 1;
-
-	log_dbg("Calculated device size is %" PRIu64 " sectors (%s), offset %" PRIu64 ".",
-		*size, *read_only ? "RO" : "RW", *offset);
-	return 0;
-}
-
 static int luks_remove_helper(struct crypt_device *cd,
 			      int key_slot,
 			      const char *other_key_file,

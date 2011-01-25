@@ -20,7 +20,7 @@
 
 /* Set if dm-crypt version was probed */
 static int _dm_crypt_checked = 0;
-static int _dm_crypt_wipe_key_supported = 0;
+static uint32_t _dm_crypt_flags = 0;
 
 static int _dm_use_count = 0;
 static struct crypt_device *_context = NULL;
@@ -45,6 +45,11 @@ static int _dm_use_udev()
 #else
 	return 0;
 #endif
+}
+
+uint32_t dm_flags(void)
+{
+	return _dm_crypt_flags;
 }
 
 static void set_dm_error(int level, const char *file, int line,
@@ -72,9 +77,12 @@ static void _dm_set_crypt_compat(int maj, int min, int patch)
 	log_dbg("Detected dm-crypt target of version %i.%i.%i.", maj, min, patch);
 
 	if (maj >= 1 && min >=2)
-		_dm_crypt_wipe_key_supported = 1;
+		_dm_crypt_flags |= DM_KEY_WIPE_SUPPORTED;
 	else
 		log_dbg("Suspend and resume disabled, no wipe key support.");
+
+	if (maj >= 1 && min >=10)
+		_dm_crypt_flags |= DM_LMK_SUPPORTED;
 
 	_dm_crypt_checked = 1;
 }
@@ -711,7 +719,7 @@ int dm_suspend_and_wipe_key(const char *name)
 	if (!_dm_check_versions())
 		return -ENOTSUP;
 
-	if (!_dm_crypt_wipe_key_supported)
+	if (!(_dm_crypt_flags & DM_KEY_WIPE_SUPPORTED))
 		return -ENOTSUP;
 
 	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0))
@@ -736,7 +744,7 @@ int dm_resume_and_reinstate_key(const char *name,
 	if (!_dm_check_versions())
 		return -ENOTSUP;
 
-	if (!_dm_crypt_wipe_key_supported)
+	if (!(_dm_crypt_flags & DM_KEY_WIPE_SUPPORTED))
 		return -ENOTSUP;
 
 	msg = crypt_safe_alloc(msg_size);

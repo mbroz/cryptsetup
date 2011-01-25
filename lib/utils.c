@@ -338,6 +338,52 @@ out:
 	return r;
 }
 
+int device_check_and_adjust(struct crypt_device *cd,
+			    const char *device,
+			    int open_exclusive,
+			    uint64_t *size,
+			    uint64_t *offset,
+			    int *read_only)
+{
+	int r, real_readonly;
+	uint64_t real_size;
+
+	if (!device)
+		return -ENOTBLK;
+
+	r = get_device_infos(device, open_exclusive, &real_readonly, &real_size);
+	if (r < 0) {
+		if (r == -EBUSY)
+			log_err(cd, _("Cannot use device %s which is in use "
+				      "(already mapped or mounted).\n"),
+				      device);
+		else
+			log_err(cd, _("Cannot get info about device %s.\n"),
+				device);
+		return r;
+	}
+
+	if (!*size) {
+		*size = real_size;
+		if (!*size) {
+			log_err(cd, _("Device %s has zero size.\n"), device);
+			return -ENOTBLK;
+		}
+		if (*size < *offset) {
+			log_err(cd, _("Device %s is too small.\n"), device);
+			return -EINVAL;
+		}
+		*size -= *offset;
+	}
+
+	if (real_readonly)
+		*read_only = 1;
+
+	log_dbg("Calculated device size is %" PRIu64 " sectors (%s), offset %" PRIu64 ".",
+		*size, *read_only ? "RO" : "RW", *offset);
+	return 0;
+}
+
 int wipe_device_header(const char *device, int sectors)
 {
 	struct stat st;
@@ -384,7 +430,7 @@ int crypt_memlock_inc(struct crypt_device *ctx)
 {
 	if (!_memlock_count++) {
 		log_dbg("Locking memory.");
-		if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+		if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
 			log_err(ctx, _("WARNING!!! Possibly insecure memory. Are you root?\n"));
 			_memlock_count--;
 			return 0;
@@ -394,7 +440,7 @@ int crypt_memlock_inc(struct crypt_device *ctx)
 			log_err(ctx, _("Cannot get process priority.\n"));
 		else
 			if (setpriority(PRIO_PROCESS, 0, DEFAULT_PROCESS_PRIORITY))
-				log_err(ctx, _("setpriority %u failed: %s"),
+				log_err(ctx, _("setpriority %d failed: %s\n"),
 					DEFAULT_PROCESS_PRIORITY, strerror(errno));
 	}
 	return _memlock_count ? 1 : 0;
@@ -404,10 +450,10 @@ int crypt_memlock_dec(struct crypt_device *ctx)
 {
 	if (_memlock_count && (!--_memlock_count)) {
 		log_dbg("Unlocking memory.");
-		if (munlockall())
-			log_err(ctx, _("Cannot unlock memory."));
+		if (munlockall() == -1)
+			log_err(ctx, _("Cannot unlock memory.\n"));
 		if (setpriority(PRIO_PROCESS, 0, _priority))
-			log_err(ctx, _("setpriority %u failed: %s"), _priority, strerror(errno));
+			log_err(ctx, _("setpriority %d failed: %s\n"), _priority, strerror(errno));
 	}
 	return _memlock_count ? 1 : 0;
 }

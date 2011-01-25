@@ -58,6 +58,10 @@ void set_error(const char *fmt, ...);
 const char *get_error(void);
 
 /* Device mapper backend */
+#define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* kernel supports key wipe message */
+#define DM_LMK_SUPPORTED      (1 << 1)	/* kernel supports lmk mode */
+uint32_t dm_flags(void);
+
 const char *dm_get_dir(void);
 int dm_init(struct crypt_device *context, int check_kernel);
 void dm_exit(void);
@@ -93,6 +97,12 @@ int get_device_infos(const char *device,
 		     int open_exclusive,
 		     int *readonly,
 		     uint64_t *size);
+int device_check_and_adjust(struct crypt_device *cd,
+			    const char *device,
+			    int open_exclusive,
+			    uint64_t *size,
+			    uint64_t *offset,
+			    int *read_only);
 int wipe_device_header(const char *device, int sectors);
 
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
