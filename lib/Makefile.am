@@ -1,4 +1,4 @@
-SUBDIRS = crypto_backend luks1
+SUBDIRS = crypto_backend luks1 loopaes
 
 moduledir = $(libdir)/cryptsetup
 
@@ -9,6 +9,7 @@ INCLUDES = \
 	-I$(top_srcdir)				\
 	-I$(top_srcdir)/lib/crypto_backend	\
 	-I$(top_srcdir)/lib/luks1		\
+	-I$(top_srcdir)/lib/loopaes		\
 	-DDATADIR=\""$(datadir)"\"		\
 	-DLIBDIR=\""$(libdir)"\"		\
 	-DPREFIX=\""$(prefix)"\"		\
@@ -20,7 +21,12 @@ INCLUDES = \
 
 lib_LTLIBRARIES = libcryptsetup.la
 
-libcryptsetup_la_DEPENDENCIES = libcryptsetup.sym
+common_ldadd = \
+	crypto_backend/libcrypto_backend.la	\
+	luks1/libluks1.la			\
+	loopaes/libloopaes.la
+
+libcryptsetup_la_DEPENDENCIES = $(common_ldadd) libcryptsetup.sym
 
 libcryptsetup_la_LDFLAGS = \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
@@ -32,8 +38,8 @@ libcryptsetup_la_LIBADD = \
 	@UUID_LIBS@				\
 	@DEVMAPPER_LIBS@			\
 	@CRYPTO_LIBS@				\
-	crypto_backend/libcrypto_backend.la	\
-	luks1/libluks1.la
+	$(common_ldadd)
+
 
 libcryptsetup_la_SOURCES = \
 	setup.c					\

@@ -146,6 +146,7 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
 
 #define CRYPT_PLAIN "PLAIN" /* regular crypt device, no on-disk header */
 #define CRYPT_LUKS1 "LUKS1" /* LUKS version 1 header on-disk */
+#define CRYPT_LOOPAES "LOOPAES" /* loop-AES compatibility mode */
 
 /**
  * Get device type
@@ -167,6 +168,10 @@ struct crypt_params_luks1 {
 	size_t data_alignment; /* in sectors, data offset is multiple of this */
 };
 
+struct crypt_params_loopaes {
+	const char *hash; /* key hash function */
+	uint64_t offset;  /* offset in sectors */
+};
 /**
  * Create (format) new crypt device (and possible header on-disk) but not activates it.
  *

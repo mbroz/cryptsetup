@@ -62,6 +62,7 @@ static int action_luksSuspend(int arg);
 static int action_luksResume(int arg);
 static int action_luksBackup(int arg);
 static int action_luksRestore(int arg);
+static int action_loopaesOpen(int arg);
 
 static struct action_type {
 	const char *type;
@@ -89,6 +90,8 @@ static struct action_type {
 	{ "luksResume",	action_luksResume,	0, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
 	{ "luksHeaderBackup",action_luksBackup,	0, 1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
 	{ "luksHeaderRestore",action_luksRestore,0,1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
+	{ "loopaesOpen",action_loopaesOpen,	0, 2, 1, N_("<device> <name> "), N_("open loop-AES device as mapping <name>") },
+	{ "loopaesClose",action_remove,		0, 1, 1, N_("<name>"), N_("remove loop-AES mapping") },
 	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
 
@@ -249,6 +252,38 @@ static int action_create(int arg)
 out:
 	crypt_free(cd);
 	crypt_safe_free(password);
+
+	return r;
+}
+
+static int action_loopaesOpen(int arg)
+{
+	struct crypt_device *cd = NULL;
+	struct crypt_params_loopaes params = {
+		.hash = opt_hash ?: NULL, // FIXME
+		.offset = opt_offset,
+	};
+	unsigned int key_size = (opt_key_size ?: 128) / 8;
+	int r;
+
+	if (!opt_key_file) {
+		log_err(_("Option --key-file is required.\n"));
+		return -EINVAL;
+	}
+
+	if ((r = crypt_init(&cd, action_argv[1])))
+		goto out;
+
+	r = crypt_format(cd, CRYPT_LOOPAES, NULL, NULL, NULL, NULL,
+			 key_size, &params);
+	if (r < 0)
+		goto out;
+
+	r = crypt_activate_by_keyfile(cd, action_argv[0],
+		CRYPT_ANY_SLOT, opt_key_file, 0,
+		opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+out:
+	crypt_free(cd);
 
 	return r;
 }
@@ -1027,9 +1062,10 @@ int main(int argc, char **argv)
 
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&
-	   strcmp(aname, "create")) {
+	   strcmp(aname, "create") &&
+	   strcmp(aname, "loopaesOpen")) {
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --key-size is allowed only for luksFormat and create.\n"
+		      _("Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
 		        "To limit read from keyfile use --keyfile-size=(bytes)."),
 		      poptGetInvocationName(popt_context));
 	}

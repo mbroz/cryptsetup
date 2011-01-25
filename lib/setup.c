@@ -7,6 +7,7 @@
 
 #include "libcryptsetup.h"
 #include "luks.h"
+#include "loopaes.h"
 #include "internal.h"
 #include "crypto_backend.h"
 
@@ -30,6 +31,13 @@ struct crypt_device {
 	char *plain_cipher;
 	char *plain_cipher_mode;
 	char *plain_uuid;
+
+	/* used in CRYPT_LOOPAES */
+	struct crypt_params_loopaes loopaes_hdr;
+	char *loopaes_cipher;
+	char *loopaes_cipher_mode;
+	char *loopaes_uuid;
+	unsigned int loopaes_key_size;
 
 	/* callbacks definitions */
 	void (*log)(int level, const char *msg, void *usrptr);
@@ -158,6 +166,11 @@ static int isPLAIN(const char *type)
 static int isLUKS(const char *type)
 {
 	return (type && !strcmp(CRYPT_LUKS1, type));
+}
+
+static int isLOOPAES(const char *type)
+{
+	return (type && !strcmp(CRYPT_LOOPAES, type));
 }
 
 /* keyslot helpers */
@@ -991,7 +1004,7 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 	char *device = NULL, *cipher_full = NULL, *device_uuid = NULL;
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char *key = NULL;
-	int key_size = 0, r;
+	int key_size = 0, key_nums, r;
 
 
 	log_dbg("Allocating crypt device context by device %s.", name);
@@ -1039,6 +1052,21 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 			if (!r) {
 				(*cd)->plain_cipher = strdup(cipher);
 				(*cd)->plain_cipher_mode = strdup(cipher_mode);
+			}
+		} else if (!strncmp(CRYPT_LOOPAES, device_uuid, sizeof(CRYPT_LOOPAES)-1)) {
+			(*cd)->type = strdup(CRYPT_LOOPAES);
+			(*cd)->loopaes_uuid = strdup(device_uuid);
+			(*cd)->loopaes_hdr.offset = cad.offset;
+
+			r = crypt_parse_name_and_mode(cipher_full, cipher,
+						      &key_nums, cipher_mode);
+			if (!r) {
+				(*cd)->loopaes_cipher = strdup(cipher);
+				(*cd)->loopaes_cipher_mode = strdup(cipher_mode);
+				/* version 3 uses last key for IV */
+				if (key_size % key_nums)
+					key_nums++;
+				(*cd)->loopaes_key_size = key_size / key_nums;
 			}
 		} else if (!strncmp(CRYPT_LUKS1, device_uuid, sizeof(CRYPT_LUKS1)-1)) {
 			if (device) {
@@ -1168,6 +1196,37 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	return r;
 }
 
+static int _crypt_format_loopaes(struct crypt_device *cd,
+				 const char *cipher,
+				 const char *uuid,
+				 size_t volume_key_size,
+				 struct crypt_params_loopaes *params)
+{
+	if (!cd->device) {
+		log_err(cd, _("Can't format LOOPAES without device.\n"));
+		return -EINVAL;
+	}
+
+	if (volume_key_size > 1024) {
+		log_err(cd, _("Invalid key size.\n"));
+		return -EINVAL;
+	}
+
+	cd->loopaes_key_size = volume_key_size;
+
+	cd->loopaes_cipher = strdup(cipher ?: DEFAULT_LOOPAES_CIPHER);
+
+	if (uuid)
+		cd->loopaes_uuid = strdup(uuid);
+
+	if (params && params->hash)
+		cd->loopaes_hdr.hash = strdup(params->hash);
+
+	cd->loopaes_hdr.offset = params ? params->offset : 0;
+
+	return 0;
+}
+
 int crypt_format(struct crypt_device *cd,
 	const char *type,
 	const char *cipher,
@@ -1194,6 +1253,8 @@ int crypt_format(struct crypt_device *cd,
 	else if (isLUKS(type))
 		r = _crypt_format_luks1(cd, cipher, cipher_mode,
 					uuid, volume_key, volume_key_size, params);
+	else if (isLOOPAES(type))
+		r = _crypt_format_loopaes(cd, cipher, uuid, volume_key_size, params);
 	else {
 		/* FIXME: allow plugins here? */
 		log_err(cd, _("Unknown crypt device type %s requested.\n"), type);
@@ -1815,7 +1876,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 	crypt_status_info ci;
 	struct volume_key *vk = NULL;
 	char *passphrase_read = NULL;
-	unsigned int passphrase_size_read;
+	unsigned int passphrase_size_read, key_count = 0;
 	int r;
 
 	log_dbg("Activating volume %s [keyslot %d] using keyfile %s.",
@@ -1863,6 +1924,18 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 				goto out;
 		}
 		r = keyslot;
+	} else if (isLOOPAES(cd->type)) {
+		r = key_from_file(cd, NULL, &passphrase_read, &passphrase_size_read,
+				  keyfile, LOOPAES_KEYFILE_MAXSIZE);
+		if (r < 0)
+			goto out;
+		r = LOOPAES_parse_keyfile(cd, &vk, &key_count,
+					  passphrase_read, passphrase_size_read);
+		if (r < 0)
+			goto out;
+		if (name)
+			r = LOOPAES_activate(cd, name, cd->loopaes_cipher,
+					     key_count, vk, flags);
 	} else
 		r = -EINVAL;
 
@@ -2185,6 +2258,9 @@ const char *crypt_get_cipher(struct crypt_device *cd)
 	if (isLUKS(cd->type))
 		return cd->hdr.cipherName;
 
+	if (isLOOPAES(cd->type))
+		return cd->loopaes_cipher;
+
 	return NULL;
 }
 
@@ -2196,6 +2272,9 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 	if (isLUKS(cd->type))
 		return cd->hdr.cipherMode;
 
+	if (isLOOPAES(cd->type))
+		return cd->loopaes_cipher_mode;
+
 	return NULL;
 }
 
@@ -2206,6 +2285,9 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 
 	if (isPLAIN(cd->type))
 		return cd->plain_uuid;
+
+	if (isLOOPAES(cd->type))
+		return cd->loopaes_uuid;
 
 	return NULL;
 }
@@ -2223,6 +2305,9 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 	if (isLUKS(cd->type))
 		return cd->hdr.keyBytes;
 
+	if (isLOOPAES(cd->type))
+		return cd->loopaes_key_size;
+
 	return 0;
 }
 
@@ -2233,6 +2318,9 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 
 	if (isLUKS(cd->type))
 		return cd->hdr.payloadOffset;
+
+	if (isLOOPAES(cd->type))
+		return cd->loopaes_hdr.offset;
 
 	return 0;
 }
