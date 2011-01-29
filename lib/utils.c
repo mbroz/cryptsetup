@@ -260,7 +260,7 @@ int device_ready(struct crypt_device *cd, const char *device, int mode)
 	 /* Try to read first sector */
 	s = read_blockwise(devfd, buf, sizeof(buf));
 	if (s < 0 || s != sizeof(buf)) {
-		log_err(cd, _("Cannot read device %s.\n"), device);
+		log_verbose(cd, _("Cannot read device %s.\n"), device);
 		r = 0;
 	}
 

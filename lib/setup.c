@@ -1024,13 +1024,21 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 	if (r < 0)
 		goto out;
 
+	*cd = NULL;
+	r = crypt_init(cd, device);
+
 	/* Underlying device disappeared but mapping still active */
-	if (!device)
+	if (!device || r == -ENOTBLK)
 		log_verbose(NULL, _("Underlying device for crypt device %s disappeared.\n"),
 			    name);
 
-	*cd = NULL;
-	r = crypt_init(cd, device);
+	/* Underlying device is not readable but crypt mapping exists */
+	if (r == -ENOTBLK) {
+		free(device);
+		device = NULL;
+		r = crypt_init(cd, NULL);
+	}
+
 	if (r < 0)
 		goto out;
 

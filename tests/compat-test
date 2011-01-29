@@ -278,5 +278,15 @@ echo "bad" | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
 echo "key0" | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || fail
 $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || fail
 
+prepare "[22] remove disappeared device" wipe
+dmsetup create $DEV_NAME --table "0 5000 linear $LOOPDEV 2" || fail
+echo "key0" | $CRYPTSETUP -q -i 0 luksFormat /dev/mapper/$DEV_NAME || fail
+echo "key0" | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
+# underlying device now returns error but node is still present
+dmsetup load $DEV_NAME --table "0 5000 error" || fail
+dmsetup resume $DEV_NAME || fail
+$CRYPTSETUP -q luksClose $DEV_NAME2 || fail
+dmsetup remove $DEV_NAME || fail
+
 remove_mapping
 exit 0
