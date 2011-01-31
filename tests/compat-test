@@ -197,7 +197,13 @@ $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 128 --uuid $TEST_UUI
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
-prepare "[17] AddKey passphrase and keyfile" wipe
+prepare "[17] AddKey volume key, passphrase and keyfile" wipe
+# masterkey
+echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV --master-key-file /dev/zero --key-slot 3 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
+echo "key1" | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/zero --key-slot 4 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: ENABLED" || fail
+echo "key2" | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/null --key-slot 5 2>/dev/null && fail
 # [0]key0 [1]key1 [2]$KEY1/1 [3]$KEY1 [4]$KEY2
 $CRYPTSETUP -q luksFormat $LOOPDEV $KEY1 --key-slot 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail

@@ -643,9 +643,10 @@ static int action_luksAddKey(int arg)
 		crypt_set_iterarion_time(cd, opt_iteration_time);
 
 	if (opt_master_key_file) {
-		if (_read_mk(opt_master_key_file, &key, keysize) < 0)
+		r = _read_mk(opt_master_key_file, &key, keysize);
+		if (r < 0)
 			goto out;
-
+		//FIXME: process keyfile arg
 		r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
 						    key, keysize, NULL, 0);
 	} else if (opt_key_file || opt_new_key_file) {
