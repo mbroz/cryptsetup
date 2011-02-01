@@ -156,10 +156,10 @@ A. Contributors
 
  * How do I read the LUKS master key from file?
 
-  The question you should ask yourself first, is why you would want
-  to do this. The only legitimate reason I can think of is if you
-  want to have two LUKS devices with the same master key. Even then,
-  I think it would be preferable to just use key-slots with the same
+  The question you should ask yourself first is why you would want to
+  do this. The only legitimate reason I can think of is if you want
+  to have two LUKS devices with the same master key. Even then, I
+  think it would be preferable to just use key-slots with the same
   passphrase, or to use plain dm-crypt instead. If you really have a
   good reason, please tell me. If I am convinced, I will add how to
   do this here.
@@ -197,7 +197,7 @@ A. Contributors
   transactional guarantees are in place, but at a cost. When I went
   back to ext2, the problem went away. This also seems to have gotten
   better with kernel 2.6.36 and the reworking of filesystem flush
-  locking. Kernel 2.6.37 is expected to improve this even further.
+  locking. Kernel 2.6.38 is expected to have more improvements here.
 
 
  * Can I use LUKS or cryptsetup with a more secure (external) medium
@@ -216,11 +216,12 @@ A. Contributors
   Whether you should is a different question. Personally I recommend
   backup, recreation of the encrypted partition with new size,
   recreation of the filesystem and restore. This gets around the
-  tricky business of resizing the filesystem. The backup is really
-  non-optional here, as a lot can go wrong, resulting in partial or
-  complete data loss. Using something like gparted to resize an
-  encrypted partition is slow, but pretty safe and should be fine.
-  This will not change the size of the filesystem hidden under the
+  tricky business of resizing the filesystem. Resizing a dm-crypt or
+  LUKS container does not resize the filesystem in it. The backup is
+  really non-optional here, as a lot can go wrong, resulting in
+  partial or complete data loss. Using something like gparted to
+  resize an encrypted partition is slow, but typicaly works. This
+  will not change the size of the filesystem hidden under the
   encryption though.
 
   You also need to be aware of size-based limitations. The one
@@ -264,11 +265,11 @@ A. Contributors
   If you get errors about unknown parameters or the like that are not
   present when cryptsetup is called from the shell, make sure you
   have no older version of cryptsetup on your system that then gets
-  called by cron/CGI.For example some distributions install
+  called by cron/CGI. For example some distributions install
   cryptsetup into /usr/sbin, while a manual install could go to
   /usr/local/sbin. As a debugging aid, call "cryptsetup --version"
-  from cron/CGI or the non-shell mechanism to be sure you have the
-  right version.
+  from cron/CGI or the non-shell mechanism to be sure the right
+  version gets called.
 
 
  * Unlocking a LUKS device takes very long. Why?
@@ -309,13 +310,6 @@ A. Contributors
       cryptsetup luksHeaderBackup --header-backup-file <file> <device>
       cryptsetup luksHeaderRestore --header-backup-file <file> <device>
  
-  If you cannot use a 1.1.x cryptsetup, you can also do a manual wipe
-  of the area in question with the command below. Be very, VERY,
-  careful and make sure to do a backup of the header before. If you
-  get this wrong, your device may become permanently inaccessible.
-
-      dd if=/dev/zero of=<device> bs=512 seek=2 count=6
-   
 
  * cryptsetup segfaults on Gentoo amd64 hardened ...
 
@@ -338,9 +332,10 @@ A. Contributors
   itself when copying large amounts of data, typically several times
   larger than your main memory.
 
-  Side note: One thing you should always do on large data movements is
-  to run a verify, for example with the "-d" option of "tar" or by
-  doing a set of MD5 checksums on the source or target with
+  Side note: One thing you should always do on large data
+  copy/movements is to run a verify, for example with the "-d"
+  option of "tar" or by doing a set of MD5 checksums on the source
+  or target with
 
       find . -type f -exec md5sum \{\} \; > checksum-file
  
@@ -371,10 +366,10 @@ A. Contributors
 
  * How do I test RAM?
 
-  First you should know that overclocking often makes memory problems
-  worse. So if you overclock (which I strongly recommend against in a
-  system holding data that has some worth), run the tests with the
-  overclocking active.
+  First you should know that overclocking often makes memory
+  problems worse. So if you overclock (which I strongly recommend
+  against in a system holding data that has some worth), run the
+  tests with the overclocking active.
 
   There are two good options. One is Memtest86+ and the other is
   "memtester" by Charles Cazabon. Memtest86+ requires a reboot and
@@ -428,44 +423,51 @@ A. Contributors
 
  * How do I securely erase a LUKS (or other) partition?
 
-  For LUKS, if you are in a desperate hurry, overwrite the first few
-  kilobytes of the LUKS partition. This erases the master key salt
-  and makes access impossible. However a LUKS header backup or full
-  backup will still grant access to most or all data, so make sure
-  that an attacker does not have access to backups or destroy them as
-  well.
+  For LUKS, if you are in a desperate hurry, overwrite the LUKS
+  header and key-slot area. This means overwriting the 1'052'672
+  bytes, i.e. at 1MiB + 4096 of the LUKS partition. A single
+  overwrite with zeros should be enough. If you anticipate being in a
+  desperate hurry, prepare the command beforehand. Example with
+  /dev/sde1 as the LUKS partition:
 
-  To do this right, overwrite the whole LUKS partition with a single
-  pass of zeros. This is enough for current HDDs. For SSDs you may
-  want to erase the whole drive several times to be sure data is not
-  retained by wear leveling. This is possibly still insecure as SSD
-  technology is not fully understood in this regard. Still, due to
-  the anti-forensic properties of the LUKS key-slots, a single
-  overwrite of an SSD could be enough. If in doubt, use physical
-  destruction in addition. Keep in mind to also erase all backups.
+      head -c 1052672 /dev/zero > /dev/sde1; sync
+ 
+  A LUKS header backup or full backup will still grant access to
+  most or all data, so make sure that an attacker does not have
+  access to backups or destroy them as well.
 
-  Example for a zero-overwrite erase of partition sda10 done with
+  If you have time, overwrite the whole LUKS partition with a single
+  pass of zeros. This is enough for current HDDs. For SSDs or FLASH
+  (USB sticks) you may want to overwrite the whole drive several
+  times to be sure data is not retained by wear leveling. This is
+  possibly still insecure as SSD technology is not fully understood
+  in this regard. Still, due to the anti-forensic properties of the
+  LUKS key-slots, a single overwrite of an SSD or FLASH drive could
+  be enough. If in doubt, use physical destruction in addition. Keep
+  in mind to also erase all backups.
+
+  Example for a zero-overwrite erase of partition sde1 done with
   dd_rescue:
 
-      dd_rescue -w /dev/zero /dev/sda10   
+      dd_rescue -w /dev/zero /dev/sde1   
  
 
  * How do I securely erase a backup of a LUKS partition or header?
 
   That depends on the medium it is stored on. For HDD and SSD, use
-  overwrite with zeros. For an SSD, you may want to overwrite the
-  complete SSD several times and use physical destruction in addition,
-  see last item. Treat USB flash drives the same as SSDs. For
-  re-writable CD/DVD, a single overwrite should also be enough, due
-  to the anti-forensic properties of the LUKS keyslots. For
-  write-once media, use physical destruction. For low security
-  requirements, just cut the CD/DVD into several parts. For high
-  security needs, shred or burn the medium. If your backup is on
-  magnetic tape, I advise physical destruction by shredding or
-  burning. The problem with magnetic tape is that it has a higher
-  dynamic range than HDDs and older data may well be recoverable
-  after overwrites. Also write-head alignment issues can lead to
-  data not actually being deleted at all during overwrites.
+  overwrite with zeros. For an SSD or FLASH drive (USB stick), you
+  may want to overwrite the complete SSD several times and use
+  physical destruction in addition, see last item. For re-writable
+  CD/DVD, a single overwrite should also be enough, due to the
+  anti-forensic properties of the LUKS keyslots. For write-once
+  media, use physical destruction. For low security requirements,
+  just cut the CD/DVD into several parts. For high security needs,
+  shred or burn the medium. If your backup is on magnetic tape, I
+  advise physical destruction by shredding or burning, after
+  overwriting . The problem with magnetic tape is that it has a
+  higher dynamic range than HDDs and older data may well be
+  recoverable after overwrites. Also write-head alignment issues can
+  lead to data not actually being deleted at all during overwrites.
 
 
  * What about backup? Does it compromise security?
@@ -473,7 +475,7 @@ A. Contributors
   That depends. See next section.
 
 
- * Why is all my data gone if I overwrite the LUKS header?
+ * Why is all my data permanently gone if I overwrite the LUKS header?
 
   Overwriting the LUKS header in part or in full is the most common
   reason why access to LUKS containers is lost permanently.
@@ -493,7 +495,7 @@ A. Contributors
   most people found the feedback comforting.
 
   If your header does not contain an intact salt, best go directly
-  to the last one ("Acceptance") and think about what to do now.
+  to the last stage ("Acceptance") and think about what to do now.
   There is one exception that I know of: If your LUKS container is
   still open, then it may be possible to extract the master key from
   the running system. Ask on the mailing-list on how to do that and
@@ -544,7 +546,7 @@ A. Contributors
   is the time it takes to process a passphrase in order to open the
   LUKS container, then an attacker has to spend at maximum
 
-  attack_time_max = 2^n * t 
+      attack_time_max = 2^n * t 
  
   time for a successful attack and on average half that. There is no
   way getting around that relationship. However, there is one thing
@@ -561,7 +563,10 @@ A. Contributors
   guess. For example, the total Harry Potter has about 1'500'000
   words (my estimation). Trying every 64 character sequence starting
   and ending at a word boundary would take only something like 20
-  days on a single CPU and is entirely feasible.
+  days on a single CPU and is entirely feasible. To put that into
+  perspective, using a number of Amazon EC2 High-CPU Extra Large
+  instances (each gives about 8 real cores), this tests costs
+  currently about $48, but can be made to run arbitrarily fast.
 
   On the other hand, choosing 1.5 lines from, say, the Wheel of Time
   is in itself not more secure, but the book selection adds quite a
@@ -602,13 +607,14 @@ A. Contributors
   In addition, the attacker can both parallelize and use special
   hardware like GPUs to speed up the attack. The attack can also
   happen quite some time after the luksFormat operation and CPUs can
-  have become faster and cheaper. For that reason you want a bit of
-  extra security. Anyways, in Example 1 your are screwed. In example
-  2, not necessarily. Even if the attack is faster, it still has a
-  certain cost associated with it, say 10000 EUR/USD with iteration
-  and 1 EUR/USD without iteration. The first can be prohibitively
-  expensive, while the second is something you try even without
-  solid proof that the decryption will yield something useful.
+  have become faster and cheaper. For that reason you want a bit
+  of extra security. Anyways, in Example 1 your are screwed. In
+  example 2, not necessarily. Even if the attack is faster, it still
+  has a certain cost associated with it, say 10000 EUR/USD with
+  iteration and 1 EUR/USD without iteration. The first can be
+  prohibitively expensive, while the second is something you try
+  even without solid proof that the decryption will yield   something
+  useful.
 
   The numbers above are mostly made up, but show the idea. Of course
   the best thing is to have a high-entropy passphrase.
@@ -627,12 +633,11 @@ A. Contributors
   very bad idea, unless you know and can enforce that the users only
   use high-entropy passphrases. If you decrease the iteration time
   without ensuring that, then you put your users at increased risk,
-  and considering how often LUKS containers are unlocked in a
+  and considering how rarely LUKS containers are unlocked in a
   typical work-flow, you do so without a good reason. Don't do it.
-  The iteration time is already low enough that some users will
-  still chose passphrases with entropy low enough that they are
-  vulnerable. Lowering it even further increases this danger
-  significantly.
+  The iteration time is already low enough that users with entropy
+  low passphrases are vulnerable. Lowering it even further increases
+  this danger significantly.
 
 
  * Is LUKS with default parameters less secure on a slow CPU?
@@ -689,8 +694,8 @@ A. Contributors
 
  * Are there any problems with "plain" IV? What is "plain64"?
 
-  First, "plain" and "plain64" are both not safe to use with CBC, see
-  previous FAQ item.
+  First, "plain" and "plain64" are both not secure to use with CBC,
+  see previous FAQ item.
 
   However there are modes, like XTS, that are secure with "plain" IV.
   The next limit is that "plain" is 64 bit, with the upper 32 bit set
@@ -730,7 +735,9 @@ A. Contributors
   Depends on how you do it. First, a backup is non-optional with
   encrypted data just the same way it is with non-encrypted data.
   Disks do break and they do not care whether they make plain or
-  encrypted data inaccessible.
+  encrypted data inaccessible. As a gideline, a well-treated HDD (!)
+  breaks with about 5% probability per year. This means everybody
+  will be hit sooner or later.
 
   However there are risks introduced by backups. For example if you
   change/disable a key-slot in LUKS, a binary backup of the partition
@@ -738,8 +745,8 @@ A. Contributors
   be able to change the key-slot on the backup as well, or use a
   different set-up. One option is to have a different passphrase on
   the backup and to make the backup with both containers open.
-  Another one is to make a backup of the original, opened container to
-  a single file, e.g. with tar, and to encrypt that file with
+  Another one is to make a backup of the original, opened container
+  to a single file, e.g. with tar, and to encrypt that file with
   public-key-cryptography, e.g. with GnuPG. You can then keep the
   secret key in a safe place, because it is only used to decrypt a
   backup. The key the backup is encrypted with can be stored without
@@ -757,11 +764,11 @@ A. Contributors
   since the backup. This is not possible with the public-key method
   though.
 
-  My personal advice is to use one USB disk (low value date) or three
-  disks (high value data) in rotating order for backups, and either
-  use different passphrases or keep them easily accessible in case
-  you need to disable a key-slot. If you do network-backup or
-  tape-backup, I strongly recommend to go the public-key path,
+  My personal advice is to use one USB disk (low value date) or
+  three disks (high value data) in rotating order for backups, and
+  either use different passphrases or keep them easily accessible
+  in case you need to disable a key-slot. If you do network-backup
+  or tape-backup, I strongly recommend to go the public-key path,
   especially as you typically cannot reliably delete data in these
   scenarios. (Well, you can burn the tape if it is under your
   control...)
@@ -773,10 +780,10 @@ A. Contributors
   There are two critical components for decryption: The salt values
   in the header itself and the key-slots. If the salt values are
   overwritten or changed, nothing (in the cryptographically strong
-  sense) can be done to access the data, unless there is a backup of
-  the LUKS header. If a key-slot is damaged, the data can still be
-  read with a different key-slot, if there is a remaining undamaged
-  and used key-slot. Note that in order to make a key-slot
+  sense) can be done to access the data, unless there is a backup
+  of the LUKS header. If a key-slot is damaged, the data can still
+  be read with a different key-slot, if there is a remaining
+  undamaged and used key-slot. Note that in order to make a key-slot
   unrecoverable in a cryptographically strong sense, changing about
   4-6 bits in random locations of its 128kiB size is quite enough.
 
@@ -785,8 +792,9 @@ A. Contributors
 
   I have not tried the different ways to do this, but very likely you
   will have written a new boot-sector, which in turn overwrites the
-  LUKS header, including the salts. You may also damage the key-slots
-  in part or in full. See also last item.
+  LUKS header, including the salts, making your data permanently
+  irretrivable, unless you have a LUKS header backup. You may also
+  damage the key-slots in part or in full. See also last item.
 
 
  * What does the on-disk structure of dm-crypt look like?
@@ -814,19 +822,19 @@ A. Contributors
 
   With 4000 stripes (the default), each key-slot is a bit less than
   128kiB in size. Due to sector alignment of the key-slot start,
-  that means the key block 0 is at offset 0x1000-0x20400, key block
-  1 at offset 0x21000-0x40400, and key block 7 at offset
+  that means the key block 0 is at offset 0x1000-0x20400, key
+  block 1 at offset 0x21000-0x40400, and key block 7 at offset
   0xc1000-0xe0400. The space to the next full sector address is
   padded with zeros. Never used key-slots are filled with what the
   disk originally contained there, a key-slot removed with
   "luksRemoveKey" or "luksKillSlot" gets filled with 0xff. Start of
   bulk data (with the default 4000 stripes and 8 key-slots) is at
   0x101000, i.e. at 1'052'672 bytes, i.e. at 1MiB + 4096 bytes from
-  the start of the partition. This is also the value given by command
-  "luksDump" with "Payload offset: 2056", just multiply by the sector
-  size (512 bytes). Incidentally, "luksHeaderBackup" dumps exactly
-  the first 1'052'672 bytes to file and "luksHeaderRestore" restores
-  them.
+  the start of   the partition. This is also the value given by
+  command "luksDump" with   "Payload offset: 2056", just multiply by
+  the sector size (512 bytes). Incidentally, "luksHeaderBackup"
+  dumps exactly the first 1'052'672 bytes to file and
+  "luksHeaderRestore"   restores them.
 
   The exact specification of the format is here:
   http://code.google.com/p/cryptsetup/wiki/Specification
@@ -836,18 +844,22 @@ A. Contributors
 
   While you could just copy the appropriate number of bytes from the
   start of the LUKS partition, the best way is to use command option
-  "luksHeaderBackup" of cryptsetup. This protects also against errors
-  when non-standard parameters have been used in LUKS partition
-  creation. Example:
+  "luksHeaderBackup" of cryptsetup. This protects also against
+  errors when non-standard parameters have been used in LUKS
+  partition creation. Example:
 
  
      cryptsetup luksHeaderBackup --header-backup-file h /dev/mapper/c1
  
+  To restore, use the inverse command, i.e.
+
+     cryptsetup luksHeaderRestore --header-backup-file h /dev/mapper/c1
+ 
 
  * How do I backup a LUKS partition?
 
-  You do a sector-image of the whole partition. This will contain the
-  LUKS header, the keys-slots and the data ares. It can be done
+  You do a sector-image of the whole partition. This will contain
+  the LUKS header, the keys-slots and the data ares. It can be done
   under Linux e.g. with dd_rescue (for a direct image copy) and with
   "cat" or "dd". Example:
 
@@ -856,22 +868,24 @@ A. Contributors
  
   You can also use any other backup software that is capable of making
   a sector image of a partition. Note that compression is
-  ineffective for encrypted data, hence it does not sense to use it.
+  ineffective for encrypted data, hence it does not make sense to
+  use it.
 
 
  * Do I need a backup of the full partition? Would the header and
    key-slots not be enough?
 
-  Backup protects you against two things: Disk loss or corruption and
-  user error. By far the most questions on the dm-crypt mailing list
-  about how to recover a damaged LUKS partition are related to user
-  error. For example, if you create a new filesystem on a LUKS
-  partition, chances are good that all data is lost permanently.
+  Backup protects you against two things: Disk loss or corruption
+  and user error. By far the most questions on the dm-crypt mailing
+  list about how to recover a damaged LUKS partition are related
+  to user error. For example, if you create a new filesystem on a
+  LUKS partition, chances are good that all data is lost
+  permanently.
 
   For this case, a header+key-slot backup would often be enough. But
-  keep in mind that a HDD has roughly a failure risk of 5% per year.
-  It is highly advisable to have a complete backup to protect against
-  this case.
+  keep in mind that a well-treated (!) HDD has roughly a failure
+  risk of 5% per year. It is highly advisable to have a complete
+  backup to protect against this case.
 
 
  * Are there security risks from a backup of the LUKS header or a
@@ -879,10 +893,10 @@ A. Contributors
 
   Yes. One risk is that if you remove access rights for specific
   key-slots by deleting their contents, the data can still be
-  accessed with invalidated passphrase and the backup. The other risk
-  is that if you erase a LUKS partition, a backup could still grant
-  access, especially if you only erased the LUKS header and not the
-  whole partition.
+  accessed with invalidated passphrase and the backup. The other
+  risk is that if you erase a LUKS partition, a backup could still
+  grant access, especially if you only erased the LUKS header and
+  not the whole partition.
 
 
  * I think this is overly complicated. Is there an alternative?
