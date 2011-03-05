@@ -25,6 +25,11 @@ static uint32_t _dm_crypt_flags = 0;
 static int _dm_use_count = 0;
 static struct crypt_device *_context = NULL;
 
+/* Check if we have DM flag to instruct kernel to force wipe buffers */
+#if !HAVE_DECL_DM_TASK_SECURE_DATA
+static int dm_task_secure_data(struct dm_task *dmt) { return 1; }
+#endif
+
 /* Compatibility for old device-mapper without udev support */
 #if HAVE_DECL_DM_UDEV_DISABLE_DISK_RULES_FLAG
 #define CRYPT_TEMP_UDEV_FLAGS	DM_UDEV_DISABLE_SUBSYSTEM_RULES_FLAG | \
@@ -469,6 +474,8 @@ int dm_create_device(const char *name,
 			goto out_no_removal;
 	}
 
+	if (!dm_task_secure_data(dmt))
+		goto out_no_removal;
 	if (read_only && !dm_task_set_ro(dmt))
 		goto out_no_removal;
 	if (!dm_task_add_target(dmt, 0, size, DM_CRYPT_TARGET, params))
@@ -593,6 +600,8 @@ int dm_query_device(const char *name,
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
 		goto out;
+	if (!dm_task_secure_data(dmt))
+		goto out;
 	if (!dm_task_set_name(dmt, name))
 		goto out;
 	r = -ENODEV;
@@ -697,6 +706,9 @@ static int _dm_message(const char *name, const char *msg)
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TARGET_MSG)))
 		return 0;
+
+	if (!dm_task_secure_data(dmt))
+		goto out;
 
 	if (name && !dm_task_set_name(dmt, name))
 		goto out;
