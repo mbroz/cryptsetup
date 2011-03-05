@@ -77,17 +77,27 @@ static void set_dm_error(int level, const char *file, int line,
 
 static int _dm_simple(int task, const char *name, int udev_wait);
 
-static void _dm_set_crypt_compat(int maj, int min, int patch)
+static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
+				 unsigned crypt_min, unsigned crypt_patch)
 {
-	log_dbg("Detected dm-crypt target of version %i.%i.%i.", maj, min, patch);
+	unsigned dm_maj, dm_min, dm_patch;
 
-	if (maj >= 1 && min >=2)
+	if (sscanf(dm_version, "%u.%u.%u", &dm_maj, &dm_min, &dm_patch) != 3)
+		dm_maj = dm_min = dm_patch = 0;
+
+	log_dbg("Detected dm-crypt version %i.%i.%i, dm-ioctl version %u.%u.%u.",
+		crypt_maj, crypt_min, crypt_patch, dm_maj, dm_min, dm_patch);
+
+	if (crypt_maj >= 1 && crypt_min >= 2)
 		_dm_crypt_flags |= DM_KEY_WIPE_SUPPORTED;
 	else
 		log_dbg("Suspend and resume disabled, no wipe key support.");
 
-	if (maj >= 1 && min >=10)
+	if (crypt_maj >= 1 && crypt_min >= 10)
 		_dm_crypt_flags |= DM_LMK_SUPPORTED;
+
+	if (dm_maj >= 4 && dm_min >= 20)
+		_dm_crypt_flags |= DM_SECURE_SUPPORTED;
 
 	_dm_crypt_checked = 1;
 }
@@ -96,6 +106,7 @@ static int _dm_check_versions(void)
 {
 	struct dm_task *dmt;
 	struct dm_versions *target, *last_target;
+	char dm_version[16];
 
 	if (_dm_crypt_checked)
 		return 1;
@@ -108,13 +119,19 @@ static int _dm_check_versions(void)
 		return 0;
 	}
 
+	if (!dm_task_get_driver_version(dmt, dm_version, sizeof(dm_version))) {
+		dm_task_destroy(dmt);
+		return 0;
+	}
+
 	target = dm_task_get_versions(dmt);
 	do {
 		last_target = target;
 		if (!strcmp(DM_CRYPT_TARGET, target->name)) {
-			_dm_set_crypt_compat((int)target->version[0],
-					     (int)target->version[1],
-					     (int)target->version[2]);
+			_dm_set_crypt_compat(dm_version,
+					     (unsigned)target->version[0],
+					     (unsigned)target->version[1],
+					     (unsigned)target->version[2]);
 		}
 		target = (void *) target + target->next;
 	} while (last_target != target);
@@ -474,7 +491,7 @@ int dm_create_device(const char *name,
 			goto out_no_removal;
 	}
 
-	if (!dm_task_secure_data(dmt))
+	if ((dm_flags() & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
 		goto out_no_removal;
 	if (read_only && !dm_task_set_ro(dmt))
 		goto out_no_removal;
@@ -600,7 +617,7 @@ int dm_query_device(const char *name,
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
 		goto out;
-	if (!dm_task_secure_data(dmt))
+	if ((dm_flags() & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
 		goto out;
 	if (!dm_task_set_name(dmt, name))
 		goto out;
@@ -707,7 +724,7 @@ static int _dm_message(const char *name, const char *msg)
 	if (!(dmt = dm_task_create(DM_DEVICE_TARGET_MSG)))
 		return 0;
 
-	if (!dm_task_secure_data(dmt))
+	if ((dm_flags() & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
 		goto out;
 
 	if (name && !dm_task_set_name(dmt, name))

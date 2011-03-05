@@ -57,9 +57,10 @@ void set_error_va(const char *fmt, va_list va);
 void set_error(const char *fmt, ...);
 const char *get_error(void);
 
-/* Device mapper backend */
-#define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* kernel supports key wipe message */
-#define DM_LMK_SUPPORTED      (1 << 1)	/* kernel supports lmk mode */
+/* Device mapper backend - kernel support flags */
+#define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
+#define DM_LMK_SUPPORTED      (1 << 1)	/* lmk mode */
+#define DM_SECURE_SUPPORTED   (1 << 2)	/* wipe (secure) buffer flag */
 uint32_t dm_flags(void);
 
 const char *dm_get_dir(void);
