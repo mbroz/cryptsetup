@@ -234,7 +234,7 @@ int PBKDF2_performance_check(const char *hash, uint64_t *iter)
 	if (__PBKDF2_global_j)
 		return -EBUSY;
 
-	if (!PBKDF2_HMAC_ready(hash))
+	if (PBKDF2_HMAC_ready(hash) < 0)
 		return -EINVAL;
 
 	/* If crypto backend is not implemented in userspace,
