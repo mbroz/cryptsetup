@@ -1,4 +1,4 @@
-EXTRA_DIST = FAQ
+EXTRA_DIST = FAQ docs
 SUBDIRS = \
 	lib \
 	src \

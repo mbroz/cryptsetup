@@ -1,0 +1,33 @@
+== Cryptsetup 1.1.2 Release Notes ==
+
+This release fixes a regression (introduced in 1.1.1 version) in handling
+key files containing new line characters (affects only files read from
+standard input).
+
+Cryptsetup can accept passphrase on stdin (standard input).
+
+Handling of new line (\n) character is defined by input specification:
+
+ * if keyfile is specified as "-" (using --key-file=- of by "-" positional argument
+   in luksFormat and luksAddKey, like cat file | cryptsetup --key-file=- <action>),
+   input is processed as normal binary file and no new line is interpreted.
+
+ * if there is no key file specification (with default input from stdin pipe
+   like echo passphrase | cryptsetup <action>) input is processed as input from terminal,
+   reading will stop after new line is detected.
+
+Moreover, luksFormat now understands --key-file (in addition to positional key
+file argument).
+
+N.B. Using of standard input and pipes for passphrases should be avoided if possible,
+cryptsetup have no control of used pipe buffers between commands in scripts and cannot
+guarantee that all passphrase/key-file buffers are properly wiped after use.
+
+=== changes since version 1.1.1 ===
+
+ * Fix luksFormat/luksOpen reading passphrase from stdin and "-" keyfile.
+ * Support --key-file/-d option for luksFormat.
+ * Fix description of --key-file and add --verbose and --debug options to man page.
+ * Add verbose log level and move unlocking message there.
+ * Remove device even if underlying device disappeared (remove, luksClose).
+ * Fix (deprecated) reload device command to accept new device argument.
