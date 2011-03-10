@@ -172,7 +172,8 @@ $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare	"[14] format/open - passphrase on stdin & new line" wipe
 # stdin defined by "-" must take even newline
-echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV - || fail
+#echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV - || fail
+echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksFormat $LOOPDEV || fail
 echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 echo -n $'foo\nbar' | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
