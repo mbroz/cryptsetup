@@ -5,8 +5,8 @@ DEV=""
 DEV_STACKED="luks0xbabe"
 
 cleanup() {
-	udevadm settle 2>/dev/null 2>&1
-	[ -b /dev/mapper/$DEV_STACKED ] && dmsetup remove $DEV_STACKED 2>/dev/null 2>&1
+	udevadm settle >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_STACKED ] && dmsetup remove $DEV_STACKED >/dev/null 2>&1
 	rmmod scsi_debug 2>/dev/null
 	sleep 2
 }

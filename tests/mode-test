@@ -15,8 +15,8 @@ IVMODES="null benbi plain plain64 essiv:sha256"
 LOOPDEV=$(losetup -f 2>/dev/null)
 
 dmremove() { # device
-	udevadm settle 2>/dev/null 2>&1
-	dmsetup remove $1 2>/dev/null 2>&1
+	udevadm settle >/dev/null 2>&1
+	dmsetup remove $1 >/dev/null 2>&1
 }
 
 cleanup() {
