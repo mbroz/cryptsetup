@@ -27,14 +27,13 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <linux/loop.h>
 
 #include "libcryptsetup.h"
 
 #define DMDIR "/dev/mapper/"
 
-#define DEVICE_1 "/dev/loop5"
 #define DEVICE_1_UUID "28632274-8c8a-493f-835b-da802e1c576b"
-#define DEVICE_2 "/dev/loop6"
 #define DEVICE_EMPTY_name "crypt_zero"
 #define DEVICE_EMPTY DMDIR DEVICE_EMPTY_name
 #define DEVICE_ERROR_name "crypt_error"
@@ -63,6 +62,9 @@ static int _verbose = 1;
 static char global_log[4096];
 static int global_lines = 0;
 
+static char *DEVICE_1 = NULL;
+static char *DEVICE_2 = NULL;
+
 // Helpers
 static int _prepare_keyfile(const char *name, const char *passphrase)
 {
@@ -82,6 +84,33 @@ static void _remove_keyfiles(void)
 {
 	remove(KEYFILE1);
 	remove(KEYFILE2);
+}
+
+char *_get_loop_device(void)
+{
+	char dev[20];
+	int i, loop_fd;
+	struct stat st;
+	struct loop_info64 lo64 = {0};
+
+	for ( i = 0; i < 256; i++ ) {
+		sprintf ( dev, "/dev/loop%d", i );
+		if ( stat ( dev, &st ) || !S_ISBLK ( st.st_mode ) )
+			goto bad;
+
+		loop_fd = open ( dev, O_RDONLY );
+		if ( loop_fd < 0 )
+			goto bad;
+
+		if ( ioctl ( loop_fd, LOOP_GET_STATUS64, &lo64 ) && errno == ENXIO ) {
+			close ( loop_fd );
+			return strdup ( dev );
+		}
+		close ( loop_fd );
+	}
+bad:
+	printf("Cannot find free loop device.\n");
+	return NULL;
 }
 
 // Decode key from its hex representation
@@ -146,6 +175,7 @@ static struct interface_callbacks cmd_icb = {
 static void _cleanup(void)
 {
 	struct stat st;
+	char tmp[256];
 
 	//_system("udevadm settle", 0);
 
@@ -161,29 +191,46 @@ static void _cleanup(void)
 	if (!stat(DEVICE_ERROR, &st))
 		_system("dmsetup remove " DEVICE_ERROR_name, 0);
 
-	if (!strncmp("/dev/loop", DEVICE_1, 9))
-		_system("losetup -d " DEVICE_1, 0);
+	// FIXME: use internel loop lib when available
+	if (DEVICE_1 && !strncmp("/dev/loop", DEVICE_1, 9)) {
+		snprintf(tmp, sizeof(tmp), "losetup -d %s", DEVICE_1);
+		_system(tmp, 0);
+	}
 
-	if (!strncmp("/dev/loop", DEVICE_2, 9))
-		_system("losetup -d " DEVICE_2, 0);
+	if (DEVICE_2 && !strncmp("/dev/loop", DEVICE_2, 9)) {
+		snprintf(tmp, sizeof(tmp), "losetup -d %s", DEVICE_2);
+		_system(tmp, 0);
+	}
 
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_remove_keyfiles();
 }
 
-static void _setup(void)
+static int _setup(void)
 {
+	char tmp[256];
+
 	_system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"", 1);
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
+	if (!DEVICE_1)
+		DEVICE_1 = _get_loop_device();
+	if (!DEVICE_1)
+		return 1;
 	if (!strncmp("/dev/loop", DEVICE_1, 9)) {
 		_system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2", 1);
-		_system("losetup " DEVICE_1 " " IMAGE1, 1);
+		snprintf(tmp, sizeof(tmp), "losetup %s %s", DEVICE_1, IMAGE1);
+		_system(tmp, 1);
 	}
+	if (!DEVICE_2)
+		DEVICE_2 = _get_loop_device();
+	if (!DEVICE_2)
+		return 1;
 	if (!strncmp("/dev/loop", DEVICE_2, 9)) {
 		_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4", 1);
-		_system("losetup " DEVICE_2 " " IMAGE_EMPTY, 1);
+		snprintf(tmp, sizeof(tmp), "losetup %s %s", DEVICE_2, IMAGE_EMPTY);
+		_system(tmp, 1);
 	}
-
+	return 0;
 }
 
 void check_ok(int status, int line, const char *func)
@@ -824,6 +871,7 @@ static void AddDeviceLuks(void)
 static void UseTempVolumes(void)
 {
 	struct crypt_device *cd;
+	char tmp[256];
 
 	// Tepmporary device without keyslot but with on-disk LUKS header
 	OK_(crypt_init(&cd, DEVICE_2));
@@ -842,19 +890,21 @@ static void UseTempVolumes(void)
 
 	// Dirty checks: device without UUID
 	// we should be able to remove it but not manuipulate with it
-	_system("dmsetup create " CDEVICE_2 " --table \""
+	snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
 		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
-		DEVICE_2 " 2048\"", 1);
+		"%s 2048\"", CDEVICE_2, DEVICE_2);
+	_system(tmp, 1);
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "No known device type");
 	crypt_free(cd);
 
 	// Dirty checks: device with UUID but LUKS header key fingerprint must fail)
-	_system("dmsetup create " CDEVICE_2 " --table \""
+	snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
 		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
-		DEVICE_2 " 2048\" "
-		"-u CRYPT-LUKS1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-ctest1", 1);
+		"%s 2048\" -u CRYPT-LUKS1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-ctest1",
+		 CDEVICE_2, DEVICE_2);
+	_system(tmp, 1);
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "wrong volume key");
@@ -924,7 +974,8 @@ int main (int argc, char *argv[])
 	}
 
 	_cleanup();
-	_setup();
+	if (_setup())
+		goto out;
 
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 
@@ -946,7 +997,7 @@ int main (int argc, char *argv[])
 	RUN_(UseTempVolumes, "Format and use temporary encrypted device");
 
 	RUN_(CallbacksTest, "API callbacks test");
-
+out:
 	_cleanup();
 	return 0;
 }

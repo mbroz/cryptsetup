@@ -2,7 +2,6 @@
 
 CRYPTSETUP=../src/cryptsetup
 
-LOOPDEV=/dev/loop5
 DEV_NAME=dummy
 DEV_NAME2=dummy2
 ORIG_IMG=luks-test-orig
@@ -21,6 +20,8 @@ KEY_MATERIAL1_EXT="S69632-133632"
 
 TEST_UUID="12345678-1234-1234-1234-123456789abc"
 
+LOOPDEV=$(losetup -f 2>/dev/null)
+
 function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
@@ -34,6 +35,12 @@ function fail()
 	remove_mapping
 	echo "FAILED"
 	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 0
 }
 
 function prepare()
@@ -85,10 +92,8 @@ function check_exists()
 	check $1
 }
 
-if [ $(id -u) != 0 ]; then
-	echo "WARNING: You must be root to run this test, test skipped."
-	exit 0
-fi
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ -z "$LOOPDEV" ] && skip "Cannot find free loop device, test skipped."
 
 # LUKS tests
 

@@ -5,7 +5,6 @@ CRYPTSETUP=../src/cryptsetup
 # try to validate using loop-aes losetup/kernel if available
 LOSETUP_AES=/losetup-aes
 
-LOOPDEV=/dev/loop5
 LOOP_DD_PARAM="bs=1k count=10000"
 EXPSUM="31e00e0e4c233c89051cd748122fde2c98db0121ca09ba93a3820817ea037bc5"
 DEV_NAME=dummy
@@ -13,6 +12,7 @@ IMG=loopaes.img
 KEYv1=key_v1
 KEYv2=key_v2
 KEYv3=key_v3
+LOOPDEV=$(losetup -f 2>/dev/null)
 
 function dmremove() { # device
         udevadm settle 2>/dev/null 2>&1
@@ -112,6 +112,7 @@ function check_version()
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ -z "$LOOPDEV" ] && skip "Cannot find free loop device, test skipped."
 which uuencode >/dev/null || skip "WARNING: test require uuencode binary, test skipped."
 check_version || skip "Probably old kernel, test skipped."
 

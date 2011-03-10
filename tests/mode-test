@@ -4,7 +4,6 @@
 #
 CRYPTSETUP=../src/cryptsetup
 DEV_NAME=dmc_test
-LOOPDEV=/dev/loop5
 HEADER_IMG=mode-test.img
 PASSWORD=3xrododenron
 
@@ -12,6 +11,8 @@ PASSWORD=3xrododenron
 CIPHERS="aes twofish serpent"
 MODES="cbc lrw xts"
 IVMODES="null benbi plain plain64 essiv:sha256"
+
+LOOPDEV=$(losetup -f 2>/dev/null)
 
 dmremove() { # device
 	udevadm settle 2>/dev/null 2>&1
@@ -33,6 +34,12 @@ fail()
 	[ -n "$1" ] && echo "$1"
 	cleanup
 	exit 100
+}
+
+skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 0
 }
 
 add_device() {
@@ -117,10 +124,8 @@ dmcrypt()
 	echo
 }
 
-if [ $(id -u) != 0 ]; then
-	echo "WARNING: You must be root to run this test, test skipped."
-	exit 0
-fi
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ -z "$LOOPDEV" ] && skip "Cannot find free loop device, test skipped."
 
 add_device
 
