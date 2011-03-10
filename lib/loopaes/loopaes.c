@@ -193,17 +193,12 @@ int LOOPAES_activate(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	if (keys_count == 1) {
-		if (asprintf(&cipher, "%s-%s", base_cipher, "cbc-plain") < 0)
-			return -ENOMEM;
-	} else {
-		if (!(dm_flags() & DM_LMK_SUPPORTED)) {
-			log_err(cd, _("Kernel doesn't support loop-AES compatible mapping.\n"));
-			return -ENOTSUP;
-		}
-		if (asprintf(&cipher, "%s:%d-%s", base_cipher, 64, "cbc-lmk") < 0)
-			return -ENOMEM;
-	}
+	if (keys_count == 1)
+		r = asprintf(&cipher, "%s-%s", base_cipher, "cbc-plain");
+	else
+		r = asprintf(&cipher, "%s:%d-%s", base_cipher, 64, "cbc-lmk");
+	if (r < 0)
+		return -ENOMEM;
 
 	log_dbg("Trying to activate loop-AES device %s using cipher %s.", name, cipher);
 	r = dm_create_device(name, device,
@@ -211,6 +206,12 @@ int LOOPAES_activate(struct crypt_device *cd,
 			     crypt_get_uuid(cd),
 			     size, 0, offset, vk->keylength, vk->key,
 			     read_only, 0);
+
+	if (!r && keys_count != 1 && !(dm_flags() & DM_LMK_SUPPORTED)) {
+		log_err(cd, _("Kernel doesn't support loop-AES compatible mapping.\n"));
+		r = -ENOTSUP;
+	}
+
 	free(cipher);
 	return r;
 }

@@ -52,11 +52,6 @@ static int _dm_use_udev()
 #endif
 }
 
-uint32_t dm_flags(void)
-{
-	return _dm_crypt_flags;
-}
-
 static void set_dm_error(int level, const char *file, int line,
 			 const char *f, ...)
 {
@@ -99,7 +94,9 @@ static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 	if (dm_maj >= 4 && dm_min >= 20)
 		_dm_crypt_flags |= DM_SECURE_SUPPORTED;
 
-	_dm_crypt_checked = 1;
+	/* Repeat test if dm-crypt is not present */
+	if (crypt_maj > 0)
+		_dm_crypt_checked = 1;
 }
 
 static int _dm_check_versions(void)
@@ -111,6 +108,7 @@ static int _dm_check_versions(void)
 	if (_dm_crypt_checked)
 		return 1;
 
+	/* FIXME: add support to DM so it forces crypt target module load here */
 	if (!(dmt = dm_task_create(DM_DEVICE_LIST_VERSIONS)))
 		return 0;
 
@@ -138,6 +136,14 @@ static int _dm_check_versions(void)
 
 	dm_task_destroy(dmt);
 	return 1;
+}
+
+uint32_t dm_flags(void)
+{
+	if (!_dm_crypt_checked)
+		_dm_check_versions();
+
+	return _dm_crypt_flags;
 }
 
 int dm_init(struct crypt_device *context, int check_kernel)
