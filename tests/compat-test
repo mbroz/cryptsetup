@@ -199,7 +199,7 @@ tst=$($CRYPTSETUP -q luksUUID $LOOPDEV)
 prepare "[16] luksFormat" wipe
 echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV || fail
 echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV -d $KEY1 || fail
-$CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 128 --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
+$CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 256 --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 

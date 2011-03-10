@@ -43,10 +43,10 @@ format() # key_bits expected [forced]
 {
 	if [ -z "$3" ] ; then
 		echo -n "Formatting using topology info ($1 bits key)...."
-		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -s $1
+		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -c aes-cbc-essiv:sha256 -s $1
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key)..."
-		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -s $1 --align-payload=$2
+		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -s $1 -c aes-cbc-essiv:sha256 --align-payload=$2
 	fi
 
 	ALIGN=$($CRYPTSETUP luksDump $DEV |grep "Payload offset" | sed -e s/.*\\t//)
