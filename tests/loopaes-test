@@ -1,0 +1,134 @@
+#!/bin/bash
+
+CRYPTSETUP=../src/cryptsetup
+
+# try to validate using loop-aes losetup/kernel if available
+LOSETUP_AES=/losetup-aes
+
+LOOPDEV=/dev/loop5
+LOOP_DD_PARAM="bs=1k count=10000"
+EXPSUM="31e00e0e4c233c89051cd748122fde2c98db0121ca09ba93a3820817ea037bc5"
+DEV_NAME=dummy
+IMG=loopaes.img
+KEYv1=key_v1
+KEYv2=key_v2
+KEYv3=key_v3
+
+function dmremove() { # device
+        udevadm settle 2>/dev/null 2>&1
+        dmsetup remove $1 2>/dev/null 2>&1
+}
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmremove $DEV_NAME2
+	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
+	losetup -d $LOOPDEV >/dev/null 2>&1
+	rm -f $IMG $KEYv1 $KEYv2 $KEYv3 >/dev/null 2>&1
+}
+
+function fail()
+{
+	remove_mapping
+	echo "FAILED"
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 0
+}
+
+function prepare()
+{
+	remove_mapping
+	dd if=/dev/zero of=$IMG $LOOP_DD_PARAM >/dev/null 2>&1
+	sync
+	losetup $LOOPDEV $IMG
+
+	# Prepare raw key: v1 - one key, v2 - 64 keys, v3 - 64 + one IV
+	if [ ! -e $KEYv3 ]; then
+		head -c 3705 /dev/urandom | uuencode -m - | head -n 66 | tail -n 65 >$KEYv3
+		head -n 1 $KEYv3 > $KEYv1
+		head -n 64 $KEYv3 > $KEYv2
+	fi
+	[ -n "$1" ] && echo -n "$1 "
+}
+
+function check_exists()
+{
+	[ -b /dev/mapper/$DEV_NAME ] || fail
+}
+
+function check_sum() # $key $keysize
+{
+        # Fill device with zeroes and reopen it
+        dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1k $LOOP_DD_PARAM >/dev/null 2>&1
+        sync
+        dmremove $DEV_NAME
+
+        $CRYPTSETUP loopaesOpen $DEV_NAME $LOOPDEV -s $2 --key-file $1 >/dev/null 2>&1
+        ret=$?
+        VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
+        if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
+                echo -n "[OK]"
+        else
+                echo "[FAIL]"
+                echo " Expecting $EXPSUM got $VSUM."
+                fail
+        fi
+}
+
+function check_sum_losetup() # $key $alg
+{
+	[ ! -x $LOSETUP_AES ] && echo && return
+
+	echo -n " Verification using Loop-AES: "
+
+	losetup -d $LOOPDEV >/dev/null 2>&1
+	cat $1 | $LOSETUP_AES -p 0 -e $2 $LOOPDEV $IMG
+        ret=$?
+        VSUM=$(sha256sum $LOOPDEV | cut -d' ' -f 1)
+        if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
+                echo "[OK]"
+        else
+                echo "[FAIL]"
+                echo " Expecting $EXPSUM got $VSUM (loop-aes)."
+                fail
+        fi
+	losetup -d $LOOPDEV >/dev/null 2>&1
+}
+
+function check_version()
+{
+	VER_STR=$(dmsetup version | grep Driver)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_PATCH=$(echo $VER_STR | cut -f 3 -d.)
+
+	test $VER_MIN -lt 19 && return 1
+	test $VER_MIN -eq 19 -a $VER_PATCH -ge 6 && return 1 # RHEL
+	return 0
+}
+
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+which uuencode >/dev/null || skip "WARNING: test require uuencode binary, test skipped."
+check_version || skip "Probably old kernel, test skipped."
+
+# Loop-AES tests
+KEY_SIZES="128 256"
+KEY_FILES="$KEYv1 $KEYv2 $KEYv3"
+
+for key_size in $KEY_SIZES ; do
+        for key in $KEY_FILES ; do
+		prepare "Open Loop-AES $key / AES-$key_size"
+		$CRYPTSETUP loopaesOpen $DEV_NAME $LOOPDEV -s $key_size --key-file $key || fail
+		check_exists
+		check_sum $key $key_size
+		$CRYPTSETUP loopaesClose $DEV_NAME || fail
+		check_sum_losetup $key AES$key_size
+        done
+done
+
+remove_mapping
+exit 0
