@@ -238,15 +238,18 @@ ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offse
 
 int device_ready(struct crypt_device *cd, const char *device, int mode)
 {
-	int devfd, r = 1;
+	int devfd, r = 0;
 	ssize_t s;
 	struct stat st;
 	char buf[512];
 
 	if(stat(device, &st) < 0) {
 		log_err(cd, _("Device %s doesn't exist or access denied.\n"), device);
-		return 0;
+		return -EINVAL;
 	}
+
+	if (!S_ISBLK(st.st_mode))
+		return -ENOTBLK;
 
 	log_dbg("Trying to open and read device %s.", device);
 	devfd = open(device, mode | O_DIRECT | O_SYNC);
@@ -254,14 +257,14 @@ int device_ready(struct crypt_device *cd, const char *device, int mode)
 		log_err(cd, _("Cannot open device %s for %s%s access.\n"), device,
 			(mode & O_EXCL) ? _("exclusive ") : "",
 			(mode & O_RDWR) ? _("writable") : _("read-only"));
-		return 0;
+		return -EINVAL;
 	}
 
 	 /* Try to read first sector */
 	s = read_blockwise(devfd, buf, sizeof(buf));
 	if (s < 0 || s != sizeof(buf)) {
 		log_verbose(cd, _("Cannot read device %s.\n"), device);
-		r = 0;
+		r = -EIO;
 	}
 
 	memset(buf, 0, sizeof(buf));

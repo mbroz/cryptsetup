@@ -15,6 +15,8 @@ struct crypt_device {
 	char *type;
 
 	char *device;
+	char *backing_file;
+	int loop_fd;
 	struct volume_key *volume_key;
 	uint64_t timeout;
 	uint64_t iteration_time;
@@ -432,7 +434,7 @@ static int key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 
 	*key = NULL;
 	if(!msg && asprintf(&prompt, _("Enter passphrase for %s: "),
-			    cd->device) < 0)
+			    crypt_get_device_name(cd)) < 0)
 		return -ENOMEM;
 
 	if (!msg)
@@ -961,32 +963,57 @@ const char *crypt_get_dir(void)
 int crypt_init(struct crypt_device **cd, const char *device)
 {
 	struct crypt_device *h = NULL;
+	int r, readonly = 0;
 
 	if (!cd)
 		return -EINVAL;
 
 	log_dbg("Allocating crypt device %s context.", device);
 
-	if (device && !device_ready(NULL, device, O_RDONLY))
-		return -ENOTBLK;
-
 	if (!(h = malloc(sizeof(struct crypt_device))))
 		return -ENOMEM;
 
 	memset(h, 0, sizeof(*h));
+	h->loop_fd = -1;
 
 	if (device) {
-		h->device = strdup(device);
-		if (!h->device) {
-			free(h);
-			return -ENOMEM;
+		r = device_ready(NULL, device, O_RDONLY);
+		if (r == -ENOTBLK) {
+			h->device = crypt_loop_get_device();
+			log_dbg("Not a block device, %s%s.",
+				h->device ? "using free loop device " :
+					 "no free loop device found",
+				h->device ?: "");
+			if (!h->device) {
+				r = -ENOSYS;
+				goto bad;
+			}
+
+			/* Keep the loop open, dettached on last close. */
+			h->loop_fd = crypt_loop_attach(h->device, device, 0, &readonly);
+			if (h->loop_fd == -1) {
+				log_dbg("Attaching loop failed.");
+				r = -EINVAL;
+				goto bad;
+			}
+
+			h->backing_file = crypt_loop_backing_file(h->device);
+			r = device_ready(NULL, h->device, O_RDONLY);
 		}
-	} else
-		h->device = NULL;
+		if (r < 0) {
+			r = -ENOTBLK;
+			goto bad;
+		}
+	}
+
+	if (!h->device && device && !(h->device = strdup(device))) {
+		r = -ENOMEM;
+		goto bad;
+	}
 
 	if (dm_init(h, 1) < 0) {
-		free(h);
-		return -ENOSYS;
+		r = -ENOSYS;
+		goto bad;
 	}
 
 	h->iteration_time = 1000;
@@ -995,6 +1022,16 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	h->rng_type = crypt_random_default_key_rng();
 	*cd = h;
 	return 0;
+bad:
+
+	if (h) {
+		if (h->loop_fd != -1)
+			close(h->loop_fd);
+		free(h->device);
+		free(h->backing_file);
+	}
+	free(h);
+	return r;
 }
 
 int crypt_init_by_name(struct crypt_device **cd, const char *name)
@@ -1043,6 +1080,13 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 		goto out;
 
 	/* Try to initialise basic parameters from active device */
+
+	if (!(*cd)->backing_file && device && crypt_loop_device(device) &&
+	    !((*cd)->backing_file = crypt_loop_backing_file(device))) {
+		r = -ENOMEM;
+		goto out;
+	}
+
 	if (device_uuid) {
 		if (!strncmp(CRYPT_PLAIN, device_uuid, sizeof(CRYPT_PLAIN)-1)) {
 			(*cd)->type = strdup(CRYPT_PLAIN);
@@ -1427,10 +1471,14 @@ void crypt_free(struct crypt_device *cd)
 	if (cd) {
 		log_dbg("Releasing crypt device %s context.", cd->device);
 
+		if (cd->loop_fd != -1)
+			close(cd->loop_fd);
+
 		dm_exit();
 		crypt_free_volume_key(cd->volume_key);
 
 		free(cd->device);
+		free(cd->backing_file);
 		free(cd->type);
 
 		/* used in plain device only */
@@ -2302,7 +2350,7 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 
 const char *crypt_get_device_name(struct crypt_device *cd)
 {
-	return cd->device;
+	return cd->backing_file ?: cd->device;
 }
 
 int crypt_get_volume_key_size(struct crypt_device *cd)
