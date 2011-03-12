@@ -83,6 +83,15 @@ int crypt_loop_attach(const char *loop, const char *file,
 		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
 		goto out;
 	}
+
+	/* Verify that autoclear is really set */
+	memset(&lo64, 0, sizeof(lo64));
+	if (ioctl(loop_fd, LOOP_GET_STATUS64, &lo64) < 0 ||
+	    !(lo64.lo_flags & LO_FLAGS_AUTOCLEAR)) {
+		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
+		goto out;
+	}
+
 	r = 0;
 out:
 	if (r && loop_fd >= 0)
