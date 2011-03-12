@@ -991,7 +991,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 			}
 
 			/* Keep the loop open, dettached on last close. */
-			h->loop_fd = crypt_loop_attach(h->device, device, 0, &readonly);
+			h->loop_fd = crypt_loop_attach(h->device, device, 0, 1, &readonly);
 			if (h->loop_fd == -1) {
 				log_err(NULL, _("Attaching loopback device failed "
 					"(loop device with autoclear flag is required).\n"));

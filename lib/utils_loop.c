@@ -35,7 +35,7 @@ char *crypt_loop_get_device(void)
 	struct stat st;
 	struct loop_info64 lo64 = {0};
 
-	for(i = 0; i < 256; i++) {
+	for (i = 0; i < 256; i++) {
 		sprintf(dev, "/dev/loop%d", i);
 		if (stat(dev, &st) || !S_ISBLK(st.st_mode))
 			return NULL;
@@ -44,7 +44,8 @@ char *crypt_loop_get_device(void)
 		if (loop_fd < 0)
 			return NULL;
 
-		if(ioctl(loop_fd, LOOP_GET_STATUS64, &lo64) && errno == ENXIO) {
+		if (ioctl(loop_fd, LOOP_GET_STATUS64, &lo64) &&
+		    errno == ENXIO) {
 			close(loop_fd);
 			return strdup(dev);
 		}
@@ -54,8 +55,8 @@ char *crypt_loop_get_device(void)
 	return NULL;
 }
 
-int crypt_loop_attach(const char *loop, const char *file,
-		      int offset, int *readonly)
+int crypt_loop_attach(const char *loop, const char *file, int offset,
+		      int autoclear, int *readonly)
 {
 	struct loop_info64 lo64 = {0};
 	int loop_fd = -1, file_fd = -1, r = 1;
@@ -74,7 +75,8 @@ int crypt_loop_attach(const char *loop, const char *file,
 
 	strncpy((char*)lo64.lo_file_name, file, LO_NAME_SIZE);
 	lo64.lo_offset = offset;
-	lo64.lo_flags |= LO_FLAGS_AUTOCLEAR;
+	if (autoclear)
+		lo64.lo_flags |= LO_FLAGS_AUTOCLEAR;
 
 	if (ioctl(loop_fd, LOOP_SET_FD, file_fd) < 0)
 		goto out;
@@ -85,11 +87,13 @@ int crypt_loop_attach(const char *loop, const char *file,
 	}
 
 	/* Verify that autoclear is really set */
-	memset(&lo64, 0, sizeof(lo64));
-	if (ioctl(loop_fd, LOOP_GET_STATUS64, &lo64) < 0 ||
-	    !(lo64.lo_flags & LO_FLAGS_AUTOCLEAR)) {
+	if (autoclear) {
+		memset(&lo64, 0, sizeof(lo64));
+		if (ioctl(loop_fd, LOOP_GET_STATUS64, &lo64) < 0 ||
+		   !(lo64.lo_flags & LO_FLAGS_AUTOCLEAR)) {
 		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
-		goto out;
+			goto out;
+		}
 	}
 
 	r = 0;
@@ -99,6 +103,21 @@ out:
 	if (file_fd >= 0)
 		close(file_fd);
 	return r ? -1 : loop_fd;
+}
+
+int crypt_loop_detach(const char *loop)
+{
+	int loop_fd = -1, r = 1;
+
+	loop_fd = open(loop, O_RDONLY);
+	if (loop_fd < 0)
+                return 1;
+
+	if (!ioctl(loop_fd, LOOP_CLR_FD, 0))
+		r = 0;
+
+	close(loop_fd);
+	return r;
 }
 
 char *crypt_loop_backing_file(const char *loop)
@@ -126,6 +145,9 @@ char *crypt_loop_backing_file(const char *loop)
 int crypt_loop_device(const char *loop)
 {
 	struct stat st;
+
+	if (!loop)
+		return 0;
 
 	if (stat(loop, &st) || !S_ISBLK(st.st_mode) ||
 	    major(st.st_rdev) != LOOP_DEV_MAJOR)

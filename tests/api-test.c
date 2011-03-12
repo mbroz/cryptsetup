@@ -30,6 +30,7 @@
 #include <linux/loop.h>
 
 #include "libcryptsetup.h"
+#include "utils_loop.h"
 
 #define DMDIR "/dev/mapper/"
 
@@ -84,33 +85,6 @@ static void _remove_keyfiles(void)
 {
 	remove(KEYFILE1);
 	remove(KEYFILE2);
-}
-
-char *_get_loop_device(void)
-{
-	char dev[20];
-	int i, loop_fd;
-	struct stat st;
-	struct loop_info64 lo64 = {0};
-
-	for ( i = 0; i < 256; i++ ) {
-		sprintf ( dev, "/dev/loop%d", i );
-		if ( stat ( dev, &st ) || !S_ISBLK ( st.st_mode ) )
-			goto bad;
-
-		loop_fd = open ( dev, O_RDONLY );
-		if ( loop_fd < 0 )
-			goto bad;
-
-		if ( ioctl ( loop_fd, LOOP_GET_STATUS64, &lo64 ) && errno == ENXIO ) {
-			close ( loop_fd );
-			return strdup ( dev );
-		}
-		close ( loop_fd );
-	}
-bad:
-	printf("Cannot find free loop device.\n");
-	return NULL;
 }
 
 // Decode key from its hex representation
@@ -175,7 +149,6 @@ static struct interface_callbacks cmd_icb = {
 static void _cleanup(void)
 {
 	struct stat st;
-	char tmp[256];
 
 	//_system("udevadm settle", 0);
 
@@ -191,16 +164,11 @@ static void _cleanup(void)
 	if (!stat(DEVICE_ERROR, &st))
 		_system("dmsetup remove " DEVICE_ERROR_name, 0);
 
-	// FIXME: use internel loop lib when available
-	if (DEVICE_1 && !strncmp("/dev/loop", DEVICE_1, 9)) {
-		snprintf(tmp, sizeof(tmp), "losetup -d %s", DEVICE_1);
-		_system(tmp, 0);
-	}
+	if (crypt_loop_device(DEVICE_1))
+		crypt_loop_detach(DEVICE_1);
 
-	if (DEVICE_2 && !strncmp("/dev/loop", DEVICE_2, 9)) {
-		snprintf(tmp, sizeof(tmp), "losetup -d %s", DEVICE_2);
-		_system(tmp, 0);
-	}
+	if (crypt_loop_device(DEVICE_2))
+		crypt_loop_detach(DEVICE_2);
 
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_remove_keyfiles();
@@ -208,27 +176,31 @@ static void _cleanup(void)
 
 static int _setup(void)
 {
-	char tmp[256];
+	int fd, ro = 0;
 
 	_system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"", 1);
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
 	if (!DEVICE_1)
-		DEVICE_1 = _get_loop_device();
-	if (!DEVICE_1)
+		DEVICE_1 = crypt_loop_get_device();
+	if (!DEVICE_1) {
+		printf("Cannot find free loop device.\n");
 		return 1;
-	if (!strncmp("/dev/loop", DEVICE_1, 9)) {
+	}
+	if (crypt_loop_device(DEVICE_1)) {
 		_system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2", 1);
-		snprintf(tmp, sizeof(tmp), "losetup %s %s", DEVICE_1, IMAGE1);
-		_system(tmp, 1);
+		fd = crypt_loop_attach(DEVICE_1, IMAGE1, 0, 0, &ro);
+		close(fd);
 	}
 	if (!DEVICE_2)
-		DEVICE_2 = _get_loop_device();
-	if (!DEVICE_2)
+		DEVICE_2 = crypt_loop_get_device();
+	if (!DEVICE_2) {
+		printf("Cannot find free loop device.\n");
 		return 1;
-	if (!strncmp("/dev/loop", DEVICE_2, 9)) {
+	}
+	if (crypt_loop_device(DEVICE_2)) {
 		_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4", 1);
-		snprintf(tmp, sizeof(tmp), "losetup %s %s", DEVICE_2, IMAGE_EMPTY);
-		_system(tmp, 1);
+		fd = crypt_loop_attach(DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
+		close(fd);
 	}
 	return 0;
 }
