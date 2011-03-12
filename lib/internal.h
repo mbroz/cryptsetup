@@ -106,12 +106,6 @@ int device_check_and_adjust(struct crypt_device *cd,
 			    int *read_only);
 int wipe_device_header(const char *device, int sectors);
 
-/* loopback device helpers */
-char *crypt_loop_get_device(void);
-char *crypt_loop_backing_file(const char *loop);
-int crypt_loop_device(const char *loop);
-int crypt_loop_attach(const char *loop, const char *file, int offset, int *readonly);
-
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)

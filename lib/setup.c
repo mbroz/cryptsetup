@@ -434,7 +434,7 @@ static int key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 
 	*key = NULL;
 	if(!msg && asprintf(&prompt, _("Enter passphrase for %s: "),
-			    crypt_get_device_name(cd)) < 0)
+			    cd->backing_file ?: cd->device) < 0)
 		return -ENOMEM;
 
 	if (!msg)
@@ -2350,7 +2350,7 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 
 const char *crypt_get_device_name(struct crypt_device *cd)
 {
-	return cd->backing_file ?: cd->device;
+	return cd->device;
 }
 
 int crypt_get_volume_key_size(struct crypt_device *cd)

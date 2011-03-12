@@ -19,15 +19,14 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <linux/loop.h>
 
-#include "internal.h"
-
-#define LOOP_DEV_MAJOR 7
+#include "utils_loop.h"
 
 char *crypt_loop_get_device(void)
 {
