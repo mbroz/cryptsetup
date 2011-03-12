@@ -12,6 +12,7 @@
 
 #include "nls.h"
 #include "utils_crypt.h"
+#include "utils_loop.h"
 
 #define SECTOR_SHIFT		9
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)

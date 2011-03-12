@@ -319,6 +319,8 @@ static int action_status(int arg)
 	crypt_status_info ci;
 	struct crypt_active_device cad;
 	struct crypt_device *cd = NULL;
+	char *backing_file;
+	const char *device;
 	int r = 0;
 
 	ci = crypt_status(NULL, action_argv[0]);
@@ -345,7 +347,13 @@ static int action_status(int arg)
 
 		log_std("  cipher:  %s-%s\n", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
 		log_std("  keysize: %d bits\n", crypt_get_volume_key_size(cd) * 8);
-		log_std("  device:  %s\n", crypt_get_device_name(cd));
+		device = crypt_get_device_name(cd);
+		log_std("  device:  %s\n", device);
+		if (crypt_loop_device(device)) {
+			backing_file = crypt_loop_backing_file(device);
+			log_std("  loop:    %s\n", backing_file);
+			free(backing_file);
+		}
 		log_std("  offset:  %" PRIu64 " sectors\n", cad.offset);
 		log_std("  size:    %" PRIu64 " sectors\n", cad.size);
 		if (cad.iv_offset)
