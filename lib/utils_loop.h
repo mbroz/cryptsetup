@@ -5,6 +5,10 @@
 
 #define LOOP_DEV_MAJOR 7
 
+#ifndef LO_FLAGS_AUTOCLEAR
+#define LO_FLAGS_AUTOCLEAR 4
+#endif
+
 char *crypt_loop_get_device(void);
 char *crypt_loop_backing_file(const char *loop);
 int crypt_loop_device(const char *loop);

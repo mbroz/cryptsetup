@@ -985,6 +985,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 					 "no free loop device found",
 				h->device ?: "");
 			if (!h->device) {
+				log_err(NULL, _("Cannot find a free loopback device.\n"));
 				r = -ENOSYS;
 				goto bad;
 			}
@@ -992,7 +993,8 @@ int crypt_init(struct crypt_device **cd, const char *device)
 			/* Keep the loop open, dettached on last close. */
 			h->loop_fd = crypt_loop_attach(h->device, device, 0, &readonly);
 			if (h->loop_fd == -1) {
-				log_dbg("Attaching loop failed.");
+				log_err(NULL, _("Attaching loopback device failed "
+					"(loop device with autoclear flag is required).\n"));
 				r = -EINVAL;
 				goto bad;
 			}
