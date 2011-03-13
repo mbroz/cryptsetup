@@ -27,7 +27,6 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <linux/loop.h>
 
 #include "libcryptsetup.h"
 #include "utils_loop.h"
