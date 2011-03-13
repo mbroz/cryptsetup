@@ -132,8 +132,9 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 void crypt_random_exit(void);
 int crypt_random_default_key_rng(void);
 
-int crypt_plain_hash(struct crypt_device *ctx, const char *hash_name,
-		     char *result, size_t size,
-		     const char *passphrase, size_t sizep);
+int crypt_plain_hash(struct crypt_device *ctx,
+		     const char *hash_name,
+		     char *key, size_t key_size,
+		     const char *passphrase, size_t passphrase_size);
 
 #endif /* INTERNAL_H */

@@ -2,7 +2,7 @@
  * cryptsetup plain device helper functions
  *
  * Copyright (C) 2004 Christophe Saout <christophe@saout.de>
- * Copyright (C) 2010 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2010-2011 Red Hat, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,70 +25,80 @@
 #include "internal.h"
 #include "crypto_backend.h"
 
-static int hash(const char *hash_name, int size, char *key,
-		int sizep, const char *passphrase)
+static int hash(const char *hash_name, size_t key_size, char *key,
+		size_t passphrase_size, const char *passphrase)
 {
 	struct crypt_hash *md = NULL;
-	size_t slen;
-	int len = crypt_hash_size(hash_name);
-	int round, i;
+	size_t len;
+	int round, i, r = 0;
 
 	if (crypt_hash_init(&md, hash_name))
 		return -ENOENT;
 
-	for(round = 0; size; round++) {
+	len = crypt_hash_size(hash_name);
+
+	for(round = 0; key_size && !r; round++) {
 		/* hack from hashalot to avoid null bytes in key */
 		for(i = 0; i < round; i++)
-			crypt_hash_write(md, "A", 1);
+			if (crypt_hash_write(md, "A", 1))
+				r = 1;
 
-		crypt_hash_write(md, passphrase, sizep);
+		if (crypt_hash_write(md, passphrase, passphrase_size))
+			r = 1;
 
-		if (len > size)
-			len = size;
-		slen = len;
-		crypt_hash_final(md, key, slen);
-		// FIXME: if slen != len
+		if (len > key_size)
+			len = key_size;
+
+		if (crypt_hash_final(md, key, len))
+			r = 1;
 
 		key += len;
-		size -= len;
-		if (size)
-			crypt_hash_restart(md);
+		key_size -= len;
+		if (key_size && crypt_hash_restart(md))
+			r = 1;
 	}
 
 	crypt_hash_destroy(md);
-	return 0;
+	return r;
 }
 
-int crypt_plain_hash(struct crypt_device *ctx, const char *hash_name,
-		     char *result, size_t size,
-		     const char *passphrase, size_t sizep)
+#define PLAIN_HASH_LEN_MAX 256
+
+int crypt_plain_hash(struct crypt_device *ctx,
+		     const char *hash_name,
+		     char *key, size_t key_size,
+		     const char *passphrase, size_t passphrase_size)
 {
-	char hash_name_buf[256], *s;
-	size_t hlen, pad = 0;
+	char hash_name_buf[PLAIN_HASH_LEN_MAX], *s;
+	size_t hash_size, pad_size;
 	int r;
 
-	if (strlen(hash_name) >= sizeof(hash_name_buf))
-		return -EINVAL;
+	log_dbg("Plain: hashing passphrase using %s.", hash_name);
 
-	if ((s = strchr(hash_name, ':'))) {
-		strcpy(hash_name_buf, hash_name);
-		hash_name_buf[s-hash_name] = '\0';
-		hash_name = hash_name_buf;
-		hlen = atoi(++s);
-		if (hlen > size) {
-			log_err(ctx, "Requested hash length (%zd) > key length (%zd)\n", hlen, size);
+	if (strlen(hash_name) >= PLAIN_HASH_LEN_MAX)
+		return -EINVAL;
+	strncpy(hash_name_buf, hash_name, PLAIN_HASH_LEN_MAX);
+	hash_name_buf[PLAIN_HASH_LEN_MAX - 1] = '\0';
+
+	/* hash[:hash_length] */
+	if ((s = strchr(hash_name_buf, ':'))) {
+		*s = '\0';
+		hash_size = atoi(++s);
+		if (hash_size > key_size) {
+			log_dbg("Hash length %zd > key length %zd",
+				hash_size, key_size);
 			return -EINVAL;
 		}
-		pad = size-hlen;
-		size = hlen;
+		pad_size = key_size - hash_size;
+	} else {
+		hash_size = key_size;
+		pad_size = 0;
 	}
 
-	r = hash(hash_name, size, result, sizep, passphrase);
-	if (r < 0)
-		log_err(ctx, "Hash algorithm %s not supported.\n", hash_name);
+	r = hash(hash_name_buf, hash_size, key, passphrase_size, passphrase);
 
-	if (r == 0 && pad)
-		memset(result+size, 0, pad);
+	if (r == 0 && pad_size)
+		memset(key + hash_size, 0, pad_size);
 
 	return r;
 }

@@ -124,6 +124,7 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 			 const char *pass, size_t passLen)
 {
 	char *key;
+	int r;
 
 	if (!key_size)
 		return NULL;
@@ -145,9 +146,14 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 
 	/* key is coming from tty, fd or binary stdin */
 	if (hash_name) {
-		if (crypt_plain_hash(cd, hash_name, key, key_size, pass, passLen) < 0) {
-			log_err(cd, _("Key processing error (using hash algorithm %s).\n"),
-				hash_name);
+		r = crypt_plain_hash(cd, hash_name, key, key_size, pass, passLen);
+		if (r < 0) {
+			if (r == -ENOENT)
+				log_err(cd, _("Hash algorithm %s not supported.\n"),
+					hash_name);
+			else
+				log_err(cd, _("Key processing error (using hash %s).\n"),
+					hash_name);
 			crypt_safe_free(key);
 			return NULL;
 		}
