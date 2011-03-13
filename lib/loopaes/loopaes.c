@@ -54,13 +54,17 @@ static int hash_key(const char *src, size_t src_len,
 		    const char *hash_name)
 {
 	struct crypt_hash *hd = NULL;
+	int r;
 
 	if (crypt_hash_init(&hd, hash_name))
 		return -EINVAL;
-	crypt_hash_write(hd, src, src_len);
-	crypt_hash_final(hd, dst, dst_len);
+
+	r = crypt_hash_write(hd, src, src_len);
+	if (!r)
+		r = crypt_hash_final(hd, dst, dst_len);
+out:
 	crypt_hash_destroy(hd);
-	return 0;
+	return r;
 }
 
 static int hash_keys(struct volume_key **vk,
