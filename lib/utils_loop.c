@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <limits.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <linux/loop.h>
@@ -120,7 +121,7 @@ int crypt_loop_detach(const char *loop)
 	return r;
 }
 
-char *crypt_loop_backing_file(const char *loop)
+static char *_ioctl_backing_file(const char *loop)
 {
 	struct loop_info64 lo64 = {0};
 	int loop_fd;
@@ -140,6 +141,38 @@ char *crypt_loop_backing_file(const char *loop)
 	close(loop_fd);
 
 	return strdup((char*)lo64.lo_file_name);
+}
+
+static char *_sysfs_backing_file(const char *loop)
+{
+	struct stat st;
+	char buf[PATH_MAX];
+	size_t len;
+	int fd;
+
+	if (stat(loop, &st) || !S_ISBLK(st.st_mode))
+		return NULL;
+
+	snprintf(buf, sizeof(buf), "/sys/dev/block/%d:%d/loop/backing_file",
+		 major(st.st_rdev), minor(st.st_rdev));
+
+	fd = open(buf, O_RDONLY);
+	if (fd < 0)
+		return NULL;
+
+	len = read(fd, buf, PATH_MAX);
+	close(fd);
+	if (len < 2)
+		return NULL;
+
+	buf[len - 1] = '\0';
+	return strdup(buf);
+}
+
+char *crypt_loop_backing_file(const char *loop)
+{
+	char *bf = _sysfs_backing_file(loop);
+	return bf ?: _ioctl_backing_file(loop);
 }
 
 int crypt_loop_device(const char *loop)
