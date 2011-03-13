@@ -166,7 +166,8 @@ static int pkcs5_pbkdf2(const char *hash,
 		memset(T, 0, hLen);
 
 		for (u = 1; u <= c ; u++) {
-			crypt_hmac_restart(hmac);
+			if (crypt_hmac_restart(hmac))
+				goto out;
 
 			if (u == 1) {
 				memcpy(tmp, S, Slen);
@@ -175,12 +176,15 @@ static int pkcs5_pbkdf2(const char *hash,
 				tmp[Slen + 2] = (i & 0x0000ff00) >> 8;
 				tmp[Slen + 3] = (i & 0x000000ff) >> 0;
 
-				crypt_hmac_write(hmac, tmp, tmplen);
+				if (crypt_hmac_write(hmac, tmp, tmplen))
+					goto out;
 			} else {
-				crypt_hmac_write(hmac, U, hLen);
+				if (crypt_hmac_write(hmac, U, hLen))
+					goto out;
 			}
 
-			crypt_hmac_final(hmac, U, hLen);
+			if (crypt_hmac_final(hmac, U, hLen))
+				goto out;
 
 			for (k = 0; (uint) k < hLen; k++)
 				T[k] ^= U[k];
