@@ -82,6 +82,20 @@ The key file with the new material is supplied as a positional argument.
 .IP
 remove supplied key or key file from LUKS device
 .PP
+\fIluksChangeKey\fR <device> [<new key file>]
+.IP
+change existing key file or passphrase. An existing passphrase or key file (via \-\-key-file) must be supplied.
+The key file with the new material is supplied as a positional argument.
+
+If no key slot is specified (and there is still free key slot on device) new slot is allocated before the old is purged.
+
+If \fB\-\-key\-slot\fR option is specified (or there is no free slot) command will overwrite existing slot.
+
+\fBWARNING:\fR Be sure you have another slot active or header backup when using explicit key slot (so you can
+unlock the device even after possible media failure during slot swap).
+
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-new-keyfile-size, \-\-key-slot].
+.PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
 wipe key with number <key slot> from LUKS device. A remaining passphrase or
@@ -258,6 +272,7 @@ set up a read-only mapping.
 .TP
 .B "\-\-iter-time, \-i"
 The number of milliseconds to spend with PBKDF2 password processing. This option is only relevant to the LUKS operations as \fIluksFormat\fR or \fIluksAddKey\fR.
+Note that 0 means default.
 .TP
 .B "\-\-batch-mode, \-q"
 Do not ask for confirmation. Use with care! This option is only relevant for \fIluksFormat\fR, \fIluksAddKey\fR, \fIluksRemoveKey\fR or \fIluksKillSlot\fR.
@@ -341,7 +356,7 @@ Copyright \(co 2004 Christophe Saout
 .br
 Copyright \(co 2004-2006 Clemens Fruhwirth
 .br
-Copyright \(co 2009-2010 Red Hat, Inc.
+Copyright \(co 2009-2011 Red Hat, Inc.
 
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

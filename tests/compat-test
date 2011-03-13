@@ -300,5 +300,30 @@ dmsetup resume $DEV_NAME || fail
 $CRYPTSETUP -q luksClose $DEV_NAME2 || fail
 dmsetup remove $DEV_NAME || fail
 
+prepare "[23] ChangeKey passphrase and keyfile" wipe
+# [0]$KEY1 [1]key0
+$CRYPTSETUP -q luksFormat $LOOPDEV $KEY1 --key-slot 0 || fail
+echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 --key-slot 1 || fail
+# keyfile [0] / keyfile [0]
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 0 || fail
+# passphrase [1] / passphrase [1]
+echo -e "key0\nkey1\n" | $CRYPTSETUP luksChangeKey $LOOPDEV --key-slot 1 || fail
+# keyfile [0] / keyfile [new]
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY2 $KEY1 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: DISABLED" || fail
+# passphrase [1] / passphrase [new]
+echo -e "key1\nkey0\n" | $CRYPTSETUP luksChangeKey $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
+# use all slots
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i 1 || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i 1 || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i 1 || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i 1 || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i 1 || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i 1 || fail
+# still allows replace
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 || fail
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
+
 remove_mapping
 exit 0

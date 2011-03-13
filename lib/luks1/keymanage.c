@@ -46,6 +46,21 @@ static inline int round_up_modulo(int x, int m) {
 	return div_round_up(x, m) * m;
 }
 
+const char *dbg_slot_state(crypt_keyslot_info ki)
+{
+	switch(ki) {
+	case CRYPT_SLOT_INACTIVE:
+		return "INACTIVE";
+	case CRYPT_SLOT_ACTIVE:
+		return "ACTIVE";
+	case CRYPT_SLOT_ACTIVE_LAST:
+		return "ACTIVE_LAST";
+	case CRYPT_SLOT_INVALID:
+	default:
+		return "INVALID";
+	}
+}
+
 int LUKS_hdr_backup(
 	const char *backup_file,
 	const char *device,
@@ -629,7 +644,8 @@ static int LUKS_open_key(const char *device,
 	size_t AFEKSize;
 	int r;
 
-	log_dbg("Trying to open key slot %d [%d].", keyIndex, (int)ki);
+	log_dbg("Trying to open key slot %d [%s].", keyIndex,
+		dbg_slot_state(ki));
 
 	if (ki < CRYPT_SLOT_ACTIVE)
 		return -ENOENT;

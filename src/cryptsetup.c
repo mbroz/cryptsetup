@@ -55,6 +55,7 @@ static int action_luksOpen(int arg);
 static int action_luksAddKey(int arg);
 static int action_luksKillSlot(int arg);
 static int action_luksRemoveKey(int arg);
+static int action_luksChangeKey(int arg);
 static int action_isLuks(int arg);
 static int action_luksUUID(int arg);
 static int action_luksDump(int arg);
@@ -81,6 +82,7 @@ static struct action_type {
 	{ "luksOpen",	action_luksOpen,	0, 2, 1, N_("<device> <name> "), N_("open LUKS device as mapping <name>") },
 	{ "luksAddKey",	action_luksAddKey,	0, 1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
 	{ "luksRemoveKey",action_luksRemoveKey,	0, 1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
+	{ "luksChangeKey",action_luksChangeKey,	0, 1, 1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
 	{ "luksKillSlot",  action_luksKillSlot, 0, 2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
 	{ "luksUUID",	action_luksUUID,	0, 1, 0, N_("<device>"), N_("print UUID of LUKS device") },
 	{ "isLuks",	action_isLuks,		0, 1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
@@ -668,6 +670,100 @@ static int action_luksAddKey(int arg)
 out:
 	crypt_free(cd);
 	crypt_safe_free(key);
+	return r;
+}
+
+static int _slots_full(struct crypt_device *cd)
+{
+	int i;
+
+	for (i = 0; i < crypt_keyslot_max(crypt_get_type(cd)); i++)
+		if (crypt_keyslot_status(cd, i) == CRYPT_SLOT_INACTIVE)
+			return 0;
+	return 1;
+}
+
+static int action_luksChangeKey(int arg)
+{
+	const char *opt_new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
+	struct crypt_device *cd = NULL;
+	char *vk = NULL, *password = NULL;
+	unsigned int passwordLen = 0;
+	size_t vk_size;
+	int new_key_slot, old_key_slot, r;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	r = crypt_get_key(_("Enter LUKS passphrase to be changed: "),
+		      &password, &passwordLen,
+		      opt_keyfile_size, opt_key_file, opt_timeout,
+		      opt_batch_mode ? 0 : opt_verify_passphrase, cd);
+	if (r < 0)
+		goto out;
+
+	vk_size = crypt_get_volume_key_size(cd);
+	vk = crypt_safe_alloc(vk_size);
+	if (!vk) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	r = crypt_volume_key_get(cd, opt_key_slot, vk, &vk_size,
+				 password, passwordLen);
+	if (r < 0) {
+		if (opt_key_slot != CRYPT_ANY_SLOT)
+			log_err(_("No key available with this passphrase.\n"));
+		goto out;
+	}
+
+	if (opt_key_slot != CRYPT_ANY_SLOT || _slots_full(cd)) {
+		log_dbg("Key slot %d is going to be overwritten (%s).",
+			r, opt_key_slot != CRYPT_ANY_SLOT ?
+			"explicit key slot specified" : "no free key slot");
+		old_key_slot = r;
+		new_key_slot = r;
+	} else {
+		log_dbg("Allocating new key slot.");
+		old_key_slot = r;
+		new_key_slot = CRYPT_ANY_SLOT;
+	}
+
+	crypt_safe_free(password);
+	password = NULL;
+	passwordLen = 0;
+	r = crypt_get_key(_("Enter new LUKS passphrase: "),
+			  &password, &passwordLen,
+			  opt_new_keyfile_size, opt_new_key_file,
+			  opt_timeout, opt_batch_mode ? 0 : 1, cd);
+	if (r < 0)
+		goto out;
+
+	if (new_key_slot == old_key_slot) {
+		(void)crypt_keyslot_destroy(cd, old_key_slot);
+		r = crypt_keyslot_add_by_volume_key(cd, new_key_slot,
+						    vk, vk_size,
+						    password, passwordLen);
+		if (r >= 0)
+			log_verbose(_("Key slot %d changed.\n"), r);
+	} else {
+		r = crypt_keyslot_add_by_volume_key(cd, CRYPT_ANY_SLOT,
+						    vk, vk_size,
+						    password, passwordLen);
+		if (r >= 0) {
+			log_verbose(_("Replaced with key slot %d.\n"), r);
+			r = crypt_keyslot_destroy(cd, old_key_slot);
+		}
+	}
+	if (r < 0)
+		log_err(_("Failed to swap new key slot.\n"));
+out:
+	crypt_safe_free(vk);
+	crypt_safe_free(password);
+	crypt_free(cd);
 	return r;
 }
 
