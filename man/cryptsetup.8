@@ -336,6 +336,14 @@ using /dev/random and /dev/urandom  here, see \fP--use-random\fR and \fP--use-ur
 options. Using /dev/random on system without enough entropy sources
 can cause \fPluksFormat\fR to block until the requested amount of random data is gathered.
 See \fPurandom(4)\fR for more information.
+.SH NOTES ON LOOPBACK DEVICE USE
+Cryptsetup is usually used directly over block device (like disk partition or LVM volume).
+However if the device argument is file, cryptsetup tries to allocate loopback device
+and map it into this file. This mode requires Linux kernel 2.6.25 or more recent which
+supports loop autoclear flag (loop device is cleared on last close automatically).
+
+When device mapping is active, you can see loop backing file in status command output.
+Also see losetup(8).
 .SH AUTHORS
 cryptsetup is written by Christophe Saout <christophe@saout.de>
 .br
