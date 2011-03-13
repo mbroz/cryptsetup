@@ -62,7 +62,7 @@ static int hash_key(const char *src, size_t src_len,
 	r = crypt_hash_write(hd, src, src_len);
 	if (!r)
 		r = crypt_hash_final(hd, dst, dst_len);
-out:
+
 	crypt_hash_destroy(hd);
 	return r;
 }

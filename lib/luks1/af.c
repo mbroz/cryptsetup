@@ -42,15 +42,22 @@ static int hash_buf(const char *src, char *dst, uint32_t iv,
 {
 	struct crypt_hash *hd = NULL;
 	char *iv_char = (char *)&iv;
+	int r;
 
 	iv = htonl(iv);
 	if (crypt_hash_init(&hd, hash_name))
-		return 1;
-	crypt_hash_write(hd, iv_char, sizeof(uint32_t));
-	crypt_hash_write(hd, src, len);
-	crypt_hash_final(hd, dst, len);
+		return -EINVAL;
+
+	if ((r = crypt_hash_write(hd, iv_char, sizeof(uint32_t))))
+		goto out;
+	
+	if ((r = crypt_hash_write(hd, src, len)))
+		goto out;
+	
+	r = crypt_hash_final(hd, dst, len);
+out:
 	crypt_hash_destroy(hd);
-	return 0;
+	return r;
 }
 
 /* diffuse: Information spreading over the whole dataset with
