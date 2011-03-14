@@ -1,7 +1,7 @@
 /*
  * cryptsetup plain device helper functions
  *
- * Copyright (C) 2004 Christophe Saout <christophe@saout.de>
+ * Copyright (C) 2004, Christophe Saout <christophe@saout.de>
  * Copyright (C) 2010-2011 Red Hat, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
