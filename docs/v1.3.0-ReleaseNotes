@@ -8,7 +8,7 @@ Important changes
  * Several userspace crypto backends support
 
    cryptsetup now supports generic crypto backend interface which allows
-   compile package with various crypto library, these are already implemented:
+   compile package with various crypto libraries, these are already implemented:
 
    * gcrypt (default, used in previous versions)
    * OpenSSL
@@ -65,7 +65,7 @@ Important changes
 
    Please note that loopAES dm-crypt mode is provided for compatibility reasons
    (so you do not need to patch kernel and util-linux to map existing volumes)
-   but is is not, and never will be, optimized for speed.
+   but it is not, and never will be, optimized for speed.
    It is experimental feature for now.
 
  * WARNING: This is the last cryptsetup release which supports library with
@@ -78,7 +78,7 @@ Other changes
 ~~~~~~~~~~~~~
  * Increase libcryptsetup version (loopAES change), still fully backward compatible.
  * Fixes static build (--disable-static-cryptsetup now works properly).
- * Supports secure data flag for device-mapper iotcl (will be in 2.6.39,
+ * Supports secure data flag for device-mapper ioctl (will be in 2.6.39,
    forcing kernel to wipe all ioctl buffers with possible key data).
    To enable this flag you need new device-mapper library, in LVM2 2.02.84.
  * Add copyright texts into some files and adds GPL exception allowing

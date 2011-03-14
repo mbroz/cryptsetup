@@ -150,7 +150,7 @@ For more information about LUKS, see \fBhttp://code.google.com/p/cryptsetup/wiki
 
 .SH loop-AES EXTENSION
 
-cryptsetup allows to map loop-AES encrypted partition using compatible dm-crypt mode.
+cryptsetup supports mapping of loop-AES encrypted partition using compatible dm-crypt mode.
 
 .PP
 \fIloopaesOpen\fR <device> <name> \-\-key-file <keyfile>
@@ -246,7 +246,7 @@ For \fIluksFormat\fR it defines which kernel random number generator will be use
 See \fBNOTES ON RNG\fR for more information. Use \fIcryptsetup \-\-help\fR to show default RNG.
 .TP
 .B "\-\-key-slot, \-S"
-For LUKS operations that add key material, this options allows to you specify which key slot is selected for the new key. This option can be used for \fIluksFormat\fR and \fIluksAddKey\fR.
+For LUKS operations that add key material, this options allows you to specify which key slot is selected for the new key. This option can be used for \fIluksFormat\fR and \fIluksAddKey\fR.
 .TP
 .B "\-\-key-size, \-s"
 set key size in bits.
