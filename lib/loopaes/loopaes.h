@@ -5,8 +5,6 @@
 #define LOOPAES_KEYFILE_MINSIZE 60
 #define LOOPAES_KEYFILE_MAXSIZE 8000
 
-#define DEFAULT_LOOPAES_CIPHER "aes"
-
 int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			  struct volume_key **vk,
 			  unsigned int *keys_count,

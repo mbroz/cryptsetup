@@ -2,7 +2,7 @@
 
 CRYPTSETUP=../src/cryptsetup
 
-# try to validate using loop-aes losetup/kernel if available
+# try to validate using loop-AES losetup/kernel if available
 LOSETUP_AES=/losetup-aes
 
 LOOP_DD_PARAM="bs=1k count=10000"
@@ -84,7 +84,7 @@ function check_sum_losetup() # $key $alg
 {
 	[ ! -x $LOSETUP_AES ] && echo && return
 
-	echo -n " Verification using Loop-AES: "
+	echo -n " Verification using loop-AES: "
 
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	cat $1 | $LOSETUP_AES -p 0 -e $2 $LOOPDEV $IMG
@@ -94,7 +94,7 @@ function check_sum_losetup() # $key $alg
                 echo "[OK]"
         else
                 echo "[FAIL]"
-                echo " Expecting $EXPSUM got $VSUM (loop-aes)."
+                echo " Expecting $EXPSUM got $VSUM (loop-AES)."
                 fail
         fi
 	losetup -d $LOOPDEV >/dev/null 2>&1
@@ -116,13 +116,13 @@ function check_version()
 which uuencode >/dev/null || skip "WARNING: test require uuencode binary, test skipped."
 check_version || skip "Probably old kernel, test skipped."
 
-# Loop-AES tests
+# loop-AES tests
 KEY_SIZES="128 256"
 KEY_FILES="$KEYv1 $KEYv2 $KEYv3"
 
 for key_size in $KEY_SIZES ; do
         for key in $KEY_FILES ; do
-		prepare "Open Loop-AES $key / AES-$key_size"
+		prepare "Open loop-AES $key / AES-$key_size"
 		$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $key_size --key-file $key || fail
 		check_exists
 		check_sum $key $key_size

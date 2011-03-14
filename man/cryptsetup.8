@@ -148,7 +148,7 @@ This command allows restoring header if device do not contain LUKS header or if 
 
 For more information about LUKS, see \fBhttp://code.google.com/p/cryptsetup/wiki/Specification\fR
 
-.SH Loop-AES EXTENSION
+.SH loop-AES EXTENSION
 
 cryptsetup allows to map loop-AES encrypted partition using compatible dm-crypt mode.
 
@@ -159,6 +159,8 @@ opens the loop-AES <device> and sets up a mapping <name>.
 
 N.B. If keyfile is in GPG encrypted format, you have to use \-\-key-file=- and decrypt it before use.
 gpg --decrypt <keyfile> | cryptsetup loopaesOpen \-\-key-file=- <device> <name>
+
+Use \-\-key-file to specify proper key length, default compiled-in parameters are visible in \-\-help output.
 
 \fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-readonly].
 .PP

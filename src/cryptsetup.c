@@ -265,7 +265,7 @@ static int action_loopaesOpen(int arg)
 		.hash = opt_hash ?: NULL, // FIXME
 		.offset = opt_offset,
 	};
-	unsigned int key_size = (opt_key_size ?: 128) / 8;
+	unsigned int key_size = (opt_key_size ?: DEFAULT_LOOPAES_KEYBITS) / 8;
 	int r;
 
 	if (!opt_key_file) {
@@ -276,8 +276,8 @@ static int action_loopaesOpen(int arg)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	r = crypt_format(cd, CRYPT_LOOPAES, NULL, NULL, NULL, NULL,
-			 key_size, &params);
+	r = crypt_format(cd, CRYPT_LOOPAES, opt_cipher ?: DEFAULT_LOOPAES_CIPHER,
+			 NULL, NULL, NULL, key_size, &params);
 	if (r < 0)
 		goto out;
 
@@ -988,8 +988,10 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 			crypt_get_dir());
 
 		log_std(_("\nDefault compiled-in device cipher parameters:\n"
+			 "\tloop-AES: %s, Key %d bits\n"
 			 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
 			 "\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"),
+			 DEFAULT_LOOPAES_CIPHER, DEFAULT_LOOPAES_KEYBITS,
 			 DEFAULT_CIPHER(PLAIN), DEFAULT_PLAIN_KEYBITS, DEFAULT_PLAIN_HASH,
 			 DEFAULT_CIPHER(LUKS1), DEFAULT_LUKS1_KEYBITS, DEFAULT_LUKS1_HASH,
 			 DEFAULT_RNG);
