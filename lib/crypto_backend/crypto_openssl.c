@@ -179,7 +179,7 @@ int crypt_hmac_restart(struct crypt_hmac *ctx)
 
 int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)
 {
-	HMAC_Update(&ctx->md, buffer, length);
+	HMAC_Update(&ctx->md, (const unsigned char *)buffer, length);
 	return 0;
 }
 

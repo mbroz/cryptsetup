@@ -20,7 +20,7 @@
 #include <string.h>
 #include <errno.h>
 #include <nss.h>
-#include <nss/pk11pub.h>
+#include <pk11pub.h>
 #include "crypto_backend.h"
 
 static int crypto_backend_initialised = 0;

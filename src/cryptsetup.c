@@ -719,6 +719,9 @@ static int action_luksChangeKey(int arg)
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
+	if (opt_iteration_time)
+		crypt_set_iterarion_time(cd, opt_iteration_time);
+
 	r = crypt_get_key(_("Enter LUKS passphrase to be changed: "),
 		      &password, &passwordLen,
 		      opt_keyfile_size, opt_key_file, opt_timeout,
