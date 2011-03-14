@@ -1,0 +1,91 @@
+Cryptsetup 1.3.0 Release Notes
+==============================
+
+Changes since version 1.2.0
+
+Important changes
+~~~~~~~~~~~~~~~~~
+ * Several userspace crypto backends support
+
+   cryptsetup now supports generic crypto backend interface which allows
+   compile package with various crypto library, these are already implemented:
+
+   * gcrypt (default, used in previous versions)
+   * OpenSSL
+   * NSS (because of missing ripemd160 it cannot provide full backward compatibility)
+   * kernel userspace API (provided by kernel 2.6.38 and above)
+     (Note that kernel userspace backend is very slow for this type of operation.
+      But it can be usefull for embedded systems, because you can avoid userspace
+      crypto library completely.)
+
+   Backend is selected during configure time, using --with-crypto_backend option.
+
+   configure --with-crypto_backend=BACKEND (gcrypt/openssl/nss/kernel) [gcrypt]
+
+   Note that performance checked (iterations) in LUKS header will cause that
+   real iteration time will differ with different backends.
+   (There are huge differences in speed between libraries.)
+
+ * Cryptsetup now automatically allocates loopback device (/dev/loop) if device
+   argument is file and not plain device.
+
+   This require Linux kernel 2.6.25 and above (which implements loop autoclear flag).
+
+   You can see backing file in cryptsetup status output if underlying device is loopback.
+
+ * Adds luksChangeKey command
+
+    cryptestup luksChangeKey --key-file <old keyfile> <new keyfile> [--key-slot X] 
+    cryptestup luksChangeKey [--key-slot X]  (for passphrase change)
+
+   This command allows passphrase/keyfile change in one step. If no key slot is
+   specified (and there is still free key slot on device) new slot is allocated before
+   the old is purged.
+
+   If --key-slot option is specified (or there is no free slot) command will overwrite
+   existing slot.
+   WARNING: Be sure you have another slot active or header backup when using explicit
+            key slot (so you can unlock the device even after possible media failure).
+
+ * Adds compatible support for loop-AES encryption type in loopaesOpen command.
+
+   Linux dm-crypt in 2.6.38 and above supports loop-AES compatible mapping
+   (including multi-key and special CBC mode, all three modes are supported).
+
+   If you have raw loop-AES keyfile (text file with uuencoded per-line keys), you can
+   access loop-AES volume using
+     cryptsetup loopaesOpen <device> <name> [--key-size 128] --key-file <key-file>
+
+   If you are using GPG encrypted keyfile
+     gpg --decrypt <key-file> | cryptsetup loopaesOpen --key-file=- <device> <name>
+
+   Do not forget to specify key size. Other ciphers than AES should work but were
+   not tested. Version and hash is automatically detected according to number
+   of lines in key file.
+
+   Please note that loopAES dm-crypt mode is provided for compatibility reasons
+   (so you do not need to patch kernel and util-linux to map existing volumes)
+   but is is not, and never will be, optimized for speed.
+   It is experimental feature for now.
+
+ * WARNING: This is the last cryptsetup release which supports library with
+            old API (using struct crypt_options).
+            These calls are deprecated since 1.1.0 and AFAIK no application
+            is using it in recent distros. Removing compatible code will allow
+            new features to be implemented easily.
+
+Other changes
+~~~~~~~~~~~~~
+ * Increase libcryptsetup version (loopAES change), still fully backward compatible.
+ * Fixes static build (--disable-static-cryptsetup now works properly).
+ * Supports secure data flag for device-mapper iotcl (will be in 2.6.39,
+   forcing kernel to wipe all ioctl buffers with possible key data).
+   To enable this flag you need new device-mapper library, in LVM2 2.02.84.
+ * Add copyright texts into some files and adds GPL exception allowing
+   to distribute resulting binaries linked with OpenSSL.
+ * Update FAQ.
+ * Fix message when locking memory fails.
+ * Fix luksAddKey return code if master key is used.
+ * Update some text files in distributions.
+ * Add docs directory with Release Notes archive.
+ * Do not hardcode loopback device name in tests, use internal loopback library.
