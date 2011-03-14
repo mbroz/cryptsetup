@@ -68,7 +68,7 @@ function check_sum() # $key $keysize
         sync
         dmremove $DEV_NAME
 
-        $CRYPTSETUP loopaesOpen $DEV_NAME $LOOPDEV -s $2 --key-file $1 >/dev/null 2>&1
+        $CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $2 --key-file $1 >/dev/null 2>&1
         ret=$?
         VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
         if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
@@ -123,7 +123,7 @@ KEY_FILES="$KEYv1 $KEYv2 $KEYv3"
 for key_size in $KEY_SIZES ; do
         for key in $KEY_FILES ; do
 		prepare "Open Loop-AES $key / AES-$key_size"
-		$CRYPTSETUP loopaesOpen $DEV_NAME $LOOPDEV -s $key_size --key-file $key || fail
+		$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $key_size --key-file $key || fail
 		check_exists
 		check_sum $key $key_size
 		$CRYPTSETUP loopaesClose $DEV_NAME || fail

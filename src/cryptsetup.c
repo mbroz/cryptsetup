@@ -273,7 +273,7 @@ static int action_loopaesOpen(int arg)
 		return -EINVAL;
 	}
 
-	if ((r = crypt_init(&cd, action_argv[1])))
+	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
 	r = crypt_format(cd, CRYPT_LOOPAES, NULL, NULL, NULL, NULL,
@@ -281,7 +281,7 @@ static int action_loopaesOpen(int arg)
 	if (r < 0)
 		goto out;
 
-	r = crypt_activate_by_keyfile(cd, action_argv[0],
+	r = crypt_activate_by_keyfile(cd, action_argv[1],
 		CRYPT_ANY_SLOT, opt_key_file, 0,
 		opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
 out:
