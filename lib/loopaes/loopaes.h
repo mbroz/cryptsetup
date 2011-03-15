@@ -3,7 +3,7 @@
 
 #define LOOPAES_KEYS_MAX 65
 #define LOOPAES_KEYFILE_MINSIZE 60
-#define LOOPAES_KEYFILE_MAXSIZE 8000
+#define LOOPAES_KEYFILE_MAXSIZE 16000
 
 int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			  struct volume_key **vk,
