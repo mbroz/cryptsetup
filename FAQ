@@ -84,6 +84,56 @@ A. Contributors
 2. Setup 
 
 
+ * What is the difference between "plain" and LUKS format?
+
+  Plain format is just that: It has no metadata on disk, reads all
+  paramters from the commandline (or the defaults), derives a
+  master-key from the passphrase and then uses that to de-/encrypt
+  the sectors of the device, with a direct 1:1 mapping between
+  encrypted and decrypted sectors.
+
+  Primary advantage is high resilience to damage, as one damaged
+  encrypted sector results in exactly one damaged decrypted sector.
+  Also, it is not readily apparent that there even is encrypted data
+  on the device, as an overwrite with crypto-grade randomness (e.g.
+  from /dev/urandom) looks exactly the same on disk.
+
+  Side-note: That has limited value against the authorities. In
+  civilized countries, they cannot force you to give up a crypto-key
+  anyways. In the US, the UK and dictatorships around the world,
+  they can force you to give up the keys (using imprisonment or worse
+  to pressure you), and in the worst case, they only need a
+  nebulous "suspicion" about the presence of encrypted data. My
+  advice is to either be ready to give up the keys or to not have
+  encrypted data when traveling to those countries, especially when
+  crossing the borders.
+
+  Disadvantages are that you do not have all the nice features that
+  the LUKS metadata offers, like multiple passphrases that can be
+  changed, the cipher being stored in the metadata, anti-forensic
+  properties like key-slot diffusion and salts, etc..
+
+  LUKS format uses a metadata header and 8 key-slot areas that are
+  being placed ath the begining of the disk, see below under "What
+  does the LUKS on-disk format looks like?". The passphrases are used
+  to decryt a single master key that is stored in the anti-forensic
+  stripes.
+
+  Advantages are a higher usability, automatic configuration of
+  non-default crypto parameters, defenses against low-entropy
+  passphrases like salting and iterated PBKDF2 passphrase hashing,
+  the ability to change passhrases, and others.
+
+  Disadvantages are that it is readily obvious there is encrypted
+  data on disk (but see side note above) and that damage to the
+  header or key-slots usually results in permanent data-loss. See
+  below under "6. Backup and Data Recovery" on how to reduce that
+  risk. Also the sector numbers get shifted by the length of the
+  header and key-slots and there is a loss of that size in capacity
+  (1MB+4096B for defaults and 2MB for the most commonly used
+  non-default XTS mode).
+
+
  * Can I encrypt an already existing, non-empty partition to use LUKS?
 
   There is no converter, and it is not really needed. The way to do
@@ -185,7 +235,7 @@ A. Contributors
 
   As far as I know it does (but I may be wrong), but please note that
   these "guarantees" are far weaker than they appear to be. For
-  example, you not not get a hard flush to disk surface even on a
+  example, you may not get a hard flush to disk surface even on a
   call to fsync. In addition, the HDD itself may do independent
   write reordering. Some other things can go wrong as well. The
   filesystem developers are aware of these problems and typically
@@ -427,11 +477,17 @@ A. Contributors
  * How do I securely erase a LUKS (or other) partition?
 
   For LUKS, if you are in a desperate hurry, overwrite the LUKS
-  header and key-slot area. This means overwriting the 1'052'672
-  bytes, i.e. at 1MiB + 4096 of the LUKS partition. A single
-  overwrite with zeros should be enough. If you anticipate being in a
-  desperate hurry, prepare the command beforehand. Example with
-  /dev/sde1 as the LUKS partition:
+  header and key-slot area. This means overwriting the first
+  (keyslots x stripes x keysize) + offset bytes. For the default
+  parameters, this is the 1'052'672 bytes, i.e. 1MiB + 4096 of the
+  LUKS partition. For 512 bit key length (e.g. for aes-xts-plain with
+  512 bit key) this is 2MiB. (The diferent offset stems from
+  differences in the sector alignment of the key-slots.) If in doubt,
+  just be generous and overwrite the first 10MB or so, it will likely
+  still be fast enough. A single overwrite with zeros should be
+  enough. If you anticipate being in a desperate hurry, prepare the
+  command beforehand. Example with /dev/sde1 as the LUKS partition
+  and default parameters:
 
       head -c 1052672 /dev/zero > /dev/sde1; sync
  
@@ -446,8 +502,12 @@ A. Contributors
   possibly still insecure as SSD technology is not fully understood
   in this regard. Still, due to the anti-forensic properties of the
   LUKS key-slots, a single overwrite of an SSD or FLASH drive could
-  be enough. If in doubt, use physical destruction in addition. Keep
-  in mind to also erase all backups.
+  be enough. If in doubt, use physical destruction in addition. Here
+  is a link to some current reseach results on erasing SSDs and FLASH
+  drives:
+  http://www.usenix.org/events/fast11/tech/full_papers/Wei.pdf
+
+  Keep in mind to also erase all backups.
 
   Example for a zero-overwrite erase of partition sde1 done with
   dd_rescue:
@@ -821,9 +881,10 @@ A. Contributors
 
   Header and key-slot descriptors fill the first 592 bytes. The
   key-slot size depends on the creation parameters, namely on the
-  number of anti-forensic stripes and on key block alignment.
+  number of anti-forensic stripes, key material offset and master
+  key size.
 
-  With 4000 stripes (the default), each key-slot is a bit less than
+  With the default parameters, each key-slot is a bit less than
   128kiB in size. Due to sector alignment of the key-slot start,
   that means the key block 0 is at offset 0x1000-0x20400, key
   block 1 at offset 0x21000-0x40400, and key block 7 at offset
@@ -831,13 +892,19 @@ A. Contributors
   padded with zeros. Never used key-slots are filled with what the
   disk originally contained there, a key-slot removed with
   "luksRemoveKey" or "luksKillSlot" gets filled with 0xff. Start of
-  bulk data (with the default 4000 stripes and 8 key-slots) is at
-  0x101000, i.e. at 1'052'672 bytes, i.e. at 1MiB + 4096 bytes from
-  the start of   the partition. This is also the value given by
-  command "luksDump" with   "Payload offset: 2056", just multiply by
-  the sector size (512 bytes). Incidentally, "luksHeaderBackup"
-  dumps exactly the first 1'052'672 bytes to file and
+  bulk data is at 0x101000, i.e. at 1'052'672 bytes, i.e. at 1MiB
+  + 4096 bytes from the start of   the partition. This is also the
+  value given by command "luksDump" with   "Payload offset: 2056",
+  just multiply by the sector size (512 bytes). Incidentally,
+  "luksHeaderBackup" for a LUKS container created with default
+  parameters dumps exactly the first 1'052'672 bytes to file and
   "luksHeaderRestore"   restores them.
+
+  For non-default parameters, you have to figure out placement
+  yourself. "luksDump" helps. For the most common non-default
+  settings, namely aes-xts-plain with 512 bit key, the offsets are:
+  1st keyslot 0x1000-0x3f800, 2nd keyslot 0x40000-0x7e000, 3rd
+  keyslot 0x7e000-0xbd800, ..., and start of bulk data at 0x200000.
 
   The exact specification of the format is here:
   http://code.google.com/p/cryptsetup/wiki/Specification
