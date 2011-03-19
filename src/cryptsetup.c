@@ -29,11 +29,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
-
 #include <libcryptsetup.h>
 #include <popt.h>
-
-#include "../config.h"
 
 #include "cryptsetup.h"
 
@@ -46,9 +43,9 @@ static char *opt_key_file = NULL;
 static char *opt_master_key_file = NULL;
 static char *opt_header_backup_file = NULL;
 static char *opt_uuid = NULL;
-static unsigned int opt_key_size = 0;
-static unsigned int opt_keyfile_size = 0;
-static unsigned int opt_new_keyfile_size = 0;
+static int opt_key_size = 0;
+static long opt_keyfile_size = 0;
+static long opt_new_keyfile_size = 0;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static uint64_t opt_size = 0;
 static uint64_t opt_offset = 0;
@@ -178,6 +175,10 @@ static void _log(int level, const char *msg, void *usrptr)
 	case CRYPT_LOG_ERROR:
 		fputs(msg, stderr);
 		break;
+	case CRYPT_LOG_DEBUG:
+		if (opt_debug)
+			printf("# %s\n", msg);
+		break;
 	default:
 		fprintf(stderr, "Internal error on logging class for msg: %s", msg);
 		break;
@@ -223,8 +224,8 @@ static int action_create(int arg)
 		.offset = opt_offset,
 	};
 	char *password = NULL;
-	unsigned int passwordLen;
-	unsigned int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
+	size_t passwordLen;
+	size_t key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	int r;
 
 	if (params.hash && !strcmp(params.hash, "plain"))
@@ -233,6 +234,10 @@ static int action_create(int arg)
 	/* FIXME: temporary hack */
 	if (opt_key_file && strcmp(opt_key_file, "-"))
 		params.hash = NULL;
+
+	if (opt_keyfile_size && opt_key_file)
+		log_std(("Ignoring keyfile size option, keyfile read size "
+			 "is always the same as encryption key size.\n"));
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
 				      cipher, NULL, cipher_mode);
@@ -261,8 +266,8 @@ static int action_create(int arg)
 			opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
 	else {
 		r = crypt_get_key(_("Enter passphrase: "),
-				  &password, &passwordLen, 0, NULL,
-				  opt_timeout,
+				  &password, &passwordLen, opt_keyfile_size,
+				  NULL, opt_timeout,
 				  opt_batch_mode ? 0 : opt_verify_passphrase,
 				  cd);
 		if (r < 0)
@@ -270,7 +275,7 @@ static int action_create(int arg)
 
 		r = crypt_activate_by_passphrase(cd, action_argv[0],
 			CRYPT_ANY_SLOT, password, passwordLen,
-			 opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+			opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
 	}
 out:
 	crypt_free(cd);
@@ -303,7 +308,7 @@ static int action_loopaesOpen(int arg)
 		goto out;
 
 	r = crypt_activate_by_keyfile(cd, action_argv[1],
-		CRYPT_ANY_SLOT, opt_key_file, 0,
+		CRYPT_ANY_SLOT, opt_key_file, opt_keyfile_size,
 		opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
 out:
 	crypt_free(cd);
@@ -420,7 +425,7 @@ static int action_luksFormat(int arg)
 	int r = -EINVAL, keysize;
 	char *msg = NULL, *key = NULL, cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char *password = NULL;
-	unsigned int passwordLen;
+	size_t passwordLen;
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params = {
 		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
@@ -526,8 +531,8 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 {
 	crypt_keyslot_info ki;
 	char *password = NULL;
-	unsigned int passwordLen, i;
-	int r;
+	size_t passwordLen;
+	int i, r;
 
 	ki = crypt_keyslot_status(cd, key_slot);
 	if (ki == CRYPT_SLOT_ACTIVE_LAST && msg_last && !_yesDialog(msg_last, NULL))
@@ -608,7 +613,7 @@ static int action_luksRemoveKey(int arg)
 {
 	struct crypt_device *cd = NULL;
 	char *password = NULL;
-	unsigned int passwordLen;
+	size_t passwordLen;
 	int r;
 
 	if ((r = crypt_init(&cd, action_argv[0])))
@@ -709,7 +714,7 @@ static int action_luksChangeKey(int arg)
 	const char *opt_new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
 	struct crypt_device *cd = NULL;
 	char *vk = NULL, *password = NULL;
-	unsigned int passwordLen = 0;
+	size_t passwordLen = 0;
 	size_t vk_size;
 	int new_key_slot, old_key_slot, r;
 
@@ -834,7 +839,7 @@ out:
 static int luksDump_with_volume_key(struct crypt_device *cd)
 {
 	char *vk = NULL, *password = NULL;
-	unsigned int passwordLen = 0;
+	size_t passwordLen = 0;
 	size_t vk_size;
 	int i, r;
 
@@ -1011,6 +1016,11 @@ static void help(poptContext popt_context, enum poptCallbackReason reason,
 			 "<key file> optional key file for the new key for luksAddKey action\n"),
 			crypt_get_dir());
 
+		log_std(_("\nDefault compiled-in keyfile parameters:\n"
+			 "\tMaximum keyfile size: %dkB, "
+			 "Maximum interactive passphrase length %d (characters)\n"),
+			 DEFAULT_KEYFILE_SIZE_MAXKB, DEFAULT_PASSPHRASE_SIZE_MAX);
+
 		log_std(_("\nDefault compiled-in device cipher parameters:\n"
 			 "\tloop-AES: %s, Key %d bits\n"
 			 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
@@ -1095,8 +1105,8 @@ int main(int argc, char **argv)
 		{ "master-key-file",  '\0',  POPT_ARG_STRING, &opt_master_key_file,     0, N_("Read the volume (master) key from file."), NULL },
 		{ "dump-master-key",  '\0',  POPT_ARG_NONE, &opt_dump_master_key,       0, N_("Dump volume (master) key instead of keyslots info."), NULL },
 		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
-		{ "keyfile-size",      'l',  POPT_ARG_INT, &opt_keyfile_size,           0, N_("Limits the read from keyfile"), N_("bytes") },
-		{ "new-keyfile-size", '\0',  POPT_ARG_INT, &opt_new_keyfile_size,       0, N_("Limits the read from newly added keyfile"), N_("bytes") },
+		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
+		{ "new-keyfile-size", '\0',  POPT_ARG_LONG, &opt_new_keyfile_size,      0, N_("Limits the read from newly added keyfile"), N_("bytes") },
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Slot number for new key (default is first free)"), NULL },
 		{ "size",              'b',  POPT_ARG_STRING, &popt_tmp,                1, N_("The size of the device"), N_("SECTORS") },
 		{ "offset",            'o',  POPT_ARG_STRING, &popt_tmp,                2, N_("The start offset in the backend device"), N_("SECTORS") },
@@ -1220,6 +1230,12 @@ int main(int argc, char **argv)
 			log_err(_("Option --key-file takes precedence over specified key file argument.\n"));
 		else
 			opt_key_file = (char*)action_argv[1];
+	}
+
+	if (opt_keyfile_size < 0 || opt_new_keyfile_size < 0 || opt_key_size < 0) {
+		usage(popt_context, EXIT_FAILURE,
+		      _("Negative number for option not permitted."),
+		      poptGetInvocationName(popt_context));
 	}
 
 	if (opt_random && opt_urandom)

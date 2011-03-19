@@ -52,10 +52,11 @@ format() # key_bits expected [forced]
 	ALIGN=$($CRYPTSETUP luksDump $DEV |grep "Payload offset" | sed -e s/.*\\t//)
 	#echo "ALIGN = $ALIGN"
 
-	if [ $ALIGN -ne $2 ] ; then
+	if [ -z "$ALIGN" ] ; then
+		fail "FAIL"
+	elif [ $ALIGN -ne $2 ] ; then
 		echo "FAIL"
-		echo "Expected alignment differs: expected $2 != detected $ALIGN"
-		fail
+		fail "Expected alignment differs: expected $2 != detected $ALIGN"
 	fi
 	echo "PASSED"
 }

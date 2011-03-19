@@ -6,9 +6,8 @@ cryptsetup - setup cryptographic volumes for dm-crypt (including LUKS extension)
 .SH DESCRIPTION
 .PP
 cryptsetup is used to conveniently setup dm-crypt managed device-mapper mappings.
+.SH PLAIN MODE
 For basic (plain) dm-crypt mappings, there are four operations.
-.SH ACTIONS
-These strings are valid for \fB<action>\fR, followed by their \fB<action args>\fR:
 
 \fIcreate\fR <name> <device>
 .IP
@@ -170,7 +169,7 @@ compatible dm-crypt mode.
 .IP
 opens the loop-AES <device> and sets up a mapping <name>.
 
-N.B. If keyfile is in GPG encrypted format, you have to use
+N.B. If key file is in GPG encrypted format, you have to use
 \-\-key-file=- and decrypt it before use.
 gpg --decrypt <keyfile> | cryptsetup loopaesOpen \-\-key-file=- <device> <name>
 
@@ -243,11 +242,11 @@ reading will not stop when new line character is detected.
 See section \fBNOTES ON PASSWORD PROCESSING\fR for more information.
 .TP
 .B "\-\-keyfile-size, \-l \fIvalue\fR"
-Limits read from keyfile to \fIvalue\fR bytes.
-Usable together with all comands using key file.
+Limits read from key file to \fIvalue\fR bytes.
+Usable together with all commands using key file.
 .TP
 .B "\-\-new-keyfile-size  \fIvalue\fR"
-Limits read from new keyfile to \fIvalue\fR bytes in \fIluksAddKey\fR when
+Limits read from new key file to \fIvalue\fR bytes in \fIluksAddKey\fR when
 adding new key file. Default is exhaustive read from key file.
 .TP
 .B "\-\-master-key-file"
@@ -348,19 +347,22 @@ The UUID must be provided in standard UUID format
 .TP
 .B "\-\-version"
 Show the version.
-.SH NOTES ON PASSWORD PROCESSING
+.SH NOTES ON PASSWORD PROCESSING FOR PLAIN MODE
 \fBFrom a terminal\fR: Password processing is new-line sensitive,
 meaning the reading will stop after encountering \\n.
 It will process the read material (without newline) with the default
 hash or the hash given by \-\-hash.
 After hashing, it will be cropped to the key size given by \-s.
 
-\fBFrom stdin\fR: Reading will continue until EOF (so using
-e.g. /dev/random as stdin will not work), with the trailing
-newline stripped.
-After that the read data will be hashed with the default hash or
-the hash given by \-\-hash and the result will be cropped to
-the keysize given by \-s.
+\fBFrom stdin\fR: Reading will continue until EOF (or until
+maximum input size is reached), with the trailing newline stripped.
+The maximum input size is defined by the same compiled-in default
+as for the maximum key file size or can be overwrittten
+using \-\-keysfile-size option.
+
+After that the read data will be hashed with the default hash
+or the hash given by \-\-hash and the result will be cropped
+to the keysize given by \-s.
 
 If "plain" is used as an argument to the hash option, the input
 data will not be hashed.
@@ -382,6 +384,10 @@ LUKS uses PBKDF2 to protect against dictionary attacks (see RFC 2898).
 LUKS will always do an exhaustive password reading.
 Hence, password can not be read from /dev/random, /dev/zero or any
 other stream that does not terminate.
+To prevent exhausting of system memory, cryptsetup limits
+maximum key file size. Compiled-in default is displayed in \-\-help
+output. You can limit reads from key file using \-\-key-size option,
+this option takes precedence over compiled-in default.
 
 For any password creation action (luksAddKey, or luksFormat),
 the user may specify how much the time the password processing

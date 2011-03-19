@@ -263,6 +263,8 @@ $CRYPTSETUP -q remove  $DEV_NAME || fail
 echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --verify-passphrase || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size 255 2>/dev/null && fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size -1 2>/dev/null && fail
+$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 -l -1 2>/dev/null && fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1  || fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d blah 2>/dev/null && fail
@@ -324,6 +326,30 @@ $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i 1 || fail
 # still allows replace
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 || fail
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
+
+prepare "[24] Keyfile limit" wipe
+$CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY1 --key-slot 0 -l 13 || fail
+$CRYPTSETUP --key-file=$KEY1 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 0 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l -1 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 14 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksClose  $DEV_NAME || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -l 14 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -l -1 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i1 -l 13 --new-keyfile-size 12 || fail
+$CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 2>/dev/null && fail
+$CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 -l 12 || fail
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -l 14 2>/dev/null && fail
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -i1 -l 13 || fail
+# -l is ignored for stdin if _only_ passphrase is used
+echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY2 -i1 || fail
+# this is stupid, but expected
+echo "key0" | $CRYPTSETUP luksRemoveKey $LOOPDEV -l 2 2>/dev/null && fail
+echo "key01" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d 4 2>/dev/null && fail
+echo -e "key0\n" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d- -l 4 || fail
 
 remove_mapping
 exit 0

@@ -104,7 +104,7 @@ static int hash_keys(struct volume_key **vk,
 	return r;
 }
 
-static int keyfile_is_gpg(char *buffer, unsigned int buffer_len)
+static int keyfile_is_gpg(char *buffer, size_t buffer_len)
 {
 	int r = 0;
 	int index = buffer_len < 100 ? buffer_len - 1 : 100;
@@ -121,22 +121,19 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			  struct volume_key **vk,
 			  unsigned int *keys_count,
 			  char *buffer,
-			  unsigned int buffer_len)
-
+			  size_t buffer_len)
 {
 	const char *keys[LOOPAES_KEYS_MAX];
 	int i, key_index, key_len, offset;
 
 	log_dbg("Parsing loop-AES keyfile of size %d.", buffer_len);
 
-	if (buffer_len < LOOPAES_KEYFILE_MINSIZE) {
-		log_err(cd, _("Incompatible loop-AES keyfile detected.\n"));
+	if (!buffer_len)
 		return -EINVAL;
-	}
 
 	if (keyfile_is_gpg(buffer, buffer_len)) {
-		log_err(cd, "Detected not yet supported GPG encrypted keyfile.\n");
-		log_std(cd, "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n");
+		log_err(cd, _("Detected not yet supported GPG encrypted keyfile.\n"));
+		log_std(cd, _("Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"));
 		return -EINVAL;
 	}
 

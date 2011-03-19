@@ -33,6 +33,9 @@
 #include "nls.h"
 #include "utils_crypt.h"
 
+#define log_dbg(x) crypt_log(NULL, CRYPT_LOG_DEBUG, x)
+#define log_err(cd, x) crypt_log(cd, CRYPT_LOG_ERROR, x)
+
 struct safe_allocation {
 	size_t	size;
 	char	data[0];
@@ -99,12 +102,12 @@ void crypt_safe_free(void *data)
 
 void *crypt_safe_realloc(void *data, size_t size)
 {
+	struct safe_allocation *alloc;
 	void *new_data;
 
 	new_data = crypt_safe_alloc(size);
 
 	if (new_data && data) {
-		struct safe_allocation *alloc;
 
 		alloc = data - offsetof(struct safe_allocation, data);
 
@@ -191,135 +194,177 @@ out_err:
 	return failed;
 }
 
-/*
- * Password reading behaviour matrix of get_key
- * FIXME: rewrite this from scratch.
- *                    p   v   n   h
- * -----------------+---+---+---+---
- * interactive      | Y | Y | Y | Inf
- * from fd          | N | N | Y | Inf
- * from binary file | N | N | N | Inf or options->key_size
- *
- * Legend: p..prompt, v..can verify, n..newline-stop, h..read horizon
- *
- * Note: --key-file=- is interpreted as a read from a binary file (stdin)
- */
+static int crypt_get_key_tty(const char *prompt,
+			     char **key, size_t *key_size,
+			     int timeout, int verify,
+			     struct crypt_device *cd)
+{
+	int key_size_max = DEFAULT_PASSPHRASE_SIZE_MAX;
+	int r = -EINVAL;
+	char *pass = NULL, *pass_verify = NULL;
 
-int crypt_get_key(char *prompt, char **key, unsigned int *passLen, int key_size,
-		  const char *key_file, int timeout, int verify,
+	log_dbg("Interactive passphrase entry requested.");
+
+	pass = crypt_safe_alloc(key_size_max + 1);
+	if (!pass) {
+		log_err(cd, _("Out of memory while reading passphrase.\n"));
+		return -ENOMEM;
+	}
+
+	if (interactive_pass(prompt, pass, key_size_max, timeout)) {
+		log_err(cd, _("Error reading passphrase from terminal.\n"));
+		goto out_err;
+	}
+	pass[key_size_max] = '\0';
+
+	if (verify) {
+		pass_verify = crypt_safe_alloc(key_size_max);
+		if (!pass_verify) {
+			log_err(cd, _("Out of memory while reading passphrase.\n"));
+			r = -ENOMEM;
+			goto out_err;
+		}
+
+		if (interactive_pass(_("Verify passphrase: "),
+		    pass_verify, key_size_max, timeout)) {
+			log_err(cd, _("Error reading passphrase from terminal.\n"));
+			goto out_err;
+		}
+
+		if (strncmp(pass, pass_verify, key_size_max)) {
+			log_err(cd, _("Passphrases do not match.\n"));
+			goto out_err;
+		}
+	}
+
+	*key = pass;
+	*key_size = strlen(pass);
+	r = 0;
+out_err:
+	crypt_safe_free(pass_verify);
+	if (r)
+		crypt_safe_free(pass);
+	return r;
+}
+
+/*
+ * Note: --key-file=- is interpreted as a read from a binary file (stdin)
+ * key_size_max == 0 means detect maximum according to input type (tty/file)
+ * timeout and verify options only applies to tty input
+ */
+int crypt_get_key(const char *prompt,
+		  char **key, size_t *key_size,
+		  size_t keyfile_size_max, const char *key_file,
+		  int timeout, int verify,
 		  struct crypt_device *cd)
 {
-	int fd = -1;
+	int fd, regular_file, read_stdin, char_read, unlimited_read = 0;
+	int r = -EINVAL;
 	char *pass = NULL;
-	int read_horizon;
-	int regular_file = 0;
-	int read_stdin;
-	int r;
+	size_t buflen, i;
 	struct stat st;
+
+	*key = NULL;
+	*key_size = 0;
 
 	/* Passphrase read from stdin? */
 	read_stdin = (!key_file || !strcmp(key_file, "-")) ? 1 : 0;
 
-	/* read_horizon applies only for real keyfile, not stdin or terminal */
-	read_horizon = (key_file && !read_stdin) ? key_size : 0 /* until EOF */;
+	if(read_stdin && isatty(STDIN_FILENO))
+		return crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
 
-	/* Setup file descriptior */
+	if (keyfile_size_max < 0) {
+		log_err(cd, _("Negative keyfile size not permitted.\n"));
+		return -EINVAL;
+	}
+
+	/* If not requsted otherwise, we limit input to prevent memory exhaustion */
+	if (keyfile_size_max == 0) {
+		keyfile_size_max = DEFAULT_KEYFILE_SIZE_MAXKB * 1024;
+		unlimited_read = 1;
+	}
+
 	fd = read_stdin ? STDIN_FILENO : open(key_file, O_RDONLY);
 	if (fd < 0) {
-		crypt_log(cd, CRYPT_LOG_ERROR,
-			  _("Failed to open key file.\n"));
+		log_err(cd, _("Failed to open key file.\n"));
+		return -EINVAL;
+	}
+
+	/* use 4k for buffer (page divisor but avoid huge pages) */
+	buflen = 4096 - sizeof(struct safe_allocation);
+	regular_file = 0;
+	if(!read_stdin) {
+		if(stat(key_file, &st) < 0) {
+			log_err(cd, _("Failed to stat key file.\n"));
+			goto out_err;
+		}
+		if(S_ISREG(st.st_mode)) {
+			regular_file = 1;
+			/* known keyfile size, alloc it in one step */
+			if (st.st_size >= keyfile_size_max)
+				buflen = keyfile_size_max;
+			else
+				buflen = st.st_size;
+		}
+	}
+
+	pass = crypt_safe_alloc(buflen);
+	if (!pass) {
+		log_err(cd, _("Out of memory while reading passphrase.\n"));
 		goto out_err;
 	}
 
-	/* Interactive case */
-	if(isatty(fd)) {
-		int i;
+	for(i = 0; i < keyfile_size_max; i++) {
+		if(i == buflen) {
+			buflen += 4096;
+			pass = crypt_safe_realloc(pass, buflen);
+			if (!pass) {
+				log_err(cd, _("Out of memory while reading passphrase.\n"));
+				r = -ENOMEM;
+				goto out_err;
+			}
+		}
 
-		pass = crypt_safe_alloc(MAX_TTY_PASSWORD_LEN);
-		if (!pass || interactive_pass(prompt, pass, MAX_TTY_PASSWORD_LEN, timeout)) {
-			crypt_log(cd, CRYPT_LOG_ERROR,
-				  _("Error reading passphrase from terminal.\n"));
+		char_read = read(fd, &pass[i], 1);
+		if (char_read < 0) {
+			log_err(cd, _("Error reading passphrase.\n"));
 			goto out_err;
 		}
-		if (verify) {
-			char pass_verify[MAX_TTY_PASSWORD_LEN];
-			i = interactive_pass(_("Verify passphrase: "), pass_verify, sizeof(pass_verify), timeout);
-			if (i || strcmp(pass, pass_verify) != 0) {
-				crypt_log(cd, CRYPT_LOG_ERROR,
-				 _("Passphrases do not match.\n"));
-				goto out_err;
-			}
-			memset(pass_verify, 0, sizeof(pass_verify));
-		}
-		*passLen = strlen(pass);
-		*key = pass;
-	} else {
-		/*
-		 * This is either a fd-input or a file, in neither case we can verify the input,
-		 * however we don't stop on new lines if it's a binary file.
-		 */
-		int buflen, i;
 
-		/* The following for control loop does an exhausting
-		 * read on the key material file, if requested with
-		 * key_size == 0, as it's done by LUKS. However, we
-		 * should warn the user, if it's a non-regular file,
-		 * such as /dev/random, because in this case, the loop
-		 * will read forever.
-		 */
-		if(!read_stdin && read_horizon == 0) {
-			if(stat(key_file, &st) < 0) {
-				crypt_log(cd, CRYPT_LOG_ERROR,
-					_("Failed to stat key file.\n"));
-				goto out_err;
-			}
-			if(!S_ISREG(st.st_mode))
-				crypt_log(cd, CRYPT_LOG_NORMAL,
-					  _("Warning: exhausting read requested, but key file"
-					    " is not a regular file, function might never return.\n"));
-			else
-				regular_file = 1;
-		}
-		buflen = 0;
-		for(i = 0; read_horizon == 0 || i < read_horizon; i++) {
-			if(i >= buflen - 1) {
-				buflen += 128;
-				pass = crypt_safe_realloc(pass, buflen);
-				if (!pass) {
-					crypt_log(cd, CRYPT_LOG_ERROR,
-						  _("Out of memory while reading passphrase.\n"));
-					goto out_err;
-				}
-			}
-
-			r = read(fd, pass + i, 1);
-			if (r < 0) {
-				crypt_log(cd, CRYPT_LOG_ERROR,
-					  _("Error reading passphrase.\n"));
-				goto out_err;
-			}
-
-			/* Stop on newline only if not requested read from keyfile */
-			if(r == 0 || (!key_file && pass[i] == '\n'))
-				break;
-		}
-		/* Fail if piped input dies reading nothing */
-		if(!i && !regular_file)
-			goto out_err;
-		pass[i] = 0;
-		*key = pass;
-		*passLen = i;
+		/* Stop on newline only if not requested read from keyfile */
+		if(char_read == 0 || (!key_file && pass[i] == '\n'))
+			break;
 	}
+
+	/* Fail if piped input dies reading nothing */
+	if(!i && !regular_file)
+		goto out_err;
+
+	/* Fail if we exceeded internal default (no specified size) */
+	if (unlimited_read && i == keyfile_size_max) {
+		log_err(cd, _("Maximum keyfile size exceeeded.\n"));
+		goto out_err;
+	}
+
+	if (!unlimited_read && i != keyfile_size_max) {
+		log_err(cd, _("Cannot read requested amount of data.\n"));
+		goto out_err;
+	}
+
+	/* Well, for historical reasons reading empty keyfile is not fail. */
+	if(!i) {
+		crypt_safe_free(pass);
+		pass = NULL;
+	}
+
+	*key = pass;
+	*key_size = i;
+	r = 0;
+out_err:
 	if(fd != STDIN_FILENO)
 		close(fd);
-	return 0;
 
-out_err:
-	if(fd >= 0 && fd != STDIN_FILENO)
-		close(fd);
-	if(pass)
+	if (r)
 		crypt_safe_free(pass);
-	*key = NULL;
-	*passLen = 0;
-	return -EINVAL;
+	return r;
 }
