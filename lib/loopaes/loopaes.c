@@ -195,7 +195,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 		return r;
 
 	if (keys_count == 1)
-		r = asprintf(&cipher, "%s-%s", base_cipher, "cbc-plain");
+		r = asprintf(&cipher, "%s-%s", base_cipher, "cbc-plain64");
 	else
 		r = asprintf(&cipher, "%s:%d-%s", base_cipher, 64, "cbc-lmk");
 	if (r < 0)
