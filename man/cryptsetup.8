@@ -173,8 +173,11 @@ N.B. If key file is in GPG encrypted format, you have to use
 \-\-key-file=- and decrypt it before use.
 gpg --decrypt <keyfile> | cryptsetup loopaesOpen \-\-key-file=- <device> <name>
 
-Use \-\-key-file to specify proper key length, default compiled-in
-parameters are visible in \-\-help output.
+Use \fB\-\-key-file\fR to specify proper key length, default compiled-in
+parameters are visible in \fB\-\-help\fR output.
+
+Use \fB\-\-offset\fR to specify device offset. Note the units need to be
+specified in 512 bytes sectors.
 
 \fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-readonly].
 .PP
@@ -295,7 +298,7 @@ This option is only relevant for \fIcreate\fR and \fIresize\fR action.
 .TP
 .B "\-\-offset, \-o"
 start offset in the backend device (in 512-byte sectors).
-This option is only relevant for \fIcreate\fR action.
+This option is only relevant for \fIcreate\fR and \fIloopaesOpen\fR action.
 .TP
 .B "\-\-skip, \-p"
 how many sectors of the encrypted data to skip at the beginning.

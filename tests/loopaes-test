@@ -3,10 +3,9 @@
 CRYPTSETUP=../src/cryptsetup
 
 # try to validate using loop-AES losetup/kernel if available
-LOSETUP_AES=/losetup-aes
+LOSETUP_AES=/losetup-aes.old
 
 LOOP_DD_PARAM="bs=1k count=10000"
-EXPSUM="31e00e0e4c233c89051cd748122fde2c98db0121ca09ba93a3820817ea037bc5"
 DEV_NAME=dummy
 IMG=loopaes.img
 KEYv1=key_v1
@@ -61,23 +60,41 @@ function check_exists()
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 }
 
-function check_sum() # $key $keysize
+function get_expsum() # $offset
 {
-        # Fill device with zeroes and reopen it
-        dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1k $LOOP_DD_PARAM >/dev/null 2>&1
-        sync
-        dmremove $DEV_NAME
+	case $1 in
+	0)
+	   echo "31e00e0e4c233c89051cd748122fde2c98db0121ca09ba93a3820817ea037bc5"
+	   ;;
+	8192)
+	   echo "bfd94392d1dd8f5d477251d21b3c736e177a4945cd4937847fc7bace82996aed"
+	   ;;
+	8388608)
+	   echo "33838fe36928a929bd7971bed7e82bd426c88193fcd692c2e6f1b9c9bfecd4d6"
+	   ;;
+	*) fail
+	   ;;
+	esac
+}
 
-        $CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $2 --key-file $1 >/dev/null 2>&1
-        ret=$?
-        VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
-        if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
-                echo -n "[OK]"
-        else
-                echo "[FAIL]"
-                echo " Expecting $EXPSUM got $VSUM."
-                fail
-        fi
+function check_sum() # $key $keysize $offset
+{
+	# Fill device with zeroes and reopen it
+	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1k $LOOP_DD_PARAM >/dev/null 2>&1
+	sync
+	dmremove $DEV_NAME
+
+	EXPSUM=$(get_expsum $offset)
+	$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $2 --key-file $1 -o $3 >/dev/null 2>&1
+	ret=$?
+	VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
+	if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
+		echo -n "[OK]"
+	else
+		echo "[FAIL]"
+		echo " Expecting $EXPSUM got $VSUM."
+		fail
+	fi
 }
 
 function check_sum_losetup() # $key $alg
@@ -87,16 +104,16 @@ function check_sum_losetup() # $key $alg
 	echo -n " Verification using loop-AES: "
 
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	cat $1 | $LOSETUP_AES -p 0 -e $2 $LOOPDEV $IMG
-        ret=$?
-        VSUM=$(sha256sum $LOOPDEV | cut -d' ' -f 1)
-        if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
-                echo "[OK]"
-        else
-                echo "[FAIL]"
-                echo " Expecting $EXPSUM got $VSUM (loop-AES)."
-                fail
-        fi
+	cat $1 | $LOSETUP_AES -p 0 -e $2 -o $3 $LOOPDEV $IMG
+	ret=$?
+	VSUM=$(sha256sum $LOOPDEV | cut -d' ' -f 1)
+	if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
+		echo "[OK]"
+	else
+		echo "[FAIL]"
+		echo " Expecting $EXPSUM got $VSUM (loop-AES)."
+		fail
+	fi
 	losetup -d $LOOPDEV >/dev/null 2>&1
 }
 
@@ -119,16 +136,20 @@ check_version || skip "Probably old kernel, test skipped."
 # loop-AES tests
 KEY_SIZES="128 256"
 KEY_FILES="$KEYv1 $KEYv2 $KEYv3"
+DEV_OFFSET="0 8192 8388608"
 
 for key_size in $KEY_SIZES ; do
-        for key in $KEY_FILES ; do
-		prepare "Open loop-AES $key / AES-$key_size"
-		$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $key_size --key-file $key || fail
+    for key in $KEY_FILES ; do
+        for offset in $DEV_OFFSET ; do
+		offset_sec=$(($offset / 512))
+		prepare "Open loop-AES $key / AES-$key_size / offset $offset"
+		$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $key_size --key-file $key -o $offset_sec || fail
 		check_exists
-		check_sum $key $key_size
+		check_sum $key $key_size $offset_sec
 		$CRYPTSETUP loopaesClose $DEV_NAME || fail
-		check_sum_losetup $key AES$key_size
+		check_sum_losetup $key AES$key_size $offset
         done
+    done
 done
 
 remove_mapping

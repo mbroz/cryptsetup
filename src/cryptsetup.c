@@ -1249,9 +1249,15 @@ int main(int argc, char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Option --uuid is allowed only for luksFormat and luksUUID."),
 		      poptGetInvocationName(popt_context));
 
-	if ((opt_offset || opt_skip) && strcmp(aname, "create"))
-		usage(popt_context, EXIT_FAILURE, _("Options --offset and --skip are supported only for create command.\n"),
-		      poptGetInvocationName(popt_context));
+	if (opt_skip && strcmp(aname, "create"))
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --skip is supported only for create command.\n"),
+		poptGetInvocationName(popt_context));
+
+	if (opt_offset && strcmp(aname, "create") && strcmp(aname, "loopaesOpen"))
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --offset is supported only for create and loopaesOpen commands.\n"),
+		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
 		opt_verbose = 1;

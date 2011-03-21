@@ -186,6 +186,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 	int read_only, r;
 
 	size = 0;
+	/* Initial IV (skip) is always the same as offset */
 	offset = crypt_get_data_offset(cd);
 	device = crypt_get_device_name(cd);
 	read_only = flags & CRYPT_ACTIVATE_READONLY;
@@ -205,7 +206,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 	r = dm_create_device(name, device,
 			     cipher, CRYPT_LOOPAES,
 			     crypt_get_uuid(cd),
-			     size, 0, offset, vk->keylength, vk->key,
+			     size, offset, offset, vk->keylength, vk->key,
 			     read_only, 0);
 
 	if (!r && keys_count != 1 && !(dm_flags() & DM_LMK_SUPPORTED)) {
