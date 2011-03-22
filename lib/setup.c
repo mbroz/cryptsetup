@@ -1309,6 +1309,7 @@ static int _crypt_format_loopaes(struct crypt_device *cd,
 		cd->loopaes_hdr.hash = strdup(params->hash);
 
 	cd->loopaes_hdr.offset = params ? params->offset : 0;
+	cd->loopaes_hdr.skip = params ? params->skip : 0;
 
 	return 0;
 }
@@ -2026,7 +2027,10 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 			goto out;
 		if (name)
 			r = LOOPAES_activate(cd, name, cd->loopaes_cipher,
-					     key_count, vk, flags);
+					     key_count, vk, NULL,
+					     cd->loopaes_hdr.offset,
+					     cd->loopaes_hdr.skip,
+					     flags);
 	} else
 		r = -EINVAL;
 

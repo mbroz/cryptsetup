@@ -179,7 +179,11 @@ parameters are visible in \fB\-\-help\fR output.
 Use \fB\-\-offset\fR to specify device offset. Note the units need to be
 specified in 512 bytes sectors.
 
-\fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-readonly].
+Use \fB\-\-skip\fR to specify IV offset. If original device used offset
+and not used it in IV sector calculations, you have to explicitly use
+\fB\-\-skip 0\fR in addition to offset parameter.
+
+\fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, \-\-readonly].
 .PP
 \fIloopaesClose\fR <name>
 .IP

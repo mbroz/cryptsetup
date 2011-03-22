@@ -171,6 +171,7 @@ struct crypt_params_luks1 {
 struct crypt_params_loopaes {
 	const char *hash; /* key hash function */
 	uint64_t offset;  /* offset in sectors */
+	uint64_t skip;    /* IV initilisation sector */
 };
 /**
  * Create (format) new crypt device (and possible header on-disk) but not activates it.

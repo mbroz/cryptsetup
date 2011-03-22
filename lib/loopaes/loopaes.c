@@ -178,9 +178,12 @@ int LOOPAES_activate(struct crypt_device *cd,
 		     const char *base_cipher,
 		     unsigned int keys_count,
 		     struct volume_key *vk,
+		     const char *hash,
+		     uint64_t offset,
+		     uint64_t skip,
 		     uint32_t flags)
 {
-	uint64_t size, offset;
+	uint64_t size;
 	uint32_t req_flags;
 	char *cipher;
 	const char *device;
@@ -188,7 +191,6 @@ int LOOPAES_activate(struct crypt_device *cd,
 
 	size = 0;
 	/* Initial IV (skip) is always the same as offset */
-	offset = crypt_get_data_offset(cd);
 	device = crypt_get_device_name(cd);
 	read_only = flags & CRYPT_ACTIVATE_READONLY;
 
@@ -210,7 +212,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 	r = dm_create_device(name, device,
 			     cipher, CRYPT_LOOPAES,
 			     crypt_get_uuid(cd),
-			     size, offset, offset, vk->keylength, vk->key,
+			     size, skip, offset, vk->keylength, vk->key,
 			     read_only, 0);
 
 	if (!r && !(dm_flags() & req_flags)) {

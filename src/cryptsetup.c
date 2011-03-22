@@ -50,6 +50,7 @@ static int opt_key_slot = CRYPT_ANY_SLOT;
 static uint64_t opt_size = 0;
 static uint64_t opt_offset = 0;
 static uint64_t opt_skip = 0;
+static int opt_skip_valid = 0;
 static int opt_readonly = 0;
 static int opt_iteration_time = 1000;
 static int opt_batch_mode = 0;
@@ -290,6 +291,7 @@ static int action_loopaesOpen(int arg)
 	struct crypt_params_loopaes params = {
 		.hash = opt_hash ?: NULL, // FIXME
 		.offset = opt_offset,
+		.skip = opt_skip_valid ? opt_skip : opt_offset,
 	};
 	unsigned int key_size = (opt_key_size ?: DEFAULT_LOOPAES_KEYBITS) / 8;
 	int r;
@@ -1157,6 +1159,7 @@ int main(int argc, char **argv)
 				break;
 			case 3:
 				opt_skip = ull_value;
+				opt_skip_valid = 1;
 				break;
 		}
 
@@ -1249,9 +1252,9 @@ int main(int argc, char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Option --uuid is allowed only for luksFormat and luksUUID."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_skip && strcmp(aname, "create"))
+	if (opt_skip && strcmp(aname, "create") && strcmp(aname, "loopaesOpen"))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --skip is supported only for create command.\n"),
+		_("Option --skip is supported only for create and loopaesOpen commands.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_offset && strcmp(aname, "create") && strcmp(aname, "loopaesOpen"))
