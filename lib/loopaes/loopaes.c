@@ -181,6 +181,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 		     uint32_t flags)
 {
 	uint64_t size, offset;
+	uint32_t req_flags;
 	char *cipher;
 	const char *device;
 	int read_only, r;
@@ -195,10 +196,13 @@ int LOOPAES_activate(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	if (keys_count == 1)
+	if (keys_count == 1) {
+		req_flags = DM_PLAIN64_SUPPORTED;
 		r = asprintf(&cipher, "%s-%s", base_cipher, "cbc-plain64");
-	else
+	} else {
+		req_flags = DM_LMK_SUPPORTED;
 		r = asprintf(&cipher, "%s:%d-%s", base_cipher, 64, "cbc-lmk");
+	}
 	if (r < 0)
 		return -ENOMEM;
 
@@ -209,7 +213,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 			     size, offset, offset, vk->keylength, vk->key,
 			     read_only, 0);
 
-	if (!r && keys_count != 1 && !(dm_flags() & DM_LMK_SUPPORTED)) {
+	if (!r && !(dm_flags() & req_flags)) {
 		log_err(cd, _("Kernel doesn't support loop-AES compatible mapping.\n"));
 		r = -ENOTSUP;
 	}

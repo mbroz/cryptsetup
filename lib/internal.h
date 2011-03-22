@@ -62,6 +62,7 @@ const char *get_error(void);
 #define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
 #define DM_LMK_SUPPORTED      (1 << 1)	/* lmk mode */
 #define DM_SECURE_SUPPORTED   (1 << 2)	/* wipe (secure) buffer flag */
+#define DM_PLAIN64_SUPPORTED  (1 << 3)	/* plain64 IV */
 uint32_t dm_flags(void);
 
 const char *dm_get_dir(void);

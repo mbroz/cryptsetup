@@ -115,6 +115,10 @@ static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 	if (dm_maj >= 4 && dm_min >= 20)
 		_dm_crypt_flags |= DM_SECURE_SUPPORTED;
 
+	/* not perfect, 2.6.33 supports with 1.7.0 */
+	if (crypt_maj >= 1 && crypt_min >= 8)
+		_dm_crypt_flags |= DM_PLAIN64_SUPPORTED;
+
 	/* Repeat test if dm-crypt is not present */
 	if (crypt_maj > 0)
 		_dm_crypt_checked = 1;
