@@ -1,6 +1,19 @@
 Cryptsetup 1.3.0 Release Notes
 ==============================
 
+Changes since version 1.3.0-rc1
+
+ * Introduce maximum default keyfile size, add configure option, visible in --help.
+
+   Cryptsetup now fails if read from keyfile exceeds internal limit.
+   You can always specify keyfile size (overrides limit) by using --keyfile-size option.
+
+ * Require the whole key read from keyfile in create command (regression in 1.2.0).
+
+ * Fix offset option for loopaesOpen.
+
+ * Lock memory in luksDump command.
+
 Changes since version 1.2.0
 
 Important changes
