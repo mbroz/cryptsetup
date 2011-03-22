@@ -95,7 +95,7 @@ function check_sum() # $key $keysize $offset
 	dmremove $DEV_NAME
 
 	EXPSUM=$(get_expsum $3)
-	$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $2 --key-file $1 $(get_offset_params $offset) >/dev/null 2>&1
+	$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $2 --key-file $1 $(get_offset_params $3) >/dev/null 2>&1
 	ret=$?
 	VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
 	if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
