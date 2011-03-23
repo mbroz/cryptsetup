@@ -2027,7 +2027,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 			goto out;
 		if (name)
 			r = LOOPAES_activate(cd, name, cd->loopaes_cipher,
-					     key_count, vk, NULL,
+					     key_count, vk,
 					     cd->loopaes_hdr.offset,
 					     cd->loopaes_hdr.skip,
 					     flags);
