@@ -1,29 +1,26 @@
 # Polish translation for cryptsetup.
 # Copyright (C) 2010 Free Software Foundation, Inc.
 # This file is put in the public domain.
-# Jakub Bogusz <qboosh@pld-linux.org>, 2010.
+# Jakub Bogusz <qboosh@pld-linux.org>, 2010-2011.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.2.0-rc1\n"
+"Project-Id-Version: cryptsetup 1.3.0-rc2\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2010-11-15 18:03+0100\n"
-"PO-Revision-Date: 2010-11-23 07:57+0100\n"
+"POT-Creation-Date: 2011-03-22 13:25+0100\n"
+"PO-Revision-Date: 2011-03-24 19:52+0100\n"
 "Last-Translator: Jakub Bogusz <qboosh@pld-linux.org>\n"
 "Language-Team: Polish <translation-team-pl@lists.sourceforge.net>\n"
+"Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=ISO-8859-2\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/gcrypt.c:47
-msgid "Cannot initialize crypto backend.\n"
-msgstr "Nie mo¿na zainicjowaæ backendu kryptograficznego.\n"
-
-#: lib/libdevmapper.c:120
+#: lib/libdevmapper.c:181
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
 msgstr "Nie mo¿na zainicjowaæ device-mappera. Czy modu³ j±dra dm_mod jest wczytany?\n"
 
-#: lib/libdevmapper.c:408
+#: lib/libdevmapper.c:469
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
 msgstr "DM-UUID dla urz±dzenia %s zosta³ skrócony.\n"
@@ -41,315 +38,350 @@ msgstr ""
 msgid "Generating key (%d%% done).\n"
 msgstr "Generowanie klucza (gotowe %d%%).\n"
 
-#: lib/random.c:163
+#: lib/random.c:166
 msgid "Fatal error during RNG initialisation.\n"
 msgstr "B³±d krytyczny w trakcie inicjalizacji RNG.\n"
 
-#: lib/random.c:190
+#: lib/random.c:193
 msgid "Unknown RNG quality requested.\n"
 msgstr "Nieznane ¿±danie jako¶ci RNG.\n"
 
-#: lib/random.c:195
+#: lib/random.c:198
 #, c-format
 msgid "Error %d reading from RNG: %s\n"
 msgstr "B³±d %d podczas odczytu z RNG: %s\n"
 
-#: lib/setup.c:109
+#: lib/setup.c:126
+msgid "Cannot initialize crypto RNG backend.\n"
+msgstr "Nie mo¿na zainicjowaæ backendu kryptograficznego RNG.\n"
+
+#: lib/setup.c:132
+msgid "Cannot initialize crypto backend.\n"
+msgstr "Nie mo¿na zainicjowaæ backendu kryptograficznego.\n"
+
+#: lib/setup.c:161
 #, c-format
 msgid "Cannot not read %d bytes from key file %s.\n"
 msgstr "Nie mo¿na odczytaæ %d bajtów z pliku klucza %s.\n"
 
-#: lib/setup.c:121
+#: lib/setup.c:175
 #, c-format
-msgid "Key processing error (using hash algorithm %s).\n"
+msgid "Hash algorithm %s not supported.\n"
+msgstr "¯±dany skrót skrótu %s nie jest obs³ugiwany.\n"
+
+#: lib/setup.c:178
+#, c-format
+msgid "Key processing error (using hash %s).\n"
 msgstr "B³±d przetwarzania klucza (u¿yto algorytmu skrótu %s).\n"
 
-#: lib/setup.c:151
+#: lib/setup.c:213
 msgid "All key slots full.\n"
 msgstr "Wszyskie miejsca na klucze s± pe³ne.\n"
 
-#: lib/setup.c:158 lib/setup.c:299 lib/setup.c:763
+#: lib/setup.c:220 lib/setup.c:315 lib/setup.c:782
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d.\n"
 msgstr "Numer klucza %d jest b³êdny, proszê wybraæ warto¶æ miêdzy 0 a %d.\n"
 
-#: lib/setup.c:164
+#: lib/setup.c:226
 #, c-format
 msgid "Key slot %d is full, please select another one.\n"
 msgstr "Miejsce na klucz %d jest pe³ne, proszê wybraæ inne.\n"
 
-#: lib/setup.c:182 src/cryptsetup.c:516
+#: lib/setup.c:244 src/cryptsetup.c:600
 msgid "Enter any remaining LUKS passphrase: "
 msgstr "Dowolne pozosta³e has³o LUKS: "
 
-#: lib/setup.c:202
+#: lib/setup.c:264
 #, c-format
 msgid "Key slot %d verified.\n"
 msgstr "Klucz %d sprawdzony.\n"
 
-#: lib/setup.c:247
-#, c-format
-msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
-msgstr "Nie mo¿na u¿yæ urz±dzenia %s, które jest w u¿yciu (ju¿ podmapowane lub zamontowane).\n"
-
-#: lib/setup.c:251
-#, c-format
-msgid "Cannot get info about device %s.\n"
-msgstr "Nie mo¿na uzyskaæ informacji o urz±dzeniu %s.\n"
-
-#: lib/setup.c:259
-#, c-format
-msgid "Device %s has zero size.\n"
-msgstr "Urz±dzenie %s ma zerowy rozmiar.\n"
-
-#: lib/setup.c:263
-#, c-format
-msgid "Device %s is too small.\n"
-msgstr "Urz±dzenie %s jest zbyt ma³e.\n"
-
-#: lib/setup.c:288 src/cryptsetup.c:544
+#: lib/setup.c:304 src/cryptsetup.c:628
 msgid "Enter LUKS passphrase to be deleted: "
 msgstr "Has³o LUKS do usuniêcia: "
 
-#: lib/setup.c:294 src/cryptsetup.c:505 src/cryptsetup.c:559
+#: lib/setup.c:310 src/cryptsetup.c:589 src/cryptsetup.c:643
 #, c-format
 msgid "Key slot %d selected for deletion.\n"
 msgstr "klucz %d wybrany do usuniêcia.\n"
 
-#: lib/setup.c:305 src/cryptsetup.c:508
+#: lib/setup.c:321 src/cryptsetup.c:592
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
 msgstr "Klucz %d nie jest aktywny. Nie mo¿na wyczy¶ciæ.\n"
 
-#: lib/setup.c:311 src/cryptsetup.c:515 src/cryptsetup.c:562
+#: lib/setup.c:327 src/cryptsetup.c:599 src/cryptsetup.c:646
 msgid "This is the last keyslot. Device will become unusable after purging this key."
 msgstr "To jest ostatni klucz. Urz±dzenie stanie siê bezu¿yteczne po usuniêciu tego klucza."
 
-#: lib/setup.c:362 lib/setup.c:1791 lib/setup.c:1862 lib/setup.c:1926
+#: lib/setup.c:378 lib/setup.c:1914 lib/setup.c:1981 lib/setup.c:2076
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Urz±dzenie %s ju¿ istnieje.\n"
 
-#: lib/setup.c:367
+#: lib/setup.c:383
 #, c-format
 msgid "Invalid key size %d.\n"
 msgstr "B³êdny rozmiar klucza %d.\n"
 
-#: lib/setup.c:449
+#: lib/setup.c:465
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "Has³o dla %s: "
 
-#: lib/setup.c:606 lib/setup.c:1523 lib/setup.c:1870 src/cryptsetup.c:227
+#: lib/setup.c:623 lib/setup.c:1646 lib/setup.c:1990 lib/setup.c:2002
+#: src/cryptsetup.c:268
 msgid "Enter passphrase: "
 msgstr "Has³o: "
 
-#: lib/setup.c:647 lib/setup.c:1032 lib/setup.c:1287 lib/setup.c:1978
+#: lib/setup.c:666 lib/setup.c:1088 lib/setup.c:1406 lib/setup.c:2128
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Urz±dzenie %s nie jest aktywne.\n"
 
-#: lib/setup.c:755
+#: lib/setup.c:774
 msgid "No known cipher specification pattern detected.\n"
 msgstr "Nie wykryto znanego wzorca okre¶laj±cego szyfr.\n"
 
-#: lib/setup.c:769 src/cryptsetup.c:383 src/cryptsetup.c:677
+#: lib/setup.c:788 src/cryptsetup.c:467 src/cryptsetup.c:859
 msgid "Enter LUKS passphrase: "
 msgstr "Has³o LUKS: "
 
-#: lib/setup.c:1044
+#: lib/setup.c:1020
+msgid "Cannot find a free loopback device.\n"
+msgstr "Nie znaleziono wolnego urz±dzenia loopback.\n"
+
+#: lib/setup.c:1028
+msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
+msgstr "Nie uda³o siê pod³±czyæ urz±dzenia loopback (wymagane urz±dzenie loop z flag± autoclear).\n"
+
+#: lib/setup.c:1103
 #, c-format
 msgid "Underlying device for crypt device %s disappeared.\n"
 msgstr "Urzêdzenie stoj±ce za urz±dzeniem szyfrowanym %s znik³o.\n"
 
-#: lib/setup.c:1109
+#: lib/setup.c:1195
 msgid "Invalid plain crypt parameters.\n"
 msgstr "B³êdne parametry szyfru plain.\n"
 
-#: lib/setup.c:1114
+#: lib/setup.c:1200 lib/setup.c:1297
 msgid "Invalid key size.\n"
 msgstr "B³êdny rozmiar klucza.\n"
 
-#: lib/setup.c:1153
+#: lib/setup.c:1239
 msgid "Can't format LUKS without device.\n"
 msgstr "Nie mo¿na sformatowaæ LUKS-a bez urz±dzenia.\n"
 
-#: lib/setup.c:1185
+#: lib/setup.c:1271
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
 msgstr "Nie mo¿na sformatowaæ urz±dzenia %s, które jest nadal w u¿yciu.\n"
 
-#: lib/setup.c:1188
+#: lib/setup.c:1274
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
 msgstr "Nie mo¿na wyczy¶ciæ nag³ówka na urz±dzeniu %s.\n"
 
-#: lib/setup.c:1227
+#: lib/setup.c:1292
+msgid "Can't format LOOPAES without device.\n"
+msgstr "Nie mo¿na sformatowaæ urz±dzenia LUKSAES bez urz±dzenia.\n"
+
+#: lib/setup.c:1346
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Nieznany typ ¿±danego urz±dzenia szyfruj±cego %s.\n"
 
-#: lib/setup.c:1324
+#: lib/setup.c:1443
 msgid "This operation is not supported for this device type.\n"
 msgstr "Ta operacja nie jest obs³ugiwana dla tego rodzaju urz±dzenia.\n"
 
-#: lib/setup.c:1339
+#: lib/setup.c:1458
 msgid "Do you really want to change UUID of device?"
 msgstr "Czy na pewno zmieniæ UUID urz±dzenia?"
 
-#: lib/setup.c:1415
+#: lib/setup.c:1538
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Wolumen %s nie jest aktywny.\n"
 
-#: lib/setup.c:1428
+#: lib/setup.c:1551
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Wolumen %s ju¿ zosta³ zatrzymany.\n"
 
-#: lib/setup.c:1456 lib/setup.c:1505 lib/setup.c:1561 lib/setup.c:1635
-#: lib/setup.c:1704 lib/setup.c:1750 lib/setup.c:1853 lib/setup.c:2047
-#: lib/setup.c:2148 lib/setup.c:2257
+#: lib/setup.c:1579 lib/setup.c:1628 lib/setup.c:1684 lib/setup.c:1758
+#: lib/setup.c:1827 lib/setup.c:1873 lib/setup.c:2197 lib/setup.c:2298
+#: lib/setup.c:2422
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Ta operacja jest obs³ugiwana tylko na urz±dzeniach LUKS.\n"
 
-#: lib/setup.c:1467 lib/setup.c:1516
+#: lib/setup.c:1590 lib/setup.c:1639
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Wolumen %s nie jest zatrzymany.\n"
 
-#: lib/setup.c:1575 lib/setup.c:1649
+#: lib/setup.c:1698 lib/setup.c:1772
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "Nie mo¿na dodaæ klucza, wszystkie miejsca na klucze wy³±czone i nie podano klucza wolumenu.\n"
 
-#: lib/setup.c:1584 lib/setup.c:1655 lib/setup.c:1659
+#: lib/setup.c:1707 lib/setup.c:1778 lib/setup.c:1782
 msgid "Enter any passphrase: "
 msgstr "Dowolne has³o: "
 
-#: lib/setup.c:1601 lib/setup.c:1672 lib/setup.c:1676 lib/setup.c:1727
+#: lib/setup.c:1724 lib/setup.c:1795 lib/setup.c:1799 lib/setup.c:1850
 msgid "Enter new passphrase for key slot: "
 msgstr "Nowe has³o dla klucza: "
 
-#: lib/setup.c:1718 lib/setup.c:1934 lib/setup.c:1947 lib/setup.c:2058
+#: lib/setup.c:1841 lib/setup.c:2084 lib/setup.c:2097 lib/setup.c:2208
 msgid "Volume key does not match the volume.\n"
 msgstr "Klucz wolumenu nie pasuje do wolumenu.\n"
 
-#: lib/setup.c:1756
+#: lib/setup.c:1879
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "Numer klucza %d jest nieprawid³owy.\n"
 
-#: lib/setup.c:1761
+#: lib/setup.c:1884
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "Klucz %d nie jest u¿ywany.\n"
 
-#: lib/setup.c:1906
+#: lib/setup.c:2056
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "Podano niew³a¶ciwy klucz wolumenu dla zwyk³ego urz±dzenia.\n"
 
-#: lib/setup.c:1917
+#: lib/setup.c:2067
 msgid "Device type is not properly initialised.\n"
 msgstr "Typ urz±dzenia nie zosta³ w³a¶ciwie zainicjalizowany.\n"
 
-#: lib/setup.c:1974
+#: lib/setup.c:2124
 #, c-format
 msgid "Device %s is busy.\n"
 msgstr "Urz±dzenie %s jest zajête.\n"
 
-#: lib/setup.c:1982
+#: lib/setup.c:2132
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "B³êdne urz±dzenie %s.\n"
 
-#: lib/setup.c:2005
+#: lib/setup.c:2155
 msgid "Volume key buffer too small.\n"
 msgstr "Bufor klucza wolumenu zbyt ma³y.\n"
 
-#: lib/setup.c:2013
+#: lib/setup.c:2163
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Nie mo¿na odtworzyæ klucza wolumenu dla zwyk³ego urz±dzenia.\n"
 
-#: lib/setup.c:2035
+#: lib/setup.c:2185
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Ta operacja nie jest obs³ugiwana dla urz±dzenia szyfruj±cego %s.\n"
 
-#: lib/utils.c:247
+#: lib/utils.c:268
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Urz±dzenie %s nie istnieje lub dostêp jest zabroniony.\n"
 
-#: lib/utils.c:254
+#: lib/utils.c:278
 #, c-format
 msgid "Cannot open device %s for %s%s access.\n"
 msgstr "Nie mo¿na otworzyæ urz±dzenia %s do %sdostêpu %s.\n"
 
-#: lib/utils.c:255
+#: lib/utils.c:279
 msgid "exclusive "
 msgstr "wy³±cznego "
 
-#: lib/utils.c:256
+#: lib/utils.c:280
 msgid "writable"
 msgstr "do zapisu"
 
-#: lib/utils.c:256
+#: lib/utils.c:280
 msgid "read-only"
 msgstr "tylko do odczytu"
 
-#: lib/utils.c:263
+#: lib/utils.c:287
 #, c-format
 msgid "Cannot read device %s.\n"
 msgstr "Nie mo¿na odczytaæ urz±dzenia %s.\n"
 
-#: lib/utils.c:388
+#: lib/utils.c:381
+#, c-format
+msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
+msgstr "Nie mo¿na u¿yæ urz±dzenia %s, które jest w u¿yciu (ju¿ podmapowane lub zamontowane).\n"
+
+#: lib/utils.c:385
+#, c-format
+msgid "Cannot get info about device %s.\n"
+msgstr "Nie mo¿na uzyskaæ informacji o urz±dzeniu %s.\n"
+
+#: lib/utils.c:393
+#, c-format
+msgid "Device %s has zero size.\n"
+msgstr "Urz±dzenie %s ma zerowy rozmiar.\n"
+
+#: lib/utils.c:397
+#, c-format
+msgid "Device %s is too small.\n"
+msgstr "Urz±dzenie %s jest zbyt ma³e.\n"
+
+#: lib/utils.c:458
 msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
 msgstr "UWAGA! Pamiêæ mo¿e nie byæ bezpieczna. Czy jeste¶ rootem?\n"
 
-#: lib/utils.c:394
+#: lib/utils.c:464
 msgid "Cannot get process priority.\n"
 msgstr "Nie mo¿na odczytaæ priorytetu procesu.\n"
 
-#: lib/utils.c:397 lib/utils.c:410
+#: lib/utils.c:467 lib/utils.c:480
 #, c-format
-msgid "setpriority %u failed: %s"
-msgstr "setpriority %u nie powiod³o siê: %s"
+msgid "setpriority %d failed: %s\n"
+msgstr "setpriority %d nie powiod³o siê: %s\n"
 
-#: lib/utils.c:408
-msgid "Cannot unlock memory."
-msgstr "Nie mo¿na odblokowaæ pamiêci."
+#: lib/utils.c:478
+msgid "Cannot unlock memory.\n"
+msgstr "Nie mo¿na odblokowaæ pamiêci.\n"
 
-#: lib/utils_crypt.c:200
-msgid "Failed to open key file.\n"
-msgstr "Nie uda³o siê otworzyæ pliku klucza.\n"
-
-#: lib/utils_crypt.c:211
-msgid "Error reading passphrase from terminal.\n"
-msgstr "B³±d podczas odczytu has³a z terminala.\n"
-
-#: lib/utils_crypt.c:216
-msgid "Verify passphrase: "
-msgstr "Weryfikacja has³a: "
-
-#: lib/utils_crypt.c:219
-msgid "Passphrases do not match.\n"
-msgstr "Has³a nie zgadzaj± siê.\n"
-
-#: lib/utils_crypt.c:243
-msgid "Failed to stat key file.\n"
-msgstr "Nie uda³o siê wykonaæ stat na pliku klucza.\n"
-
-#: lib/utils_crypt.c:248
-msgid "Warning: exhausting read requested, but key file is not a regular file, function might never return.\n"
-msgstr "Uwaga: ¿±dano odczytu ca³o¶ci, ale plik klucza nie jest zwyk³ym plikiem i funkcja mo¿e nigdy siê nie zakoñczyæ.\n"
-
-#: lib/utils_crypt.c:260
+#: lib/utils_crypt.c:210 lib/utils_crypt.c:223 lib/utils_crypt.c:313
+#: lib/utils_crypt.c:322
 msgid "Out of memory while reading passphrase.\n"
 msgstr "Brak pamiêci podczas odczytu has³a.\n"
 
-#: lib/utils_crypt.c:268
+#: lib/utils_crypt.c:215 lib/utils_crypt.c:230
+msgid "Error reading passphrase from terminal.\n"
+msgstr "B³±d podczas odczytu has³a z terminala.\n"
+
+#: lib/utils_crypt.c:228
+msgid "Verify passphrase: "
+msgstr "Weryfikacja has³a: "
+
+#: lib/utils_crypt.c:235
+msgid "Passphrases do not match.\n"
+msgstr "Has³a nie zgadzaj± siê.\n"
+
+#: lib/utils_crypt.c:277
+msgid "Negative keyfile size not permitted.\n"
+msgstr "Ujemny rozmiar pliku klucza nie jest dozwolony.\n"
+
+#: lib/utils_crypt.c:289
+msgid "Failed to open key file.\n"
+msgstr "Nie uda³o siê otworzyæ pliku klucza.\n"
+
+#: lib/utils_crypt.c:298
+msgid "Failed to stat key file.\n"
+msgstr "Nie uda³o siê wykonaæ stat na pliku klucza.\n"
+
+#: lib/utils_crypt.c:330
 msgid "Error reading passphrase.\n"
 msgstr "B³±d podczas odczytu has³a.\n"
+
+#: lib/utils_crypt.c:345
+msgid "Maximum keyfile size exceeeded.\n"
+msgstr "Przekroczono maksymalny rozmiar pliku klucza.\n"
+
+#: lib/utils_crypt.c:350
+msgid "Cannot read requested amount of data.\n"
+msgstr "Nie mo¿na odczytaæ ¿±danej ilo¶ci danych.\n"
 
 #: lib/luks1/keyencryption.c:66
 #, c-format
@@ -395,58 +427,58 @@ msgstr "Nie uda³o siê otworzyæ urz±dzenia do tymczasowego przechowywania kluczy.
 msgid "Failed to access temporary keystore device.\n"
 msgstr "Nie uda³o siê uzyskaæ dostêpu do urz±dzenia do tymczasowego przechowywania kluczy.\n"
 
-#: lib/luks1/keymanage.c:61
+#: lib/luks1/keymanage.c:76
 #, c-format
 msgid "Requested file %s already exist.\n"
 msgstr "¯±dany plik %s ju¿ istnieje.\n"
 
-#: lib/luks1/keymanage.c:81 lib/luks1/keymanage.c:224
+#: lib/luks1/keymanage.c:96 lib/luks1/keymanage.c:239
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "Urz±dzenie %s nie jest prawid³owym urz±dzeniem LUKS.\n"
 
-#: lib/luks1/keymanage.c:101
+#: lib/luks1/keymanage.c:116
 #, c-format
 msgid "Cannot write header backup file %s.\n"
 msgstr "Nie mo¿na zapisaæ pliku kopii zapasowej nag³ówka %s.\n"
 
-#: lib/luks1/keymanage.c:128
+#: lib/luks1/keymanage.c:143
 #, c-format
 msgid "Backup file %s doesn't exist.\n"
 msgstr "Plik kopii zapasowej %s nie istnieje.\n"
 
-#: lib/luks1/keymanage.c:136
+#: lib/luks1/keymanage.c:151
 msgid "Backup file do not contain valid LUKS header.\n"
 msgstr "Plik kopii zapasowej nie zawiera prawid³owego nag³ówka LUKS.\n"
 
-#: lib/luks1/keymanage.c:149
+#: lib/luks1/keymanage.c:164
 #, c-format
 msgid "Cannot open header backup file %s.\n"
 msgstr "Nie mo¿na otworzyæ pliku kopii zapasowej nag³ówka %s.\n"
 
-#: lib/luks1/keymanage.c:155
+#: lib/luks1/keymanage.c:170
 #, c-format
 msgid "Cannot read header backup file %s.\n"
 msgstr "Nie mo¿na odczytaæ pliku kopii zapasowej nag³ówka %s.\n"
 
-#: lib/luks1/keymanage.c:166
+#: lib/luks1/keymanage.c:181
 msgid "Data offset or key size differs on device and backup, restore failed.\n"
 msgstr "Offset danych lub rozmiar klucza ró¿ni± siê miêdzy urz±dzeniem a kopi± zapasow±; przywrócenie nie powiod³o siê.\n"
 
-#: lib/luks1/keymanage.c:174
+#: lib/luks1/keymanage.c:189
 #, c-format
 msgid "Device %s %s%s"
 msgstr "Urz±dzenie %s %s%s"
 
-#: lib/luks1/keymanage.c:175
+#: lib/luks1/keymanage.c:190
 msgid "does not contain LUKS header. Replacing header can destroy data on that device."
 msgstr "nie zawiera nag³ówka LUKS. Nadpisanie nag³ówka mo¿e zniszczyæ dane na tym urz±dzeniu."
 
-#: lib/luks1/keymanage.c:176
+#: lib/luks1/keymanage.c:191
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgstr "ju¿ zawiera nag³ówek LUKS. Nadpisanie nag³ówka zniszczy istniej±ce klucze."
 
-#: lib/luks1/keymanage.c:177
+#: lib/luks1/keymanage.c:192
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
@@ -454,220 +486,274 @@ msgstr ""
 "\n"
 "UWAGA: nag³ówek prawdziwego urz±dzenia ma inny UUID ni¿ kopia zapasowa!"
 
-#: lib/luks1/keymanage.c:192 lib/luks1/keymanage.c:305
-#: lib/luks1/keymanage.c:340
+#: lib/luks1/keymanage.c:207 lib/luks1/keymanage.c:320
+#: lib/luks1/keymanage.c:355
 #, c-format
 msgid "Cannot open device %s.\n"
 msgstr "Nie mo¿na otworzyæ urz±dzenia %s.\n"
 
-#: lib/luks1/keymanage.c:226
+#: lib/luks1/keymanage.c:241
 #, c-format
 msgid "Device %s is not a valid LUKS device."
 msgstr "Urz±dzenie %s nie jest prawid³owym urz±dzeniem LUKS."
 
-#: lib/luks1/keymanage.c:229
+#: lib/luks1/keymanage.c:244
 #, c-format
 msgid "Unsupported LUKS version %d.\n"
 msgstr "Nieobs³ugiwana wersja LUKS %d.\n"
 
-#: lib/luks1/keymanage.c:232 lib/luks1/keymanage.c:410
+#: lib/luks1/keymanage.c:247 lib/luks1/keymanage.c:425
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
 msgstr "¯±dany skrót LUKS %s nie jest obs³ugiwany.\n"
 
-#: lib/luks1/keymanage.c:277
+#: lib/luks1/keymanage.c:292
 #, c-format
 msgid "Cannot open file %s.\n"
 msgstr "Nie mo¿na otworzyæ pliku %s.\n"
 
-#: lib/luks1/keymanage.c:317
+#: lib/luks1/keymanage.c:332
 #, c-format
 msgid "LUKS header detected but device %s is too small.\n"
 msgstr "Wykryto nag³ówek LUKS, ale urz±dzenie %s jest zbyt ma³e.\n"
 
-#: lib/luks1/keymanage.c:361
+#: lib/luks1/keymanage.c:376
 #, c-format
 msgid "Error during update of LUKS header on device %s.\n"
 msgstr "B³±d podczas uaktualniania nag³ówka LUKS na urz±dzeniu %s.\n"
 
-#: lib/luks1/keymanage.c:368
+#: lib/luks1/keymanage.c:383
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s.\n"
 msgstr "B³êd podczas ponownego odczytu nag³ówka LUKS po uaktualnieniu na urz±dzeniu %s.\n"
 
-#: lib/luks1/keymanage.c:380
+#: lib/luks1/keymanage.c:395
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
 msgstr "Niekompatybilne opcje PBKDF2 (przy u¿yciu algorytmu skrótu %s).\n"
 
-#: lib/luks1/keymanage.c:415 lib/luks1/keymanage.c:492
+#: lib/luks1/keymanage.c:430 lib/luks1/keymanage.c:507
 msgid "Wrong LUKS UUID format provided.\n"
 msgstr "Podano z³y format LUKS UUID.\n"
 
-#: lib/luks1/keymanage.c:440
+#: lib/luks1/keymanage.c:455
 msgid "Cannot create LUKS header: reading random salt failed.\n"
 msgstr "Nie mo¿na utworzyæ nag³ówka LUKS: odczyt losowego zarodka nie powiód³ siê.\n"
 
-#: lib/luks1/keymanage.c:457
+#: lib/luks1/keymanage.c:472
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
 msgstr "Nie mo¿na utworzyæ nag³ówka LUKS: uzyskanie skrótu nag³ówka nie powiod³o siê (przy u¿yciu algorytmu %s).\n"
 
-#: lib/luks1/keymanage.c:517
+#: lib/luks1/keymanage.c:532
 #, c-format
 msgid "Key slot %d active, purge first.\n"
 msgstr "Klucz numer %d jest aktywny, nale¿y go najpierw wyczy¶ciæ.\n"
 
-#: lib/luks1/keymanage.c:522
+#: lib/luks1/keymanage.c:537
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
 msgstr "Klucz %d zawiera zbyt ma³o pasów. Zmieniony nag³ówek?\n"
 
-#: lib/luks1/keymanage.c:582
+#: lib/luks1/keymanage.c:603
 msgid "Failed to write to key storage.\n"
 msgstr "Nie uda³o siê zapisaæ klucza.\n"
 
-#: lib/luks1/keymanage.c:659
+#: lib/luks1/keymanage.c:686
 msgid "Failed to read from key storage.\n"
 msgstr "Nie uda³o siê odczytaæ klucza.\n"
 
-#: lib/luks1/keymanage.c:668
+#: lib/luks1/keymanage.c:696
 #, c-format
 msgid "Key slot %d unlocked.\n"
 msgstr "Klucz numer %d odblokowany.\n"
 
-#: lib/luks1/keymanage.c:703 src/cryptsetup.c:482
+#: lib/luks1/keymanage.c:732 src/cryptsetup.c:566 src/cryptsetup.c:748
 msgid "No key available with this passphrase.\n"
 msgstr "Dla tego has³a nie ma dostêpnego klucza.\n"
 
-#: lib/luks1/keymanage.c:783
+#: lib/luks1/keymanage.c:812
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
 msgstr "Numer klucza %d jest b³êdny, proszê wybraæ numer od 0 do %d.\n"
 
-#: lib/luks1/keymanage.c:795
+#: lib/luks1/keymanage.c:824
 #, c-format
 msgid "Cannot wipe device %s.\n"
 msgstr "Nie mo¿na wyczy¶ciæ urz±dzenia %s.\n"
 
-#: src/cryptsetup.c:75
+#: lib/loopaes/loopaes.c:135
+msgid "Detected not yet supported GPG encrypted keyfile.\n"
+msgstr "Wykryto jeszcze nie obs³ugiwany plik klucza szyfrowany GPG.\n"
+
+#: lib/loopaes/loopaes.c:136
+msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "Proszê u¿yæ gpg --decrypt <PLIK-KLUCZA> | cryptsetup --keyfile=- ...\n"
+
+#: lib/loopaes/loopaes.c:168
+msgid "Incompatible loop-AES keyfile detected.\n"
+msgstr "Wykryto niekompatybilny plik klucza loop-AES.\n"
+
+#: lib/loopaes/loopaes.c:217
+msgid "Kernel doesn't support loop-AES compatible mapping.\n"
+msgstr "J±dro nie obs³uguje odwzorowañ zgodnych z loop-AES.\n"
+
+#: src/cryptsetup.c:95
 msgid "<name> <device>"
 msgstr "<nazwa> <urz±dzenie>"
 
-#: src/cryptsetup.c:75
+#: src/cryptsetup.c:95
 msgid "create device"
 msgstr "utworzenie urz±dzenia"
 
-#: src/cryptsetup.c:76 src/cryptsetup.c:77 src/cryptsetup.c:78
-#: src/cryptsetup.c:86
+#: src/cryptsetup.c:96 src/cryptsetup.c:97 src/cryptsetup.c:98
+#: src/cryptsetup.c:107 src/cryptsetup.c:114
 msgid "<name>"
 msgstr "<nazwa>"
 
-#: src/cryptsetup.c:76
+#: src/cryptsetup.c:96
 msgid "remove device"
 msgstr "usuniêcie urz±dzenia"
 
-#: src/cryptsetup.c:77
+#: src/cryptsetup.c:97
 msgid "resize active device"
 msgstr "zmiana rozmiaru aktywnego urz±dzenia"
 
-#: src/cryptsetup.c:78
+#: src/cryptsetup.c:98
 msgid "show device status"
 msgstr "pokazanie stanu urz±dzenia"
 
-#: src/cryptsetup.c:79 src/cryptsetup.c:81
+#: src/cryptsetup.c:99 src/cryptsetup.c:101
 msgid "<device> [<new key file>]"
 msgstr "<urz±dzenie> [<nowy plik klucza>]"
 
-#: src/cryptsetup.c:79
+#: src/cryptsetup.c:99
 msgid "formats a LUKS device"
 msgstr "sformatowanie urz±dzenia LUKS"
 
-#: src/cryptsetup.c:80
+#: src/cryptsetup.c:100 src/cryptsetup.c:113
 msgid "<device> <name> "
 msgstr "<uz±dzenie> <nazwa> "
 
-#: src/cryptsetup.c:80
+#: src/cryptsetup.c:100
 msgid "open LUKS device as mapping <name>"
 msgstr "otwarcie urz±dzenia LUKS jako odwzorowania <nazwa>"
 
-#: src/cryptsetup.c:81
+#: src/cryptsetup.c:101
 msgid "add key to LUKS device"
 msgstr "dodanie klucza do urz±dzenia LUKS"
 
-#: src/cryptsetup.c:82
+#: src/cryptsetup.c:102 src/cryptsetup.c:103
 msgid "<device> [<key file>]"
 msgstr "<urz±dzenie> [<plik klucza>]"
 
-#: src/cryptsetup.c:82
+#: src/cryptsetup.c:102
 msgid "removes supplied key or key file from LUKS device"
 msgstr "usuniêcie podanego klucza lub pliku klucza z urz±dzenia LUKS"
 
-#: src/cryptsetup.c:83
+#: src/cryptsetup.c:103
+msgid "changes supplied key or key file of LUKS device"
+msgstr "zmiana podanego klucza lub pliku klucza urz±dzenia LUKS"
+
+#: src/cryptsetup.c:104
 msgid "<device> <key slot>"
 msgstr "<urz±dzenie> <numer klucza>"
 
-#: src/cryptsetup.c:83
+#: src/cryptsetup.c:104
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr "wyczyszczenie klucza o numerze <numer klucza> z urz±dzenia LUKS"
 
-#: src/cryptsetup.c:84 src/cryptsetup.c:85 src/cryptsetup.c:87
-#: src/cryptsetup.c:88 src/cryptsetup.c:89 src/cryptsetup.c:90
-#: src/cryptsetup.c:91
+#: src/cryptsetup.c:105 src/cryptsetup.c:106 src/cryptsetup.c:108
+#: src/cryptsetup.c:109 src/cryptsetup.c:110 src/cryptsetup.c:111
+#: src/cryptsetup.c:112
 msgid "<device>"
 msgstr "<urz±dzenie>"
 
-#: src/cryptsetup.c:84
+#: src/cryptsetup.c:105
 msgid "print UUID of LUKS device"
 msgstr "wypisanie UUID-a urz±dzenia LUKS"
 
-#: src/cryptsetup.c:85
+#: src/cryptsetup.c:106
 msgid "tests <device> for LUKS partition header"
 msgstr "sprawdzenie <urz±dzenia> pod k±tem nag³ówka partycji LUKS"
 
-#: src/cryptsetup.c:86
+#: src/cryptsetup.c:107
 msgid "remove LUKS mapping"
 msgstr "usuniêcie odwzorowania LUKS"
 
-#: src/cryptsetup.c:87
+#: src/cryptsetup.c:108
 msgid "dump LUKS partition information"
 msgstr "zrzut informacji o partycji LUKS"
 
-#: src/cryptsetup.c:88
+#: src/cryptsetup.c:109
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
 msgstr "Zatrzymanie urz±dzenia LUKS i wyczyszczenie klucza (zamra¿a wszystkie operacje we/wy)."
 
-#: src/cryptsetup.c:89
+#: src/cryptsetup.c:110
 msgid "Resume suspended LUKS device."
 msgstr "Wznowienie zatrzymanego urz±dzenia LUKS."
 
-#: src/cryptsetup.c:90
+#: src/cryptsetup.c:111
 msgid "Backup LUKS device header and keyslots"
 msgstr "Kopia zapasowa nag³ówka i kluczy urz±dzenia LUKS"
 
-#: src/cryptsetup.c:91
+#: src/cryptsetup.c:112
 msgid "Restore LUKS device header and keyslots"
 msgstr "Odtworzenie nag³ówka i kluczy urz±dzenia LUKS z kopii zapasowej"
 
-#: src/cryptsetup.c:169
+#: src/cryptsetup.c:113
+msgid "open loop-AES device as mapping <name>"
+msgstr "otwarcie urz±dzenia loop-AES jako odwzorowania <nazwa>"
+
+#: src/cryptsetup.c:114
+msgid "remove loop-AES mapping"
+msgstr "usuniêcie odwzorowania loop-AES"
+
+#: src/cryptsetup.c:196
 msgid "Command successful.\n"
 msgstr "Polecenie siê powiod³o.\n"
 
-#: src/cryptsetup.c:183
+#: src/cryptsetup.c:210
 #, c-format
 msgid "Command failed with code %i"
 msgstr "Polecenie nie powiod³o siê z kodem %i"
 
-#: src/cryptsetup.c:351
+#: src/cryptsetup.c:298
+msgid "Option --key-file is required.\n"
+msgstr "Wymagana jest opcja --key-file.\n"
+
+#: src/cryptsetup.c:435
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr "To nieodwo³alnie nadpisze dane na %s."
 
-#: src/cryptsetup.c:352
+#: src/cryptsetup.c:436
 msgid "memory allocation error in action_luksFormat"
 msgstr "b³±d przydzielania pamiêci w action_luksFormat"
 
-#: src/cryptsetup.c:666
+#: src/cryptsetup.c:730
+msgid "Enter LUKS passphrase to be changed: "
+msgstr "Has³o LUKS, które ma byæ zmienione: "
+
+#: src/cryptsetup.c:767
+msgid "Enter new LUKS passphrase: "
+msgstr "Nowe has³o LUKS: "
+
+#: src/cryptsetup.c:780
+#, c-format
+msgid "Key slot %d changed.\n"
+msgstr "Klucz numer %d zmieniony.\n"
+
+#: src/cryptsetup.c:786
+#, c-format
+msgid "Replaced with key slot %d.\n"
+msgstr "Zast±piono kluczem numer %d.\n"
+
+#: src/cryptsetup.c:791
+msgid "Failed to swap new key slot.\n"
+msgstr "Nie uda³o siê podstawiæ nowego klucza.\n"
+
+#: src/cryptsetup.c:848
 msgid ""
 "LUKS header dump with volume key is sensitive information\n"
 "which allows access to encrypted partition without passphrase.\n"
@@ -678,11 +764,11 @@ msgstr ""
 "Zrzut ten powinien byæ zawsze zapisywany w postaci zaszyfrowanej\n"
 "w bezpiecznym miejscu."
 
-#: src/cryptsetup.c:769 src/cryptsetup.c:790
+#: src/cryptsetup.c:951 src/cryptsetup.c:972
 msgid "Option --header-backup-file is required.\n"
 msgstr "Wymagana jest opcja --header-backup-file.\n"
 
-#: src/cryptsetup.c:824
+#: src/cryptsetup.c:1006
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -690,7 +776,7 @@ msgstr ""
 "\n"
 "<akcja> to jedno z:\n"
 
-#: src/cryptsetup.c:830
+#: src/cryptsetup.c:1012
 #, c-format
 msgid ""
 "\n"
@@ -705,205 +791,227 @@ msgstr ""
 "<numer klucza> to numer klucza LUKS do zmiany\n"
 "<plik klucza> to opcjonalny plik nowego klucza dla akcji luksAddKey\n"
 
-#: src/cryptsetup.c:837
+#: src/cryptsetup.c:1019
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in keyfile parameters:\n"
+"\tMaximum keyfile size: %dkB, Maximum interactive passphrase length %d (characters)\n"
+msgstr ""
+"\n"
+"Domy¶lne wkompilowane parametry plików klucza:\n"
+"\tMaksymalny rozmiar pliku klucza: %dkB, maksymalna d³ugo¶æ has³a interaktywnego %d (znaków)\n"
+
+#: src/cryptsetup.c:1024
 #, c-format
 msgid ""
 "\n"
 "Default compiled-in device cipher parameters:\n"
+"\tloop-AES: %s, Key %d bits\n"
 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
 "\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
 msgstr ""
 "\n"
 "Domy¶lne wkompilowane parametry szyfrowania urz±dzeñ:\n"
+"\tloop-AES: %s, bitów klucza: %d\n"
 "\tplain: %s, bitów klucza: %d, skrót has³a: %s\n"
 "\tLUKS1: %s, bitów klucza: %d, skrót nag³ówka LUKS: %s, RNG: %s\n"
 
-#: src/cryptsetup.c:901
+#: src/cryptsetup.c:1092
 msgid "Show this help message"
 msgstr "Wy¶wietlenie tego opisu"
 
-#: src/cryptsetup.c:902
+#: src/cryptsetup.c:1093
 msgid "Display brief usage"
 msgstr "Wy¶wietlenie krótkiej informacji o sk³adni"
 
-#: src/cryptsetup.c:906
+#: src/cryptsetup.c:1097
 msgid "Help options:"
 msgstr "Opcje pomocnicze:"
 
-#: src/cryptsetup.c:907
+#: src/cryptsetup.c:1098
 msgid "Print package version"
 msgstr "Wypisanie wersji pakietu"
 
-#: src/cryptsetup.c:908
+#: src/cryptsetup.c:1099
 msgid "Shows more detailed error messages"
 msgstr "Wy¶wietlanie bardziej szczegó³owych komunikatów b³êdów"
 
-#: src/cryptsetup.c:909
+#: src/cryptsetup.c:1100
 msgid "Show debug messages"
 msgstr "Wy¶wietlanie informacji diagnostycznych"
 
-#: src/cryptsetup.c:910
+#: src/cryptsetup.c:1101
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Szyfr u¿ywany do zaszyfrowania dysku (p. /proc/crypto)"
 
-#: src/cryptsetup.c:911
+#: src/cryptsetup.c:1102
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "Skrót u¿ywany do utworzenia klucza szyfruj±cego z has³a"
 
-#: src/cryptsetup.c:912
+#: src/cryptsetup.c:1103
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Sprawdzenie poprawno¶ci has³a poprzez dwukrotne pytanie"
 
-#: src/cryptsetup.c:913
+#: src/cryptsetup.c:1104
 msgid "Read the key from a file."
 msgstr "Odczyt klucza z pliku."
 
-#: src/cryptsetup.c:914
+#: src/cryptsetup.c:1105
 msgid "Read the volume (master) key from file."
 msgstr "Odczyt klucza wolumenu (klucza g³ównego) z pliku."
 
-#: src/cryptsetup.c:915
+#: src/cryptsetup.c:1106
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "Zrzut (g³ównego) klucza wolumenu zamiast informacji o kluczach."
 
-#: src/cryptsetup.c:916
+#: src/cryptsetup.c:1107
 msgid "The size of the encryption key"
 msgstr "Rozmiar klucza szyfruj±cego"
 
-#: src/cryptsetup.c:916
+#: src/cryptsetup.c:1107
 msgid "BITS"
 msgstr "BITÓW"
 
-#: src/cryptsetup.c:917
+#: src/cryptsetup.c:1108
 msgid "Limits the read from keyfile"
 msgstr "Ograniczenie odczytu z pliku klucza"
 
-#: src/cryptsetup.c:917 src/cryptsetup.c:918
+#: src/cryptsetup.c:1108 src/cryptsetup.c:1109
 msgid "bytes"
 msgstr "bajty"
 
-#: src/cryptsetup.c:918
+#: src/cryptsetup.c:1109
 msgid "Limits the read from newly added keyfile"
 msgstr "Ograniczenie odczytu z nowo dodanego pliku klucza"
 
-#: src/cryptsetup.c:919
+#: src/cryptsetup.c:1110
 msgid "Slot number for new key (default is first free)"
 msgstr "Numer dla nowego klucza (domy¶lny: pierwszy wolny)"
 
-#: src/cryptsetup.c:920
+#: src/cryptsetup.c:1111
 msgid "The size of the device"
 msgstr "Rozmiar urz±dzenia"
 
-#: src/cryptsetup.c:920 src/cryptsetup.c:921 src/cryptsetup.c:922
-#: src/cryptsetup.c:928
+#: src/cryptsetup.c:1111 src/cryptsetup.c:1112 src/cryptsetup.c:1113
+#: src/cryptsetup.c:1119
 msgid "SECTORS"
 msgstr "SEKTORÓW"
 
-#: src/cryptsetup.c:921
+#: src/cryptsetup.c:1112
 msgid "The start offset in the backend device"
 msgstr "Offset pocz±tku na urz±dzeniu przechowuj±cym"
 
-#: src/cryptsetup.c:922
+#: src/cryptsetup.c:1113
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr "Liczba sektorów zaszyfrowanych danych do pominiêcia"
 
-#: src/cryptsetup.c:923
+#: src/cryptsetup.c:1114
 msgid "Create a readonly mapping"
 msgstr "Utworzenie odwzorowania tylko do odczytu"
 
-#: src/cryptsetup.c:924
+#: src/cryptsetup.c:1115
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "Czas iteracji PBKDF2 dla LUKS (w milisekundach)"
 
-#: src/cryptsetup.c:924
+#: src/cryptsetup.c:1115
 msgid "msecs"
 msgstr "ms"
 
-#: src/cryptsetup.c:925
+#: src/cryptsetup.c:1116
 msgid "Do not ask for confirmation"
 msgstr "Bez pytañ o potwierdzenie"
 
-#: src/cryptsetup.c:926
+#: src/cryptsetup.c:1117
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "Limit czasu przy interaktywnym pytaniu o has³o (w sekundach)"
 
-#: src/cryptsetup.c:926
+#: src/cryptsetup.c:1117
 msgid "secs"
 msgstr "s"
 
-#: src/cryptsetup.c:927
+#: src/cryptsetup.c:1118
 msgid "How often the input of the passphrase can be retried"
 msgstr "Jak czêsto mo¿na powtarzaæ próby wprowadzenia has³a"
 
-#: src/cryptsetup.c:928
+#: src/cryptsetup.c:1119
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "Wyrównanie danych do granicy <n> sektorów - dla luksFormat"
 
-#: src/cryptsetup.c:929
+#: src/cryptsetup.c:1120
 msgid "File with LUKS header and keyslots backup."
 msgstr "Plik z kopi± zapasow± nag³ówka LUKS i kluczy."
 
-#: src/cryptsetup.c:930
+#: src/cryptsetup.c:1121
 msgid "Use /dev/random for generating volume key."
 msgstr "U¿ycie /dev/random do wygenerowania klucza wolumenu."
 
-#: src/cryptsetup.c:931
+#: src/cryptsetup.c:1122
 msgid "Use /dev/urandom for generating volume key."
 msgstr "U¿ycie /dev/urandom do wygenerowania klucza wolumenu."
 
-#: src/cryptsetup.c:932
+#: src/cryptsetup.c:1123
 msgid "UUID for device to use."
 msgstr "UUID dla urz±dzenia, które ma byæ u¿yte."
 
-#: src/cryptsetup.c:950
+#: src/cryptsetup.c:1141
 msgid "[OPTION...] <action> <action-specific>]"
 msgstr "[OPCJA...] <akcja> <parametry-akcji>]"
 
-#: src/cryptsetup.c:985
+#: src/cryptsetup.c:1176
 msgid "Argument <action> missing."
 msgstr "Brak argumentu <akcja>."
 
-#: src/cryptsetup.c:991
+#: src/cryptsetup.c:1182
 msgid "Unknown action."
 msgstr "Nieznana akcja."
 
-#: src/cryptsetup.c:1006
+#: src/cryptsetup.c:1197
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: wymaga %s jako argumentów"
 
-#: src/cryptsetup.c:1017
+#: src/cryptsetup.c:1209
 msgid ""
-"Option --key-size is allowed only for luksFormat and create.\n"
+"Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
 "To limit read from keyfile use --keyfile-size=(bytes)."
 msgstr ""
-"Opcja --key-size jest dopuszczalna tylko dla operacji luksFormat i create.\n"
+"Opcja --key-size jest dopuszczalna tylko dla operacji luksFormat, create\n"
+"i loopaesOpen.\n"
 "Aby ograniczyæ odczyt z pliku klucza, nale¿y u¿yæ --keyfile-size=(bajty)."
 
-#: src/cryptsetup.c:1024
+#: src/cryptsetup.c:1216
 msgid "Key size must be a multiple of 8 bits"
 msgstr "Rozmiar klucza musi byæ wielokrotno¶ci± 8 bitów"
 
-#: src/cryptsetup.c:1031
+#: src/cryptsetup.c:1223
 msgid "Key slot is invalid."
 msgstr "Numer klucza jest nieprawid³owy."
 
-#: src/cryptsetup.c:1038
+#: src/cryptsetup.c:1230
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "Opcja --key-file ma priorytet nad podanym argumentem pliku klucza.\n"
 
-#: src/cryptsetup.c:1044
+#: src/cryptsetup.c:1237
+msgid "Negative number for option not permitted."
+msgstr "Liczba ujemna nie jest dozwolona dla tej opcji."
+
+#: src/cryptsetup.c:1242
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "Dozwolona jest tylko jedna z opcji --use-[u]random."
 
-#: src/cryptsetup.c:1047
+#: src/cryptsetup.c:1245
 msgid "Option --use-[u]random is allowed only for luksFormat."
 msgstr "Opcja --use-[u]random jest dozwolona tylko dla operacji luksFormat."
 
-#: src/cryptsetup.c:1051
+#: src/cryptsetup.c:1249
 msgid "Option --uuid is allowed only for luksFormat and luksUUID."
 msgstr "Opcja --uuid jest dozwolona tylko dla operacji luksFormat i luksUUID."
 
-#: src/cryptsetup.c:1055
-msgid "Options --offset and --skip are supported only for create command.\n"
-msgstr "Opcje --offset i --skip s± obs³ugiwane tylko dla polecenia create.\n"
+#: src/cryptsetup.c:1254
+msgid "Option --skip is supported only for create command.\n"
+msgstr "Opcja --skip jest obs³ugiwana tylko dla polecenia create.\n"
+
+#: src/cryptsetup.c:1259
+msgid "Option --offset is supported only for create and loopaesOpen commands.\n"
+msgstr "Opcja --offset jest obs³ugiwana tylko dla poleceñ create i loopaesOpen.\n"
