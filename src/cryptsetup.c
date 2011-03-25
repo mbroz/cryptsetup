@@ -289,7 +289,7 @@ static int action_loopaesOpen(int arg)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_loopaes params = {
-		.hash = opt_hash ?: NULL, // FIXME
+		.hash = opt_hash ?: NULL,
 		.offset = opt_offset,
 		.skip = opt_skip_valid ? opt_skip : opt_offset,
 	};

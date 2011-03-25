@@ -8,6 +8,7 @@
 
 int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			  struct volume_key **vk,
+			  const char *hash,
 			  unsigned int *keys_count,
 			  char *buffer,
 			  size_t buffer_len);

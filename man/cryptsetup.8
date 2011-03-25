@@ -183,7 +183,11 @@ Use \fB\-\-skip\fR to specify IV offset. If original device used offset
 and not used it in IV sector calculations, you have to explicitly use
 \fB\-\-skip 0\fR in addition to offset parameter.
 
-\fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, \-\-readonly].
+Use \fB\-\-hash\fR to override hash function for password hashing
+(otherwise it is detected according to key size).
+
+\fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, 
+\-\-hash, \-\-readonly].
 .PP
 \fIloopaesClose\fR <name>
 .IP
@@ -199,7 +203,7 @@ Print more verbose messages.
 Run in debug mode with full diagnostic logs.
 .TP
 .B "\-\-hash, \-h"
-For \fIcreate\fR action specifies hash to use for password hashing.
+For \fIcreate\fR and \fIloopaesOpen\fR action specifies hash to use for password hashing.
 
 For \fIluksFormat\fR action specifies hash used in LUKS key setup scheme
 and volume key digest.
@@ -311,7 +315,7 @@ Using \-\-offset will shift the IV calculation by the same negative amount.
 Hence, if \-\-offset \fIn\fR, sector \fIn\fR will be the first sector
 on the mapping with IV \fI0\fR. Using \-\-skip would have resulted in sector
 \fIn\fR being the first sector also, but with IV \fIn\fR.
-This option is only relevant for \fIcreate\fR action.
+This option is only relevant for \fIcreate\fR and \fIloopaesOpen\fR action.
 .TP
 .B "\-\-readonly"
 set up a read-only mapping.

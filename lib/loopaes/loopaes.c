@@ -69,6 +69,7 @@ static int hash_key(const char *src, size_t src_len,
 
 static int hash_keys(struct crypt_device *cd,
 		     struct volume_key **vk,
+		     const char *hash_override,
 		     const char **input_keys,
 		     unsigned int keys_count,
 		     unsigned int key_len_output)
@@ -77,7 +78,7 @@ static int hash_keys(struct crypt_device *cd,
 	char tweak, *key_ptr;
 	int r, i, key_len_input;
 
-	hash_name = get_hash(key_len_output);
+	hash_name = hash_override ?: get_hash(key_len_output);
 	tweak = get_tweak(keys_count);
 	key_len_input = strlen(input_keys[0]);
 
@@ -123,6 +124,7 @@ static int keyfile_is_gpg(char *buffer, size_t buffer_len)
 
 int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			  struct volume_key **vk,
+			  const char *hash,
 			  unsigned int *keys_count,
 			  char *buffer,
 			  size_t buffer_len)
@@ -174,7 +176,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 	}
 
 	*keys_count = key_index;
-	return hash_keys(cd, vk, keys, key_index, crypt_get_volume_key_size(cd));
+	return hash_keys(cd, vk, hash, keys, key_index, crypt_get_volume_key_size(cd));
 }
 
 int LOOPAES_activate(struct crypt_device *cd,

@@ -1528,6 +1528,11 @@ void crypt_free(struct crypt_device *cd)
 		free(cd->plain_cipher_mode);
 		free(cd->plain_uuid);
 
+		/* used in loop-AES device only */
+		free((char*)cd->loopaes_hdr.hash);
+		free(cd->loopaes_cipher);
+		free(cd->loopaes_uuid);
+
 		free(cd);
 	}
 }
@@ -2027,7 +2032,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 				  keyfile, keyfile_size);
 		if (r < 0)
 			goto out;
-		r = LOOPAES_parse_keyfile(cd, &vk, &key_count,
+		r = LOOPAES_parse_keyfile(cd, &vk, cd->loopaes_hdr.hash, &key_count,
 					  passphrase_read, passphrase_size_read);
 		if (r < 0)
 			goto out;
