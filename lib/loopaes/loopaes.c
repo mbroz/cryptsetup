@@ -67,7 +67,8 @@ static int hash_key(const char *src, size_t src_len,
 	return r;
 }
 
-static int hash_keys(struct volume_key **vk,
+static int hash_keys(struct crypt_device *cd,
+		     struct volume_key **vk,
 		     const char **input_keys,
 		     unsigned int keys_count,
 		     unsigned int key_len_output)
@@ -80,8 +81,11 @@ static int hash_keys(struct volume_key **vk,
 	tweak = get_tweak(keys_count);
 	key_len_input = strlen(input_keys[0]);
 
-	if (!keys_count || !key_len_output || !hash_name || !key_len_input)
+	if (!keys_count || !key_len_output || !hash_name || !key_len_input) {
+		log_err(cd, _("Key processing error (using hash %s).\n"),
+			hash_name ?: "[none]");
 		return -EINVAL;
+	}
 
 	*vk = crypt_alloc_volume_key(key_len_output * keys_count, NULL);
 	if (!*vk)
@@ -170,7 +174,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 	}
 
 	*keys_count = key_index;
-	return hash_keys(vk, keys, key_index, crypt_get_volume_key_size(cd));
+	return hash_keys(cd, vk, keys, key_index, crypt_get_volume_key_size(cd));
 }
 
 int LOOPAES_activate(struct crypt_device *cd,
