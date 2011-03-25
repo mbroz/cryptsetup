@@ -278,6 +278,11 @@ int crypt_get_key(const char *prompt,
 		return -EINVAL;
 	}
 
+	if (read_stdin)
+		log_dbg("STDIN descriptor passphrase entry requested.");
+	else
+		log_dbg("File descriptor passphrase entry requested.");
+
 	/* If not requsted otherwise, we limit input to prevent memory exhaustion */
 	if (keyfile_size_max == 0) {
 		keyfile_size_max = DEFAULT_KEYFILE_SIZE_MAXKB * 1024;
@@ -337,8 +342,11 @@ int crypt_get_key(const char *prompt,
 	}
 
 	/* Fail if piped input dies reading nothing */
-	if(!i && !regular_file)
+	if(!i && !regular_file) {
+		log_dbg("Nothing read on input.");
+		r = -EPIPE;
 		goto out_err;
+	}
 
 	/* Fail if we exceeded internal default (no specified size) */
 	if (unlimited_read && i == keyfile_size_max) {

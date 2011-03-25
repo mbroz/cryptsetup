@@ -495,7 +495,7 @@ static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslo
 {
 	char *passphrase_read = NULL;
 	size_t passphrase_size_read;
-	int r = -EINVAL, tries = cd->tries;
+	int r = -EINVAL, eperm = 0, tries = cd->tries;
 
 	*vk = NULL;
 	do {
@@ -509,6 +509,8 @@ static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslo
 
 		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase_read,
 					   passphrase_size_read, &cd->hdr, vk, cd);
+		if (r == -EPERM)
+			eperm = 1;
 		crypt_safe_free(passphrase_read);
 		passphrase_read = NULL;
 	} while (r == -EPERM && (--tries > 0));
@@ -516,6 +518,10 @@ out:
 	if (r < 0) {
 		crypt_free_volume_key(*vk);
 		*vk = NULL;
+
+		/* Report wrong passphrase if at least one try failed */
+		if (eperm && r == -EPIPE)
+			r = -EPERM;
 	}
 
 	crypt_safe_free(passphrase_read);
