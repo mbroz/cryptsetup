@@ -354,6 +354,12 @@ The UUID must be provided in standard UUID format
 .TP
 .B "\-\-version"
 Show the version.
+.SH RETURN CODES
+Crypsetup returns 0 on success or non-zero on error.
+
+Error codes are: 1 wrong parameters, 2 no permission (bad passphrase),
+3 out of memory, 4 wrong device specified, 5 device already exists
+or device is busy.
 .SH NOTES ON PASSWORD PROCESSING FOR PLAIN MODE
 \fBFrom a terminal\fR: Password processing is new-line sensitive,
 meaning the reading will stop after encountering \\n.
