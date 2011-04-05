@@ -7,9 +7,9 @@
  */
 
 /*
- * AF_split operates on src and produces information splitted data in
+ * AF_split operates on src and produces information split data in
  * dst. src is assumed to be of the length blocksize. The data stripe
- * dst points to must be captable of storing blocksize*blocknumbers.
+ * dst points to must be capable of storing blocksize*blocknumbers.
  * blocknumbers is the data multiplication factor.
  *
  * AF_merge does just the opposite: reproduces the information stored in

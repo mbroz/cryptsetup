@@ -50,10 +50,10 @@ static int hash_buf(const char *src, char *dst, uint32_t iv,
 
 	if ((r = crypt_hash_write(hd, iv_char, sizeof(uint32_t))))
 		goto out;
-	
+
 	if ((r = crypt_hash_write(hd, src, len)))
 		goto out;
-	
+
 	r = crypt_hash_final(hd, dst, len);
 out:
 	crypt_hash_destroy(hd);

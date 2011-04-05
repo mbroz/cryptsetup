@@ -572,7 +572,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 		goto out;
 
 	/*
-	 * AF splitting, the masterkey stored in vk->key is splitted to AfMK
+	 * AF splitting, the masterkey stored in vk->key is split to AfKey
 	 */
 	AFEKSize = hdr->keyblock[keyIndex].stripes*vk->keylength;
 	AfKey = crypt_safe_alloc(AFEKSize);
