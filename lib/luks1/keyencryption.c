@@ -193,9 +193,8 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 			    unsigned int sector,
 			    struct crypt_device *ctx)
 {
-	return LUKS_endec_template(src,srcLength,hdr,key,keyLength, device, sector,
-				   (ssize_t (*)(int, void *, size_t)) write_blockwise,
-				   O_RDWR, ctx);
+	return LUKS_endec_template(src,srcLength,hdr,key,keyLength, device,
+				   sector, write_blockwise, O_RDWR, ctx);
 }
 
 int LUKS_decrypt_from_storage(char *dst, size_t dstLength,

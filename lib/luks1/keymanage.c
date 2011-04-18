@@ -764,29 +764,33 @@ static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)
 
 static int wipe(const char *device, unsigned int from, unsigned int to)
 {
-	int devfd;
+	int devfd, r = 0;
 	char *buffer;
-	unsigned int i;
-	unsigned int bufLen = (to - from) * SECTOR_SIZE;
-	int r = 0;
+	unsigned int i, bufLen;
+	ssize_t written;
 
 	devfd = open(device, O_RDWR | O_DIRECT | O_SYNC);
 	if(devfd == -1)
 		return -EINVAL;
 
-	buffer = (char *) malloc(bufLen);
+	bufLen = (to - from) * SECTOR_SIZE;
+	buffer = malloc(bufLen);
 	if(!buffer) {
 		close(devfd);
 		return -ENOMEM;
 	}
 
 	for(i = 0; i < 39; ++i) {
-		if                (i <  5) crypt_random_get(NULL, buffer, bufLen, CRYPT_RND_NORMAL);
+		if                (i <  5) crypt_random_get(NULL, buffer, bufLen,
+							    CRYPT_RND_NORMAL);
 		else if(i >=  5 && i < 32) wipeSpecial(buffer, bufLen, i - 5);
-		else if(i >= 32 && i < 38) crypt_random_get(NULL, buffer, bufLen, CRYPT_RND_NORMAL);
+		else if(i >= 32 && i < 38) crypt_random_get(NULL, buffer, bufLen,
+							    CRYPT_RND_NORMAL);
 		else if(i >= 38 && i < 39) memset(buffer, 0xFF, bufLen);
 
-		if(write_lseek_blockwise(devfd, buffer, bufLen, from * SECTOR_SIZE) < 0) {
+		written = write_lseek_blockwise(devfd, buffer, bufLen,
+						from * SECTOR_SIZE);
+		if (written < 0 || written != bufLen) {
 			r = -EIO;
 			break;
 		}

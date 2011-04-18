@@ -92,9 +92,9 @@ int dm_resume_and_reinstate_key(const char *name,
 				const char *key);
 
 int sector_size_for_device(const char *device);
-ssize_t write_blockwise(int fd, const void *buf, size_t count);
+ssize_t write_blockwise(int fd, void *buf, size_t count);
 ssize_t read_blockwise(int fd, void *_buf, size_t count);
-ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offset);
+ssize_t write_lseek_blockwise(int fd, char *buf, size_t count, off_t offset);
 int device_ready(struct crypt_device *cd, const char *device, int mode);
 int get_device_infos(const char *device,
 		     int open_exclusive,

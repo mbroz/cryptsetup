@@ -128,7 +128,7 @@ int sector_size_for_device(const char *device)
 	return r;
 }
 
-ssize_t write_blockwise(int fd, const void *orig_buf, size_t count)
+ssize_t write_blockwise(int fd, void *orig_buf, size_t count)
 {
 	void *hangover_buf, *hangover_buf_base = NULL;
 	void *buf, *buf_base = NULL;
@@ -148,7 +148,7 @@ ssize_t write_blockwise(int fd, const void *orig_buf, size_t count)
 			goto out;
 		memcpy(buf, orig_buf, count);
 	} else
-		buf = (void *)orig_buf;
+		buf = orig_buf;
 
 	r = write(fd, buf, solid);
 	if (r < 0 || r != solid)
@@ -160,26 +160,28 @@ ssize_t write_blockwise(int fd, const void *orig_buf, size_t count)
 			goto out;
 
 		r = read(fd, hangover_buf, bsize);
-		if(r < 0 || r != bsize) goto out;
+		if (r < 0 || r != bsize)
+			goto out;
 
 		r = lseek(fd, -bsize, SEEK_CUR);
 		if (r < 0)
 			goto out;
-		memcpy(hangover_buf, buf + solid, hangover);
+		memcpy(hangover_buf, (char*)buf + solid, hangover);
 
 		r = write(fd, hangover_buf, bsize);
-		if(r < 0 || r != bsize) goto out;
-		free(hangover_buf_base);
+		if (r < 0 || r != bsize)
+			goto out;
 	}
 	ret = count;
- out:
+out:
+	free(hangover_buf_base);
 	if (buf != orig_buf)
 		free(buf_base);
 	return ret;
 }
 
 ssize_t read_blockwise(int fd, void *orig_buf, size_t count) {
-	void *hangover_buf, *hangover_buf_base;
+	void *hangover_buf, *hangover_buf_base = NULL;
 	void *buf, *buf_base = NULL;
 	int r, hangover, solid, bsize, alignment;
 	ssize_t ret = -1;
@@ -210,11 +212,11 @@ ssize_t read_blockwise(int fd, void *orig_buf, size_t count) {
 		if (r <  0 || r != bsize)
 			goto out;
 
-		memcpy(buf + solid, hangover_buf, hangover);
-		free(hangover_buf_base);
+		memcpy((char *)buf + solid, hangover_buf, hangover);
 	}
 	ret = count;
- out:
+out:
+	free(hangover_buf_base);
 	if (buf != orig_buf) {
 		memcpy(orig_buf, buf, count);
 		free(buf_base);
@@ -222,41 +224,61 @@ ssize_t read_blockwise(int fd, void *orig_buf, size_t count) {
 	return ret;
 }
 
-/* 
+/*
  * Combines llseek with blockwise write. write_blockwise can already deal with short writes
  * but we also need a function to deal with short writes at the start. But this information
- * is implicitly included in the read/write offset, which can not be set to non-aligned 
+ * is implicitly included in the read/write offset, which can not be set to non-aligned
  * boundaries. Hence, we combine llseek with write.
  */
+ssize_t write_lseek_blockwise(int fd, char *buf, size_t count, off_t offset) {
+	char *frontPadBuf;
+	void *frontPadBuf_base = NULL;
+	int r, bsize, frontHang;
+	size_t innerCount = 0;
+	ssize_t ret = -1;
 
-ssize_t write_lseek_blockwise(int fd, const char *buf, size_t count, off_t offset) {
-	int bsize = sector_size(fd);
-	const char *orig_buf = buf;
-	char frontPadBuf[bsize];
-	int frontHang = offset % bsize;
-	int r;
-	int innerCount = count < bsize ? count : bsize;
-
-	if (bsize < 0)
+	if ((bsize = sector_size(fd)) < 0)
 		return bsize;
 
-	lseek(fd, offset - frontHang, SEEK_SET);
-	if(offset % bsize) {
-		r = read(fd,frontPadBuf,bsize);
-		if(r < 0) return -1;
+	frontHang = offset % bsize;
 
-		memcpy(frontPadBuf+frontHang, buf, innerCount);
+	if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
+		goto out;
 
-		lseek(fd, offset - frontHang, SEEK_SET);
-		r = write(fd,frontPadBuf,bsize);
-		if(r < 0) return -1;
+	if (frontHang) {
+		frontPadBuf = aligned_malloc(&frontPadBuf_base,
+					     bsize, get_alignment(fd));
+		if (!frontPadBuf)
+			goto out;
+
+		r = read(fd, frontPadBuf, bsize);
+		if (r < 0 || r != bsize)
+			goto out;
+
+		innerCount = bsize - frontHang;
+		if (innerCount > count)
+			innerCount = count;
+
+		memcpy(frontPadBuf + frontHang, buf, innerCount);
+
+		if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
+			goto out;
+
+		r = write(fd, frontPadBuf, bsize);
+		if (r < 0 || r != bsize)
+			goto out;
 
 		buf += innerCount;
 		count -= innerCount;
 	}
-	if(count <= 0) return buf - orig_buf;
 
-	return write_blockwise(fd, buf, count) + innerCount;
+	ret = count ? write_blockwise(fd, buf, count) : 0;
+	if (ret >= 0)
+		ret += innerCount;
+out:
+	free(frontPadBuf_base);
+
+	return ret;
 }
 
 int device_ready(struct crypt_device *cd, const char *device, int mode)
