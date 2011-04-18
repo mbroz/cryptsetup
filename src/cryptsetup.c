@@ -116,6 +116,7 @@ static struct action_type {
 	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
 
+__attribute__((format(printf, 5, 6)))
 static void clogger(struct crypt_device *cd, int level, const char *file,
 		   int line, const char *format, ...)
 {
@@ -140,7 +141,7 @@ static void clogger(struct crypt_device *cd, int level, const char *file,
 	free(target);
 }
 
-static int _yesDialog(const char *msg, void *usrptr)
+static int _yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 {
 	char *answer = NULL;
 	size_t size = 0;
@@ -162,7 +163,7 @@ static int _yesDialog(const char *msg, void *usrptr)
 	return r;
 }
 
-static void _log(int level, const char *msg, void *usrptr)
+static void _log(int level, const char *msg, void *usrptr __attribute__((unused)))
 {
 	switch(level) {
 
@@ -215,7 +216,7 @@ static void show_status(int errcode)
 		log_err(".\n");
 }
 
-static int action_create(int arg)
+static int action_create(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
@@ -285,7 +286,7 @@ out:
 	return r;
 }
 
-static int action_loopaesOpen(int arg)
+static int action_loopaesOpen(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_loopaes params = {
@@ -318,7 +319,7 @@ out:
 	return r;
 }
 
-static int action_remove(int arg)
+static int action_remove(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -331,7 +332,7 @@ static int action_remove(int arg)
 	return r;
 }
 
-static int action_resize(int arg)
+static int action_resize(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -344,7 +345,7 @@ static int action_resize(int arg)
 	return r;
 }
 
-static int action_status(int arg)
+static int action_status(int arg __attribute__((unused)))
 {
 	crypt_status_info ci;
 	struct crypt_active_device cad;
@@ -422,7 +423,7 @@ fail:
 	return -EINVAL;
 }
 
-static int action_luksFormat(int arg)
+static int action_luksFormat(int arg __attribute__((unused)))
 {
 	int r = -EINVAL, keysize;
 	char *msg = NULL, *key = NULL, cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
@@ -494,7 +495,7 @@ out:
 	return r;
 }
 
-static int action_luksOpen(int arg)
+static int action_luksOpen(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	uint32_t flags = 0;
@@ -571,7 +572,7 @@ out:
 	return r;
 }
 
-static int action_luksKillSlot(int arg)
+static int action_luksKillSlot(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -611,7 +612,7 @@ out:
 	return r;
 }
 
-static int action_luksRemoveKey(int arg)
+static int action_luksRemoveKey(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	char *password = NULL;
@@ -659,7 +660,7 @@ out:
 	return r;
 }
 
-static int action_luksAddKey(int arg)
+static int action_luksAddKey(int arg __attribute__((unused)))
 {
 	int r = -EINVAL, keysize = 0;
 	char *key = NULL;
@@ -711,7 +712,7 @@ static int _slots_full(struct crypt_device *cd)
 	return 1;
 }
 
-static int action_luksChangeKey(int arg)
+static int action_luksChangeKey(int arg __attribute__((unused)))
 {
 	const char *opt_new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
 	struct crypt_device *cd = NULL;
@@ -798,7 +799,7 @@ out:
 	return r;
 }
 
-static int action_isLuks(int arg)
+static int action_isLuks(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -812,7 +813,7 @@ out:
 	return r;
 }
 
-static int action_luksUUID(int arg)
+static int action_luksUUID(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	const char *existing_uuid = NULL;
@@ -843,7 +844,8 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	char *vk = NULL, *password = NULL;
 	size_t passwordLen = 0;
 	size_t vk_size;
-	int i, r;
+	unsigned i;
+	int r;
 
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
 	if (!_yesDialog(
@@ -871,9 +873,9 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	log_std("LUKS header information for %s\n", crypt_get_device_name(cd));
 	log_std("Cipher name:   \t%s\n", crypt_get_cipher(cd));
 	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
-	log_std("Payload offset:\t%d\n", crypt_get_data_offset(cd));
+	log_std("Payload offset:\t%d\n", (int)crypt_get_data_offset(cd));
 	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
-	log_std("MK bits:       \t%d\n", vk_size * 8);
+	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
 	log_std("MK dump:\t");
 
 	for(i = 0; i < vk_size; i++) {
@@ -889,7 +891,7 @@ out:
 	return r;
 }
 
-static int action_luksDump(int arg)
+static int action_luksDump(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -909,7 +911,7 @@ out:
 	return r;
 }
 
-static int action_luksSuspend(int arg)
+static int action_luksSuspend(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -922,7 +924,7 @@ static int action_luksSuspend(int arg)
 	return r;
 }
 
-static int action_luksResume(int arg)
+static int action_luksResume(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -944,7 +946,7 @@ out:
 	return r;
 }
 
-static int action_luksBackup(int arg)
+static int action_luksBackup(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -965,7 +967,7 @@ out:
 	return r;
 }
 
-static int action_luksRestore(int arg)
+static int action_luksRestore(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r = 0;
@@ -995,8 +997,11 @@ static __attribute__ ((noreturn)) void usage(poptContext popt_context,
 	exit(exitcode);
 }
 
-static void help(poptContext popt_context, enum poptCallbackReason reason,
-                 struct poptOption *key, const char * arg, void *data)
+static void help(poptContext popt_context,
+		 enum poptCallbackReason reason __attribute__((unused)),
+		 struct poptOption *key,
+		 const char *arg __attribute__((unused)),
+		 void *data __attribute__((unused)))
 {
 	if (key->shortName == '?') {
 		struct action_type *action;
@@ -1044,7 +1049,7 @@ static void _dbg_version_and_cmd(int argc, char **argv)
 	for (i = 0; i < argc; i++) {
 		if (i)
 			log_std(" ");
-		log_std(argv[i]);
+		log_std("%s", argv[i]);
 	}
 	log_std("\"\n");
 }

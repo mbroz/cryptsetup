@@ -119,7 +119,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	unsigned char tmp[EVP_MAX_MD_SIZE];
 	unsigned int tmp_len = 0;
 
-	if (length > ctx->hash_len)
+	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
 	if (EVP_DigestFinal_ex(&ctx->md, tmp, &tmp_len) != 1)
@@ -188,7 +188,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	unsigned char tmp[EVP_MAX_MD_SIZE];
 	unsigned int tmp_len = 0;
 
-	if (length > ctx->hash_len)
+	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
 	HMAC_Final(&ctx->md, tmp, &tmp_len);

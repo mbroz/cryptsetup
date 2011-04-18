@@ -50,7 +50,7 @@ static uint64_t cleaner_size = 0;
 static int devfd=-1;
 
 static int setup_mapping(const char *cipher, const char *name,
-			 const char *device, unsigned int payloadOffset,
+			 const char *device,
 			 const char *key, size_t keyLength,
 			 unsigned int sector, size_t srcLength,
 			 int mode, struct crypt_device *ctx)
@@ -73,7 +73,7 @@ static int setup_mapping(const char *cipher, const char *name,
 				keyLength, key, (mode == O_RDONLY), 0);
 }
 
-static void sigint_handler(int sig)
+static void sigint_handler(int sig __attribute__((unused)))
 {
 	if(devfd >= 0)
 		close(devfd);
@@ -85,9 +85,9 @@ static void sigint_handler(int sig)
 	kill(getpid(), SIGINT);
 }
 
-static char *_error_hint(char *cipherName, char *cipherMode, size_t keyLength)
+static const char *_error_hint(char *cipherMode, size_t keyLength)
 {
-	char *hint = "";
+	const char *hint= "";
 #ifdef __linux__
 	char c, tmp[4] = {0};
 	struct utsname uts;
@@ -145,13 +145,13 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	signal(SIGINT, sigint_handler);
 	cleaner_name = name;
 
-	r = setup_mapping(dmCipherSpec, name, device, hdr->payloadOffset,
+	r = setup_mapping(dmCipherSpec, name, device,
 			  key, keyLength, sector, srcLength, mode, ctx);
 	if(r < 0) {
 		log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
 			"Check that kernel supports %s cipher (check syslog for more info).\n%s"),
 			device, dmCipherSpec,
-			_error_hint(hdr->cipherName, hdr->cipherMode, keyLength * 8));
+			_error_hint(hdr->cipherMode, keyLength * 8));
 		r = -EIO;
 		goto out1;
 	}

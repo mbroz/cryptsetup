@@ -46,7 +46,7 @@ static int check_pid(const pid_t pid, const char *dev_name, const char *short_de
 	char dirpath[MAX_SHORTNAME], fdpath[MAX_SHORTNAME], linkpath[MAX_PATHNAME];
 	DIR *dirp;
 	struct dirent *direntry;
-	size_t len;
+	ssize_t len;
 	int r = 0;
 
 	snprintf(dirpath, sizeof(dirpath), "/proc/%d/fd", pid);

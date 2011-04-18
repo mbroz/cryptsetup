@@ -39,7 +39,7 @@ struct crypt_hmac {
 	int hash_len;
 };
 
-int crypt_backend_init(struct crypt_device *ctx)
+int crypt_backend_init(struct crypt_device *ctx __attribute__((unused)))
 {
 	if (crypto_backend_initialised)
 		return 0;
@@ -133,7 +133,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 {
 	unsigned char *hash;
 
-	if (length > ctx->hash_len)
+	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
 	hash = gcry_md_read(ctx->hd, ctx->hash_id);
@@ -207,7 +207,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 {
 	unsigned char *hash;
 
-	if (length > ctx->hash_len)
+	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
 	hash = gcry_md_read(ctx->hd, ctx->hash_id);

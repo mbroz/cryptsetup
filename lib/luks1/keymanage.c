@@ -46,7 +46,7 @@ static inline int round_up_modulo(int x, int m) {
 	return div_round_up(x, m) * m;
 }
 
-const char *dbg_slot_state(crypt_keyslot_info ki)
+static const char *dbg_slot_state(crypt_keyslot_info ki)
 {
 	switch(ki) {
 	case CRYPT_SLOT_INACTIVE:
@@ -68,7 +68,7 @@ int LUKS_hdr_backup(
 	struct crypt_device *ctx)
 {
 	int r = 0, devfd = -1;
-	size_t buffer_size;
+	ssize_t buffer_size;
 	char *buffer = NULL;
 	struct stat st;
 
@@ -134,7 +134,7 @@ int LUKS_hdr_restore(
 	struct crypt_device *ctx)
 {
 	int r = 0, devfd = -1, diff_uuid = 0;
-	size_t buffer_size;
+	ssize_t buffer_size;
 	char *buffer = NULL, msg[200];
 	struct stat st;
 	struct luks_phdr hdr_file;
@@ -282,10 +282,11 @@ int LUKS_read_phdr_backup(const char *backup_file,
 			  int require_luks_device,
 			  struct crypt_device *ctx)
 {
+	ssize_t hdr_size = sizeof(struct luks_phdr);
 	int devfd = 0, r = 0;
 
 	log_dbg("Reading LUKS header of size %d from backup file %s",
-		sizeof(struct luks_phdr), backup_file);
+		(int)hdr_size, backup_file);
 
 	devfd = open(backup_file, O_RDONLY);
 	if(-1 == devfd) {
@@ -293,7 +294,7 @@ int LUKS_read_phdr_backup(const char *backup_file,
 		return -EINVAL;
 	}
 
-	if(read(devfd, hdr, sizeof(struct luks_phdr)) < sizeof(struct luks_phdr))
+	if (read(devfd, hdr, hdr_size) < hdr_size)
 		r = -EIO;
 	else {
 		LUKS_fix_header_compatible(hdr);
@@ -309,11 +310,12 @@ int LUKS_read_phdr(const char *device,
 		   int require_luks_device,
 		   struct crypt_device *ctx)
 {
+	ssize_t hdr_size = sizeof(struct luks_phdr);
 	int devfd = 0, r = 0;
 	uint64_t size;
 
 	log_dbg("Reading LUKS header of size %d from device %s",
-		sizeof(struct luks_phdr), device);
+		hdr_size, device);
 
 	devfd = open(device,O_RDONLY | O_DIRECT | O_SYNC);
 	if(-1 == devfd) {
@@ -321,7 +323,7 @@ int LUKS_read_phdr(const char *device,
 		return -EINVAL;
 	}
 
-	if(read_blockwise(devfd, hdr, sizeof(struct luks_phdr)) < sizeof(struct luks_phdr))
+	if (read_blockwise(devfd, hdr, hdr_size) < hdr_size)
 		r = -EIO;
 	else
 		r = _check_and_convert_hdr(device, hdr, require_luks_device, ctx);
@@ -342,6 +344,7 @@ int LUKS_write_phdr(const char *device,
 		    struct luks_phdr *hdr,
 		    struct crypt_device *ctx)
 {
+	ssize_t hdr_size = sizeof(struct luks_phdr);
 	int devfd = 0;
 	unsigned int i;
 	struct luks_phdr convHdr;
@@ -356,7 +359,7 @@ int LUKS_write_phdr(const char *device,
 		return -EINVAL;
 	}
 
-	memcpy(&convHdr, hdr, sizeof(struct luks_phdr));
+	memcpy(&convHdr, hdr, hdr_size);
 	memset(&convHdr._padding, 0, sizeof(convHdr._padding));
 
 	/* Convert every uint16/32_t item to network byte order */
@@ -371,7 +374,7 @@ int LUKS_write_phdr(const char *device,
 		convHdr.keyblock[i].stripes            = htonl(hdr->keyblock[i].stripes);
 	}
 
-	r = write_blockwise(devfd, &convHdr, sizeof(struct luks_phdr)) < sizeof(struct luks_phdr) ? -EIO : 0;
+	r = write_blockwise(devfd, &convHdr, hdr_size) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(ctx, _("Error during update of LUKS header on device %s.\n"), device);
 	close(devfd);
@@ -414,9 +417,9 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	unsigned int i=0;
 	unsigned int blocksPerStripeSet = div_round_up(vk->keylength*stripes,SECTOR_SIZE);
 	int r;
-	char luksMagic[] = LUKS_MAGIC;
 	uuid_t partitionUuid;
 	int currentSector;
+	char luksMagic[] = LUKS_MAGIC;
 
 	if (alignPayload == 0)
 		alignPayload = DEFAULT_DISK_ALIGNMENT / SECTOR_SIZE;
@@ -778,7 +781,7 @@ static int wipe(const char *device, unsigned int from, unsigned int to)
 	}
 
 	for(i = 0; i < 39; ++i) {
-		if     (i >=  0 && i <  5) crypt_random_get(NULL, buffer, bufLen, CRYPT_RND_NORMAL);
+		if                (i <  5) crypt_random_get(NULL, buffer, bufLen, CRYPT_RND_NORMAL);
 		else if(i >=  5 && i < 32) wipeSpecial(buffer, bufLen, i - 5);
 		else if(i >= 32 && i < 38) crypt_random_get(NULL, buffer, bufLen, CRYPT_RND_NORMAL);
 		else if(i >= 38 && i < 39) memset(buffer, 0xFF, bufLen);

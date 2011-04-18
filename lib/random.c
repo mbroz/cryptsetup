@@ -41,7 +41,8 @@ static int random_fd = -1;
 #define RANDOM_DEVICE_TIMEOUT	5
 
 /* URANDOM_DEVICE access */
-static int _get_urandom(struct crypt_device *ctx, char *buf, size_t len)
+static int _get_urandom(struct crypt_device *ctx __attribute__((unused)),
+			char *buf, size_t len)
 {
 	int r;
 	size_t old_len = len;
@@ -201,7 +202,7 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 	return status;
 }
 
-void crypt_random_exit()
+void crypt_random_exit(void)
 {
 	random_initialised = 0;
 
@@ -216,7 +217,7 @@ void crypt_random_exit()
 	}
 }
 
-int crypt_random_default_key_rng()
+int crypt_random_default_key_rng(void)
 {
 	if (!strcmp(DEFAULT_RNG, RANDOM_DEVICE))
 		return CRYPT_RNG_RANDOM;

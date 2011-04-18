@@ -80,7 +80,7 @@ void crypt_set_debug_level(int level)
 	_debug_level = level;
 }
 
-int crypt_get_debug_level()
+int crypt_get_debug_level(void)
 {
 	return _debug_level;
 }
@@ -93,6 +93,7 @@ void crypt_log(struct crypt_device *cd, int level, const char *msg)
 		_default_log(level, msg, NULL);
 }
 
+__attribute__((format(printf, 5, 6)))
 void logger(struct crypt_device *cd, int level, const char *file,
 	    int line, const char *format, ...)
 {
@@ -159,7 +160,7 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 	if (key_file && strcmp(key_file, "-")) {
 		if(passLen < key_size) {
 			log_err(cd, _("Cannot not read %d bytes from key file %s.\n"),
-				key_size, key_file);
+				(int)key_size, key_file);
 			crypt_safe_free(key);
 			return NULL;
 		}
@@ -356,7 +357,6 @@ static int create_device_helper(struct crypt_device *cd,
 				uint64_t offset,
 				const char *uuid,
 				int read_only,
-				unsigned int flags,
 				int reload)
 {
 	crypt_status_info ci;
@@ -379,8 +379,8 @@ static int create_device_helper(struct crypt_device *cd,
 		return -EEXIST;
 	}
 
-	if (key_size < 0 || key_size > 1024) {
-		log_err(cd, _("Invalid key size %d.\n"), key_size);
+	if (key_size > 1024) {
+		log_err(cd, _("Invalid key size %d.\n"), (int)key_size);
 		return -EINVAL;
 	}
 
@@ -635,7 +635,7 @@ static int crypt_create_and_update_device(struct crypt_options *options, int upd
 			passphrase, passphrase_size,
 			options->key_size, options->size, options->skip,
 			options->offset, NULL, options->flags & CRYPT_FLAG_READONLY,
-			options->flags, update);
+			update);
 
 	crypt_safe_free(passphrase);
 	crypt_free(cd);
@@ -657,7 +657,7 @@ int crypt_resize_device(struct crypt_options *options)
 {
 	struct crypt_device *cd = NULL;
 	char *device = NULL, *cipher = NULL, *uuid = NULL, *key = NULL;
-	char *type = NULL;
+	const char *type = NULL;
 	uint64_t size, skip, offset;
 	int key_size, read_only, r;
 
@@ -915,8 +915,7 @@ int crypt_luksUUID(struct crypt_options *options)
 		return r;
 
 	uuid = (char *)crypt_get_uuid(cd);
-	log_std(cd, uuid ?: "");
-	log_std(cd, "\n");
+	log_std(cd, "%s\n", uuid ?: "");
 	crypt_free(cd);
 	return 0;
 }
@@ -1367,7 +1366,7 @@ int crypt_format(struct crypt_device *cd,
 
 int crypt_load(struct crypt_device *cd,
 	       const char *requested_type,
-	       void *params)
+	       void *params __attribute__((unused)))
 {
 	struct luks_phdr hdr;
 	int r;
@@ -1944,7 +1943,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 					 cd->volume_key->keylength, 0,
 					 cd->plain_hdr.skip, cd->plain_hdr.offset,
 					 cd->plain_uuid,
-					 flags & CRYPT_ACTIVATE_READONLY, 0, 0);
+					 flags & CRYPT_ACTIVATE_READONLY, 0);
 		keyslot = 0;
 	} else if (isLUKS(cd->type)) {
 		/* provided passphrase, do not retry */
@@ -2009,7 +2008,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 					 cd->volume_key->keylength, 0,
 					 cd->plain_hdr.skip, cd->plain_hdr.offset,
 					 cd->plain_uuid,
-					 flags & CRYPT_ACTIVATE_READONLY, 0, 0);
+					 flags & CRYPT_ACTIVATE_READONLY, 0);
 	} else if (isLUKS(cd->type)) {
 		r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
 			  &passphrase_size_read, keyfile, keyfile_size);
@@ -2075,7 +2074,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		return create_device_helper(cd, name, NULL,
 			cd->plain_cipher, cd->plain_cipher_mode, NULL, volume_key, volume_key_size,
 			cd->volume_key->keylength, 0, cd->plain_hdr.skip,
-			cd->plain_hdr.offset, cd->plain_uuid, flags & CRYPT_ACTIVATE_READONLY, 0, 0);
+			cd->plain_hdr.offset, cd->plain_uuid, flags & CRYPT_ACTIVATE_READONLY, 0);
 	}
 
 	if (!isLUKS(cd->type)) {
@@ -2163,7 +2162,8 @@ int crypt_volume_key_get(struct crypt_device *cd,
 {
 	struct volume_key *vk;
 	char *processed_key = NULL;
-	int r, key_len;
+	unsigned key_len;
+	int r;
 
 	key_len = crypt_get_volume_key_size(cd);
 	if (key_len > *volume_key_size) {
@@ -2454,7 +2454,7 @@ const char *crypt_get_type(struct crypt_device *cd)
 	return cd->type;
 }
 
-int crypt_get_active_device(struct crypt_device *cd,
+int crypt_get_active_device(struct crypt_device *cd __attribute__((unused)),
 			    const char *name,
 			    struct crypt_active_device *cad)
 {

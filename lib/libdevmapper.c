@@ -64,7 +64,7 @@ static int _dm_task_set_cookie(struct dm_task *dmt, uint32_t *cookie, uint16_t f
 static int _dm_udev_wait(uint32_t cookie) { return 0; };
 #endif
 
-static int _dm_use_udev()
+static int _dm_use_udev(void)
 {
 #ifdef USE_UDEV /* cannot be enabled if devmapper is too old */
 	return dm_udev_get_sync_support();
@@ -73,7 +73,10 @@ static int _dm_use_udev()
 #endif
 }
 
-static void set_dm_error(int level, const char *file, int line,
+__attribute__((format(printf, 4, 5)))
+static void set_dm_error(int level,
+			 const char *file __attribute__((unused)),
+			 int line __attribute__((unused)),
 			 const char *f, ...)
 {
 	char *msg = NULL;
@@ -306,7 +309,7 @@ static int _dev_read_ahead(const char *dev, uint32_t *read_ahead)
 
 static void hex_key(char *hexkey, size_t key_size, const char *key)
 {
-	int i;
+	unsigned i;
 
 	for(i = 0; i < key_size; i++)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
@@ -448,7 +451,7 @@ static void dm_prepare_uuid(const char *name, const char *type, const char *uuid
 {
 	char *ptr, uuid2[UUID_LEN] = {0};
 	uuid_t uu;
-	int i = 0;
+	unsigned i = 0;
 
 	/* Remove '-' chars */
 	if (uuid && !uuid_parse(uuid, uu)) {

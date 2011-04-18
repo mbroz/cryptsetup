@@ -40,6 +40,7 @@
 
 static char *error=NULL;
 
+__attribute__((format(printf, 1, 0)))
 void set_error_va(const char *fmt, va_list va)
 {
 	int r;
@@ -62,6 +63,7 @@ void set_error_va(const char *fmt, va_list va)
 		error[r - 1] = '\0';
 }
 
+__attribute__((format(printf, 1, 2)))
 void set_error(const char *fmt, ...)
 {
 	va_list va;

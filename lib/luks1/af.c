@@ -28,6 +28,7 @@
 #include <errno.h>
 #include "crypto_backend.h"
 #include "internal.h"
+#include "af.h"
 
 static void XORblock(const char *src1, const char *src2, char *dst, size_t n)
 {

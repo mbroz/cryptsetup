@@ -184,7 +184,7 @@ int crypt_hash_write(struct crypt_hash *ctx, const char *buffer, size_t length)
 	ssize_t r;
 
 	r = send(ctx->opfd, buffer, length, MSG_MORE);
-	if (r < 0 || r < length)
+	if (r < 0 || (size_t)r < length)
 		return -EIO;
 
 	return 0;
@@ -194,7 +194,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 {
 	ssize_t r;
 
-	if (length > ctx->hash_len)
+	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
 	r = read(ctx->opfd, buffer, length);
@@ -269,7 +269,7 @@ int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)
 	ssize_t r;
 
 	r = send(ctx->opfd, buffer, length, MSG_MORE);
-	if (r < 0 || r < length)
+	if (r < 0 || (size_t)r < length)
 		return -EIO;
 
 	return 0;
@@ -279,7 +279,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 {
 	ssize_t r;
 
-	if (length > ctx->hash_len)
+	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
 	r = read(ctx->opfd, buffer, length);

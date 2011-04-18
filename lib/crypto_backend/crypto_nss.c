@@ -142,7 +142,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	unsigned char tmp[64];
 	unsigned int tmp_len;
 
-	if (length > ctx->hash->length)
+	if (length > (size_t)ctx->hash->length)
 		return -EINVAL;
 
 	if (PK11_DigestFinal(ctx->md, tmp, &tmp_len, length) != SECSuccess)
@@ -241,7 +241,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	unsigned char tmp[64];
 	unsigned int tmp_len;
 
-	if (length > ctx->hash->length)
+	if (length > (size_t)ctx->hash->length)
 		return -EINVAL;
 
 	if (PK11_DigestFinal(ctx->md, tmp, &tmp_len, length) != SECSuccess)

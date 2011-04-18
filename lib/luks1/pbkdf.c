@@ -29,6 +29,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include "crypto_backend.h"
+#include "pbkdf.h"
 
 static volatile uint64_t __PBKDF2_global_j = 0;
 static volatile uint64_t __PBKDF2_performance = 0;
@@ -223,7 +224,7 @@ int PBKDF2_HMAC_ready(const char *hash)
 	return 1;
 }
 
-static void sigvtalarm(int foo)
+static void sigvtalarm(int foo __attribute__((unused)))
 {
 	__PBKDF2_performance = __PBKDF2_global_j;
 }

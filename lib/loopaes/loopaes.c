@@ -27,7 +27,7 @@
 
 static const char *get_hash(unsigned int key_size)
 {
-	char *hash;
+	const char *hash;
 
 	switch (key_size) {
 		case 16: hash = "sha256"; break;
@@ -76,7 +76,8 @@ static int hash_keys(struct crypt_device *cd,
 {
 	const char *hash_name;
 	char tweak, *key_ptr;
-	int r, i, key_len_input;
+	unsigned i, key_len_input;
+	int r;
 
 	hash_name = hash_override ?: get_hash(key_len_output);
 	tweak = get_tweak(keys_count);
@@ -130,7 +131,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			  size_t buffer_len)
 {
 	const char *keys[LOOPAES_KEYS_MAX];
-	int i, key_index, key_len, offset;
+	unsigned i, key_index, key_len, offset;
 
 	log_dbg("Parsing loop-AES keyfile of size %d.", buffer_len);
 
