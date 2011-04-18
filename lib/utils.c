@@ -351,35 +351,25 @@ int get_device_infos(const char *device,
 	if (fd == -1)
 		return -EINVAL;
 
-#ifdef BLKROGET
 	/* If the device can be opened read-write, i.e. readonly is still 0, then
 	 * check whether BKROGET says that it is read-only. E.g. read-only loop
 	 * devices may be openend read-write but are read-only according to BLKROGET
 	 */
 	if (*readonly == 0 && (r = ioctl(fd, BLKROGET, readonly)) < 0)
 		goto out;
-#else
-#error BLKROGET not available
-#endif
 
-#ifdef BLKGETSIZE64
 	if (ioctl(fd, BLKGETSIZE64, size) >= 0) {
 		*size >>= SECTOR_SHIFT;
 		r = 0;
 		goto out;
 	}
-#endif
 
-#ifdef BLKGETSIZE
 	if (ioctl(fd, BLKGETSIZE, &size_small) >= 0) {
 		*size = (uint64_t)size_small;
 		r = 0;
 		goto out;
 	}
 
-#else
-#	error Need at least the BLKGETSIZE ioctl!
-#endif
 	r = -EINVAL;
 out:
 	close(fd);
