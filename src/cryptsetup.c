@@ -36,13 +36,13 @@
 
 static int opt_verbose = 0;
 static int opt_debug = 0;
-static char *opt_cipher = NULL;
-static char *opt_hash = NULL;
+static const char *opt_cipher = NULL;
+static const char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
-static char *opt_key_file = NULL;
-static char *opt_master_key_file = NULL;
-static char *opt_header_backup_file = NULL;
-static char *opt_uuid = NULL;
+static const char *opt_key_file = NULL;
+static const char *opt_master_key_file = NULL;
+static const char *opt_header_backup_file = NULL;
+static const char *opt_uuid = NULL;
 static int opt_key_size = 0;
 static long opt_keyfile_size = 0;
 static long opt_new_keyfile_size = 0;
@@ -1041,7 +1041,7 @@ static void help(poptContext popt_context,
 		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
 }
 
-static void _dbg_version_and_cmd(int argc, char **argv)
+static void _dbg_version_and_cmd(int argc, const char **argv)
 {
 	int i;
 
@@ -1091,7 +1091,7 @@ static int run_action(struct action_type *action)
 	return r;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	static char *popt_tmp;
 	static struct poptOption popt_help_options[] = {
@@ -1132,7 +1132,7 @@ int main(int argc, char **argv)
 	};
 	poptContext popt_context;
 	struct action_type *action;
-	char *aname;
+	const char *aname;
 	int r;
 	const char *null_action_argv[] = {NULL};
 
@@ -1142,8 +1142,7 @@ int main(int argc, char **argv)
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE);
 
-	popt_context = poptGetContext(PACKAGE, argc, (const char **)argv,
-	                              popt_options, 0);
+	popt_context = poptGetContext(PACKAGE, argc, argv, popt_options, 0);
 	poptSetOtherOptionHelp(popt_context,
 	                       N_("[OPTION...] <action> <action-specific>]"));
 
@@ -1180,7 +1179,7 @@ int main(int argc, char **argv)
 		exit(EXIT_SUCCESS);
 	}
 
-	if (!(aname = (char *)poptGetArg(popt_context)))
+	if (!(aname = poptGetArg(popt_context)))
 		usage(popt_context, EXIT_FAILURE, _("Argument <action> missing."),
 		      poptGetInvocationName(popt_context));
 	for(action = action_types; action->type; action++)
@@ -1237,7 +1236,7 @@ int main(int argc, char **argv)
 		if (opt_key_file)
 			log_err(_("Option --key-file takes precedence over specified key file argument.\n"));
 		else
-			opt_key_file = (char*)action_argv[1];
+			opt_key_file = action_argv[1];
 	}
 
 	if (opt_keyfile_size < 0 || opt_new_keyfile_size < 0 || opt_key_size < 0) {

@@ -907,14 +907,14 @@ int crypt_luksAddKey(struct crypt_options *options)
 int crypt_luksUUID(struct crypt_options *options)
 {
 	struct crypt_device *cd = NULL;
-	char *uuid;
+	const char *uuid;
 	int r;
 
 	r = _crypt_init(&cd, CRYPT_LUKS1, options, 1, 0);
 	if (r)
 		return r;
 
-	uuid = (char *)crypt_get_uuid(cd);
+	uuid = crypt_get_uuid(cd);
 	log_std(cd, "%s\n", uuid ?: "");
 	crypt_free(cd);
 	return 0;

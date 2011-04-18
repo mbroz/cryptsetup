@@ -159,7 +159,7 @@ static int _dm_check_versions(void)
 					     (unsigned)target->version[1],
 					     (unsigned)target->version[2]);
 		}
-		target = (void *) target + target->next;
+		target = (struct dm_versions *)((char *) target + target->next);
 	} while (last_target != target);
 
 	dm_task_destroy(dmt);
@@ -645,7 +645,8 @@ int dm_query_device(const char *name,
 	struct dm_task *dmt;
 	struct dm_info dmi;
 	uint64_t start, length, val64;
-	char *target_type, *params, *rcipher, *key_, *rdevice, *endp, buffer[3], *tmp_uuid;
+	char *target_type, *params, *rcipher, *key_, *rdevice, *endp, buffer[3];
+	const char *tmp_uuid;
 	void *next = NULL;
 	int i, r = -EINVAL;
 
@@ -738,7 +739,7 @@ int dm_query_device(const char *name,
 	if (suspended)
 		*suspended = dmi.suspended;
 
-	if (uuid && (tmp_uuid = (char*)dm_task_get_uuid(dmt)) &&
+	if (uuid && (tmp_uuid = dm_task_get_uuid(dmt)) &&
 	    !strncmp(tmp_uuid, DM_UUID_PREFIX, DM_UUID_PREFIX_LEN))
 		*uuid = strdup(tmp_uuid + DM_UUID_PREFIX_LEN);
 

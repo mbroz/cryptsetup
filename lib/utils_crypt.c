@@ -92,7 +92,8 @@ void crypt_safe_free(void *data)
 	if (!data)
 		return;
 
-	alloc = data - offsetof(struct safe_allocation, data);
+	alloc = (struct safe_allocation *)
+		((char *)data - offsetof(struct safe_allocation, data));
 
 	memset(data, 0, alloc->size);
 
@@ -109,7 +110,8 @@ void *crypt_safe_realloc(void *data, size_t size)
 
 	if (new_data && data) {
 
-		alloc = data - offsetof(struct safe_allocation, data);
+		alloc = (struct safe_allocation *)
+			((char *)data - offsetof(struct safe_allocation, data));
 
 		if (size > alloc->size)
 			size = alloc->size;
@@ -273,11 +275,6 @@ int crypt_get_key(const char *prompt,
 	if(read_stdin && isatty(STDIN_FILENO))
 		return crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
 
-	if (keyfile_size_max < 0) {
-		log_err(cd, _("Negative keyfile size not permitted.\n"));
-		return -EINVAL;
-	}
-
 	if (read_stdin)
 		log_dbg("STDIN descriptor passphrase entry requested.");
 	else
@@ -306,7 +303,7 @@ int crypt_get_key(const char *prompt,
 		if(S_ISREG(st.st_mode)) {
 			regular_file = 1;
 			/* known keyfile size, alloc it in one step */
-			if (st.st_size >= keyfile_size_max)
+			if ((size_t)st.st_size >= keyfile_size_max)
 				buflen = keyfile_size_max;
 			else
 				buflen = st.st_size;
