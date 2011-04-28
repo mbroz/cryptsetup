@@ -119,6 +119,21 @@ AC_DEFUN([CONFIGURE_KERNEL], [
 
 ])
 
+AC_DEFUN([CONFIGURE_NETTLE], [
+	AC_CHECK_HEADERS(nettle/sha.h,,
+		[AC_MSG_ERROR('You need Nettle cryptographic library.')])
+
+	saved_LIBS=$LIBS
+	AC_CHECK_LIB(nettle, nettle_sha512_init,,
+		[AC_MSG_ERROR('You need Nettle library version 2.1 or more recent.')])
+	CRYPTO_LIBS=$LIBS
+	LIBS=$saved_LIBS
+
+	AC_MSG_WARN([Nettle backend does NOT provide backward compatibility (missing ripemd160 hash).])
+
+	CRYPTO_STATIC_LIBS=$CRYPTO_LIBS
+])
+
 dnl ==========================================================================
 saved_LIBS=$LIBS
 
@@ -165,7 +180,7 @@ LIBS=$saved_LIBS
 
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
-	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel) [gcrypt]]),
+	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle) [gcrypt]]),
 	[], with_crypto_backend=gcrypt
 )
 case $with_crypto_backend in
@@ -173,12 +188,14 @@ case $with_crypto_backend in
 	openssl) CONFIGURE_OPENSSL([]) ;;
 	nss)     CONFIGURE_NSS([]) ;;
 	kernel)  CONFIGURE_KERNEL([]) ;;
+	nettle)  CONFIGURE_NETTLE([]) ;;
 	*) AC_MSG_ERROR([Unknown crypto backend.]) ;;
 esac
 AM_CONDITIONAL(CRYPTO_BACKEND_GCRYPT,  test $with_crypto_backend = gcrypt)
 AM_CONDITIONAL(CRYPTO_BACKEND_OPENSSL, test $with_crypto_backend = openssl)
 AM_CONDITIONAL(CRYPTO_BACKEND_NSS,     test $with_crypto_backend = nss)
 AM_CONDITIONAL(CRYPTO_BACKEND_KERNEL,  test $with_crypto_backend = kernel)
+AM_CONDITIONAL(CRYPTO_BACKEND_NETTLE,  test $with_crypto_backend = nettle)
 
 dnl Magic for cryptsetup.static build.
 if test x$enable_static_cryptsetup = xyes; then

@@ -18,5 +18,8 @@ endif
 if CRYPTO_BACKEND_KERNEL
 libcrypto_backend_la_SOURCES += crypto_kernel.c
 endif
+if CRYPTO_BACKEND_NETTLE
+libcrypto_backend_la_SOURCES += crypto_nettle.c
+endif
 
 INCLUDES = -D_GNU_SOURCE -I$(top_srcdir)/lib
