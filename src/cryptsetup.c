@@ -279,6 +279,14 @@ static int action_create(int arg __attribute__((unused)))
 			CRYPT_ANY_SLOT, password, passwordLen,
 			opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
 	}
+
+	/* FIXME: workaround, new api missing format parameter for size.
+	 * Properly fix it after bumping library version,
+	 * add start_offset and size into "PLAIN" format specifiers.
+	 */
+	if (r >= 0 && opt_size)
+		r = crypt_resize(cd, action_argv[0], opt_size);
+
 out:
 	crypt_free(cd);
 	crypt_safe_free(password);

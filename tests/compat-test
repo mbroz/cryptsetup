@@ -259,6 +259,9 @@ echo "key0" | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 echo "key0" | $CRYPTSETUP -q create $DEV_NAME --hash sha1 $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
+echo "key0" | $CRYPTSETUP -q create $DEV_NAME --hash sha1 --size 100 $LOOPDEV || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
 # verify is ignored on non-tty input
 echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --verify-passphrase || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail

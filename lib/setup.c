@@ -399,6 +399,10 @@ static int create_device_helper(struct crypt_device *cd,
 
 	r = dm_create_device(name, cd->device, dm_cipher ?: cipher, cd->type, uuid, size, skip, offset,
 			     key_size, processed_key, read_only, reload);
+
+	if (isPLAIN(cd->type) && !uuid)
+		(void)dm_query_device(name, NULL, NULL, NULL, NULL, NULL, NULL,
+				      NULL, NULL, NULL, &cd->plain_uuid);
 out:
 	free(dm_cipher);
 	crypt_safe_free(processed_key);
@@ -1406,6 +1410,8 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	if (!cd->type || !crypt_get_uuid(cd))
 		return -EINVAL;
 
+	log_dbg("Resizing device %s to %" PRIu64 " sectors.", name, new_size);
+
 	r = dm_query_device(name, &device, &size, &skip, &offset,
 			    &cipher, &key_size, &key, &read_only, NULL, &uuid);
 	if (r < 0) {
@@ -1428,8 +1434,6 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = 0;
 		goto out;
 	}
-
-	log_dbg("Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 
 	r = dm_create_device(name, device, cipher, cd->type,
 			     crypt_get_uuid(cd), new_size, skip, offset,
