@@ -27,6 +27,8 @@
 # define textdomain(Domain) /* empty */
 # define _(Text) (Text)
 # define N_(Text) (Text)
+# define ngettext(Singular, Plural, Count) \
+    ( (Count) == 1 ? (Singular) : (Plural) )
 #endif
 
 #endif /* CRYPTSETUP_H */

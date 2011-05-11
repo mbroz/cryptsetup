@@ -159,7 +159,8 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 	/* key is coming from binary file */
 	if (key_file && strcmp(key_file, "-")) {
 		if(passLen < key_size) {
-			log_err(cd, _("Cannot not read %d bytes from key file %s.\n"),
+			log_err(cd, ngettext("Cannot read %d byte from key file %s.\n",
+				"Cannot read %d bytes from key file %s.\n", key_size),
 				(int)key_size, key_file);
 			crypt_safe_free(key);
 			return NULL;
