@@ -171,7 +171,7 @@ opens the loop-AES <device> and sets up a mapping <name>.
 
 N.B. If key file is in GPG encrypted format, you have to use
 \-\-key-file=- and decrypt it before use.
-gpg --decrypt <keyfile> | cryptsetup loopaesOpen \-\-key-file=- <device> <name>
+gpg \-\-decrypt <keyfile> | cryptsetup loopaesOpen \-\-key-file=- <device> <name>
 
 Use \fB\-\-key-file\fR to specify proper key length, default compiled-in
 parameters are visible in \fB\-\-help\fR output.
@@ -441,7 +441,7 @@ uses /dev/urandom) is used for salt, AF splitter and for wiping removed
 keyslot.
 
 Second type is used for volume (master) key. You can switch between
-using /dev/random and /dev/urandom  here, see \fP--use-random\fR and \fP--use-urandom\fR
+using /dev/random and /dev/urandom  here, see \fP\-\-use-random\fR and \fP\-\-use-urandom\fR
 options. Using /dev/random on system without enough entropy sources
 can cause \fPluksFormat\fR to block until the requested amount of random data is gathered.
 See \fPurandom(4)\fR for more information.
