@@ -259,7 +259,7 @@ static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_le
 	return result;
 }
 
-static char *lookup_dev(const char *dev_id)
+static char *lookup_dev_old(const char *dev_id)
 {
 	uint32_t major, minor;
 	dev_t dev;
@@ -288,6 +288,66 @@ static char *lookup_dev(const char *dev_id)
 
 	/* If not found, return NULL */
 	return result;
+}
+
+/* Return path to DM device */
+static char *dm_device_path(const char *dev_id)
+{
+	int major, minor;
+	struct dm_task *dmt;
+	const char *name;
+	char path[PATH_MAX];
+
+	if (sscanf(dev_id, "%d:%d", &major, &minor) != 2)
+		return NULL;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
+		return NULL;
+	if (!dm_task_set_minor(dmt, minor) ||
+	    !dm_task_set_major(dmt, major) ||
+	    !dm_task_run(dmt) ||
+	    !(name = dm_task_get_name(dmt))) {
+		dm_task_destroy(dmt);
+		return NULL;
+	}
+
+	if (snprintf(path, sizeof(path), "/dev/mapper/%s", name) < 0)
+		path[0] = '\0';
+
+	dm_task_destroy(dmt);
+
+	return strdup(path);
+}
+
+static char *lookup_dev(const char *dev_id)
+{
+	char link[PATH_MAX], path[PATH_MAX], *devname;
+	struct stat st;
+	ssize_t len;
+
+	if (snprintf(path, sizeof(path), "/sys/dev/block/%s", dev_id) < 0)
+		return NULL;
+
+	len = readlink(path, link, sizeof(link));
+	if (len < 0) {
+		if (stat("/sys/dev/block", &st) < 0)
+			return lookup_dev_old(dev_id);
+		return NULL;
+	}
+
+	link[len] = '\0';
+	devname = strrchr(link, '/');
+	if (!devname)
+		return NULL;
+	devname++;
+
+	if (!strncmp(devname, "dm-", 3))
+		return dm_device_path(dev_id);
+
+	if (snprintf(path, sizeof(path), "/dev/%s", devname) < 0)
+		return NULL;
+
+	return strdup(path);
 }
 
 static int _dev_read_ahead(const char *dev, uint32_t *read_ahead)
