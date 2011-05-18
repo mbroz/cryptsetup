@@ -263,8 +263,9 @@ static int action_create(int arg __attribute__((unused)))
 		goto out;
 
 	if (opt_key_file)
+		/* With hashing, read the whole keyfile */
 		r = crypt_activate_by_keyfile(cd, action_argv[0],
-			CRYPT_ANY_SLOT, opt_key_file, key_size,
+			CRYPT_ANY_SLOT, opt_key_file, params.hash ? 0 : key_size,
 			opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
 	else {
 		r = crypt_get_key(_("Enter passphrase: "),

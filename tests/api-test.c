@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <libdevmapper.h>
 
 #include "libcryptsetup.h"
 #include "utils_loop.h"
@@ -66,18 +67,59 @@ static char *DEVICE_1 = NULL;
 static char *DEVICE_2 = NULL;
 
 // Helpers
-static int _prepare_keyfile(const char *name, const char *passphrase)
+
+// Get key from kernel dm mapping table using dm-ioctl
+static int _get_key_dm(const char *name, char *buffer, unsigned int buffer_size)
+{
+	struct dm_task *dmt;
+	struct dm_info dmi;
+	uint64_t start, length;
+	char *target_type, *rcipher, *key, *params;
+	void *next = NULL;
+	int r = -EINVAL;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
+		goto out;
+	if (!dm_task_set_name(dmt, name))
+		goto out;
+	if (!dm_task_run(dmt))
+		goto out;
+	if (!dm_task_get_info(dmt, &dmi))
+		goto out;
+	if (!dmi.exists)
+		goto out;
+
+	next = dm_get_next_target(dmt, next, &start, &length, &target_type, &params);
+	if (!target_type || strcmp(target_type, "crypt") != 0)
+		goto out;
+
+	rcipher = strsep(&params, " ");
+	key = strsep(&params, " ");
+
+	if (buffer_size <= strlen(key))
+		goto out;
+
+	strncpy(buffer, key, buffer_size);
+	r = 0;
+out:
+	if (dmt)
+		dm_task_destroy(dmt);
+
+	return r;
+}
+
+static int _prepare_keyfile(const char *name, const char *passphrase, int size)
 {
 	int fd, r;
 
 	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR);
 	if (fd != -1) {
-		r = write(fd, passphrase, strlen(passphrase));
+		r = write(fd, passphrase, size);
 		close(fd);
 	} else
 		r = 0;
 
-	return r == strlen(passphrase) ? 0 : 1;
+	return r == size ? 0 : 1;
 }
 
 static void _remove_keyfiles(void)
@@ -299,7 +341,7 @@ static void LuksOpen(void)
 		.icb = &cmd_icb,
 	};
 
-	OK_(_prepare_keyfile(KEYFILE1, KEY1));
+	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	co.key_file = KEYFILE1;
 
 	co.device = DEVICE_EMPTY;
@@ -364,7 +406,7 @@ static void LuksFormat(void)
 		.icb = &cmd_icb,
 	};
 
-	OK_(_prepare_keyfile(KEYFILE1, KEY1));
+	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 
 	co.new_key_file = KEYFILE1;
 	co.device = DEVICE_ERROR;
@@ -396,8 +438,8 @@ static void LuksKeyGame(void)
 		.icb = &cmd_icb,
 	};
 
-	OK_(_prepare_keyfile(KEYFILE1, KEY1));
-	OK_(_prepare_keyfile(KEYFILE2, KEY2));
+	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
+	OK_(_prepare_keyfile(KEYFILE2, KEY2, strlen(KEY2)));
 
 	co.new_key_file = KEYFILE1;
 	co.device = DEVICE_2;
@@ -486,7 +528,7 @@ void DeviceResizeGame(void)
 
 	orig_size = _get_device_size(DEVICE_2);
 
-	OK_(_prepare_keyfile(KEYFILE2, KEY2));
+	OK_(_prepare_keyfile(KEYFILE2, KEY2, strlen(KEY2)));
 
 	co.key_file = KEYFILE2;
 	co.size = 1000;
@@ -619,7 +661,7 @@ static void AddDevicePlain(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	// now with keyfile
-	OK_(_prepare_keyfile(KEYFILE1, KEY1));
+	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	FAIL_(crypt_activate_by_keyfile(cd, NULL, CRYPT_ANY_SLOT, KEYFILE1, 0, 0), "cannot verify key with plain");
 	EQ_(0, crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
@@ -744,7 +786,7 @@ static void SuspendDevice(void)
 	OK_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)));
 	FAIL_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)), "not suspended");
 
-	OK_(_prepare_keyfile(KEYFILE1, KEY1));
+	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	OK_(crypt_suspend(cd, CDEVICE_1));
 	FAIL_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1 "blah", 0), "wrong keyfile");
 	OK_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0));
@@ -789,8 +831,8 @@ static void AddDeviceLuks(void)
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 
 	EQ_(1, crypt_keyslot_add_by_volume_key(cd, 1, key, key_size, KEY1, strlen(KEY1)));
-	OK_(_prepare_keyfile(KEYFILE1, KEY1));
-	OK_(_prepare_keyfile(KEYFILE2, KEY2));
+	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
+	OK_(_prepare_keyfile(KEYFILE2, KEY2, strlen(KEY2)));
 	EQ_(2, crypt_keyslot_add_by_keyfile(cd, 2, KEYFILE1, 0, KEYFILE2, 0));
 	FAIL_(crypt_activate_by_keyfile(cd, CDEVICE_2, CRYPT_ANY_SLOT, KEYFILE2, strlen(KEY2)-1, 0), "key mismatch");
 	EQ_(2, crypt_activate_by_keyfile(cd, NULL, CRYPT_ANY_SLOT, KEYFILE2, 0, 0));
@@ -899,6 +941,110 @@ static void UseTempVolumes(void)
 	crypt_free(cd);
 }
 
+static void HashDevicePlain(void)
+{
+	struct crypt_device *cd;
+	struct crypt_params_plain params = {
+		.hash = NULL,
+		.skip = 0,
+		.offset = 0,
+	};
+
+	size_t key_size;
+	char *mk_hex, *keystr, key[256];
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, &params));
+
+	// hash PLAIN, short key
+	OK_(_prepare_keyfile(KEYFILE1, "tooshort", 8));
+	FAIL_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 16, 0), "not enough data in keyfile");
+	_remove_keyfiles();
+
+	// hash PLAIN, exact key
+	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
+	mk_hex = "caffeecaffeecaffeecaffeecaffee88";
+	key_size = 16;
+	crypt_decode_key(key, mk_hex, key_size);
+	OK_(_prepare_keyfile(KEYFILE1, key, key_size));
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
+	OK_(_get_key_dm(CDEVICE_1, key, sizeof(key)));
+	OK_(strcmp(key, mk_hex));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// Limit plain key
+	mk_hex = "caffeecaffeecaffeecaffeeca000000";
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size - 3, 0));
+	OK_(_get_key_dm(CDEVICE_1, key, sizeof(key)));
+	OK_(strcmp(key, mk_hex));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	_remove_keyfiles();
+
+	// hash PLAIN, long key
+	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
+	mk_hex = "caffeecaffeecaffeecaffeecaffee88babebabe";
+	key_size = 16;
+	crypt_decode_key(key, mk_hex, key_size);
+	OK_(_prepare_keyfile(KEYFILE1, key, strlen(mk_hex) / 2));
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
+	OK_(_get_key_dm(CDEVICE_1, key, sizeof(key)));
+	FAIL_(strcmp(key, mk_hex), "only key length used");
+	OK_(strncmp(key, mk_hex, key_size));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// Now without explicit limit
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
+	OK_(_get_key_dm(CDEVICE_1, key, sizeof(key)));
+	FAIL_(strcmp(key, mk_hex), "only key length used");
+	OK_(strncmp(key, mk_hex, key_size));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	_remove_keyfiles();
+
+	// hash sha256
+	params.hash = "sha256";
+	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, &params));
+
+	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
+	mk_hex = "c62e4615bd39e222572f3a1bf7c2132e";
+	keystr = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+	key_size = strlen(keystr); // 32
+	OK_(_prepare_keyfile(KEYFILE1, keystr, strlen(keystr)));
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
+	OK_(_get_key_dm(CDEVICE_1, key, sizeof(key)));
+	OK_(strcmp(key, mk_hex));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// Read full keyfile
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
+	OK_(_get_key_dm(CDEVICE_1, key, sizeof(key)));
+	OK_(strcmp(key, mk_hex));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	_remove_keyfiles();
+
+	// Limit keyfile read
+	keystr = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAAAAAAAA";
+	OK_(_prepare_keyfile(KEYFILE1, keystr, strlen(keystr)));
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
+	OK_(_get_key_dm(CDEVICE_1, key, sizeof(key)));
+	OK_(strcmp(key, mk_hex));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// Full keyfile
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
+	OK_(_get_key_dm(CDEVICE_1, key, sizeof(key)));
+	OK_(strcmp(key, "0e49cb34a1dee1df33f6505e4de44a66"));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	_remove_keyfiles();
+
+	// FIXME: add keyfile="-" tests somehow
+
+	crypt_free(cd);
+}
+
 // Check that gcrypt is properly initialised in format
 static void NonFIPSAlg(void)
 {
@@ -962,6 +1108,7 @@ int main (int argc, char *argv[])
 	RUN_(DeviceResizeGame, "regular crypto, resize calls");
 
 	RUN_(AddDevicePlain, "plain device API creation exercise");
+	RUN_(HashDevicePlain, "plain device API hash test");
 	RUN_(AddDeviceLuks, "Format and use LUKS device");
 	RUN_(UseLuksDevice, "Use pre-formated LUKS device");
 	RUN_(SuspendDevice, "Suspend/Resume test");

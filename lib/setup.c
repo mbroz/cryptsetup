@@ -2003,14 +2003,9 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (isPLAIN(cd->type)) {
-		if (cd->plain_hdr.hash)
-			r = crypt_get_key(_("Enter passphrase: "),
-					  &passphrase_read, &passphrase_size_read,
-					  0, keyfile, cd->timeout, 0, cd);
-		else
-			r = key_from_file(cd, _("Enter passphrase: "),
-					  &passphrase_read, &passphrase_size_read,
-					  keyfile, keyfile_size);
+		r = key_from_file(cd, _("Enter passphrase: "),
+				  &passphrase_read, &passphrase_size_read,
+				  keyfile, keyfile_size);
 		if (r < 0)
 			goto out;
 		r = create_device_helper(cd, name, cd->plain_hdr.hash,
