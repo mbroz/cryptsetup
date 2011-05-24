@@ -79,6 +79,9 @@ static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_le
 	return result;
 }
 
+/*
+ * Non-udev systemd need to scan for device here.
+ */
 static char *lookup_dev_old(const char *dev_id)
 {
 	int major, minor;
