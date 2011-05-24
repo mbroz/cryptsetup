@@ -21,12 +21,12 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "internal.h"
-
-#define DEVICE_DIR	"/dev"
+#include "utils_dm.h"
 
 static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_level)
 {
@@ -66,7 +66,7 @@ static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_le
 				break;
 		} else if (S_ISBLK(st.st_mode)) {
 			/* workaround: ignore dm-X devices, these are internal kernel names */
-			if (dir_level == 0 && !strncmp(entry->d_name, "dm-", 3))
+			if (dir_level == 0 && dm_is_dm_kernel_name(entry->d_name))
 				continue;
 			if (st.st_rdev == dev) {
 				result = strdup(path);
@@ -82,17 +82,13 @@ static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_le
 /*
  * Non-udev systemd need to scan for device here.
  */
-static char *lookup_dev_old(const char *dev_id)
+static char *lookup_dev_old(int major, int minor)
 {
-	int major, minor;
 	dev_t dev;
 	char *result = NULL, buf[PATH_MAX + 1];
 
-	if (sscanf(dev_id, "%d:%d", &major, &minor) != 2)
-		return NULL;
-
 	dev = makedev(major, minor);
-	strncpy(buf, DEVICE_DIR, PATH_MAX);
+	strncpy(buf, "/dev", PATH_MAX);
 	buf[PATH_MAX] = '\0';
 
 	/* First try low level device */
@@ -100,32 +96,37 @@ static char *lookup_dev_old(const char *dev_id)
 		return result;
 
 	/* If it is dm, try DM dir  */
-	if (dm_is_dm_device(major)) {
+	if (dm_is_dm_device(major, minor)) {
 		strncpy(buf, dm_get_dir(), PATH_MAX);
 		if ((result = __lookup_dev(buf, dev, 0, 0)))
 			return result;
 	}
 
-	strncpy(buf, DEVICE_DIR, PATH_MAX);
-	result = __lookup_dev(buf, dev, 0, 4);
-
-	/* If not found, return NULL */
-	return result;
+	strncpy(buf, "/dev", PATH_MAX);
+	return  __lookup_dev(buf, dev, 0, 4);
 }
 
+/*
+ * Returns string pointing to device in /dev according to "major:minor" dev_id
+ */
 char *crypt_lookup_dev(const char *dev_id)
 {
-	char link[PATH_MAX], path[PATH_MAX], *devname;
+	int major, minor;
+	char link[PATH_MAX], path[PATH_MAX], *devname, *devpath = NULL;
 	struct stat st;
 	ssize_t len;
+
+	if (sscanf(dev_id, "%d:%d", &major, &minor) != 2)
+		return NULL;
 
 	if (snprintf(path, sizeof(path), "/sys/dev/block/%s", dev_id) < 0)
 		return NULL;
 
 	len = readlink(path, link, sizeof(link));
 	if (len < 0) {
+		/* Without /sys use old scan */
 		if (stat("/sys/dev/block", &st) < 0)
-			return lookup_dev_old(dev_id);
+			return lookup_dev_old(major, minor);
 		return NULL;
 	}
 
@@ -135,11 +136,21 @@ char *crypt_lookup_dev(const char *dev_id)
 		return NULL;
 	devname++;
 
-	if (!strncmp(devname, "dm-", 3))
-		return dm_device_path(dev_id);
+	if (dm_is_dm_kernel_name(devname))
+		devpath = dm_device_path(major, minor);
+	else if (snprintf(path, sizeof(path), "/dev/%s", devname) > 0)
+		devpath = strdup(path);
 
-	if (snprintf(path, sizeof(path), "/dev/%s", devname) < 0)
-		return NULL;
+	/*
+	 * Check that path is correct.
+	 */
+	if (devpath && ((stat(devpath, &st) < 0) ||
+	    !S_ISBLK(st.st_mode) ||
+	    (st.st_rdev != makedev(major, minor)))) {
+		free(devpath);
+		/* Should never happen unless user mangles with dev nodes. */
+		return lookup_dev_old(major, minor);
+	}
 
-	return strdup(path);
+	return devpath;
 }

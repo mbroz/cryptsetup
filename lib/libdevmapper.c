@@ -206,15 +206,11 @@ void dm_exit(void)
 }
 
 /* Return path to DM device */
-char *dm_device_path(const char *dev_id)
+char *dm_device_path(int major, int minor)
 {
-	int major, minor;
 	struct dm_task *dmt;
 	const char *name;
 	char path[PATH_MAX];
-
-	if (sscanf(dev_id, "%d:%d", &major, &minor) != 2)
-		return NULL;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
 		return NULL;
@@ -759,7 +755,12 @@ const char *dm_get_dir(void)
 	return dm_dir();
 }
 
-int dm_is_dm_device(int major)
+int dm_is_dm_device(int major, int minor)
 {
 	return dm_is_dm_major((uint32_t)major);
+}
+
+int dm_is_dm_kernel_name(const char *name)
+{
+	return strncmp(name, "dm-", 3) ? 0 : 1;
 }

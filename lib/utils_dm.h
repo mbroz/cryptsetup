@@ -2,6 +2,9 @@
 #define _UTILS_DM_H
 
 /* device-mapper library helpers */
+#include <inttypes.h>
+
+struct crypt_device;
 
 /* Device mapper backend - kernel support flags */
 #define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
@@ -35,7 +38,8 @@ int dm_suspend_and_wipe_key(const char *name);
 int dm_resume_and_reinstate_key(const char *name,
 				size_t key_size,
 				const char *key);
-char *dm_device_path(const char *dev_id);
-int dm_is_dm_device(int major);
+char *dm_device_path(int major, int minor);
+int dm_is_dm_device(int major, int minor);
+int dm_is_dm_kernel_name(const char *name);
 
 #endif /* _UTILS_DM_H */
