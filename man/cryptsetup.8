@@ -226,12 +226,11 @@ you can see compiled-in default using \fIcryptsetup \-\-help\fR.
 If not changed, the default is for plain dm-crypt and LUKS mappings
 "aes-cbc-essiv:sha256".
 
-For pre-2.6.10 kernels, use "aes-plain" as they don't understand
-the new cipher spec strings. To use ESSIV, use "aes-cbc-essiv:sha256".
-
 For XTS mode, kernel version 2.6.24 or more recent is required.
-Use "aes-xts-plain" cipher specification and set key size to 256
+Use "aes-xts-plain64" cipher specification and set key size to 256
 (or 512) bits (see \-s option).
+Note that plain64 IV (Initialization Vector) is available since kernel version 2.6.33
+and it is full 64bit version of plain IV. For more info please see FAQ.
 .TP
 .B "\-\-verify-passphrase, \-y"
 query for passwords twice. Useful when creating a (regular) mapping
