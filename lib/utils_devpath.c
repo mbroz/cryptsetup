@@ -56,6 +56,13 @@ static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_le
 		    !strncmp(entry->d_name, "..", 2))
 			continue;
 
+		if (dir_level == 0 &&
+		    (!strcmp(entry->d_name, "shm") ||
+		     !strcmp(entry->d_name, "fd") ||
+		     !strcmp(entry->d_name, "char") ||
+		     !strcmp(entry->d_name, "pts")))
+			continue;
+
 		strncpy(ptr, entry->d_name, space);
 		if (stat(path, &st) < 0)
 			continue;
