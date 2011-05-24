@@ -52,6 +52,7 @@ libcryptsetup_la_SOURCES = \
 	utils_debug.c				\
 	utils_loop.c				\
 	utils_loop.h				\
+	utils_devpath.c				\
 	libdevmapper.c				\
 	volumekey.c				\
 	random.c				\

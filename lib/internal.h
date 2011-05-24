@@ -90,8 +90,13 @@ int dm_suspend_and_wipe_key(const char *name);
 int dm_resume_and_reinstate_key(const char *name,
 				size_t key_size,
 				const char *key);
+char *dm_device_path(const char *dev_id);
+int dm_is_dm_device(int major);
+
+char *crypt_lookup_dev(const char *dev_id);
 
 int sector_size_for_device(const char *device);
+int device_read_ahead(const char *dev, uint32_t *read_ahead);
 ssize_t write_blockwise(int fd, void *buf, size_t count);
 ssize_t read_blockwise(int fd, void *_buf, size_t count);
 ssize_t write_lseek_blockwise(int fd, char *buf, size_t count, off_t offset);

@@ -19,8 +19,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <sys/ioctl.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <dirent.h>
 #include <errno.h>
@@ -32,7 +30,6 @@
 #include "internal.h"
 #include "luks.h"
 
-#define DEVICE_DIR		"/dev"
 #define DM_UUID_LEN		129
 #define DM_UUID_PREFIX		"CRYPT-"
 #define DM_UUID_PREFIX_LEN	6
@@ -208,90 +205,8 @@ void dm_exit(void)
 	}
 }
 
-static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_level)
-{
-	struct dirent *entry;
-	struct stat st;
-	char *ptr;
-	char *result = NULL;
-	DIR *dir;
-	int space;
-
-	/* Ignore strange nested directories */
-	if (dir_level > max_level)
-		return NULL;
-
-	path[PATH_MAX - 1] = '\0';
-	ptr = path + strlen(path);
-	*ptr++ = '/';
-	*ptr = '\0';
-	space = PATH_MAX - (ptr - path);
-
-	dir = opendir(path);
-	if (!dir)
-		return NULL;
-
-	while((entry = readdir(dir))) {
-		if (entry->d_name[0] == '.' ||
-		    !strncmp(entry->d_name, "..", 2))
-			continue;
-
-		strncpy(ptr, entry->d_name, space);
-		if (stat(path, &st) < 0)
-			continue;
-
-		if (S_ISDIR(st.st_mode)) {
-			result = __lookup_dev(path, dev, dir_level + 1, max_level);
-			if (result)
-				break;
-		} else if (S_ISBLK(st.st_mode)) {
-			/* workaround: ignore dm-X devices, these are internal kernel names */
-			if (dir_level == 0 && !strncmp(entry->d_name, "dm-", 3))
-				continue;
-			if (st.st_rdev == dev) {
-				result = strdup(path);
-				break;
-			}
-		}
-	}
-
-	closedir(dir);
-	return result;
-}
-
-static char *lookup_dev_old(const char *dev_id)
-{
-	uint32_t major, minor;
-	dev_t dev;
-	char *result = NULL, buf[PATH_MAX + 1];
-
-	if (sscanf(dev_id, "%" PRIu32 ":%" PRIu32, &major, &minor) != 2)
-		return NULL;
-
-	dev = makedev(major, minor);
-	strncpy(buf, DEVICE_DIR, PATH_MAX);
-	buf[PATH_MAX] = '\0';
-
-	/* First try low level device */
-	if ((result = __lookup_dev(buf, dev, 0, 0)))
-		return result;
-
-	/* If it is dm, try DM dir  */
-	if (dm_is_dm_major(major)) {
-		strncpy(buf, dm_dir(), PATH_MAX);
-		if ((result = __lookup_dev(buf, dev, 0, 0)))
-			return result;
-	}
-
-	strncpy(buf, DEVICE_DIR, PATH_MAX);
-	result = __lookup_dev(buf, dev, 0, 4);
-
-	/* If not found, return NULL */
-	return result;
-}
-
 /* Return path to DM device */
-static char *dm_device_path(const char *dev_id)
+char *dm_device_path(const char *dev_id)
 {
 	int major, minor;
 	struct dm_task *dmt;
@@ -317,54 +232,6 @@ static char *dm_device_path(const char *dev_id)
 	dm_task_destroy(dmt);
 
 	return strdup(path);
-}
-
-static char *lookup_dev(const char *dev_id)
-{
-	char link[PATH_MAX], path[PATH_MAX], *devname;
-	struct stat st;
-	ssize_t len;
-
-	if (snprintf(path, sizeof(path), "/sys/dev/block/%s", dev_id) < 0)
-		return NULL;
-
-	len = readlink(path, link, sizeof(link));
-	if (len < 0) {
-		if (stat("/sys/dev/block", &st) < 0)
-			return lookup_dev_old(dev_id);
-		return NULL;
-	}
-
-	link[len] = '\0';
-	devname = strrchr(link, '/');
-	if (!devname)
-		return NULL;
-	devname++;
-
-	if (!strncmp(devname, "dm-", 3))
-		return dm_device_path(dev_id);
-
-	if (snprintf(path, sizeof(path), "/dev/%s", devname) < 0)
-		return NULL;
-
-	return strdup(path);
-}
-
-static int _dev_read_ahead(const char *dev, uint32_t *read_ahead)
-{
-	int fd, r = 0;
-	long read_ahead_long;
-
-	if ((fd = open(dev, O_RDONLY)) < 0)
-		return 0;
-
-	r = ioctl(fd, BLKRAGET, &read_ahead_long) ? 0 : 1;
-	close(fd);
-
-	if (r)
-		*read_ahead = (uint32_t) read_ahead_long;
-
-	return r;
 }
 
 static void hex_key(char *hexkey, size_t key_size, const char *key)
@@ -593,7 +460,7 @@ int dm_create_device(const char *name,
 		goto out_no_removal;
 
 #ifdef DM_READ_AHEAD_MINIMUM_FLAG
-	if (_dev_read_ahead(device, &read_ahead) &&
+	if (device_read_ahead(device, &read_ahead) &&
 	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
 		goto out_no_removal;
 #endif
@@ -757,7 +624,7 @@ int dm_query_device(const char *name,
 	/* device */
 	rdevice = strsep(&params, " ");
 	if (device)
-		*device = lookup_dev(rdevice);
+		*device = crypt_lookup_dev(rdevice);
 
 	/*offset */
 	if (!params)
@@ -890,4 +757,9 @@ int dm_resume_and_reinstate_key(const char *name,
 const char *dm_get_dir(void)
 {
 	return dm_dir();
+}
+
+int dm_is_dm_device(int major)
+{
+	return dm_is_dm_major((uint32_t)major);
 }

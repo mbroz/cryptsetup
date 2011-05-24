@@ -108,6 +108,24 @@ static void *aligned_malloc(void **base, int size, int alignment)
 	return ptr;
 #endif
 }
+
+int device_read_ahead(const char *dev, uint32_t *read_ahead)
+{
+	int fd, r = 0;
+	long read_ahead_long;
+
+	if ((fd = open(dev, O_RDONLY)) < 0)
+		return 0;
+
+	r = ioctl(fd, BLKRAGET, &read_ahead_long) ? 0 : 1;
+	close(fd);
+
+	if (r)
+		*read_ahead = (uint32_t) read_ahead_long;
+
+	return r;
+}
+
 static int sector_size(int fd) 
 {
 	int bsize;
