@@ -2,29 +2,26 @@
 # Copyright (C) 2010 Free Software Foundation, Inc.
 # This file is put in the public domain.
 # Solveig <perso@solveig.org>, 2009.
-# Nicolas Provost <nprovost@quadriv.com>, 2010.
+# Nicolas Provost <nprovost@quadriv.com>, 2011.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.2.0-rc1\n"
+"Project-Id-Version: cryptsetup 1.3.0-rc2\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2010-11-15 18:03+0100\n"
-"PO-Revision-Date: 2010-11-23 11:19+0100\n"
+"POT-Creation-Date: 2011-03-22 13:25+0100\n"
+"PO-Revision-Date: 2011-05-27 10:06+0100\n"
 "Last-Translator: Nicolas Provost <nprovost@quadriv.com>\n"
 "Language-Team: French <traduc@traduc.org>\n"
+"Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/gcrypt.c:47
-msgid "Cannot initialize crypto backend.\n"
-msgstr "Impossible d'initialiser le moteur de chiffrement.\n"
-
-#: lib/libdevmapper.c:120
+#: lib/libdevmapper.c:181
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
-msgstr "Impossible d'initialiser le « device-mapper ». Le module noyau dm_mod est-il chargé ?\n"
+msgstr "Impossible d'initialiser le gestionnaire « device-mapper ». Le module noyau dm_mod est-il chargé ?\n"
 
-#: lib/libdevmapper.c:408
+#: lib/libdevmapper.c:469
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
 msgstr "Le DM-UUID du périphérique %s a été tronqué.\n"
@@ -34,7 +31,7 @@ msgid ""
 "System is out of entropy while generating volume key.\n"
 "Please move mouse or type some text in another window to gather some random events.\n"
 msgstr ""
-"Le système a manqué d'entropie lors de la génération de clef de volume.\n"
+"Le système a manqué d'entropie lors de la génération de la clef de volume.\n"
 "SVP remuez la souris ou tapez du texte dans une autre fenêtre pour générer des événements aléatoires.\n"
 
 #: lib/random.c:77
@@ -42,315 +39,350 @@ msgstr ""
 msgid "Generating key (%d%% done).\n"
 msgstr "Génération de la clef (%d%% effectués).\n"
 
-#: lib/random.c:163
+#: lib/random.c:166
 msgid "Fatal error during RNG initialisation.\n"
 msgstr "Erreur fatale d'initialisation RNG.\n"
 
-#: lib/random.c:190
+#: lib/random.c:193
 msgid "Unknown RNG quality requested.\n"
-msgstr "La qualité du générateur alétaoire RNG demandée est inconnue.\n"
+msgstr "La qualité du générateur aléatoire RNG demandé est inconnue.\n"
 
-#: lib/random.c:195
+#: lib/random.c:198
 #, c-format
 msgid "Error %d reading from RNG: %s\n"
 msgstr "Erreur %d en lecture du générateur aléatoire RNG : %s\n"
 
-#: lib/setup.c:109
+#: lib/setup.c:126
+msgid "Cannot initialize crypto RNG backend.\n"
+msgstr "Impossible d'initialiser le moteur aléatoire RNG pour le chiffrement.\n"
+
+#: lib/setup.c:132
+msgid "Cannot initialize crypto backend.\n"
+msgstr "Impossible d'initialiser le moteur de chiffrement.\n"
+
+#: lib/setup.c:161
 #, c-format
 msgid "Cannot not read %d bytes from key file %s.\n"
 msgstr "Échec à la lecture de %d octets du fichier %s contenant la clé.\n"
 
-#: lib/setup.c:121
+#: lib/setup.c:175
 #, c-format
-msgid "Key processing error (using hash algorithm %s).\n"
-msgstr "Erreur de traitement de la clé (en utilisant l'algorithme de hachage %s).\n"
+msgid "Hash algorithm %s not supported.\n"
+msgstr "L'algorithme de hachage %s n'est pas supporté.\n"
 
-#: lib/setup.c:151
+#: lib/setup.c:178
+#, c-format
+msgid "Key processing error (using hash %s).\n"
+msgstr "Erreur de traitement de clé (valeur hachage %s).\n"
+
+#: lib/setup.c:213
 msgid "All key slots full.\n"
 msgstr "Tous les emplacements de clés sont utilisés.\n"
 
-#: lib/setup.c:158 lib/setup.c:299 lib/setup.c:763
+#: lib/setup.c:220 lib/setup.c:315 lib/setup.c:782
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d.\n"
 msgstr "L'emplacement de clé %d n'est pas valide, merci d'en choisir un entre 0 et %d.\n"
 
-#: lib/setup.c:164
+#: lib/setup.c:226
 #, c-format
 msgid "Key slot %d is full, please select another one.\n"
 msgstr "L'emplacement de clé %d est utilisé, merci d'en sélectionner un autre.\n"
 
-#: lib/setup.c:182 src/cryptsetup.c:516
+#: lib/setup.c:244 src/cryptsetup.c:600
 msgid "Enter any remaining LUKS passphrase: "
-msgstr "Entrez une phrase secrète LUKS qui restera valide :"
+msgstr "Entrez une phrase secrète LUKS valide :"
 
-#: lib/setup.c:202
+#: lib/setup.c:264
 #, c-format
 msgid "Key slot %d verified.\n"
 msgstr "L'emplacement de clé %d a été vérifié.\n"
 
-#: lib/setup.c:247
-#, c-format
-msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
-msgstr "Impossible d'utiliser le périphérique %s actuellement en usage (déjà mappé ou monté).\n"
-
-#: lib/setup.c:251
-#, c-format
-msgid "Cannot get info about device %s.\n"
-msgstr "Impossible d'obtenir des informations au sujet du périphérique %s.\n"
-
-#: lib/setup.c:259
-#, c-format
-msgid "Device %s has zero size.\n"
-msgstr "Le périphérique %s a une taille nulle.\n"
-
-#: lib/setup.c:263
-#, c-format
-msgid "Device %s is too small.\n"
-msgstr "Le périphérique %s est trop petit.\n"
-
-#: lib/setup.c:288 src/cryptsetup.c:544
+#: lib/setup.c:304 src/cryptsetup.c:628
 msgid "Enter LUKS passphrase to be deleted: "
 msgstr "Entrez la phrase secrète LUKS à effacer :"
 
-#: lib/setup.c:294 src/cryptsetup.c:505 src/cryptsetup.c:559
+#: lib/setup.c:310 src/cryptsetup.c:589 src/cryptsetup.c:643
 #, c-format
 msgid "Key slot %d selected for deletion.\n"
 msgstr "Emplacement de clé %d sélectionné pour suppression.\n"
 
-#: lib/setup.c:305 src/cryptsetup.c:508
+#: lib/setup.c:321 src/cryptsetup.c:592
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
 msgstr "La clé %d n'est pas active. Impossible de l'effacer.\n"
 
-#: lib/setup.c:311 src/cryptsetup.c:515 src/cryptsetup.c:562
+#: lib/setup.c:327 src/cryptsetup.c:599 src/cryptsetup.c:646
 msgid "This is the last keyslot. Device will become unusable after purging this key."
 msgstr "Ceci est le dernier emplacement de clé. Le périphérique sera inutilisable après la suppression de cette clé."
 
-#: lib/setup.c:362 lib/setup.c:1791 lib/setup.c:1862 lib/setup.c:1926
+#: lib/setup.c:378 lib/setup.c:1914 lib/setup.c:1981 lib/setup.c:2076
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Le périphérique %s existe déjà.\n"
 
-#: lib/setup.c:367
+#: lib/setup.c:383
 #, c-format
 msgid "Invalid key size %d.\n"
 msgstr "%d n'est pas une taille de clé valide.\n"
 
-#: lib/setup.c:449
+#: lib/setup.c:465
 #, c-format
 msgid "Enter passphrase for %s: "
-msgstr "Entrez la phrase secrète pour %s :"
+msgstr "Saisissez la phrase secrète pour %s : "
 
-#: lib/setup.c:606 lib/setup.c:1523 lib/setup.c:1870 src/cryptsetup.c:227
+#: lib/setup.c:623 lib/setup.c:1646 lib/setup.c:1990 lib/setup.c:2002
+#: src/cryptsetup.c:268
 msgid "Enter passphrase: "
-msgstr "Entrez la phrase de passe :"
+msgstr "Saisissez la phrase secrète : "
 
-#: lib/setup.c:647 lib/setup.c:1032 lib/setup.c:1287 lib/setup.c:1978
+#: lib/setup.c:666 lib/setup.c:1088 lib/setup.c:1406 lib/setup.c:2128
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Le périphérique %s n'est pas activé.\n"
 
-#: lib/setup.c:755
+#: lib/setup.c:774
 msgid "No known cipher specification pattern detected.\n"
 msgstr "Aucun motif connu d'algorithme de chiffrement n'a été détecté.\n"
 
-#: lib/setup.c:769 src/cryptsetup.c:383 src/cryptsetup.c:677
+#: lib/setup.c:788 src/cryptsetup.c:467 src/cryptsetup.c:859
 msgid "Enter LUKS passphrase: "
-msgstr "Entrez la phrase secrète LUKS :"
+msgstr "Saisissez la phrase secrète LUKS : "
 
-#: lib/setup.c:1044
+#: lib/setup.c:1020
+msgid "Cannot find a free loopback device.\n"
+msgstr "Impossible de trouver un périphérique boucle \"loopback\" libre.\n"
+
+#: lib/setup.c:1028
+msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
+msgstr "Impossible d'associer le périphérique boucle \"loopback\" (le drapeau \"autoclear\" est requis).\n"
+
+#: lib/setup.c:1103
 #, c-format
 msgid "Underlying device for crypt device %s disappeared.\n"
 msgstr "Le périphérique sous-jacent pour le périphérique chiffré %s a disparu.\n"
 
-#: lib/setup.c:1109
+#: lib/setup.c:1195
 msgid "Invalid plain crypt parameters.\n"
 msgstr "Paramètres de chiffrement non valides.\n"
 
-#: lib/setup.c:1114
+#: lib/setup.c:1200 lib/setup.c:1297
 msgid "Invalid key size.\n"
 msgstr "La taille de la clé n'est pas valide.\n"
 
-#: lib/setup.c:1153
+#: lib/setup.c:1239
 msgid "Can't format LUKS without device.\n"
 msgstr "Impossible de formater en LUKS sans périphérique.\n"
 
-#: lib/setup.c:1185
+#: lib/setup.c:1271
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
 msgstr "Impossible de formater le périphérique %s qui est déjà en cours d'utilisation.\n"
 
-#: lib/setup.c:1188
+#: lib/setup.c:1274
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
 msgstr "Impossible d'effacer l'entête du périphérique %s.\n"
 
-#: lib/setup.c:1227
+#: lib/setup.c:1292
+msgid "Can't format LOOPAES without device.\n"
+msgstr "Impossible de formater en boucle \"loopAES\" sans périphérique.\n"
+
+#: lib/setup.c:1346
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Type de chiffrement de périphérique demandé (%s) inconnu.\n"
 
-#: lib/setup.c:1324
+#: lib/setup.c:1443
 msgid "This operation is not supported for this device type.\n"
 msgstr "Cette opération n'est pas supportée pour ce type de périphérique.\n"
 
-#: lib/setup.c:1339
+#: lib/setup.c:1458
 msgid "Do you really want to change UUID of device?"
 msgstr "Voulez-vous réellement changer l'UUID du périphérique ?"
 
-#: lib/setup.c:1415
+#: lib/setup.c:1538
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Le volume %s n'est pas actif.\n"
 
-#: lib/setup.c:1428
+#: lib/setup.c:1551
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Le volume %s est déjà en hibernation.\n"
 
-#: lib/setup.c:1456 lib/setup.c:1505 lib/setup.c:1561 lib/setup.c:1635
-#: lib/setup.c:1704 lib/setup.c:1750 lib/setup.c:1853 lib/setup.c:2047
-#: lib/setup.c:2148 lib/setup.c:2257
+#: lib/setup.c:1579 lib/setup.c:1628 lib/setup.c:1684 lib/setup.c:1758
+#: lib/setup.c:1827 lib/setup.c:1873 lib/setup.c:2197 lib/setup.c:2298
+#: lib/setup.c:2422
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Cette opération n'est possible que pour les périphériques LUKS.\n"
 
-#: lib/setup.c:1467 lib/setup.c:1516
+#: lib/setup.c:1590 lib/setup.c:1639
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Le volume %s n'est pas en hibernation.\n"
 
-#: lib/setup.c:1575 lib/setup.c:1649
+#: lib/setup.c:1698 lib/setup.c:1772
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "Impossible d'ajouter un emplacement de clé, tous les emplacements sont désactivés et aucune clé n'a été fournie pour ce volume.\n"
 
-#: lib/setup.c:1584 lib/setup.c:1655 lib/setup.c:1659
+#: lib/setup.c:1707 lib/setup.c:1778 lib/setup.c:1782
 msgid "Enter any passphrase: "
 msgstr "Entrez une phrase de passe :"
 
-#: lib/setup.c:1601 lib/setup.c:1672 lib/setup.c:1676 lib/setup.c:1727
+#: lib/setup.c:1724 lib/setup.c:1795 lib/setup.c:1799 lib/setup.c:1850
 msgid "Enter new passphrase for key slot: "
 msgstr "Entrez une nouvelle phrase secrète pour l'emplacement de clé :"
 
-#: lib/setup.c:1718 lib/setup.c:1934 lib/setup.c:1947 lib/setup.c:2058
+#: lib/setup.c:1841 lib/setup.c:2084 lib/setup.c:2097 lib/setup.c:2208
 msgid "Volume key does not match the volume.\n"
 msgstr "Ceci n'est pas la clé du volume.\n"
 
-#: lib/setup.c:1756
+#: lib/setup.c:1879
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "L'emplacement de clé %d n'est pas valide.\n"
 
-#: lib/setup.c:1761
+#: lib/setup.c:1884
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "L'emplacement de clé %d n'est pas utilisé.\n"
 
-#: lib/setup.c:1906
+#: lib/setup.c:2056
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "Clef de volume spécifiée depuis l'entrée en \"clair\" incorrecte.\n"
 
-#: lib/setup.c:1917
+#: lib/setup.c:2067
 msgid "Device type is not properly initialised.\n"
 msgstr "Type de périphérique non proprement initialisé.\n"
 
-#: lib/setup.c:1974
+#: lib/setup.c:2124
 #, c-format
 msgid "Device %s is busy.\n"
 msgstr "Le périphérique %s est occupé.\n"
 
-#: lib/setup.c:1982
+#: lib/setup.c:2132
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Le périphérique %s n'est pas valide.\n"
 
-#: lib/setup.c:2005
+#: lib/setup.c:2155
 msgid "Volume key buffer too small.\n"
 msgstr "Le tampon de la clé du volume est trop petit.\n"
 
-#: lib/setup.c:2013
+#: lib/setup.c:2163
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Impossible de récupérer la clé du volume pour ce périphérique de type « plain ».\n"
 
-#: lib/setup.c:2035
+#: lib/setup.c:2185
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Cette opération n'est pas possible pour le périphérique chiffré %s.\n"
 
-#: lib/utils.c:247
+#: lib/utils.c:268
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Le périphérique %s n'existe pas, ou l'accès y est interdit.\n"
 
-#: lib/utils.c:254
+#: lib/utils.c:278
 #, c-format
 msgid "Cannot open device %s for %s%s access.\n"
 msgstr "Impossible d'ouvrir le périphérique %s pour un accès %s%s.\n"
 
-#: lib/utils.c:255
+#: lib/utils.c:279
 msgid "exclusive "
 msgstr "exclusif "
 
-#: lib/utils.c:256
+#: lib/utils.c:280
 msgid "writable"
 msgstr "en écriture"
 
-#: lib/utils.c:256
+#: lib/utils.c:280
 msgid "read-only"
 msgstr "en lecture seule"
 
-#: lib/utils.c:263
+#: lib/utils.c:287
 #, c-format
 msgid "Cannot read device %s.\n"
 msgstr "Impossible de lire le périphérique %s.\n"
 
-#: lib/utils.c:388
+#: lib/utils.c:381
+#, c-format
+msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
+msgstr "Impossible d'utiliser le périphérique %s actuellement en usage (déjà mappé ou monté).\n"
+
+#: lib/utils.c:385
+#, c-format
+msgid "Cannot get info about device %s.\n"
+msgstr "Impossible d'obtenir des informations au sujet du périphérique %s.\n"
+
+#: lib/utils.c:393
+#, c-format
+msgid "Device %s has zero size.\n"
+msgstr "Le périphérique %s a une taille nulle.\n"
+
+#: lib/utils.c:397
+#, c-format
+msgid "Device %s is too small.\n"
+msgstr "Le périphérique %s est trop petit.\n"
+
+#: lib/utils.c:458
 msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
 msgstr "ATTENTION !!! La mémoire n'est peut-être pas sécurisée. Êtes-vous super-utilisateur ?\n"
 
-#: lib/utils.c:394
+#: lib/utils.c:464
 msgid "Cannot get process priority.\n"
 msgstr "Impossible d'obtenir la priorité du processus.\n"
 
-#: lib/utils.c:397 lib/utils.c:410
+#: lib/utils.c:467 lib/utils.c:480
 #, c-format
-msgid "setpriority %u failed: %s"
-msgstr "la priorité n'a pu être définie à %u avec « setpriority » : %s"
+msgid "setpriority %d failed: %s\n"
+msgstr "la priorité n'a pu être définie à %d avec « setpriority » : %s\n"
 
-#: lib/utils.c:408
-msgid "Cannot unlock memory."
-msgstr "Impossible de débloquer la mémoire."
+#: lib/utils.c:478
+msgid "Cannot unlock memory.\n"
+msgstr "Impossible de débloquer la mémoire.\n"
 
-#: lib/utils_crypt.c:200
-msgid "Failed to open key file.\n"
-msgstr "Impossible d'ouvrir le fichier de clef.\n"
-
-#: lib/utils_crypt.c:211
-msgid "Error reading passphrase from terminal.\n"
-msgstr "Erreur de lecture de la phrase secrète depuis la console.\n"
-
-#: lib/utils_crypt.c:216
-msgid "Verify passphrase: "
-msgstr "Entrez la phrase secrète pour vérification : "
-
-#: lib/utils_crypt.c:219
-msgid "Passphrases do not match.\n"
-msgstr "Les phrases secrètes ne sont pas identiques.\n"
-
-#: lib/utils_crypt.c:243
-msgid "Failed to stat key file.\n"
-msgstr "Impossible d'atteindre le fichier de clef.\n"
-
-#: lib/utils_crypt.c:248
-msgid "Warning: exhausting read requested, but key file is not a regular file, function might never return.\n"
-msgstr "Attention : requête de lecture, mais le fichier de clef n'est pas régulier, la procédure peut rester bloquée.\n"
-
-#: lib/utils_crypt.c:260
+#: lib/utils_crypt.c:210 lib/utils_crypt.c:223 lib/utils_crypt.c:313
+#: lib/utils_crypt.c:322
 msgid "Out of memory while reading passphrase.\n"
 msgstr "Plus assez de mémoire lors de la lecture de la phrase secrète.\n"
 
-#: lib/utils_crypt.c:268
+#: lib/utils_crypt.c:215 lib/utils_crypt.c:230
+msgid "Error reading passphrase from terminal.\n"
+msgstr "Erreur de lecture de la phrase secrète depuis la console.\n"
+
+#: lib/utils_crypt.c:228
+msgid "Verify passphrase: "
+msgstr "Entrez la phrase secrète pour vérification : "
+
+#: lib/utils_crypt.c:235
+msgid "Passphrases do not match.\n"
+msgstr "Les phrases secrètes ne sont pas identiques.\n"
+
+#: lib/utils_crypt.c:277
+msgid "Negative keyfile size not permitted.\n"
+msgstr "Taille négative de fichier de clé non autorisée.\n"
+
+#: lib/utils_crypt.c:289
+msgid "Failed to open key file.\n"
+msgstr "Impossible d'ouvrir le fichier de clef.\n"
+
+#: lib/utils_crypt.c:298
+msgid "Failed to stat key file.\n"
+msgstr "Impossible d'atteindre le fichier de clef.\n"
+
+#: lib/utils_crypt.c:330
 msgid "Error reading passphrase.\n"
 msgstr "Erreur de lecture de la phrase secrète.\n"
+
+#: lib/utils_crypt.c:345
+msgid "Maximum keyfile size exceeeded.\n"
+msgstr "Taille max. de fichier de clé dépassée.\n"
+
+#: lib/utils_crypt.c:350
+msgid "Cannot read requested amount of data.\n"
+msgstr "Impossible de lire la quantité de données demandée.\n"
 
 #: lib/luks1/keyencryption.c:66
 #, c-format
@@ -375,7 +407,7 @@ msgstr "Le mode \"bloc\" LRW est disponible depuis le noyau 2.6.20.\n"
 
 #: lib/luks1/keyencryption.c:135
 msgid "Failed to obtain device mapper directory."
-msgstr "Impossible d'obtenir l'annuaire du device mapper."
+msgstr "Impossible d'obtenir le répertoire du gestionnaire \"device mapper\"."
 
 #: lib/luks1/keyencryption.c:151
 #, c-format
@@ -390,64 +422,64 @@ msgstr ""
 
 #: lib/luks1/keyencryption.c:161
 msgid "Failed to open temporary keystore device.\n"
-msgstr "Échec lors de l'ouverture du périphérique de stockage temporaire de clé.\n"
+msgstr "Échec lors de l'ouverture du périphérique de stockage temporaire de clés.\n"
 
 #: lib/luks1/keyencryption.c:168
 msgid "Failed to access temporary keystore device.\n"
 msgstr "Impossible d'accéder au périphérique de stockage temporaire de clé.\n"
 
-#: lib/luks1/keymanage.c:61
+#: lib/luks1/keymanage.c:76
 #, c-format
 msgid "Requested file %s already exist.\n"
 msgstr "Le fichier demandé (%s) existe déjà.\n"
 
-#: lib/luks1/keymanage.c:81 lib/luks1/keymanage.c:224
+#: lib/luks1/keymanage.c:96 lib/luks1/keymanage.c:239
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "%s n'est pas un périphérique LUKS valide.\n"
 
-#: lib/luks1/keymanage.c:101
+#: lib/luks1/keymanage.c:116
 #, c-format
 msgid "Cannot write header backup file %s.\n"
 msgstr "Impossible d'écrire le fichier de sauvegarde d'en-tête %s.\n"
 
-#: lib/luks1/keymanage.c:128
+#: lib/luks1/keymanage.c:143
 #, c-format
 msgid "Backup file %s doesn't exist.\n"
 msgstr "Le fichier de sauvegarde %s n'existe pas.\n"
 
-#: lib/luks1/keymanage.c:136
+#: lib/luks1/keymanage.c:151
 msgid "Backup file do not contain valid LUKS header.\n"
 msgstr "Le fichier de sauvegarde ne contient pas d'en-tête LUKS valide.\n"
 
-#: lib/luks1/keymanage.c:149
+#: lib/luks1/keymanage.c:164
 #, c-format
 msgid "Cannot open header backup file %s.\n"
 msgstr "Impossible d'ouvrir le fichier de sauvegarde d'en-tête %s.\n"
 
-#: lib/luks1/keymanage.c:155
+#: lib/luks1/keymanage.c:170
 #, c-format
 msgid "Cannot read header backup file %s.\n"
 msgstr "Impossible de lire le fichier de sauvegarde d'en-tête %s.\n"
 
-#: lib/luks1/keymanage.c:166
+#: lib/luks1/keymanage.c:181
 msgid "Data offset or key size differs on device and backup, restore failed.\n"
 msgstr "Il y a une incohérence entre le périphérique et la sauvegarde, au niveau du décalage des données (« offset ») ou de la taille de la clé. La restauration a échoué.\n"
 
-#: lib/luks1/keymanage.c:174
+#: lib/luks1/keymanage.c:189
 #, c-format
 msgid "Device %s %s%s"
 msgstr "Périphérique %s %s%s"
 
-#: lib/luks1/keymanage.c:175
+#: lib/luks1/keymanage.c:190
 msgid "does not contain LUKS header. Replacing header can destroy data on that device."
 msgstr "ne contient pas d'en-tête LUKS. Remplacer l'en-tête peut détruire les données de ce périphérique."
 
-#: lib/luks1/keymanage.c:176
+#: lib/luks1/keymanage.c:191
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgstr "contient déjà un en-tête LUKS. Remplacer l'en-tête détruira les emplacements de clés actuels."
 
-#: lib/luks1/keymanage.c:177
+#: lib/luks1/keymanage.c:192
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
@@ -455,220 +487,274 @@ msgstr ""
 "\n"
 "ATTENTION : l'en-tête du périphérique a un UUID différent de celui de la sauvegarde !"
 
-#: lib/luks1/keymanage.c:192 lib/luks1/keymanage.c:305
-#: lib/luks1/keymanage.c:340
+#: lib/luks1/keymanage.c:207 lib/luks1/keymanage.c:320
+#: lib/luks1/keymanage.c:355
 #, c-format
 msgid "Cannot open device %s.\n"
 msgstr "Impossible d'ouvrir le périphérique %s.\n"
 
-#: lib/luks1/keymanage.c:226
+#: lib/luks1/keymanage.c:241
 #, c-format
 msgid "Device %s is not a valid LUKS device."
 msgstr "%s n'est pas un périphérique LUKS valide."
 
-#: lib/luks1/keymanage.c:229
+#: lib/luks1/keymanage.c:244
 #, c-format
 msgid "Unsupported LUKS version %d.\n"
 msgstr "La version %d de LUKS n'est pas supportée.\n"
 
-#: lib/luks1/keymanage.c:232 lib/luks1/keymanage.c:410
+#: lib/luks1/keymanage.c:247 lib/luks1/keymanage.c:425
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
 msgstr "L'algorithme de hachage LUKS demandé (%s) n'est pas supporté.\n"
 
-#: lib/luks1/keymanage.c:277
+#: lib/luks1/keymanage.c:292
 #, c-format
 msgid "Cannot open file %s.\n"
 msgstr "Impossible d'ouvrir le fichier %s.\n"
 
-#: lib/luks1/keymanage.c:317
+#: lib/luks1/keymanage.c:332
 #, c-format
 msgid "LUKS header detected but device %s is too small.\n"
 msgstr "En-tête LUKs détecté mais le périphérique %s est trop petit.\n"
 
-#: lib/luks1/keymanage.c:361
+#: lib/luks1/keymanage.c:376
 #, c-format
 msgid "Error during update of LUKS header on device %s.\n"
 msgstr "Erreur lors de la mise à jour de l'en-tête LUKS sur le périphérique %s.\n"
 
-#: lib/luks1/keymanage.c:368
+#: lib/luks1/keymanage.c:383
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s.\n"
 msgstr "Erreur lors de la relecture de l'en-tête LUKS après la mise à jour sur le périphérique %s.\n"
 
-#: lib/luks1/keymanage.c:380
+#: lib/luks1/keymanage.c:395
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
 msgstr "Options PBKDF2 incompatibles (en utilisant l'algorithme de hachage %s).\n"
 
-#: lib/luks1/keymanage.c:415 lib/luks1/keymanage.c:492
+#: lib/luks1/keymanage.c:430 lib/luks1/keymanage.c:507
 msgid "Wrong LUKS UUID format provided.\n"
 msgstr "Mauvais format d'UUID Luks fourni.\n"
 
-#: lib/luks1/keymanage.c:440
+#: lib/luks1/keymanage.c:455
 msgid "Cannot create LUKS header: reading random salt failed.\n"
 msgstr "Impossible de créer un en-tête LUKS : échec lors de la lecture de l'aléa.\n"
 
-#: lib/luks1/keymanage.c:457
+#: lib/luks1/keymanage.c:472
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
 msgstr "Impossible de créer un en-tête LUKS : le résumé (« digest ») de l'en-tête a échoué (en utilisant l'algorithme de hachage %s).\n"
 
-#: lib/luks1/keymanage.c:517
+#: lib/luks1/keymanage.c:532
 #, c-format
 msgid "Key slot %d active, purge first.\n"
 msgstr "L'emplacement de clé %d est activé, effacez-le d'abord.\n"
 
-#: lib/luks1/keymanage.c:522
+#: lib/luks1/keymanage.c:537
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
 msgstr "Le matériel de clé contenu à l'emplacement %d a trop peu de bandes. L'en-tête a-t-il été modifié ?\n"
 
-#: lib/luks1/keymanage.c:582
+#: lib/luks1/keymanage.c:603
 msgid "Failed to write to key storage.\n"
 msgstr "Échec lors de l'écriture à l'emplacement de stockage de la clé.\n"
 
-#: lib/luks1/keymanage.c:659
+#: lib/luks1/keymanage.c:686
 msgid "Failed to read from key storage.\n"
 msgstr "Échec lors de la lecture depuis l'emplacement de stockage de la clé.\n"
 
-#: lib/luks1/keymanage.c:668
+#: lib/luks1/keymanage.c:696
 #, c-format
 msgid "Key slot %d unlocked.\n"
-msgstr "L'emplacement de clé %d a été débloqué.\n"
+msgstr "Emplacement de clé %d débloqué.\n"
 
-#: lib/luks1/keymanage.c:703 src/cryptsetup.c:482
+#: lib/luks1/keymanage.c:732 src/cryptsetup.c:566 src/cryptsetup.c:748
 msgid "No key available with this passphrase.\n"
 msgstr "Aucune clé n'est disponible avec cette phrase secrète.\n"
 
-#: lib/luks1/keymanage.c:783
+#: lib/luks1/keymanage.c:812
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
 msgstr "L'emplacement de clé %d n'est pas valide, merci de sélectionner un emplacement entre 0 et %d.\n"
 
-#: lib/luks1/keymanage.c:795
+#: lib/luks1/keymanage.c:824
 #, c-format
 msgid "Cannot wipe device %s.\n"
 msgstr "Impossible d'effacer de façon sécurisée le périphérique %s.\n"
 
-#: src/cryptsetup.c:75
+#: lib/loopaes/loopaes.c:135
+msgid "Detected not yet supported GPG encrypted keyfile.\n"
+msgstr "Fichier de clé GPG chiffré détecté mais pas encore supporté.\n"
+
+#: lib/loopaes/loopaes.c:136
+msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "SVP utilisez gpg --decrypt <FICHIER DE CLE> | cryptsetup --keyfile=-...\n"
+
+#: lib/loopaes/loopaes.c:168
+msgid "Incompatible loop-AES keyfile detected.\n"
+msgstr "Fichier de clé incompatible pour boucle \"loopAES\".\n"
+
+#: lib/loopaes/loopaes.c:217
+msgid "Kernel doesn't support loop-AES compatible mapping.\n"
+msgstr "Le noyau ne supporte pas les associations de type boucle \"loopAES\".\n"
+
+#: src/cryptsetup.c:95
 msgid "<name> <device>"
 msgstr "<nom> <périphérique>"
 
-#: src/cryptsetup.c:75
+#: src/cryptsetup.c:95
 msgid "create device"
 msgstr "créer un périphérique"
 
-#: src/cryptsetup.c:76 src/cryptsetup.c:77 src/cryptsetup.c:78
-#: src/cryptsetup.c:86
+#: src/cryptsetup.c:96 src/cryptsetup.c:97 src/cryptsetup.c:98
+#: src/cryptsetup.c:107 src/cryptsetup.c:114
 msgid "<name>"
 msgstr "<nom>"
 
-#: src/cryptsetup.c:76
+#: src/cryptsetup.c:96
 msgid "remove device"
 msgstr "retirer le périphérique"
 
-#: src/cryptsetup.c:77
+#: src/cryptsetup.c:97
 msgid "resize active device"
 msgstr "redimensionner le périphérique actif"
 
-#: src/cryptsetup.c:78
+#: src/cryptsetup.c:98
 msgid "show device status"
 msgstr "afficher le statut du périphérique"
 
-#: src/cryptsetup.c:79 src/cryptsetup.c:81
+#: src/cryptsetup.c:99 src/cryptsetup.c:101
 msgid "<device> [<new key file>]"
 msgstr "<périphérique> [<fichier de la nouvelle clé>]"
 
-#: src/cryptsetup.c:79
+#: src/cryptsetup.c:99
 msgid "formats a LUKS device"
 msgstr "formate un périphérique LUKS"
 
-#: src/cryptsetup.c:80
+#: src/cryptsetup.c:100 src/cryptsetup.c:113
 msgid "<device> <name> "
 msgstr "<périphérique> <nom> "
 
-#: src/cryptsetup.c:80
+#: src/cryptsetup.c:100
 msgid "open LUKS device as mapping <name>"
 msgstr "ouvrir un périphérique LUKS avec <nom> comme « mapping »"
 
-#: src/cryptsetup.c:81
+#: src/cryptsetup.c:101
 msgid "add key to LUKS device"
 msgstr "ajouter une clé au périphérique LUKS"
 
-#: src/cryptsetup.c:82
+#: src/cryptsetup.c:102 src/cryptsetup.c:103
 msgid "<device> [<key file>]"
 msgstr "<périphérique> [<fichier de clé>]"
 
-#: src/cryptsetup.c:82
+#: src/cryptsetup.c:102
 msgid "removes supplied key or key file from LUKS device"
 msgstr "retire du périphérique LUKS la clé ou le fichier de clé fourni"
 
-#: src/cryptsetup.c:83
+#: src/cryptsetup.c:103
+msgid "changes supplied key or key file of LUKS device"
+msgstr "modifie la clé ou le fichier de clé fourni pour le périphérique LUKS"
+
+#: src/cryptsetup.c:104
 msgid "<device> <key slot>"
 msgstr "<périphérique> <emplacement de clé>"
 
-#: src/cryptsetup.c:83
+#: src/cryptsetup.c:104
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr "efface de façon sécurisée la clé avec le numéro <emplacement de clé> du périphérique LUKS"
 
-#: src/cryptsetup.c:84 src/cryptsetup.c:85 src/cryptsetup.c:87
-#: src/cryptsetup.c:88 src/cryptsetup.c:89 src/cryptsetup.c:90
-#: src/cryptsetup.c:91
+#: src/cryptsetup.c:105 src/cryptsetup.c:106 src/cryptsetup.c:108
+#: src/cryptsetup.c:109 src/cryptsetup.c:110 src/cryptsetup.c:111
+#: src/cryptsetup.c:112
 msgid "<device>"
 msgstr "<périphérique>"
 
-#: src/cryptsetup.c:84
+#: src/cryptsetup.c:105
 msgid "print UUID of LUKS device"
 msgstr "afficher l'UUID du périphérique LUKS"
 
-#: src/cryptsetup.c:85
+#: src/cryptsetup.c:106
 msgid "tests <device> for LUKS partition header"
 msgstr "teste si <périphérique> a un en-tête de partition LUKS"
 
-#: src/cryptsetup.c:86
+#: src/cryptsetup.c:107
 msgid "remove LUKS mapping"
-msgstr "retirer le « mapping » LUKS"
+msgstr "retire une association LUKS"
 
-#: src/cryptsetup.c:87
+#: src/cryptsetup.c:108
 msgid "dump LUKS partition information"
-msgstr "afficher les informations LUKS de la partition"
+msgstr "affiche les informations LUKS de la partition"
 
-#: src/cryptsetup.c:88
+#: src/cryptsetup.c:109
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
 msgstr "Mettre le périphérique LUKS en hibernation et effacer de façon sécurisée la clé (toutes les entrées/sorties sont suspendues)."
 
-#: src/cryptsetup.c:89
+#: src/cryptsetup.c:110
 msgid "Resume suspended LUKS device."
 msgstr "Réveiller le périphérique LUKS de son hibernation."
 
-#: src/cryptsetup.c:90
+#: src/cryptsetup.c:111
 msgid "Backup LUKS device header and keyslots"
 msgstr "Sauvegarder l'en-tête et les emplacements de clés du périphérique LUKS"
 
-#: src/cryptsetup.c:91
+#: src/cryptsetup.c:112
 msgid "Restore LUKS device header and keyslots"
 msgstr "Restaurer l'en-tête et les emplacements de clés du périphérique LUKS"
 
-#: src/cryptsetup.c:169
+#: src/cryptsetup.c:113
+msgid "open loop-AES device as mapping <name>"
+msgstr "ouvre un périphérique \"loopAES\" avec pour nom associé <nom>"
+
+#: src/cryptsetup.c:114
+msgid "remove loop-AES mapping"
+msgstr "enlève une association \"loopAES\""
+
+#: src/cryptsetup.c:196
 msgid "Command successful.\n"
 msgstr "Opération réussie.\n"
 
-#: src/cryptsetup.c:183
+#: src/cryptsetup.c:210
 #, c-format
 msgid "Command failed with code %i"
 msgstr "L'opération a échoué, code %i"
 
-#: src/cryptsetup.c:351
+#: src/cryptsetup.c:298
+msgid "Option --key-file is required.\n"
+msgstr "L'option --key-file est requise.\n"
+
+#: src/cryptsetup.c:435
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr "Cette action écrasera définitivement les données sur %s."
 
-#: src/cryptsetup.c:352
+#: src/cryptsetup.c:436
 msgid "memory allocation error in action_luksFormat"
 msgstr "erreur d'allocation de mémoire dans action_luksFormat"
 
-#: src/cryptsetup.c:666
+#: src/cryptsetup.c:730
+msgid "Enter LUKS passphrase to be changed: "
+msgstr "Entrez la phrase secrète LUKS à changer :"
+
+#: src/cryptsetup.c:767
+msgid "Enter new LUKS passphrase: "
+msgstr "Entrez la nouvelle phrase secrète LUKS :"
+
+#: src/cryptsetup.c:780
+#, c-format
+msgid "Key slot %d changed.\n"
+msgstr "Emplacement de clef %d modifié.\n"
+
+#: src/cryptsetup.c:786
+#, c-format
+msgid "Replaced with key slot %d.\n"
+msgstr "Remplacé par l'emplacement de clé %d.\n"
+
+#: src/cryptsetup.c:791
+msgid "Failed to swap new key slot.\n"
+msgstr "Nouvel emplacement de clé impossible à utiliser.\n"
+
+#: src/cryptsetup.c:848
 msgid ""
 "LUKS header dump with volume key is sensitive information\n"
 "which allows access to encrypted partition without passphrase.\n"
@@ -678,11 +764,11 @@ msgstr ""
 "sensible qui permet d'accéder à la partition chiffrée sans mot de passe.\n"
 "Ce contenu devrait toujours être stocké, chiffré, en lieu sûr."
 
-#: src/cryptsetup.c:769 src/cryptsetup.c:790
+#: src/cryptsetup.c:951 src/cryptsetup.c:972
 msgid "Option --header-backup-file is required.\n"
 msgstr "L'option --header-backup-file est requise.\n"
 
-#: src/cryptsetup.c:824
+#: src/cryptsetup.c:1006
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -690,7 +776,7 @@ msgstr ""
 "\n"
 "<action> est l'une de :\n"
 
-#: src/cryptsetup.c:830
+#: src/cryptsetup.c:1012
 #, c-format
 msgid ""
 "\n"
@@ -705,208 +791,232 @@ msgstr ""
 "<emplacement> est le numéro de l'emplacement de clé LUKS à modifier\n"
 "<fichier de clé> est un fichier optionnel contenant la nouvelle clé pour l'action luksAddKey\n"
 
-#: src/cryptsetup.c:837
+#: src/cryptsetup.c:1019
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in keyfile parameters:\n"
+"\tMaximum keyfile size: %dkB, Maximum interactive passphrase length %d (characters)\n"
+msgstr ""
+"\n"
+"Paramètres compilés par défaut pour les fichiers de clé :\n"
+"\tTaille max. fichier de clé : %d Ko, longueur max. de phrase secrète %d (caractères)\n"
+
+#: src/cryptsetup.c:1024
 #, c-format
 msgid ""
 "\n"
 "Default compiled-in device cipher parameters:\n"
+"\tloop-AES: %s, Key %d bits\n"
 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
 "\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
 msgstr ""
 "\n"
 "Paramètres de chiffrement compilés par défaut :\n"
-"\tplain : %s, clef : %d bits, fonction de hachage : %s\n"
-"\tLUKS1 : %s, clef : %d bits, hachage entête LUKS : %s, RNG (gén. aléa.) : %s\n"
+"\tloop-AES: %s, Key %d bits\n"
+"\tplain: %s, Key: %d bits, Password hashing: %s\n"
+"\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
 
-#: src/cryptsetup.c:901
+#: src/cryptsetup.c:1092
 msgid "Show this help message"
 msgstr "Afficher ce message d'aide"
 
-#: src/cryptsetup.c:902
+#: src/cryptsetup.c:1093
 msgid "Display brief usage"
 msgstr "Afficher, en résumé, la syntaxe d'invocation"
 
-#: src/cryptsetup.c:906
+#: src/cryptsetup.c:1097
 msgid "Help options:"
 msgstr "Options d'aide :"
 
-#: src/cryptsetup.c:907
+#: src/cryptsetup.c:1098
 msgid "Print package version"
 msgstr "Afficher la version du paquet"
 
-#: src/cryptsetup.c:908
+#: src/cryptsetup.c:1099
 msgid "Shows more detailed error messages"
 msgstr "Affiche des messages d'erreur plus détaillés"
 
-#: src/cryptsetup.c:909
+#: src/cryptsetup.c:1100
 msgid "Show debug messages"
 msgstr "Afficher les messages de débogage"
 
-#: src/cryptsetup.c:910
+#: src/cryptsetup.c:1101
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "L'algorithme (« cipher ») utilisé pour chiffrer le disque (voir /proc/crypto)"
 
-#: src/cryptsetup.c:911
+#: src/cryptsetup.c:1102
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "L'algorithme de hachage utilisé pour créer la clé de chiffrement à partir de la phrase secrète"
 
-#: src/cryptsetup.c:912
+#: src/cryptsetup.c:1103
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Vérifie la phrase secrète en la demandant deux fois"
 
-#: src/cryptsetup.c:913
+#: src/cryptsetup.c:1104
 msgid "Read the key from a file."
 msgstr "Lit la clef depuis un fichier."
 
-#: src/cryptsetup.c:914
+#: src/cryptsetup.c:1105
 msgid "Read the volume (master) key from file."
 msgstr "Lit la clé (maîtresse) du volume depuis un fichier."
 
-#: src/cryptsetup.c:915
+#: src/cryptsetup.c:1106
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "Liste les informations de la clef (maîtresse) de volume au lieu des autres emplacements de clefs."
 
-#: src/cryptsetup.c:916
+#: src/cryptsetup.c:1107
 msgid "The size of the encryption key"
 msgstr "La taille de la clé de chiffrement"
 
-#: src/cryptsetup.c:916
+#: src/cryptsetup.c:1107
 msgid "BITS"
 msgstr "BITS"
 
-#: src/cryptsetup.c:917
+#: src/cryptsetup.c:1108
 msgid "Limits the read from keyfile"
 msgstr "Limite la lecture d'un fichier de clef"
 
-#: src/cryptsetup.c:917 src/cryptsetup.c:918
+#: src/cryptsetup.c:1108 src/cryptsetup.c:1109
 msgid "bytes"
 msgstr "octets"
 
-#: src/cryptsetup.c:918
+#: src/cryptsetup.c:1109
 msgid "Limits the read from newly added keyfile"
 msgstr "Limite la lecture d'un nouveau fichier de clef ajouté"
 
-#: src/cryptsetup.c:919
+#: src/cryptsetup.c:1110
 msgid "Slot number for new key (default is first free)"
 msgstr "Numéro de l'emplacement pour la nouvelle clé (par défaut, le premier disponible)"
 
-#: src/cryptsetup.c:920
+#: src/cryptsetup.c:1111
 msgid "The size of the device"
 msgstr "La taille du périphérique"
 
-#: src/cryptsetup.c:920 src/cryptsetup.c:921 src/cryptsetup.c:922
-#: src/cryptsetup.c:928
+#: src/cryptsetup.c:1111 src/cryptsetup.c:1112 src/cryptsetup.c:1113
+#: src/cryptsetup.c:1119
 msgid "SECTORS"
 msgstr "SECTEURS"
 
-#: src/cryptsetup.c:921
+#: src/cryptsetup.c:1112
 msgid "The start offset in the backend device"
 msgstr "Le décalage à partir du début du périphérique sous-jacent"
 
-#: src/cryptsetup.c:922
+#: src/cryptsetup.c:1113
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr "Combien de secteurs de données chiffrées sauter au début"
 
-#: src/cryptsetup.c:923
+#: src/cryptsetup.c:1114
 msgid "Create a readonly mapping"
-msgstr "Créer un « mapping » en lecture seule"
+msgstr "Crée une association en lecture seule"
 
-#: src/cryptsetup.c:924
+#: src/cryptsetup.c:1115
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "Temps d'itération de PBKDF2 pour LUKS (en ms)"
 
-#: src/cryptsetup.c:924
+#: src/cryptsetup.c:1115
 msgid "msecs"
-msgstr "msecs"
+msgstr "ms"
 
-#: src/cryptsetup.c:925
+#: src/cryptsetup.c:1116
 msgid "Do not ask for confirmation"
 msgstr "Ne pas demander confirmation"
 
-#: src/cryptsetup.c:926
+#: src/cryptsetup.c:1117
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "Délai d'expiration de la demande interactive de phrase secrète (en secondes)"
 
-#: src/cryptsetup.c:926
+#: src/cryptsetup.c:1117
 msgid "secs"
-msgstr "secs"
+msgstr "s"
 
-#: src/cryptsetup.c:927
+#: src/cryptsetup.c:1118
 msgid "How often the input of the passphrase can be retried"
 msgstr "Nombre de tentatives possibles pour entrer la phrase secrète"
 
-#: src/cryptsetup.c:928
+#: src/cryptsetup.c:1119
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "Utiliser une limite de <n> secteurs pour aligner les données - pour luksFormat"
 
-#: src/cryptsetup.c:929
+#: src/cryptsetup.c:1120
 msgid "File with LUKS header and keyslots backup."
 msgstr "Fichier contenant une sauvegarde de l'en-tête LUKS et des emplacements de clés."
 
-#: src/cryptsetup.c:930
+#: src/cryptsetup.c:1121
 msgid "Use /dev/random for generating volume key."
 msgstr "Utiliser /dev/random pour générer la clef de volume."
 
-#: src/cryptsetup.c:931
+#: src/cryptsetup.c:1122
 msgid "Use /dev/urandom for generating volume key."
 msgstr "Utiliser /dev/urandom pour générer la clef de volume."
 
-#: src/cryptsetup.c:932
+#: src/cryptsetup.c:1123
 msgid "UUID for device to use."
 msgstr "UUID du périphérique à utiliser."
 
-#: src/cryptsetup.c:950
+#: src/cryptsetup.c:1141
 msgid "[OPTION...] <action> <action-specific>]"
 msgstr "[OPTION...] <action> <paramètres de l'action>]"
 
-#: src/cryptsetup.c:985
+#: src/cryptsetup.c:1176
 msgid "Argument <action> missing."
 msgstr "Il manque l'argument <action>."
 
-#: src/cryptsetup.c:991
+#: src/cryptsetup.c:1182
 msgid "Unknown action."
 msgstr "Action inconnue."
 
-#: src/cryptsetup.c:1006
+#: src/cryptsetup.c:1197
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s : les arguments %s sont requis."
 
-#: src/cryptsetup.c:1017
+#: src/cryptsetup.c:1209
 msgid ""
-"Option --key-size is allowed only for luksFormat and create.\n"
+"Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
 "To limit read from keyfile use --keyfile-size=(bytes)."
 msgstr ""
-"L'option --key-size est utilisable seulement avec luksFormat et luksCreate.\n"
+"L'option --key-size est utilisable seulement avec luksFormat, create et loopaesOpen.\n"
 "Pour limiter la lecture depuis un fichier de clef, utiliser --keyfile-size=(octets)."
 
-#: src/cryptsetup.c:1024
+#: src/cryptsetup.c:1216
 msgid "Key size must be a multiple of 8 bits"
 msgstr "La taille de la clé doit être un multiple de 8 bits"
 
-#: src/cryptsetup.c:1031
+#: src/cryptsetup.c:1223
 msgid "Key slot is invalid."
 msgstr "Emplacement de clef non valide."
 
-#: src/cryptsetup.c:1038
+#: src/cryptsetup.c:1230
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "L'option --key-file est prioritaire par rapport à un fichier de clef spécifié en argument.\n"
 
-#: src/cryptsetup.c:1044
+#: src/cryptsetup.c:1237
+msgid "Negative number for option not permitted."
+msgstr "Nombre négatif non autorisé pour cette option."
+
+#: src/cryptsetup.c:1242
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "Seule une des deux possibilités --use-[u]random est autorisée."
 
-#: src/cryptsetup.c:1047
+#: src/cryptsetup.c:1245
 msgid "Option --use-[u]random is allowed only for luksFormat."
 msgstr "L'option --use-[u]random est autorisée seulement avec luksFormat."
 
-#: src/cryptsetup.c:1051
+#: src/cryptsetup.c:1249
 msgid "Option --uuid is allowed only for luksFormat and luksUUID."
 msgstr "L'option --uuid est autorisée seulement avec luksFormat et luksUUID."
 
-#: src/cryptsetup.c:1055
-msgid "Options --offset and --skip are supported only for create command.\n"
-msgstr "Les options --offset et --skip sont utilisables uniquement avec la commande \"create\".\n"
+#: src/cryptsetup.c:1254
+msgid "Option --skip is supported only for create command.\n"
+msgstr "L'option --skip est utilisable uniquement avec la commande \"create\".\n"
+
+#: src/cryptsetup.c:1259
+msgid "Option --offset is supported only for create and loopaesOpen commands.\n"
+msgstr "L'option --offset est utilisable uniquement avec les commandes \"create\" et \"loopaesOpen\".\n"
+
+#~ msgid "Warning: exhausting read requested, but key file is not a regular file, function might never return.\n"
+#~ msgstr "Attention : requête de lecture, mais le fichier de clef n'est pas régulier, la procédure peut rester bloquée.\n"
 
 #~ msgid "Cannot find compatible device-mapper kernel modules.\n"
 #~ msgstr "Impossible de trouver des modules noyau compatibles avec device-mapper.\n"
