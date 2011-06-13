@@ -51,7 +51,7 @@ add_device() {
 
 dmcrypt_check() # device outstring
 {
-	X=$(dmsetup table $1 2>/dev/null | cut -d' '  -f 4)
+	X=$(dmsetup table $1 2>/dev/null | sed 's/.*: //' | cut -d' '  -f 4)
 	if [ $X = $2 ] ; then
 		echo -n "[table OK]"
 	else
