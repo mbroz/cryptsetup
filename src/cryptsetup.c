@@ -366,7 +366,7 @@ static int action_status(int arg __attribute__((unused)))
 	ci = crypt_status(NULL, action_argv[0]);
 	switch (ci) {
 	case CRYPT_INVALID:
-		r = -ENODEV;
+		r = -EINVAL;
 		break;
 	case CRYPT_INACTIVE:
 		log_std("%s/%s is inactive.\n", crypt_get_dir(), action_argv[0]);
