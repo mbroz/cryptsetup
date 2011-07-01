@@ -6,7 +6,8 @@ Sections
 4. Troubleshooting
 5. Security Aspects
 6. Backup and Data Recovery
-7. Issues with Specific Versions of cryptsetup
+7. Interoperability with other Disk Encryption Tools
+8. Issues with Specific Versions of cryptsetup
 A. Contributors
 
 
@@ -17,10 +18,14 @@ A. Contributors
 
   This is the FAQ (Frequently Asked Questions) for cryptsetup. It
   covers Linux disk encryption with plain dm-crypt (one passphrase,
-  no management, no descriptor on disk) and LUKS (multiple user keys
-  with one master key, anti-forensics, descriptor block at start of
-  device, ...). The latest version should usually be available at
+  no management, no metadata on disk) and LUKS (multiple user keys
+  with one master key, anti-forensic features, metadata block at
+  start of device, ...). The latest version of this FAQ should
+  usually be available at
   http://code.google.com/p/cryptsetup/wiki/FrequentlyAskedQuestions
+
+
+ * WARNINGS
 
   ATTENTION: If you are going to read just one thing, make it the
   section on Backup and Data Recovery. By far the most questions on
@@ -31,6 +36,18 @@ A. Contributors
   limitations imposed by the LUKS security model BEFORE you face such
   a disaster!
 
+  Specific warnings:
+
+  - Ubuntu as of 4/2011: It seems the installer offers to create
+  LUKS partitions in a way that several people mistook for an offer
+  to activate their existing LUKS partition. The installer gives no
+  or an inadequate warning and will destroy your old LUKS header,
+  causing permanent data loss. See also the section on Backup and
+  Data Recovery.
+
+  This issue has been acknowledged by the Ubuntu dev team, see here:
+  http://launchpad.net/bugs/420080
+
 
  * Who wrote this?
 
@@ -38,8 +55,9 @@ A. Contributors
   contributors are listed at the end. If you want to contribute, send
   your article, including a descriptive headline, to the maintainer,
   or the dm-crypt mailing list with something like "FAQ ..." in the
-  subject. Please note that by contributing to this FAQ, you accept
-  the license described below.
+  subject. You can also send more raw information and have me write
+  the section. Please note that by contributing to this FAQ, you
+  accept the license described below.
 
   This work is under the "Attribution-Share Alike 3.0 Unported"
   license, which means distribution is unlimited, you may create
@@ -150,8 +168,9 @@ A. Contributors
 
  * How do I use LUKS with a loop-device?
 
-  Just the same as with any block device. If you want, for example,
-  to use a 100MiB file as LUKS container, do something like this:
+  This can be very handy for experiments. Setup is just the same as
+  with any block device. If you want, for example, to use a 100MiB
+  file as LUKS container, do something like this:
 
       head -c 100M /dev/zero > luksfile  # create empty file
       losetup /dev/loop0 luksfile        # map luksfile to /dev/loop0
@@ -409,12 +428,13 @@ A. Contributors
   ciphers. With the usual modes in cryptsetup (CBC, ESSIV, XTS), you
   get up to a completely changed 512 byte block per bit error. A
   corrupt block causes a lot more havoc than the occasionally
-  flipped single bit and can result various obscure errors.
+  flipped single bit and can result in various obscure errors.
 
-  Note however that a verify run on copying between encrypted or
-  unencrypted devices can also show you corruption when the copying
-  itself did not report any problems. If you find defect RAM, assume
-  all backups and copied data to be suspect, unless you did a verify.
+  Note, that a verify run on copying between encrypted or
+  unencrypted devices will reliably detect corruption, even when the
+  copying itself did not report any problems. If you find defect
+  RAM, assume all backups and copied data to be suspect, unless you
+  did a verify.
 
 
  * How do I test RAM?
@@ -453,6 +473,31 @@ A. Contributors
 
 
 5. Security Aspects 
+
+
+ * Is LUKS insecure? Everybody can see I have encrypted data!
+
+  In practice it does not really matter. In most civilized countries
+  you can just refuse to hand over the keys, no harm done. In some
+  countries they can force you to hand over the keys, if they suspect
+  encryption. However the suspicion is enough, they do not have to
+  prove anything. This is for practical reasons, as even the presence
+  of a header (like the LUKS header) is not enough to prove that you
+  have any keys. It might have been an experiment, for example. Or it
+  was used as encrypted swap with a key from /dev/random. So they
+  make you prove you do not have encrypted data. Of course that is
+  just as impossible as the other way round.
+
+  This means that if you have a large set of random-looking data,
+  they can already lock you up. Hidden containers (encryption hidden
+  within encryption), as possible with Truecrypt, do not help
+  either. They will just assume the hidden container is there and
+  unless you hand over the key, you will stay locked up. Don't have
+  a hidden container? Though luck. Anybody could claim that.
+
+  Still, if you are concerned about the LUKS header, use plain
+  dm-crypt with a good passphrase. See also Section 2, "What is the
+  difference between "plain" and LUKS format?"
 
 
  * Should I initialize (overwrite) a new LUKS/dm-crypt partition?
@@ -629,7 +674,7 @@ A. Contributors
   days on a single CPU and is entirely feasible. To put that into
   perspective, using a number of Amazon EC2 High-CPU Extra Large
   instances (each gives about 8 real cores), this tests costs
-  currently about $48, but can be made to run arbitrarily fast.
+  currently about 50USD/EUR, but can be made to run arbitrarily fast.
 
   On the other hand, choosing 1.5 lines from, say, the Wheel of Time
   is in itself not more secure, but the book selection adds quite a
@@ -661,7 +706,7 @@ A. Contributors
   0.0001 seconds on a modern CPU.
 
   Example 2: The user did a bit better and has 32 chars of English
-  text. That would give use about 32 bits of entropy. With 1 second
+  text. That would be about 32 bits of entropy. With 1 second
   iteration, that means an attacker on the same CPU needs around 136
   years. That is pretty impressive for such a weak passphrase.
   Without the iterations, it would be more like 50 days on a modern
@@ -701,6 +746,13 @@ A. Contributors
   The iteration time is already low enough that users with entropy
   low passphrases are vulnerable. Lowering it even further increases
   this danger significantly.
+
+
+ * What about iteration count with plain dm-crypt?
+
+  Simple: There is none. There is also no salting. If you use plain
+  dm-crypt, the only way to be secure is to use a high entropy
+  passphrase. If in doubt, use LUKS instead.
 
 
  * Is LUKS with default parameters less secure on a slow CPU?
@@ -793,28 +845,138 @@ A. Contributors
 6. Backup and Data Recovery 
 
 
+ * Why do I need Backup?
+
+  First, disks die. The rate for well-treated (!) disk is about 5%
+  per year, which is high enough to worry about. There is some
+  indication that this may be even worse for some SSDs. This applies
+  both to LUKS and plain dm-crypt partitions.
+
+  Second, for LUKS, if anything damages the LUKS header or the
+  key-stripe area then decrypting the LUKS device can become
+  impossible. This is a frequent occuurence. For example an
+  accidental format as FAT or some software overwriting the first
+  sector where it suspects a partition boot sector typically makes a
+  LUKS partition permanently inacessible. See more below on LUKS
+  header damage.
+
+  So, data-backup in some form is non-optional. For LUKS, you may
+  also want to store a header backup in some secure location. This
+  only needs an update if you change passphrases.
+
+
+ * How do I backup a LUKS header?
+
+  While you could just copy the appropriate number of bytes from the
+  start of the LUKS partition, the best way is to use command option
+  "luksHeaderBackup" of cryptsetup. This protects also against
+  errors when non-standard parameters have been used in LUKS
+  partition creation. Example:
+
+ 
+     cryptsetup luksHeaderBackup --header-backup-file h /dev/mapper/c1
+ 
+  To restore, use the inverse command, i.e.
+
+     cryptsetup luksHeaderRestore --header-backup-file h /dev/mapper/c1
+ 
+
+ * How do I backup a LUKS or dm-crypt partition?
+
+  There are two options, a sector-image and a plain file or
+  filesystem backup of the contents of the partition. The sector
+  image is already encrypted, but cannot be compressed and contains
+  all empty space. The filesystem backup can be compressed, can
+  contain only part of the encrypted device, but needs to be
+  encrypted separately if so desired.
+
+  A sector-image will contain the whole partition in encrypted form,
+  for LUKS the LUKS header, the keys-slots and the data area. It can
+  be done under Linux e.g. with dd_rescue (for a direct image copy)
+  and with "cat" or "dd". Example:
+
+      cat /dev/sda10 > sda10.img
+      dd_rescue /dev/sda10 sda10.img 
+ 
+  You can also use any other backup software that is capable of making
+  a sector image of a partition. Note that compression is
+  ineffective for encrypted data, hence it does not make sense to
+  use it.
+
+  For a filesystem backup, you decrypt and mount the encrypted
+  partition and back it up as you would a normal filesystem. In this
+  case the backup is not encrypted, unless your encryption method
+  does that. For example you can encrypt a backup with "tar" as
+  follows with GnuPG:
+
+      tar cjf - <path> | gpg --cipher-algo AES -c - > backup.tbz2.gpg
+ 
+  And verify the backup like this if you are at "path":
+
+      cat backup.tbz2.gpg | gpg - | tar djf - 
+ 
+  Note: Allways verify backups, especially encrypted ones.
+
+  In both cases GnuPG will ask you interactively for your symmetric
+  key. The verify will only output errors. Use "tar dvjf -" to get
+  all comparison results. To make sure no data is written to disk
+  unencrypted, turn off swap if it is not encrypted before doing the
+  backup.
+
+  You can of course use different or no compression and you can use a
+  symmetric key if you have one and have a backup of the secret key
+  that belongs to it.
+
+  A second option for a filestem-level backup that can be used when
+  the backup is also on local disk (e.g. an external USB drive) is
+  to use a LUKS container there and copy the files to be backed up
+  between both mounted containers. Also see next item.
+
+
+ * Do I need a backup of the full partition? Would the header and
+   key-slots not be enough?
+
+  Backup protects you against two things: Disk loss or corruption
+  and user error. By far the most questions on the dm-crypt mailing
+  list about how to recover a damaged LUKS partition are related
+  to user error. For example, if you create a new filesystem on a
+  LUKS partition, chances are good that all data is lost
+  permanently.
+
+  For this case, a header+key-slot backup would often be enough. But
+  keep in mind that a well-treated (!) HDD has roughly a failure
+  risk of 5% per year. It is highly advisable to have a complete
+  backup to protect against this case.
+
+
+  * *What do I need to backup if I use "decrypt_derived"?
+
+  This is a script in Debian, intended for mounting /tmp or swap with
+  a key derived from the master key of an already decrypted device.
+  If you use this for an device with data that should be persistent,
+  you need to make sure you either do not lose access to that master
+  key or have a backup of the data. If you derive from a LUKS
+  device, a header backup of that device would cover backing up the
+  master key. Keep in mind that this does not protect against disk
+  loss.
+
+  Note: If you recreate the LUKS header of the device you derive from
+  (using luksFormat), the master key changes even if you use the same
+  passphrase(s) and you will not be able to decrypt the derived
+  device with the new LUKS header.
+
+
  * Does a backup compromise security?
 
-  Depends on how you do it. First, a backup is non-optional with
-  encrypted data just the same way it is with non-encrypted data.
-  Disks do break and they do not care whether they make plain or
-  encrypted data inaccessible. As a gideline, a well-treated HDD (!)
-  breaks with about 5% probability per year. This means everybody
-  will be hit sooner or later.
+  Depends on how you do it. However if you do not have one, you are
+  going to eventually loseyour encrypted data.
 
-  However there are risks introduced by backups. For example if you
+  There are risks introduced by backups. For example if you
   change/disable a key-slot in LUKS, a binary backup of the partition
   will still have the old key-slot. To deal with this, you have to
-  be able to change the key-slot on the backup as well, or use a
-  different set-up. One option is to have a different passphrase on
-  the backup and to make the backup with both containers open.
-  Another one is to make a backup of the original, opened container
-  to a single file, e.g. with tar, and to encrypt that file with
-  public-key-cryptography, e.g. with GnuPG. You can then keep the
-  secret key in a safe place, because it is only used to decrypt a
-  backup. The key the backup is encrypted with can be stored without
-  special security measures, as long as an attacker cannot replace
-  it with his own key.
+  be able to change the key-slot on the backup as well, securely
+  erase the backup or do a filesystem-level backup instead of a binary
+  one.
 
   If you use dm-crypt, backup is simpler: As there is no key
   management, the main risk is that you cannot wipe the backup when
@@ -822,19 +984,22 @@ A. Contributors
   should consist of forgetting the passphrase and that you can do
   without actual access to the backup.
 
-  In both cases, there is an additional (usually small) risk: An
-  attacker can see how many sectors and which ones have been changed
-  since the backup. This is not possible with the public-key method
-  though.
+  In both cases, there is an additional (usually small) risk with
+  binary backups: An attacker can see how many sectors and which
+  ones have been changed since the backup. To prevent this, use a
+  filesystem level backup methid that encrypts the whole backup in
+  one go, e.g. as described above with tar and GnuPG.
 
-  My personal advice is to use one USB disk (low value date) or
+  My personal advice is to use one USB disk (low value data) or
   three disks (high value data) in rotating order for backups, and
-  either use different passphrases or keep them easily accessible
-  in case you need to disable a key-slot. If you do network-backup
-  or tape-backup, I strongly recommend to go the public-key path,
-  especially as you typically cannot reliably delete data in these
-  scenarios. (Well, you can burn the tape if it is under your
-  control...)
+  either use independent LUKS partitions on them, or use encrypted
+  backup with tar and GnuPG.
+
+  If you do network-backup or tape-backup, I strongly recommend to
+  go the filesystem backup path with independent encryption, as you
+  typically cannot reliably delete data in these scenarios,
+  especially in a cloud setting. (Well, you can burn the tape if it
+  is under your control...)
 
 
  * What happens if I overwrite the start of a LUKS partition or damage
@@ -910,75 +1075,83 @@ A. Contributors
   http://code.google.com/p/cryptsetup/wiki/Specification
 
 
- * How do I backup a LUKS header?
-
-  While you could just copy the appropriate number of bytes from the
-  start of the LUKS partition, the best way is to use command option
-  "luksHeaderBackup" of cryptsetup. This protects also against
-  errors when non-standard parameters have been used in LUKS
-  partition creation. Example:
-
- 
-     cryptsetup luksHeaderBackup --header-backup-file h /dev/mapper/c1
- 
-  To restore, use the inverse command, i.e.
-
-     cryptsetup luksHeaderRestore --header-backup-file h /dev/mapper/c1
- 
-
- * How do I backup a LUKS partition?
-
-  You do a sector-image of the whole partition. This will contain
-  the LUKS header, the keys-slots and the data ares. It can be done
-  under Linux e.g. with dd_rescue (for a direct image copy) and with
-  "cat" or "dd". Example:
-
-      cat /dev/sda10 > sda10.img
-      dd_rescue /dev/sda10 sda10.img 
- 
-  You can also use any other backup software that is capable of making
-  a sector image of a partition. Note that compression is
-  ineffective for encrypted data, hence it does not make sense to
-  use it.
-
-
- * Do I need a backup of the full partition? Would the header and
-   key-slots not be enough?
-
-  Backup protects you against two things: Disk loss or corruption
-  and user error. By far the most questions on the dm-crypt mailing
-  list about how to recover a damaged LUKS partition are related
-  to user error. For example, if you create a new filesystem on a
-  LUKS partition, chances are good that all data is lost
-  permanently.
-
-  For this case, a header+key-slot backup would often be enough. But
-  keep in mind that a well-treated (!) HDD has roughly a failure
-  risk of 5% per year. It is highly advisable to have a complete
-  backup to protect against this case.
-
-
- * Are there security risks from a backup of the LUKS header or a
-   whole LUKS partition?
-
-  Yes. One risk is that if you remove access rights for specific
-  key-slots by deleting their contents, the data can still be
-  accessed with invalidated passphrase and the backup. The other
-  risk is that if you erase a LUKS partition, a backup could still
-  grant access, especially if you only erased the LUKS header and
-  not the whole partition.
-
-
  * I think this is overly complicated. Is there an alternative?
 
-  Yes, you can use plain dm-crypt. It does not allow multiple
+  Not really. Encryption comes at a price. You can use plain
+  dm-crypt to simplify things a bit. It does not allow multiple
   passphrases, but on the plus side, it has zero on disk description
   and if you overwrite some part of a plain dm-crypt partition,
   exactly the overwritten parts are lost (rounded up to sector
   borders).
 
 
-7. Issues with Specific Versions of cryptsetup 
+7. Interoperability with other Disk Encryption Tools  
+
+
+ * What is this section about?
+
+  Cryptsetup for plain dm-crypt can be used to access a number of
+  on-disk formats created by tools like loop-aes patched into
+  losetup. This somtimes works and sometimes does not.    This section
+  collects insights into what works, what does not and where more
+  information is required.
+
+  Additional information may be found in the mailing-list archives,
+  mentioned at the start of this FAQ document. If you have a
+  solution working that is not yet documented here and think a wider
+  audience may be intertested, please email the FAQ maintainer.
+
+
+ * loop-aes: General observations.
+
+  One problem is that there are different versions of losetup around.
+  loop-aes is a patch for losetup. Possible problems and deviations
+  from cryptsetup option syntax include:
+
+  - Offsets specifed in bytes (cryptsetup: 512 byte sectors)
+
+  - The need to specify an IV offset
+
+  - Encryption mode needs specifying (e.g. "-c twofish-cbc-plain")
+
+  - Key size needs specifying (e.g. "-s 128" for 128 bit keys)
+
+  - Passphrase hash algorithm needs specifying
+
+  Also note that because plain dm-crypt and loop-aes format does not
+  have metadata, autodetection, while feasible in most cases, would
+  be a lot of work that nobody really wants to do. If you still have
+  the old set-up, using a verbosity option (-v) on mapping with the
+  old tool or having a look into the system logs after setup could
+  give you the information you need.
+
+
+ * loop-aes patched into losetup on debian 5.x, kernel 2.6.32
+
+  In this case, the main problem seems to be that this variant of
+  losetup takes the offset (-o option) in bytes, while cryptsetup
+  takes it in sectors of 512 bytes each. Example: The losetupp
+  command
+
+  losetup -e twofish -o 2560 /dev/loop0 /dev/sdb1 
+  mount /dev/loop0 mountpoint
+ 
+  translates to
+
+  cryptsetup create -c twofish -o 5 --skip 5 e1 /dev/sdb1
+  mount /dev/mapper/e1 mountpoint
+ 
+
+ * loop-aes with 160 bit key
+
+  This seems to be sometimes used with twofish and blowfish and
+  represents a 160 bit ripemed160 hash output padded to 196 bit key
+  length. It seems the corresponding options for cryptsetup are
+
+  --cipher twofish-cbc-null -s 192 -h ripemd160:20
+ 
+
+8. Issues with Specific Versions of cryptsetup 
 
 
  * When using the create command for plain dm-crypt with cryptsetup
