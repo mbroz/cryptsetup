@@ -434,8 +434,8 @@ int device_check_and_adjust(struct crypt_device *cd,
 		log_dbg("Checking crypt segments for device %s.", device);
 		r = crypt_sysfs_check_crypt_segment(device, *offset, *size);
 		if (r < 0) {
-			log_err(cd, "Cannot use device %s (crypt segments "
-				    "overlaps or in use by another device).\n",
+			log_err(cd, _("Cannot use device %s (crypt segments "
+				    "overlaps or in use by another device).\n"),
 				    device);
 			return r;
 		}
