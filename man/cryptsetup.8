@@ -14,7 +14,7 @@ For basic (plain) dm-crypt mappings, there are four operations.
 creates a mapping with <name> backed by device <device>.
 
 \fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify-passphrase,
-\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, \-\-size, \-\-readonly]
+\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, \-\-size, \-\-readonly, \-\-shared]
 .PP
 \fIremove\fR <name>
 .IP
@@ -318,6 +318,12 @@ This option is only relevant for \fIcreate\fR and \fIloopaesOpen\fR action.
 .TP
 .B "\-\-readonly"
 set up a read-only mapping.
+.TP
+.B "\-\-shared"
+create another non-overlapping mapping to one common ciphertext device,
+e.g. to create hidden device inside another encrypted device.
+This option is only relevant for \fIcreate\fR action.
+Use \-\-offset, \-\-size and \-\-skip to specify mapped area.
 .TP
 .B "\-\-iter-time, \-i"
 The number of milliseconds to spend with PBKDF2 password processing.

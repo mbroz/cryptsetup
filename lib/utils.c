@@ -336,10 +336,8 @@ int device_ready(struct crypt_device *cd, const char *device, int mode)
 	return r;
 }
 
-int get_device_infos(const char *device,
-		     int open_exclusive,
-		     int *readonly,
-		     uint64_t *size)
+static int get_device_infos(const char *device, enum devcheck device_check,
+			    int *readonly, uint64_t *size)
 {
 	struct stat st;
 	unsigned long size_small;
@@ -353,7 +351,7 @@ int get_device_infos(const char *device,
 		return -EINVAL;
 
 	/* never wipe header on mounted device */
-	if (open_exclusive && S_ISBLK(st.st_mode))
+	if (device_check == DEV_EXCL && S_ISBLK(st.st_mode))
 		flags |= O_EXCL;
 
 	/* Try to open read-write to check whether it is a read-only device */
@@ -363,7 +361,7 @@ int get_device_infos(const char *device,
 		fd = open(device, O_RDONLY | flags);
 	}
 
-	if (fd == -1 && open_exclusive && errno == EBUSY)
+	if (fd == -1 && device_check == DEV_EXCL && errno == EBUSY)
 		return -EBUSY;
 
 	if (fd == -1)
@@ -396,7 +394,7 @@ out:
 
 int device_check_and_adjust(struct crypt_device *cd,
 			    const char *device,
-			    int open_exclusive,
+			    enum devcheck device_check,
 			    uint64_t *size,
 			    uint64_t *offset,
 			    int *read_only)
@@ -407,7 +405,7 @@ int device_check_and_adjust(struct crypt_device *cd,
 	if (!device)
 		return -ENOTBLK;
 
-	r = get_device_infos(device, open_exclusive, &real_readonly, &real_size);
+	r = get_device_infos(device, device_check, &real_readonly, &real_size);
 	if (r < 0) {
 		if (r == -EBUSY)
 			log_err(cd, _("Cannot use device %s which is in use "
@@ -430,6 +428,17 @@ int device_check_and_adjust(struct crypt_device *cd,
 			return -EINVAL;
 		}
 		*size -= *offset;
+	}
+
+	if (device_check == DEV_SHARED) {
+		log_dbg("Checking crypt segments for device %s.", device);
+		r = crypt_sysfs_check_crypt_segment(device, *offset, *size);
+		if (r < 0) {
+			log_err(cd, "Cannot use device %s (crypt segments "
+				    "overlaps or in use by another device).\n",
+				    device);
+			return r;
+		}
 	}
 
 	if (real_readonly)

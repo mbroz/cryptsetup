@@ -200,7 +200,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 	device = crypt_get_device_name(cd);
 	read_only = flags & CRYPT_ACTIVATE_READONLY;
 
-	r = device_check_and_adjust(cd, device, 1, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, device, DEV_EXCL, &size, &offset, &read_only);
 	if (r)
 		return r;
 

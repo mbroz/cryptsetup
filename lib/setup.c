@@ -357,16 +357,25 @@ static int create_device_helper(struct crypt_device *cd,
 				uint64_t skip,
 				uint64_t offset,
 				const char *uuid,
-				int read_only,
+				uint32_t activation_flags,
 				int reload)
 {
 	crypt_status_info ci;
 	char *dm_cipher = NULL;
 	char *processed_key = NULL;
-	int r;
+	enum devcheck device_check;
+	int r, read_only;
 
 	if (!name)
 		return -EINVAL;
+
+	read_only = activation_flags & CRYPT_ACTIVATE_READONLY ? 1 : 0;
+	if (reload)
+		device_check = DEV_OK;
+	else if (activation_flags & CRYPT_ACTIVATE_SHARED)
+		device_check = DEV_SHARED;
+	else
+		device_check = DEV_EXCL;
 
 	ci = crypt_status(cd, name);
 	if (ci == CRYPT_INVALID)
@@ -385,7 +394,7 @@ static int create_device_helper(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = device_check_and_adjust(cd, cd->device, !reload, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, cd->device, device_check, &size, &offset, &read_only);
 	if (r)
 		return r;
 
@@ -424,7 +433,7 @@ static int open_from_hdr_and_vk(struct crypt_device *cd,
 	read_only = flags & CRYPT_ACTIVATE_READONLY;
 	no_uuid = flags & CRYPT_ACTIVATE_NO_UUID;
 
-	r = device_check_and_adjust(cd, cd->device, 1, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, cd->device, DEV_EXCL, &size, &offset, &read_only);
 	if (r)
 		return r;
 
@@ -625,7 +634,11 @@ static int crypt_create_and_update_device(struct crypt_options *options, int upd
 	struct crypt_device *cd = NULL;
 	char *passphrase = NULL;
 	size_t passphrase_size = 0;
+	uint32_t activation_flags;
 	int r;
+
+	activation_flags = options->flags & CRYPT_FLAG_READONLY ?
+			   CRYPT_ACTIVATE_READONLY : 0;
 
 	r = _crypt_init(&cd, CRYPT_PLAIN, options, 0, 1);
 	if (r)
@@ -639,8 +652,7 @@ static int crypt_create_and_update_device(struct crypt_options *options, int upd
 			options->cipher, NULL, options->key_file,
 			passphrase, passphrase_size,
 			options->key_size, options->size, options->skip,
-			options->offset, NULL, options->flags & CRYPT_FLAG_READONLY,
-			update);
+			options->offset, NULL, activation_flags, update);
 
 	crypt_safe_free(passphrase);
 	crypt_free(cd);
@@ -697,7 +709,7 @@ int crypt_resize_device(struct crypt_options *options)
 		goto out;
 
 	size = options->size;
-	r = device_check_and_adjust(cd, device, 0, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, device, DEV_OK, &size, &offset, &read_only);
 	if (r)
 		goto out;
 
@@ -1226,6 +1238,7 @@ static int _crypt_format_plain(struct crypt_device *cd,
 
 	cd->plain_hdr.offset = params ? params->offset : 0;
 	cd->plain_hdr.skip = params ? params->skip : 0;
+	cd->plain_hdr.size = params ? params->size : 0;
 
 	if (!cd->plain_cipher || !cd->plain_cipher_mode)
 		return -ENOMEM;
@@ -1425,7 +1438,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		goto out;
 	}
 
-	r = device_check_and_adjust(cd, device, 0, &new_size, &offset, &read_only);
+	r = device_check_and_adjust(cd, device, DEV_OK, &new_size, &offset, &read_only);
 	if (r)
 		goto out;
 
@@ -1945,10 +1958,9 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		r = create_device_helper(cd, name, cd->plain_hdr.hash,
 					 cd->plain_cipher, cd->plain_cipher_mode,
 					 NULL, passphrase, passphrase_size,
-					 cd->volume_key->keylength, 0,
+					 cd->volume_key->keylength, cd->plain_hdr.size,
 					 cd->plain_hdr.skip, cd->plain_hdr.offset,
-					 cd->plain_uuid,
-					 flags & CRYPT_ACTIVATE_READONLY, 0);
+					 cd->plain_uuid, flags, 0);
 		keyslot = 0;
 	} else if (isLUKS(cd->type)) {
 		/* provided passphrase, do not retry */
@@ -2011,10 +2023,9 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 		r = create_device_helper(cd, name, cd->plain_hdr.hash,
 					 cd->plain_cipher, cd->plain_cipher_mode,
 					 NULL, passphrase_read, passphrase_size_read,
-					 cd->volume_key->keylength, 0,
+					 cd->volume_key->keylength, cd->plain_hdr.size,
 					 cd->plain_hdr.skip, cd->plain_hdr.offset,
-					 cd->plain_uuid,
-					 flags & CRYPT_ACTIVATE_READONLY, 0);
+					 cd->plain_uuid, flags, 0);
 	} else if (isLUKS(cd->type)) {
 		r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
 			  &passphrase_size_read, keyfile, keyfile_size);
@@ -2079,8 +2090,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 
 		return create_device_helper(cd, name, NULL,
 			cd->plain_cipher, cd->plain_cipher_mode, NULL, volume_key, volume_key_size,
-			cd->volume_key->keylength, 0, cd->plain_hdr.skip,
-			cd->plain_hdr.offset, cd->plain_uuid, flags & CRYPT_ACTIVATE_READONLY, 0);
+			cd->volume_key->keylength, cd->plain_hdr.size, cd->plain_hdr.skip,
+			cd->plain_hdr.offset, cd->plain_uuid, flags, 0);
 	}
 
 	if (!isLUKS(cd->type)) {

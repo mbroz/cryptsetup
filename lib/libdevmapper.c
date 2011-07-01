@@ -206,7 +206,7 @@ void dm_exit(void)
 }
 
 /* Return path to DM device */
-char *dm_device_path(int major, int minor)
+char *dm_device_path(const char *prefix, int major, int minor)
 {
 	struct dm_task *dmt;
 	const char *name;
@@ -222,7 +222,7 @@ char *dm_device_path(int major, int minor)
 		return NULL;
 	}
 
-	if (snprintf(path, sizeof(path), "/dev/mapper/%s", name) < 0)
+	if (snprintf(path, sizeof(path), "%s%s", prefix ?: "", name) < 0)
 		path[0] = '\0';
 
 	dm_task_destroy(dmt);
@@ -763,4 +763,28 @@ int dm_is_dm_device(int major, int minor)
 int dm_is_dm_kernel_name(const char *name)
 {
 	return strncmp(name, "dm-", 3) ? 0 : 1;
+}
+
+int dm_check_segment(const char *name, uint64_t offset, uint64_t size)
+{
+	uint64_t seg_size, seg_offset;
+	int r;
+
+	log_dbg("Checking segments for device %s.", name);
+
+	r = dm_query_device(name, NULL, &seg_size, NULL, &seg_offset,
+			    NULL, NULL, NULL, NULL, NULL, NULL);
+	if (r < 0)
+		return r;
+
+	if (offset >= (seg_offset + seg_size) || (offset + size) <= seg_offset)
+		r = 0;
+	else
+		r = -EBUSY;
+
+	log_dbg("seg: %" PRIu64 " - %" PRIu64 ", new %" PRIu64 " - %" PRIu64 "%s",
+	       seg_offset, seg_offset + seg_size, offset, offset + size,
+	       r ? " (overlapping)" : " (ok)");
+
+	return r;
 }

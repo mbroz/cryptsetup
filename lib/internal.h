@@ -47,6 +47,7 @@ void set_error(const char *fmt, ...);
 const char *get_error(void);
 
 char *crypt_lookup_dev(const char *dev_id);
+int crypt_sysfs_check_crypt_segment(const char *device, uint64_t offset, uint64_t size);
 
 int sector_size_for_device(const char *device);
 int device_read_ahead(const char *dev, uint32_t *read_ahead);
@@ -54,13 +55,11 @@ ssize_t write_blockwise(int fd, void *buf, size_t count);
 ssize_t read_blockwise(int fd, void *_buf, size_t count);
 ssize_t write_lseek_blockwise(int fd, char *buf, size_t count, off_t offset);
 int device_ready(struct crypt_device *cd, const char *device, int mode);
-int get_device_infos(const char *device,
-		     int open_exclusive,
-		     int *readonly,
-		     uint64_t *size);
+
+enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
 int device_check_and_adjust(struct crypt_device *cd,
 			    const char *device,
-			    int open_exclusive,
+			    enum devcheck device_check,
 			    uint64_t *size,
 			    uint64_t *offset,
 			    int *read_only);

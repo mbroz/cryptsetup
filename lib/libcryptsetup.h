@@ -161,6 +161,7 @@ struct crypt_params_plain {
 	const char *hash; /* password hash function */
 	uint64_t offset;  /* offset in sectors */
 	uint64_t skip;    /* IV initilisation sector */
+	uint64_t size;    /* size of mapped device or 0 for autodetection */
 };
 
 struct crypt_params_luks1 {
@@ -375,6 +376,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
  */
 #define CRYPT_ACTIVATE_READONLY (1 << 0)
 #define CRYPT_ACTIVATE_NO_UUID  (1 << 1)
+#define CRYPT_ACTIVATE_SHARED   (1 << 2)
 
 /**
  * Active device runtime attributes

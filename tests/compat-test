@@ -4,6 +4,7 @@ CRYPTSETUP=../src/cryptsetup
 
 DEV_NAME=dummy
 DEV_NAME2=dummy2
+DEV_NAME3=dummy3
 ORIG_IMG=luks-test-orig
 IMG=luks-test
 KEY1=key1
@@ -24,6 +25,7 @@ LOOPDEV=$(losetup -f 2>/dev/null)
 
 function remove_mapping()
 {
+	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove $DEV_NAME3
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
@@ -354,6 +356,18 @@ echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY2 -i1 || fail
 echo "key0" | $CRYPTSETUP luksRemoveKey $LOOPDEV -l 2 2>/dev/null && fail
 echo "key01" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d 4 2>/dev/null && fail
 echo -e "key0\n" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d- -l 4 || fail
+
+prepare "[25] Create non-overlapping segments" wipe
+echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --offset   0 --size 256 || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --offset 512 --size 256 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --offset 512 --size 256 --shared || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --offset 255 --size 256 --shared 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --offset 256 --size 257 --shared 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --offset 256 --size 1024 --shared 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --offset 256 --size 256 --shared || fail
+$CRYPTSETUP -q remove  $DEV_NAME3 || fail
+$CRYPTSETUP -q remove  $DEV_NAME2 || fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
 
 remove_mapping
 exit 0

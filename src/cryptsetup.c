@@ -61,6 +61,7 @@ static int opt_align_payload = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
 static int opt_dump_master_key = 0;
+static int opt_shared = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -224,10 +225,12 @@ static int action_create(int arg __attribute__((unused)))
 		.hash = opt_hash ?: DEFAULT_PLAIN_HASH,
 		.skip = opt_skip,
 		.offset = opt_offset,
+		.size = opt_size,
 	};
 	char *password = NULL;
 	size_t passwordLen;
 	size_t key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
+	uint32_t activate_flags = 0;
 	int r;
 
 	if (params.hash && !strcmp(params.hash, "plain"))
@@ -262,11 +265,17 @@ static int action_create(int arg __attribute__((unused)))
 	if (r < 0)
 		goto out;
 
+	if (opt_readonly)
+		activate_flags |= CRYPT_ACTIVATE_READONLY;
+
+	if (opt_shared)
+		activate_flags |= CRYPT_ACTIVATE_SHARED;
+
 	if (opt_key_file)
 		/* With hashing, read the whole keyfile */
 		r = crypt_activate_by_keyfile(cd, action_argv[0],
 			CRYPT_ANY_SLOT, opt_key_file, params.hash ? 0 : key_size,
-			opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+			activate_flags);
 	else {
 		r = crypt_get_key(_("Enter passphrase: "),
 				  &password, &passwordLen, opt_keyfile_size,
@@ -277,17 +286,8 @@ static int action_create(int arg __attribute__((unused)))
 			goto out;
 
 		r = crypt_activate_by_passphrase(cd, action_argv[0],
-			CRYPT_ANY_SLOT, password, passwordLen,
-			opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+			CRYPT_ANY_SLOT, password, passwordLen, activate_flags);
 	}
-
-	/* FIXME: workaround, new api missing format parameter for size.
-	 * Properly fix it after bumping library version,
-	 * add start_offset and size into "PLAIN" format specifiers.
-	 */
-	if (r >= 0 && opt_size)
-		r = crypt_resize(cd, action_argv[0], opt_size);
-
 out:
 	crypt_free(cd);
 	crypt_safe_free(password);
@@ -1137,6 +1137,7 @@ int main(int argc, const char **argv)
 		{ "header-backup-file",'\0', POPT_ARG_STRING, &opt_header_backup_file,  0, N_("File with LUKS header and keyslots backup."), NULL },
 		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
 		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },
+		{ "shared",            '\0', POPT_ARG_NONE, &opt_shared,                0, N_("Share device with another non-overlapping crypt segment."), NULL },
 		{ "uuid",              '\0',  POPT_ARG_STRING, &opt_uuid,               0, N_("UUID for device to use."), NULL },
 		POPT_TABLEEND
 	};
@@ -1217,6 +1218,12 @@ int main(int argc, const char **argv)
 	}
 
 	/* FIXME: rewrite this from scratch */
+
+	if (opt_shared && strcmp(aname, "create")) {
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --shared is allowed only for create operation.\n"),
+		      poptGetInvocationName(popt_context));
+	}
 
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&

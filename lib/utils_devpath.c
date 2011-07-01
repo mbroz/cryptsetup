@@ -24,11 +24,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "utils_dm.h"
 
 char *crypt_lookup_dev(const char *dev_id);
+int crypt_sysfs_check_crypt_segment(const char *device, uint64_t offset, uint64_t size);
 
 static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_level)
 {
@@ -146,7 +149,7 @@ char *crypt_lookup_dev(const char *dev_id)
 	devname++;
 
 	if (dm_is_dm_kernel_name(devname))
-		devpath = dm_device_path(major, minor);
+		devpath = dm_device_path("/dev/mapper/", major, minor);
 	else if (snprintf(path, sizeof(path), "/dev/%s", devname) > 0)
 		devpath = strdup(path);
 
@@ -162,4 +165,76 @@ char *crypt_lookup_dev(const char *dev_id)
 	}
 
 	return devpath;
+}
+
+static int crypt_sysfs_get_major_minor(const char *kname, int *major, int *minor)
+{
+	char path[PATH_MAX], tmp[64];
+	int fd, r = 0;
+
+	if (snprintf(path, sizeof(path), "/sys/block/%s/dev", kname) < 0)
+		return 0;
+
+	if ((fd = open(path, O_RDONLY)) < 0)
+		return 0;
+	r = read(fd, tmp, sizeof(tmp));
+	close(fd);
+
+	if (r <= 0 || sscanf(tmp, "%d:%d", major, minor) != 2)
+		return 0;
+
+	return 1;
+}
+
+static int crypt_sysfs_get_holders_dir(const char *device, char *path, int size)
+{
+	struct stat st;
+
+	if (stat(device, &st) < 0 || !S_ISBLK(st.st_mode))
+		return 0;
+
+	if (snprintf(path, size, "/sys/dev/block/%d:%d/holders",
+		     major(st.st_rdev), minor(st.st_rdev)) < 0)
+		return 0;
+
+	return 1;
+}
+
+int crypt_sysfs_check_crypt_segment(const char *device, uint64_t offset, uint64_t size)
+{
+	DIR *dir;
+	struct dirent *d;
+	char path[PATH_MAX], *dmname;
+	int major, minor, r = 0;
+
+	if (!crypt_sysfs_get_holders_dir(device, path, sizeof(path)))
+		return -EINVAL;
+
+	if (!(dir = opendir(path)))
+		return -EINVAL;
+
+	while (!r && (d = readdir(dir))) {
+		if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))
+			continue;
+
+		if (!dm_is_dm_kernel_name(d->d_name)) {
+			r = -EBUSY;
+			break;
+		}
+
+		if (!crypt_sysfs_get_major_minor(d->d_name, &major, &minor)) {
+			r = -EINVAL;
+			break;
+		}
+
+		if (!(dmname = dm_device_path(NULL, major, minor))) {
+			r = -EINVAL;
+			break;
+		}
+		r = dm_check_segment(dmname, offset, size);
+		free(dmname);
+	}
+	closedir(dir);
+
+	return r;
 }

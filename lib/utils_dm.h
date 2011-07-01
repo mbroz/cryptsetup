@@ -38,8 +38,9 @@ int dm_suspend_and_wipe_key(const char *name);
 int dm_resume_and_reinstate_key(const char *name,
 				size_t key_size,
 				const char *key);
-char *dm_device_path(int major, int minor);
+char *dm_device_path(const char *prefix, int major, int minor);
 int dm_is_dm_device(int major, int minor);
 int dm_is_dm_kernel_name(const char *name);
+int dm_check_segment(const char *name, uint64_t offset, uint64_t size);
 
 #endif /* _UTILS_DM_H */
