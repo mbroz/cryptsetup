@@ -153,11 +153,6 @@ static int crypt_decode_key(char *key, char *hex, unsigned int size)
 	return 0;
 }
 
-static int yesDialog(char *msg)
-{
-	return 1;
-}
-
 static void cmdLineLog(int level, char *msg)
 {
 	strncat(global_log, msg, sizeof(global_log) - strlen(global_log));
@@ -168,7 +163,6 @@ static void new_log(int level, const char *msg, void *usrptr)
 {
 	cmdLineLog(level, (char*)msg);
 }
-
 
 static void reset_log()
 {
@@ -181,11 +175,6 @@ static void _system(const char *command, int warn)
 	if (system(command) < 0 && warn)
 		printf("System command failed: %s", command);
 }
-
-static struct interface_callbacks cmd_icb = {
-	.yesDialog = yesDialog,
-	.log = cmdLineLog,
-};
 
 static void _cleanup(void)
 {
@@ -299,6 +288,17 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 			} while(0)
 
 #define RUN_(x, y)		do { printf("%s: %s\n", #x, (y)); x(); } while (0)
+
+#if 0
+static int yesDialog(char *msg)
+{
+	return 1;
+}
+
+static struct interface_callbacks cmd_icb = {
+	.yesDialog = yesDialog,
+	.log = cmdLineLog,
+};
 
 // OLD API TESTS
 static void LuksUUID(void)
@@ -589,6 +589,7 @@ void DeviceResizeGame(void)
 
 	_remove_keyfiles();
 }
+#endif
 
 // NEW API tests
 
@@ -1097,7 +1098,7 @@ int main (int argc, char *argv[])
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 
 	RUN_(NonFIPSAlg, "Crypto is properly initialised in format"); //must be the first!
-
+#if 0
 	RUN_(LuksUUID, "luksUUID API call");
 	RUN_(IsLuks, "isLuks API call");
 	RUN_(LuksOpen, "luksOpen API call");
@@ -1106,7 +1107,7 @@ int main (int argc, char *argv[])
 	RUN_(LuksFormat, "luksFormat API call");
 	RUN_(LuksKeyGame, "luksAddKey, RemoveKey, KillSlot API calls");
 	RUN_(DeviceResizeGame, "regular crypto, resize calls");
-
+#endif
 	RUN_(AddDevicePlain, "plain device API creation exercise");
 	RUN_(HashDevicePlain, "plain device API hash test");
 	RUN_(AddDeviceLuks, "Format and use LUKS device");
