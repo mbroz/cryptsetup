@@ -36,7 +36,17 @@ A. Contributors
   limitations imposed by the LUKS security model BEFORE you face such
   a disaster!
 
-  Specific warnings:
+  PASSPHRASES: Some people have had difficulties when upgrading
+  distributions. It is highly advisable to only use the 94 printable
+  characters from the first 128 characters of the ASCII table, as
+  they will always have the same binary representation. Other
+  characters may have different encoding depending on system
+  configuration and your passphrase will not work with a different
+  encoding. A table of the standardized first 128 ASCII caracters
+  can, e.g. be found on http://en.wikipedia.org/wiki/ASCII
+
+
+ * System Specific warnings
 
   - Ubuntu as of 4/2011: It seems the installer offers to create
   LUKS partitions in a way that several people mistook for an offer
@@ -639,6 +649,11 @@ A. Contributors
 
 
  * Is LUKS secure with a low-entropy (bad) passphrase?
+
+  Note: You should only use the 94 printable characters from 7 bit
+  ASCII code to prevent your passphrase from failing when the
+  character encoding changes, e.g. because of a system upgrade, see
+  also the note at the very start of this FAQ under "WARNINGS".
 
   This needs a bit of theory. The quality of your passphrase is
   directly related to its entropy (information theoretic, not
