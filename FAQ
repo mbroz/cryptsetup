@@ -202,6 +202,16 @@ A. Contributors
   new key-slot.
 
 
+ * Encrytion on top of RAID or the other way round?
+
+  Unless you have special needs, place encryption between RAID and
+  filesystem, i.e. encryption on top of RAID. You can do it the other
+  way round, but you have to be aware that you then need to give the
+  pasphrase for each individual disk and RAID autotetection will not
+  work anymore. Therefore it is better to encrypt the RAID device,
+  e.g. /dev/dm0 .
+
+
  * How do I read a dm-crypt key from file?
 
   Note that the file will still be hashed first, just like keyboard
@@ -373,10 +383,14 @@ A. Contributors
   However, this operation will not change volume key iteration count
   (MK iterations in output of "cryptsetup luksDump"). In order to
   change that, you will have to backup the data in the LUKS
-  container, luksFormat on the slow machine and restore the data.
-  Note that in the original LUKS specification this value was fixed
-  to 10, but it is now derived from the PBKDF2 benchmark as well and
-  set to iterations in 0.125 sec or 1000, whichever is larger.
+  container (i.e. your encrypted data), luksFormat on the slow
+  machine and restore the data. Note that in the original LUKS
+  specification this value was fixed to 10, but it is now derived
+  from the PBKDF2 benchmark as well and set to iterations in 0.125
+  sec or 1000, whichever is larger. Also note that MK iterations
+  are not very security relevant. But as each key-slot already takes
+  1 second, spending the additional 0.125 seconds really does not
+  matter.
 
 
  * "blkid" sees a LUKS UUID and an ext2/swap UUID on the same device.
