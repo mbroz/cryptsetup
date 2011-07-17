@@ -225,8 +225,7 @@ int PLAIN_activate(struct crypt_device *cd,
 		.device = crypt_get_device_name(cd),
 		.cipher = NULL,
 		.uuid   = crypt_get_uuid(cd),
-		.key    = vk->key,
-		.key_size = vk->keylength,
+		.vk    = vk,
 		.offset = crypt_get_data_offset(cd),
 		.iv_offset = iv_offset,
 		.size   = size,
@@ -527,11 +526,8 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 			(*cd)->plain_hdr.hash = NULL; /* no way to get this */
 			(*cd)->plain_hdr.offset = dmd.offset;
 			(*cd)->plain_hdr.skip = dmd.iv_offset;
-			(*cd)->volume_key = crypt_alloc_volume_key(dmd.key_size, dmd.key);
-			if (!(*cd)->volume_key) {
-				r = -ENOMEM;
-				goto out;
-			}
+			(*cd)->volume_key = dmd.vk;
+			dmd.vk = NULL;
 
 			r = crypt_parse_name_and_mode(dmd.cipher, cipher, NULL, cipher_mode);
 			if (!r) {
@@ -549,23 +545,20 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 				(*cd)->loopaes_cipher = strdup(cipher);
 				(*cd)->loopaes_cipher_mode = strdup(cipher_mode);
 				/* version 3 uses last key for IV */
-				if (dmd.key_size % key_nums)
+				if (dmd.vk->keylength % key_nums)
 					key_nums++;
-				(*cd)->loopaes_key_size = dmd.key_size / key_nums;
+				(*cd)->loopaes_key_size = dmd.vk->keylength / key_nums;
 			}
 		} else if (!strncmp(CRYPT_LUKS1, dmd.uuid, sizeof(CRYPT_LUKS1)-1)) {
 			if (dmd.device) {
 				if (crypt_load(*cd, CRYPT_LUKS1, NULL) < 0 ||
-				    crypt_volume_key_verify(*cd, dmd.key, dmd.key_size) < 0) {
+				    crypt_volume_key_verify(*cd, dmd.vk->key, dmd.vk->keylength) < 0) {
 					log_dbg("LUKS device header does not match active device.");
 					goto out;
 				}
 
-				(*cd)->volume_key = crypt_alloc_volume_key(dmd.key_size, dmd.key);
-				if (!(*cd)->volume_key) {
-					r = -ENOMEM;
-					goto out;
-				}
+				(*cd)->volume_key = dmd.vk;
+				dmd.vk = NULL;
 			}
 		}
 	} else
@@ -576,7 +569,7 @@ out:
 		crypt_free(*cd);
 		*cd = NULL;
 	}
-	crypt_safe_free(dmd.key);
+	crypt_free_volume_key(dmd.vk);
 	free((char*)dmd.device);
 	free((char*)dmd.cipher);
 	free((char*)dmd.uuid);
@@ -826,7 +819,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = dm_create_device(name, cd->type, &dmd, 1);
 	}
 out:
-	crypt_safe_free(dmd.key);
+	crypt_free_volume_key(dmd.vk);
 	free((char*)dmd.cipher);
 	free((char*)dmd.device);
 	free((char*)dmd.uuid);

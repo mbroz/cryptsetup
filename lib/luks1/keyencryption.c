@@ -51,7 +51,7 @@ static int devfd=-1;
 
 static int setup_mapping(const char *cipher, const char *name,
 			 const char *device,
-			 const char *key, size_t keyLength,
+			 struct volume_key *vk,
 			 unsigned int sector, size_t srcLength,
 			 int mode, struct crypt_device *ctx)
 {
@@ -60,8 +60,7 @@ static int setup_mapping(const char *cipher, const char *name,
 		.device = device,
 		.cipher = cipher,
 		.uuid   = NULL,
-		.key    = (char*)key,
-		.key_size = keyLength,
+		.vk     = vk,
 		.offset = sector,
 		.iv_offset = 0,
 		.size   = 0,
@@ -128,7 +127,7 @@ static const char *_error_hint(char *cipherMode, size_t keyLength)
    handler and global vars for cleaning */
 static int LUKS_endec_template(char *src, size_t srcLength,
 			       struct luks_phdr *hdr,
-			       char *key, size_t keyLength,
+			       struct volume_key *vk,
 			       const char *device,
 			       unsigned int sector,
 			       ssize_t (*func)(int, void *, size_t),
@@ -156,12 +155,12 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	cleaner_name = name;
 
 	r = setup_mapping(dmCipherSpec, name, device,
-			  key, keyLength, sector, srcLength, mode, ctx);
+			  vk, sector, srcLength, mode, ctx);
 	if(r < 0) {
 		log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
 			"Check that kernel supports %s cipher (check syslog for more info).\n%s"),
 			device, dmCipherSpec,
-			_error_hint(hdr->cipherMode, keyLength * 8));
+			_error_hint(hdr->cipherMode, vk->keylength * 8));
 		r = -EIO;
 		goto out1;
 	}
@@ -198,22 +197,22 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 			    struct luks_phdr *hdr,
-			    char *key, size_t keyLength,
+			    struct volume_key *vk,
 			    const char *device,
 			    unsigned int sector,
 			    struct crypt_device *ctx)
 {
-	return LUKS_endec_template(src,srcLength,hdr,key,keyLength, device,
+	return LUKS_endec_template(src,srcLength,hdr,vk, device,
 				   sector, write_blockwise, O_RDWR, ctx);
 }
 
 int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 			      struct luks_phdr *hdr,
-			      char *key, size_t keyLength,
+			      struct volume_key *vk,
 			      const char *device,
 			      unsigned int sector,
 			      struct crypt_device *ctx)
 {
-	return LUKS_endec_template(dst,dstLength,hdr,key,keyLength, device,
+	return LUKS_endec_template(dst,dstLength,hdr,vk, device,
 				   sector, read_blockwise, O_RDONLY, ctx);
 }

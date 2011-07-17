@@ -239,16 +239,16 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 }
 
 static char *get_params(const char *device, uint64_t skip, uint64_t offset,
-			const char *cipher, size_t key_size, const char *key)
+			const char *cipher, struct volume_key *vk)
 {
 	char *params;
 	char *hexkey;
 
-	hexkey = crypt_safe_alloc(key_size * 2 + 1);
+	hexkey = crypt_safe_alloc(vk->keylength * 2 + 1);
 	if (!hexkey)
 		return NULL;
 
-	hex_key(hexkey, key_size, key);
+	hex_key(hexkey, vk->keylength, vk->key);
 
 	params = crypt_safe_alloc(strlen(hexkey) + strlen(cipher) + strlen(device) + 64);
 	if (!params)
@@ -411,7 +411,7 @@ int dm_create_device(const char *name,
 	uint16_t udev_flags = 0;
 
 	params = get_params(dmd->device, dmd->iv_offset, dmd->offset,
-			    dmd->cipher, dmd->key_size, dmd->key);
+			    dmd->cipher, dmd->vk);
 	if (!params)
 		goto out_no_removal;
 
@@ -641,24 +641,21 @@ int dm_query_device(const char *name, uint32_t get_flags,
 		goto out;
 	dmd->offset = val64;
 
-	/* key_size */
-	dmd->key_size = strlen(key_) / 2;
-
-	/* key */
-	if (dmd->key_size && (get_flags & DM_ACTIVE_KEY)) {
-		dmd->key = crypt_safe_alloc(dmd->key_size);
-		if (!dmd->key) {
+	if (get_flags & DM_ACTIVE_KEY) {
+		dmd->vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);
+		if (!dmd->vk) {
 			r = -ENOMEM;
 			goto out;
 		}
 
 		buffer[2] = '\0';
-		for(i = 0; i < dmd->key_size; i++) {
+		for(i = 0; i < dmd->vk->keylength; i++) {
 			memcpy(buffer, &key_[i * 2], 2);
-			dmd->key[i] = strtoul(buffer, &endp, 16);
+			dmd->vk->key[i] = strtoul(buffer, &endp, 16);
 			if (endp != &buffer[2]) {
-				crypt_safe_free(dmd->key);
-				dmd->key = NULL;
+				crypt_free_volume_key(dmd->vk);
+				dmd->vk = NULL;
+				r = -EINVAL;
 				goto out;
 			}
 		}

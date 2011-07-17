@@ -5,6 +5,7 @@
 #include <inttypes.h>
 
 struct crypt_device;
+struct volume_key;
 
 /* Device mapper backend - kernel support flags */
 #define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
@@ -28,8 +29,9 @@ struct crypt_dm_active_device {
 	const char *device;
 	const char *cipher;
 	const char *uuid;
-	char *key;
-	size_t key_size;
+
+	/* Active key for device */
+	struct volume_key *vk;
 
 	/* struct crypt_active_device */
 	uint64_t offset;	/* offset in sectors */

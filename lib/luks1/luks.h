@@ -160,7 +160,7 @@ int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable);
 int LUKS_encrypt_to_storage(
 	char *src, size_t srcLength,
 	struct luks_phdr *hdr,
-	char *key, size_t keyLength,
+	struct volume_key *vk,
 	const char *device,
 	unsigned int sector,
 	struct crypt_device *ctx);
@@ -168,7 +168,7 @@ int LUKS_encrypt_to_storage(
 int LUKS_decrypt_from_storage(
 	char *dst, size_t dstLength,
 	struct luks_phdr *hdr,
-	char *key, size_t keyLength,
+	struct volume_key *vk,
 	const char *device,
 	unsigned int sector,
 	struct crypt_device *ctx);

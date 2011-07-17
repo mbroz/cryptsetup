@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include "config.h"
 
+struct crypt_device;
+struct volume_key;
+
 #define LOOPAES_KEYS_MAX 65
 
 int LOOPAES_parse_keyfile(struct crypt_device *cd,

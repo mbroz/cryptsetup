@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 #include <uuid/uuid.h>
 
 #include "luks.h"
@@ -525,7 +526,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 		 uint64_t *PBKDF2_per_sec,
 		 struct crypt_device *ctx)
 {
-	char derivedKey[hdr->keyBytes];
+	struct volume_key *derived_key;
 	char *AfKey = NULL;
 	unsigned int AFEKSize;
 	uint64_t PBKDF2_temp;
@@ -560,23 +561,26 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 
 	log_dbg("Key slot %d use %d password iterations.", keyIndex, hdr->keyblock[keyIndex].passwordIterations);
 
+	derived_key = crypt_alloc_volume_key(hdr->keyBytes, NULL);
+	if (!derived_key)
+		return -ENOMEM;
+
 	r = crypt_random_get(ctx, hdr->keyblock[keyIndex].passwordSalt,
 		       LUKS_SALTSIZE, CRYPT_RND_NORMAL);
 	if (r < 0)
 		return r;
 
-//	assert((vk->keylength % TWOFISH_BLOCKSIZE) == 0); FIXME
-
 	r = PBKDF2_HMAC(hdr->hashSpec, password,passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,
 			hdr->keyblock[keyIndex].passwordIterations,
-			derivedKey, hdr->keyBytes);
+			derived_key->key, hdr->keyBytes);
 	if (r < 0)
 		goto out;
 
 	/*
 	 * AF splitting, the masterkey stored in vk->key is split to AfKey
 	 */
+	assert(vk->keylength == hdr->keyBytes);
 	AFEKSize = hdr->keyblock[keyIndex].stripes*vk->keylength;
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey) {
@@ -596,8 +600,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 	r = LUKS_encrypt_to_storage(AfKey,
 				    AFEKSize,
 				    hdr,
-				    derivedKey,
-				    hdr->keyBytes,
+				    derived_key,
 				    device,
 				    hdr->keyblock[keyIndex].keyMaterialOffset,
 				    ctx);
@@ -619,7 +622,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 	r = 0;
 out:
 	crypt_safe_free(AfKey);
-	memset(derivedKey, 0, sizeof(derivedKey));
+	crypt_free_volume_key(derived_key);
 	return r;
 }
 
@@ -651,7 +654,7 @@ static int LUKS_open_key(const char *device,
 		  struct crypt_device *ctx)
 {
 	crypt_keyslot_info ki = LUKS_keyslot_info(hdr, keyIndex);
-	char derivedKey[hdr->keyBytes];
+	struct volume_key *derived_key;
 	char *AfKey;
 	size_t AFEKSize;
 	int r;
@@ -662,8 +665,11 @@ static int LUKS_open_key(const char *device,
 	if (ki < CRYPT_SLOT_ACTIVE)
 		return -ENOENT;
 
-	// assert((vk->keylength % TWOFISH_BLOCKSIZE) == 0); FIXME
+	derived_key = crypt_alloc_volume_key(hdr->keyBytes, NULL);
+	if (!derived_key)
+		return -ENOMEM;
 
+	assert(vk->keylength == hdr->keyBytes);
 	AFEKSize = hdr->keyblock[keyIndex].stripes*vk->keylength;
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey)
@@ -672,7 +678,7 @@ static int LUKS_open_key(const char *device,
 	r = PBKDF2_HMAC(hdr->hashSpec, password,passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,
 			hdr->keyblock[keyIndex].passwordIterations,
-			derivedKey, hdr->keyBytes);
+			derived_key->key, hdr->keyBytes);
 	if (r < 0)
 		goto out;
 
@@ -680,8 +686,7 @@ static int LUKS_open_key(const char *device,
 	r = LUKS_decrypt_from_storage(AfKey,
 				      AFEKSize,
 				      hdr,
-				      derivedKey,
-				      hdr->keyBytes,
+				      derived_key,
 				      device,
 				      hdr->keyblock[keyIndex].keyMaterialOffset,
 				      ctx);
@@ -699,7 +704,7 @@ static int LUKS_open_key(const char *device,
 		log_verbose(ctx, _("Key slot %d unlocked.\n"), keyIndex);
 out:
 	crypt_safe_free(AfKey);
-	memset(derivedKey, 0, sizeof(derivedKey));
+	crypt_free_volume_key(derived_key);
 	return r;
 }
 
@@ -909,8 +914,7 @@ int LUKS1_activate(struct crypt_device *cd,
 		.device = crypt_get_device_name(cd),
 		.cipher = NULL,
 		.uuid   = crypt_get_uuid(cd),
-		.key    = vk->key,
-		.key_size = vk->keylength,
+		.vk    = vk,
 		.offset = crypt_get_data_offset(cd),
 		.iv_offset = 0,
 		.size   = 0,
