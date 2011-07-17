@@ -377,6 +377,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_READONLY (1 << 0)
 #define CRYPT_ACTIVATE_NO_UUID  (1 << 1) /* ignored */
 #define CRYPT_ACTIVATE_SHARED   (1 << 2)
+#define CRYPT_ACTIVATE_ALLOW_DISCARDS (1 << 3) /* enable discards aka TRIM */
 
 /**
  * Active device runtime attributes

@@ -62,6 +62,7 @@ static int opt_random = 0;
 static int opt_urandom = 0;
 static int opt_dump_master_key = 0;
 static int opt_shared = 0;
+static int opt_allow_discards = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -271,6 +272,9 @@ static int action_create(int arg __attribute__((unused)))
 	if (opt_shared)
 		activate_flags |= CRYPT_ACTIVATE_SHARED;
 
+	if (opt_allow_discards)
+		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+
 	if (opt_key_file)
 		/* With hashing, read the whole keyfile */
 		r = crypt_activate_by_keyfile(cd, action_argv[0],
@@ -304,12 +308,19 @@ static int action_loopaesOpen(int arg __attribute__((unused)))
 		.skip = opt_skip_valid ? opt_skip : opt_offset,
 	};
 	unsigned int key_size = (opt_key_size ?: DEFAULT_LOOPAES_KEYBITS) / 8;
+	uint32_t activate_flags = 0;
 	int r;
 
 	if (!opt_key_file) {
 		log_err(_("Option --key-file is required.\n"));
 		return -EINVAL;
 	}
+
+	if (opt_readonly)
+		activate_flags |= CRYPT_ACTIVATE_READONLY;
+
+	if (opt_allow_discards)
+		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
@@ -319,9 +330,8 @@ static int action_loopaesOpen(int arg __attribute__((unused)))
 	if (r < 0)
 		goto out;
 
-	r = crypt_activate_by_keyfile(cd, action_argv[1],
-		CRYPT_ANY_SLOT, opt_key_file, opt_keyfile_size,
-		opt_readonly ?  CRYPT_ACTIVATE_READONLY : 0);
+	r = crypt_activate_by_keyfile(cd, action_argv[1], CRYPT_ANY_SLOT,
+				      opt_key_file, opt_keyfile_size, activate_flags);
 out:
 	crypt_free(cd);
 
@@ -401,6 +411,8 @@ static int action_status(int arg __attribute__((unused)))
 			log_std("  skipped: %" PRIu64 " sectors\n", cad.iv_offset);
 		log_std("  mode:    %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
 					   "readonly" : "read/write");
+		if (cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS)
+			log_std("  flags:   discards\n");
 	}
 out:
 	crypt_free(cd);
@@ -522,8 +534,12 @@ static int action_luksOpen(int arg __attribute__((unused)))
 
 	if (opt_iteration_time)
 		crypt_set_iterarion_time(cd, opt_iteration_time);
+
 	if (opt_readonly)
 		flags |= CRYPT_ACTIVATE_READONLY;
+
+	if (opt_allow_discards)
+		flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 
 	if (opt_key_file) {
 		crypt_set_password_retry(cd, 1);
@@ -1138,7 +1154,8 @@ int main(int argc, const char **argv)
 		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
 		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },
 		{ "shared",            '\0', POPT_ARG_NONE, &opt_shared,                0, N_("Share device with another non-overlapping crypt segment."), NULL },
-		{ "uuid",              '\0',  POPT_ARG_STRING, &opt_uuid,               0, N_("UUID for device to use."), NULL },
+		{ "uuid",              '\0', POPT_ARG_STRING, &opt_uuid,                0, N_("UUID for device to use."), NULL },
+		{ "allow-discards",    '\0', POPT_ARG_NONE, &opt_allow_discards,        0, N_("Allow discards (aka TRIM) requests for device."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1222,6 +1239,15 @@ int main(int argc, const char **argv)
 	if (opt_shared && strcmp(aname, "create")) {
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --shared is allowed only for create operation.\n"),
+		      poptGetInvocationName(popt_context));
+	}
+
+	if (opt_allow_discards &&
+	    strcmp(aname, "luksOpen") &&
+	    strcmp(aname, "create") &&
+	    strcmp(aname, "loopaesOpen")) {
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --allow-discards is allowed only for luksOpen, loopaesOpen and create operation.\n"),
 		      poptGetInvocationName(popt_context));
 	}
 

@@ -1,0 +1,81 @@
+#!/bin/bash
+
+CRYPTSETUP="../src/cryptsetup"
+DEV_NAME="discard-t3st"
+DEV=""
+
+cleanup() {
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	udevadm settle >/dev/null 2>&1
+	rmmod scsi_debug 2>/dev/null
+	sleep 2
+}
+
+fail()
+{
+	echo "FAILED"
+	cleanup
+	exit 100
+}
+
+add_device() {
+	modprobe scsi_debug $@
+	if [ $? -ne 0 ] ; then
+		echo "This kernel seems to not support proper scsi_debug module, test skipped."
+		exit 0
+	fi
+
+	sleep 2
+	DEV=$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+
+	DEV="/dev/$DEV"
+	[ -b $DEV ] || fail "Cannot find $DEV."
+}
+
+function check_version()
+{
+        VER_STR=$(dmsetup targets | grep crypt | cut -f 2 -dv)
+        VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+        VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+
+	# option supported in 1.11
+        test $VER_MAJ -gt 1 && return 0
+        test $VER_MIN -ge 11 && return 0
+        return 1
+}
+
+if [ $(id -u) != 0 ]; then
+	echo "WARNING: You must be root to run this test, test skipped."
+	exit 0
+fi
+
+modprobe --dry-run scsi_debug || exit 0
+modprobe dm-crypt >/dev/null 2>&1
+if ! check_version ; then
+	echo "Probably old kernel, test skipped."
+	exit 0
+fi
+
+add_device dev_size_mb=16 sector_size=512 num_tgts=1 lbpu=1
+
+# FIXME test hash of device (unmap -> zero)
+# for now just check that flag is enabled
+
+echo "[1] Allowing discards for LUKS device"
+echo xxx | $CRYPTSETUP luksFormat $DEV -q -i1 || fail
+echo xxx | $CRYPTSETUP luksOpen $DEV $DEV_NAME --allow-discards || fail
+$CRYPTSETUP status $DEV_NAME | grep flags | grep discards >/dev/null || fail
+$CRYPTSETUP resize $DEV_NAME --size 100 || fail
+$CRYPTSETUP status $DEV_NAME | grep flags | grep discards >/dev/null || fail
+dmsetup table $DEV_NAME | grep allow_discards >/dev/null || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
+
+echo "[2] Allowing discards for plain device"
+echo xxx | $CRYPTSETUP create $DEV_NAME $DEV --allow-discards || fail
+$CRYPTSETUP status $DEV_NAME | grep flags | grep discards >/dev/null || fail
+$CRYPTSETUP resize $DEV_NAME --size 100 || fail
+$CRYPTSETUP status $DEV_NAME | grep flags | grep discards >/dev/null || fail
+dmsetup table $DEV_NAME | grep allow_discards >/dev/null || fail
+$CRYPTSETUP remove $DEV_NAME || fail
+
+cleanup

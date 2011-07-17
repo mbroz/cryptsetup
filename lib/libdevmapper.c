@@ -119,6 +119,9 @@ static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 	if (crypt_maj >= 1 && crypt_min >= 8)
 		_dm_crypt_flags |= DM_PLAIN64_SUPPORTED;
 
+	if (crypt_maj >= 1 && crypt_min >= 11)
+		_dm_crypt_flags |= DM_DISCARDS_SUPPORTED;
+
 	/* Repeat test if dm-crypt is not present */
 	if (crypt_maj > 0)
 		_dm_crypt_checked = 1;
@@ -238,25 +241,38 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
-static char *get_params(const char *device, uint64_t skip, uint64_t offset,
-			const char *cipher, struct volume_key *vk)
+static char *get_params(struct crypt_dm_active_device *dmd)
 {
-	char *params;
-	char *hexkey;
+	int r, max_size;
+	char *params, *hexkey, *features = "";
 
-	hexkey = crypt_safe_alloc(vk->keylength * 2 + 1);
+	if (dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) {
+		if (dm_flags() & DM_DISCARDS_SUPPORTED) {
+			features =" 1 allow_discards";
+			log_dbg("Discard/TRIM is allowed.");
+		} else
+			log_dbg("Discard/TRIM is not supported by the kernel.");
+	}
+
+	hexkey = crypt_safe_alloc(dmd->vk->keylength * 2 + 1);
 	if (!hexkey)
 		return NULL;
 
-	hex_key(hexkey, vk->keylength, vk->key);
+	hex_key(hexkey, dmd->vk->keylength, dmd->vk->key);
 
-	params = crypt_safe_alloc(strlen(hexkey) + strlen(cipher) + strlen(device) + 64);
+	max_size = strlen(hexkey) + strlen(dmd->cipher) +
+		   strlen(dmd->device) + strlen(features) + 64;
+	params = crypt_safe_alloc(max_size);
 	if (!params)
 		goto out;
 
-	sprintf(params, "%s %s %" PRIu64 " %s %" PRIu64,
-	        cipher, hexkey, skip, device, offset);
-
+	r = snprintf(params, max_size, "%s %s %" PRIu64 " %s %" PRIu64 "%s",
+		     dmd->cipher, hexkey, dmd->iv_offset, dmd->device,
+		     dmd->offset, features);
+	if (r < 0 || r >= max_size) {
+		crypt_safe_free(params);
+		params = NULL;
+	}
 out:
 	crypt_safe_free(hexkey);
 	return params;
@@ -410,8 +426,7 @@ int dm_create_device(const char *name,
 	uint32_t cookie = 0;
 	uint16_t udev_flags = 0;
 
-	params = get_params(dmd->device, dmd->iv_offset, dmd->offset,
-			    dmd->cipher, dmd->vk);
+	params = get_params(dmd);
 	if (!params)
 		goto out_no_removal;
 
@@ -575,7 +590,7 @@ int dm_query_device(const char *name, uint32_t get_flags,
 	struct dm_task *dmt;
 	struct dm_info dmi;
 	uint64_t start, length, val64;
-	char *target_type, *params, *rcipher, *key_, *rdevice, *endp, buffer[3];
+	char *target_type, *params, *rcipher, *key_, *rdevice, *endp, buffer[3], *arg;
 	const char *tmp_uuid;
 	void *next = NULL;
 	unsigned int i;
@@ -637,9 +652,34 @@ int dm_query_device(const char *name, uint32_t get_flags,
 	if (!params)
 		goto out;
 	val64 = strtoull(params, &params, 10);
-	if (*params)
-		goto out;
 	dmd->offset = val64;
+
+	/* Features section, available since crypt target version 1.11 */
+	if (*params) {
+		if (*params != ' ')
+			goto out;
+		params++;
+
+		/* Number of arguments */
+		val64 = strtoull(params, &params, 10);
+		if (*params != ' ')
+			goto out;
+		params++;
+
+		for (i = 0; i < val64; i++) {
+			if (!params)
+				goto out;
+			arg = strsep(&params, " ");
+			if (!strcasecmp(arg, "allow_discards"))
+				dmd->flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+			else /* unknown option */
+				goto out;
+		}
+
+		/* All parameters shold be processed */
+		if (params)
+			goto out;
+	}
 
 	if (get_flags & DM_ACTIVE_KEY) {
 		dmd->vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);

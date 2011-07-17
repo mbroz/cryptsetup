@@ -12,6 +12,7 @@ struct volume_key;
 #define DM_LMK_SUPPORTED      (1 << 1)	/* lmk mode */
 #define DM_SECURE_SUPPORTED   (1 << 2)	/* wipe (secure) buffer flag */
 #define DM_PLAIN64_SUPPORTED  (1 << 3)	/* plain64 IV */
+#define DM_DISCARDS_SUPPORTED (1 << 4)	/* discards/TRIM option is supported */
 uint32_t dm_flags(void);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)

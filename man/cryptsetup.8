@@ -14,7 +14,8 @@ For basic (plain) dm-crypt mappings, there are four operations.
 creates a mapping with <name> backed by device <device>.
 
 \fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify-passphrase,
-\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, \-\-size, \-\-readonly, \-\-shared]
+\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, \-\-size, \-\-readonly, \-\-shared,
+\-\-allow-discards]
 .PP
 \fIremove\fR <name>
 .IP
@@ -51,7 +52,7 @@ opens the LUKS partition <device> and sets up a mapping <name> after
 successful verification of the supplied key material
 (either via key file by \-\-key-file, or via prompting).
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly, \-\-allow-discards].
 .PP
 \fIluksClose\fR <name>
 .IP
@@ -186,8 +187,8 @@ and not used it in IV sector calculations, you have to explicitly use
 Use \fB\-\-hash\fR to override hash function for password hashing
 (otherwise it is detected according to key size).
 
-\fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, 
-\-\-hash, \-\-readonly].
+\fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-skip,
+\-\-hash, \-\-readonly, \-\-allow-discards].
 .PP
 \fIloopaesClose\fR <name>
 .IP
@@ -360,6 +361,18 @@ new one or change existing UUID in \fIluksUUID\fR command.
 
 The UUID must be provided in standard UUID format
 (e.g. 12345678-1234-1234-1234-123456789abc).
+.TP
+.B "\-\-allow-discards\fR"
+Allow using of discards (TRIM) requests for device.
+This option is only relevant for \fIcreate\fR, \fIluksOpen\fR or \fIloopaesOpen\fR.
+
+\fBWARNING:\fR Assess the specific security risks carefully before enabling this
+option.  For example, allowing discards on encrypted devices may lead to the leak
+of information about the ciphertext device (filesystem type, used space etc.)
+if the discarded blocks can be located easily on the device later.
+
+Kernel version 3.1 or more recent is required.
+For older versions is the option ignored.
 .TP
 .B "\-\-version"
 Show the version.
