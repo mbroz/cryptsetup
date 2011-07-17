@@ -185,22 +185,26 @@ int LOOPAES_activate(struct crypt_device *cd,
 		     const char *base_cipher,
 		     unsigned int keys_count,
 		     struct volume_key *vk,
-		     uint64_t offset,
 		     uint64_t skip,
 		     uint32_t flags)
 {
-	uint64_t size;
+	char *cipher = NULL;
 	uint32_t req_flags;
-	char *cipher;
-	const char *device;
-	int read_only, r;
+	int r;
+	struct crypt_dm_active_device dmd = {
+		.device = crypt_get_device_name(cd),
+		.cipher = NULL,
+		.uuid   = crypt_get_uuid(cd),
+		.key    = vk->key,
+		.key_size = vk->keylength,
+		.offset = crypt_get_data_offset(cd),
+		.iv_offset = skip,
+		.size   = 0,
+		.flags  = flags
+	};
 
-	size = 0;
-	/* Initial IV (skip) is always the same as offset */
-	device = crypt_get_device_name(cd);
-	read_only = flags & CRYPT_ACTIVATE_READONLY;
 
-	r = device_check_and_adjust(cd, device, DEV_EXCL, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, dmd.device, DEV_EXCL, &dmd.size, &dmd.offset, &flags);
 	if (r)
 		return r;
 
@@ -214,12 +218,10 @@ int LOOPAES_activate(struct crypt_device *cd,
 	if (r < 0)
 		return -ENOMEM;
 
-	log_dbg("Trying to activate loop-AES device %s using cipher %s.", name, cipher);
-	r = dm_create_device(name, device,
-			     cipher, CRYPT_LOOPAES,
-			     crypt_get_uuid(cd),
-			     size, skip, offset, vk->keylength, vk->key,
-			     read_only, 0);
+	dmd.cipher = cipher;
+	log_dbg("Trying to activate loop-AES device %s using cipher %s.", name, dmd.cipher);
+
+	r = dm_create_device(name, CRYPT_LOOPAES, &dmd, 0);
 
 	if (!r && !(dm_flags() & req_flags)) {
 		log_err(cd, _("Kernel doesn't support loop-AES compatible mapping.\n"));

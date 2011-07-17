@@ -135,43 +135,21 @@ static int init_crypto(struct crypt_device *ctx)
 	return r;
 }
 
-/*
- * Password processing behaviour matrix of process_key
- *
- * from binary file: check if there is sufficently large key material
- * interactive & from fd: hash if requested, otherwise crop or pad with '0'
- */
-static char *process_key(struct crypt_device *cd, const char *hash_name,
-			 const char *key_file, size_t key_size,
-			 const char *pass, size_t passLen)
+static int process_key(struct crypt_device *cd, const char *hash_name,
+		       size_t key_size, const char *pass, size_t passLen,
+		       struct volume_key **vk)
 {
-	char *key;
 	int r;
 
 	if (!key_size)
-		return NULL;
+		return -EINVAL;
 
-	key = crypt_safe_alloc(key_size);
-	if (!key)
-		return NULL;
-	memset(key, 0, key_size);
+	*vk = crypt_alloc_volume_key(key_size, NULL);
+	if (!*vk)
+		return -ENOMEM;
 
-	/* key is coming from binary file */
-	if (key_file && strcmp(key_file, "-")) {
-		if(passLen < key_size) {
-			log_err(cd, ngettext("Cannot read %d byte from key file %s.\n",
-				"Cannot read %d bytes from key file %s.\n", key_size),
-				(int)key_size, key_file);
-			crypt_safe_free(key);
-			return NULL;
-		}
-		memcpy(key, pass, key_size);
-		return key;
-	}
-
-	/* key is coming from tty, fd or binary stdin */
 	if (hash_name) {
-		r = crypt_plain_hash(cd, hash_name, key, key_size, pass, passLen);
+		r = crypt_plain_hash(cd, hash_name, (*vk)->key, key_size, pass, passLen);
 		if (r < 0) {
 			if (r == -ENOENT)
 				log_err(cd, _("Hash algorithm %s not supported.\n"),
@@ -179,16 +157,17 @@ static char *process_key(struct crypt_device *cd, const char *hash_name,
 			else
 				log_err(cd, _("Key processing error (using hash %s).\n"),
 					hash_name);
-			crypt_safe_free(key);
-			return NULL;
+			crypt_free_volume_key(*vk);
+			*vk = NULL;
+			return -EINVAL;
 		}
 	} else if (passLen > key_size) {
-		memcpy(key, pass, key_size);
+		memcpy((*vk)->key, pass, key_size);
 	} else {
-		memcpy(key, pass, passLen);
+		memcpy((*vk)->key, pass, passLen);
 	}
 
-	return key;
+	return 0;
 }
 
 static int isPLAIN(const char *type)
@@ -233,108 +212,50 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 	return 0;
 }
 
-static int create_device_helper(struct crypt_device *cd,
-				const char *name,
-				const char *hash,
-				const char *cipher,
-				const char *cipher_mode,
-				const char *key_file,
-				const char *passphrase,
-				size_t passphrase_size,
-				size_t key_size,
-				uint64_t size,
-				uint64_t skip,
-				uint64_t offset,
-				const char *uuid,
-				uint32_t activation_flags,
-				int reload)
+int PLAIN_activate(struct crypt_device *cd,
+		     const char *name,
+		     struct volume_key *vk,
+		     uint64_t size,
+		     uint64_t iv_offset,
+		     uint32_t flags)
 {
-	crypt_status_info ci;
+	int r;
 	char *dm_cipher = NULL;
-	char *processed_key = NULL;
-	enum devcheck device_check;
-	int r, read_only;
+	struct crypt_dm_active_device dmd = {
+		.device = crypt_get_device_name(cd),
+		.cipher = NULL,
+		.uuid   = crypt_get_uuid(cd),
+		.key    = vk->key,
+		.key_size = vk->keylength,
+		.offset = crypt_get_data_offset(cd),
+		.iv_offset = iv_offset,
+		.size   = size,
+		.flags  = flags
+	};
 
-	if (!name)
-		return -EINVAL;
-
-	read_only = activation_flags & CRYPT_ACTIVATE_READONLY ? 1 : 0;
-	if (reload)
-		device_check = DEV_OK;
-	else if (activation_flags & CRYPT_ACTIVATE_SHARED)
-		device_check = DEV_SHARED;
-	else
-		device_check = DEV_EXCL;
-
-	ci = crypt_status(cd, name);
-	if (ci == CRYPT_INVALID)
-		return -EINVAL;
-
-	if (reload && ci < CRYPT_ACTIVE)
-		return -EINVAL;
-
-	if (!reload && ci >= CRYPT_ACTIVE) {
-		log_err(cd, _("Device %s already exists.\n"), name);
-		return -EEXIST;
-	}
-
-	if (key_size > 1024) {
-		log_err(cd, _("Invalid key size %d.\n"), (int)key_size);
-		return -EINVAL;
-	}
-
-	r = device_check_and_adjust(cd, cd->device, device_check, &size, &offset, &read_only);
+	r = device_check_and_adjust(cd, dmd.device,
+				    (dmd.flags & CRYPT_ACTIVATE_SHARED) ? DEV_SHARED : DEV_EXCL,
+				    &dmd.size, &dmd.offset, &flags);
 	if (r)
 		return r;
 
-	if (cipher_mode && asprintf(&dm_cipher, "%s-%s", cipher, cipher_mode) < 0)
+	if (crypt_get_cipher_mode(cd))
+		r = asprintf(&dm_cipher, "%s-%s", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
+	else
+		r = asprintf(&dm_cipher, "%s", crypt_get_cipher(cd));
+	if (r < 0)
 		return -ENOMEM;
 
-	processed_key = process_key(cd, hash, key_file, key_size, passphrase, passphrase_size);
-	if (!processed_key) {
-		r = -ENOENT;
-		goto out;
-	}
+	dmd.cipher = dm_cipher;
+	log_dbg("Trying to activate PLAIN device %s using cipher %s.", name, dmd.cipher);
 
-	r = dm_create_device(name, cd->device, dm_cipher ?: cipher, cd->type, uuid, size, skip, offset,
-			     key_size, processed_key, read_only, reload);
+	r = dm_create_device(name, CRYPT_PLAIN, &dmd, 0);
 
-	if (isPLAIN(cd->type) && !uuid)
-		(void)dm_query_device(name, NULL, NULL, NULL, NULL, NULL, NULL,
-				      NULL, NULL, NULL, &cd->plain_uuid);
-out:
+	// FIXME
+	if (!cd->plain_uuid && dm_query_device(name, DM_ACTIVE_UUID, &dmd) >= 0)
+		cd->plain_uuid = (char*)dmd.uuid;
+
 	free(dm_cipher);
-	crypt_safe_free(processed_key);
-	return r;
-}
-
-static int open_from_hdr_and_vk(struct crypt_device *cd,
-				struct volume_key *vk,
-				const char *name,
-				uint32_t flags)
-{
-	uint64_t size, offset;
-	char *cipher;
-	int read_only, no_uuid, r;
-
-	size = 0;
-	offset = crypt_get_data_offset(cd);
-	read_only = flags & CRYPT_ACTIVATE_READONLY;
-	no_uuid = flags & CRYPT_ACTIVATE_NO_UUID;
-
-	r = device_check_and_adjust(cd, cd->device, DEV_EXCL, &size, &offset, &read_only);
-	if (r)
-		return r;
-
-	if (asprintf(&cipher, "%s-%s", crypt_get_cipher(cd),
-		     crypt_get_cipher_mode(cd)) < 0)
-		r = -ENOMEM;
-	else
-		r = dm_create_device(name, cd->device, cipher, cd->type,
-				     no_uuid ? NULL : crypt_get_uuid(cd),
-				     size, 0, offset, vk->keylength, vk->key,
-				     read_only, 0);
-	free(cipher);
 	return r;
 }
 
@@ -474,11 +395,6 @@ const char *crypt_get_dir(void)
 	return dm_get_dir();
 }
 
-/////////////////////////////////
-//
-// New API
-//
-
 int crypt_init(struct crypt_device **cd, const char *device)
 {
 	struct crypt_device *h = NULL;
@@ -558,11 +474,9 @@ bad:
 int crypt_init_by_name(struct crypt_device **cd, const char *name)
 {
 	crypt_status_info ci;
-	struct crypt_active_device cad;
-	char *device = NULL, *cipher_full = NULL, *device_uuid = NULL;
+	struct crypt_dm_active_device dmd;
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
-	char *key = NULL;
-	int key_size = 0, key_nums, r;
+	int key_nums, r;
 
 
 	log_dbg("Allocating crypt device context by device %s.", name);
@@ -576,24 +490,22 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 		return -ENODEV;
 	}
 
-	r = dm_query_device(name, &device, &cad.size, &cad.iv_offset, &cad.offset,
-			    &cipher_full, &key_size, &key, NULL, NULL,
-			    &device_uuid);
+	r = dm_query_device(name, DM_ACTIVE_ALL, &dmd);
 	if (r < 0)
 		goto out;
 
 	*cd = NULL;
-	r = crypt_init(cd, device);
+	r = crypt_init(cd, dmd.device);
 
 	/* Underlying device disappeared but mapping still active */
-	if (!device || r == -ENOTBLK)
+	if (!dmd.device || r == -ENOTBLK)
 		log_verbose(NULL, _("Underlying device for crypt device %s disappeared.\n"),
 			    name);
 
 	/* Underlying device is not readable but crypt mapping exists */
 	if (r == -ENOTBLK) {
-		free(device);
-		device = NULL;
+		free((char*)dmd.device);
+		dmd.device = NULL;
 		r = crypt_init(cd, NULL);
 	}
 
@@ -602,54 +514,54 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 
 	/* Try to initialise basic parameters from active device */
 
-	if (!(*cd)->backing_file && device && crypt_loop_device(device) &&
-	    !((*cd)->backing_file = crypt_loop_backing_file(device))) {
+	if (!(*cd)->backing_file && dmd.device && crypt_loop_device(dmd.device) &&
+	    !((*cd)->backing_file = crypt_loop_backing_file(dmd.device))) {
 		r = -ENOMEM;
 		goto out;
 	}
 
-	if (device_uuid) {
-		if (!strncmp(CRYPT_PLAIN, device_uuid, sizeof(CRYPT_PLAIN)-1)) {
+	if (dmd.uuid) {
+		if (!strncmp(CRYPT_PLAIN, dmd.uuid, sizeof(CRYPT_PLAIN)-1)) {
 			(*cd)->type = strdup(CRYPT_PLAIN);
-			(*cd)->plain_uuid = strdup(device_uuid);
+			(*cd)->plain_uuid = strdup(dmd.uuid);
 			(*cd)->plain_hdr.hash = NULL; /* no way to get this */
-			(*cd)->plain_hdr.offset = cad.offset;
-			(*cd)->plain_hdr.skip = cad.iv_offset;
-			(*cd)->volume_key = crypt_alloc_volume_key(key_size, key);
+			(*cd)->plain_hdr.offset = dmd.offset;
+			(*cd)->plain_hdr.skip = dmd.iv_offset;
+			(*cd)->volume_key = crypt_alloc_volume_key(dmd.key_size, dmd.key);
 			if (!(*cd)->volume_key) {
 				r = -ENOMEM;
 				goto out;
 			}
 
-			r = crypt_parse_name_and_mode(cipher_full, cipher, NULL, cipher_mode);
+			r = crypt_parse_name_and_mode(dmd.cipher, cipher, NULL, cipher_mode);
 			if (!r) {
 				(*cd)->plain_cipher = strdup(cipher);
 				(*cd)->plain_cipher_mode = strdup(cipher_mode);
 			}
-		} else if (!strncmp(CRYPT_LOOPAES, device_uuid, sizeof(CRYPT_LOOPAES)-1)) {
+		} else if (!strncmp(CRYPT_LOOPAES, dmd.uuid, sizeof(CRYPT_LOOPAES)-1)) {
 			(*cd)->type = strdup(CRYPT_LOOPAES);
-			(*cd)->loopaes_uuid = strdup(device_uuid);
-			(*cd)->loopaes_hdr.offset = cad.offset;
+			(*cd)->loopaes_uuid = strdup(dmd.uuid);
+			(*cd)->loopaes_hdr.offset = dmd.offset;
 
-			r = crypt_parse_name_and_mode(cipher_full, cipher,
+			r = crypt_parse_name_and_mode(dmd.cipher, cipher,
 						      &key_nums, cipher_mode);
 			if (!r) {
 				(*cd)->loopaes_cipher = strdup(cipher);
 				(*cd)->loopaes_cipher_mode = strdup(cipher_mode);
 				/* version 3 uses last key for IV */
-				if (key_size % key_nums)
+				if (dmd.key_size % key_nums)
 					key_nums++;
-				(*cd)->loopaes_key_size = key_size / key_nums;
+				(*cd)->loopaes_key_size = dmd.key_size / key_nums;
 			}
-		} else if (!strncmp(CRYPT_LUKS1, device_uuid, sizeof(CRYPT_LUKS1)-1)) {
-			if (device) {
+		} else if (!strncmp(CRYPT_LUKS1, dmd.uuid, sizeof(CRYPT_LUKS1)-1)) {
+			if (dmd.device) {
 				if (crypt_load(*cd, CRYPT_LUKS1, NULL) < 0 ||
-				    crypt_volume_key_verify(*cd, key, key_size) < 0) {
+				    crypt_volume_key_verify(*cd, dmd.key, dmd.key_size) < 0) {
 					log_dbg("LUKS device header does not match active device.");
 					goto out;
 				}
 
-				(*cd)->volume_key = crypt_alloc_volume_key(key_size, key);
+				(*cd)->volume_key = crypt_alloc_volume_key(dmd.key_size, dmd.key);
 				if (!(*cd)->volume_key) {
 					r = -ENOMEM;
 					goto out;
@@ -664,10 +576,10 @@ out:
 		crypt_free(*cd);
 		*cd = NULL;
 	}
-	crypt_safe_free(key);
-	free(device);
-	free(cipher_full);
-	free(device_uuid);
+	crypt_safe_free(dmd.key);
+	free((char*)dmd.device);
+	free((char*)dmd.cipher);
+	free((char*)dmd.uuid);
 	return r;
 }
 
@@ -881,9 +793,8 @@ int crypt_load(struct crypt_device *cd,
 
 int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 {
-	char *device = NULL, *cipher = NULL, *uuid = NULL, *key = NULL;
-	uint64_t size, skip, offset;
-	int key_size, read_only, r;
+	struct crypt_dm_active_device dmd;
+	int r;
 
 	/* Device context type must be initialised */
 	if (!cd->type || !crypt_get_uuid(cd))
@@ -891,37 +802,34 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 
 	log_dbg("Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 
-	r = dm_query_device(name, &device, &size, &skip, &offset,
-			    &cipher, &key_size, &key, &read_only, NULL, &uuid);
+	r = dm_query_device(name, DM_ACTIVE_ALL, &dmd);
 	if (r < 0) {
 		log_err(NULL, _("Device %s is not active.\n"), name);
 		goto out;
 	}
 
-	if (!uuid) {
+	if (!dmd.uuid) {
 		r = -EINVAL;
 		goto out;
 	}
 
-	r = device_check_and_adjust(cd, device, DEV_OK, &new_size, &offset, &read_only);
+	r = device_check_and_adjust(cd, dmd.device, DEV_OK, &new_size, &dmd.offset, &dmd.flags);
 	if (r)
 		goto out;
 
-	if (new_size == size) {
+	if (new_size == dmd.size) {
 		log_dbg("Device has already requested size %" PRIu64
-			" sectors.", size);
+			" sectors.", dmd.size);
 		r = 0;
-		goto out;
+	} else {
+		dmd.size = new_size;
+		r = dm_create_device(name, cd->type, &dmd, 1);
 	}
-
-	r = dm_create_device(name, device, cipher, cd->type,
-			     crypt_get_uuid(cd), new_size, skip, offset,
-			     key_size, key, read_only, 1);
 out:
-	crypt_safe_free(key);
-	free(cipher);
-	free(device);
-	free(uuid);
+	crypt_safe_free(dmd.key);
+	free((char*)dmd.cipher);
+	free((char*)dmd.device);
+	free((char*)dmd.uuid);
 
 	return r;
 }
@@ -1023,7 +931,7 @@ int crypt_suspend(struct crypt_device *cd,
 		  const char *name)
 {
 	crypt_status_info ci;
-	int r, suspended = 0;
+	int r;
 
 	log_dbg("Suspending volume %s.", name);
 
@@ -1036,12 +944,11 @@ int crypt_suspend(struct crypt_device *cd,
 	if (!cd && dm_init(NULL, 1) < 0)
 		return -ENOSYS;
 
-	r = dm_query_device(name, NULL, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, &suspended, NULL);
+	r = dm_status_suspended(name);
 	if (r < 0)
 		goto out;
 
-	if (suspended) {
+	if (r) {
 		log_err(cd, _("Volume %s is already suspended.\n"), name);
 		r = -EINVAL;
 		goto out;
@@ -1065,7 +972,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 			       size_t passphrase_size)
 {
 	struct volume_key *vk = NULL;
-	int r, suspended = 0;
+	int r;
 
 	log_dbg("Resuming volume %s.", name);
 
@@ -1075,12 +982,11 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = dm_query_device(name, NULL, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, &suspended, NULL);
+	r = dm_status_suspended(name);
 	if (r < 0)
 		return r;
 
-	if (!suspended) {
+	if (!r) {
 		log_err(cd, _("Volume %s is not suspended.\n"), name);
 		return -EINVAL;
 	}
@@ -1114,7 +1020,7 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 	char *passphrase_read = NULL;
 	size_t passphrase_size_read;
-	int r, suspended = 0;
+	int r;
 
 	log_dbg("Resuming volume %s.", name);
 
@@ -1124,12 +1030,11 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = dm_query_device(name, NULL, NULL, NULL, NULL,
-			    NULL, NULL, NULL, NULL, &suspended, NULL);
+	r = dm_status_suspended(name);
 	if (r < 0)
 		return r;
 
-	if (!suspended) {
+	if (!r) {
 		log_err(cd, _("Volume %s is not suspended.\n"), name);
 		return -EINVAL;
 	}
@@ -1412,6 +1317,9 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 
 	/* plain, use hashed passphrase */
 	if (isPLAIN(cd->type)) {
+		if (!name)
+			return -EINVAL;
+
 		if (!passphrase) {
 			r = key_from_terminal(cd, NULL, &read_passphrase,
 					      &passphraseLen, 0);
@@ -1420,12 +1328,16 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 			passphrase = read_passphrase;
 			passphrase_size = passphraseLen;
 		}
-		r = create_device_helper(cd, name, cd->plain_hdr.hash,
-					 cd->plain_cipher, cd->plain_cipher_mode,
-					 NULL, passphrase, passphrase_size,
-					 cd->volume_key->keylength, cd->plain_hdr.size,
-					 cd->plain_hdr.skip, cd->plain_hdr.offset,
-					 cd->plain_uuid, flags, 0);
+
+		r = process_key(cd, cd->plain_hdr.hash,
+				cd->volume_key->keylength,
+				passphrase, passphrase_size, &vk);
+		if (r < 0)
+			goto out;
+
+		r = PLAIN_activate(cd, name, vk,
+				   cd->plain_hdr.size,
+				   cd->plain_hdr.skip, flags);
 		keyslot = 0;
 	} else if (isLUKS(cd->type)) {
 		/* provided passphrase, do not retry */
@@ -1438,7 +1350,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		if (r >= 0) {
 			keyslot = r;
 			if (name)
-				r = open_from_hdr_and_vk(cd, vk, name, flags);
+				r = LUKS1_activate(cd, name, vk, flags);
 		}
 	} else
 		r = -EINVAL;
@@ -1480,17 +1392,24 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (isPLAIN(cd->type)) {
+		if (!name)
+			return -EINVAL;
+
 		r = key_from_file(cd, _("Enter passphrase: "),
 				  &passphrase_read, &passphrase_size_read,
 				  keyfile, keyfile_size);
 		if (r < 0)
 			goto out;
-		r = create_device_helper(cd, name, cd->plain_hdr.hash,
-					 cd->plain_cipher, cd->plain_cipher_mode,
-					 NULL, passphrase_read, passphrase_size_read,
-					 cd->volume_key->keylength, cd->plain_hdr.size,
-					 cd->plain_hdr.skip, cd->plain_hdr.offset,
-					 cd->plain_uuid, flags, 0);
+
+		r = process_key(cd, cd->plain_hdr.hash,
+				cd->volume_key->keylength,
+				passphrase_read, passphrase_size_read, &vk);
+		if (r < 0)
+			goto out;
+
+		r = PLAIN_activate(cd, name, vk,
+				   cd->plain_hdr.size,
+				   cd->plain_hdr.skip, flags);
 	} else if (isLUKS(cd->type)) {
 		r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
 			  &passphrase_size_read, keyfile, keyfile_size);
@@ -1503,7 +1422,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 		keyslot = r;
 
 		if (name) {
-			r = open_from_hdr_and_vk(cd, vk, name, flags);
+			r = LUKS1_activate(cd, name, vk, flags);
 			if (r < 0)
 				goto out;
 		}
@@ -1520,7 +1439,6 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 		if (name)
 			r = LOOPAES_activate(cd, name, cd->loopaes_cipher,
 					     key_count, vk,
-					     cd->loopaes_hdr.offset,
 					     cd->loopaes_hdr.skip,
 					     flags);
 	} else
@@ -1540,29 +1458,10 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	uint32_t flags)
 {
 	crypt_status_info ci;
-	struct volume_key *vk;
-	int r;
+	struct volume_key *vk = NULL;
+	int r = -EINVAL;
 
 	log_dbg("Activating volume %s by volume key.", name);
-
-	/* use key directly, no hash */
-	if (isPLAIN(cd->type)) {
-		if (!volume_key || !volume_key_size || !cd->volume_key ||
-			volume_key_size != cd->volume_key->keylength) {
-			log_err(cd, _("Incorrect volume key specified for plain device.\n"));
-			return -EINVAL;
-		}
-
-		return create_device_helper(cd, name, NULL,
-			cd->plain_cipher, cd->plain_cipher_mode, NULL, volume_key, volume_key_size,
-			cd->volume_key->keylength, cd->plain_hdr.size, cd->plain_hdr.skip,
-			cd->plain_hdr.offset, cd->plain_uuid, flags, 0);
-	}
-
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("Device type is not properly initialised.\n"));
-		return -EINVAL;
-	}
 
 	if (name) {
 		ci = crypt_status(NULL, name);
@@ -1574,26 +1473,47 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		}
 	}
 
-	/* If key is not provided, try to use internal key */
-	if (!volume_key) {
-		if (!cd->volume_key) {
-			log_err(cd, _("Volume key does not match the volume.\n"));
+	/* use key directly, no hash */
+	if (isPLAIN(cd->type)) {
+		if (!name)
+			return -EINVAL;
+
+		if (!volume_key || !volume_key_size || !cd->volume_key ||
+			volume_key_size != cd->volume_key->keylength) {
+			log_err(cd, _("Incorrect volume key specified for plain device.\n"));
 			return -EINVAL;
 		}
-		volume_key_size = cd->volume_key->keylength;
-		volume_key = cd->volume_key->key;
-	}
 
-	vk = crypt_alloc_volume_key(volume_key_size, volume_key);
-	if (!vk)
-		return -ENOMEM;
-	r = LUKS_verify_volume_key(&cd->hdr, vk);
+		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
+		if (!vk)
+			return -ENOMEM;
 
-	if (r == -EPERM)
-		log_err(cd, _("Volume key does not match the volume.\n"));
+		r = PLAIN_activate(cd, name, vk,
+				   cd->plain_hdr.size,
+				   cd->plain_hdr.skip, flags);
+	} else if (isLUKS(cd->type)) {
+		/* If key is not provided, try to use internal key */
+		if (!volume_key) {
+			if (!cd->volume_key) {
+				log_err(cd, _("Volume key does not match the volume.\n"));
+				return -EINVAL;
+			}
+			volume_key_size = cd->volume_key->keylength;
+			volume_key = cd->volume_key->key;
+		}
 
-	if (!r && name)
-		r = open_from_hdr_and_vk(cd, vk, name, flags);
+		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
+		if (!vk)
+			return -ENOMEM;
+		r = LUKS_verify_volume_key(&cd->hdr, vk);
+
+		if (r == -EPERM)
+			log_err(cd, _("Volume key does not match the volume.\n"));
+
+		if (!r && name)
+			r = LUKS1_activate(cd, name, vk, flags);
+	} else
+		log_err(cd, _("Device type is not properly initialised.\n"));
 
 	crypt_free_volume_key(vk);
 
@@ -1642,10 +1562,9 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	const char *passphrase,
 	size_t passphrase_size)
 {
-	struct volume_key *vk;
-	char *processed_key = NULL;
+	struct volume_key *vk = NULL;
 	unsigned key_len;
-	int r;
+	int r = -EINVAL;
 
 	key_len = crypt_get_volume_key_size(cd);
 	if (key_len > *volume_key_size) {
@@ -1654,33 +1573,24 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	}
 
 	if (isPLAIN(cd->type) && cd->plain_hdr.hash) {
-		processed_key = process_key(cd, cd->plain_hdr.hash, NULL, key_len,
-					    passphrase, passphrase_size);
-		if (!processed_key) {
+		r = process_key(cd, cd->plain_hdr.hash, key_len,
+				passphrase, passphrase_size, &vk);
+		if (r < 0)
 			log_err(cd, _("Cannot retrieve volume key for plain device.\n"));
-			return -EINVAL;
-		}
-		memcpy(volume_key, processed_key, key_len);
-		*volume_key_size = key_len;
-		crypt_safe_free(processed_key);
-		return 0;
-	}
-
-	if (isLUKS(cd->type)) {
+	} else if (isLUKS(cd->type)) {
 		r = LUKS_open_key_with_hdr(cd->device, keyslot, passphrase,
 					passphrase_size, &cd->hdr, &vk, cd);
 
-		if (r >= 0) {
-			memcpy(volume_key, vk->key, vk->keylength);
-			*volume_key_size = vk->keylength;
-		}
+	} else
+		log_err(cd, _("This operation is not supported for %s crypt device.\n"), cd->type ?: "(none)");
 
-		crypt_free_volume_key(vk);
-		return r;
+	if (r >= 0) {
+		memcpy(volume_key, vk->key, vk->keylength);
+		*volume_key_size = vk->keylength;
 	}
 
-	log_err(cd, _("This operation is not supported for %s crypt device.\n"), cd->type ?: "(none)");
-	return -EINVAL;
+	crypt_free_volume_key(vk);
+	return r;
 }
 
 int crypt_volume_key_verify(struct crypt_device *cd,
@@ -1940,14 +1850,17 @@ int crypt_get_active_device(struct crypt_device *cd __attribute__((unused)),
 			    const char *name,
 			    struct crypt_active_device *cad)
 {
-	int r, readonly;
+	struct crypt_dm_active_device dmd;
+	int r;
 
-	r = dm_query_device(name, NULL, &cad->size, &cad->iv_offset, &cad->offset,
-			    NULL, NULL, NULL, &readonly, NULL, NULL);
+	r = dm_query_device(name, 0, &dmd);
 	if (r < 0)
 		return r;
 
-	cad->flags = readonly ? CRYPT_ACTIVATE_READONLY : 0;
+	cad->offset	= dmd.offset;
+	cad->iv_offset	= dmd.iv_offset;
+	cad->size	= dmd.size;
+	cad->flags	= dmd.flags;
 
 	return 0;
 }

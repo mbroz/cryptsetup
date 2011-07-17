@@ -13,27 +13,43 @@ struct crypt_device;
 #define DM_PLAIN64_SUPPORTED  (1 << 3)	/* plain64 IV */
 uint32_t dm_flags(void);
 
+#define DM_ACTIVE_DEVICE	(1 << 0)
+#define DM_ACTIVE_CIPHER	(1 << 1)
+#define DM_ACTIVE_UUID		(1 << 2)
+#define DM_ACTIVE_KEY		(1 << 3)
+
+#define DM_ACTIVE_ALL ( \
+	DM_ACTIVE_DEVICE | \
+	DM_ACTIVE_CIPHER | \
+	DM_ACTIVE_UUID | \
+	DM_ACTIVE_KEY)
+
+struct crypt_dm_active_device {
+	const char *device;
+	const char *cipher;
+	const char *uuid;
+	char *key;
+	size_t key_size;
+
+	/* struct crypt_active_device */
+	uint64_t offset;	/* offset in sectors */
+	uint64_t iv_offset;	/* IV initilisation sector */
+	uint64_t size;		/* active device size */
+	uint32_t flags;		/* activation flags */
+};
+
 const char *dm_get_dir(void);
 int dm_init(struct crypt_device *context, int check_kernel);
 void dm_exit(void);
 int dm_remove_device(const char *name, int force, uint64_t size);
 int dm_status_device(const char *name);
-int dm_query_device(const char *name,
-		    char **device,
-		    uint64_t *size,
-		    uint64_t *skip,
-		    uint64_t *offset,
-		    char **cipher,
-		    int *key_size,
-		    char **key,
-		    int *read_only,
-		    int *suspended,
-		    char **uuid);
-int dm_create_device(const char *name, const char *device, const char *cipher,
-		     const char *type, const char *uuid,
-		     uint64_t size, uint64_t skip, uint64_t offset,
-		     size_t key_size, const char *key,
-		     int read_only, int reload);
+int dm_status_suspended(const char *name);
+int dm_query_device(const char *name, uint32_t get_flags,
+		    struct crypt_dm_active_device *dmd);
+int dm_create_device(const char *name,
+		      const char *type,
+		      struct crypt_dm_active_device *dmd,
+		      int reload);
 int dm_suspend_and_wipe_key(const char *name);
 int dm_resume_and_reinstate_key(const char *name,
 				size_t key_size,

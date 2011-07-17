@@ -56,7 +56,17 @@ static int setup_mapping(const char *cipher, const char *name,
 			 int mode, struct crypt_device *ctx)
 {
 	int device_sector_size = sector_size_for_device(device);
-	uint64_t size;
+	struct crypt_dm_active_device dmd = {
+		.device = device,
+		.cipher = cipher,
+		.uuid   = NULL,
+		.key    = (char*)key,
+		.key_size = keyLength,
+		.offset = sector,
+		.iv_offset = 0,
+		.size   = 0,
+		.flags  = (mode == O_RDONLY) ? CRYPT_ACTIVATE_READONLY : 0
+	};
 
 	/*
 	 * we need to round this to nearest multiple of the underlying
@@ -66,11 +76,11 @@ static int setup_mapping(const char *cipher, const char *name,
 		log_err(ctx, _("Unable to obtain sector size for %s"), device);
 		return -EINVAL;
 	}
-	size = round_up_modulo(srcLength,device_sector_size)/SECTOR_SIZE;
-	cleaner_size = size;
 
-	return dm_create_device(name, device, cipher, "TEMP", NULL, size, 0, sector,
-				keyLength, key, (mode == O_RDONLY), 0);
+	dmd.size = round_up_modulo(srcLength,device_sector_size)/SECTOR_SIZE;
+	cleaner_size = dmd.size;
+
+	return dm_create_device(name, "TEMP", &dmd, 0);
 }
 
 static void sigint_handler(int sig __attribute__((unused)))

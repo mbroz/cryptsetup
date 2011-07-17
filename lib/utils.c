@@ -397,7 +397,7 @@ int device_check_and_adjust(struct crypt_device *cd,
 			    enum devcheck device_check,
 			    uint64_t *size,
 			    uint64_t *offset,
-			    int *read_only)
+			    uint32_t *flags)
 {
 	int r, real_readonly;
 	uint64_t real_size;
@@ -442,10 +442,10 @@ int device_check_and_adjust(struct crypt_device *cd,
 	}
 
 	if (real_readonly)
-		*read_only = 1;
+		*flags |= CRYPT_ACTIVATE_READONLY;
 
 	log_dbg("Calculated device size is %" PRIu64 " sectors (%s), offset %" PRIu64 ".",
-		*size, *read_only ? "RO" : "RW", *offset);
+		*size, real_readonly ? "RO" : "RW", *offset);
 	return 0;
 }
 

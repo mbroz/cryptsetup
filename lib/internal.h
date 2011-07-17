@@ -62,7 +62,7 @@ int device_check_and_adjust(struct crypt_device *cd,
 			    enum devcheck device_check,
 			    uint64_t *size,
 			    uint64_t *offset,
-			    int *read_only);
+			    uint32_t *flags);
 int wipe_device_header(const char *device, int sectors);
 
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
@@ -94,5 +94,11 @@ int crypt_plain_hash(struct crypt_device *ctx,
 		     const char *hash_name,
 		     char *key, size_t key_size,
 		     const char *passphrase, size_t passphrase_size);
+int PLAIN_activate(struct crypt_device *cd,
+		     const char *name,
+		     struct volume_key *vk,
+		     uint64_t size,
+		     uint64_t iv_offset,
+		     uint32_t flags);
 
 #endif /* INTERNAL_H */

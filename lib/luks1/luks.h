@@ -173,4 +173,9 @@ int LUKS_decrypt_from_storage(
 	unsigned int sector,
 	struct crypt_device *ctx);
 
+int LUKS1_activate(struct crypt_device *cd,
+		   const char *name,
+		   struct volume_key *vk,
+		   uint32_t flags);
+
 #endif

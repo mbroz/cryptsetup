@@ -897,3 +897,38 @@ int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable)
 	log_dbg("Key slot %d was %s in LUKS header.", keyslot, enable ? "enabled" : "disabled");
 	return 0;
 }
+
+int LUKS1_activate(struct crypt_device *cd,
+		   const char *name,
+		   struct volume_key *vk,
+		   uint32_t flags)
+{
+	int r;
+	char *dm_cipher = NULL;
+	struct crypt_dm_active_device dmd = {
+		.device = crypt_get_device_name(cd),
+		.cipher = NULL,
+		.uuid   = crypt_get_uuid(cd),
+		.key    = vk->key,
+		.key_size = vk->keylength,
+		.offset = crypt_get_data_offset(cd),
+		.iv_offset = 0,
+		.size   = 0,
+		.flags  = flags
+	};
+
+	r = device_check_and_adjust(cd, dmd.device, DEV_EXCL,
+				    &dmd.size, &dmd.offset, &flags);
+	if (r)
+		return r;
+
+	r = asprintf(&dm_cipher, "%s-%s", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
+	if (r < 0)
+		return -ENOMEM;
+
+	dmd.cipher = dm_cipher;
+	r = dm_create_device(name, CRYPT_LUKS1, &dmd, 0);
+
+	free(dm_cipher);
+	return r;
+}

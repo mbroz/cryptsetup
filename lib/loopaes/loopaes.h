@@ -18,7 +18,6 @@ int LOOPAES_activate(struct crypt_device *cd,
 		     const char *base_cipher,
 		     unsigned int keys_count,
 		     struct volume_key *vk,
-		     uint64_t offset,
 		     uint64_t skip,
 		     uint32_t flags);
 #endif

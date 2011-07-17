@@ -33,6 +33,8 @@ struct volume_key *crypt_alloc_volume_key(unsigned keylength, const char *key)
 	vk->keylength = keylength;
 	if (key)
 		memcpy(&vk->key, key, keylength);
+	else
+		memset(&vk->key, 0, keylength);
 
 	return vk;
 }
