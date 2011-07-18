@@ -98,7 +98,6 @@ int PLAIN_activate(struct crypt_device *cd,
 		     const char *name,
 		     struct volume_key *vk,
 		     uint64_t size,
-		     uint64_t iv_offset,
 		     uint32_t flags);
 
 #endif /* INTERNAL_H */

@@ -160,7 +160,7 @@ const char *crypt_get_type(struct crypt_device *cd);
 struct crypt_params_plain {
 	const char *hash; /* password hash function */
 	uint64_t offset;  /* offset in sectors */
-	uint64_t skip;    /* IV initilisation sector */
+	uint64_t skip;    /* IV offset / initialisation sector */
 	uint64_t size;    /* size of mapped device or 0 for autodetection */
 };
 
@@ -172,7 +172,7 @@ struct crypt_params_luks1 {
 struct crypt_params_loopaes {
 	const char *hash; /* key hash function */
 	uint64_t offset;  /* offset in sectors */
-	uint64_t skip;    /* IV initilisation sector */
+	uint64_t skip;    /* IV offset / initialisation sector */
 };
 /**
  * Create (format) new crypt device (and possible header on-disk) but not activates it.
@@ -540,6 +540,7 @@ int crypt_dump(struct crypt_device *cd);
  * uuid - device UUID or NULL if not set
  * device_name - underlying device name or NULL if not yet set
  * data_offset - device offset in sectors where real data starts on underlying device)
+ * iv_offset - IV offset in sectors (skip)
  * volume_key_size - size (in bytes) of volume key for crypt device
  */
 const char *crypt_get_cipher(struct crypt_device *cd);
@@ -547,6 +548,7 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd);
 const char *crypt_get_uuid(struct crypt_device *cd);
 const char *crypt_get_device_name(struct crypt_device *cd);
 uint64_t crypt_get_data_offset(struct crypt_device *cd);
+uint64_t crypt_get_iv_offset(struct crypt_device *cd);
 int crypt_get_volume_key_size(struct crypt_device *cd);
 
 /**

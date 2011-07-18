@@ -216,7 +216,6 @@ int PLAIN_activate(struct crypt_device *cd,
 		     const char *name,
 		     struct volume_key *vk,
 		     uint64_t size,
-		     uint64_t iv_offset,
 		     uint32_t flags)
 {
 	int r;
@@ -227,7 +226,7 @@ int PLAIN_activate(struct crypt_device *cd,
 		.uuid   = crypt_get_uuid(cd),
 		.vk    = vk,
 		.offset = crypt_get_data_offset(cd),
-		.iv_offset = iv_offset,
+		.iv_offset = crypt_get_iv_offset(cd),
 		.size   = size,
 		.flags  = flags
 	};
@@ -1328,9 +1327,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		if (r < 0)
 			goto out;
 
-		r = PLAIN_activate(cd, name, vk,
-				   cd->plain_hdr.size,
-				   cd->plain_hdr.skip, flags);
+		r = PLAIN_activate(cd, name, vk, cd->plain_hdr.size, flags);
 		keyslot = 0;
 	} else if (isLUKS(cd->type)) {
 		/* provided passphrase, do not retry */
@@ -1400,9 +1397,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 		if (r < 0)
 			goto out;
 
-		r = PLAIN_activate(cd, name, vk,
-				   cd->plain_hdr.size,
-				   cd->plain_hdr.skip, flags);
+		r = PLAIN_activate(cd, name, vk, cd->plain_hdr.size, flags);
 	} else if (isLUKS(cd->type)) {
 		r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
 			  &passphrase_size_read, keyfile, keyfile_size);
@@ -1431,9 +1426,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 			goto out;
 		if (name)
 			r = LOOPAES_activate(cd, name, cd->loopaes_cipher,
-					     key_count, vk,
-					     cd->loopaes_hdr.skip,
-					     flags);
+					     key_count, vk, flags);
 	} else
 		r = -EINVAL;
 
@@ -1481,9 +1474,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (!vk)
 			return -ENOMEM;
 
-		r = PLAIN_activate(cd, name, vk,
-				   cd->plain_hdr.size,
-				   cd->plain_hdr.skip, flags);
+		r = PLAIN_activate(cd, name, vk, cd->plain_hdr.size, flags);
 	} else if (isLUKS(cd->type)) {
 		/* If key is not provided, try to use internal key */
 		if (!volume_key) {
@@ -1812,6 +1803,20 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 
 	if (isLOOPAES(cd->type))
 		return cd->loopaes_hdr.offset;
+
+	return 0;
+}
+
+uint64_t crypt_get_iv_offset(struct crypt_device *cd)
+{
+	if (isPLAIN(cd->type))
+		return cd->plain_hdr.skip;
+
+	if (isLUKS(cd->type))
+		return 0;
+
+	if (isLOOPAES(cd->type))
+		return cd->loopaes_hdr.skip;
 
 	return 0;
 }
