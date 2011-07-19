@@ -488,7 +488,8 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 		return -ENODEV;
 	}
 
-	r = dm_query_device(name, DM_ACTIVE_ALL, &dmd);
+	r = dm_query_device(name, DM_ACTIVE_DEVICE | DM_ACTIVE_CIPHER |
+				  DM_ACTIVE_UUID | DM_ACTIVE_KEYSIZE, &dmd);
 	if (r < 0)
 		goto out;
 
@@ -525,8 +526,6 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 			(*cd)->plain_hdr.hash = NULL; /* no way to get this */
 			(*cd)->plain_hdr.offset = dmd.offset;
 			(*cd)->plain_hdr.skip = dmd.iv_offset;
-			(*cd)->volume_key = dmd.vk;
-			dmd.vk = NULL;
 
 			r = crypt_parse_name_and_mode(dmd.cipher, cipher, NULL, cipher_mode);
 			if (!r) {
@@ -550,14 +549,12 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 			}
 		} else if (!strncmp(CRYPT_LUKS1, dmd.uuid, sizeof(CRYPT_LUKS1)-1)) {
 			if (dmd.device) {
-				if (crypt_load(*cd, CRYPT_LUKS1, NULL) < 0 ||
-				    crypt_volume_key_verify(*cd, dmd.vk->key, dmd.vk->keylength) < 0) {
+				r = crypt_load(*cd, CRYPT_LUKS1, NULL);
+				if (r < 0) {
 					log_dbg("LUKS device header does not match active device.");
-					goto out;
+					/* initialise empty context */
+					r = 0;
 				}
-
-				(*cd)->volume_key = dmd.vk;
-				dmd.vk = NULL;
 			}
 		}
 	} else
@@ -794,7 +791,9 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 
 	log_dbg("Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 
-	r = dm_query_device(name, DM_ACTIVE_ALL, &dmd);
+	r = dm_query_device(name, DM_ACTIVE_DEVICE | DM_ACTIVE_CIPHER |
+				  DM_ACTIVE_UUID | DM_ACTIVE_KEYSIZE |
+				  DM_ACTIVE_KEY, &dmd);
 	if (r < 0) {
 		log_err(NULL, _("Device %s is not active.\n"), name);
 		goto out;
@@ -926,6 +925,12 @@ int crypt_suspend(struct crypt_device *cd,
 	int r;
 
 	log_dbg("Suspending volume %s.", name);
+
+	if (!isLUKS(cd->type)) {
+		log_err(cd, _("This operation is supported only for LUKS device.\n"));
+		r = -EINVAL;
+		goto out;
+	}
 
 	ci = crypt_status(NULL, name);
 	if (ci < CRYPT_ACTIVE) {

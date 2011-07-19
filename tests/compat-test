@@ -369,5 +369,21 @@ $CRYPTSETUP -q remove  $DEV_NAME3 || fail
 $CRYPTSETUP -q remove  $DEV_NAME2 || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 
+prepare "[26] Suspend/Resume" wipe
+# only LUKS is supported
+echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV || fail
+$CRYPTSETUP luksSuspend $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP -q remove  $DEV_NAME || fail
+$CRYPTSETUP luksSuspend $DEV_NAME 2>/dev/null && fail
+# LUKS
+echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo "key0" | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+$CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
+echo "xxx" | $CRYPTSETUP luksResume $DEV_NAME -T 1 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP luksResume $DEV_NAME  || fail
+$CRYPTSETUP -q luksClose $DEV_NAME || fail
+
 remove_mapping
 exit 0

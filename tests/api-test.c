@@ -895,10 +895,7 @@ static void UseTempVolumes(void)
 	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	crypt_free(cd);
 
-	// Volume key is properly initialised from active device
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
-	OK_(crypt_deactivate(cd, CDEVICE_2));
-	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 	crypt_free(cd);
 

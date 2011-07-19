@@ -958,8 +958,8 @@ static int action_luksResume(int arg __attribute__((unused)))
 	if ((r = crypt_init_by_name(&cd, action_argv[0])))
 		goto out;
 
-	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
-		goto out;
+	crypt_set_timeout(cd, opt_timeout);
+	crypt_set_password_retry(cd, opt_tries);
 
 	if (opt_key_file)
 		r = crypt_resume_by_keyfile(cd, action_argv[0], CRYPT_ANY_SLOT,

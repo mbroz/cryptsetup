@@ -18,13 +18,8 @@ uint32_t dm_flags(void);
 #define DM_ACTIVE_DEVICE	(1 << 0)
 #define DM_ACTIVE_CIPHER	(1 << 1)
 #define DM_ACTIVE_UUID		(1 << 2)
-#define DM_ACTIVE_KEY		(1 << 3)
-
-#define DM_ACTIVE_ALL ( \
-	DM_ACTIVE_DEVICE | \
-	DM_ACTIVE_CIPHER | \
-	DM_ACTIVE_UUID | \
-	DM_ACTIVE_KEY)
+#define DM_ACTIVE_KEYSIZE	(1 << 3)
+#define DM_ACTIVE_KEY		(1 << 4)
 
 struct crypt_dm_active_device {
 	const char *device;

@@ -681,22 +681,31 @@ int dm_query_device(const char *name, uint32_t get_flags,
 			goto out;
 	}
 
-	if (get_flags & DM_ACTIVE_KEY) {
+	/* Never allow to return empty key */
+	if ((get_flags & DM_ACTIVE_KEY) && dmi.suspended) {
+		log_dbg("Cannot read volume key while suspended.");
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (get_flags & DM_ACTIVE_KEYSIZE) {
 		dmd->vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);
 		if (!dmd->vk) {
 			r = -ENOMEM;
 			goto out;
 		}
 
-		buffer[2] = '\0';
-		for(i = 0; i < dmd->vk->keylength; i++) {
-			memcpy(buffer, &key_[i * 2], 2);
-			dmd->vk->key[i] = strtoul(buffer, &endp, 16);
-			if (endp != &buffer[2]) {
-				crypt_free_volume_key(dmd->vk);
-				dmd->vk = NULL;
-				r = -EINVAL;
-				goto out;
+		if (get_flags & DM_ACTIVE_KEY) {
+			buffer[2] = '\0';
+			for(i = 0; i < dmd->vk->keylength; i++) {
+				memcpy(buffer, &key_[i * 2], 2);
+				dmd->vk->key[i] = strtoul(buffer, &endp, 16);
+				if (endp != &buffer[2]) {
+					crypt_free_volume_key(dmd->vk);
+					dmd->vk = NULL;
+					r = -EINVAL;
+					goto out;
+				}
 			}
 		}
 	}

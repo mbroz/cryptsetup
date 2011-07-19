@@ -1,3 +1,9 @@
+2011-07-19  Milan Broz  <mbroz@redhat.com>
+	* Revert default initialisation of volume key in crypt_init_by_name().
+	* Do not allow key retrieval while suspended (key could be wiped).
+	* Do not allow suspend for non-LUKS devices.
+	* Support retries and timeout parameters for luksSuspend.
+
 2011-07-07  Milan Broz  <mbroz@redhat.com>
 	* Remove old API functions (all functions using crypt_options).
 	* Add --enable-discards option to allow discards/TRIM requests.
