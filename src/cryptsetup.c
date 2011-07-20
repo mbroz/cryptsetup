@@ -43,6 +43,7 @@ static const char *opt_key_file = NULL;
 static const char *opt_master_key_file = NULL;
 static const char *opt_header_backup_file = NULL;
 static const char *opt_uuid = NULL;
+static const char *opt_header_device = NULL;
 static int opt_key_size = 0;
 static long opt_keyfile_size = 0;
 static long opt_new_keyfile_size = 0;
@@ -356,7 +357,7 @@ static int action_resize(int arg __attribute__((unused)))
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = crypt_init_by_name(&cd, action_argv[0]);
+	r = crypt_init_by_name_and_header(&cd, action_argv[0], opt_header_device);
 	if (r == 0)
 		r = crypt_resize(cd, action_argv[0], opt_size);
 
@@ -520,13 +521,26 @@ out:
 static int action_luksOpen(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
+	const char *data_device, *header_device;
 	uint32_t flags = 0;
 	int r;
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if (opt_header_device) {
+		header_device = opt_header_device;
+		data_device = action_argv[0];
+	} else {
+		header_device = action_argv[0];
+		data_device = NULL;
+	}
+
+	if ((r = crypt_init(&cd, header_device)))
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	if (data_device &&
+	    (r = crypt_set_data_device(cd, data_device)))
 		goto out;
 
 	crypt_set_timeout(cd, opt_timeout);
@@ -942,7 +956,7 @@ static int action_luksSuspend(int arg __attribute__((unused)))
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = crypt_init_by_name(&cd, action_argv[0]);
+	r = crypt_init_by_name_and_header(&cd, action_argv[0], opt_header_device);
 	if (!r)
 		r = crypt_suspend(cd, action_argv[0]);
 
@@ -955,7 +969,7 @@ static int action_luksResume(int arg __attribute__((unused)))
 	struct crypt_device *cd = NULL;
 	int r;
 
-	if ((r = crypt_init_by_name(&cd, action_argv[0])))
+	if ((r = crypt_init_by_name_and_header(&cd, action_argv[0], opt_header_device)))
 		goto out;
 
 	crypt_set_timeout(cd, opt_timeout);
@@ -1156,6 +1170,7 @@ int main(int argc, const char **argv)
 		{ "shared",            '\0', POPT_ARG_NONE, &opt_shared,                0, N_("Share device with another non-overlapping crypt segment."), NULL },
 		{ "uuid",              '\0', POPT_ARG_STRING, &opt_uuid,                0, N_("UUID for device to use."), NULL },
 		{ "allow-discards",    '\0', POPT_ARG_NONE, &opt_allow_discards,        0, N_("Allow discards (aka TRIM) requests for device."), NULL },
+		{ "header",            '\0', POPT_ARG_STRING, &opt_header_device,       0, N_("Device or file with separated LUKS header."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

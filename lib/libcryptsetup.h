@@ -22,14 +22,23 @@ struct crypt_device; /* crypt device handle */
 int crypt_init(struct crypt_device **cd, const char *device);
 
 /**
- * Initialise crypt device handle from provided active device name
+ * Initialise crypt device handle from provided active device name,
+ * and, optionally, from separate metadata (header) device
  * and check if provided device exists.
  *
  * Returns 0 on success or negative errno value otherwise.
  *
  * @cd - crypt device handle
  * @name - name of active crypt device
+ * @header_device - optional device containing on-disk header
+ *  (NULL if it the same as underlying device on there is no on-disk header)
+ *
+ * crypt_init_by_name is quivalent to calling
+ * crypt_init_by_name_and_header(cd, name, NULL);
  */
+int crypt_init_by_name_and_header(struct crypt_device **cd,
+				  const char *name,
+				  const char *header_device);
 int crypt_init_by_name(struct crypt_device **cd, const char *name);
 
 /**
@@ -111,6 +120,13 @@ void crypt_set_timeout(struct crypt_device *cd, uint64_t timeout_sec);
 void crypt_set_password_retry(struct crypt_device *cd, int tries);
 void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_ms);
 void crypt_set_password_verify(struct crypt_device *cd, int password_verify);
+
+/**
+ * Set data device (ciphertext device) if LUKS header is separated
+ * @cd - crypt device handle
+ * @device - path to device
+ */
+int crypt_set_data_device(struct crypt_device *cd, const char *device);
 
 /**
  * Set which RNG (random number generator) is used for generating long term key

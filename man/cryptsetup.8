@@ -52,7 +52,8 @@ opens the LUKS partition <device> and sets up a mapping <name> after
 successful verification of the supplied key material
 (either via key file by \-\-key-file, or via prompting).
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly, \-\-allow-discards].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly, \-\-allow-discards,
+\-\-header].
 .PP
 \fIluksClose\fR <name>
 .IP
@@ -67,13 +68,15 @@ After that operation you have to use \fIluksResume\fR to reinstate
 encryption key (and resume device) or \fIluksClose\fR to remove mapped device.
 
 \fBWARNING:\fR never try to suspend device where is the cryptsetup binary itself.
+
+\fB<options>\fR can be [\-\-header].
 .PP
 \fIluksResume\fR <name>
 .IP
 Resumes suspended device and reinstates encryption key. You will need provide passphrase
 identical to \fIluksOpen\fR command (using prompting or key file).
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size]
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-header]
 .PP
 \fIluksAddKey\fR <device> [<new key file>]
 .IP
@@ -373,6 +376,20 @@ if the discarded blocks can be located easily on the device later.
 
 Kernel version 3.1 or more recent is required.
 For older versions is the option ignored.
+.TP
+.B "\-\-header\fR"
+Set detached (separated) metadata device or file with LUKS header.
+
+This options allows separation of ciphertext device and on-disk metadata header.
+
+This option is only relevant for LUKS devices and can be used in \fIluksOpen\fR,
+\fIluksSuspend\fR, \fIluksResume\fR and \fIresize\fR commands.
+
+For other commands with separated metadata device you have to always specify
+path to metadata device (not to the ciphertext device).
+
+\fBWARNING:\fR There is no possible check that specified ciphertext device
+is correct if on-disk header is detached. Use with care.
 .TP
 .B "\-\-version"
 Show the version.

@@ -3,6 +3,8 @@
 	* Do not allow key retrieval while suspended (key could be wiped).
 	* Do not allow suspend for non-LUKS devices.
 	* Support retries and timeout parameters for luksSuspend.
+	* Add --header option for detached metadata (on-disk LUKS header) device.
+	* Add crypt_init_by_name_and_header() and crypt_set_data_device() to API.
 
 2011-07-07  Milan Broz  <mbroz@redhat.com>
 	* Remove old API functions (all functions using crypt_options).
