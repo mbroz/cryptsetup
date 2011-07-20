@@ -476,6 +476,27 @@ bad:
 	return r;
 }
 
+static int crypt_check_data_device_size(struct crypt_device *cd)
+{
+	int r;
+	uint64_t size, size_min;
+
+	/* Check data device size, require at least one sector */
+	size_min = crypt_get_data_offset(cd) ?: SECTOR_SIZE;
+
+	r = device_size(crypt_get_device_name(cd), &size);
+	if (r < 0)
+		return r;
+
+	if (size < size_min) {
+		log_err(cd, _("LUKS header detected but device %s is too small.\n"),
+			crypt_get_device_name(cd));
+		return -EINVAL;
+	}
+
+	return r;
+}
+
 int crypt_set_data_device(struct crypt_device *cd, const char *device)
 {
 	char *data_device;
@@ -506,7 +527,7 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 
 	cd->device = data_device;
 
-	return 0;
+	return crypt_check_data_device_size(cd);
 }
 
 int crypt_init_by_name_and_header(struct crypt_device **cd,
@@ -707,10 +728,14 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if(!cd->volume_key)
 		return -ENOMEM;
 
-	//FIXME: external metadata, ignore alignment
-	if (params && params->data_alignment)
+	if (params && params->data_device) {
+		cd->metadata_device = cd->device;
+		if (!(cd->device = strdup(params->data_device)))
+			return -ENOMEM;
 		required_alignment = params->data_alignment * SECTOR_SIZE;
-	else
+	} else if (params && params->data_alignment) {
+		required_alignment = params->data_alignment * SECTOR_SIZE;
+	} else
 		get_topology_alignment(cd->device, &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
@@ -719,7 +744,8 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 			       uuid, LUKS_STRIPES,
 			       required_alignment / SECTOR_SIZE,
 			       alignment_offset / SECTOR_SIZE,
-			       cd->iteration_time, &cd->PBKDF2_per_sec, cd);
+			       cd->iteration_time, &cd->PBKDF2_per_sec,
+			       cd->metadata_device, cd);
 	if(r < 0)
 		return r;
 
@@ -839,14 +865,18 @@ int crypt_load(struct crypt_device *cd,
 		return r;
 
 	r = LUKS_read_phdr(mdata_device(cd), &hdr, 1, cd);
+	if (r < 0)
+		return r;
 
-	if (!r) {
-		memcpy(&cd->hdr, &hdr, sizeof(hdr));
-		free(cd->type);
-		cd->type = strdup(CRYPT_LUKS1);
-		if (!cd->type)
-			r = -ENOMEM;
-	}
+	r = crypt_check_data_device_size(cd);
+	if (r < 0)
+		return r;
+
+	memcpy(&cd->hdr, &hdr, sizeof(hdr));
+	free(cd->type);
+	cd->type = strdup(CRYPT_LUKS1);
+	if (!cd->type)
+		r = -ENOMEM;
 
 	return r;
 }

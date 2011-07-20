@@ -357,6 +357,9 @@ If not specified, cryptsetup tries to use topology info provided by kernel
 for underlying device to get optimal alignment.
 If not available (or calculated value is multiple of default) data is by
 default aligned to 1 MiB boundary (2048 512-byte sectors).
+
+For detached LUKS header it specifies offset on data device.
+See also \-\-header option.
 .TP
 .B "\-\-uuid=\fIUUID\fR"
 Use provided \fIUUID\fR in \fIluksFormat\fR command instead of generating
@@ -382,8 +385,11 @@ Set detached (separated) metadata device or file with LUKS header.
 
 This options allows separation of ciphertext device and on-disk metadata header.
 
-This option is only relevant for LUKS devices and can be used in \fIluksOpen\fR,
-\fIluksSuspend\fR, \fIluksResume\fR and \fIresize\fR commands.
+This option is only relevant for LUKS devices and can be used in \fIluksFormat\fR,
+\fIluksOpen\fR, \fIluksSuspend\fR, \fIluksResume\fR and \fIresize\fR commands.
+
+If used with \fIluksFormat\fR the \-\-align-payload option is taken
+as absolute sector alignment on ciphertext device and can be zero.
 
 For other commands with separated metadata device you have to always specify
 path to metadata device (not to the ciphertext device).

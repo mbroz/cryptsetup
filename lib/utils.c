@@ -336,6 +336,21 @@ int device_ready(struct crypt_device *cd, const char *device, int mode)
 	return r;
 }
 
+int device_size(const char *device, uint64_t *size)
+{
+	int devfd, r = 0;
+
+	devfd = open(device, O_RDONLY);
+	if(devfd == -1)
+		return -EINVAL;
+
+	if (ioctl(devfd, BLKGETSIZE64, size) < 0)
+		r = -EINVAL;
+
+	close(devfd);
+	return r;
+}
+
 static int get_device_infos(const char *device, enum devcheck device_check,
 			    int *readonly, uint64_t *size)
 {

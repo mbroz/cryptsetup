@@ -88,6 +88,7 @@ int LUKS_generate_phdr(
 	unsigned int alignOffset,
 	uint32_t iteration_time_ms,
 	uint64_t *PBKDF2_per_sec,
+	const char *metadata_device,
 	struct crypt_device *ctx);
 
 int LUKS_read_phdr(

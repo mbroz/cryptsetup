@@ -449,6 +449,7 @@ fail:
 static int action_luksFormat(int arg __attribute__((unused)))
 {
 	int r = -EINVAL, keysize;
+	const char *header_device;
 	char *msg = NULL, *key = NULL, cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char *password = NULL;
 	size_t passwordLen;
@@ -456,9 +457,13 @@ static int action_luksFormat(int arg __attribute__((unused)))
 	struct crypt_params_luks1 params = {
 		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
 		.data_alignment = opt_align_payload,
+		.data_device = opt_header_device ? action_argv[0] : NULL,
 	};
 
-	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]) == -1) {
+	header_device = opt_header_device ?: action_argv[0];
+
+	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."),
+		    header_device) == -1) {
 		log_err(_("memory allocation error in action_luksFormat"));
 		r = -ENOMEM;
 		goto out;
@@ -475,7 +480,7 @@ static int action_luksFormat(int arg __attribute__((unused)))
 		goto out;
 	}
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, header_device)))
 		goto out;
 
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8;
@@ -542,6 +547,12 @@ static int action_luksOpen(int arg __attribute__((unused)))
 	if (data_device &&
 	    (r = crypt_set_data_device(cd, data_device)))
 		goto out;
+
+	if (!data_device && (crypt_get_data_offset(cd) < 8)) {
+		log_err(_("Reduced data offset is allowed only for detached LUKS header.\n"));
+		r = -EINVAL;
+		goto out;
+	}
 
 	crypt_set_timeout(cd, opt_timeout);
 	crypt_set_password_retry(cd, opt_tries);

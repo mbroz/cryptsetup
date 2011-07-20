@@ -183,6 +183,7 @@ struct crypt_params_plain {
 struct crypt_params_luks1 {
 	const char *hash;      /* hash used in LUKS header */
 	size_t data_alignment; /* in sectors, data offset is multiple of this */
+	const char *data_device; /* detached ciphertext device or NULL */
 };
 
 struct crypt_params_loopaes {

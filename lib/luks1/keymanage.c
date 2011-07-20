@@ -19,8 +19,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <linux/fs.h>
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -313,7 +311,6 @@ int LUKS_read_phdr(const char *device,
 {
 	ssize_t hdr_size = sizeof(struct luks_phdr);
 	int devfd = 0, r = 0;
-	uint64_t size;
 
 	log_dbg("Reading LUKS header of size %d from device %s",
 		hdr_size, device);
@@ -329,15 +326,7 @@ int LUKS_read_phdr(const char *device,
 	else
 		r = _check_and_convert_hdr(device, hdr, require_luks_device, ctx);
 
-#ifdef BLKGETSIZE64
-	if (r == 0 && (ioctl(devfd, BLKGETSIZE64, &size) < 0 ||
-	    size < (uint64_t)hdr->payloadOffset)) {
-		log_err(ctx, _("LUKS header detected but device %s is too small.\n"), device);
-		r = -EINVAL;
-	}
-#endif
 	close(devfd);
-
 	return r;
 }
 
@@ -413,6 +402,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       unsigned int alignOffset,
 		       uint32_t iteration_time_ms,
 		       uint64_t *PBKDF2_per_sec,
+		       const char *metadata_device,
 		       struct crypt_device *ctx)
 {
 	unsigned int i=0;
@@ -422,7 +412,8 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	int currentSector;
 	char luksMagic[] = LUKS_MAGIC;
 
-	if (alignPayload == 0)
+	/* For separate metadata device allow zero alignment */
+	if (alignPayload == 0 && !metadata_device)
 		alignPayload = DEFAULT_DISK_ALIGNMENT / SECTOR_SIZE;
 
 	if (PBKDF2_HMAC_ready(hashSpec) < 0) {
@@ -486,10 +477,15 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		currentSector = round_up_modulo(currentSector + blocksPerStripeSet,
 						LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 	}
-	currentSector = round_up_modulo(currentSector, alignPayload);
 
-	/* alignOffset - offset from natural device alignment provided by topology info */
-	header->payloadOffset = currentSector + alignOffset;
+	if (metadata_device) {
+		/* for separate metadata device use alignPayload directly */
+		header->payloadOffset = alignPayload;
+	} else {
+		/* alignOffset - offset from natural device alignment provided by topology info */
+		currentSector = round_up_modulo(currentSector, alignPayload);
+		header->payloadOffset = currentSector + alignOffset;
+	}
 
         uuid_unparse(partitionUuid, header->uuid);
 
