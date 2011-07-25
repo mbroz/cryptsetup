@@ -358,20 +358,20 @@ echo "key01" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d 4 2>/dev/null && fail
 echo -e "key0\n" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d- -l 4 || fail
 
 prepare "[25] Create non-overlapping segments" wipe
-echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --offset   0 --size 256 || fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --offset 512 --size 256 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --offset 512 --size 256 --shared || fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --offset 255 --size 256 --shared 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --offset 256 --size 257 --shared 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --offset 256 --size 1024 --shared 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --offset 256 --size 256 --shared || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha1 --offset   0 --size 256 || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 --shared || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --hash sha1 --offset 255 --size 256 --shared 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --hash sha1 --offset 256 --size 257 --shared 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --hash sha1 --offset 256 --size 1024 --shared 2>/dev/null && fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --hash sha1 --offset 256 --size 256 --shared || fail
 $CRYPTSETUP -q remove  $DEV_NAME3 || fail
 $CRYPTSETUP -q remove  $DEV_NAME2 || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 
 prepare "[26] Suspend/Resume" wipe
 # only LUKS is supported
-echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV || fail
+echo "key0" | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
 $CRYPTSETUP luksSuspend $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
