@@ -102,6 +102,8 @@ function check_exists()
 prepare	"[1] open - compat image - acceptance check" new
 echo "compatkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 check_exists
+ORG_SHA1=$(sha1sum -b /dev/mapper/$DEV_NAME | cut -f 1 -d' ')
+[ "$ORG_SHA1" = 676062b66ebf36669dab705442ea0762dfc091b0 ] || fail
 
 prepare "[2] open - compat image - denial check" new
 echo "wrongkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
