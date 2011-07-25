@@ -98,7 +98,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 	return 0;
 }
 
-int crypt_hash_restart(struct crypt_hash *ctx)
+static int crypt_hash_restart(struct crypt_hash *ctx)
 {
 	if (EVP_DigestInit(&ctx->md, ctx->hash_id) != 1)
 		return -EINVAL;
@@ -129,6 +129,9 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	memset(tmp, 0, sizeof(tmp));
 
 	if (tmp_len < length)
+		return -EINVAL;
+
+	if (crypt_hash_restart(ctx))
 		return -EINVAL;
 
 	return 0;
@@ -171,10 +174,9 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	return 0;
 }
 
-int crypt_hmac_restart(struct crypt_hmac *ctx)
+static void crypt_hmac_restart(struct crypt_hmac *ctx)
 {
 	HMAC_Init_ex(&ctx->md, NULL, 0, ctx->hash_id, NULL);
-	return 0;
 }
 
 int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)
@@ -198,6 +200,8 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 
 	if (tmp_len < length)
 		return -EINVAL;
+
+	crypt_hmac_restart(ctx);
 
 	return 0;
 }

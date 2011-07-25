@@ -159,10 +159,9 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 	return 0;
 }
 
-int crypt_hash_restart(struct crypt_hash *ctx)
+static void crypt_hash_restart(struct crypt_hash *ctx)
 {
 	ctx->hash->init(&ctx->nettle_ctx);
-	return 0;
 }
 
 int crypt_hash_write(struct crypt_hash *ctx, const char *buffer, size_t length)
@@ -177,6 +176,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 		return -EINVAL;
 
 	ctx->hash->digest(&ctx->nettle_ctx, length, (uint8_t *)buffer);
+	crypt_hash_restart(ctx);
 	return 0;
 }
 
@@ -225,7 +225,7 @@ bad:
 	return -EINVAL;
 }
 
-int crypt_hmac_restart(struct crypt_hmac *ctx)
+static void crypt_hmac_restart(struct crypt_hmac *ctx)
 {
 	ctx->hash->hmac_set_key(&ctx->nettle_ctx, ctx->key_length, ctx->key);
 	return 0;
@@ -243,6 +243,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 		return -EINVAL;
 
 	ctx->hash->hmac_digest(&ctx->nettle_ctx, length, (uint8_t *)buffer);
+	crypt_hmac_restart(ctx);
 	return 0;
 }
 

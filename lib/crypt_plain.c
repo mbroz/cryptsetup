@@ -54,8 +54,6 @@ static int hash(const char *hash_name, size_t key_size, char *key,
 
 		key += len;
 		key_size -= len;
-		if (key_size && crypt_hash_restart(md))
-			r = 1;
 	}
 
 	crypt_hash_destroy(md);

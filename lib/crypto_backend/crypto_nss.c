@@ -121,7 +121,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 	return 0;
 }
 
-int crypt_hash_restart(struct crypt_hash *ctx)
+static int crypt_hash_restart(struct crypt_hash *ctx)
 {
 	if (PK11_DigestBegin(ctx->md) != SECSuccess)
 		return -EINVAL;
@@ -152,6 +152,9 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	memset(tmp, 0, sizeof(tmp));
 
 	if (tmp_len < length)
+		return -EINVAL;
+
+	if (crypt_hash_restart(ctx))
 		return -EINVAL;
 
 	return 0;
@@ -220,7 +223,7 @@ bad:
 	return -EINVAL;
 }
 
-int crypt_hmac_restart(struct crypt_hmac *ctx)
+static int crypt_hmac_restart(struct crypt_hmac *ctx)
 {
 	if (PK11_DigestBegin(ctx->md) != SECSuccess)
 		return -EINVAL;
@@ -251,6 +254,9 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	memset(tmp, 0, sizeof(tmp));
 
 	if (tmp_len < length)
+		return -EINVAL;
+
+	if (crypt_hmac_restart(ctx))
 		return -EINVAL;
 
 	return 0;

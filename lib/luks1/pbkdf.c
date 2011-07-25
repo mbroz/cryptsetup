@@ -167,9 +167,6 @@ static int pkcs5_pbkdf2(const char *hash,
 		memset(T, 0, hLen);
 
 		for (u = 1; u <= c ; u++) {
-			if (crypt_hmac_restart(hmac))
-				goto out;
-
 			if (u == 1) {
 				memcpy(tmp, S, Slen);
 				tmp[Slen + 0] = (i & 0xff000000) >> 24;

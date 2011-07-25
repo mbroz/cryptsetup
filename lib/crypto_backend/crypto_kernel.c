@@ -176,11 +176,6 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 	return 0;
 }
 
-int crypt_hash_restart(struct crypt_hash *ctx)
-{
-	return 0;
-}
-
 int crypt_hash_write(struct crypt_hash *ctx, const char *buffer, size_t length)
 {
 	ssize_t r;
@@ -258,11 +253,6 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	}
 
 	*ctx = h;
-	return 0;
-}
-
-int crypt_hmac_restart(struct crypt_hmac *ctx)
-{
 	return 0;
 }
 
