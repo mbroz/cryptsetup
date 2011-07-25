@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Try to get LUKS info and master key from active mapping and prepare parameters for cryptsetup.
+#
+# Copyright (C) 2010,2011 Milan Broz <asi@ucw.cz>
+#
+# This copyrighted material is made available to anyone wishing to use,
+# modify, copy, or redistribute it subject to the terms and conditions
+# of the GNU General Public License v.2.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+
+fail() { echo -e $1 ; exit 1 ; }
+field() { echo $(dmsetup table --target crypt --showkeys $DEVICE | sed 's/.*: //' | cut -d' ' -f$1) ; }
+field_cryptsetup() { echo $(cryptsetup status $DEVICE | grep $1 | sed "s/.*$1:\s*//;s/\ .*//") ; }
+
+which xxd >/dev/null || fail "You need xxd (part of vim package) installed to convert key."
+
+[ -z "$2" ] && fail "Recover LUKS header from active mapping, use:\n $0 crypt_mapped_device mk_file_name"
+
+DEVICE=$1
+MK_FILE=$2
+
+[ -z "$(field 4)" ] && fail "Mapping $1 not active or it is not crypt target."
+
+# FIXME:
+# - add UUID
+# - check for CRYPT-LUKS1-* DM-UUID
+
+CIPHER=$(field_cryptsetup cipher)
+OFFSET=$(field_cryptsetup offset)
+REAL_DEVICE=$(field_cryptsetup device)
+KEY_SIZE=$(field_cryptsetup keysize)
+KEY=$(field 5)
+
+[ -z "$CIPHER" -o -z "$OFFSET" -o "$OFFSET" -le 383 -o -z "$KEY" ] && fail "Incompatible device, sorry."
+
+echo "Generating master key to file $MK_FILE."
+echo -E -n $KEY| xxd -r -p >$MK_FILE
+
+echo "You can now try to reformat LUKS device using:"
+echo "  cryptsetup luksFormat -c $CIPHER -s $KEY_SIZE --align-payload=$OFFSET --master-key-file=$MK_FILE $REAL_DEVICE"
