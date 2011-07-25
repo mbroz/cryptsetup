@@ -139,9 +139,9 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	if (!hash)
 		return -EINVAL;
 
+	memcpy(buffer, hash, length);
 	crypt_hash_restart(ctx);
 
-	memcpy(buffer, hash, length);
 	return 0;
 }
 
@@ -214,9 +214,9 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	if (!hash)
 		return -EINVAL;
 
+	memcpy(buffer, hash, length);
 	crypt_hmac_restart(ctx);
 
-	memcpy(buffer, hash, length);
 	return 0;
 }
 
