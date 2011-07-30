@@ -630,8 +630,11 @@ A. Contributors
   to the last stage ("Acceptance") and think about what to do now.
   There is one exception that I know of: If your LUKS container is
   still open, then it may be possible to extract the master key from
-  the running system. Ask on the mailing-list on how to do that and
-  make sure nobody switches off the machine.
+  the running system. See Item "How do I recover the master key from
+  a mapped LUKS container?" in Section "Backup and Data Recovery".
+
+Ask on the mailing-list on how 
+  to do that and make sure nobody switches off the machine.
 
 
  * What is a "salt"?
@@ -1052,6 +1055,63 @@ A. Contributors
   LUKS header, including the salts, making your data permanently
   irretrivable, unless you have a LUKS header backup. You may also
   damage the key-slots in part or in full. See also last item.
+
+
+ * How do I recover the master key from a mapped LUKS container?
+
+  This is typically only needed if you managed to damage your LUKS
+  header, but the container is still mapped, i.e. "luksOpen"ed.
+
+  WARNING: This exposes the master key of the LUKS container. Note
+  that both ways to recreate a LUKS header with the old master key
+  described below will write the master key to disk. Unless you are
+  sure you have securely erased it afterwards, e.g. by writing it to
+  an encrypted partition, RAM disk or by erasing the filesystem you
+  wrote it to by a complete overwrite, you should change the master
+  key afterwards.    Changing the master key requires a full data
+  backup, luksFormat and then restore of the backup.
+
+  First, there is a script by Milan that tries to automatize the
+  whole process, including generating a new LUKS header with the old
+  master key:
+
+http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-active
+
+  You can also do this manually. Here is how:
+
+  - Get the master key from the device mapper. This is done by the
+  following command. Substitute c5 for whatever you mapped to:
+
+      # dmsetup table --target crypt --showkey /dev/mapper/c5
+      Result:
+      0 200704 crypt aes-cbc-essiv:sha256 
+      a1704d9715f73a1bb4db581dcacadaf405e700d591e93e2eaade13ba653d0d09 
+      0 7:0 4096
+ 
+  The result is actually one line, wrapped here for clarity. The long
+  hex string is the master key.
+
+  - Convert the master key to a binary file representation. You can
+  do this manually, e.g. with hexedit. You can also use the tool
+  "xxd" from vim like this:
+
+      echo "a1704d9....53d0d09" | xxd -r -p > master_key
+ 
+  - Do a luksFormat to create a new LUKS header. Unmapthe device
+  before you do that (luksClose). Replace \dev\dsa10 with the device
+  the LUKS container is on:
+
+      cryptsetup luksFormat --master-key-file=master_key \dev\sda10
+ 
+  Note that if the container was created with other than the default
+  settings of the cryptsetup version you are using, you need to give
+  additional parameters specifying the deviations. If in doubt, just
+  do the first step, keep the whole result safe and try with the
+  script by Milan. It does recover the other parameters as well.
+
+  Side note: This is the way the decrypt_derived script gets at the
+  master key. It just omits the conversion and hashes the master key
+  string.
 
 
  * What does the on-disk structure of dm-crypt look like?
