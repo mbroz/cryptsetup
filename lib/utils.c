@@ -432,17 +432,28 @@ int device_check_and_adjust(struct crypt_device *cd,
 		return r;
 	}
 
+	if (*offset >= real_size) {
+		log_err(cd, _("Requested offset is beyond real size of device %s.\n"),
+			device);
+		return -EINVAL;
+	}
+
 	if (!*size) {
 		*size = real_size;
 		if (!*size) {
 			log_err(cd, _("Device %s has zero size.\n"), device);
 			return -ENOTBLK;
 		}
-		if (*size < *offset) {
-			log_err(cd, _("Device %s is too small.\n"), device);
-			return -EINVAL;
-		}
 		*size -= *offset;
+	}
+
+	/* in case of size is set by parameter */
+	if ((real_size - *offset) < *size) {
+		log_dbg("Device %s: offset = %" PRIu64 " requested size = %" PRIu64
+			", backing device size = %" PRIu64,
+			device, *offset, *size, real_size);
+		log_err(cd, _("Device %s is too small.\n"), device);
+		return -EINVAL;
 	}
 
 	if (device_check == DEV_SHARED) {

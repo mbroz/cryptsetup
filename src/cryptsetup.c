@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <limits.h>
 #include <libcryptsetup.h>
 #include <popt.h>
 
@@ -1204,8 +1205,11 @@ int main(int argc, const char **argv)
 		unsigned long long ull_value;
 		char *endp;
 
+		errno = 0;
 		ull_value = strtoull(popt_tmp, &endp, 0);
-		if (*endp || !*popt_tmp)
+		if (*endp || !*popt_tmp ||
+		    (errno == ERANGE && ull_value == ULLONG_MAX) ||
+		    (errno != 0 && ull_value == 0))
 			r = POPT_ERROR_BADNUMBER;
 
 		switch(r) {
