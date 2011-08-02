@@ -57,6 +57,12 @@
 
 #define DEVICE_TEST_UUID "12345678-1234-1234-1234-123456789abc"
 
+#define DEVICE_WRONG "/dev/Ooo_"
+#define DEVICE_CHAR "/dev/zero"
+#define TMP_FILE_TEMPLATE "cryptsetuptst.XXXXXX"
+
+#define SECTOR_SHIFT 9L
+
 static int _debug   = 0;
 static int _verbose = 1;
 
@@ -65,8 +71,26 @@ static int global_lines = 0;
 
 static char *DEVICE_1 = NULL;
 static char *DEVICE_2 = NULL;
+static char *H_DEVICE = NULL;
+
+static char *tmp_file_1 = NULL;
+static char *tmp_file_2 = NULL;
 
 // Helpers
+
+static int device_size(const char *device, uint64_t *size)
+{
+	int devfd, r = 0;
+
+	devfd = open(device, O_RDONLY);
+	if(devfd == -1)
+		return -EINVAL;
+
+	if (ioctl(devfd, BLKGETSIZE64, size) < 0)
+		r = -EINVAL;
+	close(devfd);
+	return r;
+}
 
 // Get key from kernel dm mapping table using dm-ioctl
 static int _get_key_dm(const char *name, char *buffer, unsigned int buffer_size)
@@ -178,6 +202,7 @@ static void _system(const char *command, int warn)
 
 static void _cleanup(void)
 {
+	char *h_str;
 	struct stat st;
 
 	//_system("udevadm settle", 0);
@@ -201,12 +226,62 @@ static void _cleanup(void)
 		crypt_loop_detach(DEVICE_2);
 
 	_system("rm -f " IMAGE_EMPTY, 0);
+	_system("rm -f " IMAGE1, 0);
+
+	if (tmp_file_1)
+		remove(tmp_file_1);
+	if (tmp_file_2)
+		remove(tmp_file_2);
+
+	if (H_DEVICE && crypt_loop_device(H_DEVICE)) {
+		h_str = crypt_loop_backing_file(H_DEVICE);
+		if(!crypt_loop_detach(H_DEVICE) && h_str)
+			remove(h_str);
+	}
+
 	_remove_keyfiles();
 }
 
 static int _setup(void)
 {
 	int fd, ro = 0;
+	char *h_str, cmd[128];
+
+	tmp_file_1 = strdup(TMP_FILE_TEMPLATE);
+	if ((fd=mkstemp(tmp_file_1))==-1) {
+		printf("cannot create temporary file with template %s\n",tmp_file_1);
+		return 1;
+	}
+	close(fd);
+	snprintf(cmd,sizeof(cmd),"dd if=/dev/zero of=%s bs=512 count=100", tmp_file_1);
+	_system(cmd,1);
+
+	if (!H_DEVICE)
+		H_DEVICE = crypt_loop_get_device();
+	if (!H_DEVICE) {
+		printf("Cannot find free loop device.\n");
+		return 1;
+	}
+	h_str = strdup(TMP_FILE_TEMPLATE);
+	if ((fd=mkstemp(h_str))==-1) {
+		printf("cannot create temporary file with template %s\n",tmp_file_1);
+		return 1;
+	}
+	close(fd);
+	snprintf(cmd,sizeof(cmd),"dd if=/dev/zero of=%s bs=512 count=1", h_str);
+	_system(cmd,1);
+	if (crypt_loop_device(H_DEVICE)) {
+		fd = crypt_loop_attach(H_DEVICE,h_str,0,0,&ro);
+		close(fd);
+	}
+	free(h_str);
+
+	tmp_file_2 = strdup(TMP_FILE_TEMPLATE);
+	if ((fd=mkstemp(tmp_file_2))==-1) {
+		printf("cannot create temporary file with template %s\n",tmp_file_2);
+		return 1;
+	}
+	close(fd);
 
 	_system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"", 1);
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
@@ -595,24 +670,54 @@ void DeviceResizeGame(void)
 
 static void AddDevicePlain(void)
 {
-	struct crypt_device *cd;
+	struct crypt_device *cd, *cd2;
 	struct crypt_params_plain params = {
 		.hash = "sha1",
 		.skip = 0,
 		.offset = 0,
+		.size = 0
 	};
 	int fd;
 	char key[128], key2[128], path[128];
 
 	char *passphrase = PASSPHRASE;
+	// hashed hex version of PASSPHRASE
 	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
 	char *cipher = "aes";
 	char *cipher_mode = "cbc-essiv:sha256";
 
-	crypt_decode_key(key, mk_hex, key_size);
+	uint64_t size, r_size;
 
+	crypt_decode_key(key, mk_hex, key_size);
 	FAIL_(crypt_init(&cd, ""), "empty device string");
+	FAIL_(crypt_init(&cd, DEVICE_WRONG), "nonexistent device name ");
+	FAIL_(crypt_init(&cd, DEVICE_CHAR), "character device as backing device");
+	OK_(crypt_init(&cd, tmp_file_1));
+	crypt_free(cd);
+
+	// test crypt_format, crypt_get_cipher, crypt_get_cipher_mode, crypt_get_volume_key_size
+	OK_(crypt_init(&cd,DEVICE_1));
+	params.skip = 3;
+	params.offset = 42;
+	FAIL_(crypt_format(cd,CRYPT_PLAIN,NULL,cipher_mode,NULL,NULL,key_size,&params),"cipher param is null");
+	FAIL_(crypt_format(cd,CRYPT_PLAIN,cipher,NULL,NULL,NULL,key_size,&params),"cipher_mode param is null");
+	OK_(crypt_format(cd,CRYPT_PLAIN,cipher,cipher_mode,NULL,NULL,key_size,&params));
+	OK_(strcmp(cipher_mode,crypt_get_cipher_mode(cd)));
+	OK_(strcmp(cipher,crypt_get_cipher(cd)));
+	EQ_(key_size, crypt_get_volume_key_size(cd));
+	EQ_(params.skip, crypt_get_iv_offset(cd));
+	EQ_(params.offset, crypt_get_data_offset(cd));
+	params.skip = 0;
+	params.offset = 0;
+
+	// crypt_set_uuid()
+	FAIL_(crypt_set_uuid(cd,DEVICE_1_UUID),"can't set uuid to plain device");
+
+	// crypt_load() should fail for PLAIN
+	FAIL_(crypt_load(cd,CRYPT_PLAIN,NULL),"can't load header from plain device");
+
+	crypt_free(cd);
 
 	// default is "plain" hash - no password hash
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -620,11 +725,74 @@ static void AddDevicePlain(void)
 	FAIL_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0), "cannot verify key with plain");
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
-	// FIXME: this should get key from active device?
-	//OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
-	//OK_(memcmp(key, key2, key_size));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
+
+	// test boundaries in offset parameter
+	device_size(DEVICE_1,&size);
+	params.hash = NULL;
+	// zero sectors length
+	params.offset = size >> SECTOR_SHIFT;
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	EQ_(crypt_get_data_offset(cd),params.offset);
+	// device size is 0 sectors
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0), "invalid device size (0 blocks)");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+	// data part of crypt device is of 1 sector size
+	params.offset = (size >> SECTOR_SHIFT) - 1;
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), CDEVICE_1);
+	if (device_size(path, &r_size) >= 0)
+		EQ_(r_size>>SECTOR_SHIFT, 1);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// size > device_size
+	params.offset = 0;
+	params.size = (size >> SECTOR_SHIFT) + 1;
+	crypt_init(&cd, DEVICE_1);
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0),"Device too small");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+
+	// offset == device_size (autodetect size)
+	params.offset = (size >> SECTOR_SHIFT);
+	params.size = 0;
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0),"Device too small");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+
+	// offset == device_size (user defined size)
+	params.offset = (size >> SECTOR_SHIFT);
+	params.size = 123;
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0),"Device too small");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+
+	// offset+size > device_size
+	params.offset = 42;
+	params.size = (size >> SECTOR_SHIFT) - params.offset + 1;
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0),"Offset and size are beyond device real size");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+
+	// offset+size == device_size
+	params.offset = 42;
+	params.size = (size >> SECTOR_SHIFT) - params.offset;
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	if (!device_size(path, &r_size))
+		EQ_((r_size >> SECTOR_SHIFT),params.size);
+	OK_(crypt_deactivate(cd,CDEVICE_1));
+
+	crypt_free(cd);
+	params.hash = "sha1";
+	params.offset = 0;
+	params.size = 0;
+	params.skip = 0;
 
 	// Now use hashed password
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -643,7 +811,90 @@ static void AddDevicePlain(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
 
+	// crypt_init_by_name_and_header
+	OK_(crypt_init(&cd,DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_PLAIN,cipher,cipher_mode,NULL,NULL,key_size,&params));
+	OK_(crypt_activate_by_volume_key(cd,CDEVICE_1,key,key_size,0));
+	FAIL_(crypt_init_by_name_and_header(&cd2,CDEVICE_1,H_DEVICE),"can't init plain device by header device");
+	OK_(crypt_init_by_name(&cd2,CDEVICE_1));
+	OK_(crypt_deactivate(cd,CDEVICE_1));
+	crypt_free(cd);
+	crypt_free(cd2);
+
+	OK_(crypt_init(&cd,DEVICE_1));
+	OK_(crypt_format(cd,CRYPT_PLAIN,cipher,cipher_mode,NULL,NULL,key_size,&params));
+	params.size = 0;
+	params.offset = 0;
+
+	// crypt_set_data_device
+	FAIL_(crypt_set_data_device(cd,H_DEVICE),"can't set data device for plain device");
+
+	// crypt_get_type
+	OK_(strcmp(crypt_get_type(cd),CRYPT_PLAIN));
+
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+
+	// crypt_resize()
+	OK_(crypt_resize(cd,CDEVICE_1,size>>SECTOR_SHIFT)); // same size
+	if (!device_size(path,&r_size))
+		EQ_(r_size, size);
+
+	// size overlaps
+	FAIL_(crypt_resize(cd, CDEVICE_1, ULLONG_MAX),"Backing device is too small");
+	FAIL_(crypt_resize(cd, CDEVICE_1, (size>>SECTOR_SHIFT)+1),"crypt device overlaps backing device");
+
+	// resize ok
+	OK_(crypt_resize(cd,CDEVICE_1, 123));
+	if (!device_size(path,&r_size))
+		EQ_(r_size>>SECTOR_SHIFT, 123);
+	OK_(crypt_resize(cd,CDEVICE_1,0)); // full size (autodetect)
+	if (!device_size(path,&r_size))
+		EQ_(r_size, size);
+	OK_(crypt_deactivate(cd,CDEVICE_1));
+	EQ_(crypt_status(cd,CDEVICE_1),CRYPT_INACTIVE);
+
+	// offset tests
+	OK_(crypt_init(&cd,DEVICE_1));
+	params.offset = 42;
+	params.size = (size>>SECTOR_SHIFT) - params.offset - 10;
+	OK_(crypt_format(cd,CRYPT_PLAIN,cipher,cipher_mode,NULL,NULL,key_size,&params));
+	OK_(crypt_activate_by_volume_key(cd,CDEVICE_1,key,key_size,0));
+	if (!device_size(path,&r_size))
+		EQ_(r_size>>SECTOR_SHIFT, params.size);
+	// resize to fill remaining capacity
+	OK_(crypt_resize(cd,CDEVICE_1,params.size + 10));
+	if (!device_size(path,&r_size))
+		EQ_(r_size>>SECTOR_SHIFT, params.size + 10);
+
+	// 1 sector beyond real size
+	FAIL_(crypt_resize(cd,CDEVICE_1,params.size + 11), "new device size overlaps backing device"); // with respect to offset
+	if (!device_size(path,&r_size))
+		EQ_(r_size>>SECTOR_SHIFT, params.size + 10);
+	EQ_(crypt_status(cd,CDEVICE_1),CRYPT_ACTIVE);
+	fd = open(path, O_RDONLY);
+	close(fd);
+	OK_(fd < 0);
+
+	// resize to minimal size
+	OK_(crypt_resize(cd,CDEVICE_1, 1)); // minimal device size
+	if (!device_size(path,&r_size))
+		EQ_(r_size>>SECTOR_SHIFT, 1);
+	// use size of backing device (autodetect with respect to offset)
+	OK_(crypt_resize(cd,CDEVICE_1,0));
+	if (!device_size(path,&r_size))
+		EQ_(r_size>>SECTOR_SHIFT, (size >> SECTOR_SHIFT)- 42);
+	OK_(crypt_deactivate(cd,CDEVICE_1));
+
+	params.size = 0;
+	params.offset = 0;
+	OK_(crypt_format(cd,CRYPT_PLAIN,cipher,cipher_mode,NULL,NULL,key_size,&params));
+	OK_(crypt_activate_by_volume_key(cd,CDEVICE_1,key,key_size,0));
+
+	// suspend/resume tests
+	FAIL_(crypt_suspend(cd,CDEVICE_1),"cannot suspend plain device");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	FAIL_(crypt_resume_by_passphrase(cd,CDEVICE_1,CRYPT_ANY_SLOT,passphrase, strlen(passphrase)),"cannot resume plain device");
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 
 	// retrieve volume key check
@@ -663,10 +914,22 @@ static void AddDevicePlain(void)
 
 	// now with keyfile
 	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
+	OK_(_prepare_keyfile(KEYFILE2, KEY2, strlen(KEY2)));
 	FAIL_(crypt_activate_by_keyfile(cd, NULL, CRYPT_ANY_SLOT, KEYFILE1, 0, 0), "cannot verify key with plain");
 	EQ_(0, crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	_remove_keyfiles();
+
+	OK_(crypt_init(&cd,DEVICE_1));
+	OK_(crypt_format(cd,CRYPT_PLAIN,cipher,cipher_mode,NULL,NULL,key_size,&params));
+
+	// crypt_keyslot_*()
+	FAIL_(crypt_keyslot_add_by_passphrase(cd,CRYPT_ANY_SLOT,passphrase,strlen(passphrase),passphrase,strlen(passphrase)), "can't add keyslot to plain device");
+	FAIL_(crypt_keyslot_add_by_volume_key(cd,CRYPT_ANY_SLOT	,key,key_size,passphrase,strlen(passphrase)),"can't add keyslot to plain device");
+	FAIL_(crypt_keyslot_add_by_keyfile(cd,CRYPT_ANY_SLOT,KEYFILE1,strlen(KEY1),KEYFILE2,strlen(KEY2)),"can't add keyslot to plain device");
+	FAIL_(crypt_keyslot_destroy(cd,1),"can't manipulate keyslots on plain device");
+	EQ_(crypt_keyslot_status(cd, 0), CRYPT_SLOT_INVALID);
 	_remove_keyfiles();
 
 	crypt_free(cd);

@@ -3,6 +3,8 @@ TESTS = api-test compat-test loopaes-test align-test discards-test mode-test pas
 EXTRA_DIST = compatimage.img.bz2 \
 	     compat-test loopaes-test align-test discards-test mode-test password-hash-test
 
+CLEANFILES = cryptsetuptst.*
+
 differ_SOURCES = differ.c
 differ_CFLAGS = -Wall -O2
 
