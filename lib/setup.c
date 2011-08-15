@@ -219,6 +219,36 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 	return 0;
 }
 
+/*
+ * compares UUIDs returned by device-mapper (striped by cryptsetup) and uuid in header
+ */
+static int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
+{
+	int i, j;
+	char *str;
+
+	if (!dm_uuid || !hdr_uuid)
+		return -EINVAL;
+
+	str = strchr(dm_uuid, '-');
+	if (!str)
+		return -EINVAL;
+
+	for (i = 0, j = 1; hdr_uuid[i]; i++) {
+		if (hdr_uuid[i] == '-')
+			continue;
+
+		if (!str[j] || str[j] == '-')
+			return -EINVAL;
+
+		if (str[j] != hdr_uuid[i])
+			return -EINVAL;
+		j++;
+	}
+
+	return 0;
+}
+
 int PLAIN_activate(struct crypt_device *cd,
 		     const char *name,
 		     struct volume_key *vk,
@@ -637,6 +667,16 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			r = crypt_load(*cd, CRYPT_LUKS1, NULL);
 			if (r < 0) {
 				log_dbg("LUKS device header does not match active device.");
+				free((*cd)->type);
+				(*cd)->type = NULL;
+				r = 0;
+				goto out;
+			}
+			/* checks whether UUIDs match each other */
+			r = crypt_uuid_cmp(dmd.uuid, (*cd)->hdr.uuid);
+			if (r < 0) {
+				log_dbg("LUKS device header uuid: %s mismatches DM returned uuid %s",
+					(*cd)->hdr.uuid, dmd.uuid);
 				free((*cd)->type);
 				(*cd)->type = NULL;
 				r = 0;
