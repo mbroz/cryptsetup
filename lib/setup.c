@@ -288,7 +288,7 @@ int PLAIN_activate(struct crypt_device *cd,
 
 	// FIXME
 	if (!cd->plain_uuid && dm_query_device(name, DM_ACTIVE_UUID, &dmd) >= 0)
-		cd->plain_uuid = (char*)dmd.uuid;
+		cd->plain_uuid = CONST_CAST(char*)dmd.uuid;
 
 	free(dm_cipher);
 	return r;
@@ -600,7 +600,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 
 		/* Underlying device is not readable but crypt mapping exists */
 		if (r == -ENOTBLK) {
-			free((char*)dmd.device);
+			free(CONST_CAST(void*)dmd.device);
 			dmd.device = NULL;
 			r = crypt_init(cd, NULL);
 		}
@@ -691,9 +691,9 @@ out:
 		*cd = NULL;
 	}
 	crypt_free_volume_key(dmd.vk);
-	free((char*)dmd.device);
-	free((char*)dmd.cipher);
-	free((char*)dmd.uuid);
+	free(CONST_CAST(void*)dmd.device);
+	free(CONST_CAST(void*)dmd.cipher);
+	free(CONST_CAST(void*)dmd.uuid);
 	return r;
 }
 
@@ -964,9 +964,9 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	}
 out:
 	crypt_free_volume_key(dmd.vk);
-	free((char*)dmd.cipher);
-	free((char*)dmd.device);
-	free((char*)dmd.uuid);
+	free(CONST_CAST(void*)dmd.cipher);
+	free(CONST_CAST(void*)dmd.device);
+	free(CONST_CAST(void*)dmd.uuid);
 
 	return r;
 }
@@ -1051,13 +1051,13 @@ void crypt_free(struct crypt_device *cd)
 		free(cd->type);
 
 		/* used in plain device only */
-		free((char*)cd->plain_hdr.hash);
+		free(CONST_CAST(void*)cd->plain_hdr.hash);
 		free(cd->plain_cipher);
 		free(cd->plain_cipher_mode);
 		free(cd->plain_uuid);
 
 		/* used in loop-AES device only */
-		free((char*)cd->loopaes_hdr.hash);
+		free(CONST_CAST(void*)cd->loopaes_hdr.hash);
 		free(cd->loopaes_cipher);
 		free(cd->loopaes_uuid);
 
@@ -1261,7 +1261,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 		goto out;
 
 	if (new_passphrase) {
-		new_password = (char *)new_passphrase;
+		new_password = CONST_CAST(char*)new_passphrase;
 		new_passwordLen = new_passphrase_size;
 	} else {
 		r = key_from_terminal(cd, _("Enter new passphrase for key slot: "),

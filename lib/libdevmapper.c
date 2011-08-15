@@ -244,11 +244,12 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 static char *get_params(struct crypt_dm_active_device *dmd)
 {
 	int r, max_size;
-	char *params, *hexkey, *features = "";
+	char *params, *hexkey;
+	const char *features = "";
 
 	if (dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) {
 		if (dm_flags() & DM_DISCARDS_SUPPORTED) {
-			features =" 1 allow_discards";
+			features = " 1 allow_discards";
 			log_dbg("Discard/TRIM is allowed.");
 		} else
 			log_dbg("Discard/TRIM is not supported by the kernel.");

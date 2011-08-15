@@ -15,6 +15,9 @@
 #include "utils_loop.h"
 #include "utils_dm.h"
 
+/* to silent gcc -Wcast-qual for const cast */
+#define CONST_CAST(x) (x)(uintptr_t)
+
 #define SECTOR_SHIFT		9
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
 #define DEFAULT_DISK_ALIGNMENT	1048576 /* 1MiB */
