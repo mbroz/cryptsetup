@@ -860,6 +860,11 @@ int crypt_load(struct crypt_device *cd,
 	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
 
+	if (cd->type && !isLUKS(cd->type)) {
+		log_dbg("Context is already initialised to type %s", cd->type);
+		return -EINVAL;
+	}
+
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
