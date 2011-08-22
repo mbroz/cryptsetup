@@ -636,7 +636,6 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	}
 
 	if (isPLAIN((*cd)->type)) {
-		(*cd)->type = strdup(CRYPT_PLAIN);
 		(*cd)->plain_uuid = strdup(dmd.uuid);
 		(*cd)->plain_hdr.hash = NULL; /* no way to get this */
 		(*cd)->plain_hdr.offset = dmd.offset;
@@ -648,7 +647,6 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			(*cd)->plain_cipher_mode = strdup(cipher_mode);
 		}
 	} else if (isLOOPAES((*cd)->type)) {
-		(*cd)->type = strdup(CRYPT_LOOPAES);
 		(*cd)->loopaes_uuid = strdup(dmd.uuid);
 		(*cd)->loopaes_hdr.offset = dmd.offset;
 
