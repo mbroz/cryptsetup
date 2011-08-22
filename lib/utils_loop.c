@@ -29,11 +29,7 @@
 
 #include "utils_loop.h"
 
-#ifndef LOOP_CTL_GET_FREE
-#define LOOP_CTL_GET_FREE      0x4C82
-#endif
-
-char *crypt_loop_get_device(void)
+static char *crypt_loop_get_device_old(void)
 {
 	char dev[20];
 	int i, loop_fd;
@@ -60,8 +56,6 @@ char *crypt_loop_get_device(void)
 	return NULL;
 }
 
-/* loop-control not yet upstream */
-#if 0
 char *crypt_loop_get_device(void)
 {
 	char dev[64];
@@ -70,7 +64,7 @@ char *crypt_loop_get_device(void)
 
 	loop_fd = open("/dev/loop-control", O_RDONLY);
 	if (loop_fd < 0)
-		return NULL;
+		return crypt_loop_get_device_old();
 
 	i = ioctl(loop_fd, LOOP_CTL_GET_FREE);
 	if (i < 0) {
@@ -79,14 +73,14 @@ char *crypt_loop_get_device(void)
 	}
 	close(loop_fd);
 
-	snprintf(dev, "/dev/loop%d", i, sizeof(dev));
+	if (sprintf(dev, "/dev/loop%d", i) < 0)
+		return NULL;
 
 	if (stat(dev, &st) || !S_ISBLK(st.st_mode))
 		return NULL;
 
 	return strdup(dev);
 }
-#endif
 
 int crypt_loop_attach(const char *loop, const char *file, int offset,
 		      int autoclear, int *readonly)
