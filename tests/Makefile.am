@@ -1,7 +1,11 @@
 TESTS = api-test compat-test loopaes-test align-test discards-test mode-test password-hash-test
 
-EXTRA_DIST = compatimage.img.bz2 \
-	     compat-test loopaes-test align-test discards-test mode-test password-hash-test
+EXTRA_DIST = compatimage.img.bz2 valid_header_file.bz2 \
+	evil_hdr-payload_overwrite.bz2 \
+	evil_hdr-stripes_payload_dmg.bz2 \
+	evil_hdr-luks_hdr_damage.bz2 \
+	evil_hdr-small_luks_device.bz2 \
+	compat-test loopaes-test align-test discards-test mode-test password-hash-test
 
 CLEANFILES = cryptsetuptst.*
 
@@ -11,7 +15,7 @@ differ_CFLAGS = -Wall -O2
 api_test_SOURCES = api-test.c $(top_srcdir)/lib/utils_loop.c
 api_test_LDADD = ../lib/libcryptsetup.la
 api_test_LDFLAGS = -static
-api_test_CFLAGS = -g -Wall -O0 -I$(top_srcdir)/lib/
+api_test_CFLAGS = -g -Wall -O0 -I$(top_srcdir)/lib/ -I$(top_srcdir)/lib/luks1
 
 check_PROGRAMS = api-test differ
 
