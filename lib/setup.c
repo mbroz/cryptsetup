@@ -512,7 +512,7 @@ static int crypt_check_data_device_size(struct crypt_device *cd)
 	uint64_t size, size_min;
 
 	/* Check data device size, require at least one sector */
-	size_min = crypt_get_data_offset(cd) ?: SECTOR_SIZE;
+	size_min = crypt_get_data_offset(cd) << SECTOR_SHIFT ?: SECTOR_SIZE;
 
 	r = device_size(crypt_get_device_name(cd), &size);
 	if (r < 0)
