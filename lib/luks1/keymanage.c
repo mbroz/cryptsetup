@@ -45,6 +45,44 @@ static inline int round_up_modulo(int x, int m) {
 	return div_round_up(x, m) * m;
 }
 
+/* Check keyslot to prevent access outside of header and keyslot area */
+static int LUKS_check_keyslot_size(const struct luks_phdr *phdr, unsigned int keyIndex)
+{
+	uint32_t secs_per_stripes;
+
+	/* First sectors is the header itself */
+	if (phdr->keyblock[keyIndex].keyMaterialOffset * SECTOR_SIZE < LUKS_ALIGN_KEYSLOTS) {
+		log_dbg("Invalid offset %u in keyslot %u.",
+			phdr->keyblock[keyIndex].keyMaterialOffset, keyIndex);
+		return 1;
+	}
+
+	/* Ignore following check for detached header where offset can be zero. */
+	if (phdr->payloadOffset == 0)
+		return 0;
+
+	if (phdr->payloadOffset <= phdr->keyblock[keyIndex].keyMaterialOffset) {
+		log_dbg("Invalid offset %u in keyslot %u (beyond data area offset %u).",
+			phdr->keyblock[keyIndex].keyMaterialOffset, keyIndex,
+			phdr->payloadOffset);
+		return 1;
+	}
+
+	secs_per_stripes = div_round_up(phdr->keyBytes * phdr->keyblock[keyIndex].stripes, SECTOR_SIZE);
+
+	if (phdr->payloadOffset < (phdr->keyblock[keyIndex].keyMaterialOffset + secs_per_stripes)) {
+		log_dbg("Invalid keyslot size %u (offset %u, stripes %u) in "
+			"keyslot %u (beyond data area offset %u).",
+			secs_per_stripes,
+			phdr->keyblock[keyIndex].keyMaterialOffset,
+			phdr->keyblock[keyIndex].stripes,
+			keyIndex, phdr->payloadOffset);
+		return 1;
+	}
+
+	return 0;
+}
+
 static const char *dbg_slot_state(crypt_keyslot_info ki)
 {
 	switch(ki) {
@@ -255,7 +293,17 @@ static int _check_and_convert_hdr(const char *device,
 			hdr->keyblock[i].passwordIterations = ntohl(hdr->keyblock[i].passwordIterations);
 			hdr->keyblock[i].keyMaterialOffset  = ntohl(hdr->keyblock[i].keyMaterialOffset);
 			hdr->keyblock[i].stripes            = ntohl(hdr->keyblock[i].stripes);
+			if (LUKS_check_keyslot_size(hdr, i)) {
+				log_err(ctx, _("LUKS keyslot %u is invalid.\n"), i);
+				// FIXME: allow header recovery
+				r = -EINVAL;
+			}
 		}
+
+		/* Avoid unterminated strings */
+		hdr->cipherName[LUKS_CIPHERNAME_L - 1] = '\0';
+		hdr->cipherMode[LUKS_CIPHERMODE_L - 1] = '\0';
+		hdr->uuid[UUID_STRING_L - 1] = '\0';
 	}
 
 	return r;
