@@ -913,15 +913,17 @@ int crypt_load(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	r = crypt_check_data_device_size(cd);
-	if (r < 0)
-		return r;
+	if (!cd->type && !(cd->type = strdup(CRYPT_LUKS1)))
+		return -ENOMEM;
 
 	memcpy(&cd->hdr, &hdr, sizeof(hdr));
-	free(cd->type);
-	cd->type = strdup(CRYPT_LUKS1);
-	if (!cd->type)
-		r = -ENOMEM;
+
+	/* cd->type and header must be set in context */
+	r = crypt_check_data_device_size(cd);
+	if (r < 0) {
+		free(cd->type);
+		cd->type = NULL;
+	}
 
 	return r;
 }
