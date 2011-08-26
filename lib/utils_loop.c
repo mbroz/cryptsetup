@@ -29,6 +29,16 @@
 
 #include "utils_loop.h"
 
+#define LOOP_DEV_MAJOR 7
+
+#ifndef LO_FLAGS_AUTOCLEAR
+#define LO_FLAGS_AUTOCLEAR 4
+#endif
+
+#ifndef LOOP_CTL_GET_FREE
+#define LOOP_CTL_GET_FREE 0x4C82
+#endif
+
 static char *crypt_loop_get_device_old(void)
 {
 	char dev[20];
