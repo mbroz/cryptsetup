@@ -851,6 +851,11 @@ int crypt_format(struct crypt_device *cd,
 	if (!type)
 		return -EINVAL;
 
+	if (cd->type) {
+		log_dbg("Context already formatted as %s.", cd->type);
+		return -EINVAL;
+	}
+
 	log_dbg("Formatting device %s as type %s.", mdata_device(cd) ?: "(none)", type);
 
 	r = init_crypto(cd);

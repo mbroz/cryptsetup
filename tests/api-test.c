@@ -974,8 +974,8 @@ static void AddDeviceLuks(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
 	// restrict format only to empty context
-//	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formated");
-//	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, NULL), "Context is already formated");
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formated");
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, NULL), "Context is already formated");
 	// change data device to wrong one
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_0S));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "Device too small");
