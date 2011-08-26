@@ -45,6 +45,41 @@ static inline int round_up_modulo(int x, int m) {
 	return div_round_up(x, m) * m;
 }
 
+/* Get size of struct luks_phrd with all keyslots material space */
+static uint64_t LUKS_device_sectors(size_t keyLen, unsigned int stripes)
+{
+	uint64_t keyslot_sectors, sector;
+	int i;
+
+	keyslot_sectors = div_round_up(keyLen * stripes, SECTOR_SIZE);
+	sector = round_up_modulo(LUKS_PHDR_SIZE, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
+
+	for (i = 0; i < LUKS_NUMKEYS; i++) {
+		sector = round_up_modulo(sector, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
+		sector += keyslot_sectors;
+	}
+
+	return sector;
+}
+
+static int LUKS_check_device_size(const char *device,
+				  uint64_t min_sectors,
+				  size_t keyLength)
+{
+	uint64_t dev_size, req_sectors;
+
+	req_sectors = LUKS_device_sectors(keyLength, LUKS_STRIPES);
+	if (min_sectors > req_sectors)
+		req_sectors = min_sectors;
+
+	if(device_size(device, &dev_size)) {
+		log_dbg("Cannot get device size for device %s.", device);
+		return -EIO;
+	}
+
+	return (req_sectors > (dev_size >> SECTOR_SHIFT));
+}
+
 /* Check keyslot to prevent access outside of header and keyslot area */
 static int LUKS_check_keyslot_size(const struct luks_phdr *phdr, unsigned int keyIndex)
 {
@@ -390,6 +425,11 @@ int LUKS_write_phdr(const char *device,
 
 	log_dbg("Updating LUKS header of size %d on device %s",
 		sizeof(struct luks_phdr), device);
+
+	if (LUKS_check_device_size(device, hdr->payloadOffset, hdr->keyBytes)) {
+		log_err(ctx, _("Device %s is too small.\n"), device);
+		return -EINVAL;
+	}
 
 	devfd = open(device,O_RDWR | O_DIRECT | O_SYNC);
 	if(-1 == devfd) {

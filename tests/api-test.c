@@ -923,16 +923,16 @@ static void AddDeviceLuks(void)
 	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_header_size - 1));
 
 	// format
-//	OK_(crypt_init(&cd, DMDIR H_DEVICE_WRONG));
-//	params.data_alignment = 0;
-//	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Not enough space for keyslots material");
-//	crypt_free(cd);
+	OK_(crypt_init(&cd, DMDIR H_DEVICE_WRONG));
+	params.data_alignment = 0;
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Not enough space for keyslots material");
+	crypt_free(cd);
 
 	// test payload_offset = 0 for encrypted device with external header device
-//	OK_(crypt_init(&cd, DMDIR H_DEVICE));
-//	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
-//	EQ_(crypt_get_data_offset(cd), 0);
-//	crypt_free(cd);
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	EQ_(crypt_get_data_offset(cd), 0);
+	crypt_free(cd);
 
 	params.data_alignment = 0;
 	params.data_device = NULL;
@@ -953,9 +953,9 @@ static void AddDeviceLuks(void)
 	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_payload_offset - 1));
 
 	// 1 sector less than required
-//	OK_(crypt_init(&cd, DMDIR L_DEVICE_WRONG));
-//	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params),	"Device too small");
-//	crypt_free(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_WRONG));
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params),	"Device too small");
+	crypt_free(cd);
 
 	// 0 sectors for encrypted area
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_0S));
