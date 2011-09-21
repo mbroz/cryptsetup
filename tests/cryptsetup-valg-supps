@@ -1,0 +1,47 @@
+# Supresion file for valgrind
+
+# known problem in libgcrypt
+{
+   leak_in_libgcrypt_00
+   Memcheck:Leak
+   fun:malloc
+   obj:/lib64/libgcrypt.so*
+   ...
+   obj:/lib64/libgcrypt.so*
+   fun:crypt_backend_init
+   fun:init_crypto
+   ...
+}
+# TODO soon... we use global static errno to be read
+# from device context or from library default logging
+{
+   errno_leak_utils
+   Memcheck:Leak
+   fun:*lloc
+   obj:/lib*/libc*.so
+   fun:set_error_va
+   fun:set_error
+   ...
+}
+# following leaks/errors are addressed to libpopt...
+{
+  popt_read_error
+  Memcheck:Addr4
+  obj:/lib*/libpopt.so*
+  fun:poptGetNextOpt
+  fun:main
+}
+{
+  popt_leak_poptGetNextOpt_00
+  Memcheck:Leak
+  fun:realloc
+  fun:poptGetNextOpt
+  fun:main
+}
+{
+  popt_leak_poptGetNextOpt_01
+  Memcheck:Leak
+  fun:malloc
+  fun:poptGetNextOpt
+  fun:main
+}

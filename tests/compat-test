@@ -34,6 +34,7 @@ function remove_mapping()
 
 function fail()
 {
+	[ -n "$1" ] && echo "$1"
 	remove_mapping
 	echo "FAILED"
 	exit 2
@@ -94,8 +95,26 @@ function check_exists()
 	check $1
 }
 
+function valgrind_setup()
+{
+	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind"
+
+	CRYPTSETUP_BIN=$($CRYPTSETUP --lt-debug --version 2>&1 \
+		        | grep "newargv\[0\]" \
+			| sed 's/.*newargv\[0\]\:[[:space:]]\+\(.*\)$/\1/g')
+	[ -z "$CRYPTSETUP_BIN" ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="../lib/.libs:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_BIN} "$@"
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ -z "$LOOPDEV" ] && skip "Cannot find free loop device, test skipped."
+
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
 # LUKS tests
 

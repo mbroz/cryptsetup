@@ -5,9 +5,10 @@ EXTRA_DIST = compatimage.img.bz2 valid_header_file.bz2 \
 	evil_hdr-stripes_payload_dmg.bz2 \
 	evil_hdr-luks_hdr_damage.bz2 \
 	evil_hdr-small_luks_device.bz2 \
-	compat-test loopaes-test align-test discards-test mode-test password-hash-test
+	compat-test loopaes-test align-test discards-test mode-test password-hash-test \
+	cryptsetup-valg-supps valg.sh valg-api.sh
 
-CLEANFILES = cryptsetuptst.*
+CLEANFILES = cryptsetup-tst* valglog*
 
 differ_SOURCES = differ.c
 differ_CFLAGS = -Wall -O2
@@ -21,3 +22,9 @@ check_PROGRAMS = api-test differ
 
 compatimage.img:
 	@bzip2 -k -d compatimage.img.bz2
+
+valgrind-check: api-test differ
+	@VALG=1 ./compat-test
+	@INFOSTRING="api-test-000" ./valg-api.sh ./api-test
+
+.PHONY: valgrind-check
