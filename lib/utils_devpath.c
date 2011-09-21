@@ -169,7 +169,7 @@ char *crypt_lookup_dev(const char *dev_id)
 
 static int crypt_sysfs_get_major_minor(const char *kname, int *major, int *minor)
 {
-	char path[PATH_MAX], tmp[64];
+	char path[PATH_MAX], tmp[64] = {0};
 	int fd, r = 0;
 
 	if (snprintf(path, sizeof(path), "/sys/block/%s/dev", kname) < 0)
@@ -180,7 +180,11 @@ static int crypt_sysfs_get_major_minor(const char *kname, int *major, int *minor
 	r = read(fd, tmp, sizeof(tmp));
 	close(fd);
 
-	if (r <= 0 || sscanf(tmp, "%d:%d", major, minor) != 2)
+	if (r <= 0)
+		return 0;
+
+	tmp[63] = '\0';
+	if (sscanf(tmp, "%d:%d", major, minor) != 2)
 		return 0;
 
 	return 1;

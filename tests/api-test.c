@@ -355,6 +355,12 @@ static void _cleanup(void)
 	remove(BACKUP_FILE);
 
 	_remove_keyfiles();
+
+	free(tmp_file_1);
+	free(test_loop_file);
+	free(THE_LOOP_DEV);
+	free(DEVICE_1);
+	free(DEVICE_2);
 }
 
 static int _setup(void)

@@ -1046,6 +1046,7 @@ static __attribute__ ((noreturn)) void usage(poptContext popt_context,
 	poptPrintUsage(popt_context, stderr, 0);
 	if (error)
 		log_err("%s: %s\n", more, error);
+	poptFreeContext(popt_context);
 	exit(exitcode);
 }
 
@@ -1234,6 +1235,7 @@ int main(int argc, const char **argv)
 		      poptBadOption(popt_context, POPT_BADOPTION_NOALIAS));
 	if (opt_version_mode) {
 		log_std("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	}
 
@@ -1345,5 +1347,7 @@ int main(int argc, const char **argv)
 		_dbg_version_and_cmd(argc, argv);
 	}
 
-	return run_action(action);
+	r = run_action(action);
+	poptFreeContext(popt_context);
+	return r;
 }
