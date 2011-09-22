@@ -53,7 +53,7 @@ successful verification of the supplied key material
 (either via key file by \-\-key-file, or via prompting).
 
 \fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly, \-\-allow-discards,
-\-\-header].
+\-\-header, \-\-key-slot].
 .PP
 \fIluksClose\fR <name>
 .IP
@@ -288,7 +288,7 @@ to show default RNG.
 .B "\-\-key-slot, \-S"
 For LUKS operations that add key material, this options allows you
 to specify which key slot is selected for the new key.
-This option can be used for \fIluksFormat\fR and \fIluksAddKey\fR.
+This option can be used for \fIluksFormat\fR, \fIluksOpen\fR and \fIluksAddKey\fR.
 .TP
 .B "\-\-key-size, \-s"
 set key size in bits.

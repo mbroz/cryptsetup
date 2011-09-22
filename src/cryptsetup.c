@@ -570,11 +570,11 @@ static int action_luksOpen(int arg __attribute__((unused)))
 	if (opt_key_file) {
 		crypt_set_password_retry(cd, 1);
 		r = crypt_activate_by_keyfile(cd, action_argv[1],
-			CRYPT_ANY_SLOT, opt_key_file, opt_keyfile_size,
+			opt_key_slot, opt_key_file, opt_keyfile_size,
 			flags);
 	} else
 		r = crypt_activate_by_passphrase(cd, action_argv[1],
-			CRYPT_ANY_SLOT, NULL, 0, flags);
+			opt_key_slot, NULL, 0, flags);
 out:
 	crypt_free(cd);
 	return r;

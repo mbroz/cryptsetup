@@ -9,6 +9,7 @@ ORIG_IMG=luks-test-orig
 IMG=luks-test
 KEY1=key1
 KEY2=key2
+KEY5=key5
 
 LUKS_HEADER="S0-5 S6-7 S8-39 S40-71 S72-103 S104-107 S108-111 R112-131 R132-163 S164-167 S168-207 A0-591"
 KEY_SLOT0="S208-211 S212-215 R216-247 A248-251 A251-255"
@@ -18,6 +19,10 @@ KEY_MATERIAL0_EXT="R4096-68096"
 KEY_SLOT1="S256-259 S260-263 R264-295 A296-299 A300-303"
 KEY_MATERIAL1="R69632-133632"
 KEY_MATERIAL1_EXT="S69632-133632"
+
+KEY_SLOT5="S448-451 S452-455 R456-487 A488-491 A492-495"
+KEY_MATERIAL5="R331776-395264"
+KEY_MATERIAL5_EXT="S331776-395264"
 
 TEST_UUID="12345678-1234-1234-1234-123456789abc"
 
@@ -29,7 +34,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 $KEY5 >/dev/null 2>&1
 }
 
 function fail()
@@ -78,6 +83,10 @@ function prepare()
 		dd if=/dev/urandom of=$KEY2 count=1 bs=16 >/dev/null 2>&1
 	fi
 
+	if [ ! -e $KEY5 ]; then
+		dd if=/dev/urandom of=$KEY5 count=1 bs=16 >/dev/null 2>&1
+	fi
+
 	cp $IMG $ORIG_IMG
 	[ -n "$1" ] && echo "CASE: $1"
 }
@@ -117,6 +126,7 @@ function valgrind_run()
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
 # LUKS tests
+
 
 prepare	"[1] open - compat image - acceptance check" new
 echo "compatkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
@@ -405,6 +415,34 @@ $CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
 echo "xxx" | $CRYPTSETUP luksResume $DEV_NAME -T 1 2>/dev/null && fail
 echo "key0" | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
+
+prepare "[27] luksOpen with specified key slot number" wipe
+# first, let's try passphrase option
+echo "key5" | $CRYPTSETUP luksFormat -S 5 $LOOPDEV || fail
+check $LUKS_HEADER $KEY_SLOT5 $KEY_MATERIAL5
+echo "key5" | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+echo "key5" | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME || fail
+check_exists
+$CRYPTSETUP luksClose $DEV_NAME || fail
+echo -e "key5\nkey0" | $CRYPTSETUP luksAddKey -S 0 $LOOPDEV || fail
+check $LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0
+echo "key5" | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+echo "key0" | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+# second, try it with keyfiles
+$CRYPTSETUP luksFormat -q -S 5 -d $KEY5 $LOOPDEV || fail
+check $LUKS_HEADER $KEY_SLOT5 $KEY_MATERIAL5
+$CRYPTSETUP luksAddKey -S 1 -d $KEY5 $LOOPDEV $KEY1 || fail
+check $LUKS_HEADER $KEY_SLOT1 $KEY_MATERIAL1
+$CRYPTSETUP luksOpen -S 5 -d $KEY5 $LOOPDEV $DEV_NAME || fail
+check_exists
+$CRYPTSETUP luksClose $DEV_NAME || fail
+$CRYPTSETUP luksOpen -S 1 -d $KEY5 $LOOPDEV $DEV_NAME && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+$CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
 
 remove_mapping
 exit 0
