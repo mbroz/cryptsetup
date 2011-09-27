@@ -32,9 +32,16 @@ resizes an active mapping <name>.
 If \-\-size (in sectors) is not specified, the size of the underlying block device is used.
 .SH LUKS EXTENSION
 LUKS, Linux Unified Key Setup, is a standard for hard disk encryption.
-It standardizes a partition header, as well as the format of the bulk data.
-LUKS can manage multiple passwords, that can be revoked effectively
-and that are protected against dictionary attacks with PBKDF2.
+It standardizes a partition header as well as the format of the bulk data.
+LUKS can manage multiple passwords that can be individually revoked and
+effectively scrubbed from persistent media, and that are protected
+against dictionary attacks with PBKDF2.
+
+Each password, usually called a
+.B key
+in this document, is associated with a slot, of which there are typically 8.
+Key operations that do not specify a slot affect the first slot
+matching the supplied key.
 
 These are valid LUKS actions:
 
@@ -88,7 +95,7 @@ The key file with the new material is supplied as a positional argument.
 .PP
 \fIluksRemoveKey\fR <device> [<key file>] 
 .IP
-remove supplied key or key file from LUKS device
+remove supplied key or key file from LUKS device in the manner of \fIluksKillSlot\fR.
 .PP
 \fIluksChangeKey\fR <device> [<new key file>]
 .IP
