@@ -81,6 +81,14 @@ static struct hash_alg hash_algs[] = {
 		(digest_func) hmac_sha512_digest,
 		(set_key_func) hmac_sha512_set_key,
 	},
+	{ "ripemd160", RIPEMD160_DIGEST_SIZE,
+		(init_func) ripemd160_init,
+		(update_func) ripemd160_update,
+		(digest_func) ripemd160_digest,
+		(update_func) hmac_ripemd160_update,
+		(digest_func) hmac_ripemd160_digest,
+		(set_key_func) hmac_ripemd160_set_key,
+	},
 	{ NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, }
 };
 
