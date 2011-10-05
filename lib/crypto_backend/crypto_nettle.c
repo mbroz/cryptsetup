@@ -236,7 +236,6 @@ bad:
 static void crypt_hmac_restart(struct crypt_hmac *ctx)
 {
 	ctx->hash->hmac_set_key(&ctx->nettle_ctx, ctx->key_length, ctx->key);
-	return 0;
 }
 
 int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)

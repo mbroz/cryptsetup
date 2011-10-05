@@ -131,7 +131,7 @@ static int crypt_hash_restart(struct crypt_hash *ctx)
 
 int crypt_hash_write(struct crypt_hash *ctx, const char *buffer, size_t length)
 {
-	if (PK11_DigestOp(ctx->md, (unsigned char *)buffer, length) != SECSuccess)
+	if (PK11_DigestOp(ctx->md, CONST_CAST(unsigned char *)buffer, length) != SECSuccess)
 		return -EINVAL;
 
 	return 0;
@@ -182,7 +182,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	SECItem noParams;
 
 	keyItem.type = siBuffer;
-	keyItem.data = (unsigned char *)buffer;
+	keyItem.data = CONST_CAST(unsigned char *)buffer;
 	keyItem.len = (int)length;
 
 	noParams.type = siBuffer;
@@ -233,7 +233,7 @@ static int crypt_hmac_restart(struct crypt_hmac *ctx)
 
 int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)
 {
-	if (PK11_DigestOp(ctx->md, (unsigned char *)buffer, length) != SECSuccess)
+	if (PK11_DigestOp(ctx->md, CONST_CAST(unsigned char *)buffer, length) != SECSuccess)
 		return -EINVAL;
 
 	return 0;
