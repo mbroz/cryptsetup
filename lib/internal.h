@@ -68,7 +68,6 @@ int device_check_and_adjust(struct crypt_device *cd,
 			    uint64_t *size,
 			    uint64_t *offset,
 			    uint32_t *flags);
-int wipe_device_header(const char *device, int sectors);
 
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)

@@ -97,29 +97,10 @@ static void sigint_handler(int sig __attribute__((unused)))
 static const char *_error_hint(char *cipherMode, size_t keyLength)
 {
 	const char *hint= "";
-#ifdef __linux__
-	char c, tmp[4] = {0};
-	struct utsname uts;
-	int i = 0, kernel_minor;
-
-	/* Nothing to suggest here */
-	if (uname(&uts) || strncmp(uts.release, "2.6.", 4))
-		return hint;
-
-	/* Get kernel minor without suffixes */
-	while (i < 3 && (c = uts.release[i + 4]))
-		tmp[i++] = isdigit(c) ? c : '\0';
-	kernel_minor = atoi(tmp);
 
 	if (!strncmp(cipherMode, "xts", 3) && (keyLength != 256 && keyLength != 512))
 		hint = _("Key size in XTS mode must be 256 or 512 bits.\n");
-	else if (!strncmp(cipherMode, "xts", 3) && kernel_minor < 24)
-		hint = _("Block mode XTS is available since kernel 2.6.24.\n");
-	if (!strncmp(cipherMode, "lrw", 3) && (keyLength != 256 && keyLength != 512))
-		hint = _("Key size in LRW mode must be 256 or 512 bits.\n");
-	else if (!strncmp(cipherMode, "lrw", 3) && kernel_minor < 20)
-		hint = _("Block mode LRW is available since kernel 2.6.20.\n");
-#endif
+
 	return hint;
 }
 
