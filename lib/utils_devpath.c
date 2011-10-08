@@ -242,3 +242,26 @@ int crypt_sysfs_check_crypt_segment(const char *device, uint64_t offset, uint64_
 
 	return r;
 }
+
+int crypt_sysfs_get_rotational(int major, int minor, int *rotational)
+{
+	char path[PATH_MAX], tmp[64] = {0};
+	int fd, r;
+
+	if (snprintf(path, sizeof(path), "/sys/dev/block/%d:%d/queue/rotational",
+		     major, minor) < 0)
+		return 0;
+
+	if ((fd = open(path, O_RDONLY)) < 0)
+		return 0;
+	r = read(fd, tmp, sizeof(tmp));
+	close(fd);
+
+	if (r <= 0)
+		return 0;
+
+        if (sscanf(tmp, "%d", rotational) != 1)
+		return 0;
+
+	return 1;
+}

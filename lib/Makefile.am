@@ -53,6 +53,7 @@ libcryptsetup_la_SOURCES = \
 	utils_loop.c				\
 	utils_loop.h				\
 	utils_devpath.c				\
+	utils_wipe.c				\
 	libdevmapper.c				\
 	utils_dm.h				\
 	volumekey.c				\

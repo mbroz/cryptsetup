@@ -475,41 +475,6 @@ int device_check_and_adjust(struct crypt_device *cd,
 	return 0;
 }
 
-int wipe_device_header(const char *device, int sectors)
-{
-	struct stat st;
-	char *buffer;
-	int size = sectors * SECTOR_SIZE;
-	int r = -1;
-	int devfd;
-	int flags = O_RDWR | O_DIRECT | O_SYNC;
-
-	if (stat(device, &st) < 0)
-		return -EINVAL;
-
-	/* never wipe header on mounted device */
-	if (S_ISBLK(st.st_mode))
-		flags |= O_EXCL;
-
-	devfd = open(device, flags);
-	if(devfd == -1)
-		return errno == EBUSY ? -EBUSY : -EINVAL;
-
-	buffer = malloc(size);
-	if (!buffer) {
-		close(devfd);
-		return -ENOMEM;
-	}
-	memset(buffer, 0, size);
-
-	r = write_blockwise(devfd, buffer, size) < size ? -EIO : 0;
-
-	free(buffer);
-	close(devfd);
-
-	return r;
-}
-
 /* MEMLOCK */
 #define DEFAULT_PROCESS_PRIORITY -18
 

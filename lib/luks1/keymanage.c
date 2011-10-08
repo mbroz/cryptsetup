@@ -825,72 +825,6 @@ int LUKS_open_key_with_hdr(const char *device,
 	return -EPERM;
 }
 
-/*
- * Wipe patterns according to Gutmann's Paper
- */
-
-static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)
-{
-        unsigned int i;
-
-        unsigned char write_modes[][3] = {
-                {"\x55\x55\x55"}, {"\xaa\xaa\xaa"}, {"\x92\x49\x24"},
-                {"\x49\x24\x92"}, {"\x24\x92\x49"}, {"\x00\x00\x00"},
-                {"\x11\x11\x11"}, {"\x22\x22\x22"}, {"\x33\x33\x33"},
-                {"\x44\x44\x44"}, {"\x55\x55\x55"}, {"\x66\x66\x66"},
-                {"\x77\x77\x77"}, {"\x88\x88\x88"}, {"\x99\x99\x99"},
-                {"\xaa\xaa\xaa"}, {"\xbb\xbb\xbb"}, {"\xcc\xcc\xcc"},
-                {"\xdd\xdd\xdd"}, {"\xee\xee\xee"}, {"\xff\xff\xff"},
-                {"\x92\x49\x24"}, {"\x49\x24\x92"}, {"\x24\x92\x49"},
-                {"\x6d\xb6\xdb"}, {"\xb6\xdb\x6d"}, {"\xdb\x6d\xb6"}
-        };
-
-        for(i = 0; i < buffer_size / 3; ++i) {
-                memcpy(buffer, write_modes[turn], 3);
-                buffer += 3;
-        }
-}
-
-static int wipe(const char *device, unsigned int from, unsigned int to)
-{
-	int devfd, r = 0;
-	char *buffer;
-	unsigned int i, bufLen;
-	ssize_t written;
-
-	devfd = open(device, O_RDWR | O_DIRECT | O_SYNC);
-	if(devfd == -1)
-		return -EINVAL;
-
-	bufLen = (to - from) * SECTOR_SIZE;
-	buffer = malloc(bufLen);
-	if(!buffer) {
-		close(devfd);
-		return -ENOMEM;
-	}
-
-	for(i = 0; i < 39; ++i) {
-		if                (i <  5) crypt_random_get(NULL, buffer, bufLen,
-							    CRYPT_RND_NORMAL);
-		else if(i >=  5 && i < 32) wipeSpecial(buffer, bufLen, i - 5);
-		else if(i >= 32 && i < 38) crypt_random_get(NULL, buffer, bufLen,
-							    CRYPT_RND_NORMAL);
-		else if(i >= 38 && i < 39) memset(buffer, 0xFF, bufLen);
-
-		written = write_lseek_blockwise(devfd, buffer, bufLen,
-						from * SECTOR_SIZE);
-		if (written < 0 || written != bufLen) {
-			r = -EIO;
-			break;
-		}
-	}
-
-	free(buffer);
-	close(devfd);
-
-	return r;
-}
-
 int LUKS_del_key(const char *device,
 		 unsigned int keyIndex,
 		 struct luks_phdr *hdr,
@@ -915,7 +849,9 @@ int LUKS_del_key(const char *device,
 	stripesLen = hdr->keyBytes * hdr->keyblock[keyIndex].stripes;
 	endOffset = startOffset + div_round_up(stripesLen, SECTOR_SIZE);
 
-	r = wipe(device, startOffset, endOffset);
+	r = crypt_wipe(device, startOffset * SECTOR_SIZE,
+		       (endOffset - startOffset) * SECTOR_SIZE,
+		       CRYPT_WIPE_DISK, 0);
 	if (r) {
 		log_err(ctx, _("Cannot wipe device %s.\n"), device);
 		return r;

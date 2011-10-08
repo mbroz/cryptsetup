@@ -51,6 +51,7 @@ const char *get_error(void);
 
 char *crypt_lookup_dev(const char *dev_id);
 int crypt_sysfs_check_crypt_segment(const char *device, uint64_t offset, uint64_t size);
+int crypt_sysfs_get_rotational(int major, int minor, int *rotational);
 
 int sector_size_for_device(const char *device);
 int device_read_ahead(const char *dev, uint32_t *read_ahead);
@@ -103,5 +104,24 @@ int PLAIN_activate(struct crypt_device *cd,
 		     struct volume_key *vk,
 		     uint64_t size,
 		     uint32_t flags);
+
+/**
+ * Different methods used to erase sensitive data concerning
+ * either encrypted payload area or master key inside keyslot
+ * area
+ */
+typedef enum {
+	CRYPT_WIPE_ZERO, /**< overwrite area using zero blocks */
+	CRYPT_WIPE_DISK, /**< erase disk (using Gutmann method if it is rotational disk)*/
+	CRYPT_WIPE_SSD, /**< erase solid state disk (random write) */
+	CRYPT_WIPE_RANDOM /**< overwrite area using some up to now unspecified
+			    * random algorithm */
+} crypt_wipe_type;
+
+int crypt_wipe(const char *device,
+	       uint64_t offset,
+	       uint64_t sectors,
+	       crypt_wipe_type type,
+	       int flags);
 
 #endif /* INTERNAL_H */
