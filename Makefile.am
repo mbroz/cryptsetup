@@ -1,4 +1,4 @@
-EXTRA_DIST = FAQ docs misc
+EXTRA_DIST = FAQ doxyfile docs misc
 SUBDIRS = \
 	lib \
 	src \
