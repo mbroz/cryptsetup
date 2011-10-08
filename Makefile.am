@@ -7,3 +7,6 @@ SUBDIRS = \
 	po
 
 ACLOCAL_AMFLAGS = -I m4
+
+clean-local:
+	-rm -rf docs/doxygen_api_docs

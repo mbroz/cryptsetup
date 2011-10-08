@@ -3,7 +3,7 @@
  * @brief Public cryptsetup API
  *
  * For more verbose examples of LUKS related use cases,
- * please read @ref index "examples" @endref.
+ * please read @ref index "examples".
  */
 
 #ifndef _LIBCRYPTSETUP_H
@@ -65,7 +65,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 int crypt_init_by_name(struct crypt_device **cd, const char *name);
 
 /**
- * @defgroup loglevel "Cryptsetup logging API"
+ * @defgroup loglevel "Cryptsetup logging"
  *
  * Set of functions and defines used in cryptsetup for
  * logging purposes
@@ -141,6 +141,7 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
  * or negative errno value in case of error.
  *
  * @param cd crypt device handle
+ * @param password user defined password callback reference
  * @param usrptr provided identification in callback
  * @param msg Message for user
  * @param buf buffer for password
@@ -183,7 +184,7 @@ void crypt_set_timeout(struct crypt_device *cd, uint64_t timeout_sec);
 void crypt_set_password_retry(struct crypt_device *cd, int tries);
 
 /**
- * Set how long should cryptsetup iterate in PBKDF2 pseudorandom function.
+ * Set how long should cryptsetup iterate in PBKDF2 function.
  * Default value heads towards the iterations which takes around 1 second
  *
  * @param cd crypt device handle
@@ -207,13 +208,13 @@ void crypt_set_password_verify(struct crypt_device *cd, int password_verify);
  * @param device path to device
  *
  * @pre context is of LUKS type
- * @pre unlike @ref crypt_init @endref, in this function param @e device
+ * @pre unlike @ref crypt_init, in this function param @e device
  * 	has to be block device (at least 512B large)
  */
 int crypt_set_data_device(struct crypt_device *cd, const char *device);
 
 /**
- * @defgroup rng "Cryptsetup (pseudo)random API"
+ * @defgroup rng "Cryptsetup RNG"
  *
  * @addtogroup rng
  * @{
@@ -442,7 +443,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
  * @param name name of device to resume
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
  * @param keyfile key file used to unlock volume key, @e NULL for passphrase query
- * @param keyfile_size number of bytes to read from @keyfile, 0 is unlimited
+ * @param keyfile_size number of bytes to read from keyfile, 0 is unlimited
  *
  * @return unlocked key slot number or negative errno otherwise.
  */
@@ -460,7 +461,7 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 void crypt_free(struct crypt_device *cd);
 
 /**
- * @defgroup keyslot "Cryptsetup LUKS keyslots API"
+ * @defgroup keyslot "Cryptsetup LUKS keyslots"
  * @addtogroup keyslot
  * @{
  *
@@ -477,7 +478,7 @@ void crypt_free(struct crypt_device *cd);
  * @param cd crypt device handle
  * @param keyslot requested keyslot or @e CRYPT_ANY_SLOT
  * @param passphrase passphrase used to unlock volume key, @e NULL for query
- * @param passphrase_size size of @passphrase (binary data)
+ * @param passphrase_size size of passphrase (binary data)
  * @param new_passphrase passphrase for new keyslot, @e NULL for query
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
@@ -508,7 +509,7 @@ int crypt_keyslot_max(const char *type);
  * @param cd crypt device handle
  * @param keyslot requested keyslot or @e CRYPT_ANY_SLOT
  * @param keyfile key file used to unlock volume key, @e NULL for passphrase query
- * @param keyfile_size number of bytes to read from @keyfile, @e 0 is unlimited
+ * @param keyfile_size number of bytes to read from keyfile, @e 0 is unlimited
  * @param new_keyfile keyfile for new keyslot, @e NULL for passphrase query
  * @param new_keyfile_size number of bytes to read from @e new_keyfile, @e 0 is unlimited
  *
@@ -532,9 +533,9 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
  * @param volume_key provided volume key or @e NULL if used after crypt_format
- * @param volume_key_size size of @volume_key
+ * @param volume_key_size size of volume_key
  * @param passphrase passphrase for new keyslot, @e NULL for query
- * @param passphrase_size size of @passphrase
+ * @param passphrase_size size of passphrase
  *
  * @return allocated key slot number or negative errno otherwise.
  *
@@ -632,7 +633,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
  * @param name name of device to create, if @e NULL only check keyfile
  * @param keyslot requested keyslot to check or CRYPT_ANY_SLOT
  * @param keyfile key file used to unlock volume key
- * @param keyfile_size number of bytes to read from @keyfile, 0 is unlimited
+ * @param keyfile_size number of bytes to read from keyfile, 0 is unlimited
  * @param flags activation flags
  *
  * @return unlocked key slot number or negative errno otherwise.
@@ -651,14 +652,14 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check volume key
  * @param volume_key provided volume key (or @e NULL to use internal)
- * @param volume_key_size size of @volume_key
+ * @param volume_key_size size of volume_key
  * @param flags activation flags
  *
  * @return @e 0 on success or negative errno value otherwise.
  *
  * @note If @e NULL is used for volume_key, device has to be initialized
- * 	 by previous operation (like @ref crypt_format @endref
- * 	 or @ref crypt_init_by_name @endref)
+ * 	 by previous operation (like @ref crypt_format
+ * 	 or @ref crypt_init_by_name)
  */
 int crypt_activate_by_volume_key(struct crypt_device *cd,
 	const char *name,
@@ -719,6 +720,9 @@ int crypt_volume_key_verify(struct crypt_device *cd,
  * @{
  */
 
+/**
+ * Device status
+ */
 typedef enum {
 	CRYPT_INVALID, /**< device mapping is invalid in this context */
 	CRYPT_INACTIVE, /**< no such mapped device */
@@ -820,6 +824,10 @@ int crypt_get_volume_key_size(struct crypt_device *cd);
  * @addtogroup keyslot
  * @{
  *
+ */
+
+/**
+ * Crypt keyslot info
  */
 typedef enum {
 	CRYPT_SLOT_INVALID, /**< invalid keyslot */
