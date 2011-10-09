@@ -441,24 +441,24 @@ static int _setup(void)
 	return 0;
 }
 
-void check_ok(struct crypt_device *cd, int status, int line, const char *func)
+void check_ok(int status, int line, const char *func)
 {
 	char buf[256];
 
 	if (status) {
-		crypt_last_error(cd, buf, sizeof(buf));
+		crypt_get_error(buf, sizeof(buf));
 		printf("FAIL line %d [%s]: code %d, %s\n", line, func, status, buf);
 		_cleanup();
 		exit(-1);
 	}
 }
 
-void check_ko(struct crypt_device *cd, int status, int line, const char *func)
+void check_ko(int status, int line, const char *func)
 {
 	char buf[256];
 
 	memset(buf, 0, sizeof(buf));
-	crypt_last_error(cd, buf, sizeof(buf));
+	crypt_get_error(buf, sizeof(buf));
 	if (status >= 0) {
 		printf("FAIL line %d [%s]: code %d, %s\n", line, func, status, buf);
 		_cleanup();
@@ -486,10 +486,10 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 
 /* crypt_device context must be "cd" to parse error properly here */
 #define OK_(x)		do { xlog("(success)", #x, __FUNCTION__, __LINE__, NULL); \
-			     check_ok(cd, (x), __LINE__, __FUNCTION__); \
+			     check_ok((x), __LINE__, __FUNCTION__); \
 			} while(0)
 #define FAIL_(x, y)	do { xlog("(fail)   ", #x, __FUNCTION__, __LINE__, y); \
-			     check_ko(cd, (x), __LINE__, __FUNCTION__); \
+			     check_ko((x), __LINE__, __FUNCTION__); \
 			} while(0)
 #define EQ_(x, y)	do { xlog("(equal)  ", #x " == " #y, __FUNCTION__, __LINE__, NULL); \
 			     if ((x) != (y)) check_equal(__LINE__, __FUNCTION__); \
