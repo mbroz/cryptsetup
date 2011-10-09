@@ -23,13 +23,6 @@
 #define DEFAULT_DISK_ALIGNMENT	1048576 /* 1MiB */
 #define DEFAULT_MEM_ALIGNMENT	4096
 
-/* private struct crypt_options flags */
-
-#define	CRYPT_FLAG_FREE_DEVICE	(1 << 24)
-#define	CRYPT_FLAG_FREE_CIPHER	(1 << 25)
-
-#define CRYPT_FLAG_PRIVATE_MASK ((unsigned int)-1 << 24)
-
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
 struct crypt_device;
@@ -44,10 +37,6 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, unsigned k
 void crypt_free_volume_key(struct volume_key *vk);
 
 int crypt_confirm(struct crypt_device *cd, const char *msg);
-
-void set_error_va(const char *fmt, va_list va);
-void set_error(const char *fmt, ...);
-const char *get_error(void);
 
 char *crypt_lookup_dev(const char *dev_id);
 int crypt_sysfs_check_crypt_segment(const char *device, uint64_t offset, uint64_t size);
@@ -73,9 +62,7 @@ void logger(struct crypt_device *cd, int class, const char *file, int line, cons
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
 #define log_verbose(c, x...) logger(c, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
-#define log_err(c, x...) do { \
-	logger(c, CRYPT_LOG_ERROR, __FILE__, __LINE__, x); \
-	set_error(x); } while(0)
+#define log_err(c, x...) logger(c, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
 
 int crypt_get_debug_level(void);
 void debug_processes_using_device(const char *name);

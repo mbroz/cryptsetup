@@ -38,46 +38,6 @@
 #include "libcryptsetup.h"
 #include "internal.h"
 
-static char *error=NULL;
-
-__attribute__((format(printf, 1, 0)))
-void set_error_va(const char *fmt, va_list va)
-{
-	int r;
-
-	if(error) {
-		free(error);
-		error = NULL;
-	}
-
-	if(!fmt) return;
-
-	r = vasprintf(&error, fmt, va);
-	if (r < 0) {
-		free(error);
-		error = NULL;
-		return;
-	}
-
-	if (r && error[r - 1] == '\n')
-		error[r - 1] = '\0';
-}
-
-__attribute__((format(printf, 1, 2)))
-void set_error(const char *fmt, ...)
-{
-	va_list va;
-
-	va_start(va, fmt);
-	set_error_va(fmt, va);
-	va_end(va);
-}
-
-const char *get_error(void)
-{
-	return error;
-}
-
 static int get_alignment(int fd)
 {
 	int alignment = DEFAULT_MEM_ALIGNMENT;

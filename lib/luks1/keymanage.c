@@ -220,7 +220,7 @@ int LUKS_hdr_restore(
 	buffer_size = hdr_file.payloadOffset << SECTOR_SHIFT;
 
 	if (r || buffer_size < LUKS_ALIGN_KEYSLOTS) {
-		log_err(ctx, _("Backup file do not contain valid LUKS header.\n"));
+		log_err(ctx, _("Backup file doesn't contain valid LUKS header.\n"));
 		r = -EINVAL;
 		goto out;
 	}
@@ -288,7 +288,7 @@ int LUKS_hdr_restore(
 	close(devfd);
 
 	/* Be sure to reload new data */
-	r = LUKS_read_phdr(device, hdr, 0, ctx);
+	r = LUKS_read_phdr(device, hdr, 1, ctx);
 out:
 	if (devfd != -1)
 		close(devfd);
@@ -309,8 +309,6 @@ static int _check_and_convert_hdr(const char *device,
 		log_dbg("LUKS header not detected.");
 		if (require_luks_device)
 			log_err(ctx, _("Device %s is not a valid LUKS device.\n"), device);
-		else
-			set_error(_("Device %s is not a valid LUKS device."), device);
 		r = -EINVAL;
 	} else if((hdr->version = ntohs(hdr->version)) != 1) {	/* Convert every uint16/32_t item from network byte order */
 		log_err(ctx, _("Unsupported LUKS version %d.\n"), hdr->version);
@@ -689,8 +687,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 				    hdr->keyblock[keyIndex].keyMaterialOffset,
 				    ctx);
 	if (r < 0) {
-		if(!get_error())
-			log_err(ctx, _("Failed to write to key storage.\n"));
+		log_err(ctx, _("Failed to write to key storage.\n"));
 		goto out;
 	}
 

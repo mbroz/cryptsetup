@@ -73,6 +73,10 @@ struct crypt_device {
 	void *password_usrptr;
 };
 
+/* Global error */
+/* FIXME: not thread safe, remove this later */
+static char global_error[512] = {0};
+
 /* Log helper */
 static void (*_default_log)(int level, const char *msg, void *usrptr) = NULL;
 static int _debug_level = 0;
@@ -87,12 +91,23 @@ int crypt_get_debug_level(void)
 	return _debug_level;
 }
 
+
 void crypt_log(struct crypt_device *cd, int level, const char *msg)
 {
 	if (cd && cd->log)
 		cd->log(level, msg, cd->log_usrptr);
 	else if (_default_log)
 		_default_log(level, msg, NULL);
+}
+
+/* Set global error, ugly hack... */
+void set_global_error(const char *error)
+{
+	size_t size = strlen(error);
+
+	strncpy(global_error, error, sizeof(global_error) - 2);
+	if (size < sizeof(global_error) && global_error[size - 1] == '\n')
+		global_error[size - 1] = '\0';
 }
 
 __attribute__((format(printf, 5, 6)))
@@ -104,7 +119,7 @@ void logger(struct crypt_device *cd, int level, const char *file,
 
 	va_start(argp, format);
 
-	if (vasprintf(&target, format, argp) > 0) {
+	if (vasprintf(&target, format, argp) > 0 ) {
 		if (level >= 0) {
 			crypt_log(cd, level, target);
 #ifdef CRYPT_DEBUG
@@ -114,6 +129,9 @@ void logger(struct crypt_device *cd, int level, const char *file,
 		} else if (_debug_level)
 			printf("# %s\n", target);
 #endif
+
+		if (level == CRYPT_LOG_ERROR)
+			set_global_error(target);
 	}
 
 	va_end(argp);
@@ -411,16 +429,15 @@ void crypt_set_password_callback(struct crypt_device *cd,
 	cd->password_usrptr = usrptr;
 }
 
+/* Deprecated global error interface */
 void crypt_get_error(char *buf, size_t size)
 {
-	const char *error = get_error();
-
 	if (!buf || size < 1)
-		set_error(NULL);
-	else if (error) {
-		strncpy(buf, error, size - 1);
+		global_error[0] = '\0';
+	else if (*global_error) {
+		strncpy(buf, global_error, size - 1);
 		buf[size - 1] = '\0';
-		set_error(NULL);
+		global_error[0] = '\0';
 	} else
 		buf[0] = '\0';
 }

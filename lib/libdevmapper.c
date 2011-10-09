@@ -420,7 +420,6 @@ int dm_create_device(const char *name,
 	struct dm_task *dmt = NULL;
 	struct dm_info dmi;
 	char *params = NULL;
-	char *error = NULL;
 	char dev_uuid[DM_UUID_LEN] = {0};
 	int r = -EINVAL;
 	uint32_t read_ahead = 0;
@@ -497,17 +496,8 @@ out:
 		cookie = 0;
 	}
 
-	if (r < 0 && !reload) {
-		if (get_error())
-			error = strdup(get_error());
-
+	if (r < 0 && !reload)
 		dm_remove_device(name, 0, 0);
-
-		if (error) {
-			set_error(error);
-			free(error);
-		}
-	}
 
 out_no_removal:
 	if (cookie && _dm_use_udev())
