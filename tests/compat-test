@@ -160,6 +160,8 @@ echo "key1" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 # Unsuccessful Key Delete - nothing may change
 prepare "[7] unsuccessful delete"
 echo "invalid" | $CRYPTSETUP luksKillSlot $LOOPDEV 1 2>/dev/null && fail
+$CRYPTSETUP -q luksKillSlot $LOOPDEV 8 2>/dev/null && fail
+$CRYPTSETUP -q luksKillSlot $LOOPDEV 7 2>/dev/null && fail
 check
 
 # Delete Key Test

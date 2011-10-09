@@ -2,6 +2,7 @@
 	* Support Nettle 2.4 crypto backend (for ripemd160).
 	* If device is not rotational, do not use Gutmann wipe method.
 	* Add crypt_last_error() API call.
+	* Fix luksKillSLot exit code if slot is inactive or invalid.
 
 2011-09-22  Milan Broz  <mbroz@redhat.com>
 	* Support key-slot option for luksOpen (use only explicit keyslot).

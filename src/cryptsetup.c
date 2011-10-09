@@ -646,6 +646,7 @@ static int action_luksKillSlot(int arg __attribute__((unused)))
 	case CRYPT_SLOT_INACTIVE:
 		log_err(_("Key %d not active. Can't wipe.\n"), opt_key_slot);
 	case CRYPT_SLOT_INVALID:
+		r = -EINVAL;
 		goto out;
 	}
 
@@ -1301,7 +1302,7 @@ int main(int argc, const char **argv)
 	if (!strcmp(aname, "luksKillSlot") && action_argc > 1)
 		opt_key_slot = atoi(action_argv[1]);
 	if (opt_key_slot != CRYPT_ANY_SLOT &&
-	    (opt_key_slot < 0 || opt_key_slot > crypt_keyslot_max(CRYPT_LUKS1)))
+	    (opt_key_slot < 0 || opt_key_slot >= crypt_keyslot_max(CRYPT_LUKS1)))
 		usage(popt_context, EXIT_FAILURE, _("Key slot is invalid."),
 		      poptGetInvocationName(popt_context));
 
