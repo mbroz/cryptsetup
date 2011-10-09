@@ -441,24 +441,24 @@ static int _setup(void)
 	return 0;
 }
 
-void check_ok(int status, int line, const char *func)
+void check_ok(struct crypt_device *cd, int status, int line, const char *func)
 {
 	char buf[256];
 
 	if (status) {
-		crypt_get_error(buf, sizeof(buf));
+		crypt_last_error(cd, buf, sizeof(buf));
 		printf("FAIL line %d [%s]: code %d, %s\n", line, func, status, buf);
 		_cleanup();
 		exit(-1);
 	}
 }
 
-void check_ko(int status, int line, const char *func)
+void check_ko(struct crypt_device *cd, int status, int line, const char *func)
 {
 	char buf[256];
 
 	memset(buf, 0, sizeof(buf));
-	crypt_get_error(buf, sizeof(buf));
+	crypt_last_error(cd, buf, sizeof(buf));
 	if (status >= 0) {
 		printf("FAIL line %d [%s]: code %d, %s\n", line, func, status, buf);
 		_cleanup();
@@ -483,11 +483,13 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 			printf(" [%s,%s:%d] %s\n", msg, func, line, tst);
 	}
 }
+
+/* crypt_device context must be "cd" to parse error properly here */
 #define OK_(x)		do { xlog("(success)", #x, __FUNCTION__, __LINE__, NULL); \
-			     check_ok((x), __LINE__, __FUNCTION__); \
+			     check_ok(cd, (x), __LINE__, __FUNCTION__); \
 			} while(0)
 #define FAIL_(x, y)	do { xlog("(fail)   ", #x, __FUNCTION__, __LINE__, y); \
-			     check_ko((x), __LINE__, __FUNCTION__); \
+			     check_ko(cd, (x), __LINE__, __FUNCTION__); \
 			} while(0)
 #define EQ_(x, y)	do { xlog("(equal)  ", #x " == " #y, __FUNCTION__, __LINE__, NULL); \
 			     if ((x) != (y)) check_equal(__LINE__, __FUNCTION__); \
@@ -495,11 +497,9 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 
 #define RUN_(x, y)		do { printf("%s: %s\n", #x, (y)); x(); } while (0)
 
-// NEW API tests
-
 static void AddDevicePlain(void)
 {
-	struct crypt_device *cd, *cd2;
+	struct crypt_device *cd;
 	struct crypt_params_plain params = {
 		.hash = "sha1",
 		.skip = 0,
@@ -654,11 +654,12 @@ static void AddDevicePlain(void)
 	OK_(crypt_init(&cd,DEVICE_1));
 	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-	FAIL_(crypt_init_by_name_and_header(&cd2, CDEVICE_1, H_DEVICE),"can't init plain device by header device");
-	OK_(crypt_init_by_name(&cd2,CDEVICE_1));
-	OK_(crypt_deactivate(cd,CDEVICE_1));
 	crypt_free(cd);
-	crypt_free(cd2);
+
+	FAIL_(crypt_init_by_name_and_header(&cd, CDEVICE_1, H_DEVICE),"can't init plain device by header device");
+	OK_(crypt_init_by_name(&cd, CDEVICE_1));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
 
 	OK_(crypt_init(&cd,DEVICE_1));
 	OK_(crypt_format(cd,CRYPT_PLAIN,cipher,cipher_mode,NULL,NULL,key_size,&params));
@@ -812,6 +813,7 @@ static void CallbacksTest(void)
 	char *cipher = "aes";
 	char *cipher_mode = "cbc-essiv:sha256";
 	char *passphrase = PASSPHRASE;
+	char buf1[256] = {0}, buf2[256] = {0};
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	crypt_set_log_callback(cd, &new_log, NULL);
@@ -832,6 +834,22 @@ static void CallbacksTest(void)
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, NULL, 0, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// Check error reporting.
+	// This must fail and create error message
+	crypt_deactivate(cd, CDEVICE_1);
+
+	// Here context must be the same
+	crypt_get_error(buf1, sizeof(buf1));
+	crypt_last_error(cd, buf2, sizeof(buf2));
+	OK_(!*buf1);
+	OK_(!*buf2);
+	OK_(strcmp(buf1, buf2));
+
+	crypt_get_error(buf1, sizeof(buf1));
+	crypt_last_error(cd, buf2, sizeof(buf2));
+	OK_(*buf1);
+	OK_(*buf2);
 
 	crypt_free(cd);
 }

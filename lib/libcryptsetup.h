@@ -882,6 +882,18 @@ int crypt_header_restore(struct crypt_device *cd,
 /**
  * Receives last reported error
  *
+ * @param cd crypt device handle
+ * @param buf buffef for message
+ * @param size size of buffer
+ *
+ * @note Note that this is old API function using global context.
+ * All error messages are reported also through log callback.
+ */
+void crypt_last_error(struct crypt_device *cd, char *buf, size_t size);
+
+/**
+ * Receives last reported error, DEPRECATED
+ *
  * @param buf buffef for message
  * @param size size of buffer
  *

@@ -71,11 +71,14 @@ struct crypt_device {
 	void *confirm_usrptr;
 	int (*password)(const char *msg, char *buf, size_t length, void *usrptr);
 	void *password_usrptr;
+
+	/* last error message */
+	char error[MAX_ERROR_LENGTH];
 };
 
 /* Global error */
 /* FIXME: not thread safe, remove this later */
-static char global_error[512] = {0};
+static char global_error[MAX_ERROR_LENGTH] = {0};
 
 /* Log helper */
 static void (*_default_log)(int level, const char *msg, void *usrptr) = NULL;
@@ -100,14 +103,21 @@ void crypt_log(struct crypt_device *cd, int level, const char *msg)
 		_default_log(level, msg, NULL);
 }
 
-/* Set global error, ugly hack... */
-void set_global_error(const char *error)
+static void crypt_set_error(struct crypt_device *cd, const char *error)
 {
 	size_t size = strlen(error);
 
-	strncpy(global_error, error, sizeof(global_error) - 2);
-	if (size < sizeof(global_error) && global_error[size - 1] == '\n')
+	/* Set global error, ugly hack... */
+	strncpy(global_error, error, MAX_ERROR_LENGTH - 2);
+	if (size < MAX_ERROR_LENGTH && global_error[size - 1] == '\n')
 		global_error[size - 1] = '\0';
+
+	/* Set error string per context */
+	if (cd) {
+		strncpy(cd->error, error, MAX_ERROR_LENGTH - 2);
+		if (size < MAX_ERROR_LENGTH && cd->error[size - 1] == '\n')
+			cd->error[size - 1] = '\0';
+	}
 }
 
 __attribute__((format(printf, 5, 6)))
@@ -131,7 +141,7 @@ void logger(struct crypt_device *cd, int level, const char *file,
 #endif
 
 		if (level == CRYPT_LOG_ERROR)
-			set_global_error(target);
+			crypt_set_error(cd, target);
 	}
 
 	va_end(argp);
@@ -429,17 +439,28 @@ void crypt_set_password_callback(struct crypt_device *cd,
 	cd->password_usrptr = usrptr;
 }
 
+static void _get_error(char *error, char *buf, size_t size)
+{
+	if (!buf || size < 1)
+		error[0] = '\0';
+	else if (*error) {
+		strncpy(buf, error, size - 1);
+		buf[size - 1] = '\0';
+		error[0] = '\0';
+	} else
+		buf[0] = '\0';
+}
+
+void crypt_last_error(struct crypt_device *cd, char *buf, size_t size)
+{
+	if (cd)
+		return _get_error(cd->error, buf, size);
+}
+
 /* Deprecated global error interface */
 void crypt_get_error(char *buf, size_t size)
 {
-	if (!buf || size < 1)
-		global_error[0] = '\0';
-	else if (*global_error) {
-		strncpy(buf, global_error, size - 1);
-		buf[size - 1] = '\0';
-		global_error[0] = '\0';
-	} else
-		buf[0] = '\0';
+	return _get_error(global_error, buf, size);
 }
 
 const char *crypt_get_dir(void)
