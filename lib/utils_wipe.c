@@ -78,7 +78,7 @@ static ssize_t _crypt_wipe_disk(int fd, char *buffer, uint64_t offset, uint64_t 
 		else if(i >= 38 && i < 39) memset(buffer, 0xFF, size);
 
 		written = write_lseek_blockwise(fd, buffer, size, offset);
-		if (written < 0 || written != size)
+		if (written < 0 || written != (ssize_t)size)
 			return written;
 	}
 
@@ -165,7 +165,7 @@ int crypt_wipe(const char *device,
 	close(devfd);
 	free(buffer);
 
-	if (written != size || written < 0)
+	if (written != (ssize_t)size || written < 0)
 		return -EIO;
 
 	return 0;

@@ -32,6 +32,7 @@
 
 char *crypt_lookup_dev(const char *dev_id);
 int crypt_sysfs_check_crypt_segment(const char *device, uint64_t offset, uint64_t size);
+int crypt_sysfs_get_rotational(int major, int minor, int *rotational);
 
 static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_level)
 {
