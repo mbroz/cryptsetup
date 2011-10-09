@@ -1,10 +1,10 @@
-#include <inttypes.h>
-#include <libcryptsetup.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
+#include <sys/types.h>
+#include <libcryptsetup.h>
 
 #include "crypt_examples.h"
 

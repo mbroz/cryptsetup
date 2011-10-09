@@ -1,8 +1,8 @@
-#include <libcryptsetup.h>
-#include <syslog.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <syslog.h>
 #include <unistd.h>
+#include <libcryptsetup.h>
 
 #include "crypt_examples.h"
 
