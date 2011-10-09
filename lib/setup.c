@@ -94,15 +94,6 @@ int crypt_get_debug_level(void)
 	return _debug_level;
 }
 
-
-void crypt_log(struct crypt_device *cd, int level, const char *msg)
-{
-	if (cd && cd->log)
-		cd->log(level, msg, cd->log_usrptr);
-	else if (_default_log)
-		_default_log(level, msg, NULL);
-}
-
 static void crypt_set_error(struct crypt_device *cd, const char *error)
 {
 	size_t size = strlen(error);
@@ -118,6 +109,17 @@ static void crypt_set_error(struct crypt_device *cd, const char *error)
 		if (size < MAX_ERROR_LENGTH && cd->error[size - 1] == '\n')
 			cd->error[size - 1] = '\0';
 	}
+}
+
+void crypt_log(struct crypt_device *cd, int level, const char *msg)
+{
+	if (cd && cd->log)
+		cd->log(level, msg, cd->log_usrptr);
+	else if (_default_log)
+		_default_log(level, msg, NULL);
+
+	if (level == CRYPT_LOG_ERROR)
+		crypt_set_error(cd, msg);
 }
 
 __attribute__((format(printf, 5, 6)))
@@ -139,9 +141,6 @@ void logger(struct crypt_device *cd, int level, const char *file,
 		} else if (_debug_level)
 			printf("# %s\n", target);
 #endif
-
-		if (level == CRYPT_LOG_ERROR)
-			crypt_set_error(cd, target);
 	}
 
 	va_end(argp);
