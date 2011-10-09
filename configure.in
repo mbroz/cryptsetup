@@ -218,6 +218,11 @@ if test x$enable_static_cryptsetup = xyes; then
 	AC_CHECK_LIB(devmapper, dm_task_set_uuid,,
 		AC_MSG_ERROR([Cannot link with static device-mapper library.]))
 
+	dnl Try to detect uuid static library.
+	LIBS="$saved_LIBS -static"
+	AC_CHECK_LIB(uuid, uuid_generate,,
+		AC_MSG_ERROR([Cannot find static uuid library.]))
+
 	LIBS=$saved_LIBS
 	PKG_CONFIG=$saved_PKG_CONFIG
 fi
