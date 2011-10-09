@@ -235,6 +235,7 @@ static int crypt_get_key_tty(const char *prompt,
 
 		if (strncmp(pass, pass_verify, key_size_max)) {
 			log_err(cd, _("Passphrases do not match.\n"));
+			r = -EPERM;
 			goto out_err;
 		}
 	}
