@@ -574,9 +574,9 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
  */
 /** device is read only */
 #define CRYPT_ACTIVATE_READONLY (1 << 0)
-/** ignored */
+/** only reported for device without uuid */
 #define CRYPT_ACTIVATE_NO_UUID  (1 << 1)
-/** ??? */
+/** activate more non-overlapping mapping to the same device */
 #define CRYPT_ACTIVATE_SHARED   (1 << 2)
 /** enable discards aka TRIM */
 #define CRYPT_ACTIVATE_ALLOW_DISCARDS (1 << 3)
