@@ -477,12 +477,15 @@ static int action_luksFormat(int arg __attribute__((unused)))
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
 				      cipher, NULL, cipher_mode);
 	if (r < 0) {
-		log_err("No known cipher specification pattern detected.\n");
+		log_err(_("No known cipher specification pattern detected.\n"));
 		goto out;
 	}
 
-	if ((r = crypt_init(&cd, header_device)))
+	if ((r = crypt_init(&cd, header_device))) {
+		if (opt_header_device)
+			log_err(_("Cannot use %s as on-disk header.\n"), header_device);
 		goto out;
+	}
 
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8;
 
