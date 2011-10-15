@@ -97,23 +97,23 @@
  *
  *		@subsection cluks_ex crypt_luks_usage.c - Complex example
  *
- *			To compile and link against current libcryptsetup use command:
+ *			To compile and run use following commands in examples directory:
  *
  * @code
- * gcc -Wall -L../../lib/.libs -I../../lib -lcryptsetup crypt_luks_usage.c -o crypt_luks_usage
- * LD_LIBRARY_PATH=../../lib/.libs ./crypt_luks_usage _path_to_[block_device]_file
+ * make
+ * ./crypt_luks_usage _path_to_[block_device]_file
  * @endcode
  *
  *			Note that you need to have the cryptsetup library compiled. @include crypt_luks_usage.c
  *
  *	@section clog crypt_log_usage - cryptsetup logging API example
  *
- *		Example describes basic use case for cryptsetup logging API. To compile the example and link
- *		against current libcryptsetup use command:
+ *		Example describes basic use case for cryptsetup logging. To compile and run
+ * 		use following commands in examples directory:
  *
  * @code
- * gcc -Wall -L../../lib/.libs -I../../lib -lcryptsetup crypt_log_usage.c -o crypt_log_usage
- * LD_LIBRARY_PATH=../../.libs ./crypt_log_usage
+ * make
+ * ./crypt_log_usage
  * @endcode
  *
  *		Note that you need to have the cryptsetup library compiled. @include crypt_log_usage.c

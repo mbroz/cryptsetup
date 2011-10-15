@@ -1,7 +1,6 @@
-# LD_LIBRARY_PATH=../../lib/.libs
 TARGETS=crypt_log_usage crypt_luks_usage
-CFLAGS=-O0 -g -Wall -D_GNU_SOURCE -I../../lib
-LDLIBS=-lcryptsetup -L../../lib/.libs
+CFLAGS=-O0 -g -Wall -D_GNU_SOURCE
+LDLIBS=-lcryptsetup
 CC=gcc
 
 all: $(TARGETS)
