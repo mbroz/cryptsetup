@@ -12,17 +12,6 @@
    fun:init_crypto
    ...
 }
-# TODO soon... we use global static errno to be read
-# from device context or from library default logging
-{
-   errno_leak_utils
-   Memcheck:Leak
-   fun:*lloc
-   obj:/lib*/libc*.so
-   fun:set_error_va
-   fun:set_error
-   ...
-}
 # following leaks/errors are addressed to libpopt...
 {
   popt_read_error
