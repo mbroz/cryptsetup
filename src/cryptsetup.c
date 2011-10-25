@@ -191,6 +191,13 @@ static void _log(int level, const char *msg, void *usrptr __attribute__((unused)
 	}
 }
 
+static void _quiet_log(int level, const char *msg, void *usrptr)
+{
+	if (!opt_verbose && (level == CRYPT_LOG_ERROR || level == CRYPT_LOG_NORMAL))
+		level = CRYPT_LOG_VERBOSE;
+	_log(level, msg, usrptr);
+}
+
 static void show_status(int errcode)
 {
 	char error[256], *error_;
@@ -863,6 +870,7 @@ static int action_isLuks(int arg __attribute__((unused)))
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
+	crypt_set_log_callback(cd, _quiet_log, NULL);
 	r = crypt_load(cd, CRYPT_LUKS1, NULL);
 out:
 	crypt_free(cd);
