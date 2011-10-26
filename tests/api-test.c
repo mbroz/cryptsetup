@@ -121,10 +121,12 @@ static int get_luks_offsets(int metadata_device,
 {
 	int i;
 	uint64_t current_sector;
+	uint32_t sectors_per_stripes_set;
+
 	if (!keylength)
 		return -1;
 
-	uint32_t sectors_per_stripes_set = DIV_ROUND_UP(keylength*LUKS_STRIPES, SECTOR_SIZE);
+	sectors_per_stripes_set = DIV_ROUND_UP(keylength*LUKS_STRIPES, SECTOR_SIZE);
 	printf("sectors_per_stripes %" PRIu32 "\n", sectors_per_stripes_set);
 	current_sector = DIV_ROUND_UP_MODULO(DIV_ROUND_UP(LUKS_PHDR_SIZE_B, SECTOR_SIZE),
 			LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
@@ -182,7 +184,7 @@ static int _get_key_dm(const char *name, char *buffer, unsigned int buffer_size)
 	struct dm_task *dmt;
 	struct dm_info dmi;
 	uint64_t start, length;
-	char *target_type, *rcipher, *key, *params;
+	char *target_type, *key, *params;
 	void *next = NULL;
 	int r = -EINVAL;
 
@@ -201,7 +203,7 @@ static int _get_key_dm(const char *name, char *buffer, unsigned int buffer_size)
 	if (!target_type || strcmp(target_type, "crypt") != 0)
 		goto out;
 
-	rcipher = strsep(&params, " ");
+	(void)strsep(&params, " "); /* rcipher */
 	key = strsep(&params, " ");
 
 	if (buffer_size <= strlen(key))
@@ -237,7 +239,7 @@ static void _remove_keyfiles(void)
 }
 
 // Decode key from its hex representation
-static int crypt_decode_key(char *key, char *hex, unsigned int size)
+static int crypt_decode_key(char *key, const char *hex, unsigned int size)
 {
 	char buffer[3];
 	char *endp;
@@ -261,7 +263,7 @@ static int crypt_decode_key(char *key, char *hex, unsigned int size)
 	return 0;
 }
 
-static void cmdLineLog(int level, char *msg)
+static void cmdLineLog(int level, const char *msg)
 {
 	strncat(global_log, msg, sizeof(global_log) - strlen(global_log));
 	global_lines++;
@@ -269,10 +271,10 @@ static void cmdLineLog(int level, char *msg)
 
 static void new_log(int level, const char *msg, void *usrptr)
 {
-	cmdLineLog(level, (char*)msg);
+	cmdLineLog(level, msg);
 }
 
-static void reset_log()
+static void reset_log(void)
 {
 	memset(global_log, 0, sizeof(global_log));
 	global_lines = 0;
@@ -441,7 +443,7 @@ static int _setup(void)
 	return 0;
 }
 
-void check_ok(int status, int line, const char *func)
+static void check_ok(int status, int line, const char *func)
 {
 	char buf[256];
 
@@ -453,7 +455,7 @@ void check_ok(int status, int line, const char *func)
 	}
 }
 
-void check_ko(int status, int line, const char *func)
+static void check_ko(int status, int line, const char *func)
 {
 	char buf[256];
 
@@ -467,14 +469,14 @@ void check_ko(int status, int line, const char *func)
 		printf("   => errno %d, errmsg: %s\n", status, buf);
 }
 
-void check_equal(int line, const char *func)
+static void check_equal(int line, const char *func)
 {
 	printf("FAIL line %d [%s]: expected equal values differs.\n", line, func);
 	_cleanup();
 	exit(-1);
 }
 
-void xlog(const char *msg, const char *tst, const char *func, int line, const char *txt)
+static void xlog(const char *msg, const char *tst, const char *func, int line, const char *txt)
 {
 	if (_verbose) {
 		if (txt)
@@ -509,12 +511,12 @@ static void AddDevicePlain(void)
 	int fd;
 	char key[128], key2[128], path[128];
 
-	char *passphrase = PASSPHRASE;
+	const char *passphrase = PASSPHRASE;
 	// hashed hex version of PASSPHRASE
-	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
-	char *cipher = "aes";
-	char *cipher_mode = "cbc-essiv:sha256";
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
 
 	uint64_t size, r_size;
 
@@ -534,7 +536,7 @@ static void AddDevicePlain(void)
 	OK_(crypt_format(cd,CRYPT_PLAIN,cipher,cipher_mode,NULL,NULL,key_size,&params));
 	OK_(strcmp(cipher_mode,crypt_get_cipher_mode(cd)));
 	OK_(strcmp(cipher,crypt_get_cipher(cd)));
-	EQ_(key_size, crypt_get_volume_key_size(cd));
+	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(params.skip, crypt_get_iv_offset(cd));
 	EQ_(params.offset, crypt_get_data_offset(cd));
 	params.skip = 0;
@@ -751,7 +753,7 @@ static void AddDevicePlain(void)
 	OK_(memcmp(key, key2, key_size));
 	OK_(strcmp(cipher, crypt_get_cipher(cd)));
 	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
-	EQ_(key_size, crypt_get_volume_key_size(cd));
+	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(0, crypt_get_data_offset(cd));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
@@ -810,9 +812,9 @@ static void CallbacksTest(void)
 	};
 
 	size_t key_size = 256 / 8;
-	char *cipher = "aes";
-	char *cipher_mode = "cbc-essiv:sha256";
-	char *passphrase = PASSPHRASE;
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
+	const char *passphrase = PASSPHRASE;
 	char buf1[256] = {0}, buf2[256] = {0};
 
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -874,7 +876,7 @@ static void UseLuksDevice(void)
 	OK_(strcmp("aes", crypt_get_cipher(cd)));
 	OK_(strcmp("cbc-essiv:sha256", crypt_get_cipher_mode(cd)));
 	OK_(strcmp(DEVICE_1_UUID, crypt_get_uuid(cd)));
-	EQ_(key_size, crypt_get_volume_key_size(cd));
+	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(1032, crypt_get_data_offset(cd));
 
 	EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
@@ -932,11 +934,11 @@ static void AddDeviceLuks(void)
 	};
 	char key[128], key2[128];
 
-	char *passphrase = "blabla";
-	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *passphrase = "blabla";
+	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
-	char *cipher = "aes";
-	char *cipher_mode = "cbc-essiv:sha256";
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size_1;
 
 	crypt_decode_key(key, mk_hex, key_size);
@@ -1096,7 +1098,7 @@ static void AddDeviceLuks(void)
 	OK_(memcmp(key, key2, key_size));
 	OK_(strcmp(cipher, crypt_get_cipher(cd)));
 	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
-	EQ_(key_size, crypt_get_volume_key_size(cd));
+	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(4096, crypt_get_data_offset(cd));
 	OK_(strcmp(DEVICE_2, crypt_get_device_name(cd)));
 
@@ -1188,10 +1190,10 @@ static void LuksHeaderRestore(void)
 	};
 	char key[128], key2[128], cmd[256];
 
-	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
-	char *cipher = "aes";
-	char *cipher_mode = "cbc-essiv:sha256";
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
 
 	crypt_decode_key(key, mk_hex, key_size);
@@ -1262,10 +1264,10 @@ static void LuksHeaderLoad(void)
 	};
 	char key[128], cmd[256];
 
-	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
-	char *cipher = "aes";
-	char *cipher_mode = "cbc-essiv:sha256";
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size;
 
 	crypt_decode_key(key, mk_hex, key_size);
@@ -1345,10 +1347,10 @@ static void LuksHeaderBackup(void)
 	};
 	char key[128];
 
-	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
-	char *cipher = "aes";
-	char *cipher_mode = "cbc-essiv:sha256";
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
 
 	crypt_decode_key(key, mk_hex, key_size);
@@ -1385,10 +1387,10 @@ static void ResizeDeviceLuks(void)
 	};
 	char key[128];
 
-	char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
-	char *cipher = "aes";
-	char *cipher_mode = "cbc-essiv:sha256";
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size;
 
 	crypt_decode_key(key, mk_hex, key_size);
@@ -1451,7 +1453,8 @@ static void HashDevicePlain(void)
 	};
 
 	size_t key_size;
-	char *mk_hex, *keystr, key[256];
+	const char *mk_hex, *keystr;
+	char key[256];
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, &params));
@@ -1555,8 +1558,8 @@ static void NonFIPSAlg(void)
 	struct crypt_params_luks1 params = {0};
 	char key[128] = "";
 	size_t key_size = 128;
-	char *cipher = "aes";
-	char *cipher_mode = "cbc-essiv:sha256";
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
 	int ret;
 
 	OK_(crypt_init(&cd, DEVICE_2));
