@@ -56,6 +56,7 @@ struct crypt_device {
 	char *plain_cipher;
 	char *plain_cipher_mode;
 	char *plain_uuid;
+	unsigned int plain_key_size;
 
 	/* used in CRYPT_LOOPAES */
 	struct crypt_params_loopaes loopaes_hdr;
@@ -677,6 +678,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 		(*cd)->plain_hdr.hash = NULL; /* no way to get this */
 		(*cd)->plain_hdr.offset = dmd.offset;
 		(*cd)->plain_hdr.skip = dmd.iv_offset;
+		(*cd)->plain_key_size = dmd.vk->keylength;
 
 		r = crypt_parse_name_and_mode(dmd.cipher, cipher, NULL, cipher_mode);
 		if (!r) {
@@ -754,6 +756,7 @@ static int _crypt_format_plain(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	cd->plain_key_size = volume_key_size;
 	cd->volume_key = crypt_alloc_volume_key(volume_key_size, NULL);
 	if (!cd->volume_key)
 		return -ENOMEM;
@@ -1516,7 +1519,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		}
 
 		r = process_key(cd, cd->plain_hdr.hash,
-				cd->volume_key->keylength,
+				cd->plain_key_size,
 				passphrase, passphrase_size, &vk);
 		if (r < 0)
 			goto out;
@@ -1586,7 +1589,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 			goto out;
 
 		r = process_key(cd, cd->plain_hdr.hash,
-				cd->volume_key->keylength,
+				cd->plain_key_size,
 				passphrase_read, passphrase_size_read, &vk);
 		if (r < 0)
 			goto out;
@@ -1658,8 +1661,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (!name)
 			return -EINVAL;
 
-		if (!volume_key || !volume_key_size || !cd->volume_key ||
-			volume_key_size != cd->volume_key->keylength) {
+		if (!volume_key || !volume_key_size || volume_key_size != cd->plain_key_size) {
 			log_err(cd, _("Incorrect volume key specified for plain device.\n"));
 			return -EINVAL;
 		}
@@ -1976,8 +1978,8 @@ const char *crypt_get_device_name(struct crypt_device *cd)
 
 int crypt_get_volume_key_size(struct crypt_device *cd)
 {
-	if (isPLAIN(cd->type) && cd->volume_key)
-		return cd->volume_key->keylength;
+	if (isPLAIN(cd->type))
+		return cd->plain_key_size;
 
 	if (isLUKS(cd->type))
 		return cd->hdr.keyBytes;

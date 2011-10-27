@@ -660,6 +660,11 @@ static void AddDevicePlain(void)
 
 	FAIL_(crypt_init_by_name_and_header(&cd, CDEVICE_1, H_DEVICE),"can't init plain device by header device");
 	OK_(crypt_init_by_name(&cd, CDEVICE_1));
+	OK_(strcmp(cipher_mode,crypt_get_cipher_mode(cd)));
+	OK_(strcmp(cipher,crypt_get_cipher(cd)));
+	EQ_((int)key_size, crypt_get_volume_key_size(cd));
+	EQ_(params.skip, crypt_get_iv_offset(cd));
+	EQ_(params.offset, crypt_get_data_offset(cd));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 
