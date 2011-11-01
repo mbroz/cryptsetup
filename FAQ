@@ -29,21 +29,39 @@ A. Contributors
 
   ATTENTION: If you are going to read just one thing, make it the
   section on Backup and Data Recovery. By far the most questions on
-  the cryptsetup mailing list are from people that just managed to
-  somehow format or overwrite the start of their LUKS partitions. In
+  the cryptsetup mailing list are from people that managed to damage
+  the start of their LUKS partitions, i.e. the LUKS header. In
   most cases, there is nothing that can be done to help these poor
   souls recover their data. Make sure you understand the problem and
-  limitations imposed by the LUKS security model BEFORE you face such
-  a disaster!
+  limitations imposed by the LUKS security model BEFORE you face
+  such a disaster! In particular, make sure you have a current header
+  backup before doing any potentially dangerous operations.
 
-  PASSPHRASES: Some people have had difficulties when upgrading
-  distributions. It is highly advisable to only use the 94 printable
-  characters from the first 128 characters of the ASCII table, as
-  they will always have the same binary representation. Other
-  characters may have different encoding depending on system
-  configuration and your passphrase will not work with a different
-  encoding. A table of the standardized first 128 ASCII caracters
-  can, e.g. be found on http://en.wikipedia.org/wiki/ASCII
+  DISTRIBUTION INSTALLERS: Some distribution installers offer to
+  create LUKS containers in a way that can be mistaken as activation
+  of an existing container. Creating a new LUKS container on top of
+  an existing one leads to permanent, complete and irreversible data
+  loss. It is strongly recommended to only use distribution
+  installers after a complete backup of all LUKS containers has been
+  made.
+
+  LUKS PASSPHRASE IS NOT THE MASTER KEY: The LUKS passphrase is not
+  used in deriving the master key. It is used in decrypting a master
+  key that is randomly selected on header creation. This means that
+  if you create a new LUKS header on top of an old one with
+  exactly the same parameters and exactly the same passphrase as the
+  old one, it will still have a different master key and your data
+  will be permanently lost.
+
+  PASSPHRASE CHARACTER SET: Some people have had difficulties with
+  this when upgrading distributions. It is highly advisable to only
+  use the 94 printable characters from the first 128 characters of
+  the ASCII table, as they will always have the same binary
+  representation. Other characters may have different encoding
+  depending on system configuration and your passphrase will not
+  work with a different encoding. A table of the standardized first
+  128 ASCII caracters can, e.g. be found on
+  http://en.wikipedia.org/wiki/ASCII
 
 
  * System Specific warnings
