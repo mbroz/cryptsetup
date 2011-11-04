@@ -3,6 +3,7 @@ SUBDIRS = \
 	lib \
 	src \
 	man \
+	python \
 	tests \
 	po
 
