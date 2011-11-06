@@ -48,7 +48,7 @@ print "addKeyP :", c.addKeyByPassphrase(passphrase = PASSWORD,
 					newPassphrase = PASSWORD2, slot = 3)
 print "removeP :", c.removePassphrase(passphrase = PASSWORD2)
 print "addKeyP :", c.addKeyByPassphrase(PASSWORD, PASSWORD2)
-# original api required wrong passphrase paramater here
+# original api required wrong passphrase parameter here
 # print "killSlot:", c.killSlot(passphrase = "xxx", slot = 0)
 print "killSlot:", c.killSlot(slot = 0)
 print "activate:", c.activate(name = DEVICE, passphrase = PASSWORD)
