@@ -33,6 +33,9 @@ c = pycryptsetup.CryptSetup(
         logFunc = log,
         passwordDialog = askpassword)
 
+# c.debugLevel(-1);
+c.debugLevel(0);
+c.iterationTime(1)
 r =  c.isLuks()
 print "isLuks  :", r
 c.askyes(message = "Is there anybody out there?")

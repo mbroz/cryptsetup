@@ -554,6 +554,38 @@ static PyObject *CryptSetup_Suspend(CryptSetupObject* self, PyObject *args, PyOb
 	return PyObjectResult(crypt_suspend(self->device, self->activated_as));
 }
 
+#define CryptSetup_debugLevel_HELP "Set debug level\n\n\
+  debugLevel(level)\n\n\
+  level - debug level"
+
+static PyObject *CryptSetup_debugLevel(CryptSetupObject* self, PyObject *args, PyObject *kwds)
+{
+	static char *kwlist[] = {"level", NULL};
+	int level = 0;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "i", kwlist, &level))
+		return NULL;
+
+	crypt_set_debug_level(level);
+	return PyObjectResult(0);
+}
+
+#define CryptSetup_iterationTime_HELP "Set iteration time\n\n\
+  iterationTime(time_ms)\n\n\
+  time_ms - time in miliseconds"
+
+static PyObject *CryptSetup_iterationTime(CryptSetupObject* self, PyObject *args, PyObject *kwds)
+{
+	static char *kwlist[] = {"time_ms", NULL};
+	uint64_t time_ms = 0;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "l", kwlist, &time_ms))
+		return NULL;
+
+	crypt_set_iterarion_time(self->device, time_ms);
+	return PyObjectResult(0);
+}
+
 static PyMemberDef CryptSetup_members[] = {
 	{"yesDialogCB", T_OBJECT_EX, offsetof(CryptSetupObject, yesDialogCB), 0, "confirmation dialog callback"},
 	{"cmdLineLogCB", T_OBJECT_EX, offsetof(CryptSetupObject, cmdLineLogCB), 0, "logging callback"},
@@ -586,6 +618,10 @@ static PyMethodDef CryptSetup_methods[] = {
 	/* suspend resume */
 	{"resume", (PyCFunction)CryptSetup_Resume, METH_VARARGS|METH_KEYWORDS, CryptSetup_Resume_HELP},
 	{"suspend", (PyCFunction)CryptSetup_Suspend, METH_NOARGS, CryptSetup_Suspend_HELP},
+
+	/* misc */
+	{"debugLevel", (PyCFunction)CryptSetup_debugLevel, METH_VARARGS|METH_KEYWORDS, CryptSetup_debugLevel_HELP},
+	{"iterationTime", (PyCFunction)CryptSetup_iterationTime, METH_VARARGS|METH_KEYWORDS, CryptSetup_iterationTime_HELP},
 
 	{NULL} /* Sentinel */
 };
