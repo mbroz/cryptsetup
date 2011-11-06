@@ -499,7 +499,7 @@ static int action_luksFormat(int arg __attribute__((unused)))
 	crypt_set_password_verify(cd, 1);
 	crypt_set_timeout(cd, opt_timeout);
 	if (opt_iteration_time)
-		crypt_set_iterarion_time(cd, opt_iteration_time);
+		crypt_set_iteration_time(cd, opt_iteration_time);
 
 	if (opt_random)
 		crypt_set_rng_type(cd, CRYPT_RNG_RANDOM);
@@ -569,7 +569,7 @@ static int action_luksOpen(int arg __attribute__((unused)))
 	crypt_set_password_retry(cd, opt_tries);
 
 	if (opt_iteration_time)
-		crypt_set_iterarion_time(cd, opt_iteration_time);
+		crypt_set_iteration_time(cd, opt_iteration_time);
 
 	if (opt_readonly)
 		flags |= CRYPT_ACTIVATE_READONLY;
@@ -742,7 +742,7 @@ static int action_luksAddKey(int arg __attribute__((unused)))
 	crypt_set_password_verify(cd, opt_verify_passphrase ? 1 : 0);
 	crypt_set_timeout(cd, opt_timeout);
 	if (opt_iteration_time)
-		crypt_set_iterarion_time(cd, opt_iteration_time);
+		crypt_set_iteration_time(cd, opt_iteration_time);
 
 	if (opt_master_key_file) {
 		r = _read_mk(opt_master_key_file, &key, keysize);
@@ -791,7 +791,7 @@ static int action_luksChangeKey(int arg __attribute__((unused)))
 		goto out;
 
 	if (opt_iteration_time)
-		crypt_set_iterarion_time(cd, opt_iteration_time);
+		crypt_set_iteration_time(cd, opt_iteration_time);
 
 	r = crypt_get_key(_("Enter LUKS passphrase to be changed: "),
 		      &password, &passwordLen,

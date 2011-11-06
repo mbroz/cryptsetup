@@ -190,6 +190,8 @@ void crypt_set_password_retry(struct crypt_device *cd, int tries);
  * @param cd crypt device handle
  * @param iteration_time_ms the time in ms
  */
+void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms);
+/* Don't ask :-) */
 void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_ms);
 
 /**

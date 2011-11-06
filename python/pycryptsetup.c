@@ -582,7 +582,7 @@ static PyObject *CryptSetup_iterationTime(CryptSetupObject* self, PyObject *args
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "l", kwlist, &time_ms))
 		return NULL;
 
-	crypt_set_iterarion_time(self->device, time_ms);
+	crypt_set_iteration_time(self->device, time_ms);
 	return PyObjectResult(0);
 }
 

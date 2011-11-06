@@ -1811,10 +1811,14 @@ void crypt_set_password_retry(struct crypt_device *cd, int tries)
 	cd->tries = tries;
 }
 
-void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_ms)
+void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms)
 {
 	log_dbg("Iteration time set to %" PRIu64 " miliseconds.", iteration_time_ms);
 	cd->iteration_time = iteration_time_ms;
+}
+void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_ms)
+{
+	crypt_set_iteration_time(cd, iteration_time_ms);
 }
 
 void crypt_set_password_verify(struct crypt_device *cd, int password_verify)
