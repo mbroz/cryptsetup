@@ -69,6 +69,7 @@ static int passwordDialog(const char *msg, char *buf, size_t length, void *this)
 {
 	CryptSetupObject *self = this;
 	PyObject *result, *arglist;
+	size_t len;
 	char *res = NULL;
 
 	if(self->passwordDialogCB){
@@ -88,10 +89,12 @@ static int passwordDialog(const char *msg, char *buf, size_t length, void *this)
 		}
 
 		strncpy(buf, res, length - 1);
+		len = strlen(res);
 
-		// FIXME: wipe res
+		memset(res, 0, len);
 		Py_DECREF(result);
-		return strlen(buf);
+
+		return (int)len;
 	}
 
 	return -EINVAL;
@@ -168,6 +171,7 @@ static int CryptSetup_init(CryptSetupObject* self, PyObject *args, PyObject *kwd
 		 *cmdLineLogCB = NULL,
 		 *tmp = NULL;
 	char *device = NULL, *deviceName = NULL;
+	int r;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzOOO", kwlist, &device, &deviceName,
 					 &yesDialogCB, &passwordDialogCB, &cmdLineLogCB))
@@ -178,19 +182,23 @@ static int CryptSetup_init(CryptSetupObject* self, PyObject *args, PyObject *kwd
 			PyErr_SetString(PyExc_IOError, "Device cannot be opened");
 			return -1;
 		}
-
+		/* Try to load header form device */
+		r = crypt_load(self->device, NULL, NULL);
+		if (r && r != -EINVAL) {
+			PyErr_SetString(PyExc_RuntimeError, "Cannot initialize device context");
+			return -1;
+		}
 	} else if (deviceName) {
 		if (crypt_init_by_name(&(self->device), deviceName)) {
 			PyErr_SetString(PyExc_IOError, "Device cannot be opened");
 			return -1;
 		}
+		/* Context is initialized automatically from active device */
 	} else {
 		PyErr_SetString(PyExc_RuntimeError, "Either device file or luks name has to be specified");
 		return -1;
 	}
 
-	// FIXME: check return code
-	crypt_load(self->device, NULL, NULL);
 	if(deviceName)
 		self->activated_as = strdup(deviceName);
 

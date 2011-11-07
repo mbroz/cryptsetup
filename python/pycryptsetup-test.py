@@ -70,4 +70,30 @@ print "deact.  :", c.deactivate()
 
 del c
 
+c = pycryptsetup.CryptSetup(
+        device = IMG,
+        name = DEVICE,
+        yesDialog = askyes,
+        logFunc = log,
+        passwordDialog = askpassword)
+
+print "activate:", c.activate(name = DEVICE, passphrase = PASSWORD)
+
+c2 = pycryptsetup.CryptSetup(
+        name = DEVICE,
+        yesDialog = askyes,
+        logFunc = log,
+        passwordDialog = askpassword)
+
+info = c2.info()
+print "cipher  :", info["cipher"]
+print "cmode   :", info["cipher_mode"]
+print "keysize :", info["keysize"]
+
+print "deact.  :", c.deactivate()
+r = c2.deactivate()
+print "deact.  :", r
+del c
+del c2
+
 os.remove(IMG)
