@@ -567,7 +567,8 @@ static PyObject *CryptSetup_debugLevel(CryptSetupObject* self, PyObject *args, P
 		return NULL;
 
 	crypt_set_debug_level(level);
-	return PyObjectResult(0);
+
+	Py_RETURN_NONE;
 }
 
 #define CryptSetup_iterationTime_HELP "Set iteration time\n\n\
@@ -579,11 +580,12 @@ static PyObject *CryptSetup_iterationTime(CryptSetupObject* self, PyObject *args
 	static char *kwlist[] = {"time_ms", NULL};
 	uint64_t time_ms = 0;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "l", kwlist, &time_ms))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "K", kwlist, &time_ms))
 		return NULL;
 
 	crypt_set_iteration_time(self->device, time_ms);
-	return PyObjectResult(0);
+
+	Py_RETURN_NONE;
 }
 
 static PyMemberDef CryptSetup_members[] = {
