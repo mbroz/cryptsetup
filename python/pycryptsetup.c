@@ -691,7 +691,7 @@ PyMODINIT_FUNC initpycryptsetup(void)
 		return;
 
 	m = Py_InitModule3("pycryptsetup", pycryptsetup_methods, "CryptSetup pythonized API.");
-	Py_INCREF((PyObject *)&CryptSetupType);
+	Py_INCREF(&CryptSetupType);
 
 	PyModule_AddObject(m, "CryptSetup", (PyObject *)&CryptSetupType);
 }
