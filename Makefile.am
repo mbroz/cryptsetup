@@ -1,4 +1,4 @@
-EXTRA_DIST = FAQ docs misc
+EXTRA_DIST = COPYING.LGPL FAQ docs misc
 SUBDIRS = \
 	lib \
 	src \
