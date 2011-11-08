@@ -27,6 +27,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
 #include <limits.h>
@@ -378,9 +379,14 @@ static int action_status(int arg __attribute__((unused)))
 	crypt_status_info ci;
 	struct crypt_active_device cad;
 	struct crypt_device *cd = NULL;
+	struct stat st;
 	char *backing_file;
 	const char *device;
-	int r = 0;
+	int path = 0, r = 0;
+
+	/* perhaps a path, not a dm device name */
+	if (strchr(action_argv[0], '/') && !stat(action_argv[0], &st))
+		path = 1;
 
 	ci = crypt_status(NULL, action_argv[0]);
 	switch (ci) {
@@ -388,13 +394,20 @@ static int action_status(int arg __attribute__((unused)))
 		r = -EINVAL;
 		break;
 	case CRYPT_INACTIVE:
-		log_std("%s/%s is inactive.\n", crypt_get_dir(), action_argv[0]);
+		if (path)
+			log_std("%s is inactive.\n", action_argv[0]);
+		else
+			log_std("%s/%s is inactive.\n", crypt_get_dir(), action_argv[0]);
 		r = -ENODEV;
 		break;
 	case CRYPT_ACTIVE:
 	case CRYPT_BUSY:
-		log_std("%s/%s is active%s.\n", crypt_get_dir(), action_argv[0],
-			ci == CRYPT_BUSY ? " and is in use" : "");
+		if (path)
+			log_std("%s is active%s.\n", action_argv[0],
+				ci == CRYPT_BUSY ? " and is in use" : "");
+		else
+			log_std("%s/%s is active%s.\n", crypt_get_dir(), action_argv[0],
+				ci == CRYPT_BUSY ? " and is in use" : "");
 		r = crypt_init_by_name(&cd, action_argv[0]);
 		if (r < 0 || !crypt_get_type(cd))
 			goto out;
