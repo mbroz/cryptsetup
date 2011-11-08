@@ -694,4 +694,20 @@ PyMODINIT_FUNC initpycryptsetup(void)
 	Py_INCREF(&CryptSetupType);
 
 	PyModule_AddObject(m, "CryptSetup", (PyObject *)&CryptSetupType);
+
+	/* debug constants */
+	PyModule_AddIntConstant(m, "CRYPT_DEBUG_ALL", CRYPT_DEBUG_ALL);
+	PyModule_AddIntConstant(m, "CRYPT_DEBUG_NONE", CRYPT_DEBUG_NONE);
+
+	/* log constants */
+	PyModule_AddIntConstant(m, "CRYPT_LOG_NORMAL", CRYPT_LOG_NORMAL);
+	PyModule_AddIntConstant(m, "CRYPT_LOG_ERROR", CRYPT_LOG_ERROR);
+	PyModule_AddIntConstant(m, "CRYPT_LOG_VERBOSE", CRYPT_LOG_VERBOSE);
+	PyModule_AddIntConstant(m, "CRYPT_LOG_DEBUG", CRYPT_LOG_DEBUG);
+
+	/* status constants */
+	PyModule_AddIntConstant(m, "CRYPT_INVALID", CRYPT_INVALID);
+	PyModule_AddIntConstant(m, "CRYPT_INACTIVE", CRYPT_INACTIVE);
+	PyModule_AddIntConstant(m, "CRYPT_ACTIVE", CRYPT_ACTIVE);
+	PyModule_AddIntConstant(m, "CRYPT_BUSY", CRYPT_BUSY);
 }

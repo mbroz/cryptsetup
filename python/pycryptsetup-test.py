@@ -29,10 +29,9 @@ PASSWORD = "password"
 PASSWORD2 = "password2"
 DEVICE = "pycryptsetup_test_dev"
 
-def log(pri, txt):
-    if pri > 1:
-        return
-    print txt,
+def log(level, txt):
+    if level == pycryptsetup.CRYPT_LOG_ERROR:
+        print txt,
     return
 
 def askyes(txt):
@@ -41,6 +40,17 @@ def askyes(txt):
 
 def askpassword(txt):
     return PASSWORD
+
+def print_status(c):
+    r = c.status()
+    print "status  :",
+    if r == pycryptsetup.CRYPT_ACTIVE:
+        print "ACTIVE"
+    elif r == pycryptsetup.CRYPT_INACTIVE:
+        print "INACTIVE"
+    else:
+       print "ERROR"
+    return
 
 os.system("dd if=/dev/zero of=" + IMG + " bs=1M count=32 >/dev/null 2>&1")
 
@@ -51,13 +61,13 @@ c = pycryptsetup.CryptSetup(
         logFunc = log,
         passwordDialog = askpassword)
 
-# c.debugLevel(-1);
-c.debugLevel(0);
+#c.debugLevel(pycryptsetup.CRYPT_DEBUG_ALL);
+c.debugLevel(pycryptsetup.CRYPT_DEBUG_NONE);
 c.iterationTime(1)
 r =  c.isLuks()
 print "isLuks  :", r
 c.askyes(message = "Is there anybody out there?")
-c.log(priority = 1, message = "Nobody there...\n")
+c.log(priority = pycryptsetup.CRYPT_LOG_ERROR, message = "Nobody there...\n")
 c.luksFormat(cipher = "aes", cipherMode= "xts-plain64", keysize = 512)
 print "isLuks  :", c.isLuks()
 print "luksUUID:", c.luksUUID()
@@ -73,7 +83,7 @@ print "activate:", c.activate(name = DEVICE, passphrase = PASSWORD)
 print "suspend :", c.suspend()
 # os.system("dmsetup info -c " + DEVICE)
 print "resume  :", c.resume(passphrase = PASSWORD)
-print "status  :", c.status()
+print_status(c)
 info = c.info()
 print "cipher  :", info["cipher"]
 print "cmode   :", info["cipher_mode"]
