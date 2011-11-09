@@ -1,0 +1,25 @@
+Cryptsetup 1.4.1 Release Notes
+==============================
+
+Changes since version 1.4.0
+
+* Merge experimental Python cryptsetup (pycryptsetup) binding.
+
+  This option is disabled by default, you can enable build of Python binding
+  with --enable--python configure switch.
+
+  Note that binding currently covers only partial libcrypsetup functions,
+  mainly LUKS device handling needed for Anaconda installer.
+  Until now provided separately as python-cryptsetup.
+  Thanks to Martin Sivak for the code.
+
+  See python subdirectory for more info.
+
+  Python binding code is experimental for now, no stable API guarantee.
+
+* Fix crypt_get_volume_key_size() for plain device.
+  (cryptsetup status reported zero key size for plain crypt devices).
+
+* Fix typo in set_iteration_time API call (old name remains for compatibility reasons).
+
+* Fix FSF address in license and add LGPL license text.
