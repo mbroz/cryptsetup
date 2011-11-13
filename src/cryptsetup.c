@@ -408,7 +408,8 @@ static int action_status(int arg __attribute__((unused)))
 		else
 			log_std("%s/%s is active%s.\n", crypt_get_dir(), action_argv[0],
 				ci == CRYPT_BUSY ? " and is in use" : "");
-		r = crypt_init_by_name(&cd, action_argv[0]);
+
+		r = crypt_init_by_name_and_header(&cd, action_argv[0], opt_header_device);
 		if (r < 0 || !crypt_get_type(cd))
 			goto out;
 

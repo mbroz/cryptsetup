@@ -598,6 +598,27 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 	return crypt_check_data_device_size(cd);
 }
 
+static int _crypt_load_luks1(struct crypt_device *cd, int require_header)
+{
+	struct luks_phdr hdr;
+	int r;
+
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
+	r = LUKS_read_phdr(mdata_device(cd), &hdr, require_header, cd);
+	if (r < 0)
+		return r;
+
+	if (!cd->type && !(cd->type = strdup(CRYPT_LUKS1)))
+		return -ENOMEM;
+
+	memcpy(&cd->hdr, &hdr, sizeof(hdr));
+
+	return r;
+}
+
 int crypt_init_by_name_and_header(struct crypt_device **cd,
 				  const char *name,
 				  const char *header_device)
@@ -701,7 +722,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 		}
 	} else if (isLUKS((*cd)->type)) {
 		if (mdata_device(*cd)) {
-			r = crypt_load(*cd, CRYPT_LUKS1, NULL);
+			r = _crypt_load_luks1(*cd, 0);
 			if (r < 0) {
 				log_dbg("LUKS device header does not match active device.");
 				free((*cd)->type);
@@ -931,7 +952,6 @@ int crypt_load(struct crypt_device *cd,
 	       const char *requested_type,
 	       void *params __attribute__((unused)))
 {
-	struct luks_phdr hdr;
 	int r;
 
 	log_dbg("Trying to load %s crypt type from device %s.",
@@ -948,18 +968,9 @@ int crypt_load(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = init_crypto(cd);
+	r = _crypt_load_luks1(cd, 1);
 	if (r < 0)
 		return r;
-
-	r = LUKS_read_phdr(mdata_device(cd), &hdr, 1, cd);
-	if (r < 0)
-		return r;
-
-	if (!cd->type && !(cd->type = strdup(CRYPT_LUKS1)))
-		return -ENOMEM;
-
-	memcpy(&cd->hdr, &hdr, sizeof(hdr));
 
 	/* cd->type and header must be set in context */
 	r = crypt_check_data_device_size(cd);

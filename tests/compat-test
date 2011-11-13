@@ -7,6 +7,7 @@ DEV_NAME2=dummy2
 DEV_NAME3=dummy3
 ORIG_IMG=luks-test-orig
 IMG=luks-test
+HEADER_IMG=luks-header
 KEY1=key1
 KEY2=key2
 KEY5=key5
@@ -34,7 +35,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 $KEY5 >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 $KEY5 $HEADER_IMG >/dev/null 2>&1
 }
 
 function fail()
@@ -126,7 +127,6 @@ function valgrind_run()
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
 # LUKS tests
-
 
 prepare	"[1] open - compat image - acceptance check" new
 echo "compatkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
@@ -445,6 +445,17 @@ $CRYPTSETUP luksOpen -S 1 -d $KEY5 $LOOPDEV $DEV_NAME && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 $CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
+
+prepare "[28] Detached LUKS header" wipe
+dd if=/dev/zero of=$HEADER_IMG bs=1M count=4 >/dev/null 2>&1
+echo "key0" | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG || fail
+echo "key0" | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
+echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
+$CRYPTSETUP -q resize  $DEV_NAME --size 100 --header $HEADER_IMG || fail
+$CRYPTSETUP -q status  $DEV_NAME --header $HEADER_IMG | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
+echo "key0" | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
 
 remove_mapping
 exit 0
