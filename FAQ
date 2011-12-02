@@ -37,6 +37,10 @@ A. Contributors
   such a disaster! In particular, make sure you have a current header
   backup before doing any potentially dangerous operations.
 
+  BACKUP: Yes, encrypted disks die, just as normal ones do. A full
+  backup is mandatory, see Section "6. Backup and Data Recovery" on
+  options for doing encrypted backup.
+
   DISTRIBUTION INSTALLERS: Some distribution installers offer to
   create LUKS containers in a way that can be mistaken as activation
   of an existing container. Creating a new LUKS container on top of
@@ -435,6 +439,16 @@ A. Contributors
 
 
 4. Troubleshooting 
+
+
+ * I get the error "LUKS keyslot x is invalid." What does that mean?
+
+  This means that the given keyslot has an offset that points
+  outside the valid keyslot area. Typically, the reason is a
+  corrupted LUKS header because something was written to the start of
+  the device the LUKS contaner is on. Refer to Section "Backup and
+  Data Recovery" and ask on the mailing list if you have trouble
+  diagnosing and (if still possible) repairing this.
 
 
  * Can a bad RAM module cause problems?
@@ -1075,7 +1089,11 @@ A. Contributors
  * How do I recover the master key from a mapped LUKS container?
 
   This is typically only needed if you managed to damage your LUKS
-  header, but the container is still mapped, i.e. "luksOpen"ed.
+  header, but the container is still mapped, i.e. "luksOpen"ed. It
+  also helps if you have a mapped container that you forgot or do not
+  know a passphrase for (e.g. on a long running server.)
+
+  WARNING: Things go wrong, do a full backup before trying this!
 
   WARNING: This exposes the master key of the LUKS container. Note
   that both ways to recreate a LUKS header with the old master key
@@ -1086,9 +1104,9 @@ A. Contributors
   key afterwards.    Changing the master key requires a full data
   backup, luksFormat and then restore of the backup.
 
-  First, there is a script by Milan that tries to automatize the
-  whole process, including generating a new LUKS header with the old
-  master key:
+  First, there is a script by Milan that automatizes    the whole
+  process, except generating a new LUKS header with the old master
+  key (it prints the command for that though):
 
 http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-active
 
@@ -1110,23 +1128,32 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   do this manually, e.g. with hexedit. You can also use the tool
   "xxd" from vim like this:
 
-      echo "a1704d9....53d0d09" | xxd -r -p > master_key
+      echo "a1704d9....53d0d09" | xxd -r -p > <master-key-file>
  
-  - Do a luksFormat to create a new LUKS header. Unmapthe device
-  before you do that (luksClose). Replace \dev\dsa10 with the device
-  the LUKS container is on:
+  - Do a luksFormat to create a new LUKS header.
 
-      cryptsetup luksFormat --master-key-file=master_key \dev\sda10
+    NOTE: If your header is intact and you just forgot the
+  passphrase, you can just set a new passphrase, see next     subitem.
+
+  Unmap the device before you do that (luksClose). Then do
+
+      cryptsetup luksFormat --master-key-file=<master-key-file> <luks device>
  
   Note that if the container was created with other than the default
   settings of the cryptsetup version you are using, you need to give
-  additional parameters specifying the deviations. If in doubt, just
-  do the first step, keep the whole result safe and try with the
-  script by Milan. It does recover the other parameters as well.
+  additional parameters specifying the deviations. If in doubt, try
+  the script by Milan. It does recover the other parameters as well.
 
   Side note: This is the way the decrypt_derived script gets at the
   master key. It just omits the conversion and hashes the master key
   string.
+
+  - If the header is intact and you just forgot the passphrase, just
+  set a new passphrase like this:
+
+      cryptsetup luksAddKey --master-key-file=<master-key-file> <luks device>
+ 
+  You may want to disable the old one afterwards.
 
 
  * What does the on-disk structure of dm-crypt look like?
