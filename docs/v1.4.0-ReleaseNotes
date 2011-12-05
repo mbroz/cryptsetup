@@ -62,14 +62,14 @@ WARNING: This release removes old deprecated API from libcryptsetup
             cannot properly work (there is filesystem allocation layer between
             header and disk).
 
-* Support --enable-discards option to allow discards/TRIM requests.
+* Support --allow-discards option to allow discards/TRIM requests.
 
    Since kernel 3.1, dm-crypt devices optionally (not by default) support
-   block discards (TRIM) comands.
+   block discards (TRIM) commands.
    If you want to enable this operation, you have to enable it manually
-   on every activation using --enable-discards
+   on every activation using --allow-discards
 
-          cryptsetup luksOpen --enable-discards /dev/sdb test_disk
+          cryptsetup luksOpen --allow-discards /dev/sdb test_disk
 
    WARNING: There are several security consequences, please read at least
             http://asalor.blogspot.com/2011/08/trim-dm-crypt-problems.html
