@@ -1242,9 +1242,6 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   You can do 64 bit (e.g. blofish-64 with CBC), but anything below
   128 bit has to be considered insecure today.
 
-  Note: RC4 (arc4), which allows 8 bit keys, seems to be buggy at
-  this time.
-
   Example 1 - AES 128 bit with CBC:
 
       cryptsetup luksFormat -s 128 --align-payload=8 <device>
