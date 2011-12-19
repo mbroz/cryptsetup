@@ -1187,23 +1187,79 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   0xc1000-0xe0400. The space to the next full sector address is
   padded with zeros. Never used key-slots are filled with what the
   disk originally contained there, a key-slot removed with
-  "luksRemoveKey" or "luksKillSlot" gets filled with 0xff. Start of
-  bulk data is at 0x101000, i.e. at 1'052'672 bytes, i.e. at 1MiB
-  + 4096 bytes from the start of   the partition. This is also the
-  value given by command "luksDump" with   "Payload offset: 2056",
-  just multiply by the sector size (512 bytes). Incidentally,
-  "luksHeaderBackup" for a LUKS container created with default
-  parameters dumps exactly the first 1'052'672 bytes to file and
-  "luksHeaderRestore"   restores them.
+  "luksRemoveKey" or "luksKillSlot" gets filled with 0xff. Due to
+  2MiB default alignment, start of the data area for cryptsetup 1.3
+  and later is at 2MiB, i.e. at 0x200000. For older versions, it is
+  at 0x101000, i.e. at 1'052'672 bytes, i.e. at 1MiB + 4096 bytes
+  from the start of the partition. Incidentally, "luksHeaderBackup"
+  for a LUKS container created with default parameters dumps exactly
+  the first 2MiB (or 1'052'672 bytes for   headers created with
+  cryptsetup versions < 1.3) to file and "luksHeaderRestore" restores
+  them.
 
   For non-default parameters, you have to figure out placement
-  yourself. "luksDump" helps. For the most common non-default
-  settings, namely aes-xts-plain with 512 bit key, the offsets are:
-  1st keyslot 0x1000-0x3f800, 2nd keyslot 0x40000-0x7e000, 3rd
-  keyslot 0x7e000-0xbd800, ..., and start of bulk data at 0x200000.
+  yourself. "luksDump" helps. See also next item. For the most common
+  non-default settings, namely aes-xts-plain with 512 bit key, the
+  offsets are: 1st keyslot 0x1000-0x3f800, 2nd keyslot
+  0x40000-0x7e000, 3rd keyslot 0x7e000-0xbd800, ..., and start of
+  bulk data at 0x200000.
 
   The exact specification of the format is here:
   http://code.google.com/p/cryptsetup/wiki/Specification
+
+
+ * What is the smallest possible LUKS container?
+
+  Note: From cryptsetup 1.3 onwards, alignment is set to 1MB. With
+  modern Linux partitioning tools that also align to 1MB, this will
+  result in aligmnet to 2k secors and typical Flash/SSD sectors,
+  which is highly desirable for a number of reasons. Changing the
+  alignment is not recomended.
+
+  That said, with default parameters, the data area starts at
+  exactly 2MB offset (at 0x101000 for crptsetup versions before 1.3).
+  The smallest data area you can have is one sector of 512 bytes.
+  Data areas of 0 bytes can be created, but fail on mapping.
+
+  While you cannot put a filesystem into something this small, it may
+  still be used to contain, for eamcple, key. Note that with current
+  formatting tools, a partition for a container this size will be
+  3MiB anyways. If you put the LUKS container into a file (via
+  losetup and a loopback device), the file needs to be 2097664 bytes
+  in size, i.e. 2MiB + 512B.
+
+  The two ways to influence the start of the data area are key-size
+  and alignment.
+
+  For alignment, you can go down to 1 on the parameter. This will
+  still leave you with a data-area starting at 0x101000, i.e.
+  1MiB+4096B (default parameters) as alignment will be rounded up to
+  the next multiple of 8 (i.e. 4096 bytes) (TODO: need to verify
+  this).
+
+  For key-size, you can use 128 bit (e.g. AES-128 with CBC), 256 bit
+  (e.g. AES-256 with CBC) or 512 bit (e.g. AES-256 with XTS mode).
+  You can do 64 bit (e.g. blofish-64 with CBC), but anything below
+  128 bit has to be considered insecure today.
+
+  Note: RC4 (arc4), which allows 8 bit keys, seems to be buggy at
+  this time.
+
+  Example 1 - AES 128 bit with CBC:
+
+      cryptsetup luksFormat -s 128 --align-payload=8 <device>
+ 
+  This results in a data offset of 0x81000, i.e. 516KiB or 528384
+  bytes. Add one 512 byte sector and the smallest LUKS container size
+  with these parameters is 516KiB + 512B or 528896 bytes.
+
+  Example 2 - Blowfish 64 bit with CBC (WARNING: insecure):
+
+      cryptsetup luksFormat -c blowfish -s 64 --align-payload=8 /dev/loop0
+ 
+  This results in a data offset of 0x41000, i.e. 260kiB or 266240
+  bytes, with a minimal LUKS conatiner size of 260kiB + 512B or
+  266752 bytes.
 
 
  * I think this is overly complicated. Is there an alternative?
