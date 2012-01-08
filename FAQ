@@ -49,6 +49,15 @@ A. Contributors
   installers after a complete backup of all LUKS containers has been
   made.
 
+  NO WARNING ON NON-INERACTIVE FORMAT: If you feed cryptsetup from
+  STDIN (e.g. via GPG) on LUKS format, it does not give you the
+  warning that you are about to format (and e.g. will lose any
+  pre-existing LUKS container on the target), as it assumes it is
+  used form a script. In this scenario, the responsibility for
+  warning the user and possibly checking for an existing LUKS header
+  goes over to the script. This is a more general form of the
+  previous item.
+
   LUKS PASSPHRASE IS NOT THE MASTER KEY: The LUKS passphrase is not
   used in deriving the master key. It is used in decrypting a master
   key that is randomly selected on header creation. This means that
