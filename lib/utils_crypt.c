@@ -306,7 +306,7 @@ int crypt_get_key(const char *prompt,
 			/* known keyfile size, alloc it in one step */
 			if ((size_t)st.st_size >= keyfile_size_max)
 				buflen = keyfile_size_max;
-			else
+			else if (st.st_size)
 				buflen = st.st_size;
 		}
 	}
@@ -355,12 +355,6 @@ int crypt_get_key(const char *prompt,
 	if (!unlimited_read && i != keyfile_size_max) {
 		log_err(cd, _("Cannot read requested amount of data.\n"));
 		goto out_err;
-	}
-
-	/* Well, for historical reasons reading empty keyfile is not fail. */
-	if(!i) {
-		crypt_safe_free(pass);
-		pass = NULL;
 	}
 
 	*key = pass;

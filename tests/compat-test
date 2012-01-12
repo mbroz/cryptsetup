@@ -11,6 +11,7 @@ HEADER_IMG=luks-header
 KEY1=key1
 KEY2=key2
 KEY5=key5
+KEYE=keye
 
 LUKS_HEADER="S0-5 S6-7 S8-39 S40-71 S72-103 S104-107 S108-111 R112-131 R132-163 S164-167 S168-207 A0-591"
 KEY_SLOT0="S208-211 S212-215 R216-247 A248-251 A251-255"
@@ -35,7 +36,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 $KEY5 $HEADER_IMG >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG >/dev/null 2>&1
 }
 
 function fail()
@@ -86,6 +87,10 @@ function prepare()
 
 	if [ ! -e $KEY5 ]; then
 		dd if=/dev/urandom of=$KEY5 count=1 bs=16 >/dev/null 2>&1
+	fi
+
+	if [ ! -e $KEYE ]; then
+		touch $KEYE
 	fi
 
 	cp $IMG $ORIG_IMG
@@ -236,6 +241,10 @@ echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV 
 echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV -d $KEY1 || fail
 $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 256 --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+# empty keyfile
+$CRYPTSETUP -q luksFormat $LOOPDEV $KEYE || fail
+$CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[17] AddKey volume key, passphrase and keyfile" wipe
