@@ -944,12 +944,22 @@ A. Contributors
   partition creation. Example:
 
  
-     cryptsetup luksHeaderBackup --header-backup-file h /dev/mapper/c1
+     cryptsetup luksHeaderBackup --header-backup-file h <device>
  
   To restore, use the inverse command, i.e.
 
-     cryptsetup luksHeaderRestore --header-backup-file h /dev/mapper/c1
+     cryptsetup luksHeaderRestore --header-backup-file h <device>
  
+
+ * How do I test a LUKS header?
+
+  Use
+
+     cryptsetup -v isLuks <device>
+ 
+  on the device. Without the "-v" it just signals its result via
+  exit-status.
+
 
  * How do I backup a LUKS or dm-crypt partition?
 
