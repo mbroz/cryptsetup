@@ -958,7 +958,12 @@ A. Contributors
      cryptsetup -v isLuks <device>
  
   on the device. Without the "-v" it just signals its result via
-  exit-status.
+  exit-status. You can alos use the more general test
+
+      blkid -p <device>
+ 
+  which will also detect other types and give some more info. Omit
+  "-p" for old versions of blkid that do not support it.
 
 
  * How do I backup a LUKS or dm-crypt partition?
