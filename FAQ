@@ -732,9 +732,12 @@ A. Contributors
   passphrase, see next FAQ item.
 
   Still, if you want good security, a high-entropy passphrase is the
-  only option. Use at least 64 bits for secret stuff. That is 64
-  characters of English text (but only if randomly chosen) or a
-  combination of 12 truly random letters and digits.
+  only option. For example, a low-entropy passphrase can never be
+  considered secure against a TLA-level (Three Letter Agency level,
+  i.e. government-level) attacker, no matter what tricks are used in
+  the key-derivation function. Use at least 64 bits for secret stuff.
+  That is 64 characters of English text (but only if randomly chosen)
+  or a combination of 12 truly random letters and digits.
 
   For passphrase generation, do not use lines from very well-known
   texts (religious texts, Harry potter, etc.) as they are to easy to
@@ -743,7 +746,7 @@ A. Contributors
   and ending at a word boundary would take only something like 20
   days on a single CPU and is entirely feasible. To put that into
   perspective, using a number of Amazon EC2 High-CPU Extra Large
-  instances (each gives about 8 real cores), this tests costs
+  instances (each gives about 8 real cores), this test costs
   currently about 50USD/EUR, but can be made to run arbitrarily fast.
 
   On the other hand, choosing 1.5 lines from, say, the Wheel of Time
@@ -783,15 +786,15 @@ A. Contributors
   CPU, and possibly far less.
 
   In addition, the attacker can both parallelize and use special
-  hardware like GPUs to speed up the attack. The attack can also
-  happen quite some time after the luksFormat operation and CPUs can
-  have become faster and cheaper. For that reason you want a bit
-  of extra security. Anyways, in Example 1 your are screwed. In
-  example 2, not necessarily. Even if the attack is faster, it still
-  has a certain cost associated with it, say 10000 EUR/USD with
-  iteration and 1 EUR/USD without iteration. The first can be
+  hardware like GPUs or FPGAs to speed up the attack. The attack can
+  also happen quite some time after the luksFormat operation and CPUs
+  can have become faster and cheaper. For that reason you want a
+  bit of extra security. Anyways, in Example 1 your are screwed.
+  In example 2, not necessarily. Even if the attack is faster, it
+  still has a certain cost associated with it, say 10000 EUR/USD
+  with iteration and 1 EUR/USD without iteration. The first can be
   prohibitively expensive, while the second is something you try
-  even without solid proof that the decryption will yield   something
+  even without solid proof that the decryption will yield something
   useful.
 
   The numbers above are mostly made up, but show the idea. Of course
