@@ -246,6 +246,10 @@ $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 $CRYPTSETUP -q luksFormat $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
+# open by volume key
+echo "key0" | $CRYPTSETUP -q luksFormat -s 256 --master-key-file $KEY1 $LOOPDEV || fail
+$CRYPTSETUP luksOpen --master-key-file $KEY1 $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[17] AddKey volume key, passphrase and keyfile" wipe
 # masterkey

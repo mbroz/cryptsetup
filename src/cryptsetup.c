@@ -552,8 +552,9 @@ static int action_luksOpen(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device;
+	char *key = NULL;
 	uint32_t flags = 0;
-	int r;
+	int r, keysize;
 
 	if (opt_header_device) {
 		header_device = opt_header_device;
@@ -591,7 +592,14 @@ static int action_luksOpen(int arg __attribute__((unused)))
 	if (opt_allow_discards)
 		flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 
-	if (opt_key_file) {
+	if (opt_master_key_file) {
+		keysize = crypt_get_volume_key_size(cd);
+		r = _read_mk(opt_master_key_file, &key, keysize);
+		if (r < 0)
+			goto out;
+		r = crypt_activate_by_volume_key(cd, action_argv[1],
+						 key, keysize, flags);
+	} else if (opt_key_file) {
 		crypt_set_password_retry(cd, 1);
 		r = crypt_activate_by_keyfile(cd, action_argv[1],
 			opt_key_slot, opt_key_file, opt_keyfile_size,
@@ -600,6 +608,7 @@ static int action_luksOpen(int arg __attribute__((unused)))
 		r = crypt_activate_by_passphrase(cd, action_argv[1],
 			opt_key_slot, NULL, 0, flags);
 out:
+	crypt_safe_free(key);
 	crypt_free(cd);
 	return r;
 }

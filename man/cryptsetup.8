@@ -51,7 +51,7 @@ initializes a LUKS partition and sets the initial key, either via prompting or v
 
 \fB<options>\fR can be [\-\-cipher, \-\-verify-passphrase, \-\-key-size,
 \-\-key-slot, \-\-key-file (takes precedence over optional second argument),
-\-\-keyfile-size, \-\-use-random | \-\-use-urandom, \-\-uuid].
+\-\-keyfile-size, \-\-use-random | \-\-use-urandom, \-\-uuid, \-\-master-key-file].
 .PP
 \fIluksOpen\fR <device> <name>
 .IP
@@ -60,7 +60,7 @@ successful verification of the supplied key material
 (either via key file by \-\-key-file, or via prompting).
 
 \fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly, \-\-allow-discards,
-\-\-header, \-\-key-slot].
+\-\-header, \-\-key-slot, \-\-master-key-file].
 .PP
 \fIluksClose\fR <name>
 .IP
@@ -91,7 +91,8 @@ add a new key file/passphrase. An existing passphrase or key file
 (via \-\-key-file) must be supplied.
 The key file with the new material is supplied as a positional argument.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-new-keyfile-size, \-\-key-slot].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-new-keyfile-size, \-\-key-slot,
+\-\-master-key-file].
 .PP
 \fIluksRemoveKey\fR <device> [<key file>] 
 .IP
@@ -276,6 +277,9 @@ LUKS header reformatting with the same master key (if all other parameters
 are the same existing encrypted data remains intact).
 
 For \fIluksAddKey\fR it allows adding new passphrase with only master key knowledge.
+
+For \fIluksOpen\fR it allows to open the LUKS device with only master key knowledge.
+
 .TP
 .B "\-\-dump-master-key"
 For \fIluksDump\fR it allows LUKS header dump including volume (master) key.
