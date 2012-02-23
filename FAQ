@@ -41,6 +41,14 @@ A. Contributors
   backup is mandatory, see Section "6. Backup and Data Recovery" on
   options for doing encrypted backup.
 
+  CLONING/IMAGING: If you clone or image a LUKS container, you make a
+  copy of the LUKS header and the master key will stay the same!
+  That means that if you distribute an image to several machines, the
+  same master key will be used on all of them, regardless of whether
+  you change the passphrases. Do NOT do this! If you do, a root-user
+  on any of the machines can decrypt all other copies, breaking
+  security. See also Item 6.15.
+
   DISTRIBUTION INSTALLERS: Some distribution installers offer to
   create LUKS containers in a way that can be mistaken as activation
   of an existing container. Creating a new LUKS container on top of
@@ -1320,6 +1328,24 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   and if you overwrite some part of a plain dm-crypt partition,
   exactly the overwritten parts are lost (rounded up to sector
   borders).
+
+
+ * 6.15 Can I clone a LUKS container?
+
+  You can, but it breaks security, because the cloned container has
+  the same header and hence the same master key. You cannot change
+  the master key on a LUKS container, even if you change the
+  passphrase(s), the master key stays the same. That means whoever
+  has access to one of the clones can decrypt them all, completely
+  bypassing the passphrases.
+
+  The right way to do this is to first luksFormat the target
+  container, then to clone the contents of the source container, with
+  both containers mapped, i.e. decrypted. You can clone the decrypted
+  contents of a LUKS container in binary mode, although you may run
+  into secondary issuses with GUIDs in filesystems, partition tables,
+  RAID-components and the like. These are just the normal problems
+  binary cloning causes.
 
 
 7. Interoperability with other Disk Encryption Tools  
