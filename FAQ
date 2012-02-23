@@ -46,7 +46,8 @@ A. Contributors
   That means that if you distribute an image to several machines, the
   same master key will be used on all of them, regardless of whether
   you change the passphrases. Do NOT do this! If you do, a root-user
-  on any of the machines can decrypt all other copies, breaking
+  on any of the machines with a mapped (decrypted) container or a
+  passphrase on that machine can decrypt all other copies, breaking
   security. See also Item 6.15.
 
   DISTRIBUTION INSTALLERS: Some distribution installers offer to
@@ -1346,6 +1347,11 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   into secondary issuses with GUIDs in filesystems, partition tables,
   RAID-components and the like. These are just the normal problems
   binary cloning causes.
+
+  Note that if you need to ship (e.g.) cloned LUKS containers with a
+  default passphrase, that is fine as long as each container was
+  individually created (and hence has its own master key). In this
+  case, changing the default passphrase will make it secure again.
 
 
 7. Interoperability with other Disk Encryption Tools  
