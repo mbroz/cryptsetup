@@ -52,6 +52,10 @@ def print_status(c):
        print "ERROR"
     return
 
+if os.geteuid() != 0:
+	print "WARNING: You must be root to run this test, test skipped."
+	sys.exit(0)
+
 os.system("dd if=/dev/zero of=" + IMG + " bs=1M count=32 >/dev/null 2>&1")
 
 c = pycryptsetup.CryptSetup(
