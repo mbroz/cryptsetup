@@ -296,6 +296,65 @@ out:
 	return r;
 }
 
+static int _keyslot_repair(const char *device, struct luks_phdr *phdr, struct crypt_device *ctx)
+{
+	struct luks_phdr temp_phdr;
+	const unsigned char *sector = (const unsigned char*)phdr;
+	struct volume_key *vk;
+	uint64_t PBKDF2_per_sec = 1;
+	int i, bad;
+
+	// FIXME check keyBytes
+	vk = crypt_alloc_volume_key(phdr->keyBytes, NULL);
+
+	// FIXME check cipher, cipher_mode, hash, uuid, payloadOffset
+	LUKS_generate_phdr(&temp_phdr, vk, phdr->cipherName, phdr->cipherMode,
+			       phdr->hashSpec,phdr->uuid, LUKS_STRIPES,
+			       phdr->payloadOffset, 0,
+			       1, &PBKDF2_per_sec,
+			       "/dev/null", ctx);
+
+	for(i = 0; i < LUKS_NUMKEYS; ++i) {
+		bad = 0;
+		if (phdr->keyblock[i].keyMaterialOffset != temp_phdr.keyblock[i].keyMaterialOffset) {
+			log_err(ctx, _("Keyslot %i: offset repaired (%u -> %u).\n"), i,
+				(unsigned)phdr->keyblock[i].keyMaterialOffset,
+				(unsigned)temp_phdr.keyblock[i].keyMaterialOffset);
+			phdr->keyblock[i].keyMaterialOffset = temp_phdr.keyblock[i].keyMaterialOffset;
+			bad = 1;
+		}
+
+		if (phdr->keyblock[i].stripes != temp_phdr.keyblock[i].stripes) {
+			log_err(ctx, _("Keyslot %i: stripes repaired (%u -> %u).\n"), i,
+				(unsigned)phdr->keyblock[i].stripes,
+				(unsigned)temp_phdr.keyblock[i].stripes);
+			phdr->keyblock[i].stripes = temp_phdr.keyblock[i].stripes;
+			bad = 1;
+		}
+
+		/* if enabled, do not try to fix it */
+		if (phdr->keyblock[i].active != LUKS_KEY_ENABLED) {
+			/* Known case - MSDOS partition table signature */
+			if (i == 6 && sector[0x1fe] == 0x55 && sector[0x1ff] == 0xaa) {
+				log_err(ctx, _("Keyslot %i: bogus partition signature.\n"), i);
+				bad = 1;
+			}
+
+			if(bad) {
+				log_err(ctx, _("Keyslot %i: salt wiped.\n"), i);
+				phdr->keyblock[i].active = LUKS_KEY_DISABLED;
+				memset(&phdr->keyblock[i].passwordSalt, 0x00, LUKS_SALTSIZE);
+				phdr->keyblock[i].passwordIterations = 0;
+			}
+		}
+	}
+
+	crypt_free_volume_key(vk);
+	memset(&temp_phdr, 0, sizeof(temp_phdr));
+
+	return LUKS_write_phdr(device, phdr, ctx);
+}
+
 static int _check_and_convert_hdr(const char *device,
 				  struct luks_phdr *hdr,
 				  int require_luks_device,
@@ -328,7 +387,6 @@ static int _check_and_convert_hdr(const char *device,
 			hdr->keyblock[i].stripes            = ntohl(hdr->keyblock[i].stripes);
 			if (LUKS_check_keyslot_size(hdr, i)) {
 				log_err(ctx, _("LUKS keyslot %u is invalid.\n"), i);
-				// FIXME: allow header recovery
 				r = -EINVAL;
 			}
 		}
@@ -337,6 +395,12 @@ static int _check_and_convert_hdr(const char *device,
 		hdr->cipherName[LUKS_CIPHERNAME_L - 1] = '\0';
 		hdr->cipherMode[LUKS_CIPHERMODE_L - 1] = '\0';
 		hdr->uuid[UUID_STRING_L - 1] = '\0';
+#if 0
+		if (r == -EINVAL) {
+			log_err(ctx, _("Repairing keyslots.\n"));
+			r = _keyslot_repair(device, hdr, ctx);
+		}
+#endif
 	}
 
 	return r;
