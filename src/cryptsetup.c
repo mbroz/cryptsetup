@@ -152,7 +152,7 @@ static int _yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 	size_t size = 0;
 	int r = 1;
 
-	if(isatty(0) && !opt_batch_mode) {
+	if(isatty(STDIN_FILENO) && !opt_batch_mode) {
 		log_std("\nWARNING!\n========\n");
 		log_std("%s\n\nAre you sure? (Type uppercase yes): ", msg);
 		if(getline(&answer, &size, stdin) == -1) {
@@ -197,6 +197,24 @@ static void _quiet_log(int level, const char *msg, void *usrptr)
 	if (!opt_verbose && (level == CRYPT_LOG_ERROR || level == CRYPT_LOG_NORMAL))
 		level = CRYPT_LOG_VERBOSE;
 	_log(level, msg, usrptr);
+}
+
+static int _verify_passphrase(int def)
+{
+	/* Batch mode switch off verify - if not overrided by -y */
+	if (opt_verify_passphrase)
+		def = 1;
+	else if (opt_batch_mode)
+		def = 0;
+
+	/* Non-tty input doesn't allow verify */
+	if (def && !isatty(STDIN_FILENO)) {
+		if (opt_verify_passphrase)
+			log_err(_("Can't do passphrase verification on non-tty inputs.\n"));
+		def = 0;
+	}
+
+	return def;
 }
 
 static void show_status(int errcode)
@@ -294,7 +312,7 @@ static int action_create(int arg __attribute__((unused)))
 		r = crypt_get_key(_("Enter passphrase: "),
 				  &password, &passwordLen, opt_keyfile_size,
 				  NULL, opt_timeout,
-				  opt_batch_mode ? 0 : opt_verify_passphrase,
+				  _verify_passphrase(0),
 				  cd);
 		if (r < 0)
 			goto out;
@@ -510,7 +528,6 @@ static int action_luksFormat(int arg __attribute__((unused)))
 
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8;
 
-	crypt_set_password_verify(cd, 1);
 	crypt_set_timeout(cd, opt_timeout);
 	if (opt_iteration_time)
 		crypt_set_iteration_time(cd, opt_iteration_time);
@@ -522,7 +539,7 @@ static int action_luksFormat(int arg __attribute__((unused)))
 
 	r = crypt_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
 			  opt_keyfile_size, opt_key_file, opt_timeout,
-			  opt_batch_mode ? 0 : 1 /* always verify */, cd);
+			  _verify_passphrase(1), cd);
 	if (r < 0)
 		goto out;
 
@@ -582,6 +599,7 @@ static int action_luksOpen(int arg __attribute__((unused)))
 
 	crypt_set_timeout(cd, opt_timeout);
 	crypt_set_password_retry(cd, opt_tries);
+	crypt_set_password_verify(cd, _verify_passphrase(0));
 
 	if (opt_iteration_time)
 		crypt_set_iteration_time(cd, opt_iteration_time);
@@ -628,7 +646,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 
 	r = crypt_get_key(msg_pass, &password, &passwordLen,
 			  keyfile_size, key_file, opt_timeout,
-			  opt_batch_mode ? 0 : opt_verify_passphrase, cd);
+			  _verify_passphrase(0), cd);
 	if(r < 0)
 		goto out;
 
@@ -718,7 +736,7 @@ static int action_luksRemoveKey(int arg __attribute__((unused)))
 		      &password, &passwordLen,
 		      opt_keyfile_size, opt_key_file,
 		      opt_timeout,
-		      opt_batch_mode ? 0 : opt_verify_passphrase,
+		      _verify_passphrase(0),
 		      cd);
 	if(r < 0)
 		goto out;
@@ -762,7 +780,8 @@ static int action_luksAddKey(int arg __attribute__((unused)))
 		goto out;
 
 	keysize = crypt_get_volume_key_size(cd);
-	crypt_set_password_verify(cd, opt_verify_passphrase ? 1 : 0);
+	/* FIXME: lib cannot properly set verification for new/old passphrase */
+	crypt_set_password_verify(cd, _verify_passphrase(0));
 	crypt_set_timeout(cd, opt_timeout);
 	if (opt_iteration_time)
 		crypt_set_iteration_time(cd, opt_iteration_time);
@@ -819,7 +838,7 @@ static int action_luksChangeKey(int arg __attribute__((unused)))
 	r = crypt_get_key(_("Enter LUKS passphrase to be changed: "),
 		      &password, &passwordLen,
 		      opt_keyfile_size, opt_key_file, opt_timeout,
-		      opt_batch_mode ? 0 : opt_verify_passphrase, cd);
+		      _verify_passphrase(0), cd);
 	if (r < 0)
 		goto out;
 
@@ -856,7 +875,7 @@ static int action_luksChangeKey(int arg __attribute__((unused)))
 	r = crypt_get_key(_("Enter new LUKS passphrase: "),
 			  &password, &passwordLen,
 			  opt_new_keyfile_size, opt_new_key_file,
-			  opt_timeout, opt_batch_mode ? 0 : 1, cd);
+			  opt_timeout, _verify_passphrase(0), cd);
 	if (r < 0)
 		goto out;
 
@@ -1021,6 +1040,7 @@ static int action_luksResume(int arg __attribute__((unused)))
 
 	crypt_set_timeout(cd, opt_timeout);
 	crypt_set_password_retry(cd, opt_tries);
+	crypt_set_password_verify(cd, _verify_passphrase(0));
 
 	if (opt_key_file)
 		r = crypt_resume_by_keyfile(cd, action_argv[0], CRYPT_ANY_SLOT,

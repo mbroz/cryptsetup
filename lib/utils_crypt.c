@@ -273,7 +273,7 @@ int crypt_get_key(const char *prompt,
 	/* Passphrase read from stdin? */
 	read_stdin = (!key_file || !strcmp(key_file, "-")) ? 1 : 0;
 
-	if(read_stdin && isatty(STDIN_FILENO))
+	if (read_stdin && isatty(STDIN_FILENO))
 		return crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
 
 	if (read_stdin)

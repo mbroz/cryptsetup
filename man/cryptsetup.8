@@ -247,6 +247,9 @@ and it is full 64bit version of plain IV. For more info please see FAQ.
 .B "\-\-verify-passphrase, \-y"
 query for passwords twice. Useful when creating a (regular) mapping
 for the first time, or when running \fIluksFormat\fR.
+
+Password verification option is ignored if requested on non terminal
+input (like pipe of file).
 .TP
 .B "\-\-key-file, \-d"
 use file as key material.
@@ -347,8 +350,10 @@ This option is only relevant to the LUKS operations as
 Note that 0 means default.
 .TP
 .B "\-\-batch-mode, \-q"
-Do not ask for confirmation. Use with care! This option is only relevant
-for \fIluksFormat\fR, \fIluksAddKey\fR, \fIluksRemoveKey\fR or \fIluksKillSlot\fR.
+Do not ask for confirmation. Use with care!
+
+If \-y option is not specified, batch mode option also switches off
+passphrase verification for \fIluksFormat\fR.
 .TP
 .B "\-\-timeout, \-t"
 The number of seconds to wait before timeout. This option is relevant every
