@@ -379,6 +379,9 @@ static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslo
 
 		r = key_from_terminal(cd, NULL, &passphrase_read,
 				      &passphrase_size_read, 0);
+		/* Continue if it is just passphrase verify mismatch */
+		if (r == -EPERM)
+			continue;
 		if(r < 0)
 			goto out;
 
