@@ -2,6 +2,9 @@
 
 CRYPTSETUP=../src/cryptsetup
 
+CRYPTSETUP_VALGRIND=../src/.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../lib/.libs
+
 DEV_NAME=dummy
 DEV_NAME2=dummy2
 DEV_NAME3=dummy3
@@ -118,18 +121,14 @@ function check_exists()
 
 function valgrind_setup()
 {
-	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind"
-
-	CRYPTSETUP_BIN=$($CRYPTSETUP --lt-debug --version 2>&1 \
-		        | grep "newargv\[0\]" \
-			| sed 's/.*newargv\[0\]\:[[:space:]]\+\(.*\)$/\1/g')
-	[ -z "$CRYPTSETUP_BIN" ] && fail "Unable to get location of cryptsetup executable."
-	export LD_LIBRARY_PATH="../lib/.libs:$LD_LIBRARY_PATH"
+	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 }
 
 function valgrind_run()
 {
-	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_BIN} "$@"
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
