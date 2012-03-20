@@ -34,14 +34,14 @@ add_device() {
 
 function check_version()
 {
-        VER_STR=$(dmsetup targets | grep crypt | cut -f 2 -dv)
-        VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
-        VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_STR=$(dmsetup targets | grep crypt | cut -f 2 -dv)
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
 
 	# option supported in 1.11
-        test $VER_MAJ -gt 1 && return 0
-        test $VER_MIN -ge 11 && return 0
-        return 1
+	test $VER_MAJ -gt 1 && return 0
+	test $VER_MIN -ge 11 && return 0
+	return 1
 }
 
 if [ $(id -u) != 0 ]; then
