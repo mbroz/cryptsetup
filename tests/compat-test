@@ -39,6 +39,12 @@ function remove_mapping()
 	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG >/dev/null 2>&1
 }
 
+function force_uevent()
+{
+	DNAME=$(echo $LOOPDEV | cut -f3 -d /)
+	echo "change" >/sys/block/$DNAME/uevent
+}
+
 function fail()
 {
 	[ -n "$1" ] && echo "$1"
@@ -243,6 +249,7 @@ $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 256 --uuid $TEST_UUI
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # open by UUID
+force_uevent # some systems do not update loop by-uuid
 $CRYPTSETUP luksOpen -d $KEY1 UUID=X$TEST_UUID $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksOpen -d $KEY1 UUID=$TEST_UUID $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
