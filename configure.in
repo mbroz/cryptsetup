@@ -31,11 +31,11 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
 	ctype.h unistd.h locale.h)
 
-AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR('You need the uuid library')])
-AC_CHECK_HEADER(libdevmapper.h,,[AC_MSG_ERROR('You need the device-mapper library')])
+AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR([You need the uuid library.])])
+AC_CHECK_HEADER(libdevmapper.h,,[AC_MSG_ERROR([You need the device-mapper library.])])
 
 saved_LIBS=$LIBS
-AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR('You need the uuid library')])
+AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR([You need the uuid library.])])
 AC_SUBST(UUID_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
@@ -65,7 +65,7 @@ dnl ==========================================================================
 dnl Crypto backend functions
 
 AC_DEFUN([CONFIGURE_GCRYPT], [
-	AM_PATH_LIBGCRYPT(1.1.42,,[AC_MSG_ERROR('You need the gcrypt library')])
+	AM_PATH_LIBGCRYPT(1.1.42,,[AC_MSG_ERROR([You need the gcrypt library.])])
 
 	if test x$enable_static_cryptsetup = xyes; then
 		saved_LIBS=$LIBS
@@ -84,7 +84,7 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 
 AC_DEFUN([CONFIGURE_OPENSSL], [
 	PKG_CHECK_MODULES([OPENSSL], [openssl >= 0.9.8],,
-		AC_MSG_ERROR('You need openssl library'))
+		AC_MSG_ERROR([You need openssl library.]))
 	CRYPTO_CFLAGS=$OPENSSL_CFLAGS
 	CRYPTO_LIBS=$OPENSSL_LIBS
 
@@ -99,33 +99,33 @@ AC_DEFUN([CONFIGURE_OPENSSL], [
 
 AC_DEFUN([CONFIGURE_NSS], [
 	if test x$enable_static_cryptsetup = xyes; then
-		AC_MSG_ERROR([Static build of cryptsetup is not supported with NSS.]),
+		AC_MSG_ERROR([Static build of cryptsetup is not supported with NSS.])
 	fi
 
 	AC_MSG_WARN([NSS backend does NOT provide backward compatibility (missing ripemd160 hash).])
 
 	PKG_CHECK_MODULES([NSS], [nss],,
-		AC_MSG_ERROR('You need nss library'))
+		AC_MSG_ERROR([You need nss library.]))
 	CRYPTO_CFLAGS=$NSS_CFLAGS
 	CRYPTO_LIBS=$NSS_LIBS
 ])
 
 AC_DEFUN([CONFIGURE_KERNEL], [
 	AC_CHECK_HEADERS(linux/if_alg.h,,
-		[AC_MSG_ERROR('You need Linux kernel with userspace crypto interface.')])
+		[AC_MSG_ERROR([You need Linux kernel with userspace crypto interface.])])
 #	AC_CHECK_DECLS([AF_ALG],,
-#		[AC_MSG_ERROR('You need Linux kernel with userspace crypto interface.')],
+#		[AC_MSG_ERROR([You need Linux kernel with userspace crypto interface.])],
 #		[#include <sys/socket.h>])
 
 ])
 
 AC_DEFUN([CONFIGURE_NETTLE], [
 	AC_CHECK_HEADERS(nettle/sha.h,,
-		[AC_MSG_ERROR('You need Nettle cryptographic library.')])
+		[AC_MSG_ERROR([You need Nettle cryptographic library.])])
 
 	saved_LIBS=$LIBS
 	AC_CHECK_LIB(nettle, nettle_ripemd160_init,,
-		[AC_MSG_ERROR('You need Nettle library version 2.4 or more recent.')])
+		[AC_MSG_ERROR([You need Nettle library version 2.4 or more recent.])])
 	CRYPTO_LIBS=$LIBS
 	LIBS=$saved_LIBS
 
