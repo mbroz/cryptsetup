@@ -242,6 +242,10 @@ echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV 
 $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 256 --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
+# open by UUID
+$CRYPTSETUP luksOpen -d $KEY1 UUID=X$TEST_UUID $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP luksOpen -d $KEY1 UUID=$TEST_UUID $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # empty keyfile
 $CRYPTSETUP -q luksFormat $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail

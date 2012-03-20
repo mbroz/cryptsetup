@@ -59,6 +59,9 @@ opens the LUKS partition <device> and sets up a mapping <name> after
 successful verification of the supplied key material
 (either via key file by \-\-key-file, or via prompting).
 
+Device parameter can be also specified by LUKS UUID in the format UUID=<uuid>
+(then cryptsetup will use /dev/disk/by-uuid symlinks).
+
 \fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly, \-\-allow-discards,
 \-\-header, \-\-key-slot, \-\-master-key-file].
 .PP

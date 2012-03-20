@@ -27,6 +27,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -244,6 +245,31 @@ static void show_status(int errcode)
 		log_err(": %s\n", error);
 	else
 		log_err(".\n");
+}
+
+static const char *uuid_or_device(const char *spec)
+{
+	static char device[PATH_MAX];
+	char s, *ptr;
+	int i = 0, uuid_len = 5;
+
+	/* Check if it is correct UUID=<LUKS_UUID> format */
+	if (spec && !strncmp(spec, "UUID=", uuid_len)) {
+		strcpy(device, "/dev/disk/by-uuid/");
+		ptr = &device[strlen(device)];
+		i = uuid_len;
+		while ((s = spec[i++]) && i < PATH_MAX) {
+			if (!isxdigit(s) && s != '-')
+				return spec; /* Bail it out */
+			if (isalpha(s))
+				s = tolower(s);
+			*ptr++ = s;
+		}
+		*ptr = '\0';
+		return device;
+	}
+
+	return spec;
 }
 
 static int action_create(int arg __attribute__((unused)))
@@ -574,10 +600,10 @@ static int action_luksOpen(int arg __attribute__((unused)))
 	int r, keysize;
 
 	if (opt_header_device) {
-		header_device = opt_header_device;
+		header_device = uuid_or_device(opt_header_device);
 		data_device = action_argv[0];
 	} else {
-		header_device = action_argv[0];
+		header_device = uuid_or_device(action_argv[0]);
 		data_device = NULL;
 	}
 
@@ -680,7 +706,7 @@ static int action_luksKillSlot(int arg __attribute__((unused)))
 	struct crypt_device *cd = NULL;
 	int r;
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
@@ -723,7 +749,7 @@ static int action_luksRemoveKey(int arg __attribute__((unused)))
 	size_t passwordLen;
 	int r;
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
@@ -771,7 +797,7 @@ static int action_luksAddKey(int arg __attribute__((unused)))
 	const char *opt_new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
 	struct crypt_device *cd = NULL;
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
@@ -826,7 +852,7 @@ static int action_luksChangeKey(int arg __attribute__((unused)))
 	size_t vk_size;
 	int new_key_slot, old_key_slot, r;
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
@@ -1002,7 +1028,7 @@ static int action_luksDump(int arg __attribute__((unused)))
 	struct crypt_device *cd = NULL;
 	int r;
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
@@ -1063,7 +1089,7 @@ static int action_luksBackup(int arg __attribute__((unused)))
 		return -EINVAL;
 	}
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, _yesDialog, NULL);
