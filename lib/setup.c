@@ -358,7 +358,7 @@ static int key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 		} else
 			*key_len = r;
 	} else
-		r = crypt_get_key(msg, key, key_len, 0, NULL, cd->timeout,
+		r = crypt_get_key(msg, key, key_len, 0, 0, NULL, cd->timeout,
 				  (force_verify || cd->password_verify), cd);
 out:
 	free(prompt);
@@ -408,9 +408,10 @@ out:
 
 static int key_from_file(struct crypt_device *cd, char *msg,
 			  char **key, size_t *key_len,
-			  const char *key_file, size_t key_size)
+			  const char *key_file, size_t key_offset,
+			  size_t key_size)
 {
-	return crypt_get_key(msg, key, key_len, key_size, key_file,
+	return crypt_get_key(msg, key, key_len, key_offset, key_size, key_file,
 			     cd->timeout, 0, cd);
 }
 
@@ -1214,11 +1215,12 @@ out:
 	return r < 0 ? r : keyslot;
 }
 
-int crypt_resume_by_keyfile(struct crypt_device *cd,
-			    const char *name,
-			    int keyslot,
-			    const char *keyfile,
-			    size_t keyfile_size)
+int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
+				   const char *name,
+				   int keyslot,
+				   const char *keyfile,
+				   size_t keyfile_size,
+				   size_t keyfile_offset)
 {
 	struct volume_key *vk = NULL;
 	char *passphrase_read = NULL;
@@ -1246,7 +1248,8 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 		return -EINVAL;
 
 	r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
-			  &passphrase_size_read, keyfile, keyfile_size);
+			  &passphrase_size_read, keyfile, keyfile_offset,
+			  keyfile_size);
 	if (r < 0)
 		goto out;
 
@@ -1263,6 +1266,16 @@ out:
 	crypt_safe_free(passphrase_read);
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
+}
+
+int crypt_resume_by_keyfile(struct crypt_device *cd,
+			    const char *name,
+			    int keyslot,
+			    const char *keyfile,
+			    size_t keyfile_size)
+{
+	return crypt_resume_by_keyfile_offset(cd, name, keyslot,
+					      keyfile, keyfile_size, 0);
 }
 
 // slot manipulation
@@ -1341,12 +1354,14 @@ out:
 	return r ?: keyslot;
 }
 
-int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
+int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	int keyslot,
 	const char *keyfile,
 	size_t keyfile_size,
+	size_t keyfile_offset,
 	const char *new_keyfile,
-	size_t new_keyfile_size)
+	size_t new_keyfile_size,
+	size_t new_keyfile_offset)
 {
 	struct volume_key *vk = NULL;
 	char *password = NULL; size_t passwordLen;
@@ -1379,7 +1394,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
 		if (keyfile)
 			r = key_from_file(cd, _("Enter any passphrase: "),
 					  &password, &passwordLen,
-					  keyfile, keyfile_size);
+					  keyfile, keyfile_offset, keyfile_size);
 		else
 			r = key_from_terminal(cd, _("Enter any passphrase: "),
 					      &password, &passwordLen, 0);
@@ -1396,7 +1411,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
 	if (new_keyfile)
 		r = key_from_file(cd, _("Enter new passphrase for key slot: "),
 				  &new_password, &new_passwordLen, new_keyfile,
-				  new_keyfile_size);
+				  new_keyfile_offset, new_keyfile_size);
 	else
 		r = key_from_terminal(cd, _("Enter new passphrase for key slot: "),
 				      &new_password, &new_passwordLen, 1);
@@ -1410,6 +1425,18 @@ out:
 	crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
+}
+
+int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
+	int keyslot,
+	const char *keyfile,
+	size_t keyfile_size,
+	const char *new_keyfile,
+	size_t new_keyfile_size)
+{
+	return crypt_keyslot_add_by_keyfile_offset(cd, keyslot,
+				keyfile, keyfile_size, 0,
+				new_keyfile, new_keyfile_size, 0);
 }
 
 int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
@@ -1562,11 +1589,12 @@ out:
 	return r < 0  ? r : keyslot;
 }
 
-int crypt_activate_by_keyfile(struct crypt_device *cd,
+int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 	const char *name,
 	int keyslot,
 	const char *keyfile,
 	size_t keyfile_size,
+	size_t keyfile_offset,
 	uint32_t flags)
 {
 	crypt_status_info ci;
@@ -1598,7 +1626,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 
 		r = key_from_file(cd, _("Enter passphrase: "),
 				  &passphrase_read, &passphrase_size_read,
-				  keyfile, keyfile_size);
+				  keyfile, keyfile_offset, keyfile_size);
 		if (r < 0)
 			goto out;
 
@@ -1611,7 +1639,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 		r = PLAIN_activate(cd, name, vk, cd->plain_hdr.size, flags);
 	} else if (isLUKS(cd->type)) {
 		r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
-			  &passphrase_size_read, keyfile, keyfile_size);
+			  &passphrase_size_read, keyfile, keyfile_offset, keyfile_size);
 		if (r < 0)
 			goto out;
 		r = LUKS_open_key_with_hdr(mdata_device(cd), keyslot, passphrase_read,
@@ -1628,7 +1656,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 		r = keyslot;
 	} else if (isLOOPAES(cd->type)) {
 		r = key_from_file(cd, NULL, &passphrase_read, &passphrase_size_read,
-				  keyfile, keyfile_size);
+				  keyfile, keyfile_offset, keyfile_size);
 		if (r < 0)
 			goto out;
 		r = LOOPAES_parse_keyfile(cd, &vk, cd->loopaes_hdr.hash, &key_count,
@@ -1646,6 +1674,17 @@ out:
 	crypt_free_volume_key(vk);
 
 	return r;
+}
+
+int crypt_activate_by_keyfile(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	const char *keyfile,
+	size_t keyfile_size,
+	uint32_t flags)
+{
+	return crypt_activate_by_keyfile_offset(cd, name, keyslot, keyfile,
+						keyfile_size, 0, flags);
 }
 
 int crypt_activate_by_volume_key(struct crypt_device *cd,

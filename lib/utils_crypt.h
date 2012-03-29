@@ -14,7 +14,7 @@ int crypt_parse_name_and_mode(const char *s, char *cipher,
 
 int crypt_get_key(const char *prompt,
 		  char **key, size_t *key_size,
-		  size_t keyfile_size_max,
+		  size_t keyfile_offset, size_t keyfile_size_max,
 		  const char *key_file,
 		  int timeout, int verify,
 		  struct crypt_device *cd);

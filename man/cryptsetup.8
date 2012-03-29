@@ -14,8 +14,8 @@ For basic (plain) dm-crypt mappings, there are four operations.
 creates a mapping with <name> backed by device <device>.
 
 \fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify-passphrase,
-\-\-key-file, \-\-key-size, \-\-offset, \-\-skip, \-\-size, \-\-readonly, \-\-shared,
-\-\-allow-discards]
+\-\-key-file, \-\-keyfile-offset, \-\-key-size, \-\-offset, \-\-skip, \-\-size,
+\-\-readonly, \-\-shared, \-\-allow-discards]
 .PP
 \fIremove\fR <name>
 .IP
@@ -51,7 +51,8 @@ initializes a LUKS partition and sets the initial key, either via prompting or v
 
 \fB<options>\fR can be [\-\-cipher, \-\-verify-passphrase, \-\-key-size,
 \-\-key-slot, \-\-key-file (takes precedence over optional second argument),
-\-\-keyfile-size, \-\-use-random | \-\-use-urandom, \-\-uuid, \-\-master-key-file].
+\-\-keyfile-offset, \-\-keyfile-size, \-\-use-random | \-\-use-urandom, \-\-uuid,
+\-\-master-key-file].
 .PP
 \fIluksOpen\fR <device> <name>
 .IP
@@ -62,8 +63,8 @@ successful verification of the supplied key material
 Device parameter can be also specified by LUKS UUID in the format UUID=<uuid>
 (then cryptsetup will use /dev/disk/by-uuid symlinks).
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-readonly, \-\-allow-discards,
-\-\-header, \-\-key-slot, \-\-master-key-file].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset, \-\-keyfile-size, \-\-readonly,
+\-\-allow-discards, \-\-header, \-\-key-slot, \-\-master-key-file].
 .PP
 \fIluksClose\fR <name>
 .IP
@@ -94,8 +95,8 @@ add a new key file/passphrase. An existing passphrase or key file
 (via \-\-key-file) must be supplied.
 The key file with the new material is supplied as a positional argument.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-new-keyfile-size, \-\-key-slot,
-\-\-master-key-file].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset, \-\-keyfile-size, \-\-new-keyfile-offset,
+\-\-new-keyfile-size, \-\-key-slot, \-\-master-key-file].
 .PP
 \fIluksRemoveKey\fR <device> [<key file>] 
 .IP
@@ -117,15 +118,15 @@ command will overwrite existing slot.
 when using explicit key slot (so you can unlock the device even after
 possible media failure during slot swap).
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size,\-\-new-keyfile-size,
-\-\-key-slot].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset, \-\-keyfile-size, \-\-new-keyfile-offset,
+\-\-new-keyfile-size, \-\-key-slot].
 .PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
 wipe key with number <key slot> from LUKS device. A remaining passphrase or
 key file (via \-\-key-file) must be supplied.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size].
+\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset, \-\-keyfile-size].
 .PP
 \fIluksUUID\fR <device>
 .IP
@@ -153,7 +154,7 @@ stored encrypted and on safe place.
 
 LUKS passphrase or key file is required for volume key dump.
 
-\fB<options>\fR can be [\-\-dump-master-key, \-\-key-file, \-\-keyfile-size].
+\fB<options>\fR can be [\-\-dump-master-key, \-\-key-file, \-\-keyfile-offset, \-\-keyfile-size].
 .PP
 \fIluksHeaderBackup\fR <device> \-\-header-backup-file <file>
 .IP
@@ -269,9 +270,17 @@ reading will not stop when new line character is detected.
 
 See section \fBNOTES ON PASSWORD PROCESSING\fR for more information.
 .TP
+.B "\-\-keyfile-offset \fIvalue\fR"
+Begins read from key file at \fIvalue\fR bytes.
+Usable together with all commands using key file.
+.TP
 .B "\-\-keyfile-size, \-l \fIvalue\fR"
 Limits read from key file to \fIvalue\fR bytes.
 Usable together with all commands using key file.
+.TP
+.B "\-\-new-keyfile-offset \fIvalue\fR"
+Begins read from new key file at \fIvalue\fR bytes in \fIluksAddKey\fR when
+adding new key file. Default is to start at the beginning of key file.
 .TP
 .B "\-\-new-keyfile-size  \fIvalue\fR"
 Limits read from new key file to \fIvalue\fR bytes in \fIluksAddKey\fR when

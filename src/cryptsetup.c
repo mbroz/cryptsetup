@@ -50,6 +50,8 @@ static const char *opt_header_device = NULL;
 static int opt_key_size = 0;
 static long opt_keyfile_size = 0;
 static long opt_new_keyfile_size = 0;
+static long opt_keyfile_offset = 0;
+static long opt_new_keyfile_offset = 0;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static uint64_t opt_size = 0;
 static uint64_t opt_offset = 0;
@@ -295,9 +297,9 @@ static int action_create(int arg __attribute__((unused)))
 	if (opt_key_file && strcmp(opt_key_file, "-"))
 		params.hash = NULL;
 
-	if (opt_keyfile_size && opt_key_file)
-		log_std(("Ignoring keyfile size option, keyfile read size "
-			 "is always the same as encryption key size.\n"));
+	if ((opt_keyfile_offset || opt_keyfile_size) && opt_key_file)
+		log_std(("Ignoring keyfile offset and size options, keyfile read "
+			 "size is always the same as encryption key size.\n"));
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
 				      cipher, NULL, cipher_mode);
@@ -331,12 +333,14 @@ static int action_create(int arg __attribute__((unused)))
 
 	if (opt_key_file)
 		/* With hashing, read the whole keyfile */
-		r = crypt_activate_by_keyfile(cd, action_argv[0],
-			CRYPT_ANY_SLOT, opt_key_file, params.hash ? 0 : key_size,
+		r = crypt_activate_by_keyfile_offset(cd, action_argv[0],
+			CRYPT_ANY_SLOT, opt_key_file,
+			params.hash ? 0 : key_size, 0,
 			activate_flags);
 	else {
 		r = crypt_get_key(_("Enter passphrase: "),
-				  &password, &passwordLen, opt_keyfile_size,
+				  &password, &passwordLen,
+				  opt_keyfile_offset, opt_keyfile_size,
 				  NULL, opt_timeout,
 				  _verify_passphrase(0),
 				  cd);
@@ -384,8 +388,9 @@ static int action_loopaesOpen(int arg __attribute__((unused)))
 	if (r < 0)
 		goto out;
 
-	r = crypt_activate_by_keyfile(cd, action_argv[1], CRYPT_ANY_SLOT,
-				      opt_key_file, opt_keyfile_size, activate_flags);
+	r = crypt_activate_by_keyfile_offset(cd, action_argv[1], CRYPT_ANY_SLOT,
+				      opt_key_file, opt_keyfile_size,
+				      opt_keyfile_size, activate_flags);
 out:
 	crypt_free(cd);
 
@@ -564,8 +569,8 @@ static int action_luksFormat(int arg __attribute__((unused)))
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
 	r = crypt_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
-			  opt_keyfile_size, opt_key_file, opt_timeout,
-			  _verify_passphrase(1), cd);
+			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+			  opt_timeout, _verify_passphrase(1), cd);
 	if (r < 0)
 		goto out;
 
@@ -645,9 +650,9 @@ static int action_luksOpen(int arg __attribute__((unused)))
 						 key, keysize, flags);
 	} else if (opt_key_file) {
 		crypt_set_password_retry(cd, 1);
-		r = crypt_activate_by_keyfile(cd, action_argv[1],
+		r = crypt_activate_by_keyfile_offset(cd, action_argv[1],
 			opt_key_slot, opt_key_file, opt_keyfile_size,
-			flags);
+			opt_keyfile_offset, flags);
 	} else
 		r = crypt_activate_by_passphrase(cd, action_argv[1],
 			opt_key_slot, NULL, 0, flags);
@@ -659,7 +664,8 @@ out:
 
 static int verify_keyslot(struct crypt_device *cd, int key_slot,
 			  char *msg_last, char *msg_pass,
-			  const char *key_file, int keyfile_size)
+			  const char *key_file, int keyfile_offset,
+			  int keyfile_size)
 {
 	crypt_keyslot_info ki;
 	char *password = NULL;
@@ -671,7 +677,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 		return -EPERM;
 
 	r = crypt_get_key(msg_pass, &password, &passwordLen,
-			  keyfile_size, key_file, opt_timeout,
+			  keyfile_offset, keyfile_size, key_file, opt_timeout,
 			  _verify_passphrase(0), cd);
 	if(r < 0)
 		goto out;
@@ -731,7 +737,7 @@ static int action_luksKillSlot(int arg __attribute__((unused)))
 		r = verify_keyslot(cd, opt_key_slot,
 			_("This is the last keyslot. Device will become unusable after purging this key."),
 			_("Enter any remaining LUKS passphrase: "),
-			opt_key_file, opt_keyfile_size);
+			opt_key_file, opt_keyfile_offset, opt_keyfile_size);
 		if (r < 0)
 			goto out;
 	}
@@ -760,7 +766,7 @@ static int action_luksRemoveKey(int arg __attribute__((unused)))
 
 	r = crypt_get_key(_("Enter LUKS passphrase to be deleted: "),
 		      &password, &passwordLen,
-		      opt_keyfile_size, opt_key_file,
+		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 		      opt_timeout,
 		      _verify_passphrase(0),
 		      cd);
@@ -820,9 +826,9 @@ static int action_luksAddKey(int arg __attribute__((unused)))
 		r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
 						    key, keysize, NULL, 0);
 	} else if (opt_key_file || opt_new_key_file) {
-		r = crypt_keyslot_add_by_keyfile(cd, opt_key_slot,
-						 opt_key_file, opt_keyfile_size,
-						 opt_new_key_file, opt_new_keyfile_size);
+		r = crypt_keyslot_add_by_keyfile_offset(cd, opt_key_slot,
+			opt_key_file, opt_keyfile_size, opt_keyfile_offset,
+			opt_new_key_file, opt_new_keyfile_size, opt_new_keyfile_offset);
 	} else {
 		r = crypt_keyslot_add_by_passphrase(cd, opt_key_slot,
 						    NULL, 0, NULL, 0);
@@ -863,8 +869,8 @@ static int action_luksChangeKey(int arg __attribute__((unused)))
 
 	r = crypt_get_key(_("Enter LUKS passphrase to be changed: "),
 		      &password, &passwordLen,
-		      opt_keyfile_size, opt_key_file, opt_timeout,
-		      _verify_passphrase(0), cd);
+		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+		      opt_timeout, _verify_passphrase(0), cd);
 	if (r < 0)
 		goto out;
 
@@ -900,7 +906,8 @@ static int action_luksChangeKey(int arg __attribute__((unused)))
 	passwordLen = 0;
 	r = crypt_get_key(_("Enter new LUKS passphrase: "),
 			  &password, &passwordLen,
-			  opt_new_keyfile_size, opt_new_key_file,
+			  opt_new_keyfile_offset, opt_new_keyfile_size,
+			  opt_new_key_file,
 			  opt_timeout, _verify_passphrase(0), cd);
 	if (r < 0)
 		goto out;
@@ -993,7 +1000,8 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 		return -ENOMEM;
 
 	r = crypt_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
-			  opt_keyfile_size, opt_key_file, opt_timeout, 0, cd);
+			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+			  opt_timeout, 0, cd);
 	if (r < 0)
 		goto out;
 
@@ -1069,8 +1077,8 @@ static int action_luksResume(int arg __attribute__((unused)))
 	crypt_set_password_verify(cd, _verify_passphrase(0));
 
 	if (opt_key_file)
-		r = crypt_resume_by_keyfile(cd, action_argv[0], CRYPT_ANY_SLOT,
-					    opt_key_file, opt_keyfile_size);
+		r = crypt_resume_by_keyfile_offset(cd, action_argv[0], CRYPT_ANY_SLOT,
+			opt_key_file, opt_keyfile_size, opt_keyfile_offset);
 	else
 		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
 					       NULL, 0);
@@ -1247,7 +1255,9 @@ int main(int argc, const char **argv)
 		{ "dump-master-key",  '\0',  POPT_ARG_NONE, &opt_dump_master_key,       0, N_("Dump volume (master) key instead of keyslots info."), NULL },
 		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
 		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
+		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
 		{ "new-keyfile-size", '\0',  POPT_ARG_LONG, &opt_new_keyfile_size,      0, N_("Limits the read from newly added keyfile"), N_("bytes") },
+		{ "new-keyfile-offset",'\0', POPT_ARG_LONG, &opt_new_keyfile_offset,    0, N_("Number of bytes to skip in newly added keyfile"), N_("bytes") },
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Slot number for new key (default is first free)"), NULL },
 		{ "size",              'b',  POPT_ARG_STRING, &popt_tmp,                1, N_("The size of the device"), N_("SECTORS") },
 		{ "offset",            'o',  POPT_ARG_STRING, &popt_tmp,                2, N_("The start offset in the backend device"), N_("SECTORS") },
@@ -1395,7 +1405,8 @@ int main(int argc, const char **argv)
 			opt_key_file = action_argv[1];
 	}
 
-	if (opt_keyfile_size < 0 || opt_new_keyfile_size < 0 || opt_key_size < 0) {
+	if (opt_keyfile_size < 0 || opt_new_keyfile_size < 0 || opt_key_size < 0 ||
+	    opt_keyfile_offset < 0 || opt_new_keyfile_offset < 0) {
 		usage(popt_context, EXIT_FAILURE,
 		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));

@@ -21,14 +21,17 @@ CRYPTSETUP_1.0 {
 		crypt_suspend;
 		crypt_resume_by_passphrase;
 		crypt_resume_by_keyfile;
+		crypt_resume_by_keyfile_offset;
 		crypt_free;
 
 		crypt_keyslot_add_by_passphrase;
 		crypt_keyslot_add_by_keyfile;
+		crypt_keyslot_add_by_keyfile_offset;
 		crypt_keyslot_add_by_volume_key;
 		crypt_keyslot_destroy;
 		crypt_activate_by_passphrase;
 		crypt_activate_by_keyfile;
+		crypt_activate_by_keyfile_offset;
 		crypt_activate_by_volume_key;
 		crypt_deactivate;
 		crypt_volume_key_get;

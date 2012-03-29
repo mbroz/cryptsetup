@@ -396,6 +396,8 @@ $CRYPTSETUP --key-file=$KEY1 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP --key-file=$KEY1 -l 0 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP --key-file=$KEY1 -l -1 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP --key-file=$KEY1 -l 14 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset 1 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset -1 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP --key-file=$KEY1 -l 13 luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksClose  $DEV_NAME || fail
 $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
@@ -413,6 +415,18 @@ echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY2 -i1 || fail
 echo "key0" | $CRYPTSETUP luksRemoveKey $LOOPDEV -l 2 2>/dev/null && fail
 echo "key01" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d 4 2>/dev/null && fail
 echo -e "key0\n" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d- -l 4 || fail
+# offset
+$CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY1 --key-slot 0 -l 13 --keyfile-offset 16 || fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset 15 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset 16 luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksClose  $DEV_NAME || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -i1 -d $KEY1 -l 13 --keyfile-offset 16 $KEY2 --new-keyfile-offset 1 || fail
+$CRYPTSETUP --key-file=$KEY2 --keyfile-offset 11 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY2 --keyfile-offset 1 luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksClose  $DEV_NAME || fail
+$CRYPTSETUP luksChangeKey $LOOPDEV -i1 -d $KEY2 --keyfile-offset 1 $KEY2 --new-keyfile-offset 0 || fail
+$CRYPTSETUP luksOpen -d $KEY2 $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
 
 prepare "[25] Create non-overlapping segments" wipe
 echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha1 --offset   0 --size 256 || fail

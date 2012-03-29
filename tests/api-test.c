@@ -469,9 +469,10 @@ static void check_ko(int status, int line, const char *func)
 		printf("   => errno %d, errmsg: %s\n", status, buf);
 }
 
-static void check_equal(int line, const char *func)
+static void check_equal(int line, const char *func, int64_t x, int64_t y)
 {
-	printf("FAIL line %d [%s]: expected equal values differs.\n", line, func);
+	printf("FAIL line %d [%s]: expected equal values differs: %"
+		PRIi64 " != %" PRIi64 "\n", line, func, x, y);
 	_cleanup();
 	exit(-1);
 }
@@ -494,9 +495,9 @@ static void xlog(const char *msg, const char *tst, const char *func, int line, c
 			     check_ko((x), __LINE__, __FUNCTION__); \
 			} while(0)
 #define EQ_(x, y)	do { xlog("(equal)  ", #x " == " #y, __FUNCTION__, __LINE__, NULL); \
-			     if ((x) != (y)) check_equal(__LINE__, __FUNCTION__); \
+			     int64_t _x = (x), _y = (y); \
+			     if (_x != _y) check_equal(__LINE__, __FUNCTION__, _x, _y); \
 			} while(0)
-
 #define RUN_(x, y)		do { printf("%s: %s\n", #x, (y)); x(); } while (0)
 
 static void AddDevicePlain(void)
@@ -769,6 +770,9 @@ static void AddDevicePlain(void)
 	EQ_(0, crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	FAIL_(crypt_activate_by_keyfile_offset(cd, NULL, CRYPT_ANY_SLOT, KEYFILE1, 0, strlen(KEY1) + 1, 0), "cannot seek");
+	EQ_(0, crypt_activate_by_keyfile_offset(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0, 0));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
 	_remove_keyfiles();
 	crypt_free(cd);
 
@@ -921,7 +925,8 @@ static void SuspendDevice(void)
 	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	OK_(crypt_suspend(cd, CDEVICE_1));
 	FAIL_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1 "blah", 0), "wrong keyfile");
-	OK_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0));
+	FAIL_(crypt_resume_by_keyfile_offset(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 1, 0), "wrong key");
+	OK_(crypt_resume_by_keyfile_offset(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
 	FAIL_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0), "not suspended");
 	_remove_keyfiles();
 out:
@@ -1046,7 +1051,7 @@ static void AddDeviceLuks(void)
 	// there we've got uuid mismatch
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, DMDIR H_DEVICE));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
-	EQ_(crypt_get_type(cd), NULL);
+	OK_((int)crypt_get_type(cd));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "Device is active");
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, key, key_size, 0), "Device is active");
 	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_INACTIVE);
@@ -1071,15 +1076,26 @@ static void AddDeviceLuks(void)
 	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 
+	crypt_set_iteration_time(cd, 1);
 	EQ_(1, crypt_keyslot_add_by_volume_key(cd, 1, key, key_size, KEY1, strlen(KEY1)));
 	OK_(_prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	OK_(_prepare_keyfile(KEYFILE2, KEY2, strlen(KEY2)));
 	EQ_(2, crypt_keyslot_add_by_keyfile(cd, 2, KEYFILE1, 0, KEYFILE2, 0));
+	FAIL_(crypt_keyslot_add_by_keyfile_offset(cd, 3, KEYFILE1, 0, 1, KEYFILE2, 0, 1), "wrong key");
+	EQ_(3, crypt_keyslot_add_by_keyfile_offset(cd, 3, KEYFILE1, 0, 0, KEYFILE2, 0, 1));
+	EQ_(4, crypt_keyslot_add_by_keyfile_offset(cd, 4, KEYFILE2, 0, 1, KEYFILE1, 0, 1));
 	FAIL_(crypt_activate_by_keyfile(cd, CDEVICE_2, CRYPT_ANY_SLOT, KEYFILE2, strlen(KEY2)-1, 0), "key mismatch");
 	EQ_(2, crypt_activate_by_keyfile(cd, NULL, CRYPT_ANY_SLOT, KEYFILE2, 0, 0));
+	EQ_(3, crypt_activate_by_keyfile_offset(cd, NULL, CRYPT_ANY_SLOT, KEYFILE2, 0, 1, 0));
+	EQ_(4, crypt_activate_by_keyfile_offset(cd, NULL, CRYPT_ANY_SLOT, KEYFILE1, 0, 1, 0));
+	FAIL_(crypt_activate_by_keyfile_offset(cd, CDEVICE_2, CRYPT_ANY_SLOT, KEYFILE2, strlen(KEY2), 2, 0), "not enough data");
+	FAIL_(crypt_activate_by_keyfile_offset(cd, CDEVICE_2, CRYPT_ANY_SLOT, KEYFILE2, 0, strlen(KEY2) + 1, 0), "cannot seek");
+	FAIL_(crypt_activate_by_keyfile_offset(cd, CDEVICE_2, CRYPT_ANY_SLOT, KEYFILE2, 0, 2, 0), "wrong key");
 	EQ_(2, crypt_activate_by_keyfile(cd, CDEVICE_2, CRYPT_ANY_SLOT, KEYFILE2, 0, 0));
 	OK_(crypt_keyslot_destroy(cd, 1));
 	OK_(crypt_keyslot_destroy(cd, 2));
+	OK_(crypt_keyslot_destroy(cd, 3));
+	OK_(crypt_keyslot_destroy(cd, 4));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 	_remove_keyfiles();
 
@@ -1309,7 +1325,7 @@ static void LuksHeaderLoad(void)
 	// bad header: device too small (payloadOffset > device_size)
 	OK_(crypt_init(&cd, DMDIR H_DEVICE_WRONG));
 	FAIL_(crypt_load(cd, CRYPT_LUKS1, NULL), "Device too small");
-	EQ_(crypt_get_type(cd), NULL);
+	OK_((int)crypt_get_type(cd));
 	crypt_free(cd);
 
 	// 0 secs for encrypted data area
