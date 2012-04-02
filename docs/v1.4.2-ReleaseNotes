@@ -1,0 +1,41 @@
+Cryptsetup 1.4.2 Release Notes
+==============================
+
+Changes since version 1.4.1
+
+* Add --keyfile-offset and --new-keyfile-offset parameters to API and CLI.
+  These options can be used to skip start of keyfile or device used as keyfile.
+
+* Add repair command and crypt_repair() for known LUKS metadata problems repair.
+
+  Some well-known LUKS metadata corruptions are easy to repair, this
+  command should provide a way to fix these problems.
+
+  Always create binary backup of header device before running repair,
+  (only 4kB - visible header) for example by using dd:
+     dd if=/dev/<LUKS header device> of=repair_bck.img bs=1k count=4
+
+  Then you can try to run repair:
+     cryptsetup repair <device>
+
+ Note, not all problems are possible to repair and if keyslot or some header
+ parameters are overwritten, device is lost permanently.
+
+* Allow to specify --align-payload only for luksFormat.
+
+* Add --master-key-file option to luksOpen (open using volume key).
+
+* Support UUID=<LUKS_UUID> format for device specification.
+  You can open device by UUID (only shortcut to /dev/disk/by-uuid/ symlinks).
+
+* Support password verification with quiet flag if possible. (1.2.0)
+  Password verification can be still possible if input is terminal.
+
+* Fix retry if entered passphrases (with verify option) do not match.
+  (It should retry if requested, not fail.)
+
+* Fix use of empty keyfile.
+
+* Fix error message for luksClose and detached LUKS header.
+
+* Allow --header for status command to get full info with detached header.

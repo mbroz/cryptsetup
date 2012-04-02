@@ -31,4 +31,4 @@
     ( (Count) == 1 ? (Singular) : (Plural) )
 #endif
 
-#endif /* CRYPTSETUP_H */
+#endif /* CRYPTSETUP_NLS_H */
