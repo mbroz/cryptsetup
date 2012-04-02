@@ -175,6 +175,18 @@ form backup file are available after issuing this command.
 This command allows restoring header if device do not contain LUKS header
 or if the master key size and data offset in LUKS header on device match the backup file.
 .PP
+\fIrepair\fR <device>
+.IP
+Tries to repair (LUKS) device metadata if possible.
+
+This command is useful to fix known benign LUKS metadata header corruptions.
+Only basic corruptions of unused keyslot are fixable, any rewrite
+of keyslot data or used keyslot or header metadata means lost of device.
+
+\fBWARNING:\fR Always store binary copy of the original header, for
+LUKS, \fIrepair\fR will not touch more than 4kB from the start of device
+(visible LUKS header).
+.PP
 For more information about LUKS, see
 \fBhttp://code.google.com/p/cryptsetup/wiki/Specification\fR
 .SH loop-AES EXTENSION

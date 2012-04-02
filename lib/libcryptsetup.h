@@ -392,6 +392,20 @@ int crypt_load(struct crypt_device *cd,
 	       void *params);
 
 /**
+ * Try to repair crypt device on-disk header if invalid
+ *
+ * @param cd crypt device handle
+ * @param requested_type - use @e NULL for all known
+ * @param params crypt type specific parameters (see @link crypt_type @endlink)
+ *
+ * @returns 0 on success or negative errno value otherwise.
+ *
+ */
+int crypt_repair(struct crypt_device *cd,
+		 const char *requested_type,
+		 void *params __attribute__((unused)));
+
+/**
  * Resize crypt device
  *
  * @param cd - crypt device handle

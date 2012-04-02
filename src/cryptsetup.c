@@ -91,6 +91,7 @@ static int action_luksResume(int arg);
 static int action_luksBackup(int arg);
 static int action_luksRestore(int arg);
 static int action_loopaesOpen(int arg);
+static int action_luksRepair(int arg);
 
 static struct action_type {
 	const char *type;
@@ -105,6 +106,7 @@ static struct action_type {
 	{ "remove",	action_remove,		0, 1, 1, N_("<name>"), N_("remove device") },
 	{ "resize",	action_resize,		0, 1, 1, N_("<name>"), N_("resize active device") },
 	{ "status",	action_status,		0, 1, 0, N_("<name>"), N_("show device status") },
+	{ "repair",	action_luksRepair,	0, 1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
 	{ "luksFormat", action_luksFormat,	0, 1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
 	{ "luksOpen",	action_luksOpen,	0, 2, 1, N_("<device> <name> "), N_("open LUKS device as mapping <name>") },
 	{ "luksAddKey",	action_luksAddKey,	0, 1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
@@ -515,6 +517,32 @@ fail:
 	crypt_safe_free(*key);
 	*key = NULL;
 	return -EINVAL;
+}
+
+static int action_luksRepair(int arg __attribute__((unused)))
+{
+	struct crypt_device *cd = NULL;
+	int r;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	/* Currently only LUKS1 allows repair */
+	crypt_set_log_callback(cd, _quiet_log, NULL);
+	r = crypt_load(cd, CRYPT_LUKS1, NULL);
+	crypt_set_log_callback(cd, _log, NULL);
+	if (r == 0) {
+		log_verbose( _("No known problems detected for LUKS header.\n"));
+		goto out;
+	}
+
+	r = _yesDialog(_("Really try to repair LUKS device header?"),
+		       NULL) ? 0 : -EINVAL;
+	if (r == 0)
+		r = crypt_repair(cd, CRYPT_LUKS1, NULL);
+out:
+	crypt_free(cd);
+	return r;
 }
 
 static int action_luksFormat(int arg __attribute__((unused)))

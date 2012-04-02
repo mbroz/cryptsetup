@@ -495,5 +495,14 @@ $CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
 echo "key0" | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 
+prepare "[29] Repair metadata" wipe
+$CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY1 --key-slot 0 || fail
+# second sector overwrite should corrupt keyslot 6+7
+dd if=/dev/urandom of=$LOOPDEV bs=512 seek=1 count=1 >/dev/null 2>&1
+$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME >/dev/null 2>&1 && fail
+$CRYPTSETUP -q repair $LOOPDEV >/dev/null 2>&1 || fail
+$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
+
 remove_mapping
 exit 0

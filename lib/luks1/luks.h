@@ -95,6 +95,7 @@ int LUKS_read_phdr(
 	const char *device,
 	struct luks_phdr *hdr,
 	int require_luks_device,
+	int repair,
 	struct crypt_device *ctx);
 
 int LUKS_read_phdr_backup(

@@ -602,7 +602,7 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 	return crypt_check_data_device_size(cd);
 }
 
-static int _crypt_load_luks1(struct crypt_device *cd, int require_header)
+static int _crypt_load_luks1(struct crypt_device *cd, int require_header, int repair)
 {
 	struct luks_phdr hdr;
 	int r;
@@ -611,7 +611,7 @@ static int _crypt_load_luks1(struct crypt_device *cd, int require_header)
 	if (r < 0)
 		return r;
 
-	r = LUKS_read_phdr(mdata_device(cd), &hdr, require_header, cd);
+	r = LUKS_read_phdr(mdata_device(cd), &hdr, require_header, repair, cd);
 	if (r < 0)
 		return r;
 
@@ -726,7 +726,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 		}
 	} else if (isLUKS((*cd)->type)) {
 		if (mdata_device(*cd)) {
-			r = _crypt_load_luks1(*cd, 0);
+			r = _crypt_load_luks1(*cd, 0, 0);
 			if (r < 0) {
 				log_dbg("LUKS device header does not match active device.");
 				free((*cd)->type);
@@ -972,7 +972,38 @@ int crypt_load(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = _crypt_load_luks1(cd, 1);
+	r = _crypt_load_luks1(cd, 1, 0);
+	if (r < 0)
+		return r;
+
+	/* cd->type and header must be set in context */
+	r = crypt_check_data_device_size(cd);
+	if (r < 0) {
+		free(cd->type);
+		cd->type = NULL;
+	}
+
+	return r;
+}
+
+int crypt_repair(struct crypt_device *cd,
+		 const char *requested_type,
+		 void *params __attribute__((unused)))
+{
+	int r;
+
+	log_dbg("Trying to repair %s crypt type from device %s.",
+		requested_type ?: "any", mdata_device(cd) ?: "(none)");
+
+	if (!mdata_device(cd))
+		return -EINVAL;
+
+	if (requested_type && !isLUKS(requested_type))
+		return -EINVAL;
+
+
+	/* Load with repair */
+	r = _crypt_load_luks1(cd, 1, 1);
 	if (r < 0)
 		return r;
 
