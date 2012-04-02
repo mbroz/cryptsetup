@@ -1443,12 +1443,17 @@ int main(int argc, const char **argv)
 	if (opt_random && opt_urandom)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
 		      poptGetInvocationName(popt_context));
+
 	if ((opt_random || opt_urandom) && strcmp(aname, "luksFormat"))
 		usage(popt_context, EXIT_FAILURE, _("Option --use-[u]random is allowed only for luksFormat."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_uuid && strcmp(aname, "luksFormat") && strcmp(aname, "luksUUID"))
 		usage(popt_context, EXIT_FAILURE, _("Option --uuid is allowed only for luksFormat and luksUUID."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_align_payload && strcmp(aname, "luksFormat"))
+		usage(popt_context, EXIT_FAILURE, _("Option --align-payload is allowed only for luksFormat."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_skip && strcmp(aname, "create") && strcmp(aname, "loopaesOpen"))
