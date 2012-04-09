@@ -21,6 +21,9 @@ Changes since version 1.4.1
  Note, not all problems are possible to repair and if keyslot or some header
  parameters are overwritten, device is lost permanently.
 
+* Fix header check to support old (cryptsetup 1.0.0) header alignment.
+  (Regression in 1.4.0)
+
 * Allow to specify --align-payload only for luksFormat.
 
 * Add --master-key-file option to luksOpen (open using volume key).
