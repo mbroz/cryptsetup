@@ -87,7 +87,7 @@ static int LUKS_check_keyslot_size(const struct luks_phdr *phdr, unsigned int ke
 	uint32_t secs_per_stripes;
 
 	/* First sectors is the header itself */
-	if (phdr->keyblock[keyIndex].keyMaterialOffset * SECTOR_SIZE < LUKS_ALIGN_KEYSLOTS) {
+	if (phdr->keyblock[keyIndex].keyMaterialOffset * SECTOR_SIZE < sizeof(*phdr)) {
 		log_dbg("Invalid offset %u in keyslot %u.",
 			phdr->keyblock[keyIndex].keyMaterialOffset, keyIndex);
 		return 1;
@@ -310,6 +310,12 @@ static int _keyslot_repair(const char *device, struct luks_phdr *phdr, struct cr
 		log_err(ctx, _("Non standard key size, manual repair required.\n"));
 		return -EINVAL;
 	}
+	/* cryptsetup 1.0 did not align to 4k, cannot repair this one */
+	if (phdr->keyblock[0].keyMaterialOffset < (LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE)) {
+		log_err(ctx, _("Non standard keyslots alignment, manual repair required.\n"));
+		return -EINVAL;
+	}
+
 	vk = crypt_alloc_volume_key(phdr->keyBytes, NULL);
 
 	log_verbose(ctx, _("Repairing keyslots.\n"));
@@ -328,6 +334,11 @@ static int _keyslot_repair(const char *device, struct luks_phdr *phdr, struct cr
 	}
 
 	for(i = 0; i < LUKS_NUMKEYS; ++i) {
+		if (phdr->keyblock[i].active == LUKS_KEY_ENABLED)  {
+			log_dbg("Skipping repair for active keyslot %i.", i);
+			continue;
+		}
+
 		bad = 0;
 		if (phdr->keyblock[i].keyMaterialOffset != temp_phdr.keyblock[i].keyMaterialOffset) {
 			log_err(ctx, _("Keyslot %i: offset repaired (%u -> %u).\n"), i,
@@ -345,20 +356,17 @@ static int _keyslot_repair(const char *device, struct luks_phdr *phdr, struct cr
 			bad = 1;
 		}
 
-		/* if enabled, do not try to wipe salt */
-		if (phdr->keyblock[i].active != LUKS_KEY_ENABLED) {
-			/* Known case - MSDOS partition table signature */
-			if (i == 6 && sector[0x1fe] == 0x55 && sector[0x1ff] == 0xaa) {
-				log_err(ctx, _("Keyslot %i: bogus partition signature.\n"), i);
-				bad = 1;
-			}
+		/* Known case - MSDOS partition table signature */
+		if (i == 6 && sector[0x1fe] == 0x55 && sector[0x1ff] == 0xaa) {
+			log_err(ctx, _("Keyslot %i: bogus partition signature.\n"), i);
+			bad = 1;
+		}
 
-			if(bad) {
-				log_err(ctx, _("Keyslot %i: salt wiped.\n"), i);
-				phdr->keyblock[i].active = LUKS_KEY_DISABLED;
-				memset(&phdr->keyblock[i].passwordSalt, 0x00, LUKS_SALTSIZE);
-				phdr->keyblock[i].passwordIterations = 0;
-			}
+		if(bad) {
+			log_err(ctx, _("Keyslot %i: salt wiped.\n"), i);
+			phdr->keyblock[i].active = LUKS_KEY_DISABLED;
+			memset(&phdr->keyblock[i].passwordSalt, 0x00, LUKS_SALTSIZE);
+			phdr->keyblock[i].passwordIterations = 0;
 		}
 
 		if (bad)
