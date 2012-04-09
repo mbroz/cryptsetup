@@ -11,10 +11,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.4.0-rc1\n"
+"Project-Id-Version: cryptsetup 1.4.2\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2011-10-10 20:57+0200\n"
-"PO-Revision-Date: 2011-10-13 09:30+0200\n"
+"POT-Creation-Date: 2012-04-03 00:12+0200\n"
+"PO-Revision-Date: 2012-04-09 19:41+0200\n"
 "Last-Translator: Petr Pisar <petr.pisar@atlas.cz>\n"
 "Language-Team: Czech <translation-team-cs@lists.sourceforge.net>\n"
 "Language: cs\n"
@@ -59,192 +59,192 @@ msgstr "Požadována neznámá kvalita generátoru náhodných čísel.\n"
 msgid "Error %d reading from RNG: %s\n"
 msgstr "Chyba %d při čtení z generátoru náhodných čísel: %s\n"
 
-#: lib/setup.c:161
+#: lib/setup.c:162
 msgid "Cannot initialize crypto RNG backend.\n"
 msgstr "Implementaci šifrovacího generátoru náhodných čísel nelze inicializovat.\n"
 
-#: lib/setup.c:167
+#: lib/setup.c:168
 msgid "Cannot initialize crypto backend.\n"
 msgstr "Implementaci šifrování nelze inicializovat.\n"
 
-#: lib/setup.c:189
+#: lib/setup.c:190
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
 msgstr "Hašovací algoritmus %s není podporován.\n"
 
-#: lib/setup.c:192 lib/loopaes/loopaes.c:87
+#: lib/setup.c:193 lib/loopaes/loopaes.c:87
 #, c-format
 msgid "Key processing error (using hash %s).\n"
 msgstr "Chyba zpracování klíče (za použití haše %s).\n"
 
-#: lib/setup.c:228
+#: lib/setup.c:229
 msgid "All key slots full.\n"
 msgstr "Všechny pozice klíčů jsou obsazeny.\n"
 
-#: lib/setup.c:235
+#: lib/setup.c:236
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d.\n"
 msgstr "Pozice klíče %d není platná, prosím, vyberte číslo mezi 0 a %d.\n"
 
-#: lib/setup.c:241
+#: lib/setup.c:242
 #, c-format
 msgid "Key slot %d is full, please select another one.\n"
 msgstr "Pozice klíče %d je obsazena, prosím, vyberte jinou.\n"
 
-#: lib/setup.c:339
+#: lib/setup.c:340
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "Zadejte heslo pro %s: "
 
-#: lib/setup.c:495
+#: lib/setup.c:500
 msgid "Cannot find a free loopback device.\n"
 msgstr "Nelze najít volné zařízení zpětné smyčky.\n"
 
-#: lib/setup.c:503
+#: lib/setup.c:508
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
 msgstr ""
 "Připojení zařízení zpětné smyčky selhalo (požadováno zařízení s příznakem\n"
 "autoclear).\n"
 
-#: lib/setup.c:559
+#: lib/setup.c:564
 #, c-format
 msgid "LUKS header detected but device %s is too small.\n"
 msgstr "Nalezena hlavička LUKS, ale zařízení %s je příliš malé.\n"
 
-#: lib/setup.c:575 lib/setup.c:1019
+#: lib/setup.c:580 lib/setup.c:1068
 msgid "This operation is not supported for this device type.\n"
 msgstr "Tato operace není na zařízení tohoto typu podporována.\n"
 
-#: lib/setup.c:617 lib/setup.c:986 lib/setup.c:1722
+#: lib/setup.c:643 lib/setup.c:1035 lib/setup.c:1808
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Zařízení %s není aktivní.\n"
 
-#: lib/setup.c:635
+#: lib/setup.c:661
 #, c-format
 msgid "Underlying device for crypt device %s disappeared.\n"
 msgstr "Zařízení nižší úrovně pod šifrovaným zařízením %s zmizelo.\n"
 
-#: lib/setup.c:748
+#: lib/setup.c:775
 msgid "Invalid plain crypt parameters.\n"
 msgstr "Neplatné parametry plain šifry.\n"
 
-#: lib/setup.c:753 lib/setup.c:857
+#: lib/setup.c:780 lib/setup.c:885
 msgid "Invalid key size.\n"
 msgstr "Neplatná velikost klíče.\n"
 
-#: lib/setup.c:793
+#: lib/setup.c:821
 msgid "Can't format LUKS without device.\n"
 msgstr "LUKS nelze bez zařízení naformátovat.\n"
 
-#: lib/setup.c:831
+#: lib/setup.c:859
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
 msgstr "Zařízení %s, které se stále používá, nelze formátovat.\n"
 
-#: lib/setup.c:834
+#: lib/setup.c:862
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
 msgstr "Ze zařízení %s nelze odstranit hlavičku.\n"
 
-#: lib/setup.c:852
+#: lib/setup.c:880
 msgid "Can't format LOOPAES without device.\n"
 msgstr "LOOPAES nelze bez zařízení naformátovat.\n"
 
-#: lib/setup.c:912
+#: lib/setup.c:940
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Požadován neznámý typ šifrovaného zařízení %s.\n"
 
-#: lib/setup.c:1034
+#: lib/setup.c:1083
 msgid "Do you really want to change UUID of device?"
 msgstr "Opravdu chcete změnit UUID zařízení?"
 
-#: lib/setup.c:1119 lib/setup.c:1166 lib/setup.c:1214 lib/setup.c:1269
-#: lib/setup.c:1343 lib/setup.c:1412 lib/setup.c:1458 lib/setup.c:1782
-#: lib/setup.c:1883 lib/setup.c:2022
+#: lib/setup.c:1168 lib/setup.c:1215 lib/setup.c:1264 lib/setup.c:1330
+#: lib/setup.c:1406 lib/setup.c:1487 lib/setup.c:1533 lib/setup.c:1868
+#: lib/setup.c:1973 lib/setup.c:2112
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Tato operace je podporována jen u zařízení LUKS.\n"
 
-#: lib/setup.c:1126
+#: lib/setup.c:1175
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Svazek %s není aktivní.\n"
 
-#: lib/setup.c:1138
+#: lib/setup.c:1187
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Svazek %s je již uspán.\n"
 
-#: lib/setup.c:1176 lib/setup.c:1224
+#: lib/setup.c:1225 lib/setup.c:1274
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Svazek %s není uspán.\n"
 
-#: lib/setup.c:1231 lib/setup.c:1582 lib/setup.c:1596 src/cryptsetup.c:286
+#: lib/setup.c:1281 lib/setup.c:1658 lib/setup.c:1672 src/cryptsetup.c:343
 msgid "Enter passphrase: "
 msgstr "Zadejte heslo: "
 
-#: lib/setup.c:1283 lib/setup.c:1357
+#: lib/setup.c:1344 lib/setup.c:1420
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr ""
 "Nelze přidat pozici klíče, všechny pozice jsou zakázány a klíč svazku\n"
 "nebyl poskytnut.\n"
 
-#: lib/setup.c:1292 lib/setup.c:1363 lib/setup.c:1367
+#: lib/setup.c:1353 lib/setup.c:1426 lib/setup.c:1430
 msgid "Enter any passphrase: "
 msgstr "Zadejte jakékoliv heslo: "
 
-#: lib/setup.c:1309 lib/setup.c:1380 lib/setup.c:1384 lib/setup.c:1435
+#: lib/setup.c:1370 lib/setup.c:1443 lib/setup.c:1447 lib/setup.c:1510
 msgid "Enter new passphrase for key slot: "
 msgstr "Zadejte nové heslo pro pozici klíče: "
 
-#: lib/setup.c:1426 lib/setup.c:1676 lib/setup.c:1689 lib/setup.c:1793
+#: lib/setup.c:1501 lib/setup.c:1762 lib/setup.c:1775 lib/setup.c:1879
 msgid "Volume key does not match the volume.\n"
 msgstr "Heslo svazku neodpovídá svazku.\n"
 
-#: lib/setup.c:1464
+#: lib/setup.c:1539
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "Pozice klíče %d je neplatná.\n"
 
-#: lib/setup.c:1469
+#: lib/setup.c:1544
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "Pozice klíče %d není použita.\n"
 
-#: lib/setup.c:1499 lib/setup.c:1570 lib/setup.c:1651
+#: lib/setup.c:1574 lib/setup.c:1646 lib/setup.c:1738
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Zařízení %s již existuje.\n"
 
-#: lib/setup.c:1663
+#: lib/setup.c:1749
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "Byl zadán neplatný klíč svazku.\n"
 
-#: lib/setup.c:1694
+#: lib/setup.c:1780
 msgid "Device type is not properly initialised.\n"
 msgstr "Typ zařízení není řádně inicializován.\n"
 
-#: lib/setup.c:1718
+#: lib/setup.c:1804
 #, c-format
 msgid "Device %s is busy.\n"
 msgstr "Zařízení %s je stále používáno.\n"
 
-#: lib/setup.c:1726
+#: lib/setup.c:1812
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Neplatné zařízení %s.\n"
 
-#: lib/setup.c:1749
+#: lib/setup.c:1835
 msgid "Volume key buffer too small.\n"
 msgstr "Vyhrazená paměť pro klíč svazku je příliš malá.\n"
 
-#: lib/setup.c:1757
+#: lib/setup.c:1843
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Nelze získat klíč svazku pro otevřené zařízení.\n"
 
-#: lib/setup.c:1763
+#: lib/setup.c:1849
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Na šifrovaném zařízení %s není tato operace podporována.\n"
@@ -298,7 +298,7 @@ msgstr "Požadovaná poloha je za hranicí skutečné velikosti zařízení %s.\
 msgid "Device %s has zero size.\n"
 msgstr "Zařízení %s má nulovou velikost.\n"
 
-#: lib/utils.c:415 lib/luks1/keymanage.c:428
+#: lib/utils.c:415 lib/luks1/keymanage.c:524
 #, c-format
 msgid "Device %s is too small.\n"
 msgstr "Zařízení %s je příliš malé.\n"
@@ -325,8 +325,8 @@ msgstr "nastavení priority %d selhalo: %s\n"
 msgid "Cannot unlock memory.\n"
 msgstr "Paměť nelze odemknout.\n"
 
-#: lib/utils_crypt.c:212 lib/utils_crypt.c:225 lib/utils_crypt.c:316
-#: lib/utils_crypt.c:325
+#: lib/utils_crypt.c:212 lib/utils_crypt.c:225 lib/utils_crypt.c:329
+#: lib/utils_crypt.c:345
 msgid "Out of memory while reading passphrase.\n"
 msgstr "Při čtení hesla došla paměť.\n"
 
@@ -342,40 +342,48 @@ msgstr "Ověřte heslo: "
 msgid "Passphrases do not match.\n"
 msgstr "Hesla se neshodují.\n"
 
-#: lib/utils_crypt.c:292
+#: lib/utils_crypt.c:278
+msgid "Cannot use offset with terminal input.\n"
+msgstr "Ve vstupu z terminálu nelze měnit polohu.\n"
+
+#: lib/utils_crypt.c:297
 msgid "Failed to open key file.\n"
 msgstr "Soubor s klíčem se nepodařilo otevřít.\n"
 
-#: lib/utils_crypt.c:301
+#: lib/utils_crypt.c:306
 msgid "Failed to stat key file.\n"
 msgstr "O souboru s klíčem nebylo možné zjistit údaje.\n"
 
-#: lib/utils_crypt.c:333
+#: lib/utils_crypt.c:314 lib/utils_crypt.c:336
+msgid "Cannot seek to requested keyfile offset.\n"
+msgstr "Nelze se přesunout na požadované místo v souboru s klíčem.\n"
+
+#: lib/utils_crypt.c:353
 msgid "Error reading passphrase.\n"
 msgstr "Chyba při čtení hesla.\n"
 
-#: lib/utils_crypt.c:351
+#: lib/utils_crypt.c:371
 msgid "Maximum keyfile size exceeeded.\n"
 msgstr "Maximální délka souboru s klíčem překročena.\n"
 
-#: lib/utils_crypt.c:356
+#: lib/utils_crypt.c:376
 msgid "Cannot read requested amount of data.\n"
 msgstr "Požadované množství dat nelze načíst.\n"
 
-#: lib/luks1/keyencryption.c:75
+#: lib/luks1/keyencryption.c:76
 #, c-format
 msgid "Unable to obtain sector size for %s"
 msgstr "Není možné zjistit velikost sektoru u %s"
 
-#: lib/luks1/keyencryption.c:102
+#: lib/luks1/keyencryption.c:103
 msgid "Key size in XTS mode must be 256 or 512 bits.\n"
 msgstr "V režimu XTS musí být velikost klíče 256 nebo 512 bitů.\n"
 
-#: lib/luks1/keyencryption.c:125
+#: lib/luks1/keyencryption.c:126
 msgid "Failed to obtain device mapper directory."
 msgstr "Adresář device-mapperu se nepodařilo získat."
 
-#: lib/luks1/keyencryption.c:141
+#: lib/luks1/keyencryption.c:142
 #, c-format
 msgid ""
 "Failed to setup dm-crypt key mapping for device %s.\n"
@@ -386,66 +394,66 @@ msgstr ""
 "Zkontrolujte, že jádro podporuje šifru %s (podrobnosti v syslogu).\n"
 "%s"
 
-#: lib/luks1/keyencryption.c:151
+#: lib/luks1/keyencryption.c:152
 msgid "Failed to open temporary keystore device.\n"
 msgstr "Otevření dočasného zařízení s úložištěm klíče selhalo.\n"
 
-#: lib/luks1/keyencryption.c:158
+#: lib/luks1/keyencryption.c:159
 msgid "Failed to access temporary keystore device.\n"
 msgstr "Přístup do dočasného zařízení s úložištěm klíče selhal.\n"
 
-#: lib/luks1/keymanage.c:148
+#: lib/luks1/keymanage.c:149
 #, c-format
 msgid "Requested file %s already exist.\n"
 msgstr "Požadovaný soubor %s již existuje.\n"
 
-#: lib/luks1/keymanage.c:168 lib/luks1/keymanage.c:311
+#: lib/luks1/keymanage.c:169 lib/luks1/keymanage.c:391
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "Zařízení %s není platným zařízením LUKS.\n"
 
-#: lib/luks1/keymanage.c:188
+#: lib/luks1/keymanage.c:189
 #, c-format
 msgid "Cannot write header backup file %s.\n"
 msgstr "Nelze zapsat soubor %s se zálohou hlavičky.\n"
 
-#: lib/luks1/keymanage.c:215
+#: lib/luks1/keymanage.c:216
 #, c-format
 msgid "Backup file %s doesn't exist.\n"
 msgstr "Záložní soubor %s neexistuje.\n"
 
-#: lib/luks1/keymanage.c:223
+#: lib/luks1/keymanage.c:224
 msgid "Backup file doesn't contain valid LUKS header.\n"
 msgstr "Záložní soubor neobsahuje platnou hlavičku LUKS.\n"
 
-#: lib/luks1/keymanage.c:236
+#: lib/luks1/keymanage.c:237
 #, c-format
 msgid "Cannot open header backup file %s.\n"
 msgstr "Nelze otevřít soubor se zálohou hlavičky %s.\n"
 
-#: lib/luks1/keymanage.c:242
+#: lib/luks1/keymanage.c:243
 #, c-format
 msgid "Cannot read header backup file %s.\n"
 msgstr "Soubor se zálohou hlavičky %s nelze načíst.\n"
 
-#: lib/luks1/keymanage.c:253
+#: lib/luks1/keymanage.c:254
 msgid "Data offset or key size differs on device and backup, restore failed.\n"
 msgstr "Počátek dat nebo velikost klíče se liší mezi zařízením a zálohou, obnova se nezdařila.\n"
 
-#: lib/luks1/keymanage.c:261
+#: lib/luks1/keymanage.c:262
 #, c-format
 msgid "Device %s %s%s"
 msgstr "Zařízení %s %s%s"
 
-#: lib/luks1/keymanage.c:262
+#: lib/luks1/keymanage.c:263
 msgid "does not contain LUKS header. Replacing header can destroy data on that device."
 msgstr "neobsahuje hlavičku LUKS. Nahrazení hlavičky může zničit data na daném zařízení."
 
-#: lib/luks1/keymanage.c:263
+#: lib/luks1/keymanage.c:264
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgstr "již obsahuje hlavičku LUKS. Nahrazení hlavičky zničí existující pozice s klíči."
 
-#: lib/luks1/keymanage.c:264
+#: lib/luks1/keymanage.c:265
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
@@ -453,93 +461,133 @@ msgstr ""
 "\n"
 "POZOR: hlavička ve skutečném zařízení má jiné UUID než záloha!"
 
-#: lib/luks1/keymanage.c:279 lib/luks1/keymanage.c:401
-#: lib/luks1/keymanage.c:434
+#: lib/luks1/keymanage.c:280 lib/luks1/keymanage.c:496
+#: lib/luks1/keymanage.c:530
 #, c-format
 msgid "Cannot open device %s.\n"
 msgstr "Zařízení %s nelze otevřít.\n"
 
-#: lib/luks1/keymanage.c:314
+#: lib/luks1/keymanage.c:310
+msgid "Non standard key size, manual repair required.\n"
+msgstr "Nestandardní velikost klíče, je třeba ruční opravy.\n"
+
+#: lib/luks1/keymanage.c:315
+msgid "Repairing keyslots.\n"
+msgstr "Opravují se pozice klíčů.\n"
+
+#: lib/luks1/keymanage.c:326
+msgid "Repair failed."
+msgstr "Oprava selhala."
+
+#: lib/luks1/keymanage.c:333
+#, c-format
+msgid "Keyslot %i: offset repaired (%u -> %u).\n"
+msgstr "Pozice klíče %i: poloha opravena (%u → %u).\n"
+
+#: lib/luks1/keymanage.c:341
+#, c-format
+msgid "Keyslot %i: stripes repaired (%u -> %u).\n"
+msgstr "Pozice klíče %i: proklad opraven (%u → %u).\n"
+
+#: lib/luks1/keymanage.c:352
+#, c-format
+msgid "Keyslot %i: bogus partition signature.\n"
+msgstr "Pozice klíče %i: chybná značka oddílu.\n"
+
+#: lib/luks1/keymanage.c:357
+#, c-format
+msgid "Keyslot %i: salt wiped.\n"
+msgstr "Pozice klíče %i: sůl vymazána.\n"
+
+#: lib/luks1/keymanage.c:369
+msgid "Writing LUKS header to disk.\n"
+msgstr "Hlavička LUKS se zapisuje na disk.\n"
+
+#: lib/luks1/keymanage.c:394
 #, c-format
 msgid "Unsupported LUKS version %d.\n"
 msgstr "Nepodporovaná verze LUKS %d.\n"
 
-#: lib/luks1/keymanage.c:317 lib/luks1/keymanage.c:506
+#: lib/luks1/keymanage.c:400 lib/luks1/keymanage.c:602
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
 msgstr "Požadovaný haš LUKSu %s není podporován.\n"
 
-#: lib/luks1/keymanage.c:330
+#: lib/luks1/keymanage.c:415
 #, c-format
 msgid "LUKS keyslot %u is invalid.\n"
 msgstr "Pozice %u klíče LUKS není platná.\n"
 
-#: lib/luks1/keymanage.c:373
+#: lib/luks1/keymanage.c:429 src/cryptsetup.c:535
+msgid "No known problems detected for LUKS header.\n"
+msgstr "V hlavičce LUKS nenalezen žádný známý problém.\n"
+
+#: lib/luks1/keymanage.c:463
 #, c-format
 msgid "Cannot open file %s.\n"
 msgstr "Soubor %s nelze otevřít.\n"
 
-#: lib/luks1/keymanage.c:455
+#: lib/luks1/keymanage.c:551
 #, c-format
 msgid "Error during update of LUKS header on device %s.\n"
 msgstr "Chyba při aktualizaci hlavičky LUKS na zařízení %s.\n"
 
-#: lib/luks1/keymanage.c:462
+#: lib/luks1/keymanage.c:558
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s.\n"
 msgstr "Chyba při opakovaném čtení hlavičky LUKS po aktualizaci zařízení %s.\n"
 
-#: lib/luks1/keymanage.c:474
+#: lib/luks1/keymanage.c:570
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
 msgstr "Neslučitelné volby PBKDF2 (při použití hašovacího algoritmu %s).\n"
 
-#: lib/luks1/keymanage.c:511 lib/luks1/keymanage.c:593
+#: lib/luks1/keymanage.c:607 lib/luks1/keymanage.c:689
 msgid "Wrong LUKS UUID format provided.\n"
 msgstr "Poskytnut UUID LUKSu ve špatném tvaru.\n"
 
-#: lib/luks1/keymanage.c:536
+#: lib/luks1/keymanage.c:632
 msgid "Cannot create LUKS header: reading random salt failed.\n"
 msgstr "Hlavičku LUKS nelze vytvořit: čtení náhodné soli selhalo.\n"
 
-#: lib/luks1/keymanage.c:553
+#: lib/luks1/keymanage.c:649
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
 msgstr "Hlavičku LUKS nelze vytvořit: výpočet otisku hlavičky (haš %s) selhal.\n"
 
-#: lib/luks1/keymanage.c:618
+#: lib/luks1/keymanage.c:714
 #, c-format
 msgid "Key slot %d active, purge first.\n"
 msgstr "Pozice klíče %d je aktivní, nejprve ji uvolněte.\n"
 
-#: lib/luks1/keymanage.c:623
+#: lib/luks1/keymanage.c:719
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
 msgstr "Pozice klíče %d obsahuje příliš málo útržků. Manipulace s hlavičkou?\n"
 
-#: lib/luks1/keymanage.c:690
+#: lib/luks1/keymanage.c:786
 msgid "Failed to write to key storage.\n"
 msgstr "Zápis do úložiště klíče selhal.\n"
 
-#: lib/luks1/keymanage.c:775
+#: lib/luks1/keymanage.c:871
 msgid "Failed to read from key storage.\n"
 msgstr "Čtení z úložiště klíče selhalo.\n"
 
-#: lib/luks1/keymanage.c:785
+#: lib/luks1/keymanage.c:881
 #, c-format
 msgid "Key slot %d unlocked.\n"
 msgstr "Pozice klíče %d odemknuta.\n"
 
-#: lib/luks1/keymanage.c:821 src/cryptsetup.c:624 src/cryptsetup.c:807
+#: lib/luks1/keymanage.c:917 src/cryptsetup.c:732 src/cryptsetup.c:916
 msgid "No key available with this passphrase.\n"
 msgstr "S tímto heslem není dostupný žádný klíč.\n"
 
-#: lib/luks1/keymanage.c:839
+#: lib/luks1/keymanage.c:935
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
 msgstr "Pozice klíče %d není platná, prosím, vyberte pozici mezi 0 a %d.\n"
 
-#: lib/luks1/keymanage.c:853
+#: lib/luks1/keymanage.c:949
 #, c-format
 msgid "Cannot wipe device %s.\n"
 msgstr "Zařízení %s není možné smazat.\n"
@@ -560,207 +608,219 @@ msgstr "Zjištěn nekompatibilní soubor s klíčem loop-AES.\n"
 msgid "Kernel doesn't support loop-AES compatible mapping.\n"
 msgstr "Jádro nepodporuje mapování kompatibilní s loop-AES.\n"
 
-#: src/cryptsetup.c:100
+#: src/cryptsetup.c:105
 msgid "<name> <device>"
 msgstr "<název> <zařízení>"
 
-#: src/cryptsetup.c:100
+#: src/cryptsetup.c:105
 msgid "create device"
 msgstr "vytvoří zařízení"
 
-#: src/cryptsetup.c:101 src/cryptsetup.c:102 src/cryptsetup.c:103
-#: src/cryptsetup.c:112 src/cryptsetup.c:119
+#: src/cryptsetup.c:106 src/cryptsetup.c:107 src/cryptsetup.c:108
+#: src/cryptsetup.c:118 src/cryptsetup.c:125
 msgid "<name>"
 msgstr "<název>"
 
-#: src/cryptsetup.c:101
+#: src/cryptsetup.c:106
 msgid "remove device"
 msgstr "odstraní zařízení"
 
-#: src/cryptsetup.c:102
+#: src/cryptsetup.c:107
 msgid "resize active device"
 msgstr "změní velikost aktivního zařízení"
 
-#: src/cryptsetup.c:103
+#: src/cryptsetup.c:108
 msgid "show device status"
 msgstr "zobrazí stav zařízení"
 
-#: src/cryptsetup.c:104 src/cryptsetup.c:106
-msgid "<device> [<new key file>]"
-msgstr "<zařízení> [<soubor_s_novým_klíčem>]"
-
-#: src/cryptsetup.c:104
-msgid "formats a LUKS device"
-msgstr "naformátuje zařízení LUKS"
-
-#: src/cryptsetup.c:105 src/cryptsetup.c:118
-msgid "<device> <name> "
-msgstr "<zařízení> <název> "
-
-#: src/cryptsetup.c:105
-msgid "open LUKS device as mapping <name>"
-msgstr "otevře zařízení LUKS jako mapování <název>"
-
-#: src/cryptsetup.c:106
-msgid "add key to LUKS device"
-msgstr "do zařízení LUKS přidá klíč"
-
-#: src/cryptsetup.c:107 src/cryptsetup.c:108
-msgid "<device> [<key file>]"
-msgstr "<zařízení> [<soubor_s_klíčem>]"
-
-#: src/cryptsetup.c:107
-msgid "removes supplied key or key file from LUKS device"
-msgstr "odstraní zadaný klíč nebo soubor s klíčem ze zařízení LUKS"
-
-#: src/cryptsetup.c:108
-msgid "changes supplied key or key file of LUKS device"
-msgstr "změní zadaný klíč nebo soubor s klíčem u zařízení LUKS"
-
-#: src/cryptsetup.c:109
-msgid "<device> <key slot>"
-msgstr "<zařízení> <pozice_klíče>"
-
-#: src/cryptsetup.c:109
-msgid "wipes key with number <key slot> from LUKS device"
-msgstr "smaže klíč s číslem <pozice_klíče> ze zařízení LUKS"
-
-#: src/cryptsetup.c:110 src/cryptsetup.c:111 src/cryptsetup.c:113
-#: src/cryptsetup.c:114 src/cryptsetup.c:115 src/cryptsetup.c:116
-#: src/cryptsetup.c:117
+#: src/cryptsetup.c:109 src/cryptsetup.c:116 src/cryptsetup.c:117
+#: src/cryptsetup.c:119 src/cryptsetup.c:120 src/cryptsetup.c:121
+#: src/cryptsetup.c:122 src/cryptsetup.c:123
 msgid "<device>"
 msgstr "<zařízení>"
 
+#: src/cryptsetup.c:109
+msgid "try to repair on-disk metadata"
+msgstr "pokusí se opravit metadata uložená na disku"
+
+#: src/cryptsetup.c:110 src/cryptsetup.c:112
+msgid "<device> [<new key file>]"
+msgstr "<zařízení> [<soubor_s_novým_klíčem>]"
+
 #: src/cryptsetup.c:110
+msgid "formats a LUKS device"
+msgstr "naformátuje zařízení LUKS"
+
+#: src/cryptsetup.c:111 src/cryptsetup.c:124
+msgid "<device> <name> "
+msgstr "<zařízení> <název> "
+
+#: src/cryptsetup.c:111
+msgid "open LUKS device as mapping <name>"
+msgstr "otevře zařízení LUKS jako mapování <název>"
+
+#: src/cryptsetup.c:112
+msgid "add key to LUKS device"
+msgstr "do zařízení LUKS přidá klíč"
+
+#: src/cryptsetup.c:113 src/cryptsetup.c:114
+msgid "<device> [<key file>]"
+msgstr "<zařízení> [<soubor_s_klíčem>]"
+
+#: src/cryptsetup.c:113
+msgid "removes supplied key or key file from LUKS device"
+msgstr "odstraní zadaný klíč nebo soubor s klíčem ze zařízení LUKS"
+
+#: src/cryptsetup.c:114
+msgid "changes supplied key or key file of LUKS device"
+msgstr "změní zadaný klíč nebo soubor s klíčem u zařízení LUKS"
+
+#: src/cryptsetup.c:115
+msgid "<device> <key slot>"
+msgstr "<zařízení> <pozice_klíče>"
+
+#: src/cryptsetup.c:115
+msgid "wipes key with number <key slot> from LUKS device"
+msgstr "smaže klíč s číslem <pozice_klíče> ze zařízení LUKS"
+
+#: src/cryptsetup.c:116
 msgid "print UUID of LUKS device"
 msgstr "zobrazí UUID zařízení LUKS"
 
-#: src/cryptsetup.c:111
+#: src/cryptsetup.c:117
 msgid "tests <device> for LUKS partition header"
 msgstr "otestuje <zařízení> na hlavičku oddílu LUKS"
 
-#: src/cryptsetup.c:112
+#: src/cryptsetup.c:118
 msgid "remove LUKS mapping"
 msgstr "odstraní mapování LUKS"
 
-#: src/cryptsetup.c:113
+#: src/cryptsetup.c:119
 msgid "dump LUKS partition information"
 msgstr "vypíše údaje o oddílu LUKS"
 
 # TODO: not consistent with previous line
-#: src/cryptsetup.c:114
+#: src/cryptsetup.c:120
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
 msgstr "uspí zařízení LUKS a smaže klíč (všechny operace budou zmrazeny)"
 
 # TODO: not consistent with previous line
-#: src/cryptsetup.c:115
+#: src/cryptsetup.c:121
 msgid "Resume suspended LUKS device."
 msgstr "probudí uspané zařízení LUKS"
 
 # TODO: not consistent with previous line
-#: src/cryptsetup.c:116
+#: src/cryptsetup.c:122
 msgid "Backup LUKS device header and keyslots"
 msgstr "zálohuje hlavičku zařízení LUKS a jeho pozice s klíči"
 
 # TODO: not consistent with previous line
-#: src/cryptsetup.c:117
+#: src/cryptsetup.c:123
 msgid "Restore LUKS device header and keyslots"
 msgstr "obnoví hlavičku zařízení LUKS a jeho pozice s klíči"
 
-#: src/cryptsetup.c:118
+#: src/cryptsetup.c:124
 msgid "open loop-AES device as mapping <name>"
 msgstr "otevře zařízení loop-AES jako mapování <název>"
 
-#: src/cryptsetup.c:119
+#: src/cryptsetup.c:125
 msgid "remove loop-AES mapping"
 msgstr "odstraní mapování loop-AES"
 
-#: src/cryptsetup.c:202
+#: src/cryptsetup.c:218
+msgid "Can't do passphrase verification on non-tty inputs.\n"
+msgstr "Se vstupem mimo terminál nelze ověřit heslo.\n"
+
+#: src/cryptsetup.c:233
 msgid "Command successful.\n"
 msgstr "Příkaz úspěšně vykonán.\n"
 
-#: src/cryptsetup.c:216
+#: src/cryptsetup.c:247
 #, c-format
 msgid "Command failed with code %i"
 msgstr "Příkaz selhal s kódem %i"
 
-#: src/cryptsetup.c:317
+#: src/cryptsetup.c:375
 msgid "Option --key-file is required.\n"
 msgstr "Je vyžadován přepínač --key-file.\n"
 
-#: src/cryptsetup.c:466
+#: src/cryptsetup.c:539
+msgid "Really try to repair LUKS device header?"
+msgstr "Opravdu se pokusit opravit hlavičku zařízení LUKS?"
+
+#: src/cryptsetup.c:564
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr "Toto nevratně přepíše data na %s."
 
-#: src/cryptsetup.c:468
+#: src/cryptsetup.c:566
 msgid "memory allocation error in action_luksFormat"
 msgstr "chyba alokace paměti v action_luksFormat"
 
-#: src/cryptsetup.c:480
+#: src/cryptsetup.c:578
 msgid "No known cipher specification pattern detected.\n"
 msgstr "Nelze určit žádnou známou specifikaci šifry.\n"
 
-#: src/cryptsetup.c:486
+#: src/cryptsetup.c:584
 #, c-format
 msgid "Cannot use %s as on-disk header.\n"
 msgstr "%s nelze použít pro hlavičku uvnitř disku.\n"
 
-#: src/cryptsetup.c:502 src/cryptsetup.c:919
+#: src/cryptsetup.c:599 src/cryptsetup.c:1030
 msgid "Enter LUKS passphrase: "
 msgstr "Zadejte heslo LUKS: "
 
-#: src/cryptsetup.c:556
+#: src/cryptsetup.c:654
 msgid "Reduced data offset is allowed only for detached LUKS header.\n"
 msgstr "Zmenšená poloha dat je dovolena jen u oddělené hlavičky LUKS.\n"
 
-#: src/cryptsetup.c:647 src/cryptsetup.c:702
+#: src/cryptsetup.c:755 src/cryptsetup.c:810
 #, c-format
 msgid "Key slot %d selected for deletion.\n"
 msgstr "Ke smazání vybrán klíč na pozici %d.\n"
 
-#: src/cryptsetup.c:650
+#: src/cryptsetup.c:758
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
 msgstr "Klíč %d není aktivní. Nelze jej odstranit.\n"
 
-#: src/cryptsetup.c:658 src/cryptsetup.c:705
+#: src/cryptsetup.c:766 src/cryptsetup.c:813
 msgid "This is the last keyslot. Device will become unusable after purging this key."
 msgstr ""
 "Toto je poslední pozice klíče. Smazáním tohoto klíče přijdete o možnost\n"
 "zařízení použít."
 
-#: src/cryptsetup.c:659
+#: src/cryptsetup.c:767
 msgid "Enter any remaining LUKS passphrase: "
 msgstr "Zadejte jakékoliv jiné heslo LUKS: "
 
-#: src/cryptsetup.c:687
+#: src/cryptsetup.c:795
 msgid "Enter LUKS passphrase to be deleted: "
 msgstr "Zadejte heslo LUKS, které se má smazat: "
 
-#: src/cryptsetup.c:789
+#: src/cryptsetup.c:898
 msgid "Enter LUKS passphrase to be changed: "
 msgstr "Zadejte heslo LUKS, které má být změněno: "
 
-#: src/cryptsetup.c:826
+#: src/cryptsetup.c:935
 msgid "Enter new LUKS passphrase: "
 msgstr "Zadejte nové heslo LUKS: "
 
-#: src/cryptsetup.c:839
+#: src/cryptsetup.c:949
 #, c-format
 msgid "Key slot %d changed.\n"
 msgstr "Pozice klíče %d změněna.\n"
 
-#: src/cryptsetup.c:845
+#: src/cryptsetup.c:955
 #, c-format
 msgid "Replaced with key slot %d.\n"
 msgstr "Nahrazeno pozicí klíče %d.\n"
 
-#: src/cryptsetup.c:850
+#: src/cryptsetup.c:960
 msgid "Failed to swap new key slot.\n"
 msgstr "Záměna novou pozicí klíče se nezdařila.\n"
 
-#: src/cryptsetup.c:908
+#: src/cryptsetup.c:1019
 msgid ""
 "LUKS header dump with volume key is sensitive information\n"
 "which allows access to encrypted partition without passphrase.\n"
@@ -770,11 +830,11 @@ msgstr ""
 "který umožňuje přístup k šifrovanému oddílu bez znalosti hesla.\n"
 "Tento výpis by měl být vždy uložen na bezpečném místě a v zašifrované podobě."
 
-#: src/cryptsetup.c:1011 src/cryptsetup.c:1032
+#: src/cryptsetup.c:1124 src/cryptsetup.c:1145
 msgid "Option --header-backup-file is required.\n"
 msgstr "Je vyžadován přepínač --header-backup-file.\n"
 
-#: src/cryptsetup.c:1070
+#: src/cryptsetup.c:1183
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -782,7 +842,7 @@ msgstr ""
 "\n"
 "<akce> je jedna z:\n"
 
-#: src/cryptsetup.c:1076
+#: src/cryptsetup.c:1189
 #, c-format
 msgid ""
 "\n"
@@ -797,7 +857,7 @@ msgstr ""
 "<pozice_klíče> je číslo pozice klíče LUKS, který se má upravit\n"
 "<soubor_s_klíčem> je volitelný soubor s novým klíčem pro akci luksAddKey\n"
 
-#: src/cryptsetup.c:1083
+#: src/cryptsetup.c:1196
 #, c-format
 msgid ""
 "\n"
@@ -808,7 +868,7 @@ msgstr ""
 "Výchozí zakompilované parametry souborů s klíči:\n"
 "\tMaximální velikost souboru s klíčem: %d kB, Maximální délka interaktivního hesla %d (znaků)\n"
 
-#: src/cryptsetup.c:1088
+#: src/cryptsetup.c:1201
 #, c-format
 msgid ""
 "\n"
@@ -823,184 +883,193 @@ msgstr ""
 "\tplain: %s, Klíč: %d bitů, Haš hesla: %s\n"
 "\tLUKS1: %s, Klíč: %d bitů, Haš hlavičky LUKS: %s, RNG: %s\n"
 
-#: src/cryptsetup.c:1156
+#: src/cryptsetup.c:1269
 msgid "Show this help message"
 msgstr "Zobrazí tuto nápovědu"
 
-#: src/cryptsetup.c:1157
+#: src/cryptsetup.c:1270
 msgid "Display brief usage"
 msgstr "Zobrazí stručný návod na použití"
 
-#: src/cryptsetup.c:1161
+#: src/cryptsetup.c:1274
 msgid "Help options:"
 msgstr "Přepínače nápovědy:"
 
-#: src/cryptsetup.c:1162
+#: src/cryptsetup.c:1275
 msgid "Print package version"
 msgstr "Vypíše verzi balíku"
 
-#: src/cryptsetup.c:1163
+#: src/cryptsetup.c:1276
 msgid "Shows more detailed error messages"
 msgstr "Zobrazuje podrobnější chybové hlášky"
 
-#: src/cryptsetup.c:1164
+#: src/cryptsetup.c:1277
 msgid "Show debug messages"
 msgstr "Zobrazuje ladicí hlášky"
 
-#: src/cryptsetup.c:1165
+#: src/cryptsetup.c:1278
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Šifra použita k zašifrování disku (vizte /proc/crypto)"
 
-#: src/cryptsetup.c:1166
+#: src/cryptsetup.c:1279
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "Haš použit k vytvořené šifrovacího klíče z hesla"
 
-#: src/cryptsetup.c:1167
+#: src/cryptsetup.c:1280
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Ověřuje heslo dvojitým dotazem"
 
 # TODO: Remove period
-#: src/cryptsetup.c:1168
+#: src/cryptsetup.c:1281
 msgid "Read the key from a file."
 msgstr "Klíč načte ze souboru"
 
 # TODO: Remove period
-#: src/cryptsetup.c:1169
+#: src/cryptsetup.c:1282
 msgid "Read the volume (master) key from file."
 msgstr "(Hlavní) klíč svazku načte ze souboru"
 
 # TODO: Remove period
-#: src/cryptsetup.c:1170
+#: src/cryptsetup.c:1283
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "Vypíše (hlavní) klíč svazku namísto údajů o pozicích klíčů"
 
-#: src/cryptsetup.c:1171
+#: src/cryptsetup.c:1284
 msgid "The size of the encryption key"
 msgstr "Velikost šifrovacího klíče"
 
-#: src/cryptsetup.c:1171
+#: src/cryptsetup.c:1284
 msgid "BITS"
 msgstr "BITY"
 
-#: src/cryptsetup.c:1172
+#: src/cryptsetup.c:1285
 msgid "Limits the read from keyfile"
 msgstr "Omezí čtení ze souboru s klíčem"
 
-#: src/cryptsetup.c:1172 src/cryptsetup.c:1173
+#: src/cryptsetup.c:1285 src/cryptsetup.c:1286 src/cryptsetup.c:1287
+#: src/cryptsetup.c:1288
 msgid "bytes"
 msgstr "bajty"
 
-#: src/cryptsetup.c:1173
+#: src/cryptsetup.c:1286
+msgid "Number of bytes to skip in keyfile"
+msgstr "Přeskočí daný počet bajtů na začátku souboru s klíčem"
+
+#: src/cryptsetup.c:1287
 msgid "Limits the read from newly added keyfile"
 msgstr "Omezí čtení z nově přidaného souboru s klíčem"
 
-#: src/cryptsetup.c:1174
+#: src/cryptsetup.c:1288
+msgid "Number of bytes to skip in newly added keyfile"
+msgstr "Přeskočí daný počet bajtů na začátku nově přidaného souboru s klíčem"
+
+#: src/cryptsetup.c:1289
 msgid "Slot number for new key (default is first free)"
 msgstr "Číslo pozice pro nový klíč (výchozí je první volná)"
 
-#: src/cryptsetup.c:1175
+#: src/cryptsetup.c:1290
 msgid "The size of the device"
 msgstr "Velikost zařízení"
 
-#: src/cryptsetup.c:1175 src/cryptsetup.c:1176 src/cryptsetup.c:1177
-#: src/cryptsetup.c:1183
+#: src/cryptsetup.c:1290 src/cryptsetup.c:1291 src/cryptsetup.c:1292
+#: src/cryptsetup.c:1298
 msgid "SECTORS"
 msgstr "SEKTORY"
 
-#: src/cryptsetup.c:1176
+#: src/cryptsetup.c:1291
 msgid "The start offset in the backend device"
 msgstr "Poloha začátku dat v podkladovém zařízení"
 
-#: src/cryptsetup.c:1177
+#: src/cryptsetup.c:1292
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr "Kolik sektorů šifrovaných dat se má na začátku přeskočit"
 
-#: src/cryptsetup.c:1178
+#: src/cryptsetup.c:1293
 msgid "Create a readonly mapping"
 msgstr "Vytvoří mapování určené jen pro čtení"
 
-#: src/cryptsetup.c:1179
+#: src/cryptsetup.c:1294
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "Doba opakování PBKDF2 pro LUKS (v ms)"
 
-#: src/cryptsetup.c:1179
+#: src/cryptsetup.c:1294
 msgid "msecs"
 msgstr "milisekundy"
 
-#: src/cryptsetup.c:1180
+#: src/cryptsetup.c:1295
 msgid "Do not ask for confirmation"
 msgstr "Nevyžaduje potvrzení"
 
-#: src/cryptsetup.c:1181
+#: src/cryptsetup.c:1296
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "Časový limit pro interaktivní dotaz na heslo (v sekundách)"
 
-#: src/cryptsetup.c:1181
+#: src/cryptsetup.c:1296
 msgid "secs"
 msgstr "sekundy"
 
-#: src/cryptsetup.c:1182
+#: src/cryptsetup.c:1297
 msgid "How often the input of the passphrase can be retried"
 msgstr "Kolikrát se lze zeptat na heslo"
 
-#: src/cryptsetup.c:1183
+#: src/cryptsetup.c:1298
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "Zarovnává data na hranici <n> sektorů – pro luksFormat"
 
-#: src/cryptsetup.c:1184
+#: src/cryptsetup.c:1299
 msgid "File with LUKS header and keyslots backup."
 msgstr "Soubor se zálohou hlavičky LUKS a jejích pozic s klíči"
 
-#: src/cryptsetup.c:1185
+#: src/cryptsetup.c:1300
 msgid "Use /dev/random for generating volume key."
 msgstr "Klíče svazku vytvoří z /dev/random."
 
-#: src/cryptsetup.c:1186
+#: src/cryptsetup.c:1301
 msgid "Use /dev/urandom for generating volume key."
 msgstr "Klíč svazku vytvoří z /dev/urandom."
 
-#: src/cryptsetup.c:1187
+#: src/cryptsetup.c:1302
 msgid "Share device with another non-overlapping crypt segment."
 msgstr "Zařízení sdílí s jiným nepřekrývajícím se šifrovaným segmentem."
 
-#: src/cryptsetup.c:1188
+#: src/cryptsetup.c:1303
 msgid "UUID for device to use."
 msgstr "Použije zařízení s UUID."
 
-#: src/cryptsetup.c:1189
+#: src/cryptsetup.c:1304
 msgid "Allow discards (aka TRIM) requests for device."
 msgstr "Povolí u daného zařízení požadavky na zahození (TRIM)."
 
-#: src/cryptsetup.c:1190
+#: src/cryptsetup.c:1305
 msgid "Device or file with separated LUKS header."
 msgstr "Zařízení nebo soubor s oddělenou hlavičkou LUKS."
 
-#: src/cryptsetup.c:1207
+#: src/cryptsetup.c:1322
 msgid "[OPTION...] <action> <action-specific>]"
 msgstr "[PŘEPÍNAČ…] <akce> <přepínače_akce>]"
 
-#: src/cryptsetup.c:1247
+#: src/cryptsetup.c:1362
 msgid "Argument <action> missing."
 msgstr "Chybí argument <akce>."
 
-#: src/cryptsetup.c:1253
+#: src/cryptsetup.c:1368
 msgid "Unknown action."
 msgstr "Neznámá akce."
 
-#: src/cryptsetup.c:1268
+#: src/cryptsetup.c:1383
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: vyžaduje %s jako argumenty"
 
-#: src/cryptsetup.c:1277
+#: src/cryptsetup.c:1392
 msgid "Option --shared is allowed only for create operation.\n"
 msgstr "Přepínač --shared je dovolen jen při úkonu create.\n"
 
-#: src/cryptsetup.c:1286
+#: src/cryptsetup.c:1401
 msgid "Option --allow-discards is allowed only for luksOpen, loopaesOpen and create operation.\n"
 msgstr "Přepínač --allow-discards je dovolen jen při úkonech luksOpen, loopaesOpen a create.\n"
 
-#: src/cryptsetup.c:1295
+#: src/cryptsetup.c:1410
 msgid ""
 "Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
 "To limit read from keyfile use --keyfile-size=(bytes)."
@@ -1008,39 +1077,43 @@ msgstr ""
 "Přepínač --key-size je dovolen jen u luksFormat, create a  loopaesOpen.\n"
 "Čtení ze souboru s klíčem lze omezit pomocí --keyfile-size=(bajty)."
 
-#: src/cryptsetup.c:1302
+#: src/cryptsetup.c:1417
 msgid "Key size must be a multiple of 8 bits"
 msgstr "Velikost klíče musí být násobkem 8 bitů."
 
-#: src/cryptsetup.c:1309
+#: src/cryptsetup.c:1424
 msgid "Key slot is invalid."
 msgstr "Pozice klíče není platná."
 
-#: src/cryptsetup.c:1316
+#: src/cryptsetup.c:1431
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "Přepínač --key-file má přednost před zadaným argumentem souboru s klíčem.\n"
 
-#: src/cryptsetup.c:1323
+#: src/cryptsetup.c:1439
 msgid "Negative number for option not permitted."
 msgstr "U přepínače není záporné číslo dovoleno."
 
-#: src/cryptsetup.c:1328
+#: src/cryptsetup.c:1444
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "Je dovolen pouze jeden z přepínačů --use-[u]random."
 
-#: src/cryptsetup.c:1331
+#: src/cryptsetup.c:1448
 msgid "Option --use-[u]random is allowed only for luksFormat."
 msgstr "Přepínač --use-[u]random je dovolen pouze u luksFormat."
 
-#: src/cryptsetup.c:1335
+#: src/cryptsetup.c:1452
 msgid "Option --uuid is allowed only for luksFormat and luksUUID."
 msgstr "Přepínač --uuid je dovolen pouze u luksFormat a luksUUID."
 
-#: src/cryptsetup.c:1340
+#: src/cryptsetup.c:1456
+msgid "Option --align-payload is allowed only for luksFormat."
+msgstr "Přepínač --align-payload je dovolen pouze u luksFormat."
+
+#: src/cryptsetup.c:1461
 msgid "Option --skip is supported only for create and loopaesOpen commands.\n"
 msgstr "Přepínač --skip je podporován jen u příkazů create a loopaesOpen.\n"
 
-#: src/cryptsetup.c:1345
+#: src/cryptsetup.c:1466
 msgid "Option --offset is supported only for create and loopaesOpen commands.\n"
 msgstr "Přepínač --offset je podporován jen u příkazů create a loopaesOpen.\n"
 
