@@ -1,0 +1,1098 @@
+# Ukrainian translation for cryptsetup.
+# Copyright (C) 2012 Free Software Foundation, Inc.
+# This file is put in the public domain.
+#
+# Yuri Chornoivan <yurchor@ukr.net>, 2012.
+msgid ""
+msgstr ""
+"Project-Id-Version: cryptsetup 1.4.2\n"
+"Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
+"POT-Creation-Date: 2012-04-03 00:12+0200\n"
+"PO-Revision-Date: 2012-04-07 16:52+0300\n"
+"Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
+"Language-Team: Ukrainian <translation-team-uk@lists.sourceforge.net>\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Lokalize 1.5\n"
+
+#: lib/libdevmapper.c:184
+msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
+msgstr "Не вдалося ініціалізувати device-mapper. Чи завантажено модуль ядра dm_mod?\n"
+
+#: lib/libdevmapper.c:412
+#, c-format
+msgid "DM-UUID for device %s was truncated.\n"
+msgstr "DM-UUID для пристрою %s було обрізано.\n"
+
+#: lib/random.c:74
+msgid ""
+"System is out of entropy while generating volume key.\n"
+"Please move mouse or type some text in another window to gather some random events.\n"
+msgstr ""
+"Під час створення ключа тому було вичерпано буфер ентропії системи.\n"
+"Будь ласка, пересуньте вказівник миші або наберіть якийсь текст у іншому вікні, щоб зібрати додаткові дані на основі випадкових подій.\n"
+
+#: lib/random.c:78
+#, c-format
+msgid "Generating key (%d%% done).\n"
+msgstr "Створення ключа (виконано %d%%).\n"
+
+#: lib/random.c:167
+msgid "Fatal error during RNG initialisation.\n"
+msgstr "Критична помилка під час ініціалізації RNG.\n"
+
+#: lib/random.c:194
+msgid "Unknown RNG quality requested.\n"
+msgstr "Надійшов запит щодо невідомого RNG якості.\n"
+
+#: lib/random.c:199
+#, c-format
+msgid "Error %d reading from RNG: %s\n"
+msgstr "Помилка %d під час читання з RNG: %s\n"
+
+#: lib/setup.c:162
+msgid "Cannot initialize crypto RNG backend.\n"
+msgstr "Не вдалося ініціалізувати допоміжну програму шифрування RNG.\n"
+
+#: lib/setup.c:168
+msgid "Cannot initialize crypto backend.\n"
+msgstr "Не вдалося ініціалізувати допоміжну програму шифрування.\n"
+
+#: lib/setup.c:190
+#, c-format
+msgid "Hash algorithm %s not supported.\n"
+msgstr "Підтримки алгоритму хешування %s не передбачено.\n"
+
+#: lib/setup.c:193 lib/loopaes/loopaes.c:87
+#, c-format
+msgid "Key processing error (using hash %s).\n"
+msgstr "Помилка під час обробки ключа (на основі хешу %s).\n"
+
+#: lib/setup.c:229
+msgid "All key slots full.\n"
+msgstr "Заповнено всі слоти ключів.\n"
+
+#: lib/setup.c:236
+#, c-format
+msgid "Key slot %d is invalid, please select between 0 and %d.\n"
+msgstr "Слот ключа %d є некоректним, будь ласка, виберіть число від 0 до %d.\n"
+
+#: lib/setup.c:242
+#, c-format
+msgid "Key slot %d is full, please select another one.\n"
+msgstr "Слот ключа %d заповнено, будь ласка, виберіть інший.\n"
+
+#: lib/setup.c:340
+#, c-format
+msgid "Enter passphrase for %s: "
+msgstr "Введіть пароль до %s: "
+
+#: lib/setup.c:500
+msgid "Cannot find a free loopback device.\n"
+msgstr "Не вдалося знайти вільний петльовий пристрій.\n"
+
+#: lib/setup.c:508
+msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
+msgstr "Спроба долучення петльового пристрою зазнала невдачі (потрібен петльовий пристрій з встановленим прапорцем автоматичного спорожнення).\n"
+
+#: lib/setup.c:564
+#, c-format
+msgid "LUKS header detected but device %s is too small.\n"
+msgstr "Виявлено заголовок LUKS, але об’єм пристрою %s є надто малим.\n"
+
+#: lib/setup.c:580 lib/setup.c:1068
+msgid "This operation is not supported for this device type.\n"
+msgstr "Підтримки цієї дії для цього типу пристроїв не передбачено.\n"
+
+#: lib/setup.c:643 lib/setup.c:1035 lib/setup.c:1808
+#, c-format
+msgid "Device %s is not active.\n"
+msgstr "Пристрій %s є неактивним.\n"
+
+#: lib/setup.c:661
+#, c-format
+msgid "Underlying device for crypt device %s disappeared.\n"
+msgstr "Зник основний пристрій для пристрою для шифрування %s.\n"
+
+#: lib/setup.c:775
+msgid "Invalid plain crypt parameters.\n"
+msgstr "Некоректні параметри звичайного шифрування.\n"
+
+#: lib/setup.c:780 lib/setup.c:885
+msgid "Invalid key size.\n"
+msgstr "Некоректний розмір ключа.\n"
+
+#: lib/setup.c:821
+msgid "Can't format LUKS without device.\n"
+msgstr "Форматування LUKS без пристрою неможливе.\n"
+
+#: lib/setup.c:859
+#, c-format
+msgid "Cannot format device %s which is still in use.\n"
+msgstr "Не можна форматувати пристрій %s, який перебуває у користуванні.\n"
+
+#: lib/setup.c:862
+#, c-format
+msgid "Cannot wipe header on device %s.\n"
+msgstr "Не можна витирати заголовок на пристрої %s.\n"
+
+#: lib/setup.c:880
+msgid "Can't format LOOPAES without device.\n"
+msgstr "Не можна форматувати LOOPAES без пристрою.\n"
+
+#: lib/setup.c:940
+#, c-format
+msgid "Unknown crypt device type %s requested.\n"
+msgstr "Надіслано запит щодо невідомого типу пристрою шифрування, %s.\n"
+
+#: lib/setup.c:1083
+msgid "Do you really want to change UUID of device?"
+msgstr "Ви справді хочете змінити UUID пристрою?"
+
+#: lib/setup.c:1168 lib/setup.c:1215 lib/setup.c:1264 lib/setup.c:1330
+#: lib/setup.c:1406 lib/setup.c:1487 lib/setup.c:1533 lib/setup.c:1868
+#: lib/setup.c:1973 lib/setup.c:2112
+msgid "This operation is supported only for LUKS device.\n"
+msgstr "Підтримку цієї дії передбачено лише для пристроїв LUKS.\n"
+
+#: lib/setup.c:1175
+#, c-format
+msgid "Volume %s is not active.\n"
+msgstr "Том %s не є активним.\n"
+
+#: lib/setup.c:1187
+#, c-format
+msgid "Volume %s is already suspended.\n"
+msgstr "Том %s вже приспано.\n"
+
+#: lib/setup.c:1225 lib/setup.c:1274
+#, c-format
+msgid "Volume %s is not suspended.\n"
+msgstr "Том %s не приспано.\n"
+
+#: lib/setup.c:1281 lib/setup.c:1658 lib/setup.c:1672 src/cryptsetup.c:343
+msgid "Enter passphrase: "
+msgstr "Введіть пароль: "
+
+#: lib/setup.c:1344 lib/setup.c:1420
+msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
+msgstr "Не вдалося додати слот ключа, всі слоти вимкнено і не вказано ключа тому.\n"
+
+#: lib/setup.c:1353 lib/setup.c:1426 lib/setup.c:1430
+msgid "Enter any passphrase: "
+msgstr "Введіть будь-який пароль: "
+
+#: lib/setup.c:1370 lib/setup.c:1443 lib/setup.c:1447 lib/setup.c:1510
+msgid "Enter new passphrase for key slot: "
+msgstr "Введіть новий пароль для слота ключа: "
+
+#: lib/setup.c:1501 lib/setup.c:1762 lib/setup.c:1775 lib/setup.c:1879
+msgid "Volume key does not match the volume.\n"
+msgstr "Ключ тому не відповідає тому.\n"
+
+#: lib/setup.c:1539
+#, c-format
+msgid "Key slot %d is invalid.\n"
+msgstr "Слот ключа %d є некоректним.\n"
+
+#: lib/setup.c:1544
+#, c-format
+msgid "Key slot %d is not used.\n"
+msgstr "Слот ключа %d не використовується.\n"
+
+#: lib/setup.c:1574 lib/setup.c:1646 lib/setup.c:1738
+#, c-format
+msgid "Device %s already exists.\n"
+msgstr "Пристрій %s вже існує.\n"
+
+#: lib/setup.c:1749
+msgid "Incorrect volume key specified for plain device.\n"
+msgstr "Для пристрою зі звичайним шифруванням вказано помилковий ключ тому.\n"
+
+#: lib/setup.c:1780
+msgid "Device type is not properly initialised.\n"
+msgstr "Тип пристрою не ініціалізовано належним чином.\n"
+
+#: lib/setup.c:1804
+#, c-format
+msgid "Device %s is busy.\n"
+msgstr "Пристрій %s зайнято.\n"
+
+#: lib/setup.c:1812
+#, c-format
+msgid "Invalid device %s.\n"
+msgstr "Некоректний пристрій %s.\n"
+
+#: lib/setup.c:1835
+msgid "Volume key buffer too small.\n"
+msgstr "Буфер ключів тому є занадто малим.\n"
+
+#: lib/setup.c:1843
+msgid "Cannot retrieve volume key for plain device.\n"
+msgstr "Неможливо отримати ключ тому для пристрою зі звичайним шифруванням.\n"
+
+#: lib/setup.c:1849
+#, c-format
+msgid "This operation is not supported for %s crypt device.\n"
+msgstr "Підтримки цієї дії для шифрованого пристрою %s не передбачено.\n"
+
+#: lib/utils.c:270
+#, c-format
+msgid "Device %s doesn't exist or access denied.\n"
+msgstr "Пристрою %s не існує або доступ до цього пристрою заборонено.\n"
+
+#: lib/utils.c:280
+#, c-format
+msgid "Cannot open device %s for %s%s access.\n"
+msgstr "Не вдалося відкрити пристрій %s для доступу %s%s.\n"
+
+#: lib/utils.c:281
+msgid "exclusive "
+msgstr "ексклюзивний "
+
+#: lib/utils.c:282
+msgid "writable"
+msgstr "придатний до запису"
+
+#: lib/utils.c:282
+msgid "read-only"
+msgstr "тільки читання"
+
+#: lib/utils.c:289
+#, c-format
+msgid "Cannot read device %s.\n"
+msgstr "Не вдалося виконати читання з пристрою %s.\n"
+
+#: lib/utils.c:386
+#, c-format
+msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
+msgstr "Не можна використовувати пристрій %s, оскільки його вже використано (призначено або змонтовано).\n"
+
+#: lib/utils.c:390
+#, c-format
+msgid "Cannot get info about device %s.\n"
+msgstr "Не вдалося отримати дані щодо пристрою %s.\n"
+
+#: lib/utils.c:396
+#, c-format
+msgid "Requested offset is beyond real size of device %s.\n"
+msgstr "Бажана точка відступу перебуває за межами об’єму пристрою %s.\n"
+
+#: lib/utils.c:404
+#, c-format
+msgid "Device %s has zero size.\n"
+msgstr "Об’єм пристрою %s є нульовим.\n"
+
+#: lib/utils.c:415 lib/luks1/keymanage.c:524
+#, c-format
+msgid "Device %s is too small.\n"
+msgstr "Об’єм пристрою %s є надто малим.\n"
+
+#: lib/utils.c:423
+#, c-format
+msgid "Cannot use device %s (crypt segments overlaps or in use by another device).\n"
+msgstr "Використання пристрою %s неможливе (сегменти шифрування перекриваються або використовуються іншим пристроєм).\n"
+
+#: lib/utils.c:450
+msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
+msgstr "УВАГА!!! Небезпека доступу до даних у пам’яті. Працюєте від імені адміністратора?\n"
+
+#: lib/utils.c:456
+msgid "Cannot get process priority.\n"
+msgstr "Не вдалося отримати значення пріоритетності процесу.\n"
+
+#: lib/utils.c:459 lib/utils.c:472
+#, c-format
+msgid "setpriority %d failed: %s\n"
+msgstr "помилка під час встановлення пріоритетності %d: %s\n"
+
+#: lib/utils.c:470
+msgid "Cannot unlock memory.\n"
+msgstr "Не вдалося розблокувати пам’ять.\n"
+
+#: lib/utils_crypt.c:212 lib/utils_crypt.c:225 lib/utils_crypt.c:329
+#: lib/utils_crypt.c:345
+msgid "Out of memory while reading passphrase.\n"
+msgstr "Під час читання пароля вичерпано пам’ять.\n"
+
+#: lib/utils_crypt.c:217 lib/utils_crypt.c:232
+msgid "Error reading passphrase from terminal.\n"
+msgstr "Помилка під час читання пароля з термінала.\n"
+
+#: lib/utils_crypt.c:230
+msgid "Verify passphrase: "
+msgstr "Перевірка пароля: "
+
+#: lib/utils_crypt.c:237
+msgid "Passphrases do not match.\n"
+msgstr "Паролі не збігаються.\n"
+
+#: lib/utils_crypt.c:278
+msgid "Cannot use offset with terminal input.\n"
+msgstr "Не можна використовувати відступ у даних, що надходять з термінала.\n"
+
+#: lib/utils_crypt.c:297
+msgid "Failed to open key file.\n"
+msgstr "Не вдалося відкрити файл ключа.\n"
+
+#: lib/utils_crypt.c:306
+msgid "Failed to stat key file.\n"
+msgstr "Не вдалося отримати статистичні дані щодо файла ключа.\n"
+
+#: lib/utils_crypt.c:314 lib/utils_crypt.c:336
+msgid "Cannot seek to requested keyfile offset.\n"
+msgstr "Не вдалося встановити потрібну позицію у файлі ключа.\n"
+
+#: lib/utils_crypt.c:353
+msgid "Error reading passphrase.\n"
+msgstr "Помилка під час читання пароля.\n"
+
+#: lib/utils_crypt.c:371
+msgid "Maximum keyfile size exceeeded.\n"
+msgstr "Перевищено максимальний розмір файла ключа.\n"
+
+#: lib/utils_crypt.c:376
+msgid "Cannot read requested amount of data.\n"
+msgstr "Не вдалося прочитати бажаний об’єм даних.\n"
+
+#: lib/luks1/keyencryption.c:76
+#, c-format
+msgid "Unable to obtain sector size for %s"
+msgstr "Не вдалося отримати розмір сектора %s"
+
+#: lib/luks1/keyencryption.c:103
+msgid "Key size in XTS mode must be 256 or 512 bits.\n"
+msgstr "Розмір ключа у режимі XTS має бути рівним 256 або 512 бітів.\n"
+
+#: lib/luks1/keyencryption.c:126
+msgid "Failed to obtain device mapper directory."
+msgstr "Не вдалося отримати каталог призначених пристроїв."
+
+#: lib/luks1/keyencryption.c:142
+#, c-format
+msgid ""
+"Failed to setup dm-crypt key mapping for device %s.\n"
+"Check that kernel supports %s cipher (check syslog for more info).\n"
+"%s"
+msgstr ""
+"Не вдалося визначити призначення ключа dm-crypt для пристрою %s.\n"
+"Перевірте, чи передбачено у ядрі підтримку шифрування %s (докладніші дані можна знайти у журналі системи (syslog)).\n"
+"%s"
+
+#: lib/luks1/keyencryption.c:152
+msgid "Failed to open temporary keystore device.\n"
+msgstr "Не вдалося відкрити пристрій тимчасового сховища ключів.\n"
+
+#: lib/luks1/keyencryption.c:159
+msgid "Failed to access temporary keystore device.\n"
+msgstr "Не вдалося отримати доступ до пристрою тимчасового сховища ключів.\n"
+
+#: lib/luks1/keymanage.c:149
+#, c-format
+msgid "Requested file %s already exist.\n"
+msgstr "Файл %s, щодо якого надійшов запит, вже існує.\n"
+
+#: lib/luks1/keymanage.c:169 lib/luks1/keymanage.c:391
+#, c-format
+msgid "Device %s is not a valid LUKS device.\n"
+msgstr "Пристрій %s не є коректним пристроєм LUKS.\n"
+
+#: lib/luks1/keymanage.c:189
+#, c-format
+msgid "Cannot write header backup file %s.\n"
+msgstr "Не вдалося записати файл резервної копії заголовка, %s.\n"
+
+#: lib/luks1/keymanage.c:216
+#, c-format
+msgid "Backup file %s doesn't exist.\n"
+msgstr "Файла резервної копії, %s, не існує.\n"
+
+#: lib/luks1/keymanage.c:224
+msgid "Backup file doesn't contain valid LUKS header.\n"
+msgstr "Файл резервної копії не містить коректного заголовка LUKS.\n"
+
+#: lib/luks1/keymanage.c:237
+#, c-format
+msgid "Cannot open header backup file %s.\n"
+msgstr "Не вдалося відкрити файл резервної копії заголовка, %s.\n"
+
+#: lib/luks1/keymanage.c:243
+#, c-format
+msgid "Cannot read header backup file %s.\n"
+msgstr "Не вдалося прочитати дані з файла резервної копії заголовка, %s.\n"
+
+#: lib/luks1/keymanage.c:254
+msgid "Data offset or key size differs on device and backup, restore failed.\n"
+msgstr "Відступ у даних або розмір ключа на пристрої і у резервній копії є різними. Відновлення неможливе.\n"
+
+#: lib/luks1/keymanage.c:262
+#, c-format
+msgid "Device %s %s%s"
+msgstr "Пристрій %s %s%s"
+
+#: lib/luks1/keymanage.c:263
+msgid "does not contain LUKS header. Replacing header can destroy data on that device."
+msgstr "не містить заголовка LUKS. Заміна заголовка може зруйнувати дані, що зберігаються на пристрої."
+
+#: lib/luks1/keymanage.c:264
+msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
+msgstr "вже містить заголовок LUKS. Заміна заголовка призведе до руйнування вже створених слотів ключів."
+
+#: lib/luks1/keymanage.c:265
+msgid ""
+"\n"
+"WARNING: real device header has different UUID than backup!"
+msgstr ""
+"\n"
+"ПОПЕРЕДЖЕННЯ: заголовок, що зберігається на пристрої, має інший UUID, ніж заголовок у резервній копії!"
+
+#: lib/luks1/keymanage.c:280 lib/luks1/keymanage.c:496
+#: lib/luks1/keymanage.c:530
+#, c-format
+msgid "Cannot open device %s.\n"
+msgstr "Не вдалося відкрити пристрій %s.\n"
+
+#: lib/luks1/keymanage.c:310
+msgid "Non standard key size, manual repair required.\n"
+msgstr "Нестандартний розмір ключа, слід виправити дані вручну.\n"
+
+#: lib/luks1/keymanage.c:315
+msgid "Repairing keyslots.\n"
+msgstr "Виправлення слотів ключів.\n"
+
+#: lib/luks1/keymanage.c:326
+msgid "Repair failed."
+msgstr "Спроба виправлення зазнала невдачі."
+
+#: lib/luks1/keymanage.c:333
+#, c-format
+msgid "Keyslot %i: offset repaired (%u -> %u).\n"
+msgstr "Слот ключа %i: виправлено відступ (%u -> %u).\n"
+
+#: lib/luks1/keymanage.c:341
+#, c-format
+msgid "Keyslot %i: stripes repaired (%u -> %u).\n"
+msgstr "Слот ключа %i: виправлено смужки (%u -> %u).\n"
+
+#: lib/luks1/keymanage.c:352
+#, c-format
+msgid "Keyslot %i: bogus partition signature.\n"
+msgstr "Слот ключа %i: зайвий підпис розділу.\n"
+
+#: lib/luks1/keymanage.c:357
+#, c-format
+msgid "Keyslot %i: salt wiped.\n"
+msgstr "Слот ключа %i: дані ініціалізації (сіль) витерто.\n"
+
+#: lib/luks1/keymanage.c:369
+msgid "Writing LUKS header to disk.\n"
+msgstr "Запис заголовка LUKS на диск.\n"
+
+#: lib/luks1/keymanage.c:394
+#, c-format
+msgid "Unsupported LUKS version %d.\n"
+msgstr "Непідтримувана версія LUKS, %d.\n"
+
+#: lib/luks1/keymanage.c:400 lib/luks1/keymanage.c:602
+#, c-format
+msgid "Requested LUKS hash %s is not supported.\n"
+msgstr "Підтримки бажаного хешування LUKS, %s, не передбачено.\n"
+
+#: lib/luks1/keymanage.c:415
+#, c-format
+msgid "LUKS keyslot %u is invalid.\n"
+msgstr "Слот ключа LUKS %u є некоректним.\n"
+
+#: lib/luks1/keymanage.c:429 src/cryptsetup.c:535
+msgid "No known problems detected for LUKS header.\n"
+msgstr "У заголовку LUKS не виявлено жодних проблем.\n"
+
+#: lib/luks1/keymanage.c:463
+#, c-format
+msgid "Cannot open file %s.\n"
+msgstr "Не вдалося відкрити файл %s.\n"
+
+#: lib/luks1/keymanage.c:551
+#, c-format
+msgid "Error during update of LUKS header on device %s.\n"
+msgstr "Помилка під час оновлення заголовка LUKS на пристрої %s.\n"
+
+#: lib/luks1/keymanage.c:558
+#, c-format
+msgid "Error re-reading LUKS header after update on device %s.\n"
+msgstr "Помилка під час спроби повторного читання заголовка LUKS після оновлення на пристрої %s.\n"
+
+#: lib/luks1/keymanage.c:570
+#, c-format
+msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
+msgstr "Несумісні параметри PBKDF2 (з використанням алгоритму хешування %s).\n"
+
+#: lib/luks1/keymanage.c:607 lib/luks1/keymanage.c:689
+msgid "Wrong LUKS UUID format provided.\n"
+msgstr "Вказано UUID LUKS у помилковому форматі.\n"
+
+#: lib/luks1/keymanage.c:632
+msgid "Cannot create LUKS header: reading random salt failed.\n"
+msgstr "Не вдалося створити заголовок LUKS: помилка читання випадкових даних для ініціалізації.\n"
+
+#: lib/luks1/keymanage.c:649
+#, c-format
+msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
+msgstr "Не вдалося створити заголовок LUKS: помилка під час обчислення контрольної суми заголовка (з використанням хешу %s).\n"
+
+#: lib/luks1/keymanage.c:714
+#, c-format
+msgid "Key slot %d active, purge first.\n"
+msgstr "Слот ключа %d є активним. Його слід спочатку спорожнити.\n"
+
+#: lib/luks1/keymanage.c:719
+#, c-format
+msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
+msgstr "Ентропія даних слота ключа %d є надто низькою. Маніпуляції з заголовком?\n"
+
+#: lib/luks1/keymanage.c:786
+msgid "Failed to write to key storage.\n"
+msgstr "Не вдалося виконати запис до сховища ключів.\n"
+
+#: lib/luks1/keymanage.c:871
+msgid "Failed to read from key storage.\n"
+msgstr "Не вдалося виконати читання даних зі сховища ключів.\n"
+
+#: lib/luks1/keymanage.c:881
+#, c-format
+msgid "Key slot %d unlocked.\n"
+msgstr "Слот ключа %d розблоковано.\n"
+
+#: lib/luks1/keymanage.c:917 src/cryptsetup.c:732 src/cryptsetup.c:916
+msgid "No key available with this passphrase.\n"
+msgstr "Для цього пароля немає відповідного ключа.\n"
+
+#: lib/luks1/keymanage.c:935
+#, c-format
+msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
+msgstr "Слот ключа %d є некоректним, будь ласка, виберіть слот ключа з номером від 0 до %d.\n"
+
+#: lib/luks1/keymanage.c:949
+#, c-format
+msgid "Cannot wipe device %s.\n"
+msgstr "Не вдалося витерти пристрій %s.\n"
+
+#: lib/loopaes/loopaes.c:142
+msgid "Detected not yet supported GPG encrypted keyfile.\n"
+msgstr "Виявлено файл ключа, підтримки шифрування GPG у якому ще не передбачено.\n"
+
+#: lib/loopaes/loopaes.c:143
+msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "Будь ласка, скористайтеся командою gpg --decrypt <ФАЙЛ_КЛЮЧА> | cryptsetup --keyfile=- ...\n"
+
+#: lib/loopaes/loopaes.c:175
+msgid "Incompatible loop-AES keyfile detected.\n"
+msgstr "Виявлено несумісний з loop-AES файл ключа.\n"
+
+#: lib/loopaes/loopaes.c:225
+msgid "Kernel doesn't support loop-AES compatible mapping.\n"
+msgstr "У ядрі не передбачено підтримки призначення, сумісного з loop-AES.\n"
+
+#: src/cryptsetup.c:105
+msgid "<name> <device>"
+msgstr "<назва> <пристрій>"
+
+#: src/cryptsetup.c:105
+msgid "create device"
+msgstr "створити пристрій"
+
+#: src/cryptsetup.c:106 src/cryptsetup.c:107 src/cryptsetup.c:108
+#: src/cryptsetup.c:118 src/cryptsetup.c:125
+msgid "<name>"
+msgstr "<назва>"
+
+#: src/cryptsetup.c:106
+msgid "remove device"
+msgstr "вилучити пристрій"
+
+#: src/cryptsetup.c:107
+msgid "resize active device"
+msgstr "змінити розмір активного пристрою"
+
+#: src/cryptsetup.c:108
+msgid "show device status"
+msgstr "показати стан пристрою"
+
+#: src/cryptsetup.c:109 src/cryptsetup.c:116 src/cryptsetup.c:117
+#: src/cryptsetup.c:119 src/cryptsetup.c:120 src/cryptsetup.c:121
+#: src/cryptsetup.c:122 src/cryptsetup.c:123
+msgid "<device>"
+msgstr "<пристрій>"
+
+#: src/cryptsetup.c:109
+msgid "try to repair on-disk metadata"
+msgstr "спробувати виправити метадані на диску"
+
+#: src/cryptsetup.c:110 src/cryptsetup.c:112
+msgid "<device> [<new key file>]"
+msgstr "<пристрій> [<новий файл ключа>]"
+
+#: src/cryptsetup.c:110
+msgid "formats a LUKS device"
+msgstr "форматує пристрій LUKS"
+
+#: src/cryptsetup.c:111 src/cryptsetup.c:124
+msgid "<device> <name> "
+msgstr "<пристрій> <назва> "
+
+#: src/cryptsetup.c:111
+msgid "open LUKS device as mapping <name>"
+msgstr "відкрити пристрій LUKS як призначення <назва>"
+
+#: src/cryptsetup.c:112
+msgid "add key to LUKS device"
+msgstr "додати ключ до пристрою LUKS"
+
+#: src/cryptsetup.c:113 src/cryptsetup.c:114
+msgid "<device> [<key file>]"
+msgstr "<пристрій> [<файл ключа>]"
+
+#: src/cryptsetup.c:113
+msgid "removes supplied key or key file from LUKS device"
+msgstr "вилучає наданий ключ або файл ключа з пристрою LUKS"
+
+#: src/cryptsetup.c:114
+msgid "changes supplied key or key file of LUKS device"
+msgstr "змінює наданий ключ або файл ключа пристрою LUKS"
+
+#: src/cryptsetup.c:115
+msgid "<device> <key slot>"
+msgstr "<пристрій> <слот ключа>"
+
+#: src/cryptsetup.c:115
+msgid "wipes key with number <key slot> from LUKS device"
+msgstr "вилучає ключ з номером <слот ключа> з пристрою LUKS"
+
+#: src/cryptsetup.c:116
+msgid "print UUID of LUKS device"
+msgstr "вивести UUID пристрою LUKS"
+
+#: src/cryptsetup.c:117
+msgid "tests <device> for LUKS partition header"
+msgstr "виконати спробу виявлення заголовка розділу LUKS на пристрої <пристрій>"
+
+#: src/cryptsetup.c:118
+msgid "remove LUKS mapping"
+msgstr "вилучити призначення LUKS"
+
+#: src/cryptsetup.c:119
+msgid "dump LUKS partition information"
+msgstr "створити дамп даних щодо розділу LUKS"
+
+#: src/cryptsetup.c:120
+msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
+msgstr "Приспати пристрій LUKS і витерти ключ (роботу всіх каналів введення-виведення буде заморожено)."
+
+#: src/cryptsetup.c:121
+msgid "Resume suspended LUKS device."
+msgstr "Відновити роботу приспаного пристрою LUKS."
+
+#: src/cryptsetup.c:122
+msgid "Backup LUKS device header and keyslots"
+msgstr "Створити резервну копію заголовка пристрою LUKS і слотів ключів"
+
+#: src/cryptsetup.c:123
+msgid "Restore LUKS device header and keyslots"
+msgstr "Відновити заголовок пристрою LUKS і слоти ключів"
+
+#: src/cryptsetup.c:124
+msgid "open loop-AES device as mapping <name>"
+msgstr "відкрити пристрій loop-AES як призначення <назва>"
+
+#: src/cryptsetup.c:125
+msgid "remove loop-AES mapping"
+msgstr "вилучити призначення loop-AES"
+
+#: src/cryptsetup.c:218
+msgid "Can't do passphrase verification on non-tty inputs.\n"
+msgstr "Перевірку паролів не можна виконувати на основі вхідних даних, які надходять не з tty.\n"
+
+#: src/cryptsetup.c:233
+msgid "Command successful.\n"
+msgstr "Команду виконано успішно.\n"
+
+#: src/cryptsetup.c:247
+#, c-format
+msgid "Command failed with code %i"
+msgstr "Спроба виконання команди завершилася повідомленням про помилку з кодом %i"
+
+#: src/cryptsetup.c:375
+msgid "Option --key-file is required.\n"
+msgstr "Слід вказати параметр --key-file.\n"
+
+#: src/cryptsetup.c:539
+msgid "Really try to repair LUKS device header?"
+msgstr "Спробувати відновити заголовок пристрою LUKS?"
+
+#: src/cryptsetup.c:564
+#, c-format
+msgid "This will overwrite data on %s irrevocably."
+msgstr "Дані на %s буде перезаписано без можливості відновлення."
+
+#: src/cryptsetup.c:566
+msgid "memory allocation error in action_luksFormat"
+msgstr "помилка під час отримання області пам’яті у action_luksFormat"
+
+#: src/cryptsetup.c:578
+msgid "No known cipher specification pattern detected.\n"
+msgstr "Не виявлено жодного відомого зразка специфікації шифрування.\n"
+
+#: src/cryptsetup.c:584
+#, c-format
+msgid "Cannot use %s as on-disk header.\n"
+msgstr "Не можна використовувати %s як заголовок на диску.\n"
+
+#: src/cryptsetup.c:599 src/cryptsetup.c:1030
+msgid "Enter LUKS passphrase: "
+msgstr "Введіть пароль LUKS: "
+
+#: src/cryptsetup.c:654
+msgid "Reduced data offset is allowed only for detached LUKS header.\n"
+msgstr "Зменшений відступ даних можна використовувати лише для від’єднаних заголовків LUKS.\n"
+
+#: src/cryptsetup.c:755 src/cryptsetup.c:810
+#, c-format
+msgid "Key slot %d selected for deletion.\n"
+msgstr "Слот ключа %d позначено для вилучення.\n"
+
+#: src/cryptsetup.c:758
+#, c-format
+msgid "Key %d not active. Can't wipe.\n"
+msgstr "Ключ %d не є активним. Його не можна витерти.\n"
+
+#: src/cryptsetup.c:766 src/cryptsetup.c:813
+msgid "This is the last keyslot. Device will become unusable after purging this key."
+msgstr "Це останній слот ключа. Пристрій стане непридатним для використання після спорожнення цього ключа."
+
+#: src/cryptsetup.c:767
+msgid "Enter any remaining LUKS passphrase: "
+msgstr "Введіть будь-який інший пароль LUKS: "
+
+#: src/cryptsetup.c:795
+msgid "Enter LUKS passphrase to be deleted: "
+msgstr "Введіть пароль LUKS, який слід вилучити: "
+
+#: src/cryptsetup.c:898
+msgid "Enter LUKS passphrase to be changed: "
+msgstr "Введіть пароль LUKS, який слід змінити: "
+
+#: src/cryptsetup.c:935
+msgid "Enter new LUKS passphrase: "
+msgstr "Введіть новий пароль LUKS: "
+
+#: src/cryptsetup.c:949
+#, c-format
+msgid "Key slot %d changed.\n"
+msgstr "Слот ключа %d змінено.\n"
+
+#: src/cryptsetup.c:955
+#, c-format
+msgid "Replaced with key slot %d.\n"
+msgstr "Замінено слотом ключа %d.\n"
+
+#: src/cryptsetup.c:960
+msgid "Failed to swap new key slot.\n"
+msgstr "Не вдалося зарезервувати новий слот ключа.\n"
+
+#: src/cryptsetup.c:1019
+msgid ""
+"LUKS header dump with volume key is sensitive information\n"
+"which allows access to encrypted partition without passphrase.\n"
+"This dump should be always stored encrypted on safe place."
+msgstr ""
+"Дамп заголовка LUKS з ключем тому є конфіденційними даними,\n"
+"за допомогою яких можна отримати доступ до шифрованого розділу\n"
+"без пароля. Цей дамп слід зберігати у зашифрованому форматі\n"
+"у безпечному місці."
+
+#: src/cryptsetup.c:1124 src/cryptsetup.c:1145
+msgid "Option --header-backup-file is required.\n"
+msgstr "Слід вказати параметр --header-backup-file.\n"
+
+#: src/cryptsetup.c:1183
+msgid ""
+"\n"
+"<action> is one of:\n"
+msgstr ""
+"\n"
+"<дія> є однією з таких:\n"
+
+#: src/cryptsetup.c:1189
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<device> is the encrypted device\n"
+"<key slot> is the LUKS key slot number to modify\n"
+"<key file> optional key file for the new key for luksAddKey action\n"
+msgstr ""
+"\n"
+"<назва> — пристрій для створення у %s\n"
+"<пристрій> — зашифрований пристрій\n"
+"<слот ключа> — номер слота ключа LUKS, який слід змінити\n"
+"<файл ключа> — необов’язковий файл ключа для нового ключа для дії luksAddKey\n"
+
+#: src/cryptsetup.c:1196
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in keyfile parameters:\n"
+"\tMaximum keyfile size: %dkB, Maximum interactive passphrase length %d (characters)\n"
+msgstr ""
+"\n"
+"Типові вбудовані параметри файла ключа:\n"
+"\tМаксимальний розмір файла ключа: %d кБ, максимальна довжина інтерактивного пароля: %d (символів)\n"
+
+#: src/cryptsetup.c:1201
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in device cipher parameters:\n"
+"\tloop-AES: %s, Key %d bits\n"
+"\tplain: %s, Key: %d bits, Password hashing: %s\n"
+"\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
+msgstr ""
+"\n"
+"Типові вбудовані параметри шифрування на пристрої:\n"
+"\tloop-AES: %s, %d-бітовий ключ\n"
+"\tзвичайне: %s, ключ: %d-бітовий, хешування пароля: %s\n"
+"\tLUKS1: %s, ключ: %d-бітовий, хешування заголовка LUKS: %s, RNG: %s\n"
+
+#: src/cryptsetup.c:1269
+msgid "Show this help message"
+msgstr "Показати цю довідку"
+
+#: src/cryptsetup.c:1270
+msgid "Display brief usage"
+msgstr "Показати короткі настанови щодо користування"
+
+#: src/cryptsetup.c:1274
+msgid "Help options:"
+msgstr "Пункти довідки:"
+
+#: src/cryptsetup.c:1275
+msgid "Print package version"
+msgstr "Вивести дані щодо версії пакунка"
+
+#: src/cryptsetup.c:1276
+msgid "Shows more detailed error messages"
+msgstr "Показувати докладні повідомлення про помилки"
+
+#: src/cryptsetup.c:1277
+msgid "Show debug messages"
+msgstr "Показувати повідомлення зневадження"
+
+#: src/cryptsetup.c:1278
+msgid "The cipher used to encrypt the disk (see /proc/crypto)"
+msgstr "Шифр, який використано для шифрування даних диска (див. /proc/crypto)"
+
+#: src/cryptsetup.c:1279
+msgid "The hash used to create the encryption key from the passphrase"
+msgstr "Хеш, використаний для створення ключа шифрування на основі пароля"
+
+#: src/cryptsetup.c:1280
+msgid "Verifies the passphrase by asking for it twice"
+msgstr "Перевіряє пароль повторним запитом щодо нього"
+
+#: src/cryptsetup.c:1281
+msgid "Read the key from a file."
+msgstr "Прочитати ключ з файла."
+
+#: src/cryptsetup.c:1282
+msgid "Read the volume (master) key from file."
+msgstr "Прочитати ключ тому (основний ключ) з файла."
+
+#: src/cryptsetup.c:1283
+msgid "Dump volume (master) key instead of keyslots info."
+msgstr "Створити дамп ключа тому (основного ключа) замість показу даних щодо слотів ключів."
+
+#: src/cryptsetup.c:1284
+msgid "The size of the encryption key"
+msgstr "Розмір ключа шифрування"
+
+#: src/cryptsetup.c:1284
+msgid "BITS"
+msgstr "БІТИ"
+
+#: src/cryptsetup.c:1285
+msgid "Limits the read from keyfile"
+msgstr "Обмежує читання з файла ключа"
+
+#: src/cryptsetup.c:1285 src/cryptsetup.c:1286 src/cryptsetup.c:1287
+#: src/cryptsetup.c:1288
+msgid "bytes"
+msgstr "байти"
+
+#: src/cryptsetup.c:1286
+msgid "Number of bytes to skip in keyfile"
+msgstr "Кількість байтів, які слід пропустити у файлі ключа"
+
+#: src/cryptsetup.c:1287
+msgid "Limits the read from newly added keyfile"
+msgstr "Обмежує читання з щойно доданого файла ключа"
+
+#: src/cryptsetup.c:1288
+msgid "Number of bytes to skip in newly added keyfile"
+msgstr "Кількість байтів, які слід пропустити у щойно доданому файлі ключа"
+
+#: src/cryptsetup.c:1289
+msgid "Slot number for new key (default is first free)"
+msgstr "Номер слоту для нового ключа (типовим слотом є перший вільний слот)"
+
+#: src/cryptsetup.c:1290
+msgid "The size of the device"
+msgstr "Розмір пристрою"
+
+#: src/cryptsetup.c:1290 src/cryptsetup.c:1291 src/cryptsetup.c:1292
+#: src/cryptsetup.c:1298
+msgid "SECTORS"
+msgstr "СЕКТОРИ"
+
+#: src/cryptsetup.c:1291
+msgid "The start offset in the backend device"
+msgstr "Початковий відступ на допоміжному пристрої"
+
+#: src/cryptsetup.c:1292
+msgid "How many sectors of the encrypted data to skip at the beginning"
+msgstr "Кількість секторів зашифрованих даних, які слід пропустити на початку"
+
+#: src/cryptsetup.c:1293
+msgid "Create a readonly mapping"
+msgstr "Створити призначення у режимі лише читання"
+
+#: src/cryptsetup.c:1294
+msgid "PBKDF2 iteration time for LUKS (in ms)"
+msgstr "Тривалість ітерації PBKDF2 для LUKS (у мс)"
+
+#: src/cryptsetup.c:1294
+msgid "msecs"
+msgstr "мс"
+
+#: src/cryptsetup.c:1295
+msgid "Do not ask for confirmation"
+msgstr "Не питати про підтвердження"
+
+#: src/cryptsetup.c:1296
+msgid "Timeout for interactive passphrase prompt (in seconds)"
+msgstr "Час очікування у інтерактивному запиті щодо пароля (у секундах)"
+
+#: src/cryptsetup.c:1296
+msgid "secs"
+msgstr "секунди"
+
+#: src/cryptsetup.c:1297
+msgid "How often the input of the passphrase can be retried"
+msgstr "Частота повторень спроб отримання вхідних даних пароля"
+
+#: src/cryptsetup.c:1298
+msgid "Align payload at <n> sector boundaries - for luksFormat"
+msgstr "Вирівняти дані за областями у <n> секторів, для luksFormat"
+
+#: src/cryptsetup.c:1299
+msgid "File with LUKS header and keyslots backup."
+msgstr "Файл з заголовком LUKS та резервною копію слотів ключів."
+
+#: src/cryptsetup.c:1300
+msgid "Use /dev/random for generating volume key."
+msgstr "Використовувати для створення ключа тому /dev/random."
+
+#: src/cryptsetup.c:1301
+msgid "Use /dev/urandom for generating volume key."
+msgstr "Використовувати для створення ключа тому /dev/urandom."
+
+#: src/cryptsetup.c:1302
+msgid "Share device with another non-overlapping crypt segment."
+msgstr "Використовувати пристрій спільно з іншим сегментом шифрування, без перекриття."
+
+#: src/cryptsetup.c:1303
+msgid "UUID for device to use."
+msgstr "UUID пристрою, який слід використати."
+
+#: src/cryptsetup.c:1304
+msgid "Allow discards (aka TRIM) requests for device."
+msgstr "Дозволити запити відкидання (або TRIM) до пристрою."
+
+#: src/cryptsetup.c:1305
+msgid "Device or file with separated LUKS header."
+msgstr "Пристрій або файл з окремим заголовком LUKS."
+
+#: src/cryptsetup.c:1322
+msgid "[OPTION...] <action> <action-specific>]"
+msgstr "[ПАРАМЕТР...] <дія> <параметри дії>]"
+
+#: src/cryptsetup.c:1362
+msgid "Argument <action> missing."
+msgstr "Не вказано аргумент <дія>."
+
+#: src/cryptsetup.c:1368
+msgid "Unknown action."
+msgstr "Невідома дія."
+
+#: src/cryptsetup.c:1383
+#, c-format
+msgid "%s: requires %s as arguments"
+msgstr "%s: слід вказати у параметрах %s"
+
+#: src/cryptsetup.c:1392
+msgid "Option --shared is allowed only for create operation.\n"
+msgstr "Параметр --shared можна використовувати лише для дії create.\n"
+
+#: src/cryptsetup.c:1401
+msgid "Option --allow-discards is allowed only for luksOpen, loopaesOpen and create operation.\n"
+msgstr "Параметр --allow-discards можна використовувати лише для дій luksOpen, loopaesOpen і create.\n"
+
+#: src/cryptsetup.c:1410
+msgid ""
+"Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
+"To limit read from keyfile use --keyfile-size=(bytes)."
+msgstr ""
+"Параметр --key-size можна використовувати лише для дій luksFormat, create і loopaesOpen.\n"
+"Щоб обмежити читання з файла ключа, скористайтеся параметром --keyfile-size=(об’єм у байтах)."
+
+#: src/cryptsetup.c:1417
+msgid "Key size must be a multiple of 8 bits"
+msgstr "Розмір ключа має бути кратним 8 бітам"
+
+#: src/cryptsetup.c:1424
+msgid "Key slot is invalid."
+msgstr "Некоректний слот ключа."
+
+#: src/cryptsetup.c:1431
+msgid "Option --key-file takes precedence over specified key file argument.\n"
+msgstr "Параметр --key-file має пріоритет над вказаним параметром файла ключа.\n"
+
+#: src/cryptsetup.c:1439
+msgid "Negative number for option not permitted."
+msgstr "Не можна використовувати від’ємні значення для параметра."
+
+#: src/cryptsetup.c:1444
+msgid "Only one of --use-[u]random options is allowed."
+msgstr "Можна використовувати лише один з параметрів --use-[u]random."
+
+#: src/cryptsetup.c:1448
+msgid "Option --use-[u]random is allowed only for luksFormat."
+msgstr "Параметр --use-[u]random можна використовувати лише для дії luksFormat."
+
+#: src/cryptsetup.c:1452
+msgid "Option --uuid is allowed only for luksFormat and luksUUID."
+msgstr "Параметр --uuid можна використовувати лише для дій luksFormat і luksUUID."
+
+#: src/cryptsetup.c:1456
+msgid "Option --align-payload is allowed only for luksFormat."
+msgstr "Параметр --align-payload можна використовувати лише для дії luksFormat."
+
+#: src/cryptsetup.c:1461
+msgid "Option --skip is supported only for create and loopaesOpen commands.\n"
+msgstr "Підтримку параметра --skip передбачено лише для дій create і loopaesOpen.\n"
+
+#: src/cryptsetup.c:1466
+msgid "Option --offset is supported only for create and loopaesOpen commands.\n"
+msgstr "Підтримку параметра --offset передбачено лише для дій create і loopaesOpen.\n"
