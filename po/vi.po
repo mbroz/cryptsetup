@@ -1,338 +1,381 @@
 # Vietnamese translation for CryptSetup.
-# Copyright © 2010 Free Software Foundation, Inc.
+# Copyright © 2012 Free Software Foundation, Inc.
 # This file is distributed under the same license as the cryptsetup package.
 # Clytie Siddall <clytie@riverland.net.au>, 2010.
+# Trần Ngọc Quân <vnwildman@gmail.com>, 2012.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.1.1-rc1\n"
+"Project-Id-Version: cryptsetup-1.4.2\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2010-05-01 16:21+0200\n"
-"PO-Revision-Date: 2010-05-03 18:14+0930\n"
-"Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
-"Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
+"POT-Creation-Date: 2012-04-03 00:12+0200\n"
+"PO-Revision-Date: 2012-04-14 09:15+0700\n"
+"Last-Translator: Trần Ngọc Quân <vnwildman@gmail.com>\n"
+"Language-Team: Vietnamese <translation-team-vi@lists.sourceforge.net>\n"
+"Language: vi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: LocFactoryEditor 1.8\n"
+"X-Poedit-Language: Vietnamese\n"
+"X-Poedit-Country: VIET NAM\n"
+"X-Poedit-SourceCharset: utf-8\n"
 
-#: lib/libdevmapper.c:105
-msgid "Cannot find compatible device-mapper kernel modules.\n"
-msgstr "Không tìm thấy mô-đun hạt nhân ánh xạ thiết bị tương thích.\n"
-
-#: lib/libdevmapper.c:111
+#: lib/libdevmapper.c:184
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
 msgstr "Không thể sơ khởi tiến trình ánh xạ thiết bị. Mô-đun hạt nhân « dm_mod » được nạp chưa?\n"
 
-#: lib/libdevmapper.c:408
+#: lib/libdevmapper.c:412
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
 msgstr "Mã số DM-UUID cho thiết bị %s bị cắt bớt.\n"
 
-#: lib/setup.c:103
-#, c-format
-msgid "Cannot not read %d bytes from key file %s.\n"
-msgstr "Không thể đọc %d byte từ tập tin khoá %s.\n"
+#: lib/random.c:74
+msgid ""
+"System is out of entropy while generating volume key.\n"
+"Please move mouse or type some text in another window to gather some random events.\n"
+msgstr ""
+"Hệ thống bị nằm ngoài en-trô-pi trong khi tạo khóa dung lượng.\n"
+"Xin hãy di chuyển con chuột hay gõ vài chữ trong cửa sổ khác để thu thập sự kiện ngẫu nhiên.\n"
 
-#: lib/setup.c:115
+#: lib/random.c:78
 #, c-format
-msgid "Key processing error (using hash algorithm %s).\n"
-msgstr "Lỗi xử lý khoá (dùng thuật toán chuỗi duy nhất %s).\n"
+msgid "Generating key (%d%% done).\n"
+msgstr "Tạo khoá (%d%% hoàn tất).\n"
 
-#: lib/setup.c:170
+#: lib/random.c:167
+msgid "Fatal error during RNG initialisation.\n"
+msgstr "Gặp lỗi nghiêm trọng trong quá trình khởi tạo RNG.\n"
+
+#: lib/random.c:194
+msgid "Unknown RNG quality requested.\n"
+msgstr "Không hiểu chất lượng RNG đã yêu cầu.\n"
+
+#: lib/random.c:199
+#, c-format
+msgid "Error %d reading from RNG: %s\n"
+msgstr "Lỗi %d khi đọc một từ RNG: %s\n"
+
+#: lib/setup.c:162
+msgid "Cannot initialize crypto RNG backend.\n"
+msgstr "Không khởi tạo ứng dụng chạy ở phía sau (backend) mật mã RNG.\n"
+
+#: lib/setup.c:168
+msgid "Cannot initialize crypto backend.\n"
+msgstr "Không thể sơ khởi hậu phương mật mã.\n"
+
+#: lib/setup.c:190
+#, c-format
+msgid "Hash algorithm %s not supported.\n"
+msgstr "Thuật toán băm %s không được hỗ trợ.\n"
+
+#: lib/setup.c:193 lib/loopaes/loopaes.c:87
+#, c-format
+msgid "Key processing error (using hash %s).\n"
+msgstr "Lỗi xử lý khoá (dùng mã băm %s).\n"
+
+#: lib/setup.c:229
 msgid "All key slots full.\n"
 msgstr "Mọi khe khoá đều bị đầy.\n"
 
-#: lib/setup.c:177 lib/setup.c:305 lib/setup.c:779
+#: lib/setup.c:236
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d.\n"
 msgstr "Khe khoá %d không đúng, hãy chọn một giá trị trong phạm vi 0 đến %d.\n"
 
-#: lib/setup.c:183
+#: lib/setup.c:242
 #, c-format
 msgid "Key slot %d is full, please select another one.\n"
 msgstr "Khe khoá %d bị đầy, hãy chọn một khe khác.\n"
 
-#: lib/setup.c:202
-msgid "Enter any remaining LUKS passphrase: "
-msgstr "Gõ cụm từ mật khẩu LUKS nào còn lại:"
-
-#: lib/setup.c:223
-#, c-format
-msgid "Key slot %d verified.\n"
-msgstr "Khe khoá %d được thẩm định.\n"
-
-#: lib/setup.c:258
-#, c-format
-msgid "Cannot get info about device %s.\n"
-msgstr "Không thể lấy thông tin về thiết bị %s.\n"
-
-#: lib/setup.c:265
-#, c-format
-msgid "Device %s has zero size.\n"
-msgstr "Thiết bị %s có kích cỡ số không.\n"
-
-#: lib/setup.c:269
-#, c-format
-msgid "Device %s is too small.\n"
-msgstr "Thiết bị %s có kích cỡ quá nhỏ.\n"
-
-#: lib/setup.c:294
-msgid "Enter LUKS passphrase to be deleted: "
-msgstr "Gõ cụm từ mật khẩu LUKS cần xoá:"
-
-#: lib/setup.c:300
-#, c-format
-msgid "key slot %d selected for deletion.\n"
-msgstr "khe khoá %d được chọn để xoá.\n"
-
-#: lib/setup.c:311
-#, c-format
-msgid "Key %d not active. Can't wipe.\n"
-msgstr "Khoá %d không hoạt động thì không xoá được.\n"
-
-#: lib/setup.c:317
-msgid "This is the last keyslot. Device will become unusable after purging this key."
-msgstr "Đây là khe khoá cuối cùng. Sau khi tẩy khoá này thì thiết bị không dùng được."
-
-#: lib/setup.c:365 lib/setup.c:1687 lib/setup.c:1740 lib/setup.c:1797
-#, c-format
-msgid "Device %s already exists.\n"
-msgstr "Thiết bị %s đã có.\n"
-
-#: lib/setup.c:370
-#, c-format
-msgid "Invalid key size %d.\n"
-msgstr "Kích cỡ khoá không đúng %d.\n"
-
-#: lib/setup.c:472 lib/setup.c:1692
+#: lib/setup.c:340
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "Gõ cụm từ mật khẩu cho %s: "
 
-#: lib/setup.c:601 lib/setup.c:629 lib/setup.c:1401 lib/setup.c:1748
-msgid "Enter passphrase: "
-msgstr "Gõ cụm từ mật khẩu: "
+#: lib/setup.c:500
+msgid "Cannot find a free loopback device.\n"
+msgstr "Không tìm thấy thiết bị vòng ngược (loopback ) nào còn rảnh.\n"
 
-#: lib/setup.c:662 lib/setup.c:1046 lib/setup.c:1839
+#: lib/setup.c:508
+msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
+msgstr "Gặp lỗi khi gắn thiết bị vòng lặp (loopback) (thiết bị lặp với cờ autoclear là bắt buộc).\n"
+
+#: lib/setup.c:564
+#, c-format
+msgid "LUKS header detected but device %s is too small.\n"
+msgstr "Phát hiện được phần đầu LUKS mà thiết bị %s quá nhỏ.\n"
+
+#: lib/setup.c:580 lib/setup.c:1068
+msgid "This operation is not supported for this device type.\n"
+msgstr "Thao tác này không được hỗ trợ cho kiểu thiết bị này.\n"
+
+#: lib/setup.c:643 lib/setup.c:1035 lib/setup.c:1808
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Thiết bị %s không hoạt động.\n"
 
-#: lib/setup.c:771
-msgid "No known cipher specification pattern detected.\n"
-msgstr "Không phát hiện mẫu chỉ thị mật mã đã biết.\n"
+#: lib/setup.c:661
+#, c-format
+msgid "Underlying device for crypt device %s disappeared.\n"
+msgstr "Thiết bị nằm dưới cho thiết bị crypt %s đã bị biến mất.\n"
 
-#: lib/setup.c:785
-msgid "Enter LUKS passphrase: "
-msgstr "Gõ cụm từ mật khẩu LUKS: "
-
-#: lib/setup.c:926 lib/setup.c:1153 lib/setup.c:1207 lib/setup.c:1232
-#: lib/setup.c:1251
-msgid "Cannot initialize crypto backend.\n"
-msgstr "Không thể sơ khởi hậu phương mật mã.\n"
-
-#: lib/setup.c:1066
+#: lib/setup.c:775
 msgid "Invalid plain crypt parameters.\n"
 msgstr "Sai lập tham số mật mã bình thường.\n"
 
-#: lib/setup.c:1071
+#: lib/setup.c:780 lib/setup.c:885
 msgid "Invalid key size.\n"
 msgstr "Kích cỡ khoá không đúng.\n"
 
-#: lib/setup.c:1104
+#: lib/setup.c:821
 msgid "Can't format LUKS without device.\n"
 msgstr "Không thể định dạng LUKS mà không có thiết bị.\n"
 
-#: lib/setup.c:1126
+#: lib/setup.c:859
 #, c-format
-msgid "Can't wipe header on device %s.\n"
-msgstr "Không thể xoá phần đầu trên thiết bị %s.\n"
+msgid "Cannot format device %s which is still in use.\n"
+msgstr "Không thể định dạng thiết bị %s mà nó lại vẫn đang được sử dụng.\n"
 
-#: lib/setup.c:1174
+#: lib/setup.c:862
+#, c-format
+msgid "Cannot wipe header on device %s.\n"
+msgstr "Không thể tẩy xoá phần đầu trên thiết bị %s.\n"
+
+#: lib/setup.c:880
+msgid "Can't format LOOPAES without device.\n"
+msgstr "Không thể định dạng LOOPAES bên ngoài thiết bị.\n"
+
+#: lib/setup.c:940
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Không rõ kiểu thiết bị mật mã %s được yêu cầu.\n"
 
-#: lib/setup.c:1293
+#: lib/setup.c:1083
+msgid "Do you really want to change UUID of device?"
+msgstr "Bạn có thực sự muốn thay đổi UUID cho thiết bị?"
+
+#: lib/setup.c:1168 lib/setup.c:1215 lib/setup.c:1264 lib/setup.c:1330
+#: lib/setup.c:1406 lib/setup.c:1487 lib/setup.c:1533 lib/setup.c:1868
+#: lib/setup.c:1973 lib/setup.c:2112
+msgid "This operation is supported only for LUKS device.\n"
+msgstr "Thao tác này được hỗ trợ chỉ cho thiết bị LUKS.\n"
+
+#: lib/setup.c:1175
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Khối tin %s không hoạt động.\n"
 
-#: lib/setup.c:1306
+#: lib/setup.c:1187
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Khối %s đã bị ngưng.\n"
 
-#: lib/setup.c:1334 lib/setup.c:1383 lib/setup.c:1442 lib/setup.c:1520
-#: lib/setup.c:1592 lib/setup.c:1637 lib/setup.c:1731 lib/setup.c:1788
-#: lib/setup.c:1909 lib/setup.c:1992 lib/setup.c:2092
-msgid "This operation is supported only for LUKS device.\n"
-msgstr "Thao tác này được hỗ trợ chỉ cho thiết bị LUKS.\n"
-
-#: lib/setup.c:1345 lib/setup.c:1394
+#: lib/setup.c:1225 lib/setup.c:1274
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Khối %s không bị ngưng.\n"
 
-#: lib/setup.c:1456 lib/setup.c:1534
+#: lib/setup.c:1281 lib/setup.c:1658 lib/setup.c:1672 src/cryptsetup.c:343
+msgid "Enter passphrase: "
+msgstr "Gõ cụm từ mật khẩu: "
+
+#: lib/setup.c:1344 lib/setup.c:1420
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "Không thể thêm khe khoá vì mọi khe đều bị tắt và không cung cấp khoá khối tin.\n"
 
-#: lib/setup.c:1465 lib/setup.c:1540 lib/setup.c:1543
+#: lib/setup.c:1353 lib/setup.c:1426 lib/setup.c:1430
 msgid "Enter any passphrase: "
 msgstr "Gõ bất cứ cụm từ mật khẩu nào: "
 
-#: lib/setup.c:1484 lib/setup.c:1558 lib/setup.c:1562 lib/setup.c:1615
+#: lib/setup.c:1370 lib/setup.c:1443 lib/setup.c:1447 lib/setup.c:1510
 msgid "Enter new passphrase for key slot: "
 msgstr "Gõ cụm từ mật khẩu mới cho khe khoá: "
 
-#: lib/setup.c:1606 lib/setup.c:1808 lib/setup.c:1920
+#: lib/setup.c:1501 lib/setup.c:1762 lib/setup.c:1775 lib/setup.c:1879
 msgid "Volume key does not match the volume.\n"
 msgstr "Khoá khối tin không tương ứng với khối tin đó.\n"
 
-#: lib/setup.c:1643
+#: lib/setup.c:1539
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "Khe khoá %d không đúng.\n"
 
-#: lib/setup.c:1648
+#: lib/setup.c:1544
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "Khe khoá %d không được dùng.\n"
 
-#: lib/setup.c:1835
+#: lib/setup.c:1574 lib/setup.c:1646 lib/setup.c:1738
+#, c-format
+msgid "Device %s already exists.\n"
+msgstr "Thiết bị %s đã có.\n"
+
+#: lib/setup.c:1749
+msgid "Incorrect volume key specified for plain device.\n"
+msgstr "Khóa dung lượng đã chỉ định không dúng cho thiết bị thường.\n"
+
+#: lib/setup.c:1780
+msgid "Device type is not properly initialised.\n"
+msgstr "Kiểu thiết bị gần như chắc chắn là chưa được thiết lập.\n"
+
+#: lib/setup.c:1804
 #, c-format
 msgid "Device %s is busy.\n"
 msgstr "Thiết bị %s đang bận.\n"
 
-#: lib/setup.c:1843
+#: lib/setup.c:1812
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Thiết bị không đúng %s.\n"
 
-#: lib/setup.c:1867
+#: lib/setup.c:1835
 msgid "Volume key buffer too small.\n"
 msgstr "Vùng đệm khoá khối tin quá nhỏ.\n"
 
-#: lib/setup.c:1875
+#: lib/setup.c:1843
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Không thể lấy khoá khối tin cho thiết bị bình thường.\n"
 
-#: lib/setup.c:1897
+#: lib/setup.c:1849
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Thao tác này không được hỗ trợ cho thiết bị mật mã %s.\n"
 
-#: lib/utils.c:416
-#, c-format
-msgid "Failed to open key file %s.\n"
-msgstr "Lỗi mở tập tin khoá %s.\n"
-
-#: lib/utils.c:436
-msgid "Error reading passphrase from terminal.\n"
-msgstr "Gặp lỗi khi đọc cụm từ mật khẩu từ thiết bị cuối.\n"
-
-#: lib/utils.c:441
-msgid "Verify passphrase: "
-msgstr "Thẩm tra cụm từ mật khẩu: "
-
-#: lib/utils.c:443
-msgid "Passphrases do not match.\n"
-msgstr "Hai cụm từ mật khẩu không trùng nhau.\n"
-
-#: lib/utils.c:458
-msgid "Can't do passphrase verification on non-tty inputs.\n"
-msgstr "Không thể thẩm tra cụm từ mật khẩu trên đầu vào khác TTY.\n"
-
-#: lib/utils.c:471
-#, c-format
-msgid "Failed to stat key file %s.\n"
-msgstr "Lỗi lấy trạng thái về tập tin khoá %s.\n"
-
-#: lib/utils.c:475
-#, c-format
-msgid "Warning: exhausting read requested, but key file %s is not a regular file, function might never return.\n"
-msgstr "Cảnh báo : yêu cầu một hàm đọc vét kiệt mà tập tin khoá %s không phải là một tập tin thông thường thì có thể là hàm chưa bao giờ trả lại.\n"
-
-#: lib/utils.c:487
-msgid "Out of memory while reading passphrase.\n"
-msgstr "Tràn bộ nhớ trong khi đọc cụm từ mật khẩu.\n"
-
-#: lib/utils.c:494
-msgid "Error reading passphrase.\n"
-msgstr "Lỗi đọc cụm từ mật khẩu.\n"
-
-#: lib/utils.c:531
+#: lib/utils.c:270
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Thiết bị %s không tồn tại hoặc không đủ quyền truy cập.\n"
 
-#: lib/utils.c:538
+#: lib/utils.c:280
 #, c-format
 msgid "Cannot open device %s for %s%s access.\n"
 msgstr "Không thể mở thiết bị %s cho truy cập %s%s.\n"
 
-#: lib/utils.c:539
+#: lib/utils.c:281
 msgid "exclusive "
 msgstr "dành riêng"
 
-#: lib/utils.c:540
+#: lib/utils.c:282
 msgid "writable"
 msgstr "ghi được"
 
-#: lib/utils.c:540
+#: lib/utils.c:282
 msgid "read-only"
 msgstr "chỉ đọc"
 
-#: lib/utils.c:547
+#: lib/utils.c:289
 #, c-format
 msgid "Cannot read device %s.\n"
 msgstr "Không thể đọc thiết bị %s.\n"
 
-#: lib/utils.c:577
+#: lib/utils.c:386
 #, c-format
-msgid "Cannot open device: %s\n"
-msgstr "Không thể mở thiết bị: %s\n"
+msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
+msgstr "Không thể sử dụng thiết bị %s mà nó lại đang được sử dụng(đang được ánh xạ hoặc gắn).\n"
 
-#: lib/utils.c:587
+#: lib/utils.c:390
 #, c-format
-msgid "BLKROGET failed on device %s.\n"
-msgstr "BLKROGET bị lỗi trên thiết bị %s.\n"
+msgid "Cannot get info about device %s.\n"
+msgstr "Không thể lấy thông tin về thiết bị %s.\n"
 
-#: lib/utils.c:612
+#: lib/utils.c:396
 #, c-format
-msgid "BLKGETSIZE failed on device %s.\n"
-msgstr "BLKGETSIZE bị lỗi trên thiết bị %s.\n"
+msgid "Requested offset is beyond real size of device %s.\n"
+msgstr "Khoảng bù (offset) yêu cầu nằm ngoài kích thước thật của thiết bị %s.\n"
 
-#: lib/utils.c:660
+#: lib/utils.c:404
+#, c-format
+msgid "Device %s has zero size.\n"
+msgstr "Thiết bị %s có kích cỡ số không.\n"
+
+#: lib/utils.c:415 lib/luks1/keymanage.c:524
+#, c-format
+msgid "Device %s is too small.\n"
+msgstr "Thiết bị %s có kích cỡ quá nhỏ.\n"
+
+#: lib/utils.c:423
+#, c-format
+msgid "Cannot use device %s (crypt segments overlaps or in use by another device).\n"
+msgstr "Không thể sử dụng thiết bị %s (các đoạn crypt chồng lên nhau hay đang sử dụng bởi thiết bị khác).\n"
+
+#: lib/utils.c:450
 msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
 msgstr "CẢNH BÁO ! Có thể là vùng nhớ không an toàn. Bạn đang chạy dưới người chủ (root) không?\n"
 
-#: lib/utils.c:666
+#: lib/utils.c:456
 msgid "Cannot get process priority.\n"
 msgstr "Không thể lấy mức ưu tiên của tiến trình.\n"
 
-#: lib/utils.c:669 lib/utils.c:682
+#: lib/utils.c:459 lib/utils.c:472
 #, c-format
-msgid "setpriority %u failed: %s"
-msgstr "setpriority %u bị lỗi: %s"
+msgid "setpriority %d failed: %s\n"
+msgstr "đặt quyền ưu tiên %d gặp lỗi: %s\n"
 
-#: lib/utils.c:680
-msgid "Cannot unlock memory."
-msgstr "Không thể mở khoá vùng nhớ."
+#: lib/utils.c:470
+msgid "Cannot unlock memory.\n"
+msgstr "Không thể mở khoá bộ nhớ.\n"
 
-#: luks/keyencryption.c:68
+#: lib/utils_crypt.c:212 lib/utils_crypt.c:225 lib/utils_crypt.c:329
+#: lib/utils_crypt.c:345
+msgid "Out of memory while reading passphrase.\n"
+msgstr "Tràn bộ nhớ trong khi đọc cụm từ mật khẩu.\n"
+
+#: lib/utils_crypt.c:217 lib/utils_crypt.c:232
+msgid "Error reading passphrase from terminal.\n"
+msgstr "Gặp lỗi khi đọc cụm từ mật khẩu từ thiết bị cuối.\n"
+
+#: lib/utils_crypt.c:230
+msgid "Verify passphrase: "
+msgstr "Thẩm tra cụm từ mật khẩu: "
+
+#: lib/utils_crypt.c:237
+msgid "Passphrases do not match.\n"
+msgstr "Hai cụm từ mật khẩu không trùng nhau.\n"
+
+#: lib/utils_crypt.c:278
+msgid "Cannot use offset with terminal input.\n"
+msgstr "Không thể sử dụng khoảng bù (offset) với đầu vào thiết bị cuối.\n"
+
+#: lib/utils_crypt.c:297
+msgid "Failed to open key file.\n"
+msgstr "Gặp lỗi khi mở tập tin khoá.\n"
+
+#: lib/utils_crypt.c:306
+msgid "Failed to stat key file.\n"
+msgstr "Gặp lỗi khi lấy thông tin tập tin khoá.\n"
+
+#: lib/utils_crypt.c:314 lib/utils_crypt.c:336
+msgid "Cannot seek to requested keyfile offset.\n"
+msgstr "Không thể tìm (seek) tới vị trí bù (offset) tập tin khóa đã yêu cầu.\n"
+
+#: lib/utils_crypt.c:353
+msgid "Error reading passphrase.\n"
+msgstr "Lỗi đọc cụm từ mật khẩu.\n"
+
+#: lib/utils_crypt.c:371
+msgid "Maximum keyfile size exceeeded.\n"
+msgstr "Đã vượt quá kích thước tập tin khóa tối đa.\n"
+
+#: lib/utils_crypt.c:376
+msgid "Cannot read requested amount of data.\n"
+msgstr "Không thể đọc đống dữ liệu đã yêu cầu.\n"
+
+#: lib/luks1/keyencryption.c:76
 #, c-format
 msgid "Unable to obtain sector size for %s"
 msgstr "Không thể lấy kích cỡ rãnh ghi cho %s"
 
-#: luks/keyencryption.c:137
+#: lib/luks1/keyencryption.c:103
+msgid "Key size in XTS mode must be 256 or 512 bits.\n"
+msgstr "Kích thước khóa trong chế độ XTS phải là 256 hay 512 bit.\n"
+
+#: lib/luks1/keyencryption.c:126
 msgid "Failed to obtain device mapper directory."
 msgstr "Lỗi lấy thư mục trình ánh xạ thiết bị."
 
-#: luks/keyencryption.c:153
+#: lib/luks1/keyencryption.c:142
 #, c-format
 msgid ""
 "Failed to setup dm-crypt key mapping for device %s.\n"
@@ -344,66 +387,66 @@ msgstr ""
 "(xem sổ theo dõi hệ thống để tìm thêm thông tin.)\n"
 "%s"
 
-#: luks/keyencryption.c:163
+#: lib/luks1/keyencryption.c:152
 msgid "Failed to open temporary keystore device.\n"
 msgstr "Lỗi mở thiết bị lưu trữ khoá tạm thời.\n"
 
-#: luks/keyencryption.c:170
+#: lib/luks1/keyencryption.c:159
 msgid "Failed to access temporary keystore device.\n"
 msgstr "Lỗi truy cập đến thiết bị lưu trữ khoá tạm thời.\n"
 
-#: luks/keymanage.c:94
+#: lib/luks1/keymanage.c:149
 #, c-format
 msgid "Requested file %s already exist.\n"
 msgstr "Yêu cầu tập tin %s đã có.\n"
 
-#: luks/keymanage.c:114 luks/keymanage.c:257
+#: lib/luks1/keymanage.c:169 lib/luks1/keymanage.c:391
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "Thiết bị %s không phải là một thiết bị kiểu LUKS đúng.\n"
 
-#: luks/keymanage.c:134
+#: lib/luks1/keymanage.c:189
 #, c-format
 msgid "Cannot write header backup file %s.\n"
 msgstr "Không thể ghi nhớ tập tin sao lưu phần đầu %s.\n"
 
-#: luks/keymanage.c:161
+#: lib/luks1/keymanage.c:216
 #, c-format
 msgid "Backup file %s doesn't exist.\n"
 msgstr "Tập tin sao lưu %s không tồn tại.\n"
 
-#: luks/keymanage.c:169
-msgid "Backup file do not contain valid LUKS header.\n"
-msgstr "Tập tin sao lưu không chứa phần đầu LUKS đúng.\n"
+#: lib/luks1/keymanage.c:224
+msgid "Backup file doesn't contain valid LUKS header.\n"
+msgstr "Tập tin sao lưu không chứa phần đầu LUKS hợp lệ.\n"
 
-#: luks/keymanage.c:182
+#: lib/luks1/keymanage.c:237
 #, c-format
 msgid "Cannot open header backup file %s.\n"
 msgstr "Không mở được tập tin sao lưu phần đầu %s.\n"
 
-#: luks/keymanage.c:188
+#: lib/luks1/keymanage.c:243
 #, c-format
 msgid "Cannot read header backup file %s.\n"
 msgstr "Không đọc được tập tin sao lưu phần đầu %s.\n"
 
-#: luks/keymanage.c:199
+#: lib/luks1/keymanage.c:254
 msgid "Data offset or key size differs on device and backup, restore failed.\n"
 msgstr "Khoảng bù dữ liệu hoặc kích cỡ khoá vẫn khác nhau trên thiết bị và bản sao lưu thì chức năng phục hồi bị lỗi.\n"
 
-#: luks/keymanage.c:207
+#: lib/luks1/keymanage.c:262
 #, c-format
 msgid "Device %s %s%s"
 msgstr "Thiết bị %s %s%s"
 
-#: luks/keymanage.c:208
+#: lib/luks1/keymanage.c:263
 msgid "does not contain LUKS header. Replacing header can destroy data on that device."
 msgstr "không chứa phần đầu LUKS. Thay thế phần đầu thì cũng có thể hủy dữ liệu trên thiết bị đó."
 
-#: luks/keymanage.c:209
+#: lib/luks1/keymanage.c:264
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgstr "đã chứa phần đầu LUKS. Thay thế phần đầu thì cũng hủy các khe khoá đã có."
 
-#: luks/keymanage.c:210
+#: lib/luks1/keymanage.c:265
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
@@ -411,243 +454,374 @@ msgstr ""
 "\n"
 "CẢNH BÁO: phần đầu thiết bị thật có mã số UUID khác với bản sao lưu !"
 
-#: luks/keymanage.c:225 luks/keymanage.c:338 luks/keymanage.c:373
+#: lib/luks1/keymanage.c:280 lib/luks1/keymanage.c:496
+#: lib/luks1/keymanage.c:530
 #, c-format
 msgid "Cannot open device %s.\n"
 msgstr "Không thể mở thiết bị %s.\n"
 
-#: luks/keymanage.c:259
-#, c-format
-msgid "Device %s is not a valid LUKS device."
-msgstr "Thiết bị %s không phải là một thiết bị kiểu LUKS đúng."
+#: lib/luks1/keymanage.c:310
+msgid "Non standard key size, manual repair required.\n"
+msgstr "Kích thước khóa không tiêu chuẩn, yêu cầu sửa chữa bằng tay.\n"
 
-#: luks/keymanage.c:262
+#: lib/luks1/keymanage.c:315
+msgid "Repairing keyslots.\n"
+msgstr "Đang chuẩn bị keyslots.\n"
+
+#: lib/luks1/keymanage.c:326
+msgid "Repair failed."
+msgstr "Sửa chữa gặp lỗi."
+
+#: lib/luks1/keymanage.c:333
+#, c-format
+msgid "Keyslot %i: offset repaired (%u -> %u).\n"
+msgstr "Khe-khoá (keyslot) %i: khoảng bù (offset) được sửa chữa (%u -> %u).\n"
+
+#: lib/luks1/keymanage.c:341
+#, c-format
+msgid "Keyslot %i: stripes repaired (%u -> %u).\n"
+msgstr "Khe-khoá (keyslot) %i: stripes được sửa chữa (%u -> %u).\n"
+
+#: lib/luks1/keymanage.c:352
+#, c-format
+msgid "Keyslot %i: bogus partition signature.\n"
+msgstr "Khe-khoá (keyslot) %i: chữ ký phân vùng không có thật.\n"
+
+#: lib/luks1/keymanage.c:357
+#, c-format
+msgid "Keyslot %i: salt wiped.\n"
+msgstr "Khe-khoá (keyslot) %i: salt bị tẩy xóa.\n"
+
+#: lib/luks1/keymanage.c:369
+msgid "Writing LUKS header to disk.\n"
+msgstr "Đang ghi phần đầu của LUKS lên đĩa.\n"
+
+#: lib/luks1/keymanage.c:394
 #, c-format
 msgid "Unsupported LUKS version %d.\n"
 msgstr "Phiên bản LUKS không được hỗ trợ %d.\n"
 
-#: luks/keymanage.c:265
+#: lib/luks1/keymanage.c:400 lib/luks1/keymanage.c:602
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
 msgstr "Không hỗ trợ chuỗi duy nhất LUKS %s được yêu cầu.\n"
 
-#: luks/keymanage.c:310
+#: lib/luks1/keymanage.c:415
+#, c-format
+msgid "LUKS keyslot %u is invalid.\n"
+msgstr "khe-khoá LUKS %u là không hợp lệ.\n"
+
+#: lib/luks1/keymanage.c:429 src/cryptsetup.c:535
+msgid "No known problems detected for LUKS header.\n"
+msgstr "Không phát hiện thấy vấn đề với phần đầu LUKS.\n"
+
+#: lib/luks1/keymanage.c:463
 #, c-format
 msgid "Cannot open file %s.\n"
 msgstr "Không thể mở tập tin %s.\n"
 
-#: luks/keymanage.c:350
-#, c-format
-msgid "LUKS header detected but device %s is too small.\n"
-msgstr "Phát hiện được phần đầu LUKS mà thiết bị %s quá nhỏ.\n"
-
-#: luks/keymanage.c:394
+#: lib/luks1/keymanage.c:551
 #, c-format
 msgid "Error during update of LUKS header on device %s.\n"
 msgstr "Gặp lỗi trong khi cập nhật phần đầu LUKS trên thiết bị %s.\n"
 
-#: luks/keymanage.c:401
+#: lib/luks1/keymanage.c:558
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s.\n"
 msgstr "Gặp lỗi trong khi đọc lại phần đầu LUKS sau khi cập nhật trên thiết bị %s.\n"
 
-#: luks/keymanage.c:413
+#: lib/luks1/keymanage.c:570
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
 msgstr "Gặp các tuỳ chọn PBKDF2 không tương thích (dùng thuật toán chuỗi duy nhất %s).\n"
 
-#: luks/keymanage.c:461
+#: lib/luks1/keymanage.c:607 lib/luks1/keymanage.c:689
+msgid "Wrong LUKS UUID format provided.\n"
+msgstr "Đưa ra định dạng mã số UUID LUKS không đúng.\n"
+
+#: lib/luks1/keymanage.c:632
 msgid "Cannot create LUKS header: reading random salt failed.\n"
 msgstr "Không thể tạo phần đầu LUKS: lỗi đọc salt ngẫu nhiên.\n"
 
-#: luks/keymanage.c:478
+#: lib/luks1/keymanage.c:649
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
 msgstr "Không thể tạo phần đầu LUKS: lỗi tạo bản tóm tắt (dùng chuỗi duy nhất %s).\n"
 
-#: luks/keymanage.c:496
-msgid "Wrong UUID format provided, generating new one.\n"
-msgstr "Đưa ra định dạng mã số UUID không đúng nên tạo định dạng mới.\n"
-
-#: luks/keymanage.c:523
+#: lib/luks1/keymanage.c:714
 #, c-format
 msgid "Key slot %d active, purge first.\n"
 msgstr "Khe khoá %d vẫn hoạt động: cần tẩy trước.\n"
 
-#: luks/keymanage.c:528
+#: lib/luks1/keymanage.c:719
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
 msgstr "Nguyên liệu khe khoá %d gồm có quá ít sọc. Có nên thao tác phần đầu không?\n"
 
-#: luks/keymanage.c:587
+#: lib/luks1/keymanage.c:786
 msgid "Failed to write to key storage.\n"
 msgstr "Lỗi ghi khoá vào kho lưu khoá.\n"
 
-#: luks/keymanage.c:664
+#: lib/luks1/keymanage.c:871
 msgid "Failed to read from key storage.\n"
 msgstr "Lỗi đọc từ kho lưu khoá.\n"
 
-#: luks/keymanage.c:673
+#: lib/luks1/keymanage.c:881
 #, c-format
 msgid "Key slot %d unlocked.\n"
 msgstr "Khe khoá %d được mở khoá.\n"
 
-#: luks/keymanage.c:706
+#: lib/luks1/keymanage.c:917 src/cryptsetup.c:732 src/cryptsetup.c:916
 msgid "No key available with this passphrase.\n"
 msgstr "Không có khoá sẵn sàng dùng với cụm từ mật khẩu này.\n"
 
-#: luks/keymanage.c:783
+#: lib/luks1/keymanage.c:935
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
 msgstr "Khe khoá %d không đúng: hãy chọn khe khoá trong phạm vi 0 đến %d.\n"
 
-#: luks/keymanage.c:795
+#: lib/luks1/keymanage.c:949
 #, c-format
 msgid "Cannot wipe device %s.\n"
 msgstr "Không thể xoá thiết bị %s.\n"
 
-#: src/cryptsetup.c:71 src/cryptsetup.c:89
+#: lib/loopaes/loopaes.c:142
+msgid "Detected not yet supported GPG encrypted keyfile.\n"
+msgstr "Tìm thấy tập tin khóa mã hóa GPG vẫn chưa được hỗ trợ.\n"
+
+#: lib/loopaes/loopaes.c:143
+msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "Hãy sử dụng gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+
+#: lib/loopaes/loopaes.c:175
+msgid "Incompatible loop-AES keyfile detected.\n"
+msgstr "Tập tin khoá (keyfile)  loop-AES không tương thích được tìm thấy.\n"
+
+#: lib/loopaes/loopaes.c:225
+msgid "Kernel doesn't support loop-AES compatible mapping.\n"
+msgstr "Nhân không hỗ trợ ánh xạ tương thích loop-AES.\n"
+
+#: src/cryptsetup.c:105
 msgid "<name> <device>"
 msgstr "<tên> <thiết_bị>"
 
-#: src/cryptsetup.c:71
+#: src/cryptsetup.c:105
 msgid "create device"
 msgstr "tạo thiết bị"
 
-#: src/cryptsetup.c:72 src/cryptsetup.c:73 src/cryptsetup.c:74
-#: src/cryptsetup.c:82
+#: src/cryptsetup.c:106 src/cryptsetup.c:107 src/cryptsetup.c:108
+#: src/cryptsetup.c:118 src/cryptsetup.c:125
 msgid "<name>"
 msgstr "<tên>"
 
-#: src/cryptsetup.c:72
+#: src/cryptsetup.c:106
 msgid "remove device"
 msgstr "gỡ bỏ thiết bị"
 
-#: src/cryptsetup.c:73
+#: src/cryptsetup.c:107
 msgid "resize active device"
 msgstr "thay đổi kích cỡ của thiết bị hoạt động"
 
-#: src/cryptsetup.c:74
+#: src/cryptsetup.c:108
 msgid "show device status"
 msgstr "hiển thị trạng thái về thiết bị"
 
-#: src/cryptsetup.c:75 src/cryptsetup.c:77
-msgid "<device> [<new key file>]"
-msgstr "<thiết_bị> [<tập_tin_khoá_mới>]"
-
-#: src/cryptsetup.c:75
-msgid "formats a LUKS device"
-msgstr "định dạng một thiết bị kiểu LUKS"
-
-#: src/cryptsetup.c:76
-msgid "<device> <name> "
-msgstr "<thiết_bị> <tên> "
-
-#: src/cryptsetup.c:76
-msgid "open LUKS device as mapping <name>"
-msgstr "mở thiết bị LUKS như là bản ánh xạ <tên>"
-
-#: src/cryptsetup.c:77
-msgid "add key to LUKS device"
-msgstr "thêm khoá vào thiết bị LUKS"
-
-#: src/cryptsetup.c:78
-msgid "<device> [<key file>]"
-msgstr "<thiết_bị> [<tập_tin_khoá>]"
-
-#: src/cryptsetup.c:78
-msgid "removes supplied key or key file from LUKS device"
-msgstr "gỡ bỏ khỏi thiết bị LUKS khoá hoặc tập tin khoá đưa ra"
-
-#: src/cryptsetup.c:79 src/cryptsetup.c:88
-msgid "<device> <key slot>"
-msgstr "<thiết_bị> <khe_khoá>"
-
-#: src/cryptsetup.c:79
-msgid "wipes key with number <key slot> from LUKS device"
-msgstr "xoá khỏi thiết bị LUKS khoá có số <khe_khoá>"
-
-#: src/cryptsetup.c:80 src/cryptsetup.c:81 src/cryptsetup.c:83
-#: src/cryptsetup.c:84 src/cryptsetup.c:85 src/cryptsetup.c:86
-#: src/cryptsetup.c:87
+#: src/cryptsetup.c:109 src/cryptsetup.c:116 src/cryptsetup.c:117
+#: src/cryptsetup.c:119 src/cryptsetup.c:120 src/cryptsetup.c:121
+#: src/cryptsetup.c:122 src/cryptsetup.c:123
 msgid "<device>"
 msgstr "<thiết_bị>"
 
-#: src/cryptsetup.c:80
+#: src/cryptsetup.c:109
+msgid "try to repair on-disk metadata"
+msgstr "thử sửa chữa siêu dữ liệu (metadata) on-disk"
+
+#: src/cryptsetup.c:110 src/cryptsetup.c:112
+msgid "<device> [<new key file>]"
+msgstr "<thiết_bị> [<tập_tin_khoá_mới>]"
+
+#: src/cryptsetup.c:110
+msgid "formats a LUKS device"
+msgstr "định dạng một thiết bị kiểu LUKS"
+
+#: src/cryptsetup.c:111 src/cryptsetup.c:124
+msgid "<device> <name> "
+msgstr "<thiết_bị> <tên> "
+
+#: src/cryptsetup.c:111
+msgid "open LUKS device as mapping <name>"
+msgstr "mở thiết bị LUKS như là bản ánh xạ <tên>"
+
+#: src/cryptsetup.c:112
+msgid "add key to LUKS device"
+msgstr "thêm khoá vào thiết bị LUKS"
+
+#: src/cryptsetup.c:113 src/cryptsetup.c:114
+msgid "<device> [<key file>]"
+msgstr "<thiết_bị> [<tập_tin_khoá>]"
+
+#: src/cryptsetup.c:113
+msgid "removes supplied key or key file from LUKS device"
+msgstr "gỡ bỏ khỏi thiết bị LUKS khoá hoặc tập tin khoá đưa ra"
+
+#: src/cryptsetup.c:114
+msgid "changes supplied key or key file of LUKS device"
+msgstr "thay đổi khóa hay tập tin khóa đã áp dụng của thiết bị LUKS"
+
+#: src/cryptsetup.c:115
+msgid "<device> <key slot>"
+msgstr "<thiết_bị> <khe_khoá>"
+
+#: src/cryptsetup.c:115
+msgid "wipes key with number <key slot> from LUKS device"
+msgstr "xoá khỏi thiết bị LUKS khoá có số <khe_khoá>"
+
+#: src/cryptsetup.c:116
 msgid "print UUID of LUKS device"
 msgstr "in ra mã số UUID của thiết bị LUKS"
 
-#: src/cryptsetup.c:81
+#: src/cryptsetup.c:117
 msgid "tests <device> for LUKS partition header"
 msgstr "thử <thiết_bị> có phần đầu phân vùng LUKS không"
 
-#: src/cryptsetup.c:82
+#: src/cryptsetup.c:118
 msgid "remove LUKS mapping"
 msgstr "gỡ bỏ sự ánh xạ LUKS"
 
-#: src/cryptsetup.c:83
+#: src/cryptsetup.c:119
 msgid "dump LUKS partition information"
 msgstr "đổ thông tin về phân vùng LUKS"
 
-#: src/cryptsetup.c:84
+#: src/cryptsetup.c:120
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
 msgstr "Ngưng thiết bị LUKS và xoá khoá (thì mọi việc V/R đều đông cứng)."
 
-#: src/cryptsetup.c:85
+#: src/cryptsetup.c:121
 msgid "Resume suspended LUKS device."
 msgstr "Tiếp tục lại sử dụng thiết bị LUKS bị ngưng."
 
-#: src/cryptsetup.c:86
+#: src/cryptsetup.c:122
 msgid "Backup LUKS device header and keyslots"
 msgstr "Sao lưu phần đầu và các khe khoá của thiết bị LUKS"
 
-#: src/cryptsetup.c:87
+#: src/cryptsetup.c:123
 msgid "Restore LUKS device header and keyslots"
 msgstr "Phục hồi phần đầu và các khe khoá của thiết bị LUKS"
 
-#: src/cryptsetup.c:88
-msgid "identical to luksKillSlot - DEPRECATED - see man page"
-msgstr "trùng với luksKillSlot - BỊ PHẢN ĐỐI - xem trang hướng dẫn"
+#: src/cryptsetup.c:124
+msgid "open loop-AES device as mapping <name>"
+msgstr "mở thiết bị loop-AES như là ánh xạ <tên>"
 
-#: src/cryptsetup.c:89
-msgid "modify active device - DEPRECATED - see man page"
-msgstr "sửa đổi thiết bị hoạt động - BỊ PHẢN ĐỐI - xem trang hướng dẫn"
+#: src/cryptsetup.c:125
+msgid "remove loop-AES mapping"
+msgstr "gỡ bỏ ánh xạ  loop-AES"
 
-#: src/cryptsetup.c:180
+#: src/cryptsetup.c:218
+msgid "Can't do passphrase verification on non-tty inputs.\n"
+msgstr "Không thể thẩm tra cụm từ mật khẩu trên đầu vào khác TTY.\n"
+
+#: src/cryptsetup.c:233
 msgid "Command successful.\n"
 msgstr "Câu lệnh đã chạy thành công.\n"
 
-#: src/cryptsetup.c:194
+#: src/cryptsetup.c:247
 #, c-format
 msgid "Command failed with code %i"
 msgstr "Câu lệnh đã thất bại với mã %i"
 
-#: src/cryptsetup.c:222
-msgid ""
-"The reload action is deprecated. Please use \"dmsetup reload\" in case you really need this functionality.\n"
-"WARNING: do not use reload to touch LUKS devices. If that is the case, hit Ctrl-C now.\n"
-msgstr ""
-"Hành động nạp lại bị phản đối. Hãy sử dụng « dmsetup reload » trong trường hợp bạn thực sự yêu cầu chức năng này.\n"
-"CẢNH BÁO : đừng sử dụng chức năng nạp lại để thao tác thiết bị kiểu LUKS. Trong trường hợp đó, bấm tổ hợp phím Ctrl-C ngay bây giờ.\n"
+#: src/cryptsetup.c:375
+msgid "Option --key-file is required.\n"
+msgstr "Tuỳ chọn --key-file là cần thiết.\n"
 
-#: src/cryptsetup.c:390
+#: src/cryptsetup.c:539
+msgid "Really try to repair LUKS device header?"
+msgstr "Bạn có thực sự muốn thử sửa chữa phần đầu thiết bị LUKS không?"
+
+#: src/cryptsetup.c:564
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr "Hành động này sẽ ghi đè lên dữ liệu trên thiết bị %s một cách không phục hồi được."
 
-#: src/cryptsetup.c:391
+#: src/cryptsetup.c:566
 msgid "memory allocation error in action_luksFormat"
 msgstr "gặp lỗi phân cấp vùng nhớ trong « action_luksFormat »"
 
-#: src/cryptsetup.c:421
-msgid "Obsolete option --non-exclusive is ignored.\n"
-msgstr "Tuỳ chọn cũ « --non-exclusive » bị bỏ qua.\n"
+#: src/cryptsetup.c:578
+msgid "No known cipher specification pattern detected.\n"
+msgstr "Không phát hiện mẫu chỉ thị mật mã đã biết.\n"
 
-#: src/cryptsetup.c:581 src/cryptsetup.c:603
+#: src/cryptsetup.c:584
+#, c-format
+msgid "Cannot use %s as on-disk header.\n"
+msgstr "Không thể sử dụng %s như là phần đầu on-disk.\n"
+
+#: src/cryptsetup.c:599 src/cryptsetup.c:1030
+msgid "Enter LUKS passphrase: "
+msgstr "Gõ cụm từ mật khẩu LUKS: "
+
+#: src/cryptsetup.c:654
+msgid "Reduced data offset is allowed only for detached LUKS header.\n"
+msgstr "Giảm khoảng bù (offset) dữ liệu chỉ cho phép khi phần đầu LUKS được tách rời.\n"
+
+#: src/cryptsetup.c:755 src/cryptsetup.c:810
+#, c-format
+msgid "Key slot %d selected for deletion.\n"
+msgstr "Khe khoá %d đã được chọn để xoá.\n"
+
+#: src/cryptsetup.c:758
+#, c-format
+msgid "Key %d not active. Can't wipe.\n"
+msgstr "Khoá %d không hoạt động thì không xoá được.\n"
+
+#: src/cryptsetup.c:766 src/cryptsetup.c:813
+msgid "This is the last keyslot. Device will become unusable after purging this key."
+msgstr "Đây là khe khoá cuối cùng. Sau khi tẩy khoá này thì thiết bị không dùng được."
+
+#: src/cryptsetup.c:767
+msgid "Enter any remaining LUKS passphrase: "
+msgstr "Gõ cụm từ mật khẩu LUKS nào còn lại:"
+
+#: src/cryptsetup.c:795
+msgid "Enter LUKS passphrase to be deleted: "
+msgstr "Gõ cụm từ mật khẩu LUKS cần xoá:"
+
+#: src/cryptsetup.c:898
+msgid "Enter LUKS passphrase to be changed: "
+msgstr "Gõ cụm từ mật khẩu LUKS được thay đổi:"
+
+#: src/cryptsetup.c:935
+msgid "Enter new LUKS passphrase: "
+msgstr "Gõ cụm từ mật khẩu LUKS:"
+
+#: src/cryptsetup.c:949
+#, c-format
+msgid "Key slot %d changed.\n"
+msgstr "Khe khoá %d đã thay đổi.\n"
+
+#: src/cryptsetup.c:955
+#, c-format
+msgid "Replaced with key slot %d.\n"
+msgstr "Đã thay thế với khe khoá %d.\n"
+
+#: src/cryptsetup.c:960
+msgid "Failed to swap new key slot.\n"
+msgstr "Gặp lỗi khi hoán đổi khe khoá mới.\n"
+
+#: src/cryptsetup.c:1019
+msgid ""
+"LUKS header dump with volume key is sensitive information\n"
+"which allows access to encrypted partition without passphrase.\n"
+"This dump should be always stored encrypted on safe place."
+msgstr ""
+"Đổ đống đầu LUKS với khóa dung lượng là thông tin phân biệt hoa thường\n"
+"cái mà cho phép truy cập phân vùng được mã hóa mà không cần mật khẩu.\n"
+"Việc đổ đống này nên luôn được lưu trữ mã hóa tại một nơi an toàn."
+
+#: src/cryptsetup.c:1124 src/cryptsetup.c:1145
 msgid "Option --header-backup-file is required.\n"
 msgstr "Tuỳ chọn « --header-backup-file » cũng cần thiết.\n"
 
-#: src/cryptsetup.c:637
+#: src/cryptsetup.c:1183
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -655,7 +829,7 @@ msgstr ""
 "\n"
 "<hành_vi> là một của những điều dưới đây:\n"
 
-#: src/cryptsetup.c:643
+#: src/cryptsetup.c:1189
 #, c-format
 msgid ""
 "\n"
@@ -670,149 +844,305 @@ msgstr ""
 "<khe_khoá> là số thứ tự khe khoá LUKS cần sửa đổi\n"
 "<tập_tin_khoá> là tập tin khoá tuỳ chọn cho khoá mới trong hành động luksAddKey\n"
 
-#: src/cryptsetup.c:650
+#: src/cryptsetup.c:1196
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in keyfile parameters:\n"
+"\tMaximum keyfile size: %dkB, Maximum interactive passphrase length %d (characters)\n"
+msgstr ""
+"\n"
+"Các tham số khóa tập tin mặc định đã được dịch sẵn:\n"
+"\tKích thước tập tin khóa tối đa: %dkB, Độ dài mật khẩu trao đổi tối đa %d (ký tự)\n"
+
+#: src/cryptsetup.c:1201
 #, c-format
 msgid ""
 "\n"
 "Default compiled-in device cipher parameters:\n"
+"\tloop-AES: %s, Key %d bits\n"
 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
-"\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s\n"
+"\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
 msgstr ""
 "\n"
-"Các tham số mặc định về mật mã thiết bị biên dịch vào:\n"
-"\tbình thường: %s, Khoá: %d bit, Tạo chuỗi duy nhất mật khẩu: %s\n"
-"\tLUKS1: %s, Khoá: %d bit, Tạo chuỗi duy nhất phần đầu LUKS: %s\n"
+"Các tham số mặc định về mật mã thiết bị biên dịch sẵn:\n"
+"\tloop-AES: %s, Khóa %d bit\n"
+"\tbình thường: %s, Khoá: %d bit, Mã băm mật khẩu: %s\n"
+"\tLUKS1: %s, Khoá: %d bit, Mã băm phần đầu LUKS: %s, RNG: %s\n"
 
-#: src/cryptsetup.c:697
+#: src/cryptsetup.c:1269
 msgid "Show this help message"
 msgstr "Hiển thị trợ giúp này"
 
-#: src/cryptsetup.c:698
+#: src/cryptsetup.c:1270
 msgid "Display brief usage"
 msgstr " Hiển thị thông điệp ngắn về cách sử dụng"
 
-#: src/cryptsetup.c:702
+#: src/cryptsetup.c:1274
 msgid "Help options:"
 msgstr "Tùy chọn trợ giúp:"
 
-#: src/cryptsetup.c:703
-msgid "Shows more detailed error messages"
-msgstr "Hiển thị các thông điệp lỗi chi tiết hơn"
-
-#: src/cryptsetup.c:704
-msgid "Show debug messages"
-msgstr "Hiển thị thông điệp gỡ lỗi"
-
-#: src/cryptsetup.c:705
-msgid "The cipher used to encrypt the disk (see /proc/crypto)"
-msgstr "Mật mã dùng để bảo vệ đĩa (xem « /proc/crypto »)"
-
-#: src/cryptsetup.c:706
-msgid "The hash used to create the encryption key from the passphrase"
-msgstr "Chuỗi duy nhất dùng để tạo khoá mật mã từ cụm từ mật khẩu"
-
-#: src/cryptsetup.c:707
-msgid "Verifies the passphrase by asking for it twice"
-msgstr "Thẩm tra cụm từ mật khẩu bằng cách yêu cầu nó hai lần"
-
-#: src/cryptsetup.c:708
-msgid "Read the key from a file (can be /dev/random)"
-msgstr "Đọc khoá từ một tập tin nào đó (có thể là « /dev/random »)"
-
-#: src/cryptsetup.c:709
-msgid "Read the volume (master) key from file."
-msgstr "Đọc khoá khối tin (chủ) từ tập tin."
-
-#: src/cryptsetup.c:710
-msgid "The size of the encryption key"
-msgstr "Kích cỡ của khoá mật mã"
-
-#: src/cryptsetup.c:710
-msgid "BITS"
-msgstr "BIT"
-
-#: src/cryptsetup.c:711
-msgid "Slot number for new key (default is first free)"
-msgstr "Số thứ tự khe cho khoá mới (mặc định là khe trống thứ nhất)"
-
-#: src/cryptsetup.c:712
-msgid "The size of the device"
-msgstr "Kích cỡ của thiết bị"
-
-#: src/cryptsetup.c:712 src/cryptsetup.c:713 src/cryptsetup.c:714
-#: src/cryptsetup.c:721
-msgid "SECTORS"
-msgstr "RÃNH GHI"
-
-#: src/cryptsetup.c:713
-msgid "The start offset in the backend device"
-msgstr "Khoảng bù đầu tiên trong thiết bị hậu phương"
-
-#: src/cryptsetup.c:714
-msgid "How many sectors of the encrypted data to skip at the beginning"
-msgstr "Bao nhiêu rãnh ghi dữ liệu mật mã cần bỏ qua ở đầu"
-
-#: src/cryptsetup.c:715
-msgid "Create a readonly mapping"
-msgstr "Tạo một sự ánh xạ chỉ cho phép đọc"
-
-#: src/cryptsetup.c:716
-msgid "PBKDF2 iteration time for LUKS (in ms)"
-msgstr "Thời gian lặp lại PBKDF2 cho LUKS (theo mili-giây)"
-
-#: src/cryptsetup.c:716
-msgid "msecs"
-msgstr "mili-giây"
-
-#: src/cryptsetup.c:717
-msgid "Do not ask for confirmation"
-msgstr "Đừng yêu cầu xác nhận"
-
-#: src/cryptsetup.c:718
+#: src/cryptsetup.c:1275
 msgid "Print package version"
 msgstr "In ra phiên bản gói"
 
-#: src/cryptsetup.c:719
+#: src/cryptsetup.c:1276
+msgid "Shows more detailed error messages"
+msgstr "Hiển thị các thông điệp lỗi chi tiết hơn"
+
+#: src/cryptsetup.c:1277
+msgid "Show debug messages"
+msgstr "Hiển thị thông điệp gỡ lỗi"
+
+#: src/cryptsetup.c:1278
+msgid "The cipher used to encrypt the disk (see /proc/crypto)"
+msgstr "Mật mã dùng để bảo vệ đĩa (xem « /proc/crypto »)"
+
+#: src/cryptsetup.c:1279
+msgid "The hash used to create the encryption key from the passphrase"
+msgstr "Chuỗi duy nhất dùng để tạo khoá mật mã từ cụm từ mật khẩu"
+
+#: src/cryptsetup.c:1280
+msgid "Verifies the passphrase by asking for it twice"
+msgstr "Thẩm tra cụm từ mật khẩu bằng cách yêu cầu nó hai lần"
+
+#: src/cryptsetup.c:1281
+msgid "Read the key from a file."
+msgstr "Đọc khoá từ một tập tin."
+
+#: src/cryptsetup.c:1282
+msgid "Read the volume (master) key from file."
+msgstr "Đọc khoá khối tin (chủ) từ tập tin."
+
+#: src/cryptsetup.c:1283
+msgid "Dump volume (master) key instead of keyslots info."
+msgstr "Dump (đổ thành đống) khóa dung lượng (master) thay vì thông tin khe-khóa."
+
+#: src/cryptsetup.c:1284
+msgid "The size of the encryption key"
+msgstr "Kích cỡ của khoá mật mã"
+
+#: src/cryptsetup.c:1284
+msgid "BITS"
+msgstr "BIT"
+
+#: src/cryptsetup.c:1285
+msgid "Limits the read from keyfile"
+msgstr "Giới hạn việc đọc từ tệp-tin-khoá"
+
+#: src/cryptsetup.c:1285 src/cryptsetup.c:1286 src/cryptsetup.c:1287
+#: src/cryptsetup.c:1288
+msgid "bytes"
+msgstr "byte"
+
+#: src/cryptsetup.c:1286
+msgid "Number of bytes to skip in keyfile"
+msgstr "Số lượng byte nhảy qua trong tập tin khoá"
+
+#: src/cryptsetup.c:1287
+msgid "Limits the read from newly added keyfile"
+msgstr "Giới hạn đọc từ tập tin khóa mới thêm vào"
+
+#: src/cryptsetup.c:1288
+msgid "Number of bytes to skip in newly added keyfile"
+msgstr "Số lượng byte để nhảy qua trong tập tin khóa mới thêm"
+
+#: src/cryptsetup.c:1289
+msgid "Slot number for new key (default is first free)"
+msgstr "Số thứ tự khe cho khoá mới (mặc định là khe trống thứ nhất)"
+
+#: src/cryptsetup.c:1290
+msgid "The size of the device"
+msgstr "Kích cỡ của thiết bị"
+
+#: src/cryptsetup.c:1290 src/cryptsetup.c:1291 src/cryptsetup.c:1292
+#: src/cryptsetup.c:1298
+msgid "SECTORS"
+msgstr "RÃNH GHI"
+
+#: src/cryptsetup.c:1291
+msgid "The start offset in the backend device"
+msgstr "Khoảng bù đầu tiên trong thiết bị hậu phương"
+
+#: src/cryptsetup.c:1292
+msgid "How many sectors of the encrypted data to skip at the beginning"
+msgstr "Bao nhiêu rãnh ghi dữ liệu mật mã cần bỏ qua ở đầu"
+
+#: src/cryptsetup.c:1293
+msgid "Create a readonly mapping"
+msgstr "Tạo một sự ánh xạ chỉ cho phép đọc"
+
+#: src/cryptsetup.c:1294
+msgid "PBKDF2 iteration time for LUKS (in ms)"
+msgstr "Thời gian lặp lại PBKDF2 cho LUKS (theo mili-giây)"
+
+#: src/cryptsetup.c:1294
+msgid "msecs"
+msgstr "mili-giây"
+
+#: src/cryptsetup.c:1295
+msgid "Do not ask for confirmation"
+msgstr "Đừng yêu cầu xác nhận"
+
+#: src/cryptsetup.c:1296
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "Thời hạn khi nhắc gõ cụm từ mật khẩu (theo giây)"
 
-#: src/cryptsetup.c:719
+#: src/cryptsetup.c:1296
 msgid "secs"
 msgstr "giây"
 
-#: src/cryptsetup.c:720
+#: src/cryptsetup.c:1297
 msgid "How often the input of the passphrase can be retried"
 msgstr "Số các lần có thể thử lại gõ cụm từ mật khẩu"
 
-#: src/cryptsetup.c:721
+#: src/cryptsetup.c:1298
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "Sắp hàng trọng tải ở <n> biên giới rãnh ghi — cho định dạng luksFormat"
 
-#: src/cryptsetup.c:722
-msgid "(Obsoleted, see man page.)"
-msgstr "(Bị phản đối, xem trang hướng dẫn.)"
-
-#: src/cryptsetup.c:723
+#: src/cryptsetup.c:1299
 msgid "File with LUKS header and keyslots backup."
 msgstr "Tập tin chứa bản sao lưu phần đầu và các khe khoá của thiết bị LUKS."
 
-#: src/cryptsetup.c:741
+#: src/cryptsetup.c:1300
+msgid "Use /dev/random for generating volume key."
+msgstr "Sử dụng /dev/random để tạo khoá volume."
+
+#: src/cryptsetup.c:1301
+msgid "Use /dev/urandom for generating volume key."
+msgstr "Sử dụng /dev/urandom để tạo khoá volume."
+
+#: src/cryptsetup.c:1302
+msgid "Share device with another non-overlapping crypt segment."
+msgstr "Thiết bị chia sẻ với đoạn crypt không-chồng-lên-nhau khác."
+
+#: src/cryptsetup.c:1303
+msgid "UUID for device to use."
+msgstr "UUID dành cho tập tin sử dụng."
+
+#: src/cryptsetup.c:1304
+msgid "Allow discards (aka TRIM) requests for device."
+msgstr "Cho phép huỷ bỏ (được biết đến như là TRIM) các yêu cầu cho thiết bị."
+
+#: src/cryptsetup.c:1305
+msgid "Device or file with separated LUKS header."
+msgstr "Thiết bị hay tập tin với phần đầu LUKS tách nhau."
+
+#: src/cryptsetup.c:1322
 msgid "[OPTION...] <action> <action-specific>]"
 msgstr "[TÙY_CHỌN...] <hành_vi> <đặc_trưng_cho_hành_vi>]"
 
-#: src/cryptsetup.c:777
-msgid "Key size must be a multiple of 8 bits"
-msgstr "Kích cỡ khoá phải là bội số cho 8 bit"
-
-#: src/cryptsetup.c:781
+#: src/cryptsetup.c:1362
 msgid "Argument <action> missing."
 msgstr "Đối số <hành_vi> còn thiếu."
 
-#: src/cryptsetup.c:787
+#: src/cryptsetup.c:1368
 msgid "Unknown action."
 msgstr "Hành động không rõ."
 
-#: src/cryptsetup.c:802
+#: src/cryptsetup.c:1383
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: cần thiết %s làm đối số"
+
+#: src/cryptsetup.c:1392
+msgid "Option --shared is allowed only for create operation.\n"
+msgstr "Tuỳ chọn --shared chỉ cho phép với thao tác tạo (create).\n"
+
+#: src/cryptsetup.c:1401
+msgid "Option --allow-discards is allowed only for luksOpen, loopaesOpen and create operation.\n"
+msgstr "Tuỳ chọn --allow-discards thì chỉ cho phép với thao tác luksOpen, loopaesOpen và tạo (create).\n"
+
+#: src/cryptsetup.c:1410
+msgid ""
+"Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
+"To limit read from keyfile use --keyfile-size=(bytes)."
+msgstr ""
+"Tuỳ chọn --key-size thì chỉ cho phép với các thao tác luksFormat, tạo (create) và loopaesOpen.\n"
+"Để giới hạn đọc từ tệp-tin-khoá sử dụng tuỳ chọn --keyfile-size=(bytes)."
+
+#: src/cryptsetup.c:1417
+msgid "Key size must be a multiple of 8 bits"
+msgstr "Kích cỡ khoá phải là bội số cho 8 bit"
+
+#: src/cryptsetup.c:1424
+msgid "Key slot is invalid."
+msgstr "Khe khoá không đúng."
+
+#: src/cryptsetup.c:1431
+msgid "Option --key-file takes precedence over specified key file argument.\n"
+msgstr "Tuỳ chọn --key-file giữ quyền ưu tiên cao hơn tham số tập tin khoá đã chỉ định.\n"
+
+#: src/cryptsetup.c:1439
+msgid "Negative number for option not permitted."
+msgstr "Số âm cho tuỳ chọn là không được phép."
+
+#: src/cryptsetup.c:1444
+msgid "Only one of --use-[u]random options is allowed."
+msgstr "Chỉ cho phép một tuỳ chọn --use-[u]random."
+
+#: src/cryptsetup.c:1448
+msgid "Option --use-[u]random is allowed only for luksFormat."
+msgstr "Tuỳ chọn --use-[u]random chỉ được phép cho luksFormat."
+
+#: src/cryptsetup.c:1452
+msgid "Option --uuid is allowed only for luksFormat and luksUUID."
+msgstr "Tuỳ chọn --uuid thì chỉ cho phép với luksFormat và luksUUID."
+
+#: src/cryptsetup.c:1456
+msgid "Option --align-payload is allowed only for luksFormat."
+msgstr "Tuỳ chọn --align-payload chỉ được phép cho luksFormat."
+
+#: src/cryptsetup.c:1461
+msgid "Option --skip is supported only for create and loopaesOpen commands.\n"
+msgstr "Tuỳ chọn --skip chỉ hỗ trợ cho lệnh tạo (create) và loopaesOpen.\n"
+
+#: src/cryptsetup.c:1466
+msgid "Option --offset is supported only for create and loopaesOpen commands.\n"
+msgstr "Tuỳ chọn --offset chỉ hỗ trợ cho lệnh tạo (create) và loopaesOpen.\n"
+
+#~ msgid "Cannot find compatible device-mapper kernel modules.\n"
+#~ msgstr "Không tìm thấy mô-đun hạt nhân ánh xạ thiết bị tương thích.\n"
+
+#~ msgid "Cannot not read %d bytes from key file %s.\n"
+#~ msgstr "Không thể đọc %d byte từ tập tin khoá %s.\n"
+
+#~ msgid "Key slot %d verified.\n"
+#~ msgstr "Khe khoá %d được thẩm định.\n"
+
+#~ msgid "Invalid key size %d.\n"
+#~ msgstr "Kích cỡ khoá không đúng %d.\n"
+
+#~ msgid "Warning: exhausting read requested, but key file %s is not a regular file, function might never return.\n"
+#~ msgstr "Cảnh báo : yêu cầu một hàm đọc vét kiệt mà tập tin khoá %s không phải là một tập tin thông thường thì có thể là hàm chưa bao giờ trả lại.\n"
+
+#~ msgid "Cannot open device: %s\n"
+#~ msgstr "Không thể mở thiết bị: %s\n"
+
+#~ msgid "BLKROGET failed on device %s.\n"
+#~ msgstr "BLKROGET bị lỗi trên thiết bị %s.\n"
+
+#~ msgid "BLKGETSIZE failed on device %s.\n"
+#~ msgstr "BLKGETSIZE bị lỗi trên thiết bị %s.\n"
+
+#~ msgid "identical to luksKillSlot - DEPRECATED - see man page"
+#~ msgstr "trùng với luksKillSlot - BỊ PHẢN ĐỐI - xem trang hướng dẫn"
+
+#~ msgid "modify active device - DEPRECATED - see man page"
+#~ msgstr "sửa đổi thiết bị hoạt động - BỊ PHẢN ĐỐI - xem trang hướng dẫn"
+
+#~ msgid ""
+#~ "The reload action is deprecated. Please use \"dmsetup reload\" in case you really need this functionality.\n"
+#~ "WARNING: do not use reload to touch LUKS devices. If that is the case, hit Ctrl-C now.\n"
+#~ msgstr ""
+#~ "Hành động nạp lại bị phản đối. Hãy sử dụng « dmsetup reload » trong trường hợp bạn thực sự yêu cầu chức năng này.\n"
+#~ "CẢNH BÁO : đừng sử dụng chức năng nạp lại để thao tác thiết bị kiểu LUKS. Trong trường hợp đó, bấm tổ hợp phím Ctrl-C ngay bây giờ.\n"
+
+#~ msgid "Obsolete option --non-exclusive is ignored.\n"
+#~ msgstr "Tuỳ chọn cũ « --non-exclusive » bị bỏ qua.\n"
+
+#~ msgid "Read the key from a file (can be /dev/random)"
+#~ msgstr "Đọc khoá từ một tập tin nào đó (có thể là « /dev/random »)"
+
+#~ msgid "(Obsoleted, see man page.)"
+#~ msgstr "(Bị phản đối, xem trang hướng dẫn.)"
