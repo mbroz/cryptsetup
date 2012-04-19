@@ -294,7 +294,7 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
  * @{
  */
 
-/** regular crypt device, no on-disk header */
+/** plain crypt device, no on-disk header */
 #define CRYPT_PLAIN "PLAIN"
 /** LUKS version 1 header on-disk */
 #define CRYPT_LUKS1 "LUKS1"
@@ -397,7 +397,7 @@ int crypt_set_uuid(struct crypt_device *cd,
  * Load crypt device parameters from on-disk header
  *
  * @param cd crypt device handle
- * @param requested_type - use @e NULL for all known
+ * @param requested_type @link crypt_type @endlink or @e NULL for all known
  * @param params crypt type specific parameters (see @link crypt_type @endlink)
  *
  * @returns 0 on success or negative errno value otherwise.
@@ -416,7 +416,7 @@ int crypt_load(struct crypt_device *cd,
  * Try to repair crypt device on-disk header if invalid
  *
  * @param cd crypt device handle
- * @param requested_type - use @e NULL for all known
+ * @param requested_type @link crypt_type @endlink or @e NULL for all known
  * @param params crypt type specific parameters (see @link crypt_type @endlink)
  *
  * @returns 0 on success or negative errno value otherwise.
@@ -424,7 +424,7 @@ int crypt_load(struct crypt_device *cd,
  */
 int crypt_repair(struct crypt_device *cd,
 		 const char *requested_type,
-		 void *params __attribute__((unused)));
+		 void *params);
 
 /**
  * Resize crypt device
@@ -925,7 +925,7 @@ crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot);
  * Backup header and keyslots to file
  *
  * @param cd crypt device handle
- * @param requested_type type of header to backup
+ * @param requested_type @link crypt_type @endlink or @e NULL for all known
  * @param backup_file file to backup header to
  *
  * @return @e 0 on success or negative errno value otherwise.
@@ -940,7 +940,7 @@ int crypt_header_backup(struct crypt_device *cd,
  *
  *
  * @param cd crypt device handle
- * @param requested_type type of header to restore
+ * @param requested_type @link crypt_type @endlink or @e NULL for all known
  * @param backup_file file to restore header from
  *
  * @return @e 0 on success or negative errno value otherwise.
