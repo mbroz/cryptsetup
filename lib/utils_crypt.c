@@ -368,7 +368,7 @@ int crypt_get_key(const char *prompt,
 
 	/* Fail if we exceeded internal default (no specified size) */
 	if (unlimited_read && i == keyfile_size_max) {
-		log_err(cd, _("Maximum keyfile size exceeeded.\n"));
+		log_err(cd, _("Maximum keyfile size exceeded.\n"));
 		goto out_err;
 	}
 
