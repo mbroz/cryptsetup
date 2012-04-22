@@ -949,6 +949,23 @@ A. Contributors
   apply.
 
 
+ * 5.16 Is LUKS FIPS-140-2 certified?
+
+  No. But that is more a problem of FIPS-140-2 than of LUKS. From a
+  technical point-of-view, LUKS with the right parameters would be
+  FIPS-140-2 compliant, but in order to make it certified, somebody
+  has to pay real money for that. And then, whenever cryptsetup is
+  changed or extended, the certification lapses and has to be
+  obtained again.
+
+  From the aspect of actual security, LUKS with default parameters
+  should be as good as most things that are FIPS-140-2 certified,
+  although you may want to make sure to use /dev/random (by
+  specifying --use-random on luksFormat) as randomness source for
+  the master key to avoid being potentially insecure in an
+  entropy-starved situation.
+
+
 6. Backup and Data Recovery 
 
 
