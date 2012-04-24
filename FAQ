@@ -313,24 +313,29 @@ A. Contributors
  * 2.10 If I map a journaled file system using dm-crypt/LUKS, does it
    still provide its usual transactional guarantees?
 
-  As far as I know it does (but I may be wrong), but please note that
-  these "guarantees" are far weaker than they appear to be. For
-  example, you may not get a hard flush to disk surface even on a
-  call to fsync. In addition, the HDD itself may do independent
-  write reordering. Some other things can go wrong as well. The
-  filesystem developers are aware of these problems and typically
-  can make it work anyways. That said, dm-crypt/LUKS should not make
-  things worse.
+  Yes, it does, unless a very old kernel is used. The required flags
+  come from the filesystem layer and are processed and passed onwards
+  by dm-crypt. A bit more information on the process by which
+  transactional guarantees are implemented can be found here:
 
-  Personally, I have several instances of ext3 on dm-crypt and have
-  not noticed any specific problems.
+  http://lwn.net/Articles/400541/
 
-  Update: I did run into frequent small freezes (1-2 sec) when putting
-  a vmware image on ext3 over dm-crypt. This does indicate that the
-  transactional guarantees are in place, but at a cost. When I went
-  back to ext2, the problem went away. This also seems to have gotten
-  better with kernel 2.6.36 and the reworking of filesystem flush
-  locking. Kernel 2.6.38 is expected to have more improvements here.
+  Please note that these "guarantees" are weaker than they appear to
+  be. One problem is that quite a few disks lie to the OS about
+  having flushed their buffers. Some other things can go wrong as
+  well. The filesystem developers are aware of these problems and
+  typically can make it work anyways. That said, dm-crypt/LUKS will
+  not make things worse.
+
+  One specific problem you can run into though is that you can get
+  short freezes and other slowdowns due to the encryption layer.
+  Encryption takes time and forced flushes will block for that time.
+  For example, I did run into frequent small freezes (1-2 sec) when
+  putting a vmware image on ext3 over dm-crypt. When I went back to
+  ext2, the problem went away. This seems to have gotten better with
+  kernel 2.6.36 and the reworking of filesystem flush locking
+  mechanism (less blocking of CPU activity during flushes). It
+  should improve further and eventually the problem should go away.
 
 
  * 2.11 Can I use LUKS or cryptsetup with a more secure (external)
