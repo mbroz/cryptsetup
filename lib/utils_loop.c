@@ -99,7 +99,7 @@ int crypt_loop_attach(const char *loop, const char *file, int offset,
 	int loop_fd = -1, file_fd = -1, r = 1;
 
 	file_fd = open(file, (*readonly ? O_RDONLY : O_RDWR) | O_EXCL);
-	if (file_fd < 0 && errno == EROFS && !*readonly) {
+	if (file_fd < 0 && (errno == EROFS || errno == EACCES) && !*readonly) {
 		*readonly = 1;
 		file_fd = open(file, O_RDONLY | O_EXCL);
 	}
