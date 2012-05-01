@@ -428,15 +428,10 @@ $CRYPTSETUP luksChangeKey $LOOPDEV -i1 -d $KEY2 --keyfile-offset 1 $KEY2 --new-k
 $CRYPTSETUP luksOpen -d $KEY2 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 
-prepare "[25] Create non-overlapping segments" wipe
+prepare "[25] Create shared segments" wipe
 echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha1 --offset   0 --size 256 || fail
 echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 2>/dev/null && fail
 echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 --shared || fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --hash sha1 --offset 255 --size 256 --shared 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --hash sha1 --offset 256 --size 257 --shared 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --hash sha1 --offset 256 --size 1024 --shared 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME3 $LOOPDEV --hash sha1 --offset 256 --size 256 --shared || fail
-$CRYPTSETUP -q remove  $DEV_NAME3 || fail
 $CRYPTSETUP -q remove  $DEV_NAME2 || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 

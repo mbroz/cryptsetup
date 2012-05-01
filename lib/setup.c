@@ -285,6 +285,7 @@ int PLAIN_activate(struct crypt_device *cd,
 {
 	int r;
 	char *dm_cipher = NULL;
+	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
 		.device = crypt_get_device_name(cd),
 		.cipher = NULL,
@@ -296,8 +297,12 @@ int PLAIN_activate(struct crypt_device *cd,
 		.flags  = flags
 	};
 
-	r = device_check_and_adjust(cd, dmd.device,
-				    (dmd.flags & CRYPT_ACTIVATE_SHARED) ? DEV_SHARED : DEV_EXCL,
+	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
+		device_check = DEV_SHARED;
+	else
+		device_check = DEV_EXCL;
+
+	r = device_check_and_adjust(cd, dmd.device, device_check,
 				    &dmd.size, &dmd.offset, &flags);
 	if (r)
 		return r;
