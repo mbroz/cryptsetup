@@ -640,6 +640,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_SHARED   (1 << 2)
 /** enable discards aka TRIM */
 #define CRYPT_ACTIVATE_ALLOW_DISCARDS (1 << 3)
+/** skip global udev rules in activation ("private device"), input only */
+#define CRYPT_ACTIVATE_PRIVATE (1 << 4)
 
 /**
  * Active device runtime attributes

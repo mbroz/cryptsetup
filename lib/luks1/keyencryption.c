@@ -65,9 +65,12 @@ static int setup_mapping(const char *cipher, const char *name,
 		.offset = sector,
 		.iv_offset = 0,
 		.size   = 0,
-		.flags  = (mode == O_RDONLY) ? CRYPT_ACTIVATE_READONLY : 0
+		.flags  = 0
 	};
 
+	dmd.flags = CRYPT_ACTIVATE_PRIVATE;
+	if (mode == O_RDONLY)
+		dmd.flags |= CRYPT_ACTIVATE_READONLY;
 	/*
 	 * we need to round this to nearest multiple of the underlying
 	 * device's sector size, otherwise the mapping will be refused.

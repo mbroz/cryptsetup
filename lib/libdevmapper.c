@@ -435,7 +435,7 @@ int dm_create_device(const char *name,
 	if (!params)
 		goto out_no_removal;
 
-	if (type && !strncmp(type, "TEMP", 4))
+	if (dmd->flags & CRYPT_ACTIVATE_PRIVATE)
 		udev_flags = CRYPT_TEMP_UDEV_FLAGS;
 
 	/* All devices must have DM_UUID, only resize on old device is exception */
