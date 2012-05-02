@@ -295,6 +295,11 @@ static int _dm_simple(int task, const char *name, int udev_wait)
 	if (name && !dm_task_set_name(dmt, name))
 		goto out;
 
+#if HAVE_DECL_DM_TASK_RETRY_REMOVE
+	/* Used only in DM_DEVICE_REMOVE */
+	if (name && !dm_task_retry_remove(dmt))
+		goto out;
+#endif
 	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, 0))
 		goto out;
 
