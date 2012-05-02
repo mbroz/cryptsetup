@@ -1803,11 +1803,8 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
-			r = dm_remove_device(name, 0, 0);
-			break;
 		case CRYPT_BUSY:
-			log_err(cd, _("Device %s is busy.\n"), name);
-			r = -EBUSY;
+			r = dm_remove_device(name, 0, 0);
 			break;
 		case CRYPT_INACTIVE:
 			log_err(cd, _("Device %s is not active.\n"), name);
