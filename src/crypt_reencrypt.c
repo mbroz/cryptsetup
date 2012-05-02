@@ -350,7 +350,7 @@ static int activate_luks_headers(void)
 
 	if ((r = crypt_activate_by_passphrase(cd, rnc.header_file_org,
 		CRYPT_ANY_SLOT, rnc.password, rnc.passwordLen,
-		CRYPT_ACTIVATE_READONLY)) < 0)
+		CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
 
 	if ((r = crypt_init(&cd_new, rnc.header_file_new)) ||
@@ -360,7 +360,7 @@ static int activate_luks_headers(void)
 
 	if ((r = crypt_activate_by_passphrase(cd_new, rnc.header_file_new,
 		CRYPT_ANY_SLOT, rnc.password, rnc.passwordLen,
-		CRYPT_ACTIVATE_SHARED)) < 0)
+		CRYPT_ACTIVATE_SHARED|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
 out:
 	crypt_free(cd);
