@@ -35,3 +35,13 @@ cryptsetup_static_LDADD = $(cryptsetup_LDADD)	\
 	@DEVMAPPER_STATIC_LIBS@			\
 	@UUID_LIBS@
 endif
+
+# reencrypt
+crypt_reencrypt_SOURCES = \
+	$(top_builddir)/lib/utils_crypt.c	\
+	crypt_reencrypt.c			\
+	cryptsetup.h
+
+crypt_reencrypt_LDADD = $(cryptsetup_LDADD)
+crypt_reencrypt_CFLAGS = $(cryptsetup_CFLAGS)
+sbin_PROGRAMS += crypt_reencrypt
