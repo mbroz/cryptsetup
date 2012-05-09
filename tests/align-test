@@ -58,6 +58,19 @@ format() # key_bits expected [forced]
 		echo "FAIL"
 		fail "Expected alignment differs: expected $2 != detected $ALIGN"
 	fi
+
+	# test some operation, just in case
+	echo -e "xxx\naaa" | $CRYPTSETUP luksAddKey $DEV -i1 --key-slot 1
+	if [ $? -ne 0 ] ; then
+		echo "FAIL"
+		fail "Keyslot add failed."
+	fi
+	$CRYPTSETUP -q luksKillSlot $DEV 1
+	if [ $? -ne 0 ] ; then
+		echo "FAIL"
+		fail "Keyslot removal failed."
+	fi
+
 	echo "PASSED"
 }
 

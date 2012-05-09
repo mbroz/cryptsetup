@@ -133,7 +133,7 @@ int crypt_wipe(const char *device,
 	if (!buffer)
 		return -ENOMEM;
 
-	flags = O_WRONLY | O_DIRECT | O_SYNC;
+	flags = O_RDWR | O_DIRECT | O_SYNC;
 
 	/* use O_EXCL only for block devices */
 	if (exclusive && S_ISBLK(st.st_mode))
