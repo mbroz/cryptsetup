@@ -25,6 +25,9 @@
  *  - with direct-io reads old device and copy to new device in defined steps
  *  - keps simple off in file (allows restart)
  *  - there is several windows when corruption can happen
+ *
+ * null target
+ * dmsetup create x --table "0 $(blockdev --getsz DEV) crypt cipher_null-ecb-null - 0 DEV 0"
  */
 #include <string.h>
 #include <stdio.h>
@@ -55,6 +58,9 @@ static int opt_batch_mode = 0;
 static int opt_version_mode = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
+static int opt_bsize = 4;
+static int opt_new = 0;
+static const char *opt_new_file = NULL;
 
 static const char **action_argv;
 sigset_t signals_open;
@@ -64,8 +70,10 @@ struct {
 	char *device_uuid;
 	uint64_t device_size;
 	uint64_t device_offset;
+	uint64_t device_shift;
 
 	int in_progress:1;
+	enum { FORWARD = 0, BACKWARD = 1 } reencrypt_direction;
 
 	char header_file_org[PATH_MAX];
 	char header_file_new[PATH_MAX];
@@ -237,15 +245,21 @@ static int create_empty_header(const char *new_file, uint64_t size)
 static int write_log(void)
 {
 	static char buf[512];
+	ssize_t r;
 
 	//log_dbg("Updating LUKS reencryption log offset %" PRIu64 ".", offset);
 	memset(buf, 0, sizeof(buf));
 	snprintf(buf, sizeof(buf), "# LUKS reencryption log, DO NOT EDIT OR DELETE.\n"
-		"version = %d\nUUID = %s\noffset = %" PRIu64 "\n# EOF\n",
-		1, rnc.device_uuid, rnc.device_offset);
+		"version = %d\nUUID = %s\ndirection = %d\n"
+		"offset = %" PRIu64 "\nshift = %" PRIu64 "\n# EOF\n",
+		1, rnc.device_uuid, rnc.reencrypt_direction,
+		rnc.device_offset, rnc.device_shift);
 
 	lseek(rnc.log_fd, 0, SEEK_SET);
-	write(rnc.log_fd, buf, sizeof(buf));
+	r = write(rnc.log_fd, buf, sizeof(buf));
+	if (r < 0 || r != sizeof(buf))
+		return -EIO;
+
 	return 0;
 }
 
@@ -269,9 +283,15 @@ static int parse_line_log(const char *line)
 			log_dbg("Log: Unexpected UUID %s", s);
 			return -EINVAL;
 		}
+	} else if (sscanf(line, "direction = %d", &i) == 1) {
+		log_dbg("Log: direction = %i", i);
+		rnc.reencrypt_direction = i;
 	} else if (sscanf(line, "offset = %" PRIu64, &u64) == 1) {
 		log_dbg("Log: offset = %" PRIu64, u64);
 		rnc.device_offset = u64;
+	} else if (sscanf(line, "shift = %" PRIu64, &u64) == 1) {
+		log_dbg("Log: shift = %" PRIu64, u64);
+		rnc.device_shift = u64;
 	} else
 		return -EINVAL;
 
@@ -312,6 +332,10 @@ static int open_log(void)
 
 	if(stat(rnc.log_file, &st) < 0) {
 		log_dbg("Creating LUKS reencryption log file %s.", rnc.log_file);
+
+		// FIXME: move that somewhere else
+		rnc.reencrypt_direction = BACKWARD;
+
 		rnc.log_fd = open(rnc.log_file, O_RDWR|O_CREAT|O_DIRECT, S_IRUSR|S_IWUSR);
 		if (rnc.log_fd == -1)
 			return -EINVAL;
@@ -456,13 +480,94 @@ static int restore_luks_header(const char *backup)
 	return r;
 }
 
+static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *buf)
+{
+	ssize_t s1, s2;
+	int j;
+
+	log_err("Reencrypting [");
+	j = 0;
+	while (rnc.device_offset < rnc.device_size) {
+		s1 = read(fd_old, buf, block_size);
+		if (s1 < 0 || (s1 != block_size && (rnc.device_offset + s1) != rnc.device_size)) {
+			log_err("Read error, expecting %d, got %d.\n", (int)block_size, (int)s1);
+			return -EIO;
+		}
+		s2 = write(fd_new, buf, s1);
+		if (s2 < 0) {
+			log_err("Write error, expecting %d, got %d.\n", (int)block_size, (int)s2);
+			return -EIO;
+		}
+		rnc.device_offset += s1;
+		if (write_log() < 0) {
+			log_err("Log write error, some data are perhaps lost.\n");
+			return -EIO;
+		}
+
+		if (rnc.device_offset > (j * (rnc.device_size / 10))) {
+			log_err("-");
+			j++;
+		}
+	}
+	log_err("] Done.\n");
+
+	return 0;
+}
+
+static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *buf)
+{
+	ssize_t s1, s2, working_offset, working_block;
+	int j;
+
+	log_err("Reencrypting [");
+	j = 10;
+
+	while (rnc.device_offset) {
+		if (rnc.device_offset < block_size) {
+			working_offset = 0;
+			working_block = rnc.device_offset;
+		} else {
+			working_offset = rnc.device_offset - block_size;
+			working_block = block_size;
+		}
+
+		if (lseek(fd_old, working_offset, SEEK_SET) < 0 ||
+		    lseek(fd_new, working_offset, SEEK_SET) < 0)
+			return -EIO;
+//log_err("off: %06d, size %06d\n", working_offset, block_size);
+
+		s1 = read(fd_old, buf, working_block);
+		if (s1 < 0 || (s1 != working_block)) {
+			log_err("Read error, expecting %d, got %d.\n", (int)block_size, (int)s1);
+			return -EIO;
+		}
+		s2 = write(fd_new, buf, working_block);
+		if (s2 < 0) {
+			log_err("Write error, expecting %d, got %d.\n", (int)block_size, (int)s2);
+			return -EIO;
+		}
+		rnc.device_offset -= s1;
+		if (write_log() < 0) {
+			log_err("Log write error, some data are perhaps lost.\n");
+			return -EIO;
+		}
+
+		if (rnc.device_offset < (j * (rnc.device_size / 10))) {
+			log_err("-");
+			j--;
+		}
+	}
+	log_err("] Done.\n");
+
+	return 0;
+}
+
 static int copy_data(void)
 {
-	int fd_old = -1, fd_new = -1, j;
-	size_t block_size = 1024 *1024;
+	size_t block_size = opt_bsize * 1024 * 1024;
+	int fd_old = -1, fd_new = -1;
 	int r = -EINVAL;
 	void *buf = NULL;
-	ssize_t s1, s2;
 
 	fd_old = open(rnc.crypt_path_org, O_RDONLY | O_DIRECT);
 	if (fd_old == -1)
@@ -487,27 +592,17 @@ static int copy_data(void)
 		goto out;
 	}
 
-	log_err("Reencrypting [");
-	j = 0;
-	while (rnc.device_offset < rnc.device_size) {
-		s1 = read(fd_old, buf, block_size);
-		if (s1 != block_size)
-			log_err("Read error, expecting %d, got %d.\n", (int)block_size, (int)s1);
-		if (s1 < 0)
-			goto out;
-		s2 = write(fd_new, buf, s1);
-		if (s2 != block_size)
-			log_err("Write error, expecting %d, got %d.\n", (int)block_size, (int)s2);
-		rnc.device_offset += s1;
-		write_log();
-		if (rnc.device_offset > (j * (rnc.device_size / 10))) {
-			log_err("-");
-			j++;
-		}
-	}
-	log_err("] Done.\n");
-	r = 0;
+	// FIXME: all this should be in init
+	if (!rnc.in_progress && rnc.reencrypt_direction == BACKWARD)
+		rnc.device_offset = rnc.device_size;
 
+	if (rnc.reencrypt_direction == FORWARD)
+		r = copy_data_forward(fd_old, fd_new, block_size, buf);
+	else
+		r = copy_data_backward(fd_old, fd_new, block_size, buf);
+
+	if (r < 0)
+		log_err("ERROR during reencryption.\n");
 out:
 	if (fd_old != -1)
 		close(fd_old);
@@ -575,8 +670,15 @@ static int initialize_context(const char *device)
 	if (!(rnc.device = strndup(device, PATH_MAX)))
 		return -ENOMEM;
 
-	if (initialize_uuid())
+	if (opt_new_file && !create_uuid()) {
+		log_err("Cannot create fake header.\n");
 		return -EINVAL;
+	}
+
+	if (initialize_uuid()) {
+		log_err("No header found on device.\n");
+		return -EINVAL;
+	}
 
 	/* Prepare device names */
 	if (snprintf(rnc.log_file, PATH_MAX,
@@ -615,7 +717,9 @@ static void destroy_context(void)
 	close_log();
 	remove_headers();
 
-	if (rnc.device_offset == rnc.device_size) {
+	if ((rnc.reencrypt_direction == FORWARD &&
+	     rnc.device_offset == rnc.device_size) ||
+	     rnc.device_offset == 0) {
 		unlink(rnc.log_file);
 		unlink(rnc.header_file_org);
 		unlink(rnc.header_file_new);
@@ -706,6 +810,9 @@ int main(int argc, const char **argv)
 		{ "version",           '\0', POPT_ARG_NONE, &opt_version_mode,          0, N_("Print package version"), NULL },
 		{ "verbose",           'v',  POPT_ARG_NONE, &opt_verbose,               0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",             '\0', POPT_ARG_NONE, &opt_debug,                 0, N_("Show debug messages"), NULL },
+		{ "block-size",        'B',  POPT_ARG_INT, &opt_bsize,                  0, N_("Reencryption block size"), N_("MB") },
+		{ "new-header",        'N',  POPT_ARG_INT, &opt_new,                    0, N_("Create new header, need size on the end of device"), N_("MB") },
+		{ "new-crypt",         'f',  POPT_ARG_STRING, &opt_new_file,            0, N_("Log suffix for new reencryption file."), NULL },
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
@@ -727,7 +834,7 @@ int main(int argc, const char **argv)
 
 	popt_context = poptGetContext(PACKAGE, argc, argv, popt_options, 0);
 	poptSetOtherOptionHelp(popt_context,
-	                       N_("[OPTION...] <action> <action-specific>]"));
+	                       N_("[OPTION...] <device>]"));
 
 	while((r = poptGetNextOpt(popt_context)) > 0) {
 		if (r < 0)
@@ -750,6 +857,10 @@ int main(int argc, const char **argv)
 
 	if (opt_random && opt_urandom)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_new || !opt_new_file)
+		usage(popt_context, EXIT_FAILURE, _("You have to use -f with -N."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
