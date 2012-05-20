@@ -97,7 +97,7 @@ void get_topology_alignment(const char *device,
 			    unsigned long *alignment_offset,   /* bytes */
 			    unsigned long default_alignment);
 
-enum { CRYPT_RND_NORMAL = 0, CRYPT_RND_KEY = 1 };
+enum { CRYPT_RND_NORMAL = 0, CRYPT_RND_KEY = 1, CRYPT_RND_SALT = 2 };
 int crypt_random_init(struct crypt_device *ctx);
 int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int quality);
 void crypt_random_exit(void);

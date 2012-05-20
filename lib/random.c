@@ -176,6 +176,9 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 	case CRYPT_RND_NORMAL:
 		status = _get_urandom(ctx, buf, len);
 		break;
+	case CRYPT_RND_SALT:
+		status = _get_urandom(ctx, buf, len);
+		break;
 	case CRYPT_RND_KEY:
 		rng_type = ctx ? crypt_get_rng_type(ctx) :
 				 crypt_random_default_key_rng();

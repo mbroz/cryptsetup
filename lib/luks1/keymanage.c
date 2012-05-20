@@ -635,7 +635,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		header->version, header->hashSpec ,header->cipherName, header->cipherMode,
 		header->keyBytes);
 
-	r = crypt_random_get(ctx, header->mkDigestSalt, LUKS_SALTSIZE, CRYPT_RND_NORMAL);
+	r = crypt_random_get(ctx, header->mkDigestSalt, LUKS_SALTSIZE, CRYPT_RND_SALT);
 	if(r < 0) {
 		log_err(ctx,  _("Cannot create LUKS header: reading random salt failed.\n"));
 		return r;
@@ -752,7 +752,7 @@ int LUKS_set_key(const char *device, unsigned int keyIndex,
 		return -ENOMEM;
 
 	r = crypt_random_get(ctx, hdr->keyblock[keyIndex].passwordSalt,
-		       LUKS_SALTSIZE, CRYPT_RND_NORMAL);
+		       LUKS_SALTSIZE, CRYPT_RND_SALT);
 	if (r < 0)
 		return r;
 
