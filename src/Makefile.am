@@ -12,12 +12,14 @@ INCLUDES = \
 cryptsetup_SOURCES = \
 	$(top_builddir)/lib/utils_crypt.c	\
 	$(top_builddir)/lib/utils_loop.c	\
+	$(top_builddir)/lib/utils_fips.c	\
 	cryptsetup.c				\
 	cryptsetup.h
 
 cryptsetup_LDADD = \
 	$(top_builddir)/lib/libcryptsetup.la	\
-	@POPT_LIBS@
+	@POPT_LIBS@				\
+	@FIPSCHECK_LIBS@
 
 cryptsetup_CFLAGS = -Wall
 

@@ -27,6 +27,7 @@
 #include "lib/nls.h"
 #include "lib/utils_crypt.h"
 #include "lib/utils_loop.h"
+#include "lib/utils_fips.h"
 
 #define DEFAULT_CIPHER(type)	(DEFAULT_##type##_CIPHER "-" DEFAULT_##type##_MODE)
 

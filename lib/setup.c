@@ -1832,6 +1832,11 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	unsigned key_len;
 	int r = -EINVAL;
 
+	if (crypt_fips_mode()) {
+		log_err(cd, "Function not available in FIPS mode.\n");
+		return -EACCES;
+	}
+
 	key_len = crypt_get_volume_key_size(cd);
 	if (key_len > *volume_key_size) {
 		log_err(cd, _("Volume key buffer too small.\n"));

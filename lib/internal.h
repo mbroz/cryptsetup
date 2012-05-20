@@ -35,6 +35,7 @@
 #include "utils_crypt.h"
 #include "utils_loop.h"
 #include "utils_dm.h"
+#include "utils_fips.h"
 
 /* to silent gcc -Wcast-qual for const cast */
 #define CONST_CAST(x) (x)(uintptr_t)

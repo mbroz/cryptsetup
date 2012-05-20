@@ -38,6 +38,7 @@ libcryptsetup_la_LIBADD = \
 	@UUID_LIBS@				\
 	@DEVMAPPER_LIBS@			\
 	@CRYPTO_LIBS@				\
+	@FIPSCHECK_LIBS@			\
 	$(common_ldadd)
 
 
@@ -54,6 +55,8 @@ libcryptsetup_la_SOURCES = \
 	utils_loop.h				\
 	utils_devpath.c				\
 	utils_wipe.c				\
+	utils_fips.c				\
+	utils_fips.h				\
 	libdevmapper.c				\
 	utils_dm.h				\
 	volumekey.c				\

@@ -37,12 +37,13 @@ struct crypt_hmac {
 	int hash_len;
 };
 
-int crypt_backend_init(struct crypt_device *ctx __attribute__((unused)))
+int crypt_backend_init(struct crypt_device *ctx)
 {
 	if (crypto_backend_initialised)
 		return 0;
 
 	log_dbg("Initialising gcrypt crypto backend.");
+	crypt_fips_libcryptsetup_check(ctx);
 	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
 		if (!gcry_check_version (GCRYPT_REQ_VERSION)) {
 			return -ENOSYS;
