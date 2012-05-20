@@ -60,7 +60,7 @@ dmcrypt_check() # device outstring
 		fail
 	fi
 
-	X=$($CRYPTSETUP status $1 | grep cipher | sed s/\.\*cipher:\\s*//)
+	X=$($CRYPTSETUP status $1 | grep cipher: | sed s/\.\*cipher:\\s*//)
 	if [ $X = $2 ] ; then
 		echo -n "[status OK]"
 	else
@@ -132,6 +132,11 @@ add_device
 # compatibility modes
 dmcrypt aes aes-cbc-plain
 dmcrypt aes-plain aes-cbc-plain
+
+# empty cipher
+dmcrypt null cipher_null-ecb-null
+dmcrypt cipher_null cipher_null-cbc-plain
+dmcrypt cipher_null-ecb-null
 
 # codebook doesn't support IV at all
 for cipher in $CIPHERS ; do

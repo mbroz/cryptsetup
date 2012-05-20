@@ -243,7 +243,7 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 
 static char *get_params(struct crypt_dm_active_device *dmd)
 {
-	int r, max_size;
+	int r, max_size, null_cipher = 0;
 	char *params, *hexkey;
 	const char *features = "";
 
@@ -255,11 +255,17 @@ static char *get_params(struct crypt_dm_active_device *dmd)
 			log_dbg("Discard/TRIM is not supported by the kernel.");
 	}
 
-	hexkey = crypt_safe_alloc(dmd->vk->keylength * 2 + 1);
+	if (!strncmp(dmd->cipher, "cipher_null-", 12))
+		null_cipher = 1;
+
+	hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->vk->keylength * 2 + 1));
 	if (!hexkey)
 		return NULL;
 
-	hex_key(hexkey, dmd->vk->keylength, dmd->vk->key);
+	if (null_cipher)
+		strncpy(hexkey, "-", 2);
+	else
+		hex_key(hexkey, dmd->vk->keylength, dmd->vk->key);
 
 	max_size = strlen(hexkey) + strlen(dmd->cipher) +
 		   strlen(dmd->device) + strlen(features) + 64;

@@ -58,6 +58,15 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 		return 0;
 	}
 
+	/* Short version for "empty" cipher */
+	if (!strcmp(s, "null")) {
+		strncpy(cipher, "cipher_null", MAX_CIPHER_LEN);
+		strncpy(cipher_mode, "ecb-null", 9);
+		if (key_nums)
+			*key_nums = 0;
+		return 0;
+	}
+
 	if (sscanf(s, "%" MAX_CIPHER_LEN_STR "[^-]", cipher) == 1) {
 		strncpy(cipher_mode, "cbc-plain", 10);
 		if (key_nums)
