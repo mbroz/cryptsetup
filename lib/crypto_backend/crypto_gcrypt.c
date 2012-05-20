@@ -23,8 +23,6 @@
 #include <gcrypt.h>
 #include "crypto_backend.h"
 
-#define GCRYPT_REQ_VERSION "1.1.42"
-
 static int crypto_backend_initialised = 0;
 
 struct crypt_hash {
