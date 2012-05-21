@@ -226,3 +226,19 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx)
 	free(ctx);
 	return 0;
 }
+
+/* RNG  */
+int crypt_backend_fips_rng(char *buffer, size_t length, int quality)
+{
+	switch(quality) {
+	case CRYPT_RND_NORMAL:
+		gcry_randomize(buffer, length, GCRY_STRONG_RANDOM);
+		break;
+	case CRYPT_RND_SALT:
+	case CRYPT_RND_KEY:
+	default:
+		gcry_randomize(buffer, length, GCRY_VERY_STRONG_RANDOM);
+		break;
+	}
+	return 0;
+}

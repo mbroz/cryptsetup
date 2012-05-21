@@ -1,6 +1,7 @@
 2012-05-21  Milan Broz  <gmazyland@gmail.com>
 	* Add --enable-fips for linking with fipscheck library.
 	* Initialize binary and library selfcheck if running in FIPS mode.
+	* Use FIPS RNG in FIPS mode for KEY and SALT (only gcrypt backend supported).
 
 2012-05-09  Milan Broz  <gmazyland@gmail.com>
 	* Fix keyslot removal (wipe keyslot) for device with 4k hw block (1.4.0).

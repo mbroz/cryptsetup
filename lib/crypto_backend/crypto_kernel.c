@@ -291,3 +291,9 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx)
 	free(ctx);
 	return 0;
 }
+
+/* RNG - N/A */
+int crypt_backend_fips_rng(char *buffer, size_t length, int quality)
+{
+	return -EINVAL;
+}
