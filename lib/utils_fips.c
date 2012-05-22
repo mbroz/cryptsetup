@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include "libcryptsetup.h"
+#include "nls.h"
 #include "utils_fips.h"
 #include "config.h"
 
