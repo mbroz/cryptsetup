@@ -25,6 +25,7 @@
 
 #include "libcryptsetup.h"
 #include "internal.h"
+#include "crypto_backend.h"
 
 static int random_initialised = 0;
 

@@ -587,7 +587,7 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 	}
 
 	/* metadata device must be set */
-	if (!cd->device)
+	if (!cd->device || !device)
 		return -EINVAL;
 
 	r = device_ready(NULL, device, O_RDONLY);
@@ -704,7 +704,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	}
 
 	if (isPLAIN((*cd)->type)) {
-		(*cd)->plain_uuid = strdup(dmd.uuid);
+		(*cd)->plain_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
 		(*cd)->plain_hdr.hash = NULL; /* no way to get this */
 		(*cd)->plain_hdr.offset = dmd.offset;
 		(*cd)->plain_hdr.skip = dmd.iv_offset;
@@ -716,7 +716,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			(*cd)->plain_cipher_mode = strdup(cipher_mode);
 		}
 	} else if (isLOOPAES((*cd)->type)) {
-		(*cd)->loopaes_uuid = strdup(dmd.uuid);
+		(*cd)->loopaes_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
 		(*cd)->loopaes_hdr.offset = dmd.offset;
 
 		r = crypt_parse_name_and_mode(dmd.cipher, cipher,

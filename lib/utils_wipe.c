@@ -40,6 +40,14 @@ static ssize_t _crypt_wipe_zero(int fd, char *buffer, uint64_t offset, uint64_t 
 	return write_lseek_blockwise(fd, buffer, size, offset);
 }
 
+static ssize_t _crypt_wipe_random(int fd, char *buffer, uint64_t offset, uint64_t size)
+{
+	if (crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL) < 0)
+		return -EINVAL;
+
+	return write_lseek_blockwise(fd, buffer, size, offset);
+}
+
 /*
  * Wipe using Peter Gutmann method described in
  * http://www.cs.auckland.ac.nz/~pgut001/pubs/secure_del.html
@@ -68,27 +76,32 @@ static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)
 
 static ssize_t _crypt_wipe_disk(int fd, char *buffer, uint64_t offset, uint64_t size)
 {
+	int r;
 	unsigned int i;
 	ssize_t written;
 
 	for(i = 0; i < 39; ++i) {
-		if                (i <  5) crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL);
-		else if(i >=  5 && i < 32) wipeSpecial(buffer, size, i - 5);
-		else if(i >= 32 && i < 38) crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL);
-		else if(i >= 38 && i < 39) memset(buffer, 0xFF, size);
+		if (i <  5) {
+			r = crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL);
+		} else if(i >=  5 && i < 32) {
+			wipeSpecial(buffer, size, i - 5);
+			r = 0;
+		} else if(i >= 32 && i < 38) {
+			r = crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL);
+		} else if(i >= 38 && i < 39) {
+			memset(buffer, 0xFF, size);
+			r = 0;
+		}
+		if (r < 0)
+			return r;
 
 		written = write_lseek_blockwise(fd, buffer, size, offset);
 		if (written < 0 || written != (ssize_t)size)
 			return written;
 	}
 
-	return written;
-}
-
-static ssize_t _crypt_wipe_random(int fd, char *buffer, uint64_t offset, uint64_t size)
-{
-	crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL);
-	return write_lseek_blockwise(fd, buffer, size, offset);
+	/* Rewrite it finally with random */
+	return _crypt_wipe_random(fd, buffer, offset, size);
 }
 
 static ssize_t _crypt_wipe_ssd(int fd, char *buffer, uint64_t offset, uint64_t size)
@@ -152,11 +165,13 @@ int crypt_wipe(const char *device,
 			break;
 		case CRYPT_WIPE_DISK:
 			written = _crypt_wipe_disk(devfd, buffer, offset, size);
+			break;
 		case CRYPT_WIPE_SSD:
 			written = _crypt_wipe_ssd(devfd, buffer, offset, size);
 			break;
 		case CRYPT_WIPE_RANDOM:
 			written = _crypt_wipe_random(devfd, buffer, offset, size);
+			break;
 		default:
 			log_dbg("Unsuported wipe type requested: (%d)", type);
 			written = -1;
