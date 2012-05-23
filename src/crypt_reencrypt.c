@@ -669,12 +669,12 @@ static int initialize_context(const char *device)
 
 	if (!(rnc.device = strndup(device, PATH_MAX)))
 		return -ENOMEM;
-
+/*
 	if (opt_new_file && !create_uuid()) {
 		log_err("Cannot create fake header.\n");
 		return -EINVAL;
 	}
-
+*/
 	if (initialize_uuid()) {
 		log_err("No header found on device.\n");
 		return -EINVAL;
@@ -859,7 +859,7 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_new || !opt_new_file)
+	if (opt_new && !opt_new_file)
 		usage(popt_context, EXIT_FAILURE, _("You have to use -f with -N."),
 		      poptGetInvocationName(popt_context));
 
