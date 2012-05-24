@@ -193,8 +193,10 @@ as positional argument or via \-\-key-file.
 \fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset, 
 \-\-keyfile-size]
 
-\fBWARNING:\fR If you specify '-' as argument to \-\-key-file,
-then there will be no warning when you remove the 
+\fBWARNING:\fR If you read the passphrase from stdin
+(without further argument or with '-' as argument 
+to \-\-key-file), batch-mode (-q) will be implicitely
+switched on and no warning will be given when you remove the 
 last remaining passphrase from a LUKS container. Removing
 the last passphrase makes the LUKS container permanently 
 inaccessible.
@@ -234,9 +236,13 @@ passphrase makes a LUKS container permanently inaccessible.
 
 \fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset, \-\-keyfile-size].
 
-\fBWARNING:\fR If you use \-\-key-file with argument '-' to supply
-a passphrase, no warning will be given when you remove
-the last passphrase from a LUKS container. 
+\fBWARNING:\fR If you read the passphrase from stdin
+(without further argument or with '-' as argument 
+to \-\-key-file), batch-mode (-q) will be implicitely
+switched on and no warning will be given when you remove the 
+last remaining passphrase from a LUKS container. Removing
+the last passphrase makes the LUKS container permanently 
+inaccessible.
 .PP
 \fIluksUUID\fR <device>
 .IP
@@ -531,7 +537,7 @@ number of \fI0\fR for the IV calculation.
 Using \-\-skip causes sector \fIn\fR to also be the first sector
 of the mapped device, but with its number for IV generation is \fIn\fR.
 .TP
-.B "\-\-readonly, \-r"
+.B "\-\-readonly, \-r" 
 set up a read-only mapping.
 .TP
 .B "\-\-shared"
