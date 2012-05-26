@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
+#include <openssl/rand.h>
 #include "crypto_backend.h"
 
 static int crypto_backend_initialised = 0;
@@ -218,8 +219,14 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx)
 	return 0;
 }
 
-/* RNG - N/A */
-int crypt_backend_fips_rng(char *buffer, size_t length, int quality)
+/* RNG */
+int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 {
-	return -EINVAL;
+	if (fips)
+		return -EINVAL;
+
+	if (RAND_bytes((unsigned char *)buffer, length) != 1)
+		return -EINVAL;
+
+	return 0;
 }

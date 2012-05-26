@@ -28,7 +28,6 @@
 static int crypto_backend_initialised = 0;
 static char version[64];
 
-
 struct hash_alg {
 	const char *name;
 	SECOidTag oid;
@@ -284,8 +283,14 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx)
 	return 0;
 }
 
-/* RNG - N/A */
-int crypt_backend_fips_rng(char *buffer, size_t length, int quality)
+/* RNG */
+int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 {
-	return -EINVAL;
+	if (fips)
+		return -EINVAL;
+
+	if (PK11_GenerateRandom((unsigned char *)buffer, length) != SECSuccess)
+		return -EINVAL;
+
+	return 0;
 }
