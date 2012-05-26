@@ -52,7 +52,6 @@ int crypt_backend_init(struct crypt_device *ctx)
 		return 0;
 
 	OpenSSL_add_all_digests();
-	log_dbg("OpenSSL crypto backend initialized.");
 
 	crypto_backend_initialised = 1;
 	return 0;
@@ -61,6 +60,11 @@ int crypt_backend_init(struct crypt_device *ctx)
 uint32_t crypt_backend_flags(void)
 {
 	return 0;
+}
+
+const char *crypt_backend_version(void)
+{
+	return SSLeay_version(SSLEAY_VERSION);
 }
 
 /* HASH */

@@ -23,7 +23,11 @@
 #include <pk11pub.h>
 #include "crypto_backend.h"
 
+#define CONST_CAST(x) (x)(uintptr_t)
+
 static int crypto_backend_initialised = 0;
+static char version[64];
+
 
 struct hash_alg {
 	const char *name;
@@ -70,10 +74,10 @@ int crypt_backend_init(struct crypt_device *ctx)
 	if (crypto_backend_initialised)
 		return 0;
 
-	log_dbg("Initialising NSS crypto backend.");
 	if (NSS_NoDB_Init(".") != SECSuccess)
 		return -EINVAL;
 
+	snprintf(version, 64, "NSS %s", NSS_GetVersion());
 	crypto_backend_initialised = 1;
 	return 0;
 }
@@ -81,6 +85,11 @@ int crypt_backend_init(struct crypt_device *ctx)
 uint32_t crypt_backend_flags(void)
 {
 	return 0;
+}
+
+const char *crypt_backend_version(void)
+{
+	return crypto_backend_initialised ? version : "";
 }
 
 /* HASH */

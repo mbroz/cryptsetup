@@ -30,7 +30,6 @@
 #include "luks.h"
 #include "loopaes.h"
 #include "internal.h"
-#include "crypto_backend.h"
 
 struct crypt_device {
 	char *type;
@@ -157,6 +156,8 @@ static int init_crypto(struct crypt_device *ctx)
 {
 	int r;
 
+	crypt_fips_libcryptsetup_check(ctx);
+
 	r = crypt_random_init(ctx);
 	if (r < 0) {
 		log_err(ctx, _("Cannot initialize crypto RNG backend.\n"));
@@ -167,6 +168,7 @@ static int init_crypto(struct crypt_device *ctx)
 	if (r < 0)
 		log_err(ctx, _("Cannot initialize crypto backend.\n"));
 
+	log_dbg("Crypto backend (%s) initialized.", crypt_backend_version());
 	return r;
 }
 

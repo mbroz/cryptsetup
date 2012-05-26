@@ -18,12 +18,15 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include <errno.h>
 #include <assert.h>
 #include <gcrypt.h>
 #include "crypto_backend.h"
 
 static int crypto_backend_initialised = 0;
+static int crypto_backend_secmem = 1;
+static char version[64];
 
 struct crypt_hash {
 	gcry_md_hd_t hd;
@@ -42,8 +45,6 @@ int crypt_backend_init(struct crypt_device *ctx)
 	if (crypto_backend_initialised)
 		return 0;
 
-	log_dbg("Initialising gcrypt crypto backend.");
-	crypt_fips_libcryptsetup_check(ctx);
 	if (!gcry_control (GCRYCTL_INITIALIZATION_FINISHED_P)) {
 		if (!gcry_check_version (GCRYPT_REQ_VERSION)) {
 			return -ENOSYS;
@@ -56,8 +57,8 @@ int crypt_backend_init(struct crypt_device *ctx)
  * and it locks its memory space anyway.
  */
 #if 0
-		log_dbg("Initializing crypto backend (secure memory disabled).");
 		gcry_control (GCRYCTL_DISABLE_SECMEM);
+		crypto_backend_secmem = 0;
 #else
 
 		gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
@@ -67,8 +68,16 @@ int crypt_backend_init(struct crypt_device *ctx)
 		gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
 	}
 
+	snprintf(version, 64, "gcrypt %s%s",
+		 gcry_check_version(NULL),
+		 crypto_backend_secmem ? "" : ", secmem disabled");
 	crypto_backend_initialised = 1;
 	return 0;
+}
+
+const char *crypt_backend_version(void)
+{
+	return crypto_backend_initialised ? version : "";
 }
 
 uint32_t crypt_backend_flags(void)

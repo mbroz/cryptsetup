@@ -22,8 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "crypto_backend.h"
+#include "libcryptsetup.h"
 #include "loopaes.h"
+#include "internal.h"
 
 static const char *get_hash(unsigned int key_size)
 {

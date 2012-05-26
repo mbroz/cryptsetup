@@ -19,9 +19,10 @@
 #ifndef _CRYPTO_BACKEND_H
 #define _CRYPTO_BACKEND_H
 
-#include "libcryptsetup.h"
-#include "internal.h"
+#include <stdint.h>
+#include "config.h"
 
+struct crypt_device;
 struct crypt_hash;
 struct crypt_hmac;
 
@@ -30,6 +31,7 @@ int crypt_backend_init(struct crypt_device *ctx);
 #define CRYPT_BACKEND_KERNEL (1 << 0)	/* Crypto uses kernel part, for benchmark */
 
 uint32_t crypt_backend_flags(void);
+const char *crypt_backend_version(void);
 
 /* HASH */
 int crypt_hash_size(const char *name);
@@ -47,6 +49,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length);
 int crypt_hmac_destroy(struct crypt_hmac *ctx);
 
 /* RNG (must be usable in FIPS mode) */
+enum { CRYPT_RND_NORMAL = 0, CRYPT_RND_KEY = 1, CRYPT_RND_SALT = 2 };
 int crypt_backend_fips_rng(char *buffer, size_t length, int quality);
 
 #endif /* _CRYPTO_BACKEND_H */
