@@ -61,7 +61,7 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 	/* Short version for "empty" cipher */
 	if (!strcmp(s, "null")) {
 		strncpy(cipher, "cipher_null", MAX_CIPHER_LEN);
-		strncpy(cipher_mode, "ecb-null", 9);
+		strncpy(cipher_mode, "ecb", 9);
 		if (key_nums)
 			*key_nums = 0;
 		return 0;
