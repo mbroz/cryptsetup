@@ -76,7 +76,11 @@ int crypt_backend_init(struct crypt_device *ctx)
 	if (NSS_NoDB_Init(".") != SECSuccess)
 		return -EINVAL;
 
+#if HAVE_DECL_NSS_GETVERSION
 	snprintf(version, 64, "NSS %s", NSS_GetVersion());
+#else
+	snprintf(version, 64, "NSS");
+#endif
 	crypto_backend_initialised = 1;
 	return 0;
 }

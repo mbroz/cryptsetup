@@ -140,6 +140,12 @@ AC_DEFUN([CONFIGURE_NSS], [
 
 	PKG_CHECK_MODULES([NSS], [nss],,
 		AC_MSG_ERROR([You need nss library.]))
+
+	saved_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS $NSS_CFLAGS"
+	AC_CHECK_DECLS([NSS_GetVersion], [], [], [#include <nss.h>])
+	CFLAGS=$saved_CFLAGS
+
 	CRYPTO_CFLAGS=$NSS_CFLAGS
 	CRYPTO_LIBS=$NSS_LIBS
 	NO_FIPS([])
