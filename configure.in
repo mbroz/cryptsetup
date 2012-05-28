@@ -186,7 +186,12 @@ if test x$enable_static_cryptsetup = xyes; then
 		enable_static=yes
 	fi
 fi
-AM_CONDITIONAL(STATIC_CRYPTSETUP, test x$enable_static_cryptsetup = xyes)
+AM_CONDITIONAL(STATIC_TOOLS, test x$enable_static_cryptsetup = xyes)
+
+AC_ARG_ENABLE(veritysetup,
+	AS_HELP_STRING([--disable-veritysetup],
+	[disable veritysetup support]),[], [enable_veritysetup=yes])
+AM_CONDITIONAL(VERITYSETUP, test x$enable_veritysetup = xyes)
 
 AC_ARG_ENABLE(selinux,
 	AS_HELP_STRING([--disable-selinux],
