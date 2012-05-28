@@ -33,6 +33,7 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
 #include <stdint.h>
 
 struct crypt_device; /* crypt device handle */
