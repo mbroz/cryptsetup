@@ -43,7 +43,7 @@ static void crypt_fips_verify(struct crypt_device *cd,
 
 	if (!FIPSCHECK_verify(name, function)) {
 		crypt_log(cd, CRYPT_LOG_ERROR, _("FIPS checksum verification failed.\n"));
-		exit(EXIT_FAILURE);
+		_exit(EXIT_FAILURE);
 	}
 
 	crypt_log(cd, CRYPT_LOG_VERBOSE, _("Running in FIPS mode.\n"));
