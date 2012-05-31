@@ -1,0 +1,62 @@
+Cryptsetup 1.4.3 Release Notes
+==============================
+
+Changes since version 1.4.2
+
+* Fix readonly activation if underlying device is readonly (1.4.0).
+
+* Fix loop mapping on readonly file.
+
+* Include stddef.h in libdevmapper.h (size_t definition).
+
+* Fix keyslot removal for device with 4k hw block (1.4.0).
+(Wipe keyslot failed in this case.)
+
+* Relax --shared flag to allow mapping even for overlapping segments.
+
+  The --shared flag (and API CRYPT_ACTIVATE_SHARED flag) is now able
+  to map arbitrary overlapping area. From API it is even usable
+  for LUKS devices.
+  It is user responsibility to not cause data corruption though.
+
+  This allows e.g. scubed to work again and also allows some
+  tricky extensions later.
+
+* Allow empty cipher (cipher_null) for testing.
+
+  You can now use "null" (or directly cipher_null-ecb) in cryptsetup.
+  This means no encryption, useful for performance tests
+  (measure dm-crypt layer overhead).
+
+* Switch on retry on device remove for libdevmapper.
+  Device-mapper now retry removal if device is busy.
+
+* Allow "private" activation (skip some udev global rules) flag.
+  Cryptsetup library API now allows to specify CRYPT_ACTIVATE_PRIVATE,
+  which means that some udev rules are not processed.
+  (Used for temporary devices, like internal keyslot mappings where
+  it is not desirable to run any device scans.)
+
+* This release also includes some Red Hat/Fedora specific extensions
+related to FIPS140-2 compliance.
+
+In fact, all these patches are more formal changes and are just subset
+of building blocks for FIPS certification. See FAQ for more details
+about FIPS.
+
+FIPS extensions are enabled by using --enable-fips configure switch.
+
+In FIPS mode (kernel booted with fips=1 and gcrypt in FIPS mode)
+
+  - it provides library and binary integrity verification using
+  libfipscheck (requires pre-generated checksums)
+
+  - it uses FIPS approved RNG for encryption key and salt generation
+  (note that using /dev/random is not formally FIPS compliant RNG).
+
+ - only gcrypt crypto backend is currently supported in FIPS mode.
+
+The FIPS RNG requirement for salt comes from NIST SP 800-132 recommendation.
+(Recommendation for Password-Based Key Derivation. Part 1: Storage Applications.
+http://csrc.nist.gov/publications/nistpubs/800-132/nist-sp800-132.pdf)
+LUKS should be aligned to this recommendation otherwise.

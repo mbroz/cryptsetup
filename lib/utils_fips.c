@@ -18,6 +18,7 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
 #include "libcryptsetup.h"
 #include "nls.h"
 #include "utils_fips.h"
