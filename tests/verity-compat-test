@@ -1,0 +1,172 @@
+#!/bin/bash
+
+VERITYSETUP=../src/veritysetup
+#VERITYSETUP=../veritysetup-org
+
+DEV_NAME=verity3273
+DEV_OUT="$DEV_NAME.out"
+IMG=verity-data
+IMG_HASH=verity-hash
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
+	[ ! -z "$LOOPDEV2" ] && losetup -d $LOOPDEV2 >/dev/null 2>&1
+	rm -f $IMG $IMG_HASH $DEV_OUT >/dev/null 2>&1
+	LOOPDEV1=""
+	LOOPDEV2=""
+}
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	remove_mapping
+	echo "FAILED"
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 0
+}
+
+function prepare() # $1 dev1_siz [$2 dev2_size]
+{
+	remove_mapping
+
+	dd if=/dev/zero of=$IMG      bs=1k count=$1 >/dev/null 2>&1
+	LOOPDEV1=$(losetup -f 2>/dev/null)
+	[ -z "$LOOPDEV1" ] && fail "No free loop device"
+	losetup $LOOPDEV1 $IMG
+
+	[ -z "$2" ] && return
+	dd if=/dev/zero of=$IMG_HASH bs=1k count=$2 >/dev/null 2>&1
+	LOOPDEV2=$(losetup -f 2>/dev/null)
+	[ -z "$LOOPDEV2" ] && fail "No free loop device"
+	losetup $LOOPDEV2 $IMG_HASH
+}
+
+function wipe()
+{
+	dd if=/dev/zero of=$LOOPDEV1 bs=256k >/dev/null 2>&1
+	dd if=/dev/zero of=$LOOPDEV2 bs=256k >/dev/null 2>&1
+}
+
+function check_exists()
+{
+	[ -b /dev/mapper/$DEV_NAME ] || fail
+}
+
+function compare_out() # $1 what, $2 expected
+{
+	OPT=$(grep "$1" $DEV_OUT | sed -e s/.*\:\ //)
+	[ -z "$OPT" ] && fail
+	[ $OPT != $2 ] && fail "$1 differs ($OPT)"
+}
+
+function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, [$5 offset]
+{
+	if [ -z "$LOOPDEV2" ] ; then
+		BLOCKS=$(($5 * 512 / $1))
+		DEV_PARAMS="$LOOPDEV1 $LOOPDEV1 \
+			   --hash-start $5 \
+			   --data-blocks=$BLOCKS"
+	else
+		DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
+	fi
+
+	for fail in data hash; do
+	wipe
+	echo -n "V$4 block size $1: "
+	$VERITYSETUP -c $DEV_PARAMS --format=$4 \
+		--data-block-size=$1 --hash-block-size=$1 \
+		--algorithm=sha256 --salt=$3 \
+		>$DEV_OUT || fail
+
+	echo -n "[root hash]"
+	compare_out "root hash" $2
+	compare_out "salt" "$3"
+
+	$VERITYSETUP -v $DEV_PARAMS $2 >/dev/null 2>&1 || fail
+	echo -n "[verify]"
+
+	$VERITYSETUP -a $DEV_NAME $DEV_PARAMS $2  >/dev/null 2>&1 || fail
+	check_exists
+	echo -n "[activate]"
+
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
+	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
+	echo -n "[in-kernel verify]"
+
+	dmsetup remove $DEV_NAME || fail
+
+	case $fail in
+	data)
+		dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=3456 count=1 2>/dev/null
+		TXT="data_dev"
+		;;
+	hash)
+		if [ -z "$LOOPDEV2" ] ; then
+			dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=$((8193 + $4)) count=1 2>/dev/null
+		else
+			dd if=/dev/urandom of=$LOOPDEV2 bs=1 seek=8193 count=1 2>/dev/null
+		fi
+                TXT="hash_dev"
+		;;
+	esac
+
+	$VERITYSETUP -v $DEV_PARAMS $2 >/dev/null 2>&1 && \
+		fail "userspace check for $TXT corruption"
+	$VERITYSETUP -a $DEV_NAME $DEV_PARAMS $2 >/dev/null 2>&1 || \
+		fail "activation"
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
+	dmsetup status $DEV_NAME | grep "verity V" >/dev/null && \
+		fail "in-kernel check for $TXT corruption"
+	dmsetup remove $DEV_NAME || fail "deactivation"
+	echo "[$TXT corruption]"
+	done
+}
+
+function valgrind_setup()
+{
+	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	#export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${VERITYSETUP} "$@"
+}
+
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ ! -x "$VERITYSETUP" ] && skip "Cannot find $VERITYSETUP, test skipped."
+
+[ -n "$VALG" ] && valgrind_setup && VERITYSETUP=valgrind_run
+
+# VERITYSETUP tests
+
+SALT=e48da609055204e89ae53b655ca2216dd983cf3cb829f34f63a297d106d53e2d
+
+echo "Verity tests [separate devices]"
+prepare 8192 1024
+check_root_hash  512 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 $SALT 1
+check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da2b3df $SALT 1
+check_root_hash 4096 e522df0f97da4febb882ac40f30b37dc0b444bf6df418929463fa25280f09d5c $SALT 1
+check_root_hash 8192 7fbc02e9ffd56d0b3686c4fe8cbf20c72552df29317ea3b09a5e39a46a92d2f5 $SALT 1
+# version 0
+check_root_hash 4096 cbbf4ebd004ef65e29b935bb635a39cf754d677f3fa10b0126da725bbdf10f7d $SALT 0
+
+echo "Verity tests [one device offset]"
+prepare $((8192 + 1024))
+check_root_hash  512 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 $SALT 1 16384
+check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da2b3df $SALT 1 16384
+check_root_hash 4096 e522df0f97da4febb882ac40f30b37dc0b444bf6df418929463fa25280f09d5c $SALT 1 16384
+check_root_hash 8192 7fbc02e9ffd56d0b3686c4fe8cbf20c72552df29317ea3b09a5e39a46a92d2f5 $SALT 1 16384
+# version 0
+check_root_hash 4096 cbbf4ebd004ef65e29b935bb635a39cf754d677f3fa10b0126da725bbdf10f7d $SALT 0 16384
+
+remove_mapping
+exit 0

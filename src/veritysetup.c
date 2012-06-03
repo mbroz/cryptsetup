@@ -221,7 +221,7 @@ static char *xhexprint(char *bytes, size_t len)
 	char *p = xmalloc(len * 2 + 1);
 	p[0] = 0;
 	for (i = 0; i < len; i++)
-		snprintf(p + i * 2, 3, "%02x", bytes[i]);
+		snprintf(p + i * 2, 3, "%02x", (unsigned char)bytes[i]);
 	return p;
 }
 

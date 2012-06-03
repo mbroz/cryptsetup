@@ -1,4 +1,5 @@
-TESTS = api-test compat-test loopaes-test align-test discards-test mode-test password-hash-test
+TESTS = api-test compat-test loopaes-test align-test discards-test mode-test password-hash-test \
+	verity-compat-test
 
 EXTRA_DIST = compatimage.img.bz2 valid_header_file.bz2 \
 	evil_hdr-payload_overwrite.bz2 \
