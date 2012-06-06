@@ -38,6 +38,8 @@
 #include "utils_fips.h"
 #include "crypto_backend.h"
 
+#include "libcryptsetup.h"
+
 /* to silent gcc -Wcast-qual for const cast */
 #define CONST_CAST(x) (x)(uintptr_t)
 

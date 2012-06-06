@@ -32,7 +32,6 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <limits.h>
-#include <libcryptsetup.h>
 #include <popt.h>
 
 #include "cryptsetup.h"

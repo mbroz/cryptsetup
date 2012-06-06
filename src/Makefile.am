@@ -39,14 +39,12 @@ endif
 
 # veritysetup
 if VERITYSETUP
-INCLUDES += -I$(top_srcdir)/lib/crypto_backend
 
 veritysetup_SOURCES = \
 	veritysetup.c
 
 veritysetup_LDADD = \
-	$(top_builddir)/lib/crypto_backend/libcrypto_backend.la \
-	@CRYPTO_LIBS@ \
+	$(top_builddir)/lib/libcryptsetup.la	\
 	@POPT_LIBS@
 
 veritysetup_CFLAGS = $(cryptsetup_CFLAGS)
@@ -59,6 +57,8 @@ veritysetup_static_SOURCES = $(veritysetup_SOURCES)
 veritysetup_static_CFLAGS = $(veritysetup_CFLAGS)
 veritysetup_static_LDFLAGS = -all-static
 veritysetup_static_LDADD = $(veritysetup_LDADD)	\
-	@CRYPTO_STATIC_LIBS@
+	@CRYPTO_STATIC_LIBS@ \
+	@DEVMAPPER_STATIC_LIBS@ \
+	@UUID_LIBS@
 endif
 endif

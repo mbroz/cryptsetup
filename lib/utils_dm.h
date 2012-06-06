@@ -27,6 +27,7 @@
 
 struct crypt_device;
 struct volume_key;
+struct crypt_params_verity;
 
 /* Device mapper backend - kernel support flags */
 #define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
@@ -57,18 +58,36 @@ struct crypt_dm_active_device {
 	uint32_t flags;		/* activation flags */
 };
 
+struct crypt_dm_active_verity {
+	const char *data_device;
+	const char *hash_device;
+
+	const char *root_hash;
+	size_t root_hash_size;
+
+	uint64_t hash_offset;	/* hash offset (not header) */
+	uint64_t size;		/* active device size */
+	uint32_t flags;		/* activation flags */
+};
+
 const char *dm_get_dir(void);
 int dm_init(struct crypt_device *context, int check_kernel);
 void dm_exit(void);
 int dm_remove_device(const char *name, int force, uint64_t size);
 int dm_status_device(const char *name);
 int dm_status_suspended(const char *name);
+int dm_status_verity_ok(const char *name);
 int dm_query_device(const char *name, uint32_t get_flags,
 		    struct crypt_dm_active_device *dmd);
+int dm_query_verity(const char *name,
+		    struct crypt_dm_active_verity *dmd);
 int dm_create_device(const char *name,
 		      const char *type,
 		      struct crypt_dm_active_device *dmd,
 		      int reload);
+int dm_create_verity(const char *name,
+		     struct crypt_params_verity *params,
+		     struct crypt_dm_active_verity *dmd);
 int dm_suspend_and_wipe_key(const char *name);
 int dm_resume_and_reinstate_key(const char *name,
 				size_t key_size,

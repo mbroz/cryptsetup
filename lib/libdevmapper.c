@@ -28,12 +28,12 @@
 #include <uuid/uuid.h>
 
 #include "internal.h"
-#include "luks.h"
 
 #define DM_UUID_LEN		129
 #define DM_UUID_PREFIX		"CRYPT-"
 #define DM_UUID_PREFIX_LEN	6
 #define DM_CRYPT_TARGET		"crypt"
+#define DM_VERITY_TARGET	"verity"
 #define RETRY_COUNT		5
 
 /* Set if dm-crypt version was probed */
@@ -241,7 +241,7 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
-static char *get_params(struct crypt_dm_active_device *dmd)
+static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd)
 {
 	int r, max_size, null_cipher = 0;
 	char *params, *hexkey;
@@ -283,6 +283,47 @@ static char *get_params(struct crypt_dm_active_device *dmd)
 out:
 	crypt_safe_free(hexkey);
 	return params;
+}
+static char *get_dm_verity_params(struct crypt_params_verity *vp,
+				   struct crypt_dm_active_verity *dmd)
+{
+	int max_size, r;
+	char *params = NULL, *hexroot = NULL, *hexsalt = NULL;
+
+	hexroot = crypt_safe_alloc(dmd->root_hash_size * 2 + 1);
+	if (!hexroot)
+		goto out;
+	hex_key(hexroot, dmd->root_hash_size, dmd->root_hash);
+
+	hexsalt = crypt_safe_alloc(vp->salt_size * 2 + 1);
+	if (!hexsalt)
+		goto out;
+	hex_key(hexsalt, vp->salt_size, vp->salt);
+
+	max_size = strlen(hexroot) + strlen(hexsalt) +
+		   strlen(dmd->data_device) + strlen(dmd->hash_device) +
+		   strlen(vp->hash_name) + 128;
+
+	params = crypt_safe_alloc(max_size);
+	if (!params)
+		goto out;
+
+	r = snprintf(params, max_size,
+		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s",
+		     vp->version, dmd->data_device, dmd->hash_device,
+		     vp->data_block_size, vp->hash_block_size,
+		     vp->data_size, dmd->hash_offset,
+		     vp->hash_name, hexroot, hexsalt);
+	if (r < 0 || r >= max_size) {
+		crypt_safe_free(params);
+		params = NULL;
+	}
+	log_dbg("TABLE: %s", params);
+out:
+	crypt_safe_free(hexroot);
+	crypt_safe_free(hexsalt);
+	return params;
+
 }
 
 /* DM helpers */
@@ -423,25 +464,20 @@ static void dm_prepare_uuid(const char *name, const char *type, const char *uuid
 		log_err(NULL, _("DM-UUID for device %s was truncated.\n"), name);
 }
 
-int dm_create_device(const char *name,
-		     const char *type,
-		     struct crypt_dm_active_device *dmd,
-		     int reload)
+static int _dm_create_device(const char *name, const char *type,
+			     const char *device, uint32_t flags,
+			     const char *uuid, uint64_t size,
+			     char *params, int reload)
 {
 	struct dm_task *dmt = NULL;
 	struct dm_info dmi;
-	char *params = NULL;
 	char dev_uuid[DM_UUID_LEN] = {0};
 	int r = -EINVAL;
 	uint32_t read_ahead = 0;
 	uint32_t cookie = 0;
 	uint16_t udev_flags = 0;
 
-	params = get_params(dmd);
-	if (!params)
-		goto out_no_removal;
-
-	if (dmd->flags & CRYPT_ACTIVATE_PRIVATE)
+	if (flags & CRYPT_ACTIVATE_PRIVATE)
 		udev_flags = CRYPT_TEMP_UDEV_FLAGS;
 
 	/* All devices must have DM_UUID, only resize on old device is exception */
@@ -452,7 +488,7 @@ int dm_create_device(const char *name,
 		if (!dm_task_set_name(dmt, name))
 			goto out_no_removal;
 	} else {
-		dm_prepare_uuid(name, type, dmd->uuid, dev_uuid, sizeof(dev_uuid));
+		dm_prepare_uuid(name, type, uuid, dev_uuid, sizeof(dev_uuid));
 
 		if (!(dmt = dm_task_create(DM_DEVICE_CREATE)))
 			goto out_no_removal;
@@ -469,13 +505,15 @@ int dm_create_device(const char *name,
 
 	if ((dm_flags() & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
 		goto out_no_removal;
-	if ((dmd->flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
+	if ((flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
 		goto out_no_removal;
-	if (!dm_task_add_target(dmt, 0, dmd->size, DM_CRYPT_TARGET, params))
+
+	if (!dm_task_add_target(dmt, 0, size,
+		!strcmp("VERITY", type) ? DM_VERITY_TARGET : DM_CRYPT_TARGET, params))
 		goto out_no_removal;
 
 #ifdef DM_READ_AHEAD_MINIMUM_FLAG
-	if (device_read_ahead(dmd->device, &read_ahead) &&
+	if (device_read_ahead(device, &read_ahead) &&
 	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
 		goto out_no_removal;
 #endif
@@ -489,7 +527,7 @@ int dm_create_device(const char *name,
 			goto out;
 		if (!dm_task_set_name(dmt, name))
 			goto out;
-		if (dmd->uuid && !dm_task_set_uuid(dmt, dev_uuid))
+		if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
 			goto out;
 		if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
 			goto out;
@@ -523,11 +561,41 @@ out_no_removal:
 	return r;
 }
 
-static int dm_status_dmi(const char *name, struct dm_info *dmi)
+int dm_create_device(const char *name,
+		     const char *type,
+		     struct crypt_dm_active_device *dmd,
+		     int reload)
+{
+	char *table_params = NULL;
+
+	table_params = get_dm_crypt_params(dmd);
+	if (!table_params)
+		return -EINVAL;
+
+	return _dm_create_device(name, type, dmd->device, dmd->flags,
+				 dmd->uuid, dmd->size, table_params, reload);
+}
+
+int dm_create_verity(const char *name,
+		     struct crypt_params_verity *params,
+		     struct crypt_dm_active_verity *dmd)
+{
+	char *table_params = NULL;
+
+	table_params = get_dm_verity_params(params, dmd);
+	if (!table_params)
+		return -EINVAL;
+
+	return _dm_create_device(name, CRYPT_VERITY, dmd->data_device, dmd->flags,
+				 NULL, dmd->size, table_params, 0);
+}
+
+static int dm_status_dmi(const char *name, struct dm_info *dmi,
+			  const char *target, char **status_line)
 {
 	struct dm_task *dmt;
 	uint64_t start, length;
-	char *target_type, *params;
+	char *target_type, *params = NULL;
 	void *next = NULL;
 	int r = -EINVAL;
 
@@ -550,12 +618,15 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi)
 
 	next = dm_get_next_target(dmt, next, &start, &length,
 	                          &target_type, &params);
-	if (!target_type || strcmp(target_type, DM_CRYPT_TARGET) != 0 ||
+	if (!target_type || strcmp(target_type, target) != 0 ||
 	    start != 0 || next)
 		r = -EINVAL;
 	else
 		r = 0;
 out:
+	if (!r && status_line && !(*status_line = strdup(params)))
+		r = -ENOMEM;
+
 	if (dmt)
 		dm_task_destroy(dmt);
 
@@ -567,7 +638,7 @@ int dm_status_device(const char *name)
 	int r;
 	struct dm_info dmi;
 
-	r = dm_status_dmi(name, &dmi);
+	r = dm_status_dmi(name, &dmi, DM_CRYPT_TARGET, NULL);
 	if (r < 0)
 		return r;
 
@@ -579,11 +650,30 @@ int dm_status_suspended(const char *name)
 	int r;
 	struct dm_info dmi;
 
-	r = dm_status_dmi(name, &dmi);
+	r = dm_status_dmi(name, &dmi, DM_CRYPT_TARGET, NULL);
 	if (r < 0)
 		return r;
 
 	return dmi.suspended ? 1 : 0;
+}
+
+int dm_status_verity_ok(const char *name)
+{
+	int r;
+	struct dm_info dmi;
+	char *status_line = NULL;
+
+	r = dm_status_dmi(name, &dmi, DM_VERITY_TARGET, &status_line);
+	if (r < 0 || !status_line) {
+		free(status_line);
+		return r;
+	}
+
+	log_dbg("Verity volume %s status is %s.", name, status_line ?: "");
+	r = status_line[0] == 'V' ? 1 : 0;
+	free(status_line);
+
+	return r;
 }
 
 int dm_query_device(const char *name, uint32_t get_flags,
@@ -727,6 +817,14 @@ int dm_query_device(const char *name, uint32_t get_flags,
 out:
 	if (dmt)
 		dm_task_destroy(dmt);
+
+	return r;
+}
+
+int dm_query_verity(const char *name,
+		    struct crypt_dm_active_verity *dmd)
+{
+	int r = -EINVAL;
 
 	return r;
 }
