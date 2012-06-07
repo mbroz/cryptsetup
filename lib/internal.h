@@ -76,6 +76,8 @@ ssize_t write_lseek_blockwise(int fd, char *buf, size_t count, off_t offset);
 int device_ready(struct crypt_device *cd, const char *device, int mode);
 int device_size(const char *device, uint64_t *size);
 
+int crypt_getpagesize(void);
+
 enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
 int device_check_and_adjust(struct crypt_device *cd,
 			    const char *device,

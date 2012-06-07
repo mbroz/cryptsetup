@@ -346,8 +346,15 @@ int VERITY_create(struct crypt_device *cd,
 		  char *root_hash,
 		  size_t root_hash_size)
 {
+	int pgsize = crypt_getpagesize();
+
 	if (verity_hdr->salt_size > VERITY_MAX_SALT_SIZE)
 		return -EINVAL;
+
+	if (verity_hdr->hash_block_size > pgsize ||
+	    verity_hdr->data_block_size > pgsize)
+		log_err(cd, _("WARNING: Kernel cannot activate device if block "
+			      "size exceeds page size (%u).\n"), pgsize);
 
 	return VERITY_create_or_verify_hash(cd, 0,
 		verity_hdr->version,

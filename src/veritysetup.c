@@ -23,7 +23,6 @@
  * - audit alloc errors / error path
  * - change command names (cryptsetup style)
  * - extend superblock (UUID)
- * - warn if block_size > PAGE_SIZE
  * - configure.in/config.h defaults
  */
 

@@ -38,6 +38,11 @@
 #include "libcryptsetup.h"
 #include "internal.h"
 
+int crypt_getpagesize(void)
+{
+	return (int)sysconf(_SC_PAGESIZE);
+}
+
 static int get_alignment(int fd)
 {
 	int alignment = DEFAULT_MEM_ALIGNMENT;
