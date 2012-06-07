@@ -23,7 +23,6 @@
  * - audit alloc errors / error path
  * - change command names (cryptsetup style)
  * - extend superblock (UUID)
- * - configure.in/config.h defaults
  */
 
 #include <stdio.h>
@@ -52,13 +51,13 @@ static const char *hash_algorithm = NULL;
 static const char *root_hash = NULL;
 
 static int version = 1;
-static int data_block_size = 4096;
-static int hash_block_size = 4096;
+static int data_block_size = DEFAULT_VERITY_DATA_BLOCK;
+static int hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
 static char *data_blocks_string = NULL;
 static uint64_t data_blocks = 0;
 static char *hash_start_string = NULL;
 static const char *salt_string = NULL;
-static unsigned salt_size = 32;
+static unsigned salt_size = DEFAULT_VERITY_SALT_SIZE;
 static uint64_t hash_start = 0;
 
 static int opt_verbose = 0;
@@ -209,7 +208,7 @@ static int action_create(void)
 	if ((r = crypt_init(&cd, hash_device)))
 		goto out;
 
-	params.hash_name = hash_algorithm ?: "sha256";
+	params.hash_name = hash_algorithm ?: DEFAULT_VERITY_HASH;
 	params.data_device = data_device;
 
 	if (salt_string) {
