@@ -19,7 +19,6 @@
 
 /* TODO:
  * - init_by_name()
- * - unify units / uint64 etc
  * - check translations
  * - support device without superblock
  * - audit alloc errors / error path
@@ -57,13 +56,11 @@ static int version = 1;
 static int data_block_size = 4096;
 static int hash_block_size = 4096;
 static char *data_blocks_string = NULL;
-static long long data_blocks = 0;
+static uint64_t data_blocks = 0;
 static char *hash_start_string = NULL;
 static const char *salt_string = NULL;
-
 static unsigned salt_size = 32;
-
-static off_t superblock_position = 0;
+static uint64_t hash_start = 0;
 
 static int opt_verbose = 0;
 static int opt_debug = 0;
@@ -142,7 +139,7 @@ static int action_dump(void)
 	if ((r = crypt_init(&cd, hash_device)))
 		return r;
 
-	params.hash_area_offset = superblock_position;
+	params.hash_area_offset = hash_start;
 	r = crypt_load(cd, CRYPT_VERITY, &params);
 	if (!r)
 		crypt_dump(cd);
@@ -165,7 +162,7 @@ static int action_activate(int verify)
 		params.flags |= CRYPT_VERITY_CHECK_HASH;
 
 	if (use_superblock) {
-		params.hash_area_offset = superblock_position;
+		params.hash_area_offset = hash_start;
 		r = crypt_load(cd, CRYPT_VERITY, &params);
 	} else {/*
 		params.hash_name = hash_algorithm;
@@ -213,7 +210,7 @@ static int action_create(void)
 	if ((r = crypt_init(&cd, hash_device)))
 		goto out;
 
-	params.hash_name = hash_algorithm;
+	params.hash_name = hash_algorithm ?: "sha256";
 	params.data_device = data_device;
 
 	if (salt_string) {
@@ -228,7 +225,7 @@ static int action_create(void)
 	params.data_block_size = data_block_size;
 	params.hash_block_size = hash_block_size;
 	params.data_size = data_blocks;
-	params.hash_area_offset = superblock_position;
+	params.hash_area_offset = hash_start;
 	params.version = version;
 	params.flags = CRYPT_VERITY_CREATE_HASH;
 	if (!use_superblock)
@@ -310,7 +307,6 @@ int main(int argc, const char **argv)
 	poptContext popt_context;
 	int r;
 	char *end;
-	static long long hash_start = 0;
 
 	crypt_set_log_callback(NULL, _log, NULL);
 
@@ -381,39 +377,14 @@ int main(int argc, const char **argv)
 			usage(popt_context, EXIT_FAILURE,
 			      _("Invalid hash device offset."),
 			      poptGetInvocationName(popt_context));
+		hash_start *= 512;
 	}
-
-	if (hash_start < 0 ||
-	   (unsigned long long)hash_start * 512 / 512 != hash_start ||
-	   (off_t)(hash_start * 512) < 0 ||
-	   (off_t)(hash_start * 512) != hash_start * 512)
-		usage(popt_context, EXIT_FAILURE,
-		      _("Invalid hash device offset."),
-		      poptGetInvocationName(popt_context));
-
-	if (use_superblock)
-		superblock_position = hash_start * 512;
 
 	if (salt_string || !use_superblock) {
 		if (!salt_string || !strcmp(salt_string, "-"))
 			salt_string = "";
 		salt_size = strlen(salt_string) / 2;
 	}
-
-	if (data_block_size < 512 || (data_block_size & (data_block_size - 1)) || data_block_size >= 1U << 31)
-		usage(popt_context, EXIT_FAILURE, _("Invalid data block size."),
-		      poptGetInvocationName(popt_context));
-
-	if (hash_block_size < 512 || (hash_block_size & (hash_block_size - 1)) || hash_block_size >= 1U << 31)
-		usage(popt_context, EXIT_FAILURE, _("Invalid hash block size."),
-		      poptGetInvocationName(popt_context));
-
-	if (data_blocks < 0 || (off_t)data_blocks < 0 || (off_t)data_blocks != data_blocks)
-		usage(popt_context, EXIT_FAILURE, _("Invalid number of data blocks."),
-		      poptGetInvocationName(popt_context));
-
-	if (!hash_algorithm)
-		hash_algorithm = "sha256";
 
 	if (opt_debug) {
 		opt_verbose = 1;

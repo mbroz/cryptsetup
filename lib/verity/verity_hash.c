@@ -26,7 +26,7 @@
 #include "verity.h"
 #include "internal.h"
 
-static unsigned get_bits_up(unsigned u)
+static unsigned get_bits_up(size_t u)
 {
 	unsigned i = 0;
 	while ((1 << i) < u)
@@ -34,7 +34,7 @@ static unsigned get_bits_up(unsigned u)
 	return i;
 }
 
-static unsigned get_bits_down(unsigned u)
+static unsigned get_bits_down(size_t u)
 {
 	unsigned i = 0;
 	while ((u >> i) > 1)
@@ -42,17 +42,17 @@ static unsigned get_bits_down(unsigned u)
 	return i;
 }
 
-static int verify_zero(struct crypt_device *cd, FILE *wr, unsigned bytes)
+static int verify_zero(struct crypt_device *cd, FILE *wr, size_t bytes)
 {
-	unsigned i;
 	char block[bytes];
+	size_t i;
 
 	if (fread(block, bytes, 1, wr) != 1)
 		return -EIO;
 	for (i = 0; i < bytes; i++)
 		if (block[i]) {
-			log_err(cd, "spare area is not zeroed at position %lld\n",
-				(long long)ftello(wr) - bytes);
+			log_err(cd, "spare area is not zeroed at position %" PRIu64 "\n",
+				ftello(wr) - bytes);
 			return -EPERM;
 		}
 	return 0;
@@ -85,28 +85,26 @@ out:
 }
 
 static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
-				   off_t data_block, int data_block_size,
-				   off_t hash_block, int hash_block_size,
+				   off_t data_block, size_t data_block_size,
+				   off_t hash_block, size_t hash_block_size,
 				   off_t blocks, int version,
 				   const char *hash_name, int verify,
-				   char *calculated_digest, unsigned digest_size,
-				   const char *salt, unsigned salt_size)
+				   char *calculated_digest, size_t digest_size,
+				   const char *salt, size_t salt_size)
 {
 	char left_block[hash_block_size];
 	char data_buffer[data_block_size];
 	char read_digest[digest_size];
-	off_t hash_per_block = 1 << get_bits_down(hash_block_size / digest_size);
+	size_t hash_per_block = 1 << get_bits_down(hash_block_size / digest_size);
+	size_t digest_size_full = 1 << get_bits_up(digest_size);
 	off_t blocks_to_write = (blocks + hash_per_block - 1) / hash_per_block;
-	unsigned i, left_bytes;
-	off_t digest_size_full = 1 << get_bits_up(digest_size);
-	int r;
-	unsigned long long pos_rd = (unsigned long long)data_block * data_block_size;
-	unsigned long long pos_wr = (unsigned long long)hash_block * hash_block_size;
+	size_t left_bytes;
+	int i, r;
 
-	if (fseeko(rd, pos_rd, SEEK_SET))
+	if (fseeko(rd, data_block * data_block_size, SEEK_SET))
 		return -EIO;
 
-	if (wr && fseeko(wr, pos_wr, SEEK_SET))
+	if (wr && fseeko(wr, hash_block * hash_block_size, SEEK_SET))
 		return -EIO;
 
 	memset(left_block, 0, hash_block_size);
@@ -131,8 +129,8 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 				if (fread(read_digest, digest_size, 1, wr) != 1)
 					return -EIO;
 				if (memcmp(read_digest, calculated_digest, digest_size)) {
-					log_err(cd, "verification failed at position %lld\n",
-						(long long)ftello(rd) - data_block_size);
+					log_err(cd, "verification failed at position %" PRIu64 "\n",
+						ftello(rd) - data_block_size);
 					return -EPERM;
 				}
 			} else {
@@ -172,30 +170,29 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	const char *hash_name,
 	const char *hash_device,
 	const char *data_device,
-	int hash_block_size,
-	int data_block_size,
+	size_t hash_block_size,
+	size_t data_block_size,
 	off_t data_blocks,
-	long long hash_position,
+	off_t hash_position,
 	char *root_hash,
-	unsigned digest_size,
+	size_t digest_size,
 	const char *salt,
-	unsigned salt_size)
+	size_t salt_size)
 {
-	static FILE *data_file = NULL;
-	static FILE *hash_file = NULL, *hash_file_2;
-
-	int i, r;
 	char calculated_digest[digest_size];
+	FILE *data_file = NULL;
+	FILE *hash_file = NULL, *hash_file_2;
 	off_t hash_level_block[VERITY_MAX_LEVELS];
 	off_t hash_level_size[VERITY_MAX_LEVELS];
-	off_t data_file_blocks;
+	off_t data_file_blocks, s;
+	size_t hash_per_block, hash_per_block_bits;
 	uint64_t data_device_size;
-	unsigned long long hash_per_block, hash_per_block_bits;
-	unsigned levels;
+	int levels, i, r;
 
-	log_dbg("Userspace hash %s %s, data device %s, data blocks %u, hash device %s, offset %u.",
-		verify ? "verification" : "creation", hash_name, data_device,
-	 	(unsigned)data_blocks, hash_device, (unsigned)hash_position);
+	log_dbg("Userspace hash %s %s, data device %s, data blocks %" PRIu64
+		", hash_device %s, offset %" PRIu64 ".",
+		verify ? "verification" : "creation", hash_name,
+		data_device, data_blocks, hash_device, hash_position);
 
 	if (!data_blocks) {
 		r = device_size(data_device, &data_device_size);
@@ -216,8 +213,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	levels = 0;
 	if (data_file_blocks) {
 		while (hash_per_block_bits * levels < 64 &&
-		       (unsigned long long)(data_file_blocks - 1) >>
-		       (hash_per_block_bits * levels))
+		       (data_file_blocks - 1) >> (hash_per_block_bits * levels))
 			levels++;
 	}
 
@@ -227,15 +223,14 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	}
 
 	for (i = levels - 1; i >= 0; i--) {
-		off_t s;
 		hash_level_block[i] = hash_position;
 		// verity position of block data_file_blocks at level i
 		s = data_file_blocks >> (i * hash_per_block_bits);
 		s = (s + hash_per_block - 1) / hash_per_block;
 		hash_level_size[i] = s;
 		if (hash_position + s < hash_position ||
-		    (off_t)(hash_position + s) < 0 ||
-		    (off_t)(hash_position + s) != hash_position + s) {
+		    (hash_position + s) < 0 ||
+		    (hash_position + s) != hash_position + s) {
 			log_err(cd, "hash device offset overflow\n");
 			return -EINVAL;
 		}
