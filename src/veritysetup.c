@@ -18,7 +18,6 @@
  */
 
 /* TODO:
- * - detect dm-verity (devmapper)
  * - init_by_name()
  * - unify units / uint64 etc
  * - check translations

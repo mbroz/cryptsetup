@@ -127,6 +127,16 @@ static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 		_dm_crypt_checked = 1;
 }
 
+static void _dm_set_verity_compat(const char *dm_version, unsigned verity_maj,
+				   unsigned verity_min, unsigned verity_patch)
+{
+	if (verity_maj > 0)
+		_dm_crypt_flags |= DM_VERITY_SUPPORTED;
+
+	log_dbg("Detected dm-verity version %i.%i.%i.",
+		verity_maj, verity_min, verity_patch);
+}
+
 static int _dm_check_versions(void)
 {
 	struct dm_task *dmt;
@@ -155,6 +165,11 @@ static int _dm_check_versions(void)
 		last_target = target;
 		if (!strcmp(DM_CRYPT_TARGET, target->name)) {
 			_dm_set_crypt_compat(dm_version,
+					     (unsigned)target->version[0],
+					     (unsigned)target->version[1],
+					     (unsigned)target->version[2]);
+		} else if (!strcmp(DM_VERITY_TARGET, target->name)) {
+			_dm_set_verity_compat(dm_version,
 					     (unsigned)target->version[0],
 					     (unsigned)target->version[1],
 					     (unsigned)target->version[2]);
