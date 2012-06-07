@@ -51,7 +51,7 @@ static int verify_zero(struct crypt_device *cd, FILE *wr, size_t bytes)
 		return -EIO;
 	for (i = 0; i < bytes; i++)
 		if (block[i]) {
-			log_err(cd, "spare area is not zeroed at position %" PRIu64 "\n",
+			log_err(cd, _("Spare area is not zeroed at position %" PRIu64 ".\n"),
 				ftello(wr) - bytes);
 			return -EPERM;
 		}
@@ -129,7 +129,7 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 				if (fread(read_digest, digest_size, 1, wr) != 1)
 					return -EIO;
 				if (memcmp(read_digest, calculated_digest, digest_size)) {
-					log_err(cd, "verification failed at position %" PRIu64 "\n",
+					log_err(cd, _("Verification failed at position %" PRIu64 ".\n"),
 						ftello(rd) - data_block_size);
 					return -EPERM;
 				}
@@ -205,10 +205,8 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 
 	hash_per_block_bits = get_bits_down(hash_block_size / digest_size);
 	hash_per_block = 1 << hash_per_block_bits;
-	if (!hash_per_block_bits) {
-		log_err(cd, "at least two hashes must fit in a hash file block\n");
+	if (!hash_per_block_bits)
 		return -EINVAL;
-	}
 
 	levels = 0;
 	if (data_file_blocks) {
@@ -218,7 +216,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	}
 
 	if (levels > VERITY_MAX_LEVELS) {
-		log_err(cd, "too many tree levels\n");
+		log_err(cd, _("Too many tree levels for verity volume.\n"));
 		return -EINVAL;
 	}
 
@@ -231,7 +229,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		if (hash_position + s < hash_position ||
 		    (hash_position + s) < 0 ||
 		    (hash_position + s) != hash_position + s) {
-			log_err(cd, "hash device offset overflow\n");
+			log_dbg("Hash device offset overflow.");
 			return -EINVAL;
 		}
 		hash_position += s;
@@ -239,14 +237,14 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 
 	data_file = fopen(data_device, "r");
 	if (!data_file) {
-		log_err(cd, "Cannot open %s.\n", data_device);
+		log_err(cd, _("Cannot open device %s.\n"), data_device);
 		r = -EIO;
 		goto out;
 	}
 
 	hash_file = fopen(hash_device, verify ? "r" : "r+");
 	if (!hash_file) {
-		log_err(cd, "Cannot open %s.\n", hash_device);
+		log_err(cd, _("Cannot open device %s.\n"), hash_device);
 		r = -EIO;
 		goto out;
 	}
@@ -292,19 +290,19 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 					    data_file_blocks, version, hash_name, verify,
 					    calculated_digest, digest_size, salt, salt_size);
 
-	if (r) {
-		log_err(cd, "Hash of data area verification failed.\n");
+	if (r == -EPERM) {
+		log_err(cd, _("Verification of data area failed.\n"));
 		goto out;
-	} else
-		log_dbg("Hash of data area successfully verified.");
+	} else if (!r)
+		log_dbg("Verification of data area succeeded.");
 
 	/* root hash verification */
 	if (verify) {
 		r = memcmp(root_hash, calculated_digest, digest_size) ? -EPERM : 0;
 		if (r)
-			log_err(cd, "Root hash verification failed.\n");
+			log_err(cd, _("Verification of root hash failed.\n"));
 		else
-			log_dbg("Root hash successfully verified.");
+			log_dbg("Verification of root hash succeeded.");
 	} else {
 		fsync(fileno(hash_file));
 		memcpy(root_hash, calculated_digest, digest_size);
@@ -325,7 +323,7 @@ int VERITY_verify(struct crypt_device *cd,
 		  const char *root_hash,
 		  size_t root_hash_size)
 {
-	int r = VERITY_create_or_verify_hash(cd, 1,
+	return VERITY_create_or_verify_hash(cd, 1,
 		verity_hdr->version,
 		verity_hdr->hash_name,
 		hash_device,
@@ -338,13 +336,9 @@ int VERITY_verify(struct crypt_device *cd,
 		root_hash_size,
 		verity_hdr->salt,
 		verity_hdr->salt_size);
-
-	if (r == -EPERM)
-		log_err(cd, "Userspace hash verification failed.\n");
-
-	return r;
 }
 
+/* Create verity hash */
 int VERITY_create(struct crypt_device *cd,
 		  struct crypt_params_verity *verity_hdr,
 		  const char *data_device,

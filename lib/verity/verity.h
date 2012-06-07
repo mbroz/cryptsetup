@@ -48,12 +48,12 @@ struct verity_sb {
 
 int VERITY_read_sb(struct crypt_device *cd,
 		   const char *device,
-		   size_t sb_offset,
+		   uint64_t sb_offset,
 		   struct crypt_params_verity *params);
 
 int VERITY_write_sb(struct crypt_device *cd,
 		   const char *device,
-		   size_t sb_offset,
+		   uint64_t sb_offset,
 		   struct crypt_params_verity *params);
 
 int VERITY_activate(struct crypt_device *cd,

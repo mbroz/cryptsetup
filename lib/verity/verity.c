@@ -33,16 +33,16 @@
 /* Read verity superblock from disk */
 int VERITY_read_sb(struct crypt_device *cd,
 		   const char *device,
-		   size_t sb_offset,
+		   uint64_t sb_offset,
 		   struct crypt_params_verity *params)
 {
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int devfd = 0;
-	long long sb_data_blocks;
+	uint64_t sb_data_blocks;
 
-	log_dbg("Reading VERITY header of size %d on device %s, offset %u.",
-		sizeof(struct verity_sb), device, (unsigned)sb_offset);
+	log_dbg("Reading VERITY header of size %u on device %s, offset %" PRIu64 ".",
+		sizeof(struct verity_sb), device, sb_offset);
 
 	devfd = open(device ,O_RDONLY | O_DIRECT);
 	if(devfd == -1) {
@@ -75,22 +75,19 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	sb_data_blocks = ((unsigned long long)ntohl(sb.data_blocks_hi) << 31 << 1) |
+	sb_data_blocks = ((uint64_t)ntohl(sb.data_blocks_hi) << 31 << 1) |
 				ntohl(sb.data_blocks_lo);
-	if (sb_data_blocks < 0 ||
-	    (off_t)sb_data_blocks < 0 ||
-	    (off_t)sb_data_blocks != sb_data_blocks) {
-		log_err(cd, _("VERITY header data block size mismatch.\n"));
-		return -EINVAL;
-	}
 
-	// FIXME alloc error
 	params->hash_name = strdup((const char*)sb.algorithm);
+	if (!params->hash_name)
+		return -ENOMEM;
 	params->data_block_size = 1 << sb.data_block_bits;
 	params->hash_block_size = 1 << sb.hash_block_bits;
 	params->data_size = sb_data_blocks;
 	params->salt_size = ntohs(sb.salt_size);
 	params->salt = malloc(params->salt_size);
+	if (!params->salt)
+		return -ENOMEM;
 	memcpy(CONST_CAST(char*)params->salt, sb.salt, params->salt_size);
 	params->hash_area_offset = sb_offset;
 	params->version = sb.version;
@@ -101,15 +98,15 @@ int VERITY_read_sb(struct crypt_device *cd,
 /* Write verity superblock to disk */
 int VERITY_write_sb(struct crypt_device *cd,
 		   const char *device,
-		   size_t sb_offset,
+		   uint64_t sb_offset,
 		   struct crypt_params_verity *params)
 {
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int r, devfd = 0;
 
-	log_dbg("Updating VERITY header of size %d on device %s, offset %u.",
-		sizeof(struct verity_sb), device, (unsigned)sb_offset);
+	log_dbg("Updating VERITY header of size %u on device %s, offset %" PRIu64 ".",
+		sizeof(struct verity_sb), device, sb_offset);
 
 	devfd = open(device, O_RDWR | O_DIRECT);
 	if(devfd == -1) {

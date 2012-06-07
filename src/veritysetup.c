@@ -19,12 +19,12 @@
 
 /* TODO:
  * - init_by_name()
- * - check translations
  * - support device without superblock
  * - audit alloc errors / error path
  * - change command names (cryptsetup style)
  * - extend superblock (UUID)
  * - warn if block_size > PAGE_SIZE
+ * - configure.in/config.h defaults
  */
 
 #include <stdio.h>
