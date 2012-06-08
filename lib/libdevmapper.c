@@ -270,27 +270,27 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd)
 			log_dbg("Discard/TRIM is not supported by the kernel.");
 	}
 
-	if (!strncmp(dmd->cipher, "cipher_null-", 12))
+	if (!strncmp(dmd->u.crypt.cipher, "cipher_null-", 12))
 		null_cipher = 1;
 
-	hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->vk->keylength * 2 + 1));
+	hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->u.crypt.vk->keylength * 2 + 1));
 	if (!hexkey)
 		return NULL;
 
 	if (null_cipher)
 		strncpy(hexkey, "-", 2);
 	else
-		hex_key(hexkey, dmd->vk->keylength, dmd->vk->key);
+		hex_key(hexkey, dmd->u.crypt.vk->keylength, dmd->u.crypt.vk->key);
 
-	max_size = strlen(hexkey) + strlen(dmd->cipher) +
-		   strlen(dmd->device) + strlen(features) + 64;
+	max_size = strlen(hexkey) + strlen(dmd->u.crypt.cipher) +
+		   strlen(dmd->u.crypt.device) + strlen(features) + 64;
 	params = crypt_safe_alloc(max_size);
 	if (!params)
 		goto out;
 
 	r = snprintf(params, max_size, "%s %s %" PRIu64 " %s %" PRIu64 "%s",
-		     dmd->cipher, hexkey, dmd->iv_offset, dmd->device,
-		     dmd->offset, features);
+		     dmd->u.crypt.cipher, hexkey, dmd->u.crypt.iv_offset,
+		     dmd->u.crypt.device, dmd->u.crypt.offset, features);
 	if (r < 0 || r >= max_size) {
 		crypt_safe_free(params);
 		params = NULL;
@@ -587,7 +587,7 @@ int dm_create_device(const char *name,
 	if (!table_params)
 		return -EINVAL;
 
-	return _dm_create_device(name, type, dmd->device, dmd->flags,
+	return _dm_create_device(name, type, dmd->u.crypt.device, dmd->flags,
 				 dmd->uuid, dmd->size, table_params, reload);
 }
 
@@ -737,7 +737,7 @@ int dm_query_device(const char *name, uint32_t get_flags,
 	rcipher = strsep(&params, " ");
 	/* cipher */
 	if (get_flags & DM_ACTIVE_CIPHER)
-		dmd->cipher = strdup(rcipher);
+		dmd->u.crypt.cipher = strdup(rcipher);
 
 	/* skip */
 	key_ = strsep(&params, " ");
@@ -748,18 +748,18 @@ int dm_query_device(const char *name, uint32_t get_flags,
 		goto out;
 	params++;
 
-	dmd->iv_offset = val64;
+	dmd->u.crypt.iv_offset = val64;
 
 	/* device */
 	rdevice = strsep(&params, " ");
 	if (get_flags & DM_ACTIVE_DEVICE)
-		dmd->device = crypt_lookup_dev(rdevice);
+		dmd->u.crypt.device = crypt_lookup_dev(rdevice);
 
 	/*offset */
 	if (!params)
 		goto out;
 	val64 = strtoull(params, &params, 10);
-	dmd->offset = val64;
+	dmd->u.crypt.offset = val64;
 
 	/* Features section, available since crypt target version 1.11 */
 	if (*params) {
@@ -796,20 +796,20 @@ int dm_query_device(const char *name, uint32_t get_flags,
 	}
 
 	if (get_flags & DM_ACTIVE_KEYSIZE) {
-		dmd->vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);
-		if (!dmd->vk) {
+		dmd->u.crypt.vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);
+		if (!dmd->u.crypt.vk) {
 			r = -ENOMEM;
 			goto out;
 		}
 
 		if (get_flags & DM_ACTIVE_KEY) {
 			buffer[2] = '\0';
-			for(i = 0; i < dmd->vk->keylength; i++) {
+			for(i = 0; i < dmd->u.crypt.vk->keylength; i++) {
 				memcpy(buffer, &key_[i * 2], 2);
-				dmd->vk->key[i] = strtoul(buffer, &endp, 16);
+				dmd->u.crypt.vk->key[i] = strtoul(buffer, &endp, 16);
 				if (endp != &buffer[2]) {
-					crypt_free_volume_key(dmd->vk);
-					dmd->vk = NULL;
+					crypt_free_volume_key(dmd->u.crypt.vk);
+					dmd->u.crypt.vk = NULL;
 					r = -EINVAL;
 					goto out;
 				}
@@ -946,13 +946,14 @@ int dm_check_segment(const char *name, uint64_t offset, uint64_t size)
 	if (r < 0)
 		return r;
 
-	if (offset >= (dmd.offset + dmd.size) || (offset + size) <= dmd.offset)
+	if (offset >= (dmd.u.crypt.offset + dmd.size) ||
+	   (offset + size) <= dmd.u.crypt.offset)
 		r = 0;
 	else
 		r = -EBUSY;
 
 	log_dbg("seg: %" PRIu64 " - %" PRIu64 ", new %" PRIu64 " - %" PRIu64 "%s",
-	       dmd.offset, dmd.offset + dmd.size, offset, offset + size,
+	       dmd.u.crypt.offset, dmd.u.crypt.offset + dmd.size, offset, offset + size,
 	       r ? " (overlapping)" : " (ok)");
 
 	return r;

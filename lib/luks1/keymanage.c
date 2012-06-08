@@ -1033,14 +1033,17 @@ int LUKS1_activate(struct crypt_device *cd,
 	char *dm_cipher = NULL;
 	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
-		.device = crypt_get_device_name(cd),
-		.cipher = NULL,
+		.target = DM_CRYPT,
 		.uuid   = crypt_get_uuid(cd),
-		.vk    = vk,
-		.offset = crypt_get_data_offset(cd),
-		.iv_offset = 0,
+		.flags  = flags,
 		.size   = 0,
-		.flags  = flags
+		.u.crypt = {
+			.device = crypt_get_device_name(cd),
+			.cipher = NULL,
+			.vk     = vk,
+			.offset = crypt_get_data_offset(cd),
+			.iv_offset = 0,
+		}
 	};
 
 	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
@@ -1048,8 +1051,9 @@ int LUKS1_activate(struct crypt_device *cd,
 	else
 		device_check = DEV_EXCL;
 
-	r = device_check_and_adjust(cd, dmd.device, device_check,
-				    &dmd.size, &dmd.offset, &dmd.flags);
+	r = device_check_and_adjust(cd, dmd.u.crypt.device, device_check,
+				    &dmd.size, &dmd.u.crypt.offset,
+				    &dmd.flags);
 	if (r)
 		return r;
 
@@ -1057,7 +1061,7 @@ int LUKS1_activate(struct crypt_device *cd,
 	if (r < 0)
 		return -ENOMEM;
 
-	dmd.cipher = dm_cipher;
+	dmd.u.crypt.cipher = dm_cipher;
 	r = dm_create_device(name, CRYPT_LUKS1, &dmd, 0);
 
 	free(dm_cipher);

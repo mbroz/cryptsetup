@@ -45,18 +45,32 @@ uint32_t dm_flags(void);
 #define DM_ACTIVE_KEY		(1 << 4)
 
 struct crypt_dm_active_device {
-	const char *device;
-	const char *cipher;
-	const char *uuid;
-
-	/* Active key for device */
-	struct volume_key *vk;
-
-	/* struct crypt_active_device */
-	uint64_t offset;	/* offset in sectors */
-	uint64_t iv_offset;	/* IV initilisation sector */
+	enum { DM_CRYPT = 0, DM_VERITY } target;
 	uint64_t size;		/* active device size */
 	uint32_t flags;		/* activation flags */
+	const char *uuid;
+	union {
+	struct {
+		const char *device;
+		const char *cipher;
+
+		/* Active key for device */
+		struct volume_key *vk;
+
+		/* struct crypt_active_device */
+		uint64_t offset;	/* offset in sectors */
+		uint64_t iv_offset;	/* IV initilisation sector */
+	} crypt;
+	struct {
+		const char *data_device;
+		const char *hash_device;
+
+		const char *root_hash;
+		size_t root_hash_size;
+
+		uint64_t hash_offset;	/* hash offset (not header) */
+	} verity;
+	} u;
 };
 
 struct crypt_dm_active_verity {
