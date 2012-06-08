@@ -22,7 +22,6 @@
  * - extend superblock (UUID)
  * - add api tests
  * - salt string "-"
- * - man page
  */
 
 #include <stdio.h>
@@ -423,7 +422,7 @@ int main(int argc, const char **argv)
 		{ "hash-block-size", 0,    POPT_ARG_INT,  &hash_block_size,  0, N_("Block size on the hash device"), N_("bytes") },
 		{ "data-blocks",     0,    POPT_ARG_STRING, &popt_tmp,       1, N_("The number of blocks in the data file"), N_("blocks") },
 		{ "hash-start",      0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting block on the hash device"), N_("512-byte sectors") },
-		{ "algorithm",       'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
+		{ "hash",            'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
 		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },
 		POPT_TABLEEND
 	};

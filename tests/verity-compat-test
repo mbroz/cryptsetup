@@ -84,7 +84,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	echo -n "V$4 $5 block size $1: "
 	$VERITYSETUP format $DEV_PARAMS --format=$4 \
 		--data-block-size=$1 --hash-block-size=$1 \
-		--algorithm=$5 --salt=$3 \
+		--hash=$5 --salt=$3 \
 		>$DEV_OUT || fail
 
 	echo -n "[root hash]"
