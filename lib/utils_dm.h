@@ -39,19 +39,24 @@ struct crypt_params_verity;
 uint32_t dm_flags(void);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)
-#define DM_ACTIVE_CIPHER	(1 << 1)
-#define DM_ACTIVE_UUID		(1 << 2)
-#define DM_ACTIVE_KEYSIZE	(1 << 3)
-#define DM_ACTIVE_KEY		(1 << 4)
+#define DM_ACTIVE_UUID		(1 << 1)
+
+#define DM_ACTIVE_CRYPT_CIPHER	(1 << 2)
+#define DM_ACTIVE_CRYPT_KEYSIZE	(1 << 3)
+#define DM_ACTIVE_CRYPT_KEY	(1 << 4)
+
+#define DM_ACTIVE_VERITY_ROOT_HASH	(1 << 5)
+#define DM_ACTIVE_VERITY_HASH_DEVICE	(1 << 6)
+#define DM_ACTIVE_VERITY_PARAMS		(1 << 7)
 
 struct crypt_dm_active_device {
 	enum { DM_CRYPT = 0, DM_VERITY } target;
 	uint64_t size;		/* active device size */
 	uint32_t flags;		/* activation flags */
 	const char *uuid;
+	const char *data_device;
 	union {
 	struct {
-		const char *device;
 		const char *cipher;
 
 		/* Active key for device */
@@ -62,13 +67,13 @@ struct crypt_dm_active_device {
 		uint64_t iv_offset;	/* IV initilisation sector */
 	} crypt;
 	struct {
-		const char *data_device;
 		const char *hash_device;
 
 		const char *root_hash;
-		size_t root_hash_size;
+		uint32_t root_hash_size;
 
 		uint64_t hash_offset;	/* hash offset (not header) */
+		struct crypt_params_verity *vp;
 	} verity;
 	} u;
 };
@@ -85,7 +90,6 @@ int dm_query_device(const char *name, uint32_t get_flags,
 int dm_create_device(const char *name,
 		      const char *type,
 		      struct crypt_dm_active_device *dmd,
-		      void *params,
 		      int reload);
 int dm_suspend_and_wipe_key(const char *name);
 int dm_resume_and_reinstate_key(const char *name,

@@ -489,6 +489,8 @@ static int action_status(int arg __attribute__((unused)))
 	}
 out:
 	crypt_free(cd);
+	if (r == -ENOTSUP)
+		r = 0;
 	return r;
 }
 

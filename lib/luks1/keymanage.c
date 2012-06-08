@@ -1037,8 +1037,8 @@ int LUKS1_activate(struct crypt_device *cd,
 		.uuid   = crypt_get_uuid(cd),
 		.flags  = flags,
 		.size   = 0,
+		.data_device = crypt_get_device_name(cd),
 		.u.crypt = {
-			.device = crypt_get_device_name(cd),
 			.cipher = NULL,
 			.vk     = vk,
 			.offset = crypt_get_data_offset(cd),
@@ -1051,7 +1051,7 @@ int LUKS1_activate(struct crypt_device *cd,
 	else
 		device_check = DEV_EXCL;
 
-	r = device_check_and_adjust(cd, dmd.u.crypt.device, device_check,
+	r = device_check_and_adjust(cd, dmd.data_device, device_check,
 				    &dmd.size, &dmd.u.crypt.offset,
 				    &dmd.flags);
 	if (r)
@@ -1062,7 +1062,7 @@ int LUKS1_activate(struct crypt_device *cd,
 		return -ENOMEM;
 
 	dmd.u.crypt.cipher = dm_cipher;
-	r = dm_create_device(name, CRYPT_LUKS1, &dmd, NULL, 0);
+	r = dm_create_device(name, CRYPT_LUKS1, &dmd, 0);
 
 	free(dm_cipher);
 	return r;

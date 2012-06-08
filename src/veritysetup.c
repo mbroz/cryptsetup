@@ -18,11 +18,11 @@
  */
 
 /* TODO:
- * - init_by_name()
  * - support device without superblock
  * - audit alloc errors / error path
  * - change command names (cryptsetup style)
  * - extend superblock (UUID)
+ * - add api tests
  */
 
 #include <stdio.h>
@@ -40,6 +40,7 @@
 #define MODE_CREATE	1
 #define MODE_ACTIVATE	2
 #define MODE_DUMP	3
+#define MODE_STATUS	4
 
 static int mode = -1;
 static int use_superblock = 1; /* FIXME: no superblock not supported */
@@ -141,6 +142,18 @@ static int action_dump(void)
 	r = crypt_load(cd, CRYPT_VERITY, &params);
 	if (!r)
 		crypt_dump(cd);
+	crypt_free(cd);
+	return r;
+}
+
+static int action_status(void)
+{
+	struct crypt_device *cd = NULL;
+	int r;
+
+	r = crypt_init_by_name_and_header(&cd, dm_device, NULL);
+	if (!r)
+		r = crypt_dump(cd);
 	crypt_free(cd);
 	return r;
 }
@@ -292,6 +305,7 @@ int main(int argc, const char **argv)
 		{ "verify",		'v',	POPT_ARG_VAL, &mode, MODE_VERIFY, "Verify integrity", NULL },
 		{ "activate",		'a',	POPT_ARG_VAL, &mode, MODE_ACTIVATE, "Activate the device", NULL },
 		{ "dump",		'd',	POPT_ARG_VAL, &mode, MODE_DUMP, "Dump the device", NULL },
+		{ "status",		's',	POPT_ARG_VAL, &mode, MODE_STATUS, "Status active device", NULL },
 		{ "no-superblock",	0,	POPT_ARG_VAL, &use_superblock, 0, "Do not create/use superblock" },
 		{ "format",		0,	POPT_ARG_INT, &version, 0, "Format version (1 - normal format, 0 - original Chromium OS format)", "number" },
 		{ "data-block-size",	0, 	POPT_ARG_INT, &data_block_size, 0, "Block size on the data device", "bytes" },
@@ -335,13 +349,16 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
 		      poptGetInvocationName(popt_context));
 
-	if (mode == MODE_ACTIVATE) {
+	if (mode == MODE_ACTIVATE || mode == MODE_STATUS) {
 		dm_device = poptGetArg(popt_context);
 		if (!dm_device || !*dm_device)
 			usage(popt_context, EXIT_FAILURE,
 			      _("Missing activation device name."),
 			      poptGetInvocationName(popt_context));
 	}
+
+	if (mode == MODE_STATUS)
+		goto run; //FIXME
 
 	data_device = poptGetArg(popt_context);
 	if (!data_device)
@@ -383,7 +400,7 @@ int main(int argc, const char **argv)
 			salt_string = "";
 		salt_size = strlen(salt_string) / 2;
 	}
-
+run:
 	if (opt_debug) {
 		opt_verbose = 1;
 		crypt_set_debug_level(-1);
@@ -402,6 +419,9 @@ int main(int argc, const char **argv)
 			break;
 		case MODE_DUMP:
 			r = action_dump();
+			break;
+		case MODE_STATUS:
+			r = action_status();
 			break;
 	}
 

@@ -196,8 +196,8 @@ int LOOPAES_activate(struct crypt_device *cd,
 		.uuid   = crypt_get_uuid(cd),
 		.size   = 0,
 		.flags  = flags,
+		.data_device = crypt_get_device_name(cd),
 		.u.crypt  = {
-			.device = crypt_get_device_name(cd),
 			.cipher = NULL,
 			.vk     = vk,
 			.offset = crypt_get_data_offset(cd),
@@ -206,7 +206,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 	};
 
 
-	r = device_check_and_adjust(cd, dmd.u.crypt.device, DEV_EXCL,
+	r = device_check_and_adjust(cd, dmd.data_device, DEV_EXCL,
 				    &dmd.size, &dmd.u.crypt.offset, &flags);
 	if (r)
 		return r;
@@ -225,7 +225,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 	log_dbg("Trying to activate loop-AES device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
-	r = dm_create_device(name, CRYPT_LOOPAES, &dmd, NULL, 0);
+	r = dm_create_device(name, CRYPT_LOOPAES, &dmd, 0);
 
 	if (!r && !(dm_flags() & req_flags)) {
 		log_err(cd, _("Kernel doesn't support loop-AES compatible mapping.\n"));

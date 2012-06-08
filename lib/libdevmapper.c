@@ -256,11 +256,30 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
+static int hex_to_bytes(const char *hex, char *result)
+{
+	char buf[3] = "xx\0", *endp;
+	int i, len;
+
+	len = strlen(hex) / 2;
+	for (i = 0; i < len; i++) {
+		memcpy(buf, &hex[i * 2], 2);
+		result[i] = strtoul(buf, &endp, 16);
+		if (endp != &buf[2])
+			return -EINVAL;
+	}
+	return i;
+}
+
+/* http://code.google.com/p/cryptsetup/wiki/DMCrypt */
 static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd)
 {
 	int r, max_size, null_cipher = 0;
 	char *params, *hexkey;
 	const char *features = "";
+
+	if (!dmd)
+		return NULL;
 
 	if (dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) {
 		if (dm_flags() & DM_DISCARDS_SUPPORTED) {
@@ -283,14 +302,14 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd)
 		hex_key(hexkey, dmd->u.crypt.vk->keylength, dmd->u.crypt.vk->key);
 
 	max_size = strlen(hexkey) + strlen(dmd->u.crypt.cipher) +
-		   strlen(dmd->u.crypt.device) + strlen(features) + 64;
+		   strlen(dmd->data_device) + strlen(features) + 64;
 	params = crypt_safe_alloc(max_size);
 	if (!params)
 		goto out;
 
 	r = snprintf(params, max_size, "%s %s %" PRIu64 " %s %" PRIu64 "%s",
 		     dmd->u.crypt.cipher, hexkey, dmd->u.crypt.iv_offset,
-		     dmd->u.crypt.device, dmd->u.crypt.offset, features);
+		     dmd->data_device, dmd->u.crypt.offset, features);
 	if (r < 0 || r >= max_size) {
 		crypt_safe_free(params);
 		params = NULL;
@@ -299,11 +318,16 @@ out:
 	crypt_safe_free(hexkey);
 	return params;
 }
+
+/* http://code.google.com/p/cryptsetup/wiki/DMVerity */
 static char *get_dm_verity_params(struct crypt_params_verity *vp,
 				   struct crypt_dm_active_device *dmd)
 {
 	int max_size, r;
 	char *params = NULL, *hexroot = NULL, *hexsalt = NULL;
+
+	if (!vp || !dmd)
+		return NULL;
 
 	hexroot = crypt_safe_alloc(dmd->u.verity.root_hash_size * 2 + 1);
 	if (!hexroot)
@@ -316,7 +340,7 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 	hex_key(hexsalt, vp->salt_size, vp->salt);
 
 	max_size = strlen(hexroot) + strlen(hexsalt) +
-		   strlen(dmd->u.verity.data_device) +
+		   strlen(dmd->data_device) +
 		   strlen(dmd->u.verity.hash_device) +
 		   strlen(vp->hash_name) + 128;
 
@@ -326,7 +350,7 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 
 	r = snprintf(params, max_size,
 		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s",
-		     vp->version, dmd->u.verity.data_device,
+		     vp->version, dmd->data_device,
 		     dmd->u.verity.hash_device,
 		     vp->data_block_size, vp->hash_block_size,
 		     vp->data_size, dmd->u.verity.hash_offset,
@@ -581,7 +605,6 @@ out_no_removal:
 int dm_create_device(const char *name,
 		     const char *type,
 		     struct crypt_dm_active_device *dmd,
-		     void *params,
 		     int reload)
 {
 	char *table_params = NULL;
@@ -589,12 +612,12 @@ int dm_create_device(const char *name,
 	if (dmd->target == DM_CRYPT)
 		table_params = get_dm_crypt_params(dmd);
 	else if (dmd->target == DM_VERITY)
-		table_params = get_dm_verity_params(params, dmd);
+		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd);
 
 	if (!table_params)
 		return -EINVAL;
 
-	return _dm_create_device(name, type, dmd->u.crypt.device, dmd->flags,
+	return _dm_create_device(name, type, dmd->data_device, dmd->flags,
 				 dmd->uuid, dmd->size, table_params, reload);
 }
 
@@ -626,11 +649,18 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi,
 
 	next = dm_get_next_target(dmt, next, &start, &length,
 	                          &target_type, &params);
-	if (!target_type || strcmp(target_type, target) != 0 ||
-	    start != 0 || next)
-		r = -EINVAL;
-	else
-		r = 0;
+
+	if (!target_type || start != 0 || next)
+		goto out;
+
+	if (target && strcmp(target_type, target))
+		goto out;
+
+	/* for target == NULL check all supported */
+	if (!target && (strcmp(target_type, DM_CRYPT_TARGET) &&
+			strcmp(target_type, DM_VERITY_TARGET)))
+		goto out;
+	r = 0;
 out:
 	if (!r && status_line && !(*status_line = strdup(params)))
 		r = -ENOMEM;
@@ -646,7 +676,7 @@ int dm_status_device(const char *name)
 	int r;
 	struct dm_info dmi;
 
-	r = dm_status_dmi(name, &dmi, DM_CRYPT_TARGET, NULL);
+	r = dm_status_dmi(name, &dmi, NULL, NULL);
 	if (r < 0)
 		return r;
 
@@ -684,6 +714,7 @@ int dm_status_verity_ok(const char *name)
 	return r;
 }
 
+/* FIXME use hex wrapper, user val wrappers for line parsing */
 static int _dm_query_crypt(uint32_t get_flags,
 			   struct dm_info *dmi,
 			   char *params,
@@ -693,11 +724,12 @@ static int _dm_query_crypt(uint32_t get_flags,
 	char *rcipher, *key_, *rdevice, *endp, buffer[3], *arg;
 	unsigned int i;
 
+	memset(dmd, 0, sizeof(*dmd));
 	dmd->target = DM_CRYPT;
 
 	rcipher = strsep(&params, " ");
 	/* cipher */
-	if (get_flags & DM_ACTIVE_CIPHER)
+	if (get_flags & DM_ACTIVE_CRYPT_CIPHER)
 		dmd->u.crypt.cipher = strdup(rcipher);
 
 	/* skip */
@@ -714,7 +746,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 	/* device */
 	rdevice = strsep(&params, " ");
 	if (get_flags & DM_ACTIVE_DEVICE)
-		dmd->u.crypt.device = crypt_lookup_dev(rdevice);
+		dmd->data_device = crypt_lookup_dev(rdevice);
 
 	/*offset */
 	if (!params)
@@ -750,17 +782,17 @@ static int _dm_query_crypt(uint32_t get_flags,
 	}
 
 	/* Never allow to return empty key */
-	if ((get_flags & DM_ACTIVE_KEY) && dmi->suspended) {
+	if ((get_flags & DM_ACTIVE_CRYPT_KEY) && dmi->suspended) {
 		log_dbg("Cannot read volume key while suspended.");
 		return -EINVAL;
 	}
 
-	if (get_flags & DM_ACTIVE_KEYSIZE) {
+	if (get_flags & DM_ACTIVE_CRYPT_KEYSIZE) {
 		dmd->u.crypt.vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);
 		if (!dmd->u.crypt.vk)
 			return -ENOMEM;
 
-		if (get_flags & DM_ACTIVE_KEY) {
+		if (get_flags & DM_ACTIVE_CRYPT_KEY) {
 			buffer[2] = '\0';
 			for(i = 0; i < dmd->u.crypt.vk->keylength; i++) {
 				memcpy(buffer, &key_[i * 2], 2);
@@ -783,8 +815,109 @@ static int _dm_query_verity(uint32_t get_flags,
 			     char *params,
 			     struct crypt_dm_active_device *dmd)
 {
+	struct crypt_params_verity *vp = NULL;
+	uint32_t val32;
+	uint64_t val64;
+	size_t len;
+	char *str, *str2;
+
+	if (get_flags & DM_ACTIVE_VERITY_PARAMS)
+		vp = dmd->u.verity.vp;
+
+	memset(dmd, 0, sizeof(*dmd));
+
 	dmd->target = DM_VERITY;
-	return -EINVAL;
+	dmd->u.verity.vp = vp;
+
+	/* version */
+	val32 = strtoul(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	if (vp)
+		vp->version = val32;
+	params++;
+
+	/* data device */
+	str = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	if (get_flags & DM_ACTIVE_DEVICE)
+		dmd->data_device = crypt_lookup_dev(str);
+
+	/* hash device */
+	str = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE)
+		dmd->u.verity.hash_device = crypt_lookup_dev(str);
+
+	/* data block size*/
+	val32 = strtoul(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	if (vp)
+		vp->data_block_size = val32;
+	params++;
+
+	/* hash block size */
+	val32 = strtoul(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	if (vp)
+		vp->hash_block_size = val32;
+	params++;
+
+	/* data blocks */
+	val64 = strtoull(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	if (vp)
+		vp->data_size = val64;
+	params++;
+
+	/* hash start */
+	val64 = strtoull(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	dmd->u.verity.hash_offset = val64;
+	params++;
+
+	/* hash algorithm */
+	str = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	if (vp)
+		vp->hash_name = strdup(str);
+
+	/* root digest */
+	str = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	len = strlen(str) / 2;
+	dmd->u.verity.root_hash_size = len;
+	if (get_flags & DM_ACTIVE_VERITY_ROOT_HASH) {
+		if (!(str2 = malloc(len)))
+			return -ENOMEM;
+		if (hex_to_bytes(str, str2) != len)
+			return -EINVAL;
+		dmd->u.verity.root_hash = str2;
+	}
+
+	/* salt */
+	str = strsep(&params, " ");
+	if (params)
+		return -EINVAL;
+	if (vp) {
+		len = strlen(str) / 2;
+		vp->salt_size = len;
+		if (!(str2 = malloc(len)))
+			return -ENOMEM;
+		if (hex_to_bytes(str, str2) != len)
+			return -EINVAL;
+		vp->salt = str2;
+	}
+
+	return 0;
 }
 
 int dm_query_device(const char *name, uint32_t get_flags,
@@ -797,8 +930,6 @@ int dm_query_device(const char *name, uint32_t get_flags,
 	const char *tmp_uuid;
 	void *next = NULL;
 	int r = -EINVAL;
-
-	memset(dmd, 0, sizeof(*dmd));
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
 		goto out;

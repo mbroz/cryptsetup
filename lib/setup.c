@@ -305,8 +305,8 @@ int PLAIN_activate(struct crypt_device *cd,
 		.uuid   = crypt_get_uuid(cd),
 		.size   = size,
 		.flags  = flags,
+		.data_device = crypt_get_device_name(cd),
 		.u.crypt  = {
-			.device = crypt_get_device_name(cd),
 			.cipher = NULL,
 			.vk     = vk,
 			.offset = crypt_get_data_offset(cd),
@@ -319,7 +319,7 @@ int PLAIN_activate(struct crypt_device *cd,
 	else
 		device_check = DEV_EXCL;
 
-	r = device_check_and_adjust(cd, dmd.u.crypt.device, device_check,
+	r = device_check_and_adjust(cd, dmd.data_device, device_check,
 				    &dmd.size, &dmd.u.crypt.offset, &dmd.flags);
 	if (r)
 		return r;
@@ -335,7 +335,7 @@ int PLAIN_activate(struct crypt_device *cd,
 	log_dbg("Trying to activate PLAIN device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
-	r = dm_create_device(name, CRYPT_PLAIN, &dmd, NULL, 0);
+	r = dm_create_device(name, CRYPT_PLAIN, &dmd, 0);
 
 	// FIXME
 	if (!cd->plain_uuid && dm_query_device(name, DM_ACTIVE_UUID, &dmd) >= 0)
@@ -677,15 +677,121 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	return r;
 }
 
+static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
+{
+	struct crypt_dm_active_device dmd = {};
+	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	int key_nums, r;
+
+	r = dm_query_device(name, DM_ACTIVE_DEVICE |
+				   DM_ACTIVE_UUID |
+				   DM_ACTIVE_CRYPT_CIPHER |
+				   DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
+	if (r < 0)
+		goto out;
+
+	if (isPLAIN(cd->type)) {
+		cd->plain_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
+		cd->plain_hdr.hash = NULL; /* no way to get this */
+		cd->plain_hdr.offset = dmd.u.crypt.offset;
+		cd->plain_hdr.skip = dmd.u.crypt.iv_offset;
+		cd->plain_key_size = dmd.u.crypt.vk->keylength;
+
+		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher, cipher, NULL, cipher_mode);
+		if (!r) {
+			cd->plain_cipher = strdup(cipher);
+			cd->plain_cipher_mode = strdup(cipher_mode);
+		}
+	} else if (isLOOPAES(cd->type)) {
+		cd->loopaes_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
+		cd->loopaes_hdr.offset = dmd.u.crypt.offset;
+
+		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher, cipher,
+					      &key_nums, cipher_mode);
+		if (!r) {
+			cd->loopaes_cipher = strdup(cipher);
+			cd->loopaes_cipher_mode = strdup(cipher_mode);
+			/* version 3 uses last key for IV */
+			if (dmd.u.crypt.vk->keylength % key_nums)
+				key_nums++;
+			cd->loopaes_key_size = dmd.u.crypt.vk->keylength / key_nums;
+		}
+	} else if (isLUKS(cd->type)) {
+		if (mdata_device(cd)) {
+			r = _crypt_load_luks1(cd, 0, 0);
+			if (r < 0) {
+				log_dbg("LUKS device header does not match active device.");
+				free(cd->type);
+				cd->type = NULL;
+				r = 0;
+				goto out;
+			}
+			/* check whether UUIDs match each other */
+			r = crypt_uuid_cmp(dmd.uuid, cd->hdr.uuid);
+			if (r < 0) {
+				log_dbg("LUKS device header uuid: %s mismatches DM returned uuid %s",
+					cd->hdr.uuid, dmd.uuid);
+				free(cd->type);
+				cd->type = NULL;
+				r = 0;
+				goto out;
+			}
+		}
+	}
+out:
+	crypt_free_volume_key(dmd.u.crypt.vk);
+	free(CONST_CAST(void*)dmd.u.crypt.cipher);
+	free(CONST_CAST(void*)dmd.data_device);
+	free(CONST_CAST(void*)dmd.uuid);
+	return r;
+}
+
+static int _init_by_name_verity(struct crypt_device *cd, const char *name)
+{
+	struct crypt_params_verity params = {};
+	struct crypt_dm_active_device dmd = {
+		.target = DM_VERITY,
+		.u.verity.vp = &params,
+	};
+	int r;
+
+	r = dm_query_device(name, DM_ACTIVE_DEVICE |
+				   DM_ACTIVE_UUID |
+				   DM_ACTIVE_VERITY_HASH_DEVICE |
+				   DM_ACTIVE_VERITY_PARAMS, &dmd);
+	if (r < 0)
+		goto out;
+
+	if (isVERITY(cd->type)) {
+		cd->verity_flags = CRYPT_VERITY_NO_HEADER; //FIXME
+		//cd->verity_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
+		cd->verity_hdr.data_size = params.data_size;
+		cd->verity_root_hash_size = dmd.u.verity.root_hash_size;
+		cd->verity_root_hash = NULL;
+		cd->verity_hdr.hash_name = params.hash_name;
+		cd->verity_hdr.data_device = NULL;
+		cd->verity_hdr.data_block_size = params.data_block_size;
+		cd->verity_hdr.hash_block_size = params.hash_block_size;
+		cd->verity_hdr.hash_area_offset = params.hash_area_offset;
+		cd->verity_hdr.version = params.version;
+		cd->verity_hdr.flags = params.flags;
+		cd->verity_hdr.salt_size = params.salt_size;
+		cd->verity_hdr.salt = params.salt;
+	}
+out:
+	free(CONST_CAST(void*)dmd.u.verity.hash_device);
+	free(CONST_CAST(void*)dmd.data_device);
+	free(CONST_CAST(void*)dmd.uuid);
+	return r;
+}
+
 int crypt_init_by_name_and_header(struct crypt_device **cd,
 				  const char *name,
 				  const char *header_device)
 {
 	crypt_status_info ci;
 	struct crypt_dm_active_device dmd;
-	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
-	int key_nums, r;
-
+	int r;
 
 	log_dbg("Allocating crypt device context by device %s.", name);
 
@@ -698,8 +804,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 		return -ENODEV;
 	}
 
-	r = dm_query_device(name, DM_ACTIVE_DEVICE | DM_ACTIVE_CIPHER |
-				  DM_ACTIVE_UUID | DM_ACTIVE_KEYSIZE, &dmd);
+	r = dm_query_device(name, DM_ACTIVE_DEVICE | DM_ACTIVE_UUID, &dmd);
 	if (r < 0)
 		goto out;
 
@@ -708,17 +813,17 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	if (header_device) {
 		r = crypt_init(cd, header_device);
 	} else {
-		r = crypt_init(cd, dmd.u.crypt.device);
+		r = crypt_init(cd, dmd.data_device);
 
 		/* Underlying device disappeared but mapping still active */
-		if (!dmd.u.crypt.device || r == -ENOTBLK)
+		if (!dmd.data_device || r == -ENOTBLK)
 			log_verbose(NULL, _("Underlying device for crypt device %s disappeared.\n"),
 				    name);
 
 		/* Underlying device is not readable but crypt mapping exists */
 		if (r == -ENOTBLK) {
-			free(CONST_CAST(void*)dmd.u.crypt.device);
-			dmd.u.crypt.device = NULL;
+			free(CONST_CAST(void*)dmd.data_device);
+			dmd.data_device = NULL;
 			r = crypt_init(cd, NULL);
 		}
 	}
@@ -733,83 +838,38 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			(*cd)->type = strdup(CRYPT_LOOPAES);
 		else if (!strncmp(CRYPT_LUKS1, dmd.uuid, sizeof(CRYPT_LUKS1)-1))
 			(*cd)->type = strdup(CRYPT_LUKS1);
+		else if (!strncmp(CRYPT_VERITY, dmd.uuid, sizeof(CRYPT_VERITY)-1))
+			(*cd)->type = strdup(CRYPT_VERITY);
 		else
 			log_dbg("Unknown UUID set, some parameters are not set.");
 	} else
 		log_dbg("Active device has no UUID set, some parameters are not set.");
 
 	if (header_device) {
-		r = crypt_set_data_device(*cd, dmd.u.crypt.device);
+		r = crypt_set_data_device(*cd, dmd.data_device);
 		if (r < 0)
 			goto out;
 	}
 
 	/* Try to initialise basic parameters from active device */
 
-	if (!(*cd)->backing_file && dmd.u.crypt.device &&
-	    crypt_loop_device(dmd.u.crypt.device) &&
-	    !((*cd)->backing_file = crypt_loop_backing_file(dmd.u.crypt.device))) {
+	if (!(*cd)->backing_file && dmd.data_device &&
+	    crypt_loop_device(dmd.data_device) &&
+	    !((*cd)->backing_file = crypt_loop_backing_file(dmd.data_device))) {
 		r = -ENOMEM;
 		goto out;
 	}
 
-	if (isPLAIN((*cd)->type)) {
-		(*cd)->plain_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
-		(*cd)->plain_hdr.hash = NULL; /* no way to get this */
-		(*cd)->plain_hdr.offset = dmd.u.crypt.offset;
-		(*cd)->plain_hdr.skip = dmd.u.crypt.iv_offset;
-		(*cd)->plain_key_size = dmd.u.crypt.vk->keylength;
-
-		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher, cipher, NULL, cipher_mode);
-		if (!r) {
-			(*cd)->plain_cipher = strdup(cipher);
-			(*cd)->plain_cipher_mode = strdup(cipher_mode);
-		}
-	} else if (isLOOPAES((*cd)->type)) {
-		(*cd)->loopaes_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
-		(*cd)->loopaes_hdr.offset = dmd.u.crypt.offset;
-
-		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher, cipher,
-					      &key_nums, cipher_mode);
-		if (!r) {
-			(*cd)->loopaes_cipher = strdup(cipher);
-			(*cd)->loopaes_cipher_mode = strdup(cipher_mode);
-			/* version 3 uses last key for IV */
-			if (dmd.u.crypt.vk->keylength % key_nums)
-				key_nums++;
-			(*cd)->loopaes_key_size = dmd.u.crypt.vk->keylength / key_nums;
-		}
-	} else if (isLUKS((*cd)->type)) {
-		if (mdata_device(*cd)) {
-			r = _crypt_load_luks1(*cd, 0, 0);
-			if (r < 0) {
-				log_dbg("LUKS device header does not match active device.");
-				free((*cd)->type);
-				(*cd)->type = NULL;
-				r = 0;
-				goto out;
-			}
-			/* checks whether UUIDs match each other */
-			r = crypt_uuid_cmp(dmd.uuid, (*cd)->hdr.uuid);
-			if (r < 0) {
-				log_dbg("LUKS device header uuid: %s mismatches DM returned uuid %s",
-					(*cd)->hdr.uuid, dmd.uuid);
-				free((*cd)->type);
-				(*cd)->type = NULL;
-				r = 0;
-				goto out;
-			}
-		}
-	}
-
+	if (dmd.target == DM_CRYPT)
+		r = _init_by_name_crypt(*cd, name);
+	else if (dmd.target == DM_VERITY)
+		r = _init_by_name_verity(*cd, name);
 out:
 	if (r < 0) {
 		crypt_free(*cd);
 		*cd = NULL;
 	}
-	crypt_free_volume_key(dmd.u.crypt.vk);
-	free(CONST_CAST(void*)dmd.u.crypt.device);
-	free(CONST_CAST(void*)dmd.u.crypt.cipher);
+	free(CONST_CAST(void*)dmd.data_device);
 	free(CONST_CAST(void*)dmd.uuid);
 	return r;
 }
@@ -1171,20 +1231,20 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 
 	log_dbg("Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 
-	r = dm_query_device(name, DM_ACTIVE_DEVICE | DM_ACTIVE_CIPHER |
-				  DM_ACTIVE_UUID | DM_ACTIVE_KEYSIZE |
-				  DM_ACTIVE_KEY, &dmd);
+	r = dm_query_device(name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
+				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
+				  DM_ACTIVE_CRYPT_KEY, &dmd);
 	if (r < 0) {
 		log_err(NULL, _("Device %s is not active.\n"), name);
-		goto out;
+		return -EINVAL;
 	}
 
-	if (!dmd.uuid) {
+	if (!dmd.uuid || dmd.target != DM_CRYPT) {
 		r = -EINVAL;
 		goto out;
 	}
 
-	r = device_check_and_adjust(cd, dmd.u.crypt.device, DEV_OK, &new_size,
+	r = device_check_and_adjust(cd, dmd.data_device, DEV_OK, &new_size,
 				    &dmd.u.crypt.offset, &dmd.flags);
 	if (r)
 		goto out;
@@ -1195,12 +1255,14 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = 0;
 	} else {
 		dmd.size = new_size;
-		r = dm_create_device(name, cd->type, &dmd, NULL, 1);
+		r = dm_create_device(name, cd->type, &dmd, 1);
 	}
 out:
-	crypt_free_volume_key(dmd.u.crypt.vk);
-	free(CONST_CAST(void*)dmd.u.crypt.cipher);
-	free(CONST_CAST(void*)dmd.u.crypt.device);
+	if (dmd.target == DM_CRYPT) {
+		crypt_free_volume_key(dmd.u.crypt.vk);
+		free(CONST_CAST(void*)dmd.u.crypt.cipher);
+	}
+	free(CONST_CAST(void*)dmd.data_device);
 	free(CONST_CAST(void*)dmd.uuid);
 
 	return r;
@@ -2341,6 +2403,9 @@ int crypt_get_active_device(struct crypt_device *cd __attribute__((unused)),
 	r = dm_query_device(name, 0, &dmd);
 	if (r < 0)
 		return r;
+
+	if (dmd.target != DM_CRYPT)
+		return -ENOTSUP;
 
 	cad->offset	= dmd.u.crypt.offset;
 	cad->iv_offset	= dmd.u.crypt.iv_offset;
