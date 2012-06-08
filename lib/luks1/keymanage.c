@@ -1062,7 +1062,7 @@ int LUKS1_activate(struct crypt_device *cd,
 		return -ENOMEM;
 
 	dmd.u.crypt.cipher = dm_cipher;
-	r = dm_create_device(name, CRYPT_LUKS1, &dmd, 0);
+	r = dm_create_device(name, CRYPT_LUKS1, &dmd, NULL, 0);
 
 	free(dm_cipher);
 	return r;

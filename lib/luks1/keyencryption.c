@@ -86,7 +86,7 @@ static int setup_mapping(const char *cipher, const char *name,
 	dmd.size = round_up_modulo(srcLength,device_sector_size)/SECTOR_SIZE;
 	cleaner_size = dmd.size;
 
-	return dm_create_device(name, "TEMP", &dmd, 0);
+	return dm_create_device(name, "TEMP", &dmd, NULL, 0);
 }
 
 static void sigint_handler(int sig __attribute__((unused)))

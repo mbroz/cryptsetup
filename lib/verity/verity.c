@@ -155,7 +155,7 @@ int VERITY_activate(struct crypt_device *cd,
 		     struct crypt_params_verity *verity_hdr,
 		     uint32_t flags)
 {
-	struct crypt_dm_active_verity dmd;
+	struct crypt_dm_active_device dmd;
 	uint64_t offset = 0;
 	int r;
 
@@ -173,20 +173,22 @@ int VERITY_activate(struct crypt_device *cd,
 	if (!name)
 		return 0;
 
-	dmd.data_device = crypt_get_device_name(cd);
-	dmd.hash_device = hash_device;
-	dmd.root_hash = root_hash;
-	dmd.root_hash_size = root_hash_size;
-	dmd.hash_offset = VERITY_hash_offset_block(verity_hdr),
+	dmd.target = DM_VERITY;
+	dmd.u.verity.data_device = crypt_get_device_name(cd);
+	dmd.u.verity.hash_device = hash_device;
+	dmd.u.verity.root_hash = root_hash;
+	dmd.u.verity.root_hash_size = root_hash_size;
+	dmd.u.verity.hash_offset = VERITY_hash_offset_block(verity_hdr),
 	dmd.flags = CRYPT_ACTIVATE_READONLY;
 	dmd.size = verity_hdr->data_size * verity_hdr->data_block_size / 512;
+	dmd.uuid = NULL;
 
-	r = device_check_and_adjust(cd, dmd.data_device, DEV_EXCL,
+	r = device_check_and_adjust(cd, dmd.u.verity.data_device, DEV_EXCL,
 				    &dmd.size, &offset, &dmd.flags);
 	if (r)
 		return r;
 
-	r = dm_create_verity(name, verity_hdr, &dmd);
+	r = dm_create_device(name, CRYPT_VERITY, &dmd, verity_hdr, 0);
 	if (!r && !(dm_flags() & DM_VERITY_SUPPORTED)) {
 		log_err(cd, _("Kernel doesn't support dm-verity mapping.\n"));
 		return -ENOTSUP;

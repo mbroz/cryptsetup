@@ -335,7 +335,7 @@ int PLAIN_activate(struct crypt_device *cd,
 	log_dbg("Trying to activate PLAIN device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
-	r = dm_create_device(name, CRYPT_PLAIN, &dmd, 0);
+	r = dm_create_device(name, CRYPT_PLAIN, &dmd, NULL, 0);
 
 	// FIXME
 	if (!cd->plain_uuid && dm_query_device(name, DM_ACTIVE_UUID, &dmd) >= 0)
@@ -1195,7 +1195,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = 0;
 	} else {
 		dmd.size = new_size;
-		r = dm_create_device(name, cd->type, &dmd, 1);
+		r = dm_create_device(name, cd->type, &dmd, NULL, 1);
 	}
 out:
 	crypt_free_volume_key(dmd.u.crypt.vk);
