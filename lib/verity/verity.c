@@ -30,6 +30,22 @@
 #include "verity.h"
 #include "internal.h"
 
+/* FIXME: not yet final on-disk format! Add UUID etc */
+struct verity_sb {
+	uint8_t signature[8];
+	uint8_t version;
+	uint8_t data_block_bits;
+	uint8_t hash_block_bits;
+	uint8_t pad1[1];
+	uint16_t salt_size;
+	uint8_t pad2[2];
+	uint32_t data_blocks_hi;
+	uint32_t data_blocks_lo;
+	uint8_t algorithm[16];
+	uint8_t salt[VERITY_MAX_SALT_SIZE];
+	uint8_t pad3[88];
+};
+
 /* Read verity superblock from disk */
 int VERITY_read_sb(struct crypt_device *cd,
 		   const char *device,
