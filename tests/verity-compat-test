@@ -63,9 +63,9 @@ function check_exists()
 
 function compare_out() # $1 what, $2 expected
 {
-	OPT=$(grep -v "^#" $DEV_OUT | grep -i "$1" | sed -e s/.*\:\ //)
+	OPT=$(grep -v "^#" $DEV_OUT | grep -i "$1" | sed -e s/.*\:\ // )
 	[ -z "$OPT" ] && fail
-	[ $OPT != $2 ] && fail "$1 differs ($OPT)"
+	[ $OPT != $2 ] && fail "$1 differs ($2)"
 }
 
 function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
@@ -74,7 +74,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 		BLOCKS=$(($6 * 512 / $1))
 		DEV_PARAMS="$LOOPDEV1 $LOOPDEV1 \
 			   --hash-start $6 \
-			   --data-blocks=$BLOCKS"
+			   --data-blocks=$BLOCKS --debug"
 	else
 		DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
 	fi
@@ -82,7 +82,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	for fail in data hash; do
 	wipe
 	echo -n "V$4 $5 block size $1: "
-	$VERITYSETUP -c $DEV_PARAMS --format=$4 \
+	$VERITYSETUP format $DEV_PARAMS --format=$4 \
 		--data-block-size=$1 --hash-block-size=$1 \
 		--algorithm=$5 --salt=$3 \
 		>$DEV_OUT || fail
@@ -91,10 +91,10 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	compare_out "root hash" $2
 	compare_out "alt" "$3"
 
-	$VERITYSETUP -v $DEV_PARAMS $2 >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP verify $DEV_PARAMS $2 >>$DEV_OUT 2>&1 || fail
 	echo -n "[verify]"
 
-	$VERITYSETUP -a $DEV_NAME $DEV_PARAMS $2  >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $2  >>$DEV_OUT 2>&1 || fail
 	check_exists
 	echo -n "[activate]"
 
@@ -102,7 +102,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
 	echo -n "[in-kernel verify]"
 
-	dmsetup remove $DEV_NAME || fail
+	$VERITYSETUP remove $DEV_NAME || fail
 
 	case $fail in
 	data)
@@ -119,14 +119,14 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 		;;
 	esac
 
-	$VERITYSETUP -v $DEV_PARAMS $2 >>$DEV_OUT 2>&1 && \
+	$VERITYSETUP verify $DEV_PARAMS $2 >>$DEV_OUT 2>&1 && \
 		fail "userspace check for $TXT corruption"
-	$VERITYSETUP -a $DEV_NAME $DEV_PARAMS $2 >>$DEV_OUT 2>&1 || \
+	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $2 >>$DEV_OUT 2>&1 || \
 		fail "activation"
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null && \
 		fail "in-kernel check for $TXT corruption"
-	dmsetup remove $DEV_NAME || fail "deactivation"
+	$VERITYSETUP remove $DEV_NAME || fail "deactivation"
 	echo "[$TXT corruption]"
 	done
 }

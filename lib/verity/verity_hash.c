@@ -189,7 +189,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	uint64_t data_device_size;
 	int levels, i, r;
 
-	log_dbg("Userspace hash %s %s, data device %s, data blocks %" PRIu64
+	log_dbg("Hash %s %s, data device %s, data blocks %" PRIu64
 		", hash_device %s, offset %" PRIu64 ".",
 		verify ? "verification" : "creation", hash_name,
 		data_device, data_blocks, hash_device, hash_position);

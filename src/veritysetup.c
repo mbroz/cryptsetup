@@ -19,10 +19,10 @@
 
 /* TODO:
  * - support device without superblock
- * - audit alloc errors / error path
- * - change command names (cryptsetup style)
  * - extend superblock (UUID)
  * - add api tests
+ * - salt string "-"
+ * - man page
  */
 
 #include <stdio.h>
@@ -31,39 +31,28 @@
 #include <errno.h>
 #include <string.h>
 #include <popt.h>
+#include <limits.h>
 
 #include "cryptsetup.h"
 
 #define PACKAGE_VERITY "veritysetup"
 
-#define MODE_VERIFY	0
-#define MODE_CREATE	1
-#define MODE_ACTIVATE	2
-#define MODE_DUMP	3
-#define MODE_STATUS	4
-
-static int mode = -1;
 static int use_superblock = 1; /* FIXME: no superblock not supported */
 
-static const char *dm_device = NULL;
-static const char *data_device = NULL;
-static const char *hash_device = NULL;
 static const char *hash_algorithm = NULL;
-static const char *root_hash = NULL;
-
 static int version = 1;
 static int data_block_size = DEFAULT_VERITY_DATA_BLOCK;
 static int hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
-static char *data_blocks_string = NULL;
 static uint64_t data_blocks = 0;
-static char *hash_start_string = NULL;
 static const char *salt_string = NULL;
-static unsigned salt_size = DEFAULT_VERITY_SALT_SIZE;
 static uint64_t hash_start = 0;
 
 static int opt_verbose = 0;
 static int opt_debug = 0;
 static int opt_version_mode = 0;
+
+static const char **action_argv;
+static int action_argc;
 
 static int hex_to_bytes(const char *hex, char *result)
 {
@@ -129,36 +118,51 @@ static void _log(int level, const char *msg, void *usrptr __attribute__((unused)
 	}
 }
 
-static int action_dump(void)
+static int action_format(int arg)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
+	char salt_bytes[512];
 	int r;
 
-	if ((r = crypt_init(&cd, hash_device)))
-		return r;
+	if ((r = crypt_init(&cd, action_argv[1])))
+		goto out;
 
+	params.hash_name = hash_algorithm ?: DEFAULT_VERITY_HASH;
+	params.data_device = action_argv[0];
+
+	if (salt_string) {
+		params.salt_size = strlen(salt_string) / 2;
+		if (hex_to_bytes(salt_string, salt_bytes) != params.salt_size) {
+			r = -EINVAL;
+			goto out;
+		}
+		params.salt = salt_bytes;
+	} else
+		params.salt_size = DEFAULT_VERITY_SALT_SIZE;
+
+	params.data_block_size = data_block_size;
+	params.hash_block_size = hash_block_size;
+	params.data_size = data_blocks;
 	params.hash_area_offset = hash_start;
-	r = crypt_load(cd, CRYPT_VERITY, &params);
+	params.version = version;
+	params.flags = CRYPT_VERITY_CREATE_HASH;
+	if (!use_superblock)
+		params.flags |= CRYPT_VERITY_NO_HEADER;
+
+	r = crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params);
 	if (!r)
 		crypt_dump(cd);
+out:
 	crypt_free(cd);
 	return r;
 }
 
-static int action_status(void)
-{
-	struct crypt_device *cd = NULL;
-	int r;
-
-	r = crypt_init_by_name_and_header(&cd, dm_device, NULL);
-	if (!r)
-		r = crypt_dump(cd);
-	crypt_free(cd);
-	return r;
-}
-
-static int action_activate(int verify)
+static int _activate(const char *dm_device,
+		      const char *data_device,
+		      const char *hash_device,
+		      const char *root_hash,
+		      uint32_t flags)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
@@ -169,8 +173,7 @@ static int action_activate(int verify)
 	if ((r = crypt_init(&cd, hash_device)))
 		goto out;
 
-	if (verify)
-		params.flags |= CRYPT_VERITY_CHECK_HASH;
+	params.flags |= flags;
 
 	if (use_superblock) {
 		params.hash_area_offset = hash_start;
@@ -201,7 +204,8 @@ static int action_activate(int verify)
 		r = -EINVAL;
 		goto out;
 	}
-	r = crypt_activate_by_volume_key(cd, dm_device, root_hash_bytes,
+	r = crypt_activate_by_volume_key(cd, dm_device,
+					 root_hash_bytes,
 					 crypt_get_volume_key_size(cd),
 					 activate_flags);
 out:
@@ -211,41 +215,61 @@ out:
 	return r;
 }
 
-static int action_create(void)
+static int action_create(int arg)
+{
+	return _activate(action_argv[0],
+			 action_argv[1],
+			 action_argv[2],
+			 action_argv[3], 0);
+}
+
+static int action_verify(int arg)
+{
+	return _activate(NULL,
+			 action_argv[0],
+			 action_argv[1],
+			 action_argv[2],
+			 CRYPT_VERITY_CHECK_HASH);
+}
+
+static int action_remove(int arg)
+{
+	struct crypt_device *cd = NULL;
+	int r;
+
+	r = crypt_init_by_name(&cd, action_argv[0]);
+	if (r == 0)
+		r = crypt_deactivate(cd, action_argv[0]);
+
+	crypt_free(cd);
+	return r;
+}
+
+static int action_status(int arg)
+{
+	struct crypt_device *cd = NULL;
+	int r;
+
+	r = crypt_init_by_name_and_header(&cd, action_argv[0], NULL);
+	if (!r)
+		r = crypt_dump(cd);
+	crypt_free(cd);
+	return r;
+}
+
+static int action_dump(int arg)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
-	char salt_bytes[512];
 	int r;
 
-	if ((r = crypt_init(&cd, hash_device)))
-		goto out;
+	if ((r = crypt_init(&cd, action_argv[0])))
+		return r;
 
-	params.hash_name = hash_algorithm ?: DEFAULT_VERITY_HASH;
-	params.data_device = data_device;
-
-	if (salt_string) {
-		if (hex_to_bytes(salt_string, salt_bytes) != salt_size) {
-			r = -EINVAL;
-			goto out;
-		}
-		params.salt = salt_bytes;
-	}
-
-	params.salt_size = salt_size;
-	params.data_block_size = data_block_size;
-	params.hash_block_size = hash_block_size;
-	params.data_size = data_blocks;
 	params.hash_area_offset = hash_start;
-	params.version = version;
-	params.flags = CRYPT_VERITY_CREATE_HASH;
-	if (!use_superblock)
-		params.flags |= CRYPT_VERITY_NO_HEADER;
-
-	r = crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params);
+	r = crypt_load(cd, CRYPT_VERITY, &params);
 	if (!r)
 		crypt_dump(cd);
-out:
 	crypt_free(cd);
 	return r;
 }
@@ -261,20 +285,6 @@ static __attribute__ ((noreturn)) void usage(poptContext popt_context,
 	exit(exitcode);
 }
 
-static void help(poptContext popt_context,
-		 enum poptCallbackReason reason __attribute__((unused)),
-		 struct poptOption *key,
-		 const char *arg __attribute__((unused)),
-		 void *data __attribute__((unused)))
-{
-	if (key->shortName == '?') {
-		log_std("%s %s\n", PACKAGE_VERITY, PACKAGE_VERSION);
-		poptPrintHelp(popt_context, stdout, 0);
-		exit(EXIT_SUCCESS);
-	} else
-		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
-}
-
 static void _dbg_version_and_cmd(int argc, const char **argv)
 {
 	int i;
@@ -288,8 +298,114 @@ static void _dbg_version_and_cmd(int argc, const char **argv)
 	log_std("\"\n");
 }
 
+static struct action_type {
+	const char *type;
+	int (*handler)(int);
+	int required_action_argc;
+	const char *arg_desc;
+	const char *desc;
+} action_types[] = {
+	{ "format",	action_format, 2, N_("<data_device> <hash_device>"),N_("format device") },
+	{ "verify",	action_verify, 3, N_("<data_device> <hash_device> <root_hash>"),N_("verify device") },
+	{ "create",	action_create, 4, N_("<name> <data_device> <hash_device> <root_hash>"),N_("create active device") },
+	{ "remove",	action_remove, 1, N_("<name>"),N_("remove (deactivate) device") },
+	{ "status",	action_status, 1, N_("<name>"),N_("show active device status") },
+	{ "dump",	action_dump,   1, N_("<hash_device>"),N_("show on-disk information") },
+	{ NULL, NULL, 0, NULL, NULL }
+};
+
+static void help(poptContext popt_context,
+		 enum poptCallbackReason reason __attribute__((unused)),
+		 struct poptOption *key,
+		 const char *arg __attribute__((unused)),
+		 void *data __attribute__((unused)))
+{
+	struct action_type *action;
+
+	if (key->shortName == '?') {
+		log_std("%s %s\n", PACKAGE_VERITY, PACKAGE_VERSION);
+		poptPrintHelp(popt_context, stdout, 0);
+		log_std(_("\n"
+			 "<action> is one of:\n"));
+		for(action = action_types; action->type; action++)
+			log_std("\t%s %s - %s\n", action->type, _(action->arg_desc), _(action->desc));
+		log_std(_("\n"
+			 "<name> is the device to create under %s\n"
+			 "<data_device> is the data device\n"
+			 "<hash_device> is the device containing verification data\n"
+			 "<root_hash> hash of the root node on <hash_device>\n"),
+			crypt_get_dir());
+
+		log_std(_("\nDefault compiled-in dm-verity parameters:\n"
+			 "\tHash: %s, Data block (bytes): %u, "
+			 "Hash block (bytes): %u, Salt size: %u, Hash format: %u\n"),
+			DEFAULT_VERITY_HASH, DEFAULT_VERITY_DATA_BLOCK,
+			DEFAULT_VERITY_HASH_BLOCK, DEFAULT_VERITY_SALT_SIZE,
+			1);
+		exit(EXIT_SUCCESS);
+	} else
+		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
+}
+
+static void show_status(int errcode)
+{
+	char error[256], *error_;
+
+	if(!opt_verbose)
+		return;
+
+	if(!errcode) {
+		log_std(_("Command successful.\n"));
+		return;
+	}
+
+	crypt_get_error(error, sizeof(error));
+
+	if (!error[0]) {
+		error_ = strerror_r(-errcode, error, sizeof(error));
+		if (error_ != error) {
+			strncpy(error, error_, sizeof(error));
+			error[sizeof(error) - 1] = '\0';
+		}
+	}
+
+	log_err(_("Command failed with code %i"), -errcode);
+	if (*error)
+		log_err(": %s\n", error);
+	else
+		log_err(".\n");
+}
+
+static int run_action(struct action_type *action)
+{
+	int r;
+
+	log_dbg("Running command %s.", action->type);
+
+	r = action->handler(0);
+
+	show_status(r);
+
+	/* Translate exit code to simple codes */
+	switch (r) {
+	case 0: 	r = EXIT_SUCCESS; break;
+	case -EEXIST:
+	case -EBUSY:	r = 5; break;
+	case -ENOTBLK:
+	case -ENODEV:	r = 4; break;
+	case -ENOMEM:	r = 3; break;
+	case -EPERM:	r = 2; break;
+	case -EINVAL:
+	case -ENOENT:
+	case -ENOSYS:
+	default:	r = EXIT_FAILURE;
+	}
+	return r;
+}
+
 int main(int argc, const char **argv)
 {
+	static char *popt_tmp;
 	static struct poptOption popt_help_options[] = {
 		{ NULL,    '\0', POPT_ARG_CALLBACK, help, 0, NULL,                         NULL },
 		{ "help",  '?',  POPT_ARG_NONE,     NULL, 0, N_("Show this help message"), NULL },
@@ -297,28 +413,25 @@ int main(int argc, const char **argv)
 		POPT_TABLEEND
 	};
 	static struct poptOption popt_options[] = {
-		{ NULL,                '\0', POPT_ARG_INCLUDE_TABLE, popt_help_options, 0, N_("Help options:"), NULL },
-		{ "version",           '\0', POPT_ARG_NONE, &opt_version_mode,          0, N_("Print package version"), NULL },
-		{ "verbose",            0 /*v*/,  POPT_ARG_NONE, &opt_verbose,               0, N_("Shows more detailed error messages"), NULL },
-		{ "debug",             '\0', POPT_ARG_NONE, &opt_debug,                 0, N_("Show debug messages"), NULL },
-		{ "create",		'c',	POPT_ARG_VAL, &mode, MODE_CREATE, "Create hash", NULL },
-		{ "verify",		'v',	POPT_ARG_VAL, &mode, MODE_VERIFY, "Verify integrity", NULL },
-		{ "activate",		'a',	POPT_ARG_VAL, &mode, MODE_ACTIVATE, "Activate the device", NULL },
-		{ "dump",		'd',	POPT_ARG_VAL, &mode, MODE_DUMP, "Dump the device", NULL },
-		{ "status",		's',	POPT_ARG_VAL, &mode, MODE_STATUS, "Status active device", NULL },
-		{ "no-superblock",	0,	POPT_ARG_VAL, &use_superblock, 0, "Do not create/use superblock" },
-		{ "format",		0,	POPT_ARG_INT, &version, 0, "Format version (1 - normal format, 0 - original Chromium OS format)", "number" },
-		{ "data-block-size",	0, 	POPT_ARG_INT, &data_block_size, 0, "Block size on the data device", "bytes" },
-		{ "hash-block-size",	0, 	POPT_ARG_INT, &hash_block_size, 0, "Block size on the hash device", "bytes" },
-		{ "data-blocks",	0,	POPT_ARG_STRING, &data_blocks_string, 0, "The number of blocks in the data file", "blocks" },
-		{ "hash-start",		0,	POPT_ARG_STRING, &hash_start_string, 0, "Starting block on the hash device", "512-byte sectors" },
-		{ "algorithm",		0,	POPT_ARG_STRING, &hash_algorithm, 0, "Hash algorithm (default sha256)", "string" },
-		{ "salt",		0,	POPT_ARG_STRING, &salt_string, 0, "Salt", "hex string" },
+		{ NULL,              '\0', POPT_ARG_INCLUDE_TABLE, popt_help_options, 0, N_("Help options:"), NULL },
+		{ "version",         '\0', POPT_ARG_NONE, &opt_version_mode, 0, N_("Print package version"), NULL },
+		{ "verbose",         'v',  POPT_ARG_NONE, &opt_verbose,      0, N_("Shows more detailed error messages"), NULL },
+		{ "debug",           '\0', POPT_ARG_NONE, &opt_debug,        0, N_("Show debug messages"), NULL },
+		{ "no-superblock",   0,    POPT_ARG_VAL,  &use_superblock,   0, N_("Do not use verity superblock"), NULL },
+		{ "format",          0,    POPT_ARG_INT,  &version,          0, N_("Format type (1 - normal, 0 - original Chromium OS)"), N_("number") },
+		{ "data-block-size", 0,    POPT_ARG_INT,  &data_block_size,  0, N_("Block size on the data device"), N_("bytes") },
+		{ "hash-block-size", 0,    POPT_ARG_INT,  &hash_block_size,  0, N_("Block size on the hash device"), N_("bytes") },
+		{ "data-blocks",     0,    POPT_ARG_STRING, &popt_tmp,       1, N_("The number of blocks in the data file"), N_("blocks") },
+		{ "hash-start",      0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting block on the hash device"), N_("512-byte sectors") },
+		{ "algorithm",       'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
+		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },
 		POPT_TABLEEND
 	};
+
 	poptContext popt_context;
+	struct action_type *action;
+	const char *aname, *null_action_argv[] = {NULL};
 	int r;
-	char *end;
 
 	crypt_set_log_callback(NULL, _log, NULL);
 
@@ -327,104 +440,77 @@ int main(int argc, const char **argv)
 	textdomain(PACKAGE);
 
 	popt_context = poptGetContext("verity", argc, argv, popt_options, 0);
+	poptSetOtherOptionHelp(popt_context,
+	                       N_("[OPTION...] <action> <action-specific>"));
 
-	poptSetOtherOptionHelp(popt_context, "[-c|-v|-a|-d] [<device name> if activating] <data device> <hash device> [<root hash> if activating or verifying] [OPTION...]");
+	while((r = poptGetNextOpt(popt_context)) > 0) {
+		unsigned long long ull_value;
+		char *endp;
 
-	if (argc <= 1) {
-		poptPrintHelp(popt_context, stdout, 0);
-		exit(1);
+		errno = 0;
+		ull_value = strtoull(popt_tmp, &endp, 0);
+		if (*endp || !*popt_tmp ||
+		    (errno == ERANGE && ull_value == ULLONG_MAX) ||
+		    (errno != 0 && ull_value == 0))
+			r = POPT_ERROR_BADNUMBER;
+
+		switch(r) {
+			case 1:
+				data_blocks = ull_value;
+				break;
+			case 2:
+				hash_start = ull_value * 512;
+				break;
+		}
+
+		if (r < 0)
+			break;
 	}
 
-	r = poptGetNextOpt(popt_context);
 	if (r < -1)
 		usage(popt_context, EXIT_FAILURE, poptStrerror(r),
 		      poptBadOption(popt_context, POPT_BADOPTION_NOALIAS));
+
 	if (opt_version_mode) {
 		log_std("%s %s\n", PACKAGE_VERITY, PACKAGE_VERSION);
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	}
 
-	if (mode < 0)
+	if (!(aname = poptGetArg(popt_context)))
+		usage(popt_context, EXIT_FAILURE, _("Argument <action> missing."),
+		      poptGetInvocationName(popt_context));
+	for(action = action_types; action->type; action++)
+		if (strcmp(action->type, aname) == 0)
+			break;
+	if (!action->type)
 		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
 		      poptGetInvocationName(popt_context));
 
-	if (mode == MODE_ACTIVATE || mode == MODE_STATUS) {
-		dm_device = poptGetArg(popt_context);
-		if (!dm_device || !*dm_device)
-			usage(popt_context, EXIT_FAILURE,
-			      _("Missing activation device name."),
-			      poptGetInvocationName(popt_context));
-	}
+	action_argc = 0;
+	action_argv = poptGetArgs(popt_context);
+	/* Make return values of poptGetArgs more consistent in case of remaining argc = 0 */
+	if(!action_argv)
+		action_argv = null_action_argv;
 
-	if (mode == MODE_STATUS)
-		goto run; //FIXME
+	/* Count args, somewhat unnice, change? */
+	while(action_argv[action_argc] != NULL)
+		action_argc++;
 
-	data_device = poptGetArg(popt_context);
-	if (!data_device)
-		usage(popt_context, EXIT_FAILURE, _("Missing data device name."),
-		      poptGetInvocationName(popt_context));
-
-	hash_device = poptGetArg(popt_context);
-	if (!hash_device)
-		usage(popt_context, EXIT_FAILURE, _("Missing hash device name."),
-		      poptGetInvocationName(popt_context));
-
-	if (mode == MODE_ACTIVATE || mode == MODE_VERIFY) {
-		root_hash = poptGetArg(popt_context);
-		if (!root_hash)
-		usage(popt_context, EXIT_FAILURE, _("Root hash not specified."),
+	if(action_argc < action->required_action_argc) {
+		char buf[128];
+		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
+		usage(popt_context, EXIT_FAILURE, buf,
 		      poptGetInvocationName(popt_context));
 	}
 
-	if (data_blocks_string) {
-		data_blocks = strtoll(data_blocks_string, &end, 10);
-		if (!*data_blocks_string || *end)
-			usage(popt_context, EXIT_FAILURE,
-			      _("Invalid number of data blocks."),
-			      poptGetInvocationName(popt_context));
-	}
-
-	/* hash start */
-	if (hash_start_string) {
-		hash_start = strtoll(hash_start_string, &end, 10);
-		if (!*hash_start_string || *end)
-			usage(popt_context, EXIT_FAILURE,
-			      _("Invalid hash device offset."),
-			      poptGetInvocationName(popt_context));
-		hash_start *= 512;
-	}
-
-	if (salt_string || !use_superblock) {
-		if (!salt_string || !strcmp(salt_string, "-"))
-			salt_string = "";
-		salt_size = strlen(salt_string) / 2;
-	}
-run:
 	if (opt_debug) {
 		opt_verbose = 1;
 		crypt_set_debug_level(-1);
 		_dbg_version_and_cmd(argc, argv);
 	}
 
-	switch (mode) {
-		case MODE_ACTIVATE:
-			r = action_activate(0);
-			break;
-		case MODE_VERIFY:
-			r = action_activate(1);
-			break;
-		case MODE_CREATE:
-			r = action_create();
-			break;
-		case MODE_DUMP:
-			r = action_dump();
-			break;
-		case MODE_STATUS:
-			r = action_status();
-			break;
-	}
-
+	r = run_action(action);
 	poptFreeContext(popt_context);
 	return r;
 }
