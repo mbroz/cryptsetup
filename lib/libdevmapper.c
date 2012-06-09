@@ -334,10 +334,13 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 		goto out;
 	hex_key(hexroot, dmd->u.verity.root_hash_size, dmd->u.verity.root_hash);
 
-	hexsalt = crypt_safe_alloc(vp->salt_size * 2 + 1);
+	hexsalt = crypt_safe_alloc(vp->salt_size ? vp->salt_size * 2 + 1 : 2);
 	if (!hexsalt)
 		goto out;
-	hex_key(hexsalt, vp->salt_size, vp->salt);
+	if (vp->salt_size)
+		hex_key(hexsalt, vp->salt_size, vp->salt);
+	else
+		strncpy(hexsalt, "-", 2);
 
 	max_size = strlen(hexroot) + strlen(hexsalt) +
 		   strlen(dmd->data_device) +

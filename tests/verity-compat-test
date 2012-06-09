@@ -78,22 +78,28 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 		DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
 	fi
 
+	for sb in yes no; do
+	FORMAT_PARAMS="--format=$4 --data-block-size=$1 --hash-block-size=$1 --hash=$5 --salt=$3"
+	if [ $sb == yes ] ; then
+		VERIFY_PARAMS=""
+	else
+		FORMAT_PAFAMS="$FORMAT_PARAMS --no-superlock"
+		VERIFY_PARAMS=$FORMAT_PARAMS
+	fi
+
 	for fail in data hash; do
 	wipe
-	echo -n "V$4 $5 block size $1: "
-	$VERITYSETUP format $DEV_PARAMS --format=$4 \
-		--data-block-size=$1 --hash-block-size=$1 \
-		--hash=$5 --salt=$3 \
-		>$DEV_OUT || fail
+	echo -n "V$4(sb=$sb) $5 block size $1: "
+	$VERITYSETUP format $DEV_PARAMS $FORMAT_PARAMS >$DEV_OUT || fail
 
 	echo -n "[root hash]"
 	compare_out "root hash" $2
-	compare_out "alt" "$3"
+	compare_out "salt" "$3"
 
-	$VERITYSETUP verify $DEV_PARAMS $2 >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $2 >>$DEV_OUT 2>&1 || fail
 	echo -n "[verify]"
 
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $2  >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $2  >>$DEV_OUT 2>&1 || fail
 	check_exists
 	echo -n "[activate]"
 
@@ -118,15 +124,16 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 		;;
 	esac
 
-	$VERITYSETUP verify $DEV_PARAMS $2 >>$DEV_OUT 2>&1 && \
+	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $2 >>$DEV_OUT 2>&1 && \
 		fail "userspace check for $TXT corruption"
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $2 >>$DEV_OUT 2>&1 || \
+	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $2 >>$DEV_OUT 2>&1 || \
 		fail "activation"
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null && \
 		fail "in-kernel check for $TXT corruption"
 	$VERITYSETUP remove $DEV_NAME || fail "deactivation"
 	echo "[$TXT corruption]"
+	done
 	done
 }
 
@@ -158,6 +165,8 @@ check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da
 check_root_hash 4096 e522df0f97da4febb882ac40f30b37dc0b444bf6df418929463fa25280f09d5c $SALT 1 sha256
 # version 0
 check_root_hash 4096 cbbf4ebd004ef65e29b935bb635a39cf754d677f3fa10b0126da725bbdf10f7d $SALT 0 sha256
+# no salt
+check_root_hash 4096 ef29c902d87350f1da4bfa536e16cebc162a909bf89abe448b81ec500d4fb9bf - 1 sha256
 # sha1
 check_root_hash 1024 d0e9163ca8844aaa2e88fe5265a8c5d9ee494a99 $SALT 1 sha1
 check_root_hash 1024 73509e8e868be6b8ac939817a98a3d35121413b2 dadada 1 sha1
@@ -169,6 +178,8 @@ check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da
 check_root_hash 4096 e522df0f97da4febb882ac40f30b37dc0b444bf6df418929463fa25280f09d5c $SALT 1 sha256 16384
 # version 0
 check_root_hash 4096 cbbf4ebd004ef65e29b935bb635a39cf754d677f3fa10b0126da725bbdf10f7d $SALT 0 sha256 16384
+# no salt
+check_root_hash 4096 ef29c902d87350f1da4bfa536e16cebc162a909bf89abe448b81ec500d4fb9bf - 1 sha256 16384
 # sha1
 check_root_hash 1024 d0e9163ca8844aaa2e88fe5265a8c5d9ee494a99 $SALT 1 sha1 16384
 check_root_hash 1024 73509e8e868be6b8ac939817a98a3d35121413b2 dadada 1 sha1 16384

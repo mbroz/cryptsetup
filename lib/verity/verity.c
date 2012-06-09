@@ -61,7 +61,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 		sizeof(struct verity_sb), device, sb_offset);
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
-		log_err(cd, _("Verity don't use on-disk header.\n"), device);
+		log_err(cd, _("Verity device doesn't use on-disk header.\n"), device);
 		return -EINVAL;
 	}
 
@@ -130,7 +130,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 		sizeof(struct verity_sb), device, sb_offset);
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
-		log_err(cd, _("Verity don't use on-disk header.\n"), device);
+		log_err(cd, _("Verity device doesn't use on-disk header.\n"), device);
 		return -EINVAL;
 	}
 

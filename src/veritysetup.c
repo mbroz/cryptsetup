@@ -18,10 +18,8 @@
  */
 
 /* TODO:
- * - support device without superblock
  * - extend superblock (UUID)
  * - add api tests
- * - salt string "-"
  * - report in-kernel status outside libcryptsetup (extend api)
  */
 
@@ -118,37 +116,52 @@ static void _log(int level, const char *msg, void *usrptr __attribute__((unused)
 	}
 }
 
+static int _prepare_format(struct crypt_params_verity *params,
+			   const char *data_device,
+			   uint32_t flags)
+{
+	static char salt_bytes[512];
+
+	params->hash_name = hash_algorithm ?: DEFAULT_VERITY_HASH;
+	params->data_device = data_device;
+
+	if (salt_string && !strcmp(salt_string, "-")) {
+		params->salt_size = 0;
+		params->salt = NULL;
+	} else if (salt_string) {
+		params->salt_size = strlen(salt_string) / 2;
+		if (hex_to_bytes(salt_string, salt_bytes) != params->salt_size)
+			return -EINVAL;
+		params->salt = salt_bytes;
+	} else
+		params->salt_size = DEFAULT_VERITY_SALT_SIZE;
+
+	params->data_block_size = data_block_size;
+	params->hash_block_size = hash_block_size;
+	params->data_size = data_blocks;
+	params->hash_area_offset = hash_start;
+	params->version = version;
+	params->flags = flags;
+
+	return 0;
+}
+
 static int action_format(int arg)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
-	char salt_bytes[512];
+	uint32_t flags = CRYPT_VERITY_CREATE_HASH;
 	int r;
 
 	if ((r = crypt_init(&cd, action_argv[1])))
 		goto out;
 
-	params.hash_name = hash_algorithm ?: DEFAULT_VERITY_HASH;
-	params.data_device = action_argv[0];
-
-	if (salt_string) {
-		params.salt_size = strlen(salt_string) / 2;
-		if (hex_to_bytes(salt_string, salt_bytes) != params.salt_size) {
-			r = -EINVAL;
-			goto out;
-		}
-		params.salt = salt_bytes;
-	} else
-		params.salt_size = DEFAULT_VERITY_SALT_SIZE;
-
-	params.data_block_size = data_block_size;
-	params.hash_block_size = hash_block_size;
-	params.data_size = data_blocks;
-	params.hash_area_offset = hash_start;
-	params.version = version;
-	params.flags = CRYPT_VERITY_CREATE_HASH;
 	if (!use_superblock)
-		params.flags |= CRYPT_VERITY_NO_HEADER;
+		flags |= CRYPT_VERITY_NO_HEADER;
+
+	r = _prepare_format(&params, action_argv[0], flags);
+	if (r < 0)
+		goto out;
 
 	r = crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params);
 	if (!r)
@@ -173,25 +186,15 @@ static int _activate(const char *dm_device,
 	if ((r = crypt_init(&cd, hash_device)))
 		goto out;
 
-	params.flags |= flags;
-
 	if (use_superblock) {
+		params.flags = flags;
 		params.hash_area_offset = hash_start;
 		r = crypt_load(cd, CRYPT_VERITY, &params);
-	} else {/*
-		params.hash_name = hash_algorithm;
-		params.salt = salt_bytes;
-		params.salt_size = salt_size;
-		params.data_block_size = data_block_size;
-		params.hash_block_size = hash_block_size;
-
-		params.data_size = data_blocks * data_block_size / 512;
-		params.version = version;
-		params.flags |= CRYPT_VERITY_NO_HEADER;
-		r = crypt_load(cd, CRYPT_VERITY, &params);
-		crypt_format(); */
-		r = -EINVAL;
-		goto out;
+	} else {
+		r = _prepare_format(&params, data_device, flags | CRYPT_VERITY_NO_HEADER);
+		if (r < 0)
+			goto out;
+		r = crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params);
 	}
 	if (r < 0)
 		goto out;

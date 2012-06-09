@@ -654,6 +654,9 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	if (r < 0)
 		return r;
 
+	if (params->flags & CRYPT_VERITY_NO_HEADER)
+		return -EINVAL;
+
 	if (params)
 		sb_offset = params->hash_area_offset;
 
@@ -1076,11 +1079,12 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (r)
 		goto out;
 
-	log_dbg("Creating verity hash on device %s.", mdata_device(cd));
-	r = VERITY_create(cd, &cd->verity_hdr, cd->device, mdata_device(cd),
-			  cd->verity_root_hash, cd->verity_root_hash_size);
-	if (r)
-		goto out;
+	if (params->flags & CRYPT_VERITY_CREATE_HASH) {
+		r = VERITY_create(cd, &cd->verity_hdr, cd->device, mdata_device(cd),
+				  cd->verity_root_hash, cd->verity_root_hash_size);
+		if (r)
+			goto out;
+	}
 
 	if (!(params->flags & CRYPT_VERITY_NO_HEADER))
 		r = VERITY_write_sb(cd, mdata_device(cd),
