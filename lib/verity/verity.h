@@ -25,7 +25,6 @@
 
 #define VERITY_SIGNATURE	"verity\0\0"
 #define VERITY_MAX_LEVELS	63
-#define VERITY_MAX_SALT_SIZE	384
 
 struct crypt_device;
 struct crypt_params_verity;

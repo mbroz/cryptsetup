@@ -353,7 +353,7 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 
 	r = snprintf(params, max_size,
 		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s",
-		     vp->version, dmd->data_device,
+		     vp->hash_type, dmd->data_device,
 		     dmd->u.verity.hash_device,
 		     vp->data_block_size, vp->hash_block_size,
 		     vp->data_size, dmd->u.verity.hash_offset,
@@ -362,7 +362,6 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 		crypt_safe_free(params);
 		params = NULL;
 	}
-	log_dbg("TABLE: %s", params);
 out:
 	crypt_safe_free(hexroot);
 	crypt_safe_free(hexsalt);
@@ -837,7 +836,7 @@ static int _dm_query_verity(uint32_t get_flags,
 	if (*params != ' ')
 		return -EINVAL;
 	if (vp)
-		vp->version = val32;
+		vp->hash_type = val32;
 	params++;
 
 	/* data device */

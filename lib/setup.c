@@ -776,7 +776,7 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		cd->verity_hdr.data_block_size = params.data_block_size;
 		cd->verity_hdr.hash_block_size = params.hash_block_size;
 		cd->verity_hdr.hash_area_offset = dmd.u.verity.hash_offset;
-		cd->verity_hdr.version = params.version;
+		cd->verity_hdr.hash_type = params.hash_type;
 		cd->verity_hdr.flags = params.flags;
 		cd->verity_hdr.salt_size = params.salt_size;
 		cd->verity_hdr.salt = params.salt;
@@ -1036,9 +1036,6 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (!params || !params->data_device)
 		return -EINVAL;
 
-	if (params->version > 1)
-		return -EINVAL;
-
 	/* set data device */
 	cd->type = CRYPT_VERITY;
 	r = crypt_set_data_device(cd, params->data_device);
@@ -1069,7 +1066,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	cd->verity_hdr.data_block_size = params->data_block_size;
 	cd->verity_hdr.hash_block_size = params->hash_block_size;
 	cd->verity_hdr.hash_area_offset = params->hash_area_offset;
-	cd->verity_hdr.version = params->version;
+	cd->verity_hdr.hash_type = params->hash_type;
 	cd->verity_hdr.flags = params->flags;
 	cd->verity_hdr.salt_size = params->salt_size;
 	cd->verity_hdr.salt = malloc(params->salt_size);
@@ -1327,7 +1324,6 @@ int crypt_header_restore(struct crypt_device *cd,
 	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
 
-	/* Some hash functions need initialized gcrypt library */
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
@@ -1946,7 +1942,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 	int r = -EINVAL;
 
-	log_dbg("Activating volume %s by volume key.", name);
+	log_dbg("Activating volume %s by volume key.", name ?: "[none]");
 
 	if (name) {
 		ci = crypt_status(NULL, name);
@@ -2255,7 +2251,7 @@ static int _luks_dump(struct crypt_device *cd)
 static int _verity_dump(struct crypt_device *cd)
 {
 	log_std(cd, "VERITY header information for %s\n", mdata_device(cd));
-	log_std(cd, "Version:         \t%u\n", cd->verity_hdr.version);
+	log_std(cd, "Hash type:       \t%u\n", cd->verity_hdr.hash_type);
 	log_std(cd, "Data blocks:     \t%" PRIu64 "\n", cd->verity_hdr.data_size);
 	log_std(cd, "Data block size: \t%u\n", cd->verity_hdr.data_block_size);
 	log_std(cd, "Hash block size: \t%u\n", cd->verity_hdr.hash_block_size);
@@ -2415,7 +2411,7 @@ int crypt_get_verity_info(struct crypt_device *cd,
 	vp->hash_block_size = cd->verity_hdr.hash_block_size;
 	vp->data_size = cd->verity_hdr.data_size;
 	vp->hash_area_offset = cd->verity_hdr.hash_area_offset;
-	vp->version = cd->verity_hdr.version;
+	vp->hash_type = cd->verity_hdr.hash_type;
 	vp->flags = cd->verity_hdr.flags & CRYPT_VERITY_NO_HEADER;
 	return 0;
 }

@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -30,7 +31,9 @@
 #include "verity.h"
 #include "internal.h"
 
-/* FIXME: not yet final on-disk format! Add UUID etc */
+#define NEW_SB 1
+
+#ifndef NEW_SB
 struct verity_sb {
 	uint8_t signature[8];
 	uint8_t version;
@@ -42,9 +45,25 @@ struct verity_sb {
 	uint32_t data_blocks_hi;
 	uint32_t data_blocks_lo;
 	uint8_t algorithm[16];
-	uint8_t salt[VERITY_MAX_SALT_SIZE];
+	uint8_t salt[384];
 	uint8_t pad3[88];
 };
+
+#else
+struct verity_sb {
+	uint8_t  signature[8];	/* "verity\0\0" */
+	uint32_t version;	/* superblock version */
+	uint32_t hash_type;	/* 0 - Chrome OS, 1 - normal */
+	uint8_t  uuid[16];	/* UUID of hash device */
+	uint8_t  algorithm[32];/* hash algorithm name */
+	uint64_t data_block_size; /* data block in bytes */
+	uint64_t hash_block_size; /* hash block in bytes */
+	uint64_t data_blocks;	/* number of data blocks */
+	uint64_t salt_size;	/* salt size */
+	uint8_t  salt[256];	/* salt */
+	uint8_t  _pad[160];
+} __attribute__((packed));
+#endif
 
 /* Read verity superblock from disk */
 int VERITY_read_sb(struct crypt_device *cd,
@@ -54,7 +73,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 {
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
-	int devfd = 0;
+	int devfd = 0, sb_version;
 	uint64_t sb_data_blocks;
 
 	log_dbg("Reading VERITY header of size %u on device %s, offset %" PRIu64 ".",
@@ -82,7 +101,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 		log_err(cd, _("Device %s is not a valid VERITY device.\n"), device);
 		return -EINVAL;
 	}
-
+#ifndef NEW_SB
 	if (sb.version > 1) {
 		log_err(cd, _("Unsupported VERITY version %d.\n"), sb.version);
 		return -EINVAL;
@@ -91,7 +110,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 	if (sb.data_block_bits < 9 || sb.data_block_bits >= 31 ||
 	    sb.hash_block_bits < 9 || sb.hash_block_bits >= 31 ||
 	    !memchr(sb.algorithm, 0, sizeof(sb.algorithm)) ||
-	    ntohs(sb.salt_size) > VERITY_MAX_SALT_SIZE) {
+	    ntohs(sb.salt_size) > 256) {
 		log_err(cd, _("VERITY header corrupted.\n"));
 		return -EINVAL;
 	}
@@ -110,9 +129,46 @@ int VERITY_read_sb(struct crypt_device *cd,
 	if (!params->salt)
 		return -ENOMEM;
 	memcpy(CONST_CAST(char*)params->salt, sb.salt, params->salt_size);
-	params->hash_area_offset = sb_offset;
-	params->version = sb.version;
+	params->hash_type = sb.version;
+#else
+	sb_version = le32_to_cpu(sb.version);
+	if (sb_version != 1) {
+		log_err(cd, _("Unsupported VERITY version %d.\n"), sb_version);
+		return -EINVAL;
+	}
+	params->hash_type = le32_to_cpu(sb.hash_type);
+	if (params->hash_type > 1) {
+		log_err(cd, _("Unsupported VERITY hash type %d.\n"), params->hash_type);
+		return -EINVAL;
+	}
 
+	params->data_block_size = le64_to_cpu(sb.data_block_size);
+	params->hash_block_size = le64_to_cpu(sb.hash_block_size);
+	if (params->data_block_size % 512 || params->hash_block_size % 512) {
+		log_err(cd, _("Unsupported VERITY block size.\n"));
+		return -EINVAL;
+	}
+	params->data_size = le64_to_cpu(sb.data_blocks);
+
+	params->hash_name = strndup((const char*)sb.algorithm, sizeof(sb.algorithm));
+	if (!params->hash_name)
+		return -ENOMEM;
+
+	params->salt_size = le64_to_cpu(sb.salt_size);
+	if (params->salt_size > sizeof(sb.salt)) {
+		log_err(cd, _("VERITY header corrupted.\n"));
+		free(CONST_CAST(char*)params->hash_name);
+		return -EINVAL;
+	}
+	params->salt = malloc(params->salt_size);
+	if (!params->salt) {
+		free(CONST_CAST(char*)params->hash_name);
+		return -ENOMEM;
+	}
+	memcpy(CONST_CAST(char*)params->salt, sb.salt, params->salt_size);
+
+#endif
+	params->hash_area_offset = sb_offset;
 	return 0;
 }
 
@@ -141,7 +197,8 @@ int VERITY_write_sb(struct crypt_device *cd,
 	}
 
 	memcpy(&sb.signature, VERITY_SIGNATURE, sizeof(sb.signature));
-	sb.version = params->version;
+#ifndef NEW_SB
+	sb.version = params->hash_type;
 	sb.data_block_bits = ffs(params->data_block_size) - 1;
 	sb.hash_block_bits = ffs(params->hash_block_size) - 1;
 	sb.salt_size = htons(params->salt_size);
@@ -149,7 +206,16 @@ int VERITY_write_sb(struct crypt_device *cd,
 	sb.data_blocks_lo = htonl(params->data_size & 0xFFFFFFFF);
 	strncpy((char *)sb.algorithm, params->hash_name, sizeof(sb.algorithm));
 	memcpy(sb.salt, params->salt, params->salt_size);
-
+#else
+	sb.version         = cpu_to_le32(1);
+	sb.hash_type       = cpu_to_le32(params->hash_type);
+	sb.data_block_size = cpu_to_le64(params->data_block_size);
+	sb.hash_block_size = cpu_to_le64(params->hash_block_size);
+	sb.salt_size       = cpu_to_le64(params->salt_size);
+	sb.data_blocks     = cpu_to_le64(params->data_size);
+	strncpy((char *)sb.algorithm, params->hash_name, sizeof(sb.algorithm));
+	memcpy(sb.salt, params->salt, params->salt_size);
+#endif
 	r = write_lseek_blockwise(devfd, (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(cd, _("Error during update of verity header on device %s.\n"), device);

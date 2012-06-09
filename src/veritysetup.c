@@ -20,7 +20,6 @@
 /* TODO:
  * - extend superblock (UUID)
  * - add api tests
- * - report in-kernel status outside libcryptsetup (extend api)
  */
 
 #include <stdio.h>
@@ -40,7 +39,7 @@
 static int use_superblock = 1; /* FIXME: no superblock not supported */
 
 static const char *hash_algorithm = NULL;
-static int version = 1;
+static int hash_type = 1;
 static int data_block_size = DEFAULT_VERITY_DATA_BLOCK;
 static int hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
 static uint64_t data_blocks = 0;
@@ -142,7 +141,7 @@ static int _prepare_format(struct crypt_params_verity *params,
 	params->hash_block_size = hash_block_size;
 	params->data_size = data_blocks;
 	params->hash_area_offset = hash_start;
-	params->version = version;
+	params->hash_type = hash_type;
 	params->flags = flags;
 
 	return 0;
@@ -300,7 +299,7 @@ static int action_status(int arg)
 		if (r < 0)
 			goto out;
 
-		log_std("  version:     %u\n", vp.version);
+		log_std("  hash type:   %u\n", vp.hash_type);
 		log_std("  data block:  %u\n", vp.data_block_size);
 		log_std("  hash block:  %u\n", vp.hash_block_size);
 		log_std("  hash name:   %s\n", vp.hash_name);
@@ -499,7 +498,7 @@ int main(int argc, const char **argv)
 		{ "verbose",         'v',  POPT_ARG_NONE, &opt_verbose,      0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",           '\0', POPT_ARG_NONE, &opt_debug,        0, N_("Show debug messages"), NULL },
 		{ "no-superblock",   0,    POPT_ARG_VAL,  &use_superblock,   0, N_("Do not use verity superblock"), NULL },
-		{ "format",          0,    POPT_ARG_INT,  &version,          0, N_("Format type (1 - normal, 0 - original Chromium OS)"), N_("number") },
+		{ "format",          0,    POPT_ARG_INT,  &hash_type,        0, N_("Format type (1 - normal, 0 - original Chrome OS)"), N_("number") },
 		{ "data-block-size", 0,    POPT_ARG_INT,  &data_block_size,  0, N_("Block size on the data device"), N_("bytes") },
 		{ "hash-block-size", 0,    POPT_ARG_INT,  &hash_block_size,  0, N_("Block size on the hash device"), N_("bytes") },
 		{ "data-blocks",     0,    POPT_ARG_STRING, &popt_tmp,       1, N_("The number of blocks in the data file"), N_("blocks") },

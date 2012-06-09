@@ -32,6 +32,7 @@
 #include <inttypes.h>
 
 #include "nls.h"
+#include "bitops.h"
 #include "utils_crypt.h"
 #include "utils_loop.h"
 #include "utils_dm.h"

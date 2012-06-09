@@ -324,7 +324,7 @@ int VERITY_verify(struct crypt_device *cd,
 		  size_t root_hash_size)
 {
 	return VERITY_create_or_verify_hash(cd, 1,
-		verity_hdr->version,
+		verity_hdr->hash_type,
 		verity_hdr->hash_name,
 		hash_device,
 		data_device,
@@ -348,7 +348,7 @@ int VERITY_create(struct crypt_device *cd,
 {
 	int pgsize = crypt_getpagesize();
 
-	if (verity_hdr->salt_size > VERITY_MAX_SALT_SIZE)
+	if (verity_hdr->salt_size > 256)
 		return -EINVAL;
 
 	if (verity_hdr->hash_block_size > pgsize ||
@@ -357,7 +357,7 @@ int VERITY_create(struct crypt_device *cd,
 			      "size exceeds page size (%u).\n"), pgsize);
 
 	return VERITY_create_or_verify_hash(cd, 0,
-		verity_hdr->version,
+		verity_hdr->hash_type,
 		verity_hdr->hash_name,
 		hash_device,
 		data_device,
