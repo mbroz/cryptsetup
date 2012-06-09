@@ -67,7 +67,6 @@ struct crypt_device {
 
 	/* used in CRYPT_VERITY */
 	struct crypt_params_verity verity_hdr;
-	uint32_t verity_flags;
 	char *verity_root_hash;
 	uint64_t verity_root_hash_size;
 
@@ -663,7 +662,7 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 		return r;
 
 	if (params)
-		cd->verity_flags = params->flags;
+		cd->verity_hdr.flags = params->flags;
 
 	if (params && params->data_device &&
 	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
@@ -763,7 +762,7 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		goto out;
 
 	if (isVERITY(cd->type)) {
-		cd->verity_flags = CRYPT_VERITY_NO_HEADER; //FIXME
+		cd->verity_hdr.flags = CRYPT_VERITY_NO_HEADER; //FIXME
 		//cd->verity_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
 		cd->verity_hdr.data_size = params.data_size;
 		cd->verity_root_hash_size = dmd.u.verity.root_hash_size;
@@ -1034,7 +1033,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (params->version > 1)
 		return -EINVAL;
 
-	/* set dat device */
+	/* set data device */
 	cd->type = CRYPT_VERITY;
 	r = crypt_set_data_device(cd, params->data_device);
 	cd->type = NULL;
@@ -1054,11 +1053,11 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (!cd->verity_root_hash_size)
 		return -EINVAL;
 
-	cd->verity_flags = params->flags;
 	cd->verity_root_hash = malloc(cd->verity_root_hash_size);
 	if (!cd->verity_root_hash)
 		return -ENOMEM;
 
+	cd->verity_hdr.flags = params->flags;
 	cd->verity_hdr.hash_name = strdup(params->hash_name);
 	cd->verity_hdr.data_device = NULL;
 	cd->verity_hdr.data_block_size = params->data_block_size;
@@ -1083,9 +1082,10 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (r)
 		goto out;
 
-	r = VERITY_write_sb(cd, mdata_device(cd),
-			    cd->verity_hdr.hash_area_offset,
-			    &cd->verity_hdr);
+	if (!(params->flags & CRYPT_VERITY_NO_HEADER))
+		r = VERITY_write_sb(cd, mdata_device(cd),
+				    cd->verity_hdr.hash_area_offset,
+				    &cd->verity_hdr);
 out:
 	if (r) {
 		free(cd->verity_root_hash);
@@ -1996,7 +1996,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 
 		r = VERITY_activate(cd, name, mdata_device(cd),
 				    volume_key, volume_key_size,
-				    &cd->verity_hdr, cd->verity_flags);
+				    &cd->verity_hdr, CRYPT_ACTIVATE_READONLY);
 
 		if (r == -EPERM) {
 			free(cd->verity_root_hash);

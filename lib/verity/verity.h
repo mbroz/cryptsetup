@@ -46,7 +46,7 @@ int VERITY_activate(struct crypt_device *cd,
 		     const char *root_hash,
 		     size_t root_hash_size,
 		     struct crypt_params_verity *verity_hdr,
-		     uint32_t flags);
+		     uint32_t activation_flags);
 
 int VERITY_verify(struct crypt_device *cd,
 		struct crypt_params_verity *verity_hdr,

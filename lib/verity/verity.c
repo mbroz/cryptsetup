@@ -60,6 +60,11 @@ int VERITY_read_sb(struct crypt_device *cd,
 	log_dbg("Reading VERITY header of size %u on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device, sb_offset);
 
+	if (params->flags & CRYPT_VERITY_NO_HEADER) {
+		log_err(cd, _("Verity don't use on-disk header.\n"), device);
+		return -EINVAL;
+	}
+
 	devfd = open(device ,O_RDONLY | O_DIRECT);
 	if(devfd == -1) {
 		log_err(cd, _("Cannot open device %s.\n"), device);
@@ -124,6 +129,11 @@ int VERITY_write_sb(struct crypt_device *cd,
 	log_dbg("Updating VERITY header of size %u on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device, sb_offset);
 
+	if (params->flags & CRYPT_VERITY_NO_HEADER) {
+		log_err(cd, _("Verity don't use on-disk header.\n"), device);
+		return -EINVAL;
+	}
+
 	devfd = open(device, O_RDWR | O_DIRECT);
 	if(devfd == -1) {
 		log_err(cd, _("Cannot open device %s.\n"), device);
@@ -169,7 +179,7 @@ int VERITY_activate(struct crypt_device *cd,
 		     const char *root_hash,
 		     size_t root_hash_size,
 		     struct crypt_params_verity *verity_hdr,
-		     uint32_t flags)
+		     uint32_t activation_flags)
 {
 	struct crypt_dm_active_device dmd;
 	uint64_t offset = 0;
@@ -178,7 +188,7 @@ int VERITY_activate(struct crypt_device *cd,
 	log_dbg("Trying to activate VERITY device %s using hash %s.",
 		name ?: "[none]", verity_hdr->hash_name);
 
-	if (flags & CRYPT_VERITY_CHECK_HASH) {
+	if (verity_hdr->flags & CRYPT_VERITY_CHECK_HASH) {
 		r = VERITY_verify(cd, verity_hdr,
 				  crypt_get_device_name(cd), hash_device,
 				  root_hash, root_hash_size);
@@ -195,7 +205,7 @@ int VERITY_activate(struct crypt_device *cd,
 	dmd.u.verity.root_hash = root_hash;
 	dmd.u.verity.root_hash_size = root_hash_size;
 	dmd.u.verity.hash_offset = VERITY_hash_offset_block(verity_hdr),
-	dmd.flags = CRYPT_ACTIVATE_READONLY;
+	dmd.flags = activation_flags;
 	dmd.size = verity_hdr->data_size * verity_hdr->data_block_size / 512;
 	dmd.uuid = NULL;
 	dmd.u.verity.vp = verity_hdr;

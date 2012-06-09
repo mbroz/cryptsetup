@@ -22,6 +22,7 @@
  * - extend superblock (UUID)
  * - add api tests
  * - salt string "-"
+ * - report in-kernel status outside libcryptsetup (extend api)
  */
 
 #include <stdio.h>
