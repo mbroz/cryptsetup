@@ -32,11 +32,13 @@ struct crypt_params_verity;
 int VERITY_read_sb(struct crypt_device *cd,
 		   const char *device,
 		   uint64_t sb_offset,
+		   char **uuid,
 		   struct crypt_params_verity *params);
 
 int VERITY_write_sb(struct crypt_device *cd,
 		   const char *device,
 		   uint64_t sb_offset,
+		   const char *uuid_string,
 		   struct crypt_params_verity *params);
 
 int VERITY_activate(struct crypt_device *cd,
@@ -62,5 +64,7 @@ int VERITY_create(struct crypt_device *cd,
 		  size_t root_hash_size);
 
 uint64_t VERITY_hash_offset_block(struct crypt_params_verity *params);
+
+int VERITY_UUID_generate(struct crypt_device *cd, char **uuid_string);
 
 #endif

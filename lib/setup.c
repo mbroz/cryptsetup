@@ -69,6 +69,7 @@ struct crypt_device {
 	struct crypt_params_verity verity_hdr;
 	char *verity_root_hash;
 	uint64_t verity_root_hash_size;
+	char *verity_uuid;
 
 	/* callbacks definitions */
 	void (*log)(int level, const char *msg, void *usrptr);
@@ -660,7 +661,8 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	if (params)
 		sb_offset = params->hash_area_offset;
 
-	r = VERITY_read_sb(cd, mdata_device(cd), sb_offset, &cd->verity_hdr);
+	r = VERITY_read_sb(cd, mdata_device(cd), sb_offset,
+			   &cd->verity_uuid, &cd->verity_hdr);
 	if (r < 0)
 		return r;
 
@@ -765,8 +767,8 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		goto out;
 
 	if (isVERITY(cd->type)) {
+		cd->verity_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
 		cd->verity_hdr.flags = CRYPT_VERITY_NO_HEADER; //FIXME
-		//cd->verity_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
 		cd->verity_hdr.data_size = params.data_size;
 		cd->verity_root_hash_size = dmd.u.verity.root_hash_size;
 		cd->verity_root_hash = NULL;
@@ -1023,6 +1025,7 @@ static int _crypt_format_loopaes(struct crypt_device *cd,
 }
 
 static int _crypt_format_verity(struct crypt_device *cd,
+				 const char *uuid,
 				 struct crypt_params_verity *params)
 {
 	int r = 0;
@@ -1051,7 +1054,6 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	} else
 		cd->verity_hdr.data_size = params->data_size;
 
-
 	cd->verity_root_hash_size = crypt_hash_size(params->hash_name);
 	if (!cd->verity_root_hash_size)
 		return -EINVAL;
@@ -1077,26 +1079,29 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		r = crypt_random_get(cd, CONST_CAST(char*)cd->verity_hdr.salt,
 				     params->salt_size, CRYPT_RND_SALT);
 	if (r)
-		goto out;
+		return r;
 
 	if (params->flags & CRYPT_VERITY_CREATE_HASH) {
 		r = VERITY_create(cd, &cd->verity_hdr, cd->device, mdata_device(cd),
 				  cd->verity_root_hash, cd->verity_root_hash_size);
 		if (r)
-			goto out;
+			return r;
 	}
 
-	if (!(params->flags & CRYPT_VERITY_NO_HEADER))
+	if (!(params->flags & CRYPT_VERITY_NO_HEADER)) {
+		if (uuid)
+			cd->verity_uuid = strdup(uuid);
+		else {
+			r = VERITY_UUID_generate(cd, &cd->verity_uuid);
+			if (r)
+				return r;
+		}
+
 		r = VERITY_write_sb(cd, mdata_device(cd),
 				    cd->verity_hdr.hash_area_offset,
+				    cd->verity_uuid,
 				    &cd->verity_hdr);
-out:
-	if (r) {
-		free(cd->verity_root_hash);
-		free(CONST_CAST(char*)cd->verity_hdr.hash_name);
-		free(CONST_CAST(char*)cd->verity_hdr.salt);
 	}
-
 	return r;
 }
 
@@ -1134,7 +1139,7 @@ int crypt_format(struct crypt_device *cd,
 	else if (isLOOPAES(type))
 		r = _crypt_format_loopaes(cd, cipher, uuid, volume_key_size, params);
 	else if (isVERITY(type))
-		r = _crypt_format_verity(cd, params);
+		r = _crypt_format_verity(cd, uuid, params);
 	else {
 		/* FIXME: allow plugins here? */
 		log_err(cd, _("Unknown crypt device type %s requested.\n"), type);
@@ -1365,6 +1370,7 @@ void crypt_free(struct crypt_device *cd)
 		free(CONST_CAST(void*)cd->verity_hdr.hash_name);
 		free(CONST_CAST(void*)cd->verity_hdr.salt);
 		free(cd->verity_root_hash);
+		free(cd->verity_uuid);
 
 		free(cd);
 	}
@@ -2251,6 +2257,7 @@ static int _luks_dump(struct crypt_device *cd)
 static int _verity_dump(struct crypt_device *cd)
 {
 	log_std(cd, "VERITY header information for %s\n", mdata_device(cd));
+	log_std(cd, "UUID:            \t%s\n", cd->verity_uuid ?: "");
 	log_std(cd, "Hash type:       \t%u\n", cd->verity_hdr.hash_type);
 	log_std(cd, "Data blocks:     \t%" PRIu64 "\n", cd->verity_hdr.data_size);
 	log_std(cd, "Data block size: \t%u\n", cd->verity_hdr.data_block_size);
@@ -2319,6 +2326,9 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 
 	if (isLOOPAES(cd->type))
 		return cd->loopaes_uuid;
+
+	if (isVERITY(cd->type))
+		return cd->verity_uuid;
 
 	return NULL;
 }

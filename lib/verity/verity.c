@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <uuid/uuid.h>
 
 #include "libcryptsetup.h"
 #include "verity.h"
@@ -69,6 +70,7 @@ struct verity_sb {
 int VERITY_read_sb(struct crypt_device *cd,
 		   const char *device,
 		   uint64_t sb_offset,
+		   char **uuid_string,
 		   struct crypt_params_verity *params)
 {
 	struct verity_sb sb = {};
@@ -167,6 +169,8 @@ int VERITY_read_sb(struct crypt_device *cd,
 	}
 	memcpy(CONST_CAST(char*)params->salt, sb.salt, params->salt_size);
 
+	if ((*uuid_string = malloc(40)))
+		uuid_unparse(sb.uuid, *uuid_string);
 #endif
 	params->hash_area_offset = sb_offset;
 	return 0;
@@ -176,14 +180,21 @@ int VERITY_read_sb(struct crypt_device *cd,
 int VERITY_write_sb(struct crypt_device *cd,
 		   const char *device,
 		   uint64_t sb_offset,
+		   const char *uuid_string,
 		   struct crypt_params_verity *params)
 {
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
+	uuid_t uuid;
 	int r, devfd = 0;
 
 	log_dbg("Updating VERITY header of size %u on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device, sb_offset);
+
+	if (!uuid_string || uuid_parse(uuid_string, uuid) == -1) {
+		log_err(cd, _("Wrong VERITY UUID format provided.\n"), device);
+		return -EINVAL;
+	}
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
 		log_err(cd, _("Verity device doesn't use on-disk header.\n"), device);
@@ -215,6 +226,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	sb.data_blocks     = cpu_to_le64(params->data_size);
 	strncpy((char *)sb.algorithm, params->hash_name, sizeof(sb.algorithm));
 	memcpy(sb.salt, params->salt, params->salt_size);
+	memcpy(sb.uuid, uuid, sizeof(sb.uuid));
 #endif
 	r = write_lseek_blockwise(devfd, (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
 	if (r)
@@ -236,6 +248,17 @@ uint64_t VERITY_hash_offset_block(struct crypt_params_verity *params)
 	hash_offset += params->hash_block_size - 1;
 
 	return hash_offset / params->hash_block_size;
+}
+
+int VERITY_UUID_generate(struct crypt_device *cd, char **uuid_string)
+{
+	uuid_t uuid;
+
+	if (!(*uuid_string = malloc(40)))
+		return -ENOMEM;
+	uuid_generate(uuid);
+	uuid_unparse(uuid, *uuid_string);
+	return 0;
 }
 
 /* Activate verity device in kernel device-mapper */
@@ -273,7 +296,7 @@ int VERITY_activate(struct crypt_device *cd,
 	dmd.u.verity.hash_offset = VERITY_hash_offset_block(verity_hdr),
 	dmd.flags = activation_flags;
 	dmd.size = verity_hdr->data_size * verity_hdr->data_block_size / 512;
-	dmd.uuid = NULL;
+	dmd.uuid = crypt_get_uuid(cd);
 	dmd.u.verity.vp = verity_hdr;
 
 	r = device_check_and_adjust(cd, dmd.data_device, DEV_EXCL,

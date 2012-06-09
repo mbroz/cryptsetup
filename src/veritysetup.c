@@ -17,11 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/* TODO:
- * - extend superblock (UUID)
- * - add api tests
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -45,6 +40,7 @@ static int hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
 static uint64_t data_blocks = 0;
 static const char *salt_string = NULL;
 static uint64_t hash_start = 0;
+static const char *opt_uuid = NULL;
 
 static int opt_verbose = 0;
 static int opt_debug = 0;
@@ -164,7 +160,7 @@ static int action_format(int arg)
 	if (r < 0)
 		goto out;
 
-	r = crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params);
+	r = crypt_format(cd, CRYPT_VERITY, NULL, NULL, opt_uuid, NULL, 0, &params);
 	if (!r)
 		crypt_dump(cd);
 out:
@@ -505,6 +501,7 @@ int main(int argc, const char **argv)
 		{ "hash-start",      0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting block on the hash device"), N_("512-byte sectors") },
 		{ "hash",            'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
 		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },
+		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use."), NULL },
 		POPT_TABLEEND
 	};
 

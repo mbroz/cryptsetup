@@ -24,7 +24,7 @@ or activation. This hash must be trusted.
 
 \fB<options>\fR can be [\-\-hash, \-\-no-superblock, \-\-format,
 \-\-data-block-size, \-\-hash-block-size, \-\-data-blocks, \-\-hash-start,
-\-\-salt]
+\-\-salt, \-\-uuid]
 .PP
 \fIcreate\fR <name> <data_device> <hash_device> <root_hash>
 .IP
@@ -59,31 +59,38 @@ Print more information on command execution.
 Run in debug mode with full diagnostic logs. Debug output
 lines are always prefixed by '#'.
 .TP
-.B "\-\-no-superblock
+.B "\-\-no-superblock"
 Create or use dm-verity without permanent on-disk superblock.
 .TP
-.B "\-\-format=number
+.B "\-\-format=number"
 Specifies the hash version type.
 Format type 0 is original Chrome OS verion. Format type 1 si default.
 .TP
-.B "\-\-data-block-size=bytes
+.B "\-\-data-block-size=bytes"
 Used block size for the data device.
 (Note kernel supports only page-size as maximum here.)
 .TP
-.B "\-\-hash-block-size=bytes
+.B "\-\-hash-block-size=bytes"
 Used block size for the hash device.
 (Note kernel supports only page-size as maximum here.)
 .TP
-.B "\-\-data-blocks=blocks
+.B "\-\-data-blocks=blocks"
 Size of data device used in verification.
 If not specified, the whole device is used.
 .TP
-.B "\-\-hash-start=512-bytes sectors
+.B "\-\-hash-start=512-bytes sectors"
 Offset of hash area/superblock on hash_device.
 .TP
-.B "\-\-salt=hex string
+.B "\-\-salt=hex string"
 Salt used for format or verification.
 Format is hexadecimal string.
+.TP
+.B "\-\-uuid=UUID"
+Use the provided UUID for the format command
+instead of generating new one.
+
+The UUID must be provided in the standard UUID format,
+e.g. 12345678-1234-1234-1234-123456789abc.
 .TP
 .B "\-\-version"
 Show the program version.
