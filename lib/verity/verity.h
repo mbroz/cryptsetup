@@ -23,9 +23,6 @@
 #include <unistd.h>
 #include "config.h"
 
-#define VERITY_SIGNATURE	"verity\0\0"
-#define VERITY_MAX_LEVELS	63
-
 struct crypt_device;
 struct crypt_params_verity;
 

@@ -1141,7 +1141,6 @@ int crypt_format(struct crypt_device *cd,
 	else if (isVERITY(type))
 		r = _crypt_format_verity(cd, uuid, params);
 	else {
-		/* FIXME: allow plugins here? */
 		log_err(cd, _("Unknown crypt device type %s requested.\n"), type);
 		r = -EINVAL;
 	}

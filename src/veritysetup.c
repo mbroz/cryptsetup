@@ -31,7 +31,7 @@
 
 #define PACKAGE_VERITY "veritysetup"
 
-static int use_superblock = 1; /* FIXME: no superblock not supported */
+static int use_superblock = 1;
 
 static const char *hash_algorithm = NULL;
 static int hash_type = 1;

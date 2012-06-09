@@ -32,6 +32,8 @@
 #include "verity.h"
 #include "internal.h"
 
+#define VERITY_SIGNATURE "verity\0\0"
+
 #define NEW_SB 1
 
 #ifndef NEW_SB

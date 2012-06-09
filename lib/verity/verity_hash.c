@@ -26,6 +26,8 @@
 #include "verity.h"
 #include "internal.h"
 
+#define VERITY_MAX_LEVELS	63
+
 static unsigned get_bits_up(size_t u)
 {
 	unsigned i = 0;
