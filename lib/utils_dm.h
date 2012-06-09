@@ -72,7 +72,7 @@ struct crypt_dm_active_device {
 		const char *root_hash;
 		uint32_t root_hash_size;
 
-		uint64_t hash_offset;	/* hash offset (not header) */
+		uint64_t hash_offset;	/* hash offset in blocks (not header) */
 		struct crypt_params_verity *vp;
 	} verity;
 	} u;

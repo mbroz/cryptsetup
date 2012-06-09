@@ -959,11 +959,19 @@ int dm_query_device(const char *name, uint32_t get_flags,
 	if (!target_type || start != 0 || next)
 		goto out;
 
-	if (!strcmp(target_type, DM_CRYPT_TARGET))
+	if (!strcmp(target_type, DM_CRYPT_TARGET)) {
 		r = _dm_query_crypt(get_flags, &dmi, params, dmd);
-	else if (!strcmp(target_type, DM_VERITY_TARGET))
+	} else if (!strcmp(target_type, DM_VERITY_TARGET)) {
 		r = _dm_query_verity(get_flags, &dmi, params, dmd);
-	else
+		if (r < 0)
+			goto out;
+		r = dm_status_verity_ok(name);
+		if (r < 0)
+			goto out;
+		if (r == 0)
+			dmd->flags |= CRYPT_ACTIVATE_CORRUPTED;
+		r = 0;
+	} else
 		r = -EINVAL;
 
 	if (r < 0)

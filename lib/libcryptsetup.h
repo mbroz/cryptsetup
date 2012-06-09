@@ -370,6 +370,7 @@ struct crypt_params_loopaes {
 struct crypt_params_verity {
 	const char *hash_name;     /**< hash function */
 	const char *data_device;   /**< data_device (CRYPT_VERITY_CREATE_HASH) */
+	const char *hash_device;   /**< hash_device (output only) */
 	const char *salt;          /**< salt */
 	uint64_t salt_size;        /**< salt size (in bytes) */
 	uint32_t data_block_size;  /**< data block size (in bytes) */
@@ -672,6 +673,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_ALLOW_DISCARDS (1 << 3)
 /** skip global udev rules in activation ("private device"), input only */
 #define CRYPT_ACTIVATE_PRIVATE (1 << 4)
+/** corruption detected (verity), output only */
+#define CRYPT_ACTIVATE_CORRUPTED (1 << 5)
 
 /**
  * Active device runtime attributes
@@ -922,6 +925,18 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd);
  *
  */
 int crypt_get_volume_key_size(struct crypt_device *cd);
+
+/**
+ * Get device paramaters for CRYPT_VERITY device
+ *
+ * @param cd crypt device handle
+ * @param vp verity device info
+ *
+ * @e 0 on success or negative errno value otherwise.
+ *
+ */
+int crypt_get_verity_info(struct crypt_device *cd,
+	struct crypt_params_verity *vp);
 
 /**
  * @addtogroup keyslot

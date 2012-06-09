@@ -772,13 +772,16 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		cd->verity_root_hash = NULL;
 		cd->verity_hdr.hash_name = params.hash_name;
 		cd->verity_hdr.data_device = NULL;
+		cd->verity_hdr.hash_device = NULL;
 		cd->verity_hdr.data_block_size = params.data_block_size;
 		cd->verity_hdr.hash_block_size = params.hash_block_size;
-		cd->verity_hdr.hash_area_offset = params.hash_area_offset;
+		cd->verity_hdr.hash_area_offset = dmd.u.verity.hash_offset;
 		cd->verity_hdr.version = params.version;
 		cd->verity_hdr.flags = params.flags;
 		cd->verity_hdr.salt_size = params.salt_size;
 		cd->verity_hdr.salt = params.salt;
+		if (!(cd->metadata_device = strdup(dmd.u.verity.hash_device)))
+			r = -ENOMEM;
 	}
 out:
 	free(CONST_CAST(void*)dmd.u.verity.hash_device);
@@ -2397,6 +2400,26 @@ const char *crypt_get_type(struct crypt_device *cd)
 	return cd->type;
 }
 
+int crypt_get_verity_info(struct crypt_device *cd,
+	struct crypt_params_verity *vp)
+{
+	if (!isVERITY(cd->type) || !vp)
+		return -EINVAL;
+
+	vp->data_device = cd->device;
+	vp->hash_device = mdata_device(cd);
+	vp->hash_name = cd->verity_hdr.hash_name;
+	vp->salt = cd->verity_hdr.salt;
+	vp->salt_size = cd->verity_hdr.salt_size;
+	vp->data_block_size = cd->verity_hdr.data_block_size;
+	vp->hash_block_size = cd->verity_hdr.hash_block_size;
+	vp->data_size = cd->verity_hdr.data_size;
+	vp->hash_area_offset = cd->verity_hdr.hash_area_offset;
+	vp->version = cd->verity_hdr.version;
+	vp->flags = cd->verity_hdr.flags & CRYPT_VERITY_NO_HEADER;
+	return 0;
+}
+
 int crypt_get_active_device(struct crypt_device *cd __attribute__((unused)),
 			    const char *name,
 			    struct crypt_active_device *cad)
@@ -2408,7 +2431,7 @@ int crypt_get_active_device(struct crypt_device *cd __attribute__((unused)),
 	if (r < 0)
 		return r;
 
-	if (dmd.target != DM_CRYPT)
+	if (dmd.target != DM_CRYPT && dmd.target != DM_VERITY)
 		return -ENOTSUP;
 
 	cad->offset	= dmd.u.crypt.offset;

@@ -28,8 +28,10 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <string.h>
+#include <inttypes.h>
 #include <popt.h>
 #include <limits.h>
+#include <sys/stat.h>
 
 #include "cryptsetup.h"
 
@@ -212,8 +214,6 @@ static int _activate(const char *dm_device,
 					 crypt_get_volume_key_size(cd),
 					 activate_flags);
 out:
-	if (!r)
-		crypt_dump(cd);
 	crypt_free(cd);
 	return r;
 }
@@ -250,13 +250,91 @@ static int action_remove(int arg)
 
 static int action_status(int arg)
 {
+	crypt_status_info ci;
+	struct crypt_active_device cad;
+	struct crypt_params_verity vp = {};
 	struct crypt_device *cd = NULL;
-	int r;
+	struct stat st;
+	char *backing_file;
+	int i, path = 0, r = 0;
 
-	r = crypt_init_by_name_and_header(&cd, action_argv[0], NULL);
-	if (!r)
-		r = crypt_dump(cd);
+	/* perhaps a path, not a dm device name */
+	if (strchr(action_argv[0], '/') && !stat(action_argv[0], &st))
+		path = 1;
+
+	ci = crypt_status(NULL, action_argv[0]);
+	switch (ci) {
+	case CRYPT_INVALID:
+		r = -EINVAL;
+		break;
+	case CRYPT_INACTIVE:
+		if (path)
+			log_std("%s is inactive.\n", action_argv[0]);
+		else
+			log_std("%s/%s is inactive.\n", crypt_get_dir(), action_argv[0]);
+		r = -ENODEV;
+		break;
+	case CRYPT_ACTIVE:
+	case CRYPT_BUSY:
+		if (path)
+			log_std("%s is active%s.\n", action_argv[0],
+				ci == CRYPT_BUSY ? " and is in use" : "");
+		else
+			log_std("%s/%s is active%s.\n", crypt_get_dir(), action_argv[0],
+				ci == CRYPT_BUSY ? " and is in use" : "");
+
+		r = crypt_init_by_name_and_header(&cd, action_argv[0], NULL);
+		if (r < 0 || !crypt_get_type(cd))
+			goto out;
+
+		log_std("  type:        %s\n", crypt_get_type(cd));
+
+		r = crypt_get_active_device(cd, action_argv[0], &cad);
+		if (r < 0)
+			goto out;
+
+		log_std("  status:      %s\n",
+			cad.flags & CRYPT_ACTIVATE_CORRUPTED ? "corrupted" : "verified");
+
+		r = crypt_get_verity_info(cd, &vp);
+		if (r < 0)
+			goto out;
+
+		log_std("  version:     %u\n", vp.version);
+		log_std("  data block:  %u\n", vp.data_block_size);
+		log_std("  hash block:  %u\n", vp.hash_block_size);
+		log_std("  hash name:   %s\n", vp.hash_name);
+		log_std("  salt:        ");
+		if (vp.salt_size)
+			for(i = 0; i < vp.salt_size; i++)
+				log_std("%02hhx", (const char)vp.salt[i]);
+		else
+			log_std("-");
+		log_std("\n");
+
+		log_std("  data device: %s\n", vp.data_device);
+		if (crypt_loop_device(vp.data_device)) {
+			backing_file = crypt_loop_backing_file(vp.data_device);
+			log_std("  data loop:   %s\n", backing_file);
+			free(backing_file);
+		}
+		log_std("  size:        %" PRIu64 " sectors\n", cad.size);
+		log_std("  mode:        %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
+					   "readonly" : "read/write");
+
+		log_std("  hash device: %s\n", vp.hash_device);
+		if (crypt_loop_device(vp.hash_device)) {
+			backing_file = crypt_loop_backing_file(vp.hash_device);
+			log_std("  hash loop:   %s\n", backing_file);
+			free(backing_file);
+		}
+		log_std("  hash offset: %" PRIu64 " sectors\n",
+			vp.hash_area_offset * vp.hash_block_size / 512);
+	}
+out:
 	crypt_free(cd);
+	if (r == -ENOTSUP)
+		r = 0;
 	return r;
 }
 
