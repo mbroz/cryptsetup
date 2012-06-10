@@ -23,7 +23,10 @@
 #include <pk11pub.h>
 #include "crypto_backend.h"
 
+#define CONST_CAST(x) (x)(uintptr_t)
+
 static int crypto_backend_initialised = 0;
+static char version[64];
 
 struct hash_alg {
 	const char *name;
@@ -70,10 +73,14 @@ int crypt_backend_init(struct crypt_device *ctx)
 	if (crypto_backend_initialised)
 		return 0;
 
-	log_dbg("Initialising NSS crypto backend.");
 	if (NSS_NoDB_Init(".") != SECSuccess)
 		return -EINVAL;
 
+#if HAVE_DECL_NSS_GETVERSION
+	snprintf(version, 64, "NSS %s", NSS_GetVersion());
+#else
+	snprintf(version, 64, "NSS");
+#endif
 	crypto_backend_initialised = 1;
 	return 0;
 }
@@ -81,6 +88,11 @@ int crypt_backend_init(struct crypt_device *ctx)
 uint32_t crypt_backend_flags(void)
 {
 	return 0;
+}
+
+const char *crypt_backend_version(void)
+{
+	return crypto_backend_initialised ? version : "";
 }
 
 /* HASH */
@@ -275,8 +287,14 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx)
 	return 0;
 }
 
-/* RNG - N/A */
-int crypt_backend_fips_rng(char *buffer, size_t length, int quality)
+/* RNG */
+int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 {
-	return -EINVAL;
+	if (fips)
+		return -EINVAL;
+
+	if (PK11_GenerateRandom((unsigned char *)buffer, length) != SECSuccess)
+		return -EINVAL;
+
+	return 0;
 }

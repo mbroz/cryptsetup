@@ -22,8 +22,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include "libcryptsetup.h"
 #include "internal.h"
-#include "crypto_backend.h"
 
 static int hash(const char *hash_name, size_t key_size, char *key,
 		size_t passphrase_size, const char *passphrase)

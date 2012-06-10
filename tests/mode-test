@@ -134,9 +134,9 @@ dmcrypt aes aes-cbc-plain
 dmcrypt aes-plain aes-cbc-plain
 
 # empty cipher
-dmcrypt null cipher_null-ecb-null
+dmcrypt null cipher_null-ecb
 dmcrypt cipher_null cipher_null-cbc-plain
-dmcrypt cipher_null-ecb-null
+dmcrypt cipher_null-ecb
 
 # codebook doesn't support IV at all
 for cipher in $CIPHERS ; do

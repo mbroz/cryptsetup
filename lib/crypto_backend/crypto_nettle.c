@@ -24,6 +24,8 @@
 #include <nettle/hmac.h>
 #include "crypto_backend.h"
 
+static char *version = "Nettle";
+
 typedef void (*init_func) (void *);
 typedef void (*update_func) (void *, unsigned, const uint8_t *);
 typedef void (*digest_func) (void *, unsigned, uint8_t *);
@@ -135,8 +137,12 @@ static struct hash_alg *_get_alg(const char *name)
 
 int crypt_backend_init(struct crypt_device *ctx)
 {
-	log_dbg("Initialising Nettle crypto backend.");
 	return 0;
+}
+
+const char *crypt_backend_version(void)
+{
+	return version;
 }
 
 /* HASH */
@@ -264,7 +270,7 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx)
 }
 
 /* RNG - N/A */
-int crypt_backend_fips_rng(char *buffer, size_t length, int quality)
+int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 {
 	return -EINVAL;
 }

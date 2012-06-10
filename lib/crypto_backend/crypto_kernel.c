@@ -36,6 +36,7 @@
 #endif
 
 static int crypto_backend_initialised = 0;
+static char version[64];
 
 struct hash_alg {
 	const char *name;
@@ -93,7 +94,6 @@ bad:
 int crypt_backend_init(struct crypt_device *ctx)
 {
 	struct utsname uts;
-
 	struct sockaddr_alg sa = {
 		.salg_family = AF_ALG,
 		.salg_type = "hash",
@@ -104,17 +104,17 @@ int crypt_backend_init(struct crypt_device *ctx)
 	if (crypto_backend_initialised)
 		return 0;
 
-	log_dbg("Initialising kernel crypto API backend.");
-
 	if (uname(&uts) == -1 || strcmp(uts.sysname, "Linux"))
 		return -EINVAL;
-	log_dbg("Kernel version %s %s.", uts.sysname, uts.release);
 
 	if (_socket_init(&sa, &tfmfd, &opfd) < 0)
 		return -EINVAL;
 
 	close(tfmfd);
 	close(opfd);
+
+	snprintf(version, sizeof(version), "%s %s kernel cryptoAPI",
+		 uts.sysname, uts.release);
 
 	crypto_backend_initialised = 1;
 	return 0;
@@ -123,6 +123,11 @@ int crypt_backend_init(struct crypt_device *ctx)
 uint32_t crypt_backend_flags(void)
 {
 	return CRYPT_BACKEND_KERNEL;
+}
+
+const char *crypt_backend_version(void)
+{
+	return crypto_backend_initialised ? version : "";
 }
 
 static struct hash_alg *_get_alg(const char *name)
@@ -293,7 +298,7 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx)
 }
 
 /* RNG - N/A */
-int crypt_backend_fips_rng(char *buffer, size_t length, int quality)
+int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 {
 	return -EINVAL;
 }

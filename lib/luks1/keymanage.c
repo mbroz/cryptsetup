@@ -1049,7 +1049,7 @@ int LUKS1_activate(struct crypt_device *cd,
 		device_check = DEV_EXCL;
 
 	r = device_check_and_adjust(cd, dmd.device, device_check,
-				    &dmd.size, &dmd.offset, &flags);
+				    &dmd.size, &dmd.offset, &dmd.flags);
 	if (r)
 		return r;
 

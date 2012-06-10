@@ -1,9 +1,9 @@
 AC_PREREQ([2.67])
-AC_INIT([cryptsetup],[1.4.3-git])
+AC_INIT([cryptsetup],[1.4.4-git])
 
 dnl library version from <major>.<minor>.<release>[-<suffix>]
 LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
-LIBCRYPTSETUP_VERSION_INFO=5:0:1
+LIBCRYPTSETUP_VERSION_INFO=6:0:2
 
 AC_CONFIG_SRCDIR(src/cryptsetup.c)
 AC_CONFIG_MACRO_DIR([m4])
@@ -140,6 +140,12 @@ AC_DEFUN([CONFIGURE_NSS], [
 
 	PKG_CHECK_MODULES([NSS], [nss],,
 		AC_MSG_ERROR([You need nss library.]))
+
+	saved_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS $NSS_CFLAGS"
+	AC_CHECK_DECLS([NSS_GetVersion], [], [], [#include <nss.h>])
+	CFLAGS=$saved_CFLAGS
+
 	CRYPTO_CFLAGS=$NSS_CFLAGS
 	CRYPTO_LIBS=$NSS_LIBS
 	NO_FIPS([])
