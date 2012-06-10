@@ -38,9 +38,9 @@
 #include "libcryptsetup.h"
 #include "internal.h"
 
-int crypt_getpagesize(void)
+unsigned crypt_getpagesize(void)
 {
-	return (int)sysconf(_SC_PAGESIZE);
+	return (unsigned)sysconf(_SC_PAGESIZE);
 }
 
 static int get_alignment(int fd)

@@ -912,6 +912,9 @@ static int _crypt_format_plain(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (!(cd->type = strdup(CRYPT_PLAIN)))
+		return -ENOMEM;
+
 	cd->plain_key_size = volume_key_size;
 	cd->volume_key = crypt_alloc_volume_key(volume_key_size, NULL);
 	if (!cd->volume_key)
@@ -952,6 +955,9 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		log_err(cd, _("Can't format LUKS without device.\n"));
 		return -EINVAL;
 	}
+
+	if (!(cd->type = strdup(CRYPT_LUKS1)))
+		return -ENOMEM;
 
 	if (volume_key)
 		cd->volume_key = crypt_alloc_volume_key(volume_key_size,
@@ -1017,6 +1023,9 @@ static int _crypt_format_loopaes(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (!(cd->type = strdup(CRYPT_LOOPAES)))
+		return -ENOMEM;
+
 	cd->loopaes_key_size = volume_key_size;
 
 	cd->loopaes_cipher = strdup(cipher ?: DEFAULT_LOOPAES_CIPHER);
@@ -1048,10 +1057,10 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (!params || !params->data_device)
 		return -EINVAL;
 
-	/* set data device */
-	cd->type = CRYPT_VERITY;
+	if (!(cd->type = strdup(CRYPT_VERITY)))
+		return -ENOMEM;
+
 	r = crypt_set_data_device(cd, params->data_device);
-	cd->type = NULL;
 	if (r)
 		return r;
 	if (!params->data_size) {
@@ -1154,10 +1163,9 @@ int crypt_format(struct crypt_device *cd,
 		r = -EINVAL;
 	}
 
-	if (!r && !(cd->type = strdup(type)))
-		r = -ENOMEM;
-
 	if (r < 0) {
+		free(cd->type);
+		cd->type = NULL;
 		crypt_free_volume_key(cd->volume_key);
 		cd->volume_key = NULL;
 	}

@@ -49,10 +49,10 @@ static int opt_version_mode = 0;
 static const char **action_argv;
 static int action_argc;
 
-static int hex_to_bytes(const char *hex, char *result)
+static size_t hex_to_bytes(const char *hex, char *result)
 {
 	char buf[3] = "xx\0", *endp;
-	int i, len;
+	size_t i, len;
 
 	len = strlen(hex) / 2;
 	for (i = 0; i < len; i++) {
@@ -178,6 +178,7 @@ static int _activate(const char *dm_device,
 	struct crypt_params_verity params = {};
 	uint32_t activate_flags = CRYPT_ACTIVATE_READONLY;
 	char root_hash_bytes[128];
+	size_t hash_size;
 	int r;
 
 	if ((r = crypt_init(&cd, hash_device)))
@@ -199,14 +200,14 @@ static int _activate(const char *dm_device,
 	if (r < 0)
 		goto out;
 
-	if (hex_to_bytes(root_hash, root_hash_bytes) !=
-	    crypt_get_volume_key_size(cd)) {
+	hash_size = crypt_get_volume_key_size(cd);
+	if (hex_to_bytes(root_hash, root_hash_bytes) != hash_size) {
 		r = -EINVAL;
 		goto out;
 	}
 	r = crypt_activate_by_volume_key(cd, dm_device,
 					 root_hash_bytes,
-					 crypt_get_volume_key_size(cd),
+					 hash_size,
 					 activate_flags);
 out:
 	crypt_free(cd);
@@ -251,7 +252,8 @@ static int action_status(int arg)
 	struct crypt_device *cd = NULL;
 	struct stat st;
 	char *backing_file;
-	int i, path = 0, r = 0;
+	unsigned i, path = 0;
+	int r = 0;
 
 	/* perhaps a path, not a dm device name */
 	if (strchr(action_argv[0], '/') && !stat(action_argv[0], &st))

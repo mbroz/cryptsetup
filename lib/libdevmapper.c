@@ -256,10 +256,10 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
-static int hex_to_bytes(const char *hex, char *result)
+static size_t hex_to_bytes(const char *hex, char *result)
 {
 	char buf[3] = "xx\0", *endp;
-	int i, len;
+	size_t i, len;
 
 	len = strlen(hex) / 2;
 	for (i = 0; i < len; i++) {

@@ -31,7 +31,7 @@
 static unsigned get_bits_up(size_t u)
 {
 	unsigned i = 0;
-	while ((1 << i) < u)
+	while ((1U << i) < u)
 		i++;
 	return i;
 }
@@ -39,7 +39,7 @@ static unsigned get_bits_up(size_t u)
 static unsigned get_bits_down(size_t u)
 {
 	unsigned i = 0;
-	while ((u >> i) > 1)
+	while ((u >> i) > 1U)
 		i++;
 	return i;
 }
@@ -103,7 +103,8 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 	size_t digest_size_full = 1 << get_bits_up(digest_size);
 	off_t blocks_to_write = (blocks + hash_per_block - 1) / hash_per_block;
 	size_t left_bytes;
-	int i, r;
+	unsigned i;
+	int r;
 
 	if (fseeko(rd, data_block * data_block_size, SEEK_SET)) {
 		log_dbg("Cannot seek to requested position in data device.");
@@ -377,7 +378,7 @@ int VERITY_create(struct crypt_device *cd,
 		  char *root_hash,
 		  size_t root_hash_size)
 {
-	int pgsize = crypt_getpagesize();
+	unsigned pgsize = crypt_getpagesize();
 
 	if (verity_hdr->salt_size > 256)
 		return -EINVAL;
