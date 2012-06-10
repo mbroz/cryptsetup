@@ -49,8 +49,10 @@ static int verify_zero(struct crypt_device *cd, FILE *wr, size_t bytes)
 	char block[bytes];
 	size_t i;
 
-	if (fread(block, bytes, 1, wr) != 1)
+	if (fread(block, bytes, 1, wr) != 1) {
+		log_dbg("EIO while reading spare area.");
 		return -EIO;
+	}
 	for (i = 0; i < bytes; i++)
 		if (block[i]) {
 			log_err(cd, _("Spare area is not zeroed at position %" PRIu64 ".\n"),
@@ -103,11 +105,15 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 	size_t left_bytes;
 	int i, r;
 
-	if (fseeko(rd, data_block * data_block_size, SEEK_SET))
+	if (fseeko(rd, data_block * data_block_size, SEEK_SET)) {
+		log_dbg("Cannot seek to requested position in data device.");
 		return -EIO;
+	}
 
-	if (wr && fseeko(wr, hash_block * hash_block_size, SEEK_SET))
+	if (wr && fseeko(wr, hash_block * hash_block_size, SEEK_SET)) {
+		log_dbg("Cannot seek to requested position in hash device.");
 		return -EIO;
+	}
 
 	memset(left_block, 0, hash_block_size);
 	while (blocks_to_write--) {
@@ -116,8 +122,10 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 			if (!blocks)
 				break;
 			blocks--;
-			if (fread(data_buffer, data_block_size, 1, rd) != 1)
+			if (fread(data_buffer, data_block_size, 1, rd) != 1) {
+				log_dbg("Cannot read data device block.");
 				return -EIO;
+			}
 
 			if (verify_hash_block(hash_name, version,
 					calculated_digest, digest_size,
@@ -128,16 +136,20 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 			if (!wr)
 				break;
 			if (verify) {
-				if (fread(read_digest, digest_size, 1, wr) != 1)
+				if (fread(read_digest, digest_size, 1, wr) != 1) {
+					log_dbg("Cannot read digest form hash device.");
 					return -EIO;
+				}
 				if (memcmp(read_digest, calculated_digest, digest_size)) {
 					log_err(cd, _("Verification failed at position %" PRIu64 ".\n"),
 						ftello(rd) - data_block_size);
 					return -EPERM;
 				}
 			} else {
-				if (fwrite(calculated_digest, digest_size, 1, wr) != 1)
+				if (fwrite(calculated_digest, digest_size, 1, wr) != 1) {
+					log_dbg("Cannot write digest to hash device.");
 					return -EIO;
+				}
 			}
 			if (version == 0) {
 				left_bytes -= digest_size;
@@ -147,8 +159,10 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 						r = verify_zero(cd, wr, digest_size_full - digest_size);
 						if (r)
 							return r;
-					} else if (fwrite(left_block, digest_size_full - digest_size, 1, wr) != 1)
+					} else if (fwrite(left_block, digest_size_full - digest_size, 1, wr) != 1) {
+						log_dbg("Cannot write spare area to hash device.");
 						return -EIO;
+					}
 				}
 				left_bytes -= digest_size_full;
 			}
@@ -158,8 +172,10 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 				r = verify_zero(cd , wr, left_bytes);
 				if (r)
 					return r;
-			} else if (fwrite(left_block, left_bytes, 1, wr) != 1)
+			} else if (fwrite(left_block, left_bytes, 1, wr) != 1) {
+				log_dbg("Cannot write remaining spare area to hash device.");
 				return -EIO;
+			}
 		}
 	}
 
@@ -188,7 +204,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	off_t hash_level_size[VERITY_MAX_LEVELS];
 	off_t data_file_blocks, s;
 	size_t hash_per_block, hash_per_block_bits;
-	uint64_t data_device_size;
+	uint64_t data_device_size = 0, hash_device_size = 0;
 	int levels, i, r;
 
 	log_dbg("Hash %s %s, data device %s, data blocks %" PRIu64
@@ -202,8 +218,10 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 			return r;
 
 		data_file_blocks = data_device_size / data_block_size;
-	} else
+	} else {
+		data_device_size = data_blocks * data_block_size;
 		data_file_blocks = data_blocks;
+	}
 
 	hash_per_block_bits = get_bits_down(hash_block_size / digest_size);
 	hash_per_block = 1 << hash_per_block_bits;
@@ -216,6 +234,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		       (data_file_blocks - 1) >> (hash_per_block_bits * levels))
 			levels++;
 	}
+	log_dbg("Using %d hash levels.", levels);
 
 	if (levels > VERITY_MAX_LEVELS) {
 		log_err(cd, _("Too many tree levels for verity volume.\n"));
@@ -236,7 +255,10 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		}
 		hash_position += s;
 	}
+	hash_device_size = hash_position * hash_block_size;
 
+	log_dbg("Data device size required: %" PRIu64 " bytes.",
+		data_device_size);
 	data_file = fopen(data_device, "r");
 	if (!data_file) {
 		log_err(cd, _("Cannot open device %s.\n"), data_device);
@@ -244,6 +266,8 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		goto out;
 	}
 
+	log_dbg("Hash device size required: %" PRIu64 " bytes.",
+		hash_device_size);
 	hash_file = fopen(hash_device, verify ? "r" : "r+");
 	if (!hash_file) {
 		log_err(cd, _("Cannot open device %s.\n"), hash_device);
@@ -265,6 +289,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		} else {
 			hash_file_2 = fopen(hash_device, "r");
 			if (!hash_file_2) {
+				log_err(cd, _("Cannot open device %s.\n"), hash_device);
 				r = -EIO;
 				goto out;
 			}
@@ -291,25 +316,29 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 					    0, 0,
 					    data_file_blocks, version, hash_name, verify,
 					    calculated_digest, digest_size, salt, salt_size);
-
-	if (r == -EPERM) {
-		log_err(cd, _("Verification of data area failed.\n"));
-		goto out;
-	} else if (!r)
-		log_dbg("Verification of data area succeeded.");
-
-	/* root hash verification */
-	if (verify) {
-		r = memcmp(root_hash, calculated_digest, digest_size) ? -EPERM : 0;
-		if (r)
-			log_err(cd, _("Verification of root hash failed.\n"));
-		else
-			log_dbg("Verification of root hash succeeded.");
-	} else {
-		fsync(fileno(hash_file));
-		memcpy(root_hash, calculated_digest, digest_size);
-	}
 out:
+	if (verify) {
+		if (r)
+			log_err(cd, _("Verification of data area failed.\n"));
+		else {
+			log_dbg("Verification of data area succeeded.");
+			r = memcmp(root_hash, calculated_digest, digest_size) ? -EPERM : 0;
+			if (r)
+				log_err(cd, _("Verification of root hash failed.\n"));
+			else
+				log_dbg("Verification of root hash succeeded.");
+		}
+	} else {
+		if (r == -EIO)
+			log_err(cd, _("Input/output error while creating hash area.\n"));
+		else if (r)
+			log_err(cd, _("Creation of hash area failed.\n"));
+		else {
+			fsync(fileno(hash_file));
+			memcpy(root_hash, calculated_digest, digest_size);
+		}
+	}
+
 	if (data_file)
 		fclose(data_file);
 	if (hash_file)
