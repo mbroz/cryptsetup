@@ -5,22 +5,27 @@ veritysetup - manage dm-verity (block level verification) volumes
 .B veritysetup <options> <action> <action args>
 .SH DESCRIPTION
 .PP
-veritysetup is used to configure dm-verity managed device-mapper mappings.
+Veritysetup is used to configure dm-verity managed device-mapper mappings.
 
 Device-mapper verity target provides read-only transparent integrity
 checking of block devices using kernel crypto API.
 
 The dm-verity devices are always read-only.
 
-veritysetup supports these operations:
+Veritysetup supports these operations:
 .PP
 \fIformat\fR <data_device> <hash_device>
 .IP
 Calculates and permanently stores hash verification data for data_device.
-Hash area can be located on the smae device after data if specified
+Hash area can be located on the same device after data if specified
 by \-\-hash\-start option.
-Note you need to provide reported roo hash for device verification
-or activation. This hash must be trusted.
+
+Note you need to provide root hash string for device verification
+or activation. Root hash must be trusted.
+
+If data or hash device argument points to regular file, veritysetup
+allocates loopback device. In this case, hash file size must be enough
+to store the hash area.
 
 \fB<options>\fR can be [\-\-hash, \-\-no-superblock, \-\-format,
 \-\-data-block-size, \-\-hash-block-size, \-\-data-blocks, \-\-hash-start,
@@ -35,20 +40,21 @@ The <root_hash> is a hexadecimal string.
 
 \fB<options>\fR can be [\-\-hash-start, \-\-no-superblock]
 
-If option \-\-no-superblock is used, you have to use the same options
-as in format operation.
+If option \-\-no-superblock is used, you have to use as the same options
+as in initial format operation.
 .PP
 \fIremove\fR <name>
 .IP
-Removes the existing mapping <name>.
+Removes existing mapping <name>.
 .PP
 \fIstatus\fR <name>
 .IP
-Reports the status for the active verity mapping <name>.
+Reports status for the active verity mapping <name>.
 .PP
 \fIdump\fR <hash_device>
 .IP
-Reports the parameters of verity device from on-disk stored superblock.
+Reports parameters of verity device from on-disk stored superblock.
+
 \fB<options>\fR can be [\-\-no-superblock]
 .SH OPTIONS
 .TP
@@ -64,7 +70,7 @@ Create or use dm-verity without permanent on-disk superblock.
 .TP
 .B "\-\-format=number"
 Specifies the hash version type.
-Format type 0 is original Chrome OS verion. Format type 1 si default.
+Format type 0 is original Chrome OS verion. Format type 1 is current version.
 .TP
 .B "\-\-data-block-size=bytes"
 Used block size for the data device.
@@ -83,13 +89,12 @@ Offset of hash area/superblock on hash_device.
 .TP
 .B "\-\-salt=hex string"
 Salt used for format or verification.
-Format is hexadecimal string.
+Format is a hexadecimal string.
 .TP
 .B "\-\-uuid=UUID"
-Use the provided UUID for the format command
-instead of generating new one.
+Use the provided UUID for format command instead of generating new one.
 
-The UUID must be provided in the standard UUID format,
+The UUID must be provided in standard UUID format,
 e.g. 12345678-1234-1234-1234-123456789abc.
 .TP
 .B "\-\-version"
@@ -107,7 +112,7 @@ or in the 'Issues' section on LUKS website.
 Please attach the output of the failed command with the
 \-\-debug option added.
 .SH AUTHORS
-The first implementation of veritysetup was written by Chromium OS authors.
+The first implementation of veritysetup was written by Chrome OS authors.
 
 This version is based on verification code written by Mikulas Patocka <mpatocka@redhat.com>
 and rewritten for libcryptsetup by Milan Broz <gmazyland@gmail.com>.
@@ -120,4 +125,4 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 The project website at \fBhttp://code.google.com/p/cryptsetup/\fR
 
 The verity on-disk format specification available at
-\fBhttp://code.google.com/p/cryptsetup/wiki/DMCrypt\fR
+\fBhttp://code.google.com/p/cryptsetup/wiki/DMVerity\fR
