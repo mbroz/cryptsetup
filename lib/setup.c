@@ -38,7 +38,10 @@ struct crypt_device {
 	char *device;
 	char *metadata_device;
 
-	int loop_fd;
+	/* loopback automatic detach helpers */
+	int loop_device_fd;
+	int loop_metadata_device_fd;
+
 	struct volume_key *volume_key;
 	uint64_t timeout;
 	uint64_t iteration_time;
@@ -501,10 +504,48 @@ const char *crypt_get_dir(void)
 	return dm_get_dir();
 }
 
+static int set_device_or_loop(const char *device_org, char **device, int *loop_fd)
+{
+	int r, readonly = 0;
+
+	if (!device_org)
+		return 0;
+
+	r = device_ready(NULL, device_org, O_RDONLY);
+	if (r == -ENOTBLK) {
+		*device = crypt_loop_get_device();
+		log_dbg("Not a block device, %s%s.", *device ?
+			"using free loop device " : "no free loop device found",
+			*device ?: "");
+		if (!*device) {
+			log_err(NULL, _("Cannot find a free loopback device.\n"));
+			return -ENOSYS;
+		}
+
+		/* Keep the loop open, dettached on last close. */
+		*loop_fd = crypt_loop_attach(*device, device_org, 0, 1, &readonly);
+		if (*loop_fd == -1) {
+			log_err(NULL, _("Attaching loopback device failed "
+				"(loop device with autoclear flag is required).\n"));
+			return -EINVAL;
+		}
+
+		r = device_ready(NULL, *device, O_RDONLY);
+	}
+
+	if (r < 0)
+		return -ENOTBLK;
+
+	if (!*device && device_org && !(*device = strdup(device_org)))
+		return -ENOMEM;
+
+	return 0;
+}
+
 int crypt_init(struct crypt_device **cd, const char *device)
 {
 	struct crypt_device *h = NULL;
-	int r, readonly = 0;
+	int r;
 
 	if (!cd)
 		return -EINVAL;
@@ -515,43 +556,12 @@ int crypt_init(struct crypt_device **cd, const char *device)
 		return -ENOMEM;
 
 	memset(h, 0, sizeof(*h));
-	h->loop_fd = -1;
+	h->loop_device_fd = -1;
+	h->loop_metadata_device_fd = -1;
 
-	if (device) {
-		r = device_ready(NULL, device, O_RDONLY);
-		if (r == -ENOTBLK) {
-			h->device = crypt_loop_get_device();
-			log_dbg("Not a block device, %s%s.",
-				h->device ? "using free loop device " :
-					 "no free loop device found",
-				h->device ?: "");
-			if (!h->device) {
-				log_err(NULL, _("Cannot find a free loopback device.\n"));
-				r = -ENOSYS;
-				goto bad;
-			}
-
-			/* Keep the loop open, dettached on last close. */
-			h->loop_fd = crypt_loop_attach(h->device, device, 0, 1, &readonly);
-			if (h->loop_fd == -1) {
-				log_err(NULL, _("Attaching loopback device failed "
-					"(loop device with autoclear flag is required).\n"));
-				r = -EINVAL;
-				goto bad;
-			}
-
-			r = device_ready(NULL, h->device, O_RDONLY);
-		}
-		if (r < 0) {
-			r = -ENOTBLK;
-			goto bad;
-		}
-	}
-
-	if (!h->device && device && !(h->device = strdup(device))) {
-		r = -ENOMEM;
+	r = set_device_or_loop(device, &h->device, &h->loop_device_fd);
+	if (r < 0)
 		goto bad;
-	}
 
 	if (dm_init(h, 1) < 0) {
 		r = -ENOSYS;
@@ -567,8 +577,8 @@ int crypt_init(struct crypt_device **cd, const char *device)
 bad:
 
 	if (h) {
-		if (h->loop_fd != -1)
-			close(h->loop_fd);
+		if (h->loop_device_fd != -1)
+			close(h->loop_device_fd);
 		free(h->device);
 	}
 	free(h);
@@ -598,8 +608,8 @@ static int crypt_check_data_device_size(struct crypt_device *cd)
 
 int crypt_set_data_device(struct crypt_device *cd, const char *device)
 {
-	char *data_device;
-	int r;
+	char *data_device = NULL;
+	int r, loop_fd = -1;
 
 	log_dbg("Setting ciphertext data device to %s.", device ?: "(none)");
 
@@ -612,19 +622,21 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 	if (!cd->device || !device)
 		return -EINVAL;
 
-	r = device_ready(NULL, device, O_RDONLY);
+	r = set_device_or_loop(device, &data_device, &loop_fd);
 	if (r < 0)
 		return r;
 
-	if (!(data_device = strdup(device)))
-		return -ENOMEM;
-
-	if (!cd->metadata_device)
+	if (!cd->metadata_device) {
 		cd->metadata_device = cd->device;
-	else
+		cd->loop_metadata_device_fd = cd->loop_device_fd;
+	} else {
 		free(cd->device);
+		if (cd->loop_device_fd != -1)
+			close(cd->loop_device_fd);
+	}
 
 	cd->device = data_device;
+	cd->loop_device_fd = loop_fd;
 
 	return crypt_check_data_device_size(cd);
 }
@@ -1340,8 +1352,10 @@ void crypt_free(struct crypt_device *cd)
 	if (cd) {
 		log_dbg("Releasing crypt device %s context.", mdata_device(cd));
 
-		if (cd->loop_fd != -1)
-			close(cd->loop_fd);
+		if (cd->loop_device_fd != -1)
+			close(cd->loop_device_fd);
+		if (cd->loop_metadata_device_fd != -1)
+			close(cd->loop_metadata_device_fd);
 
 		dm_exit();
 		crypt_free_volume_key(cd->volume_key);
