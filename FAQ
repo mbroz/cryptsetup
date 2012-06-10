@@ -58,7 +58,7 @@ A. Contributors
   installers after a complete backup of all LUKS containers has been
   made.
 
-  NO WARNING ON NON-INERACTIVE FORMAT: If you feed cryptsetup from
+  NO WARNING ON NON-INTERACTIVE FORMAT: If you feed cryptsetup from
   STDIN (e.g. via GnuPG) on LUKS format, it does not give you the
   warning that you are about to format (and e.g. will lose any
   pre-existing LUKS container on the target), as it assumes it is
@@ -82,7 +82,7 @@ A. Contributors
   representation. Other characters may have different encoding
   depending on system configuration and your passphrase will not
   work with a different encoding. A table of the standardized first
-  128 ASCII caracters can, e.g. be found on
+  128 ASCII characters can, e.g. be found on
   http://en.wikipedia.org/wiki/ASCII
 
 
@@ -155,7 +155,7 @@ A. Contributors
  * 2.1 What is the difference between "plain" and LUKS format?
 
   Plain format is just that: It has no metadata on disk, reads all
-  paramters from the commandline (or the defaults), derives a
+  parameters from the commandline (or the defaults), derives a
   master-key from the passphrase and then uses that to de-/encrypt
   the sectors of the device, with a direct 1:1 mapping between
   encrypted and decrypted sectors.
@@ -182,15 +182,15 @@ A. Contributors
   properties like key-slot diffusion and salts, etc..
 
   LUKS format uses a metadata header and 8 key-slot areas that are
-  being placed ath the begining of the disk, see below under "What
+  being placed at the beginning of the disk, see below under "What
   does the LUKS on-disk format looks like?". The passphrases are used
-  to decryt a single master key that is stored in the anti-forensic
+  to decrypt a single master key that is stored in the anti-forensic
   stripes.
 
   Advantages are a higher usability, automatic configuration of
   non-default crypto parameters, defenses against low-entropy
   passphrases like salting and iterated PBKDF2 passphrase hashing,
-  the ability to change passhrases, and others.
+  the ability to change passphrases, and others.
 
   Disadvantages are that it is readily obvious there is encrypted
   data on disk (but see side note above) and that damage to the
@@ -243,14 +243,14 @@ A. Contributors
   new key-slot.
 
 
- * 2.5 Encrytion on top of RAID or the other way round?
+ * 2.5 Encryption on top of RAID or the other way round?
 
   Unless you have special needs, place encryption between RAID and
   filesystem, i.e. encryption on top of RAID. You can do it the other
   way round, but you have to be aware that you then need to give the
-  pasphrase for each individual disk and RAID autotetection will not
-  work anymore. Therefore it is better to encrypt the RAID device,
-  e.g. /dev/dm0 .
+  passphrase for each individual disk and RAID autodetection will
+  not work anymore. Therefore it is better to encrypt the RAID
+  device, e.g. /dev/dm0 .
 
 
  * 2.6 How do I read a dm-crypt key from file?
@@ -358,7 +358,7 @@ A. Contributors
   LUKS container does not resize the filesystem in it. The backup is
   really non-optional here, as a lot can go wrong, resulting in
   partial or complete data loss. Using something like gparted to
-  resize an encrypted partition is slow, but typicaly works. This
+  resize an encrypted partition is slow, but typically works. This
   will not change the size of the filesystem hidden under the
   encryption though.
 
@@ -455,7 +455,7 @@ A. Contributors
 
  * 3.6 cryptsetup segfaults on Gentoo amd64 hardened ...
 
-  There seems to be some inteference between the hardening and and
+  There seems to be some interference between the hardening and and
   the way cryptsetup benchmarks PBKDF2. The solution to this is
   currently not quite clear for an encrypted root filesystem.     For
   other uses, you can apparently specify USE="dynamic" as compile
@@ -471,7 +471,7 @@ A. Contributors
   This means that the given keyslot has an offset that points
   outside the valid keyslot area. Typically, the reason is a
   corrupted LUKS header because something was written to the start of
-  the device the LUKS contaner is on. Refer to Section "Backup and
+  the device the LUKS container is on. Refer to Section "Backup and
   Data Recovery" and ask on the mailing list if you have trouble
   diagnosing and (if still possible) repairing this.
 
@@ -535,7 +535,7 @@ A. Contributors
 
   - Run Memtest86+ for one cycle
 
-  - Run memterster for one cycle (shut down as many other applications
+  - Run memtester for one cycle (shut down as many other applications
   as possible)
 
   - Run Memtest86+ for 24h or more
@@ -607,7 +607,7 @@ A. Contributors
   (keyslots x stripes x keysize) + offset bytes. For the default
   parameters, this is the 1'052'672 bytes, i.e. 1MiB + 4096 of the
   LUKS partition. For 512 bit key length (e.g. for aes-xts-plain with
-  512 bit key) this is 2MiB. (The diferent offset stems from
+  512 bit key) this is 2MiB. (The different offset stems from
   differences in the sector alignment of the key-slots.) If in doubt,
   just be generous and overwrite the first 10MB or so, it will likely
   still be fast enough. A single overwrite with zeros should be
@@ -629,8 +629,8 @@ A. Contributors
   in this regard. Still, due to the anti-forensic properties of the
   LUKS key-slots, a single overwrite of an SSD or FLASH drive could
   be enough. If in doubt, use physical destruction in addition. Here
-  is a link to some current reseach results on erasing SSDs and FLASH
-  drives:
+  is a link to some current research results on erasing SSDs and
+  FLASH drives:
   http://www.usenix.org/events/fast11/tech/full_papers/Wei.pdf
 
   Keep in mind to also erase all backups.
@@ -845,7 +845,7 @@ A. Contributors
   computed. This serves to prevent attacks using special programmable
   circuits, like FPGAs, and attacks using graphics cards. PBKDF2
   does not need a lot of memory and is vulnerable to these attacks.
-  However, the publication usually refered in these discussions is
+  However, the publication usually referred in these discussions is
   not very convincing in proving that the presented hash really is
   "large memory" (that may change, email the FAQ maintainer when it
   does) and it is of limited usefulness anyways. Attackers that use
@@ -853,10 +853,10 @@ A. Contributors
   memory" property. For example the US Secret Service is known to
   use the off-hour time of all the office PCs of the Treasury for
   password breaking. The Treasury has about 110'000 employees.
-  Asuming every one has an office PC, that is significant computing
+  Assuming every one has an office PC, that is significant computing
   power, all of it with plenty of memory for computing "large
   memory" hashes. Bot-net operators also have all the memory they
-  want. The only protection against a resouceful attacker is a
+  want. The only protection against a resourceful attacker is a
   high-entropy passphrase, see items 5.8 and 5.9.
 
 
@@ -877,7 +877,7 @@ A. Contributors
   to give it low entropy. One possibility is to supply the master key
   yourself. If that key is low-entropy, then you get what you
   deserve. The other known possibility is to use /dev/urandom for
-  key generation in an entropy-startved situation (e.g. automatic
+  key generation in an entropy-starved situation (e.g. automatic
   installation on an embedded device without network and other entropy
   sources).
 
@@ -892,6 +892,8 @@ A. Contributors
 
 
  * 5.13 Why was the default aes-cbc-plain replaced with aes-cbc-essiv?
+
+  Note: This item applies both to plain dm-crypt and to LUKS
 
   The problem is that cbc-plain has a fingerprint vulnerability, where
   a specially crafted file placed into the crypto-container can be
@@ -971,6 +973,65 @@ A. Contributors
   entropy-starved situation.
 
 
+ * 5.16 What about Plausible Deniability?
+
+  First let me attempt a definition for the case of encrypted
+  filesystems: Plausible deniability is when you hide encrypted data
+  inside an encrypted container and it is not possible to prove it is
+  there. The idea is compelling and on first glance it seems
+  possible to do it. And from a cryptographic point of view, it
+  actually is possible.
+
+  So, does it work in practice? No, unfortunately. The reasoning used
+  by its proponents is fundamentally flawed in several ways and the
+  cryptographic properties fail fatally when colliding with the real
+  world.
+
+  First, why should "I do not have a hidden partition" be any more
+  plausible than "I forgot my crypto key" or "I wiped that partition
+  with random data, nothing in there"? I do not see any reason.
+
+  Second, there are two types of situations: Either they cannot force
+  you to give them the key (then you simply do not) or the can. In
+  the second case, they can always do bad things to you, because they
+  cannot prove that you have the key in the first place! This means
+  they do not have to prove you have the key, or that this random
+  looking data on your disk is actually encrypted data. So the
+  situation will allow them to waterboard/lock-up/deport you
+  anyways, regardless of how "plausible" your deniability is. Do not
+  have a hidden partition you could show to them, but there are
+  indications you may? Too bad for you. Unfortunately "plausible
+  deniability" also means you cannot prove there is no hidden data.
+
+  Third, hidden partitions are not that hidden. There are basically
+  just two possibilities: a) Make a large crypto container, but put a
+  smaller filesystem in there and put the hidden partition into the
+  free space. Unfortunately this is glaringly obvious and can be
+  detected in an automated fashion. This means that the initial
+  suspicion to put you under duress in order to make you reveal you
+  hidden data is given. b) Make a filesystem that spans the whole
+  encrypted partition, and put the hidden partition into space not
+  currently used by that filesystem. Unfortunately that is also
+  glaringly obvious, as you then cannot write to the filesystem
+  without a high risk of destroying data in the hidden container.
+  Have not written anything to the encrypted filesystem  in a while?
+  Too bad, they have the suspicion they need to do unpleasant things
+  to you.
+
+  To be fair, if you prepare option b) carefully and directly before
+  going into danger, it may work. But then, the mere presence of
+  encrypted data may already be enough to get you into trouble in
+  those places were they can demand encryption keys.
+
+  Here is an additional reference for some problems with plausible
+  deniability: http://www.schneier.com/paper-truecrypt-dfs.pdf I
+  strongly suggest you read it.
+
+  So, no, I will not provide any instructions on how to do it with
+  plain dm-crypt or LUKS. If you insist on shooting yourself in the
+  foot, you can figure out how to do it yourself.
+
+
 6. Backup and Data Recovery 
 
 
@@ -986,7 +1047,7 @@ A. Contributors
   impossible. This is a frequent occurrence. For example an
   accidental format as FAT or some software overwriting the first
   sector where it suspects a partition boot sector typically makes a
-  LUKS partition permanently inacessible. See more below on LUKS
+  LUKS partition permanently inaccessible. See more below on LUKS
   header damage.
 
   So, data-backup in some form is non-optional. For LUKS, you may
@@ -1017,7 +1078,7 @@ A. Contributors
      cryptsetup -v isLuks <device>
  
   on the device. Without the "-v" it just signals its result via
-  exit-status. You can alos use the more general test
+  exit-status. You can also use the more general test
 
       blkid -p <device>
  
@@ -1059,7 +1120,7 @@ A. Contributors
 
       cat backup.tbz2.gpg | gpg - | tar djf - 
  
-  Note: Allways verify backups, especially encrypted ones.
+  Note: Always verify backups, especially encrypted ones.
 
   In both cases GnuPG will ask you interactively for your symmetric
   key. The verify will only output errors. Use "tar dvjf -" to get
@@ -1071,7 +1132,7 @@ A. Contributors
   an asymmetric key if you have one and have a backup of the secret
   key that belongs to it.
 
-  A second option for a filestem-level backup that can be used when
+  A second option for a filesystem-level backup that can be used when
   the backup is also on local disk (e.g. an external USB drive) is
   to use a LUKS container there and copy the files to be backed up
   between both mounted containers. Also see next item.
@@ -1165,7 +1226,7 @@ A. Contributors
   I have not tried the different ways to do this, but very likely you
   will have written a new boot-sector, which in turn overwrites the
   LUKS header, including the salts, making your data permanently
-  irretrivable, unless you have a LUKS header backup. You may also
+  irretrievable, unless you have a LUKS header backup. You may also
   damage the key-slots in part or in full. See also last item.
 
 
@@ -1187,7 +1248,7 @@ A. Contributors
   key afterwards.    Changing the master key requires a full data
   backup, luksFormat and then restore of the backup.
 
-  First, there is a script by Milan that automatizes    the whole
+  First, there is a script by Milan that automates    the whole
   process, except generating a new LUKS header with the old master
   key (it prints the command for that though):
 
@@ -1216,7 +1277,8 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   - Do a luksFormat to create a new LUKS header.
 
     NOTE: If your header is intact and you just forgot the
-  passphrase, you can just set a new passphrase, see next     subitem.
+  passphrase, you can just set a new passphrase, see next
+  sub-item.
 
   Unmap the device before you do that (luksClose). Then do
 
@@ -1295,9 +1357,9 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
 
   Note: From cryptsetup 1.3 onwards, alignment is set to 1MB. With
   modern Linux partitioning tools that also align to 1MB, this will
-  result in aligmnet to 2k secors and typical Flash/SSD sectors,
+  result in alignment to 2k sectors and typical Flash/SSD sectors,
   which is highly desirable for a number of reasons. Changing the
-  alignment is not recomended.
+  alignment is not recommended.
 
   That said, with default parameters, the data area starts at
   exactly 2MB offset (at 0x101000 for cryptsetup versions before
@@ -1339,7 +1401,7 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
       cryptsetup luksFormat -c blowfish -s 64 --align-payload=8 /dev/loop0
  
   This results in a data offset of 0x41000, i.e. 260kiB or 266240
-  bytes, with a minimal LUKS conatiner size of 260kiB + 512B or
+  bytes, with a minimal LUKS container size of 260kiB + 512B or
   266752 bytes.
 
 
@@ -1366,7 +1428,7 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   container, then to clone the contents of the source container, with
   both containers mapped, i.e. decrypted. You can clone the decrypted
   contents of a LUKS container in binary mode, although you may run
-  into secondary issuses with GUIDs in filesystems, partition tables,
+  into secondary issues with GUIDs in filesystems, partition tables,
   RAID-components and the like. These are just the normal problems
   binary cloning causes.
 
@@ -1383,14 +1445,14 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
 
   Cryptsetup for plain dm-crypt can be used to access a number of
   on-disk formats created by tools like loop-aes patched into
-  losetup. This somtimes works and sometimes does not.    This section
-  collects insights into what works, what does not and where more
-  information is required.
+  losetup. This sometimes works and sometimes does not.    This
+  section collects insights into what works, what does not and where
+  more information is required.
 
   Additional information may be found in the mailing-list archives,
   mentioned at the start of this FAQ document. If you have a
   solution working that is not yet documented here and think a wider
-  audience may be intertested, please email the FAQ maintainer.
+  audience may be interested, please email the FAQ maintainer.
 
 
  * 7.2 loop-aes: General observations.
@@ -1399,7 +1461,7 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   loop-aes is a patch for losetup. Possible problems and deviations
   from cryptsetup option syntax include:
 
-  - Offsets specifed in bytes (cryptsetup: 512 byte sectors)
+  - Offsets specified in bytes (cryptsetup: 512 byte sectors)
 
   - The need to specify an IV offset
 
@@ -1417,20 +1479,19 @@ http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-ac
   give you the information you need.
 
 
- * 7.3 loop-aes patched into losetup on debian 5.x, kernel 2.6.32
+ * 7.3 loop-aes patched into losetup on Debian 5.x, kernel 2.6.32
 
   In this case, the main problem seems to be that this variant of
   losetup takes the offset (-o option) in bytes, while cryptsetup
-  takes it in sectors of 512 bytes each. Example: The losetupp
-  command
+  takes it in sectors of 512 bytes each. Example: The losetup command
 
   losetup -e twofish -o 2560 /dev/loop0 /dev/sdb1 
-  mount /dev/loop0 mountpoint
+  mount /dev/loop0 mount-point
  
   translates to
 
   cryptsetup create -c twofish -o 5 --skip 5 e1 /dev/sdb1
-  mount /dev/mapper/e1 mountpoint
+  mount /dev/mapper/e1 mount-point
  
 
  * 7.4 loop-aes with 160 bit key
