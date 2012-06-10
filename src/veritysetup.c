@@ -484,6 +484,7 @@ static int run_action(struct action_type *action)
 int main(int argc, const char **argv)
 {
 	static char *popt_tmp;
+	static const char *null_action_argv[] = {NULL};
 	static struct poptOption popt_help_options[] = {
 		{ NULL,    '\0', POPT_ARG_CALLBACK, help, 0, NULL,                         NULL },
 		{ "help",  '?',  POPT_ARG_NONE,     NULL, 0, N_("Show this help message"), NULL },
@@ -509,7 +510,7 @@ int main(int argc, const char **argv)
 
 	poptContext popt_context;
 	struct action_type *action;
-	const char *aname, *null_action_argv[] = {NULL};
+	const char *aname;
 	int r;
 
 	crypt_set_log_callback(NULL, _log, NULL);

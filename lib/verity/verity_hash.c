@@ -308,13 +308,13 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	if (levels)
 		r = create_or_verify(cd, hash_file, NULL,
 					    hash_level_block[levels - 1], hash_block_size,
-					    0, 0,
+					    0, hash_block_size,
 					    1, version, hash_name, verify,
 					    calculated_digest, digest_size, salt, salt_size);
 	else
 		r = create_or_verify(cd, data_file, NULL,
 					    0, data_block_size,
-					    0, 0,
+					    0, hash_block_size,
 					    data_file_blocks, version, hash_name, verify,
 					    calculated_digest, digest_size, salt, salt_size);
 out:

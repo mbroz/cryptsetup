@@ -218,7 +218,8 @@ int LUKS_hdr_restore(
 	}
 
 	r = LUKS_read_phdr_backup(backup_file, device, &hdr_file, 0, ctx);
-	buffer_size = hdr_file.payloadOffset << SECTOR_SHIFT;
+	if (!r)
+		buffer_size = hdr_file.payloadOffset << SECTOR_SHIFT;
 
 	if (r || buffer_size < LUKS_ALIGN_KEYSLOTS) {
 		log_err(ctx, _("Backup file doesn't contain valid LUKS header.\n"));

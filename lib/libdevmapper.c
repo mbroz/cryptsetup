@@ -616,7 +616,7 @@ int dm_create_device(const char *name,
 	else if (dmd->target == DM_VERITY)
 		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd);
 
-	if (!table_params)
+	if (!table_params || !type)
 		return -EINVAL;
 
 	return _dm_create_device(name, type, dmd->data_device, dmd->flags,
