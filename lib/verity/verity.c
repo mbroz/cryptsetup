@@ -51,7 +51,6 @@ struct verity_sb {
 	uint8_t salt[384];
 	uint8_t pad3[88];
 };
-
 #else
 struct verity_sb {
 	uint8_t  signature[8];	/* "verity\0\0" */
@@ -78,8 +77,9 @@ int VERITY_read_sb(struct crypt_device *cd,
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int devfd = 0, sb_version;
+#ifndef NEW_SB
 	uint64_t sb_data_blocks;
-
+#endif
 	log_dbg("Reading VERITY header of size %u on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device, sb_offset);
 
