@@ -70,7 +70,7 @@ struct crypt_device {
 	/* used in CRYPT_VERITY */
 	struct crypt_params_verity verity_hdr;
 	char *verity_root_hash;
-	uint64_t verity_root_hash_size;
+	unsigned int verity_root_hash_size;
 	char *verity_uuid;
 
 	/* callbacks definitions */
@@ -689,7 +689,10 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
 		return r;
 
+	/* Hash availability checked in sb load */
 	cd->verity_root_hash_size = crypt_hash_size(cd->verity_hdr.hash_name);
+	if (cd->verity_root_hash_size > 4096)
+		return -EINVAL;
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_VERITY)))
 		return -ENOMEM;
@@ -1046,7 +1049,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 				 const char *uuid,
 				 struct crypt_params_verity *params)
 {
-	int r = 0;
+	int r = 0, hash_size;
 	uint64_t data_device_size;
 
 	if (!mdata_device(cd)) {
@@ -1057,6 +1060,22 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (!params || !params->data_device)
 		return -EINVAL;
 
+	if (params->hash_type > VERITY_MAX_HASH_TYPE) {
+		log_err(cd, _("Unsupported VERITY hash type %d.\n"), params->hash_type);
+		return -EINVAL;
+	}
+
+	if (VERITY_BLOCK_SIZE_OK(params->data_block_size) ||
+	    VERITY_BLOCK_SIZE_OK(params->hash_block_size)) {
+		log_err(cd, _("Unsupported VERITY block size.\n"));
+		return -EINVAL;
+	}
+
+	if (params->hash_area_offset % 512) {
+		log_err(cd, _("Unsupported VERITY hash offset.\n"));
+		return -EINVAL;
+	}
+
 	if (!(cd->type = strdup(CRYPT_VERITY)))
 		return -ENOMEM;
 
@@ -1064,7 +1083,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (r)
 		return r;
 	if (!params->data_size) {
-		r = device_size(params->data_device, &data_device_size);
+		r = device_size(cd->device, &data_device_size);
 		if (r < 0)
 			return r;
 
@@ -1072,9 +1091,13 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	} else
 		cd->verity_hdr.data_size = params->data_size;
 
-	cd->verity_root_hash_size = crypt_hash_size(params->hash_name);
-	if (!cd->verity_root_hash_size)
+	hash_size = crypt_hash_size(params->hash_name);
+	if (hash_size <= 0) {
+		log_err(cd, _("Hash algorithm %s not supported.\n"),
+			params->hash_name);
 		return -EINVAL;
+	}
+	cd->verity_root_hash_size = hash_size;
 
 	cd->verity_root_hash = malloc(cd->verity_root_hash_size);
 	if (!cd->verity_root_hash)

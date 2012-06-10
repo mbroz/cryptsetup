@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <string.h>
+#include <ctype.h>
 #include <inttypes.h>
 #include <popt.h>
 #include <limits.h>
@@ -126,9 +127,11 @@ static int _prepare_format(struct crypt_params_verity *params,
 		params->salt_size = 0;
 		params->salt = NULL;
 	} else if (salt_string) {
-		params->salt_size = strlen(salt_string) / 2;
-		if (hex_to_bytes(salt_string, salt_bytes) != params->salt_size)
+		if (hex_to_bytes(salt_string, salt_bytes) * 2 != strlen(salt_string)) {
+			log_err(_("Invalid salt string specified.\n"));
 			return -EINVAL;
+		}
+		params->salt_size = strlen(salt_string) / 2;
 		params->salt = salt_bytes;
 	} else
 		params->salt_size = DEFAULT_VERITY_SALT_SIZE;
@@ -201,7 +204,9 @@ static int _activate(const char *dm_device,
 		goto out;
 
 	hash_size = crypt_get_volume_key_size(cd);
-	if (hex_to_bytes(root_hash, root_hash_bytes) != hash_size) {
+	if (hash_size * 2 != strlen(root_hash) ||
+	    hex_to_bytes(root_hash, root_hash_bytes) != hash_size) {
+		log_err(_("Invalid root hash string specified.\n"));
 		r = -EINVAL;
 		goto out;
 	}
@@ -528,8 +533,8 @@ int main(int argc, const char **argv)
 		char *endp;
 
 		errno = 0;
-		ull_value = strtoull(popt_tmp, &endp, 0);
-		if (*endp || !*popt_tmp ||
+		ull_value = strtoull(popt_tmp, &endp, 10);
+		if (*endp || !*popt_tmp || !isdigit(*popt_tmp) ||
 		    (errno == ERANGE && ull_value == ULLONG_MAX) ||
 		    (errno != 0 && ull_value == 0))
 			r = POPT_ERROR_BADNUMBER;
@@ -540,6 +545,8 @@ int main(int argc, const char **argv)
 				break;
 			case 2:
 				hash_start = ull_value * 512;
+				if (hash_start / 512 != ull_value)
+					r = POPT_ERROR_BADNUMBER;
 				break;
 		}
 
@@ -581,6 +588,12 @@ int main(int argc, const char **argv)
 		char buf[128];
 		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
 		usage(popt_context, EXIT_FAILURE, buf,
+		      poptGetInvocationName(popt_context));
+	}
+
+	if (data_block_size < 0 || hash_block_size < 0 || hash_type < 0) {
+		usage(popt_context, EXIT_FAILURE,
+		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));
 	}
 

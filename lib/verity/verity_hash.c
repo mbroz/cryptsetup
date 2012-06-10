@@ -88,6 +88,14 @@ out:
 	return r;
 }
 
+static int mult_overflow(off_t *u, off_t b, size_t size)
+{
+	*u = (uint64_t)b * size;
+	if ((off_t)(*u / size) != b || (off_t)*u < 0 || (off_t)*u != *u)
+		return 1;
+	return 0;
+}
+
 static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 				   off_t data_block, size_t data_block_size,
 				   off_t hash_block, size_t hash_block_size,
@@ -102,16 +110,23 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 	size_t hash_per_block = 1 << get_bits_down(hash_block_size / digest_size);
 	size_t digest_size_full = 1 << get_bits_up(digest_size);
 	off_t blocks_to_write = (blocks + hash_per_block - 1) / hash_per_block;
+	off_t seek_rd, seek_wr;
 	size_t left_bytes;
 	unsigned i;
 	int r;
 
-	if (fseeko(rd, data_block * data_block_size, SEEK_SET)) {
+	if (mult_overflow(&seek_rd, data_block, data_block_size) ||
+	    mult_overflow(&seek_wr, hash_block, hash_block_size)) {
+		log_err(cd, _("Device offset overflow.\n"));
+		return -EINVAL;
+	}
+
+	if (fseeko(rd, seek_rd, SEEK_SET)) {
 		log_dbg("Cannot seek to requested position in data device.");
 		return -EIO;
 	}
 
-	if (wr && fseeko(wr, hash_block * hash_block_size, SEEK_SET)) {
+	if (wr && fseeko(wr, seek_wr, SEEK_SET)) {
 		log_dbg("Cannot seek to requested position in hash device.");
 		return -EIO;
 	}
@@ -205,7 +220,8 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	off_t hash_level_size[VERITY_MAX_LEVELS];
 	off_t data_file_blocks, s;
 	size_t hash_per_block, hash_per_block_bits;
-	uint64_t data_device_size = 0, hash_device_size = 0;
+	off_t data_device_size = 0, hash_device_size = 0;
+	uint64_t dev_size;
 	int levels, i, r;
 
 	log_dbg("Hash %s %s, data device %s, data blocks %" PRIu64
@@ -213,15 +229,23 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		verify ? "verification" : "creation", hash_name,
 		data_device, data_blocks, hash_device, hash_position);
 
+	if (data_blocks < 0 || hash_position < 0) {
+		log_err(cd, _("Invalid size parameters for verity device.\n"));
+		return -EINVAL;
+	}
+
 	if (!data_blocks) {
-		r = device_size(data_device, &data_device_size);
+		r = device_size(data_device, &dev_size);
 		if (r < 0)
 			return r;
 
-		data_file_blocks = data_device_size / data_block_size;
-	} else {
-		data_device_size = data_blocks * data_block_size;
+		data_file_blocks = dev_size / data_block_size;
+	} else
 		data_file_blocks = data_blocks;
+
+	if (mult_overflow(&data_device_size, data_blocks, data_block_size)) {
+		log_err(cd, _("Device offset overflow.\n"));
+		return -EINVAL;
 	}
 
 	hash_per_block_bits = get_bits_down(hash_block_size / digest_size);
@@ -251,12 +275,16 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		if (hash_position + s < hash_position ||
 		    (hash_position + s) < 0 ||
 		    (hash_position + s) != hash_position + s) {
-			log_dbg("Hash device offset overflow.");
+			log_err(cd, _("Device offset overflow.\n"));
 			return -EINVAL;
 		}
 		hash_position += s;
 	}
-	hash_device_size = hash_position * hash_block_size;
+
+	if (mult_overflow(&hash_device_size, hash_position, hash_block_size)) {
+		log_err(cd, _("Device offset overflow.\n"));
+		return -EINVAL;
+	}
 
 	log_dbg("Data device size required: %" PRIu64 " bytes.",
 		data_device_size);
@@ -383,10 +411,9 @@ int VERITY_create(struct crypt_device *cd,
 	if (verity_hdr->salt_size > 256)
 		return -EINVAL;
 
-	if (verity_hdr->hash_block_size > pgsize ||
-	    verity_hdr->data_block_size > pgsize)
-		log_err(cd, _("WARNING: Kernel cannot activate device if block "
-			      "size exceeds page size (%u).\n"), pgsize);
+	if (verity_hdr->data_block_size > pgsize)
+		log_err(cd, _("WARNING: Kernel cannot activate device if data "
+			      "block size exceeds page size (%u).\n"), pgsize);
 
 	return VERITY_create_or_verify_hash(cd, 0,
 		verity_hdr->hash_type,

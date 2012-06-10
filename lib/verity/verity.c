@@ -88,6 +88,11 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (sb_offset % 512) {
+		log_err(cd, _("Unsupported VERITY hash offset.\n"));
+		return -EINVAL;
+	}
+
 	devfd = open(device ,O_RDONLY | O_DIRECT);
 	if(devfd == -1) {
 		log_err(cd, _("Cannot open device %s.\n"), device);
@@ -141,14 +146,15 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 	params->hash_type = le32_to_cpu(sb.hash_type);
-	if (params->hash_type > 1) {
+	if (params->hash_type > VERITY_MAX_HASH_TYPE) {
 		log_err(cd, _("Unsupported VERITY hash type %d.\n"), params->hash_type);
 		return -EINVAL;
 	}
 
 	params->data_block_size = le64_to_cpu(sb.data_block_size);
 	params->hash_block_size = le64_to_cpu(sb.hash_block_size);
-	if (params->data_block_size % 512 || params->hash_block_size % 512) {
+	if (VERITY_BLOCK_SIZE_OK(params->data_block_size) ||
+	    VERITY_BLOCK_SIZE_OK(params->hash_block_size)) {
 		log_err(cd, _("Unsupported VERITY block size.\n"));
 		return -EINVAL;
 	}
@@ -157,6 +163,12 @@ int VERITY_read_sb(struct crypt_device *cd,
 	params->hash_name = strndup((const char*)sb.algorithm, sizeof(sb.algorithm));
 	if (!params->hash_name)
 		return -ENOMEM;
+	if (crypt_hash_size(params->hash_name) <= 0) {
+		log_err(cd, _("Hash algorithm %s not supported.\n"),
+			params->hash_name);
+		free(CONST_CAST(char*)params->hash_name);
+		return -EINVAL;
+	}
 
 	params->salt_size = le64_to_cpu(sb.salt_size);
 	if (params->salt_size > sizeof(sb.salt)) {
