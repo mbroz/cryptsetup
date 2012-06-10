@@ -38,7 +38,6 @@ struct crypt_device {
 	char *device;
 	char *metadata_device;
 
-	char *backing_file;
 	int loop_fd;
 	struct volume_key *volume_key;
 	uint64_t timeout;
@@ -356,16 +355,23 @@ int crypt_confirm(struct crypt_device *cd, const char *msg)
 static int key_from_terminal(struct crypt_device *cd, char *msg, char **key,
 			      size_t *key_len, int force_verify)
 {
-	char *prompt = NULL;
+	char *prompt = NULL, *device_name;
 	int r;
 
 	*key = NULL;
-	if(!msg && asprintf(&prompt, _("Enter passphrase for %s: "),
-			    cd->backing_file ?: crypt_get_device_name(cd)) < 0)
-		return -ENOMEM;
-
-	if (!msg)
+	if(!msg) {
+		if (crypt_loop_device(crypt_get_device_name(cd)))
+			device_name = crypt_loop_backing_file(crypt_get_device_name(cd));
+		else
+			device_name = strdup(crypt_get_device_name(cd));
+		if (!device_name)
+			return -ENOMEM;
+		r = asprintf(&prompt, _("Enter passphrase for %s: "), device_name);
+		free(device_name);
+		if (r < 0)
+			return -ENOMEM;
 		msg = prompt;
+	}
 
 	if (cd->password) {
 		*key = crypt_safe_alloc(DEFAULT_PASSPHRASE_SIZE_MAX);
@@ -534,7 +540,6 @@ int crypt_init(struct crypt_device **cd, const char *device)
 				goto bad;
 			}
 
-			h->backing_file = crypt_loop_backing_file(h->device);
 			r = device_ready(NULL, h->device, O_RDONLY);
 		}
 		if (r < 0) {
@@ -565,7 +570,6 @@ bad:
 		if (h->loop_fd != -1)
 			close(h->loop_fd);
 		free(h->device);
-		free(h->backing_file);
 	}
 	free(h);
 	return r;
@@ -859,13 +863,6 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	}
 
 	/* Try to initialise basic parameters from active device */
-
-	if (!(*cd)->backing_file && dmd.data_device &&
-	    crypt_loop_device(dmd.data_device) &&
-	    !((*cd)->backing_file = crypt_loop_backing_file(dmd.data_device))) {
-		r = -ENOMEM;
-		goto out;
-	}
 
 	if (dmd.target == DM_CRYPT)
 		r = _init_by_name_crypt(*cd, name);
@@ -1351,7 +1348,6 @@ void crypt_free(struct crypt_device *cd)
 
 		free(cd->device);
 		free(cd->metadata_device);
-		free(cd->backing_file);
 		free(cd->type);
 
 		/* used in plain device only */
