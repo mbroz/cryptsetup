@@ -372,12 +372,12 @@ struct crypt_params_verity {
 	const char *data_device;   /**< data_device (CRYPT_VERITY_CREATE_HASH) */
 	const char *hash_device;   /**< hash_device (output only) */
 	const char *salt;          /**< salt */
-	uint64_t salt_size;        /**< salt size (in bytes) */
+	uint32_t salt_size;        /**< salt size (in bytes) */
+	uint32_t hash_type;        /**< in-kernel hashing type */
 	uint32_t data_block_size;  /**< data block size (in bytes) */
 	uint32_t hash_block_size;  /**< hash block size (in bytes) */
 	uint64_t data_size;        /**< data area size (in data blocks) */
 	uint64_t hash_area_offset; /**< hash/header offset (in bytes) */
-	uint32_t hash_type;        /**< in-kernel hashing type */
 	uint32_t flags;            /**< CRYPT_VERITY* flags */
 };
 

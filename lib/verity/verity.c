@@ -61,9 +61,10 @@ struct verity_sb {
 	uint64_t data_block_size; /* data block in bytes */
 	uint64_t hash_block_size; /* hash block in bytes */
 	uint64_t data_blocks;	/* number of data blocks */
-	uint64_t salt_size;	/* salt size */
+	uint16_t salt_size;	/* salt size */
+	uint8_t  _pad1[6];
 	uint8_t  salt[256];	/* salt */
-	uint8_t  _pad[160];
+	uint8_t  _pad2[160];
 } __attribute__((packed));
 #endif
 
@@ -170,7 +171,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	params->salt_size = le64_to_cpu(sb.salt_size);
+	params->salt_size = le16_to_cpu(sb.salt_size);
 	if (params->salt_size > sizeof(sb.salt)) {
 		log_err(cd, _("VERITY header corrupted.\n"));
 		free(CONST_CAST(char*)params->hash_name);
@@ -236,7 +237,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	sb.hash_type       = cpu_to_le32(params->hash_type);
 	sb.data_block_size = cpu_to_le64(params->data_block_size);
 	sb.hash_block_size = cpu_to_le64(params->hash_block_size);
-	sb.salt_size       = cpu_to_le64(params->salt_size);
+	sb.salt_size       = cpu_to_le16(params->salt_size);
 	sb.data_blocks     = cpu_to_le64(params->data_size);
 	strncpy((char *)sb.algorithm, params->hash_name, sizeof(sb.algorithm));
 	memcpy(sb.salt, params->salt, params->salt_size);
