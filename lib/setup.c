@@ -598,7 +598,7 @@ static int crypt_check_data_device_size(struct crypt_device *cd)
 		return r;
 
 	if (size < size_min) {
-		log_err(cd, _("LUKS header detected but device %s is too small.\n"),
+		log_err(cd, _("Header detected but device %s is too small.\n"),
 			crypt_get_device_name(cd));
 		return -EINVAL;
 	}
@@ -1223,16 +1223,6 @@ int crypt_load(struct crypt_device *cd,
 		r = _crypt_load_verity(cd, params);
 	} else
 		return -EINVAL;
-
-	if (r < 0)
-		return r;
-
-	/* cd->type and header must be set in context */
-	r = crypt_check_data_device_size(cd);
-	if (r < 0) {
-		free(cd->type);
-		cd->type = NULL;
-	}
 
 	return r;
 }
