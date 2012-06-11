@@ -70,9 +70,9 @@ function compare_out() # $1 what, $2 expected
 function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
 {
 	if [ -z "$LOOPDEV2" ] ; then
-		BLOCKS=$(($6 * 512 / $1))
+		BLOCKS=$(($6 / $1))
 		DEV_PARAMS="$LOOPDEV1 $LOOPDEV1 \
-			   --hash-start $6 \
+			   --hash-offset $6 \
 			   --data-blocks=$BLOCKS --debug"
 	else
 		DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
@@ -173,16 +173,16 @@ check_root_hash 1024 73509e8e868be6b8ac939817a98a3d35121413b2 dadada 1 sha1
 
 echo "Verity tests [one device offset]"
 prepare $((8192 + 1024))
-check_root_hash  512 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 $SALT 1 sha256 16384
-check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da2b3df $SALT 1 sha256 16384
-check_root_hash 4096 e522df0f97da4febb882ac40f30b37dc0b444bf6df418929463fa25280f09d5c $SALT 1 sha256 16384
+check_root_hash  512 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 $SALT 1 sha256 8388608
+check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da2b3df $SALT 1 sha256 8388608
+check_root_hash 4096 e522df0f97da4febb882ac40f30b37dc0b444bf6df418929463fa25280f09d5c $SALT 1 sha256 8388608
 # version 0
-check_root_hash 4096 cbbf4ebd004ef65e29b935bb635a39cf754d677f3fa10b0126da725bbdf10f7d $SALT 0 sha256 16384
+check_root_hash 4096 cbbf4ebd004ef65e29b935bb635a39cf754d677f3fa10b0126da725bbdf10f7d $SALT 0 sha256 8388608
 # no salt
-check_root_hash 4096 ef29c902d87350f1da4bfa536e16cebc162a909bf89abe448b81ec500d4fb9bf - 1 sha256 16384
+check_root_hash 4096 ef29c902d87350f1da4bfa536e16cebc162a909bf89abe448b81ec500d4fb9bf - 1 sha256 8388608
 # sha1
-check_root_hash 1024 d0e9163ca8844aaa2e88fe5265a8c5d9ee494a99 $SALT 1 sha1 16384
-check_root_hash 1024 73509e8e868be6b8ac939817a98a3d35121413b2 dadada 1 sha1 16384
+check_root_hash 1024 d0e9163ca8844aaa2e88fe5265a8c5d9ee494a99 $SALT 1 sha1 8388608
+check_root_hash 1024 73509e8e868be6b8ac939817a98a3d35121413b2 dadada 1 sha1 8388608
 
 remove_mapping
 exit 0

@@ -40,7 +40,7 @@ static int data_block_size = DEFAULT_VERITY_DATA_BLOCK;
 static int hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
 static uint64_t data_blocks = 0;
 static const char *salt_string = NULL;
-static uint64_t hash_start = 0;
+static uint64_t hash_offset = 0;
 static const char *opt_uuid = NULL;
 
 static int opt_verbose = 0;
@@ -139,7 +139,7 @@ static int _prepare_format(struct crypt_params_verity *params,
 	params->data_block_size = data_block_size;
 	params->hash_block_size = hash_block_size;
 	params->data_size = data_blocks;
-	params->hash_area_offset = hash_start;
+	params->hash_area_offset = hash_offset;
 	params->hash_type = hash_type;
 	params->flags = flags;
 
@@ -189,7 +189,7 @@ static int _activate(const char *dm_device,
 
 	if (use_superblock) {
 		params.flags = flags;
-		params.hash_area_offset = hash_start;
+		params.hash_area_offset = hash_offset;
 		r = crypt_load(cd, CRYPT_VERITY, &params);
 	} else {
 		r = _prepare_format(&params, data_device, flags | CRYPT_VERITY_NO_HEADER);
@@ -349,7 +349,7 @@ static int action_dump(int arg)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		return r;
 
-	params.hash_area_offset = hash_start;
+	params.hash_area_offset = hash_offset;
 	r = crypt_load(cd, CRYPT_VERITY, &params);
 	if (!r)
 		crypt_dump(cd);
@@ -506,7 +506,7 @@ int main(int argc, const char **argv)
 		{ "data-block-size", 0,    POPT_ARG_INT,  &data_block_size,  0, N_("Block size on the data device"), N_("bytes") },
 		{ "hash-block-size", 0,    POPT_ARG_INT,  &hash_block_size,  0, N_("Block size on the hash device"), N_("bytes") },
 		{ "data-blocks",     0,    POPT_ARG_STRING, &popt_tmp,       1, N_("The number of blocks in the data file"), N_("blocks") },
-		{ "hash-start",      0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting block on the hash device"), N_("512-byte sectors") },
+		{ "hash-offset",     0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting offset on the hash device"), N_("bytes") },
 		{ "hash",            'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
 		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },
 		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use."), NULL },
@@ -544,9 +544,7 @@ int main(int argc, const char **argv)
 				data_blocks = ull_value;
 				break;
 			case 2:
-				hash_start = ull_value * 512;
-				if (hash_start / 512 != ull_value)
-					r = POPT_ERROR_BADNUMBER;
+				hash_offset = ull_value;
 				break;
 		}
 

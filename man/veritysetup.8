@@ -18,7 +18,7 @@ Veritysetup supports these operations:
 .IP
 Calculates and permanently stores hash verification data for data_device.
 Hash area can be located on the same device after data if specified
-by \-\-hash\-start option.
+by \-\-hash\-offset option.
 
 Note you need to provide root hash string for device verification
 or activation. Root hash must be trusted.
@@ -28,7 +28,7 @@ allocates loopback device. In this case, hash file size must be enough
 to store the hash area.
 
 \fB<options>\fR can be [\-\-hash, \-\-no-superblock, \-\-format,
-\-\-data-block-size, \-\-hash-block-size, \-\-data-blocks, \-\-hash-start,
+\-\-data-block-size, \-\-hash-block-size, \-\-data-blocks, \-\-hash-offset,
 \-\-salt, \-\-uuid]
 .PP
 \fIcreate\fR <name> <data_device> <hash_device> <root_hash>
@@ -38,7 +38,7 @@ Creates a mapping with <name> backed by device <data_device> and using
 
 The <root_hash> is a hexadecimal string.
 
-\fB<options>\fR can be [\-\-hash-start, \-\-no-superblock]
+\fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock]
 
 If option \-\-no-superblock is used, you have to use as the same options
 as in initial format operation.
@@ -84,8 +84,9 @@ Used block size for the hash device.
 Size of data device used in verification.
 If not specified, the whole device is used.
 .TP
-.B "\-\-hash-start=512-bytes sectors"
+.B "\-\-hash-offset=bytes"
 Offset of hash area/superblock on hash_device.
+Value must be aligned to disk sector offset.
 .TP
 .B "\-\-salt=hex string"
 Salt used for format or verification.
