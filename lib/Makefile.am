@@ -47,6 +47,7 @@ libcryptsetup_la_LIBADD = \
 libcryptsetup_la_SOURCES = \
 	setup.c					\
 	internal.h				\
+	bitops.h				\
 	nls.h					\
 	libcryptsetup.h				\
 	utils.c					\
