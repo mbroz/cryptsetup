@@ -58,13 +58,13 @@ struct verity_sb {
 	uint32_t hash_type;	/* 0 - Chrome OS, 1 - normal */
 	uint8_t  uuid[16];	/* UUID of hash device */
 	uint8_t  algorithm[32];/* hash algorithm name */
-	uint64_t data_block_size; /* data block in bytes */
-	uint64_t hash_block_size; /* hash block in bytes */
+	uint32_t data_block_size; /* data block in bytes */
+	uint32_t hash_block_size; /* hash block in bytes */
 	uint64_t data_blocks;	/* number of data blocks */
 	uint16_t salt_size;	/* salt size */
 	uint8_t  _pad1[6];
 	uint8_t  salt[256];	/* salt */
-	uint8_t  _pad2[160];
+	uint8_t  _pad2[168];
 } __attribute__((packed));
 #endif
 
@@ -152,8 +152,8 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	params->data_block_size = le64_to_cpu(sb.data_block_size);
-	params->hash_block_size = le64_to_cpu(sb.hash_block_size);
+	params->data_block_size = le32_to_cpu(sb.data_block_size);
+	params->hash_block_size = le32_to_cpu(sb.hash_block_size);
 	if (VERITY_BLOCK_SIZE_OK(params->data_block_size) ||
 	    VERITY_BLOCK_SIZE_OK(params->hash_block_size)) {
 		log_err(cd, _("Unsupported VERITY block size.\n"));
@@ -235,8 +235,8 @@ int VERITY_write_sb(struct crypt_device *cd,
 #else
 	sb.version         = cpu_to_le32(1);
 	sb.hash_type       = cpu_to_le32(params->hash_type);
-	sb.data_block_size = cpu_to_le64(params->data_block_size);
-	sb.hash_block_size = cpu_to_le64(params->hash_block_size);
+	sb.data_block_size = cpu_to_le32(params->data_block_size);
+	sb.hash_block_size = cpu_to_le32(params->hash_block_size);
 	sb.salt_size       = cpu_to_le16(params->salt_size);
 	sb.data_blocks     = cpu_to_le64(params->data_size);
 	strncpy((char *)sb.algorithm, params->hash_name, sizeof(sb.algorithm));
