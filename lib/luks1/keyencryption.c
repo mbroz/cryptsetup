@@ -58,14 +58,17 @@ static int setup_mapping(const char *cipher, const char *name,
 {
 	int device_sector_size = sector_size_for_device(device);
 	struct crypt_dm_active_device dmd = {
-		.device = device,
-		.cipher = cipher,
+		.target = DM_CRYPT,
 		.uuid   = NULL,
-		.vk     = vk,
-		.offset = sector,
-		.iv_offset = 0,
 		.size   = 0,
-		.flags  = 0
+		.flags  = 0,
+		.data_device = device,
+		.u.crypt = {
+			.cipher = cipher,
+			.vk     = vk,
+			.offset = sector,
+			.iv_offset = 0,
+		}
 	};
 
 	dmd.flags = CRYPT_ACTIVATE_PRIVATE;

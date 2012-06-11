@@ -192,18 +192,22 @@ int LOOPAES_activate(struct crypt_device *cd,
 	uint32_t req_flags;
 	int r;
 	struct crypt_dm_active_device dmd = {
-		.device = crypt_get_device_name(cd),
-		.cipher = NULL,
+		.target = DM_CRYPT,
 		.uuid   = crypt_get_uuid(cd),
-		.vk    = vk,
-		.offset = crypt_get_data_offset(cd),
-		.iv_offset = crypt_get_iv_offset(cd),
 		.size   = 0,
-		.flags  = flags
+		.flags  = flags,
+		.data_device = crypt_get_device_name(cd),
+		.u.crypt  = {
+			.cipher = NULL,
+			.vk     = vk,
+			.offset = crypt_get_data_offset(cd),
+			.iv_offset = crypt_get_iv_offset(cd),
+		}
 	};
 
 
-	r = device_check_and_adjust(cd, dmd.device, DEV_EXCL, &dmd.size, &dmd.offset, &flags);
+	r = device_check_and_adjust(cd, dmd.data_device, DEV_EXCL,
+				    &dmd.size, &dmd.u.crypt.offset, &flags);
 	if (r)
 		return r;
 
@@ -217,8 +221,9 @@ int LOOPAES_activate(struct crypt_device *cd,
 	if (r < 0)
 		return -ENOMEM;
 
-	dmd.cipher = cipher;
-	log_dbg("Trying to activate loop-AES device %s using cipher %s.", name, dmd.cipher);
+	dmd.u.crypt.cipher = cipher;
+	log_dbg("Trying to activate loop-AES device %s using cipher %s.",
+		name, dmd.u.crypt.cipher);
 
 	r = dm_create_device(name, CRYPT_LOOPAES, &dmd, 0);
 

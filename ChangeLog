@@ -1,3 +1,9 @@
+2012-06-10  Milan Broz  <gmazyland@gmail.com>
+	* Both data and header device can now be a file.
+	* Loop is automatically allocated in crypt_set_data_device().
+	* Require only up to last keyslot area for header device (ignore data offset).
+	* Fix header backup and restore to work on files with large data offset.
+
 2012-05-27  Milan Broz  <gmazyland@gmail.com>
 	* Fix readonly activation if underlying device is readonly (1.4.0).
 	* Include stddef.h in libdevmapper.h (size_t definition).

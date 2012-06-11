@@ -47,12 +47,12 @@ static inline int round_up_modulo(int x, int m) {
 }
 
 /* Get size of struct luks_phrd with all keyslots material space */
-static uint64_t LUKS_device_sectors(size_t keyLen, unsigned int stripes)
+static uint64_t LUKS_device_sectors(size_t keyLen)
 {
 	uint64_t keyslot_sectors, sector;
 	int i;
 
-	keyslot_sectors = div_round_up(keyLen * stripes, SECTOR_SIZE);
+	keyslot_sectors = div_round_up(keyLen * LUKS_STRIPES, SECTOR_SIZE);
 	sector = round_up_modulo(LUKS_PHDR_SIZE, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 
 	for (i = 0; i < LUKS_NUMKEYS; i++) {
@@ -63,22 +63,22 @@ static uint64_t LUKS_device_sectors(size_t keyLen, unsigned int stripes)
 	return sector;
 }
 
-static int LUKS_check_device_size(const char *device,
-				  uint64_t min_sectors,
+static int LUKS_check_device_size(struct crypt_device *ctx, const char *device,
 				  size_t keyLength)
 {
-	uint64_t dev_size, req_sectors;
-
-	req_sectors = LUKS_device_sectors(keyLength, LUKS_STRIPES);
-	if (min_sectors > req_sectors)
-		req_sectors = min_sectors;
+	uint64_t dev_size;
 
 	if(device_size(device, &dev_size)) {
 		log_dbg("Cannot get device size for device %s.", device);
 		return -EIO;
 	}
 
-	return (req_sectors > (dev_size >> SECTOR_SHIFT));
+	if (LUKS_device_sectors(keyLength) > (dev_size >> SECTOR_SHIFT)) {
+		log_err(ctx, _("Device %s is too small.\n"), device);
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 /* Check keyslot to prevent access outside of header and keyslot area */
@@ -154,7 +154,7 @@ int LUKS_hdr_backup(
 	if (r)
 		return r;
 
-	buffer_size = hdr->payloadOffset << SECTOR_SHIFT;
+	buffer_size = LUKS_device_sectors(hdr->keyBytes) << SECTOR_SHIFT;
 	buffer = crypt_safe_alloc(buffer_size);
 	if (!buffer || buffer_size < LUKS_ALIGN_KEYSLOTS) {
 		r = -ENOMEM;
@@ -218,7 +218,8 @@ int LUKS_hdr_restore(
 	}
 
 	r = LUKS_read_phdr_backup(backup_file, device, &hdr_file, 0, ctx);
-	buffer_size = hdr_file.payloadOffset << SECTOR_SHIFT;
+	if (!r)
+		buffer_size = LUKS_device_sectors(hdr_file.keyBytes) << SECTOR_SHIFT;
 
 	if (r || buffer_size < LUKS_ALIGN_KEYSLOTS) {
 		log_err(ctx, _("Backup file doesn't contain valid LUKS header.\n"));
@@ -511,6 +512,9 @@ int LUKS_read_phdr(const char *device,
 		r = _check_and_convert_hdr(device, hdr, require_luks_device,
 					   repair, ctx);
 
+	if (!r)
+		r = LUKS_check_device_size(ctx, device, hdr->keyBytes);
+
 	close(devfd);
 	return r;
 }
@@ -528,10 +532,9 @@ int LUKS_write_phdr(const char *device,
 	log_dbg("Updating LUKS header of size %d on device %s",
 		sizeof(struct luks_phdr), device);
 
-	if (LUKS_check_device_size(device, hdr->payloadOffset, hdr->keyBytes)) {
-		log_err(ctx, _("Device %s is too small.\n"), device);
-		return -EINVAL;
-	}
+	r = LUKS_check_device_size(ctx, device, hdr->keyBytes);
+	if (r)
+		return r;
 
 	devfd = open(device,O_RDWR | O_DIRECT | O_SYNC);
 	if(-1 == devfd) {
@@ -1033,14 +1036,17 @@ int LUKS1_activate(struct crypt_device *cd,
 	char *dm_cipher = NULL;
 	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
-		.device = crypt_get_device_name(cd),
-		.cipher = NULL,
+		.target = DM_CRYPT,
 		.uuid   = crypt_get_uuid(cd),
-		.vk    = vk,
-		.offset = crypt_get_data_offset(cd),
-		.iv_offset = 0,
+		.flags  = flags,
 		.size   = 0,
-		.flags  = flags
+		.data_device = crypt_get_device_name(cd),
+		.u.crypt = {
+			.cipher = NULL,
+			.vk     = vk,
+			.offset = crypt_get_data_offset(cd),
+			.iv_offset = 0,
+		}
 	};
 
 	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
@@ -1048,8 +1054,9 @@ int LUKS1_activate(struct crypt_device *cd,
 	else
 		device_check = DEV_EXCL;
 
-	r = device_check_and_adjust(cd, dmd.device, device_check,
-				    &dmd.size, &dmd.offset, &dmd.flags);
+	r = device_check_and_adjust(cd, dmd.data_device, device_check,
+				    &dmd.size, &dmd.u.crypt.offset,
+				    &dmd.flags);
 	if (r)
 		return r;
 
@@ -1057,7 +1064,7 @@ int LUKS1_activate(struct crypt_device *cd,
 	if (r < 0)
 		return -ENOMEM;
 
-	dmd.cipher = dm_cipher;
+	dmd.u.crypt.cipher = dm_cipher;
 	r = dm_create_device(name, CRYPT_LUKS1, &dmd, 0);
 
 	free(dm_cipher);

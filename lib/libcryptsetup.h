@@ -301,6 +301,8 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
 #define CRYPT_LUKS1 "LUKS1"
 /** loop-AES compatibility mode */
 #define CRYPT_LOOPAES "LOOPAES"
+/** dm-verity mode */
+#define CRYPT_VERITY "VERITY"
 
 /**
  * Get device type
@@ -349,6 +351,34 @@ struct crypt_params_loopaes {
 	const char *hash; /**< key hash function */
 	uint64_t offset;  /**< offset in sectors */
 	uint64_t skip;    /**< IV offset / initialization sector */
+};
+
+/**
+ *
+ * Structure used as parameter for dm-verity device type
+ *
+ * @see crypt_format, crypt_load
+ *
+ */
+/** No on-disk header (only hashes) */
+#define CRYPT_VERITY_NO_HEADER   (1 << 0)
+/** Verity hash in userspace before activation */
+#define CRYPT_VERITY_CHECK_HASH  (1 << 1)
+/** Create hash - format hash device */
+#define CRYPT_VERITY_CREATE_HASH (1 << 2)
+
+struct crypt_params_verity {
+	const char *hash_name;     /**< hash function */
+	const char *data_device;   /**< data_device (CRYPT_VERITY_CREATE_HASH) */
+	const char *hash_device;   /**< hash_device (output only) */
+	const char *salt;          /**< salt */
+	uint64_t salt_size;        /**< salt size (in bytes) */
+	uint32_t data_block_size;  /**< data block size (in bytes) */
+	uint32_t hash_block_size;  /**< hash block size (in bytes) */
+	uint64_t data_size;        /**< data area size (in data blocks) */
+	uint64_t hash_area_offset; /**< hash/header offset (in bytes) */
+	uint32_t hash_type;        /**< in-kernel hashing type */
+	uint32_t flags;            /**< CRYPT_VERITY* flags */
 };
 
 /** @} */
@@ -643,6 +673,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_ALLOW_DISCARDS (1 << 3)
 /** skip global udev rules in activation ("private device"), input only */
 #define CRYPT_ACTIVATE_PRIVATE (1 << 4)
+/** corruption detected (verity), output only */
+#define CRYPT_ACTIVATE_CORRUPTED (1 << 5)
 
 /**
  * Active device runtime attributes
@@ -893,6 +925,18 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd);
  *
  */
 int crypt_get_volume_key_size(struct crypt_device *cd);
+
+/**
+ * Get device paramaters for CRYPT_VERITY device
+ *
+ * @param cd crypt device handle
+ * @param vp verity device info
+ *
+ * @e 0 on success or negative errno value otherwise.
+ *
+ */
+int crypt_get_verity_info(struct crypt_device *cd,
+	struct crypt_params_verity *vp);
 
 /**
  * @addtogroup keyslot

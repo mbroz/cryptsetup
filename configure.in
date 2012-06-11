@@ -186,7 +186,12 @@ if test x$enable_static_cryptsetup = xyes; then
 		enable_static=yes
 	fi
 fi
-AM_CONDITIONAL(STATIC_CRYPTSETUP, test x$enable_static_cryptsetup = xyes)
+AM_CONDITIONAL(STATIC_TOOLS, test x$enable_static_cryptsetup = xyes)
+
+AC_ARG_ENABLE(veritysetup,
+	AS_HELP_STRING([--disable-veritysetup],
+	[disable veritysetup support]),[], [enable_veritysetup=yes])
+AM_CONDITIONAL(VERITYSETUP, test x$enable_veritysetup = xyes)
 
 AC_ARG_ENABLE(selinux,
 	AS_HELP_STRING([--disable-selinux],
@@ -338,6 +343,11 @@ CS_NUM_WITH([loopaes-keybits],[key length in bits for loop-AES mode], [256])
 CS_NUM_WITH([keyfile-size-maxkb],[maximum keyfile size (in kilobytes)], [8192])
 CS_NUM_WITH([passphrase-size-max],[maximum keyfile size (in kilobytes)], [512])
 
+CS_STR_WITH([verity-hash],       [hash function for verity mode], [sha256])
+CS_NUM_WITH([verity-data-block], [data block size for verity mode], [4096])
+CS_NUM_WITH([verity-hash-block], [hash block size for verity mode], [4096])
+CS_NUM_WITH([verity-salt-size],  [salt size for verity mode], [32])
+
 dnl ==========================================================================
 
 AC_CONFIG_FILES([ Makefile
@@ -346,6 +356,7 @@ lib/libcryptsetup.pc
 lib/crypto_backend/Makefile
 lib/luks1/Makefile
 lib/loopaes/Makefile
+lib/verity/Makefile
 src/Makefile
 po/Makefile.in
 man/Makefile

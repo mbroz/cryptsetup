@@ -9,6 +9,7 @@ INCLUDES = \
 	-DVERSION=\""$(VERSION)"\"		\
 	-D_GNU_SOURCE
 
+# cryptsetup
 cryptsetup_SOURCES = \
 	$(top_builddir)/lib/utils_crypt.c	\
 	$(top_builddir)/lib/utils_loop.c	\
@@ -25,7 +26,7 @@ cryptsetup_CFLAGS = -Wall
 
 sbin_PROGRAMS=cryptsetup
 
-if STATIC_CRYPTSETUP
+if STATIC_TOOLS
 sbin_PROGRAMS += cryptsetup.static
 cryptsetup_static_SOURCES = $(cryptsetup_SOURCES)
 cryptsetup_static_CFLAGS = $(cryptsetup_CFLAGS)
@@ -34,4 +35,32 @@ cryptsetup_static_LDADD = $(cryptsetup_LDADD)	\
 	@CRYPTO_STATIC_LIBS@			\
 	@DEVMAPPER_STATIC_LIBS@			\
 	@UUID_LIBS@
+endif
+
+# veritysetup
+if VERITYSETUP
+
+veritysetup_SOURCES = \
+	$(top_builddir)/lib/utils_loop.c	\
+	veritysetup.c				\
+	cryptsetup.h
+
+veritysetup_LDADD = \
+	$(top_builddir)/lib/libcryptsetup.la	\
+	@POPT_LIBS@
+
+veritysetup_CFLAGS = $(cryptsetup_CFLAGS)
+
+sbin_PROGRAMS += veritysetup
+
+if STATIC_TOOLS
+sbin_PROGRAMS += veritysetup.static
+veritysetup_static_SOURCES = $(veritysetup_SOURCES)
+veritysetup_static_CFLAGS = $(veritysetup_CFLAGS)
+veritysetup_static_LDFLAGS = -all-static
+veritysetup_static_LDADD = $(veritysetup_LDADD)	\
+	@CRYPTO_STATIC_LIBS@ \
+	@DEVMAPPER_STATIC_LIBS@ \
+	@UUID_LIBS@
+endif
 endif

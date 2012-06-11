@@ -1,0 +1,129 @@
+.TH VERITYSETUP "8" "June 2012" "veritysetup" "Maintenance Commands"
+.SH NAME
+veritysetup - manage dm-verity (block level verification) volumes
+.SH SYNOPSIS
+.B veritysetup <options> <action> <action args>
+.SH DESCRIPTION
+.PP
+Veritysetup is used to configure dm-verity managed device-mapper mappings.
+
+Device-mapper verity target provides read-only transparent integrity
+checking of block devices using kernel crypto API.
+
+The dm-verity devices are always read-only.
+
+Veritysetup supports these operations:
+.PP
+\fIformat\fR <data_device> <hash_device>
+.IP
+Calculates and permanently stores hash verification data for data_device.
+Hash area can be located on the same device after data if specified
+by \-\-hash\-offset option.
+
+Note you need to provide root hash string for device verification
+or activation. Root hash must be trusted.
+
+If data or hash device argument points to regular file, veritysetup
+allocates loopback device. In this case, hash file size must be enough
+to store the hash area.
+
+\fB<options>\fR can be [\-\-hash, \-\-no-superblock, \-\-format,
+\-\-data-block-size, \-\-hash-block-size, \-\-data-blocks, \-\-hash-offset,
+\-\-salt, \-\-uuid]
+.PP
+\fIcreate\fR <name> <data_device> <hash_device> <root_hash>
+.IP
+Creates a mapping with <name> backed by device <data_device> and using
+<hash_device> for in-kernel verification.
+
+The <root_hash> is a hexadecimal string.
+
+\fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock]
+
+If option \-\-no-superblock is used, you have to use as the same options
+as in initial format operation.
+.PP
+\fIremove\fR <name>
+.IP
+Removes existing mapping <name>.
+.PP
+\fIstatus\fR <name>
+.IP
+Reports status for the active verity mapping <name>.
+.PP
+\fIdump\fR <hash_device>
+.IP
+Reports parameters of verity device from on-disk stored superblock.
+
+\fB<options>\fR can be [\-\-no-superblock]
+.SH OPTIONS
+.TP
+.B "\-\-verbose, \-v"
+Print more information on command execution.
+.TP
+.B "\-\-debug"
+Run in debug mode with full diagnostic logs. Debug output
+lines are always prefixed by '#'.
+.TP
+.B "\-\-no-superblock"
+Create or use dm-verity without permanent on-disk superblock.
+.TP
+.B "\-\-format=number"
+Specifies the hash version type.
+Format type 0 is original Chrome OS verion. Format type 1 is current version.
+.TP
+.B "\-\-data-block-size=bytes"
+Used block size for the data device.
+(Note kernel supports only page-size as maximum here.)
+.TP
+.B "\-\-hash-block-size=bytes"
+Used block size for the hash device.
+(Note kernel supports only page-size as maximum here.)
+.TP
+.B "\-\-data-blocks=blocks"
+Size of data device used in verification.
+If not specified, the whole device is used.
+.TP
+.B "\-\-hash-offset=bytes"
+Offset of hash area/superblock on hash_device.
+Value must be aligned to disk sector offset.
+.TP
+.B "\-\-salt=hex string"
+Salt used for format or verification.
+Format is a hexadecimal string.
+.TP
+.B "\-\-uuid=UUID"
+Use the provided UUID for format command instead of generating new one.
+
+The UUID must be provided in standard UUID format,
+e.g. 12345678-1234-1234-1234-123456789abc.
+.TP
+.B "\-\-version"
+Show the program version.
+.SH RETURN CODES
+Veritysetup returns 0 on success and a non-zero value on error.
+
+Error codes are: 1 wrong parameters, 2 no permission,
+3 out of memory, 4 wrong device specified, 5 device already exists
+or device is busy.
+.SH REPORTING BUGS
+Report bugs, including ones in the documentation, on
+the cryptsetup mailing list at <dm-crypt@saout.de>
+or in the 'Issues' section on LUKS website.
+Please attach the output of the failed command with the
+\-\-debug option added.
+.SH AUTHORS
+The first implementation of veritysetup was written by Chrome OS authors.
+
+This version is based on verification code written by Mikulas Patocka <mpatocka@redhat.com>
+and rewritten for libcryptsetup by Milan Broz <gmazyland@gmail.com>.
+.SH COPYRIGHT
+Copyright \(co 2012 Red Hat, Inc.
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+.SH SEE ALSO
+The project website at \fBhttp://code.google.com/p/cryptsetup/\fR
+
+The verity on-disk format specification available at
+\fBhttp://code.google.com/p/cryptsetup/wiki/DMVerity\fR

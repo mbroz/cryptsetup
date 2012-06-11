@@ -1,4 +1,4 @@
-SUBDIRS = crypto_backend luks1 loopaes
+SUBDIRS = crypto_backend luks1 loopaes verity
 
 moduledir = $(libdir)/cryptsetup
 
@@ -10,6 +10,7 @@ INCLUDES = \
 	-I$(top_srcdir)/lib/crypto_backend	\
 	-I$(top_srcdir)/lib/luks1		\
 	-I$(top_srcdir)/lib/loopaes		\
+	-I$(top_srcdir)/lib/verity		\
 	-DDATADIR=\""$(datadir)"\"		\
 	-DLIBDIR=\""$(libdir)"\"		\
 	-DPREFIX=\""$(prefix)"\"		\
@@ -24,7 +25,8 @@ lib_LTLIBRARIES = libcryptsetup.la
 common_ldadd = \
 	crypto_backend/libcrypto_backend.la	\
 	luks1/libluks1.la			\
-	loopaes/libloopaes.la
+	loopaes/libloopaes.la			\
+	verity/libverity.la
 
 libcryptsetup_la_DEPENDENCIES = $(common_ldadd) libcryptsetup.sym
 

@@ -32,11 +32,14 @@
 #include <inttypes.h>
 
 #include "nls.h"
+#include "bitops.h"
 #include "utils_crypt.h"
 #include "utils_loop.h"
 #include "utils_dm.h"
 #include "utils_fips.h"
 #include "crypto_backend.h"
+
+#include "libcryptsetup.h"
 
 /* to silent gcc -Wcast-qual for const cast */
 #define CONST_CAST(x) (x)(uintptr_t)
@@ -73,6 +76,8 @@ ssize_t read_blockwise(int fd, void *_buf, size_t count);
 ssize_t write_lseek_blockwise(int fd, char *buf, size_t count, off_t offset);
 int device_ready(struct crypt_device *cd, const char *device, int mode);
 int device_size(const char *device, uint64_t *size);
+
+unsigned crypt_getpagesize(void);
 
 enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
 int device_check_and_adjust(struct crypt_device *cd,

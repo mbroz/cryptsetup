@@ -27,6 +27,7 @@
 
 struct crypt_device;
 struct volume_key;
+struct crypt_params_verity;
 
 /* Device mapper backend - kernel support flags */
 #define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
@@ -34,27 +35,47 @@ struct volume_key;
 #define DM_SECURE_SUPPORTED   (1 << 2)	/* wipe (secure) buffer flag */
 #define DM_PLAIN64_SUPPORTED  (1 << 3)	/* plain64 IV */
 #define DM_DISCARDS_SUPPORTED (1 << 4)	/* discards/TRIM option is supported */
+#define DM_VERITY_SUPPORTED   (1 << 5)	/* dm-verity target supported */
 uint32_t dm_flags(void);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)
-#define DM_ACTIVE_CIPHER	(1 << 1)
-#define DM_ACTIVE_UUID		(1 << 2)
-#define DM_ACTIVE_KEYSIZE	(1 << 3)
-#define DM_ACTIVE_KEY		(1 << 4)
+#define DM_ACTIVE_UUID		(1 << 1)
+
+#define DM_ACTIVE_CRYPT_CIPHER	(1 << 2)
+#define DM_ACTIVE_CRYPT_KEYSIZE	(1 << 3)
+#define DM_ACTIVE_CRYPT_KEY	(1 << 4)
+
+#define DM_ACTIVE_VERITY_ROOT_HASH	(1 << 5)
+#define DM_ACTIVE_VERITY_HASH_DEVICE	(1 << 6)
+#define DM_ACTIVE_VERITY_PARAMS		(1 << 7)
 
 struct crypt_dm_active_device {
-	const char *device;
-	const char *cipher;
-	const char *uuid;
-
-	/* Active key for device */
-	struct volume_key *vk;
-
-	/* struct crypt_active_device */
-	uint64_t offset;	/* offset in sectors */
-	uint64_t iv_offset;	/* IV initilisation sector */
+	enum { DM_CRYPT = 0, DM_VERITY } target;
 	uint64_t size;		/* active device size */
 	uint32_t flags;		/* activation flags */
+	const char *uuid;
+	const char *data_device;
+	union {
+	struct {
+		const char *cipher;
+
+		/* Active key for device */
+		struct volume_key *vk;
+
+		/* struct crypt_active_device */
+		uint64_t offset;	/* offset in sectors */
+		uint64_t iv_offset;	/* IV initilisation sector */
+	} crypt;
+	struct {
+		const char *hash_device;
+
+		const char *root_hash;
+		uint32_t root_hash_size;
+
+		uint64_t hash_offset;	/* hash offset in blocks (not header) */
+		struct crypt_params_verity *vp;
+	} verity;
+	} u;
 };
 
 const char *dm_get_dir(void);
@@ -63,6 +84,7 @@ void dm_exit(void);
 int dm_remove_device(const char *name, int force, uint64_t size);
 int dm_status_device(const char *name);
 int dm_status_suspended(const char *name);
+int dm_status_verity_ok(const char *name);
 int dm_query_device(const char *name, uint32_t get_flags,
 		    struct crypt_dm_active_device *dmd);
 int dm_create_device(const char *name,

@@ -986,7 +986,8 @@ static void AddDeviceLuks(void)
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_0S, r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
-	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_payload_offset - 1));
+	//OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_payload_offset - 1));
+	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, 2050 - 1)); //FIXME last keyslot - 1 sector
 
 	// 1 sector less than required
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_WRONG));
@@ -1298,8 +1299,10 @@ static void LuksHeaderLoad(void)
 	// external header device
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	// prepared header on a device too small to contain header and payload
-	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_payload_offset - 1));
-	snprintf(cmd, sizeof(cmd), "dd if=" EVL_HEADER_4 " of=" DMDIR H_DEVICE_WRONG " bs=512 count=%" PRIu64, r_payload_offset - 1);
+	//OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_payload_offset - 1));
+	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, 2050 - 1)); //FIXME
+	//snprintf(cmd, sizeof(cmd), "dd if=" EVL_HEADER_4 " of=" DMDIR H_DEVICE_WRONG " bs=512 count=%" PRIu64, r_payload_offset - 1);
+	snprintf(cmd, sizeof(cmd), "dd if=" EVL_HEADER_4 " of=" DMDIR H_DEVICE_WRONG " bs=512 count=%" PRIu64, 2050ULL - 1);
 	OK_(_system(cmd, 1));
 	// some device
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
@@ -1342,7 +1345,7 @@ static void LuksHeaderLoad(void)
 	crypt_free(cd);
 
 	// damaged header
-	OK_(_system("dd if=/dev/zero of=" DMDIR L_DEVICE_0S "bs=512 count=8", 1));
+	OK_(_system("dd if=/dev/zero of=" DMDIR L_DEVICE_OK " bs=512 count=8", 1));
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	FAIL_(crypt_load(cd, CRYPT_LUKS1, NULL), "Header not found");
 	crypt_free(cd);

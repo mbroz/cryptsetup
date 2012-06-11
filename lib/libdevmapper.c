@@ -28,12 +28,12 @@
 #include <uuid/uuid.h>
 
 #include "internal.h"
-#include "luks.h"
 
 #define DM_UUID_LEN		129
 #define DM_UUID_PREFIX		"CRYPT-"
 #define DM_UUID_PREFIX_LEN	6
 #define DM_CRYPT_TARGET		"crypt"
+#define DM_VERITY_TARGET	"verity"
 #define RETRY_COUNT		5
 
 /* Set if dm-crypt version was probed */
@@ -127,6 +127,16 @@ static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 		_dm_crypt_checked = 1;
 }
 
+static void _dm_set_verity_compat(const char *dm_version, unsigned verity_maj,
+				   unsigned verity_min, unsigned verity_patch)
+{
+	if (verity_maj > 0)
+		_dm_crypt_flags |= DM_VERITY_SUPPORTED;
+
+	log_dbg("Detected dm-verity version %i.%i.%i.",
+		verity_maj, verity_min, verity_patch);
+}
+
 static int _dm_check_versions(void)
 {
 	struct dm_task *dmt;
@@ -155,6 +165,11 @@ static int _dm_check_versions(void)
 		last_target = target;
 		if (!strcmp(DM_CRYPT_TARGET, target->name)) {
 			_dm_set_crypt_compat(dm_version,
+					     (unsigned)target->version[0],
+					     (unsigned)target->version[1],
+					     (unsigned)target->version[2]);
+		} else if (!strcmp(DM_VERITY_TARGET, target->name)) {
+			_dm_set_verity_compat(dm_version,
 					     (unsigned)target->version[0],
 					     (unsigned)target->version[1],
 					     (unsigned)target->version[2]);
@@ -241,11 +256,30 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
-static char *get_params(struct crypt_dm_active_device *dmd)
+static size_t hex_to_bytes(const char *hex, char *result)
+{
+	char buf[3] = "xx\0", *endp;
+	size_t i, len;
+
+	len = strlen(hex) / 2;
+	for (i = 0; i < len; i++) {
+		memcpy(buf, &hex[i * 2], 2);
+		result[i] = strtoul(buf, &endp, 16);
+		if (endp != &buf[2])
+			return -EINVAL;
+	}
+	return i;
+}
+
+/* http://code.google.com/p/cryptsetup/wiki/DMCrypt */
+static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd)
 {
 	int r, max_size, null_cipher = 0;
 	char *params, *hexkey;
 	const char *features = "";
+
+	if (!dmd)
+		return NULL;
 
 	if (dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) {
 		if (dm_flags() & DM_DISCARDS_SUPPORTED) {
@@ -255,27 +289,27 @@ static char *get_params(struct crypt_dm_active_device *dmd)
 			log_dbg("Discard/TRIM is not supported by the kernel.");
 	}
 
-	if (!strncmp(dmd->cipher, "cipher_null-", 12))
+	if (!strncmp(dmd->u.crypt.cipher, "cipher_null-", 12))
 		null_cipher = 1;
 
-	hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->vk->keylength * 2 + 1));
+	hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->u.crypt.vk->keylength * 2 + 1));
 	if (!hexkey)
 		return NULL;
 
 	if (null_cipher)
 		strncpy(hexkey, "-", 2);
 	else
-		hex_key(hexkey, dmd->vk->keylength, dmd->vk->key);
+		hex_key(hexkey, dmd->u.crypt.vk->keylength, dmd->u.crypt.vk->key);
 
-	max_size = strlen(hexkey) + strlen(dmd->cipher) +
-		   strlen(dmd->device) + strlen(features) + 64;
+	max_size = strlen(hexkey) + strlen(dmd->u.crypt.cipher) +
+		   strlen(dmd->data_device) + strlen(features) + 64;
 	params = crypt_safe_alloc(max_size);
 	if (!params)
 		goto out;
 
 	r = snprintf(params, max_size, "%s %s %" PRIu64 " %s %" PRIu64 "%s",
-		     dmd->cipher, hexkey, dmd->iv_offset, dmd->device,
-		     dmd->offset, features);
+		     dmd->u.crypt.cipher, hexkey, dmd->u.crypt.iv_offset,
+		     dmd->data_device, dmd->u.crypt.offset, features);
 	if (r < 0 || r >= max_size) {
 		crypt_safe_free(params);
 		params = NULL;
@@ -283,6 +317,56 @@ static char *get_params(struct crypt_dm_active_device *dmd)
 out:
 	crypt_safe_free(hexkey);
 	return params;
+}
+
+/* http://code.google.com/p/cryptsetup/wiki/DMVerity */
+static char *get_dm_verity_params(struct crypt_params_verity *vp,
+				   struct crypt_dm_active_device *dmd)
+{
+	int max_size, r;
+	char *params = NULL, *hexroot = NULL, *hexsalt = NULL;
+
+	if (!vp || !dmd)
+		return NULL;
+
+	hexroot = crypt_safe_alloc(dmd->u.verity.root_hash_size * 2 + 1);
+	if (!hexroot)
+		goto out;
+	hex_key(hexroot, dmd->u.verity.root_hash_size, dmd->u.verity.root_hash);
+
+	hexsalt = crypt_safe_alloc(vp->salt_size ? vp->salt_size * 2 + 1 : 2);
+	if (!hexsalt)
+		goto out;
+	if (vp->salt_size)
+		hex_key(hexsalt, vp->salt_size, vp->salt);
+	else
+		strncpy(hexsalt, "-", 2);
+
+	max_size = strlen(hexroot) + strlen(hexsalt) +
+		   strlen(dmd->data_device) +
+		   strlen(dmd->u.verity.hash_device) +
+		   strlen(vp->hash_name) + 128;
+
+	params = crypt_safe_alloc(max_size);
+	if (!params)
+		goto out;
+
+	r = snprintf(params, max_size,
+		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s",
+		     vp->hash_type, dmd->data_device,
+		     dmd->u.verity.hash_device,
+		     vp->data_block_size, vp->hash_block_size,
+		     vp->data_size, dmd->u.verity.hash_offset,
+		     vp->hash_name, hexroot, hexsalt);
+	if (r < 0 || r >= max_size) {
+		crypt_safe_free(params);
+		params = NULL;
+	}
+out:
+	crypt_safe_free(hexroot);
+	crypt_safe_free(hexsalt);
+	return params;
+
 }
 
 /* DM helpers */
@@ -423,25 +507,20 @@ static void dm_prepare_uuid(const char *name, const char *type, const char *uuid
 		log_err(NULL, _("DM-UUID for device %s was truncated.\n"), name);
 }
 
-int dm_create_device(const char *name,
-		     const char *type,
-		     struct crypt_dm_active_device *dmd,
-		     int reload)
+static int _dm_create_device(const char *name, const char *type,
+			     const char *device, uint32_t flags,
+			     const char *uuid, uint64_t size,
+			     char *params, int reload)
 {
 	struct dm_task *dmt = NULL;
 	struct dm_info dmi;
-	char *params = NULL;
 	char dev_uuid[DM_UUID_LEN] = {0};
 	int r = -EINVAL;
 	uint32_t read_ahead = 0;
 	uint32_t cookie = 0;
 	uint16_t udev_flags = 0;
 
-	params = get_params(dmd);
-	if (!params)
-		goto out_no_removal;
-
-	if (dmd->flags & CRYPT_ACTIVATE_PRIVATE)
+	if (flags & CRYPT_ACTIVATE_PRIVATE)
 		udev_flags = CRYPT_TEMP_UDEV_FLAGS;
 
 	/* All devices must have DM_UUID, only resize on old device is exception */
@@ -452,7 +531,7 @@ int dm_create_device(const char *name,
 		if (!dm_task_set_name(dmt, name))
 			goto out_no_removal;
 	} else {
-		dm_prepare_uuid(name, type, dmd->uuid, dev_uuid, sizeof(dev_uuid));
+		dm_prepare_uuid(name, type, uuid, dev_uuid, sizeof(dev_uuid));
 
 		if (!(dmt = dm_task_create(DM_DEVICE_CREATE)))
 			goto out_no_removal;
@@ -469,13 +548,15 @@ int dm_create_device(const char *name,
 
 	if ((dm_flags() & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
 		goto out_no_removal;
-	if ((dmd->flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
+	if ((flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
 		goto out_no_removal;
-	if (!dm_task_add_target(dmt, 0, dmd->size, DM_CRYPT_TARGET, params))
+
+	if (!dm_task_add_target(dmt, 0, size,
+		!strcmp("VERITY", type) ? DM_VERITY_TARGET : DM_CRYPT_TARGET, params))
 		goto out_no_removal;
 
 #ifdef DM_READ_AHEAD_MINIMUM_FLAG
-	if (device_read_ahead(dmd->device, &read_ahead) &&
+	if (device_read_ahead(device, &read_ahead) &&
 	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
 		goto out_no_removal;
 #endif
@@ -489,7 +570,7 @@ int dm_create_device(const char *name,
 			goto out;
 		if (!dm_task_set_name(dmt, name))
 			goto out;
-		if (dmd->uuid && !dm_task_set_uuid(dmt, dev_uuid))
+		if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
 			goto out;
 		if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
 			goto out;
@@ -523,11 +604,31 @@ out_no_removal:
 	return r;
 }
 
-static int dm_status_dmi(const char *name, struct dm_info *dmi)
+int dm_create_device(const char *name,
+		     const char *type,
+		     struct crypt_dm_active_device *dmd,
+		     int reload)
+{
+	char *table_params = NULL;
+
+	if (dmd->target == DM_CRYPT)
+		table_params = get_dm_crypt_params(dmd);
+	else if (dmd->target == DM_VERITY)
+		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd);
+
+	if (!table_params || !type)
+		return -EINVAL;
+
+	return _dm_create_device(name, type, dmd->data_device, dmd->flags,
+				 dmd->uuid, dmd->size, table_params, reload);
+}
+
+static int dm_status_dmi(const char *name, struct dm_info *dmi,
+			  const char *target, char **status_line)
 {
 	struct dm_task *dmt;
 	uint64_t start, length;
-	char *target_type, *params;
+	char *target_type, *params = NULL;
 	void *next = NULL;
 	int r = -EINVAL;
 
@@ -550,12 +651,22 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi)
 
 	next = dm_get_next_target(dmt, next, &start, &length,
 	                          &target_type, &params);
-	if (!target_type || strcmp(target_type, DM_CRYPT_TARGET) != 0 ||
-	    start != 0 || next)
-		r = -EINVAL;
-	else
-		r = 0;
+
+	if (!target_type || start != 0 || next)
+		goto out;
+
+	if (target && strcmp(target_type, target))
+		goto out;
+
+	/* for target == NULL check all supported */
+	if (!target && (strcmp(target_type, DM_CRYPT_TARGET) &&
+			strcmp(target_type, DM_VERITY_TARGET)))
+		goto out;
+	r = 0;
 out:
+	if (!r && status_line && !(*status_line = strdup(params)))
+		r = -ENOMEM;
+
 	if (dmt)
 		dm_task_destroy(dmt);
 
@@ -567,7 +678,7 @@ int dm_status_device(const char *name)
 	int r;
 	struct dm_info dmi;
 
-	r = dm_status_dmi(name, &dmi);
+	r = dm_status_dmi(name, &dmi, NULL, NULL);
 	if (r < 0)
 		return r;
 
@@ -579,11 +690,236 @@ int dm_status_suspended(const char *name)
 	int r;
 	struct dm_info dmi;
 
-	r = dm_status_dmi(name, &dmi);
+	r = dm_status_dmi(name, &dmi, DM_CRYPT_TARGET, NULL);
 	if (r < 0)
 		return r;
 
 	return dmi.suspended ? 1 : 0;
+}
+
+int dm_status_verity_ok(const char *name)
+{
+	int r;
+	struct dm_info dmi;
+	char *status_line = NULL;
+
+	r = dm_status_dmi(name, &dmi, DM_VERITY_TARGET, &status_line);
+	if (r < 0 || !status_line) {
+		free(status_line);
+		return r;
+	}
+
+	log_dbg("Verity volume %s status is %s.", name, status_line ?: "");
+	r = status_line[0] == 'V' ? 1 : 0;
+	free(status_line);
+
+	return r;
+}
+
+/* FIXME use hex wrapper, user val wrappers for line parsing */
+static int _dm_query_crypt(uint32_t get_flags,
+			   struct dm_info *dmi,
+			   char *params,
+			   struct crypt_dm_active_device *dmd)
+{
+	uint64_t val64;
+	char *rcipher, *key_, *rdevice, *endp, buffer[3], *arg;
+	unsigned int i;
+
+	memset(dmd, 0, sizeof(*dmd));
+	dmd->target = DM_CRYPT;
+
+	rcipher = strsep(&params, " ");
+	/* cipher */
+	if (get_flags & DM_ACTIVE_CRYPT_CIPHER)
+		dmd->u.crypt.cipher = strdup(rcipher);
+
+	/* skip */
+	key_ = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	val64 = strtoull(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	params++;
+
+	dmd->u.crypt.iv_offset = val64;
+
+	/* device */
+	rdevice = strsep(&params, " ");
+	if (get_flags & DM_ACTIVE_DEVICE)
+		dmd->data_device = crypt_lookup_dev(rdevice);
+
+	/*offset */
+	if (!params)
+		return -EINVAL;
+	val64 = strtoull(params, &params, 10);
+	dmd->u.crypt.offset = val64;
+
+	/* Features section, available since crypt target version 1.11 */
+	if (*params) {
+		if (*params != ' ')
+			return -EINVAL;
+		params++;
+
+		/* Number of arguments */
+		val64 = strtoull(params, &params, 10);
+		if (*params != ' ')
+			return -EINVAL;
+		params++;
+
+		for (i = 0; i < val64; i++) {
+			if (!params)
+				return -EINVAL;
+			arg = strsep(&params, " ");
+			if (!strcasecmp(arg, "allow_discards"))
+				dmd->flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+			else /* unknown option */
+				return -EINVAL;
+		}
+
+		/* All parameters shold be processed */
+		if (params)
+			return -EINVAL;
+	}
+
+	/* Never allow to return empty key */
+	if ((get_flags & DM_ACTIVE_CRYPT_KEY) && dmi->suspended) {
+		log_dbg("Cannot read volume key while suspended.");
+		return -EINVAL;
+	}
+
+	if (get_flags & DM_ACTIVE_CRYPT_KEYSIZE) {
+		dmd->u.crypt.vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);
+		if (!dmd->u.crypt.vk)
+			return -ENOMEM;
+
+		if (get_flags & DM_ACTIVE_CRYPT_KEY) {
+			buffer[2] = '\0';
+			for(i = 0; i < dmd->u.crypt.vk->keylength; i++) {
+				memcpy(buffer, &key_[i * 2], 2);
+				dmd->u.crypt.vk->key[i] = strtoul(buffer, &endp, 16);
+				if (endp != &buffer[2]) {
+					crypt_free_volume_key(dmd->u.crypt.vk);
+					dmd->u.crypt.vk = NULL;
+					return -EINVAL;
+				}
+			}
+		}
+	}
+	memset(key_, 0, strlen(key_));
+
+	return 0;
+}
+
+static int _dm_query_verity(uint32_t get_flags,
+			     struct dm_info *dmi,
+			     char *params,
+			     struct crypt_dm_active_device *dmd)
+{
+	struct crypt_params_verity *vp = NULL;
+	uint32_t val32;
+	uint64_t val64;
+	size_t len;
+	char *str, *str2;
+
+	if (get_flags & DM_ACTIVE_VERITY_PARAMS)
+		vp = dmd->u.verity.vp;
+
+	memset(dmd, 0, sizeof(*dmd));
+
+	dmd->target = DM_VERITY;
+	dmd->u.verity.vp = vp;
+
+	/* version */
+	val32 = strtoul(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	if (vp)
+		vp->hash_type = val32;
+	params++;
+
+	/* data device */
+	str = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	if (get_flags & DM_ACTIVE_DEVICE)
+		dmd->data_device = crypt_lookup_dev(str);
+
+	/* hash device */
+	str = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE)
+		dmd->u.verity.hash_device = crypt_lookup_dev(str);
+
+	/* data block size*/
+	val32 = strtoul(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	if (vp)
+		vp->data_block_size = val32;
+	params++;
+
+	/* hash block size */
+	val32 = strtoul(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	if (vp)
+		vp->hash_block_size = val32;
+	params++;
+
+	/* data blocks */
+	val64 = strtoull(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	if (vp)
+		vp->data_size = val64;
+	params++;
+
+	/* hash start */
+	val64 = strtoull(params, &params, 10);
+	if (*params != ' ')
+		return -EINVAL;
+	dmd->u.verity.hash_offset = val64;
+	params++;
+
+	/* hash algorithm */
+	str = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	if (vp)
+		vp->hash_name = strdup(str);
+
+	/* root digest */
+	str = strsep(&params, " ");
+	if (!params)
+		return -EINVAL;
+	len = strlen(str) / 2;
+	dmd->u.verity.root_hash_size = len;
+	if (get_flags & DM_ACTIVE_VERITY_ROOT_HASH) {
+		if (!(str2 = malloc(len)))
+			return -ENOMEM;
+		if (hex_to_bytes(str, str2) != len)
+			return -EINVAL;
+		dmd->u.verity.root_hash = str2;
+	}
+
+	/* salt */
+	str = strsep(&params, " ");
+	if (params)
+		return -EINVAL;
+	if (vp) {
+		len = strlen(str) / 2;
+		vp->salt_size = len;
+		if (!(str2 = malloc(len)))
+			return -ENOMEM;
+		if (hex_to_bytes(str, str2) != len)
+			return -EINVAL;
+		vp->salt = str2;
+	}
+
+	return 0;
 }
 
 int dm_query_device(const char *name, uint32_t get_flags,
@@ -591,14 +927,11 @@ int dm_query_device(const char *name, uint32_t get_flags,
 {
 	struct dm_task *dmt;
 	struct dm_info dmi;
-	uint64_t start, length, val64;
-	char *target_type, *params, *rcipher, *key_, *rdevice, *endp, buffer[3], *arg;
+	uint64_t start, length;
+	char *target_type, *params;
 	const char *tmp_uuid;
 	void *next = NULL;
-	unsigned int i;
 	int r = -EINVAL;
-
-	memset(dmd, 0, sizeof(*dmd));
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
 		goto out;
@@ -619,103 +952,36 @@ int dm_query_device(const char *name, uint32_t get_flags,
 		goto out;
 	}
 
-	tmp_uuid = dm_task_get_uuid(dmt);
-
 	next = dm_get_next_target(dmt, next, &start, &length,
 	                          &target_type, &params);
-	if (!target_type || strcmp(target_type, DM_CRYPT_TARGET) != 0 ||
-	    start != 0 || next)
+
+	if (!target_type || start != 0 || next)
+		goto out;
+
+	if (!strcmp(target_type, DM_CRYPT_TARGET)) {
+		r = _dm_query_crypt(get_flags, &dmi, params, dmd);
+	} else if (!strcmp(target_type, DM_VERITY_TARGET)) {
+		r = _dm_query_verity(get_flags, &dmi, params, dmd);
+		if (r < 0)
+			goto out;
+		r = dm_status_verity_ok(name);
+		if (r < 0)
+			goto out;
+		if (r == 0)
+			dmd->flags |= CRYPT_ACTIVATE_CORRUPTED;
+		r = 0;
+	} else
+		r = -EINVAL;
+
+	if (r < 0)
 		goto out;
 
 	dmd->size = length;
 
-	rcipher = strsep(&params, " ");
-	/* cipher */
-	if (get_flags & DM_ACTIVE_CIPHER)
-		dmd->cipher = strdup(rcipher);
-
-	/* skip */
-	key_ = strsep(&params, " ");
-	if (!params)
-		goto out;
-	val64 = strtoull(params, &params, 10);
-	if (*params != ' ')
-		goto out;
-	params++;
-
-	dmd->iv_offset = val64;
-
-	/* device */
-	rdevice = strsep(&params, " ");
-	if (get_flags & DM_ACTIVE_DEVICE)
-		dmd->device = crypt_lookup_dev(rdevice);
-
-	/*offset */
-	if (!params)
-		goto out;
-	val64 = strtoull(params, &params, 10);
-	dmd->offset = val64;
-
-	/* Features section, available since crypt target version 1.11 */
-	if (*params) {
-		if (*params != ' ')
-			goto out;
-		params++;
-
-		/* Number of arguments */
-		val64 = strtoull(params, &params, 10);
-		if (*params != ' ')
-			goto out;
-		params++;
-
-		for (i = 0; i < val64; i++) {
-			if (!params)
-				goto out;
-			arg = strsep(&params, " ");
-			if (!strcasecmp(arg, "allow_discards"))
-				dmd->flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
-			else /* unknown option */
-				goto out;
-		}
-
-		/* All parameters shold be processed */
-		if (params)
-			goto out;
-	}
-
-	/* Never allow to return empty key */
-	if ((get_flags & DM_ACTIVE_KEY) && dmi.suspended) {
-		log_dbg("Cannot read volume key while suspended.");
-		r = -EINVAL;
-		goto out;
-	}
-
-	if (get_flags & DM_ACTIVE_KEYSIZE) {
-		dmd->vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);
-		if (!dmd->vk) {
-			r = -ENOMEM;
-			goto out;
-		}
-
-		if (get_flags & DM_ACTIVE_KEY) {
-			buffer[2] = '\0';
-			for(i = 0; i < dmd->vk->keylength; i++) {
-				memcpy(buffer, &key_[i * 2], 2);
-				dmd->vk->key[i] = strtoul(buffer, &endp, 16);
-				if (endp != &buffer[2]) {
-					crypt_free_volume_key(dmd->vk);
-					dmd->vk = NULL;
-					r = -EINVAL;
-					goto out;
-				}
-			}
-		}
-	}
-	memset(key_, 0, strlen(key_));
-
 	if (dmi.read_only)
 		dmd->flags |= CRYPT_ACTIVATE_READONLY;
 
+	tmp_uuid = dm_task_get_uuid(dmt);
 	if (!tmp_uuid)
 		dmd->flags |= CRYPT_ACTIVATE_NO_UUID;
 	else if (get_flags & DM_ACTIVE_UUID) {
@@ -833,13 +1099,14 @@ int dm_check_segment(const char *name, uint64_t offset, uint64_t size)
 	if (r < 0)
 		return r;
 
-	if (offset >= (dmd.offset + dmd.size) || (offset + size) <= dmd.offset)
+	if (offset >= (dmd.u.crypt.offset + dmd.size) ||
+	   (offset + size) <= dmd.u.crypt.offset)
 		r = 0;
 	else
 		r = -EBUSY;
 
 	log_dbg("seg: %" PRIu64 " - %" PRIu64 ", new %" PRIu64 " - %" PRIu64 "%s",
-	       dmd.offset, dmd.offset + dmd.size, offset, offset + size,
+	       dmd.u.crypt.offset, dmd.u.crypt.offset + dmd.size, offset, offset + size,
 	       r ? " (overlapping)" : " (ok)");
 
 	return r;

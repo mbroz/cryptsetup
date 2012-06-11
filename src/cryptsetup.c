@@ -32,7 +32,6 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <limits.h>
-#include <libcryptsetup.h>
 #include <popt.h>
 
 #include "cryptsetup.h"
@@ -490,6 +489,8 @@ static int action_status(int arg __attribute__((unused)))
 	}
 out:
 	crypt_free(cd);
+	if (r == -ENOTSUP)
+		r = 0;
 	return r;
 }
 
@@ -1321,7 +1322,7 @@ int main(int argc, const char **argv)
 
 	popt_context = poptGetContext(PACKAGE, argc, argv, popt_options, 0);
 	poptSetOtherOptionHelp(popt_context,
-	                       N_("[OPTION...] <action> <action-specific>]"));
+	                       N_("[OPTION...] <action> <action-specific>"));
 
 	while((r = poptGetNextOpt(popt_context)) > 0) {
 		unsigned long long ull_value;
