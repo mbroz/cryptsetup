@@ -43,6 +43,19 @@ The <root_hash> is a hexadecimal string.
 If option \-\-no-superblock is used, you have to use as the same options
 as in initial format operation.
 .PP
+\fIverify\fR <data_device> <hash_device> <root_hash>
+.IP
+Verifies data on data_device with use of hash blocks stored on hash_device.
+
+This command performs userspace verification, no kernel device is created.
+
+The <root_hash> is a hexadecimal string.
+
+\fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock]
+
+If option \-\-no-superblock is used, you have to use as the same options
+as in initial format operation.
+.PP
 \fIremove\fR <name>
 .IP
 Removes existing mapping <name>.
