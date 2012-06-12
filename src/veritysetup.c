@@ -50,18 +50,28 @@ static int opt_version_mode = 0;
 static const char **action_argv;
 static int action_argc;
 
-static size_t hex_to_bytes(const char *hex, char *result)
+static size_t hex_to_bytes(const char *hex, char **result)
 {
-	char buf[3] = "xx\0", *endp;
+	char buf[3] = "xx\0", *endp, *bytes;
 	size_t i, len;
 
-	len = strlen(hex) / 2;
+	len = strlen(hex);
+	if (len % 2)
+		return -EINVAL;
+	len /= 2;
+
+	if (!(bytes = malloc(len)))
+		return -ENOMEM;
+
 	for (i = 0; i < len; i++) {
 		memcpy(buf, &hex[i * 2], 2);
-		result[i] = strtoul(buf, &endp, 16);
-		if (endp != &buf[2])
+		bytes[i] = strtoul(buf, &endp, 16);
+		if (endp != &buf[2]) {
+			free(bytes);
 			return -EINVAL;
+		}
 	}
+	*result = bytes;
 	return i;
 }
 
@@ -118,7 +128,8 @@ static int _prepare_format(struct crypt_params_verity *params,
 			   const char *data_device,
 			   uint32_t flags)
 {
-	static char salt_bytes[512];
+	char *salt = NULL;
+	int len;
 
 	params->hash_name = hash_algorithm ?: DEFAULT_VERITY_HASH;
 	params->data_device = data_device;
@@ -127,14 +138,17 @@ static int _prepare_format(struct crypt_params_verity *params,
 		params->salt_size = 0;
 		params->salt = NULL;
 	} else if (salt_string) {
-		if (hex_to_bytes(salt_string, salt_bytes) * 2 != strlen(salt_string)) {
+		len = hex_to_bytes(salt_string, &salt);
+		if (len < 0) {
 			log_err(_("Invalid salt string specified.\n"));
 			return -EINVAL;
 		}
-		params->salt_size = strlen(salt_string) / 2;
-		params->salt = salt_bytes;
-	} else
+		params->salt_size = len;
+		params->salt = salt;
+	} else {
 		params->salt_size = DEFAULT_VERITY_SALT_SIZE;
+		params->salt = NULL;
+	}
 
 	params->data_block_size = data_block_size;
 	params->hash_block_size = hash_block_size;
@@ -168,6 +182,7 @@ static int action_format(int arg)
 		crypt_dump(cd);
 out:
 	crypt_free(cd);
+	free((char*)params.salt);
 	return r;
 }
 
@@ -180,7 +195,7 @@ static int _activate(const char *dm_device,
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
 	uint32_t activate_flags = CRYPT_ACTIVATE_READONLY;
-	char root_hash_bytes[128];
+	char *root_hash_bytes = NULL;
 	size_t hash_size;
 	int r;
 
@@ -204,8 +219,7 @@ static int _activate(const char *dm_device,
 		goto out;
 
 	hash_size = crypt_get_volume_key_size(cd);
-	if (hash_size * 2 != strlen(root_hash) ||
-	    hex_to_bytes(root_hash, root_hash_bytes) != hash_size) {
+	if (hex_to_bytes(root_hash, &root_hash_bytes) != hash_size) {
 		log_err(_("Invalid root hash string specified.\n"));
 		r = -EINVAL;
 		goto out;
@@ -216,6 +230,8 @@ static int _activate(const char *dm_device,
 					 activate_flags);
 out:
 	crypt_free(cd);
+	free(root_hash_bytes);
+	free((char*)params.salt);
 	return r;
 }
 
