@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <linux/fs.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -60,6 +61,8 @@ static int opt_random = 0;
 static int opt_urandom = 0;
 static int opt_bsize = 4;
 static int opt_new = 0;
+static int opt_directio = 0;
+static int opt_write_log = 0;
 static const char *opt_new_file = NULL;
 
 static const char **action_argv;
@@ -147,6 +150,13 @@ static void _quiet_log(int level, const char *msg, void *usrptr)
 	if (!opt_verbose && (level == CRYPT_LOG_ERROR || level == CRYPT_LOG_NORMAL))
 		level = CRYPT_LOG_VERBOSE;
 	_log(level, msg, usrptr);
+}
+
+/* The difference in seconds between two times in "timeval" format. */
+double time_diff(struct timeval start, struct timeval end)
+{
+	return (end.tv_sec - start.tv_sec)
+		+ (end.tv_usec - start.tv_usec) / 1E6;
 }
 
 static int alignment(int fd)
@@ -328,6 +338,7 @@ static int parse_log(void)
 
 static int open_log(void)
 {
+	int flags;
 	struct stat st;
 
 	if(stat(rnc.log_file, &st) < 0) {
@@ -336,13 +347,15 @@ static int open_log(void)
 		// FIXME: move that somewhere else
 		rnc.reencrypt_direction = BACKWARD;
 
-		rnc.log_fd = open(rnc.log_file, O_RDWR|O_CREAT|O_DIRECT, S_IRUSR|S_IWUSR);
+		flags = opt_directio ? O_RDWR|O_CREAT|O_DIRECT : O_RDWR|O_CREAT;
+		rnc.log_fd = open(rnc.log_file, flags, S_IRUSR|S_IWUSR);
 		if (rnc.log_fd == -1)
 			return -EINVAL;
 		if (write_log() < 0)
 			return -EIO;
 	} else {
 		log_dbg("Log file %s exists, restarting.", rnc.log_file);
+		flags = opt_directio ? O_RDWR|O_DIRECT : O_RDWR;
 		rnc.log_fd = open(rnc.log_file, O_RDWR|O_DIRECT);
 		if (rnc.log_fd == -1)
 			return -EINVAL;
@@ -480,11 +493,12 @@ static int restore_luks_header(const char *backup)
 	return r;
 }
 
-static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *buf)
+static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2;
 	int j;
 
+	*bytes = 0;
 	log_err("Reencrypting [");
 	j = 0;
 	while (rnc.device_offset < rnc.device_size) {
@@ -499,11 +513,12 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 			return -EIO;
 		}
 		rnc.device_offset += s1;
-		if (write_log() < 0) {
+		if (opt_write_log && write_log() < 0) {
 			log_err("Log write error, some data are perhaps lost.\n");
 			return -EIO;
 		}
 
+		*bytes += (uint64_t)s2;
 		if (rnc.device_offset > (j * (rnc.device_size / 10))) {
 			log_err("-");
 			j++;
@@ -514,11 +529,12 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 	return 0;
 }
 
-static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *buf)
+static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2, working_offset, working_block;
 	int j;
 
+	*bytes = 0;
 	log_err("Reencrypting [");
 	j = 10;
 
@@ -547,11 +563,12 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 			return -EIO;
 		}
 		rnc.device_offset -= s1;
-		if (write_log() < 0) {
+		if (opt_write_log && write_log() < 0) {
 			log_err("Log write error, some data are perhaps lost.\n");
 			return -EIO;
 		}
 
+		*bytes += (uint64_t)s2;
 		if (rnc.device_offset < (j * (rnc.device_size / 10))) {
 			log_err("-");
 			j--;
@@ -568,12 +585,15 @@ static int copy_data(void)
 	int fd_old = -1, fd_new = -1;
 	int r = -EINVAL;
 	void *buf = NULL;
+	struct timeval start_time, end_time;
+	double tdiff;
+	uint64_t bytes = 0;
 
-	fd_old = open(rnc.crypt_path_org, O_RDONLY | O_DIRECT);
+	fd_old = open(rnc.crypt_path_org, O_RDONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_old == -1)
 		goto out;
 
-	fd_new = open(rnc.crypt_path_new, O_WRONLY | O_DIRECT);
+	fd_new = open(rnc.crypt_path_new, O_WRONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_new == -1)
 		goto out;
 
@@ -596,13 +616,24 @@ static int copy_data(void)
 	if (!rnc.in_progress && rnc.reencrypt_direction == BACKWARD)
 		rnc.device_offset = rnc.device_size;
 
+	gettimeofday(&start_time, NULL);
+
 	if (rnc.reencrypt_direction == FORWARD)
-		r = copy_data_forward(fd_old, fd_new, block_size, buf);
+		r = copy_data_forward(fd_old, fd_new, block_size, buf, &bytes);
 	else
-		r = copy_data_backward(fd_old, fd_new, block_size, buf);
+		r = copy_data_backward(fd_old, fd_new, block_size, buf, &bytes);
+
+	gettimeofday(&end_time, NULL);
 
 	if (r < 0)
 		log_err("ERROR during reencryption.\n");
+
+	if (write_log() < 0)
+		log_err("Log write error, ignored.\n");
+
+	tdiff = time_diff(start_time, end_time);
+	log_err("Time elapsed %.2f seconds, %" PRIu64 " MB written, speed %.2f MB/s\n",
+		tdiff, bytes / 1024 / 1024, (double)(bytes / 1024 / 1024) / tdiff);
 out:
 	if (fd_old != -1)
 		close(fd_old);
@@ -820,6 +851,8 @@ int main(int argc, const char **argv)
 		{ "batch-mode",        'q',  POPT_ARG_NONE, &opt_batch_mode,            0, N_("Do not ask for confirmation"), NULL },
 		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
 		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },
+		{ "use-directio",      '\0', POPT_ARG_NONE, &opt_directio,              0, N_("Use direct-io when accesing devices."), NULL },
+		{ "write-log",         '\0', POPT_ARG_NONE, &opt_write_log,             0, N_("Update log file after every block."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
