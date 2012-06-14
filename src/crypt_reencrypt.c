@@ -89,6 +89,8 @@ struct {
 	char *password;
 	size_t passwordLen;
 	int keyslot;
+
+	struct timeval start_time, end_time;
 } rnc;
 
 char MAGIC[]   = {'L','U','K','S', 0xba, 0xbe};
@@ -356,7 +358,7 @@ static int open_log(void)
 	} else {
 		log_dbg("Log file %s exists, restarting.", rnc.log_file);
 		flags = opt_directio ? O_RDWR|O_DIRECT : O_RDWR;
-		rnc.log_fd = open(rnc.log_file, O_RDWR|O_DIRECT);
+		rnc.log_fd = open(rnc.log_file, flags);
 		if (rnc.log_fd == -1)
 			return -EINVAL;
 		rnc.in_progress = 1;
@@ -493,14 +495,38 @@ static int restore_luks_header(const char *backup)
 	return r;
 }
 
+void print_progress(uint64_t bytes, int final)
+{
+	uint64_t mbytes = bytes / 1024 / 1024;
+	struct timeval now_time;
+	double tdiff;
+
+	gettimeofday(&now_time, NULL);
+	if (!final && time_diff(rnc.end_time, now_time) < 0.5)
+		return;
+
+	rnc.end_time = now_time;
+
+	if (opt_batch_mode)
+		return;
+
+	tdiff = time_diff(rnc.start_time, rnc.end_time);
+	if (!tdiff)
+		return;
+
+	log_err("\33[2K\rProgress: %5.1f%%, time elapsed %3.1f seconds, %4"
+		PRIu64 " MB written, speed %5.2f MB/s%s",
+		(double)bytes / rnc.device_size * 100,
+		time_diff(rnc.start_time, rnc.end_time),
+		mbytes, (double)(mbytes) / tdiff,
+		final ? "\n" :"");
+}
+
 static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2;
-	int j;
 
 	*bytes = 0;
-	log_err("Reencrypting [");
-	j = 0;
 	while (rnc.device_offset < rnc.device_size) {
 		s1 = read(fd_old, buf, block_size);
 		if (s1 < 0 || (s1 != block_size && (rnc.device_offset + s1) != rnc.device_size)) {
@@ -519,12 +545,8 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 		}
 
 		*bytes += (uint64_t)s2;
-		if (rnc.device_offset > (j * (rnc.device_size / 10))) {
-			log_err("-");
-			j++;
-		}
+		print_progress(*bytes, 0);
 	}
-	log_err("] Done.\n");
 
 	return 0;
 }
@@ -532,12 +554,8 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2, working_offset, working_block;
-	int j;
 
 	*bytes = 0;
-	log_err("Reencrypting [");
-	j = 10;
-
 	while (rnc.device_offset) {
 		if (rnc.device_offset < block_size) {
 			working_offset = 0;
@@ -569,12 +587,8 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 		}
 
 		*bytes += (uint64_t)s2;
-		if (rnc.device_offset < (j * (rnc.device_size / 10))) {
-			log_err("-");
-			j--;
-		}
+		print_progress(*bytes, 0);
 	}
-	log_err("] Done.\n");
 
 	return 0;
 }
@@ -585,8 +599,6 @@ static int copy_data(void)
 	int fd_old = -1, fd_new = -1;
 	int r = -EINVAL;
 	void *buf = NULL;
-	struct timeval start_time, end_time;
-	double tdiff;
 	uint64_t bytes = 0;
 
 	fd_old = open(rnc.crypt_path_org, O_RDONLY | (opt_directio ? O_DIRECT : 0));
@@ -616,14 +628,13 @@ static int copy_data(void)
 	if (!rnc.in_progress && rnc.reencrypt_direction == BACKWARD)
 		rnc.device_offset = rnc.device_size;
 
-	gettimeofday(&start_time, NULL);
+	gettimeofday(&rnc.start_time, NULL);
 
 	if (rnc.reencrypt_direction == FORWARD)
 		r = copy_data_forward(fd_old, fd_new, block_size, buf, &bytes);
 	else
 		r = copy_data_backward(fd_old, fd_new, block_size, buf, &bytes);
-
-	gettimeofday(&end_time, NULL);
+	print_progress(bytes, 1);
 
 	if (r < 0)
 		log_err("ERROR during reencryption.\n");
@@ -631,9 +642,6 @@ static int copy_data(void)
 	if (write_log() < 0)
 		log_err("Log write error, ignored.\n");
 
-	tdiff = time_diff(start_time, end_time);
-	log_err("Time elapsed %.2f seconds, %" PRIu64 " MB written, speed %.2f MB/s\n",
-		tdiff, bytes / 1024 / 1024, (double)(bytes / 1024 / 1024) / tdiff);
 out:
 	if (fd_old != -1)
 		close(fd_old);
