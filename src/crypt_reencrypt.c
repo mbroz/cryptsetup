@@ -29,6 +29,9 @@
  * null target
  * dmsetup create x --table "0 $(blockdev --getsz DEV) crypt cipher_null-ecb-null - 0 DEV 0"
  */
+#define _LARGEFILE64_SOURCE
+#define _FILE_OFFSET_BITS 64
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -553,7 +556,8 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 
 static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
 {
-	ssize_t s1, s2, working_offset, working_block;
+	ssize_t s1, s2, working_block;
+	off64_t working_offset;
 
 	*bytes = 0;
 	while (rnc.device_offset) {
@@ -565,9 +569,11 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 			working_block = block_size;
 		}
 
-		if (lseek(fd_old, working_offset, SEEK_SET) < 0 ||
-		    lseek(fd_new, working_offset, SEEK_SET) < 0)
+		if (lseek64(fd_old, working_offset, SEEK_SET) < 0 ||
+		    lseek64(fd_new, working_offset, SEEK_SET) < 0) {
+			log_err("Cannot seek to device offset.\n");
 			return -EIO;
+		}
 //log_err("off: %06d, size %06d\n", working_offset, block_size);
 
 		s1 = read(fd_old, buf, working_block);
