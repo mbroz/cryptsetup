@@ -17,18 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/* The code works as follows:
- *  - create backup (detached) headers fo old and new device
- *  - mark original device unusable
- *  - maps two devices, one with old header one with new onto
- *    the _same_ underlying device
- *  - with direct-io reads old device and copy to new device in defined steps
- *  - keps simple off in file (allows restart)
- *  - there is several windows when corruption can happen
- *
- * null target
- * dmsetup create x --table "0 $(blockdev --getsz DEV) crypt cipher_null-ecb-null - 0 DEV 0"
- */
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 
@@ -57,6 +45,8 @@ static int opt_debug = 0;
 static const char *opt_cipher = NULL;
 static const char *opt_hash = NULL;
 static const char *opt_key_file = NULL;
+static long opt_keyfile_size = 0;
+static long opt_keyfile_offset = 0;
 static int opt_iteration_time = 1000;
 static int opt_batch_mode = 0;
 static int opt_version_mode = 0;
@@ -65,11 +55,14 @@ static int opt_urandom = 0;
 static int opt_bsize = 4;
 static int opt_directio = 0;
 static int opt_write_log = 0;
+static int opt_tries = 3;
+static int opt_key_slot = CRYPT_ANY_SLOT;
 
 static const char **action_argv;
 
 static volatile int quit = 0;
 
+#define MAX_SLOT 8
 struct {
 	char *device;
 	char *device_uuid;
@@ -88,8 +81,10 @@ struct {
 	char crypt_path_new[PATH_MAX];
 	int log_fd;
 
-	char *password;
-	size_t passwordLen;
+	struct {
+		char *password;
+		size_t passwordLen;
+	} p[MAX_SLOT];
 	int keyslot;
 
 	struct timeval start_time, end_time;
@@ -423,7 +418,7 @@ static int activate_luks_headers(void)
 		goto out;
 
 	if ((r = crypt_activate_by_passphrase(cd, rnc.header_file_org,
-		CRYPT_ANY_SLOT, rnc.password, rnc.passwordLen,
+		opt_key_slot, rnc.p[rnc.keyslot].password, rnc.p[rnc.keyslot].passwordLen,
 		CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
 
@@ -433,12 +428,15 @@ static int activate_luks_headers(void)
 		goto out;
 
 	if ((r = crypt_activate_by_passphrase(cd_new, rnc.header_file_new,
-		CRYPT_ANY_SLOT, rnc.password, rnc.passwordLen,
+		opt_key_slot, rnc.p[rnc.keyslot].password, rnc.p[rnc.keyslot].passwordLen,
 		CRYPT_ACTIVATE_SHARED|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
+	r = 0;
 out:
 	crypt_free(cd);
 	crypt_free(cd_new);
+	if (r < 0)
+		log_err("Activation of devices failed.\n");
 	return r;
 }
 
@@ -447,7 +445,7 @@ static int backup_luks_headers(void)
 	struct crypt_device *cd = NULL, *cd_new = NULL;
 	struct crypt_params_luks1 params = {0};
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
-	int r;
+	int i, r;
 
 	log_dbg("Creating LUKS header backup for device %s.", rnc.device);
 	if ((r = crypt_init(&cd, rnc.device)) ||
@@ -491,9 +489,14 @@ static int backup_luks_headers(void)
 			NULL, crypt_get_volume_key_size(cd), &params)))
 		goto out;
 
-	if ((r = crypt_keyslot_add_by_volume_key(cd_new, rnc.keyslot,
-				NULL, 0, rnc.password, rnc.passwordLen)) < 0)
-		goto out;
+	for (i = 0; i < MAX_SLOT; i++) {
+		if (!rnc.p[i].password)
+			continue;
+		if ((r = crypt_keyslot_add_by_volume_key(cd_new, i,
+			NULL, 0, rnc.p[i].password, rnc.p[i].passwordLen)) < 0)
+			goto out;
+		r = 0;
+	}
 
 out:
 	crypt_free(cd);
@@ -504,6 +507,8 @@ out:
 static void remove_headers(void)
 {
 	struct crypt_device *cd = NULL;
+
+	log_dbg("Removing headers.");
 
 	if (crypt_init(&cd, NULL))
 		return;
@@ -517,6 +522,8 @@ static int restore_luks_header(const char *backup)
 {
 	struct crypt_device *cd = NULL;
 	int r;
+
+	log_dbg("Restoring header for %s.", backup);
 
 	r = crypt_init(&cd, rnc.device);
 
@@ -549,7 +556,7 @@ void print_progress(uint64_t bytes, int final)
 		return;
 
 	log_err("\33[2K\rProgress: %5.1f%%, time elapsed %3.1f seconds, %4"
-		PRIu64 " MB written, speed %5.2f MB/s%s",
+		PRIu64 " MB written, speed %5.1f MB/s%s",
 		(double)bytes / rnc.device_size * 100,
 		time_diff(rnc.start_time, rnc.end_time),
 		mbytes, (double)(mbytes) / tdiff,
@@ -559,6 +566,8 @@ void print_progress(uint64_t bytes, int final)
 static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2;
+
+	log_dbg("Reencrypting forward.");
 
 	rnc.restart_bytest = *bytes = rnc.device_offset;
 	while (!quit && rnc.device_offset < rnc.device_size) {
@@ -589,6 +598,8 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 {
 	ssize_t s1, s2, working_block;
 	off64_t working_offset;
+
+	log_dbg("Reencrypting backward.");
 
 	rnc.restart_bytest = *bytes = rnc.device_size - rnc.device_offset;
 	while (!quit && rnc.device_offset) {
@@ -637,6 +648,8 @@ static int copy_data(void)
 	void *buf = NULL;
 	uint64_t bytes = 0;
 
+	log_dbg("Data copy preparation.");
+
 	fd_old = open(rnc.crypt_path_org, O_RDONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_old == -1)
 		goto out;
@@ -645,10 +658,10 @@ static int copy_data(void)
 	if (fd_new == -1)
 		goto out;
 
-	if (lseek(fd_old, rnc.device_offset, SEEK_SET) == -1)
+	if (lseek64(fd_old, rnc.device_offset, SEEK_SET) == -1)
 		goto out;
 
-	if (lseek(fd_new, rnc.device_offset, SEEK_SET) == -1)
+	if (lseek64(fd_new, rnc.device_offset, SEEK_SET) == -1)
 		goto out;
 
 	/* Check size */
@@ -695,6 +708,8 @@ static int initialize_uuid(void)
 	struct crypt_device *cd = NULL;
 	int r;
 
+	log_dbg("Initialising UUID.");
+
 	/* Try to load LUKS from device */
 	if ((r = crypt_init(&cd, rnc.device)))
 		return r;
@@ -710,33 +725,110 @@ static int initialize_uuid(void)
 	return r;
 }
 
+static int init_passphrase1(struct crypt_device *cd, const char *msg, int slot_check)
+{
+	int r = -EINVAL, slot, retry_count;
+
+	slot = (slot_check == CRYPT_ANY_SLOT) ? 0 : slot_check;
+
+	retry_count = opt_tries ?: 1;
+	while (retry_count--) {
+		r = crypt_get_key(msg, &rnc.p[slot].password,
+			&rnc.p[slot].passwordLen,
+			0, 0, NULL /*opt_key_file*/,
+			0, 0, cd);
+		if (r < 0)
+			return r;
+
+		r = crypt_activate_by_passphrase(cd, NULL, slot_check,
+			rnc.p[slot].password, rnc.p[slot].passwordLen, 0);
+
+		if (r < 0) {
+			crypt_safe_free(rnc.p[slot].password);
+			rnc.p[slot].password = NULL;
+			rnc.p[slot].passwordLen = 0;
+		}
+		if (r < 0 && r != -EPERM)
+			return r;
+		if (r >= 0) {
+			rnc.keyslot = slot;
+			break;
+		}
+		log_err(_("No key available with this passphrase.\n"));
+	}
+	return r;
+}
+
+static int init_keyfile(struct crypt_device *cd, int slot_check)
+{
+	int r, slot;
+
+	slot = (slot_check == CRYPT_ANY_SLOT) ? 0 : slot_check;
+	r = crypt_get_key(NULL, &rnc.p[slot].password, &rnc.p[slot].passwordLen,
+		opt_keyfile_offset, opt_keyfile_size, opt_key_file, 0, 0, cd);
+	if (r < 0)
+		return r;
+
+	r = crypt_activate_by_passphrase(cd, NULL, slot_check,
+		rnc.p[slot].password, rnc.p[slot].passwordLen, 0);
+
+	/*
+	 * Allow keyslot only if it is last slot or if user explicitly
+	 * specify whch slot to use (IOW others will be disabled).
+	 */
+	if (r >= 0 && opt_key_slot == CRYPT_ANY_SLOT &&
+	    crypt_keyslot_status(cd, r) != CRYPT_SLOT_ACTIVE_LAST) {
+		log_err(_("Key file can be used only with --key-slot or with "
+			  "exactly one key slot active.\n"));
+		r = -EINVAL;
+	}
+
+	if (r < 0) {
+		crypt_safe_free(rnc.p[slot].password);
+		rnc.p[slot].password = NULL;
+		rnc.p[slot].passwordLen = 0;
+		if (r == -EPERM)
+			log_err(_("No key available with this passphrase.\n"));
+		return r;
+	} else
+		rnc.keyslot = slot;
+
+	return r;
+}
+
 static int initialize_passphrase(const char *device)
 {
 	struct crypt_device *cd = NULL;
-	int r;
+	crypt_keyslot_info ki;
+	char msg[256];
+	int i, r;
+
+	log_dbg("Passhrases initialization.");
 
 	if ((r = crypt_init(&cd, device)) ||
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)) ||
-	    (r = crypt_set_data_device(cd, rnc.device)))
-		goto out;
-
-	if ((r = crypt_get_key(_("Enter LUKS passphrase: "),
-			  &rnc.password, &rnc.passwordLen,
-			  0, 0, opt_key_file,
-			  0, 0, cd)) <0)
-		goto out;
-
-	if ((r = crypt_activate_by_passphrase(cd, NULL,
-		CRYPT_ANY_SLOT, rnc.password, rnc.passwordLen, 0) < 0))
-		goto out;
-
-	if (r >= 0) {
-		rnc.keyslot = r;
-		r = 0;
+	    (r = crypt_set_data_device(cd, rnc.device))) {
+		crypt_free(cd);
+		return r;
 	}
-out:
+
+	if (opt_key_file) {
+		r = init_keyfile(cd, opt_key_slot);
+	} else if (rnc.in_progress) {
+		r = init_passphrase1(cd, _("Enter any LUKS passphrase: "), CRYPT_ANY_SLOT);
+	} else for (i = 0; i < MAX_SLOT; i++) {
+		ki = crypt_keyslot_status(cd, i);
+		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
+			continue;
+
+		snprintf(msg, sizeof(msg), _("Enter LUKS passphrase for key slot %u): "), i);
+		r = init_passphrase1(cd, msg, i);
+		if (r < 0)
+			break;
+	}
+
 	crypt_free(cd);
-	return r;
+	return r > 0 ? 0 : r;
 }
 
 static int initialize_context(const char *device)
@@ -779,6 +871,8 @@ static int initialize_context(const char *device)
 
 static void destroy_context(void)
 {
+	int i;
+
 	log_dbg("Destroying reencryption context.");
 
 	close_log();
@@ -792,7 +886,8 @@ static void destroy_context(void)
 		unlink(rnc.header_file_new);
 	}
 
-	crypt_safe_free(rnc.password);
+	for (i = 0; i < MAX_SLOT; i++)
+		crypt_safe_free(rnc.p[i].password);
 
 	free(rnc.device);
 	free(rnc.device_uuid);
@@ -812,7 +907,7 @@ int run_reencrypt(const char *device)
 		    (r = device_magic(MAKE_UNUSABLE)))
 			goto out;
 	} else {
-		if ((r = initialize_passphrase(rnc.header_file_org)))
+		if ((r = initialize_passphrase(rnc.header_file_new)))
 			goto out;
 	}
 
@@ -880,10 +975,14 @@ int main(int argc, const char **argv)
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF2 iteration time for LUKS (in ms)"), N_("msecs") },
 		{ "batch-mode",        'q',  POPT_ARG_NONE, &opt_batch_mode,            0, N_("Do not ask for confirmation"), NULL },
+		{ "tries",             'T',  POPT_ARG_INT, &opt_tries,                  0, N_("How often the input of the passphrase can be retried"), NULL },
 		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
 		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },
 		{ "use-directio",      '\0', POPT_ARG_NONE, &opt_directio,              0, N_("Use direct-io when accesing devices."), NULL },
 		{ "write-log",         '\0', POPT_ARG_NONE, &opt_write_log,             0, N_("Update log file after every block."), NULL },
+		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Use only this slot (others will be disabled)."), NULL },
+		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
+		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
