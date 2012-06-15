@@ -63,10 +63,8 @@ static int opt_version_mode = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
 static int opt_bsize = 4;
-static int opt_new = 0;
 static int opt_directio = 0;
 static int opt_write_log = 0;
-static const char *opt_new_file = NULL;
 
 static const char **action_argv;
 
@@ -749,12 +747,7 @@ static int initialize_context(const char *device)
 
 	if (!(rnc.device = strndup(device, PATH_MAX)))
 		return -ENOMEM;
-/*
-	if (opt_new_file && !create_uuid()) {
-		log_err("Cannot create fake header.\n");
-		return -EINVAL;
-	}
-*/
+
 	if (initialize_uuid()) {
 		log_err("No header found on device.\n");
 		return -EINVAL;
@@ -882,8 +875,6 @@ int main(int argc, const char **argv)
 		{ "verbose",           'v',  POPT_ARG_NONE, &opt_verbose,               0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",             '\0', POPT_ARG_NONE, &opt_debug,                 0, N_("Show debug messages"), NULL },
 		{ "block-size",        'B',  POPT_ARG_INT, &opt_bsize,                  0, N_("Reencryption block size"), N_("MB") },
-		{ "new-header",        'N',  POPT_ARG_INT, &opt_new,                    0, N_("Create new header, need size on the end of device"), N_("MB") },
-		{ "new-crypt",         'f',  POPT_ARG_STRING, &opt_new_file,            0, N_("Log suffix for new reencryption file."), NULL },
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
@@ -932,10 +923,6 @@ int main(int argc, const char **argv)
 
 	if (opt_random && opt_urandom)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
-		      poptGetInvocationName(popt_context));
-
-	if (opt_new && !opt_new_file)
-		usage(popt_context, EXIT_FAILURE, _("You have to use -f with -N."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
