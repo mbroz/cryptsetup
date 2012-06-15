@@ -69,7 +69,8 @@ static int opt_write_log = 0;
 static const char *opt_new_file = NULL;
 
 static const char **action_argv;
-sigset_t signals_open;
+
+static volatile int quit = 0;
 
 struct {
 	char *device;
@@ -155,6 +156,32 @@ static void _quiet_log(int level, const char *msg, void *usrptr)
 	if (!opt_verbose && (level == CRYPT_LOG_ERROR || level == CRYPT_LOG_NORMAL))
 		level = CRYPT_LOG_VERBOSE;
 	_log(level, msg, usrptr);
+}
+
+static void int_handler(int sig __attribute__((__unused__)))
+{
+	quit++;
+}
+
+static void set_int_block(int block)
+{
+	sigset_t signals_open;
+
+	sigemptyset(&signals_open);
+	sigaddset(&signals_open, SIGINT);
+	sigaddset(&signals_open, SIGTERM);
+	sigprocmask(block ? SIG_SETMASK : SIG_UNBLOCK, &signals_open, NULL);
+}
+
+static void set_int_handler(void)
+{
+	struct sigaction sigaction_open;
+
+	memset(&sigaction_open, 0, sizeof(struct sigaction));
+	sigaction_open.sa_handler = int_handler;
+	sigaction(SIGINT, &sigaction_open, 0);
+	sigaction(SIGTERM, &sigaction_open, 0);
+	set_int_block(0);
 }
 
 /* The difference in seconds between two times in "timeval" format. */
@@ -529,8 +556,8 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 {
 	ssize_t s1, s2;
 
-	*bytes = 0;
-	while (rnc.device_offset < rnc.device_size) {
+	*bytes = rnc.device_offset;
+	while (!quit && rnc.device_offset < rnc.device_size) {
 		s1 = read(fd_old, buf, block_size);
 		if (s1 < 0 || (s1 != block_size && (rnc.device_offset + s1) != rnc.device_size)) {
 			log_err("Read error, expecting %d, got %d.\n", (int)block_size, (int)s1);
@@ -551,7 +578,7 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 		print_progress(*bytes, 0);
 	}
 
-	return 0;
+	return quit ? -EAGAIN : 0;
 }
 
 static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
@@ -559,8 +586,8 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 	ssize_t s1, s2, working_block;
 	off64_t working_offset;
 
-	*bytes = 0;
-	while (rnc.device_offset) {
+	*bytes = rnc.device_size - rnc.device_offset;
+	while (!quit && rnc.device_offset) {
 		if (rnc.device_offset < block_size) {
 			working_offset = 0;
 			working_block = rnc.device_offset;
@@ -574,7 +601,6 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 			log_err("Cannot seek to device offset.\n");
 			return -EIO;
 		}
-//log_err("off: %06d, size %06d\n", working_offset, block_size);
 
 		s1 = read(fd_old, buf, working_block);
 		if (s1 < 0 || (s1 != working_block)) {
@@ -596,7 +622,7 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 		print_progress(*bytes, 0);
 	}
 
-	return 0;
+	return quit ? -EAGAIN : 0;
 }
 
 static int copy_data(void)
@@ -630,6 +656,7 @@ static int copy_data(void)
 		goto out;
 	}
 
+	set_int_handler();
 	// FIXME: all this should be in init
 	if (!rnc.in_progress && rnc.reencrypt_direction == BACKWARD)
 		rnc.device_offset = rnc.device_size;
@@ -640,6 +667,8 @@ static int copy_data(void)
 		r = copy_data_forward(fd_old, fd_new, block_size, buf, &bytes);
 	else
 		r = copy_data_backward(fd_old, fd_new, block_size, buf, &bytes);
+
+	set_int_block(1);
 	print_progress(bytes, 1);
 
 	if (r < 0)
@@ -746,12 +775,6 @@ static int initialize_context(const char *device)
 
 	remove_headers();
 
-	/* Block ctrl+c */
-	// FIXME: add some routine to handle it
-	sigemptyset(&signals_open);
-	sigaddset(&signals_open, SIGINT);
-	sigprocmask(SIG_SETMASK, &signals_open, NULL);
-
 	return open_log();
 }
 
@@ -774,14 +797,11 @@ static void destroy_context(void)
 
 	free(rnc.device);
 	free(rnc.device_uuid);
-
-	sigprocmask(SIG_UNBLOCK, &signals_open, NULL);
 }
 
 int run_reencrypt(const char *device)
 {
 	int r = -EINVAL;
-
 	if (initialize_context(device))
 		goto out;
 
@@ -875,6 +895,8 @@ int main(int argc, const char **argv)
 	crypt_set_log_callback(NULL, _log, NULL);
 	log_err("WARNING: this is experimental code, it can completely break your data.\n");
 
+	set_int_block(1);
+
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE);
@@ -929,6 +951,7 @@ int main(int argc, const char **argv)
 	case -ENODEV:	r = 4; break;
 	case -ENOMEM:	r = 3; break;
 	case -EPERM:	r = 2; break;
+	case -EAGAIN: log_err(_("Interrupted by a signal.\n"));
 	case -EINVAL:
 	case -ENOENT:
 	case -ENOSYS:
