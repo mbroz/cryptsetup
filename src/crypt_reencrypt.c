@@ -95,6 +95,7 @@ struct {
 	int keyslot;
 
 	struct timeval start_time, end_time;
+	uint64_t restart_bytest;
 } rnc;
 
 char MAGIC[]   = {'L','U','K','S', 0xba, 0xbe};
@@ -259,10 +260,16 @@ out:
 	return r;
 }
 
-static int create_empty_header(const char *new_file, uint64_t size)
+static int create_empty_header(const char *new_file, const char *old_file)
 {
+	struct stat st;
+	size_t size;
 	int fd, r = 0;
 	char *buf;
+
+	if (stat(old_file, &st) == -1 || (st.st_mode & S_IFMT) != S_IFREG)
+		return -EINVAL;
+	size = st.st_size;
 
 	log_dbg("Creating empty file %s of size %lu.", new_file, (unsigned long)size);
 
@@ -453,8 +460,7 @@ static int backup_luks_headers(void)
 	if ((r = crypt_header_backup(cd, CRYPT_LUKS1, rnc.header_file_org)))
 		goto out;
 
-	if ((r = create_empty_header(rnc.header_file_new,
-				     crypt_get_data_offset(cd) * 512)))
+	if ((r = create_empty_header(rnc.header_file_new, rnc.header_file_org)))
 		goto out;
 
 	params.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
@@ -527,7 +533,7 @@ static int restore_luks_header(const char *backup)
 
 void print_progress(uint64_t bytes, int final)
 {
-	uint64_t mbytes = bytes / 1024 / 1024;
+	uint64_t mbytes = (bytes - rnc.restart_bytest) / 1024 / 1024;
 	struct timeval now_time;
 	double tdiff;
 
@@ -556,7 +562,7 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 {
 	ssize_t s1, s2;
 
-	*bytes = rnc.device_offset;
+	rnc.restart_bytest = *bytes = rnc.device_offset;
 	while (!quit && rnc.device_offset < rnc.device_size) {
 		s1 = read(fd_old, buf, block_size);
 		if (s1 < 0 || (s1 != block_size && (rnc.device_offset + s1) != rnc.device_size)) {
@@ -586,7 +592,7 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 	ssize_t s1, s2, working_block;
 	off64_t working_offset;
 
-	*bytes = rnc.device_size - rnc.device_offset;
+	rnc.restart_bytest = *bytes = rnc.device_size - rnc.device_offset;
 	while (!quit && rnc.device_offset) {
 		if (rnc.device_offset < block_size) {
 			working_offset = 0;
