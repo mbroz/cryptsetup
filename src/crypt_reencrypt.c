@@ -53,6 +53,7 @@ static int opt_random = 0;
 static int opt_urandom = 0;
 static int opt_bsize = 4;
 static int opt_directio = 0;
+static int opt_fsync = 0;
 static int opt_write_log = 0;
 static int opt_tries = 3;
 static int opt_key_slot = CRYPT_ANY_SLOT;
@@ -616,15 +617,22 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 				(int)block_size, (int)s1);
 			return -EIO;
 		}
+
 		s2 = write(fd_new, buf, s1);
 		if (s2 < 0) {
 			log_dbg("Write error, expecting %d, got %d.",
 				(int)block_size, (int)s2);
 			return -EIO;
 		}
+
 		rc->device_offset += s1;
 		if (opt_write_log && write_log(rc) < 0)
 			return -EIO;
+
+		if (opt_fsync && fsync(fd_new) < 0) {
+			log_dbg("Write error, fsync.");
+			return -EIO;
+		}
 
 		*bytes += (uint64_t)s2;
 		print_progress(rc, *bytes, 0);
@@ -674,15 +682,22 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 				(int)block_size, (int)s1);
 			return -EIO;
 		}
+
 		s2 = write(fd_new, buf, working_block);
 		if (s2 < 0) {
 			log_dbg("Write error, expecting %d, got %d.",
 				(int)block_size, (int)s2);
 			return -EIO;
 		}
+
 		rc->device_offset -= s1;
 		if (opt_write_log && write_log(rc) < 0)
 			return -EIO;
+
+		if (opt_fsync && fsync(fd_new) < 0) {
+			log_dbg("Write error, fsync.");
+			return -EIO;
+		}
 
 		*bytes += (uint64_t)s2;
 		print_progress(rc, *bytes, 0);
@@ -1044,6 +1059,7 @@ int main(int argc, const char **argv)
 		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
 		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },
 		{ "use-directio",      '\0', POPT_ARG_NONE, &opt_directio,              0, N_("Use direct-io when accesing devices."), NULL },
+		{ "use-fsync",         '\0', POPT_ARG_NONE, &opt_fsync,                 0, N_("Use fsync after each block."), NULL },
 		{ "write-log",         '\0', POPT_ARG_NONE, &opt_write_log,             0, N_("Update log file after every block."), NULL },
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Use only this slot (others will be disabled)."), NULL },
 		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
