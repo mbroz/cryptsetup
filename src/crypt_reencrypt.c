@@ -178,7 +178,7 @@ static void set_int_handler(void)
 }
 
 /* The difference in seconds between two times in "timeval" format. */
-double time_diff(struct timeval start, struct timeval end)
+static double time_diff(struct timeval start, struct timeval end)
 {
 	return (end.tv_sec - start.tv_sec)
 		+ (end.tv_usec - start.tv_usec) / 1E6;
@@ -255,11 +255,13 @@ out:
 static int create_empty_header(const char *new_file, const char *old_file)
 {
 	struct stat st;
-	size_t size;
+	ssize_t size;
 	int fd, r = 0;
 	char *buf;
 
-	if (stat(old_file, &st) == -1 || (st.st_mode & S_IFMT) != S_IFREG)
+	if (stat(old_file, &st) == -1 ||
+		 (st.st_mode & S_IFMT) != S_IFREG ||
+		 (st.st_size > 16 * 1024 * 1024))
 		return -EINVAL;
 	size = st.st_size;
 
@@ -521,17 +523,17 @@ static void remove_headers(struct reenc_ctx *rc)
 	crypt_free(cd);
 }
 
-static int restore_luks_header(struct reenc_ctx *rc, const char *backup)
+static int restore_luks_header(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL;
 	int r;
 
-	log_dbg("Restoring header for %s from %s.", rc->device, backup);
+	log_dbg("Restoring header for %s from %s.", rc->device, rc->header_file_new);
 
 	r = crypt_init(&cd, rc->device);
 	if (r == 0) {
 		crypt_set_confirm_callback(cd, NULL, NULL);
-		r = crypt_header_restore(cd, CRYPT_LUKS1, backup);
+		r = crypt_header_restore(cd, CRYPT_LUKS1, rc->header_file_new);
 	}
 
 	crypt_free(cd);
@@ -542,7 +544,7 @@ static int restore_luks_header(struct reenc_ctx *rc, const char *backup)
 	return r;
 }
 
-void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
+static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 {
 	uint64_t mbytes = (bytes - rc->restart_bytes) / 1024 / 1024;
 	struct timeval now_time;
@@ -591,13 +593,16 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 	while (!quit && rc->device_offset < rc->device_size) {
 		s1 = read(fd_old, buf, block_size);
-		if (s1 < 0 || (s1 != block_size && (rc->device_offset + s1) != rc->device_size)) {
-			log_dbg("Read error, expecting %d, got %d.", (int)block_size, (int)s1);
+		if (s1 < 0 || ((size_t)s1 != block_size &&
+		    (rc->device_offset + s1) != rc->device_size)) {
+			log_dbg("Read error, expecting %d, got %d.",
+				(int)block_size, (int)s1);
 			return -EIO;
 		}
 		s2 = write(fd_new, buf, s1);
 		if (s2 < 0) {
-			log_dbg("Write error, expecting %d, got %d.", (int)block_size, (int)s2);
+			log_dbg("Write error, expecting %d, got %d.",
+				(int)block_size, (int)s2);
 			return -EIO;
 		}
 		rc->device_offset += s1;
@@ -648,12 +653,14 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 		s1 = read(fd_old, buf, working_block);
 		if (s1 < 0 || (s1 != working_block)) {
-			log_dbg("Read error, expecting %d, got %d.", (int)block_size, (int)s1);
+			log_dbg("Read error, expecting %d, got %d.",
+				(int)block_size, (int)s1);
 			return -EIO;
 		}
 		s2 = write(fd_new, buf, working_block);
 		if (s2 < 0) {
-			log_dbg("Write error, expecting %d, got %d.", (int)block_size, (int)s2);
+			log_dbg("Write error, expecting %d, got %d.",
+				(int)block_size, (int)s2);
 			return -EIO;
 		}
 		rc->device_offset -= s1;
@@ -846,7 +853,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
 			continue;
 
-		snprintf(msg, sizeof(msg), _("Enter LUKS passphrase for key slot %u): "), i);
+		snprintf(msg, sizeof(msg), _("Enter LUKS passphrase for key slot %u: "), i);
 		r = init_passphrase1(rc, cd, msg, i);
 		if (r < 0)
 			break;
@@ -932,7 +939,7 @@ static void destroy_context(struct reenc_ctx *rc)
 	free(rc->device_uuid);
 }
 
-int run_reencrypt(const char *device)
+static int run_reencrypt(const char *device)
 {
 	int r = -EINVAL;
 	struct reenc_ctx rc = {};
@@ -958,7 +965,7 @@ int run_reencrypt(const char *device)
 	if ((r = copy_data(&rc)))
 		goto out;
 
-	r = restore_luks_header(&rc, rc.header_file_new);
+	r = restore_luks_header(&rc);
 out:
 	destroy_context(&rc);
 	return r;
