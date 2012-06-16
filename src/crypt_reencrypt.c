@@ -34,9 +34,7 @@
 #include <sys/time.h>
 #include <linux/fs.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <signal.h>
-#include <libcryptsetup.h>
 #include <popt.h>
 
 #include "cryptsetup.h"
@@ -64,7 +62,7 @@ static const char **action_argv;
 static volatile int quit = 0;
 
 #define MAX_SLOT 8
-struct {
+struct reenc_ctx {
 	char *device;
 	char *device_uuid;
 	uint64_t device_size;
@@ -90,7 +88,7 @@ struct {
 
 	struct timeval start_time, end_time;
 	uint64_t restart_bytes;
-} rnc;
+};
 
 char MAGIC[]   = {'L','U','K','S', 0xba, 0xbe};
 char NOMAGIC[] = {'L','U','K','S', 0xde, 0xad};
@@ -196,13 +194,13 @@ static int alignment(int fd)
 	return alignment;
 }
 
-static int device_magic(header_magic set_magic)
+static int device_magic(struct reenc_ctx *rc, header_magic set_magic)
 {
 	char *buf = NULL;
 	int r, devfd;
 	ssize_t s;
 
-	devfd = open(rnc.device, O_RDWR | O_DIRECT);
+	devfd = open(rc->device, O_RDWR | O_DIRECT);
 	if (devfd == -1)
 		return errno == EBUSY ? -EBUSY : -EINVAL;
 
@@ -214,24 +212,24 @@ static int device_magic(header_magic set_magic)
 
 	s = read(devfd, buf, SECTOR_SIZE);
 	if (s < 0 || s != SECTOR_SIZE) {
-		log_err(_("Cannot read device %s.\n"), rnc.device);
+		log_err(_("Cannot read device %s.\n"), rc->device);
 		close(devfd);
 		return -EIO;
 	}
 
 	if (set_magic == MAKE_UNUSABLE && !memcmp(buf, MAGIC, MAGIC_L)) {
-		log_verbose(_("Marking LUKS device %s unusable.\n"), rnc.device);
+		log_verbose(_("Marking LUKS device %s unusable.\n"), rc->device);
 		memcpy(buf, NOMAGIC, MAGIC_L);
 		r = 0;
 
 	} else if (set_magic == MAKE_USABLE && !memcmp(buf, NOMAGIC, MAGIC_L)) {
-		log_verbose(_("Marking LUKS device %s usable.\n"), rnc.device);
+		log_verbose(_("Marking LUKS device %s usable.\n"), rc->device);
 		memcpy(buf, MAGIC, MAGIC_L);
 		r = 0;
 	} else if (set_magic == CHECK_UNUSABLE) {
 		r = memcmp(buf, NOMAGIC, MAGIC_L) ? -EINVAL : 0;
 		if (!r)
-			rnc.device_uuid = strndup(&buf[0xa8], 40);
+			rc->device_uuid = strndup(&buf[0xa8], 40);
 		goto out;
 	} else
 		r = -EINVAL;
@@ -241,11 +239,11 @@ static int device_magic(header_magic set_magic)
 			goto out;
 		s = write(devfd, buf, SECTOR_SIZE);
 		if (s < 0 || s != SECTOR_SIZE) {
-			log_err(_("Cannot write device %s.\n"), rnc.device);
+			log_err(_("Cannot write device %s.\n"), rc->device);
 			r = -EIO;
 		}
 	} else
-		log_dbg("LUKS signature check failed for %s.", rnc.device);
+		log_dbg("LUKS signature check failed for %s.", rc->device);
 out:
 	if (buf)
 		memset(buf, 0, SECTOR_SIZE);
@@ -285,7 +283,7 @@ static int create_empty_header(const char *new_file, const char *old_file)
 	return r;
 }
 
-static int write_log(void)
+static int write_log(struct reenc_ctx *rc)
 {
 	static char buf[SECTOR_SIZE];
 	ssize_t r;
@@ -294,11 +292,11 @@ static int write_log(void)
 	snprintf(buf, SECTOR_SIZE, "# LUKS reencryption log, DO NOT EDIT OR DELETE.\n"
 		"version = %d\nUUID = %s\ndirection = %d\n"
 		"offset = %" PRIu64 "\nshift = %" PRIu64 "\n# EOF\n",
-		1, rnc.device_uuid, rnc.reencrypt_direction,
-		rnc.device_offset, rnc.device_shift);
+		1, rc->device_uuid, rc->reencrypt_direction,
+		rc->device_offset, rc->device_shift);
 
-	lseek(rnc.log_fd, 0, SEEK_SET);
-	r = write(rnc.log_fd, buf, SECTOR_SIZE);
+	lseek(rc->log_fd, 0, SEEK_SET);
+	r = write(rc->log_fd, buf, SECTOR_SIZE);
 	if (r < 0 || r != SECTOR_SIZE) {
 		log_err(_("Cannot write reencryption log file.\n"));
 		return -EIO;
@@ -307,7 +305,7 @@ static int write_log(void)
 	return 0;
 }
 
-static int parse_line_log(const char *line)
+static int parse_line_log(struct reenc_ctx *rc, const char *line)
 {
 	uint64_t u64;
 	int i;
@@ -323,32 +321,32 @@ static int parse_line_log(const char *line)
 			return -EINVAL;
 		}
 	} else if (sscanf(line, "UUID = %40s", s) == 1) {
-		if (!rnc.device_uuid || strcmp(rnc.device_uuid, s)) {
+		if (!rc->device_uuid || strcmp(rc->device_uuid, s)) {
 			log_dbg("Log: Unexpected UUID %s", s);
 			return -EINVAL;
 		}
 	} else if (sscanf(line, "direction = %d", &i) == 1) {
 		log_dbg("Log: direction = %i", i);
-		rnc.reencrypt_direction = i;
+		rc->reencrypt_direction = i;
 	} else if (sscanf(line, "offset = %" PRIu64, &u64) == 1) {
 		log_dbg("Log: offset = %" PRIu64, u64);
-		rnc.device_offset = u64;
+		rc->device_offset = u64;
 	} else if (sscanf(line, "shift = %" PRIu64, &u64) == 1) {
 		log_dbg("Log: shift = %" PRIu64, u64);
-		rnc.device_shift = u64;
+		rc->device_shift = u64;
 	} else
 		return -EINVAL;
 
 	return 0;
 }
 
-static int parse_log(void)
+static int parse_log(struct reenc_ctx *rc)
 {
 	static char buf[SECTOR_SIZE];
 	char *start, *end;
 	ssize_t s;
 
-	s = read(rnc.log_fd, buf, SECTOR_SIZE);
+	s = read(rc->log_fd, buf, SECTOR_SIZE);
 	if (s == -1) {
 		log_err(_("Cannot read reencryption log file.\n"));
 		return -EIO;
@@ -360,7 +358,7 @@ static int parse_log(void)
 		end = strchr(start, '\n');
 		if (end) {
 			*end++ = '\0';
-			if (parse_line_log(start)) {
+			if (parse_line_log(rc, start)) {
 				log_err("Wrong log format.\n");
 				return -EINVAL;
 			}
@@ -372,63 +370,63 @@ static int parse_log(void)
 	return 0;
 }
 
-static int open_log(void)
+static int open_log(struct reenc_ctx *rc)
 {
 	int flags;
 	struct stat st;
 
-	if(stat(rnc.log_file, &st) < 0) {
-		log_dbg("Creating LUKS reencryption log file %s.", rnc.log_file);
+	if(stat(rc->log_file, &st) < 0) {
+		log_dbg("Creating LUKS reencryption log file %s.", rc->log_file);
 		flags = opt_directio ? O_RDWR|O_CREAT|O_DIRECT : O_RDWR|O_CREAT;
-		rnc.log_fd = open(rnc.log_file, flags, S_IRUSR|S_IWUSR);
-		if (rnc.log_fd == -1)
+		rc->log_fd = open(rc->log_file, flags, S_IRUSR|S_IWUSR);
+		if (rc->log_fd == -1)
 			return -EINVAL;
-		if (write_log() < 0)
+		if (write_log(rc) < 0)
 			return -EIO;
 	} else {
-		log_dbg("Log file %s exists, restarting.", rnc.log_file);
+		log_dbg("Log file %s exists, restarting.", rc->log_file);
 		flags = opt_directio ? O_RDWR|O_DIRECT : O_RDWR;
-		rnc.log_fd = open(rnc.log_file, flags);
-		if (rnc.log_fd == -1)
+		rc->log_fd = open(rc->log_file, flags);
+		if (rc->log_fd == -1)
 			return -EINVAL;
-		rnc.in_progress = 1;
+		rc->in_progress = 1;
 	}
 
 	/* Be sure it is correct format */
-	return parse_log();
+	return parse_log(rc);
 }
 
-static void close_log(void)
+static void close_log(struct reenc_ctx *rc)
 {
-	log_dbg("Closing LUKS reencryption log file %s.", rnc.log_file);
-	if (rnc.log_fd != -1)
-		close(rnc.log_fd);
+	log_dbg("Closing LUKS reencryption log file %s.", rc->log_file);
+	if (rc->log_fd != -1)
+		close(rc->log_fd);
 }
 
-static int activate_luks_headers(void)
+static int activate_luks_headers(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL, *cd_new = NULL;
 	int r;
 
 	log_dbg("Activating LUKS devices from headers.");
 
-	if ((r = crypt_init(&cd, rnc.header_file_org)) ||
+	if ((r = crypt_init(&cd, rc->header_file_org)) ||
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)) ||
-	    (r = crypt_set_data_device(cd, rnc.device)))
+	    (r = crypt_set_data_device(cd, rc->device)))
 		goto out;
 
-	if ((r = crypt_activate_by_passphrase(cd, rnc.header_file_org,
-		opt_key_slot, rnc.p[rnc.keyslot].password, rnc.p[rnc.keyslot].passwordLen,
+	if ((r = crypt_activate_by_passphrase(cd, rc->header_file_org,
+		opt_key_slot, rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen,
 		CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
 
-	if ((r = crypt_init(&cd_new, rnc.header_file_new)) ||
+	if ((r = crypt_init(&cd_new, rc->header_file_new)) ||
 	    (r = crypt_load(cd_new, CRYPT_LUKS1, NULL)) ||
-	    (r = crypt_set_data_device(cd_new, rnc.device)))
+	    (r = crypt_set_data_device(cd_new, rc->device)))
 		goto out;
 
-	if ((r = crypt_activate_by_passphrase(cd_new, rnc.header_file_new,
-		opt_key_slot, rnc.p[rnc.keyslot].password, rnc.p[rnc.keyslot].passwordLen,
+	if ((r = crypt_activate_by_passphrase(cd_new, rc->header_file_new,
+		opt_key_slot, rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen,
 		CRYPT_ACTIVATE_SHARED|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
 	r = 0;
@@ -440,32 +438,32 @@ out:
 	return r;
 }
 
-static int backup_luks_headers(void)
+static int backup_luks_headers(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL, *cd_new = NULL;
 	struct crypt_params_luks1 params = {0};
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	int i, r;
 
-	log_dbg("Creating LUKS header backup for device %s.", rnc.device);
+	log_dbg("Creating LUKS header backup for device %s.", rc->device);
 
-	if ((r = crypt_init(&cd, rnc.device)) ||
+	if ((r = crypt_init(&cd, rc->device)) ||
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
 	crypt_set_confirm_callback(cd, NULL, NULL);
-	if ((r = crypt_header_backup(cd, CRYPT_LUKS1, rnc.header_file_org)))
+	if ((r = crypt_header_backup(cd, CRYPT_LUKS1, rc->header_file_org)))
 		goto out;
-	log_verbose(_("LUKS header backup of device %s created.\n"), rnc.device);
+	log_verbose(_("LUKS header backup of device %s created.\n"), rc->device);
 
-	if ((r = create_empty_header(rnc.header_file_new, rnc.header_file_org)))
+	if ((r = create_empty_header(rc->header_file_new, rc->header_file_org)))
 		goto out;
 
 	params.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
 	params.data_alignment = crypt_get_data_offset(cd);
-	params.data_device = rnc.device;
+	params.data_device = rc->device;
 
-	if ((r = crypt_init(&cd_new, rnc.header_file_new)))
+	if ((r = crypt_init(&cd_new, rc->header_file_new)))
 		goto out;
 
 	if (opt_random)
@@ -490,13 +488,13 @@ static int backup_luks_headers(void)
 			crypt_get_uuid(cd),
 			NULL, crypt_get_volume_key_size(cd), &params)))
 		goto out;
-	log_verbose(_("New LUKS header for device %s created.\n"), rnc.device);
+	log_verbose(_("New LUKS header for device %s created.\n"), rc->device);
 
 	for (i = 0; i < MAX_SLOT; i++) {
-		if (!rnc.p[i].password)
+		if (!rc->p[i].password)
 			continue;
 		if ((r = crypt_keyslot_add_by_volume_key(cd_new, i,
-			NULL, 0, rnc.p[i].password, rnc.p[i].passwordLen)) < 0)
+			NULL, 0, rc->p[i].password, rc->p[i].passwordLen)) < 0)
 			goto out;
 		log_verbose(_("Activated keyslot %i.\n"), r);
 		r = 0;
@@ -509,7 +507,7 @@ out:
 	return r;
 }
 
-static void remove_headers(void)
+static void remove_headers(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL;
 
@@ -518,19 +516,19 @@ static void remove_headers(void)
 	if (crypt_init(&cd, NULL))
 		return;
 	crypt_set_log_callback(cd, _quiet_log, NULL);
-	(void)crypt_deactivate(cd, rnc.header_file_org);
-	(void)crypt_deactivate(cd, rnc.header_file_new);
+	(void)crypt_deactivate(cd, rc->header_file_org);
+	(void)crypt_deactivate(cd, rc->header_file_new);
 	crypt_free(cd);
 }
 
-static int restore_luks_header(const char *backup)
+static int restore_luks_header(struct reenc_ctx *rc, const char *backup)
 {
 	struct crypt_device *cd = NULL;
 	int r;
 
-	log_dbg("Restoring header for %s from %s.", rnc.device, backup);
+	log_dbg("Restoring header for %s from %s.", rc->device, backup);
 
-	r = crypt_init(&cd, rnc.device);
+	r = crypt_init(&cd, rc->device);
 	if (r == 0) {
 		crypt_set_confirm_callback(cd, NULL, NULL);
 		r = crypt_header_restore(cd, CRYPT_LUKS1, backup);
@@ -538,28 +536,28 @@ static int restore_luks_header(const char *backup)
 
 	crypt_free(cd);
 	if (r)
-		log_err(_("Cannot restore LUKS header on device %s.\n"), rnc.device);
+		log_err(_("Cannot restore LUKS header on device %s.\n"), rc->device);
 	else
-		log_verbose(_("LUKS header on device %s restored.\n"), rnc.device);
+		log_verbose(_("LUKS header on device %s restored.\n"), rc->device);
 	return r;
 }
 
-void print_progress(uint64_t bytes, int final)
+void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 {
-	uint64_t mbytes = (bytes - rnc.restart_bytes) / 1024 / 1024;
+	uint64_t mbytes = (bytes - rc->restart_bytes) / 1024 / 1024;
 	struct timeval now_time;
 	double tdiff;
 
 	gettimeofday(&now_time, NULL);
-	if (!final && time_diff(rnc.end_time, now_time) < 0.5)
+	if (!final && time_diff(rc->end_time, now_time) < 0.5)
 		return;
 
-	rnc.end_time = now_time;
+	rc->end_time = now_time;
 
 	if (opt_batch_mode)
 		return;
 
-	tdiff = time_diff(rnc.start_time, rnc.end_time);
+	tdiff = time_diff(rc->start_time, rc->end_time);
 	if (!tdiff)
 		return;
 
@@ -567,32 +565,33 @@ void print_progress(uint64_t bytes, int final)
 	log_err("\33[2K\r");
 	log_err(_("Progress: %5.1f%%, time elapsed %3.1f seconds, "
 		"%4llu MiB written, speed %5.1f MiB/s%s"),
-		(double)bytes / rnc.device_size * 100,
-		time_diff(rnc.start_time, rnc.end_time),
+		(double)bytes / rc->device_size * 100,
+		time_diff(rc->start_time, rc->end_time),
 		(unsigned long long)mbytes, (double)(mbytes) / tdiff,
 		final ? "\n" :"");
 }
 
-static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
+static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
+			     size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2;
 
 	log_dbg("Reencrypting in forward direction.");
 
-	if (lseek64(fd_old, rnc.device_offset, SEEK_SET) < 0 ||
-	    lseek64(fd_new, rnc.device_offset, SEEK_SET) < 0) {
+	if (lseek64(fd_old, rc->device_offset, SEEK_SET) < 0 ||
+	    lseek64(fd_new, rc->device_offset, SEEK_SET) < 0) {
 		log_err(_("Cannot seek to device offset.\n"));
 		return -EIO;
 	}
 
-	rnc.restart_bytes = *bytes = rnc.device_offset;
+	rc->restart_bytes = *bytes = rc->device_offset;
 
-	if (write_log() < 0)
+	if (write_log(rc) < 0)
 		return -EIO;
 
-	while (!quit && rnc.device_offset < rnc.device_size) {
+	while (!quit && rc->device_offset < rc->device_size) {
 		s1 = read(fd_old, buf, block_size);
-		if (s1 < 0 || (s1 != block_size && (rnc.device_offset + s1) != rnc.device_size)) {
+		if (s1 < 0 || (s1 != block_size && (rc->device_offset + s1) != rc->device_size)) {
 			log_dbg("Read error, expecting %d, got %d.", (int)block_size, (int)s1);
 			return -EIO;
 		}
@@ -601,42 +600,43 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 			log_dbg("Write error, expecting %d, got %d.", (int)block_size, (int)s2);
 			return -EIO;
 		}
-		rnc.device_offset += s1;
-		if (opt_write_log && write_log() < 0)
+		rc->device_offset += s1;
+		if (opt_write_log && write_log(rc) < 0)
 			return -EIO;
 
 		*bytes += (uint64_t)s2;
-		print_progress(*bytes, 0);
+		print_progress(rc, *bytes, 0);
 	}
 
 	return quit ? -EAGAIN : 0;
 }
 
-static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *buf, uint64_t *bytes)
+static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
+			      size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2, working_block;
 	off64_t working_offset;
 
 	log_dbg("Reencrypting in backward direction.");
 
-	if (!rnc.in_progress) {
-		rnc.device_offset = rnc.device_size;
-		rnc.restart_bytes = 0;
+	if (!rc->in_progress) {
+		rc->device_offset = rc->device_size;
+		rc->restart_bytes = 0;
 		*bytes = 0;
 	} else {
-		rnc.restart_bytes = rnc.device_size - rnc.device_offset;
-		*bytes = rnc.restart_bytes;
+		rc->restart_bytes = rc->device_size - rc->device_offset;
+		*bytes = rc->restart_bytes;
 	}
 
-	if (write_log() < 0)
+	if (write_log(rc) < 0)
 		return -EIO;
 
-	while (!quit && rnc.device_offset) {
-		if (rnc.device_offset < block_size) {
+	while (!quit && rc->device_offset) {
+		if (rc->device_offset < block_size) {
 			working_offset = 0;
-			working_block = rnc.device_offset;
+			working_block = rc->device_offset;
 		} else {
-			working_offset = rnc.device_offset - block_size;
+			working_offset = rc->device_offset - block_size;
 			working_block = block_size;
 		}
 
@@ -656,18 +656,18 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 			log_dbg("Write error, expecting %d, got %d.", (int)block_size, (int)s2);
 			return -EIO;
 		}
-		rnc.device_offset -= s1;
-		if (opt_write_log && write_log() < 0)
+		rc->device_offset -= s1;
+		if (opt_write_log && write_log(rc) < 0)
 			return -EIO;
 
 		*bytes += (uint64_t)s2;
-		print_progress(*bytes, 0);
+		print_progress(rc, *bytes, 0);
 	}
 
 	return quit ? -EAGAIN : 0;
 }
 
-static int copy_data(void)
+static int copy_data(struct reenc_ctx *rc)
 {
 	size_t block_size = opt_bsize * 1024 * 1024;
 	int fd_old = -1, fd_new = -1;
@@ -677,20 +677,20 @@ static int copy_data(void)
 
 	log_dbg("Data copy preparation.");
 
-	fd_old = open(rnc.crypt_path_org, O_RDONLY | (opt_directio ? O_DIRECT : 0));
+	fd_old = open(rc->crypt_path_org, O_RDONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_old == -1) {
 		log_err(_("Cannot open temporary LUKS header file.\n"));
 		goto out;
 	}
 
-	fd_new = open(rnc.crypt_path_new, O_WRONLY | (opt_directio ? O_DIRECT : 0));
+	fd_new = open(rc->crypt_path_new, O_WRONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_new == -1) {
 		log_err(_("Cannot open temporary LUKS header file.\n"));
 		goto out;
 	}
 
 	/* Check size */
-	if (ioctl(fd_old, BLKGETSIZE64, &rnc.device_size) < 0) {
+	if (ioctl(fd_old, BLKGETSIZE64, &rc->device_size) < 0) {
 		log_err(_("Cannot get device size.\n"));
 		goto out;
 	}
@@ -702,22 +702,22 @@ static int copy_data(void)
 	}
 
 	set_int_handler();
-	gettimeofday(&rnc.start_time, NULL);
+	gettimeofday(&rc->start_time, NULL);
 
-	if (rnc.reencrypt_direction == FORWARD)
-		r = copy_data_forward(fd_old, fd_new, block_size, buf, &bytes);
+	if (rc->reencrypt_direction == FORWARD)
+		r = copy_data_forward(rc, fd_old, fd_new, block_size, buf, &bytes);
 	else
-		r = copy_data_backward(fd_old, fd_new, block_size, buf, &bytes);
+		r = copy_data_backward(rc, fd_old, fd_new, block_size, buf, &bytes);
 
 	set_int_block(1);
-	print_progress(bytes, 1);
+	print_progress(rc, bytes, 1);
 
 	if (r == -EAGAIN)
 		 log_err(_("Interrupted by a signal.\n"));
 	else if (r < 0)
 		log_err(_("IO error during reencryption.\n"));
 
-	(void)write_log();
+	(void)write_log(rc);
 out:
 	if (fd_old != -1)
 		close(fd_old);
@@ -727,7 +727,7 @@ out:
 	return r;
 }
 
-static int initialize_uuid(void)
+static int initialize_uuid(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -735,21 +735,22 @@ static int initialize_uuid(void)
 	log_dbg("Initialising UUID.");
 
 	/* Try to load LUKS from device */
-	if ((r = crypt_init(&cd, rnc.device)))
+	if ((r = crypt_init(&cd, rc->device)))
 		return r;
 	crypt_set_log_callback(cd, _quiet_log, NULL);
 	r = crypt_load(cd, CRYPT_LUKS1, NULL);
 	if (!r)
-		rnc.device_uuid = strdup(crypt_get_uuid(cd));
+		rc->device_uuid = strdup(crypt_get_uuid(cd));
 	else
 		/* Reencryption already in progress - magic header? */
-		r = device_magic(CHECK_UNUSABLE);
+		r = device_magic(rc, CHECK_UNUSABLE);
 
 	crypt_free(cd);
 	return r;
 }
 
-static int init_passphrase1(struct crypt_device *cd, const char *msg, int slot_check)
+static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
+			    const char *msg, int slot_check)
 {
 	int r = -EINVAL, slot, retry_count;
 
@@ -757,25 +758,25 @@ static int init_passphrase1(struct crypt_device *cd, const char *msg, int slot_c
 
 	retry_count = opt_tries ?: 1;
 	while (retry_count--) {
-		r = crypt_get_key(msg, &rnc.p[slot].password,
-			&rnc.p[slot].passwordLen,
+		r = crypt_get_key(msg, &rc->p[slot].password,
+			&rc->p[slot].passwordLen,
 			0, 0, NULL /*opt_key_file*/,
 			0, 0, cd);
 		if (r < 0)
 			return r;
 
 		r = crypt_activate_by_passphrase(cd, NULL, slot_check,
-			rnc.p[slot].password, rnc.p[slot].passwordLen, 0);
+			rc->p[slot].password, rc->p[slot].passwordLen, 0);
 
 		if (r < 0) {
-			crypt_safe_free(rnc.p[slot].password);
-			rnc.p[slot].password = NULL;
-			rnc.p[slot].passwordLen = 0;
+			crypt_safe_free(rc->p[slot].password);
+			rc->p[slot].password = NULL;
+			rc->p[slot].passwordLen = 0;
 		}
 		if (r < 0 && r != -EPERM)
 			return r;
 		if (r >= 0) {
-			rnc.keyslot = slot;
+			rc->keyslot = slot;
 			break;
 		}
 		log_err(_("No key available with this passphrase.\n"));
@@ -783,18 +784,18 @@ static int init_passphrase1(struct crypt_device *cd, const char *msg, int slot_c
 	return r;
 }
 
-static int init_keyfile(struct crypt_device *cd, int slot_check)
+static int init_keyfile(struct reenc_ctx *rc, struct crypt_device *cd, int slot_check)
 {
 	int r, slot;
 
 	slot = (slot_check == CRYPT_ANY_SLOT) ? 0 : slot_check;
-	r = crypt_get_key(NULL, &rnc.p[slot].password, &rnc.p[slot].passwordLen,
+	r = crypt_get_key(NULL, &rc->p[slot].password, &rc->p[slot].passwordLen,
 		opt_keyfile_offset, opt_keyfile_size, opt_key_file, 0, 0, cd);
 	if (r < 0)
 		return r;
 
 	r = crypt_activate_by_passphrase(cd, NULL, slot_check,
-		rnc.p[slot].password, rnc.p[slot].passwordLen, 0);
+		rc->p[slot].password, rc->p[slot].passwordLen, 0);
 
 	/*
 	 * Allow keyslot only if it is last slot or if user explicitly
@@ -808,19 +809,19 @@ static int init_keyfile(struct crypt_device *cd, int slot_check)
 	}
 
 	if (r < 0) {
-		crypt_safe_free(rnc.p[slot].password);
-		rnc.p[slot].password = NULL;
-		rnc.p[slot].passwordLen = 0;
+		crypt_safe_free(rc->p[slot].password);
+		rc->p[slot].password = NULL;
+		rc->p[slot].passwordLen = 0;
 		if (r == -EPERM)
 			log_err(_("No key available with this passphrase.\n"));
 		return r;
 	} else
-		rnc.keyslot = slot;
+		rc->keyslot = slot;
 
 	return r;
 }
 
-static int initialize_passphrase(const char *device)
+static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 {
 	struct crypt_device *cd = NULL;
 	crypt_keyslot_info ki;
@@ -831,22 +832,22 @@ static int initialize_passphrase(const char *device)
 
 	if ((r = crypt_init(&cd, device)) ||
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)) ||
-	    (r = crypt_set_data_device(cd, rnc.device))) {
+	    (r = crypt_set_data_device(cd, rc->device))) {
 		crypt_free(cd);
 		return r;
 	}
 
 	if (opt_key_file) {
-		r = init_keyfile(cd, opt_key_slot);
-	} else if (rnc.in_progress) {
-		r = init_passphrase1(cd, _("Enter any LUKS passphrase: "), CRYPT_ANY_SLOT);
+		r = init_keyfile(rc, cd, opt_key_slot);
+	} else if (rc->in_progress) {
+		r = init_passphrase1(rc, cd, _("Enter any LUKS passphrase: "), CRYPT_ANY_SLOT);
 	} else for (i = 0; i < MAX_SLOT; i++) {
 		ki = crypt_keyslot_status(cd, i);
 		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
 			continue;
 
 		snprintf(msg, sizeof(msg), _("Enter LUKS passphrase for key slot %u): "), i);
-		r = init_passphrase1(cd, msg, i);
+		r = init_passphrase1(rc, cd, msg, i);
 		if (r < 0)
 			break;
 	}
@@ -855,109 +856,111 @@ static int initialize_passphrase(const char *device)
 	return r > 0 ? 0 : r;
 }
 
-static int initialize_context(const char *device)
+static int initialize_context(struct reenc_ctx *rc, const char *device)
 {
 	log_dbg("Initialising reencryption context.");
 
-	rnc.log_fd =-1;
+	rc->log_fd =-1;
 
-	if (!(rnc.device = strndup(device, PATH_MAX)))
+	if (!(rc->device = strndup(device, PATH_MAX)))
 		return -ENOMEM;
 
-	if (initialize_uuid()) {
+	if (initialize_uuid(rc)) {
 		log_err(_("Device %s is not a valid LUKS device.\n"), device);
 		return -EINVAL;
 	}
 
 	/* Prepare device names */
-	if (snprintf(rnc.log_file, PATH_MAX,
-		     "LUKS-%s.log", rnc.device_uuid) < 0)
+	if (snprintf(rc->log_file, PATH_MAX,
+		     "LUKS-%s.log", rc->device_uuid) < 0)
 		return -ENOMEM;
-	if (snprintf(rnc.header_file_org, PATH_MAX,
-		     "LUKS-%s.org", rnc.device_uuid) < 0)
+	if (snprintf(rc->header_file_org, PATH_MAX,
+		     "LUKS-%s.org", rc->device_uuid) < 0)
 		return -ENOMEM;
-	if (snprintf(rnc.header_file_new, PATH_MAX,
-		     "LUKS-%s.new", rnc.device_uuid) < 0)
+	if (snprintf(rc->header_file_new, PATH_MAX,
+		     "LUKS-%s.new", rc->device_uuid) < 0)
 		return -ENOMEM;
 
 	/* Paths to encrypted devices */
-	if (snprintf(rnc.crypt_path_org, PATH_MAX,
-		     "%s/%s", crypt_get_dir(), rnc.header_file_org) < 0)
+	if (snprintf(rc->crypt_path_org, PATH_MAX,
+		     "%s/%s", crypt_get_dir(), rc->header_file_org) < 0)
 		return -ENOMEM;
-	if (snprintf(rnc.crypt_path_new, PATH_MAX,
-		     "%s/%s", crypt_get_dir(), rnc.header_file_new) < 0)
+	if (snprintf(rc->crypt_path_new, PATH_MAX,
+		     "%s/%s", crypt_get_dir(), rc->header_file_new) < 0)
 		return -ENOMEM;
 
-	remove_headers();
+	remove_headers(rc);
 
-	if (open_log() < 0) {
+	if (open_log(rc) < 0) {
 		log_err(_("Cannot open reencryption log file.\n"));
 		return -EINVAL;
 	}
 
-	if (!rnc.in_progress) {
+	if (!rc->in_progress) {
 		if (1 /*opt_new */)
-			rnc.reencrypt_direction = FORWARD;
+			rc->reencrypt_direction = FORWARD;
 		else {
-			rnc.reencrypt_direction = BACKWARD;
-			rnc.device_offset = (uint64_t)~0;
+			rc->reencrypt_direction = BACKWARD;
+			rc->device_offset = (uint64_t)~0;
 		}
 	}
 
 	return 0;
 }
 
-static void destroy_context(void)
+static void destroy_context(struct reenc_ctx *rc)
 {
 	int i;
 
 	log_dbg("Destroying reencryption context.");
 
-	close_log();
-	remove_headers();
+	close_log(rc);
+	remove_headers(rc);
 
-	if ((rnc.reencrypt_direction == FORWARD &&
-	     rnc.device_offset == rnc.device_size) ||
-	     rnc.device_offset == 0) {
-		unlink(rnc.log_file);
-		unlink(rnc.header_file_org);
-		unlink(rnc.header_file_new);
+	if ((rc->reencrypt_direction == FORWARD &&
+	     rc->device_offset == rc->device_size) ||
+	     rc->device_offset == 0) {
+		unlink(rc->log_file);
+		unlink(rc->header_file_org);
+		unlink(rc->header_file_new);
 	}
 
 	for (i = 0; i < MAX_SLOT; i++)
-		crypt_safe_free(rnc.p[i].password);
+		crypt_safe_free(rc->p[i].password);
 
-	free(rnc.device);
-	free(rnc.device_uuid);
+	free(rc->device);
+	free(rc->device_uuid);
 }
 
 int run_reencrypt(const char *device)
 {
 	int r = -EINVAL;
-	if (initialize_context(device))
+	struct reenc_ctx rc = {};
+
+	if (initialize_context(&rc, device))
 		goto out;
 
 	log_dbg("Running reencryption.");
 
-	if (!rnc.in_progress) {
-		if ((r = initialize_passphrase(rnc.device)) ||
-		    (r = backup_luks_headers()) ||
-		    (r = device_magic(MAKE_UNUSABLE)))
+	if (!rc.in_progress) {
+		if ((r = initialize_passphrase(&rc, rc.device)) ||
+		    (r = backup_luks_headers(&rc)) ||
+		    (r = device_magic(&rc, MAKE_UNUSABLE)))
 			goto out;
 	} else {
-		if ((r = initialize_passphrase(rnc.header_file_new)))
+		if ((r = initialize_passphrase(&rc, rc.header_file_new)))
 			goto out;
 	}
 
-	if ((r = activate_luks_headers()))
+	if ((r = activate_luks_headers(&rc)))
 		goto out;
 
-	if ((r = copy_data()))
+	if ((r = copy_data(&rc)))
 		goto out;
 
-	r = restore_luks_header(rnc.header_file_new);
+	r = restore_luks_header(&rc, rc.header_file_new);
 out:
-	destroy_context();
+	destroy_context(&rc);
 	return r;
 }
 
