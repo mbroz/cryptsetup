@@ -88,7 +88,7 @@ struct {
 	int keyslot;
 
 	struct timeval start_time, end_time;
-	uint64_t restart_bytest;
+	uint64_t restart_bytes;
 } rnc;
 
 char MAGIC[]   = {'L','U','K','S', 0xba, 0xbe};
@@ -299,8 +299,10 @@ static int write_log(void)
 
 	lseek(rnc.log_fd, 0, SEEK_SET);
 	r = write(rnc.log_fd, buf, sizeof(buf));
-	if (r < 0 || r != sizeof(buf))
+	if (r < 0 || r != sizeof(buf)) {
+		log_err(_("Cannot write reencryption log file.\n"));
 		return -EIO;
+	}
 
 	return 0;
 }
@@ -375,10 +377,6 @@ static int open_log(void)
 
 	if(stat(rnc.log_file, &st) < 0) {
 		log_dbg("Creating LUKS reencryption log file %s.", rnc.log_file);
-
-		// FIXME: move that somewhere else
-		rnc.reencrypt_direction = BACKWARD;
-
 		flags = opt_directio ? O_RDWR|O_CREAT|O_DIRECT : O_RDWR|O_CREAT;
 		rnc.log_fd = open(rnc.log_file, flags, S_IRUSR|S_IWUSR);
 		if (rnc.log_fd == -1)
@@ -538,7 +536,7 @@ static int restore_luks_header(const char *backup)
 
 void print_progress(uint64_t bytes, int final)
 {
-	uint64_t mbytes = (bytes - rnc.restart_bytest) / 1024 / 1024;
+	uint64_t mbytes = (bytes - rnc.restart_bytes) / 1024 / 1024;
 	struct timeval now_time;
 	double tdiff;
 
@@ -569,7 +567,17 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 
 	log_dbg("Reencrypting forward.");
 
-	rnc.restart_bytest = *bytes = rnc.device_offset;
+	if (lseek64(fd_old, rnc.device_offset, SEEK_SET) < 0 ||
+	    lseek64(fd_new, rnc.device_offset, SEEK_SET) < 0) {
+		log_err("Cannot seek to device offset.\n");
+		return -EIO;
+	}
+
+	rnc.restart_bytes = *bytes = rnc.device_offset;
+
+	if (write_log() < 0)
+		return -EIO;
+
 	while (!quit && rnc.device_offset < rnc.device_size) {
 		s1 = read(fd_old, buf, block_size);
 		if (s1 < 0 || (s1 != block_size && (rnc.device_offset + s1) != rnc.device_size)) {
@@ -582,10 +590,8 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 			return -EIO;
 		}
 		rnc.device_offset += s1;
-		if (opt_write_log && write_log() < 0) {
-			log_err("Log write error, some data are perhaps lost.\n");
+		if (opt_write_log && write_log() < 0)
 			return -EIO;
-		}
 
 		*bytes += (uint64_t)s2;
 		print_progress(*bytes, 0);
@@ -601,7 +607,18 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 
 	log_dbg("Reencrypting backward.");
 
-	rnc.restart_bytest = *bytes = rnc.device_size - rnc.device_offset;
+	if (!rnc.in_progress) {
+		rnc.device_offset = rnc.device_size;
+		rnc.restart_bytes = 0;
+		*bytes = 0;
+	} else {
+		rnc.restart_bytes = rnc.device_size - rnc.device_offset;
+		*bytes = rnc.restart_bytes;
+	}
+
+	if (write_log() < 0)
+		return -EIO;
+
 	while (!quit && rnc.device_offset) {
 		if (rnc.device_offset < block_size) {
 			working_offset = 0;
@@ -628,10 +645,8 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 			return -EIO;
 		}
 		rnc.device_offset -= s1;
-		if (opt_write_log && write_log() < 0) {
-			log_err("Log write error, some data are perhaps lost.\n");
+		if (opt_write_log && write_log() < 0)
 			return -EIO;
-		}
 
 		*bytes += (uint64_t)s2;
 		print_progress(*bytes, 0);
@@ -658,12 +673,6 @@ static int copy_data(void)
 	if (fd_new == -1)
 		goto out;
 
-	if (lseek64(fd_old, rnc.device_offset, SEEK_SET) == -1)
-		goto out;
-
-	if (lseek64(fd_new, rnc.device_offset, SEEK_SET) == -1)
-		goto out;
-
 	/* Check size */
 	if (ioctl(fd_old, BLKGETSIZE64, &rnc.device_size) < 0)
 		goto out;
@@ -674,9 +683,6 @@ static int copy_data(void)
 	}
 
 	set_int_handler();
-	// FIXME: all this should be in init
-	if (!rnc.in_progress && rnc.reencrypt_direction == BACKWARD)
-		rnc.device_offset = rnc.device_size;
 
 	gettimeofday(&rnc.start_time, NULL);
 
@@ -688,12 +694,12 @@ static int copy_data(void)
 	set_int_block(1);
 	print_progress(bytes, 1);
 
-	if (r < 0)
+	if (r == -EAGAIN)
+		 log_err(_("Interrupted by a signal.\n"));
+	else if (r < 0)
 		log_err("ERROR during reencryption.\n");
 
-	if (write_log() < 0)
-		log_err("Log write error, ignored.\n");
-
+	(void)write_log();
 out:
 	if (fd_old != -1)
 		close(fd_old);
@@ -866,7 +872,21 @@ static int initialize_context(const char *device)
 
 	remove_headers();
 
-	return open_log();
+	if (open_log() < 0) {
+		log_err(_("Cannot open reencryption log file.\n"));
+		return -EINVAL;
+	}
+
+	if (!rnc.in_progress) {
+		if (1 /*opt_new */)
+			rnc.reencrypt_direction = FORWARD;
+		else {
+			rnc.reencrypt_direction = BACKWARD;
+			rnc.device_offset = (uint64_t)~0;
+		}
+	}
+
+	return 0;
 }
 
 static void destroy_context(void)
@@ -1043,7 +1063,7 @@ int main(int argc, const char **argv)
 	case -ENODEV:	r = 4; break;
 	case -ENOMEM:	r = 3; break;
 	case -EPERM:	r = 2; break;
-	case -EAGAIN: log_err(_("Interrupted by a signal.\n"));
+	case -EAGAIN:
 	case -EINVAL:
 	case -ENOENT:
 	case -ENOSYS:
