@@ -288,18 +288,17 @@ static int create_empty_header(const char *new_file, const char *old_file)
 
 static int write_log(struct reenc_ctx *rc)
 {
-	static char buf[SECTOR_SIZE];
 	ssize_t r;
 
-	memset(buf, 0, SECTOR_SIZE);
-	snprintf(buf, SECTOR_SIZE, "# LUKS reencryption log, DO NOT EDIT OR DELETE.\n"
+	memset(rc->log_buf, 0, SECTOR_SIZE);
+	snprintf(rc->log_buf, SECTOR_SIZE, "# LUKS reencryption log, DO NOT EDIT OR DELETE.\n"
 		"version = %d\nUUID = %s\ndirection = %d\n"
 		"offset = %" PRIu64 "\nshift = %" PRIu64 "\n# EOF\n",
 		1, rc->device_uuid, rc->reencrypt_direction,
 		rc->device_offset, rc->device_shift);
 
 	lseek(rc->log_fd, 0, SEEK_SET);
-	r = write(rc->log_fd, buf, SECTOR_SIZE);
+	r = write(rc->log_fd, rc->log_buf, SECTOR_SIZE);
 	if (r < 0 || r != SECTOR_SIZE) {
 		log_err(_("Cannot write reencryption log file.\n"));
 		return -EIO;
@@ -383,17 +382,22 @@ static void close_log(struct reenc_ctx *rc)
 
 static int open_log(struct reenc_ctx *rc)
 {
-	int flags;
+	int flags, create_new;
 	struct stat st;
 
-	if(stat(rc->log_file, &st) < 0) {
+	if (!stat(rc->log_file, &st))
+		create_new = 0;
+	else if (errno == ENOENT)
+		create_new = 1;
+	else
+		return -EINVAL;
+
+	if (create_new) {
 		log_dbg("Creating LUKS reencryption log file %s.", rc->log_file);
 		flags = opt_directio ? O_RDWR|O_CREAT|O_DIRECT : O_RDWR|O_CREAT;
 		rc->log_fd = open(rc->log_file, flags, S_IRUSR|S_IWUSR);
 		if (rc->log_fd == -1)
 			return -EINVAL;
-		if (write_log(rc) < 0)
-			return -EIO;
 	} else {
 		log_dbg("Log file %s exists, restarting.", rc->log_file);
 		flags = opt_directio ? O_RDWR|O_DIRECT : O_RDWR;
@@ -407,6 +411,11 @@ static int open_log(struct reenc_ctx *rc)
 		log_err(_("Allocation of aligned memory failed.\n"));
 		close_log(rc);
 		return -ENOMEM;
+	}
+
+	if (create_new && write_log(rc) < 0) {
+		close_log(rc);
+		return -EIO;
 	}
 
 	/* Be sure it is correct format */
