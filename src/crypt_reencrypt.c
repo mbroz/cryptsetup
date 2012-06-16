@@ -19,6 +19,7 @@
 
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
+#define SECTOR_SIZE 512
 
 #include <string.h>
 #include <stdio.h>
@@ -198,7 +199,6 @@ static int alignment(int fd)
 static int device_magic(header_magic set_magic)
 {
 	char *buf = NULL;
-	size_t block_size = 512;
 	int r, devfd;
 	ssize_t s;
 
@@ -206,25 +206,26 @@ static int device_magic(header_magic set_magic)
 	if (devfd == -1)
 		return errno == EBUSY ? -EBUSY : -EINVAL;
 
-	if (posix_memalign((void *)&buf, alignment(devfd), block_size)) {
+	if (posix_memalign((void *)&buf, alignment(devfd), SECTOR_SIZE)) {
+		log_err(_("Allocation of aligned memory failed.\n"));
 		r = -ENOMEM;
 		goto out;
 	}
 
-	s = read(devfd, buf, block_size);
-	if (s < 0 || s != block_size) {
-		log_verbose(_("Cannot read device %s.\n"), rnc.device);
+	s = read(devfd, buf, SECTOR_SIZE);
+	if (s < 0 || s != SECTOR_SIZE) {
+		log_err(_("Cannot read device %s.\n"), rnc.device);
 		close(devfd);
 		return -EIO;
 	}
 
 	if (set_magic == MAKE_UNUSABLE && !memcmp(buf, MAGIC, MAGIC_L)) {
-		log_dbg("Marking LUKS device %s unusable.", rnc.device);
+		log_verbose(_("Marking LUKS device %s unusable.\n"), rnc.device);
 		memcpy(buf, NOMAGIC, MAGIC_L);
 		r = 0;
 
 	} else if (set_magic == MAKE_USABLE && !memcmp(buf, NOMAGIC, MAGIC_L)) {
-		log_dbg("Marking LUKS device %s usable.", rnc.device);
+		log_verbose(_("Marking LUKS device %s usable.\n"), rnc.device);
 		memcpy(buf, MAGIC, MAGIC_L);
 		r = 0;
 	} else if (set_magic == CHECK_UNUSABLE) {
@@ -238,16 +239,16 @@ static int device_magic(header_magic set_magic)
 	if (!r) {
 		if (lseek(devfd, 0, SEEK_SET) == -1)
 			goto out;
-		s = write(devfd, buf, block_size);
-		if (s < 0 || s != block_size) {
-			log_verbose(_("Cannot write device %s.\n"), rnc.device);
+		s = write(devfd, buf, SECTOR_SIZE);
+		if (s < 0 || s != SECTOR_SIZE) {
+			log_err(_("Cannot write device %s.\n"), rnc.device);
 			r = -EIO;
 		}
 	} else
 		log_dbg("LUKS signature check failed for %s.", rnc.device);
 out:
 	if (buf)
-		memset(buf, 0, block_size);
+		memset(buf, 0, SECTOR_SIZE);
 	free(buf);
 	close(devfd);
 	return r;
@@ -286,20 +287,19 @@ static int create_empty_header(const char *new_file, const char *old_file)
 
 static int write_log(void)
 {
-	static char buf[512];
+	static char buf[SECTOR_SIZE];
 	ssize_t r;
 
-	//log_dbg("Updating LUKS reencryption log offset %" PRIu64 ".", offset);
-	memset(buf, 0, sizeof(buf));
-	snprintf(buf, sizeof(buf), "# LUKS reencryption log, DO NOT EDIT OR DELETE.\n"
+	memset(buf, 0, SECTOR_SIZE);
+	snprintf(buf, SECTOR_SIZE, "# LUKS reencryption log, DO NOT EDIT OR DELETE.\n"
 		"version = %d\nUUID = %s\ndirection = %d\n"
 		"offset = %" PRIu64 "\nshift = %" PRIu64 "\n# EOF\n",
 		1, rnc.device_uuid, rnc.reencrypt_direction,
 		rnc.device_offset, rnc.device_shift);
 
 	lseek(rnc.log_fd, 0, SEEK_SET);
-	r = write(rnc.log_fd, buf, sizeof(buf));
-	if (r < 0 || r != sizeof(buf)) {
+	r = write(rnc.log_fd, buf, SECTOR_SIZE);
+	if (r < 0 || r != SECTOR_SIZE) {
 		log_err(_("Cannot write reencryption log file.\n"));
 		return -EIO;
 	}
@@ -313,7 +313,7 @@ static int parse_line_log(const char *line)
 	int i;
 	char s[64];
 
-	/* comment */
+	/* whole line is comment */
 	if (*line == '#')
 		return 0;
 
@@ -344,15 +344,17 @@ static int parse_line_log(const char *line)
 
 static int parse_log(void)
 {
-	static char buf[512];
+	static char buf[SECTOR_SIZE];
 	char *start, *end;
 	ssize_t s;
 
-	s = read(rnc.log_fd, buf, sizeof(buf));
-	if (s == -1)
+	s = read(rnc.log_fd, buf, SECTOR_SIZE);
+	if (s == -1) {
+		log_err(_("Cannot read reencryption log file.\n"));
 		return -EIO;
+	}
 
-	buf[511] = '\0';
+	buf[SECTOR_SIZE - 1] = '\0';
 	start = buf;
 	do {
 		end = strchr(start, '\n');
@@ -434,7 +436,7 @@ out:
 	crypt_free(cd);
 	crypt_free(cd_new);
 	if (r < 0)
-		log_err("Activation of devices failed.\n");
+		log_err(_("Activation of temporary devices failed.\n"));
 	return r;
 }
 
@@ -446,6 +448,7 @@ static int backup_luks_headers(void)
 	int i, r;
 
 	log_dbg("Creating LUKS header backup for device %s.", rnc.device);
+
 	if ((r = crypt_init(&cd, rnc.device)) ||
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
@@ -453,6 +456,7 @@ static int backup_luks_headers(void)
 	crypt_set_confirm_callback(cd, NULL, NULL);
 	if ((r = crypt_header_backup(cd, CRYPT_LUKS1, rnc.header_file_org)))
 		goto out;
+	log_verbose(_("LUKS header backup of device %s created.\n"), rnc.device);
 
 	if ((r = create_empty_header(rnc.header_file_new, rnc.header_file_org)))
 		goto out;
@@ -486,6 +490,7 @@ static int backup_luks_headers(void)
 			crypt_get_uuid(cd),
 			NULL, crypt_get_volume_key_size(cd), &params)))
 		goto out;
+	log_verbose(_("New LUKS header for device %s created.\n"), rnc.device);
 
 	for (i = 0; i < MAX_SLOT; i++) {
 		if (!rnc.p[i].password)
@@ -493,12 +498,14 @@ static int backup_luks_headers(void)
 		if ((r = crypt_keyslot_add_by_volume_key(cd_new, i,
 			NULL, 0, rnc.p[i].password, rnc.p[i].passwordLen)) < 0)
 			goto out;
+		log_verbose(_("Activated keyslot %i.\n"), r);
 		r = 0;
 	}
-
 out:
 	crypt_free(cd);
 	crypt_free(cd_new);
+	if (r)
+		log_err(_("Creation of LUKS backup headers failed.\n"));
 	return r;
 }
 
@@ -521,16 +528,19 @@ static int restore_luks_header(const char *backup)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	log_dbg("Restoring header for %s.", backup);
+	log_dbg("Restoring header for %s from %s.", rnc.device, backup);
 
 	r = crypt_init(&cd, rnc.device);
-
 	if (r == 0) {
 		crypt_set_confirm_callback(cd, NULL, NULL);
 		r = crypt_header_restore(cd, CRYPT_LUKS1, backup);
 	}
 
 	crypt_free(cd);
+	if (r)
+		log_err(_("Cannot restore LUKS header on device %s.\n"), rnc.device);
+	else
+		log_verbose(_("LUKS header on device %s restored.\n"), rnc.device);
 	return r;
 }
 
@@ -553,11 +563,13 @@ void print_progress(uint64_t bytes, int final)
 	if (!tdiff)
 		return;
 
-	log_err("\33[2K\rProgress: %5.1f%%, time elapsed %3.1f seconds, %4"
-		PRIu64 " MB written, speed %5.1f MB/s%s",
+	/* vt100 code clear line */
+	log_err("\33[2K\r");
+	log_err(_("Progress: %5.1f%%, time elapsed %3.1f seconds, "
+		"%4llu MiB written, speed %5.1f MiB/s%s"),
 		(double)bytes / rnc.device_size * 100,
 		time_diff(rnc.start_time, rnc.end_time),
-		mbytes, (double)(mbytes) / tdiff,
+		(unsigned long long)mbytes, (double)(mbytes) / tdiff,
 		final ? "\n" :"");
 }
 
@@ -565,11 +577,11 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 {
 	ssize_t s1, s2;
 
-	log_dbg("Reencrypting forward.");
+	log_dbg("Reencrypting in forward direction.");
 
 	if (lseek64(fd_old, rnc.device_offset, SEEK_SET) < 0 ||
 	    lseek64(fd_new, rnc.device_offset, SEEK_SET) < 0) {
-		log_err("Cannot seek to device offset.\n");
+		log_err(_("Cannot seek to device offset.\n"));
 		return -EIO;
 	}
 
@@ -581,12 +593,12 @@ static int copy_data_forward(int fd_old, int fd_new, size_t block_size, void *bu
 	while (!quit && rnc.device_offset < rnc.device_size) {
 		s1 = read(fd_old, buf, block_size);
 		if (s1 < 0 || (s1 != block_size && (rnc.device_offset + s1) != rnc.device_size)) {
-			log_err("Read error, expecting %d, got %d.\n", (int)block_size, (int)s1);
+			log_dbg("Read error, expecting %d, got %d.", (int)block_size, (int)s1);
 			return -EIO;
 		}
 		s2 = write(fd_new, buf, s1);
 		if (s2 < 0) {
-			log_err("Write error, expecting %d, got %d.\n", (int)block_size, (int)s2);
+			log_dbg("Write error, expecting %d, got %d.", (int)block_size, (int)s2);
 			return -EIO;
 		}
 		rnc.device_offset += s1;
@@ -605,7 +617,7 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 	ssize_t s1, s2, working_block;
 	off64_t working_offset;
 
-	log_dbg("Reencrypting backward.");
+	log_dbg("Reencrypting in backward direction.");
 
 	if (!rnc.in_progress) {
 		rnc.device_offset = rnc.device_size;
@@ -630,18 +642,18 @@ static int copy_data_backward(int fd_old, int fd_new, size_t block_size, void *b
 
 		if (lseek64(fd_old, working_offset, SEEK_SET) < 0 ||
 		    lseek64(fd_new, working_offset, SEEK_SET) < 0) {
-			log_err("Cannot seek to device offset.\n");
+			log_err(_("Cannot seek to device offset.\n"));
 			return -EIO;
 		}
 
 		s1 = read(fd_old, buf, working_block);
 		if (s1 < 0 || (s1 != working_block)) {
-			log_err("Read error, expecting %d, got %d.\n", (int)block_size, (int)s1);
+			log_dbg("Read error, expecting %d, got %d.", (int)block_size, (int)s1);
 			return -EIO;
 		}
 		s2 = write(fd_new, buf, working_block);
 		if (s2 < 0) {
-			log_err("Write error, expecting %d, got %d.\n", (int)block_size, (int)s2);
+			log_dbg("Write error, expecting %d, got %d.", (int)block_size, (int)s2);
 			return -EIO;
 		}
 		rnc.device_offset -= s1;
@@ -666,24 +678,30 @@ static int copy_data(void)
 	log_dbg("Data copy preparation.");
 
 	fd_old = open(rnc.crypt_path_org, O_RDONLY | (opt_directio ? O_DIRECT : 0));
-	if (fd_old == -1)
+	if (fd_old == -1) {
+		log_err(_("Cannot open temporary LUKS header file.\n"));
 		goto out;
+	}
 
 	fd_new = open(rnc.crypt_path_new, O_WRONLY | (opt_directio ? O_DIRECT : 0));
-	if (fd_new == -1)
+	if (fd_new == -1) {
+		log_err(_("Cannot open temporary LUKS header file.\n"));
 		goto out;
+	}
 
 	/* Check size */
-	if (ioctl(fd_old, BLKGETSIZE64, &rnc.device_size) < 0)
+	if (ioctl(fd_old, BLKGETSIZE64, &rnc.device_size) < 0) {
+		log_err(_("Cannot get device size.\n"));
 		goto out;
+	}
 
 	if (posix_memalign((void *)&buf, alignment(fd_new), block_size)) {
+		log_err(_("Allocation of aligned memory failed.\n"));
 		r = -ENOMEM;
 		goto out;
 	}
 
 	set_int_handler();
-
 	gettimeofday(&rnc.start_time, NULL);
 
 	if (rnc.reencrypt_direction == FORWARD)
@@ -697,7 +715,7 @@ static int copy_data(void)
 	if (r == -EAGAIN)
 		 log_err(_("Interrupted by a signal.\n"));
 	else if (r < 0)
-		log_err("ERROR during reencryption.\n");
+		log_err(_("IO error during reencryption.\n"));
 
 	(void)write_log();
 out:
@@ -847,7 +865,7 @@ static int initialize_context(const char *device)
 		return -ENOMEM;
 
 	if (initialize_uuid()) {
-		log_err("No header found on device.\n");
+		log_err(_("Device %s is not a valid LUKS device.\n"), device);
 		return -EINVAL;
 	}
 
@@ -989,7 +1007,7 @@ int main(int argc, const char **argv)
 		{ "version",           '\0', POPT_ARG_NONE, &opt_version_mode,          0, N_("Print package version"), NULL },
 		{ "verbose",           'v',  POPT_ARG_NONE, &opt_verbose,               0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",             '\0', POPT_ARG_NONE, &opt_debug,                 0, N_("Show debug messages"), NULL },
-		{ "block-size",        'B',  POPT_ARG_INT, &opt_bsize,                  0, N_("Reencryption block size"), N_("MB") },
+		{ "block-size",        'B',  POPT_ARG_INT, &opt_bsize,                  0, N_("Reencryption block size"), N_("MiB") },
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
@@ -1009,7 +1027,6 @@ int main(int argc, const char **argv)
 	int r;
 
 	crypt_set_log_callback(NULL, _log, NULL);
-	log_err("WARNING: this is experimental code, it can completely break your data.\n");
 
 	set_int_block(1);
 
@@ -1035,6 +1052,9 @@ int main(int argc, const char **argv)
 		exit(EXIT_SUCCESS);
 	}
 
+	if (!opt_batch_mode)
+		log_err(_("WARNING: this is experimental code, it can completely break your data.\n"));
+
 	action_argv = poptGetArgs(popt_context);
 	if(!action_argv)
 		usage(popt_context, EXIT_FAILURE, _("Argument required."),
@@ -1042,6 +1062,11 @@ int main(int argc, const char **argv)
 
 	if (opt_random && opt_urandom)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_bsize < 1 || opt_bsize > 64)
+		usage(popt_context, EXIT_FAILURE,
+		      _("Only values between 1MiB and 64 MiB allowed for reencryption block size."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
