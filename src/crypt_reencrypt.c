@@ -79,6 +79,7 @@ struct reenc_ctx {
 	char crypt_path_org[PATH_MAX];
 	char crypt_path_new[PATH_MAX];
 	int log_fd;
+	char *log_buf;
 
 	struct {
 		char *password;
@@ -344,18 +345,17 @@ static int parse_line_log(struct reenc_ctx *rc, const char *line)
 
 static int parse_log(struct reenc_ctx *rc)
 {
-	static char buf[SECTOR_SIZE];
 	char *start, *end;
 	ssize_t s;
 
-	s = read(rc->log_fd, buf, SECTOR_SIZE);
+	s = read(rc->log_fd, rc->log_buf, SECTOR_SIZE);
 	if (s == -1) {
 		log_err(_("Cannot read reencryption log file.\n"));
 		return -EIO;
 	}
 
-	buf[SECTOR_SIZE - 1] = '\0';
-	start = buf;
+	rc->log_buf[SECTOR_SIZE - 1] = '\0';
+	start = rc->log_buf;
 	do {
 		end = strchr(start, '\n');
 		if (end) {
@@ -370,6 +370,15 @@ static int parse_log(struct reenc_ctx *rc)
 	} while (start);
 
 	return 0;
+}
+
+static void close_log(struct reenc_ctx *rc)
+{
+	log_dbg("Closing LUKS reencryption log file %s.", rc->log_file);
+	if (rc->log_fd != -1)
+		close(rc->log_fd);
+	free(rc->log_buf);
+	rc->log_buf = NULL;
 }
 
 static int open_log(struct reenc_ctx *rc)
@@ -394,15 +403,14 @@ static int open_log(struct reenc_ctx *rc)
 		rc->in_progress = 1;
 	}
 
+	if (posix_memalign((void *)&rc->log_buf, alignment(rc->log_fd), SECTOR_SIZE)) {
+		log_err(_("Allocation of aligned memory failed.\n"));
+		close_log(rc);
+		return -ENOMEM;
+	}
+
 	/* Be sure it is correct format */
 	return parse_log(rc);
-}
-
-static void close_log(struct reenc_ctx *rc)
-{
-	log_dbg("Closing LUKS reencryption log file %s.", rc->log_file);
-	if (rc->log_fd != -1)
-		close(rc->log_fd);
 }
 
 static int activate_luks_headers(struct reenc_ctx *rc)
@@ -565,7 +573,7 @@ static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 
 	/* vt100 code clear line */
 	log_err("\33[2K\r");
-	log_err(_("Progress: %5.1f%%, time elapsed %3.1f seconds, "
+	log_err(_("Progress: %5.1f%%, time elapsed %4.0f seconds, "
 		"%4llu MiB written, speed %5.1f MiB/s%s"),
 		(double)bytes / rc->device_size * 100,
 		time_diff(rc->start_time, rc->end_time),
