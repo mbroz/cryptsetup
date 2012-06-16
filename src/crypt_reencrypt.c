@@ -17,6 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#define PACKAGE_REENC "crypt_reencrypt"
+
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 #define SECTOR_SIZE 512
@@ -803,13 +805,18 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 
 	retry_count = opt_tries ?: 1;
 	while (retry_count--) {
+		set_int_handler();
 		r = crypt_get_key(msg, &rc->p[slot].password,
 			&rc->p[slot].passwordLen,
 			0, 0, NULL /*opt_key_file*/,
 			0, 0, cd);
 		if (r < 0)
 			return r;
+		if (quit)
+			return -EAGAIN;
 
+		/* library uses sigint internally, until it is fixed...*/
+		set_int_block(1);
 		r = crypt_activate_by_passphrase(cd, NULL, slot_check,
 			rc->p[slot].password, rc->p[slot].passwordLen, 0);
 
@@ -964,7 +971,8 @@ static void destroy_context(struct reenc_ctx *rc)
 
 	if ((rc->reencrypt_direction == FORWARD &&
 	     rc->device_offset == rc->device_size) ||
-	     rc->device_offset == 0) {
+	    (rc->reencrypt_direction == BACKWARD &&
+	     rc->device_offset == 0)) {
 		unlink(rc->log_file);
 		unlink(rc->header_file_org);
 		unlink(rc->header_file_new);
@@ -1033,7 +1041,7 @@ static void _dbg_version_and_cmd(int argc, const char **argv)
 {
 	int i;
 
-	log_std("# %s %s processing \"", PACKAGE_NAME, PACKAGE_VERSION);
+	log_std("# %s %s processing \"", PACKAGE_REENC, PACKAGE_VERSION);
 	for (i = 0; i < argc; i++) {
 		if (i)
 			log_std(" ");
@@ -1087,16 +1095,13 @@ int main(int argc, const char **argv)
 	poptSetOtherOptionHelp(popt_context,
 	                       N_("[OPTION...] <device>]"));
 
-	while((r = poptGetNextOpt(popt_context)) > 0) {
-		if (r < 0)
-			break;
-	}
-
+	while((r = poptGetNextOpt(popt_context)) > 0) ;
 	if (r < -1)
 		usage(popt_context, EXIT_FAILURE, poptStrerror(r),
 		      poptBadOption(popt_context, POPT_BADOPTION_NOALIAS));
+
 	if (opt_version_mode) {
-		log_std("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+		log_std("%s %s\n", PACKAGE_REENC, PACKAGE_VERSION);
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	}
@@ -1137,10 +1142,6 @@ int main(int argc, const char **argv)
 	case -ENODEV:	r = 4; break;
 	case -ENOMEM:	r = 3; break;
 	case -EPERM:	r = 2; break;
-	case -EAGAIN:
-	case -EINVAL:
-	case -ENOENT:
-	case -ENOSYS:
 	default:	r = EXIT_FAILURE;
 	}
 	return r;
