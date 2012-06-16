@@ -564,9 +564,9 @@ static int restore_luks_header(struct reenc_ctx *rc)
 
 static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 {
-	uint64_t mbytes = (bytes - rc->restart_bytes) / 1024 / 1024;
+	unsigned long long mbytes, eta;
 	struct timeval now_time;
-	double tdiff;
+	double tdiff, mib;
 
 	gettimeofday(&now_time, NULL);
 	if (!final && time_diff(rc->end_time, now_time) < 0.5)
@@ -581,13 +581,19 @@ static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 	if (!tdiff)
 		return;
 
+	mbytes = (bytes - rc->restart_bytes) / 1024 / 1024;
+	mib = (double)(mbytes) / tdiff;
+	if (!mib)
+		return;
+
+	eta = (unsigned long long)(rc->device_size / 1024 / 1024 / mib - tdiff);
+
 	/* vt100 code clear line */
 	log_err("\33[2K\r");
-	log_err(_("Progress: %5.1f%%, time elapsed %4.0f seconds, "
+	log_err(_("Progress: %5.1f%%, ETA %02llu:%02llu, "
 		"%4llu MiB written, speed %5.1f MiB/s%s"),
 		(double)bytes / rc->device_size * 100,
-		time_diff(rc->start_time, rc->end_time),
-		(unsigned long long)mbytes, (double)(mbytes) / tdiff,
+		eta / 60, eta % 60, mbytes, mib,
 		final ? "\n" :"");
 }
 
