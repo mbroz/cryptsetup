@@ -50,6 +50,18 @@ lines are always prefixed by '#'.
 .B "\-\-cipher, \-c" \fI<cipher-spec>\fR
 Set the cipher specification string.
 .TP
+.B "\-\-key-size, \-s \fI<bits>\fR"
+Set key size in bits. The argument has to be a multiple of  8.
+
+The possible key-sizes are limited by the cipher and mode used. 
+
+If you are increasing key size, there must be enough space in the LUKS header
+for enlarged keyslots (data offset must be large enough) or reencryption
+cannot be performed.
+
+If there is not enough space for keyslots with new key size,
+you can destructively shrink device with \-\-reduce-device-size option.
+.TP
 .B "\-\-hash, \-h \fI<hash-spec>\fR"
 Specifies the hash used in the LUKS key setup scheme and volume key digest.
 .TP
@@ -64,17 +76,17 @@ Define which kernel random number generator will be used to create the volume ke
 .TP
 .B "\-\-key-file, \-d \fIname\fR"
 Read the passphrase from file.
-.br
+
 WARNING: \-\-key-file option can be used only if there only one active keyslot,
 or alternatively, also if \-\-key-slot option is specified (then all other keyslots
 will be disabled in new LUKS device).
 
-If this option is not used, cryptswtup-reencrypt will ask for all active keyslot
+If this option is not used, cryptsetup-reencrypt will ask for all active keyslot
 passphrases.
 .TP
 .B "\-\-key-slot, \-S <0-7>"
 Specify which key slot is used.
-.br
+
 WARNING: All other keyslots will be disabled if this option is used.
 .TP
 .B "\-\-keyfile-offset \fIvalue\fR"
@@ -90,12 +102,28 @@ Number of retries for invalid passphrase entry.
 .TP
 .B "\-\-block-size, \-B \fIvalue\fR"
 Use re-encryption block size of <value> in MiB.
-.br
+
 Values can be between 1 and 64 MiB.
+.TP
+.B "\-\-reduce-device-size \fInumber of 512 bytes sectors\fR"
+Enlarge data offset for specified value of sectors by shrinking
+device size.
+
+This means that last sectors on the original device will be lost,
+ciphertext data will be effectively shifted by specified
+number of sectors.
+
+It can be usefull if you e.g. added some space to underlying
+partition (so last sectors contains no data).
+
+WARNING: This is destructive operation and cannot be reverted.
+Use with extreme care - shrinked filesystems are usually unrecoverable.
+
+You cannot shrink device more than by 64 MiB (131072 sectors).
 .TP
 .B "\-\-use-directio"
 Use direct-io (O_DIRECT) for all read/write data operations.
-.br
+
 Usefull if direct-io operations perform better than normal buffered
 operations (e.g. in virtual environments).
 .TP

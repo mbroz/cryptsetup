@@ -55,11 +55,13 @@ static int opt_version_mode = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
 static int opt_bsize = 4;
+static int opt_reduce_device_size = 0;
 static int opt_directio = 0;
 static int opt_fsync = 0;
 static int opt_write_log = 0;
 static int opt_tries = 3;
 static int opt_key_slot = CRYPT_ANY_SLOT;
+static int opt_key_size = 0;
 
 static const char **action_argv;
 
@@ -277,18 +279,35 @@ out:
 	return r;
 }
 
-static int create_empty_header(const char *new_file, const char *old_file)
+static int create_empty_header(const char *new_file, const char *old_file,
+			       uint64_t data_sector)
 {
 	struct stat st;
 	ssize_t size;
 	int fd, r = 0;
 	char *buf;
 
+	/* Never create header > 4MiB */
+	if (data_sector > 8192)
+		data_sector = 8192;
+
+	/* new header file of the same size as old backup */
 	if (stat(old_file, &st) == -1 ||
 		 (st.st_mode & S_IFMT) != S_IFREG ||
 		 (st.st_size > 16 * 1024 * 1024))
 		return -EINVAL;
 	size = st.st_size;
+
+	/*
+	 * if requesting key size change, try to use offset
+	 * here can be enough space to fit new key.
+	 */
+	if (opt_key_size)
+		size = data_sector * SECTOR_SIZE;
+
+	/* if reducing size, be sure we have enough space */
+	if (opt_reduce_device_size)
+		size += (opt_reduce_device_size * SECTOR_SIZE);
 
 	log_dbg("Creating empty file %s of size %lu.", new_file, (unsigned long)size);
 
@@ -499,12 +518,15 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		goto out;
 	log_verbose(_("LUKS header backup of device %s created.\n"), rc->device);
 
-	if ((r = create_empty_header(rc->header_file_new, rc->header_file_org)))
+	if ((r = create_empty_header(rc->header_file_new, rc->header_file_org,
+		crypt_get_data_offset(cd))))
 		goto out;
 
 	params.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
 	params.data_alignment = crypt_get_data_offset(cd);
+	params.data_alignment += opt_reduce_device_size;
 	params.data_device = rc->device;
+
 
 	if ((r = crypt_init(&cd_new, rc->header_file_new)))
 		goto out;
@@ -529,7 +551,9 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 			opt_cipher ? cipher : crypt_get_cipher(cd),
 			opt_cipher ? cipher_mode : crypt_get_cipher_mode(cd),
 			crypt_get_uuid(cd),
-			NULL, crypt_get_volume_key_size(cd), &params)))
+			NULL,
+			opt_key_size ? opt_key_size / 8 : crypt_get_volume_key_size(cd),
+			&params)))
 		goto out;
 	log_verbose(_("New LUKS header for device %s created.\n"), rc->device);
 
@@ -760,7 +784,7 @@ static int copy_data(struct reenc_ctx *rc)
 	}
 
 	/* Check size */
-	if (ioctl(fd_old, BLKGETSIZE64, &rc->device_size) < 0) {
+	if (ioctl(fd_new, BLKGETSIZE64, &rc->device_size) < 0) {
 		log_err(_("Cannot get device size.\n"));
 		goto out;
 	}
@@ -975,7 +999,7 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 	}
 
 	if (!rc->in_progress) {
-		if (1 /*opt_new */)
+		if (!opt_reduce_device_size)
 			rc->reencrypt_direction = FORWARD;
 		else {
 			rc->reencrypt_direction = BACKWARD;
@@ -998,7 +1022,7 @@ static void destroy_context(struct reenc_ctx *rc)
 	if ((rc->reencrypt_direction == FORWARD &&
 	     rc->device_offset == rc->device_size) ||
 	    (rc->reencrypt_direction == BACKWARD &&
-	     rc->device_offset == 0)) {
+	     (rc->device_offset == 0 || rc->device_offset == (uint64_t)~0))) {
 		unlink(rc->log_file);
 		unlink(rc->header_file_org);
 		unlink(rc->header_file_new);
@@ -1091,6 +1115,7 @@ int main(int argc, const char **argv)
 		{ "debug",             '\0', POPT_ARG_NONE, &opt_debug,                 0, N_("Show debug messages"), NULL },
 		{ "block-size",        'B',  POPT_ARG_INT, &opt_bsize,                  0, N_("Reencryption block size"), N_("MiB") },
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
+		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF2 iteration time for LUKS (in ms)"), N_("msecs") },
@@ -1104,6 +1129,7 @@ int main(int argc, const char **argv)
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Use only this slot (others will be disabled)."), NULL },
 		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
 		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
+		{ "reduce-device-size",'\0', POPT_ARG_INT, &opt_reduce_device_size,     0, N_("Reduce data device size (move data start). DANGEROUS!"), N_("SECTORS") },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1151,6 +1177,16 @@ int main(int argc, const char **argv)
 	if (opt_bsize < 1 || opt_bsize > 64)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Only values between 1MiB and 64 MiB allowed for reencryption block size."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_reduce_device_size > 64 * 1024 * 1024 / SECTOR_SIZE)
+		usage(popt_context, EXIT_FAILURE,
+		      _("Maximum device reduce size is 64 MiB."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_key_size % 8)
+		usage(popt_context, EXIT_FAILURE,
+		      _("Key size must be a multiple of 8 bits"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
