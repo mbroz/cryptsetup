@@ -101,7 +101,8 @@ int  MAGIC_L = 6;
 typedef enum {
 	MAKE_UNUSABLE,
 	MAKE_USABLE,
-	CHECK_UNUSABLE
+	CHECK_UNUSABLE,
+	CHECK_OPEN,
 } header_magic;
 
 __attribute__((format(printf, 5, 6)))
@@ -198,15 +199,27 @@ static int alignment(int fd)
 	return alignment;
 }
 
-static int device_magic(struct reenc_ctx *rc, header_magic set_magic)
+static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 {
 	char *buf = NULL;
 	int r, devfd;
 	ssize_t s;
 
-	devfd = open(rc->device, O_RDWR | O_DIRECT);
-	if (devfd == -1)
-		return errno == EBUSY ? -EBUSY : -EINVAL;
+	devfd = open(rc->device, O_RDWR | O_EXCL | O_DIRECT);
+	if (devfd == -1) {
+		if (errno == EBUSY) {
+			log_err(_("Cannot exclusively open %s, device in use.\n"),
+				rc->device);
+			return -EBUSY;
+		}
+		log_err(_("Cannot open device %s\n"), rc->device);
+		return -EINVAL;
+	}
+
+	if (set_magic == CHECK_OPEN) {
+		r = 0;
+		goto out;
+	}
 
 	if (posix_memalign((void *)&buf, alignment(devfd), SECTOR_SIZE)) {
 		log_err(_("Allocation of aligned memory failed.\n"));
@@ -790,7 +803,7 @@ static int initialize_uuid(struct reenc_ctx *rc)
 		rc->device_uuid = strdup(crypt_get_uuid(cd));
 	else
 		/* Reencryption already in progress - magic header? */
-		r = device_magic(rc, CHECK_UNUSABLE);
+		r = device_check(rc, CHECK_UNUSABLE);
 
 	crypt_free(cd);
 	return r;
@@ -917,6 +930,9 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 	if (!(rc->device = strndup(device, PATH_MAX)))
 		return -ENOMEM;
 
+	if (device_check(rc, CHECK_OPEN) < 0)
+		return -EINVAL;
+
 	if (initialize_uuid(rc)) {
 		log_err(_("Device %s is not a valid LUKS device.\n"), device);
 		return -EINVAL;
@@ -998,7 +1014,7 @@ static int run_reencrypt(const char *device)
 	if (!rc.in_progress) {
 		if ((r = initialize_passphrase(&rc, rc.device)) ||
 		    (r = backup_luks_headers(&rc)) ||
-		    (r = device_magic(&rc, MAKE_UNUSABLE)))
+		    (r = device_check(&rc, MAKE_UNUSABLE)))
 			goto out;
 	} else {
 		if ((r = initialize_passphrase(&rc, rc.header_file_new)))
