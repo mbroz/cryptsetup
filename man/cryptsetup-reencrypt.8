@@ -1,0 +1,136 @@
+.TH CRYPTSETUP-REENCRYPT "8" "June 2012" "cryptsetup-reencrypt" "Maintenance Commands"
+.SH NAME
+cryptsetup-reencrypt - tool for offline LUKS device re-encryption
+.SH SYNOPSIS
+.B cryptsetup-reencrypt <options> <device>
+.SH DESCRIPTION
+.PP
+Cryptsetup-reencrypt can be used to change reencryption parameters
+which otherwise require full on-disk data change (re-encryption).
+
+You can regenerate \fBvolume key\fR (the real key used in on-disk encryption
+unclocked by passphrase), \fBcipher\fR, \fBcipher mode\fR.
+
+Cryptsetup-reencrypt reencrypts data on LUKS device in-place. During
+reencryption process the LUKS device is marked unavailable.
+
+\fIWARNING\fR: The cryptsetup-reencrypt program is not resistant to hardware
+or kernel failures during reencryption (you can lose you data in this case).
+
+\fIALWAYS BE SURE YOU HAVE RELIABLE BACKUP BEFORE USING THIS TOOL.\fR
+.br
+\fITHIS TOOL IS EXPERIMENTAL.\fR
+
+The reencryption can be temporarily suspended (by TERM signal or by
+using ctrl+c) but you need to retain temporary files named LUKS-<uuid>.[log|org|new].
+LUKS device is unavailable until reencryption is finished though.
+
+For more info about LUKS see cryptsetup(8).
+.PP
+.SH OPTIONS
+.TP
+To start (or continue) re-encryption for <device> use:
+.PP
+\fIcryptsetup-reencrypt\fR <device>
+
+\fB<options>\fR can be [\-\-block-size, \-\-cipher, \-\-hash, \-\-iter-time,
+\-\-use-random | \-\-use-urandom, \-\-key-file, \-\-key-slot, \-\-keyfile-offset,
+\-\-keyfile-size, \-\-tries, \-\-use-directio, \-\-use-fsync, \-\-write-log]
+
+For detailed description of encryption and key file options see \fIcryptsetup(8)\fR
+man page.
+.TP
+.B "\-\-verbose, \-v"
+Print more information on command execution.
+.TP
+.B "\-\-debug"
+Run in debug mode with full diagnostic logs. Debug output
+lines are always prefixed by '#'.
+.TP
+.B "\-\-cipher, \-c" \fI<cipher-spec>\fR
+Set the cipher specification string.
+.TP
+.B "\-\-hash, \-h \fI<hash-spec>\fR"
+Specifies the hash used in the LUKS key setup scheme and volume key digest.
+.TP
+.B "\-\-iter-time, \-i \fI<milliseconds>\fR"
+The number of milliseconds to spend with PBKDF2 passphrase processing for the
+new LUKS header.
+.TP
+.B "\-\-use-random"
+.TP
+.B "\-\-use-urandom"
+Define which kernel random number generator will be used to create the volume key.
+.TP
+.B "\-\-key-file, \-d \fIname\fR"
+Read the passphrase from file.
+.br
+WARNING: \-\-key-file option can be used only if there only one active keyslot,
+or alternatively, also if \-\-key-slot option is specified (then all other keyslots
+will be disabled in new LUKS device).
+
+If this option is not used, cryptswtup-reencrypt will ask for all active keyslot
+passphrases.
+.TP
+.B "\-\-key-slot, \-S <0-7>"
+Specify which key slot is used.
+.br
+WARNING: All other keyslots will be disabled if this option is used.
+.TP
+.B "\-\-keyfile-offset \fIvalue\fR"
+Skip \fIvalue\fR bytes at the beginning of the key file.
+.TP
+.B "\-\-keyfile-size, \-l"
+Read a maximum of \fIvalue\fR bytes from the key file.
+Default is to read the whole file up to the compiled-in
+maximum.
+.TP
+.B "\-\-tries, \-T"
+Number of retries for invalid passphrase entry.
+.TP
+.B "\-\-block-size, \-B \fIvalue\fR"
+Use re-encryption block size of <value> in MiB.
+.br
+Values can be between 1 and 64 MiB.
+.TP
+.B "\-\-use-directio"
+Use direct-io (O_DIRECT) for all read/write data operations.
+.br
+Usefull if direct-io operations perform better than normal buffered
+operations (e.g. in virtual environments).
+.TP
+.B "\-\-use-fsync"
+Use fsync call after every written block.
+.TP
+.B "\-\-write-log"
+Update log file after every block write. This can slow down reencryption
+but will minimize data loss in the case of system crash.
+.TP
+.B "\-\-batch-mode, \-q"
+Suppresses all warnings and reencryption progress output.
+.TP
+.B "\-\-version"
+Show the program version.
+.SH RETURN CODES
+Cryptsetup-reencrypt returns 0 on success and a non-zero value on error.
+
+Error codes are: 1 wrong parameters, 2 no permission,
+3 out of memory, 4 wrong device specified, 5 device already exists
+or device is busy.
+.SH REPORTING BUGS
+Report bugs, including ones in the documentation, on
+the cryptsetup mailing list at <dm-crypt@saout.de>
+or in the 'Issues' section on LUKS website.
+Please attach the output of the failed command with the
+\-\-debug option added.
+.SH AUTHORS
+Cryptsetup-reencrypt was written by Milan Broz <gmazyland@gmail.com>.
+.SH COPYRIGHT
+Copyright \(co 2012 Milan Broz
+.br
+Copyright \(co 2012 Red Hat, Inc.
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+.SH SEE ALSO
+The project website at \fBhttp://code.google.com/p/cryptsetup/\fR

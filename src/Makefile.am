@@ -66,11 +66,25 @@ endif
 endif
 
 # reencrypt
-crypt_reencrypt_SOURCES = \
+if REENCRYPT
+cryptsetup_reencrypt_SOURCES = \
 	$(top_builddir)/lib/utils_crypt.c	\
-	crypt_reencrypt.c			\
+	cryptsetup_reencrypt.c			\
 	cryptsetup.h
 
-crypt_reencrypt_LDADD = $(cryptsetup_LDADD)
-crypt_reencrypt_CFLAGS = $(cryptsetup_CFLAGS)
-sbin_PROGRAMS += crypt_reencrypt
+cryptsetup_reencrypt_LDADD = $(cryptsetup_LDADD)
+cryptsetup_reencrypt_CFLAGS = $(cryptsetup_CFLAGS)
+
+sbin_PROGRAMS += cryptsetup-reencrypt
+
+if STATIC_TOOLS
+sbin_PROGRAMS += cryptsetup-reencrypt.static
+cryptsetup_reencrypt_static_SOURCES = $(cryptsetup_reencrypt_SOURCES)
+cryptsetup_reencrypt_static_CFLAGS = $(cryptsetup_reencrypt_CFLAGS)
+cryptsetup_reencrypt_static_LDFLAGS = -all-static
+cryptsetup_reencrypt_static_LDADD = $(cryptsetup_reencrypt_LDADD)	\
+	@CRYPTO_STATIC_LIBS@ \
+	@DEVMAPPER_STATIC_LIBS@ \
+	@UUID_LIBS@
+endif
+endif

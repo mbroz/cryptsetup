@@ -4,4 +4,8 @@ if VERITYSETUP
 man8_MANS += veritysetup.8
 endif
 
+if REENCRYPT
+man8_MANS += cryptsetup-reencrypt.8
+endif
+
 EXTRA_DIST = $(man8_MANS)
