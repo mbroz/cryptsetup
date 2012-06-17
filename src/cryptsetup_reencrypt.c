@@ -35,6 +35,7 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <linux/fs.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <popt.h>
@@ -199,11 +200,13 @@ static int alignment(int fd)
 	return alignment;
 }
 
+/* Depends on the first two fields of LUKS1 header format, magic and version */
 static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 {
 	char *buf = NULL;
 	int r, devfd;
 	ssize_t s;
+	uint16_t version;
 
 	devfd = open(rc->device, O_RDWR | O_EXCL | O_DIRECT);
 	if (devfd == -1) {
@@ -234,16 +237,21 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 		return -EIO;
 	}
 
-	if (set_magic == MAKE_UNUSABLE && !memcmp(buf, MAGIC, MAGIC_L)) {
+	/* Be sure that we do not process new version of header */
+	memcpy((void*)&version, &buf[MAGIC_L], sizeof(uint16_t));
+	version = ntohs(version);
+
+	if (set_magic == MAKE_UNUSABLE && !memcmp(buf, MAGIC, MAGIC_L) &&
+	    version == 1) {
 		log_verbose(_("Marking LUKS device %s unusable.\n"), rc->device);
 		memcpy(buf, NOMAGIC, MAGIC_L);
 		r = 0;
-
-	} else if (set_magic == MAKE_USABLE && !memcmp(buf, NOMAGIC, MAGIC_L)) {
+	} else if (set_magic == MAKE_USABLE && !memcmp(buf, NOMAGIC, MAGIC_L) &&
+		   version == 1) {
 		log_verbose(_("Marking LUKS device %s usable.\n"), rc->device);
 		memcpy(buf, MAGIC, MAGIC_L);
 		r = 0;
-	} else if (set_magic == CHECK_UNUSABLE) {
+	} else if (set_magic == CHECK_UNUSABLE && version == 1) {
 		r = memcmp(buf, NOMAGIC, MAGIC_L) ? -EINVAL : 0;
 		if (!r)
 			rc->device_uuid = strndup(&buf[0xa8], 40);
@@ -551,8 +559,10 @@ static void remove_headers(struct reenc_ctx *rc)
 	if (crypt_init(&cd, NULL))
 		return;
 	crypt_set_log_callback(cd, _quiet_log, NULL);
-	(void)crypt_deactivate(cd, rc->header_file_org);
-	(void)crypt_deactivate(cd, rc->header_file_new);
+	if (*rc->header_file_org)
+		(void)crypt_deactivate(cd, rc->header_file_org);
+	if (*rc->header_file_new)
+		(void)crypt_deactivate(cd, rc->header_file_new);
 	crypt_free(cd);
 }
 
