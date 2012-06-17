@@ -1,7 +1,8 @@
 /*
- * crypt_reencrypt - crypt utility for offline reencryption
+ * cryptsetup-reencrypt - crypt utility for offline re-encryption
  *
  * Copyright (C) 2012 Milan Broz All rights reserved.
+ * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -442,7 +443,7 @@ static int open_log(struct reenc_ctx *rc)
 		if (rc->log_fd == -1)
 			return -EINVAL;
 	} else {
-		log_dbg("Log file %s exists, restarting.", rc->log_file);
+		log_std(_("Log file %s exists, restarting reencryption.\n"), rc->log_file);
 		flags = opt_directio ? O_RDWR|O_DIRECT : O_RDWR;
 		rc->log_fd = open(rc->log_file, flags);
 		if (rc->log_fd == -1)
@@ -1084,7 +1085,12 @@ static void help(poptContext popt_context,
 		 const char *arg __attribute__((unused)),
 		 void *data __attribute__((unused)))
 {
-	usage(popt_context, EXIT_SUCCESS, NULL, NULL);
+	if (key->shortName == '?') {
+		log_std("%s %s\n", PACKAGE_REENC, PACKAGE_VERSION);
+		poptPrintHelp(popt_context, stdout, 0);
+		exit(EXIT_SUCCESS);
+	} else
+		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
 }
 
 static void _dbg_version_and_cmd(int argc, const char **argv)
@@ -1129,7 +1135,7 @@ int main(int argc, const char **argv)
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Use only this slot (others will be disabled)."), NULL },
 		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
 		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
-		{ "reduce-device-size",'\0', POPT_ARG_INT, &opt_reduce_device_size,     0, N_("Reduce data device size (move data start). DANGEROUS!"), N_("SECTORS") },
+		{ "reduce-device-size",'\0', POPT_ARG_INT, &opt_reduce_device_size,     0, N_("Reduce data device size (move data offset). DANGEROUS!"), N_("SECTORS") },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1145,7 +1151,7 @@ int main(int argc, const char **argv)
 
 	popt_context = poptGetContext(PACKAGE, argc, argv, popt_options, 0);
 	poptSetOtherOptionHelp(popt_context,
-	                       N_("[OPTION...] <device>]"));
+	                       N_("[OPTION...] <device>"));
 
 	while((r = poptGetNextOpt(popt_context)) > 0) ;
 	if (r < -1)
@@ -1174,12 +1180,20 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
 		      poptGetInvocationName(popt_context));
 
+	if (opt_bsize < 0 || opt_key_size < 0 || opt_iteration_time < 0 ||
+	    opt_tries < 0 || opt_keyfile_offset < 0 || opt_key_size < 0 ||
+	    opt_reduce_device_size < 0) {
+		usage(popt_context, EXIT_FAILURE,
+		      _("Negative number for option not permitted."),
+		      poptGetInvocationName(popt_context));
+	}
+
 	if (opt_bsize < 1 || opt_bsize > 64)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Only values between 1MiB and 64 MiB allowed for reencryption block size."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_reduce_device_size > 64 * 1024 * 1024 / SECTOR_SIZE)
+	if (opt_reduce_device_size > (64 * 1024 * 1024 / SECTOR_SIZE))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Maximum device reduce size is 64 MiB."),
 		      poptGetInvocationName(popt_context));
@@ -1187,6 +1201,15 @@ int main(int argc, const char **argv)
 	if (opt_key_size % 8)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Key size must be a multiple of 8 bits"),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_key_slot != CRYPT_ANY_SLOT &&
+	    (opt_key_slot < 0 || opt_key_slot >= crypt_keyslot_max(CRYPT_LUKS1)))
+		usage(popt_context, EXIT_FAILURE, _("Key slot is invalid."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_random && opt_urandom)
+		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
