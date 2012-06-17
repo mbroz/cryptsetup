@@ -1,0 +1,106 @@
+#!/bin/bash
+
+CRYPTSETUP=../src/cryptsetup
+REENC=../src/cryptsetup-reencrypt
+
+DEV_NAME=reenc9768
+IMG=reenc-data
+KEY1=key1
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
+	rm -f $IMG $KEY1 >/dev/null 2>&1
+	LOOPDEV1=""
+}
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	echo "FAILED"
+	remove_mapping
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 0
+}
+
+function open_crypt()
+{
+	if [ -n "$1" ] ; then
+		echo "$1" | $CRYPTSETUP luksOpen $LOOPDEV1 $DEV_NAME || fail
+	else
+		$CRYPTSETUP luksOpen -d key1 $LOOPDEV1 $DEV_NAME || fail
+	fi
+}
+
+function wipe() # $1 pass
+{
+	open_crypt $1
+	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=256k >/dev/null 2>&1
+	$CRYPTSETUP luksClose $DEV_NAME || fail
+}
+
+function prepare() # $1 dev1_siz
+{
+	remove_mapping
+
+	dd if=/dev/zero of=$IMG      bs=1k count=$1 >/dev/null 2>&1
+	LOOPDEV1=$(losetup -f 2>/dev/null)
+	[ -z "$LOOPDEV1" ] && fail "No free loop device"
+	losetup $LOOPDEV1 $IMG
+
+	if [ ! -e $KEY1 ]; then
+		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
+	fi
+}
+
+function check_hash() # $1 pwd, $2 hash
+{
+	open_crypt $1
+	HASH=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
+	[ $HASH != "$2" ] && fail "HASH differs ($HASH)"
+	$CRYPTSETUP remove $DEV_NAME || fail
+}
+
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ ! -x "$REENC" ] && skip "Cannot find $REENC, test skipped."
+
+# REENCRYPTION tests
+
+HASH1=b69dae56a14d1a8314ed40664c4033ea0a550eea2673e04df42a66ac6b9faf2c
+HASH2=d85ef2a08aeac2812a648deb875485a6e3848fc3d43ce4aa380937f08199f86b
+
+echo "[1] Reencryption"
+prepare 8192 
+echo "key0" | $CRYPTSETUP -q luksFormat -s 128 -c aes-cbc-plain -i 1 --align-payload 4096 $LOOPDEV1 || fail
+wipe "key0"
+check_hash "key0" $HASH1
+echo "key0" | $REENC $LOOPDEV1 -q
+check_hash "key0" $HASH1
+echo "key0" | $REENC $LOOPDEV1 -q -s 256
+check_hash "key0" $HASH1
+echo "key0" | $REENC $LOOPDEV1 -q -s 256 -c aes-xts-plain64 -h sha256
+check_hash "key0" $HASH1
+echo "[2] Reencryption with data shift"
+echo "key0" | $CRYPTSETUP -q luksFormat -s 128 -i 1 --align-payload 2048 $LOOPDEV1 || fail
+wipe "key0"
+echo "key0" | $REENC $LOOPDEV1 -q -s 256 --reduce-device-size 1024 || fail
+check_hash "key0" $HASH2
+echo "key0" | $REENC $LOOPDEV1 -q -i 1 || fail
+check_hash "key0" $HASH2
+echo "[3] Reencryption with keyfile"
+echo "key0" | $CRYPTSETUP -q luksFormat -d key1 -s 128 -i 1 --align-payload 4096 $LOOPDEV1 || fail
+wipe
+check_hash "" $HASH1
+echo "key0" | $CRYPTSETUP -q luksAddKey -d key1 $LOOPDEV1 || fail
+$REENC $LOOPDEV1 -d key1 -S 0 -i 1 -q || fail
+check_hash "" $HASH1
+# FIXME echo "key0" | $REENC ...
+
+remove_mapping
+exit 0
