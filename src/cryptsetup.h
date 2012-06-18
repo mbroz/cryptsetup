@@ -31,6 +31,8 @@
 
 #include "libcryptsetup.h"
 
+#define CONST_CAST(x) (x)(uintptr_t)
+
 #define DEFAULT_CIPHER(type)	(DEFAULT_##type##_CIPHER "-" DEFAULT_##type##_MODE)
 
 #define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)

@@ -43,4 +43,6 @@ void *crypt_safe_alloc(size_t size);
 void crypt_safe_free(void *data);
 void *crypt_safe_realloc(void *data, size_t size);
 
+ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc);
+
 #endif /* _UTILS_CRYPT_H */

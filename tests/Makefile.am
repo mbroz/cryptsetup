@@ -1,5 +1,8 @@
-TESTS = api-test compat-test loopaes-test align-test discards-test mode-test password-hash-test \
-	verity-compat-test
+TESTS = api-test compat-test loopaes-test align-test discards-test mode-test password-hash-test
+
+if VERITYSETUP
+TESTS += verity-compat-test
+endif
 
 if REENCRYPT
 TESTS += reencryption-compat-test

@@ -256,21 +256,6 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
-static size_t hex_to_bytes(const char *hex, char *result)
-{
-	char buf[3] = "xx\0", *endp;
-	size_t i, len;
-
-	len = strlen(hex) / 2;
-	for (i = 0; i < len; i++) {
-		memcpy(buf, &hex[i * 2], 2);
-		result[i] = strtoul(buf, &endp, 16);
-		if (endp != &buf[2])
-			return -EINVAL;
-	}
-	return i;
-}
-
 /* http://code.google.com/p/cryptsetup/wiki/DMCrypt */
 static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd)
 {
@@ -820,7 +805,7 @@ static int _dm_query_verity(uint32_t get_flags,
 	struct crypt_params_verity *vp = NULL;
 	uint32_t val32;
 	uint64_t val64;
-	size_t len;
+	ssize_t len;
 	char *str, *str2;
 
 	if (get_flags & DM_ACTIVE_VERITY_PARAMS)
@@ -895,28 +880,30 @@ static int _dm_query_verity(uint32_t get_flags,
 	str = strsep(&params, " ");
 	if (!params)
 		return -EINVAL;
-	len = strlen(str) / 2;
+	len = crypt_hex_to_bytes(str, &str2, 0);
+	if (len < 0)
+		return len;
 	dmd->u.verity.root_hash_size = len;
-	if (get_flags & DM_ACTIVE_VERITY_ROOT_HASH) {
-		if (!(str2 = malloc(len)))
-			return -ENOMEM;
-		if (hex_to_bytes(str, str2) != len)
-			return -EINVAL;
+	if (get_flags & DM_ACTIVE_VERITY_ROOT_HASH)
 		dmd->u.verity.root_hash = str2;
-	}
+	else
+		free(str2);
 
 	/* salt */
 	str = strsep(&params, " ");
 	if (params)
 		return -EINVAL;
 	if (vp) {
-		len = strlen(str) / 2;
-		vp->salt_size = len;
-		if (!(str2 = malloc(len)))
-			return -ENOMEM;
-		if (hex_to_bytes(str, str2) != len)
-			return -EINVAL;
-		vp->salt = str2;
+		if (!strcmp(str, "-")) {
+			vp->salt_size = 0;
+			vp->salt = NULL;
+		} else {
+			len = crypt_hex_to_bytes(str, &str2, 0);
+			if (len < 0)
+				return len;
+			vp->salt_size = len;
+			vp->salt = str2;
+		}
 	}
 
 	return 0;

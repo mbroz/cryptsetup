@@ -41,6 +41,7 @@ endif
 if VERITYSETUP
 
 veritysetup_SOURCES = \
+	$(top_builddir)/lib/utils_crypt.c	\
 	$(top_builddir)/lib/utils_loop.c	\
 	veritysetup.c				\
 	cryptsetup.h

@@ -397,3 +397,29 @@ out_err:
 		crypt_safe_free(pass);
 	return r;
 }
+
+ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc)
+{
+	char buf[3] = "xx\0", *endp, *bytes;
+	size_t i, len;
+
+	len = strlen(hex);
+	if (len % 2)
+		return -EINVAL;
+	len /= 2;
+
+	bytes = safe_alloc ? crypt_safe_alloc(len) : malloc(len);
+	if (!bytes)
+		return -ENOMEM;
+
+	for (i = 0; i < len; i++) {
+		memcpy(buf, &hex[i * 2], 2);
+		bytes[i] = strtoul(buf, &endp, 16);
+		if (endp != &buf[2]) {
+			safe_alloc ? crypt_safe_free(bytes) : free(bytes);
+			return -EINVAL;
+		}
+	}
+	*result = bytes;
+	return i;
+}

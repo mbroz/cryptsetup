@@ -50,31 +50,6 @@ static int opt_version_mode = 0;
 static const char **action_argv;
 static int action_argc;
 
-static size_t hex_to_bytes(const char *hex, char **result)
-{
-	char buf[3] = "xx\0", *endp, *bytes;
-	size_t i, len;
-
-	len = strlen(hex);
-	if (len % 2)
-		return -EINVAL;
-	len /= 2;
-
-	if (!(bytes = malloc(len)))
-		return -ENOMEM;
-
-	for (i = 0; i < len; i++) {
-		memcpy(buf, &hex[i * 2], 2);
-		bytes[i] = strtoul(buf, &endp, 16);
-		if (endp != &buf[2]) {
-			free(bytes);
-			return -EINVAL;
-		}
-	}
-	*result = bytes;
-	return i;
-}
-
 __attribute__((format(printf, 5, 6)))
 static void clogger(struct crypt_device *cd, int level, const char *file,
 		   int line, const char *format, ...)
@@ -138,7 +113,7 @@ static int _prepare_format(struct crypt_params_verity *params,
 		params->salt_size = 0;
 		params->salt = NULL;
 	} else if (salt_string) {
-		len = hex_to_bytes(salt_string, &salt);
+		len = crypt_hex_to_bytes(salt_string, &salt, 0);
 		if (len < 0) {
 			log_err(_("Invalid salt string specified.\n"));
 			return -EINVAL;
@@ -182,7 +157,7 @@ static int action_format(int arg)
 		crypt_dump(cd);
 out:
 	crypt_free(cd);
-	free((char*)params.salt);
+	free(CONST_CAST(char*)params.salt);
 	return r;
 }
 
@@ -196,7 +171,7 @@ static int _activate(const char *dm_device,
 	struct crypt_params_verity params = {};
 	uint32_t activate_flags = CRYPT_ACTIVATE_READONLY;
 	char *root_hash_bytes = NULL;
-	size_t hash_size;
+	ssize_t hash_size;
 	int r;
 
 	if ((r = crypt_init(&cd, hash_device)))
@@ -219,7 +194,7 @@ static int _activate(const char *dm_device,
 		goto out;
 
 	hash_size = crypt_get_volume_key_size(cd);
-	if (hex_to_bytes(root_hash, &root_hash_bytes) != hash_size) {
+	if (crypt_hex_to_bytes(root_hash, &root_hash_bytes, 0) != hash_size) {
 		log_err(_("Invalid root hash string specified.\n"));
 		r = -EINVAL;
 		goto out;
@@ -231,7 +206,7 @@ static int _activate(const char *dm_device,
 out:
 	crypt_free(cd);
 	free(root_hash_bytes);
-	free((char*)params.salt);
+	free(CONST_CAST(char*)params.salt);
 	return r;
 }
 
