@@ -153,6 +153,25 @@ Cryptsetup-reencrypt returns 0 on success and a non-zero value on error.
 Error codes are: 1 wrong parameters, 2 no permission,
 3 out of memory, 4 wrong device specified, 5 device already exists
 or device is busy.
+.SH EXAMPLES
+.TP
+Reencrypt /dev/sdb1 (change volume key)
+cryptsetup-reencrypt /dev/sdb1
+.TP
+Reencrypt and also change cipher and cipher mode
+cryptsetup-reencrypt /dev/sdb1 -c aes-xts-plain64
+.TP
+Add LUKS encryption to not yet encrypted device
+
+First, be sure you have space added to disk.
+Or alternatively shrink filesystem in advance.
+.br
+Here we need 4096 512-bytes sectors (enough for 2x128 bit key).
+
+fdisk -u /dev/sdb # move sdb1 partition end + 4096 sectors
+
+cryptsetup-reencrypt /dev/sdb1 --new --reduce-device-size 4096
+
 .SH REPORTING BUGS
 Report bugs, including ones in the documentation, on
 the cryptsetup mailing list at <dm-crypt@saout.de>
