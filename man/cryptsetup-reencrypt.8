@@ -121,6 +121,14 @@ Use with extreme care - shrinked filesystems are usually unrecoverable.
 
 You cannot shrink device more than by 64 MiB (131072 sectors).
 .TP
+.B "\-\-new, N"
+Create new header (encrypt not yet encrypted device).
+
+This option must be used together with \-\-reduce-device-size.
+
+WARNING: This is destructive operation and cannot be reverted.
+
+.TP
 .B "\-\-use-directio"
 Use direct-io (O_DIRECT) for all read/write data operations.
 

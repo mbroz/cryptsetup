@@ -4,11 +4,13 @@ CRYPTSETUP=../src/cryptsetup
 REENC=../src/cryptsetup-reencrypt
 
 DEV_NAME=reenc9768
+DEV_NAME2=reenc1273
 IMG=reenc-data
 KEY1=key1
 
 function remove_mapping()
 {
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
 	rm -f $IMG $KEY1 >/dev/null 2>&1
@@ -38,10 +40,15 @@ function open_crypt()
 	fi
 }
 
+function wipe_dev() # $1 dev
+{
+	dd if=/dev/zero of=$1 bs=256k >/dev/null 2>&1
+}
+
 function wipe() # $1 pass
 {
 	open_crypt $1
-	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=256k >/dev/null 2>&1
+	wipe_dev /dev/mapper/$DEV_NAME
 	$CRYPTSETUP luksClose $DEV_NAME || fail
 }
 
@@ -59,11 +66,16 @@ function prepare() # $1 dev1_siz
 	fi
 }
 
+function check_hash_dev() # $1 dev, $2 hash
+{
+	HASH=$(sha256sum $1 | cut -d' ' -f 1)
+	[ $HASH != "$2" ] && fail "HASH differs ($HASH)"
+}
+
 function check_hash() # $1 pwd, $2 hash
 {
 	open_crypt $1
-	HASH=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
-	[ $HASH != "$2" ] && fail "HASH differs ($HASH)"
+	check_hash_dev /dev/mapper/$DEV_NAME $2
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
 
@@ -74,6 +86,7 @@ function check_hash() # $1 pwd, $2 hash
 
 HASH1=b69dae56a14d1a8314ed40664c4033ea0a550eea2673e04df42a66ac6b9faf2c
 HASH2=d85ef2a08aeac2812a648deb875485a6e3848fc3d43ce4aa380937f08199f86b
+HASH3=e4e5749032a5163c45125eccf3e8598ba5ed840df442c97e1d5ad4ad84359605
 
 echo "[1] Reencryption"
 prepare 8192 
@@ -86,6 +99,7 @@ echo "key0" | $REENC $LOOPDEV1 -q -s 256
 check_hash "key0" $HASH1
 echo "key0" | $REENC $LOOPDEV1 -q -s 256 -c aes-xts-plain64 -h sha256
 check_hash "key0" $HASH1
+
 echo "[2] Reencryption with data shift"
 echo "key0" | $CRYPTSETUP -q luksFormat -s 128 -i 1 --align-payload 2048 $LOOPDEV1 || fail
 wipe "key0"
@@ -93,6 +107,7 @@ echo "key0" | $REENC $LOOPDEV1 -q -s 256 --reduce-device-size 1024 || fail
 check_hash "key0" $HASH2
 echo "key0" | $REENC $LOOPDEV1 -q -i 1 || fail
 check_hash "key0" $HASH2
+
 echo "[3] Reencryption with keyfile"
 echo "key0" | $CRYPTSETUP -q luksFormat -d key1 -s 128 -i 1 --align-payload 4096 $LOOPDEV1 || fail
 wipe
@@ -101,6 +116,17 @@ echo "key0" | $CRYPTSETUP -q luksAddKey -d key1 $LOOPDEV1 || fail
 $REENC $LOOPDEV1 -d key1 -S 0 -i 1 -q || fail
 check_hash "" $HASH1
 # FIXME echo "key0" | $REENC ...
+
+echo "[4] Encryption of not yet encrypted device"
+# well, movin' zeroes :-)
+OFFSET=2048
+SIZE=$(blockdev --getsz $LOOPDEV1)
+wipe_dev $LOOPDEV1
+dmsetup create $DEV_NAME2 --table "0 $(($SIZE - $OFFSET)) linear $LOOPDEV1 0" || fail
+check_hash_dev /dev/mapper/$DEV_NAME2 $HASH3
+dmsetup remove $DEV_NAME2 || fail
+echo "key0" | $REENC $LOOPDEV1 -s 128 --new --reduce-device-size $OFFSET -q
+check_hash "key0" $HASH3
 
 remove_mapping
 exit 0

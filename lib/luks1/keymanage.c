@@ -66,14 +66,22 @@ static uint64_t LUKS_device_sectors(size_t keyLen)
 static int LUKS_check_device_size(struct crypt_device *ctx, const char *device,
 				  size_t keyLength)
 {
-	uint64_t dev_size;
+	uint64_t dev_sectors, hdr_sectors;
 
-	if(device_size(device, &dev_size)) {
+	if (!keyLength)
+		return -EINVAL;
+
+	if(device_size(device, &dev_sectors)) {
 		log_dbg("Cannot get device size for device %s.", device);
 		return -EIO;
 	}
 
-	if (LUKS_device_sectors(keyLength) > (dev_size >> SECTOR_SHIFT)) {
+	dev_sectors >>= SECTOR_SHIFT;
+	hdr_sectors = LUKS_device_sectors(keyLength);
+	log_dbg("Key length %u, device size %" PRIu64 " sectors, header size %"
+		PRIu64 " sectors.",keyLength, dev_sectors, hdr_sectors);
+
+	if (hdr_sectors > dev_sectors) {
 		log_err(ctx, _("Device %s is too small.\n"), device);
 		return -EINVAL;
 	}

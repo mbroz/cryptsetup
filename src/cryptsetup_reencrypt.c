@@ -23,6 +23,8 @@
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 #define SECTOR_SIZE 512
+#define NO_UUID "cafecafe-cafe-cafe-cafe-cafecafeeeee"
+#define MAX_BCK_SECTORS 8192
 
 #include <string.h>
 #include <stdio.h>
@@ -63,6 +65,7 @@ static int opt_write_log = 0;
 static int opt_tries = 3;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static int opt_key_size = 0;
+static int opt_new = 0;
 
 static const char **action_argv;
 
@@ -284,20 +287,22 @@ static int create_empty_header(const char *new_file, const char *old_file,
 			       uint64_t data_sector)
 {
 	struct stat st;
-	ssize_t size;
+	ssize_t size = 0;
 	int fd, r = 0;
 	char *buf;
 
 	/* Never create header > 4MiB */
-	if (data_sector > 8192)
-		data_sector = 8192;
+	if (data_sector > MAX_BCK_SECTORS)
+		data_sector = MAX_BCK_SECTORS;
 
 	/* new header file of the same size as old backup */
-	if (stat(old_file, &st) == -1 ||
-		 (st.st_mode & S_IFMT) != S_IFREG ||
-		 (st.st_size > 16 * 1024 * 1024))
-		return -EINVAL;
-	size = st.st_size;
+	if (old_file) {
+		if (stat(old_file, &st) == -1 ||
+		    (st.st_mode & S_IFMT) != S_IFREG ||
+		    (st.st_size > 16 * 1024 * 1024))
+			return -EINVAL;
+		size = st.st_size;
+	}
 
 	/*
 	 * if requesting key size change, try to use offset
@@ -501,12 +506,49 @@ out:
 	return r;
 }
 
+static int create_new_header(struct reenc_ctx *rc, const char *cipher,
+			     const char *cipher_mode, const char *uuid,
+			     int key_size, struct crypt_params_luks1 *params)
+{
+	struct crypt_device *cd_new = NULL;
+	int i, r;
+
+	if ((r = crypt_init(&cd_new, rc->header_file_new)))
+		goto out;
+
+	if (opt_random)
+		crypt_set_rng_type(cd_new, CRYPT_RNG_RANDOM);
+	else if (opt_urandom)
+		crypt_set_rng_type(cd_new, CRYPT_RNG_URANDOM);
+
+	if (opt_iteration_time)
+		crypt_set_iteration_time(cd_new, opt_iteration_time);
+
+	if ((r = crypt_format(cd_new, CRYPT_LUKS1, cipher, cipher_mode,
+			      uuid, NULL, key_size, params)))
+		goto out;
+	log_verbose(_("New LUKS header for device %s created.\n"), rc->device);
+
+	for (i = 0; i < MAX_SLOT; i++) {
+		if (!rc->p[i].password)
+			continue;
+		if ((r = crypt_keyslot_add_by_volume_key(cd_new, i,
+			NULL, 0, rc->p[i].password, rc->p[i].passwordLen)) < 0)
+			goto out;
+		log_verbose(_("Activated keyslot %i.\n"), r);
+		r = 0;
+	}
+out:
+	crypt_free(cd_new);
+	return r;
+}
+
 static int backup_luks_headers(struct reenc_ctx *rc)
 {
-	struct crypt_device *cd = NULL, *cd_new = NULL;
+	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params = {0};
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
-	int i, r;
+	int r;
 
 	log_dbg("Creating LUKS header backup for device %s.", rc->device);
 
@@ -528,17 +570,40 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	params.data_alignment += opt_reduce_device_size;
 	params.data_device = rc->device;
 
+	if (opt_cipher) {
+		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
+		if (r < 0) {
+			log_err(_("No known cipher specification pattern detected.\n"));
+			goto out;
+		}
+	}
 
-	if ((r = crypt_init(&cd_new, rc->header_file_new)))
-		goto out;
+	r = create_new_header(rc,
+		opt_cipher ? cipher : crypt_get_cipher(cd),
+		opt_cipher ? cipher_mode : crypt_get_cipher_mode(cd),
+		crypt_get_uuid(cd),
+		opt_key_size ? opt_key_size / 8 : crypt_get_volume_key_size(cd),
+		&params);
+out:
+	crypt_free(cd);
+	if (r)
+		log_err(_("Creation of LUKS backup headers failed.\n"));
+	return r;
+}
 
-	if (opt_random)
-		crypt_set_rng_type(cd_new, CRYPT_RNG_RANDOM);
-	else if (opt_urandom)
-		crypt_set_rng_type(cd_new, CRYPT_RNG_URANDOM);
+/* Create fake header for original device */
+static int backup_fake_header(struct reenc_ctx *rc)
+{
+	struct crypt_device *cd_new = NULL;
+	struct crypt_params_luks1 params = {0};
+	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 
-	if (opt_iteration_time)
-		crypt_set_iteration_time(cd_new, opt_iteration_time);
+	int r;
+
+	log_dbg("Creating fake (cipher_null) header for original device.");
+
+	if (!opt_key_size)
+		opt_key_size = DEFAULT_LUKS1_KEYBITS;
 
 	if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
@@ -548,30 +613,41 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		}
 	}
 
-	if ((r = crypt_format(cd_new, CRYPT_LUKS1,
-			opt_cipher ? cipher : crypt_get_cipher(cd),
-			opt_cipher ? cipher_mode : crypt_get_cipher_mode(cd),
-			crypt_get_uuid(cd),
-			NULL,
-			opt_key_size ? opt_key_size / 8 : crypt_get_volume_key_size(cd),
-			&params)))
-		goto out;
-	log_verbose(_("New LUKS header for device %s created.\n"), rc->device);
+	r = create_empty_header(rc->header_file_org, NULL, 0);
+	if (r < 0)
+		return r;
 
-	for (i = 0; i < MAX_SLOT; i++) {
-		if (!rc->p[i].password)
-			continue;
-		if ((r = crypt_keyslot_add_by_volume_key(cd_new, i,
-			NULL, 0, rc->p[i].password, rc->p[i].passwordLen)) < 0)
-			goto out;
-		log_verbose(_("Activated keyslot %i.\n"), r);
-		r = 0;
-	}
+	params.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
+	params.data_alignment = 0;
+	params.data_device = rc->device;
+
+	r = crypt_init(&cd_new, rc->header_file_org);
+	if (r < 0)
+		return r;
+
+	r = crypt_format(cd_new, CRYPT_LUKS1, "cipher_null", "ecb",
+			 NO_UUID, NULL, opt_key_size / 8, &params);
+	if (r < 0)
+		goto out;
+
+	r = crypt_keyslot_add_by_volume_key(cd_new, 0, NULL, 0,
+			rc->p[0].password, rc->p[0].passwordLen);
+	if (r < 0)
+		goto out;
+
+	r = create_empty_header(rc->header_file_new, rc->header_file_org, 0);
+	if (r < 0)
+		goto out;
+
+	params.data_alignment = opt_reduce_device_size;
+	r = create_new_header(rc,
+		opt_cipher ? cipher : DEFAULT_LUKS1_CIPHER,
+		opt_cipher ? cipher_mode : DEFAULT_LUKS1_MODE,
+		NULL,
+		(opt_key_size ? opt_key_size : DEFAULT_LUKS1_KEYBITS) / 8,
+		&params);
 out:
-	crypt_free(cd);
 	crypt_free(cd_new);
-	if (r)
-		log_err(_("Creation of LUKS backup headers failed.\n"));
 	return r;
 }
 
@@ -829,6 +905,11 @@ static int initialize_uuid(struct reenc_ctx *rc)
 
 	log_dbg("Initialising UUID.");
 
+	if (opt_new) {
+		rc->device_uuid = strdup(NO_UUID);
+		return 0;
+	}
+
 	/* Try to load LUKS from device */
 	if ((r = crypt_init(&cd, rc->device)))
 		return r;
@@ -845,11 +926,11 @@ static int initialize_uuid(struct reenc_ctx *rc)
 }
 
 static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
-			    const char *msg, int slot_check)
+			    const char *msg, int slot_to_check, int check)
 {
 	int r = -EINVAL, slot, retry_count;
 
-	slot = (slot_check == CRYPT_ANY_SLOT) ? 0 : slot_check;
+	slot = (slot_to_check == CRYPT_ANY_SLOT) ? 0 : slot_to_check;
 
 	retry_count = opt_tries ?: 1;
 	while (retry_count--) {
@@ -865,8 +946,11 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 
 		/* library uses sigint internally, until it is fixed...*/
 		set_int_block(1);
-		r = crypt_activate_by_passphrase(cd, NULL, slot_check,
-			rc->p[slot].password, rc->p[slot].passwordLen, 0);
+		if (check)
+			r = crypt_activate_by_passphrase(cd, NULL, slot_to_check,
+				rc->p[slot].password, rc->p[slot].passwordLen, 0);
+		else
+			r = slot;
 
 		if (r < 0) {
 			crypt_safe_free(rc->p[slot].password);
@@ -930,6 +1014,11 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 
 	log_dbg("Passhrases initialization.");
 
+	if (opt_new) {
+		r = init_passphrase1(rc, cd, _("Enter new LUKS passphrase: "), 0, 0);
+		return r > 0 ? 0 : r;
+	}
+
 	if ((r = crypt_init(&cd, device)) ||
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)) ||
 	    (r = crypt_set_data_device(cd, rc->device))) {
@@ -940,14 +1029,15 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 	if (opt_key_file) {
 		r = init_keyfile(rc, cd, opt_key_slot);
 	} else if (rc->in_progress) {
-		r = init_passphrase1(rc, cd, _("Enter any LUKS passphrase: "), CRYPT_ANY_SLOT);
+		r = init_passphrase1(rc, cd, _("Enter any LUKS passphrase: "),
+				     CRYPT_ANY_SLOT, 1);
 	} else for (i = 0; i < MAX_SLOT; i++) {
 		ki = crypt_keyslot_status(cd, i);
 		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
 			continue;
 
 		snprintf(msg, sizeof(msg), _("Enter LUKS passphrase for key slot %u: "), i);
-		r = init_passphrase1(rc, cd, msg, i);
+		r = init_passphrase1(rc, cd, msg, i, 1);
 		if (r < 0)
 			break;
 	}
@@ -1047,9 +1137,13 @@ static int run_reencrypt(const char *device)
 	log_dbg("Running reencryption.");
 
 	if (!rc.in_progress) {
-		if ((r = initialize_passphrase(&rc, rc.device)) ||
-		    (r = backup_luks_headers(&rc)) ||
-		    (r = device_check(&rc, MAKE_UNUSABLE)))
+		if (opt_new) {
+			if ((r = initialize_passphrase(&rc, rc.device)) ||
+			    (r = backup_fake_header(&rc)))
+			goto out;
+		} else if ((r = initialize_passphrase(&rc, rc.device)) ||
+			   (r = backup_luks_headers(&rc)) ||
+			   (r = device_check(&rc, MAKE_UNUSABLE)))
 			goto out;
 	} else {
 		if ((r = initialize_passphrase(&rc, rc.header_file_new)))
@@ -1136,6 +1230,7 @@ int main(int argc, const char **argv)
 		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
 		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
 		{ "reduce-device-size",'\0', POPT_ARG_INT, &opt_reduce_device_size,     0, N_("Reduce data device size (move data offset). DANGEROUS!"), N_("SECTORS") },
+		{ "new",               'N',  POPT_ARG_NONE,&opt_new,                    0, N_("Create new header on not encrypted device."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1210,6 +1305,10 @@ int main(int argc, const char **argv)
 
 	if (opt_random && opt_urandom)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_new && !opt_reduce_device_size)
+		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce_device_size."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
