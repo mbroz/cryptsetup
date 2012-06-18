@@ -91,7 +91,7 @@ out:
 static int mult_overflow(off_t *u, off_t b, size_t size)
 {
 	*u = (uint64_t)b * size;
-	if ((off_t)(*u / size) != b || (off_t)*u < 0 || (off_t)*u != *u)
+	if ((off_t)(*u / size) != b || (off_t)*u < 0)
 		return 1;
 	return 0;
 }
