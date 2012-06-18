@@ -317,7 +317,7 @@ static int create_empty_header(const char *new_file, const char *old_file,
 
 	log_dbg("Creating empty file %s of size %lu.", new_file, (unsigned long)size);
 
-	if (!(buf = malloc(size)))
+	if (!size || !(buf = malloc(size)))
 		return -ENOMEM;
 	memset(buf, 0, size);
 
