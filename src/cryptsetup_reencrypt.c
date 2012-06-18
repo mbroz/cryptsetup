@@ -1014,7 +1014,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 
 	log_dbg("Passhrases initialization.");
 
-	if (opt_new) {
+	if (opt_new && !rc->in_progress) {
 		r = init_passphrase1(rc, cd, _("Enter new LUKS passphrase: "), 0, 0);
 		return r > 0 ? 0 : r;
 	}
