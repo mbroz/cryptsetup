@@ -1,5 +1,7 @@
 2012-06-18  Milan Broz  <gmazyland@gmail.com>
 	* Introduce cryptsetup-reencrypt - experimental offline LUKS reencryption tool.
+	* Fix luks-header-from-active script (do not use LUKS header on-disk, add UUID).
+	* Add --without-activation option for luksOpen (check passphrase only).
 
 2012-06-11  Milan Broz  <gmazyland@gmail.com>
 	* Introduce veritysetup for dm-verity target management.

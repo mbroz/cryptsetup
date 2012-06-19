@@ -158,6 +158,8 @@ echo "key0" | $CRYPTSETUP -i 1000 -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksF
 check "$LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0"
 
 prepare "[5] open"
+echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --without-activation || fail
+echo "blah" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --without-activation 2>/dev/null && fail
 echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 check_exists
 
