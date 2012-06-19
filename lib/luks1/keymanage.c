@@ -215,7 +215,7 @@ int LUKS_hdr_restore(
 	struct crypt_device *ctx)
 {
 	int r = 0, devfd = -1, diff_uuid = 0;
-	ssize_t buffer_size;
+	ssize_t buffer_size = 0;
 	char *buffer = NULL, msg[200];
 	struct stat st;
 	struct luks_phdr hdr_file;
