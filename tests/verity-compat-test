@@ -111,14 +111,14 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 
 	case $fail in
 	data)
-		dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=3456 count=1 2>/dev/null
+		dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=3456 count=8 2>/dev/null
 		TXT="data_dev"
 		;;
 	hash)
 		if [ -z "$LOOPDEV2" ] ; then
-			dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=$((8193 + $4)) count=1 2>/dev/null
+			dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=$((8193 + $4)) count=8 2>/dev/null
 		else
-			dd if=/dev/urandom of=$LOOPDEV2 bs=1 seek=8193 count=1 2>/dev/null
+			dd if=/dev/urandom of=$LOOPDEV2 bs=1 seek=8193 count=8 2>/dev/null
 		fi
                 TXT="hash_dev"
 		;;
