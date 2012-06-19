@@ -1394,30 +1394,27 @@ int main(int argc, const char **argv)
 
 	/* FIXME: rewrite this from scratch */
 
-	if (opt_shared && strcmp(aname, "create")) {
+	if (opt_shared && strcmp(aname, "create"))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --shared is allowed only for create operation.\n"),
 		      poptGetInvocationName(popt_context));
-	}
 
 	if (opt_allow_discards &&
 	    strcmp(aname, "luksOpen") &&
 	    strcmp(aname, "create") &&
-	    strcmp(aname, "loopaesOpen")) {
+	    strcmp(aname, "loopaesOpen"))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --allow-discards is allowed only for luksOpen, loopaesOpen and create operation.\n"),
 		      poptGetInvocationName(popt_context));
-	}
 
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&
 	   strcmp(aname, "create") &&
-	   strcmp(aname, "loopaesOpen")) {
+	   strcmp(aname, "loopaesOpen"))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
 		        "To limit read from keyfile use --keyfile-size=(bytes)."),
 		      poptGetInvocationName(popt_context));
-	}
 
 	if (opt_without_activation &&
 	   strcmp(aname, "luksOpen"))
@@ -1447,11 +1444,10 @@ int main(int argc, const char **argv)
 	}
 
 	if (opt_keyfile_size < 0 || opt_new_keyfile_size < 0 || opt_key_size < 0 ||
-	    opt_keyfile_offset < 0 || opt_new_keyfile_offset < 0) {
+	    opt_keyfile_offset < 0 || opt_new_keyfile_offset < 0)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));
-	}
 
 	if (opt_random && opt_urandom)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
