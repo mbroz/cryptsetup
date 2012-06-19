@@ -144,7 +144,7 @@ The <device> parameter can be also specified by LUKS UUID in the
 format UUID=<uuid>, which uses the symlinks in /dev/disk/by-uuid.
 
 \fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset, 
-\-\-keyfile-size, \-\-readonly, \-\-without-activation,
+\-\-keyfile-size, \-\-readonly, \-\-test-passphrase,
 \-\-allow-discards, \-\-header, \-\-key-slot, \-\-master-key-file].
 .PP
 \fIluksClose\fR <name>
@@ -613,7 +613,7 @@ later. If in doubt, do no use it.
 A kernel version of 3.1 or later is needed. For earlier kernels
 this option is ignored.
 .TP
-.B "\-\-without-activation\fR"
+.B "\-\-test-passphrase\fR"
 Do not activate device, just verify passphrase.
 This option is only relevant for \fIluksOpen\fR.
 .TP
@@ -807,7 +807,7 @@ Copyright \(co 2004 Christophe Saout
 .br
 Copyright \(co 2004-2006 Clemens Fruhwirth
 .br
-Copyright \(co 2009-2011 Red Hat, Inc.
+Copyright \(co 2009-2012 Red Hat, Inc.
 .br
 Copyright \(co 2012 Arno Wagner
 

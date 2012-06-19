@@ -68,7 +68,7 @@ static int opt_urandom = 0;
 static int opt_dump_master_key = 0;
 static int opt_shared = 0;
 static int opt_allow_discards = 0;
-static int opt_without_activation = 0;
+static int opt_test_passphrase = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -642,7 +642,7 @@ static int action_luksOpen(int arg __attribute__((unused)))
 		data_device = NULL;
 	}
 
-	activated_name = opt_without_activation ? NULL : action_argv[1];
+	activated_name = opt_test_passphrase ? NULL : action_argv[1];
 
 	if ((r = crypt_init(&cd, header_device)))
 		goto out;
@@ -1307,7 +1307,7 @@ int main(int argc, const char **argv)
 		{ "uuid",              '\0', POPT_ARG_STRING, &opt_uuid,                0, N_("UUID for device to use."), NULL },
 		{ "allow-discards",    '\0', POPT_ARG_NONE, &opt_allow_discards,        0, N_("Allow discards (aka TRIM) requests for device."), NULL },
 		{ "header",            '\0', POPT_ARG_STRING, &opt_header_device,       0, N_("Device or file with separated LUKS header."), NULL },
-		{ "without-activation",'\0', POPT_ARG_NONE, &opt_without_activation,    0, N_("Do not activate device, just check passphrase."), NULL },
+		{ "test-passphrase",   '\0', POPT_ARG_NONE, &opt_test_passphrase,       0, N_("Do not activate device, just check passphrase."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1416,10 +1416,10 @@ int main(int argc, const char **argv)
 		        "To limit read from keyfile use --keyfile-size=(bytes)."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_without_activation &&
+	if (opt_test_passphrase &&
 	   strcmp(aname, "luksOpen"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --without-activation is allowed only for luksOpen.\n"),
+		      _("Option --test-passphrase is allowed only for luksOpen.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size % 8)
