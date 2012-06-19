@@ -99,6 +99,8 @@ echo "key0" | $REENC $LOOPDEV1 -q -s 256
 check_hash "key0" $HASH1
 echo "key0" | $REENC $LOOPDEV1 -q -s 256 -c aes-xts-plain64 -h sha256
 check_hash "key0" $HASH1
+echo "key0" | $REENC $LOOPDEV1 -q --use-directio
+check_hash "key0" $HASH1
 
 echo "[2] Reencryption with data shift"
 echo "key0" | $CRYPTSETUP -q luksFormat -s 128 -i 1 --align-payload 2048 $LOOPDEV1 || fail
