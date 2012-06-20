@@ -25,6 +25,9 @@ The reencryption can be temporarily suspended (by TERM signal or by
 using ctrl+c) but you need to retain temporary files named LUKS-<uuid>.[log|org|new].
 LUKS device is unavailable until reencryption is finished though.
 
+Current working directory must by writable and temporary
+files created during reencryption must be present.
+
 For more info about LUKS see cryptsetup(8).
 .PP
 .SH OPTIONS

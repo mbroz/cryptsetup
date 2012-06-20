@@ -1,11 +1,100 @@
-Cryptsetup 1.5.0 RC1 Release Notes
+Cryptsetup 1.5.0 RC2 Release Notes
 ==================================
 
 This testing release candidate version covers mainly
-inclusion of new veritysetup tool (and related libcryptsetup extensions).
+inclusion of
+- new veritysetup tool (and related libcryptsetup extensions).
+- new experimental cryptsetup-reencrypt (offline reencryption) tool.
 
 Please note that dm-verity API extension can change in next
 1.5.0 release candidate (despite it is not expected).
+
+Changes since version 1.5.0-rc1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Introduce cryptsetup-reencrypt - experimental offline LUKS reencryption tool.
+
+! cryptsetup-reencrypt tool is EXPERIMENTAL
+! ALWAYS BE SURE YOU HAVE RELIABLE BACKUP BEFORE USING THIS TOOL
+
+This tool tries to simplify situation when you need to re-encrypt the whole
+LUKS device in situ (without need to move data elsewhere).
+
+This can happen for example when you want to change volume (master) key,
+encryption algorithm, or other encryption parameter.
+
+Cryptsetup-reencrypt can even optionally shift data on device
+(reducing data device size - you need some free space at the end of device).
+
+In general, cryptsetup-reencrypt can be used to
+
+ - re-generate volume key
+ - change arbitrary encryption parameters
+ - add encryption to not yet encrypted drive
+
+Side effect of reencryption is that final device will contain
+only ciphertext (for all sectors) so even if device was not properly
+wiped by random data, after reencryption you cannot distinguish
+which sectors are used.
+(Reecryption is done always for the whole device.)
+
+There are for sure bugs, please TEST IT IN TEST ENVIRONMENT before
+use for your data.
+
+This tool is not resistant to HW and kernel failures - hw crash
+will cause serious data corruption.
+
+You can enable compilation of this tool with --enable-cryptsetup-reencrypt
+configure option (it is switched off by default).
+(Tool requires libcryptsetup 1.4.3 and later.)
+
+You have to provide all keyslot passphrases or use --kesylot-option
+(then all other keyslots will be disabled).
+
+EXAMPLES (from man page)
+
+Reencrypt /dev/sdb1 (change volume key)
+   # cryptsetup-reencrypt /dev/sdb1
+
+Reencrypt and also change cipher and cipher mode
+  # cryptsetup-reencrypt /dev/sdb1 -c aes-xts-plain64
+
+  Note: if you are changing key size, there must be enough space
+  for keyslots in header or you have to use --reduce-device size and
+  reduce fs in advance.
+
+Add LUKS encryption to not yet encrypted device
+  First, be sure you have space added to disk.
+  Or, alternatively, shrink filesystem in advance.
+
+  Here we need 4096 512-bytes sectors (enough for 2x128 bit key).
+
+  # fdisk -u /dev/sdb # move sdb1 partition end + 4096 sectors
+
+  # cryptsetup-reencrypt /dev/sdb1 --new --reduce-device-size 4096
+
+There are some options which can improve performance (depends on system),
+namely --use-directio (use direct IO for all operations) can be faster
+on some systems. See man page.
+
+Progress and estimated time is printed during reencryption.
+
+You can suspend reencryption (using ctrl+c or term signal).
+To continue reencryption you have to provide only
+the device parameter (offset is stored in temporary log file).
+
+Please note LUKS device is marked invalid during reencryption and
+you have to retain tool temporary files until reencryption finishes.
+
+Temporary files are LUKS-<uuid>.[log|org|new]
+
+Other changes
+~~~~~~~~~~~~~
+
+  * Fix luks-header-from-active script (do not use LUKS header on-disk, add UUID).
+
+  * Add --test-passphrase option for luksOpen (check passphrase only).
+
+  * Fix parsing of hexadecimal string (salt or root hash) in veritysetup.
 
 Changes since version 1.4.3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,7 +116,7 @@ with dm-verity kernel module and new veritysetup CLI tool is added.
 There are no additional library requirements (it uses the same crypto
 backend as cryptsetup).
 
-If you want compile cryptsetup without veritysetup toop,
+If you want compile cryptsetup without veritysetup tool,
 use --disable-veritysetup configure option.
 For other configuration option see configure --help and veritysetup --help
 (e.g. default parameters).
