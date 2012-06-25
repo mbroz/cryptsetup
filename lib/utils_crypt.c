@@ -445,7 +445,7 @@ int crypt_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size)
 	    (errno != 0 && *size == 0))
 		return -EINVAL;
 
-	if (!endp)
+	if (!endp || !*endp)
 		return 0;
 
 	len = strlen(endp);

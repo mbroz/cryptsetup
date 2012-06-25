@@ -23,6 +23,7 @@
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 #define SECTOR_SIZE 512
+#define ROUND_SECTOR(x) (((x) + SECTOR_SIZE - 1) / SECTOR_SIZE)
 #define NO_UUID "cafecafe-cafe-cafe-cafe-cafecafeeeee"
 #define MAX_BCK_SECTORS 8192
 
@@ -58,7 +59,6 @@ static int opt_version_mode = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
 static int opt_bsize = 4;
-static int opt_reduce_device_size = 0;
 static int opt_directio = 0;
 static int opt_fsync = 0;
 static int opt_write_log = 0;
@@ -66,6 +66,9 @@ static int opt_tries = 3;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static int opt_key_size = 0;
 static int opt_new = 0;
+
+static const char *opt_reduce_size_str = NULL;
+static uint64_t opt_reduce_size = 0;
 
 static const char *opt_device_size_str = NULL;
 static uint64_t opt_device_size = 0;
@@ -316,8 +319,8 @@ static int create_empty_header(const char *new_file, const char *old_file,
 		size = data_sector * SECTOR_SIZE;
 
 	/* if reducing size, be sure we have enough space */
-	if (opt_reduce_device_size)
-		size += (opt_reduce_device_size * SECTOR_SIZE);
+	if (opt_reduce_size)
+		size += opt_reduce_size;
 
 	log_dbg("Creating empty file %s of size %lu.", new_file, (unsigned long)size);
 
@@ -571,7 +574,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 
 	params.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
 	params.data_alignment = crypt_get_data_offset(cd);
-	params.data_alignment += opt_reduce_device_size;
+	params.data_alignment += ROUND_SECTOR(opt_reduce_size);
 	params.data_device = rc->device;
 
 	if (opt_cipher) {
@@ -643,7 +646,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	if (r < 0)
 		goto out;
 
-	params.data_alignment = opt_reduce_device_size;
+	params.data_alignment = ROUND_SECTOR(opt_reduce_size);
 	r = create_new_header(rc,
 		opt_cipher ? cipher : DEFAULT_LUKS1_CIPHER,
 		opt_cipher ? cipher_mode : DEFAULT_LUKS1_MODE,
@@ -1100,7 +1103,7 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 	}
 
 	if (!rc->in_progress) {
-		if (!opt_reduce_device_size)
+		if (!opt_reduce_size)
 			rc->reencrypt_direction = FORWARD;
 		else {
 			rc->reencrypt_direction = BACKWARD;
@@ -1239,7 +1242,7 @@ int main(int argc, const char **argv)
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Use only this slot (others will be disabled)."), NULL },
 		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
 		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
-		{ "reduce-device-size",'\0', POPT_ARG_INT, &opt_reduce_device_size,     0, N_("Reduce data device size (move data offset). DANGEROUS!"), N_("SECTORS") },
+		{ "reduce-device-size",'\0', POPT_ARG_STRING, &opt_reduce_size_str,     0, N_("Reduce data device size (move data offset). DANGEROUS!"), N_("bytes") },
 		{ "device-size",       '\0', POPT_ARG_STRING, &opt_device_size_str,     0, N_("Use only specified device size (ignore rest of device). DANGEROUS!"), N_("bytes") },
 		{ "new",               'N',  POPT_ARG_NONE,&opt_new,                    0, N_("Create new header on not encrypted device."), NULL },
 		POPT_TABLEEND
@@ -1287,8 +1290,7 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (opt_bsize < 0 || opt_key_size < 0 || opt_iteration_time < 0 ||
-	    opt_tries < 0 || opt_keyfile_offset < 0 || opt_key_size < 0 ||
-	    opt_reduce_device_size < 0) {
+	    opt_tries < 0 || opt_keyfile_offset < 0 || opt_key_size < 0) {
 		usage(popt_context, EXIT_FAILURE,
 		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));
@@ -1297,11 +1299,6 @@ int main(int argc, const char **argv)
 	if (opt_bsize < 1 || opt_bsize > 64)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Only values between 1MiB and 64 MiB allowed for reencryption block size."),
-		      poptGetInvocationName(popt_context));
-
-	if (opt_reduce_device_size > (64 * 1024 * 1024 / SECTOR_SIZE))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Maximum device reduce size is 64 MiB."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size % 8)
@@ -1318,13 +1315,24 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_new && !opt_reduce_device_size)
-		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce_device_size."),
-		      poptGetInvocationName(popt_context));
-
 	if (opt_device_size_str &&
 	    crypt_string_to_size(NULL, opt_device_size_str, &opt_device_size))
 		usage(popt_context, EXIT_FAILURE, _("Invalid device size specification."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_reduce_size_str &&
+	    crypt_string_to_size(NULL, opt_reduce_size_str, &opt_reduce_size))
+		usage(popt_context, EXIT_FAILURE, _("Invalid device size specification."),
+		      poptGetInvocationName(popt_context));
+	if (opt_reduce_size > 64 * 1024 * 1024)
+		usage(popt_context, EXIT_FAILURE, _("Maximum device reduce size is 64 MiB."),
+		      poptGetInvocationName(popt_context));
+	if (opt_reduce_size % SECTOR_SIZE)
+		usage(popt_context, EXIT_FAILURE, _("Reduce size must be multiple of 512 bytes sector."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_new && !opt_reduce_size)
+		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce-device-size."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
