@@ -67,6 +67,9 @@ static int opt_key_slot = CRYPT_ANY_SLOT;
 static int opt_key_size = 0;
 static int opt_new = 0;
 
+static const char *opt_device_size_str = NULL;
+static uint64_t opt_device_size = 0;
+
 static const char **action_argv;
 
 static volatile int quit = 0;
@@ -75,7 +78,8 @@ static volatile int quit = 0;
 struct reenc_ctx {
 	char *device;
 	char *device_uuid;
-	uint64_t device_size;
+	uint64_t device_size; /* overrided by parameter */
+	uint64_t device_size_real;
 	uint64_t device_offset;
 	uint64_t device_shift;
 
@@ -750,6 +754,10 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			return -EIO;
 		}
 
+		/* If device_size is forced, never write more than limit */
+		if ((s1 + rc->device_offset) > rc->device_size)
+			s1 = rc->device_size - rc->device_offset;
+
 		s2 = write(fd_new, buf, s1);
 		if (s2 < 0) {
 			log_dbg("Write error, expecting %d, got %d.",
@@ -861,10 +869,12 @@ static int copy_data(struct reenc_ctx *rc)
 	}
 
 	/* Check size */
-	if (ioctl(fd_new, BLKGETSIZE64, &rc->device_size) < 0) {
+	if (ioctl(fd_new, BLKGETSIZE64, &rc->device_size_real) < 0) {
 		log_err(_("Cannot get device size.\n"));
 		goto out;
 	}
+
+	rc->device_size = opt_device_size ?: rc->device_size_real;
 
 	if (posix_memalign((void *)&buf, alignment(fd_new), block_size)) {
 		log_err(_("Allocation of aligned memory failed.\n"));
@@ -1230,6 +1240,7 @@ int main(int argc, const char **argv)
 		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
 		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
 		{ "reduce-device-size",'\0', POPT_ARG_INT, &opt_reduce_device_size,     0, N_("Reduce data device size (move data offset). DANGEROUS!"), N_("SECTORS") },
+		{ "device-size",       '\0', POPT_ARG_STRING, &opt_device_size_str,     0, N_("Use only specified device size (ignore rest of device). DANGEROUS!"), N_("bytes") },
 		{ "new",               'N',  POPT_ARG_NONE,&opt_new,                    0, N_("Create new header on not encrypted device."), NULL },
 		POPT_TABLEEND
 	};
@@ -1309,6 +1320,11 @@ int main(int argc, const char **argv)
 
 	if (opt_new && !opt_reduce_device_size)
 		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce_device_size."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_device_size_str &&
+	    crypt_string_to_size(NULL, opt_device_size_str, &opt_device_size))
+		usage(popt_context, EXIT_FAILURE, _("Invalid device size specification."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {

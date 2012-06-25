@@ -124,6 +124,23 @@ Use with extreme care - shrinked filesystems are usually unrecoverable.
 
 You cannot shrink device more than by 64 MiB (131072 sectors).
 .TP
+.B "\-\-device-size \fIsize[units]\fR"
+Instead of real device size, use specified value.
+
+It means that only specified area (from the start of the device
+to the specified size) will be reencrypted.
+
+WARNING: This is destructive operation.
+
+If no unit suffix is specified, the size is in bytes.
+
+Unit suffix can be S for 512 byte sectors, K/M/G/T (or KiB,MiB,GiB,TiB)
+for units with 1024 base or KB/MB/GB/TB for 1000 base (SI scale).
+
+WARNING: This is destructive operation.
+
+You cannot shrink device more than by 64 MiB (131072 sectors).
+.TP
 .B "\-\-new, N"
 Create new header (encrypt not yet encrypted device).
 
