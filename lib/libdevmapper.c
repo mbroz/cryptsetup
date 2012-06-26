@@ -437,8 +437,6 @@ int dm_remove_device(const char *name, int force, uint64_t size)
 		if (--retries && r) {
 			log_dbg("WARNING: other process locked internal device %s, %s.",
 				name, retries ? "retrying remove" : "giving up");
-			if (force && (crypt_get_debug_level() == CRYPT_LOG_DEBUG))
-				debug_processes_using_device(name);
 			sleep(1);
 			if (force && !error_target) {
 				/* If force flag is set, replace device with error, read-only target.

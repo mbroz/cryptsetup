@@ -94,7 +94,6 @@ void logger(struct crypt_device *cd, int class, const char *file, int line, cons
 #define log_err(c, x...) logger(c, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
 
 int crypt_get_debug_level(void);
-void debug_processes_using_device(const char *name);
 
 int crypt_memlock_inc(struct crypt_device *ctx);
 int crypt_memlock_dec(struct crypt_device *ctx);
