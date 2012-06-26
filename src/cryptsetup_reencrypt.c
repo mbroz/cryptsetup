@@ -1260,7 +1260,7 @@ int main(int argc, const char **argv)
 
 	popt_context = poptGetContext(PACKAGE, argc, argv, popt_options, 0);
 	poptSetOtherOptionHelp(popt_context,
-	                       N_("[OPTION...] <device>"));
+	                       _("[OPTION...] <device>"));
 
 	while((r = poptGetNextOpt(popt_context)) > 0) ;
 	if (r < -1)
