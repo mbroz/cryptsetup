@@ -105,7 +105,7 @@ struct reenc_ctx {
 	int keyslot;
 
 	struct timeval start_time, end_time;
-	uint64_t restart_bytes;
+	uint64_t resume_bytes;
 };
 
 char MAGIC[]   = {'L','U','K','S', 0xba, 0xbe};
@@ -455,7 +455,7 @@ static int open_log(struct reenc_ctx *rc)
 		if (rc->log_fd == -1)
 			return -EINVAL;
 	} else {
-		log_std(_("Log file %s exists, restarting reencryption.\n"), rc->log_file);
+		log_std(_("Log file %s exists, resuming reencryption.\n"), rc->log_file);
 		flags = opt_directio ? O_RDWR|O_DIRECT : O_RDWR;
 		rc->log_fd = open(rc->log_file, flags);
 		if (rc->log_fd == -1)
@@ -714,7 +714,7 @@ static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 	if (!tdiff)
 		return;
 
-	mbytes = (bytes - rc->restart_bytes) / 1024 / 1024;
+	mbytes = (bytes - rc->resume_bytes) / 1024 / 1024;
 	mib = (double)(mbytes) / tdiff;
 	if (!mib)
 		return;
@@ -743,7 +743,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		return -EIO;
 	}
 
-	rc->restart_bytes = *bytes = rc->device_offset;
+	rc->resume_bytes = *bytes = rc->device_offset;
 
 	if (write_log(rc) < 0)
 		return -EIO;
@@ -794,11 +794,11 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 	if (!rc->in_progress) {
 		rc->device_offset = rc->device_size;
-		rc->restart_bytes = 0;
+		rc->resume_bytes = 0;
 		*bytes = 0;
 	} else {
-		rc->restart_bytes = rc->device_size - rc->device_offset;
-		*bytes = rc->restart_bytes;
+		rc->resume_bytes = rc->device_size - rc->device_offset;
+		*bytes = rc->resume_bytes;
 	}
 
 	if (write_log(rc) < 0)
@@ -1298,7 +1298,7 @@ int main(int argc, const char **argv)
 
 	if (opt_bsize < 1 || opt_bsize > 64)
 		usage(popt_context, EXIT_FAILURE,
-		      _("Only values between 1MiB and 64 MiB allowed for reencryption block size."),
+		      _("Only values between 1 MiB and 64 MiB allowed for reencryption block size."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size % 8)
