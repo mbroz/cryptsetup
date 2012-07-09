@@ -226,14 +226,13 @@ void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_m
 void crypt_set_password_verify(struct crypt_device *cd, int password_verify);
 
 /**
- * Set data device (encrypted payload area device) if LUKS header is separated
+ * Set data device
+ * For LUKS it is encrypted data device when LUKS header is separated.
+ * For VERITY it is data device when hash device is separated.
  *
  * @param cd crypt device handle
  * @param device path to device
  *
- * @pre context is of LUKS type
- * @pre unlike @ref crypt_init, in this function param @e device
- * 	has to be block device (at least 512B large)
  */
 int crypt_set_data_device(struct crypt_device *cd, const char *device);
 
@@ -399,8 +398,10 @@ struct crypt_params_verity {
  *
  * @returns @e 0 on success or negative errno value otherwise.
  *
- * @note Note that crypt_format does not enable any keyslot (in case of work with LUKS device), but it stores volume key internally
- * 	 and subsequent crypt_keyslot_add_* calls can be used.
+ * @note Note that crypt_format does not enable any keyslot (in case of work with LUKS device),
+ * 	but it stores volume key internally and subsequent crypt_keyslot_add_* calls can be used.
+ * @note For VERITY @link crypt_type @endlink, only uuid parameter is used, others paramaters
+ * 	are ignored and verity specific attributes are set through mandatory params option.
  */
 int crypt_format(struct crypt_device *cd,
 	const char *type,
@@ -436,7 +437,7 @@ int crypt_set_uuid(struct crypt_device *cd,
  * @post In case LUKS header is read successfully but payload device is too small
  * error is returned and device type in context is set to @e NULL
  *
- * @note Note that in current version load works only for LUKS device type
+ * @note Note that in current version load works only for LUKS and VERITY device type.
  *
  */
 int crypt_load(struct crypt_device *cd,
@@ -766,6 +767,9 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * @note If @e NULL is used for volume_key, device has to be initialized
  * 	 by previous operation (like @ref crypt_format
  * 	 or @ref crypt_init_by_name)
+ * @note For VERITY the volume key means root hash required for activation.
+ * 	 Because kernel dm-verity is always read only, you have to provide
+ * 	 CRYPT_ACTIVATE_READONLY flag always.
  */
 int crypt_activate_by_volume_key(struct crypt_device *cd,
 	const char *name,
@@ -819,9 +823,8 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 	const char *volume_key,
 	size_t volume_key_size);
 
-
-/*
- * @defgroup devstat "dmcrypt device status"
+/**
+ * @defgroup devstat "Crypt and Verity device status"
  * @addtogroup devstat
  * @{
  */
@@ -848,7 +851,7 @@ typedef enum {
 crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
 
 /**
- * Dump text-formatted information about crypt device to log output
+ * Dump text-formatted information about crypt or verity device to log output
  *
  * @param cd crypt device handle
  *
@@ -927,7 +930,7 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd);
 int crypt_get_volume_key_size(struct crypt_device *cd);
 
 /**
- * Get device paramaters for CRYPT_VERITY device
+ * Get device parameters for VERITY device
  *
  * @param cd crypt device handle
  * @param vp verity device info
@@ -937,6 +940,7 @@ int crypt_get_volume_key_size(struct crypt_device *cd);
  */
 int crypt_get_verity_info(struct crypt_device *cd,
 	struct crypt_params_verity *vp);
+/** @} */
 
 /**
  * @addtogroup keyslot
