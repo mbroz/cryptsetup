@@ -1575,6 +1575,112 @@ static void HashDevicePlain(void)
 	crypt_free(cd);
 }
 
+static void VerityTest(void)
+{
+	struct crypt_device *cd;
+	const char *salt_hex =  "20c28ffc129c12360ba6ceea2b6cf04e89c2b41cfe6b8439eb53c1897f50df7b";
+	const char *root_hex =  "ab018b003a967fc782effb293b6dccb60b4f40c06bf80d16391acf686d28b5d6";
+	char salt[256], root_hash[256];
+	struct crypt_active_device cad;
+	struct crypt_params_verity params = {
+		.data_device = DEVICE_EMPTY,
+		.salt = salt,
+		.data_size = 0, /* whole device */
+		.hash_area_offset = 0,
+		.flags = CRYPT_VERITY_CREATE_HASH,
+	};
+
+	crypt_decode_key(salt, salt_hex, strlen(salt_hex) / 2);
+	crypt_decode_key(root_hash, root_hex, strlen(root_hex) / 2);
+
+	/* Format */
+	OK_(crypt_init(&cd, DEVICE_2));
+
+	/* block size */
+	params.data_block_size = 333;
+	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
+		"Unsupppored block size.");
+	params.data_block_size = 4096;
+	params.hash_block_size = 333;
+	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
+		"Unsupppored block size.");
+	params.hash_block_size = 4096;
+
+	/* salt size */
+	params.salt_size = 257;
+	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
+		"Too large salt.");
+	params.salt_size = 32;
+
+	/* hash_type */
+	params.hash_type = 3;
+	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
+		"Unsupported hash type.");
+	params.hash_type = 1;
+	params.hash_name = "blah";
+	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
+		"Unsupported hash name.");
+	params.hash_name = "sha256";
+
+	OK_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params));
+	crypt_free(cd);
+
+	/* Verify */
+	OK_(crypt_init(&cd, DEVICE_2));
+	memset(&params, 0, sizeof(params));
+	params.data_device = DEVICE_EMPTY;
+	params.flags = CRYPT_VERITY_CHECK_HASH;
+	OK_(crypt_load(cd, CRYPT_VERITY, &params));
+
+	/* check verity params */
+	EQ_(crypt_get_volume_key_size(cd), 32);
+	OK_(strcmp(CRYPT_VERITY, crypt_get_type(cd)));
+	memset(&params, 0, sizeof(params));
+	OK_(crypt_get_verity_info(cd, &params));
+	OK_(strcmp("sha256", params.hash_name));
+	EQ_(strlen(salt_hex) / 2, params.salt_size);
+	OK_(memcmp(salt, params.salt, params.salt_size));
+	EQ_(4096, params.data_block_size);
+	EQ_(4096, params.hash_block_size);
+	EQ_(1, params.hash_type);
+	EQ_(crypt_get_volume_key_size(cd), 32);
+
+	OK_(crypt_activate_by_volume_key(cd, NULL, root_hash, 32, 0));
+	OK_(crypt_set_data_device(cd, DEVICE_1));
+	FAIL_(crypt_activate_by_volume_key(cd, NULL, root_hash, 32, 0), "Data corrupted");;
+
+	OK_(crypt_set_data_device(cd, DEVICE_EMPTY));
+	if (crypt_activate_by_volume_key(cd, CDEVICE_1, root_hash, 32,
+	    CRYPT_ACTIVATE_READONLY) == -ENOTSUP) {
+		printf("WARNING: kernel dm-verity not supported, skipping test.\n");
+		crypt_free(cd);
+		return;
+	}
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(CRYPT_ACTIVATE_READONLY, cad.flags);
+	crypt_free(cd);
+
+	OK_(crypt_init_by_name(&cd, CDEVICE_1));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	/* hash fail */
+	root_hash[1] = ~root_hash[1];
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, root_hash, 32, CRYPT_ACTIVATE_READONLY));
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_CORRUPTED, cad.flags);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	root_hash[1] = ~root_hash[1];
+
+	/* data fail */
+	OK_(crypt_set_data_device(cd, DEVICE_1));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, root_hash, 32, CRYPT_ACTIVATE_READONLY));
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_CORRUPTED, cad.flags);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	crypt_free(cd);
+}
+
 // Check that gcrypt is properly initialised in format
 static void NonFIPSAlg(void)
 {
@@ -1589,22 +1695,28 @@ static void NonFIPSAlg(void)
 	OK_(crypt_init(&cd, DEVICE_2));
 	params.hash = "sha256";
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params),
+	      "Already formatted.");
+	crypt_free(cd);
 
 	params.hash = "whirlpool";
+	OK_(crypt_init(&cd, DEVICE_2));
 	ret = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params);
 	if (ret < 0) {
 		printf("WARNING: whirlpool not supported, skipping test.\n");
 		crypt_free(cd);
 		return;
 	}
+	crypt_free(cd);
 
 	params.hash = "md5";
+	OK_(crypt_init(&cd, DEVICE_2));
 	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params),
 	      "MD5 unsupported, too short");
 	crypt_free(cd);
 }
 
-int main (int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int i;
 
@@ -1637,8 +1749,8 @@ int main (int argc, char *argv[])
 	RUN_(UseLuksDevice, "Use pre-formated LUKS device");
 	RUN_(SuspendDevice, "Suspend/Resume test");
 	RUN_(UseTempVolumes, "Format and use temporary encrypted device");
-
 	RUN_(CallbacksTest, "API callbacks test");
+	RUN_(VerityTest, "DM verity test");
 out:
 	_cleanup();
 	return 0;

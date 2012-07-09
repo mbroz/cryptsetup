@@ -234,6 +234,7 @@ int VERITY_activate(struct crypt_device *cd,
 		name ?: "[none]", verity_hdr->hash_name);
 
 	if (verity_hdr->flags & CRYPT_VERITY_CHECK_HASH) {
+		log_dbg("Verification of data in userspace required.");
 		r = VERITY_verify(cd, verity_hdr,
 				  crypt_get_device_name(cd), hash_device,
 				  root_hash, root_hash_size);

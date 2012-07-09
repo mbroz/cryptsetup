@@ -685,10 +685,6 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	if (params)
 		cd->verity_hdr.flags = params->flags;
 
-	if (params && params->data_device &&
-	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
-		return r;
-
 	/* Hash availability checked in sb load */
 	cd->verity_root_hash_size = crypt_hash_size(cd->verity_hdr.hash_name);
 	if (cd->verity_root_hash_size > 4096)
@@ -696,6 +692,10 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_VERITY)))
 		return -ENOMEM;
+
+	if (params && params->data_device &&
+	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
+		return r;
 
 	return r;
 }
