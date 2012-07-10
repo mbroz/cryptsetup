@@ -1649,6 +1649,7 @@ static void VerityTest(void)
 	OK_(crypt_set_data_device(cd, DEVICE_1));
 	FAIL_(crypt_activate_by_volume_key(cd, NULL, root_hash, 32, 0), "Data corrupted");;
 
+	_system("modprobe dm-verity", 0);
 	OK_(crypt_set_data_device(cd, DEVICE_EMPTY));
 	if (crypt_activate_by_volume_key(cd, CDEVICE_1, root_hash, 32,
 	    CRYPT_ACTIVATE_READONLY) == -ENOTSUP) {
