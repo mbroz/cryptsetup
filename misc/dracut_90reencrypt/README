@@ -1,0 +1,23 @@
+Example of simple dracut module for reencryption of system
+LUKS drive on-the-fly.
+
+Install in /usr/share/dracut/modules.d/90reencrypt, then
+rebuild intramfs "with dracut -f -a reencrypt"
+
+Dracut then recognize argument rd_REENCRYPT=name:size,
+e.g. rd_REENCRYPT=sda2:52G means only 52G of device
+will be reencrypted (default is whole device).
+(Name is kernel name of device.)
+
+Note that reencryption context is stored in ramdisk, any
+fail can mean complete lost of data!
+
+Copyright (C) 2012 Milan Broz <asi@ucw.cz>
+
+This copyrighted material is made available to anyone wishing to use,
+modify, copy, or redistribute it subject to the terms and conditions
+of the GNU General Public License v.2.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+inst cryptsetup-reencrypt
+
+inst_hook cmdline 30 "$moddir/parse-reencrypt.sh"
+inst "$moddir"/reencrypt.sh /sbin/reencrypt
