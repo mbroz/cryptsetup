@@ -1,13 +1,24 @@
-Cryptsetup 1.5.0 RC2 Release Notes
-==================================
+Cryptsetup 1.5.0 Release Notes
+==============================
 
-This testing release candidate version covers mainly
-inclusion of
-- new veritysetup tool (and related libcryptsetup extensions).
-- new experimental cryptsetup-reencrypt (offline reencryption) tool.
+This release covers mainly inclusion of:
 
-Please note that dm-verity API extension can change in next
-1.5.0 release candidate (despite it is not expected).
+  * Veritysetup tool (and related libcryptsetup extensions for dm-verity).
+
+  * Experimental cryptsetup-reencrypt tool (LUKS offline reencryption).
+
+Changes since version 1.5.0-rc2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  * Add --device-size option for reencryption tool.
+
+  * Switch to use unit suffix for --reduce-device-size option.
+
+  * Remove open device debugging feature (no longer needed).
+
+  * Fix library name for FIPS check.
+
+  * Add example of using reencryption inside dracut (see misc/dracut).
 
 Changes since version 1.5.0-rc1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,7 +58,7 @@ You can enable compilation of this tool with --enable-cryptsetup-reencrypt
 configure option (it is switched off by default).
 (Tool requires libcryptsetup 1.4.3 and later.)
 
-You have to provide all keyslot passphrases or use --kesylot-option
+You have to provide all keyslot passphrases or use --keyslot-option
 (then all other keyslots will be disabled).
 
 EXAMPLES (from man page)
