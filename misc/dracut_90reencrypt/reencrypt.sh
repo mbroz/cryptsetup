@@ -25,7 +25,8 @@ reenc_readkey() {
     local keypath="${1#*:}"
     local keydev="${1%%:*}"
 
-    local mntp=$(mkuniqdir /mnt keydev)
+    local mntp="/tmp/reencrypted-mount-tmp"
+    mkdir "$mntp"
     mount -r "$keydev" "$mntp" || return
     cat "$mntp/$keypath"
     umount "$mntp"
