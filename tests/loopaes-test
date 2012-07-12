@@ -152,7 +152,10 @@ for key_size in $KEY_SIZES ; do
     for key in $KEY_FILES ; do
         for offset in $DEV_OFFSET ; do
 		prepare "Open loop-AES $key / AES-$key_size / offset $offset"
-		$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $key_size --key-file $key $(get_offset_params $offset) || fail
+		$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME \
+			-s $key_size --key-file $key $(get_offset_params $offset) \
+			2>/dev/null
+		[ $? -ne 0 ] && echo "[SKIPPED]" && continue
 		check_exists
 		check_sum $key $key_size $offset
 		$CRYPTSETUP loopaesClose $DEV_NAME || fail
