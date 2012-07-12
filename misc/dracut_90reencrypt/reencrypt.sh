@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# $1=$device [$2=keyfile|none [$3=size]]
+#
 
 [ -d /sys/module/dm_crypt ] || modprobe dm_crypt
 
@@ -14,18 +17,39 @@ else
 fi
 
 PARAMS="$device -T 1 --use-fsync -B 32"
-if [ -n "$2" ]; then
-    PARAMS="$PARAMS --device-size $2"
+if [ -n "$3" ]; then
+    PARAMS="$PARAMS --device-size $3"
 fi
+
+reenc_readkey() {
+    local keypath="${1#*:}"
+    local keydev="${1%%:*}"
+
+    local mntp=$(mkuniqdir /mnt keydev)
+    mount -r "$keydev" "$mntp" || return
+    cat "$mntp/$keypath"
+    umount "$mntp"
+    rmdir "$mntp"
+}
+
+reenc_run() {
+    local cwd=$(pwd)
+    cd /tmp
+    if [ "$1" = "none" ] ; then
+        /bin/plymouth ask-for-password \
+        --prompt "LUKS password for REENCRYPTING $device" \
+        --command="/sbin/cryptsetup-reencrypt $PARAMS"
+    else
+        info "REENCRYPT using key $1"
+        reenc_readkey "$1" | /sbin/cryptsetup-reencrypt -d - $PARAMS
+    fi
+    cd $cwd
+}
 
 info "REENCRYPT $device requested"
 # flock against other interactive activities
 { flock -s 9;
-    CURR=$(pwd)
-    cd /tmp
-    /bin/plymouth ask-for-password --prompt "LUKS password for REENCRYPTING $device" \
-      --command="/sbin/cryptsetup-reencrypt $PARAMS"
-    cd $CURR
+    reenc_run $2
 } 9>/.console.lock
 
 # do not ask again
