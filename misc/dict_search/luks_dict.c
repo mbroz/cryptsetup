@@ -30,7 +30,7 @@
 static void check(struct crypt_device *cd, const char *pwd_file, unsigned my_id, unsigned max_id)
 {
 	FILE *f;
-	int len, r;
+	int len, r = -1;
 	unsigned long line = 0;
 	char pwd[MAX_LEN];
 
@@ -72,7 +72,7 @@ static void check(struct crypt_device *cd, const char *pwd_file, unsigned my_id,
 
 	fclose(f);
 	crypt_free(cd);
-	exit(0);
+	exit(r >= 0 ? 2 : EXIT_SUCCESS);
 }
 
 int main(int argc, char *argv[])
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (argc == 4 && sscanf(argv[3], "%i", &procs) != 1) {
+	if (argc == 4 && (sscanf(argv[3], "%i", &procs) != 1 || procs < 1)) {
 		printf("Wrong number of processes.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -104,8 +104,14 @@ int main(int argc, char *argv[])
 	for (i = 0; i < procs; i++)
 		check(cd, argv[2], i, procs);
 
-	/* wait until at least one finishes */
-	wait(&status);
-	kill(0, SIGHUP);
-	return 0;
+	/* wait until at least one finishes with error or status 2 (key found) */
+	while (wait(&status) != -1 && WIFEXITED(status)) {
+		if (WEXITSTATUS(status) == EXIT_SUCCESS)
+			continue;
+		/* kill rest of processes */
+		kill(0, SIGTERM);
+		/* not reached */
+		break;
+	}
+	exit(0);
 }
