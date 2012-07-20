@@ -52,9 +52,11 @@ static void check(struct crypt_device *cd, const char *pwd_file, unsigned my_id,
 
 		len = strlen(pwd);
 
-		/* lines starting "#" are comments */
-		if (pwd[0] == '#')
+		/* lines starting "#!comment" are comments */
+		if (len >= 9 && !strncmp(pwd, "#!comment", 9)) {
+			printf("skipping %s\n", pwd);
 			continue;
+		}
 
 		/* strip EOL - this is like a input from tty */
 		if (len && pwd[len - 1] == '\n') {
