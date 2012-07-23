@@ -153,6 +153,7 @@ function valgrind_run()
 [ ! -x "$VERITYSETUP" ] && skip "Cannot find $VERITYSETUP, test skipped."
 
 [ -n "$VALG" ] && valgrind_setup && VERITYSETUP=valgrind_run
+modprobe dm-verity >/dev/null 2>&1
 
 # VERITYSETUP tests
 
