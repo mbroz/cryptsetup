@@ -1,7 +1,7 @@
 /*
  * Example of LUKS password dictionary search
  *
- * Run this as root, e.g. ./luks_check test.img /usr/share/john/password.lst 4
+ * Run this as root, e.g. ./luks_dict test.img /usr/share/john/password.lst 4
  *
  * Copyright (C) 2012 Milan Broz <asi@ucw.cz>
  *
@@ -52,22 +52,22 @@ static void check(struct crypt_device *cd, const char *pwd_file, unsigned my_id,
 
 		len = strlen(pwd);
 
-		/* lines starting "#!comment" are comments */
-		if (len >= 9 && !strncmp(pwd, "#!comment", 9)) {
-			printf("skipping %s\n", pwd);
-			continue;
-		}
-
 		/* strip EOL - this is like a input from tty */
 		if (len && pwd[len - 1] == '\n') {
 			pwd[len - 1] = '\0';
 			len--;
 		}
 
-		//printf("%d: checking %s\n", my_id, pwd);
+		/* lines starting "#!comment" are comments */
+		if (len >= 9 && !strncmp(pwd, "#!comment", 9)) {
+			/* printf("skipping %s\n", pwd); */
+			continue;
+		}
+
+		/* printf("%d: checking %s\n", my_id, pwd); */
 		r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, pwd, len, 0);
 		if (r >= 0) {
-			printf("Found passphrase for slot %d: %s\n", r, pwd);
+			printf("Found passphrase for slot %d: \"%s\"\n", r, pwd);
 			break;
 		}
 	}
@@ -92,6 +92,17 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	/* crypt_set_debug_level(CRYPT_DEBUG_ALL); */
+
+	/*
+	 * Need to create temporary keyslot device-mapper devices and allocate loop if needed,
+	 * so root is requried here.
+	 */
+	if (getuid() != 0) {
+		printf("You must be root to run this program.\n");
+                exit(EXIT_FAILURE);
+	}
+
 	/* signal all children if anything happens */
 	prctl(PR_SET_PDEATHSIG, SIGHUP);
 	setpriority(PRIO_PROCESS, 0, -5);
@@ -102,7 +113,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	/* run scan in separate processes */
+	/* run scan in separate processes, it is up to scheduler to assign CPUs inteligently */
 	for (i = 0; i < procs; i++)
 		check(cd, argv[2], i, procs);
 
@@ -111,7 +122,7 @@ int main(int argc, char *argv[])
 		if (WEXITSTATUS(status) == EXIT_SUCCESS)
 			continue;
 		/* kill rest of processes */
-		kill(0, SIGTERM);
+		kill(0, SIGHUP);
 		/* not reached */
 		break;
 	}
