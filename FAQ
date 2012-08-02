@@ -86,7 +86,7 @@ A. Contributors
   http://en.wikipedia.org/wiki/ASCII
 
 
- * 1.3 System Specific warnings
+ * 1.3 System specific warnings
 
   - Ubuntu as of 4/2011: It seems the installer offers to create
   LUKS partitions in a way that several people mistook for an offer
@@ -98,8 +98,37 @@ A. Contributors
   This issue has been acknowledged by the Ubuntu dev team, see here:
   http://launchpad.net/bugs/420080
 
+  Update 7/2012: I am unsure whether this has been fixed bu now, best
+  be careful.
 
- * 1.4 Who wrote this?
+
+ * 1.4 My LUKS-device is broken! Help!
+
+  First: Do not panic! In many cases the data is still recoverable.
+  Do not do anything hasty! Steps:
+
+  - Take some deep breaths. Maybe add some relaxing music. This may
+  sound funny, but I am completely serious. Often, critical damage is
+  done only after the initial problem.
+
+  - Do not reboot. The keys mays still be in the kernel if the device
+  is mapped.
+
+  - Make sure others do not reboot the system.
+
+  - Do not write to your disk without a clear understanding why this
+  will not make matters worse. Do a sector-level backup before any
+  writes. Often you do not need to write at all to get enough access
+  to make a backup of the data.
+
+  - Relax some more.
+
+  - Read section 6 of this FAQ.
+
+  - Ask on the mailing-list if you need more help.
+
+
+ * 1.5 Who wrote this?
 
   Current FAQ maintainer is Arno Wagner <arno@wagner.name>. Other
   contributors are listed at the end. If you want to contribute, send
@@ -1252,7 +1281,7 @@ A. Contributors
   process, except generating a new LUKS header with the old master
   key (it prints the command for that though):
 
-http://code.google.com/p/cryptsetup/source/browse/trunk/misc/luks-header-from-active
+http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
 
   You can also do this manually. Here is how:
 
