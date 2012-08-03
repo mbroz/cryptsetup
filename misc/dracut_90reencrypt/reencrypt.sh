@@ -27,10 +27,9 @@ reenc_readkey() {
 
     local mntp="/tmp/reencrypted-mount-tmp"
     mkdir "$mntp"
-    mount -r "$keydev" "$mntp" || return
-    cat "$mntp/$keypath"
+    mount -r "$keydev" "$mntp" && cat "$mntp/$keypath"
     umount "$mntp"
-    rmdir "$mntp"
+    rm -r "$mntp"
 }
 
 reenc_run() {
