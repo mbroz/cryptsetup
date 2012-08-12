@@ -23,9 +23,8 @@ by \-\-hash\-offset option.
 Note you need to provide root hash string for device verification
 or activation. Root hash must be trusted.
 
-If data or hash device argument points to regular file, veritysetup
-allocates loopback device. In this case, hash file size must be enough
-to store the hash area.
+The data or hash device argument can be block device or file image.
+If hash device path doesn't exist, it will be created as file.
 
 \fB<options>\fR can be [\-\-hash, \-\-no-superblock, \-\-format,
 \-\-data-block-size, \-\-hash-block-size, \-\-data-blocks, \-\-hash-offset,

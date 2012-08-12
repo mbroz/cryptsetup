@@ -11,7 +11,6 @@ function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	[ ! -z "$LOOPDEV2" ] && losetup -d $LOOPDEV2 >/dev/null 2>&1
 	rm -f $IMG $IMG_HASH $DEV_OUT >/dev/null 2>&1
 	LOOPDEV1=""
 	LOOPDEV2=""
@@ -42,17 +41,13 @@ function prepare() # $1 dev1_siz [$2 dev2_size]
 	losetup $LOOPDEV1 $IMG
 
 	[ -z "$2" ] && return
-	dd if=/dev/zero of=$IMG_HASH bs=1k count=$2 >/dev/null 2>&1
-	LOOPDEV2=$(losetup -f 2>/dev/null)
-	[ -z "$LOOPDEV2" ] && fail "No free loop device"
-	losetup $LOOPDEV2 $IMG_HASH
+	LOOPDEV2=$IMG_HASH
 }
 
 function wipe()
 {
 	dd if=/dev/zero of=$LOOPDEV1 bs=256k >/dev/null 2>&1
-	dd if=/dev/zero of=$LOOPDEV2 bs=256k >/dev/null 2>&1
-	rm -f $DEV_OUT >/dev/null 2>&1
+	rm -f $IMG_HASH $DEV_OUT >/dev/null 2>&1
 }
 
 function check_exists()
@@ -111,14 +106,14 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 
 	case $fail in
 	data)
-		dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=3456 count=8 2>/dev/null
+		dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=3456 count=8 conv=notrunc 2>/dev/null
 		TXT="data_dev"
 		;;
 	hash)
 		if [ -z "$LOOPDEV2" ] ; then
-			dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=$((8193 + $4)) count=8 2>/dev/null
+			dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=$((8193 + $4)) count=8 conv=notrunc 2>/dev/null
 		else
-			dd if=/dev/urandom of=$LOOPDEV2 bs=1 seek=8193 count=8 2>/dev/null
+			dd if=/dev/urandom of=$LOOPDEV2 bs=1 seek=8193 count=8 conv=notrunc 2>/dev/null
 		fi
                 TXT="hash_dev"
 		;;
