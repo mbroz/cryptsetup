@@ -196,7 +196,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 		.uuid   = crypt_get_uuid(cd),
 		.size   = 0,
 		.flags  = flags,
-		.data_device = crypt_get_device_name(cd),
+		.data_device = crypt_data_device(cd),
 		.u.crypt  = {
 			.cipher = NULL,
 			.vk     = vk,
@@ -205,9 +205,8 @@ int LOOPAES_activate(struct crypt_device *cd,
 		}
 	};
 
-
-	r = device_check_and_adjust(cd, dmd.data_device, DEV_EXCL,
-				    &dmd.size, &dmd.u.crypt.offset, &flags);
+	r = device_block_adjust(cd, dmd.data_device, DEV_EXCL,
+				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
 	if (r)
 		return r;
 

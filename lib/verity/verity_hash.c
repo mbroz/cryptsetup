@@ -202,8 +202,8 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	int verify,
 	int version,
 	const char *hash_name,
-	const char *hash_device,
-	const char *data_device,
+	struct device *hash_device,
+	struct device *data_device,
 	size_t hash_block_size,
 	size_t data_block_size,
 	off_t data_blocks,
@@ -227,7 +227,8 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	log_dbg("Hash %s %s, data device %s, data blocks %" PRIu64
 		", hash_device %s, offset %" PRIu64 ".",
 		verify ? "verification" : "creation", hash_name,
-		data_device, data_blocks, hash_device, hash_position);
+		device_path(data_device), data_blocks,
+		device_path(hash_device), hash_position);
 
 	if (data_blocks < 0 || hash_position < 0) {
 		log_err(cd, _("Invalid size parameters for verity device.\n"));
@@ -288,18 +289,21 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 
 	log_dbg("Data device size required: %" PRIu64 " bytes.",
 		data_device_size);
-	data_file = fopen(data_device, "r");
+	data_file = fopen(device_path(data_device), "r");
 	if (!data_file) {
-		log_err(cd, _("Cannot open device %s.\n"), data_device);
+		log_err(cd, _("Cannot open device %s.\n"),
+			device_path(data_device)
+		);
 		r = -EIO;
 		goto out;
 	}
 
 	log_dbg("Hash device size required: %" PRIu64 " bytes.",
 		hash_device_size);
-	hash_file = fopen(hash_device, verify ? "r" : "r+");
+	hash_file = fopen(device_path(hash_device), verify ? "r" : "r+");
 	if (!hash_file) {
-		log_err(cd, _("Cannot open device %s.\n"), hash_device);
+		log_err(cd, _("Cannot open device %s.\n"),
+			device_path(hash_device));
 		r = -EIO;
 		goto out;
 	}
@@ -316,9 +320,10 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 			if (r)
 				goto out;
 		} else {
-			hash_file_2 = fopen(hash_device, "r");
+			hash_file_2 = fopen(device_path(hash_device), "r");
 			if (!hash_file_2) {
-				log_err(cd, _("Cannot open device %s.\n"), hash_device);
+				log_err(cd, _("Cannot open device %s.\n"),
+					device_path(hash_device));
 				r = -EIO;
 				goto out;
 			}
@@ -378,16 +383,14 @@ out:
 /* Verify verity device using userspace crypto backend */
 int VERITY_verify(struct crypt_device *cd,
 		  struct crypt_params_verity *verity_hdr,
-		  const char *data_device,
-		  const char *hash_device,
 		  const char *root_hash,
 		  size_t root_hash_size)
 {
 	return VERITY_create_or_verify_hash(cd, 1,
 		verity_hdr->hash_type,
 		verity_hdr->hash_name,
-		hash_device,
-		data_device,
+		crypt_metadata_device(cd),
+		crypt_data_device(cd),
 		verity_hdr->hash_block_size,
 		verity_hdr->data_block_size,
 		verity_hdr->data_size,
@@ -401,8 +404,6 @@ int VERITY_verify(struct crypt_device *cd,
 /* Create verity hash */
 int VERITY_create(struct crypt_device *cd,
 		  struct crypt_params_verity *verity_hdr,
-		  const char *data_device,
-		  const char *hash_device,
 		  char *root_hash,
 		  size_t root_hash_size)
 {
@@ -418,8 +419,8 @@ int VERITY_create(struct crypt_device *cd,
 	return VERITY_create_or_verify_hash(cd, 0,
 		verity_hdr->hash_type,
 		verity_hdr->hash_name,
-		hash_device,
-		data_device,
+		crypt_metadata_device(cd),
+		crypt_data_device(cd),
 		verity_hdr->hash_block_size,
 		verity_hdr->data_block_size,
 		verity_hdr->data_size,

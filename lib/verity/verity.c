@@ -52,11 +52,12 @@ struct verity_sb {
 
 /* Read verity superblock from disk */
 int VERITY_read_sb(struct crypt_device *cd,
-		   const char *device,
 		   uint64_t sb_offset,
 		   char **uuid_string,
 		   struct crypt_params_verity *params)
 {
+	const char *device = device_path(crypt_metadata_device(cd));
+	int bsize = device_block_size(crypt_metadata_device(cd));
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int devfd = 0, sb_version;
@@ -81,7 +82,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 	}
 
 	if(lseek(devfd, sb_offset, SEEK_SET) < 0 ||
-	   read_blockwise(devfd, &sb, hdr_size) < hdr_size) {
+	   read_blockwise(devfd, bsize, &sb, hdr_size) < hdr_size) {
 		close(devfd);
 		return -EIO;
 	}
@@ -144,11 +145,12 @@ int VERITY_read_sb(struct crypt_device *cd,
 
 /* Write verity superblock to disk */
 int VERITY_write_sb(struct crypt_device *cd,
-		   const char *device,
 		   uint64_t sb_offset,
 		   const char *uuid_string,
 		   struct crypt_params_verity *params)
 {
+	const char *device = device_path(crypt_metadata_device(cd));
+	int bsize = device_block_size(crypt_metadata_device(cd));
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	uuid_t uuid;
@@ -184,7 +186,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	memcpy(sb.salt, params->salt, params->salt_size);
 	memcpy(sb.uuid, uuid, sizeof(sb.uuid));
 
-	r = write_lseek_blockwise(devfd, (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
+	r = write_lseek_blockwise(devfd, bsize, (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(cd, _("Error during update of verity header on device %s.\n"), device);
 	close(devfd);
@@ -220,14 +222,12 @@ int VERITY_UUID_generate(struct crypt_device *cd, char **uuid_string)
 /* Activate verity device in kernel device-mapper */
 int VERITY_activate(struct crypt_device *cd,
 		     const char *name,
-		     const char *hash_device,
 		     const char *root_hash,
 		     size_t root_hash_size,
 		     struct crypt_params_verity *verity_hdr,
 		     uint32_t activation_flags)
 {
 	struct crypt_dm_active_device dmd;
-	uint64_t offset = 0;
 	int r;
 
 	log_dbg("Trying to activate VERITY device %s using hash %s.",
@@ -236,7 +236,6 @@ int VERITY_activate(struct crypt_device *cd,
 	if (verity_hdr->flags & CRYPT_VERITY_CHECK_HASH) {
 		log_dbg("Verification of data in userspace required.");
 		r = VERITY_verify(cd, verity_hdr,
-				  crypt_get_device_name(cd), hash_device,
 				  root_hash, root_hash_size);
 		if (r < 0)
 			return r;
@@ -246,8 +245,8 @@ int VERITY_activate(struct crypt_device *cd,
 		return 0;
 
 	dmd.target = DM_VERITY;
-	dmd.data_device = crypt_get_device_name(cd);
-	dmd.u.verity.hash_device = hash_device;
+	dmd.data_device = crypt_data_device(cd);
+	dmd.u.verity.hash_device = crypt_metadata_device(cd);
 	dmd.u.verity.root_hash = root_hash;
 	dmd.u.verity.root_hash_size = root_hash_size;
 	dmd.u.verity.hash_offset = VERITY_hash_offset_block(verity_hdr),
@@ -256,8 +255,13 @@ int VERITY_activate(struct crypt_device *cd,
 	dmd.uuid = crypt_get_uuid(cd);
 	dmd.u.verity.vp = verity_hdr;
 
-	r = device_check_and_adjust(cd, dmd.data_device, DEV_EXCL,
-				    &dmd.size, &offset, &dmd.flags);
+	r = device_block_adjust(cd, dmd.u.verity.hash_device, DEV_OK,
+				0, NULL, NULL);
+	if (r)
+		return r;
+
+	r = device_block_adjust(cd, dmd.data_device, DEV_EXCL,
+				0, &dmd.size, &dmd.flags);
 	if (r)
 		return r;
 

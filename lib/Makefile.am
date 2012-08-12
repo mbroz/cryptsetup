@@ -59,6 +59,7 @@ libcryptsetup_la_SOURCES = \
 	utils_wipe.c				\
 	utils_fips.c				\
 	utils_fips.h				\
+	utils_device.c				\
 	libdevmapper.c				\
 	utils_dm.h				\
 	volumekey.c				\

@@ -31,20 +31,17 @@ struct crypt_device;
 struct crypt_params_verity;
 
 int VERITY_read_sb(struct crypt_device *cd,
-		   const char *device,
 		   uint64_t sb_offset,
 		   char **uuid,
 		   struct crypt_params_verity *params);
 
 int VERITY_write_sb(struct crypt_device *cd,
-		   const char *device,
 		   uint64_t sb_offset,
 		   const char *uuid_string,
 		   struct crypt_params_verity *params);
 
 int VERITY_activate(struct crypt_device *cd,
 		     const char *name,
-		     const char *hash_device,
 		     const char *root_hash,
 		     size_t root_hash_size,
 		     struct crypt_params_verity *verity_hdr,
@@ -52,15 +49,11 @@ int VERITY_activate(struct crypt_device *cd,
 
 int VERITY_verify(struct crypt_device *cd,
 		struct crypt_params_verity *verity_hdr,
-		const char *data_device,
-		const char *hash_device,
 		const char *root_hash,
 		size_t root_hash_size);
 
 int VERITY_create(struct crypt_device *cd,
 		  struct crypt_params_verity *verity_hdr,
-		  const char *data_device,
-		  const char *hash_device,
 		  char *root_hash,
 		  size_t root_hash_size);
 

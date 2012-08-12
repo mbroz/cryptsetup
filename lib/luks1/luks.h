@@ -63,6 +63,7 @@
 converted */
 
 struct volume_key;
+struct device_backend;
 
 struct luks_phdr {
 	char		magic[LUKS_MAGIC_L];
@@ -108,11 +109,10 @@ int LUKS_generate_phdr(
 	unsigned int alignOffset,
 	uint32_t iteration_time_ms,
 	uint64_t *PBKDF2_per_sec,
-	const char *metadata_device,
+	int detached_metadata_device,
 	struct crypt_device *ctx);
 
 int LUKS_read_phdr(
-	const char *device,
 	struct luks_phdr *hdr,
 	int require_luks_device,
 	int repair,
@@ -120,36 +120,30 @@ int LUKS_read_phdr(
 
 int LUKS_read_phdr_backup(
 	const char *backup_file,
-	const char *device,
 	struct luks_phdr *hdr,
 	int require_luks_device,
 	struct crypt_device *ctx);
 
 int LUKS_hdr_uuid_set(
-	const char *device,
 	struct luks_phdr *hdr,
 	const char *uuid,
 	struct crypt_device *ctx);
 
 int LUKS_hdr_backup(
 	const char *backup_file,
-	const char *device,
 	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 
 int LUKS_hdr_restore(
 	const char *backup_file,
-	const char *device,
 	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 
 int LUKS_write_phdr(
-	const char *device,
 	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 
 int LUKS_set_key(
-	const char *device,
 	unsigned int keyIndex,
 	const char *password,
 	size_t passwordLen,
@@ -160,7 +154,6 @@ int LUKS_set_key(
 	struct crypt_device *ctx);
 
 int LUKS_open_key_with_hdr(
-	const char *device,
 	int keyIndex,
 	const char *password,
 	size_t passwordLen,
@@ -169,7 +162,6 @@ int LUKS_open_key_with_hdr(
 	struct crypt_device *ctx);
 
 int LUKS_del_key(
-	const char *device,
 	unsigned int keyIndex,
 	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
@@ -183,7 +175,6 @@ int LUKS_encrypt_to_storage(
 	char *src, size_t srcLength,
 	struct luks_phdr *hdr,
 	struct volume_key *vk,
-	const char *device,
 	unsigned int sector,
 	struct crypt_device *ctx);
 
@@ -191,7 +182,6 @@ int LUKS_decrypt_from_storage(
 	char *dst, size_t dstLength,
 	struct luks_phdr *hdr,
 	struct volume_key *vk,
-	const char *device,
 	unsigned int sector,
 	struct crypt_device *ctx);
 

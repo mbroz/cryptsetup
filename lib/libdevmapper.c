@@ -287,14 +287,16 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd)
 		hex_key(hexkey, dmd->u.crypt.vk->keylength, dmd->u.crypt.vk->key);
 
 	max_size = strlen(hexkey) + strlen(dmd->u.crypt.cipher) +
-		   strlen(dmd->data_device) + strlen(features) + 64;
+		   strlen(device_block_path(dmd->data_device)) +
+		   strlen(features) + 64;
 	params = crypt_safe_alloc(max_size);
 	if (!params)
 		goto out;
 
 	r = snprintf(params, max_size, "%s %s %" PRIu64 " %s %" PRIu64 "%s",
 		     dmd->u.crypt.cipher, hexkey, dmd->u.crypt.iv_offset,
-		     dmd->data_device, dmd->u.crypt.offset, features);
+		     device_block_path(dmd->data_device), dmd->u.crypt.offset,
+		     features);
 	if (r < 0 || r >= max_size) {
 		crypt_safe_free(params);
 		params = NULL;
@@ -328,8 +330,8 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 		strncpy(hexsalt, "-", 2);
 
 	max_size = strlen(hexroot) + strlen(hexsalt) +
-		   strlen(dmd->data_device) +
-		   strlen(dmd->u.verity.hash_device) +
+		   strlen(device_block_path(dmd->data_device)) +
+		   strlen(device_block_path(dmd->u.verity.hash_device)) +
 		   strlen(vp->hash_name) + 128;
 
 	params = crypt_safe_alloc(max_size);
@@ -338,8 +340,8 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 
 	r = snprintf(params, max_size,
 		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s",
-		     vp->hash_type, dmd->data_device,
-		     dmd->u.verity.hash_device,
+		     vp->hash_type, device_block_path(dmd->data_device),
+		     device_block_path(dmd->u.verity.hash_device),
 		     vp->data_block_size, vp->hash_block_size,
 		     vp->data_size, dmd->u.verity.hash_offset,
 		     vp->hash_name, hexroot, hexsalt);
@@ -491,7 +493,7 @@ static void dm_prepare_uuid(const char *name, const char *type, const char *uuid
 }
 
 static int _dm_create_device(const char *name, const char *type,
-			     const char *device, uint32_t flags,
+			     struct device *device, uint32_t flags,
 			     const char *uuid, uint64_t size,
 			     char *params, int reload)
 {
@@ -708,6 +710,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 	uint64_t val64;
 	char *rcipher, *key_, *rdevice, *endp, buffer[3], *arg;
 	unsigned int i;
+	int r;
 
 	memset(dmd, 0, sizeof(*dmd));
 	dmd->target = DM_CRYPT;
@@ -730,8 +733,13 @@ static int _dm_query_crypt(uint32_t get_flags,
 
 	/* device */
 	rdevice = strsep(&params, " ");
-	if (get_flags & DM_ACTIVE_DEVICE)
-		dmd->data_device = crypt_lookup_dev(rdevice);
+	if (get_flags & DM_ACTIVE_DEVICE) {
+		arg = crypt_lookup_dev(rdevice);
+		r = device_alloc(&dmd->data_device, arg);
+		free(arg);
+		if (r < 0 && r != -ENOTBLK)
+			return r;
+	}
 
 	/*offset */
 	if (!params)
@@ -805,6 +813,7 @@ static int _dm_query_verity(uint32_t get_flags,
 	uint64_t val64;
 	ssize_t len;
 	char *str, *str2;
+	int r;
 
 	if (get_flags & DM_ACTIVE_VERITY_PARAMS)
 		vp = dmd->u.verity.vp;
@@ -826,15 +835,25 @@ static int _dm_query_verity(uint32_t get_flags,
 	str = strsep(&params, " ");
 	if (!params)
 		return -EINVAL;
-	if (get_flags & DM_ACTIVE_DEVICE)
-		dmd->data_device = crypt_lookup_dev(str);
+	if (get_flags & DM_ACTIVE_DEVICE) {
+		str2 = crypt_lookup_dev(str);
+		r = device_alloc(&dmd->data_device, str2);
+		free(str2);
+		if (r < 0 && r != -ENOTBLK)
+			return r;
+	}
 
 	/* hash device */
 	str = strsep(&params, " ");
 	if (!params)
 		return -EINVAL;
-	if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE)
-		dmd->u.verity.hash_device = crypt_lookup_dev(str);
+	if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE) {
+		str2 = crypt_lookup_dev(str);
+		r = device_alloc(&dmd->u.verity.hash_device, str2);
+		free(str2);
+		if (r < 0 && r != -ENOTBLK)
+			return r;
+	}
 
 	/* data block size*/
 	val32 = strtoul(params, &params, 10);
@@ -1071,28 +1090,4 @@ int dm_is_dm_device(int major, int minor)
 int dm_is_dm_kernel_name(const char *name)
 {
 	return strncmp(name, "dm-", 3) ? 0 : 1;
-}
-
-int dm_check_segment(const char *name, uint64_t offset, uint64_t size)
-{
-	struct crypt_dm_active_device dmd;
-	int r;
-
-	log_dbg("Checking segments for device %s.", name);
-
-	r = dm_query_device(name, 0, &dmd);
-	if (r < 0)
-		return r;
-
-	if (offset >= (dmd.u.crypt.offset + dmd.size) ||
-	   (offset + size) <= dmd.u.crypt.offset)
-		r = 0;
-	else
-		r = -EBUSY;
-
-	log_dbg("seg: %" PRIu64 " - %" PRIu64 ", new %" PRIu64 " - %" PRIu64 "%s",
-	       dmd.u.crypt.offset, dmd.u.crypt.offset + dmd.size, offset, offset + size,
-	       r ? " (overlapping)" : " (ok)");
-
-	return r;
 }

@@ -28,6 +28,7 @@
 struct crypt_device;
 struct volume_key;
 struct crypt_params_verity;
+struct device;
 
 /* Device mapper backend - kernel support flags */
 #define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
@@ -54,7 +55,7 @@ struct crypt_dm_active_device {
 	uint64_t size;		/* active device size */
 	uint32_t flags;		/* activation flags */
 	const char *uuid;
-	const char *data_device;
+	struct device *data_device;
 	union {
 	struct {
 		const char *cipher;
@@ -67,7 +68,7 @@ struct crypt_dm_active_device {
 		uint64_t iv_offset;	/* IV initilisation sector */
 	} crypt;
 	struct {
-		const char *hash_device;
+		struct device *hash_device;
 
 		const char *root_hash;
 		uint32_t root_hash_size;
@@ -98,6 +99,5 @@ int dm_resume_and_reinstate_key(const char *name,
 char *dm_device_path(const char *prefix, int major, int minor);
 int dm_is_dm_device(int major, int minor);
 int dm_is_dm_kernel_name(const char *name);
-int dm_check_segment(const char *name, uint64_t offset, uint64_t size);
 
 #endif /* _UTILS_DM_H */

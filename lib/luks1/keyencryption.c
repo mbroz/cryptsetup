@@ -51,17 +51,16 @@ static uint64_t cleaner_size = 0;
 static int devfd=-1;
 
 static int setup_mapping(const char *cipher, const char *name,
-			 const char *device,
-			 struct volume_key *vk,
+			 int bsize, struct volume_key *vk,
 			 unsigned int sector, size_t srcLength,
 			 int mode, struct crypt_device *ctx)
 {
-	int device_sector_size = sector_size_for_device(device);
+	struct device *device = crypt_metadata_device(ctx);
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.uuid   = NULL,
-		.size   = 0,
-		.flags  = 0,
+		.size   = round_up_modulo(srcLength, bsize) / SECTOR_SIZE,
+		.flags  = CRYPT_ACTIVATE_PRIVATE,
 		.data_device = device,
 		.u.crypt = {
 			.cipher = cipher,
@@ -70,22 +69,17 @@ static int setup_mapping(const char *cipher, const char *name,
 			.iv_offset = 0,
 		}
 	};
+	int r;
 
-	dmd.flags = CRYPT_ACTIVATE_PRIVATE;
 	if (mode == O_RDONLY)
 		dmd.flags |= CRYPT_ACTIVATE_READONLY;
-	/*
-	 * we need to round this to nearest multiple of the underlying
-	 * device's sector size, otherwise the mapping will be refused.
-	 */
-	if(device_sector_size < 0) {
-		log_err(ctx, _("Unable to obtain sector size for %s"), device);
-		return -EINVAL;
-	}
 
-	dmd.size = round_up_modulo(srcLength,device_sector_size)/SECTOR_SIZE;
+	r = device_block_adjust(ctx, dmd.data_device, DEV_OK,
+				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
+	if (r < 0)
+		return r;
+
 	cleaner_size = dmd.size;
-
 	return dm_create_device(name, "TEMP", &dmd, 0);
 }
 
@@ -116,9 +110,8 @@ static const char *_error_hint(char *cipherMode, size_t keyLength)
 static int LUKS_endec_template(char *src, size_t srcLength,
 			       struct luks_phdr *hdr,
 			       struct volume_key *vk,
-			       const char *device,
 			       unsigned int sector,
-			       ssize_t (*func)(int, void *, size_t),
+			       ssize_t (*func)(int, int, void *, size_t),
 			       int mode,
 			       struct crypt_device *ctx)
 {
@@ -127,6 +120,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	char *dmCipherSpec = NULL;
 	const char *dmDir = dm_get_dir();
 	int r = -1;
+	int bsize = device_block_size(crypt_metadata_device(ctx));
 
 	if(dmDir == NULL) {
 		log_err(ctx, _("Failed to obtain device mapper directory."));
@@ -142,12 +136,11 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	signal(SIGINT, sigint_handler);
 	cleaner_name = name;
 
-	r = setup_mapping(dmCipherSpec, name, device,
-			  vk, sector, srcLength, mode, ctx);
+	r = setup_mapping(dmCipherSpec, name, bsize, vk, sector, srcLength, mode, ctx);
 	if(r < 0) {
 		log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
 			"Check that kernel supports %s cipher (check syslog for more info).\n%s"),
-			device, dmCipherSpec,
+			device_path(crypt_metadata_device(ctx)), dmCipherSpec,
 			_error_hint(hdr->cipherMode, vk->keylength * 8));
 		r = -EIO;
 		goto out1;
@@ -160,7 +153,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 		goto out2;
 	}
 
-	r = func(devfd,src,srcLength);
+	r = func(devfd, bsize, src, srcLength);
 	if(r < 0) {
 		log_err(ctx, _("Failed to access temporary keystore device.\n"));
 		r = -EIO;
@@ -186,21 +179,19 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 			    struct luks_phdr *hdr,
 			    struct volume_key *vk,
-			    const char *device,
 			    unsigned int sector,
 			    struct crypt_device *ctx)
 {
-	return LUKS_endec_template(src,srcLength,hdr,vk, device,
-				   sector, write_blockwise, O_RDWR, ctx);
+	return LUKS_endec_template(src, srcLength, hdr, vk, sector,
+				   write_blockwise, O_RDWR, ctx);
 }
 
 int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 			      struct luks_phdr *hdr,
 			      struct volume_key *vk,
-			      const char *device,
 			      unsigned int sector,
 			      struct crypt_device *ctx)
 {
-	return LUKS_endec_template(dst,dstLength,hdr,vk, device,
-				   sector, read_blockwise, O_RDONLY, ctx);
+	return LUKS_endec_template(dst, dstLength, hdr, vk, sector,
+				   read_blockwise, O_RDONLY, ctx);
 }
