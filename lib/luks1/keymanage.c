@@ -286,7 +286,11 @@ int LUKS_hdr_restore(
 
 	devfd = open(device_path(device), O_WRONLY | O_DIRECT | O_SYNC);
 	if(devfd == -1) {
-		log_err(ctx, _("Cannot open device %s.\n"), device_path(device));
+		if (errno == EACCES)
+			log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
+				device_path(device));
+		else
+			log_err(ctx, _("Cannot open device %s.\n"), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
@@ -545,7 +549,11 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 
 	devfd = open(device_path(device), O_RDWR | O_DIRECT | O_SYNC);
 	if(-1 == devfd) {
-		log_err(ctx, _("Cannot open device %s.\n"), device_path(device));
+		if (errno == EACCES)
+			log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
+				device_path(device));
+		else
+			log_err(ctx, _("Cannot open device %s.\n"), device_path(device));
 		return -EINVAL;
 	}
 
@@ -799,10 +807,8 @@ int LUKS_set_key(unsigned int keyIndex,
 				    derived_key,
 				    hdr->keyblock[keyIndex].keyMaterialOffset,
 				    ctx);
-	if (r < 0) {
-		log_err(ctx, _("Failed to write to key storage.\n"));
+	if (r < 0)
 		goto out;
-	}
 
 	/* Mark the key as active in phdr */
 	r = LUKS_keyslot_set(hdr, (int)keyIndex, 1);
@@ -882,10 +888,8 @@ static int LUKS_open_key(unsigned int keyIndex,
 				      derived_key,
 				      hdr->keyblock[keyIndex].keyMaterialOffset,
 				      ctx);
-	if (r < 0) {
-		log_err(ctx, _("Failed to read from key storage.\n"));
+	if (r < 0)
 		goto out;
-	}
 
 	r = AF_merge(AfKey,vk->key,vk->keylength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
 	if (r < 0)
@@ -960,7 +964,13 @@ int LUKS_del_key(unsigned int keyIndex,
 		       (endOffset - startOffset) * SECTOR_SIZE,
 		       CRYPT_WIPE_DISK, 0);
 	if (r) {
-		log_err(ctx, _("Cannot wipe device %s.\n"), device_path(device));
+		if (r == -EACCES) {
+			log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
+				device_path(device));
+			r = -EINVAL;
+		} else
+			log_err(ctx, _("Cannot wipe device %s.\n"),
+				device_path(device));
 		return r;
 	}
 

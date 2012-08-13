@@ -79,6 +79,11 @@ static int setup_mapping(const char *cipher, const char *name,
 	if (r < 0)
 		return r;
 
+	if (mode != O_RDONLY && dmd.flags & CRYPT_ACTIVATE_READONLY) {
+		log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
+			device_path(device));
+		return -EACCES;
+	}
 	cleaner_size = dmd.size;
 	return dm_create_device(name, "TEMP", &dmd, 0);
 }
@@ -138,7 +143,8 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 	r = setup_mapping(dmCipherSpec, name, bsize, vk, sector, srcLength, mode, ctx);
 	if(r < 0) {
-		log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
+		if (r != -EACCES)
+			log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
 			"Check that kernel supports %s cipher (check syslog for more info).\n%s"),
 			device_path(crypt_metadata_device(ctx)), dmCipherSpec,
 			_error_hint(hdr->cipherMode, vk->keylength * 8));
@@ -155,6 +161,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 	r = func(devfd, bsize, src, srcLength);
 	if(r < 0) {
+		log_err(ctx, "errno = %i\n", errno);
 		log_err(ctx, _("Failed to access temporary keystore device.\n"));
 		r = -EIO;
 		goto out3;

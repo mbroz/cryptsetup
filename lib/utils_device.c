@@ -296,7 +296,6 @@ static int device_info(struct device *device,
 
 	if (S_ISREG(st.st_mode)) {
 		//FIXME: add readonly check
-
 		*size = (uint64_t)st.st_size;
 		*size >>= SECTOR_SHIFT;
 	} else {

@@ -163,7 +163,7 @@ int crypt_wipe(struct device *device,
 	devfd = open(device_path(device), flags);
 	if (devfd == -1) {
 		free(buffer);
-		return errno == EBUSY ? -EBUSY : -EINVAL;
+		return errno ? -errno : -EINVAL;
 	}
 
 	// FIXME: use fixed block size and loop here

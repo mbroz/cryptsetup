@@ -954,7 +954,11 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		if (r == -EBUSY)
 			log_err(cd, _("Cannot format device %s which is still in use.\n"),
 				mdata_device_path(cd));
-		else
+		else if (r == -EACCES) {
+			log_err(cd, _("Cannot format device %s, permission denied.\n"),
+				mdata_device_path(cd));
+			r = -EINVAL;
+		} else
 			log_err(cd, _("Cannot wipe header on device %s.\n"),
 				mdata_device_path(cd));
 
