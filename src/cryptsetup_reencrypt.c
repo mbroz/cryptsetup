@@ -18,43 +18,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#define PACKAGE_REENC "crypt_reencrypt"
-
-#define _LARGEFILE64_SOURCE
-#define _FILE_OFFSET_BITS 64
-#define SECTOR_SIZE 512
-#define ROUND_SECTOR(x) (((x) + SECTOR_SIZE - 1) / SECTOR_SIZE)
-#define NO_UUID "cafecafe-cafe-cafe-cafe-cafecafeeeee"
-#define MAX_BCK_SECTORS 8192
-
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <inttypes.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include "cryptsetup.h"
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <linux/fs.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <signal.h>
-#include <popt.h>
 
-#include "cryptsetup.h"
+#define PACKAGE_REENC "crypt_reencrypt"
 
-static int opt_verbose = 0;
-static int opt_debug = 0;
+#define NO_UUID "cafecafe-cafe-cafe-cafe-cafecafeeeee"
+#define MAX_BCK_SECTORS 8192
+
 static const char *opt_cipher = NULL;
 static const char *opt_hash = NULL;
 static const char *opt_key_file = NULL;
 static long opt_keyfile_size = 0;
 static long opt_keyfile_offset = 0;
 static int opt_iteration_time = 1000;
-static int opt_batch_mode = 0;
 static int opt_version_mode = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
@@ -119,55 +100,11 @@ typedef enum {
 	CHECK_OPEN,
 } header_magic;
 
-__attribute__((format(printf, 5, 6)))
-static void clogger(struct crypt_device *cd, int level, const char *file,
-		   int line, const char *format, ...)
-{
-	va_list argp;
-	char *target = NULL;
-
-	va_start(argp, format);
-
-	if (vasprintf(&target, format, argp) > 0) {
-		if (level >= 0) {
-			crypt_log(cd, level, target);
-		} else if (opt_debug)
-			printf("# %s\n", target);
-	}
-
-	va_end(argp);
-	free(target);
-}
-
-static void _log(int level, const char *msg, void *usrptr __attribute__((unused)))
-{
-	switch(level) {
-
-	case CRYPT_LOG_NORMAL:
-		fputs(msg, stdout);
-		break;
-	case CRYPT_LOG_VERBOSE:
-		if (opt_verbose)
-			fputs(msg, stdout);
-		break;
-	case CRYPT_LOG_ERROR:
-		fputs(msg, stderr);
-		break;
-	case CRYPT_LOG_DEBUG:
-		if (opt_debug)
-			printf("# %s\n", msg);
-		break;
-	default:
-		fprintf(stderr, "Internal error on logging class for msg: %s", msg);
-		break;
-	}
-}
-
 static void _quiet_log(int level, const char *msg, void *usrptr)
 {
 	if (!opt_debug)
 		return;
-	_log(level, msg, usrptr);
+	tool_log(level, msg, usrptr);
 }
 
 static void int_handler(int sig __attribute__((__unused__)))
@@ -1175,17 +1112,6 @@ out:
 	return r;
 }
 
-static __attribute__ ((noreturn)) void usage(poptContext popt_context,
-					     int exitcode, const char *error,
-					     const char *more)
-{
-	poptPrintUsage(popt_context, stderr, 0);
-	if (error)
-		log_err("%s: %s\n", more, error);
-	poptFreeContext(popt_context);
-	exit(exitcode);
-}
-
 static void help(poptContext popt_context,
 		 enum poptCallbackReason reason __attribute__((unused)),
 		 struct poptOption *key,
@@ -1198,19 +1124,6 @@ static void help(poptContext popt_context,
 		exit(EXIT_SUCCESS);
 	} else
 		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
-}
-
-static void _dbg_version_and_cmd(int argc, const char **argv)
-{
-	int i;
-
-	log_std("# %s %s processing \"", PACKAGE_REENC, PACKAGE_VERSION);
-	for (i = 0; i < argc; i++) {
-		if (i)
-			log_std(" ");
-		log_std("%s", argv[i]);
-	}
-	log_std("\"\n");
 }
 
 int main(int argc, const char **argv)
@@ -1250,7 +1163,7 @@ int main(int argc, const char **argv)
 	poptContext popt_context;
 	int r;
 
-	crypt_set_log_callback(NULL, _log, NULL);
+	crypt_set_log_callback(NULL, tool_log, NULL);
 
 	set_int_block(1);
 
@@ -1338,23 +1251,12 @@ int main(int argc, const char **argv)
 	if (opt_debug) {
 		opt_verbose = 1;
 		crypt_set_debug_level(-1);
-		_dbg_version_and_cmd(argc, argv);
+		dbg_version_and_cmd(argc, argv);
 	}
 
 	r = run_reencrypt(action_argv[0]);
 
 	poptFreeContext(popt_context);
 
-	/* Translate exit code to simple codes */
-	switch (r) {
-	case 0: 	r = EXIT_SUCCESS; break;
-	case -EEXIST:
-	case -EBUSY:	r = 5; break;
-	case -ENOTBLK:
-	case -ENODEV:	r = 4; break;
-	case -ENOMEM:	r = 3; break;
-	case -EPERM:	r = 2; break;
-	default:	r = EXIT_FAILURE;
-	}
-	return r;
+	return translate_errno(r);
 }

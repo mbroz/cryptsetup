@@ -17,19 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <string.h>
-#include <ctype.h>
-#include <inttypes.h>
-#include <popt.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
 #include "cryptsetup.h"
 
 #define PACKAGE_VERITY "veritysetup"
@@ -45,61 +32,10 @@ static const char *salt_string = NULL;
 static uint64_t hash_offset = 0;
 static const char *opt_uuid = NULL;
 
-static int opt_verbose = 0;
-static int opt_debug = 0;
 static int opt_version_mode = 0;
 
 static const char **action_argv;
 static int action_argc;
-
-__attribute__((format(printf, 5, 6)))
-static void clogger(struct crypt_device *cd, int level, const char *file,
-		   int line, const char *format, ...)
-{
-	va_list argp;
-	char *target = NULL;
-
-	va_start(argp, format);
-
-	if (vasprintf(&target, format, argp) > 0) {
-		if (level >= 0) {
-			crypt_log(cd, level, target);
-#ifdef CRYPT_DEBUG
-		} else if (opt_debug)
-			printf("# %s:%d %s\n", file ?: "?", line, target);
-#else
-		} else if (opt_debug)
-			printf("# %s\n", target);
-#endif
-	}
-
-	va_end(argp);
-	free(target);
-}
-
-static void _log(int level, const char *msg, void *usrptr __attribute__((unused)))
-{
-	switch(level) {
-
-	case CRYPT_LOG_NORMAL:
-		fputs(msg, stdout);
-		break;
-	case CRYPT_LOG_VERBOSE:
-		if (opt_verbose)
-			fputs(msg, stdout);
-		break;
-	case CRYPT_LOG_ERROR:
-		fputs(msg, stderr);
-		break;
-	case CRYPT_LOG_DEBUG:
-		if (opt_debug)
-			printf("# %s\n", msg);
-		break;
-	default:
-		fprintf(stderr, "Internal error on logging class for msg: %s", msg);
-		break;
-	}
-}
 
 static int _prepare_format(struct crypt_params_verity *params,
 			   const char *data_device,
@@ -362,30 +298,6 @@ static int action_dump(int arg)
 	return r;
 }
 
-static __attribute__ ((noreturn)) void usage(poptContext popt_context,
-					     int exitcode, const char *error,
-					     const char *more)
-{
-	poptPrintUsage(popt_context, stderr, 0);
-	if (error)
-		log_err("%s: %s\n", more, error);
-	poptFreeContext(popt_context);
-	exit(exitcode);
-}
-
-static void _dbg_version_and_cmd(int argc, const char **argv)
-{
-	int i;
-
-	log_std("# %s %s processing \"", PACKAGE_VERITY, PACKAGE_VERSION);
-	for (i = 0; i < argc; i++) {
-		if (i)
-			log_std(" ");
-		log_std("%s", argv[i]);
-	}
-	log_std("\"\n");
-}
-
 static struct action_type {
 	const char *type;
 	int (*handler)(int);
@@ -435,35 +347,6 @@ static void help(poptContext popt_context,
 		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
 }
 
-static void show_status(int errcode)
-{
-	char error[256], *error_;
-
-	if(!opt_verbose)
-		return;
-
-	if(!errcode) {
-		log_std(_("Command successful.\n"));
-		return;
-	}
-
-	crypt_get_error(error, sizeof(error));
-
-	if (!error[0]) {
-		error_ = strerror_r(-errcode, error, sizeof(error));
-		if (error_ != error) {
-			strncpy(error, error_, sizeof(error));
-			error[sizeof(error) - 1] = '\0';
-		}
-	}
-
-	log_err(_("Command failed with code %i"), -errcode);
-	if (*error)
-		log_err(": %s\n", error);
-	else
-		log_err(".\n");
-}
-
 static int run_action(struct action_type *action)
 {
 	int r;
@@ -473,22 +356,7 @@ static int run_action(struct action_type *action)
 	r = action->handler(0);
 
 	show_status(r);
-
-	/* Translate exit code to simple codes */
-	switch (r) {
-	case 0: 	r = EXIT_SUCCESS; break;
-	case -EEXIST:
-	case -EBUSY:	r = 5; break;
-	case -ENOTBLK:
-	case -ENODEV:	r = 4; break;
-	case -ENOMEM:	r = 3; break;
-	case -EPERM:	r = 2; break;
-	case -EINVAL:
-	case -ENOENT:
-	case -ENOSYS:
-	default:	r = EXIT_FAILURE;
-	}
-	return r;
+	return translate_errno(r);
 }
 
 int main(int argc, const char **argv)
@@ -523,7 +391,7 @@ int main(int argc, const char **argv)
 	const char *aname;
 	int r;
 
-	crypt_set_log_callback(NULL, _log, NULL);
+	crypt_set_log_callback(NULL, tool_log, NULL);
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
@@ -603,7 +471,7 @@ int main(int argc, const char **argv)
 	if (opt_debug) {
 		opt_verbose = 1;
 		crypt_set_debug_level(-1);
-		_dbg_version_and_cmd(argc, argv);
+		dbg_version_and_cmd(argc, argv);
 	}
 
 	r = run_action(action);

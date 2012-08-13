@@ -19,25 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <inttypes.h>
-#include <errno.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <limits.h>
-#include <popt.h>
-
 #include "cryptsetup.h"
 
-static int opt_verbose = 0;
-static int opt_debug = 0;
 static const char *opt_cipher = NULL;
 static const char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
@@ -58,7 +41,6 @@ static uint64_t opt_skip = 0;
 static int opt_skip_valid = 0;
 static int opt_readonly = 0;
 static int opt_iteration_time = 1000;
-static int opt_batch_mode = 0;
 static int opt_version_mode = 0;
 static int opt_timeout = 0;
 static int opt_tries = 3;
@@ -126,84 +108,6 @@ static struct action_type {
 	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
 
-__attribute__((format(printf, 5, 6)))
-static void clogger(struct crypt_device *cd, int level, const char *file,
-		   int line, const char *format, ...)
-{
-	va_list argp;
-	char *target = NULL;
-
-	va_start(argp, format);
-
-	if (vasprintf(&target, format, argp) > 0) {
-		if (level >= 0) {
-			crypt_log(cd, level, target);
-#ifdef CRYPT_DEBUG
-		} else if (opt_debug)
-			printf("# %s:%d %s\n", file ?: "?", line, target);
-#else
-		} else if (opt_debug)
-			printf("# %s\n", target);
-#endif
-	}
-
-	va_end(argp);
-	free(target);
-}
-
-static int _yesDialog(const char *msg, void *usrptr __attribute__((unused)))
-{
-	char *answer = NULL;
-	size_t size = 0;
-	int r = 1;
-
-	if(isatty(STDIN_FILENO) && !opt_batch_mode) {
-		log_std("\nWARNING!\n========\n");
-		log_std("%s\n\nAre you sure? (Type uppercase yes): ", msg);
-		if(getline(&answer, &size, stdin) == -1) {
-			perror("getline");
-			free(answer);
-			return 0;
-		}
-		if(strcmp(answer, "YES\n"))
-			r = 0;
-		free(answer);
-	}
-
-	return r;
-}
-
-static void _log(int level, const char *msg, void *usrptr __attribute__((unused)))
-{
-	switch(level) {
-
-	case CRYPT_LOG_NORMAL:
-		fputs(msg, stdout);
-		break;
-	case CRYPT_LOG_VERBOSE:
-		if (opt_verbose)
-			fputs(msg, stdout);
-		break;
-	case CRYPT_LOG_ERROR:
-		fputs(msg, stderr);
-		break;
-	case CRYPT_LOG_DEBUG:
-		if (opt_debug)
-			printf("# %s\n", msg);
-		break;
-	default:
-		fprintf(stderr, "Internal error on logging class for msg: %s", msg);
-		break;
-	}
-}
-
-static void _quiet_log(int level, const char *msg, void *usrptr)
-{
-	if (!opt_verbose && (level == CRYPT_LOG_ERROR || level == CRYPT_LOG_NORMAL))
-		level = CRYPT_LOG_VERBOSE;
-	_log(level, msg, usrptr);
-}
-
 static int _verify_passphrase(int def)
 {
 	/* Batch mode switch off verify - if not overrided by -y */
@@ -220,60 +124,6 @@ static int _verify_passphrase(int def)
 	}
 
 	return def;
-}
-
-static void show_status(int errcode)
-{
-	char error[256], *error_;
-
-	if(!opt_verbose)
-		return;
-
-	if(!errcode) {
-		log_std(_("Command successful.\n"));
-		return;
-	}
-
-	crypt_get_error(error, sizeof(error));
-
-	if (!error[0]) {
-		error_ = strerror_r(-errcode, error, sizeof(error));
-		if (error_ != error) {
-			strncpy(error, error_, sizeof(error));
-			error[sizeof(error) - 1] = '\0';
-		}
-	}
-
-	log_err(_("Command failed with code %i"), -errcode);
-	if (*error)
-		log_err(": %s\n", error);
-	else
-		log_err(".\n");
-}
-
-static const char *uuid_or_device(const char *spec)
-{
-	static char device[PATH_MAX];
-	char s, *ptr;
-	int i = 0, uuid_len = 5;
-
-	/* Check if it is correct UUID=<LUKS_UUID> format */
-	if (spec && !strncmp(spec, "UUID=", uuid_len)) {
-		strcpy(device, "/dev/disk/by-uuid/");
-		ptr = &device[strlen(device)];
-		i = uuid_len;
-		while ((s = spec[i++]) && i < PATH_MAX) {
-			if (!isxdigit(s) && s != '-')
-				return spec; /* Bail it out */
-			if (isalpha(s))
-				s = tolower(s);
-			*ptr++ = s;
-		}
-		*ptr = '\0';
-		return device;
-	}
-
-	return spec;
 }
 
 static int action_create(int arg __attribute__((unused)))
@@ -530,15 +380,15 @@ static int action_luksRepair(int arg __attribute__((unused)))
 		goto out;
 
 	/* Currently only LUKS1 allows repair */
-	crypt_set_log_callback(cd, _quiet_log, NULL);
+	crypt_set_log_callback(cd, quiet_log, NULL);
 	r = crypt_load(cd, CRYPT_LUKS1, NULL);
-	crypt_set_log_callback(cd, _log, NULL);
+	crypt_set_log_callback(cd, tool_log, NULL);
 	if (r == 0) {
 		log_verbose( _("No known problems detected for LUKS header.\n"));
 		goto out;
 	}
 
-	r = _yesDialog(_("Really try to repair LUKS device header?"),
+	r = yesDialog(_("Really try to repair LUKS device header?"),
 		       NULL) ? 0 : -EINVAL;
 	if (r == 0)
 		r = crypt_repair(cd, CRYPT_LUKS1, NULL);
@@ -569,7 +419,7 @@ static int action_luksFormat(int arg __attribute__((unused)))
 		r = -ENOMEM;
 		goto out;
 	}
-	r = _yesDialog(msg, NULL) ? 0 : -EINVAL;
+	r = yesDialog(msg, NULL) ? 0 : -EINVAL;
 	free(msg);
 	if (r < 0)
 		goto out;
@@ -705,7 +555,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 	int i, r;
 
 	ki = crypt_keyslot_status(cd, key_slot);
-	if (ki == CRYPT_SLOT_ACTIVE_LAST && msg_last && !_yesDialog(msg_last, NULL))
+	if (ki == CRYPT_SLOT_ACTIVE_LAST && msg_last && !yesDialog(msg_last, NULL))
 		return -EPERM;
 
 	r = crypt_get_key(msg_pass, &password, &passwordLen,
@@ -747,7 +597,7 @@ static int action_luksKillSlot(int arg __attribute__((unused)))
 	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	crypt_set_timeout(cd, opt_timeout);
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
@@ -790,7 +640,7 @@ static int action_luksRemoveKey(int arg __attribute__((unused)))
 	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	crypt_set_timeout(cd, opt_timeout);
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
@@ -814,7 +664,7 @@ static int action_luksRemoveKey(int arg __attribute__((unused)))
 	log_verbose(_("Key slot %d selected for deletion.\n"), opt_key_slot);
 
 	if (crypt_keyslot_status(cd, opt_key_slot) == CRYPT_SLOT_ACTIVE_LAST &&
-	    !_yesDialog(_("This is the last keyslot. "
+	    !yesDialog(_("This is the last keyslot. "
 			  "Device will become unusable after purging this key."),
 			NULL)) {
 		r = -EPERM;
@@ -838,7 +688,7 @@ static int action_luksAddKey(int arg __attribute__((unused)))
 	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
@@ -977,7 +827,7 @@ static int action_isLuks(int arg __attribute__((unused)))
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_log_callback(cd, _quiet_log, NULL);
+	crypt_set_log_callback(cd, quiet_log, NULL);
 	r = crypt_load(cd, CRYPT_LUKS1, NULL);
 out:
 	crypt_free(cd);
@@ -993,7 +843,7 @@ static int action_luksUUID(int arg __attribute__((unused)))
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
@@ -1018,8 +868,8 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	unsigned i;
 	int r;
 
-	crypt_set_confirm_callback(cd, _yesDialog, NULL);
-	if (!_yesDialog(
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
+	if (!yesDialog(
 	    _("LUKS header dump with volume key is sensitive information\n"
 	      "which allows access to encrypted partition without passphrase.\n"
 	      "This dump should be always stored encrypted on safe place."),
@@ -1132,7 +982,7 @@ static int action_luksBackup(int arg __attribute__((unused)))
 	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
 	r = crypt_header_backup(cd, CRYPT_LUKS1, opt_header_backup_file);
 out:
@@ -1153,22 +1003,11 @@ static int action_luksRestore(int arg __attribute__((unused)))
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	crypt_set_confirm_callback(cd, _yesDialog, NULL);
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	r = crypt_header_restore(cd, CRYPT_LUKS1, opt_header_backup_file);
 out:
 	crypt_free(cd);
 	return r;
-}
-
-static __attribute__ ((noreturn)) void usage(poptContext popt_context,
-					     int exitcode, const char *error,
-					     const char *more)
-{
-	poptPrintUsage(popt_context, stderr, 0);
-	if (error)
-		log_err("%s: %s\n", more, error);
-	poptFreeContext(popt_context);
-	exit(exitcode);
 }
 
 static void help(poptContext popt_context,
@@ -1215,19 +1054,6 @@ static void help(poptContext popt_context,
 		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
 }
 
-static void _dbg_version_and_cmd(int argc, const char **argv)
-{
-	int i;
-
-	log_std("# %s %s processing \"", PACKAGE_NAME, PACKAGE_VERSION);
-	for (i = 0; i < argc; i++) {
-		if (i)
-			log_std(" ");
-		log_std("%s", argv[i]);
-	}
-	log_std("\"\n");
-}
-
 static int run_action(struct action_type *action)
 {
 	int r;
@@ -1247,22 +1073,7 @@ static int run_action(struct action_type *action)
 		r = 0;
 
 	show_status(r);
-
-	/* Translate exit code to simple codes */
-	switch (r) {
-	case 0: 	r = EXIT_SUCCESS; break;
-	case -EEXIST:
-	case -EBUSY:	r = 5; break;
-	case -ENOTBLK:
-	case -ENODEV:	r = 4; break;
-	case -ENOMEM:	r = 3; break;
-	case -EPERM:	r = 2; break;
-	case -EINVAL:
-	case -ENOENT:
-	case -ENOSYS:
-	default:	r = EXIT_FAILURE;
-	}
-	return r;
+	return translate_errno(r);
 }
 
 int main(int argc, const char **argv)
@@ -1316,7 +1127,7 @@ int main(int argc, const char **argv)
 	int r;
 	const char *null_action_argv[] = {NULL};
 
-	crypt_set_log_callback(NULL, _log, NULL);
+	crypt_set_log_callback(NULL, tool_log, NULL);
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
@@ -1478,7 +1289,7 @@ int main(int argc, const char **argv)
 	if (opt_debug) {
 		opt_verbose = 1;
 		crypt_set_debug_level(-1);
-		_dbg_version_and_cmd(argc, argv);
+		dbg_version_and_cmd(argc, argv);
 	}
 
 	r = run_action(action);

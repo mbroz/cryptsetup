@@ -14,6 +14,7 @@ cryptsetup_SOURCES = \
 	$(top_builddir)/lib/utils_crypt.c	\
 	$(top_builddir)/lib/utils_loop.c	\
 	$(top_builddir)/lib/utils_fips.c	\
+	utils_tools.c				\
 	cryptsetup.c				\
 	cryptsetup.h
 
@@ -43,6 +44,7 @@ if VERITYSETUP
 veritysetup_SOURCES = \
 	$(top_builddir)/lib/utils_crypt.c	\
 	$(top_builddir)/lib/utils_loop.c	\
+	utils_tools.c				\
 	veritysetup.c				\
 	cryptsetup.h
 
@@ -70,6 +72,7 @@ endif
 if REENCRYPT
 cryptsetup_reencrypt_SOURCES = \
 	$(top_builddir)/lib/utils_crypt.c	\
+	utils_tools.c				\
 	cryptsetup_reencrypt.c			\
 	cryptsetup.h
 
