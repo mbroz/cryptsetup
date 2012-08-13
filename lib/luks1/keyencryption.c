@@ -161,7 +161,6 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 	r = func(devfd, bsize, src, srcLength);
 	if(r < 0) {
-		log_err(ctx, "errno = %i\n", errno);
 		log_err(ctx, _("Failed to access temporary keystore device.\n"));
 		r = -EIO;
 		goto out3;
