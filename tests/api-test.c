@@ -440,6 +440,8 @@ static int _setup(void)
 	 * volume_key = bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a */
 	_system(" [ ! -e " VALID_HEADER " ] && bzip2 -dk " VALID_HEADER ".bz2", 1);
 
+	_system("modprobe dm-crypt", 0);
+	_system("modprobe dm-verity", 0);
 	return 0;
 }
 
@@ -1649,7 +1651,6 @@ static void VerityTest(void)
 	OK_(crypt_set_data_device(cd, DEVICE_1));
 	FAIL_(crypt_activate_by_volume_key(cd, NULL, root_hash, 32, 0), "Data corrupted");;
 
-	_system("modprobe dm-verity", 0);
 	OK_(crypt_set_data_device(cd, DEVICE_EMPTY));
 	if (crypt_activate_by_volume_key(cd, CDEVICE_1, root_hash, 32,
 	    CRYPT_ACTIVATE_READONLY) == -ENOTSUP) {
