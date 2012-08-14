@@ -143,7 +143,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 	r = setup_mapping(dmCipherSpec, name, bsize, vk, sector, srcLength, mode, ctx);
 	if(r < 0) {
-		if (r != -EACCES)
+		if (r != -EACCES && r != -ENOTSUP)
 			log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
 			"Check that kernel supports %s cipher (check syslog for more info).\n%s"),
 			device_path(crypt_metadata_device(ctx)), dmCipherSpec,

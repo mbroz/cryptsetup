@@ -79,8 +79,8 @@ struct crypt_dm_active_device {
 	} u;
 };
 
-int dm_init(struct crypt_device *context, int check_kernel);
-void dm_exit(void);
+void dm_backend_init(void);
+void dm_backend_exit(void);
 
 int dm_remove_device(struct crypt_device *cd, const char *name,
 		     int force, uint64_t size);

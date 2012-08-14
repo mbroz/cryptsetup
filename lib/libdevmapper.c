@@ -38,10 +38,11 @@
 
 /* Set if dm-crypt version was probed */
 static int _dm_crypt_checked = 0;
+static int _quiet_log = 0;
 static uint32_t _dm_crypt_flags = 0;
 
-static int _dm_use_count = 0;
 static struct crypt_device *_context = NULL;
+static int _dm_use_count = 0;
 
 /* Check if we have DM flag to instruct kernel to force wipe buffers */
 #if !HAVE_DECL_DM_TASK_SECURE_DATA
@@ -81,11 +82,14 @@ static void set_dm_error(int level,
 
 	va_start(va, f);
 	if (vasprintf(&msg, f, va) > 0) {
-		if (level < 4) {
+		if (level < 4 && !_quiet_log) {
 			log_err(_context, msg);
 			log_err(_context, "\n");
-		} else
-			log_dbg(msg);
+		} else {
+			/* We do not use DM visual stack backtrace here */
+			if (strncmp(msg, "<backtrace>", 11))
+				log_dbg(msg);
+		}
 	}
 	free(msg);
 	va_end(va);
@@ -142,23 +146,23 @@ static int _dm_check_versions(void)
 	struct dm_task *dmt;
 	struct dm_versions *target, *last_target;
 	char dm_version[16];
+	int r = 0;
 
 	if (_dm_crypt_checked)
 		return 1;
 
+	/* Shut up DM while checking */
+	_quiet_log = 1;
+
 	/* FIXME: add support to DM so it forces crypt target module load here */
 	if (!(dmt = dm_task_create(DM_DEVICE_LIST_VERSIONS)))
-		return 0;
+		goto out;
 
-	if (!dm_task_run(dmt)) {
-		dm_task_destroy(dmt);
-		return 0;
-	}
+	if (!dm_task_run(dmt))
+		goto out;
 
-	if (!dm_task_get_driver_version(dmt, dm_version, sizeof(dm_version))) {
-		dm_task_destroy(dmt);
-		return 0;
-	}
+	if (!dm_task_get_driver_version(dmt, dm_version, sizeof(dm_version)))
+		goto out;
 
 	target = dm_task_get_versions(dmt);
 	do {
@@ -177,50 +181,65 @@ static int _dm_check_versions(void)
 		target = (struct dm_versions *)((char *) target + target->next);
 	} while (last_target != target);
 
-	dm_task_destroy(dmt);
-	return 1;
+	r = 1;
+	log_dbg("Device-mapper backend running with UDEV support %sabled.",
+		_dm_use_udev() ? "en" : "dis");
+out:
+	if (dmt)
+		dm_task_destroy(dmt);
+
+	_quiet_log = 0;
+	return r;
 }
 
 uint32_t dm_flags(void)
 {
-	if (!_dm_crypt_checked)
-		_dm_check_versions();
-
+	_dm_check_versions();
 	return _dm_crypt_flags;
 }
 
-int dm_init(struct crypt_device *context, int check_kernel)
+/* This doesn't run any kernel checks, just set up userspace libdevmapper */
+void dm_backend_init(void)
 {
 	if (!_dm_use_count++) {
-		log_dbg("Initialising device-mapper backend%s, UDEV is %sabled.",
-			check_kernel ? "" : " (NO kernel check requested)",
-			_dm_use_udev() ? "en" : "dis");
-		if (check_kernel && !_dm_check_versions()) {
-			log_err(context, _("Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"));
-			return -1;
-		}
-		if (getuid() || geteuid())
-			log_dbg(("WARNING: Running as a non-root user. Functionality may be unavailable."));
+		log_dbg("Initialising device-mapper backend library.");
 		dm_log_init(set_dm_error);
 		dm_log_init_verbose(10);
 	}
-
-	// FIXME: global context is not safe
-	if (context)
-		_context = context;
-
-	return 1;	/* unsafe memory */
 }
 
-void dm_exit(void)
+void dm_backend_exit(void)
 {
 	if (_dm_use_count && (!--_dm_use_count)) {
 		log_dbg("Releasing device-mapper backend.");
 		dm_log_init_verbose(0);
 		dm_log_init(NULL);
 		dm_lib_release();
-		_context = NULL;
 	}
+}
+
+/*
+ * libdevmapper is not context friendly, switch context on every DM call.
+ * FIXME: this is not safe if called in parallel but neither is DM lib.
+ */
+static int dm_init_context(struct crypt_device *cd)
+{
+	_context = cd;
+	if (!_dm_check_versions()) {
+		if (getuid() || geteuid())
+			log_err(cd, _("Cannot initialize device-mapper, "
+				      "running as non-root user.\n"));
+		else
+			log_err(cd, _("Cannot initialize device-mapper. "
+				      "Is dm_mod kernel module loaded?\n"));
+		_context = NULL;
+		return -ENOTSUP;
+	}
+	return 0;
+}
+static void dm_exit_context(void)
+{
+	_context = NULL;
 }
 
 /* Return path to DM device */
@@ -435,6 +454,9 @@ int dm_remove_device(struct crypt_device *cd, const char *name,
 	if (!name || (force && !size))
 		return -EINVAL;
 
+	if (dm_init_context(cd))
+		return -ENOTSUP;
+
 	do {
 		r = _dm_simple(DM_DEVICE_REMOVE, name, 1) ? 0 : -EINVAL;
 		if (--retries && r) {
@@ -457,6 +479,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name,
 	} while (r == -EINVAL && retries);
 
 	dm_task_update_nodes();
+	dm_exit_context();
 
 	return r;
 }
@@ -596,17 +619,25 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		     int reload)
 {
 	char *table_params = NULL;
+	int r = -EINVAL;
+
+	if (!type)
+		return -EINVAL;
+
+	if (dm_init_context(cd))
+		return -ENOTSUP;
 
 	if (dmd->target == DM_CRYPT)
 		table_params = get_dm_crypt_params(dmd);
 	else if (dmd->target == DM_VERITY)
 		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd);
 
-	if (!table_params || !type)
-		return -EINVAL;
-
-	return _dm_create_device(name, type, dmd->data_device, dmd->flags,
-				 dmd->uuid, dmd->size, table_params, reload);
+	if (table_params)
+		r = _dm_create_device(name, type, dmd->data_device,
+				      dmd->flags, dmd->uuid, dmd->size,
+				      table_params, reload);
+	dm_exit_context();
+	return r;
 }
 
 static int dm_status_dmi(const char *name, struct dm_info *dmi,
@@ -664,7 +695,10 @@ int dm_status_device(struct crypt_device *cd, const char *name)
 	int r;
 	struct dm_info dmi;
 
+	if (dm_init_context(cd))
+		return -ENOTSUP;
 	r = dm_status_dmi(name, &dmi, NULL, NULL);
+	dm_exit_context();
 	if (r < 0)
 		return r;
 
@@ -676,7 +710,10 @@ int dm_status_suspended(struct crypt_device *cd, const char *name)
 	int r;
 	struct dm_info dmi;
 
+	if (dm_init_context(cd))
+		return -ENOTSUP;
 	r = dm_status_dmi(name, &dmi, DM_CRYPT_TARGET, NULL);
+	dm_exit_context();
 	if (r < 0)
 		return r;
 
@@ -704,7 +741,13 @@ static int _dm_status_verity_ok(const char *name)
 
 int dm_status_verity_ok(struct crypt_device *cd, const char *name)
 {
-	return _dm_status_verity_ok(name);
+	int r;
+
+	if (dm_init_context(cd))
+		return -ENOTSUP;
+	r = _dm_status_verity_ok(name);
+	dm_exit_context();
+	return r;
 }
 
 /* FIXME use hex wrapper, user val wrappers for line parsing */
@@ -943,6 +986,8 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 	void *next = NULL;
 	int r = -EINVAL;
 
+	if (dm_init_context(cd))
+		return -ENOTSUP;
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
 		goto out;
 	if ((dm_flags() & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
@@ -1004,6 +1049,7 @@ out:
 	if (dmt)
 		dm_task_destroy(dmt);
 
+	dm_exit_context();
 	return r;
 }
 
@@ -1036,49 +1082,62 @@ static int _dm_message(const char *name, const char *msg)
 
 int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 {
-	if (!_dm_check_versions())
+	int r = -ENOTSUP;
+
+	if (dm_init_context(cd))
 		return -ENOTSUP;
 
 	if (!(_dm_crypt_flags & DM_KEY_WIPE_SUPPORTED))
-		return -ENOTSUP;
+		goto out;
 
-	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0))
-		return -EINVAL;
+	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0)) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	if (!_dm_message(name, "key wipe")) {
 		_dm_simple(DM_DEVICE_RESUME, name, 1);
-		return -EINVAL;
+		r = -EINVAL;
+		goto out;
 	}
-
-	return 0;
+	r = 0;
+out:
+	dm_exit_context();
+	return r;
 }
 
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				size_t key_size, const char *key)
 {
 	int msg_size = key_size * 2 + 10; // key set <key>
-	char *msg;
-	int r = 0;
+	char *msg = NULL;
+	int r = -ENOTSUP;
 
-	if (!_dm_check_versions())
+	if (dm_init_context(cd))
 		return -ENOTSUP;
 
 	if (!(_dm_crypt_flags & DM_KEY_WIPE_SUPPORTED))
-		return -ENOTSUP;
+		goto out;
 
 	msg = crypt_safe_alloc(msg_size);
-	if (!msg)
-		return -ENOMEM;
+	if (!msg) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	memset(msg, 0, msg_size);
 	strcpy(msg, "key set ");
 	hex_key(&msg[8], key_size, key);
 
 	if (!_dm_message(name, msg) ||
-	    !_dm_simple(DM_DEVICE_RESUME, name, 1))
+	    !_dm_simple(DM_DEVICE_RESUME, name, 1)) {
 		r = -EINVAL;
-
+		goto out;
+	}
+	r = 0;
+out:
 	crypt_safe_free(msg);
+	dm_exit_context();
 	return r;
 }
 

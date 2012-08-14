@@ -530,10 +530,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	if (r < 0)
 		goto bad;
 
-	if (dm_init(h, 1) < 0) {
-		r = -ENOSYS;
-		goto bad;
-	}
+	dm_backend_init();
 
 	h->iteration_time = 1000;
 	h->password_verify = 0;
@@ -940,6 +937,11 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
+	/* Check early if we cannot allocate block device for key slot access */
+	r = device_block_adjust(cd, cd->device, DEV_OK, 0, NULL, NULL);
+	if(r < 0)
+		return r;
+
 	r = LUKS_generate_phdr(&cd->hdr, cd->volume_key, cipher, cipher_mode,
 			       (params && params->hash) ? params->hash : "sha1",
 			       uuid, LUKS_STRIPES,
@@ -1334,7 +1336,7 @@ void crypt_free(struct crypt_device *cd)
 	if (cd) {
 		log_dbg("Releasing crypt device %s context.", mdata_device_path(cd));
 
-		dm_exit();
+		dm_backend_exit();
 		crypt_free_volume_key(cd->volume_key);
 
 		device_free(cd->device);
@@ -1382,8 +1384,8 @@ int crypt_suspend(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (!cd && dm_init(NULL, 1) < 0)
-		return -ENOSYS;
+	if (!cd)
+		dm_backend_init();
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -1402,7 +1404,7 @@ int crypt_suspend(struct crypt_device *cd,
 		log_err(cd, "Error during suspending device %s.\n", name);
 out:
 	if (!cd)
-		dm_exit();
+		dm_backend_exit();
 	return r;
 }
 
@@ -2019,8 +2021,8 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 
 	log_dbg("Deactivating volume %s.", name);
 
-	if (!cd && dm_init(NULL, 1) < 0)
-		return -ENOSYS;
+	if (!cd)
+		dm_backend_init();
 
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
@@ -2037,7 +2039,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 	}
 
 	if (!cd)
-		dm_exit();
+		dm_backend_exit();
 
 	return r;
 }
@@ -2167,13 +2169,13 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 {
 	int r;
 
-	if (!cd && dm_init(NULL, 1) < 0)
-		return CRYPT_INVALID;
+	if (!cd)
+		dm_backend_init();
 
 	r = dm_status_device(cd, name);
 
 	if (!cd)
-		dm_exit();
+		dm_backend_exit();
 
 	if (r < 0 && r != -ENODEV)
 		return CRYPT_INVALID;

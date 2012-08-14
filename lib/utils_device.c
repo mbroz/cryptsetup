@@ -326,11 +326,15 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 	if (device->init_done)
 		return 0;
 
-	log_dbg("Allocating free loop device.");
+	log_dbg("Allocating a free loop device.");
 	loop_device = crypt_loop_get_device();
 	if (!loop_device) {
-		log_err(cd, _("Cannot find a free loopback device.\n"));
-		return -EINVAL;
+		if (getuid() || geteuid())
+			log_err(cd, _("Cannot use a loopback device, "
+				      "running as non-root user.\n"));
+		else
+			log_err(cd, _("Cannot find a free loopback device.\n"));
+		return -ENOTSUP;
 	}
 
 	/* Keep the loop open, dettached on last close. */

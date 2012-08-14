@@ -229,7 +229,7 @@ int crypt_memlock_inc(struct crypt_device *ctx)
 	if (!_memlock_count++) {
 		log_dbg("Locking memory.");
 		if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
-			log_err(ctx, _("WARNING!!! Possibly insecure memory. Are you root?\n"));
+			log_dbg("Cannot lock memory with mlockall.");
 			_memlock_count--;
 			return 0;
 		}

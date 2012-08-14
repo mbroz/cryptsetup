@@ -582,7 +582,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 		}
 	}
 
-	if (r < 0)
+	if (r == -EPERM)
 		log_err(_("No key available with this passphrase.\n"));
 out:
 	crypt_safe_free(password);
