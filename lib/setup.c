@@ -344,10 +344,10 @@ int PLAIN_activate(struct crypt_device *cd,
 	log_dbg("Trying to activate PLAIN device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
-	r = dm_create_device(name, CRYPT_PLAIN, &dmd, 0);
+	r = dm_create_device(cd, name, CRYPT_PLAIN, &dmd, 0);
 
 	// FIXME
-	if (!cd->plain_uuid && dm_query_device(name, DM_ACTIVE_UUID, &dmd) >= 0)
+	if (!cd->plain_uuid && dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd) >= 0)
 		cd->plain_uuid = CONST_CAST(char*)dmd.uuid;
 
 	free(dm_cipher);
@@ -662,10 +662,11 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	int key_nums, r;
 
-	r = dm_query_device(name, DM_ACTIVE_DEVICE |
-				   DM_ACTIVE_UUID |
-				   DM_ACTIVE_CRYPT_CIPHER |
-				   DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
+	r = dm_query_device(cd, name,
+			DM_ACTIVE_DEVICE |
+			DM_ACTIVE_UUID |
+			DM_ACTIVE_CRYPT_CIPHER |
+			DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
 	if (r < 0)
 		goto out;
 
@@ -734,10 +735,11 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 	};
 	int r;
 
-	r = dm_query_device(name, DM_ACTIVE_DEVICE |
-				   DM_ACTIVE_UUID |
-				   DM_ACTIVE_VERITY_HASH_DEVICE |
-				   DM_ACTIVE_VERITY_PARAMS, &dmd);
+	r = dm_query_device(cd, name,
+				DM_ACTIVE_DEVICE |
+				DM_ACTIVE_UUID |
+				DM_ACTIVE_VERITY_HASH_DEVICE |
+				DM_ACTIVE_VERITY_PARAMS, &dmd);
 	if (r < 0)
 		goto out;
 
@@ -784,7 +786,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 		return -ENODEV;
 	}
 
-	r = dm_query_device(name, DM_ACTIVE_DEVICE | DM_ACTIVE_UUID, &dmd);
+	r = dm_query_device(NULL, name, DM_ACTIVE_DEVICE | DM_ACTIVE_UUID, &dmd);
 	if (r < 0)
 		goto out;
 
@@ -1228,7 +1230,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 
 	log_dbg("Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 
-	r = dm_query_device(name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
+	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
 				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
 				  DM_ACTIVE_CRYPT_KEY, &dmd);
 	if (r < 0) {
@@ -1252,7 +1254,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = 0;
 	} else {
 		dmd.size = new_size;
-		r = dm_create_device(name, cd->type, &dmd, 1);
+		r = dm_create_device(cd, name, cd->type, &dmd, 1);
 	}
 out:
 	if (dmd.target == DM_CRYPT) {
@@ -1383,7 +1385,7 @@ int crypt_suspend(struct crypt_device *cd,
 	if (!cd && dm_init(NULL, 1) < 0)
 		return -ENOSYS;
 
-	r = dm_status_suspended(name);
+	r = dm_status_suspended(cd, name);
 	if (r < 0)
 		goto out;
 
@@ -1393,7 +1395,7 @@ int crypt_suspend(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = dm_suspend_and_wipe_key(name);
+	r = dm_suspend_and_wipe_key(cd, name);
 	if (r == -ENOTSUP)
 		log_err(cd, "Suspend is not supported for device %s.\n", name);
 	else if (r)
@@ -1421,7 +1423,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = dm_status_suspended(name);
+	r = dm_status_suspended(cd, name);
 	if (r < 0)
 		return r;
 
@@ -1438,7 +1440,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 
 	if (r >= 0) {
 		keyslot = r;
-		r = dm_resume_and_reinstate_key(name, vk->keylength, vk->key);
+		r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key);
 		if (r == -ENOTSUP)
 			log_err(cd, "Resume is not supported for device %s.\n", name);
 		else if (r)
@@ -1470,7 +1472,7 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = dm_status_suspended(name);
+	r = dm_status_suspended(cd, name);
 	if (r < 0)
 		return r;
 
@@ -1494,7 +1496,7 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 		goto out;
 
 	keyslot = r;
-	r = dm_resume_and_reinstate_key(name, vk->keylength, vk->key);
+	r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key);
 	if (r)
 		log_err(cd, "Error during resuming device %s.\n", name);
 out:
@@ -2023,7 +2025,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
 		case CRYPT_BUSY:
-			r = dm_remove_device(name, 0, 0);
+			r = dm_remove_device(cd, name, 0, 0);
 			break;
 		case CRYPT_INACTIVE:
 			log_err(cd, _("Device %s is not active.\n"), name);
@@ -2168,7 +2170,7 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 	if (!cd && dm_init(NULL, 1) < 0)
 		return CRYPT_INVALID;
 
-	r = dm_status_device(name);
+	r = dm_status_device(cd, name);
 
 	if (!cd)
 		dm_exit();
@@ -2421,7 +2423,7 @@ int crypt_get_active_device(struct crypt_device *cd __attribute__((unused)),
 	struct crypt_dm_active_device dmd;
 	int r;
 
-	r = dm_query_device(name, 0, &dmd);
+	r = dm_query_device(cd, name, 0, &dmd);
 	if (r < 0)
 		return r;
 

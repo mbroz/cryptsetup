@@ -30,6 +30,11 @@
 #include <sys/types.h>
 #include "utils_dm.h"
 
+/* These are DM helpers used only by this file */
+int dm_is_dm_device(int major, int minor);
+int dm_is_dm_kernel_name(const char *name);
+char *dm_device_path(const char *prefix, int major, int minor);
+
 char *crypt_lookup_dev(const char *dev_id);
 int crypt_sysfs_get_rotational(int major, int minor, int *rotational);
 

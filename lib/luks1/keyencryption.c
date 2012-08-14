@@ -85,7 +85,7 @@ static int setup_mapping(const char *cipher, const char *name,
 		return -EACCES;
 	}
 	cleaner_size = dmd.size;
-	return dm_create_device(name, "TEMP", &dmd, 0);
+	return dm_create_device(ctx, name, "TEMP", &dmd, 0);
 }
 
 static void sigint_handler(int sig __attribute__((unused)))
@@ -94,7 +94,7 @@ static void sigint_handler(int sig __attribute__((unused)))
 		close(devfd);
 	devfd = -1;
 	if(cleaner_name)
-		dm_remove_device(cleaner_name, 1, cleaner_size);
+		dm_remove_device(NULL, cleaner_name, 1, cleaner_size);
 
 	signal(SIGINT, SIG_DFL);
 	kill(getpid(), SIGINT);
@@ -171,7 +171,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	close(devfd);
 	devfd = -1;
  out2:
-	dm_remove_device(cleaner_name, 1, cleaner_size);
+	dm_remove_device(ctx, cleaner_name, 1, cleaner_size);
  out1:
 	signal(SIGINT, SIG_DFL);
 	cleaner_name = NULL;

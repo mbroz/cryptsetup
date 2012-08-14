@@ -425,7 +425,8 @@ error:
 	return r;
 }
 
-int dm_remove_device(const char *name, int force, uint64_t size)
+int dm_remove_device(struct crypt_device *cd, const char *name,
+		     int force, uint64_t size)
 {
 	int r = -EINVAL;
 	int retries = force ? RETRY_COUNT : 1;
@@ -574,7 +575,7 @@ out:
 	}
 
 	if (r < 0 && !reload)
-		dm_remove_device(name, 0, 0);
+		_dm_simple(DM_DEVICE_REMOVE, name, 1);
 
 out_no_removal:
 	if (cookie && _dm_use_udev())
@@ -589,7 +590,7 @@ out_no_removal:
 	return r;
 }
 
-int dm_create_device(const char *name,
+int dm_create_device(struct crypt_device *cd, const char *name,
 		     const char *type,
 		     struct crypt_dm_active_device *dmd,
 		     int reload)
@@ -658,7 +659,7 @@ out:
 	return r;
 }
 
-int dm_status_device(const char *name)
+int dm_status_device(struct crypt_device *cd, const char *name)
 {
 	int r;
 	struct dm_info dmi;
@@ -670,7 +671,7 @@ int dm_status_device(const char *name)
 	return (dmi.open_count > 0);
 }
 
-int dm_status_suspended(const char *name)
+int dm_status_suspended(struct crypt_device *cd, const char *name)
 {
 	int r;
 	struct dm_info dmi;
@@ -682,7 +683,7 @@ int dm_status_suspended(const char *name)
 	return dmi.suspended ? 1 : 0;
 }
 
-int dm_status_verity_ok(const char *name)
+static int _dm_status_verity_ok(const char *name)
 {
 	int r;
 	struct dm_info dmi;
@@ -699,6 +700,11 @@ int dm_status_verity_ok(const char *name)
 	free(status_line);
 
 	return r;
+}
+
+int dm_status_verity_ok(struct crypt_device *cd, const char *name)
+{
+	return _dm_status_verity_ok(name);
 }
 
 /* FIXME use hex wrapper, user val wrappers for line parsing */
@@ -926,8 +932,8 @@ static int _dm_query_verity(uint32_t get_flags,
 	return 0;
 }
 
-int dm_query_device(const char *name, uint32_t get_flags,
-		    struct crypt_dm_active_device *dmd)
+int dm_query_device(struct crypt_device *cd, const char *name,
+		    uint32_t get_flags, struct crypt_dm_active_device *dmd)
 {
 	struct dm_task *dmt;
 	struct dm_info dmi;
@@ -968,7 +974,7 @@ int dm_query_device(const char *name, uint32_t get_flags,
 		r = _dm_query_verity(get_flags, &dmi, params, dmd);
 		if (r < 0)
 			goto out;
-		r = dm_status_verity_ok(name);
+		r = _dm_status_verity_ok(name);
 		if (r < 0)
 			goto out;
 		if (r == 0)
@@ -1028,7 +1034,7 @@ static int _dm_message(const char *name, const char *msg)
 	return r;
 }
 
-int dm_suspend_and_wipe_key(const char *name)
+int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 {
 	if (!_dm_check_versions())
 		return -ENOTSUP;
@@ -1047,9 +1053,8 @@ int dm_suspend_and_wipe_key(const char *name)
 	return 0;
 }
 
-int dm_resume_and_reinstate_key(const char *name,
-				size_t key_size,
-				const char *key)
+int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
+				size_t key_size, const char *key)
 {
 	int msg_size = key_size * 2 + 10; // key set <key>
 	char *msg;

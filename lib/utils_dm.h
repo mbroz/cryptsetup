@@ -79,25 +79,23 @@ struct crypt_dm_active_device {
 	} u;
 };
 
-const char *dm_get_dir(void);
 int dm_init(struct crypt_device *context, int check_kernel);
 void dm_exit(void);
-int dm_remove_device(const char *name, int force, uint64_t size);
-int dm_status_device(const char *name);
-int dm_status_suspended(const char *name);
-int dm_status_verity_ok(const char *name);
-int dm_query_device(const char *name, uint32_t get_flags,
-		    struct crypt_dm_active_device *dmd);
-int dm_create_device(const char *name,
-		      const char *type,
-		      struct crypt_dm_active_device *dmd,
-		      int reload);
-int dm_suspend_and_wipe_key(const char *name);
-int dm_resume_and_reinstate_key(const char *name,
-				size_t key_size,
-				const char *key);
-char *dm_device_path(const char *prefix, int major, int minor);
-int dm_is_dm_device(int major, int minor);
-int dm_is_dm_kernel_name(const char *name);
+
+int dm_remove_device(struct crypt_device *cd, const char *name,
+		     int force, uint64_t size);
+int dm_status_device(struct crypt_device *cd, const char *name);
+int dm_status_suspended(struct crypt_device *cd, const char *name);
+int dm_status_verity_ok(struct crypt_device *cd, const char *name);
+int dm_query_device(struct crypt_device *cd, const char *name,
+		    uint32_t get_flags, struct crypt_dm_active_device *dmd);
+int dm_create_device(struct crypt_device *cd, const char *name,
+		     const char *type, struct crypt_dm_active_device *dmd,
+		     int reload);
+int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name);
+int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
+				size_t key_size, const char *key);
+
+const char *dm_get_dir(void);
 
 #endif /* _UTILS_DM_H */
