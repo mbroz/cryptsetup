@@ -37,6 +37,11 @@ A. Contributors
   such a disaster! In particular, make sure you have a current header
   backup before doing any potentially dangerous operations.
 
+  SSDs/FLASH DRIVES: SSDs and Flash are different. Currently it is
+  unclear how to get LUKS or plain dm-crypt to run on them with the
+  full set of security features intact. This may or may not be a
+  problem, depending on the attacher model. See Section 5.17.
+
   BACKUP: Yes, encrypted disks die, just as normal ones do. A full
   backup is mandatory, see Section "6. Backup and Data Recovery" on
   options for doing encrypted backup.
@@ -98,7 +103,7 @@ A. Contributors
   This issue has been acknowledged by the Ubuntu dev team, see here:
   http://launchpad.net/bugs/420080
 
-  Update 7/2012: I am unsure whether this has been fixed bu now, best
+  Update 7/2012: I am unsure whether this has been fixed by now, best
   be careful.
 
 
@@ -182,6 +187,10 @@ A. Contributors
 
 
  * 2.1 What is the difference between "plain" and LUKS format?
+
+  First, unless you happen to understand the cryptographic background
+  well, you should use LUKS. It does protect the user from a lot of
+  common mistakes. Plain dm-crypt is for experts.
 
   Plain format is just that: It has no metadata on disk, reads all
   parameters from the commandline (or the defaults), derives a
@@ -1059,6 +1068,73 @@ A. Contributors
   So, no, I will not provide any instructions on how to do it with
   plain dm-crypt or LUKS. If you insist on shooting yourself in the
   foot, you can figure out how to do it yourself.
+
+
+ * 5.17 What about SSDs or Flash Drives?
+
+  The problem is that you cannot reliably erase parts of these
+  devices, mainly due to wear-leveling and possibly defect
+  management.
+
+  Basically, when overwriting a sector (of 512B), what the device
+  does is to move an internal sector (may be 128kB or even larger) to
+  some pool of discarded, not-yet erased unused sectors, take a
+  fresh empty sector from the empty-sector pool and copy the old
+  sector over with the changes to the small part you wrote. This is
+  done in some fashion so that larger writes do not cause a lot of
+  small internal updates.
+
+  The thing is that the mappings between outside-adressable sectors
+  and inside sectors is arbitrary (and the vendors are not talking).
+  Also the discarded sectors are not necessarily erased immediately.
+  They may linger a long time.
+
+  For plain dm-crypt, the consequences are that older encrypted data
+  may be lying around in some internal pools of the device. Thus may
+  or may not be a problem and depends on the application. Remember
+  the same can happen with a filesystem if consecutive writes to the
+  same area of a file can go to different sectors.
+
+  However, for LUKS, the worst case is that key-slots and LUKS
+  header may end up in these internal pools. This means that password
+  management functionality is compromised (the old passwords may
+  still be around, potentially for a very long time) and that fast
+  erase by overwriting the header and key-slot area is insecure.
+
+  Also keep in mind that the discarded/used pool may be large. For
+  example, a 240GB SSD has about 16GB of spare area in the chips that
+  it is free to do with as it likes. You would need to make each
+  individual key-slot larger than that to allow reliable overwriting.
+  And that assumes the disk thinks all other space is in use.
+  Reading the internal pools using forensic tools is not that hard,
+  but may involve some soldering.
+
+  What to do?
+
+  If you trust the device vendor (you probably should not...) you can
+  try an ATA "secure erase" command for SSDs. That does not work for
+  USB keys though. And if it finishes after a few seconds, it was
+  possibly faked by the SSD.
+
+  If you can do without password management and are fine with doing
+  physical destruction for permenently deleting data (allways after
+  one or several full overwrites!), you can use plain dm-crypt or
+  LUKS.
+
+  If you want or need the original LUKS security features to work,
+  you can use a detached LUKS header and put that on a conventional,
+  magnetic disk. That leaves potentially old encrypted data in the
+  pools on the disk, but otherwise you get LUKS with the same
+  security as on a magnetic disk.
+
+  If you are concerned about your laptop being stolen, you are likely
+  fine using LUKS on an SSD. An attacker would need to have access
+  to an old passphrase (and the key-slot for this old passphrase
+  would actually need to still be somewhere in the SSD) for your
+  data to be at risk. So unless you pasted your old passphrase all
+  over the Internet or the attacker has knowledge of it from some
+  other source and does a targetted laptop theft to get at your
+  data, you should be fine.
 
 
 6. Backup and Data Recovery 
