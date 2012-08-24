@@ -10,6 +10,12 @@ device-mapper mappings. These include plain dm-crypt volumes and
 LUKS volumes. The difference is that LUKS uses a metadata header
 and can hence offer more features than plain dm-crypt. On the other 
 hand, the header is visible and vulnerable to damage.
+.SH PLAIN DM-CRYPT OR LUKS?
+.PP
+Unless you understand the cryptographic background well, use LUKS.
+With plain dm-crypt there are a number of possible user errors
+that massively decrease security. While LUKS cannot fix them
+all, it can lessen the impact for many of them.
 .SH WARNINGS
 .PP 
 A lot of good information on the risks of using encrypted storage,
