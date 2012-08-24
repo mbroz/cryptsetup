@@ -262,6 +262,49 @@ out_err:
 }
 
 /*
+ * A simple call to lseek(3) might not be possible for some inputs (e.g.
+ * reading from a pipe), so this function instead reads of up to BUFSIZ bytes
+ * at a time until the specified number of bytes. It returns -1 on read error
+ * or when it reaches EOF before the requested number of bytes have been
+ * discarded.
+ */
+static int keyfile_seek(int fd, size_t bytes)
+{
+	char tmp[BUFSIZ];
+	size_t next_read;
+	ssize_t bytes_r;
+	off_t r;
+
+	r = lseek(fd, bytes, SEEK_CUR);
+	if (r > 0)
+		return 0;
+	if (r < 0 && errno != ESPIPE)
+		return -1;
+
+	while (bytes > 0) {
+		/* figure out how much to read */
+		next_read = bytes > sizeof(tmp) ? sizeof(tmp) : bytes;
+
+		bytes_r = read(fd, tmp, next_read);
+		if (bytes_r < 0) {
+			if (errno == EINTR)
+				continue;
+
+			/* read error */
+			return -1;
+		}
+
+		if (bytes_r == 0)
+			/* EOF */
+			break;
+
+		bytes -= bytes_r;
+	}
+
+	return bytes == 0 ? 0 : -1;
+}
+
+/*
  * Note: --key-file=- is interpreted as a read from a binary file (stdin)
  * key_size_max == 0 means detect maximum according to input type (tty/file)
  * timeout and verify options only applies to tty input
@@ -274,7 +317,7 @@ int crypt_get_key(const char *prompt,
 {
 	int fd, regular_file, read_stdin, char_read, unlimited_read = 0;
 	int r = -EINVAL;
-	char *pass = NULL, tmp;
+	char *pass = NULL;
 	size_t buflen, i, file_read_size;
 	struct stat st;
 
@@ -342,11 +385,10 @@ int crypt_get_key(const char *prompt,
 	}
 
 	/* Discard keyfile_offset bytes on input */
-	for(i = 0; i < keyfile_offset; i++)
-		if (read(fd, &tmp, 1) != 1) {
-			log_err(cd, _("Cannot seek to requested keyfile offset.\n"));
-			goto out_err;
-		}
+	if (keyfile_offset && keyfile_seek(fd, keyfile_offset) < 0) {
+		log_err(cd, _("Cannot seek to requested keyfile offset.\n"));
+		goto out_err;
+	}
 
 	for(i = 0; i < keyfile_size_max; i++) {
 		if(i == buflen) {
