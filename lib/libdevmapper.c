@@ -1125,7 +1125,6 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 		goto out;
 	}
 
-	memset(msg, 0, msg_size);
 	strcpy(msg, "key set ");
 	hex_key(&msg[8], key_size, key);
 

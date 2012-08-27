@@ -92,6 +92,7 @@ void *crypt_safe_alloc(size_t size)
 		return NULL;
 
 	alloc->size = size;
+	memset(&alloc->data, 0, size);
 
 	return &alloc->data;
 }
