@@ -52,7 +52,7 @@ static uint64_t LUKS_device_sectors(size_t keyLen)
 	uint64_t keyslot_sectors, sector;
 	int i;
 
-	keyslot_sectors = div_round_up(keyLen * LUKS_STRIPES, SECTOR_SIZE);
+	keyslot_sectors = div_round_up(AF_split_size(keyLen, LUKS_STRIPES), SECTOR_SIZE);
 	sector = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
 
 	for (i = 0; i < LUKS_NUMKEYS; i++) {
@@ -112,7 +112,7 @@ static int LUKS_check_keyslot_size(const struct luks_phdr *phdr, unsigned int ke
 		return 1;
 	}
 
-	secs_per_stripes = div_round_up(phdr->keyBytes * phdr->keyblock[keyIndex].stripes, SECTOR_SIZE);
+	secs_per_stripes = div_round_up(AF_split_size(phdr->keyBytes, phdr->keyblock[keyIndex].stripes), SECTOR_SIZE);
 
 	if (phdr->payloadOffset < (phdr->keyblock[keyIndex].keyMaterialOffset + secs_per_stripes)) {
 		log_dbg("Invalid keyslot size %u (offset %u, stripes %u) in "
@@ -508,6 +508,9 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 	/* LUKS header starts at offset 0, first keyslot on LUKS_ALIGN_KEYSLOTS */
 	assert(sizeof(struct luks_phdr) <= LUKS_ALIGN_KEYSLOTS);
 
+	/* Stripes count cannot be changed without additional code fixes yet */
+	assert(LUKS_STRIPES == 4000);
+
 	if (repair && !require_luks_device)
 		return -EINVAL;
 
@@ -618,7 +621,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       struct crypt_device *ctx)
 {
 	unsigned int i=0;
-	unsigned int blocksPerStripeSet = div_round_up(vk->keylength*stripes,SECTOR_SIZE);
+	unsigned int blocksPerStripeSet = div_round_up(AF_split_size(vk->keylength, stripes),SECTOR_SIZE);
 	int r;
 	uuid_t partitionUuid;
 	int currentSector;
@@ -735,7 +738,7 @@ int LUKS_set_key(unsigned int keyIndex,
 {
 	struct volume_key *derived_key;
 	char *AfKey = NULL;
-	unsigned int AFEKSize;
+	size_t AFEKSize;
 	uint64_t PBKDF2_temp;
 	int r;
 
@@ -744,7 +747,8 @@ int LUKS_set_key(unsigned int keyIndex,
 		return -EINVAL;
 	}
 
-	if(hdr->keyblock[keyIndex].stripes < LUKS_STRIPES) {
+	/* LUKS keyslot has always at least 4000 stripes accoding to specification */
+	if(hdr->keyblock[keyIndex].stripes < 4000) {
 	        log_err(ctx, _("Key slot %d material includes too few stripes. Header manipulation?\n"),
 			keyIndex);
 	         return -EINVAL;
@@ -788,7 +792,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	 * AF splitting, the masterkey stored in vk->key is split to AfKey
 	 */
 	assert(vk->keylength == hdr->keyBytes);
-	AFEKSize = hdr->keyblock[keyIndex].stripes*vk->keylength;
+	AFEKSize = AF_split_size(vk->keylength, hdr->keyblock[keyIndex].stripes);
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey) {
 		r = -ENOMEM;
@@ -872,7 +876,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 		return -ENOMEM;
 
 	assert(vk->keylength == hdr->keyBytes);
-	AFEKSize = hdr->keyblock[keyIndex].stripes*vk->keylength;
+	AFEKSize = AF_split_size(vk->keylength, hdr->keyblock[keyIndex].stripes);
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey)
 		return -ENOMEM;
@@ -944,7 +948,7 @@ int LUKS_del_key(unsigned int keyIndex,
 		 struct crypt_device *ctx)
 {
 	struct device *device = crypt_metadata_device(ctx);
-	unsigned int startOffset, endOffset, stripesLen;
+	unsigned int startOffset, endOffset;
 	int r;
 
 	r = LUKS_read_phdr(hdr, 1, 0, ctx);
@@ -960,8 +964,7 @@ int LUKS_del_key(unsigned int keyIndex,
 
 	/* secure deletion of key material */
 	startOffset = hdr->keyblock[keyIndex].keyMaterialOffset;
-	stripesLen = hdr->keyBytes * hdr->keyblock[keyIndex].stripes;
-	endOffset = startOffset + div_round_up(stripesLen, SECTOR_SIZE);
+	endOffset = startOffset + div_round_up(AF_split_size(hdr->keyBytes, hdr->keyblock[keyIndex].stripes), SECTOR_SIZE);
 
 	r = crypt_wipe(device, startOffset * SECTOR_SIZE,
 		       (endOffset - startOffset) * SECTOR_SIZE,

@@ -141,3 +141,9 @@ out:
 	free(bufblock);
 	return r;
 }
+
+/* Size of final split data */
+size_t AF_split_size(size_t blocksize, unsigned int blocknumbers)
+{
+	return blocksize * blocknumbers;
+}

@@ -38,5 +38,6 @@
 
 int AF_split(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, const char *hash);
 int AF_merge(char *src, char *dst, size_t blocksize, unsigned int blocknumbers, const char *hash);
+size_t AF_split_size(size_t blocksize, unsigned int blocknumbers);
 
 #endif
