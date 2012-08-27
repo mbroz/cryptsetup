@@ -51,8 +51,6 @@
 #define LUKS_MAGIC {'L','U','K','S', 0xba, 0xbe};
 #define LUKS_MAGIC_L 6
 
-#define LUKS_PHDR_SIZE (sizeof(struct luks_phdr)/SECTOR_SIZE+1)
-
 /* Actually we need only 37, but we don't want struct autoaligning to kick in */
 #define UUID_STRING_L 40
 

@@ -53,7 +53,7 @@ static uint64_t LUKS_device_sectors(size_t keyLen)
 	int i;
 
 	keyslot_sectors = div_round_up(keyLen * LUKS_STRIPES, SECTOR_SIZE);
-	sector = round_up_modulo(LUKS_PHDR_SIZE, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
+	sector = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
 
 	for (i = 0; i < LUKS_NUMKEYS; i++) {
 		sector = round_up_modulo(sector, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
@@ -505,6 +505,9 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 	ssize_t hdr_size = sizeof(struct luks_phdr);
 	int devfd = 0, r = 0;
 
+	/* LUKS header starts at offset 0, first keyslot on LUKS_ALIGN_KEYSLOTS */
+	assert(sizeof(struct luks_phdr) <= LUKS_ALIGN_KEYSLOTS);
+
 	if (repair && !require_luks_device)
 		return -EINVAL;
 
@@ -678,7 +681,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
-	currentSector = round_up_modulo(LUKS_PHDR_SIZE, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
+	currentSector = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
 	for(i = 0; i < LUKS_NUMKEYS; ++i) {
 		header->keyblock[i].active = LUKS_KEY_DISABLED;
 		header->keyblock[i].keyMaterialOffset = currentSector;
