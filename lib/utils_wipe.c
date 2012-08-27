@@ -136,7 +136,8 @@ int crypt_wipe(struct device *device,
 		return -EINVAL;
 	}
 
-	if (type == CRYPT_WIPE_DISK) {
+	if (type == CRYPT_WIPE_DISK && S_ISBLK(st.st_mode)) {
+		rotational = 0;
 		if (!crypt_sysfs_get_rotational(major(st.st_rdev),
 						minor(st.st_rdev),
 						&rotational))
