@@ -52,7 +52,7 @@ static uint64_t LUKS_device_sectors(size_t keyLen)
 	uint64_t keyslot_sectors, sector;
 	int i;
 
-	keyslot_sectors = div_round_up(AF_split_size(keyLen, LUKS_STRIPES), SECTOR_SIZE);
+	keyslot_sectors = AF_split_sectors(keyLen, LUKS_STRIPES);
 	sector = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
 
 	for (i = 0; i < LUKS_NUMKEYS; i++) {
@@ -112,7 +112,7 @@ static int LUKS_check_keyslot_size(const struct luks_phdr *phdr, unsigned int ke
 		return 1;
 	}
 
-	secs_per_stripes = div_round_up(AF_split_size(phdr->keyBytes, phdr->keyblock[keyIndex].stripes), SECTOR_SIZE);
+	secs_per_stripes = AF_split_sectors(phdr->keyBytes, phdr->keyblock[keyIndex].stripes);
 
 	if (phdr->payloadOffset < (phdr->keyblock[keyIndex].keyMaterialOffset + secs_per_stripes)) {
 		log_dbg("Invalid keyslot size %u (offset %u, stripes %u) in "
@@ -621,7 +621,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       struct crypt_device *ctx)
 {
 	unsigned int i=0;
-	unsigned int blocksPerStripeSet = div_round_up(AF_split_size(vk->keylength, stripes),SECTOR_SIZE);
+	unsigned int blocksPerStripeSet = AF_split_sectors(vk->keylength, stripes);
 	int r;
 	uuid_t partitionUuid;
 	int currentSector;
@@ -792,7 +792,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	 * AF splitting, the masterkey stored in vk->key is split to AfKey
 	 */
 	assert(vk->keylength == hdr->keyBytes);
-	AFEKSize = AF_split_size(vk->keylength, hdr->keyblock[keyIndex].stripes);
+	AFEKSize = AF_split_sectors(vk->keylength, hdr->keyblock[keyIndex].stripes) * SECTOR_SIZE;
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey) {
 		r = -ENOMEM;
@@ -876,7 +876,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 		return -ENOMEM;
 
 	assert(vk->keylength == hdr->keyBytes);
-	AFEKSize = AF_split_size(vk->keylength, hdr->keyblock[keyIndex].stripes);
+	AFEKSize = AF_split_sectors(vk->keylength, hdr->keyblock[keyIndex].stripes) * SECTOR_SIZE;
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey)
 		return -ENOMEM;
@@ -964,7 +964,7 @@ int LUKS_del_key(unsigned int keyIndex,
 
 	/* secure deletion of key material */
 	startOffset = hdr->keyblock[keyIndex].keyMaterialOffset;
-	endOffset = startOffset + div_round_up(AF_split_size(hdr->keyBytes, hdr->keyblock[keyIndex].stripes), SECTOR_SIZE);
+	endOffset = startOffset + AF_split_sectors(hdr->keyBytes, hdr->keyblock[keyIndex].stripes);
 
 	r = crypt_wipe(device, startOffset * SECTOR_SIZE,
 		       (endOffset - startOffset) * SECTOR_SIZE,

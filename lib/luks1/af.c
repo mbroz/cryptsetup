@@ -142,8 +142,16 @@ out:
 	return r;
 }
 
-/* Size of final split data */
-size_t AF_split_size(size_t blocksize, unsigned int blocknumbers)
+/* Size of final split data including sector alignment */
+size_t AF_split_sectors(size_t blocksize, unsigned int blocknumbers)
 {
-	return blocksize * blocknumbers;
+	size_t af_size;
+
+	/* data material * stripes */
+	af_size = blocksize * blocknumbers;
+
+	/* round up to sector */
+	af_size = (af_size + (SECTOR_SIZE - 1)) / SECTOR_SIZE;
+
+	return af_size;
 }
