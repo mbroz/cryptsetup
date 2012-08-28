@@ -421,3 +421,9 @@ int device_block_adjust(struct crypt_device *cd,
 		*size, real_readonly ? "RO" : "RW", device_offset);
 	return 0;
 }
+
+size_t size_round_up(size_t size, unsigned int block)
+{
+	size_t s = (size + (block - 1)) / block;
+	return s * block;
+}

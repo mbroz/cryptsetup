@@ -36,27 +36,17 @@
 #include "pbkdf.h"
 #include "internal.h"
 
-#define div_round_up(a,b) ({           \
-	typeof(a) __a = (a);          \
-	typeof(b) __b = (b);          \
-	(__a - 1) / __b + 1;        \
-})
-
-static inline int round_up_modulo(int x, int m) {
-	return div_round_up(x, m) * m;
-}
-
-/* Get size of struct luks_phrd with all keyslots material space */
-static uint64_t LUKS_device_sectors(size_t keyLen)
+/* Get size of struct luks_phdr with all keyslots material space */
+static size_t LUKS_device_sectors(size_t keyLen)
 {
-	uint64_t keyslot_sectors, sector;
+	size_t keyslot_sectors, sector;
 	int i;
 
 	keyslot_sectors = AF_split_sectors(keyLen, LUKS_STRIPES);
 	sector = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
 
 	for (i = 0; i < LUKS_NUMKEYS; i++) {
-		sector = round_up_modulo(sector, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
+		sector = size_round_up(sector, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 		sector += keyslot_sectors;
 	}
 
@@ -621,10 +611,9 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       struct crypt_device *ctx)
 {
 	unsigned int i=0;
-	unsigned int blocksPerStripeSet = AF_split_sectors(vk->keylength, stripes);
+	size_t blocksPerStripeSet, currentSector;
 	int r;
 	uuid_t partitionUuid;
-	int currentSector;
 	char luksMagic[] = LUKS_MAGIC;
 
 	/* For separate metadata device allow zero alignment */
@@ -685,11 +674,12 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	}
 
 	currentSector = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
+	blocksPerStripeSet = AF_split_sectors(vk->keylength, stripes);
 	for(i = 0; i < LUKS_NUMKEYS; ++i) {
 		header->keyblock[i].active = LUKS_KEY_DISABLED;
 		header->keyblock[i].keyMaterialOffset = currentSector;
 		header->keyblock[i].stripes = stripes;
-		currentSector = round_up_modulo(currentSector + blocksPerStripeSet,
+		currentSector = size_round_up(currentSector + blocksPerStripeSet,
 						LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 	}
 
@@ -698,7 +688,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		header->payloadOffset = alignPayload;
 	} else {
 		/* alignOffset - offset from natural device alignment provided by topology info */
-		currentSector = round_up_modulo(currentSector, alignPayload);
+		currentSector = size_round_up(currentSector, alignPayload);
 		header->payloadOffset = currentSector + alignOffset;
 	}
 

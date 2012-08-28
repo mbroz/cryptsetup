@@ -84,6 +84,7 @@ int device_block_adjust(struct crypt_device *cd,
 			uint64_t device_offset,
 			uint64_t *size,
 			uint32_t *flags);
+size_t size_round_up(size_t size, unsigned int block);
 
 /* Receive backend devices from context helpers */
 struct device *crypt_metadata_device(struct crypt_device *cd);

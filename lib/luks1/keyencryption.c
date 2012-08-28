@@ -36,22 +36,12 @@
 #include "luks.h"
 #include "internal.h"
 
-#define div_round_up(a,b) ({          \
-	typeof(a) __a = (a);          \
-	typeof(b) __b = (b);          \
-	(__a - 1) / __b + 1;          \
-})
-
-static inline int round_up_modulo(int x, int m) {
-	return div_round_up(x, m) * m;
-}
-
 static const char *cleaner_name=NULL;
 static uint64_t cleaner_size = 0;
 static int devfd=-1;
 
 static int setup_mapping(const char *cipher, const char *name,
-			 int bsize, struct volume_key *vk,
+			 unsigned int bsize, struct volume_key *vk,
 			 unsigned int sector, size_t srcLength,
 			 int mode, struct crypt_device *ctx)
 {
@@ -59,7 +49,7 @@ static int setup_mapping(const char *cipher, const char *name,
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.uuid   = NULL,
-		.size   = round_up_modulo(srcLength, bsize) / SECTOR_SIZE,
+		.size   = size_round_up(srcLength, bsize) / SECTOR_SIZE,
 		.flags  = CRYPT_ACTIVATE_PRIVATE,
 		.data_device = device,
 		.u.crypt = {
