@@ -110,9 +110,12 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	int r = -1;
 	int bsize = device_block_size(crypt_metadata_device(ctx));
 
+	if (bsize <= 0)
+		return -EINVAL;
+
 	if(dmDir == NULL) {
 		log_err(ctx, _("Failed to obtain device mapper directory."));
-		return -1;
+		return -EINVAL;
 	}
 	if(asprintf(&name,"temporary-cryptsetup-%d",getpid())               == -1 ||
 	   asprintf(&fullpath,"%s/%s",dmDir,name)                           == -1 ||
