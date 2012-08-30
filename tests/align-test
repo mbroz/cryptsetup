@@ -13,6 +13,7 @@ cleanup() {
 
 fail()
 {
+	echo "FAIL"
 	[ -n "$1" ] && echo "$1"
 	cleanup
 	exit 100
@@ -38,11 +39,10 @@ add_device() {
 	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
-
 format() # key_bits expected [forced]
 {
 	if [ -z "$3" ] ; then
-		echo -n "Formatting using topology info ($1 bits key)...."
+		echo -n "Formatting using topology info ($1 bits key)..."
 		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -c aes-cbc-essiv:sha256 -s $1
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key)..."
@@ -52,26 +52,50 @@ format() # key_bits expected [forced]
 	ALIGN=$($CRYPTSETUP luksDump $DEV |grep "Payload offset" | sed -e s/.*\\t//)
 	#echo "ALIGN = $ALIGN"
 
-	if [ -z "$ALIGN" ] ; then
-		fail "FAIL"
-	elif [ $ALIGN -ne $2 ] ; then
-		echo "FAIL"
-		fail "Expected alignment differs: expected $2 != detected $ALIGN"
-	fi
+	[ -z "$ALIGN" ] && fail
+	[ $ALIGN -ne $2 ] && fail "Expected alignment differs: expected $2 != detected $ALIGN"
 
 	# test some operation, just in case
 	echo -e "xxx\naaa" | $CRYPTSETUP luksAddKey $DEV -i1 --key-slot 1
-	if [ $? -ne 0 ] ; then
-		echo "FAIL"
-		fail "Keyslot add failed."
-	fi
+	[ $? -ne 0 ] && fail "Keyslot add failed."
+
 	$CRYPTSETUP -q luksKillSlot $DEV 1
-	if [ $? -ne 0 ] ; then
-		echo "FAIL"
-		fail "Keyslot removal failed."
-	fi
+	[ $? -ne 0 ] && fail "Keyslot removal failed."
 
 	echo "PASSED"
+}
+
+get_offsets()
+{
+	$CRYPTSETUP luksDump $DEV | grep "$1" | cut -s -d ':' -f 2 | sed  -e 's/\s//g' -e :a -e N -e 's/\n/:/g' -e 's/\s//g' -e ta
+}
+
+format_null()
+{
+	if [ $3 -eq 0 ] ; then
+		echo -n "Formatting using topology info ($1 bits key) [slot 0"
+		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1
+	else
+		echo -n "Formatting using forced sector alignment $3 ($1 bits key) [slot 0"
+		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1 --align-payload=$3
+	fi
+
+	POFF=$(get_offsets "Payload offset")
+	[ -z "$POFF" ] && fail
+	[ $POFF != $2 ] && fail "Expected data offset differs: expected $2 != detected $POFF"
+	if [ -n "$4" ] ; then
+		for j in 1 2 3 4 5 6 7 ; do
+			echo -e "xxx\nblah$j" | $CRYPTSETUP luksAddKey $DEV -q -i1 --key-slot $j -c null $PARAMS
+			echo -n $j
+			[ $? -ne 0 ] && fail
+		done
+
+		KOFF=$(get_offsets "Key material offset")
+		[ -z "$KOFF" ] && fail
+		[ $KOFF != $4 ] && fail "Expected keyslots offsets differ: expected $4 != detected $KOFF"
+	fi
+
+	echo "]...PASSED"
 }
 
 if [ $(id -u) != 0 ]; then
@@ -111,7 +135,7 @@ format 128 2048
 format 128 1536 8
 cleanup
 
-echo "# Create classic 512b drive and stack dm-linear"
+echo "# Create classic 512B drive and stack dm-linear"
 echo "# (logical_block_size=512, physical_block_size=512, alignment_offset=0)"
 add_device dev_size_mb=16 sector_size=512 num_tgts=1
 DEV2=$DEV
@@ -122,4 +146,53 @@ format 256 2112 8
 format 128 2048
 format 128 1088 8
 format 128 8192 8192
+cleanup
+
+echo "# Offset check: 512B sector drive"
+add_device dev_size_mb=16 sector_size=512 num_tgts=1
+#           |k| expO reqO expected slot offsets
+format_null  64 2048    0 8:72:136:200:264:328:392:456
+format_null  64  520    1
+format_null  64  520    8
+format_null  64  640  128
+format_null  64 2048 2048
+format_null 128 2048    0 8:136:264:392:520:648:776:904
+format_null 128 1032    1
+format_null 128 1032    8
+format_null 128 1152  128
+format_null 128 2048 2048
+format_null 256 4096    0 8:264:520:776:1032:1288:1544:1800
+format_null 256 2056    1
+format_null 256 2056    8
+format_null 256 2176  128
+format_null 256 4096 2048
+format_null 512 4096    0 8:512:1016:1520:2024:2528:3032:3536
+format_null 512 4040    1
+format_null 512 4040    8
+format_null 512 4096  128
+format_null 512 4096 2048
+cleanup
+
+echo "# Offset check: 4096B sector drive"
+add_device dev_size_mb=16 sector_size=4096 num_tgts=1
+format_null  64 2048    0 8:72:136:200:264:328:392:456
+format_null  64  520    1
+format_null  64  520    8
+format_null  64  640  128
+format_null  64 2048 2048
+format_null 128 2048    0 8:136:264:392:520:648:776:904
+format_null 128 1032    1
+format_null 128 1032    8
+format_null 128 1152  128
+format_null 128 2048 2048
+format_null 256 4096    0 8:264:520:776:1032:1288:1544:1800
+format_null 256 2056    1
+format_null 256 2056    8
+format_null 256 2176  128
+format_null 256 4096 2048
+format_null 512 4096    0 8:512:1016:1520:2024:2528:3032:3536
+format_null 512 4040    1
+format_null 512 4040    8
+format_null 512 4096  128
+format_null 512 4096 2048
 cleanup
