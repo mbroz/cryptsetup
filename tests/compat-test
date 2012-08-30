@@ -10,6 +10,7 @@ DEV_NAME2=dummy2
 DEV_NAME3=dummy3
 ORIG_IMG=luks-test-orig
 IMG=luks-test
+IMG10=luks-test-v10
 HEADER_IMG=luks-header
 KEY1=key1
 KEY2=key2
@@ -39,7 +40,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG >/dev/null 2>&1
 }
 
 function force_uevent()
@@ -77,12 +78,14 @@ function prepare()
 		remove_mapping
 		bzip2 -cd compatimage.img.bz2 > $IMG
 		losetup $LOOPDEV $IMG
+		bzip2 -cd compatv10image.img.bz2 > $IMG10
 		;;
 	reuse | *)
 		if [ ! -e $IMG ]; then
 			bzip2 -cd compatimage.img.bz2 > $IMG
 			losetup $LOOPDEV $IMG
 		fi
+		[ ! -e $IMG10 ] && bzip2 -cd compatv10image.img.bz2 > $IMG10
 		;;
 	esac
 
@@ -143,9 +146,30 @@ echo "compatkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 check_exists
 ORG_SHA1=$(sha1sum -b /dev/mapper/$DEV_NAME | cut -f 1 -d' ')
 [ "$ORG_SHA1" = 676062b66ebf36669dab705442ea0762dfc091b0 ] || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+
+# Check it can be opened from header backup as well
+$CRYPTSETUP luksHeaderBackup $IMG --header-backup-file $HEADER_IMG
+echo "compatkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME --header $HEADER_IMG || fail
+check_exists
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+
+# Repeat for V1.0 header - not aligned first keyslot
+echo "compatkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME || fail
+check_exists
+ORG_SHA1=$(sha1sum -b /dev/mapper/$DEV_NAME | cut -f 1 -d' ')
+[ "$ORG_SHA1" = 51b48c2471a7593ceaf14dc5e66bca86ed05f6cc ] || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+
+rm -f $HEADER_IMG
+$CRYPTSETUP luksHeaderBackup $IMG10 --header-backup-file $HEADER_IMG
+echo "compatkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME --header $HEADER_IMG || fail
+check_exists
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[2] open - compat image - denial check" new
 echo "wrongkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+echo "wrongkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME 2>/dev/null && fail
 check
 
 # All headers items and first key material section must change

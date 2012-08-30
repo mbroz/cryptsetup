@@ -176,7 +176,8 @@ int LUKS_hdr_backup(
 	close(devfd);
 
 	/* Wipe unused area, so backup cannot contain old signatures */
-	memset(buffer + sizeof(*hdr), 0, LUKS_ALIGN_KEYSLOTS - sizeof(*hdr));
+	if (hdr->keyblock[0].keyMaterialOffset * SECTOR_SIZE == LUKS_ALIGN_KEYSLOTS)
+		memset(buffer + sizeof(*hdr), 0, LUKS_ALIGN_KEYSLOTS - sizeof(*hdr));
 
 	devfd = creat(backup_file, S_IRUSR);
 	if(devfd == -1) {
