@@ -571,16 +571,6 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	size_t new_passphrase_size);
 
 /**
- * Get number of keyslots supported for device type.
- *
- * @param type crypt device type
- *
- * @return slot count or negative errno otherwise if device
- * doesn't not support keyslots.
- */
-int crypt_keyslot_max(const char *type);
-
-/**
 * Add key slot using provided key file path
  *
  * @pre @e cd contains initialized and formatted LUKS device context
@@ -971,6 +961,32 @@ typedef enum {
  */
 crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot);
 /** @} */
+
+/**
+ * Get number of keyslots supported for device type.
+ *
+ * @param type crypt device type
+ *
+ * @return slot count or negative errno otherwise if device
+ * doesn't not support keyslots.
+ */
+int crypt_keyslot_max(const char *type);
+
+/**
+ * Get keyslot area pointers (relative to metadata device)
+ *
+ * @param cd crypt device handle
+ * @param keyslot keyslot number
+ * @param offset offset on metadata device (in bytes)
+ * @param length length of keyslot area (in bytes)
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ *
+ */
+int crypt_keyslot_area(struct crypt_device *cd,
+	int keyslot,
+	uint64_t *offset,
+	uint64_t *length);
 
 /**
  * Backup header and keyslots to file

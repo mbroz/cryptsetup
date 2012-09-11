@@ -2393,6 +2393,17 @@ int crypt_keyslot_max(const char *type)
 	return -EINVAL;
 }
 
+int crypt_keyslot_area(struct crypt_device *cd,
+	int keyslot,
+	uint64_t *offset,
+	uint64_t *length)
+{
+	if (!isLUKS(cd->type))
+		return -EINVAL;
+
+	return LUKS_keyslot_area(&cd->hdr, keyslot, offset, length);
+}
+
 const char *crypt_get_type(struct crypt_device *cd)
 {
 	return cd->type;

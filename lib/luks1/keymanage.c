@@ -53,6 +53,20 @@ static size_t LUKS_device_sectors(size_t keyLen)
 	return sector;
 }
 
+int LUKS_keyslot_area(struct luks_phdr *hdr,
+	int keyslot,
+	uint64_t *offset,
+	uint64_t *length)
+{
+	if(keyslot >= LUKS_NUMKEYS || keyslot < 0)
+		return -EINVAL;
+
+	*offset = hdr->keyblock[keyslot].keyMaterialOffset * SECTOR_SIZE;
+	*length = AF_split_sectors(hdr->keyBytes, LUKS_STRIPES) * SECTOR_SIZE;
+
+	return 0;
+}
+
 static int LUKS_check_device_size(struct crypt_device *ctx, size_t keyLength)
 {
 	struct device *device = crypt_metadata_device(ctx);
