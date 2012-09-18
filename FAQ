@@ -8,6 +8,7 @@ Sections
 6. Backup and Data Recovery
 7. Interoperability with other Disk Encryption Tools
 8. Issues with Specific Versions of cryptsetup
+9. References and Further Reading
 A. Contributors
 
 
@@ -1577,11 +1578,12 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   - Passphrase hash algorithm needs specifying
 
   Also note that because plain dm-crypt and loop-aes format does not
-  have metadata, autodetection, while feasible in most cases, would
-  be a lot of work that nobody really wants to do. If you still have
-  the old set-up, using a verbosity option (-v) on mapping with the
-  old tool or having a look into the system logs after setup could
-  give you the information you need.
+  have metadata, and while the loopAES extension for cryptsetup tries
+  autodetection (see command loopaesOpen), it may not always work.
+  If you still have the old set-up, using a verbosity option (-v)
+  on mapping with the old tool or having a look into the system logs
+  after setup could give you the information you need. Below, there
+  are also some things that worked for somebody.
 
 
  * 7.3 loop-aes patched into losetup on Debian 5.x, kernel 2.6.32
@@ -1606,6 +1608,15 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   length. It seems the corresponding options for cryptsetup are
 
   --cipher twofish-cbc-null -s 192 -h ripemd160:20
+ 
+
+ * 7.5 loop-aes v1 format OpenSUSE
+
+  Apparently this is done by older OpenSUSE distros and stopped
+  working from OpenSUSE 12.1 to 12.2. One user had success with the
+  following:
+
+  cryptsetup create <target> <device> -c aes -s 128 -h sha256
  
 
 8. Issues with Specific Versions of cryptsetup 
@@ -1638,6 +1649,59 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   is broken in its kernel as a result. There may be a very old
   version of cryptsetup (1.0.x) provided by SLED, which should also
   not be used anymore as well. My advice would be to drop SLED 10.
+
+
+9. References and Further Reading 
+
+
+ * Purpose of this Section
+
+  The purpose of this section is to collect references to all
+  materials that do not fit the FAQ but are relevant in some fashion.
+  This can be core topics like the LUKS spec or disk encryption, but
+  it can also be more tangential, like secure storage management or
+  cryptography used in LUKS. It should still have relevance to
+  cryptsetup and its applications.
+
+  If you wan to see something added here, send email to the
+  maintainer (or the cryptsetup mailing list) giving an URL, a
+  description (1-3 lines preferred) and a section to put it in. You
+  can also propose new sections.
+
+  At this time I would like to limit the references to things that
+  are available on the web.
+
+
+ * Specifications
+
+  - LUKS on-disk format spec:
+  http://code.google.com/p/cryptsetup/wiki/Specification
+
+
+ * Code Examples
+
+  - Some code examples are in the source package under docs/examples
+
+
+ * Tools
+
+
+ * SSD and Flash Disk Related
+
+
+ * Disk Encryption
+
+
+ * Attacks Against Disk Encryption
+
+
+ * Risk Management as Relevant for Disk Encryption
+
+
+ * Cryptography
+
+
+ * Secure Storage
 
  A. Contributors In no particular order:
 
