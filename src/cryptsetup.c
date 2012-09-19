@@ -54,6 +54,7 @@ static int opt_test_passphrase = 0;
 
 static const char **action_argv;
 static int action_argc;
+static const char *null_action_argv[] = {NULL, NULL};
 
 static int action_create(int arg);
 static int action_remove(int arg);
@@ -1125,7 +1126,6 @@ int main(int argc, const char **argv)
 	struct action_type *action;
 	const char *aname;
 	int r;
-	const char *null_action_argv[] = {NULL};
 
 	crypt_set_log_callback(NULL, tool_log, NULL);
 

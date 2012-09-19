@@ -625,7 +625,7 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	if (r < 0)
 		return r;
 
-	if (params->flags & CRYPT_VERITY_NO_HEADER)
+	if (params && params->flags & CRYPT_VERITY_NO_HEADER)
 		return -EINVAL;
 
 	if (params)
@@ -1068,7 +1068,8 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		return -ENOMEM;
 
 	cd->verity_hdr.flags = params->flags;
-	cd->verity_hdr.hash_name = strdup(params->hash_name);
+	if (!(cd->verity_hdr.hash_name = strdup(params->hash_name)))
+		return -ENOMEM;
 	cd->verity_hdr.data_device = NULL;
 	cd->verity_hdr.data_block_size = params->data_block_size;
 	cd->verity_hdr.hash_block_size = params->hash_block_size;
@@ -1076,7 +1077,9 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	cd->verity_hdr.hash_type = params->hash_type;
 	cd->verity_hdr.flags = params->flags;
 	cd->verity_hdr.salt_size = params->salt_size;
-	cd->verity_hdr.salt = malloc(params->salt_size);
+	if (!(cd->verity_hdr.salt = malloc(params->salt_size)))
+		return -ENOMEM;
+
 	if (params->salt)
 		memcpy(CONST_CAST(char*)cd->verity_hdr.salt, params->salt,
 		       params->salt_size);
@@ -1372,7 +1375,7 @@ int crypt_suspend(struct crypt_device *cd,
 
 	log_dbg("Suspending volume %s.", name);
 
-	if (!isLUKS(cd->type)) {
+	if (!cd || !isLUKS(cd->type)) {
 		log_err(cd, _("This operation is supported only for LUKS device.\n"));
 		r = -EINVAL;
 		goto out;
@@ -1384,8 +1387,7 @@ int crypt_suspend(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (!cd)
-		dm_backend_init();
+	dm_backend_init();
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -1403,8 +1405,7 @@ int crypt_suspend(struct crypt_device *cd,
 	else if (r)
 		log_err(cd, "Error during suspending device %s.\n", name);
 out:
-	if (!cd)
-		dm_backend_exit();
+	dm_backend_exit();
 	return r;
 }
 

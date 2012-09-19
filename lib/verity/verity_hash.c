@@ -273,9 +273,8 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		s = data_file_blocks >> (i * hash_per_block_bits);
 		s = (s + hash_per_block - 1) / hash_per_block;
 		hash_level_size[i] = s;
-		if (hash_position + s < hash_position ||
-		    (hash_position + s) < 0 ||
-		    (hash_position + s) != hash_position + s) {
+		if ((hash_position + s) < hash_position ||
+		    (hash_position + s) < 0) {
 			log_err(cd, _("Device offset overflow.\n"));
 			return -EINVAL;
 		}

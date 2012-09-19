@@ -94,6 +94,7 @@ void *crypt_safe_alloc(size_t size)
 	alloc->size = size;
 	memset(&alloc->data, 0, size);
 
+	/* coverity[leaked_storage] */
 	return &alloc->data;
 }
 
@@ -510,10 +511,13 @@ int crypt_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size)
 		break;
 	case 't':
 	case 'T': mult *= mult_base;
+		 /* Fall through */
 	case 'g':
 	case 'G': mult *= mult_base;
+		 /* Fall through */
 	case 'm':
 	case 'M': mult *= mult_base;
+		 /* Fall through */
 	case 'k':
 	case 'K': mult *= mult_base;
 		break;

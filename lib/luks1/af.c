@@ -66,8 +66,13 @@ out:
 
 static int diffuse(char *src, char *dst, size_t size, const char *hash_name)
 {
-	unsigned int digest_size = crypt_hash_size(hash_name);
+	int hash_size = crypt_hash_size(hash_name);
+	unsigned int digest_size;
 	unsigned int i, blocks, padding;
+
+	if (hash_size <= 0)
+		return 1;
+	digest_size = hash_size;
 
 	blocks = size / digest_size;
 	padding = size % digest_size;

@@ -784,7 +784,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	r = crypt_random_get(ctx, hdr->keyblock[keyIndex].passwordSalt,
 		       LUKS_SALTSIZE, CRYPT_RND_SALT);
 	if (r < 0)
-		return r;
+		goto out;
 
 	r = PBKDF2_HMAC(hdr->hashSpec, password,passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,
@@ -883,8 +883,10 @@ static int LUKS_open_key(unsigned int keyIndex,
 	assert(vk->keylength == hdr->keyBytes);
 	AFEKSize = AF_split_sectors(vk->keylength, hdr->keyblock[keyIndex].stripes) * SECTOR_SIZE;
 	AfKey = crypt_safe_alloc(AFEKSize);
-	if (!AfKey)
-		return -ENOMEM;
+	if (!AfKey) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	r = PBKDF2_HMAC(hdr->hashSpec, password,passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt,LUKS_SALTSIZE,

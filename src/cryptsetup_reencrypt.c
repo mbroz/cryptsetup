@@ -183,8 +183,8 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 	s = read(devfd, buf, SECTOR_SIZE);
 	if (s < 0 || s != SECTOR_SIZE) {
 		log_err(_("Cannot read device %s.\n"), rc->device);
-		close(devfd);
-		return -EIO;
+		r = -EIO;
+		goto out;
 	}
 
 	/* Be sure that we do not process new version of header */
@@ -290,7 +290,9 @@ static int write_log(struct reenc_ctx *rc)
 		1, rc->device_uuid, rc->reencrypt_direction,
 		rc->device_offset, rc->device_shift);
 
-	lseek(rc->log_fd, 0, SEEK_SET);
+	if (lseek(rc->log_fd, 0, SEEK_SET) == -1)
+		return -EIO;
+
 	r = write(rc->log_fd, rc->log_buf, SECTOR_SIZE);
 	if (r < 0 || r != SECTOR_SIZE) {
 		log_err(_("Cannot write reencryption log file.\n"));

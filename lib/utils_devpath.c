@@ -139,7 +139,7 @@ char *crypt_lookup_dev(const char *dev_id)
 	if (snprintf(path, sizeof(path), "/sys/dev/block/%s", dev_id) < 0)
 		return NULL;
 
-	len = readlink(path, link, sizeof(link));
+	len = readlink(path, link, sizeof(link) - 1);
 	if (len < 0) {
 		/* Without /sys use old scan */
 		if (stat("/sys/dev/block", &st) < 0)
