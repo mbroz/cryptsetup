@@ -1,0 +1,118 @@
+Purpose
+=======
+
+chk_luks_keyslots is a tool that searches the keyslot area of a
+LUKS container for positions where entropy is low and hence
+there is a high probability of damage from overwrites of parts
+of the key-slot with data such as a RAID superblock or a partition
+table.
+
+
+Installation
+============
+
+1. Install the version of cryptsetup the tool came with.
+2. Compile with
+      gcc -lm -lcryptsetup chk_luks_keyslots.c -o chk_luks_keyslots
+
+Usage
+=====
+
+Call chk_luks_keyslots without arguments for an option summary.
+
+
+Example of a good keyslot area:
+-------------------------------
+
+root> ./chk_luks_keyslots /dev/loop0
+
+parameters (commandline and LUKS header):
+  sector size: 512
+  threshold:   0.900000
+
+- processing keyslot 0:  start: 0x001000   end: 0x020400
+- processing keyslot 1:  start: 0x021000   end: 0x040400
+- processing keyslot 2:  start: 0x041000   end: 0x060400
+- processing keyslot 3:  start: 0x061000   end: 0x080400
+- processing keyslot 4:  start: 0x081000   end: 0x0a0400
+- processing keyslot 5:  start: 0x0a1000   end: 0x0c0400
+- processing keyslot 6:  start: 0x0c1000   end: 0x0e0400
+- processing keyslot 7:  start: 0x0e1000   end: 0x100400
+
+
+Example of a fault in slot 8 at offset 0x100200:
+-----------------------------
+
+root>./chk_luks_keyslots /dev/loop2
+
+parameters (commandline and LUKS header):
+  sector size: 512
+  threshold:   0.900000
+
+- processing keyslot 0:  start: 0x001000   end: 0x020400
+- processing keyslot 1:  start: 0x021000   end: 0x040400
+- processing keyslot 2:  start: 0x041000   end: 0x060400
+- processing keyslot 3:  start: 0x061000   end: 0x080400
+- processing keyslot 4:  start: 0x081000   end: 0x0a0400
+- processing keyslot 5:  start: 0x0a1000   end: 0x0c0400
+- processing keyslot 6:  start: 0x0c1000   end: 0x0e0400
+- processing keyslot 7:  start: 0x0e1000   end: 0x100400
+  low entropy at: 0x100200    entropy: 0.846546
+
+
+Same as last, but verbose:
+--------------------------
+root>./chk_luks_keyslots  -v /dev/loop2
+
+parameters (commandline and LUKS header):
+  sector size: 512
+  threshold:   0.900000
+
+- processing keyslot 0:  start: 0x001000   end: 0x020400
+- processing keyslot 1:  start: 0x021000   end: 0x040400
+- processing keyslot 2:  start: 0x041000   end: 0x060400
+- processing keyslot 3:  start: 0x061000   end: 0x080400
+- processing keyslot 4:  start: 0x081000   end: 0x0a0400
+- processing keyslot 5:  start: 0x0a1000   end: 0x0c0400
+- processing keyslot 6:  start: 0x0c1000   end: 0x0e0400
+- processing keyslot 7:  start: 0x0e1000   end: 0x100400
+  low entropy at: 0x100200    entropy: 0.846546
+  Binary dump:
+  0x100200  BD 0E C7 A8 7D EF 04 F6  AF 83 DF 74 94 FE 04 56  ....}......t...V
+  0x100210  3B 64 BD 68 A9 F6 CF 3C  37 CD 66 B7 17 4D 63 2B  ;d.h...<7.f..Mc+
+  0x100220  8F 6E 74 7E 96 7A 2B 27  32 1B F0 80 37 5A 9A 41  .nt~.z+'2...7Z.A
+  0x100230  4A 6E CB C0 CF 39 95 45  92 90 E1 0B E6 08 EE 2A  Jn...9.E.......*
+  0x100240  FA 66 6D 67 49 89 76 B1  41 CD 24 57 AA 65 F7 69  .fmgI.v.A.$W.e.i
+  0x100250  33 16 A7 C7 61 3D 43 B7  74 D6 86 83 1D 19 BF 85  3...a=C.t.......
+  0x100260  E4 22 3E 16 66 1C B0 1E  11 0D D4 26 37 AD A4 02  .">.f......&7...
+  0x100270  40 77 9A 5A B8 40 39 E3  A3 A0 96 08 4D 57 C5 0C  @w.Z.@9.....MW..
+  0x100280  D4 74 89 45 FA 93 F7 FE  A7 9D D3 99 43 77 8E 35  .t.E........Cw.5
+  0x100290  E0 55 90 3E 91 29 EA DB  5C 13 19 C9 83 CE D8 0C  .U.>.)..\.......
+  0x1002a0  85 7F 96 26 60 16 A0 0B  E1 F9 01 13 1E 59 83 98  ...&`........Y..
+  0x1002b0  06 B5 1D 6F B6 81 9D 60  58 70 15 30 29 42 32 C6  ...o...`Xp.0)B2.
+  0x1002c0  A7 55 64 00 65 ED 41 1C  B4 C1 C7 10 E1 8E 60 B0  .Ud.e.A.......`.
+  0x1002d0  F0 9E 9C 40 5A 84 92 8D  21 F0 B8 2D 61 4E 21 9D  ...@Z...!..-aN!.
+  0x1002e0  FA B8 18 D3 47 A4 4F D4  AB 73 C0 93 F3 8E 9A 95  ....G.O..s......
+  0x1002f0  A4 F1 6D EB 36 85 F4 F7  62 BA 26 D5 15 57 0D 0C  ..m.6...b.&..W..
+  0x100300  C9 4E 19 F2 5B 5A F5 54  B8 F4 B5 57 72 08 1B 7A  .N..[Z.T...Wr..z
+  0x100310  C3 66 7F 82 1E 75 92 C2  E9 97 64 5E F7 FB A9 05  .f...u....d^....
+  0x100320  CF 30 C8 6A D1 35 9B 9D  22 52 22 46 0E 4B DE 53  .0.j.5.."R"F.K.S
+  0x100330  68 C8 DA 5F C7 CA 31 D0  C9 B4 57 CF 0F 1F 4B 9C  h.._..1...W...K.
+  0x100340  DF 0C F8 7C F2 E3 32 52  3C 0D D2 DC 5C CF F0 00  ...|..2R<...\...
+  0x100350  58 58 58 58 58 58 58 58  58 58 58 58 58 58 58 58  XXXXXXXXXXXXXXXX
+  0x100360  58 58 58 58 58 58 58 58  58 58 58 58 58 58 58 58  XXXXXXXXXXXXXXXX
+  0x100370  58 58 58 58 58 58 58 58  58 58 58 58 58 58 58 58  XXXXXXXXXXXXXXXX
+  0x100380  58 58 58 58 58 58 58 58  58 58 58 58 58 58 58 58  XXXXXXXXXXXXXXXX
+  0x100390  58 58 58 58 58 58 58 58  58 58 58 58 58 58 58 58  XXXXXXXXXXXXXXXX
+  0x1003a0  58 58 58 58 58 58 58 58  58 58 58 58 58 58 58 58  XXXXXXXXXXXXXXXX
+  0x1003b0  B4 81 7A F0 BE 38 7E 00  A4 61 41 06 ED 7B 40 D9  ..z..8~..aA..{@.
+  0x1003c0  BF 58 51 C9 CD 37 78 4D  4D B3 6E B4 7D 86 3C CB  .XQ..7xMM.n.}.<.
+  0x1003d0  D5 39 2E FC 78 B1 3E DE  C0 7F 55 25 65 71 AD 2A  .9..x.>...U%eq.*
+  0x1003e0  1E 68 D3 3B 78 17 5F D2  08 93 50 88 D8 0A 75 4F  .h.;x._...P...uO
+  0x1003f0  E5 AA 26 0F B4 F7 F5 88  65 2B E4 92 18 08 32 9E  ..&.....e+....2.
+
+
+----
+Copyright (C) 2012, Arno Wagner <arno@wagner.name>
+This file is free documentation; the author gives
+unlimited permission to copy, distribute and modify it.
