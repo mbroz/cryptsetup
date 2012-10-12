@@ -122,7 +122,7 @@ static void print_address(FILE *out, uint64_t value)
 }
 
 /* uses default "hd" style, i.e. 16 bytes followed by ASCII */
-static void hexdump_line(FILE *out, int address, unsigned char *buf) {
+static void hexdump_line(FILE *out, uint64_t address, unsigned char *buf) {
 	int i;
 	static char tbl[16] = "0123456789ABCDEF";
 
@@ -153,7 +153,7 @@ static void hexdump_line(FILE *out, int address, unsigned char *buf) {
 	fprintf(out, "\n");
 }
 
-static void hexdump_sector(FILE *out, unsigned char *buf, int address, int len)
+static void hexdump_sector(FILE *out, unsigned char *buf, uint64_t address, int len)
 {
 	int done;
 
@@ -164,13 +164,14 @@ static void hexdump_sector(FILE *out, unsigned char *buf, int address, int len)
 	}
 }
 
-static int check_keyslots(FILE *out, struct crypt_device *cd, int f_luks, unsigned char *buffer)
+static int check_keyslots(FILE *out, struct crypt_device *cd, int f_luks)
 {
-	int i, ofs;
-	unsigned j;
+	int i;
 	double ent;
+	off_t ofs;
 	uint64_t start, length, end;
 	crypt_keyslot_info ki;
+	unsigned char buffer[sector_size];
 
 	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS1) ; i++) {
 		fprintf(out, "- processing keyslot %d:", i);
@@ -204,19 +205,23 @@ static int check_keyslots(FILE *out, struct crypt_device *cd, int f_luks, unsign
 			return EXIT_FAILURE;
 		}
 
-		for (j = start; j < end; j += sector_size) {
-			ofs = j;
-			lseek(f_luks, ofs, SEEK_SET);
-			read(f_luks, buffer, sector_size);
+		for (ofs = start; (uint64_t)ofs < end; ofs += sector_size) {
+			if (lseek(f_luks, ofs, SEEK_SET) != ofs) {
+				fprintf(stderr,"\nCannot seek to keyslot area.\n");
+				return EXIT_FAILURE;
+			}
+			if (read(f_luks, buffer, sector_size) != sector_size) {
+				fprintf(stderr,"\nCannot read keyslot area.\n");
+				return EXIT_FAILURE;
+			}
 			ent = ent_samp(buffer, sector_size);
-			// printf("slot: %d  offset: %8x  ent: %f\n", i, ofs, ent);
 			if (ent < threshold) {
 				fprintf(out, "  low entropy at: ");
 				print_address(out, ofs);
 				fprintf(out, "   entropy: %f\n", ent);
 				if (verbose) {
 					fprintf(out, "  Binary dump:\n");
-					hexdump_sector(out, buffer, ofs, sector_size);
+					hexdump_sector(out, buffer, (uint64_t)ofs, sector_size);
 					fprintf(out,"\n");
 				}
 			}
@@ -232,7 +237,6 @@ int main(int argc, char **argv)
 	/* for option processing */
 	int c, r;
 	char *device;
-	unsigned char *buffer;
 
 	/* for use of libcryptsetup */
 	struct crypt_device *cd;
@@ -315,12 +319,6 @@ int main(int argc, char **argv)
 	}
 	device = argv[optind];
 
-	buffer = calloc(sector_size, 1);
-	if (!buffer) {
-		fprintf(stderr,"\nError: Cannot allocate buffer.\n");
-		exit(EXIT_FAILURE);
-	}
-
 	/* test whether we can open and read device */
 	/* This is neded as we are reading the actual data
 	* in the keyslots dirtectly from the LUKS container.
@@ -364,10 +362,9 @@ int main(int argc, char **argv)
 	fprintf(out, "  sector size: %d\n", sector_size);
 	fprintf(out, "  threshold:   %0f\n\n", threshold);
 
-	r = check_keyslots(out, cd, f_luks, buffer);
+	r = check_keyslots(out, cd, f_luks);
 
 	crypt_free(cd);
 	close(f_luks);
-	free(buffer);
 	return r;
 }
