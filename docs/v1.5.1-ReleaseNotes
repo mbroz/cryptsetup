@@ -13,7 +13,7 @@ Changes since version 1.5.0
   Also clear error messages are provided if running as non-root user and
   operation requires privileged user.
 
-* Veritysetup can be now used by normal user for creating hash image to file
+* Veritysetup can be now used by a normal user for creating hash image to file
   and also it can create hash image if doesn't exist.
   (Previously it required pre-allocated space.)
 
@@ -28,3 +28,5 @@ Changes since version 1.5.0
 * Optimized seek to keyfile-offset if key offset is large.
 
 * Fixed luksHeaderBackup for very old v1.0 unaligned LUKS headers.
+
+* Various fixes for problems found by a several static analysis tools.
