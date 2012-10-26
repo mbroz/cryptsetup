@@ -251,3 +251,44 @@ int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 	}
 	return 0;
 }
+
+/* PBKDF */
+int crypt_pbkdf(const char *kdf, const char *hash,
+		const char *password, size_t password_length,
+		const char *salt, size_t salt_length,
+		char *key, size_t key_length,
+		unsigned int iterations)
+{
+	if (!kdf || strncmp(kdf, "pbkdf2", 6))
+		return -EINVAL;
+
+	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
+			    iterations, key_length, key);
+}
+
+#if 0
+/* Until bug in gcrypt related to empty password is fixed,  cannot use this */
+int crypt_pbkdf(const char *kdf, const char *hash,
+		const char *password, size_t password_length,
+		const char *salt, size_t salt_length,
+		char *key, size_t key_length,
+		unsigned int iterations)
+{
+	int hash_id = gcry_md_map_name(hash);
+	int kdf_id;
+
+	if (!hash_id)
+		return -EINVAL;
+
+	if (kdf && !strncmp(kdf, "pbkdf2", 6))
+		kdf_id = GCRY_KDF_PBKDF2;
+	else
+		return -EINVAL;
+
+	if (gcry_kdf_derive(password, password_length, kdf_id, hash_id,
+	    salt, salt_length, iterations, key_length, key))
+		return -EINVAL;
+
+	return 0;
+}
+#endif

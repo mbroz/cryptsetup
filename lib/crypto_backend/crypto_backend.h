@@ -20,6 +20,7 @@
 #define _CRYPTO_BACKEND_H
 
 #include <stdint.h>
+#include <string.h>
 #include "config.h"
 
 struct crypt_device;
@@ -51,5 +52,20 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx);
 /* RNG (if fips paramater set, must provide FIPS compliance) */
 enum { CRYPT_RND_NORMAL = 0, CRYPT_RND_KEY = 1, CRYPT_RND_SALT = 2 };
 int crypt_backend_rng(char *buffer, size_t length, int quality, int fips);
+
+/* PBKDF*/
+int crypt_pbkdf_check(const char *kdf, const char *hash, uint64_t *iter_secs);
+int crypt_pbkdf(const char *kdf, const char *hash,
+		const char *password, size_t password_length,
+		const char *salt, size_t salt_length,
+		char *key, size_t key_length,
+		unsigned int iterations);
+
+/* internal PBKDF2 implementation */
+int pkcs5_pbkdf2(const char *hash,
+		 const char *P, size_t Plen,
+		 const char *S, size_t Slen,
+		 unsigned int c,
+		 unsigned int dkLen,char *DK);
 
 #endif /* _CRYPTO_BACKEND_H */

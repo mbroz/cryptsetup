@@ -274,3 +274,18 @@ int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 {
 	return -EINVAL;
 }
+
+/* PBKDF */
+int crypt_pbkdf(const char *kdf, const char *hash,
+		const char *password, size_t password_length,
+		const char *salt, size_t salt_length,
+		char *key, size_t key_length,
+		unsigned int iterations)
+{
+	if (!kdf || strncmp(kdf, "pbkdf2", 6))
+		return -EINVAL;
+
+	/* FIXME: switch to internal implementation in Nettle 2.6 */
+	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
+			    iterations, key_length, key);
+}

@@ -6,10 +6,8 @@ libluks1_la_CFLAGS = -Wall @CRYPTO_CFLAGS@
 
 libluks1_la_SOURCES = \
 	af.c \
-	pbkdf.c \
 	keymanage.c \
 	keyencryption.c \
-	pbkdf.h \
 	af.h \
 	luks.h
 

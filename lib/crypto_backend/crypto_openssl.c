@@ -52,7 +52,7 @@ int crypt_backend_init(struct crypt_device *ctx)
 	if (crypto_backend_initialised)
 		return 0;
 
-	OpenSSL_add_all_digests();
+	OpenSSL_add_all_algorithms();
 
 	crypto_backend_initialised = 1;
 	return 0;
@@ -226,6 +226,30 @@ int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 		return -EINVAL;
 
 	if (RAND_bytes((unsigned char *)buffer, length) != 1)
+		return -EINVAL;
+
+	return 0;
+}
+
+/* PBKDF */
+int crypt_pbkdf(const char *kdf, const char *hash,
+		const char *password, size_t password_length,
+		const char *salt, size_t salt_length,
+		char *key, size_t key_length,
+		unsigned int iterations)
+{
+	const EVP_MD *hash_id;
+
+	if (!kdf || strncmp(kdf, "pbkdf2", 6))
+		return -EINVAL;
+
+	hash_id = EVP_get_digestbyname(hash);
+	if (!hash_id)
+		return -EINVAL;
+
+	if (!PKCS5_PBKDF2_HMAC(password, (int)password_length,
+	    (unsigned char *)salt, (int)salt_length,
+            (int)iterations, hash_id, (int)key_length, (unsigned char *)key))
 		return -EINVAL;
 
 	return 0;

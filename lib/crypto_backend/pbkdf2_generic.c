@@ -3,9 +3,8 @@
  * Copyright (C) 2002,2003 Simon Josefsson
  * Copyright (C) 2004 Free Software Foundation
  *
- * LUKS code
- * Copyright (C) 2004, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
+ * cryptsetup related changes
+ * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,17 +22,9 @@
  *
  */
 
-#include <netinet/in.h>
 #include <errno.h>
-#include <signal.h>
 #include <alloca.h>
-#include <string.h>
-#include <sys/time.h>
 #include "crypto_backend.h"
-#include "pbkdf.h"
-
-static volatile uint64_t __PBKDF2_global_j = 0;
-static volatile uint64_t __PBKDF2_performance = 0;
 
 /*
  * 5.2 PBKDF2
@@ -63,11 +54,11 @@ static volatile uint64_t __PBKDF2_performance = 0;
 
 #define MAX_PRF_BLOCK_LEN 80
 
-static int pkcs5_pbkdf2(const char *hash,
+int pkcs5_pbkdf2(const char *hash,
 			const char *P, size_t Plen,
 			const char *S, size_t Slen,
 			unsigned int c, unsigned int dkLen,
-			char *DK, int perfcheck)
+			char *DK)
 {
 	struct crypt_hmac *hmac;
 	char U[MAX_PRF_BLOCK_LEN];
@@ -164,7 +155,7 @@ static int pkcs5_pbkdf2(const char *hash,
 	if (crypt_hmac_init(&hmac, hash, P, Plen))
 		return -EINVAL;
 
-	for (i = 1; (uint) i <= l; i++) {
+	for (i = 1; (unsigned int) i <= l; i++) {
 		memset(T, 0, hLen);
 
 		for (u = 1; u <= c ; u++) {
@@ -185,83 +176,14 @@ static int pkcs5_pbkdf2(const char *hash,
 			if (crypt_hmac_final(hmac, U, hLen))
 				goto out;
 
-			for (k = 0; (uint) k < hLen; k++)
+			for (k = 0; (unsigned int) k < hLen; k++)
 				T[k] ^= U[k];
-
-			if (perfcheck && __PBKDF2_performance) {
-				rc = 0;
-				goto out;
-			}
-
-			if (perfcheck)
-				__PBKDF2_global_j++;
 		}
 
-		memcpy(DK + (i - 1) * hLen, T, (uint) i == l ? r : hLen);
+		memcpy(DK + (i - 1) * hLen, T, (unsigned int) i == l ? r : hLen);
 	}
 	rc = 0;
 out:
 	crypt_hmac_destroy(hmac);
 	return rc;
-}
-
-int PBKDF2_HMAC(const char *hash,
-		const char *password, size_t passwordLen,
-		const char *salt, size_t saltLen, unsigned int iterations,
-		char *dKey, size_t dKeyLen)
-{
-	return pkcs5_pbkdf2(hash, password, passwordLen, salt, saltLen,
-			    iterations, (unsigned int)dKeyLen, dKey, 0);
-}
-
-int PBKDF2_HMAC_ready(const char *hash)
-{
-	if (crypt_hmac_size(hash) < 20)
-		return -EINVAL;
-
-	return 1;
-}
-
-static void sigvtalarm(int foo __attribute__((unused)))
-{
-	__PBKDF2_performance = __PBKDF2_global_j;
-}
-
-/* This code benchmarks PBKDF2 and returns iterations/second using wth specified hash */
-int PBKDF2_performance_check(const char *hash, uint64_t *iter)
-{
-	int timer_type, r;
-	char buf;
-	struct itimerval it;
-
-	if (__PBKDF2_global_j)
-		return -EBUSY;
-
-	if (PBKDF2_HMAC_ready(hash) < 0)
-		return -EINVAL;
-
-	/* If crypto backend is not implemented in userspace,
-	 * but uses some kernel part, we must measure also time
-	 * spent in kernel. */
-	if (crypt_backend_flags() & CRYPT_BACKEND_KERNEL) {
-		timer_type = ITIMER_PROF;
-		signal(SIGPROF,sigvtalarm);
-	} else {
-		timer_type = ITIMER_VIRTUAL;
-		signal(SIGVTALRM,sigvtalarm);
-	}
-
-	it.it_interval.tv_usec = 0;
-	it.it_interval.tv_sec = 0;
-	it.it_value.tv_usec = 0;
-	it.it_value.tv_sec =  1;
-	if (setitimer(timer_type, &it, NULL) < 0)
-		return -EINVAL;
-
-	r = pkcs5_pbkdf2(hash, "foo", 3, "bar", 3, ~(0U), 1, &buf, 1);
-
-	*iter = __PBKDF2_performance;
-	__PBKDF2_global_j = 0;
-	__PBKDF2_performance = 0;
-	return r;
 }
