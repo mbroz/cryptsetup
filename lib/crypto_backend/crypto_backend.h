@@ -68,4 +68,7 @@ int pkcs5_pbkdf2(const char *hash,
 		 unsigned int c,
 		 unsigned int dkLen,char *DK);
 
+/* CRC32 */
+uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
+
 #endif /* _CRYPTO_BACKEND_H */
