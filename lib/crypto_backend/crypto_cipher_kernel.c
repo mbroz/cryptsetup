@@ -1,0 +1,189 @@
+/*
+ * Linux kernel userspace API crypto backend implementation (skcipher)
+ *
+ * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012, Milan Broz
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <linux/if_alg.h>
+#include "crypto_backend.h"
+
+#ifndef AF_ALG
+#define AF_ALG 38
+#endif
+#ifndef SOL_ALG
+#define SOL_ALG 279
+#endif
+
+struct crypt_cipher {
+	int tfmfd;
+	int opfd;
+};
+
+int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd)
+{
+	*tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
+	if (*tfmfd == -1)
+		goto bad;
+
+	if (bind(*tfmfd, (struct sockaddr *)sa, sizeof(*sa)) == -1)
+		goto bad;
+
+	*opfd = accept(*tfmfd, NULL, 0);
+	if (*opfd == -1)
+		goto bad;
+
+	return 0;
+bad:
+	if (*tfmfd != -1) {
+		close(*tfmfd);
+		*tfmfd = -1;
+	}
+	if (*opfd != -1) {
+		close(*opfd);
+		*opfd = -1;
+	}
+	return -EINVAL;
+}
+
+/* ciphers */
+int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
+		    const char *mode, const void *buffer, size_t length)
+{
+	struct crypt_cipher *h;
+	struct sockaddr_alg sa = {
+		.salg_family = AF_ALG,
+		.salg_type = "skcipher",
+	};
+
+	h = malloc(sizeof(*h));
+	if (!h)
+		return -ENOMEM;
+
+	snprintf((char *)sa.salg_name, sizeof(sa.salg_name),
+		 "%s(%s)", mode, name);
+
+	if (crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd) < 0) {
+		free(h);
+		return -ENOTSUP;
+	}
+
+	if (setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, buffer, length) == -1) {
+		crypt_cipher_destroy(h);
+		return -EINVAL;
+	}
+
+	*ctx = h;
+	return 0;
+}
+
+/* The in/out should be aligned to page boundary */
+static int crypt_cipher_crypt(struct crypt_cipher *ctx,
+			 const char *in, char *out, size_t length,
+			 const char *iv, size_t iv_length,
+			 uint32_t direction)
+{
+	int r = 0;
+	ssize_t len;
+	struct af_alg_iv *alg_iv;
+	struct cmsghdr *header;
+	uint32_t *type;
+	struct iovec iov = {
+		.iov_base = (void*)(uintptr_t)in,
+		.iov_len = length,
+	};
+	int iv_msg_size = iv ? CMSG_SPACE(sizeof(*alg_iv) + iv_length) : 0;
+	char buffer[CMSG_SPACE(sizeof(type)) + iv_msg_size];
+	struct msghdr msg = {
+		.msg_control = buffer,
+		.msg_controllen = sizeof(buffer),
+		.msg_iov = &iov,
+		.msg_iovlen = 1,
+	};
+
+	if (!in || !out || !length)
+		return -EINVAL;
+
+	if ((!iv && iv_length) || (iv && !iv_length))
+		return -EINVAL;
+
+	memset(buffer, 0, sizeof(buffer));
+
+	/* Set encrypt/decrypt operation */
+	header = CMSG_FIRSTHDR(&msg);
+	header->cmsg_level = SOL_ALG;
+	header->cmsg_type = ALG_SET_OP;
+	header->cmsg_len = CMSG_LEN(sizeof(type));
+	type = (void*)CMSG_DATA(header);
+	*type = direction;
+
+	/* Set IV */
+	if (iv) {
+		header = CMSG_NXTHDR(&msg, header);
+		header->cmsg_level = SOL_ALG;
+		header->cmsg_type = ALG_SET_IV;
+		header->cmsg_len = iv_msg_size;
+		alg_iv = (void*)CMSG_DATA(header);
+		alg_iv->ivlen = iv_length;
+		memcpy(alg_iv->iv, iv, iv_length);
+	}
+
+	len = sendmsg(ctx->opfd, &msg, 0);
+	if (len != (ssize_t)length) {
+		r = -EIO;
+		goto bad;
+	}
+
+	len = read(ctx->opfd, out, length);
+	if (len != (ssize_t)length)
+		r = -EIO;
+bad:
+	memset(buffer, 0, sizeof(buffer));
+	return r;
+}
+
+int crypt_cipher_encrypt(struct crypt_cipher *ctx,
+			 const char *in, char *out, size_t length,
+			 const char *iv, size_t iv_length)
+{
+	return crypt_cipher_crypt(ctx, in, out, length,
+				  iv, iv_length, ALG_OP_ENCRYPT);
+}
+
+int crypt_cipher_decrypt(struct crypt_cipher *ctx,
+			 const char *in, char *out, size_t length,
+			 const char *iv, size_t iv_length)
+{
+	return crypt_cipher_crypt(ctx, in, out, length,
+				  iv, iv_length, ALG_OP_DECRYPT);
+}
+
+int crypt_cipher_destroy(struct crypt_cipher *ctx)
+{
+	if (ctx->tfmfd != -1)
+		close(ctx->tfmfd);
+	if (ctx->opfd != -1)
+		close(ctx->opfd);
+	memset(ctx, 0, sizeof(*ctx));
+	free(ctx);
+	return 0;
+}

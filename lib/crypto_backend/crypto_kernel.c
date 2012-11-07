@@ -65,31 +65,8 @@ struct crypt_hmac {
 	int hash_len;
 };
 
-static int _socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd)
-{
-	*tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
-	if (*tfmfd == -1)
-		goto bad;
-
-	if (bind(*tfmfd, (struct sockaddr *)sa, sizeof(*sa)) == -1)
-		goto bad;
-
-	*opfd = accept(*tfmfd, NULL, 0);
-	if (*opfd == -1)
-		goto bad;
-
-	return 0;
-bad:
-	if (*tfmfd != -1) {
-		close(*tfmfd);
-		*tfmfd = -1;
-	}
-	if (*opfd != -1) {
-		close(*opfd);
-		*opfd = -1;
-	}
-	return -EINVAL;
-}
+/* Defined in crypt_kernel_ciphers.c */
+extern int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd);
 
 int crypt_backend_init(struct crypt_device *ctx)
 {
@@ -107,7 +84,7 @@ int crypt_backend_init(struct crypt_device *ctx)
 	if (uname(&uts) == -1 || strcmp(uts.sysname, "Linux"))
 		return -EINVAL;
 
-	if (_socket_init(&sa, &tfmfd, &opfd) < 0)
+	if (crypt_kernel_socket_init(&sa, &tfmfd, &opfd) < 0)
 		return -EINVAL;
 
 	close(tfmfd);
@@ -172,7 +149,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 
 	strncpy((char *)sa.salg_name, ha->kernel_name, sizeof(sa.salg_name));
 
-	if (_socket_init(&sa, &h->tfmfd, &h->opfd) < 0) {
+	if (crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd) < 0) {
 		free(h);
 		return -EINVAL;
 	}
@@ -247,7 +224,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	snprintf((char *)sa.salg_name, sizeof(sa.salg_name),
 		 "hmac(%s)", ha->kernel_name);
 
-	if (_socket_init(&sa, &h->tfmfd, &h->opfd) < 0) {
+	if (crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd) < 0) {
 		free(h);
 		return -EINVAL;
 	}
