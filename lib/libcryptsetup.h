@@ -850,6 +850,29 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
 int crypt_dump(struct crypt_device *cd);
 
 /**
+ * Informational benchmark for ciphers
+ *
+ * @param cd crypt device handle
+ * @param cipher (e.g. "aes")
+ * @param cipher_mode (e.g. "xts"), IV generator is ignored
+ * @param volume_key_size size of volume key in bytes
+ * @param iv_size size of IV in bytes
+ * @param buffer_size size of encryption buffer in bytes used in test
+ * @param encryption_mbs measured encryption speed in MiB/s
+ * @param decryption_mbs measured decryption speed in MiB/s
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_benchmark(struct crypt_device *cd,
+	const char *cipher,
+	const char *cipher_mode,
+	size_t volume_key_size,
+	size_t iv_size,
+	size_t buffer_size,
+	double *encryption_mbs,
+	double *decryption_mbs);
+
+/**
  * Get cipher used in device
  *
  * @param cd crypt device handle

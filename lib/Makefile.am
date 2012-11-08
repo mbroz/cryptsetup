@@ -51,6 +51,7 @@ libcryptsetup_la_SOURCES = \
 	nls.h					\
 	libcryptsetup.h				\
 	utils.c					\
+	utils_benchmark.c			\
 	utils_crypt.c				\
 	utils_crypt.h				\
 	utils_loop.c				\

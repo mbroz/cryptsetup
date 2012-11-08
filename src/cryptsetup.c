@@ -60,6 +60,7 @@ static int action_create(int arg);
 static int action_remove(int arg);
 static int action_resize(int arg);
 static int action_status(int arg);
+static int action_benchmark(int arg);
 static int action_luksFormat(int arg);
 static int action_luksOpen(int arg);
 static int action_luksAddKey(int arg);
@@ -89,6 +90,7 @@ static struct action_type {
 	{ "remove",	action_remove,		0, 1, 1, N_("<name>"), N_("remove device") },
 	{ "resize",	action_resize,		0, 1, 1, N_("<name>"), N_("resize active device") },
 	{ "status",	action_status,		0, 1, 0, N_("<name>"), N_("show device status") },
+	{ "benchmark",	action_benchmark,	0, 0, 0, N_("<name>"), N_("benchmark cipher") },
 	{ "repair",	action_luksRepair,	0, 1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
 	{ "luksFormat", action_luksFormat,	0, 1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
 	{ "luksOpen",	action_luksOpen,	0, 2, 1, N_("<device> <name> "), N_("open LUKS device as mapping <name>") },
@@ -343,6 +345,82 @@ out:
 	crypt_free(cd);
 	if (r == -ENOTSUP)
 		r = 0;
+	return r;
+}
+
+static int action_benchmark(int arg __attribute__((unused)))
+{
+	static struct {
+		char *cipher;
+		char *mode;
+		size_t key_size;
+		size_t iv_size;
+	} bciphers[] = {
+		{ "aes",     "cbc", 16, 16 },
+		{ "serpent", "cbc", 16, 16 },
+		{ "twofish", "cbc", 16, 16 },
+		{ "aes",     "cbc", 32, 16 },
+		{ "serpent", "cbc", 32, 16 },
+		{ "twofish", "cbc", 32, 16 },
+		{ "aes",     "xts", 32, 16 },
+		{ "serpent", "xts", 32, 16 },
+		{ "twofish", "xts", 32, 16 },
+		{ "aes",     "xts", 64, 16 },
+		{ "serpent", "xts", 64, 16 },
+		{ "twofish", "xts", 64, 16 },
+		{  NULL, NULL, 0, 0 }
+	};
+	char *header = "# Tests are approximate using memory only (no storage IO).\n"
+			"# Algorithm | Key | Encryption | Decryption\n";
+	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	double enc_mbr = 0, dec_mbr = 0;
+	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS);
+	int iv_size = 16;
+	int buffer_size = 1024 * 1024;
+	char *c;
+	int i, r;
+
+	if (opt_cipher) {
+		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
+		if (r < 0) {
+			log_err(_("No known cipher specification pattern detected.\n"));
+			return r;
+		}
+		if ((c  = strchr(cipher_mode, '-')))
+			*c = '\0';
+
+		/* FIXME: not really clever :) */
+		if (strstr(cipher, "des"))
+			iv_size = 8;
+
+		r = crypt_benchmark(NULL, cipher, cipher_mode,
+				    key_size / 8, iv_size, buffer_size,
+				    &enc_mbr, &dec_mbr);
+		if (!r) {
+			log_std("%s", header);
+			strncat(cipher, "-", MAX_CIPHER_LEN);
+			strncat(cipher, cipher_mode, MAX_CIPHER_LEN);
+			log_std("%11s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
+				cipher, key_size, enc_mbr, dec_mbr);
+		} else
+			log_err(_("Cannot benchmark %s.\n"), cipher);
+	} else {
+		log_std("%s", header);
+		for (i = 0; bciphers[i].cipher; i++) {
+			r = crypt_benchmark(NULL, bciphers[i].cipher, bciphers[i].mode,
+					    bciphers[i].key_size, bciphers[i].iv_size,
+					    buffer_size, &enc_mbr, &dec_mbr);
+			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
+				 bciphers[i].cipher, bciphers[i].mode);
+			if (!r)
+				log_std("%11s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
+					cipher, bciphers[i].key_size*8, enc_mbr, dec_mbr);
+			else
+				log_std("%11s  %4db %12s %12s\n", cipher,
+					bciphers[i].key_size*8, _("N/A"), _("N/A"));
+		}
+	}
+
 	return r;
 }
 
@@ -1221,9 +1299,10 @@ int main(int argc, const char **argv)
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&
 	   strcmp(aname, "create") &&
-	   strcmp(aname, "loopaesOpen"))
+	   strcmp(aname, "loopaesOpen") &&
+	   strcmp(aname, "benchmark"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
+		      _("Option --key-size is allowed only for luksFormat, create, loopaesOpen and benchmark.\n"
 		        "To limit read from keyfile use --keyfile-size=(bytes)."),
 		      poptGetInvocationName(popt_context));
 

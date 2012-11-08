@@ -168,7 +168,7 @@ struct device *crypt_data_device(struct crypt_device *cd)
 	return cd->device;
 }
 
-static int init_crypto(struct crypt_device *ctx)
+int init_crypto(struct crypt_device *ctx)
 {
 	int r;
 
