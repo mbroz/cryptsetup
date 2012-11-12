@@ -302,6 +302,8 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
 #define CRYPT_LOOPAES "LOOPAES"
 /** dm-verity mode */
 #define CRYPT_VERITY "VERITY"
+/** TCRYPT mode */
+#define CRYPT_TCRYPT "TCRYPT"
 
 /**
  * Get device type
@@ -378,6 +380,26 @@ struct crypt_params_verity {
 	uint64_t data_size;        /**< data area size (in data blocks) */
 	uint64_t hash_area_offset; /**< hash/header offset (in bytes) */
 	uint32_t flags;            /**< CRYPT_VERITY* flags */
+};
+
+/**
+ *
+ * Structure used as parameter for TCRYPT device type
+ *
+ * @see crypt_format
+ *
+ */
+/** Try to load hidden header (describing hidden device) */
+#define CRYPT_TCRYPT_HIDDEN_HEADER   (1 << 0)
+
+struct crypt_params_tcrypt {
+	const char *passphrase;
+	size_t passphrase_size;
+	const char *hash_name;     /**< hash function for PBKDF */
+	const char *cipher[3];     /**< cipher chain */
+	const char *mode;          /**< cipher block mode */
+	size_t key_size;           /**< key size in bytes */
+	uint32_t flags;            /**< CRYPT_TCRYPT* flags */
 };
 
 /** @} */

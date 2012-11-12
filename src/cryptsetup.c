@@ -51,6 +51,7 @@ static int opt_dump_master_key = 0;
 static int opt_shared = 0;
 static int opt_allow_discards = 0;
 static int opt_test_passphrase = 0;
+static int opt_hidden = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -76,6 +77,7 @@ static int action_luksBackup(int arg);
 static int action_luksRestore(int arg);
 static int action_loopaesOpen(int arg);
 static int action_luksRepair(int arg);
+static int action_tcryptOpen(int arg);
 
 static struct action_type {
 	const char *type;
@@ -108,6 +110,7 @@ static struct action_type {
 	{ "luksHeaderRestore",action_luksRestore,0,1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
 	{ "loopaesOpen",action_loopaesOpen,	0, 2, 1, N_("<device> <name> "), N_("open loop-AES device as mapping <name>") },
 	{ "loopaesClose",action_remove,		0, 1, 1, N_("<name>"), N_("remove loop-AES mapping") },
+	{ "tcryptOpen", action_tcryptOpen,	0, 2, 1, N_("<device> <name> "), N_("open TCRYPT device as mapping <name>") },
 	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
 
@@ -249,6 +252,47 @@ static int action_loopaesOpen(int arg __attribute__((unused)))
 out:
 	crypt_free(cd);
 
+	return r;
+}
+
+static int action_tcryptOpen(int arg __attribute__((unused)))
+{
+	struct crypt_device *cd = NULL;
+	struct crypt_params_tcrypt params = {};
+	const char *activated_name;
+	uint32_t flags = 0;
+	int r;
+
+	activated_name = opt_test_passphrase ? NULL : action_argv[1];
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	/* TCRYPT header is encrypted, get passphrase now */
+	r = crypt_get_key(_("Enter passphrase: "),
+			  CONST_CAST(char**)&params.passphrase,
+			  &params.passphrase_size,
+			  opt_keyfile_offset, opt_keyfile_size,
+			  NULL, opt_timeout,
+			  _verify_passphrase(0),
+			  cd);
+	if (r < 0)
+		goto out;
+
+	if (opt_hidden)
+		params.flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
+
+	r = crypt_load(cd, CRYPT_TCRYPT, &params);
+	if (r < 0)
+		goto out;
+
+	if (opt_readonly)
+		flags |= CRYPT_ACTIVATE_READONLY;
+
+	r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, flags);
+out:
+	crypt_free(cd);
+	crypt_safe_free(CONST_CAST(char*)params.passphrase);
 	return r;
 }
 
@@ -1198,6 +1242,7 @@ int main(int argc, const char **argv)
 		{ "allow-discards",    '\0', POPT_ARG_NONE, &opt_allow_discards,        0, N_("Allow discards (aka TRIM) requests for device."), NULL },
 		{ "header",            '\0', POPT_ARG_STRING, &opt_header_device,       0, N_("Device or file with separated LUKS header."), NULL },
 		{ "test-passphrase",   '\0', POPT_ARG_NONE, &opt_test_passphrase,       0, N_("Do not activate device, just check passphrase."), NULL },
+		{ "hidden",            '\0', POPT_ARG_NONE, &opt_hidden,               0, N_("Use hidden header (hiden TCRYPT device) ."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1363,6 +1408,11 @@ int main(int argc, const char **argv)
 	if (opt_offset && strcmp(aname, "create") && strcmp(aname, "loopaesOpen"))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --offset is supported only for create and loopaesOpen commands.\n"),
+		poptGetInvocationName(popt_context));
+
+	if (opt_hidden && strcmp(aname, "tcryptOpen"))
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --hidden is supported only for tcryptOpen command.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {

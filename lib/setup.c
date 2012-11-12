@@ -30,6 +30,7 @@
 #include "luks.h"
 #include "loopaes.h"
 #include "verity.h"
+#include "tcrypt.h"
 #include "internal.h"
 
 struct crypt_device {
@@ -68,6 +69,10 @@ struct crypt_device {
 	char *verity_root_hash;
 	unsigned int verity_root_hash_size;
 	char *verity_uuid;
+
+	/* used in CRYPT_TCRYPT */
+	struct crypt_params_tcrypt tcrypt_params;
+	struct tcrypt_phdr tcrypt_hdr;
 
 	/* callbacks definitions */
 	void (*log)(int level, const char *msg, void *usrptr);
@@ -241,6 +246,11 @@ static int isLOOPAES(const char *type)
 static int isVERITY(const char *type)
 {
 	return (type && !strcmp(CRYPT_VERITY, type));
+}
+
+static int isTCRYPT(const char *type)
+{
+	return (type && !strcmp(CRYPT_TCRYPT, type));
 }
 
 /* keyslot helpers */
@@ -612,6 +622,26 @@ static int _crypt_load_luks1(struct crypt_device *cd, int require_header, int re
 		return -ENOMEM;
 
 	memcpy(&cd->hdr, &hdr, sizeof(hdr));
+
+	return r;
+}
+
+static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcrypt *params)
+{
+	int r;
+
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
+	r = TCRYPT_read_phdr(cd, &cd->tcrypt_hdr, &cd->tcrypt_params,
+			     params->passphrase, params->passphrase_size,
+			     params->flags);
+	if (r < 0)
+		return r;
+
+	if (!cd->type && !(cd->type = strdup(CRYPT_TCRYPT)))
+		return -ENOMEM;
 
 	return r;
 }
@@ -1187,6 +1217,12 @@ int crypt_load(struct crypt_device *cd,
 			return -EINVAL;
 		}
 		r = _crypt_load_verity(cd, params);
+	} else if (isTCRYPT(requested_type)) {
+		if (cd->type && !isTCRYPT(cd->type)) {
+			log_dbg("Context is already initialised to type %s", cd->type);
+			return -EINVAL;
+		}
+		r = _crypt_load_tcrypt(cd, params);
 	} else
 		return -EINVAL;
 
@@ -2005,6 +2041,11 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 			if (cd->verity_root_hash)
 				memcpy(cd->verity_root_hash, volume_key, volume_key_size);
 		}
+	} else if (isTCRYPT(cd->type)) {
+		if (!name)
+			return -EINVAL;
+		r = TCRYPT_activate(cd, name, &cd->tcrypt_hdr,
+				    &cd->tcrypt_params, flags);
 	} else
 		log_err(cd, _("Device type is not properly initialised.\n"));
 
@@ -2359,6 +2400,12 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 	if (isLOOPAES(cd->type))
 		return cd->loopaes_hdr.offset;
 
+	if (isTCRYPT(cd->type)) { // FIXME: system vol.
+		if (!cd->tcrypt_hdr.d.mk_offset)
+			return 1;
+		return (cd->tcrypt_hdr.d.mk_offset / cd->tcrypt_hdr.d.sector_size);
+	}
+
 	return 0;
 }
 
@@ -2372,6 +2419,12 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd)
 
 	if (isLOOPAES(cd->type))
 		return cd->loopaes_hdr.skip;
+
+	if (isTCRYPT(cd->type)) {
+		if (!cd->tcrypt_hdr.d.mk_offset)
+			return 0;
+		return (cd->tcrypt_hdr.d.mk_offset / cd->tcrypt_hdr.d.sector_size);
+	}
 
 	return 0;
 }
