@@ -634,9 +634,15 @@ static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcryp
 	if (r < 0)
 		return r;
 
-	r = TCRYPT_read_phdr(cd, &cd->tcrypt_hdr, &cd->tcrypt_params,
-			     params->passphrase, params->passphrase_size,
-			     params->flags);
+	memcpy(&cd->tcrypt_params, params, sizeof(*params));
+
+	r = TCRYPT_read_phdr(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
+
+	cd->tcrypt_params.passphrase = NULL;
+	cd->tcrypt_params.passphrase_size = 0;
+	cd->tcrypt_params.keyfiles = NULL;
+	cd->tcrypt_params.keyfiles_count = 0;
+
 	if (r < 0)
 		return r;
 

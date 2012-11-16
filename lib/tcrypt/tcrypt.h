@@ -33,6 +33,8 @@
 #define TCRYPT_HDR_HIDDEN_OFFSET 65536
 
 #define TCRYPT_LRW_IKEY_LEN 16
+#define TCRYPT_KEY_POOL_LEN 64
+#define TCRYPT_KEYFILE_LEN  1048576
 
 #define TCRYPT_HDR_FLAG_SYSTEM    (1 << 0)
 #define TCRYPT_HDR_FLAG_NONSYSTEM (1 << 1)
@@ -64,10 +66,7 @@ struct tcrypt_phdr {
 
 int TCRYPT_read_phdr(struct crypt_device *cd,
 		     struct tcrypt_phdr *hdr,
-		     struct crypt_params_tcrypt *params,
-		     const char *passphrase,
-		     size_t passphrase_size,
-		     uint32_t flags);
+		     struct crypt_params_tcrypt *params);
 
 int TCRYPT_activate(struct crypt_device *cd,
 		     const char *name,

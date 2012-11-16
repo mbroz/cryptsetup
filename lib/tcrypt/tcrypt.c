@@ -248,24 +248,80 @@ static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 	return r;
 }
 
+static int pool_keyfile(struct crypt_device *cd,
+			unsigned char pool[TCRYPT_KEY_POOL_LEN],
+			const char *keyfile)
+{
+	unsigned char data[TCRYPT_KEYFILE_LEN];
+	int i, j, fd, data_size;
+	uint32_t crc;
+	unsigned char *crc_c = (unsigned char*)&crc;
+
+	log_dbg("TCRYPT: using keyfile %s.", keyfile);
+
+	fd = open(keyfile, O_RDONLY);
+	if (fd < 0) {
+		log_err(cd, _("Failed to open key file.\n"));
+		return -EIO;
+	}
+
+	/* FIXME: add while */
+	data_size = read(fd, data, TCRYPT_KEYFILE_LEN);
+	close(fd);
+	if (data_size < 0) {
+		log_err(cd, _("Error reading keyfile %s.\n"), keyfile);
+		return -EIO;
+	}
+
+	for (i = 0, j = 0, crc = ~0U; i < data_size; i++) {
+		crc = crypt_crc32(crc, &data[i], 1);
+		pool[j++] += crc_c[3];
+		pool[j++] += crc_c[2];
+		pool[j++] += crc_c[1];
+		pool[j++] += crc_c[0];
+		j %= TCRYPT_KEY_POOL_LEN;
+	}
+
+	crc = 0;
+	memset(data, 0, TCRYPT_KEYFILE_LEN);
+
+	return 0;
+}
+
 static int TCRYPT_init_hdr(struct crypt_device *cd,
 			   struct tcrypt_phdr *hdr,
-			   struct crypt_params_tcrypt *params,
-			   const char *passphrase,
-			   size_t passphrase_size)
+			   struct crypt_params_tcrypt *params)
 {
+	unsigned char pwd[TCRYPT_KEY_POOL_LEN] = {};
+	size_t passphrase_size;
 	char *key;
 	int r, i;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
 
+	if (params->keyfiles_count)
+		passphrase_size = TCRYPT_KEY_POOL_LEN;
+	else
+		passphrase_size = params->passphrase_size;
+
+	/* Calculate pool content from keyfiles */
+	for (i = 0; i < params->keyfiles_count; i++) {
+		r = pool_keyfile(cd, pwd, params->keyfiles[i]);
+		if (r < 0)
+			goto out;
+	}
+
+	/* If provided password, combine it with pool */
+	for (i = 0; i < params->passphrase_size; i++)
+		pwd[i] += params->passphrase[i];
+
 	for (i = 0; tcrypt_kdf[i].name; i++) {
 		/* Derive header key */
 		log_dbg("TCRYPT: trying KDF: %s-%s-%d.",
 			tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations);
 		r = crypt_pbkdf(tcrypt_kdf[i].name, tcrypt_kdf[i].hash,
-				passphrase, passphrase_size,
+				(char*)pwd, passphrase_size,
 				hdr->salt, TCRYPT_HDR_SALT_LEN,
 				key, TCRYPT_HDR_KEY_LEN,
 				tcrypt_kdf[i].iterations);
@@ -277,25 +333,26 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		if (r != -EPERM)
 			break;
 	}
-	free(key);
 
 	if (r < 0)
-		return r;
+		goto out;
 
 	r = hdr_from_disk(hdr, params, i, r);
 	if (r < 0)
-		return r;
+		goto out;
 
 	hdr_info(cd, hdr, params);
-	return 0;
+out:
+	memset(pwd, 0, TCRYPT_KEY_POOL_LEN);
+	if (key)
+		memset(key, 0, TCRYPT_HDR_KEY_LEN);
+	free(key);
+	return r;
 }
 
 int TCRYPT_read_phdr(struct crypt_device *cd,
 		     struct tcrypt_phdr *hdr,
-		     struct crypt_params_tcrypt *params,
-		     const char *passphrase,
-		     size_t passphrase_size,
-		     uint32_t flags)
+		     struct crypt_params_tcrypt *params)
 {
 	struct device *device = crypt_metadata_device(cd);
 	ssize_t hdr_size = sizeof(struct tcrypt_phdr);
@@ -312,19 +369,18 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if ((flags & CRYPT_TCRYPT_HIDDEN_HEADER) &&
+	if ((params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) &&
 	    lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET, SEEK_SET) < 0) {
 		log_err(cd, _("Cannot seek to hidden header for %s.\n"), device_path(device));
-		r = -EIO;
-		goto out;
+		close(devfd);
+		return -EIO;
 	}
 
-	if (read_blockwise(devfd, device_block_size(device), hdr, hdr_size) == hdr_size) {
-		params->flags = flags;
-		r = TCRYPT_init_hdr(cd, hdr, params, passphrase, passphrase_size);
-	} else
+	if (read_blockwise(devfd, device_block_size(device), hdr, hdr_size) == hdr_size)
+		r = TCRYPT_init_hdr(cd, hdr, params);
+	else
 		r = -EIO;
-out:
+
 	close(devfd);
 	return r;
 }

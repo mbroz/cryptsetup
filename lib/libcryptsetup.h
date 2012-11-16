@@ -395,6 +395,8 @@ struct crypt_params_verity {
 struct crypt_params_tcrypt {
 	const char *passphrase;
 	size_t passphrase_size;
+	const char **keyfiles;
+	unsigned int keyfiles_count;
 	const char *hash_name;     /**< hash function for PBKDF */
 	const char *cipher[3];     /**< cipher chain */
 	const char *mode;          /**< cipher block mode */

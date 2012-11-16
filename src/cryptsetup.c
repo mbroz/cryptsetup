@@ -24,7 +24,11 @@
 static const char *opt_cipher = NULL;
 static const char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
+
 static const char *opt_key_file = NULL;
+static int opt_keyfiles_count = 0;
+static const char *opt_keyfiles[MAX_KEYFILES];
+
 static const char *opt_master_key_file = NULL;
 static const char *opt_header_backup_file = NULL;
 static const char *opt_uuid = NULL;
@@ -258,7 +262,10 @@ out:
 static int action_tcryptOpen(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
-	struct crypt_params_tcrypt params = {};
+	struct crypt_params_tcrypt params = {
+		.keyfiles = opt_keyfiles,
+		.keyfiles_count = opt_keyfiles_count,
+	};
 	const char *activated_name;
 	uint32_t flags = 0;
 	int r;
@@ -271,11 +278,8 @@ static int action_tcryptOpen(int arg __attribute__((unused)))
 	/* TCRYPT header is encrypted, get passphrase now */
 	r = crypt_get_key(_("Enter passphrase: "),
 			  CONST_CAST(char**)&params.passphrase,
-			  &params.passphrase_size,
-			  opt_keyfile_offset, opt_keyfile_size,
-			  NULL, opt_timeout,
-			  _verify_passphrase(0),
-			  cd);
+			  &params.passphrase_size, 0, 0, NULL, opt_timeout,
+			  _verify_passphrase(0), cd);
 	if (r < 0)
 		goto out;
 
@@ -1216,7 +1220,7 @@ int main(int argc, const char **argv)
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE, &opt_verify_passphrase,     0, N_("Verifies the passphrase by asking for it twice"), NULL },
-		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
+		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            5, N_("Read the key from a file."), NULL },
 		{ "master-key-file",  '\0',  POPT_ARG_STRING, &opt_master_key_file,     0, N_("Read the volume (master) key from file."), NULL },
 		{ "dump-master-key",  '\0',  POPT_ARG_NONE, &opt_dump_master_key,       0, N_("Dump volume (master) key instead of keyslots info."), NULL },
 		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
@@ -1265,6 +1269,12 @@ int main(int argc, const char **argv)
 	while((r = poptGetNextOpt(popt_context)) > 0) {
 		unsigned long long ull_value;
 		char *endp;
+
+		if (r == 5) {
+			if (opt_keyfiles_count < MAX_KEYFILES)
+				opt_keyfiles[opt_keyfiles_count++] = poptGetOptArg(popt_context);
+			continue;
+		}
 
 		errno = 0;
 		ull_value = strtoull(popt_tmp, &endp, 0);
