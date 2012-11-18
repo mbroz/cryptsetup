@@ -2049,7 +2049,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		}
 	} else if (isTCRYPT(cd->type)) {
 		if (!name)
-			return -EINVAL;
+			return 0;
 		r = TCRYPT_activate(cd, name, &cd->tcrypt_hdr,
 				    &cd->tcrypt_params, flags);
 	} else

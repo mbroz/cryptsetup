@@ -31,40 +31,72 @@
 
 /* TCRYPT PBKDF variants */
 static struct {
+	unsigned int legacy:1;
 	char *name;
 	char *hash;
 	unsigned int iterations;
 } tcrypt_kdf[] = {
-	{ "pbkdf2", "ripemd160", 2000 },
-	{ "pbkdf2", "ripemd160", 1000 },
-	{ "pbkdf2", "sha512",    1000 },
-	{ "pbkdf2", "whirlpool", 1000 },
-	{ NULL,     NULL,           0 }
+	{ 0, "pbkdf2", "ripemd160", 2000 },
+	{ 0, "pbkdf2", "ripemd160", 1000 },
+	{ 0, "pbkdf2", "sha512",    1000 },
+	{ 0, "pbkdf2", "whirlpool", 1000 },
+	{ 1, "pbkdf2", "sha1",      2000 },
+	{ 0, NULL,     NULL,           0 }
+};
+
+struct tcrypt_alg {
+		const char *name;
+		unsigned int key_size;
+		unsigned int iv_size;
 };
 
 /* TCRYPT cipher variants */
 static struct {
-	const char *cipher[3];
+	unsigned int legacy:1;
 	const char *mode;
-	int key_size;
+	struct tcrypt_alg cipher[3];
 } tcrypt_cipher[] = {
-	{ { "aes",     NULL,      NULL      }, "xts-plain64", 64 },
-	{ { "twofish", NULL,      NULL      }, "xts-plain64", 64 },
-	{ { "serpent", NULL,      NULL      }, "xts-plain64", 64 },
-	{ { "aes",     "twofish", "serpent" }, "xts-plain64", 64 },
-	{ { "serpent", "twofish", "aes"     }, "xts-plain64", 64 },
-	{ { "twofish", "aes",     NULL      }, "xts-plain64", 64 },
-	{ { "aes",     "serpent", NULL      }, "xts-plain64", 64 },
-	{ { "serpent", "twofish", NULL      }, "xts-plain64", 64 },
-	{ { "aes",     NULL,      NULL      }, "lrw-benbi",   48 },
-	{ { "twofish", NULL,      NULL      }, "lrw-benbi",   48 },
-	{ { "serpent", NULL,      NULL      }, "lrw-benbi",   48 },
-	{ { "aes",     "twofish", "serpent" }, "lrw-benbi",   48 },
-	{ { "serpent", "twofish", "aes"     }, "lrw-benbi",   48 },
-	{ { "twofish", "aes",     NULL      }, "lrw-benbi",   48 },
-	{ { "aes",     "serpent", NULL      }, "lrw-benbi",   48 },
-	{ { "serpent", "twofish", NULL      }, "lrw-benbi",   48 },
-	{ { NULL,      NULL,      NULL      }, NULL,           0 }
+	{ 0, "xts-plain64",{{"aes",    64,16}}},
+	{ 0, "xts-plain64",{{"serpent",64,16}}},
+	{ 0, "xts-plain64",{{"twofish",64,16}}},
+	{ 0, "xts-plain64",{{"twofish",64,16},{"aes",    64,16}}},
+	{ 0, "xts-plain64",{{"serpent",64,16},{"twofish",64,16},{"aes",    64,16}}},
+	{ 0, "xts-plain64",{{"aes",    64,16},{"serpent",64,16}}},
+	{ 0, "xts-plain64",{{"aes",    64,16},{"twofish",64,16},{"serpent",64,16}}},
+	{ 0, "xts-plain64",{{"serpent",64,16},{"twofish",64,16}}},
+
+	{ 0, "lrw-benbi",  {{"aes",    48,16}}},
+	{ 0, "lrw-benbi",  {{"serpent",48,16}}},
+	{ 0, "lrw-benbi",  {{"twofish",48,16}}},
+	{ 0, "lrw-benbi",  {{"twofish",48,16},{"aes",    48,16}}},
+	{ 0, "lrw-benbi",  {{"serpent",48,16},{"twofish",48,16},{"aes",    48,16}}},
+	{ 0, "lrw-benbi",  {{"aes",    48,16},{"serpent",48,16}}},
+	{ 0, "lrw-benbi",  {{"aes",    48,16},{"twofish",48,16},{"serpent",48,16}}},
+	{ 0, "lrw-benbi",  {{"serpent",48,16},{"twofish",48,16}}},
+
+	{ 1, "cbc-tcrypt", {{"aes",    32,16}}},
+	{ 1, "cbc-tcrypt", {{"serpent",32,16}}},
+	{ 1, "cbc-tcrypt", {{"twofish",32,16}}},
+	{ 1, "cbci-tcrypt",{{"twofish",32,16},{"aes",    32,16}}},
+	{ 1, "cbci-tcrypt",{{"serpent",32,16},{"twofish",32,16},{"aes",    32,16}}},
+	{ 1, "cbci-tcrypt",{{"aes",    32,16},{"serpent",32,16}}},
+	{ 1, "cbci-tcrypt",{{"aes",    32,16},{"twofish",32,16},{"serpent",32,16}}},
+	{ 1, "cbci-tcrypt",{{"serpent",32,16},{"twofish",32,16}}},
+
+	{ 1, "cbc-tcrypt", {{"cast5",   16,8}}},
+	{ 1, "cbc-tcrypt", {{"des3_ede",24,8}}},
+
+	// kernel LRW block size is fixed to 16 bytes
+	// thus cannot be used with blowfish where block is 8 bytes
+	//{ 1,"lrw-benbi",{{"blowfish",64,8}}},
+	//{ 1,"lrw-benbi",{{"blowfish",64,8},{"aes",48,16}}},
+	//{ 1,"lrw-benbi",{{"serpent",48,16},{"blowfish",64,8},{"aes",48,16}}},
+
+	// FIXME: why this doesn't work (blowfish key wrong)?
+	//{ 1,"cbc-tcrypt",{{"blowfish",56,8}}},
+	//{ 1,"cbc-tcrypt",{{"blowfish",56,8},{"aes",32,16}}},
+	//{ 1,"cbc-tcrypt",{{"serpent",32,16},{"blowfish",56,8},{"aes",32,16}}},
+	{}
 };
 
 static void hdr_info(struct crypt_device *cd, struct tcrypt_phdr *hdr,
@@ -138,24 +170,23 @@ static int hdr_from_disk(struct tcrypt_phdr *hdr,
 
 	params->hash_name  = tcrypt_kdf[kdf_index].hash;
 
-	params->cipher[0]  = tcrypt_cipher[cipher_index].cipher[0];
-	params->cipher[1]  = tcrypt_cipher[cipher_index].cipher[1];
-	params->cipher[2]  = tcrypt_cipher[cipher_index].cipher[2];
+	params->cipher[0]  = tcrypt_cipher[cipher_index].cipher[0].name;
+	params->cipher[1]  = tcrypt_cipher[cipher_index].cipher[1].name;
+	params->cipher[2]  = tcrypt_cipher[cipher_index].cipher[2].name;
 	params->mode     = tcrypt_cipher[cipher_index].mode;
-	params->key_size = tcrypt_cipher[cipher_index].key_size;
+	params->key_size = tcrypt_cipher[cipher_index].cipher[0].key_size; //fixme
 
 	return 0;
 }
 
 static int decrypt_hdr_one(const char *name, const char *mode,
 			   const char *key, size_t key_size,
-			   struct tcrypt_phdr *hdr)
+			   size_t iv_size, struct tcrypt_phdr *hdr)
 {
 	char iv[TCRYPT_HDR_IV_LEN] = {};
 	char mode_name[MAX_CIPHER_LEN];
 	struct crypt_cipher *cipher;
-	void *buf = &hdr->e;
-	char *c;
+	char *c, *buf = (char*)&hdr->e;
 	int r;
 
 	/* Remove IV if present */
@@ -165,14 +196,15 @@ static int decrypt_hdr_one(const char *name, const char *mode,
 		*c = '\0';
 
 	if (!strncmp(mode, "lrw", 3))
-		iv[15] = 1;
+		iv[iv_size - 1] = 1;
+	else if (!strncmp(mode, "cbc", 3))
+		memcpy(iv, &key[key_size], iv_size);
 
 	r = crypt_cipher_init(&cipher, name, mode_name, key, key_size);
 	if (r < 0)
 		return r;
 
-	r = crypt_cipher_decrypt(cipher, buf, buf, TCRYPT_HDR_LEN,
-				 iv, TCRYPT_HDR_IV_LEN);
+	r = crypt_cipher_decrypt(cipher, buf, buf, TCRYPT_HDR_LEN, iv, iv_size);
 	crypt_cipher_destroy(cipher);
 
 	return r;
@@ -191,47 +223,113 @@ static void copy_key(char *out_key, const char *key, int key_num,
 		ks -= TCRYPT_LRW_IKEY_LEN;
 		memcpy(out_key, &key[ks * ki], ks);
 		memcpy(&out_key[ks * ki], key, TCRYPT_LRW_IKEY_LEN);
+	} else if (!strncmp(mode, "cbc", 3)) {
+		ki++;
+		memcpy(out_key, &key[ki * 32], ks);
+		memcpy(&out_key[ks], key, 32);
 	}
 }
 
-static int top_cipher(const char *cipher[3])
+/*
+ * For chanined ciphers and CBC mode we need "inner" decryption.
+ * Backend doesn't provide this, so implement it here directly using ECB.
+ */
+static int decrypt_hdr_cbci(struct tcrypt_alg ciphers[3],
+			     const char *key, struct tcrypt_phdr *hdr)
 {
-	if (cipher[2])
+	struct crypt_cipher *cipher[3] = {};
+	int bs = ciphers[0].iv_size;
+	char *buf = (char*)&hdr->e, iv[bs], iv_old[bs];
+	int i, j, r;
+
+	memcpy(iv, key, bs);
+
+	/* Initialize all ciphers in chain in ECB mode */
+	for (j = 0; j < 3; j++) {
+		if (!ciphers[j].name)
+			continue;
+		r = crypt_cipher_init(&cipher[j], ciphers[j].name, "ecb",
+				      &key[(j+1)*32], ciphers[j].key_size);
+		if (r < 0)
+			goto out;
+	}
+
+	/* Implements CBC with chained ciphers in inner loop */
+	for (i = 0; i < TCRYPT_HDR_LEN; i += bs) {
+		memcpy(iv_old, &buf[i], bs);
+		for (j = 2; j >= 0; j--) {
+			if (!cipher[j])
+				continue;
+			r = crypt_cipher_decrypt(cipher[j], &buf[i], &buf[i],
+						  bs, NULL, 0);
+			if (r < 0)
+				goto out;
+		}
+		for (j = 0; j < bs; j++)
+			buf[i + j] ^= iv[j];
+		memcpy(iv, iv_old, bs);
+	}
+out:
+	for (j = 0; j < 3; j++)
+		if (cipher[j])
+			crypt_cipher_destroy(cipher[j]);
+
+	return r;
+}
+
+static int top_cipher(struct tcrypt_alg cipher[3])
+{
+	if (cipher[2].name)
 		return 2;
 
-	if (cipher[1])
+	if (cipher[1].name)
 		return 1;
 
 	return 0;
 }
 
 static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
-			const char *key)
+			const char *key, int legacy_modes)
 {
 	char one_key[TCRYPT_HDR_KEY_LEN];
 	struct tcrypt_phdr hdr2;
 	int i, j, r;
 
-	for (i = 0; tcrypt_cipher[i].cipher[0]; i++) {
+	for (i = 0; tcrypt_cipher[i].cipher[0].name; i++) {
+		if (!legacy_modes && tcrypt_cipher[i].legacy)
+			continue;
 		log_dbg("TCRYPT:  trying cipher: %s%s%s%s%s-%s.",
-			tcrypt_cipher[i].cipher[0],
-			tcrypt_cipher[i].cipher[1] ? "-" : "", tcrypt_cipher[i].cipher[1] ?: "",
-			tcrypt_cipher[i].cipher[2] ? "-" : "", tcrypt_cipher[i].cipher[2] ?: "",
+			tcrypt_cipher[i].cipher[0].name,
+			tcrypt_cipher[i].cipher[1].name ? "-" : "", tcrypt_cipher[i].cipher[1].name ?: "",
+			tcrypt_cipher[i].cipher[2].name ? "-" : "", tcrypt_cipher[i].cipher[2].name ?: "",
 			tcrypt_cipher[i].mode);
 
 		memcpy(&hdr2.e, &hdr->e, TCRYPT_HDR_LEN);
 
-		for (j = 2; j >= 0 ; j--) {
-			if (!tcrypt_cipher[i].cipher[j])
+		/* Remove CBC whitening */
+		if (!strncmp(tcrypt_cipher[i].mode, "cbc", 3)) {
+			char *buf = (char*)&hdr2.e;
+			for (j = 0; j < TCRYPT_HDR_LEN; j++)
+				buf[j] ^= key[8 + j % 8];
+		}
+
+		/* For chained (inner) CBC we do not have API support */
+		if (!strncmp(tcrypt_cipher[i].mode, "cbci", 4))
+			r = decrypt_hdr_cbci(tcrypt_cipher[i].cipher, key, &hdr2);
+		else for (j = 2; j >= 0 ; j--) {
+			if (!tcrypt_cipher[i].cipher[j].name)
 				continue;
 			copy_key(one_key, key, top_cipher(tcrypt_cipher[i].cipher),
-				 tcrypt_cipher[i].key_size,
+				 tcrypt_cipher[i].cipher[j].key_size,
 				 j, tcrypt_cipher[i].mode);
-			r = decrypt_hdr_one(tcrypt_cipher[i].cipher[j],
+			r = decrypt_hdr_one(tcrypt_cipher[i].cipher[j].name,
 					    tcrypt_cipher[i].mode, one_key,
-					    tcrypt_cipher[i].key_size, &hdr2);
-			if (r < 0)
+					    tcrypt_cipher[i].cipher[j].key_size,
+					    tcrypt_cipher[i].cipher[j].iv_size, &hdr2);
+			if (r < 0) {
+				log_dbg("Error %s.", tcrypt_cipher[i].cipher[j].name);
 				break;
+			}
 		}
 
 		if (!strncmp(hdr2.d.magic, TCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
@@ -295,7 +393,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	unsigned char pwd[TCRYPT_KEY_POOL_LEN] = {};
 	size_t passphrase_size;
 	char *key;
-	int r, i;
+	int r, i, legacy_modes;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
@@ -316,7 +414,10 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	for (i = 0; i < params->passphrase_size; i++)
 		pwd[i] += params->passphrase[i];
 
+	legacy_modes = params->flags & CRYPT_TCRYPT_LEGACY_MODES ? 1 : 0;
 	for (i = 0; tcrypt_kdf[i].name; i++) {
+		if (!legacy_modes && tcrypt_kdf[i].legacy)
+			continue;
 		/* Derive header key */
 		log_dbg("TCRYPT: trying KDF: %s-%s-%d.",
 			tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations);
@@ -329,7 +430,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			break;
 
 		/* Decrypt header */
-		r = decrypt_hdr(cd, hdr, key);
+		r = decrypt_hdr(cd, hdr, key, legacy_modes);
 		if (r != -EPERM)
 			break;
 	}
@@ -394,6 +495,11 @@ int TCRYPT_activate(struct crypt_device *cd,
 	char cipher[MAX_CIPHER_LEN], dm_name[PATH_MAX], dm_dev_name[PATH_MAX];
 	struct device *device = NULL;
 	int i, r;
+	struct tcrypt_alg tcipher[3] = {
+		{ params->cipher[0], params->key_size, 0 },
+		{ params->cipher[1], params->key_size, 0 },
+		{ params->cipher[2], params->key_size, 0 }
+	};
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.size   = 0,
@@ -404,6 +510,11 @@ int TCRYPT_activate(struct crypt_device *cd,
 			.iv_offset = crypt_get_iv_offset(cd),
 		}
 	};
+
+	if (strstr(params->mode, "-tcrypt")) {
+		log_err(cd, _("Kernel doesn't support activation for this TCRYPT legacy mode.\n"));
+		return -ENOTSUP;
+	}
 
 	r = device_block_adjust(cd, dmd.data_device, DEV_EXCL,
 				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
@@ -430,10 +541,10 @@ int TCRYPT_activate(struct crypt_device *cd,
 		snprintf(cipher, sizeof(cipher), "%s-%s",
 			 params->cipher[i], params->mode);
 		copy_key(dmd.u.crypt.vk->key, hdr->d.keys,
-			 top_cipher(params->cipher),
+			 top_cipher(tcipher),
 			 params->key_size, i, params->mode);
 
-		if (top_cipher(params->cipher) != i) {
+		if (top_cipher(tcipher) != i) {
 			snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d",
 				 dm_get_dir(), name, i + 1);
 			r = device_alloc(&device, dm_dev_name);

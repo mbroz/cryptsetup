@@ -265,6 +265,7 @@ static int action_tcryptOpen(int arg __attribute__((unused)))
 	struct crypt_params_tcrypt params = {
 		.keyfiles = opt_keyfiles,
 		.keyfiles_count = opt_keyfiles_count,
+		.flags = CRYPT_TCRYPT_LEGACY_MODES,
 	};
 	const char *activated_name;
 	uint32_t flags = 0;
@@ -293,7 +294,8 @@ static int action_tcryptOpen(int arg __attribute__((unused)))
 	if (opt_readonly)
 		flags |= CRYPT_ACTIVATE_READONLY;
 
-	r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, flags);
+	if (activated_name)
+		r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, flags);
 out:
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
@@ -1362,9 +1364,10 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (opt_test_passphrase &&
-	   strcmp(aname, "luksOpen"))
+	   strcmp(aname, "luksOpen") &&
+	   strcmp(aname, "tcryptOpen"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --test-passphrase is allowed only for luksOpen.\n"),
+		      _("Option --test-passphrase is allowed only for luksOpen and tcryptOpen.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size % 8)

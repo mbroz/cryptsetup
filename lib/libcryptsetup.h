@@ -391,6 +391,7 @@ struct crypt_params_verity {
  */
 /** Try to load hidden header (describing hidden device) */
 #define CRYPT_TCRYPT_HIDDEN_HEADER   (1 << 0)
+#define CRYPT_TCRYPT_LEGACY_MODES    (1 << 1)
 
 struct crypt_params_tcrypt {
 	const char *passphrase;
