@@ -44,7 +44,7 @@ static uint64_t opt_offset = 0;
 static uint64_t opt_skip = 0;
 static int opt_skip_valid = 0;
 static int opt_readonly = 0;
-static int opt_iteration_time = 1000;
+static int opt_iteration_time = DEFAULT_LUKS1_ITER_TIME;
 static int opt_version_mode = 0;
 static int opt_timeout = 0;
 static int opt_tries = 3;
@@ -1165,10 +1165,12 @@ static void help(poptContext popt_context,
 			 "<key file> optional key file for the new key for luksAddKey action\n"),
 			crypt_get_dir());
 
-		log_std(_("\nDefault compiled-in keyfile parameters:\n"
+		log_std(_("\nDefault compiled-in key and passphrase parameters:\n"
 			 "\tMaximum keyfile size: %dkB, "
-			 "Maximum interactive passphrase length %d (characters)\n"),
-			 DEFAULT_KEYFILE_SIZE_MAXKB, DEFAULT_PASSPHRASE_SIZE_MAX);
+			 "Maximum interactive passphrase length %d (characters)\n"
+			 "Default PBKDF2 iteration time for LUKS: %d (ms)\n"),
+			 DEFAULT_KEYFILE_SIZE_MAXKB, DEFAULT_PASSPHRASE_SIZE_MAX,
+			 DEFAULT_LUKS1_ITER_TIME);
 
 		log_std(_("\nDefault compiled-in device cipher parameters:\n"
 			 "\tloop-AES: %s, Key %d bits\n"
