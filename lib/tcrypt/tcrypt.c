@@ -111,17 +111,14 @@ static void hdr_info(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 	log_dbg("Flags: %d", (int)hdr->d.flags);
 	log_dbg("MK: offset %d, size %d", (int)hdr->d.mk_offset, (int)hdr->d.mk_size);
 	log_dbg("KDF: PBKDF2, hash %s", params->hash_name);
-	log_dbg("Cipher: %s%s%s%s%s-%s",
-		params->cipher[0],
-		params->cipher[1] ? "-" : "", params->cipher[1] ?: "",
-		params->cipher[2] ? "-" : "", params->cipher[2] ?: "",
-		params->mode);
+	log_dbg("Cipher: %s-%s", params->cipher, params->mode);
 }
 
 static int hdr_from_disk(struct tcrypt_phdr *hdr,
 			 struct crypt_params_tcrypt *params,
 			 int kdf_index, int cipher_index)
 {
+	char cipher_name[MAX_CIPHER_LEN * 4];
 	uint32_t crc32;
 	size_t size;
 
@@ -170,11 +167,26 @@ static int hdr_from_disk(struct tcrypt_phdr *hdr,
 
 	params->hash_name  = tcrypt_kdf[kdf_index].hash;
 
-	params->cipher[0]  = tcrypt_cipher[cipher_index].cipher[0].name;
-	params->cipher[1]  = tcrypt_cipher[cipher_index].cipher[1].name;
-	params->cipher[2]  = tcrypt_cipher[cipher_index].cipher[2].name;
-	params->mode     = tcrypt_cipher[cipher_index].mode;
-	params->key_size = tcrypt_cipher[cipher_index].cipher[0].key_size; //fixme
+	params->key_size = tcrypt_cipher[cipher_index].cipher[0].key_size;
+	strncpy(cipher_name, tcrypt_cipher[cipher_index].cipher[0].name,
+		sizeof(cipher_name));
+
+	if (tcrypt_cipher[cipher_index].cipher[1].name) {
+		strcat(cipher_name, "-");
+		strncat(cipher_name, tcrypt_cipher[cipher_index].cipher[1].name,
+			MAX_CIPHER_LEN);
+		params->key_size += tcrypt_cipher[cipher_index].cipher[1].key_size;
+	}
+
+	if (tcrypt_cipher[cipher_index].cipher[2].name) {
+		strcat(cipher_name, "-");
+		strncat(cipher_name, tcrypt_cipher[cipher_index].cipher[2].name,
+			MAX_CIPHER_LEN);
+		params->key_size += tcrypt_cipher[cipher_index].cipher[2].key_size;
+	}
+
+	params->cipher = strdup(cipher_name);
+	params->mode   = strdup(tcrypt_cipher[cipher_index].mode);
 
 	return 0;
 }
@@ -494,12 +506,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 {
 	char cipher[MAX_CIPHER_LEN], dm_name[PATH_MAX], dm_dev_name[PATH_MAX];
 	struct device *device = NULL;
-	int i, r;
-	struct tcrypt_alg tcipher[3] = {
-		{ params->cipher[0], params->key_size, 0 },
-		{ params->cipher[1], params->key_size, 0 },
-		{ params->cipher[2], params->key_size, 0 }
-	};
+	int i, r, num_ciphers;
+	char cname[3][MAX_CIPHER_LEN];
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.size   = 0,
@@ -521,13 +529,23 @@ int TCRYPT_activate(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	dmd.u.crypt.vk = crypt_alloc_volume_key(params->key_size, NULL);
+	/* Parse cipher chain from c1[-c2[-c3]] */
+	cname[0][0] = cname[1][0] = cname[2][0] = '\0';
+	num_ciphers = sscanf(params->cipher, "%" MAX_CIPHER_LEN_STR "[^-]-%"
+						  MAX_CIPHER_LEN_STR "[^-]-%"
+						  MAX_CIPHER_LEN_STR "s",
+		      cname[0], cname[1], cname[2]);
+	if (num_ciphers < 1)
+		return -EINVAL;
+
+	/* Frome here, key size for every cipher must be the same */
+	dmd.u.crypt.vk = crypt_alloc_volume_key(params->key_size / num_ciphers, NULL);
 	if (!dmd.u.crypt.vk)
 		return -ENOMEM;
 
 	for (i = 2; i >= 0; i--) {
 
-		if (!params->cipher[i])
+		if (!cname[i][0])
 			continue;
 
 		if (i == 0) {
@@ -539,12 +557,11 @@ int TCRYPT_activate(struct crypt_device *cd,
 		}
 
 		snprintf(cipher, sizeof(cipher), "%s-%s",
-			 params->cipher[i], params->mode);
-		copy_key(dmd.u.crypt.vk->key, hdr->d.keys,
-			 top_cipher(tcipher),
-			 params->key_size, i, params->mode);
+			 cname[i], params->mode);
+		copy_key(dmd.u.crypt.vk->key, hdr->d.keys, num_ciphers - 1,
+			 params->key_size / num_ciphers, i, params->mode);
 
-		if (top_cipher(tcipher) != i) {
+		if ((num_ciphers -1) != i) {
 			snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d",
 				 dm_get_dir(), name, i + 1);
 			r = device_alloc(&device, dm_dev_name);
@@ -621,4 +638,63 @@ int TCRYPT_deactivate(struct crypt_device *cd, const char *name)
 out:
 	free(CONST_CAST(void*)dmd.uuid);
 	return (r == -ENODEV) ? 0 : r;
+}
+
+static int status_one(struct crypt_device *cd, const char *name,
+		      const char *base_uuid, int index,
+		      size_t *key_size, char *cipher)
+{
+	struct crypt_dm_active_device dmd = {};
+	char dm_name[PATH_MAX], *c;
+	int r;
+
+	if (snprintf(dm_name, sizeof(dm_name), "%s_%d", name, index) < 0)
+		return -ENOMEM;
+
+	r = dm_status_device(cd, dm_name);
+	if (r < 0)
+		return r;
+
+	r = dm_query_device(cd, dm_name, DM_ACTIVE_UUID |
+					  DM_ACTIVE_CRYPT_CIPHER |
+					  DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
+	if (r > 0)
+		r = 0;
+	if (!r && !strncmp(dmd.uuid, base_uuid, strlen(base_uuid))) {
+		if ((c = strchr(dmd.u.crypt.cipher, '-')))
+			*c = '\0';
+		strcat(cipher, "-");
+		strncat(cipher, dmd.u.crypt.cipher, MAX_CIPHER_LEN);
+		*key_size += dmd.u.crypt.vk->keylength;
+	} else
+		r = -ENODEV;
+
+	free(CONST_CAST(void*)dmd.uuid);
+	free(CONST_CAST(void*)dmd.u.crypt.cipher);
+	crypt_free_volume_key(dmd.u.crypt.vk);
+	return r;
+}
+
+int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
+			const struct crypt_dm_active_device *dmd,
+			struct crypt_params_tcrypt *tcrypt_params,
+			struct tcrypt_phdr *tcrypt_hdr)
+{
+	char cipher[MAX_CIPHER_LEN * 4], *mode;
+
+	memset(tcrypt_params, 0, sizeof(*tcrypt_params));
+	memset(tcrypt_hdr, 0, sizeof(*tcrypt_hdr));
+	strncpy(cipher, dmd->u.crypt.cipher, MAX_CIPHER_LEN);
+
+	if ((mode = strchr(cipher, '-'))) {
+		*mode = '\0';
+		tcrypt_params->mode = strdup(++mode);
+	}
+	tcrypt_params->key_size = dmd->u.crypt.vk->keylength;
+
+	if (!status_one(cd, name, dmd->uuid, 1, &tcrypt_params->key_size, cipher))
+		status_one(cd, name, dmd->uuid, 2, &tcrypt_params->key_size, cipher);
+
+	tcrypt_params->cipher = strdup(cipher);
+	return 0;
 }

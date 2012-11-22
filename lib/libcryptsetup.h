@@ -399,9 +399,9 @@ struct crypt_params_tcrypt {
 	const char **keyfiles;
 	unsigned int keyfiles_count;
 	const char *hash_name;     /**< hash function for PBKDF */
-	const char *cipher[3];     /**< cipher chain */
+	const char *cipher;        /**< cipher chain c1[-c2[-c3]] */
 	const char *mode;          /**< cipher block mode */
-	size_t key_size;           /**< key size in bytes */
+	size_t key_size;           /**< key size in bytes (the whole chain) */
 	uint32_t flags;            /**< CRYPT_TCRYPT* flags */
 };
 

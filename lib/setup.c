@@ -751,7 +751,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			}
 		}
 	} else if (isTCRYPT(cd->type)) {
-		//FIXME
+		r = TCRYPT_init_by_name(cd, name, &dmd, &cd->tcrypt_params,
+					&cd->tcrypt_hdr);
 	}
 out:
 	crypt_free_volume_key(dmd.u.crypt.vk);
@@ -2344,6 +2345,9 @@ const char *crypt_get_cipher(struct crypt_device *cd)
 	if (isLOOPAES(cd->type))
 		return cd->loopaes_cipher;
 
+	if (isTCRYPT(cd->type))
+		return cd->tcrypt_params.cipher;
+
 	return NULL;
 }
 
@@ -2357,6 +2361,9 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 
 	if (isLOOPAES(cd->type))
 		return cd->loopaes_cipher_mode;
+
+	if (isTCRYPT(cd->type))
+		return cd->tcrypt_params.mode;
 
 	return NULL;
 }
@@ -2401,6 +2408,9 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 
 	if (isVERITY(cd->type))
 		return cd->verity_root_hash_size;
+
+	if (isTCRYPT(cd->type))
+		return cd->tcrypt_params.key_size;
 
 	return 0;
 }
