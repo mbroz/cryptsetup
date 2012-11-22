@@ -74,4 +74,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		     struct crypt_params_tcrypt *params,
 		     uint32_t flags);
 
+int TCRYPT_deactivate(struct crypt_device *cd,
+		      const char *name);
+
 #endif

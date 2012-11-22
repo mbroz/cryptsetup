@@ -750,6 +750,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 				goto out;
 			}
 		}
+	} else if (isTCRYPT(cd->type)) {
+		//FIXME
 	}
 out:
 	crypt_free_volume_key(dmd.u.crypt.vk);
@@ -855,6 +857,8 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			(*cd)->type = strdup(CRYPT_LUKS1);
 		else if (!strncmp(CRYPT_VERITY, dmd.uuid, sizeof(CRYPT_VERITY)-1))
 			(*cd)->type = strdup(CRYPT_VERITY);
+		else if (!strncmp(CRYPT_TCRYPT, dmd.uuid, sizeof(CRYPT_TCRYPT)-1))
+			(*cd)->type = strdup(CRYPT_TCRYPT);
 		else
 			log_dbg("Unknown UUID set, some parameters are not set.");
 	} else
@@ -1301,7 +1305,10 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = 0;
 	} else {
 		dmd.size = new_size;
-		r = dm_create_device(cd, name, cd->type, &dmd, 1);
+		if (isTCRYPT(cd->type))
+			r = -ENOTSUP;
+		else
+			r = dm_create_device(cd, name, cd->type, &dmd, 1);
 	}
 out:
 	if (dmd.target == DM_CRYPT) {
@@ -2075,7 +2082,10 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
 		case CRYPT_BUSY:
-			r = dm_remove_device(cd, name, 0, 0);
+			if (isTCRYPT(cd->type))
+				r = TCRYPT_deactivate(cd, name);
+			else
+				r = dm_remove_device(cd, name, 0, 0);
 			break;
 		case CRYPT_INACTIVE:
 			log_err(cd, _("Device %s is not active.\n"), name);
