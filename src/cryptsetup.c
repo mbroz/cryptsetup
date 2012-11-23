@@ -82,6 +82,7 @@ static int action_luksRestore(int arg);
 static int action_loopaesOpen(int arg);
 static int action_luksRepair(int arg);
 static int action_tcryptOpen(int arg);
+static int action_tcryptDump(int arg);
 
 static struct action_type {
 	const char *type;
@@ -115,6 +116,7 @@ static struct action_type {
 	{ "loopaesOpen",action_loopaesOpen,	0, 2, 1, N_("<device> <name> "), N_("open loop-AES device as mapping <name>") },
 	{ "loopaesClose",action_remove,		0, 1, 1, N_("<name>"), N_("remove loop-AES mapping") },
 	{ "tcryptOpen", action_tcryptOpen,	0, 2, 1, N_("<device> <name> "), N_("open TCRYPT device as mapping <name>") },
+	{ "tcryptDump", action_tcryptDump,	0, 1, 1, N_("<device>"), N_("dump TCRYPT device information") },
 	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
 
@@ -296,6 +298,41 @@ static int action_tcryptOpen(int arg __attribute__((unused)))
 
 	if (activated_name)
 		r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, flags);
+out:
+	crypt_free(cd);
+	crypt_safe_free(CONST_CAST(char*)params.passphrase);
+	return r;
+}
+
+static int action_tcryptDump(int arg __attribute__((unused)))
+{
+	struct crypt_device *cd = NULL;
+	struct crypt_params_tcrypt params = {
+		.keyfiles = opt_keyfiles,
+		.keyfiles_count = opt_keyfiles_count,
+		.flags = CRYPT_TCRYPT_LEGACY_MODES,
+	};
+	int r;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	/* TCRYPT header is encrypted, get passphrase now */
+	r = crypt_get_key(_("Enter passphrase: "),
+			  CONST_CAST(char**)&params.passphrase,
+			  &params.passphrase_size, 0, 0, NULL, opt_timeout,
+			  _verify_passphrase(0), cd);
+	if (r < 0)
+		goto out;
+
+	if (opt_hidden)
+		params.flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
+
+	r = crypt_load(cd, CRYPT_TCRYPT, &params);
+	if (r < 0)
+		goto out;
+
+	r = crypt_dump(cd);
 out:
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
@@ -1425,9 +1462,9 @@ int main(int argc, const char **argv)
 		_("Option --offset is supported only for create and loopaesOpen commands.\n"),
 		poptGetInvocationName(popt_context));
 
-	if (opt_hidden && strcmp(aname, "tcryptOpen"))
+	if (opt_hidden && strcmp(aname, "tcryptOpen") && strcmp(aname, "tcryptDump"))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --hidden is supported only for tcryptOpen command.\n"),
+		_("Option --hidden is supported only for TCRYPT commands.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {

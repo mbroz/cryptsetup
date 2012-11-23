@@ -2334,6 +2334,8 @@ int crypt_dump(struct crypt_device *cd)
 		return _luks_dump(cd);
 	else if (isVERITY(cd->type))
 		return _verity_dump(cd);
+	else if (isTCRYPT(cd->type))
+		return TCRYPT_dump(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
 
 	log_err(cd, _("Dump operation is not supported for this device type.\n"));
 	return -EINVAL;

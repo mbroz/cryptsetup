@@ -766,3 +766,23 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 
 	return 0;
 }
+
+int TCRYPT_dump(struct crypt_device *cd,
+		struct tcrypt_phdr *hdr,
+		struct crypt_params_tcrypt *params)
+{
+	log_std(cd, "TCRYPT header information for %s\n",
+		device_path(crypt_metadata_device(cd)));
+	if (hdr->d.version) {
+		log_std(cd, "Version:       \t%d\n", hdr->d.version);
+		log_std(cd, "Driver req.:\t%d\n", hdr->d.version_tc);
+
+		log_std(cd, "Sector size:\t%" PRIu32 "\n", hdr->d.sector_size);
+		log_std(cd, "MK offset:\t%" PRIu64 "\n", hdr->d.mk_offset);
+		log_std(cd, "PBKDF2 hash:\t%s\n", params->hash_name);
+	}
+	log_std(cd, "Cipher chain:\t%s\n", params->cipher);
+	log_std(cd, "Cipher mode:\t%s\n", params->mode);
+	log_std(cd, "MK bits:       \t%d\n", params->key_size * 8);
+	return 0;
+}

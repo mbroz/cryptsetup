@@ -95,4 +95,8 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 			  struct crypt_params_tcrypt *params,
 			  struct volume_key **vk);
 
+int TCRYPT_dump(struct crypt_device *cd,
+		struct tcrypt_phdr *hdr,
+		struct crypt_params_tcrypt *params);
+
 #endif
