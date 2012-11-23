@@ -755,8 +755,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			}
 		}
 	} else if (isTCRYPT(cd->type)) {
-		r = TCRYPT_init_by_name(cd, name, &dmd, &cd->tcrypt_params,
-					&cd->tcrypt_hdr);
+		r = TCRYPT_init_by_name(cd, name, &dmd, &cd->device,
+					&cd->tcrypt_params, &cd->tcrypt_hdr);
 	}
 out:
 	crypt_free_volume_key(dmd.u.crypt.vk);
@@ -2507,8 +2507,7 @@ int crypt_get_verity_info(struct crypt_device *cd,
 	return 0;
 }
 
-int crypt_get_active_device(struct crypt_device *cd __attribute__((unused)),
-			    const char *name,
+int crypt_get_active_device(struct crypt_device *cd, const char *name,
 			    struct crypt_active_device *cad)
 {
 	struct crypt_dm_active_device dmd;
@@ -2521,8 +2520,13 @@ int crypt_get_active_device(struct crypt_device *cd __attribute__((unused)),
 	if (dmd.target != DM_CRYPT && dmd.target != DM_VERITY)
 		return -ENOTSUP;
 
-	cad->offset	= dmd.u.crypt.offset;
-	cad->iv_offset	= dmd.u.crypt.iv_offset;
+	if (cd && isTCRYPT(cd->type)) {
+		cad->offset	= TCRYPT_get_data_offset(&cd->tcrypt_hdr);
+		cad->iv_offset	= TCRYPT_get_iv_offset(&cd->tcrypt_hdr);
+	} else {
+		cad->offset	= dmd.u.crypt.offset;
+		cad->iv_offset	= dmd.u.crypt.iv_offset;
+	}
 	cad->size	= dmd.size;
 	cad->flags	= dmd.flags;
 

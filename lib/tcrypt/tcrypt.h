@@ -64,7 +64,8 @@ struct tcrypt_phdr {
 	};
 } __attribute__((__packed__));
 
-struct crypt_dm_active_device dmd;
+struct crypt_dm_active_device;
+struct device;
 
 int TCRYPT_read_phdr(struct crypt_device *cd,
 		     struct tcrypt_phdr *hdr,
@@ -72,6 +73,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 
 int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 			const struct crypt_dm_active_device *dmd,
+			struct device **device,
 			struct crypt_params_tcrypt *tcrypt_params,
 			struct tcrypt_phdr *tcrypt_hdr);
 

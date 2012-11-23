@@ -653,7 +653,8 @@ out:
 
 static int status_one(struct crypt_device *cd, const char *name,
 		      const char *base_uuid, int index,
-		      size_t *key_size, char *cipher)
+		      size_t *key_size, char *cipher, uint64_t *data_offset,
+		      struct device **device)
 {
 	struct crypt_dm_active_device dmd = {};
 	char dm_name[PATH_MAX], *c;
@@ -666,7 +667,8 @@ static int status_one(struct crypt_device *cd, const char *name,
 	if (r < 0)
 		return r;
 
-	r = dm_query_device(cd, dm_name, DM_ACTIVE_UUID |
+	r = dm_query_device(cd, dm_name, DM_ACTIVE_DEVICE |
+					  DM_ACTIVE_UUID |
 					  DM_ACTIVE_CRYPT_CIPHER |
 					  DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
 	if (r > 0)
@@ -677,8 +679,13 @@ static int status_one(struct crypt_device *cd, const char *name,
 		strcat(cipher, "-");
 		strncat(cipher, dmd.u.crypt.cipher, MAX_CIPHER_LEN);
 		*key_size += dmd.u.crypt.vk->keylength;
-	} else
+		*data_offset = dmd.u.crypt.offset * SECTOR_SIZE;
+		device_free(*device);
+		*device = dmd.data_device;
+	} else {
+		device_free(dmd.data_device);
 		r = -ENODEV;
+	}
 
 	free(CONST_CAST(void*)dmd.uuid);
 	free(CONST_CAST(void*)dmd.u.crypt.cipher);
@@ -688,6 +695,7 @@ static int status_one(struct crypt_device *cd, const char *name,
 
 int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 			const struct crypt_dm_active_device *dmd,
+			struct device **device,
 			struct crypt_params_tcrypt *tcrypt_params,
 			struct tcrypt_phdr *tcrypt_hdr)
 {
@@ -695,6 +703,9 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 
 	memset(tcrypt_params, 0, sizeof(*tcrypt_params));
 	memset(tcrypt_hdr, 0, sizeof(*tcrypt_hdr));
+	tcrypt_hdr->d.sector_size = SECTOR_SIZE;
+	tcrypt_hdr->d.mk_offset = dmd->u.crypt.offset * SECTOR_SIZE;
+
 	strncpy(cipher, dmd->u.crypt.cipher, MAX_CIPHER_LEN);
 
 	if ((mode = strchr(cipher, '-'))) {
@@ -703,8 +714,10 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 	}
 	tcrypt_params->key_size = dmd->u.crypt.vk->keylength;
 
-	if (!status_one(cd, name, dmd->uuid, 1, &tcrypt_params->key_size, cipher))
-		status_one(cd, name, dmd->uuid, 2, &tcrypt_params->key_size, cipher);
+	if (!status_one(cd, name, dmd->uuid, 1, &tcrypt_params->key_size,
+			cipher, &tcrypt_hdr->d.mk_offset, device))
+		status_one(cd, name, dmd->uuid, 2, &tcrypt_params->key_size,
+			   cipher, &tcrypt_hdr->d.mk_offset, device);
 
 	tcrypt_params->cipher = strdup(cipher);
 	return 0;
