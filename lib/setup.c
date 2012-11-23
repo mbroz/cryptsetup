@@ -2137,7 +2137,8 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	} else if (isLUKS(cd->type)) {
 		r = LUKS_open_key_with_hdr(keyslot, passphrase,
 					passphrase_size, &cd->hdr, &vk, cd);
-
+	} else if (isTCRYPT(cd->type)) {
+		r = TCRYPT_get_volume_key(cd, &cd->tcrypt_hdr, &cd->tcrypt_params, &vk);
 	} else
 		log_err(cd, _("This operation is not supported for %s crypt device.\n"), cd->type ?: "(none)");
 

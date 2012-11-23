@@ -737,3 +737,32 @@ uint64_t TCRYPT_get_iv_offset(struct tcrypt_phdr *hdr)
 		return 0;
 	return (hdr->d.mk_offset / hdr->d.sector_size);
 }
+
+int TCRYPT_get_volume_key(struct crypt_device *cd,
+			  struct tcrypt_phdr *hdr,
+			  struct crypt_params_tcrypt *params,
+			  struct volume_key **vk)
+{
+	int i, num_keys = 1, key_size;
+	const char *c;
+
+	if (!hdr->d.version) {
+		log_dbg("TCRYPT: this function is not supported without encrypted header load.");
+		return -ENOTSUP;
+	}
+
+	*vk = crypt_alloc_volume_key(params->key_size, NULL);
+	if (!*vk)
+		return -ENOMEM;
+
+	for (num_keys = 0, c = params->cipher; c ; num_keys++)
+		c = strchr(++c, '-');
+
+	key_size = params->key_size / num_keys;
+
+	for (i = 0; i < num_keys; i++)
+		copy_key(&(*vk)->key[key_size * i], hdr->d.keys, num_keys - 1,
+			 key_size, i, params->mode);
+
+	return 0;
+}

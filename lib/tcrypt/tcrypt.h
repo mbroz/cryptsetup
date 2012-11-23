@@ -65,6 +65,7 @@ struct tcrypt_phdr {
 } __attribute__((__packed__));
 
 struct crypt_dm_active_device;
+struct volume_key;
 struct device;
 
 int TCRYPT_read_phdr(struct crypt_device *cd,
@@ -88,5 +89,10 @@ int TCRYPT_deactivate(struct crypt_device *cd,
 
 uint64_t TCRYPT_get_data_offset(struct tcrypt_phdr *hdr);
 uint64_t TCRYPT_get_iv_offset(struct tcrypt_phdr *hdr);
+
+int TCRYPT_get_volume_key(struct crypt_device *cd,
+			  struct tcrypt_phdr *hdr,
+			  struct crypt_params_tcrypt *params,
+			  struct volume_key **vk);
 
 #endif
