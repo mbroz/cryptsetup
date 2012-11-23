@@ -519,6 +519,17 @@ int TCRYPT_activate(struct crypt_device *cd,
 		}
 	};
 
+	if (!hdr->d.version) {
+		log_dbg("TCRYPT: this function is not supported without encrypted header load.");
+		return -ENOTSUP;
+	}
+
+	if (hdr->d.sector_size && hdr->d.sector_size != SECTOR_SIZE) {
+		log_err(cd, _("Activation is not supported for %d sector size.\n"),
+			hdr->d.sector_size);
+		return -ENOTSUP;
+	}
+
 	if (strstr(params->mode, "-tcrypt")) {
 		log_err(cd, _("Kernel doesn't support activation for this TCRYPT legacy mode.\n"));
 		return -ENOTSUP;
@@ -697,4 +708,19 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 
 	tcrypt_params->cipher = strdup(cipher);
 	return 0;
+}
+
+uint64_t TCRYPT_get_data_offset(struct tcrypt_phdr *hdr)
+{
+	// FIXME: system vol.
+	if (!hdr->d.mk_offset)
+		return 1;
+	return (hdr->d.mk_offset / hdr->d.sector_size);
+}
+
+uint64_t TCRYPT_get_iv_offset(struct tcrypt_phdr *hdr)
+{
+	if (!hdr->d.mk_offset)
+		return 0;
+	return (hdr->d.mk_offset / hdr->d.sector_size);
 }

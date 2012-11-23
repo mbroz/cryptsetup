@@ -46,6 +46,10 @@ struct crypt_device {
 	int password_verify;
 	int rng_type;
 
+	// FIXME: switch to union
+	// FIXME: privatre binary headers and access it properly
+	// through sub-library (LUKS1, TCRYPT)
+
 	/* used in CRYPT_LUKS1 */
 	struct luks_phdr hdr;
 	uint64_t PBKDF2_per_sec;
@@ -2426,11 +2430,8 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 	if (isLOOPAES(cd->type))
 		return cd->loopaes_hdr.offset;
 
-	if (isTCRYPT(cd->type)) { // FIXME: system vol.
-		if (!cd->tcrypt_hdr.d.mk_offset)
-			return 1;
-		return (cd->tcrypt_hdr.d.mk_offset / cd->tcrypt_hdr.d.sector_size);
-	}
+	if (isTCRYPT(cd->type))
+		return TCRYPT_get_data_offset(&cd->tcrypt_hdr);
 
 	return 0;
 }
@@ -2446,11 +2447,8 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd)
 	if (isLOOPAES(cd->type))
 		return cd->loopaes_hdr.skip;
 
-	if (isTCRYPT(cd->type)) {
-		if (!cd->tcrypt_hdr.d.mk_offset)
-			return 0;
-		return (cd->tcrypt_hdr.d.mk_offset / cd->tcrypt_hdr.d.sector_size);
-	}
+	if (isTCRYPT(cd->type))
+		return TCRYPT_get_iv_offset(&cd->tcrypt_hdr);
 
 	return 0;
 }
