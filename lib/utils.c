@@ -105,7 +105,7 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 		memcpy(hangover_buf, (char*)buf + solid, hangover);
 
 		r = write(fd, hangover_buf, bsize);
-		if (r < 0 || r != bsize)
+		if (r < 0 || r < hangover)
 			goto out;
 	}
 	ret = count;
@@ -145,7 +145,7 @@ ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count) {
 		if (!hangover_buf)
 			goto out;
 		r = read(fd, hangover_buf, bsize);
-		if (r <  0 || r != bsize)
+		if (r <  0 || r < hangover)
 			goto out;
 
 		memcpy((char *)buf + solid, hangover_buf, hangover);
@@ -238,7 +238,7 @@ int crypt_memlock_inc(struct crypt_device *ctx)
 			log_err(ctx, _("Cannot get process priority.\n"));
 		else
 			if (setpriority(PRIO_PROCESS, 0, DEFAULT_PROCESS_PRIORITY))
-				log_err(ctx, _("setpriority %d failed: %s\n"),
+				log_dbg("setpriority %d failed: %s",
 					DEFAULT_PROCESS_PRIORITY, strerror(errno));
 	}
 	return _memlock_count ? 1 : 0;
@@ -251,7 +251,7 @@ int crypt_memlock_dec(struct crypt_device *ctx)
 		if (munlockall() == -1)
 			log_err(ctx, _("Cannot unlock memory.\n"));
 		if (setpriority(PRIO_PROCESS, 0, _priority))
-			log_err(ctx, _("setpriority %d failed: %s\n"), _priority, strerror(errno));
+			log_dbg("setpriority %d failed: %s", _priority, strerror(errno));
 	}
 	return _memlock_count ? 1 : 0;
 }
