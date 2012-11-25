@@ -48,77 +48,125 @@ struct tcrypt_alg {
 		const char *name;
 		unsigned int key_size;
 		unsigned int iv_size;
+		unsigned int key_offset;
+		unsigned int iv_offset; /* or tweak key offset */
+};
+
+struct tcrypt_algs {
+	unsigned int legacy:1;
+	unsigned int chain_count;
+	unsigned int chain_key_size;
+	const char *long_name;
+	const char *mode;
+	struct tcrypt_alg cipher[3];
 };
 
 /* TCRYPT cipher variants */
-static struct {
-	unsigned int legacy:1;
-	const char *mode;
-	struct tcrypt_alg cipher[3];
-} tcrypt_cipher[] = {
-	{ 0, "xts-plain64",{{"aes",    64,16}}},
-	{ 0, "xts-plain64",{{"serpent",64,16}}},
-	{ 0, "xts-plain64",{{"twofish",64,16}}},
-	{ 0, "xts-plain64",{{"twofish",64,16},{"aes",    64,16}}},
-	{ 0, "xts-plain64",{{"serpent",64,16},{"twofish",64,16},{"aes",    64,16}}},
-	{ 0, "xts-plain64",{{"aes",    64,16},{"serpent",64,16}}},
-	{ 0, "xts-plain64",{{"aes",    64,16},{"twofish",64,16},{"serpent",64,16}}},
-	{ 0, "xts-plain64",{{"serpent",64,16},{"twofish",64,16}}},
-
-	{ 0, "lrw-benbi",  {{"aes",    48,16}}},
-	{ 0, "lrw-benbi",  {{"serpent",48,16}}},
-	{ 0, "lrw-benbi",  {{"twofish",48,16}}},
-	{ 0, "lrw-benbi",  {{"twofish",48,16},{"aes",    48,16}}},
-	{ 0, "lrw-benbi",  {{"serpent",48,16},{"twofish",48,16},{"aes",    48,16}}},
-	{ 0, "lrw-benbi",  {{"aes",    48,16},{"serpent",48,16}}},
-	{ 0, "lrw-benbi",  {{"aes",    48,16},{"twofish",48,16},{"serpent",48,16}}},
-	{ 0, "lrw-benbi",  {{"serpent",48,16},{"twofish",48,16}}},
-
-	{ 1, "cbc-tcrypt", {{"aes",    32,16}}},
-	{ 1, "cbc-tcrypt", {{"serpent",32,16}}},
-	{ 1, "cbc-tcrypt", {{"twofish",32,16}}},
-	{ 1, "cbci-tcrypt",{{"twofish",32,16},{"aes",    32,16}}},
-	{ 1, "cbci-tcrypt",{{"serpent",32,16},{"twofish",32,16},{"aes",    32,16}}},
-	{ 1, "cbci-tcrypt",{{"aes",    32,16},{"serpent",32,16}}},
-	{ 1, "cbci-tcrypt",{{"aes",    32,16},{"twofish",32,16},{"serpent",32,16}}},
-	{ 1, "cbci-tcrypt",{{"serpent",32,16},{"twofish",32,16}}},
-
-	{ 1, "cbc-tcrypt", {{"cast5",   16,8}}},
-	{ 1, "cbc-tcrypt", {{"des3_ede",24,8}}},
-
-	// kernel LRW block size is fixed to 16 bytes
-	// thus cannot be used with blowfish where block is 8 bytes
-	//{ 1,"lrw-benbi",{{"blowfish",64,8}}},
-	//{ 1,"lrw-benbi",{{"blowfish",64,8},{"aes",48,16}}},
-	//{ 1,"lrw-benbi",{{"serpent",48,16},{"blowfish",64,8},{"aes",48,16}}},
-
-	// FIXME: why this doesn't work (blowfish key wrong)?
-	//{ 1,"cbc-tcrypt",{{"blowfish",56,8}}},
-	//{ 1,"cbc-tcrypt",{{"blowfish",56,8},{"aes",32,16}}},
-	//{ 1,"cbc-tcrypt",{{"serpent",32,16},{"blowfish",56,8},{"aes",32,16}}},
-	{}
+static struct tcrypt_algs tcrypt_cipher[] = {
+/* XTS mode */
+{0,1,64,"aes","xts-plain64",
+	{{"aes",    64,16,0,32}}},
+{0,1,64,"serpent","xts-plain64",
+	{{"serpent",64,16,0,32}}},
+{0,1,64,"twofish","xts-plain64",
+	{{"twofish",64,16,0,32}}},
+{0,2,128,"twofish-aes","xts-plain64",
+	{{"twofish",64,16, 0,64},
+	 {"aes",    64,16,32,96}}},
+{0,3,192,"serpent-twofish-aes","xts-plain64",
+	{{"serpent",64,16, 0, 96},
+	 {"twofish",64,16,32,128},
+	 {"aes",    64,16,64,160}}},
+{0,2,128,"aes-serpent","xts-plain64",
+	{{"aes",    64,16, 0,64},
+	 {"serpent",64,16,32,96}}},
+{0,3,192,"aes-twofish-serpent","xts-plain64",
+	{{"aes",    64,16, 0, 96},
+	 {"twofish",64,16,32,128},
+	 {"serpent",64,16,64,160}}},
+{0,2,128,"serpent-twofish","xts-plain64",
+	{{"serpent",64,16, 0,64},
+	 {"twofish",64,16,32,96}}},
+/* LRW mode */
+{0,1,48,"aes","lrw-benbi",
+	{{"aes",    48,16,32,0}}},
+{0,1,48,"serpent","lrw-benbi",
+	{{"serpent",48,16,32,0}}},
+{0,1,48,"twofish","lrw-benbi",
+	{{"twofish",48,16,32,0}}},
+{0,2,96,"twofish-aes","lrw-benbi",
+	{{"twofish",48,16,32,0},
+	 {"aes",    48,16,64,0}}},
+{0,3,144,"serpent-twofish-aes","lrw-benbi",
+	{{"serpent",48,16,32,0},
+	 {"twofish",48,16,64,0},
+	 {"aes",    48,16,96,0}}},
+{0,2,96,"aes-serpent","lrw-benbi",
+	{{"aes",    48,16,32,0},
+	 {"serpent",48,16,64,0}}},
+{0,3,144,"aes-twofish-serpent","lrw-benbi",
+	{{"aes",    48,16,32,0},
+	 {"twofish",48,16,64,0},
+	 {"serpent",48,16,96,0}}},
+{0,2,96,"serpent-twofish", "lrw-benbi",
+	{{"serpent",48,16,32,0},
+	 {"twofish",48,16,64,0}}},
+/* Kernel LRW block size is fixed to 16 bytes for GF(2^128)
+ * thus cannot be used with blowfish where block is 8 bytes.
+ * There also no GF(2^64) support.
+{1,1,64,"blowfish_le","lrw-benbi",
+	 {{"blowfish_le",64,8,32,0}}},
+{1,2,112,"blowfish_le-aes","lrw-benbi",
+	 {{"blowfish_le",64, 8,32,0},
+	  {"aes",        48,16,88,0}}},
+{1,3,160,"serpent-blowfish_le-aes","lrw-benbi",
+	  {{"serpent",    48,16, 32,0},
+	   {"blowfish_le",64, 8, 64,0},
+	   {"aes",        48,16,120,0}}},*/
+/* CBC + "outer" CBC (both with whitening) */
+{1,1,32,"aes","cbc-tcrypt",
+	{{"aes",    32,16,32,0}}},
+{1,1,32,"serpent","cbc-tcrypt",
+	{{"serpent",32,16,32,0}}},
+{1,1,32,"twofish","cbc-tcrypt",
+	{{"twofish",32,16,32,0}}},
+{1,2,64,"twofish-aes","cbci-tcrypt",
+	{{"twofish",32,16,32,0},
+	 {"aes",    32,16,64,0}}},
+{1,3,96,"serpent-twofish-aes","cbci-tcrypt",
+	{{"serpent",32,16,32,0},
+	 {"twofish",32,16,64,0},
+	 {"aes",    32,16,96,0}}},
+{1,2,64,"aes-serpent","cbci-tcrypt",
+	{{"aes",    32,16,32,0},
+	 {"serpent",32,16,64,0}}},
+{1,3,96,"aes-twofish-serpent", "cbci-tcrypt",
+	{{"aes",    32,16,32,0},
+	 {"twofish",32,16,64,0},
+	 {"serpent",32,16,96,0}}},
+{1,2,64,"serpent-twofish", "cbci-tcrypt",
+	{{"serpent",32,16,32,0},
+	 {"twofish",32,16,64,0}}},
+{1,1,16,"cast5","cbc-tcrypt",
+	{{"cast5",   16,8,32,0}}},
+{1,1,24,"des3_ede","cbc-tcrypt",
+	{{"des3_ede",24,8,32,0}}},
+{1,1,56,"blowfish_le","cbc-tcrypt",
+	{{"blowfish_le",56,8,32,0}}},
+{1,2,88,"blowfish_le-aes","cbc-tcrypt",
+	{{"blowfish_le",56, 8,32,0},
+	 {"aes",        32,16,88,0}}},
+{1,3,120,"serpent-blowfish_le-aes","cbc-tcrypt",
+	{{"serpent",    32,16, 32,0},
+	 {"blowfish_le",56, 8, 64,0},
+	 {"aes",        32,16,120,0}}},
+{}
 };
-
-static void hdr_info(struct crypt_device *cd, struct tcrypt_phdr *hdr,
-		     struct crypt_params_tcrypt *params)
-{
-	log_dbg("Version: %d, required %d", (int)hdr->d.version, (int)hdr->d.version_tc);
-
-	log_dbg("Hidden size: %" PRIu64, hdr->d.hidden_volume_size);
-	log_dbg("Volume size: %" PRIu64, hdr->d.volume_size);
-
-	log_dbg("Sector size: %" PRIu64, hdr->d.sector_size);
-	log_dbg("Flags: %d", (int)hdr->d.flags);
-	log_dbg("MK: offset %d, size %d", (int)hdr->d.mk_offset, (int)hdr->d.mk_size);
-	log_dbg("KDF: PBKDF2, hash %s", params->hash_name);
-	log_dbg("Cipher: %s-%s", params->cipher, params->mode);
-}
 
 static int hdr_from_disk(struct tcrypt_phdr *hdr,
 			 struct crypt_params_tcrypt *params,
 			 int kdf_index, int cipher_index)
 {
-	char cipher_name[MAX_CIPHER_LEN * 4];
 	uint32_t crc32;
 	size_t size;
 
@@ -140,7 +188,7 @@ static int hdr_from_disk(struct tcrypt_phdr *hdr,
 
 	/* Convert header to cpu format */
 	hdr->d.version  =  be16_to_cpu(hdr->d.version);
-	hdr->d.version_tc = le16_to_cpu(hdr->d.version_tc); // ???
+	hdr->d.version_tc = le16_to_cpu(hdr->d.version_tc);
 
 	hdr->d.keys_crc32 = be32_to_cpu(hdr->d.keys_crc32);
 
@@ -164,37 +212,87 @@ static int hdr_from_disk(struct tcrypt_phdr *hdr,
 	/* Set params */
 	params->passphrase = NULL;
 	params->passphrase_size = 0;
-
 	params->hash_name  = tcrypt_kdf[kdf_index].hash;
-
-	params->key_size = tcrypt_cipher[cipher_index].cipher[0].key_size;
-	strncpy(cipher_name, tcrypt_cipher[cipher_index].cipher[0].name,
-		sizeof(cipher_name));
-
-	if (tcrypt_cipher[cipher_index].cipher[1].name) {
-		strcat(cipher_name, "-");
-		strncat(cipher_name, tcrypt_cipher[cipher_index].cipher[1].name,
-			MAX_CIPHER_LEN);
-		params->key_size += tcrypt_cipher[cipher_index].cipher[1].key_size;
-	}
-
-	if (tcrypt_cipher[cipher_index].cipher[2].name) {
-		strcat(cipher_name, "-");
-		strncat(cipher_name, tcrypt_cipher[cipher_index].cipher[2].name,
-			MAX_CIPHER_LEN);
-		params->key_size += tcrypt_cipher[cipher_index].cipher[2].key_size;
-	}
-
-	params->cipher = strdup(cipher_name);
-	params->mode   = strdup(tcrypt_cipher[cipher_index].mode);
+	params->key_size = tcrypt_cipher[cipher_index].chain_key_size;
+	params->cipher = tcrypt_cipher[cipher_index].long_name;
+	params->mode = tcrypt_cipher[cipher_index].mode;
 
 	return 0;
 }
 
-static int decrypt_hdr_one(const char *name, const char *mode,
-			   const char *key, size_t key_size,
-			   size_t iv_size, struct tcrypt_phdr *hdr)
+/*
+ * Kernel implements just big-endian version of blowfish, hack it here
+ */
+static void blowfish_le(char *buf)
 {
+	uint32_t *l = (uint32_t*)&buf[0];
+	uint32_t *r = (uint32_t*)&buf[4];
+	*l = swab32(*l);
+	*r = swab32(*r);
+}
+
+static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
+				   const char *key, char *buf)
+{
+	char iv[alg->iv_size], iv_old[alg->iv_size];
+	struct crypt_cipher *cipher = NULL;
+	int bs = alg->iv_size;
+	int i, j, r;
+
+	assert(bs == 2*sizeof(uint32_t));
+
+	r = crypt_cipher_init(&cipher, "blowfish", "ecb",
+			      &key[alg->key_offset], alg->key_size);
+	if (r < 0)
+		goto out;
+
+	memcpy(iv, &key[alg->iv_offset], alg->iv_size);
+	for (i = 0; i < TCRYPT_HDR_LEN; i += bs) {
+		memcpy(iv_old, &buf[i], bs);
+		blowfish_le(&buf[i]);
+		r = crypt_cipher_decrypt(cipher, &buf[i], &buf[i],
+					  bs, NULL, 0);
+		blowfish_le(&buf[i]);
+		if (r < 0)
+			goto out;
+		for (j = 0; j < bs; j++)
+			buf[i + j] ^= iv[j];
+		memcpy(iv, iv_old, bs);
+	}
+out:
+	crypt_cipher_destroy(cipher);
+	return r;
+}
+
+static void remove_whitening(char *buf, const char *key)
+{
+	int j;
+
+	for (j = 0; j < TCRYPT_HDR_LEN; j++)
+		buf[j] ^= key[j % 8];
+}
+
+static void copy_key(struct tcrypt_alg *alg, const char *mode,
+		     char *out_key, const char *key)
+{
+	int ks2;
+	if (!strncmp(mode, "xts", 3)) {
+		ks2 = alg->key_size / 2;
+		memcpy(out_key, &key[alg->key_offset], ks2);
+		memcpy(&out_key[ks2], &key[alg->iv_offset], ks2);
+	} else if (!strncmp(mode, "lrw", 3)) {
+		ks2 = alg->key_size - TCRYPT_LRW_IKEY_LEN;
+		memcpy(out_key, &key[alg->key_offset], ks2);
+		memcpy(&out_key[ks2], key, TCRYPT_LRW_IKEY_LEN);
+	} else if (!strncmp(mode, "cbc", 3)) {
+		memcpy(out_key, &key[alg->key_offset], alg->key_size);
+	}
+}
+
+static int decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
+			   const char *key,struct tcrypt_phdr *hdr)
+{
+	char backend_key[TCRYPT_HDR_KEY_LEN];
 	char iv[TCRYPT_HDR_IV_LEN] = {};
 	char mode_name[MAX_CIPHER_LEN];
 	struct crypt_cipher *cipher;
@@ -208,70 +306,56 @@ static int decrypt_hdr_one(const char *name, const char *mode,
 		*c = '\0';
 
 	if (!strncmp(mode, "lrw", 3))
-		iv[iv_size - 1] = 1;
-	else if (!strncmp(mode, "cbc", 3))
-		memcpy(iv, &key[key_size], iv_size);
+		iv[alg->iv_size - 1] = 1;
+	else if (!strncmp(mode, "cbc", 3)) {
+		remove_whitening(buf, &key[8]);
+		if (!strcmp(alg->name, "blowfish_le"))
+			return decrypt_blowfish_le_cbc(alg, key, buf);
+		memcpy(iv, &key[alg->iv_offset], alg->iv_size);
+	}
 
-	r = crypt_cipher_init(&cipher, name, mode_name, key, key_size);
+	copy_key(alg, mode, backend_key, key);
+	r = crypt_cipher_init(&cipher, alg->name, mode_name,
+			      backend_key, alg->key_size);
+	memset(backend_key, 0, sizeof(backend_key));
 	if (r < 0)
 		return r;
 
-	r = crypt_cipher_decrypt(cipher, buf, buf, TCRYPT_HDR_LEN, iv, iv_size);
+	r = crypt_cipher_decrypt(cipher, buf, buf, TCRYPT_HDR_LEN, iv, alg->iv_size);
 	crypt_cipher_destroy(cipher);
 
 	return r;
 }
 
-static void copy_key(char *out_key, const char *key, int key_num,
-		     int ks, int ki, const char *mode)
-{
-	if (!strncmp(mode, "xts", 3)) {
-		int ks2 = ks / 2;
-		memcpy(out_key, &key[ks2 * ki], ks2);
-		memcpy(&out_key[ks2], &key[ks2 * (++key_num + ki)], ks2);
-	} else if (!strncmp(mode, "lrw", 3)) {
-		/* First is LRW index key */
-		ki++;
-		ks -= TCRYPT_LRW_IKEY_LEN;
-		memcpy(out_key, &key[ks * ki], ks);
-		memcpy(&out_key[ks * ki], key, TCRYPT_LRW_IKEY_LEN);
-	} else if (!strncmp(mode, "cbc", 3)) {
-		ki++;
-		memcpy(out_key, &key[ki * 32], ks);
-		memcpy(&out_key[ks], key, 32);
-	}
-}
-
 /*
- * For chanined ciphers and CBC mode we need "inner" decryption.
+ * For chanined ciphers and CBC mode we need "outer" decryption.
  * Backend doesn't provide this, so implement it here directly using ECB.
  */
-static int decrypt_hdr_cbci(struct tcrypt_alg ciphers[3],
+static int decrypt_hdr_cbci(struct tcrypt_algs *ciphers,
 			     const char *key, struct tcrypt_phdr *hdr)
 {
-	struct crypt_cipher *cipher[3] = {};
-	int bs = ciphers[0].iv_size;
+	struct crypt_cipher *cipher[ciphers->chain_count];
+	int bs = ciphers->cipher[0].iv_size;
 	char *buf = (char*)&hdr->e, iv[bs], iv_old[bs];
-	int i, j, r;
+	int i, j, r = -EINVAL;
 
-	memcpy(iv, key, bs);
+	remove_whitening(buf, &key[8]);
+
+	memcpy(iv, &key[ciphers->cipher[0].iv_offset], bs);
 
 	/* Initialize all ciphers in chain in ECB mode */
-	for (j = 0; j < 3; j++) {
-		if (!ciphers[j].name)
-			continue;
-		r = crypt_cipher_init(&cipher[j], ciphers[j].name, "ecb",
-				      &key[(j+1)*32], ciphers[j].key_size);
+	for (j = 0; j < ciphers->chain_count; j++) {
+		r = crypt_cipher_init(&cipher[j], ciphers->cipher[j].name, "ecb",
+				      &key[ciphers->cipher[j].key_offset],
+				      ciphers->cipher[j].key_size);
 		if (r < 0)
 			goto out;
 	}
 
-	/* Implements CBC with chained ciphers in inner loop */
+	/* Implements CBC with chained ciphers in loop inside */
 	for (i = 0; i < TCRYPT_HDR_LEN; i += bs) {
 		memcpy(iv_old, &buf[i], bs);
-		for (j = 2; j >= 0; j--) {
-			if (!cipher[j])
-				continue;
+		for (j = ciphers->chain_count - 1; j >= 0; j--) {
 			r = crypt_cipher_decrypt(cipher[j], &buf[i], &buf[i],
 						  bs, NULL, 0);
 			if (r < 0)
@@ -282,62 +366,34 @@ static int decrypt_hdr_cbci(struct tcrypt_alg ciphers[3],
 		memcpy(iv, iv_old, bs);
 	}
 out:
-	for (j = 0; j < 3; j++)
+	for (j = 0; j < ciphers->chain_count; j++)
 		if (cipher[j])
 			crypt_cipher_destroy(cipher[j]);
 
 	return r;
 }
 
-static int top_cipher(struct tcrypt_alg cipher[3])
-{
-	if (cipher[2].name)
-		return 2;
-
-	if (cipher[1].name)
-		return 1;
-
-	return 0;
-}
-
 static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 			const char *key, int legacy_modes)
 {
-	char one_key[TCRYPT_HDR_KEY_LEN];
 	struct tcrypt_phdr hdr2;
 	int i, j, r;
 
-	for (i = 0; tcrypt_cipher[i].cipher[0].name; i++) {
+	for (i = 0; tcrypt_cipher[i].chain_count; i++) {
 		if (!legacy_modes && tcrypt_cipher[i].legacy)
 			continue;
-		log_dbg("TCRYPT:  trying cipher: %s%s%s%s%s-%s.",
-			tcrypt_cipher[i].cipher[0].name,
-			tcrypt_cipher[i].cipher[1].name ? "-" : "", tcrypt_cipher[i].cipher[1].name ?: "",
-			tcrypt_cipher[i].cipher[2].name ? "-" : "", tcrypt_cipher[i].cipher[2].name ?: "",
-			tcrypt_cipher[i].mode);
+		log_dbg("TCRYPT:  trying cipher %s-%s",
+			tcrypt_cipher[i].long_name, tcrypt_cipher[i].mode);
 
 		memcpy(&hdr2.e, &hdr->e, TCRYPT_HDR_LEN);
 
-		/* Remove CBC whitening */
-		if (!strncmp(tcrypt_cipher[i].mode, "cbc", 3)) {
-			char *buf = (char*)&hdr2.e;
-			for (j = 0; j < TCRYPT_HDR_LEN; j++)
-				buf[j] ^= key[8 + j % 8];
-		}
-
-		/* For chained (inner) CBC we do not have API support */
 		if (!strncmp(tcrypt_cipher[i].mode, "cbci", 4))
-			r = decrypt_hdr_cbci(tcrypt_cipher[i].cipher, key, &hdr2);
-		else for (j = 2; j >= 0 ; j--) {
+			r = decrypt_hdr_cbci(&tcrypt_cipher[i], key, &hdr2);
+		else for (j = tcrypt_cipher[i].chain_count - 1; j >= 0 ; j--) {
 			if (!tcrypt_cipher[i].cipher[j].name)
 				continue;
-			copy_key(one_key, key, top_cipher(tcrypt_cipher[i].cipher),
-				 tcrypt_cipher[i].cipher[j].key_size,
-				 j, tcrypt_cipher[i].mode);
-			r = decrypt_hdr_one(tcrypt_cipher[i].cipher[j].name,
-					    tcrypt_cipher[i].mode, one_key,
-					    tcrypt_cipher[i].cipher[j].key_size,
-					    tcrypt_cipher[i].cipher[j].iv_size, &hdr2);
+			r = decrypt_hdr_one(&tcrypt_cipher[i].cipher[j],
+					    tcrypt_cipher[i].mode, key, &hdr2);
 			if (r < 0) {
 				log_dbg("Error %s.", tcrypt_cipher[i].cipher[j].name);
 				break;
@@ -354,7 +410,6 @@ static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 		r = -EPERM;
 	}
 
-	memset(one_key, 0, sizeof(*one_key));
 	return r;
 }
 
@@ -405,7 +460,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	unsigned char pwd[TCRYPT_KEY_POOL_LEN] = {};
 	size_t passphrase_size;
 	char *key;
-	int r, i, legacy_modes;
+	int r = -EINVAL, i, legacy_modes;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
@@ -451,10 +506,14 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		goto out;
 
 	r = hdr_from_disk(hdr, params, i, r);
-	if (r < 0)
-		goto out;
-
-	hdr_info(cd, hdr, params);
+	if (!r) {
+		log_dbg("TCRYPT: Header version: %d, req. %d, sector %d"
+			", PBKDF2 hash %s", (int)hdr->d.version,
+			(int)hdr->d.version_tc, (int)hdr->d.sector_size,
+			params->hash_name);
+		log_dbg("TCRYPT: Header cipher %s-%s, key size %d",
+			params->cipher, params->mode, params->key_size);
+	}
 out:
 	memset(pwd, 0, TCRYPT_KEY_POOL_LEN);
 	if (key)
@@ -469,12 +528,16 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 {
 	struct device *device = crypt_metadata_device(cd);
 	ssize_t hdr_size = sizeof(struct tcrypt_phdr);
-	int devfd = 0, r;
+	int devfd = 0, r = -EIO, bs;
 
 	assert(sizeof(struct tcrypt_phdr) == 512);
 
 	log_dbg("Reading TCRYPT header of size %d bytes from device %s.",
 		hdr_size, device_path(device));
+
+	bs = device_block_size(device);
+	if (bs < 0)
+		return bs;
 
 	devfd = open(device_path(device), O_RDONLY | O_DIRECT);
 	if (devfd == -1) {
@@ -482,20 +545,34 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if ((params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) &&
-	    lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET, SEEK_SET) < 0) {
-		log_err(cd, _("Cannot seek to hidden header for %s.\n"), device_path(device));
-		close(devfd);
-		return -EIO;
-	}
-
-	if (read_blockwise(devfd, device_block_size(device), hdr, hdr_size) == hdr_size)
+	if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
+		if (lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET, SEEK_SET) >= 0 &&
+		    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
+			r = TCRYPT_init_hdr(cd, hdr, params);
+		if (r &&
+		    lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET_OLD, SEEK_END) >= 0 &&
+		    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
+			r = TCRYPT_init_hdr(cd, hdr, params);
+	} else if (read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
 		r = TCRYPT_init_hdr(cd, hdr, params);
-	else
-		r = -EIO;
 
 	close(devfd);
 	return r;
+}
+
+static struct tcrypt_algs *get_algs(struct crypt_params_tcrypt *params)
+{
+	int i;
+
+	if (!params->cipher || !params->mode)
+		return NULL;
+
+	for (i = 0; tcrypt_cipher[i].chain_count; i++)
+		if (!strcmp(tcrypt_cipher[i].long_name, params->cipher) &&
+		    !strcmp(tcrypt_cipher[i].mode, params->mode))
+		    return &tcrypt_cipher[i];
+
+	return NULL;
 }
 
 int TCRYPT_activate(struct crypt_device *cd,
@@ -506,8 +583,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 {
 	char cipher[MAX_CIPHER_LEN], dm_name[PATH_MAX], dm_dev_name[PATH_MAX];
 	struct device *device = NULL;
-	int i, r, num_ciphers;
-	char cname[3][MAX_CIPHER_LEN];
+	int i, r;
+	struct tcrypt_algs *algs;
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.size   = 0,
@@ -535,30 +612,21 @@ int TCRYPT_activate(struct crypt_device *cd,
 		return -ENOTSUP;
 	}
 
+	algs = get_algs(params);
+	if (!algs)
+		return -EINVAL;
+
 	r = device_block_adjust(cd, dmd.data_device, DEV_EXCL,
 				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
 	if (r)
 		return r;
 
-	/* Parse cipher chain from c1[-c2[-c3]] */
-	cname[0][0] = cname[1][0] = cname[2][0] = '\0';
-	num_ciphers = sscanf(params->cipher, "%" MAX_CIPHER_LEN_STR "[^-]-%"
-						  MAX_CIPHER_LEN_STR "[^-]-%"
-						  MAX_CIPHER_LEN_STR "s",
-		      cname[0], cname[1], cname[2]);
-	if (num_ciphers < 1)
-		return -EINVAL;
-
 	/* Frome here, key size for every cipher must be the same */
-	dmd.u.crypt.vk = crypt_alloc_volume_key(params->key_size / num_ciphers, NULL);
+	dmd.u.crypt.vk = crypt_alloc_volume_key(algs->cipher[0].key_size, NULL);
 	if (!dmd.u.crypt.vk)
 		return -ENOMEM;
 
-	for (i = 2; i >= 0; i--) {
-
-		if (!cname[i][0])
-			continue;
-
+	for (i = algs->chain_count - 1; i >= 0; i--) {
 		if (i == 0) {
 			strncpy(dm_name, name, sizeof(dm_name));
 			dmd.flags = flags;
@@ -568,11 +636,11 @@ int TCRYPT_activate(struct crypt_device *cd,
 		}
 
 		snprintf(cipher, sizeof(cipher), "%s-%s",
-			 cname[i], params->mode);
-		copy_key(dmd.u.crypt.vk->key, hdr->d.keys, num_ciphers - 1,
-			 params->key_size / num_ciphers, i, params->mode);
+			 algs->cipher[i].name, algs->mode);
 
-		if ((num_ciphers -1) != i) {
+		copy_key(&algs->cipher[i], algs->mode, dmd.u.crypt.vk->key, hdr->d.keys);
+
+		if ((algs->chain_count - 1) != i) {
 			snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d",
 				 dm_get_dir(), name, i + 1);
 			r = device_alloc(&device, dm_dev_name);
@@ -743,26 +811,27 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 			  struct crypt_params_tcrypt *params,
 			  struct volume_key **vk)
 {
-	int i, num_keys = 1, key_size;
-	const char *c;
+	struct tcrypt_algs *algs;
+	int i, key_index;
 
 	if (!hdr->d.version) {
 		log_dbg("TCRYPT: this function is not supported without encrypted header load.");
 		return -ENOTSUP;
 	}
 
+	algs = get_algs(params);
+	if (!algs)
+		return -EINVAL;
+
 	*vk = crypt_alloc_volume_key(params->key_size, NULL);
 	if (!*vk)
 		return -ENOMEM;
 
-	for (num_keys = 0, c = params->cipher; c ; num_keys++)
-		c = strchr(++c, '-');
-
-	key_size = params->key_size / num_keys;
-
-	for (i = 0; i < num_keys; i++)
-		copy_key(&(*vk)->key[key_size * i], hdr->d.keys, num_keys - 1,
-			 key_size, i, params->mode);
+	for (i = 0, key_index = 0; i < algs->chain_count; i++) {
+		copy_key(&algs->cipher[i], algs->mode,
+			 &(*vk)->key[key_index], hdr->d.keys);
+		key_index += algs->cipher[i].key_size;
+	}
 
 	return 0;
 }
