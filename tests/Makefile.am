@@ -20,6 +20,8 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	cryptsetup-valg-supps valg.sh valg-api.sh
 
 CLEANFILES = cryptsetup-tst* valglog*
+clean-local:
+	-rm -rf tcrypt-images
 
 differ_SOURCES = differ.c
 differ_CFLAGS = -Wall -O2
