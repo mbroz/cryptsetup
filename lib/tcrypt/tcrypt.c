@@ -528,7 +528,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 {
 	struct device *device = crypt_metadata_device(cd);
 	ssize_t hdr_size = sizeof(struct tcrypt_phdr);
-	int devfd = 0, r = -EIO, bs;
+	int devfd = 0, r, bs;
 
 	assert(sizeof(struct tcrypt_phdr) == 512);
 
@@ -545,13 +545,24 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	r = -EIO;
 	if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
-		if (lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET, SEEK_SET) >= 0 &&
-		    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
-			r = TCRYPT_init_hdr(cd, hdr, params);
-		if (r &&
-		    lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET_OLD, SEEK_END) >= 0 &&
-		    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
+		if (params->flags & CRYPT_TCRYPT_BACKUP_HEADER) {
+			if (lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET_BCK, SEEK_END) >= 0 &&
+			    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
+				r = TCRYPT_init_hdr(cd, hdr, params);
+		} else {
+			if (lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET, SEEK_SET) >= 0 &&
+			    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
+				r = TCRYPT_init_hdr(cd, hdr, params);
+			if (r &&
+			    lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET_OLD, SEEK_END) >= 0 &&
+			    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
+				r = TCRYPT_init_hdr(cd, hdr, params);
+		}
+	} else if (params->flags & CRYPT_TCRYPT_BACKUP_HEADER) {
+		if (lseek(devfd, TCRYPT_HDR_OFFSET_BCK, SEEK_END) >= 0 &&
+			    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
 			r = TCRYPT_init_hdr(cd, hdr, params);
 	} else if (read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
 		r = TCRYPT_init_hdr(cd, hdr, params);
