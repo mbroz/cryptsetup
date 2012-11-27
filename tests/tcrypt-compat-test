@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# check tcrypt images parsing
+
+CRYPTSETUP=../src/cryptsetup
+TST_DIR=tcrypt-images
+MAP=tctst
+PASSWORD="aaaaaaaaaaaa"
+PASSWORD_HIDDEN="bbbbbbbbbbbb"
+
+function remove_mapping()
+{
+        [ -b /dev/mapper/$MAP ] && dmsetup remove $MAP
+        [ -b /dev/mapper/"$MAP"_1 ] && dmsetup remove "$MAP"_1
+        [ -b /dev/mapper/"$MAP"_2 ] && dmsetup remove "$MAP"_2
+}
+
+function fail()
+{
+        [ -n "$1" ] && echo "$1"
+        echo "FAILED"
+        remove_mapping
+        exit 2
+}
+
+
+[ ! -d $TST_DIR ] && tar xjf tcrypt-images.tar.bz2
+
+echo "HEADER CHECK"
+for file in $(ls $TST_DIR/tc_*) ; do
+	echo -n " $file"
+	echo $PASSWORD | $CRYPTSETUP tcryptDump $file >/dev/null || fail
+	echo " [OK]"
+done
+
+echo "HEADER CHECK (HIDDEN)"
+for file in $(ls $TST_DIR/tc_*-hidden) ; do
+	echo -n " $file (hidden)"
+	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptDump --hidden $file >/dev/null || fail
+	echo " [OK]"
+done
+
+if [ $(id -u) != 0 ]; then
+	echo "WARNING: You must be root to run this test, test skipped."
+	exit 0
+fi
+
+echo "ACTIVATION FS UUID CHECK (LRW/XTS modes only)"
+for file in $(ls $TST_DIR/*-lrw-* $TST_DIR/*-xts-*) ; do
+	echo -n " $file"
+	echo $PASSWORD | $CRYPTSETUP tcryptOpen -r $file $MAP || fail
+	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
+	$CRYPTSETUP remove $MAP || fail
+	[ "$UUID" != "DEAD-BABE" ] && fail "UUID check failed."
+	echo " [OK]"
+done
+
+echo "ACTIVATION FS UUID (HIDDEN) CHECK (LRW/XTS modes only)"
+for file in $(ls $TST_DIR/*-lrw-*-hidden $TST_DIR/*-xts-*-hidden) ; do
+	echo -n " $file"
+	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r $file $MAP --hidden || fail
+	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
+	$CRYPTSETUP remove $MAP || fail
+	[ "$UUID" != "CAFE-BABE" ] && fail "UUID check failed."
+	echo " [OK]"
+done
