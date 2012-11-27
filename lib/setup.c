@@ -2434,7 +2434,7 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 		return cd->loopaes_hdr.offset;
 
 	if (isTCRYPT(cd->type))
-		return TCRYPT_get_data_offset(&cd->tcrypt_hdr);
+		return TCRYPT_get_data_offset(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
 
 	return 0;
 }
@@ -2451,7 +2451,7 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd)
 		return cd->loopaes_hdr.skip;
 
 	if (isTCRYPT(cd->type))
-		return TCRYPT_get_iv_offset(&cd->tcrypt_hdr);
+		return TCRYPT_get_iv_offset(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
 
 	return 0;
 }
@@ -2524,8 +2524,8 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 		return -ENOTSUP;
 
 	if (cd && isTCRYPT(cd->type)) {
-		cad->offset	= TCRYPT_get_data_offset(&cd->tcrypt_hdr);
-		cad->iv_offset	= TCRYPT_get_iv_offset(&cd->tcrypt_hdr);
+		cad->offset	= TCRYPT_get_data_offset(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
+		cad->iv_offset	= TCRYPT_get_iv_offset(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
 	} else {
 		cad->offset	= dmd.u.crypt.offset;
 		cad->iv_offset	= dmd.u.crypt.iv_offset;

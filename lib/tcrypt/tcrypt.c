@@ -508,9 +508,10 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	r = hdr_from_disk(hdr, params, i, r);
 	if (!r) {
 		log_dbg("TCRYPT: Header version: %d, req. %d, sector %d"
-			", PBKDF2 hash %s", (int)hdr->d.version,
+			", mk_offset %" PRIu64 ", hidden_size %" PRIu64
+			", volume size %" PRIu64, (int)hdr->d.version,
 			(int)hdr->d.version_tc, (int)hdr->d.sector_size,
-			params->hash_name);
+			hdr->d.mk_offset, hdr->d.hidden_volume_size, hdr->d.volume_size);
 		log_dbg("TCRYPT: Header cipher %s-%s, key size %d",
 			params->cipher, params->mode, params->key_size);
 	}
@@ -626,6 +627,11 @@ int TCRYPT_activate(struct crypt_device *cd,
 	algs = get_algs(params);
 	if (!algs)
 		return -EINVAL;
+
+	if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER)
+		dmd.size = hdr->d.hidden_volume_size / hdr->d.sector_size;
+	else
+		dmd.size = hdr->d.volume_size / hdr->d.sector_size;
 
 	r = device_block_adjust(cd, dmd.data_device, DEV_EXCL,
 				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
@@ -802,19 +808,49 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 	return 0;
 }
 
-uint64_t TCRYPT_get_data_offset(struct tcrypt_phdr *hdr)
+uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
+				 struct tcrypt_phdr *hdr,
+				 struct crypt_params_tcrypt *params)
 {
+	uint64_t size;
+
+	if (params->mode && !strncmp(params->mode, "xts", 3)) {
+		if (hdr->d.version < 3)
+			return 1;
+
+		if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
+			if (hdr->d.version > 3)
+				return (hdr->d.mk_offset / hdr->d.sector_size);
+			if (device_size(crypt_metadata_device(cd), &size) < 0)
+				return 0;
+			return (size - hdr->d.hidden_volume_size +
+				(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / hdr->d.sector_size;
+		}
+		return (hdr->d.mk_offset / hdr->d.sector_size);
+	}
+
+	if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
+		if (device_size(crypt_metadata_device(cd), &size) < 0)
+			return 0;
+		return (size - hdr->d.hidden_volume_size +
+			(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / hdr->d.sector_size;
+	}
+
 	// FIXME: system vol.
-	if (!hdr->d.mk_offset)
-		return 1;
-	return (hdr->d.mk_offset / hdr->d.sector_size);
+	return hdr->d.mk_offset / hdr->d.sector_size;
 }
 
-uint64_t TCRYPT_get_iv_offset(struct tcrypt_phdr *hdr)
+uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
+			      struct tcrypt_phdr *hdr,
+			      struct crypt_params_tcrypt *params
+)
 {
-	if (!hdr->d.mk_offset)
+	if (params->mode && !strncmp(params->mode, "xts", 3))
+		return TCRYPT_get_data_offset(cd, hdr, params);
+	else if (params->mode && !strncmp(params->mode, "lrw", 3))
 		return 0;
-	return (hdr->d.mk_offset / hdr->d.sector_size);
+
+	return hdr->d.mk_offset / hdr->d.sector_size;
 }
 
 int TCRYPT_get_volume_key(struct crypt_device *cd,
