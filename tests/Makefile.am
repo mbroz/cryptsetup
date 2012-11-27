@@ -1,4 +1,11 @@
-TESTS = api-test compat-test loopaes-test align-test discards-test mode-test password-hash-test
+TESTS = api-test \
+	compat-test \
+	loopaes-test \
+	align-test \
+	discards-test \
+	mode-test \
+	password-hash-test \
+	tcrypt-compat-test
 
 if VERITYSETUP
 TESTS += verity-compat-test
@@ -18,6 +25,7 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	compat-test loopaes-test align-test discards-test mode-test password-hash-test \
 	verity-compat-test \
 	reencryption-compat-test \
+	tcrypt-compat-test \
 	cryptsetup-valg-supps valg.sh valg-api.sh
 
 CLEANFILES = cryptsetup-tst* valglog*
