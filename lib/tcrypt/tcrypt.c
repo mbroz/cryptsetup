@@ -244,7 +244,7 @@ static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
 	r = crypt_cipher_init(&cipher, "blowfish", "ecb",
 			      &key[alg->key_offset], alg->key_size);
 	if (r < 0)
-		goto out;
+		return r;
 
 	memcpy(iv, &key[alg->iv_offset], alg->iv_size);
 	for (i = 0; i < TCRYPT_HDR_LEN; i += bs) {
@@ -254,12 +254,12 @@ static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
 					  bs, NULL, 0);
 		blowfish_le(&buf[i]);
 		if (r < 0)
-			goto out;
+			break;
 		for (j = 0; j < bs; j++)
 			buf[i + j] ^= iv[j];
 		memcpy(iv, iv_old, bs);
 	}
-out:
+
 	crypt_cipher_destroy(cipher);
 	return r;
 }
@@ -394,10 +394,18 @@ static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 				continue;
 			r = decrypt_hdr_one(&tcrypt_cipher[i].cipher[j],
 					    tcrypt_cipher[i].mode, key, &hdr2);
-			if (r < 0) {
-				log_dbg("Error %s.", tcrypt_cipher[i].cipher[j].name);
+			if (r < 0)
 				break;
-			}
+		}
+
+		if (r == -ENOENT) {
+			log_err(cd, _("Required kernel crypto interface is not available.\n"
+				      "Ensure you have af_skcipher kernel module loaded.\n"));
+			return -ENOTSUP;
+		}
+		if (r < 0) {
+			log_dbg("TCRYPT:   returned error %d, skipped.", r);
+			continue;
 		}
 
 		if (!strncmp(hdr2.d.magic, TCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {

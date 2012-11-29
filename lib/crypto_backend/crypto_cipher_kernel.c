@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <linux/if_alg.h>
 #include "crypto_backend.h"
 
@@ -43,29 +44,40 @@ int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd)
 {
 	*tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
 	if (*tfmfd == -1)
-		goto bad;
+		return -ENOENT;
 
-	if (bind(*tfmfd, (struct sockaddr *)sa, sizeof(*sa)) == -1)
-		goto bad;
-
-	*opfd = accept(*tfmfd, NULL, 0);
-	if (*opfd == -1)
-		goto bad;
-
-	return 0;
-bad:
-	if (*tfmfd != -1) {
+	if (bind(*tfmfd, (struct sockaddr *)sa, sizeof(*sa)) == -1) {
 		close(*tfmfd);
 		*tfmfd = -1;
+		return -ENOENT;
 	}
-	if (*opfd != -1) {
-		close(*opfd);
-		*opfd = -1;
+
+	*opfd = accept(*tfmfd, NULL, 0);
+	if (*opfd == -1) {
+		close(*tfmfd);
+		*tfmfd = -1;
+		return -EINVAL;
 	}
-	return -EINVAL;
+
+	return 0;
 }
 
-/* ciphers */
+static int crypt_kernel_cipher_available(void)
+{
+	struct stat st;
+
+	if(stat("/sys/module/algif_skcipher", &st) < 0)
+		return -ENOENT;
+
+	return -ENOTSUP;
+}
+
+/*
+ *ciphers
+ *
+ * ENOENT - no API available
+ * ENOTSUP - algorithm not available
+ */
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *buffer, size_t length)
 {
@@ -74,6 +86,7 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		.salg_family = AF_ALG,
 		.salg_type = "skcipher",
 	};
+	int r;
 
 	h = malloc(sizeof(*h));
 	if (!h)
@@ -82,9 +95,12 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 	snprintf((char *)sa.salg_name, sizeof(sa.salg_name),
 		 "%s(%s)", mode, name);
 
-	if (crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd) < 0) {
+	r = crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd);
+	if (r < 0) {
 		free(h);
-		return -ENOTSUP;
+		if (r == -ENOENT)
+			return crypt_kernel_cipher_available();
+		return r;
 	}
 
 	if (setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, buffer, length) == -1) {

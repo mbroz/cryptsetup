@@ -489,14 +489,18 @@ static int action_benchmark(int arg __attribute__((unused)))
 			strncat(cipher, cipher_mode, MAX_CIPHER_LEN);
 			log_std("%11s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
 				cipher, key_size, enc_mbr, dec_mbr);
-		} else
-			log_err(_("Cannot benchmark %s.\n"), cipher);
+		} else if (r == -ENOTSUP)
+			log_err(_("Cipher %s is not available.\n"), opt_cipher);
 	} else {
-		log_std("%s", header);
 		for (i = 0; bciphers[i].cipher; i++) {
 			r = crypt_benchmark(NULL, bciphers[i].cipher, bciphers[i].mode,
 					    bciphers[i].key_size, bciphers[i].iv_size,
 					    buffer_size, &enc_mbr, &dec_mbr);
+			if (r == -ENOENT)
+				break;
+			if (i == 0)
+				log_std("%s", header);
+
 			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
 				 bciphers[i].cipher, bciphers[i].mode);
 			if (!r)
@@ -508,6 +512,9 @@ static int action_benchmark(int arg __attribute__((unused)))
 		}
 	}
 
+	if (r == -ENOENT)
+		log_err( _("Required kernel crypto interface is not available.\n"
+			   "Ensure you have af_skcipher kernel module loaded.\n"));
 	return r;
 }
 
