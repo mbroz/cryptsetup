@@ -18,11 +18,47 @@ function remove_mapping()
 function fail()
 {
         [ -n "$1" ] && echo "$1"
-        echo "FAILED"
+        echo " [FAILED]"
         remove_mapping
         exit 2
 }
 
+function skip()
+{
+        [ -n "$1" ] && echo "$1"
+	echo "Test skipped."
+	exit 0
+}
+
+function test_one()
+{
+	$CRYPTSETUP benchmark -c "$1" -s "$2" | grep -v "#" || skip
+}
+
+function test_required()
+{
+	echo "REQUIRED CIPHERS TEST"
+	echo "#  Algorithm | Key | Encryption | Decryption"
+
+	test_one aes-cbc 256
+	test_one aes-lrw 384
+	test_one aes-xts 512
+
+	test_one twofish-cbc 256
+	test_one twofish-lrw 384
+	test_one twofish-xts 512
+
+	test_one serpent-cbc 256
+	test_one serpent-lrw 384
+	test_one serpent-xts 512
+
+	test_one blowfish-cbc 256
+
+	test_one des3_ede-cbc 192
+	test_one cast5 128
+}
+
+test_required
 
 [ ! -d $TST_DIR ] && tar xjf tcrypt-images.tar.bz2
 
@@ -41,7 +77,7 @@ for file in $(ls $TST_DIR/tc_*-hidden) ; do
 done
 
 if [ $(id -u) != 0 ]; then
-	echo "WARNING: You must be root to run this test, test skipped."
+	echo "WARNING: You must be root to run activation part of test, test skipped."
 	exit 0
 fi
 

@@ -458,7 +458,7 @@ static int action_benchmark(int arg __attribute__((unused)))
 		{  NULL, NULL, 0, 0 }
 	};
 	char *header = "# Tests are approximate using memory only (no storage IO).\n"
-			"# Algorithm | Key | Encryption | Decryption\n";
+			"#  Algorithm | Key | Encryption | Decryption\n";
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS);
@@ -477,7 +477,9 @@ static int action_benchmark(int arg __attribute__((unused)))
 			*c = '\0';
 
 		/* FIXME: not really clever :) */
-		if (strstr(cipher, "des"))
+		if (strstr(cipher, "des") ||
+		    strstr(cipher, "blowfish") ||
+		    strstr(cipher, "cast5"))
 			iv_size = 8;
 
 		r = crypt_benchmark(NULL, cipher, cipher_mode,
@@ -487,7 +489,7 @@ static int action_benchmark(int arg __attribute__((unused)))
 			log_std("%s", header);
 			strncat(cipher, "-", MAX_CIPHER_LEN);
 			strncat(cipher, cipher_mode, MAX_CIPHER_LEN);
-			log_std("%11s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
+			log_std("%12s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
 				cipher, key_size, enc_mbr, dec_mbr);
 		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
@@ -506,10 +508,10 @@ static int action_benchmark(int arg __attribute__((unused)))
 			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
 				 bciphers[i].cipher, bciphers[i].mode);
 			if (!r)
-				log_std("%11s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
+				log_std("%12s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
 					cipher, bciphers[i].key_size*8, enc_mbr, dec_mbr);
 			else
-				log_std("%11s  %4db %12s %12s\n", cipher,
+				log_std("%12s  %4db %12s %12s\n", cipher,
 					bciphers[i].key_size*8, _("N/A"), _("N/A"));
 		}
 		if (skipped && skipped == i)

@@ -344,6 +344,8 @@ static int decrypt_hdr_cbci(struct tcrypt_algs *ciphers,
 	memcpy(iv, &key[ciphers->cipher[0].iv_offset], bs);
 
 	/* Initialize all ciphers in chain in ECB mode */
+	for (j = 0; j < ciphers->chain_count; j++)
+		cipher[j] = NULL;
 	for (j = 0; j < ciphers->chain_count; j++) {
 		r = crypt_cipher_init(&cipher[j], ciphers->cipher[j].name, "ecb",
 				      &key[ciphers->cipher[j].key_offset],
@@ -377,7 +379,7 @@ static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 			const char *key, int legacy_modes)
 {
 	struct tcrypt_phdr hdr2;
-	int i, j, r;
+	int i, j, r = -EINVAL;
 
 	for (i = 0; tcrypt_cipher[i].chain_count; i++) {
 		if (!legacy_modes && tcrypt_cipher[i].legacy)
