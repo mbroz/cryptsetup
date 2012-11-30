@@ -1699,14 +1699,23 @@ static void TcryptTest(void)
 		.passphrase = passphrase,
 		.passphrase_size = strlen(passphrase),
 	};
+	double enc_mbr = 0, dec_mbr = 0;
 	const char *tcrypt_dev = "tcrypt-images/tc_5-sha512-xts-aes";
 	size_t key_size = 64;
 	char key[key_size], key_def[key_size];
 	const char *key_hex =
 		"e87dd14403a547b440f459aa8284da62db364658a286b94ba2f3c7957c03f290"
 		"266d38facd211e12cd0abfc5b41555df6019d73374f85fbcb23fd4efc43b0c64";
+	int r;
 
 	crypt_decode_key(key_def, key_hex, strlen(key_hex) / 2);
+
+	// First ensure we can use af_alg skcipher interface
+	r = crypt_benchmark(NULL, "aes", "xts", 512, 16, 1024, &enc_mbr, &dec_mbr);
+	if (r == -ENOTSUP || r == -ENOENT) {
+		printf("WARNING: algif_skcipher interface not present, skipping test.\n");
+		return;
+	}
 
 	OK_(crypt_init(&cd, tcrypt_dev));
 	params.passphrase_size--;
