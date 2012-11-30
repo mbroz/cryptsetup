@@ -44,7 +44,7 @@ int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd)
 {
 	*tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
 	if (*tfmfd == -1)
-		return -ENOENT;
+		return -ENOTSUP;
 
 	if (bind(*tfmfd, (struct sockaddr *)sa, sizeof(*sa)) == -1) {
 		close(*tfmfd);
@@ -62,21 +62,12 @@ int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd)
 	return 0;
 }
 
-static int crypt_kernel_cipher_available(void)
-{
-	struct stat st;
-
-	if(stat("/sys/module/algif_skcipher", &st) < 0)
-		return -ENOENT;
-
-	return -ENOTSUP;
-}
-
 /*
  *ciphers
  *
- * ENOENT - no API available
- * ENOTSUP - algorithm not available
+ * ENOENT - algorithm not available
+ * ENOTSUP - AF_ALG family not available
+ * (but cannot check specificaly for skcipher API)
  */
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *buffer, size_t length)
@@ -98,8 +89,6 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 	r = crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd);
 	if (r < 0) {
 		free(h);
-		if (r == -ENOENT)
-			return crypt_kernel_cipher_available();
 		return r;
 	}
 

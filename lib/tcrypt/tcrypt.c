@@ -398,13 +398,11 @@ static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 				break;
 		}
 
-		if (r == -ENOENT) {
-			log_err(cd, _("Required kernel crypto interface is not available.\n"
-				      "Ensure you have af_skcipher kernel module loaded.\n"));
-			return -ENOTSUP;
-		}
 		if (r < 0) {
 			log_dbg("TCRYPT:   returned error %d, skipped.", r);
+			if (r == -ENOTSUP)
+				break;
+			r = -ENOENT;
 			continue;
 		}
 
@@ -468,7 +466,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	unsigned char pwd[TCRYPT_KEY_POOL_LEN] = {};
 	size_t passphrase_size;
 	char *key;
-	int r = -EINVAL, i, legacy_modes;
+	int r = -EINVAL, i, legacy_modes, skipped = 0;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
@@ -506,10 +504,17 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 
 		/* Decrypt header */
 		r = decrypt_hdr(cd, hdr, key, legacy_modes);
+		if (r == -ENOENT) {
+			skipped++;
+			continue;
+		}
 		if (r != -EPERM)
 			break;
 	}
 
+	if (skipped == i || r == -ENOTSUP)
+		log_err(cd, _("Required kernel crypto interface not available.\n"
+			      "Ensure you have algif_skcipher kernel module loaded.\n"));
 	if (r < 0)
 		goto out;
 

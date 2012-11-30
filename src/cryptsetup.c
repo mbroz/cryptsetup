@@ -462,7 +462,7 @@ static int action_benchmark(int arg __attribute__((unused)))
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS);
-	int iv_size = 16;
+	int iv_size = 16, skipped = 0;
 	int buffer_size = 1024 * 1024;
 	char *c;
 	int i, r;
@@ -489,15 +489,17 @@ static int action_benchmark(int arg __attribute__((unused)))
 			strncat(cipher, cipher_mode, MAX_CIPHER_LEN);
 			log_std("%11s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
 				cipher, key_size, enc_mbr, dec_mbr);
-		} else if (r == -ENOTSUP)
+		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
 	} else {
 		for (i = 0; bciphers[i].cipher; i++) {
 			r = crypt_benchmark(NULL, bciphers[i].cipher, bciphers[i].mode,
 					    bciphers[i].key_size, bciphers[i].iv_size,
 					    buffer_size, &enc_mbr, &dec_mbr);
-			if (r == -ENOENT)
+			if (r == -ENOTSUP)
 				break;
+			if (r == -ENOENT)
+				skipped++;
 			if (i == 0)
 				log_std("%s", header);
 
@@ -510,11 +512,13 @@ static int action_benchmark(int arg __attribute__((unused)))
 				log_std("%11s  %4db %12s %12s\n", cipher,
 					bciphers[i].key_size*8, _("N/A"), _("N/A"));
 		}
+		if (skipped == i)
+			r = -ENOTSUP;
 	}
 
-	if (r == -ENOENT)
-		log_err( _("Required kernel crypto interface is not available.\n"
-			   "Ensure you have af_skcipher kernel module loaded.\n"));
+	if (r == -ENOTSUP)
+		log_err( _("Required kernel crypto interface not available.\n"
+			   "Ensure you have algif_skcipher kernel module loaded.\n"));
 	return r;
 }
 
