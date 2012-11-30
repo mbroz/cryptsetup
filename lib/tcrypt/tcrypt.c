@@ -829,6 +829,10 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 {
 	uint64_t size;
 
+	/* No real header loaded, initialized by active device */
+	if (!hdr->d.version)
+		return hdr->d.mk_offset / hdr->d.sector_size;
+
 	if (params->mode && !strncmp(params->mode, "xts", 3)) {
 		if (hdr->d.version < 3)
 			return 1;
@@ -877,7 +881,7 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 	int i, key_index;
 
 	if (!hdr->d.version) {
-		log_dbg("TCRYPT: this function is not supported without encrypted header load.");
+		log_err(cd, _("This function is not supported without TCRYPT header load."));
 		return -ENOTSUP;
 	}
 
