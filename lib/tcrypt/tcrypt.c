@@ -512,7 +512,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			break;
 	}
 
-	if (skipped == i || r == -ENOTSUP)
+	if ((skipped && skipped == i) || r == -ENOTSUP)
 		log_err(cd, _("Required kernel crypto interface not available.\n"
 			      "Ensure you have algif_skcipher kernel module loaded.\n"));
 	if (r < 0)

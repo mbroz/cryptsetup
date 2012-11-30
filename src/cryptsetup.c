@@ -512,7 +512,7 @@ static int action_benchmark(int arg __attribute__((unused)))
 				log_std("%11s  %4db %12s %12s\n", cipher,
 					bciphers[i].key_size*8, _("N/A"), _("N/A"));
 		}
-		if (skipped == i)
+		if (skipped && skipped == i)
 			r = -ENOTSUP;
 	}
 
