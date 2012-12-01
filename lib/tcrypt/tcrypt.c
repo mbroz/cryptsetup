@@ -428,7 +428,6 @@ static int pool_keyfile(struct crypt_device *cd,
 	unsigned char data[TCRYPT_KEYFILE_LEN];
 	int i, j, fd, data_size;
 	uint32_t crc;
-	unsigned char *crc_c = (unsigned char*)&crc;
 
 	log_dbg("TCRYPT: using keyfile %s.", keyfile);
 
@@ -448,10 +447,10 @@ static int pool_keyfile(struct crypt_device *cd,
 
 	for (i = 0, j = 0, crc = ~0U; i < data_size; i++) {
 		crc = crypt_crc32(crc, &data[i], 1);
-		pool[j++] += crc_c[3];
-		pool[j++] += crc_c[2];
-		pool[j++] += crc_c[1];
-		pool[j++] += crc_c[0];
+		pool[j++] += (unsigned char)(crc >> 24);
+		pool[j++] += (unsigned char)(crc >> 16);
+		pool[j++] += (unsigned char)(crc >>  8);
+		pool[j++] += (unsigned char)(crc);
 		j %= TCRYPT_KEY_POOL_LEN;
 	}
 
