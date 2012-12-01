@@ -76,13 +76,21 @@ for file in $(ls $TST_DIR/tc_*-hidden) ; do
 	echo " [OK]"
 done
 
+echo "HEADER KEYFILES CHECK"
+for file in $(ls $TST_DIR/tck_*) ; do
+	echo -n " $file (hidden)"
+	echo $PASSWORD | $CRYPTSETUP tcryptDump -d $TST_DIR/keyfile1 -d $TST_DIR/keyfile2 $file >/dev/null || fail
+	echo " [OK]"
+done
+
+
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
 	exit 0
 fi
 
 echo "ACTIVATION FS UUID CHECK (LRW/XTS modes only)"
-for file in $(ls $TST_DIR/*-lrw-* $TST_DIR/*-xts-*) ; do
+for file in $(ls $TST_DIR/tc_*-lrw-* $TST_DIR/tc_*-xts-*) ; do
 	echo -n " $file"
 	echo $PASSWORD | $CRYPTSETUP tcryptOpen -r $file $MAP || fail
 	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
@@ -92,7 +100,7 @@ for file in $(ls $TST_DIR/*-lrw-* $TST_DIR/*-xts-*) ; do
 done
 
 echo "ACTIVATION FS UUID (HIDDEN) CHECK (LRW/XTS modes only)"
-for file in $(ls $TST_DIR/*-lrw-*-hidden $TST_DIR/*-xts-*-hidden) ; do
+for file in $(ls $TST_DIR/tc_*-lrw-*-hidden $TST_DIR/tc_*-xts-*-hidden) ; do
 	echo -n " $file"
 	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r $file $MAP --hidden || fail
 	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)

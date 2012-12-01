@@ -1695,17 +1695,22 @@ static void TcryptTest(void)
 	struct crypt_device *cd = NULL;
 	struct crypt_active_device cad;
 	const char *passphrase = "aaaaaaaaaaaa";
+	const char *kf1 = "tcrypt-images/keyfile1";
+	const char *kf2 = "tcrypt-images/keyfile2";
+	const char *keyfiles[] = { kf1, kf2 };
 	struct crypt_params_tcrypt params = {
 		.passphrase = passphrase,
 		.passphrase_size = strlen(passphrase),
+		.keyfiles = keyfiles,
+		.keyfiles_count = 2,
 	};
 	double enc_mbr = 0, dec_mbr = 0;
-	const char *tcrypt_dev = "tcrypt-images/tc_5-sha512-xts-aes";
+	const char *tcrypt_dev = "tcrypt-images/tck_5-sha512-xts-aes";
 	size_t key_size = 64;
 	char key[key_size], key_def[key_size];
 	const char *key_hex =
-		"e87dd14403a547b440f459aa8284da62db364658a286b94ba2f3c7957c03f290"
-		"266d38facd211e12cd0abfc5b41555df6019d73374f85fbcb23fd4efc43b0c64";
+		"98dee64abe44bbf41d171c1f7b3e8eacda6d6b01f459097459a167f8c2872a96"
+		"3979531d1cdc18af62757cf22286f16f8583d848524f128d7594ac2082668c73";
 	int r;
 
 	crypt_decode_key(key_def, key_hex, strlen(key_hex) / 2);
