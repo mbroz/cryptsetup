@@ -246,6 +246,48 @@ out:
 	return r;
 }
 
+static int tcryptDump_with_volume_key(struct crypt_device *cd)
+{
+	char *vk = NULL;
+	size_t vk_size;
+	unsigned i;
+	int r;
+
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
+	if (!yesDialog(
+	    _("Header dump with volume key is sensitive information\n"
+	      "which allows access to encrypted partition without passphrase.\n"
+	      "This dump should be always stored encrypted on safe place."),
+	      NULL))
+		return -EPERM;
+
+	vk_size = crypt_get_volume_key_size(cd);
+	vk = crypt_safe_alloc(vk_size);
+	if (!vk)
+		return -ENOMEM;
+
+	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size, NULL, 0);
+	if (r < 0)
+		goto out;
+
+	log_std("TCRYPT header information for %s\n", crypt_get_device_name(cd));
+	log_std("Cipher chain:  \t%s\n", crypt_get_cipher(cd));
+	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
+	log_std("Payload offset:\t%d\n", (int)crypt_get_data_offset(cd));
+	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
+	log_std("MK dump:\t");
+
+	for(i = 0; i < vk_size; i++) {
+		if (i && !(i % 16))
+			log_std("\n\t\t");
+		log_std("%02hhx ", (char)vk[i]);
+	}
+	log_std("\n");
+out:
+	crypt_safe_free(vk);
+	return r;
+}
+
 static int action_tcryptDump(void)
 {
 	struct crypt_device *cd = NULL;
@@ -274,7 +316,10 @@ static int action_tcryptDump(void)
 	if (r < 0)
 		goto out;
 
-	r = crypt_dump(cd);
+	if (opt_dump_master_key)
+		r = tcryptDump_with_volume_key(cd);
+	else
+		r = crypt_dump(cd);
 out:
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
@@ -991,7 +1036,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	if (!yesDialog(
-	    _("LUKS header dump with volume key is sensitive information\n"
+	    _("Header dump with volume key is sensitive information\n"
 	      "which allows access to encrypted partition without passphrase.\n"
 	      "This dump should be always stored encrypted on safe place."),
 	      NULL))
