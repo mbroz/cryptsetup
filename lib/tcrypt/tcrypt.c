@@ -1,5 +1,5 @@
 /*
- * TCRYPT compatible volume handling
+ * TCRYPT (TrueCrypt-compatible) volume handling
  *
  * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2012, Milan Broz

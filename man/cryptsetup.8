@@ -361,6 +361,68 @@ Identical to \fIremove\fR.
 .PP
 See also section 7 of the FAQ and \fBhttp://loop-aes.sourceforge.net\fR
 for more information regarding loop-AES.
+.SH TCRYPT (TrueCrypt-compatible) EXTENSION
+cryptsetup supports mapping of TrueCrypt or tcplay encrypted partition
+using a native Linux kernel API.
+Header formatting and TCRYPT header change is not supported, cryptsetup
+never changes TCRYPT header on-device.
+
+TCRYPT extension requires kernel userspace crypto API to be available
+(kernel af_alg and algif_skcipher modules, introduced in Linux kernel 2.6.38).
+
+Because TCRYPT header is encrypted, you have to always provide valid
+passphrase and keyfiles.
+
+Cryptsetup should recognize all header variants, except legacy cipher chains
+using LRW encryption mode with 64 bits encryption block (namely Blowfish
+in LRW mode is not recognized, this is limitation of kernel crypto API).
+
+\fBNOTE:\fR Activation with \fBtcryptOpen\fR is supported only for cipher chains
+using LRW or XTS encryption modes.
+
+The \fBtcryptDump\fR command should work for all recognized TCRYPT devices
+and doesn't require superuser privilege.
+
+To use hidden header (and map hidden device, if available),
+use \fB\-\-hidden\fR option.
+.PP
+\fItcryptOpen\fR <device> <name> \-\-key-file <keyfile>
+.IP
+Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up a mapping <name>.
+
+\fB<options>\fR can be [\-\-key-file, \-\-hidden, \-\-readonly,
+\-\-test-passphrase].
+
+The keyfile parameter allows combination of file content with the
+passphrase and can be repeated. Note that using keyfiles is compatible
+with TCRYPT and is different from LUKS keyfile logic.
+.PP
+\fItcryptDump\fR <device>
+.IP
+Dump the header information of a TCRYPT device.
+
+If the \-\-dump-master-key option is used, the TCRYPT device master key is
+dumped instead of TCRYPT header info. Beware that the master key
+(or concatenated master keys if cipher chain is used)
+can be used to decrypt the data stored in the TCRYPT container without
+a passphrase.
+This means that if the master key is compromised, the whole device has
+to be erased to prevent further access. Use this option carefully.
+
+\fB<options>\fR can be [\-\-dump-master-key, \-\-key-file, \-\-hidden].
+
+The keyfile parameter allows combination of file content with the
+passphrase and can be repeated.
+.PP
+\fItcryptClose\fR <name>
+.IP
+Identical to \fIremove\fR.
+.PP
+See also \fBhttp://www.truecrypt.org\fR for more information regarding
+TrueCrypt.
+
+Please note that cryptsetup does not use TrueCrypt code, please report
+all problems related to this compatibility extension to cryptsetup project.
 .SH MISCELLANEOUS
 .PP
 \fIbenchmark\fR <options>
@@ -374,8 +436,8 @@ and \fB\-\-key-size\fR options.
 \fBNOTE:\fR This benchmark is using memory only and is only informative.
 You cannot directly predict real storage encryption speed from it.
 
-This benchmark requires kernel userspace crypto API interface to be available
-(kernel af_alg and af_skcipher modules, introduced in Linux kernel 2.6.38).
+This benchmark requires kernel userspace crypto API to be available
+(kernel af_alg and algif_skcipher modules, introduced in Linux kernel 2.6.38).
 
 \fB<options>\fR can be [\-\-cipher, \-\-key-size].
 .SH OPTIONS
@@ -836,6 +898,8 @@ Copyright \(co 2004 Christophe Saout
 Copyright \(co 2004-2006 Clemens Fruhwirth
 .br
 Copyright \(co 2009-2012 Red Hat, Inc.
+.br
+Copyright \(co 2009-2012 Milan Broz
 .br
 Copyright \(co 2012 Arno Wagner
 

@@ -302,7 +302,7 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
 #define CRYPT_LOOPAES "LOOPAES"
 /** dm-verity mode */
 #define CRYPT_VERITY "VERITY"
-/** TCRYPT mode */
+/** TCRYPT (TrueCrypt-compatible) mode */
 #define CRYPT_TCRYPT "TCRYPT"
 
 /**
@@ -397,10 +397,10 @@ struct crypt_params_verity {
 #define CRYPT_TCRYPT_BACKUP_HEADER   (1 << 2)
 
 struct crypt_params_tcrypt {
-	const char *passphrase;
-	size_t passphrase_size;
-	const char **keyfiles;
-	unsigned int keyfiles_count;
+	const char *passphrase;    /**< passphrase to unlock header (input only) */
+	size_t passphrase_size;    /**< passphrase size (input only) */
+	const char **keyfiles;     /**< keyfile paths to unlock header (input only) */
+	unsigned int keyfiles_count;/**< keyfiles count (input only) */
 	const char *hash_name;     /**< hash function for PBKDF */
 	const char *cipher;        /**< cipher chain c1[-c2[-c3]] */
 	const char *mode;          /**< cipher block mode */
@@ -788,6 +788,8 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * @note For VERITY the volume key means root hash required for activation.
  * 	 Because kernel dm-verity is always read only, you have to provide
  * 	 CRYPT_ACTIVATE_READONLY flag always.
+ * @note For TCRYPT the volume key should be always NULL and because master
+ * 	 key from decrypted header is used instead.
  */
 int crypt_activate_by_volume_key(struct crypt_device *cd,
 	const char *name,
@@ -820,6 +822,9 @@ int crypt_deactivate(struct crypt_device *cd, const char *name);
  * @param passphrase_size size of @e passphrase
  *
  * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note For TCRYPT cipher chain is  the volume key concatenated
+ * 	 for all ciphers in chain.
  */
 int crypt_volume_key_get(struct crypt_device *cd,
 	int keyslot,

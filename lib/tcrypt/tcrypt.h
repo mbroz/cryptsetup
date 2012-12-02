@@ -1,5 +1,5 @@
 /*
- * TCRYPT - header defitinion
+ * TCRYPT (TrueCrypt-compatible)  header defitinion
  *
  * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2012, Milan Broz
