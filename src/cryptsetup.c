@@ -62,57 +62,6 @@ static const char **action_argv;
 static int action_argc;
 static const char *null_action_argv[] = {NULL, NULL};
 
-static int action_open(int arg);
-static int action_close(int arg);
-static int action_resize(int arg);
-static int action_status(int arg);
-static int action_benchmark(int arg);
-static int action_luksFormat(int arg);
-static int action_luksAddKey(int arg);
-static int action_luksKillSlot(int arg);
-static int action_luksRemoveKey(int arg);
-static int action_luksChangeKey(int arg);
-static int action_isLuks(int arg);
-static int action_luksUUID(int arg);
-static int action_luksDump(int arg);
-static int action_luksSuspend(int arg);
-static int action_luksResume(int arg);
-static int action_luksBackup(int arg);
-static int action_luksRestore(int arg);
-static int action_luksRepair(int arg);
-static int action_tcryptDump(int arg);
-
-static struct action_type {
-	const char *type;
-	int (*handler)(int);
-	int arg;
-	int required_action_argc;
-	int required_memlock;
-	const char *arg_desc;
-	const char *desc;
-} action_types[] = {
-	{ "open",	action_open,		0, 1, 1, N_("<device> [<name>]"),N_("open device as mapping <name>") },
-	{ "close",	action_close,		0, 1, 1, N_("<name>"), N_("close device (remove mapping)") },
-	{ "resize",	action_resize,		0, 1, 1, N_("<name>"), N_("resize active device") },
-	{ "status",	action_status,		0, 1, 0, N_("<name>"), N_("show device status") },
-	{ "benchmark",	action_benchmark,	0, 0, 0, N_("<name>"), N_("benchmark cipher") },
-	{ "repair",	action_luksRepair,	0, 1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
-	{ "luksFormat", action_luksFormat,	0, 1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
-	{ "luksAddKey",	action_luksAddKey,	0, 1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
-	{ "luksRemoveKey",action_luksRemoveKey,	0, 1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
-	{ "luksChangeKey",action_luksChangeKey,	0, 1, 1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
-	{ "luksKillSlot",  action_luksKillSlot, 0, 2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
-	{ "luksUUID",	action_luksUUID,	0, 1, 0, N_("<device>"), N_("print UUID of LUKS device") },
-	{ "isLuks",	action_isLuks,		0, 1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
-	{ "luksDump",	action_luksDump,	0, 1, 1, N_("<device>"), N_("dump LUKS partition information") },
-	{ "luksSuspend",action_luksSuspend,	0, 1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen).") },
-	{ "luksResume",	action_luksResume,	0, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
-	{ "luksHeaderBackup",action_luksBackup,	0, 1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
-	{ "luksHeaderRestore",action_luksRestore,0,1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
-	{ "tcryptDump", action_tcryptDump,	0, 1, 1, N_("<device>"), N_("dump TCRYPT device information") },
-	{ NULL, NULL, 0, 0, 0, NULL, NULL }
-};
-
 static int _verify_passphrase(int def)
 {
 	/* Batch mode switch off verify - if not overrided by -y */
@@ -131,7 +80,7 @@ static int _verify_passphrase(int def)
 	return def;
 }
 
-static int action_open_plain(int arg __attribute__((unused)))
+static int action_open_plain(void)
 {
 	struct crypt_device *cd = NULL;
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
@@ -214,7 +163,7 @@ out:
 	return r;
 }
 
-static int action_open_loopaes(int arg __attribute__((unused)))
+static int action_open_loopaes(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_loopaes params = {
@@ -254,7 +203,7 @@ out:
 	return r;
 }
 
-static int action_open_tcrypt(int arg __attribute__((unused)))
+static int action_open_tcrypt(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_tcrypt params = {
@@ -297,7 +246,7 @@ out:
 	return r;
 }
 
-static int action_tcryptDump(int arg __attribute__((unused)))
+static int action_tcryptDump(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_tcrypt params = {
@@ -332,7 +281,7 @@ out:
 	return r;
 }
 
-static int action_close(int arg __attribute__((unused)))
+static int action_close(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -345,7 +294,7 @@ static int action_close(int arg __attribute__((unused)))
 	return r;
 }
 
-static int action_resize(int arg __attribute__((unused)))
+static int action_resize(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -358,7 +307,7 @@ static int action_resize(int arg __attribute__((unused)))
 	return r;
 }
 
-static int action_status(int arg __attribute__((unused)))
+static int action_status(void)
 {
 	crypt_status_info ci;
 	struct crypt_active_device cad;
@@ -428,7 +377,7 @@ out:
 	return r;
 }
 
-static int action_benchmark(int arg __attribute__((unused)))
+static int action_benchmark(void)
 {
 	static struct {
 		char *cipher;
@@ -543,7 +492,7 @@ fail:
 	return -EINVAL;
 }
 
-static int action_luksRepair(int arg __attribute__((unused)))
+static int action_luksRepair(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -569,7 +518,7 @@ out:
 	return r;
 }
 
-static int action_luksFormat(int arg __attribute__((unused)))
+static int action_luksFormat(void)
 {
 	int r = -EINVAL, keysize;
 	const char *header_device;
@@ -648,7 +597,7 @@ out:
 	return r;
 }
 
-static int action_open_luks(int arg __attribute__((unused)))
+static int action_open_luks(void)
 {
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device, *activated_name;
@@ -761,7 +710,7 @@ out:
 	return r;
 }
 
-static int action_luksKillSlot(int arg __attribute__((unused)))
+static int action_luksKillSlot(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -802,7 +751,7 @@ out:
 	return r;
 }
 
-static int action_luksRemoveKey(int arg __attribute__((unused)))
+static int action_luksRemoveKey(void)
 {
 	struct crypt_device *cd = NULL;
 	char *password = NULL;
@@ -850,7 +799,7 @@ out:
 	return r;
 }
 
-static int action_luksAddKey(int arg __attribute__((unused)))
+static int action_luksAddKey(void)
 {
 	int r = -EINVAL, keysize = 0;
 	char *key = NULL;
@@ -903,7 +852,7 @@ static int _slots_full(struct crypt_device *cd)
 	return 1;
 }
 
-static int action_luksChangeKey(int arg __attribute__((unused)))
+static int action_luksChangeKey(void)
 {
 	const char *opt_new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
 	struct crypt_device *cd = NULL;
@@ -991,7 +940,7 @@ out:
 	return r;
 }
 
-static int action_isLuks(int arg __attribute__((unused)))
+static int action_isLuks(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -1006,7 +955,7 @@ out:
 	return r;
 }
 
-static int action_luksUUID(int arg __attribute__((unused)))
+static int action_luksUUID(void)
 {
 	struct crypt_device *cd = NULL;
 	const char *existing_uuid = NULL;
@@ -1085,7 +1034,7 @@ out:
 	return r;
 }
 
-static int action_luksDump(int arg __attribute__((unused)))
+static int action_luksDump(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -1105,7 +1054,7 @@ out:
 	return r;
 }
 
-static int action_luksSuspend(int arg __attribute__((unused)))
+static int action_luksSuspend(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -1118,7 +1067,7 @@ static int action_luksSuspend(int arg __attribute__((unused)))
 	return r;
 }
 
-static int action_luksResume(int arg __attribute__((unused)))
+static int action_luksResume(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -1141,7 +1090,7 @@ out:
 	return r;
 }
 
-static int action_luksBackup(int arg __attribute__((unused)))
+static int action_luksBackup(void)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -1162,7 +1111,7 @@ out:
 	return r;
 }
 
-static int action_luksRestore(int arg __attribute__((unused)))
+static int action_luksRestore(void)
 {
 	struct crypt_device *cd = NULL;
 	int r = 0;
@@ -1182,7 +1131,7 @@ out:
 	return r;
 }
 
-static int action_open(int arg __attribute__((unused)))
+static int action_open(void)
 {
 	if (!opt_type)
 		return -EINVAL;
@@ -1190,19 +1139,19 @@ static int action_open(int arg __attribute__((unused)))
 	if (!strcmp(opt_type, "luks") || !strcmp(opt_type, "luks1")) {
 		if (action_argc < 2 && !opt_test_passphrase)
 			goto args;
-		return action_open_luks(0);
+		return action_open_luks();
 	} else if (!strcmp(opt_type, "plain")) {
 		if (action_argc < 2)
 			goto args;
-		return action_open_plain(0);
+		return action_open_plain();
 	} else if (!strcmp(opt_type, "loopaes")) {
 		if (action_argc < 2)
 			goto args;
-		return action_open_loopaes(0);
+		return action_open_loopaes();
 	} else if (!strcmp(opt_type, "tcrypt")) {
 		if (action_argc < 2 && !opt_test_passphrase)
 			goto args;
-		return action_open_tcrypt(0);
+		return action_open_tcrypt();
 	}
 
 	log_err(_("Unrecognized metadata device type %s.\n"), opt_type);
@@ -1212,6 +1161,35 @@ args:
 	return -EINVAL;
 }
 
+static struct action_type {
+	const char *type;
+	int (*handler)(void);
+	int required_action_argc;
+	int required_memlock;
+	const char *arg_desc;
+	const char *desc;
+} action_types[] = {
+	{ "open",         action_open,         1, 1, N_("<device> [<name>]"),N_("open device as mapping <name>") },
+	{ "close",        action_close,        1, 1, N_("<name>"), N_("close device (remove mapping)") },
+	{ "resize",       action_resize,       1, 1, N_("<name>"), N_("resize active device") },
+	{ "status",       action_status,       1, 0, N_("<name>"), N_("show device status") },
+	{ "benchmark",    action_benchmark,    0, 0, N_("<name>"), N_("benchmark cipher") },
+	{ "repair",       action_luksRepair,   1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
+	{ "luksFormat",   action_luksFormat,   1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
+	{ "luksAddKey",   action_luksAddKey,   1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
+	{ "luksRemoveKey",action_luksRemoveKey,1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
+	{ "luksChangeKey",action_luksChangeKey,1, 1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
+	{ "luksKillSlot", action_luksKillSlot, 2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
+	{ "luksUUID",     action_luksUUID,     1, 0, N_("<device>"), N_("print UUID of LUKS device") },
+	{ "isLuks",       action_isLuks,       1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
+	{ "luksDump",     action_luksDump,     1, 1, N_("<device>"), N_("dump LUKS partition information") },
+	{ "tcryptDump",   action_tcryptDump,   1, 1, N_("<device>"), N_("dump TCRYPT device information") },
+	{ "luksSuspend",  action_luksSuspend,  1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen).") },
+	{ "luksResume",   action_luksResume,   1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
+	{ "luksHeaderBackup", action_luksBackup,1,1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
+	{ "luksHeaderRestore",action_luksRestore,1,1,N_("<device>"), N_("Restore LUKS device header and keyslots") },
+	{}
+};
 
 static void help(poptContext popt_context,
 		 enum poptCallbackReason reason __attribute__((unused)),
@@ -1276,7 +1254,7 @@ static int run_action(struct action_type *action)
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 1);
 
-	r = action->handler(action->arg);
+	r = action->handler();
 
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 0);
