@@ -33,6 +33,7 @@ static const char *opt_master_key_file = NULL;
 static const char *opt_header_backup_file = NULL;
 static const char *opt_uuid = NULL;
 static const char *opt_header_device = NULL;
+static const char *opt_type = "luks";
 static int opt_key_size = 0;
 static long opt_keyfile_size = 0;
 static long opt_new_keyfile_size = 0;
@@ -61,13 +62,12 @@ static const char **action_argv;
 static int action_argc;
 static const char *null_action_argv[] = {NULL, NULL};
 
-static int action_create(int arg);
-static int action_remove(int arg);
+static int action_open(int arg);
+static int action_close(int arg);
 static int action_resize(int arg);
 static int action_status(int arg);
 static int action_benchmark(int arg);
 static int action_luksFormat(int arg);
-static int action_luksOpen(int arg);
 static int action_luksAddKey(int arg);
 static int action_luksKillSlot(int arg);
 static int action_luksRemoveKey(int arg);
@@ -79,9 +79,7 @@ static int action_luksSuspend(int arg);
 static int action_luksResume(int arg);
 static int action_luksBackup(int arg);
 static int action_luksRestore(int arg);
-static int action_loopaesOpen(int arg);
 static int action_luksRepair(int arg);
-static int action_tcryptOpen(int arg);
 static int action_tcryptDump(int arg);
 
 static struct action_type {
@@ -93,29 +91,24 @@ static struct action_type {
 	const char *arg_desc;
 	const char *desc;
 } action_types[] = {
-	{ "create",	action_create,		0, 2, 1, N_("<name> <device>"),N_("create device") },
-	{ "remove",	action_remove,		0, 1, 1, N_("<name>"), N_("remove device") },
+	{ "open",	action_open,		0, 1, 1, N_("<device> [<name>]"),N_("open device as mapping <name>") },
+	{ "close",	action_close,		0, 1, 1, N_("<name>"), N_("close device (remove mapping)") },
 	{ "resize",	action_resize,		0, 1, 1, N_("<name>"), N_("resize active device") },
 	{ "status",	action_status,		0, 1, 0, N_("<name>"), N_("show device status") },
 	{ "benchmark",	action_benchmark,	0, 0, 0, N_("<name>"), N_("benchmark cipher") },
 	{ "repair",	action_luksRepair,	0, 1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
 	{ "luksFormat", action_luksFormat,	0, 1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
-	{ "luksOpen",	action_luksOpen,	0, 2, 1, N_("<device> <name> "), N_("open LUKS device as mapping <name>") },
 	{ "luksAddKey",	action_luksAddKey,	0, 1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
 	{ "luksRemoveKey",action_luksRemoveKey,	0, 1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
 	{ "luksChangeKey",action_luksChangeKey,	0, 1, 1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
 	{ "luksKillSlot",  action_luksKillSlot, 0, 2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
 	{ "luksUUID",	action_luksUUID,	0, 1, 0, N_("<device>"), N_("print UUID of LUKS device") },
 	{ "isLuks",	action_isLuks,		0, 1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
-	{ "luksClose",	action_remove,		0, 1, 1, N_("<name>"), N_("remove LUKS mapping") },
 	{ "luksDump",	action_luksDump,	0, 1, 1, N_("<device>"), N_("dump LUKS partition information") },
 	{ "luksSuspend",action_luksSuspend,	0, 1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen).") },
 	{ "luksResume",	action_luksResume,	0, 1, 1, N_("<device>"), N_("Resume suspended LUKS device.") },
 	{ "luksHeaderBackup",action_luksBackup,	0, 1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
 	{ "luksHeaderRestore",action_luksRestore,0,1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
-	{ "loopaesOpen",action_loopaesOpen,	0, 2, 1, N_("<device> <name> "), N_("open loop-AES device as mapping <name>") },
-	{ "loopaesClose",action_remove,		0, 1, 1, N_("<name>"), N_("remove loop-AES mapping") },
-	{ "tcryptOpen", action_tcryptOpen,	0, 2, 1, N_("<device> <name> "), N_("open TCRYPT device as mapping <name>") },
 	{ "tcryptDump", action_tcryptDump,	0, 1, 1, N_("<device>"), N_("dump TCRYPT device information") },
 	{ NULL, NULL, 0, 0, 0, NULL, NULL }
 };
@@ -138,7 +131,7 @@ static int _verify_passphrase(int def)
 	return def;
 }
 
-static int action_create(int arg __attribute__((unused)))
+static int action_open_plain(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
@@ -172,7 +165,7 @@ static int action_create(int arg __attribute__((unused)))
 		goto out;
 	}
 
-	if ((r = crypt_init(&cd, action_argv[1])))
+	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
 	crypt_set_timeout(cd, opt_timeout);
@@ -197,7 +190,7 @@ static int action_create(int arg __attribute__((unused)))
 
 	if (opt_key_file)
 		/* With hashing, read the whole keyfile */
-		r = crypt_activate_by_keyfile_offset(cd, action_argv[0],
+		r = crypt_activate_by_keyfile_offset(cd, action_argv[1],
 			CRYPT_ANY_SLOT, opt_key_file,
 			params.hash ? 0 : key_size, 0,
 			activate_flags);
@@ -211,7 +204,7 @@ static int action_create(int arg __attribute__((unused)))
 		if (r < 0)
 			goto out;
 
-		r = crypt_activate_by_passphrase(cd, action_argv[0],
+		r = crypt_activate_by_passphrase(cd, action_argv[1],
 			CRYPT_ANY_SLOT, password, passwordLen, activate_flags);
 	}
 out:
@@ -221,7 +214,7 @@ out:
 	return r;
 }
 
-static int action_loopaesOpen(int arg __attribute__((unused)))
+static int action_open_loopaes(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_loopaes params = {
@@ -261,7 +254,7 @@ out:
 	return r;
 }
 
-static int action_tcryptOpen(int arg __attribute__((unused)))
+static int action_open_tcrypt(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_tcrypt params = {
@@ -339,7 +332,7 @@ out:
 	return r;
 }
 
-static int action_remove(int arg __attribute__((unused)))
+static int action_close(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -655,7 +648,7 @@ out:
 	return r;
 }
 
-static int action_luksOpen(int arg __attribute__((unused)))
+static int action_open_luks(int arg __attribute__((unused)))
 {
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device, *activated_name;
@@ -1189,6 +1182,37 @@ out:
 	return r;
 }
 
+static int action_open(int arg __attribute__((unused)))
+{
+	if (!opt_type)
+		return -EINVAL;
+
+	if (!strcmp(opt_type, "luks") || !strcmp(opt_type, "luks1")) {
+		if (action_argc < 2 && !opt_test_passphrase)
+			goto args;
+		return action_open_luks(0);
+	} else if (!strcmp(opt_type, "plain")) {
+		if (action_argc < 2)
+			goto args;
+		return action_open_plain(0);
+	} else if (!strcmp(opt_type, "loopaes")) {
+		if (action_argc < 2)
+			goto args;
+		return action_open_loopaes(0);
+	} else if (!strcmp(opt_type, "tcrypt")) {
+		if (action_argc < 2 && !opt_test_passphrase)
+			goto args;
+		return action_open_tcrypt(0);
+	}
+
+	log_err(_("Unrecognized metadata device type %s.\n"), opt_type);
+	return -EINVAL;
+args:
+	log_err(_("Command requires device and mapped name as arguments.\n"));
+	return -EINVAL;
+}
+
+
 static void help(poptContext popt_context,
 		 enum poptCallbackReason reason __attribute__((unused)),
 		 struct poptOption *key,
@@ -1233,6 +1257,14 @@ static void help(poptContext popt_context,
 		exit(EXIT_SUCCESS);
 	} else
 		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
+}
+
+static void help_args(struct action_type *action, poptContext popt_context)
+{
+	char buf[128];
+
+	snprintf(buf, sizeof(buf), _("%s: requires %s as arguments"), action->type, action->arg_desc);
+	usage(popt_context, EXIT_FAILURE, buf, poptGetInvocationName(popt_context));
 }
 
 static int run_action(struct action_type *action)
@@ -1300,7 +1332,8 @@ int main(int argc, const char **argv)
 		{ "allow-discards",    '\0', POPT_ARG_NONE, &opt_allow_discards,        0, N_("Allow discards (aka TRIM) requests for device."), NULL },
 		{ "header",            '\0', POPT_ARG_STRING, &opt_header_device,       0, N_("Device or file with separated LUKS header."), NULL },
 		{ "test-passphrase",   '\0', POPT_ARG_NONE, &opt_test_passphrase,       0, N_("Do not activate device, just check passphrase."), NULL },
-		{ "hidden",            '\0', POPT_ARG_NONE, &opt_hidden,               0, N_("Use hidden header (hiden TCRYPT device) ."), NULL },
+		{ "hidden",            '\0', POPT_ARG_NONE, &opt_hidden,                0, N_("Use hidden header (hidden TCRYPT device) ."), NULL },
+		{ "type",              'M',  POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1366,12 +1399,6 @@ int main(int argc, const char **argv)
 	if (!(aname = poptGetArg(popt_context)))
 		usage(popt_context, EXIT_FAILURE, _("Argument <action> missing."),
 		      poptGetInvocationName(popt_context));
-	for(action = action_types; action->type; action++)
-		if (strcmp(action->type, aname) == 0)
-			break;
-	if (!action->type)
-		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
-		      poptGetInvocationName(popt_context));
 
 	action_argc = 0;
 	action_argv = poptGetArgs(popt_context);
@@ -1383,43 +1410,72 @@ int main(int argc, const char **argv)
 	while(action_argv[action_argc] != NULL)
 		action_argc++;
 
-	if(action_argc < action->required_action_argc) {
-		char buf[128];
-		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
-		usage(popt_context, EXIT_FAILURE, buf,
-		      poptGetInvocationName(popt_context));
+	/* Handle aliases */
+	if (!strcmp(aname, "create")) {
+		/* create command had historically switched arguments */
+		if (action_argv[0] && action_argv[1]) {
+			const char *tmp = action_argv[0];
+			action_argv[0] = action_argv[1];
+			action_argv[1] = tmp;
+		}
+		aname = "open";
+		opt_type = "plain";
+	} else if (!strcmp(aname, "plainOpen")) {
+		aname = "open";
+		opt_type = "plain";
+	} else if (!strcmp(aname, "luksOpen")) {
+		aname = "open";
+		opt_type = "luks";
+	} else if (!strcmp(aname, "loopaesOpen")) {
+		aname = "open";
+		opt_type = "loopaes";
+	} else if (!strcmp(aname, "tcryptOpen")) {
+		aname = "open";
+		opt_type = "tcrypt";
+	} else if (!strcmp(aname, "remove") ||
+		   !strcmp(aname, "plainClose") ||
+		   !strcmp(aname, "luksClose") ||
+		   !strcmp(aname, "loopaesClose") ||
+		   !strcmp(aname, "tcryptClose")) {
+		aname = "close";
 	}
+
+	for(action = action_types; action->type; action++)
+		if (strcmp(action->type, aname) == 0)
+			break;
+
+	if (!action->type)
+		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
+		      poptGetInvocationName(popt_context));
+
+	if(action_argc < action->required_action_argc)
+		help_args(action, popt_context);
 
 	/* FIXME: rewrite this from scratch */
 
-	if (opt_shared && strcmp(aname, "create"))
+	if (opt_shared && (strcmp(aname, "open") || strcmp(opt_type, "plain")) )
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --shared is allowed only for create operation.\n"),
+		      _("Option --shared is allowed only for open of plain device.\n"),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_allow_discards &&
-	    strcmp(aname, "luksOpen") &&
-	    strcmp(aname, "create") &&
-	    strcmp(aname, "loopaesOpen"))
+	if (opt_allow_discards && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --allow-discards is allowed only for luksOpen, loopaesOpen and create operation.\n"),
+		      _("Option --allow-discards is allowed only for open operation.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&
-	   strcmp(aname, "create") &&
-	   strcmp(aname, "loopaesOpen") &&
+	   strcmp(aname, "open") &&
 	   strcmp(aname, "benchmark"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --key-size is allowed only for luksFormat, create, loopaesOpen and benchmark.\n"
+		      _("Option --key-size is allowed only for luksFormat, open and benchmark.\n"
 		        "To limit read from keyfile use --keyfile-size=(bytes)."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_test_passphrase &&
-	   strcmp(aname, "luksOpen") &&
-	   strcmp(aname, "tcryptOpen"))
+	if (opt_test_passphrase && (strcmp(aname, "open") ||
+	    (strcmp(opt_type, "luks") && strcmp(opt_type, "tcrypt"))))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --test-passphrase is allowed only for luksOpen and tcryptOpen.\n"),
+		      _("Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size % 8)
@@ -1465,19 +1521,22 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Option --align-payload is allowed only for luksFormat."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_skip && strcmp(aname, "create") && strcmp(aname, "loopaesOpen"))
+	if (opt_skip && (strcmp(aname, "open") ||
+	    (strcmp(opt_type, "plain") && strcmp(opt_type, "loopaes"))))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --skip is supported only for create and loopaesOpen commands.\n"),
+		_("Option --skip is supported only for open of plain and loopaes devices.\n"),
 		poptGetInvocationName(popt_context));
 
-	if (opt_offset && strcmp(aname, "create") && strcmp(aname, "loopaesOpen"))
+	if (opt_offset && (strcmp(aname, "open") ||
+	    (strcmp(opt_type, "plain") && strcmp(opt_type, "loopaes"))))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --offset is supported only for create and loopaesOpen commands.\n"),
+		_("Option --offset is supported only for open of plain and loopaes devices.\n"),
 		poptGetInvocationName(popt_context));
 
-	if (opt_hidden && strcmp(aname, "tcryptOpen") && strcmp(aname, "tcryptDump"))
+	if (opt_hidden && strcmp(aname, "tcryptDump") &&
+	    (strcmp(aname, "open") || strcmp(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --hidden is supported only for TCRYPT commands.\n"),
+		_("Option --hidden is supported only for TCRYPT device.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
