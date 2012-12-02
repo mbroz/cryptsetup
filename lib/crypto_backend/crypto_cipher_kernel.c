@@ -117,7 +117,7 @@ static int crypt_cipher_crypt(struct crypt_cipher *ctx,
 		.iov_len = length,
 	};
 	int iv_msg_size = iv ? CMSG_SPACE(sizeof(*alg_iv) + iv_length) : 0;
-	char buffer[CMSG_SPACE(sizeof(type)) + iv_msg_size];
+	char buffer[CMSG_SPACE(sizeof(*type)) + iv_msg_size];
 	struct msghdr msg = {
 		.msg_control = buffer,
 		.msg_controllen = sizeof(buffer),
@@ -137,7 +137,7 @@ static int crypt_cipher_crypt(struct crypt_cipher *ctx,
 	header = CMSG_FIRSTHDR(&msg);
 	header->cmsg_level = SOL_ALG;
 	header->cmsg_type = ALG_SET_OP;
-	header->cmsg_len = CMSG_LEN(sizeof(type));
+	header->cmsg_len = CMSG_LEN(sizeof(*type));
 	type = (void*)CMSG_DATA(header);
 	*type = direction;
 

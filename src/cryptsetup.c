@@ -425,8 +425,8 @@ out:
 static int action_benchmark(void)
 {
 	static struct {
-		char *cipher;
-		char *mode;
+		const char *cipher;
+		const char *mode;
 		size_t key_size;
 		size_t iv_size;
 	} bciphers[] = {
@@ -444,8 +444,8 @@ static int action_benchmark(void)
 		{ "twofish", "xts", 64, 16 },
 		{  NULL, NULL, 0, 0 }
 	};
-	char *header = "# Tests are approximate using memory only (no storage IO).\n"
-			"#  Algorithm | Key | Encryption | Decryption\n";
+	const char *header = "# Tests are approximate using memory only (no storage IO).\n"
+			      "#  Algorithm | Key | Encryption | Decryption\n";
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS);

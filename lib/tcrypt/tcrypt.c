@@ -32,8 +32,8 @@
 /* TCRYPT PBKDF variants */
 static struct {
 	unsigned int legacy:1;
-	char *name;
-	char *hash;
+	const char *name;
+	const char *hash;
 	unsigned int iterations;
 } tcrypt_kdf[] = {
 	{ 0, "pbkdf2", "ripemd160", 2000 },
@@ -335,9 +335,10 @@ static int decrypt_hdr_cbci(struct tcrypt_algs *ciphers,
 			     const char *key, struct tcrypt_phdr *hdr)
 {
 	struct crypt_cipher *cipher[ciphers->chain_count];
-	int bs = ciphers->cipher[0].iv_size;
+	unsigned int bs = ciphers->cipher[0].iv_size;
 	char *buf = (char*)&hdr->e, iv[bs], iv_old[bs];
-	int i, j, r = -EINVAL;
+	unsigned int i, j;
+	int r = -EINVAL;
 
 	remove_whitening(buf, &key[8]);
 
@@ -357,8 +358,8 @@ static int decrypt_hdr_cbci(struct tcrypt_algs *ciphers,
 	/* Implements CBC with chained ciphers in loop inside */
 	for (i = 0; i < TCRYPT_HDR_LEN; i += bs) {
 		memcpy(iv_old, &buf[i], bs);
-		for (j = ciphers->chain_count - 1; j >= 0; j--) {
-			r = crypt_cipher_decrypt(cipher[j], &buf[i], &buf[i],
+		for (j = ciphers->chain_count; j > 0; j--) {
+			r = crypt_cipher_decrypt(cipher[j - 1], &buf[i], &buf[i],
 						  bs, NULL, 0);
 			if (r < 0)
 				goto out;
@@ -454,7 +455,7 @@ static int pool_keyfile(struct crypt_device *cd,
 		j %= TCRYPT_KEY_POOL_LEN;
 	}
 
-	crc = 0;
+	memset(&crc, 0, sizeof(crc));
 	memset(data, 0, TCRYPT_KEYFILE_LEN);
 
 	return 0;
@@ -467,7 +468,8 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	unsigned char pwd[TCRYPT_KEY_POOL_LEN] = {};
 	size_t passphrase_size;
 	char *key;
-	int r = -EINVAL, i, legacy_modes, skipped = 0;
+	unsigned int i, skipped = 0;
+	int r = -EINVAL, legacy_modes;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
@@ -609,7 +611,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 {
 	char cipher[MAX_CIPHER_LEN], dm_name[PATH_MAX], dm_dev_name[PATH_MAX];
 	struct device *device = NULL;
-	int i, r;
+	unsigned int i;
+	int r;
 	struct tcrypt_algs *algs;
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
@@ -657,23 +660,23 @@ int TCRYPT_activate(struct crypt_device *cd,
 	if (!dmd.u.crypt.vk)
 		return -ENOMEM;
 
-	for (i = algs->chain_count - 1; i >= 0; i--) {
-		if (i == 0) {
+	for (i = algs->chain_count; i > 0; i--) {
+		if (i == 1) {
 			strncpy(dm_name, name, sizeof(dm_name));
 			dmd.flags = flags;
 		} else {
-			snprintf(dm_name, sizeof(dm_name), "%s_%d", name, i);
+			snprintf(dm_name, sizeof(dm_name), "%s_%d", name, i-1);
 			dmd.flags = flags | CRYPT_ACTIVATE_PRIVATE;
 		}
 
 		snprintf(cipher, sizeof(cipher), "%s-%s",
-			 algs->cipher[i].name, algs->mode);
+			 algs->cipher[i-1].name, algs->mode);
 
-		copy_key(&algs->cipher[i], algs->mode, dmd.u.crypt.vk->key, hdr->d.keys);
+		copy_key(&algs->cipher[i-1], algs->mode, dmd.u.crypt.vk->key, hdr->d.keys);
 
-		if ((algs->chain_count - 1) != i) {
+		if (algs->chain_count != i) {
 			snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d",
-				 dm_get_dir(), name, i + 1);
+				 dm_get_dir(), name, i);
 			r = device_alloc(&device, dm_dev_name);
 			if (r)
 				break;
@@ -877,7 +880,7 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 			  struct volume_key **vk)
 {
 	struct tcrypt_algs *algs;
-	int i, key_index;
+	unsigned int i, key_index;
 
 	if (!hdr->d.version) {
 		log_err(cd, _("This function is not supported without TCRYPT header load."));

@@ -2087,7 +2087,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
 		case CRYPT_BUSY:
-			if (isTCRYPT(cd->type))
+			if (cd && isTCRYPT(cd->type))
 				r = TCRYPT_deactivate(cd, name);
 			else
 				r = dm_remove_device(cd, name, 0, 0);
