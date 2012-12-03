@@ -48,33 +48,39 @@ Damaging the LUKS header is something people manage to do with
 surprising frequency. This risk is the result of a trade-off
 between security and safety, as LUKS is designed for fast and
 secure wiping by just overwriting header and key-slot area.
+.SH BASIC COMMANDS
+The following are valid actions for all supported device types.
 
-.SH PLAIN MODE
-Plain dm-crypt encrypts the device sector-by-sector with a
-single, non-salted hash of the passphrase. No checks
-are performed, no metadata is used. There is no formatting operation.
-When the raw device is mapped (created), the usual device operations
-can be used on the mapped device, including filesystem creation.
-Mapped devices usually reside in /dev/mapper/<name>.
-
-There are four operations:
-
-\fIcreate\fR <name> <device>
+\fIopen\fR <name> <device> \-\-type <device_type>
 .IP
-Creates a mapping with <name> backed by device <device>.
+Opens (creates a mapping) with <name> backed by device <device>.
 
-\fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify-passphrase,
-\-\-key-file, \-\-keyfile-offset, \-\-key-size, \-\-offset, \-\-skip, \-\-size,
-\-\-readonly, \-\-shared, \-\-allow-discards]
+Device type can be \fIplain\fR, \fIluks\fR (default), \fIloopaes\fR
+or \fItcrypt\fR.
 
-Example: 'cryptsetup create e1 /dev/sda10' maps the raw
-encrypted device /dev/sda10 to the mapped (decrypted) device
-/dev/mapper/e1, which can then be mounted, fsck-ed or have a
-filesystem created on it.
+For backward compatibility there are \fBopen\fR command aliases:
+
+\fBcreate\fR: open \-\-type plain <device> <name>\fR switched arguments)
+.br
+\fBplainOpen\fR: open \-\-type plain
+.br
+\fBluksOpen\fR: open \-\-type luks
+.br
+\fBloopaesOpen\fR: open \-\-type loopaes
+.br
+\fBtcryptOpen\fR: open \-\-type tcrypt
+
+\fB<options>\fR are type specific and are described below
+for individual device types.
 .PP
-\fIremove\fR <name>
+\fIclose\fR <name>
 .IP
 Removes the existing mapping <name> and wipes the key from kernel memory.
+
+For backward compatibility there are \fBclose\fR command aliases:
+\fBremove\fR, \fBplainClose\fR, \fBluksClose\fR, \fBloopaesClose\fR,
+\fBtcryptClose\fR (all behaves exactly the same, device type is
+determined automatically from active device).
 .PP
 \fIstatus\fR <name>
 .IP
@@ -88,6 +94,30 @@ If \-\-size (in sectors) is not specified, the size of the
 underlying block device is used. Note that this does not
 change the raw device geometry, it just changes how many
 sectors of the raw device are represented in the mapped device.
+.SH PLAIN MODE
+Plain dm-crypt encrypts the device sector-by-sector with a
+single, non-salted hash of the passphrase. No checks
+are performed, no metadata is used. There is no formatting operation.
+When the raw device is mapped (created), the usual device operations
+can be used on the mapped device, including filesystem creation.
+Mapped devices usually reside in /dev/mapper/<name>.
+
+The following are valid plain device type actions:
+
+\fIopen\fR \-\-type plain <device> <name>
+.br
+\fIcreate\fR <name> <device> (\fBOBSOLETE syntax\fR)
+.IP
+Creates a mapping with <name> backed by device <device>.
+
+\fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify-passphrase,
+\-\-key-file, \-\-keyfile-offset, \-\-key-size, \-\-offset, \-\-skip, \-\-size,
+\-\-readonly, \-\-shared, \-\-allow-discards]
+
+Example: 'cryptsetup open --type plain /dev/sda10 e1' maps the raw
+encrypted device /dev/sda10 to the mapped (decrypted) device
+/dev/mapper/e1, which can then be mounted, fsck-ed or have a
+filesystem created on it.
 .SH LUKS EXTENSION
 LUKS, the Linux Unified Key Setup, is a standard for disk encryption.
 It adds a standardized header at the start of the device,
@@ -138,7 +168,9 @@ You can only call luksFormat on a LUKS device that is not mapped.
 make all data the old container permanently irretrievable, unless
 you have a header backup.
 .PP
-\fIluksOpen\fR <device> <name>
+\fIopen\fR \-\-type luks <device> <name>
+.br
+\fIluksOpen\fR <device> <name> (\fBold syntax\fR)
 .IP
 Opens the LUKS device <device> and sets up a mapping <name> after
 successful verification of the supplied passphrase.
@@ -152,10 +184,6 @@ format UUID=<uuid>, which uses the symlinks in /dev/disk/by-uuid.
 \-\-keyfile-size, \-\-readonly, \-\-test-passphrase,
 \-\-allow-discards, \-\-header, \-\-key-slot, \-\-master-key-file].
 .PP
-\fIluksClose\fR <name>
-.IP
-identical to \fIremove\fR.
-.PP
 \fIluksSuspend\fR <name>
 .IP
 Suspends an active device (all IO operations will blocked
@@ -164,7 +192,7 @@ and wipes the encryption
 key from kernel memory. Needs kernel 2.6.19 or later.
 
 After this operation you have to use \fIluksResume\fR to reinstate
-the encryption key and unblock the device or \fIluksClose\fR to remove
+the encryption key and unblock the device or \fIclose\fR to remove
 the mapped device.
 
 \fBWARNING:\fR never suspend the device on which the cryptsetup binary resides.
@@ -313,23 +341,13 @@ This command requires that the master key size and data offset
 of the LUKS header already on the device and of the header backup
 match. Alternatively, if there is no LUKS header on the device,
 the backup will also be written to it.
-.PP
-\fIrepair\fR <device>
-.IP
-Tries to repair the LUKS device metadata if possible.
-
-This command is useful to fix some known benign LUKS metadata
-header corruptions. Only basic corruptions of unused keyslot
-are fixable. This command will only change the LUKS header, not
-any key-slot data.
-
-\fBWARNING:\fR Always create a binary backup of the original
-header before calling this command.
 .SH loop-AES EXTENSION
 cryptsetup supports mapping loop-AES encrypted partition using
 a compatibility mode.
 .PP
-\fIloopaesOpen\fR <device> <name> \-\-key-file <keyfile>
+\fIopen\fR \-\-type loopaes <device> <name> \-\-key-file <keyfile>
+.br
+\fIloopaesOpen\fR <device> <name> \-\-key-file <keyfile>  (\fBold syntax\fR)
 .IP
 Opens the loop-AES <device> and sets up a mapping <name>.
 
@@ -354,10 +372,6 @@ size).
 
 \fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-skip,
 \-\-hash, \-\-readonly, \-\-allow-discards].
-.PP
-\fIloopaesClose\fR <name>
-.IP
-Identical to \fIremove\fR.
 .PP
 See also section 7 of the FAQ and \fBhttp://loop-aes.sourceforge.net\fR
 for more information regarding loop-AES.
@@ -386,7 +400,9 @@ and doesn't require superuser privilege.
 To use hidden header (and map hidden device, if available),
 use \fB\-\-hidden\fR option.
 .PP
-\fItcryptOpen\fR <device> <name> \-\-key-file <keyfile>
+\fIopen\fR \-\-type tcrypt <device> <name>
+.br
+\fItcryptOpen\fR <device> <name>  (\fBold syntax\fR)
 .IP
 Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up a mapping <name>.
 
@@ -414,16 +430,25 @@ to be erased to prevent further access. Use this option carefully.
 The keyfile parameter allows combination of file content with the
 passphrase and can be repeated.
 .PP
-\fItcryptClose\fR <name>
-.IP
-Identical to \fIremove\fR.
-.PP
 See also \fBhttp://www.truecrypt.org\fR for more information regarding
 TrueCrypt.
 
 Please note that cryptsetup does not use TrueCrypt code, please report
 all problems related to this compatibility extension to cryptsetup project.
 .SH MISCELLANEOUS
+.PP
+\fIrepair\fR <device>
+.IP
+Tries to repair the device metadata if possible. Currently supported only
+for LUKS device type.
+
+This command is useful to fix some known benign LUKS metadata
+header corruptions. Only basic corruptions of unused keyslot
+are fixable. This command will only change the LUKS header, not
+any key-slot data.
+
+\fBWARNING:\fR Always create a binary backup of the original
+header before calling this command.
 .PP
 \fIbenchmark\fR <options>
 .IP
@@ -450,7 +475,7 @@ Run in debug mode with full diagnostic logs. Debug output
 lines are always prefixed by '#'.
 .TP
 .B "\-\-hash, \-h \fI<hash-spec>\fR"
-Specifies the passphrase hash for \fIcreate\fR and \fIloopaesOpen\fR.
+Specifies the passphrase hash for \fIopen\fR (for plain and loopaes device types).
 
 Specifies the hash used in the LUKS key setup scheme and volume key digest
 for \fIluksFormat\fR.
@@ -463,7 +488,7 @@ excludes, e.g., MD5. Do not use a non-crypto hash like
 \fB"crc32"\fR as this breaks security.
 
 Values compatible with old version of cryptsetup are
-\fB"ripemd160"\fR for \fIcreate\fR and
+\fB"ripemd160"\fR for \fIopen \-\-type plain\fR and
 \fB"sha1"\fR for \fIluksFormat\fR.
 
 Use \fIcryptsetup \-\-help\fR to show the defaults.
@@ -550,7 +575,7 @@ header the master key was taken from.
 For \fIluksAddKey\fR this allows adding a new passphrase
 without having to know an exiting one.
 
-For \fIluksOpen\fR this allows to open the LUKS device
+For \fIopen\fR this allows to open the LUKS device
 without giving a passphrase.
 .TP
 .B "\-\-dump-master-key"
@@ -582,7 +607,7 @@ to specify which key slot is selected for the new key.
 This option can be used for \fIluksFormat\fR,
 and \fIluksAddKey\fR.
 .br
-In addition, for \fIluksOpen\fR, this option selects a
+In addition, for \fIopen\fR, this option selects a
 specific key-slot to compare the passphrase against.
 If the given passphrase would only match a different key-slot,
 the operation fails.
@@ -595,23 +620,24 @@ mode used.
 See /proc/crypto for more information. Note that key-size
 in /proc/crypto is stated in bytes.
 
-This option can be used for \fIcreate\fR or \fIluksFormat\fR. All
-other LUKS actions will use the key-size specified in the LUKS header.
+This option can be used for \fIopen \-\-type plain\fR or \fIluksFormat\fR.
+All other LUKS actions will use the key-size specified in the LUKS header.
 Use \fIcryptsetup \-\-help\fR to show the compiled-in defaults.
 .TP
 .B "\-\-size, \-b <number of 512 byte sectors>"
 Force the size of the underlying device in sectors of 512 bytes.
-This option is only relevant for the \fIcreate\fR and \fIresize\fR
+This option is only relevant for the \fIopen\fR and \fIresize\fR
 actions.
 .TP
 .B "\-\-offset, \-o <number of 512 byte sectors>"
 Start offset in the backend device in 512-byte sectors.
-This option is only relevant for the \fIcreate\fR and \fIloopaesOpen\fR
-actions.
+This option is only relevant for the \fIopen\fR action with plain
+or loopaes device types.
 .TP
 .B "\-\-skip, \-p <number of 512 byte sectors>"
 How many sectors of the encrypted data to skip at the beginning.
-This option is only relevant for \fIcreate\fR and \fIloopaesOpen\fR action.
+This option is only relevant for the \fIopen\fR action with plain
+or loopaes device types.
 
 This is different from the \-\-offset options with respect to
 the sector numbers used in IV calculation.
@@ -628,7 +654,7 @@ set up a read-only mapping.
 Creates an additional mapping for one common
 ciphertext device. Arbitrary mappings are supported.
 This option is only relevant for the 
-\fIcreate\fR action. Use \-\-offset, \-\-size and \-\-skip to
+\fIopen \-\-type plain\fR action. Use \-\-offset, \-\-size and \-\-skip to
 specify the mapped area.
 .TP
 .B "\-\-iter-time, \-i <number of milliseconds>"
@@ -646,9 +672,8 @@ the passphrase verification for \fIluksFormat\fR.
 .B "\-\-timeout, \-t <number of seconds>"
 The number of seconds to wait before timeout on passphrase input
 via terminal. It is relevant every time a passphrase is asked,
-for example for \fIcreate\fR, \fIluksOpen\fR, \fIluksFormat\fR
-or \fIluksAddKey\fR. It has no effect if used in conjunction
-with \-\-key-file.
+for example for \fIopen\fR, \fIluksFormat\fR or \fIluksAddKey\fR.
+It has no effect if used in conjunction with \-\-key-file.
 .br
 This option is useful when the system 
 should not stall if the user does not input a passphrase,
@@ -659,8 +684,8 @@ which means to wait forever.
 How often the input of the passphrase shall be retried.
 This option is relevant
 every time a passphrase is asked, for example for
-\fIcreate\fR, \fIluksOpen\fR, \fIluksFormat\fR
-or \fIluksAddKey\fR. The default is 3 tries.
+\fIopen\fR, \fIluksFormat\fR or \fIluksAddKey\fR.
+The default is 3 tries.
 .TP
 .B "\-\-align-payload <number of 512 byte sectors>"
 Align payload at a boundary of \fIvalue\fR 512-byte sectors.
@@ -684,8 +709,7 @@ e.g. 12345678-1234-1234-1234-123456789abc.
 .TP
 .B "\-\-allow-discards\fR"
 Allow the use of discard (TRIM) requests for device.
-This option is only relevant for \fIcreate\fR, \fIluksOpen\fR
-and \fIloopaesOpen\fR.
+This option is only relevant for \fIopen\fR action.
 
 \fBWARNING:\fR This command can have a negative security impact
 because it can make filesystem-level operations visible on
@@ -699,7 +723,8 @@ this option is ignored.
 .TP
 .B "\-\-test-passphrase\fR"
 Do not activate device, just verify passphrase.
-This option is only relevant for \fIluksOpen\fR.
+This option is only relevant for \fIopen\fR action (the device
+mapping name is not mandatory if this option is used).
 .TP
 .B "\-\-header\fR <device or file storing the LUKS header>"
 Use a detached (separated) metadata device or file where the
@@ -707,7 +732,7 @@ LUKS header is stored. This options allows to store ciphertext
 and LUKS header on different devices.
 
 This option is only relevant for LUKS devices and can be 
-used with the \fIluksFormat\fR, \fIluksOpen\fR, \fIluksSuspend\fR,
+used with the \fIluksFormat\fR, \fIopen\fR, \fIluksSuspend\fR,
 \fIluksResume\fR, \fIstatus\fR and \fIresize\fR commands.
 
 For \fIluksFormat\fR with a file name as argument to \-\-header,
@@ -723,7 +748,7 @@ as absolute sector alignment on ciphertext device and can be zero.
 
 \fBWARNING:\fR There is no check whether the ciphertext device specified
 actually belongs to the header given. In fact you can specify an
-arbitrary device as the ciphertext device for \fIluksOpen\fR
+arbitrary device as the ciphertext device for \fIopen\fR
 with the \-\-header option. Use with care.
 .TP
 .B "\-\-version"
@@ -806,7 +831,7 @@ Whenever a passphrase is added to a LUKS header (luksAddKey, luksFormat),
 the user may specify how much the time the passphrase processing
 should consume. The time is used to determine the iteration count
 for PBKDF2 and higher times will offer better protection for
-low-entropy passphrases, but luksOpen will take longer to
+low-entropy passphrases, but open will take longer to
 complete. For passphrases that have entropy higher than the
 used key length, higher iteration times will not increase security.
 

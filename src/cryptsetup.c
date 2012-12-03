@@ -1214,7 +1214,7 @@ static struct action_type {
 	const char *arg_desc;
 	const char *desc;
 } action_types[] = {
-	{ "open",         action_open,         1, 1, N_("<device> [<name>]"),N_("open device as mapping <name>") },
+	{ "open",         action_open,         1, 1, N_("<device> [--type <type>] [<name>]"),N_("open device as mapping <name>") },
 	{ "close",        action_close,        1, 1, N_("<name>"), N_("close device (remove mapping)") },
 	{ "resize",       action_resize,       1, 1, N_("<name>"), N_("resize active device") },
 	{ "status",       action_status,       1, 0, N_("<name>"), N_("show device status") },
@@ -1255,6 +1255,10 @@ static void help(poptContext popt_context,
 		for(action = action_types; action->type; action++)
 			log_std("\t%s %s - %s\n", action->type, _(action->arg_desc), _(action->desc));
 
+		log_std(_("\n"
+			  "You can also use old <action> syntax aliases:\n"
+			  "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
+			  "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"));
 		log_std(_("\n"
 			 "<name> is the device to create under %s\n"
 			 "<device> is the encrypted device\n"
