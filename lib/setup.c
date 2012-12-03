@@ -46,37 +46,39 @@ struct crypt_device {
 	int password_verify;
 	int rng_type;
 
-	// FIXME: switch to union
-	// FIXME: privatre binary headers and access it properly
+	// FIXME: private binary headers and access it properly
 	// through sub-library (LUKS1, TCRYPT)
 
-	/* used in CRYPT_LUKS1 */
-	struct luks_phdr hdr;
-	uint64_t PBKDF2_per_sec;
-
-	/* used in CRYPT_PLAIN */
-	struct crypt_params_plain plain_hdr;
-	char *plain_cipher;
-	char *plain_cipher_mode;
-	char *plain_uuid;
-	unsigned int plain_key_size;
-
-	/* used in CRYPT_LOOPAES */
-	struct crypt_params_loopaes loopaes_hdr;
-	char *loopaes_cipher;
-	char *loopaes_cipher_mode;
-	char *loopaes_uuid;
-	unsigned int loopaes_key_size;
-
-	/* used in CRYPT_VERITY */
-	struct crypt_params_verity verity_hdr;
-	char *verity_root_hash;
-	unsigned int verity_root_hash_size;
-	char *verity_uuid;
-
-	/* used in CRYPT_TCRYPT */
-	struct crypt_params_tcrypt tcrypt_params;
-	struct tcrypt_phdr tcrypt_hdr;
+	union {
+	struct { /* used in CRYPT_LUKS1 */
+		struct luks_phdr hdr;
+		uint64_t PBKDF2_per_sec;
+	} luks1;
+	struct { /* used in CRYPT_PLAIN */
+		struct crypt_params_plain hdr;
+		char *cipher;
+		char *cipher_mode;
+		char *uuid;
+		unsigned int key_size;
+	} plain;
+	struct { /* used in CRYPT_LOOPAES */
+		struct crypt_params_loopaes hdr;
+		char *cipher;
+		char *cipher_mode;
+		char *uuid;
+		unsigned int key_size;
+	} loopaes;
+	struct { /* used in CRYPT_VERITY */
+		struct crypt_params_verity hdr;
+		char *root_hash;
+		unsigned int root_hash_size;
+		char *uuid;
+	} verity;
+	struct { /* used in CRYPT_TCRYPT */
+		struct crypt_params_tcrypt params;
+		struct tcrypt_phdr hdr;
+	} tcrypt;
+	} u;
 
 	/* callbacks definitions */
 	void (*log)(int level, const char *msg, void *usrptr);
@@ -261,14 +263,14 @@ static int isTCRYPT(const char *type)
 static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 {
 	if (*keyslot == CRYPT_ANY_SLOT) {
-		*keyslot = LUKS_keyslot_find_empty(&cd->hdr);
+		*keyslot = LUKS_keyslot_find_empty(&cd->u.luks1.hdr);
 		if (*keyslot < 0) {
 			log_err(cd, _("All key slots full.\n"));
 			return -EINVAL;
 		}
 	}
 
-	switch (LUKS_keyslot_info(&cd->hdr, *keyslot)) {
+	switch (LUKS_keyslot_info(&cd->u.luks1.hdr, *keyslot)) {
 		case CRYPT_SLOT_INVALID:
 			log_err(cd, _("Key slot %d is invalid, please select between 0 and %d.\n"),
 				*keyslot, LUKS_NUMKEYS - 1);
@@ -361,8 +363,8 @@ int PLAIN_activate(struct crypt_device *cd,
 	r = dm_create_device(cd, name, CRYPT_PLAIN, &dmd, 0);
 
 	// FIXME
-	if (!cd->plain_uuid && dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd) >= 0)
-		cd->plain_uuid = CONST_CAST(char*)dmd.uuid;
+	if (!cd->u.plain.uuid && dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd) >= 0)
+		cd->u.plain.uuid = CONST_CAST(char*)dmd.uuid;
 
 	free(dm_cipher);
 	return r;
@@ -439,7 +441,7 @@ static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslo
 			goto out;
 
 		r = LUKS_open_key_with_hdr(keyslot, passphrase_read,
-					   passphrase_size_read, &cd->hdr, vk, cd);
+					   passphrase_size_read, &cd->u.luks1.hdr, vk, cd);
 		if (r == -EPERM)
 			eperm = 1;
 		crypt_safe_free(passphrase_read);
@@ -625,7 +627,7 @@ static int _crypt_load_luks1(struct crypt_device *cd, int require_header, int re
 	if (!cd->type && !(cd->type = strdup(CRYPT_LUKS1)))
 		return -ENOMEM;
 
-	memcpy(&cd->hdr, &hdr, sizeof(hdr));
+	memcpy(&cd->u.luks1.hdr, &hdr, sizeof(hdr));
 
 	return r;
 }
@@ -638,14 +640,14 @@ static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcryp
 	if (r < 0)
 		return r;
 
-	memcpy(&cd->tcrypt_params, params, sizeof(*params));
+	memcpy(&cd->u.tcrypt.params, params, sizeof(*params));
 
-	r = TCRYPT_read_phdr(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
+	r = TCRYPT_read_phdr(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
-	cd->tcrypt_params.passphrase = NULL;
-	cd->tcrypt_params.passphrase_size = 0;
-	cd->tcrypt_params.keyfiles = NULL;
-	cd->tcrypt_params.keyfiles_count = 0;
+	cd->u.tcrypt.params.passphrase = NULL;
+	cd->u.tcrypt.params.passphrase_size = 0;
+	cd->u.tcrypt.params.keyfiles = NULL;
+	cd->u.tcrypt.params.keyfiles_count = 0;
 
 	if (r < 0)
 		return r;
@@ -671,16 +673,16 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	if (params)
 		sb_offset = params->hash_area_offset;
 
-	r = VERITY_read_sb(cd, sb_offset, &cd->verity_uuid, &cd->verity_hdr);
+	r = VERITY_read_sb(cd, sb_offset, &cd->u.verity.uuid, &cd->u.verity.hdr);
 	if (r < 0)
 		return r;
 
 	if (params)
-		cd->verity_hdr.flags = params->flags;
+		cd->u.verity.hdr.flags = params->flags;
 
 	/* Hash availability checked in sb load */
-	cd->verity_root_hash_size = crypt_hash_size(cd->verity_hdr.hash_name);
-	if (cd->verity_root_hash_size > 4096)
+	cd->u.verity.root_hash_size = crypt_hash_size(cd->u.verity.hdr.hash_name);
+	if (cd->u.verity.root_hash_size > 4096)
 		return -EINVAL;
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_VERITY)))
@@ -708,30 +710,30 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		goto out;
 
 	if (isPLAIN(cd->type)) {
-		cd->plain_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
-		cd->plain_hdr.hash = NULL; /* no way to get this */
-		cd->plain_hdr.offset = dmd.u.crypt.offset;
-		cd->plain_hdr.skip = dmd.u.crypt.iv_offset;
-		cd->plain_key_size = dmd.u.crypt.vk->keylength;
+		cd->u.plain.uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
+		cd->u.plain.hdr.hash = NULL; /* no way to get this */
+		cd->u.plain.hdr.offset = dmd.u.crypt.offset;
+		cd->u.plain.hdr.skip = dmd.u.crypt.iv_offset;
+		cd->u.plain.key_size = dmd.u.crypt.vk->keylength;
 
 		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher, cipher, NULL, cipher_mode);
 		if (!r) {
-			cd->plain_cipher = strdup(cipher);
-			cd->plain_cipher_mode = strdup(cipher_mode);
+			cd->u.plain.cipher = strdup(cipher);
+			cd->u.plain.cipher_mode = strdup(cipher_mode);
 		}
 	} else if (isLOOPAES(cd->type)) {
-		cd->loopaes_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
-		cd->loopaes_hdr.offset = dmd.u.crypt.offset;
+		cd->u.loopaes.uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
+		cd->u.loopaes.hdr.offset = dmd.u.crypt.offset;
 
 		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher, cipher,
 					      &key_nums, cipher_mode);
 		if (!r) {
-			cd->loopaes_cipher = strdup(cipher);
-			cd->loopaes_cipher_mode = strdup(cipher_mode);
+			cd->u.loopaes.cipher = strdup(cipher);
+			cd->u.loopaes.cipher_mode = strdup(cipher_mode);
 			/* version 3 uses last key for IV */
 			if (dmd.u.crypt.vk->keylength % key_nums)
 				key_nums++;
-			cd->loopaes_key_size = dmd.u.crypt.vk->keylength / key_nums;
+			cd->u.loopaes.key_size = dmd.u.crypt.vk->keylength / key_nums;
 		}
 	} else if (isLUKS(cd->type)) {
 		if (crypt_metadata_device(cd)) {
@@ -744,10 +746,10 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 				goto out;
 			}
 			/* check whether UUIDs match each other */
-			r = crypt_uuid_cmp(dmd.uuid, cd->hdr.uuid);
+			r = crypt_uuid_cmp(dmd.uuid, cd->u.luks1.hdr.uuid);
 			if (r < 0) {
 				log_dbg("LUKS device header uuid: %s mismatches DM returned uuid %s",
-					cd->hdr.uuid, dmd.uuid);
+					cd->u.luks1.hdr.uuid, dmd.uuid);
 				free(cd->type);
 				cd->type = NULL;
 				r = 0;
@@ -756,7 +758,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		}
 	} else if (isTCRYPT(cd->type)) {
 		r = TCRYPT_init_by_name(cd, name, &dmd, &cd->device,
-					&cd->tcrypt_params, &cd->tcrypt_hdr);
+					&cd->u.tcrypt.params, &cd->u.tcrypt.hdr);
 	}
 out:
 	crypt_free_volume_key(dmd.u.crypt.vk);
@@ -784,21 +786,21 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		goto out;
 
 	if (isVERITY(cd->type)) {
-		cd->verity_uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
-		cd->verity_hdr.flags = CRYPT_VERITY_NO_HEADER; //FIXME
-		cd->verity_hdr.data_size = params.data_size;
-		cd->verity_root_hash_size = dmd.u.verity.root_hash_size;
-		cd->verity_root_hash = NULL;
-		cd->verity_hdr.hash_name = params.hash_name;
-		cd->verity_hdr.data_device = NULL;
-		cd->verity_hdr.hash_device = NULL;
-		cd->verity_hdr.data_block_size = params.data_block_size;
-		cd->verity_hdr.hash_block_size = params.hash_block_size;
-		cd->verity_hdr.hash_area_offset = dmd.u.verity.hash_offset;
-		cd->verity_hdr.hash_type = params.hash_type;
-		cd->verity_hdr.flags = params.flags;
-		cd->verity_hdr.salt_size = params.salt_size;
-		cd->verity_hdr.salt = params.salt;
+		cd->u.verity.uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
+		cd->u.verity.hdr.flags = CRYPT_VERITY_NO_HEADER; //FIXME
+		cd->u.verity.hdr.data_size = params.data_size;
+		cd->u.verity.root_hash_size = dmd.u.verity.root_hash_size;
+		cd->u.verity.root_hash = NULL;
+		cd->u.verity.hdr.hash_name = params.hash_name;
+		cd->u.verity.hdr.data_device = NULL;
+		cd->u.verity.hdr.hash_device = NULL;
+		cd->u.verity.hdr.data_block_size = params.data_block_size;
+		cd->u.verity.hdr.hash_block_size = params.hash_block_size;
+		cd->u.verity.hdr.hash_area_offset = dmd.u.verity.hash_offset;
+		cd->u.verity.hdr.hash_type = params.hash_type;
+		cd->u.verity.hdr.flags = params.flags;
+		cd->u.verity.hdr.salt_size = params.salt_size;
+		cd->u.verity.hdr.salt = params.salt;
 		cd->metadata_device = dmd.u.verity.hash_device;
 	}
 out:
@@ -916,25 +918,25 @@ static int _crypt_format_plain(struct crypt_device *cd,
 	if (!(cd->type = strdup(CRYPT_PLAIN)))
 		return -ENOMEM;
 
-	cd->plain_key_size = volume_key_size;
+	cd->u.plain.key_size = volume_key_size;
 	cd->volume_key = crypt_alloc_volume_key(volume_key_size, NULL);
 	if (!cd->volume_key)
 		return -ENOMEM;
 
-	cd->plain_cipher = strdup(cipher);
-	cd->plain_cipher_mode = strdup(cipher_mode);
+	cd->u.plain.cipher = strdup(cipher);
+	cd->u.plain.cipher_mode = strdup(cipher_mode);
 
 	if (uuid)
-		cd->plain_uuid = strdup(uuid);
+		cd->u.plain.uuid = strdup(uuid);
 
 	if (params && params->hash)
-		cd->plain_hdr.hash = strdup(params->hash);
+		cd->u.plain.hdr.hash = strdup(params->hash);
 
-	cd->plain_hdr.offset = params ? params->offset : 0;
-	cd->plain_hdr.skip = params ? params->skip : 0;
-	cd->plain_hdr.size = params ? params->size : 0;
+	cd->u.plain.hdr.offset = params ? params->offset : 0;
+	cd->u.plain.hdr.skip = params ? params->skip : 0;
+	cd->u.plain.hdr.size = params ? params->size : 0;
 
-	if (!cd->plain_cipher || !cd->plain_cipher_mode)
+	if (!cd->u.plain.cipher || !cd->u.plain.cipher_mode)
 		return -ENOMEM;
 
 	return 0;
@@ -987,12 +989,12 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if(r < 0)
 		return r;
 
-	r = LUKS_generate_phdr(&cd->hdr, cd->volume_key, cipher, cipher_mode,
+	r = LUKS_generate_phdr(&cd->u.luks1.hdr, cd->volume_key, cipher, cipher_mode,
 			       (params && params->hash) ? params->hash : "sha1",
 			       uuid, LUKS_STRIPES,
 			       required_alignment / SECTOR_SIZE,
 			       alignment_offset / SECTOR_SIZE,
-			       cd->iteration_time, &cd->PBKDF2_per_sec,
+			       cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec,
 			       cd->metadata_device ? 1 : 0, cd);
 	if(r < 0)
 		return r;
@@ -1014,7 +1016,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		return r;
 	}
 
-	r = LUKS_write_phdr(&cd->hdr, cd);
+	r = LUKS_write_phdr(&cd->u.luks1.hdr, cd);
 
 	return r;
 }
@@ -1038,18 +1040,18 @@ static int _crypt_format_loopaes(struct crypt_device *cd,
 	if (!(cd->type = strdup(CRYPT_LOOPAES)))
 		return -ENOMEM;
 
-	cd->loopaes_key_size = volume_key_size;
+	cd->u.loopaes.key_size = volume_key_size;
 
-	cd->loopaes_cipher = strdup(cipher ?: DEFAULT_LOOPAES_CIPHER);
+	cd->u.loopaes.cipher = strdup(cipher ?: DEFAULT_LOOPAES_CIPHER);
 
 	if (uuid)
-		cd->loopaes_uuid = strdup(uuid);
+		cd->u.loopaes.uuid = strdup(uuid);
 
 	if (params && params->hash)
-		cd->loopaes_hdr.hash = strdup(params->hash);
+		cd->u.loopaes.hdr.hash = strdup(params->hash);
 
-	cd->loopaes_hdr.offset = params ? params->offset : 0;
-	cd->loopaes_hdr.skip = params ? params->skip : 0;
+	cd->u.loopaes.hdr.offset = params ? params->offset : 0;
+	cd->u.loopaes.hdr.skip = params ? params->skip : 0;
 
 	return 0;
 }
@@ -1096,9 +1098,9 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 
-		cd->verity_hdr.data_size = data_device_size / params->data_block_size;
+		cd->u.verity.hdr.data_size = data_device_size / params->data_block_size;
 	} else
-		cd->verity_hdr.data_size = params->data_size;
+		cd->u.verity.hdr.data_size = params->data_size;
 
 	hash_size = crypt_hash_size(params->hash_name);
 	if (hash_size <= 0) {
@@ -1106,53 +1108,53 @@ static int _crypt_format_verity(struct crypt_device *cd,
 			params->hash_name);
 		return -EINVAL;
 	}
-	cd->verity_root_hash_size = hash_size;
+	cd->u.verity.root_hash_size = hash_size;
 
-	cd->verity_root_hash = malloc(cd->verity_root_hash_size);
-	if (!cd->verity_root_hash)
+	cd->u.verity.root_hash = malloc(cd->u.verity.root_hash_size);
+	if (!cd->u.verity.root_hash)
 		return -ENOMEM;
 
-	cd->verity_hdr.flags = params->flags;
-	if (!(cd->verity_hdr.hash_name = strdup(params->hash_name)))
+	cd->u.verity.hdr.flags = params->flags;
+	if (!(cd->u.verity.hdr.hash_name = strdup(params->hash_name)))
 		return -ENOMEM;
-	cd->verity_hdr.data_device = NULL;
-	cd->verity_hdr.data_block_size = params->data_block_size;
-	cd->verity_hdr.hash_block_size = params->hash_block_size;
-	cd->verity_hdr.hash_area_offset = params->hash_area_offset;
-	cd->verity_hdr.hash_type = params->hash_type;
-	cd->verity_hdr.flags = params->flags;
-	cd->verity_hdr.salt_size = params->salt_size;
-	if (!(cd->verity_hdr.salt = malloc(params->salt_size)))
+	cd->u.verity.hdr.data_device = NULL;
+	cd->u.verity.hdr.data_block_size = params->data_block_size;
+	cd->u.verity.hdr.hash_block_size = params->hash_block_size;
+	cd->u.verity.hdr.hash_area_offset = params->hash_area_offset;
+	cd->u.verity.hdr.hash_type = params->hash_type;
+	cd->u.verity.hdr.flags = params->flags;
+	cd->u.verity.hdr.salt_size = params->salt_size;
+	if (!(cd->u.verity.hdr.salt = malloc(params->salt_size)))
 		return -ENOMEM;
 
 	if (params->salt)
-		memcpy(CONST_CAST(char*)cd->verity_hdr.salt, params->salt,
+		memcpy(CONST_CAST(char*)cd->u.verity.hdr.salt, params->salt,
 		       params->salt_size);
 	else
-		r = crypt_random_get(cd, CONST_CAST(char*)cd->verity_hdr.salt,
+		r = crypt_random_get(cd, CONST_CAST(char*)cd->u.verity.hdr.salt,
 				     params->salt_size, CRYPT_RND_SALT);
 	if (r)
 		return r;
 
 	if (params->flags & CRYPT_VERITY_CREATE_HASH) {
-		r = VERITY_create(cd, &cd->verity_hdr,
-				  cd->verity_root_hash, cd->verity_root_hash_size);
+		r = VERITY_create(cd, &cd->u.verity.hdr,
+				  cd->u.verity.root_hash, cd->u.verity.root_hash_size);
 		if (r)
 			return r;
 	}
 
 	if (!(params->flags & CRYPT_VERITY_NO_HEADER)) {
 		if (uuid)
-			cd->verity_uuid = strdup(uuid);
+			cd->u.verity.uuid = strdup(uuid);
 		else {
-			r = VERITY_UUID_generate(cd, &cd->verity_uuid);
+			r = VERITY_UUID_generate(cd, &cd->u.verity.uuid);
 			if (r)
 				return r;
 		}
 
-		r = VERITY_write_sb(cd, cd->verity_hdr.hash_area_offset,
-				    cd->verity_uuid,
-				    &cd->verity_hdr);
+		r = VERITY_write_sb(cd, cd->u.verity.hdr.hash_area_offset,
+				    cd->u.verity.uuid,
+				    &cd->u.verity.hdr);
 	}
 	return r;
 }
@@ -1333,7 +1335,7 @@ int crypt_set_uuid(struct crypt_device *cd, const char *uuid)
 		return  -EINVAL;
 	}
 
-	if (uuid && !strncmp(uuid, cd->hdr.uuid, sizeof(cd->hdr.uuid))) {
+	if (uuid && !strncmp(uuid, cd->u.luks1.hdr.uuid, sizeof(cd->u.luks1.hdr.uuid))) {
 		log_dbg("UUID is the same as requested (%s) for device %s.",
 			uuid, mdata_device_path(cd));
 		return 0;
@@ -1347,7 +1349,7 @@ int crypt_set_uuid(struct crypt_device *cd, const char *uuid)
 	if (!crypt_confirm(cd, _("Do you really want to change UUID of device?")))
 		return -EPERM;
 
-	return LUKS_hdr_uuid_set(&cd->hdr, uuid, cd);
+	return LUKS_hdr_uuid_set(&cd->u.luks1.hdr, uuid, cd);
 }
 
 int crypt_header_backup(struct crypt_device *cd,
@@ -1366,7 +1368,7 @@ int crypt_header_backup(struct crypt_device *cd,
 	log_dbg("Requested header backup of device %s (%s) to "
 		"file %s.", mdata_device_path(cd), requested_type, backup_file);
 
-	return LUKS_hdr_backup(backup_file, &cd->hdr, cd);
+	return LUKS_hdr_backup(backup_file, &cd->u.luks1.hdr, cd);
 }
 
 int crypt_header_restore(struct crypt_device *cd,
@@ -1385,7 +1387,7 @@ int crypt_header_restore(struct crypt_device *cd,
 	log_dbg("Requested header restore to device %s (%s) from "
 		"file %s.", mdata_device_path(cd), requested_type, backup_file);
 
-	return LUKS_hdr_restore(backup_file, &cd->hdr, cd);
+	return LUKS_hdr_restore(backup_file, &cd->u.luks1.hdr, cd);
 }
 
 void crypt_free(struct crypt_device *cd)
@@ -1398,25 +1400,24 @@ void crypt_free(struct crypt_device *cd)
 
 		device_free(cd->device);
 		device_free(cd->metadata_device);
+
+		if (isPLAIN(cd->type)) {
+			free(CONST_CAST(void*)cd->u.plain.hdr.hash);
+			free(cd->u.plain.cipher);
+			free(cd->u.plain.cipher_mode);
+			free(cd->u.plain.uuid);
+		} else if (isLOOPAES(cd->type)) {
+			free(CONST_CAST(void*)cd->u.loopaes.hdr.hash);
+			free(cd->u.loopaes.cipher);
+			free(cd->u.loopaes.uuid);
+		} else if (isVERITY(cd->type)) {
+			free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
+			free(CONST_CAST(void*)cd->u.verity.hdr.salt);
+			free(cd->u.verity.root_hash);
+			free(cd->u.verity.uuid);
+		}
+
 		free(cd->type);
-
-		/* used in plain device only */
-		free(CONST_CAST(void*)cd->plain_hdr.hash);
-		free(cd->plain_cipher);
-		free(cd->plain_cipher_mode);
-		free(cd->plain_uuid);
-
-		/* used in loop-AES device only */
-		free(CONST_CAST(void*)cd->loopaes_hdr.hash);
-		free(cd->loopaes_cipher);
-		free(cd->loopaes_uuid);
-
-		/* used in verity device only */
-		free(CONST_CAST(void*)cd->verity_hdr.hash_name);
-		free(CONST_CAST(void*)cd->verity_hdr.salt);
-		free(cd->verity_root_hash);
-		free(cd->verity_uuid);
-
 		free(cd);
 	}
 }
@@ -1491,7 +1492,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 
 	if (passphrase) {
 		r = LUKS_open_key_with_hdr(keyslot, passphrase, passphrase_size,
-					   &cd->hdr, &vk, cd);
+					   &cd->u.luks1.hdr, &vk, cd);
 	} else
 		r = volume_key_by_terminal_passphrase(cd, keyslot, &vk);
 
@@ -1548,7 +1549,7 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 		goto out;
 
 	r = LUKS_open_key_with_hdr(keyslot, passphrase_read,
-				   passphrase_size_read, &cd->hdr, &vk, cd);
+				   passphrase_size_read, &cd->u.luks1.hdr, &vk, cd);
 	if (r < 0)
 		goto out;
 
@@ -1598,7 +1599,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	if (!LUKS_keyslot_active_count(&cd->hdr)) {
+	if (!LUKS_keyslot_active_count(&cd->u.luks1.hdr)) {
 		/* No slots used, try to use pre-generated key in header */
 		if (cd->volume_key) {
 			vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
@@ -1610,7 +1611,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	} else if (passphrase) {
 		/* Passphrase provided, use it to unlock existing keyslot */
 		r = LUKS_open_key_with_hdr(CRYPT_ANY_SLOT, passphrase,
-					   passphrase_size, &cd->hdr, &vk, cd);
+					   passphrase_size, &cd->u.luks1.hdr, &vk, cd);
 	} else {
 		/* Passphrase not provided, ask first and use it to unlock existing keyslot */
 		r = key_from_terminal(cd, _("Enter any passphrase: "),
@@ -1619,7 +1620,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 			goto out;
 
 		r = LUKS_open_key_with_hdr(CRYPT_ANY_SLOT, password,
-					   passwordLen, &cd->hdr, &vk, cd);
+					   passwordLen, &cd->u.luks1.hdr, &vk, cd);
 		crypt_safe_free(password);
 	}
 
@@ -1637,7 +1638,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	}
 
 	r = LUKS_set_key(keyslot, new_password, new_passwordLen,
-			 &cd->hdr, vk, cd->iteration_time, &cd->PBKDF2_per_sec, cd);
+			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
 	if(r < 0) goto out;
 
 	r = 0;
@@ -1674,7 +1675,7 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	if (!LUKS_keyslot_active_count(&cd->hdr)) {
+	if (!LUKS_keyslot_active_count(&cd->u.luks1.hdr)) {
 		/* No slots used, try to use pre-generated key in header */
 		if (cd->volume_key) {
 			vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
@@ -1696,7 +1697,7 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 			goto out;
 
 		r = LUKS_open_key_with_hdr(CRYPT_ANY_SLOT, password, passwordLen,
-					   &cd->hdr, &vk, cd);
+					   &cd->u.luks1.hdr, &vk, cd);
 	}
 
 	if(r < 0)
@@ -1713,7 +1714,7 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 		goto out;
 
 	r = LUKS_set_key(keyslot, new_password, new_passwordLen,
-			 &cd->hdr, vk, cd->iteration_time, &cd->PBKDF2_per_sec, cd);
+			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
 out:
 	crypt_safe_free(password);
 	crypt_safe_free(new_password);
@@ -1759,7 +1760,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	if (!vk)
 		return -ENOMEM;
 
-	r = LUKS_verify_volume_key(&cd->hdr, vk);
+	r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
 	if (r < 0) {
 		log_err(cd, _("Volume key does not match the volume.\n"));
 		goto out;
@@ -1779,7 +1780,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	}
 
 	r = LUKS_set_key(keyslot, passphrase, passphrase_size,
-			 &cd->hdr, vk, cd->iteration_time, &cd->PBKDF2_per_sec, cd);
+			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
 out:
 	crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
@@ -1808,7 +1809,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 		return -EINVAL;
 	}
 
-	return LUKS_del_key(keyslot, &cd->hdr, cd);
+	return LUKS_del_key(keyslot, &cd->u.luks1.hdr, cd);
 }
 
 // activation/deactivation of device mapping
@@ -1853,19 +1854,19 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 			passphrase_size = passphraseLen;
 		}
 
-		r = process_key(cd, cd->plain_hdr.hash,
-				cd->plain_key_size,
+		r = process_key(cd, cd->u.plain.hdr.hash,
+				cd->u.plain.key_size,
 				passphrase, passphrase_size, &vk);
 		if (r < 0)
 			goto out;
 
-		r = PLAIN_activate(cd, name, vk, cd->plain_hdr.size, flags);
+		r = PLAIN_activate(cd, name, vk, cd->u.plain.hdr.size, flags);
 		keyslot = 0;
 	} else if (isLUKS(cd->type)) {
 		/* provided passphrase, do not retry */
 		if (passphrase) {
 			r = LUKS_open_key_with_hdr(keyslot, passphrase,
-						   passphrase_size, &cd->hdr, &vk, cd);
+						   passphrase_size, &cd->u.luks1.hdr, &vk, cd);
 		} else
 			r = volume_key_by_terminal_passphrase(cd, keyslot, &vk);
 
@@ -1924,20 +1925,20 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 		if (r < 0)
 			goto out;
 
-		r = process_key(cd, cd->plain_hdr.hash,
-				cd->plain_key_size,
+		r = process_key(cd, cd->u.plain.hdr.hash,
+				cd->u.plain.key_size,
 				passphrase_read, passphrase_size_read, &vk);
 		if (r < 0)
 			goto out;
 
-		r = PLAIN_activate(cd, name, vk, cd->plain_hdr.size, flags);
+		r = PLAIN_activate(cd, name, vk, cd->u.plain.hdr.size, flags);
 	} else if (isLUKS(cd->type)) {
 		r = key_from_file(cd, _("Enter passphrase: "), &passphrase_read,
 			  &passphrase_size_read, keyfile, keyfile_offset, keyfile_size);
 		if (r < 0)
 			goto out;
 		r = LUKS_open_key_with_hdr(keyslot, passphrase_read,
-					   passphrase_size_read, &cd->hdr, &vk, cd);
+					   passphrase_size_read, &cd->u.luks1.hdr, &vk, cd);
 		if (r < 0)
 			goto out;
 		keyslot = r;
@@ -1953,12 +1954,12 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 				  keyfile, keyfile_offset, keyfile_size);
 		if (r < 0)
 			goto out;
-		r = LOOPAES_parse_keyfile(cd, &vk, cd->loopaes_hdr.hash, &key_count,
+		r = LOOPAES_parse_keyfile(cd, &vk, cd->u.loopaes.hdr.hash, &key_count,
 					  passphrase_read, passphrase_size_read);
 		if (r < 0)
 			goto out;
 		if (name)
-			r = LOOPAES_activate(cd, name, cd->loopaes_cipher,
+			r = LOOPAES_activate(cd, name, cd->u.loopaes.cipher,
 					     key_count, vk, flags);
 	} else
 		r = -EINVAL;
@@ -2008,7 +2009,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (!name)
 			return -EINVAL;
 
-		if (!volume_key || !volume_key_size || volume_key_size != cd->plain_key_size) {
+		if (!volume_key || !volume_key_size || volume_key_size != cd->u.plain.key_size) {
 			log_err(cd, _("Incorrect volume key specified for plain device.\n"));
 			return -EINVAL;
 		}
@@ -2017,7 +2018,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (!vk)
 			return -ENOMEM;
 
-		r = PLAIN_activate(cd, name, vk, cd->plain_hdr.size, flags);
+		r = PLAIN_activate(cd, name, vk, cd->u.plain.hdr.size, flags);
 	} else if (isLUKS(cd->type)) {
 		/* If key is not provided, try to use internal key */
 		if (!volume_key) {
@@ -2032,7 +2033,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
 		if (!vk)
 			return -ENOMEM;
-		r = LUKS_verify_volume_key(&cd->hdr, vk);
+		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
 
 		if (r == -EPERM)
 			log_err(cd, _("Volume key does not match the volume.\n"));
@@ -2047,23 +2048,23 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		}
 
 		r = VERITY_activate(cd, name, volume_key, volume_key_size,
-				    &cd->verity_hdr, CRYPT_ACTIVATE_READONLY);
+				    &cd->u.verity.hdr, CRYPT_ACTIVATE_READONLY);
 
 		if (r == -EPERM) {
-			free(cd->verity_root_hash);
-			cd->verity_root_hash = NULL;
+			free(cd->u.verity.root_hash);
+			cd->u.verity.root_hash = NULL;
 		} if (!r) {
-			cd->verity_root_hash_size = volume_key_size;
-			if (!cd->verity_root_hash)
-				cd->verity_root_hash = malloc(volume_key_size);
-			if (cd->verity_root_hash)
-				memcpy(cd->verity_root_hash, volume_key, volume_key_size);
+			cd->u.verity.root_hash_size = volume_key_size;
+			if (!cd->u.verity.root_hash)
+				cd->u.verity.root_hash = malloc(volume_key_size);
+			if (cd->u.verity.root_hash)
+				memcpy(cd->u.verity.root_hash, volume_key, volume_key_size);
 		}
 	} else if (isTCRYPT(cd->type)) {
 		if (!name)
 			return 0;
-		r = TCRYPT_activate(cd, name, &cd->tcrypt_hdr,
-				    &cd->tcrypt_params, flags);
+		r = TCRYPT_activate(cd, name, &cd->u.tcrypt.hdr,
+				    &cd->u.tcrypt.params, flags);
 	} else
 		log_err(cd, _("Device type is not properly initialised.\n"));
 
@@ -2129,16 +2130,16 @@ int crypt_volume_key_get(struct crypt_device *cd,
 		return -ENOMEM;
 	}
 
-	if (isPLAIN(cd->type) && cd->plain_hdr.hash) {
-		r = process_key(cd, cd->plain_hdr.hash, key_len,
+	if (isPLAIN(cd->type) && cd->u.plain.hdr.hash) {
+		r = process_key(cd, cd->u.plain.hdr.hash, key_len,
 				passphrase, passphrase_size, &vk);
 		if (r < 0)
 			log_err(cd, _("Cannot retrieve volume key for plain device.\n"));
 	} else if (isLUKS(cd->type)) {
 		r = LUKS_open_key_with_hdr(keyslot, passphrase,
-					passphrase_size, &cd->hdr, &vk, cd);
+					passphrase_size, &cd->u.luks1.hdr, &vk, cd);
 	} else if (isTCRYPT(cd->type)) {
-		r = TCRYPT_get_volume_key(cd, &cd->tcrypt_hdr, &cd->tcrypt_params, &vk);
+		r = TCRYPT_get_volume_key(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params, &vk);
 	} else
 		log_err(cd, _("This operation is not supported for %s crypt device.\n"), cd->type ?: "(none)");
 
@@ -2167,7 +2168,7 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 	if (!vk)
 		return -ENOMEM;
 
-	r = LUKS_verify_volume_key(&cd->hdr, vk);
+	r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
 
 	if (r == -EPERM)
 		log_err(cd, _("Volume key does not match the volume.\n"));
@@ -2265,39 +2266,39 @@ static int _luks_dump(struct crypt_device *cd)
 	int i;
 
 	log_std(cd, "LUKS header information for %s\n\n", mdata_device_path(cd));
-	log_std(cd, "Version:       \t%d\n", cd->hdr.version);
-	log_std(cd, "Cipher name:   \t%s\n", cd->hdr.cipherName);
-	log_std(cd, "Cipher mode:   \t%s\n", cd->hdr.cipherMode);
-	log_std(cd, "Hash spec:     \t%s\n", cd->hdr.hashSpec);
-	log_std(cd, "Payload offset:\t%d\n", cd->hdr.payloadOffset);
-	log_std(cd, "MK bits:       \t%d\n", cd->hdr.keyBytes * 8);
+	log_std(cd, "Version:       \t%d\n", cd->u.luks1.hdr.version);
+	log_std(cd, "Cipher name:   \t%s\n", cd->u.luks1.hdr.cipherName);
+	log_std(cd, "Cipher mode:   \t%s\n", cd->u.luks1.hdr.cipherMode);
+	log_std(cd, "Hash spec:     \t%s\n", cd->u.luks1.hdr.hashSpec);
+	log_std(cd, "Payload offset:\t%d\n", cd->u.luks1.hdr.payloadOffset);
+	log_std(cd, "MK bits:       \t%d\n", cd->u.luks1.hdr.keyBytes * 8);
 	log_std(cd, "MK digest:     \t");
-	hexprint(cd, cd->hdr.mkDigest, LUKS_DIGESTSIZE, " ");
+	hexprint(cd, cd->u.luks1.hdr.mkDigest, LUKS_DIGESTSIZE, " ");
 	log_std(cd, "\n");
 	log_std(cd, "MK salt:       \t");
-	hexprint(cd, cd->hdr.mkDigestSalt, LUKS_SALTSIZE/2, " ");
+	hexprint(cd, cd->u.luks1.hdr.mkDigestSalt, LUKS_SALTSIZE/2, " ");
 	log_std(cd, "\n               \t");
-	hexprint(cd, cd->hdr.mkDigestSalt+LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ");
+	hexprint(cd, cd->u.luks1.hdr.mkDigestSalt+LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ");
 	log_std(cd, "\n");
-	log_std(cd, "MK iterations: \t%d\n", cd->hdr.mkDigestIterations);
-	log_std(cd, "UUID:          \t%s\n\n", cd->hdr.uuid);
+	log_std(cd, "MK iterations: \t%d\n", cd->u.luks1.hdr.mkDigestIterations);
+	log_std(cd, "UUID:          \t%s\n\n", cd->u.luks1.hdr.uuid);
 	for(i = 0; i < LUKS_NUMKEYS; i++) {
-		if(cd->hdr.keyblock[i].active == LUKS_KEY_ENABLED) {
+		if(cd->u.luks1.hdr.keyblock[i].active == LUKS_KEY_ENABLED) {
 			log_std(cd, "Key Slot %d: ENABLED\n",i);
 			log_std(cd, "\tIterations:         \t%d\n",
-				cd->hdr.keyblock[i].passwordIterations);
+				cd->u.luks1.hdr.keyblock[i].passwordIterations);
 			log_std(cd, "\tSalt:               \t");
-			hexprint(cd, cd->hdr.keyblock[i].passwordSalt,
+			hexprint(cd, cd->u.luks1.hdr.keyblock[i].passwordSalt,
 				 LUKS_SALTSIZE/2, " ");
 			log_std(cd, "\n\t                      \t");
-			hexprint(cd, cd->hdr.keyblock[i].passwordSalt +
+			hexprint(cd, cd->u.luks1.hdr.keyblock[i].passwordSalt +
 				 LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ");
 			log_std(cd, "\n");
 
 			log_std(cd, "\tKey material offset:\t%d\n",
-				cd->hdr.keyblock[i].keyMaterialOffset);
+				cd->u.luks1.hdr.keyblock[i].keyMaterialOffset);
 			log_std(cd, "\tAF stripes:            \t%d\n",
-				cd->hdr.keyblock[i].stripes);
+				cd->u.luks1.hdr.keyblock[i].stripes);
 		}
 		else 
 			log_std(cd, "Key Slot %d: DISABLED\n", i);
@@ -2308,21 +2309,21 @@ static int _luks_dump(struct crypt_device *cd)
 static int _verity_dump(struct crypt_device *cd)
 {
 	log_std(cd, "VERITY header information for %s\n", mdata_device_path(cd));
-	log_std(cd, "UUID:            \t%s\n", cd->verity_uuid ?: "");
-	log_std(cd, "Hash type:       \t%u\n", cd->verity_hdr.hash_type);
-	log_std(cd, "Data blocks:     \t%" PRIu64 "\n", cd->verity_hdr.data_size);
-	log_std(cd, "Data block size: \t%u\n", cd->verity_hdr.data_block_size);
-	log_std(cd, "Hash block size: \t%u\n", cd->verity_hdr.hash_block_size);
-	log_std(cd, "Hash algorithm:  \t%s\n", cd->verity_hdr.hash_name);
+	log_std(cd, "UUID:            \t%s\n", cd->u.verity.uuid ?: "");
+	log_std(cd, "Hash type:       \t%u\n", cd->u.verity.hdr.hash_type);
+	log_std(cd, "Data blocks:     \t%" PRIu64 "\n", cd->u.verity.hdr.data_size);
+	log_std(cd, "Data block size: \t%u\n", cd->u.verity.hdr.data_block_size);
+	log_std(cd, "Hash block size: \t%u\n", cd->u.verity.hdr.hash_block_size);
+	log_std(cd, "Hash algorithm:  \t%s\n", cd->u.verity.hdr.hash_name);
 	log_std(cd, "Salt:            \t");
-	if (cd->verity_hdr.salt_size)
-		hexprint(cd, cd->verity_hdr.salt, cd->verity_hdr.salt_size, "");
+	if (cd->u.verity.hdr.salt_size)
+		hexprint(cd, cd->u.verity.hdr.salt, cd->u.verity.hdr.salt_size, "");
 	else
 		log_std(cd, "-");
 	log_std(cd, "\n");
-	if (cd->verity_root_hash) {
+	if (cd->u.verity.root_hash) {
 		log_std(cd, "Root hash:      \t");
-		hexprint(cd, cd->verity_root_hash, cd->verity_root_hash_size, "");
+		hexprint(cd, cd->u.verity.root_hash, cd->u.verity.root_hash_size, "");
 		log_std(cd, "\n");
 	}
 	return 0;
@@ -2335,7 +2336,7 @@ int crypt_dump(struct crypt_device *cd)
 	else if (isVERITY(cd->type))
 		return _verity_dump(cd);
 	else if (isTCRYPT(cd->type))
-		return TCRYPT_dump(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
+		return TCRYPT_dump(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
 	log_err(cd, _("Dump operation is not supported for this device type.\n"));
 	return -EINVAL;
@@ -2344,16 +2345,16 @@ int crypt_dump(struct crypt_device *cd)
 const char *crypt_get_cipher(struct crypt_device *cd)
 {
 	if (isPLAIN(cd->type))
-		return cd->plain_cipher;
+		return cd->u.plain.cipher;
 
 	if (isLUKS(cd->type))
-		return cd->hdr.cipherName;
+		return cd->u.luks1.hdr.cipherName;
 
 	if (isLOOPAES(cd->type))
-		return cd->loopaes_cipher;
+		return cd->u.loopaes.cipher;
 
 	if (isTCRYPT(cd->type))
-		return cd->tcrypt_params.cipher;
+		return cd->u.tcrypt.params.cipher;
 
 	return NULL;
 }
@@ -2361,16 +2362,16 @@ const char *crypt_get_cipher(struct crypt_device *cd)
 const char *crypt_get_cipher_mode(struct crypt_device *cd)
 {
 	if (isPLAIN(cd->type))
-		return cd->plain_cipher_mode;
+		return cd->u.plain.cipher_mode;
 
 	if (isLUKS(cd->type))
-		return cd->hdr.cipherMode;
+		return cd->u.luks1.hdr.cipherMode;
 
 	if (isLOOPAES(cd->type))
-		return cd->loopaes_cipher_mode;
+		return cd->u.loopaes.cipher_mode;
 
 	if (isTCRYPT(cd->type))
-		return cd->tcrypt_params.mode;
+		return cd->u.tcrypt.params.mode;
 
 	return NULL;
 }
@@ -2378,16 +2379,16 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 const char *crypt_get_uuid(struct crypt_device *cd)
 {
 	if (isLUKS(cd->type))
-		return cd->hdr.uuid;
+		return cd->u.luks1.hdr.uuid;
 
 	if (isPLAIN(cd->type))
-		return cd->plain_uuid;
+		return cd->u.plain.uuid;
 
 	if (isLOOPAES(cd->type))
-		return cd->loopaes_uuid;
+		return cd->u.loopaes.uuid;
 
 	if (isVERITY(cd->type))
-		return cd->verity_uuid;
+		return cd->u.verity.uuid;
 
 	return NULL;
 }
@@ -2405,19 +2406,19 @@ const char *crypt_get_device_name(struct crypt_device *cd)
 int crypt_get_volume_key_size(struct crypt_device *cd)
 {
 	if (isPLAIN(cd->type))
-		return cd->plain_key_size;
+		return cd->u.plain.key_size;
 
 	if (isLUKS(cd->type))
-		return cd->hdr.keyBytes;
+		return cd->u.luks1.hdr.keyBytes;
 
 	if (isLOOPAES(cd->type))
-		return cd->loopaes_key_size;
+		return cd->u.loopaes.key_size;
 
 	if (isVERITY(cd->type))
-		return cd->verity_root_hash_size;
+		return cd->u.verity.root_hash_size;
 
 	if (isTCRYPT(cd->type))
-		return cd->tcrypt_params.key_size;
+		return cd->u.tcrypt.params.key_size;
 
 	return 0;
 }
@@ -2425,16 +2426,16 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 uint64_t crypt_get_data_offset(struct crypt_device *cd)
 {
 	if (isPLAIN(cd->type))
-		return cd->plain_hdr.offset;
+		return cd->u.plain.hdr.offset;
 
 	if (isLUKS(cd->type))
-		return cd->hdr.payloadOffset;
+		return cd->u.luks1.hdr.payloadOffset;
 
 	if (isLOOPAES(cd->type))
-		return cd->loopaes_hdr.offset;
+		return cd->u.loopaes.hdr.offset;
 
 	if (isTCRYPT(cd->type))
-		return TCRYPT_get_data_offset(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
+		return TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
 	return 0;
 }
@@ -2442,16 +2443,16 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 uint64_t crypt_get_iv_offset(struct crypt_device *cd)
 {
 	if (isPLAIN(cd->type))
-		return cd->plain_hdr.skip;
+		return cd->u.plain.hdr.skip;
 
 	if (isLUKS(cd->type))
 		return 0;
 
 	if (isLOOPAES(cd->type))
-		return cd->loopaes_hdr.skip;
+		return cd->u.loopaes.hdr.skip;
 
 	if (isTCRYPT(cd->type))
-		return TCRYPT_get_iv_offset(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
+		return TCRYPT_get_iv_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
 	return 0;
 }
@@ -2463,7 +2464,7 @@ crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot)
 		return CRYPT_SLOT_INVALID;
 	}
 
-	return LUKS_keyslot_info(&cd->hdr, keyslot);
+	return LUKS_keyslot_info(&cd->u.luks1.hdr, keyslot);
 }
 
 int crypt_keyslot_max(const char *type)
@@ -2482,7 +2483,7 @@ int crypt_keyslot_area(struct crypt_device *cd,
 	if (!isLUKS(cd->type))
 		return -EINVAL;
 
-	return LUKS_keyslot_area(&cd->hdr, keyslot, offset, length);
+	return LUKS_keyslot_area(&cd->u.luks1.hdr, keyslot, offset, length);
 }
 
 const char *crypt_get_type(struct crypt_device *cd)
@@ -2498,15 +2499,15 @@ int crypt_get_verity_info(struct crypt_device *cd,
 
 	vp->data_device = device_path(cd->device);
 	vp->hash_device = mdata_device_path(cd);
-	vp->hash_name = cd->verity_hdr.hash_name;
-	vp->salt = cd->verity_hdr.salt;
-	vp->salt_size = cd->verity_hdr.salt_size;
-	vp->data_block_size = cd->verity_hdr.data_block_size;
-	vp->hash_block_size = cd->verity_hdr.hash_block_size;
-	vp->data_size = cd->verity_hdr.data_size;
-	vp->hash_area_offset = cd->verity_hdr.hash_area_offset;
-	vp->hash_type = cd->verity_hdr.hash_type;
-	vp->flags = cd->verity_hdr.flags & CRYPT_VERITY_NO_HEADER;
+	vp->hash_name = cd->u.verity.hdr.hash_name;
+	vp->salt = cd->u.verity.hdr.salt;
+	vp->salt_size = cd->u.verity.hdr.salt_size;
+	vp->data_block_size = cd->u.verity.hdr.data_block_size;
+	vp->hash_block_size = cd->u.verity.hdr.hash_block_size;
+	vp->data_size = cd->u.verity.hdr.data_size;
+	vp->hash_area_offset = cd->u.verity.hdr.hash_area_offset;
+	vp->hash_type = cd->u.verity.hdr.hash_type;
+	vp->flags = cd->u.verity.hdr.flags & CRYPT_VERITY_NO_HEADER;
 	return 0;
 }
 
@@ -2524,8 +2525,8 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 		return -ENOTSUP;
 
 	if (cd && isTCRYPT(cd->type)) {
-		cad->offset	= TCRYPT_get_data_offset(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
-		cad->iv_offset	= TCRYPT_get_iv_offset(cd, &cd->tcrypt_hdr, &cd->tcrypt_params);
+		cad->offset	= TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+		cad->iv_offset	= TCRYPT_get_iv_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 	} else {
 		cad->offset	= dmd.u.crypt.offset;
 		cad->iv_offset	= dmd.u.crypt.iv_offset;
