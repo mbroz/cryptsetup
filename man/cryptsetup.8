@@ -452,19 +452,20 @@ header before calling this command.
 .PP
 \fIbenchmark\fR <options>
 .IP
-Benchmarks ciphers. Without parameters it tries to measure few common
-configurations.
+Benchmarks ciphers and KDF (key derivation function).
+Without parameters it tries to measure few common configurations.
 
 To benchmark other ciphers or modes, you need to specify \fB\-\-cipher\fR
-and \fB\-\-key-size\fR options.
+and \fB\-\-key-size\fR options or \fB\-\-hash\fR for KDF test.
 
 \fBNOTE:\fR This benchmark is using memory only and is only informative.
 You cannot directly predict real storage encryption speed from it.
 
-This benchmark requires kernel userspace crypto API to be available
-(kernel af_alg and algif_skcipher modules, introduced in Linux kernel 2.6.38).
+For testing block ciphers, this benchmark requires kernel userspace
+crypto API to be available (kernel af_alg and algif_skcipher modules,
+introduced in Linux kernel 2.6.38).
 
-\fB<options>\fR can be [\-\-cipher, \-\-key-size].
+\fB<options>\fR can be [\-\-cipher, \-\-key-size, \-\-hash].
 .SH OPTIONS
 .TP
 .B "\-\-verbose, \-v"
