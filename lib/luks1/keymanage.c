@@ -598,21 +598,6 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 	return r;
 }
 
-static int LUKS_PBKDF2_performance_check(const char *hashSpec,
-					 uint64_t *PBKDF2_per_sec,
-					 struct crypt_device *ctx)
-{
-	if (!*PBKDF2_per_sec) {
-		if (crypt_pbkdf_check("pbkdf2", hashSpec, PBKDF2_per_sec) < 0) {
-			log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"), hashSpec);
-			return -EINVAL;
-		}
-		log_dbg("PBKDF2: %" PRIu64 " iterations per second using hash %s.", *PBKDF2_per_sec, hashSpec);
-	}
-
-	return 0;
-}
-
 int LUKS_generate_phdr(struct luks_phdr *header,
 		       const struct volume_key *vk,
 		       const char *cipherName, const char *cipherMode, const char *hashSpec,
@@ -669,8 +654,13 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
-	if ((r = LUKS_PBKDF2_performance_check(header->hashSpec, PBKDF2_per_sec, ctx)))
+	r = crypt_benchmark_kdf(ctx, "pbkdf2", header->hashSpec,
+				"foo", 3, "bar", 3, PBKDF2_per_sec);
+	if (r < 0) {
+		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
+			header->hashSpec);
 		return r;
+	}
 
 	/* Compute master key digest */
 	iteration_time_ms /= 8;
@@ -760,8 +750,13 @@ int LUKS_set_key(unsigned int keyIndex,
 
 	log_dbg("Calculating data for key slot %d", keyIndex);
 
-	if ((r = LUKS_PBKDF2_performance_check(hdr->hashSpec, PBKDF2_per_sec, ctx)))
+	r = crypt_benchmark_kdf(ctx, "pbkdf2", hdr->hashSpec,
+				"foo", 3, "bar", 3, PBKDF2_per_sec);
+	if (r < 0) {
+		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
+			hdr->hashSpec);
 		return r;
+	}
 
 	/*
 	 * Avoid floating point operation

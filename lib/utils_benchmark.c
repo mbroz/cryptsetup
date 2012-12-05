@@ -215,3 +215,33 @@ out:
 	free(cp.iv);
 	return r;
 }
+
+int crypt_benchmark_kdf(struct crypt_device *cd,
+	const char *kdf,
+	const char *hash,
+	const char *password,
+	size_t password_size,
+	const char *salt,
+	size_t salt_size,
+	uint64_t *iterations_sec)
+{
+	int r;
+
+	if (!iterations_sec)
+		return -EINVAL;
+
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
+	if (!strncmp(kdf, "pbkdf2", 6))
+		r = crypt_pbkdf_check(kdf, hash, password, password_size,
+				      salt, salt_size, iterations_sec);
+	else
+		r = -EINVAL;
+
+	if (!r)
+		log_dbg("KDF %s, hash %s: %" PRIu64 " iterations per second.",
+			kdf, hash, *iterations_sec);
+	return r;
+}

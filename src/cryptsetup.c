@@ -4,6 +4,7 @@
  * Copyright (C) 2004, Christophe Saout <christophe@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
  * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2012, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -422,6 +423,21 @@ out:
 	return r;
 }
 
+static int action_benchmark_kdf(const char *hash)
+{
+	uint64_t kdf_iters;
+	int r;
+
+	r = crypt_benchmark_kdf(NULL, "pbkdf2", hash, "foo", 3, "bar", 3,
+				&kdf_iters);
+	if (r < 0)
+		log_std("PBKDF2-%-9s     N/A\n", hash);
+	else
+		log_std("PBKDF2-%-9s %7" PRIu64 " iterations per second\n",
+			hash, kdf_iters);
+	return r;
+}
+
 static int action_benchmark(void)
 {
 	static struct {
@@ -444,8 +460,6 @@ static int action_benchmark(void)
 		{ "twofish", "xts", 64, 16 },
 		{  NULL, NULL, 0, 0 }
 	};
-	const char *header = "# Tests are approximate using memory only (no storage IO).\n"
-			      "#  Algorithm | Key | Encryption | Decryption\n";
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS);
@@ -454,7 +468,10 @@ static int action_benchmark(void)
 	char *c;
 	int i, r;
 
-	if (opt_cipher) {
+	log_std("# Tests are approximate using memory only (no storage IO).\n");
+	if (opt_hash) {
+		r = action_benchmark_kdf(opt_hash);
+	} else if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
 		if (r < 0) {
 			log_err(_("No known cipher specification pattern detected.\n"));
@@ -473,7 +490,7 @@ static int action_benchmark(void)
 				    key_size / 8, iv_size, buffer_size,
 				    &enc_mbr, &dec_mbr);
 		if (!r) {
-			log_std("%s", header);
+			log_std("#  Algorithm | Key | Encryption | Decryption\n");
 			strncat(cipher, "-", MAX_CIPHER_LEN);
 			strncat(cipher, cipher_mode, MAX_CIPHER_LEN);
 			log_std("%12s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
@@ -481,6 +498,11 @@ static int action_benchmark(void)
 		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
 	} else {
+		action_benchmark_kdf("sha1");
+		action_benchmark_kdf("sha256");
+		action_benchmark_kdf("sha512");
+		action_benchmark_kdf("ripemd160");
+		action_benchmark_kdf("whirlpool");
 		for (i = 0; bciphers[i].cipher; i++) {
 			r = crypt_benchmark(NULL, bciphers[i].cipher, bciphers[i].mode,
 					    bciphers[i].key_size, bciphers[i].iv_size,
@@ -490,7 +512,7 @@ static int action_benchmark(void)
 			if (r == -ENOENT)
 				skipped++;
 			if (i == 0)
-				log_std("%s", header);
+				log_std("#  Algorithm | Key | Encryption | Decryption\n");
 
 			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
 				 bciphers[i].cipher, bciphers[i].mode);

@@ -905,6 +905,15 @@ int crypt_benchmark(struct crypt_device *cd,
 	double *encryption_mbs,
 	double *decryption_mbs);
 
+int crypt_benchmark_kdf(struct crypt_device *cd,
+	const char *kdf,
+	const char *hash,
+	const char *password,
+	size_t password_size,
+	const char *salt,
+	size_t salt_size,
+	uint64_t *iterations_sec);
+
 /**
  * Get cipher used in device
  *

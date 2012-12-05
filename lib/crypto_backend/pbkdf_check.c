@@ -38,7 +38,10 @@ static long time_ms(struct rusage *start, struct rusage *end)
 }
 
 /* This code benchmarks PBKDF and returns iterations/second using specified hash */
-int crypt_pbkdf_check(const char *kdf, const char *hash, uint64_t *iter_secs)
+int crypt_pbkdf_check(const char *kdf, const char *hash,
+		      const char *password, size_t password_size,
+		      const char *salt, size_t salt_size,
+		      uint64_t *iter_secs)
 {
 	struct rusage rstart, rend;
 	int r = 0, step = 0;
@@ -54,7 +57,8 @@ int crypt_pbkdf_check(const char *kdf, const char *hash, uint64_t *iter_secs)
 		if (getrusage(RUSAGE_SELF, &rstart) < 0)
 			return -EINVAL;
 
-		r = crypt_pbkdf(kdf, hash, "foo", 3, "bar", 3, &buf, 1, iterations);
+		r = crypt_pbkdf(kdf, hash, password, password_size, salt,
+				salt_size, &buf, 1, iterations);
 		if (r < 0)
 			return r;
 
