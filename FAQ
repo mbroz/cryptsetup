@@ -184,6 +184,33 @@ A. Contributors
   http://dir.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt
 
 
+ * 1.7 Unsubscribe from the mailing-list
+
+  Send mail to dm-crypt-unsubscribe@saout.de from the subscribed
+  account. You will get an email with instructions.
+
+  Basically, you just have to respond to it unmodified to get
+  unsubscribed. The listserver admin functions are not very fast. It
+  can take 15 minutes or longer for a reply to arrive (I suspect
+  greylisting is in use), so be patient.
+
+  Also note that nobody on the list can unsubscribe you, sending
+  demands to be unsubscribed to the list just annoys people that are
+  entirely blameless for you being subscribed.
+
+  If you are subscribed, a subscription confirmation email was sent
+  to your email account and it had to be answered before the
+  subscription went active. The confirmation emails from the
+  listserver have subjects like these (with other numbers):
+
+  Subject: confirm 9964cf10.....
+  
+  and are sent from dm-crypt-request@saout.de. You should check
+  whether you have anything like it in your sent email folder. If
+  you find nothing and are sure you did not confirm, then you should
+  look into a possible compromise of your email account.
+
+
 2. Setup 
 
 
@@ -595,7 +622,106 @@ A. Contributors
 5. Security Aspects 
 
 
- * 5.1 Is LUKS insecure? Everybody can see I have encrypted data!
+ * 5.1 How long is a secure passphrase ?
+
+  This is just the short answer. For more info and explanation of
+  some of the terms used in this item, read the rest of Section 5.
+  The actual recommendation is at the end of this item.
+
+  First, passphrase length is not really the right measure,
+  passphrase entropy is. For example, a random lowercase letter (a-z)
+  gives you 4.7 bit of entropy, one element of a-z0-9 gives you 5.2
+  bits of entropy, an element of a-zA-Z0-9 gives you 5.9 bits and
+  a-zA-Z0-9!@#$%^&:-+ gives you 6.2 bits. On the other hand, a random
+  English word only gives you 0.6...1.3 bits of entropy per
+  character. Using sentences that make sense gives lower entropy,
+  series of random words gives higher entropy. Do not use sentences
+  that can be tied to you or found on your computer. This type of
+  attack is done routinely today.
+
+  That said, it does not matter too much what scheme you use, but it
+  does matter how much entropy your passphrase contains, because an
+  attacker has to try on average
+
+      1/2 * 2^(bits of entropy in passphrase)    
+ 
+  different passphrases to guess correctly.
+
+  Historically, estimations tended to use computing time estimates,
+  but more modern approaches try to estimate cost of guessing a
+  passphrase.
+
+  As an example, I will try to get an estimate from the numbers in
+  http://it.slashdot.org/story/12/12/05/0623215/new-25-gpu-monster-devours-strong-passwords-in-minutes
+  More references can be found a the end of this document. Note that
+  these are estimates from the defender side, so assuming something
+  is easier than it actually is is fine. An attacker may still have
+  vastly higher cost than estimated here.
+
+  LUKS uses SHA1 for hasing per default. The claim in the reference is
+  63 billion tries/second for SHA1. We will leave aside the check
+  whether a try actually decrypts a key-slot. Now, the machine has 25
+  GPUs, which I will estimate at an overall lifetime cost of USD/EUR
+  1000 each, and an useful lifetime of 2 years. (This is on the low
+  side.) Disregarding downtime, the machine can then break
+
+     N = 63*10^9 * 3600 * 24 * 365 * 2 ~ 4*10^18     
+   
+  passphrases for EUR/USD 25k. That is one 62 bit passphrase hashed
+  once with SHA1 for EUR/USD 25k. Note that as this can be
+  parallelized, it can be done faster than 2 years with several of
+  these machines.
+
+  For plain dm-crypt (no hash iteration) this is it. This gives (with
+  SHA1, plain dm-crypt default is ripemd160 which seems to be
+  slightly slower than SHA1):
+
+    Passphrase entropy  Cost to break  
+    60 bit              EUR/USD     6k  
+    65 bit              EUR/USD   200K
+    70 bit              EUR/USD     6M
+    75 bit              EUR/USD   200M
+    80 bit              EUR/USD     6B
+    85 bit              EUR/USD   200B
+    ...                      ...    
+ 
+  For LUKS, you have to take into account hash iteration in PBKDF2.
+  For a current CPU, there are about 100k iterations (as can be
+  queried with ''cryptsetup luksDump''.
+
+  The table above then becomes:
+
+    Passphrase entropy  Cost to break 
+    50 bit              EUR/USD   600k 
+    55 bit              EUR/USD    20M
+    60 bit              EUR/USD   600M  
+    65 bit              EUR/USD    20B
+    70 bit              EUR/USD   600B
+    75 bit              EUR/USD    20T
+    ...                      ...    
+ 
+  Recommendation:
+
+  To get reasonable security for the next 10 years, it is a good idea
+  to overestimate by a factor of at least 1000.
+
+  Then there is the question of how much the attacker is willing to
+  spend. That is up to your own security evaluation. For general use,
+  I will assume the attacker is willing to spend up to 1 million
+  EUR/USD. Then we get the following recommendations:
+
+  Plain dm-crypt: Use > 80 bit. That is e.g. 17 random chars from a-z
+  or a random English sentence of > 135 characters length.
+
+  LUKS: Use > 65 bit. That is e.g. 14 random chars from a-z or a
+  random English sentence of > 108 characters length.
+
+  If paranoid, add at least 20 bit. That is roughly four additional
+  characters for random passphrases and roughly 32 characters for a
+  random English sentence.
+
+
+ * 5.2 Is LUKS insecure? Everybody can see I have encrypted data!
 
   In practice it does not really matter. In most civilized countries
   you can just refuse to hand over the keys, no harm done. In some
@@ -620,7 +746,7 @@ A. Contributors
   difference between "plain" and LUKS format?"
 
 
- * 5.2 Should I initialize (overwrite) a new LUKS/dm-crypt partition?
+ * 5.3 Should I initialize (overwrite) a new LUKS/dm-crypt partition?
 
   If you just create a filesystem on it, most of the old data will
   still be there. If the old data is sensitive, you should overwrite
@@ -639,7 +765,7 @@ A. Contributors
       dd if=/dev/zero of=/dev/mapper/e1
        
 
- * 5.3 How do I securely erase a LUKS (or other) partition?
+ * 5.4 How do I securely erase a LUKS (or other) partition?
 
   For LUKS, if you are in a desperate hurry, overwrite the LUKS
   header and key-slot area. This means overwriting the first
@@ -680,7 +806,7 @@ A. Contributors
       dd_rescue -w /dev/zero /dev/sde1   
  
 
- * 5.4 How do I securely erase a backup of a LUKS partition or header?
+ * 5.5 How do I securely erase a backup of a LUKS partition or header?
 
   That depends on the medium it is stored on. For HDD and SSD, use
   overwrite with zeros. For an SSD or FLASH drive (USB stick), you
@@ -698,12 +824,12 @@ A. Contributors
   lead to data not actually being deleted at all during overwrites.
 
 
- * 5.5 What about backup? Does it compromise security?
+ * 5.6 What about backup? Does it compromise security?
 
   That depends. See item 6.7.
 
 
- * 5.6 Why is all my data permanently gone if I overwrite the LUKS
+ * 5.7 Why is all my data permanently gone if I overwrite the LUKS
    header?
 
   Overwriting the LUKS header in part or in full is the most common
@@ -731,7 +857,7 @@ A. Contributors
   a mapped LUKS container?" in Section "Backup and Data Recovery".
 
 
- * 5.7 What is a "salt"?
+ * 5.8 What is a "salt"?
 
   A salt is a random key-grade value added to the passphrase before
   it is processed. It is not kept secret. The reason for using salts
@@ -759,7 +885,7 @@ A. Contributors
   infeasible.
 
 
- * 5.8 Is LUKS secure with a low-entropy (bad) passphrase?
+ * 5.9 Is LUKS secure with a low-entropy (bad) passphrase?
 
   Note: You should only use the 94 printable characters from 7 bit
   ASCII code to prevent your passphrase from failing when the
@@ -812,7 +938,7 @@ A. Contributors
   this is good passphrase material.
 
 
- * 5.9 What is "iteration count" and why is decreasing it a bad idea?
+ * 5.10 What is "iteration count" and why is decreasing it a bad idea?
 
   Iteration count is the number of PBKDF2 iterations a passphrase is
   put through before it is used to unlock a key-slot. Iterations are
@@ -877,7 +1003,7 @@ A. Contributors
   this danger significantly.
 
 
- * 5.10 Some people say PBKDF2 is insecure?
+ * 5.11 Some people say PBKDF2 is insecure?
 
   There is some discussion that a hash-function should have a "large
   memory" property, i.e. that it should require a lot of memory to be
@@ -899,14 +1025,14 @@ A. Contributors
   high-entropy passphrase, see items 5.8 and 5.9.
 
 
- * 5.11 What about iteration count with plain dm-crypt?
+ * 5.12 What about iteration count with plain dm-crypt?
 
   Simple: There is none. There is also no salting. If you use plain
   dm-crypt, the only way to be secure is to use a high entropy
   passphrase. If in doubt, use LUKS instead.
 
 
- * 5.12 Is LUKS with default parameters less secure on a slow CPU?
+ * 5.13 Is LUKS with default parameters less secure on a slow CPU?
 
   Unfortunately, yes. However the only aspect affected is the
   protection for low-entropy passphrase or master-key. All other
@@ -930,7 +1056,7 @@ A. Contributors
   compensate for problems in front of the keyboard.
 
 
- * 5.13 Why was the default aes-cbc-plain replaced with aes-cbc-essiv?
+ * 5.14 Why was the default aes-cbc-plain replaced with aes-cbc-essiv?
 
   Note: This item applies both to plain dm-crypt and to LUKS
 
@@ -960,7 +1086,7 @@ A. Contributors
   knowing the encryption key and the watermarking attack fails.
 
 
- * 5.14 Are there any problems with "plain" IV? What is "plain64"?
+ * 5.15 Are there any problems with "plain" IV? What is "plain64"?
 
   First, "plain" and "plain64" are both not secure to use with CBC,
   see previous FAQ item.
@@ -976,7 +1102,7 @@ A. Contributors
   does not cause any performance penalty compared to "plain".
 
 
- * 5.15 What about XTS mode?
+ * 5.16 What about XTS mode?
 
   XTS mode is potentially even more secure than cbc-essiv (but only if
   cbc-essiv is insecure in your scenario). It is a NIST standard and
@@ -995,7 +1121,7 @@ A. Contributors
   apply.
 
 
- * 5.16 Is LUKS FIPS-140-2 certified?
+ * 5.17 Is LUKS FIPS-140-2 certified?
 
   No. But that is more a problem of FIPS-140-2 than of LUKS. From a
   technical point-of-view, LUKS with the right parameters would be
@@ -1012,7 +1138,7 @@ A. Contributors
   entropy-starved situation.
 
 
- * 5.16 What about Plausible Deniability?
+ * 5.18 What about Plausible Deniability?
 
   First let me attempt a definition for the case of encrypted
   filesystems: Plausible deniability is when you hide encrypted data
@@ -1071,7 +1197,7 @@ A. Contributors
   foot, you can figure out how to do it yourself.
 
 
- * 5.17 What about SSDs or Flash Drives?
+ * 5.19 What about SSDs or Flash Drives?
 
   The problem is that you cannot reliably erase parts of these
   devices, mainly due to wear-leveling and possibly defect
@@ -1619,6 +1745,43 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   cryptsetup create <target> <device> -c aes -s 128 -h sha256
  
 
+ * 7.6 Kernel encrypted loop device (cryptoloop)
+
+  There are a number of different losetup implementations for using
+  encrypted loop devices so getting this to work may need a bit of
+  experimentation.
+
+  NOTE: Do NOT use this for new containers! Some of the existing
+  implementations are insecure and future support is uncertain.
+
+  Example for a compatible mapping:
+
+    losetup -e twofish -N /dev/loop0 /image.img
+ 
+  translates to
+
+    cryptsetup create image_plain /image.img -c twofish-cbc-plain -H plain
+ 
+  with the mapping being done to /dev/mapper/image_plain instead of
+  to /dev/loop0.
+
+  More details:
+
+  Cipher, mode and pasword hash (or no hash):
+
+  -e cipher [-N]        => -c cipher-cbc-plain -H plain [-s 256]
+  -e cipher             => -c cipher-cbc-plain -H ripemd160 [-s 256]
+ 
+  Key size and offsets (losetup: bytes, cryptsetuop: sectors of 512
+  bytes):
+
+  -k 128                 => -s 128
+  -o 2560                => -o 5 -p 5       # 2560/512 = 5
+ 
+  There is no replacement for --pass-fd, it has to be emulated using
+  keyfiles, see the cryptsetup man-page.
+
+
 8. Issues with Specific Versions of cryptsetup 
 
 
@@ -1681,6 +1844,15 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
  * Code Examples
 
   - Some code examples are in the source package under docs/examples
+
+
+  * *Brute-forciong passphrases
+
+  -
+  http://news.electricalchemy.net/2009/10/password-cracking-in-cloud-part-5.html
+
+  -
+  http://it.slashdot.org/story/12/12/05/0623215/new-25-gpu-monster-devours-strong-passwords-in-minutes
 
 
  * Tools
