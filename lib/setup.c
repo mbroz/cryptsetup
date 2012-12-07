@@ -1380,6 +1380,9 @@ int crypt_header_restore(struct crypt_device *cd,
 	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
 
+	if (cd->type && !isLUKS(cd->type))
+		return -EINVAL;
+
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
