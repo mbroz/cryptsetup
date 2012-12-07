@@ -599,6 +599,33 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	size_t new_passphrase_size);
 
 /**
+ * Change defined key slot using provided passphrase
+ *
+ * @pre @e cd contains initialized and formatted LUKS device context
+ *
+ * @param cd crypt device handle
+ * @param keyslot_old old keyslot or @e CRYPT_ANY_SLOT
+ * @param keyslot_new new keyslot (can be the same as old)
+ * @param passphrase passphrase used to unlock volume key, @e NULL for query
+ * @param passphrase_size size of passphrase (binary data)
+ * @param new_passphrase passphrase for new keyslot, @e NULL for query
+ * @param new_passphrase_size size of @e new_passphrase (binary data)
+ *
+ * @return allocated key slot number or negative errno otherwise.
+ *
+ * @note This function is just internal implementation of luksChange
+ * command to avoid reading of volume key outside libcryptsetup boundary
+ * in FIPS mode.
+ */
+int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
+	int keyslot_old,
+	int keyslot_new,
+	const char *passphrase,
+	size_t passphrase_size,
+	const char *new_passphrase,
+	size_t new_passphrase_size);
+
+/**
 * Add key slot using provided key file path
  *
  * @pre @e cd contains initialized and formatted LUKS device context
