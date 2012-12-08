@@ -636,6 +636,9 @@ static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcryp
 {
 	int r;
 
+	if (!params)
+		return -EINVAL;
+
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
