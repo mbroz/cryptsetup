@@ -471,12 +471,16 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			   struct crypt_params_tcrypt *params)
 {
 	unsigned char pwd[TCRYPT_KEY_POOL_LEN] = {};
-	size_t passphrase_size;
+	size_t passphrase_size, alignment;
 	char *key;
 	unsigned int i, skipped = 0;
 	int r = -EINVAL, legacy_modes;
 
-	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
+	alignment = crypt_getpagesize();
+	if (alignment < 0)
+		return -EINVAL;
+
+	if (posix_memalign((void*)&key, alignment, TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
 
 	if (params->keyfiles_count)

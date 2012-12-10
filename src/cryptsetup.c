@@ -491,10 +491,8 @@ static int action_benchmark(void)
 				    &enc_mbr, &dec_mbr);
 		if (!r) {
 			log_std("#  Algorithm | Key | Encryption | Decryption\n");
-			strncat(cipher, "-", MAX_CIPHER_LEN);
-			strncat(cipher, cipher_mode, MAX_CIPHER_LEN);
-			log_std("%12s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
-				cipher, key_size, enc_mbr, dec_mbr);
+			log_std("%8s-%s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
+				cipher, cipher_mode, key_size, enc_mbr, dec_mbr);
 		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
 	} else {

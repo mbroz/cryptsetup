@@ -82,10 +82,6 @@ int crypt_pbkdf_check(const char *kdf, const char *hash,
 			return -EINVAL;
 	}
 
-	/* Safety check if anything went wrong */
-	if (ms < 10)
-		return -EINVAL;
-
 	if (iter_secs)
 		*iter_secs = (iterations * 1000) / ms;
 	return r;

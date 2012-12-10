@@ -1679,7 +1679,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	r = LUKS_open_key_with_hdr(keyslot_old, passphrase, passphrase_size,
 				   &cd->u.luks1.hdr, &vk, cd);
 	if (r < 0)
-		return r;
+		goto out;
 
 	if (keyslot_old != CRYPT_ANY_SLOT && keyslot_old != r) {
 		log_dbg("Keyslot mismatch.");
