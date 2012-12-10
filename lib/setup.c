@@ -1424,6 +1424,8 @@ void crypt_free(struct crypt_device *cd)
 		}
 
 		free(cd->type);
+		/* Some structures can contain keys (TCRYPT), wipe it */
+		memset(cd, 0, sizeof(*cd));
 		free(cd);
 	}
 }

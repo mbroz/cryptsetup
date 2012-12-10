@@ -163,9 +163,9 @@ static struct tcrypt_algs tcrypt_cipher[] = {
 {}
 };
 
-static int hdr_from_disk(struct tcrypt_phdr *hdr,
-			 struct crypt_params_tcrypt *params,
-			 int kdf_index, int cipher_index)
+static int TCRYPT_hdr_from_disk(struct tcrypt_phdr *hdr,
+				struct crypt_params_tcrypt *params,
+				int kdf_index, int cipher_index)
 {
 	uint32_t crc32;
 	size_t size;
@@ -223,7 +223,7 @@ static int hdr_from_disk(struct tcrypt_phdr *hdr,
 /*
  * Kernel implements just big-endian version of blowfish, hack it here
  */
-static void blowfish_le(char *buf)
+static void TCRYPT_swab_le(char *buf)
 {
 	uint32_t *l = (uint32_t*)&buf[0];
 	uint32_t *r = (uint32_t*)&buf[4];
@@ -234,9 +234,9 @@ static void blowfish_le(char *buf)
 static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
 				   const char *key, char *buf)
 {
-	char iv[alg->iv_size], iv_old[alg->iv_size];
-	struct crypt_cipher *cipher = NULL;
 	int bs = alg->iv_size;
+	char iv[bs], iv_old[bs];
+	struct crypt_cipher *cipher = NULL;
 	int i, j, r;
 
 	assert(bs == 2*sizeof(uint32_t));
@@ -249,10 +249,10 @@ static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
 	memcpy(iv, &key[alg->iv_offset], alg->iv_size);
 	for (i = 0; i < TCRYPT_HDR_LEN; i += bs) {
 		memcpy(iv_old, &buf[i], bs);
-		blowfish_le(&buf[i]);
+		TCRYPT_swab_le(&buf[i]);
 		r = crypt_cipher_decrypt(cipher, &buf[i], &buf[i],
 					  bs, NULL, 0);
-		blowfish_le(&buf[i]);
+		TCRYPT_swab_le(&buf[i]);
 		if (r < 0)
 			break;
 		for (j = 0; j < bs; j++)
@@ -261,10 +261,12 @@ static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
 	}
 
 	crypt_cipher_destroy(cipher);
+	memset(iv, 0, bs);
+	memset(iv_old, 0, bs);
 	return r;
 }
 
-static void remove_whitening(char *buf, const char *key)
+static void TCRYPT_remove_whitening(char *buf, const char *key)
 {
 	int j;
 
@@ -272,8 +274,8 @@ static void remove_whitening(char *buf, const char *key)
 		buf[j] ^= key[j % 8];
 }
 
-static void copy_key(struct tcrypt_alg *alg, const char *mode,
-		     char *out_key, const char *key)
+static void TCRYPT_copy_key(struct tcrypt_alg *alg, const char *mode,
+			     char *out_key, const char *key)
 {
 	int ks2;
 	if (!strncmp(mode, "xts", 3)) {
@@ -289,8 +291,8 @@ static void copy_key(struct tcrypt_alg *alg, const char *mode,
 	}
 }
 
-static int decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
-			   const char *key,struct tcrypt_phdr *hdr)
+static int TCRYPT_decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
+				   const char *key,struct tcrypt_phdr *hdr)
 {
 	char backend_key[TCRYPT_HDR_KEY_LEN];
 	char iv[TCRYPT_HDR_IV_LEN] = {};
@@ -308,22 +310,23 @@ static int decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
 	if (!strncmp(mode, "lrw", 3))
 		iv[alg->iv_size - 1] = 1;
 	else if (!strncmp(mode, "cbc", 3)) {
-		remove_whitening(buf, &key[8]);
+		TCRYPT_remove_whitening(buf, &key[8]);
 		if (!strcmp(alg->name, "blowfish_le"))
 			return decrypt_blowfish_le_cbc(alg, key, buf);
 		memcpy(iv, &key[alg->iv_offset], alg->iv_size);
 	}
 
-	copy_key(alg, mode, backend_key, key);
+	TCRYPT_copy_key(alg, mode, backend_key, key);
 	r = crypt_cipher_init(&cipher, alg->name, mode_name,
 			      backend_key, alg->key_size);
+	if (!r) {
+		r = crypt_cipher_decrypt(cipher, buf, buf, TCRYPT_HDR_LEN,
+					 iv, alg->iv_size);
+		crypt_cipher_destroy(cipher);
+	}
+
 	memset(backend_key, 0, sizeof(backend_key));
-	if (r < 0)
-		return r;
-
-	r = crypt_cipher_decrypt(cipher, buf, buf, TCRYPT_HDR_LEN, iv, alg->iv_size);
-	crypt_cipher_destroy(cipher);
-
+	memset(iv, 0, TCRYPT_HDR_IV_LEN);
 	return r;
 }
 
@@ -331,8 +334,8 @@ static int decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
  * For chanined ciphers and CBC mode we need "outer" decryption.
  * Backend doesn't provide this, so implement it here directly using ECB.
  */
-static int decrypt_hdr_cbci(struct tcrypt_algs *ciphers,
-			     const char *key, struct tcrypt_phdr *hdr)
+static int TCRYPT_decrypt_cbci(struct tcrypt_algs *ciphers,
+				const char *key, struct tcrypt_phdr *hdr)
 {
 	struct crypt_cipher *cipher[ciphers->chain_count];
 	unsigned int bs = ciphers->cipher[0].iv_size;
@@ -340,7 +343,7 @@ static int decrypt_hdr_cbci(struct tcrypt_algs *ciphers,
 	unsigned int i, j;
 	int r = -EINVAL;
 
-	remove_whitening(buf, &key[8]);
+	TCRYPT_remove_whitening(buf, &key[8]);
 
 	memcpy(iv, &key[ciphers->cipher[0].iv_offset], bs);
 
@@ -373,11 +376,13 @@ out:
 		if (cipher[j])
 			crypt_cipher_destroy(cipher[j]);
 
+	memset(iv, 0, bs);
+	memset(iv_old, 0, bs);
 	return r;
 }
 
-static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
-			const char *key, int legacy_modes)
+static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
+			       const char *key, int legacy_modes)
 {
 	struct tcrypt_phdr hdr2;
 	int i, j, r = -EINVAL;
@@ -391,11 +396,11 @@ static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 		memcpy(&hdr2.e, &hdr->e, TCRYPT_HDR_LEN);
 
 		if (!strncmp(tcrypt_cipher[i].mode, "cbci", 4))
-			r = decrypt_hdr_cbci(&tcrypt_cipher[i], key, &hdr2);
+			r = TCRYPT_decrypt_cbci(&tcrypt_cipher[i], key, &hdr2);
 		else for (j = tcrypt_cipher[i].chain_count - 1; j >= 0 ; j--) {
 			if (!tcrypt_cipher[i].cipher[j].name)
 				continue;
-			r = decrypt_hdr_one(&tcrypt_cipher[i].cipher[j],
+			r = TCRYPT_decrypt_hdr_one(&tcrypt_cipher[i].cipher[j],
 					    tcrypt_cipher[i].mode, key, &hdr2);
 			if (r < 0)
 				break;
@@ -412,19 +417,19 @@ static int decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 		if (!strncmp(hdr2.d.magic, TCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
 			log_dbg("TCRYPT: Signature magic detected.");
 			memcpy(&hdr->e, &hdr2.e, TCRYPT_HDR_LEN);
-			memset(&hdr2.e, 0, TCRYPT_HDR_LEN);
 			r = i;
 			break;
 		}
 		r = -EPERM;
 	}
 
+	memset(&hdr2, 0, sizeof(hdr2));
 	return r;
 }
 
-static int pool_keyfile(struct crypt_device *cd,
-			unsigned char pool[TCRYPT_KEY_POOL_LEN],
-			const char *keyfile)
+static int TCRYPT_pool_keyfile(struct crypt_device *cd,
+				unsigned char pool[TCRYPT_KEY_POOL_LEN],
+				const char *keyfile)
 {
 	unsigned char data[TCRYPT_KEYFILE_LEN];
 	int i, j, fd, data_size;
@@ -481,7 +486,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 
 	/* Calculate pool content from keyfiles */
 	for (i = 0; i < params->keyfiles_count; i++) {
-		r = pool_keyfile(cd, pwd, params->keyfiles[i]);
+		r = TCRYPT_pool_keyfile(cd, pwd, params->keyfiles[i]);
 		if (r < 0)
 			goto out;
 	}
@@ -506,7 +511,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			break;
 
 		/* Decrypt header */
-		r = decrypt_hdr(cd, hdr, key, legacy_modes);
+		r = TCRYPT_decrypt_hdr(cd, hdr, key, legacy_modes);
 		if (r == -ENOENT) {
 			skipped++;
 			continue;
@@ -521,7 +526,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = hdr_from_disk(hdr, params, i, r);
+	r = TCRYPT_hdr_from_disk(hdr, params, i, r);
 	if (!r) {
 		log_dbg("TCRYPT: Header version: %d, req. %d, sector %d"
 			", mk_offset %" PRIu64 ", hidden_size %" PRIu64
@@ -585,19 +590,21 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		r = TCRYPT_init_hdr(cd, hdr, params);
 
 	close(devfd);
+	if (r < 0)
+		memset(hdr, 0, sizeof (*hdr));
 	return r;
 }
 
-static struct tcrypt_algs *get_algs(struct crypt_params_tcrypt *params)
+static struct tcrypt_algs *TCRYPT_get_algs(const char *cipher, const char *mode)
 {
 	int i;
 
-	if (!params->cipher || !params->mode)
+	if (!cipher || !mode)
 		return NULL;
 
 	for (i = 0; tcrypt_cipher[i].chain_count; i++)
-		if (!strcmp(tcrypt_cipher[i].long_name, params->cipher) &&
-		    !strcmp(tcrypt_cipher[i].mode, params->mode))
+		if (!strcmp(tcrypt_cipher[i].long_name, cipher) &&
+		    !strcmp(tcrypt_cipher[i].mode, mode))
 		    return &tcrypt_cipher[i];
 
 	return NULL;
@@ -641,7 +648,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		return -ENOTSUP;
 	}
 
-	algs = get_algs(params);
+	algs = TCRYPT_get_algs(params->cipher, params->mode);
 	if (!algs)
 		return -EINVAL;
 
@@ -672,7 +679,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 		snprintf(cipher, sizeof(cipher), "%s-%s",
 			 algs->cipher[i-1].name, algs->mode);
 
-		copy_key(&algs->cipher[i-1], algs->mode, dmd.u.crypt.vk->key, hdr->d.keys);
+		TCRYPT_copy_key(&algs->cipher[i-1], algs->mode,
+				dmd.u.crypt.vk->key, hdr->d.keys);
 
 		if (algs->chain_count != i) {
 			snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d",
@@ -704,7 +712,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	return r;
 }
 
-static int remove_one(struct crypt_device *cd, const char *name,
+static int TCRYPT_remove_one(struct crypt_device *cd, const char *name,
 		      const char *base_uuid, int index)
 {
 	struct crypt_dm_active_device dmd = {};
@@ -741,11 +749,11 @@ int TCRYPT_deactivate(struct crypt_device *cd, const char *name)
 	if (r < 0)
 		goto out;
 
-	r = remove_one(cd, name, dmd.uuid, 1);
+	r = TCRYPT_remove_one(cd, name, dmd.uuid, 1);
 	if (r < 0)
 		goto out;
 
-	r = remove_one(cd, name, dmd.uuid, 2);
+	r = TCRYPT_remove_one(cd, name, dmd.uuid, 2);
 	if (r < 0)
 		goto out;
 out:
@@ -753,10 +761,10 @@ out:
 	return (r == -ENODEV) ? 0 : r;
 }
 
-static int status_one(struct crypt_device *cd, const char *name,
-		      const char *base_uuid, int index,
-		      size_t *key_size, char *cipher, uint64_t *data_offset,
-		      struct device **device)
+static int TCRYPT_status_one(struct crypt_device *cd, const char *name,
+			      const char *base_uuid, int index,
+			      size_t *key_size, char *cipher,
+			      uint64_t *data_offset, struct device **device)
 {
 	struct crypt_dm_active_device dmd = {};
 	char dm_name[PATH_MAX], *c;
@@ -801,7 +809,10 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 			struct crypt_params_tcrypt *tcrypt_params,
 			struct tcrypt_phdr *tcrypt_hdr)
 {
-	char cipher[MAX_CIPHER_LEN * 4], *mode;
+	struct tcrypt_algs *algs;
+	char cipher[MAX_CIPHER_LEN * 4], mode[MAX_CIPHER_LEN], *tmp;
+	size_t key_size;
+	int r;
 
 	memset(tcrypt_params, 0, sizeof(*tcrypt_params));
 	memset(tcrypt_hdr, 0, sizeof(*tcrypt_hdr));
@@ -809,19 +820,29 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 	tcrypt_hdr->d.mk_offset = dmd->u.crypt.offset * SECTOR_SIZE;
 
 	strncpy(cipher, dmd->u.crypt.cipher, MAX_CIPHER_LEN);
+	tmp = strchr(cipher, '-');
+	if (!tmp)
+		return -EINVAL;
+	*tmp = '\0';
+	strncpy(mode, ++tmp, MAX_CIPHER_LEN);
 
-	if ((mode = strchr(cipher, '-'))) {
-		*mode = '\0';
-		tcrypt_params->mode = strdup(++mode);
-	}
-	tcrypt_params->key_size = dmd->u.crypt.vk->keylength;
+	key_size = dmd->u.crypt.vk->keylength;
+	r = TCRYPT_status_one(cd, name, dmd->uuid, 1, &key_size,
+			      cipher, &tcrypt_hdr->d.mk_offset, device);
+	if (!r)
+		r = TCRYPT_status_one(cd, name, dmd->uuid, 2, &key_size,
+				      cipher, &tcrypt_hdr->d.mk_offset, device);
 
-	if (!status_one(cd, name, dmd->uuid, 1, &tcrypt_params->key_size,
-			cipher, &tcrypt_hdr->d.mk_offset, device))
-		status_one(cd, name, dmd->uuid, 2, &tcrypt_params->key_size,
-			   cipher, &tcrypt_hdr->d.mk_offset, device);
+	if (r < 0 && r != -ENODEV)
+		return r;
 
-	tcrypt_params->cipher = strdup(cipher);
+	algs = TCRYPT_get_algs(cipher, mode);
+	if (!algs || key_size != algs->chain_key_size)
+		return -EINVAL;
+
+	tcrypt_params->key_size = algs->chain_key_size;
+	tcrypt_params->cipher = algs->long_name;
+	tcrypt_params->mode = algs->mode;
 	return 0;
 }
 
@@ -887,7 +908,7 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 		return -ENOTSUP;
 	}
 
-	algs = get_algs(params);
+	algs = TCRYPT_get_algs(params->cipher, params->mode);
 	if (!algs)
 		return -EINVAL;
 
@@ -896,8 +917,8 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 		return -ENOMEM;
 
 	for (i = 0, key_index = 0; i < algs->chain_count; i++) {
-		copy_key(&algs->cipher[i], algs->mode,
-			 &(*vk)->key[key_index], hdr->d.keys);
+		TCRYPT_copy_key(&algs->cipher[i], algs->mode,
+				&(*vk)->key[key_index], hdr->d.keys);
 		key_index += algs->cipher[i].key_size;
 	}
 
