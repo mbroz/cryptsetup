@@ -30,7 +30,8 @@
 
 unsigned crypt_getpagesize(void)
 {
-	return (unsigned)sysconf(_SC_PAGESIZE);
+	long r = sysconf(_SC_PAGESIZE);
+	return r < 0 ? DEFAULT_MEM_ALIGNMENT : r;
 }
 
 static int get_alignment(int fd)

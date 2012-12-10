@@ -128,14 +128,9 @@ static int cipher_perf(struct cipher_perf *cp,
 {
 	long ms_enc, ms_dec, ms;
 	int repeat_enc, repeat_dec;
-	size_t alignment;
 	void *buf = NULL;
 
-	alignment = crypt_getpagesize();
-	if (alignment < 0)
-		return -EINVAL;
-
-	if (posix_memalign(&buf, alignment, cp->buffer_size))
+	if (posix_memalign(&buf, crypt_getpagesize(), cp->buffer_size))
 		return -ENOMEM;
 
 	ms_enc = 0;
