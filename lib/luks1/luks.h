@@ -175,14 +175,16 @@ int LUKS_keyslot_area(struct luks_phdr *hdr,
 
 int LUKS_encrypt_to_storage(
 	char *src, size_t srcLength,
-	struct luks_phdr *hdr,
+	const char *cipher,
+	const char *cipher_mode,
 	struct volume_key *vk,
 	unsigned int sector,
 	struct crypt_device *ctx);
 
 int LUKS_decrypt_from_storage(
 	char *dst, size_t dstLength,
-	struct luks_phdr *hdr,
+	const char *cipher,
+	const char *cipher_mode,
 	struct volume_key *vk,
 	unsigned int sector,
 	struct crypt_device *ctx);

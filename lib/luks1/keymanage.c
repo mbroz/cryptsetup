@@ -809,7 +809,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	/* Encryption via dm */
 	r = LUKS_encrypt_to_storage(AfKey,
 				    AFEKSize,
-				    hdr,
+				    hdr->cipherName, hdr->cipherMode,
 				    derived_key,
 				    hdr->keyblock[keyIndex].keyMaterialOffset,
 				    ctx);
@@ -892,7 +892,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 	log_dbg("Reading key slot %d area.", keyIndex);
 	r = LUKS_decrypt_from_storage(AfKey,
 				      AFEKSize,
-				      hdr,
+				      hdr->cipherName, hdr->cipherMode,
 				      derived_key,
 				      hdr->keyblock[keyIndex].keyMaterialOffset,
 				      ctx);
