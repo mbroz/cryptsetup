@@ -72,7 +72,15 @@ int translate_errno(int r);
 
 extern volatile int quit;
 void set_int_block(int block);
-void set_int_handler(void);
+void set_int_handler(int block);
+void check_signal(int *r);
+
+int tools_get_key(const char *prompt,
+		  char **key, size_t *key_size,
+		  size_t keyfile_offset, size_t keyfile_size_max,
+		  const char *key_file,
+		  int timeout, int verify,
+		  struct crypt_device *cd);
 
 /* Log */
 #define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)

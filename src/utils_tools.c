@@ -28,6 +28,7 @@ int opt_batch_mode = 0;
 
 /* interrupt handling */
 volatile int quit = 0;
+static int signals_blocked = 0;
 
 static void int_handler(int sig __attribute__((__unused__)))
 {
@@ -38,21 +39,54 @@ void set_int_block(int block)
 {
 	sigset_t signals_open;
 
+	log_dbg("%slocking interruption on signal.", block ? "B" : "Unb");
+
 	sigemptyset(&signals_open);
 	sigaddset(&signals_open, SIGINT);
 	sigaddset(&signals_open, SIGTERM);
 	sigprocmask(block ? SIG_SETMASK : SIG_UNBLOCK, &signals_open, NULL);
+	signals_blocked = block;
+	quit = 0;
 }
 
-void set_int_handler(void)
+void set_int_handler(int block)
 {
 	struct sigaction sigaction_open;
 
+	log_dbg("Installing SIGINT/SIGTERM handler.");
 	memset(&sigaction_open, 0, sizeof(struct sigaction));
 	sigaction_open.sa_handler = int_handler;
 	sigaction(SIGINT, &sigaction_open, 0);
 	sigaction(SIGTERM, &sigaction_open, 0);
-	set_int_block(0);
+	set_int_block(block);
+}
+
+void check_signal(int *r)
+{
+	if (quit && !*r)
+		*r = -EINTR;
+}
+
+/* crypt_get_key() with signal handler */
+int tools_get_key(const char *prompt,
+		  char **key, size_t *key_size,
+		  size_t keyfile_offset, size_t keyfile_size_max,
+		  const char *key_file,
+		  int timeout, int verify,
+		  struct crypt_device *cd)
+{
+	int r, block;
+
+	block = signals_blocked;
+	if (block)
+		set_int_block(0);
+
+	r = crypt_get_key(prompt, key, key_size, keyfile_offset,
+			  keyfile_size_max, key_file, timeout, verify, cd);
+	if (block && !quit)
+		set_int_block(1);
+
+	return r;
 }
 
 __attribute__((format(printf, 5, 6)))
@@ -115,21 +149,30 @@ int yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 {
 	char *answer = NULL;
 	size_t size = 0;
-	int r = 1;
+	int r = 1, block;
+
+	block = signals_blocked;
+	if (block)
+		set_int_block(0);
 
 	if(isatty(STDIN_FILENO) && !opt_batch_mode) {
 		log_std("\nWARNING!\n========\n");
 		log_std("%s\n\nAre you sure? (Type uppercase yes): ", msg);
 		if(getline(&answer, &size, stdin) == -1) {
-			perror("getline");
-			free(answer);
-			return 0;
-		}
-		if(strcmp(answer, "YES\n"))
 			r = 0;
-		free(answer);
+			/* Aborted by signal */
+			if (!quit)
+				log_err(_("Error reading response from terminal.\n"));
+			else
+				log_dbg("Query interrupted on signal.");
+		} else if(strcmp(answer, "YES\n"))
+			r = 0;
 	}
 
+	if (block && !quit)
+		set_int_block(1);
+
+	free(answer);
 	return r;
 }
 

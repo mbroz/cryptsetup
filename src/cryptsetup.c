@@ -126,6 +126,7 @@ static int action_open_plain(void)
 			 NULL, NULL,
 			 key_size,
 			 &params);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
@@ -145,7 +146,7 @@ static int action_open_plain(void)
 			params.hash ? 0 : key_size, 0,
 			activate_flags);
 	else {
-		r = crypt_get_key(_("Enter passphrase: "),
+		r = tools_get_key(_("Enter passphrase: "),
 				  &password, &passwordLen,
 				  opt_keyfile_offset, opt_keyfile_size,
 				  NULL, opt_timeout,
@@ -192,6 +193,7 @@ static int action_open_loopaes(void)
 
 	r = crypt_format(cd, CRYPT_LOOPAES, opt_cipher ?: DEFAULT_LOOPAES_CIPHER,
 			 NULL, NULL, NULL, key_size, &params);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
@@ -222,7 +224,7 @@ static int action_open_tcrypt(void)
 		goto out;
 
 	/* TCRYPT header is encrypted, get passphrase now */
-	r = crypt_get_key(_("Enter passphrase: "),
+	r = tools_get_key(_("Enter passphrase: "),
 			  CONST_CAST(char**)&params.passphrase,
 			  &params.passphrase_size, 0, 0, NULL, opt_timeout,
 			  _verify_passphrase(0), cd);
@@ -233,6 +235,7 @@ static int action_open_tcrypt(void)
 		params.flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
 
 	r = crypt_load(cd, CRYPT_TCRYPT, &params);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
@@ -303,7 +306,7 @@ static int action_tcryptDump(void)
 		goto out;
 
 	/* TCRYPT header is encrypted, get passphrase now */
-	r = crypt_get_key(_("Enter passphrase: "),
+	r = tools_get_key(_("Enter passphrase: "),
 			  CONST_CAST(char**)&params.passphrase,
 			  &params.passphrase_size, 0, 0, NULL, opt_timeout,
 			  _verify_passphrase(0), cd);
@@ -314,6 +317,7 @@ static int action_tcryptDump(void)
 		params.flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
 
 	r = crypt_load(cd, CRYPT_TCRYPT, &params);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
@@ -460,6 +464,9 @@ static int action_benchmark(void)
 		{ "twofish", "xts", 64, 16 },
 		{  NULL, NULL, 0, 0 }
 	};
+	static char *bkdfs[] = {
+		"sha1", "sha256", "sha512", "ripemd160", "whirlpool", NULL
+	};
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS);
@@ -496,16 +503,18 @@ static int action_benchmark(void)
 		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
 	} else {
-		action_benchmark_kdf("sha1");
-		action_benchmark_kdf("sha256");
-		action_benchmark_kdf("sha512");
-		action_benchmark_kdf("ripemd160");
-		action_benchmark_kdf("whirlpool");
+		for (i = 0; bkdfs[i]; i++) {
+			r = action_benchmark_kdf(bkdfs[i]);
+			check_signal(&r);
+			if (r == -EINTR)
+				break;
+		}
 		for (i = 0; bciphers[i].cipher; i++) {
 			r = crypt_benchmark(NULL, bciphers[i].cipher, bciphers[i].mode,
 					    bciphers[i].key_size, bciphers[i].iv_size,
 					    buffer_size, &enc_mbr, &dec_mbr);
-			if (r == -ENOTSUP)
+			check_signal(&r);
+			if (r == -ENOTSUP || r == -EINTR)
 				break;
 			if (r == -ENOENT)
 				skipped++;
@@ -634,7 +643,7 @@ static int action_luksFormat(void)
 	else if (opt_urandom)
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
-	r = crypt_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
+	r = tools_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			  opt_timeout, _verify_passphrase(1), cd);
 	if (r < 0)
@@ -648,6 +657,7 @@ static int action_luksFormat(void)
 
 	r = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode,
 			 opt_uuid, key, keysize, &params);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
@@ -744,7 +754,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 	if (ki == CRYPT_SLOT_ACTIVE_LAST && msg_last && !yesDialog(msg_last, NULL))
 		return -EPERM;
 
-	r = crypt_get_key(msg_pass, &password, &passwordLen,
+	r = tools_get_key(msg_pass, &password, &passwordLen,
 			  keyfile_offset, keyfile_size, key_file, opt_timeout,
 			  _verify_passphrase(0), cd);
 	if(r < 0)
@@ -832,7 +842,7 @@ static int action_luksRemoveKey(void)
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
-	r = crypt_get_key(_("Enter LUKS passphrase to be deleted: "),
+	r = tools_get_key(_("Enter LUKS passphrase to be deleted: "),
 		      &password, &passwordLen,
 		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 		      opt_timeout,
@@ -843,6 +853,7 @@ static int action_luksRemoveKey(void)
 
 	r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT,
 					 password, passwordLen, 0);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
@@ -924,7 +935,7 @@ static int action_luksChangeKey(void)
 	if (opt_iteration_time)
 		crypt_set_iteration_time(cd, opt_iteration_time);
 
-	r = crypt_get_key(_("Enter LUKS passphrase to be changed: "),
+	r = tools_get_key(_("Enter LUKS passphrase to be changed: "),
 		      &password, &password_size,
 		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 		      opt_timeout, _verify_passphrase(0), cd);
@@ -934,10 +945,11 @@ static int action_luksChangeKey(void)
 	/* Check password before asking for new one */
 	r = crypt_activate_by_passphrase(cd, NULL, opt_key_slot,
 					 password, password_size, 0);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
-	r = crypt_get_key(_("Enter new LUKS passphrase: "),
+	r = tools_get_key(_("Enter new LUKS passphrase: "),
 			  &password_new, &password_new_size,
 			  opt_new_keyfile_offset, opt_new_keyfile_size,
 			  opt_new_key_file,
@@ -1016,7 +1028,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = crypt_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
+	r = tools_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			  opt_timeout, 0, cd);
 	if (r < 0)
@@ -1024,6 +1036,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 
 	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size,
 				 password, passwordLen);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
@@ -1272,6 +1285,7 @@ static int run_action(struct action_type *action)
 	if (action->required_memlock)
 		crypt_memory_lock(NULL, 1);
 
+	set_int_handler(0);
 	r = action->handler();
 
 	if (action->required_memlock)
@@ -1280,6 +1294,7 @@ static int run_action(struct action_type *action)
 	/* Some functions returns keyslot # */
 	if (r > 0)
 		r = 0;
+	check_signal(&r);
 
 	show_status(r);
 	return translate_errno(r);

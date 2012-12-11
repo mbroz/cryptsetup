@@ -795,7 +795,7 @@ static int copy_data(struct reenc_ctx *rc)
 		goto out;
 	}
 
-	set_int_handler();
+	set_int_handler(0);
 	gettimeofday(&rc->start_time, NULL);
 
 	if (rc->reencrypt_direction == FORWARD)
@@ -857,7 +857,7 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 
 	retry_count = opt_tries ?: 1;
 	while (retry_count--) {
-		set_int_handler();
+		set_int_handler(0);
 		r = crypt_get_key(msg, &rc->p[slot].password,
 			&rc->p[slot].passwordLen,
 			0, 0, NULL /*opt_key_file*/,
