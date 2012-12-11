@@ -20,10 +20,40 @@
  */
 
 #include "cryptsetup.h"
+#include <signal.h>
 
 int opt_verbose = 0;
 int opt_debug = 0;
 int opt_batch_mode = 0;
+
+/* interrupt handling */
+volatile int quit = 0;
+
+static void int_handler(int sig __attribute__((__unused__)))
+{
+	quit++;
+}
+
+void set_int_block(int block)
+{
+	sigset_t signals_open;
+
+	sigemptyset(&signals_open);
+	sigaddset(&signals_open, SIGINT);
+	sigaddset(&signals_open, SIGTERM);
+	sigprocmask(block ? SIG_SETMASK : SIG_UNBLOCK, &signals_open, NULL);
+}
+
+void set_int_handler(void)
+{
+	struct sigaction sigaction_open;
+
+	memset(&sigaction_open, 0, sizeof(struct sigaction));
+	sigaction_open.sa_handler = int_handler;
+	sigaction(SIGINT, &sigaction_open, 0);
+	sigaction(SIGTERM, &sigaction_open, 0);
+	set_int_block(0);
+}
 
 __attribute__((format(printf, 5, 6)))
 void clogger(struct crypt_device *cd, int level, const char *file, int line,

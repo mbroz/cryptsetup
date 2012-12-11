@@ -70,6 +70,10 @@ void usage(poptContext popt_context, int exitcode, const char *error, const char
 void dbg_version_and_cmd(int argc, const char **argv);
 int translate_errno(int r);
 
+extern volatile int quit;
+void set_int_block(int block);
+void set_int_handler(void);
+
 /* Log */
 #define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(x...) clogger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
