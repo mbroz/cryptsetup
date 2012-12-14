@@ -400,6 +400,7 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 	    (r = crypt_set_data_device(cd, rc->device)))
 		goto out;
 
+	log_verbose(_("Activating temporary device using old LUKS header.\n"));
 	if ((r = crypt_activate_by_passphrase(cd, rc->header_file_org,
 		opt_key_slot, rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen,
 		CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_PRIVATE)) < 0)
@@ -410,6 +411,7 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 	    (r = crypt_set_data_device(cd_new, rc->device)))
 		goto out;
 
+	log_verbose(_("Activating temporary device using new LUKS header.\n"));
 	if ((r = crypt_activate_by_passphrase(cd_new, rc->header_file_new,
 		opt_key_slot, rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen,
 		CRYPT_ACTIVATE_SHARED|CRYPT_ACTIVATE_PRIVATE)) < 0)
