@@ -631,6 +631,7 @@ static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 	if (!mib)
 		return;
 
+	/* FIXME: calculate this from last minute only and remaining space */
 	eta = (unsigned long long)(rc->device_size / 1024 / 1024 / mib - tdiff);
 
 	/* vt100 code clear line */
