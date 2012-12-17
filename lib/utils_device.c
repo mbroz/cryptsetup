@@ -44,20 +44,16 @@ static int device_ready(const char *device)
 	int devfd, r = 0;
 	struct stat st;
 
-	if(stat(device, &st) < 0) {
+	log_dbg("Trying to open and read device %s.", device);
+	devfd = open(device, O_RDONLY | O_DIRECT | O_SYNC);
+	if (devfd < 0) {
 		log_err(NULL, _("Device %s doesn't exist or access denied.\n"), device);
 		return -EINVAL;
 	}
-
-	if (!S_ISBLK(st.st_mode))
-		return S_ISREG(st.st_mode) ? -ENOTBLK : -EINVAL;
-
-	log_dbg("Trying to open and read device %s.", device);
-	devfd = open(device, O_RDONLY | O_DIRECT | O_SYNC);
-	if(devfd < 0) {
-		log_err(NULL, _("Cannot open device %s.\n"), device);
-		return -EINVAL;
-	}
+	if (fstat(devfd, &st) < 0)
+		r = -EINVAL;
+	else if (!S_ISBLK(st.st_mode))
+		r = S_ISREG(st.st_mode) ? -ENOTBLK : -EINVAL;
 
 	close(devfd);
 	return r;
@@ -282,6 +278,7 @@ static int device_info(struct device *device,
 		flags |= O_EXCL;
 
 	/* Try to open read-write to check whether it is a read-only device */
+	/* coverity[toctou] */
 	fd = open(device->path, O_RDWR | flags);
 	if (fd == -1 && errno == EROFS) {
 		*readonly = 1;
