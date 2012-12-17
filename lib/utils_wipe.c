@@ -161,6 +161,7 @@ int crypt_wipe(struct device *device,
 	if (exclusive && S_ISBLK(st.st_mode))
 		flags |= O_EXCL;
 
+	/* coverity[toctou] */
 	devfd = open(device_path(device), flags);
 	if (devfd == -1) {
 		free(buffer);

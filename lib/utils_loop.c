@@ -44,13 +44,10 @@ static char *crypt_loop_get_device_old(void)
 {
 	char dev[20];
 	int i, loop_fd;
-	struct stat st;
 	struct loop_info64 lo64 = {0};
 
 	for (i = 0; i < 256; i++) {
 		sprintf(dev, "/dev/loop%d", i);
-		if (stat(dev, &st) || !S_ISBLK(st.st_mode))
-			return NULL;
 
 		loop_fd = open(dev, O_RDONLY);
 		if (loop_fd < 0)
