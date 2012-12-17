@@ -154,12 +154,6 @@ int LUKS_hdr_backup(
 	int r = 0, devfd = -1;
 	ssize_t buffer_size;
 	char *buffer = NULL;
-	struct stat st;
-
-	if(stat(backup_file, &st) == 0) {
-		log_err(ctx, _("Requested file %s already exist.\n"), backup_file);
-		return -EINVAL;
-	}
 
 	r = LUKS_read_phdr(hdr, 1, 0, ctx);
 	if (r)
@@ -182,7 +176,7 @@ int LUKS_hdr_backup(
 		goto out;
 	}
 
-	if(read_blockwise(devfd, device_block_size(device), buffer, buffer_size) < buffer_size) {
+	if (read_blockwise(devfd, device_block_size(device), buffer, buffer_size) < buffer_size) {
 		r = -EIO;
 		goto out;
 	}
@@ -192,12 +186,16 @@ int LUKS_hdr_backup(
 	if (hdr->keyblock[0].keyMaterialOffset * SECTOR_SIZE == LUKS_ALIGN_KEYSLOTS)
 		memset(buffer + sizeof(*hdr), 0, LUKS_ALIGN_KEYSLOTS - sizeof(*hdr));
 
-	devfd = creat(backup_file, S_IRUSR);
-	if(devfd == -1) {
+	devfd = open(backup_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
+	if (devfd == -1) {
+		if (errno == EEXIST)
+			log_err(ctx, _("Requested header backup file %s already exists.\n"), backup_file);
+		else
+			log_err(ctx, _("Cannot create header backup file %s.\n"), backup_file);
 		r = -EINVAL;
 		goto out;
 	}
-	if(write(devfd, buffer, buffer_size) < buffer_size) {
+	if (write(devfd, buffer, buffer_size) < buffer_size) {
 		log_err(ctx, _("Cannot write header backup file %s.\n"), backup_file);
 		r = -EIO;
 		goto out;
@@ -221,15 +219,12 @@ int LUKS_hdr_restore(
 	int r = 0, devfd = -1, diff_uuid = 0;
 	ssize_t buffer_size = 0;
 	char *buffer = NULL, msg[200];
-	struct stat st;
 	struct luks_phdr hdr_file;
 
-	if(stat(backup_file, &st) < 0) {
-		log_err(ctx, _("Backup file %s doesn't exist.\n"), backup_file);
-		return -EINVAL;
-	}
-
 	r = LUKS_read_phdr_backup(backup_file, &hdr_file, 0, ctx);
+	if (r == -ENOENT)
+		return r;
+
 	if (!r)
 		buffer_size = LUKS_device_sectors(hdr_file.keyBytes) << SECTOR_SHIFT;
 
@@ -246,13 +241,13 @@ int LUKS_hdr_restore(
 	}
 
 	devfd = open(backup_file, O_RDONLY);
-	if(devfd == -1) {
+	if (devfd == -1) {
 		log_err(ctx, _("Cannot open header backup file %s.\n"), backup_file);
 		r = -EINVAL;
 		goto out;
 	}
 
-	if(read(devfd, buffer, buffer_size) < buffer_size) {
+	if (read(devfd, buffer, buffer_size) < buffer_size) {
 		log_err(ctx, _("Cannot read header backup file %s.\n"), backup_file);
 		r = -EIO;
 		goto out;
@@ -289,7 +284,7 @@ int LUKS_hdr_restore(
 		sizeof(*hdr), buffer_size - LUKS_ALIGN_KEYSLOTS, device_path(device));
 
 	devfd = open(device_path(device), O_WRONLY | O_DIRECT | O_SYNC);
-	if(devfd == -1) {
+	if (devfd == -1) {
 		if (errno == EACCES)
 			log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
 				device_path(device));
@@ -484,8 +479,8 @@ int LUKS_read_phdr_backup(const char *backup_file,
 
 	devfd = open(backup_file, O_RDONLY);
 	if(-1 == devfd) {
-		log_err(ctx, _("Cannot open file %s.\n"), backup_file);
-		return -EINVAL;
+		log_err(ctx, _("Cannot open header backup file %s.\n"), backup_file);
+		return -ENOENT;
 	}
 
 	if (read(devfd, hdr, hdr_size) < hdr_size)
