@@ -78,17 +78,15 @@ static int action_format(int arg)
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
 	uint32_t flags = CRYPT_VERITY_CREATE_HASH;
-	struct stat st;
 	int r;
 
 	/* Try to create hash image if doesn't exist */
-	if (stat(action_argv[1], &st) < 0) {
-		log_dbg("Creating hash image %s.", action_argv[1]);
-		r = open(action_argv[1], O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
-		if (r < 0) {
-			log_err(_("Cannot create hash image %s for writing.\n"), action_argv[1]);
-			return -EINVAL;
-		}
+	r = open(action_argv[1], O_WRONLY | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
+	if (r < 0 && errno != EEXIST) {
+		log_err(_("Cannot create hash image %s for writing.\n"), action_argv[1]);
+		return -EINVAL;
+	} else if (r >= 0) {
+		log_dbg("Created hash image %s.", action_argv[1]);
 		close(r);
 	}
 
