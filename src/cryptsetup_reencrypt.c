@@ -348,30 +348,19 @@ static void close_log(struct reenc_ctx *rc)
 
 static int open_log(struct reenc_ctx *rc)
 {
-	int flags, create_new;
-	struct stat st;
+	int flags = opt_directio ? O_DIRECT : 0;
 
-	if (!stat(rc->log_file, &st))
-		create_new = 0;
-	else if (errno == ENOENT)
-		create_new = 1;
-	else
-		return -EINVAL;
-
-	if (create_new) {
-		log_dbg("Creating LUKS reencryption log file %s.", rc->log_file);
-		flags = opt_directio ? O_RDWR|O_CREAT|O_DIRECT : O_RDWR|O_CREAT;
-		rc->log_fd = open(rc->log_file, flags, S_IRUSR|S_IWUSR);
-		if (rc->log_fd == -1)
-			return -EINVAL;
-	} else {
+	rc->log_fd = open(rc->log_file, O_RDWR|O_EXCL|O_CREAT|flags, S_IRUSR|S_IWUSR);
+	if (rc->log_fd != -1) {
+		log_dbg("Created LUKS reencryption log file %s.", rc->log_file);
+	} else if (errno == EEXIST) {
 		log_std(_("Log file %s exists, resuming reencryption.\n"), rc->log_file);
-		flags = opt_directio ? O_RDWR|O_DIRECT : O_RDWR;
-		rc->log_fd = open(rc->log_file, flags);
-		if (rc->log_fd == -1)
-			return -EINVAL;
+		rc->log_fd = open(rc->log_file, O_RDWR|flags);
 		rc->in_progress = 1;
 	}
+
+	if (rc->log_fd == -1)
+		return -EINVAL;
 
 	if (posix_memalign((void *)&rc->log_buf, alignment(rc->log_fd), SECTOR_SIZE)) {
 		log_err(_("Allocation of aligned memory failed.\n"));
@@ -379,7 +368,7 @@ static int open_log(struct reenc_ctx *rc)
 		return -ENOMEM;
 	}
 
-	if (create_new && write_log(rc) < 0) {
+	if (!rc->in_progress && write_log(rc) < 0) {
 		close_log(rc);
 		return -EIO;
 	}
