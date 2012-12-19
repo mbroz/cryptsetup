@@ -150,7 +150,7 @@ static int action_open_plain(void)
 				  &password, &passwordLen,
 				  opt_keyfile_offset, opt_keyfile_size,
 				  NULL, opt_timeout,
-				  _verify_passphrase(0),
+				  _verify_passphrase(0), 0,
 				  cd);
 		if (r < 0)
 			goto out;
@@ -227,7 +227,7 @@ static int action_open_tcrypt(void)
 	r = tools_get_key(_("Enter passphrase: "),
 			  CONST_CAST(char**)&params.passphrase,
 			  &params.passphrase_size, 0, 0, NULL, opt_timeout,
-			  _verify_passphrase(0), cd);
+			  _verify_passphrase(0), 0, cd);
 	if (r < 0)
 		goto out;
 
@@ -309,7 +309,7 @@ static int action_tcryptDump(void)
 	r = tools_get_key(_("Enter passphrase: "),
 			  CONST_CAST(char**)&params.passphrase,
 			  &params.passphrase_size, 0, 0, NULL, opt_timeout,
-			  _verify_passphrase(0), cd);
+			  _verify_passphrase(0), 0, cd);
 	if (r < 0)
 		goto out;
 
@@ -645,7 +645,7 @@ static int action_luksFormat(void)
 
 	r = tools_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
-			  opt_timeout, _verify_passphrase(1), cd);
+			  opt_timeout, _verify_passphrase(1), 1, cd);
 	if (r < 0)
 		goto out;
 
@@ -756,7 +756,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 
 	r = tools_get_key(msg_pass, &password, &passwordLen,
 			  keyfile_offset, keyfile_size, key_file, opt_timeout,
-			  _verify_passphrase(0), cd);
+			  _verify_passphrase(0), 0, cd);
 	if(r < 0)
 		goto out;
 
@@ -846,7 +846,7 @@ static int action_luksRemoveKey(void)
 		      &password, &passwordLen,
 		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 		      opt_timeout,
-		      _verify_passphrase(0),
+		      _verify_passphrase(0), 0,
 		      cd);
 	if(r < 0)
 		goto out;
@@ -880,6 +880,8 @@ static int action_luksAddKey(void)
 	int r = -EINVAL, keysize = 0;
 	char *key = NULL;
 	const char *opt_new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
+	char *password = NULL, *password_new = NULL;
+	size_t password_size = 0, password_new_size = 0;
 	struct crypt_device *cd = NULL;
 
 	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
@@ -909,12 +911,35 @@ static int action_luksAddKey(void)
 			opt_key_file, opt_keyfile_size, opt_keyfile_offset,
 			opt_new_key_file, opt_new_keyfile_size, opt_new_keyfile_offset);
 	} else {
+		r = tools_get_key(_("Enter any passphrase: "),
+			      &password, &password_size, 0, 0, NULL,
+			      opt_timeout, _verify_passphrase(0), 0, cd);
+
+		if (r < 0)
+			goto out;
+
+		/* Check password before asking for new one */
+		r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT,
+						 password, password_size, 0);
+		check_signal(&r);
+		if (r < 0)
+			goto out;
+
+		r = tools_get_key(_("Enter new passphrase for key slot: "),
+				  &password_new, &password_new_size, 0, 0, NULL,
+				  opt_timeout, _verify_passphrase(0), 1, cd);
+		if (r < 0)
+			goto out;
+
 		r = crypt_keyslot_add_by_passphrase(cd, opt_key_slot,
-						    NULL, 0, NULL, 0);
+						    password, password_size,
+						    password_new, password_new_size);
 	}
 out:
-	crypt_free(cd);
+	crypt_safe_free(password);
+	crypt_safe_free(password_new);
 	crypt_safe_free(key);
+	crypt_free(cd);
 	return r;
 }
 
@@ -938,7 +963,7 @@ static int action_luksChangeKey(void)
 	r = tools_get_key(_("Enter LUKS passphrase to be changed: "),
 		      &password, &password_size,
 		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
-		      opt_timeout, _verify_passphrase(0), cd);
+		      opt_timeout, _verify_passphrase(0), 0, cd);
 	if (r < 0)
 		goto out;
 
@@ -953,7 +978,7 @@ static int action_luksChangeKey(void)
 			  &password_new, &password_new_size,
 			  opt_new_keyfile_offset, opt_new_keyfile_size,
 			  opt_new_key_file,
-			  opt_timeout, _verify_passphrase(0), cd);
+			  opt_timeout, _verify_passphrase(0), 1, cd);
 	if (r < 0)
 		goto out;
 
@@ -1030,7 +1055,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 
 	r = tools_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
-			  opt_timeout, 0, cd);
+			  opt_timeout, 0, 0, cd);
 	if (r < 0)
 		goto out;
 
