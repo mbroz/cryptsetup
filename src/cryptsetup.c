@@ -1369,7 +1369,8 @@ int main(int argc, const char **argv)
 		{ "header",            '\0', POPT_ARG_STRING, &opt_header_device,       0, N_("Device or file with separated LUKS header."), NULL },
 		{ "test-passphrase",   '\0', POPT_ARG_NONE, &opt_test_passphrase,       0, N_("Do not activate device, just check passphrase."), NULL },
 		{ "hidden",            '\0', POPT_ARG_NONE, &opt_hidden,                0, N_("Use hidden header (hidden TCRYPT device) ."), NULL },
-		{ "type",              'M',  POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt."), NULL },
+		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt."), NULL },
+		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,         0, N_("Disable password quality check (if enabled)."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

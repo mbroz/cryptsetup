@@ -56,6 +56,7 @@
 extern int opt_debug;
 extern int opt_verbose;
 extern int opt_batch_mode;
+extern int opt_force_password;
 
 /* Common tools */
 void clogger(struct crypt_device *cd, int level, const char *file, int line,
@@ -74,6 +75,7 @@ extern volatile int quit;
 void set_int_block(int block);
 void set_int_handler(int block);
 void check_signal(int *r);
+int tools_signals_blocked(void);
 
 int tools_get_key(const char *prompt,
 		  char **key, size_t *key_size,

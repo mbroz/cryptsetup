@@ -35,6 +35,11 @@ static void int_handler(int sig __attribute__((__unused__)))
 	quit++;
 }
 
+int tools_signals_blocked(void)
+{
+	return signals_blocked;
+}
+
 void set_int_block(int block)
 {
 	sigset_t signals_open;
@@ -65,28 +70,6 @@ void check_signal(int *r)
 {
 	if (quit && !*r)
 		*r = -EINTR;
-}
-
-/* crypt_get_key() with signal handler */
-int tools_get_key(const char *prompt,
-		  char **key, size_t *key_size,
-		  size_t keyfile_offset, size_t keyfile_size_max,
-		  const char *key_file,
-		  int timeout, int verify, int pwquality,
-		  struct crypt_device *cd)
-{
-	int r, block;
-
-	block = signals_blocked;
-	if (block)
-		set_int_block(0);
-
-	r = crypt_get_key(prompt, key, key_size, keyfile_offset,
-			  keyfile_size_max, key_file, timeout, verify, cd);
-	if (block && !quit)
-		set_int_block(1);
-
-	return r;
 }
 
 __attribute__((format(printf, 5, 6)))
@@ -151,7 +134,7 @@ int yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 	size_t size = 0;
 	int r = 1, block;
 
-	block = signals_blocked;
+	block = tools_signals_blocked();
 	if (block)
 		set_int_block(0);
 

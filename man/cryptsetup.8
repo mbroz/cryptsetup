@@ -752,6 +752,16 @@ actually belongs to the header given. In fact you can specify an
 arbitrary device as the ciphertext device for \fIopen\fR
 with the \-\-header option. Use with care.
 .TP
+.B "\-\-force-password\fR"
+Do not use password quality checking for new LUKS passwords.
+
+This option applies only to \fIluksFormat\fR, \fIluksAddKey\fR and
+\fIluksChangeKey\fR and is ignored if cryptsetup is built without
+password quality checking support.
+
+For more info about password quality check, see manual page
+for \fBpwquality.conf(5)\fR.
+.TP
 .B "\-\-version"
 Show the program version.
 .TP

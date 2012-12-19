@@ -15,13 +15,15 @@ cryptsetup_SOURCES = \
 	$(top_builddir)/lib/utils_loop.c	\
 	$(top_builddir)/lib/utils_fips.c	\
 	utils_tools.c				\
+	utils_password.c			\
 	cryptsetup.c				\
 	cryptsetup.h
 
 cryptsetup_LDADD = \
 	$(top_builddir)/lib/libcryptsetup.la	\
 	@POPT_LIBS@				\
-	@FIPSCHECK_LIBS@
+	@FIPSCHECK_LIBS@			\
+	@PWQUALITY_LIBS@
 
 cryptsetup_CFLAGS = -Wall
 
@@ -34,6 +36,7 @@ cryptsetup_static_CFLAGS = $(cryptsetup_CFLAGS)
 cryptsetup_static_LDFLAGS = -all-static
 cryptsetup_static_LDADD = $(cryptsetup_LDADD)	\
 	@CRYPTO_STATIC_LIBS@			\
+	@PWQUALITY_STATIC_LIBS@			\
 	@DEVMAPPER_STATIC_LIBS@			\
 	@UUID_LIBS@
 endif
