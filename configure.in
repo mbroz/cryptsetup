@@ -102,7 +102,8 @@ if test "x$with_pwquality" = "xyes"; then
 	PKG_CHECK_MODULES([PWQUALITY], [pwquality >= 1.0.0],,
 		AC_MSG_ERROR([You need pwquality library.]))
 
-	PWQUALITY_STATIC_LIBS=$PWQUALITY_LIBS
+	dnl FIXME: this is really hack for now
+	PWQUALITY_STATIC_LIBS="$PWQUALITY_LIBS -lcrack -lz"
 fi
 
 dnl ==========================================================================
