@@ -97,8 +97,11 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 			goto out;
 
 		r = read(fd, hangover_buf, bsize);
-		if (r < 0 || r != bsize)
+		if (r < 0 || r < hangover)
 			goto out;
+
+		if (r < bsize)
+			bsize = r;
 
 		r = lseek(fd, -bsize, SEEK_CUR);
 		if (r < 0)

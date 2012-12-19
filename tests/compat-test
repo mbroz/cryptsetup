@@ -149,10 +149,12 @@ ORG_SHA1=$(sha1sum -b /dev/mapper/$DEV_NAME | cut -f 1 -d' ')
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 # Check it can be opened from header backup as well
-$CRYPTSETUP luksHeaderBackup $IMG --header-backup-file $HEADER_IMG
+$CRYPTSETUP luksHeaderBackup $IMG --header-backup-file $HEADER_IMG || fail
 echo "compatkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME --header $HEADER_IMG || fail
 check_exists
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
+# Check restore
+$CRYPTSETUP luksHeaderRestore -q $IMG --header-backup-file $HEADER_IMG || fail
 
 # Repeat for V1.0 header - not aligned first keyslot
 echo "compatkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME || fail

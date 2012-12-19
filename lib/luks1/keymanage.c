@@ -283,7 +283,7 @@ int LUKS_hdr_restore(
 	log_dbg("Storing backup of header (%u bytes) and keyslot area (%u bytes) to device %s.",
 		sizeof(*hdr), buffer_size - LUKS_ALIGN_KEYSLOTS, device_path(device));
 
-	devfd = open(device_path(device), O_WRONLY | O_DIRECT | O_SYNC);
+	devfd = open(device_path(device), O_RDWR | O_DIRECT | O_SYNC);
 	if (devfd == -1) {
 		if (errno == EACCES)
 			log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
