@@ -2,6 +2,7 @@
  * cryptsetup library API check functions
  *
  * Copyright (C) 2009-2012 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2012, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

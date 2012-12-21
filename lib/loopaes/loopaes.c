@@ -2,6 +2,7 @@
  * loop-AES compatible volume handling
  *
  * Copyright (C) 2011-2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2011-2012, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
