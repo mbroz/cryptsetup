@@ -6,10 +6,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.4.3\n"
+"Project-Id-Version: cryptsetup 1.5.1\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2012-05-22 23:31+0200\n"
-"PO-Revision-Date: 2012-05-26 17:23+0300\n"
+"POT-Creation-Date: 2012-09-19 15:48+0200\n"
+"PO-Revision-Date: 2012-11-04 00:53+0200\n"
 "Last-Translator: Jorma Karvonen <karvonen.jorma@gmail.com>\n"
 "Language-Team: Finnish <translation-team-fi@lists.sourceforge.net>\n"
 "Language: fi\n"
@@ -18,360 +18,381 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/libdevmapper.c:184
-msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
-msgstr "Ei voida alustaa laitekuvainta. Onko dm_mod-käyttöjärjestelmäydinmoduuli ladattu?\n"
+#: lib/libdevmapper.c:230
+msgid "Cannot initialize device-mapper, running as non-root user.\n"
+msgstr "Laitekuvaimen alustus epäonnistui, suoritetaan ei-root-käyttäjänä.\n"
 
-#: lib/libdevmapper.c:423
+#: lib/libdevmapper.c:233
+msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
+msgstr "Laitekuvaimen alustus epäonnistui. Onko dm_mod-käyttöjärjestelmäydinmoduuli ladattu?\n"
+
+#: lib/libdevmapper.c:516
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
 msgstr "DM-UUID laitteelle %s typistettiin.\n"
 
 #  Entropy viittaa tässä ilmeisesti tiivistettävän tekstin satunnaisuuteen. Mitä satunnaisempi se on, sitä vähemmän sitä voi tiivistää.
-#: lib/random.c:75
+#: lib/random.c:74
 msgid ""
 "System is out of entropy while generating volume key.\n"
 "Please move mouse or type some text in another window to gather some random events.\n"
 msgstr ""
-"Järjestelmässä ei ole satunnaisuutta taltioavainta synnytettäessä.\n"
+"Järjestelmässä ei ole satunnaisuutta taltioavainta tuotettaessa.\n"
 "Siirrä hiirtä tai kirjoita jotain tekstiä toiseen ikkunaan joidenkin satunnaistapahtumien keräämiseksi.\n"
 
-#: lib/random.c:79
+#: lib/random.c:78
 #, c-format
 msgid "Generating key (%d%% done).\n"
-msgstr "Avaimen synnyttäminen (%d%% valmis).\n"
+msgstr "Avainta tuotetaan (%d%% valmis).\n"
 
-#: lib/random.c:168
+#: lib/random.c:167
 msgid "Fatal error during RNG initialisation.\n"
 msgstr "Kohtalokas virhe RNG-alustuksen aikana.\n"
 
-#: lib/random.c:205
+#: lib/random.c:204
 msgid "Unknown RNG quality requested.\n"
 msgstr "Tuntematonta RNG-laatua pyydetty.\n"
 
-#: lib/random.c:210
+#: lib/random.c:209
 #, c-format
 msgid "Error %d reading from RNG: %s\n"
 msgstr "Virhe %d luettaessa kohteesta RNG: %s\n"
 
-#: lib/setup.c:162
+#: lib/setup.c:179
 msgid "Cannot initialize crypto RNG backend.\n"
-msgstr "Ei voida alustaa RNG-salaustaustaohjelmaa.\n"
+msgstr "RNG-salaustaustaohjelman alustus epäonnistui.\n"
 
-#: lib/setup.c:168
+#: lib/setup.c:185
 msgid "Cannot initialize crypto backend.\n"
-msgstr "Ei voida alustaa salaustaustaohjelmaa.\n"
+msgstr "Salaustaustaohjelman alustus epäonnistui.\n"
 
-#: lib/setup.c:190
+#: lib/setup.c:208 lib/setup.c:1060 lib/verity/verity.c:120
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
 msgstr "Tiivistealgoritmia %s ei tueta.\n"
 
-#: lib/setup.c:193 lib/loopaes/loopaes.c:87
+#: lib/setup.c:211 lib/loopaes/loopaes.c:88
 #, c-format
 msgid "Key processing error (using hash %s).\n"
 msgstr "Avainkäsittelyvirhe (käytetään tiivistealgoritmia %s).\n"
 
-#: lib/setup.c:229
+#: lib/setup.c:252
 msgid "All key slots full.\n"
 msgstr "Kaikki avainvälit ovat täynnä.\n"
 
-#: lib/setup.c:236
+#: lib/setup.c:259
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d.\n"
 msgstr "Avainväli %d on virheellinen, valitse väliltä 0 ... %d.\n"
 
-#: lib/setup.c:242
+#: lib/setup.c:265
 #, c-format
 msgid "Key slot %d is full, please select another one.\n"
 msgstr "Avainväli %d on täynnä, valitse joku toinen.\n"
 
-#: lib/setup.c:345
+#: lib/setup.c:379
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "Kirjoita salasanalause kohteelle %s: "
 
-#: lib/setup.c:505
-msgid "Cannot find a free loopback device.\n"
-msgstr "Ei voida löytää vapaata silmukkalaitetta.\n"
-
-#: lib/setup.c:513
-msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
-msgstr "Silmukkalaitteeseen liittyminen epäonnistui (vaaditaan silmukkalaite autoclear-lipulla).\n"
-
-#: lib/setup.c:569
+#: lib/setup.c:560
 #, c-format
-msgid "LUKS header detected but device %s is too small.\n"
-msgstr "LUKS-otsake havaittu, mutta laite %s on liian pieni.\n"
+msgid "Header detected but device %s is too small.\n"
+msgstr "Otsake havaittu, mutta laite %s on liian pieni.\n"
 
-#: lib/setup.c:585 lib/setup.c:1073
+#: lib/setup.c:576 lib/setup.c:1278
 msgid "This operation is not supported for this device type.\n"
 msgstr "Tätä toimintoa ei tueta tälle laitetyypille.\n"
 
-#: lib/setup.c:648 lib/setup.c:1040 lib/setup.c:1810
+#: lib/setup.c:782 lib/setup.c:1242 lib/setup.c:2034
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Laite %s ei ole aktiivinen.\n"
 
-#: lib/setup.c:666
+#: lib/setup.c:799
 #, c-format
 msgid "Underlying device for crypt device %s disappeared.\n"
 msgstr "Salauslaitteen %s perustana oleva laite hävisi.\n"
 
-#: lib/setup.c:780
+#: lib/setup.c:862
 msgid "Invalid plain crypt parameters.\n"
 msgstr "Virheelliset tavalliset salausparametrit.\n"
 
-#: lib/setup.c:785 lib/setup.c:890
+#: lib/setup.c:867 lib/setup.c:989
 msgid "Invalid key size.\n"
 msgstr "Virheellinen avainkoko.\n"
 
-#: lib/setup.c:826
+#: lib/setup.c:911
 msgid "Can't format LUKS without device.\n"
-msgstr "Ei voi muokata kohdetta LUKS ilman laitetta.\n"
+msgstr "Kohteen LUKS pohjustus ilman laitetta epäonnistui.\n"
 
-#: lib/setup.c:864
+#: lib/setup.c:959
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
-msgstr "Ei voida pohjustaa laitetta %s, joka on yhä käytössä.\n"
+msgstr "Laitteen %s pohjustus epäonnistui, koska se on yhä käytössä.\n"
 
-#: lib/setup.c:867
+#: lib/setup.c:962
+#, c-format
+msgid "Cannot format device %s, permission denied.\n"
+msgstr "Laitteen %s pohjustus epäonnistui, koska pääsy laitteeseen on kielletty.\n"
+
+#: lib/setup.c:966
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
-msgstr "Ei voi pyyhkiä pois otsaketta laitteesta %s.\n"
+msgstr "Otsakkeen pyyhkiminen pois laitteesta %s epäonnistui.\n"
 
-#: lib/setup.c:885
+#: lib/setup.c:984
 msgid "Can't format LOOPAES without device.\n"
-msgstr "Ei voida pohjustaa kohdetta LOOPAES ilman laitetta.\n"
+msgstr "Kohteen LOOPAES pohjustus ilman laitetta epäonnistui.\n"
 
-#: lib/setup.c:945
+#: lib/setup.c:1020
+msgid "Can't format VERITY without device.\n"
+msgstr "Kohteen VERITY pohjustus ilman laitetta epäonnistui.\n"
+
+#: lib/setup.c:1028 lib/verity/verity.c:103
+#, c-format
+msgid "Unsupported VERITY hash type %d.\n"
+msgstr "Tukematon VERITY-tiivistetyyppi %d.\n"
+
+#: lib/setup.c:1034 lib/verity/verity.c:111
+msgid "Unsupported VERITY block size.\n"
+msgstr "Tukematon VERITY-lohkokoko.\n"
+
+#: lib/setup.c:1039 lib/verity/verity.c:74
+msgid "Unsupported VERITY hash offset.\n"
+msgstr "Tukematon VERITY-tiivistesiirros.\n"
+
+#: lib/setup.c:1151
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Tuntematon salauslaitetyyppi %s pyydetty.\n"
 
-#: lib/setup.c:1088
+#: lib/setup.c:1293
 msgid "Do you really want to change UUID of device?"
 msgstr "Haluatko todella vaihtaa laitteen UUID-tunnistetta?"
 
-#: lib/setup.c:1173 lib/setup.c:1220 lib/setup.c:1269 lib/setup.c:1335
-#: lib/setup.c:1411 lib/setup.c:1492 lib/setup.c:1538 lib/setup.c:1875
-#: lib/setup.c:1980 lib/setup.c:2119
+#: lib/setup.c:1379 lib/setup.c:1424 lib/setup.c:1473 lib/setup.c:1539
+#: lib/setup.c:1615 lib/setup.c:1696 lib/setup.c:1742 lib/setup.c:2099
+#: lib/setup.c:2382
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Tätä toimintoa tuetaan vain LUKS-laitteelle.\n"
 
-#: lib/setup.c:1180
+#: lib/setup.c:1386
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Taltio %s ei ole käytössä.\n"
 
-#: lib/setup.c:1192
+#: lib/setup.c:1397
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Taltio %s on jo keskeytetty.\n"
 
-#: lib/setup.c:1230 lib/setup.c:1279
+#: lib/setup.c:1434 lib/setup.c:1483
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Taltiota %s ei ole keskeytetty.\n"
 
-#: lib/setup.c:1286 lib/setup.c:1663 lib/setup.c:1677 src/cryptsetup.c:343
+#: lib/setup.c:1490 lib/setup.c:1867 lib/setup.c:1881 src/cryptsetup.c:194
 msgid "Enter passphrase: "
 msgstr "Kirjoita salasanalause: "
 
 #  Volume key tarkoittaa yleensä äänenvoimakkuussäädintä, ei välttämättä tässä.
-#: lib/setup.c:1349 lib/setup.c:1425
+#: lib/setup.c:1553 lib/setup.c:1629
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
-msgstr "Ei voida lisätä avainväliä, kaikki välit on otettu pois käytöstä ja yhtään taltioavainta ei ole tarjottu.\n"
+msgstr "Avainvälin lisäys epäonnistui, kaikki välit on otettu pois käytöstä ja yhtään taltioavainta ei ole tarjottu.\n"
 
-#: lib/setup.c:1358 lib/setup.c:1431 lib/setup.c:1435
+#: lib/setup.c:1562 lib/setup.c:1635 lib/setup.c:1639
 msgid "Enter any passphrase: "
 msgstr "Kirjoita mikä tahansa salasanalause: "
 
-#: lib/setup.c:1375 lib/setup.c:1448 lib/setup.c:1452 lib/setup.c:1515
+#: lib/setup.c:1579 lib/setup.c:1652 lib/setup.c:1656 lib/setup.c:1719
 msgid "Enter new passphrase for key slot: "
 msgstr "Kirjoita uusi salasanalause avainvälille: "
 
-#: lib/setup.c:1506 lib/setup.c:1767 lib/setup.c:1780 lib/setup.c:1886
+#: lib/setup.c:1710 lib/setup.c:1971 lib/setup.c:1984 lib/setup.c:2110
 msgid "Volume key does not match the volume.\n"
 msgstr "Taltioavain ei täsmää taltion kanssa.\n"
 
-#: lib/setup.c:1544
+#: lib/setup.c:1748
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "Avainväli %d on virheellinen.\n"
 
-#: lib/setup.c:1549
+#: lib/setup.c:1753
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "Avainväli %d ei ole käytössä.\n"
 
-#: lib/setup.c:1579 lib/setup.c:1651 lib/setup.c:1743
+#: lib/setup.c:1783 lib/setup.c:1855 lib/setup.c:1947
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Laite %s on jo olemassa.\n"
 
-#: lib/setup.c:1754
+#: lib/setup.c:1958
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "Virheellinen taltioavain määritelty tavalliselle laitteelle.\n"
 
-#: lib/setup.c:1785
+#: lib/setup.c:1991
+msgid "Incorrect root hash specified for verity device.\n"
+msgstr "Virheellinen root-tiiviste määritelty verity-laitteelle.\n"
+
+#: lib/setup.c:2009
 msgid "Device type is not properly initialised.\n"
 msgstr "Laitetyyppi ei ole alustettu oikein.\n"
 
-#: lib/setup.c:1814
+#: lib/setup.c:2038
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Virheellinen laite %s.\n"
 
-#: lib/setup.c:1842
+#: lib/setup.c:2066
 msgid "Volume key buffer too small.\n"
 msgstr "Taltioavainpuskuri on liian pieni.\n"
 
-#: lib/setup.c:1850
+#: lib/setup.c:2074
 msgid "Cannot retrieve volume key for plain device.\n"
-msgstr "Ei voida noutaa taltioavainta tavalliselle laitteelle.\n"
+msgstr "Taltioavaimen nouto tavalliselle laitteelle epäonnistui.\n"
 
-#: lib/setup.c:1856
+#: lib/setup.c:2080
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Tätä toimintoa ei tueta %s-salauslaitteelle.\n"
 
-#: lib/utils.c:270
-#, c-format
-msgid "Device %s doesn't exist or access denied.\n"
-msgstr "Laite %s ei ole olemassa tai pääsy siihen on kielletty.\n"
+#: lib/setup.c:2275
+msgid "Dump operation is not supported for this device type.\n"
+msgstr "Dump-toimintoa ei tueta tälle laitetyypille.\n"
 
-#: lib/utils.c:280
-#, c-format
-msgid "Cannot open device %s for %s%s access.\n"
-msgstr "Ei voida avata laitetta %s kohteeseen %s%s pääsyä varten.\n"
-
-#: lib/utils.c:281
-msgid "exclusive "
-msgstr "yksinomainen "
-
-#: lib/utils.c:282
-msgid "writable"
-msgstr "kirjoitettava"
-
-#: lib/utils.c:282
-msgid "read-only"
-msgstr "kirjoitussuojattu"
-
-#: lib/utils.c:289
-#, c-format
-msgid "Cannot read device %s.\n"
-msgstr "Ei voida lukea laitetta %s.\n"
-
-#: lib/utils.c:386
-#, c-format
-msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
-msgstr "Ei voida käyttää laitetta %s, joka on käytössä (jo kuvattu tai liitetty).\n"
-
-#: lib/utils.c:390
-#, c-format
-msgid "Cannot get info about device %s.\n"
-msgstr "Ei voida saada tietoja laitteesta %s.\n"
-
-#: lib/utils.c:396
-#, c-format
-msgid "Requested offset is beyond real size of device %s.\n"
-msgstr "Pyydetty siirrososoite on laitteen %s todellisen koon ulkopuolella.\n"
-
-#: lib/utils.c:404
-#, c-format
-msgid "Device %s has zero size.\n"
-msgstr "Laitteen %s koko on nolla.\n"
-
-#: lib/utils.c:415 lib/luks1/keymanage.c:532
-#, c-format
-msgid "Device %s is too small.\n"
-msgstr "Laite %s on liian pieni.\n"
-
-#: lib/utils.c:439
-msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
-msgstr "VAROITUS!!! Mahdollisesti turvaton muisti. Oletko pääkäyttäjä?\n"
-
-#: lib/utils.c:445
+#: lib/utils.c:238
 msgid "Cannot get process priority.\n"
-msgstr "Ei voida saada prosessiprioriteettia.\n"
+msgstr "Prosessiprioriteetin hakeminen epäonnistui.\n"
 
-#: lib/utils.c:448 lib/utils.c:461
+#: lib/utils.c:241 lib/utils.c:254
 #, c-format
 msgid "setpriority %d failed: %s\n"
 msgstr "setpriority %d epäonnistui: %s\n"
 
-#: lib/utils.c:459
+#: lib/utils.c:252
 msgid "Cannot unlock memory.\n"
-msgstr "Muistin lukitusta ei voida avata.\n"
+msgstr "Muistin lukituksen avaus epäonnistui.\n"
 
-#: lib/utils_crypt.c:221 lib/utils_crypt.c:234 lib/utils_crypt.c:338
-#: lib/utils_crypt.c:354
+#: lib/utils_crypt.c:225 lib/utils_crypt.c:238 lib/utils_crypt.c:385
+#: lib/utils_crypt.c:400
 msgid "Out of memory while reading passphrase.\n"
 msgstr "Muisti loppui luettaessa salasanalausetta.\n"
 
-#: lib/utils_crypt.c:226 lib/utils_crypt.c:241
+#: lib/utils_crypt.c:230 lib/utils_crypt.c:245
 msgid "Error reading passphrase from terminal.\n"
 msgstr "Virhe luettaessa salasanalausetta pääteikkunasta.\n"
 
-#: lib/utils_crypt.c:239
+#: lib/utils_crypt.c:243
 msgid "Verify passphrase: "
 msgstr "Todenna salasanalause: "
 
-#: lib/utils_crypt.c:246
+#: lib/utils_crypt.c:250
 msgid "Passphrases do not match.\n"
 msgstr "Salasanalauseet eivät täsmää.\n"
 
-#: lib/utils_crypt.c:287
+#: lib/utils_crypt.c:334
 msgid "Cannot use offset with terminal input.\n"
-msgstr "Ei voida käyttää siirrososoitetta pääteikkunasyötteellä.\n"
+msgstr "Siirrososoitteen käyttö pääteikkunasyötteellä epäonnistui.\n"
 
-#: lib/utils_crypt.c:306
+#: lib/utils_crypt.c:353
 msgid "Failed to open key file.\n"
 msgstr "Avaintiedoston avaus epäonnistui.\n"
 
-#: lib/utils_crypt.c:315
+#: lib/utils_crypt.c:362
 msgid "Failed to stat key file.\n"
 msgstr "Avaintiedoston kutsuminen stat-funktiolla epäonnistui.\n"
 
-#: lib/utils_crypt.c:323 lib/utils_crypt.c:345
+#: lib/utils_crypt.c:370 lib/utils_crypt.c:391
 msgid "Cannot seek to requested keyfile offset.\n"
-msgstr "Ei voida etsiä pyydettyä avaintiedostosiirrososoitetta.\n"
+msgstr "Pyydetyn avaintiedostosiirrososoitteen etsintä epäonnistui.\n"
 
-#: lib/utils_crypt.c:362
+#: lib/utils_crypt.c:408
 msgid "Error reading passphrase.\n"
 msgstr "Virhe luettaessa salasanalausetta.\n"
 
-#: lib/utils_crypt.c:380
+#: lib/utils_crypt.c:426
 msgid "Maximum keyfile size exceeded.\n"
 msgstr "Avaintiedoston enimmäiskoko ylitettiin.\n"
 
-#: lib/utils_crypt.c:385
+#: lib/utils_crypt.c:431
 msgid "Cannot read requested amount of data.\n"
-msgstr "Ei voida lukea pyydettyä tietomäärää.\n"
+msgstr "Pyydetyn tietomäärän lukeminen epäonnistui.\n"
 
-#: lib/utils_fips.c:45
+#: lib/utils_fips.c:46
 msgid "FIPS checksum verification failed.\n"
 msgstr "FIPS-tarkistussummavarmennus epäonnistui.\n"
 
-#: lib/utils_fips.c:49
+#: lib/utils_fips.c:50
 msgid "Running in FIPS mode.\n"
 msgstr "Suoritetaan FIPS-tilassa.\n"
 
-#: lib/luks1/keyencryption.c:79
+#: lib/utils_device.c:48
 #, c-format
-msgid "Unable to obtain sector size for %s"
-msgstr "Ei kyetä samaan sektorikokoa kohteelle %s"
+msgid "Device %s doesn't exist or access denied.\n"
+msgstr "Laite %s ei ole olemassa tai pääsy siihen on kielletty.\n"
 
-#: lib/luks1/keyencryption.c:106
+#: lib/utils_device.c:58 lib/luks1/keymanage.c:298 lib/luks1/keymanage.c:527
+#: lib/luks1/keymanage.c:567 lib/verity/verity.c:80 lib/verity/verity.c:174
+#: lib/verity/verity_hash.c:293 lib/verity/verity_hash.c:304
+#: lib/verity/verity_hash.c:324
+#, c-format
+msgid "Cannot open device %s.\n"
+msgstr "Laitteen %s avaus epäonnistui.\n"
+
+#: lib/utils_device.c:333
+msgid "Cannot use a loopback device, running as non-root user.\n"
+msgstr "Silmukkalaitteen käyttö epäonnistui, suoritetaan ei-root-käyttäjänä.\n"
+
+#: lib/utils_device.c:336
+msgid "Cannot find a free loopback device.\n"
+msgstr "Vapaan silmukkalaiteen löytäminen epäonnistui.\n"
+
+#: lib/utils_device.c:343
+msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
+msgstr "Silmukkalaitteeseen liittyminen epäonnistui (vaaditaan silmukkalaite autoclear-lipulla).\n"
+
+#: lib/utils_device.c:383
+#, c-format
+msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
+msgstr "Laitteen %s käyttö epäonnistui, koska se on jo käytössä (jo kuvattu tai liitetty).\n"
+
+#: lib/utils_device.c:387
+#, c-format
+msgid "Cannot get info about device %s.\n"
+msgstr "Tietojen hakeminen laitteesta %s epäonnistui.\n"
+
+#: lib/utils_device.c:393
+#, c-format
+msgid "Requested offset is beyond real size of device %s.\n"
+msgstr "Pyydetty siirrososoite on laitteen %s todellisen koon ulkopuolella.\n"
+
+#: lib/utils_device.c:401
+#, c-format
+msgid "Device %s has zero size.\n"
+msgstr "Laitteen %s koko on nolla.\n"
+
+#: lib/utils_device.c:412 lib/luks1/keymanage.c:89
+#, c-format
+msgid "Device %s is too small.\n"
+msgstr "Laite %s on liian pieni.\n"
+
+#: lib/luks1/keyencryption.c:66 lib/luks1/keymanage.c:295
+#: lib/luks1/keymanage.c:564 lib/luks1/keymanage.c:981
+#, c-format
+msgid "Cannot write to device %s, permission denied.\n"
+msgstr "Laitteeseen %s kirjoittaminen epäonnistui, pääsy kielletty.\n"
+
+#: lib/luks1/keyencryption.c:91
 msgid "Key size in XTS mode must be 256 or 512 bits.\n"
 msgstr "Avainkoon on oltava XTS-tilassa 256 tai 512 bittiä.\n"
 
-#: lib/luks1/keyencryption.c:129
+#: lib/luks1/keyencryption.c:117
 msgid "Failed to obtain device mapper directory."
 msgstr "Laitekuvaajahakemiston hankkiminen epäonnistui."
 
-#: lib/luks1/keyencryption.c:145
+#: lib/luks1/keyencryption.c:133
 #, c-format
 msgid ""
 "Failed to setup dm-crypt key mapping for device %s.\n"
@@ -382,66 +403,67 @@ msgstr ""
 "Tarkista, että käyttöjärjestelmäydin tukee %s-salakirjoitusmenetelmää (lisätietoja tarkistamalla syslog).\n"
 "%s"
 
-#: lib/luks1/keyencryption.c:155
+#: lib/luks1/keyencryption.c:143
 msgid "Failed to open temporary keystore device.\n"
 msgstr "Tilapäisen avainsäiliön avaaminen epäonnistui.\n"
 
-#: lib/luks1/keyencryption.c:162
+#: lib/luks1/keyencryption.c:150
 msgid "Failed to access temporary keystore device.\n"
 msgstr "Pääsy tilapäiseen avainsäiliölaitteeseen epäonnistui.\n"
 
-#: lib/luks1/keymanage.c:149
+#: lib/luks1/keymanage.c:161
 #, c-format
 msgid "Requested file %s already exist.\n"
 msgstr "Pyydetty tiedosto %s on jo olemassa.\n"
 
-#: lib/luks1/keymanage.c:169 lib/luks1/keymanage.c:399
+#: lib/luks1/keymanage.c:181 lib/luks1/keymanage.c:417
+#: src/cryptsetup_reencrypt.c:1014
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "Laite %s ei ole kelvollinen LUKS-laite.\n"
 
-#: lib/luks1/keymanage.c:189
+#: lib/luks1/keymanage.c:202
 #, c-format
 msgid "Cannot write header backup file %s.\n"
-msgstr "Ei voida kirjoittaa otsakevarmuuskopiotiedostoa %s.\n"
+msgstr "Otsakevarmuuskopiotiedoston %s kirjoittaminen epäonnistui.\n"
 
-#: lib/luks1/keymanage.c:216
+#: lib/luks1/keymanage.c:229
 #, c-format
 msgid "Backup file %s doesn't exist.\n"
 msgstr "Varmuuskopiotiedostoa %s ei ole olemassa.\n"
 
-#: lib/luks1/keymanage.c:224
+#: lib/luks1/keymanage.c:238
 msgid "Backup file doesn't contain valid LUKS header.\n"
 msgstr "Varmuuskopiotiedosto ei sisällä kelvollista LUKS-otsaketta.\n"
 
-#: lib/luks1/keymanage.c:237
+#: lib/luks1/keymanage.c:251
 #, c-format
 msgid "Cannot open header backup file %s.\n"
-msgstr "Ei voida avata otsakevarmuuskopiotiedostoa %s.\n"
+msgstr "Otsakevarmuuskopiotiedoston %s avaus epäonnistui.\n"
 
-#: lib/luks1/keymanage.c:243
+#: lib/luks1/keymanage.c:257
 #, c-format
 msgid "Cannot read header backup file %s.\n"
-msgstr "Ei voida lukea otsakevarmuuskopiotiedostoa %s.\n"
+msgstr "Otsakevarmuuskopiotiedoston %s lukeminen epäonnistui.\n"
 
-#: lib/luks1/keymanage.c:254
+#: lib/luks1/keymanage.c:268
 msgid "Data offset or key size differs on device and backup, restore failed.\n"
 msgstr "Tietosiirrososoite tai avainkoko eroaa laitteessa ja varmuuskopiossa, palautus epäonnistui.\n"
 
-#: lib/luks1/keymanage.c:262
+#: lib/luks1/keymanage.c:276
 #, c-format
 msgid "Device %s %s%s"
 msgstr "Laite %s %s%s"
 
-#: lib/luks1/keymanage.c:263
+#: lib/luks1/keymanage.c:277
 msgid "does not contain LUKS header. Replacing header can destroy data on that device."
 msgstr "ei sisällä LUKS-otsaketta. Otsakkeen korvaaminen voi tuhota tietoja tuossa laitteessa."
 
-#: lib/luks1/keymanage.c:264
+#: lib/luks1/keymanage.c:278
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgstr "sisältää jo LUKS-otsakkeen. Otsakkeen korvaaminen tuhoaa olemassaolevat avainvälit."
 
-#: lib/luks1/keymanage.c:265
+#: lib/luks1/keymanage.c:279
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
@@ -449,364 +471,423 @@ msgstr ""
 "\n"
 "VAROITUS: oikealla laiteotsakkeella on eri UUID-tunniste kuin varmuuskopiolla!"
 
-#: lib/luks1/keymanage.c:280 lib/luks1/keymanage.c:504
-#: lib/luks1/keymanage.c:538
-#, c-format
-msgid "Cannot open device %s.\n"
-msgstr "Ei voi avata laitetta %s.\n"
-
-#: lib/luks1/keymanage.c:310
+#: lib/luks1/keymanage.c:328
 msgid "Non standard key size, manual repair required.\n"
 msgstr "Ei-vakio avainkoko, manuaalinen korjaus pyydetty.\n"
 
-#: lib/luks1/keymanage.c:315
+#: lib/luks1/keymanage.c:333
 msgid "Non standard keyslots alignment, manual repair required.\n"
 msgstr "Ei-vakiot avainvälitasaukset, manuaalinen korjaus pyydetty.\n"
 
-#: lib/luks1/keymanage.c:321
+#: lib/luks1/keymanage.c:339
 msgid "Repairing keyslots.\n"
 msgstr "Korjataan avainvälit.\n"
 
-#: lib/luks1/keymanage.c:332
+#: lib/luks1/keymanage.c:350
 msgid "Repair failed."
 msgstr "Korjaus epäonnistui."
 
-#: lib/luks1/keymanage.c:344
+#: lib/luks1/keymanage.c:362
 #, c-format
 msgid "Keyslot %i: offset repaired (%u -> %u).\n"
 msgstr "Avainväli %i: siirrososoite korjattu (%u -> %u).\n"
 
-#: lib/luks1/keymanage.c:352
+#: lib/luks1/keymanage.c:370
 #, c-format
 msgid "Keyslot %i: stripes repaired (%u -> %u).\n"
 msgstr "Avainväli %i: raidat korjattu (%u -> %u).\n"
 
-#: lib/luks1/keymanage.c:361
+#: lib/luks1/keymanage.c:379
 #, c-format
 msgid "Keyslot %i: bogus partition signature.\n"
 msgstr "Avainväli %i: valeosiotunniste.\n"
 
-#: lib/luks1/keymanage.c:366
+#: lib/luks1/keymanage.c:384
 #, c-format
 msgid "Keyslot %i: salt wiped.\n"
 msgstr "Avainväli %i: satunnaisarvosiemen tuhottu.\n"
 
-#: lib/luks1/keymanage.c:377
+#: lib/luks1/keymanage.c:395
 msgid "Writing LUKS header to disk.\n"
 msgstr "Kirjoitetaan LUKS-otsake levylle.\n"
 
-#: lib/luks1/keymanage.c:402
+#: lib/luks1/keymanage.c:420
 #, c-format
 msgid "Unsupported LUKS version %d.\n"
 msgstr "Tukematon LUKS-versio %d.\n"
 
-#: lib/luks1/keymanage.c:408 lib/luks1/keymanage.c:610
+#: lib/luks1/keymanage.c:426 lib/luks1/keymanage.c:639
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
 msgstr "Pyydetty LUKS-tiiviste %s ei ole tuettu.\n"
 
-#: lib/luks1/keymanage.c:423
+#: lib/luks1/keymanage.c:441
 #, c-format
 msgid "LUKS keyslot %u is invalid.\n"
 msgstr "LUKS-avainväli %u on virheellinen.\n"
 
-#: lib/luks1/keymanage.c:437 src/cryptsetup.c:535
+#: lib/luks1/keymanage.c:455 src/cryptsetup.c:388
 msgid "No known problems detected for LUKS header.\n"
 msgstr "Tuntemattomat pulmat havaittu LUKS-otsakkeelle.\n"
 
-#: lib/luks1/keymanage.c:471
+#: lib/luks1/keymanage.c:488
 #, c-format
 msgid "Cannot open file %s.\n"
-msgstr "Ei voi avata tiedostoa %s.\n"
+msgstr "Tiedoston %s avaus epäonnistui.\n"
 
-#: lib/luks1/keymanage.c:559
+#: lib/luks1/keymanage.c:588
 #, c-format
 msgid "Error during update of LUKS header on device %s.\n"
 msgstr "Virhe LUKS-otsakkeen päivityksen aikana laitteessa %s.\n"
 
-#: lib/luks1/keymanage.c:566
+#: lib/luks1/keymanage.c:595
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s.\n"
 msgstr "Virhe luettaessa uudelleen LUKS-otsaketta päivityksen jälkeen laitteessa %s.\n"
 
-#: lib/luks1/keymanage.c:578
+#: lib/luks1/keymanage.c:608
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
 msgstr "Ei ole yhteensopiva PBKDF2-valitsimien kanssa (käytetään tiivitstealgoritmia %s).\n"
 
-#: lib/luks1/keymanage.c:615 lib/luks1/keymanage.c:697
+#: lib/luks1/keymanage.c:644 lib/luks1/keymanage.c:726
 msgid "Wrong LUKS UUID format provided.\n"
 msgstr "Väärä LUKS UUID-muoto tarjottu.\n"
 
-#: lib/luks1/keymanage.c:640
+#: lib/luks1/keymanage.c:669
 msgid "Cannot create LUKS header: reading random salt failed.\n"
-msgstr "Ei voida luoda LUKS-otsaketta: lukeminen satunnaisarvosta epäonnistui.\n"
+msgstr "LUKS-otsakkeen luominen epäonnistui: satunnaisarvosiemenen lukeminen epäonnistui.\n"
 
-#: lib/luks1/keymanage.c:657
+#: lib/luks1/keymanage.c:686
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
-msgstr "Ei voida luoda LUKS-otsaketta: otsaketiiviste epäonnistui (käytettäen tiivistettä %s).\n"
+msgstr "LUKS-otsakkeen luominen epäonnistui: otsaketiiviste epäonnistui (käytettäen tiivistettä %s).\n"
 
-#: lib/luks1/keymanage.c:722
+#: lib/luks1/keymanage.c:751
 #, c-format
 msgid "Key slot %d active, purge first.\n"
 msgstr "Avainväli %d aktiivinen, puhdista ensimmäinen.\n"
 
-#: lib/luks1/keymanage.c:727
+#: lib/luks1/keymanage.c:757
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
 msgstr "Avainvälin %d materiaali sisältää liian vähän raitoja. Otsaketta on käsitelty?\n"
 
-#: lib/luks1/keymanage.c:794
-msgid "Failed to write to key storage.\n"
-msgstr "Avainsäiliöön kirjoittaminen epäonnistui.\n"
-
-#: lib/luks1/keymanage.c:879
-msgid "Failed to read from key storage.\n"
-msgstr "Avainsäiliöstä lukeminen epäonnistui.\n"
-
-#: lib/luks1/keymanage.c:889
+#: lib/luks1/keymanage.c:914
 #, c-format
 msgid "Key slot %d unlocked.\n"
 msgstr "Avaivälin %d lukitus avattu.\n"
 
-#: lib/luks1/keymanage.c:925 src/cryptsetup.c:732 src/cryptsetup.c:916
+#: lib/luks1/keymanage.c:949 src/cryptsetup.c:587 src/cryptsetup.c:771
+#: src/cryptsetup_reencrypt.c:918 src/cryptsetup_reencrypt.c:952
 msgid "No key available with this passphrase.\n"
 msgstr "Tälle salasanalauseelle ei ole saatavissa avainta.\n"
 
-#: lib/luks1/keymanage.c:943
+#: lib/luks1/keymanage.c:967
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
 msgstr "Avainväli %d on virheellinen, valitse avainväli välillä 0 ... %d.\n"
 
-#: lib/luks1/keymanage.c:957
+#: lib/luks1/keymanage.c:985
 #, c-format
 msgid "Cannot wipe device %s.\n"
-msgstr "Ei voi pyyhkiä tyhjäksi laitetta %s.\n"
+msgstr "Laitteen %s pyyhkiminen tyhjäksi epäonnistui.\n"
 
-#: lib/loopaes/loopaes.c:142
+#: lib/loopaes/loopaes.c:143
 msgid "Detected not yet supported GPG encrypted keyfile.\n"
 msgstr "Havaittu vielä tukematon GPG-salausavaintiedosto.\n"
 
-#: lib/loopaes/loopaes.c:143
+#: lib/loopaes/loopaes.c:144
 msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
 msgstr "Käytä gpg --decrypt <AVAINTIEDOSTO> | cryptsetup --keyfile=- ...\n"
 
-#: lib/loopaes/loopaes.c:175
+#: lib/loopaes/loopaes.c:176
 msgid "Incompatible loop-AES keyfile detected.\n"
 msgstr "Yhteensopimaton loop-AES -avaintiedosto havaittu.\n"
 
-#: lib/loopaes/loopaes.c:225
+#: lib/loopaes/loopaes.c:230
 msgid "Kernel doesn't support loop-AES compatible mapping.\n"
 msgstr "Käyttöjärjestelmäydin ei tule loop-AES -yhteensopivaa kuvausta.\n"
 
-#: src/cryptsetup.c:105
+#: lib/verity/verity.c:69 lib/verity/verity.c:168
+msgid "Verity device doesn't use on-disk header.\n"
+msgstr "Verity-laite ei käytä paikallista levyotsaketta.\n"
+
+#: lib/verity/verity.c:92
+#, c-format
+msgid "Device %s is not a valid VERITY device.\n"
+msgstr "Laite %s ei ole kelvollinen VERITY-laite.\n"
+
+#: lib/verity/verity.c:98
+#, c-format
+msgid "Unsupported VERITY version %d.\n"
+msgstr "Tukematon VERITY-versio %d.\n"
+
+#: lib/verity/verity.c:128
+msgid "VERITY header corrupted.\n"
+msgstr "VERITY-otsake rikkinäinen.\n"
+
+#: lib/verity/verity.c:163
+msgid "Wrong VERITY UUID format provided.\n"
+msgstr "Väärä VERITY UUID-muoto tarjottu.\n"
+
+#: lib/verity/verity.c:191
+#, c-format
+msgid "Error during update of verity header on device %s.\n"
+msgstr "Virhe verity-otsakkeen päivityksen aikana laitteessa %s.\n"
+
+#: lib/verity/verity.c:270
+msgid "Kernel doesn't support dm-verity mapping.\n"
+msgstr "Käyttöjärjestelmäydin ei tule dm-verity -yhteensopivaa kuvausta.\n"
+
+#: lib/verity/verity.c:281
+msgid "Verity device detected corruption after activation.\n"
+msgstr "Verity-laite havaitsi rikkoutumisen aktivoinnin jälkeen.\n"
+
+#: lib/verity/verity_hash.c:58
+#, c-format
+msgid "Spare area is not zeroed at position %<PRIu64>.\n"
+msgstr "Vapaa-aluetta ei ole nollattu sijainnissa %<PRIu64>.\n"
+
+#: lib/verity/verity_hash.c:120 lib/verity/verity_hash.c:248
+#: lib/verity/verity_hash.c:278 lib/verity/verity_hash.c:285
+msgid "Device offset overflow.\n"
+msgstr "Laitesiirrososoitteen ylivuoto.\n"
+
+#: lib/verity/verity_hash.c:160
+#, c-format
+msgid "Verification failed at position %<PRIu64>.\n"
+msgstr "Todennus epäonnistui sijainnissa %<PRIu64>.\n"
+
+#: lib/verity/verity_hash.c:234
+msgid "Invalid size parameters for verity device.\n"
+msgstr "Virheelliset kokoparametrit verity-laitteelle.\n"
+
+#: lib/verity/verity_hash.c:266
+msgid "Too many tree levels for verity volume.\n"
+msgstr "Verity-taltiolla liian monta puutasoa.\n"
+
+#: lib/verity/verity_hash.c:355
+msgid "Verification of data area failed.\n"
+msgstr "Data-alueen todentaminen epäonnistui.\n"
+
+#: lib/verity/verity_hash.c:360
+msgid "Verification of root hash failed.\n"
+msgstr "Root-tiivisteen todentaminen epäonnistui.\n"
+
+#: lib/verity/verity_hash.c:366
+msgid "Input/output error while creating hash area.\n"
+msgstr "Syöte/tulostevirhe luotaessa tiivistealuetta.\n"
+
+#: lib/verity/verity_hash.c:368
+msgid "Creation of hash area failed.\n"
+msgstr "Tiivistealueen luominen epäonnistui.\n"
+
+#: lib/verity/verity_hash.c:415
+#, c-format
+msgid "WARNING: Kernel cannot activate device if data block size exceeds page size (%u).\n"
+msgstr "VAROITUS: Käyttöjärjestelmäydin ei voi aktivoida laitetta, jos lohkokoko ylittää sivukoon (%u).\n"
+
+#: src/cryptsetup.c:88
 msgid "<name> <device>"
 msgstr "<nimi> <laite>"
 
-#: src/cryptsetup.c:105
+#: src/cryptsetup.c:88
 msgid "create device"
 msgstr "luo laite"
 
-#: src/cryptsetup.c:106 src/cryptsetup.c:107 src/cryptsetup.c:108
-#: src/cryptsetup.c:118 src/cryptsetup.c:125
+#: src/cryptsetup.c:89 src/cryptsetup.c:90 src/cryptsetup.c:91
+#: src/cryptsetup.c:101 src/cryptsetup.c:108 src/veritysetup.c:311
+#: src/veritysetup.c:312
 msgid "<name>"
 msgstr "<nimi>"
 
-#: src/cryptsetup.c:106
+#: src/cryptsetup.c:89
 msgid "remove device"
 msgstr "poista laite"
 
-#: src/cryptsetup.c:107
+#: src/cryptsetup.c:90
 msgid "resize active device"
 msgstr "muuta käytössä olevan laitteen kokoa"
 
-#: src/cryptsetup.c:108
+#: src/cryptsetup.c:91
 msgid "show device status"
 msgstr "näytä laitetila"
 
-#: src/cryptsetup.c:109 src/cryptsetup.c:116 src/cryptsetup.c:117
-#: src/cryptsetup.c:119 src/cryptsetup.c:120 src/cryptsetup.c:121
-#: src/cryptsetup.c:122 src/cryptsetup.c:123
+#: src/cryptsetup.c:92 src/cryptsetup.c:99 src/cryptsetup.c:100
+#: src/cryptsetup.c:102 src/cryptsetup.c:103 src/cryptsetup.c:104
+#: src/cryptsetup.c:105 src/cryptsetup.c:106
 msgid "<device>"
 msgstr "<laite>"
 
-#: src/cryptsetup.c:109
+#: src/cryptsetup.c:92
 msgid "try to repair on-disk metadata"
 msgstr "yritä korjata levyn sisäiset metatiedot"
 
-#: src/cryptsetup.c:110 src/cryptsetup.c:112
+#: src/cryptsetup.c:93 src/cryptsetup.c:95
 msgid "<device> [<new key file>]"
 msgstr "<laite> [<uusi avaintiedosto>]"
 
-#: src/cryptsetup.c:110
+#: src/cryptsetup.c:93
 msgid "formats a LUKS device"
 msgstr "pohjustaa LUKS-laitteen"
 
-#: src/cryptsetup.c:111 src/cryptsetup.c:124
+#: src/cryptsetup.c:94 src/cryptsetup.c:107
 msgid "<device> <name> "
 msgstr "<laite> <nimi> "
 
-#: src/cryptsetup.c:111
+#: src/cryptsetup.c:94
 msgid "open LUKS device as mapping <name>"
 msgstr "avaa LUKS-laitteen kuvauksena <nimi>"
 
-#: src/cryptsetup.c:112
+#: src/cryptsetup.c:95
 msgid "add key to LUKS device"
 msgstr "lisää avain LUKS-laitteeseen"
 
-#: src/cryptsetup.c:113 src/cryptsetup.c:114
+#: src/cryptsetup.c:96 src/cryptsetup.c:97
 msgid "<device> [<key file>]"
 msgstr "<laite> [<avaintiedosto>]"
 
-#: src/cryptsetup.c:113
+#: src/cryptsetup.c:96
 msgid "removes supplied key or key file from LUKS device"
 msgstr "poistaa tarjotun avaimen tai avaintiedoston LUKS-laitteesta"
 
-#: src/cryptsetup.c:114
+#: src/cryptsetup.c:97
 msgid "changes supplied key or key file of LUKS device"
 msgstr "vaihtaa LUKS-laitteen tarjotun avaimen tai avaintiedoston"
 
-#: src/cryptsetup.c:115
+#: src/cryptsetup.c:98
 msgid "<device> <key slot>"
 msgstr "<laite> <avainväli>"
 
-#: src/cryptsetup.c:115
+#: src/cryptsetup.c:98
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr "pyyhkäisee pois avaimen numerolla <avainväli> LUKS-laitteesta"
 
-#: src/cryptsetup.c:116
+#: src/cryptsetup.c:99
 msgid "print UUID of LUKS device"
 msgstr "tulostaa LUKS-laitteen UUID-tunnuksen"
 
-#: src/cryptsetup.c:117
+#: src/cryptsetup.c:100
 msgid "tests <device> for LUKS partition header"
 msgstr "testaa <laite> LUKS-osio-otsakkeesta"
 
-#: src/cryptsetup.c:118
+#: src/cryptsetup.c:101
 msgid "remove LUKS mapping"
 msgstr "poista LUKS-kuvaus"
 
-#: src/cryptsetup.c:119
+#: src/cryptsetup.c:102
 msgid "dump LUKS partition information"
 msgstr "vedosta LUKS-osiotiedot"
 
-#: src/cryptsetup.c:120
+#: src/cryptsetup.c:103
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
 msgstr "Keskeytä LUKS-laite ja pyyhi pois avain (kaikki siirräntäliitännät jäädytetään)."
 
-#: src/cryptsetup.c:121
+#: src/cryptsetup.c:104
 msgid "Resume suspended LUKS device."
 msgstr "Aloita uudelleen pysäytetty LUKS-laite."
 
-#: src/cryptsetup.c:122
+#: src/cryptsetup.c:105
 msgid "Backup LUKS device header and keyslots"
 msgstr "Varmuuskopioi LUKS-laiteotsake ja avainvälit"
 
-#: src/cryptsetup.c:123
+#: src/cryptsetup.c:106
 msgid "Restore LUKS device header and keyslots"
 msgstr "Palauta LUKS-laiteotsake ja avainvälit"
 
-#: src/cryptsetup.c:124
+#: src/cryptsetup.c:107
 msgid "open loop-AES device as mapping <name>"
 msgstr "avaa loop-AES -laitteen kuvauksena <nimi>"
 
-#: src/cryptsetup.c:125
+#: src/cryptsetup.c:108
 msgid "remove loop-AES mapping"
 msgstr "poista loop-AES -kuvaus"
 
-#: src/cryptsetup.c:218
+#: src/cryptsetup.c:123
 msgid "Can't do passphrase verification on non-tty inputs.\n"
-msgstr "Ei voida tehdä salasanalauseiden todennusta ei-tty-syötteissä.\n"
+msgstr "Salasanalauseiden todennus epäonnistui ei-tty-syötteissä.\n"
 
-#: src/cryptsetup.c:233
-msgid "Command successful.\n"
-msgstr "Komento onnistui.\n"
-
-#: src/cryptsetup.c:247
-#, c-format
-msgid "Command failed with code %i"
-msgstr "Komento epäonnistui koodilla %i"
-
-#: src/cryptsetup.c:375
+#: src/cryptsetup.c:226
 msgid "Option --key-file is required.\n"
 msgstr "Vaaditaan valitsin --key-file.\n"
 
-#: src/cryptsetup.c:539
+#: src/cryptsetup.c:392
 msgid "Really try to repair LUKS device header?"
 msgstr "Yritetäänkö todella korjata LUKS-laiteotsake?"
 
-#: src/cryptsetup.c:564
+#: src/cryptsetup.c:417
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr "Tämä korvaa tiedot kohteella %s peruuttamattomasti."
 
-#: src/cryptsetup.c:566
+#: src/cryptsetup.c:419
 msgid "memory allocation error in action_luksFormat"
 msgstr "muistivarausvirhe kohteessa action_luksFormat"
 
-#: src/cryptsetup.c:578
+#: src/cryptsetup.c:431 src/cryptsetup_reencrypt.c:522
+#: src/cryptsetup_reencrypt.c:557
 msgid "No known cipher specification pattern detected.\n"
 msgstr "Havaittu tuntematon salakirjoitusmenetelmämäärittelymalli.\n"
 
-#: src/cryptsetup.c:584
+#: src/cryptsetup.c:437
 #, c-format
 msgid "Cannot use %s as on-disk header.\n"
-msgstr "Ei voida käyttää %s paikallisena levyotsakkeena.\n"
+msgstr "Kohteen %s käyttö paikallisena levyotsakkeena epäonnistui.\n"
 
-#: src/cryptsetup.c:599 src/cryptsetup.c:1030
+#: src/cryptsetup.c:452 src/cryptsetup.c:885
 msgid "Enter LUKS passphrase: "
 msgstr "Kirjoita LUKS-salasanalause: "
 
-#: src/cryptsetup.c:654
+#: src/cryptsetup.c:509
 msgid "Reduced data offset is allowed only for detached LUKS header.\n"
 msgstr "Pienennetty tiedosiirrososoite sallitaan vain irrotetulle LUKS-otsakkeelle.\n"
 
-#: src/cryptsetup.c:755 src/cryptsetup.c:810
+#: src/cryptsetup.c:610 src/cryptsetup.c:665
 #, c-format
 msgid "Key slot %d selected for deletion.\n"
 msgstr "Avainväli %d valittu poistoa varten.\n"
 
-#: src/cryptsetup.c:758
+#: src/cryptsetup.c:613
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
 msgstr "Avain %d ei ole käytössä. Ei voida pyyhkiä pois.\n"
 
-#: src/cryptsetup.c:766 src/cryptsetup.c:813
+#: src/cryptsetup.c:621 src/cryptsetup.c:668
 msgid "This is the last keyslot. Device will become unusable after purging this key."
 msgstr "Tämä on viimeinen avainväli. Laite tulee käyttökelvottomaksi tämän avaimen poistamisen jälkeen."
 
-#: src/cryptsetup.c:767
+#: src/cryptsetup.c:622
 msgid "Enter any remaining LUKS passphrase: "
 msgstr "Kirjoita mikä tahansa jäljellä oleva LUKS-salasanalause: "
 
-#: src/cryptsetup.c:795
+#: src/cryptsetup.c:650
 msgid "Enter LUKS passphrase to be deleted: "
 msgstr "Kirjoita poistettava LUKS-salasanalause: "
 
-#: src/cryptsetup.c:898
+#: src/cryptsetup.c:753
 msgid "Enter LUKS passphrase to be changed: "
 msgstr "Kirjoita vaihdettava LUKS-salasanalause: "
 
-#: src/cryptsetup.c:935
+#: src/cryptsetup.c:790 src/cryptsetup_reencrypt.c:970
 msgid "Enter new LUKS passphrase: "
 msgstr "Kirjoita uusi LUKS-salasanalause: "
 
-#: src/cryptsetup.c:949
+#: src/cryptsetup.c:804
 #, c-format
 msgid "Key slot %d changed.\n"
 msgstr "Avaivälin %d vaihtui.\n"
 
-#: src/cryptsetup.c:955
+#: src/cryptsetup.c:810
 #, c-format
 msgid "Replaced with key slot %d.\n"
 msgstr "Korvattiin avainvälillä %d.\n"
 
-#: src/cryptsetup.c:960
+#: src/cryptsetup.c:815
 msgid "Failed to swap new key slot.\n"
 msgstr "Uuden avainvälin vaihtaminen epäonnistui.\n"
 
-#: src/cryptsetup.c:1019
+#: src/cryptsetup.c:874
 msgid ""
 "LUKS header dump with volume key is sensitive information\n"
 "which allows access to encrypted partition without passphrase.\n"
@@ -816,11 +897,11 @@ msgstr ""
 "joka sallii pääsyn salatulle osiolle ilman salasanaa.\n"
 "Tämä vedos pitäisi aina tallentaa salattuna turvallisessa paikasssa."
 
-#: src/cryptsetup.c:1124 src/cryptsetup.c:1145
+#: src/cryptsetup.c:979 src/cryptsetup.c:1000
 msgid "Option --header-backup-file is required.\n"
 msgstr "Vaaditaan valitsin --header-backup-file.\n"
 
-#: src/cryptsetup.c:1183
+#: src/cryptsetup.c:1027 src/veritysetup.c:328
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -828,7 +909,7 @@ msgstr ""
 "\n"
 "<toiminto> on yksi seuraavista:\n"
 
-#: src/cryptsetup.c:1189
+#: src/cryptsetup.c:1033
 #, c-format
 msgid ""
 "\n"
@@ -843,7 +924,7 @@ msgstr ""
 "<avainväli> on LUKS-avainväli muokattavaksi\n"
 "<avaintiedosto> valinnainen avaintiedosto uudelle avaimelle luksAddKey-toimintoa varten\n"
 
-#: src/cryptsetup.c:1196
+#: src/cryptsetup.c:1040
 #, c-format
 msgid ""
 "\n"
@@ -855,7 +936,7 @@ msgstr ""
 "\tAvaintiedoston enimmäiskoko: %d kilobittiä, vuorovaikutteisen\n"
 "\tsalasanalauseen enimmäispituus %d (merkkiä)\n"
 
-#: src/cryptsetup.c:1201
+#: src/cryptsetup.c:1045
 #, c-format
 msgid ""
 "\n"
@@ -870,190 +951,197 @@ msgstr ""
 "\tplain-tyyppi: %s, Avain: %d bittiä, Salasanatiivistys: %s\n"
 "\tLUKS1: %s, Avain: %d bittiä, LUKS-otsaketiivistys: %s, RNG: %s\n"
 
-#: src/cryptsetup.c:1269
+#: src/cryptsetup.c:1085 src/veritysetup.c:368 src/cryptsetup_reencrypt.c:1135
 msgid "Show this help message"
 msgstr "Näytä tämä opastesanoma"
 
-#: src/cryptsetup.c:1270
+#: src/cryptsetup.c:1086 src/veritysetup.c:369 src/cryptsetup_reencrypt.c:1136
 msgid "Display brief usage"
 msgstr "Näytä lyhyt käyttöopaste"
 
-#: src/cryptsetup.c:1274
+#: src/cryptsetup.c:1090 src/veritysetup.c:373 src/cryptsetup_reencrypt.c:1140
 msgid "Help options:"
 msgstr "Opastevalitsimet:"
 
-#: src/cryptsetup.c:1275
+#: src/cryptsetup.c:1091 src/veritysetup.c:374 src/cryptsetup_reencrypt.c:1141
 msgid "Print package version"
 msgstr "Tulosta pakkausversio"
 
-#: src/cryptsetup.c:1276
+#: src/cryptsetup.c:1092 src/veritysetup.c:375 src/cryptsetup_reencrypt.c:1142
 msgid "Shows more detailed error messages"
 msgstr "Näyttää yksityiskohtaisemmat virheilmoitukset"
 
-#: src/cryptsetup.c:1277
+#: src/cryptsetup.c:1093 src/veritysetup.c:376 src/cryptsetup_reencrypt.c:1143
 msgid "Show debug messages"
 msgstr "Näytä vianjäljityssanomat"
 
-#: src/cryptsetup.c:1278
+#: src/cryptsetup.c:1094 src/cryptsetup_reencrypt.c:1145
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Salakirjoitusmenetelmä, jota käytetään salaamaan levy (katso /proc/crypto)"
 
-#: src/cryptsetup.c:1279
+#: src/cryptsetup.c:1095 src/cryptsetup_reencrypt.c:1147
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "Tiivisteavain, jota käytetään salausavaimen luomiseen salasanalauseesta"
 
-#: src/cryptsetup.c:1280
+#: src/cryptsetup.c:1096
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Todentaa salasanalauseen kysymällä kahdesti"
 
-#: src/cryptsetup.c:1281
+#: src/cryptsetup.c:1097 src/cryptsetup_reencrypt.c:1148
 msgid "Read the key from a file."
 msgstr "Lue avain tiedostosta."
 
-#: src/cryptsetup.c:1282
+#: src/cryptsetup.c:1098
 msgid "Read the volume (master) key from file."
 msgstr "Lue taltion (pää)avain tiedostosta."
 
-#: src/cryptsetup.c:1283
+#: src/cryptsetup.c:1099
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "Vedosta taltion (pää)avain eikä avainvälien tiedot."
 
-#: src/cryptsetup.c:1284
+#: src/cryptsetup.c:1100 src/cryptsetup_reencrypt.c:1146
 msgid "The size of the encryption key"
 msgstr "Salausavaimen koko"
 
-#: src/cryptsetup.c:1284
+#: src/cryptsetup.c:1100 src/cryptsetup_reencrypt.c:1146
 msgid "BITS"
 msgstr "BITTIÄ"
 
-#: src/cryptsetup.c:1285
+#: src/cryptsetup.c:1101 src/cryptsetup_reencrypt.c:1159
 msgid "Limits the read from keyfile"
 msgstr "Avaintiedostosta luettavat rajat"
 
-#: src/cryptsetup.c:1285 src/cryptsetup.c:1286 src/cryptsetup.c:1287
-#: src/cryptsetup.c:1288
+#: src/cryptsetup.c:1101 src/cryptsetup.c:1102 src/cryptsetup.c:1103
+#: src/cryptsetup.c:1104 src/veritysetup.c:379 src/veritysetup.c:380
+#: src/veritysetup.c:382 src/cryptsetup_reencrypt.c:1158
+#: src/cryptsetup_reencrypt.c:1159 src/cryptsetup_reencrypt.c:1160
+#: src/cryptsetup_reencrypt.c:1161
 msgid "bytes"
 msgstr "tavua"
 
-#: src/cryptsetup.c:1286
+#: src/cryptsetup.c:1102 src/cryptsetup_reencrypt.c:1158
 msgid "Number of bytes to skip in keyfile"
 msgstr "Avaintiedostossa ohitettavien tavujen määrä"
 
-#: src/cryptsetup.c:1287
+#: src/cryptsetup.c:1103
 msgid "Limits the read from newly added keyfile"
 msgstr "Äskettäin lisätystä avaintiedostosta luetut rajat"
 
-#: src/cryptsetup.c:1288
+#: src/cryptsetup.c:1104
 msgid "Number of bytes to skip in newly added keyfile"
 msgstr "Ohitettu tavumäärä äskettäin lisätyssä avaintiedostossa"
 
-#: src/cryptsetup.c:1289
+#: src/cryptsetup.c:1105
 msgid "Slot number for new key (default is first free)"
 msgstr "Välinumero uudelle avaimelle (oletus on ensimmäinen vapaa)"
 
-#: src/cryptsetup.c:1290
+#: src/cryptsetup.c:1106
 msgid "The size of the device"
 msgstr "Laitteen koko"
 
-#: src/cryptsetup.c:1290 src/cryptsetup.c:1291 src/cryptsetup.c:1292
-#: src/cryptsetup.c:1298
+#: src/cryptsetup.c:1106 src/cryptsetup.c:1107 src/cryptsetup.c:1108
+#: src/cryptsetup.c:1114
 msgid "SECTORS"
 msgstr "SEKTORIA"
 
-#: src/cryptsetup.c:1291
+#: src/cryptsetup.c:1107
 msgid "The start offset in the backend device"
 msgstr "Alkusiirrososoite taustalaitteessa"
 
-#: src/cryptsetup.c:1292
+#: src/cryptsetup.c:1108
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr "Kuinka monta salaustietojen sektoria ohitetaan alussa"
 
-#: src/cryptsetup.c:1293
+#: src/cryptsetup.c:1109
 msgid "Create a readonly mapping"
 msgstr "Luo kirjoitussuojattu kuvaus"
 
-#: src/cryptsetup.c:1294
+#: src/cryptsetup.c:1110 src/cryptsetup_reencrypt.c:1149
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "PBKDF2-iterointiaika kohteelle LUKS (millisekunneissa)"
 
-#: src/cryptsetup.c:1294
+#: src/cryptsetup.c:1110 src/cryptsetup_reencrypt.c:1149
 msgid "msecs"
 msgstr "ms"
 
-#: src/cryptsetup.c:1295
+#: src/cryptsetup.c:1111 src/cryptsetup_reencrypt.c:1150
 msgid "Do not ask for confirmation"
 msgstr "Älä pyydä vahvistusta"
 
-#: src/cryptsetup.c:1296
+#: src/cryptsetup.c:1112
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "Aikakatkaisu vuorovaikutteiselle salasanalausekyselylle (sekunteina)"
 
-#: src/cryptsetup.c:1296
+#: src/cryptsetup.c:1112
 msgid "secs"
 msgstr "s"
 
-#: src/cryptsetup.c:1297
+#: src/cryptsetup.c:1113 src/cryptsetup_reencrypt.c:1151
 msgid "How often the input of the passphrase can be retried"
 msgstr "Kuinka usein salasanasyötettä voidaan yrittää uudelleen"
 
-#: src/cryptsetup.c:1298
+#: src/cryptsetup.c:1114
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "Tasaa tietosisältö osoitteessa <n> sektorirajoihin - kohdetta luksFormat varten"
 
-#: src/cryptsetup.c:1299
+#: src/cryptsetup.c:1115
 msgid "File with LUKS header and keyslots backup."
 msgstr "Tiedosto LUKS-otsakkeella ja avainvälien varmuuskopiolla."
 
-#: src/cryptsetup.c:1300
+#: src/cryptsetup.c:1116 src/cryptsetup_reencrypt.c:1152
 msgid "Use /dev/random for generating volume key."
 msgstr "Käytä /dev/random taltioavaimen synnyttämiseen."
 
-#: src/cryptsetup.c:1301
+#: src/cryptsetup.c:1117 src/cryptsetup_reencrypt.c:1153
 msgid "Use /dev/urandom for generating volume key."
 msgstr "Käytä /dev/urandom taltioavaimen synnyttämiseen."
 
-#: src/cryptsetup.c:1302
+#: src/cryptsetup.c:1118
 msgid "Share device with another non-overlapping crypt segment."
 msgstr "Jaa laite toisen ei-päällekkäisen salaussegmentin kanssa."
 
-#: src/cryptsetup.c:1303
+#: src/cryptsetup.c:1119 src/veritysetup.c:385
 msgid "UUID for device to use."
 msgstr "UUID laitteelle käytettäväksi."
 
-#: src/cryptsetup.c:1304
+#: src/cryptsetup.c:1120
 msgid "Allow discards (aka TRIM) requests for device."
 msgstr "Salli hylkäys(lempinimeltään TRIM)-pyynnöt laitteelle."
 
-#: src/cryptsetup.c:1305
+#: src/cryptsetup.c:1121
 msgid "Device or file with separated LUKS header."
 msgstr "Laite tai tiedosto erillisellä LUKS-otsakkeella."
 
-#: src/cryptsetup.c:1324
-msgid "[OPTION...] <action> <action-specific>]"
-msgstr "[VALITSIN...] <toiminto> <toimintokohtainen>]"
+#: src/cryptsetup.c:1122
+msgid "Do not activate device, just check passphrase."
+msgstr "Älä aktivoi laitetta, tarkista vain salasanalauseke."
 
-#: src/cryptsetup.c:1364
+#: src/cryptsetup.c:1140 src/veritysetup.c:402
+msgid "[OPTION...] <action> <action-specific>"
+msgstr "[VALITSIN...] <toiminto> <toimintokohtainen>"
+
+#: src/cryptsetup.c:1180 src/veritysetup.c:439
 msgid "Argument <action> missing."
 msgstr "Argumentti <toiminto> puuttuu."
 
-#: src/cryptsetup.c:1370
+#: src/cryptsetup.c:1186 src/veritysetup.c:445
 msgid "Unknown action."
 msgstr "Tuntematon toiminto."
 
-#: src/cryptsetup.c:1385
+#: src/cryptsetup.c:1201 src/veritysetup.c:460
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: vaatii %s argumentteina"
 
-#: src/cryptsetup.c:1394
+#: src/cryptsetup.c:1210
 msgid "Option --shared is allowed only for create operation.\n"
 msgstr "Valitsin --shared sallitaan vain create-toiminnolle.\n"
 
-#: src/cryptsetup.c:1403
+#: src/cryptsetup.c:1218
 msgid "Option --allow-discards is allowed only for luksOpen, loopaesOpen and create operation.\n"
 msgstr "Valitsin --allow-discards sallitaan vain luksOpen-, loopaesOpen- ja create-toiminnoille .\n"
 
-#: src/cryptsetup.c:1412
+#: src/cryptsetup.c:1226
 msgid ""
 "Option --key-size is allowed only for luksFormat, create and loopaesOpen.\n"
 "To limit read from keyfile use --keyfile-size=(bytes)."
@@ -1061,45 +1149,414 @@ msgstr ""
 "Valitsin --key-size sallitaan vain muodolle luksFormat, create- ja loopaesOpen-komennoille.\n"
 "Käytä lukemisen rajoittamiseksi avaintiedostosta valitsinta --keyfile-size=(tavua)."
 
-#: src/cryptsetup.c:1419
+#: src/cryptsetup.c:1233
+msgid "Option --test-passphrase is allowed only for luksOpen.\n"
+msgstr "Valitsin --test-passphrase sallitaan vain luksOpen-muodolle.\n"
+
+#: src/cryptsetup.c:1238 src/cryptsetup_reencrypt.c:1221
 msgid "Key size must be a multiple of 8 bits"
 msgstr "Avainkoon on oltava 8-bitin monikerta"
 
-#: src/cryptsetup.c:1426
+#: src/cryptsetup.c:1245 src/cryptsetup_reencrypt.c:1226
 msgid "Key slot is invalid."
 msgstr "Avainväli on virheellinen."
 
-#: src/cryptsetup.c:1433
+#: src/cryptsetup.c:1252
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "Valitsin --key-file on ensisijainen määritellylle avaintiedostoargumentille.\n"
 
-#: src/cryptsetup.c:1441
+#: src/cryptsetup.c:1260 src/veritysetup.c:467 src/cryptsetup_reencrypt.c:1210
 msgid "Negative number for option not permitted."
 msgstr "Valitsimelle ei sallita negatiivista numeroa."
 
-#: src/cryptsetup.c:1446
+#: src/cryptsetup.c:1264 src/cryptsetup_reencrypt.c:1204
+#: src/cryptsetup_reencrypt.c:1230
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "Vain yksi --use-[u]random -valitsin on sallittu."
 
-#: src/cryptsetup.c:1450
+#: src/cryptsetup.c:1268
 msgid "Option --use-[u]random is allowed only for luksFormat."
 msgstr "Valitsin --use-[u]random sallitaan vain luksFormat-muodolle."
 
-#: src/cryptsetup.c:1454
+#: src/cryptsetup.c:1272
 msgid "Option --uuid is allowed only for luksFormat and luksUUID."
 msgstr "Valitsin --uuid sallitaan vain luksFormat-muodolle ja luksUUID-muodolle."
 
-#: src/cryptsetup.c:1458
+#: src/cryptsetup.c:1276
 msgid "Option --align-payload is allowed only for luksFormat."
 msgstr "Valitsin --align-payload sallitaan vain luksFormat-muodolle."
 
-#: src/cryptsetup.c:1463
+#: src/cryptsetup.c:1281
 msgid "Option --skip is supported only for create and loopaesOpen commands.\n"
 msgstr "Valitsinta --skip tuetaan vain create- ja loopaesOpen-komennoille .\n"
 
-#: src/cryptsetup.c:1468
+#: src/cryptsetup.c:1286
 msgid "Option --offset is supported only for create and loopaesOpen commands.\n"
 msgstr "Valitsinta --offset tuetaan vain create- ja loopaesOpen-komennoille .\n"
+
+#: src/veritysetup.c:56
+msgid "Invalid salt string specified.\n"
+msgstr "Määritelty virheellinen satunnaisarvosiemenmerkkijono.\n"
+
+#: src/veritysetup.c:89
+#, c-format
+msgid "Cannot create hash image %s for writing.\n"
+msgstr "Tiivistevedoksen %s luominen kirjoittamista varten epäonnistui.\n"
+
+#: src/veritysetup.c:148
+msgid "Invalid root hash string specified.\n"
+msgstr "Virheellinen root-tiivistemerkkijono määritelty.\n"
+
+#: src/veritysetup.c:308
+msgid "<data_device> <hash_device>"
+msgstr "<data_laite> <tiiviste_laite>"
+
+#: src/veritysetup.c:308
+msgid "format device"
+msgstr "pohjusta laite"
+
+#: src/veritysetup.c:309
+msgid "<data_device> <hash_device> <root_hash>"
+msgstr "<data_laite> <tiiviste_laite> <root_tiiviste>"
+
+#: src/veritysetup.c:309
+msgid "verify device"
+msgstr "todenna laite"
+
+#: src/veritysetup.c:310
+msgid "<name> <data_device> <hash_device> <root_hash>"
+msgstr "<nimi> <data_laite> <tiiviste_laite> <root_tiiviste>"
+
+#: src/veritysetup.c:310
+msgid "create active device"
+msgstr "luo aktiivilaite"
+
+#: src/veritysetup.c:311
+msgid "remove (deactivate) device"
+msgstr "poista (deaktivoi) laite"
+
+#: src/veritysetup.c:312
+msgid "show active device status"
+msgstr "näytä aktiivilaitteen tila"
+
+#: src/veritysetup.c:313
+msgid "<hash_device>"
+msgstr "<tiiviste_laite>"
+
+#: src/veritysetup.c:313
+msgid "show on-disk information"
+msgstr "näytä paikallisen levyn tiedot"
+
+#: src/veritysetup.c:332
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<data_device> is the data device\n"
+"<hash_device> is the device containing verification data\n"
+"<root_hash> hash of the root node on <hash_device>\n"
+msgstr ""
+"\n"
+"<nimi> on kohteen alle %s luotava laite\n"
+"<data_laite> on datalaite\n"
+"<tiiviste_laite> on todennusdataa sisältävä laite\n"
+"<root_tiiviste> root-solmun tiiviste kohteella <tiiviste_laite>\n"
+
+#: src/veritysetup.c:339
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in dm-verity parameters:\n"
+"\tHash: %s, Data block (bytes): %u, Hash block (bytes): %u, Salt size: %u, Hash format: %u\n"
+msgstr ""
+"\n"
+"Käännetyt dm-verity oletusparametrit:\n"
+"\tTiiviste: %s, Data-lohko (tavua): %u, Tiivistelohko (tavua): %u, Satunnaislukuarvosiemenen koko: %u, Tiivistemuoto: %u\n"
+
+#: src/veritysetup.c:377
+msgid "Do not use verity superblock"
+msgstr "Älä käytä verity-superlohkoa"
+
+#: src/veritysetup.c:378
+msgid "Format type (1 - normal, 0 - original Chrome OS)"
+msgstr "Muototyyppi (1 - normaali, 0 - alkuperäinen Chrome OS)"
+
+#: src/veritysetup.c:378
+msgid "number"
+msgstr "numero"
+
+#: src/veritysetup.c:379
+msgid "Block size on the data device"
+msgstr "Data-laitteen lohkokoko"
+
+#: src/veritysetup.c:380
+msgid "Block size on the hash device"
+msgstr "Tiivistelaitteen lohkokoko"
+
+#: src/veritysetup.c:381
+msgid "The number of blocks in the data file"
+msgstr "Data-tiedoston lohkojen määrä"
+
+#: src/veritysetup.c:381
+msgid "blocks"
+msgstr "lohkoa"
+
+#: src/veritysetup.c:382
+msgid "Starting offset on the hash device"
+msgstr "Tiivistelaitteen alkusiirrososoite"
+
+#: src/veritysetup.c:383
+msgid "Hash algorithm"
+msgstr "Tiivistealgoritmi"
+
+#: src/veritysetup.c:383
+msgid "string"
+msgstr "merkkijono"
+
+#: src/veritysetup.c:384
+msgid "Salt"
+msgstr "Satunnaisarvosiemenluku"
+
+#: src/veritysetup.c:384
+msgid "hex string"
+msgstr "heksadesimaalimerkkijono"
+
+#: src/cryptsetup_reencrypt.c:164
+#, c-format
+msgid "Cannot exclusively open %s, device in use.\n"
+msgstr "Kohteen %s avaaminen eksklusiivisesti epäonnistui, laite on käytössä.\n"
+
+#: src/cryptsetup_reencrypt.c:168
+#, c-format
+msgid "Cannot open device %s\n"
+msgstr "Laitteen %s avaus epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:178 src/cryptsetup_reencrypt.c:406
+#: src/cryptsetup_reencrypt.c:822
+msgid "Allocation of aligned memory failed.\n"
+msgstr "Tasatun muistin varaaminen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:185
+#, c-format
+msgid "Cannot read device %s.\n"
+msgstr "Laitteen %s lukeminen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:196
+#, c-format
+msgid "Marking LUKS device %s unusable.\n"
+msgstr "Merkitään LUKS-laite %s käyttökelvottomaksi.\n"
+
+#: src/cryptsetup_reencrypt.c:201
+#, c-format
+msgid "Marking LUKS device %s usable.\n"
+msgstr "Merkitään LUKS-laite %s käyttökelpoiseksi.\n"
+
+#: src/cryptsetup_reencrypt.c:217
+#, c-format
+msgid "Cannot write device %s.\n"
+msgstr "Laitteelle %s kirjoittaminen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:298
+msgid "Cannot write reencryption log file.\n"
+msgstr "Uudelleensalauslokitiedoston kirjoittaminen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:347
+msgid "Cannot read reencryption log file.\n"
+msgstr "Uudelleensalauslokitiedoston lukeminen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:397
+#, c-format
+msgid "Log file %s exists, resuming reencryption.\n"
+msgstr "Lokitiedosto %s on olemassa, aloitetaan salaus uudelleen.\n"
+
+#: src/cryptsetup_reencrypt.c:451
+msgid "Activation of temporary devices failed.\n"
+msgstr "Tilapäisten laitteiden aktivoiminen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:476
+#, c-format
+msgid "New LUKS header for device %s created.\n"
+msgstr "Luotiin uusi LUKS-otsake laitteelle %s.\n"
+
+#: src/cryptsetup_reencrypt.c:484
+#, c-format
+msgid "Activated keyslot %i.\n"
+msgstr "Aktivoitiin avainväli %i.\n"
+
+#: src/cryptsetup_reencrypt.c:508
+#, c-format
+msgid "LUKS header backup of device %s created.\n"
+msgstr "Laitteen %s LUKS-otsakkeen varmuuskopio luotu.\n"
+
+#: src/cryptsetup_reencrypt.c:536
+msgid "Creation of LUKS backup headers failed.\n"
+msgstr "LUKS-varmuuskopio-otsakkeiden luominen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:631
+#, c-format
+msgid "Cannot restore LUKS header on device %s.\n"
+msgstr "LUKS-otsakkeen palautus laitteeseen %s epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:633
+#, c-format
+msgid "LUKS header on device %s restored.\n"
+msgstr "LUKS-otsake palautettu laitteessa %s.\n"
+
+#: src/cryptsetup_reencrypt.c:665
+#, c-format
+msgid "Progress: %5.1f%%, ETA %02llu:%02llu, %4llu MiB written, speed %5.1f MiB/s%s"
+msgstr "Eteneminen: %5.1f%%, ETA %02llu:%02llu, %4llu Mebitavua kirjoitettu, nopeus %5.1f Mebitavua/s%s"
+
+#: src/cryptsetup_reencrypt.c:681 src/cryptsetup_reencrypt.c:757
+msgid "Cannot seek to device offset.\n"
+msgstr "Laitteen siirrososoitteen etsintä epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:803 src/cryptsetup_reencrypt.c:809
+msgid "Cannot open temporary LUKS header file.\n"
+msgstr "Tilapäisen LUKS-otsaketiedoston avaaminen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:815
+msgid "Cannot get device size.\n"
+msgstr "Laitekoon hakeminen epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:839
+msgid "Interrupted by a signal.\n"
+msgstr "Signaalin keskeyttämä.\n"
+
+#: src/cryptsetup_reencrypt.c:841
+msgid "IO error during reencryption.\n"
+msgstr "Siirräntävirhe uudelleensalauksen aikana.\n"
+
+#: src/cryptsetup_reencrypt.c:942
+msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
+msgstr "Avaintiedostoa voidaan käyttää vain valitsimen --key-slot kanssa tai täsmälleen yhden avainvälin ollessa aktiivisena.\n"
+
+#: src/cryptsetup_reencrypt.c:984
+msgid "Enter any LUKS passphrase: "
+msgstr "Kirjoita mikä tahansa LUKS-salasanalause: "
+
+#: src/cryptsetup_reencrypt.c:991
+#, c-format
+msgid "Enter LUKS passphrase for key slot %u: "
+msgstr "Kirjoita LUKS-salasanalause avainvälille %u: "
+
+#: src/cryptsetup_reencrypt.c:1040
+msgid "Cannot open reencryption log file.\n"
+msgstr "Uudelleensalauslokitiedoston avaus epäonnistui.\n"
+
+#: src/cryptsetup_reencrypt.c:1144
+msgid "Reencryption block size"
+msgstr "Uudelleensalauslohkon koko"
+
+#: src/cryptsetup_reencrypt.c:1144
+msgid "MiB"
+msgstr "Mebitavua"
+
+#: src/cryptsetup_reencrypt.c:1154
+msgid "Use direct-io when accesing devices."
+msgstr "Käytä direct-io -siirräntää laitteisiin yhdistettäessä."
+
+#: src/cryptsetup_reencrypt.c:1155
+msgid "Use fsync after each block."
+msgstr "Käytä fsync-komentoa jokaisen lohkon jälkeen."
+
+#: src/cryptsetup_reencrypt.c:1156
+msgid "Update log file after every block."
+msgstr "Päivitä lokitiedosto jokaisen lohkon jälkeen."
+
+#: src/cryptsetup_reencrypt.c:1157
+msgid "Use only this slot (others will be disabled)."
+msgstr "Käytä vain tätä väliä (muut ovat pois käytöstä)."
+
+#: src/cryptsetup_reencrypt.c:1160
+msgid "Reduce data device size (move data offset). DANGEROUS!"
+msgstr "Pienennä datalaitekokoa (siirrä datasiirrososoitetta). VAARALLINEN!"
+
+#: src/cryptsetup_reencrypt.c:1161
+msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
+msgstr "Käytä vain määriteltyä laitekokoa (ohita laitteen loppu). VAARALLINEN!"
+
+#: src/cryptsetup_reencrypt.c:1162
+msgid "Create new header on not encrypted device."
+msgstr "Luo uusi otsake ei-salattuun laitteeseen."
+
+#: src/cryptsetup_reencrypt.c:1178
+msgid "[OPTION...] <device>"
+msgstr "[VALITSIN...] <laite>"
+
+#: src/cryptsetup_reencrypt.c:1192
+msgid "WARNING: this is experimental code, it can completely break your data.\n"
+msgstr "VAROITUS: tämä on kokeellista koodia, se voi rikkoa tietosi kokonaan.\n"
+
+#: src/cryptsetup_reencrypt.c:1193
+#, c-format
+msgid "Reencryption will change: volume key%s%s%s%s.\n"
+msgstr "Uudelleensalauas muuttuu: taltio key%s%s%s%s.\n"
+
+#: src/cryptsetup_reencrypt.c:1194
+msgid ", set hash to "
+msgstr ", aseta tiivisteeksi "
+
+#: src/cryptsetup_reencrypt.c:1195
+msgid ", set cipher to "
+msgstr ", aseta salaukseksi "
+
+#: src/cryptsetup_reencrypt.c:1200
+msgid "Argument required."
+msgstr "Argumentti vaadittu."
+
+#: src/cryptsetup_reencrypt.c:1216
+msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
+msgstr "Vain arvot välillä 1 mebitavua ja 64 mebitavua ovat sallittuja uudelleensalauslohkokokoja."
+
+#: src/cryptsetup_reencrypt.c:1235 src/cryptsetup_reencrypt.c:1240
+msgid "Invalid device size specification."
+msgstr "Virheellinen laitekokomäärittely."
+
+#: src/cryptsetup_reencrypt.c:1243
+msgid "Maximum device reduce size is 64 MiB."
+msgstr "Maksimi laitepienennyskoko on 64 mebitavua."
+
+#: src/cryptsetup_reencrypt.c:1246
+msgid "Reduce size must be multiple of 512 bytes sector."
+msgstr "Pienennyskoon on oltava 512-tavuisen sektorin monikerta."
+
+#: src/cryptsetup_reencrypt.c:1250
+msgid "Option --new must be used together with --reduce-device-size."
+msgstr "Valitsinta --new on käytettävä yhdessä valitsimen --reduce-device-size kanssa."
+
+#: src/utils_tools.c:114
+msgid "Command successful.\n"
+msgstr "Komento onnistui.\n"
+
+#: src/utils_tools.c:128
+#, c-format
+msgid "Command failed with code %i"
+msgstr "Komento epäonnistui koodilla %i"
+
+#~ msgid "Cannot open device %s for %s%s access.\n"
+#~ msgstr "Ei voida avata laitetta %s kohteeseen %s%s pääsyä varten.\n"
+
+#~ msgid "exclusive "
+#~ msgstr "yksinomainen "
+
+#~ msgid "writable"
+#~ msgstr "kirjoitettava"
+
+#~ msgid "read-only"
+#~ msgstr "kirjoitussuojattu"
+
+#~ msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
+#~ msgstr "VAROITUS!!! Mahdollisesti turvaton muisti. Oletko pääkäyttäjä?\n"
+
+#~ msgid "Unable to obtain sector size for %s"
+#~ msgstr "Ei kyetä samaan sektorikokoa kohteelle %s"
+
+#~ msgid "Failed to write to key storage.\n"
+#~ msgstr "Avainsäiliöön kirjoittaminen epäonnistui.\n"
+
+#~ msgid "Failed to read from key storage.\n"
+#~ msgstr "Avainsäiliöstä lukeminen epäonnistui.\n"
 
 #~ msgid "Device %s is busy.\n"
 #~ msgstr "Laite %s on varattu.\n"
