@@ -953,7 +953,7 @@ static void AddDeviceLuks(void)
 	};
 	char key[128], key2[128];
 
-	const char *passphrase = "blabla";
+	const char *passphrase = "blabla", *passphrase2 = "nsdkFI&Y#.sd";
 	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
 	const char *cipher = "aes";
@@ -1122,6 +1122,11 @@ static void AddDeviceLuks(void)
 	OK_(crypt_keyslot_destroy(cd, 7));
 	EQ_(CRYPT_SLOT_INACTIVE, crypt_keyslot_status(cd, 7));
 	EQ_(CRYPT_SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 6));
+
+	EQ_(7, crypt_keyslot_change_by_passphrase(cd, 6, 7, passphrase, strlen(passphrase), passphrase2, strlen(passphrase2)));
+	EQ_(CRYPT_SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 7));
+	EQ_(7, crypt_activate_by_passphrase(cd, NULL, 7, passphrase2, strlen(passphrase2), 0));
+	EQ_(6, crypt_keyslot_change_by_passphrase(cd, CRYPT_ANY_SLOT, 6, passphrase2, strlen(passphrase2), passphrase, strlen(passphrase)));
 
 	EQ_(6, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
 	OK_(crypt_volume_key_verify(cd, key2, key_size));
