@@ -397,8 +397,12 @@ using LRW or XTS encryption modes.
 The \fBtcryptDump\fR command should work for all recognized TCRYPT devices
 and doesn't require superuser privilege.
 
+To map system device (device with boot loader where the whole encrypted
+system resides) use \fB\-\-tcrypt-system\fR option. Use the whole
+device not the system partition as the device parameter.
+
 To use hidden header (and map hidden device, if available),
-use \fB\-\-hidden\fR option.
+use \fB\-\-tcrypt-hidden\fR option.
 .PP
 \fIopen\fR \-\-type tcrypt <device> <name>
 .br
@@ -406,8 +410,8 @@ use \fB\-\-hidden\fR option.
 .IP
 Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up a mapping <name>.
 
-\fB<options>\fR can be [\-\-key-file, \-\-hidden, \-\-readonly,
-\-\-test-passphrase].
+\fB<options>\fR can be [\-\-key-file, \-\-tcrypt-hidden, \-\-tcrypt-system,
+\-\-readonly, \-\-test-passphrase].
 
 The keyfile parameter allows combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
@@ -425,7 +429,8 @@ a passphrase.
 This means that if the master key is compromised, the whole device has
 to be erased to prevent further access. Use this option carefully.
 
-\fB<options>\fR can be [\-\-dump-master-key, \-\-key-file, \-\-hidden].
+\fB<options>\fR can be [\-\-dump-master-key, \-\-key-file, \-\-tcrypt-hidden,
+\-\-tcrypt-system].
 
 The keyfile parameter allows combination of file content with the
 passphrase and can be repeated.

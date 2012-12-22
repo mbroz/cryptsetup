@@ -72,13 +72,13 @@ done
 echo "HEADER CHECK (HIDDEN)"
 for file in $(ls $TST_DIR/tc_*-hidden) ; do
 	echo -n " $file (hidden)"
-	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptDump --hidden $file >/dev/null || fail
+	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptDump --tcrypt-hidden $file >/dev/null || fail
 	echo " [OK]"
 done
 
 echo "HEADER KEYFILES CHECK"
 for file in $(ls $TST_DIR/tck_*) ; do
-	echo -n " $file (hidden)"
+	echo -n " $file"
 	echo $PASSWORD | $CRYPTSETUP tcryptDump -d $TST_DIR/keyfile1 -d $TST_DIR/keyfile2 $file >/dev/null || fail
 	echo " [OK]"
 done
@@ -102,7 +102,7 @@ done
 echo "ACTIVATION FS UUID (HIDDEN) CHECK (LRW/XTS modes only)"
 for file in $(ls $TST_DIR/tc_*-lrw-*-hidden $TST_DIR/tc_*-xts-*-hidden) ; do
 	echo -n " $file"
-	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r $file $MAP --hidden || fail
+	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r $file $MAP --tcrypt-hidden || fail
 	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
 	$CRYPTSETUP remove $MAP || fail
 	[ "$UUID" != "CAFE-BABE" ] && fail "UUID check failed."

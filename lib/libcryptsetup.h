@@ -396,6 +396,8 @@ struct crypt_params_verity {
 #define CRYPT_TCRYPT_HIDDEN_HEADER   (1 << 1)
 /** Try to load backup header */
 #define CRYPT_TCRYPT_BACKUP_HEADER   (1 << 2)
+/** Device contains encrypted system (with boot loader) */
+#define CRYPT_TCRYPT_SYSTEM_HEADER   (1 << 3)
 
 struct crypt_params_tcrypt {
 	const char *passphrase;    /**< passphrase to unlock header (input only) */

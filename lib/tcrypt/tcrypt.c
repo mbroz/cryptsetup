@@ -568,7 +568,11 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 	}
 
 	r = -EIO;
-	if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
+	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
+		if (lseek(devfd, TCRYPT_HDR_SYSTEM_OFFSET, SEEK_SET) >= 0 &&
+		    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
+			r = TCRYPT_init_hdr(cd, hdr, params);
+	} else if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
 		if (params->flags & CRYPT_TCRYPT_BACKUP_HEADER) {
 			if (lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET_BCK, SEEK_END) >= 0 &&
 			    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
@@ -854,7 +858,11 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 
 	/* No real header loaded, initialized by active device */
 	if (!hdr->d.version)
-		return hdr->d.mk_offset / hdr->d.sector_size;
+		goto hdr_offset;
+
+	/* Mapping through whole device, not partition! */
+	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
+		goto hdr_offset;
 
 	if (params->mode && !strncmp(params->mode, "xts", 3)) {
 		if (hdr->d.version < 3)
@@ -868,7 +876,7 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 			return (size - hdr->d.hidden_volume_size +
 				(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / hdr->d.sector_size;
 		}
-		return (hdr->d.mk_offset / hdr->d.sector_size);
+		goto hdr_offset;
 	}
 
 	if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
@@ -878,7 +886,7 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 			(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / hdr->d.sector_size;
 	}
 
-	// FIXME: system vol.
+hdr_offset:
 	return hdr->d.mk_offset / hdr->d.sector_size;
 }
 

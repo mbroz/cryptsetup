@@ -57,7 +57,8 @@ static int opt_dump_master_key = 0;
 static int opt_shared = 0;
 static int opt_allow_discards = 0;
 static int opt_test_passphrase = 0;
-static int opt_hidden = 0;
+static int opt_tcrypt_hidden = 0;
+static int opt_tcrypt_system = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -231,8 +232,11 @@ static int action_open_tcrypt(void)
 	if (r < 0)
 		goto out;
 
-	if (opt_hidden)
+	if (opt_tcrypt_hidden)
 		params.flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
+
+	if (opt_tcrypt_system)
+		params.flags |= CRYPT_TCRYPT_SYSTEM_HEADER;
 
 	r = crypt_load(cd, CRYPT_TCRYPT, &params);
 	check_signal(&r);
@@ -313,8 +317,11 @@ static int action_tcryptDump(void)
 	if (r < 0)
 		goto out;
 
-	if (opt_hidden)
+	if (opt_tcrypt_hidden)
 		params.flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
+
+	if (opt_tcrypt_system)
+		params.flags |= CRYPT_TCRYPT_SYSTEM_HEADER;
 
 	r = crypt_load(cd, CRYPT_TCRYPT, &params);
 	check_signal(&r);
@@ -1368,9 +1375,10 @@ int main(int argc, const char **argv)
 		{ "allow-discards",    '\0', POPT_ARG_NONE, &opt_allow_discards,        0, N_("Allow discards (aka TRIM) requests for device."), NULL },
 		{ "header",            '\0', POPT_ARG_STRING, &opt_header_device,       0, N_("Device or file with separated LUKS header."), NULL },
 		{ "test-passphrase",   '\0', POPT_ARG_NONE, &opt_test_passphrase,       0, N_("Do not activate device, just check passphrase."), NULL },
-		{ "hidden",            '\0', POPT_ARG_NONE, &opt_hidden,                0, N_("Use hidden header (hidden TCRYPT device) ."), NULL },
+		{ "tcrypt-hidden",     '\0', POPT_ARG_NONE, &opt_tcrypt_hidden,         0, N_("Use hidden header (hidden TCRYPT device)."), NULL },
+		{ "tcrypt-system",     '\0', POPT_ARG_NONE, &opt_tcrypt_system,         0, N_("Device is system TCRYPT drive (with bootloader)."), NULL },
 		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt."), NULL },
-		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,         0, N_("Disable password quality check (if enabled)."), NULL },
+		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1570,10 +1578,10 @@ int main(int argc, const char **argv)
 		_("Option --offset is supported only for open of plain and loopaes devices.\n"),
 		poptGetInvocationName(popt_context));
 
-	if (opt_hidden && strcmp(aname, "tcryptDump") &&
+	if ((opt_tcrypt_hidden || opt_tcrypt_system) && strcmp(aname, "tcryptDump") &&
 	    (strcmp(aname, "open") || strcmp(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --hidden is supported only for TCRYPT device.\n"),
+		_("Option --tcrypt-hidden or --tcrypt-system is supported only for TCRYPT device.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
