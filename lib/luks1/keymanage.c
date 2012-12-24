@@ -645,7 +645,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 
 	r = crypt_random_get(ctx, header->mkDigestSalt, LUKS_SALTSIZE, CRYPT_RND_SALT);
 	if(r < 0) {
-		log_err(ctx,  _("Cannot create LUKS header: reading random salt failed.\n"));
+		log_err(ctx, _("Cannot create LUKS header: reading random salt failed.\n"));
 		return r;
 	}
 
@@ -667,7 +667,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 			header->mkDigest,LUKS_DIGESTSIZE,
 			header->mkDigestIterations);
 	if(r < 0) {
-		log_err(ctx,  _("Cannot create LUKS header: header digest failed (using hash %s).\n"),
+		log_err(ctx, _("Cannot create LUKS header: header digest failed (using hash %s).\n"),
 			header->hashSpec);
 		return r;
 	}
@@ -732,7 +732,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	int r;
 
 	if(hdr->keyblock[keyIndex].active != LUKS_KEY_DISABLED) {
-		log_err(ctx,  _("Key slot %d active, purge first.\n"), keyIndex);
+		log_err(ctx, _("Key slot %d active, purge first.\n"), keyIndex);
 		return -EINVAL;
 	}
 

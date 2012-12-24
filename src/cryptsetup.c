@@ -106,13 +106,13 @@ static int action_open_plain(void)
 		params.hash = NULL;
 
 	if ((opt_keyfile_offset || opt_keyfile_size) && opt_key_file)
-		log_std(("Ignoring keyfile offset and size options, keyfile read "
+		log_std(_("Ignoring keyfile offset and size options, keyfile read "
 			 "size is always the same as encryption key size.\n"));
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
 				      cipher, NULL, cipher_mode);
 	if (r < 0) {
-		log_err("No known cipher specification pattern detected.\n");
+		log_err(_("No known cipher specification pattern detected.\n"));
 		goto out;
 	}
 
@@ -249,6 +249,8 @@ static int action_open_tcrypt(void)
 	if (activated_name)
 		r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, flags);
 out:
+	if (r == -EPERM)
+		log_err(_("No device header detected with this passphrase.\n"));
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
 	return r;
@@ -333,6 +335,8 @@ static int action_tcryptDump(void)
 	else
 		r = crypt_dump(cd);
 out:
+	if (r == -EPERM)
+		log_err(_("No device header detected with this passphrase.\n"));
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
 	return r;
@@ -482,7 +486,7 @@ static int action_benchmark(void)
 	char *c;
 	int i, r;
 
-	log_std("# Tests are approximate using memory only (no storage IO).\n");
+	log_std(_("# Tests are approximate using memory only (no storage IO).\n"));
 	if (opt_hash) {
 		r = action_benchmark_kdf(opt_hash);
 	} else if (opt_cipher) {
@@ -504,7 +508,7 @@ static int action_benchmark(void)
 				    key_size / 8, iv_size, buffer_size,
 				    &enc_mbr, &dec_mbr);
 		if (!r) {
-			log_std("#  Algorithm | Key | Encryption | Decryption\n");
+			log_std(N_("#  Algorithm | Key | Encryption | Decryption\n"));
 			log_std("%8s-%s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
 				cipher, cipher_mode, key_size, enc_mbr, dec_mbr);
 		} else if (r == -ENOENT)
@@ -526,7 +530,7 @@ static int action_benchmark(void)
 			if (r == -ENOENT)
 				skipped++;
 			if (i == 0)
-				log_std("#  Algorithm | Key | Encryption | Decryption\n");
+				log_std(N_("#  Algorithm | Key | Encryption | Decryption\n"));
 
 			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
 				 bciphers[i].cipher, bciphers[i].mode);
@@ -557,11 +561,11 @@ static int _read_mk(const char *file, char **key, int keysize)
 
 	fd = open(file, O_RDONLY);
 	if (fd == -1) {
-		log_err("Cannot read keyfile %s.\n", file);
+		log_err(_("Cannot read keyfile %s.\n"), file);
 		goto fail;
 	}
 	if ((read(fd, *key, keysize) != keysize)) {
-		log_err("Cannot read %d bytes from keyfile %s.\n", keysize, file);
+		log_err(_("Cannot read %d bytes from keyfile %s.\n"), keysize, file);
 		close(fd);
 		goto fail;
 	}
@@ -586,7 +590,7 @@ static int action_luksRepair(void)
 	r = crypt_load(cd, CRYPT_LUKS1, NULL);
 	crypt_set_log_callback(cd, tool_log, NULL);
 	if (r == 0) {
-		log_verbose( _("No known problems detected for LUKS header.\n"));
+		log_verbose(_("No known problems detected for LUKS header.\n"));
 		goto out;
 	}
 

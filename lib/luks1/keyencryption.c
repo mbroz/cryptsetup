@@ -31,7 +31,7 @@ static void _error_hint(struct crypt_device *ctx, const char *device,
 			device, cipher_spec);
 
 	if (!strncmp(mode, "xts", 3) && (keyLength != 256 && keyLength != 512))
-		log_err(ctx,  _("Key size in XTS mode must be 256 or 512 bits.\n"));
+		log_err(ctx, _("Key size in XTS mode must be 256 or 512 bits.\n"));
 }
 
 static int LUKS_endec_template(char *src, size_t srcLength,

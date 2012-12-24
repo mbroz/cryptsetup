@@ -1465,9 +1465,9 @@ int crypt_suspend(struct crypt_device *cd,
 
 	r = dm_suspend_and_wipe_key(cd, name);
 	if (r == -ENOTSUP)
-		log_err(cd, "Suspend is not supported for device %s.\n", name);
+		log_err(cd, _("Suspend is not supported for device %s.\n"), name);
 	else if (r)
-		log_err(cd, "Error during suspending device %s.\n", name);
+		log_err(cd, _("Error during suspending device %s.\n"), name);
 out:
 	dm_backend_exit();
 	return r;
@@ -1509,9 +1509,9 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 		keyslot = r;
 		r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key);
 		if (r == -ENOTSUP)
-			log_err(cd, "Resume is not supported for device %s.\n", name);
+			log_err(cd, _("Resume is not supported for device %s.\n"), name);
 		else if (r)
-			log_err(cd, "Error during resuming device %s.\n", name);
+			log_err(cd, _("Error during resuming device %s.\n"), name);
 	} else
 		r = keyslot;
 out:
@@ -1565,7 +1565,7 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 	keyslot = r;
 	r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key);
 	if (r)
-		log_err(cd, "Error during resuming device %s.\n", name);
+		log_err(cd, _("Error during resuming device %s.\n"), name);
 out:
 	crypt_safe_free(passphrase_read);
 	crypt_free_volume_key(vk);
@@ -2190,7 +2190,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	int r = -EINVAL;
 
 	if (crypt_fips_mode()) {
-		log_err(cd, "Function not available in FIPS mode.\n");
+		log_err(cd, _("Function not available in FIPS mode.\n"));
 		return -EACCES;
 	}
 
