@@ -1,4 +1,4 @@
-TARGET=luks_dict
+TARGET=crypt_dict
 CFLAGS=-O2 -g -Wall -D_GNU_SOURCE
 LDLIBS=-lcryptsetup
 CC=gcc

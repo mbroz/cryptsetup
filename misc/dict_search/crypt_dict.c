@@ -1,9 +1,10 @@
 /*
- * Example of LUKS password dictionary search
+ * Example of LUKS/TrueCrypt password dictionary search
  *
- * Run this as root, e.g. ./luks_dict test.img /usr/share/john/password.lst 4
+ * Copyright (C) 2012 Milan Broz <gmazyland@gmail.com>
  *
- * Copyright (C) 2012 Milan Broz <asi@ucw.cz>
+ * Run this (for LUKS as root),
+ * e.g. ./crypt_dict test.img /usr/share/john/password.lst 4
  *
  * This copyrighted material is made available to anyone wishing to use,
  * modify, copy, or redistribute it subject to the terms and conditions
@@ -26,6 +27,8 @@
 #include <libcryptsetup.h>
 
 #define MAX_LEN 512
+
+static enum { LUKS, TCRYPT } device_type;
 
 static void check(struct crypt_device *cd, const char *pwd_file, unsigned my_id, unsigned max_id)
 {
@@ -65,7 +68,16 @@ static void check(struct crypt_device *cd, const char *pwd_file, unsigned my_id,
 		}
 
 		/* printf("%d: checking %s\n", my_id, pwd); */
-		r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, pwd, len, 0);
+		if (device_type == LUKS)
+			r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, pwd, len, 0);
+		else if (device_type == TCRYPT) {
+			struct crypt_params_tcrypt params = {
+				.flags = CRYPT_TCRYPT_LEGACY_MODES,
+				.passphrase = pwd,
+				.passphrase_size = len,
+			};
+			r = crypt_load(cd, CRYPT_TCRYPT, &params);
+		}
 		if (r >= 0) {
 			printf("Found passphrase for slot %d: \"%s\"\n", r, pwd);
 			break;
@@ -82,13 +94,22 @@ int main(int argc, char *argv[])
 	int i, status, procs = 4;
 	struct crypt_device *cd;
 
-	if (argc < 3 || argc > 4) {
-		printf("Use: %s <LUKS_device|file> <password file> [#processes] %d\n", argv[0], argc);
+	if (argc < 4 || argc > 5) {
+		printf("Use: %s luks|tcrypt <device|file> <password file> [#processes] %d\n", argv[0], argc);
 		exit(EXIT_FAILURE);
 	}
 
-	if (argc == 4 && (sscanf(argv[3], "%i", &procs) != 1 || procs < 1)) {
+	if (argc == 5 && (sscanf(argv[4], "%i", &procs) != 1 || procs < 1)) {
 		printf("Wrong number of processes.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!strcmp(argv[1], "luks"))
+		device_type = LUKS;
+	else if (!strcmp(argv[1], "tcrypt"))
+		device_type = TCRYPT;
+	else {
+		printf("Wrong device type %s.\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -108,14 +129,15 @@ int main(int argc, char *argv[])
 	setpriority(PRIO_PROCESS, 0, -5);
 
 	/* we are not going to modify anything, so common init is ok */
-	if (crypt_init(&cd, argv[1]) || crypt_load(cd, CRYPT_LUKS1, NULL)) {
-		printf("Cannot open %s.\n", argv[1]);
+	if (crypt_init(&cd, argv[2]) ||
+	    (device_type == LUKS && crypt_load(cd, CRYPT_LUKS1, NULL))) {
+		printf("Cannot open %s.\n", argv[2]);
 		exit(EXIT_FAILURE);
 	}
 
 	/* run scan in separate processes, it is up to scheduler to assign CPUs inteligently */
 	for (i = 0; i < procs; i++)
-		check(cd, argv[2], i, procs);
+		check(cd, argv[3], i, procs);
 
 	/* wait until at least one finishes with error or status 2 (key found) */
 	while (wait(&status) != -1 && WIFEXITED(status)) {
