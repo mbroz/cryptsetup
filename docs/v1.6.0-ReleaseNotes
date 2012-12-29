@@ -1,0 +1,227 @@
+Cryptsetup 1.6.0 Release Notes (RC1)
+====================================
+
+Changes since version 1.5.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Important changes
+~~~~~~~~~~~~~~~~~
+
+ * Cryptsetup and libcryptsetup is now released under GPLv2+
+   (GPL version 2 or any later).
+   Some internal code handling files (loopaes, verity, tcrypt
+   and crypto backend wrapper) are LGPLv2+.
+
+   Previously code was version 2 only.
+
+
+ * Introducing new unified command open and close.
+
+   Example:
+      cryptseup open --type plain|luks|loopaes|tcrypt <device> <name>
+      (type defaults to luks)
+
+   with backward-compatible aliases plainOpen, luksOpen, loopaesOpen,
+   tcryptOpen. Basically "open --type xyz" has alias "xyzOpen".
+
+   The "create" command (plain device create) is DEPRECATED but will
+   be still supported.
+   (This command is confusing because of switched arguments order.)
+
+   The close command is generic command to remove mapping and have
+   backward compatible aliases (remove, luksClose, ...) which behaves
+   exactly the same.
+
+   While all old syntax is still supported, I strongly suggest to use
+   new command syntax which is common for all device types (and possible
+   new formats added in future).
+
+
+ * cryptsetup now support directly TCRYPT (TrueCrypt and compatible tc-play)
+   on-disk format
+   (Code is complete and independent implementation not related to original project).
+
+   Only dump (tcryptDump command) and activation (open --type tcrypt or tcryptOpen)
+   of TCRYPT device is supported. No header changes are supported.
+
+   It is intended to easily access containers shared with other operating systems
+   without need to install 3rd party software. For native Linux installations LUKS
+   is the preferred format.
+
+   WARNING: TCRYPT  extension  requires kernel userspace crypto API to be available
+   (kernel af_alg and algif_skcipher modules, introduced in  Linux  kernel 2.6.38).
+
+   Because  TCRYPT  header  is encrypted, you have to always provide valid
+   passphrase and keyfiles. Keyfiles ara handled exactly the same as in original
+   format (basically, first 1MB of every keyfile is mixed using CRC32 into pool).
+
+   Cryptsetup should recognize all TCRYPT header variants ever released, except 
+   legacy  cipher chains  using LRW encryption mode with 64 bits encryption block
+   (namely Blowfish in LRW mode is not recognized, this is  limitation  of  kernel
+   crypto API).
+
+   Device activation is supported only for LRW/XTS modes (again, limitation
+   of kernel dmcrypt which do not implements TCRYPT extensions to CBC mode).
+   (So old containers cannot be activated, but you can use libcryptsetup
+   for lost password search, example of such code is included in misc directory.)
+
+   Hidden header are supported using --tcrypt-hidden option, system encryption
+   using --tcrypt-system option.
+
+   For detailed description see man page.
+
+   EXAMPLE:
+     * Dump device parameters of container in file:
+
+     # cryptsetup tcryptDump tst
+       Enter passphrase: 
+
+     TCRYPT header information for tst
+     Version:        5
+     Driver req.:    7
+     Sector size:    512
+     MK offset:      131072
+     PBKDF2 hash:    sha512
+     Cipher chain:   serpent-twofish-aes
+     Cipher mode:    xts-plain64
+     MK bits:        1536
+
+     You can also dump master key using --dump-master-key.
+     Dump does not require superuser privilege.
+
+     * Activation of this container
+
+     # cryptsetup tcryptOpen tst tcrypt_dev       
+       Enter passphrase: 
+      (Chain of dmcrypt devices is activated as /dev/mapper/tcrypt_dev.)
+   
+     * See status of active TCRYPT device
+
+     # cryptsetup status tcrypt_dev
+
+     /dev/mapper/tcrypt_dev is active.
+     type:    TCRYPT
+     cipher:  serpent-twofish-aes-xts-plain64
+     keysize: 1536 bits
+     device:  /dev/loop0
+     loop:    /tmp/tst
+     offset:  256 sectors
+     size:    65024 sectors
+     skipped: 256 sectors
+     mode:    read/write
+
+    * And plaintext filesystem now ready to mount
+
+    # blkid /dev/mapper/tcrypt_dev
+    /dev/mapper/tcrypt_dev: SEC_TYPE="msdos" UUID="9F33-2954" TYPE="vfat" 
+
+
+ * Add (optional) support for lipwquality for new LUKS passwords.
+
+   If password is entered through terminal (no keyfile specified)
+   and cryptsetup is compiled with --enable-pwquality, default
+   system pwquality settings are used to check password quality.
+
+   You can always override this check by using new --force-password option.
+
+   For more info about pwquality project see http://libpwquality.fedorahosted.org/
+
+
+ * Proper handle interrupt signals (ctrl+c and TERM signal) in tools
+
+   Code should now handle interrupt properly, release and explicitly wipe
+   in-memory key materials on interrupt.
+   (Direct users of libcryptsetup should always call crypt_free() when
+   code is interrupted to wipe all resources. There is no signal handling
+   in library, it is up to the tool using it.)
+
+ 
+ * Add new benchmark command
+
+   The "benchmark" command now tries to benchmark PBKDF2 and some block
+   cipher variants. You can specify you own parameters (--cipher/--key-size
+   for block ciphers, --hash for PBKDF2).
+
+   See man page for detailed descrition.
+
+   WARNING: benchmark requires kernel userspace crypto API to be available
+   (kernel af_alg and algif_skcipher modules, introduced in  Linux  kernel 2.6.38).
+
+   EXAMPLE:
+     # cryptsetup benchmark
+     # Tests are approximate using memory only (no storage IO).
+     PBKDF2-sha1       111077 iterations per second
+     PBKDF2-sha256      53718 iterations per second
+     PBKDF2-sha512      18832 iterations per second
+     PBKDF2-ripemd160   89775 iterations per second
+     PBKDF2-whirlpool   23918 iterations per second
+            #  Algorithm | Key | Encryption | Decryption
+          aes-cbc   128b  212.0 MiB/s  428.0 MiB/s
+      serpent-cbc   128b   23.1 MiB/s   66.0 MiB/s
+      twofish-cbc   128b   46.1 MiB/s   50.5 MiB/s
+          aes-cbc   256b  163.0 MiB/s  350.0 MiB/s
+      serpent-cbc   256b   23.1 MiB/s   66.0 MiB/s
+      twofish-cbc   256b   47.0 MiB/s   50.0 MiB/s
+          aes-xts   256b  190.0 MiB/s  190.0 MiB/s
+      serpent-xts   256b   58.4 MiB/s   58.0 MiB/s
+      twofish-xts   256b   49.0 MiB/s   49.5 MiB/s
+          aes-xts   512b  175.0 MiB/s  175.0 MiB/s
+      serpent-xts   512b   59.0 MiB/s   58.0 MiB/s
+      twofish-xts   512b   48.5 MiB/s   49.5 MiB/s
+
+     Or you can specify cipher yourself:
+     # cryptsetup benchmark --cipher cast5-cbc-essiv:sha256 -s 128
+     # Tests are approximate using memory only (no storage IO).
+     #  Algorithm | Key | Encryption | Decryption
+        cast5-cbc   128b   32.4 MiB/s   35.0 MiB/s
+
+     WARNING: these tests do not use dmcrypt, only crypto API.
+     You have to benchmark the whole device stack and you can get completely
+     different results. But is is usable for basic comparison.
+     (Note for example AES-NI decryption optimization effect in example above.)
+
+Features
+~~~~~~~~
+
+ * Do not maintain ChangeLog file anymore, see git log for detailed changes, e.g. here
+   http://code.google.com/p/cryptsetup/source/list
+
+ * Move change key into library, add crypt_keyslot_change_by_passphrase().
+   This change is useful mainly in FIPS mode, where we cannot
+   extract volume key directly from libcryptsetup.
+
+ * Add verbose messages during reencryption.
+
+ * Default LUKS PBKDF2 iteration time is now configurable.
+
+ * Add simple cipher benchmarking API.
+
+ * Add kernel skcipher backend.
+
+ * Add CRC32 implementation (for TCRYPT).
+
+ * Move PBKDF2 into crypto backend wrapper.
+   This allows use it in other formats, use library implementations and
+   also possible use of different KDF function in future.
+
+Fixes
+~~~~~
+
+ * Avoid O_DIRECT open if underlying storage doesn't support it.
+
+ * Fix some non-translated messages.
+
+ * Fix regression in header backup (1.5.1) with container in file.
+
+ * Fix blockwise read/write for end writes near end of device.
+   (was not used in previous versions)
+
+ * Ignore setpriority failure.
+
+ * Code changes to fix/ignore problems found by Coverity static analysis, including
+   - Get page size should never fail.
+   - Fix time of check/use (TOCTOU test) in tools
+   - Fix time of check/use in loop/wipe utils.
+   - Fix time of check/use in device utils.
+
+ * Disallow header restore if context is non-LUKS device.
