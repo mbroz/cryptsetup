@@ -37,6 +37,10 @@ function test_one()
 
 function test_required()
 {
+	echo "REQUIRED KDF TEST"
+	$CRYPTSETUP benchmark -h ripemd160 | grep "N/A" && skip
+	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && skip
+
 	echo "REQUIRED CIPHERS TEST"
 	echo "#  Algorithm | Key | Encryption | Decryption"
 

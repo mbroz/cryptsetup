@@ -508,6 +508,11 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 				hdr->salt, TCRYPT_HDR_SALT_LEN,
 				key, TCRYPT_HDR_KEY_LEN,
 				tcrypt_kdf[i].iterations);
+		if (r < 0 && crypt_hash_size(tcrypt_kdf[i].hash) < 0) {
+			log_verbose(cd, _("PBKDF2 hash algorithm %s not available, skipping.\n"),
+				      tcrypt_kdf[i].hash);
+			continue;
+		}
 		if (r < 0)
 			break;
 
