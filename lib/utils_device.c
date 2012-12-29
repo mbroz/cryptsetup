@@ -47,7 +47,7 @@ static int device_ready(const char *device)
 	struct stat st;
 
 	log_dbg("Trying to open and read device %s.", device);
-	devfd = open(device, O_RDONLY | O_DIRECT | O_SYNC);
+	devfd = open(device, O_RDONLY);
 	if (devfd < 0) {
 		log_err(NULL, _("Device %s doesn't exist or access denied.\n"), device);
 		return -EINVAL;
@@ -59,6 +59,20 @@ static int device_ready(const char *device)
 
 	close(devfd);
 	return r;
+}
+
+int device_open(struct device *device, int flags)
+{
+	int devfd;
+
+	devfd = open(device_path(device), flags | O_DIRECT | O_SYNC);
+	if (devfd < 0 && errno == EINVAL) {
+		log_dbg("Trying to open device %s without direct-io.",
+			device_path(device));
+		devfd = open(device_path(device), flags | O_SYNC);
+	}
+
+	return devfd;
 }
 
 int device_alloc(struct device **device, const char *path)

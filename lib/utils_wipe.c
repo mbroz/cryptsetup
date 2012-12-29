@@ -157,14 +157,14 @@ int crypt_wipe(struct device *device,
 	if (!buffer)
 		return -ENOMEM;
 
-	flags = O_RDWR | O_DIRECT | O_SYNC;
+	flags = O_RDWR;
 
 	/* use O_EXCL only for block devices */
 	if (exclusive && S_ISBLK(st.st_mode))
 		flags |= O_EXCL;
 
 	/* coverity[toctou] */
-	devfd = open(device_path(device), flags);
+	devfd = device_open(device, flags);
 	if (devfd == -1) {
 		free(buffer);
 		return errno ? -errno : -EINVAL;

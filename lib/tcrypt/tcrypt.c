@@ -562,7 +562,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 	if (bs < 0)
 		return bs;
 
-	devfd = open(device_path(device), O_RDONLY | O_DIRECT);
+	devfd = device_open(device, O_RDONLY);
 	if (devfd == -1) {
 		log_err(cd, _("Cannot open device %s.\n"), device_path(device));
 		return -EINVAL;

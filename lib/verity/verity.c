@@ -57,17 +57,18 @@ int VERITY_read_sb(struct crypt_device *cd,
 		   char **uuid_string,
 		   struct crypt_params_verity *params)
 {
-	const char *device = device_path(crypt_metadata_device(cd));
-	int bsize = device_block_size(crypt_metadata_device(cd));
+	struct device *device = crypt_metadata_device(cd);
+	int bsize = device_block_size(device);
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int devfd = 0, sb_version;
 
 	log_dbg("Reading VERITY header of size %u on device %s, offset %" PRIu64 ".",
-		sizeof(struct verity_sb), device, sb_offset);
+		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
-		log_err(cd, _("Verity device doesn't use on-disk header.\n"), device);
+		log_err(cd, _("Verity device doesn't use on-disk header.\n"),
+			device_path(device));
 		return -EINVAL;
 	}
 
@@ -76,9 +77,9 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	devfd = open(device ,O_RDONLY | O_DIRECT);
+	devfd = device_open(device, O_RDONLY);
 	if(devfd == -1) {
-		log_err(cd, _("Cannot open device %s.\n"), device);
+		log_err(cd, _("Cannot open device %s.\n"), device_path(device));
 		return -EINVAL;
 	}
 
@@ -90,7 +91,8 @@ int VERITY_read_sb(struct crypt_device *cd,
 	close(devfd);
 
 	if (memcmp(sb.signature, VERITY_SIGNATURE, sizeof(sb.signature))) {
-		log_err(cd, _("Device %s is not a valid VERITY device.\n"), device);
+		log_err(cd, _("Device %s is not a valid VERITY device.\n"),
+			device_path(device));
 		return -EINVAL;
 	}
 
@@ -150,29 +152,31 @@ int VERITY_write_sb(struct crypt_device *cd,
 		   const char *uuid_string,
 		   struct crypt_params_verity *params)
 {
-	const char *device = device_path(crypt_metadata_device(cd));
-	int bsize = device_block_size(crypt_metadata_device(cd));
+	struct device *device = crypt_metadata_device(cd);
+	int bsize = device_block_size(device);
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	uuid_t uuid;
 	int r, devfd = 0;
 
 	log_dbg("Updating VERITY header of size %u on device %s, offset %" PRIu64 ".",
-		sizeof(struct verity_sb), device, sb_offset);
+		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (!uuid_string || uuid_parse(uuid_string, uuid) == -1) {
-		log_err(cd, _("Wrong VERITY UUID format provided.\n"), device);
+		log_err(cd, _("Wrong VERITY UUID format provided.\n"),
+			device_path(device));
 		return -EINVAL;
 	}
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
-		log_err(cd, _("Verity device doesn't use on-disk header.\n"), device);
+		log_err(cd, _("Verity device doesn't use on-disk header.\n"),
+			device_path(device));
 		return -EINVAL;
 	}
 
-	devfd = open(device, O_RDWR | O_DIRECT);
+	devfd = device_open(device, O_RDWR);
 	if(devfd == -1) {
-		log_err(cd, _("Cannot open device %s.\n"), device);
+		log_err(cd, _("Cannot open device %s.\n"), device_path(device));
 		return -EINVAL;
 	}
 
@@ -189,7 +193,8 @@ int VERITY_write_sb(struct crypt_device *cd,
 
 	r = write_lseek_blockwise(devfd, bsize, (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
 	if (r)
-		log_err(cd, _("Error during update of verity header on device %s.\n"), device);
+		log_err(cd, _("Error during update of verity header on device %s.\n"),
+			device_path(device));
 	close(devfd);
 
 	return r;
