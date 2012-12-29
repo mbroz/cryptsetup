@@ -12,13 +12,13 @@ Important changes
    Some internal code handling files (loopaes, verity, tcrypt
    and crypto backend wrapper) are LGPLv2+.
 
-   Previously code was version 2 only.
+   Previously code was GPL version 2 only.
 
 
  * Introducing new unified command open and close.
 
    Example:
-      cryptseup open --type plain|luks|loopaes|tcrypt <device> <name>
+      cryptsetup open --type plain|luks|loopaes|tcrypt <device> <name>
       (type defaults to luks)
 
    with backward-compatible aliases plainOpen, luksOpen, loopaesOpen,
@@ -39,25 +39,25 @@ Important changes
 
  * cryptsetup now support directly TCRYPT (TrueCrypt and compatible tc-play)
    on-disk format
-   (Code is complete and independent implementation not related to original project).
+   (Code is independent implementation not related to original project).
 
    Only dump (tcryptDump command) and activation (open --type tcrypt or tcryptOpen)
-   of TCRYPT device is supported. No header changes are supported.
+   of TCRYPT device are supported. No header changes are supported.
 
    It is intended to easily access containers shared with other operating systems
    without need to install 3rd party software. For native Linux installations LUKS
    is the preferred format.
 
    WARNING: TCRYPT  extension  requires kernel userspace crypto API to be available
-   (kernel af_alg and algif_skcipher modules, introduced in  Linux  kernel 2.6.38).
+   (kernel af_alg and algif_skcipher modules, introduced in Linux kernel 2.6.38).
 
    Because  TCRYPT  header  is encrypted, you have to always provide valid
-   passphrase and keyfiles. Keyfiles ara handled exactly the same as in original
+   passphrase and keyfiles. Keyfiles are handled exactly the same as in original
    format (basically, first 1MB of every keyfile is mixed using CRC32 into pool).
 
    Cryptsetup should recognize all TCRYPT header variants ever released, except 
    legacy  cipher chains  using LRW encryption mode with 64 bits encryption block
-   (namely Blowfish in LRW mode is not recognized, this is  limitation  of  kernel
+   (namely Blowfish in LRW mode is not recognized, this is limitation of kernel
    crypto API).
 
    Device activation is supported only for LRW/XTS modes (again, limitation
@@ -142,7 +142,7 @@ Important changes
    cipher variants. You can specify you own parameters (--cipher/--key-size
    for block ciphers, --hash for PBKDF2).
 
-   See man page for detailed descrition.
+   See man page for detailed description.
 
    WARNING: benchmark requires kernel userspace crypto API to be available
    (kernel af_alg and algif_skcipher modules, introduced in  Linux  kernel 2.6.38).
@@ -183,8 +183,8 @@ Important changes
 Features
 ~~~~~~~~
 
- * Do not maintain ChangeLog file anymore, see git log for detailed changes, e.g. here
-   http://code.google.com/p/cryptsetup/source/list
+ * Do not maintain ChangeLog file anymore, see git log for detailed changes,
+   e.g. here http://code.google.com/p/cryptsetup/source/list
 
  * Move change key into library, add crypt_keyslot_change_by_passphrase().
    This change is useful mainly in FIPS mode, where we cannot
@@ -204,7 +204,7 @@ Features
    This allows use it in other formats, use library implementations and
    also possible use of different KDF function in future.
 
- * New PBKDF2 bechmark using getrusage().
+ * New PBKDF2 benchmark using getrusage().
 
 Fixes
 ~~~~~
