@@ -227,23 +227,27 @@ A. Contributors
   loop-file.
 
   03) If the target was in use previously, it is a good idea to
-  wipe it before creating the LUKS container, in order to remove any
-  trace of old file systems, etc. For example, some users have
+  wipe it before creating the LUKS container in order to remove any
+  trace of old file systems and data. For example, some users have
   managed to run e2fsck on a partition containing a LUKS container,
   possibly because of residual ext2 superblocks from an earlier use.
   This can do arbitrary damage up to complete and permanent loss of
   all data in the LUKS container.
 
-  To wipe, use something like
+  To just quickly wipe file systems (old data may remain), use
 
-     cat /dev/zero > target
+     wipefs -a <target device>
+ 
+  To wipe file system and data, use something like
+
+     cat /dev/zero > <target device>
  
   This can take a while. To get a progress indicator, you can use
   the tool dd_rescue (->google) instead or use my stream meter "wcs"
   (source here: http://www.tansi.org/tools/index.html) in the
   following fashion:
 
-     cat /dev/zero | wcs > target
+     cat /dev/zero | wcs > <target device>
  
   Be very sure you have the right target, all data will be lost!
 
@@ -251,14 +255,14 @@ A. Contributors
   at some time in the future this will become unnecessary.
 
   04) Create the LUKS container:
-     cryptsetup luksFormat target
+     cryptsetup luksFormat <target device>
  
   Just follow the on-screen instructions.
 
   05) Map the container. Here it will be mapped to /dev/mapper/c1:
-     cryptsetup luksOpen target c1 
+     cryptsetup luksOpen <target device> c1 
  
-  06) (Optionally) wipe the container
+  06) (Optionally) wipe the container (make sure you have the right target!):
      cat /dev/zero > /dev/mapper/c1
       
   Note that this creates a small information leak, as an attacker can
