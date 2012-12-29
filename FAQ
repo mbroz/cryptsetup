@@ -41,7 +41,7 @@ A. Contributors
   SSDs/FLASH DRIVES: SSDs and Flash are different. Currently it is
   unclear how to get LUKS or plain dm-crypt to run on them with the
   full set of security features intact. This may or may not be a
-  problem, depending on the attacher model. See Section 5.17.
+  problem, depending on the attacher model. See Section 5.19.
 
   BACKUP: Yes, encrypted disks die, just as normal ones do. A full
   backup is mandatory, see Section "6. Backup and Data Recovery" on
@@ -214,7 +214,78 @@ A. Contributors
 2. Setup 
 
 
- * 2.1 What is the difference between "plain" and LUKS format?
+ * 2.1 LUKS Container Setup mini-HOWTO
+
+  This item tries to give you a very brief list of all the steps you
+  should go though when creating a new LUKS encrypted container, i.e.
+  encrypted disk, partition or loop-file.
+
+  01) All data will be lost, if there is data on the target, make a 
+  backup.
+
+  02) Make very sure you have the right target disk, partition or
+  loop-file.
+
+  03) If the target was in use previously, it is a good idea to
+  wipe it before creating the LUKS container, in order to remove any
+  trace of old file systems, etc. For example, some users have
+  managed to run e2fsck on a partition containing a LUKS container,
+  possibly because of residual ext2 superblocks from an earlier use.
+  This can do arbitrary damage up to complete and permanent loss of
+  all data in the LUKS container.
+
+  To wipe, use something like
+
+     cat /dev/zero > target
+ 
+  This can take a while. To get a progress indicator, you can use
+  the tool dd_rescue (->google) instead or use my stream meter "wcs"
+  (source here: http://www.tansi.org/tools/index.html) in the
+  following fashion:
+
+     cat /dev/zero | wcs > target
+ 
+  Be very sure you have the right target, all data will be lost!
+
+  Note that automatic wiping is on the TODO list for cryptsetup, so
+  at some time in the future this will become unnecessary.
+
+  04) Create the LUKS container:
+     cryptsetup luksFormat target
+ 
+  Just follow the on-screen instructions.
+
+  05) Map the container. Here it will be mapped to /dev/mapper/c1:
+     cryptsetup luksOpen target c1 
+ 
+  06) (Optionally) wipe the container
+     cat /dev/zero > /dev/mapper/c1
+      
+  Note that this creates a small information leak, as an attacker can
+  determine whether a 512 byte block is zero if the attacker has
+  access to the encrypted container multiple times. Typically a
+  competent attacker that has access multiple times can install a
+  passphrase sniffer anyways, so this leakage is not very
+  significant. For getting a progress indicator, see step 03.
+
+  Note that at some time in the future, cryptsetup will do this for
+  you, but currently it is a TODO list item.
+
+  07) Create a file system in the mapped container, for example an 
+  ext3 file system (any other file system is possible):
+
+     mke2fs -j /dev/mapper/c1
+ 
+  08) Mount your encrypted file system, here on /mnt:
+     mount /dev/mapper/c1 /mnt 
+ 
+  Done. You can now use the encrypted file system to store data. Be
+  sure to read though the rest of the FAQ, these are just the very
+  basics. In particular, there are a number of mistakes that are
+  easy to make, but will compromise your security.
+
+
+ * 2.2 What is the difference between "plain" and LUKS format?
 
   First, unless you happen to understand the cryptographic background
   well, you should use LUKS. It does protect the user from a lot of
@@ -268,7 +339,7 @@ A. Contributors
   non-default XTS mode).
 
 
- * 2.2 Can I encrypt an already existing, non-empty partition to use
+ * 2.3 Can I encrypt an already existing, non-empty partition to use
    LUKS?
 
   There is no converter, and it is not really needed. The way to do
@@ -283,7 +354,7 @@ A. Contributors
   to be in a filesystem.
 
 
- * 2.3 How do I use LUKS with a loop-device?
+ * 2.4 How do I use LUKS with a loop-device?
 
   This can be very handy for experiments. Setup is just the same as
   with any block device. If you want, for example, to use a 100MiB
@@ -297,7 +368,7 @@ A. Contributors
   To unmap the file when done, use "losetup -d /dev/loop0".
 
 
- * 2.4 When I add a new key-slot to LUKS, it asks for a passphrase but
+ * 2.5 When I add a new key-slot to LUKS, it asks for a passphrase but
    then complains about there not being a key-slot with that
    passphrase?
 
@@ -309,7 +380,7 @@ A. Contributors
   new key-slot.
 
 
- * 2.5 Encryption on top of RAID or the other way round?
+ * 2.6 Encryption on top of RAID or the other way round?
 
   Unless you have special needs, place encryption between RAID and
   filesystem, i.e. encryption on top of RAID. You can do it the other
@@ -319,7 +390,7 @@ A. Contributors
   device, e.g. /dev/dm0 .
 
 
- * 2.6 How do I read a dm-crypt key from file?
+ * 2.7 How do I read a dm-crypt key from file?
 
   Note that the file will still be hashed first, just like keyboard
   input. Use the --key-file option, like this:
@@ -327,7 +398,7 @@ A. Contributors
       cryptsetup create --key-file keyfile e1 /dev/loop0
  
 
- * 2.7 How do I read a LUKS slot key from file?
+ * 2.8 How do I read a LUKS slot key from file?
 
   What you really do here is to read a passphrase from file, just as
   you would with manual entry of a passphrase for a key-slot. You can
@@ -353,7 +424,7 @@ A. Contributors
       cryptsetup luksOpen --key-file keyfile /dev/loop0 e1
  
 
- * 2.8 How do I read the LUKS master key from file?
+ * 2.9 How do I read the LUKS master key from file?
 
   The question you should ask yourself first is why you would want to
   do this. The only legitimate reason I can think of is if you want
@@ -364,7 +435,7 @@ A. Contributors
   do this here.
 
 
- * 2.9 What are the security requirements for a key read from file?
+ * 2.10 What are the security requirements for a key read from file?
 
   A file-stored key or passphrase has the same security requirements
   as one entered interactively, however you can use random bytes and
@@ -376,7 +447,7 @@ A. Contributors
       head -c 256 /dev/random > keyfile
  
 
- * 2.10 If I map a journaled file system using dm-crypt/LUKS, does it
+ * 2.11 If I map a journaled file system using dm-crypt/LUKS, does it
    still provide its usual transactional guarantees?
 
   Yes, it does, unless a very old kernel is used. The required flags
@@ -404,7 +475,7 @@ A. Contributors
   should improve further and eventually the problem should go away.
 
 
- * 2.11 Can I use LUKS or cryptsetup with a more secure (external)
+ * 2.12 Can I use LUKS or cryptsetup with a more secure (external)
    medium for key storage, e.g. TPM or a smartcard?
 
   Yes, see the answers on using a file-supplied key. You do have to
@@ -414,7 +485,7 @@ A. Contributors
   storage.
 
 
- * 2.12 Can I resize a dm-crypt or LUKS partition?
+ * 2.13 Can I resize a dm-crypt or LUKS partition?
 
   Yes, you can, as neither dm-crypt nor LUKS stores partition size.
   Whether you should is a different question. Personally I recommend
@@ -1022,7 +1093,7 @@ A. Contributors
   power, all of it with plenty of memory for computing "large
   memory" hashes. Bot-net operators also have all the memory they
   want. The only protection against a resourceful attacker is a
-  high-entropy passphrase, see items 5.8 and 5.9.
+  high-entropy passphrase, see items 5.9 and 5.10.
 
 
  * 5.12 What about iteration count with plain dm-crypt?
@@ -1846,7 +1917,7 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   - Some code examples are in the source package under docs/examples
 
 
-  * *Brute-forciong passphrases
+ * Brute-forcing passphrases
 
   -
   http://news.electricalchemy.net/2009/10/password-cracking-in-cloud-part-5.html
