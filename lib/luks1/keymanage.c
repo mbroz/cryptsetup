@@ -319,7 +319,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	uint64_t PBKDF2_per_sec = 1;
 	int i, bad, r, need_write = 0;
 
-	if (phdr->keyBytes != 16 && phdr->keyBytes != 32) {
+	if (phdr->keyBytes != 16 && phdr->keyBytes != 32 && phdr->keyBytes != 64) {
 		log_err(ctx, _("Non standard key size, manual repair required.\n"));
 		return -EINVAL;
 	}
