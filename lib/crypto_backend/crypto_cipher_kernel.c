@@ -26,8 +26,11 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <linux/if_alg.h>
 #include "crypto_backend.h"
+
+#ifdef ENABLE_AF_ALG
+
+#include <linux/if_alg.h>
 
 #ifndef AF_ALG
 #define AF_ALG 38
@@ -193,3 +196,30 @@ int crypt_cipher_destroy(struct crypt_cipher *ctx)
 	free(ctx);
 	return 0;
 }
+
+#else /* ENABLE_AF_ALG */
+
+int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
+		    const char *mode, const void *buffer, size_t length)
+{
+	return -ENOTSUP;
+}
+
+int crypt_cipher_destroy(struct crypt_cipher *ctx)
+{
+	return 0;
+}
+
+int crypt_cipher_encrypt(struct crypt_cipher *ctx,
+			 const char *in, char *out, size_t length,
+			 const char *iv, size_t iv_length)
+{
+	return -EINVAL;
+}
+int crypt_cipher_decrypt(struct crypt_cipher *ctx,
+			 const char *in, char *out, size_t length,
+			 const char *iv, size_t iv_length)
+{
+	return -EINVAL;
+}
+#endif
