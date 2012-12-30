@@ -97,6 +97,8 @@ echo "ACTIVATION FS UUID CHECK (LRW/XTS modes only)"
 for file in $(ls $TST_DIR/tc_*-lrw-* $TST_DIR/tc_*-xts-*) ; do
 	echo -n " $file"
 	echo $PASSWORD | $CRYPTSETUP tcryptOpen -r $file $MAP || fail
+	$CRYPTSETUP status $MAP >/dev/null || fail
+	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
 	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
 	$CRYPTSETUP remove $MAP || fail
 	[ "$UUID" != "DEAD-BABE" ] && fail "UUID check failed."

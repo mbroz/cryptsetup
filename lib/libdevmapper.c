@@ -696,6 +696,14 @@ int dm_status_device(struct crypt_device *cd, const char *name)
 {
 	int r;
 	struct dm_info dmi;
+	struct stat st;
+
+	/* libdevmapper is too clever and handles
+	 * path argument differenly with error.
+	 * Fail early here if parameter is non-existent path.
+	 */
+	if (strchr(name, '/') && stat(name, &st) < 0)
+		return -ENODEV;
 
 	if (dm_init_context(cd))
 		return -ENOTSUP;

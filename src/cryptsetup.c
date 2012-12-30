@@ -374,13 +374,12 @@ static int action_status(void)
 	crypt_status_info ci;
 	struct crypt_active_device cad;
 	struct crypt_device *cd = NULL;
-	struct stat st;
 	char *backing_file;
 	const char *device;
 	int path = 0, r = 0;
 
 	/* perhaps a path, not a dm device name */
-	if (strchr(action_argv[0], '/') && !stat(action_argv[0], &st))
+	if (strchr(action_argv[0], '/'))
 		path = 1;
 
 	ci = crypt_status(NULL, action_argv[0]);
