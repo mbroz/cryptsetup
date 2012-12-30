@@ -48,6 +48,17 @@ Damaging the LUKS header is something people manage to do with
 surprising frequency. This risk is the result of a trade-off
 between security and safety, as LUKS is designed for fast and
 secure wiping by just overwriting header and key-slot area.
+
+\fBPreviously used partitions:\fR If a partition was previously used,
+it is a very good idea to wipe filesystem signatures, data, etc. before
+creating a LUKS or plain dm-crypt container on it. 
+For a quick removal of filesystem signatures, use "wipefs". Take care 
+though that this may not remove everything. In particular md (RAID) 
+signatures at the end of a device may survive. It also does not 
+remove data. For a full wipe, overwrite the whole partition before 
+container creation. If you do not know how to to that, the
+cryptsetup FAQ describes several options.
+
 .SH BASIC COMMANDS
 The following are valid actions for all supported device types.
 
