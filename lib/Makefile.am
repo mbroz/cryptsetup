@@ -5,7 +5,7 @@ moduledir = $(libdir)/cryptsetup
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcryptsetup.pc
 
-INCLUDES = \
+AM_CPPFLAGS = \
 	-I$(top_srcdir)				\
 	-I$(top_srcdir)/lib/crypto_backend	\
 	-I$(top_srcdir)/lib/luks1		\

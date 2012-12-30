@@ -11,7 +11,7 @@ libluks1_la_SOURCES = \
 	af.h \
 	luks.h
 
-INCLUDES = -D_GNU_SOURCE			\
+AM_CPPFLAGS = -D_GNU_SOURCE			\
 	-D_LARGEFILE64_SOURCE                   \
 	-D_FILE_OFFSET_BITS=64                  \
         -I$(top_srcdir)/lib			\

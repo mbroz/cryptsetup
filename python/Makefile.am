@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/lib $(PYTHON_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/lib $(PYTHON_INCLUDES)
 EXTRA_DIST = pycryptsetup-test.py
 CLEANFILES = *.img
 

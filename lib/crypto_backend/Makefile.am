@@ -27,4 +27,4 @@ libcrypto_backend_la_SOURCES += crypto_nettle.c
 libcrypto_backend_la_SOURCES += pbkdf2_generic.c
 endif
 
-INCLUDES = -D_GNU_SOURCE -I$(top_srcdir)/lib
+AM_CPPFLAGS = -D_GNU_SOURCE -I$(top_srcdir)/lib
