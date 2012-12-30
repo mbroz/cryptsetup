@@ -37,6 +37,8 @@ function test_one()
 
 function test_required()
 {
+	which lsblk >/dev/null 2>&1 || skip "WARNING: lsblk tool required."
+
 	echo "REQUIRED KDF TEST"
 	$CRYPTSETUP benchmark -h ripemd160 | grep "N/A" && skip
 	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && skip
