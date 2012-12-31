@@ -39,7 +39,7 @@ static int tools_check_pwquality(const char *password)
 
 	r = pwquality_read_config(pwq, NULL, &auxerror);
 	if (r) {
-		log_err(_("Cannot check passsword quality: %s\n"),
+		log_err(_("Cannot check password quality: %s\n"),
 			pwquality_strerror(NULL, 0, r, auxerror));
 		pwquality_free_settings(pwq);
 		return -EINVAL;
