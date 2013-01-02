@@ -508,8 +508,8 @@ static int action_benchmark(void)
 				    key_size / 8, iv_size, buffer_size,
 				    &enc_mbr, &dec_mbr);
 		if (!r) {
-			log_std(N_("#  Algorithm | Key | Encryption | Decryption\n"));
-			log_std("%8s-%s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
+			log_std(N_("#  Algorithm | Key |  Encryption |  Decryption\n"));
+			log_std("%8s-%s  %4db  %6.1f MiB/s  %6.1f MiB/s\n",
 				cipher, cipher_mode, key_size, enc_mbr, dec_mbr);
 		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
@@ -530,15 +530,15 @@ static int action_benchmark(void)
 			if (r == -ENOENT)
 				skipped++;
 			if (i == 0)
-				log_std(N_("#  Algorithm | Key | Encryption | Decryption\n"));
+				log_std(N_("#  Algorithm | Key |  Encryption |  Decryption\n"));
 
 			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
 				 bciphers[i].cipher, bciphers[i].mode);
 			if (!r)
-				log_std("%12s  %4db  %5.1f MiB/s  %5.1f MiB/s\n",
+				log_std("%12s  %4db  %6.1f MiB/s  %6.1f MiB/s\n",
 					cipher, bciphers[i].key_size*8, enc_mbr, dec_mbr);
 			else
-				log_std("%12s  %4db %12s %12s\n", cipher,
+				log_std("%12s  %4db %13s %13s\n", cipher,
 					bciphers[i].key_size*8, _("N/A"), _("N/A"));
 		}
 		if (skipped && skipped == i)
