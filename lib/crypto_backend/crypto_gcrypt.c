@@ -261,21 +261,14 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		char *key, size_t key_length,
 		unsigned int iterations)
 {
+#if USE_INTERNAL_PBKDF2
 	if (!kdf || strncmp(kdf, "pbkdf2", 6))
 		return -EINVAL;
 
 	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
 			    iterations, key_length, key);
-}
 
-#if 0
-/* Until bug in gcrypt related to empty password is fixed,  cannot use this */
-int crypt_pbkdf(const char *kdf, const char *hash,
-		const char *password, size_t password_length,
-		const char *salt, size_t salt_length,
-		char *key, size_t key_length,
-		unsigned int iterations)
-{
+#else /* USE_INTERNAL_PBKDF2 */
 	int hash_id = gcry_md_map_name(hash);
 	int kdf_id;
 
@@ -292,5 +285,5 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		return -EINVAL;
 
 	return 0;
+#endif /* USE_INTERNAL_PBKDF2 */
 }
-#endif

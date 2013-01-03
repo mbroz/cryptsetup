@@ -115,6 +115,8 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 	else
 		GCRYPT_REQ_VERSION=1.1.42
 	fi
+	dnl Check if we can use gcrypt PBKDF2 (1.6.0 supports empty password)
+	AM_PATH_LIBGCRYPT([1.6.0], [use_internal_pbkdf2=0], [use_internal_pbkdf2=1])
 	AM_PATH_LIBGCRYPT($GCRYPT_REQ_VERSION,,[AC_MSG_ERROR([You need the gcrypt library.])])
 
 	if test x$enable_static_cryptsetup = xyes; then
@@ -139,6 +141,7 @@ AC_DEFUN([CONFIGURE_OPENSSL], [
 		AC_MSG_ERROR([You need openssl library.]))
 	CRYPTO_CFLAGS=$OPENSSL_CFLAGS
 	CRYPTO_LIBS=$OPENSSL_LIBS
+	use_internal_pbkdf2=0
 
 	if test x$enable_static_cryptsetup = xyes; then
 		saved_PKG_CONFIG=$PKG_CONFIG
@@ -167,6 +170,7 @@ AC_DEFUN([CONFIGURE_NSS], [
 
 	CRYPTO_CFLAGS=$NSS_CFLAGS
 	CRYPTO_LIBS=$NSS_LIBS
+	use_internal_pbkdf2=1
 	NO_FIPS([])
 ])
 
@@ -176,6 +180,7 @@ AC_DEFUN([CONFIGURE_KERNEL], [
 #	AC_CHECK_DECLS([AF_ALG],,
 #		[AC_MSG_ERROR([You need Linux kernel with userspace crypto interface.])],
 #		[#include <sys/socket.h>])
+	use_internal_pbkdf2=1
 	NO_FIPS([])
 ])
 
@@ -190,6 +195,7 @@ AC_DEFUN([CONFIGURE_NETTLE], [
 	LIBS=$saved_LIBS
 
 	CRYPTO_STATIC_LIBS=$CRYPTO_LIBS
+	use_internal_pbkdf2=1
 	NO_FIPS([])
 ])
 
@@ -279,6 +285,9 @@ AM_CONDITIONAL(CRYPTO_BACKEND_OPENSSL, test $with_crypto_backend = openssl)
 AM_CONDITIONAL(CRYPTO_BACKEND_NSS,     test $with_crypto_backend = nss)
 AM_CONDITIONAL(CRYPTO_BACKEND_KERNEL,  test $with_crypto_backend = kernel)
 AM_CONDITIONAL(CRYPTO_BACKEND_NETTLE,  test $with_crypto_backend = nettle)
+
+AM_CONDITIONAL(CRYPTO_INTERNAL_PBKDF2, test $use_internal_pbkdf2 = 1)
+AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PBKDF2])
 
 dnl Magic for cryptsetup.static build.
 if test x$enable_static_cryptsetup = xyes; then
