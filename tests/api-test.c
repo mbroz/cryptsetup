@@ -700,7 +700,7 @@ static void AddDevicePlain(void)
 		EQ_(r_size, size);
 
 	// size overlaps
-	FAIL_(crypt_resize(cd, CDEVICE_1, ULLONG_MAX),"Backing device is too small");
+	FAIL_(crypt_resize(cd, CDEVICE_1, (uint64_t)-1),"Backing device is too small");
 	FAIL_(crypt_resize(cd, CDEVICE_1, (size>>SECTOR_SHIFT)+1),"crypt device overlaps backing device");
 
 	// resize ok
