@@ -60,6 +60,7 @@ function fail()
 function skip()
 {
 	[ -n "$1" ] && echo "$1"
+	remove_mapping
 	exit 0
 }
 
@@ -77,6 +78,9 @@ function prepare()
 	new)
 		remove_mapping
 		bzip2 -cd compatimage.img.bz2 > $IMG
+		# FIXME: switch to internal loop (no losetup at all)
+		echo "bad" | $CRYPTSETUP luksOpen --key-slot 0 --test-passphrase $IMG 2>&1 | \
+			grep "autoclear flag" && skip "WARNING: Too old kernel, test skipped."
 		losetup $LOOPDEV $IMG
 		bzip2 -cd compatv10image.img.bz2 > $IMG10
 		;;
@@ -135,7 +139,7 @@ function valgrind_run()
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
-[ -z "$LOOPDEV" ] && skip "Cannot find free loop device, test skipped."
+[ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
