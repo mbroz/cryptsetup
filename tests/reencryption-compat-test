@@ -103,7 +103,7 @@ echo "key0" | $REENC $LOOPDEV1 -q --use-directio
 check_hash "key0" $HASH1
 
 echo "[2] Reencryption with data shift"
-echo "key0" | $CRYPTSETUP -q luksFormat -s 128 -i 1 --align-payload 2048 $LOOPDEV1 || fail
+echo "key0" | $CRYPTSETUP -q luksFormat -c aes-cbc-essiv:sha256 -s 128 -i 1 --align-payload 2048 $LOOPDEV1 || fail
 wipe "key0"
 echo "key0" | $REENC $LOOPDEV1 -q -s 256 --reduce-device-size 1024S || fail
 check_hash "key0" $HASH2
@@ -111,7 +111,7 @@ echo "key0" | $REENC $LOOPDEV1 -q -i 1 || fail
 check_hash "key0" $HASH2
 
 echo "[3] Reencryption with keyfile"
-echo "key0" | $CRYPTSETUP -q luksFormat -d key1 -s 128 -i 1 --align-payload 4096 $LOOPDEV1 || fail
+echo "key0" | $CRYPTSETUP -q luksFormat -d key1 -c aes-cbc-essiv:sha256 -s 128 -i 1 --align-payload 4096 $LOOPDEV1 || fail
 wipe
 check_hash "" $HASH1
 echo "key0" | $CRYPTSETUP -q luksAddKey -d key1 $LOOPDEV1 || fail
@@ -127,7 +127,7 @@ wipe_dev $LOOPDEV1
 dmsetup create $DEV_NAME2 --table "0 $(($SIZE - $OFFSET)) linear $LOOPDEV1 0" || fail
 check_hash_dev /dev/mapper/$DEV_NAME2 $HASH3
 dmsetup remove $DEV_NAME2 || fail
-echo "key0" | $REENC $LOOPDEV1 -s 128 --new --reduce-device-size "$OFFSET"S -q
+echo "key0" | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --reduce-device-size "$OFFSET"S -q
 check_hash "key0" $HASH3
 
 remove_mapping
