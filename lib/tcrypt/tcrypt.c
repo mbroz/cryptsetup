@@ -716,7 +716,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 			break;
 	}
 
-	if (!r && !(dm_flags() & DM_PLAIN64_SUPPORTED)) {
+	if (r < 0 && !(dm_flags() & DM_PLAIN64_SUPPORTED)) {
 		log_err(cd, _("Kernel doesn't support plain64 IV.\n"));
 		r = -ENOTSUP;
 	}
