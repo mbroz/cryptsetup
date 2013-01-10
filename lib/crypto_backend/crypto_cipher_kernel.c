@@ -44,6 +44,9 @@ struct crypt_cipher {
 	int opfd;
 };
 
+/* Shared with hash kernel backend */
+int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd);
+
 int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd)
 {
 	*tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);

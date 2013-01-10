@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#include "luks.h"
 #include "internal.h"
 
 static void _error_hint(struct crypt_device *ctx, const char *device,

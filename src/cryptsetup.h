@@ -69,6 +69,7 @@ void quiet_log(int level, const char *msg, void *usrptr);
 int yesDialog(const char *msg, void *usrptr __attribute__((unused)));
 void show_status(int errcode);
 const char *uuid_or_device(const char *spec);
+__attribute__ ((noreturn)) \
 void usage(poptContext popt_context, int exitcode, const char *error, const char *more);
 void dbg_version_and_cmd(int argc, const char **argv);
 int translate_errno(int r);

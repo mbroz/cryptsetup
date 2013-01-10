@@ -100,4 +100,9 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 
 const char *dm_get_dir(void);
 
+/* These are DM helpers used only by utils_devpath file */
+int dm_is_dm_device(int major, int minor);
+int dm_is_dm_kernel_name(const char *name);
+char *dm_device_path(const char *prefix, int major, int minor);
+
 #endif /* _UTILS_DM_H */

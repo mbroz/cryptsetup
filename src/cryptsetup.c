@@ -475,7 +475,7 @@ static int action_benchmark(void)
 		{ "twofish", "xts", 64, 16 },
 		{  NULL, NULL, 0, 0 }
 	};
-	static char *bkdfs[] = {
+	static const char *bkdfs[] = {
 		"sha1", "sha256", "sha512", "ripemd160", "whirlpool", NULL
 	};
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
