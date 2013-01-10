@@ -3,6 +3,8 @@
 CRYPTSETUP="../src/cryptsetup"
 DEV=""
 DEV_STACKED="luks0xbabe"
+PWD1="93R4P4pIqAH8"
+PWD2="mymJeD8ivEhE"
 
 cleanup() {
 	udevadm settle >/dev/null 2>&1
@@ -43,10 +45,10 @@ format() # key_bits expected [forced]
 {
 	if [ -z "$3" ] ; then
 		echo -n "Formatting using topology info ($1 bits key)..."
-		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -c aes-cbc-essiv:sha256 -s $1
+		echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -c aes-cbc-essiv:sha256 -s $1
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key)..."
-		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -s $1 -c aes-cbc-essiv:sha256 --align-payload=$2
+		echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -s $1 -c aes-cbc-essiv:sha256 --align-payload=$2
 	fi
 
 	ALIGN=$($CRYPTSETUP luksDump $DEV |grep "Payload offset" | sed -e s/.*\\t//)
@@ -56,7 +58,7 @@ format() # key_bits expected [forced]
 	[ $ALIGN -ne $2 ] && fail "Expected alignment differs: expected $2 != detected $ALIGN"
 
 	# test some operation, just in case
-	echo -e "xxx\naaa" | $CRYPTSETUP luksAddKey $DEV -i1 --key-slot 1
+	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $DEV -i1 --key-slot 1
 	[ $? -ne 0 ] && fail "Keyslot add failed."
 
 	$CRYPTSETUP -q luksKillSlot $DEV 1
@@ -74,10 +76,10 @@ format_null()
 {
 	if [ $3 -eq 0 ] ; then
 		echo -n "Formatting using topology info ($1 bits key) [slot 0"
-		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1
+		echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key) [slot 0"
-		echo xxx| $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1 --align-payload=$3
+		echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1 --align-payload=$3
 	fi
 
 	POFF=$(get_offsets "Payload offset")
@@ -85,7 +87,7 @@ format_null()
 	[ $POFF != $2 ] && fail "Expected data offset differs: expected $2 != detected $POFF"
 	if [ -n "$4" ] ; then
 		for j in 1 2 3 4 5 6 7 ; do
-			echo -e "xxx\nblah$j" | $CRYPTSETUP luksAddKey $DEV -q -i1 --key-slot $j -c null $PARAMS
+			echo -e "$PWD1\n$PWD2$j" | $CRYPTSETUP luksAddKey $DEV -q -i1 --key-slot $j -c null $PARAMS
 			echo -n $j
 			[ $? -ne 0 ] && fail
 		done

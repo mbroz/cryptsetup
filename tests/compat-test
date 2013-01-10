@@ -1,5 +1,6 @@
 #!/bin/bash
 
+PS4='$LINENO:'
 CRYPTSETUP=../src/cryptsetup
 
 CRYPTSETUP_VALGRIND=../src/.libs/cryptsetup
@@ -16,6 +17,11 @@ KEY1=key1
 KEY2=key2
 KEY5=key5
 KEYE=keye
+PWD0="compatkey"
+PWD1="93R4P4pIqAH8"
+PWD2="mymJeD8ivEhE"
+PWD3="ocMakf3fAcQO"
+PWDW="rUkL4RUryBom"
 
 LUKS_HEADER="S0-5 S6-7 S8-39 S40-71 S72-103 S104-107 S108-111 R112-131 R132-163 S164-167 S168-207 A0-591"
 KEY_SLOT0="S208-211 S212-215 R216-247 A248-251 A251-255"
@@ -146,7 +152,7 @@ function valgrind_run()
 # LUKS tests
 
 prepare	"[1] open - compat image - acceptance check" new
-echo "compatkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
+echo $PWD0 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 check_exists
 ORG_SHA1=$(sha1sum -b /dev/mapper/$DEV_NAME | cut -f 1 -d' ')
 [ "$ORG_SHA1" = 676062b66ebf36669dab705442ea0762dfc091b0 ] || fail
@@ -154,14 +160,14 @@ $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 # Check it can be opened from header backup as well
 $CRYPTSETUP luksHeaderBackup $IMG --header-backup-file $HEADER_IMG || fail
-echo "compatkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME --header $HEADER_IMG || fail
+echo $PWD0 | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME --header $HEADER_IMG || fail
 check_exists
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # Check restore
 $CRYPTSETUP luksHeaderRestore -q $IMG --header-backup-file $HEADER_IMG || fail
 
 # Repeat for V1.0 header - not aligned first keyslot
-echo "compatkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME || fail
+echo $PWD0 | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME || fail
 check_exists
 ORG_SHA1=$(sha1sum -b /dev/mapper/$DEV_NAME | cut -f 1 -d' ')
 [ "$ORG_SHA1" = 51b48c2471a7593ceaf14dc5e66bca86ed05f6cc ] || fail
@@ -169,39 +175,39 @@ $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 rm -f $HEADER_IMG
 $CRYPTSETUP luksHeaderBackup $IMG10 --header-backup-file $HEADER_IMG
-echo "compatkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME --header $HEADER_IMG || fail
+echo $PWD0 | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME --header $HEADER_IMG || fail
 check_exists
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[2] open - compat image - denial check" new
-echo "wrongkey" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
-echo "wrongkey" | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME 2>/dev/null && fail
+echo $PWDW | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+echo $PWDW | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME 2>/dev/null && fail
 check
 
 # All headers items and first key material section must change
 prepare "[3] format" wipe
-echo "key0" | $CRYPTSETUP -i 1000 -c aes-cbc-essiv:sha256 -s 128 luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -i 1000 -c aes-cbc-essiv:sha256 -s 128 luksFormat $LOOPDEV || fail
 check "$LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0"
 
 prepare "[4] format using hash sha512" wipe
-echo "key0" | $CRYPTSETUP -i 1000 -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -i 1000 -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksFormat $LOOPDEV || fail
 check "$LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0"
 
 prepare "[5] open"
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --test-passphrase || fail
-echo "blah" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --test-passphrase 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --test-passphrase || fail
+echo $PWDW | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --test-passphrase 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 check_exists
 
 # Key Slot 1 and key material section 1 must change, the rest must not.
 prepare "[6] add key"
-echo -e "key0\nkey1" | $CRYPTSETUP luksAddKey $LOOPDEV || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $LOOPDEV || fail
 check "$KEY_SLOT1 $KEY_MATERIAL1"
-echo "key1" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 
 # Unsuccessful Key Delete - nothing may change
 prepare "[7] unsuccessful delete"
-echo "invalid" | $CRYPTSETUP luksKillSlot $LOOPDEV 1 2>/dev/null && fail
+echo $PWDW | $CRYPTSETUP luksKillSlot $LOOPDEV 1 2>/dev/null && fail
 $CRYPTSETUP -q luksKillSlot $LOOPDEV 8 2>/dev/null && fail
 $CRYPTSETUP -q luksKillSlot $LOOPDEV 7 2>/dev/null && fail
 check
@@ -211,12 +217,12 @@ check
 prepare "[8] successful delete"
 $CRYPTSETUP -q luksKillSlot $LOOPDEV 1 || fail
 check "$KEY_SLOT1 $KEY_MATERIAL1_EXT"
-echo "key1" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2> /dev/null && fail
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 
 # Key Slot 1 and key material section 1 must change, the rest must not
 prepare "[9] add key test for key files"
-echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV $KEY1 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV $KEY1 || fail
 check "$KEY_SLOT1 $KEY_MATERIAL1"
 $CRYPTSETUP -d $KEY1 luksOpen $LOOPDEV $DEV_NAME || fail
 
@@ -224,14 +230,14 @@ $CRYPTSETUP -d $KEY1 luksOpen $LOOPDEV $DEV_NAME || fail
 prepare "[10] delete key test with key1 as remaining key"
 $CRYPTSETUP -d $KEY1 luksKillSlot $LOOPDEV 0 || fail
 check "$KEY_SLOT0 $KEY_MATERIAL0_EXT"
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 
 # Delete last slot
 prepare "[11] delete last key" wipe
-echo "key0" | $CRYPTSETUP luksFormat $LOOPDEV || fail
-echo "key0" | $CRYPTSETUP luksKillSlot $LOOPDEV 0 || fail
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP luksKillSlot $LOOPDEV 0 || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 
 # Format test for ESSIV, and some other parameters.
 prepare "[12] parameter variation test" wipe
@@ -240,42 +246,42 @@ check "$LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0"
 $CRYPTSETUP -d $KEY1 luksOpen $LOOPDEV $DEV_NAME || fail
 
 prepare	"[13] open/close - stacked devices" wipe
-echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
-echo "key0" | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
-echo "key0" | $CRYPTSETUP -q luksFormat /dev/mapper/$DEV_NAME || fail
-echo "key0" | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat /dev/mapper/$DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME2 || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare	"[14] format/open - passphrase on stdin & new line" wipe
 # stdin defined by "-" must take even newline
-#echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV - || fail
-echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksFormat $LOOPDEV || fail
-echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
+#echo -n -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksFormat $LOOPDEV - || fail
+echo -n -e "$PWD1\n$PWD2" | $CRYPTSETUP -q --key-file=- luksFormat $LOOPDEV || fail
+echo -n -e "$PWD1\n$PWD2" | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
-echo -n $'foo\nbar' | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+echo -n -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 # now also try --key-file
-echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV --key-file=- || fail
-echo -n $'foo\nbar' | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
+echo -n -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksFormat $LOOPDEV --key-file=- || fail
+echo -n -e "$PWD1\n$PWD2" | $CRYPTSETUP -q --key-file=- luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # process newline if from stdin
-echo -n $'foo\nbar' | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
-echo 'foo' | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
+echo -n -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo "$PWD1" | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[15] UUID - use and report provided UUID" wipe
-echo "key0" | $CRYPTSETUP -q luksFormat --uuid blah $LOOPDEV 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP -q luksFormat --uuid $TEST_UUID $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --uuid blah $LOOPDEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --uuid $TEST_UUID $LOOPDEV || fail
 tst=$($CRYPTSETUP -q luksUUID $LOOPDEV)
 [ "$tst"x = "$TEST_UUID"x ] || fail
-echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
 $CRYPTSETUP -q luksUUID --uuid $TEST_UUID $LOOPDEV || fail
 tst=$($CRYPTSETUP -q luksUUID $LOOPDEV)
 [ "$tst"x = "$TEST_UUID"x ] || fail
 
 prepare "[16] luksFormat" wipe
-echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV || fail
-echo "key0" | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV -d $KEY1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom $LOOPDEV -d $KEY1 || fail
 $CRYPTSETUP -q luksFormat --master-key-file /dev/urandom -s 256 --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
@@ -289,19 +295,19 @@ $CRYPTSETUP -q luksFormat $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # open by volume key
-echo "key0" | $CRYPTSETUP -q luksFormat -s 256 --master-key-file $KEY1 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat -s 256 --master-key-file $KEY1 $LOOPDEV || fail
 $CRYPTSETUP luksOpen --master-key-file /dev/urandom $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksOpen --master-key-file $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[17] AddKey volume key, passphrase and keyfile" wipe
 # masterkey
-echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV --master-key-file /dev/zero --key-slot 3 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV --master-key-file /dev/zero --key-slot 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
-echo "key1" | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/zero --key-slot 4 || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/zero --key-slot 4 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: ENABLED" || fail
-echo "key2" | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/null --key-slot 5 2>/dev/null && fail
-# [0]key0 [1]key1 [2]$KEY1/1 [3]$KEY1 [4]$KEY2
+echo $PWD3 | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/null --key-slot 5 2>/dev/null && fail
+# [0]PWD1 [1]PWD2 [2]$KEY1/1 [3]$KEY1 [4]$KEY2
 $CRYPTSETUP -q luksFormat $LOOPDEV $KEY1 --key-slot 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
 $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 3 2>/dev/null && fail
@@ -309,13 +315,13 @@ $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 3 2>/dev/null && fail
 $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 4 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: ENABLED" || fail
 # passphrase/keyfile
-echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 --key-slot 0 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 --key-slot 0 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: ENABLED" || fail
 # passphrase/passphrase
-echo -e "key0\nkey1\n" | $CRYPTSETUP luksAddKey $LOOPDEV --key-slot 1 || fail
+echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksAddKey $LOOPDEV --key-slot 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: ENABLED" || fail
 # keyfile/passphrase
-echo -e "key1\n" | $CRYPTSETUP luksAddKey $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 1 || fail
+echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: ENABLED" || fail
 
 prepare "[18] RemoveKey passphrase and keyfile" reuse
@@ -326,18 +332,18 @@ $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 --keyfile-size 1 2>/dev/null && fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: DISABLED" || fail
 # kill slot using passphrase from 1
-echo "key1" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 || fail
+echo $PWD2 | $CRYPTSETUP luksKillSlot $LOOPDEV 2 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: DISABLED" || fail
 # remove key0 / slot 0
-echo "key0" | $CRYPTSETUP luksRemoveKey $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP luksRemoveKey $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: DISABLED" || fail
 # last keyslot, in batch mode no passphrase needed...
 $CRYPTSETUP luksKillSlot -q $LOOPDEV 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
 
 prepare "[19] create & status & resize" wipe
-echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash xxx 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --cipher aes-cbc-essiv:sha256 --offset 3 --skip 4 --readonly || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash xxx 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --cipher aes-cbc-essiv:sha256 --offset 3 --skip 4 --readonly || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "offset:" | grep -q "3 sectors" || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "skipped:" | grep -q "4 sectors" || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "mode:" | grep -q "readonly" || fail
@@ -347,15 +353,15 @@ $CRYPTSETUP -q resize  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "19997 sectors" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME >/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
-echo "key0" | $CRYPTSETUP -q create $DEV_NAME --hash sha1 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME --hash sha1 $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
-echo "key0" | $CRYPTSETUP -q create $DEV_NAME --hash sha1 --size 100 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME --hash sha1 --size 100 $LOOPDEV || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 # verify is ignored on non-tty input
-echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --verify-passphrase 2>/dev/null || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --verify-passphrase 2>/dev/null || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size 255 2>/dev/null && fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size -1 2>/dev/null && fail
@@ -371,26 +377,26 @@ prepare "[20] Disallow open/create if already mapped." wipe
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
 $CRYPTSETUP create $DEV_NAME2 $LOOPDEV -d $KEY1 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV 2>/dev/null && fail
 $CRYPTSETUP remove  $DEV_NAME || fail
-echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME2 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME2 2>/dev/null && fail
 $CRYPTSETUP  luksClose  $DEV_NAME || fail
 
 prepare "[21] luksDump" wipe
-echo "key0" | $CRYPTSETUP -q luksFormat --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
-echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --uuid $TEST_UUID $LOOPDEV $KEY1 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: ENABLED" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q $TEST_UUID || fail
-echo "bad" | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || fail
+echo $PWDW | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || fail
 $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || fail
 
 prepare "[22] remove disappeared device" wipe
 dmsetup create $DEV_NAME --table "0 5000 linear $LOOPDEV 2" || fail
-echo "key0" | $CRYPTSETUP -q -i 0 luksFormat /dev/mapper/$DEV_NAME || fail
-echo "key0" | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
+echo $PWD1 | $CRYPTSETUP -q -i 0 luksFormat /dev/mapper/$DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 # underlying device now returns error but node is still present
 dmsetup load $DEV_NAME --table "0 5000 error" || fail
 dmsetup resume $DEV_NAME || fail
@@ -400,16 +406,16 @@ dmsetup remove $DEV_NAME || fail
 prepare "[23] ChangeKey passphrase and keyfile" wipe
 # [0]$KEY1 [1]key0
 $CRYPTSETUP -q luksFormat $LOOPDEV $KEY1 --key-slot 0 || fail
-echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 --key-slot 1 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 --key-slot 1 || fail
 # keyfile [0] / keyfile [0]
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 0 || fail
 # passphrase [1] / passphrase [1]
-echo -e "key0\nkey1\n" | $CRYPTSETUP luksChangeKey $LOOPDEV --key-slot 1 || fail
+echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksChangeKey $LOOPDEV --key-slot 1 || fail
 # keyfile [0] / keyfile [new]
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY2 $KEY1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: DISABLED" || fail
 # passphrase [1] / passphrase [new]
-echo -e "key1\nkey0\n" | $CRYPTSETUP luksChangeKey $LOOPDEV || fail
+echo -e "$PWD2\n$PWD1\n" | $CRYPTSETUP luksChangeKey $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
 # use all slots
 $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i 1 || fail
@@ -442,11 +448,11 @@ $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -l 14 2>/dev/null && fail
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -i1 -l 13 || fail
 # -l is ignored for stdin if _only_ passphrase is used
-echo "key0" | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY2 -i1 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY2 -i1 || fail
 # this is stupid, but expected
-echo "key0" | $CRYPTSETUP luksRemoveKey $LOOPDEV -l 2 2>/dev/null && fail
-echo "key01" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d 4 2>/dev/null && fail
-echo -e "key0\n" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d- -l 4 || fail
+echo $PWD1 | $CRYPTSETUP luksRemoveKey $LOOPDEV -l 11 2>/dev/null && fail
+echo $PWDW"0" | $CRYPTSETUP luksRemoveKey $LOOPDEV -l 12 2>/dev/null && fail
+echo -e "$PWD1\n" | $CRYPTSETUP luksRemoveKey $LOOPDEV -d- -l 12 || fail
 # offset
 $CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY1 --key-slot 0 -l 13 --keyfile-offset 16 || fail
 $CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset 15 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
@@ -461,42 +467,42 @@ $CRYPTSETUP luksOpen -d $KEY2 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 
 prepare "[25] Create shared segments" wipe
-echo "key0" | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha1 --offset   0 --size 256 || fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 --shared || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha1 --offset   0 --size 256 || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 --shared || fail
 $CRYPTSETUP -q remove  $DEV_NAME2 || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 
 prepare "[26] Suspend/Resume" wipe
 # only LUKS is supported
-echo "key0" | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
 $CRYPTSETUP luksSuspend $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME 2>/dev/null && fail
 # LUKS
-echo "key0" | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
-echo "key0" | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
 $CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
-echo "xxx" | $CRYPTSETUP luksResume $DEV_NAME -T 1 2>/dev/null && fail
-echo "key0" | $CRYPTSETUP luksResume $DEV_NAME  || fail
+echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME -T 1 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
 
 prepare "[27] luksOpen with specified key slot number" wipe
 # first, let's try passphrase option
-echo "key5" | $CRYPTSETUP luksFormat -S 5 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP luksFormat -S 5 $LOOPDEV || fail
 check $LUKS_HEADER $KEY_SLOT5 $KEY_MATERIAL5
-echo "key5" | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME && fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
-echo "key5" | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME || fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME || fail
 check_exists
 $CRYPTSETUP luksClose $DEV_NAME || fail
-echo -e "key5\nkey0" | $CRYPTSETUP luksAddKey -S 0 $LOOPDEV || fail
+echo -e "$PWD3\n$PWD1" | $CRYPTSETUP luksAddKey -S 0 $LOOPDEV || fail
 check $LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0
-echo "key5" | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME && fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
-echo "key0" | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME && fail
+echo $PWD1 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 # second, try it with keyfiles
 $CRYPTSETUP luksFormat -q -S 5 -d $KEY5 $LOOPDEV || fail
@@ -513,13 +519,13 @@ $CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME && fail
 
 prepare "[28] Detached LUKS header" wipe
 dd if=/dev/zero of=$HEADER_IMG bs=1M count=4 >/dev/null 2>&1
-echo "key0" | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG || fail
-echo "key0" | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
-echo "key0" | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG || fail
+echo $PWD1 | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 $CRYPTSETUP -q resize  $DEV_NAME --size 100 --header $HEADER_IMG || fail
 $CRYPTSETUP -q status  $DEV_NAME --header $HEADER_IMG | grep "size:" | grep -q "100 sectors" || fail
 $CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
-echo "key0" | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 
 prepare "[29] Repair metadata" wipe
