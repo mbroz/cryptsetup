@@ -67,12 +67,14 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		char *key, size_t key_length,
 		unsigned int iterations);
 
+#if USE_INTERNAL_PBKDF2
 /* internal PBKDF2 implementation */
 int pkcs5_pbkdf2(const char *hash,
 		 const char *P, size_t Plen,
 		 const char *S, size_t Slen,
 		 unsigned int c,
 		 unsigned int dkLen,char *DK);
+#endif
 
 /* CRC32 */
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
