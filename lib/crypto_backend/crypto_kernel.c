@@ -52,7 +52,7 @@ static struct hash_alg hash_algs[] = {
 	{ "sha512", "sha512", 64 },
 	{ "ripemd160", "rmd160", 20 },
 	{ "whirlpool", "wp512", 64 },
-	{ NULL, 0 }
+	{ NULL, NULL, 0 }
 };
 
 struct crypt_hash {
