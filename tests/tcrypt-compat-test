@@ -10,22 +10,22 @@ PASSWORD_HIDDEN="bbbbbbbbbbbb"
 
 function remove_mapping()
 {
-        [ -b /dev/mapper/$MAP ] && dmsetup remove $MAP
-        [ -b /dev/mapper/"$MAP"_1 ] && dmsetup remove "$MAP"_1
-        [ -b /dev/mapper/"$MAP"_2 ] && dmsetup remove "$MAP"_2
+	[ -b /dev/mapper/$MAP ] && dmsetup remove $MAP
+	[ -b /dev/mapper/"$MAP"_1 ] && dmsetup remove "$MAP"_1
+	[ -b /dev/mapper/"$MAP"_2 ] && dmsetup remove "$MAP"_2
 }
 
 function fail()
 {
-        [ -n "$1" ] && echo "$1"
-        echo " [FAILED]"
-        remove_mapping
-        exit 2
+	[ -n "$1" ] && echo "$1"
+	echo " [FAILED]"
+	remove_mapping
+	exit 2
 }
 
 function skip()
 {
-        [ -n "$1" ] && echo "$1"
+	[ -n "$1" ] && echo "$1"
 	echo "Test skipped."
 	exit 0
 }
