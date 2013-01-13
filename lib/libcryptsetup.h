@@ -89,7 +89,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 int crypt_init_by_name(struct crypt_device **cd, const char *name);
 
 /**
- * @defgroup loglevel "Cryptsetup logging"
+ * @defgroup loglevel Cryptsetup logging
  *
  * Set of functions and defines used in cryptsetup for
  * logging purposes
@@ -239,7 +239,7 @@ void crypt_set_password_verify(struct crypt_device *cd, int password_verify);
 int crypt_set_data_device(struct crypt_device *cd, const char *device);
 
 /**
- * @defgroup rng "Cryptsetup RNG"
+ * @defgroup rng Cryptsetup RNG
  *
  * @addtogroup rng
  * @{
@@ -285,7 +285,7 @@ int crypt_get_rng_type(struct crypt_device *cd);
 int crypt_memory_lock(struct crypt_device *cd, int lock);
 
 /**
- * @defgroup crypt_type "Cryptsetup on-disk format types"
+ * @defgroup crypt_type Cryptsetup on-disk format types
  *
  * Set of functions, \#defines and structs related
  * to on-disk format types
@@ -363,13 +363,6 @@ struct crypt_params_loopaes {
  * @see crypt_format, crypt_load
  *
  */
-/** No on-disk header (only hashes) */
-#define CRYPT_VERITY_NO_HEADER   (1 << 0)
-/** Verity hash in userspace before activation */
-#define CRYPT_VERITY_CHECK_HASH  (1 << 1)
-/** Create hash - format hash device */
-#define CRYPT_VERITY_CREATE_HASH (1 << 2)
-
 struct crypt_params_verity {
 	const char *hash_name;     /**< hash function */
 	const char *data_device;   /**< data_device (CRYPT_VERITY_CREATE_HASH) */
@@ -384,22 +377,20 @@ struct crypt_params_verity {
 	uint32_t flags;            /**< CRYPT_VERITY* flags */
 };
 
+/** No on-disk header (only hashes) */
+#define CRYPT_VERITY_NO_HEADER   (1 << 0)
+/** Verity hash in userspace before activation */
+#define CRYPT_VERITY_CHECK_HASH  (1 << 1)
+/** Create hash - format hash device */
+#define CRYPT_VERITY_CREATE_HASH (1 << 2)
+
 /**
  *
  * Structure used as parameter for TCRYPT device type
  *
- * @see crypt_format
+ * @see crypt_load
  *
  */
-/** Include legacy modes ehn scannig for header*/
-#define CRYPT_TCRYPT_LEGACY_MODES    (1 << 0)
-/** Try to load hidden header (describing hidden device) */
-#define CRYPT_TCRYPT_HIDDEN_HEADER   (1 << 1)
-/** Try to load backup header */
-#define CRYPT_TCRYPT_BACKUP_HEADER   (1 << 2)
-/** Device contains encrypted system (with boot loader) */
-#define CRYPT_TCRYPT_SYSTEM_HEADER   (1 << 3)
-
 struct crypt_params_tcrypt {
 	const char *passphrase;    /**< passphrase to unlock header (input only) */
 	size_t passphrase_size;    /**< passphrase size (input only) */
@@ -411,6 +402,15 @@ struct crypt_params_tcrypt {
 	size_t key_size;           /**< key size in bytes (the whole chain) */
 	uint32_t flags;            /**< CRYPT_TCRYPT* flags */
 };
+
+/** Include legacy modes ehn scannig for header*/
+#define CRYPT_TCRYPT_LEGACY_MODES    (1 << 0)
+/** Try to load hidden header (describing hidden device) */
+#define CRYPT_TCRYPT_HIDDEN_HEADER   (1 << 1)
+/** Try to load backup header */
+#define CRYPT_TCRYPT_BACKUP_HEADER   (1 << 2)
+/** Device contains encrypted system (with boot loader) */
+#define CRYPT_TCRYPT_SYSTEM_HEADER   (1 << 3)
 
 /** @} */
 
@@ -572,7 +572,7 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 void crypt_free(struct crypt_device *cd);
 
 /**
- * @defgroup keyslot "Cryptsetup LUKS keyslots"
+ * @defgroup keyslot Cryptsetup LUKS keyslots
  * @addtogroup keyslot
  * @{
  *
@@ -705,7 +705,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 /** @} */
 
 /**
- * @defgroup aflags "Device runtime attributes"
+ * @defgroup aflags Device runtime attributes
  *
  * Activation flags
  *
@@ -878,7 +878,7 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 	size_t volume_key_size);
 
 /**
- * @defgroup devstat "Crypt and Verity device status"
+ * @defgroup devstat Crypt and Verity device status
  * @addtogroup devstat
  * @{
  */
@@ -912,38 +912,6 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
  * @return @e 0 on success or negative errno value otherwise.
  */
 int crypt_dump(struct crypt_device *cd);
-
-/**
- * Informational benchmark for ciphers
- *
- * @param cd crypt device handle
- * @param cipher (e.g. "aes")
- * @param cipher_mode (e.g. "xts"), IV generator is ignored
- * @param volume_key_size size of volume key in bytes
- * @param iv_size size of IV in bytes
- * @param buffer_size size of encryption buffer in bytes used in test
- * @param encryption_mbs measured encryption speed in MiB/s
- * @param decryption_mbs measured decryption speed in MiB/s
- *
- * @return @e 0 on success or negative errno value otherwise.
- */
-int crypt_benchmark(struct crypt_device *cd,
-	const char *cipher,
-	const char *cipher_mode,
-	size_t volume_key_size,
-	size_t iv_size,
-	size_t buffer_size,
-	double *encryption_mbs,
-	double *decryption_mbs);
-
-int crypt_benchmark_kdf(struct crypt_device *cd,
-	const char *kdf,
-	const char *hash,
-	const char *password,
-	size_t password_size,
-	const char *salt,
-	size_t salt_size,
-	uint64_t *iterations_sec);
 
 /**
  * Get cipher used in device
@@ -1026,6 +994,63 @@ int crypt_get_volume_key_size(struct crypt_device *cd);
  */
 int crypt_get_verity_info(struct crypt_device *cd,
 	struct crypt_params_verity *vp);
+/** @} */
+
+/**
+ * @defgroup benchmark Benchmarking
+ *
+ * Benchmarking of algorithms
+ *
+ * @addtogroup benchmark
+ * @{
+ *
+ */
+
+/**
+ * Informational benchmark for ciphers
+ *
+ * @param cd crypt device handle
+ * @param cipher (e.g. "aes")
+ * @param cipher_mode (e.g. "xts"), IV generator is ignored
+ * @param volume_key_size size of volume key in bytes
+ * @param iv_size size of IV in bytes
+ * @param buffer_size size of encryption buffer in bytes used in test
+ * @param encryption_mbs measured encryption speed in MiB/s
+ * @param decryption_mbs measured decryption speed in MiB/s
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_benchmark(struct crypt_device *cd,
+	const char *cipher,
+	const char *cipher_mode,
+	size_t volume_key_size,
+	size_t iv_size,
+	size_t buffer_size,
+	double *encryption_mbs,
+	double *decryption_mbs);
+
+/**
+ * Informational benchmark for KDF
+ *
+ * @param cd crypt device handle
+ * @param kdf Key derivation function (e.g. "pbkdf2")
+ * @param hash Hash algorithm used in KDF (e.g. "sha256")
+ * @param password password for benchmark
+ * @param password_size size of password
+ * @param salt salt for benchmark
+ * @param salt_size size of salt
+ * @param iterations_sec returns measured KDF iterations per second
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_benchmark_kdf(struct crypt_device *cd,
+	const char *kdf,
+	const char *hash,
+	const char *password,
+	size_t password_size,
+	const char *salt,
+	size_t salt_size,
+	uint64_t *iterations_sec);
 /** @} */
 
 /**
@@ -1144,7 +1169,7 @@ void crypt_get_error(char *buf, size_t size);
 const char *crypt_get_dir(void);
 
 /**
- * @defgroup dbg "Library debug level"
+ * @defgroup dbg Library debug level
  *
  * Set library debug level
  *
