@@ -39,6 +39,7 @@ KEY_MATERIAL5_EXT="S331776-395264"
 TEST_UUID="12345678-1234-1234-1234-123456789abc"
 
 LOOPDEV=$(losetup -f 2>/dev/null)
+FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
 function remove_mapping()
 {
@@ -61,6 +62,12 @@ function fail()
 	remove_mapping
 	echo "FAILED"
 	exit 2
+}
+
+function can_fail_fips()
+{
+        # Ignore this fail if running in FIPS mode
+        [ -z "$FIPS_MODE" -o "$FIPS_MODE" -eq 0 ] && fail $1
 }
 
 function skip()
@@ -390,8 +397,8 @@ echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: ENABLED" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q $TEST_UUID || fail
 echo $PWDW | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || fail
-$CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || fail
+echo $PWD1 | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || can_fail_fips
+$CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || can_fail_fips
 
 prepare "[22] remove disappeared device" wipe
 dmsetup create $DEV_NAME --table "0 5000 linear $LOOPDEV 2" || fail
