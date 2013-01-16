@@ -27,6 +27,7 @@
 #include <linux/fs.h>
 #include <errno.h>
 #include <assert.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <libdevmapper.h>
@@ -85,6 +86,8 @@
 static int _debug   = 0;
 static int _verbose = 1;
 static int _fips_mode = 0;
+
+static int _quit = 0;
 
 static char global_log[4096];
 static int global_lines = 0;
@@ -519,6 +522,12 @@ static void xlog(const char *msg, const char *tst, const char *func, int line, c
 			printf(" [%s,%s:%d] %s [%s]\n", msg, func, line, tst, txt);
 		else
 			printf(" [%s,%s:%d] %s\n", msg, func, line, tst);
+	}
+	if (_quit) {
+		if (_verbose)
+			printf("Interrupted by a signal.\n");
+		_cleanup();
+		exit(-1);
 	}
 }
 
@@ -1849,8 +1858,14 @@ static void NonFIPSAlg(void)
 	crypt_free(cd);
 }
 
+static void int_handler(int sig __attribute__((__unused__)))
+{
+	_quit++;
+}
+
 int main(int argc, char *argv[])
 {
+	struct sigaction sa = { .sa_handler = int_handler };
 	int i;
 
 	if (getuid() != 0) {
@@ -1864,6 +1879,10 @@ int main(int argc, char *argv[])
 		else if (!strcmp("--debug", argv[i]))
 			_debug = _verbose = 1;
 	}
+
+	/* Handle interrupt properly */
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
 
 	_cleanup();
 	if (_setup())
