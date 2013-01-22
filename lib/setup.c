@@ -60,14 +60,12 @@ struct crypt_device {
 		struct crypt_params_plain hdr;
 		char *cipher;
 		char *cipher_mode;
-		char *uuid;
 		unsigned int key_size;
 	} plain;
 	struct { /* used in CRYPT_LOOPAES */
 		struct crypt_params_loopaes hdr;
 		char *cipher;
 		char *cipher_mode;
-		char *uuid;
 		unsigned int key_size;
 	} loopaes;
 	struct { /* used in CRYPT_VERITY */
@@ -329,7 +327,6 @@ int PLAIN_activate(struct crypt_device *cd,
 	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
-		.uuid   = crypt_get_uuid(cd),
 		.size   = size,
 		.flags  = flags,
 		.data_device = crypt_data_device(cd),
@@ -363,10 +360,6 @@ int PLAIN_activate(struct crypt_device *cd,
 		name, dmd.u.crypt.cipher);
 
 	r = dm_create_device(cd, name, CRYPT_PLAIN, &dmd, 0);
-
-	// FIXME
-	if (!cd->u.plain.uuid && dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd) >= 0)
-		cd->u.plain.uuid = CONST_CAST(char*)dmd.uuid;
 
 	free(dm_cipher);
 	return r;
@@ -715,7 +708,6 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		goto out;
 
 	if (isPLAIN(cd->type)) {
-		cd->u.plain.uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
 		cd->u.plain.hdr.hash = NULL; /* no way to get this */
 		cd->u.plain.hdr.offset = dmd.u.crypt.offset;
 		cd->u.plain.hdr.skip = dmd.u.crypt.iv_offset;
@@ -727,7 +719,6 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			cd->u.plain.cipher_mode = strdup(cipher_mode);
 		}
 	} else if (isLOOPAES(cd->type)) {
-		cd->u.loopaes.uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
 		cd->u.loopaes.hdr.offset = dmd.u.crypt.offset;
 
 		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher, cipher,
@@ -784,14 +775,13 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 
 	r = dm_query_device(cd, name,
 				DM_ACTIVE_DEVICE |
-				DM_ACTIVE_UUID |
 				DM_ACTIVE_VERITY_HASH_DEVICE |
 				DM_ACTIVE_VERITY_PARAMS, &dmd);
 	if (r < 0)
 		goto out;
 
 	if (isVERITY(cd->type)) {
-		cd->u.verity.uuid = dmd.uuid ? strdup(dmd.uuid) : NULL;
+		cd->u.verity.uuid = NULL; // FIXME
 		cd->u.verity.hdr.flags = CRYPT_VERITY_NO_HEADER; //FIXME
 		cd->u.verity.hdr.data_size = params.data_size;
 		cd->u.verity.root_hash_size = dmd.u.verity.root_hash_size;
@@ -810,7 +800,6 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 	}
 out:
 	device_free(dmd.data_device);
-	free(CONST_CAST(void*)dmd.uuid);
 	return r;
 }
 
@@ -920,6 +909,11 @@ static int _crypt_format_plain(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (uuid) {
+		log_err(cd, _("UUID is not supported for this crypt type.\n"));
+		return -EINVAL;
+	}
+
 	if (!(cd->type = strdup(CRYPT_PLAIN)))
 		return -ENOMEM;
 
@@ -931,8 +925,6 @@ static int _crypt_format_plain(struct crypt_device *cd,
 	cd->u.plain.cipher = strdup(cipher);
 	cd->u.plain.cipher_mode = strdup(cipher_mode);
 
-	if (uuid)
-		cd->u.plain.uuid = strdup(uuid);
 
 	if (params && params->hash)
 		cd->u.plain.hdr.hash = strdup(params->hash);
@@ -1042,15 +1034,17 @@ static int _crypt_format_loopaes(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (uuid) {
+		log_err(cd, _("UUID is not supported for this crypt type.\n"));
+		return -EINVAL;
+	}
+
 	if (!(cd->type = strdup(CRYPT_LOOPAES)))
 		return -ENOMEM;
 
 	cd->u.loopaes.key_size = volume_key_size;
 
 	cd->u.loopaes.cipher = strdup(cipher ?: DEFAULT_LOOPAES_CIPHER);
-
-	if (uuid)
-		cd->u.loopaes.uuid = strdup(uuid);
 
 	if (params && params->hash)
 		cd->u.loopaes.hdr.hash = strdup(params->hash);
@@ -1288,7 +1282,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	int r;
 
 	/* Device context type must be initialised */
-	if (!cd->type || !crypt_get_uuid(cd))
+	if (!cd->type)
 		return -EINVAL;
 
 	log_dbg("Resizing device %s to %" PRIu64 " sectors.", name, new_size);
@@ -1413,11 +1407,9 @@ void crypt_free(struct crypt_device *cd)
 			free(CONST_CAST(void*)cd->u.plain.hdr.hash);
 			free(cd->u.plain.cipher);
 			free(cd->u.plain.cipher_mode);
-			free(cd->u.plain.uuid);
 		} else if (isLOOPAES(cd->type)) {
 			free(CONST_CAST(void*)cd->u.loopaes.hdr.hash);
 			free(cd->u.loopaes.cipher);
-			free(cd->u.loopaes.uuid);
 		} else if (isVERITY(cd->type)) {
 			free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
 			free(CONST_CAST(void*)cd->u.verity.hdr.salt);
@@ -2451,12 +2443,6 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 {
 	if (isLUKS(cd->type))
 		return cd->u.luks1.hdr.uuid;
-
-	if (isPLAIN(cd->type))
-		return cd->u.plain.uuid;
-
-	if (isLOOPAES(cd->type))
-		return cd->u.loopaes.uuid;
 
 	if (isVERITY(cd->type))
 		return cd->u.verity.uuid;

@@ -195,7 +195,6 @@ int LOOPAES_activate(struct crypt_device *cd,
 	int r;
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
-		.uuid   = crypt_get_uuid(cd),
 		.size   = 0,
 		.flags  = flags,
 		.data_device = crypt_data_device(cd),

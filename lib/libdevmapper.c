@@ -493,14 +493,19 @@ int dm_remove_device(struct crypt_device *cd, const char *name,
  * CRYPT-LUKS1-00000000000000000000000000000000-name
  * CRYPT-TEMP-name
  */
-static void dm_prepare_uuid(const char *name, const char *type, const char *uuid, char *buf, size_t buflen)
+static int dm_prepare_uuid(const char *name, const char *type, const char *uuid, char *buf, size_t buflen)
 {
 	char *ptr, uuid2[UUID_LEN] = {0};
 	uuid_t uu;
 	unsigned i = 0;
 
 	/* Remove '-' chars */
-	if (uuid && !uuid_parse(uuid, uu)) {
+	if (uuid) {
+		if (uuid_parse(uuid, uu) < 0) {
+			log_dbg("Requested UUID %s has invalid format.", uuid);
+			return -EINVAL;
+		}
+
 		for (ptr = uuid2, i = 0; i < UUID_LEN; i++)
 			if (uuid[i] != '-') {
 				*ptr = uuid[i];
@@ -516,6 +521,8 @@ static void dm_prepare_uuid(const char *name, const char *type, const char *uuid
 	log_dbg("DM-UUID is %s", buf);
 	if (i >= buflen)
 		log_err(NULL, _("DM-UUID for device %s was truncated.\n"), name);
+
+	return 0;
 }
 
 static int _dm_create_device(const char *name, const char *type,
@@ -542,7 +549,9 @@ static int _dm_create_device(const char *name, const char *type,
 		if (!dm_task_set_name(dmt, name))
 			goto out_no_removal;
 	} else {
-		dm_prepare_uuid(name, type, uuid, dev_uuid, sizeof(dev_uuid));
+		r = dm_prepare_uuid(name, type, uuid, dev_uuid, sizeof(dev_uuid));
+		if (r < 0)
+			return r;
 
 		if (!(dmt = dm_task_create(DM_DEVICE_CREATE)))
 			goto out_no_removal;
