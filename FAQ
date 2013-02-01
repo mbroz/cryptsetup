@@ -509,6 +509,22 @@ A. Contributors
   for that.
 
 
+ * 2.14 How do I Benchmark the Ciphers, Hashes and Modes?
+
+  Since version 1.60 cryptsetup supports the "benchmark" command.
+  Simply run as root:
+
+   cryptsetup benchmark
+ 
+  It will output first iterations/second for the key-derivation
+  function PBKDF2 parameterized with different hash-functions, and
+  then the raw encryption speed of ciphers with different modes and
+  key-sizes. You can get more than the default benchmarks, see the
+  man-page for the relevant parameters. Note that XTS mode takes two
+  keys, hence the listed key sizes are double that for other modes
+  and half of it is the cipher key, the other half is the XTS key.
+
+
 3. Common Problems 
 
 
