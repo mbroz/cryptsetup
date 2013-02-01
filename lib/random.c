@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <assert.h>
+#include <sys/select.h>
 
 #include "libcryptsetup.h"
 #include "internal.h"
