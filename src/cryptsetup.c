@@ -657,7 +657,7 @@ static int action_luksFormat(void)
 	else if (opt_urandom)
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
-	r = tools_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
+	r = tools_get_key(_("Enter passphrase: "), &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			  opt_timeout, _verify_passphrase(1), 1, cd);
 	if (r < 0)
@@ -828,7 +828,7 @@ static int action_luksKillSlot(void)
 	if (!opt_batch_mode) {
 		r = verify_keyslot(cd, opt_key_slot,
 			_("This is the last keyslot. Device will become unusable after purging this key."),
-			_("Enter any remaining LUKS passphrase: "),
+			_("Enter any remaining passphrase: "),
 			opt_key_file, opt_keyfile_offset, opt_keyfile_size);
 		if (r < 0)
 			goto out;
@@ -856,7 +856,7 @@ static int action_luksRemoveKey(void)
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
-	r = tools_get_key(_("Enter LUKS passphrase to be deleted: "),
+	r = tools_get_key(_("Enter passphrase to be deleted: "),
 		      &password, &passwordLen,
 		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 		      opt_timeout,
@@ -925,7 +925,7 @@ static int action_luksAddKey(void)
 			opt_key_file, opt_keyfile_size, opt_keyfile_offset,
 			opt_new_key_file, opt_new_keyfile_size, opt_new_keyfile_offset);
 	} else {
-		r = tools_get_key(_("Enter any passphrase: "),
+		r = tools_get_key(_("Enter any existing passphrase: "),
 			      &password, &password_size, 0, 0, NULL,
 			      opt_timeout, _verify_passphrase(0), 0, cd);
 
@@ -974,7 +974,7 @@ static int action_luksChangeKey(void)
 	if (opt_iteration_time)
 		crypt_set_iteration_time(cd, opt_iteration_time);
 
-	r = tools_get_key(_("Enter LUKS passphrase to be changed: "),
+	r = tools_get_key(_("Enter passphrase to be changed: "),
 		      &password, &password_size,
 		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 		      opt_timeout, _verify_passphrase(0), 0, cd);
@@ -988,7 +988,7 @@ static int action_luksChangeKey(void)
 	if (r < 0)
 		goto out;
 
-	r = tools_get_key(_("Enter new LUKS passphrase: "),
+	r = tools_get_key(_("Enter new passphrase: "),
 			  &password_new, &password_new_size,
 			  opt_new_keyfile_offset, opt_new_keyfile_size,
 			  opt_new_key_file,
@@ -1067,7 +1067,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = tools_get_key(_("Enter LUKS passphrase: "), &password, &passwordLen,
+	r = tools_get_key(_("Enter passphrase: "), &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			  opt_timeout, 0, 0, cd);
 	if (r < 0)

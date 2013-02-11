@@ -931,7 +931,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 	log_dbg("Passhrases initialization.");
 
 	if (opt_new && !rc->in_progress) {
-		r = init_passphrase1(rc, cd, _("Enter new LUKS passphrase: "), 0, 0);
+		r = init_passphrase1(rc, cd, _("Enter new passphrase: "), 0, 0);
 		return r > 0 ? 0 : r;
 	}
 
@@ -945,14 +945,14 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 	if (opt_key_file) {
 		r = init_keyfile(rc, cd, opt_key_slot);
 	} else if (rc->in_progress) {
-		r = init_passphrase1(rc, cd, _("Enter any LUKS passphrase: "),
+		r = init_passphrase1(rc, cd, _("Enter any existing passphrase: "),
 				     CRYPT_ANY_SLOT, 1);
 	} else for (i = 0; i < MAX_SLOT; i++) {
 		ki = crypt_keyslot_status(cd, i);
 		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
 			continue;
 
-		snprintf(msg, sizeof(msg), _("Enter LUKS passphrase for key slot %u: "), i);
+		snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %u: "), i);
 		r = init_passphrase1(rc, cd, msg, i, 1);
 		if (r < 0)
 			break;
