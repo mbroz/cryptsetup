@@ -485,6 +485,12 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	else
 		passphrase_size = params->passphrase_size;
 
+	if (params->passphrase_size > TCRYPT_KEY_POOL_LEN) {
+		log_err(cd, _("Maximum TCRYPT passphrase length (%d) exceeded.\n"),
+			      TCRYPT_KEY_POOL_LEN);
+		return -EINVAL;
+	}
+
 	/* Calculate pool content from keyfiles */
 	for (i = 0; i < params->keyfiles_count; i++) {
 		r = TCRYPT_pool_keyfile(cd, pwd, params->keyfiles[i]);

@@ -393,7 +393,7 @@ struct crypt_params_verity {
  */
 struct crypt_params_tcrypt {
 	const char *passphrase;    /**< passphrase to unlock header (input only) */
-	size_t passphrase_size;    /**< passphrase size (input only) */
+	size_t passphrase_size;    /**< passphrase size (input only, max length is 64) */
 	const char **keyfiles;     /**< keyfile paths to unlock header (input only) */
 	unsigned int keyfiles_count;/**< keyfiles count (input only) */
 	const char *hash_name;     /**< hash function for PBKDF */
