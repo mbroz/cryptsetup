@@ -1752,6 +1752,7 @@ static void TcryptTest(void)
 	};
 	double enc_mbr = 0, dec_mbr = 0;
 	const char *tcrypt_dev = "tcrypt-images/tck_5-sha512-xts-aes";
+	const char *tcrypt_dev2 = "tcrypt-images/tc_5-sha512-xts-serpent-twofish-aes";
 	size_t key_size = 64;
 	char key[key_size], key_def[key_size];
 	const char *key_hex =
@@ -1821,6 +1822,18 @@ static void TcryptTest(void)
 
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
+
+	OK_(crypt_init(&cd, tcrypt_dev2));
+	params.keyfiles = NULL;
+	params.keyfiles_count = 0;
+	OK_(crypt_load(cd, CRYPT_TCRYPT, &params));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, CRYPT_ACTIVATE_READONLY));
+	crypt_free(cd);
+
+	// Deactivate the whole chain
+	EQ_(crypt_status(NULL, CDEVICE_1 "_1"), CRYPT_BUSY);
+	OK_(crypt_deactivate(NULL, CDEVICE_1));
+	EQ_(crypt_status(NULL, CDEVICE_1 "_1"), CRYPT_INACTIVE);
 }
 
 // Check that gcrypt is properly initialised in format

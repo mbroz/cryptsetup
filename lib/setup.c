@@ -2138,6 +2138,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 
 int crypt_deactivate(struct crypt_device *cd, const char *name)
 {
+	struct crypt_device *fake_cd = NULL;
 	int r;
 
 	if (!name)
@@ -2145,13 +2146,17 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 
 	log_dbg("Deactivating volume %s.", name);
 
-	if (!cd)
-		dm_backend_init();
+	if (!cd) {
+		r = crypt_init_by_name(&fake_cd, name);
+		if (r < 0)
+			return r;
+		cd = fake_cd;
+	}
 
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
 		case CRYPT_BUSY:
-			if (cd && isTCRYPT(cd->type))
+			if (isTCRYPT(cd->type))
 				r = TCRYPT_deactivate(cd, name);
 			else
 				r = dm_remove_device(cd, name, 0, 0);
@@ -2165,8 +2170,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 			r = -EINVAL;
 	}
 
-	if (!cd)
-		dm_backend_exit();
+	crypt_free(fake_cd);
 
 	return r;
 }
