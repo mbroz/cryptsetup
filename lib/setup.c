@@ -749,8 +749,12 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 				free(cd->type);
 				cd->type = NULL;
 				r = 0;
-				goto out;
 			}
+		} else {
+			log_dbg("LUKS device header not available.");
+			free(cd->type);
+			cd->type = NULL;
+			r = 0;
 		}
 	} else if (isTCRYPT(cd->type)) {
 		r = TCRYPT_init_by_name(cd, name, &dmd, &cd->device,
@@ -2160,6 +2164,10 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 				r = TCRYPT_deactivate(cd, name);
 			else
 				r = dm_remove_device(cd, name, 0, 0);
+			if (r < 0 && crypt_status(cd, name) == CRYPT_BUSY) {
+				log_err(cd, _("Device %s is still in use.\n"), name);
+				r = -EBUSY;
+			}
 			break;
 		case CRYPT_INACTIVE:
 			log_err(cd, _("Device %s is not active.\n"), name);
