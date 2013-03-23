@@ -75,16 +75,16 @@ static int hash_keys(struct crypt_device *cd,
 		     const char *hash_override,
 		     const char **input_keys,
 		     unsigned int keys_count,
-		     unsigned int key_len_output)
+		     unsigned int key_len_output,
+		     unsigned int key_len_input)
 {
 	const char *hash_name;
 	char tweak, *key_ptr;
-	unsigned i, key_len_input;
+	unsigned i;
 	int r;
 
 	hash_name = hash_override ?: get_hash(key_len_output);
 	tweak = get_tweak(keys_count);
-	key_len_input = strlen(input_keys[0]);
 
 	if (!keys_count || !key_len_output || !hash_name || !key_len_input) {
 		log_err(cd, _("Key processing error (using hash %s).\n"),
@@ -134,6 +134,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			  size_t buffer_len)
 {
 	const char *keys[LOOPAES_KEYS_MAX];
+	int key_lengths[LOOPAES_KEYS_MAX];
 	unsigned i, key_index, key_len, offset;
 
 	log_dbg("Parsing loop-AES keyfile of size %d.", buffer_len);
@@ -154,33 +155,45 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 
 	offset = 0;
 	key_index = 0;
+	key_lengths[0] = 0;
 	while (offset < buffer_len && key_index < LOOPAES_KEYS_MAX) {
-		keys[key_index++] = &buffer[offset];
-		while (offset < buffer_len && buffer[offset])
+		keys[key_index] = &buffer[offset];
+		key_lengths[key_index] = 0;;
+		while (offset < buffer_len && buffer[offset]) {
 			offset++;
+			key_lengths[key_index]++;
+		}
+		if (offset == buffer_len) {
+			log_dbg("Unterminated key #%d in keyfile.", key_index);
+			log_err(cd, _("Incompatible loop-AES keyfile detected.\n"));
+			return -EINVAL;
+		}
 		while (offset < buffer_len && !buffer[offset])
 			offset++;
+		key_index++;
 	}
 
 	/* All keys must be the same length */
-	key_len = key_index ? strlen(keys[0]) : 0;
+	key_len = key_lengths[0];
 	for (i = 0; i < key_index; i++)
-		if (key_len != strlen(keys[i])) {
+		if (!key_lengths[i] || (key_lengths[i] != key_len)) {
 			log_dbg("Unexpected length %d of key #%d (should be %d).",
-				strlen(keys[i]), i, key_len);
+				key_lengths[i], i, key_len);
 			key_len = 0;
 			break;
 		}
 
-	log_dbg("Keyfile: %d keys of length %d.", key_index, key_len);
 	if (offset != buffer_len || key_len == 0 ||
 	   (key_index != 1 && key_index !=64 && key_index != 65)) {
 		log_err(cd, _("Incompatible loop-AES keyfile detected.\n"));
 		return -EINVAL;
 	}
 
+	log_dbg("Keyfile: %d keys of length %d.", key_index, key_len);
+
 	*keys_count = key_index;
-	return hash_keys(cd, vk, hash, keys, key_index, crypt_get_volume_key_size(cd));
+	return hash_keys(cd, vk, hash, keys, key_index,
+			 crypt_get_volume_key_size(cd), key_len);
 }
 
 int LOOPAES_activate(struct crypt_device *cd,
