@@ -1,0 +1,32 @@
+Cryptsetup 1.6.1 Release Notes
+==============================
+
+Changes since version 1.6.0
+
+* Fix loop-AES keyfile parsing.
+  Loop-AES keyfile should be text keyfile, reject keyfiles which
+  are not properly terminated.
+
+* Fix passphrase pool overflow for too long TCRYPT passphrase.
+ (Maximal TCRYPT passphrase length is 64 characters.)
+
+* Return EPERM (translated to exit code 2) for too long TCRYPT passphrase.
+
+* Fix deactivation of device when failed underlying node disappeared.
+
+* Fix API deactivate call for TCRYPT format and NULL context parameter.
+
+* Improve keyslot checker example documentation.
+
+* Report error message if deactivation fails and device is still busy.
+
+* Make passphrase prompts more consistent (and remove "LUKS" form prompt).
+
+* Fix some missing headers (compilation failed with alternative libc).
+
+* Remove not functional API UUID support for plain & loopaes devices.
+  (not persistent activation UUID).
+
+* Properly cleanup devices on interrupt in api-test.
+
+* Support all tests run if kernel is in FIPS mode.
