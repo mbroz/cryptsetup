@@ -80,7 +80,7 @@ static int hash_keys(struct crypt_device *cd,
 {
 	const char *hash_name;
 	char tweak, *key_ptr;
-	unsigned i;
+	unsigned int i;
 	int r;
 
 	hash_name = hash_override ?: get_hash(key_len_output);
@@ -134,8 +134,8 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			  size_t buffer_len)
 {
 	const char *keys[LOOPAES_KEYS_MAX];
-	int key_lengths[LOOPAES_KEYS_MAX];
-	unsigned i, key_index, key_len, offset;
+	unsigned int key_lengths[LOOPAES_KEYS_MAX];
+	unsigned int i, key_index, key_len, offset;
 
 	log_dbg("Parsing loop-AES keyfile of size %d.", buffer_len);
 
