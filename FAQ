@@ -393,6 +393,22 @@ A. Contributors
   not work anymore. Therefore it is better to encrypt the RAID
   device, e.g. /dev/dm0 .
 
+  This means that the typical layering looks like this:
+
+  Filesystem     <- top
+  |
+  Encryption
+  |
+  RAID
+  |
+  Raw partitions
+  |
+  Raw disks      <- bottom
+ 
+  The big advantage is that you can manage the RAID container just
+  like any RAID container, it does not care that what is in it is
+  encrypted.
+
 
  * 2.7 How do I read a dm-crypt key from file?
 
@@ -487,6 +503,10 @@ A. Contributors
   cryptsetup read the key from STDIN and write it there with your
   own tool that in turn gets the key from the more secure key
   storage.
+
+  For TPM support, you may want to have a look at tpm-luks at
+  https://github.com/shpedoikal/tpm-luks. Note that tpm-luks is not
+  related to the cryptsetup project.
 
 
  * 2.13 Can I resize a dm-crypt or LUKS partition?
@@ -633,7 +653,38 @@ A. Contributors
   diagnosing and (if still possible) repairing this.
 
 
- * 4.2 Can a bad RAM module cause problems?
+ * 4.2 I cannot unlock my LUKS container! What could be the problem?
+
+  First, make sure you have a correct passphrase. Then make sure you
+  have the correct key-map and correct keyboard. And then make sure
+  you have the correct character set and encoding, see also
+  "PASSPHRASE CHARACTER SET" under Section 1.2.
+
+  If you are sure you are entering the passphrase right, there is the
+  possibility that the respective key-slot has been damaged. There
+  is no way to recover a damaged key-slot, except from a header
+  backup (see Section 6). For security reasons, there is also no
+  checksum in the key-slots that could tell you whether a key-slot has
+  been damaged. The only checksum present allows recognition of a
+  correct passphrase, but that only works if the passphrase is
+  correct and the respective key-slot is intact.
+
+  In order to find out whether a key-slot is damaged one has to look
+  for "non-random looking" data in it. There is a tool that
+  automatizes this in the cryptsetup distribution from version 1.6.0
+  onwards. It is located in misc/keyslot_checker/. Instructions how
+  to use and how to interpret results are in the README file. Note
+  that this tool requires a libcryptsetup from cryptsetup 1.6.0 or
+  later (which means libcryptsetup.so.4.5.0 or later). If the tool
+  complains about missing functions in libcryptsetup, you likely
+  have an earlier version from your distribution still installed. You
+  can either point the symbolic link(s) from libcryptsetup.so.4 to
+  the new version manually, or you can uninstall the distribution
+  version of cryptsetup and re-install that from cryptsetup >= 1.6.0
+  again to fix this.
+
+
+ * 4.3 Can a bad RAM module cause problems?
 
   LUKS and dm-crypt can give the RAM quite a workout, especially when
   combined with software RAID. In particular the combination RAID5 +
@@ -675,7 +726,7 @@ A. Contributors
   did a verify.
 
 
- * 4.3 How do I test RAM?
+ * 4.4 How do I test RAM?
 
   First you should know that overclocking often makes memory
   problems worse. So if you overclock (which I strongly recommend
@@ -1288,7 +1339,7 @@ A. Contributors
   foot, you can figure out how to do it yourself.
 
 
- * 5.19 What about SSDs or Flash Drives?
+ * 5.19 What about SSDs, Flash and Hybrid Drives?
 
   The problem is that you cannot reliably erase parts of these
   devices, mainly due to wear-leveling and possibly defect
@@ -1302,7 +1353,7 @@ A. Contributors
   done in some fashion so that larger writes do not cause a lot of
   small internal updates.
 
-  The thing is that the mappings between outside-adressable sectors
+  The thing is that the mappings between outside-addressable sectors
   and inside sectors is arbitrary (and the vendors are not talking).
   Also the discarded sectors are not necessarily erased immediately.
   They may linger a long time.
@@ -1331,11 +1382,15 @@ A. Contributors
 
   If you trust the device vendor (you probably should not...) you can
   try an ATA "secure erase" command for SSDs. That does not work for
-  USB keys though. And if it finishes after a few seconds, it was
-  possibly faked by the SSD.
+  USB keys though and may or may not be secure for a hybrid drive. If
+  it finishes on an SSD after a few seconds, it was possibly faked.
+  UNfortunately, for hybrid drives that indicator does not work, as
+  the drive may well take the time to dully erase the magnetic part,
+  but only mark the SSD/Flash part as erased while data is still in
+  there.
 
   If you can do without password management and are fine with doing
-  physical destruction for permenently deleting data (allways after
+  physical destruction for permanently deleting data (always after
   one or several full overwrites!), you can use plain dm-crypt or
   LUKS.
 
@@ -1346,13 +1401,13 @@ A. Contributors
   security as on a magnetic disk.
 
   If you are concerned about your laptop being stolen, you are likely
-  fine using LUKS on an SSD. An attacker would need to have access
-  to an old passphrase (and the key-slot for this old passphrase
-  would actually need to still be somewhere in the SSD) for your
-  data to be at risk. So unless you pasted your old passphrase all
-  over the Internet or the attacker has knowledge of it from some
-  other source and does a targetted laptop theft to get at your
-  data, you should be fine.
+  fine using LUKS on an SSD or hybrid drive. An attacker would need
+  to have access to an old passphrase (and the key-slot for this old
+  passphrase would actually need to still be somewhere in the SSD)
+  for your data to be at risk. So unless you pasted your old
+  passphrase all over the Internet or the attacker has knowledge of
+  it from some other source and does a targeted laptop theft to get
+  at your data, you should be fine.
 
 
 6. Backup and Data Recovery 
