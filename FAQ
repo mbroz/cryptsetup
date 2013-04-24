@@ -136,13 +136,17 @@ A. Contributors
 
  * 1.5 Who wrote this?
 
-  Current FAQ maintainer is Arno Wagner <arno@wagner.name>. Other
-  contributors are listed at the end. If you want to contribute, send
-  your article, including a descriptive headline, to the maintainer,
-  or the dm-crypt mailing list with something like "FAQ ..." in the
-  subject. You can also send more raw information and have me write
-  the section. Please note that by contributing to this FAQ, you
-  accept the license described below.
+  Current FAQ maintainer is Arno Wagner <arno@wagner.name>. If you
+  want to send me encrypted email, my current PGP key is DSA key
+  CB5D9718, fingerprint 12D6 C03B 1B30 33BB 13CF B774 E35C 5FA1 CB5D
+  9718.
+
+  Other contributors are listed at the end. If you want to contribute,
+  send your article, including a descriptive headline, to the
+  maintainer, or the dm-crypt mailing list with something like "FAQ
+  ..." in the subject. You can also send more raw information and
+  have me write the section. Please note that by contributing to this
+  FAQ, you accept the license described below.
 
   This work is under the "Attribution-Share Alike 3.0 Unported"
   license, which means distribution is unlimited, you may create
@@ -309,13 +313,24 @@ A. Contributors
 
   Side-note: That has limited value against the authorities. In
   civilized countries, they cannot force you to give up a crypto-key
-  anyways. In the US, the UK and dictatorships around the world,
-  they can force you to give up the keys (using imprisonment or worse
-  to pressure you), and in the worst case, they only need a
-  nebulous "suspicion" about the presence of encrypted data. My
-  advice is to either be ready to give up the keys or to not have
+  anyways. In quite a few countries around the world, they can force
+  you to give up the keys (using imprisonment or worse to pressure
+  you, sometimes without due process), and in the worst case, they
+  only need a nebulous "suspicion" about the presence of encrypted
+  data. Sometimes this applies to everybody, sometimes only when you
+  are suspected of having "illicit data" (definition subject to
+  change) and sometimes specifically when crossing a border. Note
+  that this is going on in countries like the US and the UK, to
+  different degrees and sometimes with courts restricting what the
+  authorities can actually demand.
+
+  My advice is to either be ready to give up the keys or to not have
   encrypted data when traveling to those countries, especially when
-  crossing the borders.
+  crossing the borders. The latter also means not having any
+  high-entropy (random) data areas on your disk, unless you can
+  explain them and demonstrate that explanation. Hence doing a
+  zero-wipe of all free space, including unused space, may be a good
+  idea.
 
   Disadvantages are that you do not have all the nice features that
   the LUKS metadata offers, like multiple passphrases that can be
@@ -543,6 +558,31 @@ A. Contributors
   man-page for the relevant parameters. Note that XTS mode takes two
   keys, hence the listed key sizes are double that for other modes
   and half of it is the cipher key, the other half is the XTS key.
+
+
+ * 2.15 How do I Verify I have an Authentic cryptsetup Source Package?
+
+  Current maintainer is Milan Broz and he signs the release packages
+  with his PGP key. The key he currently uses is the "RSA key ID
+  D93E98FC", fingerprint 2A29 1824 3FDE 4664 8D06 86F9 D9B0 577B
+  D93E 98FC. While I have every confidence this really is his key and
+  that he is who he claims to be, don't depend on it if your life is
+  at stake. For that matter, if your life is at stake, don't depend
+  on me being who I claim to be either.
+
+  That said, as cryptsetup is under good version control, a malicious
+  change should be noticed sooner or later, but it may take a while.
+  Also, the attacker model makes compromising the sources in a
+  non-obvious way pretty hard. Sure, you could put the master-key
+  somewhere on disk, but that is rather obvious as soon as somebody
+  looks as there would be data in an empty LUKS container in a place
+  it should not be. Doing this in a more nefarious way, for example
+  hiding the master-key in the salts, would need a look at the
+  sources to be discovered, but I think that somebody would find that
+  sooner or later as well.
+
+  That said, this discussion is really a lot more complicated and
+  longer as an FAQ can sustain. If in doubt, ask on the mailing list.
 
 
 3. Common Problems 
