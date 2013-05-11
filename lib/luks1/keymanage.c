@@ -605,7 +605,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       int detached_metadata_device,
 		       struct crypt_device *ctx)
 {
-	unsigned int i=0;
+	unsigned int i = 0, hdr_sectors = LUKS_device_sectors(vk->keylength);
 	size_t blocksPerStripeSet, currentSector;
 	int r;
 	uuid_t partitionUuid;
@@ -614,6 +614,13 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	/* For separate metadata device allow zero alignment */
 	if (alignPayload == 0 && !detached_metadata_device)
 		alignPayload = DEFAULT_DISK_ALIGNMENT / SECTOR_SIZE;
+
+	if (alignPayload && detached_metadata_device && alignPayload < hdr_sectors) {
+		log_err(ctx, _("Data offset for detached LUKS header must be "
+			       "either 0 or higher than header size (%d sectors).\n"),
+			       hdr_sectors);
+		return -EINVAL;
+	}
 
 	if (crypt_hmac_size(hashSpec) < LUKS_DIGESTSIZE) {
 		log_err(ctx, _("Requested LUKS hash %s is not supported.\n"), hashSpec);

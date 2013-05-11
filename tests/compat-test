@@ -527,6 +527,8 @@ $CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME && fail
 prepare "[28] Detached LUKS header" wipe
 dd if=/dev/zero of=$HEADER_IMG bs=1M count=4 >/dev/null 2>&1
 echo $PWD1 | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG || fail
+echo $PWD1 | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG --align-payload 1 >/dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG --align-payload 8192 || fail
 echo $PWD1 | $CRYPTSETUP luksFormat -i1 $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 $CRYPTSETUP -q resize  $DEV_NAME --size 100 --header $HEADER_IMG || fail
