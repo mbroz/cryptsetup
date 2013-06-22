@@ -50,11 +50,15 @@ LIBS=$saved_LIBS
 
 AC_CHECK_FUNCS([posix_memalign])
 
+if test "x$enable_largefile" = "xno" ; then
+  AC_MSG_ERROR([Building with --disable-largefile is not supported, it can cause data corruption.])
+fi
+
 AC_C_CONST
 AC_C_BIGENDIAN
 AC_TYPE_OFF_T
 AC_SYS_LARGEFILE
-
+AC_FUNC_FSEEKO
 AC_PROG_GCC_TRADITIONAL
 
 dnl ==========================================================================

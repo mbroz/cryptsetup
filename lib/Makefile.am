@@ -5,7 +5,7 @@ moduledir = $(libdir)/cryptsetup
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcryptsetup.pc
 
-AM_CPPFLAGS = \
+AM_CPPFLAGS = -include config.h \
 	-I$(top_srcdir)				\
 	-I$(top_srcdir)/lib/crypto_backend	\
 	-I$(top_srcdir)/lib/luks1		\
@@ -16,10 +16,7 @@ AM_CPPFLAGS = \
 	-DLIBDIR=\""$(libdir)"\"		\
 	-DPREFIX=\""$(prefix)"\"		\
 	-DSYSCONFDIR=\""$(sysconfdir)"\"	\
-	-DVERSION=\""$(VERSION)"\"		\
-	-D_GNU_SOURCE				\
-	-D_LARGEFILE64_SOURCE			\
-	-D_FILE_OFFSET_BITS=64
+	-DVERSION=\""$(VERSION)"\"
 
 lib_LTLIBRARIES = libcryptsetup.la
 
@@ -32,11 +29,11 @@ common_ldadd = \
 
 libcryptsetup_la_DEPENDENCIES = $(common_ldadd) libcryptsetup.sym
 
-libcryptsetup_la_LDFLAGS = \
+libcryptsetup_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-version-info @LIBCRYPTSETUP_VERSION_INFO@
 
-libcryptsetup_la_CFLAGS = -Wall @CRYPTO_CFLAGS@
+libcryptsetup_la_CFLAGS = -Wall $(AM_CFLAGS) @CRYPTO_CFLAGS@
 
 libcryptsetup_la_LIBADD = \
 	@UUID_LIBS@				\

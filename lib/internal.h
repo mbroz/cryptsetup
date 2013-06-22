@@ -24,10 +24,6 @@
 #ifndef INTERNAL_H
 #define INTERNAL_H
 
-#ifdef HAVE_CONFIG_H
-#	include "config.h"
-#endif
-
 #include <stdint.h>
 #include <stdarg.h>
 #include <unistd.h>

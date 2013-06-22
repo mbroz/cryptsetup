@@ -22,7 +22,6 @@
 #define _VERITY_H
 
 #include <unistd.h>
-#include "config.h"
 
 #define VERITY_MAX_HASH_TYPE 1
 #define VERITY_BLOCK_SIZE_OK(x)	((x) % 512 || (x) < 512 || \

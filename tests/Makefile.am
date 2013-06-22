@@ -33,12 +33,13 @@ clean-local:
 	-rm -rf tcrypt-images
 
 differ_SOURCES = differ.c
-differ_CFLAGS = -Wall -O2
+differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
 
 api_test_SOURCES = api-test.c $(top_srcdir)/lib/utils_loop.c
 api_test_LDADD = ../lib/libcryptsetup.la
-api_test_LDFLAGS = -static
-api_test_CFLAGS = -g -Wall -O0 -I$(top_srcdir)/lib/ -I$(top_srcdir)/lib/luks1
+api_test_LDFLAGS = $(AM_LDFLAGS) -static
+api_test_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib/ -I$(top_srcdir)/lib/luks1
+api_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 check_PROGRAMS = api-test differ
 

@@ -1,4 +1,4 @@
-AM_CPPFLAGS = \
+AM_CPPFLAGS = -include config.h \
 	-I$(top_srcdir)				\
 	-I$(top_srcdir)/lib			\
 	-DDATADIR=\""$(datadir)"\"		\
@@ -6,8 +6,7 @@ AM_CPPFLAGS = \
 	-DLIBDIR=\""$(libdir)"\"		\
 	-DPREFIX=\""$(prefix)"\"		\
 	-DSYSCONFDIR=\""$(sysconfdir)"\"	\
-	-DVERSION=\""$(VERSION)"\"		\
-	-D_GNU_SOURCE
+	-DVERSION=\""$(VERSION)"\"
 
 # cryptsetup
 cryptsetup_SOURCES = \
@@ -25,7 +24,7 @@ cryptsetup_LDADD = \
 	@FIPSCHECK_LIBS@			\
 	@PWQUALITY_LIBS@
 
-cryptsetup_CFLAGS = -Wall
+cryptsetup_CFLAGS = $(AM_CFLAGS) -Wall
 
 sbin_PROGRAMS=cryptsetup
 
@@ -33,7 +32,7 @@ if STATIC_TOOLS
 sbin_PROGRAMS += cryptsetup.static
 cryptsetup_static_SOURCES = $(cryptsetup_SOURCES)
 cryptsetup_static_CFLAGS = $(cryptsetup_CFLAGS)
-cryptsetup_static_LDFLAGS = -all-static
+cryptsetup_static_LDFLAGS = $(AM_LDFLAGS) -all-static
 cryptsetup_static_LDADD = $(cryptsetup_LDADD)	\
 	@CRYPTO_STATIC_LIBS@			\
 	@PWQUALITY_STATIC_LIBS@			\
@@ -63,7 +62,7 @@ if STATIC_TOOLS
 sbin_PROGRAMS += veritysetup.static
 veritysetup_static_SOURCES = $(veritysetup_SOURCES)
 veritysetup_static_CFLAGS = $(veritysetup_CFLAGS)
-veritysetup_static_LDFLAGS = -all-static
+veritysetup_static_LDFLAGS = $(AM_LDFLAGS) -all-static
 veritysetup_static_LDADD = $(veritysetup_LDADD)	\
 	@CRYPTO_STATIC_LIBS@ \
 	@DEVMAPPER_STATIC_LIBS@ \
@@ -88,7 +87,7 @@ if STATIC_TOOLS
 sbin_PROGRAMS += cryptsetup-reencrypt.static
 cryptsetup_reencrypt_static_SOURCES = $(cryptsetup_reencrypt_SOURCES)
 cryptsetup_reencrypt_static_CFLAGS = $(cryptsetup_reencrypt_CFLAGS)
-cryptsetup_reencrypt_static_LDFLAGS = -all-static
+cryptsetup_reencrypt_static_LDFLAGS = $(AM_LDFLAGS) -all-static
 cryptsetup_reencrypt_static_LDADD = $(cryptsetup_reencrypt_LDADD)	\
 	@CRYPTO_STATIC_LIBS@ \
 	@DEVMAPPER_STATIC_LIBS@ \

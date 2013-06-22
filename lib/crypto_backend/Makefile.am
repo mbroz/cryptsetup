@@ -2,7 +2,7 @@ moduledir = $(libdir)/cryptsetup
 
 noinst_LTLIBRARIES = libcrypto_backend.la
 
-libcrypto_backend_la_CFLAGS = -Wall @CRYPTO_CFLAGS@
+libcrypto_backend_la_CFLAGS = $(AM_CFLAGS) -Wall @CRYPTO_CFLAGS@
 
 libcrypto_backend_la_SOURCES = crypto_backend.h \
 	crypto_cipher_kernel.c pbkdf_check.c crc32.c
@@ -27,4 +27,4 @@ if CRYPTO_INTERNAL_PBKDF2
 libcrypto_backend_la_SOURCES += pbkdf2_generic.c
 endif
 
-AM_CPPFLAGS = -D_GNU_SOURCE -I$(top_srcdir)/lib
+AM_CPPFLAGS = -include config.h -I$(top_srcdir)/lib

@@ -23,7 +23,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "config.h"
 
 struct crypt_device;
 struct crypt_hash;

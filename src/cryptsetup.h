@@ -24,11 +24,6 @@
 #ifndef CRYPTSETUP_H
 #define CRYPTSETUP_H
 
-#define _LARGEFILE64_SOURCE
-#define _FILE_OFFSET_BITS 64
-
-#include <config.h>
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>

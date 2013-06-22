@@ -23,7 +23,6 @@
 #include "libcryptsetup.h"
 #include "nls.h"
 #include "utils_fips.h"
-#include "config.h"
 
 #if !ENABLE_FIPS
 int crypt_fips_mode(void) { return 0; }

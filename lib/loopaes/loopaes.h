@@ -23,7 +23,6 @@
 #define _LOOPAES_H
 
 #include <unistd.h>
-#include "config.h"
 
 struct crypt_device;
 struct volume_key;
