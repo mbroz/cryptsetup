@@ -565,7 +565,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 {
 	struct device *device = crypt_metadata_device(cd);
 	ssize_t hdr_size = sizeof(struct tcrypt_phdr);
-	int devfd = 0, r, bs;
+	int devfd = 0, r, bs, partition;
 
 	assert(sizeof(struct tcrypt_phdr) == 512);
 
@@ -585,8 +585,15 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 	r = -EIO;
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
 		if (lseek(devfd, TCRYPT_HDR_SYSTEM_OFFSET, SEEK_SET) >= 0 &&
-		    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size)
+		    read_blockwise(devfd, bs, hdr, hdr_size) == hdr_size) {
 			r = TCRYPT_init_hdr(cd, hdr, params);
+			if (r == -EPERM &&
+			    crypt_sysfs_get_partition(device_path(device), &partition) &&
+			    partition)
+				log_std(cd, _("WARNING: device %s is a partition, for TCRYPT "
+					      "system encryption you usually need to use "
+					      "whole block device path.\n"), device_path(device));
+		}
 	} else if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
 		if (params->flags & CRYPT_TCRYPT_BACKUP_HEADER) {
 			if (lseek(devfd, TCRYPT_HDR_HIDDEN_OFFSET_BCK, SEEK_END) >= 0 &&
