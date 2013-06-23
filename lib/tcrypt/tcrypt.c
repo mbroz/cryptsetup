@@ -640,6 +640,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	unsigned int i;
 	int r;
 	struct tcrypt_algs *algs;
+	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.size   = 0,
@@ -676,7 +677,18 @@ int TCRYPT_activate(struct crypt_device *cd,
 	else
 		dmd.size = hdr->d.volume_size / hdr->d.sector_size;
 
-	r = device_block_adjust(cd, dmd.data_device, DEV_EXCL,
+	/*
+	 * System encryption use the whole device mapping, there can
+	 * be active partitions.
+	 * FIXME: This will allow multiple mappings unexpectedly.
+	 */
+	if ((dmd.flags & CRYPT_ACTIVATE_SHARED) ||
+	    (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER))
+		device_check = DEV_SHARED;
+	else
+		device_check = DEV_EXCL;
+
+	r = device_block_adjust(cd, dmd.data_device, device_check,
 				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
 	if (r)
 		return r;
