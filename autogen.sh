@@ -78,7 +78,7 @@ autopoint --force $AP_OPTS
 libtoolize --force --copy
 aclocal -I m4 $AL_OPTS
 autoheader $AH_OPTS
-automake --add-missing --gnu $AM_OPTS
+automake --add-missing --copy --gnu $AM_OPTS
 autoconf $AC_OPTS
 
 if test x$NOCONFIGURE = x; then
