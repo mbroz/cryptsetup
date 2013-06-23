@@ -11,7 +11,13 @@ AC_CONFIG_SRCDIR(src/cryptsetup.c)
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CONFIG_HEADERS([config.h:config.h.in])
-AM_INIT_AUTOMAKE(dist-bzip2)
+
+# We do not want to run test in parallel. Really.
+# http://lists.gnu.org/archive/html/automake/2013-01/msg00060.html
+
+# For old automake use this
+#AM_INIT_AUTOMAKE(dist-bzip2)
+AM_INIT_AUTOMAKE([dist-bzip2 1.12 serial-tests])
 
 if test "x$prefix" = "xNONE"; then
 	sysconfdir=/etc
