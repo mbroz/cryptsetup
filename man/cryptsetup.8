@@ -520,11 +520,10 @@ Set the cipher specification string.
 
 \fIcryptsetup \-\-help\fR shows the compiled-in defaults.
 The current default in the distributed sources is
-"aes-cbc-essiv:sha256" for both plain dm-crypt and LUKS.
+"aes-cbc-essiv:sha256" for plain dm-crypt and
+"aes-xts-plain64" for LUKS.
 
-For XTS mode (a possible future default), use "aes-xts-plain"
-or better "aes-xts-plain64"
-as cipher specification and optionally set a key size of
+For XTS mode you can optionally set a key size of
 512 bits with the \-s option. Key size for XTS
 mode is twice that for other modes for the same
 security level.
