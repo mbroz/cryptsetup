@@ -220,7 +220,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	off_t hash_level_block[VERITY_MAX_LEVELS];
 	off_t hash_level_size[VERITY_MAX_LEVELS];
 	off_t data_file_blocks, s;
-	size_t hash_per_block, hash_per_block_bits;
+	size_t hash_per_block_bits;
 	off_t data_device_size = 0, hash_device_size = 0;
 	uint64_t dev_size;
 	int levels, i, r;
@@ -251,7 +251,6 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	}
 
 	hash_per_block_bits = get_bits_down(hash_block_size / digest_size);
-	hash_per_block = 1 << hash_per_block_bits;
 	if (!hash_per_block_bits)
 		return -EINVAL;
 
@@ -271,8 +270,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	for (i = levels - 1; i >= 0; i--) {
 		hash_level_block[i] = hash_position;
 		// verity position of block data_file_blocks at level i
-		s = data_file_blocks >> (i * hash_per_block_bits);
-		s = (s + hash_per_block - 1) / hash_per_block;
+		s = (data_file_blocks + ((off_t)1 << ((i + 1) * hash_per_block_bits)) - 1) >> ((i + 1) * hash_per_block_bits);
 		hash_level_size[i] = s;
 		if ((hash_position + s) < hash_position ||
 		    (hash_position + s) < 0) {
