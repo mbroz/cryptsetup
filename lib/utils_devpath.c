@@ -170,7 +170,7 @@ char *crypt_lookup_dev(const char *dev_id)
 	return devpath;
 }
 
-static int _sysfs_get_int(int major, int minor, int *value, const char *attr)
+static int _sysfs_get_uint64(int major, int minor, uint64_t *value, const char *attr)
 {
 	char path[PATH_MAX], tmp[64] = {0};
 	int fd, r;
@@ -187,7 +187,7 @@ static int _sysfs_get_int(int major, int minor, int *value, const char *attr)
 	if (r <= 0)
 		return 0;
 
-        if (sscanf(tmp, "%d", value) != 1)
+        if (sscanf(tmp, "%" PRIu64, value) != 1)
 		return 0;
 
 	return 1;
@@ -195,11 +195,18 @@ static int _sysfs_get_int(int major, int minor, int *value, const char *attr)
 
 int crypt_sysfs_get_rotational(int major, int minor, int *rotational)
 {
-	return _sysfs_get_int(major, minor, rotational, "queue/rotational");
+	uint64_t val;
+
+	if (!_sysfs_get_uint64(major, minor, &val, "queue/rotational"))
+		return 0;
+
+	*rotational = val ? 1 : 0;
+	return 1;
 }
 
 int crypt_sysfs_get_partition(const char *dev_path, int *partition)
 {
+	uint64_t val;
 	struct stat st;
 
 	if (stat(dev_path, &st) < 0)
@@ -208,6 +215,10 @@ int crypt_sysfs_get_partition(const char *dev_path, int *partition)
 	if (!S_ISBLK(st.st_mode))
 		return 0;
 
-	return _sysfs_get_int(major(st.st_rdev), minor(st.st_rdev),
-			      partition, "partition");
+	if (!_sysfs_get_uint64(major(st.st_rdev), minor(st.st_rdev),
+			      &val, "partition"))
+		return 0;
+
+	*partition = val ? 1 : 0;
+	return 1;
 }
