@@ -641,7 +641,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 		     uint32_t flags)
 {
 	char cipher[MAX_CIPHER_LEN], dm_name[PATH_MAX], dm_dev_name[PATH_MAX];
-	struct device *device = NULL;
+	char *part_path;
+	struct device *device = NULL, *part_device = NULL;
 	unsigned int i;
 	int r;
 	struct tcrypt_algs *algs;
@@ -692,6 +693,18 @@ int TCRYPT_activate(struct crypt_device *cd,
 		device_check = DEV_SHARED;
 	else
 		device_check = DEV_EXCL;
+
+	if ((params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) &&
+		(part_path = crypt_get_partition_device(device_path(dmd.data_device),
+				 dmd.u.crypt.offset, dmd.size))) {
+		if (!device_alloc(&part_device, part_path)) {
+			log_verbose(cd, _("Activating TCRYPT system encryption for partition %s.\n"),
+				    part_path);
+			dmd.data_device = part_device;
+			dmd.u.crypt.offset = 0;
+		}
+		free(part_path);
+	}
 
 	r = device_block_adjust(cd, dmd.data_device, device_check,
 				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
@@ -744,6 +757,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		r = -ENOTSUP;
 	}
 
+	device_free(part_device);
 	crypt_free_volume_key(dmd.u.crypt.vk);
 	return r;
 }

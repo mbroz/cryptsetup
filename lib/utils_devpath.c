@@ -170,16 +170,12 @@ char *crypt_lookup_dev(const char *dev_id)
 	return devpath;
 }
 
-static int _sysfs_get_uint64(int major, int minor, uint64_t *value, const char *attr)
+static int _read_uint64(const char *sysfs_path, uint64_t *value)
 {
-	char path[PATH_MAX], tmp[64] = {0};
+	char tmp[64] = {0};
 	int fd, r;
 
-	if (snprintf(path, sizeof(path), "/sys/dev/block/%d:%d/%s",
-		     major, minor, attr) < 0)
-		return 0;
-
-	if ((fd = open(path, O_RDONLY)) < 0)
+	if ((fd = open(sysfs_path, O_RDONLY)) < 0)
 		return 0;
 	r = read(fd, tmp, sizeof(tmp));
 	close(fd);
@@ -191,6 +187,28 @@ static int _sysfs_get_uint64(int major, int minor, uint64_t *value, const char *
 		return 0;
 
 	return 1;
+}
+
+static int _sysfs_get_uint64(int major, int minor, uint64_t *value, const char *attr)
+{
+	char path[PATH_MAX];
+
+	if (snprintf(path, sizeof(path), "/sys/dev/block/%d:%d/%s",
+		     major, minor, attr) < 0)
+		return 0;
+
+	return _read_uint64(path, value);
+}
+
+static int _path_get_uint64(const char *sysfs_path, uint64_t *value, const char *attr)
+{
+	char path[PATH_MAX];
+
+	if (snprintf(path, sizeof(path), "%s/%s",
+		     sysfs_path, attr) < 0)
+		return 0;
+
+	return _read_uint64(path, value);
 }
 
 int crypt_dev_is_rotational(int major, int minor)
@@ -219,4 +237,74 @@ int crypt_dev_is_partition(const char *dev_path)
 		return 0;
 
 	return val ? 1 : 0;
+}
+
+/* Try to find partition which match offset and size on top level device */
+char *crypt_get_partition_device(const char *dev_path, uint64_t offset, uint64_t size)
+{
+	char link[PATH_MAX], path[PATH_MAX], part_path[PATH_MAX], *devname;
+	char *result = NULL;
+	struct stat st;
+	size_t devname_len;
+	ssize_t len;
+	struct dirent *entry;
+	DIR *dir;
+	uint64_t part_offset, part_size;
+
+	if (stat(dev_path, &st) < 0)
+		return NULL;
+
+	if (!S_ISBLK(st.st_mode))
+		return NULL;
+
+	if (snprintf(path, sizeof(path), "/sys/dev/block/%d:%d",
+		major(st.st_rdev), minor(st.st_rdev)) < 0)
+		return NULL;
+
+	len = readlink(path, link, sizeof(link) - 1);
+	if (len < 0)
+		return NULL;
+
+	/* Get top level disk name for sysfs search */
+	link[len] = '\0';
+	devname = strrchr(link, '/');
+	if (!devname)
+		return NULL;
+	devname++;
+
+	/* DM devices do not use kernel partitions. */
+	if (dm_is_dm_kernel_name(devname))
+		return NULL;
+
+	dir = opendir(path);
+	if (!dir)
+		return NULL;
+
+	devname_len = strlen(devname);
+	while((entry = readdir(dir))) {
+		if (strncmp(entry->d_name, devname, devname_len))
+			continue;
+
+		if (snprintf(part_path, sizeof(part_path), "%s/%s",
+		    path, entry->d_name) < 0)
+			continue;
+
+		if (stat(part_path, &st) < 0)
+			continue;
+
+		if (S_ISDIR(st.st_mode)) {
+			if (!_path_get_uint64(part_path, &part_offset, "start") ||
+			    !_path_get_uint64(part_path, &part_size, "size"))
+				continue;
+			if (part_offset == offset && part_size == size &&
+			    snprintf(part_path, sizeof(part_path), "/dev/%s",
+				     entry->d_name) > 0) {
+				result = strdup(part_path);
+				break;
+			}
+		}
+	}
+	closedir(dir);
+
+	return result;
 }
