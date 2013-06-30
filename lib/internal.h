@@ -92,8 +92,8 @@ struct device *crypt_data_device(struct crypt_device *cd);
 int crypt_confirm(struct crypt_device *cd, const char *msg);
 
 char *crypt_lookup_dev(const char *dev_id);
-int crypt_sysfs_get_rotational(int major, int minor, int *rotational);
-int crypt_sysfs_get_partition(const char *dev_path, int *partition);
+int crypt_dev_is_rotational(int major, int minor);
+int crypt_dev_is_partition(const char *dev_path);
 
 ssize_t write_blockwise(int fd, int bsize, void *buf, size_t count);
 ssize_t read_blockwise(int fd, int bsize, void *_buf, size_t count);

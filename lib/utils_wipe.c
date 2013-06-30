@@ -124,7 +124,7 @@ int crypt_wipe(struct device *device,
 {
 	struct stat st;
 	char *buffer;
-	int devfd, flags, rotational, bsize;
+	int devfd, flags, bsize;
 	ssize_t written;
 
 	if (!size || size % SECTOR_SIZE || (size > MAXIMUM_WIPE_BYTES)) {
@@ -139,14 +139,12 @@ int crypt_wipe(struct device *device,
 	}
 
 	if (type == CRYPT_WIPE_DISK && S_ISBLK(st.st_mode)) {
-		rotational = 0;
-		if (!crypt_sysfs_get_rotational(major(st.st_rdev),
-						minor(st.st_rdev),
-						&rotational))
-			rotational = 1;
-		log_dbg("Rotational flag is %d.", rotational);
-		if (!rotational)
+		if (!crypt_dev_is_rotational(major(st.st_rdev),
+						minor(st.st_rdev))) {
 			type = CRYPT_WIPE_SSD;
+			log_dbg("Non-rotational device, using SSD wipe mode.");
+		} else
+			log_dbg("Rotational device, using normal wipe mode.");
 	}
 
 	bsize = device_block_size(device);

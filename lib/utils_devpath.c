@@ -193,18 +193,17 @@ static int _sysfs_get_uint64(int major, int minor, uint64_t *value, const char *
 	return 1;
 }
 
-int crypt_sysfs_get_rotational(int major, int minor, int *rotational)
+int crypt_dev_is_rotational(int major, int minor)
 {
 	uint64_t val;
 
 	if (!_sysfs_get_uint64(major, minor, &val, "queue/rotational"))
-		return 0;
+		return 1; /* if failed, expect rotational disk */
 
-	*rotational = val ? 1 : 0;
-	return 1;
+	return val ? 1 : 0;
 }
 
-int crypt_sysfs_get_partition(const char *dev_path, int *partition)
+int crypt_dev_is_partition(const char *dev_path)
 {
 	uint64_t val;
 	struct stat st;
@@ -219,6 +218,5 @@ int crypt_sysfs_get_partition(const char *dev_path, int *partition)
 			      &val, "partition"))
 		return 0;
 
-	*partition = val ? 1 : 0;
-	return 1;
+	return val ? 1 : 0;
 }
