@@ -417,6 +417,19 @@ device not the system partition as the device parameter.
 
 To use hidden header (and map hidden device, if available),
 use \fB\-\-tcrypt-hidden\fR option.
+
+\fBNote:\fR There is no protection for a hidden volume if
+the outer volume is mounted. The reason is that if there 
+were any protection, it would require some metadata describing
+what to protect in the outer volume and the hidden volume would 
+become detectable. This is not a cryptsetup limitation, it is
+a limitation of how hidden volumes are implemented in TrueCrypt.
+The way to deal with this is not to mount the outer volume after
+a hidden volume has been created in it.
+This, in turn, causes the problem that after a while all time-stamps
+in the outer volume become old and it becomes obvious that
+it is unused. This may cause suspicion in itself. 
+
 .PP
 \fIopen\fR \-\-type tcrypt <device> <name>
 .br
