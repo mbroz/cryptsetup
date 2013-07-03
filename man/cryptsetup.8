@@ -10,6 +10,10 @@ device-mapper mappings. These include plain dm-crypt volumes and
 LUKS volumes. The difference is that LUKS uses a metadata header
 and can hence offer more features than plain dm-crypt. On the other
 hand, the header is visible and vulnerable to damage.
+
+In addition, cryptsetup provides limited support for the use of
+historic loopaes volumes and for TruerCrypt compatible volumes.
+
 .SH PLAIN DM-CRYPT OR LUKS?
 .PP
 Unless you understand the cryptographic background well, use LUKS.
@@ -62,18 +66,18 @@ cryptsetup FAQ describes several options.
 .SH BASIC COMMANDS
 The following are valid actions for all supported device types.
 
-\fIopen\fR <name> <device> \-\-type <device_type>
+\fIopen\fR <device> <name> \-\-type <device_type>
 .IP
-Opens (creates a mapping) with <name> backed by device <device>.
+Opens (creates a mapping with) <name> backed by device <device>.
 
 Device type can be \fIplain\fR, \fIluks\fR (default), \fIloopaes\fR
 or \fItcrypt\fR.
 
 For backward compatibility there are \fBopen\fR command aliases:
 
-\fBcreate\fR: open \-\-type plain <device> <name>\fR switched arguments)
+\fBcreate\fR (argument-order <name> <device>): open \-\-type plain 
 .br
-\fBplainOpen\fR: open \-\-type plain
+\fBplainOpen\fR: open \-\-type plain 
 .br
 \fBluksOpen\fR: open \-\-type luks
 .br
@@ -82,7 +86,9 @@ For backward compatibility there are \fBopen\fR command aliases:
 \fBtcryptOpen\fR: open \-\-type tcrypt
 
 \fB<options>\fR are type specific and are described below
-for individual device types.
+for individual device types. For \fBcreate\fR, the order of the <name> 
+and <device> options is inverted for historical reasons, all other
+aliases use the standard \fB<device> <name>\fR order.
 .PP
 \fIclose\fR <name>
 .IP
@@ -109,7 +115,7 @@ sectors of the raw device are represented in the mapped device.
 Plain dm-crypt encrypts the device sector-by-sector with a
 single, non-salted hash of the passphrase. No checks
 are performed, no metadata is used. There is no formatting operation.
-When the raw device is mapped (created), the usual device operations
+When the raw device is mapped (opened), the usual device operations
 can be used on the mapped device, including filesystem creation.
 Mapped devices usually reside in /dev/mapper/<name>.
 
@@ -119,7 +125,7 @@ The following are valid plain device type actions:
 .br
 \fIcreate\fR <name> <device> (\fBOBSOLETE syntax\fR)
 .IP
-Creates a mapping with <name> backed by device <device>.
+Opens (creates a mapping with) <name> backed by device <device>.
 
 \fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify-passphrase,
 \-\-key-file, \-\-keyfile-offset, \-\-key-size, \-\-offset, \-\-skip, \-\-size,
@@ -170,10 +176,12 @@ from stdin and the safety-question being skipped.
 
 You can only call luksFormat on a LUKS device that is not mapped.
 
-\fB<options>\fR can be [\-\-cipher, \-\-verify-passphrase, \-\-key-size,
-\-\-key-slot, \-\-key-file (takes precedence over optional second argument),
-\-\-keyfile-offset, \-\-keyfile-size, \-\-use-random | \-\-use-urandom,
-\-\-uuid, \-\-master-key-file].
+\fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify\-passphrase, 
+\-\-key\-size, \-\-key\-slot, 
+\-\-key\-file (takes precedence over optional second argument),
+\-\-keyfile\-offset, \-\-keyfile\-size, \-\-use\-random | \-\-use\-urandom,
+\-\-uuid, \-\-master\-key\-file, \-\-iter\-time, \-\-header,
+\-\-force\-password].
 
 \fBWARNING:\fR Doing a luksFormat on an existing LUKS container will
 make all data the old container permanently irretrievable, unless
@@ -191,9 +199,9 @@ prompts for it interactively.
 The <device> parameter can be also specified by LUKS UUID in the
 format UUID=<uuid>, which uses the symlinks in /dev/disk/by-uuid.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset,
-\-\-keyfile-size, \-\-readonly, \-\-test-passphrase,
-\-\-allow-discards, \-\-header, \-\-key-slot, \-\-master-key-file].
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
+\-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
+\-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file].
 .PP
 \fIluksSuspend\fR <name>
 .IP
@@ -215,7 +223,7 @@ the mapped device.
 Resumes a suspended device and reinstates the encryption key.
 Prompts interactively for a passphrase if \-\-key-file is not given.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-size, \-\-header]
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-size, \-\-header]
 .PP
 \fIluksAddKey\fR <device> [<key file with new key>]
 .IP
@@ -224,9 +232,10 @@ interactively or via \-\-key-file.
 The new passphrase to be added can be specified interactively
 or read from the file given as positional argument.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset,
-\-\-keyfile-size, \-\-new-keyfile-offset,
-\-\-new-keyfile-size, \-\-key-slot, \-\-master-key-file].
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
+\-\-keyfile\-size, \-\-new\-keyfile\-offset,
+\-\-new\-keyfile\-size, \-\-key\-slot, \-\-master\-key\-file,
+\-\-iter\-time, \-\-force\-password].
 .PP
 \fIluksRemoveKey\fR <device> [<key file with passphrase to be removed>]
 .IP
@@ -234,12 +243,12 @@ Removes the supplied passphrase from the LUKS device. The
 passphrase to be removed can be specified interactively,
 as positional argument or via \-\-key-file.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset,
-\-\-keyfile-size]
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
+\-\-keyfile\-size]
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument 
-to \-\-key-file), batch-mode (-q) will be implicitely
+to \-\-key\-file), batch-mode (-q) will be implicitely
 switched on and no warning will be given when you remove the
 last remaining passphrase from a LUKS container. Removing
 the last passphrase makes the LUKS container permanently
@@ -248,7 +257,7 @@ inaccessible.
 \fIluksChangeKey\fR <device> [<new key file>]
 .IP
 Changes an existing passphrase. The passphrase
-to be changed must be supplied interactively or via \-\-key-file.
+to be changed must be supplied interactively or via \-\-key\-file.
 The new passphrase can be supplied interactively or in
 a file given as positional argument.
 
@@ -266,9 +275,9 @@ during this operation can cause the overwrite to fail after
 the old passphrase has been wiped and make the LUKS container
 inaccessible.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset,
-\-\-keyfile-size, \-\-new-keyfile-offset,
-\-\-new-keyfile-size, \-\-key-slot].
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
+\-\-keyfile\-size, \-\-new\-keyfile\-offset,
+\-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password].
 .PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
@@ -278,7 +287,8 @@ This command can remove the last remaining key-slot, but requires
 an interactive confirmation when doing so. Removing the last
 passphrase makes a LUKS container permanently inaccessible.
 
-\fB<options>\fR can be [\-\-key-file, \-\-keyfile-offset, \-\-keyfile-size].
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset, 
+\-\-keyfile\-size].
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument
@@ -304,7 +314,7 @@ means the device is a LUKS device.
 .IP
 Dump the header information of a LUKS device.
 
-If the \-\-dump-master-key option is used, the LUKS device master key is
+If the \-\-dump\-master\-key option is used, the LUKS device master key is
 dumped instead of the keyslot info. Beware that the master key cannot be
 changed and can be used to decrypt the data stored in the LUKS container
 without a passphrase and even without the LUKS header. This means
@@ -312,16 +322,16 @@ that if the master key is compromised, the whole device has to be
 erased to prevent further access. Use this option carefully.
 
 In order to dump the master key, a passphrase has to be supplied,
-either interactively or via \-\-key-file. 
+either interactively or via \-\-key\-file. 
 
-\fB<options>\fR can be [\-\-dump-master-key, \-\-key-file,
-\-\-keyfile-offset, \-\-keyfile-size].
+\fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
+\-\-keyfile\-offset, \-\-keyfile\-size].
 
-\fBWARNING:\fR If \-\-dump-master-key is used with \-\-key-file
-and the argument to \-\-key-file is '-', no validation question
+\fBWARNING:\fR If \-\-dump\-master\-key is used with \-\-key\-file
+and the argument to \-\-key\-file is '-', no validation question
 will be asked and no warning given.
 .PP
-\fIluksHeaderBackup\fR <device> \-\-header-backup-file <file>
+\fIluksHeaderBackup\fR <device> \-\-header\-backup\-file <file>
 .IP
 Stores a binary backup of the LUKS header and keyslot area.
 .br
@@ -338,7 +348,7 @@ addition or overwrite the encrypted data area as well.
 The second option is less secure, as some sectors
 can survive, e.g. due to defect management.
 .PP
-\fIluksHeaderRestore\fR <device> \-\-header-backup-file <file>
+\fIluksHeaderRestore\fR <device> \-\-header\-backup\-file <file>
 .IP
 Restores a binary backup of the LUKS header and keyslot area
 from the specified file.
@@ -356,18 +366,19 @@ the backup will also be written to it.
 cryptsetup supports mapping loop-AES encrypted partition using
 a compatibility mode.
 .PP
-\fIopen\fR \-\-type loopaes <device> <name> \-\-key-file <keyfile>
+\fIopen\fR \-\-type loopaes <device> <name> \-\-key\-file <keyfile>
 .br
-\fIloopaesOpen\fR <device> <name> \-\-key-file <keyfile>  (\fBold syntax\fR)
+\fIloopaesOpen\fR <device> <name> \-\-key\-file <keyfile>  (\fBold syntax\fR)
 .IP
 Opens the loop-AES <device> and sets up a mapping <name>.
 
 If the key file is encrypted with GnuPG, then you have to use
-\-\-key-file=- and decrypt it before use, e.g. like this:
+\-\-key\-file=\- and decrypt it before use, e.g. like this:
 .br
-gpg \-\-decrypt <keyfile> | cryptsetup loopaesOpen \-\-key-file=- <device> <name>
+gpg \-\-decrypt <keyfile> | cryptsetup loopaesOpen \-\-key\-file=\- 
+<device> <name>
 
-Use \fB\-\-keyfile-size\fR to specify the proper key length if needed.
+Use \fB\-\-keyfile\-size\fR to specify the proper key length if needed.
 
 Use \fB\-\-offset\fR to specify device offset. Note that the units
 need to be specified in number of 512 byte sectors.
@@ -381,8 +392,8 @@ Use \fB\-\-hash\fR to override the default hash function for
 passphrase hashing (otherwise it is detected according to key
 size).
 
-\fB<options>\fR can be [\-\-key-file, \-\-key-size, \-\-offset, \-\-skip,
-\-\-hash, \-\-readonly, \-\-allow-discards].
+\fB<options>\fR can be [\-\-key\-file, \-\-key\-size, \-\-offset, \-\-skip,
+\-\-hash, \-\-readonly, \-\-allow\-discards].
 .PP
 See also section 7 of the FAQ and \fBhttp://loop-aes.sourceforge.net\fR
 for more information regarding loop-AES.
@@ -412,11 +423,11 @@ The \fBtcryptDump\fR command should work for all recognized TCRYPT devices
 and doesn't require superuser privilege.
 
 To map system device (device with boot loader where the whole encrypted
-system resides) use \fB\-\-tcrypt-system\fR option. Use the whole
+system resides) use \fB\-\-tcrypt\-system\fR option. Use the whole
 device not the system partition as the device parameter.
 
 To use hidden header (and map hidden device, if available),
-use \fB\-\-tcrypt-hidden\fR option.
+use \fB\-\-tcrypt\-hidden\fR option.
 
 \fBNote:\fR There is no protection for a hidden volume if
 the outer volume is mounted. The reason is that if there 
@@ -447,10 +458,11 @@ and damaged files.
 .br
 \fItcryptOpen\fR <device> <name>  (\fBold syntax\fR)
 .IP
-Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up a mapping <name>.
+Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up 
+a mapping <name>.
 
-\fB<options>\fR can be [\-\-key-file, \-\-tcrypt-hidden, \-\-tcrypt-system,
-\-\-readonly, \-\-test-passphrase].
+\fB<options>\fR can be [\-\-key\-file, \-\-tcrypt\-hidden, 
+\-\-tcrypt\-system, \-\-readonly, \-\-test\-passphrase].
 
 The keyfile parameter allows combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
@@ -460,16 +472,16 @@ with TCRYPT and is different from LUKS keyfile logic.
 .IP
 Dump the header information of a TCRYPT device.
 
-If the \-\-dump-master-key option is used, the TCRYPT device master key is
-dumped instead of TCRYPT header info. Beware that the master key
+If the \-\-dump\-master\-key option is used, the TCRYPT device master key 
+is dumped instead of TCRYPT header info. Beware that the master key
 (or concatenated master keys if cipher chain is used)
 can be used to decrypt the data stored in the TCRYPT container without
 a passphrase.
 This means that if the master key is compromised, the whole device has
 to be erased to prevent further access. Use this option carefully.
 
-\fB<options>\fR can be [\-\-dump-master-key, \-\-key-file, \-\-tcrypt-hidden,
-\-\-tcrypt-system].
+\fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file, 
+\-\-tcrypt\-hidden, \-\-tcrypt\-system].
 
 The keyfile parameter allows combination of file content with the
 passphrase and can be repeated.
@@ -500,7 +512,7 @@ Benchmarks ciphers and KDF (key derivation function).
 Without parameters it tries to measure few common configurations.
 
 To benchmark other ciphers or modes, you need to specify \fB\-\-cipher\fR
-and \fB\-\-key-size\fR options or \fB\-\-hash\fR for KDF test.
+and \fB\-\-key\-size\fR options or \fB\-\-hash\fR for KDF test.
 
 \fBNOTE:\fR This benchmark is using memory only and is only informative.
 You cannot directly predict real storage encryption speed from it.
@@ -511,7 +523,7 @@ If you are configuring kernel yourself, enable
 "User-space interface for symmetric key cipher algorithms" in
 "Cryptographic API" section (CRYPTO_USER_API_SKCIPHER .config option).
 
-\fB<options>\fR can be [\-\-cipher, \-\-key-size, \-\-hash].
+\fB<options>\fR can be [\-\-cipher, \-\-key\-size, \-\-hash].
 .SH OPTIONS
 .TP
 .B "\-\-verbose, \-v"
@@ -521,7 +533,7 @@ Print more information on command execution.
 Run in debug mode with full diagnostic logs. Debug output
 lines are always prefixed by '#'.
 .TP
-.B "\-\-hash, \-h \fI<hash-spec>\fR"
+.B "\-\-hash, \-h \fI<hash\-spec>\fR"
 Specifies the passphrase hash for \fIopen\fR (for plain and loopaes device types).
 
 Specifies the hash used in the LUKS key setup scheme and volume key digest
@@ -540,7 +552,7 @@ Values compatible with old version of cryptsetup are
 
 Use \fIcryptsetup \-\-help\fR to show the defaults.
 .TP
-.B "\-\-cipher, \-c \fI<cipher-spec>\fR"
+.B "\-\-cipher, \-c \fI<cipher\-spec>\fR"
 Set the cipher specification string.
 
 \fIcryptsetup \-\-help\fR shows the compiled-in defaults.
@@ -560,7 +572,7 @@ kernel 2.6.33 or later. More information can be found in the FAQ.
 When interactively asking for a passphrase, ask for it twice
 and complain if both inputs do not match. Advised when creating
 a regular mapping for the first time, or when running
-\fIluksFormat\fR. Ignores on input from file or stdin.
+\fIluksFormat\fR. Ignored on input from file or stdin.
 .TP
 .B "\-\-key-file, \-d \fIname\fR"
 Read the passphrase from file.
@@ -568,9 +580,9 @@ Read the passphrase from file.
 If the name given is "-", then the passphrase will be read from stdin.
 In this case, reading will not stop at newline characters.
 
-With LUKS, passphrases supplied via \-\-key-file are always
+With LUKS, passphrases supplied via \-\-key\-file are always
 the existing passphrases requested by a command, except in
-the case of \fIluksFormat\fR where \-\-key-file is equivalent
+the case of \fIluksFormat\fR where \-\-key\-file is equivalent
 to the positional key file argument.
 
 If you want to set a new passphrase via key file, you have to
@@ -578,37 +590,37 @@ use a positional argument to \fIluksAddKey\fR.
 
 See section \fBNOTES ON PASSPHRASE PROCESSING\fR for more information.
 .TP
-.B "\-\-keyfile-offset \fIvalue\fR"
+.B "\-\-keyfile\-offset \fIvalue\fR"
 Skip \fIvalue\fR bytes at the beginning of the key file.
 Works with all commands that accepts key files.
 .TP
-.B "\-\-keyfile-size, \-l \fIvalue\fR"
+.B "\-\-keyfile\-size, \-l \fIvalue\fR"
 Read a maximum of \fIvalue\fR bytes from the key file.
 Default is to read the whole file up to the compiled-in
 maximum that can be queried with \-\-help. Supplying more
 data than the compiled-in maximum aborts the operation.
 
 This option is useful
-to cut trailing newlines, for example. If \-\-keyfile-offset
+to cut trailing newlines, for example. If \-\-keyfile\-offset
 is also given, the size count starts after the offset.
 Works with all commands that accepts key files.
 .TP
-.B "\-\-new-keyfile-offset \fIvalue\fR"
+.B "\-\-new\-keyfile\-offset \fIvalue\fR"
 Skip \fIvalue\fR bytes at the start when
 adding a new passphrase from key file with
 \fIluksAddKey\fR.
 .TP
-.B "\-\-new-keyfile-size  \fIvalue\fR"
+.B "\-\-new\-keyfile\-size  \fIvalue\fR"
 Read a maximum of \fIvalue\fR bytes when adding
 a new passphrase from key file with \fIluksAddKey\fR.
 Default is to read the whole file up to the compiled-in
 maximum length that can be queried with \-\-help.
 Supplying more than the compiled in maximum aborts the
 operation.
-When \-\-new-keyfile-offset is also given, reading starts
+When \-\-new\-keyfile\-offset is also given, reading starts
 after the offset.
 .TP
-.B "\-\-master-key-file"
+.B "\-\-master\-key\-file"
 Use a master key stored in a file.
 
 For \fIluksFormat\fR this
@@ -618,20 +630,25 @@ LUKS header and all other parameters are the same,
 then the new header decrypts the data encrypted with the
 header the master key was taken from.
 
+\fBWARNING:\fR If you create your own master key, you
+need to make sure to do it right. Otherwise you can end 
+up with a low-entropy or otherwise partially predictable
+master key which will compromise security.
+
 For \fIluksAddKey\fR this allows adding a new passphrase
 without having to know an exiting one.
 
 For \fIopen\fR this allows to open the LUKS device
 without giving a passphrase.
 .TP
-.B "\-\-dump-master-key"
+.B "\-\-dump\-master\-key"
 For \fIluksDump\fR this option includes the master key in the displayed
 information. Use with care, as the master key can be used to
-bypass the passphrases, see also option \-\-master-key-file.
+bypass the passphrases, see also option \-\-master\-key\-file.
 .TP
-.B "\-\-use-random"
+.B "\-\-use\-random"
 .TP
-.B "\-\-use-urandom"
+.B "\-\-use\-urandom"
 For \fIluksFormat\fR these options define which kernel random number
 generator will be used to create the master key (which is a
 long-term key).
@@ -647,7 +664,7 @@ Using /dev/random can block a long time, potentially
 forever, if not enough entropy can be harvested by
 the kernel.
 .TP
-.B "\-\-key-slot, \-S <0-7>"
+.B "\-\-key\-slot, \-S <0\-7>"
 For LUKS operations that add key material, this options allows you
 to specify which key slot is selected for the new key.
 This option can be used for \fIluksFormat\fR,
@@ -658,7 +675,7 @@ specific key-slot to compare the passphrase against.
 If the given passphrase would only match a different key-slot,
 the operation fails.
 .TP
-.B "\-\-key-size, \-s <bits>"
+.B "\-\-key\-size, \-s <bits>"
 Sets key size in bits. The argument has to be a multiple of
 8. The possible key-sizes are limited by the cipher and
 mode used.
@@ -703,13 +720,13 @@ This option is only relevant for the
 \fIopen \-\-type plain\fR action. Use \-\-offset, \-\-size and \-\-skip to
 specify the mapped area.
 .TP
-.B "\-\-iter-time, \-i <number of milliseconds>"
+.B "\-\-iter\-time, \-i <number of milliseconds>"
 The number of milliseconds to spend with PBKDF2 passphrase processing.
 This option is only relevant for LUKS operations that set or change
 passphrases, such as \fIluksFormat\fR or \fIluksAddKey\fR.
 Specifying 0 as parameter selects the compiled-in default.
 .TP
-.B "\-\-batch-mode, \-q"
+.B "\-\-batch\-mode, \-q"
 Suppresses all confirmation questions. Use with care!
 
 If the \-y option is not specified, this option also switches off
@@ -733,7 +750,7 @@ every time a passphrase is asked, for example for
 \fIopen\fR, \fIluksFormat\fR or \fIluksAddKey\fR.
 The default is 3 tries.
 .TP
-.B "\-\-align-payload <number of 512 byte sectors>"
+.B "\-\-align\-payload <number of 512 byte sectors>"
 Align payload at a boundary of \fIvalue\fR 512-byte sectors.
 This option is relevant for \fIluksFormat\fR.
 
@@ -753,7 +770,7 @@ used with the \fIluksUUID\fR command.
 The UUID must be provided in the standard UUID format,
 e.g. 12345678-1234-1234-1234-123456789abc.
 .TP
-.B "\-\-allow-discards\fR"
+.B "\-\-allow\-discards\fR"
 Allow the use of discard (TRIM) requests for device.
 This option is only relevant for \fIopen\fR action.
 
@@ -767,7 +784,7 @@ later. If in doubt, do no use it.
 A kernel version of 3.1 or later is needed. For earlier kernels
 this option is ignored.
 .TP
-.B "\-\-test-passphrase\fR"
+.B "\-\-test\-passphrase\fR"
 Do not activate device, just verify passphrase.
 This option is only relevant for \fIopen\fR action (the device
 mapping name is not mandatory if this option is used).
@@ -789,7 +806,7 @@ For other commands that change the LUKS header (e.g. \fIluksAddKey\fR),
 specify the device or file with the LUKS header directly as the
 LUKS device.
 
-If used with \fIluksFormat\fR, the \-\-align-payload option is taken
+If used with \fIluksFormat\fR, the \-\-align\-payload option is taken
 as absolute sector alignment on ciphertext device and can be zero.
 
 \fBWARNING:\fR There is no check whether the ciphertext device specified
@@ -797,7 +814,7 @@ actually belongs to the header given. In fact you can specify an
 arbitrary device as the ciphertext device for \fIopen\fR
 with the \-\-header option. Use with care.
 .TP
-.B "\-\-force-password\fR"
+.B "\-\-force\-password\fR"
 Do not use password quality checking for new LUKS passwords.
 
 This option applies only to \fIluksFormat\fR, \fIluksAddKey\fR and
@@ -830,7 +847,7 @@ low-entropy passphrases are easy to attack in plain mode.
 first newline, i.e. '\\n'.
 The input without the newline character is processed with
 the default hash or the hash specified with \-\-hash.
-The has result will be truncated to the key size 
+The hash result will be truncated to the key size 
 of the used cipher, or the size specified with \-s.
 
 \fBFrom stdin\fR: Reading will continue until a newline (or until
@@ -873,13 +890,13 @@ the newline character.
 \fBFrom stdin\fR:
 LUKS will read passphrases from stdin up to the
 first newline character or the compiled-in
-maximum key file length. If \-\-keyfile-size is
+maximum key file length. If \-\-keyfile\-size is
 given, it is ignored.
 
 \fBFrom key file\fR:
 The complete keyfile is read up to the compiled-in
 maximum size. Newline characters do not terminate the
-input. The \-\-keyfile-size option can be used to limit
+input. The \-\-keyfile\-size option can be used to limit
 what is read.
 
 \fBPassphrase processing\fR:
@@ -893,7 +910,12 @@ used key length, higher iteration times will not increase security.
 
 The default setting of one second is sufficient for most
 practical cases. The only exception is a low-entropy
-passphrase used on a slow device.
+passphrase used on a device with a slow CPU, as this will
+result in a low iteration count. On a slow device it may
+be advisable to increase the iteration time using the
+\-\-iter\-time option in order to obtain a higher
+iteration count. This does slow down all later luksOpen 
+operations accordingly. 
 .SH INCOHERENT BEHAVIOR FOR INVALID PASSPHRASES/KEYS
 LUKS checks for a valid passphrase when an encrypted partition
 is unlocked. The behavior of plain dm-crypt is different.
@@ -929,7 +951,7 @@ and for wiping deleted keyslots.
 
 The second type is used for the volume (master) key. You can switch
 between using /dev/random and /dev/urandom  here, see
-\fP\-\-use-random\fR and \fP\-\-use-urandom\fR
+\fP\-\-use\-random\fR and \fP\-\-use\-urandom\fR
 options. Using /dev/random on a system without enough entropy sources
 can cause \fPluksFormat\fR to block until the requested amount of
 random data is gathered. In a low-entropy situation (embedded system),
@@ -980,9 +1002,9 @@ Copyright \(co 2004-2006 Clemens Fruhwirth
 .br
 Copyright \(co 2009-2012 Red Hat, Inc.
 .br
-Copyright \(co 2009-2012 Milan Broz
+Copyright \(co 2009-2013 Milan Broz
 .br
-Copyright \(co 2012 Arno Wagner
+Copyright \(co 2012-2013 Arno Wagner
 
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
