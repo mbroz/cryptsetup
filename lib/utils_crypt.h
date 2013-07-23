@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 #define MAX_CIPHER_LEN		32
-#define MAX_CIPHER_LEN_STR	"32"
+#define MAX_CIPHER_LEN_STR	"31"
 #define MAX_KEYFILES		32
 
 struct crypt_device;
