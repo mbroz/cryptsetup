@@ -1010,6 +1010,12 @@ static int action_isLuks(void)
 	struct crypt_device *cd = NULL;
 	int r;
 
+	/* FIXME: argc > max should be checked for other operations as well */
+	if (action_argc > 1) {
+		log_err(_("Only one device argument for isLuks operation is supported.\n"));
+		return -ENODEV;
+	}
+
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
@@ -1500,7 +1506,7 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
 		      poptGetInvocationName(popt_context));
 
-	if(action_argc < action->required_action_argc)
+	if (action_argc < action->required_action_argc)
 		help_args(action, popt_context);
 
 	/* FIXME: rewrite this from scratch */
