@@ -1,0 +1,25 @@
+Cryptsetup 1.6.2 Release Notes
+==============================
+
+Changes since version 1.6.1
+
+* Print error and fail if more device arguments are present for isLuks command.
+
+* Fix cipher specification string parsing (found by gcc -fsanitize=address option).
+
+* Try to map TCRYPT system encryption through partition
+  (allows to activate mapping when other partition on the same device is mounted).
+
+* Print a warning if system encryption is used and device is a partition.
+  (TCRYPT system encryption uses whole device argument.)
+
+* Disallow explicit small payload offset for LUKS detached header.
+  LUKS detached header only allows data payload 0 (whole data device is used)
+  or explicit offset larger than header + keyslots size.
+
+* Fix boundary condition for verity device that caused failure for certain device sizes.
+
+* Various fixes to documentation, including update FAQ, default modes
+  and TCRYPT description.
+
+* Workaround for some recent changes in automake (serial-tests).
