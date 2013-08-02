@@ -64,6 +64,13 @@ A. Contributors
   installers after a complete backup of all LUKS containers has been
   made.
 
+  UBUNTU INSTALLER: In particular the Ubuntu installer seems to be
+  quite willing to kill LUKS containers in several different ways.
+  Those responsible at Ubuntu seem not to care very much (it is very
+  easy to recognize a LUKS container), so treat the process of
+  installing Ubuntu as a severe hazard to any LUKS container you may
+  have.
+
   NO WARNING ON NON-INTERACTIVE FORMAT: If you feed cryptsetup from
   STDIN (e.g. via GnuPG) on LUKS format, it does not give you the
   warning that you are about to format (and e.g. will lose any
@@ -104,8 +111,11 @@ A. Contributors
   This issue has been acknowledged by the Ubuntu dev team, see here:
   http://launchpad.net/bugs/420080
 
-  Update 7/2012: I am unsure whether this has been fixed by now, best
-  be careful.
+  Update 4/2013: I am still unsure whether this has been fixed by
+  now, best be careful. They also seem to have added even more LUKS
+  killer functionality to the Ubuntu installer. I can only strongly
+  recommended to not install Ubuntu on a system with existing LUKS
+  containers without complete backups.
 
 
  * 1.4 My LUKS-device is broken! Help!
@@ -263,6 +273,25 @@ A. Contributors
  
   Just follow the on-screen instructions.
 
+  Note: Passphrase iteration is determined by cryptsetup depending on
+  CPU power. On a slow device, this may be lower than you want. I
+  recently benchmarked this on a Raspberry Pi and it came out at
+  about 1/15 of the iteration count for a typical PC. If security is
+  paramount, you may want to increase the time spent in iteration, at
+  the cost of a slower unlock later. For the Raspberry Pi, using
+
+   cryptsetup luksFormat -i 15000 <target device>
+ 
+  gives you an iteration count and security level equal to an average
+  PC for passphrase iteration and master-key iteration. If in doubt,
+  check the iteration counts with
+
+   cryptsetup luksDump <target device>
+ 
+  and adjust the iteration count accordingly by creating the container
+  again with a different iteration time (the number after '-i' is the
+  iteration time in milicesonds) until your requirements are met.
+
   05) Map the container. Here it will be mapped to /dev/mapper/c1:
      cryptsetup luksOpen <target device> c1 
  
@@ -293,7 +322,62 @@ A. Contributors
   easy to make, but will compromise your security.
 
 
- * 2.2 What is the difference between "plain" and LUKS format?
+ * 2.2 How do I set up encrypted swap?
+
+  As things that are confidential can end up in swap (keys,
+  passphrases, etc. are usually protected against being swapped to
+  disk, but other things may not be), it may be advisable to do
+  something about the issue. One option is to run without swap, which
+  generally works well in a desktop-context. It may cause problems
+  in a server-setting or under special circumstances. The solution to
+  that is to encrypt swap with a random key at boot-time.
+
+  NOTE: This is for Debian, and should work for Debian-derived
+  distributions. For others you may have to write your own startup
+  script or use other mechanisms.
+
+  01) Add the swap partition to /etc/crypttab. A line like the following
+  should do it:
+
+      swap  /dev/<partition>  /dev/urandom   swap,noearly
+ 
+  Warning: While Debian refuses to overwrite partitions with a
+  filesystem or RAID signature on it, if your disk IDs may change
+  (adding or removing disks, failure of disk during boot, etc.), you
+  may want to take additional precautions. This is not a concern if
+  you have only one disk. One possibility is to make sure the
+  partition number is not present on additional disks or also swap
+  there. Another is to encapsulate the swap partition (by making it a
+  1-disk RAID1 or by using LVM), so that it gets a persistent
+  identifier. Specifying it directly by UUID does not work,
+  unfortunately, as the UUID is part of the swap signature and that
+  is not visible from the outside due to the encryption and in
+  addition changes on each reboot with this setup.
+
+  Note: Use /dev/random if you are paranoid or in a potential
+  low-entropy situation (embedded system, etc.). This may cause the
+  operation to take a long time during boot. If you are in a "no
+  entropy" situation, you cannot encrypt swap securely. In this
+  situation you should find some entropy, also because nothing else
+  using crypto will be secure, like ssh, ssl or GnuPG.
+
+  Note: The "noearly" option makes sure things like LVM, RAID, etc.
+  are running. As swap is non-critical for boot, it is fine to start
+  it late.
+
+  02) Add the swap partition to /etc/fstab. A line like the following
+  should do it:
+
+      /dev/mapper/swap none swap sw 0 0
+ 
+  That is it. Reboot or start it manually to activate encrypted swap.
+  Manual start would look like this:
+
+      /etc/init.d/crypdisks start
+      swapon /dev/mapper/swap
+ 
+
+ * 2.3 What is the difference between "plain" and LUKS format?
 
   First, unless you happen to understand the cryptographic background
   well, you should use LUKS. It does protect the user from a lot of
@@ -358,7 +442,7 @@ A. Contributors
   non-default XTS mode).
 
 
- * 2.3 Can I encrypt an already existing, non-empty partition to use
+ * 2.4 Can I encrypt an already existing, non-empty partition to use
    LUKS?
 
   There is no converter, and it is not really needed. The way to do
@@ -373,7 +457,7 @@ A. Contributors
   to be in a filesystem.
 
 
- * 2.4 How do I use LUKS with a loop-device?
+ * 2.5 How do I use LUKS with a loop-device?
 
   This can be very handy for experiments. Setup is just the same as
   with any block device. If you want, for example, to use a 100MiB
@@ -387,7 +471,7 @@ A. Contributors
   To unmap the file when done, use "losetup -d /dev/loop0".
 
 
- * 2.5 When I add a new key-slot to LUKS, it asks for a passphrase but
+ * 2.6 When I add a new key-slot to LUKS, it asks for a passphrase but
    then complains about there not being a key-slot with that
    passphrase?
 
@@ -399,7 +483,7 @@ A. Contributors
   new key-slot.
 
 
- * 2.6 Encryption on top of RAID or the other way round?
+ * 2.7 Encryption on top of RAID or the other way round?
 
   Unless you have special needs, place encryption between RAID and
   filesystem, i.e. encryption on top of RAID. You can do it the other
@@ -425,15 +509,22 @@ A. Contributors
   encrypted.
 
 
- * 2.7 How do I read a dm-crypt key from file?
+ * 2.8 How do I read a dm-crypt key from file?
 
-  Note that the file will still be hashed first, just like keyboard
-  input. Use the --key-file option, like this:
+  Use the --key-file option, like this:
 
       cryptsetup create --key-file keyfile e1 /dev/loop0
  
+  This will read the binary key from file, i.e. no hashing or
+  transformation will be applied to the keyfile before its bits are
+  used as key. Extra bits (beyond the length of the key) at the end
+  are ignored. Note that if you read from STDIN, the data will still
+  be hashed, just as a key read interactively from the terminal. See
+  the man-page sections "NOTES ON PASSPHRASE PROCESSING..." for more
+  detail.
 
- * 2.8 How do I read a LUKS slot key from file?
+
+ * 2.9 How do I read a LUKS slot key from file?
 
   What you really do here is to read a passphrase from file, just as
   you would with manual entry of a passphrase for a key-slot. You can
@@ -459,7 +550,7 @@ A. Contributors
       cryptsetup luksOpen --key-file keyfile /dev/loop0 e1
  
 
- * 2.9 How do I read the LUKS master key from file?
+ * 2.10 How do I read the LUKS master key from file?
 
   The question you should ask yourself first is why you would want to
   do this. The only legitimate reason I can think of is if you want
@@ -470,7 +561,7 @@ A. Contributors
   do this here.
 
 
- * 2.10 What are the security requirements for a key read from file?
+ * 2.11 What are the security requirements for a key read from file?
 
   A file-stored key or passphrase has the same security requirements
   as one entered interactively, however you can use random bytes and
@@ -482,7 +573,7 @@ A. Contributors
       head -c 256 /dev/random > keyfile
  
 
- * 2.11 If I map a journaled file system using dm-crypt/LUKS, does it
+ * 2.12 If I map a journaled file system using dm-crypt/LUKS, does it
    still provide its usual transactional guarantees?
 
   Yes, it does, unless a very old kernel is used. The required flags
@@ -510,7 +601,7 @@ A. Contributors
   should improve further and eventually the problem should go away.
 
 
- * 2.12 Can I use LUKS or cryptsetup with a more secure (external)
+ * 2.13 Can I use LUKS or cryptsetup with a more secure (external)
    medium for key storage, e.g. TPM or a smartcard?
 
   Yes, see the answers on using a file-supplied key. You do have to
@@ -524,7 +615,7 @@ A. Contributors
   related to the cryptsetup project.
 
 
- * 2.13 Can I resize a dm-crypt or LUKS partition?
+ * 2.14 Can I resize a dm-crypt or LUKS partition?
 
   Yes, you can, as neither dm-crypt nor LUKS stores partition size.
   Whether you should is a different question. Personally I recommend
@@ -544,7 +635,7 @@ A. Contributors
   for that.
 
 
- * 2.14 How do I Benchmark the Ciphers, Hashes and Modes?
+ * 2.15 How do I Benchmark the Ciphers, Hashes and Modes?
 
   Since version 1.60 cryptsetup supports the "benchmark" command.
   Simply run as root:
@@ -560,7 +651,7 @@ A. Contributors
   and half of it is the cipher key, the other half is the XTS key.
 
 
- * 2.15 How do I Verify I have an Authentic cryptsetup Source Package?
+ * 2.16 How do I Verify I have an Authentic cryptsetup Source Package?
 
   Current maintainer is Milan Broz and he signs the release packages
   with his PGP key. The key he currently uses is the "RSA key ID
@@ -840,8 +931,8 @@ A. Contributors
   is easier than it actually is is fine. An attacker may still have
   vastly higher cost than estimated here.
 
-  LUKS uses SHA1 for hasing per default. The claim in the reference is
-  63 billion tries/second for SHA1. We will leave aside the check
+  LUKS uses SHA1 for hashing per default. The claim in the reference
+  is 63 billion tries/second for SHA1. We will leave aside the check
   whether a try actually decrypts a key-slot. Now, the machine has 25
   GPUs, which I will estimate at an overall lifetime cost of USD/EUR
   1000 each, and an useful lifetime of 2 years. (This is on the low
