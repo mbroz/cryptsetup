@@ -31,10 +31,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "utils_dm.h"
-
-char *crypt_lookup_dev(const char *dev_id);
-int crypt_sysfs_get_rotational(int major, int minor, int *rotational);
+#include "internal.h"
 
 static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_level)
 {

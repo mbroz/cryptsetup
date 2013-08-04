@@ -538,8 +538,8 @@ static void xlog(const char *msg, const char *tst, const char *func, int line, c
 #define FAIL_(x, y)	do { xlog("(fail)   ", #x, __FUNCTION__, __LINE__, y); \
 			     check_ko((x), __LINE__, __FUNCTION__); \
 			} while(0)
-#define EQ_(x, y)	do { xlog("(equal)  ", #x " == " #y, __FUNCTION__, __LINE__, NULL); \
-			     int64_t _x = (x), _y = (y); \
+#define EQ_(x, y)	do { int64_t _x = (x), _y = (y); \
+			     xlog("(equal)  ", #x " == " #y, __FUNCTION__, __LINE__, NULL); \
 			     if (_x != _y) check_equal(__LINE__, __FUNCTION__, _x, _y); \
 			} while(0)
 #define RUN_(x, y)		do { printf("%s: %s\n", #x, (y)); x(); } while (0)
