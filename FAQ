@@ -171,14 +171,14 @@ A. Contributors
   least problems.
 
 
- * 1.5 Where is the project website?
+ * 1.6 Where is the project website?
 
   There is the project website at http://code.google.com/p/cryptsetup/
   Please do not post questions there, nobody will read them. Use
   the mailing-list instead.
 
 
- * 1.6 Is there a mailing-list?
+ * 1.7 Is there a mailing-list?
 
   Instructions on how to subscribe to the mailing-list are at on the
   project website. People are generally helpful and friendly on the
@@ -198,7 +198,7 @@ A. Contributors
   http://dir.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt
 
 
- * 1.7 Unsubscribe from the mailing-list
+ * 1.8 Unsubscribe from the mailing-list
 
   Send mail to dm-crypt-unsubscribe@saout.de from the subscribed
   account. You will get an email with instructions.
@@ -344,15 +344,16 @@ A. Contributors
   Warning: While Debian refuses to overwrite partitions with a
   filesystem or RAID signature on it, if your disk IDs may change
   (adding or removing disks, failure of disk during boot, etc.), you
-  may want to take additional precautions. This is not a concern if
-  you have only one disk. One possibility is to make sure the
-  partition number is not present on additional disks or also swap
-  there. Another is to encapsulate the swap partition (by making it a
-  1-disk RAID1 or by using LVM), so that it gets a persistent
-  identifier. Specifying it directly by UUID does not work,
-  unfortunately, as the UUID is part of the swap signature and that
-  is not visible from the outside due to the encryption and in
-  addition changes on each reboot with this setup.
+  may want to take additional precautions. Yes, this means that your
+  kernel device names like sda, sdb, ... can change between reboots!
+  This is not a concern if you have only one disk. One possibility is
+  to make sure the partition number is not present on additional
+  disks or also swap there. Another is to encapsulate the swap
+  partition (by making it a 1-disk RAID1 or by using LVM), so that it
+  gets a persistent identifier. Specifying it directly by UUID does
+  not work, unfortunately, as the UUID is part of the swap signature
+  and that is not visible from the outside due to the encryption and
+  in addition changes on each reboot with this setup.
 
   Note: Use /dev/random if you are paranoid or in a potential
   low-entropy situation (embedded system, etc.). This may cause the
@@ -1539,6 +1540,28 @@ A. Contributors
   passphrase all over the Internet or the attacker has knowledge of
   it from some other source and does a targeted laptop theft to get
   at your data, you should be fine.
+
+
+ * 5.20 LUKS is broken! It uses SHA-1!
+
+  No, it is not. SHA-1 is (academically) broken for finding
+  collisions, but not for using it in a key-derivation function. And
+  that collision vulnerability is for non-iterated use only. And you
+  need the hash-value in verbatim.
+
+  This basically means that if you already have a slot-key, and you
+  have set the PBKDF2 iteration count to 1 (it is > 10'000 normally),
+  you could (maybe) derive a different passphrase that gives you the
+  the same slot-key. But if you have the slot-key, you can already
+  unlock the key-slot and get the master key, breaking everything. So
+  basically, this SHA-1 vulnerability allows you to open a LUKS
+  container with high effort when you already have it open.
+
+  The real problem here is people that do not understand crypto and
+  claim things are broken just because some mechanism is used that
+  has been broken for a specific different use. The way the mechanism
+  is used matters very much. A hash that is broken for one use can be
+  completely secure for other uses and here it is.
 
 
 6. Backup and Data Recovery 
