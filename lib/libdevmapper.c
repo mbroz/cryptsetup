@@ -516,7 +516,7 @@ static int dm_prepare_uuid(const char *name, const char *type, const char *uuid,
 	if (uuid) {
 		if (uuid_parse(uuid, uu) < 0) {
 			log_dbg("Requested UUID %s has invalid format.", uuid);
-			return -EINVAL;
+			return 0;
 		}
 
 		for (ptr = uuid2, i = 0; i < UUID_LEN; i++)
@@ -535,7 +535,7 @@ static int dm_prepare_uuid(const char *name, const char *type, const char *uuid,
 	if (i >= buflen)
 		log_err(NULL, _("DM-UUID for device %s was truncated.\n"), name);
 
-	return 0;
+	return 1;
 }
 
 static int _dm_create_device(const char *name, const char *type,
@@ -562,9 +562,8 @@ static int _dm_create_device(const char *name, const char *type,
 		if (!dm_task_set_name(dmt, name))
 			goto out_no_removal;
 	} else {
-		r = dm_prepare_uuid(name, type, uuid, dev_uuid, sizeof(dev_uuid));
-		if (r < 0)
-			return r;
+		if (!dm_prepare_uuid(name, type, uuid, dev_uuid, sizeof(dev_uuid)))
+			goto out_no_removal;
 
 		if (!(dmt = dm_task_create(DM_DEVICE_CREATE)))
 			goto out_no_removal;
