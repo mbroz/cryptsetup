@@ -655,6 +655,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	struct device *device = NULL, *part_device = NULL;
 	unsigned int i;
 	int r;
+	uint32_t req_flags;
 	struct tcrypt_algs *algs;
 	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
@@ -683,6 +684,11 @@ int TCRYPT_activate(struct crypt_device *cd,
 		log_err(cd, _("Kernel doesn't support activation for this TCRYPT legacy mode.\n"));
 		return -ENOTSUP;
 	}
+
+	if (strstr(params->mode, "-tcw"))
+		req_flags = DM_TCW_SUPPORTED;
+	else
+		req_flags = DM_PLAIN64_SUPPORTED;
 
 	algs = TCRYPT_get_algs(params->cipher, params->mode);
 	if (!algs)
@@ -763,8 +769,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 			break;
 	}
 
-	if (r < 0 && !(dm_flags() & DM_PLAIN64_SUPPORTED)) {
-		log_err(cd, _("Kernel doesn't support plain64 IV.\n"));
+	if (r < 0 && !(dm_flags() & req_flags)) {
+		log_err(cd, _("Kernel doesn't support TCRYPT compatible mapping.\n"));
 		r = -ENOTSUP;
 	}
 

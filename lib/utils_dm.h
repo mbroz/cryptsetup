@@ -39,6 +39,7 @@ struct device;
 #define DM_PLAIN64_SUPPORTED  (1 << 3)	/* plain64 IV */
 #define DM_DISCARDS_SUPPORTED (1 << 4)	/* discards/TRIM option is supported */
 #define DM_VERITY_SUPPORTED   (1 << 5)	/* dm-verity target supported */
+#define DM_TCW_SUPPORTED      (1 << 6)	/* tcw (TCRYPT CBC with whitening) */
 uint32_t dm_flags(void);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)
