@@ -65,6 +65,7 @@ function test_required()
 }
 
 test_required
+export LANG=C
 
 [ ! -d $TST_DIR ] && tar xjf tcrypt-images.tar.bz2
 
@@ -95,10 +96,11 @@ if [ $(id -u) != 0 ]; then
 	exit 0
 fi
 
-echo "ACTIVATION FS UUID CHECK (LRW/XTS modes only)"
-for file in $(ls $TST_DIR/tc_*-lrw-* $TST_DIR/tc_*-xts-*) ; do
+echo "ACTIVATION FS UUID CHECK"
+for file in $(ls $TST_DIR/tc_*) ; do
 	echo -n " $file"
-	echo $PASSWORD | $CRYPTSETUP tcryptOpen -r $file $MAP || fail
+	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen -r $file $MAP 2>/dev/null)
+	[ $? -ne 0 ] && ( echo "$out" | grep -q -v "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	$CRYPTSETUP status $MAP >/dev/null || fail
 	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
 	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
@@ -107,10 +109,11 @@ for file in $(ls $TST_DIR/tc_*-lrw-* $TST_DIR/tc_*-xts-*) ; do
 	echo " [OK]"
 done
 
-echo "ACTIVATION FS UUID (HIDDEN) CHECK (LRW/XTS modes only)"
-for file in $(ls $TST_DIR/tc_*-lrw-*-hidden $TST_DIR/tc_*-xts-*-hidden) ; do
+echo "ACTIVATION FS UUID (HIDDEN) CHECK"
+for file in $(ls $TST_DIR/tc_*-hidden) ; do
 	echo -n " $file"
-	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r $file $MAP --tcrypt-hidden || fail
+	out=$(echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r $file $MAP --tcrypt-hidden 2>/dev/null)
+	[ $? -ne 0 ] && ( echo "$out" | grep -q -v "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
 	$CRYPTSETUP remove $MAP || fail
 	[ "$UUID" != "CAFE-BABE" ] && fail "UUID check failed."
