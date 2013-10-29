@@ -429,6 +429,9 @@ device not the system partition as the device parameter.
 To use hidden header (and map hidden device, if available),
 use \fB\-\-tcrypt\-hidden\fR option.
 
+To explicitly use backup (secondary) header, use \fB\-\-tcrypt\-backup\fR
+option.
+
 \fBNOTE:\fR There is no protection for a hidden volume if
 the outer volume is mounted. The reason is that if there
 were any protection, it would require some metadata describing
@@ -444,7 +447,7 @@ Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up
 a mapping <name>.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-tcrypt\-hidden, 
-\-\-tcrypt\-system, \-\-readonly, \-\-test\-passphrase].
+\-\-tcrypt\-system, \-\-tcrypt\-backup, \-\-readonly, \-\-test\-passphrase].
 
 The keyfile parameter allows combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
@@ -463,7 +466,7 @@ This means that if the master key is compromised, the whole device has
 to be erased to prevent further access. Use this option carefully.
 
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file, 
-\-\-tcrypt\-hidden, \-\-tcrypt\-system].
+\-\-tcrypt\-hidden, \-\-tcrypt\-system, \-\-tcrypt\-backup].
 
 The keyfile parameter allows combination of file content with the
 passphrase and can be repeated.

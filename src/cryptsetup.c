@@ -60,6 +60,7 @@ static int opt_allow_discards = 0;
 static int opt_test_passphrase = 0;
 static int opt_tcrypt_hidden = 0;
 static int opt_tcrypt_system = 0;
+static int opt_tcrypt_backup = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -239,6 +240,9 @@ static int action_open_tcrypt(void)
 	if (opt_tcrypt_system)
 		params.flags |= CRYPT_TCRYPT_SYSTEM_HEADER;
 
+	if (opt_tcrypt_backup)
+		params.flags |= CRYPT_TCRYPT_BACKUP_HEADER;
+
 	r = crypt_load(cd, CRYPT_TCRYPT, &params);
 	check_signal(&r);
 	if (r < 0)
@@ -325,6 +329,9 @@ static int action_tcryptDump(void)
 
 	if (opt_tcrypt_system)
 		params.flags |= CRYPT_TCRYPT_SYSTEM_HEADER;
+
+	if (opt_tcrypt_backup)
+		params.flags |= CRYPT_TCRYPT_BACKUP_HEADER;
 
 	r = crypt_load(cd, CRYPT_TCRYPT, &params);
 	check_signal(&r);
@@ -1390,6 +1397,7 @@ int main(int argc, const char **argv)
 		{ "test-passphrase",   '\0', POPT_ARG_NONE, &opt_test_passphrase,       0, N_("Do not activate device, just check passphrase."), NULL },
 		{ "tcrypt-hidden",     '\0', POPT_ARG_NONE, &opt_tcrypt_hidden,         0, N_("Use hidden header (hidden TCRYPT device)."), NULL },
 		{ "tcrypt-system",     '\0', POPT_ARG_NONE, &opt_tcrypt_system,         0, N_("Device is system TCRYPT drive (with bootloader)."), NULL },
+		{ "tcrypt-backup",     '\0', POPT_ARG_NONE, &opt_tcrypt_backup,         0, N_("Use backup (secondary) TCRYPT header."), NULL },
 		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt."), NULL },
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)."), NULL },
 		POPT_TABLEEND
@@ -1591,10 +1599,10 @@ int main(int argc, const char **argv)
 		_("Option --offset is supported only for open of plain and loopaes devices.\n"),
 		poptGetInvocationName(popt_context));
 
-	if ((opt_tcrypt_hidden || opt_tcrypt_system) && strcmp(aname, "tcryptDump") &&
+	if ((opt_tcrypt_hidden || opt_tcrypt_system || opt_tcrypt_backup) && strcmp(aname, "tcryptDump") &&
 	    (strcmp(aname, "open") || strcmp(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --tcrypt-hidden or --tcrypt-system is supported only for TCRYPT device.\n"),
+		_("Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
