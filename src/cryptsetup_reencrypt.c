@@ -539,8 +539,8 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	if (r < 0)
 		goto out;
 
-	r = crypt_keyslot_add_by_volume_key(cd_new, 0, NULL, 0,
-			rc->p[0].password, rc->p[0].passwordLen);
+	r = crypt_keyslot_add_by_volume_key(cd_new, rc->keyslot, NULL, 0,
+			rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen);
 	if (r < 0)
 		goto out;
 
@@ -844,15 +844,14 @@ static int initialize_uuid(struct reenc_ctx *rc)
 static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 			    const char *msg, int slot_to_check, int check)
 {
-	int r = -EINVAL, slot, retry_count;
-
-	slot = (slot_to_check == CRYPT_ANY_SLOT) ? 0 : slot_to_check;
+	char *password;
+	int r = -EINVAL, retry_count;
+	size_t passwordLen;
 
 	retry_count = opt_tries ?: 1;
 	while (retry_count--) {
 		set_int_handler(0);
-		r = crypt_get_key(msg, &rc->p[slot].password,
-			&rc->p[slot].passwordLen,
+		r = crypt_get_key(msg, &password, &passwordLen,
 			0, 0, NULL /*opt_key_file*/,
 			0, 0, cd);
 		if (r < 0)
@@ -864,42 +863,49 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 		set_int_block(1);
 		if (check)
 			r = crypt_activate_by_passphrase(cd, NULL, slot_to_check,
-				rc->p[slot].password, rc->p[slot].passwordLen, 0);
+				password, passwordLen, 0);
 		else
-			r = slot;
+			r = (slot_to_check == CRYPT_ANY_SLOT) ? 0 : slot_to_check;
 
 		if (r < 0) {
-			crypt_safe_free(rc->p[slot].password);
-			rc->p[slot].password = NULL;
-			rc->p[slot].passwordLen = 0;
+			crypt_safe_free(password);
+			password = NULL;
+			passwordLen = 0;
 		}
 		if (r < 0 && r != -EPERM)
 			return r;
 		if (r >= 0) {
-			rc->keyslot = slot;
+			rc->keyslot = r;
+			rc->p[r].password = password;
+			rc->p[r].passwordLen = passwordLen;
 			break;
 		}
 		log_err(_("No key available with this passphrase.\n"));
 	}
+
+	password = NULL;
+	passwordLen = 0;
+
 	return r;
 }
 
 static int init_keyfile(struct reenc_ctx *rc, struct crypt_device *cd, int slot_check)
 {
-	int r, slot;
+	char *password;
+	int r;
+	size_t passwordLen;
 
-	slot = (slot_check == CRYPT_ANY_SLOT) ? 0 : slot_check;
-	r = crypt_get_key(NULL, &rc->p[slot].password, &rc->p[slot].passwordLen,
-		opt_keyfile_offset, opt_keyfile_size, opt_key_file, 0, 0, cd);
+	r = crypt_get_key(NULL, &password, &passwordLen, opt_keyfile_offset,
+			  opt_keyfile_size, opt_key_file, 0, 0, cd);
 	if (r < 0)
 		return r;
 
-	r = crypt_activate_by_passphrase(cd, NULL, slot_check,
-		rc->p[slot].password, rc->p[slot].passwordLen, 0);
+	r = crypt_activate_by_passphrase(cd, NULL, slot_check, password,
+					 passwordLen, 0);
 
 	/*
 	 * Allow keyslot only if it is last slot or if user explicitly
-	 * specify whch slot to use (IOW others will be disabled).
+	 * specify which slot to use (IOW others will be disabled).
 	 */
 	if (r >= 0 && opt_key_slot == CRYPT_ANY_SLOT &&
 	    crypt_keyslot_status(cd, r) != CRYPT_SLOT_ACTIVE_LAST) {
@@ -909,14 +915,17 @@ static int init_keyfile(struct reenc_ctx *rc, struct crypt_device *cd, int slot_
 	}
 
 	if (r < 0) {
-		crypt_safe_free(rc->p[slot].password);
-		rc->p[slot].password = NULL;
-		rc->p[slot].passwordLen = 0;
+		crypt_safe_free(password);
 		if (r == -EPERM)
 			log_err(_("No key available with this passphrase.\n"));
-		return r;
-	} else
-		rc->keyslot = slot;
+	} else {
+		rc->keyslot = r;
+		rc->p[r].password = password;
+		rc->p[r].passwordLen = passwordLen;
+	}
+
+	password = NULL;
+	passwordLen = 0;
 
 	return r;
 }
@@ -931,7 +940,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 	log_dbg("Passhrases initialization.");
 
 	if (opt_new && !rc->in_progress) {
-		r = init_passphrase1(rc, cd, _("Enter new passphrase: "), 0, 0);
+		r = init_passphrase1(rc, cd, _("Enter new passphrase: "), opt_key_slot, 0);
 		return r > 0 ? 0 : r;
 	}
 
@@ -942,11 +951,16 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 		return r;
 	}
 
+	if (opt_key_slot != CRYPT_ANY_SLOT)
+		snprintf(msg, sizeof(msg),
+			 _("Enter passphrase for key slot %u: "), opt_key_slot);
+	else
+		snprintf(msg, sizeof(msg), _("Enter any existing passphrase: "));
+
 	if (opt_key_file) {
 		r = init_keyfile(rc, cd, opt_key_slot);
-	} else if (rc->in_progress) {
-		r = init_passphrase1(rc, cd, _("Enter any existing passphrase: "),
-				     CRYPT_ANY_SLOT, 1);
+	} else if (rc->in_progress || opt_key_slot != CRYPT_ANY_SLOT) {
+		r = init_passphrase1(rc, cd, msg, opt_key_slot, 1);
 	} else for (i = 0; i < MAX_SLOT; i++) {
 		ki = crypt_keyslot_status(cd, i);
 		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
