@@ -6,6 +6,7 @@ LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
 LIBCRYPTSETUP_VERSION_INFO=9:0:5
 dnl library file name for FIPS selfcheck
 LIBCRYPTSETUP_VERSION_FIPS="libcryptsetup.so.4"
+FIPS_MODULE_FILE="/etc/system-fips"
 
 AC_CONFIG_SRCDIR(src/cryptsetup.c)
 AC_CONFIG_MACRO_DIR([m4])
@@ -84,6 +85,8 @@ if test "x$with_fips" = "xyes"; then
 	AC_DEFINE(ENABLE_FIPS, 1, [Enable FIPS mode restrictions])
 	AC_DEFINE_UNQUOTED(LIBCRYPTSETUP_VERSION_FIPS, ["$LIBCRYPTSETUP_VERSION_FIPS"],
 		[library file name for FIPS selfcheck])
+	AC_DEFINE_UNQUOTED(FIPS_MODULE_FILE, ["$FIPS_MODULE_FILE"],
+		[file checked to determine if running in FIPS mode])
 
 	if test "x$enable_static" = "xyes" -o "x$enable_static_cryptsetup" = "xyes" ; then
 		AC_MSG_ERROR([Static build is not compatible with FIPS.])
@@ -347,6 +350,7 @@ AC_SUBST([CRYPTO_STATIC_LIBS])
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
 AC_SUBST([LIBCRYPTSETUP_VERSION_FIPS])
+AC_SUBST([FIPS_MODULE_FILE])
 
 dnl ==========================================================================
 AC_ARG_ENABLE([dev-random], AS_HELP_STRING([--enable-dev-random],

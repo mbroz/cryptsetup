@@ -183,8 +183,6 @@ int init_crypto(struct crypt_device *ctx)
 {
 	int r;
 
-	crypt_fips_libcryptsetup_check(ctx);
-
 	r = crypt_random_init(ctx);
 	if (r < 0) {
 		log_err(ctx, _("Cannot initialize crypto RNG backend.\n"));
@@ -2604,4 +2602,9 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	cad->flags	= dmd.flags;
 
 	return 0;
+}
+
+static void __attribute__((constructor)) libcryptsetup_ctor(void)
+{
+	crypt_fips_libcryptsetup_check();
 }

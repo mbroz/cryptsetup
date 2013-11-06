@@ -1413,7 +1413,8 @@ int main(int argc, const char **argv)
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE);
 
-	crypt_fips_self_check(NULL);
+	if (crypt_fips_mode())
+		crypt_log(NULL, CRYPT_LOG_VERBOSE, _("Running in FIPS mode.\n"));
 
 	popt_context = poptGetContext(PACKAGE, argc, argv, popt_options, 0);
 	poptSetOtherOptionHelp(popt_context,
