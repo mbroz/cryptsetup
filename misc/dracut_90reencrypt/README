@@ -2,12 +2,27 @@ Example of simple dracut module for reencryption of system
 LUKS drive on-the-fly.
 
 Install in /usr/[share|lib]/dracut/modules.d/90reencrypt, then
-rebuild intramfs "with dracut -f -a reencrypt".
+build special intramfs "with dracut -a reencrypt -o crypt".
+Reencrypt module doesn't work (has a conflict) with crypt module as
+of now. After successfull reencryption reboot using original initramfs.
 
-Dracut then recognize argument rd_REENCRYPT=name:size,
-e.g. rd_REENCRYPT=sda2:52G means only 52G of device
+Dracut then recognize argument rd.luks.reencrypt=name:size,
+e.g. rd.luks.reencrypt=sda2:52G means only 52G of device
 will be reencrypted (default is whole device).
 (Name is kernel name of device.)
+
+Also, you may specify keyslot which you want to use for reencryption,
+rd.luks.reencrypt_keyslot=<keyslot_number>. Bear in mind that if you
+use this option, all other keyslots will be deactivated.
+
+Another argument, rd.luks.reencrypt_key=/dev/sda:/path/to/keyfile
+can be used to read password for specific keyslot from device containing
+filesystem with a keyfile (file with a password). If you omit reencrypt_key
+argument, reencryption would work only in case a LUKS container has
+exactly one keyslot activated.
+
+Arguments rd.luks.reencrypt_keyslot and rd.luks.reencrypt_key are not
+mandatory.
 
 Note that reencryption context is stored in ramdisk, any
 fail can mean complete lost of data!
