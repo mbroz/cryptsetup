@@ -129,8 +129,8 @@ static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 	if (crypt_maj >= 1 && crypt_min >= 11)
 		_dm_crypt_flags |= DM_DISCARDS_SUPPORTED;
 
-	//if (crypt_maj >= 1 && crypt_min >= 13)
-	//	_dm_crypt_flags |= DM_TCW_SUPPORTED;
+	if (crypt_maj >= 1 && crypt_min >= 13)
+		_dm_crypt_flags |= DM_TCW_SUPPORTED;
 
 	/* Repeat test if dm-crypt is not present */
 	if (crypt_maj > 0)
