@@ -99,7 +99,16 @@ int crypt_plain_hash(struct crypt_device *ctx __attribute__((unused)),
 		pad_size = 0;
 	}
 
-	r = hash(hash_name_buf, hash_size, key, passphrase_size, passphrase);
+	/* No hash, copy passphrase directly */
+	if (!strcmp(hash_name_buf, "plain")) {
+		if (passphrase_size < hash_size) {
+			log_dbg("Too short plain passphrase.");
+			return -EINVAL;
+		}
+		memcpy(key, passphrase, hash_size);
+		r = 0;
+	} else
+		r = hash(hash_name_buf, hash_size, key, passphrase_size, passphrase);
 
 	if (r == 0 && pad_size)
 		memset(key + hash_size, 0, pad_size);
