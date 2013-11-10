@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2004-2006, Clemens Fruhwirth <clemens@endorphin.org>
  * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2013, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -594,6 +595,28 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 	return r;
 }
 
+/* Check that kernel supports requested cipher by decryption of one sector */
+static int LUKS_check_cipher(struct luks_phdr *hdr, struct crypt_device *ctx)
+{
+	int r;
+	struct volume_key *empty_key;
+	char buf[SECTOR_SIZE];
+
+	log_dbg("Checking if cipher %s-%s is usable.", hdr->cipherName, hdr->cipherMode);
+
+	empty_key = crypt_alloc_volume_key(hdr->keyBytes, NULL);
+	if (!empty_key)
+		return -ENOMEM;
+
+	r = LUKS_decrypt_from_storage(buf, sizeof(buf),
+				      hdr->cipherName, hdr->cipherMode,
+				      empty_key, 0, ctx);
+
+	crypt_free_volume_key(empty_key);
+	memset(buf, 0, sizeof(buf));
+	return r;
+}
+
 int LUKS_generate_phdr(struct luks_phdr *header,
 		       const struct volume_key *vk,
 		       const char *cipherName, const char *cipherMode, const char *hashSpec,
@@ -646,6 +669,10 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	header->keyBytes=vk->keylength;
 
 	LUKS_fix_header_compatible(header);
+
+	r = LUKS_check_cipher(header, ctx);
+	if (r < 0)
+		return r;
 
 	log_dbg("Generating LUKS header version %d using hash %s, %s, %s, MK %d bytes",
 		header->version, header->hashSpec ,header->cipherName, header->cipherMode,

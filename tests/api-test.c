@@ -1842,7 +1842,7 @@ static void NonFIPSAlg(void)
 	struct crypt_device *cd;
 	struct crypt_params_luks1 params = {0};
 	char key[128] = "";
-	size_t key_size = 128;
+	size_t key_size = 128 / 8;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	int ret;
