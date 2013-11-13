@@ -100,6 +100,18 @@ static void set_dm_error(int level,
 
 static int _dm_simple(int task, const char *name, int udev_wait);
 
+static int _dm_satisfies_version(unsigned target_maj, unsigned target_min,
+				 unsigned actual_maj, unsigned actual_min)
+{
+	if (actual_maj > target_maj)
+		return 1;
+
+	if (actual_maj == target_maj && actual_min >= target_min)
+		return 1;
+
+	return 0;
+}
+
 static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 				 unsigned crypt_min, unsigned crypt_patch)
 {
@@ -111,25 +123,25 @@ static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 	log_dbg("Detected dm-crypt version %i.%i.%i, dm-ioctl version %u.%u.%u.",
 		crypt_maj, crypt_min, crypt_patch, dm_maj, dm_min, dm_patch);
 
-	if (crypt_maj >= 1 && crypt_min >= 2)
+	if (_dm_satisfies_version(1, 2, crypt_maj, crypt_min))
 		_dm_crypt_flags |= DM_KEY_WIPE_SUPPORTED;
 	else
 		log_dbg("Suspend and resume disabled, no wipe key support.");
 
-	if (crypt_maj >= 1 && crypt_min >= 10)
+	if (_dm_satisfies_version(1, 10, crypt_maj, crypt_min))
 		_dm_crypt_flags |= DM_LMK_SUPPORTED;
 
-	if (dm_maj >= 4 && dm_min >= 20)
+	if (_dm_satisfies_version(4, 20, dm_maj, dm_min))
 		_dm_crypt_flags |= DM_SECURE_SUPPORTED;
 
 	/* not perfect, 2.6.33 supports with 1.7.0 */
-	if (crypt_maj >= 1 && crypt_min >= 8)
+	if (_dm_satisfies_version(1, 8, crypt_maj, crypt_min))
 		_dm_crypt_flags |= DM_PLAIN64_SUPPORTED;
 
-	if (crypt_maj >= 1 && crypt_min >= 11)
+	if (_dm_satisfies_version(1, 11, crypt_maj, crypt_min))
 		_dm_crypt_flags |= DM_DISCARDS_SUPPORTED;
 
-	if (crypt_maj >= 1 && crypt_min >= 13)
+	if (_dm_satisfies_version(1, 13, crypt_maj, crypt_min))
 		_dm_crypt_flags |= DM_TCW_SUPPORTED;
 
 	/* Repeat test if dm-crypt is not present */
