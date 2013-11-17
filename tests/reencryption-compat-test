@@ -6,15 +6,18 @@ REENC=../src/cryptsetup-reencrypt
 DEV_NAME=reenc9768
 DEV_NAME2=reenc1273
 IMG=reenc-data
+ORIG_IMG=reenc-data-orig
 KEY1=key1
 PWD1="93R4P4pIqAH8"
+PWD2="1cND4319812f"
+PWD3="1-9Qu5Ejfnqv"
 
 function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $KEY1 >/dev/null 2>&1
+	rm -f $IMG $ORIG_IMG $KEY1 >/dev/null 2>&1
 	LOOPDEV1=""
 }
 
@@ -37,7 +40,7 @@ function open_crypt()
 	if [ -n "$1" ] ; then
 		echo "$1" | $CRYPTSETUP luksOpen $LOOPDEV1 $DEV_NAME || fail
 	else
-		$CRYPTSETUP luksOpen -d key1 $LOOPDEV1 $DEV_NAME || fail
+		$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV1 $DEV_NAME || fail
 	fi
 }
 
@@ -80,6 +83,48 @@ function check_hash() # $1 pwd, $2 hash
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
 
+function backup_orig()
+{
+	sync
+	losetup -d $LOOPDEV1
+	cp $IMG $ORIG_IMG
+	losetup $LOOPDEV1 $IMG
+}
+
+function rollback()
+{
+	sync
+	losetup -d $LOOPDEV1
+	cp $ORIG_IMG $IMG
+	losetup $LOOPDEV1 $IMG
+}
+
+function check_slot() #space separeted list of ENABLED key slots
+{
+	local _KS0=DISABLED
+	local _KS1=$_KS0 _KS2=$_KS0 _KS3=$_KS0 _KS4=$_KS0 _KS5=$_KS0 _KS6=$_KS0 _KS7=$_KS0
+	local _tmp
+
+	for _tmp in $*; do
+		eval _KS$_tmp=ENABLED
+	done
+
+	local _out=$($CRYPTSETUP luksDump $LOOPDEV1 | grep -e "Key Slot" | cut -d ' ' -f 4)
+
+	local _i=0
+	for _tmp in $_out; do
+		eval local _orig="\${_KS${_i}}"
+		if [ "$_tmp" != "$_orig" ]; then
+			echo "Keyslot $_i is $_tmp, expected result: $_orig"
+			return 1
+		fi
+		_i=$[_i+1]
+	done
+
+	return 0
+}
+
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$REENC" ] && skip "Cannot find $REENC, test skipped."
 
@@ -112,12 +157,15 @@ echo $PWD1 | $REENC $LOOPDEV1 -q -i 1 || fail
 check_hash $PWD1 $HASH2
 
 echo "[3] Reencryption with keyfile"
-echo $PWD1 | $CRYPTSETUP -q luksFormat -d key1 -c aes-cbc-essiv:sha256 -s 128 -i 1 --align-payload 4096 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat -d $KEY1 -c aes-cbc-essiv:sha256 -s 128 -i 1 --align-payload 4096 $LOOPDEV1 || fail
 wipe
 check_hash "" $HASH1
-echo $PWD1 | $CRYPTSETUP -q luksAddKey -d key1 $LOOPDEV1 || fail
-$REENC $LOOPDEV1 -d key1 -S 0 -i 1 -q || fail
+echo $PWD1 | $CRYPTSETUP -q luksAddKey -d $KEY1 $LOOPDEV1 || fail
+$REENC $LOOPDEV1 -d $KEY1 -i 1 -q 2>/dev/null && fail
+$REENC $LOOPDEV1 -d $KEY1 -S 0 -i 1 -q || fail
 check_hash "" $HASH1
+check_slot 0 || fail "Only keyslot 0 expected to be enabled"
+$REENC $LOOPDEV1 -d $KEY1 -i 1 -q || fail
 # FIXME echo $PWD1 | $REENC ...
 
 echo "[4] Encryption of not yet encrypted device"
@@ -130,6 +178,39 @@ check_hash_dev /dev/mapper/$DEV_NAME2 $HASH3
 dmsetup remove $DEV_NAME2 || fail
 echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --reduce-device-size "$OFFSET"S -q
 check_hash $PWD1 $HASH3
+
+echo "[5] Reencryption using specific keyslot"
+echo $PWD2 | $CRYPTSETUP -q luksFormat -i 1 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey -i 1 -S 1 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey -i 1 -S 2 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey -i 1 -S 3 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey -i 1 -S 4 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey -i 1 -S 5 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey -i 1 -S 6 $LOOPDEV1 || fail
+# echo -e "$PWD2\n$PWD3" | $CRYPTSETUP -q luksAddKey -i 1 -S 7 $LOOPDEV1 || fail (known bug, should be fixed)
+backup_orig
+echo $PWD2 | $REENC -i 1 -S 0 -q $LOOPDEV1 || fail
+check_slot 0 || fail "Only keyslot 0 expected to be enabled"
+wipe $PWD2
+rollback
+echo $PWD1 | $REENC -i 1 -S 1 -q $LOOPDEV1 || fail
+check_slot 1 || fail "Only keyslot 1 expected to be enabled"
+wipe $PWD1
+rollback
+echo $PWD2 | $REENC -i 1 -S 6 -q $LOOPDEV1 || fail
+check_slot 6 || fail "Only keyslot 6 expected to be enabled"
+wipe $PWD2
+rollback
+#echo $PWD3 | $REENC -i 1 -S 7 -q $LOOPDEV1 || fail
+#check_slot 7 || fail "Only keyslot 7 expected to be enabled"
+#wipe $PWD3
+#rollback
+
+echo "[6] Reencryption using all active keyslots"
+echo -e "$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2" | $REENC -i 1 -q $LOOPDEV1 || fail
+check_slot 0 1 2 3 4 5 6 || fail "Only keyslots 0 to 6 expected to be enabled"
+#echo -e "$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD3" | $REENC -q $LOOPDEV1 || fail
+#check_slot 0 1 2 3 4 5 6 7 || fail "All keyslots expected to be enabled"
 
 remove_mapping
 exit 0
