@@ -257,6 +257,23 @@ static int isTCRYPT(const char *type)
 	return (type && !strcmp(CRYPT_TCRYPT, type));
 }
 
+static int onlyLUKS(struct crypt_device *cd)
+{
+	int r = 0;
+
+	if (cd && !cd->type) {
+		log_err(cd, _("Cannot determine device type. Incompatible activation of device?\n"));
+		r = -EINVAL;
+	}
+	if (!cd || !isLUKS(cd->type)) {
+		log_err(cd, _("This operation is supported only for LUKS device.\n"));
+		r = -EINVAL;
+	}
+
+	return r;
+}
+
+
 /* keyslot helpers */
 static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 {
@@ -1434,11 +1451,9 @@ int crypt_suspend(struct crypt_device *cd,
 
 	log_dbg("Suspending volume %s.", name);
 
-	if (!cd || !isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		r = -EINVAL;
-		goto out;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	ci = crypt_status(NULL, name);
 	if (ci < CRYPT_ACTIVE) {
@@ -1479,11 +1494,9 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 
 	log_dbg("Resuming volume %s.", name);
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		r = -EINVAL;
-		goto out;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -1509,7 +1522,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 			log_err(cd, _("Error during resuming device %s.\n"), name);
 	} else
 		r = keyslot;
-out:
+
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
 }
@@ -1528,11 +1541,9 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 
 	log_dbg("Resuming volume %s.", name);
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		r = -EINVAL;
-		goto out;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -1594,10 +1605,9 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 		"new passphrase %sprovided.",
 		passphrase ? "" : "not ", new_passphrase  ? "" : "not ");
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		return -EINVAL;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	r = keyslot_verify_or_find_empty(cd, &keyslot);
 	if (r)
@@ -1662,15 +1672,14 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	size_t new_passphrase_size)
 {
 	struct volume_key *vk = NULL;
-	int r = -EINVAL;
+	int r;
 
 	log_dbg("Changing passphrase from old keyslot %d to new %d.",
 		keyslot_old, keyslot_new);
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		return -EINVAL;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	r = LUKS_open_key_with_hdr(keyslot_old, passphrase, passphrase_size,
 				   &cd->u.luks1.hdr, &vk, cd);
@@ -1731,10 +1740,9 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	log_dbg("Adding new keyslot, existing keyfile %s, new keyfile %s.",
 		keyfile ?: "[none]", new_keyfile ?: "[none]");
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		return -EINVAL;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	r = keyslot_verify_or_find_empty(cd, &keyslot);
 	if (r)
@@ -1807,15 +1815,14 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	size_t passphrase_size)
 {
 	struct volume_key *vk = NULL;
-	int r = -EINVAL;
+	int r;
 	char *new_password = NULL; size_t new_passwordLen;
 
 	log_dbg("Adding new keyslot %d using volume key.", keyslot);
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		return -EINVAL;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	if (volume_key)
 		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
@@ -1855,13 +1862,13 @@ out:
 int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 {
 	crypt_keyslot_info ki;
+	int r;
 
 	log_dbg("Destroying keyslot %d.", keyslot);
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		return -EINVAL;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	ki = crypt_keyslot_status(cd, keyslot);
 	if (ki == CRYPT_SLOT_INVALID) {
@@ -2232,10 +2239,9 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 	struct volume_key *vk;
 	int r;
 
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
-		return -EINVAL;
-	}
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
 
 	vk = crypt_alloc_volume_key(volume_key_size, volume_key);
 	if (!vk)
@@ -2526,10 +2532,8 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd)
 
 crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot)
 {
-	if (!isLUKS(cd->type)) {
-		log_err(cd, _("This operation is supported only for LUKS device.\n"));
+	if (onlyLUKS(cd) < 0)
 		return CRYPT_SLOT_INVALID;
-	}
 
 	return LUKS_keyslot_info(&cd->u.luks1.hdr, keyslot);
 }
