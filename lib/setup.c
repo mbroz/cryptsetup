@@ -721,6 +721,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
 	if (r < 0)
 		goto out;
+	if (r > 0)
+		r = 0;
 
 	if (isPLAIN(cd->type)) {
 		cd->u.plain.hdr.hash = NULL; /* no way to get this */
@@ -798,6 +800,8 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 				DM_ACTIVE_VERITY_PARAMS, &dmd);
 	if (r < 0)
 		goto out;
+	if (r > 0)
+		r = 0;
 
 	if (isVERITY(cd->type)) {
 		cd->u.verity.uuid = NULL; // FIXME
