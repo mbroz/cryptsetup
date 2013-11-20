@@ -1310,8 +1310,8 @@ static void LuksHeaderRestore(void)
 
 	// volume key_size mismatch
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	memcpy(key2, key, key_size - 1);
-	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key2, key_size - 1, &params));
+	memcpy(key2, key, key_size / 2);
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key2, key_size / 2, &params));
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, VALID_HEADER), "Volume keysize mismatch");
 	crypt_free(cd);
 
