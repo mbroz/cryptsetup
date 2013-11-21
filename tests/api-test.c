@@ -1,7 +1,7 @@
 /*
  * cryptsetup library API check functions
  *
- * Copyright (C) 2009-2012 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2013 Red Hat, Inc. All rights reserved.
  * Copyright (C) 2009-2013, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
@@ -94,6 +94,7 @@ static int global_lines = 0;
 
 static char *DEVICE_1 = NULL;
 static char *DEVICE_2 = NULL;
+static char *DEVICE_3 = NULL;
 static char *THE_LOOP_DEV = NULL;
 
 static char *tmp_file_1 = NULL;
@@ -374,6 +375,9 @@ static void _cleanup(void)
 	if (crypt_loop_device(DEVICE_2))
 		crypt_loop_detach(DEVICE_2);
 
+	if (crypt_loop_device(DEVICE_3))
+		crypt_loop_detach(DEVICE_3);
+
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_system("rm -f " IMAGE1, 0);
 
@@ -394,6 +398,7 @@ static void _cleanup(void)
 	free(THE_LOOP_DEV);
 	free(DEVICE_1);
 	free(DEVICE_2);
+	free(DEVICE_3);
 }
 
 static int _setup(void)
@@ -457,6 +462,12 @@ static int _setup(void)
 		_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4 2>/dev/null", 1);
 		fd = crypt_loop_attach(DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
 		close(fd);
+	}
+	if (!DEVICE_3)
+		DEVICE_3 = crypt_loop_get_device();
+	if (!DEVICE_3) {
+		printf("Cannot find free loop device.\n");
+		return 1;
 	}
 	/* Keymaterial offset is less than 8 sectors */
 	_system(" [ ! -e " EVL_HEADER_1 " ] && bzip2 -dk " EVL_HEADER_1 ".bz2", 1);
@@ -1428,12 +1439,15 @@ static void LuksHeaderBackup(void)
 		.data_alignment = 2048,
 	};
 	char key[128];
+	int fd, ro = O_RDONLY;
 
 	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
+
+	const char *passphrase = PASSPHRASE;
 
 	crypt_decode_key(key, mk_hex, key_size);
 
@@ -1444,6 +1458,8 @@ static void LuksHeaderBackup(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), 7);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, passphrase, strlen(passphrase)), 0);
 	OK_(crypt_header_backup(cd, CRYPT_LUKS1, BACKUP_FILE));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
@@ -1453,6 +1469,43 @@ static void LuksHeaderBackup(void)
 	OK_(crypt_header_restore(cd, CRYPT_LUKS1, BACKUP_FILE));
 	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	// exercise luksOpen using backup header in file
+	OK_(crypt_init(&cd, BACKUP_FILE));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 0, passphrase, strlen(passphrase), 0), 0);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, BACKUP_FILE));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 7, passphrase, strlen(passphrase), 0), 7);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	// exercise luksOpen using backup header on block device
+	fd = crypt_loop_attach(DEVICE_3, BACKUP_FILE, 0, 0, &ro);
+	close(fd);
+	OK_(fd < 0);
+	OK_(crypt_init(&cd, DEVICE_3));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 0, passphrase, strlen(passphrase), 0), 0);
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DEVICE_3));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 7, passphrase, strlen(passphrase), 0), 7);
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);

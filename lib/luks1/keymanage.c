@@ -154,6 +154,7 @@ int LUKS_hdr_backup(
 {
 	struct device *device = crypt_metadata_device(ctx);
 	int r = 0, devfd = -1;
+	ssize_t hdr_size;
 	ssize_t buffer_size;
 	char *buffer = NULL;
 
@@ -161,15 +162,19 @@ int LUKS_hdr_backup(
 	if (r)
 		return r;
 
-	buffer_size = LUKS_device_sectors(hdr->keyBytes) << SECTOR_SHIFT;
+	hdr_size = LUKS_device_sectors(hdr->keyBytes) << SECTOR_SHIFT;
+	buffer_size = size_round_up(hdr_size, crypt_getpagesize());
+
 	buffer = crypt_safe_alloc(buffer_size);
-	if (!buffer || buffer_size < LUKS_ALIGN_KEYSLOTS) {
+	if (!buffer || hdr_size < LUKS_ALIGN_KEYSLOTS || hdr_size > buffer_size) {
 		r = -ENOMEM;
 		goto out;
 	}
 
 	log_dbg("Storing backup of header (%u bytes) and keyslot area (%u bytes).",
-		sizeof(*hdr), buffer_size - LUKS_ALIGN_KEYSLOTS);
+		sizeof(*hdr), hdr_size - LUKS_ALIGN_KEYSLOTS);
+
+	log_dbg("Output backup file size: %u bytes.", buffer_size);
 
 	devfd = device_open(device, O_RDONLY);
 	if(devfd == -1) {
@@ -178,7 +183,7 @@ int LUKS_hdr_backup(
 		goto out;
 	}
 
-	if (read_blockwise(devfd, device_block_size(device), buffer, buffer_size) < buffer_size) {
+	if (read_blockwise(devfd, device_block_size(device), buffer, hdr_size) < hdr_size) {
 		r = -EIO;
 		goto out;
 	}
