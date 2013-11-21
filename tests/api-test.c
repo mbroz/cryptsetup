@@ -123,6 +123,9 @@ static int fips_mode(void)
 	int fd;
 	char buf = 0;
 
+	if (access("/etc/system-fips", F_OK))
+		return 0;
+
 	fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY);
 
 	if (fd < 0)
