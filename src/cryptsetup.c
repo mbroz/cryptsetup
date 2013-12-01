@@ -460,6 +460,29 @@ static int action_benchmark_kdf(const char *hash)
 	return r;
 }
 
+static int benchmark_cipher_loop(const char *cipher, const char *cipher_mode,
+				 size_t volume_key_size, size_t iv_size,
+				 double *encryption_mbs, double *decryption_mbs)
+{
+	int r, buffer_size = 1024 * 1024;
+
+	do {
+		r = crypt_benchmark(NULL, cipher, cipher_mode,
+				    volume_key_size, iv_size, buffer_size,
+				    encryption_mbs, decryption_mbs);
+		if (r == -ERANGE) {
+			if (buffer_size < 1024 * 1024 * 65)
+				buffer_size *= 2;
+			else {
+				log_err(_("Result of benchmark is not reliable.\n"));
+				r = -ENOENT;
+			}
+		}
+	} while (r == -ERANGE);
+
+	return r;
+}
+
 static int action_benchmark(void)
 {
 	static struct {
@@ -489,7 +512,6 @@ static int action_benchmark(void)
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS);
 	int iv_size = 16, skipped = 0;
-	int buffer_size = 1024 * 1024;
 	char *c;
 	int i, r;
 
@@ -511,9 +533,9 @@ static int action_benchmark(void)
 		    strstr(cipher, "cast5"))
 			iv_size = 8;
 
-		r = crypt_benchmark(NULL, cipher, cipher_mode,
-				    key_size / 8, iv_size, buffer_size,
-				    &enc_mbr, &dec_mbr);
+		r = benchmark_cipher_loop(cipher, cipher_mode,
+					  key_size / 8, iv_size,
+					  &enc_mbr, &dec_mbr);
 		if (!r) {
 			log_std(N_("#  Algorithm | Key |  Encryption |  Decryption\n"));
 			log_std("%8s-%s  %4db  %6.1f MiB/s  %6.1f MiB/s\n",
@@ -528,9 +550,9 @@ static int action_benchmark(void)
 				break;
 		}
 		for (i = 0; bciphers[i].cipher; i++) {
-			r = crypt_benchmark(NULL, bciphers[i].cipher, bciphers[i].mode,
+			r = benchmark_cipher_loop(bciphers[i].cipher, bciphers[i].mode,
 					    bciphers[i].key_size, bciphers[i].iv_size,
-					    buffer_size, &enc_mbr, &dec_mbr);
+					    &enc_mbr, &dec_mbr);
 			check_signal(&r);
 			if (r == -ENOTSUP || r == -EINTR)
 				break;

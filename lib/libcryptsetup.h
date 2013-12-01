@@ -1019,6 +1019,9 @@ int crypt_get_verity_info(struct crypt_device *cd,
  * @param decryption_mbs measured decryption speed in MiB/s
  *
  * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note If encryption_buffer_size is too small and encryption time
+ *       cannot be properly measured, -ERANGE is returned.
  */
 int crypt_benchmark(struct crypt_device *cd,
 	const char *cipher,
