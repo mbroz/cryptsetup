@@ -423,8 +423,19 @@ The \fBtcryptDump\fR command should work for all recognized TCRYPT devices
 and doesn't require superuser privilege.
 
 To map system device (device with boot loader where the whole encrypted
-system resides) use \fB\-\-tcrypt\-system\fR option. Use the whole
-device not the system partition as the device parameter.
+system resides) use \fB\-\-tcrypt\-system\fR option.
+You can use partition device as the parameter (parameter must be real partition
+device, not image in file), then only this partition is mapped.
+
+If you have whole TCRYPT device as a file image and you want to map multiple
+partition encrypted with system encryption, please create loopback mapping
+with partitions first (\fBlosetup -P\fR, see \fPlosetup(8)\fR man page for more info),
+and use loop partition as the device parameter.
+
+If you use whole base device as parameter, one device for the whole system
+encryption is mapped. This mode is available only for backward compatibility
+with older cryptsetup versions which mapped TCRYPT system encryption
+using whole device.
 
 To use hidden header (and map hidden device, if available),
 use \fB\-\-tcrypt\-hidden\fR option.

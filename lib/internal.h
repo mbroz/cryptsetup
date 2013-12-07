@@ -95,6 +95,8 @@ char *crypt_lookup_dev(const char *dev_id);
 int crypt_dev_is_rotational(int major, int minor);
 int crypt_dev_is_partition(const char *dev_path);
 char *crypt_get_partition_device(const char *dev_path, uint64_t offset, uint64_t size);
+char *crypt_get_base_device(const char *dev_path);
+uint64_t crypt_dev_partition_offset(const char *dev_path);
 
 ssize_t write_blockwise(int fd, int bsize, void *buf, size_t count);
 ssize_t read_blockwise(int fd, int bsize, void *_buf, size_t count);

@@ -573,8 +573,9 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		     struct tcrypt_phdr *hdr,
 		     struct crypt_params_tcrypt *params)
 {
-	struct device *device = crypt_metadata_device(cd);
+	struct device *base_device, *device = crypt_metadata_device(cd);
 	ssize_t hdr_size = sizeof(struct tcrypt_phdr);
+	char *base_device_path;
 	int devfd = 0, r, bs;
 
 	assert(sizeof(struct tcrypt_phdr) == 512);
@@ -586,7 +587,23 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 	if (bs < 0)
 		return bs;
 
-	devfd = device_open(device, O_RDONLY);
+	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER &&
+	    crypt_dev_is_partition(device_path(device))) {
+		base_device_path = crypt_get_base_device(device_path(device));
+
+		log_dbg("Reading TCRYPT system header from device %s.", base_device_path ?: "?");
+		if (!base_device_path)
+			return -EINVAL;
+
+		r = device_alloc(&base_device, base_device_path);
+		if (r < 0)
+			return r;
+		devfd = device_open(base_device, O_RDONLY);
+		free(base_device_path);
+		device_free(base_device);
+	} else
+		devfd = device_open(device, O_RDONLY);
+
 	if (devfd == -1) {
 		log_err(cd, _("Cannot open device %s.\n"), device_path(device));
 		return -EINVAL;
@@ -694,32 +711,36 @@ int TCRYPT_activate(struct crypt_device *cd,
 	if (!algs)
 		return -EINVAL;
 
-	if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER)
+	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
+		dmd.size = 0;
+	else if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER)
 		dmd.size = hdr->d.hidden_volume_size / hdr->d.sector_size;
 	else
 		dmd.size = hdr->d.volume_size / hdr->d.sector_size;
 
-	/*
-	 * System encryption use the whole device mapping, there can
-	 * be active partitions.
-	 * FIXME: This will allow multiple mappings unexpectedly.
-	 */
-	if ((dmd.flags & CRYPT_ACTIVATE_SHARED) ||
-	    (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER))
+	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
 		device_check = DEV_SHARED;
 	else
 		device_check = DEV_EXCL;
 
 	if ((params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) &&
-		(part_path = crypt_get_partition_device(device_path(dmd.data_device),
-				 dmd.u.crypt.offset, dmd.size))) {
-		if (!device_alloc(&part_device, part_path)) {
-			log_verbose(cd, _("Activating TCRYPT system encryption for partition %s.\n"),
-				    part_path);
-			dmd.data_device = part_device;
-			dmd.u.crypt.offset = 0;
-		}
-		free(part_path);
+	     !crypt_dev_is_partition(device_path(dmd.data_device))) {
+		part_path = crypt_get_partition_device(device_path(dmd.data_device),
+						       dmd.u.crypt.offset, dmd.size);
+		if (part_path) {
+			if (!device_alloc(&part_device, part_path)) {
+				log_verbose(cd, _("Activating TCRYPT system encryption for partition %s.\n"),
+					    part_path);
+				dmd.data_device = part_device;
+				dmd.u.crypt.offset = 0;
+			}
+			free(part_path);
+		} else
+			/*
+			 * System encryption use the whole device mapping, there can
+			 * be active partitions.
+			 */
+			device_check = DEV_SHARED;
 	}
 
 	r = device_block_adjust(cd, dmd.data_device, device_check,
@@ -924,8 +945,11 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 		goto hdr_offset;
 
 	/* Mapping through whole device, not partition! */
-	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
+	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
+		if (crypt_dev_is_partition(device_path(crypt_metadata_device(cd))))
+			return 0;
 		goto hdr_offset;
+	}
 
 	if (params->mode && !strncmp(params->mode, "xts", 3)) {
 		if (hdr->d.version < 3)
@@ -955,15 +979,21 @@ hdr_offset:
 
 uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
 			      struct tcrypt_phdr *hdr,
-			      struct crypt_params_tcrypt *params
-)
+			      struct crypt_params_tcrypt *params)
 {
-	if (params->mode && !strncmp(params->mode, "xts", 3))
-		return TCRYPT_get_data_offset(cd, hdr, params);
-	else if (params->mode && !strncmp(params->mode, "lrw", 3))
-		return 0;
+	uint64_t iv_offset;
 
-	return hdr->d.mk_offset / hdr->d.sector_size;
+	if (params->mode && !strncmp(params->mode, "xts", 3))
+		iv_offset = TCRYPT_get_data_offset(cd, hdr, params);
+	else if (params->mode && !strncmp(params->mode, "lrw", 3))
+		iv_offset = 0;
+	else
+		iv_offset = hdr->d.mk_offset / hdr->d.sector_size;
+
+	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
+		iv_offset += crypt_dev_partition_offset(device_path(crypt_metadata_device(cd)));
+
+	return iv_offset;
 }
 
 int TCRYPT_get_volume_key(struct crypt_device *cd,
