@@ -3,11 +3,16 @@
 CRYPTSETUP="../src/cryptsetup"
 DEV=""
 DEV_STACKED="luks0xbabe"
+MNT_DIR="./mnt_luks"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 
 cleanup() {
 	udevadm settle >/dev/null 2>&1
+	if [ -d "$MNT_DIR" ] ; then
+	    umount -f $MNT_DIR 2>/dev/null
+	    rmdir $MNT_DIR 2>/dev/null
+	fi
 	[ -b /dev/mapper/$DEV_STACKED ] && dmsetup remove $DEV_STACKED >/dev/null 2>&1
 	rmmod scsi_debug 2>/dev/null
 	sleep 2
@@ -15,10 +20,16 @@ cleanup() {
 
 fail()
 {
-	echo "FAIL"
-	[ -n "$1" ] && echo "$1"
+	if [ -n "$1" ] ; then echo "FAIL $1" ; else echo "FAIL" ; fi
 	cleanup
 	exit 100
+}
+
+skip()
+{
+	echo "TEST SKIPPED: $1"
+	cleanup
+	exit 0
 }
 
 add_device() {
@@ -197,4 +208,19 @@ format_null 512 4040    1
 format_null 512 4040    8
 format_null 512 4096  128
 format_null 512 4096 2048
+cleanup
+
+echo "# Create enterprise-class 4K drive with fs and LUKS images."
+# loop device here presents 512 block but images have 4k block
+# cryptsetup should properly use 4k block on direct-io
+add_device dev_size_mb=16 sector_size=4096 physblk_exp=0 num_tgts=1
+for file in $(ls img_fs_*.img.bz2) ; do
+    echo "Format using fs image $file."
+    bzip2 -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
+    [ ! -d $MNT_DIR ] && mkdir $MNT_DIR
+    mount $DEV $MNT_DIR || skip "Mounting image is not available."
+    echo $PWD1 | $CRYPTSETUP luksFormat -i 1 $MNT_DIR/luks.img || fail
+    echo $PWD2 | $CRYPTSETUP luksFormat -i 1 $MNT_DIR/luks.img --header $MNT_DIR/luks_header.img || fail
+    umount $MNT_DIR
+done
 cleanup

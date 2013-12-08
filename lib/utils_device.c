@@ -221,7 +221,7 @@ int device_block_size(struct device *device)
 	if (fstat(fd, &st) < 0)
 		goto out;
 
-	if (S_ISREG(st.st_mode)) {
+	if (S_ISREG(st.st_mode) || device->file_path) {
 		r = (int)crypt_getpagesize();
 		goto out;
 	}
