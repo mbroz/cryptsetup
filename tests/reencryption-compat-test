@@ -12,6 +12,13 @@ PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
 
+
+function del_scsi_device()
+{
+	rmmod scsi_debug 2>/dev/null
+	sleep 2
+}
+
 function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
@@ -19,6 +26,7 @@ function remove_mapping()
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
 	rm -f $IMG $ORIG_IMG $KEY1 >/dev/null 2>&1
 	LOOPDEV1=""
+	del_scsi_device
 }
 
 function fail()
@@ -33,6 +41,19 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 0
+}
+
+function add_scsi_device() {
+	del_scsi_device
+        modprobe scsi_debug $@
+        if [ $? -ne 0 ] ; then
+                echo "This kernel seems to not support proper scsi_debug module, test skipped."
+                exit 0
+        fi
+
+        sleep 2
+        SCSI_DEV="/dev/"$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+        [ -b $SCSI_DEV ] || fail "Cannot find $SCSI_DEV."
 }
 
 function open_crypt()
@@ -124,6 +145,21 @@ function check_slot() #space separeted list of ENABLED key slots
 	return 0
 }
 
+function simple_scsi_reenc()
+{
+	echo -n "$1"
+	echo $PWD1 | $CRYPTSETUP luksFormat -i1 $SCSI_DEV || fail
+
+	echo $PWD1 | $CRYPTSETUP luksOpen $SCSI_DEV $DEV_NAME || fail
+	HASH=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
+	$CRYPTSETUP luksClose $DEV_NAME || fail
+
+	echo $PWD1 | $REENC -q -i 1 $SCSI_DEV || fail
+
+	echo $PWD1 | $CRYPTSETUP luksOpen $SCSI_DEV $DEV_NAME || fail
+	check_hash_dev /dev/mapper/$DEV_NAME $HASH
+	$CRYPTSETUP luksClose $DEV_NAME || fail
+}
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$REENC" ] && skip "Cannot find $REENC, test skipped."
@@ -209,6 +245,15 @@ rollback
 echo "[6] Reencryption using all active keyslots"
 echo -e "$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD3" | $REENC -q $LOOPDEV1 || fail
 check_slot 0 1 2 3 4 5 6 7 || fail "All keyslots expected to be enabled"
+
+echo "[7] Reencryption of block devices with different block size"
+add_scsi_device sector_size=512 dev_size_mb=8
+simple_scsi_reenc "[512 sector]"
+add_scsi_device sector_size=4096 dev_size_mb=8
+simple_scsi_reenc "[4096 sector]"
+add_scsi_device sector_size=512 physblk_exp=3 dev_size_mb=8
+simple_scsi_reenc "[4096/512 sector]"
+echo "[OK]"
 
 remove_mapping
 exit 0

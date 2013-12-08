@@ -122,6 +122,12 @@ static int alignment(int fd)
 	return alignment;
 }
 
+static size_t pagesize(void)
+{
+	long r = sysconf(_SC_PAGESIZE);
+	return r < 0 ? 4096 : (size_t)r;
+}
+
 /* Depends on the first two fields of LUKS1 header format, magic and version */
 static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 {
@@ -129,6 +135,7 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 	int r, devfd;
 	ssize_t s;
 	uint16_t version;
+	size_t buf_size = pagesize();
 
 	devfd = open(rc->device, O_RDWR | O_EXCL | O_DIRECT);
 	if (devfd == -1) {
@@ -146,14 +153,14 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 		goto out;
 	}
 
-	if (posix_memalign((void *)&buf, alignment(devfd), SECTOR_SIZE)) {
+	if (posix_memalign((void *)&buf, alignment(devfd), buf_size)) {
 		log_err(_("Allocation of aligned memory failed.\n"));
 		r = -ENOMEM;
 		goto out;
 	}
 
-	s = read(devfd, buf, SECTOR_SIZE);
-	if (s < 0 || s != SECTOR_SIZE) {
+	s = read(devfd, buf, buf_size);
+	if (s < 0 || s != buf_size) {
 		log_err(_("Cannot read device %s.\n"), rc->device);
 		r = -EIO;
 		goto out;
@@ -184,8 +191,8 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 	if (!r) {
 		if (lseek(devfd, 0, SEEK_SET) == -1)
 			goto out;
-		s = write(devfd, buf, SECTOR_SIZE);
-		if (s < 0 || s != SECTOR_SIZE) {
+		s = write(devfd, buf, buf_size);
+		if (s < 0 || s != buf_size) {
 			log_err(_("Cannot write device %s.\n"), rc->device);
 			r = -EIO;
 		}
@@ -193,7 +200,7 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 		log_dbg("LUKS signature check failed for %s.", rc->device);
 out:
 	if (buf)
-		memset(buf, 0, SECTOR_SIZE);
+		memset(buf, 0, buf_size);
 	free(buf);
 	close(devfd);
 	return r;
