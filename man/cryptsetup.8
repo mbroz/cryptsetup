@@ -694,17 +694,14 @@ This option is only relevant for the \fIopen\fR action with plain
 or loopaes device types.
 .TP
 .B "\-\-skip, \-p <number of 512 byte sectors>"
-How many sectors of the encrypted data to skip at the beginning.
+Start offset used in IV calculation in 512-byte sectors
+(how many sectors of the encrypted data to skip at the beginning).
 This option is only relevant for the \fIopen\fR action with plain
 or loopaes device types.
 
-This is different from the \-\-offset options with respect to
-the sector numbers used in IV calculation.
-Using \-\-offset will shift the IV calculation by the same negative amount.
-Hence, if \-\-offset \fIn\fR, sector \fIn\fR will get a sector
-number of \fI0\fR for the IV calculation.
-Using \-\-skip causes sector \fIn\fR to also be the first sector
-of the mapped device, but with its number for IV generation is \fIn\fR.
+Hence, if \-\-offset \fIn\fR, and \-\-skip \fIs\fR, sector \fIn\fR
+(the first sector of encrypted device) will get a sector number
+of \fIs\fR for the IV calculation.
 .TP
 .B "\-\-readonly, \-r"
 set up a read-only mapping.
