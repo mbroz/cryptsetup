@@ -1,0 +1,50 @@
+Cryptsetup 1.6.3 Release Notes
+==============================
+
+Changes since version 1.6.2
+
+* Fix cryptsetup reencryption tool to work properly
+  with devices using 4kB sectors.
+
+* Always use page size if running through loop device,
+  this fixes failures for external LUKS header and
+  filesystem requiring 4kB block size.
+
+* Fix TCRYPT system encryption mapping for multiple partitions.
+  Since this commit, one can use partition directly as device parameter.
+  If you need to activate such partition from image in file,
+  please first use map partitioned loop device (losetup -P)
+  on image.
+  (Cryptsetup require partition offsets visible in kernel sysfs
+  in this mode.)
+
+* Support activation of old TrueCrypt containers using CBC mode
+  and whitening (created in TrueCrypt version < 4.1).
+  This requires Linux kernel 3.13 or later.
+  (Containers with cascade CBC ciphers are not supported.)
+
+* Properly display keys in dump --dump-master-key command
+  for TrueCrypt CBC containers.
+
+* Rewrite cipher benchmark loop which was unreliable
+  on very fast machines.
+
+* Add warning if LUKS device was activated using non-cryptsetup
+  library which did not set UUID properly (e.g. cryptmount).
+  (Some commands, like luksSuspend, are not available then.)
+
+* Support length limitation also for plain (no hash) length.
+  This can be used for mapping problematic cryptosystems which
+  wipes some key (losetup sometimes set last 32 byte to zero,
+  which can be now configured as --hash plain:31 parameter).
+
+* Fix hash limit if parameter is not a number.
+  (The whole key was set to zero instead of command failure.)
+
+* Unify --key-slot behavior in cryptsetup_reencrypt tool.
+
+* Update dracut example scripts for system reencryption on first boot.
+
+* Add command line option --tcrypt-backup to access TCRYPT backup header.
+
+* Fix static compilation with OpenSSL.
