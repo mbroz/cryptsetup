@@ -25,12 +25,24 @@
 
 static long time_ms(struct rusage *start, struct rusage *end)
 {
+	int count_kernel_time = 0;
 	long ms;
+
+	if (crypt_backend_flags() & CRYPT_BACKEND_KERNEL)
+		count_kernel_time = 1;
+
+	/*
+	 * FIXME: if there is no self usage info, count system time.
+	 * This seem like getrusage() bug in some hypervisors...
+	 */
+	if (!end->ru_utime.tv_sec && !start->ru_utime.tv_sec &&
+	    !end->ru_utime.tv_usec && !start->ru_utime.tv_usec)
+		count_kernel_time = 1;
 
 	ms = (end->ru_utime.tv_sec - start->ru_utime.tv_sec) * 1000;
 	ms += (end->ru_utime.tv_usec - start->ru_utime.tv_usec) / 1000;
 
-	if (crypt_backend_flags() & CRYPT_BACKEND_KERNEL) {
+	if (count_kernel_time) {
 		ms += (end->ru_stime.tv_sec - start->ru_stime.tv_sec) * 1000;
 		ms += (end->ru_stime.tv_usec - start->ru_stime.tv_usec) / 1000;
 	}
