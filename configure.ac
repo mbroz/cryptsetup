@@ -49,7 +49,8 @@ AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR([You need the uuid library.])])
 AC_SUBST(UUID_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
-AC_CHECK_FUNCS([posix_memalign])
+AC_SEARCH_LIBS([clock_gettime],[rt posix4])
+AC_CHECK_FUNCS([posix_memalign clock_gettime])
 
 if test "x$enable_largefile" = "xno" ; then
   AC_MSG_ERROR([Building with --disable-largefile is not supported, it can cause data corruption.])
