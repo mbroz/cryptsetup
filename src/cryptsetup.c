@@ -251,6 +251,9 @@ static int action_open_tcrypt(void)
 	if (opt_readonly)
 		flags |= CRYPT_ACTIVATE_READONLY;
 
+	if (opt_allow_discards)
+		flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+
 	if (activated_name)
 		r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, flags);
 out:
@@ -1626,6 +1629,11 @@ int main(int argc, const char **argv)
 	    (strcmp(aname, "open") || strcmp(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"),
+		poptGetInvocationName(popt_context));
+
+	if (opt_tcrypt_hidden && opt_allow_discards)
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --tcrypt-hidden cannot be combined with --allow-discards.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {

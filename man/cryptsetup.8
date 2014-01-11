@@ -458,11 +458,18 @@ Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up
 a mapping <name>.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-tcrypt\-hidden, 
-\-\-tcrypt\-system, \-\-tcrypt\-backup, \-\-readonly, \-\-test\-passphrase].
+\-\-tcrypt\-system, \-\-tcrypt\-backup, \-\-readonly, \-\-test\-passphrase,
+\-\-allow-discards].
 
 The keyfile parameter allows combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
 with TCRYPT and is different from LUKS keyfile logic.
+
+\fBWARNING:\fR Option \fB\-\-allow\-discards\fR cannot be combined with
+option \fB\-\-tcrypt\-hidden\fR. For normal mapping it can cause
+\fBdestruction of hidden volume\fR (hidden volume appears as unused space
+for outer volume so this space can be discarded).
+
 .PP
 \fItcryptDump\fR <device>
 .IP
