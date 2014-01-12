@@ -250,7 +250,7 @@ static int _prepare_keyfile(const char *name, const char *passphrase, int size)
 {
 	int fd, r;
 
-	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR);
+	fd = open(name, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR);
 	if (fd != -1) {
 		r = write(fd, passphrase, size);
 		close(fd);
