@@ -209,6 +209,50 @@ out:
 	return r;
 }
 
+static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *params)
+{
+	int r, tries = opt_tries, eperm = 0;
+
+	do {
+		/* TCRYPT header is encrypted, get passphrase now */
+		r = tools_get_key(_("Enter passphrase: "),
+				  CONST_CAST(char**)&params->passphrase,
+				  &params->passphrase_size, 0, 0, NULL, opt_timeout,
+				 _verify_passphrase(0), 0, cd);
+		if (r < 0)
+			continue;
+
+		if (opt_tcrypt_hidden)
+			params->flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
+
+		if (opt_tcrypt_system)
+			params->flags |= CRYPT_TCRYPT_SYSTEM_HEADER;
+
+		if (opt_tcrypt_backup)
+			params->flags |= CRYPT_TCRYPT_BACKUP_HEADER;
+
+		r = crypt_load(cd, CRYPT_TCRYPT, params);
+
+		if (r == -EPERM) {
+			log_err(_("No device header detected with this passphrase.\n"));
+			eperm = 1;
+		}
+
+		if (r < 0) {
+			crypt_safe_free(CONST_CAST(char*)params->passphrase);
+			params->passphrase = NULL;
+			params->passphrase_size = 0;
+		}
+		check_signal(&r);
+	} while (r == -EPERM && (--tries > 0));
+
+	/* Report wrong passphrase if at least one try failed */
+	if (eperm && r == -EPIPE)
+		r = -EPERM;
+
+	return r;
+}
+
 static int action_open_tcrypt(void)
 {
 	struct crypt_device *cd = NULL;
@@ -226,25 +270,7 @@ static int action_open_tcrypt(void)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	/* TCRYPT header is encrypted, get passphrase now */
-	r = tools_get_key(_("Enter passphrase: "),
-			  CONST_CAST(char**)&params.passphrase,
-			  &params.passphrase_size, 0, 0, NULL, opt_timeout,
-			  _verify_passphrase(0), 0, cd);
-	if (r < 0)
-		goto out;
-
-	if (opt_tcrypt_hidden)
-		params.flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
-
-	if (opt_tcrypt_system)
-		params.flags |= CRYPT_TCRYPT_SYSTEM_HEADER;
-
-	if (opt_tcrypt_backup)
-		params.flags |= CRYPT_TCRYPT_BACKUP_HEADER;
-
-	r = crypt_load(cd, CRYPT_TCRYPT, &params);
-	check_signal(&r);
+	r = tcrypt_load(cd, &params);
 	if (r < 0)
 		goto out;
 
@@ -257,8 +283,6 @@ static int action_open_tcrypt(void)
 	if (activated_name)
 		r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, flags);
 out:
-	if (r == -EPERM)
-		log_err(_("No device header detected with this passphrase.\n"));
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
 	return r;
@@ -319,25 +343,7 @@ static int action_tcryptDump(void)
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
-	/* TCRYPT header is encrypted, get passphrase now */
-	r = tools_get_key(_("Enter passphrase: "),
-			  CONST_CAST(char**)&params.passphrase,
-			  &params.passphrase_size, 0, 0, NULL, opt_timeout,
-			  _verify_passphrase(0), 0, cd);
-	if (r < 0)
-		goto out;
-
-	if (opt_tcrypt_hidden)
-		params.flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
-
-	if (opt_tcrypt_system)
-		params.flags |= CRYPT_TCRYPT_SYSTEM_HEADER;
-
-	if (opt_tcrypt_backup)
-		params.flags |= CRYPT_TCRYPT_BACKUP_HEADER;
-
-	r = crypt_load(cd, CRYPT_TCRYPT, &params);
-	check_signal(&r);
+	r = tcrypt_load(cd, &params);
 	if (r < 0)
 		goto out;
 
@@ -346,8 +352,6 @@ static int action_tcryptDump(void)
 	else
 		r = crypt_dump(cd);
 out:
-	if (r == -EPERM)
-		log_err(_("No device header detected with this passphrase.\n"));
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
 	return r;
