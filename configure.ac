@@ -132,7 +132,11 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 	fi
 	dnl Check if we can use gcrypt PBKDF2 (1.6.0 supports empty password)
 	AC_ARG_ENABLE([gcrypt-pbkdf2], AS_HELP_STRING([--enable-gcrypt-pbkdf2],[force enable internal gcrypt PBKDF2]),
-		[use_internal_pbkdf2=0],
+		if test "x$enableval" = "xyes"; then
+			[use_internal_pbkdf2=0]
+		else
+			[use_internal_pbkdf2=1]
+		fi,
 		[AM_PATH_LIBGCRYPT([1.6.0], [use_internal_pbkdf2=0], [use_internal_pbkdf2=1])])
 	AM_PATH_LIBGCRYPT($GCRYPT_REQ_VERSION,,[AC_MSG_ERROR([You need the gcrypt library.])])
 
