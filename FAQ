@@ -677,6 +677,18 @@ A. Contributors
   longer as an FAQ can sustain. If in doubt, ask on the mailing list.
 
 
+ * 2.17 Is there a concern with 4k Sectors?
+
+  Not from dm-crypt itself. Encryption will be done in 512B blocks,
+  but if the partition and filesystem are aligned correctly and the
+  filesystem uses multiples of 4kiB as block size, the dm-crypt layer
+  will just process 8 x 512B = 4096B at a time with negligible
+  overhead. LUKS does place data at an offset, which is 2MiB per
+  default and will not break alignment. See also Item 6.12 of this
+  FAQ for more details. Note that if your partition or filesystem is
+  misaligned, dm-crypt can make the effect worse though.
+
+
 3. Common Problems 
 
 
@@ -1380,7 +1392,9 @@ A. Contributors
 
   XTS mode is potentially even more secure than cbc-essiv (but only if
   cbc-essiv is insecure in your scenario). It is a NIST standard and
-  used, e.g. in Truecrypt. At the moment, if you want to use it, you
+  used, e.g. in Truecrypt. From version 1.6.0 of cryptsetup onwards,
+  aes-xts-plain64 is the default for LUKS. If you want to use it
+  with a cryptsetup before version 1.6.0 or with plain dm-crypt, you
   have to specify it manually as "aes-xts-plain", i.e.
 
       cryptsetup -c aes-xts-plain luksFormat <device>
@@ -1516,8 +1530,8 @@ A. Contributors
   try an ATA "secure erase" command for SSDs. That does not work for
   USB keys though and may or may not be secure for a hybrid drive. If
   it finishes on an SSD after a few seconds, it was possibly faked.
-  UNfortunately, for hybrid drives that indicator does not work, as
-  the drive may well take the time to dully erase the magnetic part,
+  Unfortunately, for hybrid drives that indicator does not work, as
+  the drive may well take the time to truly erase the magnetic part,
   but only mark the SSD/Flash part as erased while data is still in
   there.
 
@@ -1526,7 +1540,7 @@ A. Contributors
   one or several full overwrites!), you can use plain dm-crypt or
   LUKS.
 
-  If you want or need the original LUKS security features to work,
+  If you want or need all the original LUKS security features to work,
   you can use a detached LUKS header and put that on a conventional,
   magnetic disk. That leaves potentially old encrypted data in the
   pools on the disk, but otherwise you get LUKS with the same
@@ -1562,6 +1576,59 @@ A. Contributors
   has been broken for a specific different use. The way the mechanism
   is used matters very much. A hash that is broken for one use can be
   completely secure for other uses and here it is.
+
+
+ * 5.21 Why is there no "Nuke-Option"?
+
+  A "Nuke-Option" or "Kill-switch" is a password that when entered
+  upon unlocking instead wipes the header and all passwords. So when
+  somebody forces you to enter your password, you can destroy the
+  data instead.
+
+  While this sounds attractive at first glance, it does not make sense
+  once a real security analysis is done. One problem is that you have
+  to have some kind of HSM (Hardware Security Module) in order to
+  implement it securely. In the movies, a HSM starts to smoke and
+  melt once the Nuke-Option has been activated. In reality, it just
+  wipes some battery-backed RAM cells. A proper HSM costs something
+  like 20'000...100'000 EUR/USD and there a Nuke-Option may make some
+  sense. BTW, a chipcard or a TPM is not a HSM, although some
+  vendors are promoting that myth.
+
+  Now, a proper HSMs will have a wipe option but not a Nuke-Option,
+  i.e. you can explicitly wipe the HSM, but by a different process
+  than unlocking it takes. Why is that? Simple: If somebody can force
+  you to reveal passwords, then they can also do bad things to you if
+  you do not or if you enter a nuke password instead. Think locking
+  you up for a few years for "destroying evidence" or for far longer
+  and without trial for being a "terrorist suspect". No HSM maker
+  will want to expose its customers to that risk.
+
+  Now think of the typical LUKS application scenario, i.e. disk
+  encryption. Usually the ones forcing you to hand over your password
+  will have access to the disk as well, and, if they have any real
+  suspicion, they will mirror your disk before entering anything
+  supplied by you. This neatly negates any Nuke-Option. If they have
+  no suspicion (just harassing people that cross some border for
+  example), the Nuke-Option would work, but see above about likely
+  negative consequences and remember that a Nuke-Option may not work
+  reliably on SSD and hybrid drives anyways.
+
+  Hence my advice is to never take data that you do not want to reveal
+  into any such situation in the first place. There is no need to
+  transfer data on physical carriers today. The Internet makes it
+  quite possible to transfer data between arbitrary places and modern
+  encryption makes it secure. If you do it right, nobody will even be
+  able to identify source or destination. (How to do that is out of
+  scope of this document. It does require advanced skills in this age
+  of pervasive surveillance.)
+
+  Hence, LUKS has not kill option because it would do much more harm
+  than good.
+
+  Still, if you have a good use-case (i.e. non-abstract real-world
+  situation) where a Nuke-Option would actually be beneficial, please
+  let me know.
 
 
 6. Backup and Data Recovery 
@@ -1842,7 +1909,7 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   change the password, you basically have to create a second
   encrypted device with the new passphrase and copy your data over.
   On the plus side, if you accidentally overwrite any part of a
-  dm-crypt device, the damage will be limited to the are you
+  dm-crypt device, the damage will be limited to the area you
   overwrote.
 
 
@@ -2112,6 +2179,16 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   is broken in its kernel as a result. There may be a very old
   version of cryptsetup (1.0.x) provided by SLED, which should also
   not be used anymore as well. My advice would be to drop SLED 10.
+
+
+ * 8.3 Gcrypt after 1.5.3 breaks Whirlpool
+
+  It is the other way round: In gcrypt 1.5.3 and before Whirlpool is
+  broken and it was fixed in the next version. If you selected
+  whirlpool as hash on creation of a LUKS container, it does not work
+  anymore with the fixed library. Currently, the only work-around is
+  to decrypt with the old version. This also shows one risk of using
+  rarely used settings.
 
 
 9. References and Further Reading 
