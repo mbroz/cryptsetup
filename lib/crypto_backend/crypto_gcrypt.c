@@ -28,6 +28,7 @@
 
 static int crypto_backend_initialised = 0;
 static int crypto_backend_secmem = 1;
+static int crypto_backend_whirlpool_bug = -1;
 static char version[64];
 
 struct crypt_hash {
@@ -41,6 +42,45 @@ struct crypt_hmac {
 	int hash_id;
 	int hash_len;
 };
+
+/*
+ * Test for wrong Whirlpool variant,
+ * Ref: http://lists.gnupg.org/pipermail/gcrypt-devel/2014-January/002889.html
+ */
+static void crypt_hash_test_whirlpool_bug(void)
+{
+	struct crypt_hash *h;
+	char buf[2] = "\0\0", hash_out1[64], hash_out2[64];
+	int r;
+
+	if (crypto_backend_whirlpool_bug >= 0)
+		return;
+
+	if (crypt_hash_init(&h, "whirlpool"))
+		return;
+
+	/* One shot */
+	if ((r = crypt_hash_write(h, &buf[0], 2)) ||
+	    (r = crypt_hash_final(h, hash_out1, 64))) {
+		crypt_hash_destroy(h);
+		return;
+	}
+
+	/* Split buf (crypt_hash_final resets hash state) */
+	if ((r = crypt_hash_write(h, &buf[0], 1)) ||
+	    (r = crypt_hash_write(h, &buf[1], 1)) ||
+	    (r = crypt_hash_final(h, hash_out2, 64))) {
+		crypt_hash_destroy(h);
+		return;
+	}
+
+	crypt_hash_destroy(h);
+
+	if (memcmp(hash_out1, hash_out2, 64))
+		crypto_backend_whirlpool_bug = 1;
+	else
+		crypto_backend_whirlpool_bug = 0;
+}
 
 int crypt_backend_init(struct crypt_device *ctx)
 {
@@ -70,10 +110,15 @@ int crypt_backend_init(struct crypt_device *ctx)
 		gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
 	}
 
-	snprintf(version, 64, "gcrypt %s%s",
-		 gcry_check_version(NULL),
-		 crypto_backend_secmem ? "" : ", secmem disabled");
 	crypto_backend_initialised = 1;
+	crypt_hash_test_whirlpool_bug();
+
+	snprintf(version, 64, "gcrypt %s%s%s",
+		 gcry_check_version(NULL),
+		 crypto_backend_secmem ? "" : ", secmem disabled",
+		 crypto_backend_whirlpool_bug > 0 ? ", flawed whirlpool" : ""
+		);
+
 	return 0;
 }
 
