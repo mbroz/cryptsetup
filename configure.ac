@@ -137,7 +137,7 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 		else
 			[use_internal_pbkdf2=1]
 		fi,
-		[AM_PATH_LIBGCRYPT([1.6.0], [use_internal_pbkdf2=0], [use_internal_pbkdf2=1])])
+		[AM_PATH_LIBGCRYPT([1.6.1], [use_internal_pbkdf2=0], [use_internal_pbkdf2=1])])
 	AM_PATH_LIBGCRYPT($GCRYPT_REQ_VERSION,,[AC_MSG_ERROR([You need the gcrypt library.])])
 
 	if test x$enable_static_cryptsetup = xyes; then
