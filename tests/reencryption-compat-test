@@ -255,5 +255,16 @@ add_scsi_device sector_size=512 physblk_exp=3 dev_size_mb=8
 simple_scsi_reenc "[4096/512 sector]"
 echo "[OK]"
 
+echo "[8] Header only reencryption (hash and iteration time)"
+echo $PWD1 | $CRYPTSETUP -q luksFormat --hash sha1 $LOOPDEV1 || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha256 --iter-time 1
+check_hash $PWD1 $HASH1
+echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha512
+check_hash $PWD1 $HASH1
+echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --iter-time 1
+check_hash $PWD1 $HASH1
+
 remove_mapping
 exit 0

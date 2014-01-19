@@ -67,6 +67,9 @@ you can destructively shrink device with \-\-reduce-device-size option.
 .TP
 .B "\-\-hash, \-h \fI<hash-spec>\fR"
 Specifies the hash used in the LUKS key setup scheme and volume key digest.
+
+NOTE: if this parameter is not specified, default hash algorithm is always used
+for new device header.
 .TP
 .B "\-\-iter-time, \-i \fI<milliseconds>\fR"
 The number of milliseconds to spend with PBKDF2 passphrase processing for the
@@ -99,6 +102,12 @@ Skip \fIvalue\fR bytes at the beginning of the key file.
 Read a maximum of \fIvalue\fR bytes from the key file.
 Default is to read the whole file up to the compiled-in
 maximum.
+.TP
+.B "\-\-keep-key"
+Do not change encryption key, just reencrypt the LUKS header and keyslots.
+
+This option can be combined only with \fI\-\-hash\fR or \fI\-\-iter-time\fR
+options.
 .TP
 .B "\-\-tries, \-T"
 Number of retries for invalid passphrase entry.

@@ -47,6 +47,7 @@ static int opt_tries = 3;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static int opt_key_size = 0;
 static int opt_new = 0;
+static int opt_keep_key = 0;
 
 static const char *opt_reduce_size_str = NULL;
 static uint64_t opt_reduce_size = 0;
@@ -424,7 +425,8 @@ out:
 
 static int create_new_header(struct reenc_ctx *rc, const char *cipher,
 			     const char *cipher_mode, const char *uuid,
-			     int key_size, struct crypt_params_luks1 *params)
+			     const char *key, int key_size,
+			     struct crypt_params_luks1 *params)
 {
 	struct crypt_device *cd_new = NULL;
 	int i, r;
@@ -441,7 +443,7 @@ static int create_new_header(struct reenc_ctx *rc, const char *cipher,
 		crypt_set_iteration_time(cd_new, opt_iteration_time);
 
 	if ((r = crypt_format(cd_new, CRYPT_LUKS1, cipher, cipher_mode,
-			      uuid, NULL, key_size, params)))
+			      uuid, key, key_size, params)))
 		goto out;
 	log_verbose(_("New LUKS header for device %s created.\n"), rc->device);
 
@@ -464,6 +466,8 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params = {0};
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	char *old_key = NULL;
+	size_t old_key_size;
 	int r;
 
 	log_dbg("Creating LUKS header backup for device %s.", rc->device);
@@ -494,14 +498,30 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		}
 	}
 
+	if (opt_keep_key) {
+		log_dbg("Keeping key from old header.");
+		old_key_size  = crypt_get_volume_key_size(cd);
+		old_key = crypt_safe_alloc(old_key_size);
+		if (!old_key) {
+			r = -ENOMEM;
+			goto out;
+		}
+		r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, old_key, &old_key_size,
+			rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen);
+		if (r < 0)
+			goto out;
+	}
+
 	r = create_new_header(rc,
 		opt_cipher ? cipher : crypt_get_cipher(cd),
 		opt_cipher ? cipher_mode : crypt_get_cipher_mode(cd),
 		crypt_get_uuid(cd),
+		old_key,
 		opt_key_size ? opt_key_size / 8 : crypt_get_volume_key_size(cd),
 		&params);
 out:
 	crypt_free(cd);
+	crypt_safe_free(old_key);
 	if (r)
 		log_err(_("Creation of LUKS backup headers failed.\n"));
 	return r;
@@ -559,7 +579,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	r = create_new_header(rc,
 		opt_cipher ? cipher : DEFAULT_LUKS1_CIPHER,
 		opt_cipher ? cipher_mode : DEFAULT_LUKS1_MODE,
-		NULL,
+		NULL, NULL,
 		(opt_key_size ? opt_key_size : DEFAULT_LUKS1_KEYBITS) / 8,
 		&params);
 out:
@@ -1087,11 +1107,15 @@ static int run_reencrypt(const char *device)
 			goto out;
 	}
 
-	if ((r = activate_luks_headers(&rc)))
-		goto out;
+	if (!opt_keep_key) {
+		log_dbg("Running data area reencryption.");
+		if ((r = activate_luks_headers(&rc)))
+			goto out;
 
-	if ((r = copy_data(&rc)))
-		goto out;
+		if ((r = copy_data(&rc)))
+			goto out;
+	} else
+		log_dbg("Keeping existing key, skipping data area reencryption.");
 
 	r = restore_luks_header(&rc);
 out:
@@ -1130,6 +1154,7 @@ int main(int argc, const char **argv)
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
+		{ "keep-key",          '\0', POPT_ARG_NONE, &opt_keep_key,              0, N_("Do not change key, no data area reencryption."), NULL },
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF2 iteration time for LUKS (in ms)"), N_("msecs") },
 		{ "batch-mode",        'q',  POPT_ARG_NONE, &opt_batch_mode,            0, N_("Do not ask for confirmation"), NULL },
@@ -1233,6 +1258,10 @@ int main(int argc, const char **argv)
 
 	if (opt_new && !opt_reduce_size)
 		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce-device-size."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_keep_key && ((!opt_hash && !opt_iteration_time) || opt_cipher || opt_new))
+		usage(popt_context, EXIT_FAILURE, _("Option --keep-key can be used only with --hash or --iter-time."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
