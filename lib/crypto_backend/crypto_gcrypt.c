@@ -132,6 +132,23 @@ uint32_t crypt_backend_flags(void)
 	return 0;
 }
 
+static const char *crypt_hash_compat_name(const char *name, unsigned int *flags)
+{
+	const char *hash_name = name;
+
+	/* "whirlpool_gcryptbug" is out shortcut to flawed whirlpool
+	 * in libgcrypt < 1.6.0 */
+	if (!strcasecmp(name, "whirlpool_gcryptbug")) {
+#if GCRYPT_VERSION_NUMBER >= 0x010601
+		if (flags)
+			*flags |= GCRY_MD_FLAG_BUGEMU1;
+#endif
+		hash_name = "whirlpool";
+	}
+
+	return hash_name;
+}
+
 /* HASH */
 int crypt_hash_size(const char *name)
 {
@@ -139,7 +156,7 @@ int crypt_hash_size(const char *name)
 
 	assert(crypto_backend_initialised);
 
-	hash_id = gcry_md_map_name(name);
+	hash_id = gcry_md_map_name(crypt_hash_compat_name(name, NULL));
 	if (!hash_id)
 		return -EINVAL;
 
@@ -149,6 +166,7 @@ int crypt_hash_size(const char *name)
 int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 {
 	struct crypt_hash *h;
+	unsigned int flags = 0;
 
 	assert(crypto_backend_initialised);
 
@@ -156,13 +174,13 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 	if (!h)
 		return -ENOMEM;
 
-	h->hash_id = gcry_md_map_name(name);
+	h->hash_id = gcry_md_map_name(crypt_hash_compat_name(name, &flags));
 	if (!h->hash_id) {
 		free(h);
 		return -EINVAL;
 	}
 
-	if (gcry_md_open(&h->hd, h->hash_id, 0)) {
+	if (gcry_md_open(&h->hd, h->hash_id, flags)) {
 		free(h);
 		return -EINVAL;
 	}
@@ -218,6 +236,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		    const void *buffer, size_t length)
 {
 	struct crypt_hmac *h;
+	unsigned int flags = GCRY_MD_FLAG_HMAC;
 
 	assert(crypto_backend_initialised);
 
@@ -225,13 +244,13 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	if (!h)
 		return -ENOMEM;
 
-	h->hash_id = gcry_md_map_name(name);
+	h->hash_id = gcry_md_map_name(crypt_hash_compat_name(name, &flags));
 	if (!h->hash_id) {
 		free(h);
 		return -EINVAL;
 	}
 
-	if (gcry_md_open(&h->hd, h->hash_id, GCRY_MD_FLAG_HMAC)) {
+	if (gcry_md_open(&h->hd, h->hash_id, flags)) {
 		free(h);
 		return -EINVAL;
 	}
@@ -306,15 +325,17 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		char *key, size_t key_length,
 		unsigned int iterations)
 {
+	const char *hash_name = crypt_hash_compat_name(hash, NULL);
+
 #if USE_INTERNAL_PBKDF2
 	if (!kdf || strncmp(kdf, "pbkdf2", 6))
 		return -EINVAL;
 
-	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
+	return pkcs5_pbkdf2(hash_name, password, password_length, salt, salt_length,
 			    iterations, key_length, key);
 
 #else /* USE_INTERNAL_PBKDF2 */
-	int hash_id = gcry_md_map_name(hash);
+	int hash_id = gcry_md_map_name(hash_name);
 	int kdf_id;
 
 	if (!hash_id)
