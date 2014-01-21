@@ -56,6 +56,7 @@ static void crypt_hash_test_whirlpool_bug(void)
 	if (crypto_backend_whirlpool_bug >= 0)
 		return;
 
+	crypto_backend_whirlpool_bug = 0;
 	if (crypt_hash_init(&h, "whirlpool"))
 		return;
 
@@ -78,8 +79,6 @@ static void crypt_hash_test_whirlpool_bug(void)
 
 	if (memcmp(hash_out1, hash_out2, 64))
 		crypto_backend_whirlpool_bug = 1;
-	else
-		crypto_backend_whirlpool_bug = 0;
 }
 
 int crypt_backend_init(struct crypt_device *ctx)
@@ -138,7 +137,7 @@ static const char *crypt_hash_compat_name(const char *name, unsigned int *flags)
 
 	/* "whirlpool_gcryptbug" is out shortcut to flawed whirlpool
 	 * in libgcrypt < 1.6.0 */
-	if (!strcasecmp(name, "whirlpool_gcryptbug")) {
+	if (name && !strcasecmp(name, "whirlpool_gcryptbug")) {
 #if GCRYPT_VERSION_NUMBER >= 0x010601
 		if (flags)
 			*flags |= GCRY_MD_FLAG_BUGEMU1;
