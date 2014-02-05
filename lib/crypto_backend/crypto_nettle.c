@@ -265,8 +265,8 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 int crypt_hmac_destroy(struct crypt_hmac *ctx)
 {
 	memset(ctx->key, 0, ctx->key_length);
-	memset(ctx, 0, sizeof(*ctx));
 	free(ctx->key);
+	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 	return 0;
 }
