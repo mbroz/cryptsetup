@@ -546,5 +546,14 @@ $CRYPTSETUP -q repair $LOOPDEV >/dev/null 2>&1 || fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 
+prepare "[30] LUKS erase" wipe
+$CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY5 --key-slot 5 || fail
+$CRYPTSETUP luksAddKey -S 1 -d $KEY5 $LOOPDEV $KEY1 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: ENABLED" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 5: ENABLED" || fail
+$CRYPTSETUP luksErase -q $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 5: DISABLED" || fail
+
 remove_mapping
 exit 0
