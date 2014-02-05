@@ -1,0 +1,17 @@
+# Old udev rules historically used in device-mapper.
+# No need to install these until you have some weird configuration.
+# (Code internally set the same flags.)
+
+ACTION!="add|change", GOTO="crypt_end"
+ENV{DM_UDEV_RULES_VSN}!="?*", GOTO="crypt_end"
+
+ENV{DM_UUID}=="CRYPT-TEMP-?*", GOTO="crypt_disable"
+ENV{DM_UUID}!="?*", ENV{DM_NAME}=="temporary-cryptsetup-?*", GOTO="crypt_disable"
+GOTO="crypt_end"
+
+LABEL="crypt_disable"
+ENV{DM_UDEV_DISABLE_SUBSYSTEM_RULES_FLAG}="1"
+ENV{DM_UDEV_DISABLE_DISK_RULES_FLAG}="1"
+ENV{DM_UDEV_DISABLE_OTHER_RULES_FLAG}="1"
+
+LABEL="crypt_end"
