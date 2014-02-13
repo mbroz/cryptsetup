@@ -546,10 +546,12 @@ Run in debug mode with full diagnostic logs. Debug output
 lines are always prefixed by '#'.
 .TP
 .B "\-\-hash, \-h \fI<hash\-spec>\fR"
-Specifies the passphrase hash for \fIopen\fR (for plain and loopaes device types).
+Specifies the passphrase hash for \fIopen\fR (for plain and 
+loopaes device types).
 
 Specifies the hash used in the LUKS key setup scheme and volume key digest
-for \fIluksFormat\fR.
+for \fIluksFormat\fR. The specified hash is used as hash-parameter
+for PBKDF2 and for the AF splitter. 
 
 The specified hash name is passed to the compiled-in crypto backend.
 Different backends may support different hashes.
@@ -571,6 +573,11 @@ Set the cipher specification string.
 The current default in the distributed sources is
 "aes-cbc-essiv:sha256" for plain dm-crypt and
 "aes-xts-plain64" for LUKS.
+
+If a hash is part of the cipher spefification, then it is
+used as part of the IV generation. For example, ESSIV
+needs a hash function, while "plain64" does not and
+hence none is specified.
 
 For XTS mode you can optionally set a key size of
 512 bits with the \-s option. Key size for XTS
