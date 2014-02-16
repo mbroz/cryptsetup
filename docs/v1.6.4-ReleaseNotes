@@ -1,0 +1,54 @@
+Cryptsetup 1.6.4 Release Notes
+==============================
+
+Changes since version 1.6.3
+
+* Implement new erase (with alias luksErase) command.
+
+  The erase cryptsetup command can be used to permanently erase
+  all keyslots and make the LUKS container inaccessible.
+  (The only way to unlock such device is to use LUKS header backup
+  created before erase command was used.)
+
+  You do not need to provide any password for this operation.
+
+  This operation is irreversible.
+
+* Add internal "whirlpool_gcryptbug hash" for accessing flawed
+  Whirlpool hash in gcrypt (requires gcrypt 1.6.1 or above).
+
+  The gcrypt version of Whirlpool hash algorithm was flawed in some
+  situations.
+
+  This means that if you used Whirlpool in LUKS header and upgraded
+  to new gcrypt library your LUKS container become inaccessible.
+
+  Please refer to cryptsetup FAQ for detail how to fix this situation.
+
+* Allow to use --disable-gcrypt-pbkdf2 during configuration
+  to force use internal PBKDF2 code.
+
+* Require gcrypt 1.6.1 for imported implementation of PBKDF2
+  (PBKDF2 in gcrypt 1.6.0 is too slow).
+
+* Add --keep-key to cryptsetup-reencrypt.
+
+  This allows change of LUKS header hash (and iteration count) without
+  the need to reencrypt the whole data area.
+  (Reencryption of LUKS header only without master key change.)
+
+* Fix memory leak in Nettle crypto backend.
+
+* Support --tries option even for TCRYPT devices in cryptsetup.
+
+* Support --allow-discards option even for TCRYPT devices.
+  (Note that this could destroy hidden volume and it is not suggested
+   by original TrueCrypt security model.)
+
+* Link against -lrt for clock_gettime to fix undefined reference
+  to clock_gettime error (introduced in 1.6.2).
+
+* Fix misleading error message when some algorithms are not available.
+
+* Count system time in PBKDF2 benchmark if kernel returns no self usage info.
+  (Workaround to broken getrusage() syscall with some hypervisors.)
