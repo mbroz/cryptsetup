@@ -4,7 +4,13 @@ Version 1.7:
 - TRIM for keyslots
 - Do we need crypt_data_path() - path to data device (if differs)?
 - Resync ETA time is not accurate, calculate it better (last minute window?).
-- Crypt benchmark cannot ttest ECB mode.
-- Log doesn't work yet in early binary start (FIPS message).
-
+- Crypt benchmark cannot test ECB mode.
 - crypto backend should initialise itself only once (debug log)
+- Some crypt backends are inefective fo PBKDF2 (missing fast key reset)
+  Add optimisation to internal PBKDF2 (hash HMAC key in advance).
+- Kernel backend doesn't allow PBKDF2 key size > 20480 bytes
+  (should be fixed with optimisation above).
+- Add test vectors to internal PBKDF2 code.
+- Add support for Nettle PBKDF2.
+- Extend existing LUKS header to use another KDF? (https://password-hashing.net/)
+- Fix all crazy automake warnings (or switch to Cmake).
