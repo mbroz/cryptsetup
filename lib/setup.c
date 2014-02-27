@@ -1657,14 +1657,15 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 
 	r = LUKS_set_key(keyslot, new_password, new_passwordLen,
 			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
-	if(r < 0) goto out;
+	if(r < 0)
+		goto out;
 
 	r = 0;
 out:
 	if (!new_passphrase)
 		crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
-	return r ?: keyslot;
+	return r < 0 ? r : keyslot;
 }
 
 int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
@@ -1713,10 +1714,10 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 
 	if (keyslot_old == keyslot_new) {
 		if (r >= 0)
-			log_verbose(cd, _("Key slot %d changed.\n"), r);
+			log_verbose(cd, _("Key slot %d changed.\n"), keyslot_new);
 	} else {
 		if (r >= 0) {
-			log_verbose(cd, _("Replaced with key slot %d.\n"), r);
+			log_verbose(cd, _("Replaced with key slot %d.\n"), keyslot_new);
 			r = crypt_keyslot_destroy(cd, keyslot_old);
 		}
 	}
@@ -1724,7 +1725,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 		log_err(cd, _("Failed to swap new key slot.\n"));
 out:
 	crypt_free_volume_key(vk);
-	return r ?: keyslot_new;
+	return r < 0 ? r : keyslot_new;
 }
 
 int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
