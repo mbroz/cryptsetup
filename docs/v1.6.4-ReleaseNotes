@@ -37,6 +37,9 @@ Changes since version 1.6.3
   the need to reencrypt the whole data area.
   (Reencryption of LUKS header only without master key change.)
 
+* By default verify new passphrase in luksChangeKey and luksAddKey
+  commands (if input is from terminal).
+
 * Fix memory leak in Nettle crypto backend.
 
 * Support --tries option even for TCRYPT devices in cryptsetup.
