@@ -977,7 +977,7 @@ static int action_luksAddKey(void)
 
 		r = tools_get_key(_("Enter new passphrase for key slot: "),
 				  &password_new, &password_new_size, 0, 0, NULL,
-				  opt_timeout, _verify_passphrase(0), 1, cd);
+				  opt_timeout, _verify_passphrase(1), 1, cd);
 		if (r < 0)
 			goto out;
 
@@ -1028,7 +1028,7 @@ static int action_luksChangeKey(void)
 			  &password_new, &password_new_size,
 			  opt_new_keyfile_offset, opt_new_keyfile_size,
 			  opt_new_key_file,
-			  opt_timeout, _verify_passphrase(0), 1, cd);
+			  opt_timeout, _verify_passphrase(1), 1, cd);
 	if (r < 0)
 		goto out;
 
