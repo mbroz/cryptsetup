@@ -41,7 +41,7 @@ A. Contributors
   SSDs/FLASH DRIVES: SSDs and Flash are different. Currently it is
   unclear how to get LUKS or plain dm-crypt to run on them with the
   full set of security features intact. This may or may not be a
-  problem, depending on the attacher model. See Section 5.19.
+  problem, depending on the attacker model. See Section 5.19.
 
   BACKUP: Yes, encrypted disks die, just as normal ones do. A full
   backup is mandatory, see Section "6. Backup and Data Recovery" on
@@ -1951,6 +1951,55 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   The exact specification of the format is here:
   http://code.google.com/p/cryptsetup/wiki/Specification
 
+  For your convenience, here is the LUKS header with hex offsets:
+
+Refers to LUKS On-Disk Format Specification Version 1.2.1
+LUKS header:
+offset  lenght  name             data type  description
+-----------------------------------------------------------------------
+0x0000   0x06   magic            byte[]     'L','U','K','S', 0xba, 0xbe
+     0      6
+0x0006   0x02   version          uint16_t   LUKS version
+     6      3
+0x0008   0x20   cipher-name      char[]     cipher name spec.
+     8     32
+0x0028   0x20   cipher-mode      char[]     cipher mode spec.
+    40     32
+0x0048   0x20   hash-spec        char[]     hash spec.
+    72     32
+0x0068   0x04   payload-offset   uint32_t   bulk data offset in sectors
+   104      4                               (512 byteper sector)
+0x006c   0x04   key-bytes        uint32_t   number of bytes in key
+   108      4
+0x0070   0x14   mk-digest        byte[]     master key checksum
+   112     20                               calculated with PBKDF2
+0x0084   0x20   mk-digest-salt   byte[]     salt for PBKDF2 when
+   132     32                               calculating mk-digest
+0x00a4   0x04   mk-digest-iter   uint32_t   iteration count for PBKDF2
+   164      4                               when calculating mk-digest
+0x00a8   0x28   uuid             char[]     partition UUID
+   168     40
+0x00d0   0x30   key-slot-1       key slot   key slot 1
+   208     48
+0x0100   0x30   key-slot-2       key slot   key slot 2
+   256     48
+   ...    ...   ...              ...        ...
+0x0220   0x30   key-slot-8       key slot   key slot 8
+   544     48
+Key slot:
+offset  lenght  name                  data type  description
+-------------------------------------------------------------------------
+0x0000   0x04   active                uint32_t   keyslot enabled/disabled
+     0      4
+0x0004   0x04   iterations            uint32_t   PBKDF3 iteration count
+     4      4
+0x0008   0x20   salt                  byte[]     PBKDF2 salt
+     8     32
+0x0028   0x04   key-material-offset   uint32_t   key start sector
+    40      4                                    (512 bytes/sector)
+0x002c   0x04   stripes               uint32_t   number of anti-froensic
+    44      4                                    stripes
+ 
 
  * 6.13 What is the smallest possible LUKS container?
 
@@ -2157,7 +2206,39 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
    accessible anymore!
 
   With cryptsetup 1.1.x, the distro maintainer can define different
-  default encryption modes for LUKS and plain devices. You can check
+  default encryption mod to get all comparison results. To make
+  sure no data is written to disk unencrypted, turn off swap if it is
+  not encrypted before doing the backup.
+
+  You can of course use different or no compression and you can use
+  an asymmetric key if you have one and have a backup of the secret
+  key that belongs to it.
+
+  A second option for a filesystem-level backup that can be used when
+  the backup is also on local disk (e.g. an external USB drive) is
+  to use a LUKS container there and copy the files to be backed up
+  between both mounted containers. Also see next item.
+
+
+ * 6.5 Do I need a backup of the full partition? Would the header and
+   key-slots not be enough?
+
+  Backup protects you against two things: Disk loss or corruption
+  and user error. By far the most questions on the dm-crypt mailing
+  list about how to recover a damaged LUKS partition are related
+  to user error. For example, if you create a new filesystem on a
+  LUKS partition, chances are good that all data is lost
+  permanently.
+
+  For this case, a header+key-slot backup would often be enough. But
+  keep in mind that a well-treated (!) HDD has roughly a failure
+  risk of 5% per year. It is highly advisable to have a complete
+  backup to protect against this case.
+
+
+  * *6.6 What do I need to backup if I use es for LUKS and plain
+   devices. You can check
+
   these compiled-in defaults using "cryptsetup --help". Moreover, the
   plain device default changed because the old IV mode was
   vulnerable to a watermarking attack.
@@ -2186,9 +2267,45 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   It is the other way round: In gcrypt 1.5.3 and before Whirlpool is
   broken and it was fixed in the next version. If you selected
   whirlpool as hash on creation of a LUKS container, it does not work
-  anymore with the fixed library. Currently, the only work-around is
-  to decrypt with the old version. This also shows one risk of using
-  rarely used settings.
+  anymore with the fixed library. This shows one serious risk of
+  using rarely used settings.
+
+  The only two ways to deal with this are either to decrypt with an
+  old gcrypt version that has the flaw or to use a compatibility
+  feature introduced in cryptsetup 1.6.4 and gcrypt 1.6.1 or later.
+  Versions of gcrypt between 1.5.4 and 1.6.0 cannot be used.
+
+  Steps:
+
+  - Make a header backup (seriously, do it!)
+
+  - Make sure you have cryptsetup 1.6.4 or later and check the gcrypt
+  version:
+
+ 
+     cryptsetup luksDump <your luks device> --debug | grep backend
+ 
+  If gcrypt is at version 1.5.3 or before:
+
+  - Reencrypt the LUKS header with a different hash. (Requires
+  entering all keyslot passphrases. If you do not have all, remove
+  the ones you do not have before.):
+
+     cryptsetup-reencrypt --keep-key --hash sha256 <your luks device>
+ 
+  If gcrypt is at version 1.6.1 or later:
+
+  - Patch the has name in the LUKS header from "whirlpool" to
+  "whirlpool_gcryptbug". This activates the broken implementation.
+  One way to do this is with the following command:
+
+     echo -n -e 'whirlpool_gcryptbug\0' | dd of=<luks device> bs=1 seek=72 conv=notrunc
+ 
+  - You can now open the device again. It is highly advisable to
+  change the hash now with cryptsetup-reencrypt as described above.
+  While you can reencrypt to use the fixed whirlpool, that may not
+  be a good idea as almost nobody seems to use it and hence the long
+  time until the bug was discovered.
 
 
 9. References and Further Reading 
