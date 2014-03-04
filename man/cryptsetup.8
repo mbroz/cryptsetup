@@ -131,7 +131,7 @@ Opens (creates a mapping with) <name> backed by device <device>.
 \-\-key-file, \-\-keyfile-offset, \-\-key-size, \-\-offset, \-\-skip, \-\-size,
 \-\-readonly, \-\-shared, \-\-allow-discards]
 
-Example: 'cryptsetup open --type plain /dev/sda10 e1' maps the raw
+Example: 'cryptsetup open \-\-type plain /dev/sda10 e1' maps the raw
 encrypted device /dev/sda10 to the mapped (decrypted) device
 /dev/mapper/e1, which can then be mounted, fsck-ed or have a
 filesystem created on it.
@@ -248,7 +248,7 @@ as positional argument or via \-\-key-file.
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument
-to \-\-key\-file), batch-mode (-q) will be implicitely
+to \-\-key\-file), batch-mode (\-q) will be implicitely
 switched on and no warning will be given when you remove the
 last remaining passphrase from a LUKS container. Removing
 the last passphrase makes the LUKS container permanently
@@ -292,7 +292,7 @@ passphrase makes a LUKS container permanently inaccessible.
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument
-to \-\-key-file), batch-mode (-q) will be implicitely
+to \-\-key-file), batch-mode (\-q) will be implicitely
 switched on and no warning will be given when you remove the
 last remaining passphrase from a LUKS container. Removing
 the last passphrase makes the LUKS container permanently
@@ -438,7 +438,7 @@ device, not image in file), then only this partition is mapped.
 
 If you have whole TCRYPT device as a file image and you want to map multiple
 partition encrypted with system encryption, please create loopback mapping
-with partitions first (\fBlosetup -P\fR, see \fPlosetup(8)\fR man page for more info),
+with partitions first (\fBlosetup \-P\fR, see \fPlosetup(8)\fR man page for more info),
 and use loop partition as the device parameter.
 
 If you use whole base device as parameter, one device for the whole system
@@ -657,7 +657,7 @@ master key which will compromise security.
 For \fIluksAddKey\fR this allows adding a new passphrase
 without having to know an exiting one.
 
-For \fIopen\fR this allows to open the LUKS device
+For \fIopen\fR this allows one to open the LUKS device
 without giving a passphrase.
 .TP
 .B "\-\-dump\-master\-key"
@@ -807,7 +807,7 @@ mapping name is not mandatory if this option is used).
 .TP
 .B "\-\-header\fR <device or file storing the LUKS header>"
 Use a detached (separated) metadata device or file where the
-LUKS header is stored. This options allows to store ciphertext
+LUKS header is stored. This options allows one to store ciphertext
 and LUKS header on different devices.
 
 This option is only relevant for LUKS devices and can be

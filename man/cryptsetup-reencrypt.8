@@ -139,7 +139,7 @@ This means that last sectors on the original device will be lost,
 ciphertext data will be effectively shifted by specified
 number of sectors.
 
-It can be usefull if you e.g. added some space to underlying
+It can be useful if you e.g. added some space to underlying
 partition (so last sectors contains no data).
 
 For units suffix see \-\-device-size parameter description.
@@ -160,7 +160,7 @@ WARNING: This is destructive operation and cannot be reverted.
 .B "\-\-use-directio"
 Use direct-io (O_DIRECT) for all read/write data operations.
 
-Usefull if direct-io operations perform better than normal buffered
+Useful if direct-io operations perform better than normal buffered
 operations (e.g. in virtual environments).
 .TP
 .B "\-\-use-fsync"
@@ -187,7 +187,7 @@ Reencrypt /dev/sdb1 (change volume key)
 cryptsetup-reencrypt /dev/sdb1
 .TP
 Reencrypt and also change cipher and cipher mode
-cryptsetup-reencrypt /dev/sdb1 -c aes-xts-plain64
+cryptsetup-reencrypt /dev/sdb1 \-c aes-xts-plain64
 .TP
 Add LUKS encryption to not yet encrypted device
 
@@ -196,9 +196,9 @@ Or alternatively shrink filesystem in advance.
 .br
 Here we need 4096 512-bytes sectors (enough for 2x128 bit key).
 
-fdisk -u /dev/sdb # move sdb1 partition end + 4096 sectors
+fdisk \-u /dev/sdb # move sdb1 partition end + 4096 sectors
 
-cryptsetup-reencrypt /dev/sdb1 --new --reduce-device-size 4096
+cryptsetup-reencrypt /dev/sdb1 \-\-new \-\-reduce-device-size 4096
 
 .SH REPORTING BUGS
 Report bugs, including ones in the documentation, on
