@@ -1,23 +1,23 @@
 # Italian translation for cryptsetup.
-# Copyright (C) 2010, 2011, 2012, 2013 Free Software Foundation, Inc.
+# Copyright (C) 2010, 2011, 2012, 2013, 2014 Free Software Foundation, Inc.
 # This file is put in the public domain.
 # Sergio Zanchetta <primes2h@ubuntu.com>, 2010, 2011, 2012.
-# Milo Casagrande <milo@milo.name>, 2013.
+# Milo Casagrande <milo@milo.name>, 2013, 2014.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup-1.6.3\n"
+"Project-Id-Version: cryptsetup-1.6.4\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2013-11-24 13:16+0100\n"
-"PO-Revision-Date: 2013-11-29 14:42+0100\n"
+"POT-Creation-Date: 2014-02-16 10:46+0100\n"
+"PO-Revision-Date: 2014-04-06 18:29+0100\n"
 "Last-Translator: Milo Casagrande <milo@milo.name>\n"
 "Language-Team: Italian <tp@lists.linux.it>\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8-bit\n"
+"Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n!=1);\n"
-"X-Generator: Gtranslator 2.91.6\n"
+"X-Generator: Poedit 1.6.4\n"
 
 #: lib/libdevmapper.c:260
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
@@ -219,8 +219,7 @@ msgid "Error during resuming device %s.\n"
 msgstr "Errore durante il ripristino del device %s.\n"
 
 #: lib/setup.c:1564 lib/setup.c:1998 lib/setup.c:2012 src/cryptsetup.c:152
-#: src/cryptsetup.c:230 src/cryptsetup.c:320 src/cryptsetup.c:667
-#: src/cryptsetup.c:1083
+#: src/cryptsetup.c:218 src/cryptsetup.c:696 src/cryptsetup.c:1112
 msgid "Enter passphrase: "
 msgstr "Inserire la passphrase: "
 
@@ -233,7 +232,7 @@ msgid "Enter any passphrase: "
 msgstr "Inserire una delle passphrase esistenti: "
 
 #: lib/setup.c:1652 lib/setup.c:1784 lib/setup.c:1788 lib/setup.c:1850
-#: src/cryptsetup.c:949
+#: src/cryptsetup.c:978
 msgid "Enter new passphrase for key slot: "
 msgstr "Inserire la nuova passphrase per lo slot di chiave: "
 
@@ -440,7 +439,7 @@ msgid "Failed to access temporary keystore device.\n"
 msgstr "Accesso al device temporaneo di deposito chiavi non riuscito.\n"
 
 #: lib/luks1/keymanage.c:181 lib/luks1/keymanage.c:418
-#: src/cryptsetup_reencrypt.c:992
+#: src/cryptsetup_reencrypt.c:1019
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "Il device %s non è un device LUKS valido.\n"
@@ -500,7 +499,7 @@ msgstr ""
 "ATTENZIONE: l'header reale del device ha un UUID diverso da quello di backup."
 
 #: lib/luks1/keymanage.c:299 lib/luks1/keymanage.c:528
-#: lib/luks1/keymanage.c:568 lib/tcrypt/tcrypt.c:591 lib/verity/verity.c:82
+#: lib/luks1/keymanage.c:568 lib/tcrypt/tcrypt.c:608 lib/verity/verity.c:82
 #: lib/verity/verity.c:179 lib/verity/verity_hash.c:292
 #: lib/verity/verity_hash.c:303 lib/verity/verity_hash.c:323
 #, c-format
@@ -562,7 +561,7 @@ msgstr "L'hash %s di LUKS richiesto non è supportato.\n"
 msgid "LUKS keyslot %u is invalid.\n"
 msgstr "Lo slot di chiave LUKS %u non è valido.\n"
 
-#: lib/luks1/keymanage.c:456 src/cryptsetup.c:603
+#: lib/luks1/keymanage.c:456 src/cryptsetup.c:632
 msgid "No known problems detected for LUKS header.\n"
 msgstr "Nessun problema conosciuto rilevato per l'header LUKS.\n"
 
@@ -614,8 +613,8 @@ msgstr "Il materiale dello slot di chiave %d contiene troppe poche strisce. Mani
 msgid "Key slot %d unlocked.\n"
 msgstr "Slot di chiave %d sbloccato.\n"
 
-#: lib/luks1/keymanage.c:978 src/cryptsetup.c:803
-#: src/cryptsetup_reencrypt.c:883 src/cryptsetup_reencrypt.c:920
+#: lib/luks1/keymanage.c:978 src/cryptsetup.c:832
+#: src/cryptsetup_reencrypt.c:910 src/cryptsetup_reencrypt.c:947
 msgid "No key available with this passphrase.\n"
 msgstr "Nessuna chiave disponibile con questa passphrase.\n"
 
@@ -660,38 +659,33 @@ msgstr "Lunghezza massima (%d) della passphrase TCRYPT superata.\n"
 msgid "PBKDF2 hash algorithm %s not available, skipping.\n"
 msgstr "L'algoritmo di hash PBKDF2 %s non è disponibile, viene saltato.\n"
 
-#: lib/tcrypt/tcrypt.c:546 src/cryptsetup.c:556
+#: lib/tcrypt/tcrypt.c:546 src/cryptsetup.c:585
 msgid "Required kernel crypto interface not available.\n"
 msgstr "Interfaccia kernel richiesta del cifrario non è disponibile.\n"
 
-#: lib/tcrypt/tcrypt.c:548 src/cryptsetup.c:558
+#: lib/tcrypt/tcrypt.c:548 src/cryptsetup.c:587
 msgid "Ensure you have algif_skcipher kernel module loaded.\n"
 msgstr "Assicurarsi di avere il modulo del kernel algif_skcipher caricato.\n"
 
-#: lib/tcrypt/tcrypt.c:601
-#, c-format
-msgid "WARNING: device %s is a partition, for TCRYPT system encryption you usually need to use whole block device path.\n"
-msgstr "Attenzione: il device %s è una partizione. Per il sistema di cifratura TCRYPT solitamente è necessario usare il percorso intero del device a blocchi.\n"
-
-#: lib/tcrypt/tcrypt.c:678
+#: lib/tcrypt/tcrypt.c:691
 #, c-format
 msgid "Activation is not supported for %d sector size.\n"
 msgstr "L'attivazione non è supportata per la dimensione del settore di %d.\n"
 
-#: lib/tcrypt/tcrypt.c:684
+#: lib/tcrypt/tcrypt.c:697
 msgid "Kernel doesn't support activation for this TCRYPT legacy mode.\n"
 msgstr "Il kernel non supporta l'attivazione per questa modalità legacy TCRYPT.\n"
 
-#: lib/tcrypt/tcrypt.c:717
+#: lib/tcrypt/tcrypt.c:728
 #, c-format
 msgid "Activating TCRYPT system encryption for partition %s.\n"
 msgstr "Attivazione sistema di cifratura TCRYPT per la partizione %s.\n"
 
-#: lib/tcrypt/tcrypt.c:773
+#: lib/tcrypt/tcrypt.c:790
 msgid "Kernel doesn't support TCRYPT compatible mapping.\n"
 msgstr "Il kernel non supporta la mappatura compatibile TCYPRT.\n"
 
-#: lib/tcrypt/tcrypt.c:978
+#: lib/tcrypt/tcrypt.c:1004
 msgid "This function is not supported without TCRYPT header load."
 msgstr "Questa funzione non è supportata senza l'header TCRYPT caricato."
 
@@ -782,8 +776,8 @@ msgstr "Impossibile verificare la passphrase su input non tty.\n"
 msgid "Ignoring keyfile offset and size options, keyfile read size is always the same as encryption key size.\n"
 msgstr "Vengono ignorate le opzioni offset e dimensione del file chiave: la dimensione di lettura è sempre la stessa della dimensione della chiave di cifratura.\n"
 
-#: src/cryptsetup.c:117 src/cryptsetup.c:502 src/cryptsetup.c:646
-#: src/cryptsetup_reencrypt.c:485 src/cryptsetup_reencrypt.c:520
+#: src/cryptsetup.c:117 src/cryptsetup.c:531 src/cryptsetup.c:675
+#: src/cryptsetup_reencrypt.c:496 src/cryptsetup_reencrypt.c:547
 msgid "No known cipher specification pattern detected.\n"
 msgstr "Non è stato rilevato alcun modello noto di specifica di cifrario.\n"
 
@@ -791,11 +785,11 @@ msgstr "Non è stato rilevato alcun modello noto di specifica di cifrario.\n"
 msgid "Option --key-file is required.\n"
 msgstr "È richiesta l'opzione --key-file.\n"
 
-#: src/cryptsetup.c:258 src/cryptsetup.c:347
+#: src/cryptsetup.c:237
 msgid "No device header detected with this passphrase.\n"
 msgstr "Nessun header di device rilevato con questa passphrase.\n"
 
-#: src/cryptsetup.c:273 src/cryptsetup.c:1072
+#: src/cryptsetup.c:300 src/cryptsetup.c:1101
 msgid ""
 "Header dump with volume key is sensitive information\n"
 "which allows access to encrypted partition without passphrase.\n"
@@ -805,211 +799,229 @@ msgstr ""
 "confidenziali che permettono di accedere alla partizione cifrata senza passphrase.\n"
 "Questo dump dovrebbe sempre essere salvato in modo cifrato in un luogo sicuro."
 
-#: src/cryptsetup.c:496
+#: src/cryptsetup.c:484
+msgid "Result of benchmark is not reliable.\n"
+msgstr "Il risultato del benchmark non è attendibile.\n"
+
+#: src/cryptsetup.c:525
 msgid "# Tests are approximate using memory only (no storage IO).\n"
 msgstr "# I test sono aprossimati usando solo la memoria (nessun IO dall'archivio).\n"
 
-#: src/cryptsetup.c:518 src/cryptsetup.c:540
+#: src/cryptsetup.c:547 src/cryptsetup.c:569
 msgid "#  Algorithm | Key |  Encryption |  Decryption\n"
 msgstr "#  Algoritmo | Chiave |  Cifratura |  Decigratura\n"
 
-#: src/cryptsetup.c:522
+#: src/cryptsetup.c:551
 #, c-format
 msgid "Cipher %s is not available.\n"
 msgstr "Il cifrario %s non è disponibile.\n"
 
-#: src/cryptsetup.c:549
+#: src/cryptsetup.c:578
 msgid "N/A"
 msgstr "N/D"
 
-#: src/cryptsetup.c:574
+#: src/cryptsetup.c:603
 #, c-format
 msgid "Cannot read keyfile %s.\n"
 msgstr "Impossibile leggere il file chiave %s.\n"
 
-#: src/cryptsetup.c:578
+#: src/cryptsetup.c:607
 #, c-format
 msgid "Cannot read %d bytes from keyfile %s.\n"
 msgstr "Impossibile leggere %d byte dal file chiave %s.\n"
 
-#: src/cryptsetup.c:607
+#: src/cryptsetup.c:636
 msgid "Really try to repair LUKS device header?"
 msgstr "Provare a riparare l'header del device LUKS?"
 
-#: src/cryptsetup.c:632
+#: src/cryptsetup.c:661
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr "Ciò sovrascriverà i dati in %s in modo irreversibile."
 
-#: src/cryptsetup.c:634
+#: src/cryptsetup.c:663
 msgid "memory allocation error in action_luksFormat"
 msgstr "errore di allocazione di memoria in action_luksFormat"
 
-#: src/cryptsetup.c:652
+#: src/cryptsetup.c:681
 #, c-format
 msgid "Cannot use %s as on-disk header.\n"
 msgstr "Impossibile usare %s come header on-disk.\n"
 
-#: src/cryptsetup.c:725
+#: src/cryptsetup.c:754
 msgid "Reduced data offset is allowed only for detached LUKS header.\n"
 msgstr "L'offset di dati ridotti è ammesso solo per l'header LUKS scollegato.\n"
 
-#: src/cryptsetup.c:826 src/cryptsetup.c:882
+#: src/cryptsetup.c:855 src/cryptsetup.c:911
 #, c-format
 msgid "Key slot %d selected for deletion.\n"
 msgstr "Slot di chiave %d selezionato per l'eliminazione.\n"
 
-#: src/cryptsetup.c:829
+#: src/cryptsetup.c:858
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
 msgstr "Chiave %d non attiva. Impossibile ripulirla.\n"
 
-#: src/cryptsetup.c:837 src/cryptsetup.c:885
+#: src/cryptsetup.c:866 src/cryptsetup.c:914
 msgid "This is the last keyslot. Device will become unusable after purging this key."
 msgstr "Questo è l'ultimo slot di chiave. Il device sarà inutilizzabile dopo aver eliminato questa chiave."
 
-#: src/cryptsetup.c:838
+#: src/cryptsetup.c:867
 msgid "Enter any remaining passphrase: "
 msgstr "Inserire una delle passphrase rimanenti: "
 
-#: src/cryptsetup.c:866
+#: src/cryptsetup.c:895
 msgid "Enter passphrase to be deleted: "
 msgstr "Inserire la passphrase da eliminare: "
 
-#: src/cryptsetup.c:935 src/cryptsetup_reencrypt.c:958
+#: src/cryptsetup.c:964 src/cryptsetup_reencrypt.c:985
 #, c-format
 msgid "Enter any existing passphrase: "
 msgstr "Inserire una delle passphrase esistenti: "
 
-#: src/cryptsetup.c:984
+#: src/cryptsetup.c:1013
 msgid "Enter passphrase to be changed: "
 msgstr "Inserire la passphrase da cambiare: "
 
-#: src/cryptsetup.c:998 src/cryptsetup_reencrypt.c:943
+#: src/cryptsetup.c:1027 src/cryptsetup_reencrypt.c:970
 msgid "Enter new passphrase: "
 msgstr "Inserire la nuova passphrase: "
 
-#: src/cryptsetup.c:1022
+#: src/cryptsetup.c:1051
 msgid "Only one device argument for isLuks operation is supported.\n"
 msgstr "È supportato un solo argomento device per ogni operazione isLuks.\n"
 
-#: src/cryptsetup.c:1178 src/cryptsetup.c:1199
+#: src/cryptsetup.c:1207 src/cryptsetup.c:1228
 msgid "Option --header-backup-file is required.\n"
 msgstr "È richiesta l'opzione --header-backup-file.\n"
 
-#: src/cryptsetup.c:1236
+#: src/cryptsetup.c:1265
 #, c-format
 msgid "Unrecognized metadata device type %s.\n"
 msgstr "Tipo di dispositivo meta-data %s non riconosciuto.\n"
 
-#: src/cryptsetup.c:1239
+#: src/cryptsetup.c:1268
 msgid "Command requires device and mapped name as arguments.\n"
 msgstr "Il comando richiede un device e un nome di mappatura come argomenti.\n"
 
-#: src/cryptsetup.c:1251
+#: src/cryptsetup.c:1287
+#, c-format
+msgid ""
+"This operation will erase all keyslots on device %s.\n"
+"Device will become unusable after this operation."
+msgstr ""
+"Questa operazione eliminerà tutti gli slot di chiave sul device %s.\n"
+"Il device sarà inutilizzabile dopo questa operazione."
+
+#: src/cryptsetup.c:1321
 msgid "<device> [--type <type>] [<name>]"
 msgstr "<device> [--type <tipo>] [<nome>]"
 
-#: src/cryptsetup.c:1251
+#: src/cryptsetup.c:1321
 msgid "open device as mapping <name>"
 msgstr "Apre il device come mappatura in <nome>"
 
-#: src/cryptsetup.c:1252 src/cryptsetup.c:1253 src/cryptsetup.c:1254
-#: src/cryptsetup.c:1255 src/veritysetup.c:310 src/veritysetup.c:311
+#: src/cryptsetup.c:1322 src/cryptsetup.c:1323 src/cryptsetup.c:1324
+#: src/cryptsetup.c:1325 src/veritysetup.c:311 src/veritysetup.c:312
 msgid "<name>"
 msgstr "<nome>"
 
-#: src/cryptsetup.c:1252
+#: src/cryptsetup.c:1322
 msgid "close device (remove mapping)"
 msgstr "Chiude il device (rimuove la mappatura)"
 
-#: src/cryptsetup.c:1253
+#: src/cryptsetup.c:1323
 msgid "resize active device"
 msgstr "Ridimensiona il device attivo"
 
-#: src/cryptsetup.c:1254
+#: src/cryptsetup.c:1324
 msgid "show device status"
 msgstr "Mostra lo stato del device"
 
-#: src/cryptsetup.c:1255
+#: src/cryptsetup.c:1325
 msgid "benchmark cipher"
 msgstr "Esegue benchmark del cifrario"
 
-#: src/cryptsetup.c:1256 src/cryptsetup.c:1262 src/cryptsetup.c:1263
-#: src/cryptsetup.c:1264 src/cryptsetup.c:1265 src/cryptsetup.c:1266
-#: src/cryptsetup.c:1267 src/cryptsetup.c:1268 src/cryptsetup.c:1269
+#: src/cryptsetup.c:1326 src/cryptsetup.c:1327 src/cryptsetup.c:1333
+#: src/cryptsetup.c:1334 src/cryptsetup.c:1335 src/cryptsetup.c:1336
+#: src/cryptsetup.c:1337 src/cryptsetup.c:1338 src/cryptsetup.c:1339
+#: src/cryptsetup.c:1340
 msgid "<device>"
 msgstr "<device>"
 
-#: src/cryptsetup.c:1256
+#: src/cryptsetup.c:1326
 msgid "try to repair on-disk metadata"
 msgstr "Prova a riparare i meta-dati on-disk"
 
-#: src/cryptsetup.c:1257 src/cryptsetup.c:1258
+#: src/cryptsetup.c:1327
+msgid "erase all keyslots (remove encryption key)"
+msgstr "Elimina tutti gli slot di chiavi (rimuove chiave di cifratura)"
+
+#: src/cryptsetup.c:1328 src/cryptsetup.c:1329
 msgid "<device> [<new key file>]"
 msgstr "<device> [<nuovo file chiave>]"
 
-#: src/cryptsetup.c:1257
+#: src/cryptsetup.c:1328
 msgid "formats a LUKS device"
 msgstr "Formatta un device LUKS"
 
-#: src/cryptsetup.c:1258
+#: src/cryptsetup.c:1329
 msgid "add key to LUKS device"
 msgstr "Aggiunge la chiave al device LUKS"
 
-#: src/cryptsetup.c:1259 src/cryptsetup.c:1260
+#: src/cryptsetup.c:1330 src/cryptsetup.c:1331
 msgid "<device> [<key file>]"
 msgstr "<device> [<file chiave>]"
 
-#: src/cryptsetup.c:1259
+#: src/cryptsetup.c:1330
 msgid "removes supplied key or key file from LUKS device"
 msgstr "Rimuove la chiave fornita o il file chiave dal device LUKS"
 
-#: src/cryptsetup.c:1260
+#: src/cryptsetup.c:1331
 msgid "changes supplied key or key file of LUKS device"
 msgstr "Cambia la chiave fornita o il file chiave del device LUKS"
 
-#: src/cryptsetup.c:1261
+#: src/cryptsetup.c:1332
 msgid "<device> <key slot>"
 msgstr "<device> <slot di chiave>"
 
-#: src/cryptsetup.c:1261
+#: src/cryptsetup.c:1332
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr "Ripulisce la chiave con numero <slot di chiave> dal device LUKS"
 
-#: src/cryptsetup.c:1262
+#: src/cryptsetup.c:1333
 msgid "print UUID of LUKS device"
 msgstr "Stampa l'UUID del device LUKS"
 
-#: src/cryptsetup.c:1263
+#: src/cryptsetup.c:1334
 msgid "tests <device> for LUKS partition header"
 msgstr "Verifica l'header della partizione LUKS di <device>"
 
-#: src/cryptsetup.c:1264
+#: src/cryptsetup.c:1335
 msgid "dump LUKS partition information"
 msgstr "Esegue il dump delle informazioni sulla partizione LUKS"
 
-#: src/cryptsetup.c:1265
+#: src/cryptsetup.c:1336
 msgid "dump TCRYPT device information"
 msgstr "Esegue il dump delle informazioni TCRYPT del device"
 
-#: src/cryptsetup.c:1266
+#: src/cryptsetup.c:1337
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
 msgstr "Sospende il device LUKS e ripulisce la chiave (tutti gli I/O sono congelati)."
 
-#: src/cryptsetup.c:1267
+#: src/cryptsetup.c:1338
 msgid "Resume suspended LUKS device."
 msgstr "Ripristina il device LUKS sospeso."
 
-#: src/cryptsetup.c:1268
+#: src/cryptsetup.c:1339
 msgid "Backup LUKS device header and keyslots"
 msgstr "Fa il backup dell'header del device e degli slot di chiave"
 
-#: src/cryptsetup.c:1269
+#: src/cryptsetup.c:1340
 msgid "Restore LUKS device header and keyslots"
 msgstr "Ripristina l'header del device LUKS e gli slot di chiave"
 
-#: src/cryptsetup.c:1286 src/veritysetup.c:327
+#: src/cryptsetup.c:1357 src/veritysetup.c:328
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -1017,7 +1029,7 @@ msgstr ""
 "\n"
 "<azione> è una tra:\n"
 
-#: src/cryptsetup.c:1292
+#: src/cryptsetup.c:1363
 msgid ""
 "\n"
 "You can also use old <action> syntax aliases:\n"
@@ -1029,7 +1041,7 @@ msgstr ""
 "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
 "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"
 
-#: src/cryptsetup.c:1296
+#: src/cryptsetup.c:1367
 #, c-format
 msgid ""
 "\n"
@@ -1044,7 +1056,7 @@ msgstr ""
 "<slot di chiave> è il numero dello slot di chiave LUKS da modificare\n"
 "<file chiave> è il file chiave opzionale per la nuova chiave per l'azione luksAddKey\n"
 
-#: src/cryptsetup.c:1303
+#: src/cryptsetup.c:1374
 #, c-format
 msgid ""
 "\n"
@@ -1057,7 +1069,7 @@ msgstr ""
 "\tdimensione massima del file chiave: %dkB, lunghezza massima della passphrase interattiva %d (caratteri)\n"
 "Tempo d'iterazione PBKDF2 predefinito per LUKS: %d (ms)\n"
 
-#: src/cryptsetup.c:1310
+#: src/cryptsetup.c:1381
 #, c-format
 msgid ""
 "\n"
@@ -1072,223 +1084,223 @@ msgstr ""
 "\tin chiaro: %s, chiave: %d bit, hash della password: %s\n"
 "\tLUKS1: %s, chiave: %d bit, hash dell'header LUKS: %s, RNG: %s\n"
 
-#: src/cryptsetup.c:1327 src/veritysetup.c:459
+#: src/cryptsetup.c:1398 src/veritysetup.c:460
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: richiede %s come argomenti"
 
-#: src/cryptsetup.c:1360 src/veritysetup.c:367 src/cryptsetup_reencrypt.c:1113
+#: src/cryptsetup.c:1431 src/veritysetup.c:368 src/cryptsetup_reencrypt.c:1144
 msgid "Show this help message"
 msgstr "Mostra questo messaggio d'aiuto"
 
-#: src/cryptsetup.c:1361 src/veritysetup.c:368 src/cryptsetup_reencrypt.c:1114
+#: src/cryptsetup.c:1432 src/veritysetup.c:369 src/cryptsetup_reencrypt.c:1145
 msgid "Display brief usage"
 msgstr "Mostra il modo d'uso sintetico"
 
-#: src/cryptsetup.c:1365 src/veritysetup.c:372 src/cryptsetup_reencrypt.c:1118
+#: src/cryptsetup.c:1436 src/veritysetup.c:373 src/cryptsetup_reencrypt.c:1149
 msgid "Help options:"
 msgstr "Opzioni di aiuto:"
 
-#: src/cryptsetup.c:1366 src/veritysetup.c:373 src/cryptsetup_reencrypt.c:1119
+#: src/cryptsetup.c:1437 src/veritysetup.c:374 src/cryptsetup_reencrypt.c:1150
 msgid "Print package version"
 msgstr "Stampa la versione del pacchetto"
 
-#: src/cryptsetup.c:1367 src/veritysetup.c:374 src/cryptsetup_reencrypt.c:1120
+#: src/cryptsetup.c:1438 src/veritysetup.c:375 src/cryptsetup_reencrypt.c:1151
 msgid "Shows more detailed error messages"
 msgstr "Mostra i messaggi di errore con maggior dettaglio"
 
-#: src/cryptsetup.c:1368 src/veritysetup.c:375 src/cryptsetup_reencrypt.c:1121
+#: src/cryptsetup.c:1439 src/veritysetup.c:376 src/cryptsetup_reencrypt.c:1152
 msgid "Show debug messages"
 msgstr "Mostra i messaggi di debug"
 
-#: src/cryptsetup.c:1369 src/cryptsetup_reencrypt.c:1123
+#: src/cryptsetup.c:1440 src/cryptsetup_reencrypt.c:1154
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Il cifrario usato per cifrare il disco (vedere /proc/crypto)"
 
-#: src/cryptsetup.c:1370 src/cryptsetup_reencrypt.c:1125
+#: src/cryptsetup.c:1441 src/cryptsetup_reencrypt.c:1156
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "L'hash usato per creare la chiave di cifratura dalla passphrase"
 
-#: src/cryptsetup.c:1371
+#: src/cryptsetup.c:1442
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Verifica la passphrase chiedendola due volte"
 
-#: src/cryptsetup.c:1372 src/cryptsetup_reencrypt.c:1126
+#: src/cryptsetup.c:1443 src/cryptsetup_reencrypt.c:1158
 msgid "Read the key from a file."
 msgstr "Legge la chiave da un file."
 
-#: src/cryptsetup.c:1373
+#: src/cryptsetup.c:1444
 msgid "Read the volume (master) key from file."
 msgstr "Legge la chiave (master) del volume dal file."
 
-#: src/cryptsetup.c:1374
+#: src/cryptsetup.c:1445
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "Esegue il dump della chiave (master) del volume invece delle informazioni sugli slot di chiave."
 
-#: src/cryptsetup.c:1375 src/cryptsetup_reencrypt.c:1124
+#: src/cryptsetup.c:1446 src/cryptsetup_reencrypt.c:1155
 msgid "The size of the encryption key"
 msgstr "La dimensione della chiave di cifratura"
 
-#: src/cryptsetup.c:1375 src/cryptsetup_reencrypt.c:1124
+#: src/cryptsetup.c:1446 src/cryptsetup_reencrypt.c:1155
 msgid "BITS"
 msgstr "BIT"
 
-#: src/cryptsetup.c:1376 src/cryptsetup_reencrypt.c:1137
+#: src/cryptsetup.c:1447 src/cryptsetup_reencrypt.c:1169
 msgid "Limits the read from keyfile"
 msgstr "Limita la lettura dal file di chiave"
 
-#: src/cryptsetup.c:1376 src/cryptsetup.c:1377 src/cryptsetup.c:1378
-#: src/cryptsetup.c:1379 src/veritysetup.c:378 src/veritysetup.c:379
-#: src/veritysetup.c:381 src/cryptsetup_reencrypt.c:1136
-#: src/cryptsetup_reencrypt.c:1137 src/cryptsetup_reencrypt.c:1138
-#: src/cryptsetup_reencrypt.c:1139
+#: src/cryptsetup.c:1447 src/cryptsetup.c:1448 src/cryptsetup.c:1449
+#: src/cryptsetup.c:1450 src/veritysetup.c:379 src/veritysetup.c:380
+#: src/veritysetup.c:382 src/cryptsetup_reencrypt.c:1168
+#: src/cryptsetup_reencrypt.c:1169 src/cryptsetup_reencrypt.c:1170
+#: src/cryptsetup_reencrypt.c:1171
 msgid "bytes"
 msgstr "byte"
 
-#: src/cryptsetup.c:1377 src/cryptsetup_reencrypt.c:1136
+#: src/cryptsetup.c:1448 src/cryptsetup_reencrypt.c:1168
 msgid "Number of bytes to skip in keyfile"
 msgstr "Numero di byte da saltare nel file di chiave"
 
-#: src/cryptsetup.c:1378
+#: src/cryptsetup.c:1449
 msgid "Limits the read from newly added keyfile"
 msgstr "Limita la lettura dal file di chiave appena aggiunto"
 
-#: src/cryptsetup.c:1379
+#: src/cryptsetup.c:1450
 msgid "Number of bytes to skip in newly added keyfile"
 msgstr "Numero di byte da saltare nel file di chiave appena aggiunto"
 
-#: src/cryptsetup.c:1380
+#: src/cryptsetup.c:1451
 msgid "Slot number for new key (default is first free)"
 msgstr "Numero dello slot per la nuova chiave (il primo libero è quello predefinito)"
 
-#: src/cryptsetup.c:1381
+#: src/cryptsetup.c:1452
 msgid "The size of the device"
 msgstr "La dimensione del device"
 
-#: src/cryptsetup.c:1381 src/cryptsetup.c:1382 src/cryptsetup.c:1383
-#: src/cryptsetup.c:1389
+#: src/cryptsetup.c:1452 src/cryptsetup.c:1453 src/cryptsetup.c:1454
+#: src/cryptsetup.c:1460
 msgid "SECTORS"
 msgstr "SETTORI"
 
-#: src/cryptsetup.c:1382
+#: src/cryptsetup.c:1453
 msgid "The start offset in the backend device"
 msgstr "L'offset iniziale del device di backend"
 
-#: src/cryptsetup.c:1383
+#: src/cryptsetup.c:1454
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr "Quanti settori dei dati cifrati saltare dall'inizio"
 
-#: src/cryptsetup.c:1384
+#: src/cryptsetup.c:1455
 msgid "Create a readonly mapping"
 msgstr "Crea una mappatura in sola lettura"
 
-#: src/cryptsetup.c:1385 src/cryptsetup_reencrypt.c:1127
+#: src/cryptsetup.c:1456 src/cryptsetup_reencrypt.c:1159
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "Tempo di iterazione di PBKDF2 per LUKS (in ms)"
 
-#: src/cryptsetup.c:1385 src/cryptsetup_reencrypt.c:1127
+#: src/cryptsetup.c:1456 src/cryptsetup_reencrypt.c:1159
 msgid "msecs"
 msgstr "msec"
 
-#: src/cryptsetup.c:1386 src/cryptsetup_reencrypt.c:1128
+#: src/cryptsetup.c:1457 src/cryptsetup_reencrypt.c:1160
 msgid "Do not ask for confirmation"
 msgstr "Non chiede conferma"
 
-#: src/cryptsetup.c:1387
+#: src/cryptsetup.c:1458
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "Timeout per il prompt interattivo della passphrase (in secondi)"
 
-#: src/cryptsetup.c:1387
+#: src/cryptsetup.c:1458
 msgid "secs"
 msgstr "sec"
 
 # (NDT) Descrizione dell'opzione
 # --tries, indica il numero di tentativi per richiesta
-#: src/cryptsetup.c:1388 src/cryptsetup_reencrypt.c:1129
+#: src/cryptsetup.c:1459 src/cryptsetup_reencrypt.c:1161
 msgid "How often the input of the passphrase can be retried"
 msgstr "Quante volte può essere ritentato l'inserimento della passphrase"
 
-#: src/cryptsetup.c:1389
+#: src/cryptsetup.c:1460
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "Allinea il payload agli estremi del settore <n> - per luksFormat"
 
-#: src/cryptsetup.c:1390
+#: src/cryptsetup.c:1461
 msgid "File with LUKS header and keyslots backup."
 msgstr "File con header LUKS e backup degli slot di chiave."
 
-#: src/cryptsetup.c:1391 src/cryptsetup_reencrypt.c:1130
+#: src/cryptsetup.c:1462 src/cryptsetup_reencrypt.c:1162
 msgid "Use /dev/random for generating volume key."
 msgstr "Usa /dev/random per generare la chiave di volume."
 
-#: src/cryptsetup.c:1392 src/cryptsetup_reencrypt.c:1131
+#: src/cryptsetup.c:1463 src/cryptsetup_reencrypt.c:1163
 msgid "Use /dev/urandom for generating volume key."
 msgstr "Usa /dev/urandom per generare la chiave di volume."
 
-#: src/cryptsetup.c:1393
+#: src/cryptsetup.c:1464
 msgid "Share device with another non-overlapping crypt segment."
 msgstr "Condivide il device con un altro segmento cifrato non sovrapposto."
 
-#: src/cryptsetup.c:1394 src/veritysetup.c:384
+#: src/cryptsetup.c:1465 src/veritysetup.c:385
 msgid "UUID for device to use."
 msgstr "UUID da usare per il device."
 
-#: src/cryptsetup.c:1395
+#: src/cryptsetup.c:1466
 msgid "Allow discards (aka TRIM) requests for device."
 msgstr "Ammette le richieste di scarto (funzione TRIM) per il device."
 
-#: src/cryptsetup.c:1396
+#: src/cryptsetup.c:1467
 msgid "Device or file with separated LUKS header."
 msgstr "Device o file con header LUKS separato."
 
-#: src/cryptsetup.c:1397
+#: src/cryptsetup.c:1468
 msgid "Do not activate device, just check passphrase."
 msgstr "Non attiva il device, verifica solamente la passphrase"
 
-#: src/cryptsetup.c:1398
+#: src/cryptsetup.c:1469
 msgid "Use hidden header (hidden TCRYPT device)."
 msgstr "Usa header nascosto (device TCRYPT nascosto)"
 
-#: src/cryptsetup.c:1399
+#: src/cryptsetup.c:1470
 msgid "Device is system TCRYPT drive (with bootloader)."
 msgstr "Il device è l'unità TCYPT di sistema (con bootloader)"
 
-#: src/cryptsetup.c:1400
+#: src/cryptsetup.c:1471
 msgid "Use backup (secondary) TCRYPT header."
 msgstr "Usa header TCRYPT di backup (secondario)"
 
-#: src/cryptsetup.c:1401
+#: src/cryptsetup.c:1472
 msgid "Type of device metadata: luks, plain, loopaes, tcrypt."
 msgstr "Meta-dati del tipo di device: luks, plain, loopaes, tcrypt"
 
-#: src/cryptsetup.c:1402
+#: src/cryptsetup.c:1473
 msgid "Disable password quality check (if enabled)."
 msgstr "Disabilita la verifica della qualità della password (se abilitata)"
 
-#: src/cryptsetup.c:1417
+#: src/cryptsetup.c:1488
 msgid "Running in FIPS mode.\n"
 msgstr "Esecuzione in modalità FIPS.\n"
 
-#: src/cryptsetup.c:1421 src/veritysetup.c:401
+#: src/cryptsetup.c:1492 src/veritysetup.c:402
 msgid "[OPTION...] <action> <action-specific>"
 msgstr "[OPZIONE...] <azione> <azione-specifica>]"
 
-#: src/cryptsetup.c:1467 src/veritysetup.c:438
+#: src/cryptsetup.c:1538 src/veritysetup.c:439
 msgid "Argument <action> missing."
 msgstr "Argomento <azione> mancante."
 
-#: src/cryptsetup.c:1515 src/veritysetup.c:444
+#: src/cryptsetup.c:1589 src/veritysetup.c:445
 msgid "Unknown action."
 msgstr "Azione sconosciuta."
 
-#: src/cryptsetup.c:1525
+#: src/cryptsetup.c:1599
 msgid "Option --shared is allowed only for open of plain device.\n"
 msgstr "L'opzione --shared è consentita solo per l'azione open di device plain.\n"
 
-#: src/cryptsetup.c:1530
+#: src/cryptsetup.c:1604
 msgid "Option --allow-discards is allowed only for open operation.\n"
 msgstr "L'opzione --allow-discards è consentita solo per l'azione open.\n"
 
-#: src/cryptsetup.c:1538
+#: src/cryptsetup.c:1612
 msgid ""
 "Option --key-size is allowed only for luksFormat, open and benchmark.\n"
 "To limit read from keyfile use --keyfile-size=(bytes)."
@@ -1296,109 +1308,113 @@ msgstr ""
 "L'opzione --key-size è consentita solo per luksFormat, open e benchmark.\n"
 "Per limitare la lettura dal file chiave usare --keyfile-size=(byte)."
 
-#: src/cryptsetup.c:1545
+#: src/cryptsetup.c:1619
 msgid "Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"
 msgstr "L'opzione --test-passphrase è consentita solo per l'operazione open di device LUKS e TCRYPT.\n"
 
-#: src/cryptsetup.c:1550 src/cryptsetup_reencrypt.c:1199
+#: src/cryptsetup.c:1624 src/cryptsetup_reencrypt.c:1231
 msgid "Key size must be a multiple of 8 bits"
 msgstr "La dimensione della chiave deve essere un multiplo di 8 bit"
 
-#: src/cryptsetup.c:1557 src/cryptsetup_reencrypt.c:1204
+#: src/cryptsetup.c:1631 src/cryptsetup_reencrypt.c:1236
 msgid "Key slot is invalid."
 msgstr "Lo slot di chiave non è valido."
 
-#: src/cryptsetup.c:1564
+#: src/cryptsetup.c:1638
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "L'opzione --key-file ha la precedenza sull'argomento specificato per il file chiave.\n"
 
-#: src/cryptsetup.c:1572 src/veritysetup.c:466 src/cryptsetup_reencrypt.c:1188
+#: src/cryptsetup.c:1646 src/veritysetup.c:467 src/cryptsetup_reencrypt.c:1220
 msgid "Negative number for option not permitted."
 msgstr "Non è ammesso un numero negativo per l'opzione."
 
-#: src/cryptsetup.c:1576 src/cryptsetup_reencrypt.c:1182
-#: src/cryptsetup_reencrypt.c:1208
+#: src/cryptsetup.c:1650 src/cryptsetup_reencrypt.c:1214
+#: src/cryptsetup_reencrypt.c:1240
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "È consentita solo una tra le opzioni --use-[u]random."
 
-#: src/cryptsetup.c:1580
+#: src/cryptsetup.c:1654
 msgid "Option --use-[u]random is allowed only for luksFormat."
 msgstr "L'opzione --use-[u]random è consentita solo per luksFormat."
 
-#: src/cryptsetup.c:1584
+#: src/cryptsetup.c:1658
 msgid "Option --uuid is allowed only for luksFormat and luksUUID."
 msgstr "L'opzione --uuid è consentita solo per luksFormat e luksUUID."
 
-#: src/cryptsetup.c:1588
+#: src/cryptsetup.c:1662
 msgid "Option --align-payload is allowed only for luksFormat."
 msgstr "L'opzione --align-payload è consentita solo per luksFormat."
 
-#: src/cryptsetup.c:1594
+#: src/cryptsetup.c:1668
 msgid "Option --skip is supported only for open of plain and loopaes devices.\n"
 msgstr "L'opzione --skip è supportata solo per l'azione open di device plain a loopaes.\n"
 
-#: src/cryptsetup.c:1600
+#: src/cryptsetup.c:1674
 msgid "Option --offset is supported only for open of plain and loopaes devices.\n"
 msgstr "L'opzione --offset è supportata solo per l'azione open di device plain e loopaes.\n"
 
-#: src/cryptsetup.c:1606
+#: src/cryptsetup.c:1680
 msgid "Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"
 msgstr "L'opzione --tcrypt-hidden, --tcrypt-system o --tcrypt-backup è supportata solo per device TCRYPT.\n"
 
-#: src/veritysetup.c:57
+#: src/cryptsetup.c:1685
+msgid "Option --tcrypt-hidden cannot be combined with --allow-discards.\n"
+msgstr "L'opzione --tcrypt-hidden non può essere utilizzata con --allow-discards.\n"
+
+#: src/veritysetup.c:58
 msgid "Invalid salt string specified.\n"
 msgstr "String salt specificata non valida.\n"
 
-#: src/veritysetup.c:87
+#: src/veritysetup.c:88
 #, c-format
 msgid "Cannot create hash image %s for writing.\n"
 msgstr "Impossibile creare l'immagine hash %s per la scrittura.\n"
 
-#: src/veritysetup.c:147
+#: src/veritysetup.c:148
 msgid "Invalid root hash string specified.\n"
 msgstr "Stringa hash principale specificata non valida.\n"
 
-#: src/veritysetup.c:307
+#: src/veritysetup.c:308
 msgid "<data_device> <hash_device>"
 msgstr "<device_dati> <device_hash>"
 
-#: src/veritysetup.c:307
+#: src/veritysetup.c:308
 msgid "format device"
 msgstr "Formatta il device"
 
-#: src/veritysetup.c:308
+#: src/veritysetup.c:309
 msgid "<data_device> <hash_device> <root_hash>"
 msgstr "<device_dati> <device_hash> <hash_root>"
 
-#: src/veritysetup.c:308
+#: src/veritysetup.c:309
 msgid "verify device"
 msgstr "Verifica il device"
 
-#: src/veritysetup.c:309
+#: src/veritysetup.c:310
 msgid "<name> <data_device> <hash_device> <root_hash>"
 msgstr "<nome> <device_dati> <device_hash> <hash_root>"
 
-#: src/veritysetup.c:309
+#: src/veritysetup.c:310
 msgid "create active device"
 msgstr "Crea device attivo"
 
-#: src/veritysetup.c:310
+#: src/veritysetup.c:311
 msgid "remove (deactivate) device"
 msgstr "Rimuove (disattiva) device"
 
-#: src/veritysetup.c:311
+#: src/veritysetup.c:312
 msgid "show active device status"
 msgstr "Mostra lo stato del device attivo"
 
-#: src/veritysetup.c:312
+#: src/veritysetup.c:313
 msgid "<hash_device>"
 msgstr "<device_hash>"
 
-#: src/veritysetup.c:312
+#: src/veritysetup.c:313
 msgid "show on-disk information"
 msgstr "Mostra informazioni on-disk"
 
-#: src/veritysetup.c:331
+#: src/veritysetup.c:332
 #, c-format
 msgid ""
 "\n"
@@ -1413,7 +1429,7 @@ msgstr ""
 "<device_hash> è il device che contiene i dati di verifica\n"
 "<hash_root> è l'hash del nodo radice nel <device_hash>\n"
 
-#: src/veritysetup.c:338
+#: src/veritysetup.c:339
 #, c-format
 msgid ""
 "\n"
@@ -1424,261 +1440,269 @@ msgstr ""
 "Parametri predefiniti compilati in dm-verity:\n"
 "\tHash: %s, Blocco dati (byte): %u, Blocco hash (byte): %u, Dimensione salt: %u, Formato hash: %u\n"
 
-#: src/veritysetup.c:376
+#: src/veritysetup.c:377
 msgid "Do not use verity superblock"
 msgstr "Non usa il super-blocco verity"
 
-#: src/veritysetup.c:377
+#: src/veritysetup.c:378
 msgid "Format type (1 - normal, 0 - original Chrome OS)"
 msgstr "Tipo di formato (1 - normale, 0 - ChromeOS originale)"
 
-#: src/veritysetup.c:377
+#: src/veritysetup.c:378
 msgid "number"
 msgstr "numero"
 
-#: src/veritysetup.c:378
+#: src/veritysetup.c:379
 msgid "Block size on the data device"
 msgstr "La dimensione del blocco sul device dati"
 
-#: src/veritysetup.c:379
+#: src/veritysetup.c:380
 msgid "Block size on the hash device"
 msgstr "La dimensione del blocco sul device hash"
 
-#: src/veritysetup.c:380
+#: src/veritysetup.c:381
 msgid "The number of blocks in the data file"
 msgstr "Il numero di blocchi nel file dati"
 
-#: src/veritysetup.c:380
+#: src/veritysetup.c:381
 msgid "blocks"
 msgstr "blocchi"
 
-#: src/veritysetup.c:381
+#: src/veritysetup.c:382
 msgid "Starting offset on the hash device"
 msgstr "L'offset iniziale del device di hash"
 
-#: src/veritysetup.c:382
+#: src/veritysetup.c:383
 msgid "Hash algorithm"
 msgstr "Algoritmo di hash"
 
-#: src/veritysetup.c:382
+#: src/veritysetup.c:383
 msgid "string"
 msgstr "stringa"
 
-#: src/veritysetup.c:383
+#: src/veritysetup.c:384
 msgid "Salt"
 msgstr "Salt"
 
-#: src/veritysetup.c:383
+#: src/veritysetup.c:384
 msgid "hex string"
 msgstr "stringa esadecimale"
 
-#: src/cryptsetup_reencrypt.c:136
+#: src/cryptsetup_reencrypt.c:144
 #, c-format
 msgid "Cannot exclusively open %s, device in use.\n"
 msgstr "Impossibile aprire esclusivamente il device %s, già in uso.\n"
 
-#: src/cryptsetup_reencrypt.c:140
+#: src/cryptsetup_reencrypt.c:148
 #, c-format
 msgid "Cannot open device %s\n"
 msgstr "Impossibile aprire il device %s\n"
 
-#: src/cryptsetup_reencrypt.c:150 src/cryptsetup_reencrypt.c:367
-#: src/cryptsetup_reencrypt.c:786
+#: src/cryptsetup_reencrypt.c:158 src/cryptsetup_reencrypt.c:375
+#: src/cryptsetup_reencrypt.c:813
 msgid "Allocation of aligned memory failed.\n"
 msgstr "Allocazione di memoria allineata non riuscita.\n"
 
-#: src/cryptsetup_reencrypt.c:157
+#: src/cryptsetup_reencrypt.c:165
 #, c-format
 msgid "Cannot read device %s.\n"
 msgstr "Impossibile leggere il device %s.\n"
 
-#: src/cryptsetup_reencrypt.c:168
+#: src/cryptsetup_reencrypt.c:176
 #, c-format
 msgid "Marking LUKS device %s unusable.\n"
 msgstr "Impostazione device LUCKS %s come inutilizzabile.\n"
 
-#: src/cryptsetup_reencrypt.c:173
+#: src/cryptsetup_reencrypt.c:181
 #, c-format
 msgid "Marking LUKS device %s usable.\n"
 msgstr "Impostazione device LUCKS %s come utilizzabile.\n"
 
-#: src/cryptsetup_reencrypt.c:189
+#: src/cryptsetup_reencrypt.c:197
 #, c-format
 msgid "Cannot write device %s.\n"
 msgstr "Impossibile scrivere il device %s.\n"
 
-#: src/cryptsetup_reencrypt.c:270
+#: src/cryptsetup_reencrypt.c:278
 msgid "Cannot write reencryption log file.\n"
 msgstr "Impossibile scrivere il file di registro di re-cifratura.\n"
 
-#: src/cryptsetup_reencrypt.c:319
+#: src/cryptsetup_reencrypt.c:327
 msgid "Cannot read reencryption log file.\n"
 msgstr "Impossibile leggere il file di registro di re-cifratura.\n"
 
-#: src/cryptsetup_reencrypt.c:358
+#: src/cryptsetup_reencrypt.c:366
 #, c-format
 msgid "Log file %s exists, resuming reencryption.\n"
 msgstr "Il file di registro %s esiste, viene ripristinata la re-cifratura.\n"
 
-#: src/cryptsetup_reencrypt.c:393
+#: src/cryptsetup_reencrypt.c:401
 msgid "Activating temporary device using old LUKS header.\n"
 msgstr "Attivazione device temporaneo usando il vecchio header LUKS.\n"
 
-#: src/cryptsetup_reencrypt.c:404
+#: src/cryptsetup_reencrypt.c:412
 msgid "Activating temporary device using new LUKS header.\n"
 msgstr "Attivazione device temporaneo usando il nuovo header LUKS.\n"
 
-#: src/cryptsetup_reencrypt.c:414
+#: src/cryptsetup_reencrypt.c:422
 msgid "Activation of temporary devices failed.\n"
 msgstr "Attivazione del device temporaneo non riuscita.\n"
 
-#: src/cryptsetup_reencrypt.c:439
+#: src/cryptsetup_reencrypt.c:448
 #, c-format
 msgid "New LUKS header for device %s created.\n"
 msgstr "Non è stato creato alcun header LUKS per il device %s.\n"
 
-#: src/cryptsetup_reencrypt.c:447
+#: src/cryptsetup_reencrypt.c:456
 #, c-format
 msgid "Activated keyslot %i.\n"
 msgstr "Slot di chiave %i attivato.\n"
 
-#: src/cryptsetup_reencrypt.c:471
+#: src/cryptsetup_reencrypt.c:482
 #, c-format
 msgid "LUKS header backup of device %s created.\n"
 msgstr "Header LUKS di backup del device %s creato.\n"
 
-#: src/cryptsetup_reencrypt.c:499
+#: src/cryptsetup_reencrypt.c:526
 msgid "Creation of LUKS backup headers failed.\n"
 msgstr "Creazione degli header di backup LUKS non riuscita.\n"
 
-#: src/cryptsetup_reencrypt.c:594
+#: src/cryptsetup_reencrypt.c:621
 #, c-format
 msgid "Cannot restore LUKS header on device %s.\n"
 msgstr "Impossibile ripristinare l'header LUKS sul device %s.\n"
 
-#: src/cryptsetup_reencrypt.c:596
+#: src/cryptsetup_reencrypt.c:623
 #, c-format
 msgid "LUKS header on device %s restored.\n"
 msgstr "Ripristinato l'header LUKS sul device %s.\n"
 
-#: src/cryptsetup_reencrypt.c:629
+#: src/cryptsetup_reencrypt.c:656
 #, c-format
 msgid "Progress: %5.1f%%, ETA %02llu:%02llu, %4llu MiB written, speed %5.1f MiB/s%s"
 msgstr "Avanzamento: %5.1f%%, ETA %02llu:%02llu, %4llu MiB scritti, velocità %5.1f MiB/s%s"
 
-#: src/cryptsetup_reencrypt.c:645 src/cryptsetup_reencrypt.c:721
+#: src/cryptsetup_reencrypt.c:672 src/cryptsetup_reencrypt.c:748
 msgid "Cannot seek to device offset.\n"
 msgstr "Impossibile posizionarsi all'offset del device.\n"
 
-#: src/cryptsetup_reencrypt.c:767 src/cryptsetup_reencrypt.c:773
+#: src/cryptsetup_reencrypt.c:794 src/cryptsetup_reencrypt.c:800
 msgid "Cannot open temporary LUKS header file.\n"
 msgstr "Impossibile aprire il file temporaneo dell'header LUKS.\n"
 
-#: src/cryptsetup_reencrypt.c:779
+#: src/cryptsetup_reencrypt.c:806
 msgid "Cannot get device size.\n"
 msgstr "Impossibile ottenere la dimensione del device.\n"
 
-#: src/cryptsetup_reencrypt.c:803
+#: src/cryptsetup_reencrypt.c:830
 msgid "Interrupted by a signal.\n"
 msgstr "Interrotto dal segnale.\n"
 
-#: src/cryptsetup_reencrypt.c:805
+#: src/cryptsetup_reencrypt.c:832
 msgid "IO error during reencryption.\n"
 msgstr "Errore di IO durante la re-cifratura.\n"
 
-#: src/cryptsetup_reencrypt.c:912
+#: src/cryptsetup_reencrypt.c:939
 msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
 msgstr "Il file chiave può essere usato solamente con --key-slot o con esattamente uno slot di chiave attivo.\n"
 
-#: src/cryptsetup_reencrypt.c:956 src/cryptsetup_reencrypt.c:969
+#: src/cryptsetup_reencrypt.c:983 src/cryptsetup_reencrypt.c:996
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr "Inserire la passphrase per lo slot di chiave %u: "
 
-#: src/cryptsetup_reencrypt.c:1018
+#: src/cryptsetup_reencrypt.c:1045
 msgid "Cannot open reencryption log file.\n"
 msgstr "Impossibile aprire il file di registro di re-cifratura.\n"
 
-#: src/cryptsetup_reencrypt.c:1122
+#: src/cryptsetup_reencrypt.c:1153
 msgid "Reencryption block size"
 msgstr "Dimensione blocco re-cifratura"
 
-#: src/cryptsetup_reencrypt.c:1122
+#: src/cryptsetup_reencrypt.c:1153
 msgid "MiB"
 msgstr "MiB"
 
-#: src/cryptsetup_reencrypt.c:1132
+#: src/cryptsetup_reencrypt.c:1157
+msgid "Do not change key, no data area reencryption."
+msgstr "Non cambia chiave, nessun re-cifratura dei dati."
+
+#: src/cryptsetup_reencrypt.c:1164
 msgid "Use direct-io when accesing devices."
 msgstr "Usa IO diretto negli accessi ai device"
 
-#: src/cryptsetup_reencrypt.c:1133
+#: src/cryptsetup_reencrypt.c:1165
 msgid "Use fsync after each block."
 msgstr "Usa fsync dopo ogni blocco"
 
-#: src/cryptsetup_reencrypt.c:1134
+#: src/cryptsetup_reencrypt.c:1166
 msgid "Update log file after every block."
 msgstr "Aggiora il registro a ogni blocco"
 
-#: src/cryptsetup_reencrypt.c:1135
+#: src/cryptsetup_reencrypt.c:1167
 msgid "Use only this slot (others will be disabled)."
 msgstr "Usa solo questo slot (gli altri vengono disabilitati)"
 
-#: src/cryptsetup_reencrypt.c:1138
+#: src/cryptsetup_reencrypt.c:1170
 msgid "Reduce data device size (move data offset). DANGEROUS!"
 msgstr "Riduce la dimensione dei dati del device (muove l'offset dei dati) PERICOLOSO"
 
-#: src/cryptsetup_reencrypt.c:1139
+#: src/cryptsetup_reencrypt.c:1171
 msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
 msgstr "Usa solo la dimensione specificata del device (ignora il resto del device) PERICOLOSO"
 
-#: src/cryptsetup_reencrypt.c:1140
+#: src/cryptsetup_reencrypt.c:1172
 msgid "Create new header on not encrypted device."
 msgstr "Crea un nuovo header su un device non cifrato"
 
-#: src/cryptsetup_reencrypt.c:1156
+#: src/cryptsetup_reencrypt.c:1188
 msgid "[OPTION...] <device>"
 msgstr "[OPZIONI...] <device>"
 
-#: src/cryptsetup_reencrypt.c:1170
+#: src/cryptsetup_reencrypt.c:1202
 msgid "WARNING: this is experimental code, it can completely break your data.\n"
 msgstr "Attenzione: questo è codice sperimentale, potrebbe danneggiare i propri dati.\n"
 
-#: src/cryptsetup_reencrypt.c:1171
+#: src/cryptsetup_reencrypt.c:1203
 #, c-format
 msgid "Reencryption will change: volume key%s%s%s%s.\n"
 msgstr "La re-cifratura modificherà: chiave del volume%s%s%s%s.\n"
 
-#: src/cryptsetup_reencrypt.c:1172
+#: src/cryptsetup_reencrypt.c:1204
 msgid ", set hash to "
 msgstr ", imposta l'hash a "
 
-#: src/cryptsetup_reencrypt.c:1173
+#: src/cryptsetup_reencrypt.c:1205
 msgid ", set cipher to "
 msgstr ", imposta il cifrario a "
 
-#: src/cryptsetup_reencrypt.c:1178
+#: src/cryptsetup_reencrypt.c:1210
 msgid "Argument required."
 msgstr "Argomento richiesto."
 
-#: src/cryptsetup_reencrypt.c:1194
+#: src/cryptsetup_reencrypt.c:1226
 msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
 msgstr "Solo valori tra 1 MiB e 64 MiB sono consentiti per la dimensione del blocco di re-cifratura."
 
-#: src/cryptsetup_reencrypt.c:1213 src/cryptsetup_reencrypt.c:1218
+#: src/cryptsetup_reencrypt.c:1245 src/cryptsetup_reencrypt.c:1250
 msgid "Invalid device size specification."
 msgstr "Specifica di dimensione del device non valida."
 
-#: src/cryptsetup_reencrypt.c:1221
+#: src/cryptsetup_reencrypt.c:1253
 msgid "Maximum device reduce size is 64 MiB."
 msgstr "La dimensione massima di riduzione del device è 64 MiB."
 
-#: src/cryptsetup_reencrypt.c:1224
+#: src/cryptsetup_reencrypt.c:1256
 msgid "Reduce size must be multiple of 512 bytes sector."
 msgstr "La dimensione di riduzione deve essere un multiplo di 512 byte."
 
-#: src/cryptsetup_reencrypt.c:1228
+#: src/cryptsetup_reencrypt.c:1260
 msgid "Option --new must be used together with --reduce-device-size."
 msgstr "L'opzione --new deve essere usata con --reduce-device-size."
+
+#: src/cryptsetup_reencrypt.c:1264
+msgid "Option --keep-key can be used only with --hash or --iter-time."
+msgstr "L'opzione --keep-key può essere usata solo con --hash o --iter-time."
 
 #: src/utils_tools.c:150
 msgid "Error reading response from terminal.\n"
@@ -1706,3 +1730,6 @@ msgid ""
 msgstr ""
 "Controllo qualità della password non riuscito:\n"
 " %s\n"
+
+#~ msgid "WARNING: device %s is a partition, for TCRYPT system encryption you usually need to use whole block device path.\n"
+#~ msgstr "Attenzione: il device %s è una partizione. Per il sistema di cifratura TCRYPT solitamente è necessario usare il percorso intero del device a blocchi.\n"

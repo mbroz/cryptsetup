@@ -1,11 +1,7 @@
 # German translation for the cryptsetup package.
 # Copyright (C) 2010 Free Software Foundation, Inc.
 # This file is distributed under the same license as the cryptsetup package.
-# Roland Illig <roland.illig@gmx.de>, 2010.
-# Roland Illig <roland.illig@gmx.de>, 2011.
-# Roland Illig <roland.illig@gmx.de>, 2012.
-# Roland Illig <roland.illig@gmx.de>, 2013.
-# Roland Illig <roland.illig@gmx.de>, 2014.
+# Roland Illig <roland.illig@gmx.de>, 2010-2014.
 #
 msgid ""
 msgstr ""
@@ -24,16 +20,16 @@ msgstr ""
 
 #: lib/libdevmapper.c:260
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
-msgstr "Kann die Gerätezuordnung nicht initialisieren, da das Programm nicht mit Root-Rechten läuft.\n"
+msgstr "Kann Kernelmodul »device-mapper« nicht initialisieren, da das Programm nicht mit Root-Rechten läuft.\n"
 
 #: lib/libdevmapper.c:263
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
-msgstr "Kann die Gerätezuordnung nicht initialisieren. Ist das Kernelmodul dm_mod geladen?\n"
+msgstr "Kann Kernelmodul »device-mapper« nicht initialisieren. Ist das Kernelmodul »dm_mod« geladen?\n"
 
 #: lib/libdevmapper.c:551
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
-msgstr "DM-UUID für Gerät %s wurde abgeschnitten.\n"
+msgstr "DM-UUID für Gerät »%s« wurde abgeschnitten.\n"
 
 #: lib/random.c:76
 msgid ""
@@ -72,7 +68,7 @@ msgstr "Kann das Krypto-Backend nicht initialisieren.\n"
 #: lib/setup.c:217 lib/setup.c:1129 lib/verity/verity.c:123
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
-msgstr "Hash-Algorithmus %s wird nicht unterstützt.\n"
+msgstr "Hash-Algorithmus »%s« wird nicht unterstützt.\n"
 
 #: lib/setup.c:220 lib/loopaes/loopaes.c:90
 #, c-format
@@ -104,12 +100,12 @@ msgstr "Schlüsselfach %d ist voll, bitte wählen Sie ein anderes.\n"
 #: lib/setup.c:405
 #, c-format
 msgid "Enter passphrase for %s: "
-msgstr "Geben Sie die Passphrase für %s ein: "
+msgstr "Geben Sie die Passphrase für »%s« ein: "
 
 #: lib/setup.c:586
 #, c-format
 msgid "Header detected but device %s is too small.\n"
-msgstr "Header gefunden, aber Gerät %s ist zu klein.\n"
+msgstr "Header gefunden, aber Gerät »%s« ist zu klein.\n"
 
 #: lib/setup.c:602 lib/setup.c:1356
 msgid "This operation is not supported for this device type.\n"
@@ -118,12 +114,12 @@ msgstr "Diese Operation wird für diese Geräteart nicht unterstützt.\n"
 #: lib/setup.c:844 lib/setup.c:1317 lib/setup.c:2182
 #, c-format
 msgid "Device %s is not active.\n"
-msgstr "Gerät %s ist nicht aktiv.\n"
+msgstr "Gerät »%s« ist nicht aktiv.\n"
 
 #: lib/setup.c:861
 #, c-format
 msgid "Underlying device for crypt device %s disappeared.\n"
-msgstr "Zugrundeliegendes Gerät für das Kryptogerät %s ist verschwunden.\n"
+msgstr "Zugrundeliegendes Gerät für das Kryptogerät »%s« ist verschwunden.\n"
 
 #: lib/setup.c:926
 msgid "Invalid plain crypt parameters.\n"
@@ -144,17 +140,17 @@ msgstr "Ohne Gerät kann LUKS nicht formatiert werden.\n"
 #: lib/setup.c:1026
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
-msgstr "Kann Gerät %s nicht formatieren, da es gerade benutzt wird.\n"
+msgstr "Kann Gerät »%s« nicht formatieren, da es gerade benutzt wird.\n"
 
 #: lib/setup.c:1029
 #, c-format
 msgid "Cannot format device %s, permission denied.\n"
-msgstr "Kann Gerät %s nicht formatieren, Zugriff verweigert.\n"
+msgstr "Kann Gerät »%s« nicht formatieren, Zugriff verweigert.\n"
 
 #: lib/setup.c:1033
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
-msgstr "Kann den Header auf Gerät %s nicht auslöschen.\n"
+msgstr "Kann den Header auf Gerät »%s« nicht auslöschen.\n"
 
 #: lib/setup.c:1051
 msgid "Can't format LOOPAES without device.\n"
@@ -180,7 +176,7 @@ msgstr "Nicht unterstützter VERITY-Hash-Offset.\n"
 #: lib/setup.c:1220
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
-msgstr "Unbekannte Art des Verschlüsselungsgeräts %s verlangt.\n"
+msgstr "Unbekannte Art des Verschlüsselungsgeräts »%s« verlangt.\n"
 
 #: lib/setup.c:1371
 msgid "Do you really want to change UUID of device?"
@@ -287,7 +283,7 @@ msgstr "Geräteart ist nicht richtig initialisiert.\n"
 #: lib/setup.c:2177
 #, c-format
 msgid "Device %s is still in use.\n"
-msgstr "Gerät %s wird gerade benutzt.\n"
+msgstr "Gerät »%s« wird gerade benutzt.\n"
 
 #: lib/setup.c:2186
 #, c-format
@@ -559,7 +555,7 @@ msgstr "Nicht unterstützte LUKS-Version %d.\n"
 #: lib/luks1/keymanage.c:427 lib/luks1/keymanage.c:654
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
-msgstr "Verlangter LUKS-Hash %s wird nicht unterstützt.\n"
+msgstr "Verlangter LUKS-Hash »%s« wird nicht unterstützt.\n"
 
 #: lib/luks1/keymanage.c:442
 #, c-format
@@ -1736,10 +1732,4 @@ msgid ""
 " %s\n"
 msgstr ""
 "Passwort-Qualitätsüberprüfung fehlgeschlagen:\n"
-"%s\n"
-
-#~ msgid "WARNING: device %s is a partition, for TCRYPT system encryption you usually need to use whole block device path.\n"
-#~ msgstr "WARNUNG: Gerät »%s« ist eine Partition, für TCRYPT-Systemverschlüsselung müssen Sie normalerweise ein komplettes Gerät auswählen.\n"
-
-#~ msgid "Kernel doesn't support plain64 IV.\n"
-#~ msgstr "Kernel unterstützt den plain64-IV nicht.\n"
+" %s\n"
