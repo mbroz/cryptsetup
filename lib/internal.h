@@ -105,7 +105,7 @@ ssize_t write_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t 
 unsigned crypt_getpagesize(void);
 int init_crypto(struct crypt_device *ctx);
 
-void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...);
+void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...) __attribute__ ((format (printf, 5, 6)));
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
 #define log_verbose(c, x...) logger(c, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
