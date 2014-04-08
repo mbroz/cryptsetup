@@ -571,10 +571,10 @@ static int action_benchmark(void)
 			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
 				 bciphers[i].cipher, bciphers[i].mode);
 			if (!r)
-				log_std("%12s  %4db  %6.1f MiB/s  %6.1f MiB/s\n",
+				log_std("%12s  %4zub  %6.1f MiB/s  %6.1f MiB/s\n",
 					cipher, bciphers[i].key_size*8, enc_mbr, dec_mbr);
 			else
-				log_std("%12s  %4db %13s %13s\n", cipher,
+				log_std("%12s  %4zub %13s %13s\n", cipher,
 					bciphers[i].key_size*8, _("N/A"), _("N/A"));
 		}
 		if (skipped && skipped == i)

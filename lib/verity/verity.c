@@ -63,11 +63,11 @@ int VERITY_read_sb(struct crypt_device *cd,
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int devfd = 0, sb_version;
 
-	log_dbg("Reading VERITY header of size %u on device %s, offset %" PRIu64 ".",
+	log_dbg("Reading VERITY header of size %lu on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
-		log_err(cd, _("Verity device doesn't use on-disk header.\n"),
+		log_err(cd, _("Verity device %s doesn't use on-disk header.\n"),
 			device_path(device));
 		return -EINVAL;
 	}
@@ -159,17 +159,17 @@ int VERITY_write_sb(struct crypt_device *cd,
 	uuid_t uuid;
 	int r, devfd = 0;
 
-	log_dbg("Updating VERITY header of size %u on device %s, offset %" PRIu64 ".",
+	log_dbg("Updating VERITY header of size %lu on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (!uuid_string || uuid_parse(uuid_string, uuid) == -1) {
-		log_err(cd, _("Wrong VERITY UUID format provided.\n"),
+		log_err(cd, _("Wrong VERITY UUID format provided on device %s. \n"),
 			device_path(device));
 		return -EINVAL;
 	}
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
-		log_err(cd, _("Verity device doesn't use on-disk header.\n"),
+		log_err(cd, _("Verity device %s doesn't use on-disk header.\n"),
 			device_path(device));
 		return -EINVAL;
 	}

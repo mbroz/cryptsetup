@@ -137,7 +137,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 	unsigned int key_lengths[LOOPAES_KEYS_MAX];
 	unsigned int i, key_index, key_len, offset;
 
-	log_dbg("Parsing loop-AES keyfile of size %d.", buffer_len);
+	log_dbg("Parsing loop-AES keyfile of size %zu.", buffer_len);
 
 	if (!buffer_len)
 		return -EINVAL;

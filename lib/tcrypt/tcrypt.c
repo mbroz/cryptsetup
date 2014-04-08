@@ -558,7 +558,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			", volume size %" PRIu64, (int)hdr->d.version,
 			(int)hdr->d.version_tc, (int)hdr->d.sector_size,
 			hdr->d.mk_offset, hdr->d.hidden_volume_size, hdr->d.volume_size);
-		log_dbg("TCRYPT: Header cipher %s-%s, key size %d",
+		log_dbg("TCRYPT: Header cipher %s-%s, key size %zu",
 			params->cipher, params->mode, params->key_size);
 	}
 out:
@@ -580,7 +580,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 
 	assert(sizeof(struct tcrypt_phdr) == 512);
 
-	log_dbg("Reading TCRYPT header of size %d bytes from device %s.",
+	log_dbg("Reading TCRYPT header of size %zu bytes from device %s.",
 		hdr_size, device_path(device));
 
 	bs = device_block_size(device);
@@ -1038,6 +1038,6 @@ int TCRYPT_dump(struct crypt_device *cd,
 	}
 	log_std(cd, "Cipher chain:\t%s\n", params->cipher);
 	log_std(cd, "Cipher mode:\t%s\n", params->mode);
-	log_std(cd, "MK bits:       \t%d\n", params->key_size * 8);
+	log_std(cd, "MK bits:       \t%zu\n", params->key_size * 8);
 	return 0;
 }
