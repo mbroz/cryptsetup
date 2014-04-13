@@ -2,7 +2,7 @@
  * Linux kernel userspace API crypto backend implementation
  *
  * Copyright (C) 2010-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2012, Milan Broz
+ * Copyright (C) 2010-2014, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,15 +44,16 @@ struct hash_alg {
 	const char *name;
 	const char *kernel_name;
 	int length;
+	unsigned int block_length;
 };
 
 static struct hash_alg hash_algs[] = {
-	{ "sha1", "sha1", 20 },
-	{ "sha256", "sha256", 32 },
-	{ "sha512", "sha512", 64 },
-	{ "ripemd160", "rmd160", 20 },
-	{ "whirlpool", "wp512", 64 },
-	{ NULL, NULL, 0 }
+	{ "sha1",      "sha1",   20,  64 },
+	{ "sha256",    "sha256", 32,  64 },
+	{ "sha512",    "sha512", 64, 128 },
+	{ "ripemd160", "rmd160", 20,  64 },
+	{ "whirlpool", "wp512",  64,  64 },
+	{ NULL,        NULL,      0,   0 }
 };
 
 struct crypt_hash {
@@ -289,9 +290,11 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		char *key, size_t key_length,
 		unsigned int iterations)
 {
-	if (!kdf || strncmp(kdf, "pbkdf2", 6))
+	struct hash_alg *ha = _get_alg(hash);
+
+	if (!ha || !kdf || strncmp(kdf, "pbkdf2", 6))
 		return -EINVAL;
 
 	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
-			    iterations, key_length, key);
+			    iterations, key_length, key, ha->block_length);
 }

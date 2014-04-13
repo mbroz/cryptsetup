@@ -2,7 +2,7 @@
  * GCRYPT crypto backend implementation
  *
  * Copyright (C) 2010-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2012, Milan Broz
+ * Copyright (C) 2010-2014, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -331,7 +331,7 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		return -EINVAL;
 
 	return pkcs5_pbkdf2(hash_name, password, password_length, salt, salt_length,
-			    iterations, key_length, key);
+			    iterations, key_length, key, 0);
 
 #else /* USE_INTERNAL_PBKDF2 */
 	int hash_id = gcry_md_map_name(hash_name);

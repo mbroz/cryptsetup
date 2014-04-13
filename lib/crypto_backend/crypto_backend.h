@@ -2,7 +2,7 @@
  * crypto backend implementation
  *
  * Copyright (C) 2010-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2012, Milan Broz
+ * Copyright (C) 2010-2014, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -72,7 +72,8 @@ int pkcs5_pbkdf2(const char *hash,
 		 const char *P, size_t Plen,
 		 const char *S, size_t Slen,
 		 unsigned int c,
-		 unsigned int dkLen,char *DK);
+		 unsigned int dkLen, char *DK,
+		 unsigned int hash_block_size);
 #endif
 
 /* CRC32 */

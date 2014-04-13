@@ -2,7 +2,7 @@
  * NSS crypto backend implementation
  *
  * Copyright (C) 2010-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2012, Milan Broz
+ * Copyright (C) 2010-2014, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,14 +35,15 @@ struct hash_alg {
 	SECOidTag oid;
 	CK_MECHANISM_TYPE ck_type;
 	int length;
+	unsigned int block_length;
 };
 
 static struct hash_alg hash_algs[] = {
-	{ "sha1", SEC_OID_SHA1, CKM_SHA_1_HMAC, 20 },
-	{ "sha256", SEC_OID_SHA256, CKM_SHA256_HMAC, 32 },
-	{ "sha384", SEC_OID_SHA384, CKM_SHA384_HMAC, 48 },
-	{ "sha512", SEC_OID_SHA512, CKM_SHA512_HMAC, 64 },
-//	{ "ripemd160", SEC_OID_RIPEMD160, CKM_RIPEMD160_HMAC, 20 },
+	{ "sha1",   SEC_OID_SHA1,   CKM_SHA_1_HMAC,  20,  64 },
+	{ "sha256", SEC_OID_SHA256, CKM_SHA256_HMAC, 32,  64 },
+	{ "sha384", SEC_OID_SHA384, CKM_SHA384_HMAC, 48, 128 },
+	{ "sha512", SEC_OID_SHA512, CKM_SHA512_HMAC, 64, 128 },
+//	{ "ripemd160", SEC_OID_RIPEMD160, CKM_RIPEMD160_HMAC, 20, 64 },
 	{ NULL, 0, 0, 0 }
 };
 
@@ -308,9 +309,11 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		char *key, size_t key_length,
 		unsigned int iterations)
 {
-	if (!kdf || strncmp(kdf, "pbkdf2", 6))
+	struct hash_alg *ha = _get_alg(hash);
+
+	if (!ha || !kdf || strncmp(kdf, "pbkdf2", 6))
 		return -EINVAL;
 
 	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
-			    iterations, key_length, key);
+			    iterations, key_length, key, ha->block_length);
 }

@@ -2,7 +2,7 @@
  * Nettle crypto backend implementation
  *
  * Copyright (C) 2011-2012 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2011-2012, Milan Broz
+ * Copyright (C) 2011-2014, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -289,5 +289,5 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 
 	/* FIXME: switch to internal implementation in Nettle 2.6 */
 	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
-			    iterations, key_length, key);
+			    iterations, key_length, key, 0);
 }
