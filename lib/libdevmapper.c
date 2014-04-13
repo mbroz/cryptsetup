@@ -86,12 +86,12 @@ static void set_dm_error(int level,
 	va_start(va, f);
 	if (vasprintf(&msg, f, va) > 0) {
 		if (level < 4 && !_quiet_log) {
-			log_err(_context, msg);
+			log_err(_context, "%s", msg);
 			log_err(_context, "\n");
 		} else {
 			/* We do not use DM visual stack backtrace here */
 			if (strncmp(msg, "<backtrace>", 11))
-				log_dbg(msg);
+				log_dbg("%s", msg);
 		}
 	}
 	free(msg);

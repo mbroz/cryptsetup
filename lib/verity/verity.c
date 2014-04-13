@@ -63,7 +63,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int devfd = 0, sb_version;
 
-	log_dbg("Reading VERITY header of size %lu on device %s, offset %" PRIu64 ".",
+	log_dbg("Reading VERITY header of size %zu on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
@@ -159,7 +159,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	uuid_t uuid;
 	int r, devfd = 0;
 
-	log_dbg("Updating VERITY header of size %lu on device %s, offset %" PRIu64 ".",
+	log_dbg("Updating VERITY header of size %zu on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (!uuid_string || uuid_parse(uuid_string, uuid) == -1) {

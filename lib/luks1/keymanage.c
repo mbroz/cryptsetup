@@ -552,7 +552,7 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 	struct luks_phdr convHdr;
 	int r;
 
-	log_dbg("Updating LUKS header of size %lu on device %s",
+	log_dbg("Updating LUKS header of size %zu on device %s",
 		sizeof(struct luks_phdr), device_path(device));
 
 	r = LUKS_check_device_size(ctx, hdr->keyBytes);
