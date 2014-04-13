@@ -17,8 +17,8 @@ AC_CONFIG_HEADERS([config.h:config.h.in])
 # http://lists.gnu.org/archive/html/automake/2013-01/msg00060.html
 
 # For old automake use this
-#AM_INIT_AUTOMAKE(dist-bzip2)
-AM_INIT_AUTOMAKE([dist-bzip2 1.12 serial-tests])
+#AM_INIT_AUTOMAKE(dist-xz)
+AM_INIT_AUTOMAKE([dist-xz 1.12 serial-tests])
 
 if test "x$prefix" = "xNONE"; then
 	sysconfdir=/etc
