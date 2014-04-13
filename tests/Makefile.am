@@ -5,7 +5,8 @@ TESTS = api-test \
 	discards-test \
 	mode-test \
 	password-hash-test \
-	tcrypt-compat-test
+	tcrypt-compat-test \
+	luks1-compat-test
 
 if VERITYSETUP
 TESTS += verity-compat-test
@@ -27,11 +28,12 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	verity-compat-test \
 	reencryption-compat-test \
 	tcrypt-compat-test \
+	luks1-compat-test \
 	cryptsetup-valg-supps valg.sh valg-api.sh
 
 CLEANFILES = cryptsetup-tst* valglog*
 clean-local:
-	-rm -rf tcrypt-images
+	-rm -rf tcrypt-images luks1-images
 
 differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
