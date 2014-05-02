@@ -268,6 +268,9 @@ A. Contributors
   Note that automatic wiping is on the TODO list for cryptsetup, so
   at some time in the future this will become unnecessary.
 
+  Alternatively, plain cm-crypt can be used for a very fast wipe with
+  crypto-grade randomness, see Item 2.19
+
   04) Create the LUKS container:
      cryptsetup luksFormat <target device>
  
@@ -322,7 +325,102 @@ A. Contributors
   easy to make, but will compromise your security.
 
 
- * 2.2 How do I set up encrypted swap?
+ * 2.2 LUKS on partitions or raw disks?
+
+  This is a complicated question, and made more so by the availability
+  of RAID and LVM. I will try to give some scenarios and discuss
+  advantages and disadvantages. Note that I say LUKS for simplicity,
+  but you can do all the things described with plain dm-crypt as well/
+  Also note that your specific scenario may be so special that most
+  or even all things I say below do not apply.
+
+  First some caveats: I do not like LVM and in particular not how it
+  is used in far too many places today. I also do not like the more
+  modern Linux software RAID superblocks (1.0, 1.2, 1.2) where I
+  think some people have massively screwed up and made things worse
+  instead of better. These attitudes need some explanation. If you do
+  not care, simply skip to the scenarios.
+
+  LVM: LVM adds an abstraction layer between physical block devices
+  and logical ones. As such it increases flexibility. Unfortunately,
+  it also increases complexity, decreases resilience, ease-of-use,
+  ease-of-understanding, ease-of-disaster-recoverty, etc. In addition,
+  it breaks layering as "volumes" are supposed to be something you
+  have on disk. With LVM you can have them as additional layer
+  anywhere. That is asking people to shoot themselves in the foot.
+  Now, for some very specific scenarios, LVM may indeed be nice and
+  make things easier, but in most scenarios it just makes things more
+  complicated. It is better to adjust partitioning if you want to
+  combine or split partitions, for example. It is better to use RAID
+  when you want to combine partitions and/or disks into larger ones.
+  In almost all "normal" usage scenarios, LVM has no advantages, but
+  serious disadvantages and should not be used. As a consequence, I
+  will not give any LVM-based scenarios. If you think you need LVM, I
+  advise you to reconsider and take a cold, hard look at the facts
+  and whether you may be about to do something far more  complicated
+  than needed or good engineering practices would  suggest. In
+  engineering, complexity is always the enemy and  needs to be fought
+  without mercy when encountered.
+
+  New RAID superblock formats: I could write an equally negative
+  comment on the new RIAD superblock formats 1.0, 1.1 and 1.2.
+  Instead I am just going to recommend to stay with superblock format
+  0.90 with partition type 0xfd to get kernel-level auto-detection
+  instead of having some broken-by-design user-space tool assemble
+  and start your RAID arrays. That is unless you need the new formats
+  or really know what you are doing of course.
+
+  Scenarios:
+
+  (1) Encrypted partition: Just make a partition to your liking,
+  and put LUKS on top of it and a filesystem into the LUKS container.
+  This gives you isolation of differently-tasked data areas, just as
+  ordinary partitioning does. You can have confidential data,
+  non-confidential data, data for some specific applications,
+  user-homes, root, etc. Advantages are simplicity as there is a 1:1
+  mapping between partitions and filesystems, clear security
+  functionality and the ability to separate data into different,
+  independent (!) containers.
+
+  Note that you cannot do this for encrypted root, that requires an
+  initrd. On the other hand, an initrd is about as vulnerable to a
+  competent attacker as a non-encrypted root, so there really is no
+  security advantage to doing it that way. An attacker that wants to
+  compromise your system will just compromise the initrd or the
+  kernel itself. The better way to deal with this is to make sure the
+  root partition does not store any critical data and move that to
+  additional encrypted partitions. If you really are concerned your
+  root partition may be sabotaged by somebody with physical access
+  (that would however strangely not, say, sabotage your BIOS,
+  keyboard, etc.), protect it in some other way. The PC is just not
+  set-up for a really secure boot-chain (whatever some people may
+  claim).
+
+  (2) Fully encrypted raw block device: For this, put LUKS on the
+  raw device (e.g. /dev/sdb) and put a filesystem into the LUKS
+  container, no partitioning whatsoever involved. This is very
+  suitable for things like external USB disks used for backups or
+  offline data-storage.
+
+  (3) Encrypted RAID: Create your RAID from partitions and/or full
+  devices. Put LUKS on top of the RAID device, just if it were an
+  ordinary block device. Applications are just the same as above, but
+  you get redundancy. (Side note as many people seem to be unaware of
+  it: You can do RAID1 with an arbitrary number of components in
+  Linux.) See also Item 2.8.
+
+  Now, some people advocate doing the encryption below the RAID
+  layer. That has several serious problems. One is that suddenly
+  debugging RAID issues becomes much harder. You cannot do automatic
+  RAID assembly anymore. You need to keep the encryption keys for the
+  components in sync or manage them somehow. The only possible
+  advantage is that things may run a little faster as more CPUs do
+  the encryption, but if speed is a priority over security and
+  simplicity, you are doing this wrong anyways. A good way to
+  mitigate a speed issue is to get a CPU that does hardware AES.
+
+
+ * 2.3 How do I set up encrypted swap?
 
   As things that are confidential can end up in swap (keys,
   passphrases, etc. are usually protected against being swapped to
@@ -378,7 +476,7 @@ A. Contributors
       swapon /dev/mapper/swap
  
 
- * 2.3 What is the difference between "plain" and LUKS format?
+ * 2.4 What is the difference between "plain" and LUKS format?
 
   First, unless you happen to understand the cryptographic background
   well, you should use LUKS. It does protect the user from a lot of
@@ -443,7 +541,7 @@ A. Contributors
   non-default XTS mode).
 
 
- * 2.4 Can I encrypt an already existing, non-empty partition to use
+ * 2.5 Can I encrypt an already existing, non-empty partition to use
    LUKS?
 
   There is no converter, and it is not really needed. The way to do
@@ -458,7 +556,7 @@ A. Contributors
   to be in a filesystem.
 
 
- * 2.5 How do I use LUKS with a loop-device?
+ * 2.6 How do I use LUKS with a loop-device?
 
   This can be very handy for experiments. Setup is just the same as
   with any block device. If you want, for example, to use a 100MiB
@@ -472,7 +570,7 @@ A. Contributors
   To unmap the file when done, use "losetup -d /dev/loop0".
 
 
- * 2.6 When I add a new key-slot to LUKS, it asks for a passphrase but
+ * 2.7 When I add a new key-slot to LUKS, it asks for a passphrase but
    then complains about there not being a key-slot with that
    passphrase?
 
@@ -484,7 +582,7 @@ A. Contributors
   new key-slot.
 
 
- * 2.7 Encryption on top of RAID or the other way round?
+ * 2.8 Encryption on top of RAID or the other way round?
 
   Unless you have special needs, place encryption between RAID and
   filesystem, i.e. encryption on top of RAID. You can do it the other
@@ -510,7 +608,7 @@ A. Contributors
   encrypted.
 
 
- * 2.8 How do I read a dm-crypt key from file?
+ * 2.9 How do I read a dm-crypt key from file?
 
   Use the --key-file option, like this:
 
@@ -525,7 +623,7 @@ A. Contributors
   detail.
 
 
- * 2.9 How do I read a LUKS slot key from file?
+ * 2.10 How do I read a LUKS slot key from file?
 
   What you really do here is to read a passphrase from file, just as
   you would with manual entry of a passphrase for a key-slot. You can
@@ -551,7 +649,7 @@ A. Contributors
       cryptsetup luksOpen --key-file keyfile /dev/loop0 e1
  
 
- * 2.10 How do I read the LUKS master key from file?
+ * 2.11 How do I read the LUKS master key from file?
 
   The question you should ask yourself first is why you would want to
   do this. The only legitimate reason I can think of is if you want
@@ -562,7 +660,7 @@ A. Contributors
   do this here.
 
 
- * 2.11 What are the security requirements for a key read from file?
+ * 2.12 What are the security requirements for a key read from file?
 
   A file-stored key or passphrase has the same security requirements
   as one entered interactively, however you can use random bytes and
@@ -574,7 +672,7 @@ A. Contributors
       head -c 256 /dev/random > keyfile
  
 
- * 2.12 If I map a journaled file system using dm-crypt/LUKS, does it
+ * 2.13 If I map a journaled file system using dm-crypt/LUKS, does it
    still provide its usual transactional guarantees?
 
   Yes, it does, unless a very old kernel is used. The required flags
@@ -602,7 +700,7 @@ A. Contributors
   should improve further and eventually the problem should go away.
 
 
- * 2.13 Can I use LUKS or cryptsetup with a more secure (external)
+ * 2.14 Can I use LUKS or cryptsetup with a more secure (external)
    medium for key storage, e.g. TPM or a smartcard?
 
   Yes, see the answers on using a file-supplied key. You do have to
@@ -616,7 +714,7 @@ A. Contributors
   related to the cryptsetup project.
 
 
- * 2.14 Can I resize a dm-crypt or LUKS partition?
+ * 2.15 Can I resize a dm-crypt or LUKS partition?
 
   Yes, you can, as neither dm-crypt nor LUKS stores partition size.
   Whether you should is a different question. Personally I recommend
@@ -636,7 +734,7 @@ A. Contributors
   for that.
 
 
- * 2.15 How do I Benchmark the Ciphers, Hashes and Modes?
+ * 2.16 How do I Benchmark the Ciphers, Hashes and Modes?
 
   Since version 1.60 cryptsetup supports the "benchmark" command.
   Simply run as root:
@@ -652,7 +750,7 @@ A. Contributors
   and half of it is the cipher key, the other half is the XTS key.
 
 
- * 2.16 How do I Verify I have an Authentic cryptsetup Source Package?
+ * 2.17 How do I Verify I have an Authentic cryptsetup Source Package?
 
   Current maintainer is Milan Broz and he signs the release packages
   with his PGP key. The key he currently uses is the "RSA key ID
@@ -677,7 +775,7 @@ A. Contributors
   longer as an FAQ can sustain. If in doubt, ask on the mailing list.
 
 
- * 2.17 Is there a concern with 4k Sectors?
+ * 2.18 Is there a concern with 4k Sectors?
 
   Not from dm-crypt itself. Encryption will be done in 512B blocks,
   but if the partition and filesystem are aligned correctly and the
@@ -687,6 +785,39 @@ A. Contributors
   default and will not break alignment. See also Item 6.12 of this
   FAQ for more details. Note that if your partition or filesystem is
   misaligned, dm-crypt can make the effect worse though.
+
+
+ * 2.19 How can I wipe a device with crypto-grade randomness?
+
+  The conventional recommendation if you want to not just do a
+  zero-wipe is to use something like
+
+  cat /dev/urandom >  <taget-device>
+ 
+  That is very slow and painful at 10-20MB/s on a fast computer.
+  Using cryptsetup and a plain dm-crypt device with a random key, it
+  is much faster and gives you the same level of security. The
+  defaults are quite enough.
+
+  For device set-up, do the following:
+
+  cryptsetup open --type plain -d /dev/urandom /dev/<block-device>  to_be_wiped
+ 
+  Then you have several options. Simple wipe without
+  progress-indicator:
+
+  cat /dev/zero > /dev/mapper/to_be_wiped
+ 
+  Progress-indicator by dd_rescue:
+
+  dd_rescue -w /dev/zero /dev/mapper/to_be_wiped
+ 
+  Progress-indicator by my "wcs" stream meter (available from
+  http://www.tansi.org/tools/index.html ):
+
+  cat /dev/zero | wcs > /dev/mapper/to_be_wiped
+ 
+  Remove the mapping at the end and you are done.
 
 
 3. Common Problems 
@@ -1124,9 +1255,9 @@ A. Contributors
   new filesystem on the raw LUKS partition, making the raw partition
   part of a raid array and just writing to the raw partition.
 
-  The LUKS header contains a 256 bit "salt" value and without that no
-  decryption is possible. While the salt is not secret, it is
-  key-grade material and cannot be reconstructed. This is a
+  The LUKS header contains a 256 bit "salt" per key-slot and without
+  that no decryption is possible. While the salts are not secret,
+  they are key-grade material and cannot be reconstructed. This is a
   cryptographically strong "cannot". From observations on the
   cryptsetup mailing-list, people typically go though the usual
   stages of grief (Denial, Anger, Bargaining, Depression, Acceptance)
@@ -1135,12 +1266,13 @@ A. Contributors
   fine. Even if we usually cannot help with getting back your data,
   most people found the feedback comforting.
 
-  If your header does not contain an intact salt, best go directly
-  to the last stage ("Acceptance") and think about what to do now.
-  There is one exception that I know of: If your LUKS container is
-  still open, then it may be possible to extract the master key from
-  the running system. See Item "How do I recover the master key from
-  a mapped LUKS container?" in Section "Backup and Data Recovery".
+  If your header does not contain an intact key-slot salt, best go
+  directly to the last stage ("Acceptance") and think about what to
+  do now. There is one exception that I know of: If your LUKS
+  container is still open, then it may be possible to extract the
+  master key from the running system. See Item "How do I recover the
+  master key from a mapped LUKS container?" in Section "Backup and
+  Data Recovery".
 
 
  * 5.8 What is a "salt"?
@@ -1669,6 +1801,16 @@ A. Contributors
 
      cryptsetup luksHeaderRestore --header-backup-file <file> <device>
  
+  If you are unsure about a header to be restored, make a backup of
+  the current one first! You can also test the header-file without
+  restoring it by using the --header option for a detached header
+  like this:
+
+     cryptsetup --header <file> luksOpen <device> </dev/mapper/ -name>
+ 
+  If that unlocks your keys-lot, you are good. Do not forget to close
+  the device again.
+
 
  * 6.3 How do I test a LUKS header?
 
@@ -1719,13 +1861,29 @@ A. Contributors
 
       cat backup.tbz2.gpg | gpg - | tar djf - 
  
-  Note: Always verify backups, especially encrypted ones.
+  Note: Always verify backups, especially encrypted ones!
+
+  There is one problem with verifying like this: The kernel may still
+  have some files cached and in fact verify them against RAM or may
+  even verify RAM against RAM, which defeats the purpose of the
+  exercise. The following command empties the kernel caches:
+
+      echo 3 > /proc/sys/vm/drop_caches
+ 
+  Run it after backup and before verify.
 
   In both cases GnuPG will ask you interactively for your symmetric
   key. The verify will only output errors. Use "tar dvjf -" to get
   all comparison results. To make sure no data is written to disk
   unencrypted, turn off swap if it is not encrypted before doing the
   backup.
+
+  Restore works like certification with the 'd' ('difference')
+  replaced by 'x' ('eXtract'). Refer to the man-page of tar for more
+  explanations and instructions. Note that with default options tar
+  will overwrite already existing files without warning. If you are
+  unsure about how to use tar, experiment with it in a location
+  where you cannot do damage.
 
   You can of course use different or no compression and you can use
   an asymmetric key if you have one and have a backup of the secret
@@ -1810,14 +1968,15 @@ A. Contributors
    damage the LUKS header or key-slots?
 
   There are two critical components for decryption: The salt values
-  in the header itself and the key-slots. If the salt values are
-  overwritten or changed, nothing (in the cryptographically strong
-  sense) can be done to access the data, unless there is a backup
-  of the LUKS header. If a key-slot is damaged, the data can still
-  be read with a different key-slot, if there is a remaining
-  undamaged and used key-slot. Note that in order to make a key-slot
-  unrecoverable in a cryptographically strong sense, changing about
-  4-6 bits in random locations of its 128kiB size is quite enough.
+  in the key-slot descriptors of the header and the key-slots. If the
+  salt values are overwritten or changed, nothing (in the
+  cryptographically strong sense) can be done to access the data,
+  unless there is a backup of the LUKS header. If a key-slot is
+  damaged, the data can still be read with a different key-slot, if
+  there is a remaining undamaged and used key-slot. Note that in
+  order to make a key-slot unrecoverable in a cryptographically
+  strong sense, changing about 4-6 bits in random locations of its
+  128kiB size is quite enough.
 
 
  * 6.9 What happens if I (quick) format a LUKS partition?
@@ -1951,11 +2110,14 @@ http://code.google.com/p/cryptsetup/source/browse/misc/luks-header-from-active
   The exact specification of the format is here:
   http://code.google.com/p/cryptsetup/wiki/Specification
 
-  For your convenience, here is the LUKS header with hex offsets:
+  For your convenience, here is the LUKS header with hex offsets.
+  NOTE: The spec counts key-slots from 1 to 8, but the cryptsetup
+  tool counts from 0 to 7. The numbers here refer to the cryptsetup
+  numbers.
 
 Refers to LUKS On-Disk Format Specification Version 1.2.1
 LUKS header:
-offset  lenght  name             data type  description
+offset  length  name             data type  description
 -----------------------------------------------------------------------
 0x0000   0x06   magic            byte[]     'L','U','K','S', 0xba, 0xbe
      0      6
@@ -1968,7 +2130,7 @@ offset  lenght  name             data type  description
 0x0048   0x20   hash-spec        char[]     hash spec.
     72     32
 0x0068   0x04   payload-offset   uint32_t   bulk data offset in sectors
-   104      4                               (512 byteper sector)
+   104      4                               (512 bytes per sector)
 0x006c   0x04   key-bytes        uint32_t   number of bytes in key
    108      4
 0x0070   0x14   mk-digest        byte[]     master key checksum
@@ -1979,25 +2141,34 @@ offset  lenght  name             data type  description
    164      4                               when calculating mk-digest
 0x00a8   0x28   uuid             char[]     partition UUID
    168     40
-0x00d0   0x30   key-slot-1       key slot   key slot 1
+0x00d0   0x30   key-slot-0       key slot   key slot 0
    208     48
-0x0100   0x30   key-slot-2       key slot   key slot 2
+0x0100   0x30   key-slot-1       key slot   key slot 1
    256     48
-   ...    ...   ...              ...        ...
-0x0220   0x30   key-slot-8       key slot   key slot 8
+0x0130   0x30   key-slot-2       key slot   key slot 2
+   304     48
+0x0160   0x30   key-slot-3       key slot   key slot 3
+   352     48
+0x0190   0x30   key-slot-4       key slot   key slot 4
+   400     48
+0x01c0   0x30   key-slot-5       key slot   key slot 5
+   448     48
+0x01f0   0x30   key-slot-6       key slot   key slot 6
+   496     48
+0x0220   0x30   key-slot-7       key slot   key slot 7
    544     48
 Key slot:
-offset  lenght  name                  data type  description
+offset  length  name                  data type  description
 -------------------------------------------------------------------------
-0x0000   0x04   active                uint32_t   keyslot enabled/disabled
+0x0000   0x04   active                uint32_t   key slot enabled/disabled
      0      4
-0x0004   0x04   iterations            uint32_t   PBKDF3 iteration count
+0x0004   0x04   iterations            uint32_t   PBKDF2 iteration count
      4      4
 0x0008   0x20   salt                  byte[]     PBKDF2 salt
      8     32
 0x0028   0x04   key-material-offset   uint32_t   key start sector
     40      4                                    (512 bytes/sector)
-0x002c   0x04   stripes               uint32_t   number of anti-froensic
+0x002c   0x04   stripes               uint32_t   number of anti-forensic
     44      4                                    stripes
  
 
@@ -2206,42 +2377,10 @@ offset  lenght  name                  data type  description
    accessible anymore!
 
   With cryptsetup 1.1.x, the distro maintainer can define different
-  default encryption mod to get all comparison results. To make
-  sure no data is written to disk unencrypted, turn off swap if it is
-  not encrypted before doing the backup.
-
-  You can of course use different or no compression and you can use
-  an asymmetric key if you have one and have a backup of the secret
-  key that belongs to it.
-
-  A second option for a filesystem-level backup that can be used when
-  the backup is also on local disk (e.g. an external USB drive) is
-  to use a LUKS container there and copy the files to be backed up
-  between both mounted containers. Also see next item.
-
-
- * 6.5 Do I need a backup of the full partition? Would the header and
-   key-slots not be enough?
-
-  Backup protects you against two things: Disk loss or corruption
-  and user error. By far the most questions on the dm-crypt mailing
-  list about how to recover a damaged LUKS partition are related
-  to user error. For example, if you create a new filesystem on a
-  LUKS partition, chances are good that all data is lost
-  permanently.
-
-  For this case, a header+key-slot backup would often be enough. But
-  keep in mind that a well-treated (!) HDD has roughly a failure
-  risk of 5% per year. It is highly advisable to have a complete
-  backup to protect against this case.
-
-
-  * *6.6 What do I need to backup if I use es for LUKS and plain
-   devices. You can check
-
-  these compiled-in defaults using "cryptsetup --help". Moreover, the
-  plain device default changed because the old IV mode was
-  vulnerable to a watermarking attack.
+  default encryption modes. You can check the compiled-in defaults
+  using "cryptsetup --help". Moreover, the plain device default
+  changed because the old IV mode was vulnerable to a watermarking
+  attack.
 
   If you are using a plain device and you need a compatible mode, just
   specify cipher, key size and hash algorithm explicitly. For
@@ -2297,9 +2436,11 @@ offset  lenght  name                  data type  description
  
   If gcrypt is at version 1.6.1 or later:
 
-  - Patch the has name in the LUKS header from "whirlpool" to
+  - Patch the hash name in the LUKS header from "whirlpool" to
   "whirlpool_gcryptbug". This activates the broken implementation.
-  One way to do this is with the following command:
+  The detailed header layout is in Item 6.12 of this FAQ and in the
+  LUKS on-disk format specification. One way to change the hash is
+  with the following command:
 
      echo -n -e 'whirlpool_gcryptbug\0' | dd of=<luks device> bs=1 seek=72 conv=notrunc
  
