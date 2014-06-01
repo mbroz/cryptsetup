@@ -5,7 +5,7 @@ noinst_LTLIBRARIES = libcrypto_backend.la
 libcrypto_backend_la_CFLAGS = $(AM_CFLAGS) -Wall @CRYPTO_CFLAGS@
 
 libcrypto_backend_la_SOURCES = crypto_backend.h \
-	crypto_cipher_kernel.c pbkdf_check.c crc32.c
+	crypto_cipher_kernel.c crypto_storage.c pbkdf_check.c crc32.c
 
 if CRYPTO_BACKEND_GCRYPT
 libcrypto_backend_la_SOURCES += crypto_gcrypt.c

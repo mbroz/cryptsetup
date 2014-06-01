@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2004-2006, Clemens Fruhwirth <clemens@endorphin.org>
  * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2014, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -125,8 +126,45 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 			    unsigned int sector,
 			    struct crypt_device *ctx)
 {
-	return LUKS_endec_template(src, srcLength, cipher, cipher_mode,
-				   vk, sector, write_blockwise, O_RDWR, ctx);
+
+	struct device *device = crypt_metadata_device(ctx);
+	struct crypt_storage *s;
+	int devfd, bsize, r = 0;
+
+	/* Only whole sector writes supported */
+	if (srcLength % SECTOR_SIZE)
+		return -EINVAL;
+
+	/* Encrypt buffer */
+	r = crypt_storage_init(&s, 0, cipher, cipher_mode, vk->key, vk->keylength);
+
+	/* Fallback to old temporary dmcrypt device */
+	if (r == -ENOTSUP)
+		return LUKS_endec_template(src, srcLength, cipher, cipher_mode,
+					   vk, sector, write_blockwise, O_RDWR, ctx);
+	if (r)
+		return r;
+	r = crypt_storage_encrypt(s, 0, srcLength / SECTOR_SIZE, src);
+	crypt_storage_destroy(s);
+	if (r)
+		return r;
+
+	/* Write buffer to device */
+	bsize = device_block_size(device);
+	if (bsize <= 0)
+		return -EIO;
+
+	devfd = open(device_path(device), O_RDWR | O_DIRECT);
+	if (devfd == -1)
+		return -EIO;
+
+	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
+	    write_blockwise(devfd, bsize, src, srcLength) == -1)
+		r = -EIO;
+
+	close(devfd);
+	return r;
+
 }
 
 int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
@@ -136,6 +174,48 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 			      unsigned int sector,
 			      struct crypt_device *ctx)
 {
-	return LUKS_endec_template(dst, dstLength, cipher, cipher_mode,
-				   vk, sector, read_blockwise, O_RDONLY, ctx);
+	struct device *device = crypt_metadata_device(ctx);
+	struct crypt_storage *s;
+	int devfd, bsize, r = 0;
+
+	/* Only whole sector reads supported */
+	if (dstLength % SECTOR_SIZE)
+		return -EINVAL;
+
+	r = crypt_storage_init(&s, 0, cipher, cipher_mode, vk->key, vk->keylength);
+
+	/* Fallback to old temporary dmcrypt device */
+	if (r == -ENOTSUP)
+		return LUKS_endec_template(dst, dstLength, cipher, cipher_mode,
+					   vk, sector, read_blockwise, O_RDONLY, ctx);
+	if (r)
+		return r;
+
+	/* Read buffer from device */
+	bsize = device_block_size(device);
+	if (bsize <= 0) {
+		crypt_storage_destroy(s);
+		return -EIO;
+	}
+
+	devfd = open(device_path(device), O_RDONLY | O_DIRECT);
+	if (devfd == -1) {
+		crypt_storage_destroy(s);
+		return -EIO;
+	}
+
+	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
+	    read_blockwise(devfd, bsize, dst, dstLength) == -1) {
+		crypt_storage_destroy(s);
+		close(devfd);
+		return -EIO;
+	}
+
+	close(devfd);
+
+	/* Decrypt buffer */
+	r = crypt_storage_decrypt(s, 0, dstLength / SECTOR_SIZE, dst);
+	crypt_storage_destroy(s);
+
+	return r;
 }

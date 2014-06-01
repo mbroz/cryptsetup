@@ -28,6 +28,7 @@ struct crypt_device;
 struct crypt_hash;
 struct crypt_hmac;
 struct crypt_cipher;
+struct crypt_storage;
 
 int crypt_backend_init(struct crypt_device *ctx);
 
@@ -90,5 +91,15 @@ int crypt_cipher_encrypt(struct crypt_cipher *ctx,
 int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length);
+
+/* storage encryption wrappers */
+int crypt_storage_init(struct crypt_storage **ctx, uint64_t sector_start,
+		       const char *cipher, const char *cipher_mode,
+		       char *key, size_t key_length);
+int crypt_storage_destroy(struct crypt_storage *ctx);
+int crypt_storage_decrypt(struct crypt_storage *ctx, uint64_t sector,
+			  size_t count, char *buffer);
+int crypt_storage_encrypt(struct crypt_storage *ctx, uint64_t sector,
+			  size_t count, char *buffer);
 
 #endif /* _CRYPTO_BACKEND_H */
