@@ -80,6 +80,7 @@ int pkcs5_pbkdf2(const char *hash,
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
 
 /* ciphers */
+int crypt_cipher_blocksize(const char *name);
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *buffer, size_t length);
 int crypt_cipher_destroy(struct crypt_cipher *ctx);
