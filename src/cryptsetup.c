@@ -202,7 +202,7 @@ static int action_open_loopaes(void)
 
 	r = crypt_activate_by_keyfile_offset(cd, action_argv[1], CRYPT_ANY_SLOT,
 				      opt_key_file, opt_keyfile_size,
-				      opt_keyfile_size, activate_flags);
+				      opt_keyfile_offset, activate_flags);
 out:
 	crypt_free(cd);
 
