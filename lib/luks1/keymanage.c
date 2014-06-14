@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004-2006, Clemens Fruhwirth <clemens@endorphin.org>
  * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2013, Milan Broz
+ * Copyright (C) 2013-2014, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -147,22 +147,20 @@ static const char *dbg_slot_state(crypt_keyslot_info ki)
 	}
 }
 
-int LUKS_hdr_backup(
-	const char *backup_file,
-	struct luks_phdr *hdr,
-	struct crypt_device *ctx)
+int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 {
 	struct device *device = crypt_metadata_device(ctx);
+	struct luks_phdr hdr;
 	int r = 0, devfd = -1;
 	ssize_t hdr_size;
 	ssize_t buffer_size;
 	char *buffer = NULL;
 
-	r = LUKS_read_phdr(hdr, 1, 0, ctx);
+	r = LUKS_read_phdr(&hdr, 1, 0, ctx);
 	if (r)
 		return r;
 
-	hdr_size = LUKS_device_sectors(hdr->keyBytes) << SECTOR_SHIFT;
+	hdr_size = LUKS_device_sectors(hdr.keyBytes) << SECTOR_SHIFT;
 	buffer_size = size_round_up(hdr_size, crypt_getpagesize());
 
 	buffer = crypt_safe_alloc(buffer_size);
@@ -172,7 +170,7 @@ int LUKS_hdr_backup(
 	}
 
 	log_dbg("Storing backup of header (%zu bytes) and keyslot area (%zu bytes).",
-		sizeof(*hdr), hdr_size - LUKS_ALIGN_KEYSLOTS);
+		sizeof(hdr), hdr_size - LUKS_ALIGN_KEYSLOTS);
 
 	log_dbg("Output backup file size: %zu bytes.", buffer_size);
 
@@ -190,8 +188,8 @@ int LUKS_hdr_backup(
 	close(devfd);
 
 	/* Wipe unused area, so backup cannot contain old signatures */
-	if (hdr->keyblock[0].keyMaterialOffset * SECTOR_SIZE == LUKS_ALIGN_KEYSLOTS)
-		memset(buffer + sizeof(*hdr), 0, LUKS_ALIGN_KEYSLOTS - sizeof(*hdr));
+	if (hdr.keyblock[0].keyMaterialOffset * SECTOR_SIZE == LUKS_ALIGN_KEYSLOTS)
+		memset(buffer + sizeof(hdr), 0, LUKS_ALIGN_KEYSLOTS - sizeof(hdr));
 
 	devfd = open(backup_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
 	if (devfd == -1) {
@@ -213,6 +211,7 @@ int LUKS_hdr_backup(
 out:
 	if (devfd != -1)
 		close(devfd);
+	memset(&hdr, 0, sizeof(hdr));
 	crypt_safe_free(buffer);
 	return r;
 }

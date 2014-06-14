@@ -418,10 +418,10 @@ static int action_status(void)
 				ci == CRYPT_BUSY ? " and is in use" : "");
 
 		r = crypt_init_by_name_and_header(&cd, action_argv[0], opt_header_device);
-		if (r < 0 || !crypt_get_type(cd))
+		if (r < 0)
 			goto out;
 
-		log_std("  type:    %s\n", crypt_get_type(cd));
+		log_std("  type:    %s\n", crypt_get_type(cd) ?: "n/a");
 
 		r = crypt_get_active_device(cd, action_argv[0], &cad);
 		if (r < 0)

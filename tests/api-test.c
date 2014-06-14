@@ -2,7 +2,7 @@
  * cryptsetup library API check functions
  *
  * Copyright (C) 2009-2013 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2013, Milan Broz
+ * Copyright (C) 2009-2014, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1095,6 +1095,14 @@ static void AddDeviceLuks(void)
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, DMDIR H_DEVICE));
 	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formated");
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	crypt_free(cd);
+	// check active status without header
+	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, NULL));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(!!crypt_get_type(cd));
+	OK_(strcmp(cipher, crypt_get_cipher(cd)));
+	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
+	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 

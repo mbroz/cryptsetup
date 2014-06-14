@@ -130,7 +130,6 @@ int LUKS_hdr_uuid_set(
 
 int LUKS_hdr_backup(
 	const char *backup_file,
-	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 
 int LUKS_hdr_restore(

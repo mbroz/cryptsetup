@@ -78,6 +78,13 @@ struct crypt_device {
 		struct crypt_params_tcrypt params;
 		struct tcrypt_phdr hdr;
 	} tcrypt;
+	struct { /* used if initialized without header by name */
+		char *active_name;
+		/* buffers, must refresh from kernel on every query */
+		char cipher[MAX_CIPHER_LEN];
+		char cipher_mode[MAX_CIPHER_LEN];
+		unsigned int key_size;
+	} none;
 	} u;
 
 	/* callbacks definitions */
@@ -273,6 +280,15 @@ static int onlyLUKS(struct crypt_device *cd)
 	return r;
 }
 
+static void crypt_set_null_type(struct crypt_device *cd)
+{
+	if (!cd->type)
+		return;
+
+	free(cd->type);
+	cd->type = NULL;
+	cd->u.none.active_name = NULL;
+}
 
 /* keyslot helpers */
 static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
@@ -753,8 +769,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			r = _crypt_load_luks1(cd, 0, 0);
 			if (r < 0) {
 				log_dbg("LUKS device header does not match active device.");
-				free(cd->type);
-				cd->type = NULL;
+				crypt_set_null_type(cd);
 				r = 0;
 				goto out;
 			}
@@ -763,14 +778,12 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			if (r < 0) {
 				log_dbg("LUKS device header uuid: %s mismatches DM returned uuid %s",
 					cd->u.luks1.hdr.uuid, dmd.uuid);
-				free(cd->type);
-				cd->type = NULL;
+				crypt_set_null_type(cd);
 				r = 0;
 			}
 		} else {
 			log_dbg("LUKS device header not available.");
-			free(cd->type);
-			cd->type = NULL;
+			crypt_set_null_type(cd);
 			r = 0;
 		}
 	} else if (isTCRYPT(cd->type)) {
@@ -904,7 +917,11 @@ out:
 	if (r < 0) {
 		crypt_free(*cd);
 		*cd = NULL;
+	} else if (!(*cd)->type && name) {
+		/* For anonymous device (no header found) remember initialized name */
+		(*cd)->u.none.active_name = strdup(name);
 	}
+
 	device_free(dmd.data_device);
 	free(CONST_CAST(void*)dmd.uuid);
 	return r;
@@ -1222,8 +1239,7 @@ int crypt_format(struct crypt_device *cd,
 	}
 
 	if (r < 0) {
-		free(cd->type);
-		cd->type = NULL;
+		crypt_set_null_type(cd);
 		crypt_free_volume_key(cd->volume_key);
 		cd->volume_key = NULL;
 	}
@@ -1291,10 +1307,8 @@ int crypt_repair(struct crypt_device *cd,
 
 	/* cd->type and header must be set in context */
 	r = crypt_check_data_device_size(cd);
-	if (r < 0) {
-		free(cd->type);
-		cd->type = NULL;
-	}
+	if (r < 0)
+		crypt_set_null_type(cd);
 
 	return r;
 }
@@ -1383,6 +1397,9 @@ int crypt_header_backup(struct crypt_device *cd,
 	if ((requested_type && !isLUKS(requested_type)) || !backup_file)
 		return -EINVAL;
 
+	if (cd->type && !isLUKS(cd->type))
+		return -EINVAL;
+
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
@@ -1390,13 +1407,15 @@ int crypt_header_backup(struct crypt_device *cd,
 	log_dbg("Requested header backup of device %s (%s) to "
 		"file %s.", mdata_device_path(cd), requested_type, backup_file);
 
-	return LUKS_hdr_backup(backup_file, &cd->u.luks1.hdr, cd);
+	r = LUKS_hdr_backup(backup_file, cd);
+	return r;
 }
 
 int crypt_header_restore(struct crypt_device *cd,
 			 const char *requested_type,
 			 const char *backup_file)
 {
+	struct luks_phdr hdr;
 	int r;
 
 	if (requested_type && !isLUKS(requested_type))
@@ -1412,7 +1431,10 @@ int crypt_header_restore(struct crypt_device *cd,
 	log_dbg("Requested header restore to device %s (%s) from "
 		"file %s.", mdata_device_path(cd), requested_type, backup_file);
 
-	return LUKS_hdr_restore(backup_file, &cd->u.luks1.hdr, cd);
+	r = LUKS_hdr_restore(backup_file, isLUKS(cd->type) ? &cd->u.luks1.hdr : &hdr, cd);
+
+	memset(&hdr, 0, sizeof(hdr));
+	return r;
 }
 
 void crypt_free(struct crypt_device *cd)
@@ -1438,6 +1460,8 @@ void crypt_free(struct crypt_device *cd)
 			free(CONST_CAST(void*)cd->u.verity.hdr.salt);
 			free(cd->u.verity.root_hash);
 			free(cd->u.verity.uuid);
+		} else if (!cd->type) {
+			free(cd->u.none.active_name);
 		}
 
 		free(cd->type);
@@ -2426,6 +2450,31 @@ int crypt_dump(struct crypt_device *cd)
 	return -EINVAL;
 }
 
+
+static int _init_by_name_crypt_none(struct crypt_device *cd)
+{
+	struct crypt_dm_active_device dmd = {};
+	int r;
+
+	if (cd->type || !cd->u.none.active_name)
+		return -EINVAL;
+
+	r = dm_query_device(cd, cd->u.none.active_name,
+			DM_ACTIVE_CRYPT_CIPHER |
+			DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
+	if (!r)
+		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher,
+					      cd->u.none.cipher, NULL,
+					      cd->u.none.cipher_mode);
+
+	if (!r)
+		cd->u.none.key_size = dmd.u.crypt.vk->keylength;
+
+	crypt_free_volume_key(dmd.u.crypt.vk);
+	free(CONST_CAST(void*)dmd.u.crypt.cipher);
+	return r;
+}
+
 const char *crypt_get_cipher(struct crypt_device *cd)
 {
 	if (isPLAIN(cd->type))
@@ -2439,6 +2488,9 @@ const char *crypt_get_cipher(struct crypt_device *cd)
 
 	if (isTCRYPT(cd->type))
 		return cd->u.tcrypt.params.cipher;
+
+	if (!cd->type && !_init_by_name_crypt_none(cd))
+		return cd->u.none.cipher;
 
 	return NULL;
 }
@@ -2456,6 +2508,9 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 
 	if (isTCRYPT(cd->type))
 		return cd->u.tcrypt.params.mode;
+
+	if (!cd->type && !_init_by_name_crypt_none(cd))
+		return cd->u.none.cipher_mode;
 
 	return NULL;
 }
@@ -2497,6 +2552,9 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 
 	if (isTCRYPT(cd->type))
 		return cd->u.tcrypt.params.key_size;
+
+	if (!cd->type && !_init_by_name_crypt_none(cd))
+		return cd->u.none.key_size;
 
 	return 0;
 }
