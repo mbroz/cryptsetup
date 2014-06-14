@@ -2462,7 +2462,7 @@ static int _init_by_name_crypt_none(struct crypt_device *cd)
 	r = dm_query_device(cd, cd->u.none.active_name,
 			DM_ACTIVE_CRYPT_CIPHER |
 			DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
-	if (!r)
+	if (r >= 0)
 		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher,
 					      cd->u.none.cipher, NULL,
 					      cd->u.none.cipher_mode);
