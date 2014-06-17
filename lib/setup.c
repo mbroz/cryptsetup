@@ -290,6 +290,15 @@ static void crypt_set_null_type(struct crypt_device *cd)
 	cd->u.none.active_name = NULL;
 }
 
+static void crypt_reset_null_type(struct crypt_device *cd)
+{
+	if (cd->type)
+		return;
+
+	free(cd->u.none.active_name);
+	cd->u.none.active_name = NULL;
+}
+
 /* keyslot helpers */
 static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 {
@@ -1219,6 +1228,8 @@ int crypt_format(struct crypt_device *cd,
 
 	log_dbg("Formatting device %s as type %s.", mdata_device_path(cd) ?: "(none)", type);
 
+	crypt_reset_null_type(cd);
+
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
@@ -1258,6 +1269,8 @@ int crypt_load(struct crypt_device *cd,
 
 	if (!crypt_metadata_device(cd))
 		return -EINVAL;
+
+	crypt_reset_null_type(cd);
 
 	if (!requested_type || isLUKS(requested_type)) {
 		if (cd->type && !isLUKS(cd->type)) {
