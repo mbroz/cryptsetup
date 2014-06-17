@@ -27,8 +27,6 @@
 #include <alloca.h>
 #include "crypto_backend.h"
 
-static int pkcs5_pbkdf2_test_vectors(void);
-
 static int hash_buf(const char *src, size_t src_len,
 		    char *dst, size_t dst_len,
 		    const char *hash_name)
