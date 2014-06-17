@@ -52,7 +52,7 @@ function add_scsi_device() {
         fi
 
         sleep 2
-        SCSI_DEV="/dev/"$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+        SCSI_DEV="/dev/"$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
         [ -b $SCSI_DEV ] || fail "Cannot find $SCSI_DEV."
 }
 
