@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <nettle/sha.h>
 #include <nettle/hmac.h>
+#include <nettle/pbkdf2.h>
 #include "crypto_backend.h"
 
 static char *version = "Nettle";
@@ -284,10 +285,21 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		char *key, size_t key_length,
 		unsigned int iterations)
 {
+	struct crypt_hmac *h;
+	int r;
+
 	if (!kdf || strncmp(kdf, "pbkdf2", 6))
 		return -EINVAL;
 
-	/* FIXME: switch to internal implementation in Nettle 2.6 */
-	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
-			    iterations, key_length, key, 0);
+	r = crypt_hmac_init(&h, hash, password, password_length);
+	if (r < 0)
+		return r;
+
+	nettle_pbkdf2(&h->nettle_ctx, h->hash->nettle_hmac_update,
+		      h->hash->nettle_hmac_digest, h->hash->length, iterations,
+		      salt_length, (const uint8_t *)salt, key_length,
+		      (uint8_t *)key);
+	crypt_hmac_destroy(h);
+
+	return 0;
 }

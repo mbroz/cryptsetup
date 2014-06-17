@@ -210,13 +210,13 @@ AC_DEFUN([CONFIGURE_NETTLE], [
 		[AC_MSG_ERROR([You need Nettle cryptographic library.])])
 
 	saved_LIBS=$LIBS
-	AC_CHECK_LIB(nettle, nettle_ripemd160_init,,
-		[AC_MSG_ERROR([You need Nettle library version 2.4 or more recent.])])
+	AC_CHECK_LIB(nettle, nettle_pbkdf2_hmac_sha256,,
+		[AC_MSG_ERROR([You need Nettle library version 2.6 or more recent.])])
 	CRYPTO_LIBS=$LIBS
 	LIBS=$saved_LIBS
 
 	CRYPTO_STATIC_LIBS=$CRYPTO_LIBS
-	use_internal_pbkdf2=1
+	use_internal_pbkdf2=0
 	NO_FIPS([])
 ])
 
