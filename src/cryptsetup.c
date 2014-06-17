@@ -540,6 +540,9 @@ static int action_benchmark(void)
 		    strstr(cipher, "cast5"))
 			iv_size = 8;
 
+		if (!strcmp(cipher_mode, "ecb"))
+			iv_size = 0;
+
 		r = benchmark_cipher_loop(cipher, cipher_mode,
 					  key_size / 8, iv_size,
 					  &enc_mbr, &dec_mbr);
