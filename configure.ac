@@ -386,8 +386,12 @@ AC_ARG_ENABLE([python], AS_HELP_STRING([--enable-python],[enable Python bindings
 [with_python=$enableval],
 [with_python=no])
 
+AC_ARG_WITH([python_version],
+	AS_HELP_STRING([--with-python_version=VERSION], [required Python version [2.6]]),
+	[PYTHON_VERSION=$withval], [PYTHON_VERSION=2.6])
+
 if test "x$with_python" = "xyes"; then
-	AM_PATH_PYTHON([2.4])
+	AM_PATH_PYTHON([$PYTHON_VERSION])
 
 	if ! test -x "$PYTHON-config" ; then
             AC_MSG_ERROR([Cannot find python development packages to build bindings])
@@ -395,6 +399,9 @@ if test "x$with_python" = "xyes"; then
 
 	PYTHON_INCLUDES=$($PYTHON-config --includes)
 	AC_SUBST(PYTHON_INCLUDES)
+
+	PYTHON_LIBS=$($PYTHON-config --libs)
+	AC_SUBST(PYTHON_LIBS)
 fi
 AM_CONDITIONAL([PYTHON_CRYPTSETUP], [test "x$with_python" = "xyes"])
 
