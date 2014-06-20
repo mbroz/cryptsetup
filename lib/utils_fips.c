@@ -37,12 +37,13 @@ int crypt_fips_mode(void)
 
 static void crypt_fips_verify(const char *name, const char *function)
 {
-	if (!crypt_fips_mode())
+	if (access(FIPS_MODULE_FILE, F_OK))
 		return;
 
 	if (!FIPSCHECK_verify(name, function)) {
 		fputs(_("FIPS checksum verification failed.\n"), stderr);
-		_exit(EXIT_FAILURE);
+		if (FIPSCHECK_kernel_fips_mode())
+			_exit(EXIT_FAILURE);
 	}
 }
 
