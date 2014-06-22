@@ -87,7 +87,8 @@ static int LUKS_check_device_size(struct crypt_device *ctx, size_t keyLength)
 		PRIu64 " sectors.",keyLength, dev_sectors, hdr_sectors);
 
 	if (hdr_sectors > dev_sectors) {
-		log_err(ctx, _("Device %s is too small.\n"), device_path(device));
+		log_err(ctx, _("Device %s is too small. (LUKS requires at least %" PRIu64 " bytes.)\n"),
+			device_path(device), hdr_sectors * SECTOR_SIZE);
 		return -EINVAL;
 	}
 
