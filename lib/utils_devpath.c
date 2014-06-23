@@ -1,7 +1,7 @@
 /*
  * devname - search for device name
  *
- * Copyright (C) 2004, Christophe Saout <christophe@saout.de>
+ * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
  * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2009-2013, Milan Broz

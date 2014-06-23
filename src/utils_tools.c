@@ -1,7 +1,7 @@
 /*
  * cryptsetup - setup cryptographic volumes for dm-crypt
  *
- * Copyright (C) 2004, Christophe Saout <christophe@saout.de>
+ * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
  * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2009-2014, Milan Broz
