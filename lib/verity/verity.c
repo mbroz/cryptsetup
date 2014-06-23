@@ -163,7 +163,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (!uuid_string || uuid_parse(uuid_string, uuid) == -1) {
-		log_err(cd, _("Wrong VERITY UUID format provided on device %s. \n"),
+		log_err(cd, _("Wrong VERITY UUID format provided on device %s.\n"),
 			device_path(device));
 		return -EINVAL;
 	}
