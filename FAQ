@@ -330,45 +330,28 @@ A. Contributors
   This is a complicated question, and made more so by the availability
   of RAID and LVM. I will try to give some scenarios and discuss
   advantages and disadvantages. Note that I say LUKS for simplicity,
-  but you can do all the things described with plain dm-crypt as well/
+  but you can do all the things described with plain dm-crypt as well.
   Also note that your specific scenario may be so special that most
   or even all things I say below do not apply.
 
-  First some caveats: I do not like LVM and in particular not how it
-  is used in far too many places today. I also do not like the more
-  modern Linux software RAID superblocks (1.0, 1.2, 1.2) where I
-  think some people have massively screwed up and made things worse
-  instead of better. These attitudes need some explanation. If you do
-  not care, simply skip to the scenarios.
+  Be aware that if you add LVM into the mix, things can get very
+  complicated. Same with RAID but less so. In particular, data
+  recovery can get exceedingly difficult. Only do so if you have a
+  really good reason and always remember KISS is what separates an
+  engineer from an amateur. Of course, if you really need the added
+  complexity, KISS is satisfied. But be very sure as there is a price
+  to pay for it. In engineering, complexity is always the enemy and
+  needs to be fought without mercy when encountered.
 
-  LVM: LVM adds an abstraction layer between physical block devices
-  and logical ones. As such it increases flexibility. Unfortunately,
-  it also increases complexity, decreases resilience, ease-of-use,
-  ease-of-understanding, ease-of-disaster-recoverty, etc. In addition,
-  it breaks layering as "volumes" are supposed to be something you
-  have on disk. With LVM you can have them as additional layer
-  anywhere. That is asking people to shoot themselves in the foot.
-  Now, for some very specific scenarios, LVM may indeed be nice and
-  make things easier, but in most scenarios it just makes things more
-  complicated. It is better to adjust partitioning if you want to
-  combine or split partitions, for example. It is better to use RAID
-  when you want to combine partitions and/or disks into larger ones.
-  In almost all "normal" usage scenarios, LVM has no advantages, but
-  serious disadvantages and should not be used. As a consequence, I
-  will not give any LVM-based scenarios. If you think you need LVM, I
-  advise you to reconsider and take a cold, hard look at the facts
-  and whether you may be about to do something far more  complicated
-  than needed or good engineering practices would  suggest. In
-  engineering, complexity is always the enemy and  needs to be fought
-  without mercy when encountered.
-
-  New RAID superblock formats: I could write an equally negative
-  comment on the new RIAD superblock formats 1.0, 1.1 and 1.2.
-  Instead I am just going to recommend to stay with superblock format
-  0.90 with partition type 0xfd to get kernel-level auto-detection
-  instead of having some broken-by-design user-space tool assemble
-  and start your RAID arrays. That is unless you need the new formats
-  or really know what you are doing of course.
+  Also consider using RAID instead of LVM, as at least with the old
+  superblock format 0.90, the RAID superblock is in the place (end
+  of disk) where the risk of it permanently damaging the LUKS header
+  is smallest and you can have your array assembled by the RAID
+  controller (i.e. the kernel), as it should be. Use partition type
+  0xfd for that. I recommend staying away from superblock formats
+  1.0, 1.1 and 1.2 unless you really need them. Be aware that you
+  lose autodetection with them and have to fall back to some
+  user-space script to do it.
 
   Scenarios:
 
@@ -409,7 +392,7 @@ A. Contributors
   it: You can do RAID1 with an arbitrary number of components in
   Linux.) See also Item 2.8.
 
-  Now, some people advocate doing the encryption below the RAID
+  (4) Now, some people advocate doing the encryption below the RAID
   layer. That has several serious problems. One is that suddenly
   debugging RAID issues becomes much harder. You cannot do automatic
   RAID assembly anymore. You need to keep the encryption keys for the
