@@ -485,7 +485,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	size_t passphrase_size;
 	char *key;
 	unsigned int i, skipped = 0;
-	int r = -EINVAL, legacy_modes;
+	int r = -EPERM, legacy_modes;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
@@ -498,7 +498,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	if (params->passphrase_size > TCRYPT_KEY_POOL_LEN) {
 		log_err(cd, _("Maximum TCRYPT passphrase length (%d) exceeded.\n"),
 			      TCRYPT_KEY_POOL_LEN);
-		return -EPERM;
+		goto out;
 	}
 
 	/* Calculate pool content from keyfiles */
