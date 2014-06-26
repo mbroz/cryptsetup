@@ -249,7 +249,7 @@ int crypt_cipher_destroy(struct crypt_cipher *ctx)
 
 int crypt_cipher_blocksize(const char *name)
 {
-	retrun -EINVAL;
+	return -EINVAL;
 }
 
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
