@@ -192,13 +192,15 @@ cryptsetup-reencrypt /dev/sdb1 \-c aes-xts-plain64
 Add LUKS encryption to not yet encrypted device
 
 First, be sure you have space added to disk.
+
 Or alternatively shrink filesystem in advance.
 .br
 Here we need 4096 512-bytes sectors (enough for 2x128 bit key).
 
 fdisk \-u /dev/sdb # move sdb1 partition end + 4096 sectors
+(or use resize2fs or tool for your filesystem and shrink it)
 
-cryptsetup-reencrypt /dev/sdb1 \-\-new \-\-reduce-device-size 4096
+cryptsetup-reencrypt /dev/sdb1 \-\-new \-\-reduce-device-size 4096S
 
 .SH REPORTING BUGS
 Report bugs, including ones in the documentation, on
