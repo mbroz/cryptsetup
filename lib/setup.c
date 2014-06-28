@@ -1030,11 +1030,6 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
-	/* Check early if we cannot allocate block device for key slot access */
-	r = device_block_adjust(cd, cd->device, DEV_OK, 0, NULL, NULL);
-	if(r < 0)
-		return r;
-
 	r = LUKS_generate_phdr(&cd->u.luks1.hdr, cd->volume_key, cipher, cipher_mode,
 			       (params && params->hash) ? params->hash : "sha1",
 			       uuid, LUKS_STRIPES,
