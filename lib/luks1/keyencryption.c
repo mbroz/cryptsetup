@@ -61,6 +61,8 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	};
 	int r, bsize, devfd = -1;
 
+	log_dbg("Using dmcrypt to access keyslot area.");
+
 	bsize = device_block_size(dmd.data_device);
 	if (bsize <= 0)
 		return -EINVAL;
@@ -142,8 +144,16 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	if (r == -ENOTSUP)
 		return LUKS_endec_template(src, srcLength, cipher, cipher_mode,
 					   vk, sector, write_blockwise, O_RDWR, ctx);
-	if (r)
+	if (r) {
+		log_dbg("Userspace crypto wrapper failed to initialize %s-%s (%d).",
+			cipher, cipher_mode, r);
+		_error_hint(ctx, device_path(device), cipher, cipher_mode,
+			    vk->keylength * 8);
 		return r;
+	}
+
+	log_dbg("Using userspace crypto wrapper to access keyslot area.");
+
 	r = crypt_storage_encrypt(s, 0, srcLength / SECTOR_SIZE, src);
 	crypt_storage_destroy(s);
 	if (r)
@@ -188,8 +198,15 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	if (r == -ENOTSUP)
 		return LUKS_endec_template(dst, dstLength, cipher, cipher_mode,
 					   vk, sector, read_blockwise, O_RDONLY, ctx);
-	if (r)
+	if (r) {
+		log_dbg("Userspace crypto wrapper failed to initialize %s-%s (%d).",
+			cipher, cipher_mode, r);
+		_error_hint(ctx, device_path(device), cipher, cipher_mode,
+			    vk->keylength * 8);
 		return r;
+	}
+
+	log_dbg("Using userspace crypto wrapper to access keyslot area.");
 
 	/* Read buffer from device */
 	bsize = device_block_size(device);
