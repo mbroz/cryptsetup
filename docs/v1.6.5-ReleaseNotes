@@ -1,0 +1,53 @@
+Cryptsetup 1.6.5 Release Notes
+==============================
+
+Changes since version 1.6.4
+
+* Allow LUKS header operation handling without requiring root privilege.
+  It means that you can manipulate with keyslots as a regular user, only
+  write access to device (or image) is required.
+
+  This requires kernel crypto wrapper (similar to TrueCrypt device handling)
+  to be available (CRYPTO_USER_API_SKCIPHER kernel option).
+  If this kernel interface is not available, code fallbacks to old temporary
+  keyslot device creation (where root privilege is required).
+
+  Note that activation, deactivation, resize and suspend operations still
+  need root privilege (limitation of kernel device-mapper backend).
+
+* Fix internal PBKDF2 key derivation function implementation for alternative
+  crypto backends (kernel, NSS) which do not support PBKDF2 directly and have
+  issues with longer HMAC keys.
+
+  This fixes the problem for long keyfiles where either calculation is too slow
+  (because of internal rehashing in every iteration) or there is a limit
+  (kernel backend seems to not support HMAC key longer than 20480 bytes).
+
+  (Note that for recent version of gcrypt, nettle or openssl the internal
+  PBKDF2 code is not compiled in and crypto library internal functions are
+  used instead.)
+
+* Support for Python3 for simple Python binding.
+  Python >= 2.6 is now required.
+
+* Use internal PBKDF2 in Nettle library for Nettle crypto backend.
+  Cryptsetup compilation requires Nettle >= 2.6 (if using Nettle crypto backend).
+
+* Allow simple status of crypt device without providing metadata header.
+  The command "cryptsetup status" will print basic info, even if you
+  do not provide detached header argument.
+
+* Allow to specify ECB mode in cryptsetup benchmark.
+
+* Add some LUKS images for regression testing.
+  Note that if image with Whirlpool fails, the most probable cause is that
+  you have old gcrypt library with flawed whirlpool hash.
+  Read FAQ section 8.3 for more info.
+
+Cryptsetup API NOTE:
+The direct terminal handling for passphrase entry will be removed from
+libcryptsetup in next major version (application should handle it itself).
+
+It means that you have to always either provide password in buffer or set
+your own password callback function trhough crypt_set_password_callback().
+See API documentation (or libcryptsetup.h) for more info.

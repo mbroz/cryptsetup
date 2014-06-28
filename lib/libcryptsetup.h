@@ -176,6 +176,8 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
  * @note Only zero terminated passwords can be entered this way, for complex
  *   use API functions directly.
  * @note Maximal length of password is limited to @e length @e - @e 1 (minimal 511 chars)
+ * @note Internal compiled-in terminal input is DEPRECATED and will be removed
+ *   in future versions.
  *
  * @see Callback function is used in these call provided, that certain conditions are met:
  * @li crypt_keyslot_add_by_passphrase
@@ -530,6 +532,8 @@ int crypt_suspend(struct crypt_device *cd,
  * @return unlocked key slot number or negative errno otherwise.
  *
  * @note Only LUKS device type is supported
+ * @note If passphrase is @e NULL always use crypt_set_password_callback.
+ * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_resume_by_passphrase(struct crypt_device *cd,
 	const char *name,
@@ -548,6 +552,9 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
  * @param keyfile_offset number of bytes to skip at start of keyfile
  *
  * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note If passphrase is @e NULL always use crypt_set_password_callback.
+ * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 	const char *name,
@@ -594,6 +601,9 @@ void crypt_free(struct crypt_device *cd);
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
  * @return allocated key slot number or negative errno otherwise.
+ *
+ * @note If passphrase is @e NULL always use crypt_set_password_callback.
+ * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	int keyslot,
@@ -620,6 +630,9 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
  * @note This function is just internal implementation of luksChange
  * command to avoid reading of volume key outside libcryptsetup boundary
  * in FIPS mode.
+ *
+ * @note If passphrase is @e NULL always use crypt_set_password_callback.
+ * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	int keyslot_old,
@@ -646,7 +659,6 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
  * @return allocated key slot number or negative errno otherwise.
  *
  * @note Note that @e keyfile can be "-" for STDIN
- *
  */
 int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	int keyslot,
@@ -680,6 +692,8 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
  *
  * @return allocated key slot number or negative errno otherwise.
  *
+ * @note If passphrase is @e NULL always use crypt_set_password_callback.
+ * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	int keyslot,
@@ -763,6 +777,9 @@ int crypt_get_active_device(struct crypt_device *cd,
  * @param flags activation flags
  *
  * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note If passphrase is @e NULL always use crypt_set_password_callback.
+ * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_activate_by_passphrase(struct crypt_device *cd,
 	const char *name,
