@@ -3,7 +3,7 @@ AC_INIT([cryptsetup],[1.6.5])
 
 dnl library version from <major>.<minor>.<release>[-<suffix>]
 LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
-LIBCRYPTSETUP_VERSION_INFO=9:0:5
+LIBCRYPTSETUP_VERSION_INFO=10:0:6
 dnl library file name for FIPS selfcheck
 LIBCRYPTSETUP_VERSION_FIPS="libcryptsetup.so.4"
 FIPS_MODULE_FILE="/etc/system-fips"
