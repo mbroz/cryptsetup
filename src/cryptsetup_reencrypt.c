@@ -161,7 +161,7 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 	}
 
 	s = read(devfd, buf, buf_size);
-	if (s < 0 || s != buf_size) {
+	if (s < 0 || s != (ssize_t)buf_size) {
 		log_err(_("Cannot read device %s.\n"), rc->device);
 		r = -EIO;
 		goto out;
@@ -193,7 +193,7 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 		if (lseek(devfd, 0, SEEK_SET) == -1)
 			goto out;
 		s = write(devfd, buf, buf_size);
-		if (s < 0 || s != buf_size) {
+		if (s < 0 || s != (ssize_t)buf_size) {
 			log_err(_("Cannot write device %s.\n"), rc->device);
 			r = -EIO;
 		}

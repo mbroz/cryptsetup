@@ -85,7 +85,7 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 			return -EINVAL;
 
 		hash_size = crypt_hash_size(++hash_name);
-		if (hash_size < 0 || hash_size > sizeof(tmp))
+		if (hash_size < 0 || (unsigned)hash_size > sizeof(tmp))
 			return -EINVAL;
 
 		if (crypt_hash_init(&h, hash_name))
@@ -227,7 +227,8 @@ int crypt_storage_decrypt(struct crypt_storage *ctx,
 		       uint64_t sector, size_t count,
 		       char *buffer)
 {
-	int i, r = 0;
+	unsigned int i;
+	int r = 0;
 
 	for (i = 0; i < count; i++) {
 		r = crypt_sector_iv_generate(&ctx->cipher_iv, sector + i);
@@ -250,7 +251,8 @@ int crypt_storage_encrypt(struct crypt_storage *ctx,
 		       uint64_t sector, size_t count,
 		       char *buffer)
 {
-	int i, r = 0;
+	unsigned int i;
+	int r = 0;
 
 	for (i = 0; i < count; i++) {
 		r = crypt_sector_iv_generate(&ctx->cipher_iv, sector + i);

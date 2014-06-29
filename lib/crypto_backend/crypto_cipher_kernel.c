@@ -46,7 +46,7 @@ struct crypt_cipher {
 
 struct cipher_alg {
 	const char *name;
-	unsigned int blocksize;
+	int blocksize;
 };
 
 /* FIXME: Getting block size should be dynamic from cipher backend. */
