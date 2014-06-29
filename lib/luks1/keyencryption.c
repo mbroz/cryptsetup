@@ -27,8 +27,13 @@
 #include "internal.h"
 
 static void _error_hint(struct crypt_device *ctx, const char *device,
-			const char *cipher_spec, const char *mode, size_t keyLength)
+			const char *cipher, const char *mode, size_t keyLength)
 {
+	char cipher_spec[MAX_CIPHER_LEN * 3];
+
+	if (snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", cipher, mode) < 0)
+		return;
+
 	log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
 			"Check that kernel supports %s cipher (check syslog for more info).\n"),
 			device, cipher_spec);
@@ -97,7 +102,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	if (r < 0) {
 		if (r != -EACCES && r != -ENOTSUP)
 			_error_hint(ctx, device_path(dmd.data_device),
-				    cipher_spec, cipher_mode, vk->keylength * 8);
+				    cipher, cipher_mode, vk->keylength * 8);
 		return -EIO;
 	}
 
@@ -140,13 +145,16 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	/* Encrypt buffer */
 	r = crypt_storage_init(&s, 0, cipher, cipher_mode, vk->key, vk->keylength);
 
+	if (r)
+		log_dbg("Userspace crypto wrapper cannot use %s-%s (%d).",
+			cipher, cipher_mode, r);
+
 	/* Fallback to old temporary dmcrypt device */
-	if (r == -ENOTSUP)
+	if (r == -ENOTSUP || r == -ENOENT)
 		return LUKS_endec_template(src, srcLength, cipher, cipher_mode,
 					   vk, sector, write_blockwise, O_RDWR, ctx);
+
 	if (r) {
-		log_dbg("Userspace crypto wrapper failed to initialize %s-%s (%d).",
-			cipher, cipher_mode, r);
 		_error_hint(ctx, device_path(device), cipher, cipher_mode,
 			    vk->keylength * 8);
 		return r;
@@ -194,13 +202,16 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 
 	r = crypt_storage_init(&s, 0, cipher, cipher_mode, vk->key, vk->keylength);
 
+	if (r)
+		log_dbg("Userspace crypto wrapper cannot use %s-%s (%d).",
+			cipher, cipher_mode, r);
+
 	/* Fallback to old temporary dmcrypt device */
-	if (r == -ENOTSUP)
+	if (r == -ENOTSUP || r == -ENOENT)
 		return LUKS_endec_template(dst, dstLength, cipher, cipher_mode,
 					   vk, sector, read_blockwise, O_RDONLY, ctx);
+
 	if (r) {
-		log_dbg("Userspace crypto wrapper failed to initialize %s-%s (%d).",
-			cipher, cipher_mode, r);
 		_error_hint(ctx, device_path(device), cipher, cipher_mode,
 			    vk->keylength * 8);
 		return r;

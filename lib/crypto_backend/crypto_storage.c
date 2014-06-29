@@ -68,13 +68,13 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 		ctx->type = IV_NONE;
 		ctx->iv_size = 0;
 		return 0;
-	} else if (!strncasecmp(iv_name, "null", 4)) {
+	} else if (!strcasecmp(iv_name, "null")) {
 		ctx->type = IV_NULL;
-	} else if (!strncasecmp(iv_name, "plain64", 7)) {
+	} else if (!strcasecmp(iv_name, "plain64")) {
 		ctx->type = IV_PLAIN64;
-	} else if (!strncasecmp(iv_name, "plain", 5)) {
+	} else if (!strcasecmp(iv_name, "plain")) {
 		ctx->type = IV_PLAIN;
-	} else if (!strncasecmp(iv_name, "essiv", 5)) {
+	} else if (!strncasecmp(iv_name, "essiv:", 6)) {
 		struct crypt_hash *h = NULL;
 		char *hash_name = strchr(iv_name, ':');
 		int hash_size;
@@ -119,7 +119,7 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 		ctx->type = IV_BENBI;
 		ctx->benbi_shift = SECTOR_SHIFT - log;
 	} else
-		return -EINVAL;
+		return -ENOENT;
 
 	ctx->iv = malloc(ctx->iv_size);
 	if (!ctx->iv)
