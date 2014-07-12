@@ -62,7 +62,7 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 
 	ctx->iv_size = crypt_cipher_blocksize(cipher_name);
 	if (ctx->iv_size < 0)
-		return -EINVAL;
+		return -ENOENT;
 
 	if (!iv_name || !strcmp(cipher_name, "cipher_null")) {
 		ctx->type = IV_NONE;
@@ -85,7 +85,10 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 			return -EINVAL;
 
 		hash_size = crypt_hash_size(++hash_name);
-		if (hash_size < 0 || (unsigned)hash_size > sizeof(tmp))
+		if (hash_size < 0)
+			return -ENOENT;
+
+		if ((unsigned)hash_size > sizeof(tmp))
 			return -EINVAL;
 
 		if (crypt_hash_init(&h, hash_name))
