@@ -642,8 +642,6 @@ out_no_removal:
 	if (cookie && _dm_use_udev())
 		(void)_dm_udev_wait(cookie);
 
-	if (params)
-		crypt_safe_free(params);
 	if (dmt)
 		dm_task_destroy(dmt);
 
@@ -674,6 +672,8 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		r = _dm_create_device(name, type, dmd->data_device,
 				      dmd->flags, dmd->uuid, dmd->size,
 				      table_params, reload);
+
+	crypt_safe_free(table_params);
 	dm_exit_context();
 	return r;
 }
