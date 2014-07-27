@@ -66,7 +66,11 @@ test_required
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/luks1_*) ; do
 	echo -n " $file"
-	$CRYPTSETUP luksOpen -d $TST_DIR/$KEYFILE $file $MAP 2>/dev/null || fail
+	$CRYPTSETUP luksOpen -d $TST_DIR/$KEYFILE $file $MAP 2>/dev/null
+	ret=$?
+	# ignore missing whirlpool (pwd failed is exit code 2)
+	[ $ret -eq 1 ] && (echo $file | grep -q -e "whirlpool") && echo " [N/A]" && continue
+	[ $ret -ne 0 ] && fail
 	$CRYPTSETUP status $MAP >/dev/null || fail
 	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
 	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
