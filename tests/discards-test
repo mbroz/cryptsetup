@@ -27,7 +27,7 @@ add_device() {
 	fi
 
 	sleep 2
-	DEV=$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+	DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 
 	DEV="/dev/$DEV"
 	[ -b $DEV ] || fail "Cannot find $DEV."

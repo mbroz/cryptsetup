@@ -40,7 +40,7 @@ add_device() {
 	fi
 
 	sleep 2
-	DEV=$(grep scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+	DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 
 	if [ ! -e /sys/block/$DEV/alignment_offset ] ; then
 		echo "This kernel seems to not support topology info, test skipped."
