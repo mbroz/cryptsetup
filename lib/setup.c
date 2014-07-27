@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <sys/utsname.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -98,6 +99,9 @@ struct crypt_device {
 	/* last error message */
 	char error[MAX_ERROR_LENGTH];
 };
+
+/* Just to suppress redundant messages about crypto backend */
+static int _crypto_logged = 0;
 
 /* Global error */
 /* FIXME: not thread safe, remove this later */
@@ -188,6 +192,7 @@ struct device *crypt_data_device(struct crypt_device *cd)
 
 int init_crypto(struct crypt_device *ctx)
 {
+	struct utsname uts;
 	int r;
 
 	r = crypt_random_init(ctx);
@@ -200,7 +205,14 @@ int init_crypto(struct crypt_device *ctx)
 	if (r < 0)
 		log_err(ctx, _("Cannot initialize crypto backend.\n"));
 
-	log_dbg("Crypto backend (%s) initialized.", crypt_backend_version());
+	if (!r && !_crypto_logged) {
+		log_dbg("Crypto backend (%s) initialized.", crypt_backend_version());
+		if (!uname(&uts))
+			log_dbg("Detected kernel %s %s %s.",
+				uts.sysname, uts.release, uts.machine);
+		_crypto_logged = 1;
+	}
+
 	return r;
 }
 

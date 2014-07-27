@@ -28,7 +28,6 @@
 #include <fcntl.h>
 #include <linux/fs.h>
 #include <uuid/uuid.h>
-#include <sys/utsname.h>
 
 #include "internal.h"
 
@@ -159,16 +158,6 @@ static void _dm_set_verity_compat(const char *dm_version, unsigned verity_maj,
 		verity_maj, verity_min, verity_patch);
 }
 
-static void _dm_kernel_info(void)
-{
-	struct utsname uts;
-
-	if (!uname(&uts))
-		log_dbg("Detected kernel %s %s %s.",
-			uts.sysname, uts.release, uts.machine);
-
-}
-
 static int _dm_check_versions(void)
 {
 	struct dm_task *dmt;
@@ -178,8 +167,6 @@ static int _dm_check_versions(void)
 
 	if (_dm_crypt_checked)
 		return 1;
-
-	_dm_kernel_info();
 
 	/* Shut up DM while checking */
 	_quiet_log = 1;
