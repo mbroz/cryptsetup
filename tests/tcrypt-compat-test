@@ -102,6 +102,7 @@ for file in $(ls $TST_DIR/tc_*) ; do
 	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen -r $file $MAP 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
+	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
 	[ $ret -ne 0 ] && fail
 	$CRYPTSETUP status $MAP >/dev/null || fail
 	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
@@ -117,6 +118,7 @@ for file in $(ls $TST_DIR/tc_*-hidden) ; do
 	out=$(echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r $file $MAP --tcrypt-hidden 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
+	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
 	[ $ret -ne 0 ] && fail
 	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
 	$CRYPTSETUP remove $MAP || fail
