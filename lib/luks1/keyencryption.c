@@ -136,7 +136,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 
 	struct device *device = crypt_metadata_device(ctx);
 	struct crypt_storage *s;
-	int devfd, bsize, r = 0;
+	int devfd = -1, bsize, r = 0;
 
 	/* Only whole sector writes supported */
 	if (srcLength % SECTOR_SIZE)
@@ -164,25 +164,33 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 
 	r = crypt_storage_encrypt(s, 0, srcLength / SECTOR_SIZE, src);
 	crypt_storage_destroy(s);
+
 	if (r)
 		return r;
+
+	r = -EIO;
 
 	/* Write buffer to device */
 	bsize = device_block_size(device);
 	if (bsize <= 0)
-		return -EIO;
+		goto out;
 
-	devfd = open(device_path(device), O_RDWR | O_DIRECT);
+	devfd = device_open(device, O_RDWR);
 	if (devfd == -1)
-		return -EIO;
+		goto out;
 
 	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
 	    write_blockwise(devfd, bsize, src, srcLength) == -1)
-		r = -EIO;
+		goto out;
 
-	close(devfd);
+	r = 0;
+out:
+	if(devfd != -1)
+		close(devfd);
+	if (r)
+		log_err(ctx, _("IO error while encrypting keyslot.\n"));
+
 	return r;
-
 }
 
 int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
@@ -194,7 +202,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 {
 	struct device *device = crypt_metadata_device(ctx);
 	struct crypt_storage *s;
-	int devfd, bsize, r = 0;
+	int devfd = -1, bsize, r = 0;
 
 	/* Only whole sector reads supported */
 	if (dstLength % SECTOR_SIZE)
@@ -219,30 +227,33 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 
 	log_dbg("Using userspace crypto wrapper to access keyslot area.");
 
+	r = -EIO;
+
 	/* Read buffer from device */
 	bsize = device_block_size(device);
-	if (bsize <= 0) {
-		crypt_storage_destroy(s);
-		return -EIO;
-	}
+	if (bsize <= 0)
+		goto bad;
 
-	devfd = open(device_path(device), O_RDONLY | O_DIRECT);
-	if (devfd == -1) {
-		crypt_storage_destroy(s);
-		return -EIO;
-	}
+	devfd = device_open(device, O_RDONLY);
+	if (devfd == -1)
+		goto bad;
 
 	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
-	    read_blockwise(devfd, bsize, dst, dstLength) == -1) {
-		crypt_storage_destroy(s);
-		close(devfd);
-		return -EIO;
-	}
+	    read_blockwise(devfd, bsize, dst, dstLength) == -1)
+		goto bad;
 
 	close(devfd);
 
 	/* Decrypt buffer */
 	r = crypt_storage_decrypt(s, 0, dstLength / SECTOR_SIZE, dst);
+	crypt_storage_destroy(s);
+
+	return r;
+bad:
+	if(devfd != -1)
+		close(devfd);
+
+	log_err(ctx, _("IO error while decrypting keyslot.\n"));
 	crypt_storage_destroy(s);
 
 	return r;

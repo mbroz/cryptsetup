@@ -72,6 +72,9 @@ int device_open(struct device *device, int flags)
 		devfd = open(device_path(device), flags | O_SYNC);
 	}
 
+	if (devfd < 0)
+		log_dbg("Cannot open device %s.", device_path(device));
+
 	return devfd;
 }
 
@@ -229,6 +232,9 @@ int device_block_size(struct device *device)
 	if (ioctl(fd, BLKSSZGET, &bsize) >= 0)
 		r = bsize;
 out:
+	if (r <= 0)
+		log_dbg("Cannot get block size for device %s.", device_path(device));
+
 	close(fd);
 	return r;
 }
