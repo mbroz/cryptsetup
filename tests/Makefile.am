@@ -6,7 +6,8 @@ TESTS = api-test \
 	mode-test \
 	password-hash-test \
 	tcrypt-compat-test \
-	luks1-compat-test
+	luks1-compat-test \
+	device-test
 
 if VERITYSETUP
 TESTS += verity-compat-test
@@ -30,6 +31,7 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	reencryption-compat-test \
 	tcrypt-compat-test \
 	luks1-compat-test \
+	device-test \
 	cryptsetup-valg-supps valg.sh valg-api.sh
 
 CLEANFILES = cryptsetup-tst* valglog*

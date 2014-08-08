@@ -1,0 +1,58 @@
+#!/bin/bash
+
+CRYPTSETUP="../src/cryptsetup"
+MNT_DIR="./mnt_luks"
+PWD1="93R4P4pIqAH8"
+PWD2="mymJeD8ivEhE"
+
+cleanup() {
+	udevadm settle >/dev/null 2>&1
+	if [ -d "$MNT_DIR" ] ; then
+	    umount -f $MNT_DIR 2>/dev/null
+	    rmdir $MNT_DIR 2>/dev/null
+	fi
+	sleep 2
+}
+
+fail()
+{
+	if [ -n "$1" ] ; then echo "FAIL $1" ; else echo "FAIL" ; fi
+	cleanup
+	exit 100
+}
+
+skip()
+{
+	echo "TEST SKIPPED: $1"
+	cleanup
+	exit 0
+}
+
+format() # key_bits expected [forced]
+{
+	dd if=/dev/zero of=$DEV bs=1M count=5 >/dev/null 2>&1
+
+	echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -c aes-cbc-essiv:sha256
+	[ $? -ne 0 ] && fail "Format failed."
+
+	# test some operation, just in case
+	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $DEV -i1 --key-slot 1
+	[ $? -ne 0 ] && fail "Keyslot add failed."
+
+	$CRYPTSETUP -q luksKillSlot $DEV 1
+	[ $? -ne 0 ] && fail "Keyslot removal failed."
+}
+
+if [ $(id -u) != 0 ]; then
+	echo "WARNING: You must be root to run this test, test skipped."
+	exit 0
+fi
+
+[ ! -d $MNT_DIR ] && mkdir $MNT_DIR
+
+echo "[1] Using tmpfs for image"
+DEV="$MNT_DIR/test.img"
+mount -t tmpfs none $MNT_DIR || skip "Mounting tmpfs not available."
+format
+
+cleanup
