@@ -7,10 +7,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup-1.6.5\n"
+"Project-Id-Version: cryptsetup-1.6.6\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2014-06-22 17:58+0200\n"
-"PO-Revision-Date: 2014-06-23 07:42+0700\n"
+"POT-Creation-Date: 2014-08-08 15:54+0200\n"
+"PO-Revision-Date: 2014-08-09 07:24+0700\n"
 "Last-Translator: Trần Ngọc Quân <vnwildman@gmail.com>\n"
 "Language-Team: Vietnamese <translation-team-vi@lists.sourceforge.net>\n"
 "Language: vi\n"
@@ -21,17 +21,17 @@ msgstr ""
 "X-Generator: Poedit 1.5.5\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
-#: lib/libdevmapper.c:260
+#: lib/libdevmapper.c:247
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
 msgstr "Không thể khởi tạo ánh-xạ-thiết-bị (device-mapper), do không chạy dưới quyền siêu người dùng.\n"
 
-#: lib/libdevmapper.c:263
+#: lib/libdevmapper.c:250
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
 msgstr ""
 "Không thể khởi tạo tiến trình ánh xạ thiết bị.\n"
 "Mô-đun hạt nhân “dm_mod” được nạp chưa?\n"
 
-#: lib/libdevmapper.c:551
+#: lib/libdevmapper.c:535
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
 msgstr "Mã số DM-UUID cho thiết bị %s bị cắt ngắn.\n"
@@ -47,7 +47,7 @@ msgstr ""
 #: lib/random.c:80
 #, c-format
 msgid "Generating key (%d%% done).\n"
-msgstr "Đang tạo khóa (%d%% hoàn tất).\n"
+msgstr "Đang tạo khóa (xong %d%%).\n"
 
 #: lib/random.c:169
 msgid "Fatal error during RNG initialisation.\n"
@@ -62,257 +62,257 @@ msgstr "Không hiểu chất lượng RNG đã yêu cầu.\n"
 msgid "Error %d reading from RNG: %s\n"
 msgstr "Lỗi %d khi đọc từ RNG: %s\n"
 
-#: lib/setup.c:195
+#: lib/setup.c:200
 msgid "Cannot initialize crypto RNG backend.\n"
 msgstr "Không thể khởi tạo ứng dụng chạy ở phía sau (backend) mã hóa RNG.\n"
 
-#: lib/setup.c:201
+#: lib/setup.c:206
 msgid "Cannot initialize crypto backend.\n"
 msgstr "Không thể khởi ứng dụng mã hóa chạy ở phía sau (backend).\n"
 
-#: lib/setup.c:224 lib/setup.c:1155 lib/verity/verity.c:123
+#: lib/setup.c:236 lib/setup.c:1162 lib/verity/verity.c:123
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
 msgstr "Thuật toán băm %s không được hỗ trợ.\n"
 
-#: lib/setup.c:227 lib/loopaes/loopaes.c:90
+#: lib/setup.c:239 lib/loopaes/loopaes.c:90
 #, c-format
 msgid "Key processing error (using hash %s).\n"
 msgstr "Lỗi xử lý khóa (dùng mã băm %s).\n"
 
-#: lib/setup.c:272
+#: lib/setup.c:284
 msgid "Cannot determine device type. Incompatible activation of device?\n"
 msgstr "Không thể dò tìm kiểu thiết bị. Phần hoạt hóa của thiết bị không tương thích à?\n"
 
-#: lib/setup.c:276
+#: lib/setup.c:288
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Thao tác này được hỗ trợ chỉ cho thiết bị LUKS.\n"
 
-#: lib/setup.c:308
+#: lib/setup.c:320
 msgid "All key slots full.\n"
 msgstr "Mọi khe khóa đều đã đầy.\n"
 
-#: lib/setup.c:315
+#: lib/setup.c:327
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d.\n"
 msgstr "Khe khóa %d không đúng, hãy chọn một giá trị trong phạm vi từ 0 đến %d.\n"
 
-#: lib/setup.c:321
+#: lib/setup.c:333
 #, c-format
 msgid "Key slot %d is full, please select another one.\n"
 msgstr "Khe khóa %d bị đầy, hãy chọn một khe khác.\n"
 
-#: lib/setup.c:430
+#: lib/setup.c:442
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "Nhập cụm từ mật khẩu cho %s: "
 
-#: lib/setup.c:611
+#: lib/setup.c:623
 #, c-format
 msgid "Header detected but device %s is too small.\n"
 msgstr "Phát hiện được phần đầu nhưng mà thiết bị %s quá nhỏ.\n"
 
-#: lib/setup.c:627 lib/setup.c:1383
+#: lib/setup.c:639 lib/setup.c:1390
 msgid "This operation is not supported for this device type.\n"
 msgstr "Thao tác này không được hỗ trợ cho kiểu thiết bị này.\n"
 
-#: lib/setup.c:866 lib/setup.c:1344 lib/setup.c:2220
+#: lib/setup.c:878 lib/setup.c:1351 lib/setup.c:2227
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Thiết bị %s không hoạt động.\n"
 
-#: lib/setup.c:883
+#: lib/setup.c:895
 #, c-format
 msgid "Underlying device for crypt device %s disappeared.\n"
 msgstr "Thiết bị nằm dưới cho thiết bị crypt %s đã bị biến mất.\n"
 
-#: lib/setup.c:952
+#: lib/setup.c:964
 msgid "Invalid plain crypt parameters.\n"
 msgstr "Đặt sai tham số mã hóa bình thường.\n"
 
-#: lib/setup.c:957 lib/setup.c:1082
+#: lib/setup.c:969 lib/setup.c:1089
 msgid "Invalid key size.\n"
 msgstr "Kích cỡ khóa không đúng.\n"
 
-#: lib/setup.c:962 lib/setup.c:1087
+#: lib/setup.c:974 lib/setup.c:1094
 msgid "UUID is not supported for this crypt type.\n"
 msgstr "UUID không hỗ trợ kiểu mã hóa này.\n"
 
-#: lib/setup.c:1004
+#: lib/setup.c:1016
 msgid "Can't format LUKS without device.\n"
 msgstr "Không thể định dạng “LUKS” mà không có thiết bị.\n"
 
-#: lib/setup.c:1052
+#: lib/setup.c:1059
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
 msgstr "Không thể định dạng thiết bị %s mà nó lại vẫn đang được sử dụng.\n"
 
-#: lib/setup.c:1055
+#: lib/setup.c:1062
 #, c-format
 msgid "Cannot format device %s, permission denied.\n"
 msgstr "Không thể định dạng thiết bị %s, không đủ thẩm quyền.\n"
 
-#: lib/setup.c:1059
+#: lib/setup.c:1066
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
 msgstr "Không thể tẩy xoá phần đầu trên thiết bị %s.\n"
 
-#: lib/setup.c:1077
+#: lib/setup.c:1084
 msgid "Can't format LOOPAES without device.\n"
 msgstr "Không thể định dạng “LOOPAES” bên ngoài thiết bị.\n"
 
-#: lib/setup.c:1115
+#: lib/setup.c:1122
 msgid "Can't format VERITY without device.\n"
 msgstr "Không thể định dạng “VERITY” mà không có thiết bị.\n"
 
-#: lib/setup.c:1123 lib/verity/verity.c:106
+#: lib/setup.c:1130 lib/verity/verity.c:106
 #, c-format
 msgid "Unsupported VERITY hash type %d.\n"
 msgstr "Kiểu băm “VERITY” %d không được hỗ trợ.\n"
 
-#: lib/setup.c:1129 lib/verity/verity.c:114
+#: lib/setup.c:1136 lib/verity/verity.c:114
 msgid "Unsupported VERITY block size.\n"
 msgstr "Kích thước khối “VERITY” không được hỗ trợ.\n"
 
-#: lib/setup.c:1134 lib/verity/verity.c:76
+#: lib/setup.c:1141 lib/verity/verity.c:76
 msgid "Unsupported VERITY hash offset.\n"
 msgstr "Khoảng bù (offset) mã băm “VERITY” không được hỗ trợ.\n"
 
-#: lib/setup.c:1248
+#: lib/setup.c:1255
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Không rõ kiểu thiết bị mã hóa %s được yêu cầu.\n"
 
-#: lib/setup.c:1398
+#: lib/setup.c:1405
 msgid "Do you really want to change UUID of device?"
 msgstr "Bạn có thực sự muốn thay đổi UUID cho thiết bị?"
 
-#: lib/setup.c:1501
+#: lib/setup.c:1508
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Khối tin %s không hoạt động.\n"
 
-#: lib/setup.c:1512
+#: lib/setup.c:1519
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Khối %s đã bị ngưng.\n"
 
-#: lib/setup.c:1519
+#: lib/setup.c:1526
 #, c-format
 msgid "Suspend is not supported for device %s.\n"
 msgstr "Tạm dừng không được hỗ trợ cho kiểu thiết bị %s.\n"
 
-#: lib/setup.c:1521
+#: lib/setup.c:1528
 #, c-format
 msgid "Error during suspending device %s.\n"
 msgstr "Gặp lỗi khi tạm dừng thiết bị %s.\n"
 
-#: lib/setup.c:1547 lib/setup.c:1594
+#: lib/setup.c:1554 lib/setup.c:1601
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Vùng %s không bị treo.\n"
 
-#: lib/setup.c:1561
+#: lib/setup.c:1568
 #, c-format
 msgid "Resume is not supported for device %s.\n"
 msgstr "Thao tác phục hồi không được hỗ trợ cho kiểu thiết bị %s.\n"
 
-#: lib/setup.c:1563 lib/setup.c:1615
+#: lib/setup.c:1570 lib/setup.c:1622
 #, c-format
 msgid "Error during resuming device %s.\n"
 msgstr "Gặp lỗi khi cho hoạt động trở lại thiết bị %s.\n"
 
-#: lib/setup.c:1601 lib/setup.c:2036 lib/setup.c:2050 src/cryptsetup.c:152
+#: lib/setup.c:1608 lib/setup.c:2043 lib/setup.c:2057 src/cryptsetup.c:152
 #: src/cryptsetup.c:218 src/cryptsetup.c:699 src/cryptsetup.c:1115
 msgid "Enter passphrase: "
 msgstr "Gõ cụm từ mật khẩu: "
 
-#: lib/setup.c:1663 lib/setup.c:1799
+#: lib/setup.c:1670 lib/setup.c:1806
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "Không thể thêm khe khóa vì mọi khe đều bị tắt và không cung cấp khóa khối tin.\n"
 
-#: lib/setup.c:1672 lib/setup.c:1805 lib/setup.c:1809
+#: lib/setup.c:1679 lib/setup.c:1812 lib/setup.c:1816
 msgid "Enter any passphrase: "
 msgstr "Nhập bất cứ cụm từ mật khẩu nào: "
 
-#: lib/setup.c:1689 lib/setup.c:1822 lib/setup.c:1826 lib/setup.c:1888
+#: lib/setup.c:1696 lib/setup.c:1829 lib/setup.c:1833 lib/setup.c:1895
 #: src/cryptsetup.c:981
 msgid "Enter new passphrase for key slot: "
 msgstr "Gõ cụm từ mật khẩu mới cho khe khóa: "
 
-#: lib/setup.c:1754
+#: lib/setup.c:1761
 #, c-format
 msgid "Key slot %d changed.\n"
 msgstr "Khe khóa %d đã thay đổi.\n"
 
-#: lib/setup.c:1757
+#: lib/setup.c:1764
 #, c-format
 msgid "Replaced with key slot %d.\n"
 msgstr "Đã thay thế với khe khóa %d.\n"
 
-#: lib/setup.c:1762
+#: lib/setup.c:1769
 msgid "Failed to swap new key slot.\n"
 msgstr "Gặp lỗi khi hoán đổi khe khóa mới.\n"
 
-#: lib/setup.c:1879 lib/setup.c:2140 lib/setup.c:2153 lib/setup.c:2295
+#: lib/setup.c:1886 lib/setup.c:2147 lib/setup.c:2160 lib/setup.c:2302
 msgid "Volume key does not match the volume.\n"
 msgstr "Khoá khối tin không tương ứng với khối tin đó.\n"
 
-#: lib/setup.c:1917
+#: lib/setup.c:1924
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "Khe khóa %d không đúng.\n"
 
-#: lib/setup.c:1922
+#: lib/setup.c:1929
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "Khe khóa %d không được dùng.\n"
 
-#: lib/setup.c:1952 lib/setup.c:2024 lib/setup.c:2116
+#: lib/setup.c:1959 lib/setup.c:2031 lib/setup.c:2123
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Thiết bị %s đã sẵn có.\n"
 
-#: lib/setup.c:2127
+#: lib/setup.c:2134
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "Khóa vùng chứa đã chỉ định không đúng cho thiết bị thường.\n"
 
-#: lib/setup.c:2160
+#: lib/setup.c:2167
 msgid "Incorrect root hash specified for verity device.\n"
 msgstr "Mã băm gốc đã chỉ định không đúng cho thiết bị chứng thực (verity).\n"
 
-#: lib/setup.c:2183
+#: lib/setup.c:2190
 msgid "Device type is not properly initialised.\n"
 msgstr "Kiểu thiết bị gần như chắc chắn là chưa được thiết lập.\n"
 
-#: lib/setup.c:2215
+#: lib/setup.c:2222
 #, c-format
 msgid "Device %s is still in use.\n"
 msgstr "Thiết bị %s vẫn đang được sử dụng.\n"
 
-#: lib/setup.c:2224
+#: lib/setup.c:2231
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Thiết bị không đúng %s.\n"
 
-#: lib/setup.c:2245
+#: lib/setup.c:2252
 msgid "Function not available in FIPS mode.\n"
 msgstr "Chức năng không khả dụng trong chế độ “FIPS”.\n"
 
-#: lib/setup.c:2251
+#: lib/setup.c:2258
 msgid "Volume key buffer too small.\n"
 msgstr "Vùng đệm khóa khối tin quá nhỏ.\n"
 
-#: lib/setup.c:2259
+#: lib/setup.c:2266
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Không thể lấy khóa khối tin cho thiết bị bình thường.\n"
 
-#: lib/setup.c:2266
+#: lib/setup.c:2273
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Thao tác này không được hỗ trợ cho thiết bị mã hóa %s.\n"
 
-#: lib/setup.c:2462
+#: lib/setup.c:2469
 msgid "Dump operation is not supported for this device type.\n"
 msgstr "Thao tác đổ đống (dump) không được hỗ trợ cho kiểu thiết bị này.\n"
 
@@ -373,49 +373,49 @@ msgstr "Không thể đọc đống dữ liệu đã yêu cầu.\n"
 msgid "FIPS checksum verification failed.\n"
 msgstr "Thẩm tra mã băm FIPS không đạt.\n"
 
-#: lib/utils_device.c:52 lib/luks1/keyencryption.c:83
+#: lib/utils_device.c:52 lib/luks1/keyencryption.c:90
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Thiết bị %s không tồn tại hoặc không đủ quyền truy cập.\n"
 
-#: lib/utils_device.c:346
+#: lib/utils_device.c:352
 msgid "Cannot use a loopback device, running as non-root user.\n"
 msgstr "Không thể sử dụng thiết-bị vòng ngược (loopback), do không chạy dưới quyền siêu người dùng.\n"
 
-#: lib/utils_device.c:349
+#: lib/utils_device.c:355
 msgid "Cannot find a free loopback device.\n"
 msgstr "Không tìm thấy thiết bị vòng ngược (loopback ) nào còn rảnh.\n"
 
-#: lib/utils_device.c:356
+#: lib/utils_device.c:362
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
 msgstr "Gặp lỗi khi gắn thiết bị vòng ngược (loopback) (thiết bị lặp với cờ autoclear là bắt buộc).\n"
 
-#: lib/utils_device.c:396
+#: lib/utils_device.c:402
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
 msgstr "Không thể sử dụng thiết bị %s mà nó lại đang được sử dụng (đang được ánh xạ hoặc gắn).\n"
 
-#: lib/utils_device.c:400
+#: lib/utils_device.c:406
 #, c-format
 msgid "Cannot get info about device %s.\n"
 msgstr "Không thể lấy thông tin về thiết bị %s.\n"
 
-#: lib/utils_device.c:406
+#: lib/utils_device.c:412
 #, c-format
 msgid "Requested offset is beyond real size of device %s.\n"
 msgstr "Khoảng bù (offset) đã yêu cầu nằm ngoài kích thước thật của thiết bị %s.\n"
 
-#: lib/utils_device.c:414
+#: lib/utils_device.c:420
 #, c-format
 msgid "Device %s has zero size.\n"
 msgstr "Thiết bị %s có kích cỡ là không.\n"
 
-#: lib/utils_device.c:425
+#: lib/utils_device.c:431
 #, c-format
 msgid "Device %s is too small.\n"
 msgstr "Thiết bị %s có kích cỡ quá nhỏ.\n"
 
-#: lib/luks1/keyencryption.c:32
+#: lib/luks1/keyencryption.c:37
 #, c-format
 msgid ""
 "Failed to setup dm-crypt key mapping for device %s.\n"
@@ -424,23 +424,31 @@ msgstr ""
 "Gặp lỗi khi cài đặt ánh xạ khóa dm-crypt cho thiết bị %s.\n"
 "Kiểm tra lại hạt nhân hỗ trợ mật mã %s (kiểu tra sổ theo dõi hệ thống để tìm thêm thông tin.)\n"
 
-#: lib/luks1/keyencryption.c:37
+#: lib/luks1/keyencryption.c:42
 msgid "Key size in XTS mode must be 256 or 512 bits.\n"
 msgstr "Kích thước khóa trong chế độ “XTS” phải là 256 hay 512 bit.\n"
 
-#: lib/luks1/keyencryption.c:89 lib/luks1/keymanage.c:296
+#: lib/luks1/keyencryption.c:96 lib/luks1/keymanage.c:296
 #: lib/luks1/keymanage.c:565 lib/luks1/keymanage.c:1010
 #, c-format
 msgid "Cannot write to device %s, permission denied.\n"
 msgstr "Không thể ghi thiết bị %s, không đủ thẩm quyền.\n"
 
-#: lib/luks1/keyencryption.c:104
+#: lib/luks1/keyencryption.c:111
 msgid "Failed to open temporary keystore device.\n"
 msgstr "Gặp lỗi khi mở thiết bị lưu trữ khóa tạm thời.\n"
 
-#: lib/luks1/keyencryption.c:111
+#: lib/luks1/keyencryption.c:118
 msgid "Failed to access temporary keystore device.\n"
 msgstr "Gl khi truy cập đến thiết bị lưu trữ khóa tạm thời.\n"
+
+#: lib/luks1/keyencryption.c:191
+msgid "IO error while encrypting keyslot.\n"
+msgstr "Lỗi IO (vào/ra) trong quá trình mã hóa khe khóa.\n"
+
+#: lib/luks1/keyencryption.c:256
+msgid "IO error while decrypting keyslot.\n"
+msgstr "Lỗi IO (vào/ra) trong quá trình giải mã khe khóa.\n"
 
 #: lib/luks1/keymanage.c:90
 #, c-format
@@ -466,7 +474,7 @@ msgstr "Không thể tạo phần đầu của tập tin sao lưu dự phòng %s
 #: lib/luks1/keymanage.c:205
 #, c-format
 msgid "Cannot write header backup file %s.\n"
-msgstr "Không thể ghi nhớ tập tin sao lưu phần đầu %s.\n"
+msgstr "Không thể ghi tập tin sao lưu phần đầu %s.\n"
 
 #: lib/luks1/keymanage.c:239
 msgid "Backup file doesn't contain valid LUKS header.\n"
@@ -635,7 +643,7 @@ msgstr "Khe khóa %d không đúng: hãy chọn khe khóa trong phạm vi 0 đ�
 #: lib/luks1/keymanage.c:1014
 #, c-format
 msgid "Cannot wipe device %s.\n"
-msgstr "Không thể xoá thiết bị %s.\n"
+msgstr "Không thể tẩy thiết bị %s.\n"
 
 #: lib/loopaes/loopaes.c:146
 msgid "Detected not yet supported GPG encrypted keyfile.\n"
@@ -643,7 +651,7 @@ msgstr "Tìm thấy tập tin khóa mã hóa GPG vẫn chưa được hỗ trợ
 
 #: lib/loopaes/loopaes.c:147
 msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
-msgstr "Hãy dùng gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "Hãy dùng gpg --decrypt <TẬP-TIN-KHÓA> | cryptsetup --keyfile=- ...\n"
 
 #: lib/loopaes/loopaes.c:168 lib/loopaes/loopaes.c:188
 msgid "Incompatible loop-AES keyfile detected.\n"
@@ -719,8 +727,8 @@ msgstr "phần đầu VERITY sai hỏng.\n"
 
 #: lib/verity/verity.c:166
 #, c-format
-msgid "Wrong VERITY UUID format provided on device %s. \n"
-msgstr "Đưa ra định dạng mã số UUID VERITY không đúng trên thiết bị %s.\n"
+msgid "Wrong VERITY UUID format provided on device %s.\n"
+msgstr "Đưa ra định dạng mã số VERITY không đúng trên thiết bị %s.\n"
 
 #: lib/verity/verity.c:196
 #, c-format
@@ -1287,7 +1295,7 @@ msgstr "Tắt chức năng kiểm tra chất lượng mật khẩu (nếu nó đ
 
 #: src/cryptsetup.c:1492 src/veritysetup.c:402
 msgid "[OPTION...] <action> <action-specific>"
-msgstr "[TÙY_CHỌN...] <thao-tác> <đặc-tả-thao-tác>"
+msgstr "[TÙY CHỌN...] <thao-tác> <đặc-tả-thao-tác>"
 
 #: src/cryptsetup.c:1533
 msgid "Running in FIPS mode.\n"
@@ -1626,7 +1634,7 @@ msgstr "Không mở được tập tin nhật ký reencryption.\n"
 
 #: src/cryptsetup_reencrypt.c:1153
 msgid "Reencryption block size"
-msgstr "Kích thước khối Reencryption"
+msgstr "Kích thước khối mã hóa lại"
 
 #: src/cryptsetup_reencrypt.c:1153
 msgid "MiB"
