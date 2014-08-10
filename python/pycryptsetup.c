@@ -25,6 +25,9 @@
 
 #include "libcryptsetup.h"
 
+/* Python API use char* where const char* should be used... */
+#define CONST_CAST(x) (x)(uintptr_t)
+
 #if PY_MAJOR_VERSION < 3
   #define MOD_ERROR_VAL
   #define MOD_SUCCESS_VAL(val)
@@ -42,6 +45,8 @@
             PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
           ob = PyModule_Create(&moduledef);
 #endif
+
+MOD_INIT(pycryptsetup);
 
 typedef struct {
 	PyObject_HEAD
@@ -185,7 +190,7 @@ constructor takes one to five arguments:\n\
 
 static int CryptSetup_init(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"device", "name", "yesDialog", "passwordDialog", "logFunc", NULL};
+	static const char *kwlist[] = {"device", "name", "yesDialog", "passwordDialog", "logFunc", NULL};
 	PyObject *yesDialogCB = NULL,
 		 *passwordDialogCB = NULL,
 		 *cmdLineLogCB = NULL,
@@ -193,7 +198,7 @@ static int CryptSetup_init(CryptSetupObject* self, PyObject *args, PyObject *kwd
 	char *device = NULL, *deviceName = NULL;
 	int r;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzOOO", kwlist, &device, &deviceName,
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzOOO", CONST_CAST(char**)kwlist, &device, &deviceName,
 					 &yesDialogCB, &passwordDialogCB, &cmdLineLogCB))
 		return -1;
 
@@ -256,13 +261,12 @@ CryptSetup_activate_HELP[] =
 
 static PyObject *CryptSetup_activate(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"name", "passphrase", NULL};
+	static const char *kwlist[] = {"name", "passphrase", NULL};
 	char *name = NULL, *passphrase = NULL;
 	int is;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|s", kwlist, &name, &passphrase))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|s", CONST_CAST(char**)kwlist, &name, &passphrase))
 		return NULL;
-
 
 	// FIXME: allow keyfile and \0 in passphrase
 	is = crypt_activate_by_passphrase(self->device, name, CRYPT_ANY_SLOT,
@@ -300,10 +304,10 @@ CryptSetup_askyes_HELP[] =
 
 static PyObject *CryptSetup_askyes(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"message", NULL};
+	static const char *kwlist[] = {"message", NULL};
 	PyObject *message = NULL, *result, *arglist;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &message))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", CONST_CAST(char**)kwlist, &message))
 		return NULL;
 
 	Py_INCREF(message);
@@ -328,10 +332,10 @@ CryptSetup_log_HELP[] =
 
 static PyObject *CryptSetup_log(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"priority", "message", NULL};
+	static const char *kwlist[] = {"priority", "message", NULL};
 	PyObject *message = NULL, *priority = NULL, *result, *arglist;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO", kwlist, &message, &priority))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO", CONST_CAST(char**)kwlist, &message, &priority))
 		return NULL;
 
 	Py_INCREF(message);
@@ -416,12 +420,12 @@ CryptSetup_luksFormat_HELP[] =
 
 static PyObject *CryptSetup_luksFormat(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"cipher", "cipherMode", "keysize", NULL};
+	static const char *kwlist[] = {"cipher", "cipherMode", "keysize", NULL};
 	char *cipher_mode = NULL, *cipher = NULL;
 	int keysize = 256;
 	PyObject *keysize_object = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzO", kwlist, 
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzO", CONST_CAST(char**)kwlist,
 					&cipher, &cipher_mode, &keysize_object))
 		return NULL;
 
@@ -455,12 +459,12 @@ CryptSetup_addKeyByPassphrase_HELP[] =
 
 static PyObject *CryptSetup_addKeyByPassphrase(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"passphrase", "newPassphrase", "slot", NULL};
+	static const char *kwlist[] = {"passphrase", "newPassphrase", "slot", NULL};
 	char *passphrase = NULL, *newpassphrase = NULL;
 	size_t passphrase_len = 0, newpassphrase_len = 0;
 	int slot = CRYPT_ANY_SLOT;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss|i", kwlist, &passphrase, &newpassphrase, &slot))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss|i", CONST_CAST(char**)kwlist, &passphrase, &newpassphrase, &slot))
 		return NULL;
 
 	if(passphrase)
@@ -483,12 +487,12 @@ CryptSetup_addKeyByVolumeKey_HELP[] =
 
 static PyObject *CryptSetup_addKeyByVolumeKey(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"newPassphrase", "slot", NULL};
+	static const char *kwlist[] = {"newPassphrase", "slot", NULL};
 	char *newpassphrase = NULL;
 	size_t newpassphrase_len = 0;
 	int slot = CRYPT_ANY_SLOT;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|i", kwlist, &newpassphrase, &slot))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|i", CONST_CAST(char**)kwlist, &newpassphrase, &slot))
 		return NULL;
 
 	if (newpassphrase)
@@ -506,12 +510,12 @@ CryptSetup_removePassphrase_HELP[] =
 
 static PyObject *CryptSetup_removePassphrase(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"passphrase", NULL};
+	static const char *kwlist[] = {"passphrase", NULL};
 	char *passphrase = NULL;
 	size_t passphrase_len = 0;
 	int is;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &passphrase))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", CONST_CAST(char**)kwlist, &passphrase))
 		return NULL;
 
 	if (passphrase)
@@ -533,10 +537,10 @@ CryptSetup_killSlot_HELP[] =
 
 static PyObject *CryptSetup_killSlot(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"slot", NULL};
+	static const char *kwlist[] = {"slot", NULL};
 	int slot = CRYPT_ANY_SLOT;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "i", kwlist, &slot))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "i", CONST_CAST(char**)kwlist, &slot))
 		return NULL;
 
 	switch (crypt_keyslot_status(self->device, slot)) {
@@ -579,7 +583,7 @@ CryptSetup_Resume_HELP[] =
 
 static PyObject *CryptSetup_Resume(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"passphrase", NULL};
+	static const char *kwlist[] = {"passphrase", NULL};
 	char* passphrase = NULL;
 	size_t passphrase_len = 0;
 
@@ -588,9 +592,8 @@ static PyObject *CryptSetup_Resume(CryptSetupObject* self, PyObject *args, PyObj
 		return NULL;
 	}
 
-	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|s", kwlist, &passphrase))
+	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|s", CONST_CAST(char**)kwlist, &passphrase))
 		return NULL;
-
 
 	if (passphrase)
 		passphrase_len = strlen(passphrase);
@@ -622,10 +625,10 @@ CryptSetup_debugLevel_HELP[] =
 
 static PyObject *CryptSetup_debugLevel(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"level", NULL};
+	static const char *kwlist[] = {"level", NULL};
 	int level = 0;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "i", kwlist, &level))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "i", CONST_CAST(char**)kwlist, &level))
 		return NULL;
 
 	crypt_set_debug_level(level);
@@ -641,10 +644,10 @@ CryptSetup_iterationTime_HELP[] =
 
 static PyObject *CryptSetup_iterationTime(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static char *kwlist[] = {"time_ms", NULL};
+	static const char *kwlist[] = {"time_ms", NULL};
 	uint64_t time_ms = 0;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "K", kwlist, &time_ms))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "K", CONST_CAST(char**)kwlist, &time_ms))
 		return NULL;
 
 	crypt_set_iteration_time(self->device, time_ms);
@@ -653,9 +656,9 @@ static PyObject *CryptSetup_iterationTime(CryptSetupObject* self, PyObject *args
 }
 
 static PyMemberDef CryptSetup_members[] = {
-	{"yesDialogCB", T_OBJECT_EX, offsetof(CryptSetupObject, yesDialogCB), 0, "confirmation dialog callback"},
-	{"cmdLineLogCB", T_OBJECT_EX, offsetof(CryptSetupObject, cmdLineLogCB), 0, "logging callback"},
-	{"passwordDialogCB", T_OBJECT_EX, offsetof(CryptSetupObject, passwordDialogCB), 0, "password dialog callback"},
+	{CONST_CAST(char*)"yesDialogCB", T_OBJECT_EX, offsetof(CryptSetupObject, yesDialogCB), 0, CONST_CAST(char*)"confirmation dialog callback"},
+	{CONST_CAST(char*)"cmdLineLogCB", T_OBJECT_EX, offsetof(CryptSetupObject, cmdLineLogCB), 0, CONST_CAST(char*)"logging callback"},
+	{CONST_CAST(char*)"passwordDialogCB", T_OBJECT_EX, offsetof(CryptSetupObject, passwordDialogCB), 0, CONST_CAST(char*)"password dialog callback"},
 	{NULL}
 };
 
@@ -671,7 +674,7 @@ static PyMethodDef CryptSetup_methods[] = {
 	/* cryptsetup info entrypoints */
 	{"luksUUID", (PyCFunction)CryptSetup_luksUUID, METH_NOARGS, CryptSetup_luksUUID_HELP},
 	{"isLuks", (PyCFunction)CryptSetup_isLuks, METH_NOARGS, CryptSetup_isLuks_HELP},
-	{"info", (PyCFunction)CryptSetup_Info, METH_NOARGS, CryptSetup_Info_HELP},  
+	{"info", (PyCFunction)CryptSetup_Info, METH_NOARGS, CryptSetup_Info_HELP},
 	{"status", (PyCFunction)CryptSetup_Status, METH_NOARGS, CryptSetup_Status_HELP},
 
 	/* cryptsetup mgmt entrypoints */
