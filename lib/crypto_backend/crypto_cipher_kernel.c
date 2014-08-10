@@ -187,6 +187,9 @@ static int crypt_cipher_crypt(struct crypt_cipher *ctx,
 
 	/* Set encrypt/decrypt operation */
 	header = CMSG_FIRSTHDR(&msg);
+	if (!header)
+		return -EINVAL;
+
 	header->cmsg_level = SOL_ALG;
 	header->cmsg_type = ALG_SET_OP;
 	header->cmsg_len = CMSG_LEN(sizeof(*type));
