@@ -157,7 +157,7 @@ static int untimed_read(int fd, char *pass, size_t maxlen)
 static int timed_read(int fd, char *pass, size_t maxlen, long timeout)
 {
 	struct timeval t;
-	fd_set fds;
+	fd_set fds = {}; /* Just to avoid scan-build false report for FD_SET */
 	int failed = -1;
 
 	FD_ZERO(&fds);
@@ -176,16 +176,18 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 {
 	struct termios orig, tmp;
 	int failed = -1;
-	int infd = STDIN_FILENO, outfd;
+	int infd, outfd;
 
 	if (maxlen < 1)
 		goto out_err;
 
 	/* Read and write to /dev/tty if available */
-	if ((infd = outfd = open("/dev/tty", O_RDWR)) == -1) {
+	infd = open("/dev/tty", O_RDWR);
+	if (infd == -1) {
 		infd = STDIN_FILENO;
 		outfd = STDERR_FILENO;
-	}
+	} else
+		outfd = infd;
 
 	if (tcgetattr(infd, &orig))
 		goto out_err;
