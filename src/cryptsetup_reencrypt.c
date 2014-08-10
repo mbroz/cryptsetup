@@ -1086,7 +1086,7 @@ static void destroy_context(struct reenc_ctx *rc)
 static int run_reencrypt(const char *device)
 {
 	int r = -EINVAL;
-	struct reenc_ctx rc = {};
+	static struct reenc_ctx rc = {};
 
 	if (initialize_context(&rc, device))
 		goto out;
