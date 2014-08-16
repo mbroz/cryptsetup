@@ -1,0 +1,29 @@
+Cryptsetup 1.6.6 Release Notes
+==============================
+
+Changes since version 1.6.5
+
+* LUKS: Fix keyslot device access for devices which
+  do not support direct IO operations. (Regression in 1.6.5.)
+
+* LUKS: Fallback to old temporary keyslot device mapping method
+  if hash (for ESSIV) is not supported by userspace crypto
+  library. (Regression in 1.6.5.)
+
+* Properly activate device with discard (TRIM for SSDs)
+  if requested even if dm_crypt module is not yet loaded.
+  Only if discard is not supported by the old kernel then
+  the discard option is ignored.
+
+* Fix some static analysis build warnings (scan-build).
+
+* Report crypto lib version only once (and always add kernel
+  version) in debug output.
+
+Cryptsetup API NOTE:
+The direct terminal handling for passphrase entry will be removed from
+libcryptsetup in next major version (application should handle it itself).
+
+It means that you have to always either provide password in buffer or set
+your own password callback function through crypt_set_password_callback().
+See API documentation (or libcryptsetup.h) for more info.
