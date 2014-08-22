@@ -7,10 +7,10 @@
 # Frédéric Marchal <fmarchal@perso.be>, 2014.
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.6.5\n"
+"Project-Id-Version: cryptsetup 1.6.6\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2014-06-22 17:58+0200\n"
-"PO-Revision-Date: 2014-06-25 21:33+0200\n"
+"POT-Creation-Date: 2014-08-08 15:54+0200\n"
+"PO-Revision-Date: 2014-08-19 08:10+0200\n"
 "Last-Translator: Frédéric Marchal <fmarchal@perso.be>\n"
 "Language-Team: French <traduc@traduc.org>\n"
 "Language: fr\n"
@@ -19,15 +19,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms:  nplurals=2; plural=(n > 1);\n"
 
-#: lib/libdevmapper.c:260
+#: lib/libdevmapper.c:247
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
 msgstr "Impossible d'initialiser le gestionnaire « device-mapper ». Fonctionne comme un utilisateur non-root.\n"
 
-#: lib/libdevmapper.c:263
+#: lib/libdevmapper.c:250
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
 msgstr "Impossible d'initialiser le gestionnaire « device-mapper ». Le module noyau dm_mod est-il chargé ?\n"
 
-#: lib/libdevmapper.c:551
+#: lib/libdevmapper.c:535
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
 msgstr "Le DM-UUID du périphérique %s a été tronqué.\n"
@@ -58,257 +58,257 @@ msgstr "La qualité du générateur aléatoire RNG demandé est inconnue.\n"
 msgid "Error %d reading from RNG: %s\n"
 msgstr "Erreur %d en lecture du générateur aléatoire RNG :%s\n"
 
-#: lib/setup.c:195
+#: lib/setup.c:200
 msgid "Cannot initialize crypto RNG backend.\n"
 msgstr "Impossible d'initialiser le moteur aléatoire RNG pour le chiffrement.\n"
 
-#: lib/setup.c:201
+#: lib/setup.c:206
 msgid "Cannot initialize crypto backend.\n"
 msgstr "Impossible d'initialiser le moteur de chiffrement.\n"
 
-#: lib/setup.c:224 lib/setup.c:1155 lib/verity/verity.c:123
+#: lib/setup.c:236 lib/setup.c:1162 lib/verity/verity.c:123
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
 msgstr "L'algorithme de hachage %s n'est pas supporté.\n"
 
-#: lib/setup.c:227 lib/loopaes/loopaes.c:90
+#: lib/setup.c:239 lib/loopaes/loopaes.c:90
 #, c-format
 msgid "Key processing error (using hash %s).\n"
 msgstr "Erreur de traitement de clé (valeur hachage %s).\n"
 
-#: lib/setup.c:272
+#: lib/setup.c:284
 msgid "Cannot determine device type. Incompatible activation of device?\n"
 msgstr "Impossible de déterminer le type de périphérique. Activation du périphérique incompatible ?\n"
 
-#: lib/setup.c:276
+#: lib/setup.c:288
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Cette opération n'est possible que pour les périphériques LUKS.\n"
 
-#: lib/setup.c:308
+#: lib/setup.c:320
 msgid "All key slots full.\n"
 msgstr "Tous les emplacements de clés sont utilisés.\n"
 
-#: lib/setup.c:315
+#: lib/setup.c:327
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d.\n"
 msgstr "L'emplacement de clé %d n'est pas valide, merci d'en choisir un entre 0 et %d.\n"
 
-#: lib/setup.c:321
+#: lib/setup.c:333
 #, c-format
 msgid "Key slot %d is full, please select another one.\n"
 msgstr "L'emplacement de clé %d est utilisé, merci d'en sélectionner un autre.\n"
 
-#: lib/setup.c:430
+#: lib/setup.c:442
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "Saisissez la phrase secrète pour %s : "
 
-#: lib/setup.c:611
+#: lib/setup.c:623
 #, c-format
 msgid "Header detected but device %s is too small.\n"
 msgstr "En-tête détecté mais le périphérique %s est trop petit.\n"
 
-#: lib/setup.c:627 lib/setup.c:1383
+#: lib/setup.c:639 lib/setup.c:1390
 msgid "This operation is not supported for this device type.\n"
 msgstr "Cette opération n'est pas supportée pour ce type de périphérique.\n"
 
-#: lib/setup.c:866 lib/setup.c:1344 lib/setup.c:2220
+#: lib/setup.c:878 lib/setup.c:1351 lib/setup.c:2227
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Le périphérique %s n'est pas activé.\n"
 
-#: lib/setup.c:883
+#: lib/setup.c:895
 #, c-format
 msgid "Underlying device for crypt device %s disappeared.\n"
 msgstr "Le périphérique sous-jacent pour le périphérique chiffré %s a disparu.\n"
 
-#: lib/setup.c:952
+#: lib/setup.c:964
 msgid "Invalid plain crypt parameters.\n"
 msgstr "Paramètres de chiffrement non valides.\n"
 
-#: lib/setup.c:957 lib/setup.c:1082
+#: lib/setup.c:969 lib/setup.c:1089
 msgid "Invalid key size.\n"
 msgstr "La taille de la clé n'est pas valide.\n"
 
-#: lib/setup.c:962 lib/setup.c:1087
+#: lib/setup.c:974 lib/setup.c:1094
 msgid "UUID is not supported for this crypt type.\n"
 msgstr "le UUID n'est pas supporté avec ce type de chiffrement.\n"
 
-#: lib/setup.c:1004
+#: lib/setup.c:1016
 msgid "Can't format LUKS without device.\n"
 msgstr "Impossible de formater en LUKS sans périphérique.\n"
 
-#: lib/setup.c:1052
+#: lib/setup.c:1059
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
 msgstr "Impossible de formater le périphérique %s qui est déjà en cours d'utilisation.\n"
 
-#: lib/setup.c:1055
+#: lib/setup.c:1062
 #, c-format
 msgid "Cannot format device %s, permission denied.\n"
 msgstr "Impossible de formater le périphérique %s. Permission refusée.\n"
 
-#: lib/setup.c:1059
+#: lib/setup.c:1066
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
 msgstr "Impossible d'effacer l'en-tête du périphérique %s.\n"
 
-#: lib/setup.c:1077
+#: lib/setup.c:1084
 msgid "Can't format LOOPAES without device.\n"
 msgstr "Impossible de formater LOOPAES sans périphérique.\n"
 
-#: lib/setup.c:1115
+#: lib/setup.c:1122
 msgid "Can't format VERITY without device.\n"
 msgstr "Impossible de formater VERITY sans périphérique.\n"
 
-#: lib/setup.c:1123 lib/verity/verity.c:106
+#: lib/setup.c:1130 lib/verity/verity.c:106
 #, c-format
 msgid "Unsupported VERITY hash type %d.\n"
 msgstr "Type de hachage VERITY %d non supporté.\n"
 
-#: lib/setup.c:1129 lib/verity/verity.c:114
+#: lib/setup.c:1136 lib/verity/verity.c:114
 msgid "Unsupported VERITY block size.\n"
 msgstr "Taille de bloc VERITY non supportée.\n"
 
-#: lib/setup.c:1134 lib/verity/verity.c:76
+#: lib/setup.c:1141 lib/verity/verity.c:76
 msgid "Unsupported VERITY hash offset.\n"
 msgstr "Décalage de hachage VERITY non supporté.\n"
 
-#: lib/setup.c:1248
+#: lib/setup.c:1255
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Type de chiffrement de périphérique demandé (%s) inconnu.\n"
 
-#: lib/setup.c:1398
+#: lib/setup.c:1405
 msgid "Do you really want to change UUID of device?"
 msgstr "Voulez vous réellement changer l'UUID du périphérique ?"
 
-#: lib/setup.c:1501
+#: lib/setup.c:1508
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Le volume %s n'est pas actif.\n"
 
-#: lib/setup.c:1512
+#: lib/setup.c:1519
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Le volume %s est déjà en suspendu.\n"
 
-#: lib/setup.c:1519
+#: lib/setup.c:1526
 #, c-format
 msgid "Suspend is not supported for device %s.\n"
 msgstr "Le périphérique %s ne supporte pas la suspension.\n"
 
-#: lib/setup.c:1521
+#: lib/setup.c:1528
 #, c-format
 msgid "Error during suspending device %s.\n"
 msgstr "Erreur lors de la suspension du périphérique %s.\n"
 
-#: lib/setup.c:1547 lib/setup.c:1594
+#: lib/setup.c:1554 lib/setup.c:1601
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Le volume %s n'est pas suspendu.\n"
 
-#: lib/setup.c:1561
+#: lib/setup.c:1568
 #, c-format
 msgid "Resume is not supported for device %s.\n"
 msgstr "Le périphérique %s ne supporte pas la remise en service.\n"
 
-#: lib/setup.c:1563 lib/setup.c:1615
+#: lib/setup.c:1570 lib/setup.c:1622
 #, c-format
 msgid "Error during resuming device %s.\n"
 msgstr "Erreur lors de la remise en service du périphérique %s.\n"
 
-#: lib/setup.c:1601 lib/setup.c:2036 lib/setup.c:2050 src/cryptsetup.c:152
+#: lib/setup.c:1608 lib/setup.c:2043 lib/setup.c:2057 src/cryptsetup.c:152
 #: src/cryptsetup.c:218 src/cryptsetup.c:699 src/cryptsetup.c:1115
 msgid "Enter passphrase: "
 msgstr "Saisissez la phrase secrète : "
 
-#: lib/setup.c:1663 lib/setup.c:1799
+#: lib/setup.c:1670 lib/setup.c:1806
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "Impossible d'ajouter un emplacement de clé, tous les emplacements sont désactivés et aucune clé n'a été fournie pour ce volume.\n"
 
-#: lib/setup.c:1672 lib/setup.c:1805 lib/setup.c:1809
+#: lib/setup.c:1679 lib/setup.c:1812 lib/setup.c:1816
 msgid "Enter any passphrase: "
 msgstr "Entrez une phrase de passe : "
 
-#: lib/setup.c:1689 lib/setup.c:1822 lib/setup.c:1826 lib/setup.c:1888
+#: lib/setup.c:1696 lib/setup.c:1829 lib/setup.c:1833 lib/setup.c:1895
 #: src/cryptsetup.c:981
 msgid "Enter new passphrase for key slot: "
 msgstr "Entrez une nouvelle phrase secrète pour l'emplacement de clé : "
 
-#: lib/setup.c:1754
+#: lib/setup.c:1761
 #, c-format
 msgid "Key slot %d changed.\n"
 msgstr "Emplacement de clef %d modifié.\n"
 
-#: lib/setup.c:1757
+#: lib/setup.c:1764
 #, c-format
 msgid "Replaced with key slot %d.\n"
 msgstr "Remplacé par l'emplacement de clé %d.\n"
 
-#: lib/setup.c:1762
+#: lib/setup.c:1769
 msgid "Failed to swap new key slot.\n"
 msgstr "Nouvel emplacement de clé impossible à échanger.\n"
 
-#: lib/setup.c:1879 lib/setup.c:2140 lib/setup.c:2153 lib/setup.c:2295
+#: lib/setup.c:1886 lib/setup.c:2147 lib/setup.c:2160 lib/setup.c:2302
 msgid "Volume key does not match the volume.\n"
 msgstr "Ceci n'est pas la clé du volume.\n"
 
-#: lib/setup.c:1917
+#: lib/setup.c:1924
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "L'emplacement de clé %d n'est pas valide.\n"
 
-#: lib/setup.c:1922
+#: lib/setup.c:1929
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "L'emplacement de clé %d n'est pas utilisé.\n"
 
-#: lib/setup.c:1952 lib/setup.c:2024 lib/setup.c:2116
+#: lib/setup.c:1959 lib/setup.c:2031 lib/setup.c:2123
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Le périphérique %s existe déjà.\n"
 
-#: lib/setup.c:2127
+#: lib/setup.c:2134
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "Clé de volume incorrecte pour le périphérique en clair.\n"
 
-#: lib/setup.c:2160
+#: lib/setup.c:2167
 msgid "Incorrect root hash specified for verity device.\n"
 msgstr "Hachage racine incorrect spécifié pour le périphérique verity.\n"
 
-#: lib/setup.c:2183
+#: lib/setup.c:2190
 msgid "Device type is not properly initialised.\n"
 msgstr "Type de périphérique non proprement initialisé.\n"
 
-#: lib/setup.c:2215
+#: lib/setup.c:2222
 #, c-format
 msgid "Device %s is still in use.\n"
 msgstr "Le périphérique %s est toujours occupé.\n"
 
-#: lib/setup.c:2224
+#: lib/setup.c:2231
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Le périphérique %s n'est pas valide.\n"
 
-#: lib/setup.c:2245
+#: lib/setup.c:2252
 msgid "Function not available in FIPS mode.\n"
 msgstr "Fonction pas disponible en mode FIPS.\n"
 
-#: lib/setup.c:2251
+#: lib/setup.c:2258
 msgid "Volume key buffer too small.\n"
 msgstr "Le tampon de la clé du volume est trop petit.\n"
 
-#: lib/setup.c:2259
+#: lib/setup.c:2266
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Impossible de récupérer la clé du volume pour ce périphérique de type « plain ».\n"
 
-#: lib/setup.c:2266
+#: lib/setup.c:2273
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Cette opération n'est pas possible pour le périphérique chiffré %s.\n"
 
-#: lib/setup.c:2462
+#: lib/setup.c:2469
 msgid "Dump operation is not supported for this device type.\n"
 msgstr "L'opération de vidage n'est pas supportée pour ce type de périphérique.\n"
 
@@ -369,49 +369,49 @@ msgstr "Impossible de lire la quantité de données demandée.\n"
 msgid "FIPS checksum verification failed.\n"
 msgstr "La vérification de la somme de contrôle FIPS a échoué.\n"
 
-#: lib/utils_device.c:52 lib/luks1/keyencryption.c:83
+#: lib/utils_device.c:52 lib/luks1/keyencryption.c:90
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Le périphérique %s n'existe pas ou l'accès y est interdit.\n"
 
-#: lib/utils_device.c:346
+#: lib/utils_device.c:352
 msgid "Cannot use a loopback device, running as non-root user.\n"
 msgstr "Impossible d'utiliser un périphérique loopback. Fonctionne comme un utilisateur non-root.\n"
 
-#: lib/utils_device.c:349
+#: lib/utils_device.c:355
 msgid "Cannot find a free loopback device.\n"
 msgstr "Impossible de trouver un périphérique loopback libre.\n"
 
-#: lib/utils_device.c:356
+#: lib/utils_device.c:362
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
 msgstr "Impossible d'associer le périphérique loopback (le drapeau « autoclear » est requis).\n"
 
-#: lib/utils_device.c:396
+#: lib/utils_device.c:402
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
 msgstr "Impossible d'utiliser le périphérique %s actuellement en usage (déjà mappé ou monté).\n"
 
-#: lib/utils_device.c:400
+#: lib/utils_device.c:406
 #, c-format
 msgid "Cannot get info about device %s.\n"
 msgstr "Impossible d'obtenir des informations au sujet du périphérique %s.\n"
 
-#: lib/utils_device.c:406
+#: lib/utils_device.c:412
 #, c-format
 msgid "Requested offset is beyond real size of device %s.\n"
 msgstr "Le décalage demandé est au delà de la taille réelle du périphérique %s.\n"
 
-#: lib/utils_device.c:414
+#: lib/utils_device.c:420
 #, c-format
 msgid "Device %s has zero size.\n"
 msgstr "Le périphérique %s a une taille nulle.\n"
 
-#: lib/utils_device.c:425
+#: lib/utils_device.c:431
 #, c-format
 msgid "Device %s is too small.\n"
 msgstr "Le périphérique %s est trop petit.\n"
 
-#: lib/luks1/keyencryption.c:32
+#: lib/luks1/keyencryption.c:37
 #, c-format
 msgid ""
 "Failed to setup dm-crypt key mapping for device %s.\n"
@@ -420,23 +420,31 @@ msgstr ""
 "Impossible de configurer la correspondance des clés dm-crypt du périphérique %s.\n"
 "Vérifiez que le noyau supporte le chiffrement %s (pour plus d'informations, voir les journaux syslog).\n"
 
-#: lib/luks1/keyencryption.c:37
+#: lib/luks1/keyencryption.c:42
 msgid "Key size in XTS mode must be 256 or 512 bits.\n"
 msgstr "La taille de la clé en mode XTS doit être un multiple de 256 ou 512 bits.\n"
 
-#: lib/luks1/keyencryption.c:89 lib/luks1/keymanage.c:296
+#: lib/luks1/keyencryption.c:96 lib/luks1/keymanage.c:296
 #: lib/luks1/keymanage.c:565 lib/luks1/keymanage.c:1010
 #, c-format
 msgid "Cannot write to device %s, permission denied.\n"
 msgstr "Impossible d'écrire sur le périphérique %s. Permission refusée.\n"
 
-#: lib/luks1/keyencryption.c:104
+#: lib/luks1/keyencryption.c:111
 msgid "Failed to open temporary keystore device.\n"
 msgstr "Échec lors de l'ouverture du périphérique de stockage temporaire de clés.\n"
 
-#: lib/luks1/keyencryption.c:111
+#: lib/luks1/keyencryption.c:118
 msgid "Failed to access temporary keystore device.\n"
 msgstr "Impossible d'accéder au périphérique de stockage temporaire de clé.\n"
+
+#: lib/luks1/keyencryption.c:191
+msgid "IO error while encrypting keyslot.\n"
+msgstr "Erreur E/S pendant le chiffrement de l'emplacement de clé.\n"
+
+#: lib/luks1/keyencryption.c:256
+msgid "IO error while decrypting keyslot.\n"
+msgstr "Erreur E/S pendant le déchiffrement de l'emplacement de clé.\n"
 
 #: lib/luks1/keymanage.c:90
 #, c-format
@@ -715,7 +723,7 @@ msgstr "En-tête VERITY corrompu.\n"
 
 #: lib/verity/verity.c:166
 #, c-format
-msgid "Wrong VERITY UUID format provided on device %s. \n"
+msgid "Wrong VERITY UUID format provided on device %s.\n"
 msgstr "Mauvais format d'UUID VERITY fourni sur le périphérique %s.\n"
 
 #: lib/verity/verity.c:196
