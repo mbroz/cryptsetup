@@ -76,7 +76,7 @@ struct reenc_ctx {
 	char crypt_path_org[PATH_MAX];
 	char crypt_path_new[PATH_MAX];
 	int log_fd;
-	char *log_buf;
+	char log_buf[SECTOR_SIZE];
 
 	struct {
 		char *password;
@@ -351,13 +351,11 @@ static void close_log(struct reenc_ctx *rc)
 	log_dbg("Closing LUKS reencryption log file %s.", rc->log_file);
 	if (rc->log_fd != -1)
 		close(rc->log_fd);
-	free(rc->log_buf);
-	rc->log_buf = NULL;
 }
 
 static int open_log(struct reenc_ctx *rc)
 {
-	int flags = opt_directio ? O_DIRECT : 0;
+	int flags = opt_fsync ? O_SYNC : 0;
 
 	rc->log_fd = open(rc->log_file, O_RDWR|O_EXCL|O_CREAT|flags, S_IRUSR|S_IWUSR);
 	if (rc->log_fd != -1) {
@@ -370,12 +368,6 @@ static int open_log(struct reenc_ctx *rc)
 
 	if (rc->log_fd == -1)
 		return -EINVAL;
-
-	if (posix_memalign((void *)&rc->log_buf, alignment(rc->log_fd), SECTOR_SIZE)) {
-		log_err(_("Allocation of aligned memory failed.\n"));
-		close_log(rc);
-		return -ENOMEM;
-	}
 
 	if (!rc->in_progress && write_log(rc) < 0) {
 		close_log(rc);

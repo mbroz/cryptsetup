@@ -158,13 +158,15 @@ WARNING: This is destructive operation and cannot be reverted.
 
 .TP
 .B "\-\-use-directio"
-Use direct-io (O_DIRECT) for all read/write data operations.
+Use direct-io (O_DIRECT) for all read/write data operations related
+to block device undergoing reencryption.
 
 Useful if direct-io operations perform better than normal buffered
 operations (e.g. in virtual environments).
 .TP
 .B "\-\-use-fsync"
-Use fsync call after every written block.
+Use fsync call after every written block. This applies for reencryption
+log files as well.
 .TP
 .B "\-\-write-log"
 Update log file after every block write. This can slow down reencryption
