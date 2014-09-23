@@ -18,7 +18,7 @@ TESTS += reencryption-compat-test
 endif
 
 EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
-	img_fs_ext4.img.bz2 img_fs_xfs.img.bz2 \
+	img_fs_ext4.img.bz2 img_fs_vfat.img.bz2 img_fs_xfs.img.bz2 \
 	valid_header_file.bz2 \
 	evil_hdr-payload_overwrite.bz2 \
 	evil_hdr-stripes_payload_dmg.bz2 \
