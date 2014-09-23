@@ -12,6 +12,8 @@ PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
 
+MNT_DIR=./mnt_luks
+START_DIR=$(pwd)
 
 function del_scsi_device()
 {
@@ -25,6 +27,8 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
 	rm -f $IMG $ORIG_IMG $KEY1 >/dev/null 2>&1
+	umount $MNT_DIR > /dev/null 2>&1
+	rmdir $MNT_DIR > /dev/null 2>&1
 	LOOPDEV1=""
 	del_scsi_device
 }
@@ -33,6 +37,7 @@ function fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "FAILED"
+	cd $START_DIR
 	remove_mapping
 	exit 2
 }
@@ -161,8 +166,40 @@ function simple_scsi_reenc()
 	$CRYPTSETUP luksClose $DEV_NAME || fail
 }
 
+function mount_and_test() {
+	test -d $MNT_DIR || mkdir -p $MNT_DIR
+	mount $@ $MNT_DIR 2>/dev/null || {
+		echo -n "failed to mount [SKIP]"
+		return 0
+	}
+	rm $MNT_DIR/* 2>/dev/null
+	cd $MNT_DIR
+	echo $PWD2 | $START_DIR/$REENC $LOOPDEV1 -q --use-fsync --use-directio --write-log || return 1
+	cd $START_DIR
+	umount $MNT_DIR
+	echo -n [OK]
+}
+
+function test_logging_tmpfs() {
+	echo -n "[tmpfs]"
+	mount_and_test -t tmpfs none -o size=$[25*1024*1024] || return 1
+	echo
+}
+
+function test_logging() {
+	echo -n "$1:"
+	for img in $(ls img_fs*img.bz2) ; do
+		wipefs -a $SCSI_DEV > /dev/null
+		echo -n "[${img%.img.bz2}]"
+		bzip2 -d -c $img | dd of=$SCSI_DEV >/dev/null 2>&1
+		mount_and_test $SCSI_DEV || return 1
+	done
+	echo
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$REENC" ] && skip "Cannot find $REENC, test skipped."
+which wipefs >/dev/null ||  skip "Cannot find wipefs, test skipped."
 
 # REENCRYPTION tests
 
@@ -171,7 +208,7 @@ HASH2=d85ef2a08aeac2812a648deb875485a6e3848fc3d43ce4aa380937f08199f86b
 HASH3=e4e5749032a5163c45125eccf3e8598ba5ed840df442c97e1d5ad4ad84359605
 
 echo "[1] Reencryption"
-prepare 8192 
+prepare 8192
 echo $PWD1 | $CRYPTSETUP -q luksFormat -s 128 -c aes-cbc-plain -i 1 --align-payload 4096 $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
@@ -265,6 +302,17 @@ echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha512
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --iter-time 1
 check_hash $PWD1 $HASH1
+
+echo "[9] Test log I/Os on various underlaying block devices"
+prepare 8192
+echo $PWD2 | $CRYPTSETUP -q luksFormat -i 1 $LOOPDEV1 || fail
+add_scsi_device sector_size=512 dev_size_mb=25
+test_logging "[512 sector]" || fail
+add_scsi_device sector_size=4096 dev_size_mb=25
+test_logging "[4096 sector]" || fail
+add_scsi_device sector_size=512 dev_size_mb=25 physblk_exp=3
+test_logging "[4096/512 sector]" || fail
+test_logging_tmpfs || fail
 
 remove_mapping
 exit 0
