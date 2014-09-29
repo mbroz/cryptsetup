@@ -179,7 +179,7 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 	int infd, outfd;
 
 	if (maxlen < 1)
-		goto out_err;
+		return failed;
 
 	/* Read and write to /dev/tty if available */
 	infd = open("/dev/tty", O_RDWR);
