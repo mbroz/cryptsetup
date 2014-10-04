@@ -652,6 +652,29 @@ static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 		final ? "\n" :"");
 }
 
+static ssize_t read_buf(int fd, void *buf, size_t count)
+{
+	size_t read_size = 0;
+	ssize_t s;
+
+	do {
+		/* This expects that partial read is aligned in buffer */
+		s = read(fd, buf, count - read_size);
+		if (s == -1 && errno != EINTR)
+			return s;
+		if (s == 0)
+			return (ssize_t)read_size;
+		if (s > 0) {
+			if (s != count)
+				log_dbg("Partial read %zd / %zu.", s, count);
+			read_size += (size_t)s;
+			buf += s;
+		}
+	} while (read_size != count);
+
+	return (ssize_t)count;
+}
+
 static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			     size_t block_size, void *buf, uint64_t *bytes)
 {
@@ -671,11 +694,11 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		return -EIO;
 
 	while (!quit && rc->device_offset < rc->device_size) {
-		s1 = read(fd_old, buf, block_size);
+		s1 = read_buf(fd_old, buf, block_size);
 		if (s1 < 0 || ((size_t)s1 != block_size &&
 		    (rc->device_offset + s1) != rc->device_size)) {
-			log_dbg("Read error, expecting %d, got %d.",
-				(int)block_size, (int)s1);
+			log_dbg("Read error, expecting %zu, got %zd.",
+				block_size, s1);
 			return -EIO;
 		}
 
@@ -685,8 +708,8 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 		s2 = write(fd_new, buf, s1);
 		if (s2 < 0) {
-			log_dbg("Write error, expecting %d, got %d.",
-				(int)block_size, (int)s2);
+			log_dbg("Write error, expecting %zu, got %zd.",
+				block_size, s2);
 			return -EIO;
 		}
 
@@ -741,17 +764,17 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			return -EIO;
 		}
 
-		s1 = read(fd_old, buf, working_block);
+		s1 = read_buf(fd_old, buf, working_block);
 		if (s1 < 0 || (s1 != working_block)) {
-			log_dbg("Read error, expecting %d, got %d.",
-				(int)block_size, (int)s1);
+			log_dbg("Read error, expecting %zu, got %zd.",
+				block_size, s1);
 			return -EIO;
 		}
 
 		s2 = write(fd_new, buf, working_block);
 		if (s2 < 0) {
-			log_dbg("Write error, expecting %d, got %d.",
-				(int)block_size, (int)s2);
+			log_dbg("Write error, expecting %zu, got %zd.",
+				block_size, s2);
 			return -EIO;
 		}
 
