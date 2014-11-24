@@ -804,7 +804,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	hdr->keyblock[keyIndex].passwordIterations = at_least((uint32_t)PBKDF2_temp,
 							      LUKS_SLOT_ITERATIONS_MIN);
 
-	log_dbg("Key slot %d use %d password iterations.", keyIndex, hdr->keyblock[keyIndex].passwordIterations);
+	log_dbg("Key slot %d use %" PRIu32 " password iterations.", keyIndex, hdr->keyblock[keyIndex].passwordIterations);
 
 	derived_key = crypt_alloc_volume_key(hdr->keyBytes, NULL);
 	if (!derived_key)

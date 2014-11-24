@@ -2430,12 +2430,12 @@ static int _luks_dump(struct crypt_device *cd)
 	int i;
 
 	log_std(cd, "LUKS header information for %s\n\n", mdata_device_path(cd));
-	log_std(cd, "Version:       \t%d\n", cd->u.luks1.hdr.version);
+	log_std(cd, "Version:       \t%" PRIu16 "\n", cd->u.luks1.hdr.version);
 	log_std(cd, "Cipher name:   \t%s\n", cd->u.luks1.hdr.cipherName);
 	log_std(cd, "Cipher mode:   \t%s\n", cd->u.luks1.hdr.cipherMode);
 	log_std(cd, "Hash spec:     \t%s\n", cd->u.luks1.hdr.hashSpec);
-	log_std(cd, "Payload offset:\t%d\n", cd->u.luks1.hdr.payloadOffset);
-	log_std(cd, "MK bits:       \t%d\n", cd->u.luks1.hdr.keyBytes * 8);
+	log_std(cd, "Payload offset:\t%" PRIu32 "\n", cd->u.luks1.hdr.payloadOffset);
+	log_std(cd, "MK bits:       \t%" PRIu32 "\n", cd->u.luks1.hdr.keyBytes * 8);
 	log_std(cd, "MK digest:     \t");
 	hexprint(cd, cd->u.luks1.hdr.mkDigest, LUKS_DIGESTSIZE, " ");
 	log_std(cd, "\n");
@@ -2444,12 +2444,12 @@ static int _luks_dump(struct crypt_device *cd)
 	log_std(cd, "\n               \t");
 	hexprint(cd, cd->u.luks1.hdr.mkDigestSalt+LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ");
 	log_std(cd, "\n");
-	log_std(cd, "MK iterations: \t%d\n", cd->u.luks1.hdr.mkDigestIterations);
+	log_std(cd, "MK iterations: \t%" PRIu32 "\n", cd->u.luks1.hdr.mkDigestIterations);
 	log_std(cd, "UUID:          \t%s\n\n", cd->u.luks1.hdr.uuid);
 	for(i = 0; i < LUKS_NUMKEYS; i++) {
 		if(cd->u.luks1.hdr.keyblock[i].active == LUKS_KEY_ENABLED) {
 			log_std(cd, "Key Slot %d: ENABLED\n",i);
-			log_std(cd, "\tIterations:         \t%d\n",
+			log_std(cd, "\tIterations:         \t%" PRIu32 "\n",
 				cd->u.luks1.hdr.keyblock[i].passwordIterations);
 			log_std(cd, "\tSalt:               \t");
 			hexprint(cd, cd->u.luks1.hdr.keyblock[i].passwordSalt,
@@ -2459,9 +2459,9 @@ static int _luks_dump(struct crypt_device *cd)
 				 LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ");
 			log_std(cd, "\n");
 
-			log_std(cd, "\tKey material offset:\t%d\n",
+			log_std(cd, "\tKey material offset:\t%" PRIu32 "\n",
 				cd->u.luks1.hdr.keyblock[i].keyMaterialOffset);
-			log_std(cd, "\tAF stripes:            \t%d\n",
+			log_std(cd, "\tAF stripes:            \t%" PRIu32 "\n",
 				cd->u.luks1.hdr.keyblock[i].stripes);
 		}
 		else 
