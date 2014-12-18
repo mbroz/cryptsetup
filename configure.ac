@@ -5,7 +5,6 @@ dnl library version from <major>.<minor>.<release>[-<suffix>]
 LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
 LIBCRYPTSETUP_VERSION_INFO=10:0:6
 dnl library file name for FIPS selfcheck
-LIBCRYPTSETUP_VERSION_FIPS="libcryptsetup.so.4"
 FIPS_MODULE_FILE="/etc/system-fips"
 
 AC_CONFIG_SRCDIR(src/cryptsetup.c)
@@ -78,15 +77,13 @@ AC_SUBST(POPT_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
 dnl ==========================================================================
-dnl FIPS extensions
+dnl FIPS extensions (only for RHEL)
 AC_ARG_ENABLE([fips], AS_HELP_STRING([--enable-fips],[enable FIPS mode restrictions]),
 [with_fips=$enableval],
 [with_fips=no])
 
 if test "x$with_fips" = "xyes"; then
 	AC_DEFINE(ENABLE_FIPS, 1, [Enable FIPS mode restrictions])
-	AC_DEFINE_UNQUOTED(LIBCRYPTSETUP_VERSION_FIPS, ["$LIBCRYPTSETUP_VERSION_FIPS"],
-		[library file name for FIPS selfcheck])
 	AC_DEFINE_UNQUOTED(FIPS_MODULE_FILE, ["$FIPS_MODULE_FILE"],
 		[file checked to determine if running in FIPS mode])
 
@@ -140,6 +137,14 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 		fi,
 		[AM_PATH_LIBGCRYPT([1.6.1], [use_internal_pbkdf2=0], [use_internal_pbkdf2=1])])
 	AM_PATH_LIBGCRYPT($GCRYPT_REQ_VERSION,,[AC_MSG_ERROR([You need the gcrypt library.])])
+
+	AC_MSG_CHECKING([internal gcrypt PBKDF2 implementation])
+	if test $use_internal_pbkdf2 = 0; then
+		AC_MSG_RESULT([yes])
+	else
+		AC_MSG_RESULT([no])
+		NO_FIPS([])
+	fi
 
 	if test x$enable_static_cryptsetup = xyes; then
 		saved_LIBS=$LIBS

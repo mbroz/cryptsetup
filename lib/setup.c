@@ -2690,8 +2690,3 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 
 	return 0;
 }
-
-static void __attribute__((constructor)) libcryptsetup_ctor(void)
-{
-	crypt_fips_libcryptsetup_check();
-}
