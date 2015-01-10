@@ -163,7 +163,7 @@ int yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 
 void show_status(int errcode)
 {
-	char error[256], *error_;
+	char error[256];
 
 	if(!opt_verbose)
 		return;
@@ -175,12 +175,16 @@ void show_status(int errcode)
 
 	crypt_get_error(error, sizeof(error));
 
-	if (!error[0]) {
-		error_ = strerror_r(-errcode, error, sizeof(error));
-		if (error_ != error) {
+	if (*error) {
+#ifdef STRERROR_R_CHAR_P /* GNU-specific strerror_r */
+		char *error_ = strerror_r(-errcode, error, sizeof(error));
+		if (error_ != error)
 			strncpy(error, error_, sizeof(error));
-			error[sizeof(error) - 1] = '\0';
-		}
+#else /* POSIX strerror_r variant */
+		if (strerror_r(-errcode, error, sizeof(error)))
+			*error = '\0';
+#endif
+		error[sizeof(error) - 1] = '\0';
 	}
 
 	log_err(_("Command failed with code %i"), -errcode);
