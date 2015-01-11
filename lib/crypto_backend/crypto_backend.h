@@ -102,4 +102,11 @@ int crypt_storage_decrypt(struct crypt_storage *ctx, uint64_t sector,
 int crypt_storage_encrypt(struct crypt_storage *ctx, uint64_t sector,
 			  size_t count, char *buffer);
 
+/* Memzero helper (memset on stack can be optimized out) */
+static inline void crypt_backend_memzero(void *s, size_t n)
+{
+	volatile uint8_t *p = (volatile uint8_t *)s;
+	while(n--) *p++ = 0;
+}
+
 #endif /* _CRYPTO_BACKEND_H */

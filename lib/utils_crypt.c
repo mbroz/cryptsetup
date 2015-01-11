@@ -81,6 +81,18 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 	return -EINVAL;
 }
 
+/*
+ * Replacement for memset(s, 0, n) on stack that can be optimized out
+ * Also used in safe allocations for explicit memory wipe.
+ */
+void crypt_memzero(void *s, size_t n)
+{
+	volatile uint8_t *p = (volatile uint8_t *)s;
+
+	while(n--)
+		*p++ = 0;
+}
+
 /* safe allocations */
 void *crypt_safe_alloc(size_t size)
 {
@@ -94,7 +106,7 @@ void *crypt_safe_alloc(size_t size)
 		return NULL;
 
 	alloc->size = size;
-	memset(&alloc->data, 0, size);
+	crypt_memzero(&alloc->data, size);
 
 	/* coverity[leaked_storage] */
 	return &alloc->data;
@@ -110,7 +122,7 @@ void crypt_safe_free(void *data)
 	alloc = (struct safe_allocation *)
 		((char *)data - offsetof(struct safe_allocation, data));
 
-	memset(data, 0, alloc->size);
+	crypt_memzero(data, alloc->size);
 
 	alloc->size = 0x55aa55aa;
 	free(alloc);

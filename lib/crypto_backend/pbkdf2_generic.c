@@ -188,7 +188,7 @@ int pkcs5_pbkdf2(const char *hash,
 
 		if (crypt_hmac_init(&hmac, hash, P_hash, hLen))
 			return -EINVAL;
-		memset(P_hash, 0, sizeof(P_hash));
+		crypt_backend_memzero(P_hash, sizeof(P_hash));
 	} else {
 		if (crypt_hmac_init(&hmac, hash, P, Plen))
 			return -EINVAL;
@@ -224,9 +224,9 @@ int pkcs5_pbkdf2(const char *hash,
 	rc = 0;
 out:
 	crypt_hmac_destroy(hmac);
-	memset(U, 0, sizeof(U));
-	memset(T, 0, sizeof(T));
-	memset(tmp, 0, tmplen);
+	crypt_backend_memzero(U, sizeof(U));
+	crypt_backend_memzero(T, sizeof(T));
+	crypt_backend_memzero(tmp, tmplen);
 
 	return rc;
 }

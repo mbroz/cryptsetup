@@ -133,7 +133,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 		return -EINVAL;
 
 	memcpy(buffer, tmp, length);
-	memset(tmp, 0, sizeof(tmp));
+	crypt_backend_memzero(tmp, sizeof(tmp));
 
 	if (tmp_len < length)
 		return -EINVAL;
@@ -203,7 +203,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	HMAC_Final(&ctx->md, tmp, &tmp_len);
 
 	memcpy(buffer, tmp, length);
-	memset(tmp, 0, sizeof(tmp));
+	crypt_backend_memzero(tmp, sizeof(tmp));
 
 	if (tmp_len < length)
 		return -EINVAL;

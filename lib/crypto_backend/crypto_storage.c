@@ -103,13 +103,13 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 		r = crypt_hash_final(h, tmp, hash_size);
 		crypt_hash_destroy(h);
 		if (r) {
-			memset(tmp, 0, sizeof(tmp));
+			crypt_backend_memzero(tmp, sizeof(tmp));
 			return r;
 		}
 
 		r = crypt_cipher_init(&ctx->essiv_cipher, cipher_name, "ecb",
 				      tmp, hash_size);
-		memset(tmp, 0, sizeof(tmp));
+		crypt_backend_memzero(tmp, sizeof(tmp));
 		if (r)
 			return r;
 

@@ -217,7 +217,7 @@ static int crypt_cipher_crypt(struct crypt_cipher *ctx,
 	if (len != (ssize_t)length)
 		r = -EIO;
 bad:
-	memset(buffer, 0, sizeof(buffer));
+	crypt_backend_memzero(buffer, sizeof(buffer));
 	return r;
 }
 

@@ -269,8 +269,8 @@ static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
 	}
 
 	crypt_cipher_destroy(cipher);
-	memset(iv, 0, bs);
-	memset(iv_old, 0, bs);
+	crypt_memzero(iv, bs);
+	crypt_memzero(iv_old, bs);
 	return r;
 }
 
@@ -336,8 +336,8 @@ static int TCRYPT_decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
 		crypt_cipher_destroy(cipher);
 	}
 
-	memset(backend_key, 0, sizeof(backend_key));
-	memset(iv, 0, TCRYPT_HDR_IV_LEN);
+	crypt_memzero(backend_key, sizeof(backend_key));
+	crypt_memzero(iv, TCRYPT_HDR_IV_LEN);
 	return r;
 }
 
@@ -387,8 +387,8 @@ out:
 		if (cipher[j])
 			crypt_cipher_destroy(cipher[j]);
 
-	memset(iv, 0, bs);
-	memset(iv_old, 0, bs);
+	crypt_memzero(iv, bs);
+	crypt_memzero(iv_old, bs);
 	return r;
 }
 
@@ -434,7 +434,7 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 		r = -EPERM;
 	}
 
-	memset(&hdr2, 0, sizeof(hdr2));
+	crypt_memzero(&hdr2, sizeof(hdr2));
 	return r;
 }
 
@@ -471,8 +471,8 @@ static int TCRYPT_pool_keyfile(struct crypt_device *cd,
 		j %= TCRYPT_KEY_POOL_LEN;
 	}
 
-	memset(&crc, 0, sizeof(crc));
-	memset(data, 0, TCRYPT_KEYFILE_LEN);
+	crypt_memzero(&crc, sizeof(crc));
+	crypt_memzero(data, TCRYPT_KEYFILE_LEN);
 
 	return 0;
 }
@@ -562,9 +562,9 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			params->cipher, params->mode, params->key_size);
 	}
 out:
-	memset(pwd, 0, TCRYPT_KEY_POOL_LEN);
+	crypt_memzero(pwd, TCRYPT_KEY_POOL_LEN);
 	if (key)
-		memset(key, 0, TCRYPT_HDR_KEY_LEN);
+		crypt_memzero(key, TCRYPT_HDR_KEY_LEN);
 	free(key);
 	return r;
 }

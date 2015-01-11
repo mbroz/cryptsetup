@@ -1453,7 +1453,7 @@ int crypt_header_restore(struct crypt_device *cd,
 
 	r = LUKS_hdr_restore(backup_file, isLUKS(cd->type) ? &cd->u.luks1.hdr : &hdr, cd);
 
-	memset(&hdr, 0, sizeof(hdr));
+	crypt_memzero(&hdr, sizeof(hdr));
 	return r;
 }
 
@@ -1486,7 +1486,7 @@ void crypt_free(struct crypt_device *cd)
 
 		free(cd->type);
 		/* Some structures can contain keys (TCRYPT), wipe it */
-		memset(cd, 0, sizeof(*cd));
+		crypt_memzero(cd, sizeof(*cd));
 		free(cd);
 	}
 }
