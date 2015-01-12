@@ -21,7 +21,6 @@ cryptsetup_SOURCES = \
 cryptsetup_LDADD = \
 	$(top_builddir)/lib/libcryptsetup.la	\
 	@POPT_LIBS@				\
-	@FIPSCHECK_LIBS@			\
 	@PWQUALITY_LIBS@
 
 cryptsetup_CFLAGS = $(AM_CFLAGS) -Wall

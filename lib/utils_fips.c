@@ -19,15 +19,28 @@
  */
 
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "utils_fips.h"
 
 #if !ENABLE_FIPS
 int crypt_fips_mode(void) { return 0; }
 #else
-#include <fipscheck.h>
+static int kernel_fips_mode(void)
+{
+	int fd;
+	char buf[1] = "";
+
+	if ((fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY)) >= 0) {
+		while (read(fd, buf, sizeof(buf)) < 0 && errno == EINTR);
+		close(fd);
+	}
+
+	return (buf[0] == '1') ? 1 : 0;
+}
 
 int crypt_fips_mode(void)
 {
-	return FIPSCHECK_kernel_fips_mode() && !access(FIPS_MODULE_FILE, F_OK);
+	return kernel_fips_mode() && !access("/etc/system-fips", F_OK);
 }
 #endif /* ENABLE_FIPS */

@@ -4,8 +4,6 @@ AC_INIT([cryptsetup],[1.7.0-git])
 dnl library version from <major>.<minor>.<release>[-<suffix>]
 LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
 LIBCRYPTSETUP_VERSION_INFO=10:0:6
-dnl library file name for FIPS selfcheck
-FIPS_MODULE_FILE="/etc/system-fips"
 
 AC_CONFIG_SRCDIR(src/cryptsetup.c)
 AC_CONFIG_MACRO_DIR([m4])
@@ -84,18 +82,10 @@ AC_ARG_ENABLE([fips], AS_HELP_STRING([--enable-fips],[enable FIPS mode restricti
 
 if test "x$with_fips" = "xyes"; then
 	AC_DEFINE(ENABLE_FIPS, 1, [Enable FIPS mode restrictions])
-	AC_DEFINE_UNQUOTED(FIPS_MODULE_FILE, ["$FIPS_MODULE_FILE"],
-		[file checked to determine if running in FIPS mode])
 
 	if test "x$enable_static" = "xyes" -o "x$enable_static_cryptsetup" = "xyes" ; then
 		AC_MSG_ERROR([Static build is not compatible with FIPS.])
 	fi
-
-	saved_LIBS=$LIBS
-	AC_CHECK_LIB(fipscheck, FIPSCHECK_verify, ,[AC_MSG_ERROR([You need the fipscheck library.])])
-	AC_SUBST(FIPSCHECK_LIBS, $LIBS)
-	LIBS=$saved_LIBS
-
 fi
 
 AC_DEFUN([NO_FIPS], [
@@ -138,11 +128,11 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 		[AM_PATH_LIBGCRYPT([1.6.1], [use_internal_pbkdf2=0], [use_internal_pbkdf2=1])])
 	AM_PATH_LIBGCRYPT($GCRYPT_REQ_VERSION,,[AC_MSG_ERROR([You need the gcrypt library.])])
 
-	AC_MSG_CHECKING([internal gcrypt PBKDF2 implementation])
+	AC_MSG_CHECKING([if internal cryptsetup PBKDF2 is compiled-in])
 	if test $use_internal_pbkdf2 = 0; then
-		AC_MSG_RESULT([yes])
-	else
 		AC_MSG_RESULT([no])
+	else
+		AC_MSG_RESULT([yes])
 		NO_FIPS([])
 	fi
 
@@ -360,8 +350,6 @@ AC_SUBST([CRYPTO_STATIC_LIBS])
 
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
-AC_SUBST([LIBCRYPTSETUP_VERSION_FIPS])
-AC_SUBST([FIPS_MODULE_FILE])
 
 dnl ==========================================================================
 AC_ARG_ENABLE([dev-random], AS_HELP_STRING([--enable-dev-random],
