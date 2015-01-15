@@ -387,6 +387,14 @@ If the key file is encrypted with GnuPG, then you have to use
 gpg \-\-decrypt <keyfile> | cryptsetup loopaesOpen \-\-key\-file=\-
 <device> <name>
 
+\fBWARNING:\fR The loop-AES extension cannot use direct input of key file
+on real terminal because the keys are separated by end-of-line and only part
+of the multi-key file would be read.
+.br
+If you need it in script, just use the pipe redirection:
+.br
+echo $keyfile | cryptsetup loopaesOpen \-\-key\-file=\- <device> <name>
+
 Use \fB\-\-keyfile\-size\fR to specify the proper key length if needed.
 
 Use \fB\-\-offset\fR to specify device offset. Note that the units
