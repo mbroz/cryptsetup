@@ -665,10 +665,10 @@ static ssize_t read_buf(int fd, void *buf, size_t count)
 		if (s == 0)
 			return (ssize_t)read_size;
 		if (s > 0) {
-			if (s != count)
+			if (s != (ssize_t)count)
 				log_dbg("Partial read %zd / %zu.", s, count);
 			read_size += (size_t)s;
-			buf += s;
+			buf = (uint8_t*)buf + s;
 		}
 	} while (read_size != count);
 

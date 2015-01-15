@@ -45,6 +45,8 @@ void *crypt_safe_alloc(size_t size);
 void crypt_safe_free(void *data);
 void *crypt_safe_realloc(void *data, size_t size);
 
+void crypt_memzero(void *s, size_t n);
+
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc);
 int crypt_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size);
 

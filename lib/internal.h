@@ -57,7 +57,6 @@ struct volume_key {
 	char key[];
 };
 
-void crypt_memzero(void *s, size_t n);
 struct volume_key *crypt_alloc_volume_key(unsigned keylength, const char *key);
 struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, unsigned keylength);
 void crypt_free_volume_key(struct volume_key *vk);
