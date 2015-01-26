@@ -160,6 +160,14 @@ Key operations that do not specify a slot affect the first slot
 that matches the supplied passphrase or the first empty slot if
 a new passphrase is added.
 
+The \fB<device>\fR parameter can be also specified by a LUKS UUID in the
+format UUID=<uuid>. Translation to real device name uses symlinks
+in /dev/disk/by-uuid directory.
+
+To specify a detached header, the \fB\-\-header\fR parameter can be used
+in all LUKS commands and always takes precedence over positional \fB<device>\fR
+parameter.
+
 The following are valid LUKS actions:
 
 \fIluksFormat\fR <device> [<key file>]
@@ -195,9 +203,6 @@ Opens the LUKS device <device> and sets up a mapping <name> after
 successful verification of the supplied passphrase.
 If the passphrase is not supplied via \-\-key-file, the command
 prompts for it interactively.
-
-The <device> parameter can be also specified by LUKS UUID in the
-format UUID=<uuid>, which uses the symlinks in /dev/disk/by-uuid.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
@@ -235,7 +240,7 @@ or read from the file given as positional argument.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-master\-key\-file,
-\-\-iter\-time, \-\-force\-password].
+\-\-iter\-time, \-\-force\-password, \-\-header].
 .PP
 \fIluksRemoveKey\fR <device> [<key file with passphrase to be removed>]
 .IP
@@ -244,7 +249,7 @@ passphrase to be removed can be specified interactively,
 as positional argument or via \-\-key-file.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size]
+\-\-keyfile\-size, \-\-header]
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument
@@ -277,7 +282,7 @@ inaccessible.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
-\-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password].
+\-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header].
 .PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
@@ -288,7 +293,7 @@ an interactive confirmation when doing so. Removing the last
 passphrase makes a LUKS container permanently inaccessible.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size].
+\-\-keyfile\-size, \-\-header].
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument
@@ -334,7 +339,7 @@ In order to dump the master key, a passphrase has to be supplied,
 either interactively or via \-\-key\-file.
 
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
-\-\-keyfile\-offset, \-\-keyfile\-size].
+\-\-keyfile\-offset, \-\-keyfile\-size, \-\-header].
 
 \fBWARNING:\fR If \-\-dump\-master\-key is used with \-\-key\-file
 and the argument to \-\-key\-file is '-', no validation question
@@ -1026,7 +1031,7 @@ Copyright \(co 2004-2006 Clemens Fruhwirth
 .br
 Copyright \(co 2009-2012 Red Hat, Inc.
 .br
-Copyright \(co 2009-2014 Milan Broz
+Copyright \(co 2009-2015 Milan Broz
 .br
 Copyright \(co 2012-2014 Arno Wagner
 

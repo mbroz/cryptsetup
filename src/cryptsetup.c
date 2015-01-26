@@ -4,7 +4,7 @@
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
  * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2014, Milan Broz
+ * Copyright (C) 2009-2015, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -65,6 +65,14 @@ static int opt_tcrypt_backup = 0;
 static const char **action_argv;
 static int action_argc;
 static const char *null_action_argv[] = {NULL, NULL};
+
+static const char *uuid_or_device_header(const char **data_device)
+{
+	if (data_device)
+		*data_device = opt_header_device ? action_argv[0] : NULL;
+
+	return uuid_or_device(opt_header_device ?: action_argv[0]);
+}
 
 static int _verify_passphrase(int def)
 {
@@ -733,13 +741,7 @@ static int action_open_luks(void)
 	uint32_t flags = 0;
 	int r, keysize;
 
-	if (opt_header_device) {
-		header_device = uuid_or_device(opt_header_device);
-		data_device = action_argv[0];
-	} else {
-		header_device = uuid_or_device(action_argv[0]);
-		data_device = NULL;
-	}
+	header_device = uuid_or_device_header(&data_device);
 
 	activated_name = opt_test_passphrase ? NULL : action_argv[1];
 
@@ -843,7 +845,7 @@ static int action_luksKillSlot(void)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
@@ -886,7 +888,7 @@ static int action_luksRemoveKey(void)
 	size_t passwordLen;
 	int r;
 
-	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
@@ -937,7 +939,7 @@ static int action_luksAddKey(void)
 	size_t password_size = 0, password_new_size = 0;
 	struct crypt_device *cd = NULL;
 
-	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
@@ -1004,7 +1006,7 @@ static int action_luksChangeKey(void)
 	size_t password_size = 0, password_new_size = 0;
 	int r;
 
-	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
@@ -1055,7 +1057,7 @@ static int action_isLuks(void)
 		return -ENODEV;
 	}
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	crypt_set_log_callback(cd, quiet_log, NULL);
@@ -1071,7 +1073,7 @@ static int action_luksUUID(void)
 	const char *existing_uuid = NULL;
 	int r;
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
@@ -1150,7 +1152,7 @@ static int action_luksDump(void)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
@@ -1170,7 +1172,7 @@ static int action_luksSuspend(void)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = crypt_init_by_name_and_header(&cd, action_argv[0], opt_header_device);
+	r = crypt_init_by_name_and_header(&cd, action_argv[0], uuid_or_device(opt_header_device));
 	if (!r)
 		r = crypt_suspend(cd, action_argv[0]);
 
@@ -1183,7 +1185,7 @@ static int action_luksResume(void)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	if ((r = crypt_init_by_name_and_header(&cd, action_argv[0], opt_header_device)))
+	if ((r = crypt_init_by_name_and_header(&cd, action_argv[0], uuid_or_device(opt_header_device))))
 		goto out;
 
 	crypt_set_timeout(cd, opt_timeout);
@@ -1211,7 +1213,7 @@ static int action_luksBackup(void)
 		return -EINVAL;
 	}
 
-	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
@@ -1232,7 +1234,7 @@ static int action_luksRestore(void)
 		return -EINVAL;
 	}
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
@@ -1279,7 +1281,7 @@ static int action_luksErase(void)
 	char *msg = NULL;
 	int i, r;
 
-	if ((r = crypt_init(&cd, uuid_or_device(action_argv[0]))))
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
@@ -1289,7 +1291,7 @@ static int action_luksErase(void)
 
 	if(asprintf(&msg, _("This operation will erase all keyslots on device %s.\n"
 			    "Device will become unusable after this operation."),
-			    uuid_or_device(action_argv[0])) == -1) {
+			    uuid_or_device_header(NULL)) == -1) {
 		r = -ENOMEM;
 		goto out;
 	}

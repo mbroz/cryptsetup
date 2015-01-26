@@ -538,6 +538,10 @@ $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
 $CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -S 5 _fakedev_ --header $HEADER_IMG $KEY5 || fail
+$CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "Key Slot 5: ENABLED" || fail
+$CRYPTSETUP luksKillSlot -q _fakedev_ --header $HEADER_IMG 5 || fail
+$CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "Key Slot 5: DISABLED" || fail
 
 prepare "[29] Repair metadata" wipe
 $CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY1 --key-slot 0 || fail
