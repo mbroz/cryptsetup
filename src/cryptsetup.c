@@ -958,9 +958,22 @@ static int action_luksAddKey(void)
 		r = _read_mk(opt_master_key_file, &key, keysize);
 		if (r < 0)
 			goto out;
-		//FIXME: process keyfile arg
-		r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
-						    key, keysize, NULL, 0);
+
+		r = crypt_volume_key_verify(cd, key, keysize);
+		check_signal(&r);
+		if (r < 0)
+			goto out;
+
+		r = tools_get_key(_("Enter new passphrase for key slot: "),
+				  &password_new, &password_new_size,
+				  opt_new_keyfile_offset, opt_new_keyfile_size,
+				  opt_new_key_file, opt_timeout,
+				  _verify_passphrase(1), 1, cd);
+		if (r < 0)
+			goto out;
+
+		r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot, key, keysize,
+						    password_new, password_new_size);
 	} else if (opt_key_file || opt_new_key_file) {
 		r = crypt_keyslot_add_by_keyfile_offset(cd, opt_key_slot,
 			opt_key_file, opt_keyfile_size, opt_keyfile_offset,

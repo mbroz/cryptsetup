@@ -314,6 +314,9 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
 echo $PWD2 | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/zero --key-slot 4 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: ENABLED" || fail
 echo $PWD3 | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/null --key-slot 5 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/zero --key-slot 5 $KEY1 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 5: ENABLED" || fail
+
 # [0]PWD1 [1]PWD2 [2]$KEY1/1 [3]$KEY1 [4]$KEY2
 $CRYPTSETUP -q luksFormat $LOOPDEV $KEY1 --key-slot 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
