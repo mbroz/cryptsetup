@@ -1,4 +1,4 @@
-.TH CRYPTSETUP-REENCRYPT "8" "December 2013" "cryptsetup-reencrypt" "Maintenance Commands"
+.TH CRYPTSETUP-REENCRYPT "8" "January 2015" "cryptsetup-reencrypt" "Maintenance Commands"
 .SH NAME
 cryptsetup-reencrypt - tool for offline LUKS device re-encryption
 .SH SYNOPSIS
@@ -36,9 +36,15 @@ To start (or continue) re-encryption for <device> use:
 .PP
 \fIcryptsetup-reencrypt\fR <device>
 
-\fB<options>\fR can be [\-\-block-size, \-\-cipher, \-\-hash, \-\-iter-time,
-\-\-use-random | \-\-use-urandom, \-\-key-file, \-\-key-slot, \-\-keyfile-offset,
-\-\-keyfile-size, \-\-tries, \-\-use-directio, \-\-use-fsync, \-\-write-log]
+\fB<options>\fR can be [\-\-batch-mode, \-\-block-size, \-\-cipher, \-\-debug,
+\-\-device-size, \-\-hash, \-\-iter-time, \-\-use-random | \-\-use-urandom,
+\-\-keep-key, \-\-key-size, \-\-key-file, \-\-key-slot, \-\-keyfile-offset,
+\-\-keyfile-size, \-\-tries, \-\-use-directio, \-\-use-fsync, \-\-verbose, \-\-write-log]
+
+To encrypt data on (not yet encrypted) device, use \fI\-\-new\fR with combination
+with \fI\-\-reduce-device-size\fR.
+
+To remove encryption from device, use \fI\-\-decrypt\fR.
 
 For detailed description of encryption and key file options see \fIcryptsetup(8)\fR
 man page.
@@ -68,7 +74,7 @@ you can destructively shrink device with \-\-reduce-device-size option.
 .B "\-\-hash, \-h \fI<hash-spec>\fR"
 Specifies the hash used in the LUKS key setup scheme and volume key digest.
 
-NOTE: if this parameter is not specified, default hash algorithm is always used
+\fBNOTE:\fR if this parameter is not specified, default hash algorithm is always used
 for new device header.
 .TP
 .B "\-\-iter-time, \-i \fI<milliseconds>\fR"
@@ -83,7 +89,7 @@ Define which kernel random number generator will be used to create the volume ke
 .B "\-\-key-file, \-d \fIname\fR"
 Read the passphrase from file.
 
-WARNING: \-\-key-file option can be used only if there only one active keyslot,
+\fBWARNING:\fR \-\-key-file option can be used only if there only one active keyslot,
 or alternatively, also if \-\-key-slot option is specified (then all other keyslots
 will be disabled in new LUKS device).
 
@@ -93,7 +99,7 @@ passphrases.
 .B "\-\-key-slot, \-S <0-7>"
 Specify which key slot is used.
 
-WARNING: All other keyslots will be disabled if this option is used.
+\fBWARNING:\fR All other keyslots will be disabled if this option is used.
 .TP
 .B "\-\-keyfile-offset \fIvalue\fR"
 Skip \fIvalue\fR bytes at the beginning of the key file.
@@ -123,14 +129,14 @@ Instead of real device size, use specified value.
 It means that only specified area (from the start of the device
 to the specified size) will be reencrypted.
 
-WARNING: This is destructive operation.
+\fBWARNING:\fR This is destructive operation.
 
 If no unit suffix is specified, the size is in bytes.
 
 Unit suffix can be S for 512 byte sectors, K/M/G/T (or KiB,MiB,GiB,TiB)
 for units with 1024 base or KB/MB/GB/TB for 1000 base (SI scale).
 
-WARNING: This is destructive operation.
+\fBWARNING:\fR This is destructive operation.
 .TP
 .B "\-\-reduce-device-size \fIsize[units]\fR"
 Enlarge data offset to specified value by shrinking device size.
@@ -144,7 +150,7 @@ partition (so last sectors contains no data).
 
 For units suffix see \-\-device-size parameter description.
 
-WARNING: This is destructive operation and cannot be reverted.
+\fBWARNING:\fR This is destructive operation and cannot be reverted.
 Use with extreme care - shrinked filesystems are usually unrecoverable.
 
 You cannot shrink device more than by 64 MiB (131072 sectors).
@@ -154,8 +160,12 @@ Create new header (encrypt not yet encrypted device).
 
 This option must be used together with \-\-reduce-device-size.
 
-WARNING: This is destructive operation and cannot be reverted.
+\fBWARNING:\fR This is destructive operation and cannot be reverted.
+.TP
+.B "\-\-decrypt"
+Remove encryption (decrypt already encrypted device and remove LUKS header).
 
+\fBWARNING:\fR This is destructive operation and cannot be reverted.
 .TP
 .B "\-\-use-directio"
 Use direct-io (O_DIRECT) for all read/write data operations related
@@ -203,6 +213,10 @@ fdisk \-u /dev/sdb # move sdb1 partition end + 4096 sectors
 (or use resize2fs or tool for your filesystem and shrink it)
 
 cryptsetup-reencrypt /dev/sdb1 \-\-new \-\-reduce-device-size 4096S
+.TP
+Remove LUKS encryption completely
+
+cryptsetup-reencrypt /dev/sdb1 \-\-decrypt
 
 .SH REPORTING BUGS
 Report bugs, including ones in the documentation, on
@@ -213,7 +227,7 @@ Please attach the output of the failed command with the
 .SH AUTHORS
 Cryptsetup-reencrypt was written by Milan Broz <gmazyland@gmail.com>.
 .SH COPYRIGHT
-Copyright \(co 2012-2014 Milan Broz
+Copyright \(co 2012-2015 Milan Broz
 .br
 Copyright \(co 2012-2013 Red Hat, Inc.
 
