@@ -106,18 +106,8 @@ static int action_open_plain(void)
 	size_t passwordLen;
 	size_t key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	uint32_t activate_flags = 0;
+	int keyfile_limited = 0;
 	int r;
-
-	if (params.hash && !strcmp(params.hash, "plain"))
-		params.hash = NULL;
-
-	/* FIXME: temporary hack */
-	if (opt_key_file && strcmp(opt_key_file, "-"))
-		params.hash = NULL;
-
-	if ((opt_keyfile_offset || opt_keyfile_size) && opt_key_file)
-		log_std(_("Ignoring keyfile offset and size options, keyfile read "
-			 "size is always the same as encryption key size.\n"));
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
 				      cipher, NULL, cipher_mode);
@@ -125,6 +115,24 @@ static int action_open_plain(void)
 		log_err(_("No known cipher specification pattern detected.\n"));
 		goto out;
 	}
+
+	if (opt_key_file && strcmp(opt_key_file, "-") != 0)
+		keyfile_limited = 1;
+
+	/* FIXME: temporary hack, no hashing for keyfiles in plain mode */
+	if (opt_key_file && keyfile_limited) {
+		params.hash = NULL;
+		if (!opt_batch_mode && opt_hash)
+			log_std(_("WARNING: The --hash parameter is being ignored "
+				 "in plain mode with keyfile specified.\n"));
+	}
+
+	if (params.hash && !strcmp(params.hash, "plain"))
+		params.hash = NULL;
+
+	if (!opt_batch_mode && !params.hash && opt_key_file && keyfile_limited && opt_keyfile_size)
+		log_std(_("WARNING: The --keyfile-size option is being ignored, "
+			 "the read size is the same as the encryption key size.\n"));
 
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
@@ -150,13 +158,17 @@ static int action_open_plain(void)
 	if (opt_allow_discards)
 		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 
-	if (opt_key_file)
-		/* With hashing, read the whole keyfile */
+	if (opt_key_file) {
+		/* If no hash, key is read directly, read size is always key_size
+		 * (possible opt_keyfile_size is ignored.
+		 * If hash is specified, opt_keyfile_size is applied.
+		 * The opt_keyfile_offset is applied always.
+		 */
 		r = crypt_activate_by_keyfile_offset(cd, action_argv[1],
 			CRYPT_ANY_SLOT, opt_key_file,
-			params.hash ? 0 : key_size, 0,
+			params.hash ? opt_keyfile_size : key_size, opt_keyfile_offset,
 			activate_flags);
-	else {
+	} else {
 		r = tools_get_key(_("Enter passphrase: "),
 				  &password, &passwordLen,
 				  opt_keyfile_offset, opt_keyfile_size,

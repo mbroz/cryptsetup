@@ -882,7 +882,7 @@ of the used cipher, or the size specified with \-s.
 \fBFrom stdin\fR: Reading will continue until a newline (or until
 the maximum input size is reached), with the trailing newline
 stripped. The maximum input size is defined by the same
-compiled-in default as for the maximum key file size and  can
+compiled-in default as for the maximum key file size and can
 be overwritten using \-\-keyfile-size option.
 
 The data read will be hashed with the default hash
@@ -904,8 +904,16 @@ less than the key size.
 \fBFrom a key file\fR: It will be truncated to the
 key size of the used cipher or the size given by \-s
 and directly used as binary key.
-if the key file is shorter than the key, cryptsetup
+
+\fBWARNING\fR: The \-\-hash argument is being ignored.
+The \-\-hash option is usable only for stdin input in plain mode.
+
+If the key file is shorter than the key, cryptsetup
 will quit with an error.
+The maximum input size is defined by the same
+compiled-in default as for the maximum key file size and can
+be overwritten using \-\-keyfile-size option.
+
 
 .SH NOTES ON PASSPHRASE PROCESSING FOR LUKS
 LUKS uses PBKDF2 to protect against dictionary attacks

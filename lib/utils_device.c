@@ -46,6 +46,9 @@ static int device_ready(const char *device)
 	int devfd, r = 0;
 	struct stat st;
 
+	//FIXME: check if device allows to use O_DIRECT
+	// not only on open but also on read (with offset 0)
+
 	log_dbg("Trying to open and read device %s.", device);
 	devfd = open(device, O_RDONLY);
 	if (devfd < 0) {
