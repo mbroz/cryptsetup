@@ -813,6 +813,28 @@ later. If in doubt, do not use it.
 A kernel version of 3.1 or later is needed. For earlier kernels
 this option is ignored.
 .TP
+.B "\-\-perf\-same_cpu_crypt\fR"
+Perform encryption using the same cpu that IO was submitted on.
+The default is to use an unbound workqueue so that encryption work
+is automatically balanced between available CPUs.
+This option is only relevant for \fIopen\fR action.
+
+\fBNOTE:\fR This option is available only for low-level dm-crypt
+performance tuning, use only if you need a change to default dm-crypt
+behaviour. Needs kernel 3.20 or later.
+.TP
+.B "\-\-perf\-submit_from_crypt_cpus\fR"
+Disable offloading writes to a separate thread after encryption.
+There are some situations where offloading write bios from the
+encryption threads to a single thread degrades performance
+significantly.  The default is to offload write bios to the same
+thread.
+This option is only relevant for \fIopen\fR action.
+
+\fBNOTE:\fR This option is available only for low-level dm-crypt
+performance tuning, use only if you need a change to default dm-crypt
+behaviour. Needs kernel 3.20 or later.
+.TP
 .B "\-\-test\-passphrase\fR"
 Do not activate device, just verify passphrase.
 This option is only relevant for \fIopen\fR action (the device
@@ -1037,7 +1059,7 @@ Copyright \(co 2004 Jana Saout
 .br
 Copyright \(co 2004-2006 Clemens Fruhwirth
 .br
-Copyright \(co 2009-2012 Red Hat, Inc.
+Copyright \(co 2009-2015 Red Hat, Inc.
 .br
 Copyright \(co 2009-2015 Milan Broz
 .br

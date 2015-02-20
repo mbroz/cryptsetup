@@ -3,8 +3,8 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2012, Milan Broz
+ * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2015, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,6 +40,9 @@ struct device;
 #define DM_DISCARDS_SUPPORTED (1 << 4)	/* discards/TRIM option is supported */
 #define DM_VERITY_SUPPORTED   (1 << 5)	/* dm-verity target supported */
 #define DM_TCW_SUPPORTED      (1 << 6)	/* tcw (TCRYPT CBC with whitening) */
+#define DM_SAME_CPU_CRYPT_SUPPORTED (1 << 7) /* same_cpu_crypt */
+#define DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED (1 << 8) /* submit_from_crypt_cpus */
+
 uint32_t dm_flags(void);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)

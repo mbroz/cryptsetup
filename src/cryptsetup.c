@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2009-2015, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
@@ -57,6 +57,8 @@ static int opt_urandom = 0;
 static int opt_dump_master_key = 0;
 static int opt_shared = 0;
 static int opt_allow_discards = 0;
+static int opt_perf_same_cpu_crypt = 0;
+static int opt_perf_submit_from_crypt_cpus = 0;
 static int opt_test_passphrase = 0;
 static int opt_tcrypt_hidden = 0;
 static int opt_tcrypt_system = 0;
@@ -90,6 +92,21 @@ static int _verify_passphrase(int def)
 	}
 
 	return def;
+}
+
+static void _set_activation_flags(uint32_t *flags)
+{
+	if (opt_readonly)
+		*flags |= CRYPT_ACTIVATE_READONLY;
+
+	if (opt_allow_discards)
+		*flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+
+	if (opt_perf_same_cpu_crypt)
+		*flags |= CRYPT_ACTIVATE_SAME_CPU_CRYPT;
+
+	if (opt_perf_submit_from_crypt_cpus)
+		*flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
 }
 
 static int action_open_plain(void)
@@ -149,14 +166,10 @@ static int action_open_plain(void)
 	if (r < 0)
 		goto out;
 
-	if (opt_readonly)
-		activate_flags |= CRYPT_ACTIVATE_READONLY;
-
 	if (opt_shared)
 		activate_flags |= CRYPT_ACTIVATE_SHARED;
 
-	if (opt_allow_discards)
-		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+	_set_activation_flags(&activate_flags);
 
 	if (opt_key_file) {
 		/* If no hash, key is read directly, read size is always key_size
@@ -205,11 +218,7 @@ static int action_open_loopaes(void)
 		return -EINVAL;
 	}
 
-	if (opt_readonly)
-		activate_flags |= CRYPT_ACTIVATE_READONLY;
-
-	if (opt_allow_discards)
-		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+	_set_activation_flags(&activate_flags);
 
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
@@ -282,7 +291,7 @@ static int action_open_tcrypt(void)
 		.flags = CRYPT_TCRYPT_LEGACY_MODES,
 	};
 	const char *activated_name;
-	uint32_t flags = 0;
+	uint32_t activate_flags = 0;
 	int r;
 
 	activated_name = opt_test_passphrase ? NULL : action_argv[1];
@@ -294,14 +303,10 @@ static int action_open_tcrypt(void)
 	if (r < 0)
 		goto out;
 
-	if (opt_readonly)
-		flags |= CRYPT_ACTIVATE_READONLY;
-
-	if (opt_allow_discards)
-		flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+	_set_activation_flags(&activate_flags);
 
 	if (activated_name)
-		r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, flags);
+		r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, activate_flags);
 out:
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
@@ -462,8 +467,13 @@ static int action_status(void)
 			log_std("  skipped: %" PRIu64 " sectors\n", cad.iv_offset);
 		log_std("  mode:    %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
 					   "readonly" : "read/write");
-		if (cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS)
-			log_std("  flags:   discards\n");
+		if (cad.flags & (CRYPT_ACTIVATE_ALLOW_DISCARDS|
+				 CRYPT_ACTIVATE_ALLOW_DISCARDS|
+				 CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS))
+			log_std("  flags:   %s%s%s\n",
+				(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? "discards " : "",
+				(cad.flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? "same_cpu_crypt " : "",
+				(cad.flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? "submit_from_crypt_cpus" : "");
 	}
 out:
 	crypt_free(cd);
@@ -750,7 +760,7 @@ static int action_open_luks(void)
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device, *activated_name;
 	char *key = NULL;
-	uint32_t flags = 0;
+	uint32_t activate_flags = 0;
 	int r, keysize;
 
 	header_device = uuid_or_device_header(&data_device);
@@ -780,11 +790,7 @@ static int action_open_luks(void)
 	if (opt_iteration_time)
 		crypt_set_iteration_time(cd, opt_iteration_time);
 
-	if (opt_readonly)
-		flags |= CRYPT_ACTIVATE_READONLY;
-
-	if (opt_allow_discards)
-		flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+	_set_activation_flags(&activate_flags);
 
 	if (opt_master_key_file) {
 		keysize = crypt_get_volume_key_size(cd);
@@ -792,15 +798,15 @@ static int action_open_luks(void)
 		if (r < 0)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
-						 key, keysize, flags);
+						 key, keysize, activate_flags);
 	} else if (opt_key_file) {
 		crypt_set_password_retry(cd, 1);
 		r = crypt_activate_by_keyfile_offset(cd, activated_name,
 			opt_key_slot, opt_key_file, opt_keyfile_size,
-			opt_keyfile_offset, flags);
+			opt_keyfile_offset, activate_flags);
 	} else
 		r = crypt_activate_by_passphrase(cd, activated_name,
-			opt_key_slot, NULL, 0, flags);
+			opt_key_slot, NULL, 0, activate_flags);
 out:
 	crypt_safe_free(key);
 	crypt_free(cd);
@@ -1501,6 +1507,8 @@ int main(int argc, const char **argv)
 		{ "tcrypt-backup",     '\0', POPT_ARG_NONE, &opt_tcrypt_backup,         0, N_("Use backup (secondary) TCRYPT header."), NULL },
 		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt."), NULL },
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)."), NULL },
+		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option."), NULL },
+		{ "perf-submit_from_crypt_cpus",'\0', POPT_ARG_NONE, &opt_perf_submit_from_crypt_cpus,0,N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

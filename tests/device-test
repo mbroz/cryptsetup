@@ -2,10 +2,12 @@
 
 CRYPTSETUP="../src/cryptsetup"
 MNT_DIR="./mnt_luks"
+DEV_NAME="dummy"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 
 cleanup() {
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	udevadm settle >/dev/null 2>&1
 	if [ -d "$MNT_DIR" ] ; then
 	    umount -f $MNT_DIR 2>/dev/null
@@ -54,5 +56,31 @@ echo "[1] Using tmpfs for image"
 DEV="$MNT_DIR/test.img"
 mount -t tmpfs none $MNT_DIR || skip "Mounting tmpfs not available."
 format
+
+echo "[2] Kernel dmcrypt performace options"
+echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --perf-same_cpu_crypt >/dev/null 2>&1
+if [ $? -ne 0 ] ; then
+	echo "TEST SKIPPED: dmcrypt options not available"
+else
+	$CRYPTSETUP close $DEV_NAME || fail
+	# plain
+	echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	# LUKS
+	echo -e "$PWD1" | $CRYPTSETUP open --type luks1 $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo -e "$PWD1" | $CRYPTSETUP open --type luks1 $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+fi
 
 cleanup

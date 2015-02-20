@@ -3,8 +3,8 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2014, Milan Broz
+ * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2015, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -739,6 +739,11 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_PRIVATE (1 << 4)
 /** corruption detected (verity), output only */
 #define CRYPT_ACTIVATE_CORRUPTED (1 << 5)
+/** use same_cpu_crypt option for dm-crypt */
+#define CRYPT_ACTIVATE_SAME_CPU_CRYPT (1 << 6)
+/** use submit_from_crypt_cpus for dm-crypt */
+#define CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS (1 << 7)
+
 
 /**
  * Active device runtime attributes

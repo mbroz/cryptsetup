@@ -3,8 +3,8 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2012, Milan Broz
+ * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2015, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -142,6 +142,11 @@ static void _dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 
 	if (_dm_satisfies_version(1, 13, crypt_maj, crypt_min))
 		_dm_crypt_flags |= DM_TCW_SUPPORTED;
+
+	if (_dm_satisfies_version(1, 14, crypt_maj, crypt_min)) {
+		_dm_crypt_flags |= DM_SAME_CPU_CRYPT_SUPPORTED;
+		_dm_crypt_flags |= DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED;
+	}
 
 	/* Repeat test if dm-crypt is not present */
 	if (crypt_maj > 0)
@@ -295,17 +300,27 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 /* http://code.google.com/p/cryptsetup/wiki/DMCrypt */
 static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t flags)
 {
-	int r, max_size, null_cipher = 0;
+	int r, max_size, null_cipher = 0, num_options = 0;
 	char *params, *hexkey;
-	const char *features;
+	char features[256];
 
 	if (!dmd)
 		return NULL;
 
 	if (flags & CRYPT_ACTIVATE_ALLOW_DISCARDS)
-		features = " 1 allow_discards";
+		num_options++;
+	if (flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT)
+		num_options++;
+	if (flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)
+		num_options++;
+
+	if (num_options)
+		snprintf(features, sizeof(features)-1, " %d%s%s%s", num_options,
+		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? " allow_discards" : "",
+		(flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? " same_cpu_crypt" : "",
+		(flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? " submit_from_crypt_cpus" : "");
 	else
-		features = "";
+		*features = '\0';
 
 	if (!strncmp(dmd->u.crypt.cipher, "cipher_null-", 12))
 		null_cipher = 1;
@@ -677,6 +692,11 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 				      dmd->uuid, dmd->size, table_params, reload);
 	}
 
+	if (r == -EINVAL &&
+	    dmd_flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) &&
+	    !(dm_flags() & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
+		log_err(cd, _("Requested dmcrypt performance options are not supported.\n"));
+
 	crypt_safe_free(table_params);
 	dm_exit_context();
 	return r;
@@ -864,6 +884,10 @@ static int _dm_query_crypt(uint32_t get_flags,
 			arg = strsep(&params, " ");
 			if (!strcasecmp(arg, "allow_discards"))
 				dmd->flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+			else if (!strcasecmp(arg, "same_cpu_crypt"))
+				dmd->flags |= CRYPT_ACTIVATE_SAME_CPU_CRYPT;
+			else if (!strcasecmp(arg, "submit_from_crypt_cpus"))
+				dmd->flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
 			else /* unknown option */
 				return -EINVAL;
 		}
