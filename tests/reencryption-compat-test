@@ -79,6 +79,7 @@ function wipe() # $1 pass
 {
 	open_crypt $1
 	wipe_dev /dev/mapper/$DEV_NAME
+	udevadm settle >/dev/null 2>&1
 	$CRYPTSETUP luksClose $DEV_NAME || fail
 }
 
