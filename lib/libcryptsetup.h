@@ -405,7 +405,7 @@ struct crypt_params_tcrypt {
 	uint32_t flags;            /**< CRYPT_TCRYPT* flags */
 };
 
-/** Include legacy modes ehn scannig for header*/
+/** Include legacy modes for header*/
 #define CRYPT_TCRYPT_LEGACY_MODES    (1 << 0)
 /** Try to load hidden header (describing hidden device) */
 #define CRYPT_TCRYPT_HIDDEN_HEADER   (1 << 1)
@@ -413,6 +413,8 @@ struct crypt_params_tcrypt {
 #define CRYPT_TCRYPT_BACKUP_HEADER   (1 << 2)
 /** Device contains encrypted system (with boot loader) */
 #define CRYPT_TCRYPT_SYSTEM_HEADER   (1 << 3)
+/** Include Veracrypt modes for header*/
+#define CRYPT_TCRYPT_VERA_MODES      (1 << 4)
 
 /** @} */
 

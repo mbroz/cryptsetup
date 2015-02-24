@@ -70,23 +70,23 @@ export LANG=C
 [ ! -d $TST_DIR ] && tar xjf tcrypt-images.tar.bz2
 
 echo "HEADER CHECK"
-for file in $(ls $TST_DIR/tc_*) ; do
+for file in $(ls $TST_DIR/[tv]c_*) ; do
 	echo -n " $file"
-	echo $PASSWORD | $CRYPTSETUP tcryptDump $file >/dev/null || fail
+	echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $file >/dev/null || fail
 	echo " [OK]"
 done
 
 echo "HEADER CHECK (HIDDEN)"
-for file in $(ls $TST_DIR/tc_*-hidden) ; do
+for file in $(ls $TST_DIR/[tv]c_*-hidden) ; do
 	echo -n " $file (hidden)"
-	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptDump --tcrypt-hidden $file >/dev/null || fail
+	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptDump --tcrypt-hidden --veracrypt $file >/dev/null || fail
 	echo " [OK]"
 done
 
 echo "HEADER KEYFILES CHECK"
-for file in $(ls $TST_DIR/tck_*) ; do
+for file in $(ls $TST_DIR/[tv]ck_*) ; do
 	echo -n " $file"
-	echo $PASSWORD | $CRYPTSETUP tcryptDump -d $TST_DIR/keyfile1 -d $TST_DIR/keyfile2 $file >/dev/null || fail
+	echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt -d $TST_DIR/keyfile1 -d $TST_DIR/keyfile2 $file >/dev/null || fail
 	echo " [OK]"
 done
 
@@ -97,9 +97,9 @@ if [ $(id -u) != 0 ]; then
 fi
 
 echo "ACTIVATION FS UUID CHECK"
-for file in $(ls $TST_DIR/tc_*) ; do
+for file in $(ls $TST_DIR/[tv]c_*) ; do
 	echo -n " $file"
-	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen -r $file $MAP 2>&1)
+	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen --veracrypt -r $file $MAP 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
@@ -113,9 +113,9 @@ for file in $(ls $TST_DIR/tc_*) ; do
 done
 
 echo "ACTIVATION FS UUID (HIDDEN) CHECK"
-for file in $(ls $TST_DIR/tc_*-hidden) ; do
+for file in $(ls $TST_DIR/[tv]c_*-hidden) ; do
 	echo -n " $file"
-	out=$(echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r $file $MAP --tcrypt-hidden 2>&1)
+	out=$(echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen --veracrypt -r $file $MAP --tcrypt-hidden 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue

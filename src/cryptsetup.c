@@ -63,6 +63,7 @@ static int opt_test_passphrase = 0;
 static int opt_tcrypt_hidden = 0;
 static int opt_tcrypt_system = 0;
 static int opt_tcrypt_backup = 0;
+static int opt_veracrypt = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -288,7 +289,8 @@ static int action_open_tcrypt(void)
 	struct crypt_params_tcrypt params = {
 		.keyfiles = opt_keyfiles,
 		.keyfiles_count = opt_keyfiles_count,
-		.flags = CRYPT_TCRYPT_LEGACY_MODES,
+		.flags = CRYPT_TCRYPT_LEGACY_MODES |
+			 (opt_veracrypt ? CRYPT_TCRYPT_VERA_MODES : 0),
 	};
 	const char *activated_name;
 	uint32_t activate_flags = 0;
@@ -361,7 +363,8 @@ static int action_tcryptDump(void)
 	struct crypt_params_tcrypt params = {
 		.keyfiles = opt_keyfiles,
 		.keyfiles_count = opt_keyfiles_count,
-		.flags = CRYPT_TCRYPT_LEGACY_MODES,
+		.flags = CRYPT_TCRYPT_LEGACY_MODES |
+			 (opt_veracrypt ? CRYPT_TCRYPT_VERA_MODES : 0),
 	};
 	int r;
 
@@ -1505,6 +1508,7 @@ int main(int argc, const char **argv)
 		{ "tcrypt-hidden",     '\0', POPT_ARG_NONE, &opt_tcrypt_hidden,         0, N_("Use hidden header (hidden TCRYPT device)."), NULL },
 		{ "tcrypt-system",     '\0', POPT_ARG_NONE, &opt_tcrypt_system,         0, N_("Device is system TCRYPT drive (with bootloader)."), NULL },
 		{ "tcrypt-backup",     '\0', POPT_ARG_NONE, &opt_tcrypt_backup,         0, N_("Use backup (secondary) TCRYPT header."), NULL },
+		{ "veracrypt",         '\0', POPT_ARG_NONE, &opt_veracrypt,             0, N_("Scan also for VeraCrypt compatible device."), NULL },
 		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt."), NULL },
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)."), NULL },
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option."), NULL },
@@ -1608,6 +1612,8 @@ int main(int argc, const char **argv)
 		opt_type = "loopaes";
 	} else if (!strcmp(aname, "tcryptOpen")) {
 		aname = "open";
+		opt_type = "tcrypt";
+	} else if (!strcmp(aname, "tcryptDump")) {
 		opt_type = "tcrypt";
 	} else if (!strcmp(aname, "remove") ||
 		   !strcmp(aname, "plainClose") ||
@@ -1722,6 +1728,11 @@ int main(int argc, const char **argv)
 	if (opt_tcrypt_hidden && opt_allow_discards)
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --tcrypt-hidden cannot be combined with --allow-discards.\n"),
+		poptGetInvocationName(popt_context));
+
+	if (opt_veracrypt && strcmp(opt_type, "tcrypt"))
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --veracrypt is supported only for TCRYPT device type.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {

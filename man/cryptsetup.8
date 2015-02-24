@@ -419,8 +419,9 @@ size).
 .PP
 See also section 7 of the FAQ and \fBhttp://loop-aes.sourceforge.net\fR
 for more information regarding loop-AES.
-.SH TCRYPT (TrueCrypt-compatible) EXTENSION
-cryptsetup supports mapping of TrueCrypt or tcplay encrypted partition
+.SH TCRYPT (TrueCrypt-compatible and VeraCrypt) EXTENSION
+cryptsetup supports mapping of TrueCrypt, tcplay or VeraCrypt
+(with \fB\-\-veracrypt\fR option) encrypted partition
 using a native Linux kernel API.
 Header formatting and TCRYPT header change is not supported, cryptsetup
 never changes TCRYPT header on-device.
@@ -437,6 +438,11 @@ passphrase and keyfiles.
 Cryptsetup should recognize all header variants, except legacy cipher chains
 using LRW encryption mode with 64 bits encryption block (namely Blowfish
 in LRW mode is not recognized, this is limitation of kernel crypto API).
+
+To recognize VeraCrypt device  use \fB\-\-veracrypt\fR option.
+VeraCrypt is just extension of TrueCrypt header with increased
+iteration count so unlocking can take quite a lot of time (in comparison
+with TCRYPT device).
 
 \fBNOTE:\fR Activation with \fBtcryptOpen\fR is supported only for cipher chains
 using LRW or XTS encryption modes.

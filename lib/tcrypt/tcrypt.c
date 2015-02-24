@@ -1,8 +1,8 @@
 /*
- * TCRYPT (TrueCrypt-compatible) volume handling
+ * TCRYPT (TrueCrypt-compatible) and VeraCrypt volume handling
  *
  * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2014, Milan Broz
+ * Copyright (C) 2012-2015, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,16 +33,23 @@
 /* TCRYPT PBKDF variants */
 static struct {
 	unsigned int legacy:1;
+	unsigned int veracrypt:1;
 	const char *name;
 	const char *hash;
 	unsigned int iterations;
 } tcrypt_kdf[] = {
-	{ 0, "pbkdf2", "ripemd160", 2000 },
-	{ 0, "pbkdf2", "ripemd160", 1000 },
-	{ 0, "pbkdf2", "sha512",    1000 },
-	{ 0, "pbkdf2", "whirlpool", 1000 },
-	{ 1, "pbkdf2", "sha1",      2000 },
-	{ 0, NULL,     NULL,           0 }
+	{ 0, 0, "pbkdf2", "ripemd160", 2000 },
+	{ 0, 0, "pbkdf2", "ripemd160", 1000 },
+	{ 0, 0, "pbkdf2", "sha512",    1000 },
+	{ 0, 0, "pbkdf2", "whirlpool", 1000 },
+	{ 1, 0, "pbkdf2", "sha1",      2000 },
+	{ 0, 1, "pbkdf2", "sha512",    500000 },
+	{ 0, 1, "pbkdf2", "whirlpool", 500000 },
+	{ 0, 1, "pbkdf2", "sha256",    500000 }, // VeraCrypt 1.0f
+	{ 0, 1, "pbkdf2", "sha256",    200000 }, // boot only
+	{ 0, 1, "pbkdf2", "ripemd160", 655331 },
+	{ 0, 1, "pbkdf2", "ripemd160", 327661 }, // boot only
+	{ 0, 0, NULL,     NULL,        0 }
 };
 
 struct tcrypt_alg {
@@ -196,7 +203,7 @@ static int TCRYPT_hdr_from_disk(struct tcrypt_phdr *hdr,
 
 	/* Convert header to cpu format */
 	hdr->d.version  =  be16_to_cpu(hdr->d.version);
-	hdr->d.version_tc = le16_to_cpu(hdr->d.version_tc);
+	hdr->d.version_tc = be16_to_cpu(hdr->d.version_tc);
 
 	hdr->d.keys_crc32 = be32_to_cpu(hdr->d.keys_crc32);
 
@@ -393,13 +400,13 @@ out:
 }
 
 static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
-			       const char *key, int legacy_modes)
+			       const char *key, uint32_t flags)
 {
 	struct tcrypt_phdr hdr2;
 	int i, j, r = -EINVAL;
 
 	for (i = 0; tcrypt_cipher[i].chain_count; i++) {
-		if (!legacy_modes && tcrypt_cipher[i].legacy)
+		if (!(flags & CRYPT_TCRYPT_LEGACY_MODES) && tcrypt_cipher[i].legacy)
 			continue;
 		log_dbg("TCRYPT:  trying cipher %s-%s",
 			tcrypt_cipher[i].long_name, tcrypt_cipher[i].mode);
@@ -427,6 +434,13 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 
 		if (!strncmp(hdr2.d.magic, TCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
 			log_dbg("TCRYPT: Signature magic detected.");
+			memcpy(&hdr->e, &hdr2.e, TCRYPT_HDR_LEN);
+			r = i;
+			break;
+		}
+		if ((flags & CRYPT_TCRYPT_VERA_MODES) &&
+		     !strncmp(hdr2.d.magic, VCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
+			log_dbg("TCRYPT: Signature magic detected (Veracrypt).");
 			memcpy(&hdr->e, &hdr2.e, TCRYPT_HDR_LEN);
 			r = i;
 			break;
@@ -485,7 +499,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	size_t passphrase_size;
 	char *key;
 	unsigned int i, skipped = 0;
-	int r = -EPERM, legacy_modes;
+	int r = -EPERM;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
@@ -512,9 +526,10 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	for (i = 0; i < params->passphrase_size; i++)
 		pwd[i] += params->passphrase[i];
 
-	legacy_modes = params->flags & CRYPT_TCRYPT_LEGACY_MODES ? 1 : 0;
 	for (i = 0; tcrypt_kdf[i].name; i++) {
-		if (!legacy_modes && tcrypt_kdf[i].legacy)
+		if (!(params->flags & CRYPT_TCRYPT_LEGACY_MODES) && tcrypt_kdf[i].legacy)
+			continue;
+		if (!(params->flags & CRYPT_TCRYPT_VERA_MODES) && tcrypt_kdf[i].veracrypt)
 			continue;
 		/* Derive header key */
 		log_dbg("TCRYPT: trying KDF: %s-%s-%d.",
@@ -533,7 +548,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			break;
 
 		/* Decrypt header */
-		r = TCRYPT_decrypt_hdr(cd, hdr, key, legacy_modes);
+		r = TCRYPT_decrypt_hdr(cd, hdr, key, params->flags);
 		if (r == -ENOENT) {
 			skipped++;
 			r = -EPERM;
@@ -553,10 +568,11 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 
 	r = TCRYPT_hdr_from_disk(hdr, params, i, r);
 	if (!r) {
-		log_dbg("TCRYPT: Header version: %d, req. %d, sector %d"
+		log_dbg("TCRYPT: Magic: %s, Header version: %d, req. %d, sector %d"
 			", mk_offset %" PRIu64 ", hidden_size %" PRIu64
-			", volume size %" PRIu64, (int)hdr->d.version,
-			(int)hdr->d.version_tc, (int)hdr->d.sector_size,
+			", volume size %" PRIu64, tcrypt_kdf[i].veracrypt ?
+			VCRYPT_HDR_MAGIC : TCRYPT_HDR_MAGIC,
+			(int)hdr->d.version, (int)hdr->d.version_tc, (int)hdr->d.sector_size,
 			hdr->d.mk_offset, hdr->d.hidden_volume_size, hdr->d.volume_size);
 		log_dbg("TCRYPT: Header cipher %s-%s, key size %zu",
 			params->cipher, params->mode, params->key_size);
@@ -1026,11 +1042,13 @@ int TCRYPT_dump(struct crypt_device *cd,
 		struct tcrypt_phdr *hdr,
 		struct crypt_params_tcrypt *params)
 {
-	log_std(cd, "TCRYPT header information for %s\n",
+	log_std(cd, "%s header information for %s\n",
+		hdr->d.magic[0] == 'T' ? "TCRYPT" : "VERACRYPT",
 		device_path(crypt_metadata_device(cd)));
 	if (hdr->d.version) {
 		log_std(cd, "Version:       \t%d\n", hdr->d.version);
-		log_std(cd, "Driver req.:\t%d\n", hdr->d.version_tc);
+		log_std(cd, "Driver req.:\t%x.%x\n", hdr->d.version_tc >> 8,
+						    hdr->d.version_tc & 0xFF);
 
 		log_std(cd, "Sector size:\t%" PRIu32 "\n", hdr->d.sector_size);
 		log_std(cd, "MK offset:\t%" PRIu64 "\n", hdr->d.mk_offset);
