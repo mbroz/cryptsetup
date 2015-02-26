@@ -20,16 +20,16 @@ msgstr ""
 
 #: lib/libdevmapper.c:247
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
-msgstr "Kann Kernelmodul »device-mapper« nicht initialisieren, da das Programm nicht mit Root-Rechten läuft.\n"
+msgstr "Das Kernelmodul »device-mapper« kann nicht initialisiert werden, da das Programm nicht mit Root-Rechten läuft.\n"
 
 #: lib/libdevmapper.c:250
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
-msgstr "Kann Kernelmodul »device-mapper« nicht initialisieren. Ist das Kernelmodul »dm_mod« geladen?\n"
+msgstr "Das Kernelmodul »device-mapper« kann nicht initialisiert werden. Ist das Kernelmodul »dm_mod« geladen?\n"
 
 #: lib/libdevmapper.c:535
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
-msgstr "DM-UUID für Gerät »%s« wurde abgeschnitten.\n"
+msgstr "DM-UUID für Gerät »%s« wurde verkürzt.\n"
 
 #: lib/random.c:76
 msgid ""
@@ -42,7 +42,7 @@ msgstr ""
 #: lib/random.c:80
 #, c-format
 msgid "Generating key (%d%% done).\n"
-msgstr "Generiere Schlüssel (%d%% erledigt).\n"
+msgstr "Schlüssel wird generiert (%d %% erledigt).\n"
 
 #: lib/random.c:169
 msgid "Fatal error during RNG initialisation.\n"
@@ -59,11 +59,11 @@ msgstr "Fehler %d beim Einlesen vom Zufallszahlengenerator: %s\n"
 
 #: lib/setup.c:200
 msgid "Cannot initialize crypto RNG backend.\n"
-msgstr "Kann das Krypto-Zufallszahlengenerator-Backend nicht initialisieren.\n"
+msgstr "Fehler beim Initialisieren des Krypto-Zufallszahlengenerator-Backends.\n"
 
 #: lib/setup.c:206
 msgid "Cannot initialize crypto backend.\n"
-msgstr "Kann das Krypto-Backend nicht initialisieren.\n"
+msgstr "Fehler beim Initialisieren des Krypto-Backends.\n"
 
 #: lib/setup.c:236 lib/setup.c:1162 lib/verity/verity.c:123
 #, c-format
@@ -73,7 +73,7 @@ msgstr "Hash-Algorithmus »%s« wird nicht unterstützt.\n"
 #: lib/setup.c:239 lib/loopaes/loopaes.c:90
 #, c-format
 msgid "Key processing error (using hash %s).\n"
-msgstr "Fehler beim Verarbeiten des Schlüssels (mit Hash %s).\n"
+msgstr "Fehler beim Verarbeiten des Schlüssels (mit Hash-Algorithmus »%s«).\n"
 
 #: lib/setup.c:284
 msgid "Cannot determine device type. Incompatible activation of device?\n"
@@ -85,7 +85,7 @@ msgstr "Diese Operation wird nur für LUKS-Geräte unterstützt.\n"
 
 #: lib/setup.c:320
 msgid "All key slots full.\n"
-msgstr "Alle Schlüsselfächer voll.\n"
+msgstr "Alle Schlüsselfächer sind voll.\n"
 
 #: lib/setup.c:327
 #, c-format
@@ -131,7 +131,7 @@ msgstr "Ungültige Schlüsselgröße.\n"
 
 #: lib/setup.c:974 lib/setup.c:1094
 msgid "UUID is not supported for this crypt type.\n"
-msgstr "UUID wird für diese Verschlüsselungs-Art nicht unterstützt.\n"
+msgstr "UUID wird für diese Verschlüsselungsart nicht unterstützt.\n"
 
 #: lib/setup.c:1016
 msgid "Can't format LUKS without device.\n"
@@ -140,17 +140,17 @@ msgstr "Ohne Gerät kann LUKS nicht formatiert werden.\n"
 #: lib/setup.c:1059
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
-msgstr "Kann Gerät »%s« nicht formatieren, da es gerade benutzt wird.\n"
+msgstr "Gerät »%s« kann nicht formatiert werden, da es gerade benutzt wird.\n"
 
 #: lib/setup.c:1062
 #, c-format
 msgid "Cannot format device %s, permission denied.\n"
-msgstr "Kann Gerät »%s« nicht formatieren, Zugriff verweigert.\n"
+msgstr "Gerät »%s« kann nicht formatiert werden, Zugriff verweigert.\n"
 
 #: lib/setup.c:1066
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
-msgstr "Kann den Header auf Gerät »%s« nicht auslöschen.\n"
+msgstr "Fehler beim Auslöschen des Headers auf Gerät »%s«.\n"
 
 #: lib/setup.c:1084
 msgid "Can't format LOOPAES without device.\n"
@@ -215,7 +215,7 @@ msgstr "Das Gerät »%s« kann nicht aus dem Ruhezustand aufgeweckt werden.\n"
 #: lib/setup.c:1570 lib/setup.c:1622
 #, c-format
 msgid "Error during resuming device %s.\n"
-msgstr "Fehler beim Aufwecken aus dem Ruhezustand von Gerät »%s«.\n"
+msgstr "Fehler beim Aufwecken von Gerät »%s« aus dem Ruhezustand.\n"
 
 #: lib/setup.c:1608 lib/setup.c:2043 lib/setup.c:2057 src/cryptsetup.c:152
 #: src/cryptsetup.c:218 src/cryptsetup.c:699 src/cryptsetup.c:1115
@@ -224,7 +224,7 @@ msgstr "Passphrase eingeben: "
 
 #: lib/setup.c:1670 lib/setup.c:1806
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
-msgstr "Kann kein Schlüsselfach hinzufügen, alle Fächer sind deaktiviert und es wurde kein Laufwerksschlüssel angegeben.\n"
+msgstr "Schlüsselfach kann nicht hinzugefügt werden, da alle Fächer deaktiviert sind und kein Laufwerksschlüssel angegeben wurde.\n"
 
 #: lib/setup.c:1679 lib/setup.c:1812 lib/setup.c:1816
 msgid "Enter any passphrase: "
@@ -247,7 +247,7 @@ msgstr "Ersetzt durch Schlüsselfach %d.\n"
 
 #: lib/setup.c:1769
 msgid "Failed to swap new key slot.\n"
-msgstr "Konnte neues Schlüsselfach nicht auswechseln.\n"
+msgstr "Neues Schlüsselfach konnte nicht ausgewechselt werden.\n"
 
 #: lib/setup.c:1886 lib/setup.c:2147 lib/setup.c:2160 lib/setup.c:2302
 msgid "Volume key does not match the volume.\n"
@@ -292,7 +292,7 @@ msgstr "Ungültiges Gerät »%s«.\n"
 
 #: lib/setup.c:2252
 msgid "Function not available in FIPS mode.\n"
-msgstr "Diese Funktion gibt es im FIPS-Modus nicht.\n"
+msgstr "Diese Funktion ist im FIPS-Modus nicht verfügbar.\n"
 
 #: lib/setup.c:2258
 msgid "Volume key buffer too small.\n"
@@ -300,7 +300,7 @@ msgstr "Laufwerks-Schlüsselpuffer zu klein.\n"
 
 #: lib/setup.c:2266
 msgid "Cannot retrieve volume key for plain device.\n"
-msgstr "Kann Laufwerksschlüssel für Plain-Gerät nicht ermitteln.\n"
+msgstr "Fehler beim Ermitteln des Laufwerksschlüssels für Plain-Gerät.\n"
 
 #: lib/setup.c:2273
 #, c-format
@@ -313,16 +313,16 @@ msgstr "Die Dump-Operation wird für diese Geräteart nicht unterstützt.\n"
 
 #: lib/utils.c:244
 msgid "Cannot get process priority.\n"
-msgstr "Kann Prozesspriorität nicht ermitteln.\n"
+msgstr "Fehler beim Ermitteln der Prozesspriorität.\n"
 
 #: lib/utils.c:258
 msgid "Cannot unlock memory.\n"
-msgstr "Kann Speicher nicht entsperren.\n"
+msgstr "Fehler beim Entsperren des Speichers.\n"
 
 #: lib/utils_crypt.c:227 lib/utils_crypt.c:240 lib/utils_crypt.c:387
 #: lib/utils_crypt.c:402
 msgid "Out of memory while reading passphrase.\n"
-msgstr "Zu wenig Speicher zum Einlesen der Passphrasees.\n"
+msgstr "Zu wenig Speicher zum Einlesen der Passphrase.\n"
 
 #: lib/utils_crypt.c:232 lib/utils_crypt.c:247
 msgid "Error reading passphrase from terminal.\n"
@@ -330,7 +330,7 @@ msgstr "Fehler beim Lesen der Passphrase vom Terminal.\n"
 
 #: lib/utils_crypt.c:245
 msgid "Verify passphrase: "
-msgstr "Passphrase wiederholen: "
+msgstr "Passphrase bestätigen: "
 
 #: lib/utils_crypt.c:252
 msgid "Passphrases do not match.\n"
@@ -338,19 +338,19 @@ msgstr "Passphrasen stimmen nicht überein.\n"
 
 #: lib/utils_crypt.c:336
 msgid "Cannot use offset with terminal input.\n"
-msgstr "Kann Offset nicht mit Terminaleingabe nutzen.\n"
+msgstr "Offset kann nicht zusammen mit Terminaleingabe benutzt werden.\n"
 
 #: lib/utils_crypt.c:355 lib/tcrypt/tcrypt.c:453
 msgid "Failed to open key file.\n"
-msgstr "Konnte Schlüsseldatei nicht öffnen.\n"
+msgstr "Fehler beim Öffnen der Schlüsseldatei.\n"
 
 #: lib/utils_crypt.c:364
 msgid "Failed to stat key file.\n"
-msgstr "Konnte Infos zur Schlüsseldatei nicht ermitteln.\n"
+msgstr "Fehler beim Öffnen der Schlüsseldatei.\n"
 
 #: lib/utils_crypt.c:372 lib/utils_crypt.c:393
 msgid "Cannot seek to requested keyfile offset.\n"
-msgstr "Kann nicht zur gewünschten Position in der Schlüsseldatei springen.\n"
+msgstr "Fehler beim Zugriff auf die Schlüsseldatei.\n"
 
 #: lib/utils_crypt.c:410
 msgid "Error reading passphrase.\n"
@@ -362,7 +362,7 @@ msgstr "Größenbegrenzung für die Schlüsseldatei überschritten.\n"
 
 #: lib/utils_crypt.c:433
 msgid "Cannot read requested amount of data.\n"
-msgstr "Kann die gewünschte Menge an Daten nicht lesen.\n"
+msgstr "Die gewünschte Menge an Daten kann nicht eingelesen werden.\n"
 
 #: lib/utils_fips.c:44
 msgid "FIPS checksum verification failed.\n"
@@ -375,25 +375,25 @@ msgstr "Gerät »%s« existiert nicht oder Zugriff verweigert.\n"
 
 #: lib/utils_device.c:352
 msgid "Cannot use a loopback device, running as non-root user.\n"
-msgstr "Kann das Loopback-Gerät nicht benutzen, weil das Programm nicht mit Root-Rechten läuft.\n"
+msgstr "Das Loopback-Gerät kann nicht benutzt werden, da das Programm nicht mit Root-Rechten läuft.\n"
 
 #: lib/utils_device.c:355
 msgid "Cannot find a free loopback device.\n"
-msgstr "Kann kein freies Loopback-Gerät finden.\n"
+msgstr "Kein freies Loopback-Gerät gefunden.\n"
 
 #: lib/utils_device.c:362
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
-msgstr "Anklemmen des Loopback-Geräts fehlgeschlagen (das Loopback-Gerät benötigt den autoclear-Schalter).\n"
+msgstr "Anklemmen des Loopback-Geräts fehlgeschlagen (das Loopback-Gerät benötigt den »autoclear«-Schalter).\n"
 
 #: lib/utils_device.c:402
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
-msgstr "Kann Gerät »%s« nicht nutzen, da es gerade benutzt wird.\n"
+msgstr "Gerät »%s« kann nicht benutzt werden, da es bereits anderweitig benutzt wird.\n"
 
 #: lib/utils_device.c:406
 #, c-format
 msgid "Cannot get info about device %s.\n"
-msgstr "Kann Infos über Gerät »%s« nicht bekommen.\n"
+msgstr "Fehler beim Abrufen der Infos über Gerät »%s«.\n"
 
 #: lib/utils_device.c:412
 #, c-format
@@ -417,7 +417,7 @@ msgid ""
 "Check that kernel supports %s cipher (check syslog for more info).\n"
 msgstr ""
 "Einrichten der dm-crypt-Schlüsselzuordnung für Gerät »%s« fehlgeschlagen.\n"
-"Stellen Sie sicher, dass der Kernel die %s-Verschlüsselung unterstützt.\n"
+"Stellen Sie sicher, dass der Kernel die Verschlüsselung »%s« unterstützt.\n"
 "(Sehen Sie im System-Log nach, ob sich dort Hinweise finden.)\n"
 
 #: lib/luks1/keyencryption.c:42
@@ -428,15 +428,15 @@ msgstr "Schlüsselgröße im XTS-Modus muss entweder 256 oder 512 Bits sein.\n"
 #: lib/luks1/keymanage.c:565 lib/luks1/keymanage.c:1010
 #, c-format
 msgid "Cannot write to device %s, permission denied.\n"
-msgstr "Kann nicht auf Gerät »%s« schreiben, Zugriff verweigert.\n"
+msgstr "Fehler beim Schreiben auf Gerät »%s«, Zugriff verweigert.\n"
 
 #: lib/luks1/keyencryption.c:111
 msgid "Failed to open temporary keystore device.\n"
-msgstr "Öffnen des temporären Schlüsselspeichergeräts fehlgeschlagen.\n"
+msgstr "Fehler beim Öffnen des temporären Schlüsselspeichergeräts.\n"
 
 #: lib/luks1/keyencryption.c:118
 msgid "Failed to access temporary keystore device.\n"
-msgstr "Zugriff auf das temporäre Schlüsselspeichergerät fehlgeschlagen.\n"
+msgstr "Fehler beim Zugriff auf das temporäre Schlüsselspeichergerät.\n"
 
 #: lib/luks1/keyencryption.c:191
 msgid "IO error while encrypting keyslot.\n"
@@ -449,7 +449,7 @@ msgstr "E/A-Fehler beim Entschlüsseln des Schlüsselfachs.\n"
 #: lib/luks1/keymanage.c:90
 #, c-format
 msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
-msgstr "Gerät %s ist zu klein. (LUKS benötigt mindestens %<PRIu64> Bytes.)\n"
+msgstr "Gerät »%s« ist zu klein. (LUKS benötigt mindestens %<PRIu64> Bytes.)\n"
 
 #: lib/luks1/keymanage.c:180 lib/luks1/keymanage.c:418
 #: src/cryptsetup_reencrypt.c:1019
@@ -465,30 +465,30 @@ msgstr "Angeforderte Header-Backupdatei »%s« existiert bereits.\n"
 #: lib/luks1/keymanage.c:200
 #, c-format
 msgid "Cannot create header backup file %s.\n"
-msgstr "Kann Header-Backupdatei »%s« nicht anlegen.\n"
+msgstr "Fehler beim Anlegen der Header-Backupdatei »%s«.\n"
 
 #: lib/luks1/keymanage.c:205
 #, c-format
 msgid "Cannot write header backup file %s.\n"
-msgstr "Kann Sicherungskopie »%s« des Headers nicht schreiben.\n"
+msgstr "Fehler beim Speichern der Header-Backupdatei »%s«.\n"
 
 #: lib/luks1/keymanage.c:239
 msgid "Backup file doesn't contain valid LUKS header.\n"
-msgstr "Sicherungsdatei enthält keinen gültigen LUKS-Header.\n"
+msgstr "Backupdatei enthält keinen gültigen LUKS-Header.\n"
 
 #: lib/luks1/keymanage.c:252 lib/luks1/keymanage.c:489
 #, c-format
 msgid "Cannot open header backup file %s.\n"
-msgstr "Kann Sicherungskopie »%s« des Headers nicht öffnen.\n"
+msgstr "Fehler beim Öffnen der Header-Backupdatei »%s«.\n"
 
 #: lib/luks1/keymanage.c:258
 #, c-format
 msgid "Cannot read header backup file %s.\n"
-msgstr "Kann Sicherungskopie »%s« des Headers nicht lesen.\n"
+msgstr "Fehler beim Einlesen der Header-Backupdatei »%s«.\n"
 
 #: lib/luks1/keymanage.c:269
 msgid "Data offset or key size differs on device and backup, restore failed.\n"
-msgstr "Unterschiedlicher Offset oder Schlüsselgröße zwischen Gerät und Sicherung, Wiederherstellung fehlgeschlagen.\n"
+msgstr "Unterschiedlicher Offset oder Schlüsselgröße zwischen Gerät und Backup. Wiederherstellung fehlgeschlagen.\n"
 
 #: lib/luks1/keymanage.c:277
 #, c-format
@@ -509,7 +509,7 @@ msgid ""
 "WARNING: real device header has different UUID than backup!"
 msgstr ""
 "\n"
-"WARNUNG: Der Header des echten Geräts hat eine andere UUID als die Sicherungskopie!"
+"WARNUNG: Der Header des echten Geräts hat eine andere UUID als das Backup!"
 
 #: lib/luks1/keymanage.c:299 lib/luks1/keymanage.c:528
 #: lib/luks1/keymanage.c:568 lib/tcrypt/tcrypt.c:608 lib/verity/verity.c:82
@@ -517,7 +517,7 @@ msgstr ""
 #: lib/verity/verity_hash.c:303 lib/verity/verity_hash.c:323
 #, c-format
 msgid "Cannot open device %s.\n"
-msgstr "Kann Gerät »%s« nicht öffnen.\n"
+msgstr "Fehler beim Öffnen des Geräts »%s«.\n"
 
 #: lib/luks1/keymanage.c:329
 msgid "Non standard key size, manual repair required.\n"
@@ -529,11 +529,11 @@ msgstr "Ungewöhnliche Ausrichtung der Schlüsselfächer, manuelles Reparieren e
 
 #: lib/luks1/keymanage.c:340
 msgid "Repairing keyslots.\n"
-msgstr "Repariere Schlüsselfächer.\n"
+msgstr "Schlüsselfächer werden repariert.\n"
 
 #: lib/luks1/keymanage.c:351
 msgid "Repair failed."
-msgstr "Reparieren fehlgeschlagen."
+msgstr "Fehler beim Reparieren der Schlüsselfächer."
 
 #: lib/luks1/keymanage.c:363
 #, c-format
@@ -558,7 +558,7 @@ msgstr "Schlüsselfach %i: Salt gelöscht.\n"
 
 #: lib/luks1/keymanage.c:396
 msgid "Writing LUKS header to disk.\n"
-msgstr "Schreibe LUKS-Header auf die Platte.\n"
+msgstr "LUKS-Header wird auf den Datenträger geschrieben.\n"
 
 #: lib/luks1/keymanage.c:421
 #, c-format
@@ -600,18 +600,18 @@ msgstr "Falsches LUKS-UUID-Format angegeben.\n"
 
 #: lib/luks1/keymanage.c:688
 msgid "Cannot create LUKS header: reading random salt failed.\n"
-msgstr "Kann LUKS-Header nicht erzeugen: Lesen der zufälligen Streuung fehlgeschlagen.\n"
+msgstr "LUKS-Header kann nicht angelegt werden: Fehler beim Einlesen des zufälligen Salts.\n"
 
 #: lib/luks1/keymanage.c:695 lib/luks1/keymanage.c:791
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
-msgstr "Inkompatible PBKDF2-Optionen (mit Hash-Algorithmus %s).\n"
+msgstr "Inkompatible PBKDF2-Optionen (mit Hash-Algorithmus »%s«).\n"
 
 # XXX
 #: lib/luks1/keymanage.c:710
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
-msgstr "Kann LUKS-Header nicht erzeugen: Auszug des Headers fehlgeschlagen (mit Hash %s).\n"
+msgstr "LUKS-Header kann nicht angelegt werden: Fehler beim Hashen des Headers (mit Hash-Algorithmus »%s«).\n"
 
 #: lib/luks1/keymanage.c:775
 #, c-format
@@ -641,7 +641,7 @@ msgstr "Schlüsselfach %d ist ungültig, bitte wählen Sie ein Schlüsselfach zw
 #: lib/luks1/keymanage.c:1014
 #, c-format
 msgid "Cannot wipe device %s.\n"
-msgstr "Kann Gerät »%s« nicht auslöschen.\n"
+msgstr "Gerät »%s« kann nicht ausgelöscht werden.\n"
 
 #: lib/loopaes/loopaes.c:146
 msgid "Detected not yet supported GPG encrypted keyfile.\n"
@@ -694,7 +694,7 @@ msgstr "Der Kernel unterstützt die Aktivierung für diesen TCRYPT-Legacymodus n
 #: lib/tcrypt/tcrypt.c:728
 #, c-format
 msgid "Activating TCRYPT system encryption for partition %s.\n"
-msgstr "Aktiviere TCRYPT-Systemverschlüsselung für Partition »%s«.\n"
+msgstr "TCRYPT-Systemverschlüsselung für Partition »%s« wird aktiviert.\n"
 
 #: lib/tcrypt/tcrypt.c:790
 msgid "Kernel doesn't support TCRYPT compatible mapping.\n"
@@ -707,7 +707,7 @@ msgstr "Diese Funktionalität braucht einen geladenen TCRYPT-Header."
 #: lib/verity/verity.c:70 lib/verity/verity.c:172
 #, c-format
 msgid "Verity device %s doesn't use on-disk header.\n"
-msgstr "Verity-Gerät »%s« benutzt keinen Header auf der Platte.\n"
+msgstr "Verity-Gerät »%s« benutzt keinen Header auf dem Datenträger.\n"
 
 #: lib/verity/verity.c:94
 #, c-format
@@ -744,7 +744,7 @@ msgstr "Verity-Gerät hat eine Verfälschung nach der Aktivierung festgestellt.\
 #: lib/verity/verity_hash.c:59
 #, c-format
 msgid "Spare area is not zeroed at position %<PRIu64>.\n"
-msgstr "Zusätzlicher Platz ist nicht ausgenullt an Position %<PRIu64>.\n"
+msgstr "Zusätzlicher Platz an Position %<PRIu64> ist nicht ausgenullt.\n"
 
 #: lib/verity/verity_hash.c:121 lib/verity/verity_hash.c:249
 #: lib/verity/verity_hash.c:277 lib/verity/verity_hash.c:284
@@ -754,7 +754,7 @@ msgstr "Überlauf beim Geräte-Offset.\n"
 #: lib/verity/verity_hash.c:161
 #, c-format
 msgid "Verification failed at position %<PRIu64>.\n"
-msgstr "Verifikation fehlgeschlagen an Position %<PRIu64>.\n"
+msgstr "Fehler beim Verifizieren an Position %<PRIu64>.\n"
 
 #: lib/verity/verity_hash.c:235
 msgid "Invalid size parameters for verity device.\n"
@@ -766,11 +766,11 @@ msgstr "Zu viele Ebenen für Verity-Laufwerk.\n"
 
 #: lib/verity/verity_hash.c:354
 msgid "Verification of data area failed.\n"
-msgstr "Verifikation des Datenbereichs fehlgeschlagen.\n"
+msgstr "Fehler beim Verifizieren des Datenbereichs.\n"
 
 #: lib/verity/verity_hash.c:359
 msgid "Verification of root hash failed.\n"
-msgstr "Verifikation des Root-Hashes fehlgeschlagen.\n"
+msgstr "Fehler beim Verifizieren des Root-Hashes.\n"
 
 #: lib/verity/verity_hash.c:365
 msgid "Input/output error while creating hash area.\n"
@@ -778,7 +778,7 @@ msgstr "E/A-Fehler beim Anlegen des Hash-Bereiches.\n"
 
 #: lib/verity/verity_hash.c:367
 msgid "Creation of hash area failed.\n"
-msgstr "Anlegen des Hash-Bereiches fehlgeschlagen.\n"
+msgstr "Fehler beim Anlegen des Hash-Bereiches.\n"
 
 #: lib/verity/verity_hash.c:414
 #, c-format
@@ -787,11 +787,11 @@ msgstr "WARNUNG: Kernel kann das Gerät nicht aktivieren, wenn die Datenblockgr�
 
 #: src/cryptsetup.c:80
 msgid "Can't do passphrase verification on non-tty inputs.\n"
-msgstr "Kann die Passphrase-Verifikation nur auf Terminal-Eingaben durchführen.\n"
+msgstr "Passphrase-Verifikation ist nur auf Terminal-Eingaben möglich.\n"
 
 #: src/cryptsetup.c:111
 msgid "Ignoring keyfile offset and size options, keyfile read size is always the same as encryption key size.\n"
-msgstr "Ignoriere Optionen für Schlüsseldatei-Offset und -Größe, da die Schlüsseldatei immer genau so groß ist wie der Verschlüsselungsschlüssel.\n"
+msgstr "Optionen für Schlüsseldatei-Offset und -Größe werden ignoriert, da die Schlüsseldatei immer genau so groß ist wie der Verschlüsselungsschlüssel.\n"
 
 #: src/cryptsetup.c:117 src/cryptsetup.c:531 src/cryptsetup.c:678
 #: src/cryptsetup_reencrypt.c:496 src/cryptsetup_reencrypt.c:547
@@ -800,7 +800,7 @@ msgstr "Kein bekanntes Verschlüsselungsmuster entdeckt.\n"
 
 #: src/cryptsetup.c:184
 msgid "Option --key-file is required.\n"
-msgstr "Die Option --key-file wird benötigt.\n"
+msgstr "Die Option »--key-file« muss angegeben werden.\n"
 
 #: src/cryptsetup.c:237
 msgid "No device header detected with this passphrase.\n"
@@ -824,7 +824,7 @@ msgstr "Das Ergebnis des Benchmarks ist nicht zuverlässig.\n"
 
 #: src/cryptsetup.c:525
 msgid "# Tests are approximate using memory only (no storage IO).\n"
-msgstr "# Die Tests sind nur annähernd genau, da sie nicht auf die Festplatte zugreifen.\n"
+msgstr "# Die Tests sind nur annähernd genau, da sie nicht auf den Datenträger zugreifen.\n"
 
 #: src/cryptsetup.c:550 src/cryptsetup.c:572
 msgid "#  Algorithm | Key |  Encryption |  Decryption\n"
@@ -842,12 +842,12 @@ msgstr "N/A"
 #: src/cryptsetup.c:606
 #, c-format
 msgid "Cannot read keyfile %s.\n"
-msgstr "Kann Schlüsseldatei »%s« nicht lesen.\n"
+msgstr "Fehler beim Einlesen der Schlüsseldatei »%s«.\n"
 
 #: src/cryptsetup.c:610
 #, c-format
 msgid "Cannot read %d bytes from keyfile %s.\n"
-msgstr "Kann %d Bytes aus der Schlüsseldatei »%s« nicht lesen.\n"
+msgstr "Fehler beim Einlesen von %d Bytes aus der Schlüsseldatei »%s«.\n"
 
 #: src/cryptsetup.c:639
 msgid "Really try to repair LUKS device header?"
@@ -856,7 +856,7 @@ msgstr "Wirklich versuchen, den LUKS-Geräteheader wiederherzustellen?"
 #: src/cryptsetup.c:664
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
-msgstr "Hiermit überschreiben Sie Daten auf »%s« unwiderruflich."
+msgstr "Hiermit werden die Daten auf »%s« unwiderruflich überschrieben."
 
 #: src/cryptsetup.c:666
 msgid "memory allocation error in action_luksFormat"
@@ -865,7 +865,7 @@ msgstr "Speicherproblem in action_luksFormat"
 #: src/cryptsetup.c:684
 #, c-format
 msgid "Cannot use %s as on-disk header.\n"
-msgstr "Kann »%s« nicht als Auf-Platte-Header nutzen.\n"
+msgstr "Das Gerät »%s« kann nicht als Datenträger-Header benutzt werden.\n"
 
 #: src/cryptsetup.c:757
 msgid "Reduced data offset is allowed only for detached LUKS header.\n"
@@ -879,7 +879,7 @@ msgstr "Schlüsselfach %d zum Löschen ausgewählt.\n"
 #: src/cryptsetup.c:861
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
-msgstr "Schlüssel %d nicht aktiv. Kann nicht auslöschen.\n"
+msgstr "Schlüssel %d ist nicht aktiv und kann daher nicht ausgelöscht werden.\n"
 
 #: src/cryptsetup.c:869 src/cryptsetup.c:917
 msgid "This is the last keyslot. Device will become unusable after purging this key."
@@ -908,11 +908,11 @@ msgstr "Geben Sie die neue Passphrase ein: "
 
 #: src/cryptsetup.c:1054
 msgid "Only one device argument for isLuks operation is supported.\n"
-msgstr "Die isLuks-Operation unterstützt nur genau ein Geräte-Argument.\n"
+msgstr "Die Operation »isLuks« unterstützt nur genau ein Geräte-Argument.\n"
 
 #: src/cryptsetup.c:1210 src/cryptsetup.c:1231
 msgid "Option --header-backup-file is required.\n"
-msgstr "Option --header-backup-file wird benötigt.\n"
+msgstr "Option »--header-backup-file« muss angegeben werden.\n"
 
 #: src/cryptsetup.c:1268
 #, c-format
@@ -970,7 +970,7 @@ msgstr "<Gerät>"
 
 #: src/cryptsetup.c:1329
 msgid "try to repair on-disk metadata"
-msgstr "Versuche die Auf-Platte-Metadaten zu reparieren"
+msgstr "Versuchen, die Metadaten auf dem Datenträger zu reparieren"
 
 #: src/cryptsetup.c:1330
 msgid "erase all keyslots (remove encryption key)"
@@ -982,7 +982,7 @@ msgstr "<Gerät> [<neue Schlüsseldatei>]"
 
 #: src/cryptsetup.c:1331
 msgid "formats a LUKS device"
-msgstr "Formatiert ein LUKS-Gerät"
+msgstr "Ein LUKS-Gerät formatieren"
 
 #: src/cryptsetup.c:1332
 msgid "add key to LUKS device"
@@ -1034,11 +1034,11 @@ msgstr "LUKS-Gerät aus dem Ruhezustand aufwecken."
 
 #: src/cryptsetup.c:1342
 msgid "Backup LUKS device header and keyslots"
-msgstr "Sichern des Headers und der Schlüsselfächer eines LUKS-Geräts"
+msgstr "Header und Schlüsselfächer eines LUKS-Geräts sichern"
 
 #: src/cryptsetup.c:1343
 msgid "Restore LUKS device header and keyslots"
-msgstr "Wiederherstellen des Headers und der Schlüsselfächer eines LUKS-Geräts"
+msgstr "Header und Schlüsselfächer eines LUKS-Geräts wiederherstellen"
 
 #: src/cryptsetup.c:1360 src/veritysetup.c:328
 msgid ""
@@ -1073,7 +1073,7 @@ msgstr ""
 "<Name> ist das Gerät, das unter »%s« erzeugt wird\n"
 "<Gerät> ist das verschlüsselte Gerät\n"
 "<Schlüsselfach> ist die Nummer des zu verändernden LUKS-Schlüsselfachs\n"
-"<Schlüsseldatei> optionale Schlüsseldatei für für den neuen Schlüssel der »luksAddKey«-Aktion\n"
+"<Schlüsseldatei> optionale Schlüsseldatei für den neuen Schlüssel der »luksAddKey«-Aktion\n"
 
 #: src/cryptsetup.c:1377
 #, c-format
@@ -1134,7 +1134,7 @@ msgstr "Zeigt Debugging-Meldungen an"
 
 #: src/cryptsetup.c:1443 src/cryptsetup_reencrypt.c:1154
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
-msgstr "Der Algorithmus zum Verschlüsseln der Platte (siehe /proc/crypto)"
+msgstr "Der Algorithmus zum Verschlüsseln des Datenträgers (siehe /proc/crypto)"
 
 #: src/cryptsetup.c:1444 src/cryptsetup_reencrypt.c:1156
 msgid "The hash used to create the encryption key from the passphrase"
@@ -1244,7 +1244,7 @@ msgstr "Nutzdaten an Grenzen von <n> Sektoren ausrichten - für luksFormat"
 
 #: src/cryptsetup.c:1464
 msgid "File with LUKS header and keyslots backup."
-msgstr "Datei mit der Sicherung der LUKS-Header und den Schlüsselfächern."
+msgstr "Datei mit dem Backup der LUKS-Header und den Schlüsselfächern."
 
 #: src/cryptsetup.c:1465 src/cryptsetup_reencrypt.c:1162
 msgid "Use /dev/random for generating volume key."
@@ -1264,7 +1264,7 @@ msgstr "UUID für das zu verwendende Gerät."
 
 #: src/cryptsetup.c:1469
 msgid "Allow discards (aka TRIM) requests for device."
-msgstr "TRIM-Befehle für das Gerät zulassen."
+msgstr "Auswurf-Anfragen (»TRIM«-Befehl) für das Gerät zulassen."
 
 #: src/cryptsetup.c:1470
 msgid "Device or file with separated LUKS header."
@@ -1386,7 +1386,7 @@ msgstr "Ungültiger Salt-String angegeben.\n"
 #: src/veritysetup.c:88
 #, c-format
 msgid "Cannot create hash image %s for writing.\n"
-msgstr "Kann Hash-Abbild »%s« nicht zum Schreiben anlegen.\n"
+msgstr "Fehler beim Schreiben des Hash-Abbilds »%s«.\n"
 
 #: src/veritysetup.c:148
 msgid "Invalid root hash string specified.\n"
@@ -1430,7 +1430,7 @@ msgstr "<Hash-Gerät>"
 
 #: src/veritysetup.c:313
 msgid "show on-disk information"
-msgstr "Daten auf der Platte anzeigen"
+msgstr "Auf dem Datenträger gespeicherte Informationen anzeigen"
 
 #: src/veritysetup.c:332
 #, c-format
@@ -1455,7 +1455,7 @@ msgid ""
 "\tHash: %s, Data block (bytes): %u, Hash block (bytes): %u, Salt size: %u, Hash format: %u\n"
 msgstr ""
 "\n"
-"Eincompilierte Vorgabewerte für dm-verity:\n"
+"Einkompilierte Vorgabewerte für dm-verity:\n"
 "\tHash: %s, Datenblock (Bytes): %u, Hashblock (Bytes): %u, Salt-Größe: %u, Hashformat: %u\n"
 
 #: src/veritysetup.c:377
@@ -1509,12 +1509,12 @@ msgstr "Hex-Zeichenkette"
 #: src/cryptsetup_reencrypt.c:144
 #, c-format
 msgid "Cannot exclusively open %s, device in use.\n"
-msgstr "Kann Gerät »%s« nicht exklusiv öffnen, es wird bereits benutzt.\n"
+msgstr "Gerät »%s« kann nicht exklusiv geöffnet werden, da es bereits benutzt wird.\n"
 
 #: src/cryptsetup_reencrypt.c:148
 #, c-format
 msgid "Cannot open device %s\n"
-msgstr "Kann Gerät »%s« nicht öffnen\n"
+msgstr "Fehler beim Öffnen von Gerät »%s«.\n"
 
 #: src/cryptsetup_reencrypt.c:158 src/cryptsetup_reencrypt.c:375
 #: src/cryptsetup_reencrypt.c:813
@@ -1524,30 +1524,30 @@ msgstr "Belegen des ausgerichteten Speichers fehlgeschlagen.\n"
 #: src/cryptsetup_reencrypt.c:165
 #, c-format
 msgid "Cannot read device %s.\n"
-msgstr "Kann nicht von Gerät »%s« lesen.\n"
+msgstr "Fehler beim Lesen von Gerät »%s«.\n"
 
 #: src/cryptsetup_reencrypt.c:176
 #, c-format
 msgid "Marking LUKS device %s unusable.\n"
-msgstr "Markiere LUKS-Gerät »%s« als unbenutzbar.\n"
+msgstr "LUKS-Gerät »%s« wird als unbenutzbar markiert.\n"
 
 #: src/cryptsetup_reencrypt.c:181
 #, c-format
 msgid "Marking LUKS device %s usable.\n"
-msgstr "Markiere LUKS-Gerät »%s« als benutzbar.\n"
+msgstr "LUKS-Gerät »%s« wird als benutzbar markiert.\n"
 
 #: src/cryptsetup_reencrypt.c:197
 #, c-format
 msgid "Cannot write device %s.\n"
-msgstr "Kann Gerät »%s« nicht beschreiben.\n"
+msgstr "Fehler beim Schreiben auf Gerät »%s«.\n"
 
 #: src/cryptsetup_reencrypt.c:278
 msgid "Cannot write reencryption log file.\n"
-msgstr "Kann Wiederverschlüsselungs-Logdatei nicht wegschreiben.\n"
+msgstr "Fehler beim Speichern der Wiederverschlüsselungs-Logdatei.\n"
 
 #: src/cryptsetup_reencrypt.c:327
 msgid "Cannot read reencryption log file.\n"
-msgstr "Kann Wiederverschlüsselungs-Logdatei nicht einlesen.\n"
+msgstr "Fehler beim Einlesen der Wiederverschlüsselungs-Logdatei.\n"
 
 #: src/cryptsetup_reencrypt.c:366
 #, c-format
@@ -1556,15 +1556,15 @@ msgstr "Logdatei »%s« existiert, Wiederverschlüsselung wird fortgesetzt.\n"
 
 #: src/cryptsetup_reencrypt.c:401
 msgid "Activating temporary device using old LUKS header.\n"
-msgstr "Aktivieren des temporären Gerätes mit dem alten LUKS-Header.\n"
+msgstr "Temporäres Gerät mit dem alten LUKS-Header wird aktiviert.\n"
 
 #: src/cryptsetup_reencrypt.c:412
 msgid "Activating temporary device using new LUKS header.\n"
-msgstr "Aktivieren des temporären Gerätes mit dem neuen LUKS-Header.\n"
+msgstr "Temporäres Gerät mit dem neuen LUKS-Header wird aktiviert.\n"
 
 #: src/cryptsetup_reencrypt.c:422
 msgid "Activation of temporary devices failed.\n"
-msgstr "Aktivieren der temporären Geräte fehlgeschlagen.\n"
+msgstr "Fehler beim Aktivieren der temporären Geräte.\n"
 
 #: src/cryptsetup_reencrypt.c:448
 #, c-format
@@ -1583,12 +1583,12 @@ msgstr "LUKS-Backup-Header von Gerät »%s« angelegt.\n"
 
 #: src/cryptsetup_reencrypt.c:526
 msgid "Creation of LUKS backup headers failed.\n"
-msgstr "Anlegen der LUKS-Backup-Header fehlgeschlagen.\n"
+msgstr "Fehler beim Anlegen des LUKS-Backup-Headers.\n"
 
 #: src/cryptsetup_reencrypt.c:621
 #, c-format
 msgid "Cannot restore LUKS header on device %s.\n"
-msgstr "Kann den LUKS-Header auf Gerät »%s« nicht wiederherstellen.\n"
+msgstr "Fehler beim Wiederherstellen des LUKS-Headers auf Gerät »%s«.\n"
 
 #: src/cryptsetup_reencrypt.c:623
 #, c-format
@@ -1602,15 +1602,15 @@ msgstr "Fortschritt: %5.1f%%, noch %02llu:%02llu, %4llu MiB geschrieben bei %5.1
 
 #: src/cryptsetup_reencrypt.c:672 src/cryptsetup_reencrypt.c:748
 msgid "Cannot seek to device offset.\n"
-msgstr "Kann nicht zum gewünschten Offset springen.\n"
+msgstr "Fehler beim Springen zum Gerät-Offset.\n"
 
 #: src/cryptsetup_reencrypt.c:794 src/cryptsetup_reencrypt.c:800
 msgid "Cannot open temporary LUKS header file.\n"
-msgstr "Kann temporäre LUKS-Header-Datei nicht öffnen.\n"
+msgstr "Fehler beim Öffnen der temporären LUKS-Header-Datei.\n"
 
 #: src/cryptsetup_reencrypt.c:806
 msgid "Cannot get device size.\n"
-msgstr "Kann Gerätegröße nicht ermitteln.\n"
+msgstr "Fehler beim Ermitteln der Gerätegröße.\n"
 
 #: src/cryptsetup_reencrypt.c:830
 msgid "Interrupted by a signal.\n"
@@ -1631,7 +1631,7 @@ msgstr "Geben Sie die Passphrase für Schlüsselfach %u ein: "
 
 #: src/cryptsetup_reencrypt.c:1045
 msgid "Cannot open reencryption log file.\n"
-msgstr "Kann die Wiederverschlüsselungs-Logdatei nicht öffnen.\n"
+msgstr "Fehler beim Öffnen der Wiederverschlüsselungs-Logdatei.\n"
 
 #: src/cryptsetup_reencrypt.c:1153
 msgid "Reencryption block size"
@@ -1679,12 +1679,12 @@ msgstr "[OPTION...] <Gerät>"
 
 #: src/cryptsetup_reencrypt.c:1202
 msgid "WARNING: this is experimental code, it can completely break your data.\n"
-msgstr "WARNUNG: Dies ist experimenteller Code, kann sein, dass er Ihre Daten komplett zerstört.\n"
+msgstr "WARNUNG: Dies ist experimenteller Code, es kann sein, dass er Ihre Daten komplett zerstört.\n"
 
 #: src/cryptsetup_reencrypt.c:1203
 #, c-format
 msgid "Reencryption will change: volume key%s%s%s%s.\n"
-msgstr "Wiederverschlüsselung wird ändern: Laufwerkskennung%s%s%s%s.\n"
+msgstr "Wiederverschlüsselung ändert: Laufwerkskennung%s%s%s%s.\n"
 
 #: src/cryptsetup_reencrypt.c:1204
 msgid ", set hash to "
@@ -1696,11 +1696,11 @@ msgstr ", Verschlüsselung auf "
 
 #: src/cryptsetup_reencrypt.c:1210
 msgid "Argument required."
-msgstr "Argument erforderlich."
+msgstr "Argument muss angegeben werden."
 
 #: src/cryptsetup_reencrypt.c:1226
 msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
-msgstr "Nur Werte zwischen 1 MiB und 64 MiB sind für die Wiederverschlüsselungs-Blockgröße erlaubt."
+msgstr "Für die Wiederverschlüsselungs-Blockgröße sind nur Werte zwischen 1 MiB und 64 MiB erlaubt."
 
 #: src/cryptsetup_reencrypt.c:1245 src/cryptsetup_reencrypt.c:1250
 msgid "Invalid device size specification."
@@ -1716,11 +1716,11 @@ msgstr "Die verkleinerte Größe muss ein Vielfaches von 512-Byte-Sektoren sein.
 
 #: src/cryptsetup_reencrypt.c:1260
 msgid "Option --new must be used together with --reduce-device-size."
-msgstr "Die Option --new muss zusammen mit --reduce-device-size benutzt werden."
+msgstr "Die Option »--new« muss zusammen mit »--reduce-device-size« benutzt werden."
 
 #: src/cryptsetup_reencrypt.c:1264
 msgid "Option --keep-key can be used only with --hash or --iter-time."
-msgstr "Die Option --keep-new kann nur zusammen mit --hash oder --iter-time benutzt werden."
+msgstr "Die Option »--keep-new« kann nur zusammen mit »--hash« oder »--iter-time« benutzt werden."
 
 #: src/utils_tools.c:150
 msgid "Error reading response from terminal.\n"
@@ -1733,12 +1733,12 @@ msgstr "Befehl erfolgreich.\n"
 #: src/utils_tools.c:186
 #, c-format
 msgid "Command failed with code %i"
-msgstr "Befehl fehlgeschlagen mit Code %i"
+msgstr "Fehler %i beim Ausführen eines Befehls"
 
 #: src/utils_password.c:42
 #, c-format
 msgid "Cannot check password quality: %s\n"
-msgstr "Kann die Passwort-Qualität nicht prüfen: %s\n"
+msgstr "Fehler beim Prüfen der Passwortqualität: %s\n"
 
 #: src/utils_password.c:50
 #, c-format
