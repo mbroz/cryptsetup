@@ -3,8 +3,8 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2012, Milan Broz
+ * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2015, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -38,23 +38,109 @@ struct device {
 	char *file_path;
 	int loop_fd;
 
+	int o_direct:1;
 	int init_done:1;
 };
 
-static int device_ready(const char *device)
+static int device_block_size_fd(int fd, size_t *min_size)
 {
-	int devfd, r = 0;
+	struct stat st;
+	int bsize = 0, r = -EINVAL;
+
+	if (fstat(fd, &st) < 0)
+		return -EINVAL;
+
+	if (S_ISREG(st.st_mode))
+		r = (int)crypt_getpagesize();
+	else if (ioctl(fd, BLKSSZGET, &bsize) >= 0)
+		r = bsize;
+	else
+		r = -EINVAL;
+
+	if (r < 0 || !min_size)
+		return r;
+
+	if (S_ISREG(st.st_mode)) {
+		/* file can be empty as well */
+		if (st.st_size > bsize)
+			*min_size = bsize;
+		else
+			*min_size = st.st_size;
+	} else {
+		/* block device must have at least one block */
+		*min_size = bsize;
+	}
+
+	return bsize;
+}
+
+static int device_read_test(int devfd)
+{
+	char buffer[512];
+	int blocksize, r = -EIO;
+	size_t minsize = 0;
+
+	blocksize = device_block_size_fd(devfd, &minsize);
+
+	if (blocksize < 0)
+		return -EINVAL;
+
+	if (minsize == 0)
+		return 0;
+
+	if (minsize > sizeof(buffer))
+		minsize = sizeof(buffer);
+
+	if (read_blockwise(devfd, blocksize, buffer, minsize) == (ssize_t)minsize)
+		r = 0;
+
+	crypt_memzero(buffer, sizeof(buffer));
+	return r;
+}
+
+/*
+ * The direct-io is always preferred. The header is usually mapped to the same
+ * device and can be accessed when the rest of device is mapped to data device.
+ * Using dirct-io encsures that we do not mess with data in cache.
+ * (But proper alignment should prevent this in the first place.)
+ * The read test is needed to detect broken configurations (seen with remote
+ * block devices) that allow open with direct-io but then fails on read.
+ */
+static int device_ready(struct device *device, int check_directio)
+{
+	int devfd = -1, r = 0;
 	struct stat st;
 
-	//FIXME: check if device allows to use O_DIRECT
-	// not only on open but also on read (with offset 0)
+	if (check_directio) {
+		log_dbg("Trying to open and read device %s with direct-io.",
+			device_path(device));
+		devfd = open(device_path(device), O_RDONLY | O_DIRECT);
+		if (devfd >= 0 && device_read_test(devfd) == 0) {
+			device->o_direct = 1;
+		} else {
+			close(devfd);
+			devfd = -1;
+		}
+	}
 
-	log_dbg("Trying to open and read device %s.", device);
-	devfd = open(device, O_RDONLY);
 	if (devfd < 0) {
-		log_err(NULL, _("Device %s doesn't exist or access denied.\n"), device);
+		log_dbg("Trying to open and read device %s without direct-io.",
+			device_path(device));
+		devfd = open(device_path(device), O_RDONLY);
+		if (devfd >= 0 && device_read_test(devfd) == 0) {
+			device->o_direct = 0;
+		} else {
+			close(devfd);
+			devfd = -1;
+		}
+	}
+
+	if (devfd < 0) {
+		log_err(NULL, _("Device %s doesn't exist or access denied.\n"),
+			device_path(device));
 		return -EINVAL;
 	}
+
 	if (fstat(devfd, &st) < 0)
 		r = -EINVAL;
 	else if (!S_ISBLK(st.st_mode))
@@ -68,12 +154,11 @@ int device_open(struct device *device, int flags)
 {
 	int devfd;
 
-	devfd = open(device_path(device), flags | O_DIRECT | O_SYNC);
-	if (devfd < 0 && errno == EINVAL) {
-		log_dbg("Trying to open device %s without direct-io.",
-			device_path(device));
-		devfd = open(device_path(device), flags | O_SYNC);
-	}
+	flags |= O_SYNC;
+	if (device->o_direct)
+		flags |= O_DIRECT;
+
+	devfd = open(device_path(device), flags);
 
 	if (devfd < 0)
 		log_dbg("Cannot open device %s.", device_path(device));
@@ -96,22 +181,22 @@ int device_alloc(struct device **device, const char *path)
 		return -ENOMEM;
 
 	memset(dev, 0, sizeof(struct device));
+	dev->path = strdup(path);
+	if (!dev->path) {
+		free(dev);
+		return -ENOMEM;
+	}
 	dev->loop_fd = -1;
 
-	r = device_ready(path);
+	r = device_ready(dev, 1);
 	if (!r) {
 		dev->init_done = 1;
 	} else if (r == -ENOTBLK) {
 		/* alloc loop later */
 	} else if (r < 0) {
+		free(dev->path);
 		free(dev);
 		return -ENOTBLK;
-	}
-
-	dev->path = strdup(path);
-	if (!dev->path) {
-		free(dev);
-		return -ENOMEM;
 	}
 
 	*device = dev;
@@ -214,27 +299,20 @@ out:
 
 int device_block_size(struct device *device)
 {
-	struct stat st;
-	int fd, bsize = 0, r = -EINVAL;
+	int fd, r = -EINVAL;
 
 	if (!device)
 		return 0;
+
+	if (device->file_path)
+		return (int)crypt_getpagesize();
 
 	fd = open(device->path, O_RDONLY);
 	if(fd < 0)
 		return -EINVAL;
 
-	if (fstat(fd, &st) < 0)
-		goto out;
+	r = device_block_size_fd(fd, NULL);
 
-	if (S_ISREG(st.st_mode) || device->file_path) {
-		r = (int)crypt_getpagesize();
-		goto out;
-	}
-
-	if (ioctl(fd, BLKSSZGET, &bsize) >= 0)
-		r = bsize;
-out:
 	if (r <= 0)
 		log_dbg("Cannot get block size for device %s.", device_path(device));
 
@@ -342,7 +420,7 @@ out:
 
 static int device_internal_prepare(struct crypt_device *cd, struct device *device)
 {
-	char *loop_device;
+	char *loop_device, *file_path = NULL;
 	int r, loop_fd, readonly = 0;
 
 	if (device->init_done)
@@ -368,15 +446,19 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 		return -EINVAL;
 	}
 
-	r = device_ready(loop_device);
+	file_path = device->path;
+	device->path = loop_device;
+
+	r = device_ready(device, device->o_direct);
 	if (r < 0) {
+		device->path = file_path;
+		crypt_loop_detach(loop_device);
 		free(loop_device);
 		return r;
 	}
 
 	device->loop_fd = loop_fd;
-	device->file_path = device->path;
-	device->path = loop_device;
+	device->file_path = file_path;
 	device->init_done = 1;
 
 	return 0;
