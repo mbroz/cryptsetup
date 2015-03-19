@@ -29,7 +29,7 @@
 
 /*
  * Internal IV helper
- * IV documentation: https://code.google.com/p/cryptsetup/wiki/DMCrypt
+ * IV documentation: https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt
  */
 struct crypt_sector_iv {
 	enum { IV_NONE, IV_NULL, IV_PLAIN, IV_PLAIN64, IV_ESSIV, IV_BENBI } type;

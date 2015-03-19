@@ -297,7 +297,7 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
-/* http://code.google.com/p/cryptsetup/wiki/DMCrypt */
+/* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt */
 static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t flags)
 {
 	int r, max_size, null_cipher = 0, num_options = 0;
@@ -354,7 +354,7 @@ out:
 	return params;
 }
 
-/* http://code.google.com/p/cryptsetup/wiki/DMVerity */
+/* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity */
 static char *get_dm_verity_params(struct crypt_params_verity *vp,
 				   struct crypt_dm_active_device *dmd)
 {

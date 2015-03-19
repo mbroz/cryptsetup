@@ -35,7 +35,7 @@
 
 #define VERITY_SIGNATURE "verity\0\0"
 
-/* http://code.google.com/p/cryptsetup/wiki/DMVerity#Verity_superblock_format */
+/* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity#verity-superblock-format */
 struct verity_sb {
 	uint8_t  signature[8];	/* "verity\0\0" */
 	uint32_t version;	/* superblock version */
