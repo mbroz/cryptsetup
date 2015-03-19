@@ -26,7 +26,7 @@ Why LUKS?
  * effective passphrase revocation,
  * free.
 
-[Project home page](https://gitlab.com/cryptsetup/cryptsetup/wikis/home).
+[Project home page](https://gitlab.com/cryptsetup/cryptsetup/).
 -----------------
 
 [Frequently asked questions (FAQ)](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions)
@@ -34,8 +34,21 @@ Why LUKS?
 
 Download
 --------
-For the latest released version and older releases see
-[release directory on kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/)
+All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
+
+**The latest cryptsetup version is 1.6.6**
+  * [cryptsetup-1.6.6.tar.xz]([https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.6.tar.xz)
+  * Signature [cryptsetup-1.6.6.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.6.tar.sign)
+    _(You need to decompress file first to check signature.)_
+  * [Cryptsetup 1.6.6 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.6-ReleaseNotes).
+
+Previous versions
+ * [Version 1.6.5]([https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.5.tar.xz) -
+   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.5.tar.sign) -
+   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.5-ReleaseNotes).
+ * [Version 1.6.4]([https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.4.tar.xz) -
+   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.4.tar.sign) -
+   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.4-ReleaseNotes).
 
 Source and API docs
 -------------------
