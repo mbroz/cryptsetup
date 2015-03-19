@@ -37,16 +37,16 @@ Download
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
 
 **The latest cryptsetup version is 1.6.6**
-  * [cryptsetup-1.6.6.tar.xz]([https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.6.tar.xz)
+  * [cryptsetup-1.6.6.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.6.tar.xz)
   * Signature [cryptsetup-1.6.6.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.6.tar.sign)
     _(You need to decompress file first to check signature.)_
   * [Cryptsetup 1.6.6 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.6-ReleaseNotes).
 
 Previous versions
- * [Version 1.6.5]([https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.5.tar.xz) -
+ * [Version 1.6.5](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.5.tar.xz) -
    [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.5.tar.sign) -
    [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.5-ReleaseNotes).
- * [Version 1.6.4]([https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.4.tar.xz) -
+ * [Version 1.6.4](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.4.tar.xz) -
    [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.4.tar.sign) -
    [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.4-ReleaseNotes).
 
