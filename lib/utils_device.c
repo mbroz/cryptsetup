@@ -111,28 +111,25 @@ static int device_ready(struct device *device, int check_directio)
 	int devfd = -1, r = 0;
 	struct stat st;
 
+	device->o_direct = 0;
 	if (check_directio) {
 		log_dbg("Trying to open and read device %s with direct-io.",
 			device_path(device));
 		devfd = open(device_path(device), O_RDONLY | O_DIRECT);
-		if (devfd >= 0 && device_read_test(devfd) == 0) {
-			device->o_direct = 1;
-		} else {
-			close(devfd);
-			devfd = -1;
+		if (devfd >= 0) {
+			if (device_read_test(devfd) == 0) {
+				device->o_direct = 1;
+			} else {
+				close(devfd);
+				devfd = -1;
+			}
 		}
 	}
 
 	if (devfd < 0) {
-		log_dbg("Trying to open and read device %s without direct-io.",
+		log_dbg("Trying to open device %s without direct-io.",
 			device_path(device));
 		devfd = open(device_path(device), O_RDONLY);
-		if (devfd >= 0 && device_read_test(devfd) == 0) {
-			device->o_direct = 0;
-		} else {
-			close(devfd);
-			devfd = -1;
-		}
 	}
 
 	if (devfd < 0) {
