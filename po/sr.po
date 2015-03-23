@@ -1,0 +1,1742 @@
+# Serbian translation for cryptsetup.
+# Copyright (C) 2014 Free Software Foundation, Inc.
+# This file is distributed under the same license as the cryptsetup package.
+# Мирослав Николић <miroslavnikolic@rocketmail.com>, 2014.
+msgid ""
+msgstr ""
+"Project-Id-Version: cryptsetup-1.6.6\n"
+"Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
+"POT-Creation-Date: 2014-08-08 15:54+0200\n"
+"PO-Revision-Date: 2014-11-18 10:00+0200\n"
+"Last-Translator: Мирослав Николић <miroslavnikolic@rocketmail.com>\n"
+"Language-Team: Serbian <(nothing)>\n"
+"Language: sr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: lib/libdevmapper.c:247
+msgid "Cannot initialize device-mapper, running as non-root user.\n"
+msgstr "Не могу да покренем мапера уређаја, радим као обичан корисник.\n"
+
+#: lib/libdevmapper.c:250
+msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
+msgstr "Не могу да покренем мапера уређаја. Да ли је модул језгра „dm_mod“ учитан?\n"
+
+#: lib/libdevmapper.c:535
+#, c-format
+msgid "DM-UUID for device %s was truncated.\n"
+msgstr "ДМ-УЈИБ за уређај „%s“ је скраћен.\n"
+
+#: lib/random.c:76
+msgid ""
+"System is out of entropy while generating volume key.\n"
+"Please move mouse or type some text in another window to gather some random events.\n"
+msgstr ""
+"Систем је ван ентропије приликом стварања кључа волумена.\n"
+"Померите миша или откуцајте неки текст у другом прозору да прикупите неке насумичне догађаје.\n"
+
+#: lib/random.c:80
+#, c-format
+msgid "Generating key (%d%% done).\n"
+msgstr "Стварам кључ (%d %% је урађено).\n"
+
+#: lib/random.c:169
+msgid "Fatal error during RNG initialisation.\n"
+msgstr "Кобна грешка за време покретања РНГ-а.\n"
+
+#: lib/random.c:206
+msgid "Unknown RNG quality requested.\n"
+msgstr "Затражен је непознат квалитет РНГ-а.\n"
+
+#: lib/random.c:211
+#, c-format
+msgid "Error %d reading from RNG: %s\n"
+msgstr "Грешка %d читања из РНГ-а: %s\n"
+
+#: lib/setup.c:200
+msgid "Cannot initialize crypto RNG backend.\n"
+msgstr "Не могу да покренем РНГ позадинца криптографије.\n"
+
+#: lib/setup.c:206
+msgid "Cannot initialize crypto backend.\n"
+msgstr "Не могу да покренем позадинца криптографије.\n"
+
+#: lib/setup.c:236 lib/setup.c:1162 lib/verity/verity.c:123
+#, c-format
+msgid "Hash algorithm %s not supported.\n"
+msgstr "Хеш алгоритам „%s“ није подржан.\n"
+
+#: lib/setup.c:239 lib/loopaes/loopaes.c:90
+#, c-format
+msgid "Key processing error (using hash %s).\n"
+msgstr "Грешка обраде кључа (користим хеш %s).\n"
+
+#: lib/setup.c:284
+msgid "Cannot determine device type. Incompatible activation of device?\n"
+msgstr "Не могу да одредим врсту уређаја. Несагласно покретање уређаја?\n"
+
+#: lib/setup.c:288
+msgid "This operation is supported only for LUKS device.\n"
+msgstr "Ова радња је подржана само за ЛУКС уређај.\n"
+
+#: lib/setup.c:320
+msgid "All key slots full.\n"
+msgstr "Сви исеци кључева су пуни.\n"
+
+#: lib/setup.c:327
+#, c-format
+msgid "Key slot %d is invalid, please select between 0 and %d.\n"
+msgstr "Исек кључа %d није исправан, изаберите између 0 и %d.\n"
+
+#: lib/setup.c:333
+#, c-format
+msgid "Key slot %d is full, please select another one.\n"
+msgstr "Исек кључа %d је пун, изаберите неки други.\n"
+
+#: lib/setup.c:442
+#, c-format
+msgid "Enter passphrase for %s: "
+msgstr "Унесите пропусну реч за „%s“: "
+
+#: lib/setup.c:623
+#, c-format
+msgid "Header detected but device %s is too small.\n"
+msgstr "Заглавље је откривено али уређај „%s“ је премали.\n"
+
+#: lib/setup.c:639 lib/setup.c:1390
+msgid "This operation is not supported for this device type.\n"
+msgstr "Ова радња није подржана за ову врсту уређаја.\n"
+
+#: lib/setup.c:878 lib/setup.c:1351 lib/setup.c:2227
+#, c-format
+msgid "Device %s is not active.\n"
+msgstr "Уређај „%s“ није радан.\n"
+
+#: lib/setup.c:895
+#, c-format
+msgid "Underlying device for crypt device %s disappeared.\n"
+msgstr "Основни уређај за криптографски уређај „%s“ је нестао.\n"
+
+#: lib/setup.c:964
+msgid "Invalid plain crypt parameters.\n"
+msgstr "Неисправни параметри обичне криптографије.\n"
+
+#: lib/setup.c:969 lib/setup.c:1089
+msgid "Invalid key size.\n"
+msgstr "Неисправна величина кључа.\n"
+
+#: lib/setup.c:974 lib/setup.c:1094
+msgid "UUID is not supported for this crypt type.\n"
+msgstr "УЈИБ није подржан за ову врсту криптографије.\n"
+
+#: lib/setup.c:1016
+msgid "Can't format LUKS without device.\n"
+msgstr "Не могу да обликујем „LUKS“ без уређаја.\n"
+
+#: lib/setup.c:1059
+#, c-format
+msgid "Cannot format device %s which is still in use.\n"
+msgstr "Не могу да обликујем уређај „%s“ који је још увек у употреби.\n"
+
+#: lib/setup.c:1062
+#, c-format
+msgid "Cannot format device %s, permission denied.\n"
+msgstr "Не могу да обликујем уређај „%s“, овлашћење је одбијено.\n"
+
+#: lib/setup.c:1066
+#, c-format
+msgid "Cannot wipe header on device %s.\n"
+msgstr "Не могу да очистим заглавље на уређају „%s“.\n"
+
+#: lib/setup.c:1084
+msgid "Can't format LOOPAES without device.\n"
+msgstr "Не могу да обликујем „LOOPAES“ без уређаја.\n"
+
+#: lib/setup.c:1122
+msgid "Can't format VERITY without device.\n"
+msgstr "Не могу да обликујем ТАЧНОСТ без уређаја.\n"
+
+#: lib/setup.c:1130 lib/verity/verity.c:106
+#, c-format
+msgid "Unsupported VERITY hash type %d.\n"
+msgstr "Неподржана врста хеша ТАЧНОСТИ %d.\n"
+
+#: lib/setup.c:1136 lib/verity/verity.c:114
+msgid "Unsupported VERITY block size.\n"
+msgstr "Неподржана величина блока ТАЧНОСТИ.\n"
+
+#: lib/setup.c:1141 lib/verity/verity.c:76
+msgid "Unsupported VERITY hash offset.\n"
+msgstr "Неподржан померај хеша ТАЧНОСТИ.\n"
+
+#: lib/setup.c:1255
+#, c-format
+msgid "Unknown crypt device type %s requested.\n"
+msgstr "Затражена је непозната врста „%s“ криптографског уређаја.\n"
+
+#: lib/setup.c:1405
+msgid "Do you really want to change UUID of device?"
+msgstr "Да ли стварно желите да измените УЈИБ уређаја?"
+
+#: lib/setup.c:1508
+#, c-format
+msgid "Volume %s is not active.\n"
+msgstr "Волумен „%s“ није радан.\n"
+
+#: lib/setup.c:1519
+#, c-format
+msgid "Volume %s is already suspended.\n"
+msgstr "Волумен „%s“ је већ обустављен.\n"
+
+#: lib/setup.c:1526
+#, c-format
+msgid "Suspend is not supported for device %s.\n"
+msgstr "Обустављање није подржано за уређај „%s“.\n"
+
+#: lib/setup.c:1528
+#, c-format
+msgid "Error during suspending device %s.\n"
+msgstr "Грешка за време обустављања уређаја „%s“.\n"
+
+#: lib/setup.c:1554 lib/setup.c:1601
+#, c-format
+msgid "Volume %s is not suspended.\n"
+msgstr "Волумен „%s“ није обустављен.\n"
+
+#: lib/setup.c:1568
+#, c-format
+msgid "Resume is not supported for device %s.\n"
+msgstr "Настављање није подржано за уређај „%s“.\n"
+
+#: lib/setup.c:1570 lib/setup.c:1622
+#, c-format
+msgid "Error during resuming device %s.\n"
+msgstr "Грешка за време настављања уређаја „%s“.\n"
+
+#: lib/setup.c:1608 lib/setup.c:2043 lib/setup.c:2057 src/cryptsetup.c:152
+#: src/cryptsetup.c:218 src/cryptsetup.c:699 src/cryptsetup.c:1115
+msgid "Enter passphrase: "
+msgstr "Унесите пропусну реч: "
+
+#: lib/setup.c:1670 lib/setup.c:1806
+msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
+msgstr "Не могу да додам исек кључа, сви исеци су искључени а није обезбеђен ниједан кључ волумена.\n"
+
+#: lib/setup.c:1679 lib/setup.c:1812 lib/setup.c:1816
+msgid "Enter any passphrase: "
+msgstr "Унесите неку пропусну реч: "
+
+#: lib/setup.c:1696 lib/setup.c:1829 lib/setup.c:1833 lib/setup.c:1895
+#: src/cryptsetup.c:981
+msgid "Enter new passphrase for key slot: "
+msgstr "Унесите нову пропусну реч за исек кључа: "
+
+#: lib/setup.c:1761
+#, c-format
+msgid "Key slot %d changed.\n"
+msgstr "Исек кључа „%d“ је измењен.\n"
+
+#: lib/setup.c:1764
+#, c-format
+msgid "Replaced with key slot %d.\n"
+msgstr "Замењен је исеком кључа „%d“.\n"
+
+#: lib/setup.c:1769
+msgid "Failed to swap new key slot.\n"
+msgstr "Нисам успео да разменим нови исек кључа.\n"
+
+#: lib/setup.c:1886 lib/setup.c:2147 lib/setup.c:2160 lib/setup.c:2302
+msgid "Volume key does not match the volume.\n"
+msgstr "Кључ волумена не одговара волумену.\n"
+
+#: lib/setup.c:1924
+#, c-format
+msgid "Key slot %d is invalid.\n"
+msgstr "Исек кључа „%d“ није исправан.\n"
+
+#: lib/setup.c:1929
+#, c-format
+msgid "Key slot %d is not used.\n"
+msgstr "Исек кључа „%d“ није у употреби.\n"
+
+#: lib/setup.c:1959 lib/setup.c:2031 lib/setup.c:2123
+#, c-format
+msgid "Device %s already exists.\n"
+msgstr "Уређај „%s“ већ постоји.\n"
+
+#: lib/setup.c:2134
+msgid "Incorrect volume key specified for plain device.\n"
+msgstr "Наведен је неисправан кључ волумена за обичан уређај.\n"
+
+#: lib/setup.c:2167
+msgid "Incorrect root hash specified for verity device.\n"
+msgstr "Наведен је неисправан хеш корена за уређај тачности.\n"
+
+#: lib/setup.c:2190
+msgid "Device type is not properly initialised.\n"
+msgstr "Врста уређаја није исправно покренута.\n"
+
+#: lib/setup.c:2222
+#, c-format
+msgid "Device %s is still in use.\n"
+msgstr "Уређај „%s“ је још увеку употреби.\n"
+
+#: lib/setup.c:2231
+#, c-format
+msgid "Invalid device %s.\n"
+msgstr "Неисправан уређај „%s“.\n"
+
+#: lib/setup.c:2252
+msgid "Function not available in FIPS mode.\n"
+msgstr "Функција није доступна у ФИПС режиму.\n"
+
+#: lib/setup.c:2258
+msgid "Volume key buffer too small.\n"
+msgstr "Међумеморија кључа волумена је премала.\n"
+
+#: lib/setup.c:2266
+msgid "Cannot retrieve volume key for plain device.\n"
+msgstr "Не могу да довучем кључ волумена за обичан уређај.\n"
+
+#: lib/setup.c:2273
+#, c-format
+msgid "This operation is not supported for %s crypt device.\n"
+msgstr "Ова радња није подржана за криптографски уређај „%s“.\n"
+
+#: lib/setup.c:2469
+msgid "Dump operation is not supported for this device type.\n"
+msgstr "Радња исписа није подржана за ову врсту уређаја.\n"
+
+#: lib/utils.c:244
+msgid "Cannot get process priority.\n"
+msgstr "Не могу да добавим хитност процеса.\n"
+
+#: lib/utils.c:258
+msgid "Cannot unlock memory.\n"
+msgstr "Не могу да откључам меморију.\n"
+
+#: lib/utils_crypt.c:227 lib/utils_crypt.c:240 lib/utils_crypt.c:387
+#: lib/utils_crypt.c:402
+msgid "Out of memory while reading passphrase.\n"
+msgstr "Нестало је меморије приликом читања пропусне речи.\n"
+
+#: lib/utils_crypt.c:232 lib/utils_crypt.c:247
+msgid "Error reading passphrase from terminal.\n"
+msgstr "Грешка читања пропусне речи из терминала.\n"
+
+#: lib/utils_crypt.c:245
+msgid "Verify passphrase: "
+msgstr "Провери пропусну реч: "
+
+#: lib/utils_crypt.c:252
+msgid "Passphrases do not match.\n"
+msgstr "Пропусне речи се не подударају.\n"
+
+#: lib/utils_crypt.c:336
+msgid "Cannot use offset with terminal input.\n"
+msgstr "Не могу да користим померај са улазом терминала.\n"
+
+#: lib/utils_crypt.c:355 lib/tcrypt/tcrypt.c:453
+msgid "Failed to open key file.\n"
+msgstr "Нисам успео да отворим датотеку кључа.\n"
+
+#: lib/utils_crypt.c:364
+msgid "Failed to stat key file.\n"
+msgstr "Нисам успео да добавим податке датотеке кључа.\n"
+
+#: lib/utils_crypt.c:372 lib/utils_crypt.c:393
+msgid "Cannot seek to requested keyfile offset.\n"
+msgstr "Не могу да премотам на затражени померај датотеке кључа.\n"
+
+#: lib/utils_crypt.c:410
+msgid "Error reading passphrase.\n"
+msgstr "Грешка читања пропусне речи.\n"
+
+#: lib/utils_crypt.c:428
+msgid "Maximum keyfile size exceeded.\n"
+msgstr "Премашена је највећа величина датотеке кључа.\n"
+
+#: lib/utils_crypt.c:433
+msgid "Cannot read requested amount of data.\n"
+msgstr "Не могу да прочитам затражену количину података.\n"
+
+#: lib/utils_fips.c:44
+msgid "FIPS checksum verification failed.\n"
+msgstr "Није успела провера ФИПС провере суме.\n"
+
+#: lib/utils_device.c:52 lib/luks1/keyencryption.c:90
+#, c-format
+msgid "Device %s doesn't exist or access denied.\n"
+msgstr "Уређај „%s“ не постоји или је приступ одбијен.\n"
+
+#: lib/utils_device.c:352
+msgid "Cannot use a loopback device, running as non-root user.\n"
+msgstr "Не могу да користим уређај повратне петље, радим као обичан корисник.\n"
+
+#: lib/utils_device.c:355
+msgid "Cannot find a free loopback device.\n"
+msgstr "Не могу да пронађем слободан уређај повратне петље.\n"
+
+#: lib/utils_device.c:362
+msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
+msgstr "Прикачињање уређаја повратне петље није успело (потребан је уређај петље са опцијом самочишћења).\n"
+
+#: lib/utils_device.c:402
+#, c-format
+msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
+msgstr "Не могу да користим уређај „%s“ који је у употреби (већ мапиран или прикачен).\n"
+
+#: lib/utils_device.c:406
+#, c-format
+msgid "Cannot get info about device %s.\n"
+msgstr "Не могу да добавим податке о уређају „%s“.\n"
+
+#: lib/utils_device.c:412
+#, c-format
+msgid "Requested offset is beyond real size of device %s.\n"
+msgstr "Захтевани померај је изван стварне величине уређаја „%s“.\n"
+
+#: lib/utils_device.c:420
+#, c-format
+msgid "Device %s has zero size.\n"
+msgstr "Уређај „%s“ има нулту величину.\n"
+
+#: lib/utils_device.c:431
+#, c-format
+msgid "Device %s is too small.\n"
+msgstr "Уређај „%s“ је премали.\n"
+
+#: lib/luks1/keyencryption.c:37
+#, c-format
+msgid ""
+"Failed to setup dm-crypt key mapping for device %s.\n"
+"Check that kernel supports %s cipher (check syslog for more info).\n"
+msgstr ""
+"Нисам успео да подесим мапирање кључа „dm-crypt“ за уређај %s.\n"
+"Проверите да ли језгро подржава „%s“ шифрера (проверите дневник система за више података).\n"
+
+#: lib/luks1/keyencryption.c:42
+msgid "Key size in XTS mode must be 256 or 512 bits.\n"
+msgstr "Величина кључа у „XTS“ режиму мора да буде 256 или 512 бита.\n"
+
+#: lib/luks1/keyencryption.c:96 lib/luks1/keymanage.c:296
+#: lib/luks1/keymanage.c:565 lib/luks1/keymanage.c:1010
+#, c-format
+msgid "Cannot write to device %s, permission denied.\n"
+msgstr "Не могу да пишем на уређај „%s“, овлашћење је одбијено.\n"
+
+#: lib/luks1/keyencryption.c:111
+msgid "Failed to open temporary keystore device.\n"
+msgstr "Нисам успео да отворим привремени уређај смештаја кључа.\n"
+
+#: lib/luks1/keyencryption.c:118
+msgid "Failed to access temporary keystore device.\n"
+msgstr "Нисам успео да приступм привременом уређају смештаја кључа.\n"
+
+#: lib/luks1/keyencryption.c:191
+msgid "IO error while encrypting keyslot.\n"
+msgstr "Грешка УИ приликом шифровања исека кључа.\n"
+
+#: lib/luks1/keyencryption.c:256
+msgid "IO error while decrypting keyslot.\n"
+msgstr "Грешка УИ приликом дешифровања исека кључа.\n"
+
+#: lib/luks1/keymanage.c:90
+#, c-format
+msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
+msgstr "Уређај „%s“ је премали. (ЛУКС захтева барем %<PRIu64> бајта.)\n"
+
+#: lib/luks1/keymanage.c:180 lib/luks1/keymanage.c:418
+#: src/cryptsetup_reencrypt.c:1019
+#, c-format
+msgid "Device %s is not a valid LUKS device.\n"
+msgstr "Уређај „%s“ није исправан ЛУКС уређај.\n"
+
+#: lib/luks1/keymanage.c:198
+#, c-format
+msgid "Requested header backup file %s already exists.\n"
+msgstr "Затражена датотека резерве заглавља „%s“ већ постоји.\n"
+
+#: lib/luks1/keymanage.c:200
+#, c-format
+msgid "Cannot create header backup file %s.\n"
+msgstr "Не могу да направим резервну датотеку заглавља „%s“.\n"
+
+#: lib/luks1/keymanage.c:205
+#, c-format
+msgid "Cannot write header backup file %s.\n"
+msgstr "Не могу да запишем резервну датотеку заглавља „%s“.\n"
+
+#: lib/luks1/keymanage.c:239
+msgid "Backup file doesn't contain valid LUKS header.\n"
+msgstr "Датотека резерве не садржи исправно ЛУКС заглавље.\n"
+
+#: lib/luks1/keymanage.c:252 lib/luks1/keymanage.c:489
+#, c-format
+msgid "Cannot open header backup file %s.\n"
+msgstr "Не могу да отворим резервну датотеку заглавља „%s“.\n"
+
+#: lib/luks1/keymanage.c:258
+#, c-format
+msgid "Cannot read header backup file %s.\n"
+msgstr "Не могу да прочитам резервну датотеку заглавља „%s“.\n"
+
+#: lib/luks1/keymanage.c:269
+msgid "Data offset or key size differs on device and backup, restore failed.\n"
+msgstr "Померај датума или величина кључа се разликују на уређају и резерви, враћање није успело.\n"
+
+#: lib/luks1/keymanage.c:277
+#, c-format
+msgid "Device %s %s%s"
+msgstr "Уређај %s %s%s"
+
+#: lib/luks1/keymanage.c:278
+msgid "does not contain LUKS header. Replacing header can destroy data on that device."
+msgstr "не садржи ЛУКС заглавље. Замена заглавља може да уништи податке на том уређају."
+
+#: lib/luks1/keymanage.c:279
+msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
+msgstr "већ садржи „LUKS“ заглавље. Замена заглавља ће уништити постојеће исеке кључева."
+
+#: lib/luks1/keymanage.c:280
+msgid ""
+"\n"
+"WARNING: real device header has different UUID than backup!"
+msgstr ""
+"\n"
+"УПОЗОРЕЊЕ: право заглавље уређаја има другачији УЈИБ од резерве!"
+
+#: lib/luks1/keymanage.c:299 lib/luks1/keymanage.c:528
+#: lib/luks1/keymanage.c:568 lib/tcrypt/tcrypt.c:608 lib/verity/verity.c:82
+#: lib/verity/verity.c:179 lib/verity/verity_hash.c:292
+#: lib/verity/verity_hash.c:303 lib/verity/verity_hash.c:323
+#, c-format
+msgid "Cannot open device %s.\n"
+msgstr "Не могу да отворим уређај „%s“.\n"
+
+#: lib/luks1/keymanage.c:329
+msgid "Non standard key size, manual repair required.\n"
+msgstr "Неуобичајена величина кључа, потребна је ручна поправка.\n"
+
+#: lib/luks1/keymanage.c:334
+msgid "Non standard keyslots alignment, manual repair required.\n"
+msgstr "Неуобичајено поравнање исека кључева, потребна је ручна поправка.\n"
+
+#: lib/luks1/keymanage.c:340
+msgid "Repairing keyslots.\n"
+msgstr "Поправљам исеке кључева.\n"
+
+#: lib/luks1/keymanage.c:351
+msgid "Repair failed."
+msgstr "Поправканије успела."
+
+#: lib/luks1/keymanage.c:363
+#, c-format
+msgid "Keyslot %i: offset repaired (%u -> %u).\n"
+msgstr "Исек кључа %i: померај је оправљен (%u —> %u).\n"
+
+#: lib/luks1/keymanage.c:371
+#, c-format
+msgid "Keyslot %i: stripes repaired (%u -> %u).\n"
+msgstr "Исек кључа %i: траке су оправљене (%u —> %u).\n"
+
+#: lib/luks1/keymanage.c:380
+#, c-format
+msgid "Keyslot %i: bogus partition signature.\n"
+msgstr "Исек кључа %i: лажан потпис партиције.\n"
+
+#: lib/luks1/keymanage.c:385
+#, c-format
+msgid "Keyslot %i: salt wiped.\n"
+msgstr "Исек кључа %i: присолак је обрисан.\n"
+
+#: lib/luks1/keymanage.c:396
+msgid "Writing LUKS header to disk.\n"
+msgstr "Записујем ЛУКС заглавље на диск.\n"
+
+#: lib/luks1/keymanage.c:421
+#, c-format
+msgid "Unsupported LUKS version %d.\n"
+msgstr "Неподржано ЛУКС издање %d.\n"
+
+#: lib/luks1/keymanage.c:427 lib/luks1/keymanage.c:654
+#, c-format
+msgid "Requested LUKS hash %s is not supported.\n"
+msgstr "Затражени ЛУКС хеш „%s“ није подржан.\n"
+
+#: lib/luks1/keymanage.c:442
+#, c-format
+msgid "LUKS keyslot %u is invalid.\n"
+msgstr "ЛУКС исек кључа „%u“ није исправан.\n"
+
+#: lib/luks1/keymanage.c:456 src/cryptsetup.c:635
+msgid "No known problems detected for LUKS header.\n"
+msgstr "Нису откривени познати проблеми за ЛУКС заглавље.\n"
+
+#: lib/luks1/keymanage.c:589
+#, c-format
+msgid "Error during update of LUKS header on device %s.\n"
+msgstr "Грешка приликом освежавања ЛУКС заглавља на уређају „%s“.\n"
+
+#: lib/luks1/keymanage.c:596
+#, c-format
+msgid "Error re-reading LUKS header after update on device %s.\n"
+msgstr "Грешка поновног читања ЛУКС заглавља након освежења на уређају „%s“.\n"
+
+#: lib/luks1/keymanage.c:647
+#, c-format
+msgid "Data offset for detached LUKS header must be either 0 or higher than header size (%d sectors).\n"
+msgstr "Померај података за откачено ЛУКС заглавље мора бити или 0 или већи од величине заглавља (%d сектора).\n"
+
+#: lib/luks1/keymanage.c:659 lib/luks1/keymanage.c:750
+msgid "Wrong LUKS UUID format provided.\n"
+msgstr "Достављен је погрешан запис ЛУКС УЈИБ-а.\n"
+
+#: lib/luks1/keymanage.c:688
+msgid "Cannot create LUKS header: reading random salt failed.\n"
+msgstr "Не могу да направим ЛУКС заглавље: није успело читање насумичног присолка.\n"
+
+#: lib/luks1/keymanage.c:695 lib/luks1/keymanage.c:791
+#, c-format
+msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
+msgstr "Нису сагласне ПБКДФ2 опције (користим хеш алгоритам %s).\n"
+
+#: lib/luks1/keymanage.c:710
+#, c-format
+msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
+msgstr "Не могу да направим ЛУКС заглавље: није успео преглед заглавља (користим хеш „%s“).\n"
+
+#: lib/luks1/keymanage.c:775
+#, c-format
+msgid "Key slot %d active, purge first.\n"
+msgstr "Исек кључа „%d“ је радан, прво прочистите.\n"
+
+#: lib/luks1/keymanage.c:781
+#, c-format
+msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
+msgstr "Материјал исека кључа „%d“ обухвата премало трака. Да управљам заглављем?\n"
+
+#: lib/luks1/keymanage.c:943
+#, c-format
+msgid "Key slot %d unlocked.\n"
+msgstr "Исек кључа „%d“ је откључан.\n"
+
+#: lib/luks1/keymanage.c:978 src/cryptsetup.c:835
+#: src/cryptsetup_reencrypt.c:910 src/cryptsetup_reencrypt.c:947
+msgid "No key available with this passphrase.\n"
+msgstr "Нема доступног кључа са овом пропусном речју.\n"
+
+#: lib/luks1/keymanage.c:996
+#, c-format
+msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
+msgstr "Исек кључа %d није исправан, изаберите га између 0 и %d.\n"
+
+#: lib/luks1/keymanage.c:1014
+#, c-format
+msgid "Cannot wipe device %s.\n"
+msgstr "Не могу да очистим уређај „%s“.\n"
+
+#: lib/loopaes/loopaes.c:146
+msgid "Detected not yet supported GPG encrypted keyfile.\n"
+msgstr "Откривена је још увек неподржана ГПГ-ом шифрована датотека кључа.\n"
+
+#: lib/loopaes/loopaes.c:147
+msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "Користите gpg --decrypt <ДАТОТЕКА_КЉУЧА> | cryptsetup --keyfile=- ...\n"
+
+#: lib/loopaes/loopaes.c:168 lib/loopaes/loopaes.c:188
+msgid "Incompatible loop-AES keyfile detected.\n"
+msgstr "Откривена је несагласна датотека кључа АЕС петље.\n"
+
+#: lib/loopaes/loopaes.c:244
+msgid "Kernel doesn't support loop-AES compatible mapping.\n"
+msgstr "Језгро не подржава мапирање сагласно са АЕС петљом.\n"
+
+#: lib/tcrypt/tcrypt.c:461
+#, c-format
+msgid "Error reading keyfile %s.\n"
+msgstr "Грешка читања датотеке кључа „%s“.\n"
+
+#: lib/tcrypt/tcrypt.c:499
+#, c-format
+msgid "Maximum TCRYPT passphrase length (%d) exceeded.\n"
+msgstr "Премашена је највећа дужина „TCRYPT“ пропусне речи (%d).\n"
+
+#: lib/tcrypt/tcrypt.c:528
+#, c-format
+msgid "PBKDF2 hash algorithm %s not available, skipping.\n"
+msgstr "ПБКДФ2 алгоритам хеша „%s“ није доступан, прескачем.\n"
+
+#: lib/tcrypt/tcrypt.c:546 src/cryptsetup.c:588
+msgid "Required kernel crypto interface not available.\n"
+msgstr "Није доступно затражено сучеље криптографије језгра.\n"
+
+#: lib/tcrypt/tcrypt.c:548 src/cryptsetup.c:590
+msgid "Ensure you have algif_skcipher kernel module loaded.\n"
+msgstr "Уверите се да је учитан модул језгра „algif_skcipher“.\n"
+
+#: lib/tcrypt/tcrypt.c:691
+#, c-format
+msgid "Activation is not supported for %d sector size.\n"
+msgstr "Покретање није подржано за величину %d сектора.\n"
+
+#: lib/tcrypt/tcrypt.c:697
+msgid "Kernel doesn't support activation for this TCRYPT legacy mode.\n"
+msgstr "Језгро не подржава покретање за овај стари ТКРИПТ режим.\n"
+
+#: lib/tcrypt/tcrypt.c:728
+#, c-format
+msgid "Activating TCRYPT system encryption for partition %s.\n"
+msgstr "Покрећем „TCRYPT“ систем шифровања за партицију „%s“.\n"
+
+#: lib/tcrypt/tcrypt.c:790
+msgid "Kernel doesn't support TCRYPT compatible mapping.\n"
+msgstr "Језгро не подржава мапирање сагласно са „TCRYPT“-ом.\n"
+
+#: lib/tcrypt/tcrypt.c:1004
+msgid "This function is not supported without TCRYPT header load."
+msgstr "Ова функција није подржана без учитавања ТКРИПТ заглавља."
+
+#: lib/verity/verity.c:70 lib/verity/verity.c:172
+#, c-format
+msgid "Verity device %s doesn't use on-disk header.\n"
+msgstr "Уређај тачности %s не користи заглавље на-диску.\n"
+
+#: lib/verity/verity.c:94
+#, c-format
+msgid "Device %s is not a valid VERITY device.\n"
+msgstr "Уређај „%s“ није исправан уређај ТАЧНОСТИ.\n"
+
+#: lib/verity/verity.c:101
+#, c-format
+msgid "Unsupported VERITY version %d.\n"
+msgstr "Неподржано издање ТАЧНОСТИ %d.\n"
+
+#: lib/verity/verity.c:131
+msgid "VERITY header corrupted.\n"
+msgstr "Заглавље ТАЧНОСТИ је оштећено.\n"
+
+#: lib/verity/verity.c:166
+#, c-format
+msgid "Wrong VERITY UUID format provided on device %s.\n"
+msgstr "Достављен је погрешан УЈИБ запис ТАЧНОСТИ на уређају „%s“.\n"
+
+#: lib/verity/verity.c:196
+#, c-format
+msgid "Error during update of verity header on device %s.\n"
+msgstr "Грешка приликом освежавања заглавља тачности на уређају „%s“.\n"
+
+#: lib/verity/verity.c:276
+msgid "Kernel doesn't support dm-verity mapping.\n"
+msgstr "Језгро не подржава мапирање дм-тачности.\n"
+
+#: lib/verity/verity.c:287
+msgid "Verity device detected corruption after activation.\n"
+msgstr "Уређај тачности је открио оштећење након покретања.\n"
+
+#: lib/verity/verity_hash.c:59
+#, c-format
+msgid "Spare area is not zeroed at position %<PRIu64>.\n"
+msgstr "Сувишна област није нулирана на положају %<PRIu64>.\n"
+
+#: lib/verity/verity_hash.c:121 lib/verity/verity_hash.c:249
+#: lib/verity/verity_hash.c:277 lib/verity/verity_hash.c:284
+msgid "Device offset overflow.\n"
+msgstr "Прекорачење помераја уређаја.\n"
+
+#: lib/verity/verity_hash.c:161
+#, c-format
+msgid "Verification failed at position %<PRIu64>.\n"
+msgstr "Провера није успела на положају %<PRIu64>.\n"
+
+#: lib/verity/verity_hash.c:235
+msgid "Invalid size parameters for verity device.\n"
+msgstr "Неисправни параметри величине за уређај тачности.\n"
+
+#: lib/verity/verity_hash.c:266
+msgid "Too many tree levels for verity volume.\n"
+msgstr "Превише нивоа стабла за волумен тачности.\n"
+
+#: lib/verity/verity_hash.c:354
+msgid "Verification of data area failed.\n"
+msgstr "Провера области података није успела.\n"
+
+#: lib/verity/verity_hash.c:359
+msgid "Verification of root hash failed.\n"
+msgstr "Провера хеша корена није успела.\n"
+
+#: lib/verity/verity_hash.c:365
+msgid "Input/output error while creating hash area.\n"
+msgstr "Улазно/излазна грешка приликом стварања области хеша.\n"
+
+#: lib/verity/verity_hash.c:367
+msgid "Creation of hash area failed.\n"
+msgstr "Стварање области хеша није успело.\n"
+
+#: lib/verity/verity_hash.c:414
+#, c-format
+msgid "WARNING: Kernel cannot activate device if data block size exceeds page size (%u).\n"
+msgstr "УПОЗОРЕЊЕ: Језгро не може да покрене уређајако величина блока података премашује величину странице (%u).\n"
+
+#: src/cryptsetup.c:80
+msgid "Can't do passphrase verification on non-tty inputs.\n"
+msgstr "Не могу да одрадим проверу пропусне речи на не-конзолним улазима.\n"
+
+#: src/cryptsetup.c:111
+msgid "Ignoring keyfile offset and size options, keyfile read size is always the same as encryption key size.\n"
+msgstr "Занемарујем померај датотеке кључа и опције величине, величина читања датотеке кључа је увек иста као величина кључа шифровања.\n"
+
+#: src/cryptsetup.c:117 src/cryptsetup.c:531 src/cryptsetup.c:678
+#: src/cryptsetup_reencrypt.c:496 src/cryptsetup_reencrypt.c:547
+msgid "No known cipher specification pattern detected.\n"
+msgstr "Није откривен познат образац одреднице шифрера.\n"
+
+#: src/cryptsetup.c:184
+msgid "Option --key-file is required.\n"
+msgstr "Захтевана је опција „--key-file“.\n"
+
+#: src/cryptsetup.c:237
+msgid "No device header detected with this passphrase.\n"
+msgstr "Није откривено заглавље уређаја са овом пропусном речи.\n"
+
+#: src/cryptsetup.c:300 src/cryptsetup.c:1104
+msgid ""
+"Header dump with volume key is sensitive information\n"
+"which allows access to encrypted partition without passphrase.\n"
+"This dump should be always stored encrypted on safe place."
+msgstr ""
+"Избачај заглавља са кључем волумена је осетљив податак\n"
+"који омогућава приступ шифрованој партицији без лозинке.\n"
+"Овај избачај треба увек бити смештен шифрован на безбедном месту."
+
+#: src/cryptsetup.c:484
+msgid "Result of benchmark is not reliable.\n"
+msgstr "Резултат тестирања није поуздан.\n"
+
+#: src/cryptsetup.c:525
+msgid "# Tests are approximate using memory only (no storage IO).\n"
+msgstr "# Пробе су приближне користећи само меморију (без УИ смештаја).\n"
+
+#: src/cryptsetup.c:550 src/cryptsetup.c:572
+msgid "#  Algorithm | Key |  Encryption |  Decryption\n"
+msgstr "#  Алгоритам | Кључ |  Шифровање |  Дешифровање\n"
+
+#: src/cryptsetup.c:554
+#, c-format
+msgid "Cipher %s is not available.\n"
+msgstr "Шифрер „%s“ није доступан.\n"
+
+#: src/cryptsetup.c:581
+msgid "N/A"
+msgstr "Недоступно"
+
+#: src/cryptsetup.c:606
+#, c-format
+msgid "Cannot read keyfile %s.\n"
+msgstr "Не могу да прочитам датотеку кључа „%s“.\n"
+
+#: src/cryptsetup.c:610
+#, c-format
+msgid "Cannot read %d bytes from keyfile %s.\n"
+msgstr "Не могу да прочитам %d бајта из датотеке кључа „%s“.\n"
+
+#: src/cryptsetup.c:639
+msgid "Really try to repair LUKS device header?"
+msgstr "Стварно да покушам да поправим заглавље ЛУКС уређаја?"
+
+#: src/cryptsetup.c:664
+#, c-format
+msgid "This will overwrite data on %s irrevocably."
+msgstr "Ово ће неповратно да препише податке на „%s“."
+
+#: src/cryptsetup.c:666
+msgid "memory allocation error in action_luksFormat"
+msgstr "грешка доделе меморије у „action_luksFormat“"
+
+#: src/cryptsetup.c:684
+#, c-format
+msgid "Cannot use %s as on-disk header.\n"
+msgstr "Не могу да користим „%s“ као заглавље на-диску.\n"
+
+#: src/cryptsetup.c:757
+msgid "Reduced data offset is allowed only for detached LUKS header.\n"
+msgstr "Смањени померај података је допуштен само за откачена ЛУКС заглавља.\n"
+
+#: src/cryptsetup.c:858 src/cryptsetup.c:914
+#, c-format
+msgid "Key slot %d selected for deletion.\n"
+msgstr "Исек кључа „%d“ је изабран за брисање.\n"
+
+#: src/cryptsetup.c:861
+#, c-format
+msgid "Key %d not active. Can't wipe.\n"
+msgstr "Кључ „%d“ није радан. Не могу да очистим.\n"
+
+#: src/cryptsetup.c:869 src/cryptsetup.c:917
+msgid "This is the last keyslot. Device will become unusable after purging this key."
+msgstr "Ово је последњи исек кључа. Уређај ће постати неупотребљив након чишћења овог кључа."
+
+#: src/cryptsetup.c:870
+msgid "Enter any remaining passphrase: "
+msgstr "Унесите неку преосталу пропусну реч: "
+
+#: src/cryptsetup.c:898
+msgid "Enter passphrase to be deleted: "
+msgstr "Унесите пропусну реч за брисање: "
+
+#: src/cryptsetup.c:967 src/cryptsetup_reencrypt.c:985
+#, c-format
+msgid "Enter any existing passphrase: "
+msgstr "Унесите неку постојећу пропусну реч: "
+
+#: src/cryptsetup.c:1016
+msgid "Enter passphrase to be changed: "
+msgstr "Унесите пропусну реч за мењање: "
+
+#: src/cryptsetup.c:1030 src/cryptsetup_reencrypt.c:970
+msgid "Enter new passphrase: "
+msgstr "Унесите нову пропусну реч: "
+
+#: src/cryptsetup.c:1054
+msgid "Only one device argument for isLuks operation is supported.\n"
+msgstr "Подржан је само један аргумент уређаја за радњу „isLuks“.\n"
+
+#: src/cryptsetup.c:1210 src/cryptsetup.c:1231
+msgid "Option --header-backup-file is required.\n"
+msgstr "Захтевана је опција „--header-backup-file“.\n"
+
+#: src/cryptsetup.c:1268
+#, c-format
+msgid "Unrecognized metadata device type %s.\n"
+msgstr "Непозната врста уређаја метаподатака „%s“.\n"
+
+#: src/cryptsetup.c:1271
+msgid "Command requires device and mapped name as arguments.\n"
+msgstr "Наредба захтева уређај и мапирани назив као аргумент.\n"
+
+#: src/cryptsetup.c:1290
+#, c-format
+msgid ""
+"This operation will erase all keyslots on device %s.\n"
+"Device will become unusable after this operation."
+msgstr ""
+"Ова радња ће обрисати све исеке кључева на уређају „%s“.\n"
+"Уређај ће постати неупотребљив након ове радње."
+
+#: src/cryptsetup.c:1324
+msgid "<device> [--type <type>] [<name>]"
+msgstr "<уређај> [--type <врста>] [<назив>]"
+
+#: src/cryptsetup.c:1324
+msgid "open device as mapping <name>"
+msgstr "отвара уређај као <назив> мапирања"
+
+#: src/cryptsetup.c:1325 src/cryptsetup.c:1326 src/cryptsetup.c:1327
+#: src/cryptsetup.c:1328 src/veritysetup.c:311 src/veritysetup.c:312
+msgid "<name>"
+msgstr "<назив>"
+
+#: src/cryptsetup.c:1325
+msgid "close device (remove mapping)"
+msgstr "затвара уређај (уклања мапирање)"
+
+#: src/cryptsetup.c:1326
+msgid "resize active device"
+msgstr "мења величину радног уређаја"
+
+#: src/cryptsetup.c:1327
+msgid "show device status"
+msgstr "показује стање уређаја"
+
+#: src/cryptsetup.c:1328
+msgid "benchmark cipher"
+msgstr "шифрер оцењивања"
+
+#: src/cryptsetup.c:1329 src/cryptsetup.c:1330 src/cryptsetup.c:1336
+#: src/cryptsetup.c:1337 src/cryptsetup.c:1338 src/cryptsetup.c:1339
+#: src/cryptsetup.c:1340 src/cryptsetup.c:1341 src/cryptsetup.c:1342
+#: src/cryptsetup.c:1343
+msgid "<device>"
+msgstr "<уређај>"
+
+#: src/cryptsetup.c:1329
+msgid "try to repair on-disk metadata"
+msgstr "покушава да поправи метаподатке на-диску"
+
+#: src/cryptsetup.c:1330
+msgid "erase all keyslots (remove encryption key)"
+msgstr "брише све исеке кључева (уклања кључ шифровања)"
+
+#: src/cryptsetup.c:1331 src/cryptsetup.c:1332
+msgid "<device> [<new key file>]"
+msgstr "<уређај> [<нова датотека кључа>]"
+
+#: src/cryptsetup.c:1331
+msgid "formats a LUKS device"
+msgstr "форматира ЛУКС уређај"
+
+#: src/cryptsetup.c:1332
+msgid "add key to LUKS device"
+msgstr "додаје кључ у ЛУКС уређај"
+
+#: src/cryptsetup.c:1333 src/cryptsetup.c:1334
+msgid "<device> [<key file>]"
+msgstr "<уређај> [<датотека кључа>]"
+
+#: src/cryptsetup.c:1333
+msgid "removes supplied key or key file from LUKS device"
+msgstr "уклања достављени кључ или датотеку кључа из ЛУКС уређаја"
+
+#: src/cryptsetup.c:1334
+msgid "changes supplied key or key file of LUKS device"
+msgstr "мења достављени кључ или датотеку кључа ЛУКС уређаја"
+
+#: src/cryptsetup.c:1335
+msgid "<device> <key slot>"
+msgstr "<уређај> <исек кључа>"
+
+#: src/cryptsetup.c:1335
+msgid "wipes key with number <key slot> from LUKS device"
+msgstr "брише кључ са бројем <исека кључа> са ЛУКС уређаја"
+
+#: src/cryptsetup.c:1336
+msgid "print UUID of LUKS device"
+msgstr "исписује УЈИБ ЛУКС уређаја"
+
+#: src/cryptsetup.c:1337
+msgid "tests <device> for LUKS partition header"
+msgstr "испробава <уређај> за заглављем ЛУКС партиције"
+
+#: src/cryptsetup.c:1338
+msgid "dump LUKS partition information"
+msgstr "исписује податке ЛУКС партиције"
+
+#: src/cryptsetup.c:1339
+msgid "dump TCRYPT device information"
+msgstr "исписује податке ТКРИПТ уређаја"
+
+#: src/cryptsetup.c:1340
+msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
+msgstr "Обуставља ЛУКС уређај и брише кључ (сви УИ су замрзнути)."
+
+#: src/cryptsetup.c:1341
+msgid "Resume suspended LUKS device."
+msgstr "Наставља са обустављеним ЛУКС уређајем."
+
+#: src/cryptsetup.c:1342
+msgid "Backup LUKS device header and keyslots"
+msgstr "Прави резерву заглавља „LUKS“ уређаја и исека кључева"
+
+#: src/cryptsetup.c:1343
+msgid "Restore LUKS device header and keyslots"
+msgstr "Враћа заглавље „LUKS“ уређаја и исеке кључева"
+
+#: src/cryptsetup.c:1360 src/veritysetup.c:328
+msgid ""
+"\n"
+"<action> is one of:\n"
+msgstr ""
+"\n"
+"<радња> је једна од следећих:\n"
+
+#: src/cryptsetup.c:1366
+msgid ""
+"\n"
+"You can also use old <action> syntax aliases:\n"
+"\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
+"\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"
+msgstr ""
+"\n"
+"Можете такође да користите старе надимке синтаксе <радње>:\n"
+"\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
+"\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"
+
+#: src/cryptsetup.c:1370
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<device> is the encrypted device\n"
+"<key slot> is the LUKS key slot number to modify\n"
+"<key file> optional key file for the new key for luksAddKey action\n"
+msgstr ""
+"\n"
+"<назив> је уређај за стварање под „%s“\n"
+"<уређај> је шифровани уређај\n"
+"<исек кључа> је број „LUKS“ исека кључа за мењање\n"
+"<датотека кључа> изборна датотека кључа за нови кључ за радњу „luksAddKey“\n"
+
+#: src/cryptsetup.c:1377
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in key and passphrase parameters:\n"
+"\tMaximum keyfile size: %dkB, Maximum interactive passphrase length %d (characters)\n"
+"Default PBKDF2 iteration time for LUKS: %d (ms)\n"
+msgstr ""
+"\n"
+"Основни:\n"
+"\tНајвећа величина датотеке кључа: %d kB, Највећа дужина међудејствене лозинке %d (знакова)\n"
+"Основно време ПБКДФ2 понављања за ЛУКС: %d (ms)\n"
+
+#: src/cryptsetup.c:1384
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in device cipher parameters:\n"
+"\tloop-AES: %s, Key %d bits\n"
+"\tplain: %s, Key: %d bits, Password hashing: %s\n"
+"\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
+msgstr ""
+"\n"
+"Основни преведени параметри шифрера уређаја:\n"
+"\tпетља-АЕС: %s, Кључ %d бита\n"
+"\tобично: %s, Кључ: %d бита, Хеширање лозинке: %s\n"
+"\tЛУКС1: %s, Кључ: %d бита, Хеширање ЛУКС заглавља: %s, РНГ: %s\n"
+
+#: src/cryptsetup.c:1401 src/veritysetup.c:460
+#, c-format
+msgid "%s: requires %s as arguments"
+msgstr "%s: захтева „%s“ као аргумент"
+
+#: src/cryptsetup.c:1434 src/veritysetup.c:368 src/cryptsetup_reencrypt.c:1144
+msgid "Show this help message"
+msgstr "Приказује ову поруку помоћи"
+
+#: src/cryptsetup.c:1435 src/veritysetup.c:369 src/cryptsetup_reencrypt.c:1145
+msgid "Display brief usage"
+msgstr "Прикажите кратку поруку о коришћењу"
+
+#: src/cryptsetup.c:1439 src/veritysetup.c:373 src/cryptsetup_reencrypt.c:1149
+msgid "Help options:"
+msgstr "Опције помоћи:"
+
+#: src/cryptsetup.c:1440 src/veritysetup.c:374 src/cryptsetup_reencrypt.c:1150
+msgid "Print package version"
+msgstr "Исписује издање пакета"
+
+#: src/cryptsetup.c:1441 src/veritysetup.c:375 src/cryptsetup_reencrypt.c:1151
+msgid "Shows more detailed error messages"
+msgstr "Приказује опширније поруке о грешкама"
+
+#: src/cryptsetup.c:1442 src/veritysetup.c:376 src/cryptsetup_reencrypt.c:1152
+msgid "Show debug messages"
+msgstr "Приказује поруке прочишћавања"
+
+#: src/cryptsetup.c:1443 src/cryptsetup_reencrypt.c:1154
+msgid "The cipher used to encrypt the disk (see /proc/crypto)"
+msgstr "Шифрер коришћен за шифровање диска (видите „/proc/crypto“)"
+
+#: src/cryptsetup.c:1444 src/cryptsetup_reencrypt.c:1156
+msgid "The hash used to create the encryption key from the passphrase"
+msgstr "Хеш коришћен за стварање кључа шифровања из лозинке"
+
+#: src/cryptsetup.c:1445
+msgid "Verifies the passphrase by asking for it twice"
+msgstr "Проверава лозинку тражећи је два пута"
+
+#: src/cryptsetup.c:1446 src/cryptsetup_reencrypt.c:1158
+msgid "Read the key from a file."
+msgstr "Чита кључ из датотеке."
+
+#: src/cryptsetup.c:1447
+msgid "Read the volume (master) key from file."
+msgstr "Чита (главни) кључ вочумена из датотеке."
+
+#: src/cryptsetup.c:1448
+msgid "Dump volume (master) key instead of keyslots info."
+msgstr "Даје (главни) кључ волумена уместо података исека кључева."
+
+#: src/cryptsetup.c:1449 src/cryptsetup_reencrypt.c:1155
+msgid "The size of the encryption key"
+msgstr "Величина кључа шифровања"
+
+#: src/cryptsetup.c:1449 src/cryptsetup_reencrypt.c:1155
+msgid "BITS"
+msgstr "БИТА"
+
+#: src/cryptsetup.c:1450 src/cryptsetup_reencrypt.c:1169
+msgid "Limits the read from keyfile"
+msgstr "Ограничава читање из датотеке кључа"
+
+#: src/cryptsetup.c:1450 src/cryptsetup.c:1451 src/cryptsetup.c:1452
+#: src/cryptsetup.c:1453 src/veritysetup.c:379 src/veritysetup.c:380
+#: src/veritysetup.c:382 src/cryptsetup_reencrypt.c:1168
+#: src/cryptsetup_reencrypt.c:1169 src/cryptsetup_reencrypt.c:1170
+#: src/cryptsetup_reencrypt.c:1171
+msgid "bytes"
+msgstr "бајта"
+
+#: src/cryptsetup.c:1451 src/cryptsetup_reencrypt.c:1168
+msgid "Number of bytes to skip in keyfile"
+msgstr "Број бајтова за прескакање у датотеци кључа"
+
+#: src/cryptsetup.c:1452
+msgid "Limits the read from newly added keyfile"
+msgstr "Ограничава читање из новододате датотеке кључа"
+
+#: src/cryptsetup.c:1453
+msgid "Number of bytes to skip in newly added keyfile"
+msgstr "Број бајтова за прескакање у новододатој датотеци кључа"
+
+#: src/cryptsetup.c:1454
+msgid "Slot number for new key (default is first free)"
+msgstr "Број исека за нови кључ (основно је први слободан)"
+
+#: src/cryptsetup.c:1455
+msgid "The size of the device"
+msgstr "Величина уређаја"
+
+#: src/cryptsetup.c:1455 src/cryptsetup.c:1456 src/cryptsetup.c:1457
+#: src/cryptsetup.c:1463
+msgid "SECTORS"
+msgstr "ОДЕЉЦИ"
+
+#: src/cryptsetup.c:1456
+msgid "The start offset in the backend device"
+msgstr "Почетни померај у позадинском уређају"
+
+#: src/cryptsetup.c:1457
+msgid "How many sectors of the encrypted data to skip at the beginning"
+msgstr "Број одељака шифрованих података за прескакање на почетку"
+
+#: src/cryptsetup.c:1458
+msgid "Create a readonly mapping"
+msgstr "Прави мапирање само за читање"
+
+#: src/cryptsetup.c:1459 src/cryptsetup_reencrypt.c:1159
+msgid "PBKDF2 iteration time for LUKS (in ms)"
+msgstr "Време ПБКДФ2 понављања за ЛУКС (у милисекундама)"
+
+#: src/cryptsetup.c:1459 src/cryptsetup_reencrypt.c:1159
+msgid "msecs"
+msgstr "милисекунде"
+
+#: src/cryptsetup.c:1460 src/cryptsetup_reencrypt.c:1160
+msgid "Do not ask for confirmation"
+msgstr "Не тражи потврђивање"
+
+#: src/cryptsetup.c:1461
+msgid "Timeout for interactive passphrase prompt (in seconds)"
+msgstr "Време за упит међудејствене лозинке (у секундама)"
+
+#: src/cryptsetup.c:1461
+msgid "secs"
+msgstr "секунде"
+
+#: src/cryptsetup.c:1462 src/cryptsetup_reencrypt.c:1161
+msgid "How often the input of the passphrase can be retried"
+msgstr "Колико често унос лозинке може бити покушан"
+
+#: src/cryptsetup.c:1463
+msgid "Align payload at <n> sector boundaries - for luksFormat"
+msgstr "Поравнава утовар на границе <n> одељка — за „luksFormat“"
+
+#: src/cryptsetup.c:1464
+msgid "File with LUKS header and keyslots backup."
+msgstr "Датотека са резервом „LUKS“ заглавља и исецима кључева."
+
+#: src/cryptsetup.c:1465 src/cryptsetup_reencrypt.c:1162
+msgid "Use /dev/random for generating volume key."
+msgstr "Користи „/dev/random“ за стварање кључа волумена."
+
+#: src/cryptsetup.c:1466 src/cryptsetup_reencrypt.c:1163
+msgid "Use /dev/urandom for generating volume key."
+msgstr "Користи „/dev/urandom“ за стварање кључа волумена."
+
+#: src/cryptsetup.c:1467
+msgid "Share device with another non-overlapping crypt segment."
+msgstr "Дели уређај са другим не-преклапајућим подеоком шифрера."
+
+#: src/cryptsetup.c:1468 src/veritysetup.c:385
+msgid "UUID for device to use."
+msgstr "УЈИБ уређаја за коришћење."
+
+#: src/cryptsetup.c:1469
+msgid "Allow discards (aka TRIM) requests for device."
+msgstr "Допушта одбацивања (тј. СКРАЋЕЊЕ) захтева за уређај."
+
+#: src/cryptsetup.c:1470
+msgid "Device or file with separated LUKS header."
+msgstr "Уређај или датотека са одвојеним ЛУКС заглављем."
+
+#: src/cryptsetup.c:1471
+msgid "Do not activate device, just check passphrase."
+msgstr "Не покреће уређај, само проверава лозинку."
+
+#: src/cryptsetup.c:1472
+msgid "Use hidden header (hidden TCRYPT device)."
+msgstr "Користи скривено заглавље (скривени ТКРИПТ уређај)."
+
+#: src/cryptsetup.c:1473
+msgid "Device is system TCRYPT drive (with bootloader)."
+msgstr "Уређај је ТКРИПТ диск система (са подизачем система)."
+
+#: src/cryptsetup.c:1474
+msgid "Use backup (secondary) TCRYPT header."
+msgstr "Користи резервно (другоразредно) ТКРИПТ заглавље."
+
+#: src/cryptsetup.c:1475
+msgid "Type of device metadata: luks, plain, loopaes, tcrypt."
+msgstr "Врста метаподатака уређаја: luks, plain, loopaes, tcrypt."
+
+#: src/cryptsetup.c:1476
+msgid "Disable password quality check (if enabled)."
+msgstr "Искључује проверу квалитета лозинке (ако је укључена)."
+
+#: src/cryptsetup.c:1492 src/veritysetup.c:402
+msgid "[OPTION...] <action> <action-specific>"
+msgstr "[ОПЦИЈА...] <радња> <посебност-радње>"
+
+#: src/cryptsetup.c:1533
+msgid "Running in FIPS mode.\n"
+msgstr "Ради у ФИПС режиму.\n"
+
+#: src/cryptsetup.c:1542 src/veritysetup.c:439
+msgid "Argument <action> missing."
+msgstr "Недостаје аргумент <радња>."
+
+#: src/cryptsetup.c:1593 src/veritysetup.c:445
+msgid "Unknown action."
+msgstr "Непозната радња."
+
+#: src/cryptsetup.c:1603
+msgid "Option --shared is allowed only for open of plain device.\n"
+msgstr "Опција „--shared“ је допуштена само за отварање обичног уређаја.\n"
+
+#: src/cryptsetup.c:1608
+msgid "Option --allow-discards is allowed only for open operation.\n"
+msgstr "Опција „--allow-discards“ је допуштена само за радњу отварања.\n"
+
+#: src/cryptsetup.c:1616
+msgid ""
+"Option --key-size is allowed only for luksFormat, open and benchmark.\n"
+"To limit read from keyfile use --keyfile-size=(bytes)."
+msgstr ""
+"Опција „--key-size“ је допуштена само за „luksFormat“, отварање и оцењивање.\n"
+"Да ограничите читање из датотеке кључа користите „--keyfile-size=(бајтова)."
+
+#: src/cryptsetup.c:1623
+msgid "Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"
+msgstr "Опција „--test-passphrase“ је допуштена само за отварање ЛУКС и ТКРИПТ уређаје.\n"
+
+#: src/cryptsetup.c:1628 src/cryptsetup_reencrypt.c:1231
+msgid "Key size must be a multiple of 8 bits"
+msgstr "Величина кључа мора бити умножак од 8 бита"
+
+#: src/cryptsetup.c:1635 src/cryptsetup_reencrypt.c:1236
+msgid "Key slot is invalid."
+msgstr "Исек кључа није исправан."
+
+#: src/cryptsetup.c:1642
+msgid "Option --key-file takes precedence over specified key file argument.\n"
+msgstr "Опција „--key-file“ има првенство над наведеним аргументом датотеке кључа.\n"
+
+#: src/cryptsetup.c:1650 src/veritysetup.c:467 src/cryptsetup_reencrypt.c:1220
+msgid "Negative number for option not permitted."
+msgstr "Негативан број за опцију није допуштен."
+
+#: src/cryptsetup.c:1654 src/cryptsetup_reencrypt.c:1214
+#: src/cryptsetup_reencrypt.c:1240
+msgid "Only one of --use-[u]random options is allowed."
+msgstr "Дозвољена је само једна опција „--use-[u]random“."
+
+#: src/cryptsetup.c:1658
+msgid "Option --use-[u]random is allowed only for luksFormat."
+msgstr "Опција „--use-[u]random“ је допуштена само за „luksFormat“."
+
+#: src/cryptsetup.c:1662
+msgid "Option --uuid is allowed only for luksFormat and luksUUID."
+msgstr "Опција „--uuid“ је допуштена само за „luksFormat“ и „luksUUID“."
+
+#: src/cryptsetup.c:1666
+msgid "Option --align-payload is allowed only for luksFormat."
+msgstr "Опција „--align-payload“ је допуштена само за „luksFormat“."
+
+#: src/cryptsetup.c:1672
+msgid "Option --skip is supported only for open of plain and loopaes devices.\n"
+msgstr "Опција „--skip“ је подржана само за отварање обичних и упетљаних уређаја.\n"
+
+#: src/cryptsetup.c:1678
+msgid "Option --offset is supported only for open of plain and loopaes devices.\n"
+msgstr "Опција „--offset“ је подржана само за отварање обичних и упетљаних уређаја.\n"
+
+#: src/cryptsetup.c:1684
+msgid "Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"
+msgstr "Опција „--tcrypt-hidden“, „--tcrypt-system“ или „--tcrypt-backup“ је подржана само за ТКРИПТ уређај.\n"
+
+#: src/cryptsetup.c:1689
+msgid "Option --tcrypt-hidden cannot be combined with --allow-discards.\n"
+msgstr "Опција „--tcrypt-hidden“ не може бити обједињена са „--allow-discards“.\n"
+
+#: src/veritysetup.c:58
+msgid "Invalid salt string specified.\n"
+msgstr "Наведена је неисправна ниска присолка.\n"
+
+#: src/veritysetup.c:88
+#, c-format
+msgid "Cannot create hash image %s for writing.\n"
+msgstr "Не могу да направим хеш слику „%s“ ради уписа.\n"
+
+#: src/veritysetup.c:148
+msgid "Invalid root hash string specified.\n"
+msgstr "Наведена је неисправна ниска хеша корена.\n"
+
+#: src/veritysetup.c:308
+msgid "<data_device> <hash_device>"
+msgstr "<уређај_података> <уређај_хеша>"
+
+#: src/veritysetup.c:308
+msgid "format device"
+msgstr "форматира уређај"
+
+#: src/veritysetup.c:309
+msgid "<data_device> <hash_device> <root_hash>"
+msgstr "<уређај_података> <уређај_хеша> <хеш_корена>"
+
+#: src/veritysetup.c:309
+msgid "verify device"
+msgstr "проверава уређај"
+
+#: src/veritysetup.c:310
+msgid "<name> <data_device> <hash_device> <root_hash>"
+msgstr "<назив> <уређај_података> <уређај_хеша> <хеш_корена>"
+
+#: src/veritysetup.c:310
+msgid "create active device"
+msgstr "прави радни уређај"
+
+#: src/veritysetup.c:311
+msgid "remove (deactivate) device"
+msgstr "уклања (искључује) уређај"
+
+#: src/veritysetup.c:312
+msgid "show active device status"
+msgstr "показује стање радног уређаја"
+
+#: src/veritysetup.c:313
+msgid "<hash_device>"
+msgstr "<уређај_хеша>"
+
+#: src/veritysetup.c:313
+msgid "show on-disk information"
+msgstr "приказује податке на-диску"
+
+#: src/veritysetup.c:332
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<data_device> is the data device\n"
+"<hash_device> is the device containing verification data\n"
+"<root_hash> hash of the root node on <hash_device>\n"
+msgstr ""
+"\n"
+"<назив> јесте уређај за стварање под „%s“\n"
+"<уређај_података> јесте уређај података\n"
+"<уређај_хеша> јесте уређај који садржи податке проверавања\n"
+"<хеш_корена> хеш кореног чвора на <уређају_хеша>\n"
+
+#: src/veritysetup.c:339
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in dm-verity parameters:\n"
+"\tHash: %s, Data block (bytes): %u, Hash block (bytes): %u, Salt size: %u, Hash format: %u\n"
+msgstr ""
+"\n"
+"Основни преведени параметри дм-тачности:\n"
+"\tХеш: %s, Блок података (бајта): %u, Блок хеша (бајта): %u, Величина присолка: %u, Запис хеша: %u\n"
+
+#: src/veritysetup.c:377
+msgid "Do not use verity superblock"
+msgstr "Не користи суперблок тачности"
+
+#: src/veritysetup.c:378
+msgid "Format type (1 - normal, 0 - original Chrome OS)"
+msgstr "Врста записа (1 — обично, 0 — изворни Хром ОС)"
+
+#: src/veritysetup.c:378
+msgid "number"
+msgstr "број"
+
+#: src/veritysetup.c:379
+msgid "Block size on the data device"
+msgstr "Величина блока на уређају података"
+
+#: src/veritysetup.c:380
+msgid "Block size on the hash device"
+msgstr "Величина блока на уређају хеша"
+
+#: src/veritysetup.c:381
+msgid "The number of blocks in the data file"
+msgstr "Број блокова у датотеци података"
+
+#: src/veritysetup.c:381
+msgid "blocks"
+msgstr "блокови"
+
+#: src/veritysetup.c:382
+msgid "Starting offset on the hash device"
+msgstr "Почетни померај на уређају хеша"
+
+#: src/veritysetup.c:383
+msgid "Hash algorithm"
+msgstr "Алгоритам хеша"
+
+#: src/veritysetup.c:383
+msgid "string"
+msgstr "ниска"
+
+#: src/veritysetup.c:384
+msgid "Salt"
+msgstr "Присолак"
+
+#: src/veritysetup.c:384
+msgid "hex string"
+msgstr "ниска хеша"
+
+#: src/cryptsetup_reencrypt.c:144
+#, c-format
+msgid "Cannot exclusively open %s, device in use.\n"
+msgstr "Не могу изричито да отворим „%s“, уређај је у употреби.\n"
+
+#: src/cryptsetup_reencrypt.c:148
+#, c-format
+msgid "Cannot open device %s\n"
+msgstr "Не могу да отворим уређај „%s“\n"
+
+#: src/cryptsetup_reencrypt.c:158 src/cryptsetup_reencrypt.c:375
+#: src/cryptsetup_reencrypt.c:813
+msgid "Allocation of aligned memory failed.\n"
+msgstr "Додела поређане меморије није успела.\n"
+
+#: src/cryptsetup_reencrypt.c:165
+#, c-format
+msgid "Cannot read device %s.\n"
+msgstr "Не могу да читам уређај „%s“.\n"
+
+#: src/cryptsetup_reencrypt.c:176
+#, c-format
+msgid "Marking LUKS device %s unusable.\n"
+msgstr "Означавам ЛУКС уређај „%s“ неупотребљивим.\n"
+
+#: src/cryptsetup_reencrypt.c:181
+#, c-format
+msgid "Marking LUKS device %s usable.\n"
+msgstr "Означавам ЛУКС уређај „%s“ употребљивим.\n"
+
+#: src/cryptsetup_reencrypt.c:197
+#, c-format
+msgid "Cannot write device %s.\n"
+msgstr "Не могу да пишем на уређају „%s“.\n"
+
+#: src/cryptsetup_reencrypt.c:278
+msgid "Cannot write reencryption log file.\n"
+msgstr "Не могу да запишем датотеку дневника поновног шифровања.\n"
+
+#: src/cryptsetup_reencrypt.c:327
+msgid "Cannot read reencryption log file.\n"
+msgstr "Не могу да прочитам датотеку дневника поновног шифровања.\n"
+
+#: src/cryptsetup_reencrypt.c:366
+#, c-format
+msgid "Log file %s exists, resuming reencryption.\n"
+msgstr "Датотека дневника „%s“ постоји, настављам поновно шифровање.\n"
+
+#: src/cryptsetup_reencrypt.c:401
+msgid "Activating temporary device using old LUKS header.\n"
+msgstr "Покрећем привремени уређај користећи старо ЛУКС заглавље.\n"
+
+#: src/cryptsetup_reencrypt.c:412
+msgid "Activating temporary device using new LUKS header.\n"
+msgstr "Покрећем привремени уређај користећи ново ЛУКС заглавље.\n"
+
+#: src/cryptsetup_reencrypt.c:422
+msgid "Activation of temporary devices failed.\n"
+msgstr "Покретање привременог уређаја није успело.\n"
+
+#: src/cryptsetup_reencrypt.c:448
+#, c-format
+msgid "New LUKS header for device %s created.\n"
+msgstr "Направљено је ново ЛУКС заглавље за уређај „%s“.\n"
+
+#: src/cryptsetup_reencrypt.c:456
+#, c-format
+msgid "Activated keyslot %i.\n"
+msgstr "Покренути исек кључа %i.\n"
+
+#: src/cryptsetup_reencrypt.c:482
+#, c-format
+msgid "LUKS header backup of device %s created.\n"
+msgstr "Направљена је резерва ЛУКС заглавља за уређај „%s“.\n"
+
+#: src/cryptsetup_reencrypt.c:526
+msgid "Creation of LUKS backup headers failed.\n"
+msgstr "Није успело прављење резерве ЛУКС заглавља.\n"
+
+#: src/cryptsetup_reencrypt.c:621
+#, c-format
+msgid "Cannot restore LUKS header on device %s.\n"
+msgstr "Не могу да повратим ЛУКС заглавље на уређају „%s“.\n"
+
+#: src/cryptsetup_reencrypt.c:623
+#, c-format
+msgid "LUKS header on device %s restored.\n"
+msgstr "Повраћено је ЛУКС заглавље на уређају „%s“.\n"
+
+#: src/cryptsetup_reencrypt.c:656
+#, c-format
+msgid "Progress: %5.1f%%, ETA %02llu:%02llu, %4llu MiB written, speed %5.1f MiB/s%s"
+msgstr "Напредовање: %5.1f%%, ЕТА %02llu:%02llu, %4llu MiB је записано, брзина %5.1f MiB/s%s"
+
+#: src/cryptsetup_reencrypt.c:672 src/cryptsetup_reencrypt.c:748
+msgid "Cannot seek to device offset.\n"
+msgstr "Не могу да премотам на померај уређаја.\n"
+
+#: src/cryptsetup_reencrypt.c:794 src/cryptsetup_reencrypt.c:800
+msgid "Cannot open temporary LUKS header file.\n"
+msgstr "Не могу да отворим привремену датотеку ЛУКС заглавља.\n"
+
+#: src/cryptsetup_reencrypt.c:806
+msgid "Cannot get device size.\n"
+msgstr "Не могу да добавим величину уређаја.\n"
+
+#: src/cryptsetup_reencrypt.c:830
+msgid "Interrupted by a signal.\n"
+msgstr "Прекинуто сигналом.\n"
+
+#: src/cryptsetup_reencrypt.c:832
+msgid "IO error during reencryption.\n"
+msgstr "УИ грешка за време поновног шифровања.\n"
+
+#: src/cryptsetup_reencrypt.c:939
+msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
+msgstr "Датотека кључа може бити коришћена само са „--key-slot“ или са тачно једним радним исеком кључа.\n"
+
+#: src/cryptsetup_reencrypt.c:983 src/cryptsetup_reencrypt.c:996
+#, c-format
+msgid "Enter passphrase for key slot %u: "
+msgstr "Унесите пропусну реч за исек кључа %u: "
+
+#: src/cryptsetup_reencrypt.c:1045
+msgid "Cannot open reencryption log file.\n"
+msgstr "Не могу да отворим датотеку дневника поновног шифровања.\n"
+
+#: src/cryptsetup_reencrypt.c:1153
+msgid "Reencryption block size"
+msgstr "Величина блока поновног шифровања"
+
+#: src/cryptsetup_reencrypt.c:1153
+msgid "MiB"
+msgstr "MiB"
+
+#: src/cryptsetup_reencrypt.c:1157
+msgid "Do not change key, no data area reencryption."
+msgstr "Не мења кључ, нема поновног шифровања области података."
+
+#: src/cryptsetup_reencrypt.c:1164
+msgid "Use direct-io when accessing devices."
+msgstr "Користи непосредни-уи приликом приступа уређајима."
+
+#: src/cryptsetup_reencrypt.c:1165
+msgid "Use fsync after each block."
+msgstr "Користи ф-усаглашавање након сваког блока."
+
+#: src/cryptsetup_reencrypt.c:1166
+msgid "Update log file after every block."
+msgstr "Освежава датотеку дневника након сваког блока."
+
+#: src/cryptsetup_reencrypt.c:1167
+msgid "Use only this slot (others will be disabled)."
+msgstr "Користи само овај исек (остали ће бити искључени)."
+
+#: src/cryptsetup_reencrypt.c:1170
+msgid "Reduce data device size (move data offset). DANGEROUS!"
+msgstr "Смањује величину уређаја података (премешта померај података). ОВО ЈЕ ОПАСНО!"
+
+#: src/cryptsetup_reencrypt.c:1171
+msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
+msgstr "Користи само наведену величину уређаја (занемарује остатак уређаја). ОВО ЈЕ ОПСАНО!"
+
+#: src/cryptsetup_reencrypt.c:1172
+msgid "Create new header on not encrypted device."
+msgstr "Прави ново заглавље на нешифрованом уређају."
+
+#: src/cryptsetup_reencrypt.c:1188
+msgid "[OPTION...] <device>"
+msgstr "[ОПЦИЈА...] <уређај>"
+
+#: src/cryptsetup_reencrypt.c:1202
+msgid "WARNING: this is experimental code, it can completely break your data.\n"
+msgstr "УПОЗОРЕЊЕ: ово је пробни код, може потпуно да оштети ваше податке.\n"
+
+#: src/cryptsetup_reencrypt.c:1203
+#, c-format
+msgid "Reencryption will change: volume key%s%s%s%s.\n"
+msgstr "Поновно шифровање ће изменити: кључ волумена%s%s%s%s.\n"
+
+#: src/cryptsetup_reencrypt.c:1204
+msgid ", set hash to "
+msgstr ", поставља хеш на "
+
+#: src/cryptsetup_reencrypt.c:1205
+msgid ", set cipher to "
+msgstr ", поставља шифрера на "
+
+#: src/cryptsetup_reencrypt.c:1210
+msgid "Argument required."
+msgstr "Потребан је аргумент."
+
+#: src/cryptsetup_reencrypt.c:1226
+msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
+msgstr "Само вредности између 1 MiB и 64 MiB су допуштене завеличину блока поновног шифровања."
+
+#: src/cryptsetup_reencrypt.c:1245 src/cryptsetup_reencrypt.c:1250
+msgid "Invalid device size specification."
+msgstr "Неисправна одредба величине уређаја."
+
+#: src/cryptsetup_reencrypt.c:1253
+msgid "Maximum device reduce size is 64 MiB."
+msgstr "Највећа величина смањења уређаја је 64 MiB."
+
+#: src/cryptsetup_reencrypt.c:1256
+msgid "Reduce size must be multiple of 512 bytes sector."
+msgstr "Величина смањивања мора бити умножак одељка од 512 бајта."
+
+#: src/cryptsetup_reencrypt.c:1260
+msgid "Option --new must be used together with --reduce-device-size."
+msgstr "Опција „--new“ мора да се користи са „--reduce-device-size“."
+
+#: src/cryptsetup_reencrypt.c:1264
+msgid "Option --keep-key can be used only with --hash or --iter-time."
+msgstr "Опција „--keep-key“ може да се користи само са „--hash“ или „--iter-time“."
+
+#: src/utils_tools.c:150
+msgid "Error reading response from terminal.\n"
+msgstr "Грешка читања одговора из терминала.\n"
+
+#: src/utils_tools.c:172
+msgid "Command successful.\n"
+msgstr "Наредба је успела.\n"
+
+#: src/utils_tools.c:186
+#, c-format
+msgid "Command failed with code %i"
+msgstr "Наредба није успела са кодом %i"
+
+#: src/utils_password.c:42
+#, c-format
+msgid "Cannot check password quality: %s\n"
+msgstr "Не могу да проверим квалитет лозинке: %s\n"
+
+#: src/utils_password.c:50
+#, c-format
+msgid ""
+"Password quality check failed:\n"
+" %s\n"
+msgstr ""
+"Провера квалитета лозинке није успела:\n"
+" %s\n"
