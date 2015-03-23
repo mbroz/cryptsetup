@@ -1,0 +1,84 @@
+Cryptsetup 1.6.7 Release Notes
+==============================
+
+Changes since version 1.6.6
+
+* Cryptsetup git and wiki are now hosted on GitLab.
+  https://gitlab.com/cryptsetup/cryptsetup
+
+  Repository of stable releases remains on kernel.org site
+  https://www.kernel.org/pub/linux/utils/cryptsetup/
+
+  For more info please see README file.
+
+* Cryptsetup TCRYPT mode now supports VeraCrypt devices (TrueCrypt extension).
+
+  The VeraCrypt extension only increases iteration count for the key
+  derivation function (on-disk format is the same as TrueCrypt format).
+
+  Note that unlocking of a VeraCrypt device can take very long time if used
+  on slow machines.
+
+  To use this extension, add --veracrypt option, for example
+    cryptsetup open --type tcrypt --veracrypt <container> <name>
+
+  For use through libcryptsetup, just add CRYPT_TCRYPT_VERA_MODES flag.
+
+* Support keyfile-offset and keyfile-size options even for plain volumes.
+
+* Support keyfile option for luksAddKey if the master key is specified.
+
+* For historic reasons, hashing in the plain mode is not used
+  if keyfile is specified (with exception of --key-file=-).
+  Print a warning if these parameters are ignored.
+
+* Support permanent device decryption for cryptsetup-reencrypt.
+  To remove LUKS encryption from a device, you can now use --decrypt option.
+
+* Allow to use --header option in all LUKS commands.
+  The --header always takes precedence over positional device argument.
+
+* Allow luksSuspend without need to specify a detached header.
+
+* Detect if O_DIRECT is usable on a device allocation.
+  There are some strange storage stack configurations which wrongly allows
+  to open devices with direct-io but fails on all IO operations later.
+
+  Cryptsetup now tries to read the device first sector to ensure it can use
+  direct-io.
+
+*  Add low-level performance options tuning for dmcrypt (for Linux 4.0 and later).
+
+   Linux kernel 4.0 contains rewritten dmcrypt code which tries to better utilize
+   encryption on parallel CPU cores.
+
+   While tests show that this change increases performance on most configurations,
+   dmcrypt now provides some switches to change its new behavior.
+
+   You can use them (per-device) with these cryptsetup switches:
+      --perf-same_cpu_crypt
+      --perf-submit_from_crypt_cpus
+
+  Please use these only in the case of serious performance problems.
+  Refer to the cryptsetup man page and dm-crypt documentation
+  (for same_cpu_crypt and submit_from_crypt_cpus options).
+  https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt
+
+* Get rid of libfipscheck library.
+  (Note that this option was used only for Red Hat and derived distributions.)
+  With recent FIPS changes we do not need to link to this FIPS monster anymore.
+  Also drop some no longer needed FIPS mode checks.
+
+* Many fixes and clarifications to man pages.
+
+* Prevent compiler to optimize-out zeroing of buffers for on-stack variables.
+
+* Fix a crash if non-GNU strerror_r is used.
+
+Cryptsetup API NOTE:
+The direct terminal handling for passphrase entry will be removed from
+libcryptsetup in next major version (application should handle it itself).
+
+It means that you have to always either provide password in buffer or set
+your own password callback function through crypt_set_password_callback().
+See API documentation (or libcryptsetup.h) for more info.
