@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <linux/fs.h>
 #include <uuid/uuid.h>
+#include <sys/stat.h>
 
 #include "internal.h"
 
