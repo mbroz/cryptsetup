@@ -1,413 +1,415 @@
-# Dutch translation of cryptsetup.
-# This file is distributed under the same license as the cryptsetup package.
+# Danish translation cryptsetup-1.6.7.da.po.
 # Copyright (C) 2015 Free Software Foundation, Inc.
-# Koen Torfs <koen@drunkfelines.com>, 2015.
+# This file is distributed under the same license as the cryptsetup package.
+# Joe Hansen <joedalton2@yahoo.dk>, 2015.
+#
+# Konventioner
+# wipe -> rydde
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: cryptsetup-1.6.7\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
 "POT-Creation-Date: 2015-03-19 09:55+0100\n"
-"PO-Revision-Date: 2015-03-28 21:54+0100\n"
-"Last-Translator: Koen Torfs <koen@drunkfelines.com>\n"
-"Language-Team: Dutch <vertaling@vrijschrift.org>\n"
-"Language: nl\n"
+"PO-Revision-Date: 2015-04-18 22:00+0200\n"
+"Last-Translator: Joe Hansen <joedalton2@yahoo.dk>\n"
+"Language-Team: Danish <dansk@dansk-gruppen.dk>\n"
+"Language: da\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
 
 #: lib/libdevmapper.c:252
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
-msgstr "Kan apparaatstoewijzer niet initialiseren, uitvoering als non-root gebruiker.\n"
+msgstr "Kan ikke initialisere enhedsoversætter, kører som ikke-root bruger.\n"
 
 #: lib/libdevmapper.c:255
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
-msgstr "Kan apparaatstoewijzer niet initialiseren. Is kernelmodule dm_mod geladen?\n"
+msgstr "Kan ikke initialisere enhedsoversætter. Er dm_mod-kernemodulet indlæst?\n"
 
 #: lib/libdevmapper.c:550
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
-msgstr "DM-UUID voor apparaat %s werd afgekapt.\n"
+msgstr "DM-UUID for enheden %s blev afkortet.\n"
 
 #: lib/libdevmapper.c:698
 msgid "Requested dmcrypt performance options are not supported.\n"
-msgstr "Aangevraagde prestatie-opties voor dmcrypt worden niet ondersteund.\n"
+msgstr "Anmodte dmcrypts-ydelsestilvalg er ikke understøttede.\n"
 
 #: lib/random.c:76
 msgid ""
 "System is out of entropy while generating volume key.\n"
 "Please move mouse or type some text in another window to gather some random events.\n"
 msgstr ""
-"Systeem heeft niet genoeg willekeurige gegevens om de sleutel tot het opslagmedium verder te genereren.\n"
-"Beweeg de muis of typ wat tekst in een nieuw venster om enkele willekeurige evenementen te verzamelen.\n"
+"Systemet har ikke nok entropi til oprettelse af diskenhedsnøgle.\n"
+"Flyt venligst musen eller indtast noget tekst i et andet vindue for at samle nogle vilkårlige hændelser.\n"
 
 #: lib/random.c:80
 #, c-format
 msgid "Generating key (%d%% done).\n"
-msgstr "Sleutel wordt gegenereerd (%d%% afgewerkt).\n"
+msgstr "Opretter nøgle (%d%% færdig).\n"
 
 #: lib/random.c:169
 msgid "Fatal error during RNG initialisation.\n"
-msgstr "Fatale fout bij initialisatie van RNG.\n"
+msgstr "Fatal fejl under RNG-initialisering.\n"
 
 #: lib/random.c:206
 msgid "Unknown RNG quality requested.\n"
-msgstr "Onbekende RNG-kwaliteit aangevraagd.\n"
+msgstr "Der blev anmodt om ukendt RNG-kvalitet.\n"
 
 #: lib/random.c:211
 #, c-format
 msgid "Error %d reading from RNG: %s\n"
-msgstr "Fout %d bij lezen uit RNG: %s\n"
+msgstr "Fejl %d under læsning fra RNG: %s\n"
 
 #: lib/setup.c:200
 msgid "Cannot initialize crypto RNG backend.\n"
-msgstr "Kan RNG versleutelings-backend niet initialiseren.\n"
+msgstr "Kan ikke initialisere crypto RNG-motor.\n"
 
 #: lib/setup.c:206
 msgid "Cannot initialize crypto backend.\n"
-msgstr "Kan versleutelings-backend niet initialiseren.\n"
+msgstr "Kan ikke initialisere crypto-motor.\n"
 
 #: lib/setup.c:236 lib/setup.c:1192 lib/verity/verity.c:123
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
-msgstr "Aangevraagd hash-algoritme %s wordt niet ondersteund.\n"
+msgstr "Hashalgoritme %s er ikke understøttet.\n"
 
 #: lib/setup.c:239 lib/loopaes/loopaes.c:90
 #, c-format
 msgid "Key processing error (using hash %s).\n"
-msgstr "Sleutelbehandelingsfout (met hash %s in gebruik).\n"
+msgstr "Nøglebehandlingsfejl (der bruger hash %s).\n"
 
 #: lib/setup.c:284
 msgid "Cannot determine device type. Incompatible activation of device?\n"
-msgstr "Apparaatstype kan niet bepaald worden. Incompatibele apparaatsactivering?\n"
+msgstr "Kan ikke bestemme enhedstype. Er aktivering af enhed ikke kompatibel?\n"
 
 #: lib/setup.c:288 lib/setup.c:1537
 msgid "This operation is supported only for LUKS device.\n"
-msgstr "Deze operatie wordt enkel ondersteund voor LUKS-apparaten.\n"
+msgstr "Denne operation er kun understøttet for LUKS-enhed.\n"
 
 #: lib/setup.c:320
 msgid "All key slots full.\n"
-msgstr "Alle sleutelplaatsen zijn vol.\n"
+msgstr "Alle nøglepladser er udfyldt.\n"
 
 #: lib/setup.c:327
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d.\n"
-msgstr "Sleutelplaats %d is ongeldig, selecteer een plaats tussen 0 en %d.\n"
+msgstr "Nøgleplads %d er ugyldig, vælg venligst mellem 0 og %d.\n"
 
 #: lib/setup.c:333
 #, c-format
 msgid "Key slot %d is full, please select another one.\n"
-msgstr "Sleutelplaats %d is vol, selecteer een andere.\n"
+msgstr "Nøgleplads %d er fuld, vælg venligst en anden.\n"
 
 #: lib/setup.c:472
 #, c-format
 msgid "Enter passphrase for %s: "
-msgstr "Voer wachtwoord in voor %s: "
+msgstr "Indtast adgangsfrase for %s: "
 
 #: lib/setup.c:653
 #, c-format
 msgid "Header detected but device %s is too small.\n"
-msgstr "Koptekst gevonden maar apparaat %s is te klein.\n"
+msgstr "Teksthoved detekteret men enheden %s er for lille.\n"
 
 #: lib/setup.c:669 lib/setup.c:1420
 msgid "This operation is not supported for this device type.\n"
-msgstr "Deze operatie wordt niet ondersteund voor dit apparaatstype.\n"
+msgstr "Denne operation er ikke understøttet for denne enhedstype.\n"
 
 #: lib/setup.c:908 lib/setup.c:1381 lib/setup.c:2264
 #, c-format
 msgid "Device %s is not active.\n"
-msgstr "Apparaat %s is niet actief.\n"
+msgstr "Enhed %s er ikke aktiv.\n"
 
 #: lib/setup.c:925
 #, c-format
 msgid "Underlying device for crypt device %s disappeared.\n"
-msgstr "Onderliggend apparaat van versleutelingsapparaat %s is verdwenen.\n"
+msgstr "Underliggende enhed for cryptenheden %s forsvandt.\n"
 
 #: lib/setup.c:994
 msgid "Invalid plain crypt parameters.\n"
-msgstr "Ongeldige normale versleutelingsparameters.\n"
+msgstr "Ugyldige rene crypt-parametre.\n"
 
 #: lib/setup.c:999 lib/setup.c:1119
 msgid "Invalid key size.\n"
-msgstr "Ongeldige sleutelgrootte.\n"
+msgstr "Ugyldig nøglestørrelse.\n"
 
 #: lib/setup.c:1004 lib/setup.c:1124
 msgid "UUID is not supported for this crypt type.\n"
-msgstr "UUID wordt niet ondersteund voor dit encryptietype.\n"
+msgstr "UUID er ikke understøttet for denne crypttype.\n"
 
 #: lib/setup.c:1046
 msgid "Can't format LUKS without device.\n"
-msgstr "Kan LUKS niet formatteren zonder apparaat.\n"
+msgstr "Kan ikke formatere LUKS uden enhed.\n"
 
 #: lib/setup.c:1089
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
-msgstr "Kan apparaat %s niet formatteren; het is nog steeds actief.\n"
+msgstr "Kan ikke formatere enheden %s som stadig er i brug.\n"
 
 #: lib/setup.c:1092
 #, c-format
 msgid "Cannot format device %s, permission denied.\n"
-msgstr "Kan apparaat %s niet formatteren: toestemming geweigerd.\n"
+msgstr "Kan ikke formatere enheden %s, tilladelse nægtet.\n"
 
 #: lib/setup.c:1096
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
-msgstr "Kan koptekst op apparaat %s niet wissen.\n"
+msgstr "Kan ikke rydde teksthoved på enheden %s.\n"
 
 #: lib/setup.c:1114
 msgid "Can't format LOOPAES without device.\n"
-msgstr "Kan LOOPAES niet formatteren zonder apparaat.\n"
+msgstr "Kan ikke formatere LOOPAES uden enhed.\n"
 
 #: lib/setup.c:1152
 msgid "Can't format VERITY without device.\n"
-msgstr "Kan VERITY niet formatteren zonder apparaat.\n"
+msgstr "Kan ikke formatere VERITY uden enhed.\n"
 
 #: lib/setup.c:1160 lib/verity/verity.c:106
 #, c-format
 msgid "Unsupported VERITY hash type %d.\n"
-msgstr "Niet-ondersteund VERITY-hashtype %d.\n"
+msgstr "VERITY-hashtypen %d er ikke understøttet.\n"
 
 #: lib/setup.c:1166 lib/verity/verity.c:114
 msgid "Unsupported VERITY block size.\n"
-msgstr "Niet-ondersteunde VERITY-blokgrootte.\n"
+msgstr "VERITY-blokstørrelse er ikke understøttet.\n"
 
 #: lib/setup.c:1171 lib/verity/verity.c:76
 msgid "Unsupported VERITY hash offset.\n"
-msgstr "Niet-ondersteunde VERITY-hashgegevenspositie.\n"
+msgstr "VERITY-hashforskydning er ikke understøttet.\n"
 
 #: lib/setup.c:1285
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
-msgstr "Onbekend versleutelingsapparaattype %s aangevraagd.\n"
+msgstr "Der blev anmodt om ukendt crypt-enhedstype %s.\n"
 
 #: lib/setup.c:1435
 msgid "Do you really want to change UUID of device?"
-msgstr "Bent u zeker dat u het UUID van het apparaat wilt wijzigen?"
+msgstr "Ønsker du at ændre UUID for enhed?"
 
 #: lib/setup.c:1545
 #, c-format
 msgid "Volume %s is not active.\n"
-msgstr "Opslagmedium %s is niet actief.\n"
+msgstr "Diskenheden %s er ikke aktiv.\n"
 
 #: lib/setup.c:1556
 #, c-format
 msgid "Volume %s is already suspended.\n"
-msgstr "Opslagmedium %s is reeds geschorst.\n"
+msgstr "Diskenheden %s er allerede suspenderet.\n"
 
 #: lib/setup.c:1563
 #, c-format
 msgid "Suspend is not supported for device %s.\n"
-msgstr "Opschorten wordt niet ondersteund voor apparaat %s.\n"
+msgstr "Suspension er ikke understøttet for enheden %s.\n"
 
 #: lib/setup.c:1565
 #, c-format
 msgid "Error during suspending device %s.\n"
-msgstr "Fout bij het opschorten van apparaat %s.\n"
+msgstr "Fejl under suspension af enheden %s.\n"
 
 #: lib/setup.c:1591 lib/setup.c:1638
 #, c-format
 msgid "Volume %s is not suspended.\n"
-msgstr "Opslagmedium %s is niet geschorst.\n"
+msgstr "Diskenheden %s er ikke suspenderet.\n"
 
 #: lib/setup.c:1605
 #, c-format
 msgid "Resume is not supported for device %s.\n"
-msgstr "Hervatting wordt niet ondersteund voor apparaat %s.\n"
+msgstr "Genoptag er ikke understøttet for enheden %s.\n"
 
 #: lib/setup.c:1607 lib/setup.c:1659
 #, c-format
 msgid "Error during resuming device %s.\n"
-msgstr "Fout bij het hervatten van apparaat %s.\n"
+msgstr "Fejl under genoptagelse af enheden %s.\n"
 
 #: lib/setup.c:1645 lib/setup.c:2080 lib/setup.c:2094 src/cryptsetup.c:186
 #: src/cryptsetup.c:248 src/cryptsetup.c:732 src/cryptsetup.c:1151
 msgid "Enter passphrase: "
-msgstr "Voer wachtwoord in: "
+msgstr "Indtast adgangsfrase: "
 
 #: lib/setup.c:1707 lib/setup.c:1843
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
-msgstr "Kan geen sleutelplaats toevoegen, alle plaatsen zijn uitgeschakeld en er is geen sleutel tot het opslagmedium voorzien.\n"
+msgstr "Kan ikke tilføje nøgleplads, alle pladser er deaktiveret og ingen diskenhedsnøgle tilbudt.\n"
 
 #: lib/setup.c:1716 lib/setup.c:1849 lib/setup.c:1853
 msgid "Enter any passphrase: "
-msgstr "Voer enig wachtwoord in: "
+msgstr "Indtast en adgangsfrase: "
 
 #: lib/setup.c:1733 lib/setup.c:1866 lib/setup.c:1870 lib/setup.c:1932
 #: src/cryptsetup.c:988 src/cryptsetup.c:1017
 msgid "Enter new passphrase for key slot: "
-msgstr "Voer een nieuw wachtwoord in voor de sleutelplaats: "
+msgstr "Indtast ny adgangsfrase for nøgleplads: "
 
 #: lib/setup.c:1798
 #, c-format
 msgid "Key slot %d changed.\n"
-msgstr "Sleutelplaats %d werd gewijzigd.\n"
+msgstr "Nøglepladsen %d ændret.\n"
 
 #: lib/setup.c:1801
 #, c-format
 msgid "Replaced with key slot %d.\n"
-msgstr "Vervangen door sleutelplaats %d.\n"
+msgstr "Erstattet med nøglepladsen %d.\n"
 
 #: lib/setup.c:1806
 msgid "Failed to swap new key slot.\n"
-msgstr "Kan nieuwe sleutelplaats niet verwisselen.\n"
+msgstr "Kunne ikke swappe ny nøgleplads.\n"
 
 #: lib/setup.c:1923 lib/setup.c:2184 lib/setup.c:2197 lib/setup.c:2339
 msgid "Volume key does not match the volume.\n"
-msgstr "Sleutel tot opslagmedium komt niet overeen met het opslagmedium.\n"
+msgstr "Diskenhedsnøgle matcher ikke diskenheden.\n"
 
 #: lib/setup.c:1961
 #, c-format
 msgid "Key slot %d is invalid.\n"
-msgstr "Sleutelplaats %d is ongeldig.\n"
+msgstr "Nøgleplads %d er ugyldig.\n"
 
 #: lib/setup.c:1966
 #, c-format
 msgid "Key slot %d is not used.\n"
-msgstr "Sleutelplaats %d is niet in gebruik.\n"
+msgstr "Nøglepladsen %d er ikke brugt.\n"
 
 #: lib/setup.c:1996 lib/setup.c:2068 lib/setup.c:2160
 #, c-format
 msgid "Device %s already exists.\n"
-msgstr "Apparaat %s bestaat reeds.\n"
+msgstr "Enheden %s findes allerede.\n"
 
 #: lib/setup.c:2171
 msgid "Incorrect volume key specified for plain device.\n"
-msgstr "Incorrecte sleutel tot het opslagmedium voor normaal apparaat verschaft.\n"
+msgstr "Ukorrekt diskenhedsnøgle specificeret for ren enhed.\n"
 
 #: lib/setup.c:2204
 msgid "Incorrect root hash specified for verity device.\n"
-msgstr "Incorrecte root-hash voor het VERITY-apparaat opgegeven.\n"
+msgstr "Ukorrekt roothash specificeret for verity-enhed.\n"
 
 #: lib/setup.c:2227
 msgid "Device type is not properly initialised.\n"
-msgstr "Apparaatstype is niet behoorlijk geïnitialiseerd.\n"
+msgstr "Enhedstype er ikke ordentlig initialiseret.\n"
 
 #: lib/setup.c:2259
 #, c-format
 msgid "Device %s is still in use.\n"
-msgstr "Apparaat %s is nog in gebruik.\n"
+msgstr "Enheden %s er stadig i brug.\n"
 
 #: lib/setup.c:2268
 #, c-format
 msgid "Invalid device %s.\n"
-msgstr "Ongeldig apparaat %s.\n"
+msgstr "Ugyldig enhed %s.\n"
 
 #: lib/setup.c:2289
 msgid "Function not available in FIPS mode.\n"
-msgstr "Functie niet beschikbaar in FIPS-modus.\n"
+msgstr "Funkton er ikke tilgængelig i FIPS-tilstand.\n"
 
 #: lib/setup.c:2295
 msgid "Volume key buffer too small.\n"
-msgstr "Sleutelbuffer van het opslagmedium is te klein.\n"
+msgstr "Diskenhedsnøglebuffer er for lille.\n"
 
 #: lib/setup.c:2303
 msgid "Cannot retrieve volume key for plain device.\n"
-msgstr "Kan sleutel tot het opslagmedium voor normaal apparaat niet ophalen.\n"
+msgstr "Kan ikke indhente diskenhedsnøgle for ren enhed.\n"
 
 #: lib/setup.c:2310
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
-msgstr "Deze operatie wordt niet ondersteund voor versleutelapparaat %s.\n"
+msgstr "Denne operation er ikke understøttet for %s crypt-enhed.\n"
 
 #: lib/setup.c:2506
 msgid "Dump operation is not supported for this device type.\n"
-msgstr "Dump-operatie wordt niet ondersteund voor dit apparaatstype.\n"
+msgstr "Dump-operation er ikke understøttet for denne enhedstype.\n"
 
 #: lib/utils.c:244
 msgid "Cannot get process priority.\n"
-msgstr "Kan geen procesprioriteit verkrijgen.\n"
+msgstr "Kan ikke indhente procesprioritet.\n"
 
 #: lib/utils.c:258
 msgid "Cannot unlock memory.\n"
-msgstr "Kan geheugen niet ontgrendelen.\n"
+msgstr "Kan ikke låse hukommelsen op.\n"
 
 #: lib/utils_crypt.c:241 lib/utils_crypt.c:254 lib/utils_crypt.c:401
 #: lib/utils_crypt.c:416
 msgid "Out of memory while reading passphrase.\n"
-msgstr "Geen geheugen meer beschikbaar bij lezen van wachtwoord.\n"
+msgstr "Ikke nok hukommelse under læsning af adgangsfrase.\n"
 
 #: lib/utils_crypt.c:246 lib/utils_crypt.c:261
 msgid "Error reading passphrase from terminal.\n"
-msgstr "Fout bij het lezen van het wachtwoord uit de terminal.\n"
+msgstr "Kunne ikke læse adgangsfrase fra terminal.\n"
 
 #: lib/utils_crypt.c:259
 msgid "Verify passphrase: "
-msgstr "Voer wachtwoord nogmaals in: "
+msgstr "Verificer adgangsfrase: "
 
 #: lib/utils_crypt.c:266
 msgid "Passphrases do not match.\n"
-msgstr "Wachtwoorden komen niet overeen.\n"
+msgstr "Adgangsfraser matcher ikke.\n"
 
 #: lib/utils_crypt.c:350
 msgid "Cannot use offset with terminal input.\n"
-msgstr "Kan de gegevenspositie niet via terminalinvoer gebruiken.\n"
+msgstr "Kan ikke bruge forskydning med terminalinddata.\n"
 
 #: lib/utils_crypt.c:369 lib/tcrypt/tcrypt.c:467
 msgid "Failed to open key file.\n"
-msgstr "Openen van sleutelbestand is mislukt.\n"
+msgstr "Kunne ikke åbne nøglefil.\n"
 
 #: lib/utils_crypt.c:378
 msgid "Failed to stat key file.\n"
-msgstr "Kan status van sleutelbestand niet opvragen.\n"
+msgstr "Kunne ikke køre stat på nøglefil.\n"
 
 #: lib/utils_crypt.c:386 lib/utils_crypt.c:407
 msgid "Cannot seek to requested keyfile offset.\n"
-msgstr "Kan niet zoeken tot aan het aangevraagde sleutelbestand.\n"
+msgstr "Kan ikke søge til anmodte nøglefilsforskydning.\n"
 
 #: lib/utils_crypt.c:424
 msgid "Error reading passphrase.\n"
-msgstr "Fout bij lezen van wachtwoord.\n"
+msgstr "Der opstod en fejl under læsning af adgangsfrase.\n"
 
 #: lib/utils_crypt.c:442
 msgid "Maximum keyfile size exceeded.\n"
-msgstr "Maximum sleutelbestandsgrootte overschreden.\n"
+msgstr "Nøglefilsstørrelsen er over maksimum.\n"
 
 #: lib/utils_crypt.c:447
 msgid "Cannot read requested amount of data.\n"
-msgstr "Kan aangevraagde hoeveelheid data niet lezen.\n"
+msgstr "Kan ikke læse den anmodte datamængde.\n"
 
 #: lib/utils_device.c:136 lib/luks1/keyencryption.c:90
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
-msgstr "Apparaat %s bestaat niet of toegang is geweigerd.\n"
+msgstr "Enheden %s findes ikke eller adgang nægtet.\n"
 
 #: lib/utils_device.c:430
 msgid "Cannot use a loopback device, running as non-root user.\n"
-msgstr "Kan geen loopback-apparaat gebruiken, uitvoering als non-root gebruiker.\n"
+msgstr "Kan ikke bruge en loopback-enhed, kører som ikke-root bruger.\n"
 
 #: lib/utils_device.c:433
 msgid "Cannot find a free loopback device.\n"
-msgstr "Kan geen vrij loopback-apparaat vinden.\n"
+msgstr "Kan ikke finde en fri loopback-enhed.\n"
 
 #: lib/utils_device.c:440
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
-msgstr "Vastmaken loopback-apparaat gefaald (loop-apparaat met autoclear-vlag is vereist).\n"
+msgstr "Vedhæftelse af loopback-enhed mislykkedes (loop-enhed med flaget autoclear er krævet).\n"
 
 #: lib/utils_device.c:484
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
-msgstr "Kan apparaat %s niet gebruiken; het is nog actief (reeds toegewezen of aangekoppeld).\n"
+msgstr "Kan ikke bruge enheden %s som er i brug (allerede kortlagt eller monteret).\n"
 
 #: lib/utils_device.c:488
 #, c-format
 msgid "Cannot get info about device %s.\n"
-msgstr "Kan geen informatie verkrijgen over apparaat %s.\n"
+msgstr "Kan ikke indhente information om enheden %s.\n"
 
 #: lib/utils_device.c:494
 #, c-format
 msgid "Requested offset is beyond real size of device %s.\n"
-msgstr "De aangevraagde gegevenspositie valt buiten de werkelijke grootte van apparaat %s.\n"
+msgstr "Anmodt forskydning er mere end den reelle størrelse for enheden %s.\n"
 
 #: lib/utils_device.c:502
 #, c-format
 msgid "Device %s has zero size.\n"
-msgstr "Apparaat %s heeft grootte nul.\n"
+msgstr "Enheden %s har nul størrelse.\n"
 
 #: lib/utils_device.c:513
 #, c-format
 msgid "Device %s is too small.\n"
-msgstr "Apparaat %s is te klein.\n"
+msgstr "Enheden %s er for lille.\n"
 
 #: lib/luks1/keyencryption.c:37
 #, c-format
@@ -415,91 +417,91 @@ msgid ""
 "Failed to setup dm-crypt key mapping for device %s.\n"
 "Check that kernel supports %s cipher (check syslog for more info).\n"
 msgstr ""
-"Kan dm-crypt sleuteltoewijzing niet instellen voor apparaat %s.\n"
-"Kijk na of de kernel versleutelalgoritme %s ondersteunt (bekijk syslog voor meer informatie).\n"
+"Kunne ikke opsætte dm-crypt nøgleoversættelse for enhden %s.\n"
+"Kontroller at kernen understøtter krypteringsalgoritmen %s (kontroller syslog for yderligere information).\n"
 
 #: lib/luks1/keyencryption.c:42
 msgid "Key size in XTS mode must be 256 or 512 bits.\n"
-msgstr "In XTS-modus moet de sleutelgrootte 256 of 512 bits zijn.\n"
+msgstr "Nøglestørrelse i XTS-tilstand skal være 256- eller 512-bit.\n"
 
 #: lib/luks1/keyencryption.c:96 lib/luks1/keymanage.c:296
 #: lib/luks1/keymanage.c:572 lib/luks1/keymanage.c:1017
 #, c-format
 msgid "Cannot write to device %s, permission denied.\n"
-msgstr "Kan apparaat %s niet beschrijven: toestemming geweigerd.\n"
+msgstr "Kan ikke skrive til enheden %s, tilladelse nægtet.\n"
 
 #: lib/luks1/keyencryption.c:111
 msgid "Failed to open temporary keystore device.\n"
-msgstr "Openen van het tijdelijke sleutelopslagapparaat is mislukt.\n"
+msgstr "Kunne ikke åbne midlertidig nøglelagerenhed.\n"
 
 #: lib/luks1/keyencryption.c:118
 msgid "Failed to access temporary keystore device.\n"
-msgstr "Kan geen toegang verkrijgen tot tijdelijk sleutelopslagapparaat.\n"
+msgstr "Kunne ikke tilgå midlertidig nøglelagerenhed.\n"
 
 #: lib/luks1/keyencryption.c:191
 msgid "IO error while encrypting keyslot.\n"
-msgstr "Invoer/uitvoerfout tijdens het versleutelen van de sleutelplaats.\n"
+msgstr "IO-fejl under kryptering af nøgleplads.\n"
 
 #: lib/luks1/keyencryption.c:256
 msgid "IO error while decrypting keyslot.\n"
-msgstr "Invoer/uitvoerfout tijdens het ontsleutelen van de sleutelplaats.\n"
+msgstr "IO-fejl under dekryptering af nøgleplads.\n"
 
 #: lib/luks1/keymanage.c:90
 #, c-format
 msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
-msgstr "Apparaat %s is te klein. (LUKS vereist minstens %<PRIu64> bytes.)\n"
+msgstr "Enheden %s er for lille. (LUKS kræver mindst %<PRIu64> byte.)\n"
 
 #: lib/luks1/keymanage.c:180 lib/luks1/keymanage.c:418
 #: src/cryptsetup_reencrypt.c:1110
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
-msgstr "Apparaat %s is geen geldig LUKS-apparaat.\n"
+msgstr "Enheden %s er ikke en gyldig LUKS-enhed.\n"
 
 #: lib/luks1/keymanage.c:198
 #, c-format
 msgid "Requested header backup file %s already exists.\n"
-msgstr "Aangevraagd reservekopiebestand %s van koptekst bestaat reeds.\n"
+msgstr "Den anmodte sikkerhedskopifil %s for teksthoveder findes allerede.\n"
 
 #: lib/luks1/keymanage.c:200
 #, c-format
 msgid "Cannot create header backup file %s.\n"
-msgstr "Kan reservekopiebestand %s van koptekst niet aanmaken.\n"
+msgstr "Kan ikke oprette sikkerhedskopifilen %s for teksthoveder.\n"
 
 #: lib/luks1/keymanage.c:205
 #, c-format
 msgid "Cannot write header backup file %s.\n"
-msgstr "Kan reservekopiebestand %s van koptekst niet schrijven.\n"
+msgstr "Kan ikke skrive sikkerhedskopifilen %s for teksthoveder.\n"
 
 #: lib/luks1/keymanage.c:239
 msgid "Backup file doesn't contain valid LUKS header.\n"
-msgstr "Reservekopiebestand bevat geen geldige LUKS-koptekst.\n"
+msgstr "Sikkerhedskopifilen indeholder ikke gyldige LUKS-teksthoveder.\n"
 
 #: lib/luks1/keymanage.c:252 lib/luks1/keymanage.c:496
 #, c-format
 msgid "Cannot open header backup file %s.\n"
-msgstr "Kan reservekopiebestand %s van koptekst niet openen.\n"
+msgstr "Kan ikke åbne sikkerhedskopifilen %s for teksthoveder.\n"
 
 #: lib/luks1/keymanage.c:258
 #, c-format
 msgid "Cannot read header backup file %s.\n"
-msgstr "Kan reservekopiebestand %s van koptekst niet lezen.\n"
+msgstr "Kan ikke læse sikkerhedskopifilen %s for teksthoveder.\n"
 
 #: lib/luks1/keymanage.c:269
 msgid "Data offset or key size differs on device and backup, restore failed.\n"
-msgstr "Verschillende gegevenspositie of sleutelgrootte in apparaat en reservekopie; herstelling is mislukt.\n"
+msgstr "Dataforskydning eller nøglestørrelse er forskellige på enhed eller sikkerhedskopi, gendannelse mislykkedes.\n"
 
 #: lib/luks1/keymanage.c:277
 #, c-format
 msgid "Device %s %s%s"
-msgstr "Apparaat %s %s%s"
+msgstr "Enheden %s %s%s"
 
 #: lib/luks1/keymanage.c:278
 msgid "does not contain LUKS header. Replacing header can destroy data on that device."
-msgstr "bevat geen LUKS-koptekst. Het vervangen van de koptekst kan gegevens op het apparaat vernietigen."
+msgstr "indeholder ikke LUKS-teksthoveder. Erstatning af teksthoved kan ødelægge data på den enhed."
 
 #: lib/luks1/keymanage.c:279
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
-msgstr "bevat reeds een LUKS-koptekst. Het vervangen van de koptekst zal bestaande sleutelplaatsen vernietigen."
+msgstr "indeholder allerede LUKS-teksthoveder. Erstatning af teksthoveder vil ødelægge eksisterende nøglepladser."
 
 #: lib/luks1/keymanage.c:280
 msgid ""
@@ -507,7 +509,7 @@ msgid ""
 "WARNING: real device header has different UUID than backup!"
 msgstr ""
 "\n"
-"WAARSCHUWING: originele apparaatkoptekst heeft een ander UUID dan de reservekopie!"
+"ADVARSEL: reel enhedsteksthoved har en anden UUID end sikkerhedskopien!"
 
 #: lib/luks1/keymanage.c:299 lib/luks1/keymanage.c:535
 #: lib/luks1/keymanage.c:575 lib/tcrypt/tcrypt.c:624 lib/verity/verity.c:82
@@ -515,296 +517,296 @@ msgstr ""
 #: lib/verity/verity_hash.c:303 lib/verity/verity_hash.c:323
 #, c-format
 msgid "Cannot open device %s.\n"
-msgstr "Kan apparaat %s niet openen.\n"
+msgstr "Kan ikke åbne enheden %s.\n"
 
 #: lib/luks1/keymanage.c:329
 msgid "Non standard key size, manual repair required.\n"
-msgstr "Niet-standaard sleutelgrootte, handmatige herstelling is vereist.\n"
+msgstr "Nøglestørrelsen følger ikke standarden, en manuel reparation er krævet.\n"
 
 #: lib/luks1/keymanage.c:334
 msgid "Non standard keyslots alignment, manual repair required.\n"
-msgstr "Niet-standaard sleutelplaatsuitlijning, handmatige herstelling is vereist.\n"
+msgstr "Nøglepladsopstillingen følger ikke standarden, en manuel reparation er krævet.\n"
 
 #: lib/luks1/keymanage.c:340
 msgid "Repairing keyslots.\n"
-msgstr "Sleutelplaatsen worden hersteld.\n"
+msgstr "Reparerer nøglepladser.\n"
 
 #: lib/luks1/keymanage.c:351
 msgid "Repair failed."
-msgstr "Herstelling is mislukt."
+msgstr "Reparation mislykkedes."
 
 #: lib/luks1/keymanage.c:363
 #, c-format
 msgid "Keyslot %i: offset repaired (%u -> %u).\n"
-msgstr "Sleutelplaats %i: gegevenspositie hersteld (%u -> %u).\n"
+msgstr "Nøgleplads %i: forskydning repareret (%u -> %u).\n"
 
 #: lib/luks1/keymanage.c:371
 #, c-format
 msgid "Keyslot %i: stripes repaired (%u -> %u).\n"
-msgstr "Sleutelplaats %i: fragmenten hersteld (%u -> %u).\n"
+msgstr "Nøgleplads %i: striber (»stripes«) repareret (%u -> %u).\n"
 
 #: lib/luks1/keymanage.c:380
 #, c-format
 msgid "Keyslot %i: bogus partition signature.\n"
-msgstr "Sleutelplaats %i: valse partitiehandtekening.\n"
+msgstr "Nøgleplads %i: falsk partitionssignatur.\n"
 
 #: lib/luks1/keymanage.c:385
 #, c-format
 msgid "Keyslot %i: salt wiped.\n"
-msgstr "Sleutelplaats %i: salt uitgewist.\n"
+msgstr "Nøgleplads %i: salt ryddet.\n"
 
 #: lib/luks1/keymanage.c:396
 msgid "Writing LUKS header to disk.\n"
-msgstr "LUKS-koptekst wordt naar schijf geschreven.\n"
+msgstr "Skriver LUKS-teksthovedet til disken.\n"
 
 #: lib/luks1/keymanage.c:421
 #, c-format
 msgid "Unsupported LUKS version %d.\n"
-msgstr "Niet-ondersteunde LUKS-versie %d.\n"
+msgstr "LUKS-version %d er ikke understøttet.\n"
 
 #: lib/luks1/keymanage.c:427 lib/luks1/keymanage.c:661
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
-msgstr "Aangevraagde LUKS-hash %s wordt niet ondersteund.\n"
+msgstr "Den anmodte LUKS-hash %s er ikke understøttet.\n"
 
 #: lib/luks1/keymanage.c:442
 #, c-format
 msgid "LUKS keyslot %u is invalid.\n"
-msgstr "LUKS-sleutelplaats %u is ongeldig.\n"
+msgstr "LUKS-nøgleplads %u er ugyldig.\n"
 
 #: lib/luks1/keymanage.c:456 src/cryptsetup.c:668
 msgid "No known problems detected for LUKS header.\n"
-msgstr "Geen gekende problemen gevonden bij LUKS-koptekst.\n"
+msgstr "Ingen kendte problemer detekteret for LUKS-teksthoved.\n"
 
 #: lib/luks1/keymanage.c:596
 #, c-format
 msgid "Error during update of LUKS header on device %s.\n"
-msgstr "Fout bij het bijwerken van LUKS-koptekst op apparaat %s.\n"
+msgstr "Fejl under opdatering af LUKS-teksthoved på enhed %s.\n"
 
 #: lib/luks1/keymanage.c:603
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s.\n"
-msgstr "Fout bij het herlezen van LUKS-koptekst na bijwerken van apparaat %s.\n"
+msgstr "Fejl under genlæsning af LUKS-teksthoved efter opdatering på enhed %s.\n"
 
 #: lib/luks1/keymanage.c:654
 #, c-format
 msgid "Data offset for detached LUKS header must be either 0 or higher than header size (%d sectors).\n"
-msgstr "De datagegevenspositie voor een aparte LUKS-koptekst moet of 0 zijn, of hoger liggen dan de koptekstgrootte (%d sectoren).\n"
+msgstr "Dataforskydning for frakoblet LUKS-teksthoved skal være enten 0 eller højere end teksthovedstørrelse (%d sektorer).\n"
 
 #: lib/luks1/keymanage.c:666 lib/luks1/keymanage.c:757
 msgid "Wrong LUKS UUID format provided.\n"
-msgstr "Verkeerd LUKS UUID-formaat verschaft.\n"
+msgstr "Forkert LUKS UUID-format anført.\n"
 
 #: lib/luks1/keymanage.c:695
 msgid "Cannot create LUKS header: reading random salt failed.\n"
-msgstr "Kan LUKS-koptekst niet aanmaken: lezen van random salt is mislukt.\n"
+msgstr "Kan ikke oprette LUKS-teksthoved: læsning af vilkårlig salt mislykkedes.\n"
 
 #: lib/luks1/keymanage.c:702 lib/luks1/keymanage.c:798
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
-msgstr "Niet-compatibele PBKDF2-opties (met hash-algoritme %s in gebruik).\n"
+msgstr "Ikke kompatible PBKDF2-tilvalg (der bruger hash-algoritme %s).\n"
 
 #: lib/luks1/keymanage.c:717
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
-msgstr "Kan LUKS-koptekst niet aanmaken: koptekst-extract is mislukt (met %s-hash).\n"
+msgstr "Kan ikke oprette LUKS-teksthoved: Teksthovedsammendrag mislykkedes (bruger hash %s).\n"
 
 #: lib/luks1/keymanage.c:782
 #, c-format
 msgid "Key slot %d active, purge first.\n"
-msgstr "Sleutelplaats %d is actief; ruim eerst op.\n"
+msgstr "Nøgleplads %d aktiv, nulstil (purge) den først.\n"
 
 #: lib/luks1/keymanage.c:788
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
-msgstr "Inhoud van sleutelplaats %d bevat te weinig fragmenten. Koptekstmanipulatie?\n"
+msgstr "Nøgleplads %d-materiale inkluderer for mange få striber (»stribes«). Teksthovedmanipulering?\n"
 
 #: lib/luks1/keymanage.c:950
 #, c-format
 msgid "Key slot %d unlocked.\n"
-msgstr "Sleutelplaats %d is ontgrendeld.\n"
+msgstr "Nøgleplads %d låst op.\n"
 
 #: lib/luks1/keymanage.c:985 src/cryptsetup.c:858
 #: src/cryptsetup_reencrypt.c:999 src/cryptsetup_reencrypt.c:1036
 msgid "No key available with this passphrase.\n"
-msgstr "Geen sleutel beschikbaar met dit wachtwoord.\n"
+msgstr "Ingen nøgle tilgængelig med denne adgangsfrase.\n"
 
 #: lib/luks1/keymanage.c:1003
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
-msgstr "Sleutelplaats %d is ongeldig, selecteer een sleutelplaats tussen 0 en %d.\n"
+msgstr "Nøgleplads %d er ugyldig, vælg nøgleplads mellem 0 og %d.\n"
 
 #: lib/luks1/keymanage.c:1021
 #, c-format
 msgid "Cannot wipe device %s.\n"
-msgstr "Kan apparaat %s niet wissen.\n"
+msgstr "Kan ikke rydde enheden %s.\n"
 
 #: lib/loopaes/loopaes.c:146
 msgid "Detected not yet supported GPG encrypted keyfile.\n"
-msgstr "Nog niet ondersteund GPG-versleuteld sleutelbestand gevonden.\n"
+msgstr "Detekteret endnu ikke understøttet GPG-krypteret nøglefil.\n"
 
 #: lib/loopaes/loopaes.c:147
 msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
-msgstr "Gebruik gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "Brug venligst gpg --decrypt <NØGLEFIL> | cryptsetup --keyfile=- ...\n"
 
 #: lib/loopaes/loopaes.c:168 lib/loopaes/loopaes.c:188
 msgid "Incompatible loop-AES keyfile detected.\n"
-msgstr "Onverenigbaar loop-AES-sleutelbestand gevonden.\n"
+msgstr "Ikke kompatibel loop-AES-nøglefil detekteret.\n"
 
 #: lib/loopaes/loopaes.c:244
 msgid "Kernel doesn't support loop-AES compatible mapping.\n"
-msgstr "Toewijzingen compatibel met loop-AES worden niet ondersteund door de kernel.\n"
+msgstr "Kerne understøtter ikke loop-AES-kompatibel oversættelse.\n"
 
 #: lib/tcrypt/tcrypt.c:475
 #, c-format
 msgid "Error reading keyfile %s.\n"
-msgstr "Fout bij het lezen van sleutelbestand %s.\n"
+msgstr "Fejl under læsning af nøglefilen %s.\n"
 
 #: lib/tcrypt/tcrypt.c:513
 #, c-format
 msgid "Maximum TCRYPT passphrase length (%d) exceeded.\n"
-msgstr "Maximum TCRYPT-wachtwoorlengte (%d) overschreden.\n"
+msgstr "Den maksimale længde for TCRYPT-adgangsfrasen (%d) er overskredet.\n"
 
 #: lib/tcrypt/tcrypt.c:543
 #, c-format
 msgid "PBKDF2 hash algorithm %s not available, skipping.\n"
-msgstr "PBKDF2 hash-algoritme %s is niet beschikbaar, wordt overgeslaan.\n"
+msgstr "PBKDF2-hashalgoritmen %s er ikke tilgængelig, udelader.\n"
 
 #: lib/tcrypt/tcrypt.c:561 src/cryptsetup.c:621
 msgid "Required kernel crypto interface not available.\n"
-msgstr "Benodigde kernel cryptografie-interface is niet beschikbaar.\n"
+msgstr "Krævet kernegrænseflade for crypto er ikke tilgængelig.\n"
 
 #: lib/tcrypt/tcrypt.c:563 src/cryptsetup.c:623
 msgid "Ensure you have algif_skcipher kernel module loaded.\n"
-msgstr "Kijk na of kernelmodule algif_skcipher geladen is.\n"
+msgstr "Sikr dig at du har kernemodulet algif_skcipher indlæst.\n"
 
 #: lib/tcrypt/tcrypt.c:707
 #, c-format
 msgid "Activation is not supported for %d sector size.\n"
-msgstr "Activatie wordt niet ondersteund voor %d sectorgrootte.\n"
+msgstr "Aktivering er endnu ikke understøttet for %d sektorstørrelse.\n"
 
 #: lib/tcrypt/tcrypt.c:713
 msgid "Kernel doesn't support activation for this TCRYPT legacy mode.\n"
-msgstr "Activatie voor deze TCRYPT-legacymodus wordt niet ondersteund door de kernel.\n"
+msgstr "Kerne understøtter ikke aktivering for denne TCRYPT legacy-tilstand.\n"
 
 #: lib/tcrypt/tcrypt.c:744
 #, c-format
 msgid "Activating TCRYPT system encryption for partition %s.\n"
-msgstr "TCRYPT-systeemversleuteling voor partitie %s wordt geactiveerd.\n"
+msgstr "Aktivering af TCRYPT-systemkryptering for partition %s.\n"
 
 #: lib/tcrypt/tcrypt.c:806
 msgid "Kernel doesn't support TCRYPT compatible mapping.\n"
-msgstr "Toewijzingen compatibel met TCRYPT worden niet ondersteund door de kernel.\n"
+msgstr "Kerne undersøtter ikke TCRYPT-kompatibel oversættelse.\n"
 
 #: lib/tcrypt/tcrypt.c:1020
 msgid "This function is not supported without TCRYPT header load."
-msgstr "Deze functie wordt niet ondersteund zonder TCRYPT-koptekst."
+msgstr "Denne funktion er ikke understøttet uden TCRYPT-teksthovedindlæsning."
 
 #: lib/verity/verity.c:70 lib/verity/verity.c:172
 #, c-format
 msgid "Verity device %s doesn't use on-disk header.\n"
-msgstr "VERITY-apparaat %s gebruikt geen on-disk koptekst.\n"
+msgstr "Verity-enheden %s bruger ikke on-disk-teksthoved.\n"
 
 #: lib/verity/verity.c:94
 #, c-format
 msgid "Device %s is not a valid VERITY device.\n"
-msgstr "Apparaat %s is geen geldig VERITY-apparaat.\n"
+msgstr "Enheden %s er ikke en gyldig VERITY-enhed.\n"
 
 #: lib/verity/verity.c:101
 #, c-format
 msgid "Unsupported VERITY version %d.\n"
-msgstr "Niet-ondersteunde VERITY-versie %d.\n"
+msgstr "Ikke understøttet VERITY-version %d.\n"
 
 #: lib/verity/verity.c:131
 msgid "VERITY header corrupted.\n"
-msgstr "VERITY-koptekst beschadigd.\n"
+msgstr "VERITY-teksthovedet er ødelagt.\n"
 
 #: lib/verity/verity.c:166
 #, c-format
 msgid "Wrong VERITY UUID format provided on device %s.\n"
-msgstr "Verkeerd VERITY UUID-formaat verschaft op apparaat %s.\n"
+msgstr "Forkert VERITY UUID-format indeholdt på enheden %s.\n"
 
 #: lib/verity/verity.c:196
 #, c-format
 msgid "Error during update of verity header on device %s.\n"
-msgstr "Fout bij het bijwerken van VERITY-koptekst op apparaat %s.\n"
+msgstr "Fejl under opdatering af verity-teksthoved på enheden %s.\n"
 
 #: lib/verity/verity.c:276
 msgid "Kernel doesn't support dm-verity mapping.\n"
-msgstr "dm-verity toewijzingen niet ondersteund door kernel.\n"
+msgstr "Kerne understøtter ikke dm-verity-oversættelse.\n"
 
 #: lib/verity/verity.c:287
 msgid "Verity device detected corruption after activation.\n"
-msgstr "VERITY-apparaat ontdekte beschadiging na activatie.\n"
+msgstr "Verity-enheden detekterede korruption efter aktivering.\n"
 
 #: lib/verity/verity_hash.c:59
 #, c-format
 msgid "Spare area is not zeroed at position %<PRIu64>.\n"
-msgstr "Reservegebied is niet ingesteld op positie %<PRIu64>.\n"
+msgstr "Ledigt område nulstilles ikke (»not zeroed«) på position %<PRIu64>.\n"
 
 #: lib/verity/verity_hash.c:121 lib/verity/verity_hash.c:249
 #: lib/verity/verity_hash.c:277 lib/verity/verity_hash.c:284
 msgid "Device offset overflow.\n"
-msgstr "Overloop van apparaatsgegevenspositie.\n"
+msgstr "Forskydningsoverløb for enhed.\n"
 
 #: lib/verity/verity_hash.c:161
 #, c-format
 msgid "Verification failed at position %<PRIu64>.\n"
-msgstr "Controle gefaald op positie %<PRIu64>.\n"
+msgstr "Verificering mislykkedes på position %<PRIu64>.\n"
 
 #: lib/verity/verity_hash.c:235
 msgid "Invalid size parameters for verity device.\n"
-msgstr "Ongeldige grootteparameters voor VERITY-apparaat.\n"
+msgstr "Ugyldig størrelse for parametre for verity-enhed.\n"
 
 #: lib/verity/verity_hash.c:266
 msgid "Too many tree levels for verity volume.\n"
-msgstr "Te veel niveau's in de boomstructuur voor een VERITY-volume.\n"
+msgstr "For mange træniveauer for verity-diskenhed.\n"
 
 #: lib/verity/verity_hash.c:354
 msgid "Verification of data area failed.\n"
-msgstr "Controle van gegevensgebied gefaald.\n"
+msgstr "Verifikation af dataområde mislykkedes.\n"
 
 #: lib/verity/verity_hash.c:359
 msgid "Verification of root hash failed.\n"
-msgstr "Controle van root-hash gefaald.\n"
+msgstr "Verifikation af root-hash mislykkedes.\n"
 
 #: lib/verity/verity_hash.c:365
 msgid "Input/output error while creating hash area.\n"
-msgstr "Invoer/uitvoerfout bij het aanmaken van hash-gebied.\n"
+msgstr "Inddata/uddata-fejl under oprettelse af hash-område.\n"
 
 #: lib/verity/verity_hash.c:367
 msgid "Creation of hash area failed.\n"
-msgstr "Creatie hash-gebied gefaald.\n"
+msgstr "Oprettelse af hash-område mislykkedes.\n"
 
 #: lib/verity/verity_hash.c:414
 #, c-format
 msgid "WARNING: Kernel cannot activate device if data block size exceeds page size (%u).\n"
-msgstr "WAARSCHUWING: Kernel kan apparaat niet activeren als de gegevensblokgrootte groter is dan de paginagrootte (%u).\n"
+msgstr "ADVARSEL: Kerne kan ikke aktivere enhed hvis dataenes blokstørrelse er større end sidestørrelsen (%u).\n"
 
 #: src/cryptsetup.c:91
 msgid "Can't do passphrase verification on non-tty inputs.\n"
-msgstr "Kan geen wachtwoordverificatie uitvoeren op invoer van buiten de terminal.\n"
+msgstr "Kan ikke udføre verificering af adgangsfrase på ikke-tty-inddata.\n"
 
 #: src/cryptsetup.c:133 src/cryptsetup.c:564 src/cryptsetup.c:711
 #: src/cryptsetup_reencrypt.c:502 src/cryptsetup_reencrypt.c:556
 msgid "No known cipher specification pattern detected.\n"
-msgstr "Geen bekend specificatiepatroon voor het sleutelalgoritme gevonden.\n"
+msgstr "Ikke kendt specifikationsmønster for krypteringsalgoritme detekteret.\n"
 
 #: src/cryptsetup.c:144
 msgid "WARNING: The --hash parameter is being ignored in plain mode with keyfile specified.\n"
-msgstr "WAARSCHUWING: In normale modus met opgegeven sleutelbestand wordt de --hash-parameter genegeerd.\n"
+msgstr "ADVARSEL: Parameteren --hash bliver ignoreret i ren (plain) tilstand med nøglefil specificeret.\n"
 
 #: src/cryptsetup.c:152
 msgid "WARNING: The --keyfile-size option is being ignored, the read size is the same as the encryption key size.\n"
-msgstr "WAARSCHUWING: De optie --keyfile-size wordt genegeerd, de leesgrootte is gelijk aan de encryptiesleutelgrootte.\n"
+msgstr "ADVARSEL: Tilvalget --keyfile-size bliver ignoreret, læsestørrelsen er den samme som størrelsen for krypteringsnøglen.\n"
 
 #: src/cryptsetup.c:218
 msgid "Option --key-file is required.\n"
-msgstr "Optie --key-file is vereist.\n"
+msgstr "Tilvalget --key-file er krævet.\n"
 
 #: src/cryptsetup.c:267
 msgid "No device header detected with this passphrase.\n"
-msgstr "Geen apparaatkoptekst beschikbaar met dit wachtwoord.\n"
+msgstr "Intet enhedsteksthoved detekteret med denne adgangsfrase.\n"
 
 #: src/cryptsetup.c:327 src/cryptsetup.c:1140
 msgid ""
@@ -812,114 +814,114 @@ msgid ""
 "which allows access to encrypted partition without passphrase.\n"
 "This dump should be always stored encrypted on safe place."
 msgstr ""
-"Dump van koptekst met sleutel tot het opslagmedium bevat gevoelige informatie\n"
-"die zonder wachtwoord toegang verschaft tot versleutelde partities.\n"
-"De dump zou steeds versleuteld en op een veilige plaats bewaard moeten worden."
+"Teksthoveddump med diskenhedsnøgle er sensitiv information\n"
+"som giver adgang til krypteret partition uden adgangsfrase.\n"
+"Dette dump bør altid lagres krypteret et sikkert sted."
 
 #: src/cryptsetup.c:517
 msgid "Result of benchmark is not reliable.\n"
-msgstr "Benchmarkresultaat is niet betrouwbaar.\n"
+msgstr "Sammenligningens resultat er ikke troværdigt.\n"
 
 #: src/cryptsetup.c:558
 msgid "# Tests are approximate using memory only (no storage IO).\n"
-msgstr "# Tests zijn bij benadering met enkel geheugen in gebruik (geen opslag-IO).\n"
+msgstr "# Test bruger kun hukommelse omtrentlig (ingen lager-IO).\n"
 
 #: src/cryptsetup.c:583 src/cryptsetup.c:605
 msgid "#  Algorithm | Key |  Encryption |  Decryption\n"
-msgstr "#  Algoritme | Sleutel |  Versleuteling |  Ontsleuteling\n"
+msgstr "# Algoritme | Nøgle | Kryptering | Dekryptering\n"
 
 #: src/cryptsetup.c:587
 #, c-format
 msgid "Cipher %s is not available.\n"
-msgstr "Versleutelalgoritme %s is niet beschikbaar.\n"
+msgstr "Krypteringsalgoritmen %s er ikke tilgængelig.\n"
 
 #: src/cryptsetup.c:614
 msgid "N/A"
-msgstr "N/A"
+msgstr "-"
 
 #: src/cryptsetup.c:639
 #, c-format
 msgid "Cannot read keyfile %s.\n"
-msgstr "Kan sleutelbestand %s niet lezen.\n"
+msgstr "Kan ikke læse nøglefilen %s.\n"
 
 #: src/cryptsetup.c:643
 #, c-format
 msgid "Cannot read %d bytes from keyfile %s.\n"
-msgstr "Kan %d bytes uit sleutelbestand %s niet lezen.\n"
+msgstr "Kan ikke læse %d byte fra nøglefilen %s.\n"
 
 #: src/cryptsetup.c:672
 msgid "Really try to repair LUKS device header?"
-msgstr "Bent u zeker de LUKS-apparaatkoptekst te willen herstellen?"
+msgstr "Skal LUKS-enhedsteksthovedet forsøges repareres?"
 
 #: src/cryptsetup.c:697
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
-msgstr "Dit zal data op %s onherroepelijk overschrijven."
+msgstr "Dette vil uigenkaldeligt overskrive data på %s."
 
 #: src/cryptsetup.c:699
 msgid "memory allocation error in action_luksFormat"
-msgstr "geheugentoewijzingsfout in action_luksFormat"
+msgstr "hukommelsesallokeringsfejl i action_luksFormat"
 
 #: src/cryptsetup.c:717
 #, c-format
 msgid "Cannot use %s as on-disk header.\n"
-msgstr "Kan %s niet als on-diskkoptekst gebruiken.\n"
+msgstr "Kan ikke bruge %s på on-disk-teksthoved.\n"
 
 #: src/cryptsetup.c:784
 msgid "Reduced data offset is allowed only for detached LUKS header.\n"
-msgstr "Een verlaagde datagegevenspositie wordt enkel toegestaan voor een vrijstaande LUKS-koptekst.\n"
+msgstr "Reduceret dataforskydning er kun tilladt for frakoblet LUKS-teksthoved.\n"
 
 #: src/cryptsetup.c:881 src/cryptsetup.c:937
 #, c-format
 msgid "Key slot %d selected for deletion.\n"
-msgstr "Sleutelplaats %d geselecteerd voor verwijdering.\n"
+msgstr "Nøgleplads %d valgt for sletning.\n"
 
 #: src/cryptsetup.c:884
 #, c-format
 msgid "Key %d not active. Can't wipe.\n"
-msgstr "Sleutel %d is niet actief. Kan niet wissen.\n"
+msgstr "Nøglen %d er ikke aktiv. Kan ikke rydde.\n"
 
 #: src/cryptsetup.c:892 src/cryptsetup.c:940
 msgid "This is the last keyslot. Device will become unusable after purging this key."
-msgstr "Dit is de laatste sleutelplaats. Apparaat zal onbruikbaar worden na het verwijderen van deze sleutel."
+msgstr "Dette er den sidste nøgleplads. Enheden vil blive ubrugelig efter fjernelse af denne nøgle."
 
 #: src/cryptsetup.c:893
 msgid "Enter any remaining passphrase: "
-msgstr "Voer enig overblijvend wachtwoord in: "
+msgstr "Indtast en eventuel tilbageværende adgangsfrase: "
 
 #: src/cryptsetup.c:921
 msgid "Enter passphrase to be deleted: "
-msgstr "Voer het te verwijderen wachtwoord in: "
+msgstr "Indtast adgangsfrase som skal slettes: "
 
 #: src/cryptsetup.c:1003 src/cryptsetup_reencrypt.c:1074
 #, c-format
 msgid "Enter any existing passphrase: "
-msgstr "Voer een bestaand wachtwoord in: "
+msgstr "Indtast en eventuel eksisterende adgangsfrase: "
 
 #: src/cryptsetup.c:1052
 msgid "Enter passphrase to be changed: "
-msgstr "Voer het te wijzigen wachtwoord in: "
+msgstr "Indtast adgangsfrase som skal ændres: "
 
 #: src/cryptsetup.c:1066 src/cryptsetup_reencrypt.c:1059
 msgid "Enter new passphrase: "
-msgstr "Voer nieuw wachtwoord in: "
+msgstr "Indtast ny adgangsfrase: "
 
 #: src/cryptsetup.c:1090
 msgid "Only one device argument for isLuks operation is supported.\n"
-msgstr "Voor de isLuks-operatie wordt slechts één apparaatsargument ondersteund.\n"
+msgstr "Kun et enhedsargument for isLuks-operation er understøttet.\n"
 
 #: src/cryptsetup.c:1246 src/cryptsetup.c:1267
 msgid "Option --header-backup-file is required.\n"
-msgstr "Optie --header-backup-file is vereist.\n"
+msgstr "Tilvalget --header-backup-file er krævet.\n"
 
 #: src/cryptsetup.c:1304
 #, c-format
 msgid "Unrecognized metadata device type %s.\n"
-msgstr "Niet-herkende metadata bij apparaatstype %s.\n"
+msgstr "Metadataenhedstypen %s blev ikke genkendt.\n"
 
 #: src/cryptsetup.c:1307
 msgid "Command requires device and mapped name as arguments.\n"
-msgstr "Opdracht vereist apparaat en toewijzingsnaam als argumenten.\n"
+msgstr "Kommandoen kræver enhedsnavn og oversat navn som argumenter.\n"
 
 #: src/cryptsetup.c:1326
 #, c-format
@@ -927,116 +929,116 @@ msgid ""
 "This operation will erase all keyslots on device %s.\n"
 "Device will become unusable after this operation."
 msgstr ""
-"Deze operatie zal alle sleutelplaatsen op apparaat %s wissen.\n"
-"Na deze operatie wordt het apparaat onbruikbaar."
+"Denne operation vil slette alle nøglepladser på enheden %s.\n"
+"Enheden vil blive ubrugelig efter denne operation."
 
 #: src/cryptsetup.c:1360
 msgid "<device> [--type <type>] [<name>]"
-msgstr "<apparaat> [--type <type>] [<naam>]"
+msgstr "<enhed> [--type <type>] [<navn>]"
 
 #: src/cryptsetup.c:1360
 msgid "open device as mapping <name>"
-msgstr "apparaat als toewijzing <naam> openen"
+msgstr "åbn enhed som oversættelse <navn>"
 
 #: src/cryptsetup.c:1361 src/cryptsetup.c:1362 src/cryptsetup.c:1363
 #: src/cryptsetup.c:1364 src/veritysetup.c:311 src/veritysetup.c:312
 msgid "<name>"
-msgstr "<naam>"
+msgstr "<navn>"
 
 #: src/cryptsetup.c:1361
 msgid "close device (remove mapping)"
-msgstr "apparaat sluiten (toewijzingen verwijderen)"
+msgstr "luk enhed (fjern oversættelse)"
 
 #: src/cryptsetup.c:1362
 msgid "resize active device"
-msgstr "actief apparaat vergroten of verkleinen"
+msgstr "ændr størrelse på aktiv enhed"
 
 #: src/cryptsetup.c:1363
 msgid "show device status"
-msgstr "apparaatstatus tonen"
+msgstr "vis enhedsstatus"
 
 #: src/cryptsetup.c:1364
 msgid "benchmark cipher"
-msgstr "versleutelalgoritme benchmarken"
+msgstr "krypteringsalgoritme for sammenligning"
 
 #: src/cryptsetup.c:1365 src/cryptsetup.c:1366 src/cryptsetup.c:1372
 #: src/cryptsetup.c:1373 src/cryptsetup.c:1374 src/cryptsetup.c:1375
 #: src/cryptsetup.c:1376 src/cryptsetup.c:1377 src/cryptsetup.c:1378
 #: src/cryptsetup.c:1379
 msgid "<device>"
-msgstr "<apparaat>"
+msgstr "<enhed>"
 
 #: src/cryptsetup.c:1365
 msgid "try to repair on-disk metadata"
-msgstr "on-disk metadata proberen te herstellen"
+msgstr "prøv at reparere on-disk-metadata"
 
 #: src/cryptsetup.c:1366
 msgid "erase all keyslots (remove encryption key)"
-msgstr "alle sleutelplaatsen wissen (encryptiesleutel verwijderen)"
+msgstr "slet alle nøglepladser (fjern krypteringsnøgle)"
 
 #: src/cryptsetup.c:1367 src/cryptsetup.c:1368
 msgid "<device> [<new key file>]"
-msgstr "<apparaat> [<nieuw sleutelbestand>]"
+msgstr "<enhed> [<ny nøglefil>]"
 
 #: src/cryptsetup.c:1367
 msgid "formats a LUKS device"
-msgstr "een LUKS-apparaat formatteren"
+msgstr "formaterer en LUKS-enhed"
 
 #: src/cryptsetup.c:1368
 msgid "add key to LUKS device"
-msgstr "sleutel aan LUKS-apparaat toevoegen"
+msgstr "tilføj nøgle til LUKS-enhed"
 
 #: src/cryptsetup.c:1369 src/cryptsetup.c:1370
 msgid "<device> [<key file>]"
-msgstr "<apparaat> [<sleutelbestand>]"
+msgstr "<enhed> [<nøglefil>]"
 
 #: src/cryptsetup.c:1369
 msgid "removes supplied key or key file from LUKS device"
-msgstr "verschafte sleutel of sleutelbestand van LUKS-apparaat verwijderen"
+msgstr "fjerner leveret nøgle eller nøglefil fra LUKS-enhed"
 
 #: src/cryptsetup.c:1370
 msgid "changes supplied key or key file of LUKS device"
-msgstr "wijzigt verschafte sleutel of sleutelbestand van LUKS-apparaat"
+msgstr "ændrer leveret nøgle eller nøglefil for LUKS-enhed"
 
 #: src/cryptsetup.c:1371
 msgid "<device> <key slot>"
-msgstr "<apparaat> <sleutelplaats>"
+msgstr "<enhed> <nøgleplads>"
 
 #: src/cryptsetup.c:1371
 msgid "wipes key with number <key slot> from LUKS device"
-msgstr "sleutel met nummer <sleutelplaats> van LUKS-apparaat verwijderen"
+msgstr "rydder nøgle med nummer <nøgleplads> fra LUKS-enhed"
 
 #: src/cryptsetup.c:1372
 msgid "print UUID of LUKS device"
-msgstr "UUID van LUKS-apparaat tonen"
+msgstr "vis UUID for lUKS-enhed"
 
 #: src/cryptsetup.c:1373
 msgid "tests <device> for LUKS partition header"
-msgstr "<apparaat> op een LUKS-partitiekoptekst testen"
+msgstr "tester <enhed> for LUKS-partitionsteksthoved"
 
 #: src/cryptsetup.c:1374
 msgid "dump LUKS partition information"
-msgstr "LUKS-partitie-informatie dumpen"
+msgstr "dump LUKS-partitionsinformation"
 
 #: src/cryptsetup.c:1375
 msgid "dump TCRYPT device information"
-msgstr "TCRYPT-apparaatsinformatie dumpen"
+msgstr "dump TCRYPT-enhedsinformation"
 
 #: src/cryptsetup.c:1376
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
-msgstr "LUKS-apparaat schorsen en sleutel wissen (alle in-/uitvoer wordt bevroren)."
+msgstr "Suspender LUKS-enhed og ryd nøgle (alle IO'er fryses fast)."
 
 #: src/cryptsetup.c:1377
 msgid "Resume suspended LUKS device."
-msgstr "Geschorst LUKS-apparaat hervatten."
+msgstr "Genoptag suspenderet LUKS-enhed."
 
 #: src/cryptsetup.c:1378
 msgid "Backup LUKS device header and keyslots"
-msgstr "Reservekopie van LUKS-apparaatkoptekst en -sleutelplaatsen maken"
+msgstr "Lav sikkerhedskopi af LUKS-enhedsteksthoved og nøglepladser"
 
 #: src/cryptsetup.c:1379
 msgid "Restore LUKS device header and keyslots"
-msgstr "LUKS-apparaatkoptekst en -sleutelplaatsen herstellen"
+msgstr "Gendan LUKS-teksthoved og nøglepladser"
 
 #: src/cryptsetup.c:1396 src/veritysetup.c:328
 msgid ""
@@ -1044,7 +1046,7 @@ msgid ""
 "<action> is one of:\n"
 msgstr ""
 "\n"
-"<actie> is één van:\n"
+"<handling> er en af:\n"
 
 #: src/cryptsetup.c:1402
 msgid ""
@@ -1054,9 +1056,9 @@ msgid ""
 "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"
 msgstr ""
 "\n"
-"U kan ook oude <actie>-syntax aliasen gebruiken:\n"
-"\topen: (plainOpen), luksOpen, loopaesOpen, tcryptOpen aanmaken\n"
-"\tclose: (plainClose), luksClose, loopaesClose, tryptClose verwijderen\n"
+"Du kan også bruge gamle <handling> syntaksaliasser:\n"
+"\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
+"\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"
 
 #: src/cryptsetup.c:1406
 #, c-format
@@ -1068,10 +1070,10 @@ msgid ""
 "<key file> optional key file for the new key for luksAddKey action\n"
 msgstr ""
 "\n"
-"<naam> is het onder %s aan te maken apparaat\n"
-"<apparaat> is het versleutelde apparaat\n"
-"<sleutelplaats> is het nummer van de te wijzigen LUKS-sleutelplaats\n"
-"<sleutelbestand> optioneel sleutelbestand voor de nieuwe sleutel voor de luksAddKey-actie\n"
+"<navn> er enheden at oprette under %s\n"
+"<enhed> er den krypterede enhed\n"
+"<nøgleplads> er LUKS-nøglens pladsnummer, der skal ændres\n"
+"<nøglefil> valgfri nøglefil for den nye nøgle for luksAddKey-handling\n"
 
 #: src/cryptsetup.c:1413
 #, c-format
@@ -1082,9 +1084,9 @@ msgid ""
 "Default PBKDF2 iteration time for LUKS: %d (ms)\n"
 msgstr ""
 "\n"
-"Standaard meegecompileerde sleutel- en wachtwoordparameters:\n"
-"\tMaximum sleutelplaatsgrootte: %dkB, maximum lengte interactief wachtwoord %d (karakters)\n"
-"Standaard PBKDF2-herhalingstijd voor LUKS: %d (ms)\n"
+"Standardindkompileret nøgle og adgangsfraseparametre.\n"
+"\tMaksimal nøglefilsstørrelse: %dkB, Maksimal interaktiv adgangsfraselængde %d (tegn)\n"
+"Standard PBKDF2-iterationstid for LUKS: %d (ms)\n"
 
 #: src/cryptsetup.c:1420
 #, c-format
@@ -1096,75 +1098,75 @@ msgid ""
 "\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
 msgstr ""
 "\n"
-"Standaard meegecompileerde parameters van het apparaatsversleutelingsalgoritme:\n"
-"\tloop-AES: %s, Sleutel: %d bits\n"
-"\tplain: %s, Sleutel: %d bits, Wachtwoordhashing: %s\n"
-"\tLUKS1: %s, Sleutel: %d bits, LUKS-kopteksthashing: %s, RNG: %s\n"
+"Standardindkompileret enhedskrypteringsalgoritmeparametre:\n"
+"\tloop-AES: %s, Nøgle %d bit\n"
+"\tplain: %s, Nøgle: %d bit, Adgangskodehashing: %s\n"
+"\tLUKS1: %s, Nøgle: %d bit, LUKS-teksthovedhashing: %s, RNG: %s\n"
 
 #: src/cryptsetup.c:1437 src/veritysetup.c:460
 #, c-format
 msgid "%s: requires %s as arguments"
-msgstr "%s: vereist %s als argumenten"
+msgstr "%s: kræver %s som argumenter"
 
 #: src/cryptsetup.c:1470 src/veritysetup.c:368 src/cryptsetup_reencrypt.c:1253
 msgid "Show this help message"
-msgstr "Deze hulptekst tonen"
+msgstr "Vis denne hjælpetekst"
 
 #: src/cryptsetup.c:1471 src/veritysetup.c:369 src/cryptsetup_reencrypt.c:1254
 msgid "Display brief usage"
-msgstr "Korte gebruikssamenvatting tonen"
+msgstr "Vis en kort brugsmanual"
 
 #: src/cryptsetup.c:1475 src/veritysetup.c:373 src/cryptsetup_reencrypt.c:1258
 msgid "Help options:"
-msgstr "Hulpopties:"
+msgstr "Hjælpetilvalg:"
 
 #: src/cryptsetup.c:1476 src/veritysetup.c:374 src/cryptsetup_reencrypt.c:1259
 msgid "Print package version"
-msgstr "Pakketversie tonen"
+msgstr "Vis pakkeversion"
 
 #: src/cryptsetup.c:1477 src/veritysetup.c:375 src/cryptsetup_reencrypt.c:1260
 msgid "Shows more detailed error messages"
-msgstr "Gedetailleerdere foutboodschappen tonen"
+msgstr "Viser mere detaljerede fejlbeskeder"
 
 #: src/cryptsetup.c:1478 src/veritysetup.c:376 src/cryptsetup_reencrypt.c:1261
 msgid "Show debug messages"
-msgstr "Debug-boodschappen tonen"
+msgstr "Vis fejlsøgningsbeskeder"
 
 #: src/cryptsetup.c:1479 src/cryptsetup_reencrypt.c:1263
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
-msgstr "Het gebruikte versleutelalgoritme om de schijf te versleutelen (zie /proc/crypto)"
+msgstr "Krypteringsalgoritmen brugt til at kryptere disken (se /proc/crypto)"
 
 #: src/cryptsetup.c:1480 src/cryptsetup_reencrypt.c:1265
 msgid "The hash used to create the encryption key from the passphrase"
-msgstr "De gebruikte hash om de encryptiesleutel uit het wachtwoord aan te maken"
+msgstr "Hashen brugt til at oprette krypteringsnøglen fra adgangsfrasen"
 
 #: src/cryptsetup.c:1481
 msgid "Verifies the passphrase by asking for it twice"
-msgstr "Het wachtwoord controleren door het twee keer te vragen"
+msgstr "Verificerer adgangsfrasen ved at anmode om den to gange"
 
 #: src/cryptsetup.c:1482 src/cryptsetup_reencrypt.c:1267
 msgid "Read the key from a file."
-msgstr "De sleutel uit een bestand lezen."
+msgstr "Læs nøglen fra en fil."
 
 #: src/cryptsetup.c:1483
 msgid "Read the volume (master) key from file."
-msgstr "De (hoofd)sleutel tot het opslagmedium uit een bestand lezen."
+msgstr "Læs diskenhedens (master) nøgle fra fil."
 
 #: src/cryptsetup.c:1484
 msgid "Dump volume (master) key instead of keyslots info."
-msgstr "Dump (hoofd)sleutel tot het opslagmedium in plaats van de sleutelplaatsinformatie."
+msgstr "Dump diskenheds (master) nøgle i stedet for information om nøgleplads."
 
 #: src/cryptsetup.c:1485 src/cryptsetup_reencrypt.c:1264
 msgid "The size of the encryption key"
-msgstr "De grootte van de encryptiesleutel"
+msgstr "Størrelsen for den krypterede nøgle"
 
 #: src/cryptsetup.c:1485 src/cryptsetup_reencrypt.c:1264
 msgid "BITS"
-msgstr "BITS"
+msgstr "BIT"
 
 #: src/cryptsetup.c:1486 src/cryptsetup_reencrypt.c:1278
 msgid "Limits the read from keyfile"
-msgstr "Beperkt de lezing uit sleutelbestand"
+msgstr "Begræns læsningen fra nøglefil"
 
 #: src/cryptsetup.c:1486 src/cryptsetup.c:1487 src/cryptsetup.c:1488
 #: src/cryptsetup.c:1489 src/veritysetup.c:379 src/veritysetup.c:380
@@ -1172,278 +1174,278 @@ msgstr "Beperkt de lezing uit sleutelbestand"
 #: src/cryptsetup_reencrypt.c:1278 src/cryptsetup_reencrypt.c:1279
 #: src/cryptsetup_reencrypt.c:1280
 msgid "bytes"
-msgstr "bytes"
+msgstr "byte"
 
 #: src/cryptsetup.c:1487 src/cryptsetup_reencrypt.c:1277
 msgid "Number of bytes to skip in keyfile"
-msgstr "Aantal bytes over te slaan in sleutelbestand"
+msgstr "Antallet af byte at udelade i nøglefil"
 
 #: src/cryptsetup.c:1488
 msgid "Limits the read from newly added keyfile"
-msgstr "Beperkt de lezing uit een nieuw toegevoegd sleutelbestand"
+msgstr "Begræns læsningnen fra nyligt tilføjet nøglefil"
 
 #: src/cryptsetup.c:1489
 msgid "Number of bytes to skip in newly added keyfile"
-msgstr "Aantal bytes over te slaan in nieuwste toegevoegde sleutelbestand"
+msgstr "Antallet af byte at udelade i senest tilføjet nøglefil"
 
 #: src/cryptsetup.c:1490
 msgid "Slot number for new key (default is first free)"
-msgstr "Plaatsnummer voor nieuwe sleutel (standaard is de eerste open plaats)"
+msgstr "Pladsnummer for ny nøgle (standard er den første ledige)"
 
 #: src/cryptsetup.c:1491
 msgid "The size of the device"
-msgstr "De grootte van het apparaat"
+msgstr "Størrelse på enheden"
 
 #: src/cryptsetup.c:1491 src/cryptsetup.c:1492 src/cryptsetup.c:1493
 #: src/cryptsetup.c:1499
 msgid "SECTORS"
-msgstr "SECTOREN"
+msgstr "SEKTORER"
 
 #: src/cryptsetup.c:1492
 msgid "The start offset in the backend device"
-msgstr "De startplaats in het backend-apparaat"
+msgstr "Startforskydningen i motorenheden"
 
 #: src/cryptsetup.c:1493
 msgid "How many sectors of the encrypted data to skip at the beginning"
-msgstr "Hoeveel sectoren van de versleutelde gegevens aan het begin over te slaan"
+msgstr "Antal sektorer med krypterede data som skal udelades i begyndelsen"
 
 #: src/cryptsetup.c:1494
 msgid "Create a readonly mapping"
-msgstr "Een alleen-lezen toewijzing aanmaken"
+msgstr "Opret en skrivebeskyttet oversættelse"
 
 #: src/cryptsetup.c:1495 src/cryptsetup_reencrypt.c:1268
 msgid "PBKDF2 iteration time for LUKS (in ms)"
-msgstr "PBKDF2 herhalingstijd voor LUKS (in ms)"
+msgstr "PBKDF2-iteratoinstid for LUKS (i ms)"
 
 #: src/cryptsetup.c:1495 src/cryptsetup_reencrypt.c:1268
 msgid "msecs"
-msgstr "milliseconden"
+msgstr "ms"
 
 #: src/cryptsetup.c:1496 src/cryptsetup_reencrypt.c:1269
 msgid "Do not ask for confirmation"
-msgstr "Niet om bevestiging vragen"
+msgstr "Anmod ikke om bekræftelse"
 
 #: src/cryptsetup.c:1497
 msgid "Timeout for interactive passphrase prompt (in seconds)"
-msgstr "Timeout voor interactieve wachtwoordprompt (in seconden)"
+msgstr "Tidsudløb for interaktiv adgangsfraseprompt (i sekunder)"
 
 #: src/cryptsetup.c:1497
 msgid "secs"
-msgstr "seconden"
+msgstr "sek"
 
 #: src/cryptsetup.c:1498 src/cryptsetup_reencrypt.c:1270
 msgid "How often the input of the passphrase can be retried"
-msgstr "Hoe vaak de invoering van het wachtwoord opnieuw geprobeerd kan worden"
+msgstr "Hvor ofte inddata for adgangsfrasen kan indhentes"
 
 #: src/cryptsetup.c:1499
 msgid "Align payload at <n> sector boundaries - for luksFormat"
-msgstr "Payload uitlijnen op meervouden van <n> sectoren – voor luksFormat"
+msgstr "Juster belastning ved <n> sektorgrænser - for luksFormat"
 
 #: src/cryptsetup.c:1500
 msgid "File with LUKS header and keyslots backup."
-msgstr "Bestand met reservekopie van LUKS-koptekst en -sleutelplaatsen."
+msgstr "Fil med LUKS-teksthoved og sikkerhedskopi af nøglepladser."
 
 #: src/cryptsetup.c:1501 src/cryptsetup_reencrypt.c:1271
 msgid "Use /dev/random for generating volume key."
-msgstr "Gebruik /dev/random om de sleutel tot het opslagmedium te genereren."
+msgstr "Brug /dev/random til oprettelse af diskenhedsnøgle."
 
 #: src/cryptsetup.c:1502 src/cryptsetup_reencrypt.c:1272
 msgid "Use /dev/urandom for generating volume key."
-msgstr "Gebruik /dev/urandom om de sleutel tot het opslagmedium te genereren."
+msgstr "Brug /dev/urandom til oprettelse af diskenhedsnøgle."
 
 #: src/cryptsetup.c:1503
 msgid "Share device with another non-overlapping crypt segment."
-msgstr "Apparaat met een ander, niet-overlappend cryptsegment delen."
+msgstr "Del enhed med et andet ikkeoverlappende kryptsegment."
 
 #: src/cryptsetup.c:1504 src/veritysetup.c:385
 msgid "UUID for device to use."
-msgstr "UUID van het te gebruiken apparaat."
+msgstr "UUID som enheden skal bruge."
 
 #: src/cryptsetup.c:1505
 msgid "Allow discards (aka TRIM) requests for device."
-msgstr "Discardaanvragen (alias TRIM) op dit apparaat toelaten."
+msgstr "Tillader fjernelsesforespørgsler (a.k.a. TRIM) for enhed."
 
 #: src/cryptsetup.c:1506
 msgid "Device or file with separated LUKS header."
-msgstr "Apparaat of bestand met verschillende LUKS-koptekst."
+msgstr "Enhed eller fil med adskilt LUKS-teksthoved."
 
 #: src/cryptsetup.c:1507
 msgid "Do not activate device, just check passphrase."
-msgstr "Apparaat niet activeren, enkel wachtwoord controleren."
+msgstr "Aktiver ikke enhed, kontroller bare adgangsfrase."
 
 #: src/cryptsetup.c:1508
 msgid "Use hidden header (hidden TCRYPT device)."
-msgstr "Verborgen koptekst gebruiken (verborgen TCRYPT-apparaat)."
+msgstr "Brug skjult teksthoved (skjult TCRYPT-enhed)."
 
 #: src/cryptsetup.c:1509
 msgid "Device is system TCRYPT drive (with bootloader)."
-msgstr "Apparaat is TCRYPT-systeemschijf (met bootloader)."
+msgstr "Enhed er system-TCRYPT-drev (med opstartsindlæser)."
 
 #: src/cryptsetup.c:1510
 msgid "Use backup (secondary) TCRYPT header."
-msgstr "Reserve (secundaire) TCRYPT-koptekst gebruiken."
+msgstr "Brug sikkerhedskopi (sekundær) TCRYPT-teksthoved."
 
 #: src/cryptsetup.c:1511
 msgid "Scan also for VeraCrypt compatible device."
-msgstr "Eveneens naar VeraCrypt-compatibel apparaat scannen."
+msgstr "Skan også for VeraCrypt-kompatibel enhed."
 
 #: src/cryptsetup.c:1512
 msgid "Type of device metadata: luks, plain, loopaes, tcrypt."
-msgstr "Soorten apparaat-metadata: luks, plain, loopaes, tcrypt."
+msgstr "Type for enheds metadata: luks, plain, loopaes, tcrypt."
 
 #: src/cryptsetup.c:1513
 msgid "Disable password quality check (if enabled)."
-msgstr "Wachtwoordkwaliteitscontrole uitschakelen (indien ingeschakeld)."
+msgstr "Deaktiver kontrol af adgangskodens kvalitet (hvis aktiveret)."
 
 #: src/cryptsetup.c:1514
 msgid "Use dm-crypt same_cpu_crypt performance compatibility option."
-msgstr "dm-crypt same_cpu_crypt prestatie-compatibiliteitsoptie gebruiken."
+msgstr "Brug tilvalgene dm-crypt og same_cpu_crypt for ydelseskompatibilitet."
 
 #: src/cryptsetup.c:1515
 msgid "Use dm-crypt submit_from_crypt_cpus performance compatibility option."
-msgstr "dm-crypt submit_from_crypt_cpus prestatie-compatibiliteitsoptie gebruiken."
+msgstr "Brug tilvalgene dm-crypt og submit_from_crypt_cpus for ydelseskompatibilitet."
 
 #: src/cryptsetup.c:1531 src/veritysetup.c:402
 msgid "[OPTION...] <action> <action-specific>"
-msgstr "[OPTIE…] <actie> <actie-specifiek>"
+msgstr "[TILVALG...] <handling> <handling-specifik>"
 
 #: src/cryptsetup.c:1572
 msgid "Running in FIPS mode.\n"
-msgstr "Uitvoering in FIPS-modus.\n"
+msgstr "Kører i FIPS-tilstand.\n"
 
 #: src/cryptsetup.c:1581 src/veritysetup.c:439
 msgid "Argument <action> missing."
-msgstr "Argument <actie> ontbreekt."
+msgstr "Argument <handling> mangler."
 
 #: src/cryptsetup.c:1634 src/veritysetup.c:445
 msgid "Unknown action."
-msgstr "Onbekende actie."
+msgstr "Ukendt handling."
 
 #: src/cryptsetup.c:1644
 msgid "Option --shared is allowed only for open of plain device.\n"
-msgstr "Optie --shared wordt enkel toegestaan voor open-opdracht op plain-apparaat.\n"
+msgstr "Tilvalget --shared er kun tilladt for åbning af en ren enhed.\n"
 
 #: src/cryptsetup.c:1649
 msgid "Option --allow-discards is allowed only for open operation.\n"
-msgstr "Optie --allow-discards wordt enkel toegestaan voor de open-operatie.\n"
+msgstr "Tilvalget --allow-discards er kun tilladt for åbne operationer.\n"
 
 #: src/cryptsetup.c:1657
 msgid ""
 "Option --key-size is allowed only for luksFormat, open and benchmark.\n"
 "To limit read from keyfile use --keyfile-size=(bytes)."
 msgstr ""
-"Optie --key-size is enkel toegestaan bij luksFormat, open en benchmark.\n"
-"Om de lezing uit een sleutelbestand te beperken, gebruik --keyfile-size=(bytes)."
+"Tilvalget --key-size er kun tilladt for luksFormat, open og benchmark.\n"
+"For at begrænse læsning fra nøglefilen bruges --keyfile-size=(bytes)."
 
 #: src/cryptsetup.c:1664
 msgid "Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"
-msgstr "Optie --test-passphrase is enkel toegestaan bij open van LUKS- en TCRYPT-apparaten.\n"
+msgstr "Tilvalget --test-passphrase er kun tilladt for åbning af LUKS- og TCRYPT-enheder.\n"
 
 #: src/cryptsetup.c:1669 src/cryptsetup_reencrypt.c:1341
 msgid "Key size must be a multiple of 8 bits"
-msgstr "Sleutelgrootte moet een meervoud zijn van 8 bits"
+msgstr "Nøglestørrelse skal gå op i 8 bit"
 
 #: src/cryptsetup.c:1676 src/cryptsetup_reencrypt.c:1346
 msgid "Key slot is invalid."
-msgstr "Sleutelplaats is ongeldig."
+msgstr "Nøgleplads er ugyldig."
 
 #: src/cryptsetup.c:1683
 msgid "Option --key-file takes precedence over specified key file argument.\n"
-msgstr "Optie --key-file krijgt voorrang over het gespecificeerde sleutelbestandsargument.\n"
+msgstr "Tilvalget --key-file har forrang over specificeret nøglefilsargument.\n"
 
 #: src/cryptsetup.c:1691 src/veritysetup.c:467 src/cryptsetup_reencrypt.c:1330
 msgid "Negative number for option not permitted."
-msgstr "Een negatief getal wordt niet toegestaan voor deze optie."
+msgstr "Negativ nummer for tilvalg er ikke tilladt."
 
 #: src/cryptsetup.c:1695 src/cryptsetup_reencrypt.c:1324
 #: src/cryptsetup_reencrypt.c:1350
 msgid "Only one of --use-[u]random options is allowed."
-msgstr "Slechts een enkel gebruik van de opties --use-[u]random is toegestaan."
+msgstr "Kun et af tilvalgene --use-[u]random er tilladt."
 
 #: src/cryptsetup.c:1699
 msgid "Option --use-[u]random is allowed only for luksFormat."
-msgstr "OPtie --use-[u]random is enkel toegestaan bij luksFormat."
+msgstr "Tilvalget --use-[u]random er kun tilladt for luksFormat."
 
 #: src/cryptsetup.c:1703
 msgid "Option --uuid is allowed only for luksFormat and luksUUID."
-msgstr "Optie --uuid is enkel toegestaan bij luksFormat en luksUUID."
+msgstr "Tilvalget --uid er kun tilladt for luksFormat og luksUUID."
 
 #: src/cryptsetup.c:1707
 msgid "Option --align-payload is allowed only for luksFormat."
-msgstr "Optie --align-payload is enkel toegestaan voor luksFormat."
+msgstr "Tilvalget --align-payload er kun tilladt for luksFormat."
 
 #: src/cryptsetup.c:1713
 msgid "Option --skip is supported only for open of plain and loopaes devices.\n"
-msgstr "Optie --skip wordt enkel ondersteund voor open-opdracht op plain- en loopaes-apparaten.\n"
+msgstr "Tilvalget --skip er kun understøttet for åbning af plain- og loopaes-enheder.\n"
 
 #: src/cryptsetup.c:1719
 msgid "Option --offset is supported only for open of plain and loopaes devices.\n"
-msgstr "Optie --offset wordt enkel ondersteund voor open-opdracht op plain- en loopaes-apparaten.\n"
+msgstr "Tilvalget --offset er kun understøttet for åbning af plain- og loopaes-enheder.\n"
 
 #: src/cryptsetup.c:1725
 msgid "Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"
-msgstr "Optie --tcrypt-hidden, --tcrypt-system of --tcrypt-backup wordt enkel ondersteund voor TCRYPT-apparaten.\n"
+msgstr "Tilvalgene --tcrypt-hidden, --tcrypt-system eller --tcrypt-backup er kun understøttet for TCRYPT-enhed.\n"
 
 #: src/cryptsetup.c:1730
 msgid "Option --tcrypt-hidden cannot be combined with --allow-discards.\n"
-msgstr "Optie --tcrypt-hidden kan niet met --allow-discards gecombineerd worden.\n"
+msgstr "Tilvaget --tcrypt-hidden kan ikke kombineres med --allow-discards.\n"
 
 #: src/cryptsetup.c:1735
 msgid "Option --veracrypt is supported only for TCRYPT device type.\n"
-msgstr "Optie --veracrypt wordt enkel ondersteund voor TCRYPT-apparaatstype.\n"
+msgstr "Tilvalget --veracrypt er kun understøttet for TCRYPT-enhedstype.\n"
 
 #: src/veritysetup.c:58
 msgid "Invalid salt string specified.\n"
-msgstr "Ongeldige salt-tekenreeks opgegeven.\n"
+msgstr "Ugyldig salt-streng specificeret.\n"
 
 #: src/veritysetup.c:88
 #, c-format
 msgid "Cannot create hash image %s for writing.\n"
-msgstr "Kan hashafbeeling %s niet aanmaken voor beschrijving.\n"
+msgstr "Kan ikke oprette hashaftryk %s for skriving.\n"
 
 #: src/veritysetup.c:148
 msgid "Invalid root hash string specified.\n"
-msgstr "Ongeldige root-hash tekenreeks opgegeven.\n"
+msgstr "Ugyldig root-hash-streng specificeret.\n"
 
 #: src/veritysetup.c:308
 msgid "<data_device> <hash_device>"
-msgstr "<gegevensapparaat> <hash-apparaat>"
+msgstr "<data_enhed> <hash_device>"
 
 #: src/veritysetup.c:308
 msgid "format device"
-msgstr "apparaat formateren"
+msgstr "formater enhed"
 
 #: src/veritysetup.c:309
 msgid "<data_device> <hash_device> <root_hash>"
-msgstr "<gegevensapparaat> <hash-apparaat> <root-hash>"
+msgstr "<data_enhed> <hash_enhed> <root_hash>"
 
 #: src/veritysetup.c:309
 msgid "verify device"
-msgstr "apparaat controleren"
+msgstr "verificer enhed"
 
 #: src/veritysetup.c:310
 msgid "<name> <data_device> <hash_device> <root_hash>"
-msgstr "<naam> <gegevensapparaat> <hash-apparaat> <root-hash>"
+msgstr "<navn> <data_enhed> <hash_enhed> <root_hash>"
 
 #: src/veritysetup.c:310
 msgid "create active device"
-msgstr "actief apparaat aanmaken"
+msgstr "opret aktiv enhed"
 
 #: src/veritysetup.c:311
 msgid "remove (deactivate) device"
-msgstr "apparaat verwijderen (deactiveren)"
+msgstr "fjern (deaktiver) enhed"
 
 #: src/veritysetup.c:312
 msgid "show active device status"
-msgstr "status van actief apparaat tonen"
+msgstr "vis aktiv enhedsstatus"
 
 #: src/veritysetup.c:313
 msgid "<hash_device>"
-msgstr "<hash-apparaat>"
+msgstr "<hash_enhed>"
 
 #: src/veritysetup.c:313
 msgid "show on-disk information"
-msgstr "on-disk informatie tonen"
+msgstr "vis on-disk-information"
 
 #: src/veritysetup.c:332
 #, c-format
@@ -1455,10 +1457,10 @@ msgid ""
 "<root_hash> hash of the root node on <hash_device>\n"
 msgstr ""
 "\n"
-"<naam> is de naam van het onder %s te creëren apparaat\n"
-"<gegevensapparaat> is het de naam van het gegevensapparaat\n"
-"<hash-apparaat> is de naam van het apparaat dat de verificatiegegevens bevat\n"
-"<root-hash> is de hash van de rootnode op <hash-apparaat>\n"
+"<navn> er enheden der skal opretttes under %s\n"
+"<data_enhed> er dataenheden\n"
+"<hash_enhed> er enheden indeholdende verifikationsdata\n"
+"<root_hash> hash for root-knuden på <hash_enhed>\n"
 
 #: src/veritysetup.c:339
 #, c-format
@@ -1468,16 +1470,16 @@ msgid ""
 "\tHash: %s, Data block (bytes): %u, Hash block (bytes): %u, Salt size: %u, Hash format: %u\n"
 msgstr ""
 "\n"
-"Standaard meegecompileerde dm-verity parameters:\n"
-"\tHash: %s, Datablok (bytes): %u, Hashblock (bytes): %u, Saltgrootte: %u, Hashformaat: %u\n"
+"Standardindkompilerede dm-verity-parametre:\n"
+"\tHash: %s, Databok (byte): %u, Hashblok (byte): %u, Salt-str.: %u, Hashformat: %u\n"
 
 #: src/veritysetup.c:377
 msgid "Do not use verity superblock"
-msgstr "VERITY-superblok niet gebruiken"
+msgstr "Brug ikke verity-superblok"
 
 #: src/veritysetup.c:378
 msgid "Format type (1 - normal, 0 - original Chrome OS)"
-msgstr "Formaatstype (1 - normaal, 0 - origineel Chrome OS)"
+msgstr "Formatype (1 - normal, 0 - original Chrome OS)"
 
 #: src/veritysetup.c:378
 msgid "number"
@@ -1485,31 +1487,31 @@ msgstr "nummer"
 
 #: src/veritysetup.c:379
 msgid "Block size on the data device"
-msgstr "Blokgrootte op het gegevensapparaat"
+msgstr "Blokstørrelse på dataenheden"
 
 #: src/veritysetup.c:380
 msgid "Block size on the hash device"
-msgstr "Blokgrootte op het hash-apparaat"
+msgstr "Blokstørrelse på hashenheden"
 
 #: src/veritysetup.c:381
 msgid "The number of blocks in the data file"
-msgstr "Aantal blokken in het gegevensbestand"
+msgstr "Antallet af blokke i datafilen"
 
 #: src/veritysetup.c:381
 msgid "blocks"
-msgstr "blokken"
+msgstr "blokke"
 
 #: src/veritysetup.c:382
 msgid "Starting offset on the hash device"
-msgstr "De startplaats op het hash-apparaat"
+msgstr "Starter forskydning på hashenheden"
 
 #: src/veritysetup.c:383
 msgid "Hash algorithm"
-msgstr "Hash-algoritme"
+msgstr "Hashalgoritme"
 
 #: src/veritysetup.c:383
 msgid "string"
-msgstr "tekenreeks"
+msgstr "streng"
 
 #: src/veritysetup.c:384
 msgid "Salt"
@@ -1517,395 +1519,257 @@ msgstr "Salt"
 
 #: src/veritysetup.c:384
 msgid "hex string"
-msgstr "hex-tekenreeks"
+msgstr "hex-streng"
 
 #: src/cryptsetup_reencrypt.c:147
 #, c-format
 msgid "Cannot exclusively open %s, device in use.\n"
-msgstr "Kan %s niet exclusief openen, apparaat wordt gebruikt.\n"
+msgstr "Kan ikke eksklusivt åbne %s, enheden er i brug.\n"
 
 #: src/cryptsetup_reencrypt.c:151
 #, c-format
 msgid "Cannot open device %s\n"
-msgstr "Kan apparaat %s niet openen.\n"
+msgstr "Kan ikke åbne enhed %s\n"
 
 #: src/cryptsetup_reencrypt.c:161 src/cryptsetup_reencrypt.c:893
 msgid "Allocation of aligned memory failed.\n"
-msgstr "Reservering van uitgelijnd geheugen gefaald.\n"
+msgstr "Allokering af tilpasset hukommelse mislykkedes.\n"
 
 #: src/cryptsetup_reencrypt.c:168
 #, c-format
 msgid "Cannot read device %s.\n"
-msgstr "Kan apparaat niet lezen: %s.\n"
+msgstr "Kan ikke læse enheden %s.\n"
 
 #: src/cryptsetup_reencrypt.c:179
 #, c-format
 msgid "Marking LUKS device %s unusable.\n"
-msgstr "LUKS-apparaat %s wordt als onbruikbaar gemarkeerd.\n"
+msgstr "Markerer LUKS-enheden %s som ubrugelig.\n"
 
 #: src/cryptsetup_reencrypt.c:184
 #, c-format
 msgid "Marking LUKS device %s usable.\n"
-msgstr "LUKS-apparaat %s wordt als bruikbaar gemarkeerd.\n"
+msgstr "Markerer LUKS-enheden %s som brugbar.\n"
 
 #: src/cryptsetup_reencrypt.c:200
 #, c-format
 msgid "Cannot write device %s.\n"
-msgstr "Kan apparaat %s niet beschrijven.\n"
+msgstr "Kan ikke skrive enhed %s.\n"
 
 #: src/cryptsetup_reencrypt.c:281
 msgid "Cannot write reencryption log file.\n"
-msgstr "Kan herencryptie-logbestand niet schrijven.\n"
+msgstr "Kan ikke skrive genkrypteringslogfilen.\n"
 
 #: src/cryptsetup_reencrypt.c:337
 msgid "Cannot read reencryption log file.\n"
-msgstr "Kan herencryptie-logbestand niet lezen.\n"
+msgstr "Kan ikke læse genkrypteringslogfilen.\n"
 
 #: src/cryptsetup_reencrypt.c:374
 #, c-format
 msgid "Log file %s exists, resuming reencryption.\n"
-msgstr "Logbestand %s bestaat reeds, herencryptie wordt herstart.\n"
+msgstr "Logfilen %s findes, genoptager genkryptering.\n"
 
 #: src/cryptsetup_reencrypt.c:403
 msgid "Activating temporary device using old LUKS header.\n"
-msgstr "Activatie van tijdelijke apparaat met oude LUKS-koptekst.\n"
+msgstr "Aktiverer midlertidig enhed via brug af gammel LUKS-teksthoved.\n"
 
 #: src/cryptsetup_reencrypt.c:414
 msgid "Activating temporary device using new LUKS header.\n"
-msgstr "Activatie van tijdelijke apparaat met nieuwe LUKS-koptekst.\n"
+msgstr "Aktiverer midlertidig enhed via brug af ny LUKS-teksthoved.\n"
 
 #: src/cryptsetup_reencrypt.c:424
 msgid "Activation of temporary devices failed.\n"
-msgstr "Activatie van tijdelijke apparaten gefaald.\n"
+msgstr "Aktivering af midlertidige enheder mislykkedes.\n"
 
 #: src/cryptsetup_reencrypt.c:450
 #, c-format
 msgid "New LUKS header for device %s created.\n"
-msgstr "Nieuwe LUKS-koptekst voor apparaat %s aangemaakt.\n"
+msgstr "Ny LUKS-teksthoved for enheden %s oprettet.\n"
 
 #: src/cryptsetup_reencrypt.c:458
 #, c-format
 msgid "Activated keyslot %i.\n"
-msgstr "Sleutelplaats %d geactiveerd.\n"
+msgstr "Aktiveret nøgleplads %i.\n"
 
 #: src/cryptsetup_reencrypt.c:484
 #, c-format
 msgid "LUKS header backup of device %s created.\n"
-msgstr "Reservekopie van LUKS-koptekst op apparaat %s aangemaakt .\n"
+msgstr "Sikkerhedskopi af LUKS-teksthoved for enheden %s er oprettet.\n"
 
 #: src/cryptsetup_reencrypt.c:532
 msgid "Creation of LUKS backup headers failed.\n"
-msgstr "Creatie van LUKS-reservekopteksten gefaald.\n"
+msgstr "Oprettelse af LUKS-sikkerhedskopiteksthoveder mislykkedes.\n"
 
 #: src/cryptsetup_reencrypt.c:634
 #, c-format
 msgid "Cannot restore LUKS header on device %s.\n"
-msgstr "Kan koptekst op apparaat %s niet herstellen.\n"
+msgstr "Kan ikke gendanne LUKS-teksthoved på enheden %s.\n"
 
 #: src/cryptsetup_reencrypt.c:636
 #, c-format
 msgid "LUKS header on device %s restored.\n"
-msgstr "LUKS-koptekst op apparaat %s hersteld.\n"
+msgstr "LUKS-teksthoved på enheden %s er gendannet.\n"
 
 #: src/cryptsetup_reencrypt.c:669
 #, c-format
 msgid "Progress: %5.1f%%, ETA %02llu:%02llu, %4llu MiB written, speed %5.1f MiB/s%s"
-msgstr "Vooruitgang: %5.1f%%, geschatte voltooiïngstijd %02llu:%02llu, %4llu MB geschreven, snelheid %5.1f MiB/s%s"
+msgstr "Status: %5.1f%%, EAT %02llu:%02llu, %4llu MiB skrevet, hastighed %5.1f MiB/s%s"
 
 #: src/cryptsetup_reencrypt.c:708 src/cryptsetup_reencrypt.c:784
 #: src/cryptsetup_reencrypt.c:826
 msgid "Cannot seek to device offset.\n"
-msgstr "Onmogelijk te zoeken tot startplaats van apparaat.\n"
+msgstr "Kan ikke søge til enhedsforskydning.\n"
 
 #: src/cryptsetup_reencrypt.c:865 src/cryptsetup_reencrypt.c:871
 msgid "Cannot open temporary LUKS header file.\n"
-msgstr "Kan tijdelijk LUKS-koptekstbestand niet openen.\n"
+msgstr "Kan ikke åbne midlertidig LUKS-teksthovedfil.\n"
 
 #: src/cryptsetup_reencrypt.c:876 src/cryptsetup_reencrypt.c:881
 msgid "Cannot get device size.\n"
-msgstr "Kan apparaatgrootte niet lezen.\n"
+msgstr "Kan ikke indhente enhedsstørrelse.\n"
 
 #: src/cryptsetup_reencrypt.c:919
 msgid "Interrupted by a signal.\n"
-msgstr "Onderbroken door een signaal.\n"
+msgstr "Afbrudt af et signal.\n"
 
 #: src/cryptsetup_reencrypt.c:921
 msgid "IO error during reencryption.\n"
-msgstr "Invoer/uitvoerfout tijdens herencryptie.\n"
+msgstr "IO-fejl under genkryptering.\n"
 
 #: src/cryptsetup_reencrypt.c:1028
 msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
-msgstr "Sleutelbestand kan enkel gebruikt worden met optie --key-slot of met enkel één actieve sleutelplaats.\n"
+msgstr "Nøglefil kan kun bruges med --key-slot eller med præcis en aktiv nøgleplads.\n"
 
 #: src/cryptsetup_reencrypt.c:1072 src/cryptsetup_reencrypt.c:1087
 #, c-format
 msgid "Enter passphrase for key slot %u: "
-msgstr "Voer wachtwoord voor sleutelplaats %u in: "
+msgstr "Indtast adgangsfrase for nøgleplads %u: "
 
 #: src/cryptsetup_reencrypt.c:1136
 msgid "Cannot open reencryption log file.\n"
-msgstr "Kan herencryptie-logbestand niet openen.\n"
+msgstr "Kan ikke åbne genkrypteringslogfilen.\n"
 
 #: src/cryptsetup_reencrypt.c:1262
 msgid "Reencryption block size"
-msgstr "Blokgrootte herencryptie"
+msgstr "Blokstørrelse for genkryptering"
 
 #: src/cryptsetup_reencrypt.c:1262
 msgid "MiB"
-msgstr "MB"
+msgstr "MiB"
 
 #: src/cryptsetup_reencrypt.c:1266
 msgid "Do not change key, no data area reencryption."
-msgstr "Sleutel niet wijzigen; gegevensgebied wordt niet opnieuw versleuteld."
+msgstr "Ændr ikke nøgle, ingen dataområde-genkryptering."
 
 #: src/cryptsetup_reencrypt.c:1273
 msgid "Use direct-io when accessing devices."
-msgstr "direct-io gebruiken bij het lezen van apparaten."
+msgstr "Brug direct-io når enheder tilgås."
 
 #: src/cryptsetup_reencrypt.c:1274
 msgid "Use fsync after each block."
-msgstr "fsync na elk blok gebruiken."
+msgstr "Brug fsync efter hver blok."
 
 #: src/cryptsetup_reencrypt.c:1275
 msgid "Update log file after every block."
-msgstr "Na elk blok het logbestand bijwerken."
+msgstr "Opdater logfil efter hver blok."
 
 #: src/cryptsetup_reencrypt.c:1276
 msgid "Use only this slot (others will be disabled)."
-msgstr "Enkel deze plaats gebruiken (anderen worden uitgeschakeld)."
+msgstr "Brug kun denne plads (andre vil blive deaktiveret)."
 
 #: src/cryptsetup_reencrypt.c:1279
 msgid "Reduce data device size (move data offset). DANGEROUS!"
-msgstr "Grootte van gegevensapparaat wijzigen (gegevenspositie wijzigen). GEVAARLIJK!"
+msgstr "Reducer dataenhedstørrelse (flyt dataforskydning). FARLIGT!"
 
 #: src/cryptsetup_reencrypt.c:1280
 msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
-msgstr "Enkel ingegeven apparaatsgrootte gebruiken (rest van apparaat wordt genegeerd). GEVAARLIJK!"
+msgstr "Brug kun specificeret enhedstørrelse (ignorer resten af enheden). FARLIGT!"
 
 #: src/cryptsetup_reencrypt.c:1281
 msgid "Create new header on not encrypted device."
-msgstr "Nieuwe koptekst op niet-versleuteld apparaat invoeren."
+msgstr "Opret nyt teksthoved på ikke krypteret enhed."
 
 #: src/cryptsetup_reencrypt.c:1282
 msgid "Permanently decrypt device (remove encryption)."
-msgstr "Apparaat permanent ontsleutelen (encryptie verwijderen)."
+msgstr "Dekrypter enhed permanent (fjern kryptering)."
 
 #: src/cryptsetup_reencrypt.c:1298
 msgid "[OPTION...] <device>"
-msgstr "[OPTIE...] <apparaat>"
+msgstr "[TILVALG...] <enhed>"
 
 #: src/cryptsetup_reencrypt.c:1312
 msgid "WARNING: this is experimental code, it can completely break your data.\n"
-msgstr "Waarschuwing: deze code is nog experimenteel, het kan al uw data volledig vernielen.\n"
+msgstr "ADVARSEL: dette er eksperimentel kode, det kan fuldstændig ødelægge dine data.\n"
 
 #: src/cryptsetup_reencrypt.c:1313
 #, c-format
 msgid "Reencryption will change: volume key%s%s%s%s.\n"
-msgstr "Herencryptie zal sleutel tot het opslagmedium %s%s%s%s wijzigen.\n"
+msgstr "Genkryptering vil ændre: diskenhedsnøgle%s%s%s%s.\n"
 
 #: src/cryptsetup_reencrypt.c:1314
 msgid ", set hash to "
-msgstr ", stel hash in op "
+msgstr ", sæt hash til "
 
 #: src/cryptsetup_reencrypt.c:1315
 msgid ", set cipher to "
-msgstr ", stel sleutelalgoritme in op "
+msgstr ", set krypteringsalgoritme til "
 
 #: src/cryptsetup_reencrypt.c:1320
 msgid "Argument required."
-msgstr "Argument is vereist."
+msgstr "Argument krævet."
 
 #: src/cryptsetup_reencrypt.c:1336
 msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
-msgstr "Enkel waarden tussen 1 MB en 64 MB zijn toegestaan als herencryptieblokgrootte."
+msgstr "Kun værdier mellem 1 MiB og 64 MiB tilladt for genkrypteringsblokstørrelsen."
 
 #: src/cryptsetup_reencrypt.c:1355 src/cryptsetup_reencrypt.c:1360
 msgid "Invalid device size specification."
-msgstr "Ongeldig apparaatsgrootte ingegeven."
+msgstr "Ugyldig specifikation for enhedsstørrelse."
 
 #: src/cryptsetup_reencrypt.c:1363
 msgid "Maximum device reduce size is 64 MiB."
-msgstr "Maximum apparaatsverkleiningsgrootte is 64 MB."
+msgstr "Maksimal reduceringsstørrelse for enhed er 64 MiB."
 
 #: src/cryptsetup_reencrypt.c:1366
 msgid "Reduce size must be multiple of 512 bytes sector."
-msgstr "Verkleiningsgrootte moet een meervoud zijn van de 512 bytes-grote sector."
+msgstr "Reducer størrelse skal være multiplum af 512 byte sektor."
 
 #: src/cryptsetup_reencrypt.c:1370
 msgid "Option --new must be used together with --reduce-device-size."
-msgstr "Optie --new moet samen met --reduce-device-size gebruikt worden."
+msgstr "Tilvalget --new skal bruges sammen med --reduce-device-size."
 
 #: src/cryptsetup_reencrypt.c:1374
 msgid "Option --keep-key can be used only with --hash or --iter-time."
-msgstr "Optie -- keep-key kan enkel samen met --hash of --iter-time gebruikt worden."
+msgstr "Tilvalget --keep-key kan kun bruges med --hash eller --iter-time."
 
 #: src/cryptsetup_reencrypt.c:1378
 msgid "Option --new cannot be used together with --decrypt."
-msgstr "Optie --new kan niet samen met --decrypt gebruikt worden."
+msgstr "Tilvalget --new kan ikke bruges sammen med --decrypt."
 
 #: src/cryptsetup_reencrypt.c:1382
 msgid "Option --decrypt is incompatible with specified parameters."
-msgstr "Optie --decrypt is niet verenigbaar met de verschafte parameters."
+msgstr "Tilvalget --decrypt er ikke kompatibelt med specificerede parametre."
 
 #: src/utils_tools.c:151
 msgid "Error reading response from terminal.\n"
-msgstr "Fout bij het lezen van antwoord uit de terminal.\n"
+msgstr "Fejl ved læsning af svar fra terminal.\n"
 
 #: src/utils_tools.c:173
 msgid "Command successful.\n"
-msgstr "Opdracht succesvol.\n"
+msgstr "Kommando succesfuld.\n"
 
 #: src/utils_tools.c:191
 #, c-format
 msgid "Command failed with code %i"
-msgstr "Opdracht is mislukt met code %i"
+msgstr "Kommando mislykkedes med kode %i"
 
 #: src/utils_password.c:42
 #, c-format
 msgid "Cannot check password quality: %s\n"
-msgstr "Kan wachtwoordkwaliteit niet nakijken: %s\n"
+msgstr "Kan ikke kontrollere adganskodekvalitet: %s\n"
 
 #: src/utils_password.c:50
 #, c-format
 msgid ""
 "Password quality check failed:\n"
 " %s\n"
-msgstr ""
-"Wachtwoordkwaliteitscontrole gefaald:\n"
-"%s\n"
-
-#~ msgid "FIPS checksum verification failed.\n"
-#~ msgstr "Verificatie van FIPS-controlesom gefaald.\n"
-
-#~ msgid "WARNING: device %s is a partition, for TCRYPT system encryption you usually need to use whole block device path.\n"
-#~ msgstr "WAARSCHUWING: apparaat %s is een partitie; bij TCRYPT-systeemversleuteling moet u doorgaans het volledige pad naar het blok-apparaat gebruiken.\n"
-
-#~ msgid "Kernel doesn't support plain64 IV.\n"
-#~ msgstr "Kernel ondersteunt plain64 IV niet.\n"
-
-#~ msgid "Enter LUKS passphrase: "
-#~ msgstr "Voer LUKS-wachtwoord in: "
-
-#~ msgid "Enter new LUKS passphrase: "
-#~ msgstr "Voer nieuw LUKS-wachtwoord in: "
-
-#~ msgid "Enter any LUKS passphrase: "
-#~ msgstr "Voer een LUKS-wachtwoord in: "
-
-#~ msgid "Cannot open device %s for %s%s access.\n"
-#~ msgstr "Kan apparaat %s niet openen voor %s%s-toegang.\n"
-
-#~ msgid "exclusive "
-#~ msgstr "exclusieve "
-
-#~ msgid "writable"
-#~ msgstr "schrijf"
-
-#~ msgid "read-only"
-#~ msgstr "alleen-lezen"
-
-#~ msgid "WARNING!!! Possibly insecure memory. Are you root?\n"
-#~ msgstr "WAARSCHUWING!!! Mogelijk onveilig geheugen. Bent u root?\n"
-
-#~ msgid "Unable to obtain sector size for %s"
-#~ msgstr "Kan sectorgrootte van %s niet verkrijgen"
-
-#~ msgid "Failed to obtain device mapper directory."
-#~ msgstr "Kan geen map voor de apparaatstoewijzer verkrijgen."
-
-#~ msgid "Backup file %s doesn't exist.\n"
-#~ msgstr "Reservekopiebestand %s bestaat niet.\n"
-
-#~ msgid "Cannot open file %s.\n"
-#~ msgstr "Kan bestand %s niet openen.\n"
-
-#~ msgid "Failed to write to key storage.\n"
-#~ msgstr "Schrijven naar sleutelopslag is mislukt.\n"
-
-#~ msgid "Failed to read from key storage.\n"
-#~ msgstr "Lezen uit sleutelopslag is mislukt.\n"
-
-#~ msgid "<name> <device>"
-#~ msgstr "<naam> <apparaat>"
-
-#~ msgid "create device"
-#~ msgstr "apparaat aanmaken"
-
-#~ msgid "remove device"
-#~ msgstr "apparaat verwijderen"
-
-#~ msgid "remove LUKS mapping"
-#~ msgstr "LUKS-toewijzing verwijderen"
-
-#~ msgid "open loop-AES device as mapping <name>"
-#~ msgstr "loop-AES-apparaat als toewijzing <naam> openen"
-
-#~ msgid "remove loop-AES mapping"
-#~ msgstr "loop-AES-toewijzing verwijderen"
-
-#~ msgid "Option --allow-discards is allowed only for luksOpen, loopaesOpen and create operation.\n"
-#~ msgstr "Optie --allow-discards wordt enkel ondersteund voor de luksOpen-, loopaesOpen- en create-opdrachten.\n"
-
-#~ msgid "Cannot use device %s (crypt segments overlaps or in use by another device).\n"
-#~ msgstr "Kan apparaat %s niet gebruiken (cryptsegmenten overlappen of worden door een ander apparaat gebruikt).\n"
-
-#~ msgid "Key slot %d verified.\n"
-#~ msgstr "Sleutelplaats %d is geverifieerd.\n"
-
-#~ msgid "Invalid key size %d.\n"
-#~ msgstr "Ongeldige sleutelgrootte %d.\n"
-
-#~ msgid "Block mode XTS is available since kernel 2.6.24.\n"
-#~ msgstr "Blokmodus XTS is beschikbaar vanaf kernelversie 2.6.24.\n"
-
-#~ msgid "Key size in LRW mode must be 256 or 512 bits.\n"
-#~ msgstr "In LRW-modus moet de sleutelgrootte 256 of 512 bits zijn.\n"
-
-#~ msgid "Block mode LRW is available since kernel 2.6.20.\n"
-#~ msgstr "Blokmodus LRW is beschikbaar vanaf kernelversie 2.6.20.\n"
-
-#~ msgid "Negative keyfile size not permitted.\n"
-#~ msgstr "Een negatieve sleutelbestandsgrootte is niet toegestaan.\n"
-
-#~ msgid "Warning: exhausting read requested, but key file is not a regular file, function might never return.\n"
-#~ msgstr "Waarschuwing: volledige lezing aangevraagd, maar sleutelbestand is geen regulier bestand, functie zal misschien nooit terugkeren.\n"
-
-#~ msgid "Cannot find compatible device-mapper kernel modules.\n"
-#~ msgstr "Kan geen compatibele kernelmodules voor apparaatstoewijzer vinden.\n"
-
-#~ msgid "Cannot open device: %s\n"
-#~ msgstr "Kan apparaat niet openen: %s\n"
-
-#~ msgid "BLKROGET failed on device %s.\n"
-#~ msgstr "BLKROGET() is mislukt op apparaat %s.\n"
-
-#~ msgid "BLKGETSIZE failed on device %s.\n"
-#~ msgstr "BLKGETSIZE() is mislukt op apparaat %s.\n"
-
-#~ msgid "identical to luksKillSlot - DEPRECATED - see man page"
-#~ msgstr "identiek aan luksKillSlot - VEROUDERD - zie man-pagina"
-
-#~ msgid "modify active device - DEPRECATED - see man page"
-#~ msgstr "actief apparaat wijzigen - VEROUDERD - zie man-pagina"
-
-#~ msgid ""
-#~ "The reload action is deprecated. Please use \"dmsetup reload\" in case you really need this functionality.\n"
-#~ "WARNING: do not use reload to touch LUKS devices. If that is the case, hit Ctrl-C now.\n"
-#~ msgstr ""
-#~ "De herlaadactie is verouderd. Gebruik “dmsetup reload” indien u deze functionaliteit echt nodig hebt.\n"
-#~ "WAARSCHUWING: gebruik de herlaadactie niet om LUKS-apparaten te “touchen”. Indien u dat wilt doen, typ nu Ctrl-C.\n"
-
-#~ msgid "Obsolete option --non-exclusive is ignored.\n"
-#~ msgstr "Verouderde optie --non-exclusive wordt genegeerd.\n"
-
-#~ msgid "Read the key from a file (can be /dev/random)"
-#~ msgstr "De sleutel uit een bestand lezen (mag /dev/random zijn)"
-
-#~ msgid "(Obsoleted, see man page.)"
-#~ msgstr "(Verouderd, zie man-pagina.)"
-
-#~ msgid "%s is not LUKS device.\n"
-#~ msgstr "%s is geen LUKS-apparaat.\n"
-
-#~ msgid "%s is not LUKS device."
-#~ msgstr "%s is geen LUKS-apparaat."
+msgstr "Kontrol af adgangskodens kvalitet mislykkedes:<n %s\n"
