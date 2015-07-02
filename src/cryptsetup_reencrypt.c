@@ -391,9 +391,29 @@ static int open_log(struct reenc_ctx *rc)
 static int activate_luks_headers(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL, *cd_new = NULL;
+	const char *pwd_old, *pwd_new, pwd_empty[] = "";
+	size_t pwd_old_len, pwd_new_len;
 	int r;
 
 	log_dbg("Activating LUKS devices from headers.");
+
+	/* Never use real password for empty header processing */
+	if (rc->reencrypt_mode == REENCRYPT) {
+		pwd_old = rc->p[rc->keyslot].password;
+		pwd_old_len = rc->p[rc->keyslot].passwordLen;
+		pwd_new = pwd_old;
+		pwd_new_len = pwd_old_len;
+	} else if (rc->reencrypt_mode == DECRYPT) {
+		pwd_old = rc->p[rc->keyslot].password;
+		pwd_old_len = rc->p[rc->keyslot].passwordLen;
+		pwd_new = pwd_empty;
+		pwd_new_len = 0;
+	} else if (rc->reencrypt_mode == ENCRYPT) {
+		pwd_old = pwd_empty;
+		pwd_old_len = 0;
+		pwd_new = rc->p[rc->keyslot].password;
+		pwd_new_len = rc->p[rc->keyslot].passwordLen;
+	}
 
 	if ((r = crypt_init(&cd, rc->header_file_org)) ||
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)) ||
@@ -402,7 +422,7 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 
 	log_verbose(_("Activating temporary device using old LUKS header.\n"));
 	if ((r = crypt_activate_by_passphrase(cd, rc->header_file_org,
-		opt_key_slot, rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen,
+		opt_key_slot, pwd_old, pwd_old_len,
 		CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
 
@@ -413,7 +433,7 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 
 	log_verbose(_("Activating temporary device using new LUKS header.\n"));
 	if ((r = crypt_activate_by_passphrase(cd_new, rc->header_file_new,
-		opt_key_slot, rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen,
+		opt_key_slot, pwd_new, pwd_new_len,
 		CRYPT_ACTIVATE_SHARED|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
 	r = 0;
