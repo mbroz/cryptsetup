@@ -9,7 +9,7 @@ IMG_HASH=verity-hash
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
 	rm -f $IMG $IMG_HASH $DEV_OUT >/dev/null 2>&1
 	LOOPDEV1=""
@@ -102,7 +102,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
 	echo -n "[in-kernel verify]"
 
-	$VERITYSETUP remove $DEV_NAME || fail
+	$VERITYSETUP remove $DEV_NAME >/dev/null 2>&1 || fail
 
 	case $fail in
 	data)
@@ -126,7 +126,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null && \
 		fail "in-kernel check for $TXT corruption"
-	$VERITYSETUP remove $DEV_NAME || fail "deactivation"
+	$VERITYSETUP remove $DEV_NAME >/dev/null 2>&1 || fail "deactivation"
 	echo "[$TXT corruption]"
 	done
 	done
