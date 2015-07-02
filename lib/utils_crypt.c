@@ -334,7 +334,7 @@ int crypt_get_key(const char *prompt,
 		  struct crypt_device *cd)
 {
 	int fd, regular_file, read_stdin, char_read, unlimited_read = 0;
-	int r = -EINVAL;
+	int r = -EINVAL, newline;
 	char *pass = NULL;
 	size_t buflen, i, file_read_size;
 	struct stat st;
@@ -408,7 +408,7 @@ int crypt_get_key(const char *prompt,
 		goto out_err;
 	}
 
-	for(i = 0; i < keyfile_size_max; i++) {
+	for(i = 0, newline = 0; i < keyfile_size_max; i++) {
 		if(i == buflen) {
 			buflen += 4096;
 			pass = crypt_safe_realloc(pass, buflen);
@@ -426,12 +426,17 @@ int crypt_get_key(const char *prompt,
 		}
 
 		/* Stop on newline only if not requested read from keyfile */
-		if(char_read == 0 || (!key_file && pass[i] == '\n'))
+		if (char_read == 0)
 			break;
+		if (!key_file && pass[i] == '\n') {
+			newline = 1;
+			pass[i] = '\0';
+			break;
+		}
 	}
 
 	/* Fail if piped input dies reading nothing */
-	if(!i && !regular_file) {
+	if(!i && !regular_file && !newline) {
 		log_dbg("Nothing read on input.");
 		r = -EPIPE;
 		goto out_err;

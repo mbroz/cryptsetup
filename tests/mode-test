@@ -6,6 +6,7 @@ CRYPTSETUP=../src/cryptsetup
 DEV_NAME=dmc_test
 HEADER_IMG=mode-test.img
 PASSWORD=3xrododenron
+PASSWORD1=$PASSWORD
 
 # cipher-chainmode-ivopts:ivmode
 CIPHERS="aes twofish serpent"
@@ -134,10 +135,12 @@ dmcrypt aes aes-cbc-plain
 dmcrypt aes-plain aes-cbc-plain
 
 # empty cipher
+PASSWORD=""
 dmcrypt null cipher_null-ecb
 dmcrypt cipher_null cipher_null-cbc-plain
 dmcrypt cipher_null-ecb
 
+PASSWORD=$PASSWORD1
 # codebook doesn't support IV at all
 for cipher in $CIPHERS ; do
 	dmcrypt "$cipher-ecb"

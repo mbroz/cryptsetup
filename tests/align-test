@@ -87,10 +87,10 @@ format_null()
 {
 	if [ $3 -eq 0 ] ; then
 		echo -n "Formatting using topology info ($1 bits key) [slot 0"
-		echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1
+		echo | $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key) [slot 0"
-		echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1 --align-payload=$3
+		echo | $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1 --align-payload=$3
 	fi
 
 	POFF=$(get_offsets "Payload offset")
@@ -98,7 +98,7 @@ format_null()
 	[ $POFF != $2 ] && fail "Expected data offset differs: expected $2 != detected $POFF"
 	if [ -n "$4" ] ; then
 		for j in 1 2 3 4 5 6 7 ; do
-			echo -e "$PWD1\n$PWD2$j" | $CRYPTSETUP luksAddKey $DEV -q -i1 --key-slot $j -c null $PARAMS
+			echo -e "\n" | $CRYPTSETUP luksAddKey $DEV -q -i1 --key-slot $j -c null $PARAMS
 			echo -n $j
 			[ $? -ne 0 ] && fail
 		done
