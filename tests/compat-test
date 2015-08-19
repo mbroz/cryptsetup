@@ -361,6 +361,10 @@ $CRYPTSETUP -q resize  $DEV_NAME --size 100 || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
 $CRYPTSETUP -q resize  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "19997 sectors" || fail
+# Resize underlying loop device as well
+truncate -s 16M $IMG || fail
+$CRYPTSETUP -q resize  $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "32765 sectors" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME >/dev/null && fail
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail

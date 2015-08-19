@@ -1387,6 +1387,14 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		goto out;
 	}
 
+	if (crypt_loop_device(crypt_get_device_name(cd))) {
+		log_dbg("Trying to resize underlying loop device %s.",
+			crypt_get_device_name(cd));
+		/* Here we always use default size not new_size */
+		if (crypt_loop_resize(crypt_get_device_name(cd)))
+			log_err(NULL, _("Cannot resize loop device.\n"));
+	}
+
 	r = device_block_adjust(cd, dmd.data_device, DEV_OK,
 				dmd.u.crypt.offset, &new_size, &dmd.flags);
 	if (r)

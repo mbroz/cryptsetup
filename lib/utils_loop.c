@@ -1,8 +1,8 @@
 /*
  * loopback block device utilities
  *
- * Copyright (C) 2011-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2012, Milan Broz
+ * Copyright (C) 2011-2015, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2015, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,6 +40,10 @@
 
 #ifndef LOOP_CTL_GET_FREE
 #define LOOP_CTL_GET_FREE 0x4C82
+#endif
+
+#ifndef LOOP_SET_CAPACITY
+#define LOOP_SET_CAPACITY 0x4C07
 #endif
 
 static char *crypt_loop_get_device_old(void)
@@ -151,6 +155,21 @@ int crypt_loop_detach(const char *loop)
                 return 1;
 
 	if (!ioctl(loop_fd, LOOP_CLR_FD, 0))
+		r = 0;
+
+	close(loop_fd);
+	return r;
+}
+
+int crypt_loop_resize(const char *loop)
+{
+	int loop_fd = -1, r = 1;
+
+	loop_fd = open(loop, O_RDONLY);
+	if (loop_fd < 0)
+                return 1;
+
+	if (!ioctl(loop_fd, LOOP_SET_CAPACITY, 0))
 		r = 0;
 
 	close(loop_fd);
