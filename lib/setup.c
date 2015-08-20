@@ -456,89 +456,6 @@ int crypt_confirm(struct crypt_device *cd, const char *msg)
 		return cd->confirm(msg, cd->confirm_usrptr);
 }
 
-static int key_from_terminal(struct crypt_device *cd, char *msg, char **key,
-			      size_t *key_len, int force_verify)
-{
-	char *prompt = NULL, *device_name;
-	int r;
-
-	*key = NULL;
-	if(!msg) {
-		if (crypt_loop_device(crypt_get_device_name(cd)))
-			device_name = crypt_loop_backing_file(crypt_get_device_name(cd));
-		else
-			device_name = strdup(crypt_get_device_name(cd));
-		if (!device_name)
-			return -ENOMEM;
-		r = asprintf(&prompt, _("Enter passphrase for %s: "), device_name);
-		free(device_name);
-		if (r < 0)
-			return -ENOMEM;
-		msg = prompt;
-	}
-
-	if (cd->password) {
-		*key = crypt_safe_alloc(DEFAULT_PASSPHRASE_SIZE_MAX);
-		if (!*key) {
-			r = -ENOMEM;
-			goto out;
-		}
-		r = cd->password(msg, *key, DEFAULT_PASSPHRASE_SIZE_MAX,
-				 cd->password_usrptr);
-		if (r < 0) {
-			crypt_safe_free(*key);
-			*key = NULL;
-		} else
-			*key_len = r;
-	} else
-		r = crypt_get_key(msg, key, key_len, 0, 0, NULL, cd->timeout,
-				  (force_verify || cd->password_verify), cd);
-out:
-	free(prompt);
-	return (r < 0) ? r: 0;
-}
-
-static int volume_key_by_terminal_passphrase(struct crypt_device *cd, int keyslot,
-					     struct volume_key **vk)
-{
-	char *passphrase_read = NULL;
-	size_t passphrase_size_read;
-	int r = -EINVAL, eperm = 0, tries = cd->tries;
-
-	*vk = NULL;
-	do {
-		crypt_free_volume_key(*vk);
-		*vk = NULL;
-
-		r = key_from_terminal(cd, NULL, &passphrase_read,
-				      &passphrase_size_read, 0);
-		/* Continue if it is just passphrase verify mismatch */
-		if (r == -EPERM)
-			continue;
-		if(r < 0)
-			goto out;
-
-		r = LUKS_open_key_with_hdr(keyslot, passphrase_read,
-					   passphrase_size_read, &cd->u.luks1.hdr, vk, cd);
-		if (r == -EPERM)
-			eperm = 1;
-		crypt_safe_free(passphrase_read);
-		passphrase_read = NULL;
-	} while (r == -EPERM && (--tries > 0));
-out:
-	if (r < 0) {
-		crypt_free_volume_key(*vk);
-		*vk = NULL;
-
-		/* Report wrong passphrase if at least one try failed */
-		if (eperm && r == -EPIPE)
-			r = -EPERM;
-	}
-
-	crypt_safe_free(passphrase_read);
-	return r;
-}
-
 void crypt_set_log_callback(struct crypt_device *cd,
 	void (*log)(int level, const char *msg, void *usrptr),
 	void *usrptr)
@@ -1583,6 +1500,9 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	if (!passphrase)
+		return -EINVAL;
+
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
 		return r;
@@ -1592,12 +1512,8 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (passphrase) {
-		r = LUKS_open_key_with_hdr(keyslot, passphrase, passphrase_size,
-					   &cd->u.luks1.hdr, &vk, cd);
-	} else
-		r = volume_key_by_terminal_passphrase(cd, keyslot, &vk);
-
+	r = LUKS_open_key_with_hdr(keyslot, passphrase, passphrase_size,
+				   &cd->u.luks1.hdr, &vk, cd);
 	if (r >= 0) {
 		keyslot = r;
 		r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key);
@@ -1676,14 +1592,12 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 // slot manipulation
 int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	int keyslot, // -1 any
-	const char *passphrase, // NULL -> terminal
+	const char *passphrase,
 	size_t passphrase_size,
-	const char *new_passphrase, // NULL -> terminal
+	const char *new_passphrase,
 	size_t new_passphrase_size)
 {
 	struct volume_key *vk = NULL;
-	char *password = NULL, *new_password = NULL;
-	size_t passwordLen, new_passwordLen;
 	int r;
 
 	log_dbg("Adding new keyslot, existing passphrase %sprovided,"
@@ -1693,6 +1607,9 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	r = onlyLUKS(cd);
 	if (r < 0)
 		return r;
+
+	if (!passphrase || !new_passphrase)
+		return -EINVAL;
 
 	r = keyslot_verify_or_find_empty(cd, &keyslot);
 	if (r)
@@ -1707,44 +1624,22 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 			log_err(cd, _("Cannot add key slot, all slots disabled and no volume key provided.\n"));
 			return -EINVAL;
 		}
-	} else if (passphrase) {
+	} else {
 		/* Passphrase provided, use it to unlock existing keyslot */
 		r = LUKS_open_key_with_hdr(CRYPT_ANY_SLOT, passphrase,
 					   passphrase_size, &cd->u.luks1.hdr, &vk, cd);
-	} else {
-		/* Passphrase not provided, ask first and use it to unlock existing keyslot */
-		r = key_from_terminal(cd, _("Enter any passphrase: "),
-				      &password, &passwordLen, 0);
-		if (r < 0)
-			goto out;
-
-		r = LUKS_open_key_with_hdr(CRYPT_ANY_SLOT, password,
-					   passwordLen, &cd->u.luks1.hdr, &vk, cd);
-		crypt_safe_free(password);
 	}
 
 	if(r < 0)
 		goto out;
 
-	if (new_passphrase) {
-		new_password = CONST_CAST(char*)new_passphrase;
-		new_passwordLen = new_passphrase_size;
-	} else {
-		r = key_from_terminal(cd, _("Enter new passphrase for key slot: "),
-				      &new_password, &new_passwordLen, 1);
-		if(r < 0)
-			goto out;
-	}
-
-	r = LUKS_set_key(keyslot, new_password, new_passwordLen,
+	r = LUKS_set_key(keyslot, CONST_CAST(char*)new_passphrase, new_passphrase_size,
 			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
 	if(r < 0)
 		goto out;
 
 	r = 0;
 out:
-	if (!new_passphrase)
-		crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
 }
@@ -1830,6 +1725,9 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	if (!keyfile || !new_keyfile)
+		return -EINVAL;
+
 	r = keyslot_verify_or_find_empty(cd, &keyslot);
 	if (r)
 		return r;
@@ -1844,14 +1742,9 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 			return -EINVAL;
 		}
 	} else {
-		/* Read password from file of (if NULL) from terminal */
-		if (keyfile)
-			r = crypt_keyfile_read(cd, keyfile,
-					       &password, &passwordLen,
-					       keyfile_offset, keyfile_size);
-		else
-			r = key_from_terminal(cd, _("Enter any passphrase: "),
-					      &password, &passwordLen, 0);
+		r = crypt_keyfile_read(cd, keyfile,
+				       &password, &passwordLen,
+				       keyfile_offset, keyfile_size);
 		if (r < 0)
 			goto out;
 
@@ -1862,13 +1755,9 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	if(r < 0)
 		goto out;
 
-	if (new_keyfile)
-		r = crypt_keyfile_read(cd, new_keyfile,
-				       &new_password, &new_passwordLen,
-				       new_keyfile_offset, new_keyfile_size);
-	else
-		r = key_from_terminal(cd, _("Enter new passphrase for key slot: "),
-				      &new_password, &new_passwordLen, 1);
+	r = crypt_keyfile_read(cd, new_keyfile,
+			       &new_password, &new_passwordLen,
+			       new_keyfile_offset, new_keyfile_size);
 	if (r < 0)
 		goto out;
 
@@ -1902,13 +1791,15 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 {
 	struct volume_key *vk = NULL;
 	int r;
-	char *new_password = NULL; size_t new_passwordLen;
 
 	log_dbg("Adding new keyslot %d using volume key.", keyslot);
 
 	r = onlyLUKS(cd);
 	if (r < 0)
 		return r;
+
+	if (!passphrase)
+		return -EINVAL;
 
 	if (volume_key)
 		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
@@ -1928,19 +1819,9 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	if (r)
 		goto out;
 
-	if (!passphrase) {
-		r = key_from_terminal(cd, _("Enter new passphrase for key slot: "),
-				      &new_password, &new_passwordLen, 1);
-		if (r < 0)
-			goto out;
-		passphrase = new_password;
-		passphrase_size = new_passwordLen;
-	}
-
 	r = LUKS_set_key(keyslot, passphrase, passphrase_size,
 			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
 out:
-	crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
 	return (r < 0) ? r : keyslot;
 }
@@ -1980,13 +1861,14 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 {
 	crypt_status_info ci;
 	struct volume_key *vk = NULL;
-	char *read_passphrase = NULL;
-	size_t passphraseLen = 0;
 	int r;
 
 	log_dbg("%s volume %s [keyslot %d] using %spassphrase.",
 		name ? "Activating" : "Checking", name ?: "",
 		keyslot, passphrase ? "" : "[none] ");
+
+	if (!passphrase)
+		return -EINVAL;
 
 	if (name) {
 		ci = crypt_status(NULL, name);
@@ -2003,15 +1885,6 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		if (!name)
 			return -EINVAL;
 
-		if (!passphrase) {
-			r = key_from_terminal(cd, NULL, &read_passphrase,
-					      &passphraseLen, 0);
-			if (r < 0)
-				goto out;
-			passphrase = read_passphrase;
-			passphrase_size = passphraseLen;
-		}
-
 		r = process_key(cd, cd->u.plain.hdr.hash,
 				cd->u.plain.key_size,
 				passphrase, passphrase_size, &vk);
@@ -2021,13 +1894,8 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		r = PLAIN_activate(cd, name, vk, cd->u.plain.hdr.size, flags);
 		keyslot = 0;
 	} else if (isLUKS(cd->type)) {
-		/* provided passphrase, do not retry */
-		if (passphrase) {
-			r = LUKS_open_key_with_hdr(keyslot, passphrase,
-						   passphrase_size, &cd->u.luks1.hdr, &vk, cd);
-		} else
-			r = volume_key_by_terminal_passphrase(cd, keyslot, &vk);
-
+		r = LUKS_open_key_with_hdr(keyslot, passphrase,
+					   passphrase_size, &cd->u.luks1.hdr, &vk, cd);
 		if (r >= 0) {
 			keyslot = r;
 			if (name)
@@ -2036,7 +1904,6 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 	} else
 		r = -EINVAL;
 out:
-	crypt_safe_free(read_passphrase);
 	crypt_free_volume_key(vk);
 
 	return r < 0  ? r : keyslot;
