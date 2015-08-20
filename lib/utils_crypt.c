@@ -234,6 +234,9 @@ static int crypt_get_key_tty(const char *prompt,
 	int r = -EINVAL;
 	char *pass = NULL, *pass_verify = NULL;
 
+	*key = NULL;
+	*key_size = 0;
+
 	log_dbg("Interactive passphrase entry requested.");
 
 	pass = crypt_safe_alloc(key_size_max + 1);
@@ -322,41 +325,30 @@ static int keyfile_seek(int fd, size_t bytes)
 	return bytes == 0 ? 0 : -1;
 }
 
-/*
- * Note: --key-file=- is interpreted as a read from a binary file (stdin)
- * key_size_max == 0 means detect maximum according to input type (tty/file)
- * timeout and verify options only applies to tty input
- */
-int crypt_get_key(const char *prompt,
-		  char **key, size_t *key_size,
-		  size_t keyfile_offset, size_t keyfile_size_max,
-		  const char *key_file, int timeout, int verify,
-		  struct crypt_device *cd)
+int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
+		       char **key, size_t *key_size_read,
+		       size_t keyfile_offset, size_t keyfile_size_max)
 {
-	int fd, regular_file, read_stdin, char_read, unlimited_read = 0;
+	int fd, regular_file, char_read, unlimited_read = 0;
 	int r = -EINVAL, newline;
 	char *pass = NULL;
 	size_t buflen, i, file_read_size;
 	struct stat st;
 
 	*key = NULL;
-	*key_size = 0;
+	*key_size_read = 0;
 
-	/* Passphrase read from stdin? */
-	read_stdin = (!key_file || !strcmp(key_file, "-")) ? 1 : 0;
-
-	if (read_stdin && isatty(STDIN_FILENO)) {
-		if (keyfile_offset) {
-			log_err(cd, _("Cannot use offset with terminal input.\n"));
-			return -EINVAL;
-		}
-		return crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
+	fd = keyfile ? open(keyfile, O_RDONLY) : STDIN_FILENO;
+	if (fd < 0) {
+		log_err(cd, _("Failed to open key file.\n"));
+		return -EINVAL;
 	}
 
-	if (read_stdin)
-		log_dbg("STDIN descriptor passphrase entry requested.");
-	else
-		log_dbg("File descriptor passphrase entry requested.");
+	if (isatty(fd)) {
+		log_err(cd, _("Cannot read keyfile from a terminal.\n"));
+		r = -EINVAL;
+		goto out_err;
+	}
 
 	/* If not requsted otherwise, we limit input to prevent memory exhaustion */
 	if (keyfile_size_max == 0) {
@@ -364,17 +356,11 @@ int crypt_get_key(const char *prompt,
 		unlimited_read = 1;
 	}
 
-	fd = read_stdin ? STDIN_FILENO : open(key_file, O_RDONLY);
-	if (fd < 0) {
-		log_err(cd, _("Failed to open key file.\n"));
-		return -EINVAL;
-	}
-
 	/* use 4k for buffer (page divisor but avoid huge pages) */
 	buflen = 4096 - sizeof(struct safe_allocation);
 	regular_file = 0;
-	if(!read_stdin) {
-		if(stat(key_file, &st) < 0) {
+	if(fd != STDIN_FILENO) {
+		if(stat(keyfile, &st) < 0) {
 			log_err(cd, _("Failed to stat key file.\n"));
 			goto out_err;
 		}
@@ -428,7 +414,7 @@ int crypt_get_key(const char *prompt,
 		/* Stop on newline only if not requested read from keyfile */
 		if (char_read == 0)
 			break;
-		if (!key_file && pass[i] == '\n') {
+		if (!keyfile && pass[i] == '\n') {
 			newline = 1;
 			pass[i] = '\0';
 			break;
@@ -454,7 +440,7 @@ int crypt_get_key(const char *prompt,
 	}
 
 	*key = pass;
-	*key_size = i;
+	*key_size_read = i;
 	r = 0;
 out_err:
 	if(fd != STDIN_FILENO)
@@ -463,6 +449,39 @@ out_err:
 	if (r)
 		crypt_safe_free(pass);
 	return r;
+}
+
+
+/*
+ * Note: --key-file=- is interpreted as a read from a binary file (stdin)
+ * key_size_max == 0 means detect maximum according to input type (tty/file)
+ * timeout and verify options only applies to tty input
+ */
+int crypt_get_key(const char *prompt,
+		  char **key, size_t *key_size,
+		  size_t keyfile_offset, size_t keyfile_size_max,
+		  const char *key_file, int timeout, int verify,
+		  struct crypt_device *cd)
+{
+	int read_stdin;
+
+	/* Passphrase read from stdin? */
+	read_stdin = (!key_file || !strcmp(key_file, "-")) ? 1 : 0;
+
+	if (read_stdin && isatty(STDIN_FILENO)) {
+		if (keyfile_offset) {
+			log_err(cd, _("Cannot use offset with terminal input.\n"));
+			return -EINVAL;
+		}
+		return crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
+	}
+
+	if (read_stdin)
+		log_dbg("STDIN descriptor passphrase entry requested.");
+	else
+		log_dbg("File descriptor passphrase entry requested.");
+
+	return crypt_keyfile_read(cd, key_file, key, key_size, keyfile_offset, keyfile_size_max);
 }
 
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc)
