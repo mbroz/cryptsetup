@@ -499,7 +499,6 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
-	crypt_set_confirm_callback(cd, NULL, NULL);
 	if ((r = crypt_header_backup(cd, CRYPT_LUKS1, rc->header_file_org)))
 		goto out;
 	log_verbose(_("LUKS header backup of device %s created.\n"), rc->device);
@@ -646,7 +645,6 @@ static int restore_luks_header(struct reenc_ctx *rc)
 
 	r = crypt_init(&cd, rc->device);
 	if (r == 0) {
-		crypt_set_confirm_callback(cd, NULL, NULL);
 		r = crypt_header_restore(cd, CRYPT_LUKS1, rc->header_file_new);
 	}
 

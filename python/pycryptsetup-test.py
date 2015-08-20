@@ -40,9 +40,6 @@ def askyes(txt):
     print("Question:", txt)
     return 1
 
-def askpassword(txt):
-    return PASSWORD
-
 def print_status(c):
     r = c.status()
     print("status  :",end="")
@@ -64,8 +61,7 @@ c = pycryptsetup.CryptSetup(
         device = IMG,
         name = DEVICE,
         yesDialog = askyes,
-        logFunc = log,
-        passwordDialog = askpassword)
+        logFunc = log)
 
 #c.debugLevel(pycryptsetup.CRYPT_DEBUG_ALL);
 c.debugLevel(pycryptsetup.CRYPT_DEBUG_NONE);
@@ -108,16 +104,14 @@ c = pycryptsetup.CryptSetup(
         device = IMG,
         name = DEVICE,
         yesDialog = askyes,
-        logFunc = log,
-        passwordDialog = askpassword)
+        logFunc = log)
 
 print("activate:", c.activate(name = DEVICE, passphrase = PASSWORD))
 
 c2 = pycryptsetup.CryptSetup(
         name = DEVICE,
         yesDialog = askyes,
-        logFunc = log,
-        passwordDialog = askpassword)
+        logFunc = log)
 
 info = c2.info()
 print("cipher  :", info["cipher"])

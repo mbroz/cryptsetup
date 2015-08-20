@@ -850,27 +850,6 @@ static void AddDevicePlain(void)
 	crypt_free(cd);
 }
 
-#define CALLBACK_ERROR "calback_error xyz"
-static int pass_callback_err(const char *msg, char *buf, size_t length, void *usrptr)
-{
-	struct crypt_device *cd = usrptr;
-
-	assert(cd);
-	assert(length);
-	assert(msg);
-
-	crypt_log(cd, CRYPT_LOG_ERROR, CALLBACK_ERROR);
-	return -EINVAL;
-}
-
-static int pass_callback_ok(const char *msg, char *buf, size_t length, void *usrptr)
-{
-	assert(length);
-	assert(msg);
-	strcpy(buf, PASSPHRASE);
-	return strlen(buf);
-}
-
 static void CallbacksTest(void)
 {
 	struct crypt_device *cd;
@@ -897,25 +876,13 @@ static void CallbacksTest(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	reset_log();
-	crypt_set_password_callback(cd, pass_callback_err, cd);
-	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, NULL, 0, 0), "callback fails");
-	EQ_(strncmp(global_log, CALLBACK_ERROR, strlen(CALLBACK_ERROR)), 0);
-
-	crypt_set_password_callback(cd, pass_callback_ok, NULL);
-	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, NULL, 0, 0));
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
-	OK_(crypt_deactivate(cd, CDEVICE_1));
-
-	// Check error reporting.
-	// This must fail and create error message
-	crypt_deactivate(cd, CDEVICE_1);
-
 	// Here context must be the same
-	crypt_get_error(buf1, sizeof(buf1));
-	crypt_last_error(cd, buf2, sizeof(buf2));
-	OK_(!*buf1);
-	OK_(!*buf2);
-	OK_(strcmp(buf1, buf2));
+	//FIXME: password callback test was here
+	//crypt_get_error(buf1, sizeof(buf1));
+	//crypt_last_error(cd, buf2, sizeof(buf2));
+	//OK_(!*buf1);
+	//OK_(!*buf2);
+	//OK_(strcmp(buf1, buf2));
 
 	crypt_get_error(buf1, sizeof(buf1));
 	crypt_last_error(cd, buf2, sizeof(buf2));

@@ -58,7 +58,6 @@ typedef struct {
 	/* Callbacks */
 	PyObject *yesDialogCB;
 	PyObject *cmdLineLogCB;
-	PyObject *passwordDialogCB;
 } CryptSetupObject;
 
 static int yesDialog(const char *msg, void *this)
@@ -88,41 +87,6 @@ static int yesDialog(const char *msg, void *this)
 	return 1;
 }
 
-static int passwordDialog(const char *msg, char *buf, size_t length, void *this)
-{
-	CryptSetupObject *self = this;
-	PyObject *result, *arglist;
-	size_t len;
-	char *res = NULL;
-
-	if(self->passwordDialogCB){
-		arglist = Py_BuildValue("(s)", msg);
-		if (!arglist)
-			return -ENOMEM;
-
-		result = PyEval_CallObject(self->passwordDialogCB, arglist);
-		Py_DECREF(arglist);
-
-		if (!result)
-			return -EINVAL;
-
-		if (!PyArg_Parse(result, "z", &res)) {
-			Py_DECREF(result);
-			return -EINVAL;
-		}
-
-		strncpy(buf, res, length - 1);
-		len = strlen(res);
-
-		memset(res, 0, len);
-		Py_DECREF(result);
-
-		return (int)len;
-	}
-
-	return -EINVAL;
-}
-
 static void cmdLineLog(int cls, const char *msg, void *this)
 {
 	CryptSetupObject *self = this;
@@ -144,7 +108,6 @@ static void CryptSetup_dealloc(CryptSetupObject* self)
 	/* free the callbacks */
 	Py_XDECREF(self->yesDialogCB);
 	Py_XDECREF(self->cmdLineLogCB);
-	Py_XDECREF(self->passwordDialogCB);
 
 	free(self->activated_as);
 
@@ -160,7 +123,6 @@ static PyObject *CryptSetup_new(PyTypeObject *type, PyObject *args, PyObject *kw
 
 	if (self) {
 		self->yesDialogCB = NULL;
-		self->passwordDialogCB = NULL;
 		self->cmdLineLogCB = NULL;
 		self->activated_as = NULL;
 	}
@@ -181,8 +143,8 @@ static PyObject *PyObjectResult(int is)
 static char
 CryptSetup_HELP[] =
 "CryptSetup object\n\n\
-constructor takes one to five arguments:\n\
-  __init__(device, name, yesDialog, passwordDialog, logFunc)\n\n\
+constructor takes one to four arguments:\n\
+  __init__(device, name, yesDialog, logFunc)\n\n\
   yesDialog - python function with func(text) signature, \n\
               which asks the user question text and returns 1\n\
               of the answer was positive or 0 if not\n\
@@ -190,16 +152,15 @@ constructor takes one to five arguments:\n\
 
 static int CryptSetup_init(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static const char *kwlist[] = {"device", "name", "yesDialog", "passwordDialog", "logFunc", NULL};
+	static const char *kwlist[] = {"device", "name", "yesDialog", "logFunc", NULL};
 	PyObject *yesDialogCB = NULL,
-		 *passwordDialogCB = NULL,
 		 *cmdLineLogCB = NULL,
 		 *tmp = NULL;
 	char *device = NULL, *deviceName = NULL;
 	int r;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzOOO", CONST_CAST(char**)kwlist, &device, &deviceName,
-					 &yesDialogCB, &passwordDialogCB, &cmdLineLogCB))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzOO", CONST_CAST(char**)kwlist, &device, &deviceName,
+					 &yesDialogCB, &cmdLineLogCB))
 		return -1;
 
 	if (device) {
@@ -233,14 +194,6 @@ static int CryptSetup_init(CryptSetupObject* self, PyObject *args, PyObject *kwd
 		self->yesDialogCB = yesDialogCB;
 		Py_XDECREF(tmp);
 		crypt_set_confirm_callback(self->device, yesDialog, self);
-	}
-
-	if (passwordDialogCB) {
-		tmp = self->passwordDialogCB;
-		Py_INCREF(passwordDialogCB);
-		self->passwordDialogCB = passwordDialogCB;
-		Py_XDECREF(tmp);
-		crypt_set_password_callback(self->device, passwordDialog, self);
 	}
 
 	if (cmdLineLogCB) {
@@ -658,7 +611,6 @@ static PyObject *CryptSetup_iterationTime(CryptSetupObject* self, PyObject *args
 static PyMemberDef CryptSetup_members[] = {
 	{CONST_CAST(char*)"yesDialogCB", T_OBJECT_EX, offsetof(CryptSetupObject, yesDialogCB), 0, CONST_CAST(char*)"confirmation dialog callback"},
 	{CONST_CAST(char*)"cmdLineLogCB", T_OBJECT_EX, offsetof(CryptSetupObject, cmdLineLogCB), 0, CONST_CAST(char*)"logging callback"},
-	{CONST_CAST(char*)"passwordDialogCB", T_OBJECT_EX, offsetof(CryptSetupObject, passwordDialogCB), 0, CONST_CAST(char*)"password dialog callback"},
 	{NULL}
 };
 

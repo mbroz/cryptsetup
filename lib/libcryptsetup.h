@@ -156,61 +156,6 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
 	void *usrptr);
 
 /**
- * Set password query callback. DEPRECATED
- *
- * If code need @e _interactive_ query for password, this callback is called.
- * If not defined, compiled-in default is called (uses terminal input).
- *
- * Callback should return length of password in buffer
- * or negative errno value in case of error.
- *
- * @param cd crypt device handle
- * @param password user defined password callback reference
- * @param usrptr provided identification in callback
- * @param msg Message for user
- * @param buf buffer for password
- * @param length size of buffer
- *
- * @note Note that if this function is defined, verify option is ignored
- *   (caller which provided callback is responsible for password verification)
- * @note Only zero terminated passwords can be entered this way, for complex
- *   use API functions directly.
- * @note Maximal length of password is limited to @e length @e - @e 1 (minimal 511 chars)
- * @note This function is DEPRECATED and will be removed in future versions.
- *
- * @see Callback function is used in these call provided, that certain conditions are met:
- * @li crypt_keyslot_add_by_passphrase
- * @li crypt_activate_by_passphrase
- * @li crypt_resume_by_passphrase
- * @li crypt_resume_by_keyfile
- * @li crypt_keyslot_add_by_keyfile
- * @li crypt_keyslot_add_by_volume_key
- *
- */
-void crypt_set_password_callback(struct crypt_device *cd,
-	int (*password)(const char *msg, char *buf, size_t length, void *usrptr),
-	void *usrptr);
-
-/**
- * Set timeout for interactive password entry using default
- * password callback. DEPRECATED
- *
- * @param cd crypt device handle
- * @param timeout_sec timeout in seconds
- */
-void crypt_set_timeout(struct crypt_device *cd, uint64_t timeout_sec);
-
-/**
- * Set number of retries in case password input has been incorrect. DEPRECATED.
- *
- * @param cd crypt device handle
- * @param tries the number
- *
- * @note This function is DEPRECATED and will be removed in future versions.
- */
-void crypt_set_password_retry(struct crypt_device *cd, int tries);
-
-/**
  * Set how long should cryptsetup iterate in PBKDF2 function.
  * Default value heads towards the iterations which takes around 1 second.
  *
@@ -218,19 +163,6 @@ void crypt_set_password_retry(struct crypt_device *cd, int tries);
  * @param iteration_time_ms the time in ms
  */
 void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms);
-/* Don't ask :-) */
-void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_ms);
-
-/**
- * Set whether passphrase will be verified on input
- * (user has to input same passphrase twice). DEPRECATED
- *
- * @param cd crypt device handle
- * @param password_verify @e 0 = false, @e !0 true
- *
- * @note This function is DEPRECATED and will be removed in future versions.
- */
-void crypt_set_password_verify(struct crypt_device *cd, int password_verify);
 
 /**
  * Set data device
@@ -540,8 +472,6 @@ int crypt_suspend(struct crypt_device *cd,
  * @return unlocked key slot number or negative errno otherwise.
  *
  * @note Only LUKS device type is supported
- * @note If passphrase is @e NULL always use crypt_set_password_callback.
- * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_resume_by_passphrase(struct crypt_device *cd,
 	const char *name,
@@ -560,9 +490,6 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
  * @param keyfile_offset number of bytes to skip at start of keyfile
  *
  * @return unlocked key slot number or negative errno otherwise.
- *
- * @note If passphrase is @e NULL always use crypt_set_password_callback.
- * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 	const char *name,
@@ -609,9 +536,6 @@ void crypt_free(struct crypt_device *cd);
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
  * @return allocated key slot number or negative errno otherwise.
- *
- * @note If passphrase is @e NULL always use crypt_set_password_callback.
- * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	int keyslot,
@@ -638,9 +562,6 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
  * @note This function is just internal implementation of luksChange
  * command to avoid reading of volume key outside libcryptsetup boundary
  * in FIPS mode.
- *
- * @note If passphrase is @e NULL always use crypt_set_password_callback.
- * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	int keyslot_old,
@@ -665,9 +586,6 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
  * @param new_keyfile_offset number of bytes to skip at start of new_keyfile
  *
  * @return allocated key slot number or negative errno otherwise.
- *
- * @note Note that @e keyfile can be "-" for STDIN. This special handling is DEPRECATED
- * and will be removed in next version.
  */
 int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	int keyslot,
@@ -700,9 +618,6 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
  * @param passphrase_size size of passphrase
  *
  * @return allocated key slot number or negative errno otherwise.
- *
- * @note If passphrase is @e NULL always use crypt_set_password_callback.
- * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	int keyslot,
@@ -791,9 +706,6 @@ int crypt_get_active_device(struct crypt_device *cd,
  * @param flags activation flags
  *
  * @return unlocked key slot number or negative errno otherwise.
- *
- * @note If passphrase is @e NULL always use crypt_set_password_callback.
- * Internal terminal password query is DEPRECATED and will be removed in next version.
  */
 int crypt_activate_by_passphrase(struct crypt_device *cd,
 	const char *name,

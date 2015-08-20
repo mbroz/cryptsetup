@@ -43,10 +43,7 @@ struct crypt_device {
 	struct device *metadata_device;
 
 	struct volume_key *volume_key;
-	uint64_t timeout;
 	uint64_t iteration_time;
-	int tries;
-	int password_verify;
 	int rng_type;
 
 	// FIXME: private binary headers and access it properly
@@ -93,8 +90,6 @@ struct crypt_device {
 	void *log_usrptr;
 	int (*confirm)(const char *msg, void *usrptr);
 	void *confirm_usrptr;
-	int (*password)(const char *msg, char *buf, size_t length, void *usrptr);
-	void *password_usrptr;
 
 	/* last error message */
 	char error[MAX_ERROR_LENGTH];
@@ -476,14 +471,6 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
 	cd->confirm_usrptr = usrptr;
 }
 
-void crypt_set_password_callback(struct crypt_device *cd,
-	int (*password)(const char *msg, char *buf, size_t length, void *usrptr),
-	void *usrptr)
-{
-	cd->password = password;
-	cd->password_usrptr = usrptr;
-}
-
 static void _get_error(char *error, char *buf, size_t size)
 {
 	if (!buf || size < 1)
@@ -535,8 +522,6 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	dm_backend_init();
 
 	h->iteration_time = 1000;
-	h->password_verify = 0;
-	h->tries = 3;
 	h->rng_type = crypt_random_default_key_rng();
 	*cd = h;
 	return 0;
@@ -2212,32 +2197,10 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 	return r;
 }
 
-void crypt_set_timeout(struct crypt_device *cd, uint64_t timeout_sec)
-{
-	log_dbg("Timeout set to %" PRIu64 " miliseconds.", timeout_sec);
-	cd->timeout = timeout_sec;
-}
-
-void crypt_set_password_retry(struct crypt_device *cd, int tries)
-{
-	log_dbg("Password retry count set to %d.", tries);
-	cd->tries = tries;
-}
-
 void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms)
 {
 	log_dbg("Iteration time set to %" PRIu64 " miliseconds.", iteration_time_ms);
 	cd->iteration_time = iteration_time_ms;
-}
-void crypt_set_iterarion_time(struct crypt_device *cd, uint64_t iteration_time_ms)
-{
-	crypt_set_iteration_time(cd, iteration_time_ms);
-}
-
-void crypt_set_password_verify(struct crypt_device *cd, int password_verify)
-{
-	log_dbg("Password verification %s.", password_verify ? "enabled" : "disabled");
-	cd->password_verify = password_verify ? 1 : 0;
 }
 
 void crypt_set_rng_type(struct crypt_device *cd, int rng_type)
