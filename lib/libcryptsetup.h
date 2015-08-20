@@ -1225,6 +1225,16 @@ void crypt_set_debug_level(int level);
 
 /** @} */
 
+/**
+ * Read keyfile
+ *
+ */
+int crypt_keyfile_read(struct crypt_device *cd,
+	const char *keyfile,
+	char **key, size_t *key_size_read,
+	size_t keyfile_offset,
+	size_t keyfile_size_max);
+
 #ifdef __cplusplus
 }
 #endif
