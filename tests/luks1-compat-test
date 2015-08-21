@@ -70,6 +70,10 @@ for file in $(ls $TST_DIR/luks1_*) ; do
 	ret=$?
 	# ignore missing whirlpool (pwd failed is exit code 2)
 	[ $ret -eq 1 ] && (echo $file | grep -q -e "whirlpool") && echo " [N/A]" && continue
+	# ignore flawed whirlpool (pwd failed is exit code 2)
+	[ $ret -eq 2 ] && (echo $file | grep -q -e "whirlpool") && \
+		($CRYPTSETUP luksDump $file --debug | grep -q -e "flawed whirlpool") && \
+		echo " [IGNORED (flawed Whirlpool library)]" && continue
 	[ $ret -ne 0 ] && fail
 	$CRYPTSETUP status $MAP >/dev/null || fail
 	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
