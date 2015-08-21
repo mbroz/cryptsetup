@@ -1371,12 +1371,12 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (opt_device_size_str &&
-	    crypt_string_to_size(NULL, opt_device_size_str, &opt_device_size))
+	    tools_string_to_size(NULL, opt_device_size_str, &opt_device_size))
 		usage(popt_context, EXIT_FAILURE, _("Invalid device size specification."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_reduce_size_str &&
-	    crypt_string_to_size(NULL, opt_reduce_size_str, &opt_reduce_size))
+	    tools_string_to_size(NULL, opt_reduce_size_str, &opt_reduce_size))
 		usage(popt_context, EXIT_FAILURE, _("Invalid device size specification."),
 		      poptGetInvocationName(popt_context));
 	if (opt_reduce_size > 64 * 1024 * 1024)
