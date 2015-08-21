@@ -162,6 +162,9 @@ int crypt_random_init(struct crypt_device *ctx)
 	if(random_fd == -1)
 		goto fail;
 
+	if (crypt_fips_mode())
+		log_verbose(ctx, _("Running in FIPS mode.\n"));
+
 	random_initialised = 1;
 	return 0;
 fail:
