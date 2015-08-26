@@ -1545,7 +1545,7 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 
 	r = crypt_keyfile_read(cd, keyfile,
 			       &passphrase_read, &passphrase_size_read,
-			       keyfile_offset, keyfile_size);
+			       keyfile_offset, keyfile_size, 0);
 	if (r < 0)
 		goto out;
 
@@ -1729,7 +1729,7 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	} else {
 		r = crypt_keyfile_read(cd, keyfile,
 				       &password, &passwordLen,
-				       keyfile_offset, keyfile_size);
+				       keyfile_offset, keyfile_size, 0);
 		if (r < 0)
 			goto out;
 
@@ -1742,7 +1742,7 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 
 	r = crypt_keyfile_read(cd, new_keyfile,
 			       &new_password, &new_passwordLen,
-			       new_keyfile_offset, new_keyfile_size);
+			       new_keyfile_offset, new_keyfile_size, 0);
 	if (r < 0)
 		goto out;
 
@@ -1931,7 +1931,7 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 
 		r = crypt_keyfile_read(cd, keyfile,
 				       &passphrase_read, &passphrase_size_read,
-				       keyfile_offset, keyfile_size);
+				       keyfile_offset, keyfile_size, 0);
 		if (r < 0)
 			goto out;
 
@@ -1945,7 +1945,7 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 	} else if (isLUKS(cd->type)) {
 		r = crypt_keyfile_read(cd, keyfile,
 				       &passphrase_read, &passphrase_size_read,
-				       keyfile_offset, keyfile_size);
+				       keyfile_offset, keyfile_size, 0);
 		if (r < 0)
 			goto out;
 		r = LUKS_open_key_with_hdr(keyslot, passphrase_read,
@@ -1963,7 +1963,7 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 	} else if (isLOOPAES(cd->type)) {
 		r = crypt_keyfile_read(cd, keyfile,
 				       &passphrase_read, &passphrase_size_read,
-				       keyfile_offset, keyfile_size);
+				       keyfile_offset, keyfile_size, 0);
 		if (r < 0)
 			goto out;
 		r = LOOPAES_parse_keyfile(cd, &vk, cd->u.loopaes.hdr.hash, &key_count,

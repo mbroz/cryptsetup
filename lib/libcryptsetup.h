@@ -1145,7 +1145,11 @@ int crypt_keyfile_read(struct crypt_device *cd,
 	const char *keyfile,
 	char **key, size_t *key_size_read,
 	size_t keyfile_offset,
-	size_t keyfile_size_max);
+	size_t keyfile_size_max,
+	uint32_t flags
+);
+/** No on-disk header (only hashes) */
+#define CRYPT_KEYFILE_STOP_EOL   (1 << 0)
 
 #ifdef __cplusplus
 }

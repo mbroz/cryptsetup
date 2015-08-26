@@ -257,15 +257,21 @@ static int crypt_get_key(const char *prompt,
 		  struct crypt_device *cd)
 {
 	int read_stdin;
+	uint32_t flags = 0;
 
 	/* Passphrase read from stdin? */
 	read_stdin = (!key_file || !strcmp(key_file, "-")) ? 1 : 0;
+	if (!key_file)
+		flags |= CRYPT_KEYFILE_STOP_EOL;
 
 	if (read_stdin && isatty(STDIN_FILENO)) {
 		if (keyfile_offset) {
 			log_err(_("Cannot use offset with terminal input.\n"));
 			return -EINVAL;
 		}
+		//FIXME:if (!prompt)  "Enter passphrase for %s: "
+		if (!prompt)
+			prompt = "Enter passphrase:";
 		return crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
 	}
 
@@ -274,7 +280,7 @@ static int crypt_get_key(const char *prompt,
 	else
 		log_dbg("File descriptor passphrase entry requested.");
 
-	return crypt_keyfile_read(cd, key_file, key, key_size, keyfile_offset, keyfile_size_max);
+	return crypt_keyfile_read(cd, read_stdin ? NULL : key_file, key, key_size, keyfile_offset, keyfile_size_max, flags);
 }
 
 int tools_get_key(const char *prompt,

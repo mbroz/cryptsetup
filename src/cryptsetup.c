@@ -761,6 +761,8 @@ static int action_open_luks(void)
 	char *key = NULL;
 	uint32_t activate_flags = 0;
 	int r, keysize;
+	char *password = NULL;
+	size_t passwordLen;
 
 	header_device = uuid_or_device_header(&data_device);
 
@@ -794,15 +796,19 @@ static int action_open_luks(void)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
-	} else if (opt_key_file) {
-		r = crypt_activate_by_keyfile_offset(cd, activated_name,
-			opt_key_slot, opt_key_file, opt_keyfile_size,
-			opt_keyfile_offset, activate_flags);
-	} else
+	} else {
+		r = tools_get_key(NULL, &password, &passwordLen,
+				  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+				  opt_timeout, _verify_passphrase(0), 0, cd);
+		if (r < 0)
+			goto out;
+
 		r = crypt_activate_by_passphrase(cd, activated_name,
-			opt_key_slot, NULL, 0, activate_flags);
+			opt_key_slot, password, passwordLen, activate_flags);
+	}
 out:
 	crypt_safe_free(key);
+	crypt_safe_free(password);
 	crypt_free(cd);
 	return r;
 }
@@ -1214,18 +1220,25 @@ static int action_luksSuspend(void)
 static int action_luksResume(void)
 {
 	struct crypt_device *cd = NULL;
+	char *password = NULL;
+	size_t passwordLen;
 	int r;
 
 	if ((r = crypt_init_by_name_and_header(&cd, action_argv[0], uuid_or_device(opt_header_device))))
 		goto out;
 
-	if (opt_key_file)
-		r = crypt_resume_by_keyfile_offset(cd, action_argv[0], CRYPT_ANY_SLOT,
-			opt_key_file, opt_keyfile_size, opt_keyfile_offset);
-	else
-		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
-					       NULL, 0);
+	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
+		goto out;
+
+	r = tools_get_key(NULL, &password, &passwordLen,
+		  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+		  opt_timeout, _verify_passphrase(0), 0, cd);
+	if (r)
+		goto out;
+
+	r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT, password, passwordLen);
 out:
+	crypt_safe_free(password);
 	crypt_free(cd);
 	return r;
 }

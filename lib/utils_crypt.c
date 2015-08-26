@@ -194,7 +194,8 @@ static int keyfile_seek(int fd, size_t bytes)
 
 int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 		       char **key, size_t *key_size_read,
-		       size_t keyfile_offset, size_t keyfile_size_max)
+		       size_t keyfile_offset, size_t keyfile_size_max,
+		       uint32_t flags)
 {
 	int fd, regular_file, char_read, unlimited_read = 0;
 	int r = -EINVAL, newline;
@@ -226,7 +227,7 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 	/* use 4k for buffer (page divisor but avoid huge pages) */
 	buflen = 4096 - sizeof(struct safe_allocation);
 	regular_file = 0;
-	if(fd != STDIN_FILENO) {
+	if (keyfile) {
 		if(stat(keyfile, &st) < 0) {
 			log_err(cd, _("Failed to stat key file.\n"));
 			goto out_err;
@@ -281,7 +282,7 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 		/* Stop on newline only if not requested read from keyfile */
 		if (char_read == 0)
 			break;
-		if (!keyfile && pass[i] == '\n') {
+		if ((flags & CRYPT_KEYFILE_STOP_EOL) && pass[i] == '\n') {
 			newline = 1;
 			pass[i] = '\0';
 			break;
