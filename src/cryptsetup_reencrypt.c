@@ -882,13 +882,13 @@ static int copy_data(struct reenc_ctx *rc)
 
 	fd_old = open(rc->crypt_path_org, O_RDONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_old == -1) {
-		log_err(_("Cannot open temporary LUKS header file.\n"));
+		log_err(_("Cannot open temporary LUKS device.\n"));
 		goto out;
 	}
 
 	fd_new = open(rc->crypt_path_new, O_WRONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_new == -1) {
-		log_err(_("Cannot open temporary LUKS header file.\n"));
+		log_err(_("Cannot open temporary LUKS device.\n"));
 		goto out;
 	}
 
