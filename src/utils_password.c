@@ -248,41 +248,7 @@ out_err:
 /*
  * Note: --key-file=- is interpreted as a read from a binary file (stdin)
  * key_size_max == 0 means detect maximum according to input type (tty/file)
- * timeout and verify options only applies to tty input
  */
-static int crypt_get_key(const char *prompt,
-		  char **key, size_t *key_size,
-		  size_t keyfile_offset, size_t keyfile_size_max,
-		  const char *key_file, int timeout, int verify,
-		  struct crypt_device *cd)
-{
-	int read_stdin;
-	uint32_t flags = 0;
-
-	/* Passphrase read from stdin? */
-	read_stdin = (!key_file || !strcmp(key_file, "-")) ? 1 : 0;
-	if (!key_file)
-		flags |= CRYPT_KEYFILE_STOP_EOL;
-
-	if (read_stdin && isatty(STDIN_FILENO)) {
-		if (keyfile_offset) {
-			log_err(_("Cannot use offset with terminal input.\n"));
-			return -EINVAL;
-		}
-		//FIXME:if (!prompt)  "Enter passphrase for %s: "
-		if (!prompt)
-			prompt = "Enter passphrase:";
-		return crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
-	}
-
-	if (read_stdin)
-		log_dbg("STDIN descriptor passphrase entry requested.");
-	else
-		log_dbg("File descriptor passphrase entry requested.");
-
-	return crypt_keyfile_read(cd, read_stdin ? NULL : key_file, key, key_size, keyfile_offset, keyfile_size_max, flags);
-}
-
 int tools_get_key(const char *prompt,
 		  char **key, size_t *key_size,
 		  size_t keyfile_offset, size_t keyfile_size_max,
@@ -296,8 +262,27 @@ int tools_get_key(const char *prompt,
 	if (block)
 		set_int_block(0);
 
-	r = crypt_get_key(prompt, key, key_size, keyfile_offset,
-			  keyfile_size_max, key_file, timeout, verify, cd);
+	if (tools_is_stdin(key_file)) {
+		if (isatty(STDIN_FILENO)) {
+			if (keyfile_offset) {
+				log_err(_("Cannot use offset with terminal input.\n"));
+				r = -EINVAL;
+			}
+			//FIXME:if (!prompt)  "Enter passphrase for %s: "
+			if (!prompt)
+				prompt = "Enter passphrase:";
+			r = crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
+		} else {
+			log_dbg("STDIN descriptor passphrase entry requested.");
+			/* No keyfile means STDIN with EOL handling (\n will end input)). */
+			r = crypt_keyfile_read(cd, NULL, key, key_size, keyfile_offset, keyfile_size_max,
+					       key_file ? 0 : CRYPT_KEYFILE_STOP_EOL);
+		}
+	} else {
+		log_dbg("File descriptor passphrase entry requested.");
+		r = crypt_keyfile_read(cd, key_file, key, key_size, keyfile_offset, keyfile_size_max, 0);
+	}
+
 	if (block && !quit)
 		set_int_block(1);
 
