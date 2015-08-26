@@ -991,13 +991,15 @@ static int action_luksAddKey(void)
 
 		r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot, key, keysize,
 						    password_new, password_new_size);
-	} else if (opt_key_file || opt_new_key_file) {
+	} else if (opt_key_file && !tools_is_stdin(opt_key_file) &&
+		   opt_new_key_file && !tools_is_stdin(opt_new_key_file)) {
 		r = crypt_keyslot_add_by_keyfile_offset(cd, opt_key_slot,
 			opt_key_file, opt_keyfile_size, opt_keyfile_offset,
 			opt_new_key_file, opt_new_keyfile_size, opt_new_keyfile_offset);
 	} else {
 		r = tools_get_key(_("Enter any existing passphrase: "),
-			      &password, &password_size, 0, 0, NULL,
+			      &password, &password_size,
+			      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			      opt_timeout, _verify_passphrase(0), 0, cd);
 
 		if (r < 0)
@@ -1011,8 +1013,9 @@ static int action_luksAddKey(void)
 			goto out;
 
 		r = tools_get_key(_("Enter new passphrase for key slot: "),
-				  &password_new, &password_new_size, 0, 0, NULL,
-				  opt_timeout, _verify_passphrase(1), 1, cd);
+				  &password_new, &password_new_size,
+				  opt_new_keyfile_offset, opt_new_keyfile_size, opt_new_key_file,
+				  opt_timeout, _verify_passphrase(1), opt_new_key_file ? 0 : 1, cd);
 		if (r < 0)
 			goto out;
 

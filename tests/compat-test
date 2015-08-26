@@ -309,29 +309,43 @@ $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[17] AddKey volume key, passphrase and keyfile" wipe
 # masterkey
-echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV --master-key-file /dev/zero --key-slot 3 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat -i1 $LOOPDEV --master-key-file /dev/zero --key-slot 3 || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
-echo $PWD2 | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/zero --key-slot 4 || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey -i1 $LOOPDEV --master-key-file /dev/zero --key-slot 4 || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 4 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: ENABLED" || fail
-echo $PWD3 | $CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/null --key-slot 5 2>/dev/null && fail
-$CRYPTSETUP luksAddKey $LOOPDEV --master-key-file /dev/zero --key-slot 5 $KEY1 || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -i1 $LOOPDEV --master-key-file /dev/null --key-slot 5 2>/dev/null && fail
+$CRYPTSETUP luksAddKey -i1 $LOOPDEV --master-key-file /dev/zero --key-slot 5 $KEY1 || fail
+$CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 5 -d $KEY1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 5: ENABLED" || fail
 
+# special "-" handling
+$CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY1 --key-slot 3 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -i1 $LOOPDEV -d $KEY1 - || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV -d - --test-passphrase || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -i1 $LOOPDEV -d - $KEY2 || fail
+$CRYPTSETUP luksOpen $LOOPDEV -d $KEY2 --test-passphrase || fail
+
 # [0]PWD1 [1]PWD2 [2]$KEY1/1 [3]$KEY1 [4]$KEY2
-$CRYPTSETUP -q luksFormat $LOOPDEV $KEY1 --key-slot 3 || fail
+$CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY1 --key-slot 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 3 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV -i1 -d $KEY1 $KEY2 --key-slot 3 2>/dev/null && fail
 # keyfile/keyfile
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 --key-slot 4 || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -i1 -d $KEY1 $KEY2 --key-slot 4 || fail
+$CRYPTSETUP luksOpen $LOOPDEV -d $KEY2 --test-passphrase --key-slot 4 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: ENABLED" || fail
 # passphrase/keyfile
-echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 --key-slot 0 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -i1 $LOOPDEV -d $KEY1 --key-slot 0 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: ENABLED" || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 0 || fail
 # passphrase/passphrase
-echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksAddKey $LOOPDEV --key-slot 1 || fail
+echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksAddKey -i1 $LOOPDEV --key-slot 1 || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: ENABLED" || fail
 # keyfile/passphrase
-echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 1 || fail
+echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey -i1 $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: ENABLED" || fail
 
 prepare "[18] RemoveKey passphrase and keyfile" reuse
