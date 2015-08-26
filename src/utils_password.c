@@ -65,6 +65,17 @@ static int tools_check_pwquality(const char *password)
 }
 #endif /* ENABLE_PWQUALITY */
 
+/*
+ * Keyfile - is standard input treated as a binary file (no EOL handling).
+ */
+int tools_is_stdin(const char *key_file)
+{
+	if (!key_file)
+		return 1;
+
+	return strcmp(key_file, "-") ? 0 : 1;
+}
+
 int tools_get_key(const char *prompt,
 		  char **key, size_t *key_size,
 		  size_t keyfile_offset, size_t keyfile_size_max,

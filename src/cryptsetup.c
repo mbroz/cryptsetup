@@ -124,7 +124,6 @@ static int action_open_plain(void)
 	size_t passwordLen;
 	size_t key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	uint32_t activate_flags = 0;
-	int keyfile_limited = 0;
 	int r;
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
@@ -134,11 +133,8 @@ static int action_open_plain(void)
 		goto out;
 	}
 
-	if (opt_key_file && strcmp(opt_key_file, "-") != 0)
-		keyfile_limited = 1;
-
 	/* FIXME: temporary hack, no hashing for keyfiles in plain mode */
-	if (opt_key_file && keyfile_limited) {
+	if (opt_key_file && !tools_is_stdin(opt_key_file)) {
 		params.hash = NULL;
 		if (!opt_batch_mode && opt_hash)
 			log_std(_("WARNING: The --hash parameter is being ignored "
@@ -148,7 +144,7 @@ static int action_open_plain(void)
 	if (params.hash && !strcmp(params.hash, "plain"))
 		params.hash = NULL;
 
-	if (!opt_batch_mode && !params.hash && opt_key_file && keyfile_limited && opt_keyfile_size)
+	if (!opt_batch_mode && !params.hash && opt_key_file && !tools_is_stdin(opt_key_file) && opt_keyfile_size)
 		log_std(_("WARNING: The --keyfile-size option is being ignored, "
 			 "the read size is the same as the encryption key size.\n"));
 
@@ -172,7 +168,7 @@ static int action_open_plain(void)
 
 	_set_activation_flags(&activate_flags);
 
-	if (opt_key_file) {
+	if (!tools_is_stdin(opt_key_file)) {
 		/* If no hash, key is read directly, read size is always key_size
 		 * (possible opt_keyfile_size is ignored.
 		 * If hash is specified, opt_keyfile_size is applied.
@@ -185,8 +181,8 @@ static int action_open_plain(void)
 	} else {
 		r = tools_get_key(_("Enter passphrase: "),
 				  &password, &passwordLen,
-				  opt_keyfile_offset, opt_keyfile_size,
-				  NULL, opt_timeout,
+				  opt_keyfile_offset, (opt_key_file && !params.hash) ? key_size : opt_keyfile_size,
+				  opt_key_file, opt_timeout,
 				  _verify_passphrase(0), 0,
 				  cd);
 		if (r < 0)
