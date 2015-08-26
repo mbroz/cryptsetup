@@ -74,6 +74,7 @@ if REENCRYPT
 cryptsetup_reencrypt_SOURCES = \
 	$(top_builddir)/lib/utils_crypt.c	\
 	utils_tools.c				\
+	utils_password.c			\
 	cryptsetup_reencrypt.c			\
 	cryptsetup.h
 

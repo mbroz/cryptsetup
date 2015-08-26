@@ -987,17 +987,13 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 
 	retry_count = opt_tries ?: 1;
 	while (retry_count--) {
-		set_int_handler(0);
-		r = crypt_get_key(msg, &password, &passwordLen,
-			0, 0, NULL /*opt_key_file*/,
-			0, 0, cd);
+		r = tools_get_key(msg,  &password, &passwordLen, 0, 0,
+				  NULL /*opt_key_file*/, 0, 0, 0 /*pwquality*/, cd);
 		if (r < 0)
 			return r;
 		if (quit)
 			return -EAGAIN;
 
-		/* library uses sigint internally, until it is fixed...*/
-		set_int_block(1);
 		if (check)
 			r = crypt_activate_by_passphrase(cd, NULL, slot_to_check,
 				password, passwordLen, 0);
@@ -1032,8 +1028,8 @@ static int init_keyfile(struct reenc_ctx *rc, struct crypt_device *cd, int slot_
 	int r;
 	size_t passwordLen;
 
-	r = crypt_get_key(NULL, &password, &passwordLen, opt_keyfile_offset,
-			  opt_keyfile_size, opt_key_file, 0, 0, cd);
+	r = tools_get_key(NULL, &password, &passwordLen, opt_keyfile_offset,
+			  opt_keyfile_size, opt_key_file, 0, 0, 0, cd);
 	if (r < 0)
 		return r;
 
