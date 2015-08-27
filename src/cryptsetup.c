@@ -708,6 +708,10 @@ static int action_luksFormat(void)
 		goto out;
 	}
 
+	/* Never call pwquality if using null cipher */
+	if (tools_is_cipher_null(cipher))
+		opt_force_password = 1;
+
 	if ((r = crypt_init(&cd, header_device))) {
 		if (opt_header_device)
 			log_err(_("Cannot use %s as on-disk header.\n"), header_device);
@@ -964,6 +968,10 @@ static int action_luksAddKey(void)
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
+	/* Never call pwquality if using null cipher */
+	if (tools_is_cipher_null(crypt_get_cipher(cd)))
+		opt_force_password = 1;
+
 	keysize = crypt_get_volume_key_size(cd);
 	/* FIXME: lib cannot properly set verification for new/old passphrase */
 	crypt_set_password_verify(cd, _verify_passphrase(0));
@@ -1044,6 +1052,10 @@ static int action_luksChangeKey(void)
 
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
+
+	/* Never call pwquality if using null cipher */
+	if (tools_is_cipher_null(crypt_get_cipher(cd)))
+		opt_force_password = 1;
 
 	if (opt_iteration_time)
 		crypt_set_iteration_time(cd, opt_iteration_time);

@@ -65,6 +65,14 @@ static int tools_check_pwquality(const char *password)
 }
 #endif /* ENABLE_PWQUALITY */
 
+int tools_is_cipher_null(const char *cipher)
+{
+	if (!cipher)
+		return 0;
+
+	return !strcmp(cipher, "cipher_null") ? 1 : 0;
+}
+
 /*
  * Keyfile - is standard input treated as a binary file (no EOL handling).
  */
