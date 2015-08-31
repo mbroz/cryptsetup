@@ -90,6 +90,7 @@ static int _fips_mode = 0;
 static int _quit = 0;
 
 static char global_log[4096];
+static char last_error[256];
 static int global_lines = 0;
 
 static char *DEVICE_1 = NULL;
@@ -291,22 +292,27 @@ static int crypt_decode_key(char *key, const char *hex, unsigned int size)
 	return 0;
 }
 
-static void cmdLineLog(int level, const char *msg)
+static void global_log_callback(int level, const char *msg, void *usrptr)
 {
-	strncat(global_log, msg, sizeof(global_log) - strlen(global_log));
-	global_lines++;
-}
+	int len;
 
-static void new_log(int level, const char *msg, void *usrptr)
-{
 	if (_debug)
 		printf("LOG: %s", msg);
-	cmdLineLog(level, msg);
+	strncat(global_log, msg, sizeof(global_log) - strlen(global_log));
+	global_lines++;
+	if (level == CRYPT_LOG_ERROR) {
+		len = strlen(msg);
+		if (len > sizeof(last_error))
+			len = sizeof(last_error);
+		strncpy(last_error, msg, sizeof(last_error));
+		last_error[len-1] = '\0';
+	}
 }
 
 static void reset_log(void)
 {
 	memset(global_log, 0, sizeof(global_log));
+	memset(last_error, 0, sizeof(last_error));
 	global_lines = 0;
 }
 
@@ -492,16 +498,16 @@ static int _setup(void)
 	if (_debug)
 		printf("FIPS MODE: %d\n", _fips_mode);
 
+	/* Use default log callback */
+	crypt_set_log_callback(NULL, &global_log_callback, NULL);
+
 	return 0;
 }
 
 static void check_ok(int status, int line, const char *func)
 {
-	char buf[256];
-
 	if (status) {
-		crypt_get_error(buf, sizeof(buf));
-		printf("FAIL line %d [%s]: code %d, %s\n", line, func, status, buf);
+		printf("FAIL line %d [%s]: code %d, %s\n", line, func, status, last_error);
 		_cleanup();
 		exit(-1);
 	}
@@ -509,16 +515,12 @@ static void check_ok(int status, int line, const char *func)
 
 static void check_ko(int status, int line, const char *func)
 {
-	char buf[256];
-
-	memset(buf, 0, sizeof(buf));
-	crypt_get_error(buf, sizeof(buf));
 	if (status >= 0) {
-		printf("FAIL line %d [%s]: code %d, %s\n", line, func, status, buf);
+		printf("FAIL line %d [%s]: code %d, %s\n", line, func, status, last_error);
 		_cleanup();
 		exit(-1);
 	} else if (_verbose)
-		printf("   => errno %d, errmsg: %s\n", status, buf);
+		printf("   => errno %d, errmsg: %s\n", status, last_error);
 }
 
 static void check_equal(int line, const char *func, int64_t x, int64_t y)
@@ -556,7 +558,9 @@ static void xlog(const char *msg, const char *tst, const char *func, int line, c
 			     xlog("(equal)  ", #x " == " #y, __FUNCTION__, __LINE__, NULL); \
 			     if (_x != _y) check_equal(__LINE__, __FUNCTION__, _x, _y); \
 			} while(0)
-#define RUN_(x, y)		do { printf("%s: %s\n", #x, (y)); x(); } while (0)
+#define RUN_(x, y)	do { reset_log(); \
+			     printf("%s: %s\n", #x, (y)); x(); \
+			} while (0)
 
 static void AddDevicePlain(void)
 {
@@ -850,6 +854,14 @@ static void AddDevicePlain(void)
 	crypt_free(cd);
 }
 
+static int new_messages = 0;
+static void new_log(int level, const char *msg, void *usrptr)
+{
+	if (level == CRYPT_LOG_ERROR)
+		new_messages++;
+	global_log_callback(level, msg, usrptr);
+}
+
 static void CallbacksTest(void)
 {
 	struct crypt_device *cd;
@@ -863,32 +875,19 @@ static void CallbacksTest(void)
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	const char *passphrase = PASSPHRASE;
-	char buf1[256] = {0}, buf2[256] = {0};
 
 	OK_(crypt_init(&cd, DEVICE_1));
+	new_messages = 0;
 	crypt_set_log_callback(cd, &new_log, NULL);
-	//crypt_set_log_callback(cd, NULL, NULL);
-
+	EQ_(new_messages, 0);
 	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
-
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	EQ_(new_messages, 0);
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0), "already exists");
+	EQ_(new_messages, 1);
+	crypt_set_log_callback(cd, NULL, NULL);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
-
-	reset_log();
-	// Here context must be the same
-	//FIXME: password callback test was here
-	//crypt_get_error(buf1, sizeof(buf1));
-	//crypt_last_error(cd, buf2, sizeof(buf2));
-	//OK_(!*buf1);
-	//OK_(!*buf2);
-	//OK_(strcmp(buf1, buf2));
-
-	crypt_get_error(buf1, sizeof(buf1));
-	crypt_last_error(cd, buf2, sizeof(buf2));
-	OK_(*buf1);
-	OK_(*buf2);
-
 	crypt_free(cd);
 }
 
@@ -1192,10 +1191,8 @@ static void AddDeviceLuks(void)
 	OK_(strcmp(DEVICE_2, crypt_get_device_name(cd)));
 
 	reset_log();
-	crypt_set_log_callback(cd, &new_log, NULL);
 	OK_(crypt_dump(cd));
 	OK_(!(global_lines != 0));
-	crypt_set_log_callback(cd, NULL, NULL);
 	reset_log();
 
 	FAIL_(crypt_set_uuid(cd, "blah"), "wrong UUID format");
@@ -1847,10 +1844,8 @@ static void TcryptTest(void)
 	}
 
 	reset_log();
-	crypt_set_log_callback(cd, &new_log, NULL);
 	OK_(crypt_dump(cd));
 	OK_(!(global_lines != 0));
-	crypt_set_log_callback(cd, NULL, NULL);
 	reset_log();
 
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, CRYPT_ACTIVATE_READONLY));
