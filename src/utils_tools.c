@@ -164,7 +164,7 @@ int yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 
 void show_status(int errcode)
 {
-	char error[256];
+	char *crypt_error;
 
 	if(!opt_verbose)
 		return;
@@ -174,25 +174,23 @@ void show_status(int errcode)
 		return;
 	}
 
-	crypt_get_error(error, sizeof(error));
+	if (errcode < 0)
+		errcode = translate_errno(errcode);
 
-	if (*error) {
-#ifdef STRERROR_R_CHAR_P /* GNU-specific strerror_r */
-		char *error_ = strerror_r(-errcode, error, sizeof(error));
-		if (error_ != error)
-			strncpy(error, error_, sizeof(error));
-#else /* POSIX strerror_r variant */
-		if (strerror_r(-errcode, error, sizeof(error)))
-			*error = '\0';
-#endif
-		error[sizeof(error) - 1] = '\0';
-	}
-
-	log_err(_("Command failed with code %i"), -errcode);
-	if (*error)
-		log_err(": %s\n", error);
+	if (errcode == 1)
+		crypt_error = _("wrong or missing parameters");
+	else if (errcode == 2)
+		crypt_error = _("no permission or bad passphrase");
+	else if (errcode == 3)
+		crypt_error = _("out of memory");
+	else if (errcode == 4)
+		crypt_error = _("wrong device or file specified");
+	else if (errcode == 5)
+		crypt_error = _("device already exists or device is busy");
 	else
-		log_err(".\n");
+		crypt_error = _("unknown error");
+
+	log_std(_("Command failed with code %i (%s).\n"), -errcode, crypt_error);
 }
 
 const char *uuid_or_device(const char *spec)

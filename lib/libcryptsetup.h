@@ -1085,28 +1085,6 @@ int crypt_header_restore(struct crypt_device *cd,
 	const char *backup_file);
 
 /**
- * Receive last reported error, DEPRECATED.
- *
- * @param cd crypt device handle
- * @param buf buffef for message
- * @param size size of buffer
- *
- * @note This function is DEPRECATED and will be removed in future versions.
- * @note All error messages are reported also through log callback.
- */
-void crypt_last_error(struct crypt_device *cd, char *buf, size_t size);
-
-/**
- * Receives last reported error, DEPRECATED
- *
- * @param buf buffef for message
- * @param size size of buffer
- *
- * @note This function is DEPRECATED and will be removed in future versions.
- */
-void crypt_get_error(char *buf, size_t size);
-
-/**
  * Get directory where mapped crypt devices are created
  *
  * @return the directory path

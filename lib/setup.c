@@ -90,17 +90,10 @@ struct crypt_device {
 	void *log_usrptr;
 	int (*confirm)(const char *msg, void *usrptr);
 	void *confirm_usrptr;
-
-	/* last error message */
-	char error[MAX_ERROR_LENGTH];
 };
 
 /* Just to suppress redundant messages about crypto backend */
 static int _crypto_logged = 0;
-
-/* Global error */
-/* FIXME: not thread safe, remove this later */
-static char global_error[MAX_ERROR_LENGTH] = {0};
 
 /* Log helper */
 static void (*_default_log)(int level, const char *msg, void *usrptr) = NULL;
@@ -116,32 +109,12 @@ int crypt_get_debug_level(void)
 	return _debug_level;
 }
 
-static void crypt_set_error(struct crypt_device *cd, const char *error)
-{
-	size_t size = strlen(error);
-
-	/* Set global error, ugly hack... */
-	strncpy(global_error, error, MAX_ERROR_LENGTH - 2);
-	if (size < MAX_ERROR_LENGTH && global_error[size - 1] == '\n')
-		global_error[size - 1] = '\0';
-
-	/* Set error string per context */
-	if (cd) {
-		strncpy(cd->error, error, MAX_ERROR_LENGTH - 2);
-		if (size < MAX_ERROR_LENGTH && cd->error[size - 1] == '\n')
-			cd->error[size - 1] = '\0';
-	}
-}
-
 void crypt_log(struct crypt_device *cd, int level, const char *msg)
 {
 	if (cd && cd->log)
 		cd->log(level, msg, cd->log_usrptr);
 	else if (_default_log)
 		_default_log(level, msg, NULL);
-
-	if (level == CRYPT_LOG_ERROR)
-		crypt_set_error(cd, msg);
 }
 
 __attribute__((format(printf, 5, 6)))
@@ -469,30 +442,6 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
 {
 	cd->confirm = confirm;
 	cd->confirm_usrptr = usrptr;
-}
-
-static void _get_error(char *error, char *buf, size_t size)
-{
-	if (!buf || size < 1)
-		error[0] = '\0';
-	else if (*error) {
-		strncpy(buf, error, size - 1);
-		buf[size - 1] = '\0';
-		error[0] = '\0';
-	} else
-		buf[0] = '\0';
-}
-
-void crypt_last_error(struct crypt_device *cd, char *buf, size_t size)
-{
-	if (cd)
-		return _get_error(cd->error, buf, size);
-}
-
-/* Deprecated global error interface */
-void crypt_get_error(char *buf, size_t size)
-{
-	return _get_error(global_error, buf, size);
 }
 
 const char *crypt_get_dir(void)
