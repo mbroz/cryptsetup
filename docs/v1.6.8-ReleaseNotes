@@ -1,0 +1,47 @@
+Cryptsetup 1.6.8 Release Notes
+==============================
+
+Changes since version 1.6.7
+
+* If the null cipher (no encryption) is used, allow only empty password for LUKS.
+  (Previously cryptsetup accepted any password in this case.)
+
+  The null cipher can be used only for testing and it is used temporarily during
+  offline encrypting not yet encrypted device (cryptsetup-reencrypt tool).
+
+  Accepting only empty password prevents situation when someone adds another
+  LUKS device using the same UUID (UUID of existing LUKS device) with faked
+  header containing null cipher.
+  This could force user to use different LUKS device (with no encryption)
+  without noticing.
+  (IOW it prevents situation when attacker intentionally forces
+  user to boot into different system just by LUKS header manipulation.)
+
+  Properly configured systems should have an additional integrity protection
+  in place here (LUKS here provides only confidentiality) but it is better
+  to not allow this situation in the first place.
+
+  (For more info see QubesOS Security Bulletin QSB-019-2015.)
+
+* Properly support stdin "-" handling for luksAddKey for both new and old
+  keyfile parameters.
+
+* If encrypted device is file-backed (it uses underlying loop device),
+  cryptsetup resize will try to resize underlying loop device as well.
+  (It can be used to grow up file-backed device in one step.)
+
+* Cryptsetup now allows to use empty password through stdin pipe.
+  (Intended only for testing in scripts.)
+
+Cryptsetup API NOTE:
+
+Direct terminal handling and password calling callback for passphrase
+entry will be removed from libcryptsetup in next major (2.x) version
+(application should handle it itself).
+It means that application have to always provide password in API calls.
+
+Functions returning last error will be removed in next major version (2.x).
+These functions did not work properly for early initialization errors
+and application can implement better function easily using own error callback.
+
+See comments in libcryptsetup.h for more info about deprecated functions.
