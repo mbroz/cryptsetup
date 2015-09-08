@@ -413,7 +413,8 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 		pwd_old_len = 0;
 		pwd_new = rc->p[rc->keyslot].password;
 		pwd_new_len = rc->p[rc->keyslot].passwordLen;
-	}
+	} else
+		return -EINVAL;
 
 	if ((r = crypt_init(&cd, rc->header_file_org)) ||
 	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)) ||
