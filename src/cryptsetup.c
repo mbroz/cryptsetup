@@ -121,7 +121,7 @@ static int action_open_plain(void)
 		.size = opt_size,
 	};
 	char *password = NULL;
-	size_t passwordLen;
+	size_t passwordLen, key_size_max;
 	size_t key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	uint32_t activate_flags = 0;
 	int r;
@@ -174,17 +174,17 @@ static int action_open_plain(void)
 		 * If hash is specified, opt_keyfile_size is applied.
 		 * The opt_keyfile_offset is applied always.
 		 */
+		key_size_max = params.hash ? (size_t)opt_keyfile_size : key_size;
 		r = crypt_activate_by_keyfile_offset(cd, action_argv[1],
-			CRYPT_ANY_SLOT, opt_key_file,
-			params.hash ? opt_keyfile_size : key_size, opt_keyfile_offset,
-			activate_flags);
+			CRYPT_ANY_SLOT, opt_key_file, key_size_max,
+			opt_keyfile_offset, activate_flags);
 	} else {
+		key_size_max = (opt_key_file && !params.hash) ? key_size : (size_t)opt_keyfile_size;
 		r = tools_get_key(_("Enter passphrase: "),
 				  &password, &passwordLen,
-				  opt_keyfile_offset, (opt_key_file && !params.hash) ? key_size : opt_keyfile_size,
+				  opt_keyfile_offset, key_size_max,
 				  opt_key_file, opt_timeout,
-				  _verify_passphrase(0), 0,
-				  cd);
+				  _verify_passphrase(0), 0, cd);
 		if (r < 0)
 			goto out;
 

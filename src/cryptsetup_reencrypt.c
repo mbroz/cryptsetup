@@ -852,7 +852,7 @@ static void zero_rest_of_device(int fd, size_t block_size, void *buf,
 	s1 = block_size;
 
 	while (!quit && *bytes) {
-		if (*bytes < s1)
+		if (*bytes < (uint64_t)s1)
 			s1 = *bytes;
 
 		s2 = write(fd, buf, s1);
