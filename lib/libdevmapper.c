@@ -434,7 +434,7 @@ static int _dm_simple(int task, const char *name, int udev_wait)
 	if (udev_wait)
 		(void)_dm_udev_wait(cookie);
 
-      out:
+out:
 	dm_task_destroy(dmt);
 	return r;
 }
@@ -591,9 +591,6 @@ static int _dm_create_device(const char *name, const char *type,
 
 		if (!dm_task_set_uuid(dmt, dev_uuid))
 			goto out_no_removal;
-
-		if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
-			goto out_no_removal;
 	}
 
 	if ((dm_flags() & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
@@ -610,6 +607,9 @@ static int _dm_create_device(const char *name, const char *type,
 	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
 		goto out_no_removal;
 #endif
+	/* do not set cookie for DM_DEVICE_RELOAD task */
+	if (!reload && _dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
+		goto out_no_removal;
 
 	if (!dm_task_run(dmt))
 		goto out_no_removal;
