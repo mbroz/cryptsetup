@@ -1108,6 +1108,8 @@ uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd,
  */
 /** Unfinished offline reencryption */
 #define CRYPT_REQUIREMENT_OFFLINE_REENCRYPT	(1 << 0)
+/** Online reencryption in-progress */
+#define CRYPT_REQUIREMENT_ONLINE_REENCRYPT	(1 << 1)
 /** unknown requirement in header (output only) */
 #define CRYPT_REQUIREMENT_UNKNOWN		(1 << 31)
 
@@ -2101,6 +2103,134 @@ int crypt_activate_by_token(struct crypt_device *cd,
 	int token,
 	void *usrptr,
 	uint32_t flags);
+/** @} */
+
+/**
+ * @defgroup crypt-reencryption LUKS2 volume reencryption support
+ *
+ * Set of functions to handling LUKS2 volume reencryption
+ *
+ * @addtogroup crypt-reencryption
+ * @{
+ */
+
+/** Initialize reencryption metadata but do not run reencryption yet. */
+#define CRYPT_REENCRYPT_INITIALIZE_ONLY    (1 << 0)
+/** Move the first segment; used only with data shift. */
+#define CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT (1 << 1)
+
+/**
+ * Reencryption direction
+ */
+typedef enum {
+	CRYPT_REENCRYPT_FORWARD = 0, /**< forward direction */
+	CRYPT_REENCRYPT_BACKWARD     /**< backward direction */
+} crypt_reencrypt_direction_info;
+
+/**
+ * LUKS2 reencryption options.
+ */
+struct crypt_params_reencrypt {
+	const char *mode;                         /**< Mode as "encrypt" / "reencrypt" / "decrypt", immutable after first init. */
+	crypt_reencrypt_direction_info direction; /**< Reencryption direction, immutable after first init. */
+	const char *resilience;                   /**< Resilience mode: "none", "checksum", "journal" or "shift" (only "shift" is immutable after init) */
+	const char *hash;                         /**< Used hash for "checksum" resilience type, ignored otherwise. */
+	uint64_t data_shift;                      /**< Used in "shift" mode, must be non-zero, immutable after first init. */
+	uint64_t max_hotzone_size;                /**< Hotzone size for "none" mode; maximum hotzone size for "checksum" mode. */
+	const struct crypt_params_luks2 *luks2;   /**< LUKS2 parameters for the final reencryption volume.*/
+	uint32_t flags;                           /**< Reencryption flags. */
+};
+
+/**
+ * Initialize reencryption metadata using passphrase.
+ *
+ * This function initializes on-disk metadata to include all reencryption segments,
+ * according to the provided options.
+ * If metadata already contains ongoing reencryption metadata, it loads these parameters
+ * (in this situation all parameters except @e name and @e passphrase can be omitted).
+ *
+ * @param cd crypt device handle
+ * @param name name of active device or @e NULL for offline reencryption
+ * @param passphrase passphrase used to unlock volume key
+ * @param passphrase_size size of @e passphrase (binary data)
+ * @param keyslot_old keyslot to unlock existing device or CRYPT_ANY_SLOT
+ * @param keyslot_new existing (unbound) reencryption keyslot; must be set except for decryption
+ * @param cipher cipher specification (e.g. "aes")
+ * @param cipher_mode cipher mode and IV (e.g. "xts-plain64")
+ * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
+ *
+ * @return reencryption key slot number or negative errno otherwise.
+ */
+int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
+	const char *name,
+	const char *passphrase,
+	size_t passphrase_size,
+	int keyslot_old,
+	int keyslot_new,
+	const char *cipher,
+	const char *cipher_mode,
+	const struct crypt_params_reencrypt *params);
+
+/**
+ * Initialize reencryption metadata using passphrase in keyring.
+ *
+ * This function initializes on-disk metadata to include all reencryption segments,
+ * according to the provided options.
+ * If metadata already contains ongoing reencryption metadata, it loads these parameters
+ * (in this situation all parameters except @e name and @e key_description can be omitted).
+ *
+ * @param cd crypt device handle
+ * @param name name of active device or @e NULL for offline reencryption
+ * @param key_description passphrase (key) identification in keyring
+ * @param keyslot_old keyslot to unlock existing device or CRYPT_ANY_SLOT
+ * @param keyslot_new existing (unbound) reencryption keyslot; must be set except for decryption
+ * @param cipher cipher specification (e.g. "aes")
+ * @param cipher_mode cipher mode and IV (e.g. "xts-plain64")
+ * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
+ *
+ * @return reencryption key slot number or negative errno otherwise.
+ */
+int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
+	const char *name,
+	const char *key_description,
+	int keyslot_old,
+	int keyslot_new,
+	const char *cipher,
+	const char *cipher_mode,
+	const struct crypt_params_reencrypt *params);
+
+/**
+ * Run data reencryption.
+ *
+ * @param cd crypt device handle
+ * @param progress is a callback funtion reporting device \b size,
+ * current \b offset of reencryption and provided \b usrptr identification
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_reencrypt(struct crypt_device *cd,
+		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr));
+
+/**
+ * Reencryption status info
+ */
+typedef enum {
+	CRYPT_REENCRYPT_NONE = 0, /**< No reencryption in progress */
+	CRYPT_REENCRYPT_CLEAN,    /**< Ongoing reencryption in a clean state. */
+	CRYPT_REENCRYPT_CRASH,    /**< Aborted reencryption that need internal recovery. */
+	CRYPT_REENCRYPT_INVALID   /**< Invalid state. */
+} crypt_reencrypt_info;
+
+/**
+ * LUKS2 reencryption status.
+ *
+ * @param cd crypt device handle
+ * @param params reecryption parameters
+ *
+ * @return reencryption status info and parameters.
+ */
+crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
+		struct crypt_params_reencrypt *params);
 /** @} */
 
 #ifdef __cplusplus

@@ -370,3 +370,30 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	return crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_RANDOM,
 				 offset, length, wipe_block, NULL, NULL);
 }
+
+/* FIXME: what if user wanted to keep original keyslots size? */
+int LUKS2_set_keyslots_size(struct crypt_device *cd,
+		struct luks2_hdr *hdr,
+		uint64_t data_offset)
+{
+	json_object *jobj_config;
+	uint64_t keyslots_size;
+
+	if (data_offset < get_min_offset(hdr))
+		return 1;
+
+	keyslots_size = data_offset - get_min_offset(hdr);
+
+	/* keep keyslots_size reasonable for custom data alignments */
+	if (keyslots_size > LUKS2_MAX_KEYSLOTS_SIZE)
+		keyslots_size = LUKS2_MAX_KEYSLOTS_SIZE;
+
+	/* keyslots size has to be 4 KiB aligned */
+	keyslots_size -= (keyslots_size % 4096);
+
+	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
+		return 1;
+
+	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));
+	return 0;
+}

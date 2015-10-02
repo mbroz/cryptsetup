@@ -110,7 +110,8 @@ int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 	return -ENOENT;
 }
 
-static int _digest_verify(struct crypt_device *cd,
+int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
 	int digest,
 	const struct volume_key *vk)
 {
@@ -122,10 +123,12 @@ static int _digest_verify(struct crypt_device *cd,
 		return -EINVAL;
 
 	r = h->verify(cd, digest, vk->key, vk->keylength);
-	if (r < 0)
+	if (r < 0) {
 		log_dbg(cd, "Digest %d (%s) verify failed with %d.", digest, h->name, r);
+		return r;
+	}
 
-	return r;
+	return digest;
 }
 
 int LUKS2_digest_verify(struct crypt_device *cd,
@@ -133,15 +136,15 @@ int LUKS2_digest_verify(struct crypt_device *cd,
 	const struct volume_key *vk,
 	int keyslot)
 {
-	int digest, r;
+	int digest;
 
 	digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 	if (digest < 0)
 		return digest;
 
-	r = _digest_verify(cd, digest, vk);
+	log_dbg(cd, "Verifying key from keyslot %d, digest %d.", keyslot, digest);
 
-	return r < 0 ? r : digest;
+	return LUKS2_digest_verify_by_digest(cd, hdr, digest, vk);
 }
 
 int LUKS2_digest_dump(struct crypt_device *cd, int digest)
@@ -154,37 +157,25 @@ int LUKS2_digest_dump(struct crypt_device *cd, int digest)
 	return h->dump(cd, digest);
 }
 
-int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int segment,
-	const struct volume_key *vk)
-{
-	int digest, r;
-
-	digest = LUKS2_digest_by_segment(hdr, segment);
-	if (digest < 0)
-		return digest;
-
-	log_dbg(cd, "Verifying key digest %d.", digest);
-
-	r = _digest_verify(cd, digest, vk);
-
-	return r < 0 ? r : digest;
-}
-
 int LUKS2_digest_any_matching(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		const struct volume_key *vk)
 {
 	int digest;
 
-	for (digest = 0; digest < LUKS2_DIGEST_MAX; digest++) {
-		if (_digest_verify(cd, digest, vk) < 0)
-			continue;
-		return digest;
-	}
+	for (digest = 0; digest < LUKS2_DIGEST_MAX; digest++)
+		if (LUKS2_digest_verify_by_digest(cd, hdr, digest, vk) == digest)
+			return digest;
 
 	return -ENOENT;
+}
+
+int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int segment,
+	const struct volume_key *vk)
+{
+	return LUKS2_digest_verify_by_digest(cd, hdr, LUKS2_digest_by_segment(hdr, segment), vk);
 }
 
 /* FIXME: segment can have more digests */
@@ -424,6 +415,11 @@ static char *get_key_description_by_digest(struct crypt_device *cd, int digest)
 	return desc;
 }
 
+char *LUKS2_key_description_by_digest(struct crypt_device *cd, int digest)
+{
+	return get_key_description_by_digest(cd, digest);
+}
+
 int LUKS2_key_description_by_segment(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int segment)
 {
@@ -439,6 +435,20 @@ int LUKS2_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int keyslot)
 {
 	char *desc = get_key_description_by_digest(cd, LUKS2_digest_by_keyslot(hdr, keyslot));
+	int r;
+
+	r = crypt_volume_key_set_description(vk, desc);
+	if (!r)
+		r = crypt_volume_key_load_in_keyring(cd, vk);
+
+	free(desc);
+	return r;
+}
+
+int LUKS2_volume_key_load_in_keyring_by_digest(struct crypt_device *cd,
+		struct luks2_hdr *hdr, struct volume_key *vk, int digest)
+{
+	char *desc = get_key_description_by_digest(cd, digest);
 	int r;
 
 	r = crypt_volume_key_set_description(vk, desc);

@@ -16,6 +16,7 @@ lib/utils_wipe.c
 lib/utils_keyring.c
 lib/utils_blkid.c
 lib/utils_io.c
+lib/utils_storage_wrappers.c
 lib/luks1/af.c
 lib/luks1/keyencryption.c
 lib/luks1/keymanage.c
@@ -32,7 +33,10 @@ lib/luks2/luks2_json_format.c
 lib/luks2/luks2_json_metadata.c
 lib/luks2/luks2_keyslot.c
 lib/luks2/luks2_keyslot_luks2.c
+lib/luks2/luks2_keyslot_reenc.c
 lib/luks2/luks2_luks1_convert.c
+lib/luks2/luks2_reencrypt.c
+lib/luks2/luks2_segment.c
 lib/luks2/luks2_token.c
 lib/luks2/luks2_token_keyring.c
 src/cryptsetup.c
@@ -42,3 +46,4 @@ src/cryptsetup_reencrypt.c
 src/utils_tools.c
 src/utils_password.c
 src/utils_luks2.c
+src/utils_blockdev.c

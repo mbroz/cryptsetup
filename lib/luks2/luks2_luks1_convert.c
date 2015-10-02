@@ -24,6 +24,14 @@
 #include "../luks1/luks.h"
 #include "../luks1/af.h"
 
+int LUKS2_check_cipher(struct crypt_device *cd,
+		      size_t keylength,
+		      const char *cipher,
+		      const char *cipher_mode)
+{
+	return LUKS_check_cipher(cd, keylength, cipher, cipher_mode);
+}
+
 static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struct json_object **keyslot_object)
 {
 	char *base64_str, cipher[LUKS_CIPHERNAME_L+LUKS_CIPHERMODE_L];

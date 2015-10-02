@@ -197,6 +197,10 @@ int LUKS2_segments_count(struct luks2_hdr *hdr)
 
 int LUKS2_get_default_segment(struct luks2_hdr *hdr)
 {
+	int s = LUKS2_get_segment_id_by_flag(hdr, "backup-final");
+	if (s >= 0)
+		return s;
+
 	if (LUKS2_segments_count(hdr) == 1)
 		return 0;
 
@@ -210,25 +214,6 @@ int LUKS2_get_default_segment(struct luks2_hdr *hdr)
 uint32_t json_object_get_uint32(json_object *jobj)
 {
 	return json_object_get_int64(jobj);
-}
-
-/* jobj has to be json_type_string and numbered */
-static json_bool json_str_to_int64(json_object *jobj, int64_t *value)
-{
-	char *endptr;
-	long long int tmp;
-
-	errno = 0;
-	tmp = strtoll(json_object_get_string(jobj), &endptr, 10);
-	if (*endptr || errno) {
-		log_dbg(NULL, "Failed to parse int64_t type from string %s.",
-			json_object_get_string(jobj));
-		*value = 0;
-		return FALSE;
-	}
-
-	*value = tmp;
-	return TRUE;
 }
 
 /* jobj has to be json_type_string and numbered */
@@ -248,13 +233,6 @@ static json_bool json_str_to_uint64(json_object *jobj, uint64_t *value)
 	return TRUE;
 }
 
-int64_t json_object_get_int64_ex(json_object *jobj)
-{
-	int64_t r;
-	json_str_to_int64(jobj, &r);
-	return r;
-}
-
 uint64_t json_object_get_uint64(json_object *jobj)
 {
 	uint64_t r;
@@ -270,21 +248,6 @@ json_object *json_object_new_uint64(uint64_t value)
 	json_object *jobj;
 
 	r = snprintf(num, sizeof(num), "%" PRIu64, value);
-	if (r < 0 || (size_t)r >= sizeof(num))
-		return NULL;
-
-	jobj = json_object_new_string(num);
-	return jobj;
-}
-
-json_object *json_object_new_int64_ex(int64_t value)
-{
-	/* 18446744073709551615 */
-	char num[21];
-	int r;
-	json_object *jobj;
-
-	r = snprintf(num, sizeof(num), "%" PRIi64, value);
 	if (r < 0 || (size_t)r >= sizeof(num))
 		return NULL;
 
@@ -322,7 +285,7 @@ json_object *json_contains(struct crypt_device *cd, json_object *jobj, const cha
 	return sobj;
 }
 
-static json_bool validate_json_uint32(json_object *jobj)
+json_bool validate_json_uint32(json_object *jobj)
 {
 	int64_t tmp;
 
@@ -592,18 +555,48 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd,
 	return !segment_has_digest(key, jobj_digests);
 }
 
+static bool validate_segment_intervals(struct crypt_device *cd,
+				    int length, const struct interval *ix)
+{
+	int j, i = 0;
+
+	while (i < length) {
+		if (ix[i].length == UINT64_MAX && (i != (length - 1))) {
+			log_dbg(cd, "Only last regular segment is allowed to have 'dynamic' size.");
+			return false;
+		}
+
+		for (j = 0; j < length; j++) {
+			if (i == j)
+				continue;
+			if ((ix[i].offset >= ix[j].offset) && (ix[j].length == UINT64_MAX || (ix[i].offset < (ix[j].offset + ix[j].length)))) {
+				log_dbg(cd, "Overlapping segments [%" PRIu64 ",%" PRIu64 "]%s and [%" PRIu64 ",%" PRIu64 "]%s.",
+					ix[i].offset, ix[i].offset + ix[i].length, ix[i].length == UINT64_MAX ? "(dynamic)" : "",
+					ix[j].offset, ix[j].offset + ix[j].length, ix[j].length == UINT64_MAX ? "(dynamic)" : "");
+				return false;
+			}
+		}
+
+		i++;
+	}
+
+	return true;
+}
+
 static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 {
-	json_object *jobj, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type, *jobj_flags;
-	int i;
+	json_object *jobj_segments, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type, *jobj_flags, *jobj;
+	struct interval *intervals;
 	uint64_t offset, size;
+	int i, r, count, first_backup = -1;
 
-	if (!json_object_object_get_ex(hdr_jobj, "segments", &jobj)) {
+	if (!json_object_object_get_ex(hdr_jobj, "segments", &jobj_segments)) {
 		log_dbg(cd, "Missing segments section.");
 		return 1;
 	}
 
-	if (json_object_object_length(jobj) < 1) {
+	count = json_object_object_length(jobj_segments);
+	if (count < 1) {
 		log_dbg(cd, "Empty segments section.");
 		return 1;
 	}
@@ -612,7 +605,7 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 	if (!json_object_object_get_ex(hdr_jobj, "digests", &jobj_digests))
 		return 1;
 
-	json_object_object_foreach(jobj, key, val) {
+	json_object_object_foreach(jobj_segments, key, val) {
 		if (!numbered(cd, "Segment", key))
 			return 1;
 
@@ -653,10 +646,59 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 					return 1;
 		}
 
+		i = atoi(key);
+		if (json_segment_is_backup(val)) {
+			if (first_backup < 0 || i < first_backup)
+				first_backup = i;
+		} else {
+			if ((first_backup >= 0) && i >= first_backup) {
+				log_dbg(cd, "Regular segment at %d is behind backup segment at %d", i, first_backup);
+				return 1;
+			}
+		}
+
 		/* crypt */
 		if (!strcmp(json_object_get_string(jobj_type), "crypt") &&
 		    hdr_validate_crypt_segment(cd, val, key, jobj_digests, offset, size))
 			return 1;
+	}
+
+	if (first_backup == 0) {
+		log_dbg(cd, "No regular segment.");
+		return 1;
+	}
+
+	if (first_backup < 0)
+		first_backup = count;
+
+	intervals = malloc(first_backup * sizeof(*intervals));
+	if (!intervals) {
+		log_dbg(cd, "Not enough memory.");
+		return 1;
+	}
+
+	for (i = 0; i < first_backup; i++) {
+		jobj = json_segments_get_segment(jobj_segments, i);
+		if (!jobj) {
+			log_dbg(cd, "Gap at key %d in segments object.", i);
+			free(intervals);
+			return 1;
+		}
+		intervals[i].offset = json_segment_get_offset(jobj, 0);
+		intervals[i].length = json_segment_get_size(jobj, 0) ?: UINT64_MAX;
+	}
+
+	r = !validate_segment_intervals(cd, first_backup, intervals);
+	free(intervals);
+
+	if (r)
+		return 1;
+
+	for (; i < count; i++) {
+		if (!json_segments_get_segment(jobj_segments, i)) {
+			log_dbg(cd, "Gap at key %d in segments object.", i);
+			return 1;
+		}
 	}
 
 	return 0;
@@ -1064,6 +1106,11 @@ static int reqs_reencrypt(uint32_t reqs)
 	return reqs & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT;
 }
 
+static int reqs_reencrypt_online(uint32_t reqs)
+{
+	return reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
+}
+
 int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		     const char *backup_file)
 {
@@ -1098,7 +1145,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	/* do not allow header restore from backup with unmet requirements */
-	if (LUKS2_unmet_requirements(cd, &hdr_file, 0, 1)) {
+	if (LUKS2_unmet_requirements(cd, &hdr_file, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1)) {
 		log_err(cd, _("Forbidden LUKS2 requirements detected in backup %s."),
 			backup_file);
 		r = -ETXTBSY;
@@ -1309,6 +1356,7 @@ static const struct  {
 	const char *description;
 } requirements_flags[] = {
 	{ CRYPT_REQUIREMENT_OFFLINE_REENCRYPT, "offline-reencrypt" },
+	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, "online-reencrypt" },
 	{ 0, NULL }
 };
 
@@ -1502,7 +1550,7 @@ static void hdr_dump_keyslots(struct crypt_device *cd, json_object *hdr_jobj)
 		json_object_object_get_ex(val, "type", &jobj2);
 		tmps = json_object_get_string(jobj2);
 
-		r = LUKS2_keyslot_for_segment(crypt_get_hdr(cd, CRYPT_LUKS2), j, CRYPT_DEFAULT_SEGMENT);
+		r = LUKS2_keyslot_for_segment(crypt_get_hdr(cd, CRYPT_LUKS2), j, CRYPT_ONE_SEGMENT);
 		log_std(cd, "  %s: %s%s\n", slot, tmps, r == -ENOENT ? " (unbound)" : "");
 
 		if (json_object_object_get_ex(val, "key_size", &jobj2))
@@ -1659,8 +1707,56 @@ int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr)
 	return 0;
 }
 
+int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size)
+{
+	json_object *jobj_segments, *jobj_size;
+	uint64_t tmp = 0;
+	int sector_size;
+
+	if (!size || !json_object_object_get_ex(hdr->jobj, "segments", &jobj_segments))
+		return -EINVAL;
+
+	json_object_object_foreach(jobj_segments, key, val) {
+		UNUSED(key);
+		if (json_segment_is_backup(val))
+			continue;
+
+		json_object_object_get_ex(val, "size", &jobj_size);
+		if (!strcmp(json_object_get_string(jobj_size), "dynamic")) {
+			sector_size = json_segment_get_sector_size(val);
+			/* last dynamic segment must have at least one sector in size */
+			if (tmp)
+				*size = tmp + (sector_size > 0 ? sector_size : SECTOR_SIZE);
+			else
+				*size = 0;
+			return 0;
+		}
+
+		tmp += json_object_get_uint64(jobj_size);
+	}
+
+	/* impossible, segments with size set to 0 are illegal */
+	if (!tmp)
+		return -EINVAL;
+
+	*size = tmp;
+	return 0;
+}
+
 uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr)
 {
+	uint64_t new = 0, old = 0;
+	json_object *jobj;
+
+	jobj = LUKS2_get_segment_by_flag(hdr, "backup-final");
+	if (jobj) {
+		new = json_segment_get_offset(jobj, 1);
+		jobj = LUKS2_get_segment_by_flag(hdr, "backup-previous");
+		if (jobj)
+			old = json_segment_get_offset(jobj, 1);
+		return new > old ? new : old;
+	}
+
 	return json_segments_get_minimal_offset(LUKS2_get_segments_jobj(hdr), 1);
 }
 
@@ -1680,6 +1776,26 @@ const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment)
 
 	/* FIXME: default encryption (for other segment types) must be string here. */
 	return json_segment_get_cipher(jobj_segment) ?: "null";
+}
+
+crypt_reencrypt_info LUKS2_reenc_status(struct luks2_hdr *hdr)
+{
+	uint32_t reqs;
+
+	/*
+	 * Any unknown requirement or offline reencryption should abort
+	 * anything related to online-reencryption handling
+	 */
+	if (LUKS2_config_get_requirements(NULL, hdr, &reqs))
+		return CRYPT_REENCRYPT_INVALID;
+
+	if (!reqs_reencrypt_online(reqs))
+		return CRYPT_REENCRYPT_NONE;
+
+	if (json_segments_segment_in_reencrypt(LUKS2_get_segments_jobj(hdr)) < 0)
+		return CRYPT_REENCRYPT_CLEAN;
+
+	return CRYPT_REENCRYPT_CRASH;
 }
 
 const char *LUKS2_get_keyslot_cipher(struct luks2_hdr *hdr, int keyslot, size_t *key_size)
@@ -1726,6 +1842,7 @@ const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment)
 }
 
 /* FIXME: this only ensures that once we have journal encryption, it is not ignored. */
+/* implement segment count and type restrictions (crypt and only single crypt) */
 static int LUKS2_integrity_compatible(struct luks2_hdr *hdr)
 {
 	json_object *jobj1, *jobj2, *jobj3, *jobj4;
@@ -1813,17 +1930,189 @@ int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment)
 
 int LUKS2_get_sector_size(struct luks2_hdr *hdr)
 {
-	json_object *jobj1, *jobj_segment;
+	json_object *jobj_segment;
 
 	jobj_segment = LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT);
 	if (!jobj_segment)
 		return SECTOR_SIZE;
 
-	json_object_object_get_ex(jobj_segment, "sector_size", &jobj1);
-	if (!jobj1)
-		return SECTOR_SIZE;
+	return json_segment_get_sector_size(jobj_segment) ?: SECTOR_SIZE;
+}
 
-	return json_object_get_int(jobj1);
+static int _prepare_multi_dmd(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	struct volume_key *vks,
+	json_object *jobj_segments,
+	struct crypt_dm_active_device *dmd)
+{
+	struct volume_key *vk;
+	json_object *jobj;
+	enum devcheck device_check;
+	int r;
+	unsigned s = 0;
+	uint64_t data_offset, segment_size, segment_offset, segment_start = 0;
+	struct dm_target *t = &dmd->segment;
+
+	if (dmd->flags & CRYPT_ACTIVATE_SHARED)
+		device_check = DEV_OK;
+	else
+		device_check = DEV_EXCL;
+
+	/* FIXME: replace == 0 with < LUKS2_header_size() */
+	data_offset = json_segments_get_minimal_offset(jobj_segments, 1);
+	if (data_offset == 0 &&
+	    crypt_data_device(cd) == crypt_metadata_device(cd)) {
+		log_dbg(cd, "Internal error. Wrong data offset");
+		return -EINVAL;
+	}
+
+	r = device_block_adjust(cd, crypt_data_device(cd), device_check,
+			                                data_offset, &dmd->size, &dmd->flags);
+	if (r)
+		return r;
+
+	r = -EINVAL;
+
+	while (t) {
+		jobj = json_segments_get_segment(jobj_segments, s);
+		if (!jobj) {
+			log_dbg(cd, "Internal error. Segment %u is null.", s);
+			return -EINVAL;
+		}
+
+		segment_offset = json_segment_get_offset(jobj, 1);
+		segment_size = json_segment_get_size(jobj, 1);
+		/* 'dynamic' length allowed in last segment only */
+		if (!segment_size && !t->next)
+			segment_size = dmd->size - segment_start;
+		if (!segment_size) {
+			log_dbg(cd, "Internal error. Wrong segment size %u", s);
+			return -EINVAL;
+		}
+
+		if (!strcmp(json_segment_type(jobj), "crypt")) {
+			vk = crypt_volume_key_by_id(vks, LUKS2_digest_by_segment(hdr, s));
+			if (!vk) {
+				log_err(cd, _("Missing key for dm-crypt segment %u"), s);
+				return -EINVAL;
+			}
+
+			r = dm_crypt_target_set(t, segment_start, segment_size,
+					crypt_data_device(cd), vk,
+					json_segment_get_cipher(jobj),
+					json_segment_get_iv_offset(jobj),
+					segment_offset, "none", 0,
+					json_segment_get_sector_size(jobj));
+			if (r) {
+				log_err(cd, _("Failed to set dm-crypt segment."));
+				return r;
+			}
+		} else if (!strcmp(json_segment_type(jobj), "linear")) {
+			r = dm_linear_target_set(t, segment_start, segment_size, crypt_data_device(cd), segment_offset);
+			if (r) {
+				log_err(cd, _("Failed to set dm-linear segment."));
+				return r;
+			}
+		} else
+			return -EINVAL;
+
+		segment_start += segment_size;
+		t = t->next;
+		s++;
+	}
+
+	return r;
+}
+
+/* FIXME: This shares almost all code with activate_multi_custom */
+static int _reload_custom_multi(struct crypt_device *cd,
+	const char *name,
+	struct volume_key *vks,
+	json_object *jobj_segments,
+	uint32_t flags)
+{
+	int r, count = json_segments_count(jobj_segments);
+	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+	struct crypt_dm_active_device dmd =  {
+		.uuid   = crypt_get_uuid(cd),
+	};
+
+	if (count < 0)
+		return -EINVAL;
+
+	/* do not allow activation when particular requirements detected */
+	if ((r = LUKS2_unmet_requirements(cd, hdr, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 0)))
+		return r;
+
+	/* Add persistent activation flags */
+	if (!(flags & CRYPT_ACTIVATE_IGNORE_PERSISTENT))
+		LUKS2_config_get_flags(cd, hdr, &dmd.flags);
+
+	dmd.flags |= (flags | CRYPT_ACTIVATE_SHARED);
+
+	r = dm_targets_allocate(&dmd.segment, count);
+	if (r) {
+		dm_targets_free(cd, &dmd);
+		return r;
+	}
+
+	r = _prepare_multi_dmd(cd, hdr, vks, jobj_segments, &dmd);
+	if (!r)
+		r = dm_reload_device(cd, name, &dmd, 0, 0);
+
+	dm_targets_free(cd, &dmd);
+	return r;
+}
+
+int LUKS2_reload(struct crypt_device *cd,
+	const char *name,
+	struct volume_key *vks,
+	uint32_t flags)
+{
+	if (crypt_get_integrity_tag_size(cd))
+		return -ENOTSUP;
+
+	return _reload_custom_multi(cd, name, vks,
+			LUKS2_get_segments_jobj(crypt_get_hdr(cd, CRYPT_LUKS2)), flags);
+}
+
+int LUKS2_activate_multi(struct crypt_device *cd,
+	const char *name,
+	struct volume_key *vks,
+	uint32_t flags)
+{
+	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+	json_object *jobj_segments = LUKS2_get_segments_jobj(hdr);
+	int r, count = json_segments_count(jobj_segments);
+	struct crypt_dm_active_device dmd = {
+		.uuid   = crypt_get_uuid(cd),
+	};
+
+	if (count < 0)
+		return -EINVAL;
+
+	/* do not allow activation when particular requirements detected */
+	if ((r = LUKS2_unmet_requirements(cd, hdr, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 0)))
+		return r;
+
+	/* Add persistent activation flags */
+	if (!(flags & CRYPT_ACTIVATE_IGNORE_PERSISTENT))
+		LUKS2_config_get_flags(cd, hdr, &dmd.flags);
+
+	dmd.flags |= flags;
+
+	r = dm_targets_allocate(&dmd.segment, count);
+	if (r) {
+		dm_targets_free(cd, &dmd);
+		return r;
+	}
+
+	r = _prepare_multi_dmd(cd, hdr, vks, jobj_segments, &dmd);
+	if (!r)
+		r = dm_create_device(cd, name, CRYPT_LUKS2, &dmd);
+
+	dm_targets_free(cd, &dmd);
+	return r;
 }
 
 int LUKS2_activate(struct crypt_device *cd,
@@ -1877,6 +2166,153 @@ int LUKS2_activate(struct crypt_device *cd,
 	return r;
 }
 
+static bool is_reencryption_helper(const char *name)
+{
+	size_t len;
+
+	if (!name)
+		return false;
+
+	len = strlen(name);
+	return (len >= 9 && (!strcmp(name + len - 8, "-hotzone") ||
+			     !strcmp(name + len - 8, "-overlay")));
+
+}
+
+static bool contains_reencryption_helper(char **names)
+{
+	while (*names) {
+		if (is_reencryption_helper(*names++))
+			return true;
+	}
+
+	return false;
+}
+
+int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr *hdr, struct crypt_dm_active_device *dmd, uint32_t flags)
+{
+	int r, ret;
+	struct dm_target *tgt;
+	crypt_status_info ci;
+	struct crypt_dm_active_device dmdc;
+	char **dep, uuid[37], deps_uuid_prefix[38], *deps[65] = { 0 };
+	const char *namei = NULL;
+	struct crypt_lock_handle *reencrypt_lock = NULL;
+
+	if (!dmd || !dmd->uuid)
+		return -EINVAL;
+
+	r = snprintf(deps_uuid_prefix, sizeof(deps_uuid_prefix), "TEMP-%.32s", dmd->uuid + 6);
+	if (r < 0 || (size_t)r != 37)
+		return -EINVAL;
+
+	r = snprintf(uuid, sizeof(uuid), "%.8s-%.4s-%.4s-%.4s-%.12s",
+		 dmd->uuid + 6, dmd->uuid + 14, dmd->uuid + 18, dmd->uuid + 22, dmd->uuid + 26);
+	if (r < 0 || (size_t)r != 36)
+		return -EINVAL;
+
+	/* uuid mismatch with metadata (if available) */
+	if (hdr && strcmp(hdr->uuid, uuid))
+		return -EINVAL;
+
+	tgt = &dmd->segment;
+
+	/* TODO: We have LUKS2 dependencies now */
+	if (hdr && single_segment(dmd) && tgt->type == DM_CRYPT && crypt_get_integrity_tag_size(cd))
+		namei = device_dm_name(tgt->data_device);
+
+	r = dm_device_deps(cd, name, deps_uuid_prefix, deps, ARRAY_SIZE(deps));
+	if (r < 0)
+		goto out;
+
+	if (contains_reencryption_helper(deps)) {
+		r = crypt_reencrypt_lock(cd, uuid, &reencrypt_lock);
+		if (r) {
+			if (r == -EBUSY)
+				log_err(cd, _("Reencryption in-progress. Cannot deactivate device."));
+			else
+				log_err(cd, _("Failed to get reencryption lock."));
+			goto out;
+		}
+	}
+
+	dep = deps;
+	while (*dep) {
+		if (is_reencryption_helper(*dep) && (dm_status_suspended(cd, *dep) > 0)) {
+			if (dm_error_device(cd, *dep))
+				log_err(cd, _("Failed to error suspended device %s."), *dep);
+		}
+		dep++;
+	}
+
+	r = dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmdc);
+	if (r < 0) {
+		memset(&dmdc, 0, sizeof(dmdc));
+		dmdc.segment.type = DM_UNKNOWN;
+	}
+
+	/* Remove top level device first */
+	r = dm_remove_device(cd, name, flags);
+	if (!r) {
+		tgt = &dmdc.segment;
+		while (tgt) {
+			if (tgt->type == DM_CRYPT)
+				crypt_drop_keyring_key_by_description(cd, tgt->u.crypt.vk->key_description, LOGON_KEY);
+			tgt = tgt->next;
+		}
+	}
+	dm_targets_free(cd, &dmdc);
+
+	/* TODO: We have LUKS2 dependencies now */
+	if (r >= 0 && namei) {
+		log_dbg(cd, "Deactivating integrity device %s.", namei);
+		r = dm_remove_device(cd, namei, 0);
+	}
+
+	if (!r) {
+		ret = 0;
+		dep = deps;
+		while (*dep) {
+			log_dbg(cd, "Deactivating LUKS2 dependent device %s.", *dep);
+			r = dm_query_device(cd, *dep, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmdc);
+			if (r < 0) {
+				memset(&dmdc, 0, sizeof(dmdc));
+				dmdc.segment.type = DM_UNKNOWN;
+			}
+
+			r = dm_remove_device(cd, *dep, flags);
+			if (r < 0) {
+				ci = crypt_status(cd, *dep);
+				if (ci == CRYPT_BUSY)
+					log_err(cd, _("Device %s is still in use."), *dep);
+				if (ci == CRYPT_INACTIVE)
+					r = 0;
+			}
+			if (!r) {
+				tgt = &dmdc.segment;
+				while (tgt) {
+					if (tgt->type == DM_CRYPT)
+						crypt_drop_keyring_key_by_description(cd, tgt->u.crypt.vk->key_description, LOGON_KEY);
+					tgt = tgt->next;
+				}
+			}
+			dm_targets_free(cd, &dmdc);
+			if (r && !ret)
+				ret = r;
+			dep++;
+		}
+		r = ret;
+	}
+
+out:
+	crypt_reencrypt_unlock(cd, reencrypt_lock);
+	dep = deps;
+	while (*dep)
+		free(*dep++);
+
+	return r;
+}
+
 int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet)
 {
 	uint32_t reqs;
@@ -1900,6 +2336,8 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 
 	if (reqs_reencrypt(reqs) && !quiet)
 		log_err(cd, _("Offline reencryption in progress. Aborting."));
+	if (reqs_reencrypt_online(reqs) && !quiet)
+		log_err(cd, _("Online reencryption in progress. Aborting."));
 
 	/* any remaining unmasked requirement fails the check */
 	return reqs ? -EINVAL : 0;

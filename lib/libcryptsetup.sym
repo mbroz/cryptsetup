@@ -113,6 +113,11 @@ CRYPTSETUP_2.0 {
 		crypt_keyfile_device_read;
 
 		crypt_wipe;
+
+		crypt_reencrypt_init_by_passphrase;
+		crypt_reencrypt_init_by_keyring;
+		crypt_reencrypt;
+		crypt_reencrypt_status;
 	local:
 		*;
 };

@@ -280,6 +280,19 @@ int device_open(struct crypt_device *cd, struct device *device, int flags)
 	return device_open_internal(cd, device, flags);
 }
 
+int device_open_excl(struct crypt_device *cd, struct device *device, int flags)
+{
+	struct stat st;
+
+	if (stat(device_path(device), &st))
+		return -EINVAL;
+	if (S_ISBLK(st.st_mode))
+		flags |= O_EXCL;
+
+	assert(!device_locked(device->lh));
+	return device_open_internal(cd, device, flags);
+}
+
 int device_open_locked(struct crypt_device *cd, struct device *device, int flags)
 {
 	assert(!crypt_metadata_locking_enabled() || device_locked(device->lh));

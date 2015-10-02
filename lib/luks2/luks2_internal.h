@@ -62,10 +62,8 @@ void hexprint_base64(struct crypt_device *cd, json_object *jobj,
 json_object *parse_json_len(struct crypt_device *cd, const char *json_area,
 			    uint64_t max_length, int *json_len);
 uint64_t json_object_get_uint64(json_object *jobj);
-int64_t json_object_get_int64_ex(json_object *jobj);
 uint32_t json_object_get_uint32(json_object *jobj);
 json_object *json_object_new_uint64(uint64_t value);
-json_object *json_object_new_int64_ex(int64_t value);
 
 int json_object_object_add_by_uint(json_object *jobj, unsigned key, json_object *jobj_val);
 void json_object_object_del_by_uint(json_object *jobj, unsigned key);
@@ -78,6 +76,7 @@ void JSON_DBG(struct crypt_device *cd, json_object *jobj, const char *desc);
  */
 
 /* validation helper */
+json_bool validate_json_uint32(json_object *jobj);
 json_object *json_contains(struct crypt_device *cd, json_object *jobj, const char *name,
 			   const char *section, const char *key, json_type type);
 
@@ -146,6 +145,12 @@ typedef struct  {
 	keyslot_repair_func repair;
 } keyslot_handler;
 
+/* can not fit prototype alloc function */
+int reenc_keyslot_alloc(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const struct crypt_params_reencrypt *params);
+
 /**
  * LUKS2 digest handlers (EXPERIMENTAL)
  */
@@ -186,4 +191,8 @@ int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 int LUKS2_find_area_max_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 			    uint64_t *area_offset, uint64_t *area_length);
 
+int LUKS2_check_cipher(struct crypt_device *cd,
+		      size_t keylength,
+		      const char *cipher,
+		      const char *cipher_mode);
 #endif
