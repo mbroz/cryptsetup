@@ -75,6 +75,7 @@ struct tcrypt_phdr {
 struct crypt_device;
 struct crypt_params_tcrypt;
 struct crypt_dm_active_device;
+struct dm_target;
 struct volume_key;
 struct device;
 
@@ -83,7 +84,8 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		     struct crypt_params_tcrypt *params);
 
 int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
-			const struct crypt_dm_active_device *dmd,
+			const char *uuid,
+			const struct dm_target *tgt,
 			struct device **device,
 			struct crypt_params_tcrypt *tcrypt_params,
 			struct tcrypt_phdr *tcrypt_hdr);

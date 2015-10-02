@@ -65,6 +65,13 @@
 # define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
+#define MOVE_REF(x, y) \
+	do { \
+		typeof (x) *_px = &(x), *_py = &(y); \
+		*_px = *_py; \
+		*_py = NULL; \
+	} while (0)
+
 struct crypt_device;
 
 struct volume_key {

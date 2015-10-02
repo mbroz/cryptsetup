@@ -1156,22 +1156,22 @@ int LUKS1_activate(struct crypt_device *cd,
 		   struct volume_key *vk,
 		   uint32_t flags)
 {
+	int r;
 	struct crypt_dm_active_device dmd = {
-		.target = DM_CRYPT,
-		.uuid   = crypt_get_uuid(cd),
-		.flags  = flags,
-		.size   = 0,
-		.data_device = crypt_data_device(cd),
-		.u.crypt = {
-			.cipher = crypt_get_cipher_spec(cd),
-			.vk     = vk,
-			.offset = crypt_get_data_offset(cd),
-			.iv_offset = 0,
-			.sector_size = crypt_get_sector_size(cd),
-		}
+		.flags = flags,
+		.uuid = crypt_get_uuid(cd),
 	};
 
-	return create_or_reload_device(cd, name, CRYPT_LUKS1, &dmd);
+	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
+			vk, crypt_get_cipher_spec(cd), crypt_get_iv_offset(cd),
+			crypt_get_data_offset(cd), crypt_get_integrity(cd),
+			crypt_get_integrity_tag_size(cd), crypt_get_sector_size(cd));
+	if (!r)
+		r = create_or_reload_device(cd, name, CRYPT_LUKS1, &dmd);
+
+	dm_targets_free(cd, &dmd);
+
+	return r;
 }
 
 int LUKS_wipe_header_areas(struct luks_phdr *hdr,

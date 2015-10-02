@@ -1861,24 +1861,19 @@ int LUKS2_activate(struct crypt_device *cd,
 {
 	int r;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
-	struct crypt_dm_active_device dmdi, dmd = {
-		.target = DM_CRYPT,
+	struct crypt_dm_active_device dmdi = {}, dmd = {
 		.uuid   = crypt_get_uuid(cd),
-		.size   = 0,
-		.data_device = crypt_data_device(cd),
-		.u.crypt = {
-			.vk     = vk,
-			.offset = crypt_get_data_offset(cd),
-			.cipher = LUKS2_get_cipher(hdr, CRYPT_DEFAULT_SEGMENT),
-			.integrity = crypt_get_integrity(cd),
-			.iv_offset = 0,
-			.tag_size = crypt_get_integrity_tag_size(cd),
-			.sector_size = crypt_get_sector_size(cd)
-		}
 	};
 
 	/* do not allow activation when particular requirements detected */
 	if ((r = LUKS2_unmet_requirements(cd, hdr, 0, 0)))
+		return r;
+
+	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
+			vk, crypt_get_cipher_spec(cd), crypt_get_iv_offset(cd),
+			crypt_get_data_offset(cd), crypt_get_integrity(cd) ?: "none",
+			crypt_get_integrity_tag_size(cd), crypt_get_sector_size(cd));
+	if (r < 0)
 		return r;
 
 	/* Add persistent activation flags */
@@ -1887,7 +1882,7 @@ int LUKS2_activate(struct crypt_device *cd,
 
 	dmd.flags |= flags;
 
-	if (dmd.u.crypt.tag_size) {
+	if (crypt_get_integrity_tag_size(cd)) {
 		if (!LUKS2_integrity_compatible(hdr)) {
 			log_err(cd, "Unsupported device integrity configuration.");
 			return -EINVAL;
@@ -1897,17 +1892,17 @@ int LUKS2_activate(struct crypt_device *cd,
 		if (r)
 			return r;
 
-		/* Space for IV metadata only */
-		if (!dmd.u.crypt.integrity)
-			dmd.u.crypt.integrity = "none";
+		dmd.segment.u.crypt.offset = 0;
+		dmd.segment.size = dmdi.segment.size;
 
-		dmd.u.crypt.offset = 0;
-		dmd.size = dmdi.size;
+		r = create_or_reload_device_with_integrity(cd, name, CRYPT_LUKS2, &dmd, &dmdi);
+	} else
+		r = create_or_reload_device(cd, name, CRYPT_LUKS2, &dmd);
 
-		return create_or_reload_device_with_integrity(cd, name, CRYPT_LUKS2, &dmd, &dmdi);
-	}
+	dm_targets_free(cd, &dmd);
+	dm_targets_free(cd, &dmdi);
 
-	return create_or_reload_device(cd, name, CRYPT_LUKS2, &dmd);
+	return r;
 }
 
 int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet)
