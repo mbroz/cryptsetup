@@ -97,17 +97,44 @@ AC_DEFUN([NO_FIPS], [
 
 dnl ==========================================================================
 dnl pwquality library (cryptsetup CLI only)
-AC_ARG_ENABLE([pwquality], AS_HELP_STRING([--enable-pwquality],[enable password quality checking]),
-[with_pwquality=$enableval],
-[with_pwquality=no])
+AC_ARG_ENABLE([pwquality],
+	      AS_HELP_STRING([--enable-pwquality],
+			     [enable password quality checking using pwquality library]),
+	      [with_pwquality=$enableval],
+	      [with_pwquality=no])
 
 if test "x$with_pwquality" = "xyes"; then
-	AC_DEFINE(ENABLE_PWQUALITY, 1, [Enable password quality checking])
+	AC_DEFINE(ENABLE_PWQUALITY, 1, [Enable password quality checking using pwquality library])
 	PKG_CHECK_MODULES([PWQUALITY], [pwquality >= 1.0.0],,
 		AC_MSG_ERROR([You need pwquality library.]))
 
 	dnl FIXME: this is really hack for now
 	PWQUALITY_STATIC_LIBS="$PWQUALITY_LIBS -lcrack -lz"
+fi
+
+dnl ==========================================================================
+dnl passwdqc library (cryptsetup CLI only)
+AC_ARG_ENABLE([passwdqc],
+	      AS_HELP_STRING([--enable-passwdqc@<:@=CONFIG_PATH@:>@],
+			     [enable password quality checking using passwdqc library (optionally with CONFIG_PATH)]),
+	      [enable_passwdqc=$enableval],
+	      [enable_passwdqc=no])
+
+case "$enable_passwdqc" in
+	yes|no) use_passwdqc_config="" ;;
+	/*) use_passwdqc_config="$enable_passwdqc"; enable_passwdqc=yes ;;
+	*) AC_MSG_ERROR([Unrecognized --enable-passwdqc parameter.]) ;;
+esac
+AC_DEFINE_UNQUOTED([PASSWDQC_CONFIG_FILE], ["$use_passwdqc_config"], [passwdqc library config file])
+
+if test "x$enable_passwdqc" = "xyes"; then
+	AC_DEFINE(ENABLE_PASSWDQC, 1, [Enable password quality checking using passwdqc library])
+
+	PASSWDQC_LIBS="-lpasswdqc"
+fi
+
+if test "x$with_pwquality$enable_passwdqc" = "xyesyes"; then
+	AC_MSG_ERROR([--enable-pwquality and --enable-passwdqc are mutually incompatible.])
 fi
 
 dnl ==========================================================================
@@ -344,6 +371,8 @@ AC_SUBST([DEVMAPPER_STATIC_LIBS])
 
 AC_SUBST([PWQUALITY_LIBS])
 AC_SUBST([PWQUALITY_STATIC_LIBS])
+
+AC_SUBST([PASSWDQC_LIBS])
 
 AC_SUBST([CRYPTO_CFLAGS])
 AC_SUBST([CRYPTO_LIBS])
