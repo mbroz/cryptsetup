@@ -24,7 +24,7 @@
 int opt_force_password = 0;
 
 #if defined ENABLE_PWQUALITY
-# include <pwquality.h>
+#include <pwquality.h>
 
 static int tools_check_pwquality(const char *password)
 {
@@ -59,24 +59,24 @@ static int tools_check_pwquality(const char *password)
 	return r;
 }
 #elif defined ENABLE_PASSWDQC
-# include <passwdqc.h>
+#include <passwdqc.h>
 
 static int tools_check_pwquality(const char *password)
 {
 	passwdqc_params_t params;
 	char *parse_reason;
 	const char *check_reason;
+	const char *config = PASSWDQC_CONFIG_FILE;
 
 	passwdqc_params_reset(&params);
 
-# ifdef PASSWDQC_CONFIG_FILE
-	if (passwdqc_params_load(&params, &parse_reason, PASSWDQC_CONFIG_FILE)) {
+	if (*config && passwdqc_params_load(&params, &parse_reason, config)) {
 		log_err(_("Cannot check password quality: %s\n"),
 			(parse_reason ? parse_reason : "Out of memory"));
 		free(parse_reason);
 		return -EINVAL;
 	}
-# endif
+
 	check_reason = passwdqc_check(&params.qc, password, NULL, NULL);
 	if (check_reason) {
 		log_err(_("Password quality check failed: Bad passphrase (%s)\n"),

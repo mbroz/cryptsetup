@@ -115,18 +115,17 @@ fi
 dnl ==========================================================================
 dnl passwdqc library (cryptsetup CLI only)
 AC_ARG_ENABLE([passwdqc],
-	      AS_HELP_STRING([--enable-passwdqc],
-			     [enable password quality checking using passwdqc library]),
+	      AS_HELP_STRING([--enable-passwdqc@<:@=CONFIG_PATH@:>@],
+			     [enable password quality checking using passwdqc library (optionally with CONFIG_PATH)]),
 	      [enable_passwdqc=$enableval],
 	      [enable_passwdqc=no])
 
 case "$enable_passwdqc" in
-	yes|no)	;;
-	/*)
-	AC_DEFINE_UNQUOTED([PASSWDQC_CONFIG_FILE], ["$enable_passwdqc"], [passwdqc library config file])
-	enable_passwdqc=yes ;;
+	yes|no) use_passwdqc_config="" ;;
+	/*) use_passwdqc_config="$enable_passwdqc"; enable_passwdqc=yes ;;
 	*) AC_MSG_ERROR([Unrecognized --enable-passwdqc parameter.]) ;;
 esac
+AC_DEFINE_UNQUOTED([PASSWDQC_CONFIG_FILE], ["$use_passwdqc_config"], [passwdqc library config file])
 
 if test "x$enable_passwdqc" = "xyes"; then
 	AC_DEFINE(ENABLE_PASSWDQC, 1, [Enable password quality checking using passwdqc library])
