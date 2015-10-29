@@ -757,14 +757,18 @@ int TCRYPT_activate(struct crypt_device *cd,
 
 	r = device_block_adjust(cd, dmd.data_device, device_check,
 				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
-	if (r)
+	if (r) {
+		device_free(part_device);
 		return r;
+	}
 
 	/* Frome here, key size for every cipher must be the same */
 	dmd.u.crypt.vk = crypt_alloc_volume_key(algs->cipher[0].key_size +
 						algs->cipher[0].key_extra_size, NULL);
-	if (!dmd.u.crypt.vk)
+	if (!dmd.u.crypt.vk) {
+		device_free(part_device);
 		return -ENOMEM;
+	}
 
 	for (i = algs->chain_count; i > 0; i--) {
 		if (i == 1) {
