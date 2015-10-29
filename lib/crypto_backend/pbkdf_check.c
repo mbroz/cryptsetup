@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdlib.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -52,31 +53,39 @@ static long time_ms(struct rusage *start, struct rusage *end)
 
 /* This code benchmarks PBKDF and returns iterations/second using specified hash */
 int crypt_pbkdf_check(const char *kdf, const char *hash,
-		      const char *password, size_t password_size,
-		      const char *salt, size_t salt_size,
-		      uint64_t *iter_secs)
+		      const char *password, size_t password_length,
+		      const char *salt, size_t salt_length,
+		      size_t key_length, uint64_t *iter_secs)
 {
 	struct rusage rstart, rend;
 	int r = 0, step = 0;
 	long ms = 0;
-	char buf;
+	char *key = NULL;
 	unsigned int iterations;
 
-	if (!kdf || !hash)
+	if (!kdf || !hash || key_length <= 0)
 		return -EINVAL;
+
+	key = malloc(key_length);
+	if (!key)
+		return -ENOMEM;
 
 	iterations = 1 << 15;
 	while (ms < 500) {
-		if (getrusage(RUSAGE_SELF, &rstart) < 0)
-			return -EINVAL;
+		if (getrusage(RUSAGE_SELF, &rstart) < 0) {
+			r = -EINVAL;
+			goto out;
+		}
 
-		r = crypt_pbkdf(kdf, hash, password, password_size, salt,
-				salt_size, &buf, 1, iterations);
+		r = crypt_pbkdf(kdf, hash, password, password_length, salt,
+				salt_length, key, key_length, iterations);
 		if (r < 0)
-			return r;
+			goto out;
 
-		if (getrusage(RUSAGE_SELF, &rend) < 0)
-			return -EINVAL;
+		if (getrusage(RUSAGE_SELF, &rend) < 0) {
+			r = -EINVAL;
+			goto out;
+		}
 
 		ms = time_ms(&rstart, &rend);
 		if (ms > 500)
@@ -91,11 +100,18 @@ int crypt_pbkdf_check(const char *kdf, const char *hash,
 		else
 			iterations <<= 1;
 
-		if (++step > 10 || !iterations)
-			return -EINVAL;
+		if (++step > 10 || !iterations) {
+			r = -EINVAL;
+			goto out;
+		}
 	}
 
 	if (iter_secs)
 		*iter_secs = (iterations * 1000) / ms;
+out:
+	if (key) {
+		crypt_backend_memzero(key, key_length);
+		free(key);
+	}
 	return r;
 }

@@ -491,8 +491,8 @@ static int action_benchmark_kdf(const char *hash)
 	if (r < 0)
 		log_std("PBKDF2-%-9s     N/A\n", hash);
 	else
-		log_std("PBKDF2-%-9s %7" PRIu64 " iterations per second\n",
-			hash, kdf_iters);
+		log_std("PBKDF2-%-9s %7" PRIu64 " iterations per second for %d-bit key\n",
+			hash, kdf_iters, DEFAULT_LUKS1_KEYBITS);
 	return r;
 }
 

@@ -240,7 +240,7 @@ int crypt_benchmark_kdf(struct crypt_device *cd,
 	size_t salt_size,
 	uint64_t *iterations_sec)
 {
-	int r;
+	int r, key_length = 0;
 
 	if (!iterations_sec)
 		return -EINVAL;
@@ -249,14 +249,21 @@ int crypt_benchmark_kdf(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	// FIXME: this should be in KDF check API parameters later
+	if (cd)
+		key_length = crypt_get_volume_key_size(cd);
+
+	if (key_length == 0)
+		key_length = DEFAULT_LUKS1_KEYBITS / 8;
+
 	if (!strncmp(kdf, "pbkdf2", 6))
 		r = crypt_pbkdf_check(kdf, hash, password, password_size,
-				      salt, salt_size, iterations_sec);
+				      salt, salt_size, key_length, iterations_sec);
 	else
 		r = -EINVAL;
 
 	if (!r)
-		log_dbg("KDF %s, hash %s: %" PRIu64 " iterations per second.",
-			kdf, hash, *iterations_sec);
+		log_dbg("KDF %s, hash %s: %" PRIu64 " iterations per second (%d-bits key).",
+			kdf, hash, *iterations_sec, key_length * 8);
 	return r;
 }

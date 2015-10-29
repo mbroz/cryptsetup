@@ -804,7 +804,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	 * Avoid floating point operation
 	 * Final iteration count is at least LUKS_SLOT_ITERATIONS_MIN
 	 */
-	PBKDF2_temp = (*PBKDF2_per_sec / 2) * (uint64_t)iteration_time_ms;
+	PBKDF2_temp = *PBKDF2_per_sec * (uint64_t)iteration_time_ms;
 	PBKDF2_temp /= 1024;
 	if (PBKDF2_temp > UINT32_MAX)
 		PBKDF2_temp = UINT32_MAX;

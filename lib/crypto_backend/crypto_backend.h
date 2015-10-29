@@ -58,9 +58,9 @@ int crypt_backend_rng(char *buffer, size_t length, int quality, int fips);
 
 /* PBKDF*/
 int crypt_pbkdf_check(const char *kdf, const char *hash,
-		      const char *password, size_t password_size,
-		      const char *salt, size_t salt_size,
-		      uint64_t *iter_secs);
+		      const char *password, size_t password_length,
+		      const char *salt, size_t salt_length,
+		      size_t key_length, uint64_t *iter_secs);
 int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
 		const char *salt, size_t salt_length,
