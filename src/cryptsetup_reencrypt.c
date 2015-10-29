@@ -1329,12 +1329,10 @@ int main(int argc, const char **argv)
 		exit(EXIT_SUCCESS);
 	}
 
-	if (!opt_batch_mode) {
-		log_std(_("WARNING: this is experimental code, it can completely break your data.\n"));
+	if (!opt_batch_mode)
 		log_verbose(_("Reencryption will change: volume key%s%s%s%s.\n"),
 			opt_hash   ? _(", set hash to ")  : "", opt_hash   ?: "",
 			opt_cipher ? _(", set cipher to "): "", opt_cipher ?: "");
-	}
 
 	action_argv = poptGetArgs(popt_context);
 	if(!action_argv)
