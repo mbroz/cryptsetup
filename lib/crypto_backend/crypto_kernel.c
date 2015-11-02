@@ -77,7 +77,7 @@ int crypt_backend_init(struct crypt_device *ctx)
 	struct sockaddr_alg sa = {
 		.salg_family = AF_ALG,
 		.salg_type = "hash",
-		.salg_name = "sha1",
+		.salg_name = "sha256",
 	};
 	int tfmfd = -1, opfd = -1;
 

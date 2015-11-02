@@ -1074,7 +1074,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
 	r = LUKS_generate_phdr(&cd->u.luks1.hdr, cd->volume_key, cipher, cipher_mode,
-			       (params && params->hash) ? params->hash : "sha1",
+			       (params && params->hash) ? params->hash : DEFAULT_LUKS1_HASH,
 			       uuid, LUKS_STRIPES,
 			       required_alignment / SECTOR_SIZE,
 			       alignment_offset / SECTOR_SIZE,
