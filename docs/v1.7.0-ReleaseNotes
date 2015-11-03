@@ -1,0 +1,81 @@
+Cryptsetup 1.7.0 Release Notes
+==============================
+
+The cryptsetup 1.7 release changes defaults for LUKS,
+there are no API changes.
+
+Changes since version 1.6.8
+
+* Default hash function is now SHA256 (used in key derivation function
+  and anti-forensic splitter).
+
+  Note that replacing SHA1 with SHA256 is not for security reasons.
+  (LUKS does not have problems even if collisions are found for SHA1,
+  for details see FAQ item 5.20).
+
+  Using SHA256 as default is mainly to prevent compatibility problems
+  on hardened systems where SHA1 is already be phased out.
+
+  Note that all checks (kernel crypto API availability check) now uses
+  SHA256 as well.
+
+* Default iteration time for PBKDF2 is now 2 seconds.
+
+  Increasing iteration time is in combination with PBKDF2 benchmark
+  fixes a try to keep PBKDF2 iteration count still high enough and
+  also still acceptable for users.
+
+  N.B. Long term is to replace PBKDF2 algorithm with Password Hashing
+  Competition winner - Argon2.
+
+  Distributions can still change these defaults in compilation time.
+
+  You can change iteration time and used hash function in existing LUKS
+  header with cryptsetup-reencrypt utility even without full reencryption
+  of device (see --keep-key option).
+
+* Fix PBKDF2 iteration benchmark for longer key sizes.
+
+  The previous PBKDF2 benchmark code did not take into account
+  output key length properly.
+
+  For SHA1 (with 160-bits output) and 256-bit keys (and longer)
+  it means that the final iteration value was higher than it should be.
+
+  For other hash algorithms (like SHA256 or SHA512) it caused
+  that iteration count was lower (in comparison to SHA1) than
+  expected for the requested time period.
+
+  The PBKDF2 benchmark code is now fixed to use the key size for
+  the formatted device (or default LUKS key size if running in informational
+  benchmark mode).
+
+  Thanks to A.Visconti, S.Bossi, A.Calo and H.Ragab
+  (http://www.club.di.unimi.it/) for point this out.
+  (Based on "What users should know about Full Disk Encryption
+  based on LUKS" paper to be presented on CANS2015).
+
+* Remove experimental warning for reencrypt tool.
+  The strong request for full backup before using reencryption utility
+  still applies :)
+
+* Add optional libpasswdqc support for new LUKS passwords.
+
+  If password is entered through terminal (no keyfile specified) and
+  cryptsetup is compiled with --enable-passwdqc[=/etc/passwdqc.conf],
+  configured system passwdqc settings are used to check password quality.
+
+* Update FAQ document.
+
+Cryptsetup API NOTE:
+
+Direct terminal handling and password calling callback for passphrase
+entry will be removed from libcryptsetup in next major (2.x) version
+(application should handle it itself).
+It means that application have to always provide password in API calls.
+
+Functions returning last error will be removed in next major version (2.x).
+These functions did not work properly for early initialization errors
+and application can implement better function easily using own error callback.
+
+See comments in libcryptsetup.h for more info about deprecated functions.
