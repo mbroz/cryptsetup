@@ -355,6 +355,12 @@ $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY1 2>/dev/null && fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 --keyfile-size 1 2>/dev/null && fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: DISABLED" || fail
+# if password or keyfile is provided, batch mode must not suppress it
+echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 2>/dev/null && fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 -q 2>/dev/null && fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 --key-file=- 2>/dev/null && fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 --key-file=- -q 2>/dev/null && fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: ENABLED" || fail
 # kill slot using passphrase from 1
 echo $PWD2 | $CRYPTSETUP luksKillSlot $LOOPDEV 2 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: DISABLED" || fail
