@@ -286,8 +286,9 @@ inaccessible.
 .PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
-Wipe the key-slot number <key slot> from the LUKS device. A remaining
-passphrase must be supplied, either interactively or via \-\-key-file.
+Wipe the key-slot number <key slot> from the LUKS device. Except running
+in batch-mode (\-q) a remaining passphrase must be supplied,
+either interactively or via \-\-key-file.
 This command can remove the last remaining key-slot, but requires
 an interactive confirmation when doing so. Removing the last
 passphrase makes a LUKS container permanently inaccessible.
@@ -297,11 +298,16 @@ passphrase makes a LUKS container permanently inaccessible.
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument
-to \-\-key-file), batch-mode (\-q) will be implicitely
+to \-\-key-file), batch-mode (\-q) will be implicitly
 switched on and no warning will be given when you remove the
 last remaining passphrase from a LUKS container. Removing
 the last passphrase makes the LUKS container permanently
 inaccessible.
+
+\fBNOTE:\fR If there is no passphrase provided (on stdin or through
+\-\-key-file argument) and batch-mode (\-q) is active, the
+key-slot is removed without any other warning.
+
 .PP
 \fIerase\fR <device>
 .br

@@ -824,7 +824,8 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 	int i, r;
 
 	ki = crypt_keyslot_status(cd, key_slot);
-	if (ki == CRYPT_SLOT_ACTIVE_LAST && msg_last && !yesDialog(msg_last, NULL))
+	if (ki == CRYPT_SLOT_ACTIVE_LAST && !opt_batch_mode && !key_file &&
+	    msg_last && !yesDialog(msg_last, NULL))
 		return -EPERM;
 
 	r = tools_get_key(msg_pass, &password, &passwordLen,
@@ -850,6 +851,10 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 				break;
 		}
 	}
+
+	/* Handle inactive keyslots the same as bad password here */
+	if (r == -ENOENT)
+		r = -EPERM;
 
 	if (r == -EPERM)
 		log_err(_("No key available with this passphrase.\n"));
@@ -883,7 +888,7 @@ static int action_luksKillSlot(void)
 		goto out;
 	}
 
-	if (!opt_batch_mode) {
+	if (!opt_batch_mode || opt_key_file || !isatty(STDIN_FILENO)) {
 		r = verify_keyslot(cd, opt_key_slot,
 			_("This is the last keyslot. Device will become unusable after purging this key."),
 			_("Enter any remaining passphrase: "),
