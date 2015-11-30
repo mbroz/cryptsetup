@@ -56,13 +56,14 @@ static void *aligned_malloc(void **base, int size, int alignment)
 /* Credits go to Michal's padlock patches for this alignment code */
 	char *ptr;
 
-	ptr  = malloc(size + alignment);
-	if(ptr == NULL) return NULL;
+	ptr = malloc(size + alignment);
+	if (!ptr)
+		return NULL;
 
 	*base = ptr;
-	if(alignment > 1 && ((long)ptr & (alignment - 1))) {
+	if (alignment > 1 && ((long)ptr & (alignment - 1)))
 		ptr += alignment - ((long)(ptr) & (alignment - 1));
-	}
+
 	return ptr;
 #endif
 }
@@ -171,7 +172,8 @@ out:
 	return ret;
 }
 
-ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count) {
+ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count)
+{
 	void *hangover_buf, *hangover_buf_base = NULL;
 	void *buf, *buf_base = NULL;
 	int r, alignment;
@@ -193,7 +195,7 @@ ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count) {
 		buf = orig_buf;
 
 	r = read_buffer(fd, buf, solid);
-	if(r < 0 || r != (ssize_t)solid)
+	if (r < 0 || r != (ssize_t)solid)
 		goto out;
 
 	if (hangover) {
@@ -222,7 +224,8 @@ out:
  * is implicitly included in the read/write offset, which can not be set to non-aligned
  * boundaries. Hence, we combine llseek with write.
  */
-ssize_t write_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t offset) {
+ssize_t write_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t offset)
+{
 	char *frontPadBuf;
 	void *frontPadBuf_base = NULL;
 	int r, frontHang;
