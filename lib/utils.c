@@ -71,7 +71,8 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 {
 	void *hangover_buf, *hangover_buf_base = NULL;
 	void *buf, *buf_base = NULL;
-	int r, hangover, solid, alignment;
+	int r, alignment;
+	size_t hangover, solid;
 	ssize_t ret = -1;
 
 	if (fd == -1 || !orig_buf || bsize <= 0)
@@ -89,9 +90,11 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 	} else
 		buf = orig_buf;
 
-	r = write(fd, buf, solid);
-	if (r < 0 || r != solid)
-		goto out;
+	if (solid) {
+		r = write(fd, buf, solid);
+		if (r < 0 || r != (ssize_t)solid)
+			goto out;
+	}
 
 	if (hangover) {
 		hangover_buf = aligned_malloc(&hangover_buf_base, bsize, alignment);
@@ -99,7 +102,7 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 			goto out;
 
 		r = read(fd, hangover_buf, bsize);
-		if (r < 0 || r < hangover)
+		if (r < 0 || r < (ssize_t)hangover)
 			goto out;
 
 		if (r < bsize)
@@ -111,7 +114,7 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 		memcpy(hangover_buf, (char*)buf + solid, hangover);
 
 		r = write(fd, hangover_buf, bsize);
-		if (r < 0 || r < hangover)
+		if (r < 0 || r < (ssize_t)hangover)
 			goto out;
 	}
 	ret = count;
@@ -125,7 +128,8 @@ out:
 ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count) {
 	void *hangover_buf, *hangover_buf_base = NULL;
 	void *buf, *buf_base = NULL;
-	int r, hangover, solid, alignment;
+	int r, alignment;
+	size_t hangover, solid;
 	ssize_t ret = -1;
 
 	if (fd == -1 || !orig_buf || bsize <= 0)
@@ -143,7 +147,7 @@ ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count) {
 		buf = orig_buf;
 
 	r = read(fd, buf, solid);
-	if(r < 0 || r != solid)
+	if(r < 0 || r != (ssize_t)solid)
 		goto out;
 
 	if (hangover) {
@@ -151,7 +155,7 @@ ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count) {
 		if (!hangover_buf)
 			goto out;
 		r = read(fd, hangover_buf, bsize);
-		if (r <  0 || r < hangover)
+		if (r <  0 || r < (ssize_t)hangover)
 			goto out;
 
 		memcpy((char *)buf + solid, hangover_buf, hangover);
