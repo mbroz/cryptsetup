@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2009-2012, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
@@ -65,6 +65,52 @@ static void *aligned_malloc(void **base, int size, int alignment)
 	}
 	return ptr;
 #endif
+}
+
+ssize_t read_buffer(int fd, void *buf, size_t count)
+{
+	size_t read_size = 0;
+	ssize_t r;
+
+	if (fd < 0 || !buf)
+		return -EINVAL;
+
+	do {
+		r = read(fd, buf, count - read_size);
+		if (r == -1 && errno != EINTR)
+			return r;
+		if (r == 0)
+			return (ssize_t)read_size;
+		if (r > 0) {
+			read_size += (size_t)r;
+			buf = (uint8_t*)buf + r;
+		}
+	} while (read_size != count);
+
+	return (ssize_t)count;
+}
+
+ssize_t write_buffer(int fd, const void *buf, size_t count)
+{
+	size_t write_size = 0;
+	ssize_t w;
+
+	if (fd < 0 || !buf || !count)
+		return -EINVAL;
+
+	do {
+		w = write(fd, buf, count - write_size);
+		if (w < 0 && errno != EINTR)
+			return w;
+		if (w == 0)
+			return (ssize_t)write_size;
+		if (w > 0) {
+			write_size += (size_t) w;
+			buf = (const uint8_t*)buf + w;
+		}
+	} while (write_size != count);
+
+	return (ssize_t)write_size;
 }
 
 ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)

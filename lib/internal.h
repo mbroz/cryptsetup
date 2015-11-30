@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2009-2012, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
@@ -98,6 +98,8 @@ char *crypt_get_partition_device(const char *dev_path, uint64_t offset, uint64_t
 char *crypt_get_base_device(const char *dev_path);
 uint64_t crypt_dev_partition_offset(const char *dev_path);
 
+ssize_t write_buffer(int fd, const void *buf, size_t count);
+ssize_t read_buffer(int fd, void *buf, size_t count);
 ssize_t write_blockwise(int fd, int bsize, void *buf, size_t count);
 ssize_t read_blockwise(int fd, int bsize, void *_buf, size_t count);
 ssize_t write_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t offset);
