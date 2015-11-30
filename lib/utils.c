@@ -273,6 +273,52 @@ out:
 	return ret;
 }
 
+ssize_t read_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t offset)
+{
+	char *frontPadBuf;
+	void *frontPadBuf_base = NULL;
+	int r, frontHang;
+	size_t innerCount = 0;
+	ssize_t ret = -1;
+
+	if (fd == -1 || !buf || bsize <= 0)
+		return -1;
+
+	frontHang = offset % bsize;
+
+	if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
+		return ret;
+
+	if (frontHang) {
+		frontPadBuf = aligned_malloc(&frontPadBuf_base,
+					     bsize, get_alignment(fd));
+
+		if (!frontPadBuf)
+			return ret;
+
+		r = read_buffer(fd, frontPadBuf, bsize);
+		if (r < 0 || r != bsize)
+			goto out;
+
+		innerCount = bsize - frontHang;
+		if (innerCount > count)
+			innerCount = count;
+
+		memcpy(buf, frontPadBuf + frontHang, innerCount);
+
+		buf += innerCount;
+		count -= innerCount;
+	}
+
+	ret = read_blockwise(fd, bsize, buf, count);
+	if (ret >= 0)
+		ret += innerCount;
+out:
+	free(frontPadBuf_base);
+
+	return ret;
+}
+
 /* MEMLOCK */
 #define DEFAULT_PROCESS_PRIORITY -18
 
