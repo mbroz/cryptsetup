@@ -168,7 +168,7 @@ crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot);
 int LUKS_keyslot_find_empty(struct luks_phdr *hdr);
 int LUKS_keyslot_active_count(struct luks_phdr *hdr);
 int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable);
-int LUKS_keyslot_area(struct luks_phdr *hdr,
+int LUKS_keyslot_area(const struct luks_phdr *hdr,
 	int keyslot,
 	uint64_t *offset,
 	uint64_t *length);

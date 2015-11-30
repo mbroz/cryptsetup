@@ -54,7 +54,7 @@ static size_t LUKS_device_sectors(size_t keyLen)
 	return sector;
 }
 
-int LUKS_keyslot_area(struct luks_phdr *hdr,
+int LUKS_keyslot_area(const struct luks_phdr *hdr,
 	int keyslot,
 	uint64_t *offset,
 	uint64_t *length)
