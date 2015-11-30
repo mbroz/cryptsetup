@@ -137,7 +137,7 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 		buf = orig_buf;
 
 	if (solid) {
-		r = write(fd, buf, solid);
+		r = write_buffer(fd, buf, solid);
 		if (r < 0 || r != (ssize_t)solid)
 			goto out;
 	}
@@ -147,7 +147,7 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 		if (!hangover_buf)
 			goto out;
 
-		r = read(fd, hangover_buf, bsize);
+		r = read_buffer(fd, hangover_buf, bsize);
 		if (r < 0 || r < (ssize_t)hangover)
 			goto out;
 
@@ -159,7 +159,7 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 			goto out;
 		memcpy(hangover_buf, (char*)buf + solid, hangover);
 
-		r = write(fd, hangover_buf, bsize);
+		r = write_buffer(fd, hangover_buf, bsize);
 		if (r < 0 || r < (ssize_t)hangover)
 			goto out;
 	}
@@ -192,7 +192,7 @@ ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count) {
 	} else
 		buf = orig_buf;
 
-	r = read(fd, buf, solid);
+	r = read_buffer(fd, buf, solid);
 	if(r < 0 || r != (ssize_t)solid)
 		goto out;
 
@@ -200,7 +200,7 @@ ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count) {
 		hangover_buf = aligned_malloc(&hangover_buf_base, bsize, alignment);
 		if (!hangover_buf)
 			goto out;
-		r = read(fd, hangover_buf, bsize);
+		r = read_buffer(fd, hangover_buf, bsize);
 		if (r <  0 || r < (ssize_t)hangover)
 			goto out;
 
@@ -243,7 +243,7 @@ ssize_t write_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t 
 		if (!frontPadBuf)
 			goto out;
 
-		r = read(fd, frontPadBuf, bsize);
+		r = read_buffer(fd, frontPadBuf, bsize);
 		if (r < 0 || r != bsize)
 			goto out;
 
@@ -256,7 +256,7 @@ ssize_t write_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t 
 		if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
 			goto out;
 
-		r = write(fd, frontPadBuf, bsize);
+		r = write_buffer(fd, frontPadBuf, bsize);
 		if (r < 0 || r != bsize)
 			goto out;
 

@@ -468,8 +468,7 @@ static int TCRYPT_pool_keyfile(struct crypt_device *cd,
 		return -EIO;
 	}
 
-	/* FIXME: add while */
-	data_size = read(fd, data, TCRYPT_KEYFILE_LEN);
+	data_size = read_buffer(fd, data, TCRYPT_KEYFILE_LEN);
 	close(fd);
 	if (data_size < 0) {
 		log_err(cd, _("Error reading keyfile %s.\n"), keyfile);
