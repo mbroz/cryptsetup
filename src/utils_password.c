@@ -256,7 +256,7 @@ int tools_get_key(const char *prompt,
 		  int timeout, int verify, int pwquality,
 		  struct crypt_device *cd)
 {
-	int r, block;
+	int r = -EINVAL, block;
 
 	block = tools_signals_blocked();
 	if (block)
@@ -266,12 +266,12 @@ int tools_get_key(const char *prompt,
 		if (isatty(STDIN_FILENO)) {
 			if (keyfile_offset) {
 				log_err(_("Cannot use offset with terminal input.\n"));
-				r = -EINVAL;
+			} else {
+				//FIXME:if (!prompt)  "Enter passphrase for %s: "
+				if (!prompt)
+					prompt = "Enter passphrase:";
+				r = crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
 			}
-			//FIXME:if (!prompt)  "Enter passphrase for %s: "
-			if (!prompt)
-				prompt = "Enter passphrase:";
-			r = crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
 		} else {
 			log_dbg("STDIN descriptor passphrase entry requested.");
 			/* No keyfile means STDIN with EOL handling (\n will end input)). */
