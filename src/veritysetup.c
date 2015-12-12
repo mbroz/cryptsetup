@@ -25,6 +25,8 @@
 
 static int use_superblock = 1;
 
+static const char *fec_device = NULL;
+static int fec_roots = DEFAULT_VERITY_FEC_ROOTS;
 static const char *hash_algorithm = NULL;
 static int hash_type = 1;
 static int data_block_size = DEFAULT_VERITY_DATA_BLOCK;
@@ -51,6 +53,8 @@ static int _prepare_format(struct crypt_params_verity *params,
 
 	params->hash_name = hash_algorithm ?: DEFAULT_VERITY_HASH;
 	params->data_device = data_device;
+	params->fec_device = fec_device;
+	params->fec_roots = fec_roots;
 
 	if (salt_string && !strcmp(salt_string, "-")) {
 		params->salt_size = 0;
@@ -93,6 +97,17 @@ static int action_format(int arg)
 	} else if (r >= 0) {
 		log_dbg("Created hash image %s.", action_argv[1]);
 		close(r);
+	}
+	/* Try to create FEC image if doesn't exist */
+	if (fec_device) {
+		r = open(fec_device, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
+		if (r < 0 && errno != EEXIST) {
+			log_err(_("Cannot create FEC image %s for writing.\n"), fec_device);
+			return -EINVAL;
+		} else if (r >= 0) {
+			log_dbg("Created FEC image %s.", fec_device);
+			close(r);
+		}
 	}
 
 	if ((r = crypt_init(&cd, action_argv[1])))
@@ -140,6 +155,8 @@ static int _activate(const char *dm_device,
 	if (use_superblock) {
 		params.flags = flags;
 		params.hash_area_offset = hash_offset;
+		params.fec_device = fec_device;
+		params.fec_roots = fec_roots;
 		r = crypt_load(cd, CRYPT_VERITY, &params);
 	} else {
 		r = _prepare_format(&params, data_device, flags | CRYPT_VERITY_NO_HEADER);
@@ -396,7 +413,9 @@ int main(int argc, const char **argv)
 		{ "format",          0,    POPT_ARG_INT,  &hash_type,        0, N_("Format type (1 - normal, 0 - original Chrome OS)"), N_("number") },
 		{ "data-block-size", 0,    POPT_ARG_INT,  &data_block_size,  0, N_("Block size on the data device"), N_("bytes") },
 		{ "hash-block-size", 0,    POPT_ARG_INT,  &hash_block_size,  0, N_("Block size on the hash device"), N_("bytes") },
+		{ "fec-roots",       0,    POPT_ARG_INT,  &fec_roots,        0, N_("FEC parity bytes"), N_("bytes") },
 		{ "data-blocks",     0,    POPT_ARG_STRING, &popt_tmp,       1, N_("The number of blocks in the data file"), N_("blocks") },
+		{ "fec-device",      0,    POPT_ARG_STRING, &fec_device,     0, N_("Path to device with error correction data"), N_("path") },
 		{ "hash-offset",     0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting offset on the hash device"), N_("bytes") },
 		{ "hash",            'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
 		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },

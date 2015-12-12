@@ -456,6 +456,7 @@ CS_STR_WITH([verity-hash],       [hash function for verity mode], [sha256])
 CS_NUM_WITH([verity-data-block], [data block size for verity mode], [4096])
 CS_NUM_WITH([verity-hash-block], [hash block size for verity mode], [4096])
 CS_NUM_WITH([verity-salt-size],  [salt size for verity mode], [32])
+CS_NUM_WITH([verity-fec-roots],  [parity bytes for verity FEC], [2])
 
 dnl ==========================================================================
 

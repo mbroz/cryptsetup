@@ -33,6 +33,7 @@
 #include "luks.h"
 #include "loopaes.h"
 #include "verity.h"
+#include "fec.h"
 #include "tcrypt.h"
 #include "internal.h"
 
@@ -1054,6 +1055,8 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (!(cd->u.verity.hdr.hash_name = strdup(params->hash_name)))
 		return -ENOMEM;
 	cd->u.verity.hdr.data_device = NULL;
+	cd->u.verity.hdr.fec_device = params->fec_device;
+	cd->u.verity.hdr.fec_roots = params->fec_roots;
 	cd->u.verity.hdr.data_block_size = params->data_block_size;
 	cd->u.verity.hdr.hash_block_size = params->hash_block_size;
 	cd->u.verity.hdr.hash_area_offset = params->hash_area_offset;
@@ -1092,6 +1095,13 @@ static int _crypt_format_verity(struct crypt_device *cd,
 				    cd->u.verity.uuid,
 				    &cd->u.verity.hdr);
 	}
+
+	if (params->fec_device) {
+		r = VERITY_FEC_create(cd, &cd->u.verity.hdr);
+		if (r)
+			return r;
+	}
+
 	return r;
 }
 

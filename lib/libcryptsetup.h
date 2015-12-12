@@ -304,7 +304,9 @@ struct crypt_params_verity {
 	const char *hash_name;     /**< hash function */
 	const char *data_device;   /**< data_device (CRYPT_VERITY_CREATE_HASH) */
 	const char *hash_device;   /**< hash_device (output only) */
+	const char *fec_device;    /**< fec_device (output only) */
 	const char *salt;          /**< salt */
+	int fec_roots;             /**< fec_roots */
 	uint32_t salt_size;        /**< salt size (in bytes) */
 	uint32_t hash_type;        /**< in-kernel hashing type */
 	uint32_t data_block_size;  /**< data block size (in bytes) */
