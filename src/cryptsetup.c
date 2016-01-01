@@ -28,6 +28,7 @@ static const char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
 
 static const char *opt_key_file = NULL;
+static const char *opt_keyfile_stdin = NULL;
 static int opt_keyfiles_count = 0;
 static const char *opt_keyfiles[MAX_KEYFILES];
 
@@ -239,11 +240,14 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 {
 	int r, tries = opt_tries, eperm = 0;
 
+	if (opt_keyfile_stdin)
+		tries = 1;
+
 	do {
 		/* TCRYPT header is encrypted, get passphrase now */
 		r = tools_get_key(_("Enter passphrase: "),
 				  CONST_CAST(char**)&params->passphrase,
-				  &params->passphrase_size, 0, 0, NULL, opt_timeout,
+				  &params->passphrase_size, 0, 0, opt_keyfile_stdin, opt_timeout,
 				 _verify_passphrase(0), 0, cd);
 		if (r < 0)
 			continue;
@@ -1534,7 +1538,7 @@ int main(int argc, const char **argv)
 	poptContext popt_context;
 	struct action_type *action;
 	const char *aname;
-	int r;
+	int r, total_keyfiles = 0;
 
 	crypt_set_log_callback(NULL, tool_log, NULL);
 
@@ -1548,11 +1552,15 @@ int main(int argc, const char **argv)
 
 	while((r = poptGetNextOpt(popt_context)) > 0) {
 		unsigned long long ull_value;
-		char *endp;
+		char *endp, *kf;
 
 		if (r == 5) {
-			if (opt_keyfiles_count < MAX_KEYFILES)
-				opt_keyfiles[opt_keyfiles_count++] = poptGetOptArg(popt_context);
+			kf = poptGetOptArg(popt_context);
+			if (tools_is_stdin(kf))
+				opt_keyfile_stdin = kf;
+			else if (opt_keyfiles_count < MAX_KEYFILES)
+				opt_keyfiles[opt_keyfiles_count++] = kf;
+			total_keyfiles++;
 			continue;
 		}
 
@@ -1702,6 +1710,10 @@ int main(int argc, const char **argv)
 	    opt_keyfile_offset < 0 || opt_new_keyfile_offset < 0)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Negative number for option not permitted."),
+		      poptGetInvocationName(popt_context));
+
+	if (total_keyfiles > 1 && strcmp(opt_type, "tcrypt"))
+		usage(popt_context, EXIT_FAILURE, _("Only one --key-file argument is allowed."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_random && opt_urandom)
