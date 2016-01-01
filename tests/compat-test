@@ -327,6 +327,8 @@ echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV -d - --test-passphrase || fail
 echo $PWD1 | $CRYPTSETUP luksAddKey -i1 $LOOPDEV -d - $KEY2 || fail
 $CRYPTSETUP luksOpen $LOOPDEV -d $KEY2 --test-passphrase || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV -d - -d $KEY1 --test-passphrase 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV -d $KEY1 -d $KEY1 --test-passphrase 2>/dev/null && fail
 
 # [0]PWD1 [1]PWD2 [2]$KEY1/1 [3]$KEY1 [4]$KEY2
 $CRYPTSETUP -q luksFormat -i1 $LOOPDEV $KEY1 --key-slot 3 || fail
