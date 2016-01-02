@@ -2,7 +2,7 @@
  * Linux kernel userspace API crypto backend implementation
  *
  * Copyright (C) 2010-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2014, Milan Broz
+ * Copyright (C) 2010-2016, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -68,8 +68,27 @@ struct crypt_hmac {
 	int hash_len;
 };
 
-/* Defined in crypt_kernel_ciphers.c */
-extern int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd);
+static int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd)
+{
+	*tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
+	if (*tfmfd < 0)
+		return -ENOTSUP;
+
+	if (bind(*tfmfd, (struct sockaddr *)sa, sizeof(*sa)) < 0) {
+		close(*tfmfd);
+		*tfmfd = -1;
+		return -ENOENT;
+	}
+
+	*opfd = accept(*tfmfd, NULL, 0);
+	if (*opfd < 0) {
+		close(*tfmfd);
+		*tfmfd = -1;
+		return -EINVAL;
+	}
+
+	return 0;
+}
 
 int crypt_backend_init(struct crypt_device *ctx)
 {
@@ -188,9 +207,9 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 
 int crypt_hash_destroy(struct crypt_hash *ctx)
 {
-	if (ctx->tfmfd != -1)
+	if (ctx->tfmfd >= 0)
 		close(ctx->tfmfd);
-	if (ctx->opfd != -1)
+	if (ctx->opfd >= 0)
 		close(ctx->opfd);
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
@@ -232,7 +251,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		return -EINVAL;
 	}
 
-	if (setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, buffer, length) == -1) {
+	if (setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, buffer, length) < 0) {
 		crypt_hmac_destroy(h);
 		return -EINVAL;
 	}
@@ -268,9 +287,9 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 
 int crypt_hmac_destroy(struct crypt_hmac *ctx)
 {
-	if (ctx->tfmfd != -1)
+	if (ctx->tfmfd >= 0)
 		close(ctx->tfmfd);
-	if (ctx->opfd != -1)
+	if (ctx->opfd >= 0)
 		close(ctx->opfd);
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
