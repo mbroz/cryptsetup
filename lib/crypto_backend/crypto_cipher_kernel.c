@@ -2,7 +2,7 @@
  * Linux kernel userspace API crypto backend implementation (skcipher)
  *
  * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2014, Milan Broz
+ * Copyright (C) 2012-2016, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -88,33 +88,8 @@ int crypt_cipher_blocksize(const char *name)
 	return ca ? ca->blocksize : -EINVAL;
 }
 
-/* Shared with hash kernel backend */
-int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd);
-
-int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *opfd)
-{
-	*tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
-	if (*tfmfd == -1)
-		return -ENOTSUP;
-
-	if (bind(*tfmfd, (struct sockaddr *)sa, sizeof(*sa)) == -1) {
-		close(*tfmfd);
-		*tfmfd = -1;
-		return -ENOENT;
-	}
-
-	*opfd = accept(*tfmfd, NULL, 0);
-	if (*opfd == -1) {
-		close(*tfmfd);
-		*tfmfd = -1;
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
 /*
- *ciphers
+ * ciphers
  *
  * ENOENT - algorithm not available
  * ENOTSUP - AF_ALG family not available
@@ -128,7 +103,6 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		.salg_family = AF_ALG,
 		.salg_type = "skcipher",
 	};
-	int r;
 
 	h = malloc(sizeof(*h));
 	if (!h)
@@ -137,14 +111,26 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 	snprintf((char *)sa.salg_name, sizeof(sa.salg_name),
 		 "%s(%s)", mode, name);
 
-	r = crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd);
-	if (r < 0) {
-		free(h);
-		return r;
+	h->opfd = -1;
+	h->tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
+	if (h->tfmfd < 0) {
+		crypt_cipher_destroy(h);
+		return -ENOTSUP;
+	}
+
+	if (bind(h->tfmfd, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+		crypt_cipher_destroy(h);
+		return -ENOENT;
 	}
 
 	if (length && strcmp(name, "cipher_null") &&
-	    setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, buffer, length) == -1) {
+	    setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, buffer, length) < 0) {
+		crypt_cipher_destroy(h);
+		return -EINVAL;
+	}
+
+	h->opfd = accept(h->tfmfd, NULL, 0);
+	if (h->opfd < 0) {
 		crypt_cipher_destroy(h);
 		return -EINVAL;
 	}
@@ -239,9 +225,9 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 
 int crypt_cipher_destroy(struct crypt_cipher *ctx)
 {
-	if (ctx->tfmfd != -1)
+	if (ctx->tfmfd >= 0)
 		close(ctx->tfmfd);
-	if (ctx->opfd != -1)
+	if (ctx->opfd >= 0)
 		close(ctx->opfd);
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
