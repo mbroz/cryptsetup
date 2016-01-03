@@ -123,8 +123,10 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		return -ENOENT;
 	}
 
-	if (length && strcmp(name, "cipher_null") &&
-	    setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, buffer, length) < 0) {
+	if (!strcmp(name, "cipher_null"))
+		length = 0;
+
+	if (setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, buffer, length) < 0) {
 		crypt_cipher_destroy(h);
 		return -EINVAL;
 	}
