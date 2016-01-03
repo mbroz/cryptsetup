@@ -224,7 +224,7 @@ out:
  * is implicitly included in the read/write offset, which can not be set to non-aligned
  * boundaries. Hence, we combine llseek with write.
  */
-ssize_t write_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t offset)
+ssize_t write_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t offset)
 {
 	char *frontPadBuf;
 	void *frontPadBuf_base = NULL;
@@ -263,7 +263,7 @@ ssize_t write_lseek_blockwise(int fd, int bsize, char *buf, size_t count, off_t 
 		if (r < 0 || r != bsize)
 			goto out;
 
-		buf += innerCount;
+		buf = (char*)buf + innerCount;
 		count -= innerCount;
 	}
 
@@ -309,7 +309,7 @@ ssize_t read_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t o
 
 		memcpy(buf, frontPadBuf + frontHang, innerCount);
 
-		buf += innerCount;
+		buf = (char*)buf + innerCount;
 		count -= innerCount;
 	}
 
