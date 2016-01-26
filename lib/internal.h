@@ -137,6 +137,8 @@ int PLAIN_activate(struct crypt_device *cd,
 		     uint64_t size,
 		     uint32_t flags);
 
+void *crypt_get_hdr(struct crypt_device *cd, const char *type);
+
 /**
  * Different methods used to erase sensitive data concerning
  * either encrypted payload area or master key inside keyslot
@@ -152,8 +154,9 @@ typedef enum {
 
 int crypt_wipe(struct device *device,
 	       uint64_t offset,
-	       uint64_t sectors,
+	       uint64_t size,
 	       crypt_wipe_type type,
-	       int flags);
+	       int exclusive);
+
 
 #endif /* INTERNAL_H */

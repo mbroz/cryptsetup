@@ -48,6 +48,9 @@ struct safe_allocation {
 int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 			      char *cipher_mode)
 {
+	if (!s || !cipher || !cipher_mode)
+		return -EINVAL;
+
 	if (sscanf(s, "%" MAX_CIPHER_LEN_STR "[^-]-%" MAX_CIPHER_LEN_STR "s",
 		   cipher, cipher_mode) == 2) {
 		if (!strcmp(cipher_mode, "plain"))

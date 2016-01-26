@@ -99,7 +99,7 @@ static int diffuse(char *src, char *dst, size_t size, const char *hash_name)
  * must be supplied to AF_merge to recover information.
  */
 
-int AF_split(char *src, char *dst, size_t blocksize,
+int AF_split(const char *src, char *dst, size_t blocksize,
 	     unsigned int blocknumbers, const char *hash)
 {
 	unsigned int i;
@@ -125,7 +125,7 @@ out:
 	return r;
 }
 
-int AF_merge(char *src, char *dst, size_t blocksize,
+int AF_merge(const char *src, char *dst, size_t blocksize,
 	     unsigned int blocknumbers, const char *hash)
 {
 	unsigned int i;
