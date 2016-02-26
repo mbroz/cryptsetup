@@ -1,7 +1,7 @@
 /*
  * cryptsetup-reencrypt - crypt utility for offline re-encryption
  *
- * Copyright (C) 2012, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2016, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2012-2015, Milan Broz All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -68,6 +68,7 @@ struct reenc_ctx {
 	uint64_t device_offset;
 	uint64_t device_shift;
 
+	int stained:1;
 	int in_progress:1;
 	enum { FORWARD = 0, BACKWARD = 1 } reencrypt_direction;
 	enum { REENCRYPT = 0, ENCRYPT = 1, DECRYPT = 2 } reencrypt_mode;
@@ -195,6 +196,8 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 			log_err(_("Cannot write device %s.\n"), rc->device);
 			r = -EIO;
 		}
+		if (s > 0 && set_magic == MAKE_UNUSABLE)
+			rc->stained = 1;
 	} else
 		log_dbg("LUKS signature check failed for %s.", rc->device);
 out:
@@ -365,6 +368,7 @@ static int open_log(struct reenc_ctx *rc)
 	rc->log_fd = open(rc->log_file, O_RDWR|O_EXCL|O_CREAT|flags, S_IRUSR|S_IWUSR);
 	if (rc->log_fd != -1) {
 		log_dbg("Created LUKS reencryption log file %s.", rc->log_file);
+		rc->stained = 0;
 	} else if (errno == EEXIST) {
 		log_std(_("Log file %s exists, resuming reencryption.\n"), rc->log_file);
 		rc->log_fd = open(rc->log_file, O_RDWR|flags);
@@ -648,8 +652,10 @@ static int restore_luks_header(struct reenc_ctx *rc)
 	crypt_free(cd);
 	if (r)
 		log_err(_("Cannot restore LUKS header on device %s.\n"), rc->device);
-	else
+	else {
 		log_verbose(_("LUKS header on device %s restored.\n"), rc->device);
+		rc->stained = 0;
+	}
 	return r;
 }
 
@@ -785,6 +791,9 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 	if (write_log(rc) < 0)
 		return -EIO;
+
+	/* dirty the device during ENCRYPT mode */
+	rc->stained = 1;
 
 	while (!quit && rc->device_offset) {
 		if (rc->device_offset < block_size) {
@@ -1181,10 +1190,7 @@ static void destroy_context(struct reenc_ctx *rc)
 	close_log(rc);
 	remove_headers(rc);
 
-	if ((rc->reencrypt_direction == FORWARD &&
-	     rc->device_offset == rc->device_size) ||
-	    (rc->reencrypt_direction == BACKWARD &&
-	     (rc->device_offset == 0 || rc->device_offset == (uint64_t)~0))) {
+	if (!rc->stained) {
 		unlink(rc->log_file);
 		unlink(rc->header_file_org);
 		unlink(rc->header_file_new);
@@ -1200,7 +1206,9 @@ static void destroy_context(struct reenc_ctx *rc)
 static int run_reencrypt(const char *device)
 {
 	int r = -EINVAL;
-	static struct reenc_ctx rc = {};
+	static struct reenc_ctx rc = {
+		.stained = 1
+	};
 
 	if (initialize_context(&rc, device))
 		goto out;
@@ -1243,6 +1251,8 @@ static int run_reencrypt(const char *device)
 	// FIXME: fix error path above to not skip this
 	if (rc.reencrypt_mode != DECRYPT)
 		r = restore_luks_header(&rc);
+	else
+		rc.stained = 0;
 out:
 	destroy_context(&rc);
 	return r;
