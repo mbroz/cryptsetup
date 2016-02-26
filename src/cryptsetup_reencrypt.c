@@ -179,11 +179,6 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 		log_verbose(_("Marking LUKS device %s unusable.\n"), rc->device);
 		memcpy(buf, NOMAGIC, MAGIC_L);
 		r = 0;
-	} else if (set_magic == MAKE_USABLE && !memcmp(buf, NOMAGIC, MAGIC_L) &&
-		   version == 1) {
-		log_verbose(_("Marking LUKS device %s usable.\n"), rc->device);
-		memcpy(buf, MAGIC, MAGIC_L);
-		r = 0;
 	} else if (set_magic == CHECK_UNUSABLE && version == 1) {
 		r = memcmp(buf, NOMAGIC, MAGIC_L) ? -EINVAL : 0;
 		if (!r)
