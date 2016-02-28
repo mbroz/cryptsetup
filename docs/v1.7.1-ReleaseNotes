@@ -1,0 +1,36 @@
+Cryptsetup 1.7.1 Release Notes
+==============================
+
+Changes since version 1.7.0
+
+* Code now uses kernel crypto API backend according to new
+  changes introduced in mainline kernel
+
+  While mainline kernel should contain backward compatible
+  changes, some stable series kernels do not contain fully
+  backported compatibility patches.
+  Without these patches  most of cryptsetup operations
+  (like unlocking device) fail.
+
+  This change in cryptsetup ensures that all operations using
+  kernel crypto API works even on these kernels.
+
+* The cryptsetup-reencrypt utility now properly detects removal
+  of underlying link to block device and does not remove
+  ongoing re-encryption log.
+  This allows proper recovery (resume) of reencrypt operation later.
+
+  NOTE: Never use /dev/disk/by-uuid/ path for reencryption utility,
+  this link disappears once the device metadata is temporarily
+  removed from device.
+
+* Cryptsetup now allows special "-" (standard input) keyfile handling
+  even for TCRYPT (TrueCrypt and VeraCrypt compatible) devices.
+
+* Cryptsetup now fails if there are more keyfiles specified
+  for non-TCRYPT device.
+
+* The luksKillSlot command now does not suppress provided password
+  in batch mode (if password is wrong slot is not destroyed).
+  Note that not providing password in batch mode means that keyslot
+  is destroyed unconditionally.
