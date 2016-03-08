@@ -498,6 +498,7 @@ static PyObject *CryptSetup_killSlot(CryptSetupObject* self, PyObject *args, PyO
 
 	switch (crypt_keyslot_status(self->device, slot)) {
 	case CRYPT_SLOT_ACTIVE:
+	case CRYPT_SLOT_RESERVED:
 		return PyObjectResult(crypt_keyslot_destroy(self->device, slot));
 	case CRYPT_SLOT_ACTIVE_LAST:
 		PyErr_SetString(PyExc_ValueError, "Last slot, removing it would render the device unusable");
