@@ -234,6 +234,10 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	if (bsize <= 0)
 		goto bad;
 
+	r = device_lseek_test(device, sector * SECTOR_SIZE);
+	if (r == -1)
+		goto bad;
+
 	devfd = device_open(device, O_RDONLY);
 	if (devfd == -1)
 		goto bad;

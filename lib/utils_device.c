@@ -50,8 +50,10 @@ static int device_block_size_fd(int fd, size_t *min_size)
 	if (fstat(fd, &st) < 0)
 		return -EINVAL;
 
-	if (S_ISREG(st.st_mode))
+	if (S_ISREG(st.st_mode)) {
 		r = (int)crypt_getpagesize();
+		bsize = r;
+	}
 	else if (ioctl(fd, BLKSSZGET, &bsize) >= 0)
 		r = bsize;
 	else
@@ -96,6 +98,33 @@ static int device_read_test(int devfd)
 
 	crypt_memzero(buffer, sizeof(buffer));
 	return r;
+}
+
+int device_lseek_test(struct device *device, size_t seek_value)
+{
+        int devfd = -1, bsize;
+	struct stat st;
+        if (device->o_direct) {
+		devfd = device_open(device, O_RDONLY);
+		if (devfd == -1)
+			return -1;
+		fstat(devfd, &st);
+		if (S_ISREG(st.st_mode)) {
+			lseek(devfd,seek_value, SEEK_SET);
+			if (device_read_test(devfd) != 0)
+				device->o_direct = 0;
+		}
+		else if (ioctl(devfd, BLKSSZGET, &bsize) >= 0) {
+			if (seek_value % bsize)
+				device->o_direct = 0;
+		}
+		else {
+			close(devfd);
+			return -1;
+		}
+	close(devfd);
+	}
+        return 0;
 }
 
 /*
