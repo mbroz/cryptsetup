@@ -545,6 +545,16 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 	if (!r)
 		r = LUKS_check_device_size(ctx, hdr->keyBytes);
 
+	/*
+	 * Cryptsetup 1.0.0 did not align keyslots to 4k (very rare version).
+	 * Disable direct-io to avoid possible IO errors if underlying device
+	 * has bigger sector size.
+	 */
+	if (!r && hdr->keyblock[0].keyMaterialOffset * SECTOR_SIZE < LUKS_ALIGN_KEYSLOTS) {
+		log_dbg("Old unaligned LUKS keyslot detected, disabling direct-io.");
+		device_disable_direct_io(device);
+	}
+
 	close(devfd);
 	return r;
 }
