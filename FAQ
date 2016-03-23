@@ -808,7 +808,7 @@ A. Contributors
 
   For device set-up, do the following:
 
-    cryptsetup open --type plain -d /dev/urandom /dev/<block-device>  target
+    cryptsetup open --type plain -d /dev/urandom /dev/<block-device> to_be_wiped
 
   This maps the container as plain under /dev/mapper/to_be_wiped with a
   random password.  For the actual wipe you have several options. 
@@ -827,6 +827,29 @@ A. Contributors
 
 
   Remove the mapping at the end and you are done.
+
+  * 2.20 How to I wipe only the LUKS header?
+
+  This is not the emergency wipe procedure. That is in Item 5.4. This procedure
+  is intended to be used when the data should stay intact, e.g. when you change
+  your LUKS container to use a detached header and want to remove the old one.
+
+  Most safe way is this (backup is still a good idea):
+ 
+  01) Determine header size in 512 Byte sectors with "luksDump":
+
+     cryptsetup luksDump <device with LUKS container>
+
+->   ...
+     Payload offset: <number>
+     ...
+
+  02) Take the result number and write number * 512 zeros to the start of the
+      device, e.g. like this:
+
+     dd bs=512 count=<number> if=/dev/zero of=<device>
+
+  That is it.   
 
 
 3. Common Problems
