@@ -75,6 +75,8 @@ int device_block_size(struct device *device);
 int device_read_ahead(struct device *device, uint32_t *read_ahead);
 int device_size(struct device *device, uint64_t *size);
 int device_open(struct device *device, int flags);
+void device_disable_direct_io(struct device *device);
+
 
 enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
 int device_block_adjust(struct crypt_device *cd,
