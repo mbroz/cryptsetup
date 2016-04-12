@@ -37,7 +37,8 @@ To start (or continue) re-encryption for <device> use:
 \fB<options>\fR can be [\-\-batch-mode, \-\-block-size, \-\-cipher, \-\-debug,
 \-\-device-size, \-\-hash, \-\-iter-time, \-\-use-random | \-\-use-urandom,
 \-\-keep-key, \-\-key-size, \-\-key-file, \-\-key-slot, \-\-keyfile-offset,
-\-\-keyfile-size, \-\-tries, \-\-use-directio, \-\-use-fsync, \-\-verbose, \-\-write-log]
+\-\-keyfile-size, \-\-tries, \-\-use-directio, \-\-use-fsync, \-\-verbose, \-\-write-log,
+\-\-uuid]
 
 To encrypt data on (not yet encrypted) device, use \fI\-\-new\fR with combination
 with \fI\-\-reduce-device-size\fR.
@@ -153,7 +154,7 @@ Use with extreme care - shrinked filesystems are usually unrecoverable.
 
 You cannot shrink device more than by 64 MiB (131072 sectors).
 .TP
-.B "\-\-new, N"
+.B "\-\-new, \-N"
 Create new header (encrypt not yet encrypted device).
 
 This option must be used together with \-\-reduce-device-size.
@@ -179,6 +180,11 @@ log files as well.
 .B "\-\-write-log"
 Update log file after every block write. This can slow down reencryption
 but will minimize data loss in the case of system crash.
+.TP
+.B "\-\-uuid" \fI<uuid>\fR
+Use only while resuming an interrupted decryption process (see \-\-decrypt).
+To find out what \fI<uuid>\fR to pass look for temporary files LUKS-<uuid>.[|log|org|new] of the
+interrupted decryption process.
 .TP
 .B "\-\-batch-mode, \-q"
 Suppresses all warnings and reencryption progress output.
