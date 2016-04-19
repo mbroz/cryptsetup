@@ -77,7 +77,8 @@ cryptsetup_reencrypt_SOURCES = \
 	cryptsetup_reencrypt.c			\
 	cryptsetup.h
 
-cryptsetup_reencrypt_LDADD = $(cryptsetup_LDADD)
+cryptsetup_reencrypt_LDADD = $(cryptsetup_LDADD) \
+	@UUID_LIBS@
 cryptsetup_reencrypt_CFLAGS = $(cryptsetup_CFLAGS)
 
 sbin_PROGRAMS += cryptsetup-reencrypt
