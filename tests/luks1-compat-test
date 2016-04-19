@@ -61,7 +61,7 @@ if [ $(id -u) != 0 ]; then
 fi
 
 test_required
-[ ! -d $TST_DIR ] && tar xjf luks1-images.tar.bz2
+[ ! -d $TST_DIR ] && tar xjf luks1-images.tar.bz2 --no-same-owner
 
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/luks1_*) ; do
