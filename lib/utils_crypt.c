@@ -220,7 +220,7 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 
 	/* If not requsted otherwise, we limit input to prevent memory exhaustion */
 	if (keyfile_size_max == 0) {
-		keyfile_size_max = DEFAULT_KEYFILE_SIZE_MAXKB * 1024;
+		keyfile_size_max = DEFAULT_KEYFILE_SIZE_MAXKB * 1024 + 1;
 		unlimited_read = 1;
 	}
 
