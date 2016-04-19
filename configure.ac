@@ -37,7 +37,7 @@ PKG_PROG_PKG_CONFIG
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
-	ctype.h unistd.h locale.h byteswap.h endian.h)
+	sys/sysmacros.h ctype.h unistd.h locale.h byteswap.h endian.h)
 
 AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR([You need the uuid library.])])
 AC_CHECK_HEADER(libdevmapper.h,,[AC_MSG_ERROR([You need the device-mapper library.])])

@@ -31,6 +31,9 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef HAVE_SYS_SYSMACROS_H
+# include <sys/sysmacros.h>     /* for major, minor */
+#endif
 #include "internal.h"
 
 static char *__lookup_dev(char *path, dev_t dev, int dir_level, const int max_level)
