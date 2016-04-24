@@ -723,6 +723,9 @@ int TCRYPT_activate(struct crypt_device *cd,
 	if (!algs)
 		return -EINVAL;
 
+	if (hdr->d.sector_size == 0)
+		return -EINVAL;
+
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
 		dmd.size = 0;
 	else if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER)
