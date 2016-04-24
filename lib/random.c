@@ -234,9 +234,11 @@ void crypt_random_exit(void)
 
 int crypt_random_default_key_rng(void)
 {
+	/* coverity[pointless_string_compare] */
 	if (!strcmp(DEFAULT_RNG, RANDOM_DEVICE))
 		return CRYPT_RNG_RANDOM;
 
+	/* coverity[pointless_string_compare] */
 	if (!strcmp(DEFAULT_RNG, URANDOM_DEVICE))
 		return CRYPT_RNG_URANDOM;
 

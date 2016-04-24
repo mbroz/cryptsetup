@@ -314,12 +314,13 @@ static int TCRYPT_decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
 {
 	char backend_key[TCRYPT_HDR_KEY_LEN];
 	char iv[TCRYPT_HDR_IV_LEN] = {};
-	char mode_name[MAX_CIPHER_LEN];
+	char mode_name[MAX_CIPHER_LEN + 1];
 	struct crypt_cipher *cipher;
 	char *c, *buf = (char*)&hdr->e;
 	int r;
 
 	/* Remove IV if present */
+	mode_name[MAX_CIPHER_LEN] = '\0';
 	strncpy(mode_name, mode, MAX_CIPHER_LEN);
 	c = strchr(mode_name, '-');
 	if (c)
@@ -611,10 +612,10 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 			return -EINVAL;
 
 		r = device_alloc(&base_device, base_device_path);
+		free(base_device_path);
 		if (r < 0)
 			return r;
 		devfd = device_open(base_device, O_RDONLY);
-		free(base_device_path);
 		device_free(base_device);
 	} else
 		devfd = device_open(device, O_RDONLY);
@@ -771,7 +772,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 
 	for (i = algs->chain_count; i > 0; i--) {
 		if (i == 1) {
-			strncpy(dm_name, name, sizeof(dm_name));
+			dm_name[sizeof(dm_name)-1] = '\0';
+			strncpy(dm_name, name, sizeof(dm_name)-1);
 			dmd.flags = flags;
 		} else {
 			snprintf(dm_name, sizeof(dm_name), "%s_%d", name, i-1);
@@ -913,7 +915,7 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 			struct tcrypt_phdr *tcrypt_hdr)
 {
 	struct tcrypt_algs *algs;
-	char cipher[MAX_CIPHER_LEN * 4], mode[MAX_CIPHER_LEN], *tmp;
+	char cipher[MAX_CIPHER_LEN * 4], mode[MAX_CIPHER_LEN+1], *tmp;
 	size_t key_size;
 	int r;
 
@@ -927,6 +929,7 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 	if (!tmp)
 		return -EINVAL;
 	*tmp = '\0';
+	mode[MAX_CIPHER_LEN] = '\0';
 	strncpy(mode, ++tmp, MAX_CIPHER_LEN);
 
 	key_size = dmd->u.crypt.vk->keylength;

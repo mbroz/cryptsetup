@@ -811,7 +811,7 @@ out:
 	if (r < 0) {
 		crypt_free(*cd);
 		*cd = NULL;
-	} else if (!(*cd)->type && name) {
+	} else if (!(*cd)->type) {
 		/* For anonymous device (no header found) remember initialized name */
 		(*cd)->u.none.active_name = strdup(name);
 	}
