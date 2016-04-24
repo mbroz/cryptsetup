@@ -62,7 +62,7 @@ int LUKS_keyslot_area(struct luks_phdr *hdr,
 	if(keyslot >= LUKS_NUMKEYS || keyslot < 0)
 		return -EINVAL;
 
-	*offset = hdr->keyblock[keyslot].keyMaterialOffset * SECTOR_SIZE;
+	*offset = (uint64_t)hdr->keyblock[keyslot].keyMaterialOffset * SECTOR_SIZE;
 	*length = AF_split_sectors(hdr->keyBytes, LUKS_STRIPES) * SECTOR_SIZE;
 
 	return 0;
@@ -684,9 +684,9 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	/* Set Magic */
 	memcpy(header->magic,luksMagic,LUKS_MAGIC_L);
 	header->version=1;
-	strncpy(header->cipherName,cipherName,LUKS_CIPHERNAME_L);
-	strncpy(header->cipherMode,cipherMode,LUKS_CIPHERMODE_L);
-	strncpy(header->hashSpec,hashSpec,LUKS_HASHSPEC_L);
+	strncpy(header->cipherName,cipherName,LUKS_CIPHERNAME_L-1);
+	strncpy(header->cipherMode,cipherMode,LUKS_CIPHERMODE_L-1);
+	strncpy(header->hashSpec,hashSpec,LUKS_HASHSPEC_L-1);
 
 	header->keyBytes=vk->keylength;
 

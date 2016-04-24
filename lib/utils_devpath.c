@@ -279,24 +279,30 @@ char *crypt_get_partition_device(const char *dev_path, uint64_t offset, uint64_t
 		major(st.st_rdev), minor(st.st_rdev)) < 0)
 		return NULL;
 
-	len = readlink(path, link, sizeof(link) - 1);
-	if (len < 0)
+	dir = opendir(path);
+	if (!dir)
 		return NULL;
+
+	len = readlink(path, link, sizeof(link) - 1);
+	if (len < 0) {
+		closedir(dir);
+		return NULL;
+	}
 
 	/* Get top level disk name for sysfs search */
 	link[len] = '\0';
 	devname = strrchr(link, '/');
-	if (!devname)
+	if (!devname) {
+		closedir(dir);
 		return NULL;
+	}
 	devname++;
 
 	/* DM devices do not use kernel partitions. */
-	if (dm_is_dm_kernel_name(devname))
+	if (dm_is_dm_kernel_name(devname)) {
+		closedir(dir);
 		return NULL;
-
-	dir = opendir(path);
-	if (!dir)
-		return NULL;
+	}
 
 	devname_len = strlen(devname);
 	while((entry = readdir(dir))) {

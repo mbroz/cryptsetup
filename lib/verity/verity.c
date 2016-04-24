@@ -156,6 +156,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	int bsize = device_block_size(device);
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
+	char *algorithm;
 	uuid_t uuid;
 	int r, devfd = 0;
 
@@ -187,7 +188,9 @@ int VERITY_write_sb(struct crypt_device *cd,
 	sb.hash_block_size = cpu_to_le32(params->hash_block_size);
 	sb.salt_size       = cpu_to_le16(params->salt_size);
 	sb.data_blocks     = cpu_to_le64(params->data_size);
-	strncpy((char *)sb.algorithm, params->hash_name, sizeof(sb.algorithm));
+	algorithm = (char *)sb.algorithm;
+	algorithm[sizeof(sb.algorithm)-1] = '\0';
+	strncpy(algorithm, params->hash_name, sizeof(sb.algorithm)-1);
 	memcpy(sb.salt, params->salt, params->salt_size);
 	memcpy(sb.uuid, uuid, sizeof(sb.uuid));
 
