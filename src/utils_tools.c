@@ -319,7 +319,7 @@ int tools_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size)
 	}
 
 	tmp = *size * mult;
-	if ((tmp / *size) != mult) {
+	if (*size && (tmp / *size) != mult) {
 		log_dbg("Device size overflow.");
 		return -EINVAL;
 	}
