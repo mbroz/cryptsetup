@@ -39,7 +39,8 @@ reenc_readkey() {
 }
 
 reenc_run() {
-    local cwd=$(pwd)
+    local cwd
+    cwd=$(pwd)
     local _prompt="LUKS password for REENCRYPTING $device"
     cd /tmp
     if [ "$1" = "none" ] ; then
