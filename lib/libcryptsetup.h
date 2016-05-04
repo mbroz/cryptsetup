@@ -3,8 +3,8 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2015, Milan Broz
+ * Copyright (C) 2009-2016, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2016, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -752,6 +752,12 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_SAME_CPU_CRYPT (1 << 6)
 /** use submit_from_crypt_cpus for dm-crypt */
 #define CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS (1 << 7)
+/** dm-verity: ignore_corruption flag - ignore corruption, log it only */
+#define CRYPT_ACTIVATE_IGNORE_CORRUPTION (1 << 8)
+/** dm-verity: restart_on_corruption flag - restart kernel on corruption */
+#define CRYPT_ACTIVATE_RESTART_ON_CORRUPTION (1 << 9)
+/** dm-verity: ignore_zero_blocks - do not verify zero blocks */
+#define CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS (1 << 10)
 
 
 /**

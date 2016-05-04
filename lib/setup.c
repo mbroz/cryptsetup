@@ -3,8 +3,8 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2014, Milan Broz
+ * Copyright (C) 2009-2016, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2016, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -2215,7 +2215,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		}
 
 		r = VERITY_activate(cd, name, volume_key, volume_key_size,
-				    &cd->u.verity.hdr, CRYPT_ACTIVATE_READONLY);
+				    &cd->u.verity.hdr, flags|CRYPT_ACTIVATE_READONLY);
 
 		if (r == -EPERM) {
 			free(cd->u.verity.root_hash);

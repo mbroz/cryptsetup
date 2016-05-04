@@ -1,8 +1,8 @@
 /*
  * veritysetup - setup cryptographic volumes for dm-verity
  *
- * Copyright (C) 2012-2013, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2013, Milan Broz
+ * Copyright (C) 2012-2016, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2016, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,6 +33,9 @@ static uint64_t data_blocks = 0;
 static const char *salt_string = NULL;
 static uint64_t hash_offset = 0;
 static const char *opt_uuid = NULL;
+static int opt_restart_on_corruption = 0;
+static int opt_ignore_corruption = 0;
+static int opt_ignore_zero_blocks = 0;
 
 static int opt_version_mode = 0;
 
@@ -126,6 +129,13 @@ static int _activate(const char *dm_device,
 
 	if ((r = crypt_init(&cd, hash_device)))
 		goto out;
+
+	if (opt_ignore_corruption)
+		activate_flags |= CRYPT_ACTIVATE_IGNORE_CORRUPTION;
+	if (opt_restart_on_corruption)
+		activate_flags |= CRYPT_ACTIVATE_RESTART_ON_CORRUPTION;
+	if (opt_ignore_zero_blocks)
+		activate_flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
 
 	if (use_superblock) {
 		params.flags = flags;
@@ -273,6 +283,14 @@ static int action_status(int arg)
 		}
 		log_std("  hash offset: %" PRIu64 " sectors\n",
 			vp.hash_area_offset * vp.hash_block_size / 512);
+
+		if (cad.flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
+				 CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
+				 CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS))
+			log_std("  flags:       %s%s%s\n",
+				(cad.flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? "ignore_corruption " : "",
+				(cad.flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? "restart_on_corruption " : "",
+				(cad.flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? "ignore_zero_blocks" : "");
 	}
 out:
 	crypt_free(cd);
@@ -383,6 +401,9 @@ int main(int argc, const char **argv)
 		{ "hash",            'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
 		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },
 		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use."), NULL },
+		{ "restart-on-corruption", 0,POPT_ARG_NONE,&opt_restart_on_corruption, 0, N_("Restart kernel if corruption is detected"), NULL },
+		{ "ignore-corruption", 0,  POPT_ARG_NONE, &opt_ignore_corruption,  0, N_("Ignore corruption, log it only"), NULL },
+		{ "ignore-zero-blocks", 0, POPT_ARG_NONE, &opt_ignore_zero_blocks, 0, N_("Do not verify zeroed blocks"), NULL },
 		POPT_TABLEEND
 	};
 
@@ -467,6 +488,16 @@ int main(int argc, const char **argv)
 		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));
 	}
+
+	if ((opt_ignore_corruption || opt_restart_on_corruption || opt_ignore_zero_blocks) && strcmp(aname, "create"))
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks is allowed only for create operation.\n"),
+		poptGetInvocationName(popt_context));
+
+	if (opt_ignore_corruption && opt_restart_on_corruption)
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --ignore-corruption and --restart-on-corruption cannot be used together.\n"),
+		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
 		opt_verbose = 1;
