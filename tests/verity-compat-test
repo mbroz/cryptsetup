@@ -78,7 +78,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	if [ $sb == yes ] ; then
 		VERIFY_PARAMS=""
 	else
-		FORMAT_PAFAMS="$FORMAT_PARAMS --no-superlock"
+		FORMAT_PARAMS="$FORMAT_PARAMS --no-superblock"
 		VERIFY_PARAMS=$FORMAT_PARAMS
 	fi
 
