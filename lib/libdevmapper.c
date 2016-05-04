@@ -3,8 +3,8 @@
  *
  * Copyright (C) 2004, Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2015, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2015, Milan Broz
+ * Copyright (C) 2009-2016, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2016, Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -159,6 +159,15 @@ static void _dm_set_verity_compat(const char *dm_version, unsigned verity_maj,
 {
 	if (verity_maj > 0)
 		_dm_crypt_flags |= DM_VERITY_SUPPORTED;
+	else
+		return;
+	/*
+	 * ignore_corruption, restart_on corruption is available since 1.2 (kernel 4.1)
+	 * ignore_zero_blocks since 1.3 (kernel 4.5)
+	 * (but some dm-verity targets 1.2 don't support it)
+	 */
+	if (_dm_satisfies_version(1, 3, verity_maj, verity_min))
+		_dm_crypt_flags |= DM_VERITY_ON_CORRUPTION_SUPPORTED;
 
 	log_dbg("Detected dm-verity version %i.%i.%i.",
 		verity_maj, verity_min, verity_patch);
@@ -357,13 +366,34 @@ out:
 
 /* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity */
 static char *get_dm_verity_params(struct crypt_params_verity *vp,
-				   struct crypt_dm_active_device *dmd)
+				   struct crypt_dm_active_device *dmd, uint32_t flags)
 {
-	int max_size, r;
+	int max_size, r, num_options = 0;
 	char *params = NULL, *hexroot = NULL, *hexsalt = NULL;
+	char features[256];
 
 	if (!vp || !dmd)
 		return NULL;
+
+	/* These flags are not compatible */
+	if ((flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) &&
+	    (flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION))
+		flags &= ~CRYPT_ACTIVATE_IGNORE_CORRUPTION;
+
+	if (flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION)
+		num_options++;
+	if (flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION)
+		num_options++;
+	if (flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS)
+		num_options++;
+
+	if (num_options)
+		snprintf(features, sizeof(features)-1, " %d%s%s%s", num_options,
+		(flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? " ignore_corruption" : "",
+		(flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? " restart_on_corruption" : "",
+		(flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? " ignore_zero_blocks" : "");
+	else
+		*features = '\0';
 
 	hexroot = crypt_safe_alloc(dmd->u.verity.root_hash_size * 2 + 1);
 	if (!hexroot)
@@ -388,12 +418,12 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 		goto out;
 
 	r = snprintf(params, max_size,
-		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s",
+		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s %s",
 		     vp->hash_type, device_block_path(dmd->data_device),
 		     device_block_path(dmd->u.verity.hash_device),
 		     vp->data_block_size, vp->hash_block_size,
 		     vp->data_size, dmd->u.verity.hash_offset,
-		     vp->hash_name, hexroot, hexsalt);
+		     vp->hash_name, hexroot, hexsalt, features);
 	if (r < 0 || r >= max_size) {
 		crypt_safe_free(params);
 		params = NULL;
@@ -676,7 +706,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (dmd->target == DM_CRYPT)
 		table_params = get_dm_crypt_params(dmd, dmd_flags);
 	else if (dmd->target == DM_VERITY)
-		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd);
+		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd, dmd_flags);
 
 	r = _dm_create_device(name, type, dmd->data_device, dmd_flags,
 			      dmd->uuid, dmd->size, table_params, reload);
@@ -696,7 +726,13 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (r == -EINVAL &&
 	    dmd_flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) &&
 	    !(dm_flags() & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
-		log_err(cd, _("Requested dmcrypt performance options are not supported.\n"));
+		log_err(cd, _("Requested dm-crypt performance options are not supported.\n"));
+
+	if (r == -EINVAL && dmd_flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
+					  CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
+					  CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) &&
+	    !(dm_flags() & DM_VERITY_ON_CORRUPTION_SUPPORTED))
+		log_err(cd, _("Requested dm-verity data corruption handling options are not supported.\n"));
 
 	crypt_safe_free(table_params);
 	dm_exit_context();
@@ -893,7 +929,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 				return -EINVAL;
 		}
 
-		/* All parameters shold be processed */
+		/* All parameters should be processed */
 		if (params)
 			return -EINVAL;
 	}
@@ -936,7 +972,8 @@ static int _dm_query_verity(uint32_t get_flags,
 	uint32_t val32;
 	uint64_t val64;
 	ssize_t len;
-	char *str, *str2;
+	char *str, *str2, *arg;
+	unsigned int i;
 	int r;
 
 	if (get_flags & DM_ACTIVE_VERITY_PARAMS)
@@ -1032,8 +1069,6 @@ static int _dm_query_verity(uint32_t get_flags,
 
 	/* salt */
 	str = strsep(&params, " ");
-	if (params)
-		return -EINVAL;
 	if (vp) {
 		if (!strcmp(str, "-")) {
 			vp->salt_size = 0;
@@ -1045,6 +1080,33 @@ static int _dm_query_verity(uint32_t get_flags,
 			vp->salt_size = len;
 			vp->salt = str2;
 		}
+	}
+
+	/* Features section, available since verity target version 1.3 */
+	if (params) {
+		/* Number of arguments */
+		val64 = strtoull(params, &params, 10);
+		if (*params != ' ')
+			return -EINVAL;
+		params++;
+
+		for (i = 0; i < val64; i++) {
+			if (!params)
+				return -EINVAL;
+			arg = strsep(&params, " ");
+			if (!strcasecmp(arg, "ignore_corruption"))
+				dmd->flags |= CRYPT_ACTIVATE_IGNORE_CORRUPTION;
+			else if (!strcasecmp(arg, "restart_on_corruption"))
+				dmd->flags |= CRYPT_ACTIVATE_RESTART_ON_CORRUPTION;
+			else if (!strcasecmp(arg, "ignore_zero_blocks"))
+				dmd->flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
+			else /* unknown option */
+				return -EINVAL;
+		}
+
+		/* All parameters should be processed */
+		if (params)
+			return -EINVAL;
 	}
 
 	return 0;
