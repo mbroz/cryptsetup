@@ -206,7 +206,6 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 		r = -EIO;
 		goto out;
 	}
-	close(devfd);
 
 	r = 0;
 out:
@@ -260,6 +259,7 @@ int LUKS_hdr_restore(
 		goto out;
 	}
 	close(devfd);
+	devfd = -1;
 
 	r = LUKS_read_phdr(hdr, 0, 0, ctx);
 	if (r == 0) {
@@ -306,6 +306,7 @@ int LUKS_hdr_restore(
 		goto out;
 	}
 	close(devfd);
+	devfd = -1;
 
 	/* Be sure to reload new data */
 	r = LUKS_read_phdr(hdr, 1, 0, ctx);
