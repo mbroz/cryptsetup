@@ -1381,7 +1381,7 @@ static struct action_type {
 	{ "close",        action_close,        1, 1, N_("<name>"), N_("close device (remove mapping)") },
 	{ "resize",       action_resize,       1, 1, N_("<name>"), N_("resize active device") },
 	{ "status",       action_status,       1, 0, N_("<name>"), N_("show device status") },
-	{ "benchmark",    action_benchmark,    0, 0, N_("<name>"), N_("benchmark cipher") },
+	{ "benchmark",    action_benchmark,    0, 0, N_("[--cipher <cipher>]"), N_("benchmark cipher") },
 	{ "repair",       action_luksRepair,   1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
 	{ "erase",        action_luksErase ,   1, 1, N_("<device>"), N_("erase all keyslots (remove encryption key)") },
 	{ "luksFormat",   action_luksFormat,   1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
