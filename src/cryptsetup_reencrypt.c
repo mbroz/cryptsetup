@@ -151,7 +151,7 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 				rc->device);
 			return -EBUSY;
 		}
-		log_err(_("Cannot open device %s\n"), rc->device);
+		log_err(_("Cannot open device %s.\n"), rc->device);
 		return -EINVAL;
 	}
 
