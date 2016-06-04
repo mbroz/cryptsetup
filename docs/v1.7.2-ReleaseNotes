@@ -1,0 +1,37 @@
+Cryptsetup 1.7.2 Release Notes
+==============================
+
+Changes since version 1.7.1
+
+* Update LUKS documentation format.
+  Clarify fixed sector size and keyslots alignment.
+
+* Support activation options for error handling modes in Linux kernel
+  dm-verity module:
+
+  --ignore-corruption - dm-verity just logs detected corruption
+
+  --restart-on-corruption - dm-verity restarts the kernel if corruption is detected
+
+  If the options above are not specified, default behavior for dm-verity remains.
+  Default is that I/O operation fails with I/O error if corrupted block is detected.
+
+  --ignore-zero-blocks - Instructs dm-verity to not verify blocks that are expected
+  to contain zeroes and always return zeroes directly instead.
+
+  NOTE that these options could have security or functional impacts,
+  do not use them without assessing the risks!
+
+* Fix help text for cipher benchmark specification (mention --cipher option).
+
+* Fix off-by-one error in maximum keyfile size.
+  Allow keyfiles up to compiled-in default and not that value minus one.
+
+* Support resume of interrupted decryption in cryptsetup-reencrypt utility.
+  To resume decryption, LUKS device UUID (--uuid option) option must be used.
+
+* Do not use direct-io for LUKS header with unaligned keyslots.
+  Such headers were used only by the first cryptsetup-luks-1.0.0 release (2005).
+
+* Fix device block size detection to properly work on particular file-based
+  containers over underlying devices with 4k sectors.
