@@ -1010,8 +1010,12 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 			0, 0, cd);
 		if (r < 0)
 			return r;
-		if (quit)
+		if (quit) {
+			crypt_safe_free(password);
+			password = NULL;
+			passwordLen = 0;
 			return -EAGAIN;
+		}
 
 		/* library uses sigint internally, until it is fixed...*/
 		set_int_block(1);
