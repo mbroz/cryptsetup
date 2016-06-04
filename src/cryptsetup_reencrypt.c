@@ -1006,8 +1006,12 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 				  NULL /*opt_key_file*/, 0, 0, 0 /*pwquality*/, cd);
 		if (r < 0)
 			return r;
-		if (quit)
+		if (quit) {
+			crypt_safe_free(password);
+			password = NULL;
+			passwordLen = 0;
 			return -EAGAIN;
+		}
 
 		if (check)
 			r = crypt_activate_by_passphrase(cd, NULL, slot_to_check,
