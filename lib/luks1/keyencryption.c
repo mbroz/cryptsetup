@@ -120,7 +120,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	} else
 		r = 0;
  out:
-	if(devfd != -1)
+	if (devfd != -1)
 		close(devfd);
 	dm_remove_device(ctx, name, 1, dmd.size);
 	return r;
@@ -176,7 +176,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 		goto out;
 
 	devfd = device_open(device, O_RDWR);
-	if (devfd == -1)
+	if (devfd < 0)
 		goto out;
 
 	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
@@ -185,7 +185,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 
 	r = 0;
 out:
-	if(devfd != -1)
+	if (devfd >= 0)
 		close(devfd);
 	if (r)
 		log_err(ctx, _("IO error while encrypting keyslot.\n"));
@@ -235,7 +235,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 		goto bad;
 
 	devfd = device_open(device, O_RDONLY);
-	if (devfd == -1)
+	if (devfd < 0)
 		goto bad;
 
 	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
@@ -250,7 +250,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 
 	return r;
 bad:
-	if(devfd != -1)
+	if (devfd >= 0)
 		close(devfd);
 
 	log_err(ctx, _("IO error while decrypting keyslot.\n"));

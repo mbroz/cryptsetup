@@ -78,13 +78,13 @@ int VERITY_read_sb(struct crypt_device *cd,
 	}
 
 	devfd = device_open(device, O_RDONLY);
-	if(devfd == -1) {
+	if (devfd < 0) {
 		log_err(cd, _("Cannot open device %s.\n"), device_path(device));
 		return -EINVAL;
 	}
 
-	if(lseek(devfd, sb_offset, SEEK_SET) < 0 ||
-	   read_blockwise(devfd, bsize, &sb, hdr_size) < hdr_size) {
+	if (lseek(devfd, sb_offset, SEEK_SET) < 0 ||
+	    read_blockwise(devfd, bsize, &sb, hdr_size) < hdr_size) {
 		close(devfd);
 		return -EIO;
 	}
@@ -176,7 +176,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	}
 
 	devfd = device_open(device, O_RDWR);
-	if(devfd == -1) {
+	if (devfd < 0) {
 		log_err(cd, _("Cannot open device %s.\n"), device_path(device));
 		return -EINVAL;
 	}

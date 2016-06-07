@@ -166,7 +166,7 @@ int crypt_wipe(struct device *device,
 
 	/* coverity[toctou] */
 	devfd = device_open(device, flags);
-	if (devfd == -1) {
+	if (devfd < 0) {
 		free(buffer);
 		return errno ? -errno : -EINVAL;
 	}

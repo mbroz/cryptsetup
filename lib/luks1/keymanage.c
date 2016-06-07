@@ -176,7 +176,7 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 	log_dbg("Output backup file size: %zu bytes.", buffer_size);
 
 	devfd = device_open(device, O_RDONLY);
-	if(devfd == -1) {
+	if (devfd < 0) {
 		log_err(ctx, _("Device %s is not a valid LUKS device.\n"), device_path(device));
 		r = -EINVAL;
 		goto out;
@@ -209,7 +209,7 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 
 	r = 0;
 out:
-	if (devfd != -1)
+	if (devfd >= 0)
 		close(devfd);
 	crypt_memzero(&hdr, sizeof(hdr));
 	crypt_safe_free(buffer);
@@ -291,7 +291,7 @@ int LUKS_hdr_restore(
 		sizeof(*hdr), buffer_size - LUKS_ALIGN_KEYSLOTS, device_path(device));
 
 	devfd = device_open(device, O_RDWR);
-	if (devfd == -1) {
+	if (devfd < 0) {
 		if (errno == EACCES)
 			log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
 				device_path(device));
@@ -311,7 +311,7 @@ int LUKS_hdr_restore(
 	/* Be sure to reload new data */
 	r = LUKS_read_phdr(hdr, 1, 0, ctx);
 out:
-	if (devfd != -1)
+	if (devfd >= 0)
 		close(devfd);
 	crypt_safe_free(buffer);
 	return r;
@@ -493,7 +493,7 @@ int LUKS_read_phdr_backup(const char *backup_file,
 		(int)hdr_size, backup_file);
 
 	devfd = open(backup_file, O_RDONLY);
-	if(-1 == devfd) {
+	if (devfd == -1) {
 		log_err(ctx, _("Cannot open header backup file %s.\n"), backup_file);
 		return -ENOENT;
 	}
@@ -532,7 +532,7 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 		hdr_size, device_path(device));
 
 	devfd = device_open(device, O_RDONLY);
-	if (devfd == -1) {
+	if (devfd < 0) {
 		log_err(ctx, _("Cannot open device %s.\n"), device_path(device));
 		return -EINVAL;
 	}
@@ -578,7 +578,7 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 		return r;
 
 	devfd = device_open(device, O_RDWR);
-	if(-1 == devfd) {
+	if (devfd < 0) {
 		if (errno == EACCES)
 			log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
 				device_path(device));
