@@ -1808,6 +1808,8 @@ static void VerityTest(void)
 	/* hash fail */
 	root_hash[1] = ~root_hash[1];
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, root_hash, 32, CRYPT_ACTIVATE_READONLY));
+	/* Be sure there was some read activity to mark device corrupted. */
+	_system("blkid " DMDIR CDEVICE_1, 0);
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
 	EQ_(CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_CORRUPTED, cad.flags);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -1816,6 +1818,7 @@ static void VerityTest(void)
 	/* data fail */
 	OK_(crypt_set_data_device(cd, DEVICE_1));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, root_hash, 32, CRYPT_ACTIVATE_READONLY));
+	_system("blkid " DMDIR CDEVICE_1, 0);
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
 	EQ_(CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_CORRUPTED, cad.flags);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
