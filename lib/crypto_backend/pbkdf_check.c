@@ -71,7 +71,7 @@ int crypt_pbkdf_check(const char *kdf, const char *hash,
 		return -ENOMEM;
 
 	iterations = 1 << 15;
-	while (ms < 500) {
+	while (1) {
 		if (getrusage(RUSAGE_SELF, &rstart) < 0) {
 			r = -EINVAL;
 			goto out;
