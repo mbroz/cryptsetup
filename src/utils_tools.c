@@ -206,7 +206,7 @@ const char *uuid_or_device(const char *spec)
 		strcpy(device, "/dev/disk/by-uuid/");
 		ptr = &device[strlen(device)];
 		i = uuid_len;
-		while ((s = spec[i++]) && i < PATH_MAX) {
+		while ((s = spec[i++]) && i < (PATH_MAX - 13)) {
 			if (!isxdigit(s) && s != '-')
 				return spec; /* Bail it out */
 			if (isalpha(s))
