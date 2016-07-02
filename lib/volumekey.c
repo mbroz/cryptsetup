@@ -29,7 +29,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 {
 	struct volume_key *vk;
 
-	if (!keylength || keylength > (SIZE_MAX - sizeof(*vk)))
+	if (keylength > (SIZE_MAX - sizeof(*vk)))
 		return NULL;
 
 	vk = malloc(sizeof(*vk) + keylength);
@@ -37,10 +37,14 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 		return NULL;
 
 	vk->keylength = keylength;
-	if (key)
-		memcpy(&vk->key, key, keylength);
-	else
-		crypt_memzero(&vk->key, keylength);
+
+	/* keylength 0 is valid => no key */
+	if (vk->keylength) {
+		if (key)
+			memcpy(&vk->key, key, keylength);
+		else
+			crypt_memzero(&vk->key, keylength);
+	}
 
 	return vk;
 }
