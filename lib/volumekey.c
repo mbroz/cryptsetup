@@ -54,7 +54,7 @@ void crypt_free_volume_key(struct volume_key *vk)
 	}
 }
 
-struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, unsigned keylength)
+struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength)
 {
 	int r;
 	struct volume_key *vk;
