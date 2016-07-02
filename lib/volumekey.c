@@ -20,14 +20,19 @@
  */
 
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "internal.h"
 
-struct volume_key *crypt_alloc_volume_key(unsigned keylength, const char *key)
+struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 {
-	struct volume_key *vk = malloc(sizeof(*vk) + keylength);
+	struct volume_key *vk;
 
+	if (!keylength || keylength > (SIZE_MAX - sizeof(*vk)))
+		return NULL;
+
+	vk = malloc(sizeof(*vk) + keylength);
 	if (!vk)
 		return NULL;
 
