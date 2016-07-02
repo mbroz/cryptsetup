@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -97,7 +98,7 @@ void *crypt_safe_alloc(size_t size)
 {
 	struct safe_allocation *alloc;
 
-	if (!size)
+	if (!size || size > (SIZE_MAX - offsetof(struct safe_allocation, data)))
 		return NULL;
 
 	alloc = malloc(size + offsetof(struct safe_allocation, data));
