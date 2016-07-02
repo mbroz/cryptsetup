@@ -57,8 +57,8 @@ struct volume_key {
 	char key[];
 };
 
-struct volume_key *crypt_alloc_volume_key(unsigned keylength, const char *key);
-struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, unsigned keylength);
+struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key);
+struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength);
 void crypt_free_volume_key(struct volume_key *vk);
 
 /* Device backend */
