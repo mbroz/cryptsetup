@@ -196,7 +196,7 @@ msgstr "Kan inte ändra storlek på loop-enhet.\n"
 
 #: lib/setup.c:1444
 msgid "Do you really want to change UUID of device?"
-msgstr "Vill du verkligen ändra UUID-för en enhet?"
+msgstr "Vill du verkligen ändra UUID för en enhet?"
 
 #: lib/setup.c:1554
 #, c-format
@@ -308,7 +308,7 @@ msgstr "Ogiltig enhet %s.\n"
 
 #: lib/setup.c:2298
 msgid "Function not available in FIPS mode.\n"
-msgstr "Funktion inte tillgänlig i FIPS-läge.\n"
+msgstr "Funktion inte tillgänglig i FIPS-läge.\n"
 
 #: lib/setup.c:2304
 msgid "Volume key buffer too small.\n"
@@ -602,7 +602,7 @@ msgstr "Fel vid omläsning av LUKS-huvud efter uppdatering på enheten %s.\n"
 #: lib/luks1/keymanage.c:665
 #, c-format
 msgid "Data offset for detached LUKS header must be either 0 or higher than header size (%d sectors).\n"
-msgstr "Data-offset för fristående LUKS-huvud måste vara antingen 0 eller större än huvudstorleken (%d sectors).\n"
+msgstr "Data-offset för fristående LUKS-huvud måste vara antingen 0 eller större än huvudstorleken (%d sektorer).\n"
 
 #: lib/luks1/keymanage.c:677 lib/luks1/keymanage.c:768
 msgid "Wrong LUKS UUID format provided.\n"
@@ -630,7 +630,7 @@ msgstr "Nyckelplats %d är aktiv, rensa först.\n"
 #: lib/luks1/keymanage.c:799
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
-msgstr "Nyckelplats %d material inkluderar för få stripes. Har huvudet manipulerats?\n"
+msgstr "Nyckelplats %d material inkluderar för få remsor. Har huvudet manipulerats?\n"
 
 #: lib/luks1/keymanage.c:966
 #, c-format
@@ -689,7 +689,7 @@ msgstr "Begärt kryptogränssnitt för kärnan inte tillgängligt.\n"
 
 #: lib/tcrypt/tcrypt.c:564 src/cryptsetup.c:623
 msgid "Ensure you have algif_skcipher kernel module loaded.\n"
-msgstr "Försäkra dig om att kärnmodulen algif_skchiper är inläst.\n"
+msgstr "Försäkra dig om att kärnmodulen algif_skcipher är inläst.\n"
 
 #: lib/tcrypt/tcrypt.c:708
 #, c-format
@@ -748,7 +748,7 @@ msgstr "Kärnan stöder inte dm-verity-mappning.\n"
 
 #: lib/verity/verity.c:290
 msgid "Verity device detected corruption after activation.\n"
-msgstr "Verity-enhet identifierades som skadat efter aktivering.\n"
+msgstr "Verity-enhet identifierades som skadad efter aktivering.\n"
 
 #: lib/verity/verity_hash.c:59
 #, c-format
@@ -885,7 +885,7 @@ msgstr "Förminskad dataoffset endast tillåtet för fristående LUKS-huvuden.\n
 #: src/cryptsetup.c:890 src/cryptsetup.c:946
 #, c-format
 msgid "Key slot %d selected for deletion.\n"
-msgstr "Nyckeplats %d markerad för borttagning.\n"
+msgstr "Nyckelplats %d markerad för borttagning.\n"
 
 #: src/cryptsetup.c:893
 #, c-format
@@ -940,7 +940,7 @@ msgid ""
 "This operation will erase all keyslots on device %s.\n"
 "Device will become unusable after this operation."
 msgstr ""
-"Denna åtgärde kommer att ta bort alla nyckelplatser på enhet %s.\n"
+"Denna åtgärd kommer att ta bort alla nyckelplatser på enhet %s.\n"
 "Enheten kommer att bli oanvändbar efter denna åtgärd."
 
 #: src/cryptsetup.c:1380
@@ -989,7 +989,7 @@ msgstr "försök att reparera metadata på disken"
 
 #: src/cryptsetup.c:1386
 msgid "erase all keyslots (remove encryption key)"
-msgstr "ta bort att nyckelplatser (ta bort krypteringsnyckeln)"
+msgstr "ta bort alla nyckelplatser (ta bort krypteringsnyckeln)"
 
 #: src/cryptsetup.c:1387 src/cryptsetup.c:1388
 msgid "<device> [<new key file>]"
@@ -1201,7 +1201,7 @@ msgstr "Begränsa läsningen från nyligen tillagd nyckelfil"
 
 #: src/cryptsetup.c:1509
 msgid "Number of bytes to skip in newly added keyfile"
-msgstr "Antal byte att hoppa över in nyligen tillagd nyckelfil"
+msgstr "Antal byte att hoppa över i nyligen tillagd nyckelfil"
 
 #: src/cryptsetup.c:1510
 msgid "Slot number for new key (default is first free)"
@@ -1375,7 +1375,7 @@ msgstr "Endast ett argument för --key-file är tillåtet."
 #: src/cryptsetup.c:1720 src/cryptsetup_reencrypt.c:1367
 #: src/cryptsetup_reencrypt.c:1393
 msgid "Only one of --use-[u]random options is allowed."
-msgstr "Endast en av flaggorna --use-[u]random options är tillåten."
+msgstr "Endast en av flaggorna --use-[u]random är tillåten."
 
 #: src/cryptsetup.c:1724
 msgid "Option --use-[u]random is allowed only for luksFormat."
@@ -1407,7 +1407,7 @@ msgstr "Flaggan --tcrypt-hidden kan inte kombineras med --allow-discards.\n"
 
 #: src/cryptsetup.c:1760
 msgid "Option --veracrypt is supported only for TCRYPT device type.\n"
-msgstr "Flaggan --veracrypt stöds endast för TCRYPT-enhetestyper.\n"
+msgstr "Flaggan --veracrypt stöds endast för TCRYPT-enhetstyper.\n"
 
 #: src/veritysetup.c:61
 msgid "Invalid salt string specified.\n"
@@ -1473,9 +1473,9 @@ msgid ""
 msgstr ""
 "\n"
 "<namn> är enheten att skapa under %s\n"
-"<data_enhet> är dataenheten\n"
-"<hash_enhet> är enheten som innehåller verifieringsdata\n"
-"<rot_hash> hash för rotnoden på <hash_enhet>\n"
+"<dataenhet> är dataenheten\n"
+"<hashenhet> är enheten som innehåller verifieringsdata\n"
+"<rothash> hash för rotnoden på <hashenhet>\n"
 
 #: src/veritysetup.c:357
 #, c-format
@@ -1559,7 +1559,7 @@ msgstr "Flaggorna --ignore-corruption och --restart-on-corruption kan inte anvä
 #: src/cryptsetup_reencrypt.c:150
 #, c-format
 msgid "Cannot exclusively open %s, device in use.\n"
-msgstr "Kan inte öppna enheten %s, enheten används.\n"
+msgstr "Kan inte öppna %s exklusivt, enheten används.\n"
 
 #: src/cryptsetup_reencrypt.c:154
 #, c-format
@@ -1671,7 +1671,7 @@ msgstr "Angivet UUID är ogiltigt.\n"
 
 #: src/cryptsetup_reencrypt.c:1066
 msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
-msgstr "Nyckelfil kan endast använda med --key-slot eller exakt en aktiv nyckelplats.\n"
+msgstr "Nyckelfil kan endast användas med --key-slot eller exakt en aktiv nyckelplats.\n"
 
 #: src/cryptsetup_reencrypt.c:1110 src/cryptsetup_reencrypt.c:1125
 #, c-format
@@ -1728,7 +1728,7 @@ msgstr "Skapa nytt huvud på icke-krypterad enhet."
 
 #: src/cryptsetup_reencrypt.c:1326
 msgid "Permanently decrypt device (remove encryption)."
-msgstr "Dekryptera enheten permanent (ta bor kryptering)."
+msgstr "Dekryptera enheten permanent (ta bort kryptering)."
 
 #: src/cryptsetup_reencrypt.c:1327
 msgid "The uuid used to resume decryption."
@@ -1769,7 +1769,7 @@ msgstr "Högsta förminskningsstorlek för enhet är 64 MiB."
 
 #: src/cryptsetup_reencrypt.c:1409
 msgid "Reduce size must be multiple of 512 bytes sector."
-msgstr "Minskningsstorlekt måste vara en multipel av 512-bytesektor."
+msgstr "Minskningsstorlek måste vara en multipel av 512-bytesektor."
 
 #: src/cryptsetup_reencrypt.c:1413
 msgid "Option --new must be used together with --reduce-device-size."
