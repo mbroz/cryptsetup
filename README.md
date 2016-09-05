@@ -18,6 +18,9 @@ only facilitate compatibility among distributions, but also provides secure mana
 In contrast to existing solution, LUKS stores all setup necessary setup information in the partition header,  
 enabling the user to transport or migrate his data seamlessly.
 
+Last version of the LUKS format specification is
+[available here](https://gitlab.com/cryptsetup/cryptsetup/wikis/LUKS-standard/on-disk-format.pdf).
+
 Why LUKS?
 ---------
  * compatiblity via standardization,
