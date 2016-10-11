@@ -95,7 +95,8 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 		return -EINVAL;
 	}
 
-	if (EVP_DigestInit(&h->md, h->hash_id) != 1) {
+	EVP_MD_CTX_init(&h->md);
+	if (EVP_DigestInit_ex(&h->md, h->hash_id, NULL) != 1) {
 		free(h);
 		return -EINVAL;
 	}
@@ -107,7 +108,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 
 static int crypt_hash_restart(struct crypt_hash *ctx)
 {
-	if (EVP_DigestInit(&ctx->md, ctx->hash_id) != 1)
+	if (EVP_DigestInit_ex(&ctx->md, ctx->hash_id, NULL) != 1)
 		return -EINVAL;
 
 	return 0;
