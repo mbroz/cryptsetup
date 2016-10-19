@@ -1,8 +1,8 @@
 /*
  * OPENSSL crypto backend implementation
  *
- * Copyright (C) 2010-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2014, Milan Broz
+ * Copyright (C) 2010-2016, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2010-2016, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,13 +38,13 @@
 static int crypto_backend_initialised = 0;
 
 struct crypt_hash {
-	EVP_MD_CTX md;
+	EVP_MD_CTX *md;
 	const EVP_MD *hash_id;
 	int hash_len;
 };
 
 struct crypt_hmac {
-	HMAC_CTX md;
+	HMAC_CTX *md;
 	const EVP_MD *hash_id;
 	int hash_len;
 };
@@ -70,6 +70,43 @@ const char *crypt_backend_version(void)
 	return SSLeay_version(SSLEAY_VERSION);
 }
 
+/*
+ * Compatible wrappers for OpenSSL < 1.1.0
+ */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static EVP_MD_CTX *EVP_MD_CTX_new(void)
+{
+	EVP_MD_CTX *md = malloc(sizeof(*md));
+
+	if (md)
+		EVP_MD_CTX_init(md);
+
+	return md;
+}
+
+static void EVP_MD_CTX_free(EVP_MD_CTX *md)
+{
+	EVP_MD_CTX_cleanup(md);
+	free(md);
+}
+
+static HMAC_CTX *HMAC_CTX_new(void)
+{
+	HMAC_CTX *md = malloc(sizeof(*md));
+
+	if (md)
+		HMAC_CTX_init(md);
+
+	return md;
+}
+
+static void HMAC_CTX_free(HMAC_CTX *md)
+{
+	HMAC_CTX_cleanup(md);
+	free(md);
+}
+#endif
+
 /* HASH */
 int crypt_hash_size(const char *name)
 {
@@ -89,14 +126,19 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 	if (!h)
 		return -ENOMEM;
 
+	h->md = EVP_MD_CTX_new();
+	if (!h->md) {
+		free(h);
+		return -ENOMEM;
+	}
+
 	h->hash_id = EVP_get_digestbyname(name);
 	if (!h->hash_id) {
 		free(h);
 		return -EINVAL;
 	}
 
-	EVP_MD_CTX_init(&h->md);
-	if (EVP_DigestInit_ex(&h->md, h->hash_id, NULL) != 1) {
+	if (EVP_DigestInit_ex(h->md, h->hash_id, NULL) != 1) {
 		free(h);
 		return -EINVAL;
 	}
@@ -108,7 +150,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 
 static int crypt_hash_restart(struct crypt_hash *ctx)
 {
-	if (EVP_DigestInit_ex(&ctx->md, ctx->hash_id, NULL) != 1)
+	if (EVP_DigestInit_ex(ctx->md, ctx->hash_id, NULL) != 1)
 		return -EINVAL;
 
 	return 0;
@@ -116,7 +158,7 @@ static int crypt_hash_restart(struct crypt_hash *ctx)
 
 int crypt_hash_write(struct crypt_hash *ctx, const char *buffer, size_t length)
 {
-	if (EVP_DigestUpdate(&ctx->md, buffer, length) != 1)
+	if (EVP_DigestUpdate(ctx->md, buffer, length) != 1)
 		return -EINVAL;
 
 	return 0;
@@ -130,7 +172,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
-	if (EVP_DigestFinal_ex(&ctx->md, tmp, &tmp_len) != 1)
+	if (EVP_DigestFinal_ex(ctx->md, tmp, &tmp_len) != 1)
 		return -EINVAL;
 
 	memcpy(buffer, tmp, length);
@@ -147,7 +189,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 
 int crypt_hash_destroy(struct crypt_hash *ctx)
 {
-	EVP_MD_CTX_cleanup(&ctx->md);
+	EVP_MD_CTX_free(ctx->md);
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 	return 0;
@@ -168,14 +210,19 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	if (!h)
 		return -ENOMEM;
 
+	h->md = HMAC_CTX_new();
+	if (!h->md) {
+		free(h);
+		return -ENOMEM;
+	}
+
 	h->hash_id = EVP_get_digestbyname(name);
 	if (!h->hash_id) {
 		free(h);
 		return -EINVAL;
 	}
 
-	HMAC_CTX_init(&h->md);
-	HMAC_Init_ex(&h->md, buffer, length, h->hash_id, NULL);
+	HMAC_Init_ex(h->md, buffer, length, h->hash_id, NULL);
 
 	h->hash_len = EVP_MD_size(h->hash_id);
 	*ctx = h;
@@ -184,12 +231,12 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 
 static void crypt_hmac_restart(struct crypt_hmac *ctx)
 {
-	HMAC_Init_ex(&ctx->md, NULL, 0, ctx->hash_id, NULL);
+	HMAC_Init_ex(ctx->md, NULL, 0, ctx->hash_id, NULL);
 }
 
 int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)
 {
-	HMAC_Update(&ctx->md, (const unsigned char *)buffer, length);
+	HMAC_Update(ctx->md, (const unsigned char *)buffer, length);
 	return 0;
 }
 
@@ -201,7 +248,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
-	HMAC_Final(&ctx->md, tmp, &tmp_len);
+	HMAC_Final(ctx->md, tmp, &tmp_len);
 
 	memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
@@ -216,7 +263,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 
 int crypt_hmac_destroy(struct crypt_hmac *ctx)
 {
-	HMAC_CTX_cleanup(&ctx->md);
+	HMAC_CTX_free(ctx->md);
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 	return 0;
