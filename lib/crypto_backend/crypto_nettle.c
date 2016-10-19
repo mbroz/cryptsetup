@@ -1,8 +1,8 @@
 /*
  * Nettle crypto backend implementation
  *
- * Copyright (C) 2011-2012 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2011-2014, Milan Broz
+ * Copyright (C) 2011-2016 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2011-2016, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,9 +30,9 @@
 static char *version = "Nettle";
 
 typedef void (*init_func) (void *);
-typedef void (*update_func) (void *, unsigned, const uint8_t *);
-typedef void (*digest_func) (void *, unsigned, uint8_t *);
-typedef void (*set_key_func) (void *, unsigned, const uint8_t *);
+typedef void (*update_func) (void *, size_t, const uint8_t *);
+typedef void (*digest_func) (void *, size_t, uint8_t *);
+typedef void (*set_key_func) (void *, size_t, const uint8_t *);
 
 struct hash_alg {
 	const char *name;
