@@ -973,7 +973,7 @@ static int initialize_uuid(struct reenc_ctx *rc)
 		if (!r)
 			rc->device_uuid = strdup(opt_uuid);
 		else
-			log_err(_("Passed UUID is invalid.\n"));
+			log_err(_("Provided UUID is invalid.\n"));
 
 		return r;
 	}
@@ -1175,7 +1175,8 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 
 	if (!rc->in_progress) {
 		if (opt_uuid) {
-			log_err(_("Cannot use passed UUID unless decryption in progress.\n"));
+			log_err(_("No decryption in progress, provided UUID can "
+			"be used only to resume suspended decryption process.\n"));
 			return -EINVAL;
 		}
 
