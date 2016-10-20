@@ -134,11 +134,13 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 
 	h->hash_id = EVP_get_digestbyname(name);
 	if (!h->hash_id) {
+		EVP_MD_CTX_free(h->md);
 		free(h);
 		return -EINVAL;
 	}
 
 	if (EVP_DigestInit_ex(h->md, h->hash_id, NULL) != 1) {
+		EVP_MD_CTX_free(h->md);
 		free(h);
 		return -EINVAL;
 	}
@@ -218,6 +220,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 
 	h->hash_id = EVP_get_digestbyname(name);
 	if (!h->hash_id) {
+		HMAC_CTX_free(h->md);
 		free(h);
 		return -EINVAL;
 	}
@@ -298,7 +301,7 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		return -EINVAL;
 
 	if (!PKCS5_PBKDF2_HMAC(password, (int)password_length,
-	    (unsigned char *)salt, (int)salt_length,
+	    (const unsigned char *)salt, (int)salt_length,
             (int)iterations, hash_id, (int)key_length, (unsigned char *)key))
 		return -EINVAL;
 
