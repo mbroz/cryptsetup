@@ -470,7 +470,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 
 	dm_backend_init();
 
-	h->iteration_time = 1000;
+	h->iteration_time = DEFAULT_LUKS1_ITER_TIME;
 	h->rng_type = crypt_random_default_key_rng();
 	*cd = h;
 	return 0;
