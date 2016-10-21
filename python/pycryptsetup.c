@@ -640,7 +640,7 @@ static char
 CryptSetup_iterationTime_HELP[] =
 "Set iteration time\n\n\
   iterationTime(time_ms)\n\n\
-  time_ms - time in miliseconds";
+  time_ms - time in milliseconds";
 
 static PyObject *CryptSetup_iterationTime(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {

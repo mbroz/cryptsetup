@@ -131,7 +131,7 @@ int crypt_wipe(struct device *device,
 	ssize_t written;
 
 	if (!size || size % SECTOR_SIZE || (size > MAXIMUM_WIPE_BYTES)) {
-		log_dbg("Unsuported wipe size for device %s: %ld.",
+		log_dbg("Unsupported wipe size for device %s: %ld.",
 			device_path(device), (unsigned long)size);
 		return -EINVAL;
 	}
@@ -186,7 +186,7 @@ int crypt_wipe(struct device *device,
 			written = _crypt_wipe_random(devfd, bsize, buffer, offset, size);
 			break;
 		default:
-			log_dbg("Unsuported wipe type requested: (%d)", type);
+			log_dbg("Unsupported wipe type requested: (%d)", type);
 			written = -1;
 	}
 
