@@ -105,9 +105,9 @@ ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
 		if (r < bsize)
 			bsize = r;
 
-		r = lseek(fd, -bsize, SEEK_CUR);
-		if (r < 0)
+		if (lseek(fd, -bsize, SEEK_CUR) < 0)
 			goto out;
+
 		memcpy(hangover_buf, (char*)buf + solid, hangover);
 
 		r = write(fd, hangover_buf, bsize);
