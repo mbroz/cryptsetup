@@ -2148,7 +2148,7 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 
 void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms)
 {
-	log_dbg("Iteration time set to %" PRIu64 " miliseconds.", iteration_time_ms);
+	log_dbg("Iteration time set to %" PRIu64 " milliseconds.", iteration_time_ms);
 	cd->iteration_time = iteration_time_ms;
 }
 
