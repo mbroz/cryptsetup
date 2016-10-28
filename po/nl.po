@@ -1,39 +1,44 @@
 # Dutch translation of cryptsetup.
 # This file is distributed under the same license as the cryptsetup package.
-# Copyright (C) 2015 Free Software Foundation, Inc.
+# Copyright (C) 2016 Free Software Foundation, Inc.
 # Koen Torfs <koen@drunkfelines.com>, 2016.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup-1.7.1\n"
+"Project-Id-Version: cryptsetup-1.7.3\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2016-02-21 21:24+0100\n"
-"PO-Revision-Date: 2016-02-29 19:15+0100\n"
+"POT-Creation-Date: 2016-10-20 14:43+0200\n"
+"PO-Revision-Date: 2016-10-24 18:33+0100\n"
 "Last-Translator: Koen Torfs <koen@drunkfelines.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Poedit 1.6.10\n"
 
-#: lib/libdevmapper.c:253
+#: lib/libdevmapper.c:262
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
 msgstr "Kan apparaatstoewijzer niet initialiseren, uitvoering als non-root gebruiker.\n"
 
-#: lib/libdevmapper.c:256
+#: lib/libdevmapper.c:265
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
 msgstr "Kan apparaatstoewijzer niet initialiseren. Is kernelmodule dm_mod geladen?\n"
 
-#: lib/libdevmapper.c:551
+#: lib/libdevmapper.c:581
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
 msgstr "DM-UUID voor apparaat %s werd afgekapt.\n"
 
-#: lib/libdevmapper.c:699
-msgid "Requested dmcrypt performance options are not supported.\n"
-msgstr "Aangevraagde prestatie-opties voor dmcrypt worden niet ondersteund.\n"
+#: lib/libdevmapper.c:729
+msgid "Requested dm-crypt performance options are not supported.\n"
+msgstr "Aangevraagde prestatie-opties voor dm-crypt worden niet ondersteund.\n"
+
+#: lib/libdevmapper.c:735
+msgid "Requested dm-verity data corruption handling options are not supported.\n"
+msgstr "Aangevraagde opties voor behandeling van datacorruptie van dm-verity worden niet ondersteund.\n"
 
 #: lib/random.c:76
 msgid ""
@@ -352,7 +357,7 @@ msgstr "Wachtwoorden komen niet overeen.\n"
 msgid "Cannot use offset with terminal input.\n"
 msgstr "Kan de gegevenspositie niet via terminalinvoer gebruiken.\n"
 
-#: lib/utils_crypt.c:369 lib/tcrypt/tcrypt.c:467
+#: lib/utils_crypt.c:369 lib/tcrypt/tcrypt.c:468
 msgid "Failed to open key file.\n"
 msgstr "Openen van sleutelbestand is mislukt.\n"
 
@@ -376,44 +381,44 @@ msgstr "Maximum sleutelbestandsgrootte overschreden.\n"
 msgid "Cannot read requested amount of data.\n"
 msgstr "Kan aangevraagde hoeveelheid data niet lezen.\n"
 
-#: lib/utils_device.c:136 lib/luks1/keyencryption.c:90
+#: lib/utils_device.c:138 lib/luks1/keyencryption.c:90
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Apparaat %s bestaat niet of toegang is geweigerd.\n"
 
-#: lib/utils_device.c:430
+#: lib/utils_device.c:432
 msgid "Cannot use a loopback device, running as non-root user.\n"
 msgstr "Kan geen loopback-apparaat gebruiken, uitvoering als non-root gebruiker.\n"
 
-#: lib/utils_device.c:433
+#: lib/utils_device.c:435
 msgid "Cannot find a free loopback device.\n"
 msgstr "Kan geen vrij loopback-apparaat vinden.\n"
 
-#: lib/utils_device.c:440
+#: lib/utils_device.c:442
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
 msgstr "Vastmaken loopback-apparaat gefaald (loop-apparaat met autoclear-vlag is vereist).\n"
 
-#: lib/utils_device.c:484
+#: lib/utils_device.c:486
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
 msgstr "Kan apparaat %s niet gebruiken; het is nog actief (reeds toegewezen of aangekoppeld).\n"
 
-#: lib/utils_device.c:488
+#: lib/utils_device.c:490
 #, c-format
 msgid "Cannot get info about device %s.\n"
 msgstr "Kan geen informatie verkrijgen over apparaat %s.\n"
 
-#: lib/utils_device.c:494
+#: lib/utils_device.c:496
 #, c-format
 msgid "Requested offset is beyond real size of device %s.\n"
 msgstr "De aangevraagde gegevenspositie valt buiten de werkelijke grootte van apparaat %s.\n"
 
-#: lib/utils_device.c:502
+#: lib/utils_device.c:504
 #, c-format
 msgid "Device %s has zero size.\n"
 msgstr "Apparaat %s heeft grootte nul.\n"
 
-#: lib/utils_device.c:513
+#: lib/utils_device.c:515
 #, c-format
 msgid "Device %s is too small.\n"
 msgstr "Apparaat %s is te klein.\n"
@@ -432,7 +437,7 @@ msgid "Key size in XTS mode must be 256 or 512 bits.\n"
 msgstr "In XTS-modus moet de sleutelgrootte 256 of 512 bits zijn.\n"
 
 #: lib/luks1/keyencryption.c:96 lib/luks1/keymanage.c:296
-#: lib/luks1/keymanage.c:572 lib/luks1/keymanage.c:1022
+#: lib/luks1/keymanage.c:583 lib/luks1/keymanage.c:1033
 #, c-format
 msgid "Cannot write to device %s, permission denied.\n"
 msgstr "Kan apparaat %s niet beschrijven: toestemming geweigerd.\n"
@@ -458,8 +463,8 @@ msgstr "Invoer/uitvoerfout tijdens het ontsleutelen van de sleutelplaats.\n"
 msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
 msgstr "Apparaat %s is te klein. (LUKS vereist minstens %<PRIu64> bytes.)\n"
 
-#: lib/luks1/keymanage.c:180 lib/luks1/keymanage.c:418
-#: src/cryptsetup_reencrypt.c:1131
+#: lib/luks1/keymanage.c:180 lib/luks1/keymanage.c:419
+#: src/cryptsetup_reencrypt.c:1152
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "Apparaat %s is geen geldig LUKS-apparaat.\n"
@@ -479,16 +484,16 @@ msgstr "Kan reservekopiebestand %s van koptekst niet aanmaken.\n"
 msgid "Cannot write header backup file %s.\n"
 msgstr "Kan reservekopiebestand %s van koptekst niet schrijven.\n"
 
-#: lib/luks1/keymanage.c:239
+#: lib/luks1/keymanage.c:238
 msgid "Backup file doesn't contain valid LUKS header.\n"
 msgstr "Reservekopiebestand bevat geen geldige LUKS-koptekst.\n"
 
-#: lib/luks1/keymanage.c:252 lib/luks1/keymanage.c:496
+#: lib/luks1/keymanage.c:251 lib/luks1/keymanage.c:497
 #, c-format
 msgid "Cannot open header backup file %s.\n"
 msgstr "Kan reservekopiebestand %s van koptekst niet openen.\n"
 
-#: lib/luks1/keymanage.c:258
+#: lib/luks1/keymanage.c:257
 #, c-format
 msgid "Cannot read header backup file %s.\n"
 msgstr "Kan reservekopiebestand %s van koptekst niet lezen.\n"
@@ -518,132 +523,133 @@ msgstr ""
 "\n"
 "WAARSCHUWING: originele apparaatkoptekst heeft een ander UUID dan de reservekopie!"
 
-#: lib/luks1/keymanage.c:299 lib/luks1/keymanage.c:535
-#: lib/luks1/keymanage.c:575 lib/tcrypt/tcrypt.c:624 lib/verity/verity.c:82
-#: lib/verity/verity.c:179 lib/verity/verity_hash.c:292
+#: lib/luks1/keymanage.c:299 lib/luks1/keymanage.c:536
+#: lib/luks1/keymanage.c:586 lib/tcrypt/tcrypt.c:625 lib/verity/verity.c:82
+#: lib/verity/verity.c:180 lib/verity/verity_hash.c:292
 #: lib/verity/verity_hash.c:303 lib/verity/verity_hash.c:323
+#: src/cryptsetup_reencrypt.c:154
 #, c-format
 msgid "Cannot open device %s.\n"
 msgstr "Kan apparaat %s niet openen.\n"
 
-#: lib/luks1/keymanage.c:329
+#: lib/luks1/keymanage.c:330
 msgid "Non standard key size, manual repair required.\n"
 msgstr "Niet-standaard sleutelgrootte, handmatige herstelling is vereist.\n"
 
-#: lib/luks1/keymanage.c:334
+#: lib/luks1/keymanage.c:335
 msgid "Non standard keyslots alignment, manual repair required.\n"
 msgstr "Niet-standaard sleutelplaatsuitlijning, handmatige herstelling is vereist.\n"
 
-#: lib/luks1/keymanage.c:340
+#: lib/luks1/keymanage.c:341
 msgid "Repairing keyslots.\n"
 msgstr "Sleutelplaatsen worden hersteld.\n"
 
-#: lib/luks1/keymanage.c:351
+#: lib/luks1/keymanage.c:352
 msgid "Repair failed."
 msgstr "Herstelling is mislukt."
 
-#: lib/luks1/keymanage.c:363
+#: lib/luks1/keymanage.c:364
 #, c-format
 msgid "Keyslot %i: offset repaired (%u -> %u).\n"
 msgstr "Sleutelplaats %i: gegevenspositie hersteld (%u -> %u).\n"
 
-#: lib/luks1/keymanage.c:371
+#: lib/luks1/keymanage.c:372
 #, c-format
 msgid "Keyslot %i: stripes repaired (%u -> %u).\n"
 msgstr "Sleutelplaats %i: fragmenten hersteld (%u -> %u).\n"
 
-#: lib/luks1/keymanage.c:380
+#: lib/luks1/keymanage.c:381
 #, c-format
 msgid "Keyslot %i: bogus partition signature.\n"
 msgstr "Sleutelplaats %i: valse partitiehandtekening.\n"
 
-#: lib/luks1/keymanage.c:385
+#: lib/luks1/keymanage.c:386
 #, c-format
 msgid "Keyslot %i: salt wiped.\n"
 msgstr "Sleutelplaats %i: salt uitgewist.\n"
 
-#: lib/luks1/keymanage.c:396
+#: lib/luks1/keymanage.c:397
 msgid "Writing LUKS header to disk.\n"
 msgstr "LUKS-koptekst wordt naar schijf geschreven.\n"
 
-#: lib/luks1/keymanage.c:421
+#: lib/luks1/keymanage.c:422
 #, c-format
 msgid "Unsupported LUKS version %d.\n"
 msgstr "Niet-ondersteunde LUKS-versie %d.\n"
 
-#: lib/luks1/keymanage.c:427 lib/luks1/keymanage.c:661
+#: lib/luks1/keymanage.c:428 lib/luks1/keymanage.c:672
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
 msgstr "Aangevraagde LUKS-hash %s wordt niet ondersteund.\n"
 
-#: lib/luks1/keymanage.c:442
+#: lib/luks1/keymanage.c:443
 #, c-format
 msgid "LUKS keyslot %u is invalid.\n"
 msgstr "LUKS-sleutelplaats %u is ongeldig.\n"
 
-#: lib/luks1/keymanage.c:456 src/cryptsetup.c:668
+#: lib/luks1/keymanage.c:457 src/cryptsetup.c:668
 msgid "No known problems detected for LUKS header.\n"
 msgstr "Geen gekende problemen gevonden bij LUKS-koptekst.\n"
 
-#: lib/luks1/keymanage.c:596
+#: lib/luks1/keymanage.c:607
 #, c-format
 msgid "Error during update of LUKS header on device %s.\n"
 msgstr "Fout bij het bijwerken van LUKS-koptekst op apparaat %s.\n"
 
-#: lib/luks1/keymanage.c:603
+#: lib/luks1/keymanage.c:614
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s.\n"
 msgstr "Fout bij het herlezen van LUKS-koptekst na bijwerken van apparaat %s.\n"
 
-#: lib/luks1/keymanage.c:654
+#: lib/luks1/keymanage.c:665
 #, c-format
 msgid "Data offset for detached LUKS header must be either 0 or higher than header size (%d sectors).\n"
 msgstr "De datagegevenspositie voor een aparte LUKS-koptekst moet of 0 zijn, of hoger liggen dan de koptekstgrootte (%d sectoren).\n"
 
-#: lib/luks1/keymanage.c:666 lib/luks1/keymanage.c:757
+#: lib/luks1/keymanage.c:677 lib/luks1/keymanage.c:768
 msgid "Wrong LUKS UUID format provided.\n"
 msgstr "Verkeerd LUKS UUID-formaat verschaft.\n"
 
-#: lib/luks1/keymanage.c:695
+#: lib/luks1/keymanage.c:706
 msgid "Cannot create LUKS header: reading random salt failed.\n"
 msgstr "Kan LUKS-koptekst niet aanmaken: lezen van random salt is mislukt.\n"
 
-#: lib/luks1/keymanage.c:702 lib/luks1/keymanage.c:798
+#: lib/luks1/keymanage.c:713 lib/luks1/keymanage.c:809
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
 msgstr "Niet-compatibele PBKDF2-opties (met hash-algoritme %s in gebruik).\n"
 
-#: lib/luks1/keymanage.c:717
+#: lib/luks1/keymanage.c:728
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
 msgstr "Kan LUKS-koptekst niet aanmaken: koptekst-extract is mislukt (met %s-hash).\n"
 
-#: lib/luks1/keymanage.c:782
+#: lib/luks1/keymanage.c:793
 #, c-format
 msgid "Key slot %d active, purge first.\n"
 msgstr "Sleutelplaats %d is actief; ruim eerst op.\n"
 
-#: lib/luks1/keymanage.c:788
+#: lib/luks1/keymanage.c:799
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
 msgstr "Inhoud van sleutelplaats %d bevat te weinig fragmenten. Koptekstmanipulatie?\n"
 
-#: lib/luks1/keymanage.c:955
+#: lib/luks1/keymanage.c:966
 #, c-format
 msgid "Key slot %d unlocked.\n"
 msgstr "Sleutelplaats %d is ontgrendeld.\n"
 
-#: lib/luks1/keymanage.c:990 src/cryptsetup.c:867
-#: src/cryptsetup_reencrypt.c:1020 src/cryptsetup_reencrypt.c:1057
+#: lib/luks1/keymanage.c:1001 src/cryptsetup.c:867
+#: src/cryptsetup_reencrypt.c:1041 src/cryptsetup_reencrypt.c:1078
 msgid "No key available with this passphrase.\n"
 msgstr "Geen sleutel beschikbaar met dit wachtwoord.\n"
 
-#: lib/luks1/keymanage.c:1008
+#: lib/luks1/keymanage.c:1019
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
 msgstr "Sleutelplaats %d is ongeldig, selecteer een sleutelplaats tussen 0 en %d.\n"
 
-#: lib/luks1/keymanage.c:1026
+#: lib/luks1/keymanage.c:1037
 #, c-format
 msgid "Cannot wipe device %s.\n"
 msgstr "Kan apparaat %s niet wissen.\n"
@@ -664,52 +670,52 @@ msgstr "Onverenigbaar loop-AES-sleutelbestand gevonden.\n"
 msgid "Kernel doesn't support loop-AES compatible mapping.\n"
 msgstr "Toewijzingen compatibel met loop-AES worden niet ondersteund door de kernel.\n"
 
-#: lib/tcrypt/tcrypt.c:475
+#: lib/tcrypt/tcrypt.c:476
 #, c-format
 msgid "Error reading keyfile %s.\n"
 msgstr "Fout bij het lezen van sleutelbestand %s.\n"
 
-#: lib/tcrypt/tcrypt.c:513
+#: lib/tcrypt/tcrypt.c:514
 #, c-format
 msgid "Maximum TCRYPT passphrase length (%d) exceeded.\n"
 msgstr "Maximum TCRYPT-wachtwoorlengte (%d) overschreden.\n"
 
-#: lib/tcrypt/tcrypt.c:543
+#: lib/tcrypt/tcrypt.c:544
 #, c-format
 msgid "PBKDF2 hash algorithm %s not available, skipping.\n"
 msgstr "PBKDF2 hash-algoritme %s is niet beschikbaar, wordt overgeslaan.\n"
 
-#: lib/tcrypt/tcrypt.c:561 src/cryptsetup.c:621
+#: lib/tcrypt/tcrypt.c:562 src/cryptsetup.c:621
 msgid "Required kernel crypto interface not available.\n"
 msgstr "Benodigde kernel cryptografie-interface is niet beschikbaar.\n"
 
-#: lib/tcrypt/tcrypt.c:563 src/cryptsetup.c:623
+#: lib/tcrypt/tcrypt.c:564 src/cryptsetup.c:623
 msgid "Ensure you have algif_skcipher kernel module loaded.\n"
 msgstr "Kijk na of kernelmodule algif_skcipher geladen is.\n"
 
-#: lib/tcrypt/tcrypt.c:707
+#: lib/tcrypt/tcrypt.c:708
 #, c-format
 msgid "Activation is not supported for %d sector size.\n"
 msgstr "Activatie wordt niet ondersteund voor %d sectorgrootte.\n"
 
-#: lib/tcrypt/tcrypt.c:713
+#: lib/tcrypt/tcrypt.c:714
 msgid "Kernel doesn't support activation for this TCRYPT legacy mode.\n"
 msgstr "Activatie voor deze TCRYPT-legacymodus wordt niet ondersteund door de kernel.\n"
 
-#: lib/tcrypt/tcrypt.c:744
+#: lib/tcrypt/tcrypt.c:748
 #, c-format
 msgid "Activating TCRYPT system encryption for partition %s.\n"
 msgstr "TCRYPT-systeemversleuteling voor partitie %s wordt geactiveerd.\n"
 
-#: lib/tcrypt/tcrypt.c:810
+#: lib/tcrypt/tcrypt.c:815
 msgid "Kernel doesn't support TCRYPT compatible mapping.\n"
 msgstr "Toewijzingen compatibel met TCRYPT worden niet ondersteund door de kernel.\n"
 
-#: lib/tcrypt/tcrypt.c:1024
+#: lib/tcrypt/tcrypt.c:1030
 msgid "This function is not supported without TCRYPT header load."
 msgstr "Deze functie wordt niet ondersteund zonder TCRYPT-koptekst."
 
-#: lib/verity/verity.c:70 lib/verity/verity.c:172
+#: lib/verity/verity.c:70 lib/verity/verity.c:173
 #, c-format
 msgid "Verity device %s doesn't use on-disk header.\n"
 msgstr "VERITY-apparaat %s gebruikt geen on-disk koptekst.\n"
@@ -728,21 +734,21 @@ msgstr "Niet-ondersteunde VERITY-versie %d.\n"
 msgid "VERITY header corrupted.\n"
 msgstr "VERITY-koptekst beschadigd.\n"
 
-#: lib/verity/verity.c:166
+#: lib/verity/verity.c:167
 #, c-format
 msgid "Wrong VERITY UUID format provided on device %s.\n"
 msgstr "Verkeerd VERITY UUID-formaat verschaft op apparaat %s.\n"
 
-#: lib/verity/verity.c:196
+#: lib/verity/verity.c:199
 #, c-format
 msgid "Error during update of verity header on device %s.\n"
 msgstr "Fout bij het bijwerken van VERITY-koptekst op apparaat %s.\n"
 
-#: lib/verity/verity.c:276
+#: lib/verity/verity.c:279
 msgid "Kernel doesn't support dm-verity mapping.\n"
 msgstr "dm-verity toewijzingen niet ondersteund door kernel.\n"
 
-#: lib/verity/verity.c:287
+#: lib/verity/verity.c:290
 msgid "Verity device detected corruption after activation.\n"
 msgstr "VERITY-apparaat ontdekte beschadiging na activatie.\n"
 
@@ -795,7 +801,7 @@ msgid "Can't do passphrase verification on non-tty inputs.\n"
 msgstr "Kan geen wachtwoordverificatie uitvoeren op invoer van buiten de terminal.\n"
 
 #: src/cryptsetup.c:133 src/cryptsetup.c:564 src/cryptsetup.c:711
-#: src/cryptsetup_reencrypt.c:523 src/cryptsetup_reencrypt.c:577
+#: src/cryptsetup_reencrypt.c:524 src/cryptsetup_reencrypt.c:578
 msgid "No known cipher specification pattern detected.\n"
 msgstr "Geen bekend specificatiepatroon voor het sleutelalgoritme gevonden.\n"
 
@@ -900,7 +906,7 @@ msgstr "Voer enig overblijvend wachtwoord in: "
 msgid "Enter passphrase to be deleted: "
 msgstr "Voer het te verwijderen wachtwoord in: "
 
-#: src/cryptsetup.c:1017 src/cryptsetup_reencrypt.c:1095
+#: src/cryptsetup.c:1017 src/cryptsetup_reencrypt.c:1116
 #, c-format
 msgid "Enter any existing passphrase: "
 msgstr "Voer een bestaand wachtwoord in: "
@@ -909,7 +915,7 @@ msgstr "Voer een bestaand wachtwoord in: "
 msgid "Enter passphrase to be changed: "
 msgstr "Voer het te wijzigen wachtwoord in: "
 
-#: src/cryptsetup.c:1086 src/cryptsetup_reencrypt.c:1080
+#: src/cryptsetup.c:1086 src/cryptsetup_reencrypt.c:1101
 msgid "Enter new passphrase: "
 msgstr "Voer nieuw wachtwoord in: "
 
@@ -948,7 +954,7 @@ msgid "open device as mapping <name>"
 msgstr "apparaat als toewijzing <naam> openen"
 
 #: src/cryptsetup.c:1381 src/cryptsetup.c:1382 src/cryptsetup.c:1383
-#: src/cryptsetup.c:1384 src/veritysetup.c:311 src/veritysetup.c:312
+#: src/veritysetup.c:329 src/veritysetup.c:330
 msgid "<name>"
 msgstr "<naam>"
 
@@ -963,6 +969,10 @@ msgstr "actief apparaat vergroten of verkleinen"
 #: src/cryptsetup.c:1383
 msgid "show device status"
 msgstr "apparaatstatus tonen"
+
+#: src/cryptsetup.c:1384
+msgid "[--cipher <cipher>]"
+msgstr "[--cipher <versleutelalgoritme>]"
 
 #: src/cryptsetup.c:1384
 msgid "benchmark cipher"
@@ -1047,7 +1057,7 @@ msgstr "Reservekopie van LUKS-apparaatkoptekst en -sleutelplaatsen maken"
 msgid "Restore LUKS device header and keyslots"
 msgstr "LUKS-apparaatkoptekst en -sleutelplaatsen herstellen"
 
-#: src/cryptsetup.c:1416 src/veritysetup.c:328
+#: src/cryptsetup.c:1416 src/veritysetup.c:346
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -1110,40 +1120,40 @@ msgstr ""
 "\tplain: %s, Sleutel: %d bits, Wachtwoordhashing: %s\n"
 "\tLUKS1: %s, Sleutel: %d bits, LUKS-kopteksthashing: %s, RNG: %s\n"
 
-#: src/cryptsetup.c:1457 src/veritysetup.c:460
+#: src/cryptsetup.c:1457 src/veritysetup.c:481
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: vereist %s als argumenten"
 
-#: src/cryptsetup.c:1490 src/veritysetup.c:368 src/cryptsetup_reencrypt.c:1274
+#: src/cryptsetup.c:1490 src/veritysetup.c:386 src/cryptsetup_reencrypt.c:1302
 msgid "Show this help message"
 msgstr "Deze hulptekst tonen"
 
-#: src/cryptsetup.c:1491 src/veritysetup.c:369 src/cryptsetup_reencrypt.c:1275
+#: src/cryptsetup.c:1491 src/veritysetup.c:387 src/cryptsetup_reencrypt.c:1303
 msgid "Display brief usage"
 msgstr "Korte gebruikssamenvatting tonen"
 
-#: src/cryptsetup.c:1495 src/veritysetup.c:373 src/cryptsetup_reencrypt.c:1279
+#: src/cryptsetup.c:1495 src/veritysetup.c:391 src/cryptsetup_reencrypt.c:1307
 msgid "Help options:"
 msgstr "Hulpopties:"
 
-#: src/cryptsetup.c:1496 src/veritysetup.c:374 src/cryptsetup_reencrypt.c:1280
+#: src/cryptsetup.c:1496 src/veritysetup.c:392 src/cryptsetup_reencrypt.c:1308
 msgid "Print package version"
 msgstr "Pakketversie tonen"
 
-#: src/cryptsetup.c:1497 src/veritysetup.c:375 src/cryptsetup_reencrypt.c:1281
+#: src/cryptsetup.c:1497 src/veritysetup.c:393 src/cryptsetup_reencrypt.c:1309
 msgid "Shows more detailed error messages"
 msgstr "Gedetailleerdere foutboodschappen tonen"
 
-#: src/cryptsetup.c:1498 src/veritysetup.c:376 src/cryptsetup_reencrypt.c:1282
+#: src/cryptsetup.c:1498 src/veritysetup.c:394 src/cryptsetup_reencrypt.c:1310
 msgid "Show debug messages"
 msgstr "Debug-boodschappen tonen"
 
-#: src/cryptsetup.c:1499 src/cryptsetup_reencrypt.c:1284
+#: src/cryptsetup.c:1499 src/cryptsetup_reencrypt.c:1312
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Het gebruikte versleutelalgoritme om de schijf te versleutelen (zie /proc/crypto)"
 
-#: src/cryptsetup.c:1500 src/cryptsetup_reencrypt.c:1286
+#: src/cryptsetup.c:1500 src/cryptsetup_reencrypt.c:1314
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "De gebruikte hash om de encryptiesleutel uit het wachtwoord aan te maken"
 
@@ -1151,7 +1161,7 @@ msgstr "De gebruikte hash om de encryptiesleutel uit het wachtwoord aan te maken
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Het wachtwoord controleren door het twee keer te vragen"
 
-#: src/cryptsetup.c:1502 src/cryptsetup_reencrypt.c:1288
+#: src/cryptsetup.c:1502 src/cryptsetup_reencrypt.c:1316
 msgid "Read the key from a file."
 msgstr "De sleutel uit een bestand lezen."
 
@@ -1163,27 +1173,27 @@ msgstr "De (hoofd)sleutel tot het opslagmedium uit een bestand lezen."
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "Dump (hoofd)sleutel tot het opslagmedium in plaats van de sleutelplaatsinformatie."
 
-#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1285
+#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1313
 msgid "The size of the encryption key"
 msgstr "De grootte van de encryptiesleutel"
 
-#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1285
+#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1313
 msgid "BITS"
 msgstr "BITS"
 
-#: src/cryptsetup.c:1506 src/cryptsetup_reencrypt.c:1299
+#: src/cryptsetup.c:1506 src/cryptsetup_reencrypt.c:1327
 msgid "Limits the read from keyfile"
 msgstr "Beperkt de lezing uit sleutelbestand"
 
 #: src/cryptsetup.c:1506 src/cryptsetup.c:1507 src/cryptsetup.c:1508
-#: src/cryptsetup.c:1509 src/veritysetup.c:379 src/veritysetup.c:380
-#: src/veritysetup.c:382 src/cryptsetup_reencrypt.c:1298
-#: src/cryptsetup_reencrypt.c:1299 src/cryptsetup_reencrypt.c:1300
-#: src/cryptsetup_reencrypt.c:1301
+#: src/cryptsetup.c:1509 src/veritysetup.c:397 src/veritysetup.c:398
+#: src/veritysetup.c:400 src/cryptsetup_reencrypt.c:1326
+#: src/cryptsetup_reencrypt.c:1327 src/cryptsetup_reencrypt.c:1328
+#: src/cryptsetup_reencrypt.c:1329
 msgid "bytes"
 msgstr "bytes"
 
-#: src/cryptsetup.c:1507 src/cryptsetup_reencrypt.c:1298
+#: src/cryptsetup.c:1507 src/cryptsetup_reencrypt.c:1326
 msgid "Number of bytes to skip in keyfile"
 msgstr "Aantal bytes over te slaan in sleutelbestand"
 
@@ -1220,15 +1230,15 @@ msgstr "Hoeveel sectoren van de versleutelde gegevens aan het begin over te slaa
 msgid "Create a readonly mapping"
 msgstr "Een alleen-lezen toewijzing aanmaken"
 
-#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1289
+#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1317
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "PBKDF2 herhalingstijd voor LUKS (in ms)"
 
-#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1289
+#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1317
 msgid "msecs"
 msgstr "milliseconden"
 
-#: src/cryptsetup.c:1516 src/cryptsetup_reencrypt.c:1290
+#: src/cryptsetup.c:1516 src/cryptsetup_reencrypt.c:1318
 msgid "Do not ask for confirmation"
 msgstr "Niet om bevestiging vragen"
 
@@ -1240,7 +1250,7 @@ msgstr "Timeout voor interactieve wachtwoordprompt (in seconden)"
 msgid "secs"
 msgstr "seconden"
 
-#: src/cryptsetup.c:1518 src/cryptsetup_reencrypt.c:1291
+#: src/cryptsetup.c:1518 src/cryptsetup_reencrypt.c:1319
 msgid "How often the input of the passphrase can be retried"
 msgstr "Hoe vaak de invoering van het wachtwoord opnieuw geprobeerd kan worden"
 
@@ -1252,11 +1262,11 @@ msgstr "Payload uitlijnen op meervouden van <n> sectoren – voor luksFormat"
 msgid "File with LUKS header and keyslots backup."
 msgstr "Bestand met reservekopie van LUKS-koptekst en -sleutelplaatsen."
 
-#: src/cryptsetup.c:1521 src/cryptsetup_reencrypt.c:1292
+#: src/cryptsetup.c:1521 src/cryptsetup_reencrypt.c:1320
 msgid "Use /dev/random for generating volume key."
 msgstr "Gebruik /dev/random om de sleutel tot het opslagmedium te genereren."
 
-#: src/cryptsetup.c:1522 src/cryptsetup_reencrypt.c:1293
+#: src/cryptsetup.c:1522 src/cryptsetup_reencrypt.c:1321
 msgid "Use /dev/urandom for generating volume key."
 msgstr "Gebruik /dev/urandom om de sleutel tot het opslagmedium te genereren."
 
@@ -1264,7 +1274,7 @@ msgstr "Gebruik /dev/urandom om de sleutel tot het opslagmedium te genereren."
 msgid "Share device with another non-overlapping crypt segment."
 msgstr "Apparaat met een ander, niet-overlappend cryptsegment delen."
 
-#: src/cryptsetup.c:1524 src/veritysetup.c:385
+#: src/cryptsetup.c:1524 src/veritysetup.c:403
 msgid "UUID for device to use."
 msgstr "UUID van het te gebruiken apparaat."
 
@@ -1312,15 +1322,15 @@ msgstr "dm-crypt same_cpu_crypt prestatie-compatibiliteitsoptie gebruiken."
 msgid "Use dm-crypt submit_from_crypt_cpus performance compatibility option."
 msgstr "dm-crypt submit_from_crypt_cpus prestatie-compatibiliteitsoptie gebruiken."
 
-#: src/cryptsetup.c:1551 src/veritysetup.c:402
+#: src/cryptsetup.c:1551 src/veritysetup.c:423
 msgid "[OPTION...] <action> <action-specific>"
 msgstr "[OPTIE…] <actie> <actie-specifiek>"
 
-#: src/cryptsetup.c:1602 src/veritysetup.c:439
+#: src/cryptsetup.c:1602 src/veritysetup.c:460
 msgid "Argument <action> missing."
 msgstr "Argument <actie> ontbreekt."
 
-#: src/cryptsetup.c:1655 src/veritysetup.c:445
+#: src/cryptsetup.c:1655 src/veritysetup.c:466
 msgid "Unknown action."
 msgstr "Onbekende actie."
 
@@ -1344,11 +1354,11 @@ msgstr ""
 msgid "Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"
 msgstr "Optie --test-passphrase is enkel toegestaan bij open van LUKS- en TCRYPT-apparaten.\n"
 
-#: src/cryptsetup.c:1690 src/cryptsetup_reencrypt.c:1360
+#: src/cryptsetup.c:1690 src/cryptsetup_reencrypt.c:1389
 msgid "Key size must be a multiple of 8 bits"
 msgstr "Sleutelgrootte moet een meervoud zijn van 8 bits"
 
-#: src/cryptsetup.c:1697 src/cryptsetup_reencrypt.c:1365
+#: src/cryptsetup.c:1697 src/cryptsetup_reencrypt.c:1394
 msgid "Key slot is invalid."
 msgstr "Sleutelplaats is ongeldig."
 
@@ -1356,7 +1366,7 @@ msgstr "Sleutelplaats is ongeldig."
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "Optie --key-file krijgt voorrang over het gespecificeerde sleutelbestandsargument.\n"
 
-#: src/cryptsetup.c:1712 src/veritysetup.c:467 src/cryptsetup_reencrypt.c:1349
+#: src/cryptsetup.c:1712 src/veritysetup.c:488 src/cryptsetup_reencrypt.c:1378
 msgid "Negative number for option not permitted."
 msgstr "Een negatief getal wordt niet toegestaan voor deze optie."
 
@@ -1364,8 +1374,8 @@ msgstr "Een negatief getal wordt niet toegestaan voor deze optie."
 msgid "Only one --key-file argument is allowed."
 msgstr "Slechts een enkel gebruik van het --key-file argument is toegestaan."
 
-#: src/cryptsetup.c:1720 src/cryptsetup_reencrypt.c:1343
-#: src/cryptsetup_reencrypt.c:1369
+#: src/cryptsetup.c:1720 src/cryptsetup_reencrypt.c:1372
+#: src/cryptsetup_reencrypt.c:1398
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "Slechts een enkel gebruik van de opties --use-[u]random is toegestaan."
 
@@ -1401,60 +1411,60 @@ msgstr "Optie --tcrypt-hidden kan niet met --allow-discards gecombineerd worden.
 msgid "Option --veracrypt is supported only for TCRYPT device type.\n"
 msgstr "Optie --veracrypt wordt enkel ondersteund voor TCRYPT-apparaatstype.\n"
 
-#: src/veritysetup.c:58
+#: src/veritysetup.c:61
 msgid "Invalid salt string specified.\n"
 msgstr "Ongeldige salt-tekenreeks opgegeven.\n"
 
-#: src/veritysetup.c:88
+#: src/veritysetup.c:91
 #, c-format
 msgid "Cannot create hash image %s for writing.\n"
 msgstr "Kan hashafbeeling %s niet aanmaken voor beschrijving.\n"
 
-#: src/veritysetup.c:148
+#: src/veritysetup.c:158
 msgid "Invalid root hash string specified.\n"
 msgstr "Ongeldige root-hash tekenreeks opgegeven.\n"
 
-#: src/veritysetup.c:308
+#: src/veritysetup.c:326
 msgid "<data_device> <hash_device>"
 msgstr "<gegevensapparaat> <hash-apparaat>"
 
-#: src/veritysetup.c:308
+#: src/veritysetup.c:326
 msgid "format device"
 msgstr "apparaat formateren"
 
-#: src/veritysetup.c:309
+#: src/veritysetup.c:327
 msgid "<data_device> <hash_device> <root_hash>"
 msgstr "<gegevensapparaat> <hash-apparaat> <root-hash>"
 
-#: src/veritysetup.c:309
+#: src/veritysetup.c:327
 msgid "verify device"
 msgstr "apparaat controleren"
 
-#: src/veritysetup.c:310
+#: src/veritysetup.c:328
 msgid "<name> <data_device> <hash_device> <root_hash>"
 msgstr "<naam> <gegevensapparaat> <hash-apparaat> <root-hash>"
 
-#: src/veritysetup.c:310
+#: src/veritysetup.c:328
 msgid "create active device"
 msgstr "actief apparaat aanmaken"
 
-#: src/veritysetup.c:311
+#: src/veritysetup.c:329
 msgid "remove (deactivate) device"
 msgstr "apparaat verwijderen (deactiveren)"
 
-#: src/veritysetup.c:312
+#: src/veritysetup.c:330
 msgid "show active device status"
 msgstr "status van actief apparaat tonen"
 
-#: src/veritysetup.c:313
+#: src/veritysetup.c:331
 msgid "<hash_device>"
 msgstr "<hash-apparaat>"
 
-#: src/veritysetup.c:313
+#: src/veritysetup.c:331
 msgid "show on-disk information"
 msgstr "on-disk informatie tonen"
 
-#: src/veritysetup.c:332
+#: src/veritysetup.c:350
 #, c-format
 msgid ""
 "\n"
@@ -1469,7 +1479,7 @@ msgstr ""
 "<hash-apparaat> is de naam van het apparaat dat de verificatiegegevens bevat\n"
 "<root-hash> is de hash van de rootnode op <hash-apparaat>\n"
 
-#: src/veritysetup.c:339
+#: src/veritysetup.c:357
 #, c-format
 msgid ""
 "\n"
@@ -1480,84 +1490,94 @@ msgstr ""
 "Standaard meegecompileerde dm-verity parameters:\n"
 "\tHash: %s, Datablok (bytes): %u, Hashblock (bytes): %u, Saltgrootte: %u, Hashformaat: %u\n"
 
-#: src/veritysetup.c:377
+#: src/veritysetup.c:395
 msgid "Do not use verity superblock"
 msgstr "VERITY-superblok niet gebruiken"
 
-#: src/veritysetup.c:378
+#: src/veritysetup.c:396
 msgid "Format type (1 - normal, 0 - original Chrome OS)"
 msgstr "Formaatstype (1 - normaal, 0 - origineel Chrome OS)"
 
-#: src/veritysetup.c:378
+#: src/veritysetup.c:396
 msgid "number"
 msgstr "nummer"
 
-#: src/veritysetup.c:379
+#: src/veritysetup.c:397
 msgid "Block size on the data device"
 msgstr "Blokgrootte op het gegevensapparaat"
 
-#: src/veritysetup.c:380
+#: src/veritysetup.c:398
 msgid "Block size on the hash device"
 msgstr "Blokgrootte op het hash-apparaat"
 
-#: src/veritysetup.c:381
+#: src/veritysetup.c:399
 msgid "The number of blocks in the data file"
 msgstr "Aantal blokken in het gegevensbestand"
 
-#: src/veritysetup.c:381
+#: src/veritysetup.c:399
 msgid "blocks"
 msgstr "blokken"
 
-#: src/veritysetup.c:382
+#: src/veritysetup.c:400
 msgid "Starting offset on the hash device"
 msgstr "De startplaats op het hash-apparaat"
 
-#: src/veritysetup.c:383
+#: src/veritysetup.c:401
 msgid "Hash algorithm"
 msgstr "Hash-algoritme"
 
-#: src/veritysetup.c:383
+#: src/veritysetup.c:401
 msgid "string"
 msgstr "tekenreeks"
 
-#: src/veritysetup.c:384
+#: src/veritysetup.c:402
 msgid "Salt"
 msgstr "Salt"
 
-#: src/veritysetup.c:384
+#: src/veritysetup.c:402
 msgid "hex string"
 msgstr "hex-tekenreeks"
 
-#: src/cryptsetup_reencrypt.c:147
+#: src/veritysetup.c:404
+msgid "Restart kernel if corruption is detected"
+msgstr "Kernel herstarten bij ontdekking van corruptie"
+
+#: src/veritysetup.c:405
+msgid "Ignore corruption, log it only"
+msgstr "Datacorruptie negeren, enkel loggen"
+
+#: src/veritysetup.c:406
+msgid "Do not verify zeroed blocks"
+msgstr "Op nul ingestelde blokken niet controleren"
+
+#: src/veritysetup.c:494
+msgid "Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks is allowed only for create operation.\n"
+msgstr "Opties --ignore-corruption, --restart-on-corruption of --ignore-zero-blocks kunnen enkel bij een create-operatie gebruikt worden.\n"
+
+#: src/veritysetup.c:499
+msgid "Option --ignore-corruption and --restart-on-corruption cannot be used together.\n"
+msgstr "Opties --ignore-corruption en --restart-on-corruption kunnen niet samen gebruikt worden.\n"
+
+#: src/cryptsetup_reencrypt.c:150
 #, c-format
 msgid "Cannot exclusively open %s, device in use.\n"
 msgstr "Kan %s niet exclusief openen, apparaat wordt gebruikt.\n"
 
-#: src/cryptsetup_reencrypt.c:151
-#, c-format
-msgid "Cannot open device %s\n"
-msgstr "Kan apparaat %s niet openen.\n"
-
-#: src/cryptsetup_reencrypt.c:161 src/cryptsetup_reencrypt.c:914
+#: src/cryptsetup_reencrypt.c:164 src/cryptsetup_reencrypt.c:920
 msgid "Allocation of aligned memory failed.\n"
 msgstr "Reservering van uitgelijnd geheugen gefaald.\n"
 
-#: src/cryptsetup_reencrypt.c:168
+#: src/cryptsetup_reencrypt.c:171
 #, c-format
 msgid "Cannot read device %s.\n"
 msgstr "Kan apparaat niet lezen: %s.\n"
 
-#: src/cryptsetup_reencrypt.c:179
+#: src/cryptsetup_reencrypt.c:182
 #, c-format
 msgid "Marking LUKS device %s unusable.\n"
 msgstr "LUKS-apparaat %s wordt als onbruikbaar gemarkeerd.\n"
 
-#: src/cryptsetup_reencrypt.c:184
-#, c-format
-msgid "Marking LUKS device %s usable.\n"
-msgstr "LUKS-apparaat %s wordt als bruikbaar gemarkeerd.\n"
-
-#: src/cryptsetup_reencrypt.c:200
+#: src/cryptsetup_reencrypt.c:198
 #, c-format
 msgid "Cannot write device %s.\n"
 msgstr "Kan apparaat %s niet beschrijven.\n"
@@ -1570,187 +1590,203 @@ msgstr "Kan herencryptie-logbestand niet schrijven.\n"
 msgid "Cannot read reencryption log file.\n"
 msgstr "Kan herencryptie-logbestand niet lezen.\n"
 
-#: src/cryptsetup_reencrypt.c:374
+#: src/cryptsetup_reencrypt.c:375
 #, c-format
 msgid "Log file %s exists, resuming reencryption.\n"
 msgstr "Logbestand %s bestaat reeds, herencryptie wordt herstart.\n"
 
-#: src/cryptsetup_reencrypt.c:424
+#: src/cryptsetup_reencrypt.c:425
 msgid "Activating temporary device using old LUKS header.\n"
 msgstr "Activatie van tijdelijke apparaat met oude LUKS-koptekst.\n"
 
-#: src/cryptsetup_reencrypt.c:435
+#: src/cryptsetup_reencrypt.c:436
 msgid "Activating temporary device using new LUKS header.\n"
 msgstr "Activatie van tijdelijke apparaat met nieuwe LUKS-koptekst.\n"
 
-#: src/cryptsetup_reencrypt.c:445
+#: src/cryptsetup_reencrypt.c:446
 msgid "Activation of temporary devices failed.\n"
 msgstr "Activatie van tijdelijke apparaten gefaald.\n"
 
-#: src/cryptsetup_reencrypt.c:471
+#: src/cryptsetup_reencrypt.c:472
 #, c-format
 msgid "New LUKS header for device %s created.\n"
 msgstr "Nieuwe LUKS-koptekst voor apparaat %s aangemaakt.\n"
 
-#: src/cryptsetup_reencrypt.c:479
+#: src/cryptsetup_reencrypt.c:480
 #, c-format
 msgid "Activated keyslot %i.\n"
 msgstr "Sleutelplaats %d geactiveerd.\n"
 
-#: src/cryptsetup_reencrypt.c:505
+#: src/cryptsetup_reencrypt.c:506
 #, c-format
 msgid "LUKS header backup of device %s created.\n"
 msgstr "Reservekopie van LUKS-koptekst op apparaat %s aangemaakt .\n"
 
-#: src/cryptsetup_reencrypt.c:553
+#: src/cryptsetup_reencrypt.c:554
 msgid "Creation of LUKS backup headers failed.\n"
 msgstr "Creatie van LUKS-reservekopteksten gefaald.\n"
 
-#: src/cryptsetup_reencrypt.c:655
+#: src/cryptsetup_reencrypt.c:656
 #, c-format
 msgid "Cannot restore LUKS header on device %s.\n"
 msgstr "Kan koptekst op apparaat %s niet herstellen.\n"
 
-#: src/cryptsetup_reencrypt.c:657
+#: src/cryptsetup_reencrypt.c:658
 #, c-format
 msgid "LUKS header on device %s restored.\n"
 msgstr "LUKS-koptekst op apparaat %s hersteld.\n"
 
-#: src/cryptsetup_reencrypt.c:690
+#: src/cryptsetup_reencrypt.c:693
 #, c-format
 msgid "Progress: %5.1f%%, ETA %02llu:%02llu, %4llu MiB written, speed %5.1f MiB/s%s"
 msgstr "Vooruitgang: %5.1f%%, geschatte voltooiïngstijd %02llu:%02llu, %4llu MB geschreven, snelheid %5.1f MiB/s%s"
 
-#: src/cryptsetup_reencrypt.c:729 src/cryptsetup_reencrypt.c:805
-#: src/cryptsetup_reencrypt.c:847
+#: src/cryptsetup_reencrypt.c:732 src/cryptsetup_reencrypt.c:811
+#: src/cryptsetup_reencrypt.c:853
 msgid "Cannot seek to device offset.\n"
 msgstr "Onmogelijk te zoeken tot startplaats van apparaat.\n"
 
-#: src/cryptsetup_reencrypt.c:886 src/cryptsetup_reencrypt.c:892
+#: src/cryptsetup_reencrypt.c:892 src/cryptsetup_reencrypt.c:898
 msgid "Cannot open temporary LUKS device.\n"
 msgstr "Kan tijdelijk LUKS-apparaat niet openen.\n"
 
-#: src/cryptsetup_reencrypt.c:897 src/cryptsetup_reencrypt.c:902
+#: src/cryptsetup_reencrypt.c:903 src/cryptsetup_reencrypt.c:908
 msgid "Cannot get device size.\n"
 msgstr "Kan apparaatgrootte niet lezen.\n"
 
-#: src/cryptsetup_reencrypt.c:940
+#: src/cryptsetup_reencrypt.c:946
 msgid "Interrupted by a signal.\n"
 msgstr "Onderbroken door een signaal.\n"
 
-#: src/cryptsetup_reencrypt.c:942
+#: src/cryptsetup_reencrypt.c:948
 msgid "IO error during reencryption.\n"
 msgstr "Invoer/uitvoerfout tijdens herencryptie.\n"
 
-#: src/cryptsetup_reencrypt.c:1049
+#: src/cryptsetup_reencrypt.c:978
+msgid "Provided UUID is invalid.\n"
+msgstr "Opgegeven UUID is ongeldig.\n"
+
+#: src/cryptsetup_reencrypt.c:1070
 msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
 msgstr "Sleutelbestand kan enkel gebruikt worden met optie --key-slot of met enkel één actieve sleutelplaats.\n"
 
-#: src/cryptsetup_reencrypt.c:1093 src/cryptsetup_reencrypt.c:1108
+#: src/cryptsetup_reencrypt.c:1114 src/cryptsetup_reencrypt.c:1129
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr "Voer wachtwoord voor sleutelplaats %u in: "
 
-#: src/cryptsetup_reencrypt.c:1157
+#: src/cryptsetup_reencrypt.c:1178
 msgid "Cannot open reencryption log file.\n"
 msgstr "Kan herencryptie-logbestand niet openen.\n"
 
-#: src/cryptsetup_reencrypt.c:1283
+#: src/cryptsetup_reencrypt.c:1184
+msgid "No decryption in progress, provided UUID can be used only to resume suspended decryption process.\n"
+msgstr "Er is geen ontsleutelingsproces aan de gang. Het opgegeven UUID kan enkel gebruikt worden om een geschorst ontsleutelingsproces opnieuw te starten.\n"
+
+#: src/cryptsetup_reencrypt.c:1311
 msgid "Reencryption block size"
 msgstr "Blokgrootte herencryptie"
 
-#: src/cryptsetup_reencrypt.c:1283
+#: src/cryptsetup_reencrypt.c:1311
 msgid "MiB"
 msgstr "MB"
 
-#: src/cryptsetup_reencrypt.c:1287
+#: src/cryptsetup_reencrypt.c:1315
 msgid "Do not change key, no data area reencryption."
 msgstr "Sleutel niet wijzigen; gegevensgebied wordt niet opnieuw versleuteld."
 
-#: src/cryptsetup_reencrypt.c:1294
+#: src/cryptsetup_reencrypt.c:1322
 msgid "Use direct-io when accessing devices."
 msgstr "direct-io gebruiken bij het lezen van apparaten."
 
-#: src/cryptsetup_reencrypt.c:1295
+#: src/cryptsetup_reencrypt.c:1323
 msgid "Use fsync after each block."
 msgstr "fsync na elk blok gebruiken."
 
-#: src/cryptsetup_reencrypt.c:1296
+#: src/cryptsetup_reencrypt.c:1324
 msgid "Update log file after every block."
 msgstr "Na elk blok het logbestand bijwerken."
 
-#: src/cryptsetup_reencrypt.c:1297
+#: src/cryptsetup_reencrypt.c:1325
 msgid "Use only this slot (others will be disabled)."
 msgstr "Enkel deze plaats gebruiken (anderen worden uitgeschakeld)."
 
-#: src/cryptsetup_reencrypt.c:1300
+#: src/cryptsetup_reencrypt.c:1328
 msgid "Reduce data device size (move data offset). DANGEROUS!"
 msgstr "Grootte van gegevensapparaat wijzigen (gegevenspositie wijzigen). GEVAARLIJK!"
 
-#: src/cryptsetup_reencrypt.c:1301
+#: src/cryptsetup_reencrypt.c:1329
 msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
 msgstr "Enkel ingegeven apparaatsgrootte gebruiken (rest van apparaat wordt genegeerd). GEVAARLIJK!"
 
-#: src/cryptsetup_reencrypt.c:1302
+#: src/cryptsetup_reencrypt.c:1330
 msgid "Create new header on not encrypted device."
 msgstr "Nieuwe koptekst op niet-versleuteld apparaat invoeren."
 
-#: src/cryptsetup_reencrypt.c:1303
+#: src/cryptsetup_reencrypt.c:1331
 msgid "Permanently decrypt device (remove encryption)."
 msgstr "Apparaat permanent ontsleutelen (encryptie verwijderen)."
 
-#: src/cryptsetup_reencrypt.c:1319
+#: src/cryptsetup_reencrypt.c:1332
+msgid "The uuid used to resume decryption."
+msgstr "Het UUID om de ontsleuteling te hervatten."
+
+#: src/cryptsetup_reencrypt.c:1348
 msgid "[OPTION...] <device>"
 msgstr "[OPTIE...] <apparaat>"
 
-#: src/cryptsetup_reencrypt.c:1333
+#: src/cryptsetup_reencrypt.c:1362
 #, c-format
 msgid "Reencryption will change: volume key%s%s%s%s.\n"
 msgstr "Herencryptie zal sleutel tot het opslagmedium %s%s%s%s wijzigen.\n"
 
-#: src/cryptsetup_reencrypt.c:1334
+#: src/cryptsetup_reencrypt.c:1363
 msgid ", set hash to "
 msgstr ", stel hash in op "
 
-#: src/cryptsetup_reencrypt.c:1335
+#: src/cryptsetup_reencrypt.c:1364
 msgid ", set cipher to "
 msgstr ", stel sleutelalgoritme in op "
 
-#: src/cryptsetup_reencrypt.c:1339
+#: src/cryptsetup_reencrypt.c:1368
 msgid "Argument required."
 msgstr "Argument is vereist."
 
-#: src/cryptsetup_reencrypt.c:1355
+#: src/cryptsetup_reencrypt.c:1384
 msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
 msgstr "Enkel waarden tussen 1 MB en 64 MB zijn toegestaan als herencryptieblokgrootte."
 
-#: src/cryptsetup_reencrypt.c:1374 src/cryptsetup_reencrypt.c:1379
+#: src/cryptsetup_reencrypt.c:1403 src/cryptsetup_reencrypt.c:1408
 msgid "Invalid device size specification."
 msgstr "Ongeldig apparaatsgrootte ingegeven."
 
-#: src/cryptsetup_reencrypt.c:1382
+#: src/cryptsetup_reencrypt.c:1411
 msgid "Maximum device reduce size is 64 MiB."
 msgstr "Maximum apparaatsverkleiningsgrootte is 64 MB."
 
-#: src/cryptsetup_reencrypt.c:1385
+#: src/cryptsetup_reencrypt.c:1414
 msgid "Reduce size must be multiple of 512 bytes sector."
 msgstr "Verkleiningsgrootte moet een meervoud zijn van de 512 bytes-grote sector."
 
-#: src/cryptsetup_reencrypt.c:1389
+#: src/cryptsetup_reencrypt.c:1418
 msgid "Option --new must be used together with --reduce-device-size."
 msgstr "Optie --new moet samen met --reduce-device-size gebruikt worden."
 
-#: src/cryptsetup_reencrypt.c:1393
+#: src/cryptsetup_reencrypt.c:1422
 msgid "Option --keep-key can be used only with --hash or --iter-time."
 msgstr "Optie -- keep-key kan enkel samen met --hash of --iter-time gebruikt worden."
 
-#: src/cryptsetup_reencrypt.c:1397
+#: src/cryptsetup_reencrypt.c:1426
 msgid "Option --new cannot be used together with --decrypt."
 msgstr "Optie --new kan niet samen met --decrypt gebruikt worden."
 
-#: src/cryptsetup_reencrypt.c:1401
+#: src/cryptsetup_reencrypt.c:1430
 msgid "Option --decrypt is incompatible with specified parameters."
 msgstr "Optie --decrypt is niet verenigbaar met de verschafte parameters."
+
+#: src/cryptsetup_reencrypt.c:1434
+msgid "Option --uuid is allowed only together with --decrypt."
+msgstr "Optie --uuid kan enkel samen met --decrypt gebruikt worden."
 
 #: src/utils_tools.c:151
 msgid "Error reading response from terminal.\n"
@@ -1783,6 +1819,15 @@ msgstr ""
 #, c-format
 msgid "Password quality check failed: Bad passphrase (%s)\n"
 msgstr "Wachtwoordkwaliteitscontrole gefaald: Wachtwoord is van slechte kwaliteit (%s)\n"
+
+#~ msgid "Cannot open device %s\n"
+#~ msgstr "Kan apparaat %s niet openen.\n"
+
+#~ msgid "Cannot use passed UUID unless decryption in progress.\n"
+#~ msgstr "Kan doorgegeven UUID niet gebruiken tenzij ontsleuteling al bezig is.\n"
+
+#~ msgid "Marking LUKS device %s usable.\n"
+#~ msgstr "LUKS-apparaat %s wordt als bruikbaar gemarkeerd.\n"
 
 #~ msgid "WARNING: this is experimental code, it can completely break your data.\n"
 #~ msgstr "Waarschuwing: deze code is nog experimenteel, het kan al uw data volledig vernielen.\n"

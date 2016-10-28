@@ -7,13 +7,14 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.7.2\n"
+"Project-Id-Version: cryptsetup 1.7.3\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2016-05-19 13:14+0200\n"
-"PO-Revision-Date: 2016-05-20 08:23+0700\n"
+"POT-Creation-Date: 2016-10-20 14:43+0200\n"
+"PO-Revision-Date: 2016-10-21 07:04+0700\n"
 "Last-Translator: Trần Ngọc Quân <vnwildman@gmail.com>\n"
 "Language-Team: Vietnamese <translation-team-vi@lists.sourceforge.net>\n"
 "Language: vi\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -467,7 +468,7 @@ msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
 msgstr "Thiết bị %s quá nhỏ. (LUKS cần ít nhất %<PRIu64> byte.)\n"
 
 #: lib/luks1/keymanage.c:180 lib/luks1/keymanage.c:419
-#: src/cryptsetup_reencrypt.c:1148
+#: src/cryptsetup_reencrypt.c:1152
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "Thiết bị %s không phải là một thiết bị kiểu LUKS đúng.\n"
@@ -530,6 +531,7 @@ msgstr ""
 #: lib/luks1/keymanage.c:586 lib/tcrypt/tcrypt.c:625 lib/verity/verity.c:82
 #: lib/verity/verity.c:180 lib/verity/verity_hash.c:292
 #: lib/verity/verity_hash.c:303 lib/verity/verity_hash.c:323
+#: src/cryptsetup_reencrypt.c:154
 #, c-format
 msgid "Cannot open device %s.\n"
 msgstr "Không thể mở thiết bị %s.\n"
@@ -642,7 +644,7 @@ msgid "Key slot %d unlocked.\n"
 msgstr "Khe khóa %d được mở khóa.\n"
 
 #: lib/luks1/keymanage.c:1001 src/cryptsetup.c:867
-#: src/cryptsetup_reencrypt.c:1037 src/cryptsetup_reencrypt.c:1074
+#: src/cryptsetup_reencrypt.c:1041 src/cryptsetup_reencrypt.c:1078
 msgid "No key available with this passphrase.\n"
 msgstr "Không có khóa sẵn sàng dùng với cụm từ mật khẩu này.\n"
 
@@ -908,7 +910,7 @@ msgstr "Gõ cụm từ mật khẩu bất kỳ còn lại: "
 msgid "Enter passphrase to be deleted: "
 msgstr "Gõ cụm từ mật khẩu cần xóa: "
 
-#: src/cryptsetup.c:1017 src/cryptsetup_reencrypt.c:1112
+#: src/cryptsetup.c:1017 src/cryptsetup_reencrypt.c:1116
 #, c-format
 msgid "Enter any existing passphrase: "
 msgstr "Hãy nhập mật khẩu bất kỳ sẵn có: "
@@ -917,7 +919,7 @@ msgstr "Hãy nhập mật khẩu bất kỳ sẵn có: "
 msgid "Enter passphrase to be changed: "
 msgstr "Gõ cụm từ mật khẩu cần được thay đổi: "
 
-#: src/cryptsetup.c:1086 src/cryptsetup_reencrypt.c:1097
+#: src/cryptsetup.c:1086 src/cryptsetup_reencrypt.c:1101
 msgid "Enter new passphrase: "
 msgstr "Gõ cụm từ mật khẩu mới: "
 
@@ -1127,35 +1129,35 @@ msgstr ""
 msgid "%s: requires %s as arguments"
 msgstr "%s: cần thiết %s làm đối số"
 
-#: src/cryptsetup.c:1490 src/veritysetup.c:386 src/cryptsetup_reencrypt.c:1297
+#: src/cryptsetup.c:1490 src/veritysetup.c:386 src/cryptsetup_reencrypt.c:1302
 msgid "Show this help message"
 msgstr "Hiển thị trợ giúp này"
 
-#: src/cryptsetup.c:1491 src/veritysetup.c:387 src/cryptsetup_reencrypt.c:1298
+#: src/cryptsetup.c:1491 src/veritysetup.c:387 src/cryptsetup_reencrypt.c:1303
 msgid "Display brief usage"
 msgstr "Hiển thị thông tin ngắn về cách sử dụng"
 
-#: src/cryptsetup.c:1495 src/veritysetup.c:391 src/cryptsetup_reencrypt.c:1302
+#: src/cryptsetup.c:1495 src/veritysetup.c:391 src/cryptsetup_reencrypt.c:1307
 msgid "Help options:"
 msgstr "Tùy chọn trợ giúp:"
 
-#: src/cryptsetup.c:1496 src/veritysetup.c:392 src/cryptsetup_reencrypt.c:1303
+#: src/cryptsetup.c:1496 src/veritysetup.c:392 src/cryptsetup_reencrypt.c:1308
 msgid "Print package version"
 msgstr "Hiển thị phiên bản của gói"
 
-#: src/cryptsetup.c:1497 src/veritysetup.c:393 src/cryptsetup_reencrypt.c:1304
+#: src/cryptsetup.c:1497 src/veritysetup.c:393 src/cryptsetup_reencrypt.c:1309
 msgid "Shows more detailed error messages"
 msgstr "Hiển thị các thông điệp lỗi chi tiết hơn"
 
-#: src/cryptsetup.c:1498 src/veritysetup.c:394 src/cryptsetup_reencrypt.c:1305
+#: src/cryptsetup.c:1498 src/veritysetup.c:394 src/cryptsetup_reencrypt.c:1310
 msgid "Show debug messages"
 msgstr "Hiển thị thông điệp gỡ lỗi"
 
-#: src/cryptsetup.c:1499 src/cryptsetup_reencrypt.c:1307
+#: src/cryptsetup.c:1499 src/cryptsetup_reencrypt.c:1312
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Mật mã dùng để bảo vệ đĩa (xem “/proc/crypto”)"
 
-#: src/cryptsetup.c:1500 src/cryptsetup_reencrypt.c:1309
+#: src/cryptsetup.c:1500 src/cryptsetup_reencrypt.c:1314
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "Chuỗi duy nhất dùng để tạo khóa mã hóa từ cụm từ mật khẩu"
 
@@ -1163,7 +1165,7 @@ msgstr "Chuỗi duy nhất dùng để tạo khóa mã hóa từ cụm từ mậ
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Thẩm tra cụm từ mật khẩu bằng cách yêu cầu nó hai lần"
 
-#: src/cryptsetup.c:1502 src/cryptsetup_reencrypt.c:1311
+#: src/cryptsetup.c:1502 src/cryptsetup_reencrypt.c:1316
 msgid "Read the key from a file."
 msgstr "Đọc khóa từ một tập tin."
 
@@ -1175,27 +1177,27 @@ msgstr "Đọc khóa khối tin (chủ) từ tập tin."
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "Dump (đổ thành đống) khóa vùng chứa (master) thay vì thông tin khe-khóa."
 
-#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1308
+#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1313
 msgid "The size of the encryption key"
 msgstr "Kích cỡ của khóa mã hóa"
 
-#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1308
+#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1313
 msgid "BITS"
 msgstr "BIT"
 
-#: src/cryptsetup.c:1506 src/cryptsetup_reencrypt.c:1322
+#: src/cryptsetup.c:1506 src/cryptsetup_reencrypt.c:1327
 msgid "Limits the read from keyfile"
 msgstr "Giới hạn việc đọc từ tập-tin-khóa"
 
 #: src/cryptsetup.c:1506 src/cryptsetup.c:1507 src/cryptsetup.c:1508
 #: src/cryptsetup.c:1509 src/veritysetup.c:397 src/veritysetup.c:398
-#: src/veritysetup.c:400 src/cryptsetup_reencrypt.c:1321
-#: src/cryptsetup_reencrypt.c:1322 src/cryptsetup_reencrypt.c:1323
-#: src/cryptsetup_reencrypt.c:1324
+#: src/veritysetup.c:400 src/cryptsetup_reencrypt.c:1326
+#: src/cryptsetup_reencrypt.c:1327 src/cryptsetup_reencrypt.c:1328
+#: src/cryptsetup_reencrypt.c:1329
 msgid "bytes"
 msgstr "byte"
 
-#: src/cryptsetup.c:1507 src/cryptsetup_reencrypt.c:1321
+#: src/cryptsetup.c:1507 src/cryptsetup_reencrypt.c:1326
 msgid "Number of bytes to skip in keyfile"
 msgstr "Số lượng byte nhảy qua trong tập tin khóa"
 
@@ -1232,15 +1234,15 @@ msgstr "Bao nhiêu cung từ dữ liệu mã hóa cần bỏ qua ở đầu"
 msgid "Create a readonly mapping"
 msgstr "Tạo một sự ánh xạ chỉ cho đọc"
 
-#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1312
+#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1317
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "Thời gian lặp lại PBKDF2 cho LUKS (theo mili-giây)"
 
-#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1312
+#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1317
 msgid "msecs"
 msgstr "mili-giây"
 
-#: src/cryptsetup.c:1516 src/cryptsetup_reencrypt.c:1313
+#: src/cryptsetup.c:1516 src/cryptsetup_reencrypt.c:1318
 msgid "Do not ask for confirmation"
 msgstr "Không cần xác nhận"
 
@@ -1252,7 +1254,7 @@ msgstr "Thời gian chờ gõ cụm từ mật khẩu tối đa (theo giây)"
 msgid "secs"
 msgstr "giây"
 
-#: src/cryptsetup.c:1518 src/cryptsetup_reencrypt.c:1314
+#: src/cryptsetup.c:1518 src/cryptsetup_reencrypt.c:1319
 msgid "How often the input of the passphrase can be retried"
 msgstr "Số các lần có cho phép thử gõ lại cụm từ mật khẩu"
 
@@ -1264,11 +1266,11 @@ msgstr "Căn chỉnh trọng tải ở <n> biên giới cung từ — cho địn
 msgid "File with LUKS header and keyslots backup."
 msgstr "Tập tin chứa bản sao lưu phần đầu và các khe khóa của thiết bị LUKS."
 
-#: src/cryptsetup.c:1521 src/cryptsetup_reencrypt.c:1315
+#: src/cryptsetup.c:1521 src/cryptsetup_reencrypt.c:1320
 msgid "Use /dev/random for generating volume key."
 msgstr "Dùng /dev/random để tạo khóa volume."
 
-#: src/cryptsetup.c:1522 src/cryptsetup_reencrypt.c:1316
+#: src/cryptsetup.c:1522 src/cryptsetup_reencrypt.c:1321
 msgid "Use /dev/urandom for generating volume key."
 msgstr "Dùng /dev/urandom để tạo khóa vùng."
 
@@ -1356,11 +1358,11 @@ msgstr ""
 msgid "Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"
 msgstr "Tùy chọn “--test-passphrase” chỉ được phép cho lệnh mở thiết bị LUKS và TCRYPT.\n"
 
-#: src/cryptsetup.c:1690 src/cryptsetup_reencrypt.c:1384
+#: src/cryptsetup.c:1690 src/cryptsetup_reencrypt.c:1389
 msgid "Key size must be a multiple of 8 bits"
 msgstr "Kích cỡ khóa phải là bội số của 8 bít"
 
-#: src/cryptsetup.c:1697 src/cryptsetup_reencrypt.c:1389
+#: src/cryptsetup.c:1697 src/cryptsetup_reencrypt.c:1394
 msgid "Key slot is invalid."
 msgstr "Khe khóa không đúng."
 
@@ -1368,7 +1370,7 @@ msgstr "Khe khóa không đúng."
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "Tùy chọn --key-file giữ quyền ưu tiên cao hơn tham số tập tin khóa đã chỉ định.\n"
 
-#: src/cryptsetup.c:1712 src/veritysetup.c:488 src/cryptsetup_reencrypt.c:1373
+#: src/cryptsetup.c:1712 src/veritysetup.c:488 src/cryptsetup_reencrypt.c:1378
 msgid "Negative number for option not permitted."
 msgstr "Tùy chọn không chấp nhận giá trị là số âm."
 
@@ -1376,8 +1378,8 @@ msgstr "Tùy chọn không chấp nhận giá trị là số âm."
 msgid "Only one --key-file argument is allowed."
 msgstr "Chỉ cho phép một tùy chọn --key-file."
 
-#: src/cryptsetup.c:1720 src/cryptsetup_reencrypt.c:1367
-#: src/cryptsetup_reencrypt.c:1393
+#: src/cryptsetup.c:1720 src/cryptsetup_reencrypt.c:1372
+#: src/cryptsetup_reencrypt.c:1398
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "Chỉ cho phép một tùy chọn “--use-[u]random”."
 
@@ -1565,11 +1567,6 @@ msgstr "Không được dùng các tùy chọn --ignore-corruption và --restart
 msgid "Cannot exclusively open %s, device in use.\n"
 msgstr "Không thể mở %s một cách đệ qui, thiết bị vẫn đang được sử dụng.\n"
 
-#: src/cryptsetup_reencrypt.c:154
-#, c-format
-msgid "Cannot open device %s\n"
-msgstr "Không thể mở thiết bị %s\n"
-
 #: src/cryptsetup_reencrypt.c:164 src/cryptsetup_reencrypt.c:920
 msgid "Allocation of aligned memory failed.\n"
 msgstr "Phân bổ bộ nhớ điều chỉnh gặp lỗi.\n"
@@ -1655,7 +1652,7 @@ msgstr "Không thể di chuyển vị trí tới vị trí tương đối thiế
 
 #: src/cryptsetup_reencrypt.c:892 src/cryptsetup_reencrypt.c:898
 msgid "Cannot open temporary LUKS device.\n"
-msgstr "Không thể thiết bị LUKS tạm thời.\n"
+msgstr "Không thể r thiết bị LUKS tạm thời.\n"
 
 #: src/cryptsetup_reencrypt.c:903 src/cryptsetup_reencrypt.c:908
 msgid "Cannot get device size.\n"
@@ -1670,128 +1667,128 @@ msgid "IO error during reencryption.\n"
 msgstr "Lỗi IO (vào/ra) trong quá trình mã hóa lại.\n"
 
 #: src/cryptsetup_reencrypt.c:978
-msgid "Passed UUID is invalid.\n"
-msgstr "UUID đã chuyển qua không hợp lệ.\n"
+msgid "Provided UUID is invalid.\n"
+msgstr "UUID đã cung cấp không hợp lệ.\n"
 
-#: src/cryptsetup_reencrypt.c:1066
+#: src/cryptsetup_reencrypt.c:1070
 msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
 msgstr "Tập tin khóa có thể sử dụng với tùy chọn --key-slot hoặc với chính xác một khe khóa hoạt động.\n"
 
-#: src/cryptsetup_reencrypt.c:1110 src/cryptsetup_reencrypt.c:1125
+#: src/cryptsetup_reencrypt.c:1114 src/cryptsetup_reencrypt.c:1129
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr "Gõ cụm từ mật khẩu cho khe khóa %u: "
 
-#: src/cryptsetup_reencrypt.c:1174
+#: src/cryptsetup_reencrypt.c:1178
 msgid "Cannot open reencryption log file.\n"
 msgstr "Không mở được tập tin nhật ký reencryption.\n"
 
-#: src/cryptsetup_reencrypt.c:1180
-msgid "Cannot use passed UUID unless decryption in progress.\n"
-msgstr "Không thể dùng UUID chuyển qua trừ khi việc giải mã đang được thực hiện.\n"
+#: src/cryptsetup_reencrypt.c:1184
+msgid "No decryption in progress, provided UUID can be used only to resume suspended decryption process.\n"
+msgstr "Không có quá trình giải mã nào đang xử lý, UUID đã cung cấp có thể chỉ được dùng để phục hồi lại tiến trình giải mã đã tạm dừng.\n"
 
-#: src/cryptsetup_reencrypt.c:1306
+#: src/cryptsetup_reencrypt.c:1311
 msgid "Reencryption block size"
 msgstr "Kích thước khối mã hóa lại"
 
-#: src/cryptsetup_reencrypt.c:1306
+#: src/cryptsetup_reencrypt.c:1311
 msgid "MiB"
 msgstr "MiB"
 
-#: src/cryptsetup_reencrypt.c:1310
+#: src/cryptsetup_reencrypt.c:1315
 msgid "Do not change key, no data area reencryption."
 msgstr "Khôngười thay đổi khóa, không có mã hóa lại vùng dữ liệu."
 
-#: src/cryptsetup_reencrypt.c:1317
+#: src/cryptsetup_reencrypt.c:1322
 msgid "Use direct-io when accessing devices."
 msgstr "Sử dụng vào ra trực tiếp khi truy cập các thiết bị."
 
-#: src/cryptsetup_reencrypt.c:1318
+#: src/cryptsetup_reencrypt.c:1323
 msgid "Use fsync after each block."
 msgstr "Sử dụng fsync sau mỗi khối."
 
-#: src/cryptsetup_reencrypt.c:1319
+#: src/cryptsetup_reencrypt.c:1324
 msgid "Update log file after every block."
 msgstr "Cập nhật tập tin nhật ký sau mỗi khối."
 
-#: src/cryptsetup_reencrypt.c:1320
+#: src/cryptsetup_reencrypt.c:1325
 msgid "Use only this slot (others will be disabled)."
 msgstr "Chỉ sử dụng khe này (những cái khác sẽ bị tắt đi)."
 
-#: src/cryptsetup_reencrypt.c:1323
+#: src/cryptsetup_reencrypt.c:1328
 msgid "Reduce data device size (move data offset). DANGEROUS!"
 msgstr "Giảm kích thước dữ liệu thiết bị (di chuyển offset dữ liệu). NGUY HIỂM!"
 
-#: src/cryptsetup_reencrypt.c:1324
+#: src/cryptsetup_reencrypt.c:1329
 msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
 msgstr "Chỉ sử dụng kích thước dữ liệu thiết bị (bỏ qua phần còn lại của thiết bị). NGUY HIỂM!"
 
-#: src/cryptsetup_reencrypt.c:1325
+#: src/cryptsetup_reencrypt.c:1330
 msgid "Create new header on not encrypted device."
 msgstr "Tạo phần đầu mới không trên thiết bị được mã hóa."
 
-#: src/cryptsetup_reencrypt.c:1326
+#: src/cryptsetup_reencrypt.c:1331
 msgid "Permanently decrypt device (remove encryption)."
 msgstr "Thiết bị mã hóa cố định (gỡ bỏ mã hóa)."
 
-#: src/cryptsetup_reencrypt.c:1327
+#: src/cryptsetup_reencrypt.c:1332
 msgid "The uuid used to resume decryption."
 msgstr "uuid được dùng để khôi phục việc giải mã."
 
-#: src/cryptsetup_reencrypt.c:1343
+#: src/cryptsetup_reencrypt.c:1348
 msgid "[OPTION...] <device>"
 msgstr "[TÙY_CHỌN…] <thiết-bị>"
 
-#: src/cryptsetup_reencrypt.c:1357
+#: src/cryptsetup_reencrypt.c:1362
 #, c-format
 msgid "Reencryption will change: volume key%s%s%s%s.\n"
 msgstr "Reencryption sẽ thay đổi: khóa dung lượng%s%s%s%s.\n"
 
-#: src/cryptsetup_reencrypt.c:1358
+#: src/cryptsetup_reencrypt.c:1363
 msgid ", set hash to "
 msgstr ", đặt kiểu băm thành "
 
-#: src/cryptsetup_reencrypt.c:1359
+#: src/cryptsetup_reencrypt.c:1364
 msgid ", set cipher to "
 msgstr ", đặt kiểu mã hóa thành "
 
-#: src/cryptsetup_reencrypt.c:1363
+#: src/cryptsetup_reencrypt.c:1368
 msgid "Argument required."
 msgstr "Cần đối số."
 
-#: src/cryptsetup_reencrypt.c:1379
+#: src/cryptsetup_reencrypt.c:1384
 msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
 msgstr "Chỉ những giá trị nằm giữa 1MiB và 64 MiB là cho phép đối với kích thước khối reencryption (mã hóa lại)."
 
-#: src/cryptsetup_reencrypt.c:1398 src/cryptsetup_reencrypt.c:1403
+#: src/cryptsetup_reencrypt.c:1403 src/cryptsetup_reencrypt.c:1408
 msgid "Invalid device size specification."
 msgstr "Đặc tả kích thước thiết bị không đúng."
 
-#: src/cryptsetup_reencrypt.c:1406
+#: src/cryptsetup_reencrypt.c:1411
 msgid "Maximum device reduce size is 64 MiB."
 msgstr "Kích thước thu nhỏ thiết bị tối đa là 64 MiB."
 
-#: src/cryptsetup_reencrypt.c:1409
+#: src/cryptsetup_reencrypt.c:1414
 msgid "Reduce size must be multiple of 512 bytes sector."
 msgstr "Kích cỡ giảm phải là bội số cung từ (sector) 512 byte"
 
-#: src/cryptsetup_reencrypt.c:1413
+#: src/cryptsetup_reencrypt.c:1418
 msgid "Option --new must be used together with --reduce-device-size."
 msgstr "Tùy chọn “--new” phải được sử dụng cùng với “--reduce-device-size”."
 
-#: src/cryptsetup_reencrypt.c:1417
+#: src/cryptsetup_reencrypt.c:1422
 msgid "Option --keep-key can be used only with --hash or --iter-time."
 msgstr "Tùy chọn “--keep-key” có thể dùng với “--hash” hoặc “--iter-time”."
 
-#: src/cryptsetup_reencrypt.c:1421
+#: src/cryptsetup_reencrypt.c:1426
 msgid "Option --new cannot be used together with --decrypt."
 msgstr "Tùy chọn “--new” không được sử dụng cùng với “ --decrypt”."
 
-#: src/cryptsetup_reencrypt.c:1425
+#: src/cryptsetup_reencrypt.c:1430
 msgid "Option --decrypt is incompatible with specified parameters."
 msgstr "Tùy chọn --decrypt không tương thích với các đối số đã cho."
 
-#: src/cryptsetup_reencrypt.c:1429
+#: src/cryptsetup_reencrypt.c:1434
 msgid "Option --uuid is allowed only together with --decrypt."
 msgstr "Tùy chọn “--uuid” chỉ được sử dụng cùng với “ --decrypt”."
 
@@ -1826,6 +1823,12 @@ msgstr ""
 #, c-format
 msgid "Password quality check failed: Bad passphrase (%s)\n"
 msgstr "Gặp lỗi khi kiểm tra chất lượng mật khẩu: mật khẩu sai (%s)\n"
+
+#~ msgid "Cannot open device %s\n"
+#~ msgstr "Không thể mở thiết bị %s\n"
+
+#~ msgid "Cannot use passed UUID unless decryption in progress.\n"
+#~ msgstr "Không thể dùng UUID chuyển qua trừ khi việc giải mã đang được thực hiện.\n"
 
 #~ msgid "Marking LUKS device %s usable.\n"
 #~ msgstr "Đánh dấu thiết bị LUKS %s là có thể dùng.\n"

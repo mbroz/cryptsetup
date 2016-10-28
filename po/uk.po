@@ -5,16 +5,17 @@
 # Yuri Chornoivan <yurchor@ukr.net>, 2012, 2013, 2014, 2015, 2016.
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.7.2\n"
+"Project-Id-Version: cryptsetup 1.7.3\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2016-05-19 13:14+0200\n"
-"PO-Revision-Date: 2016-05-19 19:24+0300\n"
+"POT-Creation-Date: 2016-10-20 14:43+0200\n"
+"PO-Revision-Date: 2016-10-20 21:25+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <translation-team-uk@lists.sourceforge.net>\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Lokalize 1.5\n"
 
@@ -463,7 +464,7 @@ msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
 msgstr "Обсяг пристрою %s є надто малим. (LUKS потрібно принаймні %<PRIu64> байтів.)\n"
 
 #: lib/luks1/keymanage.c:180 lib/luks1/keymanage.c:419
-#: src/cryptsetup_reencrypt.c:1148
+#: src/cryptsetup_reencrypt.c:1152
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "Пристрій %s не є коректним пристроєм LUKS.\n"
@@ -526,6 +527,7 @@ msgstr ""
 #: lib/luks1/keymanage.c:586 lib/tcrypt/tcrypt.c:625 lib/verity/verity.c:82
 #: lib/verity/verity.c:180 lib/verity/verity_hash.c:292
 #: lib/verity/verity_hash.c:303 lib/verity/verity_hash.c:323
+#: src/cryptsetup_reencrypt.c:154
 #, c-format
 msgid "Cannot open device %s.\n"
 msgstr "Не вдалося відкрити пристрій %s.\n"
@@ -638,7 +640,7 @@ msgid "Key slot %d unlocked.\n"
 msgstr "Слот ключа %d розблоковано.\n"
 
 #: lib/luks1/keymanage.c:1001 src/cryptsetup.c:867
-#: src/cryptsetup_reencrypt.c:1037 src/cryptsetup_reencrypt.c:1074
+#: src/cryptsetup_reencrypt.c:1041 src/cryptsetup_reencrypt.c:1078
 msgid "No key available with this passphrase.\n"
 msgstr "Для цього пароля немає відповідного ключа.\n"
 
@@ -905,7 +907,7 @@ msgstr "Введіть будь-який інший пароль: "
 msgid "Enter passphrase to be deleted: "
 msgstr "Введіть пароль, який слід вилучити: "
 
-#: src/cryptsetup.c:1017 src/cryptsetup_reencrypt.c:1112
+#: src/cryptsetup.c:1017 src/cryptsetup_reencrypt.c:1116
 #, c-format
 msgid "Enter any existing passphrase: "
 msgstr "Введіть будь-який пароль: "
@@ -914,7 +916,7 @@ msgstr "Введіть будь-який пароль: "
 msgid "Enter passphrase to be changed: "
 msgstr "Введіть пароль, який слід змінити: "
 
-#: src/cryptsetup.c:1086 src/cryptsetup_reencrypt.c:1097
+#: src/cryptsetup.c:1086 src/cryptsetup_reencrypt.c:1101
 msgid "Enter new passphrase: "
 msgstr "Введіть новий пароль: "
 
@@ -1125,35 +1127,35 @@ msgstr ""
 msgid "%s: requires %s as arguments"
 msgstr "%s: слід вказати у параметрах %s"
 
-#: src/cryptsetup.c:1490 src/veritysetup.c:386 src/cryptsetup_reencrypt.c:1297
+#: src/cryptsetup.c:1490 src/veritysetup.c:386 src/cryptsetup_reencrypt.c:1302
 msgid "Show this help message"
 msgstr "Показати цю довідку"
 
-#: src/cryptsetup.c:1491 src/veritysetup.c:387 src/cryptsetup_reencrypt.c:1298
+#: src/cryptsetup.c:1491 src/veritysetup.c:387 src/cryptsetup_reencrypt.c:1303
 msgid "Display brief usage"
 msgstr "Показати короткі настанови щодо користування"
 
-#: src/cryptsetup.c:1495 src/veritysetup.c:391 src/cryptsetup_reencrypt.c:1302
+#: src/cryptsetup.c:1495 src/veritysetup.c:391 src/cryptsetup_reencrypt.c:1307
 msgid "Help options:"
 msgstr "Пункти довідки:"
 
-#: src/cryptsetup.c:1496 src/veritysetup.c:392 src/cryptsetup_reencrypt.c:1303
+#: src/cryptsetup.c:1496 src/veritysetup.c:392 src/cryptsetup_reencrypt.c:1308
 msgid "Print package version"
 msgstr "Вивести дані щодо версії пакунка"
 
-#: src/cryptsetup.c:1497 src/veritysetup.c:393 src/cryptsetup_reencrypt.c:1304
+#: src/cryptsetup.c:1497 src/veritysetup.c:393 src/cryptsetup_reencrypt.c:1309
 msgid "Shows more detailed error messages"
 msgstr "Показувати докладні повідомлення про помилки"
 
-#: src/cryptsetup.c:1498 src/veritysetup.c:394 src/cryptsetup_reencrypt.c:1305
+#: src/cryptsetup.c:1498 src/veritysetup.c:394 src/cryptsetup_reencrypt.c:1310
 msgid "Show debug messages"
 msgstr "Показувати повідомлення зневадження"
 
-#: src/cryptsetup.c:1499 src/cryptsetup_reencrypt.c:1307
+#: src/cryptsetup.c:1499 src/cryptsetup_reencrypt.c:1312
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "Шифр, який використано для шифрування даних диска (див. /proc/crypto)"
 
-#: src/cryptsetup.c:1500 src/cryptsetup_reencrypt.c:1309
+#: src/cryptsetup.c:1500 src/cryptsetup_reencrypt.c:1314
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "Хеш, використаний для створення ключа шифрування на основі пароля"
 
@@ -1161,7 +1163,7 @@ msgstr "Хеш, використаний для створення ключа ш
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "Перевіряє пароль повторним запитом щодо нього"
 
-#: src/cryptsetup.c:1502 src/cryptsetup_reencrypt.c:1311
+#: src/cryptsetup.c:1502 src/cryptsetup_reencrypt.c:1316
 msgid "Read the key from a file."
 msgstr "Прочитати ключ з файла."
 
@@ -1173,27 +1175,27 @@ msgstr "Прочитати ключ тому (основний ключ) з фа
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "Створити дамп ключа тому (основного ключа) замість показу даних щодо слотів ключів."
 
-#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1308
+#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1313
 msgid "The size of the encryption key"
 msgstr "Розмір ключа шифрування"
 
-#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1308
+#: src/cryptsetup.c:1505 src/cryptsetup_reencrypt.c:1313
 msgid "BITS"
 msgstr "БІТИ"
 
-#: src/cryptsetup.c:1506 src/cryptsetup_reencrypt.c:1322
+#: src/cryptsetup.c:1506 src/cryptsetup_reencrypt.c:1327
 msgid "Limits the read from keyfile"
 msgstr "Обмежує читання з файла ключа"
 
 #: src/cryptsetup.c:1506 src/cryptsetup.c:1507 src/cryptsetup.c:1508
 #: src/cryptsetup.c:1509 src/veritysetup.c:397 src/veritysetup.c:398
-#: src/veritysetup.c:400 src/cryptsetup_reencrypt.c:1321
-#: src/cryptsetup_reencrypt.c:1322 src/cryptsetup_reencrypt.c:1323
-#: src/cryptsetup_reencrypt.c:1324
+#: src/veritysetup.c:400 src/cryptsetup_reencrypt.c:1326
+#: src/cryptsetup_reencrypt.c:1327 src/cryptsetup_reencrypt.c:1328
+#: src/cryptsetup_reencrypt.c:1329
 msgid "bytes"
 msgstr "байти"
 
-#: src/cryptsetup.c:1507 src/cryptsetup_reencrypt.c:1321
+#: src/cryptsetup.c:1507 src/cryptsetup_reencrypt.c:1326
 msgid "Number of bytes to skip in keyfile"
 msgstr "Кількість байтів, які слід пропустити у файлі ключа"
 
@@ -1230,15 +1232,15 @@ msgstr "Кількість секторів зашифрованих даних,
 msgid "Create a readonly mapping"
 msgstr "Створити призначення у режимі лише читання"
 
-#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1312
+#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1317
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "Тривалість ітерації PBKDF2 для LUKS (у мс)"
 
-#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1312
+#: src/cryptsetup.c:1515 src/cryptsetup_reencrypt.c:1317
 msgid "msecs"
 msgstr "мс"
 
-#: src/cryptsetup.c:1516 src/cryptsetup_reencrypt.c:1313
+#: src/cryptsetup.c:1516 src/cryptsetup_reencrypt.c:1318
 msgid "Do not ask for confirmation"
 msgstr "Не питати про підтвердження"
 
@@ -1250,7 +1252,7 @@ msgstr "Час очікування у інтерактивному запиті
 msgid "secs"
 msgstr "секунди"
 
-#: src/cryptsetup.c:1518 src/cryptsetup_reencrypt.c:1314
+#: src/cryptsetup.c:1518 src/cryptsetup_reencrypt.c:1319
 msgid "How often the input of the passphrase can be retried"
 msgstr "Частота повторень спроб отримання вхідних даних пароля"
 
@@ -1262,11 +1264,11 @@ msgstr "Вирівняти дані за областями у <n> сектор�
 msgid "File with LUKS header and keyslots backup."
 msgstr "Файл з заголовком LUKS та резервною копію слотів ключів."
 
-#: src/cryptsetup.c:1521 src/cryptsetup_reencrypt.c:1315
+#: src/cryptsetup.c:1521 src/cryptsetup_reencrypt.c:1320
 msgid "Use /dev/random for generating volume key."
 msgstr "Використовувати для створення ключа тому /dev/random."
 
-#: src/cryptsetup.c:1522 src/cryptsetup_reencrypt.c:1316
+#: src/cryptsetup.c:1522 src/cryptsetup_reencrypt.c:1321
 msgid "Use /dev/urandom for generating volume key."
 msgstr "Використовувати для створення ключа тому /dev/urandom."
 
@@ -1354,11 +1356,11 @@ msgstr ""
 msgid "Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"
 msgstr "Параметр --test-passphrase можна використовувати лише для відкриття пристроїв LUKS та TCRYPT.\n"
 
-#: src/cryptsetup.c:1690 src/cryptsetup_reencrypt.c:1384
+#: src/cryptsetup.c:1690 src/cryptsetup_reencrypt.c:1389
 msgid "Key size must be a multiple of 8 bits"
 msgstr "Розмір ключа має бути кратним 8 бітам"
 
-#: src/cryptsetup.c:1697 src/cryptsetup_reencrypt.c:1389
+#: src/cryptsetup.c:1697 src/cryptsetup_reencrypt.c:1394
 msgid "Key slot is invalid."
 msgstr "Некоректний слот ключа."
 
@@ -1366,7 +1368,7 @@ msgstr "Некоректний слот ключа."
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "Параметр --key-file має пріоритет над вказаним параметром файла ключа.\n"
 
-#: src/cryptsetup.c:1712 src/veritysetup.c:488 src/cryptsetup_reencrypt.c:1373
+#: src/cryptsetup.c:1712 src/veritysetup.c:488 src/cryptsetup_reencrypt.c:1378
 msgid "Negative number for option not permitted."
 msgstr "Не можна використовувати від’ємні значення для параметра."
 
@@ -1374,8 +1376,8 @@ msgstr "Не можна використовувати від’ємні зна�
 msgid "Only one --key-file argument is allowed."
 msgstr "Можна використовувати лише один аргумент --key-file."
 
-#: src/cryptsetup.c:1720 src/cryptsetup_reencrypt.c:1367
-#: src/cryptsetup_reencrypt.c:1393
+#: src/cryptsetup.c:1720 src/cryptsetup_reencrypt.c:1372
+#: src/cryptsetup_reencrypt.c:1398
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "Можна використовувати лише один з параметрів --use-[u]random."
 
@@ -1563,11 +1565,6 @@ msgstr "Параметри --ignore-corruption і --restart-on-corruption не �
 msgid "Cannot exclusively open %s, device in use.\n"
 msgstr "Не можна відкрити %s у виключному режимі, пристрій вже використовується.\n"
 
-#: src/cryptsetup_reencrypt.c:154
-#, c-format
-msgid "Cannot open device %s\n"
-msgstr "Не вдалося відкрити пристрій %s\n"
-
 #: src/cryptsetup_reencrypt.c:164 src/cryptsetup_reencrypt.c:920
 msgid "Allocation of aligned memory failed.\n"
 msgstr "Спроба розподілу вирівняних ділянок пам’яті зазнала невдачі.\n"
@@ -1668,128 +1665,128 @@ msgid "IO error during reencryption.\n"
 msgstr "Помилка введення-виведення під час повторного шифрування.\n"
 
 #: src/cryptsetup_reencrypt.c:978
-msgid "Passed UUID is invalid.\n"
-msgstr "Переданий UUID є некоректним.\n"
+msgid "Provided UUID is invalid.\n"
+msgstr "Наданий UUID є некоректним.\n"
 
-#: src/cryptsetup_reencrypt.c:1066
+#: src/cryptsetup_reencrypt.c:1070
 msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
 msgstr "Файлом ключа можна користуватися лише з --key-slot, або якщо активним є лише один слот ключа.\n"
 
-#: src/cryptsetup_reencrypt.c:1110 src/cryptsetup_reencrypt.c:1125
+#: src/cryptsetup_reencrypt.c:1114 src/cryptsetup_reencrypt.c:1129
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr "Вкажіть пароль для слоту ключа %u: "
 
-#: src/cryptsetup_reencrypt.c:1174
+#: src/cryptsetup_reencrypt.c:1178
 msgid "Cannot open reencryption log file.\n"
 msgstr "Не вдалося відкрити файл журналу повторного шифрування.\n"
 
-#: src/cryptsetup_reencrypt.c:1180
-msgid "Cannot use passed UUID unless decryption in progress.\n"
-msgstr "Не можна використовувати переданий UUID, якщо не виконується дія з розшифровування.\n"
+#: src/cryptsetup_reencrypt.c:1184
+msgid "No decryption in progress, provided UUID can be used only to resume suspended decryption process.\n"
+msgstr "Розшифровування не виконується. Наданий UUID можна використовувати лише для відновлення призупиненого процесу розшифровування.\n"
 
-#: src/cryptsetup_reencrypt.c:1306
+#: src/cryptsetup_reencrypt.c:1311
 msgid "Reencryption block size"
 msgstr "Розмір блоку повторного шифрування"
 
-#: src/cryptsetup_reencrypt.c:1306
+#: src/cryptsetup_reencrypt.c:1311
 msgid "MiB"
 msgstr "МіБ"
 
-#: src/cryptsetup_reencrypt.c:1310
+#: src/cryptsetup_reencrypt.c:1315
 msgid "Do not change key, no data area reencryption."
 msgstr "Не змінювати ключ, не виконувати повторного шифрування області даних."
 
-#: src/cryptsetup_reencrypt.c:1317
+#: src/cryptsetup_reencrypt.c:1322
 msgid "Use direct-io when accessing devices."
 msgstr "Використовувати безпосереднє введення-виведення під час доступу до пристроїв."
 
-#: src/cryptsetup_reencrypt.c:1318
+#: src/cryptsetup_reencrypt.c:1323
 msgid "Use fsync after each block."
 msgstr "Використовувати fsync після кожного блоку."
 
-#: src/cryptsetup_reencrypt.c:1319
+#: src/cryptsetup_reencrypt.c:1324
 msgid "Update log file after every block."
 msgstr "Оновлювати файл журналу після кожного блоку."
 
-#: src/cryptsetup_reencrypt.c:1320
+#: src/cryptsetup_reencrypt.c:1325
 msgid "Use only this slot (others will be disabled)."
 msgstr "Використовувати лише цей слот (інші буде вимкнено)."
 
-#: src/cryptsetup_reencrypt.c:1323
+#: src/cryptsetup_reencrypt.c:1328
 msgid "Reduce data device size (move data offset). DANGEROUS!"
 msgstr "Зменшити розмір пристрою зберігання даних (змістити відступ даних). НЕБЕЗПЕЧНО!"
 
-#: src/cryptsetup_reencrypt.c:1324
+#: src/cryptsetup_reencrypt.c:1329
 msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
 msgstr "Використовувати лише вказаний розмір пристрою (ігнорувати решту об’єму). НЕБЕЗПЕЧНО!"
 
-#: src/cryptsetup_reencrypt.c:1325
+#: src/cryptsetup_reencrypt.c:1330
 msgid "Create new header on not encrypted device."
 msgstr "Створити новий заголовок на незашифрованому пристрої."
 
-#: src/cryptsetup_reencrypt.c:1326
+#: src/cryptsetup_reencrypt.c:1331
 msgid "Permanently decrypt device (remove encryption)."
 msgstr "Остаточно розшифрувати пристрій (скасувати шифрування)"
 
-#: src/cryptsetup_reencrypt.c:1327
+#: src/cryptsetup_reencrypt.c:1332
 msgid "The uuid used to resume decryption."
 msgstr "UUID, що використовується для відновлення розшифровування."
 
-#: src/cryptsetup_reencrypt.c:1343
+#: src/cryptsetup_reencrypt.c:1348
 msgid "[OPTION...] <device>"
 msgstr "[ПАРАМЕТР...] <пристрій>"
 
-#: src/cryptsetup_reencrypt.c:1357
+#: src/cryptsetup_reencrypt.c:1362
 #, c-format
 msgid "Reencryption will change: volume key%s%s%s%s.\n"
 msgstr "Повторне шифрування призведе до зміни: ключа тому%s%s%s%s.\n"
 
-#: src/cryptsetup_reencrypt.c:1358
+#: src/cryptsetup_reencrypt.c:1363
 msgid ", set hash to "
 msgstr ", встановити хеш у значення "
 
-#: src/cryptsetup_reencrypt.c:1359
+#: src/cryptsetup_reencrypt.c:1364
 msgid ", set cipher to "
 msgstr ", встановити шифрування "
 
-#: src/cryptsetup_reencrypt.c:1363
+#: src/cryptsetup_reencrypt.c:1368
 msgid "Argument required."
 msgstr "Слід вказати аргумент."
 
-#: src/cryptsetup_reencrypt.c:1379
+#: src/cryptsetup_reencrypt.c:1384
 msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
 msgstr "Розмір блоку повторного шифрування повинен належати діапазону від 1 МіБ до 64 МІБ."
 
-#: src/cryptsetup_reencrypt.c:1398 src/cryptsetup_reencrypt.c:1403
+#: src/cryptsetup_reencrypt.c:1403 src/cryptsetup_reencrypt.c:1408
 msgid "Invalid device size specification."
 msgstr "Некоректна специфікація розміру пристрою."
 
-#: src/cryptsetup_reencrypt.c:1406
+#: src/cryptsetup_reencrypt.c:1411
 msgid "Maximum device reduce size is 64 MiB."
 msgstr "Максимальний розмір зменшення розміру пристрою дорівнює 64 МіБ."
 
-#: src/cryptsetup_reencrypt.c:1409
+#: src/cryptsetup_reencrypt.c:1414
 msgid "Reduce size must be multiple of 512 bytes sector."
 msgstr "Розмір зменшення має бути кратним до 512-байтового сектора."
 
-#: src/cryptsetup_reencrypt.c:1413
+#: src/cryptsetup_reencrypt.c:1418
 msgid "Option --new must be used together with --reduce-device-size."
 msgstr "Параметр --new слід використовувати разом з --reduce-device-size."
 
-#: src/cryptsetup_reencrypt.c:1417
+#: src/cryptsetup_reencrypt.c:1422
 msgid "Option --keep-key can be used only with --hash or --iter-time."
 msgstr "Параметр --keep-key можна використовувати лише разом з параметром --hash або --iter-time."
 
-#: src/cryptsetup_reencrypt.c:1421
+#: src/cryptsetup_reencrypt.c:1426
 msgid "Option --new cannot be used together with --decrypt."
 msgstr "Параметр --new не можна використовувати разом з --decrypt."
 
-#: src/cryptsetup_reencrypt.c:1425
+#: src/cryptsetup_reencrypt.c:1430
 msgid "Option --decrypt is incompatible with specified parameters."
 msgstr "Параметр --decrypt є несумісним із вказаними параметрами."
 
-#: src/cryptsetup_reencrypt.c:1429
+#: src/cryptsetup_reencrypt.c:1434
 msgid "Option --uuid is allowed only together with --decrypt."
 msgstr "Параметр --uuid можна використовувати лише разом із --decrypt."
 
@@ -1824,6 +1821,12 @@ msgstr ""
 #, c-format
 msgid "Password quality check failed: Bad passphrase (%s)\n"
 msgstr "Помилка під час спроби оцінити якість пароля: некоректний пароль (%s)\n"
+
+#~ msgid "Cannot open device %s\n"
+#~ msgstr "Не вдалося відкрити пристрій %s\n"
+
+#~ msgid "Cannot use passed UUID unless decryption in progress.\n"
+#~ msgstr "Не можна використовувати переданий UUID, якщо не виконується дія з розшифровування.\n"
 
 #~ msgid "Marking LUKS device %s usable.\n"
 #~ msgstr "Позначаємо пристрій LUKS %s як придатний\n"
