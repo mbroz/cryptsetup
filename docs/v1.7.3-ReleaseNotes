@@ -13,8 +13,12 @@ Changes since version 1.7.2
   If the measurement function returns exactly 500 ms, the iteration calculation loop
   doubled iteration count but instead of repeating measurement it used this value directly.
 
+* Verify passphrase in cryptsetup-reencrypt when encrypting a new drive.
+
 * OpenSSL backend: fix memory leak if hash context was repeatedly reused.
 
 * OpenSSL backend: add support for OpenSSL 1.1.0.
 
 * Fix several minor spelling errors.
+
+* Properly check maximal buffer size when parsing UUID from /dev/disk/.
