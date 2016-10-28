@@ -996,7 +996,7 @@ static int initialize_uuid(struct reenc_ctx *rc)
 }
 
 static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
-			    const char *msg, int slot_to_check, int check)
+			    const char *msg, int slot_to_check, int check, int verify)
 {
 	char *password;
 	int r = -EINVAL, retry_count;
@@ -1007,7 +1007,7 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 		set_int_handler(0);
 		r = crypt_get_key(msg, &password, &passwordLen,
 			0, 0, NULL /*opt_key_file*/,
-			0, 0, cd);
+			0, verify, cd);
 		if (r < 0)
 			return r;
 		if (quit) {
@@ -1098,7 +1098,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 	log_dbg("Passhrases initialization.");
 
 	if (rc->reencrypt_mode == ENCRYPT && !rc->in_progress) {
-		r = init_passphrase1(rc, cd, _("Enter new passphrase: "), opt_key_slot, 0);
+		r = init_passphrase1(rc, cd, _("Enter new passphrase: "), opt_key_slot, 0, 1);
 		return r > 0 ? 0 : r;
 	}
 
@@ -1120,14 +1120,14 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 	} else if (rc->in_progress ||
 		   opt_key_slot != CRYPT_ANY_SLOT ||
 		   rc->reencrypt_mode == DECRYPT) {
-		r = init_passphrase1(rc, cd, msg, opt_key_slot, 1);
+		r = init_passphrase1(rc, cd, msg, opt_key_slot, 1, 0);
 	} else for (i = 0; i < MAX_SLOT; i++) {
 		ki = crypt_keyslot_status(cd, i);
 		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
 			continue;
 
 		snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %u: "), i);
-		r = init_passphrase1(rc, cd, msg, i, 1);
+		r = init_passphrase1(rc, cd, msg, i, 1, 0);
 		if (r < 0)
 			break;
 	}
