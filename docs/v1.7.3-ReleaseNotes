@@ -1,0 +1,20 @@
+Cryptsetup 1.7.3 Release Notes
+==============================
+
+Changes since version 1.7.2
+
+* Fix device access to hash offsets located beyond the 2GB device boundary in veritysetup.
+
+* Set configured (compile-time) default iteration time for devices created directly through
+  libcryptsetup (default was hardcoded 1 second, the configured value applied only
+  for cryptsetup application).
+
+* Fix PBKDF2 benchmark to not double iteration count for specific corner case.
+  If the measurement function returns exactly 500 ms, the iteration calculation loop
+  doubled iteration count but instead of repeating measurement it used this value directly.
+
+* OpenSSL backend: fix memory leak if hash context was repeatedly reused.
+
+* OpenSSL backend: add support for OpenSSL 1.1.0.
+
+* Fix several minor spelling errors.
