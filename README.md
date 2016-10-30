@@ -36,34 +36,22 @@ Download
 --------
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
 
-**The latest cryptsetup version is 1.7.2**
-  * [cryptsetup-1.7.2.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.2.tar.xz)
-  * Signature [cryptsetup-1.7.2.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.2.tar.sign)
+**The latest cryptsetup version is 1.7.3**
+  * [cryptsetup-1.7.3.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.3.tar.xz)
+  * Signature [cryptsetup-1.7.3.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.3.tar.sign)
     _(You need to decompress file first to check signature.)_
-  * [Cryptsetup 1.7.2 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/v1.7.2-ReleaseNotes).
+  * [Cryptsetup 1.7.3 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/v1.7.3-ReleaseNotes).
 
 Previous versions
+ * [Version 1.7.2](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.2.tar.xz) -
+   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.2.tar.sign) -
+   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/v1.7.2-ReleaseNotes).
  * [Version 1.7.1](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.1.tar.xz) -
    [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.1.tar.sign) -
    [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/v1.7.1-ReleaseNotes).
  * [Version 1.7.0](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.0.tar.xz) -
    [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.0.tar.sign) -
    [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/v1.7.0-ReleaseNotes).
- * [Version 1.6.8](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.8.tar.xz) -
-   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.8.tar.sign) -
-   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.8-ReleaseNotes).
- * [Version 1.6.7](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.7.tar.xz) -
-   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.7.tar.sign) -
-   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.7-ReleaseNotes).
- * [Version 1.6.6](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.6.tar.xz) -
-   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.6.tar.sign) -
-   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.6-ReleaseNotes).
- * [Version 1.6.5](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.5.tar.xz) -
-   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.5.tar.sign) -
-   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.5-ReleaseNotes).
- * [Version 1.6.4](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.4.tar.xz) -
-   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/cryptsetup-1.6.4.tar.sign) -
-   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.6/v1.6.4-ReleaseNotes).
 
 Source and API docs
 -------------------
