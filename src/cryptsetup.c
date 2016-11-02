@@ -471,7 +471,7 @@ static int action_status(void)
 		log_std("  mode:    %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
 					   "readonly" : "read/write");
 		if (cad.flags & (CRYPT_ACTIVATE_ALLOW_DISCARDS|
-				 CRYPT_ACTIVATE_ALLOW_DISCARDS|
+				 CRYPT_ACTIVATE_SAME_CPU_CRYPT|
 				 CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS))
 			log_std("  flags:   %s%s%s\n",
 				(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? "discards " : "",
