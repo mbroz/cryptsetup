@@ -73,7 +73,7 @@ const char *crypt_backend_version(void)
 /*
  * Compatible wrappers for OpenSSL < 1.1.0
  */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
 static EVP_MD_CTX *EVP_MD_CTX_new(void)
 {
 	EVP_MD_CTX *md = malloc(sizeof(*md));
