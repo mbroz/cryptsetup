@@ -32,6 +32,12 @@ Why LUKS?
 [Project home page](https://gitlab.com/cryptsetup/cryptsetup/).
 -----------------
 
+**CVE-2016-4484 (Initrd root shell)**
+
+This is problem in **intramfs** **scripts** only (these are **not** part of cryptsetup project), it is neiter bug in cryptsetup nor in LUKS.  
+Some distributions could add these scripts to distributed package, please check your distro updates for more info.
+
+
 [Frequently asked questions (FAQ)](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions)
 --------------------------------
 
