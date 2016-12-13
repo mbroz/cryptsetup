@@ -171,6 +171,31 @@ function valgrind_run()
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${VERITYSETUP} "$@"
 }
 
+function checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
+{
+	echo -n "Size :: $1 B | Hash-offset :: $2 blocks | Data-blocks :: $3 "
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=$1 >/dev/null 2>&1
+	$VERITYSETUP --data-blocks=$3 --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 || fail "Test [hash-offset greater than 2G] failed"
+	echo "[OK]"
+	remove_mapping
+}
+function checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks
+{
+	echo -n "Size :: $1 B | Hash-offset :: $2 blocks | "
+
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=$1 >/dev/null 2>&1
+	if [ -z $3 ] ; then
+	  # veritysetup must fail
+	  $VERITYSETUP --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 && fail "Test [overlap with option \"--data-blocks\" not entered] failed"
+	else
+	  $VERITYSETUP --data-blocks=$3 --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 || fail "Test [overlap with option \"--data-blocks\" entered] failed"
+	  RET=$?
+	  [ "$3" -gt "$(($2 / 4096))" ] && [ "$RET" -eq "0" ] && fail "Test [overlap - hash-offset in data area] failed"
+	fi
+	echo "[OK]"
+	remove_mapping
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$VERITYSETUP" ] && skip "Cannot find $VERITYSETUP, test skipped."
 
@@ -208,6 +233,7 @@ check_root_hash 4096 ef29c902d87350f1da4bfa536e16cebc162a909bf89abe448b81ec500d4
 check_root_hash 1024 d0e9163ca8844aaa2e88fe5265a8c5d9ee494a99 $SALT 1 sha1 8388608
 check_root_hash 1024 73509e8e868be6b8ac939817a98a3d35121413b2 dadada 1 sha1 8388608
 
+
 if check_version ; then
 	echo "Verity data corruption options test."
 	SALT=e48da609055204e89ae53b655ca2216dd983cf3cb829f34f63a297d106d53e2d
@@ -218,6 +244,14 @@ if check_version ; then
 	check_option 512 $HASH $SALT 1 sha256 "--ignore-zero-blocks" "ignore_zero_blocks"
 	check_option 512 $HASH $SALT 1 sha256 "--ignore-corruption --ignore-zero-blocks" "ignore_corruption"
 fi
+
+echo "Veritysetup [hash-offset bigger than 2G works] "
+checkOffsetBug 3000000000 2499997696 256
+checkOffsetBug 10000000000 8000000000 128
+
+echo "Veritysetup [overlap-detection] "
+checkOverlapBug 2097152 1433600
+checkOverlapBug 2097152 1433600 350
 
 remove_mapping
 exit 0
