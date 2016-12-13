@@ -1188,6 +1188,12 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	} else
 		cd->u.verity.hdr.data_size = params->data_size;
 
+	if (device_is_identical(crypt_metadata_device(cd), crypt_data_device(cd)) &&
+	   (cd->u.verity.hdr.data_size * params->data_block_size) > params->hash_area_offset) {
+		log_err(cd, _("Data area overlaps with hash area.\n"));
+		return -EINVAL;
+	}
+
 	hash_size = crypt_hash_size(params->hash_name);
 	if (hash_size <= 0) {
 		log_err(cd, _("Hash algorithm %s not supported.\n"),

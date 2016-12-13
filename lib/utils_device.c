@@ -535,3 +535,18 @@ void device_disable_direct_io(struct device *device)
 {
 	device->o_direct = 0;
 }
+
+int device_is_identical(struct device *device1, struct device *device2)
+{
+	if (device1 == device2)
+		return 1;
+
+	if (!device1 || !device2 || !device_path(device1) || !device_path(device2))
+		return 0;
+
+	/* This should be better check - major/minor for block device etc */
+	if (!strcmp(device_path(device1), device_path(device2)))
+		return 1;
+
+	return 0;
+}
