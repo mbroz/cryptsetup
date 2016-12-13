@@ -129,14 +129,45 @@ and always directly return zeroes instead.
 \fBWARNING:\fR Use this option only in very specific cases.
 This option is available since Linux kernel version 4.5.
 .TP
+.B "\-\-hash=hash"
+Hash algorithm for dm-verity. For default see \-\-help option.
+.TP
 .B "\-\-version"
 Show the program version.
 .SH RETURN CODES
 Veritysetup returns 0 on success and a non-zero value on error.
 
-Error codes are: 1 wrong parameters, 2 no permission,
-3 out of memory, 4 wrong device specified, 5 device already exists
-or device is busy.
+Error codes are:
+    1 wrong parameters
+    2 no permission
+    3 out of memory
+    4 wrong device specified
+    5 device already exists or device is busy.
+
+.SH EXAMPLES
+.B "veritysetup \-\-data-blocks=256 format <data_device> <hash_device>"
+
+Calculates and stores verification data on hash_device for the first 256 blocks (of block-size).
+If hash_device does not exist, it is created (as file image).
+
+.B "veritysetup format <data_device> <hash_device>"
+
+Calculates and stores verification data on hash_device for the whole data_device.
+
+.B "veritysetup \-\-data-blocks=256 \-\-hash-offset=1052672 format <device> <device>"
+
+Verification data (hashes) is stored on the same device as data (starting at hash-offset).
+Hash-offset must be greater than number of blocks in data-area.
+
+.B "veritysetup \-\-data-blocks=256 \-\-hash-offset=1052672 create test-device <device> <device> <root_hash>"
+
+Acivatees the verity device named test-device. Options \-\-data-blocks and \-\-hash-offset are the same
+as in the format command. The <root_hash> was calculated in format command.
+
+.B "veritysetup \-\-data-blocks=256 \-\-hash-offset=1052672 verify <data_device> <hash_device> <root_hash>"
+
+Verifies device without activation (in userspace).
+
 .SH REPORTING BUGS
 Report bugs, including ones in the documentation, on
 the cryptsetup mailing list at <dm-crypt@saout.de>
