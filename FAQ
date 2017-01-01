@@ -9,7 +9,8 @@ Sections
 6. Backup and Data Recovery
 7. Interoperability with other Disk Encryption Tools
 8. Issues with Specific Versions of cryptsetup
-9. References and Further Reading
+9. The Initrd question
+10. References and Further Reading
 A. Contributors
 
 1. General Questions
@@ -310,7 +311,7 @@ A. Contributors
 
   and adjust the iteration count accordingly by creating the container
   again with a different iteration time (the number after '-i' is the
-  iteration time in milicesonds) until your requirements are met.
+  iteration time in milliseconds) until your requirements are met.
 
   05) Map the container. Here it will be mapped to /dev/mapper/c1:
 
@@ -1606,11 +1607,33 @@ A. Contributors
   * 5.18 What about Plausible Deniability?
 
   First let me attempt a definition for the case of encrypted
-  filesystems: Plausible deniability is when you hide encrypted data
+  filesystems: Plausible deniability is when you store data
   inside an encrypted container and it is not possible to prove it is
-  there.  The idea is compelling and on first glance it seems possible
-  to do it.  And from a cryptographic point of view, it actually is
-  possible.
+  there without  having a special passphrase. And at the same time
+  it must be "plausible" that there actually is no hidden data there.
+
+  As a simple entropy-analysis will show that here may be data there,
+  the second part is what makes it tricky.
+
+  There seem to  be a lot of misunderstandings what that
+  means, so let me make clear that this refers to the situation where 
+  the attackers can prove that there is data that may be random or 
+  may be part of a plausible-deniability scheme, they just cannot 
+  prove which one it is. Hence a plausible-deniability
+  scheme must hold up when the attackers know there is 
+  something potentially fishy. If you just hide data and rely on
+  it not being found, that is just simple deniability, not "plausible"
+  deniability and I am not talking about that in the following.
+  Simple deniability against a low-competence attacker may
+  be as simple as  renaming a file or putting data into an unused
+  part of a disk. Simple deniability against a high-skill attacker
+  with time to invest is usually pointless though unless you go
+  for advanced steganographic techniques, which have their own
+  drawbacks, such as low data capacity.
+
+  Now, the idea of plausible deniability is compelling and on first 
+  glance it seems possible to do it.  And from a cryptographic point 
+  of view, it actually is possible.
 
   So, does it work in practice? No, unfortunately. The reasoning used
   by its proponents is fundamentally flawed in several ways and the
@@ -1622,7 +1645,7 @@ A. Contributors
   with random data, nothing in there"?  I do not see any reason.
 
   Second, there are two types of situations: Either they cannot force
-  you to give them the key (then you simply do not) or the can.  In the
+  you to give them the key (then you simply do not) or they can.  In the
   second case, they can always do bad things to you, because they
   cannot prove that you have the key in the first place!  This means
   they do not have to prove you have the key, or that this random
@@ -1653,8 +1676,8 @@ A. Contributors
   places were they can demand encryption keys.
 
   Here is an additional reference for some problems with plausible
-  deniability: http://www.schneier.com/paper-truecrypt-dfs.pdf I
-  strongly suggest you read it.
+  deniability: http://www.schneier.com/paper-truecrypt-dfs.pdf 
+  I strongly suggest you read it.
 
   So, no, I will not provide any instructions on how to do it with
   plain dm-crypt or LUKS.  If you insist on shooting yourself in the
@@ -2560,7 +2583,172 @@ offset  length  name                  data type  description
   bug was discovered.
 
 
-9. References and Further Reading
+9. The Initrd question
+
+* 9.1 My initrd is broken with cryptsetup or does now work as I want it to
+
+That is not nice! However the initrd is supplied by your distribution, not by
+the cryptsetup project and hence you should complain to them. We cannot 
+really to anything about it.
+
+* 9.2 CVE-2016-4484 says cryptsetup is broken!
+
+Not really. It says the initrd in some Debian versions have a behavior that 
+under some very special and unusual conditions may be considered
+a vulnerability. Incidentally, at this time (6-Dec-16) CVE-2016-4484 says
+absolutely nothing, which means that the reporters could not be bothered
+do actually describe the problem so far and hence it cannot be that bad.
+If it were, you would expect that they would have a CVE description in
+there 20 days (!) after reporting the problem to the press.
+
+What happens is that you can trick the initrd to go to a rescue-shell
+if you enter the LUKS password wrongly in a specific way. But falling
+back to a rescue shell on initrd errors is a sensible default behavior
+in the first place. It gives you about as much access as booting
+a rescue system from CD or USB-Stick or as removing the disk would 
+give you. So this only applies when an attacker has physical access,
+but cannot boot anything else or remove the disk. These will be rare 
+circumstances indeed, and if you rely on the default distribution 
+initrd to keep you safe under these circumstances, than you have
+bigger problems than this somewhat expected behavior.
+
+My take is this was much more driven by some big egos that wanted
+to make a splash for self-aggrandizement, than by any actual 
+security concerns. Ignore it.
+
+* 9.3 How do I do my own inird with cryptsetup?
+
+It depends on the distribution. Below, I give a very simple example
+and step-by-step instructions for Debian. With a bit of work, it
+should be possible to adapt this to other distributions. Note that
+the description is pretty general, so if you want to do other things
+with an initrd it provides an useful starting point for that too.
+
+01) Unpacking an existing initrd to use as template
+
+A Linux initrd is in gzip'ed cpio format. To unpack it, use something
+like this: 
+
+     md tmp; cd tmp; cat ../initrd | gunzip | cpio -id
+
+After this, you have the full initrd content in tmp/
+
+02) Inspecting the init-script
+The init-script is the only thing the kernel cares about. All activity 
+starts there. Its traditional location is /sbin/init on disk, but /init
+in an initrd. In the initrd just unpacked as above it is tmp/init.
+
+While init can be a binary despite usually being called "init script",
+in Debian the main init on the root partition is a binary, but the
+init in the initrd (and that one is called by the kernel) is a script
+and starts like this:
+
+    #!/bin/sh
+    ....
+
+The "sh" used here is in tmp/bin/sh as just unpacked, and in
+Debian it currently is a busybox.
+
+03) Creating your own initrd
+The two examples below should give you most of what is needed.
+
+Here is a really minimal example. IT does nothing but set up some
+things and then drop to an interactive shell. It is perfect to try
+out things that you want to go into the init-script.
+
+!/bin/sh
+export PATH=/sbin:/bin
+[ -d /sys ] || mkdir /sys
+[ -d /proc ] || mkdir /proc
+[ -d /tmp ] || mkdir /tmp
+mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
+mount -t proc -o nodev,noexec,nosuid proc /proc
+echo "initrd is running, starting BusyBox..."
+exec /bin/sh --login
+
+
+Here is an example that opens the first LUKS-partition it
+finds with the hard-coded password "test2" and then 
+mounts it as root-filesystem. This is intended to be 
+used on an USB-stick that after boot goes into a safe, 
+as it contains the LUKS-passphrase in plain text and is
+not secure to be left in the system. The script contains
+debug-output that should make it easier to see what
+is going on. Note that the final hand-over to the
+init on the encrypted root-partition is done 
+by "exec switch_root /mnt/root /sbin/init", after
+mounting the decrypted LUKS container 
+with "mount /dev/mapper/c1 /mnt/root". Note that
+the second argument of switch_root is relative to the
+first argument, i.e. the init started with this command
+is really /mnt/sbin/init before switch_root runs.
+
+!/bin/sh
+
+export PATH=/sbin:/bin
+[ -d /sys ] || mkdir /sys
+[ -d /proc ] || mkdir /proc
+[ -d /tmp ] || mkdir /tmp
+mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
+mount -t proc -o nodev,noexec,nosuid proc /proc
+
+echo "detecting LUKS containers in sda1-10, sdb1-10"; sleep 1
+for i in a b
+do
+  for j in 1 2 3 4 5 6 7 8 9 10
+  do
+    sleep 0.5
+    d="/dev/sd"$i""$j
+    echo -n $d
+    cryptsetup isLuks $d >/dev/null 2>&1
+    r=$?
+    echo -n "  result: "$r""
+    # 0 = is LUKS, 1 = is not LUKS, 4 = other error
+    if expr $r = 0 > /dev/null
+    then
+      echo "  is LUKS, attempting unlock"
+      echo -n "test2" | cryptsetup luksOpen --key-file=- $d c1
+      r=$?
+      echo "  result of unlock attempt: "$r""
+      sleep 2
+      if expr $r = 0 > /dev/null
+      then
+        echo "*** LUKS partition unlocked, switching root *** (waiting 30 seconds before doing that)"
+        mount /dev/mapper/c1 /mnt/root
+        sleep 30
+        exec switch_root /mnt/root /sbin/init
+      fi
+    else
+      echo "  is not LUKS"
+    fi
+  done
+done
+
+echo "FAIL finding root on LUKS, loading BusyBox..."; sleep 5
+exec /bin/sh --login
+
+
+04) What if I want a binary in the initrd, but libraries are missing?
+
+That is a bit tricky. One option is to compile statically, but that
+does not work for everything. Debian puts some libraries into
+lib/ and lib64/ which are usually enough. If you need more, you 
+can add the libraries you need. That may or may not need a
+configuration change as well. Refer to standard Linux documentation
+on how to add a library to a Linux system. A running initrd is
+just a running Linux system after all, it is not special.
+
+05) How do I repack the initrd?
+
+Simply repack the changed directory. While in tmp/, do
+the following:
+
+find . | cpio --create --format='newc' | gzip > ../new_initrd
+
+Rename to however you want it called (the name of
+the initrd is a kernel-parameter) and move to /boot. That is it.
+
+10. References and Further Reading
 
   * Purpose of this Section
 
