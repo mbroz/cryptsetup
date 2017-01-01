@@ -2589,17 +2589,17 @@ offset  length  name                  data type  description
 
 That is not nice! However the initrd is supplied by your distribution, not by
 the cryptsetup project and hence you should complain to them. We cannot 
-really to anything about it.
+really do anything about it.
 
 * 9.2 CVE-2016-4484 says cryptsetup is broken!
 
 Not really. It says the initrd in some Debian versions have a behavior that 
 under some very special and unusual conditions may be considered
-a vulnerability. Incidentally, at this time (6-Dec-16) CVE-2016-4484 says
+a vulnerability. Incidentally, at this time (1-Jan-17) CVE-2016-4484 still says
 absolutely nothing, which means that the reporters could not be bothered
 do actually describe the problem so far and hence it cannot be that bad.
 If it were, you would expect that they would have a CVE description in
-there 20 days (!) after reporting the problem to the press.
+there more than 30 days (!) after reporting the problem to the press.
 
 What happens is that you can trick the initrd to go to a rescue-shell
 if you enter the LUKS password wrongly in a specific way. But falling
@@ -2636,11 +2636,11 @@ After this, you have the full initrd content in tmp/
 02) Inspecting the init-script
 The init-script is the only thing the kernel cares about. All activity 
 starts there. Its traditional location is /sbin/init on disk, but /init
-in an initrd. In the initrd just unpacked as above it is tmp/init.
+in an initrd. In an initrd unpacked as above it is tmp/init.
 
 While init can be a binary despite usually being called "init script",
 in Debian the main init on the root partition is a binary, but the
-init in the initrd (and that one is called by the kernel) is a script
+init in the initrd (and only that one is called by the kernel) is a script
 and starts like this:
 
     #!/bin/sh
@@ -2652,7 +2652,7 @@ Debian it currently is a busybox.
 03) Creating your own initrd
 The two examples below should give you most of what is needed.
 
-Here is a really minimal example. IT does nothing but set up some
+Here is a really minimal example. It does nothing but set up some
 things and then drop to an interactive shell. It is perfect to try
 out things that you want to go into the init-script.
 
@@ -2678,20 +2678,18 @@ is going on. Note that the final hand-over to the
 init on the encrypted root-partition is done 
 by "exec switch_root /mnt/root /sbin/init", after
 mounting the decrypted LUKS container 
-with "mount /dev/mapper/c1 /mnt/root". Note that
-the second argument of switch_root is relative to the
+with "mount /dev/mapper/c1 /mnt/root". 
+The second argument of switch_root is relative to the
 first argument, i.e. the init started with this command
 is really /mnt/sbin/init before switch_root runs.
 
 !/bin/sh
-
 export PATH=/sbin:/bin
 [ -d /sys ] || mkdir /sys
 [ -d /proc ] || mkdir /proc
 [ -d /tmp ] || mkdir /tmp
 mount -t sysfs -o nodev,noexec,nosuid sysfs /sys
 mount -t proc -o nodev,noexec,nosuid proc /proc
-
 echo "detecting LUKS containers in sda1-10, sdb1-10"; sleep 1
 for i in a b
 do
@@ -2723,7 +2721,6 @@ do
     fi
   done
 done
-
 echo "FAIL finding root on LUKS, loading BusyBox..."; sleep 5
 exec /bin/sh --login
 
@@ -2733,10 +2730,11 @@ exec /bin/sh --login
 That is a bit tricky. One option is to compile statically, but that
 does not work for everything. Debian puts some libraries into
 lib/ and lib64/ which are usually enough. If you need more, you 
-can add the libraries you need. That may or may not need a
-configuration change as well. Refer to standard Linux documentation
+can add the libraries you need there. That may or may not need a
+configuration change for the dynamic linker "ld" as well. 
+Refer to standard Linux documentation
 on how to add a library to a Linux system. A running initrd is
-just a running Linux system after all, it is not special.
+just a running Linux system after all, it is not special in any way.
 
 05) How do I repack the initrd?
 
@@ -2745,7 +2743,7 @@ the following:
 
 find . | cpio --create --format='newc' | gzip > ../new_initrd
 
-Rename to however you want it called (the name of
+Rename "new_initrd" to however you want it called (the name of
 the initrd is a kernel-parameter) and move to /boot. That is it.
 
 10. References and Further Reading
