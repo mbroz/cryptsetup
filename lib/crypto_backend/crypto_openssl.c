@@ -35,8 +35,6 @@
 #include <openssl/rand.h>
 #include "crypto_backend.h"
 
-static int crypto_backend_initialised = 0;
-
 struct crypt_hash {
 	EVP_MD_CTX *md;
 	const EVP_MD *hash_id;
@@ -49,6 +47,9 @@ struct crypt_hmac {
 	int hash_len;
 };
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+static int crypto_backend_initialised = 0;
+
 int crypt_backend_init(struct crypt_device *ctx)
 {
 	if (crypto_backend_initialised)
@@ -59,15 +60,17 @@ int crypt_backend_init(struct crypt_device *ctx)
 	crypto_backend_initialised = 1;
 	return 0;
 }
+#else
+int crypt_backend_init(struct crypt_device *ctx)
+{
+	return 0;
+}
+#endif
+
 
 uint32_t crypt_backend_flags(void)
 {
 	return 0;
-}
-
-const char *crypt_backend_version(void)
-{
-	return SSLeay_version(SSLEAY_VERSION);
 }
 
 /*
@@ -105,7 +108,19 @@ static void HMAC_CTX_free(HMAC_CTX *md)
 	HMAC_CTX_cleanup(md);
 	free(md);
 }
+
+#define OPENSSL_VERSION SSLEAY_VERSION
+const char *OpenSSL_version(int t)
+{
+	return SSLeay_version(t);
+}
 #endif
+
+const char *crypt_backend_version(void)
+{
+	return OpenSSL_version(OPENSSL_VERSION);
+}
+
 
 /* HASH */
 int crypt_hash_size(const char *name)
