@@ -28,6 +28,10 @@
 #include "libcryptsetup.h"
 #include "internal.h"
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
 static int random_initialised = 0;
 
 #define URANDOM_DEVICE	"/dev/urandom"
@@ -152,13 +156,13 @@ int crypt_random_init(struct crypt_device *ctx)
 
 	/* Used for CRYPT_RND_NORMAL */
 	if(urandom_fd == -1)
-		urandom_fd = open(URANDOM_DEVICE, O_RDONLY);
+		urandom_fd = open(URANDOM_DEVICE, O_RDONLY | O_CLOEXEC);
 	if(urandom_fd == -1)
 		goto fail;
 
 	/* Used for CRYPT_RND_KEY */
 	if(random_fd == -1)
-		random_fd = open(RANDOM_DEVICE, O_RDONLY | O_NONBLOCK);
+		random_fd = open(RANDOM_DEVICE, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if(random_fd == -1)
 		goto fail;
 
