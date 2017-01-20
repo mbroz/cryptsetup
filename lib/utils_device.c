@@ -419,25 +419,22 @@ out:
 
 static int device_internal_prepare(struct crypt_device *cd, struct device *device)
 {
-	char *loop_device, *file_path = NULL;
+	char *loop_device = NULL, *file_path = NULL;
 	int r, loop_fd, readonly = 0;
 
 	if (device->init_done)
 		return 0;
 
-	log_dbg("Allocating a free loop device.");
-	loop_device = crypt_loop_get_device();
-	if (!loop_device) {
-		if (getuid() || geteuid())
-			log_err(cd, _("Cannot use a loopback device, "
-				      "running as non-root user.\n"));
-		else
-			log_err(cd, _("Cannot find a free loopback device.\n"));
+	if (getuid() || geteuid()) {
+		log_err(cd, _("Cannot use a loopback device, "
+			      "running as non-root user.\n"));
 		return -ENOTSUP;
 	}
 
+	log_dbg("Allocating a free loop device.");
+
 	/* Keep the loop open, dettached on last close. */
-	loop_fd = crypt_loop_attach(loop_device, device->path, 0, 1, &readonly);
+	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly);
 	if (loop_fd == -1) {
 		log_err(cd, _("Attaching loopback device failed "
 			"(loop device with autoclear flag is required).\n"));

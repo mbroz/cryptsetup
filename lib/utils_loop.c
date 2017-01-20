@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -73,7 +74,7 @@ static char *crypt_loop_get_device_old(void)
 	return NULL;
 }
 
-char *crypt_loop_get_device(void)
+static char *crypt_loop_get_device(void)
 {
 	char dev[64];
 	int i, loop_fd;
@@ -99,12 +100,14 @@ char *crypt_loop_get_device(void)
 	return strdup(dev);
 }
 
-int crypt_loop_attach(const char *loop, const char *file, int offset,
+int crypt_loop_attach(char **loop, const char *file, int offset,
 		      int autoclear, int *readonly)
 {
 	struct loop_info64 lo64 = {0};
 	char *lo_file_name;
 	int loop_fd = -1, file_fd = -1, r = 1;
+
+	*loop = NULL;
 
 	file_fd = open(file, (*readonly ? O_RDONLY : O_RDWR) | O_EXCL);
 	if (file_fd < 0 && (errno == EROFS || errno == EACCES) && !*readonly) {
@@ -114,9 +117,25 @@ int crypt_loop_attach(const char *loop, const char *file, int offset,
 	if (file_fd < 0)
 		goto out;
 
-	loop_fd = open(loop, *readonly ? O_RDONLY : O_RDWR);
-	if (loop_fd < 0)
-		goto out;
+	while (loop_fd < 0)  {
+		*loop = crypt_loop_get_device();
+		if (!*loop)
+			goto out;
+
+		loop_fd = open(*loop, *readonly ? O_RDONLY : O_RDWR);
+		if (loop_fd < 0)
+			goto out;
+
+		if (ioctl(loop_fd, LOOP_SET_FD, file_fd) < 0) {
+			if (errno != EBUSY)
+				goto out;
+			free(*loop);
+			*loop = NULL;
+
+			close(loop_fd);
+			loop_fd = -1;
+		}
+	}
 
 	lo_file_name = (char*)lo64.lo_file_name;
 	lo_file_name[LO_NAME_SIZE-1] = '\0';
@@ -124,9 +143,6 @@ int crypt_loop_attach(const char *loop, const char *file, int offset,
 	lo64.lo_offset = offset;
 	if (autoclear)
 		lo64.lo_flags |= LO_FLAGS_AUTOCLEAR;
-
-	if (ioctl(loop_fd, LOOP_SET_FD, file_fd) < 0)
-		goto out;
 
 	if (ioctl(loop_fd, LOOP_SET_STATUS64, &lo64) < 0) {
 		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
@@ -149,6 +165,10 @@ out:
 		close(loop_fd);
 	if (file_fd >= 0)
 		close(file_fd);
+	if (r && *loop) {
+		free(*loop);
+		*loop = NULL;
+	}
 	return r ? -1 : loop_fd;
 }
 

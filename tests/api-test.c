@@ -423,16 +423,8 @@ static int _setup(void)
 	if (_system(cmd, 1))
 		return 1;
 
-	if (!THE_LOOP_DEV)
-		THE_LOOP_DEV = crypt_loop_get_device();
-	if (!THE_LOOP_DEV) {
-		printf("Cannot find free loop device.\n");
-		return 1;
-	}
-	if (crypt_loop_device(THE_LOOP_DEV)) {
-		fd = crypt_loop_attach(THE_LOOP_DEV, test_loop_file, 0, 0, &ro);
-		close(fd);
-	}
+	fd = crypt_loop_attach(&THE_LOOP_DEV, test_loop_file, 0, 0, &ro);
+	close(fd);
 
 	tmp_file_1 = strdup(THE_LFILE_TEMPLATE);
 	if ((fd=mkstemp(tmp_file_1)) == -1) {
@@ -447,34 +439,15 @@ static int _setup(void)
 
 	_system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"", 1);
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
-	if (!DEVICE_1)
-		DEVICE_1 = crypt_loop_get_device();
-	if (!DEVICE_1) {
-		printf("Cannot find free loop device.\n");
-		return 1;
-	}
-	if (crypt_loop_device(DEVICE_1)) {
-		_system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2", 1);
-		fd = crypt_loop_attach(DEVICE_1, IMAGE1, 0, 0, &ro);
-		close(fd);
-	}
-	if (!DEVICE_2)
-		DEVICE_2 = crypt_loop_get_device();
-	if (!DEVICE_2) {
-		printf("Cannot find free loop device.\n");
-		return 1;
-	}
-	if (crypt_loop_device(DEVICE_2)) {
-		_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4 2>/dev/null", 1);
-		fd = crypt_loop_attach(DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
-		close(fd);
-	}
-	if (!DEVICE_3)
-		DEVICE_3 = crypt_loop_get_device();
-	if (!DEVICE_3) {
-		printf("Cannot find free loop device.\n");
-		return 1;
-	}
+
+	_system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2", 1);
+	fd = crypt_loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
+	close(fd);
+
+	_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4 2>/dev/null", 1);
+	fd = crypt_loop_attach(&DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
+	close(fd);
+
 	/* Keymaterial offset is less than 8 sectors */
 	_system(" [ ! -e " EVL_HEADER_1 " ] && bzip2 -dk " EVL_HEADER_1 ".bz2", 1);
 	/* keymaterial offset aims into payload area */
@@ -1486,7 +1459,7 @@ static void LuksHeaderBackup(void)
 	crypt_free(cd);
 
 	// exercise luksOpen using backup header on block device
-	fd = crypt_loop_attach(DEVICE_3, BACKUP_FILE, 0, 0, &ro);
+	fd = crypt_loop_attach(&DEVICE_3, BACKUP_FILE, 0, 0, &ro);
 	close(fd);
 	OK_(fd < 0);
 	OK_(crypt_init(&cd, DEVICE_3));
