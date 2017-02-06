@@ -65,6 +65,8 @@ static int opt_tcrypt_hidden = 0;
 static int opt_tcrypt_system = 0;
 static int opt_tcrypt_backup = 0;
 static int opt_veracrypt = 0;
+static int opt_veracrypt_pim = -1;
+static int opt_veracrypt_query_pim = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -249,6 +251,38 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 		if (r < 0)
 			continue;
 
+		if (opt_veracrypt_query_pim) {
+			char *tmp_pim_nptr = NULL;
+			char *tmp_pim_end = " ";
+			size_t tmp_pim_size = 0;
+			unsigned long int tmp_pim_ul = 0;
+
+			r = tools_get_key(_("Enter VeraCrypt PIM: "),
+					CONST_CAST(char**)&tmp_pim_nptr,
+					&tmp_pim_size, 0, 0, opt_keyfile_stdin, opt_timeout,
+					_verify_passphrase(0), 0, cd);
+			if (r < 0)
+				continue;
+
+			tmp_pim_ul = strtoul(tmp_pim_nptr, &tmp_pim_end, 10);
+			if (*tmp_pim_nptr == '\0' || *tmp_pim_end != '\0') {
+				log_err(_("Invalid PIM value: parse error\n"));
+				r = -EINVAL;
+			} else if (tmp_pim_ul == 0) {
+				log_err(_("Invalid PIM value: 0\n"));
+				r = -EINVAL;
+			} else if (tmp_pim_ul > ((1L << (CHAR_BIT * sizeof(params->veracrypt_pim))) - 1)) {
+				log_err(_("Invalid PIM value: outside of range\n"));
+				r = -ERANGE;
+			}
+			crypt_safe_free(CONST_CAST(char*)tmp_pim_nptr);
+			if (r < 0)
+				continue;
+
+			params->veracrypt_pim = tmp_pim_ul;
+			tmp_pim_ul= 0;
+		}
+
 		if (opt_tcrypt_hidden)
 			params->flags |= CRYPT_TCRYPT_HIDDEN_HEADER;
 
@@ -271,7 +305,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 			params->passphrase_size = 0;
 		}
 		check_signal(&r);
-	} while (r == -EPERM && (--tries > 0));
+	} while ((r == -EPERM || r == -EINVAL || r == -ERANGE) && (--tries > 0));
 
 	/* Report wrong passphrase if at least one try failed */
 	if (eperm && r == -EPIPE)
@@ -288,6 +322,7 @@ static int action_open_tcrypt(void)
 		.keyfiles_count = opt_keyfiles_count,
 		.flags = CRYPT_TCRYPT_LEGACY_MODES |
 			 (opt_veracrypt ? CRYPT_TCRYPT_VERA_MODES : 0),
+		.veracrypt_pim = (opt_veracrypt_pim > 0) ? opt_veracrypt_pim : 0,
 	};
 	const char *activated_name;
 	uint32_t activate_flags = 0;
@@ -1524,6 +1559,8 @@ int main(int argc, const char **argv)
 		{ "tcrypt-system",     '\0', POPT_ARG_NONE, &opt_tcrypt_system,         0, N_("Device is system TCRYPT drive (with bootloader)."), NULL },
 		{ "tcrypt-backup",     '\0', POPT_ARG_NONE, &opt_tcrypt_backup,         0, N_("Use backup (secondary) TCRYPT header."), NULL },
 		{ "veracrypt",         '\0', POPT_ARG_NONE, &opt_veracrypt,             0, N_("Scan also for VeraCrypt compatible device."), NULL },
+		{ "veracrypt-pim",     '\0', POPT_ARG_INT, &opt_veracrypt_pim,          0, N_("Personal Iteration Multiplier for for VeraCrypt compatible device."), NULL },
+		{ "veracrypt-query-pim", '\0', POPT_ARG_NONE, &opt_veracrypt_query_pim, 0, N_("Query Personal Iteration Multiplier for for VeraCrypt compatible device."), NULL },
 		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt."), NULL },
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)."), NULL },
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option."), NULL },
@@ -1754,6 +1791,30 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --veracrypt is supported only for TCRYPT device type.\n"),
 		poptGetInvocationName(popt_context));
+
+	if (opt_veracrypt_pim != -1) {
+		if (opt_veracrypt_pim < -1) {
+			usage(popt_context, EXIT_FAILURE,
+			_("Invalid argument for parameter --veracrypt-pim supplied.\n"),
+			poptGetInvocationName(popt_context));
+		} else if (!opt_veracrypt) {
+			usage(popt_context, EXIT_FAILURE,
+			_("Option --veracrypt-pim is supported only for VeraCrypt compatible devices.\n"),
+			poptGetInvocationName(popt_context));
+		}
+	}
+
+	if (opt_veracrypt_query_pim) {
+		if (!opt_veracrypt) {
+			usage(popt_context, EXIT_FAILURE,
+			_("Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices.\n"),
+			poptGetInvocationName(popt_context));
+		} else if (opt_veracrypt_pim != -1) {
+			usage(popt_context, EXIT_FAILURE,
+			_("The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive.\n"),
+			poptGetInvocationName(popt_context));
+		}
+	}
 
 	if (opt_debug) {
 		opt_verbose = 1;

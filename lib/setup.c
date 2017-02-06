@@ -82,6 +82,7 @@ struct crypt_device {
 		char cipher[MAX_CIPHER_LEN];
 		char cipher_mode[MAX_CIPHER_LEN];
 		unsigned int key_size;
+		unsigned int veracrypt_pim;
 	} none;
 	} u;
 
@@ -571,6 +572,7 @@ static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcryp
 	cd->u.tcrypt.params.passphrase_size = 0;
 	cd->u.tcrypt.params.keyfiles = NULL;
 	cd->u.tcrypt.params.keyfiles_count = 0;
+	cd->u.tcrypt.params.veracrypt_pim = 0;
 
 	if (r < 0)
 		return r;

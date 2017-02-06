@@ -338,6 +338,7 @@ struct crypt_params_tcrypt {
 	const char *mode;          /**< cipher block mode */
 	size_t key_size;           /**< key size in bytes (the whole chain) */
 	uint32_t flags;            /**< CRYPT_TCRYPT* flags */
+	uint32_t veracrypt_pim;    /**< VeraCrypt Personal Iteration Multiplier */
 };
 
 /** Include legacy modes when scanning for header */

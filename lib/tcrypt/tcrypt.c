@@ -531,6 +531,14 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			continue;
 		if (!(params->flags & CRYPT_TCRYPT_VERA_MODES) && tcrypt_kdf[i].veracrypt)
 			continue;
+		if ((params->flags & CRYPT_TCRYPT_VERA_MODES) && params->veracrypt_pim) {
+			/* adjust iterations to given PIM cmdline parameter */
+			if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
+				tcrypt_kdf[i].iterations = params->veracrypt_pim * 2048;
+			else
+				tcrypt_kdf[i].iterations = 15000 + (params->veracrypt_pim * 1000);
+		}
+
 		/* Derive header key */
 		log_dbg("TCRYPT: trying KDF: %s-%s-%d.",
 			tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations);

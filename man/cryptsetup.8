@@ -450,10 +450,21 @@ Cryptsetup should recognize all header variants, except legacy cipher chains
 using LRW encryption mode with 64 bits encryption block (namely Blowfish
 in LRW mode is not recognized, this is limitation of kernel crypto API).
 
-To recognize VeraCrypt device  use \fB\-\-veracrypt\fR option.
+To recognize a VeraCrypt device use the \fB\-\-veracrypt\fR option.
 VeraCrypt is just extension of TrueCrypt header with increased
 iteration count so unlocking can take quite a lot of time (in comparison
 with TCRYPT device).
+
+To open a VeraCrypt device with a custom Personal Iteration Multiplier (PIM)
+value, \fBadditionally to --veracrypt \fR use either the
+\fB--veracrypt-pim=<PIM>\fR option to directly specify the PIM on the command-
+line or use \fB--veracrypt-query-pim\fR to be prompted for the PIM.
+
+The PIM value affects the number of iterations applied during key derivation. Please refer to
+\fBhttps://veracrypt.codeplex.com/wikipage?title=Personal%20Iterations%20Multiplier%20(PIM)\fR
+for more detailed information.
+
+
 
 \fBNOTE:\fR Activation with \fBtcryptOpen\fR is supported only for cipher chains
 using LRW or XTS encryption modes.
