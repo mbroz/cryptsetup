@@ -107,10 +107,15 @@ Reports the status for the mapping <name>.
 .IP
 Resizes an active mapping <name>.
 
-If \-\-size (in sectors) is not specified, the size of the
-underlying block device is used. Note that this does not
-change the raw device geometry, it just changes how many
-sectors of the raw device are represented in the mapped device.
+If \-\-size (in sectors) is not specified, the size is computed
+from the underlying device. For LUKS it is the size of the
+underlying device without the area reserved for LUKS header
+(see data payload offset in \fBluksDump\fR command).
+For plain crypt device the whole device size is used.
+
+Note that this does not change the raw device geometry, it just
+changes how many sectors of the raw device are represented
+in the mapped device.
 .SH PLAIN MODE
 Plain dm-crypt encrypts the device sector-by-sector with a
 single, non-salted hash of the passphrase. No checks
@@ -732,7 +737,7 @@ All other LUKS actions will use the key-size specified in the LUKS header.
 Use \fIcryptsetup \-\-help\fR to show the compiled-in defaults.
 .TP
 .B "\-\-size, \-b <number of 512 byte sectors>"
-Force the size of the underlying device in sectors of 512 bytes.
+Set the size of the device in sectors of 512 bytes.
 This option is only relevant for the \fIopen\fR and \fIresize\fR
 actions.
 .TP
