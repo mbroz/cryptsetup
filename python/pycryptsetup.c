@@ -413,22 +413,26 @@ static PyObject *CryptSetup_Info(CryptSetupObject* self, PyObject *args, PyObjec
 static char
 CryptSetup_luksFormat_HELP[] =
 "Format device to enable LUKS\n\n\
-  luksFormat(cipher = 'aes', cipherMode = 'cbc-essiv:sha256', keysize = 256)\n\n\
+  luksFormat(cipher = 'aes', cipherMode = 'cbc-essiv:sha256', keysize = 256, hashMode = 'sha256')\n\n\
   cipher - cipher specification, e.g. aes, serpent\n\
   cipherMode - cipher mode specification, e.g. cbc-essiv:sha256, xts-plain64\n\
-  keysize - key size in bits";
+  keysize - key size in bits\n\
+  hashMode - hash specification, e.g. sha256";
 
 static PyObject *CryptSetup_luksFormat(CryptSetupObject* self, PyObject *args, PyObject *kwds)
 {
-	static const char *kwlist[] = {"cipher", "cipherMode", "keysize", NULL};
-	char *cipher_mode = NULL, *cipher = NULL;
+	static const char *kwlist[] = {"cipher", "cipherMode", "keysize", "hashMode", NULL};
+	char *cipher_mode = NULL, *cipher = NULL, *hashMode = NULL;
 	int keysize = 256;
 	PyObject *keysize_object = NULL;
+	struct crypt_params_luks1 params = {};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzO", CONST_CAST(char**)kwlist,
-					&cipher, &cipher_mode, &keysize_object))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|zzOz", CONST_CAST(char**)kwlist,
+					&cipher, &cipher_mode, &keysize_object,
+					&hashMode))
 		return NULL;
 
+	params.hash = hashMode;
 	if (!keysize_object || keysize_object == Py_None) {
 		/* use default value */
 	} else if (!PyInt_Check(keysize_object)) {
@@ -446,7 +450,7 @@ static PyObject *CryptSetup_luksFormat(CryptSetupObject* self, PyObject *args, P
 	// FIXME use #defined defaults
 	return PyObjectResult(crypt_format(self->device, CRYPT_LUKS1,
 				cipher ?: "aes", cipher_mode ?: "cbc-essiv:sha256",
-				NULL, NULL, keysize / 8, NULL));
+				NULL, NULL, keysize / 8, &params));
 }
 
 static char
