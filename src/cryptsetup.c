@@ -253,7 +253,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 
 		if (opt_veracrypt_query_pim) {
 			char *tmp_pim_nptr = NULL;
-			char *tmp_pim_end = " ";
+			char *tmp_pim_end = NULL;
 			size_t tmp_pim_size = 0;
 			unsigned long int tmp_pim_ul = 0;
 
@@ -265,7 +265,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 				continue;
 
 			tmp_pim_ul = strtoul(tmp_pim_nptr, &tmp_pim_end, 10);
-			if (*tmp_pim_nptr == '\0' || *tmp_pim_end != '\0') {
+			if (*tmp_pim_nptr == '\0' || !tmp_pim_end || *tmp_pim_end != '\0') {
 				log_err(_("Invalid PIM value: parse error\n"));
 				r = -EINVAL;
 			} else if (tmp_pim_ul == 0) {
@@ -280,7 +280,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 				continue;
 
 			params->veracrypt_pim = tmp_pim_ul;
-			tmp_pim_ul= 0;
+			crypt_memzero(&tmp_pim_ul, sizeof(tmp_pim_ul));
 		}
 
 		if (opt_tcrypt_hidden)
@@ -344,6 +344,7 @@ static int action_open_tcrypt(void)
 out:
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
+	crypt_memzero(&params.veracrypt_pim, sizeof(params.veracrypt_pim));
 	return r;
 }
 
