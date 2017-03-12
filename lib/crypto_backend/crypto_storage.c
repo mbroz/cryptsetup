@@ -2,7 +2,7 @@
  * Generic wrapper for storage encryption modes and Initial Vectors
  * (reimplementation of some functions from Linux dm-crypt kernel)
  *
- * Copyright (C) 2014, Milan Broz
+ * Copyright (C) 2014-2017, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
