@@ -1,0 +1,22 @@
+Cryptsetup 1.7.4 Release Notes
+==============================
+
+Changes since version 1.7.3
+
+* Allow to specify LUKS1 hash algorithm in Python luksFormat wrapper.
+
+* Use LUKS1 compiled-in defaults also in Python wrapper.
+
+* OpenSSL backend: Fix OpenSSL 1.1.0 support without backward compatible API.
+
+* OpenSSL backend: Fix LibreSSL compatibility.
+
+* Check for data device and hash device area overlap in veritysetup.
+
+* Fix a possible race while allocating a free loop device.
+
+* Fix possible file descriptor leaks if libcryptsetup is run from a forked process.
+
+* Fix missing same_cpu_crypt flag in status command.
+
+* Various updates to FAQ and man pages.
