@@ -1,14 +1,14 @@
 # German translation for the cryptsetup package.
 # Copyright (C) 2010 Free Software Foundation, Inc.
 # This file is distributed under the same license as the cryptsetup package.
-# Roland Illig <roland.illig@gmx.de>, 2010-2016.
+# Roland Illig <roland.illig@gmx.de>, 2010-2017.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.7.3\n"
+"Project-Id-Version: cryptsetup 1.7.4\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2016-10-20 14:43+0200\n"
-"PO-Revision-Date: 2016-10-21 22:01+0200\n"
+"POT-Creation-Date: 2017-03-02 09:40+0100\n"
+"PO-Revision-Date: 2017-03-03 18:53+0100\n"
 "Last-Translator: Roland Illig <roland.illig@gmx.de>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Bugs: Report translation errors to the Language-Team address.\n"
-"X-Generator: Poedit 1.8.11\n"
+"X-Generator: Poedit 2.0beta3\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: lib/libdevmapper.c:262
@@ -40,7 +40,7 @@ msgstr "Die verlangten dm-crypt-Performance-Optionen werden nicht unterstützt.\
 msgid "Requested dm-verity data corruption handling options are not supported.\n"
 msgstr "Die verlangten dm-verity-Datenbeschädigungs-Optionen werden nicht unterstützt.\n"
 
-#: lib/random.c:76
+#: lib/random.c:80
 msgid ""
 "System is out of entropy while generating volume key.\n"
 "Please move mouse or type some text in another window to gather some random events.\n"
@@ -48,24 +48,24 @@ msgstr ""
 "Das System hat keine Entropie mehr, um den Laufwerksschlüssel zu generieren.\n"
 "Bitte bewegen Sie die Maus oder tippen Sie etwas Text in ein anderes Fenster, um einige zufällige Ereignisse zu sammeln.\n"
 
-#: lib/random.c:80
+#: lib/random.c:84
 #, c-format
 msgid "Generating key (%d%% done).\n"
 msgstr "Schlüssel wird generiert (%d %% erledigt).\n"
 
-#: lib/random.c:166
+#: lib/random.c:170
 msgid "Running in FIPS mode.\n"
 msgstr "Laufe im FIPS-Modus.\n"
 
-#: lib/random.c:172
+#: lib/random.c:176
 msgid "Fatal error during RNG initialisation.\n"
 msgstr "Fataler Fehler während der Initialisierung des Zufallszahlengenerators.\n"
 
-#: lib/random.c:209
+#: lib/random.c:213
 msgid "Unknown RNG quality requested.\n"
 msgstr "Unbekannte Qualität des Zufallszahlengenerators verlangt.\n"
 
-#: lib/random.c:214
+#: lib/random.c:218
 #, c-format
 msgid "Error %d reading from RNG: %s\n"
 msgstr "Fehler %d beim Einlesen vom Zufallszahlengenerator: %s\n"
@@ -78,7 +78,7 @@ msgstr "Fehler beim Initialisieren des Krypto-Zufallszahlengenerator-Backends.\n
 msgid "Cannot initialize crypto backend.\n"
 msgstr "Fehler beim Initialisieren des Krypto-Backends.\n"
 
-#: lib/setup.c:237 lib/setup.c:1193 lib/verity/verity.c:123
+#: lib/setup.c:237 lib/setup.c:1199 lib/verity/verity.c:123
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
 msgstr "Hash-Algorithmus »%s« wird nicht unterstützt.\n"
@@ -92,7 +92,7 @@ msgstr "Fehler beim Verarbeiten des Schlüssels (mit Hash-Algorithmus »%s«).\n
 msgid "Cannot determine device type. Incompatible activation of device?\n"
 msgstr "Geräte-Art kann nicht bestimmt werden. Inkompatible Aktivierung des Geräts?\n"
 
-#: lib/setup.c:289 lib/setup.c:1546
+#: lib/setup.c:289 lib/setup.c:1552
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Diese Operation wird nur für LUKS-Geräte unterstützt.\n"
 
@@ -120,11 +120,11 @@ msgstr "Geben Sie die Passphrase für »%s« ein: "
 msgid "Header detected but device %s is too small.\n"
 msgstr "Header gefunden, aber Gerät »%s« ist zu klein.\n"
 
-#: lib/setup.c:670 lib/setup.c:1429
+#: lib/setup.c:670 lib/setup.c:1435
 msgid "This operation is not supported for this device type.\n"
 msgstr "Diese Operation wird für diese Geräteart nicht unterstützt.\n"
 
-#: lib/setup.c:909 lib/setup.c:1382 lib/setup.c:2273
+#: lib/setup.c:909 lib/setup.c:1388 lib/setup.c:2279
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Gerät »%s« ist nicht aktiv.\n"
@@ -186,145 +186,149 @@ msgstr "Nicht unterstützte VERITY-Blockgröße.\n"
 msgid "Unsupported VERITY hash offset.\n"
 msgstr "Nicht unterstützter VERITY-Hash-Offset.\n"
 
-#: lib/setup.c:1286
+#: lib/setup.c:1193
+msgid "Data area overlaps with hash area.\n"
+msgstr "Datenbereich und Hashbereich überlappen sich.\n"
+
+#: lib/setup.c:1292
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Unbekannte Art des Verschlüsselungsgeräts »%s« verlangt.\n"
 
-#: lib/setup.c:1396
+#: lib/setup.c:1402
 msgid "Cannot resize loop device.\n"
 msgstr "Fehler beim Ändern der Größe des Loopback-Geräts.\n"
 
-#: lib/setup.c:1444
+#: lib/setup.c:1450
 msgid "Do you really want to change UUID of device?"
 msgstr "Wollen Sie wirklich die UUID des Geräts ändern?"
 
-#: lib/setup.c:1554
+#: lib/setup.c:1560
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Laufwerk »%s« ist nicht aktiv.\n"
 
-#: lib/setup.c:1565
+#: lib/setup.c:1571
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Laufwerk »%s« ist bereits im Ruhezustand.\n"
 
-#: lib/setup.c:1572
+#: lib/setup.c:1578
 #, c-format
 msgid "Suspend is not supported for device %s.\n"
 msgstr "Das Gerät »%s« unterstützt keinen Ruhezustand.\n"
 
-#: lib/setup.c:1574
+#: lib/setup.c:1580
 #, c-format
 msgid "Error during suspending device %s.\n"
 msgstr "Das Gerät »%s« kann nicht in den Ruhezustand versetzt werden.\n"
 
-#: lib/setup.c:1600 lib/setup.c:1647
+#: lib/setup.c:1606 lib/setup.c:1653
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Laufwerk »%s« ist nicht im Ruhezustand.\n"
 
-#: lib/setup.c:1614
+#: lib/setup.c:1620
 #, c-format
 msgid "Resume is not supported for device %s.\n"
 msgstr "Das Gerät »%s« kann nicht aus dem Ruhezustand aufgeweckt werden.\n"
 
-#: lib/setup.c:1616 lib/setup.c:1668
+#: lib/setup.c:1622 lib/setup.c:1674
 #, c-format
 msgid "Error during resuming device %s.\n"
 msgstr "Fehler beim Aufwecken von Gerät »%s« aus dem Ruhezustand.\n"
 
-#: lib/setup.c:1654 lib/setup.c:2089 lib/setup.c:2103 src/cryptsetup.c:184
+#: lib/setup.c:1660 lib/setup.c:2095 lib/setup.c:2109 src/cryptsetup.c:184
 #: src/cryptsetup.c:248 src/cryptsetup.c:736 src/cryptsetup.c:1171
 msgid "Enter passphrase: "
 msgstr "Passphrase eingeben: "
 
-#: lib/setup.c:1716 lib/setup.c:1852
+#: lib/setup.c:1722 lib/setup.c:1858
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "Schlüsselfach kann nicht hinzugefügt werden, da alle Fächer deaktiviert sind und kein Laufwerksschlüssel angegeben wurde.\n"
 
-#: lib/setup.c:1725 lib/setup.c:1858 lib/setup.c:1862
+#: lib/setup.c:1731 lib/setup.c:1864 lib/setup.c:1868
 msgid "Enter any passphrase: "
 msgstr "Geben Sie irgendeine Passphrase ein: "
 
-#: lib/setup.c:1742 lib/setup.c:1875 lib/setup.c:1879 lib/setup.c:1941
+#: lib/setup.c:1748 lib/setup.c:1881 lib/setup.c:1885 lib/setup.c:1947
 #: src/cryptsetup.c:1001 src/cryptsetup.c:1032
 msgid "Enter new passphrase for key slot: "
 msgstr "Geben Sie die neue Passphrase für das Schlüsselfach ein: "
 
-#: lib/setup.c:1807
+#: lib/setup.c:1813
 #, c-format
 msgid "Key slot %d changed.\n"
 msgstr "Schlüsselfach %d geändert.\n"
 
-#: lib/setup.c:1810
+#: lib/setup.c:1816
 #, c-format
 msgid "Replaced with key slot %d.\n"
 msgstr "Ersetzt durch Schlüsselfach %d.\n"
 
-#: lib/setup.c:1815
+#: lib/setup.c:1821
 msgid "Failed to swap new key slot.\n"
 msgstr "Neues Schlüsselfach konnte nicht ausgewechselt werden.\n"
 
-#: lib/setup.c:1932 lib/setup.c:2193 lib/setup.c:2206 lib/setup.c:2348
+#: lib/setup.c:1938 lib/setup.c:2199 lib/setup.c:2212 lib/setup.c:2354
 msgid "Volume key does not match the volume.\n"
 msgstr "Der Laufwerksschlüssel passt nicht zum Laufwerk.\n"
 
-#: lib/setup.c:1970
+#: lib/setup.c:1976
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "Schlüsselfach %d ist ungültig.\n"
 
-#: lib/setup.c:1975
+#: lib/setup.c:1981
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "Schlüsselfach %d ist unbenutzt.\n"
 
-#: lib/setup.c:2005 lib/setup.c:2077 lib/setup.c:2169
+#: lib/setup.c:2011 lib/setup.c:2083 lib/setup.c:2175
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Das Gerät »%s« existiert bereits.\n"
 
-#: lib/setup.c:2180
+#: lib/setup.c:2186
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "Falscher Laufwerksschlüssel für Plain-Gerät angegeben.\n"
 
-#: lib/setup.c:2213
+#: lib/setup.c:2219
 msgid "Incorrect root hash specified for verity device.\n"
 msgstr "Falscher Root-Hash-Schlüssel für VERITY-Gerät angegeben.\n"
 
-#: lib/setup.c:2236
+#: lib/setup.c:2242
 msgid "Device type is not properly initialised.\n"
 msgstr "Geräteart ist nicht richtig initialisiert.\n"
 
-#: lib/setup.c:2268
+#: lib/setup.c:2274
 #, c-format
 msgid "Device %s is still in use.\n"
 msgstr "Gerät »%s« wird gerade benutzt.\n"
 
-#: lib/setup.c:2277
+#: lib/setup.c:2283
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Ungültiges Gerät »%s«.\n"
 
-#: lib/setup.c:2298
+#: lib/setup.c:2304
 msgid "Function not available in FIPS mode.\n"
 msgstr "Diese Funktion ist im FIPS-Modus nicht verfügbar.\n"
 
-#: lib/setup.c:2304
+#: lib/setup.c:2310
 msgid "Volume key buffer too small.\n"
 msgstr "Laufwerks-Schlüsselpuffer zu klein.\n"
 
-#: lib/setup.c:2312
+#: lib/setup.c:2318
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Fehler beim Ermitteln des Laufwerksschlüssels für Plain-Gerät.\n"
 
-#: lib/setup.c:2319
+#: lib/setup.c:2325
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Diese Operation wird für Kryptogerät »%s« nicht unterstützt.\n"
 
-#: lib/setup.c:2515
+#: lib/setup.c:2521
 msgid "Dump operation is not supported for this device type.\n"
 msgstr "Die Dump-Operation wird für diese Geräteart nicht unterstützt.\n"
 
@@ -336,48 +340,48 @@ msgstr "Fehler beim Ermitteln der Prozesspriorität.\n"
 msgid "Cannot unlock memory.\n"
 msgstr "Fehler beim Entsperren des Speichers.\n"
 
-#: lib/utils_crypt.c:241 lib/utils_crypt.c:254 lib/utils_crypt.c:401
-#: lib/utils_crypt.c:416
+#: lib/utils_crypt.c:242 lib/utils_crypt.c:255 lib/utils_crypt.c:402
+#: lib/utils_crypt.c:417
 msgid "Out of memory while reading passphrase.\n"
 msgstr "Zu wenig Speicher zum Einlesen der Passphrase.\n"
 
-#: lib/utils_crypt.c:246 lib/utils_crypt.c:261
+#: lib/utils_crypt.c:247 lib/utils_crypt.c:262
 msgid "Error reading passphrase from terminal.\n"
 msgstr "Fehler beim Lesen der Passphrase vom Terminal.\n"
 
-#: lib/utils_crypt.c:259
+#: lib/utils_crypt.c:260
 msgid "Verify passphrase: "
 msgstr "Passphrase bestätigen: "
 
-#: lib/utils_crypt.c:266
+#: lib/utils_crypt.c:267
 msgid "Passphrases do not match.\n"
 msgstr "Passphrasen stimmen nicht überein.\n"
 
-#: lib/utils_crypt.c:350
+#: lib/utils_crypt.c:351
 msgid "Cannot use offset with terminal input.\n"
 msgstr "Offset kann nicht zusammen mit Terminaleingabe benutzt werden.\n"
 
-#: lib/utils_crypt.c:369 lib/tcrypt/tcrypt.c:468
+#: lib/utils_crypt.c:370 lib/tcrypt/tcrypt.c:468
 msgid "Failed to open key file.\n"
 msgstr "Fehler beim Öffnen der Schlüsseldatei.\n"
 
-#: lib/utils_crypt.c:378
+#: lib/utils_crypt.c:379
 msgid "Failed to stat key file.\n"
 msgstr "Fehler beim Öffnen der Schlüsseldatei.\n"
 
-#: lib/utils_crypt.c:386 lib/utils_crypt.c:407
+#: lib/utils_crypt.c:387 lib/utils_crypt.c:408
 msgid "Cannot seek to requested keyfile offset.\n"
 msgstr "Fehler beim Zugriff auf die Schlüsseldatei.\n"
 
-#: lib/utils_crypt.c:424
+#: lib/utils_crypt.c:425
 msgid "Error reading passphrase.\n"
 msgstr "Fehler beim Einlesen der Passphrase.\n"
 
-#: lib/utils_crypt.c:447
+#: lib/utils_crypt.c:448
 msgid "Maximum keyfile size exceeded.\n"
 msgstr "Größenbegrenzung für die Schlüsseldatei überschritten.\n"
 
-#: lib/utils_crypt.c:452
+#: lib/utils_crypt.c:453
 msgid "Cannot read requested amount of data.\n"
 msgstr "Die gewünschte Menge an Daten kann nicht eingelesen werden.\n"
 
@@ -386,39 +390,35 @@ msgstr "Die gewünschte Menge an Daten kann nicht eingelesen werden.\n"
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Gerät »%s« existiert nicht oder Zugriff verweigert.\n"
 
-#: lib/utils_device.c:432
+#: lib/utils_device.c:429
 msgid "Cannot use a loopback device, running as non-root user.\n"
 msgstr "Das Loopback-Gerät kann nicht benutzt werden, da das Programm nicht mit Root-Rechten läuft.\n"
 
-#: lib/utils_device.c:435
-msgid "Cannot find a free loopback device.\n"
-msgstr "Kein freies Loopback-Gerät gefunden.\n"
-
-#: lib/utils_device.c:442
+#: lib/utils_device.c:439
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
 msgstr "Anklemmen des Loopback-Geräts fehlgeschlagen (das Loopback-Gerät benötigt den »autoclear«-Schalter).\n"
 
-#: lib/utils_device.c:486
+#: lib/utils_device.c:483
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
 msgstr "Gerät »%s« kann nicht benutzt werden, da es bereits anderweitig benutzt wird.\n"
 
-#: lib/utils_device.c:490
+#: lib/utils_device.c:487
 #, c-format
 msgid "Cannot get info about device %s.\n"
 msgstr "Fehler beim Abrufen der Infos über Gerät »%s«.\n"
 
-#: lib/utils_device.c:496
+#: lib/utils_device.c:493
 #, c-format
 msgid "Requested offset is beyond real size of device %s.\n"
 msgstr "Der angeforderte Offset ist jenseits der wirklichen Größe des Geräts »%s«.\n"
 
-#: lib/utils_device.c:504
+#: lib/utils_device.c:501
 #, c-format
 msgid "Device %s has zero size.\n"
 msgstr "Gerät »%s« hat die Größe 0.\n"
 
-#: lib/utils_device.c:515
+#: lib/utils_device.c:512
 #, c-format
 msgid "Device %s is too small.\n"
 msgstr "Gerät »%s« ist zu klein.\n"
@@ -1825,6 +1825,9 @@ msgstr ""
 #, c-format
 msgid "Password quality check failed: Bad passphrase (%s)\n"
 msgstr "Passwort-Qualitätsüberprüfung fehlgeschlagen: Falsche Passphrase (%s)\n"
+
+#~ msgid "Cannot find a free loopback device.\n"
+#~ msgstr "Kein freies Loopback-Gerät gefunden.\n"
 
 #~ msgid "Cannot open device %s\n"
 #~ msgstr "Fehler beim Öffnen von Gerät »%s«.\n"
