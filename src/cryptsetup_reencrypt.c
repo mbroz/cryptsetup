@@ -1,8 +1,8 @@
 /*
  * cryptsetup-reencrypt - crypt utility for offline re-encryption
  *
- * Copyright (C) 2012-2016, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2015, Milan Broz All rights reserved.
+ * Copyright (C) 2012-2017, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2017, Milan Broz All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

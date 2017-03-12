@@ -1,7 +1,7 @@
 /*
  * FIPS mode utilities
  *
- * Copyright (C) 2011-2015, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2011-2017, Red Hat, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

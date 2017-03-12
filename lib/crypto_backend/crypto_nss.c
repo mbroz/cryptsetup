@@ -1,8 +1,8 @@
 /*
  * NSS crypto backend implementation
  *
- * Copyright (C) 2010-2012, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2014, Milan Broz
+ * Copyright (C) 2010-2017, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2010-2017, Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
