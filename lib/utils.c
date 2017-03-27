@@ -235,6 +235,12 @@ ssize_t write_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t 
 	if (fd == -1 || !buf || bsize <= 0)
 		return -1;
 
+	if (offset < 0)
+		offset = lseek(fd, offset, SEEK_END);
+
+	if (offset < 0)
+		return -1;
+
 	frontHang = offset % bsize;
 
 	if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
@@ -285,6 +291,12 @@ ssize_t read_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t o
 	ssize_t ret = -1;
 
 	if (fd == -1 || !buf || bsize <= 0)
+		return -1;
+
+	if (offset < 0)
+		offset = lseek(fd, offset, SEEK_END);
+
+	if (offset < 0)
 		return -1;
 
 	frontHang = offset % bsize;
