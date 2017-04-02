@@ -206,10 +206,12 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 	}
 
 	/* write superblock */
-	r = FEC_write_sb(&ctx, fd);
-	if (r) {
-		log_err(cd, _("Failed to write FEC superblock.\n"));
-		goto out;
+	if (!(params->flags & CRYPT_VERITY_NO_HEADER)) {
+		r = FEC_write_sb(&ctx, fd);
+		if (r) {
+			log_err(cd, _("Failed to write FEC superblock.\n"));
+			goto out;
+		}
 	}
 
 	/* encode input */
