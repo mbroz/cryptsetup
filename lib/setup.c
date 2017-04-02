@@ -2237,7 +2237,8 @@ static int _luks_dump(struct crypt_device *cd)
 	log_std(cd, "MK iterations: \t%" PRIu32 "\n", cd->u.luks1.hdr.mkDigestIterations);
 	log_std(cd, "UUID:          \t%s\n\n", cd->u.luks1.hdr.uuid);
 	for(i = 0; i < LUKS_NUMKEYS; i++) {
-		if(cd->u.luks1.hdr.keyblock[i].active == LUKS_KEY_ENABLED) {
+		switch (cd->u.luks1.hdr.keyblock[i].active) {
+		case LUKS_KEY_ENABLED:
 			log_std(cd, "Key Slot %d: ENABLED\n",i);
 			log_std(cd, "\tIterations:         \t%" PRIu32 "\n",
 				cd->u.luks1.hdr.keyblock[i].passwordIterations);
@@ -2253,9 +2254,20 @@ static int _luks_dump(struct crypt_device *cd)
 				cd->u.luks1.hdr.keyblock[i].keyMaterialOffset);
 			log_std(cd, "\tAF stripes:            \t%" PRIu32 "\n",
 				cd->u.luks1.hdr.keyblock[i].stripes);
-		}
-		else 
+			break;
+
+		case LUKS_KEY_RESERVED:
+			log_std(cd, "Key Slot %d: RESERVED\n", i);
+			break;
+
+		case LUKS_KEY_DISABLED:
 			log_std(cd, "Key Slot %d: DISABLED\n", i);
+			break;
+
+		default:
+			log_std(cd, "Key Slot %d: UNKNOWN\n", i);
+			break;
+		}
 	}
 	return 0;
 }
@@ -2445,6 +2457,21 @@ crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot)
 		return CRYPT_SLOT_INVALID;
 
 	return LUKS_keyslot_info(&cd->u.luks1.hdr, keyslot);
+}
+
+int crypt_keyslot_reserve(struct crypt_device *cd, int keyslot)
+{
+	int r = 0;
+
+	r = onlyLUKS(cd);
+	if (r < 0)
+		return r;
+
+	r = keyslot_verify_or_find_empty(cd, &keyslot);
+	if (r)
+		return r;
+
+	return LUKS_res_key(keyslot, &cd->u.luks1.hdr, cd);
 }
 
 int crypt_keyslot_max(const char *type)

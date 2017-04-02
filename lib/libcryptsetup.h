@@ -1019,8 +1019,9 @@ typedef enum {
 	CRYPT_SLOT_INVALID, /**< invalid keyslot */
 	CRYPT_SLOT_INACTIVE, /**< keyslot is inactive (free) */
 	CRYPT_SLOT_ACTIVE, /**< keyslot is active (used) */
-	CRYPT_SLOT_ACTIVE_LAST /**< keylost is active (used)
-				*   and last used at the same time */
+	CRYPT_SLOT_ACTIVE_LAST, /**< keylost is active (used)
+				 *   and last used at the same time */
+	CRYPT_SLOT_RESERVED /**< keyslot is reserved (used) */
 } crypt_keyslot_info;
 
 /**
@@ -1034,6 +1035,16 @@ typedef enum {
  *
  */
 crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot);
+
+/**
+ * Reserve a key slot.
+ *
+ * @param cd crypt device handle
+ * @param keyslot requested keyslot or @e CRYPT_ANY_SLOT
+ *
+ * @return allocated key slot number or negative errno otherwise.
+ */
+int crypt_keyslot_reserve(struct crypt_device *cd, int keyslot);
 /** @} */
 
 /**

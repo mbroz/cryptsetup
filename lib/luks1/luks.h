@@ -44,6 +44,7 @@
 #define LUKS_KEY_ENABLED_OLD 0xCAFE
 
 #define LUKS_KEY_DISABLED 0x0000DEAD
+#define LUKS_KEY_RESERVED 0x00DDBA11
 #define LUKS_KEY_ENABLED  0x00AC71F3
 
 #define LUKS_STRIPES 4000
@@ -164,10 +165,15 @@ int LUKS_del_key(
 	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 
+int LUKS_res_key(
+	unsigned int keyIndex,
+	struct luks_phdr *hdr,
+	struct crypt_device *ctx);
+
 crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot);
 int LUKS_keyslot_find_empty(struct luks_phdr *hdr);
 int LUKS_keyslot_active_count(struct luks_phdr *hdr);
-int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable);
+int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int mode);
 int LUKS_keyslot_area(const struct luks_phdr *hdr,
 	int keyslot,
 	uint64_t *offset,

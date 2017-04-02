@@ -917,6 +917,7 @@ static int action_luksKillSlot(void)
 		goto out;
 
 	switch (crypt_keyslot_status(cd, opt_key_slot)) {
+	case CRYPT_SLOT_RESERVED:
 	case CRYPT_SLOT_ACTIVE_LAST:
 	case CRYPT_SLOT_ACTIVE:
 		log_verbose(_("Key slot %d selected for deletion.\n"), opt_key_slot);
@@ -1362,7 +1363,6 @@ args:
 static int action_luksErase(void)
 {
 	struct crypt_device *cd = NULL;
-	crypt_keyslot_info ki;
 	char *msg = NULL;
 	int i, r;
 
@@ -1387,11 +1387,16 @@ static int action_luksErase(void)
 	}
 
 	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS1); i++) {
-		ki = crypt_keyslot_status(cd, i);
-		if (ki == CRYPT_SLOT_ACTIVE || ki == CRYPT_SLOT_ACTIVE_LAST) {
+		switch (crypt_keyslot_status(cd, i)) {
+		case CRYPT_SLOT_INACTIVE:
+		case CRYPT_SLOT_INVALID:
+			continue;
+
+		default:
 			r = crypt_keyslot_destroy(cd, i);
 			if (r < 0)
 				goto out;
+			break;
 		}
 	}
 out:

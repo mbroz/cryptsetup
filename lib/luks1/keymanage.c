@@ -142,6 +142,8 @@ static const char *dbg_slot_state(crypt_keyslot_info ki)
 		return "ACTIVE";
 	case CRYPT_SLOT_ACTIVE_LAST:
 		return "ACTIVE_LAST";
+	case CRYPT_SLOT_RESERVED:
+		return "RESERVED";
 	case CRYPT_SLOT_INVALID:
 	default:
 		return "INVALID";
@@ -356,6 +358,11 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	for(i = 0; i < LUKS_NUMKEYS; ++i) {
 		if (phdr->keyblock[i].active == LUKS_KEY_ENABLED)  {
 			log_dbg("Skipping repair for active keyslot %i.", i);
+			continue;
+		}
+
+		if (phdr->keyblock[i].active == LUKS_KEY_RESERVED)  {
+			log_dbg("Skipping repair for reserved keyslot %i.", i);
 			continue;
 		}
 
@@ -790,7 +797,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	int r;
 
 	if(hdr->keyblock[keyIndex].active != LUKS_KEY_DISABLED) {
-		log_err(ctx, _("Key slot %d active, purge first.\n"), keyIndex);
+		log_err(ctx, _("Key slot %d not disabled, purge first.\n"), keyIndex);
 		return -EINVAL;
 	}
 
@@ -870,7 +877,7 @@ int LUKS_set_key(unsigned int keyIndex,
 		goto out;
 
 	/* Mark the key as active in phdr */
-	r = LUKS_keyslot_set(hdr, (int)keyIndex, 1);
+	r = LUKS_keyslot_set(hdr, (int)keyIndex, LUKS_KEY_ENABLED);
 	if (r < 0)
 		goto out;
 
@@ -920,7 +927,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 	log_dbg("Trying to open key slot %d [%s].", keyIndex,
 		dbg_slot_state(ki));
 
-	if (ki < CRYPT_SLOT_ACTIVE)
+	if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
 		return -ENOENT;
 
 	derived_key = crypt_alloc_volume_key(hdr->keyBytes, NULL);
@@ -1014,7 +1021,7 @@ int LUKS_del_key(unsigned int keyIndex,
 	if (r)
 		return r;
 
-	r = LUKS_keyslot_set(hdr, keyIndex, 0);
+	r = LUKS_keyslot_set(hdr, keyIndex, LUKS_KEY_DISABLED);
 	if (r) {
 		log_err(ctx, _("Key slot %d is invalid, please select keyslot between 0 and %d.\n"),
 			keyIndex, LUKS_NUMKEYS - 1);
@@ -1048,6 +1055,26 @@ int LUKS_del_key(unsigned int keyIndex,
 	return r;
 }
 
+int LUKS_res_key(unsigned int keyIndex,
+		 struct luks_phdr *hdr,
+		 struct crypt_device *ctx)
+{
+	int r;
+
+	r = LUKS_read_phdr(hdr, 1, 0, ctx);
+	if (r)
+		return r;
+
+	r = LUKS_keyslot_set(hdr, keyIndex, LUKS_KEY_RESERVED);
+	if (r) {
+		log_err(ctx, _("Key slot %d is invalid, please select keyslot between 0 and %d.\n"),
+			keyIndex, LUKS_NUMKEYS - 1);
+		return r;
+	}
+
+	return LUKS_write_phdr(hdr, ctx);
+}
+
 crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot)
 {
 	int i;
@@ -1057,6 +1084,9 @@ crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot)
 
 	if (hdr->keyblock[keyslot].active == LUKS_KEY_DISABLED)
 		return CRYPT_SLOT_INACTIVE;
+
+	if (hdr->keyblock[keyslot].active == LUKS_KEY_RESERVED)
+		return CRYPT_SLOT_RESERVED;
 
 	if (hdr->keyblock[keyslot].active != LUKS_KEY_ENABLED)
 		return CRYPT_SLOT_INVALID;
@@ -1093,15 +1123,31 @@ int LUKS_keyslot_active_count(struct luks_phdr *hdr)
 	return num;
 }
 
-int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable)
+int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int mode)
 {
+	const char *modestr = NULL;
 	crypt_keyslot_info ki = LUKS_keyslot_info(hdr, keyslot);
 
 	if (ki == CRYPT_SLOT_INVALID)
 		return -EINVAL;
 
-	hdr->keyblock[keyslot].active = enable ? LUKS_KEY_ENABLED : LUKS_KEY_DISABLED;
-	log_dbg("Key slot %d was %s in LUKS header.", keyslot, enable ? "enabled" : "disabled");
+	switch (mode) {
+	case LUKS_KEY_ENABLED:
+		modestr = "enabled";
+		break;
+	case LUKS_KEY_DISABLED:
+		modestr = "disabled";
+		break;
+	case LUKS_KEY_RESERVED:
+		modestr = "reserved";
+		break;
+	default:
+		modestr = "unknown";
+		break;
+	}
+
+	hdr->keyblock[keyslot].active = mode;
+	log_dbg("Key slot %d was %s in LUKS header.", keyslot, modestr);
 	return 0;
 }
 

@@ -171,18 +171,24 @@ static int check_keyslots(FILE *out, struct crypt_device *cd, int f_luks)
 	double ent;
 	off_t ofs;
 	uint64_t start, length, end;
-	crypt_keyslot_info ki;
 	unsigned char buffer[sector_size];
 
 	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS1) ; i++) {
 		fprintf(out, "- processing keyslot %d:", i);
-		ki = crypt_keyslot_status(cd, i);
-		if (ki == CRYPT_SLOT_INACTIVE) {
+		switch (crypt_keyslot_status(cd, i)) {
+		case CRYPT_SLOT_INACTIVE:
 			fprintf(out, "  keyslot not in use\n");
 			continue;
-		}
 
-		if (ki == CRYPT_SLOT_INVALID) {
+		case CRYPT_SLOT_RESERVED:
+			fprintf(out, "  keyslot reserved\n");
+			continue;
+
+		case CRYPT_SLOT_ACTIVE:
+		case CRYPT_SLOT_ACTIVE_LAST:
+			break;
+
+		default:
 			fprintf(out, "\nError: keyslot invalid.\n");
 			return EXIT_FAILURE;
 		}
