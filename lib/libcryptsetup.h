@@ -312,6 +312,7 @@ struct crypt_params_verity {
 	uint32_t hash_block_size;  /**< hash block size (in bytes) */
 	uint64_t data_size;        /**< data area size (in data blocks) */
 	uint64_t hash_area_offset; /**< hash/header offset (in bytes) */
+	uint64_t fec_area_offset;  /**< FEC/header offset (in bytes) */
 	uint32_t fec_roots;        /**< Reed-Solomon FEC roots */
 	uint32_t flags;            /**< CRYPT_VERITY* flags */
 };

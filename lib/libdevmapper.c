@@ -390,8 +390,8 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 	if (dmd->u.verity.fec_device) {
 		num_options += 8;
 		snprintf(fec_features, sizeof(fec_features)-1,
-			 " use_fec_from_device %s fec_start 0 fec_blocks %" PRIu64 " fec_roots %" PRIu32,
-			 device_block_path(dmd->u.verity.fec_device),
+			 " use_fec_from_device %s fec_start %" PRIu64 " fec_blocks %" PRIu64 " fec_roots %" PRIu32,
+			 device_block_path(dmd->u.verity.fec_device), dmd->u.verity.fec_offset,
 			 vp->data_size + dmd->u.verity.hash_blocks, vp->fec_roots);
 	} else
 		*fec_features = '\0';

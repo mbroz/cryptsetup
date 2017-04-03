@@ -67,6 +67,21 @@ struct fec_context {
 	size_t ninputs;
 };
 
+/* Calculate FEC offset in hash blocks */
+uint64_t VERITY_FEC_offset_block(struct crypt_params_verity *params)
+{
+	uint64_t fec_offset = params->fec_area_offset;
+
+	if (params->flags & CRYPT_VERITY_NO_HEADER)
+		return fec_offset / params->hash_block_size;
+
+	fec_offset += sizeof(struct fec_sb);
+	//hash_offset += params->hash_block_size - 1;
+
+	return fec_offset / params->hash_block_size;
+}
+
+
 /* computes ceil(x / y) */
 static inline uint64_t FEC_div_round_up(uint64_t x, uint64_t y)
 {
@@ -300,6 +315,12 @@ int VERITY_FEC_create(struct crypt_device *cd,
 	if (fd == -1) {
 		log_err(cd, _("Cannot open device %s.\n"), params->fec_device);
 		return -errno;
+	}
+
+	if (lseek(fd, params->fec_area_offset, SEEK_SET) != params->fec_area_offset) {
+		log_dbg("Cannot seek to requested position in FEC device.");
+		TEMP_FAILURE_RETRY(close(fd));
+		return -EIO;
 	}
 
 	/* input devices */

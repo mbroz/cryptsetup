@@ -730,6 +730,7 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		cd->u.verity.hdr.data_block_size = params.data_block_size;
 		cd->u.verity.hdr.hash_block_size = params.hash_block_size;
 		cd->u.verity.hdr.hash_area_offset = dmd.u.verity.hash_offset;
+		cd->u.verity.hdr.fec_area_offset = dmd.u.verity.fec_offset;
 		cd->u.verity.hdr.hash_type = params.hash_type;
 		cd->u.verity.hdr.flags = params.flags;
 		cd->u.verity.hdr.salt_size = params.salt_size;
@@ -1023,6 +1024,11 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (params->fec_area_offset % 512) {
+		log_err(cd, _("Unsupported VERITY FEC offset.\n"));
+		return -EINVAL;
+	}
+
 	if (!(cd->type = strdup(CRYPT_VERITY)))
 		return -ENOMEM;
 
@@ -1069,6 +1075,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	cd->u.verity.hdr.data_block_size = params->data_block_size;
 	cd->u.verity.hdr.hash_block_size = params->hash_block_size;
 	cd->u.verity.hdr.hash_area_offset = params->hash_area_offset;
+	cd->u.verity.hdr.fec_area_offset = params->fec_area_offset;
 	cd->u.verity.hdr.hash_type = params->hash_type;
 	cd->u.verity.hdr.flags = params->flags;
 	cd->u.verity.hdr.salt_size = params->salt_size;

@@ -34,6 +34,7 @@ static int hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
 static uint64_t data_blocks = 0;
 static const char *salt_string = NULL;
 static uint64_t hash_offset = 0;
+static uint64_t fec_offset = 0;
 static const char *opt_uuid = NULL;
 static int opt_restart_on_corruption = 0;
 static int opt_ignore_corruption = 0;
@@ -76,6 +77,7 @@ static int _prepare_format(struct crypt_params_verity *params,
 	params->hash_block_size = hash_block_size;
 	params->data_size = data_blocks;
 	params->hash_area_offset = hash_offset;
+	params->fec_area_offset = fec_offset;
 	params->hash_type = hash_type;
 	params->flags = flags;
 
@@ -155,6 +157,7 @@ static int _activate(const char *dm_device,
 	if (use_superblock) {
 		params.flags = flags;
 		params.hash_area_offset = hash_offset;
+		params.fec_area_offset = fec_offset;
 		params.fec_device = fec_device;
 		params.fec_roots = fec_roots;
 		r = crypt_load(cd, CRYPT_VERITY, &params);
@@ -326,6 +329,7 @@ static int action_dump(int arg)
 		return r;
 
 	params.hash_area_offset = hash_offset;
+	params.fec_area_offset = fec_offset;
 	r = crypt_load(cd, CRYPT_VERITY, &params);
 	if (!r)
 		crypt_dump(cd);
@@ -417,6 +421,7 @@ int main(int argc, const char **argv)
 		{ "data-blocks",     0,    POPT_ARG_STRING, &popt_tmp,       1, N_("The number of blocks in the data file"), N_("blocks") },
 		{ "fec-device",      0,    POPT_ARG_STRING, &fec_device,     0, N_("Path to device with error correction data"), N_("path") },
 		{ "hash-offset",     0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting offset on the hash device"), N_("bytes") },
+		{ "fec-offset",      0,    POPT_ARG_STRING, &popt_tmp,       3, N_("Starting offset on the FEC device"), N_("bytes") },
 		{ "hash",            'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
 		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },
 		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use."), NULL },
@@ -458,6 +463,9 @@ int main(int argc, const char **argv)
 				break;
 			case 2:
 				hash_offset = ull_value;
+				break;
+			case 3:
+				fec_offset = ull_value;
 				break;
 		}
 

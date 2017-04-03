@@ -444,8 +444,8 @@ int VERITY_create(struct crypt_device *cd,
 
 uint64_t VERITY_hash_blocks(struct crypt_device *cd, struct crypt_params_verity *params)
 {
-	off_t hash_position = (off_t)params->hash_area_offset;
-	int levels;
+	off_t hash_position = 0;
+	int levels = 0;
 
 	if (hash_levels(params->hash_block_size, crypt_get_volume_key_size(cd),
 		params->data_size, &hash_position, &levels, NULL, NULL))

@@ -83,6 +83,7 @@ struct crypt_dm_active_device {
 
 		uint64_t hash_offset;	/* hash offset in blocks (not header) */
 		uint64_t hash_blocks;	/* size of hash device (in hash blocks) */
+		uint64_t fec_offset;	/* FEC offset in blocks (not header) */
 		struct crypt_params_verity *vp;
 	} verity;
 	} u;
