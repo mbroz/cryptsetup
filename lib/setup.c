@@ -735,6 +735,9 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		cd->u.verity.hdr.flags = params.flags;
 		cd->u.verity.hdr.salt_size = params.salt_size;
 		cd->u.verity.hdr.salt = params.salt;
+		cd->u.verity.hdr.fec_device = params.fec_device;
+		cd->u.verity.hdr.fec_roots = params.fec_roots;
+		cd->u.verity.fec_device = dmd.u.verity.fec_device;
 		cd->metadata_device = dmd.u.verity.hash_device;
 	}
 out:
@@ -2502,6 +2505,9 @@ int crypt_get_verity_info(struct crypt_device *cd,
 
 	vp->data_device = device_path(cd->device);
 	vp->hash_device = mdata_device_path(cd);
+	vp->fec_device  = device_path(cd->u.verity.fec_device);
+	vp->fec_area_offset = cd->u.verity.hdr.fec_area_offset;
+	vp->fec_roots = cd->u.verity.hdr.fec_roots;
 	vp->hash_name = cd->u.verity.hdr.hash_name;
 	vp->salt = cd->u.verity.hdr.salt;
 	vp->salt_size = cd->u.verity.hdr.salt_size;

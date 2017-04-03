@@ -304,6 +304,17 @@ static int action_status(int arg)
 		log_std("  hash offset: %" PRIu64 " sectors\n",
 			vp.hash_area_offset * vp.hash_block_size / 512);
 
+		if (vp.fec_device) {
+			log_std("  FEC device:  %s\n", vp.fec_device);
+			if (crypt_loop_device(vp.fec_device)) {
+				backing_file = crypt_loop_backing_file(vp.fec_device);
+				log_std("  FEC loop:    %s\n", backing_file);
+				free(backing_file);
+			}
+			log_std("  FEC offset:  %" PRIu64 " sectors\n",
+				vp.fec_area_offset * vp.hash_block_size / 512);
+			log_std("  FEC roots:   %u\n", vp.fec_roots);
+		}
 		if (cad.flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
 				 CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
 				 CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS))

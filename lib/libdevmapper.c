@@ -982,7 +982,7 @@ static int _dm_query_verity(uint32_t get_flags,
 	uint64_t val64;
 	ssize_t len;
 	char *str, *str2, *arg;
-	unsigned int i;
+	unsigned int i, features;
 	int r;
 
 	if (get_flags & DM_ACTIVE_VERITY_PARAMS)
@@ -1099,7 +1099,8 @@ static int _dm_query_verity(uint32_t get_flags,
 			return -EINVAL;
 		params++;
 
-		for (i = 0; i < val64; i++) {
+		features = (int)val64;
+		for (i = 0; i < features; i++) {
 			if (!params)
 				return -EINVAL;
 			arg = strsep(&params, " ");
@@ -1109,12 +1110,46 @@ static int _dm_query_verity(uint32_t get_flags,
 				dmd->flags |= CRYPT_ACTIVATE_RESTART_ON_CORRUPTION;
 			else if (!strcasecmp(arg, "ignore_zero_blocks"))
 				dmd->flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
-			else /* unknown option */
+			else if (!strcasecmp(arg, "use_fec_from_device")) {
+				str = strsep(&params, " ");
+				str2 = crypt_lookup_dev(str);
+				if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE) {
+					r = device_alloc(&dmd->u.verity.fec_device, str2);
+					if (r < 0 && r != -ENOTBLK) {
+						free(str2);
+						return r;
+					}
+				}
+				if (vp)
+					vp->fec_device = str2;
+				i++;
+			} else if (!strcasecmp(arg, "fec_start")) {
+				val64 = strtoull(params, &params, 10);
+				if (*params)
+					params++;
+				dmd->u.verity.fec_offset = val64;
+				if (vp)
+					vp->fec_area_offset = val64 * vp->hash_block_size;
+				i++;
+			} else if (!strcasecmp(arg, "fec_blocks")) {
+				val64 = strtoull(params, &params, 10);
+				if (*params)
+					params++;
+				dmd->u.verity.fec_blocks = val64;
+				i++;
+			} else if (!strcasecmp(arg, "fec_roots")) {
+				val32 = strtoul(params, &params, 10);
+				if (*params)
+					params++;
+				if (vp)
+					vp->fec_roots = val32;
+				i++;
+			} else /* unknown option */
 				return -EINVAL;
 		}
 
 		/* All parameters should be processed */
-		if (params)
+		if (params && *params)
 			return -EINVAL;
 	}
 
