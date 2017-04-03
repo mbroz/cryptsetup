@@ -97,6 +97,42 @@ static int mult_overflow(off_t *u, off_t b, size_t size)
 	return 0;
 }
 
+static int hash_levels(size_t hash_block_size, size_t digest_size,
+		       off_t data_file_blocks, off_t *hash_position, int *levels,
+		       off_t *hash_level_block, off_t *hash_level_size)
+{
+	size_t hash_per_block_bits;
+	off_t s;
+	int i;
+
+	hash_per_block_bits = get_bits_down(hash_block_size / digest_size);
+	if (!hash_per_block_bits)
+		return -EINVAL;
+
+	*levels = 0;
+	while (hash_per_block_bits * *levels < 64 &&
+	       (data_file_blocks - 1) >> (hash_per_block_bits * *levels))
+		(*levels)++;
+
+	if (*levels > VERITY_MAX_LEVELS)
+		return -EINVAL;
+
+	for (i = *levels - 1; i >= 0; i--) {
+		if (hash_level_block)
+			hash_level_block[i] = *hash_position;
+		// verity position of block data_file_blocks at level i
+		s = (data_file_blocks + ((off_t)1 << ((i + 1) * hash_per_block_bits)) - 1) >> ((i + 1) * hash_per_block_bits);
+		if (hash_level_size)
+			hash_level_size[i] = s;
+		if ((*hash_position + s) < *hash_position ||
+		    (*hash_position + s) < 0)
+			return -EINVAL;
+		*hash_position += s;
+	}
+
+	return 0;
+}
+
 static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 				   off_t data_block, size_t data_block_size,
 				   off_t hash_block, size_t hash_block_size,
@@ -219,8 +255,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	FILE *hash_file = NULL, *hash_file_2;
 	off_t hash_level_block[VERITY_MAX_LEVELS];
 	off_t hash_level_size[VERITY_MAX_LEVELS];
-	off_t data_file_blocks, s;
-	size_t hash_per_block_bits;
+	off_t data_file_blocks;
 	off_t data_device_size = 0, hash_device_size = 0;
 	uint64_t dev_size;
 	int levels, i, r;
@@ -250,35 +285,13 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	hash_per_block_bits = get_bits_down(hash_block_size / digest_size);
-	if (!hash_per_block_bits)
+	if (hash_levels(hash_block_size, digest_size, data_file_blocks, &hash_position,
+		&levels, &hash_level_block[0], &hash_level_size[0])) {
+		log_err(cd, _("Hash area overflow.\n"));
 		return -EINVAL;
-
-	levels = 0;
-	if (data_file_blocks) {
-		while (hash_per_block_bits * levels < 64 &&
-		       (data_file_blocks - 1) >> (hash_per_block_bits * levels))
-			levels++;
 	}
+
 	log_dbg("Using %d hash levels.", levels);
-
-	if (levels > VERITY_MAX_LEVELS) {
-		log_err(cd, _("Too many tree levels for verity volume.\n"));
-		return -EINVAL;
-	}
-
-	for (i = levels - 1; i >= 0; i--) {
-		hash_level_block[i] = hash_position;
-		// verity position of block data_file_blocks at level i
-		s = (data_file_blocks + ((off_t)1 << ((i + 1) * hash_per_block_bits)) - 1) >> ((i + 1) * hash_per_block_bits);
-		hash_level_size[i] = s;
-		if ((hash_position + s) < hash_position ||
-		    (hash_position + s) < 0) {
-			log_err(cd, _("Device offset overflow.\n"));
-			return -EINVAL;
-		}
-		hash_position += s;
-	}
 
 	if (mult_overflow(&hash_device_size, hash_position, hash_block_size)) {
 		log_err(cd, _("Device offset overflow.\n"));
@@ -427,4 +440,16 @@ int VERITY_create(struct crypt_device *cd,
 		root_hash_size,
 		verity_hdr->salt,
 		verity_hdr->salt_size);
+}
+
+uint64_t VERITY_hash_blocks(struct crypt_device *cd, struct crypt_params_verity *params)
+{
+	off_t hash_position = (off_t)params->hash_area_offset;
+	int levels;
+
+	if (hash_levels(params->hash_block_size, crypt_get_volume_key_size(cd),
+		params->data_size, &hash_position, &levels, NULL, NULL))
+		return 0;
+
+	return (uint64_t)hash_position;
 }
