@@ -76,11 +76,13 @@ struct crypt_dm_active_device {
 	} crypt;
 	struct {
 		struct device *hash_device;
+		struct device *fec_device;
 
 		const char *root_hash;
 		uint32_t root_hash_size;
 
 		uint64_t hash_offset;	/* hash offset in blocks (not header) */
+		uint64_t hash_blocks;	/* size of hash device (in hash blocks) */
 		struct crypt_params_verity *vp;
 	} verity;
 	} u;

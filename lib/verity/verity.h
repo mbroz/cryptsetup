@@ -29,6 +29,7 @@
 
 struct crypt_device;
 struct crypt_params_verity;
+struct device;
 
 int VERITY_read_sb(struct crypt_device *cd,
 		   uint64_t sb_offset,
@@ -44,6 +45,7 @@ int VERITY_activate(struct crypt_device *cd,
 		     const char *name,
 		     const char *root_hash,
 		     size_t root_hash_size,
+		     struct device *fec_device,
 		     struct crypt_params_verity *verity_hdr,
 		     uint32_t activation_flags);
 

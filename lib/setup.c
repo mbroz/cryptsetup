@@ -72,6 +72,7 @@ struct crypt_device {
 		char *root_hash;
 		unsigned int root_hash_size;
 		char *uuid;
+		struct device *fec_device;
 	} verity;
 	struct { /* used in CRYPT_TCRYPT */
 		struct crypt_params_tcrypt params;
@@ -618,6 +619,10 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
 		return r;
 
+	if (params && params->fec_device &&
+	    (r = device_alloc(&cd->u.verity.fec_device, params->fec_device)) < 0)
+		return r;
+
 	return r;
 }
 
@@ -1039,6 +1044,10 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (params->fec_device &&
+	    (r = device_alloc(&cd->u.verity.fec_device, params->fec_device)) < 0)
+		return r;
+
 	hash_size = crypt_hash_size(params->hash_name);
 	if (hash_size <= 0) {
 		log_err(cd, _("Hash algorithm %s not supported.\n"),
@@ -1078,6 +1087,8 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (params->flags & CRYPT_VERITY_CREATE_HASH) {
 		r = VERITY_create(cd, &cd->u.verity.hdr,
 				  cd->u.verity.root_hash, cd->u.verity.root_hash_size);
+		if (!r && params->fec_device)
+			r = VERITY_FEC_create(cd, &cd->u.verity.hdr);
 		if (r)
 			return r;
 	}
@@ -1094,12 +1105,6 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		r = VERITY_write_sb(cd, cd->u.verity.hdr.hash_area_offset,
 				    cd->u.verity.uuid,
 				    &cd->u.verity.hdr);
-	}
-
-	if (params->fec_device) {
-		r = VERITY_FEC_create(cd, &cd->u.verity.hdr);
-		if (r)
-			return r;
 	}
 
 	return r;
@@ -1379,6 +1384,7 @@ void crypt_free(struct crypt_device *cd)
 			free(CONST_CAST(void*)cd->u.verity.hdr.salt);
 			free(cd->u.verity.root_hash);
 			free(cd->u.verity.uuid);
+			device_free(cd->u.verity.fec_device);
 		} else if (!cd->type) {
 			free(cd->u.none.active_name);
 		}
@@ -2026,7 +2032,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 			return -EINVAL;
 		}
 
-		r = VERITY_activate(cd, name, volume_key, volume_key_size,
+		r = VERITY_activate(cd, name, volume_key, volume_key_size, cd->u.verity.fec_device,
 				    &cd->u.verity.hdr, flags|CRYPT_ACTIVATE_READONLY);
 
 		if (r == -EPERM) {

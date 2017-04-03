@@ -233,6 +233,7 @@ int VERITY_activate(struct crypt_device *cd,
 		     const char *name,
 		     const char *root_hash,
 		     size_t root_hash_size,
+		     struct device *fec_device,
 		     struct crypt_params_verity *verity_hdr,
 		     uint32_t activation_flags)
 {
@@ -256,9 +257,11 @@ int VERITY_activate(struct crypt_device *cd,
 	dmd.target = DM_VERITY;
 	dmd.data_device = crypt_data_device(cd);
 	dmd.u.verity.hash_device = crypt_metadata_device(cd);
+	dmd.u.verity.fec_device = fec_device;
 	dmd.u.verity.root_hash = root_hash;
 	dmd.u.verity.root_hash_size = root_hash_size;
-	dmd.u.verity.hash_offset = VERITY_hash_offset_block(verity_hdr),
+	dmd.u.verity.hash_offset = VERITY_hash_offset_block(verity_hdr);
+	dmd.u.verity.hash_blocks = VERITY_hash_blocks(cd, verity_hdr);
 	dmd.flags = activation_flags;
 	dmd.size = verity_hdr->data_size * verity_hdr->data_block_size / 512;
 	dmd.uuid = crypt_get_uuid(cd);
@@ -273,6 +276,13 @@ int VERITY_activate(struct crypt_device *cd,
 				0, &dmd.size, &dmd.flags);
 	if (r)
 		return r;
+
+	if (dmd.u.verity.fec_device) {
+		r = device_block_adjust(cd, dmd.u.verity.fec_device, DEV_OK,
+					0, NULL, NULL);
+		if (r)
+			return r;
+	}
 
 	r = dm_create_device(cd, name, CRYPT_VERITY, &dmd, 0);
 	if (r < 0 && !(dm_flags() & DM_VERITY_SUPPORTED)) {

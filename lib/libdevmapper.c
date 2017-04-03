@@ -370,7 +370,7 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 {
 	int max_size, r, num_options = 0;
 	char *params = NULL, *hexroot = NULL, *hexsalt = NULL;
-	char features[256];
+	char features[256], fec_features[256];
 
 	if (!vp || !dmd)
 		return NULL;
@@ -386,6 +386,15 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS)
 		num_options++;
+
+	if (dmd->u.verity.fec_device) {
+		num_options += 8;
+		snprintf(fec_features, sizeof(fec_features)-1,
+			 " use_fec_from_device %s fec_start 0 fec_blocks %" PRIu64 " fec_roots %" PRIu32,
+			 device_block_path(dmd->u.verity.fec_device),
+			 vp->data_size + dmd->u.verity.hash_blocks, vp->fec_roots);
+	} else
+		*fec_features = '\0';
 
 	if (num_options)
 		snprintf(features, sizeof(features)-1, " %d%s%s%s", num_options,
@@ -418,12 +427,12 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 		goto out;
 
 	r = snprintf(params, max_size,
-		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s %s",
+		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s%s%s",
 		     vp->hash_type, device_block_path(dmd->data_device),
 		     device_block_path(dmd->u.verity.hash_device),
 		     vp->data_block_size, vp->hash_block_size,
 		     vp->data_size, dmd->u.verity.hash_offset,
-		     vp->hash_name, hexroot, hexsalt, features);
+		     vp->hash_name, hexroot, hexsalt, features, fec_features);
 	if (r < 0 || r >= max_size) {
 		crypt_safe_free(params);
 		params = NULL;
