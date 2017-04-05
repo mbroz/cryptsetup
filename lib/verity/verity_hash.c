@@ -105,6 +105,9 @@ static int hash_levels(size_t hash_block_size, size_t digest_size,
 	off_t s;
 	int i;
 
+	if (!digest_size)
+		return -EINVAL;
+
 	hash_per_block_bits = get_bits_down(hash_block_size / digest_size);
 	if (!hash_per_block_bits)
 		return -EINVAL;
