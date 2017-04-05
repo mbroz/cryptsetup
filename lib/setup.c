@@ -1097,7 +1097,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		r = VERITY_create(cd, &cd->u.verity.hdr,
 				  cd->u.verity.root_hash, cd->u.verity.root_hash_size);
 		if (!r && params->fec_device)
-			r = VERITY_FEC_create(cd, &cd->u.verity.hdr);
+			r = VERITY_FEC_create(cd, &cd->u.verity.hdr, cd->u.verity.fec_device);
 		if (r)
 			return r;
 	}

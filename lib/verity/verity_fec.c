@@ -2,6 +2,7 @@
  * dm-verity Forward Error Correction (FEC) support
  *
  * Copyright (C) 2015, Google, Inc. All rights reserved.
+ * Copyright (C) 2017, Red Hat, Inc. All rights reserved.
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +37,8 @@
 #define FEC_MIN_RSN 231
 #define FEC_MAX_RSN 253
 
+#define FEC_INPUT_DEVICES 2
+
 /* parameters to init_rs_char */
 #define FEC_PARAMS(roots) \
     8,          /* symbol size in bits */ \
@@ -44,11 +47,6 @@
     1,          /* primitive element to generate polynomial roots */ \
     (roots),    /* polynomial degree (number of roots) */ \
     0           /* padding bytes at the front of shortened block */
-
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(array) \
-		sizeof(array) / sizeof(array[0])
-#endif
 
 #define FEC_SIGNATURE "fec...\0\0"
 #define FEC_VERSION 0
@@ -94,50 +92,10 @@ uint64_t VERITY_FEC_offset_block(struct crypt_params_verity *params)
 	return fec_offset / params->hash_block_size;
 }
 
-
 /* computes ceil(x / y) */
 static inline uint64_t FEC_div_round_up(uint64_t x, uint64_t y)
 {
 	return (x / y) + (x % y > 0 ? 1 : 0);
-}
-
-/* writes the entire data buffer to fd */
-int FEC_write(int fd, const void *p, size_t count)
-{
-	const uint8_t *data = (const uint8_t *)p;
-	size_t left = count;
-
-	while (left > 0) {
-		ssize_t n = TEMP_FAILURE_RETRY(write(fd, data, left));
-
-		if (n == -1)
-			return -errno;
-
-		data += n;
-		left -= n;
-	}
-
-	return 0;
-}
-
-/* reads count bytes to data from fd at offset */
-int FEC_pread(int fd, uint8_t *data, size_t count, uint64_t offset)
-{
-	size_t left = count;
-
-	while (left > 0) {
-		ssize_t n = TEMP_FAILURE_RETRY(pread64(fd, data, left,
-				offset));
-
-		if (n <= 0)
-			return -errno;
-
-		data += n;
-		left -= n;
-		offset += n;
-	}
-
-	return 0;
 }
 
 /* returns a physical offset for the given RS offset */
@@ -148,8 +106,8 @@ static inline uint64_t FEC_interleave(struct fec_context *ctx, uint64_t offset)
 }
 
 /* returns data for a byte at the specified RS offset */
-int FEC_read_interleaved(struct fec_context *ctx, uint64_t i, uint8_t *output,
-			 size_t count)
+static int FEC_read_interleaved(struct fec_context *ctx, uint64_t i,
+				void *output, size_t count)
 {
 	size_t n;
 	uint64_t offset = FEC_interleave(ctx, i);
@@ -165,10 +123,11 @@ int FEC_read_interleaved(struct fec_context *ctx, uint64_t i, uint8_t *output,
 		if (offset >= ctx->inputs[n].count) {
 			offset -= ctx->inputs[n].count;
 			continue;
-	}
+		}
 
-	return FEC_pread(ctx->inputs[n].fd, output, count,
-			 ctx->inputs[n].start + offset);
+		if (lseek(ctx->inputs[n].fd, ctx->inputs[n].start + offset, SEEK_SET) < 0)
+			return -1;
+		return (read_buffer(ctx->inputs[n].fd, output, count) == count) ? 0 : -1;
 	}
 
 	/* should never be reached */
@@ -181,11 +140,11 @@ static int FEC_write_sb(struct fec_context *ctx, int fd)
 
 	memset(&sb, 0, sizeof(sb));
 	memcpy(&sb.signature, FEC_SIGNATURE, sizeof(sb.signature));
-	sb.version = FEC_VERSION;
-	sb.roots = ctx->roots;
-	sb.blocks = ctx->size / ctx->block_size;
+	sb.version = FEC_VERSION; // FIXME: endianess
+	sb.roots = ctx->roots;  // FIXME: endianess
+	sb.blocks = ctx->size / ctx->block_size;  // FIXME: endianess
 
-	return FEC_write(fd, &sb, sizeof(sb));
+	return (write_buffer(fd, &sb, sizeof(sb)) == sizeof(sb)) ? 0 : -1;
 }
 
 /* encodes inputs to fd */
@@ -234,25 +193,19 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 	}
 
 	/* write superblock */
-	if (!(params->flags & CRYPT_VERITY_NO_HEADER)) {
-		r = FEC_write_sb(&ctx, fd);
-		if (r) {
-			log_err(cd, _("Failed to write FEC superblock.\n"));
-			goto out;
-		}
+	if (!(params->flags & CRYPT_VERITY_NO_HEADER) && FEC_write_sb(&ctx, fd)) {
+		log_err(cd, _("Failed to write FEC superblock.\n"));
+		r = -EIO;
+		goto out;
 	}
 
 	/* encode input */
 	for (n = 0; n < ctx.rounds; ++n) {
 		for (i = 0; i < ctx.rsn; ++i) {
-			r = FEC_read_interleaved(&ctx,
-				n * ctx.rsn * ctx.block_size + i,
-				&buf[i * ctx.block_size],
-				ctx.block_size);
-
-			if (r) {
-				log_err(cd, _("Failed to read RS block %"
-					PRIu64 " byte %d.\n"), n, i);
+			if (FEC_read_interleaved(&ctx, n * ctx.rsn * ctx.block_size + i,
+						 &buf[i * ctx.block_size], ctx.block_size)) {
+				log_err(cd, _("Failed to read RS block %" PRIu64 " byte %d.\n"), n, i);
+				r = -EIO;
 				goto out;
 			}
 		}
@@ -262,11 +215,9 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 				rs_block[i] = buf[i * ctx.block_size + b];
 
 			encode_rs_char(rs, rs_block, parity);
-			r = FEC_write(fd, parity, sizeof(parity));
-
-			if (r) {
-				log_err(cd, _("Failed to write parity for RS "
-					"block %" PRIu64 ".\n"), n);
+			if (write_buffer(fd, parity, sizeof(parity)) != sizeof(parity)) {
+				log_err(cd, _("Failed to write parity for RS block %" PRIu64 ".\n"), n);
+				r = -EIO;
 				goto out;
 			}
 		}
@@ -277,39 +228,27 @@ out:
 		free_rs_char(rs);
 
 	free(buf);
-
 	return r;
 }
 
-static int FEC_open_inputs(struct crypt_device *cd,
-			   struct fec_input_device *inputs,
-			   size_t ninputs)
-{
-	size_t n;
-
-	for (n = 0; n < ninputs; ++n)
-		inputs[n].fd = -1;
-
-	for (n = 0; n < ninputs; ++n) {
-		inputs[n].fd =
-			TEMP_FAILURE_RETRY(open(device_path(inputs[n].device),
-						O_RDWR));
-		if (inputs[n].fd == -1) {
-			log_err(cd, _("Failed to open %s.\n"),
-				device_path(inputs[n].device));
-			return -errno;
-		}
-	}
-
-	return 0;
-}
-
 int VERITY_FEC_create(struct crypt_device *cd,
-		      struct crypt_params_verity *params)
+		      struct crypt_params_verity *params,
+		      struct device *fec_device)
 {
 	int r;
 	int fd = -1;
-	struct fec_input_device inputs[2];
+	struct fec_input_device inputs[FEC_INPUT_DEVICES] = {
+		{
+			.device = crypt_data_device(cd),
+			.fd = -1,
+			.start = 0,
+			.count =  params->data_size * params->data_block_size
+		},{
+			.device = crypt_metadata_device(cd),
+			.fd = -1,
+			.start = VERITY_hash_offset_block(params) * params->data_block_size
+		}
+	};
 
 	/* validate parameters */
 	if (params->data_block_size != params->hash_block_size) {
@@ -323,52 +262,49 @@ int VERITY_FEC_create(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	/* open the output device */
-	fd = TEMP_FAILURE_RETRY(open(params->fec_device, O_RDWR | O_CLOEXEC));
+	r = -EIO;
+
+	/* output device */
+	fd = open(device_path(fec_device), O_RDWR);
 	if (fd == -1) {
-		log_err(cd, _("Cannot open device %s.\n"), params->fec_device);
-		return -errno;
+		log_err(cd, _("Cannot open device %s.\n"), device_path(fec_device));
+		goto out;
 	}
 
-	if (lseek(fd, params->fec_area_offset, SEEK_SET) != params->fec_area_offset) {
+	if (lseek(fd, params->fec_area_offset, SEEK_SET) < 0) {
 		log_dbg("Cannot seek to requested position in FEC device.");
-		TEMP_FAILURE_RETRY(close(fd));
-		return -EIO;
+		goto out;
 	}
 
 	/* input devices */
-	memset(inputs, 0, sizeof(inputs));
-
-	inputs[0].device = crypt_data_device(cd);
-	inputs[0].count = params->data_size * params->data_block_size;
-
-	/* cover the entire hash device starting from hash_offset */
-	inputs[1].device = crypt_metadata_device(cd);
-	inputs[1].start = VERITY_hash_offset_block(params) *
-				params->data_block_size;
-
-	r = device_size(crypt_metadata_device(cd), &inputs[1].count);
-	if (r) {
-		log_err(cd, _("Failed to determine size for device %s.\n"),
-				device_path(crypt_metadata_device(cd)));
+	inputs[0].fd = open(device_path(inputs[0].device), O_RDONLY);
+	if (inputs[0].fd == -1) {
+		log_err(cd, _("Cannot open device %s.\n"), device_path(inputs[0].device));
+		goto out;
+	}
+	inputs[1].fd = open(device_path(inputs[1].device), O_RDONLY);
+	if (inputs[1].fd == -1) {
+		log_err(cd, _("Cannot open device %s.\n"), device_path(inputs[1].device));
 		goto out;
 	}
 
+	/* cover the entire hash device starting from hash_offset */
+	r = device_size(inputs[1].device, &inputs[1].count);
+	if (r) {
+		log_err(cd, _("Failed to determine size for device %s.\n"),
+				device_path(inputs[1].device));
+		goto out;
+	}
 	inputs[1].count -= inputs[1].start;
 
-	r = FEC_open_inputs(cd, inputs, ARRAY_SIZE(inputs));
-	if (r)
-		goto out;
-
-	r = FEC_encode_inputs(cd, params, inputs, ARRAY_SIZE(inputs), fd);
-
+	r = FEC_encode_inputs(cd, params, inputs, FEC_INPUT_DEVICES, fd);
 out:
 	if (inputs[0].fd != -1)
-		TEMP_FAILURE_RETRY(close(inputs[0].fd));
+		close(inputs[0].fd);
 	if (inputs[1].fd != -1)
-		TEMP_FAILURE_RETRY(close(inputs[1].fd));
+		close(inputs[1].fd);
 	if (fd != -1)
-		TEMP_FAILURE_RETRY(close(fd));
+		close(fd);
 
 	return r;
 }
