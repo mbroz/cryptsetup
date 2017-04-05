@@ -114,8 +114,7 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 			     struct fec_input_device *inputs,
 			     size_t ninputs, int fd)
 {
-	int r;
-	int i;
+	int i, r = 0;
 	struct fec_context ctx;
 	uint32_t b;
 	uint64_t n;
@@ -132,7 +131,6 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 	ctx.ninputs = ninputs;
 
 	rs = init_rs_char(FEC_PARAMS(ctx.roots));
-
 	if (!rs) {
 		log_err(cd, _("Failed to allocate RS context.\n"));
 		return -ENOMEM;
@@ -150,7 +148,8 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 	buf = malloc(ctx.rounds * ctx.block_size * ctx.roots);
 	if (!buf) {
 		log_err(cd, _("Failed to allocate buffer.\n"));
-		return -ENOMEM;
+		r = -ENOMEM;
+		goto out;
 	}
 
 	/* encode input */
@@ -178,9 +177,7 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 	}
 
 out:
-	if (rs)
-		free_rs_char(rs);
-
+	free_rs_char(rs);
 	free(buf);
 	return r;
 }
