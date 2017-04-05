@@ -255,7 +255,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 			char *tmp_pim_nptr = NULL;
 			char *tmp_pim_end = NULL;
 			size_t tmp_pim_size = 0;
-			unsigned long int tmp_pim_ul = 0;
+			unsigned long long tmp_pim_ull = 0;
 
 			r = tools_get_key(_("Enter VeraCrypt PIM: "),
 					CONST_CAST(char**)&tmp_pim_nptr,
@@ -264,14 +264,14 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 			if (r < 0)
 				continue;
 
-			tmp_pim_ul = strtoul(tmp_pim_nptr, &tmp_pim_end, 10);
+			tmp_pim_ull = strtoull(tmp_pim_nptr, &tmp_pim_end, 10);
 			if (*tmp_pim_nptr == '\0' || !tmp_pim_end || *tmp_pim_end != '\0') {
 				log_err(_("Invalid PIM value: parse error\n"));
 				r = -EINVAL;
-			} else if (tmp_pim_ul == 0) {
+			} else if (tmp_pim_ull == 0) {
 				log_err(_("Invalid PIM value: 0\n"));
 				r = -EINVAL;
-			} else if (tmp_pim_ul > ((1L << (CHAR_BIT * sizeof(params->veracrypt_pim))) - 1)) {
+			} else if (tmp_pim_ull > UINT32_MAX) {
 				log_err(_("Invalid PIM value: outside of range\n"));
 				r = -ERANGE;
 			}
@@ -279,8 +279,8 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 			if (r < 0)
 				continue;
 
-			params->veracrypt_pim = tmp_pim_ul;
-			crypt_memzero(&tmp_pim_ul, sizeof(tmp_pim_ul));
+			params->veracrypt_pim = (uint32_t)tmp_pim_ull;
+			crypt_memzero(&tmp_pim_ull, sizeof(tmp_pim_ull));
 		}
 
 		if (opt_tcrypt_hidden)

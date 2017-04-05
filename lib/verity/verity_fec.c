@@ -96,7 +96,7 @@ static int FEC_read_interleaved(struct fec_context *ctx, uint64_t i,
 
 		if (lseek(ctx->inputs[n].fd, ctx->inputs[n].start + offset, SEEK_SET) < 0)
 			return -1;
-		return (read_buffer(ctx->inputs[n].fd, output, count) == count) ? 0 : -1;
+		return (read_buffer(ctx->inputs[n].fd, output, count) == (ssize_t)count) ? 0 : -1;
 	}
 
 	/* should never be reached */
@@ -163,7 +163,7 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 				rs_block[i] = buf[i * ctx.block_size + b];
 
 			encode_rs_char(rs, rs_block, parity);
-			if (write_buffer(fd, parity, sizeof(parity)) != sizeof(parity)) {
+			if (write_buffer(fd, parity, sizeof(parity)) != (ssize_t)sizeof(parity)) {
 				log_err(cd, _("Failed to write parity for RS block %" PRIu64 ".\n"), n);
 				r = -EIO;
 				goto out;
