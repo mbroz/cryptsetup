@@ -48,18 +48,6 @@
     (roots),    /* polynomial degree (number of roots) */ \
     0           /* padding bytes at the front of shortened block */
 
-#define FEC_SIGNATURE "fec...\0\0"
-#define FEC_VERSION 0
-
-struct fec_sb {
-	uint8_t  signature[8];	/* "fec...\0\0" */
-	uint32_t version;	/* superblock version */
-	uint8_t  _pad1[4];
-	uint32_t roots;		/* parity bytes */
-	uint64_t blocks;	/* number of data blocks */
-	uint8_t  _pad2[484];
-} __attribute__((packed));
-
 struct fec_input_device {
 	struct device *device;
 	int fd;
@@ -77,20 +65,6 @@ struct fec_context {
 	struct fec_input_device *inputs;
 	size_t ninputs;
 };
-
-/* Calculate FEC offset in hash blocks */
-uint64_t VERITY_FEC_offset_block(struct crypt_params_verity *params)
-{
-	uint64_t fec_offset = params->fec_area_offset;
-
-	if (params->flags & CRYPT_VERITY_NO_HEADER)
-		return fec_offset / params->hash_block_size;
-
-	fec_offset += sizeof(struct fec_sb);
-	//hash_offset += params->hash_block_size - 1;
-
-	return fec_offset / params->hash_block_size;
-}
 
 /* computes ceil(x / y) */
 static inline uint64_t FEC_div_round_up(uint64_t x, uint64_t y)
@@ -132,19 +106,6 @@ static int FEC_read_interleaved(struct fec_context *ctx, uint64_t i,
 
 	/* should never be reached */
 	return -1;
-}
-
-static int FEC_write_sb(struct fec_context *ctx, int fd)
-{
-	struct fec_sb sb;
-
-	memset(&sb, 0, sizeof(sb));
-	memcpy(&sb.signature, FEC_SIGNATURE, sizeof(sb.signature));
-	sb.version = FEC_VERSION; // FIXME: endianess
-	sb.roots = ctx->roots;  // FIXME: endianess
-	sb.blocks = ctx->size / ctx->block_size;  // FIXME: endianess
-
-	return (write_buffer(fd, &sb, sizeof(sb)) == sizeof(sb)) ? 0 : -1;
 }
 
 /* encodes inputs to fd */
@@ -190,13 +151,6 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 	if (!buf) {
 		log_err(cd, _("Failed to allocate buffer.\n"));
 		return -ENOMEM;
-	}
-
-	/* write superblock */
-	if (!(params->flags & CRYPT_VERITY_NO_HEADER) && FEC_write_sb(&ctx, fd)) {
-		log_err(cd, _("Failed to write FEC superblock.\n"));
-		r = -EIO;
-		goto out;
 	}
 
 	/* encode input */

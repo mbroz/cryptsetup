@@ -261,7 +261,7 @@ int VERITY_activate(struct crypt_device *cd,
 	dmd.u.verity.root_hash = root_hash;
 	dmd.u.verity.root_hash_size = root_hash_size;
 	dmd.u.verity.hash_offset = VERITY_hash_offset_block(verity_hdr);
-	dmd.u.verity.fec_offset = VERITY_FEC_offset_block(verity_hdr);
+	dmd.u.verity.fec_offset = verity_hdr->fec_area_offset / verity_hdr->hash_block_size;
 	dmd.u.verity.hash_blocks = VERITY_hash_blocks(cd, verity_hdr);
 	dmd.flags = activation_flags;
 	dmd.size = verity_hdr->data_size * verity_hdr->data_block_size / 512;
