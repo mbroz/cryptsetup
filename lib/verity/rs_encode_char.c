@@ -175,7 +175,7 @@ void encode_rs_char(struct rs *rs, data_t *data, data_t *parity)
 
 	memset(parity, 0, rs->nroots * sizeof(data_t));
 
-	for (i = 0; i < rs->nroots - rs->pad; i++) {
+	for (i = 0; i < rs->nn - rs->nroots - rs->pad; i++) {
 		feedback = rs->index_of[data[i] ^ parity[0]];
 		if (feedback != A0) {
 			/* feedback term is non-zero */
@@ -184,7 +184,7 @@ void encode_rs_char(struct rs *rs, data_t *data, data_t *parity)
 			 * always be for the polynomials constructed by init_rs() */
 			feedback = modnn(rs, rs->nn - rs->genpoly[rs->nroots] + feedback);
 #endif
-			for(j = 1; j < rs->nroots; j++)
+			for (j = 1; j < rs->nroots; j++)
 				parity[j] ^= rs->alpha_to[modnn(rs, feedback + rs->genpoly[rs->nroots - j])];
 		}
 
