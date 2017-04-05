@@ -33,7 +33,6 @@
 #include "luks.h"
 #include "loopaes.h"
 #include "verity.h"
-#include "fec.h"
 #include "tcrypt.h"
 #include "internal.h"
 

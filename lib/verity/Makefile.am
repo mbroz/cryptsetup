@@ -6,10 +6,9 @@ libverity_la_CFLAGS = -Wall $(AM_CFLAGS) @CRYPTO_CFLAGS@
 
 libverity_la_SOURCES = \
 	verity_hash.c \
+	verity_fec.c \
 	verity.c \
 	verity.h \
-	fec.c \
-	fec.h \
 	libfec/encode_rs_char.c \
 	libfec/encode_rs.h \
 	libfec/init_rs_char.c \

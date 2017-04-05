@@ -29,8 +29,21 @@
 
 #include "verity.h"
 #include "internal.h"
-#include "fec.h"
 #include "libfec/fec.h"
+
+/* ecc parameters */
+#define FEC_RSM 255
+#define FEC_MIN_RSN 231
+#define FEC_MAX_RSN 253
+
+/* parameters to init_rs_char */
+#define FEC_PARAMS(roots) \
+    8,          /* symbol size in bits */ \
+    0x11d,      /* field generator polynomial coefficients */ \
+    0,          /* first root of the generator */ \
+    1,          /* primitive element to generate polynomial roots */ \
+    (roots),    /* polynomial degree (number of roots) */ \
+    0           /* padding bytes at the front of shortened block */
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(array) \
