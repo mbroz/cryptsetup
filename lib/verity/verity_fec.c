@@ -25,7 +25,7 @@
 
 #include "verity.h"
 #include "internal.h"
-#include "libfec/fec.h"
+#include "rs.h"
 
 /* ecc parameters */
 #define FEC_RSM 255
