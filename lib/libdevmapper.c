@@ -165,9 +165,12 @@ static void _dm_set_verity_compat(const char *dm_version, unsigned verity_maj,
 	 * ignore_corruption, restart_on corruption is available since 1.2 (kernel 4.1)
 	 * ignore_zero_blocks since 1.3 (kernel 4.5)
 	 * (but some dm-verity targets 1.2 don't support it)
+	 * FEC is added in 1.3 as well.
 	 */
-	if (_dm_satisfies_version(1, 3, verity_maj, verity_min))
+	if (_dm_satisfies_version(1, 3, verity_maj, verity_min)) {
 		_dm_crypt_flags |= DM_VERITY_ON_CORRUPTION_SUPPORTED;
+		_dm_crypt_flags |= DM_VERITY_FEC_SUPPORTED;
+	}
 
 	log_dbg("Detected dm-verity version %i.%i.%i.",
 		verity_maj, verity_min, verity_patch);
@@ -742,6 +745,10 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 					  CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) &&
 	    !(dm_flags() & DM_VERITY_ON_CORRUPTION_SUPPORTED))
 		log_err(cd, _("Requested dm-verity data corruption handling options are not supported.\n"));
+
+	if (r == -EINVAL && dmd->target == DM_VERITY && dmd->u.verity.fec_device &&
+	    !(dm_flags() & DM_VERITY_FEC_SUPPORTED))
+		log_err(cd, _("Requested dm-verity FEC options are not supported.\n"));
 
 	crypt_safe_free(table_params);
 	dm_exit_context();
