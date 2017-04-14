@@ -140,7 +140,7 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 	ctx.blocks = FEC_div_round_up(ctx.size, ctx.block_size);
 	ctx.rounds = FEC_div_round_up(ctx.blocks, ctx.rsn);
 
-	buf = malloc(ctx.rounds * ctx.block_size * ctx.roots);
+	buf = malloc(ctx.block_size * ctx.rsn);
 	if (!buf) {
 		log_err(cd, _("Failed to allocate buffer.\n"));
 		r = -ENOMEM;
