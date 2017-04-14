@@ -78,7 +78,7 @@ int crypt_pbkdf_check(const char *kdf, const char *hash,
 		}
 
 		r = crypt_pbkdf(kdf, hash, password, password_length, salt,
-				salt_length, key, key_length, iterations);
+				salt_length, key, key_length, iterations, 0, 0);
 		if (r < 0)
 			goto out;
 

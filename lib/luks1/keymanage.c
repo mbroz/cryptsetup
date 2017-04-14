@@ -795,7 +795,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	r = crypt_pbkdf("pbkdf2", header->hashSpec, vk->key,vk->keylength,
 			header->mkDigestSalt, LUKS_SALTSIZE,
 			header->mkDigest,LUKS_DIGESTSIZE,
-			header->mkDigestIterations);
+			header->mkDigestIterations, 0, 0);
 	if(r < 0) {
 		log_err(ctx, _("Cannot create LUKS header: header digest failed (using hash %s).\n"),
 			header->hashSpec);
@@ -908,7 +908,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	r = crypt_pbkdf("pbkdf2", hdr->hashSpec, password, passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt, LUKS_SALTSIZE,
 			derived_key->key, hdr->keyBytes,
-			hdr->keyblock[keyIndex].passwordIterations);
+			hdr->keyblock[keyIndex].passwordIterations, 0, 0);
 	if (r < 0)
 		goto out;
 
@@ -966,7 +966,7 @@ int LUKS_verify_volume_key(const struct luks_phdr *hdr,
 	if (crypt_pbkdf("pbkdf2", hdr->hashSpec, vk->key, vk->keylength,
 			hdr->mkDigestSalt, LUKS_SALTSIZE,
 			checkHashBuf, LUKS_DIGESTSIZE,
-			hdr->mkDigestIterations) < 0)
+			hdr->mkDigestIterations, 0, 0) < 0)
 		return -EINVAL;
 
 	if (memcmp(checkHashBuf, hdr->mkDigest, LUKS_DIGESTSIZE))
@@ -1010,7 +1010,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 	r = crypt_pbkdf("pbkdf2", hdr->hashSpec, password, passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt, LUKS_SALTSIZE,
 			derived_key->key, hdr->keyBytes,
-			hdr->keyblock[keyIndex].passwordIterations);
+			hdr->keyblock[keyIndex].passwordIterations, 0, 0);
 	if (r < 0)
 		goto out;
 

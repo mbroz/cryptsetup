@@ -340,6 +340,13 @@ AM_CONDITIONAL(CRYPTO_BACKEND_NETTLE,  test $with_crypto_backend = nettle)
 AM_CONDITIONAL(CRYPTO_INTERNAL_PBKDF2, test $use_internal_pbkdf2 = 1)
 AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PBKDF2])
 
+AC_ARG_ENABLE(argon2, AS_HELP_STRING([--enable-argon2],
+	[enable internal implementation of Argon2 PBKDF]))
+AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test x$enable_argon2 = xyes)
+if test x$enable_argon2 = xyes ; then
+AC_DEFINE(USE_INTERNAL_ARGON2, 1, [Use internal Argon2])
+fi
+
 dnl Magic for cryptsetup.static build.
 if test x$enable_static_cryptsetup = xyes; then
 	saved_PKG_CONFIG=$PKG_CONFIG
@@ -470,6 +477,7 @@ AC_CONFIG_FILES([ Makefile
 lib/Makefile
 lib/libcryptsetup.pc
 lib/crypto_backend/Makefile
+lib/crypto_backend/argon2/Makefile
 lib/luks1/Makefile
 lib/loopaes/Makefile
 lib/verity/Makefile

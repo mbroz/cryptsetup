@@ -65,7 +65,7 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
 		const char *salt, size_t salt_length,
 		char *key, size_t key_length,
-		unsigned int iterations);
+		uint32_t iterations, uint32_t memory, uint32_t parallel);
 
 #if USE_INTERNAL_PBKDF2
 /* internal PBKDF2 implementation */
@@ -75,6 +75,14 @@ int pkcs5_pbkdf2(const char *hash,
 		 unsigned int c,
 		 unsigned int dkLen, char *DK,
 		 unsigned int hash_block_size);
+#endif
+
+#if USE_INTERNAL_ARGON2
+/* internal Argon2 implementation */
+int argon2(const char *type, const char *password, size_t password_length,
+	   const char *salt, size_t salt_length,
+	   char *key, size_t key_length,
+	   uint32_t iterations, uint32_t memory, uint32_t parallel);
 #endif
 
 /* CRC32 */
