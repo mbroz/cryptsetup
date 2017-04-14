@@ -77,6 +77,15 @@ int pkcs5_pbkdf2(const char *hash,
 		 unsigned int hash_block_size);
 #endif
 
+int argon2(const char *password, size_t password_length,
+	   const char *salt, size_t salt_length,
+	   char *key, size_t key_length,
+	   uint32_t iterations, uint32_t memory, uint32_t parallel);
+int crypt_argon2_check(const char *password, size_t password_length,
+		      const char *salt, size_t salt_length,
+		      size_t key_length, uint32_t m_cost, uint32_t p_cost,
+		      int iter_msec,  uint32_t *t_cost);
+
 /* CRC32 */
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
 

@@ -1,6 +1,12 @@
+SUBDIRS = argon2
+
 moduledir = $(libdir)/cryptsetup
 
 noinst_LTLIBRARIES = libcrypto_backend.la
+
+libcrypto_backend_la_DEPENDENCIES = argon2/libargon2.la
+
+libcrypto_backend_la_LIBADD = argon2/libargon2.la
 
 libcrypto_backend_la_CFLAGS = $(AM_CFLAGS) -Wall @CRYPTO_CFLAGS@
 
@@ -26,5 +32,7 @@ endif
 if CRYPTO_INTERNAL_PBKDF2
 libcrypto_backend_la_SOURCES += pbkdf2_generic.c
 endif
+
+libcrypto_backend_la_SOURCES += argon2_generic.c
 
 AM_CPPFLAGS = -include config.h -I$(top_srcdir)/lib

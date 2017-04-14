@@ -469,6 +469,7 @@ AC_CONFIG_FILES([ Makefile
 lib/Makefile
 lib/libcryptsetup.pc
 lib/crypto_backend/Makefile
+lib/crypto_backend/argon2/Makefile
 lib/luks1/Makefile
 lib/loopaes/Makefile
 lib/verity/Makefile
