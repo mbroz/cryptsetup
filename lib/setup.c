@@ -618,9 +618,13 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
 		return r;
 
-	if (params && params->fec_device &&
-	    (r = device_alloc(&cd->u.verity.fec_device, params->fec_device)) < 0)
-		return r;
+	if (params && params->fec_device) {
+		r = device_alloc(&cd->u.verity.fec_device, params->fec_device);
+		if (r < 0)
+			return r;
+		cd->u.verity.hdr.fec_area_offset = params->fec_area_offset;
+		cd->u.verity.hdr.fec_roots = params->fec_roots;
+	}
 
 	return r;
 }
