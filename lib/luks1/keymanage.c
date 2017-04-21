@@ -631,9 +631,11 @@ static int LUKS_check_cipher(struct luks_phdr *hdr, struct crypt_device *ctx)
 	if (!empty_key)
 		return -ENOMEM;
 
-	r = LUKS_decrypt_from_storage(buf, sizeof(buf),
-				      hdr->cipherName, hdr->cipherMode,
-				      empty_key, 0, ctx);
+	/* No need to get KEY quality random but it must avoid known weak keys. */
+	r = crypt_random_get(ctx, empty_key->key, empty_key->keylength, CRYPT_RND_NORMAL);
+	if (!r)
+		r = LUKS_decrypt_from_storage(buf, sizeof(buf), hdr->cipherName,
+					      hdr->cipherMode, empty_key, 0, ctx);
 
 	crypt_free_volume_key(empty_key);
 	crypt_memzero(buf, sizeof(buf));
