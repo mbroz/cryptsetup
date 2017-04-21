@@ -43,6 +43,7 @@ reenc_run() {
     cwd=$(pwd)
     local _prompt="LUKS password for REENCRYPTING $device"
     cd /tmp
+    udevadm settle
     if [ "$1" = "none" ] ; then
 	if [ "$2" != "any" ]; then
 		_prompt="$_prompt, using keyslot $2"
