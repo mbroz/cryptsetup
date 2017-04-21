@@ -124,9 +124,6 @@ static int fips_mode(void)
 	int fd;
 	char buf = 0;
 
-	if (access("/etc/system-fips", F_OK))
-		return 0;
-
 	fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY);
 
 	if (fd < 0)
@@ -1885,6 +1882,10 @@ static void TcryptTest(void)
 
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
+
+	// Following test uses non-FIPS algorithms in the cipher chain
+	if(_fips_mode)
+		return;
 
 	OK_(crypt_init(&cd, tcrypt_dev2));
 	params.keyfiles = NULL;
