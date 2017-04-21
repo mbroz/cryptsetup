@@ -24,4 +24,5 @@ if [ -n "$REENC_DEV" ] ; then
            /sbin/reencrypt $env{DEVNAME} %s"\n' "$REENC_KEY $REENC_SLOT $REENC_SIZE"
    printf 'LABEL="reenc_end"\n'
 } > /etc/udev/rules.d/69-reencryption.rules
+   initqueue --unique --finished --name crypt-reencrypt-finished-${REENC_DEV} [ -e /tmp/reencrypted ]
 fi
