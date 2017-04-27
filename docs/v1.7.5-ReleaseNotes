@@ -1,0 +1,22 @@
+Cryptsetup 1.7.5 Release Notes
+==============================
+
+Changes since version 1.7.5
+
+* Fixes to luksFormat to properly support recent kernel running in FIPS mode.
+
+  Cryptsetup must never use a weak key even if it is just used for testing
+  of algorithm availability. In FIPS mode, weak keys are always rejected.
+
+  A weak key is for example detected if the XTS encryption mode use
+  the same key for the tweak and the encryption part.
+
+* Fixes accesses to unaligned hidden legacy TrueCrypt header.
+
+  On a native 4k-sector device the old hidden TrueCrypt header is not
+  aligned with the hw sector size (this problem was fixed in later TrueCrypt
+  on-disk format versions).
+
+  Cryptsetup now properly aligns the read so it does not fail.
+
+* Fixes to optional dracut ramdisk scripts for offline re-encryption on initial boot.
