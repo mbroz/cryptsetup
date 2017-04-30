@@ -17,6 +17,10 @@ if REENCRYPT
 TESTS += reencryption-compat-test
 endif
 
+if INTEGRITYSETUP
+TESTS += integrity-compat-test
+endif
+
 EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	img_fs_ext4.img.bz2 img_fs_vfat.img.bz2 img_fs_xfs.img.bz2 \
 	valid_header_file.bz2 \
@@ -32,6 +36,7 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	tcrypt-compat-test \
 	luks1-compat-test \
 	device-test \
+	integrity-compat-test \
 	cryptsetup-valg-supps valg.sh valg-api.sh
 
 CLEANFILES = cryptsetup-tst* valglog*

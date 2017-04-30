@@ -34,6 +34,7 @@
 #include "loopaes.h"
 #include "verity.h"
 #include "tcrypt.h"
+#include "integrity.h"
 #include "internal.h"
 
 struct crypt_device {
@@ -77,6 +78,11 @@ struct crypt_device {
 		struct crypt_params_tcrypt params;
 		struct tcrypt_phdr hdr;
 	} tcrypt;
+	struct { /* used in CRYPT_INTEGRITY */
+		struct crypt_params_integrity params;
+		struct volume_key *journal_mac_key;
+		struct volume_key *journal_crypt_key;
+	} integrity;
 	struct { /* used if initialized without header by name */
 		char *active_name;
 		/* buffers, must refresh from kernel on every query */
@@ -245,6 +251,11 @@ static int isVERITY(const char *type)
 static int isTCRYPT(const char *type)
 {
 	return (type && !strcmp(CRYPT_TCRYPT, type));
+}
+
+static int isINTEGRITY(const char *type)
+{
+	return (type && !strcmp(CRYPT_INTEGRITY, type));
 }
 
 static int onlyLUKS(struct crypt_device *cd)
@@ -635,6 +646,55 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	return r;
 }
 
+static int _crypt_load_integrity(struct crypt_device *cd,
+				 struct crypt_params_integrity *params)
+{
+	int r;
+
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
+	r = INTEGRITY_read_sb(cd, &cd->u.integrity.params);
+	if (r < 0)
+		return r;
+
+	if (params) {
+		cd->u.integrity.params.journal_watermark = params->journal_watermark;
+		cd->u.integrity.params.journal_commit_time = params->journal_commit_time;
+		cd->u.integrity.params.buffer_sectors = params->buffer_sectors;
+		// FIXME: check ENOMEM
+		if (params->integrity)
+			cd->u.integrity.params.integrity = strdup(params->integrity);
+		if (params->journal_integrity)
+			cd->u.integrity.params.journal_integrity = strdup(params->journal_integrity);
+		if (params->journal_crypt)
+			cd->u.integrity.params.journal_crypt = strdup(params->journal_crypt);
+
+		if (params->journal_crypt_key) {
+			cd->u.integrity.journal_crypt_key =
+				crypt_alloc_volume_key(params->journal_crypt_key_size,
+						       params->journal_crypt_key);
+			if (!cd->u.integrity.journal_crypt_key)
+				return -ENOMEM;
+		}
+		if (params->journal_integrity_key) {
+			cd->u.integrity.journal_mac_key =
+				crypt_alloc_volume_key(params->journal_integrity_key_size,
+						       params->journal_integrity_key);
+			if (!cd->u.integrity.journal_mac_key)
+				return -ENOMEM;
+		}
+	}
+
+	if (!cd->type && !(cd->type = strdup(CRYPT_INTEGRITY))) {
+		free(CONST_CAST(void*)cd->u.integrity.params.integrity);
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
 static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 {
 	struct crypt_dm_active_device dmd = {};
@@ -754,6 +814,38 @@ out:
 	return r;
 }
 
+static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
+{
+	struct crypt_dm_active_device dmd = {
+		.target = DM_INTEGRITY,
+	};
+	int r;
+
+	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE |
+				      DM_ACTIVE_CRYPT_KEY |
+				      DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
+	if (r < 0)
+		goto out;
+	if (r > 0)
+		r = 0;
+
+	if (isINTEGRITY(cd->type)) {
+		cd->u.integrity.params.tag_size = dmd.u.integrity.tag_size;
+		cd->u.integrity.params.sector_size = dmd.u.integrity.sector_size;
+		cd->u.integrity.params.journal_size = dmd.u.integrity.journal_size;
+		cd->u.integrity.params.journal_watermark = dmd.u.integrity.journal_watermark;
+		cd->u.integrity.params.journal_commit_time = dmd.u.integrity.journal_commit_time;
+		cd->u.integrity.params.interleave_sectors = dmd.u.integrity.interleave_sectors;
+		cd->u.integrity.params.buffer_sectors = dmd.u.integrity.buffer_sectors;
+		cd->u.integrity.params.integrity = dmd.u.integrity.integrity;
+		//FIXME init keys?
+	}
+out:
+	crypt_free_volume_key(dmd.u.integrity.vk);
+	device_free(dmd.data_device);
+	return r;
+}
+
 int crypt_init_by_name_and_header(struct crypt_device **cd,
 				  const char *name,
 				  const char *header_device)
@@ -811,6 +903,8 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			(*cd)->type = strdup(CRYPT_VERITY);
 		else if (!strncmp(CRYPT_TCRYPT, dmd.uuid, sizeof(CRYPT_TCRYPT)-1))
 			(*cd)->type = strdup(CRYPT_TCRYPT);
+		else if (!strncmp(CRYPT_INTEGRITY, dmd.uuid, sizeof(CRYPT_INTEGRITY)-1))
+			(*cd)->type = strdup(CRYPT_INTEGRITY);
 		else
 			log_dbg("Unknown UUID set, some parameters are not set.");
 	} else
@@ -828,6 +922,8 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 		r = _init_by_name_crypt(*cd, name);
 	else if (dmd.target == DM_VERITY)
 		r = _init_by_name_verity(*cd, name);
+	else if (dmd.target == DM_INTEGRITY)
+		r = _init_by_name_integrity(*cd, name);
 out:
 	if (r < 0) {
 		crypt_free(*cd);
@@ -1129,6 +1225,78 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	return r;
 }
 
+static int _crypt_format_integrity(struct crypt_device *cd,
+				   const char *uuid,
+				   struct crypt_params_integrity *params)
+{
+	int r;
+
+	if (!params)
+		return -EINVAL;
+
+	if (uuid) {
+		log_err(cd, _("UUID is not supported for this crypt type.\n"));
+		return -EINVAL;
+	}
+
+	/* Wipe first 8 sectors - fs magic numbers etc. */
+	r = crypt_wipe(crypt_metadata_device(cd), 0, 8 * SECTOR_SIZE, CRYPT_WIPE_ZERO, 1);
+	if (r < 0) {
+		if (r == -EBUSY)
+			log_err(cd, _("Cannot format device %s which is still in use.\n"),
+				mdata_device_path(cd));
+		else if (r == -EACCES) {
+			log_err(cd, _("Cannot format device %s, permission denied.\n"),
+				mdata_device_path(cd));
+			r = -EINVAL;
+		} else
+			log_err(cd, _("Cannot wipe header on device %s.\n"),
+				mdata_device_path(cd));
+
+		return r;
+	}
+
+	if (!(cd->type = strdup(CRYPT_INTEGRITY)))
+		return -ENOMEM;
+
+	if (params->journal_crypt_key) {
+		cd->u.integrity.journal_crypt_key =
+			crypt_alloc_volume_key(params->journal_crypt_key_size,
+					       params->journal_crypt_key);
+		if (!cd->u.integrity.journal_crypt_key) {
+			crypt_reset_null_type(cd);
+			return -ENOMEM;
+		}
+	}
+	if (params->journal_integrity_key) {
+		cd->u.integrity.journal_mac_key =
+			crypt_alloc_volume_key(params->journal_integrity_key_size,
+					       params->journal_integrity_key);
+		if (!cd->u.integrity.journal_mac_key) {
+			crypt_reset_null_type(cd);
+			return -ENOMEM;
+		}
+	}
+
+	cd->u.integrity.params.journal_size = params->journal_size;
+	cd->u.integrity.params.journal_watermark = params->journal_watermark;
+	cd->u.integrity.params.journal_commit_time = params->journal_commit_time;
+	cd->u.integrity.params.interleave_sectors = params->interleave_sectors;
+	cd->u.integrity.params.buffer_sectors = params->buffer_sectors;
+	cd->u.integrity.params.sector_size = params->sector_size;
+	cd->u.integrity.params.tag_size = params->tag_size;
+	cd->u.integrity.params.integrity = params->integrity;
+	cd->u.integrity.params.journal_integrity = params->journal_integrity;
+	cd->u.integrity.params.journal_crypt = params->journal_crypt;
+
+	r = INTEGRITY_format(cd, params, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key);
+	if (r)
+		log_err(cd, _("Cannot format integrity for device %s.\n"),
+			mdata_device_path(cd));
+
+	return r;
+}
+
 int crypt_format(struct crypt_device *cd,
 	const char *type,
 	const char *cipher,
@@ -1166,6 +1334,8 @@ int crypt_format(struct crypt_device *cd,
 		r = _crypt_format_loopaes(cd, cipher, uuid, volume_key_size, params);
 	else if (isVERITY(type))
 		r = _crypt_format_verity(cd, uuid, params);
+	else if (isINTEGRITY(type))
+		r = _crypt_format_integrity(cd, uuid, params);
 	else {
 		log_err(cd, _("Unknown crypt device type %s requested.\n"), type);
 		r = -EINVAL;
@@ -1213,6 +1383,12 @@ int crypt_load(struct crypt_device *cd,
 			return -EINVAL;
 		}
 		r = _crypt_load_tcrypt(cd, params);
+	} else if (isINTEGRITY(requested_type)) {
+		if (cd->type && !isINTEGRITY(cd->type)) {
+			log_dbg("Context is already initialised to type %s", cd->type);
+			return -EINVAL;
+		}
+		r = _crypt_load_integrity(cd, params);
 	} else
 		return -EINVAL;
 
@@ -1404,6 +1580,10 @@ void crypt_free(struct crypt_device *cd)
 			free(cd->u.verity.root_hash);
 			free(cd->u.verity.uuid);
 			device_free(cd->u.verity.fec_device);
+		} else if (isINTEGRITY(cd->type)) {
+			free(CONST_CAST(void*)cd->u.integrity.params.integrity);
+			crypt_free_volume_key(cd->u.integrity.journal_crypt_key);
+			crypt_free_volume_key(cd->u.integrity.journal_mac_key);
 		} else if (!cd->type) {
 			free(cd->u.none.active_name);
 		}
@@ -2069,6 +2249,17 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 			return 0;
 		r = TCRYPT_activate(cd, name, &cd->u.tcrypt.hdr,
 				    &cd->u.tcrypt.params, flags);
+	} else if (isINTEGRITY(cd->type)) {
+		if (!name)
+			return 0;
+		if (volume_key) {
+			vk = crypt_alloc_volume_key(volume_key_size, volume_key);
+			if (!vk)
+				return -ENOMEM;
+		}
+		r = INTEGRITY_activate(cd, name, &cd->u.integrity.params, vk,
+				       cd->u.integrity.journal_crypt_key,
+				       cd->u.integrity.journal_mac_key, flags);
 	} else
 		log_err(cd, _("Device type is not properly initialised.\n"));
 
@@ -2326,6 +2517,8 @@ int crypt_dump(struct crypt_device *cd)
 		return _verity_dump(cd);
 	else if (isTCRYPT(cd->type))
 		return TCRYPT_dump(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+	else if (isINTEGRITY(cd->type))
+		return INTEGRITY_dump(cd, crypt_data_device(cd), 0);
 
 	log_err(cd, _("Dump operation is not supported for this device type.\n"));
 	return -EINVAL;
@@ -2394,6 +2587,52 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 		return cd->u.none.cipher_mode;
 
 	return NULL;
+}
+
+const char *crypt_get_integrity(struct crypt_device *cd)
+{
+	if (isINTEGRITY(cd->type))
+		return cd->u.integrity.params.integrity;
+
+	return NULL;
+}
+
+int crypt_get_integrity_key_size(struct crypt_device *cd)
+{
+	if (isINTEGRITY(cd->type))
+		return INTEGRITY_key_size(cd);
+
+	return 0;
+}
+
+int crypt_get_integrity_tag_size(struct crypt_device *cd)
+{
+	if (isINTEGRITY(cd->type))
+		return cd->u.integrity.params.tag_size;
+
+	return 0;
+}
+
+uint64_t crypt_get_integrity_sectors(struct crypt_device *cd)
+{
+	uint64_t sectors;
+
+	if (!isINTEGRITY(cd->type))
+		return 0;
+
+	if (INTEGRITY_data_sectors(cd, crypt_data_device(cd),
+		crypt_get_data_offset(cd) * SECTOR_SIZE, &sectors) < 0)
+		return 0;
+
+	return sectors;
+}
+
+int crypt_get_sector_size(struct crypt_device *cd)
+{
+	if (isINTEGRITY(cd->type))
+		return cd->u.integrity.params.sector_size;
+
+	return SECTOR_SIZE;
 }
 
 const char *crypt_get_uuid(struct crypt_device *cd)
@@ -2539,13 +2778,15 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	if (r < 0)
 		return r;
 
-	if (dmd.target != DM_CRYPT && dmd.target != DM_VERITY)
+	if (dmd.target != DM_CRYPT &&
+	    dmd.target != DM_VERITY &&
+	    dmd.target != DM_INTEGRITY)
 		return -ENOTSUP;
 
 	if (cd && isTCRYPT(cd->type)) {
 		cad->offset	= TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 		cad->iv_offset	= TCRYPT_get_iv_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
-	} else {
+	} else if (dmd.target == DM_CRYPT) {
 		cad->offset	= dmd.u.crypt.offset;
 		cad->iv_offset	= dmd.u.crypt.iv_offset;
 	}

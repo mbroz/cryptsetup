@@ -1,0 +1,96 @@
+.TH INTEGRITYSETUP "8" "May 2017" "integritysetup" "Maintenance Commands"
+.SH NAME
+integritysetup - manage dm-integrity (block level integrity) volumes
+.SH SYNOPSIS
+.B integritysetup <options> <action> <action args>
+.SH DESCRIPTION
+.PP
+Integritysetup is used to configure dm-integrity managed device-mapper mappings.
+
+Device-mapper integrity target provides read-write transparent integrity
+checking of block devices. The dm-integrity target emulates additional data
+integrity field per-sector. You can use this additional field directly
+with integritysetup utility, or indirectly (for authenticated encryption)
+through cryptsetup.
+
+Integritysetup supports these operations:
+.PP
+\fIformat\fR <device>
+.IP
+Formats <device> (calculates space and dm-integrity superblock).
+\fB<options>\fR can be []
+
+.PP
+\fIcreate\fR <name> <device>
+.IP
+Creates a mapping with <name> backed by device <device>.
+
+.PP
+\fIremove\fR <name>
+.IP
+Removes existing mapping <name>.
+.PP
+\fIstatus\fR <name>
+.IP
+Reports status for the active integrity mapping <name>.
+.PP
+\fIdump\fR <device>
+.IP
+Reports parameters from on-disk stored superblock.
+
+.SH OPTIONS
+.TP
+.B "\-\-verbose, \-v"
+Print more information on command execution.
+.TP
+.B "\-\-debug"
+Run in debug mode with full diagnostic logs. Debug output
+lines are always prefixed by '#'.
+.B "\-\-version"
+Show the program version.
+.TP
+
+\fBWARNING:\fR Use these options only for very specific cases.
+The dm-integrity target is available since Linux kernel version 4.12.
+.TP
+.SH RETURN CODES
+Integritysetup returns 0 on success and a non-zero value on error.
+
+Error codes are:
+    1 wrong parameters
+    2 no permission
+    3 out of memory
+    4 wrong device specified
+    5 device already exists or device is busy.
+
+.SH EXAMPLES
+.B "integritysetup format <device> --tag-size 4"
+
+Formats device to use additional 4 bytes per-sector for integrity data.
+
+.B "integritysetup create test-device <device> --integrity crc32"
+
+Acivates the integrity device named test-device and automaticaly calculate specified
+checsum on write (and verifies it on read).
+
+.SH REPORTING BUGS
+Report bugs, including ones in the documentation, on
+the cryptsetup mailing list at <dm-crypt@saout.de>
+or in the 'Issues' section on LUKS website.
+Please attach the output of the failed command with the
+\-\-debug option added.
+.SH AUTHORS
+The integritysetup tool and code is written by Milan Broz <gmazyland@gmail.com>
+and is part of cryptsetup project.
+.SH COPYRIGHT
+Copyright \(co 2016-2017 Red Hat, Inc.
+.br
+Copyright \(co 2016-2017 Milan Broz
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+.SH SEE ALSO
+The project website at \fBhttps://gitlab.com/cryptsetup/cryptsetup\fR
+
+The integrity on-disk format specification available at
+\fBhttps://gitlab.com/cryptsetup/cryptsetup/wikis/DMIntegrity\fR

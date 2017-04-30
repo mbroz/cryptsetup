@@ -268,6 +268,11 @@ AC_ARG_ENABLE([cryptsetup-reencrypt],
 	[enable cryptsetup-reencrypt tool]))
 AM_CONDITIONAL(REENCRYPT, test x$enable_cryptsetup_reencrypt = xyes)
 
+AC_ARG_ENABLE(integritysetup,
+	AS_HELP_STRING([--disable-integritysetup],
+	[disable integritysetup support]),[], [enable_integritysetup=yes])
+AM_CONDITIONAL(INTEGRITYSETUP, test x$enable_integritysetup = xyes)
+
 AC_ARG_ENABLE(selinux,
 	AS_HELP_STRING([--disable-selinux],
 	[disable selinux support [default=auto]]),[], [])
@@ -468,6 +473,7 @@ lib/luks1/Makefile
 lib/loopaes/Makefile
 lib/verity/Makefile
 lib/tcrypt/Makefile
+lib/integrity/Makefile
 src/Makefile
 po/Makefile.in
 man/Makefile

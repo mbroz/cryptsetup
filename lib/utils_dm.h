@@ -44,6 +44,7 @@ struct device;
 #define DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED (1 << 8) /* submit_from_crypt_cpus */
 #define DM_VERITY_ON_CORRUPTION_SUPPORTED (1 << 9) /* ignore/restart_on_corruption, ignore_zero_block */
 #define DM_VERITY_FEC_SUPPORTED (1 << 10) /* Forward Error Correction (FEC) */
+#define DM_INTEGRITY_SUPPORTED (1 << 12) /* dm-integrity target supported */
 
 uint32_t dm_flags(void);
 
@@ -59,7 +60,7 @@ uint32_t dm_flags(void);
 #define DM_ACTIVE_VERITY_PARAMS		(1 << 7)
 
 struct crypt_dm_active_device {
-	enum { DM_CRYPT = 0, DM_VERITY } target;
+	enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY } target;
 	uint64_t size;		/* active device size */
 	uint32_t flags;		/* activation flags */
 	const char *uuid;
@@ -67,6 +68,7 @@ struct crypt_dm_active_device {
 	union {
 	struct {
 		const char *cipher;
+		const char *integrity;
 
 		/* Active key for device */
 		struct volume_key *vk;
@@ -88,6 +90,26 @@ struct crypt_dm_active_device {
 		uint64_t fec_blocks;	/* size of FEC device (in hash blocks) */
 		struct crypt_params_verity *vp;
 	} verity;
+	struct {
+		uint64_t journal_size;
+		uint32_t journal_watermark;
+		uint32_t journal_commit_time;
+		uint32_t interleave_sectors;
+		uint32_t tag_size;
+		uint64_t offset;	/* offset in sectors */
+		uint32_t sector_size;	/* integrity sector size */
+		uint32_t buffer_sectors;
+
+		const char *integrity;
+		/* Active key for device */
+		struct volume_key *vk;
+
+		const char *journal_integrity;
+		struct volume_key *journal_integrity_key;
+
+		const char *journal_crypt;
+		struct volume_key *journal_crypt_key;
+	} integrity;
 	} u;
 };
 

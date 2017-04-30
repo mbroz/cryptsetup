@@ -84,6 +84,28 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 	return -EINVAL;
 }
 
+int crypt_parse_hash_integrity_mode(const char *s, char *integrity)
+{
+	char mode[MAX_CIPHER_LEN], hash[MAX_CIPHER_LEN];
+	int r;
+
+	if (!s || !integrity || strchr(s, '(') || strchr(s, ')'))
+		return -EINVAL;
+
+	r = sscanf(s, "%" MAX_CIPHER_LEN_STR "[^-]-%" MAX_CIPHER_LEN_STR "s", mode, hash);
+	if (r == 2)
+		r = snprintf(integrity, MAX_CIPHER_LEN, "%s(%s)", mode, hash);
+	else if (r == 1)
+		r = snprintf(integrity, MAX_CIPHER_LEN, "%s", mode);
+	else
+		return -EINVAL;
+
+	if (r < 0 || r == MAX_CIPHER_LEN)
+		return -EINVAL;
+
+	return 0;
+}
+
 /*
  * Replacement for memset(s, 0, n) on stack that can be optimized out
  * Also used in safe allocations for explicit memory wipe.

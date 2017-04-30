@@ -8,4 +8,8 @@ if REENCRYPT
 man8_MANS += cryptsetup-reencrypt.8
 endif
 
-EXTRA_DIST = cryptsetup.8 veritysetup.8 cryptsetup-reencrypt.8
+if INTEGRITYSETUP
+man8_MANS += integritysetup.8
+endif
+
+EXTRA_DIST = cryptsetup.8 integritysetup.8 veritysetup.8 cryptsetup-reencrypt.8

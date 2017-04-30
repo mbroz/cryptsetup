@@ -243,6 +243,8 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
 #define CRYPT_VERITY "VERITY"
 /** TCRYPT (TrueCrypt-compatible and VeraCrypt-compatible) mode */
 #define CRYPT_TCRYPT "TCRYPT"
+/** INTEGRITY dm-integrity device */
+#define CRYPT_INTEGRITY "INTEGRITY"
 
 /**
  * Get device type
@@ -357,6 +359,32 @@ struct crypt_params_tcrypt {
  *  VeraCrypt device is reported as TCRYPT type.
  */
 #define CRYPT_TCRYPT_VERA_MODES      (1 << 4)
+
+/**
+ *
+ * Structure used as parameter for dm-integrity device type.
+ *
+ * @see crypt_format, crypt_load
+ *
+ */
+struct crypt_params_integrity {
+	uint64_t journal_size;
+	unsigned int journal_watermark;
+	unsigned int journal_commit_time;
+	uint32_t interleave_sectors;
+	uint32_t tag_size;
+	uint32_t sector_size;	/* integrity sector size */
+	uint32_t buffer_sectors;
+	const char *integrity;
+
+	const char *journal_integrity;
+	const char *journal_integrity_key;   /* only for crypt_load */
+	uint32_t journal_integrity_key_size; /* only for crypt_load */
+
+	const char *journal_crypt;
+	const char *journal_crypt_key;       /* only for crypt_load */
+	uint32_t journal_crypt_key_size;     /* only for crypt_load */
+};
 
 /** @} */
 
@@ -677,7 +705,10 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_RESTART_ON_CORRUPTION (1 << 9)
 /** dm-verity: ignore_zero_blocks - do not verify zero blocks */
 #define CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS (1 << 10)
-
+/** dm-integrity: direct writes, do not use journal */
+#define CRYPT_ACTIVATE_NO_JOURNAL (1 << 12)
+/** dm-integrity: recovery mode - no journal, no integrity checks */
+#define CRYPT_ACTIVATE_RECOVERY (1 << 13)
 
 /**
  * Active device runtime attributes
@@ -887,6 +918,46 @@ const char *crypt_get_cipher(struct crypt_device *cd);
 const char *crypt_get_cipher_mode(struct crypt_device *cd);
 
 /**
+ * Get cipher integrity mode used in device.
+ *
+ * @param cd crypt device handle
+ *
+ * @return used cipher mode e.g. "hmac(sha256)" or @e otherwise
+ *
+ */
+const char *crypt_get_integrity(struct crypt_device *cd);
+
+/**
+ * Get size (in bytes) of integrity key (if present) for crypt device.
+ *
+ * @param cd crypt device handle
+ *
+ * @return integrity key size
+ *
+ */
+int crypt_get_integrity_key_size(struct crypt_device *cd);
+
+/**
+ * Get size (in bytes) of integrity tag (if present) for crypt device.
+ *
+ * @param cd crypt device handle
+ *
+ * @return integrity tag size
+ *
+ */
+int crypt_get_integrity_tag_size(struct crypt_device *cd);
+
+/**
+ * Get size (in bytes) of provided data sectors for integrity device.
+ *
+ * @param cd crypt device handle
+ *
+ * @return provided device size in 512-bytes sectors
+ *
+ */
+uint64_t crypt_get_integrity_sectors(struct crypt_device *cd);
+
+/**
  * Get device UUID.
  *
  * @param cd crypt device handle
@@ -935,6 +1006,16 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd);
  *
  */
 int crypt_get_volume_key_size(struct crypt_device *cd);
+
+/**
+ * Get size (in bytes) of encryption sector for crypt device.
+ *
+ * @param cd crypt device handle
+ *
+ * @return sector size
+ *
+ */
+int crypt_get_sector_size(struct crypt_device *cd);
 
 /**
  * Get device parameters for VERITY device.
