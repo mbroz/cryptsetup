@@ -123,6 +123,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 		log_err(cd, _("Hash algorithm %s not supported.\n"),
 			params->hash_name);
 		free(CONST_CAST(char*)params->hash_name);
+		params->hash_name = NULL;
 		return -EINVAL;
 	}
 
@@ -130,11 +131,13 @@ int VERITY_read_sb(struct crypt_device *cd,
 	if (params->salt_size > sizeof(sb.salt)) {
 		log_err(cd, _("VERITY header corrupted.\n"));
 		free(CONST_CAST(char*)params->hash_name);
+		params->hash_name = NULL;
 		return -EINVAL;
 	}
 	params->salt = malloc(params->salt_size);
 	if (!params->salt) {
 		free(CONST_CAST(char*)params->hash_name);
+		params->hash_name = NULL;
 		return -ENOMEM;
 	}
 	memcpy(CONST_CAST(char*)params->salt, sb.salt, params->salt_size);
