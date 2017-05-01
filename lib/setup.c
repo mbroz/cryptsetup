@@ -603,6 +603,14 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	if (r < 0)
 		return r;
 
+	if (!cd->type && !(cd->type = strdup(CRYPT_VERITY))) {
+		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
+		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
+		free(cd->u.verity.uuid);
+		crypt_memzero(&cd->u.verity.hdr, sizeof(cd->u.verity.hdr));
+		return -ENOMEM;
+	}
+
 	if (params)
 		cd->u.verity.hdr.flags = params->flags;
 
@@ -610,9 +618,6 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	cd->u.verity.root_hash_size = crypt_hash_size(cd->u.verity.hdr.hash_name);
 	if (cd->u.verity.root_hash_size > 4096)
 		return -EINVAL;
-
-	if (!cd->type && !(cd->type = strdup(CRYPT_VERITY)))
-		return -ENOMEM;
 
 	if (params && params->data_device &&
 	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
