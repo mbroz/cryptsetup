@@ -6,12 +6,14 @@ DEV_NAME=verity3273
 DEV_OUT="$DEV_NAME.out"
 IMG=verity-data
 IMG_HASH=verity-hash
+IMG_TMP=tst-dev
+FEC_DEV=tst_fec123
 
 function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $IMG_HASH $DEV_OUT >/dev/null 2>&1
+	rm -f $IMG $IMG_HASH $DEV_OUT $FEC_DEV $IMG_TMP  >/dev/null 2>&1
 	LOOPDEV1=""
 	LOOPDEV2=""
 }
@@ -35,7 +37,7 @@ function prepare() # $1 dev1_siz [$2 dev2_size]
 {
 	remove_mapping
 
-	dd if=/dev/zero of=$IMG      bs=1k count=$1 >/dev/null 2>&1
+	dd if=/dev/zero of=$IMG bs=1k count=$1 >/dev/null 2>&1
 	LOOPDEV1=$(losetup -f 2>/dev/null)
 	[ -z "$LOOPDEV1" ] && fail "No free loop device"
 	losetup $LOOPDEV1 $IMG
@@ -57,14 +59,14 @@ function check_exists()
 
 function check_version()
 {
-        VER_STR=$(dmsetup targets | grep verity | cut -f 3 -dv)
-        VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
-        VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_STR=$(dmsetup targets | grep verity | cut -f 3 -dv)
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
 
-        # option supported in 1.3
-        test $VER_MAJ -gt 1 && return 0
-        test $VER_MIN -ge 3 && return 0
-        return 1
+	# option supported in 1.3
+	test $VER_MAJ -gt 1 && return 0
+	test $VER_MIN -ge 3 && return 0
+	return 1
 }
 
 function compare_out() # $1 what, $2 expected
@@ -144,6 +146,84 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	done
 }
 
+function corrupt_device() # $1 device, $2 device_size(in bytes), $3 #{corrupted_bytes}
+{
+	ARR=(`seq 0 $(($2 - 1)) | shuf`)
+	CORRUPT=$3
+
+	while [ "$CORRUPT" -gt 0 ]; do
+		echo "1" | dd of=$1 bs=1 count=1 seek=${ARR[$CORRUPT]} conv=notrunc > /dev/null 2>&1
+		CORRUPT=$(($CORRUPT - 1))
+	done
+}
+
+# $1 data_device, $2 hash_device, $3 fec_device, $4 data/hash_block_size(in bytes),
+# $5 data_size(in blocks), $6 device_size(in blocks), $7 hash_offset(in bytes),
+# $8 fec_offset(in bytes), $9 fec_roots, ${10} corrupted_bytes, [${11} superblock(y/n), ${12} salt]
+function check_fec()
+{
+	INDEX=25
+	dd if=/dev/zero of=$1 bs=$4 count=$6 > /dev/null 2>&1
+
+	echo -n "Block_size: $4, Data_size: $(($4 * $5))B, FEC_roots: $9, Corrupted_bytes: ${10} "
+
+	PARAMS=" --data-block-size=$4 --hash-block-size=$4 "
+	if [ "$5" -ne "$6" ]; then
+		PARAMS="$PARAMS --data-blocks=$5"
+	fi
+
+	if [ "$7" -ne 0 ]; then
+		PARAMS="$PARAMS --hash-offset=$7"
+	fi
+
+	if [ "$8" -ne 0 ]; then
+		PARAMS="$PARAMS --fec-offset=$8"
+	fi
+
+	if [ "${11}" == "n" ]; then
+		INDEX=24
+		echo -n "[no-superblock]"
+		PARAMS="$PARAMS --no-superblock -s=${12}"
+	elif [ -n "${12}" ]; then
+		PARAMS="$PARAMS -s=${12}"
+	fi
+
+	if [[ "$1" == "$2" && "$1" == "$3" ]]; then
+		echo -n "[one_device_test]"
+		dd if=/dev/zero of=$IMG_TMP bs=$4 count=$5  > /dev/null 2>&1
+		ARR=(`sha256sum $IMG_TMP`)
+		HASH_ORIG=${ARR[0]}
+	else
+		ARR=(`sha256sum $1`)
+		HASH_ORIG=${ARR[0]}
+	fi
+
+	ARR=(`$VERITYSETUP format $1 $2 --fec-device=$3 $PARAMS`)
+	SALT=${ARR[$INDEX]}
+	ROOT_HASH=${ARR[$(($INDEX+3))]}
+
+	corrupt_device $1 $(($5 * $4)) ${10}
+
+	$VERITYSETUP create $DEV_NAME $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS > /dev/null 2>&1
+
+	udevadm settle
+
+	dd if=/dev/mapper/$DEV_NAME of=$IMG_TMP > /dev/null 2>&1
+	ARR=(`sha256sum $IMG_TMP`)
+
+	HASH_REPAIRED=${ARR[0]}
+
+	$VERITYSETUP remove $DEV_NAME
+	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
+
+	if [ "$HASH_ORIG" != "$HASH_REPAIRED" ]; then
+		echo -n "[correction failed]"
+		return 1
+	fi
+
+	echo "[file was repaired][OK]"
+}
+
 function check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI option, $7 status option
 {
 	DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
@@ -179,6 +259,7 @@ function checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
 	echo "[OK]"
 	remove_mapping
 }
+
 function checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks
 {
 	echo -n "Size :: $1 B | Hash-offset :: $2 blocks | "
@@ -252,6 +333,22 @@ checkOffsetBug 10000000000 8000000000 128
 echo "Veritysetup [overlap-detection] "
 checkOverlapBug 2097152 1433600
 checkOverlapBug 2097152 1433600 350
+
+if check_version ; then
+	echo "Veritysetup [FEC tests]"
+	command -v shuf >/dev/null 2>&1 || skip "WARNING: shuf tool required."
+
+	for INDEX in  {1..4}; do
+	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) ) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 35 35 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 512 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 1024 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
+	  # this test should fail
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($RANDOM % 200 + 200))) && fail "FEC repair must fail"
+	  echo "[OK]"
+	done
+fi
 
 remove_mapping
 exit 0
