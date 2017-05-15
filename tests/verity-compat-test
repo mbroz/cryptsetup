@@ -205,6 +205,10 @@ function check_fec()
 	corrupt_device $1 $(($5 * $4)) ${10}
 
 	$VERITYSETUP create $DEV_NAME $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS > /dev/null 2>&1
+	if [ "$?" -ne "0" ] ; then
+		echo "[N/A, test skipped]"
+		return 3
+	fi
 
 	udevadm settle
 
@@ -314,7 +318,6 @@ check_root_hash 4096 ef29c902d87350f1da4bfa536e16cebc162a909bf89abe448b81ec500d4
 check_root_hash 1024 d0e9163ca8844aaa2e88fe5265a8c5d9ee494a99 $SALT 1 sha1 8388608
 check_root_hash 1024 73509e8e868be6b8ac939817a98a3d35121413b2 dadada 1 sha1 8388608
 
-
 if check_version ; then
 	echo "Verity data corruption options test."
 	SALT=e48da609055204e89ae53b655ca2216dd983cf3cb829f34f63a297d106d53e2d
@@ -339,7 +342,12 @@ if check_version ; then
 	command -v shuf >/dev/null 2>&1 || skip "WARNING: shuf tool required."
 
 	for INDEX in  {1..4}; do
-	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) ) || fail "FEC repair failed"
+	  # in the first iteration check if we can usae FEC (it can be compiled-out)
+	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) )
+	  RET=$?
+	  [ "$RET" -eq "3" ] && break
+	  [ "$RET" -eq "0" ] || fail "FEC repair failed"
+
 	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
 	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 35 35 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
 	  (check_fec $IMG $IMG_HASH $FEC_DEV 512 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
