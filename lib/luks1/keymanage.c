@@ -627,7 +627,7 @@ static int LUKS_check_cipher(struct luks_phdr *hdr, struct crypt_device *ctx)
 
 	log_dbg("Checking if cipher %s-%s is usable.", hdr->cipherName, hdr->cipherMode);
 
-	empty_key = crypt_alloc_volume_key(hdr->keyBytes, NULL);
+	empty_key = crypt_alloc_volume_key(hdr->keyBytes, hdr->keyBytes >= 4 ? "key" : NULL);
 	if (!empty_key)
 		return -ENOMEM;
 
