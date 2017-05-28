@@ -182,21 +182,23 @@ int INTEGRITY_activate(struct crypt_device *cd,
 			.offset = crypt_get_data_offset(cd),
 			.tag_size = crypt_get_integrity_tag_size(cd),
 			.sector_size = crypt_get_sector_size(cd),
+			.vk = vk,
+			.journal_crypt_key = journal_crypt_key,
+			.journal_integrity_key = journal_mac_key,
 		}
 	};
 	int r;
 
-	dmdi.u.integrity.journal_size = params->journal_size;
-	dmdi.u.integrity.journal_watermark = params->journal_watermark;
-	dmdi.u.integrity.journal_commit_time = params->journal_commit_time;
-	dmdi.u.integrity.interleave_sectors = params->interleave_sectors;
-	dmdi.u.integrity.buffer_sectors = params->buffer_sectors;
-	dmdi.u.integrity.integrity = params->integrity;
-	dmdi.u.integrity.vk = vk;
-	dmdi.u.integrity.journal_integrity = params->journal_integrity;
-	dmdi.u.integrity.journal_integrity_key = journal_mac_key;
-	dmdi.u.integrity.journal_crypt = params->journal_crypt;
-	dmdi.u.integrity.journal_crypt_key = journal_crypt_key;
+	if (params) {
+		dmdi.u.integrity.journal_size = params->journal_size;
+		dmdi.u.integrity.journal_watermark = params->journal_watermark;
+		dmdi.u.integrity.journal_commit_time = params->journal_commit_time;
+		dmdi.u.integrity.interleave_sectors = params->interleave_sectors;
+		dmdi.u.integrity.buffer_sectors = params->buffer_sectors;
+		dmdi.u.integrity.integrity = params->integrity;
+		dmdi.u.integrity.journal_integrity = params->journal_integrity;
+		dmdi.u.integrity.journal_crypt = params->journal_crypt;
+	}
 
 	log_dbg("Trying to activate INTEGRITY device on top of %s, using name %s, tag size %d, provided sectors %" PRIu64".",
 		device_path(dmdi.data_device), name, dmdi.u.integrity.tag_size, dmdi.size);
@@ -224,21 +226,23 @@ int INTEGRITY_format(struct crypt_device *cd,
 			.offset = crypt_get_data_offset(cd),
 			.tag_size = crypt_get_integrity_tag_size(cd),
 			.sector_size = crypt_get_sector_size(cd),
+			.journal_crypt_key = journal_crypt_key,
+			.journal_integrity_key = journal_mac_key,
 		}
 	};
 	int r;
 	uuid_t tmp_uuid_bin;
 
-	dmdi.u.integrity.journal_size = params->journal_size;
-	dmdi.u.integrity.journal_watermark = params->journal_watermark;
-	dmdi.u.integrity.journal_commit_time = params->journal_commit_time;
-	dmdi.u.integrity.interleave_sectors = params->interleave_sectors;
-	dmdi.u.integrity.buffer_sectors = params->buffer_sectors;
-	dmdi.u.integrity.integrity = params->integrity;
-	dmdi.u.integrity.journal_integrity = params->journal_integrity;
-	dmdi.u.integrity.journal_integrity_key = journal_mac_key;
-	dmdi.u.integrity.journal_crypt = params->journal_crypt;
-	dmdi.u.integrity.journal_crypt_key = journal_crypt_key;
+	if (params) {
+		dmdi.u.integrity.journal_size = params->journal_size;
+		dmdi.u.integrity.journal_watermark = params->journal_watermark;
+		dmdi.u.integrity.journal_commit_time = params->journal_commit_time;
+		dmdi.u.integrity.interleave_sectors = params->interleave_sectors;
+		dmdi.u.integrity.buffer_sectors = params->buffer_sectors;
+		dmdi.u.integrity.integrity = params->integrity;
+		dmdi.u.integrity.journal_integrity = params->journal_integrity;
+		dmdi.u.integrity.journal_crypt = params->journal_crypt;
+	}
 
 	uuid_generate(tmp_uuid_bin);
 	uuid_unparse(tmp_uuid_bin, tmp_uuid);
