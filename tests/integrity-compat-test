@@ -97,6 +97,8 @@ intformat() # alg alg_out tagsize sector_size csum
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$INTSETUP" ] && skip "Cannot find $INTSETUP, test skipped."
+modprobe dm-integrity >/dev/null 2>&1
+dmsetup targets | grep integrity >/dev/null 2>&1 || skip "Cannot find dm-integrity target, test skipped."
 
 add_device
 
