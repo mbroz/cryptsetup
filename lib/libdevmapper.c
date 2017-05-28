@@ -371,10 +371,21 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
+/* get string length for key_size written in decimal system */
+static size_t get_key_size_strlen(size_t key_size)
+{
+	size_t ret = 1;
+
+	while ((key_size /= 10))
+		ret++;
+
+	return ret;
+}
+
 /* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt */
 static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t flags)
 {
-	int r, max_size, null_cipher = 0, num_options = 0;
+	int r, max_size, null_cipher = 0, num_options = 0, keystr_len = 0;
 	char *params, *hexkey;
 	char features[256];
 
@@ -399,13 +410,24 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t fl
 	if (!strncmp(dmd->u.crypt.cipher, "cipher_null-", 12))
 		null_cipher = 1;
 
-	hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->u.crypt.vk->keylength * 2 + 1));
+	if (dmd->u.crypt.key_in_keyring) {
+		keystr_len = strlen(dmd->u.crypt.key_description) + get_key_size_strlen(dmd->u.crypt.vk->keylength) + 9;
+		hexkey = crypt_safe_alloc(keystr_len);
+	} else
+		hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->u.crypt.vk->keylength * 2 + 1));
+
 	if (!hexkey)
 		return NULL;
 
 	if (null_cipher)
 		strncpy(hexkey, "-", 2);
-	else
+	else if (dmd->u.crypt.key_in_keyring) {
+		r = snprintf(hexkey, keystr_len, ":%zu:logon:%s", dmd->u.crypt.vk->keylength, dmd->u.crypt.key_description);
+		if (r < 0 || r >= keystr_len) {
+			params = NULL;
+			goto out;
+		}
+	} else
 		hex_key(hexkey, dmd->u.crypt.vk->keylength, dmd->u.crypt.vk->key);
 
 	max_size = strlen(hexkey) + strlen(dmd->u.crypt.cipher) +
@@ -1149,6 +1171,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 	char *rcipher, *key_, *rdevice, *endp, buffer[3], *arg;
 	unsigned int i;
 	int r;
+	size_t key_size;
 
 	memset(dmd, 0, sizeof(*dmd));
 	dmd->target = DM_CRYPT;
@@ -1222,20 +1245,38 @@ static int _dm_query_crypt(uint32_t get_flags,
 		return -EINVAL;
 	}
 
+	if (key_[0] == ':')
+		dmd->u.crypt.key_in_keyring = 1;
+
 	if (get_flags & DM_ACTIVE_CRYPT_KEYSIZE) {
-		dmd->u.crypt.vk = crypt_alloc_volume_key(strlen(key_) / 2, NULL);
+		/* we will trust kernel the key_string is in expected format */
+		if (key_[0] == ':') {
+			if (sscanf(key_ + 1, "%zu", &key_size) != 1)
+				return -EINVAL;
+		} else
+			key_size = strlen(key_) / 2;
+
+		dmd->u.crypt.vk = crypt_alloc_volume_key(key_size, NULL);
 		if (!dmd->u.crypt.vk)
 			return -ENOMEM;
 
 		if (get_flags & DM_ACTIVE_CRYPT_KEY) {
-			buffer[2] = '\0';
-			for(i = 0; i < dmd->u.crypt.vk->keylength; i++) {
-				memcpy(buffer, &key_[i * 2], 2);
-				dmd->u.crypt.vk->key[i] = strtoul(buffer, &endp, 16);
-				if (endp != &buffer[2]) {
+			if (key_[0] == ':') {
+				dmd->u.crypt.key_description = strdup(strpbrk(key_ + 1, ":") + 1);
+				if (!dmd->u.crypt.key_description) {
 					crypt_free_volume_key(dmd->u.crypt.vk);
-					dmd->u.crypt.vk = NULL;
-					return -EINVAL;
+					return -ENOMEM;
+				}
+			} else {
+				buffer[2] = '\0';
+				for(i = 0; i < dmd->u.crypt.vk->keylength; i++) {
+					memcpy(buffer, &key_[i * 2], 2);
+					dmd->u.crypt.vk->key[i] = strtoul(buffer, &endp, 16);
+					if (endp != &buffer[2]) {
+						crypt_free_volume_key(dmd->u.crypt.vk);
+						dmd->u.crypt.vk = NULL;
+						return -EINVAL;
+					}
 				}
 			}
 		}
@@ -1685,10 +1726,10 @@ out:
 }
 
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
-				size_t key_size, const char *key)
+				size_t key_size, const char *key, unsigned key_in_keyring)
 {
 	uint32_t dmt_flags;
-	int msg_size = key_size * 2 + 10; // key set <key>
+	int msg_size;
 	char *msg = NULL;
 	int r = -ENOTSUP;
 
@@ -1698,6 +1739,11 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
 		goto out;
 
+	if (key_in_keyring)
+		msg_size = strlen(key) + get_key_size_strlen(key_size) + 17;
+	else
+		msg_size = key_size * 2 + 10; // key set <key>
+
 	msg = crypt_safe_alloc(msg_size);
 	if (!msg) {
 		r = -ENOMEM;
@@ -1705,7 +1751,10 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	}
 
 	strcpy(msg, "key set ");
-	hex_key(&msg[8], key_size, key);
+	if (key_in_keyring)
+		snprintf(msg + 8, msg_size - 8, ":%zu:logon:%s", key_size, key);
+	else
+		hex_key(&msg[8], key_size, key);
 
 	if (!_dm_message(name, msg, dmt_flags) ||
 	    !_dm_simple(DM_DEVICE_RESUME, name, 1)) {

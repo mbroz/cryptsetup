@@ -75,6 +75,7 @@ struct crypt_dm_active_device {
 	struct {
 		const char *cipher;
 		const char *integrity;
+		char *key_description;
 
 		/* Active key for device */
 		struct volume_key *vk;
@@ -82,6 +83,8 @@ struct crypt_dm_active_device {
 		/* struct crypt_active_device */
 		uint64_t offset;	/* offset in sectors */
 		uint64_t iv_offset;	/* IV initilisation sector */
+
+		unsigned key_in_keyring:1; /* status detected key loaded via kernel keyring */
 	} crypt;
 	struct {
 		struct device *hash_device;
@@ -133,7 +136,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		     int reload);
 int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name);
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
-				size_t key_size, const char *key);
+				size_t key_size, const char *key, unsigned key_in_keyring);
 
 const char *dm_get_dir(void);
 
