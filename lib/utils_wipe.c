@@ -130,7 +130,10 @@ int crypt_wipe(struct device *device,
 	int devfd, flags, bsize;
 	ssize_t written;
 
-	if (!size || size % SECTOR_SIZE || (size > MAXIMUM_WIPE_BYTES)) {
+	if (size == 0)
+		return 0;
+
+	if (size % SECTOR_SIZE || (size > MAXIMUM_WIPE_BYTES)) {
 		log_dbg("Unsupported wipe size for device %s: %ld.",
 			device_path(device), (unsigned long)size);
 		return -EINVAL;

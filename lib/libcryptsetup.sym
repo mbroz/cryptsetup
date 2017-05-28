@@ -3,6 +3,7 @@ CRYPTSETUP_2.0 {
 		crypt_init;
 		crypt_init_by_name;
 		crypt_init_by_name_and_header;
+
 		crypt_set_log_callback;
 		crypt_set_confirm_callback;
 		crypt_set_iteration_time;
@@ -10,7 +11,9 @@ CRYPTSETUP_2.0 {
 		crypt_set_data_device;
 
 		crypt_memory_lock;
+		crypt_metadata_locking;
 		crypt_format;
+		crypt_convert;
 		crypt_load;
 		crypt_repair;
 		crypt_resize;
@@ -25,20 +28,36 @@ CRYPTSETUP_2.0 {
 		crypt_keyslot_add_by_keyfile;
 		crypt_keyslot_add_by_keyfile_offset;
 		crypt_keyslot_add_by_volume_key;
+		crypt_keyslot_add_by_volume_key_assign;
+
+		crypt_keyslot_set_priority;
+		crypt_keyslot_get_priority;
+
+		crypt_token_json_get;
+		crypt_token_json_set;
+		crypt_token_assign_keyslot;
+		crypt_token_unassign_keyslot;
+		crypt_token_register;
+
+		crypt_activate_by_token;
+
 		crypt_keyslot_destroy;
 		crypt_activate_by_passphrase;
 		crypt_activate_by_keyfile;
 		crypt_activate_by_keyfile_offset;
 		crypt_activate_by_volume_key;
+		crypt_activate_by_keyring;
 		crypt_deactivate;
 		crypt_volume_key_get;
 		crypt_volume_key_verify;
+		crypt_volume_key_keyring;
 		crypt_status;
 		crypt_dump;
 		crypt_benchmark;
 		crypt_benchmark_pbkdf;
 		crypt_get_cipher;
 		crypt_get_cipher_mode;
+		crypt_get_cipher_segment;
 		crypt_get_integrity;
 		crypt_get_integrity_key_size;
 		crypt_get_integrity_tag_size;
@@ -53,9 +72,12 @@ CRYPTSETUP_2.0 {
 
 		crypt_get_type;
 		crypt_get_active_device;
+		crypt_persistent_flags_set;
 
 		crypt_set_rng_type;
 		crypt_get_rng_type;
+		crypt_set_pbkdf_type;
+		crypt_get_pbkdf_type;
 
 		crypt_keyslot_max;
 		crypt_keyslot_area;

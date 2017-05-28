@@ -1,5 +1,6 @@
 TESTS = api-test \
 	compat-test \
+	compat-test2 \
 	loopaes-test \
 	align-test \
 	discards-test \
@@ -25,17 +26,21 @@ endif
 EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	img_fs_ext4.img.bz2 img_fs_vfat.img.bz2 img_fs_xfs.img.bz2 \
 	valid_header_file.bz2 \
+	luks2_header_file.xz \
 	evil_hdr-payload_overwrite.bz2 \
 	evil_hdr-stripes_payload_dmg.bz2 \
 	evil_hdr-luks_hdr_damage.bz2 \
 	evil_hdr-small_luks_device.bz2 \
 	tcrypt-images.tar.bz2 \
 	luks1-images.tar.bz2 \
-	compat-test loopaes-test align-test discards-test mode-test password-hash-test \
+	compat-test \
+	compat-test2 \
+	loopaes-test align-test discards-test mode-test password-hash-test \
 	verity-compat-test \
 	reencryption-compat-test \
 	tcrypt-compat-test \
 	luks1-compat-test \
+	luks2-validation-test \
 	device-test \
 	keyring-test \
 	integrity-compat-test \
@@ -43,7 +48,7 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 
 CLEANFILES = cryptsetup-tst* valglog*
 clean-local:
-	-rm -rf tcrypt-images luks1-images
+	-rm -rf tcrypt-images luks1-images luks2-images
 
 differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2

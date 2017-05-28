@@ -34,6 +34,8 @@ AC_ENABLE_STATIC(no)
 LT_INIT
 PKG_PROG_PKG_CONFIG
 
+AC_C_RESTRICT
+
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
@@ -327,6 +329,9 @@ if test "x$enable_udev" = xyes; then
 fi
 LIBS=$saved_LIBS
 
+dnl Check for JSON-C used in LUKS2
+PKG_CHECK_MODULES([JSON_C], [json-c])
+
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
 	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle) [gcrypt]]),
@@ -405,6 +410,8 @@ AC_SUBST([PASSWDQC_LIBS])
 AC_SUBST([CRYPTO_CFLAGS])
 AC_SUBST([CRYPTO_LIBS])
 AC_SUBST([CRYPTO_STATIC_LIBS])
+
+AC_SUBST([JSON_C_LIBS])
 
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
@@ -491,6 +498,17 @@ CS_NUM_WITH([verity-hash-block], [hash block size for verity mode], [4096])
 CS_NUM_WITH([verity-salt-size],  [salt size for verity mode], [32])
 CS_NUM_WITH([verity-fec-roots],  [parity bytes for verity FEC], [2])
 
+CS_STR_WITH([luks2-lock-path], [path to directory for LUKSv2 locks], [/run/lock/cryptsetup])
+test -z "$with_luks2_lock_path" && with_luks2_lock_path=/run/lock/cryptsetup
+test "${with_luks2_lock_path:0:1}" = "/" || AC_MSG_ERROR([--with-luks2-lock-path argument must be an absolute path.])
+DEFAULT_LUKS2_LOCK_PATH=$with_luks2_lock_path
+AC_SUBST(DEFAULT_LUKS2_LOCK_PATH)
+
+CS_NUM_WITH([luks2-lock-dir-perms], [default luks2 locking directory permissions], [0700])
+test -z "$with_luks2_lock_dir_perms" && with_luks2_lock_dir_perms=0700
+DEFAULT_LUKS2_LOCK_DIR_PERMS=$with_luks2_lock_dir_perms
+AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
+
 dnl ==========================================================================
 
 AC_CONFIG_FILES([ Makefile
@@ -499,6 +517,7 @@ lib/libcryptsetup.pc
 lib/crypto_backend/Makefile
 lib/crypto_backend/argon2/Makefile
 lib/luks1/Makefile
+lib/luks2/Makefile
 lib/loopaes/Makefile
 lib/verity/Makefile
 lib/tcrypt/Makefile
@@ -508,5 +527,7 @@ po/Makefile.in
 man/Makefile
 tests/Makefile
 python/Makefile
+scripts/Makefile
+scripts/cryptsetup_tmpfiles.conf
 ])
 AC_OUTPUT

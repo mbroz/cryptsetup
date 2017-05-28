@@ -1,0 +1,151 @@
+#!/bin/bash
+
+CRYPTSETUP=../src/cryptsetup
+PASS="ad#svh93q4AFDQ32."
+
+DM_CRYPT_SECTOR=512
+LUKS2_HDR_SIZE=2112 # 16 KiB version, stored twice, including luks2 areas with keyslots
+
+START_DIR=$(pwd)
+
+DEV_NAME=luks2_dev_0
+DEV_NAME2=luks2_dev_1
+IMG=luks2-backend.img
+ORIG_IMG=luks2_valid_hdr.img
+TST_IMGS=$START_DIR/luks2-images
+
+MNT_DIR=$START_DIR/mnt_luks
+
+GEN_DIR=generators
+
+LOCK_DIR=$(sed -n -e 's/\(^[[:space:]]*#define[[:space:]]\+DEFAULT_LUKS2_LOCK_PATH[[:space:]]\+"\)\(.*\)\("\)/\2/p' ../config.h)
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
+	rm -f $IMG $KEY1 >/dev/null 2>&1
+	umount $MNT_DIR > /dev/null 2>&1
+	rmdir $MNT_DIR > /dev/null 2>&1
+	LOOPDEV1=""
+}
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	echo "FAILED"
+	cd $START_DIR
+	remove_mapping
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 0
+}
+
+function luks2_format() # $1 dev
+{
+	echo $PASS | $CRYPTSETUP luksFormat --type luks2 $@
+}
+
+function prepare() # $1 dev1_size
+{
+	remove_mapping
+
+	if [ ! -e $ORIG_IMG ]; then
+		dd if=/dev/zero of=$ORIG_IMG bs=1k count=$1 >/dev/null 2>&1
+		luks2_format $ORIG_IMG
+	fi
+	cp $ORIG_IMG $IMG
+	cp $IMG $TST_IMGS
+	LOOPDEV1=$(losetup -f 2>/dev/null)
+	[ -z "$LOOPDEV1" ] && fail "No free loop device"
+	losetup $LOOPDEV1 $IMG
+}
+
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+which losetup >/dev/null ||  skip "Cannot find losetup, test skipped."
+which wipefs >/dev/null ||  skip "Cannot find wipefs, test skipped."
+which jq >/dev/null || skip "Cannot find jq, test skipped."
+[ -d "$LOCK_DIR" ] || skip "WARNING: LUKS2 locking directory ($LOCK_DIR) is missing, test skipped."
+
+test -d $TST_IMGS || mkdir $TST_IMGS
+prepare 8192
+
+echo "[0] Generating test headers"
+cd $GEN_DIR
+for scr in ./generate-*.sh; do
+	$scr $TST_IMGS $TST_IMGS/$IMG || fail "Header generator $scr failed: '$?'"
+done
+cd $START_DIR
+
+echo "[1] Test basic auto-recovery"
+dd if=$TST_IMGS/luks2-invalid-checksum-hdr0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 > /dev/null || fail "Failed to recover from trivial header corruption at offset 0"
+# TODO: check epoch is incresed after recovery
+# TODO: check only sectors related to corrupted hdr at offset 0 are written (dmstats tool/differ.c)
+
+dd if=$TST_IMGS/luks2-invalid-checksum-hdr1.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 > /dev/null || fail "Failed to recover from trivial header corruption at offset 16384"
+# TODO: check epoch is incresed after recovery
+# TODO: check only sectors related to corrupted hdr at offset 16384 are written (dmstats tool/differ.c)
+
+dd if=$TST_IMGS/luks2-invalid-checksum-both-hdrs.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "luksDump passed with both header being corrupted"
+
+echo "[2] Test ability to auto-correct mallformed json area"
+dd if=$TST_IMGS/luks2-corrupted-hdr0-with-correct-chks.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 > /dev/null || fail "Failed to auto correct malformed json area at offset 512"
+# TODO: check epoch is incresed after recovery
+# TODO: check only sectors related to corrupted hdr at offset 0 are written (dmstats tool/differ.c)
+
+dd if=$TST_IMGS/luks2-corrupted-hdr1-with-correct-chks.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 > /dev/null || fail "Failed to auto correct malformed json area at offset 16896"
+# TODO: check epoch is incresed after recovery
+# TODO: check only sectors related to corrupted hdr at offset 16384 are written (dmstats tool/differ.c)
+
+dd if=$TST_IMGS/luks2-correct-full-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 >/dev/null || fail "Failed to parse full and correct json area"
+# TODO: check epoch is incresed after recovery of secondary header
+# TODO: check only sectors related to corrupted hdr at offset 16384 are written (dmstats tool/differ.c)
+
+# Secondary header is always broken in following tests
+echo "[3] Test LUKS2 json area restrictions"
+dd if=$TST_IMGS/luks2-non-null-byte-beyond-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect illegal data right beyond json data string"
+
+dd if=$TST_IMGS/luks2-non-null-bytes-beyond-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect illegal data in json area"
+
+dd if=$TST_IMGS/luks2-missing-trailing-null-byte-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect missing terminal null byte"
+
+dd if=$TST_IMGS/luks2-invalid-opening-char-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect invalid opening character in json area"
+
+dd if=$TST_IMGS/luks2-invalid-object-type-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect invalid json object type"
+
+# TODO this test fails occasionally. Investigate
+# TODO fix this test (areas section removed)
+#dd if=$TST_IMGS/luks2-missing-keyslot-referenced-in-keyslots-array-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+#$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect missing keyslot reference in areas"
+
+dd if=$TST_IMGS/luks2-missing-keyslot-referenced-in-segment-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect missing keyslot reference in segments"
+
+# TODO fix this test (areas section removed)
+#dd if=$TST_IMGS/luks2-overlapping-areas-c0-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+#$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect two exactly same area specifications"
+
+dd if=$TST_IMGS/luks2-overlapping-areas-c1-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect two intersecting area specifications"
+
+# TODO fix this test (areas section removed)
+#dd if=$TST_IMGS/luks2-area-in-json-hdr-space-json0.img of=$LOOPDEV1 bs=$DM_CRYPT_SECTOR count=$LUKS2_HDR_SIZE oflag=direct > /dev/null 2>&1 || fail "Missing test image"
+#$CRYPTSETUP luksDump $LOOPDEV1 2>/dev/null && fail "Failed to detect area referencing LUKS2 header space"
+
+remove_mapping

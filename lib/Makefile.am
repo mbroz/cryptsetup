@@ -1,4 +1,4 @@
-SUBDIRS = crypto_backend luks1 loopaes verity tcrypt integrity
+SUBDIRS = crypto_backend luks1 luks2 loopaes verity tcrypt integrity
 
 moduledir = $(libdir)/cryptsetup
 
@@ -9,6 +9,7 @@ AM_CPPFLAGS = -include config.h \
 	-I$(top_srcdir)				\
 	-I$(top_srcdir)/lib/crypto_backend	\
 	-I$(top_srcdir)/lib/luks1		\
+	-I$(top_srcdir)/lib/luks2		\
 	-I$(top_srcdir)/lib/loopaes		\
 	-I$(top_srcdir)/lib/verity		\
 	-I$(top_srcdir)/lib/tcrypt		\
@@ -24,6 +25,7 @@ lib_LTLIBRARIES = libcryptsetup.la
 common_ldadd = \
 	crypto_backend/libcrypto_backend.la	\
 	luks1/libluks1.la			\
+	luks2/libluks2.la			\
 	loopaes/libloopaes.la			\
 	verity/libverity.la			\
 	tcrypt/libtcrypt.la			\
@@ -41,6 +43,7 @@ libcryptsetup_la_LIBADD = \
 	@UUID_LIBS@				\
 	@DEVMAPPER_LIBS@			\
 	@CRYPTO_LIBS@				\
+	@JSON_C_LIBS@				\
 	$(common_ldadd)
 
 
@@ -63,6 +66,8 @@ libcryptsetup_la_SOURCES = \
 	utils_device.c				\
 	utils_keyring.c				\
 	utils_keyring.h				\
+	utils_device_locking.c			\
+	utils_device_locking.h			\
 	libdevmapper.c				\
 	utils_dm.h				\
 	volumekey.c				\

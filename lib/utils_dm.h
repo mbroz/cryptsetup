@@ -46,6 +46,7 @@ struct device;
 #define DM_VERITY_FEC_SUPPORTED (1 << 10) /* Forward Error Correction (FEC) */
 #define DM_KERNEL_KEYRING_SUPPORTED (1 << 11) /* dm-crypt allows loading kernel keyring keys */
 #define DM_INTEGRITY_SUPPORTED (1 << 12) /* dm-integrity target supported */
+//FIXME add DM_SECTOR_SIZE once we have version
 
 uint32_t dm_flags(void);
 
@@ -78,8 +79,8 @@ struct crypt_dm_active_device {
 		/* struct crypt_active_device */
 		uint64_t offset;	/* offset in sectors */
 		uint64_t iv_offset;	/* IV initilisation sector */
-
-		unsigned key_in_keyring:1; /* status detected key loaded via kernel keyring */
+		uint32_t tag_size;	/* additional on-disk tag size */
+		uint32_t sector_size;	/* encryption sector size */
 	} crypt;
 	struct {
 		struct device *hash_device;
@@ -132,7 +133,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		     int reload);
 int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name);
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
-				size_t key_size, const char *key, unsigned key_in_keyring);
+				const struct volume_key *vk);
 
 const char *dm_get_dir(void);
 

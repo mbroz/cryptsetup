@@ -234,6 +234,11 @@ static int _dm_check_versions(void)
 					     (unsigned)target->version[0],
 					     (unsigned)target->version[1],
 					     (unsigned)target->version[2]);
+		} else if (!strcmp(DM_INTEGRITY_TARGET, target->name)) {
+			_dm_set_integrity_compat(dm_version,
+					     (unsigned)target->version[0],
+					     (unsigned)target->version[1],
+					     (unsigned)target->version[2]);
 		}
 		target = (struct dm_versions *)((char *) target + target->next);
 	} while (last_target != target);
@@ -343,14 +348,148 @@ static size_t get_key_size_strlen(size_t key_size)
 	return ret;
 }
 
+#define CLEN    64   /* 2*MAX_CIPHER_LEN */
+#define CLENS  "63"  /* for sscanf length + '\0' */
+#define CAPIL  144   /* should be enough to fit whole capi string */
+#define CAPIS "143"  /* for sscanf of crypto API string + 16  + \0 */
+
+static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
+		       char *c_dm, int c_dm_size,
+		       char *i_dm, int i_dm_size)
+{
+	int c_size = 0, i_size = 0, i;
+	char cipher[CLEN], mode[CLEN], iv[CLEN], tmp[CLEN];
+	char capi[CAPIL];
+
+	if (!c_dm || !c_dm_size || !i_dm || !i_dm_size)
+		return -EINVAL;
+
+	i = sscanf(org_c, "%" CLENS "[^-]-%" CLENS "s", cipher, tmp);
+	if (i != 2)
+		return -EINVAL;
+
+	i = sscanf(tmp, "%" CLENS "[^-]-%" CLENS "s", mode, iv);
+	if (i == 1) {
+		strncpy(iv, mode, CLEN);
+		*mode = '\0';
+		if (snprintf(capi, sizeof(capi), "%s", cipher) < 0)
+			return -EINVAL;
+	} else if (i == 2) {
+		if (snprintf(capi, sizeof(capi), "%s(%s)", mode, cipher) < 0)
+			return -EINVAL;
+	} else
+		return -EINVAL;
+
+	if (!org_i) {
+		/* legacy mode: CIPHER-MODE-IV*/
+		i_size = snprintf(i_dm, i_dm_size, "%s", "");
+		c_size = snprintf(c_dm, c_dm_size, "%s", org_c);
+	} else if (!strcmp(org_i, "none")) {
+		/* IV only: capi:MODE(CIPHER)-IV */
+		i_size = snprintf(i_dm, i_dm_size, " integrity:%u:none", tag_size);
+		c_size = snprintf(c_dm, c_dm_size, "capi:%s-%s", capi, iv);
+	} else if (!strcmp(org_i, "aead") && !strcmp(mode, "ccm")) {
+		/* CCM AEAD: capi:rfc4309(MODE(CIPHER))-IV */
+		i_size = snprintf(i_dm, i_dm_size, " integrity:%u:aead", tag_size);
+		c_size = snprintf(c_dm, c_dm_size, "capi:rfc4309(%s)-%s", capi, iv);
+	} else if (!strcmp(org_i, "aead")) {
+		/* AEAD: capi:MODE(CIPHER))-IV */
+		i_size = snprintf(i_dm, i_dm_size, " integrity:%u:aead", tag_size);
+		c_size = snprintf(c_dm, c_dm_size, "capi:%s-%s", capi, iv);
+	} else if (!strcmp(org_i, "poly1305")) {
+		/* POLY1305 AEAD: capi:rfc7539(MODE(CIPHER),POLY1305)-IV */
+		i_size = snprintf(i_dm, i_dm_size, " integrity:%u:aead", tag_size);
+		c_size = snprintf(c_dm, c_dm_size, "capi:rfc7539(%s,poly1305)-%s", capi, iv);
+	} else {
+		/* other AEAD: capi:authenc(<AUTH>,MODE(CIPHER))-IV */
+		i_size = snprintf(i_dm, i_dm_size, " integrity:%u:aead", tag_size);
+		c_size = snprintf(c_dm, c_dm_size, "capi:authenc(%s,%s)-%s", org_i, capi, iv);
+	}
+
+	if (c_size < 0 || c_size == c_dm_size)
+		return -EINVAL;
+	if (i_size < 0 || i_size == i_dm_size)
+		return -EINVAL;
+
+	return 0;
+}
+
+static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
+{
+	char cipher[CLEN], mode[CLEN], iv[CLEN], auth[CLEN];
+	char tmp[CAPIL], capi[CAPIL];
+	size_t len;
+	int i;
+
+	if (!c_dm)
+		return -EINVAL;
+
+	/* legacy mode */
+	if (strncmp(c_dm, "capi:", 4)) {
+		if (!(*org_c = strdup(c_dm)))
+			return -ENOMEM;
+		*org_i = NULL;
+		return 0;
+	}
+
+	/* modes with capi: prefix */
+	i = sscanf(c_dm, "capi:%" CAPIS "[^-]-%" CLENS "s", tmp, iv);
+	if (i != 2)
+		return -EINVAL;
+
+	len = strlen(tmp);
+	if (len < 2)
+		return -EINVAL;
+
+	if (tmp[len-1] == ')')
+		tmp[len-1] = '\0';
+
+	if (sscanf(tmp, "rfc4309(%" CAPIS "s", capi) == 1) {
+		if (!(*org_i = strdup("aead")))
+			return -ENOMEM;
+	} else if (sscanf(tmp, "rfc7539(%" CAPIS "[^,],%" CLENS "s", capi, auth) == 2) {
+		if (!(*org_i = strdup(auth)))
+			return -ENOMEM;
+	} else if (sscanf(tmp, "authenc(%" CLENS "[^,],%" CAPIS "s", auth, capi) == 2) {
+		if (!(*org_i = strdup(auth)))
+			return -ENOMEM;
+	} else {
+		if (i_dm) {
+			if (!(*org_i = strdup(i_dm)))
+				return -ENOMEM;
+		} else
+			*org_i = NULL;
+		strncpy(capi, tmp, sizeof(capi));
+	}
+
+	i = sscanf(capi, "%" CLENS "[^(](%" CLENS "[^)])", mode, cipher);
+	if (i == 2)
+		snprintf(tmp, sizeof(tmp), "%s-%s-%s", cipher, mode, iv);
+	else
+		snprintf(tmp, sizeof(tmp), "%s-%s", capi, iv);
+
+	if (!(*org_c = strdup(tmp))) {
+		free(*org_i);
+		*org_i = NULL;
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
 /* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt */
 static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t flags)
 {
 	int r, max_size, null_cipher = 0, num_options = 0, keystr_len = 0;
 	char *params, *hexkey;
-	char features[256];
+	char sector_feature[32], features[256], integrity_dm[256], cipher_dm[256];
 
 	if (!dmd)
+		return NULL;
+
+	r = cipher_c2dm(dmd->u.crypt.cipher, dmd->u.crypt.integrity, dmd->u.crypt.tag_size,
+			cipher_dm, sizeof(cipher_dm), integrity_dm, sizeof(integrity_dm));
+	if (r < 0)
 		return NULL;
 
 	if (flags & CRYPT_ACTIVATE_ALLOW_DISCARDS)
@@ -359,20 +498,29 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t fl
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)
 		num_options++;
+	if (dmd->u.crypt.integrity)
+		num_options++;
 
-	if (num_options)
-		snprintf(features, sizeof(features)-1, " %d%s%s%s", num_options,
+	if (dmd->u.crypt.sector_size != SECTOR_SIZE) {
+		num_options++;
+		snprintf(sector_feature, sizeof(sector_feature), " sector_size:%u", dmd->u.crypt.sector_size);
+	} else
+		*sector_feature = '\0';
+
+	if (num_options) {
+		snprintf(features, sizeof(features)-1, " %d%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? " allow_discards" : "",
 		(flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? " same_cpu_crypt" : "",
-		(flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? " submit_from_crypt_cpus" : "");
-	else
+		(flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? " submit_from_crypt_cpus" : "",
+		sector_feature, integrity_dm);
+	} else
 		*features = '\0';
 
-	if (!strncmp(dmd->u.crypt.cipher, "cipher_null-", 12))
+	if (!strncmp(cipher_dm, "cipher_null-", 12))
 		null_cipher = 1;
 
-	if (dmd->u.crypt.key_in_keyring) {
-		keystr_len = strlen(dmd->u.crypt.key_description) + get_key_size_strlen(dmd->u.crypt.vk->keylength) + 9;
+	if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+		keystr_len = strlen(dmd->u.crypt.vk->key_description) + get_key_size_strlen(dmd->u.crypt.vk->keylength) + 9;
 		hexkey = crypt_safe_alloc(keystr_len);
 	} else
 		hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->u.crypt.vk->keylength * 2 + 1));
@@ -382,8 +530,8 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t fl
 
 	if (null_cipher)
 		strncpy(hexkey, "-", 2);
-	else if (dmd->u.crypt.key_in_keyring) {
-		r = snprintf(hexkey, keystr_len, ":%zu:logon:%s", dmd->u.crypt.vk->keylength, dmd->u.crypt.key_description);
+	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+		r = snprintf(hexkey, keystr_len, ":%zu:logon:%s", dmd->u.crypt.vk->keylength, dmd->u.crypt.vk->key_description);
 		if (r < 0 || r >= keystr_len) {
 			params = NULL;
 			goto out;
@@ -391,7 +539,7 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t fl
 	} else
 		hex_key(hexkey, dmd->u.crypt.vk->keylength, dmd->u.crypt.vk->key);
 
-	max_size = strlen(hexkey) + strlen(dmd->u.crypt.cipher) +
+	max_size = strlen(hexkey) + strlen(cipher_dm) +
 		   strlen(device_block_path(dmd->data_device)) +
 		   strlen(features) + 64;
 	params = crypt_safe_alloc(max_size);
@@ -399,7 +547,7 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t fl
 		goto out;
 
 	r = snprintf(params, max_size, "%s %s %" PRIu64 " %s %" PRIu64 "%s",
-		     dmd->u.crypt.cipher, hexkey, dmd->u.crypt.iv_offset,
+		     cipher_dm, hexkey, dmd->u.crypt.iv_offset,
 		     device_block_path(dmd->data_device), dmd->u.crypt.offset,
 		     features);
 	if (r < 0 || r >= max_size) {
@@ -890,6 +1038,14 @@ static int check_retry(uint32_t *dmd_flags)
 		ret = 1;
 	}
 
+	/* If kernel keyring is not supported load key directly in dm-crypt */
+	if ((*dmd_flags & CRYPT_ACTIVATE_KEYRING_KEY) &&
+	    !(dm_flags() & DM_KERNEL_KEYRING_SUPPORTED)) {
+		log_dbg("kernel keyring is not supported");
+		*dmd_flags = *dmd_flags & ~CRYPT_ACTIVATE_KEYRING_KEY;
+		ret = 1;
+	}
+
 	return ret;
 }
 
@@ -948,10 +1104,6 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (r == -EINVAL && dmd->target == DM_VERITY && dmd->u.verity.fec_device &&
 	    !(dm_flags() & DM_VERITY_FEC_SUPPORTED))
 		log_err(cd, _("Requested dm-verity FEC options are not supported.\n"));
-
-	if (r == -EINVAL &&
-	    dmd->u.crypt.key_in_keyring && !(dm_flags() & DM_KERNEL_KEYRING_SUPPORTED))
-		log_err(cd, _("dm-crypt doesn't support loading kernel keyring keys.\n"));
 
 	crypt_safe_free(table_params);
 	dm_exit_context();
@@ -1084,18 +1236,17 @@ static int _dm_query_crypt(uint32_t get_flags,
 			   struct crypt_dm_active_device *dmd)
 {
 	uint64_t val64;
-	char *rcipher, *key_, *rdevice, *endp, buffer[3], *arg;
-	unsigned int i;
+	char *rcipher, *rintegrity, *key_, *rdevice, *endp, buffer[3], *arg, *key_desc;
+	unsigned int i, val;
 	int r;
 	size_t key_size;
 
 	memset(dmd, 0, sizeof(*dmd));
 	dmd->target = DM_CRYPT;
+	dmd->u.crypt.sector_size = SECTOR_SIZE;
 
 	rcipher = strsep(&params, " ");
-	/* cipher */
-	if (get_flags & DM_ACTIVE_CRYPT_CIPHER)
-		dmd->u.crypt.cipher = strdup(rcipher);
+	rintegrity = NULL;
 
 	/* skip */
 	key_ = strsep(&params, " ");
@@ -1124,6 +1275,8 @@ static int _dm_query_crypt(uint32_t get_flags,
 	val64 = strtoull(params, &params, 10);
 	dmd->u.crypt.offset = val64;
 
+	dmd->u.crypt.tag_size = 0;
+
 	/* Features section, available since crypt target version 1.11 */
 	if (*params) {
 		if (*params != ' ')
@@ -1146,13 +1299,29 @@ static int _dm_query_crypt(uint32_t get_flags,
 				dmd->flags |= CRYPT_ACTIVATE_SAME_CPU_CRYPT;
 			else if (!strcasecmp(arg, "submit_from_crypt_cpus"))
 				dmd->flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
-			else /* unknown option */
+			else if (sscanf(arg, "integrity:%u:", &val) == 1) {
+				dmd->u.crypt.tag_size = val;
+				rintegrity = strchr(arg + strlen("integrity:"), ':') + 1;
+				if (!rintegrity)
+					return -EINVAL;
+			} else if (sscanf(arg, "sector_size:%u", &val) == 1) {
+				dmd->u.crypt.sector_size = val;
+			} else /* unknown option */
 				return -EINVAL;
 		}
 
 		/* All parameters should be processed */
 		if (params)
 			return -EINVAL;
+	}
+
+	/* cipher */
+	if (get_flags & DM_ACTIVE_CRYPT_CIPHER) {
+		r = cipher_dm2c(CONST_CAST(char**)&dmd->u.crypt.cipher,
+				CONST_CAST(char**)&dmd->u.crypt.integrity,
+				rcipher, rintegrity);
+		if (r < 0)
+			return r;
 	}
 
 	/* Never allow to return empty key */
@@ -1162,7 +1331,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 	}
 
 	if (key_[0] == ':')
-		dmd->u.crypt.key_in_keyring = 1;
+		dmd->flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 
 	if (get_flags & DM_ACTIVE_CRYPT_KEYSIZE) {
 		/* we will trust kernel the key_string is in expected format */
@@ -1178,11 +1347,12 @@ static int _dm_query_crypt(uint32_t get_flags,
 
 		if (get_flags & DM_ACTIVE_CRYPT_KEY) {
 			if (key_[0] == ':') {
-				dmd->u.crypt.key_description = strdup(strpbrk(key_ + 1, ":") + 1);
-				if (!dmd->u.crypt.key_description) {
+				key_desc = strdup(strpbrk(key_ + 1, ":") + 1);
+				if (!key_desc) {
 					crypt_free_volume_key(dmd->u.crypt.vk);
 					return -ENOMEM;
 				}
+				crypt_volume_key_set_description(dmd->u.crypt.vk, key_desc);
 			} else {
 				buffer[2] = '\0';
 				for(i = 0; i < dmd->u.crypt.vk->keylength; i++) {
@@ -1636,7 +1806,7 @@ out:
 }
 
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
-				size_t key_size, const char *key, unsigned key_in_keyring)
+				const struct volume_key *vk)
 {
 	int msg_size;
 	char *msg = NULL;
@@ -1648,10 +1818,10 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	if (!(_dm_crypt_flags & DM_KEY_WIPE_SUPPORTED))
 		goto out;
 
-	if (key_in_keyring)
-		msg_size = strlen(key) + get_key_size_strlen(key_size) + 17;
+	if (vk->key_description)
+		msg_size = strlen(vk->key_description) + get_key_size_strlen(vk->keylength) + 17;
 	else
-		msg_size = key_size * 2 + 10; // key set <key>
+		msg_size = vk->keylength * 2 + 10; // key set <key>
 
 	msg = crypt_safe_alloc(msg_size);
 	if (!msg) {
@@ -1660,10 +1830,10 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	}
 
 	strcpy(msg, "key set ");
-	if (key_in_keyring)
-		snprintf(msg + 8, msg_size - 8, ":%zu:logon:%s", key_size, key);
+	if (vk->key_description)
+		snprintf(msg + 8, msg_size - 8, ":%zu:logon:%s", vk->keylength, vk->key_description);
 	else
-		hex_key(&msg[8], key_size, key);
+		hex_key(&msg[8], vk->keylength, vk->key);
 
 	if (!_dm_message(name, msg) ||
 	    !_dm_simple(DM_DEVICE_RESUME, name, 1)) {

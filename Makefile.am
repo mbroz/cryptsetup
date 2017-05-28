@@ -5,7 +5,8 @@ SUBDIRS = \
 	man \
 	python \
 	tests \
-	po
+	po \
+	scripts
 
 ACLOCAL_AMFLAGS = -I m4
 

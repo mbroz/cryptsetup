@@ -106,6 +106,40 @@ int crypt_parse_hash_integrity_mode(const char *s, char *integrity)
 	return 0;
 }
 
+int crypt_parse_integrity_mode(const char *s, char *integrity,
+			       int *integrity_key_size)
+{
+	int ks = 0, r = 0;
+
+	if (!s || !integrity)
+		return -EINVAL;
+
+	// FIXME: do not hardcode it here
+
+	/* AEAD modes */
+	if (!strcmp(s, "aead") ||
+	    !strcmp(s, "poly1305") ||
+	    !strcmp(s, "none")) {
+		strncpy(integrity, s, MAX_CIPHER_LEN);
+		ks = 0;
+	} else if (!strcmp(s, "hmac-sha256")) {
+		strncpy(integrity, "hmac(sha256)", MAX_CIPHER_LEN);
+		ks = 32;
+	} else if (!strcmp(s, "hmac-sha512")) {
+		ks = 64;
+		strncpy(integrity, "hmac(sha512)", MAX_CIPHER_LEN);
+	} else if (!strcmp(s, "cmac-aes")) {
+		ks = 16;
+		strncpy(integrity, "cmac(aes)", MAX_CIPHER_LEN);
+	} else
+		r = -EINVAL;
+
+	if (integrity_key_size)
+		*integrity_key_size = ks;
+
+	return r;
+}
+
 /*
  * Replacement for memset(s, 0, n) on stack that can be optimized out
  * Also used in safe allocations for explicit memory wipe.

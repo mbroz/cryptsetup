@@ -657,7 +657,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	size_t blocksPerStripeSet, currentSector;
 	int r;
 	uuid_t partitionUuid;
-	const struct crypt_pbkdf_type pbkdf = {
+	const struct crypt_pbkdf_type benchmark_pbkdf = {
 		.type = "pbkdf2",
 		.hash = hashSpec,
 		.time_ms = 1000,
@@ -714,7 +714,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
-	r = crypt_benchmark_pbkdf(ctx, &pbkdf, "foo", 3, "bar", 3, vk->keylength,
+	r = crypt_benchmark_pbkdf(ctx, &benchmark_pbkdf, "foo", 3, "bar", 3, vk->keylength,
 	                          PBKDF2_per_sec, NULL);
 	if (r < 0) {
 		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
@@ -1134,6 +1134,7 @@ int LUKS1_activate(struct crypt_device *cd,
 			.vk     = vk,
 			.offset = crypt_get_data_offset(cd),
 			.iv_offset = 0,
+			.sector_size = crypt_get_sector_size(cd),
 		}
 	};
 

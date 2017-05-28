@@ -116,6 +116,17 @@ For plain crypt device the whole device size is used.
 Note that this does not change the raw device geometry, it just
 changes how many sectors of the raw device are represented
 in the mapped device.
+
+If cryptsetup detected volume key for active device loaded in kernel keyring
+service instead in dm-crypt directly, resize action would first try to retrieve
+the key using a token and only if it failed it'd ask for passphrase
+to unlock a keyslot (LUKS) or to derive a volume key again (plain mode).
+The kernel keyring is used by default for LUKS2 devices.
+
+With LUKS2 device additional \fB<options>\fR can be [\-\-token, \-\-token\-only,
+\-\-key-slot, \-\-key-file, \-\-keyfile\-size, \-\-keyfile\-offset, \-\-timeout,
+\-\-disable-locks, \-\-disable-keyring].
+
 .SH PLAIN MODE
 Plain dm-crypt encrypts the device sector-by-sector with a
 single, non-salted hash of the passphrase. No checks
@@ -194,7 +205,7 @@ You can only call luksFormat on a LUKS device that is not mapped.
 \-\-key\-file (takes precedence over optional second argument),
 \-\-keyfile\-offset, \-\-keyfile\-size, \-\-use\-random | \-\-use\-urandom,
 \-\-uuid, \-\-master\-key\-file, \-\-iter\-time, \-\-header,
-\-\-force\-password].
+\-\-force\-password, \-\-disable-locks].
 
 \fBWARNING:\fR Doing a luksFormat on an existing LUKS container will
 make all data the old container permanently irretrievable, unless
@@ -206,12 +217,15 @@ you have a header backup.
 .IP
 Opens the LUKS device <device> and sets up a mapping <name> after
 successful verification of the supplied passphrase.
-If the passphrase is not supplied via \-\-key-file, the command
-prompts for it interactively.
+
+First the passphrase is searched in LUKS tokens. If it's not
+found in any token and also the passphrase is not supplied via \-\-key-file,
+the command prompts for it interactively.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
-\-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file].
+\-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file, \-\-token,
+\-\-token\-only, \-\-disable\-keyring, \-\-disable\-locks].
 .PP
 \fIluksSuspend\fR <name>
 .IP
@@ -226,14 +240,15 @@ the mapped device.
 
 \fBWARNING:\fR never suspend the device on which the cryptsetup binary resides.
 
-\fB<options>\fR can be [\-\-header].
+\fB<options>\fR can be [\-\-header, \-\-disable\-locks].
 .PP
 \fIluksResume\fR <name>
 .IP
 Resumes a suspended device and reinstates the encryption key.
 Prompts interactively for a passphrase if \-\-key-file is not given.
 
-\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-size, \-\-header]
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-size, \-\-header,
+\-\-disable\-keyring,\-\-disable\-locks]
 .PP
 \fIluksAddKey\fR <device> [<key file with new key>]
 .IP
@@ -245,7 +260,7 @@ or read from the file given as positional argument.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-master\-key\-file,
-\-\-iter\-time, \-\-force\-password, \-\-header].
+\-\-iter\-time, \-\-force\-password, \-\-header, \-\-disable\-locks].
 .PP
 \fIluksRemoveKey\fR <device> [<key file with passphrase to be removed>]
 .IP
@@ -254,7 +269,7 @@ passphrase to be removed can be specified interactively,
 as positional argument or via \-\-key-file.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size, \-\-header]
+\-\-keyfile\-size, \-\-header, \-\-disable\-locks]
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument
@@ -287,7 +302,8 @@ inaccessible.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
-\-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header].
+\-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header,
+\-\-disable\-locks].
 .PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
@@ -299,7 +315,7 @@ an interactive confirmation when doing so. Removing the last
 passphrase makes a LUKS container permanently inaccessible.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size, \-\-header].
+\-\-keyfile\-size, \-\-header, \-\-disable\-locks].
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as argument
@@ -350,7 +366,7 @@ In order to dump the master key, a passphrase has to be supplied,
 either interactively or via \-\-key\-file.
 
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
-\-\-keyfile\-offset, \-\-keyfile\-size, \-\-header].
+\-\-keyfile\-offset, \-\-keyfile\-size, \-\-header, \-\-disable\-locks].
 
 \fBWARNING:\fR If \-\-dump\-master\-key is used with \-\-key\-file
 and the argument to \-\-key\-file is '-', no validation question
@@ -387,6 +403,27 @@ This command requires that the master key size and data offset
 of the LUKS header already on the device and of the header backup
 match. Alternatively, if there is no LUKS header on the device,
 the backup will also be written to it.
+.PP
+\fItoken\fR <add|remove> <device>
+.IP
+Adds new token of type keyring enabling auto-activation of device provided the
+passphrase is stored in 'user' type key and the description is available to
+cryptsetup process for search and read access. Usually the passphrase should
+be put in 'user' or 'user-session' keyring.
+
+For adding new keyring token option --key-description is mandatory. Also new token
+is assigned to key slot specified with --key-slot option or to all active key slots
+in case --key-slot option is ommited.
+
+To remove existing token, specify token number which should be removed with
+\-\-token option.
+
+\fBWARNING:\fR The action \fItoken remove\fR removes any token type, not just 'keyring'
+type from token slot specified by \-\-token option.
+
+\fB<options>\fR can be [\-\-header, \-\-token, \-\-key-slot, \-\-disable\-locks,
+\-\-disable\-keyring].
+
 .SH loop-AES EXTENSION
 cryptsetup supports mapping loop-AES encrypted partition using
 a compatibility mode.
@@ -902,6 +939,29 @@ password quality checking support.
 
 For more info about password quality check, see manual page
 for \fBpwquality.conf(5)\fR and \fBpasswdqc.conf(5)\fR.
+.TP
+.B "\-\-disable\-locks"
+Disable lock protection for metadata on disk.
+This option is irelevant for legacy metadata formats (others than LUKSv2).
+
+\fBWARNING:\fR Do not use this option unless you run cryptsetup in a
+restricted environment where locking is impossible to perform
+(where /run directory cannot be used).
+.TP
+.B "\-\-disable\-keyring"
+Do not load volume key in kernel keyring but use legacy mode and store key
+directly in dm-crypt target instead. Currently this option affects only LUKS2
+devices.
+.TP
+.B "\-\-token"
+Specify what token to use in actions \fItoken\fR, \fIopen\fR or \fIresize\fR.
+If ommited all available tokens will be checked before proceeding further with
+passphrase prompt.
+.TP
+.B "\-\-token\-only"
+Do not proceed further with action (any of \fItoken\fR, \fIopen\fR or
+\fIresize\fR) if token activation failed. Without the option
+action asks for passphrase to proceed further.
 .TP
 .B "\-\-version"
 Show the program version.

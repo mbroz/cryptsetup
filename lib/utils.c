@@ -42,6 +42,20 @@ unsigned crypt_cpusonline(void)
 	return r < 0 ? 1 : r;
 }
 
+const char *uint64_to_str(char *buffer, size_t size, const uint64_t *val)
+{
+	int r = snprintf(buffer, size, "%" PRIu64, *val);
+	if (r < 0) {
+		log_dbg("Failed to convert integer to string.");
+		*buffer = '\0';
+	} else if ((size_t)r >= size) {
+		log_dbg("Not enough space to store '%" PRIu64 "' to a string buffer.", *val);
+		*buffer = '\0';
+	}
+
+	return buffer;
+}
+
 static size_t get_alignment(int fd)
 {
 	long alignment = DEFAULT_MEM_ALIGNMENT;
