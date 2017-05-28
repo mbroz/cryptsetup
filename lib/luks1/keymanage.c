@@ -323,7 +323,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	struct luks_phdr temp_phdr;
 	const unsigned char *sector = (const unsigned char*)phdr;
 	struct volume_key *vk;
-	uint64_t PBKDF2_per_sec = 1;
+	uint32_t PBKDF2_per_sec = 1;
 	int i, bad, r, need_write = 0;
 
 	if (phdr->keyBytes != 16 && phdr->keyBytes != 32 && phdr->keyBytes != 64) {
@@ -649,7 +649,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       unsigned int alignPayload,
 		       unsigned int alignOffset,
 		       uint32_t iteration_time_ms,
-		       uint64_t *PBKDF2_per_sec,
+		       uint32_t *PBKDF2_per_sec,
 		       int detached_metadata_device,
 		       struct crypt_device *ctx)
 {
@@ -657,6 +657,11 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	size_t blocksPerStripeSet, currentSector;
 	int r;
 	uuid_t partitionUuid;
+	const struct crypt_pbkdf_type pbkdf = {
+		.type = "pbkdf2",
+		.hash = hashSpec,
+		.time_ms = 1000,
+	};
 	char luksMagic[] = LUKS_MAGIC;
 
 	/* For separate metadata device allow zero alignment */
@@ -709,8 +714,8 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
-	r = crypt_benchmark_kdf(ctx, "pbkdf2", header->hashSpec,
-				"foo", 3, "bar", 3, PBKDF2_per_sec);
+	r = crypt_benchmark_pbkdf(ctx, &pbkdf, "foo", 3, "bar", 3, vk->keylength,
+	                          PBKDF2_per_sec, NULL);
 	if (r < 0) {
 		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
 			header->hashSpec);
@@ -725,7 +730,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	r = crypt_pbkdf("pbkdf2", header->hashSpec, vk->key,vk->keylength,
 			header->mkDigestSalt, LUKS_SALTSIZE,
 			header->mkDigest,LUKS_DIGESTSIZE,
-			header->mkDigestIterations);
+			header->mkDigestIterations, 0, 0);
 	if(r < 0) {
 		log_err(ctx, _("Cannot create LUKS header: header digest failed (using hash %s).\n"),
 			header->hashSpec);
@@ -782,13 +787,19 @@ int LUKS_set_key(unsigned int keyIndex,
 		 const char *password, size_t passwordLen,
 		 struct luks_phdr *hdr, struct volume_key *vk,
 		 uint32_t iteration_time_ms,
-		 uint64_t *PBKDF2_per_sec,
+		 uint32_t *PBKDF2_per_sec,
 		 struct crypt_device *ctx)
 {
 	struct volume_key *derived_key;
 	char *AfKey = NULL;
 	size_t AFEKSize;
-	uint64_t PBKDF2_temp;
+	double PBKDF2_temp;
+	const struct crypt_pbkdf_type pbkdf = {
+		.type = "pbkdf2",
+		.hash = hdr->hashSpec,
+		.time_ms = 1000,
+	};
+
 	int r;
 
 	if(hdr->keyblock[keyIndex].active != LUKS_KEY_DISABLED) {
@@ -805,8 +816,8 @@ int LUKS_set_key(unsigned int keyIndex,
 
 	log_dbg("Calculating data for key slot %d", keyIndex);
 
-	r = crypt_benchmark_kdf(ctx, "pbkdf2", hdr->hashSpec,
-				"foo", 3, "bar", 3, PBKDF2_per_sec);
+	r = crypt_benchmark_pbkdf(ctx, &pbkdf, "foo", 3, "bar", 3, vk->keylength,
+	                          PBKDF2_per_sec, NULL);
 	if (r < 0) {
 		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
 			hdr->hashSpec);
@@ -814,13 +825,10 @@ int LUKS_set_key(unsigned int keyIndex,
 	}
 
 	/*
-	 * Avoid floating point operation
 	 * Final iteration count is at least LUKS_SLOT_ITERATIONS_MIN
 	 */
-	PBKDF2_temp = *PBKDF2_per_sec * (uint64_t)iteration_time_ms;
-	PBKDF2_temp /= 1024;
-	if (PBKDF2_temp > UINT32_MAX)
-		PBKDF2_temp = UINT32_MAX;
+	PBKDF2_temp = ((double)*PBKDF2_per_sec * iteration_time_ms / 1000.);
+	assert(PBKDF2_temp < UINT32_MAX);
 	hdr->keyblock[keyIndex].passwordIterations = at_least((uint32_t)PBKDF2_temp,
 							      LUKS_SLOT_ITERATIONS_MIN);
 
@@ -838,7 +846,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	r = crypt_pbkdf("pbkdf2", hdr->hashSpec, password, passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt, LUKS_SALTSIZE,
 			derived_key->key, hdr->keyBytes,
-			hdr->keyblock[keyIndex].passwordIterations);
+			hdr->keyblock[keyIndex].passwordIterations, 0, 0);
 	if (r < 0)
 		goto out;
 
@@ -896,7 +904,7 @@ int LUKS_verify_volume_key(const struct luks_phdr *hdr,
 	if (crypt_pbkdf("pbkdf2", hdr->hashSpec, vk->key, vk->keylength,
 			hdr->mkDigestSalt, LUKS_SALTSIZE,
 			checkHashBuf, LUKS_DIGESTSIZE,
-			hdr->mkDigestIterations) < 0)
+			hdr->mkDigestIterations, 0, 0) < 0)
 		return -EINVAL;
 
 	if (memcmp(checkHashBuf, hdr->mkDigest, LUKS_DIGESTSIZE))
@@ -940,7 +948,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 	r = crypt_pbkdf("pbkdf2", hdr->hashSpec, password, passwordLen,
 			hdr->keyblock[keyIndex].passwordSalt, LUKS_SALTSIZE,
 			derived_key->key, hdr->keyBytes,
-			hdr->keyblock[keyIndex].passwordIterations);
+			hdr->keyblock[keyIndex].passwordIterations, 0, 0);
 	if (r < 0)
 		goto out;
 

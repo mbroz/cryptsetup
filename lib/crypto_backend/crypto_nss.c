@@ -307,13 +307,24 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
 		const char *salt, size_t salt_length,
 		char *key, size_t key_length,
-		unsigned int iterations)
+		uint32_t iterations, uint32_t memory, uint32_t parallel)
 {
-	struct hash_alg *ha = _get_alg(hash);
+	struct hash_alg *ha;
 
-	if (!ha || !kdf || strncmp(kdf, "pbkdf2", 6))
+	if (!kdf)
 		return -EINVAL;
 
-	return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
-			    iterations, key_length, key, ha->block_length);
+	if (!strcmp(kdf, "pbkdf2")) {
+		ha = _get_alg(hash);
+		if (!ha)
+			return -EINVAL;
+
+		return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
+				    iterations, key_length, key, ha->block_length);
+	} else if (!strcmp(kdf, "argon2")) {
+		return argon2(password, password_length, salt, salt_length,
+			      key, key_length, iterations, memory, parallel);
+	}
+
+	return -EINVAL;
 }

@@ -308,21 +308,28 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
 		const char *salt, size_t salt_length,
 		char *key, size_t key_length,
-		unsigned int iterations)
+		uint32_t iterations, uint32_t memory, uint32_t parallel)
+
 {
 	const EVP_MD *hash_id;
 
-	if (!kdf || strncmp(kdf, "pbkdf2", 6))
+	if (!kdf)
 		return -EINVAL;
 
-	hash_id = EVP_get_digestbyname(hash);
-	if (!hash_id)
-		return -EINVAL;
+	if (!strcmp(kdf, "pbkdf2")) {
+		hash_id = EVP_get_digestbyname(hash);
+		if (!hash_id)
+			return -EINVAL;
 
-	if (!PKCS5_PBKDF2_HMAC(password, (int)password_length,
-	    (const unsigned char *)salt, (int)salt_length,
-            (int)iterations, hash_id, (int)key_length, (unsigned char *)key))
-		return -EINVAL;
+		if (!PKCS5_PBKDF2_HMAC(password, (int)password_length,
+		    (unsigned char *)salt, (int)salt_length,
+	            (int)iterations, hash_id, (int)key_length, (unsigned char *)key))
+			return -EINVAL;
+		return 0;
+	} else if (!strcmp(kdf, "argon2")) {
+		return argon2(password, password_length, salt, salt_length,
+			      key, key_length, iterations, memory, parallel);
+	}
 
-	return 0;
+	return -EINVAL;
 }

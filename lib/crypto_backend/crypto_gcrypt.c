@@ -317,38 +317,47 @@ int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 	return 0;
 }
 
-/* PBKDF */
-int crypt_pbkdf(const char *kdf, const char *hash,
-		const char *password, size_t password_length,
-		const char *salt, size_t salt_length,
-		char *key, size_t key_length,
-		unsigned int iterations)
+static int pbkdf2(const char *hash,
+		  const char *password, size_t password_length,
+		  const char *salt, size_t salt_length,
+		  char *key, size_t key_length,
+		  uint32_t iterations)
 {
 	const char *hash_name = crypt_hash_compat_name(hash, NULL);
 
 #if USE_INTERNAL_PBKDF2
-	if (!kdf || strncmp(kdf, "pbkdf2", 6))
-		return -EINVAL;
-
 	return pkcs5_pbkdf2(hash_name, password, password_length, salt, salt_length,
 			    iterations, key_length, key, 0);
-
 #else /* USE_INTERNAL_PBKDF2 */
 	int hash_id = gcry_md_map_name(hash_name);
-	int kdf_id;
 
 	if (!hash_id)
 		return -EINVAL;
 
-	if (kdf && !strncmp(kdf, "pbkdf2", 6))
-		kdf_id = GCRY_KDF_PBKDF2;
-	else
-		return -EINVAL;
-
-	if (gcry_kdf_derive(password, password_length, kdf_id, hash_id,
+	if (gcry_kdf_derive(password, password_length, GCRY_KDF_PBKDF2, hash_id,
 	    salt, salt_length, iterations, key_length, key))
 		return -EINVAL;
 
 	return 0;
 #endif /* USE_INTERNAL_PBKDF2 */
+}
+
+/* PBKDF */
+int crypt_pbkdf(const char *kdf, const char *hash,
+		const char *password, size_t password_length,
+		const char *salt, size_t salt_length,
+		char *key, size_t key_length,
+		uint32_t iterations, uint32_t memory, uint32_t parallel)
+{
+	if (!kdf)
+		return -EINVAL;
+
+	if (!strcmp(kdf, "pbkdf2"))
+		return pbkdf2(hash, password, password_length, salt, salt_length,
+			      key, key_length, iterations);
+	else if (!strcmp(kdf, "argon2"))
+		return argon2(password, password_length, salt, salt_length,
+			      key, key_length, iterations, memory, parallel);
+
+	return -EINVAL;
 }

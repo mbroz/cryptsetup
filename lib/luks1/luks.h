@@ -107,7 +107,7 @@ int LUKS_generate_phdr(
 	unsigned int alignPayload,
 	unsigned int alignOffset,
 	uint32_t iteration_time_ms,
-	uint64_t *PBKDF2_per_sec,
+	uint32_t *PBKDF2_per_sec,
 	int detached_metadata_device,
 	struct crypt_device *ctx);
 
@@ -148,7 +148,7 @@ int LUKS_set_key(
 	struct luks_phdr *hdr,
 	struct volume_key *vk,
 	uint32_t iteration_time_ms,
-	uint64_t *PBKDF2_per_sec,
+	uint32_t *PBKDF2_per_sec,
 	struct crypt_device *ctx);
 
 int LUKS_open_key_with_hdr(

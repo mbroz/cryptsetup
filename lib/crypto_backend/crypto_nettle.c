@@ -283,23 +283,29 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
 		const char *salt, size_t salt_length,
 		char *key, size_t key_length,
-		unsigned int iterations)
+		uint32_t iterations, uint32_t memory, uint32_t parallel)
 {
 	struct crypt_hmac *h;
 	int r;
 
-	if (!kdf || strncmp(kdf, "pbkdf2", 6))
+	if (!kdf)
 		return -EINVAL;
 
-	r = crypt_hmac_init(&h, hash, password, password_length);
-	if (r < 0)
-		return r;
+	if (!strcmp(kdf, "pbkdf2")) {
+		r = crypt_hmac_init(&h, hash, password, password_length);
+		if (r < 0)
+			return r;
 
-	nettle_pbkdf2(&h->nettle_ctx, h->hash->nettle_hmac_update,
-		      h->hash->nettle_hmac_digest, h->hash->length, iterations,
-		      salt_length, (const uint8_t *)salt, key_length,
-		      (uint8_t *)key);
-	crypt_hmac_destroy(h);
+		nettle_pbkdf2(&h->nettle_ctx, h->hash->nettle_hmac_update,
+			      h->hash->nettle_hmac_digest, h->hash->length, iterations,
+			      salt_length, (const uint8_t *)salt, key_length,
+			      (uint8_t *)key);
+		crypt_hmac_destroy(h);
+		return 0;
+	} else if (!strcmp(kdf, "argon2")) {
+		return argon2(password, password_length, salt, salt_length,
+			      key, key_length, iterations, memory, parallel);
+	}
 
-	return 0;
+	return -EINVAL;
 }

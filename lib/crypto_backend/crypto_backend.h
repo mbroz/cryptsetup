@@ -60,12 +60,12 @@ int crypt_backend_rng(char *buffer, size_t length, int quality, int fips);
 int crypt_pbkdf_check(const char *kdf, const char *hash,
 		      const char *password, size_t password_length,
 		      const char *salt, size_t salt_length,
-		      size_t key_length, uint64_t *iter_secs);
+		      size_t key_length, uint32_t *iter_secs);
 int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
 		const char *salt, size_t salt_length,
 		char *key, size_t key_length,
-		unsigned int iterations);
+		uint32_t iterations, uint32_t memory, uint32_t parallel);
 
 #if USE_INTERNAL_PBKDF2
 /* internal PBKDF2 implementation */
@@ -82,9 +82,9 @@ int argon2(const char *password, size_t password_length,
 	   char *key, size_t key_length,
 	   uint32_t iterations, uint32_t memory, uint32_t parallel);
 int crypt_argon2_check(const char *password, size_t password_length,
-		      const char *salt, size_t salt_length,
-		      size_t key_length, uint32_t m_cost, uint32_t p_cost,
-		      int iter_msec,  uint32_t *t_cost);
+		      const char *salt, size_t salt_length, size_t key_length,
+		      uint32_t min_t_cost, uint32_t max_m_cost, uint32_t parallel,
+		      int target_msec,  uint32_t *out_t_cost, uint32_t *out_m_cost);
 
 /* CRC32 */
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);

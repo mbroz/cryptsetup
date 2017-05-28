@@ -36,6 +36,12 @@ unsigned crypt_getpagesize(void)
 	return r < 0 ? DEFAULT_MEM_ALIGNMENT : r;
 }
 
+unsigned crypt_cpusonline(void)
+{
+	long r = sysconf(_SC_NPROCESSORS_ONLN);
+	return r < 0 ? 1 : r;
+}
+
 static size_t get_alignment(int fd)
 {
 	long alignment = DEFAULT_MEM_ALIGNMENT;

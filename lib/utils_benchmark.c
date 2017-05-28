@@ -25,6 +25,8 @@
 
 #include "internal.h"
 
+#define ARGON2_MIN_T_COST 4 /* TODO: put some reasonable value here */
+
 /*
  * This is not simulating storage, so using disk block causes extreme overhead.
  * Let's use some fixed block size where results are more reliable...
@@ -231,39 +233,46 @@ out:
 	return r;
 }
 
-int crypt_benchmark_kdf(struct crypt_device *cd,
-	const char *kdf,
-	const char *hash,
+int crypt_benchmark_pbkdf(struct crypt_device *cd,
+	const struct crypt_pbkdf_type *pbkdf,
 	const char *password,
 	size_t password_size,
 	const char *salt,
 	size_t salt_size,
-	uint64_t *iterations_sec)
+	size_t volume_key_size,
+	uint32_t *iterations,
+	uint32_t *memory)
 {
-	int r, key_length = 0;
-
-	if (!iterations_sec)
-		return -EINVAL;
+	uint32_t iterations_sec;
+	int r;
 
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
 
-	// FIXME: this should be in KDF check API parameters later
-	if (cd)
-		key_length = crypt_get_volume_key_size(cd);
+	if (!strcmp(pbkdf->type, "pbkdf2")) {
+		if (!iterations || memory)
+			return -EINVAL;
 
-	if (key_length == 0)
-		key_length = DEFAULT_LUKS1_KEYBITS / 8;
+		r = crypt_pbkdf_check(pbkdf->type, pbkdf->hash, password, password_size,
+				      salt, salt_size, volume_key_size, &iterations_sec);
 
-	if (!strncmp(kdf, "pbkdf2", 6))
-		r = crypt_pbkdf_check(kdf, hash, password, password_size,
-				      salt, salt_size, key_length, iterations_sec);
-	else
+		*iterations = (uint32_t)((uint64_t)iterations_sec * (uint64_t)pbkdf->time_ms / 1000);
+		if (!r)
+			log_dbg("PBKDF2 benchmark, hash %s: %u iterations per second (%zu-bits key).",
+				pbkdf->hash, iterations_sec, volume_key_size * 8);
+	} else if (!strcmp(pbkdf->type, "argon2")) {
+		if (!iterations || !memory)
+			return -EINVAL;
+
+		r = crypt_argon2_check(password, password_size, salt, salt_size,
+				       volume_key_size, ARGON2_MIN_T_COST, pbkdf->max_memory_kb,
+				       pbkdf->parallel_threads, pbkdf->time_ms, iterations, memory);
+		if (!r)
+			log_dbg("Argon2 benchmark: %u iterations, %u memory (%zu-bits key).",
+				*iterations, *memory, volume_key_size * 8);
+	} else
 		r = -EINVAL;
 
-	if (!r)
-		log_dbg("KDF %s, hash %s: %" PRIu64 " iterations per second (%d-bits key).",
-			kdf, hash, *iterations_sec, key_length * 8);
 	return r;
 }

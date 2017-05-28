@@ -67,6 +67,9 @@ static int opt_tcrypt_backup = 0;
 static int opt_veracrypt = 0;
 static int opt_veracrypt_pim = -1;
 static int opt_veracrypt_query_pim = 0;
+static const char *opt_pbkdf = DEFAULT_LUKS2_PBKDF;
+static long opt_pbkdf_memory = DEFAULT_LUKS2_MEMORY_KB;
+static long opt_pbkdf_parallel = DEFAULT_LUKS2_PARALLEL_THREADS;
 
 static const char **action_argv;
 static int action_argc;
@@ -518,18 +521,45 @@ out:
 	return r;
 }
 
-static int action_benchmark_kdf(const char *hash)
+static int action_benchmark_kdf(const char *kdf, const char *hash, size_t key_size)
 {
-	uint64_t kdf_iters;
 	int r;
+	if (!strcmp(kdf, "pbkdf2")) {
+		const struct crypt_pbkdf_type pbkdf = {
+			.type = "pbkdf2",
+			.hash = hash,
+			.time_ms = 1000,
+		};
+		uint32_t kdf_iters;
 
-	r = crypt_benchmark_kdf(NULL, "pbkdf2", hash, "foo", 3, "bar", 3,
-				&kdf_iters);
-	if (r < 0)
-		log_std("PBKDF2-%-9s     N/A\n", hash);
-	else
-		log_std("PBKDF2-%-9s %7" PRIu64 " iterations per second for %d-bit key\n",
-			hash, kdf_iters, DEFAULT_LUKS1_KEYBITS);
+		r = crypt_benchmark_pbkdf(NULL, &pbkdf, "foo", 3, "bar", 3, key_size,
+								  &kdf_iters, NULL);
+		if (r < 0)
+			log_std("PBKDF2-%-9s     N/A\n", hash);
+		else
+			log_std("PBKDF2-%-9s %7u iterations per second for %zu-bit key\n",
+				hash, kdf_iters, key_size * 8);
+	} else if (!strcmp(kdf, "argon2")) {
+		const struct crypt_pbkdf_type pbkdf = {
+			.type = "argon2",
+			.time_ms = opt_iteration_time ?: DEFAULT_LUKS2_ITER_TIME,
+			.max_memory_kb = opt_pbkdf_memory,
+			.parallel_threads = opt_pbkdf_parallel,
+		};
+		uint32_t iters, memory;
+
+		r = crypt_benchmark_pbkdf(NULL, &pbkdf, "foo", 3,
+		                          "barbarbarbarbarbar", 18, key_size,
+								  &iters, &memory);
+		if (r < 0)
+			log_std("Argon2               N/A\n");
+		else
+			log_std("Argon2           %7u iterations, %7u memory for %zu-bit key, %u ms iteration time\n",
+				iters, memory, key_size * 8, (unsigned)pbkdf.time_ms);
+	} else {
+		log_err("Unknown PBKDF '%s'\n", kdf);
+		r = -EINVAL;
+	}
 	return r;
 }
 
@@ -583,14 +613,14 @@ static int action_benchmark(void)
 	};
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
-	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS);
+	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	int iv_size = 16, skipped = 0;
 	char *c;
 	int i, r;
 
 	log_std(_("# Tests are approximate using memory only (no storage IO).\n"));
-	if (opt_hash) {
-		r = action_benchmark_kdf(opt_hash);
+	if (!strcmp(opt_pbkdf, "pbkdf2") && opt_hash) {
+		r = action_benchmark_kdf(opt_pbkdf, opt_hash, key_size);
 	} else if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
 		if (r < 0) {
@@ -610,7 +640,7 @@ static int action_benchmark(void)
 			iv_size = 0;
 
 		r = benchmark_cipher_loop(cipher, cipher_mode,
-					  key_size / 8, iv_size,
+					  key_size, iv_size,
 					  &enc_mbr, &dec_mbr);
 		if (!r) {
 			log_std(N_("#     Algorithm | Key |  Encryption |  Decryption\n"));
@@ -620,11 +650,15 @@ static int action_benchmark(void)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
 	} else {
 		for (i = 0; bkdfs[i]; i++) {
-			r = action_benchmark_kdf(bkdfs[i]);
+			r = action_benchmark_kdf("pbkdf2", bkdfs[i], key_size);
 			check_signal(&r);
 			if (r == -EINTR)
 				break;
 		}
+
+		/* benchmark Argon2: */
+		action_benchmark_kdf("argon2", NULL, key_size);
+
 		for (i = 0; bciphers[i].cipher; i++) {
 			r = benchmark_cipher_loop(bciphers[i].cipher, bciphers[i].mode,
 					    bciphers[i].key_size, bciphers[i].iv_size,
@@ -1464,9 +1498,12 @@ static void help(poptContext popt_context,
 		log_std(_("\nDefault compiled-in key and passphrase parameters:\n"
 			 "\tMaximum keyfile size: %dkB, "
 			 "Maximum interactive passphrase length %d (characters)\n"
-			 "Default PBKDF2 iteration time for LUKS: %d (ms)\n"),
+			 "Default PBKDF2 iteration time for LUKS: %d (ms)\n"
+			 "Default PBKDF for LUKS2: %s\n"
+			 "\tIteration time: %d, Memory required: %dkB, Parallel threads: %d\n"),
 			 DEFAULT_KEYFILE_SIZE_MAXKB, DEFAULT_PASSPHRASE_SIZE_MAX,
-			 DEFAULT_LUKS1_ITER_TIME);
+			 DEFAULT_LUKS1_ITER_TIME, DEFAULT_LUKS2_PBKDF, DEFAULT_LUKS2_ITER_TIME,
+			 DEFAULT_LUKS2_MEMORY_KB, DEFAULT_LUKS2_PARALLEL_THREADS);
 
 		log_std(_("\nDefault compiled-in device cipher parameters:\n"
 			 "\tloop-AES: %s, Key %d bits\n"
@@ -1566,6 +1603,9 @@ int main(int argc, const char **argv)
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)."), NULL },
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option."), NULL },
 		{ "perf-submit_from_crypt_cpus",'\0', POPT_ARG_NONE, &opt_perf_submit_from_crypt_cpus,0,N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option."), NULL },
+		{ "pbkdf",              '\0', POPT_ARG_STRING, &opt_pbkdf,              0, N_("Password-based key derivation algorithm (PBKDF) for LUKS2 (argon2/pbkdf2)."), NULL },
+		{ "pbkdf-memory",       '\0', POPT_ARG_LONG, &opt_pbkdf_memory,         0, N_("Password-based key derivation algorithm (PBKDF) memory cost limit"), N_("kilobytes") },
+		{ "pbkdf-parallel",     '\0', POPT_ARG_LONG, &opt_pbkdf_parallel,       0, N_("Password-based key derivation algorithm (PBKDF) parallel cost "), N_("threads") },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
