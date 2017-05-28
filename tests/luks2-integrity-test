@@ -1,0 +1,151 @@
+#!/bin/bash
+#
+# Test cryptsetup/authenticated encryption compatibility.
+#
+CRYPTSETUP=../src/cryptsetup
+DEV_NAME=dmi_test
+DEV=mode-test.img
+PWD1=nHjJHjI23JK
+KEY_FILE=key.img
+FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+
+dmremove() { # device
+	udevadm settle >/dev/null 2>&1
+	dmsetup remove $1 >/dev/null 2>&1
+}
+
+cleanup() {
+	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
+	[ -b /dev/mapper/"$DEV_NAME"_dif ] && dmremove "$DEV_NAME"_dif
+	rm -f $DEV $KEY_FILE >/dev/null 2>&1
+}
+
+fail()
+{
+	echo
+	[ -n "$1" ] && echo "FAIL: $1"
+	cleanup
+	exit 100
+}
+
+skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 77
+}
+
+add_device() {
+	cleanup
+	dd if=/dev/urandom of=$KEY_FILE bs=1 count=512 >/dev/null 2>&1
+	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
+	sync
+}
+
+status_check() # name value
+{
+	#$CRYPTSETUP status $DEV_NAME
+	X=$($CRYPTSETUP status $DEV_NAME | grep -m1 "$1" | sed -e 's/.*:[ \t]\+//' | cut -d' ' -f1)
+	if [ "$X" != "$2" ] ; then
+		echo "[status FAIL]"
+		echo " Expecting $1:$2 got \"$X\"."
+		fail
+	fi
+}
+
+dump_check() # name value
+{
+	#$CRYPTSETUP luksDump $DEV
+	X=$($CRYPTSETUP luksDump $DEV | grep -m1 "$1" | sed -e 's/.*:[ \t]\+//' | cut -d' ' -f1)
+	if [ "$X" != "$2" ] ; then
+		echo "[dump FAIL]"
+		echo " Expecting $1:$2 got \"$X\"."
+		fail
+	fi
+}
+
+int_check_sum() # alg checksum
+{
+	VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
+	if [ "$VSUM" = "$2" ] ; then
+		echo -n "[CHECKSUM]"
+	else
+		echo "[FAIL]"
+		echo " Expecting $2 got $VSUM."
+		fail
+	fi
+}
+
+int_error_detection() # alg int sector_size
+{
+	# FIXME: this is just a trivial failure
+	echo -n "[DETECT_CORRUPTION]"
+	echo -n "XXXXX" | dd of=$DEV bs=1M seek=28 count=1 conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
+	$CRYPTSETUP open -d $KEY_FILE $DEV $DEV_NAME || fail "Cannot activate device."
+	dd if=/dev/mapper/$DEV_NAME  of=/dev/null >/dev/null 2>&1 && fail "Error detection failed."
+	$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+}
+
+intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
+{
+	echo -n "[$1:$2:$4:$6]"
+	echo -n "[FORMAT]"
+	$CRYPTSETUP luksFormat --type luks2 -q -c $1 --integrity $2 --sector-size $6 -s $4 \
+		$FAST_PBKDF_OPT -d $KEY_FILE $DEV >/dev/null 2>&1
+	if [ $? -ne 0 ] ; then
+		echo "[N/A]"
+		return
+	fi
+	dump_check "cipher" $1
+	dump_check "sector" $6
+	dump_check "integrity" $3
+	dump_check "Key:" $(($4 + $5))
+	echo -n "[ACTIVATE]"
+	$CRYPTSETUP open -d $KEY_FILE $DEV $DEV_NAME || fail "Cannot activate device."
+	status_check "cipher" $1
+	status_check "sector size" $6
+	status_check "integrity:" $3
+	status_check "keysize:" $(($4 + $5))
+	[ $5 -gt 0 ] && status_check "integrity keysize:" $5
+	int_check_sum $1 $7
+	echo -n "[REMOVE]"
+	$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	int_error_detection
+	echo "[OK]"
+}
+
+
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+modprobe dm-integrity >/dev/null 2>&1
+dmsetup targets | grep integrity >/dev/null 2>&1 || skip "Cannot find dm-integrity target, test skipped."
+
+add_device
+
+intformat aes-xts-plain64 hmac-sha256 hmac\(sha256\) 256 256  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c
+intformat aes-xts-random  hmac-sha256 hmac\(sha256\) 256 256  512 492c2d1cc9e222a850c399bfef4ed5a86bf5afc59e54f0f0c7ba8e2a64548323
+intformat aes-xts-plain64 hmac-sha256 hmac\(sha256\) 512 256  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c
+intformat aes-xts-random  hmac-sha256 hmac\(sha256\) 512 256  512 492c2d1cc9e222a850c399bfef4ed5a86bf5afc59e54f0f0c7ba8e2a64548323
+intformat aes-xts-plain64 hmac-sha256 hmac\(sha256\) 256 256 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+intformat aes-xts-random  hmac-sha256 hmac\(sha256\) 256 256 4096 8c0463f5ac09613674bdf40b0ff6f985edbc3de04e51fdc688873cb333ef3cda
+intformat aes-xts-plain64 hmac-sha256 hmac\(sha256\) 512 256 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+intformat aes-xts-random  hmac-sha256 hmac\(sha256\) 512 256 4096 8c0463f5ac09613674bdf40b0ff6f985edbc3de04e51fdc688873cb333ef3cda
+
+intformat aes-xts-plain64 hmac-sha512 hmac\(sha512\) 512 512 4096 9873d864fccb866521e79c9f0f75ad0c578d6bd7620399bbf4779e698c6e92fd
+intformat aes-xts-random  hmac-sha512 hmac\(sha512\) 512 512 4096 621f6c03f7361c2bf8f10059ae822339223f8471c750b0cf8584fba7134bd4a2
+
+intformat aes-gcm-random aead aead 128 0  512 5f6f3f6be03c74d9aaaeaf40dd310c99a20e2786045f78a1fc6a0b189d231f57
+intformat aes-gcm-random aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+intformat aes-gcm-random aead aead 256 0  512 5f6f3f6be03c74d9aaaeaf40dd310c99a20e2786045f78a1fc6a0b189d231f57
+intformat aes-gcm-random aead aead 256 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+
+intformat aes-ccm-random aead aead 152 0  512 288e5e9bc5be6c0bd2a74abbb72c7944da83198b5e3041dcf159e7ae250dafa8
+intformat aes-ccm-random aead aead 152 0 4096 7370c66a92708fb71b186931468be6aa9b26f4f88373b00b1c57360b9ee1304e
+intformat aes-ccm-random aead aead 280 0  512 288e5e9bc5be6c0bd2a74abbb72c7944da83198b5e3041dcf159e7ae250dafa8
+intformat aes-ccm-random aead aead 280 0 4096 7370c66a92708fb71b186931468be6aa9b26f4f88373b00b1c57360b9ee1304e
+
+intformat chacha20-plain64 poly1305 poly1305 256 0  512 3f82eae753ff52a689ddc559c691bbdff838361bbe9a3ce8c7212e16e51b5dbe
+intformat chacha20-random  poly1305 poly1305 256 0  512 5f6f3f6be03c74d9aaaeaf40dd310c99a20e2786045f78a1fc6a0b189d231f57
+intformat chacha20-plain64 poly1305 poly1305 256 0 4096 7370c66a92708fb71b186931468be6aa9b26f4f88373b00b1c57360b9ee1304e
+intformat chacha20-random  poly1305 poly1305 256 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+
+cleanup

@@ -1,0 +1,162 @@
+#!/bin/bash
+
+#turn on debug mode by following env. variable _DEBUG=1
+
+PS4='$LINENO:'
+CRYPTSETUP=../src/cryptsetup
+
+CRYPTSETUP_VALGRIND=../src/.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../lib/.libs
+
+DM_CRYPT_SECTOR=512
+LUKS2_HDR_SIZE=2112 # 16 KiB version, stored twice, including luks2 areas with keyslots
+
+START_DIR=$(pwd)
+
+IMG=luks2-backend.img
+ORIG_IMG=luks2_valid_hdr.img
+TST_IMGS=$START_DIR/luks2-images
+
+GEN_DIR=generators
+
+[ -z "$srcdir" ] && srcdir="."
+
+function remove_mapping()
+{
+	rm -rf $IMG $TST_IMGS >/dev/null 2>&1
+}
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	echo "FAILED"
+	cd $START_DIR
+	remove_mapping
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 77
+}
+
+function prepare() # $1 dev1_size
+{
+	remove_mapping
+
+	test -d $TST_IMGS || mkdir $TST_IMGS
+
+	test -e $ORIG_IMG || xz -dkc $srcdir/$ORIG_IMG.xz >$ORIG_IMG
+	cp $ORIG_IMG $TST_IMGS
+	cp $ORIG_IMG $IMG
+}
+
+function test_load()
+{
+	local _debug=
+
+	test -z "$_DEBUG" || _debug="--debug"
+
+	case "$1" in
+	R)
+		if [ -n "$_debug" ]; then
+			$CRYPTSETUP luksDump $_debug $IMG || fail "$2"
+		else
+			$CRYPTSETUP luksDump $_debug $IMG > /dev/null || fail "$2"
+		fi
+		;;
+	F)
+		if [ -n "$_debug" ]; then
+			$CRYPTSETUP luksDump $_debug $IMG && fail "$2"
+		else
+			$CRYPTSETUP luksDump $_debug $IMG > /dev/null 2>&1 && fail "$2"
+		fi
+		;;
+	*)
+		fail "Internal test error"
+		;;
+	esac
+
+}
+
+function RUN()
+{
+	echo -n "Test image: $1..."
+	cp $TST_IMGS/$1 $IMG || fail "Missing test image"
+	test_load $2 "$3"
+	echo "OK"
+}
+
+function valgrind_setup()
+{
+	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+
+which jq >/dev/null || skip "Cannot find jq, test skipped."
+
+prepare
+
+echo "[0] Generating test headers"
+cd $srcdir/$GEN_DIR
+for scr in ./generate-*.sh; do
+	echo -n "$(basename $scr)..."
+	$scr $TST_IMGS $TST_IMGS/$ORIG_IMG || fail "Header generator $scr failed: '$?'"
+	echo "done"
+done
+cd $START_DIR
+
+echo "[1] Test basic auto-recovery"
+RUN luks2-invalid-checksum-hdr0.img "R" "Failed to recover from trivial header corruption at offset 0"
+# TODO: check epoch is incresed after recovery
+# TODO: check only sectors related to corrupted hdr at offset 0 are written (dmstats tool/differ.c)
+
+RUN luks2-invalid-checksum-hdr1.img "R" "Failed to recover from trivial header corruption at offset 16384"
+# TODO: check epoch is incresed after recovery
+# TODO: check only sectors related to corrupted hdr at offset 16384 are written (dmstats tool/differ.c)
+
+RUN luks2-invalid-checksum-both-hdrs.img "F" "Failed to recognise corrupted header beyond repair"
+
+echo "[2] Test ability to auto-correct mallformed json area"
+RUN luks2-corrupted-hdr0-with-correct-chks.img "R" "Failed to auto correct malformed json area at offset 512"
+# TODO: check epoch is incresed after recovery
+# TODO: check only sectors related to corrupted hdr at offset 0 are written (dmstats tool/differ.c)
+
+RUN luks2-corrupted-hdr1-with-correct-chks.img "R" "Failed to auto correct malformed json area at offset 16896"
+# TODO: check epoch is incresed after recovery
+# TODO: check only sectors related to corrupted hdr at offset 16384 are written (dmstats tool/differ.c)
+
+RUN luks2-correct-full-json0.img "R" "Failed to parse full and correct json area"
+# TODO: detect noop (norecovery, epoch untouched)
+# TODO: check epoch is NOT incresed after recovery of secondary header
+
+# Secondary header is always broken in following tests
+echo "[3] Test LUKS2 json area restrictions"
+RUN luks2-non-null-byte-beyond-json0.img		"F" "Failed to detect illegal data right beyond json data string"
+RUN luks2-non-null-bytes-beyond-json0.img		"F" "Failed to detect illegal data in json area"
+RUN luks2-missing-trailing-null-byte-json0.img		"F" "Failed to detect missing terminal null byte"
+RUN luks2-invalid-opening-char-json0.img		"F" "Failed to detect invalid opening character in json area"
+RUN luks2-invalid-object-type-json0.img			"F" "Failed to detect invalid json object type"
+RUN luks2-overlapping-areas-c0-json0.img		"F" "Failed to detect two exactly same area specifications"
+RUN luks2-overlapping-areas-c1-json0.img		"F" "Failed to detect two intersecting area specifications"
+RUN luks2-overlapping-areas-c2-json0.img		"F" "Failed to detect two slightly intersecting area specifications"
+RUN luks2-area-in-json-hdr-space-json0.img		"F" "Failed to detect area referencing LUKS2 header space"
+RUN luks2-missing-keyslot-referenced-in-digest.img	"F" "Failed to detect missing keyslot referenced in digest"
+RUN luks2-missing-segment-referenced-in-digest.img	"F" "Failed to detect missing segment referenced in digest"
+RUN luks2-missing-keyslot-referenced-in-token.img	"F" "Failed to detect missing keyslots referenced in token"
+RUN luks2-invalid-keyslots-size-c0.img			"F" "Failed to detect too large keyslots_size in config section"
+RUN luks2-invalid-keyslots-size-c1.img			"F" "Failed to detect unaligned keyslots_size in config section"
+RUN luks2-invalid-keyslots-size-c2.img			"F" "Failed to detect too small keyslots_size config section"
+RUN luks2-invalid-json-size-c0.img			"F" "Failed to detect invalid json_size config section"
+RUN luks2-invalid-json-size-c1.img			"F" "Failed to detect invalid json_size config section"
+
+remove_mapping

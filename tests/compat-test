@@ -62,7 +62,7 @@ function fail()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
-	echo "FAILED"
+	echo "FAILED at line $(caller)"
 	exit 2
 }
 
