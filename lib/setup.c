@@ -1674,7 +1674,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 				   &cd->u.luks1.hdr, &vk, cd);
 	if (r >= 0) {
 		keyslot = r;
-		r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key);
+		r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key, 0);
 		if (r == -ENOTSUP)
 			log_err(cd, _("Resume is not supported for device %s.\n"), name);
 		else if (r)
@@ -1728,7 +1728,7 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 		goto out;
 
 	keyslot = r;
-	r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key);
+	r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key, 0);
 	if (r)
 		log_err(cd, _("Error during resuming device %s.\n"), name);
 out:

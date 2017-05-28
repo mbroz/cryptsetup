@@ -37,10 +37,33 @@ PKG_PROG_PKG_CONFIG
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
-	sys/sysmacros.h ctype.h unistd.h locale.h byteswap.h endian.h)
+	sys/sysmacros.h ctype.h unistd.h locale.h byteswap.h endian.h stdint.h)
 
 AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR([You need the uuid library.])])
 AC_CHECK_HEADER(libdevmapper.h,,[AC_MSG_ERROR([You need the device-mapper library.])])
+
+AC_ARG_ENABLE(keyring, AS_HELP_STRING([--disable-keyring],[disable kernel keyring support and builtin kernel keyring token]),[], [enable_keyring=yes])
+if test "x$enable_keyring" = "xyes"; then
+	AC_CHECK_HEADERS(linux/keyctl.h,,[AC_MSG_ERROR([You need Linux kernel headers with kernel keyring service compiled.])])
+
+	dnl ==========================================================================
+	dnl check whether kernel is compiled with kernel keyring service syscalls
+	AC_CHECK_DECL(__NR_add_key,,[AC_MSG_ERROR([The kernel is missing add_key syscall.])], [#include <syscall.h>])
+	AC_CHECK_DECL(__NR_keyctl,,[AC_MSG_ERROR([The kernel is missing keyctl syscall.])], [#include <syscall.h>])
+	AC_CHECK_DECL(__NR_request_key,,[AC_MSG_ERROR([The kernel is missing request_key syscall.])], [#include <syscall.h>])
+
+	dnl ==========================================================================
+	dnl check that key_serial_t hasn't been adopted yet in stdlib
+	AC_CHECK_TYPES([key_serial_t], [], [], [
+	AC_INCLUDES_DEFAULT
+	#ifdef HAVE_LINUX_KEYCTL_H
+	# include <linux/keyctl.h>
+	#endif
+	])
+
+	AC_DEFINE(KERNEL_KEYRING, 1, [Enable kernel keyring service support])
+fi
+AM_CONDITIONAL(KERNEL_KEYRING, test x$enable_keyring = xyes)
 
 saved_LIBS=$LIBS
 AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR([You need the uuid library.])])

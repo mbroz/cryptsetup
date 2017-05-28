@@ -1,0 +1,213 @@
+#!/bin/bash
+
+DEV_ZERO="dmtst-zero"
+DEV_CRYPT="dmtst-crypt"
+
+CIPHER="aes-xts-plain64"
+
+TEST_KEYRING="dmtst_keyring"
+
+USER_KEY_32_OK="dmtst:ukey_32_ok"
+USER_KEY_32_WRONG="dmtst:ukey_32_wrong_size"
+
+LOGON_KEY_32_OK="dmtst:lkey_32_ok"
+LOGON_KEY_32_WRONG="dmtst:lkey_32_wrong_size"
+
+PAYLOAD_32="bb21158c733229347bd4e681891e213d"
+PAYLOAD_31="bb21158c733229347bd4e681891e213"
+
+HEXKEY_32="bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+HEXKEY_32_BAD="bb21158c733229347bd4e68189XXXX3d94c685be6a5b84818afe7a78a6de7a1a"
+HEXKEY_31="bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a"
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 0
+}
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_CRYPT ] && dmsetup remove $DEV_CRYPT
+	[ -b /dev/mapper/$DEV_ZERO ] && dmsetup remove $DEV_ZERO
+
+	# unlink whole test keyring
+	keyctl unlink "%:$TEST_KEYRING" "@u" >/dev/null
+}
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	echo "FAILED"
+	remove_mapping
+	exit 2
+}
+
+# $1 type
+# $2 description
+# $3 payload
+# $4 keyring
+function load_key()
+{
+	keyctl add $@ >/dev/null
+}
+
+
+which dmsetup >/dev/null || skip "Cannot find dmsetup, test skipped"
+which keyctl >/dev/null || skip "Cannot find keyctl, test skipped"
+
+keyctl newring $TEST_KEYRING "@u" >/dev/null || fail "Cannot load test keyring"
+
+load_key logon $LOGON_KEY_32_OK $PAYLOAD_32 "%:$TEST_KEYRING" || fail "Cannot load 32 byte logon key type"
+load_key user $USER_KEY_32_OK $PAYLOAD_32 "%:$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+load_key logon $LOGON_KEY_32_WRONG $PAYLOAD_31 "%:$TEST_KEYRING" || fail "Cannot load 31 byte logon key type"
+load_key user $USER_KEY_32_WRONG $PAYLOAD_31 "%:$TEST_KEYRING" || fail "Cannot load 31 byte user key type"
+
+dmsetup create $DEV_ZERO --table "0 100 zero" || fail
+
+echo "[1] Valid keyring keys"
+
+# load logon type kernel key
+KEY=":32:logon:$LOGON_KEY_32_OK"
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" || fail
+dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER $KEY 0" || fail
+dmsetup remove $DEV_CRYPT || fail
+
+# load user type kernel key
+KEY=":32:user:$USER_KEY_32_OK"
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" || fail
+dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER $KEY 0" || fail
+dmsetup remove $DEV_CRYPT || fail
+
+# load logon type kernel key...
+KEY=":32:logon:$LOGON_KEY_32_OK"
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" || fail
+dmsetup suspend $DEV_CRYPT || fail
+dmsetup message $DEV_CRYPT 0 "key wipe" || fail
+# ...replace the key with hexkey...
+dmsetup message $DEV_CRYPT 0 "key set $HEXKEY_32" || fail
+dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER $HEXKEY_32 0" || fail
+dmsetup resume $DEV_CRYPT || fail
+dmsetup suspend $DEV_CRYPT || fail
+# ...and replace it again with user type kernel key...
+dmsetup message $DEV_CRYPT 0 "key set :32:user:$USER_KEY_32_OK" || fail
+dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER :32:user:$USER_KEY_32_OK 0" || fail
+dmsetup message $DEV_CRYPT 0 "key set $HEXKEY_32" || fail
+dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER $HEXKEY_32 0" || fail
+dmsetup resume $DEV_CRYPT || fail
+dmsetup remove $DEV_CRYPT || fail
+
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $HEXKEY_32 0 /dev/mapper/$DEV_ZERO 0" || fail
+dmsetup suspend $DEV_CRYPT || fail
+dmsetup message $DEV_CRYPT 0 "key wipe" || fail
+dmsetup message $DEV_CRYPT 0 "key set :32:user:$USER_KEY_32_OK" || fail
+dmsetup resume $DEV_CRYPT || fail
+dmsetup suspend $DEV_CRYPT || fail
+dmsetup message $DEV_CRYPT 0 "key set :32:logon:$LOGON_KEY_32_OK" || fail
+dmsetup resume $DEV_CRYPT || fail
+dmsetup remove $DEV_CRYPT || fail
+
+echo "[2] message ioctl"
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $HEXKEY_32 0 /dev/mapper/$DEV_ZERO 0" || fail
+dmsetup suspend $DEV_CRYPT || fail
+dmsetup message $DEV_CRYPT 0 "key set :32:logon:$LOGON_KEY_32_WRONG" 2> /dev/null && fail
+# old key should be intact and valid
+dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER $HEXKEY_32 0" || fail
+dmsetup resume $DEV_CRYPT || fail
+dmsetup suspend $DEV_CRYPT || fail
+# now the key gets destroyed by invalid input
+dmsetup message $DEV_CRYPT 0 "key set $HEXKEY_32_BAD" 2> /dev/null && fail
+dmsetup resume $DEV_CRYPT 2> /dev/null && fail
+# hmm... see the output. don't like it
+# dmsetup table --showkeys $DEV_CRYPT
+
+dmsetup message $DEV_CRYPT 0 "key set :32:user:$USER_KEY_32_OK" || fail
+dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER :32:user:$USER_KEY_32_OK 0" || fail
+dmsetup message $DEV_CRYPT 0 "key set :31:logon:$LOGON_KEY_32_OK" 2> /dev/null && fail
+dmsetup message $DEV_CRYPT 0 "key set :" 2> /dev/null && fail
+dmsetup message $DEV_CRYPT 0 "key set ::::" 2> /dev/null && fail
+dmsetup message $DEV_CRYPT 0 "key set :0:logon:$LOGON_KEY_32_OK" 2> /dev/null && fail
+dmsetup message $DEV_CRYPT 0 "key set :32" 2> /dev/null && fail
+dmsetup message $DEV_CRYPT 0 "key set :32:" 2> /dev/null && fail
+dmsetup message $DEV_CRYPT 0 "key set :32:logon" 2> /dev/null && fail
+dmsetup message $DEV_CRYPT 0 "key set :32:logo" 2> /dev/null && fail
+dmsetup message $DEV_CRYPT 0 "key set :32:logon:" 2> /dev/null && fail
+dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER :32:user:$USER_KEY_32_OK 0" || fail
+dmsetup message $DEV_CRYPT 0 "key set :32:user:$USER_KEY_32_OK" || fail
+dmsetup resume $DEV_CRYPT || fail
+dmsetup remove $DEV_CRYPT || fail
+
+echo "[3] bOrked keys"
+# declare the key having 32 bytes but load key which has in fact 31 bytes only
+KEY=":32:logon:$LOGON_KEY_32_WRONG"
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" 2> /dev/null && fail "dm-crypt accepted wrong key size"
+
+# declare the key having 31 bytes (incompatible with cipher) and load key with 32 bytes in real
+KEY=":31:logon:$LOGON_KEY_32_WRONG"
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" 2> /dev/null && fail "dm-crypt accepted wrong key size"
+
+# declare the key being user type but try to load logon one
+KEY=":32:user:$LOGON_KEY_32"
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" 2> /dev/null  && fail "dm-crypt accepted key description for invalid key type"
+
+# now the other way
+KEY=":32:logon:$USER_KEY_32"
+dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" 2> /dev/null  && fail "dm-crypt accepted key description for invalid key type"
+
+BORKED_KEYS=":\ 32:logon:$LOGON_KEY_32_OK
+: 32:logon:$LOGON_KEY_32_OK
+:+32:logon:$LOGON_KEY_32_OK
+:-32:logon:$LOGON_KEY_32_OK
+:32 :logon:$LOGON_KEY_32_OK
+:32\ :logon:$LOGON_KEY_32_OK
+:32_:logon:$LOGON_KEY_32_OK
+:32+:logon:$LOGON_KEY_32_OK
+:30+2:logon:$LOGON_KEY_32_OK
+:32+0:logon:$LOGON_KEY_32_OK
+:32: logon:$LOGON_KEY_32_OK
+:32:\ logon:$LOGON_KEY_32_OK
+:32:logonA:$LOGON_KEY_32_OK
+:32:logo:$LOGON_KEY_32_OK
+:32:llogon:$LOGON_KEY_32_OK
+:32xlogon:$LOGON_KEY_32_OK
+:32logon:$LOGON_KEY_32_OK
+:32:logonx$LOGON_KEY_32_OK
+:32:logon$LOGON_KEY_32_OK
+: 32:user:$USER_KEY_32_OK
+:\ 32:user:$USER_KEY_32_OK
+:+32:user:$USER_KEY_32_OK
+:-32:user:$USER_KEY_32_OK
+:32 :user:$USER_KEY_32_OK
+:32\ :user:$USER_KEY_32_OK
+:32_:user:$USER_KEY_32_OK
+:32+:user:$USER_KEY_32_OK
+:30+2:user:$USER_KEY_32_OK
+:32+0:user:$USER_KEY_32_OK
+:32: user:$USER_KEY_32_OK
+:32:\ user:$USER_KEY_32_OK
+:32:userA:$USER_KEY_32_OK
+:32:use:$USER_KEY_32_OK
+:32:uuser:$USER_KEY_32_OK
+:32xuser:$USER_KEY_32_OK
+:32user:$USER_KEY_32_OK
+:32:userx$USER_KEY_32_OK
+:32:user$USER_KEY_32_OK
+:32:userlogon:$USER_KEY_32_OK
+:32:userlogon:$LOGON_KEY_32_OK
+:32:logonuser:$USER_KEY_32_OK
+:32:logonuser:$LOGON_KEY_32_OK
+:32:logon:user:$USER_KEY_32_OK
+:32:logon:user:$LOGON_KEY_32_OK
+:32:user:logon:$USER_KEY_32_OK
+:32:user:logon:$LOGON_KEY_32_OK"
+
+# TODO: add tests with whitespace in key description (not possible with current libdevmapper)
+
+IFS="
+"
+
+for key in $BORKED_KEYS; do
+	dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $key 0 /dev/mapper/$DEV_ZERO 0" 2> /dev/null && fail "dm-crypt accepted seriously borked key string"
+done
+
+remove_mapping
