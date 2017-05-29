@@ -493,37 +493,37 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 		num_options++;
 		snprintf(feature, sizeof(feature), "journal_sectors:%u ",
 			 (unsigned)(dmd->u.integrity.journal_size / SECTOR_SIZE));
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 	if (dmd->u.integrity.journal_watermark) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "journal_watermark:%u ",
 			 dmd->u.integrity.journal_watermark);
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 	if (dmd->u.integrity.journal_commit_time) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "commit_time:%u ",
 			 dmd->u.integrity.journal_commit_time);
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 	if (dmd->u.integrity.interleave_sectors) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "interleave_sectors:%u ",
 			 dmd->u.integrity.interleave_sectors);
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 	if (dmd->u.integrity.sector_size) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "block_size:%u ",
 			 dmd->u.integrity.sector_size);
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 	if (dmd->u.integrity.buffer_sectors) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "buffer_sectors:%u ",
 			 dmd->u.integrity.buffer_sectors);
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 	if (dmd->u.integrity.integrity) {
 		num_options++;
@@ -540,7 +540,7 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 
 		snprintf(feature, sizeof(feature), "internal_hash:%s%s%s ",
 			 dmd->u.integrity.integrity, hexkey ? ":" : "", hexkey ?: "");
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
 	}
 
@@ -560,7 +560,7 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 
 		snprintf(feature, sizeof(feature), "journal_mac:%s%s%s ",
 			 dmd->u.integrity.journal_integrity, hexkey ? ":" : "", hexkey ?: "");
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
 	}
 
@@ -580,7 +580,7 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 
 		snprintf(feature, sizeof(feature), "journal_crypt:%s%s%s ",
 			 dmd->u.integrity.journal_crypt, hexkey ? ":" : "", hexkey ?: "");
-		strncat(features, feature, sizeof(features));
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
 	}
 
