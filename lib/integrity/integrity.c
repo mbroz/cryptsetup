@@ -128,13 +128,15 @@ int INTEGRITY_key_size(struct crypt_device *cd)
 	return -EINVAL;
 }
 
-int INTEGRITY_tag_size(struct crypt_device *cd)
+int INTEGRITY_tag_size(struct crypt_device *cd,
+		       const char *integrity,
+		       const char *cipher_mode)
 {
-	const char *integrity = crypt_get_integrity(cd);
-	const char *cipher_mode = crypt_get_cipher_mode(cd);
 	int iv_tag_size = 0, auth_tag_size = 0;
 
-	if (!strcmp(cipher_mode, "xts-random"))
+	if (!cipher_mode)
+		iv_tag_size = 0;
+	else if (!strcmp(cipher_mode, "xts-random"))
 		iv_tag_size = 16;
 	else if (!strcmp(cipher_mode, "gcm-random"))
 		iv_tag_size = 12;
