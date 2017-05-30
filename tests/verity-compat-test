@@ -148,11 +148,13 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 
 function corrupt_device() # $1 device, $2 device_size(in bytes), $3 #{corrupted_bytes}
 {
-	ARR=(`seq 0 $(($2 - 1)) | shuf`)
+	# Repeatable magic corruption :-)
 	CORRUPT=$3
-
+	RANDOM=43
 	while [ "$CORRUPT" -gt 0 ]; do
-		echo "1" | dd of=$1 bs=1 count=1 seek=${ARR[$CORRUPT]} conv=notrunc > /dev/null 2>&1
+		SEEK=$RANDOM
+		while [ $SEEK -ge $2 ] ; do SEEK=$RANDOM; done
+		echo -n -e "\x55" | dd of=$1 bs=1 count=1 seek=$SEEK conv=notrunc > /dev/null 2>&1
 		CORRUPT=$(($CORRUPT - 1))
 	done
 }
@@ -339,8 +341,6 @@ checkOverlapBug 2097152 1433600 350
 
 if check_version ; then
 	echo "Veritysetup [FEC tests]"
-	command -v shuf >/dev/null 2>&1 || skip "WARNING: shuf tool required."
-
 	for INDEX in  {1..4}; do
 	  # in the first iteration check if we can usae FEC (it can be compiled-out)
 	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) )
