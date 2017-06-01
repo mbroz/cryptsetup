@@ -7,6 +7,7 @@ TST_DIR=tcrypt-images
 MAP=tctst
 PASSWORD="aaaaaaaaaaaa"
 PASSWORD_HIDDEN="bbbbbbbbbbbb"
+PIM=1234
 
 function remove_mapping()
 {
@@ -97,9 +98,11 @@ if [ $(id -u) != 0 ]; then
 fi
 
 echo "ACTIVATION FS UUID CHECK"
-for file in $(ls $TST_DIR/[tv]c_*) ; do
+for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_*) ; do
 	echo -n " $file"
-	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen --veracrypt -r $file $MAP 2>&1)
+	PIM_OPT=""
+	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"
+	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen --veracrypt $PIM_OPT -r $file $MAP 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
