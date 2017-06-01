@@ -175,6 +175,7 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		       struct volume_key *journal_mac_key,
 		       uint32_t flags)
 {
+	uint32_t dmi_flags;
 	struct crypt_dm_active_device dmdi = {
 		.target      = DM_INTEGRITY,
 		.data_device = crypt_data_device(cd),
@@ -210,7 +211,13 @@ int INTEGRITY_activate(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	return dm_create_device(cd, name, "INTEGRITY", &dmdi, 0);
+	r = dm_create_device(cd, name, "INTEGRITY", &dmdi, 0);
+	if (r < 0 && (dm_flags(DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
+		log_err(cd, _("Kernel doesn't support dm-integrity mapping.\n"));
+		return -ENOTSUP;
+	}
+
+	return r;
 }
 
 int INTEGRITY_format(struct crypt_device *cd,
@@ -218,6 +225,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key)
 {
+	uint32_t dmi_flags;
 	char tmp_name[64], tmp_uuid[40];
 	struct crypt_dm_active_device dmdi = {
 		.target      = DM_INTEGRITY,
@@ -255,6 +263,10 @@ int INTEGRITY_format(struct crypt_device *cd,
 		device_path(dmdi.data_device), tmp_name, dmdi.u.integrity.tag_size);
 
 	r = device_block_adjust(cd, dmdi.data_device, DEV_EXCL, dmdi.u.integrity.offset, NULL, NULL);
+	if (r < 0 && (dm_flags(DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
+		log_err(cd, _("Kernel doesn't support dm-integrity mapping.\n"));
+		return -ENOTSUP;
+	}
 	if (r)
 		return r;
 
