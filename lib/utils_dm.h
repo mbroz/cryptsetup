@@ -44,9 +44,14 @@ struct device;
 #define DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED (1 << 8) /* submit_from_crypt_cpus */
 #define DM_VERITY_ON_CORRUPTION_SUPPORTED (1 << 9) /* ignore/restart_on_corruption, ignore_zero_block */
 #define DM_VERITY_FEC_SUPPORTED (1 << 10) /* Forward Error Correction (FEC) */
+#define DM_KERNEL_KEYRING_SUPPORTED (1 << 11) /* dm-crypt allows loading kernel keyring keys */
 #define DM_INTEGRITY_SUPPORTED (1 << 12) /* dm-integrity target supported */
+#define DM_SECTOR_SIZE_SUPPORTED (1 << 13) /* support for sector size setting in dm-crypt/dm-integrity */
+#define DM_CAPI_STRING_SUPPORTED (1 << 14) /* support for cryptoapi format cipher definition */
 
-uint32_t dm_flags(void);
+typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_UNKNOWN } dm_target_type;
+
+int dm_flags(dm_target_type target, uint32_t *flags);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)
 #define DM_ACTIVE_UUID		(1 << 1)
@@ -60,7 +65,7 @@ uint32_t dm_flags(void);
 #define DM_ACTIVE_VERITY_PARAMS		(1 << 7)
 
 struct crypt_dm_active_device {
-	enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY } target;
+	dm_target_type target;
 	uint64_t size;		/* active device size */
 	uint32_t flags;		/* activation flags */
 	const char *uuid;

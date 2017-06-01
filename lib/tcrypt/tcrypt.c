@@ -691,7 +691,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	struct device *device = NULL, *part_device = NULL;
 	unsigned int i;
 	int r;
-	uint32_t req_flags;
+	uint32_t req_flags, dmc_flags;
 	struct tcrypt_algs *algs;
 	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
@@ -817,7 +817,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 			break;
 	}
 
-	if (r < 0 && !(dm_flags() & req_flags)) {
+	if (r < 0 && !dm_flags(DM_CRYPT, &dmc_flags) &&
+	    (dmc_flags & req_flags) != req_flags) {
 		log_err(cd, _("Kernel doesn't support TCRYPT compatible mapping.\n"));
 		r = -ENOTSUP;
 	}

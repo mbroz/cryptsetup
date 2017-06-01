@@ -241,6 +241,7 @@ int VERITY_activate(struct crypt_device *cd,
 		     uint32_t activation_flags)
 {
 	struct crypt_dm_active_device dmd;
+	uint32_t dmv_flags;
 	int r;
 
 	log_dbg("Trying to activate VERITY device %s using hash %s.",
@@ -289,7 +290,7 @@ int VERITY_activate(struct crypt_device *cd,
 	}
 
 	r = dm_create_device(cd, name, CRYPT_VERITY, &dmd, 0);
-	if (r < 0 && !(dm_flags() & DM_VERITY_SUPPORTED)) {
+	if (r < 0 && !dm_flags(DM_VERITY, &dmv_flags) && !(dmv_flags & DM_VERITY_SUPPORTED)) {
 		log_err(cd, _("Kernel doesn't support dm-verity mapping.\n"));
 		return -ENOTSUP;
 	}
