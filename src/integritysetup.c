@@ -32,7 +32,7 @@ static uint64_t opt_journal_size = 0;
 static int opt_interleave_sectors = 0;
 static int opt_journal_watermark = 0;
 static int opt_journal_commit_time = 0;
-static int opt_tag_size = DEFAULT_TAG_SIZE;
+static int opt_tag_size = 0;
 static int opt_sector_size = 0;
 static int opt_buffer_sectors = 0;
 
@@ -501,15 +501,22 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 	}
 
-	if (strcmp(aname, "format") && (opt_journal_size_str || opt_interleave_sectors || opt_sector_size))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Options --journal-size, --interleave--sectors, --sector-size and --tag-size can be "
-		        "used only for format action.\n"),
-		      poptGetInvocationName(popt_context));
+	if (!strcmp(aname, "format") && opt_tag_size == 0)
+		opt_tag_size = DEFAULT_TAG_SIZE;
 
-	if (strcmp(aname, "format") && opt_tag_size <= 0)
+	if (opt_interleave_sectors < 0 || opt_journal_watermark < 0 ||
+	    opt_journal_commit_time < 0 || opt_tag_size < 0 ||
+	    opt_sector_size < 0 || opt_buffer_sectors < 0 ||
+	    opt_integrity_key_file < 0 || opt_journal_integrity_key_file < 0 ||
+	    opt_journal_crypt_key_size < 0)
+                usage(popt_context, EXIT_FAILURE,
+                      _("Negative number for option not permitted."),
+                      poptGetInvocationName(popt_context));
+
+	if (strcmp(aname, "format") && (opt_journal_size_str || opt_interleave_sectors || opt_sector_size || opt_tag_size))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --tag-size must be set.\n"),
+		      _("Options --journal-size, --interleave-sectors, --sector-size and --tag-size can be "
+		        "used only for format action.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_journal_size_str &&
