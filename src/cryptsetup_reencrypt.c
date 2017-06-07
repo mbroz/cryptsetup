@@ -21,7 +21,6 @@
 
 #include "cryptsetup.h"
 #include <sys/ioctl.h>
-#include <sys/time.h>
 #include <linux/fs.h>
 #include <arpa/inet.h>
 #include <uuid/uuid.h>
@@ -110,13 +109,6 @@ static void _quiet_log(int level, const char *msg, void *usrptr)
 	if (!opt_debug)
 		return;
 	tool_log(level, msg, usrptr);
-}
-
-/* The difference in seconds between two times in "timeval" format. */
-static double time_diff(struct timeval start, struct timeval end)
-{
-	return (end.tv_sec - start.tv_sec)
-		+ (end.tv_usec - start.tv_usec) / 1E6;
 }
 
 static int alignment(int fd)
@@ -659,42 +651,6 @@ static int restore_luks_header(struct reenc_ctx *rc)
 	return r;
 }
 
-static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
-{
-	unsigned long long mbytes, eta;
-	struct timeval now_time;
-	double tdiff, mib;
-
-	gettimeofday(&now_time, NULL);
-	if (!final && time_diff(rc->end_time, now_time) < 0.5)
-		return;
-
-	rc->end_time = now_time;
-
-	if (opt_batch_mode)
-		return;
-
-	tdiff = time_diff(rc->start_time, rc->end_time);
-	if (!tdiff)
-		return;
-
-	mbytes = (bytes - rc->resume_bytes) / 1024 / 1024;
-	mib = (double)(mbytes) / tdiff;
-	if (!mib)
-		return;
-
-	/* FIXME: calculate this from last minute only and remaining space */
-	eta = (unsigned long long)(rc->device_size / 1024 / 1024 / mib - tdiff);
-
-	/* vt100 code clear line */
-	log_err("\33[2K\r");
-	log_err(_("Progress: %5.1f%%, ETA %02llu:%02llu, "
-		"%4llu MiB written, speed %5.1f MiB/s%s"),
-		(double)bytes / rc->device_size * 100,
-		eta / 60, eta % 60, mbytes, mib,
-		final ? "\n" :"");
-}
-
 static ssize_t read_buf(int fd, void *buf, size_t count)
 {
 	size_t read_size = 0;
@@ -766,7 +722,8 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		}
 
 		*bytes += (uint64_t)s2;
-		print_progress(rc, *bytes, 0);
+		tools_time_progress(rc->device_size, *bytes,
+				    &rc->start_time, &rc->end_time);
 	}
 
 	return quit ? -EAGAIN : 0;
@@ -834,7 +791,8 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		}
 
 		*bytes += (uint64_t)s2;
-		print_progress(rc, *bytes, 0);
+		tools_time_progress(rc->device_size, *bytes,
+				    &rc->start_time, &rc->end_time);
 	}
 
 	return quit ? -EAGAIN : 0;
@@ -921,14 +879,13 @@ static int copy_data(struct reenc_ctx *rc)
 	}
 
 	set_int_handler(0);
-	gettimeofday(&rc->start_time, NULL);
+	tools_time_progress(rc->device_size, bytes,
+			    &rc->start_time, &rc->end_time);
 
 	if (rc->reencrypt_direction == FORWARD)
 		r = copy_data_forward(rc, fd_old, fd_new, block_size, buf, &bytes);
 	else
 		r = copy_data_backward(rc, fd_old, fd_new, block_size, buf, &bytes);
-
-	print_progress(rc, bytes, 1);
 
 	/* Zero (wipe) rest of now plain-only device when decrypting.
 	 * (To not leave any sign of encryption here.) */
