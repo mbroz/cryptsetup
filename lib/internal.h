@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <inttypes.h>
 
@@ -77,7 +78,7 @@ int device_size(struct device *device, uint64_t *size);
 int device_open(struct device *device, int flags);
 void device_disable_direct_io(struct device *device);
 int device_is_identical(struct device *device1, struct device *device2);
-
+int device_is_rotational(struct device *device);
 
 enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
 int device_block_adjust(struct crypt_device *cd,
@@ -139,24 +140,13 @@ int PLAIN_activate(struct crypt_device *cd,
 
 void *crypt_get_hdr(struct crypt_device *cd, const char *type);
 
-/**
- * Different methods used to erase sensitive data concerning
- * either encrypted payload area or master key inside keyslot
- * area
- */
-typedef enum {
-	CRYPT_WIPE_ZERO, /**< overwrite area using zero blocks */
-	CRYPT_WIPE_DISK, /**< erase disk (using Gutmann method if it is rotational disk)*/
-	CRYPT_WIPE_SSD, /**< erase solid state disk (random write) */
-	CRYPT_WIPE_RANDOM /**< overwrite area using some up to now unspecified
-			    * random algorithm */
-} crypt_wipe_type;
-
-int crypt_wipe(struct device *device,
-	       uint64_t offset,
-	       uint64_t size,
-	       crypt_wipe_type type,
-	       int exclusive);
-
+int crypt_wipe_device(struct crypt_device *cd,
+	struct device *device,
+	crypt_wipe_pattern pattern,
+	uint64_t offset,
+	uint64_t length,
+	size_t wipe_block_size,
+	int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
+	void *usrptr);
 
 #endif /* INTERNAL_H */

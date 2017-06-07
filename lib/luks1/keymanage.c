@@ -1027,9 +1027,9 @@ int LUKS_del_key(unsigned int keyIndex,
 	startOffset = hdr->keyblock[keyIndex].keyMaterialOffset;
 	endOffset = startOffset + AF_split_sectors(hdr->keyBytes, hdr->keyblock[keyIndex].stripes);
 
-	r = crypt_wipe(device, startOffset * SECTOR_SIZE,
-		       (endOffset - startOffset) * SECTOR_SIZE,
-		       CRYPT_WIPE_DISK, 0);
+	r = crypt_wipe_device(ctx, device, CRYPT_WIPE_SPECIAL, startOffset * SECTOR_SIZE,
+			      (endOffset - startOffset) * SECTOR_SIZE,
+			      (endOffset - startOffset) * SECTOR_SIZE, NULL, NULL);
 	if (r) {
 		if (r == -EACCES) {
 			log_err(ctx, _("Cannot write to device %s, permission denied.\n"),

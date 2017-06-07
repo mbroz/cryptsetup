@@ -1039,23 +1039,19 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 			       alignment_offset / SECTOR_SIZE,
 			       cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec,
 			       cd->metadata_device ? 1 : 0, cd);
-	if(r < 0)
+	if (r < 0)
+		return r;
+
+	r = device_block_adjust(cd, crypt_metadata_device(cd), DEV_EXCL, 0, NULL, NULL);
+	if (r < 0)
 		return r;
 
 	/* Wipe first 8 sectors - fs magic numbers etc. */
-	r = crypt_wipe(crypt_metadata_device(cd), 0, 8 * SECTOR_SIZE, CRYPT_WIPE_ZERO, 1);
-	if(r < 0) {
-		if (r == -EBUSY)
-			log_err(cd, _("Cannot format device %s which is still in use.\n"),
-				mdata_device_path(cd));
-		else if (r == -EACCES) {
-			log_err(cd, _("Cannot format device %s, permission denied.\n"),
-				mdata_device_path(cd));
-			r = -EINVAL;
-		} else
-			log_err(cd, _("Cannot wipe header on device %s.\n"),
-				mdata_device_path(cd));
-
+	r = crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO, 0,
+			      8 * SECTOR_SIZE, 8 * SECTOR_SIZE, NULL, NULL);
+	if (r < 0) {
+		log_err(cd, _("Cannot wipe header on device %s.\n"),
+			mdata_device_path(cd));
 		return r;
 	}
 
@@ -1239,20 +1235,16 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	/* Wipe first 8 sectors - fs magic numbers etc. */
-	r = crypt_wipe(crypt_metadata_device(cd), 0, 8 * SECTOR_SIZE, CRYPT_WIPE_ZERO, 1);
-	if (r < 0) {
-		if (r == -EBUSY)
-			log_err(cd, _("Cannot format device %s which is still in use.\n"),
-				mdata_device_path(cd));
-		else if (r == -EACCES) {
-			log_err(cd, _("Cannot format device %s, permission denied.\n"),
-				mdata_device_path(cd));
-			r = -EINVAL;
-		} else
-			log_err(cd, _("Cannot wipe header on device %s.\n"),
-				mdata_device_path(cd));
+	r = device_block_adjust(cd, crypt_metadata_device(cd), DEV_EXCL, 0, NULL, NULL);
+	if (r < 0)
+		return r;
 
+	/* Wipe first 8 sectors - fs magic numbers etc. */
+	r = crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO, 0,
+			      8 * SECTOR_SIZE, 8 * SECTOR_SIZE, NULL, NULL);
+	if (r < 0) {
+		log_err(cd, _("Cannot wipe header on device %s.\n"),
+			mdata_device_path(cd));
 		return r;
 	}
 
@@ -1285,9 +1277,12 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 	cd->u.integrity.params.buffer_sectors = params->buffer_sectors;
 	cd->u.integrity.params.sector_size = params->sector_size;
 	cd->u.integrity.params.tag_size = params->tag_size;
-	cd->u.integrity.params.integrity = params->integrity;
-	cd->u.integrity.params.journal_integrity = params->journal_integrity;
-	cd->u.integrity.params.journal_crypt = params->journal_crypt;
+	if (params->integrity)
+		cd->u.integrity.params.integrity = strdup(params->integrity);
+	if (params->journal_integrity)
+		cd->u.integrity.params.journal_integrity = strdup(params->journal_integrity);
+	if (params->journal_crypt)
+		cd->u.integrity.params.journal_crypt = strdup(params->journal_crypt);
 
 	r = INTEGRITY_format(cd, params, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key);
 	if (r)
@@ -1582,6 +1577,8 @@ void crypt_free(struct crypt_device *cd)
 			device_free(cd->u.verity.fec_device);
 		} else if (isINTEGRITY(cd->type)) {
 			free(CONST_CAST(void*)cd->u.integrity.params.integrity);
+			free(CONST_CAST(void*)cd->u.integrity.params.journal_integrity);
+			free(CONST_CAST(void*)cd->u.integrity.params.journal_crypt);
 			crypt_free_volume_key(cd->u.integrity.journal_crypt_key);
 			crypt_free_volume_key(cd->u.integrity.journal_mac_key);
 		} else if (!cd->type) {

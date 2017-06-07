@@ -22,6 +22,7 @@
  */
 
 #include "cryptsetup.h"
+#include <math.h>
 #include <signal.h>
 
 int opt_verbose = 0;
@@ -324,4 +325,68 @@ int tools_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size)
 
 	*size = tmp;
 	return 0;
+}
+
+/* Time progress helper */
+
+/* The difference in seconds between two times in "timeval" format. */
+static double time_diff(struct timeval *start, struct timeval *end)
+{
+	return (end->tv_sec - start->tv_sec)
+		+ (end->tv_usec - start->tv_usec) / 1E6;
+}
+
+// FIXME: detect terminal type
+void tools_clear_line(void)
+{
+	/* vt100 code clear line */
+	log_std("\33[2K\r");
+}
+
+void tools_time_progress(uint64_t device_size, uint64_t bytes,
+			 struct timeval *start_time, struct timeval *end_time)
+{
+	struct timeval now_time;
+	unsigned long long mbytes, eta;
+	double tdiff, mib;
+	int final = (bytes == device_size);
+
+	gettimeofday(&now_time, NULL);
+	if (start_time->tv_sec == 0 && start_time->tv_usec == 0) {
+		*start_time = now_time;
+		*end_time = now_time;
+		return;
+	}
+
+	if (!final && time_diff(end_time, &now_time) < 0.5)
+		return;
+
+	*end_time = now_time;
+
+	tdiff = time_diff(start_time, end_time);
+	if (!tdiff)
+		return;
+
+	mbytes = bytes  / 1024 / 1024;
+	mib = (double)(mbytes) / tdiff;
+	if (!mib)
+		return;
+
+	/* FIXME: calculate this from last minute only and remaining space */
+	eta = (unsigned long long)(device_size / 1024 / 1024 / mib - tdiff);
+
+	tools_clear_line();
+	if (final)
+		log_std("Finished, time %02llu:%02llu.%03llu, "
+			"%4llu MiB written, speed %5.1f MiB/s\n",
+			(unsigned long long)tdiff / 60,
+			(unsigned long long)tdiff % 60,
+			(unsigned long long)((tdiff - floor(tdiff)) * 1000.0),
+			mbytes, mib);
+	else
+		log_std("Progress: %5.1f%%, ETA %02llu:%02llu, "
+			"%4llu MiB written, speed %5.1f MiB/s",
+			(double)bytes / device_size * 100,
+			eta / 60, eta % 60, mbytes, mib);
+	fflush(stdout);
 }

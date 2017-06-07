@@ -1220,6 +1220,58 @@ int crypt_keyfile_read(struct crypt_device *cd,
 /** No on-disk header (only hashes) */
 #define CRYPT_KEYFILE_STOP_EOL   (1 << 0)
 
+/**
+ * @defgroup wipe Device wipe helper
+ *
+ * Wipe or fill a device with a pattern.
+ *
+ * @addtogroup wipe
+ * @{
+ */
+
+/**
+ * Wipe pattern
+ */
+typedef enum {
+	CRYPT_WIPE_ZERO,           /**< Fill with zeroes */
+	CRYPT_WIPE_RANDOM,         /**< Use RNG to fill data */
+	CRYPT_WIPE_ENCRYPTED_ZERO, /**< Add encryption and fill with zeroes as plaintext */
+	CRYPT_WIPE_SPECIAL,        /**< Compatibility only, do not use (Gutmann method) */
+} crypt_wipe_pattern;
+
+/**
+ * Wipe/Fill (part of) a device with the selected pattern.
+ *
+ * @param cd crypt device handle
+ * @param dev_path path to device to wipe or @e NULL if data device should be used
+ * @param pattern selected wipe pattern
+ * @param offset offset on device (in bytes)
+ * @param length length of area to be wiped (in bytes)
+ * @param wipe_block_size used block for wiping (one step) (in bytes)
+ * @param flags wipe flags
+ * @param progress callback function called after each @e wipe_block_size or @e NULL
+ * @param usrptr provided identification in callback
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note A @e progress callback can interrupt wipe process by returning non-zero code.
+ */
+int crypt_wipe(struct crypt_device *cd,
+	const char *dev_path, /* if null, use data device */
+	crypt_wipe_pattern pattern,
+	uint64_t offset,
+	uint64_t length,
+	size_t wipe_block_size,
+	uint32_t flags,
+	int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
+	void *usrptr
+);
+
+/** Use direct-io */
+#define CRYPT_WIPE_NO_DIRECT_IO (1 << 0)
+
+/** @} */
+
 #ifdef __cplusplus
 }
 #endif

@@ -30,6 +30,9 @@
 #include <sys/ioctl.h>
 #include <linux/fs.h>
 #include <unistd.h>
+#ifdef HAVE_SYS_SYSMACROS_H
+# include <sys/sysmacros.h>     /* for major, minor */
+#endif
 #include "internal.h"
 
 struct device {
@@ -482,7 +485,10 @@ int device_block_adjust(struct crypt_device *cd,
 		if (r == -EBUSY)
 			log_err(cd, _("Cannot use device %s which is in use "
 				      "(already mapped or mounted).\n"),
-				      device->path);
+			      device->path);
+		else if (r == -EACCES)
+			log_err(cd, _("Cannot use device %s, permission denied.\n"),
+				device->path);
 		else
 			log_err(cd, _("Cannot get info about device %s.\n"),
 				device->path);
@@ -546,4 +552,17 @@ int device_is_identical(struct device *device1, struct device *device2)
 		return 1;
 
 	return 0;
+}
+
+int device_is_rotational(struct device *device)
+{
+	struct stat st;
+
+	if (stat(device_path(device), &st) < 0)
+		return -EINVAL;
+
+	if (!S_ISBLK(st.st_mode))
+		return 0;
+
+	return crypt_dev_is_rotational(major(st.st_rdev), minor(st.st_rdev));
 }
