@@ -17,7 +17,7 @@ cryptsetup_SOURCES = \
 	cryptsetup.c				\
 	cryptsetup.h
 
-cryptsetup_LDADD = \
+cryptsetup_LDADD = -lm \
 	$(top_builddir)/lib/libcryptsetup.la	\
 	@POPT_LIBS@				\
 	@PWQUALITY_LIBS@			\
@@ -49,7 +49,7 @@ veritysetup_SOURCES = \
 	veritysetup.c				\
 	cryptsetup.h
 
-veritysetup_LDADD = \
+veritysetup_LDADD = -lm \
 	$(top_builddir)/lib/libcryptsetup.la	\
 	@POPT_LIBS@
 
@@ -79,9 +79,10 @@ integritysetup_SOURCES = \
 	integritysetup.c			\
 	cryptsetup.h
 
-integritysetup_LDADD = \
+integritysetup_LDADD = -lm \
 	$(top_builddir)/lib/libcryptsetup.la	\
-	@POPT_LIBS@
+	@POPT_LIBS@ \
+	@UUID_LIBS@
 
 integritysetup_CFLAGS = $(cryptsetup_CFLAGS)
 
