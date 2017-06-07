@@ -81,7 +81,7 @@ intformat() # alg alg_out tagsize sector_size csum
 {
 	echo -n "[INTEGRITY:$2:$3:$4]"
 	echo -n "[FORMAT]"
-	$INTSETUP format --integrity $1 --tag-size $3 --sector-size $4 $DEV || fail "Cannot format device."
+	$INTSETUP format -q --integrity $1 --tag-size $3 --sector-size $4 $DEV || fail "Cannot format device."
 	dump_check "tag_size" $3
 	dump_check "sector_size" $4
 	echo -n "[ACTIVATE]"

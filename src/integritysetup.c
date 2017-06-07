@@ -20,11 +20,13 @@
  */
 
 #include "cryptsetup.h"
+#include <uuid/uuid.h>
 
 #define PACKAGE_INTEGRITY "integritysetup"
 
 #define DEFAULT_TAG_SIZE 4
 #define DEFAULT_ALG_NAME "crc32"
+#define DEFAULT_WIPE_BLOCK 1024*1024 /* 1 MiB */
 #define MAX_KEY_SIZE 4096
 
 static const char *opt_journal_size_str = NULL;
@@ -35,6 +37,8 @@ static int opt_journal_commit_time = 0;
 static int opt_tag_size = 0;
 static int opt_sector_size = 0;
 static int opt_buffer_sectors = 0;
+
+static int opt_no_wipe = 0;
 
 static const char *opt_integrity = DEFAULT_ALG_NAME;
 static const char *opt_integrity_key_file = NULL;
@@ -128,6 +132,58 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 	return 0;
 }
 
+static int wipe_callback(uint64_t size, uint64_t offset, void *usrptr)
+{
+	static struct timeval start_time = {}, end_time = {};
+	int r = 0;
+
+	if (!opt_batch_mode)
+		tools_time_progress(size, offset, &start_time, &end_time);
+
+	check_signal(&r);
+	if (r) {
+		tools_clear_line();
+		log_err("\nWipe interrupted.\n");
+	}
+
+	return r;
+}
+
+static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
+{
+	char tmp_name[64], tmp_path[128], tmp_uuid[40];
+	uuid_t tmp_uuid_bin;
+	int r;
+
+	if (!opt_batch_mode)
+		log_std(_("Wiping device to initialize integrity checksum.\n"
+			"You can interrupt this by pressing CTRL+c "
+			"(rest of not wiped device will contain invalid checksum).\n"));
+
+	/* Activate the device a temporary one */
+	uuid_generate(tmp_uuid_bin);
+	uuid_unparse(tmp_uuid_bin, tmp_uuid);
+	if (snprintf(tmp_name, sizeof(tmp_name), "temporary-cryptsetup-%s", tmp_uuid) < 0)
+		return -EINVAL;
+	if (snprintf(tmp_path, sizeof(tmp_path), "%s/%s", crypt_get_dir(), tmp_name) < 0)
+		return -EINVAL;
+
+	r = crypt_activate_by_volume_key(cd, tmp_name, integrity_key,
+		opt_integrity_key_size, CRYPT_ACTIVATE_PRIVATE | CRYPT_ACTIVATE_NO_JOURNAL);
+	if (r < 0)
+		return r;
+
+	/* Wipe the device */
+	set_int_handler(0);
+	r = crypt_wipe(cd, tmp_path, CRYPT_WIPE_ZERO, 0, 0, DEFAULT_WIPE_BLOCK,
+		       0, &wipe_callback, NULL);
+	if (crypt_deactivate(cd, tmp_name))
+		log_err(_("Cannot deactivate temporary device %s.\n"), tmp_path);
+	set_int_block(0);
+
+	return r;
+}
+
 static int action_format(int arg)
 {
 	struct crypt_device *cd = NULL;
@@ -140,8 +196,18 @@ static int action_format(int arg)
 		.tag_size = opt_tag_size,
 		.sector_size = opt_sector_size ?: SECTOR_SIZE,
 	};
-	char journal_integrity[MAX_CIPHER_LEN], journal_crypt[MAX_CIPHER_LEN];
+	char integrity[MAX_CIPHER_LEN], journal_integrity[MAX_CIPHER_LEN], journal_crypt[MAX_CIPHER_LEN];
+	char *integrity_key = NULL;
 	int r;
+
+	if (opt_integrity) {
+		r = crypt_parse_hash_integrity_mode(opt_integrity, integrity);
+		if (r < 0) {
+			log_err(_("No known integrity specification pattern detected.\n"));
+			return r;
+		}
+		params.integrity = integrity;
+	}
 
 	if (opt_journal_integrity) {
 		r = crypt_parse_hash_integrity_mode(opt_journal_integrity, journal_integrity);
@@ -161,17 +227,25 @@ static int action_format(int arg)
 		params.journal_crypt = journal_crypt;
 	}
 
-	r = _read_keys(NULL, &params);
+	r = _read_keys(&integrity_key, &params);
 	if (r)
-		return r;
+		goto out;
 
 	r = crypt_init(&cd, action_argv[0]);
 	if (r < 0)
-		return r;
+		goto out;
 
-	r = crypt_format(cd, CRYPT_INTEGRITY, NULL,
-			 NULL, NULL, NULL, 0, &params);
-	check_signal(&r);
+	r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, &params);
+	if (r < 0)
+		goto out;
+
+	if (!opt_batch_mode)
+		log_std(_("Formatted with tag size %u, internal integrity %s.\n"), opt_tag_size, opt_integrity);
+
+	if (!opt_no_wipe)
+		r = _wipe_data_device(cd, integrity_key);
+out:
+	crypt_safe_free(integrity_key);
 	crypt_safe_free(CONST_CAST(void*)params.journal_integrity_key);
 	crypt_safe_free(CONST_CAST(void*)params.journal_crypt_key);
 	crypt_free(cd);
@@ -224,11 +298,11 @@ static int action_create(int arg)
 	if (opt_integrity_recovery)
 		activate_flags |= CRYPT_ACTIVATE_RECOVERY;
 
-	if ((r = crypt_init(&cd, action_argv[1])))
-		return r;
-
 	r = _read_keys(&integrity_key, &params);
 	if (r)
+		goto out;
+
+	if ((r = crypt_init(&cd, action_argv[1])))
 		goto out;
 
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
@@ -410,6 +484,9 @@ int main(int argc, const char **argv)
 		{ "version",            '\0', POPT_ARG_NONE, &opt_version_mode,       0, N_("Print package version"), NULL },
 		{ "verbose",             'v', POPT_ARG_NONE, &opt_verbose,            0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",              '\0', POPT_ARG_NONE, &opt_debug,              0, N_("Show debug messages"), NULL },
+		{ "batch-mode",         'q',  POPT_ARG_NONE, &opt_batch_mode,         0, N_("Do not ask for confirmation"), NULL },
+		{ "no-wipe",            '\0', POPT_ARG_NONE, &opt_no_wipe,            0, N_("Do not wipe device after format"), NULL },
+
 		{ "journal-size",       '\0', POPT_ARG_STRING,&opt_journal_size_str,  0, N_("Journal size"), N_("bytes") },
 		{ "interleave-sectors", '\0', POPT_ARG_INT,  &opt_interleave_sectors, 0, N_("Interleave sectors"), N_("SECTORS") },
 		{ "journal-watermark",  '\0', POPT_ARG_INT,  &opt_journal_watermark,  0, N_("Journal watermark"),N_("percent") },
@@ -507,16 +584,17 @@ int main(int argc, const char **argv)
 	if (opt_interleave_sectors < 0 || opt_journal_watermark < 0 ||
 	    opt_journal_commit_time < 0 || opt_tag_size < 0 ||
 	    opt_sector_size < 0 || opt_buffer_sectors < 0 ||
-	    opt_integrity_key_file < 0 || opt_journal_integrity_key_file < 0 ||
+	    opt_integrity_key_size < 0 || opt_journal_integrity_key_size < 0 ||
 	    opt_journal_crypt_key_size < 0)
                 usage(popt_context, EXIT_FAILURE,
                       _("Negative number for option not permitted."),
                       poptGetInvocationName(popt_context));
 
-	if (strcmp(aname, "format") && (opt_journal_size_str || opt_interleave_sectors || opt_sector_size || opt_tag_size))
+	if (strcmp(aname, "format") && (opt_journal_size_str || opt_interleave_sectors ||
+		opt_sector_size || opt_tag_size || opt_no_wipe ))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Options --journal-size, --interleave-sectors, --sector-size and --tag-size can be "
-		        "used only for format action.\n"),
+		      _("Options --journal-size, --interleave-sectors, --sector-size, --tag-size"
+		        "and --no-wipe can be used only for format action.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_journal_size_str &&
