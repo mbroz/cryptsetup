@@ -58,7 +58,6 @@ int VERITY_read_sb(struct crypt_device *cd,
 		   struct crypt_params_verity *params)
 {
 	struct device *device = crypt_metadata_device(cd);
-	int bsize = device_block_size(device);
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int devfd = 0, sb_version;
@@ -84,7 +83,8 @@ int VERITY_read_sb(struct crypt_device *cd,
 	}
 
 	if (lseek(devfd, sb_offset, SEEK_SET) < 0 ||
-	    read_blockwise(devfd, bsize, &sb, hdr_size) < hdr_size) {
+	    read_blockwise(devfd, device_block_size(device), device_alignment(device),
+			   &sb, hdr_size) < hdr_size) {
 		close(devfd);
 		return -EIO;
 	}
@@ -156,7 +156,6 @@ int VERITY_write_sb(struct crypt_device *cd,
 		   struct crypt_params_verity *params)
 {
 	struct device *device = crypt_metadata_device(cd);
-	int bsize = device_block_size(device);
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	char *algorithm;
@@ -197,7 +196,8 @@ int VERITY_write_sb(struct crypt_device *cd,
 	memcpy(sb.salt, params->salt, params->salt_size);
 	memcpy(sb.uuid, uuid, sizeof(sb.uuid));
 
-	r = write_lseek_blockwise(devfd, bsize, (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
+	r = write_lseek_blockwise(devfd, device_block_size(device), device_alignment(device),
+				  (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(cd, _("Error during update of verity header on device %s.\n"),
 			device_path(device));

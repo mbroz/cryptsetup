@@ -79,6 +79,7 @@ int device_open(struct device *device, int flags);
 void device_disable_direct_io(struct device *device);
 int device_is_identical(struct device *device1, struct device *device2);
 int device_is_rotational(struct device *device);
+size_t device_alignment(struct device *device);
 
 enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
 int device_block_adjust(struct crypt_device *cd,
@@ -104,10 +105,10 @@ uint64_t crypt_dev_partition_offset(const char *dev_path);
 
 ssize_t write_buffer(int fd, const void *buf, size_t count);
 ssize_t read_buffer(int fd, void *buf, size_t count);
-ssize_t write_blockwise(int fd, int bsize, void *buf, size_t count);
-ssize_t read_blockwise(int fd, int bsize, void *buf, size_t count);
-ssize_t write_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t offset);
-ssize_t read_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t offset);
+ssize_t write_blockwise(int fd, int bsize, size_t alignment, void *orig_buf, size_t count);
+ssize_t read_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count);
+ssize_t write_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count, off_t offset);
+ssize_t read_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count, off_t offset);
 
 unsigned crypt_getpagesize(void);
 int init_crypto(struct crypt_device *ctx);

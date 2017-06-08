@@ -43,6 +43,9 @@ struct device {
 
 	int o_direct:1;
 	int init_done:1;
+
+	/* cached values */
+	size_t alignment;
 };
 
 static int device_block_size_fd(int fd, size_t *min_size)
@@ -79,15 +82,28 @@ static int device_block_size_fd(int fd, size_t *min_size)
 	return bsize;
 }
 
+static size_t device_alignment_fd(int devfd)
+{
+	long alignment = DEFAULT_MEM_ALIGNMENT;
+
+#ifdef _PC_REC_XFER_ALIGN
+	alignment = fpathconf(devfd, _PC_REC_XFER_ALIGN);
+	if (alignment < 0)
+		alignment = DEFAULT_MEM_ALIGNMENT;
+#endif
+	return (size_t)alignment;
+}
+
 static int device_read_test(int devfd)
 {
 	char buffer[512];
 	int blocksize, r = -EIO;
-	size_t minsize = 0;
+	size_t minsize = 0, alignment;
 
 	blocksize = device_block_size_fd(devfd, &minsize);
+	alignment = device_alignment_fd(devfd);
 
-	if (blocksize < 0)
+	if (blocksize <= 0 || !alignment)
 		return -EINVAL;
 
 	if (minsize == 0)
@@ -96,7 +112,7 @@ static int device_read_test(int devfd)
 	if (minsize > sizeof(buffer))
 		minsize = sizeof(buffer);
 
-	if (read_blockwise(devfd, blocksize, buffer, minsize) == (ssize_t)minsize)
+	if (read_blockwise(devfd, blocksize, alignment, buffer, minsize) == (ssize_t)minsize)
 		r = 0;
 
 	crypt_memzero(buffer, sizeof(buffer));
@@ -147,6 +163,8 @@ static int device_ready(struct device *device, int check_directio)
 		r = -EINVAL;
 	else if (!S_ISBLK(st.st_mode))
 		r = S_ISREG(st.st_mode) ? -ENOTBLK : -EINVAL;
+
+	device->alignment = device_alignment_fd(devfd);
 
 	close(devfd);
 	return r;
@@ -565,4 +583,19 @@ int device_is_rotational(struct device *device)
 		return 0;
 
 	return crypt_dev_is_rotational(major(st.st_rdev), minor(st.st_rdev));
+}
+
+size_t device_alignment(struct device *device)
+{
+	int devfd;
+
+	if (!device->alignment) {
+		devfd = open(device_path(device), O_RDONLY);
+		if (devfd != -1) {
+			device->alignment = device_alignment_fd(devfd);
+			close(devfd);
+		}
+	}
+
+	return device->alignment;
 }

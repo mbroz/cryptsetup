@@ -182,7 +182,8 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 		goto out;
 	}
 
-	if (read_blockwise(devfd, device_block_size(device), buffer, hdr_size) < hdr_size) {
+	if (read_blockwise(devfd, device_block_size(device), device_alignment(device),
+			   buffer, hdr_size) < hdr_size) {
 		r = -EIO;
 		goto out;
 	}
@@ -301,7 +302,8 @@ int LUKS_hdr_restore(
 		goto out;
 	}
 
-	if (write_blockwise(devfd, device_block_size(device), buffer, buffer_size) < buffer_size) {
+	if (write_blockwise(devfd, device_block_size(device), device_alignment(device),
+			    buffer, buffer_size) < buffer_size) {
 		r = -EIO;
 		goto out;
 	}
@@ -537,7 +539,8 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 		return -EINVAL;
 	}
 
-	if (read_blockwise(devfd, device_block_size(device), hdr, hdr_size) < hdr_size)
+	if (read_blockwise(devfd, device_block_size(device), device_alignment(device),
+			   hdr, hdr_size) < hdr_size)
 		r = -EIO;
 	else
 		r = _check_and_convert_hdr(device_path(device), hdr, require_luks_device,
@@ -602,7 +605,8 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 		convHdr.keyblock[i].stripes            = htonl(hdr->keyblock[i].stripes);
 	}
 
-	r = write_blockwise(devfd, device_block_size(device), &convHdr, hdr_size) < hdr_size ? -EIO : 0;
+	r = write_blockwise(devfd, device_block_size(device), device_alignment(device),
+			    &convHdr, hdr_size) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(ctx, _("Error during update of LUKS header on device %s.\n"), device_path(device));
 	close(devfd);

@@ -40,7 +40,7 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	}
 
 	if (read_lseek_blockwise(devfd, device_block_size(device),
-		sb, sizeof(*sb), offset) != sizeof(*sb) ||
+		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
 	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic)) ||
 	    sb->version != SB_VERSION) {
 		log_std(cd, "No integrity superblock detected on %s.\n",

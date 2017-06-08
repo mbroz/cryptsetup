@@ -36,18 +36,6 @@ unsigned crypt_getpagesize(void)
 	return r < 0 ? DEFAULT_MEM_ALIGNMENT : r;
 }
 
-static size_t get_alignment(int fd)
-{
-	long alignment = DEFAULT_MEM_ALIGNMENT;
-
-#ifdef _PC_REC_XFER_ALIGN
-	alignment = fpathconf(fd, _PC_REC_XFER_ALIGN);
-	if (alignment < 0)
-		alignment = DEFAULT_MEM_ALIGNMENT;
-#endif
-	return (size_t)alignment;
-}
-
 ssize_t read_buffer(int fd, void *buf, size_t count)
 {
 	size_t read_size = 0;
@@ -94,19 +82,18 @@ ssize_t write_buffer(int fd, const void *buf, size_t count)
 	return (ssize_t)write_size;
 }
 
-ssize_t write_blockwise(int fd, int bsize, void *orig_buf, size_t count)
+ssize_t write_blockwise(int fd, int bsize, size_t alignment, void *orig_buf, size_t count)
 {
 	void *hangover_buf = NULL, *buf = NULL;
 	int r;
-	size_t alignment, hangover, solid;
+	size_t hangover, solid;
 	ssize_t ret = -1;
 
-	if (fd == -1 || !orig_buf || bsize <= 0)
+	if (fd == -1 || !orig_buf || bsize <= 0 || !alignment)
 		return -1;
 
 	hangover = count % bsize;
 	solid = count - hangover;
-	alignment = get_alignment(fd);
 
 	if ((size_t)orig_buf & (alignment - 1)) {
 		if (posix_memalign(&buf, alignment, count))
@@ -149,19 +136,18 @@ out:
 	return ret;
 }
 
-ssize_t read_blockwise(int fd, int bsize, void *orig_buf, size_t count)
+ssize_t read_blockwise(int fd, int bsize, size_t alignment, void *orig_buf, size_t count)
 {
 	void *hangover_buf = NULL, *buf = NULL;
 	int r;
-	size_t alignment, hangover, solid;
+	size_t hangover, solid;
 	ssize_t ret = -1;
 
-	if (fd == -1 || !orig_buf || bsize <= 0)
+	if (fd == -1 || !orig_buf || bsize <= 0 || !alignment)
 		return -1;
 
 	hangover = count % bsize;
 	solid = count - hangover;
-	alignment = get_alignment(fd);
 
 	if ((size_t)orig_buf & (alignment - 1)) {
 		if (posix_memalign(&buf, alignment, count))
@@ -198,7 +184,7 @@ out:
  * is implicitly included in the read/write offset, which can not be set to non-aligned
  * boundaries. Hence, we combine llseek with write.
  */
-ssize_t write_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t offset)
+ssize_t write_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count, off_t offset)
 {
 	void *frontPadBuf = NULL;
 	int r, frontHang;
@@ -220,7 +206,7 @@ ssize_t write_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t 
 		return -1;
 
 	if (frontHang) {
-		if (posix_memalign(&frontPadBuf, get_alignment(fd), bsize))
+		if (posix_memalign(&frontPadBuf, alignment, bsize))
 			return -1;
 
 		r = read_buffer(fd, frontPadBuf, bsize);
@@ -244,7 +230,7 @@ ssize_t write_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t 
 		count -= innerCount;
 	}
 
-	ret = count ? write_blockwise(fd, bsize, buf, count) : 0;
+	ret = count ? write_blockwise(fd, bsize, alignment, buf, count) : 0;
 	if (ret >= 0)
 		ret += innerCount;
 out:
@@ -252,7 +238,7 @@ out:
 	return ret;
 }
 
-ssize_t read_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t offset)
+ssize_t read_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count, off_t offset)
 {
 	void *frontPadBuf = NULL;
 	int r, frontHang;
@@ -274,7 +260,7 @@ ssize_t read_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t o
 		return -1;
 
 	if (frontHang) {
-		if (posix_memalign(&frontPadBuf, get_alignment(fd), bsize))
+		if (posix_memalign(&frontPadBuf, alignment, bsize))
 			return -1;
 
 		r = read_buffer(fd, frontPadBuf, bsize);
@@ -291,7 +277,7 @@ ssize_t read_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t o
 		count -= innerCount;
 	}
 
-	ret = read_blockwise(fd, bsize, buf, count);
+	ret = read_blockwise(fd, bsize, alignment, buf, count);
 	if (ret >= 0)
 		ret += innerCount;
 out:
