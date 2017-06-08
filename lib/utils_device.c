@@ -128,6 +128,7 @@ static int device_ready(struct device *device, int check_directio)
 {
 	int devfd = -1, r = 0;
 	struct stat st;
+	size_t tmp_size;
 
 	device->o_direct = 0;
 	if (check_directio) {
@@ -161,8 +162,14 @@ static int device_ready(struct device *device, int check_directio)
 	else if (!S_ISBLK(st.st_mode))
 		r = S_ISREG(st.st_mode) ? -ENOTBLK : -EINVAL;
 
-	device->alignment = device_alignment_fd(devfd);
-	device->block_size= device_block_size_fd(devfd, NULL);
+	/* Allow only increase (loop device) */
+	tmp_size = device_alignment_fd(devfd);
+	if (tmp_size > device->alignment)
+		device->alignment = tmp_size;
+
+	tmp_size = device_block_size_fd(devfd, NULL);
+	if (tmp_size > device->block_size)
+		device->block_size = tmp_size;
 
 	close(devfd);
 	return r;
