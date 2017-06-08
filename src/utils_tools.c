@@ -351,6 +351,9 @@ void tools_time_progress(uint64_t device_size, uint64_t bytes,
 	double tdiff, mib;
 	int final = (bytes == device_size);
 
+	if (opt_batch_mode)
+		return;
+
 	gettimeofday(&now_time, NULL);
 	if (start_time->tv_sec == 0 && start_time->tv_usec == 0) {
 		*start_time = now_time;

@@ -137,8 +137,7 @@ static int wipe_callback(uint64_t size, uint64_t offset, void *usrptr)
 	static struct timeval start_time = {}, end_time = {};
 	int r = 0;
 
-	if (!opt_batch_mode)
-		tools_time_progress(size, offset, &start_time, &end_time);
+	tools_time_progress(size, offset, &start_time, &end_time);
 
 	check_signal(&r);
 	if (r) {
