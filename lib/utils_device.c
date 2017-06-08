@@ -46,31 +46,28 @@ struct device {
 
 	/* cached values */
 	size_t alignment;
+	size_t block_size;
 };
 
-static int device_block_size_fd(int fd, size_t *min_size)
+static size_t device_block_size_fd(int fd, size_t *min_size)
 {
 	struct stat st;
-	int bsize = 0, r = -EINVAL;
+	size_t bsize;
 
 	if (fstat(fd, &st) < 0)
-		return -EINVAL;
+		return 0;
 
-	if (S_ISREG(st.st_mode)) {
-		r = (int)crypt_getpagesize();
-		bsize = r;
-	}
-	else if (ioctl(fd, BLKSSZGET, &bsize) >= 0)
-		r = bsize;
-	else
-		r = -EINVAL;
+	if (S_ISREG(st.st_mode))
+		bsize = crypt_getpagesize();
+	else if (ioctl(fd, BLKSSZGET, &bsize) < 0)
+		return 0;
 
-	if (r < 0 || !min_size)
-		return r;
+	if (!min_size)
+		return bsize;
 
 	if (S_ISREG(st.st_mode)) {
 		/* file can be empty as well */
-		if (st.st_size > bsize)
+		if (st.st_size > (ssize_t)bsize)
 			*min_size = bsize;
 		else
 			*min_size = st.st_size;
@@ -97,13 +94,13 @@ static size_t device_alignment_fd(int devfd)
 static int device_read_test(int devfd)
 {
 	char buffer[512];
-	int blocksize, r = -EIO;
-	size_t minsize = 0, alignment;
+	int r = -EIO;
+	size_t minsize = 0, blocksize, alignment;
 
 	blocksize = device_block_size_fd(devfd, &minsize);
 	alignment = device_alignment_fd(devfd);
 
-	if (blocksize <= 0 || !alignment)
+	if (!blocksize || !alignment)
 		return -EINVAL;
 
 	if (minsize == 0)
@@ -165,6 +162,7 @@ static int device_ready(struct device *device, int check_directio)
 		r = S_ISREG(st.st_mode) ? -ENOTBLK : -EINVAL;
 
 	device->alignment = device_alignment_fd(devfd);
+	device->block_size= device_block_size_fd(devfd, NULL);
 
 	close(devfd);
 	return r;
@@ -317,27 +315,30 @@ out:
 	(void)close(fd);
 }
 
-int device_block_size(struct device *device)
+size_t device_block_size(struct device *device)
 {
-	int fd, r = -EINVAL;
+	int fd;
 
 	if (!device)
 		return 0;
 
+	if (device->block_size)
+		return device->block_size;
+
 	if (device->file_path)
-		return (int)crypt_getpagesize();
+		device->block_size = crypt_getpagesize();
+	else {
+		fd = open(device->path, O_RDONLY);
+		if (fd >= 0) {
+			device->block_size = device_block_size_fd(fd, NULL);
+			close(fd);
+		}
+	}
 
-	fd = open(device->path, O_RDONLY);
-	if(fd < 0)
-		return -EINVAL;
-
-	r = device_block_size_fd(fd, NULL);
-
-	if (r <= 0)
+	if (!device->block_size)
 		log_dbg("Cannot get block size for device %s.", device_path(device));
 
-	close(fd);
-	return r;
+	return device->block_size;
 }
 
 int device_read_ahead(struct device *device, uint32_t *read_ahead)
@@ -546,7 +547,7 @@ int device_block_adjust(struct crypt_device *cd,
 	return 0;
 }
 
-size_t size_round_up(size_t size, unsigned int block)
+size_t size_round_up(size_t size, size_t block)
 {
 	size_t s = (size + (block - 1)) / block;
 	return s * block;

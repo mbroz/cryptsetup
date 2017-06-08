@@ -600,18 +600,12 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 	struct device *base_device, *device = crypt_metadata_device(cd);
 	ssize_t hdr_size = sizeof(struct tcrypt_phdr);
 	char *base_device_path;
-	int devfd = 0, r, bs;
-	size_t alignment;
+	int devfd = 0, r;
 
 	assert(sizeof(struct tcrypt_phdr) == 512);
 
 	log_dbg("Reading TCRYPT header of size %zu bytes from device %s.",
 		hdr_size, device_path(device));
-
-	bs = device_block_size(device);
-	alignment = device_alignment(device);
-	if (bs < 0)
-		return bs;
 
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER &&
 	    crypt_dev_is_partition(device_path(device))) {
@@ -637,28 +631,34 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 
 	r = -EIO;
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
-		if (read_lseek_blockwise(devfd, bs, alignment, hdr, hdr_size,
+		if (read_lseek_blockwise(devfd, device_block_size(device),
+			device_alignment(device), hdr, hdr_size,
 			TCRYPT_HDR_SYSTEM_OFFSET) == hdr_size) {
 			r = TCRYPT_init_hdr(cd, hdr, params);
 		}
 	} else if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
 		if (params->flags & CRYPT_TCRYPT_BACKUP_HEADER) {
-			if (read_lseek_blockwise(devfd, bs, alignment, hdr, hdr_size,
+			if (read_lseek_blockwise(devfd, device_block_size(device),
+				device_alignment(device), hdr, hdr_size,
 				TCRYPT_HDR_HIDDEN_OFFSET_BCK) == hdr_size)
 				r = TCRYPT_init_hdr(cd, hdr, params);
 		} else {
-			if (read_lseek_blockwise(devfd, bs, alignment, hdr, hdr_size,
+			if (read_lseek_blockwise(devfd, device_block_size(device),
+				device_alignment(device), hdr, hdr_size,
 				TCRYPT_HDR_HIDDEN_OFFSET) == hdr_size)
 				r = TCRYPT_init_hdr(cd, hdr, params);
-			if (r && read_lseek_blockwise(devfd, bs, alignment, hdr, hdr_size,
+			if (r && read_lseek_blockwise(devfd, device_block_size(device),
+				device_alignment(device), hdr, hdr_size,
 				TCRYPT_HDR_HIDDEN_OFFSET_OLD) == hdr_size)
 				r = TCRYPT_init_hdr(cd, hdr, params);
 		}
 	} else if (params->flags & CRYPT_TCRYPT_BACKUP_HEADER) {
-		if (read_lseek_blockwise(devfd, bs, alignment, hdr, hdr_size,
+		if (read_lseek_blockwise(devfd, device_block_size(device),
+			device_alignment(device), hdr, hdr_size,
 			TCRYPT_HDR_OFFSET_BCK) == hdr_size)
 			r = TCRYPT_init_hdr(cd, hdr, params);
-	} else if (read_blockwise(devfd, bs, alignment, hdr, hdr_size) == hdr_size)
+	} else if (read_blockwise(devfd, device_block_size(device),
+			device_alignment(device), hdr, hdr_size) == hdr_size)
 		r = TCRYPT_init_hdr(cd, hdr, params);
 
 	close(devfd);

@@ -72,7 +72,7 @@ void device_topology_alignment(struct device *device,
 			    unsigned long *required_alignment, /* bytes */
 			    unsigned long *alignment_offset,   /* bytes */
 			    unsigned long default_alignment);
-int device_block_size(struct device *device);
+size_t device_block_size(struct device *device);
 int device_read_ahead(struct device *device, uint32_t *read_ahead);
 int device_size(struct device *device, uint64_t *size);
 int device_open(struct device *device, int flags);
@@ -88,7 +88,7 @@ int device_block_adjust(struct crypt_device *cd,
 			uint64_t device_offset,
 			uint64_t *size,
 			uint32_t *flags);
-size_t size_round_up(size_t size, unsigned int block);
+size_t size_round_up(size_t size, size_t block);
 
 /* Receive backend devices from context helpers */
 struct device *crypt_metadata_device(struct crypt_device *cd);
@@ -105,12 +105,12 @@ uint64_t crypt_dev_partition_offset(const char *dev_path);
 
 ssize_t write_buffer(int fd, const void *buf, size_t count);
 ssize_t read_buffer(int fd, void *buf, size_t count);
-ssize_t write_blockwise(int fd, int bsize, size_t alignment, void *orig_buf, size_t count);
-ssize_t read_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count);
-ssize_t write_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count, off_t offset);
-ssize_t read_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count, off_t offset);
+ssize_t write_blockwise(int fd, size_t bsize, size_t alignment, void *orig_buf, size_t count);
+ssize_t read_blockwise(int fd, size_t bsize, size_t alignment, void *buf, size_t count);
+ssize_t write_lseek_blockwise(int fd, size_t bsize, size_t alignment, void *buf, size_t count, off_t offset);
+ssize_t read_lseek_blockwise(int fd, size_t bsize, size_t alignment, void *buf, size_t count, off_t offset);
 
-unsigned crypt_getpagesize(void);
+size_t crypt_getpagesize(void);
 int init_crypto(struct crypt_device *ctx);
 
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...) __attribute__ ((format (printf, 5, 6)));

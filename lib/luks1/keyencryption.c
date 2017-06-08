@@ -46,7 +46,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 			       const char *cipher, const char *cipher_mode,
 			       struct volume_key *vk,
 			       unsigned int sector,
-			       ssize_t (*func)(int, int, size_t, void *, size_t),
+			       ssize_t (*func)(int, size_t, size_t, void *, size_t),
 			       int mode,
 			       struct crypt_device *ctx)
 {
@@ -64,14 +64,14 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 			.iv_offset = 0,
 		}
 	};
-	int r, bsize, devfd = -1;
-	size_t alignment;
+	int r, devfd = -1;
+	size_t bsize, alignment;
 
 	log_dbg("Using dmcrypt to access keyslot area.");
 
 	bsize = device_block_size(dmd.data_device);
 	alignment = device_alignment(dmd.data_device);
-	if (bsize <= 0 || !alignment)
+	if (!bsize || !alignment)
 		return -EINVAL;
 
 	dmd.size = size_round_up(srcLength, bsize) / SECTOR_SIZE;
@@ -138,8 +138,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 
 	struct device *device = crypt_metadata_device(ctx);
 	struct crypt_storage *s;
-	int devfd = -1, bsize, r = 0;
-	size_t alignment;
+	int devfd = -1, r = 0;
 
 	/* Only whole sector writes supported */
 	if (srcLength % SECTOR_SIZE)
@@ -174,17 +173,13 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	r = -EIO;
 
 	/* Write buffer to device */
-	bsize = device_block_size(device);
-	alignment = device_alignment(device);
-	if (bsize <= 0 || !alignment)
-		goto out;
-
 	devfd = device_open(device, O_RDWR);
 	if (devfd < 0)
 		goto out;
 
 	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
-	    write_blockwise(devfd, bsize, alignment, src, srcLength) == -1)
+	    write_blockwise(devfd, device_block_size(device),
+			    device_alignment(device), src, srcLength) == -1)
 		goto out;
 
 	r = 0;
@@ -206,8 +201,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 {
 	struct device *device = crypt_metadata_device(ctx);
 	struct crypt_storage *s;
-	int devfd = -1, bsize, r = 0;
-	size_t alignment;
+	int devfd = -1, r = 0;
 
 	/* Only whole sector reads supported */
 	if (dstLength % SECTOR_SIZE)
@@ -235,17 +229,13 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	r = -EIO;
 
 	/* Read buffer from device */
-	bsize = device_block_size(device);
-	alignment = device_alignment(device);
-	if (bsize <= 0 || !alignment)
-		goto bad;
-
 	devfd = device_open(device, O_RDONLY);
 	if (devfd < 0)
 		goto bad;
 
 	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
-	    read_blockwise(devfd, bsize, alignment, dst, dstLength) == -1)
+	    read_blockwise(devfd, device_block_size(device),
+			   device_alignment(device), dst, dstLength) == -1)
 		goto bad;
 
 	close(devfd);

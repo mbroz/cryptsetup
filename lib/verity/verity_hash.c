@@ -421,7 +421,7 @@ int VERITY_create(struct crypt_device *cd,
 		  char *root_hash,
 		  size_t root_hash_size)
 {
-	unsigned pgsize = crypt_getpagesize();
+	unsigned pgsize = (unsigned)crypt_getpagesize();
 
 	if (verity_hdr->salt_size > 256)
 		return -EINVAL;

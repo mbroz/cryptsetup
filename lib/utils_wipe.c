@@ -52,7 +52,7 @@ static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)
 	}
 }
 
-static int crypt_wipe_special(int fd, int bsize, size_t alignment, char *buffer,
+static int crypt_wipe_special(int fd, size_t bsize, size_t alignment, char *buffer,
 			      uint64_t offset, size_t size)
 {
 	int r;
@@ -136,8 +136,8 @@ int crypt_wipe_device(struct crypt_device *cd,
 	int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
 	void *usrptr)
 {
-	int r, devfd = -1, bsize;
-	size_t alignment;
+	int r, devfd = -1;
+	size_t bsize, alignment;
 	char *sf = NULL;
 	uint64_t dev_size;
 	bool need_block_init = true;
@@ -145,7 +145,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 	/* Note: LUKS1 calls it with wipe_block not aligned to multiple of bsize */
 	bsize = device_block_size(device);
 	alignment = device_alignment(device);
-	if ((bsize <= 0) || !alignment || (wipe_block_size < (size_t)bsize))
+	if (!bsize || !alignment || (wipe_block_size < bsize))
 		return -EINVAL;
 
 	/* Everything must be aligned to SECTOR_SIZE */

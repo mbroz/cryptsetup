@@ -153,8 +153,8 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 	struct device *device = crypt_metadata_device(ctx);
 	struct luks_phdr hdr;
 	int r = 0, devfd = -1;
-	ssize_t hdr_size;
-	ssize_t buffer_size;
+	size_t hdr_size;
+	size_t buffer_size;
 	char *buffer = NULL;
 
 	r = LUKS_read_phdr(&hdr, 1, 0, ctx);
@@ -183,7 +183,7 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 	}
 
 	if (read_blockwise(devfd, device_block_size(device), device_alignment(device),
-			   buffer, hdr_size) < hdr_size) {
+			   buffer, hdr_size) < (ssize_t)hdr_size) {
 		r = -EIO;
 		goto out;
 	}
@@ -202,7 +202,7 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 		r = -EINVAL;
 		goto out;
 	}
-	if (write_buffer(devfd, buffer, buffer_size) < buffer_size) {
+	if (write_buffer(devfd, buffer, buffer_size) < (ssize_t)buffer_size) {
 		log_err(ctx, _("Cannot write header backup file %s.\n"), backup_file);
 		r = -EIO;
 		goto out;

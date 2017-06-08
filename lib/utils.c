@@ -30,10 +30,10 @@
 
 #include "internal.h"
 
-unsigned crypt_getpagesize(void)
+size_t crypt_getpagesize(void)
 {
 	long r = sysconf(_SC_PAGESIZE);
-	return r < 0 ? DEFAULT_MEM_ALIGNMENT : r;
+	return r <= 0 ? DEFAULT_MEM_ALIGNMENT : (size_t)r;
 }
 
 ssize_t read_buffer(int fd, void *buf, size_t count)
@@ -82,14 +82,15 @@ ssize_t write_buffer(int fd, const void *buf, size_t count)
 	return (ssize_t)write_size;
 }
 
-ssize_t write_blockwise(int fd, int bsize, size_t alignment, void *orig_buf, size_t count)
+ssize_t write_blockwise(int fd, size_t bsize, size_t alignment,
+			void *orig_buf, size_t count)
 {
 	void *hangover_buf = NULL, *buf = NULL;
 	int r;
 	size_t hangover, solid;
 	ssize_t ret = -1;
 
-	if (fd == -1 || !orig_buf || bsize <= 0 || !alignment)
+	if (fd == -1 || !orig_buf || !bsize || !alignment)
 		return -1;
 
 	hangover = count % bsize;
@@ -116,10 +117,10 @@ ssize_t write_blockwise(int fd, int bsize, size_t alignment, void *orig_buf, siz
 		if (r < 0 || r < (ssize_t)hangover)
 			goto out;
 
-		if (r < bsize)
+		if (r < (ssize_t)bsize)
 			bsize = r;
 
-		if (lseek(fd, -bsize, SEEK_CUR) < 0)
+		if (lseek(fd, -(off_t)bsize, SEEK_CUR) < 0)
 			goto out;
 
 		memcpy(hangover_buf, (char*)buf + solid, hangover);
@@ -136,14 +137,15 @@ out:
 	return ret;
 }
 
-ssize_t read_blockwise(int fd, int bsize, size_t alignment, void *orig_buf, size_t count)
+ssize_t read_blockwise(int fd, size_t bsize, size_t alignment,
+		       void *orig_buf, size_t count)
 {
 	void *hangover_buf = NULL, *buf = NULL;
 	int r;
 	size_t hangover, solid;
 	ssize_t ret = -1;
 
-	if (fd == -1 || !orig_buf || bsize <= 0 || !alignment)
+	if (fd == -1 || !orig_buf || !bsize || !alignment)
 		return -1;
 
 	hangover = count % bsize;
@@ -184,14 +186,15 @@ out:
  * is implicitly included in the read/write offset, which can not be set to non-aligned
  * boundaries. Hence, we combine llseek with write.
  */
-ssize_t write_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count, off_t offset)
+ssize_t write_lseek_blockwise(int fd, size_t bsize, size_t alignment,
+			      void *buf, size_t count, off_t offset)
 {
 	void *frontPadBuf = NULL;
-	int r, frontHang;
-	size_t innerCount = 0;
+	int r;
+	size_t frontHang, innerCount = 0;
 	ssize_t ret = -1;
 
-	if (fd == -1 || !buf || bsize <= 0)
+	if (fd == -1 || !buf || !bsize || !alignment)
 		return -1;
 
 	if (offset < 0)
@@ -210,7 +213,7 @@ ssize_t write_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, si
 			return -1;
 
 		r = read_buffer(fd, frontPadBuf, bsize);
-		if (r < 0 || r != bsize)
+		if (r < 0 || r != (ssize_t)bsize)
 			goto out;
 
 		innerCount = bsize - frontHang;
@@ -223,7 +226,7 @@ ssize_t write_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, si
 			goto out;
 
 		r = write_buffer(fd, frontPadBuf, bsize);
-		if (r < 0 || r != bsize)
+		if (r < 0 || r != (ssize_t)bsize)
 			goto out;
 
 		buf = (char*)buf + innerCount;
@@ -238,11 +241,12 @@ out:
 	return ret;
 }
 
-ssize_t read_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, size_t count, off_t offset)
+ssize_t read_lseek_blockwise(int fd, size_t bsize, size_t alignment,
+			     void *buf, size_t count, off_t offset)
 {
 	void *frontPadBuf = NULL;
-	int r, frontHang;
-	size_t innerCount = 0;
+	int r;
+	size_t frontHang, innerCount = 0;
 	ssize_t ret = -1;
 
 	if (fd == -1 || !buf || bsize <= 0)
@@ -264,7 +268,7 @@ ssize_t read_lseek_blockwise(int fd, int bsize, size_t alignment, void *buf, siz
 			return -1;
 
 		r = read_buffer(fd, frontPadBuf, bsize);
-		if (r < 0 || r != bsize)
+		if (r < 0 || r != (ssize_t)bsize)
 			goto out;
 
 		innerCount = bsize - frontHang;
