@@ -53,14 +53,19 @@ static size_t device_block_size_fd(int fd, size_t *min_size)
 {
 	struct stat st;
 	size_t bsize;
+	int arg;
 
 	if (fstat(fd, &st) < 0)
 		return 0;
 
 	if (S_ISREG(st.st_mode))
 		bsize = crypt_getpagesize();
-	else if (ioctl(fd, BLKSSZGET, &bsize) < 0)
-		return 0;
+	else {
+		if (ioctl(fd, BLKSSZGET, &arg) < 0)
+			bsize = crypt_getpagesize();
+		else
+			bsize = (size_t)arg;
+	}
 
 	if (!min_size)
 		return bsize;
