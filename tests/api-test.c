@@ -57,6 +57,7 @@
 #define EVL_HEADER_2 "evil_hdr-payload_overwrite"
 #define EVL_HEADER_3 "evil_hdr-stripes_payload_dmg"
 #define EVL_HEADER_4 "evil_hdr-small_luks_device"
+#define EVL_HEADER_5 "evil_hdr-keyslot_overlap"
 #define VALID_HEADER "valid_header_file"
 #define BACKUP_FILE "csetup_backup_file"
 #define IMAGE1 "compatimage.img"
@@ -391,6 +392,7 @@ static void _cleanup(void)
 	remove(EVL_HEADER_2);
 	remove(EVL_HEADER_3);
 	remove(EVL_HEADER_4);
+	remove(EVL_HEADER_5);
 	remove(VALID_HEADER);
 	remove(BACKUP_FILE);
 
@@ -454,6 +456,8 @@ static int _setup(void)
 	/* luks device header for data and header on same device. payloadOffset is greater than
 	 * device size (crypt_load() test) */
 	_system(" [ ! -e " EVL_HEADER_4 " ] && bzip2 -dk " EVL_HEADER_4 ".bz2", 1);
+	 /* two keyslots with same offset (overlaping keyslots) */
+	_system(" [ ! -e " EVL_HEADER_5 " ] && bzip2 -dk " EVL_HEADER_5 ".bz2", 1);
 	/* valid header: payloadOffset=4096, key_size=32,
 	 * volume_key = bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a */
 	_system(" [ ! -e " VALID_HEADER " ] && bzip2 -dk " VALID_HEADER ".bz2", 1);
@@ -1274,6 +1278,7 @@ static void LuksHeaderRestore(void)
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_2), "Header corrupted");
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_3), "Header corrupted");
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_4), "Header too small");
+	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_5), "Header corrupted");
 	OK_(crypt_header_restore(cd, CRYPT_LUKS1, VALID_HEADER));
 	// wipe valid luks header
 	snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=" DMDIR L_DEVICE_OK " bs=512 count=%" PRIu64 " 2>/dev/null", r_payload_offset);
@@ -1282,6 +1287,7 @@ static void LuksHeaderRestore(void)
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_2), "Header corrupted");
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_3), "Header corrupted");
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_4), "Header too small");
+	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_5), "Header corrupted");
 	OK_(crypt_header_restore(cd, CRYPT_LUKS1, VALID_HEADER));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	OK_(crypt_deactivate(cd, CDEVICE_1));

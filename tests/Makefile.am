@@ -28,6 +28,7 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	evil_hdr-stripes_payload_dmg.bz2 \
 	evil_hdr-luks_hdr_damage.bz2 \
 	evil_hdr-small_luks_device.bz2 \
+	evil_hdr-keyslot_overlap.bz2 \
 	tcrypt-images.tar.bz2 \
 	luks1-images.tar.bz2 \
 	compat-test loopaes-test align-test discards-test mode-test password-hash-test \
