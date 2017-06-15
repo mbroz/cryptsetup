@@ -1,0 +1,37 @@
+language: c
+
+sudo: required
+dist: trusty
+
+compiler:
+  - gcc
+
+env:
+  - MAKE_CHECK="gcrypt"
+  - MAKE_CHECK="openssl"
+
+branches:
+  only:
+    - master
+
+before_install:
+  - uname -a
+  - $CC --version
+  - which $CC
+  # workaround clang not system wide, fail on sudo make install
+  - export CC=`which $CC`
+  # workaround travis-ci issue #5301
+  - unset PYTHON_CFLAGS
+
+install:
+  - source ./.travis-functions.sh
+  - travis_install_script
+
+before_script:
+  - travis_before_script
+
+script:
+  - travis_script
+
+after_script:
+  - travis_after_script
