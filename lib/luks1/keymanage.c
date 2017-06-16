@@ -68,13 +68,12 @@ int LUKS_keyslot_area(const struct luks_phdr *hdr,
 	return 0;
 }
 
-/* because the array has 8 elements and it's mostly sorted. that's why */
-static void _insertsort(int *array, int high, const void *usrptr)
+/* insertsort: because the array has 8 elements and it's mostly sorted. that's why */
+static void LUKS_sort_keyslots(const struct luks_phdr *hdr, int *array)
 {
-	const struct luks_phdr *hdr = (const struct luks_phdr *)usrptr;
 	int i, j, x;
 
-	for (i = 1; i < high; i++) {
+	for (i = 1; i < LUKS_NUMKEYS; i++) {
 		j = i;
 		while (j > 0 && hdr->keyblock[array[j-1]].keyMaterialOffset > hdr->keyblock[array[j]].keyMaterialOffset) {
 			x = array[j];
@@ -83,11 +82,6 @@ static void _insertsort(int *array, int high, const void *usrptr)
 			j--;
 		}
 	}
-}
-
-static void LUKS_sort_keyslots(const struct luks_phdr *phdr, int *sorted_areas)
-{
-	_insertsort(sorted_areas, LUKS_NUMKEYS, phdr);
 }
 
 static size_t LUKS_device_sectors(const struct luks_phdr *hdr)
