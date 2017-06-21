@@ -302,6 +302,7 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 		char_read = read(fd, &pass[i], 1);
 		if (char_read < 0) {
 			log_err(cd, _("Error reading passphrase.\n"));
+			r = -EPIPE;
 			goto out_err;
 		}
 
