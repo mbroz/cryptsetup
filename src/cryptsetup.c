@@ -901,6 +901,12 @@ static int action_luksKillSlot(void)
 			_("This is the last keyslot. Device will become unusable after purging this key."),
 			_("Enter any remaining passphrase: "),
 			opt_key_file, opt_keyfile_offset, opt_keyfile_size);
+
+		if (r == -EPIPE && (!opt_key_file || tools_is_stdin(opt_key_file))) {
+			log_dbg("Failed read from input, ignoring passphrase.");
+			r = 0;
+		}
+
 		if (r < 0)
 			goto out;
 	}

@@ -354,6 +354,8 @@ prepare "[18] RemoveKey passphrase and keyfile" reuse
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: DISABLED" || fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY1 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV -i1 -d $KEY2 $KEY1 --key-slot 3 2>/dev/null || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: ENABLED" || fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 --keyfile-size 1 2>/dev/null && fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 4: DISABLED" || fail
@@ -366,6 +368,9 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: ENABLED" || fail
 # kill slot using passphrase from 1
 echo $PWD2 | $CRYPTSETUP luksKillSlot $LOOPDEV 2 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: DISABLED" || fail
+# kill slot with redirected stdin
+$CRYPTSETUP luksKillSlot $LOOPDEV 3 </dev/null || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: DISABLED" || fail
 # remove key0 / slot 0
 echo $PWD1 | $CRYPTSETUP luksRemoveKey $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: DISABLED" || fail

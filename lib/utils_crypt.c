@@ -423,6 +423,7 @@ int crypt_get_key(const char *prompt,
 		char_read = read(fd, &pass[i], 1);
 		if (char_read < 0) {
 			log_err(cd, _("Error reading passphrase.\n"));
+			r = -EPIPE;
 			goto out_err;
 		}
 
