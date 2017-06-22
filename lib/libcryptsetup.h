@@ -1255,6 +1255,9 @@ typedef enum {
  * @return @e 0 on success or negative errno value otherwise.
  *
  * @note A @e progress callback can interrupt wipe process by returning non-zero code.
+ *
+ * @note If the error values is -EIO or -EINTR, some part of the device could
+ *       be overwritten. Other error codes (-EINVAL, -ENOMEM) means that no IO was performed.
  */
 int crypt_wipe(struct crypt_device *cd,
 	const char *dev_path, /* if null, use data device */

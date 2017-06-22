@@ -72,7 +72,7 @@ static int crypt_wipe_special(int fd, size_t bsize, size_t alignment, char *buff
 			r = 0;
 		}
 		if (r < 0)
-			return r;
+			return -EIO;
 
 		written = write_lseek_blockwise(fd, bsize, alignment,
 						buffer, size, offset);
@@ -82,7 +82,7 @@ static int crypt_wipe_special(int fd, size_t bsize, size_t alignment, char *buff
 
 	/* Rewrite it finally with random */
 	if (crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL) < 0)
-		return -EINVAL;
+		return -EIO;
 
 	written = write_lseek_blockwise(fd, bsize, alignment, buffer, size, offset);
 	if (written < 0 || written != (ssize_t)size)
@@ -107,11 +107,13 @@ static int wipe_block(int devfd, crypt_wipe_pattern pattern, char *sf,
 			*need_block_init = false;
 			r = 0;
 		} else if (pattern == CRYPT_WIPE_RANDOM) {
-			r = crypt_random_get(NULL, sf, wipe_block_size, CRYPT_RND_NORMAL);
+			r = crypt_random_get(NULL, sf, wipe_block_size,
+					     CRYPT_RND_NORMAL) ? -EIO : 0;
 			*need_block_init = true;
 		} else if (pattern == CRYPT_WIPE_ENCRYPTED_ZERO) {
 			// FIXME
-			r = crypt_random_get(NULL, sf, wipe_block_size, CRYPT_RND_NORMAL);
+			r = crypt_random_get(NULL, sf, wipe_block_size,
+					     CRYPT_RND_NORMAL) ? -EIO : 0;
 			*need_block_init = true;
 		} else
 			r = -EINVAL;
@@ -174,12 +176,12 @@ int crypt_wipe_device(struct crypt_device *cd,
 
 	if (lseek64(devfd, offset, SEEK_SET) < 0) {
 		log_err(cd, "Cannot seek to device offset.\n");
-		r = -EIO;
+		r = -EINVAL;
 		goto out;
 	}
 
 	if (progress && progress(dev_size, offset, usrptr)) {
-		r = -EINTR;
+		r = -EINVAL; /* No change yet, treat this as a parameter error */
 		goto out;
 	}
 
