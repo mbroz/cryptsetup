@@ -1598,6 +1598,9 @@ int crypt_suspend(struct crypt_device *cd,
 	crypt_status_info ci;
 	int r;
 
+	if (!name)
+		return -EINVAL;
+
 	log_dbg("Suspending volume %s.", name);
 
 	if (cd->type) {
@@ -1648,14 +1651,14 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 	int r;
 
-	log_dbg("Resuming volume %s.", name);
-
 	r = onlyLUKS(cd);
 	if (r < 0)
 		return r;
 
-	if (!passphrase)
+	if (!passphrase || !name)
 		return -EINVAL;
+
+	log_dbg("Resuming volume %s.", name);
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -1694,11 +1697,14 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 	size_t passphrase_size_read;
 	int r;
 
-	log_dbg("Resuming volume %s.", name);
-
 	r = onlyLUKS(cd);
 	if (r < 0)
 		return r;
+
+	if (!name)
+		return -EINVAL;
+
+	log_dbg("Resuming volume %s.", name);
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
