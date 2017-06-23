@@ -756,7 +756,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 
 	if (flags & CRYPT_DEACTIVATE_FORCE) {
 		r = dm_query_device(cd, name, 0, &dmd);
-		if (!r)
+		if (r)
 			return r;
 	}
 
