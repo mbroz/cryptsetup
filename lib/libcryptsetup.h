@@ -812,6 +812,11 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	size_t volume_key_size,
 	uint32_t flags);
 
+/** lazy deactivation - remove once last user releases it */
+#define CRYPT_DEACTIVATE_DEFERRED (1 << 0)
+/** force deactivation - if the device is busy, it is replaced by error device */
+#define CRYPT_DEACTIVATE_FORCE    (1 << 1)
+
 /**
  * Deactivate crypt device. This function tries to remove active device-mapper
  * mapping from kernel. Also, sensitive data like the volume key are removed from
@@ -819,9 +824,17 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
  *
  * @param cd crypt device handle, can be @e NULL
  * @param name name of device to deactivate
+ * @param flags deactivation flags
  *
  * @return @e 0 on success or negative errno value otherwise.
  *
+ */
+int crypt_deactivate_by_name(struct crypt_device *cd,
+	const char *name,
+	uint32_t flags);
+
+/**
+ * Deactivate crypt device. See @ref crypt_deactivate_by_name with empty @e flags.
  */
 int crypt_deactivate(struct crypt_device *cd, const char *name);
 

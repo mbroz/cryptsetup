@@ -93,7 +93,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 		     uint32_t flags);
 
 int TCRYPT_deactivate(struct crypt_device *cd,
-		      const char *name);
+		      const char *name,
+		      uint32_t flags);
 
 uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 				struct tcrypt_phdr *hdr,

@@ -831,7 +831,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 }
 
 static int TCRYPT_remove_one(struct crypt_device *cd, const char *name,
-		      const char *base_uuid, int index)
+		      const char *base_uuid, int index, uint32_t flags)
 {
 	struct crypt_dm_active_device dmd = {};
 	char dm_name[PATH_MAX];
@@ -846,13 +846,13 @@ static int TCRYPT_remove_one(struct crypt_device *cd, const char *name,
 
 	r = dm_query_device(cd, dm_name, DM_ACTIVE_UUID, &dmd);
 	if (!r && !strncmp(dmd.uuid, base_uuid, strlen(base_uuid)))
-		r = dm_remove_device(cd, dm_name, 0, 0);
+		r = dm_remove_device(cd, dm_name, flags);
 
 	free(CONST_CAST(void*)dmd.uuid);
 	return r;
 }
 
-int TCRYPT_deactivate(struct crypt_device *cd, const char *name)
+int TCRYPT_deactivate(struct crypt_device *cd, const char *name, uint32_t flags)
 {
 	struct crypt_dm_active_device dmd = {};
 	int r;
@@ -863,15 +863,15 @@ int TCRYPT_deactivate(struct crypt_device *cd, const char *name)
 	if (!dmd.uuid)
 		return -EINVAL;
 
-	r = dm_remove_device(cd, name, 0, 0);
+	r = dm_remove_device(cd, name, flags);
 	if (r < 0)
 		goto out;
 
-	r = TCRYPT_remove_one(cd, name, dmd.uuid, 1);
+	r = TCRYPT_remove_one(cd, name, dmd.uuid, 1, flags);
 	if (r < 0)
 		goto out;
 
-	r = TCRYPT_remove_one(cd, name, dmd.uuid, 2);
+	r = TCRYPT_remove_one(cd, name, dmd.uuid, 2, flags);
 	if (r < 0)
 		goto out;
 out:

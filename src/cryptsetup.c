@@ -67,6 +67,7 @@ static int opt_tcrypt_backup = 0;
 static int opt_veracrypt = 0;
 static int opt_veracrypt_pim = -1;
 static int opt_veracrypt_query_pim = 0;
+static int opt_deferred_remove = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -421,11 +422,15 @@ out:
 static int action_close(void)
 {
 	struct crypt_device *cd = NULL;
+	uint32_t flags = 0;
 	int r;
+
+	if (opt_deferred_remove)
+		flags |= CRYPT_DEACTIVATE_DEFERRED;
 
 	r = crypt_init_by_name(&cd, action_argv[0]);
 	if (r == 0)
-		r = crypt_deactivate(cd, action_argv[0]);
+		r = crypt_deactivate_by_name(cd, action_argv[0], flags);
 
 	crypt_free(cd);
 	return r;
@@ -1572,6 +1577,7 @@ int main(int argc, const char **argv)
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)."), NULL },
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option."), NULL },
 		{ "perf-submit_from_crypt_cpus",'\0', POPT_ARG_NONE, &opt_perf_submit_from_crypt_cpus,0,N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option."), NULL },
+		{ "deferred",          '\0', POPT_ARG_NONE, &opt_deferred_remove,       0, N_("Device removal is deferred until the last user closes it."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1698,6 +1704,11 @@ int main(int argc, const char **argv)
 		help_args(action, popt_context);
 
 	/* FIXME: rewrite this from scratch */
+
+	if (opt_deferred_remove && strcmp(aname, "close"))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --deferred is allowed only for close command.\n"),
+		      poptGetInvocationName(popt_context));
 
 	if (opt_shared && (strcmp(aname, "open") || strcmp(opt_type, "plain")) )
 		usage(popt_context, EXIT_FAILURE,

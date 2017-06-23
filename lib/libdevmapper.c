@@ -72,6 +72,8 @@ static int _dm_task_set_cookie(struct dm_task *dmt, uint32_t *cookie, uint16_t f
 static int _dm_udev_wait(uint32_t cookie) { return 0; };
 #endif
 
+/* FIXME: We should use DM_UDEV_DISABLE_LIBRARY_FALLBACK */
+
 static int _dm_use_udev(void)
 {
 #ifdef USE_UDEV /* cannot be enabled if devmapper is too old */
@@ -642,6 +644,41 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 }
 
 /* DM helpers */
+static int _dm_remove(const char *name, int udev_wait, int deferred)
+{
+	int r = 0;
+	struct dm_task *dmt;
+	uint32_t cookie = 0;
+
+	if (!_dm_use_udev())
+		udev_wait = 0;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_REMOVE)))
+		return 0;
+
+	if (!dm_task_set_name(dmt, name))
+		goto out;
+
+#if HAVE_DECL_DM_TASK_RETRY_REMOVE
+	if (!dm_task_retry_remove(dmt))
+		goto out;
+#endif
+#if HAVE_DECL_DM_TASK_DEFERRED_REMOVE
+	if (deferred && !dm_task_deferred_remove(dmt))
+		goto out;
+#endif
+	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, 0))
+		goto out;
+
+	r = dm_task_run(dmt);
+
+	if (udev_wait)
+		(void)_dm_udev_wait(cookie);
+out:
+	dm_task_destroy(dmt);
+	return r;
+}
+
 static int _dm_simple(int task, const char *name, int udev_wait)
 {
 	int r = 0;
@@ -657,11 +694,6 @@ static int _dm_simple(int task, const char *name, int udev_wait)
 	if (name && !dm_task_set_name(dmt, name))
 		goto out;
 
-#if HAVE_DECL_DM_TASK_RETRY_REMOVE
-	/* Used only in DM_DEVICE_REMOVE */
-	if (name && !dm_task_retry_remove(dmt))
-		goto out;
-#endif
 	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, 0))
 		goto out;
 
@@ -669,7 +701,6 @@ static int _dm_simple(int task, const char *name, int udev_wait)
 
 	if (udev_wait)
 		(void)_dm_udev_wait(cookie);
-
 out:
 	dm_task_destroy(dmt);
 	return r;
@@ -710,35 +741,39 @@ error:
 	return r;
 }
 
-int dm_remove_device(struct crypt_device *cd, const char *name,
-		     int force, uint64_t size)
+int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 {
+	struct crypt_dm_active_device dmd = {};
 	int r = -EINVAL;
-	int retries = force ? RETRY_COUNT : 1;
+	int retries = (flags & CRYPT_DEACTIVATE_FORCE) ? RETRY_COUNT : 1;
 	int error_target = 0;
 
-	if (!name || (force && !size))
+	if (!name)
 		return -EINVAL;
 
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
+	if (flags & CRYPT_DEACTIVATE_FORCE) {
+		r = dm_query_device(cd, name, 0, &dmd);
+		if (!r)
+			return r;
+	}
+
 	do {
-		r = _dm_simple(DM_DEVICE_REMOVE, name, 1) ? 0 : -EINVAL;
+		r = _dm_remove(name, 1, flags & CRYPT_DEACTIVATE_DEFERRED) ? 0 : -EINVAL;
 		if (--retries && r) {
 			log_dbg("WARNING: other process locked internal device %s, %s.",
 				name, retries ? "retrying remove" : "giving up");
 			sleep(1);
-			if (force && !error_target) {
+			if ((flags & CRYPT_DEACTIVATE_FORCE) && !error_target) {
 				/* If force flag is set, replace device with error, read-only target.
 				 * it should stop processes from reading it and also removed underlying
 				 * device from mapping, so it is usable again.
-				 * Force flag should be used only for temporary devices, which are
-				 * intended to work inside cryptsetup only!
 				 * Anyway, if some process try to read temporary cryptsetup device,
 				 * it is bug - no other process should try touch it (e.g. udev).
 				 */
-				_error_device(name, size);
+				_error_device(name, dmd.size);
 				error_target = 1;
 			}
 		}
@@ -888,7 +923,7 @@ out:
 	}
 
 	if (r < 0 && !reload)
-		_dm_simple(DM_DEVICE_REMOVE, name, 1);
+		_dm_remove(name, 1, 0);
 
 out_no_removal:
 	if (cookie && _dm_use_udev())
