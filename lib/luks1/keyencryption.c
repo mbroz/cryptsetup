@@ -124,7 +124,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
  out:
 	if (devfd != -1)
 		close(devfd);
-	dm_remove_device(ctx, name, CRYPT_DEACTIVATE_FORCE|CRYPT_DEACTIVATE_DEFERRED);
+	dm_remove_device(ctx, name, CRYPT_DEACTIVATE_FORCE);
 	return r;
 }
 

@@ -274,5 +274,5 @@ int INTEGRITY_format(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	return dm_remove_device(cd, tmp_name, CRYPT_DEACTIVATE_FORCE|CRYPT_DEACTIVATE_DEFERRED);
+	return dm_remove_device(cd, tmp_name, CRYPT_DEACTIVATE_FORCE);
 }

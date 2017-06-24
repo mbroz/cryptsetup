@@ -754,12 +754,6 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	if (flags & CRYPT_DEACTIVATE_FORCE) {
-		r = dm_query_device(cd, name, 0, &dmd);
-		if (r)
-			return r;
-	}
-
 	do {
 		r = _dm_remove(name, 1, flags & CRYPT_DEACTIVATE_DEFERRED) ? 0 : -EINVAL;
 		if (--retries && r) {
@@ -773,8 +767,10 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 				 * Anyway, if some process try to read temporary cryptsetup device,
 				 * it is bug - no other process should try touch it (e.g. udev).
 				 */
-				_error_device(name, dmd.size);
-				error_target = 1;
+				if (!dm_query_device(cd, name, 0, &dmd)) {
+					_error_device(name, dmd.size);
+					error_target = 1;
+				}
 			}
 		}
 	} while (r == -EINVAL && retries);
