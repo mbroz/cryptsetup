@@ -70,6 +70,14 @@ function can_fail_fips()
         [ -z "$FIPS_MODE" -o "$FIPS_MODE" -eq 0 ] && fail $1
 }
 
+function can_fail_ver() #min DM
+{
+        VER_STR=$(dmsetup version | grep Driver)
+        VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+
+        test $VER_MIN -ge $1 && fail $2
+}
+
 function skip()
 {
 	[ -n "$1" ] && echo "$1"
@@ -600,10 +608,11 @@ echo $PWD1 | $CRYPTSETUP open --type plain $LOOPDEV $DEV_NAME || fail
 echo $PWD2 | $CRYPTSETUP open --type plain /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 $CRYPTSETUP close $DEV_NAME >/dev/null 2>&1 && fail
 $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
-$CRYPTSETUP close --deferred $DEV_NAME >/dev/null || fail
+$CRYPTSETUP close --deferred $DEV_NAME >/dev/null || can_fail_ver 27
 $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
 $CRYPTSETUP close $DEV_NAME2 || fail
-$CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1&& fail
+$CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 && can_fail_ver 27
+$CRYPTSETUP close $DEV_NAME >/dev/null 2>&1
 
 remove_mapping
 exit 0

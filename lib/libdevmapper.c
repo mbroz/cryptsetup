@@ -240,6 +240,9 @@ static int _dm_check_versions(dm_target_type target_type)
 
 		if (_dm_satisfies_version(4, 20, dm_maj, dm_min))
 			_dm_flags |= DM_SECURE_SUPPORTED;
+
+		if (_dm_satisfies_version(4, 27, dm_maj, dm_min))
+			_dm_flags |= DM_DEFERRED_SUPPORTED;
 	}
 
 	target = dm_task_get_versions(dmt);
@@ -746,7 +749,9 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	struct crypt_dm_active_device dmd = {};
 	int r = -EINVAL;
 	int retries = (flags & CRYPT_DEACTIVATE_FORCE) ? RETRY_COUNT : 1;
+	int deferred = (flags & CRYPT_DEACTIVATE_DEFERRED) ? 1 : 0;
 	int error_target = 0;
+	uint32_t dmt_flags;
 
 	if (!name)
 		return -EINVAL;
@@ -754,8 +759,14 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
+	dm_flags(DM_UNKNOWN, &dmt_flags);
+	if (deferred && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
+		log_err(cd, _("Requested deferred flag is not supported.\n"));
+		return -ENOTSUP;
+	}
+
 	do {
-		r = _dm_remove(name, 1, flags & CRYPT_DEACTIVATE_DEFERRED) ? 0 : -EINVAL;
+		r = _dm_remove(name, 1, deferred) ? 0 : -EINVAL;
 		if (--retries && r) {
 			log_dbg("WARNING: other process locked internal device %s, %s.",
 				name, retries ? "retrying remove" : "giving up");

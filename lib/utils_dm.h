@@ -48,6 +48,7 @@ struct device;
 #define DM_INTEGRITY_SUPPORTED (1 << 12) /* dm-integrity target supported */
 #define DM_SECTOR_SIZE_SUPPORTED (1 << 13) /* support for sector size setting in dm-crypt/dm-integrity */
 #define DM_CAPI_STRING_SUPPORTED (1 << 14) /* support for cryptoapi format cipher definition */
+#define DM_DEFERRED_SUPPORTED (1 << 15) /* deferred removal of device */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_UNKNOWN } dm_target_type;
 
