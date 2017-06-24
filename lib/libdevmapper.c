@@ -240,9 +240,10 @@ static int _dm_check_versions(dm_target_type target_type)
 
 		if (_dm_satisfies_version(4, 20, dm_maj, dm_min))
 			_dm_flags |= DM_SECURE_SUPPORTED;
-
+#if HAVE_DECL_DM_TASK_DEFERRED_REMOVE
 		if (_dm_satisfies_version(4, 27, dm_maj, dm_min))
 			_dm_flags |= DM_DEFERRED_SUPPORTED;
+#endif
 	}
 
 	target = dm_task_get_versions(dmt);

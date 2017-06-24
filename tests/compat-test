@@ -608,7 +608,7 @@ echo $PWD1 | $CRYPTSETUP open --type plain $LOOPDEV $DEV_NAME || fail
 echo $PWD2 | $CRYPTSETUP open --type plain /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 $CRYPTSETUP close $DEV_NAME >/dev/null 2>&1 && fail
 $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
-$CRYPTSETUP close --deferred $DEV_NAME >/dev/null || can_fail_ver 27
+$CRYPTSETUP close --deferred $DEV_NAME >/dev/null 2>&1 || can_fail_ver 27
 $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
 $CRYPTSETUP close $DEV_NAME2 || fail
 $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 && can_fail_ver 27

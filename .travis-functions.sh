@@ -46,6 +46,8 @@ function check_root
 	sudo modprobe dm-crypt
 	sudo modprobe dm-verity
 	sudo modprobe dm-integrity
+	uname -a
+	sudo dmsetup version
 	sudo dmsetup targets
 
 	# FIXME: we should use -E option here
