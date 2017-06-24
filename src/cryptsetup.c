@@ -422,6 +422,7 @@ out:
 static int action_close(void)
 {
 	struct crypt_device *cd = NULL;
+	crypt_status_info ci;
 	uint32_t flags = 0;
 	int r;
 
@@ -431,6 +432,13 @@ static int action_close(void)
 	r = crypt_init_by_name(&cd, action_argv[0]);
 	if (r == 0)
 		r = crypt_deactivate_by_name(cd, action_argv[0], flags);
+
+	if (!r && opt_deferred_remove) {
+		ci = crypt_status(cd, action_argv[0]);
+		if (ci == CRYPT_ACTIVE || ci == CRYPT_BUSY)
+			log_std(_("Device %s is still active and scheduled for deferred removal.\n"),
+				  action_argv[0]);
+	}
 
 	crypt_free(cd);
 	return r;
