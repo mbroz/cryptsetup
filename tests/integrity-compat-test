@@ -65,7 +65,7 @@ int_check_sum() # alg checksum
 	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M oflag=direct >/dev/null 2>&1
 	dmremove $DEV_NAME
 
-	$INTSETUP create $DEV_NAME $DEV --integrity $1 || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device."
 
 	VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
 	if [ "$VSUM" = "$2" ] ; then
@@ -85,13 +85,13 @@ intformat() # alg alg_out tagsize sector_size csum
 	dump_check "tag_size" $3
 	dump_check "sector_size" $4
 	echo -n "[ACTIVATE]"
-	$INTSETUP create $DEV_NAME $DEV --integrity $1 || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device."
 	status_check "tag size" $3
 	status_check "integrity" $2
 	status_check "sector size" $4
 	int_check_sum $1 $5
 	echo -n "[REMOVE]"
-	$INTSETUP remove $DEV_NAME || fail "Cannot deactivate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 }
 

@@ -251,7 +251,7 @@ out:
 	return r;
 }
 
-static int action_create(int arg)
+static int action_open(int arg)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_integrity params = {
@@ -301,13 +301,13 @@ static int action_create(int arg)
 	if (r)
 		goto out;
 
-	if ((r = crypt_init(&cd, action_argv[1])))
+	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
 
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
 	if (r)
 		goto out;
-	r = crypt_activate_by_volume_key(cd, action_argv[0], integrity_key,
+	r = crypt_activate_by_volume_key(cd, action_argv[1], integrity_key,
 					 opt_integrity_key_size, activate_flags);
 out:
 	crypt_safe_free(integrity_key);
@@ -317,7 +317,7 @@ out:
 	return r;
 }
 
-static int action_remove(int arg)
+static int action_close(int arg)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -421,8 +421,8 @@ static struct action_type {
 	const char *desc;
 } action_types[] = {
 	{ "format",	action_format, 1, N_("<integrity_device>"),N_("format device") },
-	{ "create",	action_create, 2, N_("<name> <integrity_device>"),N_("create active device") },
-	{ "remove",	action_remove, 1, N_("<name>"),N_("remove (deactivate) device") },
+	{ "open",	action_open,   2, N_("<integrity_device> <name>"),N_("open device as <name>") },
+	{ "close",	action_close,  1, N_("<name>"),N_("close device (deactivate and remove mapping)") },
 	{ "status",	action_status, 1, N_("<name>"),N_("show active device status") },
 	{ "dump",	action_dump,   1, N_("<integrity_device>"),N_("show on-disk information") },
 	{ NULL, NULL, 0, NULL, NULL }
@@ -553,12 +553,6 @@ int main(int argc, const char **argv)
 	if (!(aname = poptGetArg(popt_context)))
 		usage(popt_context, EXIT_FAILURE, _("Argument <action> missing."),
 		      poptGetInvocationName(popt_context));
-	for (action = action_types; action->type; action++)
-		if (strcmp(action->type, aname) == 0)
-			break;
-	if (!action->type)
-		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
-		      poptGetInvocationName(popt_context));
 
 	action_argc = 0;
 	action_argv = poptGetArgs(popt_context);
@@ -569,6 +563,27 @@ int main(int argc, const char **argv)
 	/* Count args, somewhat unnice, change? */
 	while (action_argv[action_argc] != NULL)
 		action_argc++;
+
+	/* Handle aliases */
+	if (!strcmp(aname, "create")) {
+		/* create command had historically switched arguments */
+		if (action_argv[0] && action_argv[1]) {
+			const char *tmp = action_argv[0];
+			action_argv[0] = action_argv[1];
+			action_argv[1] = tmp;
+		}
+		aname = "open";
+	} else if (!strcmp(aname, "remove")) {
+		aname = "close";
+	}
+
+	for (action = action_types; action->type; action++)
+		if (strcmp(action->type, aname) == 0)
+			break;
+
+	if (!action->type)
+		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
+		      poptGetInvocationName(popt_context));
 
 	if (action_argc < action->required_action_argc) {
 		char buf[128];

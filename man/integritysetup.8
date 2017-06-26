@@ -21,14 +21,19 @@ Formats <device> (calculates space and dm-integrity superblock).
 \fB<options>\fR can be []
 
 .PP
-\fIcreate\fR <name> <device>
+\fIopen\fR <device> <name>
+.br
+\fIcreate\fR <name> <device> (\fBOBSOLETE syntax\fR)
 .IP
-Creates a mapping with <name> backed by device <device>.
+Open a mapping with <name> backed by device <device>.
 
 .PP
-\fIremove\fR <name>
+\fIclose\fR <name>
 .IP
 Removes existing mapping <name>.
+
+For backward compatibility there is \fBremove\fR command alias
+for \fBclose\fR command.
 .PP
 \fIstatus\fR <name>
 .IP
