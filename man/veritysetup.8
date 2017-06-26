@@ -30,6 +30,7 @@ If hash device path doesn't exist, it will be created as file.
 \-\-data-block-size, \-\-hash-block-size, \-\-data-blocks, \-\-hash-offset,
 \-\-salt, \-\-uuid]
 .PP
+\fIopen\fR <data_device> <name> <hash_device> <root_hash>
 \fIcreate\fR <name> <data_device> <hash_device> <root_hash>
 .IP
 Creates a mapping with <name> backed by device <data_device> and using
@@ -56,9 +57,12 @@ The <root_hash> is a hexadecimal string.
 If option \-\-no-superblock is used, you have to use as the same options
 as in initial format operation.
 .PP
-\fIremove\fR <name>
+\fIclose\fR <name>
 .IP
 Removes existing mapping <name>.
+
+For backward compatibility there is \fBremove\fR command alias
+for \fBclose\fR command.
 .PP
 \fIstatus\fR <name>
 .IP

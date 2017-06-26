@@ -190,10 +190,10 @@ out:
 	return r;
 }
 
-static int action_create(int arg)
+static int action_open(int arg)
 {
-	return _activate(action_argv[0],
-			 action_argv[1],
+	return _activate(action_argv[1],
+			 action_argv[0],
 			 action_argv[2],
 			 action_argv[3], 0);
 }
@@ -207,7 +207,7 @@ static int action_verify(int arg)
 			 CRYPT_VERITY_CHECK_HASH);
 }
 
-static int action_remove(int arg)
+static int action_close(int arg)
 {
 	struct crypt_device *cd = NULL;
 	int r;
@@ -357,8 +357,8 @@ static struct action_type {
 } action_types[] = {
 	{ "format",	action_format, 2, N_("<data_device> <hash_device>"),N_("format device") },
 	{ "verify",	action_verify, 3, N_("<data_device> <hash_device> <root_hash>"),N_("verify device") },
-	{ "create",	action_create, 4, N_("<name> <data_device> <hash_device> <root_hash>"),N_("create active device") },
-	{ "remove",	action_remove, 1, N_("<name>"),N_("remove (deactivate) device") },
+	{ "open",	action_open,   4, N_("<data_device> <name> <hash_device> <root_hash>"),N_("open device as <name>") },
+	{ "close",	action_close,  1, N_("<name>"),N_("close device (deactivate and remove mapping)") },
 	{ "status",	action_status, 1, N_("<name>"),N_("show active device status") },
 	{ "dump",	action_dump,   1, N_("<hash_device>"),N_("show on-disk information") },
 	{ NULL, NULL, 0, NULL, NULL }
@@ -497,12 +497,6 @@ int main(int argc, const char **argv)
 	if (!(aname = poptGetArg(popt_context)))
 		usage(popt_context, EXIT_FAILURE, _("Argument <action> missing."),
 		      poptGetInvocationName(popt_context));
-	for(action = action_types; action->type; action++)
-		if (strcmp(action->type, aname) == 0)
-			break;
-	if (!action->type)
-		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
-		      poptGetInvocationName(popt_context));
 
 	action_argc = 0;
 	action_argv = poptGetArgs(popt_context);
@@ -514,7 +508,28 @@ int main(int argc, const char **argv)
 	while(action_argv[action_argc] != NULL)
 		action_argc++;
 
-	if(action_argc < action->required_action_argc) {
+	/* Handle aliases */
+	if (!strcmp(aname, "create")) {
+		/* create command had historically switched arguments */
+		if (action_argv[0] && action_argv[1]) {
+			const char *tmp = action_argv[0];
+			action_argv[0] = action_argv[1];
+			action_argv[1] = tmp;
+		}
+		aname = "open";
+	} else if (!strcmp(aname, "remove")) {
+		aname = "close";
+	}
+
+	for (action = action_types; action->type; action++)
+		if (strcmp(action->type, aname) == 0)
+			break;
+
+	if (!action->type)
+		usage(popt_context, EXIT_FAILURE, _("Unknown action."),
+		      poptGetInvocationName(popt_context));
+
+	if (action_argc < action->required_action_argc) {
 		char buf[128];
 		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
 		usage(popt_context, EXIT_FAILURE, buf,
@@ -527,9 +542,9 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 	}
 
-	if ((opt_ignore_corruption || opt_restart_on_corruption || opt_ignore_zero_blocks) && strcmp(aname, "create"))
+	if ((opt_ignore_corruption || opt_restart_on_corruption || opt_ignore_zero_blocks) && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks is allowed only for create operation.\n"),
+		_("Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks is allowed only for open operation.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_ignore_corruption && opt_restart_on_corruption)

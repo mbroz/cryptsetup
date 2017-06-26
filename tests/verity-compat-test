@@ -116,7 +116,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
 	echo -n "[in-kernel verify]"
 
-	$VERITYSETUP remove $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
 
 	case $fail in
 	data)
@@ -140,7 +140,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null && \
 		fail "in-kernel check for $TXT corruption"
-	$VERITYSETUP remove $DEV_NAME >/dev/null 2>&1 || fail "deactivation"
+	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail "deactivation"
 	echo "[$TXT corruption]"
 	done
 	done
@@ -219,7 +219,7 @@ function check_fec()
 
 	HASH_REPAIRED=${ARR[0]}
 
-	$VERITYSETUP remove $DEV_NAME
+	$VERITYSETUP close $DEV_NAME
 	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
 
 	if [ "$HASH_ORIG" != "$HASH_REPAIRED" ]; then
@@ -241,7 +241,7 @@ function check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI
 	check_exists
 	$VERITYSETUP status $DEV_NAME 2>/dev/null | grep flags | grep -q $7 || fail
 	dmsetup table $DEV_NAME 2>/dev/null | grep -q $7 || fail
-	$VERITYSETUP remove $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
 	echo "[OK]"
 }
 
