@@ -84,13 +84,22 @@ static void LUKS_sort_keyslots(const struct luks_phdr *hdr, int *array)
 	}
 }
 
-static size_t LUKS_device_sectors(const struct luks_phdr *hdr)
+size_t LUKS_device_sectors(const struct luks_phdr *hdr)
 {
 	int sorted_areas[LUKS_NUMKEYS] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 
 	LUKS_sort_keyslots(hdr, sorted_areas);
 
 	return hdr->keyblock[sorted_areas[LUKS_NUMKEYS-1]].keyMaterialOffset + AF_split_sectors(hdr->keyBytes, LUKS_STRIPES);
+}
+
+size_t LUKS_keyslots_offset(const struct luks_phdr *hdr)
+{
+	int sorted_areas[LUKS_NUMKEYS] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+
+	LUKS_sort_keyslots(hdr, sorted_areas);
+
+	return hdr->keyblock[sorted_areas[0]].keyMaterialOffset;
 }
 
 static int LUKS_check_device_size(struct crypt_device *ctx, const struct luks_phdr *hdr)
@@ -385,7 +394,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 		return -EINVAL;
 	}
 	/* cryptsetup 1.0 did not align to 4k, cannot repair this one */
-	if (phdr->keyblock[0].keyMaterialOffset < (LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE)) {
+	if (LUKS_keyslots_offset(phdr) < (LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE)) {
 		log_err(ctx, _("Non standard keyslots alignment, manual repair required.\n"));
 		return -EINVAL;
 	}
