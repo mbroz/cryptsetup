@@ -813,7 +813,7 @@ static int action_open_luks(void)
 	const char *data_device, *header_device, *activated_name;
 	char *key = NULL;
 	uint32_t activate_flags = 0;
-	int r, keysize;
+	int r, keysize, tries;
 	char *password = NULL;
 	size_t passwordLen;
 
@@ -850,14 +850,17 @@ static int action_open_luks(void)
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
 	} else {
-		r = tools_get_key(NULL, &password, &passwordLen,
-				  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
-				  opt_timeout, _verify_passphrase(0), 0, cd);
-		if (r < 0)
-			goto out;
+		tries = (opt_key_file && !tools_is_stdin(opt_key_file)) ? 1 : opt_tries;
+		do {
+			r = tools_get_key(NULL, &password, &passwordLen,
+					opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+					opt_timeout, _verify_passphrase(0), 0, cd);
+			if (r < 0)
+				goto out;
 
-		r = crypt_activate_by_passphrase(cd, activated_name,
-			opt_key_slot, password, passwordLen, activate_flags);
+			r = crypt_activate_by_passphrase(cd, activated_name,
+				opt_key_slot, password, passwordLen, activate_flags);
+		} while ((r == -EPERM || r == -EINVAL || r == -ERANGE) && (--tries > 0));
 	}
 out:
 	crypt_safe_free(key);
@@ -1286,7 +1289,7 @@ static int action_luksResume(void)
 	struct crypt_device *cd = NULL;
 	char *password = NULL;
 	size_t passwordLen;
-	int r;
+	int r, tries;
 
 	if ((r = crypt_init_by_name_and_header(&cd, action_argv[0], uuid_or_device(opt_header_device))))
 		goto out;
@@ -1294,13 +1297,17 @@ static int action_luksResume(void)
 	if ((r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
-	r = tools_get_key(NULL, &password, &passwordLen,
-		  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
-		  opt_timeout, _verify_passphrase(0), 0, cd);
-	if (r)
-		goto out;
+	tries = (opt_key_file && !tools_is_stdin(opt_key_file)) ? 1 : opt_tries;
+	do {
+		r = tools_get_key(NULL, &password, &passwordLen,
+			opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+			opt_timeout, _verify_passphrase(0), 0, cd);
+		if (r)
+			goto out;
 
-	r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT, password, passwordLen);
+		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
+					       password, passwordLen);
+	} while ((r == -EPERM || r == -EINVAL || r == -ERANGE) && (--tries > 0));
 out:
 	crypt_safe_free(password);
 	crypt_free(cd);

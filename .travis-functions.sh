@@ -75,6 +75,7 @@ function travis_install_script
 		pkg-config \
 		autopoint \
 		gettext \
+		expect
 		|| return
 }
 

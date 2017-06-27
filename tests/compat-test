@@ -43,9 +43,9 @@ LOOPDEV=$(losetup -f 2>/dev/null)
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove $DEV_NAME3
-	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove $DEV_NAME3 >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG >/dev/null 2>&1
 }
@@ -79,7 +79,7 @@ function skip()
 
 function prepare()
 {
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
 
 	case "$2" in
 	wipe)
@@ -610,6 +610,23 @@ else
   $CRYPTSETUP close $DEV_NAME2 >/dev/null 2>&1
   $CRYPTSETUP close $DEV_NAME >/dev/null 2>&1
 fi
+
+prepare "[32] Interactive password retry from terminal." new
+which expect >/dev/null 2>&1 || skip "WARNING: expect tool missing, interactive test will be skipped."
+expect - >/dev/null 2>&1 <<EOF
+set timeout 30
+eval spawn $CRYPTSETUP luksOpen -v -T 2 $LOOPDEV $DEV_NAME
+expect "Enter passphrase"
+send "$PWD0x\n"
+expect "No key available with this passphrase."
+expect "Enter passphrase"
+send "$PWD0\n"
+expect "Key slot 0 unlocked."
+expect eof
+exit
+EOF
+check_exists
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 remove_mapping
 exit 0
