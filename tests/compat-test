@@ -617,9 +617,11 @@ expect - >/dev/null 2>&1 <<EOF
 set timeout 30
 eval spawn $CRYPTSETUP luksOpen -v -T 2 $LOOPDEV $DEV_NAME
 expect "Enter passphrase"
+sleep 0.5
 send "$PWD0x\n"
 expect "No key available with this passphrase."
 expect "Enter passphrase"
+sleep 0.5
 send "$PWD0\n"
 expect "Key slot 0 unlocked."
 expect eof
