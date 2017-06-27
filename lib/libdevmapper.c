@@ -72,8 +72,6 @@ static int _dm_task_set_cookie(struct dm_task *dmt, uint32_t *cookie, uint16_t f
 static int _dm_udev_wait(uint32_t cookie) { return 0; };
 #endif
 
-/* FIXME: We should use DM_UDEV_DISABLE_LIBRARY_FALLBACK */
-
 static int _dm_use_udev(void)
 {
 #ifdef USE_UDEV /* cannot be enabled if devmapper is too old */
@@ -671,7 +669,7 @@ static int _dm_remove(const char *name, int udev_wait, int deferred)
 	if (deferred && !dm_task_deferred_remove(dmt))
 		goto out;
 #endif
-	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, 0))
+	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, DM_UDEV_DISABLE_LIBRARY_FALLBACK))
 		goto out;
 
 	r = dm_task_run(dmt);
@@ -698,7 +696,7 @@ static int _dm_simple(int task, const char *name, int udev_wait)
 	if (name && !dm_task_set_name(dmt, name))
 		goto out;
 
-	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, 0))
+	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, DM_UDEV_DISABLE_LIBRARY_FALLBACK))
 		goto out;
 
 	r = dm_task_run(dmt);
@@ -845,7 +843,7 @@ static int _dm_create_device(const char *name, const char *type,
 	uint32_t read_ahead = 0;
 	uint32_t cookie = 0;
 	uint32_t dmt_flags;
-	uint16_t udev_flags = 0;
+	uint16_t udev_flags = DM_UDEV_DISABLE_LIBRARY_FALLBACK;
 
 	/* Only need DM_SECURE_SUPPORTED, no target specific fail matters */
 	dm_flags(target, &dmt_flags);
@@ -863,7 +861,7 @@ static int _dm_create_device(const char *name, const char *type,
 		return -EINVAL;
 
 	if (flags & CRYPT_ACTIVATE_PRIVATE)
-		udev_flags = CRYPT_TEMP_UDEV_FLAGS;
+		udev_flags |= CRYPT_TEMP_UDEV_FLAGS;
 
 	/* All devices must have DM_UUID, only resize on old device is exception */
 	if (reload) {
