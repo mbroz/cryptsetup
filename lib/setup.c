@@ -2650,8 +2650,12 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 
 const char *crypt_get_device_name(struct crypt_device *cd)
 {
-	const char *path = device_block_path(cd->device);
+	const char *path;
 
+	if (!cd)
+		return NULL;
+
+	path = device_block_path(cd->device);
 	if (!path)
 		path = device_path(cd->device);
 

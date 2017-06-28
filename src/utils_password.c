@@ -256,6 +256,7 @@ int tools_get_key(const char *prompt,
 		  int timeout, int verify, int pwquality,
 		  struct crypt_device *cd)
 {
+	char tmp[1024];
 	int r = -EINVAL, block;
 
 	block = tools_signals_blocked();
@@ -267,10 +268,12 @@ int tools_get_key(const char *prompt,
 			if (keyfile_offset) {
 				log_err(_("Cannot use offset with terminal input.\n"));
 			} else {
-				//FIXME:if (!prompt)  "Enter passphrase for %s: "
-				if (!prompt)
-					prompt = "Enter passphrase:";
-				r = crypt_get_key_tty(prompt, key, key_size, timeout, verify, cd);
+				if (!prompt && !crypt_get_device_name(cd))
+					snprintf(tmp, sizeof(tmp), _("Enter passphrase: "));
+				else if (!prompt)
+					snprintf(tmp, sizeof(tmp), _("Enter passphrase for %s: "),
+						crypt_get_device_name(cd));
+				r = crypt_get_key_tty(prompt ?: tmp, key, key_size, timeout, verify, cd);
 			}
 		} else {
 			log_dbg("STDIN descriptor passphrase entry requested.");

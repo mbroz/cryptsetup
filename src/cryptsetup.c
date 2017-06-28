@@ -181,8 +181,7 @@ static int action_open_plain(void)
 			opt_keyfile_offset, activate_flags);
 	} else {
 		key_size_max = (opt_key_file && !params.hash) ? key_size : (size_t)opt_keyfile_size;
-		r = tools_get_key(_("Enter passphrase: "),
-				  &password, &passwordLen,
+		r = tools_get_key(NULL, &password, &passwordLen,
 				  opt_keyfile_offset, key_size_max,
 				  opt_key_file, opt_timeout,
 				  _verify_passphrase(0), 0, cd);
@@ -245,8 +244,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 
 	do {
 		/* TCRYPT header is encrypted, get passphrase now */
-		r = tools_get_key(_("Enter passphrase: "),
-				  CONST_CAST(char**)&params->passphrase,
+		r = tools_get_key(NULL, CONST_CAST(char**)&params->passphrase,
 				  &params->passphrase_size, 0, 0, opt_keyfile_stdin, opt_timeout,
 				 _verify_passphrase(0), 0, cd);
 		if (r < 0)
@@ -778,7 +776,7 @@ static int action_luksFormat(void)
 	else if (opt_urandom)
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
-	r = tools_get_key(_("Enter passphrase: "), &password, &passwordLen,
+	r = tools_get_key(NULL, &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			  opt_timeout, _verify_passphrase(1), 1, cd);
 	if (r < 0)
@@ -1218,7 +1216,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = tools_get_key(_("Enter passphrase: "), &password, &passwordLen,
+	r = tools_get_key(NULL, &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			  opt_timeout, 0, 0, cd);
 	if (r < 0)
