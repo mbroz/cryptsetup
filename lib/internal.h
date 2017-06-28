@@ -82,6 +82,9 @@ int device_is_rotational(struct device *device);
 size_t device_alignment(struct device *device);
 
 enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
+int device_check_access(struct crypt_device *cd,
+			struct device *device,
+			enum devcheck device_check);
 int device_block_adjust(struct crypt_device *cd,
 			struct device *device,
 			enum devcheck device_check,

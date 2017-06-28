@@ -396,18 +396,27 @@ out:
 	return r;
 }
 
-static int device_info(struct device *device,
-			enum devcheck device_check,
-			int *readonly, uint64_t *size)
+static int device_info(struct crypt_device *cd,
+		       struct device *device,
+		       enum devcheck device_check,
+		       int *readonly, uint64_t *size)
 {
 	struct stat st;
-	int fd, r = -EINVAL, flags = 0;
+	int fd = -1, r, flags = 0, real_readonly;
+	uint64_t real_size;
 
-	*readonly = 0;
-	*size = 0;
+	if (!device) {
+		r = -ENOTBLK;
+		goto out;
+	}
 
-	if (stat(device->path, &st) < 0)
-		return -EINVAL;
+	real_readonly = 0;
+	real_size = 0;
+
+	if (stat(device->path, &st) < 0) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	/* never wipe header on mounted device */
 	if (device_check == DEV_EXCL && S_ISBLK(st.st_mode))
@@ -417,38 +426,69 @@ static int device_info(struct device *device,
 	/* coverity[toctou] */
 	fd = open(device->path, O_RDWR | flags);
 	if (fd == -1 && errno == EROFS) {
-		*readonly = 1;
+		real_readonly = 1;
 		fd = open(device->path, O_RDONLY | flags);
 	}
 
-	if (fd == -1 && device_check == DEV_EXCL && errno == EBUSY)
-		return -EBUSY;
+	if (fd == -1 && device_check == DEV_EXCL && errno == EBUSY) {
+		r = -EBUSY;
+		goto out;
+	}
 
-	if (fd == -1)
-		return -EINVAL;
+	if (fd == -1) {
+		r = -EINVAL;
+		goto out;
+	}
 
+	r = 0;
 	if (S_ISREG(st.st_mode)) {
 		//FIXME: add readonly check
-		*size = (uint64_t)st.st_size;
-		*size >>= SECTOR_SHIFT;
+		real_size = (uint64_t)st.st_size;
+		real_size >>= SECTOR_SHIFT;
 	} else {
 		/* If the device can be opened read-write, i.e. readonly is still 0, then
 		 * check whether BKROGET says that it is read-only. E.g. read-only loop
 		 * devices may be openend read-write but are read-only according to BLKROGET
 		 */
-		if (*readonly == 0 && (r = ioctl(fd, BLKROGET, readonly)) < 0)
+		if (real_readonly == 0 && (r = ioctl(fd, BLKROGET, &real_readonly)) < 0)
 			goto out;
 
-		if (ioctl(fd, BLKGETSIZE64, size) >= 0) {
-			*size >>= SECTOR_SHIFT;
-			r = 0;
+		r = ioctl(fd, BLKGETSIZE64, &real_size);
+		if (r >= 0) {
+			real_size >>= SECTOR_SHIFT;
 			goto out;
 		}
 	}
-	r = -EINVAL;
 out:
-	close(fd);
+	if (fd != -1)
+		close(fd);
+
+	switch (r) {
+	case 0:
+		if (readonly)
+			*readonly = real_readonly;
+		if (size)
+			*size = real_size;
+		break;
+	case -EBUSY:
+		log_err(cd, _("Cannot use device %s which is in use "
+			      "(already mapped or mounted).\n"), device->path);
+		break;
+	case -EACCES:
+		log_err(cd, _("Cannot use device %s, permission denied.\n"), device->path);
+		break;
+	default:
+		log_err(cd, _("Cannot get info about device %s.\n"), device->path);
+	}
+
 	return r;
+}
+
+int device_check_access(struct crypt_device *cd,
+			struct device *device,
+			enum devcheck device_check)
+{
+	return device_info(cd, device, device_check, NULL, NULL);
 }
 
 static int device_internal_prepare(struct crypt_device *cd, struct device *device)
@@ -511,20 +551,9 @@ int device_block_adjust(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	r = device_info(device, device_check, &real_readonly, &real_size);
-	if (r < 0) {
-		if (r == -EBUSY)
-			log_err(cd, _("Cannot use device %s which is in use "
-				      "(already mapped or mounted).\n"),
-			      device->path);
-		else if (r == -EACCES)
-			log_err(cd, _("Cannot use device %s, permission denied.\n"),
-				device->path);
-		else
-			log_err(cd, _("Cannot get info about device %s.\n"),
-				device->path);
+	r = device_info(cd, device, device_check, &real_readonly, &real_size);
+	if (r)
 		return r;
-	}
 
 	if (device_offset >= real_size) {
 		log_err(cd, _("Requested offset is beyond real size of device %s.\n"),

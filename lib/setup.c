@@ -1042,7 +1042,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	r = device_block_adjust(cd, crypt_metadata_device(cd), DEV_EXCL, 0, NULL, NULL);
+	r = device_check_access(cd, crypt_metadata_device(cd), DEV_EXCL);
 	if (r < 0)
 		return r;
 
@@ -1235,7 +1235,7 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = device_block_adjust(cd, crypt_metadata_device(cd), DEV_EXCL, 0, NULL, NULL);
+	r = device_check_access(cd, crypt_metadata_device(cd), DEV_EXCL);
 	if (r < 0)
 		return r;
 
