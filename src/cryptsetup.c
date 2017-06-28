@@ -858,6 +858,7 @@ static int action_open_luks(void)
 
 			r = crypt_activate_by_passphrase(cd, activated_name,
 				opt_key_slot, password, passwordLen, activate_flags);
+			check_signal(&r);
 		} while ((r == -EPERM || r == -EINVAL || r == -ERANGE) && (--tries > 0));
 	}
 out:
@@ -1305,6 +1306,7 @@ static int action_luksResume(void)
 
 		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
 					       password, passwordLen);
+		check_signal(&r);
 	} while ((r == -EPERM || r == -EINVAL || r == -ERANGE) && (--tries > 0));
 out:
 	crypt_safe_free(password);
