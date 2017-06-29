@@ -19,7 +19,7 @@ In contrast to existing solution, LUKS stores all setup necessary setup informat
 enabling the user to transport or migrate his data seamlessly.
 
 Last version of the LUKS format specification is
-[available here](https://gitlab.com/cryptsetup/cryptsetup/wikis/LUKS-standard/on-disk-format.pdf).
+[available here](https://www.kernel.org/pub/linux/utils/cryptsetup/LUKS_docs/on-disk-format.pdf).
 
 Why LUKS?
 ---------
