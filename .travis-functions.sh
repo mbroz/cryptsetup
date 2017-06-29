@@ -104,6 +104,7 @@ function travis_install_script
 		gettext \
 		expect \
 		keyutils \
+		libjson-c-dev \
 		|| return
 }
 
