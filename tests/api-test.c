@@ -327,7 +327,7 @@ static int _system(const char *command, int warn)
 #if HAVE_DECL_DM_TASK_RETRY_REMOVE
 #define DM_RETRY "--retry "
 #else
-#deinfe DM_RETRY ""
+#define DM_RETRY ""
 #endif
 
 static void _cleanup_dmdevices(void)
