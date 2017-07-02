@@ -17,8 +17,10 @@ Integritysetup supports these operations:
 .PP
 \fIformat\fR <device>
 .IP
-Formats <device> (calculates space and dm-integrity superblock).
-\fB<options>\fR can be []
+Formats <device> (calculates space and dm-integrity superblock and wipes the device).
+
+\fB<options>\fR can be [\-\-batch-mode, \-\-no-wipe, \-\-journal-size, \-\-interleave-sectors,
+\-\-tag-size, \-\-integrity, \-\-integrity-key-size, \-\-integrity-key-file, \-\-sector-size]
 
 .PP
 \fIopen\fR <device> <name>
@@ -26,6 +28,10 @@ Formats <device> (calculates space and dm-integrity superblock).
 \fIcreate\fR <name> <device> (\fBOBSOLETE syntax\fR)
 .IP
 Open a mapping with <name> backed by device <device>.
+
+\fB<options>\fR can be [\-\-batch-mode, \-\-journal-watermark, \-\-journal-commit-time,
+\-\-buffer-sectors, \-\-integrity, \-\-integrity-key-size, \-\-integrity-key-file,
+\-\-integrity-no-journal, \-\-integrity-recovery-mode]
 
 .PP
 \fIclose\fR <name>
@@ -51,11 +57,64 @@ Print more information on command execution.
 .B "\-\-debug"
 Run in debug mode with full diagnostic logs. Debug output
 lines are always prefixed by '#'.
+.TP
 .B "\-\-version"
 Show the program version.
 .TP
+.B "\-\-batch\-mode"
+Do not ask for confirmation.
+.TP
+.B "\-\-no\-wipe"
+Do not wipe device after format. Deviced that is not initially wiped will contain invalid checksums.
+.TP
+.B "\-\-journal\-size=bytes"
+Size of journal.
+.TP
+.B "\-\-interleave\-sectors=SECTORS"
+Number of interleaved sectors.
+.TP
+.B "\-\-journal\-watermark=percent"
+Journal watermark in percents. When the size of the journal exceeds this watermark,
+the journal flush will be started.
+.TP
+.B "\-\-journal\-commit\-time=ms"
+Commit time in milliseconds. When this time passes (and no explicit flush operation was issued),
+the journal is written.
+.TP
+.B "\-\-tag\-size=bytes"
+Size of the integrity tag per-sector (here the integrity function will store authentication tag).
 
-\fBWARNING:\fR Use these options only for very specific cases.
+Note: The size can be smaller that output size of the hash function, in that case only
+part of the hash will be stored.
+.TP
+.B "\-\-sector\-size=bytes"
+Size of sector (power of two: 512, 1024, 2048, 4096).
+.TP
+.B "\-\-buffer\-sectors=SECTORS"
+The number of sectors in one buffer.
+
+The tag area is accessed using buffers, the large buffer size means that the I/O size will
+be larger, but there could be less I/Os issued.
+.TP
+.B "\-\-integrity=algorithm"
+Use intenal integrity calculation (standalone mode).
+The integrity algorithm can be CRC (crc32) or hash function (sha1, sha256).
+
+For HMAC (hmac-sha256) you have to also specify a integrity key and its size.
+.TP
+.B "\-\-integrity\-key\-size=bits"
+The size of the data integrity key
+.TP
+.B "\-\-integrity\-key\-file=file"
+The file with the integrity key.
+.TP
+.B "\-\-integrity\-no\-journal"
+Disable journal for integrity device.
+.TP
+.B "\-\-integrity\-recovery\-mode"
+Recovery mode (no journal, no tag checking).
+.TP
+
 The dm-integrity target is available since Linux kernel version 4.12.
 .TP
 .SH RETURN CODES
@@ -69,14 +128,26 @@ Error codes are:
     5 device already exists or device is busy.
 
 .SH EXAMPLES
-.B "integritysetup format <device> --tag-size 4"
+Format the device with default standalone mode (CRC32):
 
-Formats device to use additional 4 bytes per-sector for integrity data.
+.B "integritysetup format <device>"
 
-.B "integritysetup create test-device <device> --integrity crc32"
+Open the device with default parameters:
 
-Acivates the integrity device named test-device and automaticaly calculate specified
-checsum on write (and verifies it on read).
+.B "integritysetup open <device> test"
+
+Format the device in standalone mode for use with HMAC(SHA256):
+
+.B "integritysetup format <device> --tag-size 32 --integrity hmac-sha256 \
+--integrity-key-file <keyfile> --integrity-key-size <key_bytes>"
+
+Open (activate) the device with HMAC(SHA256) and HMAC key in file:
+
+.B "integritysetup open <device> test --integrity hmac-sha256 \
+--integrity-key-file <keyfile> --integrity-key-size <key_bytes>"
+
+Dump dm-integrity superblock information:
+.B "integritysetup dump <device>"
 
 .SH REPORTING BUGS
 Report bugs, including ones in the documentation, on

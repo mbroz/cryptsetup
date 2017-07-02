@@ -608,7 +608,7 @@ int main(int argc, const char **argv)
 		opt_sector_size || opt_tag_size || opt_no_wipe ))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Options --journal-size, --interleave-sectors, --sector-size, --tag-size"
-		        "and --no-wipe can be used only for format action.\n"),
+		        " and --no-wipe can be used only for format action.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_journal_size_str &&
