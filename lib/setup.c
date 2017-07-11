@@ -1102,7 +1102,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 				 struct crypt_params_verity *params)
 {
 	int r = 0, hash_size;
-	uint64_t data_device_size;
+	uint64_t data_device_size, hash_blocks_size;
 
 	if (!crypt_metadata_device(cd)) {
 		log_err(cd, _("Can't format VERITY without device.\n"));
@@ -1154,10 +1154,6 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (params->fec_device &&
-	    (r = device_alloc(&cd->u.verity.fec_device, params->fec_device)) < 0)
-		return r;
-
 	hash_size = crypt_hash_size(params->hash_name);
 	if (hash_size <= 0) {
 		log_err(cd, _("Hash algorithm %s not supported.\n"),
@@ -1165,6 +1161,25 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 	cd->u.verity.root_hash_size = hash_size;
+
+	if (params->fec_device) {
+		r = device_alloc(&cd->u.verity.fec_device, params->fec_device);
+		if (r < 0)
+			return r;
+
+		hash_blocks_size = VERITY_hash_blocks(cd, params) * params->hash_block_size;
+		if (device_is_identical(crypt_metadata_device(cd), cd->u.verity.fec_device) &&
+		    (params->hash_area_offset + hash_blocks_size) > params->fec_area_offset) {
+			log_err(cd, _("Hash area overlaps with FEC area.\n"));
+			return -EINVAL;
+		}
+
+		if (device_is_identical(crypt_data_device(cd), cd->u.verity.fec_device) &&
+		    (cd->u.verity.hdr.data_size * params->data_block_size) > params->fec_area_offset) {
+			log_err(cd, _("Data area overlaps with FEC area.\n"));
+			return -EINVAL;
+		}
+	}
 
 	cd->u.verity.root_hash = malloc(cd->u.verity.root_hash_size);
 	if (!cd->u.verity.root_hash)
