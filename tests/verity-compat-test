@@ -266,19 +266,42 @@ function checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
 	remove_mapping
 }
 
-function checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks
+function checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks, $4 block_size, $5 fec_offset
 {
-	echo -n "Size :: $1 B | Hash-offset :: $2 blocks | "
+	echo -n "Device-size :: $1 B | "
+	[ $# -ge 3 ] && echo -n "Data-blocks :: $3 blocks| "
+	[ $# -lt 3 ] && echo -n "Data-blocks :: whole device | "
+	[ $# -ge 4 ] && echo -n "Block-size :: $4 B | "
+	[ $# -lt 4 ] && echo -n "Block-size :: 4096 B | "
+	echo -n "Hash-offset :: $2 B | "
 
 	dd if=/dev/zero of=$IMG bs=1 count=0 seek=$1 >/dev/null 2>&1
 	if [ -z $3 ] ; then
-	  # veritysetup must fail
-	  $VERITYSETUP --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 && fail "Test [overlap with option \"--data-blocks\" not entered] failed"
+		# veritysetup must fail
+		$VERITYSETUP --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 && fail "Test [overlap with option \"--data-blocks\" not entered] failed"
 	else
-	  $VERITYSETUP --data-blocks=$3 --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 || fail "Test [overlap with option \"--data-blocks\" entered] failed"
-	  RET=$?
-	  [ "$3" -gt "$(($2 / 4096))" ] && [ "$RET" -eq "0" ] && fail "Test [overlap - hash-offset in data area] failed"
+		$VERITYSETUP --data-block-size=$4 --hash-block-size=$4 --data-blocks=$3 --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1
+		RET=$?
+		[ "$3" -gt "$(($2 / $4))" ] && [ "$RET" -eq "0" ] && fail "Test [overlap - hash-offset in data area] failed"
 	fi
+
+	if [ $# -eq 5 ] ; then
+		echo -n "FEC-offset :: $5 B | "
+		PARAMS="--data-block-size=$4 --hash-block-size=$4 --data-blocks=$3 --fec-device=$IMG --fec-offset=$5"
+
+		# test data-fec area overlap
+		$VERITYSETUP format $IMG $IMG_HASH $PARAMS >/dev/null 2>&1
+		RET=$?
+		[ "$(($3*$4))" -gt "$5" ] && [ "$RET" -eq "0" ] && fail "Test [data/fec area overlap] failed"
+
+		HASH_SIZE=$(stat --printf="%s" $IMG_HASH)
+
+		# test hash-fec area overlap
+		$VERITYSETUP format $IMG $IMG $PARAMS --hash-offset=$2 >/dev/null 2>&1
+		RET=$?
+		[ "$(($2 + $HASH_SIZE))" -gt "$5" ] && [ "$RET" -eq "0" ] && fail "Test [hash/fec area overlap] failed"
+	fi
+
 	echo "[OK]"
 	remove_mapping
 }
@@ -337,12 +360,15 @@ checkOffsetBug 10000000000 8000000000 128
 
 echo "Veritysetup [overlap-detection] "
 checkOverlapBug 2097152 1433600
-checkOverlapBug 2097152 1433600 350
+checkOverlapBug 2097152 1433600 350 4096
+checkOverlapBug 2097152 1228800 350 4096 # data-hash overlap
+checkOverlapBug 2097152 0 350 4096 1228800 # data-fec overlap
+checkOverlapBug 10240000 256000 400 512 256512 # hash-fec overlap
 
 if check_version ; then
 	echo "Veritysetup [FEC tests]"
 	for INDEX in  {1..4}; do
-	  # in the first iteration check if we can usae FEC (it can be compiled-out)
+	  # in the first iteration check if we can use FEC (it can be compiled-out)
 	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) )
 	  RET=$?
 	  [ "$RET" -eq "3" ] && break
