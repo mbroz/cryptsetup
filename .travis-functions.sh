@@ -35,8 +35,8 @@ function check_root
 
 	[ -z "$cfg_opts" ] && return
 
-	# FIXME: --enable-python does not work here
-	configure_travis \
+    configure_travis \
+		--enable-python \
 		--enable-cryptsetup-reencrypt \
 		"$cfg_opts" \
 		|| return
@@ -61,6 +61,7 @@ function travis_install_script
 	# install some packages from Ubuntu's default sources
 	sudo apt-get -qq update
 	sudo apt-get install -qq >/dev/null \
+		python-dev \
 		sharutils \
 		libgcrypt20-dev \
 		libssl-dev \
