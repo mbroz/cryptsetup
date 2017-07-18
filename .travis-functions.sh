@@ -29,6 +29,32 @@ function configure_travis
 	return $err
 }
 
+function check_nonroot
+{
+	local cfg_opts="$1"
+
+	[ -z "$cfg_opts" ] && return
+
+	configure_travis \
+		--enable-python \
+		--enable-cryptsetup-reencrypt \
+		"$cfg_opts" \
+		|| return
+
+	$MAKE || return
+
+	sudo modprobe dm-crypt
+	sudo modprobe dm-verity
+	sudo modprobe dm-integrity
+	uname -a
+	sudo dmsetup version
+	sudo dmsetup targets
+
+	make check || return
+
+	#sudo $MAKE install || return
+}
+
 function check_root
 {
 	local cfg_opts="$1"
@@ -98,10 +124,12 @@ function travis_script
 
 	case "$MAKE_CHECK" in
 	gcrypt)
+		check_nonroot "--with-crypto_backend=gcrypt"
 		check_root "--with-crypto_backend=gcrypt"
 		;;
 
 	openssl)
+		check_nonroot "--with-crypto_backend=openssl"
 		check_root "--with-crypto_backend=openssl"
 		;;
 	*)
