@@ -44,7 +44,7 @@ function test_required()
 	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && skip
 
 	echo "REQUIRED CIPHERS TEST"
-	echo "#  Algorithm | Key |  Encryption |  Decryption"
+	echo "#     Algorithm | Key |  Encryption |  Decryption"
 
 	test_one aes-xts 256
 	test_one twofish-xts 256
@@ -55,13 +55,28 @@ function test_required()
 
 export LANG=C
 
+test_required
+[ ! -d $TST_DIR ] && tar xjf luks1-images.tar.bz2 --no-same-owner
+
+echo "PASSPHRASE CHECK"
+for file in $(ls $TST_DIR/luks1_*) ; do
+	echo -n " $file"
+	$CRYPTSETUP luksOpen -d $TST_DIR/$KEYFILE $file --test-passphrase 2>/dev/null
+	ret=$?
+	# ignore missing whirlpool (pwd failed is exit code 2)
+	[ $ret -eq 1 ] && (echo $file | grep -q -e "whirlpool") && echo " [N/A]" && continue
+	# ignore flawed whirlpool (pwd failed is exit code 2)
+	[ $ret -eq 2 ] && (echo $file | grep -q -e "whirlpool") && \
+		($CRYPTSETUP luksDump $file --debug | grep -q -e "flawed whirlpool") && \
+		echo " [IGNORED (flawed Whirlpool library)]" && continue
+	[ $ret -ne 0 ] && fail
+	echo " [OK]"
+done
+
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
 	exit 0
 fi
-
-test_required
-[ ! -d $TST_DIR ] && tar xjf luks1-images.tar.bz2 --no-same-owner
 
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/luks1_*) ; do
