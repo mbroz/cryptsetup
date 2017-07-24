@@ -147,8 +147,10 @@ int crypt_wipe_device(struct crypt_device *cd,
 	/* Note: LUKS1 calls it with wipe_block not aligned to multiple of bsize */
 	bsize = device_block_size(device);
 	alignment = device_alignment(device);
-	if (!bsize || !alignment || (wipe_block_size < bsize))
+	if (!bsize || !alignment || !wipe_block_size)
 		return -EINVAL;
+
+	/* FIXME: if wipe_block_size < bsize, then a wipe is highly ineffective */
 
 	/* Everything must be aligned to SECTOR_SIZE */
 	if ((offset % SECTOR_SIZE) || (length % SECTOR_SIZE) || (wipe_block_size % SECTOR_SIZE))
