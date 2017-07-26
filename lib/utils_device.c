@@ -52,17 +52,6 @@ struct device {
 	size_t block_size;
 };
 
-static size_t device_fs_block_size(const char *path)
-{
-#ifdef HAVE_SYS_STATVFS_H
-	struct statvfs buf;
-
-	if (!statvfs(path, &buf) && buf.f_bsize)
-		return (size_t)buf.f_bsize;
-#endif
-	return crypt_getpagesize();
-}
-
 static size_t device_fs_block_size_fd(int fd)
 {
 #ifdef HAVE_SYS_STATVFS_H
@@ -362,14 +351,10 @@ size_t device_block_size(struct device *device)
 	if (device->block_size)
 		return device->block_size;
 
-	if (device->file_path)
-		device->block_size = device_fs_block_size(device->file_path);
-	else {
-		fd = open(device->path, O_RDONLY);
-		if (fd >= 0) {
-			device->block_size = device_block_size_fd(fd, NULL);
-			close(fd);
-		}
+	fd = open(device->file_path ?: device->path, O_RDONLY);
+	if (fd >= 0) {
+		device->block_size = device_block_size_fd(fd, NULL);
+		close(fd);
 	}
 
 	if (!device->block_size)
