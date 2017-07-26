@@ -2047,9 +2047,10 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 
 	if (name) {
 		ci = crypt_status(NULL, name);
-		if (ci == CRYPT_INVALID)
+		if (ci == CRYPT_INVALID) {
+			log_err(cd, _("Cannot use device %s, name is invalid or still in use.\n"), name);
 			return -EINVAL;
-		else if (ci >= CRYPT_ACTIVE) {
+		} else if (ci >= CRYPT_ACTIVE) {
 			log_err(cd, _("Device %s already exists.\n"), name);
 			return -EEXIST;
 		}
@@ -2104,9 +2105,10 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 
 	if (name) {
 		ci = crypt_status(NULL, name);
-		if (ci == CRYPT_INVALID)
+		if (ci == CRYPT_INVALID) {
+			log_err(cd, _("Cannot use device %s, name is invalid or still in use.\n"), name);
 			return -EINVAL;
-		else if (ci >= CRYPT_ACTIVE) {
+		} else if (ci >= CRYPT_ACTIVE) {
 			log_err(cd, _("Device %s already exists.\n"), name);
 			return -EEXIST;
 		}
@@ -2198,9 +2200,10 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 
 	if (name) {
 		ci = crypt_status(NULL, name);
-		if (ci == CRYPT_INVALID)
+		if (ci == CRYPT_INVALID) {
+			log_err(cd, _("Cannot use device %s, name is invalid or still in use.\n"), name);
 			return -EINVAL;
-		else if (ci >= CRYPT_ACTIVE) {
+		} else if (ci >= CRYPT_ACTIVE) {
 			log_err(cd, _("Device %s already exists.\n"), name);
 			return -EEXIST;
 		}
