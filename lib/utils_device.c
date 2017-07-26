@@ -33,6 +33,9 @@
 #ifdef HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
+#ifdef HAVE_SYS_STATVFS_H
+# include <sys/statvfs.h>
+#endif
 #include "internal.h"
 
 struct device {
@@ -49,6 +52,28 @@ struct device {
 	size_t block_size;
 };
 
+static size_t device_fs_block_size(const char *path)
+{
+#ifdef HAVE_SYS_STATVFS_H
+	struct statvfs buf;
+
+	if (!statvfs(path, &buf) && buf.f_bsize)
+		return (size_t)buf.f_bsize;
+#endif
+	return crypt_getpagesize();
+}
+
+static size_t device_fs_block_size_fd(int fd)
+{
+#ifdef HAVE_SYS_STATVFS_H
+	struct statvfs buf;
+
+	if (!fstatvfs(fd, &buf) && buf.f_bsize)
+		return (size_t)buf.f_bsize;
+#endif
+	return crypt_getpagesize();
+}
+
 static size_t device_block_size_fd(int fd, size_t *min_size)
 {
 	struct stat st;
@@ -59,7 +84,7 @@ static size_t device_block_size_fd(int fd, size_t *min_size)
 		return 0;
 
 	if (S_ISREG(st.st_mode))
-		bsize = crypt_getpagesize();
+		bsize = device_fs_block_size_fd(fd);
 	else {
 		if (ioctl(fd, BLKSSZGET, &arg) < 0)
 			bsize = crypt_getpagesize();
@@ -338,7 +363,7 @@ size_t device_block_size(struct device *device)
 		return device->block_size;
 
 	if (device->file_path)
-		device->block_size = crypt_getpagesize();
+		device->block_size = device_fs_block_size(device->file_path);
 	else {
 		fd = open(device->path, O_RDONLY);
 		if (fd >= 0) {
