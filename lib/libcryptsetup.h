@@ -368,22 +368,22 @@ struct crypt_params_tcrypt {
  *
  */
 struct crypt_params_integrity {
-	uint64_t journal_size;
-	unsigned int journal_watermark;
-	unsigned int journal_commit_time;
-	uint32_t interleave_sectors;
-	uint32_t tag_size;
-	uint32_t sector_size;	/* integrity sector size */
-	uint32_t buffer_sectors;
-	const char *integrity;
+	uint64_t journal_size;               /**< size of journal in bytes */
+	unsigned int journal_watermark;      /**< journal flush watermark in percents */
+	unsigned int journal_commit_time;    /**< journal commit time in ms */
+	uint32_t interleave_sectors;         /**< number of interleave sectors (power of two) */
+	uint32_t tag_size;                   /**< tag size per-sector in bytes */
+	uint32_t sector_size;                /**< sector size in bytes */
+	uint32_t buffer_sectors;             /**< number of sectors in one buffer */
+	const char *integrity;               /**< integrity algorithm */
 
-	const char *journal_integrity;
-	const char *journal_integrity_key;   /* only for crypt_load */
-	uint32_t journal_integrity_key_size; /* only for crypt_load */
+	const char *journal_integrity;       /**< journal integrity algorithm */
+	const char *journal_integrity_key;   /**< journal integrity key, only for crypt_load */
+	uint32_t journal_integrity_key_size; /**< journal integrity key size, only for crypt_load */
 
-	const char *journal_crypt;
-	const char *journal_crypt_key;       /* only for crypt_load */
-	uint32_t journal_crypt_key_size;     /* only for crypt_load */
+	const char *journal_crypt;           /**< journal encryption algorithm */
+	const char *journal_crypt_key;       /**< journal crypt key, only for crypt_load */
+	uint32_t journal_crypt_key_size;     /**< journal crypt key size, only for crypt_load */
 };
 
 /** @} */
