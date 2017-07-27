@@ -65,6 +65,7 @@ void crypt_free_volume_key(struct volume_key *vk);
 /* Device backend */
 struct device;
 int device_alloc(struct device **device, const char *path);
+int device_alloc_no_check(struct device **device, const char *path);
 void device_free(struct device *device);
 const char *device_path(const struct device *device);
 const char *device_block_path(const struct device *device);

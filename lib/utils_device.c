@@ -143,16 +143,16 @@ static int device_read_test(int devfd)
  * The read test is needed to detect broken configurations (seen with remote
  * block devices) that allow open with direct-io but then fails on read.
  */
-static int device_ready(struct device *device, int check_directio)
+static int device_ready(struct device *device)
 {
 	int devfd = -1, r = 0;
 	struct stat st;
 	size_t tmp_size;
 
-	device->o_direct = 0;
-	if (check_directio) {
+	if (device->o_direct) {
 		log_dbg("Trying to open and read device %s with direct-io.",
 			device_path(device));
+		device->o_direct = 0;
 		devfd = open(device_path(device), O_RDONLY | O_DIRECT);
 		if (devfd >= 0) {
 			if (device_read_test(devfd) == 0) {
@@ -210,10 +210,10 @@ int device_open(struct device *device, int flags)
 	return devfd;
 }
 
-int device_alloc(struct device **device, const char *path)
+/* Avoid any read from device, expects direct-io to work. */
+int device_alloc_no_check(struct device **device, const char *path)
 {
 	struct device *dev;
-	int r;
 
 	if (!path) {
 		*device = NULL;
@@ -231,8 +231,22 @@ int device_alloc(struct device **device, const char *path)
 		return -ENOMEM;
 	}
 	dev->loop_fd = -1;
+	dev->o_direct = 1;
 
-	r = device_ready(dev, 1);
+	*device = dev;
+	return 0;
+}
+
+int device_alloc(struct device **device, const char *path)
+{
+	struct device *dev;
+	int r;
+
+	r = device_alloc_no_check(&dev, path);
+	if (r < 0)
+		return r;
+
+	r = device_ready(dev);
 	if (!r) {
 		dev->init_done = 1;
 	} else if (r == -ENOTBLK) {
@@ -529,7 +543,7 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 	file_path = device->path;
 	device->path = loop_device;
 
-	r = device_ready(device, device->o_direct);
+	r = device_ready(device);
 	if (r < 0) {
 		device->path = file_path;
 		crypt_loop_detach(loop_device);

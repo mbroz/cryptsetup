@@ -239,7 +239,7 @@ int crypt_wipe(struct crypt_device *cd,
 	if (!dev_path)
 		device = crypt_data_device(cd);
 	else {
-		r = device_alloc(&device, dev_path);
+		r = device_alloc_no_check(&device, dev_path);
 		if (r < 0)
 			return r;
 
