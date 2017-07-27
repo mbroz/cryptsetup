@@ -246,15 +246,17 @@ int device_alloc(struct device **device, const char *path)
 	if (r < 0)
 		return r;
 
-	r = device_ready(dev);
-	if (!r) {
-		dev->init_done = 1;
-	} else if (r == -ENOTBLK) {
-		/* alloc loop later */
-	} else if (r < 0) {
-		free(dev->path);
-		free(dev);
-		return -ENOTBLK;
+	if (dev) {
+		r = device_ready(dev);
+		if (!r) {
+			dev->init_done = 1;
+		} else if (r == -ENOTBLK) {
+			/* alloc loop later */
+		} else if (r < 0) {
+			free(dev->path);
+			free(dev);
+			return -ENOTBLK;
+		}
 	}
 
 	*device = dev;
