@@ -25,7 +25,7 @@
 #define PACKAGE_INTEGRITY "integritysetup"
 
 #define DEFAULT_TAG_SIZE 4
-#define DEFAULT_ALG_NAME "crc32"
+#define DEFAULT_ALG_NAME "crc32c"
 #define DEFAULT_WIPE_BLOCK 1024*1024 /* 1 MiB */
 #define MAX_KEY_SIZE 4096
 

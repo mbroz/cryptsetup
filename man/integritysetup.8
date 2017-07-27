@@ -98,7 +98,7 @@ be larger, but there could be less I/Os issued.
 .TP
 .B "\-\-integrity=algorithm"
 Use intenal integrity calculation (standalone mode).
-The integrity algorithm can be CRC (crc32) or hash function (sha1, sha256).
+The integrity algorithm can be CRC (crc32c/crc32) or hash function (sha1, sha256).
 
 For HMAC (hmac-sha256) you have to also specify a integrity key and its size.
 .TP
@@ -130,7 +130,7 @@ Error codes are:
     5 device already exists or device is busy.
 
 .SH EXAMPLES
-Format the device with default standalone mode (CRC32):
+Format the device with default standalone mode (CRC32C):
 
 .B "integritysetup format <device>"
 

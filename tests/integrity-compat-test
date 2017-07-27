@@ -7,7 +7,6 @@ DEV_NAME=dmc_test
 DEV=mode-test.img
 KEY_FILE=key.img
 
-
 dmremove() { # device
 	udevadm settle >/dev/null 2>&1
 	dmsetup remove $1 >/dev/null 2>&1
@@ -102,6 +101,7 @@ dmsetup targets | grep integrity >/dev/null 2>&1 || skip "Cannot find dm-integri
 
 add_device
 
+intformat crc32c      crc32c          4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
 intformat crc32       crc32           4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
 intformat sha1        sha1           20  512 6eedd6344dab8875cd185fcd6565dfc869ab36bc57e577f40c685290b1fa7fe7
 intformat sha1        sha1           16 4096 e152ec88227b539cd9cafd8bdb587a1072d720cd6bcebe1398d4136c9e7f337b
