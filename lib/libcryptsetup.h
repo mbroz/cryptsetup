@@ -1041,6 +1041,18 @@ int crypt_get_sector_size(struct crypt_device *cd);
  */
 int crypt_get_verity_info(struct crypt_device *cd,
 	struct crypt_params_verity *vp);
+
+/**
+ * Get device parameters for INTEGRITY device.
+ *
+ * @param cd crypt device handle
+ * @param vp verity device info
+ *
+ * @e 0 on success or negative errno value otherwise.
+ *
+ */
+int crypt_get_integrity_info(struct crypt_device *cd,
+	struct crypt_params_integrity *ip);
 /** @} */
 
 /**

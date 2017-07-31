@@ -1529,11 +1529,15 @@ static int _dm_query_integrity(uint32_t get_flags,
 					if (r)
 						return r;
 				}
-			} else if (!strncmp(arg, "journal_crypt:", 14))
-				;/* ignore it for now */
-			else if (!strncmp(arg, "journal_mac:", 12))
-				;/* ignore it for now */
-			else /* unknown option */
+			} else if (!strncmp(arg, "journal_crypt:", 14)) {
+				str = &arg[14];
+				arg = strsep(&str, ":");
+				dmd->u.integrity.journal_crypt = strdup(arg);
+			} else if (!strncmp(arg, "journal_mac:", 12)) {
+				str = &arg[12];
+				arg = strsep(&str, ":");
+				dmd->u.integrity.journal_integrity = strdup(arg);
+			} else /* unknown option */
 				return -EINVAL;
 		}
 

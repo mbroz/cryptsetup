@@ -838,6 +838,9 @@ static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
 		cd->u.integrity.params.interleave_sectors = dmd.u.integrity.interleave_sectors;
 		cd->u.integrity.params.buffer_sectors = dmd.u.integrity.buffer_sectors;
 		cd->u.integrity.params.integrity = dmd.u.integrity.integrity;
+		cd->u.integrity.params.journal_integrity = dmd.u.integrity.journal_integrity;
+		cd->u.integrity.params.journal_crypt = dmd.u.integrity.journal_crypt;
+
 		//FIXME init keys?
 	}
 out:
@@ -2795,6 +2798,33 @@ int crypt_get_verity_info(struct crypt_device *cd,
 	vp->hash_area_offset = cd->u.verity.hdr.hash_area_offset;
 	vp->hash_type = cd->u.verity.hdr.hash_type;
 	vp->flags = cd->u.verity.hdr.flags & CRYPT_VERITY_NO_HEADER;
+	return 0;
+}
+
+int crypt_get_integrity_info(struct crypt_device *cd,
+	struct crypt_params_integrity *ip)
+{
+	if (!isINTEGRITY(cd->type) || !ip)
+		return -EINVAL;
+
+	ip->journal_size = cd->u.integrity.params.journal_size;
+	ip->journal_watermark = cd->u.integrity.params.journal_watermark;
+	ip->journal_commit_time = cd->u.integrity.params.journal_commit_time;
+	ip->interleave_sectors = cd->u.integrity.params.interleave_sectors;
+	ip->tag_size = cd->u.integrity.params.tag_size;
+	ip->sector_size = cd->u.integrity.params.sector_size;
+	ip->buffer_sectors = cd->u.integrity.params.buffer_sectors;
+
+	ip->integrity = cd->u.integrity.params.integrity;
+
+	ip->journal_integrity = cd->u.integrity.params.journal_integrity;
+	ip->journal_integrity_key_size = cd->u.integrity.params.journal_integrity_key_size;
+	ip->journal_integrity_key = NULL;
+
+	ip->journal_crypt = cd->u.integrity.params.journal_crypt;
+	ip->journal_crypt_key_size = cd->u.integrity.params.journal_crypt_key_size;
+	ip->journal_crypt_key = NULL;
+
 	return 0;
 }
 

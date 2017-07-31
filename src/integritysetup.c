@@ -334,6 +334,7 @@ static int action_status(int arg)
 {
 	crypt_status_info ci;
 	struct crypt_active_device cad;
+	struct crypt_params_integrity ip = {};
 	struct crypt_device *cd = NULL;
 	char *backing_file;
 	const char *device;
@@ -374,8 +375,12 @@ static int action_status(int arg)
 		if (r < 0)
 			goto out;
 
-		log_std("  tag size: %u\n", crypt_get_integrity_tag_size(cd));
-		log_std("  integrity: %s\n", crypt_get_integrity(cd) ?: "(none)");
+		r = crypt_get_integrity_info(cd, &ip);
+		if (r < 0)
+			goto out;
+
+		log_std("  tag size: %u\n", ip.tag_size);
+		log_std("  integrity: %s\n", ip.integrity ?: "(none)");
 		device = crypt_get_device_name(cd);
 		log_std("  device:  %s\n", device);
 		if (crypt_loop_device(device)) {
@@ -384,9 +389,22 @@ static int action_status(int arg)
 			free(backing_file);
 		}
 		log_std("  sector size:  %u sectors\n", crypt_get_sector_size(cd));
+		log_std("  interleave sectors: %u\n", ip.interleave_sectors);
 		log_std("  size:    %" PRIu64 " sectors\n", cad.size);
-		log_std("  mode:    %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
-					   "readonly" : "read/write");
+		log_std("  mode:    %s%s\n",
+			cad.flags & CRYPT_ACTIVATE_READONLY ? "readonly" : "read/write",
+			cad.flags & CRYPT_ACTIVATE_RECOVERY ? " recovery" : "");
+		if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL) {
+			log_std("  journal: not active\n");
+		} else {
+			log_std("  journal size: %" PRIu64 " bytes\n", ip.journal_size);
+			log_std("  journal watermark: %u%%\n", ip.journal_watermark);
+			log_std("  journal commit time: %u ms\n", ip.journal_commit_time);
+			if (ip.journal_integrity)
+				log_std("  journal integrity MAC: %s\n", ip.journal_integrity);
+			if (ip.journal_crypt)
+				log_std("  journal encryption: %s\n", ip.journal_crypt);
+		}
 	}
 out:
 	crypt_free(cd);
