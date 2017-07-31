@@ -519,7 +519,7 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 
 	max_size = strlen(device_block_path(dmd->data_device)) +
 			(dmd->u.integrity.vk ? dmd->u.integrity.vk->keylength * 2 : 0) +
-			(dmd->u.integrity.journal_integrity_key ? dmd->u.integrity.journal_crypt_key->keylength * 2 : 0) +
+			(dmd->u.integrity.journal_integrity_key ? dmd->u.integrity.journal_integrity_key->keylength * 2 : 0) +
 			(dmd->u.integrity.journal_crypt_key ? dmd->u.integrity.journal_crypt_key->keylength * 2 : 0) +
 			(dmd->u.integrity.integrity ? strlen(dmd->u.integrity.integrity) : 0) +
 			(dmd->u.integrity.journal_integrity ? strlen(dmd->u.integrity.journal_integrity) : 0) +
