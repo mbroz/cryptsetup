@@ -1046,7 +1046,7 @@ int crypt_get_verity_info(struct crypt_device *cd,
  * Get device parameters for INTEGRITY device.
  *
  * @param cd crypt device handle
- * @param vp verity device info
+ * @param ip verity device info
  *
  * @e 0 on success or negative errno value otherwise.
  *
