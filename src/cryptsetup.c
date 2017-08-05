@@ -68,6 +68,9 @@ static int opt_veracrypt = 0;
 static int opt_veracrypt_pim = -1;
 static int opt_veracrypt_query_pim = 0;
 static int opt_deferred_remove = 0;
+static const char *opt_pbkdf = CRYPT_KDF_PBKDF2;
+static long opt_pbkdf_memory = 1024;
+static long opt_pbkdf_parallel = 2;
 
 static const char **action_argv;
 static int action_argc;
@@ -548,9 +551,26 @@ static int action_benchmark_kdf(const char *kdf, const char *hash, size_t key_si
 			log_std("PBKDF2-%-9s %7u iterations per second for %zu-bit key\n",
 				hash, kdf_iters, key_size * 8);
 	} else {
-		log_err("Unknown PBKDF '%s'\n", kdf);
-		r = -EINVAL;
+		const struct crypt_pbkdf_type pbkdf = {
+			.type = kdf,
+			.time_ms = opt_iteration_time ?: 800,
+			.max_memory_kb = opt_pbkdf_memory,
+			.parallel_threads = opt_pbkdf_parallel,
+		};
+		uint32_t iters, memory;
+
+		r = crypt_benchmark_pbkdf(NULL, &pbkdf, "foo", 3,
+			"barbarbarbarbarbar", 18, key_size, &iters, &memory);
+		if (r < 0)
+			log_std("%-10s N/A\n", kdf);
+		else
+			log_std("%-10s %4u iterations, %5u memory, "
+				"%1u parallel threads (CPUs) for "
+				"%zu-bit key (%u ms time)\n", kdf,
+				iters, memory, pbkdf.parallel_threads,
+				key_size * 8, (unsigned)pbkdf.time_ms);
 	}
+
 	return r;
 }
 
@@ -610,7 +630,9 @@ static int action_benchmark(void)
 	int i, r;
 
 	log_std(_("# Tests are approximate using memory only (no storage IO).\n"));
-	if (opt_cipher) {
+	if (!strcmp(opt_pbkdf, CRYPT_KDF_PBKDF2) && opt_hash) {
+		r = action_benchmark_kdf(CRYPT_KDF_PBKDF2, opt_hash, key_size);
+	} else if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
 		if (r < 0) {
 			log_err(_("No known cipher specification pattern detected.\n"));
@@ -644,6 +666,11 @@ static int action_benchmark(void)
 			if (r == -EINTR)
 				break;
 		}
+
+		/* benchmark Argon2: */
+		action_benchmark_kdf(CRYPT_KDF_ARGON2I, NULL, key_size);
+		action_benchmark_kdf(CRYPT_KDF_ARGON2ID, NULL, key_size);
+
 		for (i = 0; bciphers[i].cipher; i++) {
 			r = benchmark_cipher_loop(bciphers[i].cipher, bciphers[i].mode,
 					    bciphers[i].key_size, bciphers[i].iv_size,
@@ -1601,6 +1628,9 @@ int main(int argc, const char **argv)
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option."), NULL },
 		{ "perf-submit_from_crypt_cpus",'\0', POPT_ARG_NONE, &opt_perf_submit_from_crypt_cpus,0,N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option."), NULL },
 		{ "deferred",          '\0', POPT_ARG_NONE, &opt_deferred_remove,       0, N_("Device removal is deferred until the last user closes it."), NULL },
+		{ "pbkdf",             '\0', POPT_ARG_STRING, &opt_pbkdf,               0, N_("Password-based key derivation algorithm (PBKDF) for LUKS2 (argon2/pbkdf2)."), NULL },
+		{ "pbkdf-memory",      '\0', POPT_ARG_LONG, &opt_pbkdf_memory,          0, N_("Password-based key derivation algorithm (PBKDF) memory cost limit"), N_("kilobytes") },
+		{ "pbkdf-parallel",    '\0', POPT_ARG_LONG, &opt_pbkdf_parallel,        0, N_("Password-based key derivation algorithm (PBKDF) parallel cost "), N_("threads") },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

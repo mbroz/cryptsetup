@@ -57,15 +57,17 @@ enum { CRYPT_RND_NORMAL = 0, CRYPT_RND_KEY = 1, CRYPT_RND_SALT = 2 };
 int crypt_backend_rng(char *buffer, size_t length, int quality, int fips);
 
 /* PBKDF*/
-int crypt_pbkdf_check(const char *kdf, const char *hash,
-		      const char *password, size_t password_length,
-		      const char *salt, size_t salt_length,
-		      size_t key_length, uint32_t *iter_secs);
 int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
 		const char *salt, size_t salt_length,
 		char *key, size_t key_length,
 		uint32_t iterations, uint32_t memory, uint32_t parallel);
+int crypt_pbkdf_perf(const char *kdf, const char *hash,
+		const char *password, size_t password_size,
+		const char *salt, size_t salt_size,
+		size_t volume_key_size, uint32_t time_ms,
+		uint32_t max_memory_kb, uint32_t parallel_threads,
+		uint32_t *iterations_out, uint32_t *memory_out);
 
 #if USE_INTERNAL_PBKDF2
 /* internal PBKDF2 implementation */
