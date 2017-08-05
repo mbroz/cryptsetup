@@ -55,7 +55,7 @@ static long time_ms(struct rusage *start, struct rusage *end)
 int crypt_pbkdf_check(const char *kdf, const char *hash,
 		      const char *password, size_t password_length,
 		      const char *salt, size_t salt_length,
-		      size_t key_length, uint64_t *iter_secs)
+		      size_t key_length, uint32_t *iter_secs)
 {
 	struct rusage rstart, rend;
 	int r = 0, step = 0;

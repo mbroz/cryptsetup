@@ -49,6 +49,9 @@
 #define DEFAULT_MEM_ALIGNMENT	4096
 #define MAX_ERROR_LENGTH	512
 
+#define MAX_PBKDF_THREADS	8
+#define MAX_PBKDF_MEMORY	1024*1024 /* 1GiB */
+
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
 struct crypt_device;
@@ -115,6 +118,8 @@ ssize_t write_lseek_blockwise(int fd, size_t bsize, size_t alignment, void *buf,
 ssize_t read_lseek_blockwise(int fd, size_t bsize, size_t alignment, void *buf, size_t count, off_t offset);
 
 size_t crypt_getpagesize(void);
+unsigned crypt_cpusonline(void);
+
 int init_crypto(struct crypt_device *ctx);
 
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...) __attribute__ ((format (printf, 5, 6)));

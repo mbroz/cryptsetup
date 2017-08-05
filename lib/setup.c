@@ -44,8 +44,11 @@ struct crypt_device {
 	struct device *metadata_device;
 
 	struct volume_key *volume_key;
-	uint64_t iteration_time;
 	int rng_type;
+	struct crypt_pbkdf_type pbkdf;
+
+	/* global context scope settings */
+	unsigned iter_time_set:1;
 
 	// FIXME: private binary headers and access it properly
 	// through sub-library (LUKS1, TCRYPT)
@@ -53,7 +56,7 @@ struct crypt_device {
 	union {
 	struct { /* used in CRYPT_LUKS1 */
 		struct luks_phdr hdr;
-		uint64_t PBKDF2_per_sec;
+		uint32_t PBKDF2_per_sec;
 	} luks1;
 	struct { /* used in CRYPT_PLAIN */
 		struct crypt_params_plain hdr;
@@ -483,8 +486,8 @@ int crypt_init(struct crypt_device **cd, const char *device)
 
 	dm_backend_init();
 
-	h->iteration_time = DEFAULT_LUKS1_ITER_TIME;
 	h->rng_type = crypt_random_default_key_rng();
+
 	*cd = h;
 	return 0;
 bad:
@@ -544,9 +547,108 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 	return crypt_check_data_device_size(cd);
 }
 
+static int verify_pbkdf_params(struct crypt_device *cd, const struct crypt_pbkdf_type *pbkdf)
+{
+	int r = 0;
+
+	if (!pbkdf->type || !pbkdf->hash)
+		return -EINVAL;
+
+	/* TODO: initialise crypto and check the hash and pbkdf are both available */
+	r = crypt_parse_pbkdf(pbkdf->type, NULL);
+	if (r < 0) {
+		log_err(cd, _("Unknown pbkdf type %s.\n"), pbkdf->type);
+		return r;
+	}
+
+	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2)) {
+		if (pbkdf->max_memory_kb || pbkdf->parallel_threads) {
+			log_err(cd, _("PBKDF max memory or parallel threads must not be set with pbkdf2.\n"));
+			return -EINVAL;
+		}
+		return 0;
+	}
+
+	if (pbkdf->max_memory_kb > MAX_PBKDF_MEMORY) {
+		log_err(cd, _("Requested maximum PBKDF memory cost is too high (maximum is %d kilobytes).\n"),
+			MAX_PBKDF_MEMORY);
+		r = -EINVAL;
+	}
+	if (!pbkdf->max_memory_kb) {
+		log_err(cd, _("Requested maximum PBKDF memory can not be zero.\n"));
+		r = -EINVAL;
+	}
+	if (!pbkdf->parallel_threads) {
+		log_err(cd, _("Requested PBKDF parallel threads can not be zero.\n"));
+		r = -EINVAL;
+	}
+	if (!pbkdf->time_ms) {
+		log_err(cd, _("Requested PBKDF target time can not be zero.\n"));
+		r = -EINVAL;
+	}
+
+	return r;
+}
+
+static int init_pbkdf_type(struct crypt_device *cd, const struct crypt_pbkdf_type *pbkdf)
+{
+	const char *hash, *type;
+	int r;
+	struct crypt_pbkdf_type default_luks1 = {
+		.type = CRYPT_KDF_PBKDF2,
+		.hash = DEFAULT_LUKS1_HASH,
+		.time_ms = cd->iter_time_set ? cd->pbkdf.time_ms : DEFAULT_LUKS1_ITER_TIME
+	};
+	unsigned cpus = crypt_cpusonline();
+
+	if (!pbkdf) {
+		pbkdf = &default_luks1;
+
+		/*
+		 * black magic due to crypt_set_iteration_time() but we don't
+		 * want crypt_get_pbkdf_type() return invalid parameters
+		 */
+		r = verify_pbkdf_params(cd, pbkdf);
+		if (r)
+			return r;
+	}
+
+	/*
+	 * Crypto backend may be not initialized here,
+	 * cannot check if algorithms are really available.
+	 * It will fail later anyway :-)
+	 */
+	type = strdup(pbkdf->type);
+	hash = strdup(pbkdf->hash);
+
+	if (!type || !hash) {
+		free(CONST_CAST(void*)type);
+		free(CONST_CAST(void*)hash);
+		return -ENOMEM;
+	}
+
+	free(CONST_CAST(void*)cd->pbkdf.type);
+	free(CONST_CAST(void*)cd->pbkdf.hash);
+	cd->pbkdf.type = type;
+	cd->pbkdf.hash = hash;
+
+	cd->pbkdf.time_ms = pbkdf->time_ms;
+	cd->pbkdf.max_memory_kb = pbkdf->max_memory_kb;
+
+	if (pbkdf->parallel_threads > cpus) {
+		cd->pbkdf.parallel_threads = cpus;
+		log_dbg("Only %u active CPUs detected, PBKDF threads decreased from %d to %d.",
+			cpus, pbkdf->parallel_threads, cpus);
+	} else
+		cd->pbkdf.parallel_threads = pbkdf->parallel_threads;
+
+	return 0;
+}
+
 static int _crypt_load_luks1(struct crypt_device *cd, int require_header, int repair)
 {
 	struct luks_phdr hdr;
+	struct crypt_pbkdf_type pbkdf = {};
 	int r;
 
 	r = init_crypto(cd);
@@ -555,6 +657,14 @@ static int _crypt_load_luks1(struct crypt_device *cd, int require_header, int re
 
 	r = LUKS_read_phdr(&hdr, require_header, repair, cd);
 	if (r < 0)
+		return r;
+
+	pbkdf.type = CRYPT_KDF_PBKDF2;
+	pbkdf.hash = hdr.hashSpec;
+	pbkdf.time_ms = cd->iter_time_set ? cd->pbkdf.time_ms : DEFAULT_LUKS1_ITER_TIME;
+
+	r = init_pbkdf_type(cd, &pbkdf);
+	if (r)
 		return r;
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_LUKS1)))
@@ -1022,6 +1132,17 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if(!cd->volume_key)
 		return -ENOMEM;
 
+	r = init_pbkdf_type(cd, NULL);
+	if (r)
+		return r;
+
+	if (params && params->hash && strcmp(params->hash, DEFAULT_LUKS1_HASH)) {
+		free(CONST_CAST(void*)cd->pbkdf.hash);
+		cd->pbkdf.hash = strdup(params->hash);
+		if (!cd->pbkdf.hash)
+			return -ENOMEM;
+	}
+
 	if (params && params->data_device) {
 		cd->metadata_device = cd->device;
 		cd->device = NULL;
@@ -1036,11 +1157,10 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
 	r = LUKS_generate_phdr(&cd->u.luks1.hdr, cd->volume_key, cipher, cipher_mode,
-			       (params && params->hash) ? params->hash : DEFAULT_LUKS1_HASH,
-			       uuid, LUKS_STRIPES,
+			       cd->pbkdf.hash, uuid, LUKS_STRIPES,
 			       required_alignment / SECTOR_SIZE,
 			       alignment_offset / SECTOR_SIZE,
-			       cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec,
+			       cd->pbkdf.time_ms, &cd->u.luks1.PBKDF2_per_sec,
 			       cd->metadata_device ? 1 : 0, cd);
 	if (r < 0)
 		return r;
@@ -1603,6 +1723,9 @@ void crypt_free(struct crypt_device *cd)
 			free(cd->u.none.active_name);
 		}
 
+		free(CONST_CAST(void*)cd->pbkdf.type);
+		free(CONST_CAST(void*)cd->pbkdf.hash);
+
 		free(cd->type);
 		/* Some structures can contain keys (TCRYPT), wipe it */
 		crypt_memzero(cd, sizeof(*cd));
@@ -1812,7 +1935,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 		goto out;
 
 	r = LUKS_set_key(keyslot, CONST_CAST(char*)new_passphrase, new_passphrase_size,
-			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
+			 &cd->u.luks1.hdr, vk, cd->pbkdf.time_ms, &cd->u.luks1.PBKDF2_per_sec, cd);
 	if(r < 0)
 		goto out;
 
@@ -1863,7 +1986,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	}
 
 	r = LUKS_set_key(keyslot_new, new_passphrase, new_passphrase_size,
-			 &cd->u.luks1.hdr, vk, cd->iteration_time,
+			 &cd->u.luks1.hdr, vk, cd->pbkdf.time_ms,
 			 &cd->u.luks1.PBKDF2_per_sec, cd);
 
 	if (keyslot_old == keyslot_new) {
@@ -1940,7 +2063,7 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 		goto out;
 
 	r = LUKS_set_key(keyslot, new_password, new_passwordLen,
-			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
+			 &cd->u.luks1.hdr, vk, cd->pbkdf.time_ms, &cd->u.luks1.PBKDF2_per_sec, cd);
 out:
 	crypt_safe_free(password);
 	crypt_safe_free(new_password);
@@ -1998,7 +2121,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 		goto out;
 
 	r = LUKS_set_key(keyslot, passphrase, passphrase_size,
-			 &cd->u.luks1.hdr, vk, cd->iteration_time, &cd->u.luks1.PBKDF2_per_sec, cd);
+			 &cd->u.luks1.hdr, vk, cd->pbkdf.time_ms, &cd->u.luks1.PBKDF2_per_sec, cd);
 out:
 	crypt_free_volume_key(vk);
 	return (r < 0) ? r : keyslot;
@@ -2411,8 +2534,18 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 
 void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms)
 {
-	log_dbg("Iteration time set to %" PRIu64 " milliseconds.", iteration_time_ms);
-	cd->iteration_time = iteration_time_ms;
+	int r = 0;
+
+	if (!cd)
+		return;
+
+	if (iteration_time_ms > UINT32_MAX)
+		iteration_time_ms = DEFAULT_LUKS1_ITER_TIME;
+	cd->pbkdf.time_ms = (uint32_t)iteration_time_ms;
+	cd->iter_time_set = 1;
+
+	if (!r)
+		log_dbg("Iteration time set to %" PRIu64 " miliseconds.", iteration_time_ms);
 }
 
 void crypt_set_rng_type(struct crypt_device *cd, int rng_type)
@@ -2431,6 +2564,38 @@ int crypt_get_rng_type(struct crypt_device *cd)
 		return -EINVAL;
 
 	return cd->rng_type;
+}
+
+int crypt_set_pbkdf_type(struct crypt_device *cd, const struct crypt_pbkdf_type *pbkdf)
+{
+	int r;
+
+	if (!cd)
+		return -EINVAL;
+
+	if (!pbkdf) {
+		log_dbg("Resetting pbkdf type to default");
+		cd->iter_time_set = 0;
+		return init_pbkdf_type(cd, NULL);
+	}
+
+	log_dbg("PBKDF %s, hash %s, time_ms %u, max_memory_kb %u, parallel_threads %u.",
+		pbkdf->type ?: "(none)", pbkdf->hash ?: "(none)", pbkdf->time_ms,
+		pbkdf->max_memory_kb, pbkdf->parallel_threads);
+
+	if (verify_pbkdf_params(cd, pbkdf))
+		return -EINVAL;
+
+	r = init_pbkdf_type(cd, pbkdf);
+	if (!r)
+		cd->iter_time_set = 1;
+
+	return r;
+}
+
+const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd)
+{
+	return cd ? &cd->pbkdf : NULL;
 }
 
 int crypt_memory_lock(struct crypt_device *cd, int lock)
@@ -2509,7 +2674,7 @@ static int _luks_dump(struct crypt_device *cd)
 			log_std(cd, "\tAF stripes:            \t%" PRIu32 "\n",
 				cd->u.luks1.hdr.keyblock[i].stripes);
 		}
-		else 
+		else
 			log_std(cd, "Key Slot %d: DISABLED\n", i);
 	}
 	return 0;

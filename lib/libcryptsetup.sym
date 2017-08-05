@@ -3,6 +3,7 @@ CRYPTSETUP_2.0 {
 		crypt_init;
 		crypt_init_by_name;
 		crypt_init_by_name_and_header;
+
 		crypt_set_log_callback;
 		crypt_set_confirm_callback;
 		crypt_set_iteration_time;
@@ -37,7 +38,7 @@ CRYPTSETUP_2.0 {
 		crypt_status;
 		crypt_dump;
 		crypt_benchmark;
-		crypt_benchmark_kdf;
+		crypt_benchmark_pbkdf;
 		crypt_get_cipher;
 		crypt_get_cipher_mode;
 		crypt_get_integrity;
@@ -58,6 +59,8 @@ CRYPTSETUP_2.0 {
 
 		crypt_set_rng_type;
 		crypt_get_rng_type;
+		crypt_set_pbkdf_type;
+		crypt_get_pbkdf_type;
 
 		crypt_keyslot_max;
 		crypt_keyslot_area;

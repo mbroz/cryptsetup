@@ -36,6 +36,12 @@ size_t crypt_getpagesize(void)
 	return r <= 0 ? DEFAULT_MEM_ALIGNMENT : (size_t)r;
 }
 
+unsigned crypt_cpusonline(void)
+{
+	long r = sysconf(_SC_NPROCESSORS_ONLN);
+	return r < 0 ? 1 : r;
+}
+
 ssize_t read_buffer(int fd, void *buf, size_t count)
 {
 	size_t read_size = 0;

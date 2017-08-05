@@ -106,6 +106,29 @@ int crypt_parse_hash_integrity_mode(const char *s, char *integrity)
 	return 0;
 }
 
+int crypt_parse_pbkdf(const char *s, const char **pbkdf)
+{
+	const char *tmp = NULL;
+
+	if (!s)
+		return -EINVAL;
+
+	if (!strcasecmp(s, CRYPT_KDF_PBKDF2))
+		tmp = CRYPT_KDF_PBKDF2;
+	else if (!strcasecmp(s, CRYPT_KDF_ARGON2I))
+		tmp = CRYPT_KDF_ARGON2I;
+	else if (!strcasecmp(s, CRYPT_KDF_ARGON2ID))
+		tmp = CRYPT_KDF_ARGON2ID;
+
+	if (!tmp)
+		return -EINVAL;
+
+	if (pbkdf)
+		*pbkdf = tmp;
+
+	return 0;
+}
+
 /*
  * Replacement for memset(s, 0, n) on stack that can be optimized out
  * Also used in safe allocations for explicit memory wipe.

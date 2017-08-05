@@ -176,7 +176,7 @@ void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_m
 int crypt_set_data_device(struct crypt_device *cd, const char *device);
 
 /**
- * @defgroup rng Cryptsetup RNG
+ * @defgroup rng Cryptsetup RNG and PBKDF
  *
  * @addtogroup rng
  * @{
@@ -205,6 +205,49 @@ void crypt_set_rng_type(struct crypt_device *cd, int rng_type);
  *
  */
 int crypt_get_rng_type(struct crypt_device *cd);
+
+/**
+ * PBKDF parameters.
+ */
+struct crypt_pbkdf_type {
+	const char *type;         /**< PBKDF algorithm  */
+	const char *hash;         /**< Hash algorithm */
+	uint32_t time_ms;         /**< Requested time cost [milliseconds] */
+	uint32_t max_memory_kb;       /**< Requested memory cost [kilobytes] */
+	uint32_t parallel_threads;/**< Requested parallel cost [threads] */
+};
+
+/** PBKDF2 for LUKS1 and LUKS2 */
+#define CRYPT_KDF_PBKDF2   "pbkdf2"
+/** Argon2i according to RFC */
+#define CRYPT_KDF_ARGON2I  "argon2i"
+/** Argon2id according to RFC */
+#define CRYPT_KDF_ARGON2ID "argon2id"
+
+/**
+ * Set default PBKDF (Password-Based Key Derivation Algorithm) for next keyslot
+ * about to get created with any crypt_keyslot_add_*() call. Works only with
+ * valid LUKSv2 device handles.
+ *
+ * @param cd crypt device handle
+ * @param pbkdf PBKDF parameters
+ *
+ * @return 0 on success or negative errno value otherwise.
+ *
+ */
+int crypt_set_pbkdf_type(struct crypt_device *cd,
+	 const struct crypt_pbkdf_type *pbkdf);
+
+/**
+ * Get current default PBKDF (Password-Based Key Derivation Algorithm) for keyslots.
+ * Works only with LUKS device handles (both versions).
+ *
+ * @param cd crypt device handle
+ *
+ * @return struct on success or NULL value otherwise.
+ *
+ */
+const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd);
 
 /** @} */
 
@@ -1092,27 +1135,29 @@ int crypt_benchmark(struct crypt_device *cd,
 	double *decryption_mbs);
 
 /**
- * Informational benchmark for KDF.
+ * Informational benchmark for PBKDF.
  *
  * @param cd crypt device handle
- * @param kdf Key derivation function (e.g. "pbkdf2")
- * @param hash Hash algorithm used in KDF (e.g. "sha256")
+ * @param pbkdf PBKDF parameters
  * @param password password for benchmark
  * @param password_size size of password
  * @param salt salt for benchmark
  * @param salt_size size of salt
- * @param iterations_sec returns measured KDF iterations per second
+ * @param volume_key_size output volume key size
+ * @param iterations_sec returns measured PBKDF iterations per second
  *
  * @return @e 0 on success or negative errno value otherwise.
  */
-int crypt_benchmark_kdf(struct crypt_device *cd,
-	const char *kdf,
-	const char *hash,
+int crypt_benchmark_pbkdf(struct crypt_device *cd,
+	const struct crypt_pbkdf_type *pbkdf,
 	const char *password,
 	size_t password_size,
 	const char *salt,
 	size_t salt_size,
-	uint64_t *iterations_sec);
+	size_t volume_key_size,
+	uint32_t *iterations,
+	uint32_t *memory);
+
 /** @} */
 
 /**

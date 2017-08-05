@@ -34,6 +34,7 @@ struct crypt_device;
 int crypt_parse_name_and_mode(const char *s, char *cipher,
 			      int *key_nums, char *cipher_mode);
 int crypt_parse_hash_integrity_mode(const char *s, char *integrity);
+int crypt_parse_pbkdf(const char *s, const char **pbkdf);
 
 void *crypt_safe_alloc(size_t size);
 void crypt_safe_free(void *data);
