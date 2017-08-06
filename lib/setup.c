@@ -776,6 +776,7 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 		// FIXME: check ENOMEM
 		if (params->integrity)
 			cd->u.integrity.params.integrity = strdup(params->integrity);
+		cd->u.integrity.params.integrity_key_size = params->integrity_key_size;
 		if (params->journal_integrity)
 			cd->u.integrity.params.journal_integrity = strdup(params->journal_integrity);
 		if (params->journal_crypt)
@@ -951,10 +952,17 @@ static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
 		cd->u.integrity.params.journal_integrity = dmd.u.integrity.journal_integrity;
 		cd->u.integrity.params.journal_crypt = dmd.u.integrity.journal_crypt;
 
-		//FIXME init keys?
+		if (dmd.u.integrity.vk)
+			cd->u.integrity.params.integrity_key_size = dmd.u.integrity.vk->keylength;
+		if (dmd.u.integrity.journal_integrity_key)
+			cd->u.integrity.params.journal_integrity_key_size = dmd.u.integrity.journal_integrity_key->keylength;
+		if (dmd.u.integrity.journal_crypt_key)
+			cd->u.integrity.params.integrity_key_size = dmd.u.integrity.journal_crypt_key->keylength;
 	}
 out:
 	crypt_free_volume_key(dmd.u.integrity.vk);
+	crypt_free_volume_key(dmd.u.integrity.journal_integrity_key);
+	crypt_free_volume_key(dmd.u.integrity.journal_crypt_key);
 	device_free(dmd.data_device);
 	return r;
 }
@@ -2783,6 +2791,7 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 	return NULL;
 }
 
+/* INTERNAL only */
 const char *crypt_get_integrity(struct crypt_device *cd)
 {
 	if (isINTEGRITY(cd->type))
@@ -2791,6 +2800,7 @@ const char *crypt_get_integrity(struct crypt_device *cd)
 	return NULL;
 }
 
+/* INTERNAL only */
 int crypt_get_integrity_key_size(struct crypt_device *cd)
 {
 	if (isINTEGRITY(cd->type))
@@ -2799,26 +2809,13 @@ int crypt_get_integrity_key_size(struct crypt_device *cd)
 	return 0;
 }
 
+/* INTERNAL only */
 int crypt_get_integrity_tag_size(struct crypt_device *cd)
 {
 	if (isINTEGRITY(cd->type))
 		return cd->u.integrity.params.tag_size;
 
 	return 0;
-}
-
-uint64_t crypt_get_integrity_sectors(struct crypt_device *cd)
-{
-	uint64_t sectors;
-
-	if (!isINTEGRITY(cd->type))
-		return 0;
-
-	if (INTEGRITY_data_sectors(cd, crypt_data_device(cd),
-		crypt_get_data_offset(cd) * SECTOR_SIZE, &sectors) < 0)
-		return 0;
-
-	return sectors;
 }
 
 int crypt_get_sector_size(struct crypt_device *cd)
@@ -2969,28 +2966,32 @@ int crypt_get_verity_info(struct crypt_device *cd,
 int crypt_get_integrity_info(struct crypt_device *cd,
 	struct crypt_params_integrity *ip)
 {
-	if (!isINTEGRITY(cd->type) || !ip)
+	if (!cd || !ip)
 		return -EINVAL;
 
-	ip->journal_size = cd->u.integrity.params.journal_size;
-	ip->journal_watermark = cd->u.integrity.params.journal_watermark;
-	ip->journal_commit_time = cd->u.integrity.params.journal_commit_time;
-	ip->interleave_sectors = cd->u.integrity.params.interleave_sectors;
-	ip->tag_size = cd->u.integrity.params.tag_size;
-	ip->sector_size = cd->u.integrity.params.sector_size;
-	ip->buffer_sectors = cd->u.integrity.params.buffer_sectors;
+	if (isINTEGRITY(cd->type)) {
+		ip->journal_size = cd->u.integrity.params.journal_size;
+		ip->journal_watermark = cd->u.integrity.params.journal_watermark;
+		ip->journal_commit_time = cd->u.integrity.params.journal_commit_time;
+		ip->interleave_sectors = cd->u.integrity.params.interleave_sectors;
+		ip->tag_size = cd->u.integrity.params.tag_size;
+		ip->sector_size = cd->u.integrity.params.sector_size;
+		ip->buffer_sectors = cd->u.integrity.params.buffer_sectors;
 
-	ip->integrity = cd->u.integrity.params.integrity;
+		ip->integrity = cd->u.integrity.params.integrity;
+		ip->integrity_key_size = crypt_get_integrity_key_size(cd);
 
-	ip->journal_integrity = cd->u.integrity.params.journal_integrity;
-	ip->journal_integrity_key_size = cd->u.integrity.params.journal_integrity_key_size;
-	ip->journal_integrity_key = NULL;
+		ip->journal_integrity = cd->u.integrity.params.journal_integrity;
+		ip->journal_integrity_key_size = cd->u.integrity.params.journal_integrity_key_size;
+		ip->journal_integrity_key = NULL;
 
-	ip->journal_crypt = cd->u.integrity.params.journal_crypt;
-	ip->journal_crypt_key_size = cd->u.integrity.params.journal_crypt_key_size;
-	ip->journal_crypt_key = NULL;
+		ip->journal_crypt = cd->u.integrity.params.journal_crypt;
+		ip->journal_crypt_key_size = cd->u.integrity.params.journal_crypt_key_size;
+		ip->journal_crypt_key = NULL;
+		return 0;
+	}
 
-	return 0;
+	return -ENOTSUP;
 }
 
 int crypt_get_active_device(struct crypt_device *cd, const char *name,

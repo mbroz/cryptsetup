@@ -169,7 +169,7 @@ int INTEGRITY_tag_size(struct crypt_device *cd,
 
 int INTEGRITY_activate(struct crypt_device *cd,
 		       const char *name,
-		       struct crypt_params_integrity *params,
+		       const struct crypt_params_integrity *params,
 		       struct volume_key *vk,
 		       struct volume_key *journal_crypt_key,
 		       struct volume_key *journal_mac_key,
@@ -179,7 +179,6 @@ int INTEGRITY_activate(struct crypt_device *cd,
 	struct crypt_dm_active_device dmdi = {
 		.target      = DM_INTEGRITY,
 		.data_device = crypt_data_device(cd),
-		.size = crypt_get_integrity_sectors(cd),
 		.flags = flags,
 		.u.integrity = {
 			.offset = crypt_get_data_offset(cd),
@@ -191,6 +190,11 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		}
 	};
 	int r;
+
+	r = INTEGRITY_data_sectors(cd, dmdi.data_device,
+				   dmdi.u.integrity.offset * SECTOR_SIZE, &dmdi.size);
+	if (r < 0)
+		return r;
 
 	if (params) {
 		dmdi.u.integrity.journal_size = params->journal_size;
@@ -221,7 +225,7 @@ int INTEGRITY_activate(struct crypt_device *cd,
 }
 
 int INTEGRITY_format(struct crypt_device *cd,
-		     struct crypt_params_integrity *params,
+		     const struct crypt_params_integrity *params,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key)
 {

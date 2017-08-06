@@ -101,6 +101,7 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 		r = _read_mk(opt_integrity_key_file, &int_key, opt_integrity_key_size);
 		if (r < 0)
 			return r;
+		params->integrity_key_size = opt_integrity_key_size;
 	}
 
 	if (opt_journal_integrity_key_file) {

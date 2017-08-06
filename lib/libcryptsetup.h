@@ -419,6 +419,7 @@ struct crypt_params_integrity {
 	uint32_t sector_size;                /**< sector size in bytes */
 	uint32_t buffer_sectors;             /**< number of sectors in one buffer */
 	const char *integrity;               /**< integrity algorithm */
+	uint32_t integrity_key_size;         /**< integrity key size, info only */
 
 	const char *journal_integrity;       /**< journal integrity algorithm */
 	const char *journal_integrity_key;   /**< journal integrity key, only for crypt_load */
@@ -972,46 +973,6 @@ const char *crypt_get_cipher(struct crypt_device *cd);
  *
  */
 const char *crypt_get_cipher_mode(struct crypt_device *cd);
-
-/**
- * Get cipher integrity mode used in device.
- *
- * @param cd crypt device handle
- *
- * @return used cipher mode e.g. "hmac(sha256)" or @e otherwise
- *
- */
-const char *crypt_get_integrity(struct crypt_device *cd);
-
-/**
- * Get size (in bytes) of integrity key (if present) for crypt device.
- *
- * @param cd crypt device handle
- *
- * @return integrity key size
- *
- */
-int crypt_get_integrity_key_size(struct crypt_device *cd);
-
-/**
- * Get size (in bytes) of integrity tag (if present) for crypt device.
- *
- * @param cd crypt device handle
- *
- * @return integrity tag size
- *
- */
-int crypt_get_integrity_tag_size(struct crypt_device *cd);
-
-/**
- * Get size (in bytes) of provided data sectors for integrity device.
- *
- * @param cd crypt device handle
- *
- * @return provided device size in 512-bytes sectors
- *
- */
-uint64_t crypt_get_integrity_sectors(struct crypt_device *cd);
 
 /**
  * Get device UUID.

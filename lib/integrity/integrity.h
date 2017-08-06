@@ -56,13 +56,13 @@ int INTEGRITY_tag_size(struct crypt_device *cd,
 		       const char *cipher_mode);
 
 int INTEGRITY_format(struct crypt_device *cd,
-		     struct crypt_params_integrity *params,
+		     const struct crypt_params_integrity *params,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key);
 
 int INTEGRITY_activate(struct crypt_device *cd,
 		       const char *name,
-		       struct crypt_params_integrity *params,
+		       const struct crypt_params_integrity *params,
 		       struct volume_key *vk,
 		       struct volume_key *journal_crypt_key,
 		       struct volume_key *journal_mac_key,

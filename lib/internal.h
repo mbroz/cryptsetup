@@ -159,4 +159,9 @@ int crypt_wipe_device(struct crypt_device *cd,
 	int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
 	void *usrptr);
 
+/* Internal integrity helpers */
+const char *crypt_get_integrity(struct crypt_device *cd);
+int crypt_get_integrity_key_size(struct crypt_device *cd);
+int crypt_get_integrity_tag_size(struct crypt_device *cd);
+
 #endif /* INTERNAL_H */
