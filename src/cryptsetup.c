@@ -68,7 +68,7 @@ static int opt_veracrypt = 0;
 static int opt_veracrypt_pim = -1;
 static int opt_veracrypt_query_pim = 0;
 static int opt_deferred_remove = 0;
-static const char *opt_pbkdf = CRYPT_KDF_PBKDF2;
+static const char *opt_pbkdf = NULL;
 static long opt_pbkdf_memory = 1024;
 static long opt_pbkdf_parallel = 2;
 
@@ -619,8 +619,18 @@ static int action_benchmark(void)
 		{ "twofish", "xts", 64, 16 },
 		{  NULL, NULL, 0, 0 }
 	};
-	static const char *bkdfs[] = {
-		"sha1", "sha256", "sha512", "ripemd160", "whirlpool", NULL
+	static struct {
+		const char *type;
+		const char *hash;
+	} bkdfs[] = {
+		{ CRYPT_KDF_PBKDF2,   "sha1" },
+		{ CRYPT_KDF_PBKDF2,   "sha256" },
+		{ CRYPT_KDF_PBKDF2,   "sha512" },
+		{ CRYPT_KDF_PBKDF2,   "ripemd160" },
+		{ CRYPT_KDF_PBKDF2,   "whirlpool" },
+		{ CRYPT_KDF_ARGON2I,  NULL },
+		{ CRYPT_KDF_ARGON2ID, NULL },
+		{ NULL, NULL }
 	};
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
@@ -630,8 +640,8 @@ static int action_benchmark(void)
 	int i, r;
 
 	log_std(_("# Tests are approximate using memory only (no storage IO).\n"));
-	if (!strcmp(opt_pbkdf, CRYPT_KDF_PBKDF2) && opt_hash) {
-		r = action_benchmark_kdf(CRYPT_KDF_PBKDF2, opt_hash, key_size);
+	if (opt_pbkdf && (strcmp(opt_pbkdf, CRYPT_KDF_PBKDF2) || opt_hash)) {
+		r = action_benchmark_kdf(opt_pbkdf, opt_hash, key_size);
 	} else if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
 		if (r < 0) {
@@ -660,16 +670,12 @@ static int action_benchmark(void)
 		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
 	} else {
-		for (i = 0; bkdfs[i]; i++) {
-			r = action_benchmark_kdf(CRYPT_KDF_PBKDF2, bkdfs[i], key_size);
+		for (i = 0; bkdfs[i].type; i++) {
+			r = action_benchmark_kdf(bkdfs[i].type, bkdfs[i].hash, key_size);
 			check_signal(&r);
 			if (r == -EINTR)
 				break;
 		}
-
-		/* benchmark Argon2: */
-		action_benchmark_kdf(CRYPT_KDF_ARGON2I, NULL, key_size);
-		action_benchmark_kdf(CRYPT_KDF_ARGON2ID, NULL, key_size);
 
 		for (i = 0; bciphers[i].cipher; i++) {
 			r = benchmark_cipher_loop(bciphers[i].cipher, bciphers[i].mode,
