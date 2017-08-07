@@ -36,8 +36,11 @@
 #endif
 
 #define BENCH_MIN_MS 250
+#define BENCH_MIN_MS_FAST 10
 #define BENCH_PERCENT_ATLEAST 95
-#define BENCH_PERCENT_ATMOST 105
+#define BENCH_PERCENT_ATMOST 110
+#define BENCH_SAMPLES_FAST 3
+#define BENCH_SAMPLES_SLOW 1
 
 static long time_ms(struct rusage *start, struct rusage *end)
 {
@@ -150,7 +153,7 @@ static int crypt_argon2_check(const char *kdf, const char *password, size_t pass
 	while (1) {
 		r = measure_argon2(kdf, password, password_length, salt, salt_length,
 		                   key, key_length, t_cost, m_cost, parallel,
-		                   3, BENCH_MIN_MS, &ms);
+		                   BENCH_SAMPLES_FAST, BENCH_MIN_MS, &ms);
 		if (r < 0)
 			goto out;
 
@@ -161,9 +164,25 @@ static int crypt_argon2_check(const char *kdf, const char *password, size_t pass
 			break;
 
 		if (m_cost == max_m_cost) {
-			t_cost = ms ? (t_cost * BENCH_MIN_MS) / (uint32_t)ms : t_cost * 16;
+			if (ms < BENCH_MIN_MS_FAST)
+				t_cost *= 16;
+			else {
+				uint32_t new = (t_cost * BENCH_MIN_MS) / (uint32_t)ms;
+				if (new == t_cost)
+					break;
+
+				t_cost = new;
+			}
 		} else {
-			m_cost = ms ? (m_cost * BENCH_MIN_MS) / (uint32_t)ms : m_cost * 16;
+			if (ms < BENCH_MIN_MS_FAST)
+				m_cost *= 16;
+			else {
+				uint32_t new = (m_cost * BENCH_MIN_MS) / (uint32_t)ms;
+				if (new == m_cost)
+					break;
+
+				m_cost = new;
+			}
 			if (m_cost > max_m_cost) {
 				m_cost = max_m_cost;
 			}
@@ -201,7 +220,7 @@ static int crypt_argon2_check(const char *kdf, const char *password, size_t pass
 
 		r = measure_argon2(kdf, password, password_length, salt, salt_length,
 		                   key, key_length, t_cost, m_cost, parallel,
-		                   4, ms_atleast, &ms);
+		                   BENCH_SAMPLES_SLOW, ms_atleast, &ms);
 		if (r < 0)
 			goto out;
 
