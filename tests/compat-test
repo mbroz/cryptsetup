@@ -82,6 +82,11 @@ function prepare()
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
 
 	case "$2" in
+	file)
+		remove_mapping
+		dd if=/dev/zero of=$IMG bs=1k count=10000 >/dev/null 2>&1
+		sync
+		;;
 	wipe)
 		remove_mapping
 		dd if=/dev/zero of=$IMG bs=1k count=10000 >/dev/null 2>&1
@@ -151,13 +156,76 @@ function valgrind_run()
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+
+# LUKS non-root-tests
+if [ $(id -u) != 0 ]; then
+	$CRYPTSETUP benchmark -c aes-xts-plain64 >/dev/null 2>&1 || \
+		skip "WARNING: Cannot run test without kernel userspace crypto API, test skipped."
+fi
+
+prepare "Image in file tests (root capabilities not required)" file
+echo "[1] format"
+echo $PWD1 | $CRYPTSETUP luksFormat $IMG || fail
+echo "[2] open"
+echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase || fail
+echo "[3] add key"
+echo $PWD1 | $CRYPTSETUP luksAddKey $IMG && fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG || fail
+echo -e "$PWD0\n$PWD1" | $CRYPTSETUP luksAddKey $IMG 2>/dev/null && fail
+echo "[4] change key"
+echo -e "$PWD1\n$PWD0\n" | $CRYPTSETUP luksChangeKey -i1 $IMG || fail
+echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksChangeKey -i1 $IMG 2>/dev/null && fail
+echo "[5] remove key"
+# delete active keys PWD0, PWD2
+echo $PWD1 | $CRYPTSETUP luksRemoveKey $IMG 2>/dev/null && fail
+echo $PWD0 | $CRYPTSETUP luksRemoveKey $IMG || fail
+echo $PWD2 | $CRYPTSETUP luksRemoveKey $IMG || fail
+# check if keys were deleted
+echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+echo $PWD2 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+echo "[6] kill slot"
+# format new luks device with active keys PWD1, PWD2
+echo $PWD1 | $CRYPTSETUP luksFormat $IMG || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG || fail
+# deactivate keys by killing slots
+$CRYPTSETUP luksDump $IMG | grep -q "Key Slot 0: ENABLED" || fail
+$CRYPTSETUP luksDump $IMG | grep -q "Key Slot 1: ENABLED" || fail
+$CRYPTSETUP luksDump $IMG | grep -q "Key Slot 2: DISABLED" || fail
+echo $PWD1 | $CRYPTSETUP -q luksKillSlot $IMG 0 2>/dev/null && fail
+echo $PWD2 | $CRYPTSETUP -q luksKillSlot $IMG 0 || fail
+$CRYPTSETUP luksDump $IMG | grep -q "Key Slot 0: DISABLED" || fail
+echo $PWD1 | $CRYPTSETUP -q luksKillSlot $IMG 1 2>/dev/null && fail
+echo $PWD2 | $CRYPTSETUP -q luksKillSlot $IMG 1 || fail
+$CRYPTSETUP luksDump $IMG | grep -q "Key Slot 1: DISABLED" || fail
+# check if keys were deactivated
+echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+echo $PWD2 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+echo "[7] header backup"
+echo $PWD1 | $CRYPTSETUP luksFormat $IMG || fail
+$CRYPTSETUP luksHeaderBackup $IMG --header-backup-file $HEADER_IMG || fail
+echo $PWD1 | $CRYPTSETUP luksRemoveKey $IMG || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+echo "[8] header restore"
+$CRYPTSETUP luksHeaderRestore -q $IMG --header-backup-file $HEADER_IMG || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase || fail
+echo "[9] luksDump"
+echo $PWD1 | $CRYPTSETUP -q luksFormat -i1 --uuid $TEST_UUID $IMG $KEY1 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -i1 $IMG -d $KEY1 || fail
+$CRYPTSETUP luksDump $IMG | grep -q "Key Slot 0: ENABLED" || fail
+$CRYPTSETUP luksDump $IMG | grep -q $TEST_UUID || fail
+echo $PWDW | $CRYPTSETUP luksDump $IMG --dump-master-key 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksDump $IMG --dump-master-key | grep -q "MK dump:" || can_fail_fips
+$CRYPTSETUP luksDump -q $IMG --dump-master-key -d $KEY1 | grep -q "MK dump:" || can_fail_fips
+echo "[10] uuid"
+echo $PWD1 | $CRYPTSETUP -q luksFormat -i1 --uuid $TEST_UUID $IMG || fail
+$CRYPTSETUP -q luksUUID $IMG | grep -q $TEST_UUID || fail
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."
 
-[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
-
-# LUKS tests
-
+# LUKS root-tests
 prepare	"[1] open - compat image - acceptance check" new
 echo $PWD0 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 check_exists
