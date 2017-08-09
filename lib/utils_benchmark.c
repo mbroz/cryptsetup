@@ -232,14 +232,14 @@ out:
 }
 
 int crypt_benchmark_pbkdf(struct crypt_device *cd,
-	const struct crypt_pbkdf_type *pbkdf,
+	struct crypt_pbkdf_type *pbkdf,
 	const char *password,
 	size_t password_size,
 	const char *salt,
 	size_t salt_size,
 	size_t volume_key_size,
-	uint32_t *iterations,
-	uint32_t *memory)
+	int (*progress)(long time_ms, void *usrptr),
+	void *usrptr)
 {
 	int r;
 
@@ -248,7 +248,7 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 		return r;
 
 	/* Hack to not print hash for argon, it is used also for AF later.*/
-	if (pbkdf->hash && !memory)
+	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2))
 		log_dbg("Running %s-%s benchmark.", pbkdf->type, pbkdf->hash);
 	else
 		log_dbg("Running %s benchmark.", pbkdf->type);
@@ -256,11 +256,11 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	r = crypt_pbkdf_perf(pbkdf->type, pbkdf->hash, password, password_size,
 			     salt, salt_size, volume_key_size, pbkdf->time_ms,
 			     pbkdf->max_memory_kb, pbkdf->parallel_threads,
-			     iterations, memory);
+			     &pbkdf->time_ms, &pbkdf->max_memory_kb, progress, usrptr);
 
 	if (!r)
 		log_dbg(" %u iterations, %u memory (for %zu-bits key).",
-			iterations ? *iterations : 0, memory ? *memory : 0,
+			pbkdf->time_ms, pbkdf->max_memory_kb,
 			volume_key_size * 8);
 	return r;
 }

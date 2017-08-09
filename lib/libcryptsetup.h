@@ -1110,14 +1110,14 @@ int crypt_benchmark(struct crypt_device *cd,
  * @return @e 0 on success or negative errno value otherwise.
  */
 int crypt_benchmark_pbkdf(struct crypt_device *cd,
-	const struct crypt_pbkdf_type *pbkdf,
+	struct crypt_pbkdf_type *pbkdf,
 	const char *password,
 	size_t password_size,
 	const char *salt,
 	size_t salt_size,
 	size_t volume_key_size,
-	uint32_t *iterations,
-	uint32_t *memory);
+	int (*progress)(long time_ms, void *usrptr),
+	void *usrptr);
 
 /** @} */
 

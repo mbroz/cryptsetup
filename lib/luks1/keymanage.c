@@ -727,7 +727,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	size_t blocksPerStripeSet, currentSector;
 	int r;
 	uuid_t partitionUuid;
-	const struct crypt_pbkdf_type pbkdf = {
+	struct crypt_pbkdf_type pbkdf = {
 		.type = CRYPT_KDF_PBKDF2,
 		.hash = hashSpec,
 		.time_ms = 1000,
@@ -785,7 +785,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	}
 
 	r = crypt_benchmark_pbkdf(ctx, &pbkdf, "foo", 3, "bar", 3, vk->keylength,
-	                          PBKDF2_per_sec, NULL);
+	                          NULL, NULL);
 	if (r < 0) {
 		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
 			header->hashSpec);
@@ -793,6 +793,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	}
 
 	/* Compute master key digest */
+	*PBKDF2_per_sec = pbkdf.time_ms;
 	iteration_time_ms /= 8;
 	header->mkDigestIterations = at_least((uint32_t)(*PBKDF2_per_sec/1024) * iteration_time_ms,
 					      LUKS_MKD_ITERATIONS_MIN);
@@ -864,7 +865,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	char *AfKey = NULL;
 	size_t AFEKSize;
 	double PBKDF2_temp;
-	const struct crypt_pbkdf_type pbkdf = {
+	struct crypt_pbkdf_type pbkdf = {
 		.type = CRYPT_KDF_PBKDF2,
 		.hash = hdr->hashSpec,
 		.time_ms = 1000,
@@ -887,7 +888,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	log_dbg("Calculating data for key slot %d", keyIndex);
 
 	r = crypt_benchmark_pbkdf(ctx, &pbkdf, "foo", 3, "bar", 3, vk->keylength,
-	                          PBKDF2_per_sec, NULL);
+	                          NULL, NULL);
 	if (r < 0) {
 		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
 			hdr->hashSpec);
@@ -897,6 +898,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	/*
 	 * Final iteration count is at least LUKS_SLOT_ITERATIONS_MIN
 	 */
+	*PBKDF2_per_sec = pbkdf.time_ms;
 	PBKDF2_temp = ((double)*PBKDF2_per_sec * iteration_time_ms / 1000.);
 	assert(PBKDF2_temp < UINT32_MAX);
 	hdr->keyblock[keyIndex].passwordIterations = at_least((uint32_t)PBKDF2_temp,
