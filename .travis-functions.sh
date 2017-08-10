@@ -103,6 +103,7 @@ function travis_install_script
 		autopoint \
 		gettext \
 		expect \
+		keyutils \
 		|| return
 }
 
