@@ -489,7 +489,6 @@ static int run_action(struct action_type *action)
 
 int main(int argc, const char **argv)
 {
-	static char *popt_tmp;
 	static const char *null_action_argv[] = {NULL};
 	static struct poptOption popt_help_options[] = {
 		{ NULL,    '\0', POPT_ARG_CALLBACK, help, 0, NULL,                         NULL },
@@ -544,19 +543,8 @@ int main(int argc, const char **argv)
 	poptSetOtherOptionHelp(popt_context,
 	                       _("[OPTION...] <action> <action-specific>"));
 
-	while ((r = poptGetNextOpt(popt_context)) > 0) {
-		unsigned long long ull_value;
-		char *endp;
 
-		errno = 0;
-		ull_value = strtoull(popt_tmp, &endp, 10);
-		if (*endp || !*popt_tmp || !isdigit(*popt_tmp) ||
-		    (errno == ERANGE && ull_value == ULLONG_MAX) ||
-		    (errno != 0 && ull_value == 0))
-			r = POPT_ERROR_BADNUMBER;
-
-		if (r < 0)
-			break;
+	while ((r = poptGetNextOpt(popt_context)) >= 0) {
 	}
 
 	if (r < -1)
