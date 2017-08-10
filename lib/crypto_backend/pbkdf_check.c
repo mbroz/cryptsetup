@@ -115,7 +115,7 @@ static int measure_argon2(const char *kdf, const char *password, size_t password
 static int crypt_argon2_check(const char *kdf, const char *password, size_t password_length,
 		      const char *salt, size_t salt_length, size_t key_length,
 		      uint32_t min_t_cost, uint32_t max_m_cost, uint32_t parallel,
-		      int target_ms,  uint32_t *out_t_cost, uint32_t *out_m_cost,
+		      uint32_t target_ms,  uint32_t *out_t_cost, uint32_t *out_m_cost,
 		      int (*progress)(long time_ms, void *usrptr), void *usrptr)
 {
 	int r = 0;
@@ -239,7 +239,7 @@ out:
 static int crypt_pbkdf_check(const char *kdf, const char *hash,
 		      const char *password, size_t password_length,
 		      const char *salt, size_t salt_length,
-		      size_t key_length, uint32_t *iter_secs, int target_ms,
+		      size_t key_length, uint32_t *iter_secs, uint32_t target_ms,
 		      int (*progress)(long time_ms, void *usrptr), void *usrptr)
 
 {
@@ -247,7 +247,8 @@ static int crypt_pbkdf_check(const char *kdf, const char *hash,
 	int r = 0, step = 0;
 	long ms = 0;
 	char *key = NULL;
-	unsigned int iterations;
+	uint32_t iterations;
+	double PBKDF2_temp;
 
 	if (!kdf || !hash || key_length <= 0)
 		return -EINVAL;
@@ -256,6 +257,7 @@ static int crypt_pbkdf_check(const char *kdf, const char *hash,
 	if (!key)
 		return -ENOMEM;
 
+	*iter_secs = 0;
 	iterations = 1 << 15;
 	while (1) {
 		if (getrusage(RUSAGE_SELF, &rstart) < 0) {
@@ -275,8 +277,12 @@ static int crypt_pbkdf_check(const char *kdf, const char *hash,
 		}
 
 		ms = time_ms(&rstart, &rend);
-
-		*iter_secs = (uint32_t)((uint64_t)iterations * (uint64_t)target_ms / (uint64_t)ms);
+		if (ms) {
+			PBKDF2_temp = (double)iterations * target_ms / ms;
+			if (PBKDF2_temp > UINT32_MAX)
+				return -EINVAL;
+			*iter_secs = (uint32_t)PBKDF2_temp;
+		}
 
 		if (progress && progress(ms, usrptr)) {
 			r = -EINTR;
