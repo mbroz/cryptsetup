@@ -242,16 +242,15 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	void *usrptr)
 {
 	int r;
+	const char *kdf_opt;
 
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
 
-	/* Hack to not print hash for argon, it is used also for AF later.*/
-	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2))
-		log_dbg("Running %s-%s benchmark.", pbkdf->type, pbkdf->hash);
-	else
-		log_dbg("Running %s benchmark.", pbkdf->type);
+	kdf_opt = !strcmp(pbkdf->type, CRYPT_KDF_PBKDF2) ? pbkdf->hash : "";
+
+	log_dbg("Running %s(%s) benchmark.", pbkdf->type, kdf_opt);
 
 	r = crypt_pbkdf_perf(pbkdf->type, pbkdf->hash, password, password_size,
 			     salt, salt_size, volume_key_size, pbkdf->time_ms,
@@ -259,8 +258,8 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 			     &pbkdf->time_ms, &pbkdf->max_memory_kb, progress, usrptr);
 
 	if (!r)
-		log_dbg(" %u iterations, %u memory (for %zu-bits key).",
-			pbkdf->time_ms, pbkdf->max_memory_kb,
-			volume_key_size * 8);
+		log_dbg("Benchmark returns %s(%s) %u iterations, %u memory, %u threads (for %zu-bits key).",
+			pbkdf->type, kdf_opt, pbkdf->time_ms, pbkdf->max_memory_kb,
+			pbkdf->parallel_threads, volume_key_size * 8);
 	return r;
 }
