@@ -166,14 +166,14 @@ fi
 
 prepare "Image in file tests (root capabilities not required)" file
 echo "[1] format"
-echo $PWD1 | $CRYPTSETUP luksFormat $IMG || fail
+echo $PWD1 | $CRYPTSETUP luksFormat $IMG -i1 || fail
 echo "[2] open"
 echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase || fail
 echo "[3] add key"
-echo $PWD1 | $CRYPTSETUP luksAddKey $IMG && fail
-echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG || fail
-echo -e "$PWD0\n$PWD1" | $CRYPTSETUP luksAddKey $IMG 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $IMG -i1 && fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG -i1 || fail
+echo -e "$PWD0\n$PWD1" | $CRYPTSETUP luksAddKey $IMG -i1 2>/dev/null && fail
 echo "[4] change key"
 echo -e "$PWD1\n$PWD0\n" | $CRYPTSETUP luksChangeKey -i1 $IMG || fail
 echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksChangeKey -i1 $IMG 2>/dev/null && fail
@@ -187,8 +187,8 @@ echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 echo $PWD2 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 echo "[6] kill slot"
 # format new luks device with active keys PWD1, PWD2
-echo $PWD1 | $CRYPTSETUP luksFormat $IMG || fail
-echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG || fail
+echo $PWD1 | $CRYPTSETUP luksFormat $IMG -i1 || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG -i1 || fail
 # deactivate keys by killing slots
 $CRYPTSETUP luksDump $IMG | grep -q "Key Slot 0: ENABLED" || fail
 $CRYPTSETUP luksDump $IMG | grep -q "Key Slot 1: ENABLED" || fail
@@ -203,7 +203,7 @@ $CRYPTSETUP luksDump $IMG | grep -q "Key Slot 1: DISABLED" || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 echo $PWD2 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 echo "[7] header backup"
-echo $PWD1 | $CRYPTSETUP luksFormat $IMG || fail
+echo $PWD1 | $CRYPTSETUP luksFormat $IMG -i1 || fail
 $CRYPTSETUP luksHeaderBackup $IMG --header-backup-file $HEADER_IMG || fail
 echo $PWD1 | $CRYPTSETUP luksRemoveKey $IMG || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
@@ -310,7 +310,7 @@ $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 
 # Delete last slot
 prepare "[11] delete last key" wipe
-echo $PWD1 | $CRYPTSETUP luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP luksFormat $LOOPDEV -i1 || fail
 echo $PWD1 | $CRYPTSETUP luksKillSlot $LOOPDEV 0 || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 
@@ -321,7 +321,7 @@ check "$LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0"
 $CRYPTSETUP -d $KEY1 luksOpen $LOOPDEV $DEV_NAME || fail
 
 prepare	"[13] open/close - stacked devices" wipe
-echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $LOOPDEV -i1 || fail
 echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat /dev/mapper/$DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
@@ -547,14 +547,14 @@ $CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset 1 luksOpen $LOOPDEV $DEV_NAM
 $CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset -1 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP --key-file=$KEY1 -l 13 luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksClose  $DEV_NAME || fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -l 14 2>/dev/null && fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -l -1 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i1 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i1 -l 14 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i1 -l -1 2>/dev/null && fail
 $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 -i1 -l 13 --new-keyfile-size 12 || fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 2>/dev/null && fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 -l 12 || fail
-$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
-$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -l 14 2>/dev/null && fail
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -i1 2>/dev/null && fail
+$CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -i1 -l 14 2>/dev/null && fail
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -i1 -l 13 || fail
 # -l is ignored for stdin if _only_ passphrase is used
 echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY2 -i1 || fail
