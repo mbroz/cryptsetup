@@ -532,7 +532,7 @@ out:
 	return r;
 }
 
-static int benchmark_callback(long time_ms, void *usrptr)
+static int benchmark_callback(uint32_t time_ms, void *usrptr)
 {
 	struct crypt_pbkdf_type *pbkdf = usrptr;
 	int r = 0;
@@ -542,7 +542,7 @@ static int benchmark_callback(long time_ms, void *usrptr)
 		log_err("Benchmark interrupted.\n");
 	else
 		log_dbg("PBKDF benchmark: memory cost = %u, iterations = %u, "
-			"threads = %u (took %ld ms)", pbkdf->max_memory_kb,
+			"threads = %u (took %u ms)", pbkdf->max_memory_kb,
 			pbkdf->iterations, pbkdf->parallel_threads, time_ms);
 	return r;
 }

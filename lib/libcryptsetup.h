@@ -1117,7 +1117,7 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	const char *salt,
 	size_t salt_size,
 	size_t volume_key_size,
-	int (*progress)(long time_ms, void *usrptr),
+	int (*progress)(uint32_t time_ms, void *usrptr),
 	void *usrptr);
 
 /** @} */

@@ -238,7 +238,7 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	const char *salt,
 	size_t salt_size,
 	size_t volume_key_size,
-	int (*progress)(long time_ms, void *usrptr),
+	int (*progress)(uint32_t time_ms, void *usrptr),
 	void *usrptr)
 {
 	int r;
@@ -264,12 +264,12 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	return r;
 }
 
-static int benchmark_callback(long time_ms, void *usrptr)
+static int benchmark_callback(uint32_t time_ms, void *usrptr)
 {
 	struct crypt_pbkdf_type *pbkdf = usrptr;
 
 	log_dbg("PBKDF benchmark: memory cost = %u, iterations = %u, "
-		"threads = %u (took %ld ms)", pbkdf->max_memory_kb,
+		"threads = %u (took %u ms)", pbkdf->max_memory_kb,
 		pbkdf->iterations, pbkdf->parallel_threads, time_ms);
 
 	return 0;

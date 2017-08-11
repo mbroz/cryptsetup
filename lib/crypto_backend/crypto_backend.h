@@ -68,7 +68,7 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 		size_t volume_key_size, uint32_t time_ms,
 		uint32_t max_memory_kb, uint32_t parallel_threads,
 		uint32_t *iterations_out, uint32_t *memory_out,
-		int (*progress)(long time_ms, void *usrptr), void *usrptr);
+		int (*progress)(uint32_t time_ms, void *usrptr), void *usrptr);
 
 #if USE_INTERNAL_PBKDF2
 /* internal PBKDF2 implementation */

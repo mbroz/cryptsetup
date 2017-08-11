@@ -169,7 +169,7 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 			      uint32_t min_t_cost, uint32_t max_m_cost,
 			      uint32_t parallel, uint32_t target_ms,
 			      uint32_t *out_t_cost, uint32_t *out_m_cost,
-			      int (*progress)(long time_ms, void *usrptr),
+			      int (*progress)(uint32_t time_ms, void *usrptr),
 			      void *usrptr)
 {
 	int r = 0;
@@ -201,7 +201,7 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 			/* Update parameters to actual measurement */
 			*out_t_cost = t_cost;
 			*out_m_cost = m_cost;
-			if (progress && progress(ms, usrptr))
+			if (progress && progress((uint32_t)ms, usrptr))
 				r = -EINTR;
 		}
 
@@ -255,7 +255,7 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 			/* Update parameters to actual measurement */
 			*out_t_cost = t_cost;
 			*out_m_cost = m_cost;
-			if (progress && progress(ms, usrptr))
+			if (progress && progress((uint32_t)ms, usrptr))
 				r = -EINTR;
 		}
 
@@ -276,7 +276,7 @@ static int crypt_pbkdf_check(const char *kdf, const char *hash,
 		      const char *password, size_t password_length,
 		      const char *salt, size_t salt_length,
 		      size_t key_length, uint32_t *iter_secs, uint32_t target_ms,
-		      int (*progress)(long time_ms, void *usrptr), void *usrptr)
+		      int (*progress)(uint32_t time_ms, void *usrptr), void *usrptr)
 
 {
 	struct rusage rstart, rend;
@@ -320,7 +320,7 @@ static int crypt_pbkdf_check(const char *kdf, const char *hash,
 			*iter_secs = (uint32_t)PBKDF2_temp;
 		}
 
-		if (progress && progress(ms, usrptr)) {
+		if (progress && progress((uint32_t)ms, usrptr)) {
 			r = -EINTR;
 			goto out;
 		}
@@ -358,7 +358,7 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 		size_t volume_key_size, uint32_t time_ms,
 		uint32_t max_memory_kb, uint32_t parallel_threads,
 		uint32_t *iterations_out, uint32_t *memory_out,
-		int (*progress)(long time_ms, void *usrptr), void *usrptr)
+		int (*progress)(uint32_t time_ms, void *usrptr), void *usrptr)
 {
 	int r = -EINVAL;
 
