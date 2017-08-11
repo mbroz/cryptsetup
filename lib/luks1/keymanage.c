@@ -386,7 +386,6 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	struct luks_phdr temp_phdr;
 	const unsigned char *sector = (const unsigned char*)phdr;
 	struct volume_key *vk;
-	uint32_t PBKDF2_per_sec = 1;
 	int i, bad, r, need_write = 0;
 
 	if (phdr->keyBytes != 16 && phdr->keyBytes != 32 && phdr->keyBytes != 64) {
@@ -409,7 +408,6 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	r = LUKS_generate_phdr(&temp_phdr, vk, phdr->cipherName, phdr->cipherMode,
 			       phdr->hashSpec,phdr->uuid, LUKS_STRIPES,
 			       phdr->payloadOffset, 0,
-			       1, &PBKDF2_per_sec,
 			       1, ctx);
 	if (r < 0)
 		goto out;
@@ -718,8 +716,6 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       const char *uuid, unsigned int stripes,
 		       unsigned int alignPayload,
 		       unsigned int alignOffset,
-		       uint32_t iteration_time_ms,
-		       uint32_t *PBKDF2_per_sec,
 		       int detached_metadata_device,
 		       struct crypt_device *ctx)
 {
@@ -727,11 +723,8 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	size_t blocksPerStripeSet, currentSector;
 	int r;
 	uuid_t partitionUuid;
-	struct crypt_pbkdf_type pbkdf = {
-		.type = CRYPT_KDF_PBKDF2,
-		.hash = hashSpec,
-		.time_ms = 1000,
-	};
+	struct crypt_pbkdf_type *pbkdf;
+	double PBKDF2_temp;
 	char luksMagic[] = LUKS_MAGIC;
 
 	/* For separate metadata device allow zero alignment */
@@ -784,19 +777,17 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
-	r = crypt_benchmark_pbkdf(ctx, &pbkdf, "foo", 3, "bar", 3, vk->keylength,
-	                          NULL, NULL);
-	if (r < 0) {
-		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
-			header->hashSpec);
-		return r;
-	}
-
 	/* Compute master key digest */
-	*PBKDF2_per_sec = pbkdf.time_ms;
-	iteration_time_ms /= 8;
-	header->mkDigestIterations = at_least((uint32_t)(*PBKDF2_per_sec/1024) * iteration_time_ms,
-					      LUKS_MKD_ITERATIONS_MIN);
+	pbkdf = CONST_CAST(struct crypt_pbkdf_type *)crypt_get_pbkdf_type(ctx);
+	r = crypt_benchmark_pbkdf_internal(ctx, pbkdf, vk->keylength);
+	if (r < 0)
+		return r;
+	assert(pbkdf->iterations);
+
+	PBKDF2_temp = (double)pbkdf->iterations * LUKS_MKD_ITERATIONS_MS / pbkdf->time_ms;
+	if (PBKDF2_temp > (double)UINT32_MAX)
+		return -EINVAL;
+	header->mkDigestIterations = at_least((uint32_t)PBKDF2_temp, LUKS_MKD_ITERATIONS_MIN);
 
 	r = crypt_pbkdf(CRYPT_KDF_PBKDF2, header->hashSpec, vk->key,vk->keylength,
 			header->mkDigestSalt, LUKS_SALTSIZE,
@@ -857,20 +848,12 @@ int LUKS_hdr_uuid_set(
 int LUKS_set_key(unsigned int keyIndex,
 		 const char *password, size_t passwordLen,
 		 struct luks_phdr *hdr, struct volume_key *vk,
-		 uint32_t iteration_time_ms,
-		 uint32_t *PBKDF2_per_sec,
 		 struct crypt_device *ctx)
 {
 	struct volume_key *derived_key;
 	char *AfKey = NULL;
 	size_t AFEKSize;
-	double PBKDF2_temp;
-	struct crypt_pbkdf_type pbkdf = {
-		.type = CRYPT_KDF_PBKDF2,
-		.hash = hdr->hashSpec,
-		.time_ms = 1000,
-	};
-
+	struct crypt_pbkdf_type *pbkdf;
 	int r;
 
 	if(hdr->keyblock[keyIndex].active != LUKS_KEY_DISABLED) {
@@ -886,25 +869,19 @@ int LUKS_set_key(unsigned int keyIndex,
 	}
 
 	log_dbg("Calculating data for key slot %d", keyIndex);
-
-	r = crypt_benchmark_pbkdf(ctx, &pbkdf, "foo", 3, "bar", 3, vk->keylength,
-	                          NULL, NULL);
-	if (r < 0) {
-		log_err(ctx, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
-			hdr->hashSpec);
+	pbkdf = CONST_CAST(struct crypt_pbkdf_type *)crypt_get_pbkdf_type(ctx);
+	r = crypt_benchmark_pbkdf_internal(ctx, pbkdf, vk->keylength);
+	if (r < 0)
 		return r;
-	}
+	assert(pbkdf->iterations);
 
 	/*
 	 * Final iteration count is at least LUKS_SLOT_ITERATIONS_MIN
 	 */
-	*PBKDF2_per_sec = pbkdf.time_ms;
-	PBKDF2_temp = ((double)*PBKDF2_per_sec * iteration_time_ms / 1000.);
-	assert(PBKDF2_temp < UINT32_MAX);
-	hdr->keyblock[keyIndex].passwordIterations = at_least((uint32_t)PBKDF2_temp,
-							      LUKS_SLOT_ITERATIONS_MIN);
-
-	log_dbg("Key slot %d use %" PRIu32 " password iterations.", keyIndex, hdr->keyblock[keyIndex].passwordIterations);
+	hdr->keyblock[keyIndex].passwordIterations =
+		at_least(pbkdf->iterations, LUKS_SLOT_ITERATIONS_MIN);
+	log_dbg("Key slot %d use %" PRIu32 " password iterations.", keyIndex,
+		hdr->keyblock[keyIndex].passwordIterations);
 
 	derived_key = crypt_alloc_volume_key(hdr->keyBytes, NULL);
 	if (!derived_key)

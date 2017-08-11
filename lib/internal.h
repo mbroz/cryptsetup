@@ -49,8 +49,9 @@
 #define DEFAULT_MEM_ALIGNMENT	4096
 #define MAX_ERROR_LENGTH	512
 
-#define MAX_PBKDF_THREADS	8
+#define MAX_PBKDF_THREADS	4
 #define MAX_PBKDF_MEMORY	1024*1024 /* 1GiB */
+#define MIN_PBKDF2_ITERATIONS	1000 /* recommendation in NIST SP 800-132 */
 
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
@@ -64,6 +65,10 @@ struct volume_key {
 struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key);
 struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength);
 void crypt_free_volume_key(struct volume_key *vk);
+
+int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
+				   struct crypt_pbkdf_type *pbkdf,
+				   size_t volume_key_size);
 
 /* Device backend */
 struct device;

@@ -543,7 +543,7 @@ static int benchmark_callback(long time_ms, void *usrptr)
 	else
 		log_dbg("PBKDF benchmark: memory cost = %u, iterations = %u, "
 			"threads = %u (took %ld ms)", pbkdf->max_memory_kb,
-			pbkdf->time_ms, pbkdf->parallel_threads, time_ms);
+			pbkdf->iterations, pbkdf->parallel_threads, time_ms);
 	return r;
 }
 
@@ -563,7 +563,7 @@ static int action_benchmark_kdf(const char *kdf, const char *hash, size_t key_si
 			log_std("PBKDF2-%-9s     N/A\n", hash);
 		else
 			log_std("PBKDF2-%-9s %7u iterations per second for %zu-bit key\n",
-				hash, pbkdf.time_ms, key_size * 8);
+				hash, pbkdf.iterations, key_size * 8);
 	} else {
 		struct crypt_pbkdf_type pbkdf = {
 			.type = kdf,
@@ -573,16 +573,16 @@ static int action_benchmark_kdf(const char *kdf, const char *hash, size_t key_si
 		};
 
 		r = crypt_benchmark_pbkdf(NULL, &pbkdf, "foo", 3,
-			"barbarbarbarbarbar", 18, key_size,
-			&benchmark_callback, &pbkdf);
+			"0123456789abcdef0123456789abcdef", 32,
+			key_size, &benchmark_callback, &pbkdf);
 		if (r < 0)
 			log_std("%-10s N/A\n", kdf);
 		else
 			log_std("%-10s %4u iterations, %5u memory, "
 				"%1u parallel threads (CPUs) for "
 				"%zu-bit key (requested %u ms time)\n", kdf,
-				pbkdf.time_ms, pbkdf.max_memory_kb, pbkdf.parallel_threads,
-				key_size * 8, opt_iteration_time ?: 800);
+				pbkdf.iterations, pbkdf.max_memory_kb, pbkdf.parallel_threads,
+				key_size * 8, pbkdf.time_ms);
 	}
 
 	return r;

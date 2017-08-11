@@ -213,7 +213,8 @@ struct crypt_pbkdf_type {
 	const char *type;         /**< PBKDF algorithm  */
 	const char *hash;         /**< Hash algorithm */
 	uint32_t time_ms;         /**< Requested time cost [milliseconds] */
-	uint32_t max_memory_kb;       /**< Requested memory cost [kilobytes] */
+	uint32_t iterations;      /**< Iterations, 0 or benchmarked value. */
+	uint32_t max_memory_kb;   /**< Requested or benchmarked  memory cost [kilobytes] */
 	uint32_t parallel_threads;/**< Requested parallel cost [threads] */
 };
 

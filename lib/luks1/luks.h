@@ -40,6 +40,9 @@
 #define LUKS_MKD_ITERATIONS_MIN  1000
 #define LUKS_SLOT_ITERATIONS_MIN 1000
 
+// Iteration time for digest in ms
+#define LUKS_MKD_ITERATIONS_MS 125
+
 #define LUKS_KEY_DISABLED_OLD 0
 #define LUKS_KEY_ENABLED_OLD 0xCAFE
 
@@ -106,8 +109,6 @@ int LUKS_generate_phdr(
 	unsigned int stripes,
 	unsigned int alignPayload,
 	unsigned int alignOffset,
-	uint32_t iteration_time_ms,
-	uint32_t *PBKDF2_per_sec,
 	int detached_metadata_device,
 	struct crypt_device *ctx);
 
@@ -147,8 +148,6 @@ int LUKS_set_key(
 	size_t passwordLen,
 	struct luks_phdr *hdr,
 	struct volume_key *vk,
-	uint32_t iteration_time_ms,
-	uint32_t *PBKDF2_per_sec,
 	struct crypt_device *ctx);
 
 int LUKS_open_key_with_hdr(
