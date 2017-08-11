@@ -112,16 +112,69 @@ static int measure_argon2(const char *kdf, const char *password, size_t password
 	return 0;
 }
 
-static int crypt_argon2_check(const char *kdf, const char *password, size_t password_length,
-		      const char *salt, size_t salt_length, size_t key_length,
-		      uint32_t min_t_cost, uint32_t max_m_cost, uint32_t parallel,
-		      uint32_t target_ms,  uint32_t *out_t_cost, uint32_t *out_m_cost,
-		      int (*progress)(long time_ms, void *usrptr), void *usrptr)
+/* 0 - continue, 1 - break */
+static int next_argon2_params(uint32_t *t_cost, uint32_t *m_cost,
+			      uint32_t min_t_cost, uint32_t min_m_cost,
+			      uint32_t max_m_cost, long ms, uint32_t target_ms)
+{
+	uint32_t new_t_cost, new_m_cost;
+	uint64_t num, denom;
+
+	if (ms > target_ms) {
+		/* decreasing, first try to lower t_cost, then m_cost */
+		num = (uint64_t)*t_cost * (uint64_t)target_ms;
+		denom = (uint64_t)ms;
+		new_t_cost = (uint32_t)(num / denom);
+		if (new_t_cost < min_t_cost) {
+			num = (uint64_t)*t_cost * (uint64_t)*m_cost *
+			      (uint64_t)target_ms;
+			denom = (uint64_t)min_t_cost * (uint64_t)ms;
+			*t_cost = min_t_cost;
+			*m_cost = (uint32_t)(num / denom);
+			if (*m_cost < min_m_cost) {
+				*m_cost = min_m_cost;
+				return 1;
+			}
+		} else {
+			*t_cost = new_t_cost;
+		}
+	} else {
+		/* increasing, first try to increase m_cost, then t_cost */
+		num = (uint64_t)*m_cost * (uint64_t)target_ms;
+		denom = (uint64_t)ms;
+		new_m_cost = (uint32_t)(num / denom);
+		if (new_m_cost > max_m_cost) {
+			num = (uint64_t)*t_cost * (uint64_t)*m_cost *
+			      (uint64_t)target_ms;
+			denom = (uint64_t)max_m_cost * (uint64_t)ms;
+			*t_cost = (uint32_t)(num / denom);
+			*m_cost = max_m_cost;
+			if (*t_cost <= min_t_cost) {
+				*t_cost = min_t_cost;
+				return 1;
+			}
+		} else if (new_m_cost < min_m_cost) {
+			*m_cost = min_m_cost;
+			return 1;
+		} else {
+			*m_cost = new_m_cost;
+		}
+	}
+	return 0;
+}
+
+static int crypt_argon2_check(const char *kdf, const char *password,
+			      size_t password_length, const char *salt,
+			      size_t salt_length, size_t key_length,
+			      uint32_t min_t_cost, uint32_t max_m_cost,
+			      uint32_t parallel, uint32_t target_ms,
+			      uint32_t *out_t_cost, uint32_t *out_m_cost,
+			      int (*progress)(long time_ms, void *usrptr),
+			      void *usrptr)
 {
 	int r = 0;
 	char *key = NULL;
 	uint32_t t_cost, m_cost, min_m_cost = 8 * parallel;
-	uint64_t num, denom;
 	long ms;
 	long ms_atleast = (long)target_ms * BENCH_PERCENT_ATLEAST / 100;
 	long ms_atmost = (long)target_ms * BENCH_PERCENT_ATMOST / 100;
@@ -190,26 +243,9 @@ static int crypt_argon2_check(const char *kdf, const char *password, size_t pass
 	 * the acceptance range (+-5 %), try to improve the estimate:
 	 */
 	do {
-		uint32_t new_m_cost;
-
-		num = (uint64_t)m_cost * (uint64_t)target_ms;
-		denom = (uint64_t)ms;
-		new_m_cost = (uint32_t)(num / denom);
-		if (new_m_cost > max_m_cost) {
-			num = (uint64_t)t_cost * (uint64_t)m_cost * (uint64_t)target_ms;
-			denom = (uint64_t)max_m_cost * (uint64_t)ms;
-			t_cost = (uint32_t)(num / denom);
-			m_cost = max_m_cost;
-			if (t_cost <= min_t_cost) {
-				t_cost = min_t_cost;
-				break;
-			}
-		} else if (new_m_cost < min_m_cost) {
-			m_cost = min_m_cost;
+		if (next_argon2_params(&t_cost, &m_cost, min_t_cost, min_m_cost,
+				       max_m_cost, ms, target_ms))
 			break;
-		} else {
-			m_cost = new_m_cost;
-		}
 
 		r = measure_argon2(kdf, password, password_length, salt, salt_length,
 		                   key, key_length, t_cost, m_cost, parallel,
