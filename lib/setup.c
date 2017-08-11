@@ -547,6 +547,9 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 	return crypt_check_data_device_size(cd);
 }
 
+/*
+ * PBKDF configuration interface
+ */
 static int verify_pbkdf_params(struct crypt_device *cd, const struct crypt_pbkdf_type *pbkdf)
 {
 	int r = 0;
@@ -645,6 +648,57 @@ static int init_pbkdf_type(struct crypt_device *cd, const struct crypt_pbkdf_typ
 	return 0;
 }
 
+int crypt_set_pbkdf_type(struct crypt_device *cd, const struct crypt_pbkdf_type *pbkdf)
+{
+	int r;
+
+	if (!cd)
+		return -EINVAL;
+
+	if (!pbkdf) {
+		log_dbg("Resetting pbkdf type to default");
+		cd->iter_time_set = 0;
+		return init_pbkdf_type(cd, NULL);
+	}
+
+	log_dbg("PBKDF %s, hash %s, time_ms %u, max_memory_kb %u, parallel_threads %u.",
+		pbkdf->type ?: "(none)", pbkdf->hash ?: "(none)", pbkdf->time_ms,
+		pbkdf->max_memory_kb, pbkdf->parallel_threads);
+
+	if (verify_pbkdf_params(cd, pbkdf))
+		return -EINVAL;
+
+	r = init_pbkdf_type(cd, pbkdf);
+	if (!r)
+		cd->iter_time_set = 1;
+
+	return r;
+}
+
+const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd)
+{
+	return cd ? &cd->pbkdf : NULL;
+}
+
+void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms)
+{
+	int r = 0;
+
+	if (!cd)
+		return;
+
+	if (iteration_time_ms > UINT32_MAX)
+		iteration_time_ms = DEFAULT_LUKS1_ITER_TIME;
+	cd->pbkdf.time_ms = (uint32_t)iteration_time_ms;
+	cd->iter_time_set = 1;
+
+	if (!r)
+		log_dbg("Iteration time set to %" PRIu64 " miliseconds.", iteration_time_ms);
+}
+
+/*
+ * crypt_load() helpers
+ */
 static int _crypt_load_luks1(struct crypt_device *cd, int require_header, int repair)
 {
 	struct luks_phdr hdr;
@@ -804,6 +858,78 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 	}
 
 	return 0;
+}
+
+int crypt_load(struct crypt_device *cd,
+	       const char *requested_type,
+	       void *params)
+{
+	int r;
+
+	log_dbg("Trying to load %s crypt type from device %s.",
+		requested_type ?: "any", mdata_device_path(cd) ?: "(none)");
+
+	if (!crypt_metadata_device(cd))
+		return -EINVAL;
+
+	crypt_reset_null_type(cd);
+
+	if (!requested_type || isLUKS(requested_type)) {
+		if (cd->type && !isLUKS(cd->type)) {
+			log_dbg("Context is already initialised to type %s", cd->type);
+			return -EINVAL;
+		}
+
+		r = _crypt_load_luks1(cd, 1, 0);
+	} else if (isVERITY(requested_type)) {
+		if (cd->type && !isVERITY(cd->type)) {
+			log_dbg("Context is already initialised to type %s", cd->type);
+			return -EINVAL;
+		}
+		r = _crypt_load_verity(cd, params);
+	} else if (isTCRYPT(requested_type)) {
+		if (cd->type && !isTCRYPT(cd->type)) {
+			log_dbg("Context is already initialised to type %s", cd->type);
+			return -EINVAL;
+		}
+		r = _crypt_load_tcrypt(cd, params);
+	} else if (isINTEGRITY(requested_type)) {
+		if (cd->type && !isINTEGRITY(cd->type)) {
+			log_dbg("Context is already initialised to type %s", cd->type);
+			return -EINVAL;
+		}
+		r = _crypt_load_integrity(cd, params);
+	} else
+		return -EINVAL;
+
+	return r;
+}
+
+/*
+ * crypt_init() helpers
+ */
+static int _init_by_name_crypt_none(struct crypt_device *cd)
+{
+	struct crypt_dm_active_device dmd = {};
+	int r;
+
+	if (cd->type || !cd->u.none.active_name)
+		return -EINVAL;
+
+	r = dm_query_device(cd, cd->u.none.active_name,
+			DM_ACTIVE_CRYPT_CIPHER |
+			DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
+	if (r >= 0)
+		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher,
+					      cd->u.none.cipher, NULL,
+					      cd->u.none.cipher_mode);
+
+	if (!r)
+		cd->u.none.key_size = dmd.u.crypt.vk->keylength;
+
+	crypt_free_volume_key(dmd.u.crypt.vk);
+	free(CONST_CAST(void*)dmd.u.crypt.cipher);
+	return r;
 }
 
 static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
@@ -1064,6 +1190,9 @@ int crypt_init_by_name(struct crypt_device **cd, const char *name)
 	return crypt_init_by_name_and_header(cd, name, NULL);
 }
 
+/*
+ * crypt_format() helpers
+ */
 static int _crypt_format_plain(struct crypt_device *cd,
 			       const char *cipher,
 			       const char *cipher_mode,
@@ -1491,51 +1620,6 @@ int crypt_format(struct crypt_device *cd,
 	return r;
 }
 
-int crypt_load(struct crypt_device *cd,
-	       const char *requested_type,
-	       void *params)
-{
-	int r;
-
-	log_dbg("Trying to load %s crypt type from device %s.",
-		requested_type ?: "any", mdata_device_path(cd) ?: "(none)");
-
-	if (!crypt_metadata_device(cd))
-		return -EINVAL;
-
-	crypt_reset_null_type(cd);
-
-	if (!requested_type || isLUKS(requested_type)) {
-		if (cd->type && !isLUKS(cd->type)) {
-			log_dbg("Context is already initialised to type %s", cd->type);
-			return -EINVAL;
-		}
-
-		r = _crypt_load_luks1(cd, 1, 0);
-	} else if (isVERITY(requested_type)) {
-		if (cd->type && !isVERITY(cd->type)) {
-			log_dbg("Context is already initialised to type %s", cd->type);
-			return -EINVAL;
-		}
-		r = _crypt_load_verity(cd, params);
-	} else if (isTCRYPT(requested_type)) {
-		if (cd->type && !isTCRYPT(cd->type)) {
-			log_dbg("Context is already initialised to type %s", cd->type);
-			return -EINVAL;
-		}
-		r = _crypt_load_tcrypt(cd, params);
-	} else if (isINTEGRITY(requested_type)) {
-		if (cd->type && !isINTEGRITY(cd->type)) {
-			log_dbg("Context is already initialised to type %s", cd->type);
-			return -EINVAL;
-		}
-		r = _crypt_load_integrity(cd, params);
-	} else
-		return -EINVAL;
-
-	return r;
-}
-
 int crypt_repair(struct crypt_device *cd,
 		 const char *requested_type,
 		 void *params __attribute__((unused)))
@@ -1898,7 +1982,9 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 					      keyfile, keyfile_size, 0);
 }
 
-// slot manipulation
+/*
+ * Keyslot manipulation
+ */
 int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	int keyslot, // -1 any
 	const char *passphrase,
@@ -2160,7 +2246,9 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 	return LUKS_del_key(keyslot, &cd->u.luks1.hdr, cd);
 }
 
-// activation/deactivation of device mapping
+/*
+ * Activation/deactivation of a device
+ */
 int crypt_activate_by_passphrase(struct crypt_device *cd,
 	const char *name,
 	int keyslot,
@@ -2471,6 +2559,37 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 	return crypt_deactivate_by_name(cd, name, 0);
 }
 
+int crypt_get_active_device(struct crypt_device *cd, const char *name,
+			    struct crypt_active_device *cad)
+{
+	struct crypt_dm_active_device dmd;
+	int r;
+
+	r = dm_query_device(cd, name, 0, &dmd);
+	if (r < 0)
+		return r;
+
+	if (dmd.target != DM_CRYPT &&
+	    dmd.target != DM_VERITY &&
+	    dmd.target != DM_INTEGRITY)
+		return -ENOTSUP;
+
+	if (cd && isTCRYPT(cd->type)) {
+		cad->offset	= TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+		cad->iv_offset	= TCRYPT_get_iv_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+	} else if (dmd.target == DM_CRYPT) {
+		cad->offset	= dmd.u.crypt.offset;
+		cad->iv_offset	= dmd.u.crypt.iv_offset;
+	}
+	cad->size	= dmd.size;
+	cad->flags	= dmd.flags;
+
+	return 0;
+}
+
+/*
+ * Volume key handling
+ */
 int crypt_volume_key_get(struct crypt_device *cd,
 	int keyslot,
 	char *volume_key,
@@ -2540,22 +2659,9 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 	return r;
 }
 
-void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms)
-{
-	int r = 0;
-
-	if (!cd)
-		return;
-
-	if (iteration_time_ms > UINT32_MAX)
-		iteration_time_ms = DEFAULT_LUKS1_ITER_TIME;
-	cd->pbkdf.time_ms = (uint32_t)iteration_time_ms;
-	cd->iter_time_set = 1;
-
-	if (!r)
-		log_dbg("Iteration time set to %" PRIu64 " miliseconds.", iteration_time_ms);
-}
-
+/*
+ * RNG and memory locking
+ */
 void crypt_set_rng_type(struct crypt_device *cd, int rng_type)
 {
 	switch (rng_type) {
@@ -2574,44 +2680,14 @@ int crypt_get_rng_type(struct crypt_device *cd)
 	return cd->rng_type;
 }
 
-int crypt_set_pbkdf_type(struct crypt_device *cd, const struct crypt_pbkdf_type *pbkdf)
-{
-	int r;
-
-	if (!cd)
-		return -EINVAL;
-
-	if (!pbkdf) {
-		log_dbg("Resetting pbkdf type to default");
-		cd->iter_time_set = 0;
-		return init_pbkdf_type(cd, NULL);
-	}
-
-	log_dbg("PBKDF %s, hash %s, time_ms %u, max_memory_kb %u, parallel_threads %u.",
-		pbkdf->type ?: "(none)", pbkdf->hash ?: "(none)", pbkdf->time_ms,
-		pbkdf->max_memory_kb, pbkdf->parallel_threads);
-
-	if (verify_pbkdf_params(cd, pbkdf))
-		return -EINVAL;
-
-	r = init_pbkdf_type(cd, pbkdf);
-	if (!r)
-		cd->iter_time_set = 1;
-
-	return r;
-}
-
-const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd)
-{
-	return cd ? &cd->pbkdf : NULL;
-}
-
 int crypt_memory_lock(struct crypt_device *cd, int lock)
 {
 	return lock ? crypt_memlock_inc(cd) : crypt_memlock_dec(cd);
 }
 
-// reporting
+/*
+ * Reporting
+ */
 crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 {
 	int r;
@@ -2724,31 +2800,6 @@ int crypt_dump(struct crypt_device *cd)
 
 	log_err(cd, _("Dump operation is not supported for this device type.\n"));
 	return -EINVAL;
-}
-
-
-static int _init_by_name_crypt_none(struct crypt_device *cd)
-{
-	struct crypt_dm_active_device dmd = {};
-	int r;
-
-	if (cd->type || !cd->u.none.active_name)
-		return -EINVAL;
-
-	r = dm_query_device(cd, cd->u.none.active_name,
-			DM_ACTIVE_CRYPT_CIPHER |
-			DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
-	if (r >= 0)
-		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher,
-					      cd->u.none.cipher, NULL,
-					      cd->u.none.cipher_mode);
-
-	if (!r)
-		cd->u.none.key_size = dmd.u.crypt.vk->keylength;
-
-	crypt_free_volume_key(dmd.u.crypt.vk);
-	free(CONST_CAST(void*)dmd.u.crypt.cipher);
-	return r;
 }
 
 const char *crypt_get_cipher(struct crypt_device *cd)
@@ -2992,32 +3043,4 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 	}
 
 	return -ENOTSUP;
-}
-
-int crypt_get_active_device(struct crypt_device *cd, const char *name,
-			    struct crypt_active_device *cad)
-{
-	struct crypt_dm_active_device dmd;
-	int r;
-
-	r = dm_query_device(cd, name, 0, &dmd);
-	if (r < 0)
-		return r;
-
-	if (dmd.target != DM_CRYPT &&
-	    dmd.target != DM_VERITY &&
-	    dmd.target != DM_INTEGRITY)
-		return -ENOTSUP;
-
-	if (cd && isTCRYPT(cd->type)) {
-		cad->offset	= TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
-		cad->iv_offset	= TCRYPT_get_iv_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
-	} else if (dmd.target == DM_CRYPT) {
-		cad->offset	= dmd.u.crypt.offset;
-		cad->iv_offset	= dmd.u.crypt.iv_offset;
-	}
-	cad->size	= dmd.size;
-	cad->flags	= dmd.flags;
-
-	return 0;
 }
