@@ -387,7 +387,7 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 		       size_t keyfile_offset, size_t keyfile_size_max,
 		       uint32_t flags)
 {
-	int fd, regular_file, char_read, unlimited_read = 0;
+	int fd, regular_file, char_to_read = 0, char_read = 0, unlimited_read = 0;
 	int r = -EINVAL, newline;
 	char *pass = NULL;
 	size_t buflen, i, file_read_size;
@@ -452,7 +452,7 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 		goto out_err;
 	}
 
-	for (i = 0, newline = 0; i < keyfile_size_max; i++) {
+	for (i = 0, newline = 0; i < keyfile_size_max; i += char_read) {
 		if (i == buflen) {
 			buflen += 4096;
 			pass = crypt_safe_realloc(pass, buflen);
@@ -463,16 +463,28 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 			}
 		}
 
-		char_read = read(fd, &pass[i], 1);
+		if (flags & CRYPT_KEYFILE_STOP_EOL) {
+			/* If we should stop on newline, we must read the input
+			 * one character at the time. Otherwise we might end up
+			 * having read some bytes after the newline, which we
+			 * promised not to do.
+			 */
+			char_to_read = 1;
+		} else {
+			/* char_to_read = min(keyfile_size_max - i, buflen - i) */
+			char_to_read = keyfile_size_max < buflen ?
+				keyfile_size_max - i : buflen - i;
+		}
+		char_read = read_buffer(fd, &pass[i], char_to_read);
 		if (char_read < 0) {
 			log_err(cd, _("Error reading passphrase.\n"));
 			r = -EPIPE;
 			goto out_err;
 		}
 
-		/* Stop on newline only if not requested read from keyfile */
 		if (char_read == 0)
 			break;
+		/* Stop on newline only if not requested read from keyfile */
 		if ((flags & CRYPT_KEYFILE_STOP_EOL) && pass[i] == '\n') {
 			newline = 1;
 			pass[i] = '\0';
