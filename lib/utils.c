@@ -412,10 +412,11 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 	if (keyfile_size_max == 0) {
 		keyfile_size_max = DEFAULT_KEYFILE_SIZE_MAXKB * 1024 + 1;
 		unlimited_read = 1;
-	}
+		/* use 4k for buffer (page divisor but avoid huge pages) */
+		buflen = 4096 - sizeof(struct safe_allocation);
+	} else
+		buflen = keyfile_size_max;
 
-	/* use 4k for buffer (page divisor but avoid huge pages) */
-	buflen = 4096 - sizeof(struct safe_allocation);
 	regular_file = 0;
 	if (keyfile) {
 		if (stat(keyfile, &st) < 0) {
