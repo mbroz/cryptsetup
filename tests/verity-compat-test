@@ -60,6 +60,8 @@ function check_exists()
 function check_version()
 {
 	VER_STR=$(dmsetup targets | grep verity | cut -f 3 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-verity version."
+
 	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
 	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
 

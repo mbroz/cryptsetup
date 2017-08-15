@@ -54,20 +54,15 @@ function load_key()
 
 function dm_crypt_keyring_support()
 {
-	local str
-	local major=0
-	local minor=0
+	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
 
-	str=$(dmsetup targets | grep crypt | sed -e 's/crypt[[:space:]]\+v\(.*\)/\1/g')
-	[ -z "$str" ] && fail "failed to parse dm-crypt version"
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
 
-	major=${str%%.*}
-	minor=${str#*.}
-	minor=${minor%.*}
-
-	[ $major -gt 1 ] && return 0
-	[ $major -lt 1 ] && return 1
-	[ $minor -ge 15 ]
+	[ $VER_MAJ -gt 1 ] && return 0
+	[ $VER_MAJ -lt 1 ] && return 1
+	[ $VER_MIN -ge 15 ]
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
