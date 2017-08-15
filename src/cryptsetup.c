@@ -654,7 +654,9 @@ static int action_benchmark(void)
 	int i, r;
 
 	log_std(_("# Tests are approximate using memory only (no storage IO).\n"));
-	if (opt_pbkdf && (strcmp(opt_pbkdf, CRYPT_KDF_PBKDF2) || opt_hash)) {
+	if (opt_pbkdf || opt_hash) {
+		if (!opt_pbkdf && opt_hash)
+			opt_pbkdf = CRYPT_KDF_PBKDF2;
 		r = action_benchmark_kdf(opt_pbkdf, opt_hash, key_size);
 	} else if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
