@@ -31,6 +31,12 @@
 
 struct crypt_device;
 
+/* Not to be used directly */
+struct safe_allocation {
+	size_t	size;
+	char	data[0];
+};
+
 int crypt_parse_name_and_mode(const char *s, char *cipher,
 			      int *key_nums, char *cipher_mode);
 int crypt_parse_hash_integrity_mode(const char *s, char *integrity);
