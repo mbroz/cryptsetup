@@ -112,13 +112,17 @@ static int measure_argon2(const char *kdf, const char *password, size_t password
 	return 0;
 }
 
-/* 0 - continue, 1 - break */
+#define CONTINUE 0
+#define FINAL   1
 static int next_argon2_params(uint32_t *t_cost, uint32_t *m_cost,
 			      uint32_t min_t_cost, uint32_t min_m_cost,
 			      uint32_t max_m_cost, long ms, uint32_t target_ms)
 {
-	uint32_t new_t_cost, new_m_cost;
+	uint32_t old_t_cost, old_m_cost, new_t_cost, new_m_cost;
 	uint64_t num, denom;
+
+	old_t_cost = *t_cost;
+	old_m_cost = *m_cost;
 
 	if (ms > target_ms) {
 		/* decreasing, first try to lower t_cost, then m_cost */
@@ -133,7 +137,7 @@ static int next_argon2_params(uint32_t *t_cost, uint32_t *m_cost,
 			*m_cost = (uint32_t)(num / denom);
 			if (*m_cost < min_m_cost) {
 				*m_cost = min_m_cost;
-				return 1;
+				return FINAL;
 			}
 		} else {
 			*t_cost = new_t_cost;
@@ -151,16 +155,21 @@ static int next_argon2_params(uint32_t *t_cost, uint32_t *m_cost,
 			*m_cost = max_m_cost;
 			if (*t_cost <= min_t_cost) {
 				*t_cost = min_t_cost;
-				return 1;
+				return FINAL;
 			}
 		} else if (new_m_cost < min_m_cost) {
 			*m_cost = min_m_cost;
-			return 1;
+			return FINAL;
 		} else {
 			*m_cost = new_m_cost;
 		}
 	}
-	return 0;
+
+	/* do not continue if it is the same as in the previous run */
+	if (old_t_cost == *t_cost && old_m_cost == *m_cost)
+		return FINAL;
+
+	return CONTINUE;
 }
 
 static int crypt_argon2_check(const char *kdf, const char *password,
@@ -236,7 +245,6 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 			}
 		}
 	}
-
 	/*
 	 * 2. Use the params obtained in (1.) to estimate the target params.
 	 * 3. Then repeatedly measure the candidate params and if they fall out of
@@ -244,8 +252,12 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 	 */
 	do {
 		if (next_argon2_params(&t_cost, &m_cost, min_t_cost, min_m_cost,
-				       max_m_cost, ms, target_ms))
+				       max_m_cost, ms, target_ms)) {
+			/* Update parameters to final computation */
+			*out_t_cost = t_cost;
+			*out_m_cost = m_cost;
 			break;
+		}
 
 		r = measure_argon2(kdf, password, password_length, salt, salt_length,
 		                   key, key_length, t_cost, m_cost, parallel,
@@ -260,7 +272,7 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 		}
 
 		if (r < 0)
-			goto out;
+			break;
 
 	} while (ms < ms_atleast || ms > ms_atmost);
 out:
