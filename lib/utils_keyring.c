@@ -223,6 +223,7 @@ int keyring_get_passphrase(const char *key_desc,
 
 	return 0;
 #else
+	log_dbg("Kernel keyring features disabled");
 	return -EINVAL;
 #endif
 }
