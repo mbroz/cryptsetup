@@ -3062,3 +3062,8 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 
 	return -ENOTSUP;
 }
+
+static void __attribute__((destructor)) libcryptsetup_exit(void)
+{
+	crypt_backend_destroy();
+}

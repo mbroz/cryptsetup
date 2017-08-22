@@ -38,7 +38,7 @@
 #endif
 
 static int crypto_backend_initialised = 0;
-static char version[64];
+static char version[256];
 
 struct hash_alg {
 	const char *name;
@@ -124,6 +124,11 @@ int crypt_backend_init(struct crypt_device *ctx)
 
 	crypto_backend_initialised = 1;
 	return 0;
+}
+
+void crypt_backend_destroy(void)
+{
+	crypto_backend_initialised = 0;
 }
 
 uint32_t crypt_backend_flags(void)

@@ -31,6 +31,7 @@ struct crypt_cipher;
 struct crypt_storage;
 
 int crypt_backend_init(struct crypt_device *ctx);
+void crypt_backend_destroy(void);
 
 #define CRYPT_BACKEND_KERNEL (1 << 0)	/* Crypto uses kernel part, for benchmark */
 

@@ -143,6 +143,11 @@ int crypt_backend_init(struct crypt_device *ctx)
 	return 0;
 }
 
+void crypt_backend_destroy(void)
+{
+	return;
+}
+
 const char *crypt_backend_version(void)
 {
 	return version;

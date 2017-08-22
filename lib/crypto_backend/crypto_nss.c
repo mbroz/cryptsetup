@@ -88,6 +88,11 @@ int crypt_backend_init(struct crypt_device *ctx)
 	return 0;
 }
 
+void crypt_backend_destroy(void)
+{
+	crypto_backend_initialised = 0;
+}
+
 uint32_t crypt_backend_flags(void)
 {
 	return 0;
