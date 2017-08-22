@@ -32,6 +32,9 @@
 #ifdef HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
+#ifdef HAVE_SYS_STATVFS_H
+# include <sys/statvfs.h>
+#endif
 #include <linux/loop.h>
 
 #include "utils_loop.h"
@@ -48,6 +51,11 @@
 
 #ifndef LOOP_SET_CAPACITY
 #define LOOP_SET_CAPACITY 0x4C07
+#endif
+
+#ifndef LO_FLAGS_BLOCKSIZE
+#define LO_FLAGS_BLOCKSIZE 32
+#define LO_INFO_BLOCKSIZE(l) (l)->lo_init[0]
 #endif
 
 static char *crypt_loop_get_device_old(void)
@@ -100,6 +108,21 @@ static char *crypt_loop_get_device(void)
 	return strdup(dev);
 }
 
+static size_t crypt_loop_block_size_fd(int fd)
+{
+	size_t bs = 512;
+#ifdef HAVE_SYS_STATVFS_H
+	struct statvfs buf;
+
+	if (!fstatvfs(fd, &buf) && buf.f_bsize)
+		bs = (size_t)buf.f_bsize;
+
+	if (bs != 1024 && bs != 2048 && bs != 4096)
+		bs = 512;
+#endif
+	return bs;
+}
+
 int crypt_loop_attach(char **loop, const char *file, int offset,
 		      int autoclear, int *readonly)
 {
@@ -143,6 +166,9 @@ int crypt_loop_attach(char **loop, const char *file, int offset,
 	lo64.lo_offset = offset;
 	if (autoclear)
 		lo64.lo_flags |= LO_FLAGS_AUTOCLEAR;
+
+	LO_INFO_BLOCKSIZE(&lo64) = crypt_loop_block_size_fd(file_fd);
+	lo64.lo_flags |= LO_FLAGS_BLOCKSIZE;
 
 	if (ioctl(loop_fd, LOOP_SET_STATUS64, &lo64) < 0) {
 		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
