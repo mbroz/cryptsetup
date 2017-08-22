@@ -916,6 +916,9 @@ static int action_open_luks(void)
 			r = crypt_activate_by_passphrase(cd, activated_name,
 				opt_key_slot, password, passwordLen, activate_flags);
 			check_signal(&r);
+
+			crypt_safe_free(password);
+			password = NULL;
 		} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
 	}
 out:
@@ -1358,12 +1361,15 @@ static int action_luksResume(void)
 		r = tools_get_key(NULL, &password, &passwordLen,
 			opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			opt_timeout, _verify_passphrase(0), 0, cd);
-		if (r)
+		if (r < 0)
 			goto out;
 
 		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
 					       password, passwordLen);
 		check_signal(&r);
+
+		crypt_safe_free(password);
+		password = NULL;
 	} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
 out:
 	crypt_safe_free(password);
