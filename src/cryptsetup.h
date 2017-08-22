@@ -51,6 +51,8 @@
 #define SECTOR_SIZE 512
 #define ROUND_SECTOR(x) (((x) + SECTOR_SIZE - 1) / SECTOR_SIZE)
 
+#define DEFAULT_WIPE_BLOCK	1048576 /* 1 MiB */
+
 extern int opt_debug;
 extern int opt_verbose;
 extern int opt_batch_mode;
@@ -90,6 +92,7 @@ void tools_clear_line(void);
 
 void tools_time_progress(uint64_t device_size, uint64_t bytes,
 			 struct timeval *start_time, struct timeval *end_time);
+int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr);
 
 /* Log */
 #define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)

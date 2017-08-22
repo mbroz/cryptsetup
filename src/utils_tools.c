@@ -393,3 +393,19 @@ void tools_time_progress(uint64_t device_size, uint64_t bytes,
 			eta / 60, eta % 60, mbytes, mib);
 	fflush(stdout);
 }
+
+int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr)
+{
+	static struct timeval start_time = {}, end_time = {};
+	int r = 0;
+
+	tools_time_progress(size, offset, &start_time, &end_time);
+
+	check_signal(&r);
+	if (r) {
+		tools_clear_line();
+		log_err("\nWipe interrupted.\n");
+	}
+
+	return r;
+}

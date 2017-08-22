@@ -26,7 +26,6 @@
 
 #define DEFAULT_TAG_SIZE 4
 #define DEFAULT_ALG_NAME "crc32c"
-#define DEFAULT_WIPE_BLOCK 1024*1024 /* 1 MiB */
 #define MAX_KEY_SIZE 4096
 
 static const char *opt_journal_size_str = NULL;
@@ -133,22 +132,6 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 	return 0;
 }
 
-static int wipe_callback(uint64_t size, uint64_t offset, void *usrptr)
-{
-	static struct timeval start_time = {}, end_time = {};
-	int r = 0;
-
-	tools_time_progress(size, offset, &start_time, &end_time);
-
-	check_signal(&r);
-	if (r) {
-		tools_clear_line();
-		log_err("\nWipe interrupted.\n");
-	}
-
-	return r;
-}
-
 static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 {
 	char tmp_name[64], tmp_path[128], tmp_uuid[40];
@@ -176,7 +159,7 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 	/* Wipe the device */
 	set_int_handler(0);
 	r = crypt_wipe(cd, tmp_path, CRYPT_WIPE_ZERO, 0, 0, DEFAULT_WIPE_BLOCK,
-		       0, &wipe_callback, NULL);
+		       0, &tools_wipe_progress, NULL);
 	if (crypt_deactivate(cd, tmp_name))
 		log_err(_("Cannot deactivate temporary device %s.\n"), tmp_path);
 	set_int_block(0);
