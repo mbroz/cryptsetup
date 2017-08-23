@@ -23,7 +23,7 @@ add_device() {
 	modprobe scsi_debug $@
 	if [ $? -ne 0 ] ; then
 		echo "This kernel seems to not support proper scsi_debug module, test skipped."
-		exit 0
+		exit 77
 	fi
 
 	sleep 2
@@ -49,14 +49,14 @@ function check_version()
 
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run this test, test skipped."
-	exit 0
+	exit 77
 fi
 
 modprobe --dry-run scsi_debug || exit 0
 modprobe dm-crypt >/dev/null 2>&1
 if ! check_version ; then
 	echo "Probably old kernel, test skipped."
-	exit 0
+	exit 77
 fi
 
 add_device dev_size_mb=16 sector_size=512 num_tgts=1 lbpu=1

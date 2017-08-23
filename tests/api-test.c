@@ -1920,7 +1920,7 @@ int main(int argc, char *argv[])
 
 	if (getuid() != 0) {
 		printf("You must be root to run this test.\n");
-		exit(0);
+		exit(77);
 	}
 
 	for (i = 1; i < argc; i++) {

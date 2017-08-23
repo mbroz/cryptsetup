@@ -74,7 +74,8 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
-	exit 0
+	[ -z "$2" ] && exit $2
+	exit 77
 }
 
 function prepare()
@@ -680,7 +681,7 @@ else
 fi
 
 # Interactive tests
-which expect >/dev/null 2>&1 || skip "WARNING: expect tool missing, interactive test will be skipped."
+which expect >/dev/null 2>&1 || skip "WARNING: expect tool missing, interactive test will be skipped." 0
 
 prepare "[32] Interactive password retry from terminal." new
 expect - >/dev/null 2>&1 <<EOF

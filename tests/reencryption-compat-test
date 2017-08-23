@@ -45,7 +45,7 @@ function fail()
 function skip()
 {
 	[ -n "$1" ] && echo "$1"
-	exit 0
+	exit 77
 }
 
 function add_scsi_device() {
@@ -53,7 +53,7 @@ function add_scsi_device() {
         modprobe scsi_debug $@
         if [ $? -ne 0 ] ; then
                 echo "This kernel seems to not support proper scsi_debug module, test skipped."
-                exit 0
+                exit 77
         fi
 
         sleep 2

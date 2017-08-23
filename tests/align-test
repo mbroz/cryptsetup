@@ -38,7 +38,7 @@ add_device() {
 	modprobe scsi_debug $@
 	if [ $? -ne 0 ] ; then
 		echo "This kernel seems to not support proper scsi_debug module, test skipped."
-		exit 0
+		exit 77
 	fi
 
 	sleep 2
@@ -47,7 +47,7 @@ add_device() {
 	if [ ! -e /sys/block/$DEV/alignment_offset ] ; then
 		echo "This kernel seems to not support topology info, test skipped."
 		cleanup
-		exit 0
+		exit 77
 	fi
 
 	DEV="/dev/$DEV"
@@ -115,7 +115,7 @@ format_null()
 
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run this test, test skipped."
-	exit 0
+	exit 77
 fi
 
 modprobe --dry-run scsi_debug || exit 0
