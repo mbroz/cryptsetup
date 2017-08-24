@@ -68,7 +68,9 @@ libcryptsetup_la_SOURCES = \
 	utils_dm.h				\
 	volumekey.c				\
 	random.c				\
-	crypt_plain.c
+	crypt_plain.c				\
+	base64.h				\
+	base64.c
 
 include_HEADERS = libcryptsetup.h
 
