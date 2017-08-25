@@ -1317,6 +1317,8 @@ static int _dm_query_verity(uint32_t get_flags,
 	char *str, *str2, *arg;
 	unsigned int i, features;
 	int r;
+	struct device *data_device = NULL, *hash_device = NULL, *fec_device = NULL;
+	char *hash_name = NULL, *root_hash = NULL, *salt = NULL, *fec_dev_str = NULL;
 
 	if (get_flags & DM_ACTIVE_VERITY_PARAMS)
 		vp = dmd->u.verity.vp;
@@ -1340,28 +1342,32 @@ static int _dm_query_verity(uint32_t get_flags,
 		return -EINVAL;
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(&dmd->data_device, str2);
+		r = device_alloc(&data_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
 			return r;
 	}
+
+	r = -EINVAL;
 
 	/* hash device */
 	str = strsep(&params, " ");
 	if (!params)
-		return -EINVAL;
+		goto err;
 	if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(&dmd->u.verity.hash_device, str2);
+		r = device_alloc(&hash_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
-			return r;
+			goto err;
 	}
+
+	r = -EINVAL;
 
 	/* data block size*/
 	val32 = strtoul(params, &params, 10);
 	if (*params != ' ')
-		return -EINVAL;
+		goto err;
 	if (vp)
 		vp->data_block_size = val32;
 	params++;
@@ -1369,7 +1375,7 @@ static int _dm_query_verity(uint32_t get_flags,
 	/* hash block size */
 	val32 = strtoul(params, &params, 10);
 	if (*params != ' ')
-		return -EINVAL;
+		goto err;
 	if (vp)
 		vp->hash_block_size = val32;
 	params++;
@@ -1377,7 +1383,7 @@ static int _dm_query_verity(uint32_t get_flags,
 	/* data blocks */
 	val64 = strtoull(params, &params, 10);
 	if (*params != ' ')
-		return -EINVAL;
+		goto err;
 	if (vp)
 		vp->data_size = val64;
 	params++;
@@ -1385,27 +1391,34 @@ static int _dm_query_verity(uint32_t get_flags,
 	/* hash start */
 	val64 = strtoull(params, &params, 10);
 	if (*params != ' ')
-		return -EINVAL;
+		goto err;
 	dmd->u.verity.hash_offset = val64;
 	params++;
 
 	/* hash algorithm */
 	str = strsep(&params, " ");
 	if (!params)
-		return -EINVAL;
-	if (vp)
-		vp->hash_name = strdup(str);
+		goto err;
+	if (vp) {
+		hash_name = strdup(str);
+		if (!hash_name) {
+			r = -ENOMEM;
+			goto err;
+		}
+	}
 
 	/* root digest */
 	str = strsep(&params, " ");
 	if (!params)
-		return -EINVAL;
+		goto err;
 	len = crypt_hex_to_bytes(str, &str2, 0);
-	if (len < 0)
-		return len;
+	if (len < 0) {
+		r = len;
+		goto err;
+	}
 	dmd->u.verity.root_hash_size = len;
 	if (get_flags & DM_ACTIVE_VERITY_ROOT_HASH)
-		dmd->u.verity.root_hash = str2;
+		root_hash = str2;
 	else
 		free(str2);
 
@@ -1417,25 +1430,30 @@ static int _dm_query_verity(uint32_t get_flags,
 			vp->salt = NULL;
 		} else {
 			len = crypt_hex_to_bytes(str, &str2, 0);
-			if (len < 0)
-				return len;
+			if (len < 0) {
+				r = len;
+				goto err;
+			}
 			vp->salt_size = len;
-			vp->salt = str2;
+			salt = str2;
 		}
 	}
+
+	r = -EINVAL;
 
 	/* Features section, available since verity target version 1.3 */
 	if (params) {
 		/* Number of arguments */
 		val64 = strtoull(params, &params, 10);
 		if (*params != ' ')
-			return -EINVAL;
+			goto err;
 		params++;
 
 		features = (int)val64;
 		for (i = 0; i < features; i++) {
+			r = -EINVAL;
 			if (!params)
-				return -EINVAL;
+				goto err;
 			arg = strsep(&params, " ");
 			if (!strcasecmp(arg, "ignore_corruption"))
 				dmd->flags |= CRYPT_ACTIVATE_IGNORE_CORRUPTION;
@@ -1447,14 +1465,16 @@ static int _dm_query_verity(uint32_t get_flags,
 				str = strsep(&params, " ");
 				str2 = crypt_lookup_dev(str);
 				if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE) {
-					r = device_alloc(&dmd->u.verity.fec_device, str2);
+					r = device_alloc(&fec_device, str2);
 					if (r < 0 && r != -ENOTBLK) {
 						free(str2);
-						return r;
+						goto err;
 					}
 				}
 				if (vp)
-					vp->fec_device = str2;
+					fec_dev_str = str2;
+				else
+					free(str2);
 				i++;
 			} else if (!strcasecmp(arg, "fec_start")) {
 				val64 = strtoull(params, &params, 10);
@@ -1478,15 +1498,40 @@ static int _dm_query_verity(uint32_t get_flags,
 					vp->fec_roots = val32;
 				i++;
 			} else /* unknown option */
-				return -EINVAL;
+				goto err;
 		}
 
 		/* All parameters should be processed */
-		if (params && *params)
-			return -EINVAL;
+		if (params && *params) {
+			r = -EINVAL;
+			goto err;
+		}
 	}
 
+	if (data_device)
+		dmd->data_device = data_device;
+	if (hash_device)
+		dmd->u.verity.hash_device = hash_device;
+	if (fec_device)
+		dmd->u.verity.fec_device = fec_device;
+	if (root_hash)
+		dmd->u.verity.root_hash = root_hash;
+	if (vp && hash_name)
+		vp->hash_name = hash_name;
+	if (vp && salt)
+		vp->salt = salt;
+	if (vp && fec_dev_str)
+		vp->fec_device = fec_dev_str;
 	return 0;
+err:
+	device_free(data_device);
+	device_free(hash_device);
+	device_free(fec_device);
+	free(root_hash);
+	free(hash_name);
+	free(salt);
+	free(fec_dev_str);
+	return r;
 }
 
 static int _dm_query_integrity(uint32_t get_flags,
@@ -1500,6 +1545,9 @@ static int _dm_query_integrity(uint32_t get_flags,
 	unsigned int features, val;
 	ssize_t len;
 	int i, r;
+	struct device *data_device = NULL;
+	char *integrity = NULL, *journal_crypt = NULL, *journal_integrity = NULL;
+	struct volume_key *vk = NULL;
 
 	memset(dmd, 0, sizeof(*dmd));
 
@@ -1509,30 +1557,32 @@ static int _dm_query_integrity(uint32_t get_flags,
 	str = strsep(&params, " ");
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(&dmd->data_device, str2);
+		r = device_alloc(&data_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
 			return r;
 	}
 
+	r = -EINVAL;
+
 	/*offset */
 	if (!params)
-		return -EINVAL;
+		goto err;
 	val64 = strtoull(params, &params, 10);
 	if (!*params || *params != ' ')
-		return -EINVAL;
+		goto err;
 	dmd->u.integrity.offset = val64;
 
 	/* tag size*/
 	val32 = strtoul(params, &params, 10);
 	dmd->u.integrity.tag_size = val32;
 	if (!*params || *params != ' ')
-		return -EINVAL;
+		goto err;
 
 	/* journal */
 	c = toupper(*(++params));
 	if (!*params || *(++params) != ' ' || (c != 'D' && c != 'J' && c != 'R'))
-		return -EINVAL;
+		goto err;
 	if (c == 'D')
 		dmd->flags |= CRYPT_ACTIVATE_NO_JOURNAL;
 	if (c == 'R')
@@ -1545,13 +1595,14 @@ static int _dm_query_integrity(uint32_t get_flags,
 		/* Number of arguments */
 		val64 = strtoull(params, &params, 10);
 		if (*params != ' ')
-			return -EINVAL;
+			goto err;
 		params++;
 
 		features = (int)val64;
 		for (i = 0; i < features; i++) {
+			r = -EINVAL;
 			if (!params)
-				return -EINVAL;
+				goto err;
 			arg = strsep(&params, " ");
 			if (sscanf(arg, "journal_sectors:%u", &val) == 1)
 				dmd->u.integrity.journal_size = val * SECTOR_SIZE;
@@ -1568,45 +1619,78 @@ static int _dm_query_integrity(uint32_t get_flags,
 			else if (!strncmp(arg, "internal_hash:", 14)) {
 				str = &arg[14];
 				arg = strsep(&str, ":");
-				dmd->u.integrity.integrity = strdup(arg);
+				integrity = strdup(arg);
+				if (!integrity) {
+					r = -ENOMEM;
+					goto err;
+				}
 
 				if (str) {
 					len = crypt_hex_to_bytes(str, &str2, 1);
-					if (len < 0)
-						return len;
+					if (len < 0) {
+						r = len;
+						goto err;
+					}
 
 					r = 0;
 					if (get_flags & DM_ACTIVE_CRYPT_KEY) {
-						dmd->u.integrity.vk = crypt_alloc_volume_key(len, str2);
-						if (!dmd->u.integrity.vk)
+						vk = crypt_alloc_volume_key(len, str2);
+						if (!vk)
 							r = -ENOMEM;
 					} else if (get_flags & DM_ACTIVE_CRYPT_KEYSIZE) {
-						dmd->u.integrity.vk = crypt_alloc_volume_key(len, NULL);
-						if (!dmd->u.integrity.vk)
+						vk = crypt_alloc_volume_key(len, NULL);
+						if (!vk)
 							r = -ENOMEM;
 					}
 					crypt_safe_free(str2);
-					if (r)
-						return r;
+					if (r < 0)
+						goto err;
 				}
 			} else if (!strncmp(arg, "journal_crypt:", 14)) {
 				str = &arg[14];
 				arg = strsep(&str, ":");
-				dmd->u.integrity.journal_crypt = strdup(arg);
+				journal_crypt = strdup(arg);
+				if (!journal_crypt) {
+					r = -ENOMEM;
+					goto err;
+				}
 			} else if (!strncmp(arg, "journal_mac:", 12)) {
 				str = &arg[12];
 				arg = strsep(&str, ":");
-				dmd->u.integrity.journal_integrity = strdup(arg);
+				journal_integrity = strdup(arg);
+				if (!journal_integrity) {
+					r = -ENOMEM;
+					goto err;
+				}
 			} else /* unknown option */
-				return -EINVAL;
+				goto err;
 		}
 
 		/* All parameters should be processed */
-		if (params && *params)
-			return -EINVAL;
+		if (params && *params) {
+			r = -EINVAL;
+			goto err;
+		}
 	}
 
+	if (data_device)
+		dmd->data_device = data_device;
+	if (integrity)
+		dmd->u.integrity.integrity = integrity;
+	if (journal_crypt)
+		dmd->u.integrity.journal_crypt = journal_crypt;
+	if (journal_integrity)
+		dmd->u.integrity.journal_integrity = journal_integrity;
+	if (vk)
+		dmd->u.integrity.vk = vk;
 	return 0;
+err:
+	device_free(data_device);
+	free(integrity);
+	free(journal_crypt);
+	free(journal_integrity);
+	crypt_free_volume_key(vk);
+	return r;
 }
 
 int dm_query_device(struct crypt_device *cd, const char *name,
