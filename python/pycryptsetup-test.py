@@ -53,7 +53,7 @@ def print_status(c):
 
 if os.geteuid() != 0:
 	print("WARNING: You must be root to run this test, test skipped.")
-	sys.exit(0)
+	sys.exit(77)
 
 os.system("dd if=/dev/zero of=" + IMG + " bs=1M count=32 >/dev/null 2>&1")
 
