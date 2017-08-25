@@ -1172,22 +1172,27 @@ static int _dm_query_crypt(uint32_t get_flags,
 	unsigned int i;
 	int r;
 	size_t key_size;
+	struct device *data_device = NULL;
+	char *cipher = NULL;
+	struct volume_key *vk = NULL;
 
 	memset(dmd, 0, sizeof(*dmd));
 	dmd->target = DM_CRYPT;
 
+	r = -EINVAL;
+
 	rcipher = strsep(&params, " ");
 	/* cipher */
 	if (get_flags & DM_ACTIVE_CRYPT_CIPHER)
-		dmd->u.crypt.cipher = strdup(rcipher);
+		cipher = strdup(rcipher);
 
 	/* skip */
 	key_ = strsep(&params, " ");
 	if (!params)
-		return -EINVAL;
+		goto err;
 	val64 = strtoull(params, &params, 10);
 	if (*params != ' ')
-		return -EINVAL;
+		goto err;
 	params++;
 
 	dmd->u.crypt.iv_offset = val64;
@@ -1196,33 +1201,35 @@ static int _dm_query_crypt(uint32_t get_flags,
 	rdevice = strsep(&params, " ");
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		arg = crypt_lookup_dev(rdevice);
-		r = device_alloc(&dmd->data_device, arg);
+		r = device_alloc(&data_device, arg);
 		free(arg);
 		if (r < 0 && r != -ENOTBLK)
-			return r;
+			goto err;
 	}
+
+	r = -EINVAL;
 
 	/*offset */
 	if (!params)
-		return -EINVAL;
+		goto err;
 	val64 = strtoull(params, &params, 10);
 	dmd->u.crypt.offset = val64;
 
 	/* Features section, available since crypt target version 1.11 */
 	if (*params) {
 		if (*params != ' ')
-			return -EINVAL;
+			goto err;
 		params++;
 
 		/* Number of arguments */
 		val64 = strtoull(params, &params, 10);
 		if (*params != ' ')
-			return -EINVAL;
+			goto err;
 		params++;
 
 		for (i = 0; i < val64; i++) {
 			if (!params)
-				return -EINVAL;
+				goto err;
 			arg = strsep(&params, " ");
 			if (!strcasecmp(arg, "allow_discards"))
 				dmd->flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
@@ -1231,18 +1238,18 @@ static int _dm_query_crypt(uint32_t get_flags,
 			else if (!strcasecmp(arg, "submit_from_crypt_cpus"))
 				dmd->flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
 			else /* unknown option */
-				return -EINVAL;
+				goto err;
 		}
 
 		/* All parameters should be processed */
 		if (params)
-			return -EINVAL;
+			goto err;
 	}
 
 	/* Never allow to return empty key */
 	if ((get_flags & DM_ACTIVE_CRYPT_KEY) && dmi->suspended) {
 		log_dbg("Cannot read volume key while suspended.");
-		return -EINVAL;
+		goto err;
 	}
 
 	if (key_[0] == ':')
@@ -1252,30 +1259,31 @@ static int _dm_query_crypt(uint32_t get_flags,
 		/* we will trust kernel the key_string is in expected format */
 		if (key_[0] == ':') {
 			if (sscanf(key_ + 1, "%zu", &key_size) != 1)
-				return -EINVAL;
+				goto err;
 		} else
 			key_size = strlen(key_) / 2;
 
-		dmd->u.crypt.vk = crypt_alloc_volume_key(key_size, NULL);
-		if (!dmd->u.crypt.vk)
-			return -ENOMEM;
+		vk = crypt_alloc_volume_key(key_size, NULL);
+		if (!vk) {
+			r = -ENOMEM;
+			goto err;
+		}
 
 		if (get_flags & DM_ACTIVE_CRYPT_KEY) {
 			if (key_[0] == ':') {
 				dmd->u.crypt.key_description = strdup(strpbrk(key_ + 1, ":") + 1);
 				if (!dmd->u.crypt.key_description) {
-					crypt_free_volume_key(dmd->u.crypt.vk);
-					return -ENOMEM;
+					r = -ENOMEM;
+					goto err;
 				}
 			} else {
 				buffer[2] = '\0';
-				for(i = 0; i < dmd->u.crypt.vk->keylength; i++) {
+				for(i = 0; i < vk->keylength; i++) {
 					memcpy(buffer, &key_[i * 2], 2);
-					dmd->u.crypt.vk->key[i] = strtoul(buffer, &endp, 16);
+					vk->key[i] = strtoul(buffer, &endp, 16);
 					if (endp != &buffer[2]) {
-						crypt_free_volume_key(dmd->u.crypt.vk);
-						dmd->u.crypt.vk = NULL;
-						return -EINVAL;
+						r = -EINVAL;
+						goto err;
 					}
 				}
 			}
@@ -1283,7 +1291,18 @@ static int _dm_query_crypt(uint32_t get_flags,
 	}
 	memset(key_, 0, strlen(key_));
 
+	if (cipher)
+		dmd->u.crypt.cipher = cipher;
+	if (data_device)
+		dmd->data_device = data_device;
+	if (vk)
+		dmd->u.crypt.vk = vk;
 	return 0;
+err:
+	free(cipher);
+	device_free(data_device);
+	crypt_free_volume_key(vk);
+	return r;
 }
 
 static int _dm_query_verity(uint32_t get_flags,
