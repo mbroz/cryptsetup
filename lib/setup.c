@@ -1721,7 +1721,7 @@ out:
 		crypt_free_volume_key(dmd.u.crypt.vk);
 		free(CONST_CAST(void*)dmd.u.crypt.cipher);
 	}
-	free(CONST_CAST(void*)dmd.data_device);
+	device_free(dmd.data_device);
 	free(CONST_CAST(void*)dmd.uuid);
 
 	return r;
