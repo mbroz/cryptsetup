@@ -332,6 +332,9 @@ int crypt_volume_key_keyring(struct crypt_device *cd, int enable);
 /** INTEGRITY dm-integrity device */
 #define CRYPT_INTEGRITY "INTEGRITY"
 
+/** LUKS any version */
+#define CRYPT_LUKS NULL
+
 /**
  * Get device type
  *

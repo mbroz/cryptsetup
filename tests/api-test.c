@@ -1159,7 +1159,7 @@ static void LuksHeaderLoad(void)
 
 	/* check load sets proper device type */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_0S));
-	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
 	EQ_(strcmp(CRYPT_LUKS1, crypt_get_type(cd)), 0);
 	crypt_free(cd);
 
