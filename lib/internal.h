@@ -149,6 +149,8 @@ unsigned crypt_cpusonline(void);
 
 int init_crypto(struct crypt_device *ctx);
 
+const char *uint64_to_str(char *buffer, size_t size, const uint64_t *val);
+
 void logger(struct crypt_device *cd, int class, const char *file, int line, const char *format, ...) __attribute__ ((format (printf, 5, 6)));
 #define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
