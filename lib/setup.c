@@ -1121,6 +1121,9 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	struct crypt_dm_active_device dmd;
 	int r;
 
+	if (!name)
+		return -EINVAL;
+
 	log_dbg("Allocating crypt device context by device %s.", name);
 
 	ci = crypt_status(NULL, name);
