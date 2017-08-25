@@ -1,4 +1,4 @@
-.TH CRYPTSETUP-REENCRYPT "8" "March 2017" "cryptsetup-reencrypt" "Maintenance Commands"
+.TH CRYPTSETUP-REENCRYPT "8" "September 2017" "cryptsetup-reencrypt" "Maintenance Commands"
 .SH NAME
 cryptsetup-reencrypt - tool for offline LUKS device re-encryption
 .SH SYNOPSIS
@@ -13,6 +13,8 @@ unclocked by passphrase), \fBcipher\fR, \fBcipher mode\fR.
 
 Cryptsetup-reencrypt reencrypts data on LUKS device in-place. During
 reencryption process the LUKS device is marked unavailable.
+
+\fBNOTE:\fR LUKS2 format is not yet supported.
 
 \fIWARNING\fR: The cryptsetup-reencrypt program is not resistant to hardware
 or kernel failures during reencryption (you can lose you data in this case).

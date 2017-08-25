@@ -403,6 +403,9 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 	size_t buflen, i, file_read_size;
 	struct stat st;
 
+	if (!key || !key_size_read)
+		return -EINVAL;
+
 	*key = NULL;
 	*key_size_read = 0;
 

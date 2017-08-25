@@ -21,7 +21,8 @@ cryptsetup_LDADD = -lm \
 	$(top_builddir)/lib/libcryptsetup.la	\
 	@POPT_LIBS@				\
 	@PWQUALITY_LIBS@			\
-	@PASSWDQC_LIBS@
+	@PASSWDQC_LIBS@				\
+	@UUID_LIBS@
 
 cryptsetup_CFLAGS = $(AM_CFLAGS) -Wall
 

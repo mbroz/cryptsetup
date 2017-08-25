@@ -253,9 +253,9 @@ int INTEGRITY_format(struct crypt_device *cd,
 		dmdi.u.integrity.journal_commit_time = params->journal_commit_time;
 		dmdi.u.integrity.interleave_sectors = params->interleave_sectors;
 		dmdi.u.integrity.buffer_sectors = params->buffer_sectors;
-		dmdi.u.integrity.integrity = params->integrity;
 		dmdi.u.integrity.journal_integrity = params->journal_integrity;
 		dmdi.u.integrity.journal_crypt = params->journal_crypt;
+		dmdi.u.integrity.integrity = params->integrity;
 	}
 
 	uuid_generate(tmp_uuid_bin);

@@ -8,11 +8,13 @@ CRYPTSETUP_2.0 {
 		crypt_set_confirm_callback;
 		crypt_set_iteration_time;
 		crypt_set_uuid;
+		crypt_set_label;
 		crypt_set_data_device;
 
 		crypt_memory_lock;
 		crypt_metadata_locking;
 		crypt_format;
+		crypt_convert;
 		crypt_load;
 		crypt_repair;
 		crypt_resize;
@@ -27,6 +29,22 @@ CRYPTSETUP_2.0 {
 		crypt_keyslot_add_by_keyfile;
 		crypt_keyslot_add_by_keyfile_offset;
 		crypt_keyslot_add_by_volume_key;
+		crypt_keyslot_add_by_key;
+
+		crypt_keyslot_set_priority;
+		crypt_keyslot_get_priority;
+
+		crypt_token_json_get;
+		crypt_token_json_set;
+		crypt_token_status;
+		crypt_token_luks2_keyring_get;
+		crypt_token_luks2_keyring_set;
+		crypt_token_assign_keyslot;
+		crypt_token_unassign_keyslot;
+		crypt_token_register;
+
+		crypt_activate_by_token;
+
 		crypt_keyslot_destroy;
 		crypt_activate_by_passphrase;
 		crypt_activate_by_keyfile;
@@ -55,6 +73,8 @@ CRYPTSETUP_2.0 {
 
 		crypt_get_type;
 		crypt_get_active_device;
+		crypt_persistent_flags_set;
+		crypt_persistent_flags_get;
 
 		crypt_set_rng_type;
 		crypt_get_rng_type;

@@ -24,6 +24,14 @@
 
 #include "internal.h"
 
+const struct crypt_pbkdf_type default_luks2 = {
+	.type = DEFAULT_LUKS2_PBKDF,
+	.hash = DEFAULT_LUKS1_HASH,
+	.time_ms = DEFAULT_LUKS2_ITER_TIME,
+	.max_memory_kb = DEFAULT_LUKS2_MEMORY_KB,
+	.parallel_threads = DEFAULT_LUKS2_PARALLEL_THREADS
+};
+
 const struct crypt_pbkdf_type default_luks1 = {
 	.type = CRYPT_KDF_PBKDF2,
 	.hash = DEFAULT_LUKS1_HASH,
@@ -95,7 +103,9 @@ int init_pbkdf_type(struct crypt_device *cd,
 	uint32_t old_flags;
 	int r;
 
-	if (!pbkdf)
+	if (!pbkdf && dev_type && !strcmp(dev_type, CRYPT_LUKS2))
+		pbkdf = &default_luks2;
+	else if (!pbkdf)
 		pbkdf = &default_luks1;
 
 	r = verify_pbkdf_params(cd, pbkdf);

@@ -1,4 +1,4 @@
-.TH CRYPTSETUP "8" "March 2017" "cryptsetup" "Maintenance Commands"
+.TH CRYPTSETUP "8" "September 2017" "cryptsetup" "Maintenance Commands"
 .SH NAME
 cryptsetup - manage plain dm-crypt and LUKS encrypted volumes
 .SH SYNOPSIS
@@ -12,7 +12,7 @@ and can hence offer more features than plain dm-crypt. On the other
 hand, the header is visible and vulnerable to damage.
 
 In addition, cryptsetup provides limited support for the use of
-historic loopaes volumes and for TrueCrypt compatible volumes.
+loop-AES volumes and for TrueCrypt compatible volumes.
 
 .SH PLAIN DM-CRYPT OR LUKS?
 .PP
@@ -29,12 +29,12 @@ to be mentioned here.
 
 \fBBackup:\fR Storage media die. Encryption has no influence on that.
 Backup is mandatory for encrypted data as well, if the data has any
-worth. See the Cryptsetup FAQ for advice on how to do backup of an
+worth. See the Cryptsetup FAQ for advice on how to do a backup of an
 encrypted volume.
 
 \fBCharacter encoding:\fR If you enter a
 passphrase with special symbols, the passphrase can change
-depending character encoding. Keyboard settings can also change,
+depending on character encoding. Keyboard settings can also change,
 which can make blind input hard or impossible. For
 example, switching from some ASCII 8-bit variant to UTF-8
 can lead to a different binary encoding and hence different
@@ -57,10 +57,10 @@ secure wiping by just overwriting header and key-slot area.
 it is a very good idea to wipe filesystem signatures, data, etc. before
 creating a LUKS or plain dm-crypt container on it.
 For a quick removal of filesystem signatures, use "wipefs". Take care
-though that this may not remove everything. In particular md (RAID)
+though that this may not remove everything. In particular, MD RAID
 signatures at the end of a device may survive. It also does not
 remove data. For a full wipe, overwrite the whole partition before
-container creation. If you do not know how to to that, the
+container creation. If you do not know how to do that, the
 cryptsetup FAQ describes several options.
 
 .SH BASIC COMMANDS
@@ -98,6 +98,9 @@ For backward compatibility there are \fBclose\fR command aliases:
 \fBremove\fR, \fBplainClose\fR, \fBluksClose\fR, \fBloopaesClose\fR,
 \fBtcryptClose\fR (all behaves exactly the same, device type is
 determined automatically from active device).
+
+\fB<options>\fR can be [\-\-deferred]
+
 .PP
 \fIstatus\fR <name>
 .IP
@@ -111,11 +114,22 @@ If \-\-size (in sectors) is not specified, the size is computed
 from the underlying device. For LUKS it is the size of the
 underlying device without the area reserved for LUKS header
 (see data payload offset in \fBluksDump\fR command).
-For plain crypt device the whole device size is used.
+For plain crypt device, the whole device size is used.
 
 Note that this does not change the raw device geometry, it just
 changes how many sectors of the raw device are represented
 in the mapped device.
+
+If cryptsetup detected volume key for active device loaded in kernel keyring
+service, resize action would first try to retrieve
+the key using a token and only if it failed it'd ask for a passphrase
+to unlock a keyslot (LUKS) or to derive a volume key again (plain mode).
+The kernel keyring is used by default for LUKS2 devices.
+
+With LUKS2 device additional \fB<options>\fR can be [\-\-token\-id, \-\-token\-only,
+\-\-key\-slot, \-\-key\-file, \-\-keyfile\-size, \-\-keyfile\-offset, \-\-timeout,
+\-\-disable\-locks, \-\-disable\-keyring].
+
 .SH PLAIN MODE
 Plain dm-crypt encrypts the device sector-by-sector with a
 single, non-salted hash of the passphrase. No checks
@@ -134,7 +148,7 @@ Opens (creates a mapping with) <name> backed by device <device>.
 
 \fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify-passphrase,
 \-\-key-file, \-\-keyfile-offset, \-\-key-size, \-\-offset, \-\-skip, \-\-size,
-\-\-readonly, \-\-shared, \-\-allow-discards]
+\-\-readonly, \-\-shared, \-\-allow\-discards]
 
 Example: 'cryptsetup open \-\-type plain /dev/sda10 e1' maps the raw
 encrypted device /dev/sda10 to the mapped (decrypted) device
@@ -146,7 +160,7 @@ It adds a standardized header at the start of the device,
 a key-slot area directly behind the header and the bulk
 data area behind that. The whole set is called a 'LUKS container'.
 The device that a LUKS container resides on is called a 'LUKS device'.
-For most purposes both terms can be used interchangeably. But
+For most purposes, both terms can be used interchangeably. But
 note that when the LUKS header is at a nonzero offset
 in a device, then the device is not a LUKS device anymore, but
 has a LUKS container stored in it at an offset.
@@ -158,6 +172,12 @@ are protected against brute-force and dictionary
 attacks by PBKDF2, which implements hash iteration and salting
 in one function.
 
+LUKS2 is a new version of header format that allows additional
+extensions like different PBKDF algorithm or authenticated encryption.
+You can format device with LUKS2 header if you specify
+\fI\-\-type luks2\fR in \fIluksFormat\fR command.
+For activation, the format is already recognized automatically.
+
 Each passphrase, also called a
 .B key
 in this document, is associated with one of 8 key-slots.
@@ -165,13 +185,13 @@ Key operations that do not specify a slot affect the first slot
 that matches the supplied passphrase or the first empty slot if
 a new passphrase is added.
 
-The \fB<device>\fR parameter can be also specified by a LUKS UUID in the
+The \fB<device>\fR parameter can also be specified by a LUKS UUID in the
 format UUID=<uuid>. Translation to real device name uses symlinks
 in /dev/disk/by-uuid directory.
 
 To specify a detached header, the \fB\-\-header\fR parameter can be used
-in all LUKS commands and always takes precedence over positional \fB<device>\fR
-parameter.
+in all LUKS commands and always takes precedence over the positional
+\fB<device>\fR parameter.
 
 The following are valid LUKS actions:
 
@@ -183,21 +203,30 @@ either via prompting or via <key file>. Note that
 if the second argument is present, then the passphrase
 is taken from the file given there, without the need
 to use the \-\-key-file option. Also note that for both forms
-of reading the passphrase from file you can
+of reading the passphrase from a file you can
 give '-' as file name, which results in the passphrase being read
 from stdin and the safety-question being skipped.
 
 You can only call luksFormat on a LUKS device that is not mapped.
+
+To use LUKS2, specify \fI\-\-type luks2\fR.
 
 \fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify\-passphrase,
 \-\-key\-size, \-\-key\-slot,
 \-\-key\-file (takes precedence over optional second argument),
 \-\-keyfile\-offset, \-\-keyfile\-size, \-\-use\-random | \-\-use\-urandom,
 \-\-uuid, \-\-master\-key\-file, \-\-iter\-time, \-\-header,
-\-\-force\-password].
+\-\-pbkdf\-force\-iterations,
+\-\-force\-password, \-\-disable-locks].
+
+For LUKS2, additional \fB<options>\fR can be
+[\-\-integrity, \-\-integrity\-no\-wipe, \-\-sector\-size,
+\-\-label, \-\-subsystem,
+\-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel,
+\-\-disable\-locks, \-\-disable\-keyring].
 
 \fBWARNING:\fR Doing a luksFormat on an existing LUKS container will
-make all data the old container permanently irretrievable, unless
+make all data the old container permanently irretrievable unless
 you have a header backup.
 .PP
 \fIopen\fR \-\-type luks <device> <name>
@@ -206,16 +235,19 @@ you have a header backup.
 .IP
 Opens the LUKS device <device> and sets up a mapping <name> after
 successful verification of the supplied passphrase.
-If the passphrase is not supplied via \-\-key-file, the command
-prompts for it interactively.
+
+First, the passphrase is searched in LUKS tokens. If it's not
+found in any token and also the passphrase is not supplied via \-\-key-file,
+the command prompts for it interactively.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
-\-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file].
+\-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file, \-\-token\-id,
+\-\-token\-only, \-\-disable\-keyring, \-\-disable\-locks].
 .PP
 \fIluksSuspend\fR <name>
 .IP
-Suspends an active device (all IO operations will blocked
+Suspends an active device (all IO operations will block
 and accesses to the device will wait indefinitely)
 and wipes the encryption
 key from kernel memory. Needs kernel 2.6.19 or later.
@@ -226,14 +258,15 @@ the mapped device.
 
 \fBWARNING:\fR never suspend the device on which the cryptsetup binary resides.
 
-\fB<options>\fR can be [\-\-header].
+\fB<options>\fR can be [\-\-header, \-\-disable\-locks].
 .PP
 \fIluksResume\fR <name>
 .IP
 Resumes a suspended device and reinstates the encryption key.
 Prompts interactively for a passphrase if \-\-key-file is not given.
 
-\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-size, \-\-header]
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-size, \-\-header,
+\-\-disable\-keyring,\-\-disable\-locks]
 .PP
 \fIluksAddKey\fR <device> [<key file with new key>]
 .IP
@@ -245,19 +278,19 @@ or read from the file given as positional argument.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-master\-key\-file,
-\-\-iter\-time, \-\-force\-password, \-\-header].
+\-\-iter\-time, \-\-force\-password, \-\-header, \-\-disable\-locks].
 .PP
 \fIluksRemoveKey\fR <device> [<key file with passphrase to be removed>]
 .IP
 Removes the supplied passphrase from the LUKS device. The
 passphrase to be removed can be specified interactively,
-as positional argument or via \-\-key-file.
+as the positional argument or via \-\-key-file.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size, \-\-header]
+\-\-keyfile\-size, \-\-header, \-\-disable\-locks]
 
 \fBWARNING:\fR If you read the passphrase from stdin
-(without further argument or with '-' as argument
+(without further argument or with '-' as an argument
 to \-\-key\-file), batch-mode (\-q) will be implicitly
 switched on and no warning will be given when you remove the
 last remaining passphrase from a LUKS container. Removing
@@ -287,7 +320,8 @@ inaccessible.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
-\-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header].
+\-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header,
+\-\-disable\-locks].
 .PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
@@ -299,10 +333,10 @@ an interactive confirmation when doing so. Removing the last
 passphrase makes a LUKS container permanently inaccessible.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size, \-\-header].
+\-\-keyfile\-size, \-\-header, \-\-disable\-locks].
 
 \fBWARNING:\fR If you read the passphrase from stdin
-(without further argument or with '-' as argument
+(without further argument or with '-' as an argument
 to \-\-key-file), batch-mode (\-q) will be implicitly
 switched on and no warning will be given when you remove the
 last remaining passphrase from a LUKS container. Removing
@@ -346,11 +380,11 @@ without a passphrase and even without the LUKS header. This means
 that if the master key is compromised, the whole device has to be
 erased to prevent further access. Use this option carefully.
 
-In order to dump the master key, a passphrase has to be supplied,
+To dump the master key, a passphrase has to be supplied,
 either interactively or via \-\-key\-file.
 
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
-\-\-keyfile\-offset, \-\-keyfile\-size, \-\-header].
+\-\-keyfile\-offset, \-\-keyfile\-size, \-\-header, \-\-disable\-locks].
 
 \fBWARNING:\fR If \-\-dump\-master\-key is used with \-\-key\-file
 and the argument to \-\-key\-file is '-', no validation question
@@ -381,12 +415,56 @@ from the specified file.
 Note: Using '-' as filename reads the header backup from a file named '-'.
 
 \fBWARNING:\fR Header and keyslots will be replaced, only
-the passphrases from the backup will work afterwards.
+the passphrases from the backup will work afterward.
 
 This command requires that the master key size and data offset
 of the LUKS header already on the device and of the header backup
 match. Alternatively, if there is no LUKS header on the device,
 the backup will also be written to it.
+.PP
+\fItoken\fR <add|remove> <device>
+.IP
+Adds a new keyring token to enable auto-activation of the device.
+For the auto-activation, the passphrase must be stored in keyring with the specified
+description. Usually, the passphrase should be stored in \fIuser\fR or
+\fIuser-session\fR keyring.
+The \fItoken\fR command is supported only for LUKS2.
+
+For adding new keyring token, option \-\-key\-description is mandatory.
+Also, new token is assigned to key slot specified with \-\-key\-slot option or to all
+active key slots in the case \-\-key\-slot option is ommited.
+
+To remove existing token, specify the token ID which should be removed with
+\-\-token\-id option.
+
+\fBWARNING:\fR The action \fItoken remove\fR removes any token type, not just \fIkeyring\fR
+type from token slot specified by \-\-token\-id option.
+
+\fB<options>\fR can be [\-\-header, \-\-token\-id, \-\-key-slot, \-\-key\-description,
+\-\-disable\-locks, \-\-disable\-keyring].
+.PP
+\fIconvert\fR <device> \-\-type <format>
+.IP
+Converts the device between LUKS and LUKS2 format (if possible).
+The conversion will not be performed if there is an additional LUKS2 feature or LUKS has
+unsupported header size.
+
+\fBWARNING:\fR The \fIconvert\fR action can destroy the LUKS header in the case of a crash
+during conversion or if a media error occurs.
+Always create a header backup before performing this operation!
+
+\fB<options>\fR can be [\-\-header, \-\-type].
+.PP
+\fIconfig\fR <device>
+.IP
+Set permanent configuration options (store to LUKS header).
+The \fIconfig\fR command is supported only for LUKS2.
+
+The permanent options can be \fI\-\-priority\fR to set priority (normal, prefer, ignore)
+for keyslot (specified by \fI\-\-key\-slot\fR) or \fI\-\-label\fR and \fI\-\-subsystem\fR.
+
+\fB<options>\fR can be [\-\-priority, \-\-label, \-\-subsystem, \-\-key\-slot, \-\-header].
+
 .SH loop-AES EXTENSION
 cryptsetup supports mapping loop-AES encrypted partition using
 a compatibility mode.
@@ -403,7 +481,7 @@ If the key file is encrypted with GnuPG, then you have to use
 gpg \-\-decrypt <keyfile> | cryptsetup loopaesOpen \-\-key\-file=\-
 <device> <name>
 
-\fBWARNING:\fR The loop-AES extension cannot use direct input of key file
+\fBWARNING:\fR The loop-AES extension cannot use the direct input of key file
 on real terminal because the keys are separated by end-of-line and only part
 of the multi-key file would be read.
 .br
@@ -456,15 +534,13 @@ iteration count so unlocking can take quite a lot of time (in comparison
 with TCRYPT device).
 
 To open a VeraCrypt device with a custom Personal Iteration Multiplier (PIM)
-value, \fBadditionally to --veracrypt \fR use either the
-\fB--veracrypt-pim=<PIM>\fR option to directly specify the PIM on the command-
-line or use \fB--veracrypt-query-pim\fR to be prompted for the PIM.
+value, \fBadditionally to \-\-veracrypt \fR use either the
+\fB\-\-veracrypt\-pim=<PIM>\fR option to directly specify the PIM on the command-
+line or use \fB\-\-veracrypt\-query\-pim\fR to be prompted for the PIM.
 
 The PIM value affects the number of iterations applied during key derivation. Please refer to
-\fBhttps://veracrypt.codeplex.com/wikipage?title=Personal%20Iterations%20Multiplier%20(PIM)\fR
+\fBhttps://www.veracrypt.fr/en/Personal%20Iterations%20Multiplier%20(PIM).html\fR
 for more detailed information.
-
-
 
 \fBNOTE:\fR Activation with \fBtcryptOpen\fR is supported only for cipher chains
 using LRW or XTS encryption modes.
@@ -475,17 +551,17 @@ and doesn't require superuser privilege.
 To map system device (device with boot loader where the whole encrypted
 system resides) use \fB\-\-tcrypt\-system\fR option.
 You can use partition device as the parameter (parameter must be real partition
-device, not image in file), then only this partition is mapped.
+device, not an image in a file), then only this partition is mapped.
 
-If you have whole TCRYPT device as a file image and you want to map multiple
+If you have the whole TCRYPT device as a file image and you want to map multiple
 partition encrypted with system encryption, please create loopback mapping
 with partitions first (\fBlosetup \-P\fR, see \fPlosetup(8)\fR man page for more info),
 and use loop partition as the device parameter.
 
-If you use whole base device as parameter, one device for the whole system
+If you use the whole base device as a parameter, one device for the whole system
 encryption is mapped. This mode is available only for backward compatibility
 with older cryptsetup versions which mapped TCRYPT system encryption
-using whole device.
+using the whole device.
 
 To use hidden header (and map hidden device, if available),
 use \fB\-\-tcrypt\-hidden\fR option.
@@ -509,15 +585,15 @@ a mapping <name>.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-tcrypt\-hidden,
 \-\-tcrypt\-system, \-\-tcrypt\-backup, \-\-readonly, \-\-test\-passphrase,
-\-\-allow-discards].
+\-\-allow-discards, \-\-vracrypt, \-\-veracrypt\-pim, \-\-veracrypt\-querry\-pim].
 
-The keyfile parameter allows combination of file content with the
+The keyfile parameter allows a combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
 with TCRYPT and is different from LUKS keyfile logic.
 
 \fBWARNING:\fR Option \fB\-\-allow\-discards\fR cannot be combined with
-option \fB\-\-tcrypt\-hidden\fR. For normal mapping it can cause
-\fBdestruction of hidden volume\fR (hidden volume appears as unused space
+option \fB\-\-tcrypt\-hidden\fR. For normal mapping, it can cause
+the \fBdestruction of hidden volume\fR (hidden volume appears as unused space
 for outer volume so this space can be discarded).
 
 .PP
@@ -536,14 +612,14 @@ to be erased to prevent further access. Use this option carefully.
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
 \-\-tcrypt\-hidden, \-\-tcrypt\-system, \-\-tcrypt\-backup].
 
-The keyfile parameter allows combination of file content with the
+The keyfile parameter allows a combination of file content with the
 passphrase and can be repeated.
 .PP
 See also \fBhttps://en.wikipedia.org/wiki/TrueCrypt\fR for more information regarding
 TrueCrypt.
 
 Please note that cryptsetup does not use TrueCrypt code, please report
-all problems related to this compatibility extension to cryptsetup project.
+all problems related to this compatibility extension to the cryptsetup project.
 .SH MISCELLANEOUS
 .PP
 \fIrepair\fR <device>
@@ -562,7 +638,7 @@ header before calling this command.
 \fIbenchmark\fR <options>
 .IP
 Benchmarks ciphers and KDF (key derivation function).
-Without parameters it tries to measure few common configurations.
+Without parameters, it tries to measure few common configurations.
 
 To benchmark other ciphers or modes, you need to specify \fB\-\-cipher\fR
 and \fB\-\-key\-size\fR options or \fB\-\-hash\fR for KDF test.
@@ -585,6 +661,10 @@ Print more information on command execution.
 .B "\-\-debug"
 Run in debug mode with full diagnostic logs. Debug output
 lines are always prefixed by '#'.
+.TP
+.B "\-\-type <device-type>
+Specifies required device type, for more info
+read \fIBASIC COMMANDS\fR section.
 .TP
 .B "\-\-hash, \-h \fI<hash\-spec>\fR"
 Specifies the passphrase hash for \fIopen\fR (for plain and
@@ -652,18 +732,18 @@ See section \fBNOTES ON PASSPHRASE PROCESSING\fR for more information.
 .TP
 .B "\-\-keyfile\-offset \fIvalue\fR"
 Skip \fIvalue\fR bytes at the beginning of the key file.
-Works with all commands that accepts key files.
+Works with all commands that accept key files.
 .TP
 .B "\-\-keyfile\-size, \-l \fIvalue\fR"
 Read a maximum of \fIvalue\fR bytes from the key file.
-Default is to read the whole file up to the compiled-in
+The default is to read the whole file up to the compiled-in
 maximum that can be queried with \-\-help. Supplying more
 data than the compiled-in maximum aborts the operation.
 
 This option is useful
 to cut trailing newlines, for example. If \-\-keyfile\-offset
 is also given, the size count starts after the offset.
-Works with all commands that accepts key files.
+Works with all commands that accept key files.
 .TP
 .B "\-\-new\-keyfile\-offset \fIvalue\fR"
 Skip \fIvalue\fR bytes at the start when
@@ -673,7 +753,7 @@ adding a new passphrase from key file with
 .B "\-\-new\-keyfile\-size  \fIvalue\fR"
 Read a maximum of \fIvalue\fR bytes when adding
 a new passphrase from key file with \fIluksAddKey\fR.
-Default is to read the whole file up to the compiled-in
+The default is to read the whole file up to the compiled-in
 maximum length that can be queried with \-\-help.
 Supplying more than the compiled in maximum aborts the
 operation.
@@ -691,7 +771,7 @@ then the new header decrypts the data encrypted with the
 header the master key was taken from.
 
 \fBWARNING:\fR If you create your own master key, you
-need to make sure to do it right. Otherwise you can end
+need to make sure to do it right. Otherwise, you can end
 up with a low-entropy or otherwise partially predictable
 master key which will compromise security.
 
@@ -764,7 +844,7 @@ This option is only relevant for the \fIopen\fR action with plain
 or loopaes device types.
 
 Hence, if \-\-offset \fIn\fR, and \-\-skip \fIs\fR, sector \fIn\fR
-(the first sector of encrypted device) will get a sector number
+(the first sector of the encrypted device) will get a sector number
 of \fIs\fR for the IV calculation.
 .TP
 .B "\-\-readonly, \-r"
@@ -777,11 +857,66 @@ This option is only relevant for the
 \fIopen \-\-type plain\fR action. Use \-\-offset, \-\-size and \-\-skip to
 specify the mapped area.
 .TP
+.B "\-\-pbkdf <PBKDF spec>"
+Set Password-Based Key Derivation Function (PBKDF) algorithm for LUKS keyslot.
+The PBKDF can be: \fIpbkdf2\fR (for PBKDF2 according to RFC2898),
+\fIargon2i\fR for Argon2i or \fIargon2id\fR for Argon2id
+(see https://www.cryptolux.org/index.php/Argon2 for more info).
+
+For LUKS1, only PBKDF2 is accepted (no need to use this option).
+The default PBKDF2 for LUKS2 is set during compilation time
+and is available in \fIcryptsetup \-\-help\fR output.
+
+A PBKDF is used for increasing dictionary and brute-force attack cost
+for keyslot passwords. The parameters can be time, memory and parallel cost.
+
+For PBKDF2, only time cost (number of iterations) applies.
+For Argon2i/id, there is also memory cost (memory required during
+the process of key derivation) and parallel cost (number of threads
+that run in parallel during the key derivation.
+
+Note that increasing memory cost also increases time, so the final
+parameter values are measured by a benchmark. The benchmark
+tries to find iteration time (\fI\-\-iter\-time\fR) with required
+memory cost \fI\-\-pbkdf\-memory\fR. If it is not possible,
+the memory cost is decreased as well.
+The parallel cost \fI\-\-pbkdf\-parallel\fR is constant, is is checked
+against available CPU cores (if not available, it is decreased) and the maximum
+parallel cost is 4.
+
+You can see all PBKDF parameters for particular LUKS2 keyslot with
+\fIluksDump\fR command.
+
+\fBNOTE:\fR If you do not want to use benchmark and want to specify
+all parameters directly, use \fI\-\-pbkdf\-force\-iterations\fR with
+\fI\-\-pbkdf\-memory\fR and \fI\-\-pbkdf\-parallel\fR.
+This will override the values without benchmarking.
+Note it can cause extremely long unlocking time. Use only is specified
+cases, for example, if you know that the formatted device will
+be used on some small embedded system.
+In this case, the LUKS PBKDF2 digest will be set to the minimum iteration count.
+.TP
 .B "\-\-iter\-time, \-i <number of milliseconds>"
-The number of milliseconds to spend with PBKDF2 passphrase processing.
+The number of milliseconds to spend with PBKDF passphrase processing.
 This option is only relevant for LUKS operations that set or change
 passphrases, such as \fIluksFormat\fR or \fIluksAddKey\fR.
 Specifying 0 as parameter selects the compiled-in default.
+.TP
+.B "\-\-pbkdf\-memory <number>"
+Set the memory cost for PBKDF (for Argon2i/id the number represents kilobytes).
+Note that it is maximal value, PBKDF benchmark can decrease it.
+This option is not available for PBKDF2.
+.TP
+.B "\-\-pbkdf\-paralell <number>"
+Set the parallel cost for PBKDF (number of threads, up to 4).
+Note that it is maximal value, it is decreased automatically if
+CPU online count is lower.
+This option is not available for PBKDF2.
+.TP
+.B "\-\-pbkdf\-force\-iterations <num>"
+Avoid PBKDF benchmark and set time cost (iterations) directly.
+It can be used for LUKS/LUKS2 device only.
+See \fI\-\-pbkdf\fR option for more info.
 .TP
 .B "\-\-batch\-mode, \-q"
 Suppresses all confirmation questions. Use with care!
@@ -812,23 +947,23 @@ Align payload at a boundary of \fIvalue\fR 512-byte sectors.
 This option is relevant for \fIluksFormat\fR.
 
 If not specified, cryptsetup tries to use the topology info
-provided by kernel for the underlying device to get optimal alignment.
+provided by the kernel for the underlying device to get the optimal alignment.
 If not available (or the calculated value is a multiple of the default)
 data is by default aligned to a 1MiB boundary (i.e. 2048 512-byte sectors).
 
-For a detached LUKS header this option specifies the offset on the
+For a detached LUKS header, this option specifies the offset on the
 data device. See also the \-\-header option.
 .TP
 .B "\-\-uuid=\fIUUID\fR"
 Use the provided \fIUUID\fR for the \fIluksFormat\fR command
-instead of generating new one. Changes the existing UUID when
+instead of generating a new one. Changes the existing UUID when
 used with the \fIluksUUID\fR command.
 
 The UUID must be provided in the standard UUID format,
 e.g. 12345678-1234-1234-1234-123456789abc.
 .TP
 .B "\-\-allow\-discards\fR"
-Allow the use of discard (TRIM) requests for device.
+Allow the use of discard (TRIM) requests for the device.
 This option is only relevant for \fIopen\fR action.
 
 \fBWARNING:\fR This command can have a negative security impact
@@ -838,7 +973,7 @@ filesystem type, used space, etc. may be extractable from
 the physical device if the discarded blocks can be located
 later. If in doubt, do not use it.
 
-A kernel version of 3.1 or later is needed. For earlier kernels
+A kernel version of 3.1 or later is needed. For earlier kernels,
 this option is ignored.
 .TP
 .B "\-\-perf\-same_cpu_crypt\fR"
@@ -864,20 +999,20 @@ performance tuning, use only if you need a change to default dm-crypt
 behaviour. Needs kernel 4.0 or later.
 .TP
 .B "\-\-test\-passphrase\fR"
-Do not activate device, just verify passphrase.
+Do not activate the device, just verify passphrase.
 This option is only relevant for \fIopen\fR action (the device
 mapping name is not mandatory if this option is used).
 .TP
 .B "\-\-header\fR <device or file storing the LUKS header>"
 Use a detached (separated) metadata device or file where the
-LUKS header is stored. This options allows one to store ciphertext
+LUKS header is stored. This option allows one to store ciphertext
 and LUKS header on different devices.
 
 This option is only relevant for LUKS devices and can be
 used with the \fIluksFormat\fR, \fIopen\fR, \fIluksSuspend\fR,
 \fIluksResume\fR, \fIstatus\fR and \fIresize\fR commands.
 
-For \fIluksFormat\fR with a file name as argument to \-\-header,
+For \fIluksFormat\fR with a file name as the argument to \-\-header,
 it has to exist and be large enough to contain the LUKS header.
 See the cryptsetup FAQ for header size calculation.
 
@@ -889,22 +1024,128 @@ If used with \fIluksFormat\fR, the \-\-align\-payload option is taken
 as absolute sector alignment on ciphertext device and can be zero.
 
 \fBWARNING:\fR There is no check whether the ciphertext device specified
-actually belongs to the header given. In fact you can specify an
+actually belongs to the header given. In fact, you can specify an
 arbitrary device as the ciphertext device for \fIopen\fR
 with the \-\-header option. Use with care.
 .TP
-.B "\-\-force\-password\fR"
+.B "\-\-header\-backup\-file <file>"
+Specify file with header backup for \fIluksHeaderBackup\fR or
+\fIluksHeaderBackup\fR actions.
+.TP
+.B "\-\-force\-password"
 Do not use password quality checking for new LUKS passwords.
 
 This option applies only to \fIluksFormat\fR, \fIluksAddKey\fR and
 \fIluksChangeKey\fR and is ignored if cryptsetup is built without
 password quality checking support.
 
-For more info about password quality check, see manual page
+For more info about password quality check, see the manual page
 for \fBpwquality.conf(5)\fR and \fBpasswdqc.conf(5)\fR.
 .TP
 .B "\-\-deferred"
 Defers device removal in \fIclose\fR command until the last user closes it.
+.TP
+.B "\-\-disable\-locks"
+Disable lock protection for metadata on disk.
+This option is valid only for LUKS2 and ignored for other formats.
+
+\fBWARNING:\fR Do not use this option unless you run cryptsetup in
+a restricted environment where locking is impossible to perform
+(where /run directory cannot be used).
+.TP
+.B "\-\-disable\-keyring"
+Do not load volume key in kernel keyring but use store key directly
+in the dm-crypt target.
+This option is supported only for the LUKS2 format.
+.TP
+.B "\-\-key\-description <text>"
+Set key description in keyring for use with \fItoken\fR command.
+.TP
+.B "\-\-priority <normal|prefer|ignore>"
+Set a priority for LUKS2 keyslot.
+The \fIprefer\fR priority marked slots are tried before \fInormal\fR priority.
+The \fIignored\fR priority means, that slot is never used, if not explicitly
+requested by \fI\-\-key\-slot\fR option.
+.TP
+.B "\-\-token\-id"
+Specify what token to use in actions \fItoken\fR, \fIopen\fR or \fIresize\fR.
+If omitted, all available tokens will be checked before proceeding further with
+passphrase prompt.
+.TP
+.B "\-\-token\-only"
+Do not proceed further with action (any of \fItoken\fR, \fIopen\fR or
+\fIresize\fR) if token activation failed. Without the option,
+action asks for passphrase to proceed further.
+.TP
+.B "\-\-sector\-size <bytes>"
+Set sector size for use with disk encryption. It must be power of two
+and in range 512 - 4096 bytes. The default is 512 bytes sectors.
+This option is available only in the LUKS2 mode.
+
+Note that if sector size is higher than underlying device hardware sector
+and there is not integrity protection that uses data journal, using
+this option can increase risk on incomplete sector writes during a power fail.
+
+If used together with \fI\-\-integrity\fR option and dm-integrity journal,
+the atomicity of writes is guaranteed in all cases (but it cost write
+performance - data has to be written twice).
+
+Increasing sector size from 512 bytes to 4096 bytes can provide better
+performance on most of the modern storage devices and also with some
+hw encryption accelerators.
+.TP
+.B "\-\-persistent"
+If used with LUKS2 devices and activation commands like \fIopen\fR,
+the specified activation flags are persistently written into metadata
+and used next time automatically even for normal activation.
+(No need to use cryptab or other system configuration files.)
+Only \fI\-\-allow-discards\fR, \fI\-\-perf\-same_cpu_crypt\fR,
+\fI\-\-perf\-submit_from_crypt_cpus\fR and \fI\-\-integrity\-no\-journal\fR
+can be stored persistently.
+.TP
+.B "\-\-label <LABEL>"
+.B "\-\-subsystem <SUBSYSTEM>"
+Set label and subsystem description for LUKS2 device, can be used
+in \fIconfig\fR and \fIformat\fR actions.
+The label and subsystem are optional fields and can be later used in udev scripts
+for triggering user actions once device marked by these labels is detected.
+.TP
+.B "\-\-integrity <integrity algorithm>"
+Specify integrity algorithm to be used for authenticated disk encryption in LUKS2.
+
+\fBWARNING: This extension is EXPERIMENTAL\fR and requires dm-integrity
+kernel target (available since kernel version 4.12).
+For more info, see \fIAUTHENTICATED DISK ENCRYPTION\fR section.
+.TP
+.B "\-\-integrity\-\no\-journal"
+Activate device with integrity protection without using data journal (direct
+write of data and integrity tags).
+Note that without journal power fail can cause non-atomic write and data corruption.
+Use only if journalling is performed on a different storage layer.
+.TP
+.B "\-\-integrity\-\no\-wipe"
+Skip wiping of device authentication (integrity) tags. If you skip this
+step, sectors will report invalid integrity tag until an application write
+to the sector.
+
+\fBNOTE:\fR Even some writes to the device can fail if the write is not
+aligned to page size and page-cache initiates read of a sector with invalid
+integrity tag.
+.TP
+.B "\-\-tcrypt\-hidden"
+.B "\-\-tcrypt\-system"
+.B "\-\-tcrypt\-backup"
+Specify which TrueCrypt on-disk header will be used to open the device.
+See \fITCRYPT\fR section for more info.
+.TP
+.B "\-\-veracrypt"
+Allow VeraCrypt compatible mode. Only for TCRYPT extension.
+See \fITCRYPT\fR section for more info.
+.TP
+.B "\-\-veracrypt\-pim"
+.B "\-\-veracrypt\-query\-pim"
+Use a custom Personal Iteration Multiplier (PIM) for VeraCrypt device.
+See \fITCRYPT\fR section for more info.
 .TP
 .B "\-\-version"
 Show the program version.
@@ -956,7 +1197,7 @@ less than the key size.
 
 \fBFrom a key file\fR: It will be truncated to the
 key size of the used cipher or the size given by \-s
-and directly used as binary key.
+and directly used as a binary key.
 
 \fBWARNING\fR: The \-\-hash argument is being ignored.
 The \-\-hash option is usable only for stdin input in plain mode.
@@ -998,10 +1239,10 @@ low-entropy passphrases, but open will take longer to
 complete. For passphrases that have entropy higher than the
 used key length, higher iteration times will not increase security.
 
-The default setting of one second is sufficient for most
+The default setting of one or two seconds is sufficient for most
 practical cases. The only exception is a low-entropy
 passphrase used on a device with a slow CPU, as this will
-result in a low iteration count. On a slow device it may
+result in a low iteration count. On a slow device, it may
 be advisable to increase the iteration time using the
 \-\-iter\-time option in order to obtain a higher
 iteration count. This does slow down all later luksOpen
@@ -1021,7 +1262,7 @@ in order to get more options.
 
 For the \-\-hash option, if the crypto backend is libgcrypt,
 then all algorithms supported by the gcrypt library are available.
-For other crypto backends some algorithms may be missing.
+For other crypto backends, some algorithms may be missing.
 .SH NOTES ON PASSPHRASES
 Mathematics can't be bribed. Make sure you keep your passphrases safe.
 There are a few nice tricks for constructing a fallback, when suddenly
@@ -1050,13 +1291,49 @@ time, using /dev/urandom in a low-entropy situation will
 produce low-quality keys. This is a serious problem, but solving
 it is out of scope for a mere man-page.
 See \fPurandom(4)\fR for more information.
+.SH AUTHENTICATED DISK ENCRYPTION (EXPERIMENTAL)
+Since Linux kernel version 4.12 dm-crypt supports authenticated
+disk encryption.
+
+Normal disk encryption modes are length-preserving (plaintext sector
+is of the same size as a ciphertext sector) and can provide only
+confidentiality protection, but not cryptographically sound
+data integrity protection.
+
+Authenticated modes require additional space per-sector for
+authentication tag and use Authenticated Encryption with Additional
+Data (AEAD) algorithms.
+
+If you configure LUKS2 device with data integrity protection,
+there will be an underlying dm-integrity device, which provides
+additional per-sector metadata space and also provide data
+journal protection to ensure atomicity of data and metadata update.
+Because there must be additional space for metadata and journal,
+the available space for the device will be smaller than for
+length-preserving modes.
+
+The dm-crypt device then resides on top of such a dm-integrity device.
+All activation and deactivation of this device stack is performed
+by cryptsetup, there is no difference in using \fIluksOpen\fR
+for integrity protected devices.
+If you want to format LUKS2 device with data integrity protection,
+use \fI\-\-integrity\fR option.
+
+Some integrity modes requires two independent keys (key for encryption
+and for authentication). Both these keys are stored in one LUKS keyslot.
+
+\fBWARNING:\fR All support for authenticated modes is experimental
+and there are only some modes available for now. Note that there
+are a very few authenticated encryption algorithms that are suitable
+for disk encryption.
+
 .SH NOTES ON LOOPBACK DEVICE USE
 Cryptsetup is usually used directly on a block device (disk
 partition or LVM volume). However, if the device argument is a
 file, cryptsetup tries to allocate a loopback device
 and map it into this file. This mode requires Linux kernel 2.6.25
 or more recent which supports the loop autoclear flag (loop device is
-cleared on last close automatically). Of course, you can
+cleared on the last close automatically). Of course, you can
 always map a file to a loop-device manually. See the
 cryptsetup FAQ for an example.
 

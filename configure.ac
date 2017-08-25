@@ -34,6 +34,8 @@ AC_ENABLE_STATIC(no)
 LT_INIT
 PKG_PROG_PKG_CONFIG
 
+AC_C_RESTRICT
+
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
@@ -328,6 +330,9 @@ if test "x$enable_udev" = xyes; then
 fi
 LIBS=$saved_LIBS
 
+dnl Check for JSON-C used in LUKS2
+PKG_CHECK_MODULES([JSON_C], [json-c])
+
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
 	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle) [gcrypt]]),
@@ -363,8 +368,8 @@ AM_CONDITIONAL(CRYPTO_BACKEND_NETTLE,  test $with_crypto_backend = nettle)
 AM_CONDITIONAL(CRYPTO_INTERNAL_PBKDF2, test $use_internal_pbkdf2 = 1)
 AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PBKDF2])
 
-AC_ARG_ENABLE(argon2, AS_HELP_STRING([--enable-argon2],
-	[enable internal implementation of Argon2 PBKDF]))
+AC_ARG_ENABLE(argon2, AS_HELP_STRING([--disable-argon2],
+	[disable internal implementation of Argon2 PBKDF]),[], [enable_argon2=yes])
 AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test x$enable_argon2 = xyes)
 if test x$enable_argon2 = xyes ; then
 AC_DEFINE(USE_INTERNAL_ARGON2, 1, [Use internal Argon2])
@@ -413,6 +418,8 @@ AC_SUBST([PASSWDQC_LIBS])
 AC_SUBST([CRYPTO_CFLAGS])
 AC_SUBST([CRYPTO_LIBS])
 AC_SUBST([CRYPTO_STATIC_LIBS])
+
+AC_SUBST([JSON_C_LIBS])
 
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
@@ -480,7 +487,12 @@ CS_STR_WITH([luks1-hash],   [hash function for LUKS1 header], [sha256])
 CS_STR_WITH([luks1-cipher], [cipher for LUKS1], [aes])
 CS_STR_WITH([luks1-mode],   [cipher mode for LUKS1], [xts-plain64])
 CS_NUM_WITH([luks1-keybits],[key length in bits for LUKS1], [256])
-CS_NUM_WITH([luks1-iter-time],[PBKDF2 iteration time for LUKS1 (in ms)], [2000])
+
+CS_STR_WITH([luks2-pbkdf],           [Default PBKDF algorithm (pbkdf2 or argon2i/argon2id) for LUKS2], [argon2i])
+CS_NUM_WITH([luks1-iter-time],       [PBKDF2 iteration time for LUKS1 (in ms)], [2000])
+CS_NUM_WITH([luks2-iter-time],       [Argon2 PBKDF iteration time for LUKS2 (in ms)], [800])
+CS_NUM_WITH([luks2-memory-kb],       [Argon2 PBKDF memory cost for LUKS2 (in kB)], [1024])
+CS_NUM_WITH([luks2-parallel-threads],[Argon2 PBKDF max parallel cost for LUKS2 (if CPUs available)], [4])
 
 CS_STR_WITH([loopaes-cipher], [cipher for loop-AES mode], [aes])
 CS_NUM_WITH([loopaes-keybits],[key length in bits for loop-AES mode], [256])
@@ -513,6 +525,7 @@ lib/libcryptsetup.pc
 lib/crypto_backend/Makefile
 lib/crypto_backend/argon2/Makefile
 lib/luks1/Makefile
+lib/luks2/Makefile
 lib/loopaes/Makefile
 lib/verity/Makefile
 lib/tcrypt/Makefile

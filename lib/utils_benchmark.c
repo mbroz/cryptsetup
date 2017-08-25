@@ -197,7 +197,7 @@ int crypt_benchmark(struct crypt_device *cd,
 	char *c;
 	int r;
 
-	if (!cipher || !cipher_mode || !volume_key_size)
+	if (!cipher || !cipher_mode || !volume_key_size || !encryption_mbs || !decryption_mbs)
 		return -EINVAL;
 
 	r = init_crypto(cd);
@@ -243,6 +243,9 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 {
 	int r;
 	const char *kdf_opt;
+
+	if (!pbkdf || (!password && password_size))
+		return -EINVAL;
 
 	r = init_crypto(cd);
 	if (r < 0)
