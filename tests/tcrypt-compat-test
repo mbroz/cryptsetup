@@ -9,6 +9,8 @@ PASSWORD="aaaaaaaaaaaa"
 PASSWORD_HIDDEN="bbbbbbbbbbbb"
 PIM=1234
 
+[ -z "$srcdir" ] && srcdir="."
+
 function remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove $MAP
@@ -68,7 +70,7 @@ function test_required()
 test_required
 export LANG=C
 
-[ ! -d $TST_DIR ] && tar xjf tcrypt-images.tar.bz2 --no-same-owner
+[ ! -d $TST_DIR ] && tar xjf $srcdir/tcrypt-images.tar.bz2 --no-same-owner
 
 echo "HEADER CHECK"
 for file in $(ls $TST_DIR/[tv]c_*) ; do
