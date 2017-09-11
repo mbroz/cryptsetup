@@ -23,6 +23,8 @@
 #include "crypto_backend.h"
 #include "argon2/argon2.h"
 
+#define CONST_CAST(x) (x)(uintptr_t)
+
 int argon2(const char *type, const char *password, size_t password_length,
 	   const char *salt, size_t salt_length,
 	   char *key, size_t key_length,
@@ -38,9 +40,9 @@ int argon2(const char *type, const char *password, size_t password_length,
 		.threads = (uint32_t)parallel,
 		.out = (uint8_t *)key,
 		.outlen = (uint32_t)key_length,
-		.pwd = (uint8_t *)password,
+		.pwd = CONST_CAST(uint8_t *)password,
 		.pwdlen = (uint32_t)password_length,
-		.salt = (uint8_t *)salt,
+		.salt = CONST_CAST(uint8_t *)salt,
 		.saltlen = (uint32_t)salt_length,
 	};
 	int r;
