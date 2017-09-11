@@ -95,9 +95,8 @@ ssize_t write_blockwise(int fd, size_t bsize, size_t alignment,
 			void *orig_buf, size_t count)
 {
 	void *hangover_buf = NULL, *buf = NULL;
-	int r;
 	size_t hangover, solid;
-	ssize_t ret = -1;
+	ssize_t r, ret = -1;
 
 	if (fd == -1 || !orig_buf || !bsize || !alignment)
 		return -1;
@@ -150,9 +149,8 @@ ssize_t read_blockwise(int fd, size_t bsize, size_t alignment,
 		       void *orig_buf, size_t count)
 {
 	void *hangover_buf = NULL, *buf = NULL;
-	int r;
 	size_t hangover, solid;
-	ssize_t ret = -1;
+	ssize_t r, ret = -1;
 
 	if (fd == -1 || !orig_buf || !bsize || !alignment)
 		return -1;
@@ -199,9 +197,8 @@ ssize_t write_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 			      void *buf, size_t count, off_t offset)
 {
 	void *frontPadBuf = NULL;
-	int r;
 	size_t frontHang, innerCount = 0;
-	ssize_t ret = -1;
+	ssize_t r, ret = -1;
 
 	if (fd == -1 || !buf || !bsize || !alignment)
 		return -1;
@@ -226,16 +223,16 @@ ssize_t write_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 			innerCount = count;
 
 		r = read_buffer(fd, frontPadBuf, bsize);
-		if (r < (frontHang + innerCount))
+		if (r < 0 || r < (ssize_t)(frontHang + innerCount))
 			goto out;
 
-		memcpy(frontPadBuf + frontHang, buf, innerCount);
+		memcpy((char*)frontPadBuf + frontHang, buf, innerCount);
 
 		if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
 			goto out;
 
 		r = write_buffer(fd, frontPadBuf, frontHang + innerCount);
-		if (r != (frontHang + innerCount))
+		if (r < 0 || r != (ssize_t)(frontHang + innerCount))
 			goto out;
 
 		buf = (char*)buf + innerCount;
@@ -254,9 +251,8 @@ ssize_t read_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 			     void *buf, size_t count, off_t offset)
 {
 	void *frontPadBuf = NULL;
-	int r;
 	size_t frontHang, innerCount = 0;
-	ssize_t ret = -1;
+	ssize_t r, ret = -1;
 
 	if (fd == -1 || !buf || bsize <= 0)
 		return -1;
@@ -281,10 +277,10 @@ ssize_t read_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 			innerCount = count;
 
 		r = read_buffer(fd, frontPadBuf, bsize);
-		if (r < (frontHang + innerCount))
+		if (r < 0 || r < (ssize_t)(frontHang + innerCount))
 			goto out;
 
-		memcpy(buf, frontPadBuf + frontHang, innerCount);
+		memcpy(buf, (char*)frontPadBuf + frontHang, innerCount);
 
 		buf = (char*)buf + innerCount;
 		count -= innerCount;
