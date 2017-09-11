@@ -999,6 +999,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		return -ENOTSUP;
 
 	dmd_flags = dmd->flags;
+	dmt_flags = 0;
 
 	if (dmd->target == DM_CRYPT)
 		table_params = get_dm_crypt_params(dmd, dmd_flags);
