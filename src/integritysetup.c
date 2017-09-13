@@ -484,18 +484,18 @@ int main(int argc, const char **argv)
 		{ "version",            '\0', POPT_ARG_NONE, &opt_version_mode,       0, N_("Print package version"), NULL },
 		{ "verbose",             'v', POPT_ARG_NONE, &opt_verbose,            0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",              '\0', POPT_ARG_NONE, &opt_debug,              0, N_("Show debug messages"), NULL },
-		{ "batch-mode",         'q',  POPT_ARG_NONE, &opt_batch_mode,         0, N_("Do not ask for confirmation"), NULL },
+		{ "batch-mode",          'q', POPT_ARG_NONE, &opt_batch_mode,         0, N_("Do not ask for confirmation"), NULL },
 		{ "no-wipe",            '\0', POPT_ARG_NONE, &opt_no_wipe,            0, N_("Do not wipe device after format"), NULL },
 
-		{ "journal-size",       '\0', POPT_ARG_STRING,&opt_journal_size_str,  0, N_("Journal size"), N_("bytes") },
+		{ "journal-size",        'j', POPT_ARG_STRING,&opt_journal_size_str,  0, N_("Journal size"), N_("bytes") },
 		{ "interleave-sectors", '\0', POPT_ARG_INT,  &opt_interleave_sectors, 0, N_("Interleave sectors"), N_("SECTORS") },
 		{ "journal-watermark",  '\0', POPT_ARG_INT,  &opt_journal_watermark,  0, N_("Journal watermark"),N_("percent") },
 		{ "journal-commit-time",'\0', POPT_ARG_INT,  &opt_journal_commit_time,0, N_("Journal commit time"), N_("ms") },
-		{ "tag-size",           '\0', POPT_ARG_INT,  &opt_tag_size,           0, N_("Tag size per-sector"), N_("bytes") },
-		{ "sector-size",        '\0', POPT_ARG_INT,  &opt_sector_size,        0, N_("Sector size"), N_("bytes") },
+		{ "tag-size",            't', POPT_ARG_INT,  &opt_tag_size,           0, N_("Tag size per-sector"), N_("bytes") },
+		{ "sector-size",         's', POPT_ARG_INT,  &opt_sector_size,        0, N_("Sector size"), N_("bytes") },
 		{ "buffer-sectors",     '\0', POPT_ARG_INT,  &opt_buffer_sectors,     0, N_("Buffers size"), N_("SECTORS") },
 
-		{ "integrity",                 '\0', POPT_ARG_STRING, &opt_integrity,                 0, N_("Data integrity algorithm (default "DEFAULT_ALG_NAME ")"), NULL },
+		{ "integrity",                  'I', POPT_ARG_STRING, &opt_integrity,                 0, N_("Data integrity algorithm (default "DEFAULT_ALG_NAME ")"), NULL },
 		{ "integrity-key-size",        '\0', POPT_ARG_INT,    &opt_integrity_key_size,        0, N_("The size of the data integrity key"), N_("BITS") },
 		{ "integrity-key-file",        '\0', POPT_ARG_STRING, &opt_integrity_key_file,        0, N_("Read the integrity key from a file."), NULL },
 
@@ -507,8 +507,8 @@ int main(int argc, const char **argv)
 		{ "journal-crypt-key-size",    '\0', POPT_ARG_INT,    &opt_journal_crypt_key_size,    0, N_("The size of the journal encryption key"), N_("BITS") },
 		{ "journal-crypt-key-file",    '\0', POPT_ARG_STRING, &opt_journal_crypt_key_file,    0, N_("Read the journal encryption key from a file."), NULL },
 
-		{ "integrity-no-journal",       '\0',POPT_ARG_NONE,  &opt_integrity_nojournal,  0, N_("Disable journal for integrity device."), NULL },
-		{ "integrity-recovery-mode",    '\0',POPT_ARG_NONE, &opt_integrity_recovery,  0, N_("Recovery mode (no journal, no tag checking)."), NULL },
+		{ "integrity-no-journal",       'D', POPT_ARG_NONE,  &opt_integrity_nojournal, 0, N_("Disable journal for integrity device."), NULL },
+		{ "integrity-recovery-mode",    'R', POPT_ARG_NONE,  &opt_integrity_recovery,  0, N_("Recovery mode (no journal, no tag checking)."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

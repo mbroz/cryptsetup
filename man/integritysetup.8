@@ -1,4 +1,4 @@
-.TH INTEGRITYSETUP "8" "May 2017" "integritysetup" "Maintenance Commands"
+.TH INTEGRITYSETUP "8" "September 2017" "integritysetup" "Maintenance Commands"
 .SH NAME
 integritysetup - manage dm-integrity (block level integrity) volumes
 .SH SYNOPSIS
@@ -19,8 +19,8 @@ Integritysetup supports these operations:
 .IP
 Formats <device> (calculates space and dm-integrity superblock and wipes the device).
 
-\fB<options>\fR can be [\-\-batch-mode, \-\-no-wipe, \-\-journal-size, \-\-interleave-sectors,
-\-\-tag-size, \-\-integrity, \-\-integrity-key-size, \-\-integrity-key-file, \-\-sector-size]
+\fB<options>\fR can be [\-\-batch\-mode, \-\-no\-wipe, \-\-journal\-size, \-\-interleave\-sectors,
+\-\-tag\-size, \-\-integrity, \-\-integrity\-key\-size, \-\-integrity\-key\-file, \-\-sector\-size]
 
 .PP
 \fIopen\fR <device> <name>
@@ -29,17 +29,17 @@ Formats <device> (calculates space and dm-integrity superblock and wipes the dev
 .IP
 Open a mapping with <name> backed by device <device>.
 
-\fB<options>\fR can be [\-\-batch-mode, \-\-journal-watermark, \-\-journal-commit-time,
-\-\-buffer-sectors, \-\-integrity, \-\-integrity-key-size, \-\-integrity-key-file,
-\-\-integrity-no-journal, \-\-integrity-recovery-mode]
+\fB<options>\fR can be [\-\-batch\-mode, \-\-journal\-watermark, \-\-journal\-commit\-time,
+\-\-buffer\-sectors, \-\-integrity, \-\-integrity\-key\-size, \-\-integrity\-key\-file,
+\-\-integrity\-no\-journal, \-\-integrity\-recovery\-mode]
 
 .PP
 \fIclose\fR <name>
 .IP
 Removes existing mapping <name>.
 
-For backward compatibility there is \fBremove\fR command alias
-for \fBclose\fR command.
+For backward compatibility, there is \fBremove\fR command alias
+for the \fBclose\fR command.
 .PP
 \fIstatus\fR <name>
 .IP
@@ -65,59 +65,90 @@ Show the program version.
 Do not ask for confirmation.
 .TP
 .B "\-\-no\-wipe"
-Do not wipe device after format. Deviced that is not initially wiped will contain invalid checksums.
+Do not wipe the device after format. A device that is not initially wiped will contain invalid checksums.
 .TP
-.B "\-\-journal\-size=bytes"
-Size of journal.
+.B "\-\-journal\-size, \-j BYTES"
+Size of the journal.
 .TP
-.B "\-\-interleave\-sectors=SECTORS"
-Number of interleaved sectors.
+.B "\-\-interleave\-sectors SECTORS"
+The number of interleaved sectors.
 .TP
-.B "\-\-journal\-watermark=percent"
+.B "\-\-journal\-watermark PERCENT"
 Journal watermark in percents. When the size of the journal exceeds this watermark,
 the journal flush will be started.
 .TP
-.B "\-\-journal\-commit\-time=ms"
+.B "\-\-journal\-commit\-time MS"
 Commit time in milliseconds. When this time passes (and no explicit flush operation was issued),
 the journal is written.
 .TP
-.B "\-\-tag\-size=bytes"
+.B "\-\-tag\-size, \-t BYTES"
 Size of the integrity tag per-sector (here the integrity function will store authentication tag).
 
 \fBNOTE:\fR The size can be smaller that output size of the hash function, in that case only
 part of the hash will be stored.
 .TP
-.B "\-\-sector\-size=bytes"
-Size of sector (power of two: 512, 1024, 2048, 4096).
+.B "\-\-sector\-size, \-s BYTES"
+Sector size (power of two: 512, 1024, 2048, 4096).
 .TP
-.B "\-\-buffer\-sectors=SECTORS"
+.B "\-\-buffer\-sectors SECTORS"
 The number of sectors in one buffer.
 
 The tag area is accessed using buffers, the large buffer size means that the I/O size will
 be larger, but there could be less I/Os issued.
 .TP
-.B "\-\-integrity=algorithm"
-Use intenal integrity calculation (standalone mode).
+.B "\-\-integrity, \-I ALGORITHM"
+Use internal integrity calculation (standalone mode).
 The integrity algorithm can be CRC (crc32c/crc32) or hash function (sha1, sha256).
 
-For HMAC (hmac-sha256) you have to also specify a integrity key and its size.
+For HMAC (hmac-sha256) you have also to specify an integrity key and its size.
 .TP
-.B "\-\-integrity\-key\-size=bits"
+.B "\-\-integrity\-key\-size BITS"
 The size of the data integrity key.
 .TP
-.B "\-\-integrity\-key\-file=file"
+.B "\-\-integrity\-key\-file FILE"
 The file with the integrity key.
 .TP
-.B "\-\-integrity\-no\-journal"
+.B "\-\-integrity\-no\-journal, \-D"
 Disable journal for integrity device.
 
-\fBWARNING:\fR In case of crash, it is possible that the data and integrity tag doesn't match if journal is disabled.
+\fBWARNING:\fR
+In case of a crash, it is possible that the data and integrity tag doesn't match
+if the journal is disabled.
 .TP
-.B "\-\-integrity\-recovery\-mode"
+.B "\-\-integrity\-recovery\-mode. \-R"
 Recovery mode (no journal, no tag checking).
 .TP
 
+\fBNOTE:\fR The following options are intended for testing purposes only.
+Using journal encryption does not make sense without encryption the data,
+these options are internally used in authenticated disk encryption with \fBcryptsetup(8)\fR.
+.TP
+.B "\-\-journal\-integrity ALGORITHM"
+Integrity algorithm for journal area.
+See \-\-integrity option for detailed specification.
+.TP
+.B "\-\-journal\-integrity\-key\-size BITS"
+The size of the journal integrity key.
+.TP
+.B "\-\-journal\-integrity\-key\-file FILE"
+The file with the integrity key.
+.TP
+.B "\-\-journal\-crypt ALGORITHM"
+Encryption algorithm for journal data area.
+You can use a block cipher here such as cbc(aes) or
+a stream cipher, for example, chacha20 or ctr(aes).
+.TP
+.B "\-\-journal\-crypt\-key\-size BITS"
+The size of the journal encryption key.
+.TP
+.B "\-\-journal\-crypt\-key\-file FILE"
+The file with the journal encryption key.
+.TP
 The dm-integrity target is available since Linux kernel version 4.12.
+.TP
+\fBNOTE:\fR
+Format and activation of an integrity device always require superuser
+privilege because the superblock is calculated and handled in dm-integrity kernel target.
 
 .SH RETURN CODES
 Integritysetup returns 0 on success and a non-zero value on error.
@@ -127,7 +158,7 @@ Error codes are:
     2 no permission
     3 out of memory
     4 wrong device specified
-    5 device already exists or device is busy.
+    5 device already exists, or device is busy.
 
 .SH EXAMPLES
 Format the device with default standalone mode (CRC32C):
@@ -140,13 +171,13 @@ Open the device with default parameters:
 
 Format the device in standalone mode for use with HMAC(SHA256):
 
-.B "integritysetup format <device> --tag-size 32 --integrity hmac-sha256 \
---integrity-key-file <keyfile> --integrity-key-size <key_bytes>"
+.B "integritysetup format <device> \-\-tag\-size 32 \-\-integrity hmac\-sha256 \
+\-\-integrity\-key\-file <keyfile> \-\-integrity\-key\-size <key_bytes>"
 
 Open (activate) the device with HMAC(SHA256) and HMAC key in file:
 
-.B "integritysetup open <device> test --integrity hmac-sha256 \
---integrity-key-file <keyfile> --integrity-key-size <key_bytes>"
+.B "integritysetup open <device> test \-\-integrity hmac\-sha256 \
+\-\-integrity\-key\-file <keyfile> \-\-integrity\-key\-size <key_bytes>"
 
 Dump dm-integrity superblock information:
 
@@ -159,8 +190,8 @@ or in the 'Issues' section on LUKS website.
 Please attach the output of the failed command with the
 \-\-debug option added.
 .SH AUTHORS
-The integritysetup tool and code is written by Milan Broz <gmazyland@gmail.com>
-and is part of cryptsetup project.
+The integritysetup tool is written by Milan Broz <gmazyland@gmail.com>
+and is part of the cryptsetup project.
 .SH COPYRIGHT
 Copyright \(co 2016-2017 Red Hat, Inc.
 .br
