@@ -94,6 +94,34 @@ intformat() # alg alg_out tagsize sector_size csum
 	echo "[OK]"
 }
 
+int_error_detection() # alg tagsize sector_size
+{
+	echo -n "[INTEGRITY:$1:$2:$3]"
+	echo -n "[FORMAT]"
+	$INTSETUP format -q --integrity $1 --tag-size $2 --sector-size $3 $DEV || fail "Cannot format device."
+	echo -n "[ACTIVATE]"
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-no-journal || fail "Cannot activate device."
+	echo -n "[WRITE DATA]"
+	echo -n "EXAMPLE TEXT" | dd of=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Cannot write to device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+
+	# find offset of data area
+	ARR=(`dd if=$DEV bs=512 2>/dev/null | hexdump -C | grep 'EXAMPLE TEXT'`)
+	OFF_HEX=${ARR[0]}
+	OFF_DEC=$((16#$OFF_HEX))
+
+	echo -n "[CORRUPT DATA:$OFF_DEC]"
+	echo -n "Z" | dd of=$DEV bs=1 seek=$OFF_DEC conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
+
+	echo -n "[DETECT ERROR]"
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device."
+	dd if=/dev/mapper/$DEV_NAME  >/dev/null 2>&1 && fail "Error detection failed."
+
+	echo -n "[REMOVE]"
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	echo "[OK]"
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$INTSETUP" ] && skip "Cannot find $INTSETUP, test skipped."
 modprobe dm-integrity >/dev/null 2>&1
@@ -109,6 +137,19 @@ intformat sha256      sha256         32  512 8e5fe4119558e117bfc40e3b0f13ade3abe
 intformat hmac-sha256 hmac\(sha256\) 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
 intformat sha256      sha256         32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4
 intformat hmac-sha256 hmac\(sha256\) 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4
+
+echo "Error detection tests:"
+int_error_detection crc32c      4  512
+int_error_detection crc32c      4  4096
+int_error_detection crc32       4  512
+int_error_detection crc32       4  4096
+int_error_detection sha1        20 512
+int_error_detection sha1        16 512
+int_error_detection sha1        20 4096
+int_error_detection sha256      32 512
+int_error_detection sha256      32 4096
+int_error_detection hmac-sha256 32 512
+int_error_detection hmac-sha256 32 4096
 
 # FIXME: key, journal encryption, mode/recovery, journal params
 
