@@ -1272,7 +1272,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 
 		if (get_flags & DM_ACTIVE_CRYPT_KEY) {
 			if (key_[0] == ':') {
-				dmd->u.crypt.key_description = strdup(strpbrk(key_ + 1, ":") + 1);
+				dmd->u.crypt.key_description = strdup(strpbrk(strpbrk(key_ + 1, ":") + 1, ":") + 1);
 				if (!dmd->u.crypt.key_description) {
 					r = -ENOMEM;
 					goto err;
