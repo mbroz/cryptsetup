@@ -1998,6 +1998,15 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	struct crypt_dm_active_device dmd = {};
 	int r;
 
+	/*
+	 * FIXME: check context uuid matches the dm-crypt device uuid.
+	 * 	  Currently it's possible to resize device (name)
+	 * 	  unrelated to device loaded in context.
+	 *
+	 *	  Also with LUKS2 we must not allow resize when there's
+	 *	  explicit size stored in metadata (length != "dynamic")
+	 */
+
 	/* Device context type must be initialised */
 	if (!cd || !cd->type || !name)
 		return -EINVAL;
@@ -2268,6 +2277,8 @@ int crypt_suspend(struct crypt_device *cd,
 	crypt_status_info ci;
 	int r;
 
+	/* FIXME: check context uuid matches the dm-crypt device uuid (onlyLUKS branching) */
+
 	if (!cd || !name)
 		return -EINVAL;
 
@@ -2329,6 +2340,8 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 	int r;
 
+	/* FIXME: check context uuid matches the dm-crypt device uuid */
+
 	if (!passphrase || !name)
 		return -EINVAL;
 
@@ -2388,6 +2401,8 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 	char *passphrase_read = NULL;
 	size_t passphrase_size_read;
 	int r;
+
+	/* FIXME: check context uuid matches the dm-crypt device uuid */
 
 	if (!name || !keyfile)
 		return -EINVAL;
