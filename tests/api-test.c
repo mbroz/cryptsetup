@@ -1873,6 +1873,60 @@ static void TcryptTest(void)
 	EQ_(crypt_status(NULL, CDEVICE_1 "_1"), CRYPT_INACTIVE);
 }
 
+static void IntegrityTest(void)
+{
+	struct crypt_device *cd;
+	struct crypt_params_integrity params = {
+		.tag_size = 4,
+		.integrity = "crc32c",
+		.sector_size = 4096,
+	}, ip = {};
+	int ret;
+
+	// FIXME: this should be more detailed
+
+	OK_(crypt_init(&cd,DEVICE_1));
+	FAIL_(crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,NULL), "params field required");
+	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
+	if (ret < 0) {
+		printf("WARNING: cannot format integrity device, skipping test.\n");
+		crypt_free(cd);
+		return;
+	}
+	OK_(crypt_get_integrity_info(cd, &ip));
+	EQ_(ip.tag_size, params.tag_size);
+	EQ_(ip.sector_size, params.sector_size);
+	EQ_(crypt_get_sector_size(cd), params.sector_size);
+	EQ_(ip.interleave_sectors, params.interleave_sectors);
+	EQ_(ip.journal_size, params.journal_size);
+	EQ_(ip.journal_watermark, params.journal_watermark);
+	OK_(strcmp(ip.integrity,params.integrity));
+	FAIL_(crypt_set_uuid(cd,DEVICE_1_UUID),"can't set uuid to integrity device");
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_INTEGRITY, NULL));
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	//params.tag_size = 8;
+	//FAIL_(crypt_load(cd, CRYPT_INTEGRITY, &params), "tag size mismatch");
+	params.tag_size = 4;
+	OK_(crypt_load(cd, CRYPT_INTEGRITY, &params));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	crypt_free(cd);
+
+	memset(&ip, 0, sizeof(ip));
+	OK_(crypt_init_by_name(&cd, CDEVICE_1));
+	OK_(crypt_get_integrity_info(cd, &ip));
+	EQ_(ip.tag_size, params.tag_size);
+	OK_(strcmp(ip.integrity,params.integrity));
+	OK_(strcmp(CRYPT_INTEGRITY,crypt_get_type(cd)));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+}
+
 // Check that gcrypt is properly initialised in format
 static void NonFIPSAlg(void)
 {
@@ -1954,6 +2008,7 @@ int main(int argc, char *argv[])
 	RUN_(CallbacksTest, "API callbacks test");
 	RUN_(VerityTest, "DM verity test");
 	RUN_(TcryptTest, "Tcrypt API test");
+	RUN_(IntegrityTest, "Integrity API test");
 out:
 	_cleanup();
 	return 0;

@@ -694,6 +694,8 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	// FIXME: add checks for fields in integrity sb vs params
+
 	if (params) {
 		cd->u.integrity.params.journal_watermark = params->journal_watermark;
 		cd->u.integrity.params.journal_commit_time = params->journal_commit_time;
