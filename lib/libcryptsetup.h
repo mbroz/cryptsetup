@@ -156,15 +156,6 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
 	void *usrptr);
 
 /**
- * Set how long should cryptsetup iterate in PBKDF2 function.
- * Default value heads towards the iterations which takes around 1 second.
- *
- * @param cd crypt device handle
- * @param iteration_time_ms the time in ms
- */
-void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms);
-
-/**
  * Set data device
  * For LUKS it is encrypted data device when LUKS header is separated.
  * For VERITY it is data device when hash device is separated.
@@ -216,9 +207,15 @@ struct crypt_pbkdf_type {
 	uint32_t iterations;      /**< Iterations, 0 or benchmarked value. */
 	uint32_t max_memory_kb;   /**< Requested or benchmarked  memory cost [kilobytes] */
 	uint32_t parallel_threads;/**< Requested parallel cost [threads] */
+	uint32_t flags;           /**< CRYPT_PBKDF* flags */
 };
 
-/** PBKDF2 for LUKS1 and LUKS2 */
+/** Iteration time set by crypt_set_iteration_time(), for compatibility only. */
+#define CRYPT_PBKDF_ITER_TIME_SET   (1 << 0)
+/** Never run benchmarks, use pre-set value or defaults. */
+#define CRYPT_PBKDF_NO_BENCHMARK    (1 << 1)
+
+/** PBKDF2 according to RFC2898, LUKS1 legacy */
 #define CRYPT_KDF_PBKDF2   "pbkdf2"
 /** Argon2i according to RFC */
 #define CRYPT_KDF_ARGON2I  "argon2i"
@@ -227,14 +224,15 @@ struct crypt_pbkdf_type {
 
 /**
  * Set default PBKDF (Password-Based Key Derivation Algorithm) for next keyslot
- * about to get created with any crypt_keyslot_add_*() call. Works only with
- * valid LUKSv2 device handles.
+ * about to get created with any crypt_keyslot_add_*() call.
  *
  * @param cd crypt device handle
  * @param pbkdf PBKDF parameters
  *
  * @return 0 on success or negative errno value otherwise.
  *
+ * @note For LUKS1, only PBKDF2 is suppported, other settings will be rejected.
+ * @note For non-LUKS context types the call succeeds, but PBKDF is not used.
  */
 int crypt_set_pbkdf_type(struct crypt_device *cd,
 	 const struct crypt_pbkdf_type *pbkdf);
@@ -249,6 +247,18 @@ int crypt_set_pbkdf_type(struct crypt_device *cd,
  *
  */
 const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd);
+
+/**
+ * Set how long should cryptsetup iterate in PBKDF2 function.
+ * Default value heads towards the iterations which takes around 1 second.
+ * \b Deprecated, only for backward compatibility. Use @link crypt_set_pbkdf_type.
+ *
+ * @param cd crypt device handle
+ * @param iteration_time_ms the time in ms
+ *
+ * @note If the time value is not acceptable for active PBKDF, value is quietly ignored.
+ */
+void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms);
 
 /** @} */
 

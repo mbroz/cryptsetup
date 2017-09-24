@@ -292,8 +292,13 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 
 	/* Already benchmarked */
 	if (pbkdf->iterations) {
-		log_dbg("Reusing PBKDF benchmark values.");
+		log_dbg("Reusing PBKDF values.");
 		return 0;
+	}
+
+	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK) {
+		log_err(cd, _("PBKDF benchmark disabled but iterations not set.\n"));
+		return -EINVAL;
 	}
 
 	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2)) {
