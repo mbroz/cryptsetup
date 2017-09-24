@@ -49,6 +49,7 @@
 #define CONST_CAST(x) (x)(uintptr_t)
 #define DEFAULT_CIPHER(type)	(DEFAULT_##type##_CIPHER "-" DEFAULT_##type##_MODE)
 #define SECTOR_SIZE 512
+#define MAX_SECTOR_SIZE 4096
 #define ROUND_SECTOR(x) (((x) + SECTOR_SIZE - 1) / SECTOR_SIZE)
 
 #define DEFAULT_WIPE_BLOCK	1048576 /* 1 MiB */

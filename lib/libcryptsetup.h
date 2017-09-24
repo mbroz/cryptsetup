@@ -356,6 +356,7 @@ struct crypt_params_plain {
 	uint64_t offset; /**< offset in sectors */
 	uint64_t skip; /**< IV offset / initialization sector */
 	uint64_t size; /**< size of mapped device or @e 0 for autodetection */
+	uint32_t sector_size; /**< sector size in bytes (@e 0 means 512 for compatibility) */
 };
 
 /**
@@ -1214,7 +1215,7 @@ const char *crypt_get_uuid(struct crypt_device *cd);
 const char *crypt_get_device_name(struct crypt_device *cd);
 
 /**
- * Get device offset in sectors where real data starts (on underlying device).
+ * Get device offset in 512-bytes sectors where real data starts (on underlying device).
  *
  * @param cd crypt device handle
  *
@@ -1224,7 +1225,7 @@ const char *crypt_get_device_name(struct crypt_device *cd);
 uint64_t crypt_get_data_offset(struct crypt_device *cd);
 
 /**
- * Get IV offset in sectors (skip).
+ * Get IV offset in 512-bytes sectors (skip).
  *
  * @param cd crypt device handle
  *

@@ -110,7 +110,7 @@ Reports the status for the mapping <name>.
 .IP
 Resizes an active mapping <name>.
 
-If \-\-size (in sectors) is not specified, the size is computed
+If \-\-size (in 512-bytes sectors) is not specified, the size is computed
 from the underlying device. For LUKS it is the size of the
 underlying device without the area reserved for LUKS header
 (see data payload offset in \fBluksDump\fR command).
@@ -147,8 +147,8 @@ The following are valid plain device type actions:
 Opens (creates a mapping with) <name> backed by device <device>.
 
 \fB<options>\fR can be [\-\-hash, \-\-cipher, \-\-verify-passphrase,
-\-\-key-file, \-\-keyfile-offset, \-\-key-size, \-\-offset, \-\-skip, \-\-size,
-\-\-readonly, \-\-shared, \-\-allow\-discards]
+\-\-sector\-size, \-\-key-file, \-\-keyfile-offset, \-\-key-size,
+\-\-offset, \-\-skip, \-\-size, \-\-readonly, \-\-shared, \-\-allow\-discards]
 
 Example: 'cryptsetup open \-\-type plain /dev/sda10 e1' maps the raw
 encrypted device /dev/sda10 to the mapped (decrypted) device

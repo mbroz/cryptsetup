@@ -46,6 +46,14 @@ format() # format
 	[ $? -ne 0 ] && fail "Keyslot removal failed."
 }
 
+check_sector_size() # $1 expected sector size
+{
+	$CRYPTSETUP status $DEV_NAME | grep "sector size" | grep -q $1 || fail
+	if [ $S -gt 512 ]; then
+		dmsetup table $DEV_NAME | grep -q "sector_size:$1" || fail
+	fi
+}
+
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run this test, test skipped."
 	exit 0
@@ -101,6 +109,35 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
 	$CRYPTSETUP close $DEV_NAME || fail
+fi
+
+echo "[3] Kernel dmcrypt sector size options"
+echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --sector-size 4096 >/dev/null 2>&1
+if [ $? -ne 0 ] ; then
+	echo "TEST SKIPPED: dmcrypt sector-size option not available"
+else
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	echo -n "PLAIN sector size:"
+	echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --sector-size 1234 >/dev/null 2>&1 && fail
+	for S in 512 1024 2048 4096; do
+		echo -n "[$S]"
+		echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --sector-size $S || fail
+		check_sector_size $S
+		$CRYPTSETUP close $DEV_NAME || fail
+	done
+	echo
+
+	echo -n "LUKS2 sector size:"
+	echo -e "$PWD1" | $CRYPTSETUP luksFormat --type luks2 -$DEV --sector-size 1234 >/dev/null 2>&1 && fail
+	for S in 512 1024 2048 4096; do
+		echo -n "[$S]"
+		echo -e "$PWD1" | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 --pbkdf-force-iterations 1000 $DEV --sector-size $S || fail
+		echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME || fail
+		check_sector_size $S
+		$CRYPTSETUP close $DEV_NAME || fail
+	done
+	echo
 fi
 
 cleanup

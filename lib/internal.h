@@ -46,6 +46,7 @@
 
 #define SECTOR_SHIFT		9
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
+#define MAX_SECTOR_SIZE		4096 /* min page size among all platforms */
 #define DEFAULT_DISK_ALIGNMENT	1048576 /* 1MiB */
 #define DEFAULT_MEM_ALIGNMENT	4096
 #define MAX_ERROR_LENGTH	512

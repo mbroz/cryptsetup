@@ -587,7 +587,7 @@ static int crypt_check_data_device_size(struct crypt_device *cd)
 	int r;
 	uint64_t size, size_min;
 
-	/* Check data device size, require at least one sector */
+	/* Check data device size, require at least header or one sector */
 	size_min = crypt_get_data_offset(cd) << SECTOR_SHIFT ?: SECTOR_SIZE;
 
 	r = device_size(cd->device, &size);
@@ -1065,6 +1065,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		cd->u.plain.hdr.hash = NULL; /* no way to get this */
 		cd->u.plain.hdr.offset = dmd.u.crypt.offset;
 		cd->u.plain.hdr.skip = dmd.u.crypt.iv_offset;
+		cd->u.plain.hdr.sector_size = dmd.u.crypt.sector_size;
 		cd->u.plain.key_size = dmd.u.crypt.vk->keylength;
 		cd->u.plain.cipher = strdup(cipher);
 		cd->u.plain.cipher_mode = strdup(cipher_mode);
@@ -1311,6 +1312,8 @@ static int _crypt_format_plain(struct crypt_device *cd,
 			       size_t volume_key_size,
 			       struct crypt_params_plain *params)
 {
+	unsigned int sector_size = params ? params->sector_size : SECTOR_SIZE;
+
 	if (!cipher || !cipher_mode) {
 		log_err(cd, _("Invalid plain crypt parameters.\n"));
 		return -EINVAL;
@@ -1323,6 +1326,16 @@ static int _crypt_format_plain(struct crypt_device *cd,
 
 	if (uuid) {
 		log_err(cd, _("UUID is not supported for this crypt type.\n"));
+		return -EINVAL;
+	}
+
+	/* For compatibility with old params structure */
+	if (!sector_size)
+		sector_size = SECTOR_SIZE;
+
+	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
+	    (sector_size & (sector_size - 1))) {
+		log_err(cd, _("Unsupported encryption sector size.\n"));
 		return -EINVAL;
 	}
 
@@ -1344,6 +1357,7 @@ static int _crypt_format_plain(struct crypt_device *cd,
 	cd->u.plain.hdr.offset = params ? params->offset : 0;
 	cd->u.plain.hdr.skip = params ? params->skip : 0;
 	cd->u.plain.hdr.size = params ? params->size : 0;
+	cd->u.plain.hdr.sector_size = sector_size;
 
 	if (!cd->u.plain.cipher || !cd->u.plain.cipher_mode)
 		return -ENOMEM;
@@ -1459,7 +1473,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (sector_size < 512 || sector_size > 4096 || (sector_size & (sector_size - 1))) {
+	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
+	    (sector_size & (sector_size - 1))) {
 		log_err(cd, _("Unsupported encryption sector size.\n"));
 		return -EINVAL;
 	}
@@ -3599,6 +3614,9 @@ int crypt_get_sector_size(struct crypt_device *cd)
 {
 	if (!cd)
 		return SECTOR_SIZE;
+
+	if (isPLAIN(cd->type))
+		return cd->u.plain.hdr.sector_size;
 
 	if (isINTEGRITY(cd->type))
 		return cd->u.integrity.params.sector_size;

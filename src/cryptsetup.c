@@ -83,7 +83,7 @@ static const char *opt_integrity = NULL; /* none */
 static int opt_integrity_nojournal = 0;
 static int opt_integrity_no_wipe = 0;
 static const char *opt_key_description = NULL;
-static int opt_sector_size = 512;
+static int opt_sector_size = SECTOR_SIZE;
 static int opt_persistent = 0;
 static const char *opt_label = NULL;
 static const char *opt_subsystem = NULL;
@@ -166,6 +166,7 @@ static int action_open_plain(void)
 		.skip = opt_skip,
 		.offset = opt_offset,
 		.size = opt_size,
+		.sector_size = opt_sector_size,
 	};
 	char *password = NULL;
 	size_t passwordLen, key_size_max;
@@ -954,7 +955,7 @@ static int action_luksFormat(void)
 	else
 		luks_version = 1;
 
-	if (opt_sector_size > 512 && luks_version == 1) {
+	if (opt_sector_size > SECTOR_SIZE && luks_version == 1) {
 		log_err(_("Unsupported encryption sector size.\n"));
 		return -EINVAL;
 	}
@@ -2357,8 +2358,14 @@ int main(int argc, const char **argv)
 		_("PBKDF forced iterations cannot be combined with iteration time option.\n"),
 		poptGetInvocationName(popt_context));
 
-	if ((opt_sector_size != 512 && strcmp(aname, "luksFormat")) || opt_sector_size < 512
-		|| opt_sector_size > 4096 || (opt_sector_size & (opt_sector_size - 1)))
+	if (opt_sector_size != SECTOR_SIZE && strcmp(aname, "luksFormat") &&
+	    (strcmp(aname, "open") || strcmp(opt_type, "plain")))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Sector size option is not supported for this command.\n"),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_sector_size < SECTOR_SIZE || opt_sector_size > MAX_SECTOR_SIZE ||
+	    (opt_sector_size & (opt_sector_size - 1)))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Unsupported encryption sector size.\n"),
 		      poptGetInvocationName(popt_context));
