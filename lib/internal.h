@@ -36,6 +36,7 @@
 #include "utils_loop.h"
 #include "utils_dm.h"
 #include "utils_fips.h"
+#include "utils_keyring.h"
 #include "crypto_backend.h"
 
 #include "libcryptsetup.h"
@@ -55,16 +56,21 @@
 
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
+#define CRYPT_DEFAULT_SEGMENT 0
+
 struct crypt_device;
 
 struct volume_key {
 	size_t keylength;
+	const char *key_description;
 	char key[];
 };
 
 struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key);
 struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength);
 void crypt_free_volume_key(struct volume_key *vk);
+void crypt_volume_key_set_description(struct volume_key *key, const char *key_description);
+const char *crypt_volume_key_get_description(const struct volume_key *key);
 
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd);
 int init_pbkdf_type(struct crypt_device *cd,
@@ -120,6 +126,8 @@ int crypt_dev_is_partition(const char *dev_path);
 char *crypt_get_partition_device(const char *dev_path, uint64_t offset, uint64_t size);
 char *crypt_get_base_device(const char *dev_path);
 uint64_t crypt_dev_partition_offset(const char *dev_path);
+int lookup_by_disk_id(const char *dm_uuid);
+int lookup_by_sysfs_uuid_field(const char *dm_uuid, size_t max_len);
 
 ssize_t write_buffer(int fd, const void *buf, size_t count);
 ssize_t read_buffer(int fd, void *buf, size_t count);
@@ -174,5 +182,8 @@ int crypt_wipe_device(struct crypt_device *cd,
 const char *crypt_get_integrity(struct crypt_device *cd);
 int crypt_get_integrity_key_size(struct crypt_device *cd);
 int crypt_get_integrity_tag_size(struct crypt_device *cd);
+
+int crypt_key_in_keyring(struct crypt_device *cd);
+void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring);
 
 #endif /* INTERNAL_H */

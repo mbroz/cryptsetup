@@ -704,6 +704,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 			.cipher = cipher,
 			.offset = crypt_get_data_offset(cd),
 			.iv_offset = crypt_get_iv_offset(cd),
+			.sector_size = crypt_get_sector_size(cd),
 		}
 	};
 

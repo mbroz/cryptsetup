@@ -48,6 +48,7 @@ struct crypt_device {
 	struct crypt_pbkdf_type pbkdf;
 
 	/* global context scope settings */
+	unsigned key_in_keyring:1;
 
 	// FIXME: private binary headers and access it properly
 	// through sub-library (LUKS1, TCRYPT)
@@ -108,6 +109,12 @@ static int _crypto_logged = 0;
 static void (*_default_log)(int level, const char *msg, void *usrptr) = NULL;
 static int _debug_level = 0;
 
+/* Library scope detection for kernel keyring support */
+static int _kernel_keyring_supported;
+
+/* Library allowed to use kernel keyring for loading VK in kernel crypto layer */
+static int _vk_via_keyring = 1;
+
 void crypt_set_debug_level(int level)
 {
 	_debug_level = level;
@@ -124,6 +131,8 @@ void crypt_log(struct crypt_device *cd, int level, const char *msg)
 		cd->log(level, msg, cd->log_usrptr);
 	else if (_default_log)
 		_default_log(level, msg, NULL);
+	else if (_debug_level)
+		printf("%s", msg);
 }
 
 __attribute__((format(printf, 5, 6)))
@@ -400,6 +409,7 @@ int PLAIN_activate(struct crypt_device *cd,
 			.vk     = vk,
 			.offset = crypt_get_data_offset(cd),
 			.iv_offset = crypt_get_iv_offset(cd),
+			.sector_size = crypt_get_sector_size(cd),
 		}
 	};
 
@@ -1514,9 +1524,36 @@ int crypt_repair(struct crypt_device *cd,
 	return r;
 }
 
+static int crypt_get_segment_key_description(struct crypt_device *cd, char **segment_key_desc, int segment)
+{
+	char *key_desc;
+	int r;
+	size_t len;
+
+	if (!crypt_get_uuid(cd) || segment > 9 || segment < 0)
+		return -EINVAL;
+
+	len = strlen(crypt_get_uuid(cd)) + 14;
+
+	key_desc = malloc(len);
+	if (!key_desc)
+	       return -ENOMEM;
+
+	r = snprintf(key_desc, len, "%s:%s-%u", "cryptsetup", crypt_get_uuid(cd), segment);
+	if (r < 0 || (size_t)r >= len) {
+	       free(key_desc);
+	       return -EINVAL;
+	}
+
+	*segment_key_desc = key_desc;
+
+	return 0;
+}
+
 int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 {
-	struct crypt_dm_active_device dmd;
+	char *key_desc;
+	struct crypt_dm_active_device dmd = {};
 	int r;
 
 	/* Device context type must be initialised */
@@ -1536,6 +1573,20 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	if (!dmd.uuid || dmd.target != DM_CRYPT) {
 		r = -EINVAL;
 		goto out;
+	}
+
+	if ((dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_key_in_keyring(cd)) {
+		r = -EPERM;
+		goto out;
+	}
+
+	if (crypt_key_in_keyring(cd)) {
+		r = crypt_get_segment_key_description(cd, &key_desc, CRYPT_DEFAULT_SEGMENT);
+		if (r)
+			goto out;
+
+		crypt_volume_key_set_description(dmd.u.crypt.vk, key_desc);
+		dmd.flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 	}
 
 	if (crypt_loop_device(crypt_get_device_name(cd))) {
@@ -1690,6 +1741,56 @@ void crypt_free(struct crypt_device *cd)
 	}
 }
 
+/* internal only */
+int crypt_key_in_keyring(struct crypt_device *cd)
+{
+	return cd ? cd->key_in_keyring : 0;
+}
+
+/* internal only */
+void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring)
+{
+	if (!cd)
+		return;
+
+	cd->key_in_keyring = key_in_keyring;
+}
+
+static void crypt_drop_keyring_key(struct crypt_device *cd, const char *active_key_desc)
+{
+	char *seg_key_desc;
+
+	/* drop key detected in active dm-crypt table */
+	if (active_key_desc)
+		keyring_revoke_and_unlink_key(active_key_desc);
+
+	if (!crypt_key_in_keyring(cd) ||
+	    crypt_get_segment_key_description(cd, &seg_key_desc, CRYPT_DEFAULT_SEGMENT))
+		return;
+
+	/* drop segment key */
+	if (!keyring_revoke_and_unlink_key(seg_key_desc))
+		crypt_set_key_in_keyring(cd, 0);
+
+	free(seg_key_desc);
+}
+
+static char *crypt_get_device_key_description(const char *name)
+{
+	char *tmp = NULL;
+	struct crypt_dm_active_device dmd;
+
+	if (dm_query_device(NULL, name, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmd) < 0 || dmd.target != DM_CRYPT)
+		return NULL;
+
+	if (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY)
+		tmp = strdup(crypt_volume_key_get_description(dmd.u.crypt.vk));
+
+	crypt_free_volume_key(dmd.u.crypt.vk);
+
+	return tmp;
+}
+
 int crypt_suspend(struct crypt_device *cd,
 		  const char *name)
 {
@@ -1771,7 +1872,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 				   &cd->u.luks1.hdr, &vk, cd);
 	if (r >= 0) {
 		keyslot = r;
-		r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key, 0);
+		r = dm_resume_and_reinstate_key(cd, name, vk);
 		if (r == -ENOTSUP)
 			log_err(cd, _("Resume is not supported for device %s.\n"), name);
 		else if (r)
@@ -1828,7 +1929,7 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 		goto out;
 
 	keyslot = r;
-	r = dm_resume_and_reinstate_key(cd, name, vk->keylength, vk->key, 0);
+	r = dm_resume_and_reinstate_key(cd, name, vk);
 	if (r)
 		log_err(cd, _("Error during resuming device %s.\n"), name);
 out:
@@ -2108,6 +2209,29 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 	}
 
 	return LUKS_del_key(keyslot, &cd->u.luks1.hdr, cd);
+}
+
+int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
+{
+	char *seg_key_desc = NULL;
+	int r;
+
+	if (!vk)
+		return -EINVAL;
+
+	r = crypt_get_segment_key_description(cd, &seg_key_desc, CRYPT_DEFAULT_SEGMENT);
+	if (!r)
+		r = keyring_add_key_in_thread_keyring(seg_key_desc, vk->key, vk->keylength);
+
+	if (r) {
+		free(seg_key_desc);
+		log_err(cd, _("Failed to load key in kernel keyring.\n"));
+	} else {
+		crypt_volume_key_set_description(vk, seg_key_desc);
+		crypt_set_key_in_keyring(cd, 1);
+	}
+
+	return r;
 }
 
 /*
@@ -2907,6 +3031,35 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 	}
 
 	return -ENOTSUP;
+}
+
+static int kernel_keyring_support(void)
+{
+	static unsigned _checked = 0;
+
+	if (!_checked) {
+		_kernel_keyring_supported = keyring_check();
+		_checked = 1;
+	}
+
+	return _kernel_keyring_supported;
+}
+
+int crypt_use_keyring_for_vk(const struct crypt_device *cd)
+{
+	uint32_t dmc_flags;
+
+	/* dm backend must be initialised */
+	if (!cd)
+		return 0;
+
+	if (!_vk_via_keyring || !kernel_keyring_support())
+		return 0;
+
+	if (dm_flags(DM_CRYPT, &dmc_flags))
+		return 1;
+
+	return (dmc_flags & DM_KERNEL_KEYRING_SUPPORTED);
 }
 
 static void __attribute__((destructor)) libcryptsetup_exit(void)

@@ -1183,6 +1183,7 @@ int LUKS1_activate(struct crypt_device *cd,
 			.vk     = vk,
 			.offset = crypt_get_data_offset(cd),
 			.iv_offset = 0,
+			.sector_size = crypt_get_sector_size(cd),
 		}
 	};
 

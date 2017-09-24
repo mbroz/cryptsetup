@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "luks.h"
+#include "af.h"
 #include "internal.h"
 
 static void _error_hint(struct crypt_device *ctx, const char *device,
@@ -62,6 +63,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 			.vk     = vk,
 			.offset = sector,
 			.iv_offset = 0,
+			.sector_size = SECTOR_SIZE,
 		}
 	};
 	int r, devfd = -1;

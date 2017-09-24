@@ -283,6 +283,24 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
  */
 
 /**
+ * Set or unset loading of volume keys via kernel keyring. When set to 'enabled'
+ * library loads key in kernel keyring first and pass the key description to
+ * dm-crypt instead of binary key copy. If set to 'disabled' library fall backs
+ * to classical method loading volume key directly in dm-crypt target.
+ *
+ * @param cd crypt device handle, can be @e NULL
+ * @param enable 0 to disable loading of volume keys via kernel keyring
+ * 	  (classical method) otherwise enable it (default)
+ *
+ * @returns @e 0 on success or negative errno value otherwise.
+ *
+ * @note Currently loading of volume keys via kernel keyring is supported
+ * 	 (and enabled by default) only for LUKS2 devices.
+ * @note The switch is global on the library level.
+ */
+int crypt_volume_key_keyring(struct crypt_device *cd, int enable);
+
+/**
  * @addtogroup crypt_type
  * @{
  */
@@ -527,6 +545,12 @@ int crypt_repair(struct crypt_device *cd,
  * @param new_size - new device size in sectors or @e 0 to use all of the underlying device size
  *
  * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note Most notably it returns -EPERM when device was activated with volume key
+ * 	 in kernel keyring and current device handle doesn't have verified key
+ * 	 in kernel keyring in the same time. Perform any crypt_activate_*()
+ * 	 operation with device name set to NULL to load verified volume key in
+ * 	 the keyring.
  */
 int crypt_resize(struct crypt_device *cd,
 		 const char *name,
@@ -760,6 +784,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_RESTART_ON_CORRUPTION (1 << 9)
 /** dm-verity: ignore_zero_blocks - do not verify zero blocks */
 #define CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS (1 << 10)
+/** key loaded in kernel keyring instead directly in dm-crypt */
+#define CRYPT_ACTIVATE_KEYRING_KEY (1 << 11)
 /** dm-integrity: direct writes, do not use journal */
 #define CRYPT_ACTIVATE_NO_JOURNAL (1 << 12)
 /** dm-integrity: recovery mode - no journal, no integrity checks */
@@ -871,6 +897,29 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 #define CRYPT_DEACTIVATE_DEFERRED (1 << 0)
 /** force deactivation - if the device is busy, it is replaced by error device */
 #define CRYPT_DEACTIVATE_FORCE    (1 << 1)
+
+/**
+ * Activate device using passphrase stored in kernel keyring.
+ *
+ *
+ * @param cd crypt device handle
+ * @param name name of device to create, if @e NULL only check passphrase in keyring
+ * @param key_description kernel keyring key description library should look
+ *        for passphrase in
+ * @param keyslot requested keyslot to check or CRYPT_ANY_SLOT
+ * @param flags activation flags
+ *
+ * @return @e unlocked keyslot number on success or negative errno value otherwise.
+ *
+ * @note Keyslot passphrase must be stored in 'user' key type
+ * 	 and the key has to be reachable for process context
+ * 	 on behalf of which this function is called.
+ */
+int crypt_activate_by_keyring(struct crypt_device *cd,
+			      const char *name,
+			      const char *key_description,
+			      int keyslot,
+			      uint32_t flags);
 
 /**
  * Deactivate crypt device. This function tries to remove active device-mapper

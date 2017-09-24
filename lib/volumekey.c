@@ -36,6 +36,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	if (!vk)
 		return NULL;
 
+	vk->key_description = NULL;
 	vk->keylength = keylength;
 
 	/* keylength 0 is valid => no key */
@@ -49,11 +50,28 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	return vk;
 }
 
+void crypt_volume_key_set_description(struct volume_key *vk, const char *key_description)
+{
+	if (vk) {
+		free(CONST_CAST(void*)vk->key_description);
+		vk->key_description = key_description;
+	}
+}
+
+const char *crypt_volume_key_get_description(const struct volume_key *vk)
+{
+	if (!vk)
+		return NULL;
+
+	return vk->key_description;
+}
+
 void crypt_free_volume_key(struct volume_key *vk)
 {
 	if (vk) {
 		crypt_memzero(vk->key, vk->keylength);
 		vk->keylength = 0;
+		free(CONST_CAST(void*)vk->key_description);
 		free(vk);
 	}
 }
