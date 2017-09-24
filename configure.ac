@@ -494,6 +494,17 @@ CS_NUM_WITH([verity-hash-block], [hash block size for verity mode], [4096])
 CS_NUM_WITH([verity-salt-size],  [salt size for verity mode], [32])
 CS_NUM_WITH([verity-fec-roots],  [parity bytes for verity FEC], [2])
 
+CS_STR_WITH([luks2-lock-path], [path to directory for LUKSv2 locks], [/run/lock/cryptsetup])
+test -z "$with_luks2_lock_path" && with_luks2_lock_path=/run/lock/cryptsetup
+test "${with_luks2_lock_path:0:1}" = "/" || AC_MSG_ERROR([--with-luks2-lock-path argument must be an absolute path.])
+DEFAULT_LUKS2_LOCK_PATH=$with_luks2_lock_path
+AC_SUBST(DEFAULT_LUKS2_LOCK_PATH)
+
+CS_NUM_WITH([luks2-lock-dir-perms], [default luks2 locking directory permissions], [0700])
+test -z "$with_luks2_lock_dir_perms" && with_luks2_lock_dir_perms=0700
+DEFAULT_LUKS2_LOCK_DIR_PERMS=$with_luks2_lock_dir_perms
+AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
+
 dnl ==========================================================================
 
 AC_CONFIG_FILES([ Makefile
@@ -511,5 +522,7 @@ po/Makefile.in
 man/Makefile
 tests/Makefile
 python/Makefile
+scripts/Makefile
+scripts/cryptsetup_tmpfiles.conf
 ])
 AC_OUTPUT

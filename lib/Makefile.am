@@ -63,6 +63,8 @@ libcryptsetup_la_SOURCES = \
 	utils_device.c				\
 	utils_keyring.c				\
 	utils_keyring.h				\
+	utils_device_locking.c			\
+	utils_device_locking.h			\
 	utils_pbkdf.c				\
 	libdevmapper.c				\
 	utils_dm.h				\

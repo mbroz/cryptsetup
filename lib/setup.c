@@ -109,6 +109,9 @@ static int _crypto_logged = 0;
 static void (*_default_log)(int level, const char *msg, void *usrptr) = NULL;
 static int _debug_level = 0;
 
+/* Library can do metadata locking  */
+static int _metadata_locking = 1;
+
 /* Library scope detection for kernel keyring support */
 static int _kernel_keyring_supported;
 
@@ -3062,6 +3065,21 @@ int crypt_use_keyring_for_vk(const struct crypt_device *cd)
 		return 1;
 
 	return (dmc_flags & DM_KERNEL_KEYRING_SUPPORTED);
+}
+
+/* Internal only */
+int crypt_metadata_locking_enabled(void)
+{
+	return _metadata_locking;
+}
+
+int crypt_metadata_locking(struct crypt_device *cd, int enable)
+{
+	if (enable && !_metadata_locking)
+		return -EPERM;
+
+	_metadata_locking = enable ? 1 : 0;
+	return 0;
 }
 
 static void __attribute__((destructor)) libcryptsetup_exit(void)

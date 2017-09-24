@@ -276,11 +276,18 @@ void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_m
 int crypt_memory_lock(struct crypt_device *cd, int lock);
 
 /**
- * @defgroup crypt_type Cryptsetup on-disk format types
+ * Set global lock protection for on-disk metadata (file-based locking).
  *
- * Set of functions, \#defines and structs related
- * to on-disk format types
+ * @param cd crypt device handle, can be @e NULL
+ * @param enable 0 to disable locking otherwise enable it (default)
+ *
+ * @returns @e 0 on success or negative errno value otherwise.
+ *
+ * @note Locking applied only for some metadata formats (LUKS2).
+ * @note The switch is global on the library level.
+ * 	 In current version locking can be only switched off and cannot be switched on later.
  */
+int crypt_metadata_locking(struct crypt_device *cd, int enable);
 
 /**
  * Set or unset loading of volume keys via kernel keyring. When set to 'enabled'
@@ -299,6 +306,13 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
  * @note The switch is global on the library level.
  */
 int crypt_volume_key_keyring(struct crypt_device *cd, int enable);
+
+/**
+ * @defgroup crypt_type Cryptsetup on-disk format types
+ *
+ * Set of functions, \#defines and structs related
+ * to on-disk format types
+ */
 
 /**
  * @addtogroup crypt_type
