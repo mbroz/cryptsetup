@@ -929,6 +929,8 @@ int crypt_get_active_device(struct crypt_device *cd,
 /**
  * LUKS2 header requirements
  */
+/** Unfinished offline reencryption */
+#define CRYPT_REQUIREMENT_OFFLINE_REENCRYPT	(1 << 0)
 /** unknown requirement in header (output only) */
 #define CRYPT_REQUIREMENT_UNKNOWN		(1 << 31)
 

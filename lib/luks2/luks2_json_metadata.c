@@ -989,6 +989,11 @@ static int reqs_unknown(uint32_t reqs)
 	return reqs & CRYPT_REQUIREMENT_UNKNOWN;
 }
 
+static int reqs_reencrypt(uint32_t reqs)
+{
+	return reqs & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT;
+}
+
 int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		     const char *backup_file)
 {
@@ -1024,7 +1029,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	/* do not allow header restore from backup with unmet requirements */
 	if (LUKS2_unmet_requirements(cd, &hdr_file, 0, 1)) {
-		log_err(cd, _("Unmet LUKS2 requirements detected in backup %s.\n"),
+		log_err(cd, _("Forbidden LUKS2 requirements detected in backup %s.\n"),
 			backup_file);
 		r = -ETXTBSY;
 		goto out;
@@ -1054,32 +1059,38 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	r = LUKS2_hdr_read(cd, &tmp_hdr);
 	if (r == 0) {
+		log_dbg("Device %s already contains LUKS2 header, checking UUID and requirements.", device_path(device));
 		r = LUKS2_config_get_requirements(cd, &tmp_hdr, &reqs);
 		if (r)
 			goto out;
 
-		log_dbg("Device %s already contains LUKS header, checking UUID and offset.", device_path(device));
-		if (LUKS2_get_data_offset(&tmp_hdr) != LUKS2_get_data_offset(&hdr_file)) {
-			log_err(cd, _("Data offset differ on device and backup, restore failed.\n"));
-			r = -EINVAL;
-			goto out;
-		}
-		/* FIXME: what could go wrong? Erase if we're fine with consequences */
-		if (buffer_size != (ssize_t) LUKS2_hdr_and_areas_size(tmp_hdr.jobj)) {
-			log_err(cd, _("Binary header with keyslot areas size differ on device and backup, restore failed.\n"));
-			r = -EINVAL;
-			goto out;
-		}
 		if (memcmp(tmp_hdr.uuid, hdr_file.uuid, LUKS2_UUID_L))
 			diff_uuid = 1;
+
+		if (!reqs_reencrypt(reqs)) {
+			log_dbg("Checking LUKS2 header size and offsets.");
+			if (LUKS2_get_data_offset(&tmp_hdr) != LUKS2_get_data_offset(&hdr_file)) {
+				log_err(cd, _("Data offset differ on device and backup, restore failed.\n"));
+				r = -EINVAL;
+				goto out;
+			}
+			/* FIXME: what could go wrong? Erase if we're fine with consequences */
+			if (buffer_size != (ssize_t) LUKS2_hdr_and_areas_size(tmp_hdr.jobj)) {
+				log_err(cd, _("Binary header with keyslot areas size differ on device and backup, restore failed.\n"));
+				r = -EINVAL;
+				goto out;
+			}
+		}
 	}
 
-	r = snprintf(msg, sizeof(msg), _("Device %s %s%s%s"), device_path(device),
+	r = snprintf(msg, sizeof(msg), _("Device %s %s%s%s%s"), device_path(device),
 		     r ? _("does not contain LUKS2 header. Replacing header can destroy data on that device.") :
 			 _("already contains LUKS2 header. Replacing header will destroy existing keyslots."),
 		     diff_uuid ? _("\nWARNING: real device header has different UUID than backup!") : "",
 		     reqs_unknown(reqs) ? _("\nWARNING: unknown LUKS2 requirements detected in real device header!"
-					    "\nReplacing header with backup may corrupt the data on that device!") : "");
+					    "\nReplacing header with backup may corrupt the data on that device!") : "",
+		     reqs_reencrypt(reqs) ? _("\nWARNING: Unfinished offline reencryption detected on the device!"
+					      "\nReplacing header with backup may corrupt data.") : "");
 	if (r < 0 || (size_t) r >= sizeof(msg)) {
 		r = -ENOMEM;
 		goto out;
@@ -1218,10 +1229,12 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
  * }
  */
 
+/* LUKS2 library requirements */
 static const struct  {
 	uint32_t flag;
 	const char *description;
 } requirements_flags[] = {
+	{ CRYPT_REQUIREMENT_OFFLINE_REENCRYPT, "offline-reencrypt" },
 	{ 0, NULL }
 };
 
@@ -1812,6 +1825,9 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 
 	/* mask out permitted requirements */
 	reqs &= ~reqs_mask;
+
+	if (reqs_reencrypt(reqs) && !quiet)
+		log_err(cd, _("Offline reencryption in progress. Aborting.\n"));
 
 	/* any remaining unmasked requirement fails the check */
 	return reqs ? -EINVAL : 0;
