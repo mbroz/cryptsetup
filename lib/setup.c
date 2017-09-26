@@ -308,14 +308,10 @@ static int _onlyLUKS(struct crypt_device *cd, uint32_t cdflags)
 		r = -EINVAL;
 	}
 
-	if (r || (cdflags & CRYPT_CD_UNRESTRICTED))
+	if (r || (cdflags & CRYPT_CD_UNRESTRICTED) || isLUKS1(cd->type))
 		return r;
 
-	if (isLUKS2(cd->type) &&
-	    LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, cdflags & CRYPT_CD_QUIET))
-		r = -ETXTBSY;
-
-	return r;
+	return LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0, cdflags & CRYPT_CD_QUIET);
 }
 
 static int onlyLUKS(struct crypt_device *cd)
@@ -342,7 +338,7 @@ static int _onlyLUKS2(struct crypt_device *cd, uint32_t cdflags)
 	if (r || (cdflags & CRYPT_CD_UNRESTRICTED))
 		return r;
 
-	return LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, cdflags & CRYPT_CD_QUIET) ? -ETXTBSY : 0;
+	return LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0, cdflags & CRYPT_CD_QUIET);
 }
 
 static int onlyLUKS2(struct crypt_device *cd)
@@ -2061,9 +2057,9 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		dmd.size = new_size;
 		if (isTCRYPT(cd->type))
 			r = -ENOTSUP;
-		else if (isLUKS2(cd->type) && LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0))
-			r = -ETXTBSY;
-		else
+		else if (isLUKS2(cd->type))
+			r = LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0, 0);
+		if (!r)
 			r = dm_create_device(cd, name, cd->type, &dmd, 1);
 	}
 out:

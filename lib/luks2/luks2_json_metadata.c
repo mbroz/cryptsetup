@@ -1023,7 +1023,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	/* do not allow header restore from backup with unmet requirements */
-	if (LUKS2_unmet_requirements(cd, &hdr_file, 1)) {
+	if (LUKS2_unmet_requirements(cd, &hdr_file, 0, 1)) {
 		log_err(cd, _("Unmet LUKS2 requirements detected in backup %s.\n"),
 			backup_file);
 		return -ETXTBSY;
@@ -1733,7 +1733,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	struct device *device = NULL;
 
 	/* do not allow activation when particular requirements detected */
-	if ((r = LUKS2_unmet_requirements(cd, hdr, 0)))
+	if ((r = LUKS2_unmet_requirements(cd, hdr, 0, 0)))
 		return r;
 
 	/* Add persistent activation flags */
@@ -1792,21 +1792,27 @@ int LUKS2_activate(struct crypt_device *cd,
 	return r;
 }
 
-int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, int quiet)
+int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet)
 {
 	uint32_t reqs;
 	int r = LUKS2_config_get_requirements(cd, hdr, &reqs);
 
 	if (r) {
-		log_err(cd, _("Failed to read LUKS2 requierements.\n"));
+		if (!quiet)
+			log_err(cd, _("Failed to read LUKS2 requierements.\n"));
 		return r;
 	}
 
-	if (reqs_unknown(reqs))
-		r = -ETXTBSY;
+	/* do not mask unknown requirements check */
+	if (reqs_unknown(reqs)) {
+		if (!quiet)
+			log_err(cd, _("Unmet LUKS2 requirements detected.\n"));
+		return -ETXTBSY;
+	}
 
-	if (r && !quiet)
-		log_err(cd, _("Unmet LUKS2 requirements detected.\n"));
+	/* mask out permitted requirements */
+	reqs &= ~reqs_mask;
 
-	return r;
+	/* any remaining unmasked requirement fails the check */
+	return reqs ? -EINVAL : 0;
 }

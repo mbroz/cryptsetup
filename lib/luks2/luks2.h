@@ -337,7 +337,7 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *reqs);
 int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs);
 
-int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, int quiet);
+int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet);
 
 int crypt_use_keyring_for_vk(const struct crypt_device *cd);
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk);
