@@ -2877,9 +2877,6 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 				r = LUKS1_activate(cd, name, vk, flags);
 		}
 	} else if (isLUKS2(cd->type)) {
-		if (name && LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0))
-			return -ETXTBSY;
-
 		r = LUKS2_keyslot_open(cd, keyslot,
 				       name ? CRYPT_DEFAULT_SEGMENT : CRYPT_ANY_SEGMENT,
 				       passphrase, passphrase_size, &vk);
@@ -3005,10 +3002,6 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 		}
 		r = keyslot;
 	} else if (isLUKS2(cd->type)) {
-		if (name && LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0)) {
-			r  = -ETXTBSY;
-			goto out;
-		}
 		r = crypt_keyfile_read(cd, keyfile,
 				       &passphrase_read, &passphrase_size_read,
 				       keyfile_offset, keyfile_size, 0);
@@ -3134,8 +3127,6 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (!r && name)
 			r = LUKS1_activate(cd, name, vk, flags);
 	} else if (isLUKS2(cd->type)) {
-		if (name && LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0))
-			return -ETXTBSY;
 		/* If key is not provided, try to use internal key */
 		if (!volume_key) {
 			if (!cd->volume_key) {
@@ -3991,12 +3982,11 @@ int crypt_activate_by_token(struct crypt_device *cd,
 	const char *name, int token, void *usrptr, uint32_t flags)
 {
 	int r;
-	uint32_t check = CRYPT_CD_QUIET | (name ? 0 : CRYPT_CD_UNRESTRICTED);
 
 	log_dbg("%s volume %s using token %d.",
 		name ? "Activating" : "Checking", name ?: "passphrase", token);
 
-	if ((r = _onlyLUKS2(cd, check)))
+	if ((r = _onlyLUKS2(cd, CRYPT_CD_QUIET | CRYPT_CD_UNRESTRICTED)))
 		return r;
 
 	if (token == CRYPT_ANY_TOKEN)

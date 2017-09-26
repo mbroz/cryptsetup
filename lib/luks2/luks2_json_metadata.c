@@ -1734,6 +1734,10 @@ int LUKS2_activate(struct crypt_device *cd,
 	char dm_int_name[PATH_MAX], dm_int_dev_name[PATH_MAX];
 	struct device *device = NULL;
 
+	/* do not allow activation when particular requirements detected */
+	if ((r = LUKS2_unmet_requirements(cd, hdr, 0)))
+		return r;
+
 	/* Add persistent activation flags */
 	if (!(flags & CRYPT_ACTIVATE_IGNORE_PERSISTENT))
 		LUKS2_config_get_flags(cd, hdr, &dmd.flags);
