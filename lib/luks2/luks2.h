@@ -334,8 +334,8 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 /*
  * Requirements for device activation or header modification
  */
-int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *requirements);
-int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t requirements);
+int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *reqs);
+int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs);
 
 int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, int quiet);
 

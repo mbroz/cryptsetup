@@ -984,9 +984,9 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return r;
 }
 
-static int reqs_unknown(uint32_t flags)
+static int reqs_unknown(uint32_t reqs)
 {
-	return flags & CRYPT_REQUIREMENT_UNKNOWN;
+	return reqs & CRYPT_REQUIREMENT_UNKNOWN;
 }
 
 int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
@@ -998,7 +998,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	char *buffer = NULL, msg[1024];
 	struct luks2_hdr hdr_file;
 	struct luks2_hdr tmp_hdr = {};
-	uint32_t flags = 0;
+	uint32_t reqs = 0;
 
 	r = device_alloc(&backup_device, backup_file);
 	if (r < 0)
@@ -1053,7 +1053,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	r = LUKS2_hdr_read(cd, &tmp_hdr);
 	if (r == 0) {
-		r = LUKS2_config_get_requirements(cd, &tmp_hdr, &flags);
+		r = LUKS2_config_get_requirements(cd, &tmp_hdr, &reqs);
 		if (r)
 			goto out;
 
@@ -1077,8 +1077,8 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		     r ? _("does not contain LUKS2 header. Replacing header can destroy data on that device.") :
 			 _("already contains LUKS2 header. Replacing header will destroy existing keyslots."),
 		     diff_uuid ? _("\nWARNING: real device header has different UUID than backup!") : "",
-		     reqs_unknown(flags) ? _("\nWARNING: unknown LUKS2 requirements detected in real device header!"
-					     "\nReplacing header with backup may corrupt the data on that device!") : "");
+		     reqs_unknown(reqs) ? _("\nWARNING: unknown LUKS2 requirements detected in real device header!"
+					    "\nReplacing header with backup may corrupt the data on that device!") : "");
 	if (r < 0 || (size_t) r >= sizeof(msg)) {
 		r = -ENOMEM;
 		goto out;
@@ -1238,17 +1238,17 @@ static uint32_t get_requirement_by_name(const char *requirement)
 /*
  * returns count of requirements (past cryptsetup 2.0 release)
  */
-int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *requirements)
+int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *reqs)
 {
 	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
 	int i, len;
-	uint32_t flag;
+	uint32_t req;
 
 	assert(hdr);
-	if (!hdr || !requirements)
+	if (!hdr || !reqs)
 		return -EINVAL;
 
-	*requirements = 0;
+	*reqs = 0;
 
 	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
 		return 0;
@@ -1260,25 +1260,23 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 		return 0;
 
 	len = json_object_array_length(jobj_mandatory);
-	if (!len) {
-		log_dbg("No LUKS2 requirements detected.");
+	if (!len)
 		return 0;
-	}
 
 	log_dbg("LUKS2 requirements detected:");
 
 	for (i = 0; i < len; i++) {
 		jobj = json_object_array_get_idx(jobj_mandatory, i);
-		flag = get_requirement_by_name(json_object_get_string(jobj));
+		req = get_requirement_by_name(json_object_get_string(jobj));
 		log_dbg("%s - %sknown", json_object_get_string(jobj),
-				        (flag & CRYPT_REQUIREMENT_UNKNOWN) ? "un" : "");
-		*requirements |= flag;
+				        reqs_unknown(req) ? "un" : "");
+		*reqs |= req;
 	}
 
 	return 0;
 }
 
-int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t requirements)
+int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs)
 {
 	int i, r = -EINVAL;
 
@@ -1292,7 +1290,7 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 		return -ENOMEM;
 
 	for (i = 0; requirements_flags[i].description; i++) {
-		if (requirements & requirements_flags[i].flag) {
+		if (reqs & requirements_flags[i].flag) {
 			jobj = json_object_new_string(requirements_flags[i].description);
 			if (!jobj) {
 				r = -ENOMEM;
@@ -1300,12 +1298,12 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 			}
 			json_object_array_add(jobj_mandatory, jobj);
 			/* erase processed flag from input set */
-			requirements &= ~(requirements_flags[i].flag);
+			reqs &= ~(requirements_flags[i].flag);
 		}
 	}
 
 	/* any remaining bit in requirements is unknown therefore illegal */
-	if (requirements) {
+	if (reqs) {
 		log_dbg("Illegal requiremnt flag(s) requested");
 		goto err;
 	}
