@@ -38,6 +38,13 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+/**
+ * @defgroup crypt-init Cryptsetup device context initialization
+ * Set of functions for creating and destroying @e crypt_device context
+ * @addtogroup crypt-init
+ * @{
+ */
+
 struct crypt_device; /* crypt device handle */
 
 /**
@@ -77,8 +84,8 @@ int crypt_init(struct crypt_device **cd, const char *device);
  * 	 crypt_init_by_name_and_header(cd, name, NULL);
  */
 int crypt_init_by_name_and_header(struct crypt_device **cd,
-				  const char *name,
-				  const char *header_device);
+	const char *name,
+	const char *header_device);
 
 /**
  * This is equivalent to call
@@ -89,15 +96,49 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 int crypt_init_by_name(struct crypt_device **cd, const char *name);
 
 /**
- * @defgroup loglevel Cryptsetup logging
+ * Release crypt device context and used memory.
  *
- * Set of functions and defines used in cryptsetup for
- * logging purposes
- *
+ * @param cd crypt device handle
  */
+void crypt_free(struct crypt_device *cd);
 
 /**
- * @addtogroup loglevel
+ * Set confirmation callback (yes/no).
+ *
+ * If code need confirmation (like resetting uuid or restoring LUKS header from file)
+ * this function is called. If not defined, everything is confirmed.
+ *
+ * Callback function @e confirm should return @e 0 if operation is declined,
+ * other values mean accepted.
+ *
+ * @param cd crypt device handle
+ * @param confirm user defined confirm callback reference
+ * @param usrptr provided identification in callback
+ * @param msg Message for user to confirm
+ *
+ * @note Current version of cryptsetup API requires confirmation only when UUID is being changed
+ */
+void crypt_set_confirm_callback(struct crypt_device *cd,
+	int (*confirm)(const char *msg, void *usrptr),
+	void *usrptr);
+
+/**
+ * Set data device
+ * For LUKS it is encrypted data device when LUKS header is separated.
+ * For VERITY it is data device when hash device is separated.
+ *
+ * @param cd crypt device handle
+ * @param device path to device
+ *
+ */
+int crypt_set_data_device(struct crypt_device *cd, const char *device);
+/** @} */
+
+/**
+ * @defgroup crypt-log Cryptsetup logging
+ * Set of functions and defines used in cryptsetup for
+ * logging purposes
+ * @addtogroup crypt-log
  * @{
  */
 
@@ -136,42 +177,9 @@ void crypt_log(struct crypt_device *cd, int level, const char *msg);
 /** @} */
 
 /**
- * Set confirmation callback (yes/no).
- *
- * If code need confirmation (like resetting uuid or restoring LUKS header from file)
- * this function is called. If not defined, everything is confirmed.
- *
- * Callback function @e confirm should return @e 0 if operation is declined,
- * other values mean accepted.
- *
- * @param cd crypt device handle
- * @param confirm user defined confirm callback reference
- * @param usrptr provided identification in callback
- * @param msg Message for user to confirm
- *
- * @note Current version of cryptsetup API requires confirmation only when UUID is being changed
- */
-void crypt_set_confirm_callback(struct crypt_device *cd,
-	int (*confirm)(const char *msg, void *usrptr),
-	void *usrptr);
-
-/**
- * Set data device
- * For LUKS it is encrypted data device when LUKS header is separated.
- * For VERITY it is data device when hash device is separated.
- *
- * @param cd crypt device handle
- * @param device path to device
- *
- */
-int crypt_set_data_device(struct crypt_device *cd, const char *device);
-
-/**
- * @defgroup rng Cryptsetup RNG and PBKDF
- *
- * @addtogroup rng
+ * @defgroup crypt-set Cryptsetup settings (RNG, PBKDF, locking)
+ * @addtogroup crypt-set
  * @{
- *
  */
 
 /** CRYPT_RNG_URANDOM - use /dev/urandom */
@@ -251,7 +259,8 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd);
 /**
  * Set how long should cryptsetup iterate in PBKDF2 function.
  * Default value heads towards the iterations which takes around 1 second.
- * \b Deprecated, only for backward compatibility. Use @link crypt_set_pbkdf_type.
+ * \b Deprecated, only for backward compatibility.
+ * Use @link crypt_set_pbkdf_type @endlink.
  *
  * @param cd crypt device handle
  * @param iteration_time_ms the time in ms
@@ -259,8 +268,6 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd);
  * @note If the time value is not acceptable for active PBKDF, value is quietly ignored.
  */
 void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms);
-
-/** @} */
 
 /**
  * Helper to lock/unlock memory to avoid swap sensitive data to disk.
@@ -288,34 +295,13 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
  * 	 In current version locking can be only switched off and cannot be switched on later.
  */
 int crypt_metadata_locking(struct crypt_device *cd, int enable);
+/** @} */
 
 /**
- * Set or unset loading of volume keys via kernel keyring. When set to 'enabled'
- * library loads key in kernel keyring first and pass the key description to
- * dm-crypt instead of binary key copy. If set to 'disabled' library fall backs
- * to classical method loading volume key directly in dm-crypt target.
- *
- * @param cd crypt device handle, can be @e NULL
- * @param enable 0 to disable loading of volume keys via kernel keyring
- * 	  (classical method) otherwise enable it (default)
- *
- * @returns @e 0 on success or negative errno value otherwise.
- *
- * @note Currently loading of volume keys via kernel keyring is supported
- * 	 (and enabled by default) only for LUKS2 devices.
- * @note The switch is global on the library level.
- */
-int crypt_volume_key_keyring(struct crypt_device *cd, int enable);
-
-/**
- * @defgroup crypt_type Cryptsetup on-disk format types
- *
+ * @defgroup crypt-type Cryptsetup on-disk format types
  * Set of functions, \#defines and structs related
  * to on-disk format types
- */
-
-/**
- * @addtogroup crypt_type
+ * @addtogroup crypt-type
  * @{
  */
 
@@ -352,10 +338,10 @@ const char *crypt_get_type(struct crypt_device *cd);
  * @see crypt_format
  */
 struct crypt_params_plain {
-	const char *hash; /**< password hash function */
-	uint64_t offset; /**< offset in sectors */
-	uint64_t skip; /**< IV offset / initialization sector */
-	uint64_t size; /**< size of mapped device or @e 0 for autodetection */
+	const char *hash;     /**< password hash function */
+	uint64_t offset;      /**< offset in sectors */
+	uint64_t skip;        /**< IV offset / initialization sector */
+	uint64_t size;        /**< size of mapped device or @e 0 for autodetection */
 	uint32_t sector_size; /**< sector size in bytes (@e 0 means 512 for compatibility) */
 };
 
@@ -369,8 +355,8 @@ struct crypt_params_plain {
  *
  */
 struct crypt_params_luks1 {
-	const char *hash; /**< hash used in LUKS header */
-	size_t data_alignment; /**< data alignment in sectors, data offset is multiple of this */
+	const char *hash;        /**< hash used in LUKS header */
+	size_t data_alignment;   /**< data alignment in sectors, data offset is multiple of this */
 	const char *data_device; /**< detached encrypted data device or @e NULL */
 };
 
@@ -490,16 +476,22 @@ struct crypt_params_integrity {
  */
 struct crypt_params_luks2 {
 	const struct crypt_pbkdf_type *pbkdf; /**< PBKDF (and hash) parameters or @e NULL*/
-	const char *integrity;               /**< integrity algorithm or @e NULL */
+	const char *integrity;                /**< integrity algorithm or @e NULL */
 	const struct crypt_params_integrity *integrity_params; /**< Data integrity parameters or @e NULL*/
-	size_t data_alignment; /**< data alignment in sectors, data offset is multiple of this */
+	size_t data_alignment;   /**< data alignment in sectors, data offset is multiple of this */
 	const char *data_device; /**< detached encrypted data device or @e NULL */
-	uint32_t sector_size; /**< encryption sector size */
-	const char *label; /**< header label or @e NULL*/
-	const char *subsystem; /**< header subsystem label or @e NULL*/
+	uint32_t sector_size;    /**< encryption sector size */
+	const char *label;       /**< header label or @e NULL*/
+	const char *subsystem;   /**< header subsystem label or @e NULL*/
 };
-
 /** @} */
+
+/**
+ * @defgroup crypt-actions Cryptsetup device context actions
+ * Set of functions for formatting and manipulating with specific crypt_type
+ * @addtogroup crypt-actions
+ * @{
+ */
 
 /**
  * Create (format) new crypt device (and possible header on-disk) but do not activate it.
@@ -513,13 +505,13 @@ struct crypt_params_luks2 {
  * @param uuid requested UUID or @e NULL if it should be generated
  * @param volume_key pre-generated volume key or @e NULL if it should be generated (only for LUKS)
  * @param volume_key_size size of volume key in bytes.
- * @param params crypt type specific parameters (see @link crypt_type @endlink)
+ * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
  * @returns @e 0 on success or negative errno value otherwise.
  *
  * @note Note that crypt_format does not enable any keyslot (in case of work with LUKS device),
  * 	but it stores volume key internally and subsequent crypt_keyslot_add_* calls can be used.
- * @note For VERITY @link crypt_type @endlink, only uuid parameter is used, others paramaters
+ * @note For VERITY @link crypt-type @endlink, only uuid parameter is used, others paramaters
  * 	are ignored and verity specific attributes are set through mandatory params option.
  */
 int crypt_format(struct crypt_device *cd,
@@ -536,15 +528,15 @@ int crypt_format(struct crypt_device *cd,
  *
  * @param cd crypt device handle
  * @param type type of device (optional params struct must be of this type)
- * @param params crypt type specific parameters (see @link crypt_type @endlink)
+ * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
  * @returns 0 on success or negative errno value otherwise.
  *
  * @note Currently, only LUKS1->LUKS2 conversion is supported
  */
 int crypt_convert(struct crypt_device *cd,
-		  const char *type,
-		  void *params);
+	const char *type,
+	void *params);
 
 /**
  * Set new UUID for already existing device.
@@ -557,7 +549,7 @@ int crypt_convert(struct crypt_device *cd,
  * @note Currently, only LUKS device type are supported
  */
 int crypt_set_uuid(struct crypt_device *cd,
-		   const char *uuid);
+	const char *uuid);
 
 /**
  * Set new labels (label and subsystem) for already existing device.
@@ -571,15 +563,33 @@ int crypt_set_uuid(struct crypt_device *cd,
  * @note Currently, only LUKS2 device type is supported
  */
 int crypt_set_label(struct crypt_device *cd,
-		    const char *label,
-		    const char *subsystem);
+	const char *label,
+	const char *subsystem);
+
+/**
+ * Set or unset loading of volume keys via kernel keyring. When set to 'enabled'
+ * library loads key in kernel keyring first and pass the key description to
+ * dm-crypt instead of binary key copy. If set to 'disabled' library fall backs
+ * to classical method loading volume key directly in dm-crypt target.
+ *
+ * @param cd crypt device handle, can be @e NULL
+ * @param enable 0 to disable loading of volume keys via kernel keyring
+ * 	  (classical method) otherwise enable it (default)
+ *
+ * @returns @e 0 on success or negative errno value otherwise.
+ *
+ * @note Currently loading of volume keys via kernel keyring is supported
+ * 	 (and enabled by default) only for LUKS2 devices.
+ * @note The switch is global on the library level.
+ */
+int crypt_volume_key_keyring(struct crypt_device *cd, int enable);
 
 /**
  * Load crypt device parameters from on-disk header.
  *
  * @param cd crypt device handle
- * @param requested_type @link crypt_type @endlink or @e NULL for all known
- * @param params crypt type specific parameters (see @link crypt_type @endlink)
+ * @param requested_type @link crypt-type @endlink or @e NULL for all known
+ * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
  * @returns 0 on success or negative errno value otherwise.
  *
@@ -590,22 +600,22 @@ int crypt_set_label(struct crypt_device *cd,
  *
  */
 int crypt_load(struct crypt_device *cd,
-	       const char *requested_type,
-	       void *params);
+	const char *requested_type,
+	void *params);
 
 /**
  * Try to repair crypt device on-disk header if invalid.
  *
  * @param cd crypt device handle
- * @param requested_type @link crypt_type @endlink or @e NULL for all known
- * @param params crypt type specific parameters (see @link crypt_type @endlink)
+ * @param requested_type @link crypt-type @endlink or @e NULL for all known
+ * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
  * @returns 0 on success or negative errno value otherwise.
  *
  */
 int crypt_repair(struct crypt_device *cd,
-		 const char *requested_type,
-		 void *params);
+	const char *requested_type,
+	void *params);
 
 /**
  * Resize crypt device.
@@ -623,8 +633,8 @@ int crypt_repair(struct crypt_device *cd,
  * 	 the keyring.
  */
 int crypt_resize(struct crypt_device *cd,
-		 const char *name,
-		 uint64_t new_size);
+	const char *name,
+	uint64_t new_size);
 
 /**
  * Suspend crypt device.
@@ -638,7 +648,7 @@ int crypt_resize(struct crypt_device *cd,
  *
  */
 int crypt_suspend(struct crypt_device *cd,
-		  const char *name);
+	const char *name);
 
 /**
  * Resume crypt device using passphrase.
@@ -686,19 +696,12 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 	int keyslot,
 	const char *keyfile,
 	size_t keyfile_size);
+/** @} */
 
 /**
- * Release crypt device context and used memory.
- *
- * @param cd crypt device handle
- */
-void crypt_free(struct crypt_device *cd);
-
-/**
- * @defgroup keyslot Cryptsetup LUKS keyslots
- * @addtogroup keyslot
+ * @defgroup crypt-keyslot LUKS keyslots
+ * @addtogroup crypt-keyslot
  * @{
- *
  */
 
 /** iterate through all keyslots and find first one that fits */
@@ -807,7 +810,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	const char *passphrase,
 	size_t passphrase_size);
 
-/* create keyslot with volume key not associated with current dm-crypt segment */
+/** create keyslot with volume key not associated with current dm-crypt segment */
 #define CRYPT_VOLUME_KEY_NO_SEGMENT (1 << 0)
 
 /**
@@ -821,6 +824,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
  * @param volume_key_size size of volume_key
  * @param passphrase passphrase for new keyslot, @e NULL for query
  * @param passphrase_size size of passphrase
+ * @param flags key flags to set
  *
  * @return allocated key slot number or negative errno otherwise.
  *
@@ -851,32 +855,15 @@ int crypt_keyslot_add_by_key(struct crypt_device *cd,
  * @note Note that there is no passphrase verification used.
  */
 int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
-
 /** @} */
 
 /**
- * @defgroup areqs LUKS2 header requirements
- *
- * LUKS2 requirements flags
- *
- * @addtogroup areqs
- * @{
- */
-
-#define CRYPT_REQUIREMENT_UNKNOWN		(1 << 31)
-/** unknown requirement in header (output only) */
-
-/* @} */
-
-/**
- * @defgroup aflags Device runtime attributes
- *
+ * @defgroup crypt-aflags Device runtime attributes
  * Activation flags
- *
- * @addtogroup aflags
+ * @addtogroup crypt-aflags
  * @{
- *
  */
+
 /** device is read only */
 #define CRYPT_ACTIVATE_READONLY (1 << 0)
 /** only reported for device without uuid */
@@ -912,10 +899,10 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
  * Active device runtime attributes
  */
 struct crypt_active_device {
-	uint64_t offset; /**< offset in sectors */
+	uint64_t offset;    /**< offset in sectors */
 	uint64_t iv_offset; /**< IV initialization sector */
-	uint64_t size; /**< active device size */
-	uint32_t flags; /**< activation flags */
+	uint64_t size;      /**< active device size */
+	uint32_t flags;     /**< activation flags */
 };
 
 /**
@@ -931,12 +918,25 @@ struct crypt_active_device {
 int crypt_get_active_device(struct crypt_device *cd,
 			    const char *name,
 			    struct crypt_active_device *cad);
+/** @} */
+
+/**
+ * @defgroup crypt-pflags LUKS2 Device persistent flags and requirements
+ * @addtogroup crypt-pflags
+ * @{
+ */
+
+/**
+ * LUKS2 header requirements
+ */
+/** unknown requirement in header (output only) */
+#define CRYPT_REQUIREMENT_UNKNOWN		(1 << 31)
 
 /**
  * Persistent flags type
  */
 typedef enum {
-	CRYPT_FLAGS_ACTIVATION, /**< activation flags */
+	CRYPT_FLAGS_ACTIVATION, /**< activation flags, @see aflags */
 	CRYPT_FLAGS_REQUIREMENTS /**< requirements flags */
 } crypt_flags_type;
 
@@ -959,8 +959,8 @@ typedef enum {
  *	 CRYPT_REQUIREMENT_FLAG is illegal (output only) in set operation.
  */
 int crypt_persistent_flags_set(struct crypt_device *cd,
-			       crypt_flags_type type,
-			       uint32_t flags);
+	crypt_flags_type type,
+	uint32_t flags);
 
 /**
  * Get persistent flags stored in header.
@@ -972,10 +972,15 @@ int crypt_persistent_flags_set(struct crypt_device *cd,
  * @return @e 0 on success or negative errno value otherwise
  */
 int crypt_persistent_flags_get(struct crypt_device *cd,
-			       crypt_flags_type type,
-			       uint32_t *flags);
-
+	crypt_flags_type type,
+	uint32_t *flags);
 /** @} */
+
+/**
+ * @defgroup crypt-activation Device activation
+ * @addtogroup crypt-activation
+ * @{
+ */
 
 /**
  * Activate device or check passphrase.
@@ -1053,11 +1058,6 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	size_t volume_key_size,
 	uint32_t flags);
 
-/** lazy deactivation - remove once last user releases it */
-#define CRYPT_DEACTIVATE_DEFERRED (1 << 0)
-/** force deactivation - if the device is busy, it is replaced by error device */
-#define CRYPT_DEACTIVATE_FORCE    (1 << 1)
-
 /**
  * Activate device using passphrase stored in kernel keyring.
  *
@@ -1076,10 +1076,15 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
  * 	 on behalf of which this function is called.
  */
 int crypt_activate_by_keyring(struct crypt_device *cd,
-			      const char *name,
-			      const char *key_description,
-			      int keyslot,
-			      uint32_t flags);
+	const char *name,
+	const char *key_description,
+	int keyslot,
+	uint32_t flags);
+
+/** lazy deactivation - remove once last user releases it */
+#define CRYPT_DEACTIVATE_DEFERRED (1 << 0)
+/** force deactivation - if the device is busy, it is replaced by error device */
+#define CRYPT_DEACTIVATE_FORCE    (1 << 1)
 
 /**
  * Deactivate crypt device. This function tries to remove active device-mapper
@@ -1101,6 +1106,13 @@ int crypt_deactivate_by_name(struct crypt_device *cd,
  * Deactivate crypt device. See @ref crypt_deactivate_by_name with empty @e flags.
  */
 int crypt_deactivate(struct crypt_device *cd, const char *name);
+/** @} */
+
+/**
+ * @defgroup crypt-key Volume Key manipulation
+ * @addtogroup crypt-key
+ * @{
+ */
 
 /**
  * Get volume key from crypt device.
@@ -1137,10 +1149,11 @@ int crypt_volume_key_get(struct crypt_device *cd,
 int crypt_volume_key_verify(struct crypt_device *cd,
 	const char *volume_key,
 	size_t volume_key_size);
+/** @} */
 
 /**
- * @defgroup devstat Crypt and Verity device status
- * @addtogroup devstat
+ * @defgroup crypt-devstat Crypt and Verity device status
+ * @addtogroup crypt-devstat
  * @{
  */
 
@@ -1148,10 +1161,10 @@ int crypt_volume_key_verify(struct crypt_device *cd,
  * Device status
  */
 typedef enum {
-	CRYPT_INVALID, /**< device mapping is invalid in this context */
+	CRYPT_INVALID,  /**< device mapping is invalid in this context */
 	CRYPT_INACTIVE, /**< no such mapped device */
-	CRYPT_ACTIVE, /**< device is active */
-	CRYPT_BUSY /**< device is active and has open count > 0 */
+	CRYPT_ACTIVE,   /**< device is active */
+	CRYPT_BUSY      /**< device is active and has open count > 0 */
 } crypt_status_info;
 
 /**
@@ -1280,13 +1293,10 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 /** @} */
 
 /**
- * @defgroup benchmark Benchmarking
- *
+ * @defgroup crypt-benchmark Benchmarking
  * Benchmarking of algorithms
- *
- * @addtogroup benchmark
+ * @addtogroup crypt-benchmark
  * @{
- *
  */
 
 /**
@@ -1325,7 +1335,8 @@ int crypt_benchmark(struct crypt_device *cd,
  * @param salt salt for benchmark
  * @param salt_size size of salt
  * @param volume_key_size output volume key size
- * @param iterations_sec returns measured PBKDF iterations per second
+ * @param progress callback function
+ * @param usrptr provided identification in callback
  *
  * @return @e 0 on success or negative errno value otherwise.
  */
@@ -1338,24 +1349,22 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	size_t volume_key_size,
 	int (*progress)(uint32_t time_ms, void *usrptr),
 	void *usrptr);
-
 /** @} */
 
 /**
- * @addtogroup keyslot
+ * @addtogroup crypt-keyslot
  * @{
- *
  */
 
 /**
  * Crypt keyslot info
  */
 typedef enum {
-	CRYPT_SLOT_INVALID, /**< invalid keyslot */
-	CRYPT_SLOT_INACTIVE, /**< keyslot is inactive (free) */
-	CRYPT_SLOT_ACTIVE, /**< keyslot is active (used) */
+	CRYPT_SLOT_INVALID,    /**< invalid keyslot */
+	CRYPT_SLOT_INACTIVE,   /**< keyslot is inactive (free) */
+	CRYPT_SLOT_ACTIVE,     /**< keyslot is active (used) */
 	CRYPT_SLOT_ACTIVE_LAST /**< keylost is active (used)
-				*   and last used at the same time */
+				 *  and last used at the same time */
 } crypt_keyslot_info;
 
 /**
@@ -1426,14 +1435,26 @@ int crypt_keyslot_area(struct crypt_device *cd,
 	int keyslot,
 	uint64_t *offset,
 	uint64_t *length);
+
+/**
+ * Get directory where mapped crypt devices are created
+ *
+ * @return the directory path
+ */
+const char *crypt_get_dir(void);
+
 /** @} */
 
-
+/**
+ * @defgroup crypt-backup Device metadata backup
+ * @addtogroup crypt-backup
+ * @{
+ */
 /**
  * Backup header and keyslots to file.
  *
  * @param cd crypt device handle
- * @param requested_type @link crypt_type @endlink or @e NULL for all known
+ * @param requested_type @link crypt-type @endlink or @e NULL for all known
  * @param backup_file file to backup header to
  *
  * @return @e 0 on success or negative errno value otherwise.
@@ -1448,7 +1469,7 @@ int crypt_header_backup(struct crypt_device *cd,
  *
  *
  * @param cd crypt device handle
- * @param requested_type @link crypt_type @endlink or @e NULL for all known
+ * @param requested_type @link crypt-type @endlink or @e NULL for all known
  * @param backup_file file to restore header from
  *
  * @return @e 0 on success or negative errno value otherwise.
@@ -1457,20 +1478,12 @@ int crypt_header_backup(struct crypt_device *cd,
 int crypt_header_restore(struct crypt_device *cd,
 	const char *requested_type,
 	const char *backup_file);
+/** @} */
 
 /**
- * Get directory where mapped crypt devices are created
- *
- * @return the directory path
- */
-const char *crypt_get_dir(void);
-
-/**
- * @defgroup dbg Library debug level
- *
+ * @defgroup crypt-dbg Library debug level
  * Set library debug level
- *
- * @addtogroup dbg
+ * @addtogroup crypt-dbg
  * @{
  */
 
@@ -1486,17 +1499,12 @@ const char *crypt_get_dir(void);
  *
  */
 void crypt_set_debug_level(int level);
-
 /** @} */
 
 /**
- * @defgroup keyfiles Keyfile utilities
- *
- * Utilities to handle keyfiles
- *
- * @addtogroup keyfiles
+ * @defgroup crypt-keyfile Function to read keyfile
+ * @addtogroup crypt-keyfile
  * @{
- *
  */
 
 /**
@@ -1512,16 +1520,13 @@ int crypt_keyfile_read(struct crypt_device *cd,
 );
 /** No on-disk header (only hashes) */
 #define CRYPT_KEYFILE_STOP_EOL   (1 << 0)
+/** @} */
 
 /**
- * @defgroup wipe Device wipe helper
- *
- * Wipe or fill a device with a pattern.
- *
- * @addtogroup wipe
+ * @defgroup crypt-wipe Function to wipe device
+ * @addtogroup crypt-wipe
  * @{
  */
-
 /**
  * Wipe pattern
  */
@@ -1565,18 +1570,17 @@ int crypt_wipe(struct crypt_device *cd,
 
 /** Use direct-io */
 #define CRYPT_WIPE_NO_DIRECT_IO (1 << 0)
-
 /** @} */
 
 /**
- * @defgroup tokens LUKS2 token wrapper access
+ * @defgroup crypt-tokens LUKS2 token wrapper access
  *
  * Utilities for handling tokens LUKS2
  * Token is a device or a method how to read password for particular keyslot
  * automatically. It can be chunk of data stored on hardware token or
  * just a metadata how to generate password.
  *
- * @addtogroup tokens
+ * @addtogroup crypt-tokens
  * @{
  */
 
@@ -1613,12 +1617,15 @@ int crypt_token_json_set(struct crypt_device *cd,
 	int token,
 	const char *json);
 
+/**
+ * Token info
+ */
 typedef enum {
-	CRYPT_TOKEN_INVALID, /**< token is invalid */
-	CRYPT_TOKEN_INACTIVE, /**< token is empty (free) */
-	CRYPT_TOKEN_INTERNAL, /**< active internal token with driver */
+	CRYPT_TOKEN_INVALID,          /**< token is invalid */
+	CRYPT_TOKEN_INACTIVE,         /**< token is empty (free) */
+	CRYPT_TOKEN_INTERNAL,         /**< active internal token with driver */
 	CRYPT_TOKEN_INTERNAL_UNKNOWN, /**< active internal token (reserved name) with missing token driver */
-	CRYPT_TOKEN_EXTERNAL, /**< active external (user defined) token with driver */
+	CRYPT_TOKEN_EXTERNAL,         /**< active external (user defined) token with driver */
 	CRYPT_TOKEN_EXTERNAL_UNKNOWN, /**< active external (user defined) token with missing token driver */
 } crypt_token_info;
 
@@ -1645,10 +1652,10 @@ crypt_token_info crypt_token_status(struct crypt_device *cd, int token, const ch
  *
  */
 struct crypt_token_params_luks2_keyring {
-	const char *key_description;
+	const char *key_description; /**< Reference in keyring */
 };
 
-/*
+/**
  * Create a new luks2 keyring token.
  *
  * @param cd crypt device handle
@@ -1662,7 +1669,7 @@ int crypt_token_luks2_keyring_set(struct crypt_device *cd,
 	int token,
 	const struct crypt_token_params_luks2_keyring *params);
 
-/*
+/**
  * Get LUKS2 keyring token params
  *
  * @param cd crypt device handle
@@ -1743,7 +1750,7 @@ typedef void (*crypt_token_buffer_free_func) (void *buffer, size_t buffer_len);
  * This fuction validates JSON representation of user defined token for additional data
  * specific for its token type. If defined in the handler, it's called
  * during @link crypt_activate_by_token @endlink. It may also be called during
- * @link crypt_token_set @endlink when appropriate token handler was registered before
+ * @link crypt_token_json_set @endlink when appropriate token handler was registered before
  * with @link crypt_token_register @endlink.
  *
  * @param cd crypt device handle
@@ -1764,6 +1771,9 @@ typedef int (*crypt_token_validate_func) (struct crypt_device *cd, const char *j
  */
 typedef void (*crypt_token_dump_func) (struct crypt_device *cd, const char *json);
 
+/**
+ * Token handler
+ */
 typedef struct  {
 	const char *name;           /**< token handler name */
 	crypt_token_open_func open; /**< token handler open function */
@@ -1797,7 +1807,6 @@ int crypt_activate_by_token(struct crypt_device *cd,
 	int token,
 	void *usrptr,
 	uint32_t flags);
-
 /** @} */
 
 #ifdef __cplusplus
