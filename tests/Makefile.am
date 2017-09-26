@@ -19,7 +19,8 @@ TESTS += verity-compat-test
 endif
 
 if REENCRYPT
-TESTS += reencryption-compat-test
+TESTS += reencryption-compat-test reencryption-compat-test2
+
 endif
 
 if INTEGRITYSETUP
@@ -48,6 +49,7 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	loopaes-test align-test discards-test mode-test password-hash-test \
 	verity-compat-test \
 	reencryption-compat-test \
+	reencryption-compat-test2 \
 	tcrypt-compat-test \
 	luks1-compat-test \
 	luks2-validation-test generators \
