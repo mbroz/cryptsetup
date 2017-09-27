@@ -1,0 +1,56 @@
+Integration with kernel keyring service
+---------------------------------------
+
+We have two different use cases for kernel keyring service:
+
+I) Volume keys
+
+Since upstream kernel 4.10 dm-crypt device mapper target allows loading volume
+key (VK) in kernel keyring service. The key offloaded in kernel keyring service
+is only referenced (by key description) in dm-crypt target and the VK is therefore
+no longer stored directly in dm-crypt target. Starting with cryptsetup 2.0 we
+load VK in kernel keyring by default for LUKSv2 devices (when dm-crypt with the
+feature is available).
+
+Currently cryptsetup loads VK in 'logon' type kernel key so that VK is passed in
+the kernel and can't be read from userspace afterward. Also cryptsetup loads VK in
+thread keyring (before passing the reference to dm-crypt target) so that the key
+lifetime is directly bound to the process that performs the dm-crypt setup. When
+cryptsetup process exits (for whatever reason) the key gets unlinked in kernel
+automatically. In summary, the key description visible in dm-crypt table line is
+a reference to VK that usually no longer exists in kernel keyring service if you
+used cryptsetup to for device activation.
+
+Using this feature dm-crypt no longer maintains a direct key copy (but there's
+always at least one copy in kernel crypto layer).
+
+II) Keyslot passphrase
+The second use case for kernel keyring is to allow cryptsetup reading the keyslot
+passphrase stored in kernel keyring instead. The user may load passphrase in kernel
+keyring and notify cryptsetup to read it from there later. Currently, cryptsetup
+cli supports kernel keyring for passphrase only via LUKS2 internal token
+(luks2-keyring). Library also provides a general method for device activation by
+reading passphrase from keyring: crypt_activate_by_keyring(). The key type
+for use case II) must always be 'user' since we need to read the actual key
+data from userspace unlike with VK in I). Ability to read keyslot passphrase
+from kernel keyring also allows easily auto-activate LUKS2 devices.
+
+Simple example how to use kernel keyring for keyslot passphrase:
+
+1) create LUKS2 keyring token for keyslot 0 (in LUKS2 device/image)
+cryptsetup token add --key-description my:key -S 0 /dev/device
+
+2) Load keyslot passphrase in user keyring
+read -s -p "Keyslot passphrase: "; echo -n $REPLY | keyctl padd user my:key @u
+
+3) Activate device using passphrase stored in kernel keyring
+cryptsetup open /dev/device my_unlocked_device
+
+4a) unlink the key when no longer needed by
+keyctl unlink %user:my:key @u
+
+4b) or revoke it immediately by
+keyctl revoke %user:my:key
+
+If cryptsetup asks for passphrase in step 3) something went wrong with keyring
+activation. See --debug output then.
