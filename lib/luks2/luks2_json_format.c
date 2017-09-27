@@ -182,7 +182,7 @@ int LUKS2_generate_hdr(
 	jobj_segment = json_object_new_object();
 	json_object_object_add(jobj_segment, "type", json_object_new_string("crypt"));
 	if (detached_metadata_device)
-		offset = alignPayload * sector_size;
+		offset = (uint64_t)alignPayload * sector_size;
 	else {
 		//FIXME
 		//offset = size_round_up(areas[7].offset + areas[7].length, alignPayload * SECTOR_SIZE);

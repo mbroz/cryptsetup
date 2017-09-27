@@ -106,8 +106,7 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 	if (opt_journal_integrity_key_file) {
 		r = _read_mk(opt_journal_integrity_key_file, &journal_integrity_key, opt_journal_integrity_key_size);
 		if (r < 0) {
-			crypt_safe_free(*integrity_key);
-			*integrity_key = NULL;
+			crypt_safe_free(int_key);
 			return r;
 		}
 		params->journal_integrity_key = journal_integrity_key;
@@ -117,8 +116,7 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 	if (opt_journal_crypt_key_file) {
 		r = _read_mk(opt_journal_crypt_key_file, &journal_crypt_key, opt_journal_crypt_key_size);
 		if (r < 0) {
-			crypt_safe_free(*integrity_key);
-			*integrity_key = NULL;
+			crypt_safe_free(int_key);
 			crypt_safe_free(journal_integrity_key);
 			return r;
 		}

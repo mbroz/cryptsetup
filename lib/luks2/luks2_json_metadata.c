@@ -941,6 +941,7 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (r) {
 		log_err(cd, _("Failed to acquire read lock on device %s.\n"),
 			device_path(crypt_metadata_device(cd)));
+		crypt_safe_free(buffer);
 		return r;
 	}
 
@@ -969,7 +970,6 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 			log_err(cd, _("Requested header backup file %s already exists.\n"), backup_file);
 		else
 			log_err(cd, _("Cannot create header backup file %s.\n"), backup_file);
-		close(devfd);
 		crypt_safe_free(buffer);
 		return -EINVAL;
 	}

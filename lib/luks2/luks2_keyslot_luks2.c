@@ -126,6 +126,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 	if (r) {
 		log_err(cd, _("Failed to acquire read lock on device %s.\n"),
 			device_path(device));
+		crypt_storage_destroy(s);
 		return r;
 	}
 
@@ -143,15 +144,13 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 
 	device_read_unlock(device);
 
-	if (r) {
-		log_err(cd, _("IO error while decrypting keyslot.\n"));
-		return r;
-	}
-
 	/* Decrypt buffer */
-	r = crypt_storage_decrypt(s, 0, dstLength / SECTOR_SIZE, dst);
-	crypt_storage_destroy(s);
+	if (!r)
+		r = crypt_storage_decrypt(s, 0, dstLength / SECTOR_SIZE, dst);
+	else
+		log_err(cd, _("IO error while decrypting keyslot.\n"));
 
+	crypt_storage_destroy(s);
 	return r;
 #endif
 }
@@ -314,9 +313,10 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	if (!json_object_object_get_ex(jobj_kdf, "salt", &jobj2))
 		return -EINVAL;
 	salt_len = LUKS_SALTSIZE;
-	base64_decode(json_object_get_string(jobj2),
-		      json_object_get_string_len(jobj2),
-		      salt, &salt_len);
+	if (!base64_decode(json_object_get_string(jobj2),
+			   json_object_get_string_len(jobj2),
+			   salt, &salt_len))
+		return -EINVAL;
 	if (salt_len != LUKS_SALTSIZE)
 		return -EINVAL;
 

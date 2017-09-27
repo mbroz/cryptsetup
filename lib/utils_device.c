@@ -501,10 +501,8 @@ static int device_info(struct crypt_device *cd,
 	int fd = -1, r, flags = 0, real_readonly;
 	uint64_t real_size;
 
-	if (!device) {
-		r = -ENOTBLK;
-		goto out;
-	}
+	if (!device)
+		return -ENOTBLK;
 
 	real_readonly = 0;
 	real_size = 0;

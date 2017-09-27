@@ -169,6 +169,7 @@ static void release_lock_handle(struct crypt_lock_handle *h)
 	char res[PATH_MAX];
 	struct stat buf_a, buf_b;
 
+	/* coverity[toctou] */
 	if (S_ISBLK(h->mode) && /* was it block device */
 	    !flock(h->flock_fd, LOCK_EX | LOCK_NB) && /* lock to drop the file */
 	    !resource_by_devno(res, sizeof(res), h->devno, 1) && /* acquire lock resource name */

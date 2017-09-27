@@ -76,7 +76,7 @@ static int hdr_checksum_calculate(const char *alg, struct luks2_hdr_disk *hdr_di
 	struct crypt_hash *hd = NULL;
 	int r;
 
-	if (crypt_hash_init(&hd, alg))
+	if (crypt_hash_size(alg) <= 0 || crypt_hash_init(&hd, alg))
 		return -EINVAL;
 
 	/* Binary header, csum zeroed. */
@@ -101,6 +101,9 @@ static int hdr_checksum_check(const char *alg, struct luks2_hdr_disk *hdr_disk,
 {
 	struct luks2_hdr_disk hdr_tmp;
 	int r;
+
+	if (crypt_hash_size(alg) <= 0)
+		return -EINVAL;
 
 	/* Copy header and zero checksum. */
 	memcpy(&hdr_tmp, hdr_disk, LUKS2_HDR_BIN_LEN);
@@ -576,7 +579,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 			state_hdr1 = HDR_OBSOLETE;
 	}
 
-	/* check header with keyslots fit the device */
+	/* check header with keyslots to fit the device */
 	if (state_hdr1 == HDR_OK)
 		hdr_size = LUKS2_hdr_and_areas_size(jobj_hdr1);
 	else if (state_hdr2 == HDR_OK)
@@ -641,16 +644,17 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 		hdr_from_disk(&hdr_disk1, &hdr_disk2, hdr, 0);
 		hdr->jobj = jobj_hdr1;
 		json_object_put(jobj_hdr2);
-		return 0;
 	} else if (state_hdr2 == HDR_OK) {
 		hdr_from_disk(&hdr_disk2, &hdr_disk1, hdr, 1);
 		hdr->jobj = jobj_hdr2;
 		json_object_put(jobj_hdr1);
-		return 0;
 	}
 
-	r = (state_hdr1 == HDR_FAIL_IO || state_hdr2 == HDR_FAIL_IO) ? -EIO : -EINVAL;
-
+	/*
+	 * FIXME: should this fail? At least one header was read correctly.
+	 * r = (state_hdr1 == HDR_FAIL_IO || state_hdr2 == HDR_FAIL_IO) ? -EIO : -EINVAL;
+	 */
+	return 0;
 err:
 	log_dbg("LUKS2 header read failed (%d).", r);
 

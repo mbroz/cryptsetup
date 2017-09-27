@@ -406,7 +406,8 @@ static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
 
 	i = sscanf(tmp, "%" CLENS "[^-]-%" CLENS "s", mode, iv);
 	if (i == 1) {
-		strncpy(iv, mode, CLEN);
+		memset(iv, 0, sizeof(iv));
+		strncpy(iv, mode, sizeof(iv) - 1);
 		*mode = '\0';
 		if (snprintf(capi, sizeof(capi), "%s", cipher) < 0)
 			return -EINVAL;
@@ -495,7 +496,8 @@ static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char 
 				return -ENOMEM;
 		} else
 			*org_i = NULL;
-		strncpy(capi, tmp, sizeof(capi));
+		memset(capi, 0, sizeof(capi));
+		strncpy(capi, tmp, sizeof(capi) - 1);
 	}
 
 	i = sscanf(capi, "%" CLENS "[^(](%" CLENS "[^)])", mode, cipher);
@@ -1426,9 +1428,10 @@ static int _dm_query_crypt(uint32_t get_flags,
 				dmd->flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
 			else if (sscanf(arg, "integrity:%u:", &val) == 1) {
 				dmd->u.crypt.tag_size = val;
-				rintegrity = strchr(arg + strlen("integrity:"), ':') + 1;
+				rintegrity = strchr(arg + strlen("integrity:"), ':');
 				if (!rintegrity)
 					goto err;
+				rintegrity++;
 			} else if (sscanf(arg, "sector_size:%u", &val) == 1) {
 				dmd->u.crypt.sector_size = val;
 			} else /* unknown option */
@@ -1825,7 +1828,7 @@ static int _dm_query_integrity(uint32_t get_flags,
 				dmd->u.integrity.sector_size = val;
 			else if (sscanf(arg, "buffer_sectors:%u", &val) == 1)
 				dmd->u.integrity.buffer_sectors = val;
-			else if (!strncmp(arg, "internal_hash:", 14)) {
+			else if (!strncmp(arg, "internal_hash:", 14) && !integrity) {
 				str = &arg[14];
 				arg = strsep(&str, ":");
 				integrity = strdup(arg);
@@ -1855,7 +1858,7 @@ static int _dm_query_integrity(uint32_t get_flags,
 					if (r < 0)
 						goto err;
 				}
-			} else if (!strncmp(arg, "journal_crypt:", 14)) {
+			} else if (!strncmp(arg, "journal_crypt:", 14) && !journal_crypt) {
 				str = &arg[14];
 				arg = strsep(&str, ":");
 				journal_crypt = strdup(arg);
@@ -1863,7 +1866,7 @@ static int _dm_query_integrity(uint32_t get_flags,
 					r = -ENOMEM;
 					goto err;
 				}
-			} else if (!strncmp(arg, "journal_mac:", 12)) {
+			} else if (!strncmp(arg, "journal_mac:", 12) && !journal_integrity) {
 				str = &arg[12];
 				arg = strsep(&str, ":");
 				journal_integrity = strdup(arg);

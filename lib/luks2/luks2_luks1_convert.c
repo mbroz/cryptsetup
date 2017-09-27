@@ -138,7 +138,7 @@ static int json_luks1_segment(const struct luks_phdr *hdr_v1, struct json_object
 	json_object_object_add(segment_obj, "type", field);
 
 	/* offset field */
-	number = hdr_v1->payloadOffset * SECTOR_SIZE;
+	number = (uint64_t)hdr_v1->payloadOffset * SECTOR_SIZE;
 
 	field = json_object_new_string(uint64_to_str(num, sizeof(num), &number));
 	if (!field) {
@@ -442,6 +442,7 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 	devfd = device_open(device, O_RDWR);
 	if (devfd == -1) {
 		log_dbg("Cannot open device %s.", device_path(device));
+		free(buf);
 		return -EIO;
 	}
 
@@ -521,7 +522,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	strncpy(hdr2->checksum_alg, "sha256", LUKS2_CHECKSUM_ALG_L);
 	crypt_random_get(cd, (char*)hdr2->salt1, sizeof(hdr2->salt1), CRYPT_RND_SALT);
 	crypt_random_get(cd, (char*)hdr2->salt2, sizeof(hdr2->salt2), CRYPT_RND_SALT);
-	strncpy(hdr2->uuid, crypt_get_uuid(cd), LUKS2_UUID_L);
+	strncpy(hdr2->uuid, crypt_get_uuid(cd), LUKS2_UUID_L-1); /* UUID should be max 36 chars */
 	hdr2->jobj = jobj;
 
 	/*
@@ -769,7 +770,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	/* FIXME: LUKS1 requires offset == 0 || offset >= luks1_hdr_size */
 	hdr1->payloadOffset = offset;
 
-	strncpy(hdr1->uuid, hdr2->uuid, UUID_STRING_L);
+	strncpy(hdr1->uuid, hdr2->uuid, UUID_STRING_L - 1); /* max 36 chars */
 
 	memcpy(hdr1->magic, luksMagic, LUKS_MAGIC_L);
 
