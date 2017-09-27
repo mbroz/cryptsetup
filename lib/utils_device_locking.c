@@ -169,15 +169,16 @@ static void release_lock_handle(struct crypt_lock_handle *h)
 	char res[PATH_MAX];
 	struct stat buf_a, buf_b;
 
-	/* coverity[toctou] */
 	if (S_ISBLK(h->mode) && /* was it block device */
 	    !flock(h->flock_fd, LOCK_EX | LOCK_NB) && /* lock to drop the file */
 	    !resource_by_devno(res, sizeof(res), h->devno, 1) && /* acquire lock resource name */
 	    !fstat(h->flock_fd, &buf_a) && /* read inode id refered by fd */
 	    !stat(res, &buf_b) && /* does path file stil exist? */
-	    same_inode(buf_a, buf_b)) /* is it same id as the one referenced by fd? */
+	    same_inode(buf_a, buf_b)) { /* is it same id as the one referenced by fd? */
+		/* coverity[toctou] */
 		if (unlink(res)) /* yes? unlink the file */
 			log_dbg("Failed to unlink resource file: %s", res);
+	}
 
 	if (close(h->flock_fd))
 		log_dbg("Failed to close resource fd (%d).", h->flock_fd);

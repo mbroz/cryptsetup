@@ -726,14 +726,14 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	if (r < 0)
 		return r;
 
-	strncpy(hdr1->cipherName, cipher, sizeof(hdr1->cipherName));
-	strncpy(hdr1->cipherMode, cipher_mode, sizeof(hdr1->cipherMode));
+	strncpy(hdr1->cipherName, cipher, sizeof(hdr1->cipherName) - 1);
+	strncpy(hdr1->cipherMode, cipher_mode, sizeof(hdr1->cipherMode) - 1);
 
 	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf))
 		return -EINVAL;
 	if (!json_object_object_get_ex(jobj_kdf, "hash", &jobj1))
 		return -EINVAL;
-	strncpy(hdr1->hashSpec, json_object_get_string(jobj1), sizeof(hdr1->hashSpec));
+	strncpy(hdr1->hashSpec, json_object_get_string(jobj1), sizeof(hdr1->hashSpec) - 1);
 
 	hdr1->keyBytes = key_size;
 
