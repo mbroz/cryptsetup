@@ -1339,6 +1339,16 @@ cryptsetup FAQ for an example.
 
 When device mapping is active, you can see the loop backing file in
 the status command output. Also see losetup(8).
+.SH LUKS2 header locking
+.PP
+The LUKS2 on-disk metadata is updated in several steps and
+to achieve proper atomic update, there is a locking mechanism.
+For an image in file, code uses \fIflock(2)\fR system call.
+For a block device, lock is perfomed over a special file stored
+in a locking directory (by default \fI/run/lock/cryptsetup\fR).
+The locking directory should be created with the proper security
+context by the distribution during the boot-up phase.
+Only LUKS2 uses locks, other formats do not use this mechanism.
 .SH DEPRECATED ACTIONS
 .PP
 The \fIreload\fR action is no longer supported.
