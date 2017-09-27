@@ -2552,9 +2552,9 @@ static void Luks2Requirements(void)
 	EQ_(r, -ETXTBSY);
 
 	/* crypt_activate_by_token (restricted for activation only) */
+#ifdef KERNEL_KEYRING
 	FAIL_((r = crypt_activate_by_token(cd, CDEVICE_1, 1, NULL, 0)), ""); // supposed to be silent
 	EQ_(r, -ETXTBSY);
-#ifdef KERNEL_KEYRING
 	OK_(crypt_activate_by_token(cd, NULL, 1, NULL, 0));
 	OK_(crypt_activate_by_token(cd, NULL, 1, NULL, CRYPT_ACTIVATE_KEYRING_KEY));
 #endif
