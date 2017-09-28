@@ -1,0 +1,512 @@
+Cryptsetup 2.0.0 RC0 Release Notes
+==================================
+Release candidate with experimental features.
+
+This version introduces a new on-disk LUKS2 format.
+
+The legacy LUKS (referenced as LUKS1) will be fully supported
+forever as well as a traditional and fully backward compatible format.
+
+NOTE: This version changes soname of libcryptsetup library and increases
+major version for all public symbols.
+Most of the old functions are fully backward compatible, so only
+recompilation of programs should be needed.
+
+Please note that authenticated disk encryption, noncryptographic
+data integrity protection (dm-integrity), use of Argon2 Password-Based
+Key Derivation Function and the LUKS2 on-disk format itself are new
+features and can contain some bugs.
+Please do not use it without properly configured backup or in
+production systems.
+
+Until final 2.0 version is released, the new API calls or LUKS2 format
+could still change if a major problem is found.
+
+Important features
+~~~~~~~~~~~~~~~~~~
+
+* New command integritysetup: support for the new dm-integrity kernel target.
+
+  The dm-integrity is a new kernel device-mapper target that introduces
+  software emulation of per-sector integrity fields on the disk sector level.
+  It is available since Linux kernel version 4.12.
+
+  The provided per-sector metadata fields can be used for storing a data
+  integrity checksum (for example CRC32).
+  The dm-integrity implements data journal that enforces atomic update
+  of a sector and its integrity metadata.
+
+  Integritysetup is a CLI utility that can setup standalone dm-integrity
+  devices (that internally check integrity of data).
+
+  Integritysetup is intended to be used for settings that require
+  non-cryptographic data integrity protection with no data encryption.
+  Fo setting integrity protected encrypted devices, see disk authenticated
+  encryption below.
+
+  Note that after formatting the checksums need to be initialized;
+  otherwise device reads will fail because of integrity errors.
+  Integritysetup by default tries to wipe the device with zero blocks
+  to avoid this problem. Device wipe can be time-consuming, you can skip
+  this step by specifying --no-wipe option.
+  (But note that not wiping device can cause some operations to fail
+  if a write is not multiple of page size and kernel page cache tries
+  to read sectors with not yet initialized checksums.)
+
+  The default setting is tag size 4 bytes per-sector and CRC32C protection.
+  To format device with these defaults:
+  $ integritysetup format <device>
+  $ integritysetup open <device> <name>
+
+  Note that used algorithm (unlike tag size) is NOT stored in device
+  kernel superblock and if you use different algorithm, you MUST specify
+  it in every open command, for example:
+  $ integritysetup format <device> --tag-size 32 --integrity sha256
+  $ integritysetup open <device> <name> --integrity sha256
+
+  For more info, see integrity man page.
+
+* Veritysetup command can now format and activate dm-verity devices
+  that contain Forward Error Correction (FEC) (Reed-Solomon code is used).
+  This feature is used on most of Android devices already (available since
+  Linux kernel 4.5).
+
+  There are new options --fec-device, --fec-offset to specify data area
+  with correction code and --fec-roots that set Redd-Solomon generator roots.
+  This setting can be used for format command (veritysetup will calculate
+  and store RS codes) or open command (veritysetup configures kernel
+  dm-verity to use RS codes).
+
+  For more info see veritysetup man page.
+
+* Support for larger sector sizes for crypt devices.
+
+  LUKS2 and plain crypt devices can be now configured with larger encryption
+  sector (typically 4096 bytes, sector size must be the power of two,
+  maximal sector size is 4096 bytes for portability).
+  Large sector size can decrease encryption overhead and can also help
+  with some specific crypto hardware accelerators that perform very
+  badly with 512 bytes sectors.
+
+  Note that if you configure such a larger sector of the device that does use
+  smaller physical sector, there is a possibility of a data corruption during
+  power fail (partial sector writes).
+
+  WARNING: If you use different sector size for a plain device after data were
+  stored,  the decryption will produce garbage.
+
+  For LUKS2, the sector size is stored in metadata and cannot be changed later.
+
+LUKS2 format and features
+~~~~~~~~~~~~~~~~~~~~~~~~~
+The LUKS2 is an on-disk storage format designed to provide simple key
+management, primarily intended for Full Disk Encryption based on dm-crypt.
+
+The LUKS2 is inspired by LUKS1 format and in some specific situations (most
+of the default configurations) can be converted in-place from LUKS1.
+
+The LUKS2 format is designed to allow future updates of various
+parts without the need to modify binary structures and internally
+uses JSON text format for metadata. Compilation now requires the json-c library
+that is used for JSON data processing.
+
+On-disk format provides redundancy of metadata, detection
+of metadata corruption and automatic repair from metadata copy.
+
+NOTE: For security reasons, there is no redundancy in keyslots binary data
+(encrypted keys) but the format allows adding such a feature in future.
+
+NOTE: to operate correctly, LUKS2 requires locking of metadata.
+Locking is performed by using flock() system call for images in file
+and for block device by using a specific lock file in /run/lock/cryptsetup.
+
+This directory must be created by distribution (do not rely on internal
+fallback). For systemd-based distribution, you can simply install
+scripts/cryptsetup_tmpfiles.conf into tmpfiles.d directory.
+
+For more details see LUKS2-format.txt and LUKS2-locking.txt in the docs
+directory. (Please note this is just overview, there will be more formal
+documentation later.)
+
+LUKS2 use
+~~~~~~~~~
+
+LUKS2 allows using all possible configurations as LUKS1.
+
+To format device as LUKS2, you have to add "--type luks2" during format:
+
+ $ cryptsetup luksFormat --type luks2 <device>
+
+All commands issued later will recognize the new format automatically.
+
+The newly added features in LUKS2 include:
+
+* Authenticated disk (sector) encryption (EXPERIMENTAL)
+
+  Legacy Full disk encryption (FDE), for example, LUKS1, is a length-preserving
+  encryption (plaintext is the same size as a ciphertext).
+  Such FDE can provide data confidentiality, but cannot provide sound data
+  integrity protection.
+
+  Full disk authenticated encryption is a way how to provide both
+  confidentiality and data integrity protection. Integrity protection here means
+  not only detection of random data corruption (silent data corruption) but also
+  prevention of an unauthorized intentional change of disk sector content.
+
+  NOTE: Integrity protection of this type cannot prevent a replay attack.
+  An attacker can replace the device or its part of the old content, and it
+  cannot be detected.
+  If you need such protection, better use integrity protection on a higher layer.
+
+  For data integrity protection on the sector level, we need additional
+  per-sector metadata space. In LUKS2 this space is provided by a new
+  device-mapper dm-integrity target (available since kernel 4.12).
+  Here the integrity target provides only reliable per-sector metadata store,
+  and the whole authenticated encryption is performed inside dm-crypt stacked
+  over the dm-integrity device.
+
+  For encryption, Authenticated Encryption with Additional Data (AEAD) is used.
+  Every sector is processed as a encryption request of this format:
+
+   |----- AAD -------|------ DATA -------|-- AUTH TAG --|
+   | (authenticated) | (auth+encryption) |              |
+   | sector_LE |  IV |  sector in/out    |  tag in/out  |
+
+  AEAD encrypts the whole sector and also authenticates sector number
+  (to detect sector relocation) and also authenticates Initialization Vector.
+
+  AEAD encryption produces encrypted data and authentication tag.
+  The authenticated tag is then stored in per-sector metadata space provided
+  by dm-integrity.
+
+  Most of the current AEAD algorithms requires IV as a nonce, value that is
+  never reused. Because sector number, as an IV, cannot be used in this
+  environment, we use a new random IV (IV is a random value generated by system
+  RNG on every write). This random IV is then stored in the per-sector metadata
+  as well.
+
+  Because the authentication tag (and IV) requires additional space, the device
+  provided for a user has less capacity. Also, the data journalling means that
+  writes are performed twice, decreasing throughput.
+
+  This integrity protection works better with SSDs. If you want to ignore
+  dm-integrity data journal (because journalling is performed on some higher
+  layer or you just want to trade-off performance to safe recovery), you can
+  switch journal off with --integrity-no-journal option.
+  (This flag can be stored persistently as well.)
+
+  Note that (similar to integritysetup) the device read will fail if
+  authentication tag is not initialized (no previous write).
+  By default cryptsetup run wipe of a device (writing zeroes) to initialize
+  authentication tags. This operation can be very time-consuming.
+  You can skip device wipe using --integrity-no-wipe option.
+
+  To format LUKS2 device with integrity protection, use new --integrity option.
+
+  For now, there are very few AEAD algorithms that can be used, and some
+  of them are known to be problematic. In this release we support only
+  a few of AEAD algorithms (options are for now hard coded), later this
+  extension will be completely algorithm-agnostic.
+
+  For testing of authenticated encryption, these algorithms work for now:
+
+  1) aes-xts-random with hmac-sha256 or hmac-sha512 as the authentication tag.
+     (Authentication key for HMAC is independently generated. This mode is very slow.)
+     $ cryptsetup luksFormat --type luks2 <device> --cipher aes-xts-random --integrity hmac-sha256
+
+  2) aes-gcm-random (native AEAD mode)
+     DO NOT USE in production. The GCM mode uses only 96-bit nonce,
+     and possible collision means fatal security problem.
+     GCM mode has very good hardware support through AES-NI, so it is useful
+     for performance testing.
+     $ cryptsetup luksFormat --type luks2 <device> --cipher aes-gcm-random --integrity aead
+
+  3) ChaCha20 with Poly1305 authenticator (according to RFC7539)
+     $ cryptsetup luksFormat --type luks2 <device> --cipher chacha20-random --integrity poly1305
+
+  To specify AES128/AES256 just specify proper key size (without possible
+  authentication key). Other symmetric ciphers, like Serpent or Twofish,
+  should work as well. The mode 1) and 2) should be compatible with IEEE 1619.1
+  standard recommendation.
+
+  You can also store only random IV in tag without integrity protection.
+
+  Note that using random IV forces the system to pseudorandomly change the whole
+  sector on every write without removing parallel processing of XTS mode.
+  In cryptography, we can say that this will provide indistinguishability under
+  chosen plaintext attack (IND-CPA) that cannot be achieved in legacy
+  FDE systems. On the other side, if stored random IV is corrupted, the sector
+  is no longer decrypted properly.
+
+  To use only random IV (no integrity protection), just specify "none" integrity.
+  $ cryptsetup luksFormat --type luks2 <device> --cipher aes-xts-random --integrity none
+
+  FDE authenticated encryption is not a replacement for filesystem layer
+  authenticated encryption. The goal is to provide at least something because
+  data integrity protection is often completely ignored in today systems.
+
+* New memory-hard PBKDF
+
+  LUKS1 introduced Password-Based Key Derivation Function v2 as a tool to
+  increase attacker cost for a dictionary and brute force attacks.
+  The PBKDF2 uses iteration count to increase time of key derivation.
+  Unfortunately, with modern GPUs, the PBKDF2 calculations can be run
+  in parallel and PBKDF2 can no longer provide the best available protection.
+  Increasing iteration count just cannot prevent massive parallel dictionary
+  password attacks in long-term.
+
+  To solve this problem, a new PBKDF, based on so-called memory-hard functions
+  can be used. Key derivation with memory-hard function requires a certain
+  amount of memory to compute its output. The memory requirement is very
+  costly for GPUs and prevents these systems to operate ineffectively,
+  increasing cost for attackers.
+
+  LUKS2 introduces support for Argon2i and Argon2id as a PBKDF.
+  Argon2 is the winner of Password Hashing Competition and is currently
+  in final RFC draft specification.
+
+  For now, libcryptsetup contains the embedded copy of reference implementation
+  of Argon2 (that is easily portable to all architectures).
+  Later, once this function is available in common crypto libraries, it will
+  switch to external implementation. (This happened for LUKS1 and PBKDF2
+  as well years ago.)
+  With using reference implementation (that is not optimized for speed), there
+  is some performance penalty. However, using memory-hard PBKDF should still
+  significantly complicate GPU-optimized dictionary and brute force attacks.
+
+  The Argon2 uses three costs: memory, time (number of iterations) and parallel
+  (number of threads).
+  Note that time and memory cost highly influences each other (accessing a lot
+  of memory takes more time).
+
+  There is a new benchmark that tries to calculate costs to take similar way as
+  in LUKS1 (where iteration is measured to take 1-2 seconds on user system).
+  Because now there are more cost variables, it prefers time cost (iterations)
+  and tries to find required memory that fits. (IOW required memory cost can be
+  lower if the benchmarks are not able to find required parameters.)
+  The benchmark cannot run too long, so it tries to approximate next step
+  for benchmarking.
+
+  For now, default LUKS2 PBKDF algorithm is Argon2i (data independent variant)
+  with memory cost set to 128MB, time to 800ms and parallel thread according
+  to available CPU cores but no more than 4.
+
+  All default parameters can be set during compile time and also set on
+  the command line by using --pbkdf, --pbkdf-memory, --pbkdf-parallel and
+  --iter-time options.
+  (Or without benchmark directly by using --pbkdf-force-iterations, see below.)
+
+  You can still use PBKDF2 even for LUKS2 by specifying --pbkdf pbkdf2 option.
+  (Then only iteration count is applied.)
+
+* Use of kernel keyring
+
+  Kernel keyring is a storage for sensitive material (like cryptographic keys)
+  inside Linux kernel.
+
+  LUKS2 uses keyring for two major functions:
+
+   - To store volume key for dm-crypt where it avoids sending volume key in
+  every device-mapper ioctl structure. Volume key is also no longer directly
+  visible in a dm-crypt mapping table. The key is not available for the user
+  after dm-crypt configuration (obviously except direct memory scan).
+  Use of kernel keyring can be disabled in runtime by --disable-keyring option.
+
+   - As a tool to automatically unlock LUKS device if a passphrase is put into
+  kernel keyring and proper keyring token is configured.
+
+   This allows storing a secret (passphrase) to kernel per-user keyring by
+  some external tool (for example some TPM handler) and LUKS2, if configured,
+  will automatically search in the keyring and unlock the system.
+  For more info see Tokens section below.
+
+* Persistent flags
+  The activation flags (like allow-discards) can be stored in metadata and used
+  automatically by all later activations (even without using crypttab).
+
+  To store activation flags permanently, use activation command with required
+  flags and add --persistent option.
+
+  For example, to mark device to always activate with TRIM enabled,
+  use (for LUKS2 type):
+
+   $ cryptsetup open <device> <name> --allow-discards --persistent
+
+  You can check persistent flags in dump command output:
+
+  $ cryptsetup luksDump <device>
+
+* Tokens and auto-activation
+
+  A LUKS2 token is an object that can be described "how to get passphrase or key"
+  to unlock particular keyslot.
+  (Also it can be used to store any additional metadata, and with
+  the libcryptsetup interface it can be used to define user token types.)
+
+  Cryptsetup internally implements keyring token. Cryptsetup tries to use
+  available tokens before asking for the passphrase. For keyring token,
+  it means that if the passphrase is available under specified identifier
+  inside kernel keyring, the device is automatically activated using this
+  stored passphrase.
+
+  Example of using LUKS2 keyring token:
+
+  # Adding token to metadata with "my_token" identifier (by default it applies to all keyslots).
+  $ cryptsetup token add --key-description "my_token" <device>
+
+  # Storing passphrase to user keyring (this can be done by an external application)
+  $ echo -n <passphrase> | keyctl padd user my_token @u
+
+  # Now cryptsetup activates automatically if it finds correct passphrase
+  $ cryptsetup open <device> <name>
+
+  The main reason to use tokens this way is to separate possible hardware
+  handlers from cryptsetup code.
+
+* Keyslot priorities
+
+  LUKS2 keyslot can have a new priority attribute.
+  The default is "normal". The "prefer" priority tell the keyslot to be tried
+  before other keyslots. Priority "ignore" means that keyslot will never be
+  used if not specified explicitly (it can be used for backup administrator
+  passwords that are used only situations when a user forgets own passphrase).
+
+  The priority of keyslot can be set with new config command, for example
+  $ cryptsetup config <device> --key-slot 1 --priority prefer
+
+  Setting priority to normal will reset slot to normal state.
+
+* LUKS2 label and subsystem
+
+  The header now contains additional fields for label and subsystem (additional
+  label). These fields can be used similar to filesystem label and will be
+  visible in udev rules to possible filtering. (Note that blkid do not yet
+  contain the LUKS scanning code).
+
+  By default both labels are empty. Label and subsystem are always set together
+  (no option  means clear the label) with the config command:
+
+  $ cryptsetup config <device> --label my_device --subsystem ""
+
+* In-place conversion form LUKS1
+
+  To allow easy testing and transition to the new LUKS2 format, there is a new
+  convert command that allows in-place conversion from the LUKS1 format and,
+  if there are no incompatible options, also conversion back from LUKS2
+  to LUKS1 format.
+
+  Note this command can be used only on some LUKS1 devices (some device header
+  sizes are not supported).
+  This command is dangerous, never run it without header backup!
+  If something fails in the middle of conversion (IO error), the header
+  is destroyed. (Note that conversion requires move of keyslot data area to
+  a different offset.)
+
+  To convert header in-place to LUKS2 format, use
+  $ cryptsetup convert <device> --type luks2
+
+  To convert it back to LUKS1 format, use
+  $ cryptsetup convert <device> --type luks1
+
+  You can verify LUKS version with luksDump command.
+  $ cryptsetup luksDump <device>
+
+  Note that some LUKS2 features will make header incompatible with LUKS1 and
+  conversion will be rejected (for example using new Argon2 PBKDF or integrity
+  extensions). Some minor attributes can be lost in conversion.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Explicit KDF iterations count setting
+
+  With new PBKDF interface, there is also the possibility to setup PBKDF costs
+  directly, avoiding benchmarks. This can be useful if device is formatted to be
+  primarily used on a different system.
+
+  The option --pbkdf-force-iterations is available for both LUKS1 and LUKS2
+  format. Using this option can cause device to have either very low or very
+  high PBKDF costs.
+  In the first case it means bad protection to dictionary attacks, in the second
+  case, it can mean extremely high unlocking time or memory requirements.
+  Use only if you are sure what you are doing!
+
+  Not that this setting also affects iteration count for the key digest.
+  For LUKS1 iteration count for digest will be approximately 1/8 of requested
+  value, for LUKS2 and "pbkdf2" digest minimal PBKDF2 iteration count (1000)
+  will be used. You cannot set lower iteration count than the internal minimum
+  (1000 for PBKDF2).
+
+  To format LUKS1 device with forced iteration count (and no benchmarking), use
+  $ cryptsetup luksFormat <device> --pbkdf-force-iterations 22222
+
+  For LUKS2 it is always better to specify full settings (do not rely on default
+  cost values).
+  For example, we can set to use Argon2id with iteration cost 5, memory 128000
+  and paralell set 1:
+  $ cryptsetup luksFormat --type luks2 <device> \
+    --pbkdf argon2id --pbkdf-force-iterations 5 --pbkdf-memory 128000 --pbkdf-parallel 1
+
+* VeraCrypt PIM
+
+  Cryptsetup can now also open VeraCrypt device that uses Personal Iteration
+  Multiplier (PIM). PIM is an integer value that user must remember additionally
+  to passphrase and influences PBKDF2 iteration count (without it VeraCrypt uses
+  a fixed number of iterations).
+
+  To open VeraCrypt device with PIM settings, use --veracrypt-pim (to specify
+  PIM on the command line) or --veracrypt-query-pim to query PIM interactively.
+
+* Support for plain64be IV
+
+  The plain64be is big-endian variant of plain64 Initialization Vector. It is
+  used in some images of hardware-based disk encryption systems. Supporting this
+  variant allows using dm-crypt to map such images through cryptsetup.
+
+* Deferral removal
+
+  Cryptsetup now can mark device for deferred removal by using a new option
+  --deferred. This means that close command will not fail if the device is still
+  in use, but will instruct the kernel to remove the device automatically after
+  use count drops to zero (for example, once the filesystem is unmounted).
+
+* A lot of updates to man pages and many minor changes that would make this
+  release notes too long ;-)
+
+Unfinished things & TODO for next RC or future
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* There will be better documentation and examples.
+
+* There will be some more formal definition of the threat model for integrity
+  protection. (And a link to some papers discussing integrity protection,
+  once it is, hopefully, accepted and published.)
+
+* Offline re-encrypt tool supports only LUKS1 format for now (patches are
+ on the way).
+
+* There will be online LUKS2 re-encryption tool in future.
+
+* Authenticated encryption will use new algorithms from CAESAR competition,
+  once these algorithms are available in kernel.
+
+* Authenticated encryption do not set encryption for dm-integrity journal.
+
+  While it does not influence data confidentiality or integrity protection,
+  an attacker can get some more information from data journal or cause that
+  system will corrupt sectors after journal replay. (That corruption will be
+  detected though.)
+
+* Some utilities (blkid, systemd-cryptsetup) will need small updates to support
+  LUKS2 format.
+
+* There are some examples of user-defined tokens inside misc/luks2_keyslot_example
+  directory (like a simple external program that uses libssh to unlock LUKS2
+  using remote keyfile).
+
+  We will document these examples later in release notes for next RC.
+
+* The distribution archive is now very big because of some testing images that do not compress
+  well. Some cleaning is needed here.
+
+* A lot of ideas are hidden inside the LUKS2 design that is not yet used or
+  described here, let's try if the basics work first :-)
