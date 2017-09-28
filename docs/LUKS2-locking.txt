@@ -1,42 +1,38 @@
-LUKS version 2 device locking overview
-======================================
-
-(last updated: 2017-09-01)
-
-TODOs:
-	a) installation tips for distro maintainers
+LUKS2 device locking overview
+=============================
 
 Why
----
+~~~
 
-Unlike with version 1, LUKS v2 format keeps two identical copies of metadata
-stored consecutively at head of metadata device (file or bdev). The metadata
+LUKS2 format keeps two identical copies of metadata stored consecutively
+at the head of metadata device (file or bdev). The metadata
 area (both copies) must be updated in a single atomic operation to avoid
-some nasty side effects.
+header corruption during concurrent write.
 
-While with LUKSv1 users may have clear knowledge of when a LUKS header is
+While with LUKS1 users may have clear knowledge of when a LUKS header is
 being updated (written to) or when it's being read solely the need for
-locking with legacy format was not so obvious as it is with LUKSv2 format.
-With LUKSv2 the boundary between read-only and read-write is blurry and what
-used to be exclusively read-only operation (i.e. cryptsetup open command) may
+locking with legacy format was not so obvious as it is with the LUKSv2 format.
+
+With LUKS2 the boundary between read-only and read-write is blurry and what
+used to be the exclusively read-only operation (i.e., cryptsetup open command) may
 easily become read-update operation silently without user's knowledge.
-A significant feature of LUKSv2 format is resilience against accidental
-corruption of metadata. (i.e. partial header overwrite by parted or cfdisk
-while creating partion on mistaken block device).
-Such header corruption is detected eraly on header read and auto-recovery
+Major feature of LUKS2 format is resilience against accidental
+corruption of metadata (i.e., partial header overwrite by parted or cfdisk
+while creating partition on mistaken block device).
+Such header corruption is detected early on header read and auto-recovery
 procedure takes place (the corrupted header with checksum mismatch is being
 replaced by the secondary one if that one is intact).
 On current Linux systems header load operation may be triggered without user
 direct intervention for example by udev rule or from systemd service.
-Such clash of header read and auto-recovery procudere could have severe
-consequences with worst case of having LUKSv2 device unaccessible or being
+Such clash of header read and auto-recovery procedure could have severe
+consequences with the worst case of having LUKS2 device unaccessible or being
 broken beyond repair.
 
-Whole locking of LUKSv2 device headers split in two categories depending
+The whole locking of LUKSv2 device headers split into two categories depending
 what backend the header is stored on:
 
 I) block device
----------------
+~~~~~~~~~~~~~~~
 
 We perform flock() on file descriptors of files stored in a private
 directory (by default /run/lock/cryptsetup). The file name is derived
@@ -46,22 +42,20 @@ to superuser only. For this method to work the distribution needs
 to install the locking directory with appropriate access rights.
 
 II) regular files
------------------
+~~~~~~~~~~~~~~~~~
 
 First notable difference between headers stored in a file
-vs headers stored in a block device is that headers in a file may be
-manipulated by regular user unlike headers on block devices. Therefore
-we perform flock() protection on a file with luks2 header directly.
-
+vs. headers stored in a block device is that headers in a file may be
+manipulated by the regular user unlike headers on block devices. Therefore
+we perform flock() protection on file with the luks2 header directly.
 
 Limitations
------------
+~~~~~~~~~~~
 
-a) In general the locking model provide serialization of I/Os targeting
+a) In general, the locking model provides serialization of I/Os targeting
 the header only. It means the header is always written or read at once
 while locking is enabled.
 We do not suppress any other negative effect that two or more concurrent
-writers of same header may cause.
+writers of the same header may cause.
 
-b) It's obvious but for the sake of clarification: the locking is not
-cluster aware in any way.
+b) The locking is not cluster aware in any way.
