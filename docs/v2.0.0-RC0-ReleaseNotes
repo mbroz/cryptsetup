@@ -473,6 +473,60 @@ Other changes
 * A lot of updates to man pages and many minor changes that would make this
   release notes too long ;-)
 
+Libcryptsetup API changes
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These API functions were removed, libcryptsetup no longer handles password
+retries from terminal (application should handle terminal operations itself):
+	crypt_set_password_callback;
+	crypt_set_timeout;
+	crypt_set_password_retry;
+	crypt_set_password_verify;
+
+This call is removed (no need to keep typo backward compatibility,
+the proper function is crypt_set_iteration_time :-)
+	crypt_set_iterarion_time;
+
+These calls were removed because are not safe, use per-context
+error callbacks instead:
+	crypt_last_error;
+	crypt_get_error;
+
+The PBKDF benchmark was replaced by a new function that uses new KDF structure
+	crypt_benchmark_kdf; (removed)
+	crypt_benchmark_pbkdf; (new API call)
+
+These new calls are now exported, for details see libcryptsetup.h:
+	crypt_keyslot_add_by_key;
+	crypt_keyslot_set_priority;
+	crypt_keyslot_get_priority;
+
+	crypt_token_json_get;
+	crypt_token_json_set;
+	crypt_token_status;
+	crypt_token_luks2_keyring_get;
+	crypt_token_luks2_keyring_set;
+	crypt_token_assign_keyslot;
+	crypt_token_unassign_keyslot;
+	crypt_token_register;
+
+	crypt_activate_by_token;
+	crypt_activate_by_keyring;
+	crypt_deactivate_by_name;
+
+	crypt_metadata_locking;
+	crypt_volume_key_keyring;
+	crypt_get_integrity_info;
+	crypt_get_sector_size;
+	crypt_persistent_flags_set;
+	crypt_persistent_flags_get;
+	crypt_set_pbkdf_type;
+	crypt_get_pbkdf_type;
+
+	crypt_convert;
+	crypt_keyfile_read;
+	crypt_wipe;
+
 Unfinished things & TODO for next RC or future
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * There will be better documentation and examples.
