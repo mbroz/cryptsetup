@@ -9,7 +9,10 @@ These include **plain** **dm-crypt** volumes, **LUKS** volumes, **loop-AES**
 and **TrueCrypt** (including **VeraCrypt** extension) format.
 
 Project also includes **veritysetup** utility used to conveniently setup
-[DMVerity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity) block integrity checking kernel module.
+[DMVerity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity) block integrity checking kernel module
+and, since version 2.0,  **integritysetup** to setup
+[DMIntegrity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMIntegrity) block integrity kernel module.
+
 
 LUKS Design
 -----------
@@ -32,18 +35,18 @@ Why LUKS?
 [Project home page](https://gitlab.com/cryptsetup/cryptsetup/).
 -----------------
 
-**CVE-2016-4484 (Initrd root shell)**
-
-This is problem in **intramfs** **scripts** only (these are **not** part of cryptsetup project), it is neiter bug in cryptsetup nor in LUKS.  
-Some distributions could add these scripts to distributed package, please check your distro updates for more info.
-
-
 [Frequently asked questions (FAQ)](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions)
 --------------------------------
 
 Download
 --------
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
+
+**The latest cryptsetup TESTING version is 2.0.0-rc0**
+  * [cryptsetup-2.0.0-rc0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.0-rc0.tar.xz)
+  * Signature [cryptsetup-2.0.0-rc0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.0-rc0.tar.sign)
+    _(You need to decompress file first to check signature.)_
+  * [Cryptsetup 2.0.0-rc0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/v2.0.0-rc0-ReleaseNotes).
 
 **The latest cryptsetup version is 1.7.5**
   * [cryptsetup-1.7.5.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.xz)
