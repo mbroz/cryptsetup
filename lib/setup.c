@@ -2049,6 +2049,14 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	if (r)
 		goto out;
 
+	if (new_size & ((dmd.u.crypt.sector_size >> SECTOR_SHIFT) - 1)) {
+		log_err(cd, _("Device %s size is not aligned to requested sector size (%u bytes).\n"),
+			crypt_get_device_name(cd), (unsigned)dmd.u.crypt.sector_size);
+		r = -EINVAL;
+		goto out;
+	}
+
+
 	if (new_size == dmd.size) {
 		log_dbg("Device has already requested size %" PRIu64
 			" sectors.", dmd.size);
