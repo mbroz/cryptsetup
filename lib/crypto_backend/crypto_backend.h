@@ -81,13 +81,11 @@ int pkcs5_pbkdf2(const char *hash,
 		 unsigned int hash_block_size);
 #endif
 
-#if USE_INTERNAL_ARGON2
-/* internal Argon2 implementation */
+/* Argon2 implementation wrapper */
 int argon2(const char *type, const char *password, size_t password_length,
 	   const char *salt, size_t salt_length,
 	   char *key, size_t key_length,
 	   uint32_t iterations, uint32_t memory, uint32_t parallel);
-#endif
 
 /* CRC32 */
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);

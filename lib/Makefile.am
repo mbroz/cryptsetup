@@ -43,6 +43,7 @@ libcryptsetup_la_LIBADD = \
 	@UUID_LIBS@				\
 	@DEVMAPPER_LIBS@			\
 	@CRYPTO_LIBS@				\
+	@LIBARGON2_LIBS@			\
 	@JSON_C_LIBS@				\
 	$(common_ldadd)
 

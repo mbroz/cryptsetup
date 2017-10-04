@@ -368,12 +368,24 @@ AM_CONDITIONAL(CRYPTO_BACKEND_NETTLE,  test $with_crypto_backend = nettle)
 AM_CONDITIONAL(CRYPTO_INTERNAL_PBKDF2, test $use_internal_pbkdf2 = 1)
 AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PBKDF2])
 
-AC_ARG_ENABLE(argon2, AS_HELP_STRING([--disable-argon2],
-	[disable internal implementation of Argon2 PBKDF]),[], [enable_argon2=yes])
-AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test x$enable_argon2 = xyes)
-if test x$enable_argon2 = xyes ; then
-AC_DEFINE(USE_INTERNAL_ARGON2, 1, [Use internal Argon2])
+dnl Argon2 implementation
+AC_ARG_ENABLE(internal-argon2, AS_HELP_STRING([--disable-internal-argon2],
+	[disable internal implementation of Argon2 PBKDF]),[], [enable_internal_argon2=yes])
+
+AC_ARG_ENABLE([libargon2], AS_HELP_STRING([--enable-libargon2],
+	[enable external libargon2 (PHC) library (disables internal bundled version) ]),[], [enable_libargon2=no])
+
+if test x$enable_libargon2 = xyes ; then
+	AC_CHECK_HEADERS(argon2.h,,
+		[AC_MSG_ERROR([You need libargon2 development library installed.])])
+	PKG_CHECK_MODULES([LIBARGON2], [libargon2],,[LIBARGON2_LIBS="-largon2"])
+	enable_internal_argon2=no
 fi
+
+if test x$enable_internal_argon2 = xyes ; then
+	AC_DEFINE(USE_INTERNAL_ARGON2, 1, [Use internal Argon2])
+fi
+AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test x$enable_internal_argon2 = xyes)
 
 dnl Magic for cryptsetup.static build.
 if test x$enable_static_cryptsetup = xyes; then
@@ -420,6 +432,7 @@ AC_SUBST([CRYPTO_LIBS])
 AC_SUBST([CRYPTO_STATIC_LIBS])
 
 AC_SUBST([JSON_C_LIBS])
+AC_SUBST([LIBARGON2_LIBS])
 
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])

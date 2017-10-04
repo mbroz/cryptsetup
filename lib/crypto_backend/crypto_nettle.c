@@ -307,11 +307,9 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 			      (uint8_t *)key);
 		crypt_hmac_destroy(h);
 		return 0;
-#if USE_INTERNAL_ARGON2
 	} else if (!strncmp(kdf, "argon2", 6)) {
 		return argon2(kdf, password, password_length, salt, salt_length,
 			      key, key_length, iterations, memory, parallel);
-#endif
 	}
 
 	return -EINVAL;

@@ -331,11 +331,9 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 	            (int)iterations, hash_id, (int)key_length, (unsigned char *)key))
 			return -EINVAL;
 		return 0;
-#if USE_INTERNAL_ARGON2
 	} else if (!strncmp(kdf, "argon2", 6)) {
 		return argon2(kdf, password, password_length, salt, salt_length,
 			      key, key_length, iterations, memory, parallel);
-#endif
 	}
 
 	return -EINVAL;

@@ -21,7 +21,11 @@
 
 #include <errno.h>
 #include "crypto_backend.h"
+#if HAVE_ARGON2_H
+#include <argon2.h>
+#else
 #include "argon2/argon2.h"
+#endif
 
 #define CONST_CAST(x) (x)(uintptr_t)
 
@@ -30,6 +34,9 @@ int argon2(const char *type, const char *password, size_t password_length,
 	   char *key, size_t key_length,
 	   uint32_t iterations, uint32_t memory, uint32_t parallel)
 {
+#if !USE_INTERNAL_ARGON2 && !HAVE_ARGON2_H
+	return -EINVAL;
+#else
 	argon2_type atype;
 	argon2_context context = {
 		.flags = ARGON2_DEFAULT_FLAGS,
@@ -68,6 +75,7 @@ int argon2(const char *type, const char *password, size_t password_length,
 	}
 
 	return r;
+#endif
 }
 
 #if 0
