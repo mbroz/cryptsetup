@@ -28,6 +28,7 @@
 int opt_verbose = 0;
 int opt_debug = 0;
 int opt_batch_mode = 0;
+int opt_progress_frequency = 0;
 
 /* interrupt handling */
 volatile int quit = 0;
@@ -336,9 +337,10 @@ static double time_diff(struct timeval *start, struct timeval *end)
 		+ (end->tv_usec - start->tv_usec) / 1E6;
 }
 
-// FIXME: detect terminal type
 void tools_clear_line(void)
 {
+	if (opt_progress_frequency)
+		return;
 	/* vt100 code clear line */
 	log_std("\33[2K\r");
 }
@@ -348,8 +350,9 @@ void tools_time_progress(uint64_t device_size, uint64_t bytes,
 {
 	struct timeval now_time;
 	unsigned long long mbytes, eta;
-	double tdiff, mib;
+	double tdiff, mib, frequency;
 	int final = (bytes == device_size);
+	char *eol;
 
 	if (opt_batch_mode)
 		return;
@@ -361,7 +364,15 @@ void tools_time_progress(uint64_t device_size, uint64_t bytes,
 		return;
 	}
 
-	if (!final && time_diff(end_time, &now_time) < 0.5)
+	if (opt_progress_frequency) {
+		frequency = (double)opt_progress_frequency;
+		eol = "\n";
+	} else {
+		frequency = 0.5;
+		eol = "";
+	}
+
+	if (!final && time_diff(end_time, &now_time) < frequency)
 		return;
 
 	*end_time = now_time;
@@ -388,9 +399,9 @@ void tools_time_progress(uint64_t device_size, uint64_t bytes,
 			mbytes, mib);
 	else
 		log_std("Progress: %5.1f%%, ETA %02llu:%02llu, "
-			"%4llu MiB written, speed %5.1f MiB/s",
+			"%4llu MiB written, speed %5.1f MiB/s%s",
 			(double)bytes / device_size * 100,
-			eta / 60, eta % 60, mbytes, mib);
+			eta / 60, eta % 60, mbytes, mib, eol);
 	fflush(stdout);
 }
 

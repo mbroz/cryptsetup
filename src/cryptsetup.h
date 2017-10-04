@@ -58,6 +58,8 @@ extern int opt_debug;
 extern int opt_verbose;
 extern int opt_batch_mode;
 extern int opt_force_password;
+extern int opt_progress_frequency;
+
 
 /* Common tools */
 void clogger(struct crypt_device *cd, int level, const char *file, int line,

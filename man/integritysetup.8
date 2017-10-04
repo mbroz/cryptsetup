@@ -20,7 +20,8 @@ Integritysetup supports these operations:
 Formats <device> (calculates space and dm-integrity superblock and wipes the device).
 
 \fB<options>\fR can be [\-\-batch\-mode, \-\-no\-wipe, \-\-journal\-size, \-\-interleave\-sectors,
-\-\-tag\-size, \-\-integrity, \-\-integrity\-key\-size, \-\-integrity\-key\-file, \-\-sector\-size]
+\-\-tag\-size, \-\-integrity, \-\-integrity\-key\-size, \-\-integrity\-key\-file, \-\-sector\-size,
+\-\-progress-frequency]
 
 .PP
 \fIopen\fR <device> <name>
@@ -63,6 +64,9 @@ Show the program version.
 .TP
 .B "\-\-batch\-mode"
 Do not ask for confirmation.
+.TP
+.B "\-\-progress-frequency <seconds>"
+Print separate line every <seconds> with wipe progress.
 .TP
 .B "\-\-no\-wipe"
 Do not wipe the device after format. A device that is not initially wiped will contain invalid checksums.
