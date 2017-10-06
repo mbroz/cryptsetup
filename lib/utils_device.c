@@ -693,7 +693,7 @@ void device_disable_direct_io(struct device *device)
 	device->o_direct = 0;
 }
 
-int device_direct_io(struct device *device)
+int device_direct_io(const struct device *device)
 {
 	return device->o_direct;
 }

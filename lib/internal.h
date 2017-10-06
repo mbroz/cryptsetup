@@ -103,7 +103,7 @@ void device_disable_direct_io(struct device *device);
 int device_is_identical(struct device *device1, struct device *device2);
 int device_is_rotational(struct device *device);
 size_t device_alignment(struct device *device);
-int device_direct_io(struct device *device);
+int device_direct_io(const struct device *device);
 
 int device_open_locked(struct device *device, int flags);
 int device_read_lock(struct crypt_device *cd, struct device *device);

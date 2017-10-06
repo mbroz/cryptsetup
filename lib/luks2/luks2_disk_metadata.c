@@ -666,14 +666,19 @@ err:
 	return r;
 }
 
-int LUKS2_hdr_version_unlocked(struct crypt_device *cd)
+int LUKS2_hdr_version_unlocked(struct crypt_device *cd, const char *backup_file)
 {
 	struct {
 		char magic[LUKS2_MAGIC_L];
 		uint16_t version;
 	}  __attribute__ ((packed)) hdr;
-	struct device *device = crypt_metadata_device(cd);
-	int r, devfd, flags;
+	struct device *device = NULL;
+	int r = 0, devfd = -1, flags;
+
+	if (!backup_file)
+		device = crypt_metadata_device(cd);
+	else if (device_alloc(&device, backup_file) < 0)
+		return 0;
 
 	if (!device)
 		return 0;
@@ -684,16 +689,18 @@ int LUKS2_hdr_version_unlocked(struct crypt_device *cd)
 
 	devfd = open(device_path(device), flags);
 	if (devfd < 0)
-		return 0;
+		goto err;
 
 	if ((read_lseek_blockwise(devfd, device_block_size(device),
-				  device_alignment(device), &hdr, sizeof(hdr), 0)
-				  != sizeof(hdr)) ||
-				  memcmp(hdr.magic, LUKS2_MAGIC_1ST, LUKS2_MAGIC_L))
-		r = 0;
-	else
+	     device_alignment(device), &hdr, sizeof(hdr), 0) == sizeof(hdr)) &&
+	    !memcmp(hdr.magic, LUKS2_MAGIC_1ST, LUKS2_MAGIC_L))
 		r = (int)be16_to_cpu(hdr.version);
+err:
+	if (devfd != -1)
+		close(devfd);
 
-	close(devfd);
+	if (backup_file)
+		device_free(device);
+
 	return r;
 }

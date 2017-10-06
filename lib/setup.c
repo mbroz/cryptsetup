@@ -724,7 +724,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 
 	/* This will return 0 if primary LUKS2 header is damaged */
 	if (!requested_type)
-		version = LUKS2_hdr_version_unlocked(cd);
+		version = LUKS2_hdr_version_unlocked(cd, NULL);
 
 	if (isLUKS1(requested_type) || version == 1) {
 		if (cd->type && isLUKS2(cd->type)) {
@@ -2162,7 +2162,7 @@ int crypt_header_restore(struct crypt_device *cd,
 {
 	struct luks_phdr hdr1;
 	struct luks2_hdr hdr2;
-	int r;
+	int r, version;
 
 	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
@@ -2177,15 +2177,21 @@ int crypt_header_restore(struct crypt_device *cd,
 	log_dbg("Requested header restore to device %s (%s) from "
 		"file %s.", mdata_device_path(cd), requested_type ?: "any type", backup_file);
 
-	memset(&hdr2, 0, sizeof(hdr2));
-	if (!cd->type) {
-		if (!requested_type || isLUKS2(requested_type))
-			r = LUKS2_hdr_restore(cd, &hdr2, backup_file);
-		else
-			r = -ENOENT;
+	version = LUKS2_hdr_version_unlocked(cd, backup_file);
+	if (!version ||
+	   (requested_type && version == 1 && !isLUKS1(requested_type)) ||
+	   (requested_type && version == 2 && !isLUKS2(requested_type))) {
+		log_err(cd, _("Header backup file does not contain compatible LUKS header.\n"));
+		return -EINVAL;
+	}
 
-		if (r && (!requested_type || isLUKS1(requested_type)))
+	memset(&hdr2, 0, sizeof(hdr2));
+
+	if (!cd->type) {
+		if (version == 1)
 			r = LUKS_hdr_restore(backup_file, &hdr1, cd);
+		else
+			r = LUKS2_hdr_restore(cd, &hdr2, backup_file);
 
 		LUKS2_hdr_free(&hdr2);
 		crypt_memzero(&hdr1, sizeof(hdr1));

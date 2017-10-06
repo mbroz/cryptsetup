@@ -109,7 +109,8 @@ struct luks2_hdr {
 
 #define LUKS2_MAX_KEYSLOTS_SIZE 0x8000000 /* 128 MiB */
 
-int LUKS2_hdr_version_unlocked(struct crypt_device *cd);
+int LUKS2_hdr_version_unlocked(struct crypt_device *cd,
+	const char *backup_file);
 
 int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr);
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr);
