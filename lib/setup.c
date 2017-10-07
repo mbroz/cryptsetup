@@ -2902,8 +2902,10 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 			if (name)
 				r = LUKS2_activate(cd, name, vk, flags);
 		}
-	} else
+	} else {
+		log_err(cd, _("Device type is not properly initialised.\n"));
 		r = -EINVAL;
+	}
 out:
 	crypt_free_volume_key(vk);
 
@@ -2913,6 +2915,24 @@ out:
 	return r < 0 ? r : keyslot;
 }
 
+static int _activate_check_status(struct crypt_device *cd, const char *name)
+{
+	crypt_status_info ci;
+
+	if (!name)
+		return 0;
+
+	ci = crypt_status(cd, name);
+	if (ci == CRYPT_INVALID) {
+		log_err(cd, _("Cannot use device %s, name is invalid or still in use.\n"), name);
+		return -EINVAL;
+	} else if (ci >= CRYPT_ACTIVE) {
+		log_err(cd, _("Device %s already exists.\n"), name);
+		return -EEXIST;
+	}
+
+	return 0;
+}
 
 // activation/deactivation of device mapping
 int crypt_activate_by_passphrase(struct crypt_device *cd,
@@ -2922,7 +2942,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 	size_t passphrase_size,
 	uint32_t flags)
 {
-	crypt_status_info ci;
+	int r;
 
 	if (!cd || !passphrase)
 		return -EINVAL;
@@ -2931,15 +2951,9 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 		name ? "Activating" : "Checking", name ?: "passphrase",
 		keyslot);
 
-	if (name) {
-		ci = crypt_status(NULL, name);
-		if (ci == CRYPT_INVALID)
-			return -EINVAL;
-		else if (ci >= CRYPT_ACTIVE) {
-			log_err(cd, _("Device %s already exists.\n"), name);
-			return -EEXIST;
-		}
-	}
+	r = _activate_check_status(cd, name);
+	if (r < 0)
+		return r;
 
 	return _activate_by_passphrase(cd, name, keyslot, passphrase, passphrase_size, flags);
 }
@@ -2952,7 +2966,6 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 	size_t keyfile_offset,
 	uint32_t flags)
 {
-	crypt_status_info ci;
 	struct volume_key *vk = NULL;
 	char *passphrase_read = NULL;
 	size_t passphrase_size_read;
@@ -2965,16 +2978,9 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 	log_dbg("%s volume %s [keyslot %d] using keyfile %s.",
 		name ? "Activating" : "Checking", name ?: "passphrase", keyslot, keyfile);
 
-	if (name) {
-		ci = crypt_status(NULL, name);
-		if (ci == CRYPT_INVALID) {
-			log_err(cd, _("Cannot use device %s, name is invalid or still in use.\n"), name);
-			return -EINVAL;
-		} else if (ci >= CRYPT_ACTIVE) {
-			log_err(cd, _("Device %s already exists.\n"), name);
-			return -EEXIST;
-		}
-	}
+	r = _activate_check_status(cd, name);
+	if (r < 0)
+		return r;
 
 	if (isPLAIN(cd->type)) {
 		if (!name)
@@ -3049,8 +3055,10 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 		if (name)
 			r = LOOPAES_activate(cd, name, cd->u.loopaes.cipher,
 					     key_count, vk, flags);
-	} else
+	} else {
+		log_err(cd, _("Device type is not properly initialised.\n"));
 		r = -EINVAL;
+	}
 
 out:
 	crypt_safe_free(passphrase_read);
@@ -3079,9 +3087,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	size_t volume_key_size,
 	uint32_t flags)
 {
-	crypt_status_info ci;
 	struct volume_key *vk = NULL;
-	int r = -EINVAL;
+	int r;
 
 	if (!cd)
 		return -EINVAL;
@@ -3089,16 +3096,9 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	log_dbg("%s volume %s by volume key.", name ? "Activating" : "Checking",
 		name ?: "");
 
-	if (name) {
-		ci = crypt_status(NULL, name);
-		if (ci == CRYPT_INVALID) {
-			log_err(cd, _("Cannot use device %s, name is invalid or still in use.\n"), name);
-			return -EINVAL;
-		} else if (ci >= CRYPT_ACTIVE) {
-			log_err(cd, _("Device %s already exists.\n"), name);
-			return -EEXIST;
-		}
-	}
+	r = _activate_check_status(cd, name);
+	if (r < 0)
+		return r;
 
 	/* use key directly, no hash */
 	if (isPLAIN(cd->type)) {
@@ -3197,8 +3197,10 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		r = INTEGRITY_activate(cd, name, &cd->u.integrity.params, vk,
 				       cd->u.integrity.journal_crypt_key,
 				       cd->u.integrity.journal_mac_key, flags);
-	} else
+	} else {
 		log_err(cd, _("Device type is not properly initialised.\n"));
+		r = -EINVAL;
+	}
 
 	crypt_free_volume_key(vk);
 
@@ -4149,7 +4151,6 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 {
 	char *passphrase;
 	size_t passphrase_size;
-	crypt_status_info ci;
 	int r;
 
 	if (!cd || !key_description)
@@ -4163,15 +4164,9 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (name) {
-		ci = crypt_status(NULL, name);
-		if (ci == CRYPT_INVALID)
-			return -EINVAL;
-		else if (ci >= CRYPT_ACTIVE) {
-			log_err(cd, _("Device %s already exists.\n"), name);
-			return -EEXIST;
-		}
-	}
+	r = _activate_check_status(cd, name);
+	if (r < 0)
+		return r;
 
 	if (keyring_get_passphrase(key_description, &passphrase, &passphrase_size)) {
 		log_err(cd, _("Failed to read passphrase from keyring key %s"), key_description);
