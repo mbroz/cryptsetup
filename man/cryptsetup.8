@@ -1016,7 +1016,7 @@ used with the \fIluksFormat\fR, \fIopen\fR, \fIluksSuspend\fR,
 \fIluksResume\fR, \fIstatus\fR and \fIresize\fR commands.
 
 For \fIluksFormat\fR with a file name as the argument to \-\-header,
-it has to exist and be large enough to contain the LUKS header.
+the file will be automatically created if it does not exist.
 See the cryptsetup FAQ for header size calculation.
 
 For other commands that change the LUKS header (e.g. \fIluksAddKey\fR),

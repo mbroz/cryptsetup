@@ -929,7 +929,8 @@ static int _wipe_data_device(struct crypt_device *cd)
 
 static int action_luksFormat(void)
 {
-	int r = -EINVAL, keysize, integrity_keysize = 0, luks_version;
+	int r = -EINVAL, keysize, integrity_keysize = 0, luks_version, fd;
+	struct stat st;
 	const char *header_device;
 	char *msg = NULL, *key = NULL, *password = NULL;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], integrity[MAX_CIPHER_LEN];
@@ -958,6 +959,24 @@ static int action_luksFormat(void)
 	if (opt_sector_size > SECTOR_SIZE && luks_version == 1) {
 		log_err(_("Unsupported encryption sector size.\n"));
 		return -EINVAL;
+	}
+
+	/* Create header file (must contain at least one sector)? */
+	if (opt_header_device && stat(opt_header_device, &st) < 0 && errno == ENOENT) {
+		if (!opt_batch_mode &&
+		    !yesDialog("Header file does not exist, do you want to create it?", NULL))
+		    return -EPERM;
+
+		log_dbg("Creating header file.");
+		fd = open(opt_header_device, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IWUSR);
+		if (fd == -1 || posix_fallocate(fd, 0, 4096))
+			log_err(_("Cannot create header file %s.\n"), opt_header_device);
+		else
+			r = 0;
+		if (fd != -1)
+			close(fd);
+		if (r < 0)
+			return r;
 	}
 
 	header_device = opt_header_device ?: action_argv[0];

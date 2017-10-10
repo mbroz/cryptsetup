@@ -492,6 +492,24 @@ out:
 	return r;
 }
 
+/* For a file, allocate the required space */
+int device_fallocate(struct device *device, uint64_t size)
+{
+	struct stat st;
+	int devfd, r = -EINVAL;
+
+	devfd = open(device->path, O_WRONLY);
+	if(devfd == -1)
+		return -EINVAL;
+
+	if (!fstat(devfd, &st) && S_ISREG(st.st_mode) &&
+	    !posix_fallocate(devfd, 0, size))
+		r = 0;
+
+	close(devfd);
+	return r;
+}
+
 static int device_info(struct crypt_device *cd,
 		       struct device *device,
 		       enum devcheck device_check,

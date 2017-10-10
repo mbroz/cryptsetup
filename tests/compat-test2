@@ -569,7 +569,6 @@ echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_KEYU || fail
 echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME && fail
 
 prepare "[28] Detached LUKS header" wipe
-dd if=/dev/zero of=$HEADER_IMG bs=1M count=4 >/dev/null 2>&1
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
 #FIXME
 #echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 1 >/dev/null 2>&1 && fail

@@ -343,7 +343,8 @@ static int hdr_write_disk(struct device *device, struct luks2_hdr *hdr,
 	return r;
 }
 
-static int LUKS2_check_device_size(struct crypt_device *cd, struct device *device, uint64_t hdr_size)
+static int LUKS2_check_device_size(struct crypt_device *cd, struct device *device,
+				   uint64_t hdr_size, int falloc)
 {
 	uint64_t dev_size;
 
@@ -356,6 +357,10 @@ static int LUKS2_check_device_size(struct crypt_device *cd, struct device *devic
 		PRIu64 ".", dev_size, hdr_size);
 
 	if (hdr_size > dev_size) {
+		/* If it is header file, increase its size */
+		if (falloc && !device_fallocate(device, hdr_size))
+			return 0;
+
 		log_err(cd, _("Device %s is too small. (LUKS2 requires at least %" PRIu64 " bytes.)\n"),
 			device_path(device), hdr_size);
 		return -EINVAL;
@@ -385,7 +390,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 		return -EINVAL;
 	}
 
-	r = LUKS2_check_device_size(cd, crypt_metadata_device(cd), LUKS2_hdr_and_areas_size(hdr->jobj));
+	r = LUKS2_check_device_size(cd, crypt_metadata_device(cd), LUKS2_hdr_and_areas_size(hdr->jobj), 1);
 	if (r)
 		return r;
 
@@ -589,7 +594,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 		goto err;
 	}
 
-	r = LUKS2_check_device_size(cd, device, hdr_size);
+	r = LUKS2_check_device_size(cd, device, hdr_size, 0);
 	if (r)
 		goto err;
 

@@ -102,7 +102,7 @@ size_t LUKS_keyslots_offset(const struct luks_phdr *hdr)
 	return hdr->keyblock[sorted_areas[0]].keyMaterialOffset;
 }
 
-static int LUKS_check_device_size(struct crypt_device *ctx, const struct luks_phdr *hdr)
+static int LUKS_check_device_size(struct crypt_device *ctx, const struct luks_phdr *hdr, int falloc)
 {
 	struct device *device = crypt_metadata_device(ctx);
 	uint64_t dev_sectors, hdr_sectors;
@@ -110,7 +110,7 @@ static int LUKS_check_device_size(struct crypt_device *ctx, const struct luks_ph
 	if (!hdr->keyBytes)
 		return -EINVAL;
 
-	if(device_size(device, &dev_sectors)) {
+	if (device_size(device, &dev_sectors)) {
 		log_dbg("Cannot get device size for device %s.", device_path(device));
 		return -EIO;
 	}
@@ -121,6 +121,10 @@ static int LUKS_check_device_size(struct crypt_device *ctx, const struct luks_ph
 		PRIu64 " sectors.", hdr->keyBytes, dev_sectors, hdr_sectors);
 
 	if (hdr_sectors > dev_sectors) {
+		/* If it is header file, increase its size */
+		if (falloc && !device_fallocate(device, hdr_sectors << SECTOR_SHIFT))
+			return 0;
+
 		log_err(ctx, _("Device %s is too small. (LUKS requires at least %" PRIu64 " bytes.)\n"),
 			device_path(device), hdr_sectors * SECTOR_SIZE);
 		return -EINVAL;
@@ -611,7 +615,7 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 					   repair, ctx);
 
 	if (!r)
-		r = LUKS_check_device_size(ctx, hdr);
+		r = LUKS_check_device_size(ctx, hdr, 0);
 
 	/*
 	 * Cryptsetup 1.0.0 did not align keyslots to 4k (very rare version).
@@ -640,7 +644,7 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 	log_dbg("Updating LUKS header of size %zu on device %s",
 		sizeof(struct luks_phdr), device_path(device));
 
-	r = LUKS_check_device_size(ctx, hdr);
+	r = LUKS_check_device_size(ctx, hdr, 1);
 	if (r)
 		return r;
 
