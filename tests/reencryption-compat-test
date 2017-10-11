@@ -200,7 +200,7 @@ function test_logging() {
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$REENC" ] && skip "Cannot find $REENC, test skipped."
-which wipefs >/dev/null ||  skip "Cannot find wipefs, test skipped."
+which wipefs >/dev/null 2>&1 ||  skip "Cannot find wipefs, test skipped."
 
 # REENCRYPTION tests
 

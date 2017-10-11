@@ -162,7 +162,7 @@ function dm_crypt_keyring_support()
 }
 
 function test_and_prepare_keyring() {
-	which keyctl > /dev/null || skip "Cannot find keyctl, test skipped"
+	which keyctl > /dev/null 2>&1 || skip "Cannot find keyctl, test skipped"
 	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
 	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@u" 2> /dev/null)
 	test -n "$TEST_KEYRING" || skip "Failed to create keyring in user keyring"
