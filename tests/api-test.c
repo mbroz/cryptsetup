@@ -33,7 +33,6 @@
 #include "api_test.h"
 #include "luks.h"
 #include "libcryptsetup.h"
-#include "utils_loop.h"
 
 #define DMDIR "/dev/mapper/"
 
@@ -185,17 +184,17 @@ static void _cleanup(void)
 
 	_cleanup_dmdevices();
 
-	if (crypt_loop_device(THE_LOOP_DEV))
-		crypt_loop_detach(THE_LOOP_DEV);
+	if (loop_device(THE_LOOP_DEV))
+		loop_detach(THE_LOOP_DEV);
 
-	if (crypt_loop_device(DEVICE_1))
-		crypt_loop_detach(DEVICE_1);
+	if (loop_device(DEVICE_1))
+		loop_detach(DEVICE_1);
 
-	if (crypt_loop_device(DEVICE_2))
-		crypt_loop_detach(DEVICE_2);
+	if (loop_device(DEVICE_2))
+		loop_detach(DEVICE_2);
 
-	if (crypt_loop_device(DEVICE_3))
-		crypt_loop_detach(DEVICE_3);
+	if (loop_device(DEVICE_3))
+		loop_detach(DEVICE_3);
 
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_system("rm -f " IMAGE1, 0);
@@ -237,7 +236,7 @@ static int _setup(void)
 	if (_system(cmd, 1))
 		return 1;
 
-	fd = crypt_loop_attach(&THE_LOOP_DEV, test_loop_file, 0, 0, &ro);
+	fd = loop_attach(&THE_LOOP_DEV, test_loop_file, 0, 0, &ro);
 	close(fd);
 
 	tmp_file_1 = strdup(THE_LFILE_TEMPLATE);
@@ -255,11 +254,11 @@ static int _setup(void)
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
 
 	_system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2", 1);
-	fd = crypt_loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
 	close(fd);
 
 	_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4 2>/dev/null", 1);
-	fd = crypt_loop_attach(&DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
 	close(fd);
 
 	/* Keymaterial offset is less than 8 sectors */
@@ -1227,7 +1226,7 @@ static void LuksHeaderBackup(void)
 	crypt_free(cd);
 
 	// exercise luksOpen using backup header on block device
-	fd = crypt_loop_attach(&DEVICE_3, BACKUP_FILE, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_3, BACKUP_FILE, 0, 0, &ro);
 	close(fd);
 	OK_(fd < 0);
 	OK_(crypt_init(&cd, DEVICE_3));

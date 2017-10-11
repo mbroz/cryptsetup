@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <linux/loop.h>
 
 #include "api_test.h"
 #include "libcryptsetup.h"
@@ -401,4 +402,171 @@ out:
 int t_dm_crypt_keyring_support(void)
 {
 	return t_dm_crypt_flags & T_DM_KERNEL_KEYRING_SUPPORTED;
+}
+
+/* loop helpers */
+
+#define LOOP_DEV_MAJOR 7
+
+#ifndef LO_FLAGS_AUTOCLEAR
+#define LO_FLAGS_AUTOCLEAR 4
+#endif
+
+#ifndef LOOP_CTL_GET_FREE
+#define LOOP_CTL_GET_FREE 0x4C82
+#endif
+
+#ifndef LOOP_SET_CAPACITY
+#define LOOP_SET_CAPACITY 0x4C07
+#endif
+
+int loop_device(const char *loop)
+{
+	struct stat st;
+
+	if (!loop)
+		return 0;
+
+	if (stat(loop, &st) || !S_ISBLK(st.st_mode) ||
+	    major(st.st_rdev) != LOOP_DEV_MAJOR)
+		return 0;
+
+	return 1;
+}
+
+static char *crypt_loop_get_device_old(void)
+{
+	char dev[20];
+	int i, loop_fd;
+	struct loop_info64 lo64 = {0};
+
+	for (i = 0; i < 256; i++) {
+		sprintf(dev, "/dev/loop%d", i);
+
+		loop_fd = open(dev, O_RDONLY);
+		if (loop_fd < 0)
+			return NULL;
+
+		if (ioctl(loop_fd, LOOP_GET_STATUS64, &lo64) &&
+		    errno == ENXIO) {
+			close(loop_fd);
+			return strdup(dev);
+		}
+		close(loop_fd);
+	}
+
+	return NULL;
+}
+
+static char *crypt_loop_get_device(void)
+{
+	char dev[64];
+	int i, loop_fd;
+	struct stat st;
+
+	loop_fd = open("/dev/loop-control", O_RDONLY);
+	if (loop_fd < 0)
+		return crypt_loop_get_device_old();
+
+	i = ioctl(loop_fd, LOOP_CTL_GET_FREE);
+	if (i < 0) {
+		close(loop_fd);
+		return NULL;
+	}
+	close(loop_fd);
+
+	if (sprintf(dev, "/dev/loop%d", i) < 0)
+		return NULL;
+
+	if (stat(dev, &st) || !S_ISBLK(st.st_mode))
+		return NULL;
+
+	return strdup(dev);
+}
+
+int loop_attach(char **loop, const char *file, int offset,
+		      int autoclear, int *readonly)
+{
+	struct loop_info64 lo64 = {0};
+	char *lo_file_name;
+	int loop_fd = -1, file_fd = -1, r = 1;
+
+	*loop = NULL;
+
+	file_fd = open(file, (*readonly ? O_RDONLY : O_RDWR) | O_EXCL);
+	if (file_fd < 0 && (errno == EROFS || errno == EACCES) && !*readonly) {
+		*readonly = 1;
+		file_fd = open(file, O_RDONLY | O_EXCL);
+	}
+	if (file_fd < 0)
+		goto out;
+
+	while (loop_fd < 0)  {
+		*loop = crypt_loop_get_device();
+		if (!*loop)
+			goto out;
+
+		loop_fd = open(*loop, *readonly ? O_RDONLY : O_RDWR);
+		if (loop_fd < 0)
+			goto out;
+
+		if (ioctl(loop_fd, LOOP_SET_FD, file_fd) < 0) {
+			if (errno != EBUSY)
+				goto out;
+			free(*loop);
+			*loop = NULL;
+
+			close(loop_fd);
+			loop_fd = -1;
+		}
+	}
+
+	lo_file_name = (char*)lo64.lo_file_name;
+	lo_file_name[LO_NAME_SIZE-1] = '\0';
+	strncpy(lo_file_name, file, LO_NAME_SIZE-1);
+	lo64.lo_offset = offset;
+	if (autoclear)
+		lo64.lo_flags |= LO_FLAGS_AUTOCLEAR;
+
+	if (ioctl(loop_fd, LOOP_SET_STATUS64, &lo64) < 0) {
+		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
+		goto out;
+	}
+
+	/* Verify that autoclear is really set */
+	if (autoclear) {
+		memset(&lo64, 0, sizeof(lo64));
+		if (ioctl(loop_fd, LOOP_GET_STATUS64, &lo64) < 0 ||
+		   !(lo64.lo_flags & LO_FLAGS_AUTOCLEAR)) {
+		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
+			goto out;
+		}
+	}
+
+	r = 0;
+out:
+	if (r && loop_fd >= 0)
+		close(loop_fd);
+	if (file_fd >= 0)
+		close(file_fd);
+	if (r && *loop) {
+		free(*loop);
+		*loop = NULL;
+	}
+	return r ? -1 : loop_fd;
+}
+
+int loop_detach(const char *loop)
+{
+	int loop_fd = -1, r = 1;
+
+	loop_fd = open(loop, O_RDONLY);
+	if (loop_fd < 0)
+                return 1;
+
+	if (!ioctl(loop_fd, LOOP_CLR_FD, 0))
+		r = 0;
+
+	close(loop_fd);
+	return r;
 }

@@ -42,7 +42,6 @@ typedef int32_t key_serial_t;
 #include "api_test.h"
 #include "luks.h"
 #include "libcryptsetup.h"
-#include "utils_loop.h"
 
 #define DMDIR "/dev/mapper/"
 
@@ -235,26 +234,26 @@ static void _cleanup(void)
 
 	_cleanup_dmdevices();
 
-	if (crypt_loop_device(THE_LOOP_DEV))
-		crypt_loop_detach(THE_LOOP_DEV);
+	if (loop_device(THE_LOOP_DEV))
+		loop_detach(THE_LOOP_DEV);
 
-	if (crypt_loop_device(DEVICE_1))
-		crypt_loop_detach(DEVICE_1);
+	if (loop_device(DEVICE_1))
+		loop_detach(DEVICE_1);
 
-	if (crypt_loop_device(DEVICE_2))
-		crypt_loop_detach(DEVICE_2);
+	if (loop_device(DEVICE_2))
+		loop_detach(DEVICE_2);
 
-	if (crypt_loop_device(DEVICE_3))
-		crypt_loop_detach(DEVICE_3);
+	if (loop_device(DEVICE_3))
+		loop_detach(DEVICE_3);
 
-	if (crypt_loop_device(DEVICE_4))
-		crypt_loop_detach(DEVICE_4);
+	if (loop_device(DEVICE_4))
+		loop_detach(DEVICE_4);
 
-	if (crypt_loop_device(DEVICE_5))
-		crypt_loop_detach(DEVICE_5);
+	if (loop_device(DEVICE_5))
+		loop_detach(DEVICE_5);
 
-	if (crypt_loop_device(DEVICE_6))
-		crypt_loop_detach(DEVICE_6);
+	if (loop_device(DEVICE_6))
+		loop_detach(DEVICE_6);
 
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_system("rm -f " IMAGE1, 0);
@@ -297,7 +296,7 @@ static int _setup(void)
 	if (_system(cmd, 1))
 		return 1;
 
-	fd = crypt_loop_attach(&THE_LOOP_DEV, test_loop_file, 0, 0, &ro);
+	fd = loop_attach(&THE_LOOP_DEV, test_loop_file, 0, 0, &ro);
 	close(fd);
 
 	tmp_file_1 = strdup(THE_LFILE_TEMPLATE);
@@ -315,23 +314,23 @@ static int _setup(void)
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
 
 	_system(" [ ! -e " IMAGE1 " ] && xz -dk " IMAGE1 ".xz", 1);
-	fd = crypt_loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
 	close(fd);
 
 	_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=32 2>/dev/null", 1);
-	fd = crypt_loop_attach(&DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
 	close(fd);
 
 	_system(" [ ! -e " VALID_LUKS2_HEADER " ] && xz -dk " VALID_LUKS2_HEADER ".xz", 1);
-	fd = crypt_loop_attach(&DEVICE_4, VALID_LUKS2_HEADER, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_4, VALID_LUKS2_HEADER, 0, 0, &ro);
 	close(fd);
 
 	_system(" [ ! -e " REQS_LUKS2_HEADER " ] && xz -dk " REQS_LUKS2_HEADER ".xz", 1);
-	fd = crypt_loop_attach(&DEVICE_5, REQS_LUKS2_HEADER, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_5, REQS_LUKS2_HEADER, 0, 0, &ro);
 	close(fd);
 
 	_system(" [ ! -e " NO_REQS_LUKS2_HEADER " ] && xz -dk " NO_REQS_LUKS2_HEADER ".xz", 1);
-	fd = crypt_loop_attach(&DEVICE_6, NO_REQS_LUKS2_HEADER, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_6, NO_REQS_LUKS2_HEADER, 0, 0, &ro);
 	close(fd);
 
 	_system(" [ ! -d " CONV_DIR " ] && tar xJf " CONV_DIR ".tar.xz", 1);
@@ -1108,7 +1107,7 @@ static void Luks2HeaderBackup(void)
 	crypt_free(cd);
 
 	// exercise luksOpen using backup header on block device
-	fd = crypt_loop_attach(&DEVICE_3, BACKUP_FILE, 0, 0, &ro);
+	fd = loop_attach(&DEVICE_3, BACKUP_FILE, 0, 0, &ro);
 	close(fd);
 	OK_(fd < 0);
 	OK_(crypt_init(&cd, DEVICE_3));

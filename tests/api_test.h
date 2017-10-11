@@ -105,4 +105,10 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 #define T_DM_INTEGRITY_SUPPORTED (1 << 12) /* dm-integrity target supported */
 //FIXME add T_DM_SECTOR_SIZE once we have version
 
+/* loop helpers */
+int loop_device(const char *loop);
+int loop_attach(char **loop, const char *file, int offset,
+		      int autoclear, int *readonly);
+int loop_detach(const char *loop);
+
 #endif
