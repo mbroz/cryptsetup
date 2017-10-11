@@ -1,0 +1,13 @@
+EXTRA_DIST += python/pycryptsetup-test.py
+CLEANFILES += python/*.img
+
+if PYTHON_CRYPTSETUP
+TESTS += python/pycryptsetup-test.py
+
+pyexec_LTLIBRARIES = pycryptsetup.la
+
+pycryptsetup_la_SOURCES = python/pycryptsetup.c
+pycryptsetup_la_CPPFLAGS = $(AM_CPPFLAGS) $(PYTHON_CPPFLAGS) $(PYTHON_INCLUDES) -fno-strict-aliasing
+pycryptsetup_la_LDFLAGS = -avoid-version -module -shared -export-dynamic
+pycryptsetup_la_LIBADD = libcryptsetup.la $(PYTHON_LIBS)
+endif

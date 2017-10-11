@@ -1,0 +1,92 @@
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = lib/libcryptsetup.pc
+
+lib_LTLIBRARIES = libcryptsetup.la
+
+include_HEADERS = lib/libcryptsetup.h
+
+EXTRA_DIST += lib/libcryptsetup.pc.in lib/libcryptsetup.sym
+
+libcryptsetup_la_CPPFLAGS = $(AM_CPPFLAGS) \
+	-I $(top_srcdir)/lib/crypto_backend	\
+	-I $(top_srcdir)/lib/luks1		\
+	-I $(top_srcdir)/lib/luks2		\
+	-I $(top_srcdir)/lib/loopaes		\
+	-I $(top_srcdir)/lib/verity		\
+	-I $(top_srcdir)/lib/tcrypt		\
+	-I $(top_srcdir)/lib/integrity
+
+libcryptsetup_la_DEPENDENCIES = libcrypto_backend.la lib/libcryptsetup.sym
+
+libcryptsetup_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
+	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
+	-version-info @LIBCRYPTSETUP_VERSION_INFO@
+
+libcryptsetup_la_CFLAGS = $(AM_CFLAGS) @CRYPTO_CFLAGS@
+
+libcryptsetup_la_LIBADD = \
+	@UUID_LIBS@		\
+	@DEVMAPPER_LIBS@	\
+	@CRYPTO_LIBS@		\
+	@LIBARGON2_LIBS@	\
+	@JSON_C_LIBS@		\
+	libcrypto_backend.la
+
+libcryptsetup_la_SOURCES = \
+	lib/setup.c			\
+	lib/internal.h			\
+	lib/bitops.h			\
+	lib/nls.h			\
+	lib/libcryptsetup.h		\
+	lib/utils.c			\
+	lib/utils_benchmark.c		\
+	lib/utils_crypt.c		\
+	lib/utils_crypt.h		\
+	lib/utils_loop.c		\
+	lib/utils_loop.h		\
+	lib/utils_devpath.c		\
+	lib/utils_wipe.c		\
+	lib/utils_fips.c		\
+	lib/utils_fips.h		\
+	lib/utils_device.c		\
+	lib/utils_keyring.c		\
+	lib/utils_keyring.h		\
+	lib/utils_device_locking.c	\
+	lib/utils_device_locking.h	\
+	lib/utils_pbkdf.c		\
+	lib/libdevmapper.c		\
+	lib/utils_dm.h			\
+	lib/volumekey.c			\
+	lib/random.c			\
+	lib/crypt_plain.c		\
+	lib/base64.h			\
+	lib/base64.c			\
+	lib/integrity/integrity.h	\
+	lib/integrity/integrity.c       \
+	lib/loopaes/loopaes.h		\
+	lib/loopaes/loopaes.c		\
+	lib/tcrypt/tcrypt.h		\
+	lib/tcrypt/tcrypt.c		\
+	lib/luks1/af.h			\
+	lib/luks1/af.c			\
+	lib/luks1/keyencryption.c	\
+	lib/luks1/keymanage.c		\
+	lib/luks1/luks.h		\
+	lib/verity/verity_hash.c	\
+	lib/verity/verity_fec.c		\
+	lib/verity/verity.c		\
+	lib/verity/verity.h		\
+	lib/verity/rs_encode_char.c	\
+	lib/verity/rs.h                 \
+	lib/luks2/luks2_disk_metadata.c	\
+	lib/luks2/luks2_json_format.c	\
+	lib/luks2/luks2_json_metadata.c	\
+	lib/luks2/luks2_luks1_convert.c	\
+	lib/luks2/luks2_digest.c	\
+	lib/luks2/luks2_digest_pbkdf2.c	\
+	lib/luks2/luks2_keyslot.c	\
+	lib/luks2/luks2_keyslot_luks2.c	\
+	lib/luks2/luks2_token_keyring.c	\
+	lib/luks2/luks2_token.c		\
+	lib/luks2/luks2_internal.h	\
+	lib/luks2/luks2.h

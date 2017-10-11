@@ -1,0 +1,21 @@
+noinst_LTLIBRARIES += libargon2.la
+
+libargon2_la_CFLAGS = $(AM_CFLAGS) -std=c89 -pthread -O3
+libargon2_la_CPPFLAGS = $(AM_CPPFLAGS) -I lib/crypto_backend/argon2/blake2
+
+libargon2_la_SOURCES = \
+	lib/crypto_backend/argon2/blake2/blake2b.c \
+	lib/crypto_backend/argon2/blake2/blake2.h \
+	lib/crypto_backend/argon2/blake2/blake2-impl.h \
+	lib/crypto_backend/argon2/blake2/blamka-round-ref.h \
+	lib/crypto_backend/argon2/argon2.c \
+	lib/crypto_backend/argon2/argon2.h \
+	lib/crypto_backend/argon2/core.c \
+	lib/crypto_backend/argon2/core.h \
+	lib/crypto_backend/argon2/encoding.c \
+	lib/crypto_backend/argon2/encoding.h \
+	lib/crypto_backend/argon2/ref.c \
+	lib/crypto_backend/argon2/thread.c \
+	lib/crypto_backend/argon2/thread.h
+
+EXTRA_DIST += lib/crypto_backend/argon2/LICENSE

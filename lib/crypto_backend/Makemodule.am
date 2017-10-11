@@ -1,0 +1,36 @@
+noinst_LTLIBRARIES += libcrypto_backend.la
+
+libcrypto_backend_la_CFLAGS = $(AM_CFLAGS) @CRYPTO_CFLAGS@
+
+libcrypto_backend_la_SOURCES = \
+	lib/crypto_backend/crypto_backend.h \
+	lib/crypto_backend/crypto_cipher_kernel.c \
+	lib/crypto_backend/crypto_storage.c \
+	lib/crypto_backend/pbkdf_check.c \
+	lib/crypto_backend/crc32.c \
+	lib/crypto_backend/argon2_generic.c
+
+if CRYPTO_BACKEND_GCRYPT
+libcrypto_backend_la_SOURCES += lib/crypto_backend/crypto_gcrypt.c
+endif
+if CRYPTO_BACKEND_OPENSSL
+libcrypto_backend_la_SOURCES += lib/crypto_backend/crypto_openssl.c
+endif
+if CRYPTO_BACKEND_NSS
+libcrypto_backend_la_SOURCES += lib/crypto_backend/crypto_nss.c
+endif
+if CRYPTO_BACKEND_KERNEL
+libcrypto_backend_la_SOURCES += lib/crypto_backend/crypto_kernel.c
+endif
+if CRYPTO_BACKEND_NETTLE
+libcrypto_backend_la_SOURCES += lib/crypto_backend/crypto_nettle.c
+endif
+
+if CRYPTO_INTERNAL_PBKDF2
+libcrypto_backend_la_SOURCES += lib/crypto_backend/pbkdf2_generic.c
+endif
+
+if CRYPTO_INTERNAL_ARGON2
+libcrypto_backend_la_DEPENDENCIES = libargon2.la
+libcrypto_backend_la_LIBADD = libargon2.la
+endif

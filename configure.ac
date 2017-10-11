@@ -15,8 +15,8 @@ AC_CONFIG_HEADERS([config.h:config.h.in])
 # http://lists.gnu.org/archive/html/automake/2013-01/msg00060.html
 
 # For old automake use this
-#AM_INIT_AUTOMAKE(dist-xz)
-AM_INIT_AUTOMAKE([dist-xz 1.12 serial-tests])
+#AM_INIT_AUTOMAKE(dist-xz subdir-objects)
+AM_INIT_AUTOMAKE([dist-xz 1.12 serial-tests subdir-objects])
 
 if test "x$prefix" = "xNONE"; then
 	sysconfdir=/etc
@@ -533,22 +533,9 @@ AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
 dnl ==========================================================================
 
 AC_CONFIG_FILES([ Makefile
-lib/Makefile
 lib/libcryptsetup.pc
-lib/crypto_backend/Makefile
-lib/crypto_backend/argon2/Makefile
-lib/luks1/Makefile
-lib/luks2/Makefile
-lib/loopaes/Makefile
-lib/verity/Makefile
-lib/tcrypt/Makefile
-lib/integrity/Makefile
-src/Makefile
 po/Makefile.in
-man/Makefile
-tests/Makefile
-python/Makefile
-scripts/Makefile
 scripts/cryptsetup_tmpfiles.conf
+tests/Makefile
 ])
 AC_OUTPUT
