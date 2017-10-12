@@ -90,7 +90,7 @@ AC_FUNC_STRERROR_R
 dnl ==========================================================================
 
 AM_GNU_GETTEXT([external],[need-ngettext])
-AM_GNU_GETTEXT_VERSION([0.15])
+AM_GNU_GETTEXT_VERSION([0.18.3])
 
 dnl ==========================================================================
 
