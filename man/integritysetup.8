@@ -106,7 +106,7 @@ The integrity algorithm can be CRC (crc32c/crc32) or hash function (sha1, sha256
 
 For HMAC (hmac-sha256) you have also to specify an integrity key and its size.
 .TP
-.B "\-\-integrity\-key\-size BITS"
+.B "\-\-integrity\-key\-size BYTES"
 The size of the data integrity key.
 .TP
 .B "\-\-integrity\-key\-file FILE"
@@ -131,7 +131,7 @@ these options are internally used in authenticated disk encryption with \fBcrypt
 Integrity algorithm for journal area.
 See \-\-integrity option for detailed specification.
 .TP
-.B "\-\-journal\-integrity\-key\-size BITS"
+.B "\-\-journal\-integrity\-key\-size BYTES"
 The size of the journal integrity key.
 .TP
 .B "\-\-journal\-integrity\-key\-file FILE"
@@ -142,7 +142,7 @@ Encryption algorithm for journal data area.
 You can use a block cipher here such as cbc(aes) or
 a stream cipher, for example, chacha20 or ctr(aes).
 .TP
-.B "\-\-journal\-crypt\-key\-size BITS"
+.B "\-\-journal\-crypt\-key\-size BYTES"
 The size of the journal encryption key.
 .TP
 .B "\-\-journal\-crypt\-key\-file FILE"
