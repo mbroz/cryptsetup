@@ -370,7 +370,7 @@ static int action_status(int arg)
 			log_std("  loop:    %s\n", backing_file);
 			free(backing_file);
 		}
-		log_std("  sector size:  %u sectors\n", crypt_get_sector_size(cd));
+		log_std("  sector size:  %u bytes\n", crypt_get_sector_size(cd));
 		log_std("  interleave sectors: %u\n", ip.interleave_sectors);
 		log_std("  size:    %" PRIu64 " sectors\n", cad.size);
 		log_std("  mode:    %s%s\n",
