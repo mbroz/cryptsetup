@@ -94,19 +94,29 @@ intformat() # alg alg_out tagsize sector_size csum
 	echo "[OK]"
 }
 
-int_error_detection() # alg tagsize sector_size
+int_error_detection() # alg tagsize sector_size key_file key_size
 {
+	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
 	echo -n "[INTEGRITY:$1:$2:$3]"
 	echo -n "[FORMAT]"
-	$INTSETUP format -q --integrity $1 --tag-size $2 --sector-size $3 $DEV || fail "Cannot format device."
+	[ -n "$4" -a -n "$5" ] && KEY_PARAMS="--integrity-key-file $4 --integrity-key-size $5"
+	$INTSETUP format -q --integrity $1 --tag-size $2 --sector-size $3 $KEY_PARAMS $DEV || fail "Cannot format device."
 	echo -n "[ACTIVATE]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-no-journal || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-no-journal $KEY_PARAMS || fail "Cannot activate device."
+
+	if [ -n "$4" -a -n "$5" ]; then
+		echo -n "[KEYED HASH]"
+		KEY_HEX=$(xxd -c 256 -l $5 -p $4)
+		[ -z "$KEY_HEX" ] && fail "Cannot decode key."
+		dmsetup table $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
+	fi
+
 	echo -n "[WRITE DATA]"
 	echo -n "EXAMPLE TEXT" | dd of=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Cannot write to device."
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 
 	# find offset of data area
-	ARR=(`dd if=$DEV bs=512 2>/dev/null | hexdump -C | grep 'EXAMPLE TEXT'`)
+	ARR=($(dd if=$DEV bs=512 2>/dev/null | hexdump -C | grep 'EXAMPLE TEXT'))
 	OFF_HEX=${ARR[0]}
 	OFF_DEC=$((16#$OFF_HEX))
 
@@ -114,7 +124,7 @@ int_error_detection() # alg tagsize sector_size
 	echo -n "Z" | dd of=$DEV bs=1 seek=$OFF_DEC conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
 
 	echo -n "[DETECT ERROR]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
 	dd if=/dev/mapper/$DEV_NAME  >/dev/null 2>&1 && fail "Error detection failed."
 
 	echo -n "[REMOVE]"
@@ -122,13 +132,32 @@ int_error_detection() # alg tagsize sector_size
 	echo "[OK]"
 }
 
+int_journal_crypt() # crypt_alg crypt_alg_kernel crypt_key crypt_key_size
+{
+	echo -n "[JOURNAL CRYPT:$1:${4}B]"
+
+	echo -n "[FORMAT]"
+	ARGS="--journal-crypt $1 --journal-crypt-key-file $3 --journal-crypt-key-size $4"
+	$INTSETUP format -q $ARGS $DEV || fail "Cannot format device."
+
+	echo -n "[ACTIVATE]"
+	$INTSETUP open $DEV $DEV_NAME $ARGS || fail "Cannot activate device."
+
+	KEY_HEX=$(xxd -c 256 -l $4 -p $3)
+	[ -z "$KEY_HEX" ] && fail "Cannot decode key."
+	dmsetup table $DEV_NAME | grep -q "journal_crypt:$2:$KEY_HEX" || fail "Key mismatch."
+
+	$INTSETUP close $DEV_NAME
+	echo "[OK]"
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$INTSETUP" ] && skip "Cannot find $INTSETUP, test skipped."
+which hexdump >/dev/null 2>&1 || skip "WARNING: hexdump tool required."
 modprobe dm-integrity >/dev/null 2>&1
 dmsetup targets | grep integrity >/dev/null 2>&1 || skip "Cannot find dm-integrity target, test skipped."
 
 add_device
-
 intformat crc32c      crc32c          4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
 intformat crc32       crc32           4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
 intformat sha1        sha1           20  512 6eedd6344dab8875cd185fcd6565dfc869ab36bc57e577f40c685290b1fa7fe7
@@ -151,6 +180,17 @@ int_error_detection sha256      32 4096
 int_error_detection hmac-sha256 32 512
 int_error_detection hmac-sha256 32 4096
 
-# FIXME: key, journal encryption, mode/recovery, journal params
+which xxd >/dev/null 2>&1 || skip "WARNING: xxd tool required."
+int_error_detection hmac-sha256 32 512 $KEY_FILE 32
+int_error_detection hmac-sha256 32 4096 $KEY_FILE 32
+
+echo "Journal encryption tests:"
+int_journal_crypt cbc-aes cbc\(aes\) $KEY_FILE 32
+int_journal_crypt cbc-aes cbc\(aes\) $KEY_FILE 16
+int_journal_crypt salsa20 salsa20    $KEY_FILE 32
+int_journal_crypt ctr-aes ctr\(aes\) $KEY_FILE 32
+int_journal_crypt ctr-aes ctr\(aes\) $KEY_FILE 16
+
+# FIXME: journal-key, mode/recovery, journal params
 
 cleanup
