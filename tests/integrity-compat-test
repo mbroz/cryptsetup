@@ -40,7 +40,7 @@ add_device() {
 
 status_check() # name value
 {
-	X=$($INTSETUP status $DEV_NAME | grep "$1" | sed 's/.*: //' | cut -d' '  -f 2)
+	X=$($INTSETUP status $DEV_NAME | grep "$1" | sed 's/.*: //' | sed 's/^[[:space:]]*//')
 	if [ "$X" != "$2" ] ; then
 		echo "[status FAIL]"
 		echo " Expecting $1:$2 got \"$X\"."
@@ -87,7 +87,7 @@ intformat() # alg alg_out tagsize sector_size csum
 	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device."
 	status_check "tag size" $3
 	status_check "integrity" $2
-	status_check "sector size" $4
+	status_check "sector size" "$4 bytes"
 	int_check_sum $1 $5
 	echo -n "[REMOVE]"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
@@ -131,6 +131,32 @@ int_error_detection() # alg tagsize sector_size key_file key_size
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 }
+
+int_journal() # 1 alg, 2 tagsize, 3 sector_size, 4 watermark, 5 commit_time, 6 journal_integrity, 7 key-file, 8 key-size, 9 journal_integrity_out
+{
+    echo -n "[INTEGRITY JOURNAL:$6:${4}%:${5}ms]"
+    echo -n "[FORMAT]"
+    ARGS="--integrity $1 --journal-watermark $4 --journal-commit-time $5 --journal-integrity $6 --journal-integrity-key-file $7 --journal-integrity-key-size $8"
+    $INTSETUP format -q --tag-size $2 --sector-size $3 $ARGS $DEV || fail "Cannot format device."
+
+    echo -n "[ACTIVATE]"
+
+    $INTSETUP open $DEV $DEV_NAME $ARGS || fail "Cannot activate device."
+
+    echo -n "[KEYED HASH]"
+    KEY_HEX=$(xxd -c 256 -l $8 -p $7)
+    [ -z "$KEY_HEX" ] && fail "Cannot decode key."
+    dmsetup table $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
+
+    status_check "journal watermark" "${4}%"
+    status_check "journal commit time" "${5} ms"
+    status_check "journal integrity MAC" $9
+
+    echo -n "[REMOVE]"
+    $INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+    echo "[OK]"
+}
+
 
 int_journal_crypt() # crypt_alg crypt_alg_kernel crypt_key crypt_key_size
 {
@@ -184,6 +210,11 @@ which xxd >/dev/null 2>&1 || skip "WARNING: xxd tool required."
 int_error_detection hmac-sha256 32 512 $KEY_FILE 32
 int_error_detection hmac-sha256 32 4096 $KEY_FILE 32
 
+echo "Journal parameters tests:"
+int_journal crc32  4  512  66 1000 hmac-sha256 $KEY_FILE 32 hmac\(sha256\)
+# int_journal sha256 32 4096 33 5000 hmac-sha1   $KEY_FILE 16 hmac\(sha1\)
+int_journal sha1   20 512  75 9999 hmac-sha256 $KEY_FILE 32 hmac\(sha256\)
+
 echo "Journal encryption tests:"
 int_journal_crypt cbc-aes cbc\(aes\) $KEY_FILE 32
 int_journal_crypt cbc-aes cbc\(aes\) $KEY_FILE 16
@@ -191,6 +222,6 @@ int_journal_crypt salsa20 salsa20    $KEY_FILE 32
 int_journal_crypt ctr-aes ctr\(aes\) $KEY_FILE 32
 int_journal_crypt ctr-aes ctr\(aes\) $KEY_FILE 16
 
-# FIXME: journal-key, mode/recovery, journal params
+# FIXME: mode/recovery
 
 cleanup
