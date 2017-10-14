@@ -299,9 +299,6 @@ int crypt_hmac_destroy(struct crypt_hmac *ctx)
 /* RNG */
 int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
 {
-	if (fips)
-		return -EINVAL;
-
 	if (RAND_bytes((unsigned char *)buffer, length) != 1)
 		return -EINVAL;
 

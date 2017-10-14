@@ -215,8 +215,7 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 	}
 
 	if (status)
-		log_err(ctx, _("Error %d reading from RNG: %s\n"),
-			errno, strerror(errno));
+		log_err(ctx, _("Error reading from RNG.\n"));
 
 	return status;
 }
