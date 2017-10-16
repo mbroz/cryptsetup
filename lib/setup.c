@@ -3217,6 +3217,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 	const char *namei = NULL;
 	struct crypt_dm_active_device dmd = {};
 	int r;
+	uint32_t get_flags = DM_ACTIVE_DEVICE | DM_ACTIVE_HOLDERS;
 
 	if (!name)
 		return -EINVAL;
@@ -3230,16 +3231,25 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 		cd = fake_cd;
 	}
 
+	/* skip holders detection and early abort when some flags raised */
+	if (flags & (CRYPT_DEACTIVATE_FORCE | CRYPT_DEACTIVATE_DEFERRED))
+		get_flags &= ~DM_ACTIVE_HOLDERS;
+
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
 		case CRYPT_BUSY:
-			key_desc = crypt_get_device_key_description(name);
-
-			if (crypt_get_integrity_tag_size(cd)) {
-				r = dm_query_device(cd, name, DM_ACTIVE_DEVICE, &dmd);
-				if (r >= 0)
+			r = dm_query_device(cd, name, get_flags, &dmd);
+			if (r >= 0) {
+				if (dmd.holders) {
+					log_err(cd, _("Device %s is still in use.\n"), name);
+					r = -EBUSY;
+					break;
+				}
+				if (crypt_get_integrity_tag_size(cd))
 					namei = device_dm_name(dmd.data_device);
 			}
+
+			key_desc = crypt_get_device_key_description(name);
 
 			if (isTCRYPT(cd->type))
 				r = TCRYPT_deactivate(cd, name, flags);
