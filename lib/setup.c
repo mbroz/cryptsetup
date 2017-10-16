@@ -2249,6 +2249,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 int crypt_deactivate(struct crypt_device *cd, const char *name)
 {
 	struct crypt_device *fake_cd = NULL;
+	struct crypt_dm_active_device dmd = {};
 	int r;
 
 	if (!name)
@@ -2266,6 +2267,13 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
 		case CRYPT_BUSY:
+			r = dm_query_device(cd, name, DM_ACTIVE_HOLDERS, &dmd);
+			if (r >= 0 && dmd.holders) {
+				log_err(cd, _("Device %s is still in use.\n"), name);
+				r = -EBUSY;
+				break;
+			}
+
 			if (isTCRYPT(cd->type))
 				r = TCRYPT_deactivate(cd, name);
 			else

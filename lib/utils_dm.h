@@ -48,14 +48,16 @@ uint32_t dm_flags(void);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)
 #define DM_ACTIVE_UUID		(1 << 1)
+#define DM_ACTIVE_HOLDERS	(1 << 2)
 
-#define DM_ACTIVE_CRYPT_CIPHER	(1 << 2)
-#define DM_ACTIVE_CRYPT_KEYSIZE	(1 << 3)
-#define DM_ACTIVE_CRYPT_KEY	(1 << 4)
+#define DM_ACTIVE_CRYPT_CIPHER	(1 << 3)
+#define DM_ACTIVE_CRYPT_KEYSIZE	(1 << 4)
+#define DM_ACTIVE_CRYPT_KEY	(1 << 5)
 
-#define DM_ACTIVE_VERITY_ROOT_HASH	(1 << 5)
-#define DM_ACTIVE_VERITY_HASH_DEVICE	(1 << 6)
-#define DM_ACTIVE_VERITY_PARAMS		(1 << 7)
+#define DM_ACTIVE_VERITY_ROOT_HASH	(1 << 6)
+#define DM_ACTIVE_VERITY_HASH_DEVICE	(1 << 7)
+#define DM_ACTIVE_VERITY_PARAMS		(1 << 8)
+
 
 struct crypt_dm_active_device {
 	enum { DM_CRYPT = 0, DM_VERITY } target;
@@ -63,6 +65,7 @@ struct crypt_dm_active_device {
 	uint32_t flags;		/* activation flags */
 	const char *uuid;
 	struct device *data_device;
+	unsigned holders:1;
 	union {
 	struct {
 		const char *cipher;

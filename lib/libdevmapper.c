@@ -1181,6 +1181,13 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 			dmd->uuid = strdup(tmp_uuid + DM_UUID_PREFIX_LEN);
 	}
 
+	dmd->holders = 0;
+#if (HAVE_DECL_DM_DEVICE_HAS_HOLDERS && HAVE_DECL_DM_DEVICE_HAS_MOUNTED_FS)
+	if (get_flags & DM_ACTIVE_HOLDERS)
+		dmd->holders = (dm_device_has_mounted_fs(dmi.major, dmi.minor) ||
+				dm_device_has_holders(dmi.major, dmi.minor));
+#endif
+
 	r = (dmi.open_count > 0);
 out:
 	if (dmt)
