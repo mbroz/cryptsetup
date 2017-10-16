@@ -1120,13 +1120,13 @@ Specify integrity algorithm to be used for authenticated disk encryption in LUKS
 kernel target (available since kernel version 4.12).
 For more info, see \fIAUTHENTICATED DISK ENCRYPTION\fR section.
 .TP
-.B "\-\-integrity\-\no\-journal"
+.B "\-\-integrity\-no\-journal"
 Activate device with integrity protection without using data journal (direct
 write of data and integrity tags).
 Note that without journal power fail can cause non-atomic write and data corruption.
 Use only if journalling is performed on a different storage layer.
 .TP
-.B "\-\-integrity\-\no\-wipe"
+.B "\-\-integrity\-no\-wipe"
 Skip wiping of device authentication (integrity) tags. If you skip this
 step, sectors will report invalid integrity tag until an application write
 to the sector.
