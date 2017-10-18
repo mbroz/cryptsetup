@@ -18,7 +18,7 @@ else
     device="$1"
 fi
 
-PARAMS="$device -T 1 --use-fsync -B 32"
+PARAMS="$device -T 1 --use-fsync --progress-frequency 5 -B 32"
 if [ "$3" != "any" ]; then
     PARAMS="$PARAMS -S $3"
 fi
