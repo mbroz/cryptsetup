@@ -252,21 +252,21 @@ ssize_t write_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t 
 		if (!frontPadBuf)
 			goto out;
 
-		r = read_buffer(fd, frontPadBuf, bsize);
-		if (r < 0 || r != bsize)
-			goto out;
-
 		innerCount = bsize - frontHang;
 		if (innerCount > count)
 			innerCount = count;
+
+		r = read_buffer(fd, frontPadBuf, bsize);
+		if (r < (frontHang + innerCount))
+			goto out;
 
 		memcpy(frontPadBuf + frontHang, buf, innerCount);
 
 		if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
 			goto out;
 
-		r = write_buffer(fd, frontPadBuf, bsize);
-		if (r < 0 || r != bsize)
+		r = write_buffer(fd, frontPadBuf, frontHang + innerCount);
+		if (r != (frontHang + innerCount))
 			goto out;
 
 		buf = (char*)buf + innerCount;
@@ -311,13 +311,13 @@ ssize_t read_lseek_blockwise(int fd, int bsize, void *buf, size_t count, off_t o
 		if (!frontPadBuf)
 			return ret;
 
-		r = read_buffer(fd, frontPadBuf, bsize);
-		if (r < 0 || r != bsize)
-			goto out;
-
 		innerCount = bsize - frontHang;
 		if (innerCount > count)
 			innerCount = count;
+
+		r = read_buffer(fd, frontPadBuf, bsize);
+		if (r < (frontHang + innerCount))
+			goto out;
 
 		memcpy(buf, frontPadBuf + frontHang, innerCount);
 
