@@ -1,6 +1,8 @@
 #!/bin/bash
 
 VERITYSETUP=../veritysetup
+VERITYSETUP_VALGRIND=../.libs/veritysetup
+VERITYSETUP_LIB_VALGRIND=../.libs
 
 DEV_NAME=verity3273
 DEV_OUT="$DEV_NAME.out"
@@ -250,13 +252,13 @@ function check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI
 function valgrind_setup()
 {
 	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
-	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
-	#export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	[ ! -f $VERITYSETUP_VALGRIND ] && fail "Unable to get location of veritysetup executable."
+	export LD_LIBRARY_PATH="$VERITYSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 }
 
 function valgrind_run()
 {
-	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${VERITYSETUP} "$@"
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${VERITYSETUP_VALGRIND} "$@"
 }
 
 function checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
