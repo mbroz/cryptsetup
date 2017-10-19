@@ -3,6 +3,9 @@
 # Test integritysetup compatibility.
 #
 INTSETUP=../integritysetup
+INTSETUP_VALGRIND=../.libs/integritysetup
+INTSETUP_LIB_VALGRIND=../.libs
+
 DEV_NAME=dmc_test
 DEV=mode-test.img
 KEY_FILE=key.img
@@ -56,6 +59,18 @@ dump_check() # name value
 		echo " Expecting $1:$2 got \"$X\"."
 		fail
 	fi
+}
+
+function valgrind_setup()
+{
+    which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+    [ ! -f $INTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+    export LD_LIBRARY_PATH="$INTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+    INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${INTSETUP_VALGRIND} "$@"
 }
 
 int_check_sum() # alg checksum
@@ -179,6 +194,8 @@ int_journal_crypt() # crypt_alg crypt_alg_kernel crypt_key crypt_key_size
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$INTSETUP" ] && skip "Cannot find $INTSETUP, test skipped."
+
+[ -n "$VALG" ] && valgrind_setup && INTSETUP=valgrind_run
 which hexdump >/dev/null 2>&1 || skip "WARNING: hexdump tool required."
 modprobe dm-integrity >/dev/null 2>&1
 dmsetup targets | grep integrity >/dev/null 2>&1 || skip "Cannot find dm-integrity target, test skipped."
