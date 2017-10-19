@@ -38,7 +38,7 @@ To start (or continue) re-encryption for <device> use:
 \-\-device-size, \-\-hash, \-\-iter-time, \-\-use-random | \-\-use-urandom,
 \-\-keep-key, \-\-key-size, \-\-key-file, \-\-key-slot, \-\-keyfile-offset,
 \-\-keyfile-size, \-\-tries, \-\-use-directio, \-\-use-fsync, \-\-verbose, \-\-write-log,
-\-\-uuid]
+\-\-uuid, \-\-progress-frequency]
 
 To encrypt data on (not yet encrypted) device, use \fI\-\-new\fR with combination
 with \fI\-\-reduce-device-size\fR.
@@ -189,6 +189,9 @@ of the interrupted decryption process.
 .TP
 .B "\-\-batch-mode, \-q"
 Suppresses all warnings and reencryption progress output.
+.TP
+.B "\-\-progress-frequency <seconds>"
+Print separate line every <seconds> with reencryption progress.
 .TP
 .B "\-\-version"
 Show the program version.

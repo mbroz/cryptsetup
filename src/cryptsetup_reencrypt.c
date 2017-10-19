@@ -51,6 +51,7 @@ static int opt_key_size = 0;
 static int opt_new = 0;
 static int opt_keep_key = 0;
 static int opt_decrypt = 0;
+static int opt_progress_frequency = 0;
 
 static const char *opt_reduce_size_str = NULL;
 static uint64_t opt_reduce_size = 0;
@@ -665,10 +666,18 @@ static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 {
 	unsigned long long mbytes, eta;
 	struct timeval now_time;
-	double tdiff, mib;
+	double tdiff, mib, frequency;
+	char *eol = "";
 
 	gettimeofday(&now_time, NULL);
-	if (!final && time_diff(rc->end_time, now_time) < 0.5)
+	if (opt_progress_frequency)
+		frequency = (double)opt_progress_frequency;
+	else
+		frequency = 0.5;
+	if (final || opt_progress_frequency)
+		eol = "\n";
+
+	if (!final && time_diff(rc->end_time, now_time) < frequency)
 		return;
 
 	rc->end_time = now_time;
@@ -689,12 +698,12 @@ static void print_progress(struct reenc_ctx *rc, uint64_t bytes, int final)
 	eta = (unsigned long long)(rc->device_size / 1024 / 1024 / mib - tdiff);
 
 	/* vt100 code clear line */
-	log_err("\33[2K\r");
+	if (!opt_progress_frequency)
+		log_err("\33[2K\r");
 	log_err(_("Progress: %5.1f%%, ETA %02llu:%02llu, "
 		"%4llu MiB written, speed %5.1f MiB/s%s"),
 		(double)bytes / rc->device_size * 100,
-		eta / 60, eta % 60, mbytes, mib,
-		final ? "\n" :"");
+		eta / 60, eta % 60, mbytes, mib, eol);
 }
 
 static ssize_t read_buf(int fd, void *buf, size_t count)
@@ -1316,6 +1325,7 @@ int main(int argc, const char **argv)
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF2 iteration time for LUKS (in ms)"), N_("msecs") },
 		{ "batch-mode",        'q',  POPT_ARG_NONE, &opt_batch_mode,            0, N_("Do not ask for confirmation"), NULL },
+		{ "progress-frequency",'\0', POPT_ARG_INT, &opt_progress_frequency,     0, N_("Progress line update (in seconds)"), N_("secs") },
 		{ "tries",             'T',  POPT_ARG_INT, &opt_tries,                  0, N_("How often the input of the passphrase can be retried"), NULL },
 		{ "use-random",        '\0', POPT_ARG_NONE, &opt_random,                0, N_("Use /dev/random for generating volume key."), NULL },
 		{ "use-urandom",       '\0', POPT_ARG_NONE, &opt_urandom,               0, N_("Use /dev/urandom for generating volume key."), NULL },
