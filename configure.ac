@@ -273,7 +273,7 @@ saved_LIBS=$LIBS
 
 AC_ARG_ENABLE([static-cryptsetup],
 	AS_HELP_STRING([--enable-static-cryptsetup],
-	[enable build of static cryptsetup binary]))
+	[enable build of static version of tools]))
 if test x$enable_static_cryptsetup = xyes; then
 	if test x$enable_static = xno; then
 		AC_MSG_WARN([Requested static cryptsetup build, enabling static library.])
@@ -281,6 +281,11 @@ if test x$enable_static_cryptsetup = xyes; then
 	fi
 fi
 AM_CONDITIONAL(STATIC_TOOLS, test x$enable_static_cryptsetup = xyes)
+
+AC_ARG_ENABLE(cryptsetup,
+	AS_HELP_STRING([--disable-cryptsetup],
+	[disable cryptsetup support]),[], [enable_cryptsetup=yes])
+AM_CONDITIONAL(CRYPTSETUP, test x$enable_cryptsetup = xyes)
 
 AC_ARG_ENABLE(veritysetup,
 	AS_HELP_STRING([--disable-veritysetup],

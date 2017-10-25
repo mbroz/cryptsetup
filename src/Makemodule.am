@@ -1,4 +1,6 @@
 # cryptsetup
+if CRYPTSETUP
+
 cryptsetup_SOURCES =		\
 	lib/utils_crypt.c	\
 	lib/utils_loop.c	\
@@ -25,6 +27,7 @@ cryptsetup_static_LDADD =	\
 	@CRYPTO_STATIC_LIBS@	\
 	@PWQUALITY_STATIC_LIBS@	\
 	@DEVMAPPER_STATIC_LIBS@
+endif
 endif
 
 # veritysetup
