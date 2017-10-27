@@ -88,6 +88,8 @@ valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./compat-test
 	@VALG=1 ./compat-test2
 	@VALG=1 ./luks2-validation-test
+	@VALG=1 ./verity-compat-test
+	@VALG=1 ./integrity-compat-test
 	@INFOSTRING="api-test-000" ./valg-api.sh ./api-test
 	@INFOSTRING="api-test-002" ./valg-api.sh ./api-test-2
 
