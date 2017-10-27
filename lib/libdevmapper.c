@@ -1831,10 +1831,12 @@ static int _dm_query_integrity(uint32_t get_flags,
 			else if (!strncmp(arg, "internal_hash:", 14) && !integrity) {
 				str = &arg[14];
 				arg = strsep(&str, ":");
-				integrity = strdup(arg);
-				if (!integrity) {
-					r = -ENOMEM;
-					goto err;
+				if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
+					integrity = strdup(arg);
+					if (!integrity) {
+						r = -ENOMEM;
+						goto err;
+					}
 				}
 
 				if (str) {
@@ -1861,18 +1863,22 @@ static int _dm_query_integrity(uint32_t get_flags,
 			} else if (!strncmp(arg, "journal_crypt:", 14) && !journal_crypt) {
 				str = &arg[14];
 				arg = strsep(&str, ":");
-				journal_crypt = strdup(arg);
-				if (!journal_crypt) {
-					r = -ENOMEM;
-					goto err;
+				if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
+					journal_crypt = strdup(arg);
+					if (!journal_crypt) {
+						r = -ENOMEM;
+						goto err;
+					}
 				}
 			} else if (!strncmp(arg, "journal_mac:", 12) && !journal_integrity) {
 				str = &arg[12];
 				arg = strsep(&str, ":");
-				journal_integrity = strdup(arg);
-				if (!journal_integrity) {
-					r = -ENOMEM;
-					goto err;
+				if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
+					journal_integrity = strdup(arg);
+					if (!journal_integrity) {
+						r = -ENOMEM;
+						goto err;
+					}
 				}
 			} else /* unknown option */
 				goto err;

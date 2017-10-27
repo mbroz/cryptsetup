@@ -66,6 +66,7 @@ int dm_flags(dm_target_type target, uint32_t *flags);
 #define DM_ACTIVE_VERITY_HASH_DEVICE	(1 << 7)
 #define DM_ACTIVE_VERITY_PARAMS		(1 << 8)
 
+#define DM_ACTIVE_INTEGRITY_PARAMS	(1 << 9)
 
 struct crypt_dm_active_device {
 	dm_target_type target;

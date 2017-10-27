@@ -1116,7 +1116,7 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		.target = DM_VERITY,
 		.u.verity.vp = &params,
 	};
-	int r;
+	int r, verity_type = 0;
 
 	r = dm_query_device(cd, name,
 				DM_ACTIVE_DEVICE |
@@ -1148,8 +1148,14 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		cd->u.verity.hdr.fec_roots = params.fec_roots;
 		cd->u.verity.fec_device = dmd.u.verity.fec_device;
 		cd->metadata_device = dmd.u.verity.hash_device;
+		verity_type = 1;
 	}
 out:
+	if (!verity_type && dmd.u.verity.vp) {
+		free(CONST_CAST(void*)dmd.u.verity.vp->hash_name);
+		free(CONST_CAST(void*)dmd.u.verity.vp->salt);
+		free(CONST_CAST(void*)dmd.u.verity.fec_device);
+	}
 	device_free(dmd.data_device);
 	return r;
 }
@@ -1159,11 +1165,12 @@ static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
 	struct crypt_dm_active_device dmd = {
 		.target = DM_INTEGRITY,
 	};
-	int r;
+	int r, integrity_type = 0;
 
 	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE |
 				      DM_ACTIVE_CRYPT_KEY |
-				      DM_ACTIVE_CRYPT_KEYSIZE, &dmd);
+				      DM_ACTIVE_CRYPT_KEYSIZE |
+				      DM_ACTIVE_INTEGRITY_PARAMS, &dmd);
 	if (r < 0)
 		goto out;
 	if (r > 0)
@@ -1187,8 +1194,14 @@ static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
 			cd->u.integrity.params.journal_integrity_key_size = dmd.u.integrity.journal_integrity_key->keylength;
 		if (dmd.u.integrity.journal_crypt_key)
 			cd->u.integrity.params.integrity_key_size = dmd.u.integrity.journal_crypt_key->keylength;
+		integrity_type = 1;
 	}
 out:
+	if (!integrity_type) {
+		free(CONST_CAST(void*)dmd.u.integrity.integrity);
+		free(CONST_CAST(void*)dmd.u.integrity.journal_integrity);
+		free(CONST_CAST(void*)dmd.u.integrity.journal_crypt);
+	}
 	crypt_free_volume_key(dmd.u.integrity.vk);
 	crypt_free_volume_key(dmd.u.integrity.journal_integrity_key);
 	crypt_free_volume_key(dmd.u.integrity.journal_crypt_key);
