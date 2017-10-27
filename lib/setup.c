@@ -1007,6 +1007,9 @@ static void crypt_free_type(struct crypt_device *cd)
 		free(cd->u.loopaes.cipher);
 	} else if (isVERITY(cd->type)) {
 		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
+		free(CONST_CAST(void*)cd->u.verity.hdr.data_device);
+		free(CONST_CAST(void*)cd->u.verity.hdr.hash_device);
+		free(CONST_CAST(void*)cd->u.verity.hdr.fec_device);
 		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
 		free(cd->u.verity.root_hash);
 		free(cd->u.verity.uuid);
@@ -1151,10 +1154,10 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		verity_type = 1;
 	}
 out:
-	if (!verity_type && dmd.u.verity.vp) {
-		free(CONST_CAST(void*)dmd.u.verity.vp->hash_name);
-		free(CONST_CAST(void*)dmd.u.verity.vp->salt);
-		free(CONST_CAST(void*)dmd.u.verity.fec_device);
+	if (!verity_type) {
+		free(CONST_CAST(void*)params.hash_name);
+		free(CONST_CAST(void*)params.salt);
+		free(CONST_CAST(void*)params.fec_device);
 	}
 	device_free(dmd.data_device);
 	return r;
