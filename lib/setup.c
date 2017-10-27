@@ -2282,13 +2282,16 @@ static char *crypt_get_device_key_description(const char *name)
 	char *tmp = NULL;
 	struct crypt_dm_active_device dmd;
 
-	if (dm_query_device(NULL, name, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmd) < 0 || dmd.target != DM_CRYPT)
+	if (dm_query_device(NULL, name, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmd) < 0)
 		return NULL;
 
-	if (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY)
-		tmp = strdup(crypt_volume_key_get_description(dmd.u.crypt.vk));
-
-	crypt_free_volume_key(dmd.u.crypt.vk);
+	if (dmd.target == DM_CRYPT) {
+		if (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY)
+			tmp = strdup(crypt_volume_key_get_description(dmd.u.crypt.vk));
+		crypt_free_volume_key(dmd.u.crypt.vk);
+	} else if (dmd.target == DM_INTEGRITY) {
+		crypt_free_volume_key(dmd.u.integrity.vk);
+	}
 
 	return tmp;
 }
