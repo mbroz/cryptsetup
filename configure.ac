@@ -293,8 +293,8 @@ AC_ARG_ENABLE(veritysetup,
 AM_CONDITIONAL(VERITYSETUP, test x$enable_veritysetup = xyes)
 
 AC_ARG_ENABLE([cryptsetup-reencrypt],
-	AS_HELP_STRING([--enable-cryptsetup-reencrypt],
-	[enable cryptsetup-reencrypt tool]))
+	AS_HELP_STRING([--disable-cryptsetup-reencrypt],
+	[disable cryptsetup-reencrypt tool]),[], [enable_cryptsetup_reencrypt=yes])
 AM_CONDITIONAL(REENCRYPT, test x$enable_cryptsetup_reencrypt = xyes)
 
 AC_ARG_ENABLE(integritysetup,
