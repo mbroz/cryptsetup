@@ -1019,14 +1019,15 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	if (r < 0) {
 		log_err(cd, _("Backup file doesn't contain valid LUKS header.\n"));
-		return r;
+		goto out;
 	}
 
 	/* do not allow header restore from backup with unmet requirements */
 	if (LUKS2_unmet_requirements(cd, &hdr_file, 0, 1)) {
 		log_err(cd, _("Unmet LUKS2 requirements detected in backup %s.\n"),
 			backup_file);
-		return -ETXTBSY;
+		r = -ETXTBSY;
+		goto out;
 	}
 
 	buffer_size = LUKS2_hdr_and_areas_size(hdr_file.jobj);
