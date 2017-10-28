@@ -352,7 +352,7 @@ void tools_time_progress(uint64_t device_size, uint64_t bytes,
 	unsigned long long mbytes, eta;
 	double tdiff, mib, frequency;
 	int final = (bytes == device_size);
-	char *eol;
+	const char *eol;
 
 	if (opt_batch_mode)
 		return;

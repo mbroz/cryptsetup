@@ -1279,12 +1279,11 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 
 int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs)
 {
+	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
 	int i, r = -EINVAL;
 
 	if (!hdr)
 		return -EINVAL;
-
-	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
 
 	jobj_mandatory = json_object_new_array();
 	if (!jobj_mandatory)
