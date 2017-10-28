@@ -259,8 +259,10 @@ static void _cleanup(void)
 	_system("rm -f " IMAGE1, 0);
 	_system("rm -rf " CONV_DIR, 0);
 
-	remove(test_loop_file);
-	remove(tmp_file_1);
+	if (test_loop_file)
+		remove(test_loop_file);
+	if (tmp_file_1)
+		remove(tmp_file_1);
 
 	remove(VALID_LUKS2_HEADER);
 	remove(REQS_LUKS2_HEADER);

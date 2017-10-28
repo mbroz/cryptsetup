@@ -199,8 +199,10 @@ static void _cleanup(void)
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_system("rm -f " IMAGE1, 0);
 
-	remove(test_loop_file);
-	remove(tmp_file_1);
+	if (test_loop_file)
+		remove(test_loop_file);
+	if (tmp_file_1)
+		remove(tmp_file_1);
 
 	remove(EVL_HEADER_1);
 	remove(EVL_HEADER_2);

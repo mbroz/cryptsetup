@@ -301,10 +301,13 @@ static int t_dm_satisfies_version(unsigned target_maj, unsigned target_min,
 static void t_dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 				 unsigned crypt_min, unsigned crypt_patch)
 {
-	unsigned dm_maj, dm_min, dm_patch;
+	unsigned dm_maj = 0, dm_min = 0, dm_patch = 0;
 
-	if (sscanf(dm_version, "%u.%u.%u", &dm_maj, &dm_min, &dm_patch) != 3)
-		dm_maj = dm_min = dm_patch = 0;
+	if (sscanf(dm_version, "%u.%u.%u", &dm_maj, &dm_min, &dm_patch) != 3) {
+		dm_maj = 0;
+		dm_min = 0;
+		dm_patch = 0;
+	}
 
 	if (t_dm_satisfies_version(1, 2, crypt_maj, crypt_min))
 		t_dm_crypt_flags |= T_DM_KEY_WIPE_SUPPORTED;
@@ -370,6 +373,9 @@ int t_dm_check_versions(void)
 		goto out;
 
 	if (!dm_task_run(dmt))
+		goto out;
+
+	if (!dm_task_get_driver_version(dmt, dm_version, sizeof(dm_version)))
 		goto out;
 
 	target = dm_task_get_versions(dmt);
