@@ -15,13 +15,13 @@ OBJECTS4=$(SOURCES4:.c=.o)
 
 all: $(TARGET) $(TARGET2) $(TARGET4)
 
-$(TARGET): $(OBJECTS) ../../lib/.libs/libcryptsetup.a
+$(TARGET): $(OBJECTS) ../../.libs/libcryptsetup.a
 	$(CC) -o $@ $^ $(LDLIBS)
 
-$(TARGET2): $(OBJECTS2) ../../lib/.libs/libcryptsetup.a
+$(TARGET2): $(OBJECTS2) ../../.libs/libcryptsetup.a
 	$(CC) -o $@ $^ $(LDLIBS)
 
-$(TARGET4): $(OBJECTS4) ../../lib/.libs/libcryptsetup.a
+$(TARGET4): $(OBJECTS4) ../../.libs/libcryptsetup.a
 	$(CC) -o $@ $^ $(LDLIBS)
 
 clean:
