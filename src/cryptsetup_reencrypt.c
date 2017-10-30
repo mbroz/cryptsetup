@@ -600,6 +600,9 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 			goto out;
 	}
 
+	if (isLUKS2(rc->type) && !opt_batch_mode)
+		log_std(_("Using default pbkdf parameters for new LUKS2 header.\n"));
+
 	r = create_new_header(rc,
 		opt_cipher ? cipher : crypt_get_cipher(cd),
 		opt_cipher ? cipher_mode : crypt_get_cipher_mode(cd),
