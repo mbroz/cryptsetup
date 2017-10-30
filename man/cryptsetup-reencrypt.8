@@ -14,7 +14,9 @@ unclocked by passphrase), \fBcipher\fR, \fBcipher mode\fR.
 Cryptsetup-reencrypt reencrypts data on LUKS device in-place. During
 reencryption process the LUKS device is marked unavailable.
 
-\fBNOTE:\fR LUKS2 format is not yet supported.
+\fBNOTE:\fR LUKS2 format support is limited. Currently the tool uses default
+values for new LUKS2 headers. Only those parameters shared with LUKS1 format
+may be changed (\-\-hash and \-\-iter\-time only).
 
 \fIWARNING\fR: The cryptsetup-reencrypt program is not resistant to hardware
 or kernel failures during reencryption (you can lose you data in this case).
@@ -194,6 +196,13 @@ Suppresses all warnings and reencryption progress output.
 .TP
 .B "\-\-progress-frequency <seconds>"
 Print separate line every <seconds> with reencryption progress.
+.TP
+.B "\-\-type <type>"
+Use only while encrypting not yet encrypted device (see \-\-new).
+
+Specify LUKS version when performing in-place encryption. If the parameter
+is ommited default value (LUKS1) is used. Type may be one of: \fBluks\fR (default),
+\fBluks1\fR or \fBluks2\fR.
 .TP
 .B "\-\-version"
 Show the program version.
