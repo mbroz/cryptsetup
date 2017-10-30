@@ -33,7 +33,6 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	luks2_keyslot_unassigned.img.xz \
 	img_fs_ext4.img.bz2 img_fs_vfat.img.bz2 img_fs_xfs.img.bz2 \
 	valid_header_file.bz2 \
-	luks2_header_file.xz \
 	luks2_valid_hdr.img.xz \
 	luks2_header_requirements.xz \
 	luks2_header_requirements_free.xz \
