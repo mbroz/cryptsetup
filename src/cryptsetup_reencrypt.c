@@ -1179,6 +1179,11 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 
 	rc->log_fd = -1;
 
+	if (crypt_keyslot_max(CRYPT_LUKS2) > MAX_SLOT) {
+		log_dbg("Internal error");
+		return -EINVAL;
+	}
+
 	if (!(rc->device = strndup(device, PATH_MAX)))
 		return -ENOMEM;
 
