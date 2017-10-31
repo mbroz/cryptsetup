@@ -82,6 +82,21 @@ function check_root
 	#sudo $MAKE install || return
 }
 
+function check_nonroot_compile_only
+{
+	local cfg_opts="$1"
+
+	[ -z "$cfg_opts" ] && return
+
+	configure_travis \
+		--enable-python \
+		--enable-cryptsetup-reencrypt \
+		"$cfg_opts" \
+		|| return
+
+	$MAKE
+}
+
 function travis_install_script
 {
 	# install some packages from Ubuntu's default sources
@@ -129,10 +144,15 @@ function travis_script
 		check_nonroot "--with-crypto_backend=gcrypt"
 		check_root "--with-crypto_backend=gcrypt"
 		;;
-
+	gcrypt_compile)
+		check_nonroot_compile_only "--with-crypto_backend=gcrypt"
+		;;
 	openssl)
 		check_nonroot "--with-crypto_backend=openssl"
 		check_root "--with-crypto_backend=openssl"
+		;;
+	openssl_compile)
+		check_nonroot_compile_only "--with-crypto_backend=openssl"
 		;;
 	*)
 		echo "error, check environment (travis.yml)" >&2
