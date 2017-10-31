@@ -1,4 +1,4 @@
-Cryptsetup 2.0.0 RC0 Release Notes
+Cryptsetup 2.0.0 RC1 Release Notes
 ==================================
 Release candidate with experimental features.
 
@@ -19,8 +19,40 @@ features and can contain some bugs.
 Please do not use it without properly configured backup or in
 production systems.
 
-Until final 2.0 version is released, the new API calls or LUKS2 format
-could still change if a major problem is found.
+Until final 2.0 version is released, the new LUKS2 format
+could still internally change if a major problem is found.
+
+The library API calls (versioned symbols) are now stable and
+will not change in an incompatible way.
+
+Changes since version 2.0.0-RC0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Enable to use system libargon2 instead of bundled version.
+  Renames --disable-argon2 to --disable-internal-argon2 option
+  and adds --enable-libargon2 flag to allow system libargon2.
+
+* Changes in build system (Automake)
+  - The build system now uses non-recursive automake (except for tests).
+  (Tools binaries are now located in buildroot directory.)
+  - New --disable-cryptsetup option to disable build of cryptsetup tool.
+  - Enable build of cryptsetup-reencrypt by default.
+
+* Adds limited support for offline reencryption of LUKS2 format.
+
+* Decrease size of testing images (and the whole release archive).
+
+* Fixes for several memory leaks found by Valgrind and Coverity tools.
+
+* Fixes for several typos in man pages and error messages.
+
+* LUKS header file in luksFormat is now automatically created
+  if it does not exist.
+
+* Do not allow resize if device size is not aligned to sector size.
+
+Cryptsetup 2.0.0 RC0 Release Notes
+==================================
 
 Important features
 ~~~~~~~~~~~~~~~~~~
