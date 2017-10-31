@@ -36,16 +36,20 @@ PKG_PROG_PKG_CONFIG
 
 dnl ==========================================================================
 dnl define PKG_CHECK_VAR for old pkg-config <= 0.28
+m4_ifndef([AS_VAR_COPY],
+[m4_define([AS_VAR_COPY],
+[AS_LITERAL_IF([$1[]$2], [$1=$$2], [eval $1=\$$2])])
+])
 m4_ifndef([PKG_CHECK_VAR], [
 AC_DEFUN([PKG_CHECK_VAR],
-[AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
-AC_ARG_VAR([$1], [value of $3 for $2, overriding pkg-config])dnl
+[AC_REQUIRE([PKG_PROG_PKG_CONFIG])
+AC_ARG_VAR([$1], [value of $3 for $2, overriding pkg-config])
 
 _PKG_CONFIG([$1], [variable="][$3]["], [$2])
 AS_VAR_COPY([$1], [pkg_cv_][$1])
 
-AS_VAR_IF([$1], [""], [$5], [$4])dnl
-])dnl PKG_CHECK_VAR
+AS_VAR_IF([$1], [""], [$5], [$4])
+])
 ])
 dnl ==========================================================================
 
