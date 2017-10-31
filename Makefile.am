@@ -3,6 +3,7 @@ SUBDIRS = po tests
 TESTS =
 CLEANFILES =
 DISTCLEAN_TARGETS =
+INSTALL_DATA_HOOKS =
 
 AM_CPPFLAGS = \
 	-include config.h \
@@ -16,9 +17,12 @@ AM_CPPFLAGS = \
 AM_CFLAGS = -Wall
 AM_LDFLAGS =
 
+tmpfilesddir = @DEFAULT_TMPFILESDIR@
+
 noinst_LTLIBRARIES =
 sbin_PROGRAMS =
 man8_MANS =
+tmpfilesd_DATA =
 
 include man/Makemodule.am
 
@@ -44,3 +48,5 @@ distclean-local:
 
 clean-local:
 	-rm -rf docs/doxygen_api_docs
+
+install-data-hook: $(INSTALL_DATA_HOOKS)

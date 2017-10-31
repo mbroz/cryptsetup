@@ -1,1 +1,10 @@
-DISTCLEAN_TARGETS += cryptsetup_tmpfiles.conf
+DISTCLEAN_TARGETS += scripts/cryptsetup_tmpfiles.conf
+
+if CRYPTSETUP_TMPFILE
+tmpfilesd_DATA += scripts/cryptsetup_tmpfiles.conf
+
+install-data-hooks-tmpfiles:
+	mv $(DESTDIR)$(tmpfilesddir)/cryptsetup_tmpfiles.conf $(DESTDIR)$(tmpfilesddir)/cryptsetup.conf
+
+INSTALL_DATA_HOOKS += install-data-hooks-tmpfiles
+endif
