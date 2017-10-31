@@ -3,7 +3,6 @@ SUBDIRS = po tests
 TESTS =
 CLEANFILES =
 DISTCLEAN_TARGETS =
-INSTALL_DATA_HOOKS =
 
 AM_CPPFLAGS = \
 	-include config.h \
@@ -40,7 +39,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 DISTCHECK_CONFIGURE_FLAGS = 	\
 	--enable-python		\
-	--enable-cryptsetup-reencrypt
+	--with-tmpfilesdir=$$dc_install_base/$(systemd_tmpfilesdir)
 
 distclean-local:
 	-find . -name \*~ -o -name \*.orig -o -name \*.rej | xargs rm -f
@@ -48,5 +47,3 @@ distclean-local:
 
 clean-local:
 	-rm -rf docs/doxygen_api_docs
-
-install-data-hook: $(INSTALL_DATA_HOOKS)

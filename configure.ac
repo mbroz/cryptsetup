@@ -425,7 +425,9 @@ if test x$enable_static_cryptsetup = xyes; then
 	PKG_CONFIG=$saved_PKG_CONFIG
 fi
 
+AC_MSG_CHECKING([for systemd tmpfiles config directory])
 PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
+AC_MSG_RESULT([$systemd_tmpfilesdir])
 
 AC_SUBST([DEVMAPPER_LIBS])
 AC_SUBST([DEVMAPPER_STATIC_LIBS])
@@ -527,7 +529,7 @@ CS_NUM_WITH([verity-hash-block], [hash block size for verity mode], [4096])
 CS_NUM_WITH([verity-salt-size],  [salt size for verity mode], [32])
 CS_NUM_WITH([verity-fec-roots],  [parity bytes for verity FEC], [2])
 
-CS_STR_WITH([tmpfilesdir], [override default path to directory with systemd temporary files], [$systemd_tmpfilesdir])
+CS_STR_WITH([tmpfilesdir], [override default path to directory with systemd temporary files], [])
 test -z "$with_tmpfilesdir" && with_tmpfilesdir=$systemd_tmpfilesdir
 test "x$with_tmpfilesdir" == "xno" || {
 	test "${with_tmpfilesdir:0:1}" = "/" || AC_MSG_ERROR([--with-tmpfilesdir argument must be an absolute path.])
@@ -553,7 +555,7 @@ dnl ==========================================================================
 AC_CONFIG_FILES([ Makefile
 lib/libcryptsetup.pc
 po/Makefile.in
-scripts/cryptsetup_tmpfiles.conf
+scripts/cryptsetup.conf
 tests/Makefile
 ])
 AC_OUTPUT
