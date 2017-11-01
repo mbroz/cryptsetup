@@ -39,7 +39,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 DISTCHECK_CONFIGURE_FLAGS = 	\
 	--enable-python		\
-	--with-tmpfilesdir=$$dc_install_base/$(systemd_tmpfilesdir)
+	--with-tmpfilesdir=$$dc_install_base/usr/lib/tmpfiles.d
 
 distclean-local:
 	-find . -name \*~ -o -name \*.orig -o -name \*.rej | xargs rm -f

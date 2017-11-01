@@ -38,8 +38,11 @@ Changes since version 2.0.0-RC0
   - New --disable-cryptsetup option to disable build of cryptsetup tool.
   - Enable build of cryptsetup-reencrypt by default.
 
-* Install tmpfile.d configuration for locking directory.
+* Install tmpfiles.d configuration for LUKS2 locking directory.
   You can overwrite this using --with-tmpfilesdir configure option.
+  If your distro does not support tmpfiles.d directory, you have
+  to create locking directory (/run/lock/cryptsetup) in cryptsetup
+  package (or init scripts).
 
 * Adds limited support for offline reencryption of LUKS2 format.
 
