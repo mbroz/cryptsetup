@@ -29,7 +29,9 @@ include python/Makemodule.am
 
 include scripts/Makemodule.am
 
+if CRYPTO_INTERNAL_ARGON2
 include lib/crypto_backend/argon2/Makemodule.am
+endif
 include lib/crypto_backend/Makemodule.am
 include lib/Makemodule.am
 
@@ -39,7 +41,8 @@ ACLOCAL_AMFLAGS = -I m4
 
 DISTCHECK_CONFIGURE_FLAGS = 	\
 	--enable-python		\
-	--with-tmpfilesdir=$$dc_install_base/usr/lib/tmpfiles.d
+	--with-tmpfilesdir=$$dc_install_base/usr/lib/tmpfiles.d \
+	--enable-internal-argon2
 
 distclean-local:
 	-find . -name \*~ -o -name \*.orig -o -name \*.rej | xargs rm -f
