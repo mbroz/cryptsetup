@@ -1788,6 +1788,7 @@ int LUKS2_activate(struct crypt_device *cd,
 					   &dmd.size);
 		if (r < 0) {
 			log_err(cd, "Cannot detect integrity device size.\n");
+			device_free(device);
 			dm_remove_device(cd, dm_int_name, 0);
 			return r;
 		}
