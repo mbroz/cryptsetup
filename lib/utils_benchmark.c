@@ -1,5 +1,5 @@
 /*
- * libcryptsetup - cryptsetup library, cipher bechmark
+ * libcryptsetup - cryptsetup library, cipher benchmark
  *
  * Copyright (C) 2012-2017, Red Hat, Inc. All rights reserved.
  * Copyright (C) 2012-2017, Milan Broz
@@ -281,8 +281,8 @@ static int benchmark_callback(uint32_t time_ms, void *usrptr)
 /*
  * Used in internal places to benchmark crypt_device context PBKDF.
  * Once requested parameters are benchmarked, iterations attribute is set,
- * and the benchamarked values can be reused.
- * Note that memory cost can be changed after benchark (if used).
+ * and the benchmarked values can be reused.
+ * Note that memory cost can be changed after benchmark (if used).
  * NOTE: You need to check that you are benchmarking for the same key size.
  */
 int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
@@ -306,8 +306,8 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 
 	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2)) {
 		/*
-		 * For PBKDF2 it is enouch to run benchmark for only 1 second
-		 * and interpolate final iterarions value from it.
+		 * For PBKDF2 it is enough to run benchmark for only 1 second
+		 * and interpolate final iterations value from it.
 		 */
 		ms_tmp = pbkdf->time_ms;
 		pbkdf->time_ms = 1000;

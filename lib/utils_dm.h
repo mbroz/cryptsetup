@@ -86,7 +86,7 @@ struct crypt_dm_active_device {
 
 		/* struct crypt_active_device */
 		uint64_t offset;	/* offset in sectors */
-		uint64_t iv_offset;	/* IV initilisation sector */
+		uint64_t iv_offset;	/* IV initialisation sector */
 		uint32_t tag_size;	/* additional on-disk tag size */
 		uint32_t sector_size;	/* encryption sector size */
 	} crypt;

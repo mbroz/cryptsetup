@@ -267,12 +267,12 @@ static int _setup(void)
 	_system(" [ ! -e " EVL_HEADER_1 " ] && bzip2 -dk " EVL_HEADER_1 ".bz2", 1);
 	/* keymaterial offset aims into payload area */
 	_system(" [ ! -e " EVL_HEADER_2 " ] && bzip2 -dk " EVL_HEADER_2 ".bz2", 1);
-	/* keymaterial offset is valid, number of stripes causes payload area to be overwriten */
+	/* keymaterial offset is valid, number of stripes causes payload area to be overwritten */
 	_system(" [ ! -e " EVL_HEADER_3 " ] && bzip2 -dk " EVL_HEADER_3 ".bz2", 1);
 	/* luks device header for data and header on same device. payloadOffset is greater than
 	 * device size (crypt_load() test) */
 	_system(" [ ! -e " EVL_HEADER_4 " ] && bzip2 -dk " EVL_HEADER_4 ".bz2", 1);
-	 /* two keyslots with same offset (overlaping keyslots) */
+	 /* two keyslots with same offset (overlapping keyslots) */
 	_system(" [ ! -e " EVL_HEADER_5 " ] && bzip2 -dk " EVL_HEADER_5 ".bz2", 1);
 	/* valid header: payloadOffset=4096, key_size=32,
 	 * volume_key = bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a */
@@ -796,8 +796,8 @@ static void AddDeviceLuks(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
 	// restrict format only to empty context
-	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formated");
-	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, NULL), "Context is already formated");
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formatted");
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, NULL), "Context is already formatted");
 	// change data device to wrong one
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_0S));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "Device too small");
@@ -816,7 +816,7 @@ static void AddDeviceLuks(void)
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 7, passphrase, strlen(passphrase) ,0), 7);
 	crypt_free(cd);
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, DMDIR H_DEVICE));
-	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formated");
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formatted");
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	crypt_free(cd);
 	// check active status without header
@@ -988,7 +988,7 @@ static void UseTempVolumes(void)
 	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, NULL));
 	FAIL_(crypt_activate_by_volume_key(cd, NULL, "xxx", 3, 0), "cannot verify key with plain");
 	FAIL_(crypt_volume_key_verify(cd, "xxx", 3), "cannot verify key with plain");
-	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, "xxx", 3, 0), "wrong key lenght");
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, "xxx", 3, 0), "wrong key length");
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, "volumekeyvolumek", 16, 0));
 	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_2));

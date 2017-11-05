@@ -6,7 +6,7 @@
 # *** Description ***
 #
 # generate primary header with json area concluded with illegal
-# byte beyond terminating '}' charcter.
+# byte beyond terminating '}' character.
 #
 # secondary header is corrupted on purpose as well
 #

@@ -192,7 +192,7 @@ static int download_remote_password(struct crypt_device *cd, char *password, siz
 		return -EINVAL;
 
 
-	/* extract third party metadata neccessary to extract passphrase remotely */
+	/* extract third party metadata necessary to extract passphrase remotely */
 	json_object_object_get_ex(jobj_keyslot, "ssh_server", &jobj_server);
 	json_object_object_get_ex(jobj_keyslot, "ssh_user",   &jobj_user);
 	json_object_object_get_ex(jobj_keyslot, "ssh_path",   &jobj_path);

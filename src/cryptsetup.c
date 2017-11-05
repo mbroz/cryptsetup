@@ -119,7 +119,7 @@ static const char *luksType(const char *type)
 
 static int _verify_passphrase(int def)
 {
-	/* Batch mode switch off verify - if not overrided by -y */
+	/* Batch mode switch off verify - if not overridden by -y */
 	if (opt_verify_passphrase)
 		def = 1;
 	else if (opt_batch_mode)

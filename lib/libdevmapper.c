@@ -1155,7 +1155,7 @@ static int check_retry(uint32_t *dmd_flags, uint32_t dmt_flags)
 	/* If kernel keyring is not supported load key directly in dm-crypt */
 	if ((*dmd_flags & CRYPT_ACTIVATE_KEYRING_KEY) &&
 	    !(dmt_flags & DM_KERNEL_KEYRING_SUPPORTED)) {
-		log_dbg("dm-crypt doesn't suport kernel keyring");
+		log_dbg("dm-crypt doesn't support kernel keyring");
 		*dmd_flags = *dmd_flags & ~CRYPT_ACTIVATE_KEYRING_KEY;
 		ret = 1;
 	}
@@ -1288,7 +1288,7 @@ int dm_status_device(struct crypt_device *cd, const char *name)
 	struct stat st;
 
 	/* libdevmapper is too clever and handles
-	 * path argument differenly with error.
+	 * path argument differently with error.
 	 * Fail early here if parameter is non-existent path.
 	 */
 	if (strchr(name, '/') && stat(name, &st) < 0)

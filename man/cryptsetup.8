@@ -432,7 +432,7 @@ The \fItoken\fR command is supported only for LUKS2.
 
 For adding new keyring token, option \-\-key\-description is mandatory.
 Also, new token is assigned to key slot specified with \-\-key\-slot option or to all
-active key slots in the case \-\-key\-slot option is ommited.
+active key slots in the case \-\-key\-slot option is omitted.
 
 To remove existing token, specify the token ID which should be removed with
 \-\-token\-id option.
@@ -907,7 +907,7 @@ Set the memory cost for PBKDF (for Argon2i/id the number represents kilobytes).
 Note that it is maximal value, PBKDF benchmark can decrease it.
 This option is not available for PBKDF2.
 .TP
-.B "\-\-pbkdf\-paralell <number>"
+.B "\-\-pbkdf\-parallel <number>"
 Set the parallel cost for PBKDF (number of threads, up to 4).
 Note that it is maximal value, it is decreased automatically if
 CPU online count is lower.
@@ -1347,7 +1347,7 @@ the status command output. Also see losetup(8).
 The LUKS2 on-disk metadata is updated in several steps and
 to achieve proper atomic update, there is a locking mechanism.
 For an image in file, code uses \fIflock(2)\fR system call.
-For a block device, lock is perfomed over a special file stored
+For a block device, lock is performed over a special file stored
 in a locking directory (by default \fI/run/lock/cryptsetup\fR).
 The locking directory should be created with the proper security
 context by the distribution during the boot-up phase.

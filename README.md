@@ -26,7 +26,7 @@ Last version of the LUKS format specification is
 
 Why LUKS?
 ---------
- * compatiblity via standardization,
+ * compatibility via standardization,
  * secure against low entropy attacks,
  * support for multiple keys,
  * effective passphrase revocation,

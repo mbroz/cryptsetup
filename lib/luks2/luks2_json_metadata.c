@@ -844,7 +844,7 @@ static void LUKS2_hdr_free_unused_objects(struct crypt_device *cd, struct luks2_
 
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr)
 {
-	/* FIXME: we risk to hide future intenal implementation bugs with this */
+	/* FIXME: we risk to hide future internal implementation bugs with this */
 	LUKS2_hdr_free_unused_objects(cd, hdr);
 
 	if (LUKS2_hdr_validate(hdr->jobj))
@@ -1317,7 +1317,7 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 
 	/* any remaining bit in requirements is unknown therefore illegal */
 	if (reqs) {
-		log_dbg("Illegal requiremnt flag(s) requested");
+		log_dbg("Illegal requirement flag(s) requested");
 		goto err;
 	}
 

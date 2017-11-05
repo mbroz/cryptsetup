@@ -120,7 +120,7 @@ Defines what to do if data integrity problem is detected (data corruption).
 
 Without these options kernel fails the IO operation with I/O error.
 With \-\-ignore-corruption option the corruption is only logged.
-With \-\-restart-on-corruption the kernel is restarted immediatelly.
+With \-\-restart-on-corruption the kernel is restarted immediately.
 (You have to provide way how to avoid restart loops.)
 
 \fBWARNING:\fR Use these options only for very specific cases.
@@ -182,7 +182,7 @@ Hash-offset must be greater than number of blocks in data-area.
 
 .B "veritysetup \-\-data-blocks=256 \-\-hash-offset=1052672 create test-device <device> <device> <root_hash>"
 
-Acivatees the verity device named test-device. Options \-\-data-blocks and \-\-hash-offset are the same
+Activates the verity device named test-device. Options \-\-data-blocks and \-\-hash-offset are the same
 as in the format command. The <root_hash> was calculated in format command.
 
 .B "veritysetup \-\-data-blocks=256 \-\-hash-offset=1052672 verify <data_device> <hash_device> <root_hash>"

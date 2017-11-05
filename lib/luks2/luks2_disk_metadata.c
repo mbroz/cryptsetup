@@ -182,7 +182,7 @@ static void hdr_to_disk(struct luks2_hdr *hdr,
 }
 
 /*
- * Sanity checks before checkum is validated
+ * Sanity checks before checksum is validated
  */
 static int hdr_disk_sanity_check_pre(struct luks2_hdr_disk *hdr,
 				     size_t *hdr_json_size, int secondary,
@@ -324,7 +324,7 @@ static int hdr_write_disk(struct device *device, struct luks2_hdr *hdr,
 	}
 
 	/*
-	 * Calculate checksum and write header with checkum.
+	 * Calculate checksum and write header with checksum.
 	 */
 	r = hdr_checksum_calculate(hdr_disk.checksum_alg, &hdr_disk,
 				   json_area, hdr_json_len);
@@ -504,7 +504,7 @@ static json_object *parse_and_validate_json(const char *json_area, int length)
 	if (!jobj)
 		return NULL;
 
-	/* successfull parse_json_len must not return offset <= 0 */
+	/* successful parse_json_len must not return offset <= 0 */
 	assert(offset > 0);
 
 	r = validate_json_area(json_area, offset, length);

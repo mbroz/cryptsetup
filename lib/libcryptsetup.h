@@ -239,7 +239,7 @@ struct crypt_pbkdf_type {
  *
  * @return 0 on success or negative errno value otherwise.
  *
- * @note For LUKS1, only PBKDF2 is suppported, other settings will be rejected.
+ * @note For LUKS1, only PBKDF2 is supported, other settings will be rejected.
  * @note For non-LUKS context types the call succeeds, but PBKDF is not used.
  */
 int crypt_set_pbkdf_type(struct crypt_device *cd,
@@ -511,7 +511,7 @@ struct crypt_params_luks2 {
  *
  * @note Note that crypt_format does not enable any keyslot (in case of work with LUKS device),
  * 	but it stores volume key internally and subsequent crypt_keyslot_add_* calls can be used.
- * @note For VERITY @link crypt-type @endlink, only uuid parameter is used, others paramaters
+ * @note For VERITY @link crypt-type @endlink, only uuid parameter is used, other parameters
  * 	are ignored and verity specific attributes are set through mandatory params option.
  */
 int crypt_format(struct crypt_device *cd,
@@ -1648,7 +1648,7 @@ typedef enum {
 crypt_token_info crypt_token_status(struct crypt_device *cd, int token, const char **type);
 
 /**
- * LUKS2 keyring token paramaters.
+ * LUKS2 keyring token parameters.
  *
  * @see crypt_token_builtin_set
  *

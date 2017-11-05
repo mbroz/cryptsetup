@@ -3959,7 +3959,7 @@ int crypt_convert(struct crypt_device *cd,
 	return crypt_load(cd, type, params);
 }
 
-/* Internall access function to header pointer */
+/* Internal access function to header pointer */
 void *crypt_get_hdr(struct crypt_device *cd, const char *type)
 {
 	/* If requested type differs, ignore it */

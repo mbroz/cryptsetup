@@ -172,7 +172,7 @@ static void release_lock_handle(struct crypt_lock_handle *h)
 	if (S_ISBLK(h->mode) && /* was it block device */
 	    !flock(h->flock_fd, LOCK_EX | LOCK_NB) && /* lock to drop the file */
 	    !resource_by_devno(res, sizeof(res), h->devno, 1) && /* acquire lock resource name */
-	    !fstat(h->flock_fd, &buf_a) && /* read inode id refered by fd */
+	    !fstat(h->flock_fd, &buf_a) && /* read inode id referred by fd */
 	    !stat(res, &buf_b) && /* does path file stil exist? */
 	    same_inode(buf_a, buf_b)) { /* is it same id as the one referenced by fd? */
 		/* coverity[toctou] */

@@ -61,7 +61,7 @@ const char *help =
 "            the threshold down to reduce misdetection. For values\n"
 "            larger than the default you need to adjust the threshold\n"
 "            up to retain sensitivity.\n"
-"  -v        Print found suspicuous sectors verbosely. \n"
+"  -v        Print found suspicious sectors verbosely. \n"
 "  -d        Print decimal addresses instead of hex ones.\n"
 "\n";
 
@@ -321,8 +321,8 @@ int main(int argc, char **argv)
 	device = argv[optind];
 
 	/* test whether we can open and read device */
-	/* This is neded as we are reading the actual data
-	* in the keyslots dirtectly from the LUKS container.
+	/* This is needed as we are reading the actual data
+	* in the keyslots directly from the LUKS container.
 	*/
 	f_luks = open(device, O_RDONLY);
 	if (f_luks == -1) {

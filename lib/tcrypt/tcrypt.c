@@ -350,7 +350,7 @@ static int TCRYPT_decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
 }
 
 /*
- * For chanined ciphers and CBC mode we need "outer" decryption.
+ * For chained ciphers and CBC mode we need "outer" decryption.
  * Backend doesn't provide this, so implement it here directly using ECB.
  */
 static int TCRYPT_decrypt_cbci(struct tcrypt_algs *ciphers,
@@ -775,7 +775,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		return r;
 	}
 
-	/* Frome here, key size for every cipher must be the same */
+	/* From here, key size for every cipher must be the same */
 	dmd.u.crypt.vk = crypt_alloc_volume_key(algs->cipher[0].key_size +
 						algs->cipher[0].key_extra_size, NULL);
 	if (!dmd.u.crypt.vk) {

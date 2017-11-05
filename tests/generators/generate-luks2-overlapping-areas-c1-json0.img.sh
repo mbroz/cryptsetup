@@ -5,7 +5,7 @@
 #
 # *** Description ***
 #
-# generate primary header with one area incuded within another one (in terms of 'offset' + 'length')
+# generate primary header with one area included within another one (in terms of 'offset' + 'length')
 #
 # secondary header is corrupted on purpose as well
 #

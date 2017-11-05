@@ -235,7 +235,7 @@ static PyObject *CryptSetup_activate(CryptSetupObject* self, PyObject *args, PyO
 
 static char
 CryptSetup_deactivate_HELP[] =
-"Dectivate LUKS device\n\n\
+"Deactivate LUKS device\n\n\
   deactivate()";
 
 static PyObject *CryptSetup_deactivate(CryptSetupObject* self, PyObject *args, PyObject *kwds)

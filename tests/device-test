@@ -66,7 +66,7 @@ DEV="$MNT_DIR/test.img"
 mount -t tmpfs none $MNT_DIR || skip "Mounting tmpfs not available."
 format luks1
 
-echo "[2] Kernel dmcrypt performace options"
+echo "[2] Kernel dmcrypt performance options"
 echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --perf-same_cpu_crypt >/dev/null 2>&1
 if [ $? -ne 0 ] ; then
 	echo "TEST SKIPPED: dmcrypt options not available"

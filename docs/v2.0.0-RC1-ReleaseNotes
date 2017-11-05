@@ -481,7 +481,7 @@ Other changes
   For LUKS2 it is always better to specify full settings (do not rely on default
   cost values).
   For example, we can set to use Argon2id with iteration cost 5, memory 128000
-  and paralell set 1:
+  and parallel set 1:
   $ cryptsetup luksFormat --type luks2 <device> \
     --pbkdf argon2id --pbkdf-force-iterations 5 --pbkdf-memory 128000 --pbkdf-parallel 1
 

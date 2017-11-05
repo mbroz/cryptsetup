@@ -2,9 +2,9 @@ Example of simple dracut module for reencryption of system
 LUKS drive on-the-fly.
 
 Install in /usr/[share|lib]/dracut/modules.d/90reencrypt, then
-build special intramfs "with dracut -a reencrypt -o crypt".
+build special initramfs "with dracut -a reencrypt -o crypt".
 Reencrypt module doesn't work (has a conflict) with crypt module as
-of now. After successfull reencryption reboot using original initramfs.
+of now. After successful reencryption reboot using original initramfs.
 
 Dracut then recognize argument rd.luks.reencrypt=name:size,
 e.g. rd.luks.reencrypt=sda2:52G means only 52G of device

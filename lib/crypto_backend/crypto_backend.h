@@ -53,7 +53,7 @@ int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length);
 int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length);
 int crypt_hmac_destroy(struct crypt_hmac *ctx);
 
-/* RNG (if fips paramater set, must provide FIPS compliance) */
+/* RNG (if fips parameter set, must provide FIPS compliance) */
 enum { CRYPT_RND_NORMAL = 0, CRYPT_RND_KEY = 1, CRYPT_RND_SALT = 2 };
 int crypt_backend_rng(char *buffer, size_t length, int quality, int fips);
 

@@ -65,7 +65,7 @@ struct reenc_ctx {
 	char *device;
 	char *device_uuid;
 	const char *type;
-	uint64_t device_size; /* overrided by parameter */
+	uint64_t device_size; /* overridden by parameter */
 	uint64_t device_size_new_real;
 	uint64_t device_size_org_real;
 	uint64_t device_offset;

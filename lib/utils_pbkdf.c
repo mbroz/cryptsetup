@@ -218,5 +218,5 @@ void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_m
 	pbkdf->flags &= ~(CRYPT_PBKDF_NO_BENCHMARK);
 	pbkdf->iterations = 0;
 
-	log_dbg("Iteration time set to %" PRIu64 " miliseconds.", iteration_time_ms);
+	log_dbg("Iteration time set to %" PRIu64 " milliseconds.", iteration_time_ms);
 }

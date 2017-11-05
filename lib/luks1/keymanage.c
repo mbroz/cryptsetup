@@ -457,7 +457,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	}
 
 	/*
-	 * check repair result before writting because repair can't fix out of order
+	 * check repair result before writing because repair can't fix out of order
 	 * keyslot offsets and would corrupt header again
 	 */
 	if (LUKS_check_keyslots(ctx, phdr))
@@ -539,7 +539,7 @@ static void _to_lower(char *str, unsigned max_len)
 
 static void LUKS_fix_header_compatible(struct luks_phdr *header)
 {
-	/* Old cryptsetup expects "sha1", gcrypt allows case insensistive names,
+	/* Old cryptsetup expects "sha1", gcrypt allows case insensitive names,
 	 * so always convert hash to lower case in header */
 	_to_lower(header->hashSpec, LUKS_HASHSPEC_L);
 
@@ -865,7 +865,7 @@ int LUKS_set_key(unsigned int keyIndex,
 		return -EINVAL;
 	}
 
-	/* LUKS keyslot has always at least 4000 stripes accoding to specification */
+	/* LUKS keyslot has always at least 4000 stripes according to specification */
 	if(hdr->keyblock[keyIndex].stripes < 4000) {
 	        log_err(ctx, _("Key slot %d material includes too few stripes. Header manipulation?\n"),
 			keyIndex);
