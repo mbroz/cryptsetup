@@ -6,18 +6,18 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 1.7.3\n"
+"Project-Id-Version: cryptsetup 1.7.4\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2016-10-20 14:43+0200\n"
-"PO-Revision-Date: 2017-02-09 23:13+0100\n"
-"Last-Translator: Josef Andersson <josef.andersson@fripost.org>\n"
+"POT-Creation-Date: 2017-03-02 09:40+0100\n"
+"PO-Revision-Date: 2017-08-07 07:14+0200\n"
+"Last-Translator: Josef Andersson <l10nl18nsweja@gmail.com>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "Language: sv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Bugs: Report translation errors to the Language-Team address.\n"
-"X-Generator: Poedit 1.8.9\n"
+"X-Generator: Poedit 2.0.1\n"
 
 #: lib/libdevmapper.c:262
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
@@ -40,7 +40,7 @@ msgstr "Begärda dm-crypt-prestandaalternativ stöds inte.\n"
 msgid "Requested dm-verity data corruption handling options are not supported.\n"
 msgstr "Begärda dm-verity-hanteringsalternativ för skadad data stöds inte.\n"
 
-#: lib/random.c:76
+#: lib/random.c:80
 msgid ""
 "System is out of entropy while generating volume key.\n"
 "Please move mouse or type some text in another window to gather some random events.\n"
@@ -48,24 +48,24 @@ msgstr ""
 "Systemet fick slut på entropi under generering av volymnyckeln.\n"
 "Flytta musen eller skriv in text i ett annat fönster för att samla några slumpmässiga händelser.\n"
 
-#: lib/random.c:80
+#: lib/random.c:84
 #, c-format
 msgid "Generating key (%d%% done).\n"
 msgstr "Genererar nyckel (%d%% done).\n"
 
-#: lib/random.c:166
+#: lib/random.c:170
 msgid "Running in FIPS mode.\n"
 msgstr "Kör i FIPS-läge.\n"
 
-#: lib/random.c:172
+#: lib/random.c:176
 msgid "Fatal error during RNG initialisation.\n"
 msgstr "Ödesdigert fel under RNG-initiering.\n"
 
-#: lib/random.c:209
+#: lib/random.c:213
 msgid "Unknown RNG quality requested.\n"
 msgstr "Okänd RNG-kvalitet begärd.\n"
 
-#: lib/random.c:214
+#: lib/random.c:218
 #, c-format
 msgid "Error %d reading from RNG: %s\n"
 msgstr "Fel %d vid läsning från RNG: %s\n"
@@ -78,7 +78,7 @@ msgstr "Kan inte initiera RNG-krypteringsbakände.\n"
 msgid "Cannot initialize crypto backend.\n"
 msgstr "Kan inte initiera krypteringsbakände.\n"
 
-#: lib/setup.c:237 lib/setup.c:1193 lib/verity/verity.c:123
+#: lib/setup.c:237 lib/setup.c:1199 lib/verity/verity.c:123
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
 msgstr "Hashalgoritmen %s stöds inte.\n"
@@ -92,7 +92,7 @@ msgstr "Fel vid nyckelbehandling (använder hash %s).\n"
 msgid "Cannot determine device type. Incompatible activation of device?\n"
 msgstr "Kan inte avgöra enhetstyp. Inkompatibel aktivering av enhet?\n"
 
-#: lib/setup.c:289 lib/setup.c:1546
+#: lib/setup.c:289 lib/setup.c:1552
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "Denna åtgärd stöds endast för LUKS-enheter.\n"
 
@@ -120,11 +120,11 @@ msgstr "Ange lösenfras för %s: "
 msgid "Header detected but device %s is too small.\n"
 msgstr "Huvud identifierat men enheten %s är för liten.\n"
 
-#: lib/setup.c:670 lib/setup.c:1429
+#: lib/setup.c:670 lib/setup.c:1435
 msgid "This operation is not supported for this device type.\n"
 msgstr "Denna åtgärd stöds inte för denna enhetstyp.\n"
 
-#: lib/setup.c:909 lib/setup.c:1382 lib/setup.c:2273
+#: lib/setup.c:909 lib/setup.c:1388 lib/setup.c:2279
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "Enheten %s är inte aktiv.\n"
@@ -186,145 +186,149 @@ msgstr "VERITY-blockstorlek som inte stöds.\n"
 msgid "Unsupported VERITY hash offset.\n"
 msgstr "VERITY-hashoffset som inte stöds.\n"
 
-#: lib/setup.c:1286
+#: lib/setup.c:1193
+msgid "Data area overlaps with hash area.\n"
+msgstr "Dataområde spiller över på hashområdet.\n"
+
+#: lib/setup.c:1292
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "Okänd typ av krypteringsenhet %s begärd.\n"
 
-#: lib/setup.c:1396
+#: lib/setup.c:1402
 msgid "Cannot resize loop device.\n"
 msgstr "Kan inte ändra storlek på loop-enhet.\n"
 
-#: lib/setup.c:1444
+#: lib/setup.c:1450
 msgid "Do you really want to change UUID of device?"
 msgstr "Vill du verkligen ändra UUID för en enhet?"
 
-#: lib/setup.c:1554
+#: lib/setup.c:1560
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "Volymen %s är inte aktiv.\n"
 
-#: lib/setup.c:1565
+#: lib/setup.c:1571
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "Volymen %s är redan i vänteläge.\n"
 
-#: lib/setup.c:1572
+#: lib/setup.c:1578
 #, c-format
 msgid "Suspend is not supported for device %s.\n"
 msgstr "Vänteläge stöds inte för enhet %s.\n"
 
-#: lib/setup.c:1574
+#: lib/setup.c:1580
 #, c-format
 msgid "Error during suspending device %s.\n"
 msgstr "Fel då enheten %s försattes i vänteläge.\n"
 
-#: lib/setup.c:1600 lib/setup.c:1647
+#: lib/setup.c:1606 lib/setup.c:1653
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "Volymen %s är inte i vänteläge.\n"
 
-#: lib/setup.c:1614
+#: lib/setup.c:1620
 #, c-format
 msgid "Resume is not supported for device %s.\n"
 msgstr "Att fortsätta stöds inte för enhet %s.\n"
 
-#: lib/setup.c:1616 lib/setup.c:1668
+#: lib/setup.c:1622 lib/setup.c:1674
 #, c-format
 msgid "Error during resuming device %s.\n"
 msgstr "Fel vid fortsättning av enheten %s.\n"
 
-#: lib/setup.c:1654 lib/setup.c:2089 lib/setup.c:2103 src/cryptsetup.c:184
+#: lib/setup.c:1660 lib/setup.c:2095 lib/setup.c:2109 src/cryptsetup.c:184
 #: src/cryptsetup.c:248 src/cryptsetup.c:736 src/cryptsetup.c:1171
 msgid "Enter passphrase: "
 msgstr "Ange lösenfras: "
 
-#: lib/setup.c:1716 lib/setup.c:1852
+#: lib/setup.c:1722 lib/setup.c:1858
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "Kan inte lägga till nyckelplats. Alla platser är inaktiverade och ingen volymnyckel har angivits.\n"
 
-#: lib/setup.c:1725 lib/setup.c:1858 lib/setup.c:1862
+#: lib/setup.c:1731 lib/setup.c:1864 lib/setup.c:1868
 msgid "Enter any passphrase: "
 msgstr "Ange valfri lösenfras: "
 
-#: lib/setup.c:1742 lib/setup.c:1875 lib/setup.c:1879 lib/setup.c:1941
+#: lib/setup.c:1748 lib/setup.c:1881 lib/setup.c:1885 lib/setup.c:1947
 #: src/cryptsetup.c:1001 src/cryptsetup.c:1032
 msgid "Enter new passphrase for key slot: "
 msgstr "Ange ny lösenfras för nyckelplats: "
 
-#: lib/setup.c:1807
+#: lib/setup.c:1813
 #, c-format
 msgid "Key slot %d changed.\n"
 msgstr "Nyckelplats %d är ändrad.\n"
 
-#: lib/setup.c:1810
+#: lib/setup.c:1816
 #, c-format
 msgid "Replaced with key slot %d.\n"
 msgstr "Ersätt med nyckelplats %d.\n"
 
-#: lib/setup.c:1815
+#: lib/setup.c:1821
 msgid "Failed to swap new key slot.\n"
 msgstr "Misslyckades med att byta ny nyckelplats.\n"
 
-#: lib/setup.c:1932 lib/setup.c:2193 lib/setup.c:2206 lib/setup.c:2348
+#: lib/setup.c:1938 lib/setup.c:2199 lib/setup.c:2212 lib/setup.c:2354
 msgid "Volume key does not match the volume.\n"
 msgstr "Volymnyckeln stämmer inte överens med volymen.\n"
 
-#: lib/setup.c:1970
+#: lib/setup.c:1976
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "Nyckelplats %d är ogiltig.\n"
 
-#: lib/setup.c:1975
+#: lib/setup.c:1981
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "Nyckelplats %d används inte.\n"
 
-#: lib/setup.c:2005 lib/setup.c:2077 lib/setup.c:2169
+#: lib/setup.c:2011 lib/setup.c:2083 lib/setup.c:2175
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "Enheten %s finns redan.\n"
 
-#: lib/setup.c:2180
+#: lib/setup.c:2186
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "Felaktig volymnyckel för vanlig enhet.\n"
 
-#: lib/setup.c:2213
+#: lib/setup.c:2219
 msgid "Incorrect root hash specified for verity device.\n"
 msgstr "Felaktig rothash angiven för verity-enhet.\n"
 
-#: lib/setup.c:2236
+#: lib/setup.c:2242
 msgid "Device type is not properly initialised.\n"
 msgstr "Enhetstypen är inte korrekt initierad.\n"
 
-#: lib/setup.c:2268
+#: lib/setup.c:2274
 #, c-format
 msgid "Device %s is still in use.\n"
 msgstr "Enheten %s används fortfarande.\n"
 
-#: lib/setup.c:2277
+#: lib/setup.c:2283
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "Ogiltig enhet %s.\n"
 
-#: lib/setup.c:2298
+#: lib/setup.c:2304
 msgid "Function not available in FIPS mode.\n"
 msgstr "Funktion inte tillgänglig i FIPS-läge.\n"
 
-#: lib/setup.c:2304
+#: lib/setup.c:2310
 msgid "Volume key buffer too small.\n"
 msgstr "Buffert för volymnyckel är för liten.\n"
 
-#: lib/setup.c:2312
+#: lib/setup.c:2318
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "Kan inte hämta volymnyckel för vanlig enhet.\n"
 
-#: lib/setup.c:2319
+#: lib/setup.c:2325
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "Denna åtgärd stöds inte för krypteringsenheter av typen %s.\n"
 
-#: lib/setup.c:2515
+#: lib/setup.c:2521
 msgid "Dump operation is not supported for this device type.\n"
 msgstr "Utskriftsåtgärden stöds inte för denna enhetstyp.\n"
 
@@ -336,48 +340,48 @@ msgstr "Kan inte få processprioritet.\n"
 msgid "Cannot unlock memory.\n"
 msgstr "Kan inte låsa upp minne.\n"
 
-#: lib/utils_crypt.c:241 lib/utils_crypt.c:254 lib/utils_crypt.c:401
-#: lib/utils_crypt.c:416
+#: lib/utils_crypt.c:242 lib/utils_crypt.c:255 lib/utils_crypt.c:402
+#: lib/utils_crypt.c:417
 msgid "Out of memory while reading passphrase.\n"
 msgstr "Slut på minne vid läsning av lösenfras.\n"
 
-#: lib/utils_crypt.c:246 lib/utils_crypt.c:261
+#: lib/utils_crypt.c:247 lib/utils_crypt.c:262
 msgid "Error reading passphrase from terminal.\n"
 msgstr "Fel vid läsning av lösenfras från terminal.\n"
 
-#: lib/utils_crypt.c:259
+#: lib/utils_crypt.c:260
 msgid "Verify passphrase: "
 msgstr "Verifiera lösenfras: "
 
-#: lib/utils_crypt.c:266
+#: lib/utils_crypt.c:267
 msgid "Passphrases do not match.\n"
 msgstr "Lösenfraserna stämmer inte överens.\n"
 
-#: lib/utils_crypt.c:350
+#: lib/utils_crypt.c:351
 msgid "Cannot use offset with terminal input.\n"
 msgstr "Kan inte använda offset med terminalinmatning.\n"
 
-#: lib/utils_crypt.c:369 lib/tcrypt/tcrypt.c:468
+#: lib/utils_crypt.c:370 lib/tcrypt/tcrypt.c:468
 msgid "Failed to open key file.\n"
 msgstr "Misslyckades med att öppna nyckelfilen.\n"
 
-#: lib/utils_crypt.c:378
+#: lib/utils_crypt.c:379
 msgid "Failed to stat key file.\n"
 msgstr "Misslyckades med att ta status på nyckelfilen.\n"
 
-#: lib/utils_crypt.c:386 lib/utils_crypt.c:407
+#: lib/utils_crypt.c:387 lib/utils_crypt.c:408
 msgid "Cannot seek to requested keyfile offset.\n"
 msgstr "Kan inte söka efter begärd nyckelfilsoffset.\n"
 
-#: lib/utils_crypt.c:424
+#: lib/utils_crypt.c:425
 msgid "Error reading passphrase.\n"
 msgstr "Fel vid läsning av lösenfras.\n"
 
-#: lib/utils_crypt.c:447
+#: lib/utils_crypt.c:448
 msgid "Maximum keyfile size exceeded.\n"
 msgstr "Högsta nyckelfilsstorlek överskriden.\n"
 
-#: lib/utils_crypt.c:452
+#: lib/utils_crypt.c:453
 msgid "Cannot read requested amount of data.\n"
 msgstr "Kan inte läsa begärd mängd data.\n"
 
@@ -386,39 +390,35 @@ msgstr "Kan inte läsa begärd mängd data.\n"
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "Enheten %s finns inte eller åtkomst nekas.\n"
 
-#: lib/utils_device.c:432
+#: lib/utils_device.c:429
 msgid "Cannot use a loopback device, running as non-root user.\n"
 msgstr "Kan inte använda en loopback-enhet, kör som icke-root-användare.\n"
 
-#: lib/utils_device.c:435
-msgid "Cannot find a free loopback device.\n"
-msgstr "Kan inte hitta en ledig loopback-enhet.\n"
-
-#: lib/utils_device.c:442
+#: lib/utils_device.c:439
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
 msgstr "Misslyckades med fästa loopback-enhet (kräver loop-enhet med flaggan autoclear).\n"
 
-#: lib/utils_device.c:486
+#: lib/utils_device.c:483
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
 msgstr "Kan inte använda enheten %s som redan används (redan mappad eller monterad).\n"
 
-#: lib/utils_device.c:490
+#: lib/utils_device.c:487
 #, c-format
 msgid "Cannot get info about device %s.\n"
 msgstr "Kan inte hämta information om enheten %s.\n"
 
-#: lib/utils_device.c:496
+#: lib/utils_device.c:493
 #, c-format
 msgid "Requested offset is beyond real size of device %s.\n"
 msgstr "Begärd offset är bortom faktiska enhetsstorleken för %s.\n"
 
-#: lib/utils_device.c:504
+#: lib/utils_device.c:501
 #, c-format
 msgid "Device %s has zero size.\n"
 msgstr "Enheten %s har noll storlek.\n"
 
-#: lib/utils_device.c:515
+#: lib/utils_device.c:512
 #, c-format
 msgid "Device %s is too small.\n"
 msgstr "Enheten %s är för liten.\n"
@@ -1819,6 +1819,9 @@ msgstr ""
 #, c-format
 msgid "Password quality check failed: Bad passphrase (%s)\n"
 msgstr "Misslyckades med kvalitetskontroll av lösenord: Dålig lösenfras (%s)\n"
+
+#~ msgid "Cannot find a free loopback device.\n"
+#~ msgstr "Kan inte hitta en ledig loopback-enhet.\n"
 
 #~ msgid "Cannot open device %s\n"
 #~ msgstr "Kan inte öppna enheten %s\n"
