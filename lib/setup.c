@@ -3264,7 +3264,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 					r = -EBUSY;
 					break;
 				}
-				if (crypt_get_integrity_tag_size(cd))
+				if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd))
 					namei = device_dm_name(dmd.data_device);
 			}
 
