@@ -1844,6 +1844,8 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 				   struct crypt_params_integrity *params)
 {
 	int r;
+	char *integrity = NULL, *journal_integrity = NULL, *journal_crypt = NULL;
+	struct volume_key *journal_crypt_key = NULL, *journal_mac_key = NULL;
 
 	if (!params)
 		return -EINVAL;
@@ -1870,24 +1872,36 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 		return -ENOMEM;
 
 	if (params->journal_crypt_key) {
-		cd->u.integrity.journal_crypt_key =
-			crypt_alloc_volume_key(params->journal_crypt_key_size,
-					       params->journal_crypt_key);
-		if (!cd->u.integrity.journal_crypt_key) {
-			crypt_reset_null_type(cd);
+		journal_crypt_key = crypt_alloc_volume_key(params->journal_crypt_key_size,
+							   params->journal_crypt_key);
+		if (!journal_crypt_key)
 			return -ENOMEM;
-		}
 	}
+
 	if (params->journal_integrity_key) {
-		cd->u.integrity.journal_mac_key =
-			crypt_alloc_volume_key(params->journal_integrity_key_size,
-					       params->journal_integrity_key);
-		if (!cd->u.integrity.journal_mac_key) {
-			crypt_reset_null_type(cd);
-			return -ENOMEM;
+		journal_mac_key = crypt_alloc_volume_key(params->journal_integrity_key_size,
+							 params->journal_integrity_key);
+		if (!journal_mac_key) {
+			r = -ENOMEM;
+			goto err;
 		}
 	}
 
+	if (params->integrity && !(integrity = strdup(params->integrity))) {
+		r = -ENOMEM;
+		goto err;
+	}
+	if (params->journal_integrity && !(journal_integrity = strdup(params->journal_integrity))) {
+		r = -ENOMEM;
+		goto err;
+	}
+	if (params->journal_crypt && !(journal_crypt = strdup(params->journal_crypt))) {
+		r = -ENOMEM;
+		goto err;
+	}
+
+	cd->u.integrity.journal_crypt_key = journal_crypt_key;
+	cd->u.integrity.journal_mac_key = journal_mac_key;
 	cd->u.integrity.params.journal_size = params->journal_size;
 	cd->u.integrity.params.journal_watermark = params->journal_watermark;
 	cd->u.integrity.params.journal_commit_time = params->journal_commit_time;
@@ -1895,17 +1909,22 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 	cd->u.integrity.params.buffer_sectors = params->buffer_sectors;
 	cd->u.integrity.params.sector_size = params->sector_size;
 	cd->u.integrity.params.tag_size = params->tag_size;
-	if (params->integrity)
-		cd->u.integrity.params.integrity = strdup(params->integrity);
-	if (params->journal_integrity)
-		cd->u.integrity.params.journal_integrity = strdup(params->journal_integrity);
-	if (params->journal_crypt)
-		cd->u.integrity.params.journal_crypt = strdup(params->journal_crypt);
+	cd->u.integrity.params.integrity = integrity;
+	cd->u.integrity.params.journal_integrity = journal_integrity;
+	cd->u.integrity.params.journal_crypt = journal_crypt;
 
 	r = INTEGRITY_format(cd, params, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key);
 	if (r)
 		log_err(cd, _("Cannot format integrity for device %s.\n"),
 			mdata_device_path(cd));
+err:
+	if (r) {
+		crypt_free_volume_key(journal_crypt_key);
+		crypt_free_volume_key(journal_mac_key);
+		free(integrity);
+		free(journal_integrity);
+		free(journal_crypt);
+	}
 
 	return r;
 }
