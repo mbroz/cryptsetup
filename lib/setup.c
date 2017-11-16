@@ -1686,6 +1686,8 @@ static int _crypt_format_verity(struct crypt_device *cd,
 {
 	int r = 0, hash_size;
 	uint64_t data_device_size, hash_blocks_size;
+	struct device *fec_device = NULL;
+	char *fec_device_path = NULL, *hash_name = NULL, *root_hash = NULL, *salt = NULL;
 
 	if (!crypt_metadata_device(cd)) {
 		log_err(cd, _("Can't format VERITY without device.\n"));
@@ -1746,33 +1748,46 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	cd->u.verity.root_hash_size = hash_size;
 
 	if (params->fec_device) {
-		r = device_alloc(&cd->u.verity.fec_device, params->fec_device);
-		if (r < 0)
-			return r;
-
-		hash_blocks_size = VERITY_hash_blocks(cd, params) * params->hash_block_size;
-		if (device_is_identical(crypt_metadata_device(cd), cd->u.verity.fec_device) &&
-		    (params->hash_area_offset + hash_blocks_size) > params->fec_area_offset) {
-			log_err(cd, _("Hash area overlaps with FEC area.\n"));
-			return -EINVAL;
+		fec_device_path = strdup(params->fec_device);
+		if (!fec_device_path)
+			return -ENOMEM;
+		r = device_alloc(&fec_device, params->fec_device);
+		if (r < 0) {
+			r = -ENOMEM;
+			goto err;
 		}
 
-		if (device_is_identical(crypt_data_device(cd), cd->u.verity.fec_device) &&
+		hash_blocks_size = VERITY_hash_blocks(cd, params) * params->hash_block_size;
+		if (device_is_identical(crypt_metadata_device(cd), fec_device) &&
+		    (params->hash_area_offset + hash_blocks_size) > params->fec_area_offset) {
+			log_err(cd, _("Hash area overlaps with FEC area.\n"));
+			r = -EINVAL;
+			goto err;
+		}
+
+		if (device_is_identical(crypt_data_device(cd), fec_device) &&
 		    (cd->u.verity.hdr.data_size * params->data_block_size) > params->fec_area_offset) {
 			log_err(cd, _("Data area overlaps with FEC area.\n"));
-			return -EINVAL;
+			r = -EINVAL;
+			goto err;
 		}
 	}
 
-	cd->u.verity.root_hash = malloc(cd->u.verity.root_hash_size);
-	if (!cd->u.verity.root_hash)
-		return -ENOMEM;
+	root_hash = malloc(cd->u.verity.root_hash_size);
+	hash_name = strdup(params->hash_name);
+	salt = malloc(params->salt_size);
+
+	if (!root_hash || !hash_name || !salt) {
+		r = -ENOMEM;
+		goto err;
+	}
 
 	cd->u.verity.hdr.flags = params->flags;
-	if (!(cd->u.verity.hdr.hash_name = strdup(params->hash_name)))
-		return -ENOMEM;
+	cd->u.verity.root_hash = root_hash;
+	cd->u.verity.hdr.hash_name = hash_name;
 	cd->u.verity.hdr.data_device = NULL;
-	cd->u.verity.hdr.fec_device = params->fec_device;
+	cd->u.verity.fec_device = fec_device;
+	cd->u.verity.hdr.fec_device = fec_device_path;
 	cd->u.verity.hdr.fec_roots = params->fec_roots;
 	cd->u.verity.hdr.data_block_size = params->data_block_size;
 	cd->u.verity.hdr.hash_block_size = params->hash_block_size;
@@ -1781,17 +1796,14 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	cd->u.verity.hdr.hash_type = params->hash_type;
 	cd->u.verity.hdr.flags = params->flags;
 	cd->u.verity.hdr.salt_size = params->salt_size;
-	if (!(cd->u.verity.hdr.salt = malloc(params->salt_size)))
-		return -ENOMEM;
+	cd->u.verity.hdr.salt = salt;
 
 	if (params->salt)
-		memcpy(CONST_CAST(char*)cd->u.verity.hdr.salt, params->salt,
-		       params->salt_size);
+		memcpy(salt, params->salt, params->salt_size);
 	else
-		r = crypt_random_get(cd, CONST_CAST(char*)cd->u.verity.hdr.salt,
-				     params->salt_size, CRYPT_RND_SALT);
+		r = crypt_random_get(cd, salt, params->salt_size, CRYPT_RND_SALT);
 	if (r)
-		return r;
+		goto err;
 
 	if (params->flags & CRYPT_VERITY_CREATE_HASH) {
 		r = VERITY_create(cd, &cd->u.verity.hdr,
@@ -1799,21 +1811,29 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		if (!r && params->fec_device)
 			r = VERITY_FEC_create(cd, &cd->u.verity.hdr, cd->u.verity.fec_device);
 		if (r)
-			return r;
+			goto err;
 	}
 
 	if (!(params->flags & CRYPT_VERITY_NO_HEADER)) {
-		if (uuid)
-			cd->u.verity.uuid = strdup(uuid);
-		else {
+		if (uuid) {
+			if (!(cd->u.verity.uuid = strdup(uuid)))
+				r = -ENOMEM;
+		} else
 			r = VERITY_UUID_generate(cd, &cd->u.verity.uuid);
-			if (r)
-				return r;
-		}
 
-		r = VERITY_write_sb(cd, cd->u.verity.hdr.hash_area_offset,
-				    cd->u.verity.uuid,
-				    &cd->u.verity.hdr);
+		if (!r)
+			r = VERITY_write_sb(cd, cd->u.verity.hdr.hash_area_offset,
+					    cd->u.verity.uuid,
+					    &cd->u.verity.hdr);
+	}
+
+err:
+	if (r) {
+		device_free(fec_device);
+		free(root_hash);
+		free(hash_name);
+		free(fec_device_path);
+		free(salt);
 	}
 
 	return r;
