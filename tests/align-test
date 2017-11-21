@@ -132,6 +132,17 @@ format 256 8192 8192
 format 128 8192 8192
 cleanup
 
+echo "# Create desktop-class 4K drive with misaligned opt-io (some bad USB enclosures)"
+echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=0, opt-io=1025)"
+add_device dev_size_mb=16 sector_size=512 physblk_exp=3 num_tgts=1 opt_blks=1025
+format 256 4096
+format 256 2112 8
+format 128 2048
+format 128 1088 8
+format 256 8192 8192
+format 128 8192 8192
+cleanup
+
 echo "# Create desktop-class 4K drive w/ 63-sector DOS partition compensation"
 echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=3584)"
 add_device dev_size_mb=16 sector_size=512 physblk_exp=3 lowest_aligned=7 num_tgts=1

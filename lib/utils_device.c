@@ -414,7 +414,9 @@ void device_topology_alignment(struct device *device,
 
 	temp_alignment = (unsigned long)min_io_size;
 
-	if (temp_alignment < (unsigned long)opt_io_size)
+	/* Ignore bogus opt-io that could break alignment */
+	if ((temp_alignment < (unsigned long)opt_io_size) &&
+	    !((unsigned long)opt_io_size % temp_alignment))
 		temp_alignment = (unsigned long)opt_io_size;
 
 	/* If calculated alignment is multiple of default, keep default */
