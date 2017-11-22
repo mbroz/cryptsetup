@@ -184,7 +184,6 @@ uint32_t json_object_get_uint32(json_object *jobj)
 }
 
 /* jobj has to be json_type_string and numbered */
-/* FIXME: sscanf() instead? */
 static json_bool json_str_to_uint64(json_object *jobj, uint64_t *value)
 {
 	char *endptr;
@@ -192,7 +191,7 @@ static json_bool json_str_to_uint64(json_object *jobj, uint64_t *value)
 
 	errno = 0;
 	tmp = strtoull(json_object_get_string(jobj), &endptr, 10);
-	if (*endptr || errno || tmp >= UINT64_MAX) {
+	if (*endptr || errno || tmp > UINT64_MAX) {
 		log_dbg("Failed to parse uint64_t type from string %s.",
 			json_object_get_string(jobj));
 		*value = 0;
