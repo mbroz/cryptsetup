@@ -26,7 +26,7 @@
 
 static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struct json_object **keyslot_object)
 {
-	char *base64_str, cipher[LUKS_CIPHERNAME_L+LUKS_CIPHERMODE_L], num[24];
+	char *base64_str, cipher[LUKS_CIPHERNAME_L+LUKS_CIPHERMODE_L];
 	size_t base64_len;
 	struct json_object *keyslot_obj, *field, *jobj_kdf, *jobj_af, *jobj_area;
 	uint64_t offset, area_size, offs_a, offs_b, length;
@@ -83,8 +83,8 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 	}
 	area_size = offs_b - offs_a;
 	json_object_object_add(jobj_area, "key_size", json_object_new_int(hdr_v1->keyBytes));
-	json_object_object_add(jobj_area, "offset", json_object_new_string(uint64_to_str(num, sizeof(num), &offset)));
-	json_object_object_add(jobj_area, "size", json_object_new_string(uint64_to_str(num, sizeof(num), &area_size)));
+	json_object_object_add(jobj_area, "offset", json_object_new_uint64(offset));
+	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_size));
 	json_object_object_add(keyslot_obj, "area", jobj_area);
 
 	*keyslot_object = keyslot_obj;
@@ -121,7 +121,6 @@ static int json_luks1_segment(const struct luks_phdr *hdr_v1, struct json_object
 {
 	const char *c;
 	char cipher[LUKS_CIPHERNAME_L+LUKS_CIPHERMODE_L];
-	char num[24]; /* uint64_t in string */
 	struct json_object *segment_obj, *field;
 	uint64_t number;
 
@@ -140,7 +139,7 @@ static int json_luks1_segment(const struct luks_phdr *hdr_v1, struct json_object
 	/* offset field */
 	number = (uint64_t)hdr_v1->payloadOffset * SECTOR_SIZE;
 
-	field = json_object_new_string(uint64_to_str(num, sizeof(num), &number));
+	field = json_object_new_uint64(number);
 	if (!field) {
 		json_object_put(segment_obj);
 		return -ENOMEM;
@@ -348,7 +347,6 @@ static int json_luks1_digests(const struct luks_phdr *hdr_v1, struct json_object
 
 static int json_luks1_object(struct luks_phdr *hdr_v1, struct json_object **luks1_object, uint64_t keyslots_size)
 {
-	char num[24];
 	int r;
 	struct json_object *luks1_obj, *field;
 	uint64_t json_size;
@@ -399,10 +397,8 @@ static int json_luks1_object(struct luks_phdr *hdr_v1, struct json_object **luks
 	json_object_object_add(luks1_obj, "config", field);
 
 	json_size = LUKS2_HDR_16K_LEN - LUKS2_HDR_BIN_LEN;
-	json_object_object_add(field, "json_size",
-		json_object_new_string(uint64_to_str(num, sizeof(num), &json_size)));
-	json_object_object_add(field, "keyslots_size",
-		json_object_new_string(uint64_to_str(num, sizeof(num), &keyslots_size)));
+	json_object_object_add(field, "json_size", json_object_new_uint64(json_size));
+	json_object_object_add(field, "keyslots_size", json_object_new_uint64(keyslots_size));
 
 	*luks1_object = luks1_obj;
 	return 0;
@@ -410,7 +406,6 @@ static int json_luks1_object(struct luks_phdr *hdr_v1, struct json_object **luks
 
 static void move_keyslot_offset(json_object *jobj, int offset_add)
 {
-	char num[24];
 	json_object *jobj1, *jobj2, *jobj_area;
 	uint64_t offset = 0;
 
@@ -420,7 +415,7 @@ static void move_keyslot_offset(json_object *jobj, int offset_add)
 		json_object_object_get_ex(val, "area", &jobj_area);
 		json_object_object_get_ex(jobj_area, "offset", &jobj2);
 		offset = json_object_get_uint64(jobj2) + offset_add;
-		json_object_object_add(jobj_area, "offset", json_object_new_string(uint64_to_str(num, sizeof(num), &offset)));
+		json_object_object_add(jobj_area, "offset", json_object_new_uint64(offset));
 	}
 }
 

@@ -381,7 +381,6 @@ int luks2_keyslot_alloc(struct crypt_device *cd,
 {
 	struct luks2_hdr *hdr;
 	const struct crypt_pbkdf_type *pbkdf;
-	char area_offset_string[24], area_length_string[24];
 	char cipher[2 * MAX_CIPHER_LEN + 1], num[16];
 	uint64_t area_offset, area_length;
 	json_object *jobj_keyslots, *jobj_keyslot, *jobj_kdf, *jobj_af, *jobj_area;
@@ -463,10 +462,8 @@ int luks2_keyslot_alloc(struct crypt_device *cd,
 
 	json_object_object_add(jobj_area, "encryption", json_object_new_string(cipher));
 	json_object_object_add(jobj_area, "key_size", json_object_new_int(keyslot_key_len));
-	uint64_to_str(area_offset_string, sizeof(area_offset_string), &area_offset);
-	json_object_object_add(jobj_area, "offset", json_object_new_string(area_offset_string));
-	uint64_to_str(area_length_string, sizeof(area_length_string), &area_length);
-	json_object_object_add(jobj_area, "size", json_object_new_string(area_length_string));
+	json_object_object_add(jobj_area, "offset", json_object_new_uint64(area_offset));
+	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
 
 	snprintf(num, sizeof(num), "%d", keyslot);

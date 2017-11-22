@@ -190,7 +190,7 @@ int LUKS2_generate_hdr(
 		offset += alignOffset;
 	}
 
-	json_object_object_add(jobj_segment, "offset", json_object_new_string(uint64_to_str(num, sizeof(num), &offset)));
+	json_object_object_add(jobj_segment, "offset", json_object_new_uint64(offset));
 	json_object_object_add(jobj_segment, "iv_tweak", json_object_new_string("0"));
 	json_object_object_add(jobj_segment, "size", json_object_new_string("dynamic"));
 	json_object_object_add(jobj_segment, "encryption", json_object_new_string(cipher));
@@ -208,8 +208,7 @@ int LUKS2_generate_hdr(
 	json_object_object_add(jobj_segments, num, jobj_segment);
 
 	json_size = hdr->hdr_size - LUKS2_HDR_BIN_LEN;
-	json_object_object_add(jobj_config, "json_size",
-		json_object_new_string(uint64_to_str(num, sizeof(num), &json_size)));
+	json_object_object_add(jobj_config, "json_size", json_object_new_uint64(json_size));
 
 	/* for detached metadata device compute reasonable keyslot areas size */
 	// FIXME: this is coupled with FIXME above
@@ -225,8 +224,7 @@ int LUKS2_generate_hdr(
 	/* keyslots size has to be 4 KiB aligned */
 	keyslots_size -= (keyslots_size % 4096);
 
-	json_object_object_add(jobj_config, "keyslots_size",
-		json_object_new_string(uint64_to_str(num, sizeof(num), &keyslots_size)));
+	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));
 
 	JSON_DBG(hdr->jobj, "Header JSON");
 	return 0;

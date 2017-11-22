@@ -209,6 +209,21 @@ uint64_t json_object_get_uint64(json_object *jobj)
 	return json_str_to_uint64(jobj, &r) ? r : 0;
 }
 
+json_object *json_object_new_uint64(uint64_t value)
+{
+	/* 18446744073709551615 */
+	char num[21];
+	int r;
+	json_object *jobj;
+
+	r = snprintf(num, sizeof(num), "%" PRIu64, value);
+	if (r < 0 || (size_t)r >= sizeof(num))
+		return NULL;
+
+	jobj = json_object_new_string(num);
+	return jobj;
+}
+
 /*
  * Validate helpers
  */
