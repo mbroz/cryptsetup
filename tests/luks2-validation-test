@@ -159,4 +159,9 @@ RUN luks2-invalid-keyslots-size-c2.img			"F" "Failed to detect too small keyslot
 RUN luks2-invalid-json-size-c0.img			"F" "Failed to detect invalid json_size config section"
 RUN luks2-invalid-json-size-c1.img			"F" "Failed to detect invalid json_size config section"
 
+echo "[4] Test integers value limits"
+RUN luks2-uint64-max-segment-size.img			"R" "Validation rejected correct value"
+RUN luks2-uint64-overflow-segment-size.img		"F" "Failed to detect uint64_t overflow"
+RUN luks2-uint64-signed-segment-size.img		"F" "Failed to detect negative value"
+
 remove_mapping
