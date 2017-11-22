@@ -221,19 +221,6 @@ int LUKS2_digests_verify_by_segment(struct crypt_device *cd,
 	return i ? 0 : -ENOENT;
 }
 
-int LUKS2_digest_json_get(struct crypt_device *cd, struct luks2_hdr *hdr,
-			  int digest, const char **json)
-{
-	json_object *jobj_digest;
-
-	jobj_digest = LUKS2_get_digest_jobj(hdr, digest);
-	if (!jobj_digest)
-		return -EINVAL;
-
-	*json = json_object_to_json_string_ext(jobj_digest, JSON_C_TO_STRING_PLAIN);
-	return 0;
-}
-
 static int assign_one_digest(struct crypt_device *cd, struct luks2_hdr *hdr,
 			     int keyslot, int digest, int assign)
 {

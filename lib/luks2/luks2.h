@@ -244,11 +244,6 @@ int LUKS2_digest_verify(struct crypt_device *cd,
 int LUKS2_digest_dump(struct crypt_device *cd,
 	int digest);
 
-int LUKS2_digest_json_get(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int digest,
-	const char **json);
-
 int LUKS2_digest_json_set(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int digest,
