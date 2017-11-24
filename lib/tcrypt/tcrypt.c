@@ -457,23 +457,28 @@ static int TCRYPT_pool_keyfile(struct crypt_device *cd,
 				unsigned char pool[TCRYPT_KEY_POOL_LEN],
 				const char *keyfile)
 {
-	unsigned char data[TCRYPT_KEYFILE_LEN];
-	int i, j, fd, data_size;
+	unsigned char *data;
+	int i, j, fd, data_size, r = -EIO;
 	uint32_t crc;
 
 	log_dbg("TCRYPT: using keyfile %s.", keyfile);
 
+	data = malloc(TCRYPT_KEYFILE_LEN);
+	if (!data)
+		return -ENOMEM;
+	memset(data, 0, TCRYPT_KEYFILE_LEN);
+
 	fd = open(keyfile, O_RDONLY);
 	if (fd < 0) {
 		log_err(cd, _("Failed to open key file.\n"));
-		return -EIO;
+		goto out;
 	}
 
 	data_size = read_buffer(fd, data, TCRYPT_KEYFILE_LEN);
 	close(fd);
 	if (data_size < 0) {
 		log_err(cd, _("Error reading keyfile %s.\n"), keyfile);
-		return -EIO;
+		goto out;
 	}
 
 	for (i = 0, j = 0, crc = ~0U; i < data_size; i++) {
@@ -484,11 +489,13 @@ static int TCRYPT_pool_keyfile(struct crypt_device *cd,
 		pool[j++] += (unsigned char)(crc);
 		j %= TCRYPT_KEY_POOL_LEN;
 	}
-
+	r = 0;
+out:
 	crypt_memzero(&crc, sizeof(crc));
 	crypt_memzero(data, TCRYPT_KEYFILE_LEN);
+	free(data);
 
-	return 0;
+	return r;
 }
 
 static int TCRYPT_init_hdr(struct crypt_device *cd,
