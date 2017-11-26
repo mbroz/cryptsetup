@@ -7,7 +7,7 @@ INTSETUP_VALGRIND=../.libs/integritysetup
 INTSETUP_LIB_VALGRIND=../.libs
 
 DEV_NAME=dmc_test
-DEV=mode-test.img
+DEV=test123.img
 KEY_FILE=key.img
 
 dmremove() { # device
@@ -57,6 +57,16 @@ dump_check() # name value
 	if [ "$X" != "$2" ] ; then
 		echo "[dump FAIL]"
 		echo " Expecting $1:$2 got \"$X\"."
+		fail
+	fi
+}
+
+kernel_param_check() # number value
+{
+	X=$(dmsetup table $DEV_NAME | cut -d " " -f $1)
+	if [ "$X" != $2 ] ; then
+		echo "[param_check FAIL]"
+		echo "Expecting $2 got \"$X\"."
 		fail
 	fi
 }
@@ -192,6 +202,38 @@ int_journal_crypt() # crypt_alg crypt_alg_kernel crypt_key crypt_key_size
 	echo "[OK]"
 }
 
+int_mode() # alg tag_size sector_size
+{
+	echo -n "[MODE TESTS:$1:$2:$3]"
+	ARGS="--tag-size $2 --sector-size $3"
+
+	$INTSETUP format -q $ARGS $DEV --integrity $1 || fail "Cannot format device."
+
+	echo -n "[JOURNALED WRITES]"
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device with journal."
+	status_check "mode" "read/write"
+	kernel_param_check 7 "J"
+
+	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+
+	echo -n "[DIRECT WRITES]"
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-no-journal || fail "Cannot activate device without journal."
+	status_check "mode" "read/write"
+	status_check "journal" "not active"
+	kernel_param_check 7 "D"
+
+	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+
+	echo -n "[RECOVERY MODE]"
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-recovery-mode || fail "Cannot activate device in recovery mode."
+	status_check "mode" "read/write recovery"
+	kernel_param_check 7 "R"
+
+	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+
+	echo "[OK]"
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$INTSETUP" ] && skip "Cannot find $INTSETUP, test skipped."
 
@@ -240,6 +282,12 @@ int_journal_crypt salsa20 salsa20    $KEY_FILE 32
 int_journal_crypt ctr-aes ctr\(aes\) $KEY_FILE 32
 int_journal_crypt ctr-aes ctr\(aes\) $KEY_FILE 16
 
-# FIXME: mode/recovery
+echo "Mode tests:"
+int_mode crc32c      4  512
+int_mode crc32       4  512
+int_mode sha1        20 512
+int_mode sha256      32 512
+int_mode hmac-sha256 32 512
+int_mode hmac-sha256 32 4096
 
 cleanup
