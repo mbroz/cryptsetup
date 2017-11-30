@@ -57,8 +57,6 @@
 
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
-#define CRYPT_DEFAULT_SEGMENT 0
-
 struct crypt_device;
 
 struct volume_key {
