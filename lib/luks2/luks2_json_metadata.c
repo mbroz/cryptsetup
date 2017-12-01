@@ -1601,13 +1601,13 @@ const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment)
 		return NULL;
 
 	if (!json_object_object_get_ex(hdr->jobj, "segments", &jobj1))
-		return 0;
+		return NULL;
 
 	if (!json_object_object_get_ex(jobj1, buf, &jobj2))
-		return 0;
+		return NULL;
 
 	if (!json_object_object_get_ex(jobj2, "encryption", &jobj3))
-		return 0;
+		return NULL;
 
 	return json_object_get_string(jobj3);
 }
