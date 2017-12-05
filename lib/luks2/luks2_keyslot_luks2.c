@@ -576,7 +576,7 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 		log_std(cd, "\tIterations: %" PRIu64 "\n", json_object_get_uint64(jobj1));
 	} else {
 		json_object_object_get_ex(jobj_kdf, "time", &jobj1);
-		log_std(cd, "\tTime:       %" PRIu64 "\n", json_object_get_int64(jobj1));
+		log_std(cd, "\tTime cost:  %" PRIu64 "\n", json_object_get_int64(jobj1));
 
 		json_object_object_get_ex(jobj_kdf, "memory", &jobj1);
 		log_std(cd, "\tMemory:     %" PRIu64 "\n", json_object_get_int64(jobj1));

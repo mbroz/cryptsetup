@@ -728,12 +728,12 @@ $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2id" || fail
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2i  --pbkdf-force-iterations 1 \
 	--pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2i" || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "Time:" | grep -q "1" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | grep -q "1" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | grep -q "1234" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Threads:" | grep -q "1" || fail
 # Benchmark
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2i -i 500 --pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || fail
-[ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Time:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || fail
+[ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || fail
 [ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || fail
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 -i 500 $LOOPDEV || fail
 [ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep -m1 "Iterations:" | cut -d' ' -f 2 | sed -e 's/\ //g')" -gt 1000 ] || fail
