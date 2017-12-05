@@ -49,4 +49,4 @@ distclean-local:
 	rm -rf autom4te.cache
 
 clean-local:
-	-rm -rf docs/doxygen_api_docs
+	-rm -rf docs/doxygen_api_docs libargon2.la
