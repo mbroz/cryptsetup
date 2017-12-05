@@ -405,6 +405,8 @@ if test x$enable_libargon2 = xyes ; then
 		[AC_MSG_ERROR([You need libargon2 development library installed.])])
 	PKG_CHECK_MODULES([LIBARGON2], [libargon2],,[LIBARGON2_LIBS="-largon2"])
 	enable_internal_argon2=no
+else
+	AC_MSG_WARN([Argon2 bundled (slow) reference implementation will be used, please consider to use system library with --enable-libargon2.])
 fi
 
 if test x$enable_internal_argon2 = xyes ; then
@@ -532,8 +534,8 @@ CS_NUM_WITH([luks1-keybits],[key length in bits for LUKS1], [256])
 
 CS_STR_WITH([luks2-pbkdf],           [Default PBKDF algorithm (pbkdf2 or argon2i/argon2id) for LUKS2], [argon2i])
 CS_NUM_WITH([luks1-iter-time],       [PBKDF2 iteration time for LUKS1 (in ms)], [2000])
-CS_NUM_WITH([luks2-iter-time],       [Argon2 PBKDF iteration time for LUKS2 (in ms)], [800])
-CS_NUM_WITH([luks2-memory-kb],       [Argon2 PBKDF memory cost for LUKS2 (in kB)], [131072])
+CS_NUM_WITH([luks2-iter-time],       [Argon2 PBKDF iteration time for LUKS2 (in ms)], [2000])
+CS_NUM_WITH([luks2-memory-kb],       [Argon2 PBKDF memory cost for LUKS2 (in kB)], [1048576])
 CS_NUM_WITH([luks2-parallel-threads],[Argon2 PBKDF max parallel cost for LUKS2 (if CPUs available)], [4])
 
 CS_STR_WITH([loopaes-cipher], [cipher for loop-AES mode], [aes])
