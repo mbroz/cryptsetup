@@ -67,7 +67,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 		}
 	};
 	int r, devfd = -1;
-	size_t bsize, alignment;
+	size_t bsize, keyslot_alignment, alignment;
 
 	log_dbg("Using dmcrypt to access keyslot area.");
 
@@ -76,7 +76,11 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	if (!bsize || !alignment)
 		return -EINVAL;
 
-	dmd.size = size_round_up(srcLength, bsize) / SECTOR_SIZE;
+	if (bsize > LUKS_ALIGN_KEYSLOTS)
+		keyslot_alignment = LUKS_ALIGN_KEYSLOTS;
+	else
+		keyslot_alignment = bsize;
+	dmd.size = size_round_up(srcLength, keyslot_alignment) / SECTOR_SIZE;
 
 	if (mode == O_RDONLY)
 		dmd.flags |= CRYPT_ACTIVATE_READONLY;
