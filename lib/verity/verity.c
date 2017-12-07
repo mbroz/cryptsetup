@@ -82,9 +82,9 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (lseek(devfd, sb_offset, SEEK_SET) < 0 ||
-	    read_blockwise(devfd, device_block_size(device), device_alignment(device),
-			   &sb, hdr_size) < hdr_size) {
+	if (read_lseek_blockwise(devfd, device_block_size(device),
+				 device_alignment(device), &sb, hdr_size,
+				 sb_offset) < hdr_size) {
 		close(devfd);
 		return -EIO;
 	}

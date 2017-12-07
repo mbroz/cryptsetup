@@ -73,10 +73,9 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 
 	devfd = device_open_locked(device, O_RDWR);
 	if (devfd >= 0) {
-		if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
-			write_blockwise(devfd, device_block_size(device),
-					device_alignment(device), src,
-					srcLength) == -1)
+		if (write_lseek_blockwise(devfd, device_block_size(device),
+					  device_alignment(device), src,
+					  srcLength, sector * SECTOR_SIZE) < 0)
 			r = -EIO;
 		else
 			r = 0;
@@ -132,9 +131,9 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 
 	devfd = device_open_locked(device, O_RDONLY);
 	if (devfd >= 0) {
-		if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
-			read_blockwise(devfd, device_block_size(device),
-				       device_alignment(device), dst, dstLength) == -1)
+		if (read_lseek_blockwise(devfd, device_block_size(device),
+					 device_alignment(device), dst,
+					 dstLength, sector * SECTOR_SIZE) < 0)
 			r = -EIO;
 		else
 			r = 0;

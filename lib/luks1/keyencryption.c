@@ -183,9 +183,9 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	if (devfd < 0)
 		goto out;
 
-	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
-	    write_blockwise(devfd, device_block_size(device),
-			    device_alignment(device), src, srcLength) == -1)
+	if (write_lseek_blockwise(devfd, device_block_size(device),
+				  device_alignment(device), src, srcLength,
+				  sector * SECTOR_SIZE) < 0)
 		goto out;
 
 	r = 0;
@@ -239,9 +239,9 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	if (devfd < 0)
 		goto bad;
 
-	if (lseek(devfd, sector * SECTOR_SIZE, SEEK_SET) == -1 ||
-	    read_blockwise(devfd, device_block_size(device),
-			   device_alignment(device), dst, dstLength) == -1)
+	if (read_lseek_blockwise(devfd, device_block_size(device),
+				 device_alignment(device), dst, dstLength,
+				 sector * SECTOR_SIZE) < 0)
 		goto bad;
 
 	close(devfd);

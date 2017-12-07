@@ -94,6 +94,7 @@ static int FEC_read_interleaved(struct fec_context *ctx, uint64_t i,
 			continue;
 		}
 
+		/* FIXME: read_lseek_blockwise candidate */
 		if (lseek(ctx->inputs[n].fd, ctx->inputs[n].start + offset, SEEK_SET) < 0)
 			return -1;
 		return (read_buffer(ctx->inputs[n].fd, output, count) == (ssize_t)count) ? 0 : -1;
