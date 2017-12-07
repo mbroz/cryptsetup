@@ -146,6 +146,7 @@ ssize_t read_lseek_blockwise(int fd, size_t bsize, size_t alignment, void *buf, 
 
 size_t crypt_getpagesize(void);
 unsigned crypt_cpusonline(void);
+uint64_t crypt_getphysmemory_kb(void);
 
 int init_crypto(struct crypt_device *ctx);
 

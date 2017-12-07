@@ -38,6 +38,26 @@ const struct crypt_pbkdf_type default_luks1 = {
 	.time_ms = DEFAULT_LUKS1_ITER_TIME
 };
 
+static uint32_t adjusted_pbkdf_memory(void)
+{
+	uint64_t memory_kb = crypt_getphysmemory_kb();
+
+	/* Ignore bogus value */
+	if (memory_kb < (128 * 1024))
+		return DEFAULT_LUKS2_MEMORY_KB;
+
+	/*
+	 * Never use more than half of physical memory.
+	 * OOM killer is too clever...
+	 */
+	memory_kb /= 2;
+
+	if (memory_kb < DEFAULT_LUKS2_MEMORY_KB)
+		return (uint32_t)memory_kb;
+
+	return DEFAULT_LUKS2_MEMORY_KB;
+}
+
 /*
  * PBKDF configuration interface
  */
@@ -100,7 +120,7 @@ int init_pbkdf_type(struct crypt_device *cd,
 	struct crypt_pbkdf_type *cd_pbkdf = crypt_get_pbkdf(cd);
 	const char *hash, *type;
 	unsigned cpus;
-	uint32_t old_flags;
+	uint32_t old_flags, memory_kb;
 	int r;
 
 	if (!pbkdf && dev_type && !strcmp(dev_type, CRYPT_LUKS2))
@@ -161,6 +181,16 @@ int init_pbkdf_type(struct crypt_device *cd,
 				"PBKDF threads decreased from %d to %d.",
 				cpus, cd_pbkdf->parallel_threads, cpus);
 			cd_pbkdf->parallel_threads = cpus;
+		}
+	}
+
+	if (cd_pbkdf->max_memory_kb) {
+		memory_kb = adjusted_pbkdf_memory();
+		if (cd_pbkdf->max_memory_kb > memory_kb) {
+			log_dbg("Not enough physical memory detected, "
+				"PBKDF max memory decreased from %dkB to %dkB.",
+				cd_pbkdf->max_memory_kb, memory_kb);
+			cd_pbkdf->max_memory_kb = memory_kb;
 		}
 	}
 

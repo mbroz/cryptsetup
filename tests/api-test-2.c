@@ -141,6 +141,23 @@ static unsigned cpus_online(void)
 	return r;
 }
 
+static uint32_t adjusted_pbkdf_memory(void)
+{
+	long pagesize = sysconf(_SC_PAGESIZE);
+	long pages = sysconf(_SC_PHYS_PAGES);
+	uint64_t memory_kb;
+
+	if (pagesize <= 0 || pages <= 0)
+		return DEFAULT_LUKS2_MEMORY_KB;
+
+	memory_kb = pagesize / 1024 * pages / 2;
+
+	if (memory_kb < DEFAULT_LUKS2_MEMORY_KB)
+		return (uint32_t)memory_kb;
+
+	return DEFAULT_LUKS2_MEMORY_KB;
+}
+
 static unsigned _min(unsigned a, unsigned b)
 {
 	return a < b ? a : b;
@@ -2125,7 +2142,7 @@ static void Pbkdf(void)
 	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
 	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
 	EQ_(pbkdf->time_ms, DEFAULT_LUKS2_ITER_TIME);
-	EQ_(pbkdf->max_memory_kb, DEFAULT_LUKS2_MEMORY_KB);
+	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
 	EQ_(pbkdf->parallel_threads, _min(cpus_online(), DEFAULT_LUKS2_PARALLEL_THREADS));
 	// set and verify argon2 type
 	OK_(crypt_set_pbkdf_type(cd, &argon2));
@@ -2150,7 +2167,7 @@ static void Pbkdf(void)
 	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
 	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
 	EQ_(pbkdf->time_ms, DEFAULT_LUKS2_ITER_TIME);
-	EQ_(pbkdf->max_memory_kb, DEFAULT_LUKS2_MEMORY_KB);
+	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
 	EQ_(pbkdf->parallel_threads, _min(cpus_online(), DEFAULT_LUKS2_PARALLEL_THREADS));
 	// try to pass illegal values
 	argon2.parallel_threads = 0;
@@ -2182,14 +2199,14 @@ static void Pbkdf(void)
 	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
 	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
 	EQ_(pbkdf->time_ms, DEFAULT_LUKS2_ITER_TIME);
-	EQ_(pbkdf->max_memory_kb, DEFAULT_LUKS2_MEMORY_KB);
+	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
 	EQ_(pbkdf->parallel_threads, _min(cpus_online(), DEFAULT_LUKS2_PARALLEL_THREADS));
 	crypt_set_iteration_time(cd, 1);
 	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
 	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
 	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
 	EQ_(pbkdf->time_ms, 1);
-	EQ_(pbkdf->max_memory_kb, DEFAULT_LUKS2_MEMORY_KB);
+	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
 	EQ_(pbkdf->parallel_threads, _min(cpus_online(), DEFAULT_LUKS2_PARALLEL_THREADS));
 	crypt_free(cd);
 

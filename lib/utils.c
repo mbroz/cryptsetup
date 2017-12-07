@@ -45,6 +45,23 @@ unsigned crypt_cpusonline(void)
 	return r < 0 ? 1 : r;
 }
 
+uint64_t crypt_getphysmemory_kb(void)
+{
+	long pagesize, phys_pages;
+	uint64_t phys_memory_kb;
+
+	pagesize = sysconf(_SC_PAGESIZE);
+	phys_pages = sysconf(_SC_PHYS_PAGES);
+
+	if (pagesize < 0 || phys_pages < 0)
+		return 0;
+
+	phys_memory_kb = pagesize / 1024;
+	phys_memory_kb *= phys_pages;
+
+	return phys_memory_kb;
+}
+
 ssize_t read_buffer(int fd, void *buf, size_t count)
 {
 	size_t read_size = 0;
