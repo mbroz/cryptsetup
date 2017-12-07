@@ -333,7 +333,7 @@ echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --key
 echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 # keyfile/passphrase
-echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 1 || fail
+echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" || fail
 
 prepare "[18] RemoveKey passphrase and keyfile" reuse
