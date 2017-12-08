@@ -502,6 +502,9 @@ static void SuspendDevice(void)
 	}
 
 	OK_(suspend_status);
+#ifdef KERNEL_KEYRING
+	FAIL_(_volume_key_in_keyring(cd, 0), "");
+#endif
 	FAIL_(crypt_suspend(cd, CDEVICE_1), "already suspended");
 
 	FAIL_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)-1), "wrong key");
