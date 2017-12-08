@@ -2300,23 +2300,14 @@ void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring)
 	cd->key_in_keyring = key_in_keyring;
 }
 
-static void crypt_drop_keyring_key(struct crypt_device *cd, const char *active_key_desc)
+/* internal only */
+void crypt_drop_keyring_key(struct crypt_device *cd, const char *key_description)
 {
-	char *seg_key_desc;
-
-	/* drop key detected in active dm-crypt table */
-	if (active_key_desc)
-		keyring_revoke_and_unlink_key(active_key_desc);
-
-	if (!crypt_key_in_keyring(cd) ||
-	    crypt_get_segment_key_description(cd, &seg_key_desc, CRYPT_DEFAULT_SEGMENT))
+	if (!key_description)
 		return;
 
-	/* drop segment key */
-	if (!keyring_revoke_and_unlink_key(seg_key_desc))
-		crypt_set_key_in_keyring(cd, 0);
-
-	free(seg_key_desc);
+	keyring_revoke_and_unlink_key(key_description);
+	crypt_set_key_in_keyring(cd, 0);
 }
 
 static char *crypt_get_device_key_description(const char *name)
@@ -2450,9 +2441,9 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	else if (r)
 		log_err(cd, _("Error during resuming device %s.\n"), name);
 out:
-	crypt_free_volume_key(vk);
 	if (r < 0)
-		crypt_drop_keyring_key(cd, NULL);
+		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
 }
@@ -2514,9 +2505,9 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 		log_err(cd, _("Error during resuming device %s.\n"), name);
 out:
 	crypt_safe_free(passphrase_read);
-	crypt_free_volume_key(vk);
 	if (r < 0)
-		crypt_drop_keyring_key(cd, NULL);
+		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
 }
 
@@ -2886,6 +2877,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 	return LUKS2_keyslot_wipe(cd, &cd->u.luks2.hdr, keyslot, 0);
 }
 
+/* internal only */
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
 	char *seg_key_desc = NULL;
@@ -2965,10 +2957,9 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 		r = -EINVAL;
 	}
 out:
-	crypt_free_volume_key(vk);
-
 	if (r < 0)
-		crypt_drop_keyring_key(cd, NULL);
+		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
 }
@@ -3118,13 +3109,11 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 		log_err(cd, _("Device type is not properly initialised.\n"));
 		r = -EINVAL;
 	}
-
 out:
 	crypt_safe_free(passphrase_read);
-	crypt_free_volume_key(vk);
-
 	if (r < 0)
-		crypt_drop_keyring_key(cd, NULL);
+		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	crypt_free_volume_key(vk);
 
 	return r;
 }
@@ -3263,10 +3252,9 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		r = -EINVAL;
 	}
 
-	crypt_free_volume_key(vk);
-
 	if (r < 0)
-		crypt_drop_keyring_key(cd, NULL);
+		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	crypt_free_volume_key(vk);
 
 	return r;
 }
@@ -4073,14 +4061,9 @@ int crypt_activate_by_token(struct crypt_device *cd,
 		return r;
 
 	if (token == CRYPT_ANY_TOKEN)
-		r = LUKS2_token_open_and_activate_any(cd, &cd->u.luks2.hdr, name, flags);
-	else
-		r = LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, flags, usrptr);
+		return LUKS2_token_open_and_activate_any(cd, &cd->u.luks2.hdr, name, flags);
 
-	if (r < 0)
-		crypt_drop_keyring_key(cd, NULL);
-
-	return r;
+	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, flags, usrptr);
 }
 
 int crypt_token_json_get(struct crypt_device *cd, int token, const char **json)

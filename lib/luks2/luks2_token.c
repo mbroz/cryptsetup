@@ -404,6 +404,8 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	if (r >= 0 && name)
 		r = LUKS2_activate(cd, name, vk, flags);
 
+	if (r < 0)
+		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
 	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
@@ -446,6 +448,8 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	if (r >= 0 && name)
 		r = LUKS2_activate(cd, name, vk, flags);
 
+	if (r < 0)
+		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
 	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
