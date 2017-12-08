@@ -2383,17 +2383,16 @@ int crypt_suspend(struct crypt_device *cd,
 		goto out;
 	}
 
+	key_desc = crypt_get_device_key_description(name);
+
 	r = dm_suspend_and_wipe_key(cd, name);
 	if (r == -ENOTSUP)
 		log_err(cd, _("Suspend is not supported for device %s.\n"), name);
 	else if (r)
 		log_err(cd, _("Error during suspending device %s.\n"), name);
-
-	if (!r) {
-		key_desc = crypt_get_device_key_description(name);
+	else
 		crypt_drop_keyring_key(cd, key_desc);
-		free(key_desc);
-	}
+	free(key_desc);
 out:
 	dm_backend_exit();
 	return r;
