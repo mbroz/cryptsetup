@@ -2505,7 +2505,7 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 
 	if (crypt_use_keyring_for_vk(cd)) {
 		r = crypt_volume_key_load_in_keyring(cd, vk);
-		if (r)
+		if (r < 0)
 			goto out;
 	}
 
@@ -2952,7 +2952,8 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 			keyslot = r;
 
 			if ((name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd)) {
-				if (crypt_volume_key_load_in_keyring(cd, vk))
+				r = crypt_volume_key_load_in_keyring(cd, vk);
+				if (r < 0)
 					goto out;
 				flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 			}
@@ -3089,7 +3090,8 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 		keyslot = r;
 
 		if ((name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd)) {
-			if (crypt_volume_key_load_in_keyring(cd, vk))
+			r = crypt_volume_key_load_in_keyring(cd, vk);
+			if (r < 0)
 				goto out;
 			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 		}
@@ -3213,9 +3215,11 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (r == -EPERM || r == -ENOENT)
 			log_err(cd, _("Volume key does not match the volume.\n"));
 
-		if (!r && (name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd))
-			if (!(r = crypt_volume_key_load_in_keyring(cd, vk)))
+		if (!r && (name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd)) {
+			r = crypt_volume_key_load_in_keyring(cd, vk);
+			if (!r)
 				flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+		}
 
 		if (!r && name)
 			r = LUKS2_activate(cd, name, vk, flags);
