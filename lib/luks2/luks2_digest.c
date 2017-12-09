@@ -182,10 +182,43 @@ int LUKS2_digests_verify_by_segment(struct crypt_device *cd,
 	const struct volume_key *vk,
 	digests_t digests)
 {
-	char segment_name[16];
 	const digest_handler *h;
+	digests_t tmp;
+	int *digest, r, i = 0;
+
+	digest = digests ? digests : tmp;
+
+	r = LUKS2_digests_by_segment(cd, hdr, segment, digest);
+	if (r)
+		return r;
+
+	while (i < LUKS2_DIGEST_MAX && digest[i] != -1) {
+		log_dbg("Verifying key digest %d.", digest[i]);
+
+		h = LUKS2_digest_handler(cd, digest[i]);
+		if (!h)
+			return -EINVAL;
+
+		r = h->verify(cd, digest[i], vk->key, vk->keylength);
+		if (r < 0) {
+			log_dbg("Digest %d (%s) verify failed with %d.", digest[i], h->name, r);
+			return r;
+		}
+
+		i++;
+	}
+
+	return 0;
+}
+
+int LUKS2_digests_by_segment(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int segment,
+	digests_t digests)
+{
+	char segment_name[16];
 	json_object *jobj_digests, *jobj_digest_segments;
-	int digest, r, i = 0;
+	int i = 0;
 
 	json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests);
 
@@ -197,25 +230,10 @@ int LUKS2_digests_verify_by_segment(struct crypt_device *cd,
 		if (!LUKS2_array_jobj(jobj_digest_segments, segment_name))
 			continue;
 
-		digest = atoi(key);
-		log_dbg("Verifying key digest %d.", digest);
-
-		h = LUKS2_digest_handler(cd, digest);
-		if (!h)
-			return -EINVAL;
-
-		r = h->verify(cd, digest, vk->key, vk->keylength);
-		if (r < 0) {
-			log_dbg("Digest %d (%s) verify failed with %d.", digest, h->name, r);
-			return r;
-		}
-
-		if (digests)
-			digests[i] = digest;
-		i++;
+		digests[i++] = atoi(key);
 	}
 
-	if (digests && i < LUKS2_DIGEST_MAX)
+	if (i < LUKS2_DIGEST_MAX)
 		digests[i] = -1;
 
 	return i ? 0 : -ENOENT;

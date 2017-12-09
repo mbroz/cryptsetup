@@ -384,7 +384,7 @@ static key_serial_t _kernel_key_by_segment(struct crypt_device *cd, int segment)
 {
 	char key_description[1024];
 
-	if (snprintf(key_description, sizeof(key_description), "cryptsetup:%s-%u", crypt_get_uuid(cd), segment) < 1)
+	if (snprintf(key_description, sizeof(key_description), "cryptsetup:%s-d%u", crypt_get_uuid(cd), segment) < 1)
 		return -1;
 
 	return request_key("logon", key_description, NULL, 0);

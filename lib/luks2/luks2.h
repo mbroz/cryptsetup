@@ -227,6 +227,11 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 /*
  * Generic LUKS2 digest
  */
+int LUKS2_digests_by_segment(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int segment,
+	digests_t digests);
+
 int LUKS2_digests_verify_by_segment(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int segment,
@@ -338,6 +343,7 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 int crypt_use_keyring_for_vk(const struct crypt_device *cd);
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk);
 void crypt_drop_keyring_key(struct crypt_device *cd, const char *key_description);
+const char *crypt_get_key_description_by_keyslot(struct crypt_device *cd, int keyslot);
 
 struct luks_phdr;
 int LUKS2_luks1_to_luks2(struct crypt_device *cd,
