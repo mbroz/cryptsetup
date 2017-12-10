@@ -112,7 +112,9 @@ function prepare()
 	esac
 
 	if [ ! -e $KEY1 ]; then
-		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
+		#dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
+		echo -n $'\x48\xc6\x74\x4f\x41\x4e\x50\xc0\x79\xc2\x2d\x5b\x5f\x68\x84\x17' >$KEY1
+		echo -n $'\x9c\x03\x5e\x1b\x4d\x0f\x9a\x75\xb3\x90\x70\x32\x0a\xf8\xae\xc4'>>$KEY1
 	fi
 
 	if [ ! -e $KEY2 ]; then
