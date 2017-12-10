@@ -1,6 +1,6 @@
-Cryptsetup 2.0.0 RC1 Release Notes
+Cryptsetup 2.0.0 Release Notes
 ==================================
-Release candidate with experimental features.
+Stable release with experimental features.
 
 This version introduces a new on-disk LUKS2 format.
 
@@ -12,18 +12,28 @@ major version for all public symbols.
 Most of the old functions are fully backward compatible, so only
 recompilation of programs should be needed.
 
-Please note that authenticated disk encryption, noncryptographic
+Please note that authenticated disk encryption, non-cryptographic
 data integrity protection (dm-integrity), use of Argon2 Password-Based
 Key Derivation Function and the LUKS2 on-disk format itself are new
 features and can contain some bugs.
-Please do not use it without properly configured backup or in
-production systems.
 
-Until final 2.0 version is released, the new LUKS2 format
-could still internally change if a major problem is found.
+To provide all security features of authenticated encryption we need
+better nonce-reuse resistant algorithm in kernel (see note below).
+For now, please use authenticated encryption as experimental feature.
 
-The library API calls (versioned symbols) are now stable and
-will not change in an incompatible way.
+Please do not use LUKS2 without properly configured backup or in
+production systems that need to be compatible with older systems.
+
+Changes since version 2.0.0-RC1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Limit KDF requested (for format) memory by available physical memory.
+  On some systems too high requested amount of memory causes OOM killer
+  to kill the process (instead of returning ENOMEM).
+  We never try to use more than half of available physical memory.
+
+* Ignore device alignment if it is not multiple of minimal-io.
+  Some USB enclosures seems to report bogus topology info that
+  prevents to use LUKS detached header.
 
 Changes since version 2.0.0-RC0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -248,12 +258,13 @@ The newly added features in LUKS2 include:
 
   For testing of authenticated encryption, these algorithms work for now:
 
-  1) aes-xts-random with hmac-sha256 or hmac-sha512 as the authentication tag.
-     (Authentication key for HMAC is independently generated. This mode is very slow.)
-     $ cryptsetup luksFormat --type luks2 <device> --cipher aes-xts-random --integrity hmac-sha256
+  1) aes-xts-plain64 with hmac-sha256 or hmac-sha512 as the authentication tag.
+     (Common FDE mode + independent authentication tag. Authentication key
+      for HMAC is independently generated. This mode is very slow.)
+     $ cryptsetup luksFormat --type luks2 <device> --cipher aes-xts-plain64 --integrity hmac-sha256
 
   2) aes-gcm-random (native AEAD mode)
-     DO NOT USE in production. The GCM mode uses only 96-bit nonce,
+     DO NOT USE in production! The GCM mode uses only 96-bit nonce,
      and possible collision means fatal security problem.
      GCM mode has very good hardware support through AES-NI, so it is useful
      for performance testing.
@@ -267,17 +278,8 @@ The newly added features in LUKS2 include:
   should work as well. The mode 1) and 2) should be compatible with IEEE 1619.1
   standard recommendation.
 
-  You can also store only random IV in tag without integrity protection.
-
-  Note that using random IV forces the system to pseudorandomly change the whole
-  sector on every write without removing parallel processing of XTS mode.
-  In cryptography, we can say that this will provide indistinguishability under
-  chosen plaintext attack (IND-CPA) that cannot be achieved in legacy
-  FDE systems. On the other side, if stored random IV is corrupted, the sector
-  is no longer decrypted properly.
-
-  To use only random IV (no integrity protection), just specify "none" integrity.
-  $ cryptsetup luksFormat --type luks2 <device> --cipher aes-xts-random --integrity none
+  There will be better suitable authenticated modes available soon
+  For now we are just preparing framework to enable it (and hopefully improve security of FDE).
 
   FDE authenticated encryption is not a replacement for filesystem layer
   authenticated encryption. The goal is to provide at least something because
@@ -565,21 +567,24 @@ These new calls are now exported, for details see libcryptsetup.h:
 	crypt_keyfile_read;
 	crypt_wipe;
 
-Unfinished things & TODO for next RC or future
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unfinished things & TODO for next releases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * There will be better documentation and examples.
 
 * There will be some more formal definition of the threat model for integrity
   protection. (And a link to some papers discussing integrity protection,
   once it is, hopefully, accepted and published.)
 
-* Offline re-encrypt tool supports only LUKS1 format for now (patches are
- on the way).
+* Offline re-encrypt tool LUKS2 support is currently limited.
+  There will be online LUKS2 re-encryption tool in future.
 
-* There will be online LUKS2 re-encryption tool in future.
-
-* Authenticated encryption will use new algorithms from CAESAR competition,
-  once these algorithms are available in kernel.
+* Authenticated encryption will use new algorithms from CAESAR competition
+  (https://competitions.cr.yp.to/caesar.html) once these algorithms are available
+  in kernel (more on this later).
+  NOTE: Currently available authenticated modes (GCM, Chacha20-poly1305)
+  in kernel have too small 96-bit nonces that are problematic with
+  randomly generated IVs (the collison probability is not negligible).
+  For the GCM, nonce collision is a fatal problem.
 
 * Authenticated encryption do not set encryption for dm-integrity journal.
 
@@ -588,17 +593,13 @@ Unfinished things & TODO for next RC or future
   system will corrupt sectors after journal replay. (That corruption will be
   detected though.)
 
-* Some utilities (blkid, systemd-cryptsetup) will need small updates to support
-  LUKS2 format.
+* Some utilities (blkid, systemd-cryptsetup) have already support for LUKS
+  but not yet in released version (support in crypttab etc).
 
 * There are some examples of user-defined tokens inside misc/luks2_keyslot_example
   directory (like a simple external program that uses libssh to unlock LUKS2
   using remote keyfile).
 
-  We will document these examples later in release notes for next RC.
-
-* The distribution archive is now very big because of some testing images that do not compress
-  well. Some cleaning is needed here.
-
-* A lot of ideas are hidden inside the LUKS2 design that is not yet used or
-  described here, let's try if the basics work first :-)
+* The python binding (pycryptsetup) contains only basic functionality for LUKS1
+  (it is not updated for new features) and will be deprecated soon in favor
+  of python bindings to libblockdev library (that can already handle LUKS1 devices).
