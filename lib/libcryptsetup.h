@@ -627,10 +627,12 @@ int crypt_repair(struct crypt_device *cd,
  * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Most notably it returns -EPERM when device was activated with volume key
- * 	 in kernel keyring and current device handle doesn't have verified key
- * 	 in kernel keyring in the same time. Perform any crypt_activate_*()
- * 	 operation with device name set to NULL to load verified volume key in
- * 	 the keyring.
+ * 	 in kernel keyring and current device handle (context) doesn't have verified key
+ * 	 loaded in kernel. To load volume key for already active device use any of
+ * 	 @link crypt_activate_by_passphrase @endlink, @link crypt_activate_by_keyfile @endlink,
+ * 	 @link crypt_activate_by_keyfile_offset @endlink, @link crypt_activate_by_volume_key @endlink,
+ * 	 @link crypt_activate_by_keyring @endlink or @link crypt_activate_by_token @endlink with flag
+ * 	 @e CRYPT_ACTIVATE_KEYRING_KEY raised and @e name parameter set to @e NULL.
  */
 int crypt_resize(struct crypt_device *cd,
 	const char *name,
