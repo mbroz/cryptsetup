@@ -1288,7 +1288,7 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 		return 0;
 
 	len = json_object_array_length(jobj_mandatory);
-	if (!len)
+	if (len <= 0)
 		return 0;
 
 	log_dbg("LUKS2 requirements detected:");
@@ -1347,7 +1347,7 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 		json_object_object_add(jobj_config, "requirements", jobj_requirements);
 	}
 
-	if (json_object_array_length(jobj_mandatory)) {
+	if (json_object_array_length(jobj_mandatory) > 0) {
 		/* replace mandatory field with new values */
 		json_object_object_add(jobj_requirements, "mandatory", jobj_mandatory);
 	} else {
@@ -1390,9 +1390,9 @@ static void hdr_dump_config(struct crypt_device *cd, json_object *hdr_jobj)
 		log_std(cd, "%s ", json_object_get_string(jobj1));
 	}
 
-	log_std(cd, "%s\n%s", flags ? "" : "(no flags)", reqs ? "" : "\n");
+	log_std(cd, "%s\n%s", flags > 0 ? "" : "(no flags)", reqs > 0 ? "" : "\n");
 
-	if (reqs) {
+	if (reqs > 0) {
 		log_std(cd, "Requirements:\t");
 		for (i = 0; i < reqs; i++) {
 			jobj1 = json_object_array_get_idx(jobj_mandatory, i);
@@ -1706,7 +1706,7 @@ int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment)
 
 		if (!LUKS2_array_jobj(jobj_digest_segments, buf))
 			continue;
-		if (!json_object_array_length(jobj_digest_keyslots))
+		if (json_object_array_length(jobj_digest_keyslots) <= 0)
 			continue;
 
 		jobj1 = json_object_array_get_idx(jobj_digest_keyslots, 0);

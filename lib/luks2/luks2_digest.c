@@ -368,14 +368,14 @@ static int digest_unused(json_object *jobj_digest)
 	json_object *jobj;
 
 	json_object_object_get_ex(jobj_digest, "segments", &jobj);
-	if (!jobj || !json_object_is_type(jobj, json_type_array) || json_object_array_length(jobj))
+	if (!jobj || !json_object_is_type(jobj, json_type_array) || json_object_array_length(jobj) > 0)
 		return 0;
 
 	json_object_object_get_ex(jobj_digest, "keyslots", &jobj);
 	if (!jobj || !json_object_is_type(jobj, json_type_array))
 		return 0;
 
-	return json_object_array_length(jobj) ? 0 : 1;
+	return json_object_array_length(jobj) > 0 ? 0 : 1;
 }
 
 void LUKS2_digests_erase_unused(struct crypt_device *cd,
