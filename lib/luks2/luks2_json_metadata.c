@@ -68,7 +68,7 @@ struct json_object *LUKS2_array_jobj(struct json_object *array, const char *num)
 	struct json_object *jobj1;
 	int i;
 
-	for (i = 0; i < json_object_array_length(array); i++) {
+	for (i = 0; i < (int) json_object_array_length(array); i++) {
 		jobj1 = json_object_array_get_idx(array, i);
 		if (!strcmp(num, json_object_get_string(jobj1)))
 			return jobj1;
@@ -88,7 +88,7 @@ struct json_object *LUKS2_array_remove(struct json_object *array, const char *nu
 
 	/* Create new array without jobj_removing. */
 	array_new = json_object_new_array();
-	for (i = 0; i < json_object_array_length(array); i++) {
+	for (i = 0; i < (int) json_object_array_length(array); i++) {
 		jobj1 = json_object_array_get_idx(array, i);
 		if (jobj1 != jobj_removing)
 			json_object_array_add(array_new, json_object_get(jobj1));
@@ -294,7 +294,7 @@ static json_bool validate_json_uint32(json_object *jobj)
 static json_bool validate_keyslots_array(json_object *jarr, json_object *jobj_keys)
 {
 	json_object *jobj;
-	int i = 0, length = json_object_array_length(jarr);
+	int i = 0, length = (int) json_object_array_length(jarr);
 
 	while (i < length) {
 		jobj = json_object_array_get_idx(jarr, i);
@@ -315,7 +315,7 @@ static json_bool validate_keyslots_array(json_object *jarr, json_object *jobj_ke
 static json_bool validate_segments_array(json_object *jarr, json_object *jobj_segments)
 {
 	json_object *jobj;
-	int i = 0, length = json_object_array_length(jarr);
+	int i = 0, length = (int) json_object_array_length(jarr);
 
 	while (i < length) {
 		jobj = json_object_array_get_idx(jarr, i);
@@ -762,7 +762,7 @@ static int hdr_validate_config(json_object *hdr_jobj)
 			return 1;
 
 		/* All array members must be strings */
-		for (i = 0; i < json_object_array_length(jobj); i++)
+		for (i = 0; i < (int) json_object_array_length(jobj); i++)
 			if (!json_object_is_type(json_object_array_get_idx(jobj, i), json_type_string))
 				return 1;
 	}
@@ -778,7 +778,7 @@ static int hdr_validate_config(json_object *hdr_jobj)
 				return 1;
 
 			/* All array members must be strings */
-			for (i = 0; i < json_object_array_length(jobj1); i++)
+			for (i = 0; i < (int) json_object_array_length(jobj1); i++)
 				if (!json_object_is_type(json_object_array_get_idx(jobj1, i), json_type_string))
 					return 1;
 		}
@@ -1192,7 +1192,7 @@ int LUKS2_config_get_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 	if (!json_object_object_get_ex(jobj_config, "flags", &jobj_flags))
 		return 0;
 
-	for (i = 0; i < json_object_array_length(jobj_flags); i++) {
+	for (i = 0; i < (int) json_object_array_length(jobj_flags); i++) {
 		jobj1 = json_object_array_get_idx(jobj_flags, i);
 		for (j = 0; persistent_flags[j].description; j++) {
 			if (!strcmp(persistent_flags[j].description,
@@ -1287,7 +1287,7 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 	if (!json_object_object_get_ex(jobj_requirements, "mandatory", &jobj_mandatory))
 		return 0;
 
-	len = json_object_array_length(jobj_mandatory);
+	len = (int) json_object_array_length(jobj_mandatory);
 	if (len <= 0)
 		return 0;
 
@@ -1379,10 +1379,10 @@ static void hdr_dump_config(struct crypt_device *cd, json_object *hdr_jobj)
 
 	if (json_object_object_get_ex(hdr_jobj, "config", &jobj_config)) {
 		if (json_object_object_get_ex(jobj_config, "flags", &jobj_flags))
-			flags = json_object_array_length(jobj_flags);
+			flags = (int) json_object_array_length(jobj_flags);
 		if (json_object_object_get_ex(jobj_config, "requirements", &jobj_requirements) &&
 		    json_object_object_get_ex(jobj_requirements, "mandatory", &jobj_mandatory))
-			reqs = json_object_array_length(jobj_mandatory);
+			reqs = (int) json_object_array_length(jobj_mandatory);
 	}
 
 	for (i = 0; i < flags; i++) {
@@ -1455,7 +1455,7 @@ static void hdr_dump_keyslots(struct crypt_device *cd, json_object *hdr_jobj)
 		json_object_object_get_ex(hdr_jobj, "digests", &digests_jobj);
 		json_object_object_foreach(digests_jobj, key2, val2) {
 			json_object_object_get_ex(val2, "keyslots", &jobj2);
-			for (i = 0; i < json_object_array_length(jobj2); i++) {
+			for (i = 0; i < (int) json_object_array_length(jobj2); i++) {
 				jobj3 = json_object_array_get_idx(jobj2, i);
 				if (!strcmp(slot, json_object_get_string(jobj3))) {
 					log_std(cd, "\tDigest ID:  %s\n", key2);
@@ -1488,7 +1488,7 @@ static void hdr_dump_tokens(struct crypt_device *cd, json_object *hdr_jobj)
 		LUKS2_token_dump(cd, j);
 
 		json_object_object_get_ex(val, "keyslots", &jobj2);
-		for (i = 0; i < json_object_array_length(jobj2); i++) {
+		for (i = 0; i < (int) json_object_array_length(jobj2); i++) {
 			jobj3 = json_object_array_get_idx(jobj2, i);
 			log_std(cd, "\tKeyslot:  %s\n", json_object_get_string(jobj3));
 		}

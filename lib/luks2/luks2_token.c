@@ -361,7 +361,7 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 
 	/* Try to open keyslot referenced in token */
 	r = -EINVAL;
-	for (i = 0; i < json_object_array_length(jobj_token_keyslots) && r < 0; i++) {
+	for (i = 0; i < (int) json_object_array_length(jobj_token_keyslots) && r < 0; i++) {
 		jobj = json_object_array_get_idx(jobj_token_keyslots, i);
 		num = json_object_get_string(jobj);
 		log_dbg("Trying to open keyslot %s with token %d (type %s).", num, token, h->name);
