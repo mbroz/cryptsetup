@@ -403,6 +403,7 @@ AC_ARG_ENABLE([libargon2], AS_HELP_STRING([--enable-libargon2],
 if test x$enable_libargon2 = xyes ; then
 	AC_CHECK_HEADERS(argon2.h,,
 		[AC_MSG_ERROR([You need libargon2 development library installed.])])
+	AC_CHECK_DECL(Argon2_id,,[AC_MSG_ERROR([You need more recent Argon2 library with support for Argon2id.])], [#include <argon2.h>])
 	PKG_CHECK_MODULES([LIBARGON2], [libargon2],,[LIBARGON2_LIBS="-largon2"])
 	enable_internal_argon2=no
 else
