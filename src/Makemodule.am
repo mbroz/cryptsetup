@@ -112,6 +112,7 @@ cryptsetup_reencrypt_static_LDFLAGS = $(AM_LDFLAGS) -all-static
 cryptsetup_reencrypt_static_LDADD =	\
 	$(cryptsetup_reencrypt_LDADD)	\
 	@CRYPTO_STATIC_LIBS@		\
+	@PWQUALITY_STATIC_LIBS@		\
 	@DEVMAPPER_STATIC_LIBS@
 endif
 endif
