@@ -48,7 +48,7 @@ extern "C" {
 struct crypt_device; /* crypt device handle */
 
 /**
- * Initialize crypt device handle and check if provided device exists.
+ * Initialize crypt device handle and check if the provided device exists.
  *
  * @param cd Returns pointer to crypt device handle
  * @param device Path to the backing device.
@@ -59,7 +59,7 @@ struct crypt_device; /* crypt device handle */
  *
  * @return @e 0 on success or negative errno value otherwise.
  *
- * @note Note that logging is not initialized here, possible messages uses
+ * @note Note that logging is not initialized here, possible messages use
  * 	 default log function.
  */
 int crypt_init(struct crypt_device **cd, const char *device);
@@ -116,7 +116,8 @@ void crypt_free(struct crypt_device *cd);
  * @param usrptr provided identification in callback
  * @param msg Message for user to confirm
  *
- * @note Current version of cryptsetup API requires confirmation only when UUID is being changed
+ * @note Current version of cryptsetup API requires confirmation for UUID change and
+ *	 LUKS header restore only.
  */
 void crypt_set_confirm_callback(struct crypt_device *cd,
 	int (*confirm)(const char *msg, void *usrptr),
@@ -509,8 +510,8 @@ struct crypt_params_luks2 {
  *
  * @returns @e 0 on success or negative errno value otherwise.
  *
- * @note Note that crypt_format does not enable any keyslot (in case of work with LUKS device),
- * 	but it stores volume key internally and subsequent crypt_keyslot_add_* calls can be used.
+ * @note Note that crypt_format does not create LUKS keyslot (any version). To create keyslot
+ *	 call any crypt_keyslot_add_* function.
  * @note For VERITY @link crypt-type @endlink, only uuid parameter is used, other parameters
  * 	are ignored and verity specific attributes are set through mandatory params option.
  */
@@ -532,7 +533,14 @@ int crypt_format(struct crypt_device *cd,
  *
  * @returns 0 on success or negative errno value otherwise.
  *
- * @note Currently, only LUKS1->LUKS2 conversion is supported
+ * @note Currently, only LUKS1->LUKS2 and LUKS2->LUKS1 conversions are supported.
+ *	 Not all LUKS2 devices may be converted back to LUKS1. To make such a conversion
+ *	 posible all active LUKS2 keyslots must be in LUKS1 compatible mode (i.e. pbkdf
+ *	 type must be PBKDF2) and device cannot be formated with any authenticated
+ *	 encryption mode.
+ *
+ * @note Device must be offline for conversion. UUID change is not possible for active
+ *	 devices.
  */
 int crypt_convert(struct crypt_device *cd,
 	const char *type,
@@ -567,10 +575,11 @@ int crypt_set_label(struct crypt_device *cd,
 	const char *subsystem);
 
 /**
- * Set or unset loading of volume keys via kernel keyring. When set to 'enabled'
- * library loads key in kernel keyring first and pass the key description to
- * dm-crypt instead of binary key copy. If set to 'disabled' library fall backs
- * to classical method loading volume key directly in dm-crypt target.
+ * Enable or disable loading of volume keys via kernel keyring. When set to
+ * 'enabled' library loads key in kernel keyring first and pass the key
+ * description to dm-crypt instead of binary key copy. If set to 'disabled'
+ * library fallbacks to old method of loading volume key directly in
+ * dm-crypt target.
  *
  * @param cd crypt device handle, can be @e NULL
  * @param enable 0 to disable loading of volume keys via kernel keyring
@@ -604,7 +613,7 @@ int crypt_load(struct crypt_device *cd,
 	void *params);
 
 /**
- * Try to repair crypt device on-disk header if invalid.
+ * Try to repair crypt device LUKS1 on-disk header if invalid.
  *
  * @param cd crypt device handle
  * @param requested_type @link crypt-type @endlink or @e NULL for all known
@@ -612,6 +621,9 @@ int crypt_load(struct crypt_device *cd,
  *
  * @returns 0 on success or negative errno value otherwise.
  *
+ * @note Does not support LUKS2 devices explicitly. LUKS2 header is auto-repaired
+ *	 (if exactly one header checksum does not match) automatically on
+ *	 crypt_load().
  */
 int crypt_repair(struct crypt_device *cd,
 	const char *requested_type,
@@ -659,7 +671,7 @@ int crypt_suspend(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param name name of device to resume
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
- * @param passphrase passphrase used to unlock volume key, @e NULL for query
+ * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of @e passphrase (binary data)
  *
  * @return unlocked key slot number or negative errno otherwise.
@@ -678,7 +690,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param name name of device to resume
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
- * @param keyfile key file used to unlock volume key, @e NULL for passphrase query
+ * @param keyfile key file used to unlock volume key
  * @param keyfile_size number of bytes to read from keyfile, 0 is unlimited
  * @param keyfile_offset number of bytes to skip at start of keyfile
  *
@@ -716,9 +728,9 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
  *
  * @param cd crypt device handle
  * @param keyslot requested keyslot or @e CRYPT_ANY_SLOT
- * @param passphrase passphrase used to unlock volume key, @e NULL for query
+ * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of passphrase (binary data)
- * @param new_passphrase passphrase for new keyslot, @e NULL for query
+ * @param new_passphrase passphrase for new keyslot
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
  * @return allocated key slot number or negative errno otherwise.
@@ -738,9 +750,9 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param keyslot_old old keyslot or @e CRYPT_ANY_SLOT
  * @param keyslot_new new keyslot (can be the same as old)
- * @param passphrase passphrase used to unlock volume key, @e NULL for query
+ * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of passphrase (binary data)
- * @param new_passphrase passphrase for new keyslot, @e NULL for query
+ * @param new_passphrase passphrase for new keyslot
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
  * @return allocated key slot number or negative errno otherwise.
@@ -764,10 +776,10 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
  *
  * @param cd crypt device handle
  * @param keyslot requested keyslot or @e CRYPT_ANY_SLOT
- * @param keyfile key file used to unlock volume key, @e NULL for passphrase query
+ * @param keyfile key file used to unlock volume key
  * @param keyfile_size number of bytes to read from keyfile, @e 0 is unlimited
  * @param keyfile_offset number of bytes to skip at start of keyfile
- * @param new_keyfile keyfile for new keyslot, @e NULL for passphrase query
+ * @param new_keyfile keyfile for new keyslot
  * @param new_keyfile_size number of bytes to read from @e new_keyfile, @e 0 is unlimited
  * @param new_keyfile_offset number of bytes to skip at start of new_keyfile
  *
@@ -800,7 +812,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
  * @param volume_key provided volume key or @e NULL if used after crypt_format
  * @param volume_key_size size of volume_key
- * @param passphrase passphrase for new keyslot, @e NULL for query
+ * @param passphrase passphrase for new keyslot
  * @param passphrase_size size of passphrase
  *
  * @return allocated key slot number or negative errno otherwise.
@@ -824,7 +836,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
  * @param volume_key provided volume key or @e NULL (see note below)
  * @param volume_key_size size of volume_key
- * @param passphrase passphrase for new keyslot, @e NULL for query
+ * @param passphrase passphrase for new keyslot
  * @param passphrase_size size of passphrase
  * @param flags key flags to set
  *
@@ -992,7 +1004,7 @@ int crypt_persistent_flags_get(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check passphrase
  * @param keyslot requested keyslot to check or @e CRYPT_ANY_SLOT
- * @param passphrase passphrase used to unlock volume key, @e NULL for query
+ * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of @e passphrase
  * @param flags activation flags
  *
@@ -1131,7 +1143,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name);
  *
  * @return unlocked key slot number or negative errno otherwise.
  *
- * @note For TCRYPT cipher chain is  the volume key concatenated
+ * @note For TCRYPT cipher chain is the volume key concatenated
  * 	 for all ciphers in chain.
  */
 int crypt_volume_key_get(struct crypt_device *cd,
@@ -1582,7 +1594,7 @@ int crypt_wipe(struct crypt_device *cd,
  * Utilities for handling tokens LUKS2
  * Token is a device or a method how to read password for particular keyslot
  * automatically. It can be chunk of data stored on hardware token or
- * just a metadata how to generate password.
+ * just a metadata how to generate the password.
  *
  * @addtogroup crypt-tokens
  * @{
@@ -1614,7 +1626,7 @@ int crypt_token_json_get(struct crypt_device *cd,
  * @return allocated token id or negative errno otherwise.
  *
  * @note The buffer must be in proper JSON format and must contain at least
- *       string "type" with slot type and array of string names "keyslots".
+ *       string "type" with slot type and an array of string names "keyslots".
  *       Keyslots array contains assignments to particular slots and can be empty.
  */
 int crypt_token_json_set(struct crypt_device *cd,
@@ -1721,7 +1733,7 @@ int crypt_token_unassign_keyslot(struct crypt_device *cd,
 
 /**
  * Token handler open function prototype.
- * This fuction retrieves password from a token and return allocated buffer
+ * This function retrieves password from a token and return allocated buffer
  * containing this password. This buffer has to be deallocated by calling
  * free() function and content should be wiped before deallocation.
  *
