@@ -82,75 +82,23 @@ int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr, const char *type)
 	return -EINVAL;
 }
 
-static int digests_by_segment(json_object *jobj_digests, const char *segment,
-			      digests_t digests)
-{
-	json_object *jobj_segs;
-	int i = 0;
-
-	json_object_object_foreach(jobj_digests, dig, val) {
-		json_object_object_get_ex(val, "segments", &jobj_segs);
-		if (LUKS2_array_jobj(jobj_segs, segment))
-			digests[i++] = atoi(dig);
-	}
-
-	if (i < LUKS2_DIGEST_MAX)
-		digests[i] = -1;
-
-	return i ? 0 : -ENOENT;
-}
-
-static int is_in(const int super[], int super_size, int elem)
-{
-	int i;
-
-	for (i = 0; i < super_size && super[i] != -1; i++)
-		if (super[i] == elem)
-			return 1;
-	return 0;
-}
-
-static int is_subset(const int super[], const int sub[], int super_size)
-{
-	int i;
-
-	for (i = 0; i < super_size && sub[i] != -1; i++)
-		if (!is_in(super, super_size, sub[i]))
-			return 0;
-
-	return 1;
-}
-
 int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 {
-	char keyslot_name[16], segment_name[16];
-	digests_t keyslot_digests, segment_digests;
-	json_object *jobj_digests;
-	int r = -ENOENT;
+	int keyslot_digest, segment_digest;
 
 	/* no need to check anything */
 	if (segment == CRYPT_ANY_SEGMENT)
 		return 0;
 
-	if (snprintf(segment_name, sizeof(segment_name), "%u", segment) < 1 ||
-	    snprintf(keyslot_name, sizeof(keyslot_name), "%u", keyslot) < 1)
+	keyslot_digest = LUKS2_digest_by_keyslot(NULL, hdr, keyslot);
+	if (keyslot_digest < 0)
 		return -EINVAL;
 
-	/* empty set is subset of any set and it'd be wrong */
-	json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests);
-	r = LUKS2_digests_by_keyslot(NULL, hdr, keyslot, keyslot_digests);
-	if (r)
-		return r;
+	segment_digest = LUKS2_digest_by_segment(NULL, hdr, segment);
+	if (segment_digest < 0)
+		return -EINVAL;
 
-	/* empty set can't be superset of non-empty one */
-	if (digests_by_segment(jobj_digests, segment_name, segment_digests))
-		return r;
-
-	/*
-	 * keyslot may activate segment if set of digests for keyslot
-	 * is actually subset of set of digests for segment
-	 */
-	return is_subset(segment_digests, keyslot_digests, LUKS2_DIGEST_MAX) ? 0 : -ENOENT;
+	return segment_digest == keyslot_digest ? 0 : -ENOENT;
 }
 
 int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
@@ -160,7 +108,6 @@ int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 
 	json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots);
 
-	/* keyslot digests must be subset of segment digests */
 	json_object_object_foreach(jobj_keyslots, slot, val) {
 		UNUSED(val);
 		if (!LUKS2_keyslot_for_segment(hdr, atoi(slot), segment))

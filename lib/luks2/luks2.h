@@ -43,8 +43,6 @@
 
 #define LUKS2_DIGEST_MAX 8
 
-typedef int digests_t[LUKS2_DIGEST_MAX];
-
 #define CRYPT_ANY_SEGMENT -1
 #define CRYPT_DEFAULT_SEGMENT 0
 #define CRYPT_DEFAULT_SEGMENT_STR "0"
@@ -227,16 +225,14 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 /*
  * Generic LUKS2 digest
  */
-int LUKS2_digests_by_segment(struct crypt_device *cd,
+int LUKS2_digest_by_segment(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	int segment,
-	digests_t digests);
+	int segment);
 
-int LUKS2_digests_verify_by_segment(struct crypt_device *cd,
+int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int segment,
-	const struct volume_key *vk,
-	digests_t digests);
+	const struct volume_key *vk);
 
 void LUKS2_digests_erase_unused(struct crypt_device *cd,
 	struct luks2_hdr *hdr);
@@ -248,18 +244,6 @@ int LUKS2_digest_verify(struct crypt_device *cd,
 
 int LUKS2_digest_dump(struct crypt_device *cd,
 	int digest);
-
-int LUKS2_digest_json_set(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int digest,
-	const char *json);
-
-int LUKS2_digests_assign(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot,
-	digests_t digests,
-	int assign,
-	int commit);
 
 int LUKS2_digest_assign(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
@@ -275,10 +259,9 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd,
 	int assign,
 	int commit);
 
-int LUKS2_digests_by_keyslot(struct crypt_device *cd,
+int LUKS2_digest_by_keyslot(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	int keyslot,
-	digests_t digests);
+	int keyslot);
 
 int LUKS2_digest_create(struct crypt_device *cd,
 	const char *type,

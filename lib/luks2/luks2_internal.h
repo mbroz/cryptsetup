@@ -124,12 +124,9 @@ typedef struct  {
 	digest_dump_func   dump;
 } digest_handler;
 
-int crypt_digest_register(const digest_handler *handler);
 const digest_handler *LUKS2_digest_handler_type(struct crypt_device *cd, const char *type);
 
 #define CRYPT_ANY_DIGEST -1
-int crypt_keyslot_assign_digest(struct crypt_device *cd, int keyslot, int digest);
-int crypt_keyslot_unassign_digest(struct crypt_device *cd, int keyslot, int digest);
 
 /**
  * LUKS2 token handlers (internal use only)
