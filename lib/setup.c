@@ -2315,10 +2315,16 @@ void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring)
 /* internal only */
 void crypt_drop_keyring_key(struct crypt_device *cd, const char *key_description)
 {
+	int r;
+
 	if (!key_description)
 		return;
 
-	keyring_revoke_and_unlink_key(key_description);
+	log_dbg("Requesting keyring key %s for revoke and unlink.", key_description);
+
+	r = keyring_revoke_and_unlink_key(key_description);
+	if (r)
+		log_dbg("keyring_revoke_and_unlink failed (error %d)", r);
 	crypt_set_key_in_keyring(cd, 0);
 }
 
@@ -2908,10 +2914,13 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		return -EINVAL;
 	}
 
+	log_dbg("Loading key %s (%zu bytes) in thread keyring.", key_desc, vk->keylength);
+
 	r = keyring_add_key_in_thread_keyring(key_desc, vk->key, vk->keylength);
-	if (r)
+	if (r) {
+		log_dbg("keyring_add_key_in_thread_keyring failed (error %d)", r);
 		log_err(cd, _("Failed to load key in kernel keyring.\n"));
-	else
+	} else
 		crypt_set_key_in_keyring(cd, 1);
 
 	return r;
@@ -4216,6 +4225,26 @@ int crypt_volume_key_keyring(struct crypt_device *cd, int enable)
 	return 0;
 }
 
+/* internal only */
+int crypt_get_passphrase_from_keyring(const char *key_description,
+				      char **passphrase,
+				      size_t *passphrase_len)
+{
+	int r;
+
+	log_dbg("Looking for passphrase with key description: %s", key_description);
+
+	r = keyring_get_passphrase(key_description, passphrase, passphrase_len);
+	if (r) {
+		if (r == -ENOTSUP)
+			log_dbg("Kernel keyring features disabled.");
+		else
+			log_dbg("keyring_get_passphrase failed (error %d)", r);
+	}
+
+	return r;
+}
+
 int crypt_activate_by_keyring(struct crypt_device *cd,
 			      const char *name,
 			      const char *key_description,
@@ -4241,7 +4270,7 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	if (keyring_get_passphrase(key_description, &passphrase, &passphrase_size)) {
+	if (crypt_get_passphrase_from_keyring(key_description, &passphrase, &passphrase_size)) {
 		log_err(cd, _("Failed to read passphrase from keyring key %s"), key_description);
 		return -EINVAL;
 	}

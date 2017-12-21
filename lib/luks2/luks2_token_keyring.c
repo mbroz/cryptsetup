@@ -41,8 +41,7 @@ static int keyring_open(struct crypt_device *cd,
 
 	json_object_object_get_ex(jobj_token, "key_description", &jobj_key);
 
-	/* TODO: if r == -ENOKEY then instantiate the key? */
-	if (keyring_get_passphrase(json_object_get_string(jobj_key), buffer, buffer_len))
+	if (crypt_get_passphrase_from_keyring(json_object_get_string(jobj_key), buffer, buffer_len))
 		return -EINVAL;
 
 	return 0;

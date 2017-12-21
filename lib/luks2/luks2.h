@@ -327,6 +327,8 @@ int crypt_use_keyring_for_vk(const struct crypt_device *cd);
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk);
 void crypt_drop_keyring_key(struct crypt_device *cd, const char *key_description);
 const char *crypt_get_key_description_by_keyslot(struct crypt_device *cd, int keyslot);
+int crypt_get_passphrase_from_keyring(const char *key_description,
+				      char **passphrase, size_t *passphrase_len);
 
 struct luks_phdr;
 int LUKS2_luks1_to_luks2(struct crypt_device *cd,

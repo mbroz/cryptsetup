@@ -31,7 +31,7 @@
 typedef int32_t key_serial_t;
 #endif
 
-#include "internal.h"
+#include "utils_crypt.h"
 #include "utils_keyring.h"
 
 #ifdef KERNEL_KEYRING
@@ -91,79 +91,15 @@ int keyring_add_key_in_thread_keyring(const char *key_desc, const void *key, siz
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
 
-	log_dbg("Loading key %s (%zu bytes) in thread keyring", key_desc, key_size);
-
 	kid = add_key("logon", key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
-	if (kid < 0) {
-		switch (errno) {
-		case EINVAL:
-			log_dbg("add_key: the payload data is invalid.");
-			break;
-		case ENOMEM:
-			log_dbg("add_key: insufficient memory to create a key.");
-			break;
-		case EDQUOT:
-			log_dbg("add_key: quota would exceed.");
-			break;
-		}
+	if (kid < 0)
 		return -errno;
-	}
 
 	return 0;
 #else
-	return -EINVAL;
+	return -ENOTSUP;
 #endif
 }
-
-#ifdef KERNEL_KEYRING
-static key_serial_t request_key_verbose(const char *type,
-	const char *key_desc,
-	const char *callout_info,
-	key_serial_t keyring)
-{
-	key_serial_t kid;
-
-	/*
-	 * Search for a key in this particular order (first found, first served):
-	 *
-	 * 1) thread keyring
-	 * 2) process keyring
-	 * 3) user keyring (if exists) or user session keyring (if exists)
-	 */
-	kid = request_key(type, key_desc, callout_info, keyring);
-	if (kid < 0) {
-		switch (errno) {
-		case EACCES:
-			log_dbg("request_key: The keyring wasn't available for modification by the user.");
-			break;
-		case EINTR:
-			log_dbg("request_key: The request was interrupted by a signal.");
-			break;
-		case EDQUOT:
-			log_dbg("request_key: The key quota for this user would be exceeded by creating this key or linking it to the keyring.");
-			break;
-		case EKEYEXPIRED:
-			log_dbg("request_key: An expired key was found, but no replacement could be obtained.");
-			break;
-		case EKEYREVOKED:
-			log_dbg("request_key: A revoked key was found, but no replacement could be obtained.");
-			break;
-		case ENOKEY:
-			log_dbg("request_key: No matching key was found.");
-			break;
-		/* NOTE following error codes are unreachable unless key generation is triggered */
-		case EKEYREJECTED:
-			log_dbg("request_key: The attempt to generate a new key was rejected.");
-			break;
-		case ENOMEM:
-			log_dbg("request_key: Insufficient memory to create a key.");
-			break;
-		}
-	}
-
-	return kid;
-}
-#endif
 
 int keyring_get_passphrase(const char *key_desc,
 		      char **passphrase,
@@ -176,10 +112,8 @@ int keyring_get_passphrase(const char *key_desc,
 	char *buf = NULL;
 	size_t len = 0;
 
-	log_dbg("Looking for key described with '%s'.", key_desc);
-
 	do
-		kid = request_key_verbose("user", key_desc, NULL, 0);
+		kid = request_key("user", key_desc, NULL, 0);
 	while (kid < 0 && errno == EINTR);
 
 	if (kid < 0)
@@ -201,20 +135,6 @@ int keyring_get_passphrase(const char *key_desc,
 		err = errno;
 		crypt_memzero(buf, len);
 		free(buf);
-		switch (err) {
-		case ENOKEY:
-			log_dbg("keyctl_read: The key specified is invalid.");
-			break;
-		case EKEYEXPIRED:
-			log_dbg("keyctl_read: The key specified has expired.");
-			break;
-		case EKEYREVOKED:
-			log_dbg("keyctl_read: The key specified had been revoked.");
-			break;
-		case EACCES:
-			log_dbg("keyctl_read: The key exists, but is not readable by the calling process.");
-			break;
-		}
 		return -err;
 	}
 
@@ -223,8 +143,7 @@ int keyring_get_passphrase(const char *key_desc,
 
 	return 0;
 #else
-	log_dbg("Kernel keyring features disabled");
-	return -EINVAL;
+	return -ENOTSUP;
 #endif
 }
 
@@ -233,32 +152,15 @@ int keyring_revoke_and_unlink_key(const char *key_desc)
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
 
-	log_dbg("requesting keyring key %s for removal", key_desc);
-
 	do
-		kid = request_key_verbose("logon", key_desc, NULL, 0);
+		kid = request_key("logon", key_desc, NULL, 0);
 	while (kid < 0 && errno == EINTR);
 
 	if (kid < 0)
 		return 0;
 
-	log_dbg("Revoking key %s", key_desc);
-
-	if (keyctl_revoke(kid)) {
-		switch (errno) {
-		case ENOKEY:
-			log_dbg ("keyctl_revoke: The specified key does not exist.");
-			break;
-		case EKEYREVOKED:
-			log_dbg("keyctl_revoke: The key has already been revoked.");
-			break;
-		case EACCES:
-			log_dbg("keyctl_revoke: The name key exists, but is not writable by the calling process.");
-			return -errno;
-		default:
-			log_dbg("keyctl_revoke: Unexpected errno: %d", errno);
-		}
-	}
+	if (keyctl_revoke(kid))
+		return -errno;
 
 	/*
 	 * best effort only. the key could have been linked
@@ -271,6 +173,6 @@ int keyring_revoke_and_unlink_key(const char *key_desc)
 
 	return 0;
 #else
-	return -EINVAL;
+	return -ENOTSUP;
 #endif
 }
