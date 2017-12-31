@@ -1827,7 +1827,7 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 
 	if (r) {
 		if (!quiet)
-			log_err(cd, _("Failed to read LUKS2 requierements.\n"));
+			log_err(cd, _("Failed to read LUKS2 requirements.\n"));
 		return r;
 	}
 
