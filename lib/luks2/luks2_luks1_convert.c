@@ -642,7 +642,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		}
 
 		if (i >= LUKS_NUMKEYS) {
-			log_err(cd, _("Cannot convert to LUKS1 format - slot %u (over maximum slots) is still active .\n"), i);
+			log_err(cd, _("Cannot convert to LUKS1 format - slot %u (over maximum slots) is still active.\n"), i);
 			return -EINVAL;
 		}
 
