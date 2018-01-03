@@ -880,8 +880,7 @@ int LUKS2_hdr_uuid(struct crypt_device *cd, struct luks2_hdr *hdr, const char *u
 
 	uuid_unparse(partitionUuid, hdr->uuid);
 
-	/* FIXME: why is this not LUKS2_hdr_write? */
-	return LUKS2_disk_hdr_write(cd, hdr, crypt_metadata_device(cd));
+	return LUKS2_hdr_write(cd, hdr);
 }
 
 int LUKS2_hdr_labels(struct crypt_device *cd, struct luks2_hdr *hdr,
