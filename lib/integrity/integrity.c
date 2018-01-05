@@ -130,6 +130,7 @@ int INTEGRITY_key_size(struct crypt_device *cd)
 
 int INTEGRITY_tag_size(struct crypt_device *cd,
 		       const char *integrity,
+		       const char *cipher,
 		       const char *cipher_mode)
 {
 	int iv_tag_size = 0, auth_tag_size = 0;

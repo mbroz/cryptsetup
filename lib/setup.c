@@ -1502,7 +1502,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			params->integrity_params->journal_integrity)
 				return -ENOTSUP;
 		}
-		if (!INTEGRITY_tag_size(cd, integrity, cipher_mode)) {
+		if (!INTEGRITY_tag_size(cd, integrity, cipher, cipher_mode)) {
 			if (!strcmp(integrity, "none"))
 				integrity = NULL;
 			else
@@ -3711,6 +3711,7 @@ int crypt_get_integrity_tag_size(struct crypt_device *cd)
 
 	if (isLUKS2(cd->type))
 		return INTEGRITY_tag_size(cd, crypt_get_integrity(cd),
+					  crypt_get_cipher(cd),
 					  crypt_get_cipher_mode(cd));
 	return 0;
 }
@@ -3966,7 +3967,7 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 
 		ip->integrity = LUKS2_get_integrity(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
 		ip->integrity_key_size = crypt_get_integrity_key_size(cd);
-		ip->tag_size = INTEGRITY_tag_size(cd, ip->integrity, crypt_get_cipher_mode(cd));
+		ip->tag_size = INTEGRITY_tag_size(cd, ip->integrity, crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
 
 		ip->journal_integrity = NULL;
 		ip->journal_integrity_key_size = 0;
