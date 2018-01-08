@@ -611,6 +611,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	int i, r, last_active = 0;
 	uint64_t offset, area_length;
 	char buf[256], luksMagic[] = LUKS_MAGIC;
+	struct luks2_keyslot_params params;
 
 	jobj_digest  = LUKS2_get_digest_jobj(hdr2, 0);
 	if (!jobj_digest)
@@ -628,9 +629,16 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return -EINVAL;
 	}
 
-	key_size = r = LUKS2_get_volume_key_size(hdr2, 0);
+	/* We really do not care about params later except keys_size */
+	r = LUKS2_keyslot_params_default(cd, hdr2, 0, &params);
 	if (r < 0)
 		return -EINVAL;
+
+	r = LUKS2_get_volume_key_size(hdr2, 0);
+	if (r < 0)
+		return -EINVAL;
+	key_size = r;
+	params.area.raw.key_size = key_size;
 
 	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
 		if (LUKS2_keyslot_info(hdr2, i) == CRYPT_SLOT_INACTIVE)
@@ -670,7 +678,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 			if (LUKS2_find_area_gap(cd, hdr2, key_size, &offset, &area_length))
 				return -EINVAL;
 			/* FIXME: luks2 reload is required! */
-			if (luks2_keyslot_alloc(cd, i, key_size))
+			if (luks2_keyslot_alloc(cd, i, key_size, &params))
 				return -EINVAL;
 		}
 

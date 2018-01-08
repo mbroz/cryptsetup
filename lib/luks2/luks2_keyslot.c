@@ -117,6 +117,50 @@ int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 	return num;
 }
 
+int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
+	size_t key_size, struct luks2_keyslot_params *params)
+{
+	int r, integrity_key_size = crypt_get_integrity_key_size(cd);
+	const struct crypt_pbkdf_type *pbkdf = crypt_get_pbkdf_type(cd);
+
+	if (!hdr || !pbkdf || !params)
+		return -EINVAL;
+
+	params->af_type   = LUKS2_KEYSLOT_AF_LUKS1;
+	params->area_type = LUKS2_KEYSLOT_AREA_RAW;
+
+	/* set keyslot AF parameters */
+	/* currently we use hash for AF from pbkdf settings */
+	r = snprintf(params->af.luks1.hash, sizeof(params->af.luks1.hash),
+		     "%s", pbkdf->hash);
+	if (r < 0 || (size_t)r >= sizeof(params->af.luks1.hash))
+		return -EINVAL;
+
+	params->af.luks1.stripes = 4000;
+
+	/* set keyslot area encryption parameters */
+	/* short circuit authenticated encryption hardcoded defaults */
+	if (crypt_get_integrity_tag_size(cd) || key_size == 0) {
+		// FIXME: fixed cipher and key size can be wrong
+		snprintf(params->area.raw.encryption, sizeof(params->area.raw.encryption),
+			 "aes-xts-plain64");
+		params->area.raw.key_size = 32;
+		return 0;
+	}
+
+	r = snprintf(params->area.raw.encryption, sizeof(params->area.raw.encryption),
+		     "%s", LUKS2_get_cipher(hdr, CRYPT_DEFAULT_SEGMENT));
+	if (r < 0 || (size_t)r >= sizeof(params->area.raw.encryption))
+		return -EINVAL;
+
+	/* Slot encryption tries to use the same key size as for the main algorithm */
+	if (integrity_key_size > key_size)
+		return -EINVAL;
+	params->area.raw.key_size = key_size - integrity_key_size;
+
+	return 0;
+}
+
 crypt_keyslot_info LUKS2_keyslot_info(struct luks2_hdr *hdr, int keyslot)
 {
 	crypt_keyslot_info ki;
@@ -281,7 +325,8 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 	int keyslot,
 	const char *password,
 	size_t password_len,
-	const struct volume_key *vk)
+	const struct volume_key *vk,
+	const struct luks2_keyslot_params *params)
 {
 	const keyslot_handler *h;
 	int r;
@@ -295,7 +340,7 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 		if (!h)
 			return -EINVAL;
 
-		r = h->alloc(cd, keyslot, vk->keylength);
+		r = h->alloc(cd, keyslot, vk->keylength, params);
 		if (r)
 			return r;
 	} else if (!(h = LUKS2_keyslot_handler(cd, keyslot)))

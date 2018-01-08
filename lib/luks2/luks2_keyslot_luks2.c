@@ -376,17 +376,23 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 
 int luks2_keyslot_alloc(struct crypt_device *cd,
 	int keyslot,
-	size_t volume_key_len)
+	size_t volume_key_len,
+	const struct luks2_keyslot_params *params)
 {
 	struct luks2_hdr *hdr;
 	const struct crypt_pbkdf_type *pbkdf;
-	char cipher[2 * MAX_CIPHER_LEN + 1], num[16];
+	char num[16];
 	uint64_t area_offset, area_length;
 	json_object *jobj_keyslots, *jobj_keyslot, *jobj_kdf, *jobj_af, *jobj_area;
-	size_t keyslot_key_len;
 	int r;
 
 	log_dbg("Trying to allocate LUKS2 keyslot %d.", keyslot);
+
+	if (!params || params->area_type != LUKS2_KEYSLOT_AREA_RAW ||
+	    params->af_type != LUKS2_KEYSLOT_AF_LUKS1) {
+		log_dbg("Invalid LUKS2 keyslot parameters.");
+		return -EINVAL;
+	}
 
 	if (!(hdr = crypt_get_hdr(cd, CRYPT_LUKS2)))
 		return -EINVAL;
@@ -439,28 +445,15 @@ int luks2_keyslot_alloc(struct crypt_device *cd,
 	/* AF object */
 	jobj_af = json_object_new_object();
 	json_object_object_add(jobj_af, "type", json_object_new_string("luks1"));
-	json_object_object_add(jobj_af, "hash", json_object_new_string(pbkdf->hash));
-	json_object_object_add(jobj_af, "stripes", json_object_new_int(4000));
+	json_object_object_add(jobj_af, "hash", json_object_new_string(params->af.luks1.hash));
+	json_object_object_add(jobj_af, "stripes", json_object_new_int(params->af.luks1.stripes));
 	json_object_object_add(jobj_keyslot, "af", jobj_af);
 
 	/* Area object */
 	jobj_area = json_object_new_object();
 	json_object_object_add(jobj_area, "type", json_object_new_string("raw"));
-
-	/* Slot encryption tries to use the same key size as fot the main algorithm */
-	keyslot_key_len = volume_key_len - crypt_get_integrity_key_size(cd);
-
-	/* Cannot use metadata tags in keyslot */
-	if (crypt_get_integrity_tag_size(cd)) {
-		snprintf(cipher, sizeof(cipher), "aes-xts-plain64"); // FIXME: fixed cipher and key size can be wrong
-		keyslot_key_len = 32;
-	} else if (crypt_get_cipher_mode(cd))
-		snprintf(cipher, sizeof(cipher), "%s-%s", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
-	else
-		snprintf(cipher, sizeof(cipher), "%s", crypt_get_cipher(cd));
-
-	json_object_object_add(jobj_area, "encryption", json_object_new_string(cipher));
-	json_object_object_add(jobj_area, "key_size", json_object_new_int(keyslot_key_len));
+	json_object_object_add(jobj_area, "encryption", json_object_new_string(params->area.raw.encryption));
+	json_object_object_add(jobj_area, "key_size", json_object_new_int(params->area.raw.key_size));
 	json_object_object_add(jobj_area, "offset", json_object_new_uint64(area_offset));
 	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);

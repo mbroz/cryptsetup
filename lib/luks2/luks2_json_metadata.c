@@ -26,6 +26,8 @@
 #include <ctype.h>
 #include <uuid/uuid.h>
 
+#define LUKS_STRIPES 4000
+
 struct interval {
 	uint64_t offset;
 	uint64_t length;
@@ -1609,6 +1611,78 @@ const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment)
 		return NULL;
 
 	return json_object_get_string(jobj3);
+}
+
+static int luks2_keyslot_af_params(json_object *jobj_af, struct luks2_keyslot_params *params)
+{
+	int r;
+	json_object *jobj_type, *jobj1;
+
+	/* currently we only support luks1 AF */
+	json_object_object_get_ex(jobj_af, "type", &jobj_type);
+	if (strcmp(json_object_get_string(jobj_type), "luks1"))
+		return 1;
+
+	/* process luks1 af params */
+	json_object_object_get_ex(jobj_af, "stripes", &jobj1);
+	params->af.luks1.stripes = json_object_get_int(jobj1);
+	if (params->af.luks1.stripes != LUKS_STRIPES)
+		return 1;
+
+	json_object_object_get_ex(jobj_af, "hash", &jobj1);
+	r = snprintf(params->af.luks1.hash, sizeof(params->af.luks1.hash), "%s",
+		     json_object_get_string(jobj1));
+	if (r < 0 || (size_t)r >= sizeof(params->af.luks1.hash))
+		return 1;
+
+	params->af_type = LUKS2_KEYSLOT_AF_LUKS1;
+
+	return 0;
+}
+
+static int luks2_keyslot_area_params(json_object *jobj_area, struct luks2_keyslot_params *params)
+{
+	int r;
+	json_object *jobj_type, *jobj1;
+
+	/* currently we only support raw length preserving area encryption */
+	json_object_object_get_ex(jobj_area, "type", &jobj_type);
+	if (strcmp(json_object_get_string(jobj_type), "raw"))
+		return 1;
+
+	/* process raw area encryption params */
+	json_object_object_get_ex(jobj_area, "encryption", &jobj1);
+	r = snprintf(params->area.raw.encryption, sizeof(params->area.raw.encryption), "%s",
+		     json_object_get_string(jobj1));
+	if (r < 0 || (size_t)r >= sizeof(params->area.raw.encryption))
+		return 1;
+	json_object_object_get_ex(jobj_area, "key_size", &jobj1);
+	params->area.raw.key_size = json_object_get_int(jobj1);
+
+	params->area_type = LUKS2_KEYSLOT_AREA_RAW;
+
+	return 0;
+}
+
+/* keyslot must be validated */
+int LUKS2_get_keyslot_params(struct luks2_hdr *hdr, int keyslot, struct luks2_keyslot_params *params)
+{
+	json_object *jobj_keyslot, *jobj_af, *jobj_area;
+
+	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
+	if (!jobj_keyslot)
+		return -ENOENT;
+
+	if (!json_object_object_get_ex(jobj_keyslot, "area", &jobj_area) ||
+	    !json_object_object_get_ex(jobj_keyslot, "af", &jobj_af))
+		return -EINVAL;
+
+	if (luks2_keyslot_af_params(jobj_af, params))
+		return -EINVAL;
+	if (luks2_keyslot_area_params(jobj_area, params))
+		return -EINVAL;
+
+	return 0;
 }
 
 const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment)

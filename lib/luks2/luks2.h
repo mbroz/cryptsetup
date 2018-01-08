@@ -95,6 +95,25 @@ struct luks2_hdr {
 	json_object	*jobj;
 };
 
+struct luks2_keyslot_params {
+	enum { LUKS2_KEYSLOT_AF_LUKS1 = 0 } af_type;
+	enum { LUKS2_KEYSLOT_AREA_RAW = 0 } area_type;
+
+	union {
+	struct {
+		char hash[LUKS2_CHECKSUM_ALG_L]; // or include luks.h
+		unsigned int stripes;
+	} luks1;
+	} af;
+
+	union {
+	struct {
+		char encryption[65]; // or include utils_crypt.h
+		size_t key_size;
+	} raw;
+	} area;
+};
+
 /*
  * Supportable header sizes (hdr_disk + JSON area)
  * Also used as offset for the 2nd header.
@@ -151,7 +170,8 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 	int keyslot,
 	const char *password,
 	size_t password_len,
-	const struct volume_key *vk);
+	const struct volume_key *vk,
+	const struct luks2_keyslot_params *params);
 
 int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
@@ -299,6 +319,10 @@ uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr);
 int LUKS2_get_sector_size(struct luks2_hdr *hdr);
 const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment);
 const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment);
+int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
+	size_t key_size, struct luks2_keyslot_params *params);
+int LUKS2_get_keyslot_params(struct luks2_hdr *hdr, int keyslot,
+	struct luks2_keyslot_params *params);
 int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment);
 int LUKS2_get_keyslot_key_size(struct luks2_hdr *hdr, int keyslot);
 int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr, const char *type);

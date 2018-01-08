@@ -2262,6 +2262,11 @@ static void Luks2KeyslotAdd(void)
 	/* otoh passphrase check should pass */
 	EQ_(crypt_activate_by_passphrase(cd, NULL, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
 	EQ_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
+	/* in general crypt_keyslot_add_by_key must allow any reasonable key size
+	 * even though such keyslot will not be usable for segment encryption */
+	EQ_(crypt_keyslot_add_by_key(cd, 2, key2, key_size-1, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 2);
+	EQ_(crypt_keyslot_add_by_key(cd, 3, key2, 13, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 3);
+
 	crypt_free(cd);
 }
 
