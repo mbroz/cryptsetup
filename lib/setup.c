@@ -3803,6 +3803,8 @@ const char *crypt_get_device_name(struct crypt_device *cd)
 
 int crypt_get_volume_key_size(struct crypt_device *cd)
 {
+	int r;
+
 	if (!cd)
 		return 0;
 
@@ -3812,8 +3814,12 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 	if (isLUKS1(cd->type))
 		return cd->u.luks1.hdr.keyBytes;
 
-	if (isLUKS2(cd->type))
-		return LUKS2_get_volume_key_size(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
+	if (isLUKS2(cd->type)) {
+		r = LUKS2_get_volume_key_size(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
+		if (r < 0 && cd->volume_key)
+			r = cd->volume_key->keylength;
+		return r < 0 ? 0 : r;
+	}
 
 	if (isLOOPAES(cd->type))
 		return cd->u.loopaes.key_size;
