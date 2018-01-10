@@ -23,7 +23,7 @@ cleanup() {
 fail()
 {
 	echo
-	[ -n "$1" ] && echo "FAIL: $1"
+	[ -n "$1" ] && echo "FAILED at line $(caller)"
 	cleanup
 	exit 100
 }
@@ -133,7 +133,7 @@ int_error_detection() # alg tagsize sector_size key_file key_size
 		echo -n "[KEYED HASH]"
 		KEY_HEX=$(xxd -c 256 -l $5 -p $4)
 		[ -z "$KEY_HEX" ] && fail "Cannot decode key."
-		dmsetup table $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
+		dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
 	fi
 
 	echo -n "[WRITE DATA]"
@@ -171,7 +171,7 @@ int_journal() # 1 alg, 2 tagsize, 3 sector_size, 4 watermark, 5 commit_time, 6 j
     echo -n "[KEYED HASH]"
     KEY_HEX=$(xxd -c 256 -l $8 -p $7)
     [ -z "$KEY_HEX" ] && fail "Cannot decode key."
-    dmsetup table $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
+    dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
 
     status_check "journal watermark" "${4}%"
     status_check "journal commit time" "${5} ms"
@@ -196,7 +196,7 @@ int_journal_crypt() # crypt_alg crypt_alg_kernel crypt_key crypt_key_size
 
 	KEY_HEX=$(xxd -c 256 -l $4 -p $3)
 	[ -z "$KEY_HEX" ] && fail "Cannot decode key."
-	dmsetup table $DEV_NAME | grep -q "journal_crypt:$2:$KEY_HEX" || fail "Key mismatch."
+	dmsetup table --showkeys $DEV_NAME | grep -q "journal_crypt:$2:$KEY_HEX" || fail "Key mismatch."
 
 	$INTSETUP close $DEV_NAME
 	echo "[OK]"
