@@ -11,6 +11,7 @@ TESTS = api-test \
 	luks1-compat-test \
 	device-test \
 	keyring-test \
+	keyring-compat-test \
 	luks2-validation-test \
 	luks2-integrity-test
 
@@ -55,6 +56,7 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	luks2-integrity-test \
 	device-test \
 	keyring-test \
+	keyring-compat-test \
 	integrity-compat-test \
 	cryptsetup-valg-supps valg.sh valg-api.sh
 
