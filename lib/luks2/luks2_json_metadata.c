@@ -1748,7 +1748,7 @@ int LUKS2_activate(struct crypt_device *cd,
 		.u.crypt = {
 			.vk     = vk,
 			.offset = crypt_get_data_offset(cd),
-			.cipher = LUKS2_get_cipher(hdr, 0),
+			.cipher = LUKS2_get_cipher(hdr, CRYPT_DEFAULT_SEGMENT),
 			.integrity = crypt_get_integrity(cd),
 			.iv_offset = 0,
 			.tag_size = crypt_get_integrity_tag_size(cd),
