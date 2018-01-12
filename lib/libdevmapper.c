@@ -109,13 +109,16 @@ static void set_dm_error(int level,
 
 static int _dm_simple(int task, const char *name, int udev_wait);
 
-static int _dm_satisfies_version(unsigned target_maj, unsigned target_min,
-				 unsigned actual_maj, unsigned actual_min)
+static int _dm_satisfies_version(unsigned target_maj, unsigned target_min, unsigned target_patch,
+				 unsigned actual_maj, unsigned actual_min, unsigned actual_patch)
 {
 	if (actual_maj > target_maj)
 		return 1;
 
-	if (actual_maj == target_maj && actual_min >= target_min)
+	if (actual_maj == target_maj && actual_min > target_min)
+		return 1;
+
+	if (actual_maj == target_maj && actual_min == target_min && actual_patch >= target_patch)
 		return 1;
 
 	return 0;
@@ -131,33 +134,33 @@ static void _dm_set_crypt_compat(unsigned crypt_maj,
 	log_dbg("Detected dm-crypt version %i.%i.%i.",
 		crypt_maj, crypt_min, crypt_patch);
 
-	if (_dm_satisfies_version(1, 2, crypt_maj, crypt_min))
+	if (_dm_satisfies_version(1, 2, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_KEY_WIPE_SUPPORTED;
 	else
 		log_dbg("Suspend and resume disabled, no wipe key support.");
 
-	if (_dm_satisfies_version(1, 10, crypt_maj, crypt_min))
+	if (_dm_satisfies_version(1, 10, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_LMK_SUPPORTED;
 
 	/* not perfect, 2.6.33 supports with 1.7.0 */
-	if (_dm_satisfies_version(1, 8, crypt_maj, crypt_min))
+	if (_dm_satisfies_version(1, 8, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_PLAIN64_SUPPORTED;
 
-	if (_dm_satisfies_version(1, 11, crypt_maj, crypt_min))
+	if (_dm_satisfies_version(1, 11, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_DISCARDS_SUPPORTED;
 
-	if (_dm_satisfies_version(1, 13, crypt_maj, crypt_min))
+	if (_dm_satisfies_version(1, 13, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_TCW_SUPPORTED;
 
-	if (_dm_satisfies_version(1, 14, crypt_maj, crypt_min)) {
+	if (_dm_satisfies_version(1, 14, 0, crypt_maj, crypt_min, crypt_patch)) {
 		_dm_flags |= DM_SAME_CPU_CRYPT_SUPPORTED;
 		_dm_flags |= DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED;
 	}
 
-	if (_dm_satisfies_version(1, 15, crypt_maj, crypt_min))
+	if (_dm_satisfies_version(1, 18, 1, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_KERNEL_KEYRING_SUPPORTED;
 
-	if (_dm_satisfies_version(1, 17, crypt_maj, crypt_min)) {
+	if (_dm_satisfies_version(1, 17, 0, crypt_maj, crypt_min, crypt_patch)) {
 		_dm_flags |= DM_SECTOR_SIZE_SUPPORTED;
 		_dm_flags |= DM_CAPI_STRING_SUPPORTED;
 	}
@@ -183,7 +186,7 @@ static void _dm_set_verity_compat(unsigned verity_maj,
 	 * (but some dm-verity targets 1.2 don't support it)
 	 * FEC is added in 1.3 as well.
 	 */
-	if (_dm_satisfies_version(1, 3, verity_maj, verity_min)) {
+	if (_dm_satisfies_version(1, 3, 0, verity_maj, verity_min, verity_patch)) {
 		_dm_flags |= DM_VERITY_ON_CORRUPTION_SUPPORTED;
 		_dm_flags |= DM_VERITY_FEC_SUPPORTED;
 	}
@@ -238,10 +241,10 @@ static int _dm_check_versions(dm_target_type target_type)
 			goto out;
 		log_dbg("Detected dm-ioctl version %u.%u.%u.", dm_maj, dm_min, dm_patch);
 
-		if (_dm_satisfies_version(4, 20, dm_maj, dm_min))
+		if (_dm_satisfies_version(4, 20, 0, dm_maj, dm_min, dm_patch))
 			_dm_flags |= DM_SECURE_SUPPORTED;
 #if HAVE_DECL_DM_TASK_DEFERRED_REMOVE
-		if (_dm_satisfies_version(4, 27, dm_maj, dm_min))
+		if (_dm_satisfies_version(4, 27, 0, dm_maj, dm_min, dm_patch))
 			_dm_flags |= DM_DEFERRED_SUPPORTED;
 #endif
 	}
