@@ -87,4 +87,4 @@ For cryptsetup and LUKS related questions, please use the dm-crypt mailing list,
 If you want to subscribe just send an empty mail to [dm-crypt-subscribe@saout.de](mailto:dm-crypt-subscribe@saout.de).
 
 You can also browse [list archive](http://www.saout.de/pipermail/dm-crypt/) or read it through
-[web interface](http://news.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt).
+[web interface](https://marc.info/?l=dm-crypt).
