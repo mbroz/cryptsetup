@@ -2964,6 +2964,9 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 	int r;
 	struct volume_key *vk = NULL;
 
+	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd))
+		return -EINVAL;
+
 	/* plain, use hashed passphrase */
 	if (isPLAIN(cd->type)) {
 		if (!name)
@@ -3072,7 +3075,8 @@ int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	unsigned int key_count = 0;
 	int r;
 
-	if (!cd || !keyfile)
+	if (!cd || !keyfile ||
+	    ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd)))
 		return -EINVAL;
 
 	log_dbg("%s volume %s [keyslot %d] using keyfile %s.",
@@ -3202,7 +3206,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 	int r;
 
-	if (!cd)
+	if (!cd ||
+	    ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd)))
 		return -EINVAL;
 
 	log_dbg("%s volume %s by volume key.", name ? "Activating" : "Checking",
