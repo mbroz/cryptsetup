@@ -286,15 +286,15 @@ int _system(const char *command, int warn)
 	return r;
 }
 
-static int t_dm_satisfies_version(unsigned target_maj, unsigned target_min,
-				 unsigned actual_maj, unsigned actual_min)
+static int t_dm_satisfies_version(unsigned target_maj, unsigned target_min, unsigned target_patch,
+				 unsigned actual_maj, unsigned actual_min, unsigned actual_patch)
 {
 	if (actual_maj > target_maj)
 		return 1;
-
-	if (actual_maj == target_maj && actual_min >= target_min)
+	if (actual_maj == target_maj && actual_min > target_min)
 		return 1;
-
+	if (actual_maj == target_maj && actual_min == target_min && actual_patch >= target_patch)
+		return 1;
 	return 0;
 }
 
@@ -309,30 +309,30 @@ static void t_dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 		dm_patch = 0;
 	}
 
-	if (t_dm_satisfies_version(1, 2, crypt_maj, crypt_min))
+	if (t_dm_satisfies_version(1, 2, 0, crypt_maj, crypt_min, 0))
 		t_dm_crypt_flags |= T_DM_KEY_WIPE_SUPPORTED;
 
-	if (t_dm_satisfies_version(1, 10, crypt_maj, crypt_min))
+	if (t_dm_satisfies_version(1, 10, 0, crypt_maj, crypt_min, 0))
 		t_dm_crypt_flags |= T_DM_LMK_SUPPORTED;
 
-	if (t_dm_satisfies_version(4, 20, dm_maj, dm_min))
+	if (t_dm_satisfies_version(4, 20, 0, dm_maj, dm_min, 0))
 		t_dm_crypt_flags |= T_DM_SECURE_SUPPORTED;
 
-	if (t_dm_satisfies_version(1, 8, crypt_maj, crypt_min))
+	if (t_dm_satisfies_version(1, 8, 0, crypt_maj, crypt_min, 0))
 		t_dm_crypt_flags |= T_DM_PLAIN64_SUPPORTED;
 
-	if (t_dm_satisfies_version(1, 11, crypt_maj, crypt_min))
+	if (t_dm_satisfies_version(1, 11, 0, crypt_maj, crypt_min, 0))
 		t_dm_crypt_flags |= T_DM_DISCARDS_SUPPORTED;
 
-	if (t_dm_satisfies_version(1, 13, crypt_maj, crypt_min))
+	if (t_dm_satisfies_version(1, 13, 0, crypt_maj, crypt_min, 0))
 		t_dm_crypt_flags |= T_DM_TCW_SUPPORTED;
 
-	if (t_dm_satisfies_version(1, 14, crypt_maj, crypt_min)) {
+	if (t_dm_satisfies_version(1, 14, 0, crypt_maj, crypt_min, 0)) {
 		t_dm_crypt_flags |= T_DM_SAME_CPU_CRYPT_SUPPORTED;
 		t_dm_crypt_flags |= T_DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED;
 	}
 
-	if (t_dm_satisfies_version(1, 15, crypt_maj, crypt_min))
+	if (t_dm_satisfies_version(1, 18, 1, crypt_maj, crypt_min, crypt_patch))
 		t_dm_crypt_flags |= T_DM_KERNEL_KEYRING_SUPPORTED;
 }
 
@@ -349,7 +349,7 @@ static void t_dm_set_verity_compat(const char *dm_version, unsigned verity_maj,
 	 * (but some dm-verity targets 1.2 don't support it)
 	 * FEC is added in 1.3 as well.
 	 */
-	if (t_dm_satisfies_version(1, 3, verity_maj, verity_min)) {
+	if (t_dm_satisfies_version(1, 3, 0, verity_maj, verity_min, 0)) {
 		t_dm_crypt_flags |= T_DM_VERITY_ON_CORRUPTION_SUPPORTED;
 		t_dm_crypt_flags |= T_DM_VERITY_FEC_SUPPORTED;
 	}

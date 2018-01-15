@@ -23,8 +23,6 @@ PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 PWD3="ocMakf3fAcQO"
 PWDW="rUkL4RUryBom"
-CHKS_DMCRYPT=vk_in_dmcrypt.chk
-CHKS_KEYRING=vk_in_keyring.chk
 TEST_KEYRING_NAME="compattest2_keyring"
 TEST_TOKEN0="compattest2_desc0"
 TEST_TOKEN1="compattest2_desc1"
@@ -47,7 +45,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $CHKS_DMCRYPT $CHKS_KEYRING $HEADER_KEYU >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU >/dev/null 2>&1
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -157,10 +155,13 @@ function dm_crypt_keyring_support()
 
 	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
 	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
 
 	[ $VER_MAJ -gt 1 ] && return 0
 	[ $VER_MAJ -lt 1 ] && return 1
-	[ $VER_MIN -ge 15 ]
+	[ $VER_MIN -gt 18 ] && return 0
+	[ $VER_MIN -eq 18 -a $VER_PTC -ge 1 ] && return 0
+	return 1
 }
 
 function test_and_prepare_keyring() {
@@ -619,43 +620,29 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
 $CRYPTSETUP -q convert --type luks1 $LOOPDEV || fail
 
-# FIXME: perhaps better to test in keyring-test script
 if dm_crypt_keyring_support; then
 	prepare "[32] LUKS2 key in keyring" wipe
-	dd if=/dev/zero of=$HEADER_IMG bs=1M count=4 >/dev/null 2>&1
-	which sha1sum > /dev/null 2>&1 || skip "sha1sum is missing"
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
 	# check keyring support detection works as expected
 	rmmod dm-crypt > /dev/null 2>&1 || true
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "keyring" || fail
-	dd if=/dev/urandom of=/dev/mapper/$DEV_NAME bs=4k count=2500 oflag=direct > /dev/null 2>&1 || fail
-	sha1sum /dev/mapper/$DEV_NAME > $CHKS_KEYRING
+
 	$CRYPTSETUP close $DEV_NAME || fail
 	echo $PWD1 | $CRYPTSETUP open  $LOOPDEV --disable-keyring --header $HEADER_IMG $DEV_NAME || fail
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
-	sha1sum /dev/mapper/$DEV_NAME > $CHKS_DMCRYPT
-	diff $CHKS_DMCRYPT $CHKS_KEYRING || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV --disable-keyring --header $HEADER_IMG $DEV_NAME || fail
-	dd if=/dev/urandom of=/dev/mapper/$DEV_NAME bs=4k count=2500 oflag=direct > /dev/null 2>&1 || fail
-	sha1sum /dev/mapper/$DEV_NAME > $CHKS_DMCRYPT
 	$CRYPTSETUP luksSuspend $DEV_NAME || fail
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "keyring" || fail
-	sha1sum /dev/mapper/$DEV_NAME > $CHKS_KEYRING
-	diff $CHKS_DMCRYPT $CHKS_KEYRING || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
-	dd if=/dev/urandom of=/dev/mapper/$DEV_NAME bs=4k count=2500 oflag=direct > /dev/null 2>&1 || fail
-	sha1sum /dev/mapper/$DEV_NAME > $CHKS_KEYRING
 	$CRYPTSETUP luksSuspend $DEV_NAME || fail
 	echo $PWD1 | $CRYPTSETUP luksResume --disable-keyring $DEV_NAME --header $HEADER_IMG || fail
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
-	sha1sum /dev/mapper/$DEV_NAME > $CHKS_DMCRYPT
-	diff $CHKS_DMCRYPT $CHKS_KEYRING || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 fi
 

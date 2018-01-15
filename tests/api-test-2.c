@@ -1239,7 +1239,7 @@ static void ResizeDeviceLuks2(void)
 	else
 		OK_(crypt_resize(cd, CDEVICE_1, 44));
 	// reinstate the volume key in keyring
-	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, CRYPT_ACTIVATE_KEYRING_KEY));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 	OK_(crypt_resize(cd, CDEVICE_1, 43));
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
 		EQ_(43, r_size >> SECTOR_SHIFT);
@@ -2453,20 +2453,20 @@ static void Luks2Requirements(void)
 	FAIL_((r = crypt_activate_by_passphrase(cd, CDEVICE_1, 0, "aaa", 3, 0)), "Unmet requirements detected");
 	EQ_(r, -ETXTBSY);
 	OK_(crypt_activate_by_passphrase(cd, NULL, 0, "aaa", 3, 0));
-	OK_(crypt_activate_by_passphrase(cd, NULL, 0, "aaa", 3, CRYPT_ACTIVATE_KEYRING_KEY));
+	OK_(crypt_activate_by_passphrase(cd, NULL, 0, "aaa", 3, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
 
 	/* crypt_activate_by_keyfile (restricted for activation only) */
 	FAIL_((r = crypt_activate_by_keyfile(cd, CDEVICE_1, 0, KEYFILE1, 0, 0)), "Unmet requirements detected");
 	EQ_(r, -ETXTBSY);
 	OK_(crypt_activate_by_keyfile(cd, NULL, 0, KEYFILE1, 0, 0));
-	OK_(crypt_activate_by_keyfile(cd, NULL, 0, KEYFILE1, 0, CRYPT_ACTIVATE_KEYRING_KEY));
+	OK_(crypt_activate_by_keyfile(cd, NULL, 0, KEYFILE1, 0, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 
 	/* crypt_activate_by_volume_key (restricted for activation only) */
 	FAIL_((r = crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0)), "Unmet requirements detected");
 	EQ_(r, -ETXTBSY);
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
-	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, CRYPT_ACTIVATE_KEYRING_KEY));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 
 #ifdef KERNEL_KEYRING
 	kid = add_key("user", KEY_DESC_TEST0, "aaa", 3, KEY_SPEC_THREAD_KEYRING);
@@ -2479,7 +2479,7 @@ static void Luks2Requirements(void)
 	FAIL_((r = crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST0, 0, 0)), "Unmet requirements detected");
 	EQ_(r, -ETXTBSY);
 	OK_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST0, 0, 0));
-	OK_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST0, 0, CRYPT_ACTIVATE_KEYRING_KEY));
+	OK_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST0, 0, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 #endif
 
 	/* crypt_volume_key_verify (unrestricted) */
@@ -2566,7 +2566,7 @@ static void Luks2Requirements(void)
 	FAIL_((r = crypt_activate_by_token(cd, CDEVICE_1, 1, NULL, 0)), ""); // supposed to be silent
 	EQ_(r, -ETXTBSY);
 	OK_(crypt_activate_by_token(cd, NULL, 1, NULL, 0));
-	OK_(crypt_activate_by_token(cd, NULL, 1, NULL, CRYPT_ACTIVATE_KEYRING_KEY));
+	OK_(crypt_activate_by_token(cd, NULL, 1, NULL, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 #endif
 	OK_(get_luks2_offsets(1, 8192, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 2));
@@ -2635,7 +2635,7 @@ static void Luks2Requirements(void)
 
 	OK_(crypt_init_by_name(&cd, CDEVICE_1));
 	/* load VK in keyring */
-	OK_(crypt_activate_by_passphrase(cd, NULL, 0, "aaa", 3, CRYPT_ACTIVATE_KEYRING_KEY));
+	OK_(crypt_activate_by_passphrase(cd, NULL, 0, "aaa", 3, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 	/* crypt_resize (restricted) */
 	FAIL_((r = crypt_resize(cd, CDEVICE_1, 1)), "Unmet requirements detected");
 	EQ_(r, -ETXTBSY);

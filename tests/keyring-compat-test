@@ -67,6 +67,8 @@ function dm_crypt_keyring_support()
 	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
 	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
 
+	# run the test with dm-crypt v1.15.0+ on purpose
+	# the fix is in dm-crypt v1.18.1+
 	[ $VER_MAJ -gt 1 ] && return 0
 	[ $VER_MAJ -lt 1 ] && return 1
 	[ $VER_MIN -ge 15 ]
