@@ -4101,6 +4101,15 @@ static int kernel_keyring_support(void)
 	return _kernel_keyring_supported;
 }
 
+static int dmcrypt_keyring_bug(void)
+{
+	uint64_t kversion;
+
+	if (kernel_version(&kversion))
+		return 1;
+	return kversion < version(4,15,0,0);
+}
+
 int crypt_use_keyring_for_vk(const struct crypt_device *cd)
 {
 	uint32_t dmc_flags;
@@ -4113,7 +4122,7 @@ int crypt_use_keyring_for_vk(const struct crypt_device *cd)
 		return 0;
 
 	if (dm_flags(DM_CRYPT, &dmc_flags))
-		return 1;
+		return dmcrypt_keyring_bug() ? 0 : 1;
 
 	return (dmc_flags & DM_KERNEL_KEYRING_SUPPORTED);
 }

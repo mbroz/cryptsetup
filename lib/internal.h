@@ -197,4 +197,11 @@ int crypt_get_integrity_tag_size(struct crypt_device *cd);
 int crypt_key_in_keyring(struct crypt_device *cd);
 void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring);
 
+static inline uint64_t version(uint16_t major, uint16_t minor, uint16_t patch, uint16_t release)
+{
+	return (uint64_t)release | ((uint64_t)patch << 16) | ((uint64_t)minor << 32) | ((uint64_t)major << 48);
+}
+
+int kernel_version(uint64_t *kversion);
+
 #endif /* INTERNAL_H */

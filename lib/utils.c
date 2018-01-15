@@ -30,6 +30,7 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 
 #include "internal.h"
 
@@ -552,4 +553,28 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 {
 	return crypt_keyfile_device_read(cd, keyfile, key, key_size_read,
 					 keyfile_offset, keyfile_size_max, flags);
+}
+
+int kernel_version(uint64_t *kversion)
+{
+	struct utsname uts;
+	uint16_t maj, min, patch, rel;
+	int r = -EINVAL;
+
+	if (uname(&uts) < 0)
+		return r;
+
+	if (sscanf(uts.release, "%" SCNu16  ".%" SCNu16 ".%" SCNu16 "-%" SCNu16,
+		   &maj, &min, &patch, &rel) == 4)
+		r = 0;
+	else if (sscanf(uts.release,  "%" SCNu16 ".%" SCNu16 ".%" SCNu16,
+			&maj, &min, &patch) == 3) {
+		rel = 0;
+		r = 0;
+	}
+
+	if (!r)
+		*kversion = version(maj, min, patch, rel);
+
+	return r;
 }
