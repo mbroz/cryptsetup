@@ -359,28 +359,32 @@ int crypt_memlock_dec(struct crypt_device *ctx)
  * or when it reaches EOF before the requested number of bytes have been
  * discarded.
  */
-static int keyfile_seek(int fd, size_t bytes)
+static int keyfile_seek(int fd, uint64_t bytes)
 {
 	char tmp[BUFSIZ];
 	size_t next_read;
 	ssize_t bytes_r;
-	off_t r;
+	off64_t r;
 
-	r = lseek(fd, bytes, SEEK_CUR);
+	r = lseek64(fd, bytes, SEEK_CUR);
 	if (r > 0)
 		return 0;
 	if (r < 0 && errno != ESPIPE)
 		return -1;
 
+	if (bytes > SIZE_MAX)
+		return -1;
+
 	while (bytes > 0) {
 		/* figure out how much to read */
-		next_read = bytes > sizeof(tmp) ? sizeof(tmp) : bytes;
+		next_read = bytes > sizeof(tmp) ? sizeof(tmp) : (size_t)bytes;
 
 		bytes_r = read(fd, tmp, next_read);
 		if (bytes_r < 0) {
 			if (errno == EINTR)
 				continue;
 
+			crypt_memzero(tmp, sizeof(tmp));
 			/* read error */
 			return -1;
 		}
@@ -392,18 +396,20 @@ static int keyfile_seek(int fd, size_t bytes)
 		bytes -= bytes_r;
 	}
 
+	crypt_memzero(tmp, sizeof(tmp));
 	return bytes == 0 ? 0 : -1;
 }
 
-int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
-		       char **key, size_t *key_size_read,
-		       size_t keyfile_offset, size_t keyfile_size_max,
-		       uint32_t flags)
+int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
+			      char **key, size_t *key_size_read,
+			      uint64_t keyfile_offset, size_t keyfile_size_max,
+			      uint32_t flags)
 {
 	int fd, regular_file, char_to_read = 0, char_read = 0, unlimited_read = 0;
 	int r = -EINVAL, newline;
 	char *pass = NULL;
-	size_t buflen, i, file_read_size;
+	size_t buflen, i;
+	uint64_t file_read_size;
 	struct stat st;
 
 	if (!key || !key_size_read)
@@ -441,7 +447,7 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 		}
 		if (S_ISREG(st.st_mode)) {
 			regular_file = 1;
-			file_read_size = (size_t)st.st_size;
+			file_read_size = (uint64_t)st.st_size;
 
 			if (keyfile_offset > file_read_size) {
 				log_err(cd, _("Cannot seek to requested keyfile offset.\n"));
@@ -450,7 +456,7 @@ int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
 			file_read_size -= keyfile_offset;
 
 			/* known keyfile size, alloc it in one step */
-			if (file_read_size >= keyfile_size_max)
+			if (file_read_size >= (uint64_t)keyfile_size_max)
 				buflen = keyfile_size_max;
 			else if (file_read_size)
 				buflen = file_read_size;
@@ -537,4 +543,13 @@ out_err:
 	if (r)
 		crypt_safe_free(pass);
 	return r;
+}
+
+int crypt_keyfile_read(struct crypt_device *cd,  const char *keyfile,
+		       char **key, size_t *key_size_read,
+		       size_t keyfile_offset, size_t keyfile_size_max,
+		       uint32_t flags)
+{
+	return crypt_keyfile_device_read(cd, keyfile, key, key_size_read,
+					 keyfile_offset, keyfile_size_max, flags);
 }

@@ -588,6 +588,15 @@ $CRYPTSETUP luksClose  $DEV_NAME || fail
 $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY2 --keyfile-offset 1 $KEY2 --new-keyfile-offset 0 || fail
 $CRYPTSETUP luksOpen -d $KEY2 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
+# large device with keyfile
+echo -e '0 10000000 error'\\n'10000000 1000000 zero' | dmsetup create $DEV_NAME2 || fail
+$CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT $LOOPDEV /dev/mapper/$DEV_NAME2 -l 13 --keyfile-offset 5120000000 || fail
+$CRYPTSETUP --key-file=/dev/mapper/$DEV_NAME2 -l 13 --keyfile-offset 5119999999 luksOpen $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=/dev/mapper/$DEV_NAME2 -l 13 --keyfile-offset 5120000000 luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
+$CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d /dev/mapper/$DEV_NAME2 \
+  --keyfile-offset 5120000000 -l 13 /dev/mapper/$DEV_NAME2 --new-keyfile-offset 5120000001 --new-keyfile-size 15 || fail
+dmsetup remove $DEV_NAME2
 
 prepare "[25] Create shared segments" wipe
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha1 --offset   0 --size 256 || fail

@@ -22,12 +22,14 @@ CRYPTSETUP_2.0 {
 		crypt_resume_by_passphrase;
 		crypt_resume_by_keyfile;
 		crypt_resume_by_keyfile_offset;
+		crypt_resume_by_keyfile_device_offset;
 		crypt_free;
 
 		crypt_keyslot_add_by_passphrase;
 		crypt_keyslot_change_by_passphrase;
 		crypt_keyslot_add_by_keyfile;
 		crypt_keyslot_add_by_keyfile_offset;
+		crypt_keyslot_add_by_keyfile_device_offset;
 		crypt_keyslot_add_by_volume_key;
 		crypt_keyslot_add_by_key;
 
@@ -49,6 +51,7 @@ CRYPTSETUP_2.0 {
 		crypt_activate_by_passphrase;
 		crypt_activate_by_keyfile;
 		crypt_activate_by_keyfile_offset;
+		crypt_activate_by_keyfile_device_offset;
 		crypt_activate_by_volume_key;
 		crypt_activate_by_keyring;
 		crypt_deactivate;
@@ -92,6 +95,7 @@ CRYPTSETUP_2.0 {
 		crypt_header_restore;
 
 		crypt_keyfile_read;
+		crypt_keyfile_device_read;
 
 		crypt_wipe;
 	local:

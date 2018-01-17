@@ -83,7 +83,7 @@ int tools_signals_blocked(void);
 
 int tools_get_key(const char *prompt,
 		  char **key, size_t *key_size,
-		  size_t keyfile_offset, size_t keyfile_size_max,
+		  uint64_t keyfile_offset, size_t keyfile_size_max,
 		  const char *key_file,
 		  int timeout, int verify, int pwquality,
 		  struct crypt_device *cd);

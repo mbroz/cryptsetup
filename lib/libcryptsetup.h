@@ -696,14 +696,25 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
  *
  * @return unlocked key slot number or negative errno otherwise.
  */
+int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	const char *keyfile,
+	size_t keyfile_size,
+	uint64_t keyfile_offset);
+
+/**
+ * Backward compatible crypt_resume_by_keyfile_device_offset() (with size_t offset).
+ */
 int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 	const char *name,
 	int keyslot,
 	const char *keyfile,
 	size_t keyfile_size,
 	size_t keyfile_offset);
+
 /**
- * Backward compatible crypt_resume_by_keyfile_offset() (without offset).
+ * Backward compatible crypt_resume_by_keyfile_device_offset() (without offset).
  */
 int crypt_resume_by_keyfile(struct crypt_device *cd,
 	const char *name,
@@ -785,6 +796,18 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
  *
  * @return allocated key slot number or negative errno otherwise.
  */
+int crypt_keyslot_add_by_keyfile_device_offset(struct crypt_device *cd,
+	int keyslot,
+	const char *keyfile,
+	size_t keyfile_size,
+	uint64_t keyfile_offset,
+	const char *new_keyfile,
+	size_t new_keyfile_size,
+	uint64_t new_keyfile_offset);
+
+/**
+ * Backward compatible crypt_keyslot_add_by_keyfile_device_offset() (with size_t offset).
+ */
 int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	int keyslot,
 	const char *keyfile,
@@ -793,8 +816,9 @@ int crypt_keyslot_add_by_keyfile_offset(struct crypt_device *cd,
 	const char *new_keyfile,
 	size_t new_keyfile_size,
 	size_t new_keyfile_offset);
+
 /**
- * Backward compatible crypt_keyslot_add_by_keyfile_offset() (without offset).
+ * Backward compatible crypt_keyslot_add_by_keyfile_device_offset() (without offset).
  */
 int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
 	int keyslot,
@@ -1030,6 +1054,17 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
  *
  * @return unlocked key slot number or negative errno otherwise.
  */
+int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	const char *keyfile,
+	size_t keyfile_size,
+	uint64_t keyfile_offset,
+	uint32_t flags);
+
+/**
+ * Backward compatible crypt_activate_by_keyfile_device_offset() (with size_t offset).
+ */
 int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 	const char *name,
 	int keyslot,
@@ -1037,8 +1072,9 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 	size_t keyfile_size,
 	size_t keyfile_offset,
 	uint32_t flags);
+
 /**
- * Backward compatible crypt_activate_by_keyfile_offset() (without offset).
+ * Backward compatible crypt_activate_by_keyfile_device_offset() (without offset).
  */
 int crypt_activate_by_keyfile(struct crypt_device *cd,
 	const char *name,
@@ -1049,7 +1085,6 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
 
 /**
  * Activate device using provided volume key.
- *
  *
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check volume key
@@ -1076,7 +1111,6 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 
 /**
  * Activate device using passphrase stored in kernel keyring.
- *
  *
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check passphrase in keyring
@@ -1386,7 +1420,6 @@ typedef enum {
 /**
  * Get information about particular key slot.
  *
- *
  * @param cd crypt device handle
  * @param keyslot requested keyslot to check or CRYPT_ANY_SLOT
  *
@@ -1483,7 +1516,6 @@ int crypt_header_backup(struct crypt_device *cd,
 /**
  * Restore header and keyslots from backup file.
  *
- *
  * @param cd crypt device handle
  * @param requested_type @link crypt-type @endlink or @e NULL for all known
  * @param backup_file file to restore header from
@@ -1526,15 +1558,34 @@ void crypt_set_debug_level(int level);
 /**
  * Read keyfile
  *
+ * @param cd crypt device handle
+ * @param keyfile keyfile to read
+ * @param key buffer for key
+ * @param key_size_read size of read key
+ * @param keyfile_offset keyfile offset
+ * @param keyfile_size_max maximal size of keyfile to read
+ * @param flags keyfile read flags
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_keyfile_device_read(struct crypt_device *cd,
+	const char *keyfile,
+	char **key, size_t *key_size_read,
+	uint64_t keyfile_offset,
+	size_t keyfile_size_max,
+	uint32_t flags);
+
+/**
+ * Backward compatible crypt_keyfile_device_read() (with size_t offset).
  */
 int crypt_keyfile_read(struct crypt_device *cd,
 	const char *keyfile,
 	char **key, size_t *key_size_read,
 	size_t keyfile_offset,
 	size_t keyfile_size_max,
-	uint32_t flags
-);
-/** No on-disk header (only hashes) */
+	uint32_t flags);
+
+/** Read key only to the first end of line (\\n). */
 #define CRYPT_KEYFILE_STOP_EOL   (1 << 0)
 /** @} */
 
@@ -1600,7 +1651,7 @@ int crypt_wipe(struct crypt_device *cd,
  * @{
  */
 
-/** iterate through all tokens */
+/** Iterate through all tokens */
 #define CRYPT_ANY_TOKEN -1
 
 /**

@@ -41,8 +41,8 @@ static const char *opt_type = "luks";
 static int opt_key_size = 0;
 static long opt_keyfile_size = 0;
 static long opt_new_keyfile_size = 0;
-static long opt_keyfile_offset = 0;
-static long opt_new_keyfile_offset = 0;
+static uint64_t opt_keyfile_offset = 0;
+static uint64_t opt_new_keyfile_offset = 0;
 static int opt_key_slot = CRYPT_ANY_SLOT;
 static int opt_token = CRYPT_ANY_TOKEN;
 static int opt_token_only = 0;
@@ -220,7 +220,7 @@ static int action_open_plain(void)
 		 * The opt_keyfile_offset is applied always.
 		 */
 		key_size_max = params.hash ? (size_t)opt_keyfile_size : key_size;
-		r = crypt_activate_by_keyfile_offset(cd, action_argv[1],
+		r = crypt_activate_by_keyfile_device_offset(cd, action_argv[1],
 			CRYPT_ANY_SLOT, opt_key_file, key_size_max,
 			opt_keyfile_offset, activate_flags);
 	} else {
@@ -270,7 +270,7 @@ static int action_open_loopaes(void)
 	if (r < 0)
 		goto out;
 
-	r = crypt_activate_by_keyfile_offset(cd, action_argv[1], CRYPT_ANY_SLOT,
+	r = crypt_activate_by_keyfile_device_offset(cd, action_argv[1], CRYPT_ANY_SLOT,
 				      opt_key_file, opt_keyfile_size,
 				      opt_keyfile_offset, activate_flags);
 out:
@@ -1150,7 +1150,7 @@ out:
 
 static int verify_keyslot(struct crypt_device *cd, int key_slot,
 			  char *msg_last, char *msg_pass,
-			  const char *key_file, int keyfile_offset,
+			  const char *key_file, uint64_t keyfile_offset,
 			  int keyfile_size)
 {
 	crypt_keyslot_info ki;
@@ -1335,7 +1335,7 @@ static int action_luksAddKey(void)
 						    password_new, password_new_size);
 	} else if (opt_key_file && !tools_is_stdin(opt_key_file) &&
 		   opt_new_key_file && !tools_is_stdin(opt_new_key_file)) {
-		r = crypt_keyslot_add_by_keyfile_offset(cd, opt_key_slot,
+		r = crypt_keyslot_add_by_keyfile_device_offset(cd, opt_key_slot,
 			opt_key_file, opt_keyfile_size, opt_keyfile_offset,
 			opt_new_key_file, opt_new_keyfile_size, opt_new_keyfile_offset);
 	} else {
@@ -2027,14 +2027,14 @@ int main(int argc, const char **argv)
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE, &opt_verify_passphrase,     0, N_("Verifies the passphrase by asking for it twice"), NULL },
-		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            5, N_("Read the key from a file."), NULL },
+		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            6, N_("Read the key from a file."), NULL },
 		{ "master-key-file",  '\0',  POPT_ARG_STRING, &opt_master_key_file,     0, N_("Read the volume (master) key from file."), NULL },
 		{ "dump-master-key",  '\0',  POPT_ARG_NONE, &opt_dump_master_key,       0, N_("Dump volume (master) key instead of keyslots info."), NULL },
 		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
 		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
-		{ "keyfile-offset",   '\0',  POPT_ARG_LONG, &opt_keyfile_offset,        0, N_("Number of bytes to skip in keyfile"), N_("bytes") },
+		{ "keyfile-offset",   '\0',  POPT_ARG_STRING, &popt_tmp,                4, N_("Number of bytes to skip in keyfile"), N_("bytes") },
 		{ "new-keyfile-size", '\0',  POPT_ARG_LONG, &opt_new_keyfile_size,      0, N_("Limits the read from newly added keyfile"), N_("bytes") },
-		{ "new-keyfile-offset",'\0', POPT_ARG_LONG, &opt_new_keyfile_offset,    0, N_("Number of bytes to skip in newly added keyfile"), N_("bytes") },
+		{ "new-keyfile-offset",'\0', POPT_ARG_STRING, &popt_tmp,                5, N_("Number of bytes to skip in newly added keyfile"), N_("bytes") },
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Slot number for new key (default is first free)"), NULL },
 		{ "size",              'b',  POPT_ARG_STRING, &popt_tmp,                1, N_("The size of the device"), N_("SECTORS") },
 		{ "offset",            'o',  POPT_ARG_STRING, &popt_tmp,                2, N_("The start offset in the backend device"), N_("SECTORS") },
@@ -2103,7 +2103,7 @@ int main(int argc, const char **argv)
 		unsigned long long ull_value;
 		char *endp, *kf;
 
-		if (r == 5) {
+		if (r == 6) {
 			kf = poptGetOptArg(popt_context);
 			if (tools_is_stdin(kf))
 				opt_keyfile_stdin = kf;
@@ -2115,7 +2115,7 @@ int main(int argc, const char **argv)
 
 		errno = 0;
 		ull_value = strtoull(popt_tmp, &endp, 0);
-		if (*endp || !*popt_tmp ||
+		if (*endp || !*popt_tmp || !isdigit(*popt_tmp) ||
 		    (errno == ERANGE && ull_value == ULLONG_MAX) ||
 		    (errno != 0 && ull_value == 0))
 			r = POPT_ERROR_BADNUMBER;
@@ -2130,6 +2130,12 @@ int main(int argc, const char **argv)
 			case 3:
 				opt_skip = ull_value;
 				opt_skip_valid = 1;
+				break;
+			case 4:
+				opt_keyfile_offset = ull_value;
+				break;
+			case 5:
+				opt_new_keyfile_offset = ull_value;
 				break;
 		}
 
@@ -2283,8 +2289,7 @@ int main(int argc, const char **argv)
 			opt_key_file = action_argv[1];
 	}
 
-	if (opt_keyfile_size < 0 || opt_new_keyfile_size < 0 || opt_key_size < 0 ||
-	    opt_keyfile_offset < 0 || opt_new_keyfile_offset < 0)
+	if (opt_keyfile_size < 0 || opt_new_keyfile_size < 0 || opt_key_size < 0)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));

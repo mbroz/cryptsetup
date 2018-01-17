@@ -251,7 +251,7 @@ out_err:
  */
 int tools_get_key(const char *prompt,
 		  char **key, size_t *key_size,
-		  size_t keyfile_offset, size_t keyfile_size_max,
+		  uint64_t keyfile_offset, size_t keyfile_size_max,
 		  const char *key_file,
 		  int timeout, int verify, int pwquality,
 		  struct crypt_device *cd)
@@ -278,12 +278,14 @@ int tools_get_key(const char *prompt,
 		} else {
 			log_dbg("STDIN descriptor passphrase entry requested.");
 			/* No keyfile means STDIN with EOL handling (\n will end input)). */
-			r = crypt_keyfile_read(cd, NULL, key, key_size, keyfile_offset, keyfile_size_max,
-					       key_file ? 0 : CRYPT_KEYFILE_STOP_EOL);
+			r = crypt_keyfile_device_read(cd, NULL, key, key_size,
+					keyfile_offset, keyfile_size_max,
+					key_file ? 0 : CRYPT_KEYFILE_STOP_EOL);
 		}
 	} else {
 		log_dbg("File descriptor passphrase entry requested.");
-		r = crypt_keyfile_read(cd, key_file, key, key_size, keyfile_offset, keyfile_size_max, 0);
+		r = crypt_keyfile_device_read(cd, key_file, key, key_size,
+					      keyfile_offset, keyfile_size_max, 0);
 	}
 
 	if (block && !quit)
