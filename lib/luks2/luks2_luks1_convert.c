@@ -717,7 +717,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return -EINVAL;
 	if (!json_object_object_get_ex(jobj_area, "encryption", &jobj1))
 		return -EINVAL;
-	r = crypt_parse_name_and_mode(json_object_get_string(jobj1), cipher, NULL, cipher_mode, 1);
+	r = crypt_parse_name_and_mode(json_object_get_string(jobj1), cipher, NULL, cipher_mode);
 	if (r < 0)
 		return r;
 
