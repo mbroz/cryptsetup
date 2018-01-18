@@ -45,6 +45,9 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 				return -EINVAL;
 		}
 
+		if (!strcmp(cipher_mode, "ecb"))
+			return 0;
+
 		/* Enforce IV */
 		if (require_iv) {
 			char *tmp = strchr(cipher_mode, '-');
