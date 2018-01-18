@@ -38,7 +38,7 @@ struct safe_allocation {
 };
 
 int crypt_parse_name_and_mode(const char *s, char *cipher,
-			      int *key_nums, char *cipher_mode);
+			      int *key_nums, char *cipher_mode, int require_iv);
 int crypt_parse_hash_integrity_mode(const char *s, char *integrity);
 int crypt_parse_integrity_mode(const char *s, char *integrity,
 			       int *integrity_key_size);

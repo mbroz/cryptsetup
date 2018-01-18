@@ -64,12 +64,15 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 	if (ctx->iv_size < 8)
 		return -ENOENT;
 
-	if (!iv_name ||
-	    !strcmp(cipher_name, "cipher_null") ||
+	if (!strcmp(cipher_name, "cipher_null") ||
 	    !strcmp(mode_name, "ecb")) {
+		if (iv_name)
+			return -EINVAL;
 		ctx->type = IV_NONE;
 		ctx->iv_size = 0;
 		return 0;
+	} else if (!iv_name) {
+		return -EINVAL;
 	} else if (!strcasecmp(iv_name, "null")) {
 		ctx->type = IV_NULL;
 	} else if (!strcasecmp(iv_name, "plain64")) {

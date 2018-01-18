@@ -175,9 +175,9 @@ static int action_open_plain(void)
 	int r;
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
-				      cipher, NULL, cipher_mode);
+				      cipher, NULL, cipher_mode, 1);
 	if (r < 0) {
-		log_err(_("No known cipher specification pattern detected.\n"));
+		log_err(_("No known cipher specification pattern (cipher-mode-iv) detected.\n"));
 		goto out;
 	}
 
@@ -744,9 +744,9 @@ static int action_benchmark(void)
 			opt_pbkdf = CRYPT_KDF_PBKDF2;
 		r = action_benchmark_kdf(opt_pbkdf, opt_hash, key_size);
 	} else if (opt_cipher) {
-		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
+		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode, 0);
 		if (r < 0) {
-			log_err(_("No known cipher specification pattern detected.\n"));
+			log_err(_("No known cipher specification pattern (cipher-mode-iv) detected.\n"));
 			return r;
 		}
 		if ((c  = strchr(cipher_mode, '-')))
@@ -993,9 +993,9 @@ static int action_luksFormat(void)
 		goto out;
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
-				      cipher, NULL, cipher_mode);
+				      cipher, NULL, cipher_mode, 1);
 	if (r < 0) {
-		log_err(_("No known cipher specification pattern detected.\n"));
+		log_err(_("No known cipher specification pattern (cipher-mode-iv) detected.\n"));
 		goto out;
 	}
 

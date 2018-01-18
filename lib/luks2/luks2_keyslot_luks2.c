@@ -179,7 +179,7 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 
 	if (!json_object_object_get_ex(jobj_area, "encryption", &jobj2))
 		return -EINVAL;
-	r = crypt_parse_name_and_mode(json_object_get_string(jobj2), cipher, NULL, cipher_mode);
+	r = crypt_parse_name_and_mode(json_object_get_string(jobj2), cipher, NULL, cipher_mode, 1);
 	if (r < 0)
 		return r;
 
@@ -329,7 +329,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 
 	if (!json_object_object_get_ex(jobj_area, "encryption", &jobj2))
 		return -EINVAL;
-	r = crypt_parse_name_and_mode(json_object_get_string(jobj2), cipher, NULL, cipher_mode);
+	r = crypt_parse_name_and_mode(json_object_get_string(jobj2), cipher, NULL, cipher_mode, 1);
 	if (r < 0)
 		return r;
 

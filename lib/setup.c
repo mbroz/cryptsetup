@@ -660,7 +660,7 @@ static int _crypt_load_luks2(struct crypt_device *cd, int reload)
 	}
 
 	r = crypt_parse_name_and_mode(LUKS2_get_cipher(&hdr2, CRYPT_DEFAULT_SEGMENT),
-				      tmp_cipher, NULL, tmp_cipher_mode);
+				      tmp_cipher, NULL, tmp_cipher_mode, 0);
 	if (r < 0) {
 		log_dbg("Cannot parse cipher and mode from loaded device.");
 		goto out;
@@ -971,7 +971,7 @@ static int _init_by_name_crypt_none(struct crypt_device *cd)
 	if (r >= 0)
 		r = crypt_parse_name_and_mode(dmd.u.crypt.cipher,
 					      cd->u.none.cipher, NULL,
-					      cd->u.none.cipher_mode);
+					      cd->u.none.cipher_mode, 0);
 
 	if (!r)
 		cd->u.none.key_size = dmd.u.crypt.vk->keylength;
@@ -1043,7 +1043,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		goto out;
 
 	r = crypt_parse_name_and_mode(dmd.u.crypt.cipher, cipher,
-				      &key_nums, cipher_mode);
+				      &key_nums, cipher_mode, 0);
 	if (r < 0) {
 		log_dbg("Cannot parse cipher and mode from active device.");
 		goto out;

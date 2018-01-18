@@ -579,9 +579,9 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	params2.sector_size = crypt_get_sector_size(cd);
 
 	if (opt_cipher) {
-		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
+		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode, 1);
 		if (r < 0) {
-			log_err(_("No known cipher specification pattern detected.\n"));
+			log_err(_("No known cipher specification pattern (cipher-mode-iv) detected.\n"));
 			goto out;
 		}
 	}
@@ -647,9 +647,9 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		opt_key_size = DEFAULT_LUKS1_KEYBITS;
 
 	if (opt_cipher) {
-		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
+		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode, 1);
 		if (r < 0) {
-			log_err(_("No known cipher specification pattern detected.\n"));
+			log_err(_("No known cipher specification pattern (cipher-mode-iv) detected.\n"));
 			goto out;
 		}
 	}
