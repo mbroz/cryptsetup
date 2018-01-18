@@ -628,12 +628,18 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
 $CRYPTSETUP -q convert --type luks1 $LOOPDEV || fail
 
-if dm_crypt_keyring_flawed && rmmod dm-crypt > /dev/null 2>&1; then
+if dm_crypt_keyring_flawed; then
 	prepare "[32a] LUKS2 keyring dm-crypt bug" wipe
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
-	# key must not load in kernel key even when dm-crypt module is missing
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	# key must not load in kernel key even when dm-crypt module is missing
+	if rmmod dm-crypt > /dev/null 2>&1; then
+		echo $PWD1 | $CRYPTSETUP open $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
+		$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
+		$CRYPTSETUP close $DEV_NAME || fail
+	fi
 fi
 
 if dm_crypt_keyring_support; then

@@ -644,6 +644,7 @@ static void AddDeviceLuks2(void)
 	// generate keyslot material at the end of luks header
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), 7);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 7, passphrase, strlen(passphrase) ,0), 7);
 	crypt_free(cd);
