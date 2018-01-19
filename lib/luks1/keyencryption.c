@@ -21,6 +21,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <fcntl.h>
 #include <errno.h>
 #include "luks.h"
@@ -30,7 +31,7 @@
 static void _error_hint(struct crypt_device *ctx, const char *device,
 			const char *cipher, const char *mode, size_t keyLength)
 {
-	char cipher_spec[MAX_CIPHER_LEN * 3];
+	char *c, cipher_spec[MAX_CIPHER_LEN * 3];
 
 	if (snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", cipher, mode) < 0)
 		return;
@@ -41,6 +42,8 @@ static void _error_hint(struct crypt_device *ctx, const char *device,
 
 	if (!strncmp(mode, "xts", 3) && (keyLength != 256 && keyLength != 512))
 		log_err(ctx, _("Key size in XTS mode must be 256 or 512 bits.\n"));
+	else if (!(c = strchr(mode, '-')) || strlen(c) < 4)
+		log_err(ctx, _("Cipher specification should be in [cipher]-[mode]-[iv] format.\n"));
 }
 
 static int LUKS_endec_template(char *src, size_t srcLength,
