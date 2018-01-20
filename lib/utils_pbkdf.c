@@ -38,12 +38,12 @@ const struct crypt_pbkdf_type default_luks1 = {
 	.time_ms = DEFAULT_LUKS1_ITER_TIME
 };
 
-static uint32_t adjusted_pbkdf_memory(void)
+static uint32_t adjusted_phys_memory(void)
 {
 	uint64_t memory_kb = crypt_getphysmemory_kb();
 
 	/* Ignore bogus value */
-	if (memory_kb < (128 * 1024))
+	if (memory_kb < (128 * 1024) || memory_kb > UINT32_MAX)
 		return DEFAULT_LUKS2_MEMORY_KB;
 
 	/*
@@ -52,10 +52,7 @@ static uint32_t adjusted_pbkdf_memory(void)
 	 */
 	memory_kb /= 2;
 
-	if (memory_kb < DEFAULT_LUKS2_MEMORY_KB)
-		return (uint32_t)memory_kb;
-
-	return DEFAULT_LUKS2_MEMORY_KB;
+	return memory_kb;
 }
 
 /*
@@ -185,7 +182,7 @@ int init_pbkdf_type(struct crypt_device *cd,
 	}
 
 	if (cd_pbkdf->max_memory_kb) {
-		memory_kb = adjusted_pbkdf_memory();
+		memory_kb = adjusted_phys_memory();
 		if (cd_pbkdf->max_memory_kb > memory_kb) {
 			log_dbg("Not enough physical memory detected, "
 				"PBKDF max memory decreased from %dkB to %dkB.",
