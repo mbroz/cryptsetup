@@ -2,7 +2,7 @@
 #
 # Python bindings to libcryptsetup test
 #
-# Copyright (C) 2011-2017, Red Hat, Inc. All rights reserved.
+# Copyright (C) 2011-2018, Red Hat, Inc. All rights reserved.
 #
 # This file is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public

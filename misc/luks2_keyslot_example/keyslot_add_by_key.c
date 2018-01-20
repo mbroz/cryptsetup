@@ -1,8 +1,8 @@
 /*
  * Prototype LUKS2 utility for keyslots unassigned to volume
  *
- * Copyright (C) 2017, Red Hat, Inc. All rights reserved.
- * Copyright (C) 2017, Ondrej Kozina <okozina@redhat.com>
+ * Copyright (C) 2017-2018, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2017-2018, Ondrej Kozina <okozina@redhat.com>
  *
  * Use:
  *  - generate LUKS2 device

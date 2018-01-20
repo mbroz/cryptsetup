@@ -1,7 +1,7 @@
 /*
  * Python bindings to libcryptsetup
  *
- * Copyright (C) 2009-2017, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2018, Red Hat, Inc. All rights reserved.
  * Written by Martin Sivak
  *
  * This file is free software; you can redistribute it and/or
