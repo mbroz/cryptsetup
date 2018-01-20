@@ -1,8 +1,8 @@
 # Spanish translations for cryptsetup package
 # Traducciones al español para el paquete cryptsetup.
-# Copyright (C) 2014, 2015, 2016, 2017 Free Software Foundation, Inc.
+# Copyright (C) 2014, 2015, 2016, 2017, 2018 Free Software Foundation, Inc.
 # This file is put in the public domain.
-# Antonio Ceballos <aceballos@gmail.com>, 2013, 2014, 2015, 2016, 2017
+# Antonio Ceballos <aceballos@gmail.com>, 2013, 2014, 2015, 2016, 2017, 2018
 #
 # ######################################################################
 # Traducciones dudosas:
@@ -41,6 +41,7 @@
 # temporary = temporal
 # reencryption = recifrado
 # invalid = no válido, -a
+# lock = bloqueo
 #
 # #######################################################################
 # Términos no traducidos
@@ -73,7 +74,7 @@ msgstr ""
 "Project-Id-Version: cryptsetup 2.0.0\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
 "POT-Creation-Date: 2017-12-10 20:27+0100\n"
-"PO-Revision-Date: 2017-12-30 09:51+0100\n"
+"PO-Revision-Date: 2018-01-08 00:10+0100\n"
 "Last-Translator: Antonio Ceballos <aceballos@gmail.com>\n"
 "Language-Team: Spanish <es@tp.org.es>\n"
 "Language: es\n"
@@ -117,10 +118,8 @@ msgid "Requested data integrity options are not supported.\n"
 msgstr "Las opciones de integridad de datos solicitadas no están disponibles.\n"
 
 #: lib/libdevmapper.c:1225
-#, fuzzy
-#| msgid "Requested dm-crypt performance options are not supported.\n"
 msgid "Requested sector_size option is not supported.\n"
-msgstr "Las opciones de rendimiento de dm-crypt solicitadas no están disponibles.\n"
+msgstr "La opción sector_size solicitada no está disponible.\n"
 
 #: lib/random.c:80
 msgid ""
@@ -258,28 +257,25 @@ msgstr "No se puede dar formato al dispositivo %s; permiso denegado.\n"
 #: lib/setup.c:1603 lib/luks2/luks2_json_metadata.c:838
 #: lib/luks2/luks2_json_metadata.c:1123 lib/luks2/luks2_keyslot.c:394
 #: lib/luks2/luks2_keyslot_luks2.c:40 lib/luks2/luks2_keyslot_luks2.c:69
-#, fuzzy, c-format
-#| msgid "Failed to access temporary keystore device.\n"
+#, c-format
 msgid "Failed to acquire write lock on device %s.\n"
-msgstr "No se ha podido acceder al dispositivo de almacenamiento de claves temporal.\n"
+msgstr "No se ha podido adquirir el bloqueo de escritura del dispositivo %s.\n"
 
 #: lib/setup.c:1611 lib/setup.c:1918
 #, fuzzy, c-format
 #| msgid "Cannot write device %s.\n"
 msgid "Cannot format integrity for device %s.\n"
-msgstr "No se puede escribir en el dispositivo %s.\n"
+msgstr "No se puede en el dispositivo %s.\n"
 
 #: lib/setup.c:1623
-#, fuzzy, c-format
-#| msgid "Cannot format device %s which is still in use.\n"
+#, c-format
 msgid "Cannot format device %s in use.\n"
-msgstr "No se puede dar formato al dispositivo %s que todavía está en uso.\n"
+msgstr "No se puede dar formato al dispositivo %s en uso.\n"
 
 #: lib/setup.c:1630
-#, fuzzy, c-format
-#| msgid "Cannot read device %s.\n"
+#, c-format
 msgid "Cannot format device %s\n"
-msgstr "No se puede leer el dispositivo %s.\n"
+msgstr "No se puede dar formato al dispositivo %s.\n"
 
 #: lib/setup.c:1653
 msgid "Can't format LOOPAES without device.\n"
@@ -303,26 +299,20 @@ msgid "Unsupported VERITY hash offset.\n"
 msgstr "Desplazamiento «hash» VERITY no disponible.\n"
 
 #: lib/setup.c:1717
-#, fuzzy
-#| msgid "Unsupported VERITY hash offset.\n"
 msgid "Unsupported VERITY FEC offset.\n"
-msgstr "Desplazamiento «hash» VERITY no disponible.\n"
+msgstr "Desplazamiento FEC VERITY no disponible.\n"
 
 #: lib/setup.c:1738
 msgid "Data area overlaps with hash area.\n"
 msgstr "La zona de datos se solapa con la zona «hash».\n"
 
 #: lib/setup.c:1763
-#, fuzzy
-#| msgid "Data area overlaps with hash area.\n"
 msgid "Hash area overlaps with FEC area.\n"
-msgstr "La zona de datos se solapa con la zona «hash».\n"
+msgstr "La zona «hash» se solapa con la zona FEC.\n"
 
 #: lib/setup.c:1770
-#, fuzzy
-#| msgid "Data area overlaps with hash area.\n"
 msgid "Data area overlaps with FEC area.\n"
-msgstr "La zona de datos se solapa con la zona «hash».\n"
+msgstr "La zona de datos se solapa con la zona FEC.\n"
 
 #: lib/setup.c:1975
 #, c-format
@@ -334,20 +324,17 @@ msgid "Cannot resize loop device.\n"
 msgstr "No se ha podido cambiar el tamaño del dispositivo de bucle.\n"
 
 #: lib/setup.c:2134
-#, fuzzy, c-format
-#| msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
+#, c-format
 msgid "Device %s size is not aligned to requested sector size (%u bytes).\n"
-msgstr "El dispositivo %s es demasiado pequeño. (LUKS necesita %<PRIu64> btyes como mínimo.)\n"
+msgstr "El tamaño del dispositivo %s no está alineado con el tamaño del sector solicitado (%u bytes).\n"
 
 #: lib/setup.c:2188
 msgid "Do you really want to change UUID of device?"
 msgstr "¿Está seguro de que quiere cambiar el UUID del dispositivo?"
 
 #: lib/setup.c:2264
-#, fuzzy
-#| msgid "Backup file doesn't contain valid LUKS header.\n"
 msgid "Header backup file does not contain compatible LUKS header.\n"
-msgstr "El fichero de copia de seguridad no contiene una cabecera LUKS válida.\n"
+msgstr "El fichero de copia de seguridad de la cabecera no contiene una cabecera LUKS compatible.\n"
 
 #: lib/setup.c:2386
 #, c-format
@@ -421,17 +408,16 @@ msgstr "La ranura de claves %d no se está utilizando.\n"
 #, fuzzy
 #| msgid "Failed to open key file.\n"
 msgid "Failed to load key in kernel keyring.\n"
-msgstr "No se ha podido abrir el fichero de claves.\n"
+msgstr "No se ha podido cargar la llave en el llavero del núcleo.\n"
 
 #: lib/setup.c:2984 lib/setup.c:3138 lib/setup.c:3281
 msgid "Device type is not properly initialised.\n"
 msgstr "Este tipo de dispositivo no se ha inicializado adecuadamente.\n"
 
 #: lib/setup.c:3004
-#, fuzzy, c-format
-#| msgid "Cannot format device %s which is still in use.\n"
+#, c-format
 msgid "Cannot use device %s, name is invalid or still in use.\n"
-msgstr "No se puede dar formato al dispositivo %s que todavía está en uso.\n"
+msgstr "No se puede utilizar el dispositivo %s; el nombre no es válido o todavía está en uso.\n"
 
 #: lib/setup.c:3007
 #, c-format
@@ -478,28 +464,24 @@ msgid "Dump operation is not supported for this device type.\n"
 msgstr "Operación de volcado no deisponible para este tipo de dispositivo.\n"
 
 #: lib/setup.c:4013
-#, fuzzy, c-format
-#| msgid "Cannot format device %s which is still in use.\n"
+#, c-format
 msgid "Cannot convert device %s which is still in use.\n"
-msgstr "No se puede dar formato al dispositivo %s que todavía está en uso.\n"
+msgstr "No se puede convertir el dispositivo %s que todavía está en uso.\n"
 
 #: lib/setup.c:4247
-#, fuzzy
-#| msgid "This operation is not supported for this device type.\n"
 msgid "Kernel keyring is not supported by the kernel.\n"
-msgstr "Esta operación no está disponible para este tipo de dispositivo.\n"
+msgstr "El llavero de núcleo no está admitido en el núcleo.\n"
 
 #: lib/setup.c:4256
-#, fuzzy, c-format
-#| msgid "Error reading passphrase from terminal.\n"
+#, c-format
 msgid "Failed to read passphrase from keyring key %s"
-msgstr "Error al leer la frase contraseña desde el terminal.\n"
+msgstr "No se ha podido leer la frase contraseña desde la clave %s del llavero"
 
 #: lib/setup.c:4351
 #, fuzzy, c-format
 #| msgid "Failed to swap new key slot.\n"
 msgid "Failed to assign keyslot %d to digests.\n"
-msgstr "No se ha logrado intercambiar la nueva ranura de claves.\n"
+msgstr "No se ha logrado asignar la ranura de claves %d a los digestivos.\n"
 
 #: lib/utils.c:332
 msgid "Cannot get process priority.\n"
@@ -514,10 +496,8 @@ msgid "Failed to open key file.\n"
 msgstr "No se ha podido abrir el fichero de claves.\n"
 
 #: lib/utils.c:422
-#, fuzzy
-#| msgid "Cannot read keyfile %s.\n"
 msgid "Cannot read keyfile from a terminal.\n"
-msgstr "No se puede leer el fichero de claves %s.\n"
+msgstr "No se puede leer el fichero de claves desde un terminal.\n"
 
 #: lib/utils.c:439
 msgid "Failed to stat key file.\n"
@@ -550,10 +530,9 @@ msgid "Device %s doesn't exist or access denied.\n"
 msgstr "El dispositivo %s no existe o el acceso al mismo ha sido denegado.\n"
 
 #: lib/utils_device.c:595
-#, fuzzy, c-format
-#| msgid "Cannot write to device %s, permission denied.\n"
+#, c-format
 msgid "Cannot use device %s, permission denied.\n"
-msgstr "No se puede escribir en el dispositivo %s; permiso denegado.\n"
+msgstr "No se puede utilizar el dispositivo %s; permiso denegado.\n"
 
 #: lib/utils_device.c:598
 #, c-format
@@ -586,34 +565,32 @@ msgstr "El dispositivo %s es demasiado pequeño.\n"
 #: lib/utils_pbkdf.c:76
 #, c-format
 msgid "Unknown PBKDF type %s.\n"
-msgstr ""
+msgstr "Tipo de PBKDF %s desconocido.\n"
 
 #: lib/utils_pbkdf.c:83
-#, fuzzy
-#| msgid "Requested LUKS hash %s is not supported.\n"
 msgid "Requested PBKDF type is not supported for LUKS1.\n"
-msgstr "La «hash» LUKS solicitada %s no está disponible.\n"
+msgstr "El tipo de PBKDF solicitado no está disponible para LUKS1.\n"
 
 #: lib/utils_pbkdf.c:89
 msgid "PBKDF max memory or parallel threads must not be set with pbkdf2.\n"
-msgstr ""
+msgstr "No se pueden establecer la memoria máxima de PBKDF ni los hilos paralelos con pbkdf2.\n"
 
 #: lib/utils_pbkdf.c:96
 #, c-format
 msgid "Requested maximum PBKDF memory cost is too high (maximum is %d kilobytes).\n"
-msgstr ""
+msgstr "El coste de la memoria máxima solicitada de PBKDF es demasiado alto (el máximo es %d kilobytes).\n"
 
 #: lib/utils_pbkdf.c:101
 msgid "Requested maximum PBKDF memory can not be zero.\n"
-msgstr ""
+msgstr "La memoria máxima solicitada de PBKDF no puede ser cero.\n"
 
 #: lib/utils_pbkdf.c:105
 msgid "Requested PBKDF parallel threads can not be zero.\n"
-msgstr ""
+msgstr "Los hilos paralelos solicitados de PBKDF no pueden ser cero.\n"
 
 #: lib/utils_pbkdf.c:109
 msgid "Requested PBKDF target time can not be zero.\n"
-msgstr ""
+msgstr "El tiempo objetivo máximo de PBKDF no puede ser cero.\n"
 
 #: lib/utils_benchmark.c:303
 msgid "PBKDF benchmark disabled but iterations not set.\n"
@@ -625,15 +602,13 @@ msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
 msgstr "Opciones PBKDF2 no compatibles (usando el algoritmo «hash» %s).\n"
 
 #: lib/utils_benchmark.c:335
-#, fuzzy
-#| msgid "Not compatible PBKDF2 options (using hash algorithm %s).\n"
 msgid "Not compatible PBKDF options.\n"
-msgstr "Opciones PBKDF2 no compatibles (usando el algoritmo «hash» %s).\n"
+msgstr "Opciones PBKDF no compatibles.\n"
 
 #: lib/utils_device_locking.c:85
 #, c-format
 msgid "WARNING: Locking directory %s/%s is missing!\n"
-msgstr ""
+msgstr "ATENCIÓN: ¡Falta el directorio de bloqueo %s/%s!\n"
 
 #: lib/luks1/keyencryption.c:38
 #, c-format
@@ -672,10 +647,9 @@ msgid "IO error while decrypting keyslot.\n"
 msgstr "Error de entrada/salida mientras se descifraba una ranura de claves.\n"
 
 #: lib/luks1/keymanage.c:128
-#, fuzzy, c-format
-#| msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
+#, c-format
 msgid "Device %s is too small. (LUKS1 requires at least %<PRIu64> bytes.)\n"
-msgstr "El dispositivo %s es demasiado pequeño. (LUKS necesita %<PRIu64> btyes como mínimo.)\n"
+msgstr "El dispositivo %s es demasiado pequeño. (LUKS1 necesita %<PRIu64> btyes como mínimo.)\n"
 
 #: lib/luks1/keymanage.c:149 lib/luks1/keymanage.c:157
 #: lib/luks1/keymanage.c:169 lib/luks1/keymanage.c:180
@@ -793,10 +767,8 @@ msgid "Writing LUKS header to disk.\n"
 msgstr "Escribiendo cabecera LUKS en el disco.\n"
 
 #: lib/luks1/keymanage.c:471
-#, fuzzy
-#| msgid "Repair failed."
 msgid "Repair failed.\n"
-msgstr "La reparación ha fallado."
+msgstr "La reparación ha fallado.\n"
 
 #: lib/luks1/keymanage.c:493
 #, c-format
@@ -1041,56 +1013,46 @@ msgstr ""
 
 #: lib/verity/verity_fec.c:208
 msgid "Invalid number of parity bytes.\n"
-msgstr ""
+msgstr "Número no válido de bytes de paridad.\n"
 
 #: lib/verity/verity_fec.c:241
-#, fuzzy, c-format
-#| msgid "Failed to open temporary keystore device.\n"
+#, c-format
 msgid "Failed to determine size for device %s.\n"
-msgstr "No se ha podido abrir el dispositivo de almacenamiento de claves temporal.\n"
+msgstr "No se ha podido determinar el tamaño para el dispositivo %s.\n"
 
 #: lib/integrity/integrity.c:220 lib/integrity/integrity.c:271
-#, fuzzy
-#| msgid "Kernel doesn't support dm-verity mapping.\n"
 msgid "Kernel doesn't support dm-integrity mapping.\n"
-msgstr "El núcleo no dispone de asignación «dm-verity».\n"
+msgstr "El núcleo no dispone de asociación «dm-integrity».\n"
 
 #: lib/luks2/luks2_disk_metadata.c:364
-#, fuzzy, c-format
-#| msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
+#, c-format
 msgid "Device %s is too small. (LUKS2 requires at least %<PRIu64> bytes.)\n"
-msgstr "El dispositivo %s es demasiado pequeño. (LUKS necesita %<PRIu64> btyes como mínimo.)\n"
+msgstr "El dispositivo %s es demasiado pequeño. (LUKS3 necesita %<PRIu64> btyes como mínimo.)\n"
 
 #: lib/luks2/luks2_disk_metadata.c:427
-#, fuzzy
-#| msgid "Failed to access temporary keystore device.\n"
 msgid "Failed to acquire write device lock.\n"
-msgstr "No se ha podido acceder al dispositivo de almacenamiento de claves temporal.\n"
+msgstr "No se ha podido adquirir el bloqueo de escritura para el dispositivo.\n"
 
 #: lib/luks2/luks2_json_format.c:99
-#, fuzzy
-#| msgid "Failed to swap new key slot.\n"
 msgid "No space for new keyslot.\n"
-msgstr "No se ha logrado intercambiar la nueva ranura de claves.\n"
+msgstr "No hay espacio para la nueva ranura de claves.\n"
 
 #: lib/luks2/luks2_json_metadata.c:826 lib/luks2/luks2_json_metadata.c:956
 #: lib/luks2/luks2_json_metadata.c:1029 lib/luks2/luks2_keyslot_luks2.c:103
 #: lib/luks2/luks2_keyslot_luks2.c:126
 #, fuzzy, c-format
-#| msgid "Failed to access temporary keystore device.\n"
+#| msgid "Failed to acquire read lock on device %s.\n"
 msgid "Failed to acquire read lock on device %s.\n"
-msgstr "No se ha podido acceder al dispositivo de almacenamiento de claves temporal.\n"
+msgstr "No se ha podido adquirir el bloqueo de lectura para el dispositivo.\n"
 
 #: lib/luks2/luks2_json_metadata.c:1046
 #, c-format
 msgid "Forbidden LUKS2 requirements detected in backup %s.\n"
-msgstr ""
+msgstr "Se han detectado requisitos prohibidos para LUKS2 en la copia de seguridad %s.\n"
 
 #: lib/luks2/luks2_json_metadata.c:1087
-#, fuzzy
-#| msgid "Data offset or key size differs on device and backup, restore failed.\n"
 msgid "Data offset differ on device and backup, restore failed.\n"
-msgstr "La posición de los datos o el tamaño de la clave no coinciden en el dispositivo y en la copia de seguridad.\n"
+msgstr "La posición de los datos no coinciden en el dispositivo y en la copia de seguridad; ha fallado la restauración.\n"
 
 #: lib/luks2/luks2_json_metadata.c:1093
 #, fuzzy
@@ -1099,22 +1061,17 @@ msgid "Binary header with keyslot areas size differ on device and backup, restor
 msgstr "La posición de los datos o el tamaño de la clave no coinciden en el dispositivo y en la copia de seguridad.\n"
 
 #: lib/luks2/luks2_json_metadata.c:1100
-#, fuzzy, c-format
-#| msgid "Device %s %s%s"
+#, c-format
 msgid "Device %s %s%s%s%s"
-msgstr "Dispositivo %s %s%s"
+msgstr "Dispositivo %s %s%s%s%s"
 
 #: lib/luks2/luks2_json_metadata.c:1101
-#, fuzzy
-#| msgid "does not contain LUKS header. Replacing header can destroy data on that device."
 msgid "does not contain LUKS2 header. Replacing header can destroy data on that device."
-msgstr "no contiene cabecera LUKS. Reemplazar la cabecera puede destruir los datos en ese dispositivo."
+msgstr "no contiene cabecera LUKS2. Reemplazar la cabecera puede destruir los datos en ese dispositivo."
 
 #: lib/luks2/luks2_json_metadata.c:1102
-#, fuzzy
-#| msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgid "already contains LUKS2 header. Replacing header will destroy existing keyslots."
-msgstr "ya contiene cabecera LUKS. Reemplazar la cabecera destruirá las ranuras de claves existentes."
+msgstr "ya contiene cabecera LUKS2. Reemplazar la cabecera destruirá las ranuras de claves existentes."
 
 #: lib/luks2/luks2_json_metadata.c:1104
 msgid ""
