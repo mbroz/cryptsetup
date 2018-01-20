@@ -186,7 +186,7 @@ int LUKS2_generate_hdr(
 	else {
 		//FIXME
 		//offset = size_round_up(areas[7].offset + areas[7].length, alignPayload * SECTOR_SIZE);
-		offset = size_round_up(LUKS2_HDR_DEFAULT_LEN, alignPayload * sector_size);
+		offset = size_round_up(LUKS2_HDR_DEFAULT_LEN, (size_t)alignPayload * sector_size);
 		offset += alignOffset;
 	}
 

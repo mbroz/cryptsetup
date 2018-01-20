@@ -51,8 +51,8 @@ struct fec_input_device {
 };
 
 struct fec_context {
-	int rsn;
-	int roots;
+	uint32_t rsn;
+	uint32_t roots;
 	uint64_t size;
 	uint64_t blocks;
 	uint64_t rounds;
@@ -141,7 +141,7 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 	ctx.blocks = FEC_div_round_up(ctx.size, ctx.block_size);
 	ctx.rounds = FEC_div_round_up(ctx.blocks, ctx.rsn);
 
-	buf = malloc(ctx.block_size * ctx.rsn);
+	buf = malloc((size_t)ctx.block_size * ctx.rsn);
 	if (!buf) {
 		log_err(cd, _("Failed to allocate buffer.\n"));
 		r = -ENOMEM;

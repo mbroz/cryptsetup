@@ -2648,7 +2648,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	const char *new_passphrase,
 	size_t new_passphrase_size)
 {
-	int digest, r;
+	int digest = -1, r;
 	struct luks2_keyslot_params params;
 	struct volume_key *vk = NULL;
 

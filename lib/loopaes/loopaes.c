@@ -92,7 +92,7 @@ static int hash_keys(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	*vk = crypt_alloc_volume_key(key_len_output * keys_count, NULL);
+	*vk = crypt_alloc_volume_key((size_t)key_len_output * keys_count, NULL);
 	if (!*vk)
 		return -ENOMEM;
 

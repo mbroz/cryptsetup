@@ -22,7 +22,7 @@
 #ifndef _CRYPTSETUP_LUKS2_ONDISK_H
 #define _CRYPTSETUP_LUKS2_ONDISK_H
 
-#include <stdint.h>
+#include "libcryptsetup.h"
 
 #define LUKS2_MAGIC_1ST "LUKS\xba\xbe"
 #define LUKS2_MAGIC_2ND "SKUL\xba\xbe"

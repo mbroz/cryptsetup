@@ -306,7 +306,7 @@ int LUKS2_keyslot_open(struct crypt_device *cd,
 			password, password_len, segment, vk);
 		if (r_prio >= 0)
 			r = r_prio;
-		else if (r_prio < 0 && (r_prio != -EPERM) && (r_prio != -ENOENT))
+		else if (r_prio != -EPERM && r_prio != -ENOENT)
 			r = r_prio;
 		else
 			r = LUKS2_keyslot_open_priority(cd, hdr, CRYPT_SLOT_PRIORITY_NORMAL,

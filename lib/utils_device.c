@@ -48,8 +48,8 @@ struct device {
 
 	struct crypt_lock_handle *lh;
 
-	int o_direct:1;
-	int init_done:1;
+	unsigned int o_direct:1;
+	unsigned int init_done:1;
 
 	/* cached values */
 	size_t alignment;

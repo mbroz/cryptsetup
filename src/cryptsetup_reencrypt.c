@@ -71,8 +71,8 @@ struct reenc_ctx {
 	uint64_t device_offset;
 	uint64_t device_shift;
 
-	int stained:1;
-	int in_progress:1;
+	unsigned int stained:1;
+	unsigned int in_progress:1;
 	enum { FORWARD = 0, BACKWARD = 1 } reencrypt_direction;
 	enum { REENCRYPT = 0, ENCRYPT = 1, DECRYPT = 2 } reencrypt_mode;
 

@@ -373,9 +373,6 @@ static int keyfile_seek(int fd, uint64_t bytes)
 	if (r < 0 && errno != ESPIPE)
 		return -1;
 
-	if (bytes > SIZE_MAX)
-		return -1;
-
 	while (bytes > 0) {
 		/* figure out how much to read */
 		next_read = bytes > sizeof(tmp) ? sizeof(tmp) : (size_t)bytes;

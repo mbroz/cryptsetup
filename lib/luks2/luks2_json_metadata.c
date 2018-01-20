@@ -107,7 +107,7 @@ json_object *LUKS2_get_keyslot_jobj(struct luks2_hdr *hdr, int keyslot)
 	json_object *jobj1, *jobj2;
 	char keyslot_name[16];
 
-	if (!hdr)
+	if (!hdr || keyslot < 0)
 		return NULL;
 
 	if (snprintf(keyslot_name, sizeof(keyslot_name), "%u", keyslot) < 1)
@@ -125,7 +125,7 @@ json_object *LUKS2_get_token_jobj(struct luks2_hdr *hdr, int token)
 	json_object *jobj1, *jobj2;
 	char token_name[16];
 
-	if (!hdr)
+	if (!hdr || token < 0)
 		return NULL;
 
 	if (snprintf(token_name, sizeof(token_name), "%u", token) < 1)
@@ -143,7 +143,7 @@ json_object *LUKS2_get_digest_jobj(struct luks2_hdr *hdr, int digest)
 	json_object *jobj1, *jobj2;
 	char digest_name[16];
 
-	if (!hdr)
+	if (!hdr || digest < 0)
 		return NULL;
 
 	if (snprintf(digest_name, sizeof(digest_name), "%u", digest) < 1)
@@ -161,7 +161,7 @@ json_object *LUKS2_get_segment_jobj(struct luks2_hdr *hdr, int segment)
 	json_object *jobj1, *jobj2;
 	char segment_name[16];
 
-	if (!hdr)
+	if (!hdr || segment < 0)
 		return NULL;
 
 	if (snprintf(segment_name, sizeof(segment_name), "%u", segment) < 1)
@@ -193,7 +193,7 @@ static json_bool json_str_to_uint64(json_object *jobj, uint64_t *value)
 
 	errno = 0;
 	tmp = strtoull(json_object_get_string(jobj), &endptr, 10);
-	if (*endptr || errno || tmp > UINT64_MAX) {
+	if (*endptr || errno) {
 		log_dbg("Failed to parse uint64_t type from string %s.",
 			json_object_get_string(jobj));
 		*value = 0;
