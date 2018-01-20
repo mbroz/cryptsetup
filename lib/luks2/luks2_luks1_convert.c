@@ -610,8 +610,8 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	uint32_t key_size;
 	int i, r, last_active = 0;
 	uint64_t offset, area_length;
-	char buf[256], luksMagic[] = LUKS_MAGIC;
 	struct luks2_keyslot_params params;
+	char buf[256], luksMagic[] = LUKS_MAGIC;
 
 	jobj_digest  = LUKS2_get_digest_jobj(hdr2, 0);
 	if (!jobj_digest)

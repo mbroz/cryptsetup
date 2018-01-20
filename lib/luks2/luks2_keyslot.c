@@ -154,7 +154,7 @@ int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 		return -EINVAL;
 
 	/* Slot encryption tries to use the same key size as for the main algorithm */
-	if (integrity_key_size > key_size)
+	if ((size_t)integrity_key_size > key_size)
 		return -EINVAL;
 	params->area.raw.key_size = key_size - integrity_key_size;
 

@@ -395,11 +395,11 @@ int validate_inputs(const argon2_context *context) {
             return ARGON2_PWD_PTR_MISMATCH;
         }
     }
-
+#if ARGON2_MIN_PWD_LENGTH > 0 /* cryptsetup: fix gcc warning */
     if (ARGON2_MIN_PWD_LENGTH > context->pwdlen) {
       return ARGON2_PWD_TOO_SHORT;
     }
-
+#endif
     if (ARGON2_MAX_PWD_LENGTH < context->pwdlen) {
         return ARGON2_PWD_TOO_LONG;
     }
@@ -425,9 +425,11 @@ int validate_inputs(const argon2_context *context) {
             return ARGON2_SECRET_PTR_MISMATCH;
         }
     } else {
+#if ARGON2_MIN_SECRET > 0 /* cryptsetup: fix gcc warning */
         if (ARGON2_MIN_SECRET > context->secretlen) {
             return ARGON2_SECRET_TOO_SHORT;
         }
+#endif
         if (ARGON2_MAX_SECRET < context->secretlen) {
             return ARGON2_SECRET_TOO_LONG;
         }
@@ -439,9 +441,11 @@ int validate_inputs(const argon2_context *context) {
             return ARGON2_AD_PTR_MISMATCH;
         }
     } else {
+#if ARGON2_MIN_AD_LENGTH > 0 /* cryptsetup: fix gcc warning */
         if (ARGON2_MIN_AD_LENGTH > context->adlen) {
             return ARGON2_AD_TOO_SHORT;
         }
+#endif
         if (ARGON2_MAX_AD_LENGTH < context->adlen) {
             return ARGON2_AD_TOO_LONG;
         }
@@ -451,11 +455,11 @@ int validate_inputs(const argon2_context *context) {
     if (ARGON2_MIN_MEMORY > context->m_cost) {
         return ARGON2_MEMORY_TOO_LITTLE;
     }
-
+#if 0 /* UINT32_MAX, cryptsetup: fix gcc warning */
     if (ARGON2_MAX_MEMORY < context->m_cost) {
         return ARGON2_MEMORY_TOO_MUCH;
     }
-
+#endif
     if (context->m_cost < 8 * context->lanes) {
         return ARGON2_MEMORY_TOO_LITTLE;
     }

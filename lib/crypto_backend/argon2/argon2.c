@@ -23,6 +23,9 @@
 #include "encoding.h"
 #include "core.h"
 
+/* to silent gcc -Wcast-qual for const cast */
+#define CONST_CAST(x) (x)(uintptr_t)
+
 const char *argon2_type2string(argon2_type type, int uppercase) {
     switch (type) {
         case Argon2_d:
@@ -283,7 +286,7 @@ int argon2_verify(const char *encoded, const void *pwd, const size_t pwdlen,
         goto fail;
     }
 
-    ctx.pwd = (uint8_t *)pwd;
+    ctx.pwd = CONST_CAST(uint8_t *)pwd;
     ctx.pwdlen = (uint32_t)pwdlen;
 
     ret = decode_string(&ctx, encoded, type);
@@ -346,7 +349,7 @@ int argon2_verify_ctx(argon2_context *context, const char *hash,
         return ret;
     }
 
-    if (argon2_compare((uint8_t *)hash, context->out, context->outlen)) {
+    if (argon2_compare(CONST_CAST(uint8_t *)hash, context->out, context->outlen)) {
         return ARGON2_VERIFY_MISMATCH;
     }
 

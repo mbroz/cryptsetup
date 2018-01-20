@@ -22,6 +22,8 @@
 #include "blake2.h"
 #include "blake2-impl.h"
 
+void clear_internal_memory(void *v, size_t n);
+
 static const uint64_t blake2b_IV[8] = {
     UINT64_C(0x6a09e667f3bcc908), UINT64_C(0xbb67ae8584caa73b),
     UINT64_C(0x3c6ef372fe94f82b), UINT64_C(0xa54ff53a5f1d36f1),

@@ -345,7 +345,7 @@ base64_decode_ctx_init (struct base64_decode_context *ctx)
    and return CTX->buf.  In either case, advance *IN to point to the byte
    after the last one processed, and set *N_NON_NEWLINE to the number of
    verified non-newline bytes accessible through the returned pointer.  */
-static char *
+static const char *
 get_4 (struct base64_decode_context *ctx,
        char const *restrict *in, char const *restrict in_end,
        size_t *n_non_newline)
@@ -361,7 +361,7 @@ get_4 (struct base64_decode_context *ctx,
           /* This is the common case: no newline.  */
           *in += 4;
           *n_non_newline = 4;
-          return (char *) t;
+          return (const char *) t;
         }
     }
 

@@ -110,7 +110,8 @@ static int FEC_encode_inputs(struct crypt_device *cd,
 			     struct fec_input_device *inputs,
 			     size_t ninputs, int fd)
 {
-	int i, r = 0;
+	int r = 0;
+	unsigned int i;
 	struct fec_context ctx;
 	uint32_t b;
 	uint64_t n;
