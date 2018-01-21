@@ -43,11 +43,11 @@ Changes since version 2.0.0
 * Introduce new 64-bit byte-offset *keyfile_device_offset functions.
 
   The keyfile interface was designed, well, for keyfiles. Unfortunately,
-  there are uses cases where a keyfile can be placed on a device, and
+  there are user cases where a keyfile can be placed on a device, and
   size_t offset can overflow on 32-bit systems.
 
-  New set of fucntions that allows 64-bit offsets even on 32bit systems
-  are now availeble:
+  New set of functions that allow 64-bit offsets even on 32bit systems
+  are now available:
 
      - crypt_resume_by_keyfile_device_offset
      - crypt_keyslot_add_by_keyfile_device_offset
