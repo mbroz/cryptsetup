@@ -1,0 +1,109 @@
+Cryptsetup 2.0.1 Release Notes
+==============================
+Stable and bug-fix release with experimental features.
+
+This version introduces a new on-disk LUKS2 format.
+
+The legacy LUKS (referenced as LUKS1) will be fully supported
+forever as well as a traditional and fully backward compatible format.
+
+Please note that authenticated disk encryption, non-cryptographic
+data integrity protection (dm-integrity), use of Argon2 Password-Based
+Key Derivation Function and the LUKS2 on-disk format itself are new
+features and can contain some bugs.
+
+To provide all security features of authenticated encryption we need
+a better nonce-reuse resistant algorithm in the kernel (see note below).
+For now, please use authenticated encryption as an experimental feature.
+
+Please do not use LUKS2 without properly configured backup or in
+production systems that need to be compatible with older systems.
+
+Changes since version 2.0.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* To store volume key into kernel keyring, kernel 4.15 with dm-crypt 1.18.1
+  is required. If a volume key is stored in keyring (LUKS2 only),
+  the dm-crypt v1.15.0 through v1.18.0 contains a serious bug that may cause
+  data corruption for ciphers with ESSIV.
+  (The key for ESSIV is zeroed because of code misplacement.)
+  This bug is not present for LUKS1 or any other IVs used in LUKS modes.
+  This change is not visible to the user (except dmsetup output).
+
+* Increase maximum allowed PBKDF memory-cost limit to 4 GiB.
+  The Argon2 PBKDF uses 1GiB by default; this is also limited by the amount
+  of physical memory available (maximum is half of the physical memory).
+
+* Use /run/cryptsetup as default for cryptsetup locking dir.
+  There were problems with sharing /run/lock with lockdev, and in the early
+  boot, the directory was missing.
+  The directory can be changed with --with-luks2-lock-path and
+  --with-luks2-lock-dir-perms configure switches.
+
+* Introduce new 64-bit byte-offset *keyfile_device_offset functions.
+
+  The keyfile interface was designed, well, for keyfiles. Unfortunately,
+  there are uses cases where a keyfile can be placed on a device, and
+  size_t offset can overflow on 32-bit systems.
+
+  New set of fucntions that allows 64-bit offsets even on 32bit systems
+  are now availeble:
+
+     - crypt_resume_by_keyfile_device_offset
+     - crypt_keyslot_add_by_keyfile_device_offset
+     - crypt_activate_by_keyfile_device_offset
+     - crypt_keyfile_device_read
+
+  The new functions have added the _device_ in name.
+  Old functions are just internal wrappers around these.
+
+  Also cryptsetup --keyfile-offset and --new-keyfile-offset now allows
+  64-bit offsets as parameters.
+
+* Add error hint for wrongly formatted cipher strings in LUKS1 and
+  properly fail in luksFormat if cipher format is missing required IV.
+  For now, crypto API quietly used cipher without IV if a cipher
+  algorithm without IV specification was used (e.g., aes-xts).
+  This caused fail later during activation.
+
+* Configure check for a recent Argon2 lib to support mandatory Argon2id.
+
+* Fix for the cryptsetup-reencrypt static build if pwquality is enabled.
+
+* Update LUKS1 standard doc (https links in the bibliography).
+
+
+Unfinished things & TODO for next releases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* There will be better documentation and examples.
+
+* There will be some more formal definition of the threat model for integrity
+  protection. (And a link to some papers discussing integrity protection,
+  once it is, hopefully, accepted and published.)
+
+* Offline re-encrypt tool LUKS2 support is currently limited.
+  There will be online LUKS2 re-encryption tool in future.
+
+* Authenticated encryption will use new algorithms from CAESAR competition
+  (https://competitions.cr.yp.to/caesar.html) once these algorithms are
+  available in the kernel (more on this later).
+  NOTE: Currently available authenticated modes (GCM, Chacha20-poly1305)
+  in the kernel have too small 96-bit nonces that are problematic with
+  randomly generated IVs (the collision probability is not negligible).
+  For the GCM, nonce collision is a fatal problem.
+
+* Authenticated encryption do not set encryption for a dm-integrity journal.
+
+  While it does not influence data confidentiality or integrity protection,
+  an attacker can get some more information from data journal or cause that
+  system will corrupt sectors after journal replay. (That corruption will be
+  detected though.)
+
+* There are examples of user-defined tokens inside misc/luks2_keyslot_example
+  directory (like a simple external program that uses libssh to unlock LUKS2
+  using remote keyfile).
+
+* The python binding (pycryptsetup) contains only basic functionality for LUKS1
+  (it is not updated for new features) and will be deprecated soon in favor
+  of python bindings to the libblockdev library (that can already handle LUKS1
+  devices).
