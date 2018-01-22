@@ -153,8 +153,11 @@ int yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 				log_err(_("Error reading response from terminal.\n"));
 			else
 				log_dbg("Query interrupted on signal.");
-		} else if(strcmp(answer, "YES\n"))
+		} else if(strcmp(answer, "YES\n")) {
 			r = 0;
+		} else {
+			log_std("Operation aborted.");
+		}
 	}
 
 	if (block && !quit)
