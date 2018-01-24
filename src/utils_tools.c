@@ -132,8 +132,9 @@ void quiet_log(int level, const char *msg, void *usrptr)
 	tool_log(level, msg, usrptr);
 }
 
-int yesDialog(const char *msg, void *usrptr __attribute__((unused)))
+int yesDialog(const char *msg, void *usrptr)
 {
+	const char *fail_msg = (const char *)usrptr;
 	char *answer = NULL;
 	size_t size = 0;
 	int r = 1, block;
@@ -142,7 +143,7 @@ int yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 	if (block)
 		set_int_block(0);
 
-	if(isatty(STDIN_FILENO) && !opt_batch_mode) {
+	if (isatty(STDIN_FILENO) && !opt_batch_mode) {
 		log_std("\nWARNING!\n========\n");
 		log_std("%s\n\nAre you sure? (Type uppercase yes): ", msg);
 		fflush(stdout);
@@ -153,8 +154,11 @@ int yesDialog(const char *msg, void *usrptr __attribute__((unused)))
 				log_err(_("Error reading response from terminal.\n"));
 			else
 				log_dbg("Query interrupted on signal.");
-		} else if(strcmp(answer, "YES\n"))
+		} else if (strcmp(answer, "YES\n")) {
 			r = 0;
+			if (fail_msg)
+				log_err("%s", fail_msg);
+		}
 	}
 
 	if (block && !quit)

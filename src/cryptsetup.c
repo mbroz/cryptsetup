@@ -884,7 +884,7 @@ static int action_luksRepair(void)
 	}
 
 	r = yesDialog(_("Really try to repair LUKS device header?"),
-		       NULL) ? 0 : -EINVAL;
+		       _("Operation aborted.\n")) ? 0 : -EINVAL;
 	if (r == 0)
 		r = crypt_repair(cd, luksType(opt_type), NULL);
 out:
@@ -964,7 +964,8 @@ static int action_luksFormat(void)
 	/* Create header file (must contain at least one sector)? */
 	if (opt_header_device && stat(opt_header_device, &st) < 0 && errno == ENOENT) {
 		if (!opt_batch_mode &&
-		    !yesDialog("Header file does not exist, do you want to create it?", NULL))
+		    !yesDialog("Header file does not exist, do you want to create it?",
+			    _("Operation aborted.\n")))
 		    return -EPERM;
 
 		log_dbg("Creating header file.");
@@ -987,7 +988,7 @@ static int action_luksFormat(void)
 		r = -ENOMEM;
 		goto out;
 	}
-	r = yesDialog(msg, NULL) ? 0 : -EINVAL;
+	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 	free(msg);
 	if (r < 0)
 		goto out;
@@ -1149,7 +1150,7 @@ out:
 }
 
 static int verify_keyslot(struct crypt_device *cd, int key_slot,
-			  char *msg_last, char *msg_pass,
+			  char *msg_last, char *msg_pass, char *msg_fail,
 			  const char *key_file, uint64_t keyfile_offset,
 			  int keyfile_size)
 {
@@ -1160,7 +1161,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 
 	ki = crypt_keyslot_status(cd, key_slot);
 	if (ki == CRYPT_SLOT_ACTIVE_LAST && !opt_batch_mode && !key_file &&
-	    msg_last && !yesDialog(msg_last, NULL))
+	    msg_last && !yesDialog(msg_last, msg_fail))
 		return -EPERM;
 
 	r = tools_get_key(msg_pass, &password, &passwordLen,
@@ -1220,6 +1221,7 @@ static int action_luksKillSlot(void)
 		r = verify_keyslot(cd, opt_key_slot,
 			_("This is the last keyslot. Device will become unusable after purging this key."),
 			_("Enter any remaining passphrase: "),
+			_("Operation aborted, the keyslot was NOT wiped.\n"),
 			opt_key_file, opt_keyfile_offset, opt_keyfile_size);
 
 		if (r == -EPIPE && (!opt_key_file || tools_is_stdin(opt_key_file))) {
@@ -1273,7 +1275,7 @@ static int action_luksRemoveKey(void)
 	if (crypt_keyslot_status(cd, opt_key_slot) == CRYPT_SLOT_ACTIVE_LAST &&
 	    !yesDialog(_("This is the last keyslot. "
 			  "Device will become unusable after purging this key."),
-			NULL)) {
+			_("Operation aborted, the keyslot was NOT wiped.\n"))) {
 		r = -EPERM;
 		goto out;
 	}
@@ -1458,7 +1460,7 @@ static int action_luksUUID(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
+	crypt_set_confirm_callback(cd, yesDialog, _("Operation aborted.\n"));
 
 	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
 		goto out;
@@ -1691,7 +1693,7 @@ static int action_luksErase(void)
 		goto out;
 	}
 
-	if (!yesDialog(msg, NULL)) {
+	if (!yesDialog(msg, _("Operation aborted, keyslots were NOT wiped.\n"))) {
 		r = -EPERM;
 		goto out;
 	}
@@ -1754,7 +1756,7 @@ static int action_luksConvert(void)
 		return -ENOMEM;
 	}
 
-	if (yesDialog(msg, NULL))
+	if (yesDialog(msg, _("Operation aborted, device was NOT converted.\n")))
 		r = crypt_convert(cd, to_type, NULL);
 	else
 		r = -EPERM;
