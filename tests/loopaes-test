@@ -87,7 +87,7 @@ function get_expsum() # $offset
 	esac
 }
 
-function check_sum() # $key $keysize $offset
+function check_sum() # $key $keysize $offset [stdin|keyfile]
 {
 	# Fill device with zeroes and reopen it
 	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1k $LOOP_DD_PARAM >/dev/null 2>&1
@@ -95,14 +95,18 @@ function check_sum() # $key $keysize $offset
 	dmremove $DEV_NAME
 
 	EXPSUM=$(get_expsum $3)
-	$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $2 --key-file $1 $(get_offset_params $3) >/dev/null 2>&1
+	if [ "$4" == "stdin" ] ; then
+		cat $1 | $CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $2 --key-file - $(get_offset_params $3) >/dev/null 2>&1
+	else
+		$CRYPTSETUP loopaesOpen $LOOPDEV $DEV_NAME -s $2 --key-file $1 $(get_offset_params $3) >/dev/null 2>&1
+	fi
 	ret=$?
 	VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
 	if [ $ret -eq 0 -a "$VSUM" = "$EXPSUM" ] ; then
-		echo -n "[OK]"
+		echo -n "[$4:OK]"
 	else
-		echo "[FAIL]"
-		echo " Expecting $EXPSUM got $VSUM."
+		echo "[$4:FAIL]"
+		[ "$VSUM" != "$EXPSUM" ] && echo " Expecting $EXPSUM got $VSUM."
 		fail
 	fi
 }
@@ -121,7 +125,7 @@ function check_sum_losetup() # $key $alg
 		echo "[OK]"
 	else
 		echo "[FAIL]"
-		echo " Expecting $EXPSUM got $VSUM (loop-AES)."
+		[ "$VSUM" != "$EXPSUM" ] && echo " Expecting $EXPSUM got $VSUM (loop-AES)."
 		fail
 	fi
 	losetup -d $LOOPDEV >/dev/null 2>&1
@@ -157,7 +161,9 @@ for key_size in $KEY_SIZES ; do
 			2>/dev/null
 		[ $? -ne 0 ] && echo "[SKIPPED]" && continue
 		check_exists
-		check_sum $key $key_size $offset
+		check_sum $key $key_size $offset keyfile
+		$CRYPTSETUP loopaesClose $DEV_NAME || fail
+		check_sum $key $key_size $offset stdin
 		$CRYPTSETUP loopaesClose $DEV_NAME || fail
 		check_sum_losetup $key AES$key_size $offset
         done

@@ -271,8 +271,8 @@ static int action_open_loopaes(void)
 		goto out;
 
 	r = crypt_activate_by_keyfile_device_offset(cd, action_argv[1], CRYPT_ANY_SLOT,
-				      opt_key_file, opt_keyfile_size,
-				      opt_keyfile_offset, activate_flags);
+		tools_is_stdin(opt_key_file) ? "/dev/stdin" : opt_key_file, opt_keyfile_size,
+		opt_keyfile_offset, activate_flags);
 out:
 	crypt_free(cd);
 
