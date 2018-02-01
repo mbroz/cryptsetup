@@ -37,7 +37,11 @@ static const char *opt_uuid = NULL;
 static const char *opt_type = "luks";
 static long opt_keyfile_size = 0;
 static long opt_keyfile_offset = 0;
-static int opt_iteration_time = 1000;
+static int opt_iteration_time = 0;
+static const char *opt_pbkdf = NULL;
+static long opt_pbkdf_memory = DEFAULT_LUKS2_MEMORY_KB;
+static long opt_pbkdf_parallel = DEFAULT_LUKS2_PARALLEL_THREADS;
+static long opt_pbkdf_iterations = 0;
 static int opt_version_mode = 0;
 static int opt_random = 0;
 static int opt_urandom = 0;
@@ -490,6 +494,35 @@ out:
 	return r;
 }
 
+static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
+{
+	struct crypt_pbkdf_type pbkdf = {};
+
+	if (!strcmp(dev_type, CRYPT_LUKS1)) {
+		if (opt_pbkdf && strcmp(opt_pbkdf, CRYPT_KDF_PBKDF2))
+			return -EINVAL;
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
+		pbkdf.time_ms = opt_iteration_time ?: DEFAULT_LUKS1_ITER_TIME;
+	} else if (!strcmp(dev_type, CRYPT_LUKS2)) {
+		pbkdf.type = opt_pbkdf ?: DEFAULT_LUKS2_PBKDF;
+		pbkdf.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
+		pbkdf.time_ms = opt_iteration_time ?: DEFAULT_LUKS2_ITER_TIME;
+		if (strcmp(pbkdf.type, CRYPT_KDF_PBKDF2)) {
+			pbkdf.max_memory_kb = opt_pbkdf_memory;
+			pbkdf.parallel_threads = opt_pbkdf_parallel;
+		}
+	} else
+		return -EINVAL;
+
+	if (opt_pbkdf_iterations) {
+		pbkdf.iterations = opt_pbkdf_iterations;
+		pbkdf.flags |= CRYPT_PBKDF_NO_BENCHMARK;
+	}
+
+	return crypt_set_pbkdf_type(cd, &pbkdf);
+}
+
 static int create_new_header(struct reenc_ctx *rc, const char *cipher,
 			     const char *cipher_mode, const char *uuid,
 			     const char *key, int key_size,
@@ -507,8 +540,11 @@ static int create_new_header(struct reenc_ctx *rc, const char *cipher,
 	else if (opt_urandom)
 		crypt_set_rng_type(cd_new, CRYPT_RNG_URANDOM);
 
-	if (opt_iteration_time)
-		crypt_set_iteration_time(cd_new, opt_iteration_time);
+	r = set_pbkdf_params(cd_new, type);
+	if (r) {
+		log_err(_("Failed to set PBKDF parameters.\n"));
+		goto out;
+	}
 
 	if ((r = crypt_format(cd_new, type, cipher, cipher_mode,
 			      uuid, key, key_size, params)))
@@ -538,16 +574,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params = {0};
-	const struct crypt_pbkdf_type luks2_pbkdf = {
-		.type = DEFAULT_LUKS2_PBKDF,
-		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
-		.time_ms = DEFAULT_LUKS2_ITER_TIME,
-		.max_memory_kb = DEFAULT_LUKS2_MEMORY_KB,
-		.parallel_threads = DEFAULT_LUKS2_PARALLEL_THREADS
-	};
-	struct crypt_params_luks2 params2 = {
-		.pbkdf = &luks2_pbkdf,
-	};
+	struct crypt_params_luks2 params2 = {0};
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char *old_key = NULL;
 	size_t old_key_size;
@@ -599,9 +626,6 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		if (r < 0)
 			goto out;
 	}
-
-	if (isLUKS2(rc->type) && !opt_batch_mode)
-		log_std(_("Using default pbkdf parameters for new LUKS2 header.\n"));
 
 	r = create_new_header(rc,
 		opt_cipher ? cipher : crypt_get_cipher(cd),
@@ -1384,6 +1408,10 @@ int main(int argc, const char **argv)
 		{ "decrypt",           '\0', POPT_ARG_NONE, &opt_decrypt,               0, N_("Permanently decrypt device (remove encryption)."), NULL },
 		{ "uuid",              '\0', POPT_ARG_STRING, &opt_uuid,                0, N_("The uuid used to resume decryption."), NULL },
 		{ "type",              '\0', POPT_ARG_STRING, &opt_type,                0, N_("Type of LUKS metadata (luks1 or luks2)."), NULL },
+		{ "pbkdf",             '\0', POPT_ARG_STRING, &opt_pbkdf,               0, N_("PBKDF algorithm (for LUKS2) (argon2i/argon2id/pbkdf2)."), NULL },
+		{ "pbkdf-memory",      '\0', POPT_ARG_LONG, &opt_pbkdf_memory,          0, N_("PBKDF memory cost limit"), N_("kilobytes") },
+		{ "pbkdf-parallel",    '\0', POPT_ARG_LONG, &opt_pbkdf_parallel,        0, N_("PBKDF parallel cost "), N_("threads") },
+		{ "pbkdf-force-iterations",'\0',POPT_ARG_LONG, &opt_pbkdf_iterations,   0, N_("PBKDF iterations cost (forced, disables benchmark)"), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1429,11 +1457,23 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (opt_bsize < 0 || opt_key_size < 0 || opt_iteration_time < 0 ||
-	    opt_tries < 0 || opt_keyfile_offset < 0 || opt_key_size < 0) {
+	    opt_tries < 0 || opt_keyfile_offset < 0 || opt_key_size < 0 ||
+	    opt_pbkdf_iterations < 0 || opt_pbkdf_memory < 0 ||
+	    opt_pbkdf_parallel < 0) {
 		usage(popt_context, EXIT_FAILURE,
 		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));
 	}
+
+	if (opt_pbkdf && crypt_parse_pbkdf(opt_pbkdf, &opt_pbkdf))
+		usage(popt_context, EXIT_FAILURE,
+		_("Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id.\n"),
+		poptGetInvocationName(popt_context));
+
+	if (opt_pbkdf_iterations && opt_iteration_time)
+		usage(popt_context, EXIT_FAILURE,
+		_("PBKDF forced iterations cannot be combined with iteration time option.\n"),
+		poptGetInvocationName(popt_context));
 
 	if (opt_bsize < 1 || opt_bsize > 64)
 		usage(popt_context, EXIT_FAILURE,
@@ -1474,8 +1514,8 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce-device-size."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_keep_key && ((!opt_hash && !opt_iteration_time) || opt_cipher || opt_new))
-		usage(popt_context, EXIT_FAILURE, _("Option --keep-key can be used only with --hash or --iter-time."),
+	if (opt_keep_key && ((!opt_hash && !opt_iteration_time && !opt_pbkdf_iterations) || opt_cipher || opt_new))
+		usage(popt_context, EXIT_FAILURE, _("Option --keep-key can be used only with --hash, --iter-time or --pbkdf-force-iterations."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_new && opt_decrypt)
