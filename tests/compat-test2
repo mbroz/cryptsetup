@@ -729,17 +729,16 @@ $CRYPTSETUP luksDump $LOOPDEV | grep "Label:" | grep -q "TheLabel" || fail
 prepare "[36] LUKS PBKDF setting" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf bla $LOOPDEV >/dev/null 2>&1 && fail
 # Force setting, no benchmark. PBKDF2 has 1000 iterations as a minimum
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-iterations 999 $LOOPDEV || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "Iterations:" | grep -q "1000" || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-iterations 999 $LOOPDEV 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-iterations 1234 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Iterations:" | grep -q "1234" || fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 1 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 3 $LOOPDEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 4 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2id" || fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2i  --pbkdf-force-iterations 1 \
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2i  --pbkdf-force-iterations 4 \
 	--pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2i" || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | grep -q "1" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | grep -q "4" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | grep -q "1234" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Threads:" | grep -q "1" || fail
 # Benchmark

@@ -211,7 +211,7 @@ HASH4=2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74
 
 echo "[1] Reencryption"
 prepare 8192
-echo $PWD1 | $CRYPTSETUP -q luksFormat -s 128 -c aes-cbc-plain --pbkdf-force-iterations 1 --align-payload 4096 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat -s 128 -c aes-cbc-plain --pbkdf-force-iterations 1000 --align-payload 4096 $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q
@@ -225,7 +225,7 @@ check_hash $PWD1 $HASH1
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[2] Reencryption with data shift"
-echo $PWD1 | $CRYPTSETUP -q luksFormat -c aes-cbc-essiv:sha256 -s 128 --pbkdf-force-iterations 1 --align-payload 2048 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat -c aes-cbc-essiv:sha256 -s 128 --pbkdf-force-iterations 1000 --align-payload 2048 $LOOPDEV1 || fail
 wipe $PWD1
 echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 --reduce-device-size 1024S || fail
 check_hash $PWD1 $HASH2
@@ -234,10 +234,10 @@ check_hash $PWD1 $HASH2
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[3] Reencryption with keyfile"
-echo $PWD1 | $CRYPTSETUP -q luksFormat -d $KEY1 -c aes-cbc-essiv:sha256 -s 128 --pbkdf-force-iterations 1 --align-payload 4096 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat -d $KEY1 -c aes-cbc-essiv:sha256 -s 128 --pbkdf-force-iterations 1000 --align-payload 4096 $LOOPDEV1 || fail
 wipe
 check_hash "" $HASH1
-echo $PWD1 | $CRYPTSETUP -q luksAddKey -d $KEY1 $LOOPDEV1 --pbkdf-force-iterations 1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksAddKey -d $KEY1 $LOOPDEV1 --pbkdf-force-iterations 1000 || fail
 $REENC $LOOPDEV1 -d $KEY1 -i 1 -q 2>/dev/null && fail
 $REENC $LOOPDEV1 -d $KEY1 -S 0 -i 1 -q || fail
 check_hash "" $HASH1
@@ -258,14 +258,14 @@ check_hash $PWD1 $HASH3
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[5] Reencryption using specific keyslot"
-echo $PWD2 | $CRYPTSETUP -q luksFormat --pbkdf-force-iterations 1 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1 -S 1 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1 -S 2 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1 -S 3 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1 -S 4 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1 -S 5 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1 -S 6 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD3" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1 -S 7 $LOOPDEV1 || fail
+echo $PWD2 | $CRYPTSETUP -q luksFormat --pbkdf-force-iterations 1000 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1000 -S 1 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1000 -S 2 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1000 -S 3 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1000 -S 4 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1000 -S 5 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1000 -S 6 $LOOPDEV1 || fail
+echo -e "$PWD2\n$PWD3" | $CRYPTSETUP -q luksAddKey --pbkdf-force-iterations 1000 -S 7 $LOOPDEV1 || fail
 backup_orig
 echo $PWD2 | $REENC -i 1 -S 0 -q $LOOPDEV1 || fail
 check_slot 0 || fail "Only keyslot 0 expected to be enabled"
@@ -298,7 +298,7 @@ simple_scsi_reenc "[4096/512 sector]"
 echo "[OK]"
 
 echo "[8] Header only reencryption (hash and iteration time)"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --hash sha1 --pbkdf-force-iterations 1 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --hash sha1 --pbkdf-force-iterations 1000 $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha256 --iter-time 1
@@ -322,7 +322,7 @@ test_logging_tmpfs || fail
 
 echo "[10] Removal of encryption"
 prepare 8192
-echo $PWD1 | $CRYPTSETUP -q luksFormat --pbkdf-force-iterations 1 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --pbkdf-force-iterations 1000 $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt
