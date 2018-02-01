@@ -86,7 +86,27 @@ int verify_pbkdf_params(struct crypt_device *cd,
 			log_err(cd, _("PBKDF max memory or parallel threads must not be set with pbkdf2.\n"));
 			return -EINVAL;
 		}
+		if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK &&
+		    pbkdf->iterations < MIN_PBKDF2_ITERATIONS) {
+			log_err(cd, _("Forced iteration count is too low for %s (minimum is %u).\n"),
+				pbkdf_type, MIN_PBKDF2_ITERATIONS);
+			return -EINVAL;
+		}
 		return 0;
+	}
+
+	/* TODO: properly define minimal iterations and also minimal memory values */
+	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK) {
+		if (pbkdf->iterations < 4) {
+			log_err(cd, _("Forced iteration count is too low for %s (minimum is %u).\n"),
+				pbkdf_type, 4);
+			r = -EINVAL;
+		}
+		if (pbkdf->max_memory_kb < 32) {
+			log_err(cd, _("Forced memory cost is too low for %s (minimum is %u kilobytes).\n"),
+				pbkdf_type, 32);
+			r = -EINVAL;
+		}
 	}
 
 	if (pbkdf->max_memory_kb > MAX_PBKDF_MEMORY) {
