@@ -1413,8 +1413,10 @@ int main(int argc, const char **argv)
 	}
 
 	if (!opt_batch_mode)
-		log_verbose(_("Reencryption will change: volume key%s%s%s%s.\n"),
-			opt_hash   ? _(", set hash to ")  : "", opt_hash   ?: "",
+		log_verbose(_("Reencryption will change: %s%s%s%s%s%s.\n"),
+			opt_keep_key ? "" :  _("volume key"),
+			(!opt_keep_key && opt_hash) ? ", " : "",
+			opt_hash   ? _("set hash to ")    : "", opt_hash   ?: "",
 			opt_cipher ? _(", set cipher to "): "", opt_cipher ?: "");
 
 	action_argv = poptGetArgs(popt_context);
