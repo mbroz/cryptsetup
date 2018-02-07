@@ -1302,6 +1302,48 @@ static void destroy_context(struct reenc_ctx *rc)
 	free(rc->device_uuid);
 }
 
+static int luks2_change_pbkdf_params(struct reenc_ctx *rc)
+{
+	int i, r;
+	struct crypt_device *cd;
+
+	if ((r = initialize_passphrase(rc, rc->device)))
+		return r;
+
+	if (crypt_init(&cd, rc->device) ||
+	    crypt_load(cd, CRYPT_LUKS2, NULL))
+		return -EINVAL;
+
+	if ((r = set_pbkdf_params(cd, CRYPT_LUKS2)))
+		goto out;
+
+	log_dbg("LUKS2 keyslot pbkdf params change.");
+
+	r = -EINVAL;
+
+	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++) {
+		if (!rc->p[i].password)
+			continue;
+		if ((r = crypt_keyslot_change_by_passphrase(cd, i, i,
+			rc->p[i].password, rc->p[i].passwordLen,
+			rc->p[i].password, rc->p[i].passwordLen)) < 0)
+			goto out;
+		log_verbose(_("Changed pbkdf parameters in keyslot %i.\n"), r);
+		r = 0;
+	}
+
+	if (r)
+		goto out;
+
+	/* see create_new_header */
+	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++)
+		if (!rc->p[i].password)
+			(void)crypt_keyslot_destroy(cd, i);
+out:
+	crypt_free(cd);
+	return r;
+}
+
 static int run_reencrypt(const char *device)
 {
 	int r = -EINVAL;
@@ -1311,6 +1353,12 @@ static int run_reencrypt(const char *device)
 
 	if (initialize_context(&rc, device))
 		goto out;
+
+	/* short-circuit LUKS2 keyslot parameters change */
+	if (opt_keep_key && isLUKS2(rc.type)) {
+		r = luks2_change_pbkdf_params(&rc);
+		goto out;
+	}
 
 	log_dbg("Running reencryption.");
 
