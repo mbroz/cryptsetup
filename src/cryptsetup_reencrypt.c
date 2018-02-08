@@ -1182,6 +1182,7 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 
 	rc->log_fd = -1;
 
+	/* FIXME: replace MAX_KEYSLOT with crypt_keyslot_max(CRYPT_LUKS2) */
 	if (crypt_keyslot_max(CRYPT_LUKS2) > MAX_SLOT) {
 		log_dbg("Internal error");
 		return -EINVAL;
@@ -1195,6 +1196,12 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 
 	if (initialize_uuid(rc)) {
 		log_err(_("Device %s is not a valid LUKS device.\n"), device);
+		return -EINVAL;
+	}
+
+	if (opt_key_slot != CRYPT_ANY_SLOT &&
+	    opt_key_slot >= crypt_keyslot_max(rc->type)) {
+		log_err(_("Key slot is invalid.\n"));
 		return -EINVAL;
 	}
 
@@ -1437,7 +1444,7 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_slot != CRYPT_ANY_SLOT &&
-	    (opt_key_slot < 0 || opt_key_slot >= crypt_keyslot_max(CRYPT_LUKS1)))
+	    (opt_key_slot < 0 || opt_key_slot >= crypt_keyslot_max(CRYPT_LUKS2)))
 		usage(popt_context, EXIT_FAILURE, _("Key slot is invalid."),
 		      poptGetInvocationName(popt_context));
 
