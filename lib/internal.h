@@ -51,10 +51,6 @@
 #define DEFAULT_MEM_ALIGNMENT	4096
 #define MAX_ERROR_LENGTH	512
 
-#define MAX_PBKDF_THREADS	4
-#define MAX_PBKDF_MEMORY	4*1024*1024 /* 4GiB */
-#define MIN_PBKDF2_ITERATIONS	1000 /* recommendation in NIST SP 800-132 */
-
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
 struct crypt_device;

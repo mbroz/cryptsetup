@@ -98,6 +98,7 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 	int r;
 	char *base64_str;
 	struct luks2_hdr *hdr;
+	struct crypt_pbkdf_limits pbkdf_limits;
 	struct crypt_pbkdf_type pbkdf = {
 		.type = CRYPT_KDF_PBKDF2,
 		.hash = "sha256",
@@ -110,8 +111,12 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	r = crypt_pbkdf_get_limits(CRYPT_KDF_PBKDF2, &pbkdf_limits);
+	if (r < 0)
+		return r;
+
 	if (crypt_get_pbkdf(cd)->flags & CRYPT_PBKDF_NO_BENCHMARK)
-		pbkdf.iterations = MIN_PBKDF2_ITERATIONS;
+		pbkdf.iterations = pbkdf_limits.min_iterations;
 	else {
 		r = crypt_benchmark_pbkdf_internal(cd, &pbkdf, volume_key_len);
 		if (r < 0)

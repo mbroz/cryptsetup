@@ -61,6 +61,7 @@ static uint32_t adjusted_phys_memory(void)
 int verify_pbkdf_params(struct crypt_device *cd,
 			const struct crypt_pbkdf_type *pbkdf)
 {
+	struct crypt_pbkdf_limits pbkdf_limits;
 	const char *pbkdf_type;
 	int r = 0;
 
@@ -73,6 +74,10 @@ int verify_pbkdf_params(struct crypt_device *cd,
 		log_err(cd, _("Unknown PBKDF type %s.\n"), pbkdf->type);
 		return r;
 	}
+
+	r = crypt_pbkdf_get_limits(pbkdf->type, &pbkdf_limits);
+	if (r < 0)
+		return r;
 
 	if (crypt_get_type(cd) &&
 	    !strcmp(crypt_get_type(cd), CRYPT_LUKS1) &&
@@ -87,9 +92,9 @@ int verify_pbkdf_params(struct crypt_device *cd,
 			return -EINVAL;
 		}
 		if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK &&
-		    pbkdf->iterations < MIN_PBKDF2_ITERATIONS) {
+		    pbkdf->iterations < pbkdf_limits.min_iterations) {
 			log_err(cd, _("Forced iteration count is too low for %s (minimum is %u).\n"),
-				pbkdf_type, MIN_PBKDF2_ITERATIONS);
+				pbkdf_type, pbkdf_limits.min_iterations);
 			return -EINVAL;
 		}
 		return 0;
@@ -97,21 +102,21 @@ int verify_pbkdf_params(struct crypt_device *cd,
 
 	/* TODO: properly define minimal iterations and also minimal memory values */
 	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK) {
-		if (pbkdf->iterations < 4) {
+		if (pbkdf->iterations < pbkdf_limits.min_iterations) {
 			log_err(cd, _("Forced iteration count is too low for %s (minimum is %u).\n"),
-				pbkdf_type, 4);
+				pbkdf_type, pbkdf_limits.min_iterations);
 			r = -EINVAL;
 		}
-		if (pbkdf->max_memory_kb < 32) {
+		if (pbkdf->max_memory_kb < pbkdf_limits.min_memory) {
 			log_err(cd, _("Forced memory cost is too low for %s (minimum is %u kilobytes).\n"),
-				pbkdf_type, 32);
+				pbkdf_type, pbkdf_limits.min_memory);
 			r = -EINVAL;
 		}
 	}
 
-	if (pbkdf->max_memory_kb > MAX_PBKDF_MEMORY) {
+	if (pbkdf->max_memory_kb > pbkdf_limits.max_memory) {
 		log_err(cd, _("Requested maximum PBKDF memory cost is too high (maximum is %d kilobytes).\n"),
-			MAX_PBKDF_MEMORY);
+			pbkdf_limits.max_memory);
 		r = -EINVAL;
 	}
 	if (!pbkdf->max_memory_kb) {
@@ -135,6 +140,7 @@ int init_pbkdf_type(struct crypt_device *cd,
 		    const char *dev_type)
 {
 	struct crypt_pbkdf_type *cd_pbkdf = crypt_get_pbkdf(cd);
+	struct crypt_pbkdf_limits pbkdf_limits;
 	const char *hash, *type;
 	unsigned cpus;
 	uint32_t old_flags, memory_kb;
@@ -147,6 +153,10 @@ int init_pbkdf_type(struct crypt_device *cd,
 
 	r = verify_pbkdf_params(cd, pbkdf);
 	if (r)
+		return r;
+
+	r = crypt_pbkdf_get_limits(pbkdf->type, &pbkdf_limits);
+	if (r < 0)
 		return r;
 
 	/*
@@ -185,10 +195,10 @@ int init_pbkdf_type(struct crypt_device *cd,
 	cd_pbkdf->max_memory_kb = pbkdf->max_memory_kb;
 	cd_pbkdf->parallel_threads = pbkdf->parallel_threads;
 
-	if (cd_pbkdf->parallel_threads > MAX_PBKDF_THREADS) {
+	if (cd_pbkdf->parallel_threads > pbkdf_limits.max_parallel) {
 		log_dbg("Maximum PBKDF threads is %d (requested %d).",
-			MAX_PBKDF_THREADS, cd_pbkdf->parallel_threads);
-		cd_pbkdf->parallel_threads = MAX_PBKDF_THREADS;
+			pbkdf_limits.max_parallel, cd_pbkdf->parallel_threads);
+		cd_pbkdf->parallel_threads = pbkdf_limits.max_parallel;
 	}
 
 	if (cd_pbkdf->parallel_threads) {

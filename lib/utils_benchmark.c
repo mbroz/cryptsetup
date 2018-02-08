@@ -289,6 +289,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 				   struct crypt_pbkdf_type *pbkdf,
 				   size_t volume_key_size)
 {
+	struct crypt_pbkdf_limits pbkdf_limits;
 	double PBKDF2_tmp;
 	uint32_t ms_tmp;
 	int r = -EINVAL;
@@ -303,6 +304,10 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 		log_err(cd, _("PBKDF benchmark disabled but iterations not set.\n"));
 		return -EINVAL;
 	}
+
+	r = crypt_pbkdf_get_limits(pbkdf->type, &pbkdf_limits);
+	if (r)
+		return r;
 
 	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2)) {
 		/*
@@ -326,7 +331,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 		PBKDF2_tmp = ((double)pbkdf->iterations * pbkdf->time_ms / 1000.);
 		if (PBKDF2_tmp > (double)UINT32_MAX)
 			return -EINVAL;
-		pbkdf->iterations = at_least((uint32_t)PBKDF2_tmp, MIN_PBKDF2_ITERATIONS);
+		pbkdf->iterations = at_least((uint32_t)PBKDF2_tmp, pbkdf_limits.min_iterations);
 	} else {
 		r = crypt_benchmark_pbkdf(cd, pbkdf, "foo", 3,
 			"0123456789abcdef0123456789abcdef", 32,

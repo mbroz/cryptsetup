@@ -34,6 +34,33 @@
 #define BENCH_SAMPLES_FAST 3
 #define BENCH_SAMPLES_SLOW 1
 
+/* These PBKDF2 limits must be never violated */
+int crypt_pbkdf_get_limits(const char *kdf, struct crypt_pbkdf_limits *limits)
+{
+	if (!kdf || !limits)
+		return -EINVAL;
+
+	if (!strcmp(kdf, "pbkdf2")) {
+		limits->min_iterations = 1000; /* recommendation in NIST SP 800-132 */
+		limits->max_iterations = UINT32_MAX;
+		limits->min_memory     = 0; /* N/A */
+		limits->max_memory     = 0; /* N/A */
+		limits->min_parallel   = 0; /* N/A */
+		limits->max_parallel   = 0; /* N/A */
+		return 0;
+	} else if (!strncmp(kdf, "argon2", 6)) {
+		limits->min_iterations = 4;
+		limits->max_iterations = UINT32_MAX;
+		limits->min_memory     = 32;
+		limits->max_memory     = 4*1024*1024; /* 4GiB */
+		limits->min_parallel   = 1;
+		limits->max_parallel   = 4;
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
 static long time_ms(struct rusage *start, struct rusage *end)
 {
 	int count_kernel_time = 0;
@@ -362,8 +389,6 @@ out:
 	return r;
 }
 
-#define ARGON2_MIN_T_COST 4
-
 int crypt_pbkdf_perf(const char *kdf, const char *hash,
 		const char *password, size_t password_size,
 		const char *salt, size_t salt_size,
@@ -372,10 +397,15 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 		uint32_t *iterations_out, uint32_t *memory_out,
 		int (*progress)(uint32_t time_ms, void *usrptr), void *usrptr)
 {
+	struct crypt_pbkdf_limits pbkdf_limits;
 	int r = -EINVAL;
 
 	if (!kdf || !iterations_out || !memory_out)
 		return -EINVAL;
+
+	r = crypt_pbkdf_get_limits(kdf, &pbkdf_limits);
+	if (r < 0)
+		return r;
 
 	*memory_out = 0;
 	*iterations_out = 0;
@@ -388,7 +418,7 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 	else if (!strncmp(kdf, "argon2", 6))
 		r = crypt_argon2_check(kdf, password, password_size,
 				       salt, salt_size, volume_key_size,
-				       ARGON2_MIN_T_COST, max_memory_kb,
+				       pbkdf_limits.min_iterations, max_memory_kb,
 				       parallel_threads, time_ms, iterations_out,
 				       memory_out, progress, usrptr);
 	return r;
