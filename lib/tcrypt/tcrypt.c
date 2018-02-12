@@ -505,7 +505,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	unsigned char pwd[TCRYPT_KEY_POOL_LEN] = {};
 	size_t passphrase_size;
 	char *key;
-	unsigned int i, skipped = 0;
+	unsigned int i, skipped = 0, iterations;
 	int r = -EPERM;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
@@ -538,22 +538,25 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			continue;
 		if (!(params->flags & CRYPT_TCRYPT_VERA_MODES) && tcrypt_kdf[i].veracrypt)
 			continue;
-		if ((params->flags & CRYPT_TCRYPT_VERA_MODES) && params->veracrypt_pim) {
+		if ((params->flags & CRYPT_TCRYPT_VERA_MODES) && tcrypt_kdf[i].veracrypt &&
+		     params->veracrypt_pim) {
 			/* adjust iterations to given PIM cmdline parameter */
 			if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
-				tcrypt_kdf[i].iterations = params->veracrypt_pim * 2048;
+				iterations = params->veracrypt_pim * 2048;
 			else
-				tcrypt_kdf[i].iterations = 15000 + (params->veracrypt_pim * 1000);
-		}
+				iterations = 15000 + (params->veracrypt_pim * 1000);
+		} else
+			iterations = tcrypt_kdf[i].iterations;
 
 		/* Derive header key */
-		log_dbg("TCRYPT: trying KDF: %s-%s-%d.",
-			tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations);
+		log_dbg("TCRYPT: trying KDF: %s-%s-%d%s.",
+			tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations,
+			params->veracrypt_pim && tcrypt_kdf[i].veracrypt ? "-PIM" : "");
 		r = crypt_pbkdf(tcrypt_kdf[i].name, tcrypt_kdf[i].hash,
 				(char*)pwd, passphrase_size,
 				hdr->salt, TCRYPT_HDR_SALT_LEN,
 				key, TCRYPT_HDR_KEY_LEN,
-				tcrypt_kdf[i].iterations, 0, 0);
+				iterations, 0, 0);
 		if (r < 0 && crypt_hash_size(tcrypt_kdf[i].hash) < 0) {
 			log_verbose(cd, _("PBKDF2 hash algorithm %s not available, skipping.\n"),
 				      tcrypt_kdf[i].hash);
