@@ -52,84 +52,25 @@ To remove encryption from device, use \fI\-\-decrypt\fR.
 For detailed description of encryption and key file options see \fIcryptsetup(8)\fR
 man page.
 .TP
-.B "\-\-verbose, \-v"
-Print more information on command execution.
-.TP
-.B "\-\-debug"
-Run in debug mode with full diagnostic logs. Debug output
-lines are always prefixed by '#'.
-.TP
-.B "\-\-cipher, \-c" \fI<cipher-spec>\fR
-Set the cipher specification string.
-.TP
-.B "\-\-key-size, \-s \fI<bits>\fR"
-Set key size in bits. The argument has to be a multiple of  8.
-
-The possible key-sizes are limited by the cipher and mode used.
-
-If you are increasing key size, there must be enough space in the LUKS header
-for enlarged keyslots (data offset must be large enough) or reencryption
-cannot be performed.
-
-If there is not enough space for keyslots with new key size,
-you can destructively shrink device with \-\-reduce-device-size option.
-.TP
-.B "\-\-hash, \-h \fI<hash-spec>\fR"
-Specifies the hash used in the LUKS1 key setup scheme and volume key digest.
-
-\fBNOTE:\fR if this parameter is not specified, default hash algorithm is always used
-for new LUKS1 device header.
-
-\fBNOTE:\fR with LUKS2 format this option is only relevant when new keyslot pbkdf algorithm
-is set to PBKDF2 (see \fI\-\-pbkdf).
-.TP
-.B "\-\-iter-time, \-i \fI<milliseconds>\fR"
-The number of milliseconds to spend with PBKDF2 passphrase processing for the
-new LUKS header.
-.TP
-.B "\-\-use-random"
-.TP
-.B "\-\-use-urandom"
-Define which kernel random number generator will be used to create the volume key.
-.TP
-.B "\-\-key-file, \-d \fIname\fR"
-Read the passphrase from file.
-
-\fBWARNING:\fR \-\-key-file option can be used only if there only one active keyslot,
-or alternatively, also if \-\-key-slot option is specified (then all other keyslots
-will be disabled in new LUKS device).
-
-If this option is not used, cryptsetup-reencrypt will ask for all active keyslot
-passphrases.
-.TP
-.B "\-\-key-slot, \-S <0-MAX>"
-Specify which key slot is used. For LUKS1, max keyslot number is 7. For LUKS2, it's 31.
-
-\fBWARNING:\fR All other keyslots will be disabled if this option is used.
-.TP
-.B "\-\-keyfile-offset \fIvalue\fR"
-Skip \fIvalue\fR bytes at the beginning of the key file.
-.TP
-.B "\-\-keyfile-size, \-l"
-Read a maximum of \fIvalue\fR bytes from the key file.
-Default is to read the whole file up to the compiled-in
-maximum.
-.TP
-.B "\-\-keep-key"
-Do not change encryption key, just reencrypt the LUKS header and keyslots.
-
-This option can be combined only with \fI\-\-hash\fR, \fI\-\-iter-time\fR,
-\fI\-\-pbkdf\-force\-iterations\fR, \fI\-\-pbkdf\fR (LUKS2 only),
-\fI\-\-pbkdf\-memory\fR (Argon2i/id and LUKS2 only) and \fI\-\-pbkdf\-parallel\fR
-(Argon2i/id and LUKS2 only) options.
-.TP
-.B "\-\-tries, \-T"
-Number of retries for invalid passphrase entry.
+.B "\-\-batch-mode, \-q"
+Suppresses all warnings and reencryption progress output.
 .TP
 .B "\-\-block-size, \-B \fIvalue\fR"
 Use re-encryption block size of <value> in MiB.
 
 Values can be between 1 and 64 MiB.
+.TP
+.B "\-\-cipher, \-c" \fI<cipher-spec>\fR
+Set the cipher specification string.
+.TP
+.B "\-\-debug"
+Run in debug mode with full diagnostic logs. Debug output
+lines are always prefixed by '#'.
+.TP
+.B "\-\-decrypt"
+Remove encryption (decrypt already encrypted device and remove LUKS header).
+
+\fBWARNING:\fR This is destructive operation and cannot be reverted.
 .TP
 .B "\-\-device-size \fIsize[units]\fR"
 Instead of real device size, use specified value.
@@ -144,22 +85,61 @@ for units with 1024 base or KB/MB/GB/TB for 1000 base (SI scale).
 
 \fBWARNING:\fR This is destructive operation.
 .TP
-.B "\-\-reduce-device-size \fIsize[units]\fR"
-Enlarge data offset to specified value by shrinking device size.
+.B "\-\-hash, \-h \fI<hash-spec>\fR"
+Specifies the hash used in the LUKS1 key setup scheme and volume key digest.
 
-This means that last sectors on the original device will be lost,
-ciphertext data will be effectively shifted by specified
-number of sectors.
+\fBNOTE:\fR if this parameter is not specified, default hash algorithm is always used
+for new LUKS1 device header.
 
-It can be useful if you e.g. added some space to underlying
-partition (so last sectors contains no data).
+\fBNOTE:\fR with LUKS2 format this option is only relevant when new keyslot pbkdf algorithm
+is set to PBKDF2 (see \fI\-\-pbkdf).
+.TP
+.B "\-\-iter-time, \-i \fI<milliseconds>\fR"
+The number of milliseconds to spend with PBKDF2 passphrase processing for the
+new LUKS header.
+.TP
+.B "\-\-keep-key"
+Do not change encryption key, just reencrypt the LUKS header and keyslots.
 
-For units suffix see \-\-device-size parameter description.
+This option can be combined only with \fI\-\-hash\fR, \fI\-\-iter-time\fR,
+\fI\-\-pbkdf\-force\-iterations\fR, \fI\-\-pbkdf\fR (LUKS2 only),
+\fI\-\-pbkdf\-memory\fR (Argon2i/id and LUKS2 only) and \fI\-\-pbkdf\-parallel\fR
+(Argon2i/id and LUKS2 only) options.
+.TP
+.B "\-\-key-file, \-d \fIname\fR"
+Read the passphrase from file.
 
-You cannot shrink device more than by 64 MiB (131072 sectors).
+\fBWARNING:\fR \-\-key-file option can be used only if there only one active keyslot,
+or alternatively, also if \-\-key-slot option is specified (then all other keyslots
+will be disabled in new LUKS device).
 
-\fBWARNING:\fR This is destructive operation and cannot be reverted.
-Use with extreme care - shrunk filesystems are usually unrecoverable.
+If this option is not used, cryptsetup-reencrypt will ask for all active keyslot
+passphrases.
+.TP
+.B "\-\-key-size, \-s \fI<bits>\fR"
+Set key size in bits. The argument has to be a multiple of  8.
+
+The possible key-sizes are limited by the cipher and mode used.
+
+If you are increasing key size, there must be enough space in the LUKS header
+for enlarged keyslots (data offset must be large enough) or reencryption
+cannot be performed.
+
+If there is not enough space for keyslots with new key size,
+you can destructively shrink device with \-\-reduce-device-size option.
+.TP
+.B "\-\-key-slot, \-S <0-MAX>"
+Specify which key slot is used. For LUKS1, max keyslot number is 7. For LUKS2, it's 31.
+
+\fBWARNING:\fR All other keyslots will be disabled if this option is used.
+.TP
+.B "\-\-keyfile-offset \fIvalue\fR"
+Skip \fIvalue\fR bytes at the beginning of the key file.
+.TP
+.B "\-\-keyfile-size, \-l"
+Read a maximum of \fIvalue\fR bytes from the key file.
+Default is to read the whole file up to the compiled-in
+maximum.
 .TP
 .B "\-\-new, \-N"
 Create new header (encrypt not yet encrypted device).
@@ -167,48 +147,6 @@ Create new header (encrypt not yet encrypted device).
 This option must be used together with \-\-reduce-device-size.
 
 \fBWARNING:\fR This is destructive operation and cannot be reverted.
-.TP
-.B "\-\-decrypt"
-Remove encryption (decrypt already encrypted device and remove LUKS header).
-
-\fBWARNING:\fR This is destructive operation and cannot be reverted.
-.TP
-.B "\-\-use-directio"
-Use direct-io (O_DIRECT) for all read/write data operations related
-to block device undergoing reencryption.
-
-Useful if direct-io operations perform better than normal buffered
-operations (e.g. in virtual environments).
-.TP
-.B "\-\-use-fsync"
-Use fsync call after every written block. This applies for reencryption
-log files as well.
-.TP
-.B "\-\-write-log"
-Update log file after every block write. This can slow down reencryption
-but will minimize data loss in the case of system crash.
-.TP
-.B "\-\-uuid" \fI<uuid>\fR
-Use only while resuming an interrupted decryption process (see \-\-decrypt).
-
-To find out what \fI<uuid>\fR to pass look for temporary files LUKS-<uuid>.[|log|org|new]
-of the interrupted decryption process.
-.TP
-.B "\-\-batch-mode, \-q"
-Suppresses all warnings and reencryption progress output.
-.TP
-.B "\-\-progress-frequency <seconds>"
-Print separate line every <seconds> with reencryption progress.
-.TP
-.B "\-\-type <type>"
-Use only while encrypting not yet encrypted device (see \-\-new).
-
-Specify LUKS version when performing in-place encryption. If the parameter
-is omitted default value (LUKS1) is used. Type may be one of: \fBluks\fR (default),
-\fBluks1\fR or \fBluks2\fR.
-.TP
-.B "\-\-version"
-Show the program version.
 .TP
 .B "\-\-pbkdf"
 Set Password-Based Key Derivation Function (PBKDF) algorithm for LUKS keyslot.
@@ -230,6 +168,68 @@ Set the parallel cost for PBKDF (number of threads, up to 4).
 Note that it is maximal value, it is decreased automatically if
 CPU online count is lower.
 This option is not available for PBKDF2.
+.TP
+.B "\-\-progress-frequency <seconds>"
+Print separate line every <seconds> with reencryption progress.
+.TP
+.B "\-\-reduce-device-size \fIsize[units]\fR"
+Enlarge data offset to specified value by shrinking device size.
+
+This means that last sectors on the original device will be lost,
+ciphertext data will be effectively shifted by specified
+number of sectors.
+
+It can be useful if you e.g. added some space to underlying
+partition (so last sectors contains no data).
+
+For units suffix see \-\-device-size parameter description.
+
+You cannot shrink device more than by 64 MiB (131072 sectors).
+
+\fBWARNING:\fR This is destructive operation and cannot be reverted.
+Use with extreme care - shrunk filesystems are usually unrecoverable.
+.TP
+.B "\-\-tries, \-T"
+Number of retries for invalid passphrase entry.
+.TP
+.B "\-\-type <type>"
+Use only while encrypting not yet encrypted device (see \-\-new).
+
+Specify LUKS version when performing in-place encryption. If the parameter
+is omitted default value (LUKS1) is used. Type may be one of: \fBluks\fR (default),
+\fBluks1\fR or \fBluks2\fR.
+.TP
+.B "\-\-use-directio"
+Use direct-io (O_DIRECT) for all read/write data operations related
+to block device undergoing reencryption.
+
+Useful if direct-io operations perform better than normal buffered
+operations (e.g. in virtual environments).
+.TP
+.B "\-\-use-fsync"
+Use fsync call after every written block. This applies for reencryption
+log files as well.
+.TP
+.B "\-\-use-random"
+.TP
+.B "\-\-use-urandom"
+Define which kernel random number generator will be used to create the volume key.
+.TP
+.B "\-\-uuid" \fI<uuid>\fR
+Use only while resuming an interrupted decryption process (see \-\-decrypt).
+
+To find out what \fI<uuid>\fR to pass look for temporary files LUKS-<uuid>.[|log|org|new]
+of the interrupted decryption process.
+.TP
+.B "\-\-verbose, \-v"
+Print more information on command execution.
+.TP
+.B "\-\-version"
+Show the program version.
+.TP
+.B "\-\-write-log"
+Update log file after every block write. This can slow down reencryption
+but will minimize data loss in the case of system crash.
 
 .SH RETURN CODES
 Cryptsetup-reencrypt returns 0 on success and a non-zero value on error.
