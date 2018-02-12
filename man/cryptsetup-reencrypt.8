@@ -14,12 +14,11 @@ unclocked by passphrase), \fBcipher\fR, \fBcipher mode\fR.
 Cryptsetup-reencrypt reencrypts data on LUKS device in-place. During
 reencryption process the LUKS device is marked unavailable.
 
-\fBNOTE:\fR LUKS2 format support is limited. Currently the tool uses default
-values for new LUKS2 headers. Only those parameters shared with LUKS1 format
-may be changed (\-\-hash and \-\-iter\-time only).
+\fBNOTE:\fR LUKS2 format support is limited. All tokens get removed unless
+\-\-keep\-key option is requested.
 
 \fIWARNING\fR: The cryptsetup-reencrypt program is not resistant to hardware
-or kernel failures during reencryption (you can lose you data in this case).
+or kernel failures during reencryption (you can lose your data in this case).
 
 \fIALWAYS BE SURE YOU HAVE RELIABLE BACKUP BEFORE USING THIS TOOL.\fR
 .br
@@ -38,11 +37,12 @@ To start (or continue) re-encryption for <device> use:
 .PP
 \fIcryptsetup-reencrypt\fR <device>
 
-\fB<options>\fR can be [\-\-batch-mode, \-\-block-size, \-\-cipher, \-\-debug,
-\-\-device-size, \-\-hash, \-\-iter-time, \-\-use-random | \-\-use-urandom,
-\-\-keep-key, \-\-key-size, \-\-key-file, \-\-key-slot, \-\-keyfile-offset,
-\-\-keyfile-size, \-\-tries, \-\-use-directio, \-\-use-fsync, \-\-verbose, \-\-write-log,
-\-\-uuid, \-\-progress-frequency]
+\fB<options>\fR can be [\-\-batch-mode, \-\-block-size, \-\-cipher | \-\-keep-key,
+\-\-debug, \-\-device-size, \-\-hash, \-\-iter-time | \-\-pbkdf\-force\-iterations,
+\-\-key-file, \-\-key-size, \-\-key-slot, \-\-keyfile-offset, \-\-keyfile-size,
+\-\-tries, \-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel, \-\-progress-frequency,
+\-\-use-directio, \-\-use-random | \-\-use-urandom, \-\-use-fsync, \-\-uuid,
+\-\-verbose, \-\-write-log]
 
 To encrypt data on (not yet encrypted) device, use \fI\-\-new\fR with combination
 with \fI\-\-reduce-device-size\fR.
@@ -75,10 +75,13 @@ If there is not enough space for keyslots with new key size,
 you can destructively shrink device with \-\-reduce-device-size option.
 .TP
 .B "\-\-hash, \-h \fI<hash-spec>\fR"
-Specifies the hash used in the LUKS key setup scheme and volume key digest.
+Specifies the hash used in the LUKS1 key setup scheme and volume key digest.
 
 \fBNOTE:\fR if this parameter is not specified, default hash algorithm is always used
-for new device header.
+for new LUKS1 device header.
+
+\fBNOTE:\fR with LUKS2 format this option is only relevant when new keyslot pbkdf algorithm
+is set to PBKDF2 (see \fI\-\-pbkdf).
 .TP
 .B "\-\-iter-time, \-i \fI<milliseconds>\fR"
 The number of milliseconds to spend with PBKDF2 passphrase processing for the
@@ -99,8 +102,8 @@ will be disabled in new LUKS device).
 If this option is not used, cryptsetup-reencrypt will ask for all active keyslot
 passphrases.
 .TP
-.B "\-\-key-slot, \-S <0-7>"
-Specify which key slot is used.
+.B "\-\-key-slot, \-S <0-MAX>"
+Specify which key slot is used. For LUKS1, max keyslot number is 7. For LUKS2, it's 31.
 
 \fBWARNING:\fR All other keyslots will be disabled if this option is used.
 .TP
@@ -115,8 +118,10 @@ maximum.
 .B "\-\-keep-key"
 Do not change encryption key, just reencrypt the LUKS header and keyslots.
 
-This option can be combined only with \fI\-\-hash\fR or \fI\-\-iter-time\fR
-options.
+This option can be combined only with \fI\-\-hash\fR, \fI\-\-iter-time\fR,
+\fI\-\-pbkdf\-force\-iterations\fR, \fI\-\-pbkdf\fR (LUKS2 only),
+\fI\-\-pbkdf\-memory\fR (Argon2i/id and LUKS2 only) and \fI\-\-pbkdf\-parallel\fR
+(Argon2i/id and LUKS2 only) options.
 .TP
 .B "\-\-tries, \-T"
 Number of retries for invalid passphrase entry.
@@ -131,8 +136,6 @@ Instead of real device size, use specified value.
 
 It means that only specified area (from the start of the device
 to the specified size) will be reencrypted.
-
-\fBWARNING:\fR This is destructive operation.
 
 If no unit suffix is specified, the size is in bytes.
 
@@ -153,10 +156,10 @@ partition (so last sectors contains no data).
 
 For units suffix see \-\-device-size parameter description.
 
+You cannot shrink device more than by 64 MiB (131072 sectors).
+
 \fBWARNING:\fR This is destructive operation and cannot be reverted.
 Use with extreme care - shrunk filesystems are usually unrecoverable.
-
-You cannot shrink device more than by 64 MiB (131072 sectors).
 .TP
 .B "\-\-new, \-N"
 Create new header (encrypt not yet encrypted device).
@@ -206,6 +209,28 @@ is omitted default value (LUKS1) is used. Type may be one of: \fBluks\fR (defaul
 .TP
 .B "\-\-version"
 Show the program version.
+.TP
+.B "\-\-pbkdf"
+Set Password-Based Key Derivation Function (PBKDF) algorithm for LUKS keyslot.
+The PBKDF can be: \fIpbkdf2\fR, \fIargon2i\fR for Argon2i or \fIargon2id\fR for Argon2id.
+
+For LUKS1, only \fIpbkdf2\fR is accepted (no need to use this option).
+.TP
+.B "\-\-pbkdf\-force\-iterations <num>"
+Avoid PBKDF benchmark and set time cost (iterations) directly.
+.TP
+.B "\-\-pbkdf\-memory <number>"
+Set the memory cost for PBKDF (for Argon2i/id the number represents kilobytes).
+Note that it is maximal value, PBKDF benchmark or available physical memory
+can decrease it.
+This option is not available for PBKDF2.
+.TP
+.B "\-\-pbkdf\-parallel <number>"
+Set the parallel cost for PBKDF (number of threads, up to 4).
+Note that it is maximal value, it is decreased automatically if
+CPU online count is lower.
+This option is not available for PBKDF2.
+
 .SH RETURN CODES
 Cryptsetup-reencrypt returns 0 on success and a non-zero value on error.
 
