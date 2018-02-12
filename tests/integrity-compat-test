@@ -83,13 +83,19 @@ function valgrind_run()
     INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${INTSETUP_VALGRIND} "$@"
 }
 
-int_check_sum() # alg checksum
+int_check_sum() # alg checksum [keyfile keysize]
 {
+	if [ -n "$4" ] ; then
+		KEY_PARAMS="--integrity-key-file $3 --integrity-key-size $4"
+	else
+		KEY_PARAMS=""
+	fi
+
 	# Fill device with zeroes and reopen it
 	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M oflag=direct >/dev/null 2>&1
 	dmremove $DEV_NAME
 
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
 
 	VSUM=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
 	if [ "$VSUM" = "$2" ] ; then
@@ -101,19 +107,25 @@ int_check_sum() # alg checksum
 	fi
 }
 
-intformat() # alg alg_out tagsize sector_size csum
+intformat() # alg alg_out tagsize sector_size csum [keyfile keysize]
 {
+	if [ -n "$7" ] ; then
+		KEY_PARAMS="--integrity-key-file $6 --integrity-key-size $7"
+	else
+		KEY_PARAMS=""
+	fi
+
 	echo -n "[INTEGRITY:$2:$3:$4]"
 	echo -n "[FORMAT]"
-	$INTSETUP format -q --integrity $1 --tag-size $3 --sector-size $4 $DEV || fail "Cannot format device."
+	$INTSETUP format -q --integrity $1 --tag-size $3 --sector-size $4 $KEY_PARAMS $DEV || fail "Cannot format device."
 	dump_check "tag_size" $3
 	dump_check "sector_size" $4
 	echo -n "[ACTIVATE]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
 	status_check "tag size" $3
 	status_check "integrity" $2
 	status_check "sector size" "$4 bytes"
-	int_check_sum $1 $5
+	int_check_sum $1 $5 $6 $7
 	echo -n "[REMOVE]"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
@@ -121,10 +133,15 @@ intformat() # alg alg_out tagsize sector_size csum
 
 int_error_detection() # alg tagsize sector_size key_file key_size
 {
+	if [ -n "$5" ] ; then
+		KEY_PARAMS="--integrity-key-file $4 --integrity-key-size $5"
+	else
+		KEY_PARAMS=""
+	fi
 	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
+
 	echo -n "[INTEGRITY:$1:$2:$3]"
 	echo -n "[FORMAT]"
-	[ -n "$4" -a -n "$5" ] && KEY_PARAMS="--integrity-key-file $4 --integrity-key-size $5"
 	$INTSETUP format -q --integrity $1 --tag-size $2 --sector-size $3 $KEY_PARAMS $DEV || fail "Cannot format device."
 	echo -n "[ACTIVATE]"
 	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-no-journal $KEY_PARAMS || fail "Cannot activate device."
@@ -202,22 +219,28 @@ int_journal_crypt() # crypt_alg crypt_alg_kernel crypt_key crypt_key_size
 	echo "[OK]"
 }
 
-int_mode() # alg tag_size sector_size
+int_mode() # alg tag_size sector_size [keyfile keysize]
 {
+	if [ -n "$5" ] ; then
+		KEY_PARAMS="--integrity-key-file $4 --integrity-key-size $5"
+	else
+		KEY_PARAMS=""
+	fi
+
 	echo -n "[MODE TESTS:$1:$2:$3]"
 	ARGS="--tag-size $2 --sector-size $3"
 
-	$INTSETUP format -q $ARGS $DEV --integrity $1 || fail "Cannot format device."
+	$INTSETUP format -q $ARGS $KEY_PARAMS $DEV --integrity $1 || fail "Cannot format device."
 
 	echo -n "[JOURNALED WRITES]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 || fail "Cannot activate device with journal."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device with journal."
 	status_check "mode" "read/write"
 	kernel_param_check 7 "J"
 
 	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
 
 	echo -n "[DIRECT WRITES]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-no-journal || fail "Cannot activate device without journal."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS --integrity-no-journal || fail "Cannot activate device without journal."
 	status_check "mode" "read/write"
 	status_check "journal" "not active"
 	kernel_param_check 7 "D"
@@ -225,7 +248,7 @@ int_mode() # alg tag_size sector_size
 	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
 
 	echo -n "[RECOVERY MODE]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-recovery-mode || fail "Cannot activate device in recovery mode."
+	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS --integrity-recovery-mode || fail "Cannot activate device in recovery mode."
 	status_check "mode" "read/write recovery"
 	kernel_param_check 7 "R"
 
@@ -248,9 +271,9 @@ intformat crc32       crc32           4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e
 intformat sha1        sha1           20  512 6eedd6344dab8875cd185fcd6565dfc869ab36bc57e577f40c685290b1fa7fe7
 intformat sha1        sha1           16 4096 e152ec88227b539cd9cafd8bdb587a1072d720cd6bcebe1398d4136c9e7f337b
 intformat sha256      sha256         32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
-intformat hmac-sha256 hmac\(sha256\) 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
+intformat hmac-sha256 hmac\(sha256\) 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11 $KEY_FILE 32
 intformat sha256      sha256         32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4
-intformat hmac-sha256 hmac\(sha256\) 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4
+intformat hmac-sha256 hmac\(sha256\) 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4 $KEY_FILE 32
 
 echo "Error detection tests:"
 int_error_detection crc32c      4  512
@@ -262,8 +285,6 @@ int_error_detection sha1        16 512
 int_error_detection sha1        20 4096
 int_error_detection sha256      32 512
 int_error_detection sha256      32 4096
-int_error_detection hmac-sha256 32 512
-int_error_detection hmac-sha256 32 4096
 
 which xxd >/dev/null 2>&1 || skip "WARNING: xxd tool required."
 int_error_detection hmac-sha256 32 512 $KEY_FILE 32
@@ -287,7 +308,7 @@ int_mode crc32c      4  512
 int_mode crc32       4  512
 int_mode sha1        20 512
 int_mode sha256      32 512
-int_mode hmac-sha256 32 512
-int_mode hmac-sha256 32 4096
+int_mode hmac-sha256 32 512  $KEY_FILE 32
+int_mode hmac-sha256 32 4096 $KEY_FILE 32
 
 cleanup
