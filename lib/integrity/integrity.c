@@ -275,7 +275,13 @@ int INTEGRITY_format(struct crypt_device *cd,
 	if (r)
 		return r;
 
+	/* There is no data area, we can actually use fake zeroed key */
+	if (params->integrity_key_size)
+		dmdi.u.integrity.vk = crypt_alloc_volume_key(params->integrity_key_size, NULL);
+
 	r = dm_create_device(cd, tmp_name, "INTEGRITY", &dmdi, 0);
+
+	crypt_free_volume_key(dmdi.u.integrity.vk);
 	if (r)
 		return r;
 
