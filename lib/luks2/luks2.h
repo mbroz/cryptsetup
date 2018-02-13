@@ -206,6 +206,11 @@ int LUKS2_token_assign(struct crypt_device *cd,
 	int assign,
 	int commit);
 
+int LUKS2_token_is_assigned(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	int token);
+
 int LUKS2_token_create(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,

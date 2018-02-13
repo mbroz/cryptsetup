@@ -571,3 +571,27 @@ int LUKS2_token_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	return token;
 }
+
+int LUKS2_token_is_assigned(struct crypt_device *cd, struct luks2_hdr *hdr,
+			    int keyslot, int token)
+{
+	int i;
+	json_object *jobj_token, *jobj_token_keyslots, *jobj;
+
+	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX || token < 0 || token >= LUKS2_TOKENS_MAX)
+		return -EINVAL;
+
+	jobj_token = LUKS2_get_token_jobj(hdr, token);
+	if (!jobj_token)
+		return -ENOENT;
+
+	json_object_object_get_ex(jobj_token, "keyslots", &jobj_token_keyslots);
+
+	for (i = 0; i < (int) json_object_array_length(jobj_token_keyslots); i++) {
+		jobj = json_object_array_get_idx(jobj_token_keyslots, i);
+		if (keyslot == atoi(json_object_get_string(jobj)))
+			return 0;
+	}
+
+	return -ENOENT;
+}

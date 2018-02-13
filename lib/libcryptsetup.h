@@ -1783,6 +1783,21 @@ int crypt_token_unassign_keyslot(struct crypt_device *cd,
 	int keyslot);
 
 /**
+ * Get info about token assignment to particular keyslot.
+ *
+ * @param cd crypt device handle
+ * @param token token id
+ * @param keyslot keyslot
+ *
+ * @return 0 on success (token exists and is assigned to the keyslot),
+ *	   -ENOENT if token is not assigned to a keyslot (token, keyslot
+ *	   or both may be inactive) or other negative errno otherwise.
+ */
+int crypt_token_is_assigned(struct crypt_device *cd,
+	int token,
+	int keyslot);
+
+/**
  * Token handler open function prototype.
  * This function retrieves password from a token and return allocated buffer
  * containing this password. This buffer has to be deallocated by calling

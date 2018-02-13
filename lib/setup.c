@@ -4274,6 +4274,16 @@ int crypt_token_unassign_keyslot(struct crypt_device *cd, int token, int keyslot
 	return LUKS2_token_assign(cd, &cd->u.luks2.hdr, keyslot, token, 0, 1);
 }
 
+int crypt_token_is_assigned(struct crypt_device *cd, int token, int keyslot)
+{
+	int r;
+
+	if ((r = _onlyLUKS2(cd, CRYPT_CD_QUIET | CRYPT_CD_UNRESTRICTED)))
+		return r;
+
+	return LUKS2_token_is_assigned(cd, &cd->u.luks2.hdr, keyslot, token);
+}
+
 /* Internal only */
 int crypt_metadata_locking_enabled(void)
 {
