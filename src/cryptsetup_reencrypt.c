@@ -65,6 +65,7 @@ static uint64_t opt_device_size = 0;
 static const char **action_argv;
 
 #define MAX_SLOT 32
+#define MAX_TOKEN 32
 struct reenc_ctx {
 	char *device;
 	char *device_uuid;
@@ -81,6 +82,7 @@ struct reenc_ctx {
 	enum { REENCRYPT = 0, ENCRYPT = 1, DECRYPT = 2 } reencrypt_mode;
 
 	char header_file_org[PATH_MAX];
+	char header_file_tmp[PATH_MAX];
 	char header_file_new[PATH_MAX];
 	char log_file[PATH_MAX];
 
@@ -570,11 +572,78 @@ static int isLUKS2(const char *type)
 	return (type && !strcmp(type, CRYPT_LUKS2));
 }
 
+static int luks2_transfer_tokens(struct reenc_ctx *rc)
+{
+	const char *json, *type;
+	crypt_token_info ti;
+	int i, r = -EINVAL;
+	struct crypt_device *cd_old = NULL, *cd_new = NULL;
+
+	if (crypt_init(&cd_old, rc->header_file_tmp) ||
+	    crypt_load(cd_old, CRYPT_LUKS2, NULL))
+		return -EINVAL;
+
+	if (crypt_init(&cd_new, rc->header_file_new) ||
+	    crypt_load(cd_new, CRYPT_LUKS2, NULL))
+		goto out;
+
+	/*
+	 * we have to erase keyslots missing in new header so that we can
+	 * transfer tokens from old header to new one
+	 */
+	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++)
+		if (!rc->p[i].password && crypt_keyslot_status(cd_old, i) == CRYPT_SLOT_ACTIVE) {
+			r = crypt_keyslot_destroy(cd_old, i);
+			if (r < 0)
+				goto out;
+		}
+
+	for (i = 0; i < MAX_TOKEN; i++) {
+		ti = crypt_token_status(cd_old, i, &type);
+		switch (ti) {
+		case CRYPT_TOKEN_INVALID:
+			log_dbg("Internal error.");
+			r = -EINVAL;
+			goto out;
+		case CRYPT_TOKEN_INACTIVE:
+			break;
+		case CRYPT_TOKEN_INTERNAL_UNKNOWN:
+			log_err(_("This version of cryptsetup-reencrypt can't handle new internal token type %s.\n"), type);
+			r = -EINVAL;
+			goto out;
+		case CRYPT_TOKEN_INTERNAL:
+			/* fallthrough */
+		case CRYPT_TOKEN_EXTERNAL:
+			/* fallthrough */
+		case CRYPT_TOKEN_EXTERNAL_UNKNOWN:
+			if (crypt_token_json_get(cd_old, i, &json) != i) {
+				log_dbg("Failed to get %s token (%d).", type, i);
+				r = -EINVAL;
+				goto out;
+			}
+			if (crypt_token_json_set(cd_new, i, json) != i) {
+				log_dbg("Failed to create %s token (%d).", type, i);
+				r = -EINVAL;
+				goto out;
+			}
+		}
+	}
+
+	r = 0;
+out:
+	crypt_free(cd_old);
+	crypt_free(cd_new);
+	unlink(rc->header_file_tmp);
+
+	return r;
+}
+
 static int backup_luks_headers(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params = {0};
 	struct crypt_params_luks2 params2 = {0};
+	struct stat st;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char *old_key = NULL;
 	size_t old_key_size;
@@ -588,6 +657,14 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 
 	if ((r = crypt_header_backup(cd, CRYPT_LUKS, rc->header_file_org)))
 		goto out;
+	if (isLUKS2(rc->type)) {
+		if ((r = crypt_header_backup(cd, CRYPT_LUKS2, rc->header_file_tmp)))
+			goto out;
+		if ((r = stat(rc->header_file_tmp, &st)))
+			goto out;
+		if ((r = chmod(rc->header_file_tmp, st.st_mode | S_IWUSR)))
+			goto out;
+	}
 	log_verbose(_("%s header backup of device %s created.\n"), rc->device, isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
 
 	/* For decrypt, new header will be fake one, so we are done here. */
@@ -635,6 +712,10 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		opt_key_size ? opt_key_size / 8 : crypt_get_volume_key_size(cd),
 		rc->type,
 		isLUKS2(rc->type) ? (void*)&params2 : (void*)&params);
+
+	if (!r && isLUKS2(rc->type))
+		r = luks2_transfer_tokens(rc);
+
 out:
 	crypt_free(cd);
 	crypt_safe_free(old_key);
@@ -1239,6 +1320,9 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 	if (snprintf(rc->header_file_new, PATH_MAX,
 		     "LUKS-%s.new", rc->device_uuid) < 0)
 		return -ENOMEM;
+	if (snprintf(rc->header_file_tmp, PATH_MAX,
+		     "LUKS-%s.tmp", rc->device_uuid) < 0)
+		return -ENOMEM;
 
 	/* Paths to encrypted devices */
 	if (snprintf(rc->crypt_path_org, PATH_MAX,
@@ -1293,6 +1377,7 @@ static void destroy_context(struct reenc_ctx *rc)
 		unlink(rc->log_file);
 		unlink(rc->header_file_org);
 		unlink(rc->header_file_new);
+		unlink(rc->header_file_tmp);
 	}
 
 	for (i = 0; i < MAX_SLOT; i++)
