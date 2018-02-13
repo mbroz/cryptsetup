@@ -31,7 +31,7 @@
 #include "internal.h"
 
 /* TCRYPT PBKDF variants */
-static struct {
+static const struct {
 	unsigned int legacy:1;
 	unsigned int veracrypt:1;
 	const char *name;
@@ -538,8 +538,10 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			continue;
 		if (!(params->flags & CRYPT_TCRYPT_VERA_MODES) && tcrypt_kdf[i].veracrypt)
 			continue;
-		if ((params->flags & CRYPT_TCRYPT_VERA_MODES) && tcrypt_kdf[i].veracrypt &&
-		     params->veracrypt_pim) {
+		if ((params->flags & CRYPT_TCRYPT_VERA_MODES) && params->veracrypt_pim) {
+			/* Do not try TrueCrypt modes if we have PIM value */
+			if (!tcrypt_kdf[i].veracrypt)
+				continue;
 			/* adjust iterations to given PIM cmdline parameter */
 			if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
 				iterations = params->veracrypt_pim * 2048;
