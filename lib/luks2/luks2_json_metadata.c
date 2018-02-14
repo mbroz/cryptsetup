@@ -1829,7 +1829,7 @@ int LUKS2_activate(struct crypt_device *cd,
 			.sector_size = crypt_get_sector_size(cd)
 		}
 	};
-	char dm_int_name[PATH_MAX], dm_int_dev_name[PATH_MAX];
+	char dm_int_name[512], dm_int_dev_name[PATH_MAX];
 	struct device *device = NULL;
 
 	/* do not allow activation when particular requirements detected */

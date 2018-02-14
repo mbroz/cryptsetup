@@ -457,7 +457,7 @@ static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
 static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
 {
 	char cipher[CLEN], mode[CLEN], iv[CLEN], auth[CLEN];
-	char tmp[CAPIL], capi[CAPIL];
+	char tmp[CAPIL*2], capi[CAPIL];
 	size_t len;
 	int i;
 
@@ -523,7 +523,7 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t fl
 {
 	int r, max_size, null_cipher = 0, num_options = 0, keystr_len = 0;
 	char *params, *hexkey;
-	char sector_feature[32], features[256], integrity_dm[256], cipher_dm[256];
+	char sector_feature[32], features[512], integrity_dm[256], cipher_dm[256];
 
 	if (!dmd)
 		return NULL;
