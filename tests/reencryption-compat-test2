@@ -340,5 +340,24 @@ check_hash $PWD1 $HASH5
 echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt
 check_hash_dev $LOOPDEV1 $HASH4
 
+echo "[11] Reencryption with tokens"
+prepare 8192
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+wipe $PWD1
+check_hash $PWD1 $HASH5
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey -S23 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey -S1 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey -S3 $FAST_PBKDF_ARGON $LOOPDEV1 || fai
+$CRYPTSETUP token add --key-description key-name0 --key-slot 23 --token-id 0 $LOOPDEV1
+$CRYPTSETUP token add --key-description key-name2 --key-slot 1 --token-id 2 $LOOPDEV1
+$CRYPTSETUP token add --key-description key-name31 --token-id 31 $LOOPDEV1
+echo $PWD1 | $CRYPTSETUP -q luksKillSlot $LOOPDEV1 3 || fail
+echo $PWD2 | $REENC $FAST_PBKDF_ARGON -S 23 -q $LOOPDEV1 || fail
+$CRYPTSETUP luksDump $LOOPDEV1 | grep "0: luks2-keyring" >/dev/null || fail
+[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A2 -m1 "0: luks2-keyring" | grep Keyslot: | sed -e 's/[[[:space:]]\+Keyslot:\ \+//g')" -eq 23 ] || fail
+$CRYPTSETUP luksDump $LOOPDEV1 | grep "2: luks2-keyring" >/dev/null || fail
+$CRYPTSETUP luksDump $LOOPDEV1 | grep "31: luks2-keyring" >/dev/null || fail
+[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A2 -m1 "31: luks2-keyring" | grep Keyslot: | sed -e 's/[[[:space:]]\+Keyslot:\ \+//g')" -eq 23 ] || fail
+
 remove_mapping
 exit 0
