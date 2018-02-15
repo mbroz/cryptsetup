@@ -62,6 +62,11 @@ static int keyring_validate(struct crypt_device *cd __attribute__((unused)),
 		return r;
 	}
 
+	if (json_object_object_length(jobj_token) != 3) {
+		log_dbg("Keyring token is expected to have exactly 3 fields.");
+		goto out;
+	}
+
 	if (!json_object_object_get_ex(jobj_token, "key_description", &jobj_key)) {
 		log_dbg("missing key_description field.");
 		goto out;
