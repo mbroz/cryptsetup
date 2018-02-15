@@ -132,6 +132,7 @@ int LUKS2_token_create(struct crypt_device *cd,
 	int commit)
 {
 	const crypt_token_handler *h;
+	const token_handler *th;
 	json_object *jobj_tokens, *jobj_type, *jobj;
 	enum json_tokener_error jerr;
 	char num[16];
@@ -169,12 +170,16 @@ int LUKS2_token_create(struct crypt_device *cd,
 
 		json_object_object_get_ex(jobj, "type", &jobj_type);
 		if (is_builtin_candidate(json_object_get_string(jobj_type))) {
-			log_dbg("%s is builtin token candidate", json_object_get_string(jobj_type));
-			json_object_put(jobj);
-			return -EINVAL;
-		}
+			th = LUKS2_token_handler_type_internal(cd, json_object_get_string(jobj_type));
+			if (!th || !th->set) {
+				log_dbg("%s is builtin token candidate with missing handler", json_object_get_string(jobj_type));
+				json_object_put(jobj);
+				return -EINVAL;
+			}
+			h = th->h;
+		} else
+			h = LUKS2_token_handler_type(cd, json_object_get_string(jobj_type));
 
-		h = LUKS2_token_handler_type(cd, json_object_get_string(jobj_type));
 		if (h && h->validate && h->validate(cd, json)) {
 			json_object_put(jobj);
 			return -EINVAL;
