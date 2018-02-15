@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "internal.h"
 
@@ -50,20 +51,17 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	return vk;
 }
 
-void crypt_volume_key_set_description(struct volume_key *vk, const char *key_description)
-{
-	if (vk) {
-		free(CONST_CAST(void*)vk->key_description);
-		vk->key_description = key_description;
-	}
-}
-
-const char *crypt_volume_key_get_description(const struct volume_key *vk)
+int crypt_volume_key_set_description(struct volume_key *vk, const char *key_description)
 {
 	if (!vk)
-		return NULL;
+		return -EINVAL;
 
-	return vk->key_description;
+	free(CONST_CAST(void*)vk->key_description);
+	vk->key_description = NULL;
+	if (key_description && !(vk->key_description = strdup(key_description)))
+		return -ENOMEM;
+
+	return 0;
 }
 
 void crypt_free_volume_key(struct volume_key *vk)

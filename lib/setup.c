@@ -2017,7 +2017,7 @@ int crypt_repair(struct crypt_device *cd,
 	return r;
 }
 
-static const char *crypt_get_key_description_by_digest(struct crypt_device *cd, int digest)
+static char *crypt_get_key_description_by_digest(struct crypt_device *cd, int digest)
 {
 	char *desc, digest_str[3];
 	int r;
@@ -2046,15 +2046,52 @@ static const char *crypt_get_key_description_by_digest(struct crypt_device *cd, 
 	return desc;
 }
 
-static const char *crypt_get_key_description_by_segment(struct crypt_device *cd, int segment)
+static int crypt_set_key_description_by_segment(struct crypt_device *cd, struct volume_key *vk, int segment)
 {
-	return crypt_get_key_description_by_digest(cd, LUKS2_digest_by_segment(cd, &cd->u.luks2.hdr, segment));
+	char *desc = crypt_get_key_description_by_digest(cd, LUKS2_digest_by_segment(cd, &cd->u.luks2.hdr, segment));
+	int r;
+
+	r = crypt_volume_key_set_description(vk, desc);
+	free(desc);
+	return r;
 }
 
-/* curently internal only (candidate for new API call) */
-const char *crypt_get_key_description_by_keyslot(struct crypt_device *cd, int keyslot)
+/* internal only */
+static int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
-	return crypt_get_key_description_by_digest(cd, LUKS2_digest_by_keyslot(cd, &cd->u.luks2.hdr, keyslot));
+	int r;
+
+	if (!vk || !cd)
+		return -EINVAL;
+
+	if (!vk->key_description) {
+		log_dbg("Invalid key description");
+		return -EINVAL;
+	}
+
+	log_dbg("Loading key (%zu bytes) in thread keyring.", vk->keylength);
+
+	r = keyring_add_key_in_thread_keyring(vk->key_description, vk->key, vk->keylength);
+	if (r) {
+		log_dbg("keyring_add_key_in_thread_keyring failed (error %d)", r);
+		log_err(cd, _("Failed to load key in kernel keyring.\n"));
+	} else
+		crypt_set_key_in_keyring(cd, 1);
+
+	return r;
+}
+
+int crypt_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd, struct volume_key *vk, int keyslot)
+{
+	char *desc = crypt_get_key_description_by_digest(cd, LUKS2_digest_by_keyslot(cd, &cd->u.luks2.hdr, keyslot));
+	int r;
+
+	r = crypt_volume_key_set_description(vk, desc);
+	if (!r)
+		r = crypt_volume_key_load_in_keyring(cd, vk);
+
+	free(desc);
+	return r;
 }
 
 int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
@@ -2096,8 +2133,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	}
 
 	if (crypt_key_in_keyring(cd)) {
-		crypt_volume_key_set_description(dmd.u.crypt.vk, crypt_get_key_description_by_segment(cd, CRYPT_DEFAULT_SEGMENT));
-		r = crypt_volume_key_get_description(dmd.u.crypt.vk) ? 0 : -EINVAL;
+		r = crypt_set_key_description_by_segment(cd, dmd.u.crypt.vk, CRYPT_DEFAULT_SEGMENT);
 		if (r)
 			goto out;
 
@@ -2320,7 +2356,7 @@ void crypt_drop_keyring_key(struct crypt_device *cd, const char *key_description
 	if (!key_description)
 		return;
 
-	log_dbg("Requesting keyring key %s for revoke and unlink.", key_description);
+	log_dbg("Requesting keyring key for revoke and unlink.");
 
 	r = keyring_revoke_and_unlink_key(key_description);
 	if (r)
@@ -2337,8 +2373,8 @@ static char *crypt_get_device_key_description(const char *name)
 		return NULL;
 
 	if (dmd.target == DM_CRYPT) {
-		if (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY)
-			tmp = strdup(crypt_volume_key_get_description(dmd.u.crypt.vk));
+		if ((dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY) && dmd.u.crypt.vk->key_description)
+			tmp = strdup(dmd.u.crypt.vk->key_description);
 		crypt_free_volume_key(dmd.u.crypt.vk);
 	} else if (dmd.target == DM_INTEGRITY) {
 		crypt_free_volume_key(dmd.u.integrity.vk);
@@ -2447,8 +2483,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	keyslot = r;
 
 	if (crypt_use_keyring_for_vk(cd)) {
-		crypt_volume_key_set_description(vk, crypt_get_key_description_by_keyslot(cd, keyslot));
-		r = crypt_volume_key_load_in_keyring(cd, vk);
+		r = crypt_volume_key_load_in_keyring_by_keyslot(cd, vk, keyslot);
 		if (r < 0)
 			goto out;
 	}
@@ -2460,8 +2495,8 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	else if (r)
 		log_err(cd, _("Error during resuming device %s.\n"), name);
 out:
-	if (r < 0)
-		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	if (r < 0 && vk)
+		crypt_drop_keyring_key(cd, vk->key_description);
 	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
@@ -2514,8 +2549,7 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 	keyslot = r;
 
 	if (crypt_use_keyring_for_vk(cd)) {
-		crypt_volume_key_set_description(vk, crypt_get_key_description_by_keyslot(cd, keyslot));
-		r = crypt_volume_key_load_in_keyring(cd, vk);
+		r = crypt_volume_key_load_in_keyring_by_keyslot(cd, vk, keyslot);
 		if (r < 0)
 			goto out;
 	}
@@ -2525,8 +2559,8 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 		log_err(cd, _("Error during resuming device %s.\n"), name);
 out:
 	crypt_safe_free(passphrase_read);
-	if (r < 0)
-		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	if (r < 0 && vk)
+		crypt_drop_keyring_key(cd, vk->key_description);
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
 }
@@ -2936,33 +2970,6 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 	return LUKS2_keyslot_wipe(cd, &cd->u.luks2.hdr, keyslot, 0);
 }
 
-/* internal only */
-int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
-{
-	const char *key_desc;
-	int r;
-
-	if (!vk || !cd)
-		return -EINVAL;
-
-	key_desc = crypt_volume_key_get_description(vk);
-	if (!key_desc) {
-		log_dbg("Invalid key description");
-		return -EINVAL;
-	}
-
-	log_dbg("Loading key %s (%zu bytes) in thread keyring.", key_desc, vk->keylength);
-
-	r = keyring_add_key_in_thread_keyring(key_desc, vk->key, vk->keylength);
-	if (r) {
-		log_dbg("keyring_add_key_in_thread_keyring failed (error %d)", r);
-		log_err(cd, _("Failed to load key in kernel keyring.\n"));
-	} else
-		crypt_set_key_in_keyring(cd, 1);
-
-	return r;
-}
-
 /*
  * Activation/deactivation of a device
  */
@@ -3008,8 +3015,7 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 			keyslot = r;
 
 			if ((name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd)) {
-				crypt_volume_key_set_description(vk, crypt_get_key_description_by_keyslot(cd, keyslot));
-				r = crypt_volume_key_load_in_keyring(cd, vk);
+				r = crypt_volume_key_load_in_keyring_by_keyslot(cd, vk, keyslot);
 				if (r < 0)
 					goto out;
 				flags |= CRYPT_ACTIVATE_KEYRING_KEY;
@@ -3023,8 +3029,8 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 		r = -EINVAL;
 	}
 out:
-	if (r < 0)
-		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	if (r < 0 && vk)
+		crypt_drop_keyring_key(cd, vk->key_description);
 	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
@@ -3147,8 +3153,7 @@ int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 		keyslot = r;
 
 		if ((name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd)) {
-			crypt_volume_key_set_description(vk, crypt_get_key_description_by_keyslot(cd, keyslot));
-			r = crypt_volume_key_load_in_keyring(cd, vk);
+			r = crypt_volume_key_load_in_keyring_by_keyslot(cd, vk, keyslot);
 			if (r < 0)
 				goto out;
 			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
@@ -3179,8 +3184,8 @@ int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	}
 out:
 	crypt_safe_free(passphrase_read);
-	if (r < 0)
-		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	if (r < 0 && vk)
+		crypt_drop_keyring_key(cd, vk->key_description);
 	crypt_free_volume_key(vk);
 
 	return r;
@@ -3285,8 +3290,9 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 			log_err(cd, _("Volume key does not match the volume.\n"));
 
 		if (!r && (name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd)) {
-			crypt_volume_key_set_description(vk, crypt_get_key_description_by_segment(cd, CRYPT_DEFAULT_SEGMENT));
-			r = crypt_volume_key_load_in_keyring(cd, vk);
+			r = crypt_set_key_description_by_segment(cd, vk, CRYPT_DEFAULT_SEGMENT);
+			if (!r)
+				r = crypt_volume_key_load_in_keyring(cd, vk);
 			if (!r)
 				flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 		}
@@ -3334,8 +3340,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		r = -EINVAL;
 	}
 
-	if (r < 0)
-		crypt_drop_keyring_key(cd, crypt_volume_key_get_description(vk));
+	if (r < 0 && vk)
+		crypt_drop_keyring_key(cd, vk->key_description);
 	crypt_free_volume_key(vk);
 
 	return r;
