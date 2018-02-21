@@ -191,6 +191,9 @@ int crypt_get_integrity_tag_size(struct crypt_device *cd);
 
 int crypt_key_in_keyring(struct crypt_device *cd);
 void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring);
+int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk);
+int crypt_use_keyring_for_vk(const struct crypt_device *cd);
+void crypt_drop_keyring_key(struct crypt_device *cd, const char *key_description);
 
 static inline uint64_t version(uint16_t major, uint16_t minor, uint16_t patch, uint16_t release)
 {

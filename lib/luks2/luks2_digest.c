@@ -341,3 +341,58 @@ void LUKS2_digests_erase_unused(struct crypt_device *cd,
 		}
 	}
 }
+
+/* Key description helpers */
+static char *get_key_description_by_digest(struct crypt_device *cd, int digest)
+{
+	char *desc, digest_str[3];
+	int r;
+	size_t len;
+
+	if (!crypt_get_uuid(cd))
+		return NULL;
+
+	r = snprintf(digest_str, sizeof(digest_str), "d%u", digest);
+	if (r < 0 || (size_t)r >= sizeof(digest_str))
+		return NULL;
+
+	/* "cryptsetup:<uuid>-<digest_str>" + \0 */
+	len = strlen(crypt_get_uuid(cd)) + strlen(digest_str) + 13;
+
+	desc = malloc(len);
+	if (!desc)
+	       return NULL;
+
+	r = snprintf(desc, len, "%s:%s-%s", "cryptsetup", crypt_get_uuid(cd), digest_str);
+	if (r < 0 || (size_t)r >= len) {
+	       free(desc);
+	       return NULL;
+	}
+
+	return desc;
+}
+
+int LUKS2_key_description_by_segment(struct crypt_device *cd,
+		struct luks2_hdr *hdr, struct volume_key *vk, int segment)
+{
+	char *desc = get_key_description_by_digest(cd, LUKS2_digest_by_segment(cd, hdr, segment));
+	int r;
+
+	r = crypt_volume_key_set_description(vk, desc);
+	free(desc);
+	return r;
+}
+
+int LUKS2_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd,
+		struct luks2_hdr *hdr, struct volume_key *vk, int keyslot)
+{
+	char *desc = get_key_description_by_digest(cd, LUKS2_digest_by_keyslot(cd, hdr, keyslot));
+	int r;
+
+	r = crypt_volume_key_set_description(vk, desc);
+	if (!r)
+		r = crypt_volume_key_load_in_keyring(cd, vk);
+
+	free(desc);
+	return r;
+}

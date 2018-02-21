@@ -404,7 +404,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	keyslot = r;
 
 	if ((name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd))
-		r = crypt_volume_key_load_in_keyring_by_keyslot(cd, vk, keyslot);
+		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd, hdr, vk, keyslot);
 
 	if (r >= 0 && name)
 		r = LUKS2_activate(cd, name, vk, flags);
@@ -448,7 +448,7 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	keyslot = r;
 
 	if (r >= 0 && (name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd))
-		r = crypt_volume_key_load_in_keyring_by_keyslot(cd, vk, keyslot);
+		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd, hdr, vk, keyslot);
 
 	if (r >= 0 && name)
 		r = LUKS2_activate(cd, name, vk, flags);
