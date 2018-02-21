@@ -686,6 +686,7 @@ static int _crypt_load_luks2(struct crypt_device *cd, int reload)
 	} else
 		cd->type = type;
 
+	r = 0;
 	memcpy(&cd->u.luks2.hdr, &hdr2, sizeof(hdr2));
 
 	/* Save cipher and mode, compatibility only. */
@@ -984,7 +985,9 @@ static int _init_by_name_crypt_none(struct crypt_device *cd)
 
 static const char *LUKS_UUID(struct crypt_device *cd)
 {
-	if (isLUKS1(cd->type))
+	if (!cd)
+		return NULL;
+	else if (isLUKS1(cd->type))
 		return cd->u.luks1.hdr.uuid;
 	else if (isLUKS2(cd->type))
 		return cd->u.luks2.hdr.uuid;
