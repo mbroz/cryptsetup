@@ -226,7 +226,7 @@ cleanup
 echo "# Create enterprise-class 4K drive with fs and LUKS images."
 # loop device here presents 512 block but images have 4k block
 # cryptsetup should properly use 4k block on direct-io
-add_device dev_size_mb=16 sector_size=4096 physblk_exp=0 num_tgts=1 opt_blks=64
+add_device dev_size_mb=32 sector_size=4096 physblk_exp=0 num_tgts=1 opt_blks=64
 for file in $(ls img_fs_*.img.bz2) ; do
     echo "Format using fs image $file."
     bzip2 -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"

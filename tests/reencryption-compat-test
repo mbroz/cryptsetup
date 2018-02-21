@@ -320,11 +320,11 @@ $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 echo "[9] Test log I/Os on various underlaying block devices"
 prepare 8192
 echo $PWD2 | $CRYPTSETUP -q luksFormat $FAST_PBKDF $LOOPDEV1 || fail
-add_scsi_device sector_size=512 dev_size_mb=25
+add_scsi_device sector_size=512 dev_size_mb=32
 test_logging "[512 sector]" || fail
-add_scsi_device sector_size=4096 dev_size_mb=25
+add_scsi_device sector_size=4096 dev_size_mb=32
 test_logging "[4096 sector]" || fail
-add_scsi_device sector_size=512 dev_size_mb=25 physblk_exp=3
+add_scsi_device sector_size=512 dev_size_mb=32 physblk_exp=3
 test_logging "[4096/512 sector]" || fail
 test_logging_tmpfs || fail
 
