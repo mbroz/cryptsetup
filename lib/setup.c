@@ -4042,6 +4042,9 @@ int crypt_activate_by_token(struct crypt_device *cd,
 	if ((r = _onlyLUKS2(cd, CRYPT_CD_QUIET | CRYPT_CD_UNRESTRICTED)))
 		return r;
 
+	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd))
+		return -EINVAL;
+
 	if (token == CRYPT_ANY_TOKEN)
 		return LUKS2_token_open_and_activate_any(cd, &cd->u.luks2.hdr, name, flags);
 
