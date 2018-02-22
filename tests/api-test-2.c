@@ -392,7 +392,7 @@ static key_serial_t _kernel_key_by_segment(struct crypt_device *cd, int segment)
 
 static int _volume_key_in_keyring(struct crypt_device *cd, int segment)
 {
-	return _kernel_key_by_segment(cd, segment);
+	return _kernel_key_by_segment(cd, segment) >= 0 ? 0 : -1;
 }
 
 static int _drop_keyring_key(struct crypt_device *cd, int segment)
@@ -1559,6 +1559,16 @@ static void Tokens(void)
 	EQ_(crypt_activate_by_token(cd, NULL, 2, PASSPHRASE, 0), 0);
 	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE, 0), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+#ifdef KERNEL_KEYRING
+	if (t_dm_crypt_keyring_support()) {
+		EQ_(crypt_activate_by_token(cd, NULL, 2, PASSPHRASE, CRYPT_ACTIVATE_KEYRING_KEY), 0);
+		OK_(_volume_key_in_keyring(cd, 0));
+	}
+	OK_(crypt_volume_key_keyring(cd, 0));
+#endif
+	FAIL_(crypt_activate_by_token(cd, NULL, 2, PASSPHRASE, CRYPT_ACTIVATE_KEYRING_KEY), "Can't use keyring when disabled in library");
+	OK_(crypt_volume_key_keyring(cd, 1));
 
 	EQ_(crypt_token_luks2_keyring_set(cd, 5, &params), 5);
 	EQ_(crypt_token_status(cd, 5, &dummy), CRYPT_TOKEN_INTERNAL);
