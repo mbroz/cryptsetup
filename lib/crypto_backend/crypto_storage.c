@@ -56,7 +56,7 @@ static int int_log2(unsigned int x)
 
 static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 			 const char *cipher_name, const char *mode_name,
-			 const char *iv_name, char *key, size_t key_length)
+			 const char *iv_name, const void *key, size_t key_length)
 {
 	memset(ctx, 0, sizeof(*ctx));
 
@@ -197,7 +197,7 @@ int crypt_storage_init(struct crypt_storage **ctx,
 		       uint64_t sector_start,
 		       const char *cipher,
 		       const char *cipher_mode,
-		       char *key, size_t key_length)
+		       const void *key, size_t key_length)
 {
 	struct crypt_storage *s;
 	char mode_name[64];

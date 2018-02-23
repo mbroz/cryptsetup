@@ -22,6 +22,7 @@
 #define _CRYPTO_BACKEND_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include <string.h>
 
 struct crypt_device;
@@ -100,7 +101,7 @@ uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
 /* ciphers */
 int crypt_cipher_blocksize(const char *name);
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
-		    const char *mode, const void *buffer, size_t length);
+		    const char *mode, const void *key, size_t key_length);
 void crypt_cipher_destroy(struct crypt_cipher *ctx);
 int crypt_cipher_encrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
@@ -112,7 +113,7 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 /* storage encryption wrappers */
 int crypt_storage_init(struct crypt_storage **ctx, uint64_t sector_start,
 		       const char *cipher, const char *cipher_mode,
-		       char *key, size_t key_length);
+		       const void *key, size_t key_length);
 void crypt_storage_destroy(struct crypt_storage *ctx);
 int crypt_storage_decrypt(struct crypt_storage *ctx, uint64_t sector,
 			  size_t count, char *buffer);
