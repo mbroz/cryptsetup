@@ -1163,6 +1163,14 @@ static int check_retry(uint32_t *dmd_flags, uint32_t dmt_flags)
 		ret = 1;
 	}
 
+	/* Drop performance options if not supported */
+	if ((*dmd_flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)) &&
+	    !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED | DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED))) {
+		log_dbg("dm-crypt doesn't support performance options");
+		*dmd_flags = *dmd_flags & ~(CRYPT_ACTIVATE_SAME_CPU_CRYPT | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS);
+		ret = 1;
+	}
+
 	return ret;
 }
 
