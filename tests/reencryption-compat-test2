@@ -190,7 +190,7 @@ function test_logging() {
 	for img in $(ls img_fs*img.bz2) ; do
 		wipefs -a $SCSI_DEV > /dev/null
 		echo -n "[${img%.img.bz2}]"
-		bzip2 -d -c $img | dd of=$SCSI_DEV >/dev/null 2>&1
+		bzip2 -d -c $img | dd of=$SCSI_DEV bs=4k >/dev/null 2>&1
 		mount_and_test $SCSI_DEV || return 1
 	done
 	echo
