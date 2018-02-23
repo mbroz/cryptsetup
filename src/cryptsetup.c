@@ -2240,6 +2240,11 @@ int main(int argc, const char **argv)
 		      _("Option --persistent is allowed only for open operation.\n"),
 		      poptGetInvocationName(popt_context));
 
+	if (opt_persistent && opt_test_passphrase)
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --persistent is not allowed with --test-passphrase.\n"),
+		      poptGetInvocationName(popt_context));
+
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&
 	   strcmp(aname, "open") &&
