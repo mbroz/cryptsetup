@@ -2750,6 +2750,34 @@ static void Luks2Integrity(void)
 	crypt_free(cd);
 }
 
+static void Luks2Flags(void)
+{
+	struct crypt_device *cd;
+	uint32_t flags = 42;
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+
+	/* check library erase passed variable on success when no flags set */
+	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_ACTIVATION, &flags));
+	EQ_(flags, 0);
+
+	/* check set and get behave as expected */
+	flags = CRYPT_ACTIVATE_ALLOW_DISCARDS;
+	OK_(crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, flags));
+	flags = 0;
+	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_ACTIVATION, &flags));
+	EQ_(flags, CRYPT_ACTIVATE_ALLOW_DISCARDS);
+
+	flags = CRYPT_ACTIVATE_ALLOW_DISCARDS | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
+	OK_(crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, flags));
+	flags = (uint32_t)~0;
+	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_ACTIVATION, &flags));
+	EQ_(flags,CRYPT_ACTIVATE_ALLOW_DISCARDS | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS);
+
+	crypt_free(cd);
+}
+
 static void int_handler(int sig __attribute__((__unused__)))
 {
 	_quit++;
@@ -2800,6 +2828,7 @@ int main(int argc, char *argv[])
 	RUN_(Luks2ActivateByKeyring, "Test LUKS2 activation by passphrase in keyring");
 	RUN_(Luks2Requirements, "Test LUKS2 requirements flags");
 	RUN_(Luks2Integrity, "Test LUKS2 with data integrity");
+	RUN_(Luks2Flags, "Test LUKS2 persistent flags");
 out:
 	_cleanup();
 	return 0;
