@@ -14,9 +14,6 @@ unclocked by passphrase), \fBcipher\fR, \fBcipher mode\fR.
 Cryptsetup-reencrypt reencrypts data on LUKS device in-place. During
 reencryption process the LUKS device is marked unavailable.
 
-\fBNOTE:\fR LUKS2 format support is limited. All tokens get removed unless
-\-\-keep\-key option is requested.
-
 \fIWARNING\fR: The cryptsetup-reencrypt program is not resistant to hardware
 or kernel failures during reencryption (you can lose your data in this case).
 
