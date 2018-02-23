@@ -17,6 +17,21 @@ PWD3="1-9Qu5Ejfnqv"
 MNT_DIR=./mnt_luks
 START_DIR=$(pwd)
 
+function dm_crypt_features()
+{
+	local VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
+
+	local VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	local VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+
+	[ $VER_MAJ -lt 1 ] && return
+	[ $VER_MAJ -eq 1 -a $VER_MIN -lt 11 ] && return
+	ALLOW_DISCARDS=--allow-discards
+	[ $VER_MAJ -eq 1 -a $VER_MIN -lt 14 ] && return
+	PERF_CPU=--perf-same_cpu_crypt
+}
+
 function del_scsi_device()
 {
 	rmmod scsi_debug 2>/dev/null
@@ -322,7 +337,6 @@ check_slot 21 || fail "Only keyslot 21 expected to be enabled"
 $CRYPTSETUP luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[9] Test log I/Os on various underlaying block devices"
-prepare 8192
 echo $PWD2 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_ARGON $LOOPDEV1 || fail
 add_scsi_device sector_size=512 dev_size_mb=32
 test_logging "[512 sector]" || fail
@@ -333,7 +347,6 @@ test_logging "[4096/512 sector]" || fail
 test_logging_tmpfs || fail
 
 echo "[10] Removal of encryption"
-prepare 8192
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_ARGON $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
@@ -341,7 +354,6 @@ echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt
 check_hash_dev $LOOPDEV1 $HASH4
 
 echo "[11] Reencryption with tokens"
-prepare 8192
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_ARGON $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
@@ -358,6 +370,21 @@ $CRYPTSETUP luksDump $LOOPDEV1 | grep "0: luks2-keyring" >/dev/null || fail
 $CRYPTSETUP luksDump $LOOPDEV1 | grep "2: luks2-keyring" >/dev/null || fail
 $CRYPTSETUP luksDump $LOOPDEV1 | grep "31: luks2-keyring" >/dev/null || fail
 [ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A2 -m1 "31: luks2-keyring" | grep Keyslot: | sed -e 's/[[[:space:]]\+Keyslot:\ \+//g')" -eq 23 ] || fail
+
+echo "[12] Reencryption with persistent flags"
+dm_crypt_features
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+wipe $PWD1
+check_hash $PWD1 $HASH5
+echo $PWD1 | $CRYPTSETUP open $LOOPDEV1 $DEV_NAME $ALLOW_DISCARDS $PERF_CPU --persistent || fail
+$CRYPTSETUP close $DEV_NAME || fail
+echo $PWD1 | $REENC $FAST_PBKDF_ARGON -q $LOOPDEV1 || fail
+if [ -n "$PERF_CPU" ]; then
+	$CRYPTSETUP luksDump $LOOPDEV1 | grep -m1 Flags: | grep same-cpu-crypt > /dev/null || fail
+fi
+if [ -n "$ALLOW_DISCARDS" ]; then
+	$CRYPTSETUP luksDump $LOOPDEV1 | grep -m1 Flags: | grep allow-discards > /dev/null || fail
+fi
 
 remove_mapping
 exit 0
