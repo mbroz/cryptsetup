@@ -227,7 +227,7 @@ int crypt_hmac_size(const char *name)
 }
 
 int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
-		    const void *buffer, size_t length)
+		    const void *key, size_t key_length)
 {
 	struct crypt_hmac *h;
 
@@ -248,7 +248,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		return -EINVAL;
 	}
 
-	HMAC_Init_ex(h->md, buffer, length, h->hash_id, NULL);
+	HMAC_Init_ex(h->md, key, key_length, h->hash_id, NULL);
 
 	h->hash_len = EVP_MD_size(h->hash_id);
 	*ctx = h;

@@ -239,7 +239,7 @@ int crypt_hmac_size(const char *name)
 }
 
 int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
-		    const void *buffer, size_t length)
+		    const void *key, size_t key_length)
 {
 	struct crypt_hmac *h;
 	unsigned int flags = GCRY_MD_FLAG_HMAC;
@@ -261,7 +261,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		return -EINVAL;
 	}
 
-	if (gcry_md_setkey(h->hd, buffer, length)) {
+	if (gcry_md_setkey(h->hd, key, key_length)) {
 		gcry_md_close(h->hd);
 		free(h);
 		return -EINVAL;

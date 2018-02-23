@@ -194,15 +194,15 @@ int crypt_hmac_size(const char *name)
 }
 
 int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
-		    const void *buffer, size_t length)
+		    const void *key, size_t key_length)
 {
 	struct crypt_hmac *h;
 	SECItem keyItem;
 	SECItem noParams;
 
 	keyItem.type = siBuffer;
-	keyItem.data = CONST_CAST(unsigned char *)buffer;
-	keyItem.len = (int)length;
+	keyItem.data = CONST_CAST(unsigned char *)key;
+	keyItem.len = (int)key_length;
 
 	noParams.type = siBuffer;
 	noParams.data = 0;

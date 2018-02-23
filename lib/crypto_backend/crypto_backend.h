@@ -48,7 +48,7 @@ void crypt_hash_destroy(struct crypt_hash *ctx);
 /* HMAC */
 int crypt_hmac_size(const char *name);
 int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
-		    const void *buffer, size_t length);
+		    const void *key, size_t key_length);
 int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length);
 int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length);
 void crypt_hmac_destroy(struct crypt_hmac *ctx);

@@ -234,7 +234,7 @@ int crypt_hmac_size(const char *name)
 }
 
 int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
-		    const void *buffer, size_t length)
+		    const void *key, size_t key_length)
 {
 	struct crypt_hmac *h;
 	struct hash_alg *ha;
@@ -257,7 +257,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	snprintf((char *)sa.salg_name, sizeof(sa.salg_name),
 		 "hmac(%s)", ha->kernel_name);
 
-	if (crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd, buffer, length) < 0) {
+	if (crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd, key, key_length) < 0) {
 		free(h);
 		return -EINVAL;
 	}
