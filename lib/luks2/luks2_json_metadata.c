@@ -1182,10 +1182,12 @@ static const struct  {
 int LUKS2_config_get_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *flags)
 {
 	json_object *jobj1, *jobj_config, *jobj_flags;
-	int i, j;
+	int i, j, found;
 
 	if (!hdr || !flags)
 		return -EINVAL;
+
+	*flags = 0;
 
 	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
 		return 0;
@@ -1195,17 +1197,17 @@ int LUKS2_config_get_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 
 	for (i = 0; i < (int) json_object_array_length(jobj_flags); i++) {
 		jobj1 = json_object_array_get_idx(jobj_flags, i);
-		for (j = 0; persistent_flags[j].description; j++) {
+		for (j = 0, found = 0; persistent_flags[j].description && !found; j++)
 			if (!strcmp(persistent_flags[j].description,
 				    json_object_get_string(jobj1))) {
 				*flags |= persistent_flags[j].flag;
 				log_dbg("Using persistent flag %s.",
 					json_object_get_string(jobj1));
-				break;
+				found = 1;
 			}
-			log_verbose(cd, _("Ignored unknown flag %s."),
-				json_object_get_string(jobj1));
-		}
+		if (!found)
+			log_verbose(cd, _("Ignored unknown flag %s.\n"),
+				    json_object_get_string(jobj1));
 	}
 
 	return 0;
@@ -1816,7 +1818,6 @@ int LUKS2_activate(struct crypt_device *cd,
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.uuid   = crypt_get_uuid(cd),
-		.flags  = flags,
 		.size   = 0,
 		.data_device = crypt_data_device(cd),
 		.u.crypt = {
@@ -1839,6 +1840,8 @@ int LUKS2_activate(struct crypt_device *cd,
 	/* Add persistent activation flags */
 	if (!(flags & CRYPT_ACTIVATE_IGNORE_PERSISTENT))
 		LUKS2_config_get_flags(cd, hdr, &dmd.flags);
+
+	dmd.flags |= flags;
 
 	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
 		device_check = DEV_SHARED;
