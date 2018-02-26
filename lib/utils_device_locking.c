@@ -75,7 +75,9 @@ static int open_lock_dir(struct crypt_device *cd, const char *dir, const char *b
 
 	dirfd = open(dir, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 	if (dirfd < 0) {
-		log_dbg("Failed to open directory '%s': (%d: %s).", dir, errno, strerror(errno));
+		log_dbg("Failed to open directory %s: (%d: %s).", dir, errno, strerror(errno));
+		if (errno == ENOTDIR || errno == ENOENT)
+			log_err(cd, _("Locking aborted. The locking path %s/%s is unusable (not a directory or missing).\n"), dir, base);
 		return -EINVAL;
 	}
 
@@ -89,8 +91,11 @@ static int open_lock_dir(struct crypt_device *cd, const char *dir, const char *b
 				log_dbg("Failed to create directory %s in %s (%d: %s).", base, dir, errno, strerror(errno));
 			else
 				lockdfd = openat(dirfd, base, O_RDONLY | O_NOFOLLOW | O_DIRECTORY | O_CLOEXEC);
-		} else
+		} else {
 			log_dbg("Failed to open directory %s/%s: (%d: %s)", dir, base, errno, strerror(errno));
+			if (errno == ENOTDIR || errno == ELOOP)
+				log_err(cd, _("Locking aborted. The locking path %s/%s is unusable (%s is not a directory).\n"), dir, base, base);
+		}
 	}
 
 	close(dirfd);
