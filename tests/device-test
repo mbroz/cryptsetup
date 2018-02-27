@@ -6,6 +6,7 @@ DEV_NAME="dummy"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+SKIP_COUNT=0
 
 cleanup() {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
@@ -31,6 +32,21 @@ skip()
 	exit 77
 }
 
+function dm_crypt_features()
+{
+	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
+
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+
+	[ $VER_MAJ -lt 1 ] && return
+	[ $VER_MAJ -eq 1 -a $VER_MIN -lt 14 ] && return
+	DM_PERF_CPU=1
+	[ $VER_MAJ -eq 1 -a $VER_MIN -lt 17 ] && return
+	DM_SECTOR_SIZE=1
+}
+
 format() # format
 {
 	dd if=/dev/zero of=$DEV bs=1M count=5 >/dev/null 2>&1
@@ -54,9 +70,10 @@ check_sector_size() # $1 expected sector size
 	fi
 }
 
+dm_crypt_features
+
 if [ $(id -u) != 0 ]; then
-	echo "WARNING: You must be root to run this test, test skipped."
-	exit 0
+	skip "You must be root to run this test, test skipped."
 fi
 
 [ ! -d $MNT_DIR ] && mkdir $MNT_DIR
@@ -67,11 +84,10 @@ mount -t tmpfs none $MNT_DIR || skip "Mounting tmpfs not available."
 format luks1
 
 echo "[2] Kernel dmcrypt performance options"
-echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --perf-same_cpu_crypt >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
+if [ -z "$DM_PERF_CPU" ]; then
 	echo "TEST SKIPPED: dmcrypt options not available"
+	SKIP_COUNT=$((SKIP_COUNT+1))
 else
-	$CRYPTSETUP close $DEV_NAME || fail
 	# plain
 	echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
@@ -113,7 +129,13 @@ fi
 
 echo "[3] Kernel dmcrypt sector size options"
 echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --sector-size 4096 >/dev/null 2>&1
-if [ $? -ne 0 ] ; then
+ret=$?
+[ -z "$DM_SECTOR_SIZE" -a $ret -eq 0 ] && fail "cryptsetup activated device with --sector-size option on incompatible kernel!"
+if [ $ret -ne 0 ] ; then
+	SKIP_COUNT=$((SKIP_COUNT+1))
+	if [ $SKIP_COUNT -ge 2 ]; then
+		skip "dmcrypt sector-size option not available"
+	fi
 	echo "TEST SKIPPED: dmcrypt sector-size option not available"
 else
 	$CRYPTSETUP close $DEV_NAME || fail
