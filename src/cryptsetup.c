@@ -1077,19 +1077,9 @@ out:
 	return r;
 }
 
-static int update_persistent_flags(struct crypt_device *cd, const char *name, uint32_t activation_flags)
-{
-	struct crypt_active_device cad;
-
-	/* write only flags not filtered by current kernel during activation */
-	if (crypt_get_active_device(cd, name, &cad))
-		return -EINVAL;
-
-	return crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, cad.flags & activation_flags);
-}
-
 static int action_open_luks(void)
 {
+	struct crypt_active_device cad;
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device, *activated_name;
 	char *key = NULL;
@@ -1150,7 +1140,8 @@ static int action_open_luks(void)
 	}
 out:
 	if (r >= 0 && opt_persistent &&
-	    update_persistent_flags(cd, activated_name, activate_flags))
+	    (crypt_get_active_device(cd, activated_name, &cad) ||
+	     crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, cad.flags & activate_flags)))
 		log_err(_("Device activated but cannot make flags persistent.\n"));
 
 	crypt_safe_free(key);
