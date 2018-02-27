@@ -73,7 +73,7 @@ static int open_lock_dir(struct crypt_device *cd, const char *dir, const char *b
 {
 	int dirfd, lockdfd;
 
-	dirfd = open(dir, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+	dirfd = open(dir, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 	if (dirfd < 0) {
 		log_dbg("Failed to open directory '%s': (%d: %s).", dir, errno, strerror(errno));
 		return -EINVAL;
