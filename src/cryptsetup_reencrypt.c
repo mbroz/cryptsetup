@@ -572,10 +572,11 @@ static int isLUKS2(const char *type)
 	return (type && !strcmp(type, CRYPT_LUKS2));
 }
 
-static int luks2_transfer_tokens(struct reenc_ctx *rc)
+static int luks2_metadata_copy(struct reenc_ctx *rc)
 {
 	const char *json, *type;
 	crypt_token_info ti;
+	uint32_t flags;
 	int i, r = -EINVAL;
 	struct crypt_device *cd_old = NULL, *cd_new = NULL;
 
@@ -629,40 +630,24 @@ static int luks2_transfer_tokens(struct reenc_ctx *rc)
 		}
 	}
 
-	r = 0;
+	if ((r = crypt_persistent_flags_get(cd_old, CRYPT_FLAGS_ACTIVATION, &flags))) {
+		log_err(_("Failed to read activation flags from backup header.\n"));
+		goto out;
+	}
+	if ((r = crypt_persistent_flags_set(cd_new, CRYPT_FLAGS_ACTIVATION, flags))) {
+		log_err(_("Failed to write activation flags to new header.\n"));
+		goto out;
+	}
+	if ((r = crypt_persistent_flags_get(cd_old, CRYPT_FLAGS_REQUIREMENTS, &flags))) {
+		log_err(_("Failed to read requirements from backup header.\n"));
+		goto out;
+	}
+	if ((r = crypt_persistent_flags_set(cd_new, CRYPT_FLAGS_REQUIREMENTS, flags)))
+		log_err(_("Failed to read requirements from backup header.\n"));
 out:
 	crypt_free(cd_old);
 	crypt_free(cd_new);
 	unlink(rc->header_file_tmp);
-
-	return r;
-}
-
-static int luks2_transfer_flags(struct reenc_ctx *rc)
-{
-	int r = -EINVAL;
-	uint32_t flags;
-	struct crypt_device *cd_old = NULL, *cd_new = NULL;
-
-	if (crypt_init(&cd_old, rc->header_file_org) ||
-	    crypt_load(cd_old, CRYPT_LUKS2, NULL))
-		goto out;
-
-	if (crypt_init(&cd_new, rc->header_file_new) ||
-	    crypt_load(cd_new, CRYPT_LUKS2, NULL))
-		goto out;
-
-	if ((r = crypt_persistent_flags_get(cd_old, CRYPT_FLAGS_ACTIVATION, &flags)))
-		log_err(_("Failed to read activation flags from backup header.\n"));
-	else if ((r = crypt_persistent_flags_set(cd_new, CRYPT_FLAGS_ACTIVATION, flags)))
-		log_err(_("Failed to write activation flags to new header.\n"));
-	else if ((r = crypt_persistent_flags_get(cd_old, CRYPT_FLAGS_REQUIREMENTS, &flags)))
-		log_err(_("Failed to read requirements from backup header.\n"));
-	else if ((r = crypt_persistent_flags_set(cd_new, CRYPT_FLAGS_REQUIREMENTS, flags)))
-		log_err(_("Failed to read requirements from backup header.\n"));
-out:
-	crypt_free(cd_old);
-	crypt_free(cd_new);
 
 	return r;
 }
@@ -742,13 +727,8 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		rc->type,
 		isLUKS2(rc->type) ? (void*)&params2 : (void*)&params);
 
-	if (r || !isLUKS2(rc->type))
-		goto out;
-
-	r = luks2_transfer_tokens(rc);
-	if (!r)
-		r = luks2_transfer_flags(rc);
-
+	if (!r && isLUKS2(rc->type))
+		r = luks2_metadata_copy(rc);
 out:
 	crypt_free(cd);
 	crypt_safe_free(old_key);
