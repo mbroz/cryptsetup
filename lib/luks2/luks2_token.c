@@ -350,7 +350,7 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 {
 	const crypt_token_handler *h;
 	json_object *jobj_token, *jobj_token_keyslots, *jobj;
-	const char *num;
+	const char *num = NULL;
 	int i, r;
 
 	if (!(h = LUKS2_token_handler(cd, token)))
@@ -373,7 +373,10 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 		r = LUKS2_keyslot_open(cd, atoi(num), segment, buffer, buffer_len, vk);
 	}
 
-	return r < 0 ? r : atoi(num);
+	if (r >= 0 && num)
+		return atoi(num);
+
+	return r;
 }
 
 int LUKS2_token_open_and_activate(struct crypt_device *cd,
