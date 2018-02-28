@@ -2948,6 +2948,28 @@ out:
 	return r < 0 ? r : keyslot;
 }
 
+static int _activate_loopaes(struct crypt_device *cd,
+	const char *name,
+	char *buffer,
+	size_t buffer_size,
+	uint32_t flags)
+{
+	int r;
+	unsigned int key_count = 0;
+	struct volume_key *vk = NULL;
+
+	r = LOOPAES_parse_keyfile(cd, &vk, cd->u.loopaes.hdr.hash, &key_count,
+				  buffer, buffer_size);
+
+	if (!r && name)
+		r = LOOPAES_activate(cd, name, cd->u.loopaes.cipher, key_count,
+				     vk, flags);
+
+	crypt_free_volume_key(vk);
+
+	return r;
+}
+
 static int _activate_check_status(struct crypt_device *cd, const char *name)
 {
 	crypt_status_info ci;
@@ -2999,10 +3021,8 @@ int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	uint64_t keyfile_offset,
 	uint32_t flags)
 {
-	struct volume_key *vk = NULL;
 	char *passphrase_read = NULL;
 	size_t passphrase_size_read;
-	unsigned int key_count = 0;
 	int r;
 
 	if (!cd || !keyfile ||
@@ -3016,92 +3036,19 @@ int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	if (isPLAIN(cd->type)) {
-		if (!name)
-			return -EINVAL;
+	r = crypt_keyfile_device_read(cd, keyfile,
+				&passphrase_read, &passphrase_size_read,
+				keyfile_offset, keyfile_size, 0);
+	if (r < 0)
+		goto out;
 
-		r = crypt_keyfile_device_read(cd, keyfile,
-					&passphrase_read, &passphrase_size_read,
-					keyfile_offset, keyfile_size, 0);
-		if (r < 0)
-			goto out;
+	if (isLOOPAES(cd->type))
+		r = _activate_loopaes(cd, name, passphrase_read, passphrase_size_read, flags);
+	else
+		r = _activate_by_passphrase(cd, name, keyslot, passphrase_read, passphrase_size_read, flags);
 
-		r = process_key(cd, cd->u.plain.hdr.hash,
-				cd->u.plain.key_size,
-				passphrase_read, passphrase_size_read, &vk);
-		if (r < 0)
-			goto out;
-
-		r = PLAIN_activate(cd, name, vk, cd->u.plain.hdr.size, flags);
-	} else if (isLUKS1(cd->type)) {
-		r = crypt_keyfile_device_read(cd, keyfile,
-					&passphrase_read, &passphrase_size_read,
-					keyfile_offset, keyfile_size, 0);
-		if (r < 0)
-			goto out;
-		r = LUKS_open_key_with_hdr(keyslot, passphrase_read,
-					   passphrase_size_read, &cd->u.luks1.hdr, &vk, cd);
-		if (r < 0)
-			goto out;
-		keyslot = r;
-
-		if (name) {
-			r = LUKS1_activate(cd, name, vk, flags);
-			if (r < 0)
-				goto out;
-		}
-		r = keyslot;
-	} else if (isLUKS2(cd->type)) {
-		r = crypt_keyfile_device_read(cd, keyfile,
-					&passphrase_read, &passphrase_size_read,
-					keyfile_offset, keyfile_size, 0);
-		if (r < 0)
-			goto out;
-
-		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT, passphrase_read,
-					passphrase_size_read,  &vk);
-		if (r < 0)
-			goto out;
-		keyslot = r;
-
-		if ((name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) &&
-		    crypt_use_keyring_for_vk(cd)) {
-			r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
-						&cd->u.luks2.hdr, vk, keyslot);
-			if (r < 0)
-				goto out;
-			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
-		}
-
-		if (name) {
-			r = LUKS2_activate(cd, name, vk, flags);
-			if (r < 0)
-				goto out;
-		}
-		r = keyslot;
-	} else if (isLOOPAES(cd->type)) {
-		r = crypt_keyfile_device_read(cd, keyfile,
-					&passphrase_read, &passphrase_size_read,
-					keyfile_offset, keyfile_size, 0);
-		if (r < 0)
-			goto out;
-		r = LOOPAES_parse_keyfile(cd, &vk, cd->u.loopaes.hdr.hash, &key_count,
-					  passphrase_read, passphrase_size_read);
-		if (r < 0)
-			goto out;
-		if (name)
-			r = LOOPAES_activate(cd, name, cd->u.loopaes.cipher,
-					     key_count, vk, flags);
-	} else {
-		log_err(cd, _("Device type is not properly initialised.\n"));
-		r = -EINVAL;
-	}
 out:
 	crypt_safe_free(passphrase_read);
-	if (r < 0 && vk)
-		crypt_drop_keyring_key(cd, vk->key_description);
-	crypt_free_volume_key(vk);
-
 	return r;
 }
 
