@@ -50,9 +50,7 @@ function check_nonroot
 	sudo dmsetup version
 	sudo dmsetup targets
 
-	make check || return
-
-	#sudo $MAKE install || return
+	make check
 }
 
 function check_root
@@ -77,9 +75,7 @@ function check_root
 	sudo dmsetup targets
 
 	# FIXME: we should use -E option here
-	sudo make check || return
-
-	#sudo $MAKE install || return
+	sudo make check
 }
 
 function check_nonroot_compile_only
@@ -141,14 +137,14 @@ function travis_script
 
 	case "$MAKE_CHECK" in
 	gcrypt)
-		check_nonroot "--with-crypto_backend=gcrypt"
+		check_nonroot "--with-crypto_backend=gcrypt" && \
 		check_root "--with-crypto_backend=gcrypt"
 		;;
 	gcrypt_compile)
 		check_nonroot_compile_only "--with-crypto_backend=gcrypt"
 		;;
 	openssl)
-		check_nonroot "--with-crypto_backend=openssl"
+		check_nonroot "--with-crypto_backend=openssl" && \
 		check_root "--with-crypto_backend=openssl"
 		;;
 	openssl_compile)
