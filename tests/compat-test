@@ -702,173 +702,206 @@ else
 fi
 
 # Interactive tests
+# Do not remove sleep 0.1 below, the password query flushes TTY buffer (so the code is racy).
 which expect >/dev/null 2>&1 || skip "WARNING: expect tool missing, interactive test will be skipped." 0
 
 prepare "[32] Interactive password retry from terminal." new
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
+expect - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
 eval spawn $CRYPTSETUP luksOpen -v -T 2 $LOOPDEV $DEV_NAME
-expect "Enter passphrase"
-send "$PWD0x\n"
-expect "No key available with this passphrase."
-expect "Enter passphrase"
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
+send "$PWD0 x\n"
+expect timeout abort "No key available with this passphrase."
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
 send "$PWD0\n"
-expect "Key slot 0 unlocked."
-expect eof
+expect timeout abort "Key slot 0 unlocked."
+expect timeout abort "Command successful."
+expect timeout abort eof
 exit
 EOF
+[ $? -eq 0 ] || fail "Expect script failed."
 check_exists
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[33] Interactive unsuccessful password retry from terminal." new
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
+expect - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
 eval spawn $CRYPTSETUP luksOpen -v -T 2 $LOOPDEV $DEV_NAME
-expect "Enter passphrase"
-send "$PWD0x\n"
-expect "No key available with this passphrase."
-expect "Enter passphrase"
-send "$PWD0y\n"
-expect "No key available with this passphrase."
-expect eof
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
+send "$PWD0 x\n"
+expect timeout abort "No key available with this passphrase."
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
+send "$PWD0 y\n"
+expect timeout abort "No key available with this passphrase."
+expect timeout abort eof
 exit
 EOF
+[ $? -eq 0 ] || fail "Expect script failed."
 
 prepare "[34] Interactive kill of last key slot." new
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
+expect - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
 eval spawn $CRYPTSETUP luksKillSlot -v $LOOPDEV 0
-expect ""
-expect "WARNING!"
-expect "========"
-expect "This is the last keyslot. Device will become unusable after purging this key."
-expect ""
-expect "Are you sure? (Type uppercase yes):"
+expect timeout abort "Are you sure? (Type uppercase yes):"
 send "YES\n"
-expect "Enter any remaining passphrase:"
+expect timeout abort "Enter any remaining passphrase:"
+sleep 0.1
 send "$PWD0\n"
-expect eof
+expect timeout abort "Command successful."
+expect timeout abort eof
 eval spawn $CRYPTSETUP luksKillSlot -v $LOOPDEV 0
-expect "Key 0 not active. Can't wipe."
+expect timeout abort "Keyslot 0 is not active."
+expect timeout abort eof
 exit
 EOF
+[ $? -eq 0 ] || fail "Expect script failed."
 
 prepare "[35] Interactive format of device." wipe
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
+expect - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
 eval spawn $CRYPTSETUP luksFormat $FAST_PBKDF_OPT -v $LOOPDEV
-expect ""
-expect "WARNING!"
-expect "========"
-expect "This will overwrite data on $LOOPDEV irrevocably."
-expect ""
-expect "Are you sure? (Type uppercase yes):"
+expect timeout abort "Are you sure? (Type uppercase yes):"
 send "YES\n"
-expect "Enter passphrase for $LOOPDEV:"
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
 send "$PWD0\n"
-expect "Verify passphrase:"
+expect timeout abort "Verify passphrase:"
+sleep 0.1
 send "$PWD0\n"
-expect eof
+expect timeout abort "Command successful."
+expect timeout abort eof
 eval spawn $CRYPTSETUP luksOpen -v $LOOPDEV --test-passphrase
-expect "Enter passphrase for $LOOPDEV:"
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
 send "$PWD0\n"
-expect eof
+expect timeout abort "Command successful."
+expect timeout abort eof
 exit
 EOF
+[ $? -eq 0 ] || fail "Expect script failed."
 
-prepare "[36] Interactive unsuccessful format of device." wipe
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
-eval spawn $CRYPTSETUP luksFormat $FAST_PBKDF_OPT -v $LOOPDEV
-expect ""
-expect "WARNING!"
-expect "========"
-expect "This will overwrite data on $LOOPDEV irrevocably."
-expect ""
-expect "Are you sure? (Type uppercase yes):"
+prepare "[36] Interactive unsuccessful format of device." new
+expect - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
+eval spawn $CRYPTSETUP erase -v $LOOPDEV
+expect timeout abort "Are you sure? (Type uppercase yes):"
 send "YES\n"
-expect "Enter passphrase for $LOOPDEV:"
+expect timeout abort "Command successful."
+expect timeout abort eof
+eval spawn $CRYPTSETUP luksFormat $FAST_PBKDF_OPT -v $LOOPDEV
+expect timeout abort "Are you sure? (Type uppercase yes):"
+send "YES\n"
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
 send "$PWD0\n"
-expect "Verify passphrase:"
-send "$PWD0x\n"
-expect "Passphrases do not match."
-expect eof
-eval spawn $CRYPTSETUP luksOpen -v $LOOPDEV --test-passphrase
-expect "Enter passphrase for $LOOPDEV:"
+expect timeout abort "Verify passphrase:"
+sleep 0.1
+send "$PWD0 x\n"
+expect timeout abort "Passphrases do not match."
+expect timeout abort eof
+eval spawn $CRYPTSETUP luksOpen -v $LOOPDEV -T 1 --test-passphrase
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
 send "$PWD0\n"
-expect "No key available with this passphrase."
-expect eof
+expect timeout abort "No key available with this passphrase."
+expect timeout abort eof
 exit
 EOF
+[ $? -eq 0 ] || fail "Expect script failed."
 
 prepare "[37] Interactive add key." new
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
+expect - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
 eval spawn $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -v $LOOPDEV
-expect "Enter any existing passphrase:"
+expect timeout abort "Enter any existing passphrase:"
+sleep 0.1
 send "$PWD0\n"
-expect "Enter new passphrase for key slot:"
+expect timeout abort "Enter new passphrase for key slot:"
+sleep 0.1
 send "$PWD1\n"
-expect "Verify passphrase:"
+expect timeout abort "Verify passphrase:"
+sleep 0.1
 send "$PWD1\n"
-expect eof
+expect timeout abort "Command successful."
+expect timeout abort eof
 eval spawn $CRYPTSETUP luksOpen $FAST_PBKDF_OPT -v $LOOPDEV --test-passphrase
-expect "Enter passphrase for $LOOPDEV:"
+expect timeout abort "Enter passphrase"
+sleep 0.1
 send "$PWD1\n"
-expect eof
+expect timeout abort "Command successful."
+expect timeout abort eof
 exit
 EOF
+[ $? -eq 0 ] || fail "Expect script failed."
 
 prepare "[38] Interactive change key." new
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
+expect - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
 eval spawn $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT -v $LOOPDEV
-expect "Enter passphrase to be changed:"
+expect timeout abort "Enter passphrase to be changed:"
+sleep 0.1
 send "$PWD0\n"
-expect "Enter new passphrase:"
+expect timeout abort "Enter new passphrase:"
+sleep 0.1
 send "$PWD1\n"
-expect "Verify passphrase:"
+expect timeout abort "Verify passphrase:"
+sleep 0.1
 send "$PWD1\n"
-expect eof
+expect timeout abort "Command successful."
+expect timeout abort eof
 eval spawn $CRYPTSETUP luksOpen -v $LOOPDEV --test-passphrase
-expect "Enter passphrase for $LOOPDEV:"
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
 send "$PWD1\n"
-expect eof
+expect timeout abort "Command successful."
+expect timeout abort eof
 exit
 EOF
+[ $? -eq 0 ] || fail "Expect script failed."
 
 prepare "[39] Interactive suspend and resume." new
 echo $PWD0 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
-eval spawn $CRYPTSETUP luksSuspend -v $LOOPDEV
-expect eof
-eval spawn $CRYPTSETUP luksResume -v $LOOPDEV
-expect "Enter passphrase for $LOOPDEV:"
-send "$PWD0\n"
-expect eof
-exit
-EOF
-
-prepare "[40] Interactive suspend and unsuccessful resume." new
-echo $PWD0 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
-expect - >/dev/null 2>&1 <<EOF
-set timeout 30
-eval spawn $CRYPTSETUP luksSuspend -v $LOOPDEV
-expect eof
-eval spawn $CRYPTSETUP luksResume -v $LOOPDEV
-expect "Enter passphrase for $LOOPDEV:"
-send "$PWD0x\n"
-expect "No key available with this passphrase."
-expect "Enter passphrase for $LOOPDEV:"
+expect - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
+eval spawn $CRYPTSETUP luksSuspend -v $DEV_NAME
+expect timeout abort "Command successful."
+expect timeout abort eof
+eval spawn $CRYPTSETUP luksResume -v -T 3  $DEV_NAME
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
+send "$PWD0 x\n"
+expect timeout abort "No key available with this passphrase."
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
 send "$PWD1\n"
-expect "No key available with this passphrase."
-expect "Enter passphrase for $LOOPDEV:"
-send "$PWD0y\n"
-expect "No key available with this passphrase."
-expect eof
+expect timeout abort "No key available with this passphrase."
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
+send "$PWD0 y\n"
+expect timeout abort "No key available with this passphrase."
+expect timeout abort eof
+eval spawn $CRYPTSETUP luksResume -v $DEV_NAME
+expect timeout abort "Enter passphrase for $LOOPDEV:"
+sleep 0.1
+send "$PWD0\n"
+expect timeout abort "Command successful."
+expect timeout abort eof
 exit
 EOF
+[ $? -eq 0 ] || fail "Expect script failed."
+$CRYPTSETUP remove $DEV_NAME || fail
 
 remove_mapping
 exit 0
