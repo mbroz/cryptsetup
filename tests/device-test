@@ -70,11 +70,11 @@ check_sector_size() # $1 expected sector size
 	fi
 }
 
-dm_crypt_features
-
 if [ $(id -u) != 0 ]; then
 	skip "You must be root to run this test, test skipped."
 fi
+
+dm_crypt_features
 
 [ ! -d $MNT_DIR ] && mkdir $MNT_DIR
 
