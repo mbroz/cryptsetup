@@ -1218,6 +1218,18 @@ static int action_luksKillSlot(void)
 	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
 		goto out;
 
+	switch (crypt_keyslot_status(cd, opt_key_slot)) {
+	case CRYPT_SLOT_ACTIVE_LAST:
+	case CRYPT_SLOT_ACTIVE:
+		log_verbose(_("Keyslot %d is selected for deletion.\n"), opt_key_slot);
+		break;
+	case CRYPT_SLOT_INACTIVE:
+		log_err(_("Keyslot %d is not active.\n"), opt_key_slot);
+		/* pass through */
+	case CRYPT_SLOT_INVALID:
+		return -EINVAL;
+	}
+
 	if (!opt_batch_mode || opt_key_file || !isatty(STDIN_FILENO)) {
 		r = verify_keyslot(cd, opt_key_slot,
 			_("This is the last keyslot. Device will become unusable after purging this key."),
