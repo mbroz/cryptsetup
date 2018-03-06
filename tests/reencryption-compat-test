@@ -7,6 +7,7 @@ FAST_PBKDF="--pbkdf-force-iterations 1000"
 DEV_NAME=reenc9768
 DEV_NAME2=reenc1273
 IMG=reenc-data
+IMG_HDR=$IMG.hdr
 ORIG_IMG=reenc-data-orig
 KEY1=key1
 PWD1="93R4P4pIqAH8"
@@ -27,7 +28,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $ORIG_IMG $KEY1 >/dev/null 2>&1
+	rm -f $IMG $IMG_HDR $ORIG_IMG $KEY1 >/dev/null 2>&1
 	umount $MNT_DIR > /dev/null 2>&1
 	rmdir $MNT_DIR > /dev/null 2>&1
 	LOOPDEV1=""
@@ -62,9 +63,11 @@ function add_scsi_device() {
         [ -b $SCSI_DEV ] || fail "Cannot find $SCSI_DEV."
 }
 
-function open_crypt()
+function open_crypt() # $1 pwd, $2 hdr
 {
-	if [ -n "$1" ] ; then
+	if [ -n "$2" ] ; then
+		echo "$1" | $CRYPTSETUP luksOpen $LOOPDEV1 $DEV_NAME --header $2 || fail
+	elif [ -n "$1" ] ; then
 		echo "$1" | $CRYPTSETUP luksOpen $LOOPDEV1 $DEV_NAME || fail
 	else
 		$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV1 $DEV_NAME || fail
@@ -104,9 +107,9 @@ function check_hash_dev() # $1 dev, $2 hash
 	[ $HASH != "$2" ] && fail "HASH differs ($HASH)"
 }
 
-function check_hash() # $1 pwd, $2 hash
+function check_hash() # $1 pwd, $2 hash, $3 hdr
 {
-	open_crypt $1
+	open_crypt $1 $3
 	check_hash_dev /dev/mapper/$DEV_NAME $2
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
@@ -335,6 +338,22 @@ wipe $PWD1
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt
 check_hash_dev $LOOPDEV1 $HASH4
+
+echo "[11] Detached header - adding encryption/reencryption/decryption"
+prepare 8192
+check_hash_dev $IMG $HASH4
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new
+check_hash $PWD1 $HASH4 $IMG_HDR
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR
+check_hash $PWD1 $HASH4 $IMG_HDR
+echo $PWD1 | $REENC $LOOPDEV1 -q --header $IMG_HDR --decrypt
+check_hash_dev $IMG $HASH4
+# existing header of zero size
+cat /dev/null >$IMG_HDR
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new
+check_hash $PWD1 $HASH4 $IMG_HDR
+$CRYPTSETUP isLuks $LOOPDEV1 && fail
+$CRYPTSETUP isLuks $IMG_HDR || fail
 
 remove_mapping
 exit 0

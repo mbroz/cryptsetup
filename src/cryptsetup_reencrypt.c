@@ -55,6 +55,7 @@ static int opt_key_size = 0;
 static int opt_new = 0;
 static int opt_keep_key = 0;
 static int opt_decrypt = 0;
+static const char *opt_header_device = NULL;
 
 static const char *opt_reduce_size_str = NULL;
 static uint64_t opt_reduce_size = 0;
@@ -68,6 +69,7 @@ static const char **action_argv;
 #define MAX_TOKEN 32
 struct reenc_ctx {
 	char *device;
+	char *device_header;
 	char *device_uuid;
 	const char *type;
 	uint64_t device_size; /* overridden by parameter */
@@ -147,6 +149,11 @@ static const char *luksType(const char *type)
 	return NULL;
 }
 
+static const char *hdr_device(const struct reenc_ctx *rc)
+{
+	return rc->device_header ?: rc->device;
+}
+
 static int set_reencrypt_requirement(const struct reenc_ctx *rc)
 {
 	uint32_t reqs;
@@ -154,7 +161,7 @@ static int set_reencrypt_requirement(const struct reenc_ctx *rc)
 	struct crypt_device *cd = NULL;
 	struct crypt_params_integrity ip = { 0 };
 
-	if (crypt_init(&cd, rc->device) ||
+	if (crypt_init(&cd, hdr_device(rc)) ||
 	    crypt_load(cd, CRYPT_LUKS2, NULL) ||
 	    crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &reqs))
 		goto out;
@@ -179,7 +186,7 @@ out:
 }
 
 /* Depends on the first two fields of LUKS1 header format, magic and version */
-static int device_check(struct reenc_ctx *rc, header_magic set_magic)
+static int device_check(struct reenc_ctx *rc, const char *device, header_magic set_magic)
 {
 	char *buf = NULL;
 	int r, devfd;
@@ -187,14 +194,14 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 	uint16_t version;
 	size_t buf_size = pagesize();
 
-	devfd = open(rc->device, O_RDWR | O_EXCL | O_DIRECT);
+	devfd = open(device, O_RDWR | O_EXCL | O_DIRECT);
 	if (devfd == -1) {
 		if (errno == EBUSY) {
 			log_err(_("Cannot exclusively open %s, device in use.\n"),
-				rc->device);
+				device);
 			return -EBUSY;
 		}
-		log_err(_("Cannot open device %s.\n"), rc->device);
+		log_err(_("Cannot open device %s.\n"), device);
 		return -EINVAL;
 	}
 
@@ -211,7 +218,7 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 
 	s = read(devfd, buf, buf_size);
 	if (s < 0 || s != (ssize_t)buf_size) {
-		log_err(_("Cannot read device %s.\n"), rc->device);
+		log_err(_("Cannot read device %s.\n"), device);
 		r = -EIO;
 		goto out;
 	}
@@ -222,11 +229,11 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 
 	if (set_magic == MAKE_UNUSABLE && !memcmp(buf, MAGIC, MAGIC_L) &&
 	    version == 1) {
-		log_verbose(_("Marking LUKS1 device %s unusable.\n"), rc->device);
+		log_verbose(_("Marking LUKS1 device %s unusable.\n"), device);
 		memcpy(buf, NOMAGIC, MAGIC_L);
 		r = 0;
 	} else if (set_magic == MAKE_UNUSABLE && version == 2) {
-		log_verbose(_("Setting LUKS2 offline reencrypt flag on device %s.\n"), rc->device);
+		log_verbose(_("Setting LUKS2 offline reencrypt flag on device %s.\n"), device);
 		r = set_reencrypt_requirement(rc);
 		if (!r)
 			rc->stained = 1;
@@ -243,14 +250,14 @@ static int device_check(struct reenc_ctx *rc, header_magic set_magic)
 			goto out;
 		s = write(devfd, buf, buf_size);
 		if (s < 0 || s != (ssize_t)buf_size) {
-			log_err(_("Cannot write device %s.\n"), rc->device);
+			log_err(_("Cannot write device %s.\n"), device);
 			r = -EIO;
 		}
 		if (s > 0 && set_magic == MAKE_UNUSABLE)
 			rc->stained = 1;
 	}
 	if (r)
-		log_dbg("LUKS signature check failed for %s.", rc->device);
+		log_dbg("LUKS signature check failed for %s.", device);
 out:
 	if (buf)
 		memset(buf, 0, buf_size);
@@ -284,7 +291,7 @@ static int create_empty_header(const char *new_file, const char *old_file,
 	 * if requesting key size change, try to use offset
 	 * here can be enough space to fit new key.
 	 */
-	if (opt_key_size)
+	if (opt_key_size && data_sector)
 		size = data_sector * SECTOR_SIZE;
 
 	/* if reducing size, be sure we have enough space */
@@ -663,9 +670,9 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	size_t old_key_size;
 	int r;
 
-	log_dbg("Creating LUKS header backup for device %s.", rc->device);
+	log_dbg("Creating LUKS header backup for device %s.", hdr_device(rc));
 
-	if ((r = crypt_init(&cd, rc->device)) ||
+	if ((r = crypt_init(&cd, hdr_device(rc))) ||
 	    (r = crypt_load(cd, CRYPT_LUKS, NULL)))
 		goto out;
 
@@ -834,21 +841,42 @@ static void remove_headers(struct reenc_ctx *rc)
 
 static int restore_luks_header(struct reenc_ctx *rc)
 {
+	struct stat st;
 	struct crypt_device *cd = NULL;
-	int r;
+	int fd, r;
 
-	log_dbg("Restoring header for %s from %s.", rc->device, rc->header_file_new);
+	log_dbg("Restoring header for %s from %s.", hdr_device(rc), rc->header_file_new);
 
-	r = crypt_init(&cd, rc->device);
+	/*
+	 * For new encryption and new detached header in file just move it.
+	 * For existing file try to ensure we have prealocated space for restore.
+	 */
+	if (opt_new && rc->device_header) {
+		r = stat(rc->device_header, &st);
+		if (r == -1) {
+			r = rename(rc->header_file_new, rc->device_header);
+			goto out;
+		} else if ((st.st_mode & S_IFMT) == S_IFREG &&
+			stat(rc->header_file_new, &st) != -1) {
+			fd = open(rc->device_header, O_WRONLY);
+			if (fd != -1) {
+				posix_fallocate(fd, 0, st.st_size);
+				close(fd);
+			}
+		}
+	}
+
+	r = crypt_init(&cd, hdr_device(rc));
 	if (r == 0) {
 		r = crypt_header_restore(cd, rc->type, rc->header_file_new);
 	}
 
 	crypt_free(cd);
+out:
 	if (r)
-		log_err(_("Cannot restore %s header on device %s.\n"), rc->device, isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
+		log_err(_("Cannot restore %s header on device %s.\n"), hdr_device(rc), isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
 	else {
-		log_verbose(_("%s header on device %s restored.\n"), rc->device, isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
+		log_verbose(_("%s header on device %s restored.\n"), hdr_device(rc), isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
 		rc->stained = 0;
 	}
 	return r;
@@ -1140,7 +1168,7 @@ static int initialize_uuid(struct reenc_ctx *rc)
 	}
 
 	/* Try to load LUKS from device */
-	if ((r = crypt_init(&cd, rc->device)))
+	if ((r = crypt_init(&cd, hdr_device(rc))))
 		return r;
 	crypt_set_log_callback(cd, _quiet_log, NULL);
 	r = crypt_load(cd, CRYPT_LUKS, NULL);
@@ -1148,7 +1176,7 @@ static int initialize_uuid(struct reenc_ctx *rc)
 		rc->device_uuid = strdup(crypt_get_uuid(cd));
 	else
 		/* Reencryption already in progress - magic header? */
-		r = device_check(rc, CHECK_UNUSABLE);
+		r = device_check(rc, hdr_device(rc), CHECK_UNUSABLE);
 
 	if (!r)
 		rc->type = isLUKS2(crypt_get_type(cd)) ? CRYPT_LUKS2 : CRYPT_LUKS1;
@@ -1309,7 +1337,10 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 	if (!(rc->device = strndup(device, PATH_MAX)))
 		return -ENOMEM;
 
-	if (device_check(rc, CHECK_OPEN) < 0)
+	if (opt_header_device && !(rc->device_header = strndup(opt_header_device, PATH_MAX)))
+		return -ENOMEM;
+
+	if (device_check(rc, rc->device, CHECK_OPEN) < 0)
 		return -EINVAL;
 
 	if (initialize_uuid(rc)) {
@@ -1397,6 +1428,7 @@ static void destroy_context(struct reenc_ctx *rc)
 		crypt_safe_free(rc->p[i].password);
 
 	free(rc->device);
+	free(rc->device_header);
 	free(rc->device_uuid);
 }
 
@@ -1405,10 +1437,10 @@ static int luks2_change_pbkdf_params(struct reenc_ctx *rc)
 	int i, r;
 	struct crypt_device *cd;
 
-	if ((r = initialize_passphrase(rc, rc->device)))
+	if ((r = initialize_passphrase(rc, hdr_device(rc))))
 		return r;
 
-	if (crypt_init(&cd, rc->device) ||
+	if (crypt_init(&cd, hdr_device(rc)) ||
 	    crypt_load(cd, CRYPT_LUKS2, NULL))
 		return -EINVAL;
 
@@ -1461,7 +1493,7 @@ static int run_reencrypt(const char *device)
 	log_dbg("Running reencryption.");
 
 	if (!rc.in_progress) {
-		if ((r = initialize_passphrase(&rc, rc.device)))
+		if ((r = initialize_passphrase(&rc, hdr_device(&rc))))
 			goto out;
 
 		if (rc.reencrypt_mode == ENCRYPT) {
@@ -1475,7 +1507,7 @@ static int run_reencrypt(const char *device)
 			if (rc.reencrypt_mode == DECRYPT &&
 			    (r = backup_fake_header(&rc)))
 				goto out;
-			if ((r = device_check(&rc, MAKE_UNUSABLE)))
+			if ((r = device_check(&rc, hdr_device(&rc), MAKE_UNUSABLE)))
 				goto out;
 		}
 	} else {
@@ -1558,6 +1590,7 @@ int main(int argc, const char **argv)
 		{ "pbkdf-memory",      '\0', POPT_ARG_LONG, &opt_pbkdf_memory,          0, N_("PBKDF memory cost limit"), N_("kilobytes") },
 		{ "pbkdf-parallel",    '\0', POPT_ARG_LONG, &opt_pbkdf_parallel,        0, N_("PBKDF parallel cost "), N_("threads") },
 		{ "pbkdf-force-iterations",'\0',POPT_ARG_LONG, &opt_pbkdf_iterations,   0, N_("PBKDF iterations cost (forced, disables benchmark)"), NULL },
+		{ "header",            '\0', POPT_ARG_STRING, &opt_header_device,       0, N_("Device or file with separated LUKS header."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -1656,8 +1689,8 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Reduce size must be multiple of 512 bytes sector."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_new && !opt_reduce_size)
-		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce-device-size."),
+	if (opt_new && (!opt_reduce_size && !opt_header_device))
+		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce-device-size or --header."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_keep_key && ((!opt_hash && !opt_iteration_time && !opt_pbkdf_iterations) || opt_cipher || opt_new))

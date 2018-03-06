@@ -35,14 +35,14 @@ To start (or continue) re-encryption for <device> use:
 \fIcryptsetup-reencrypt\fR <device>
 
 \fB<options>\fR can be [\-\-batch-mode, \-\-block-size, \-\-cipher | \-\-keep-key,
-\-\-debug, \-\-device-size, \-\-hash, \-\-iter-time | \-\-pbkdf\-force\-iterations,
+\-\-debug, \-\-device-size, \-\-hash, \-\-header, \-\-iter-time | \-\-pbkdf\-force\-iterations,
 \-\-key-file, \-\-key-size, \-\-key-slot, \-\-keyfile-offset, \-\-keyfile-size,
 \-\-tries, \-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel, \-\-progress-frequency,
 \-\-use-directio, \-\-use-random | \-\-use-urandom, \-\-use-fsync, \-\-uuid,
 \-\-verbose, \-\-write-log]
 
 To encrypt data on (not yet encrypted) device, use \fI\-\-new\fR with combination
-with \fI\-\-reduce-device-size\fR.
+with \fI\-\-reduce-device-size\fR or with \fI\-\-header\fR option for detached header.
 
 To remove encryption from device, use \fI\-\-decrypt\fR.
 
@@ -89,7 +89,17 @@ Specifies the hash used in the LUKS1 key setup scheme and volume key digest.
 for new LUKS1 device header.
 
 \fBNOTE:\fR with LUKS2 format this option is only relevant when new keyslot pbkdf algorithm
-is set to PBKDF2 (see \fI\-\-pbkdf).
+is set to PBKDF2 (see \fI\-\-pbkdf\fR).
+.TP
+.B "\-\-header\fR \fI<LUKS header file>\fR"
+Use a detached (separated) metadata device or file where the
+LUKS header is stored. This option allows one to store ciphertext
+and LUKS header on different devices.
+
+\fBWARNING:\fR There is no check whether the ciphertext device specified
+actually belongs to the header given.
+If used with \fI\-\-new\fR option, the header file will created (or overwritten).
+Use with care.
 .TP
 .B "\-\-iter-time, \-i \fI<milliseconds>\fR"
 The number of milliseconds to spend with PBKDF2 passphrase processing for the
