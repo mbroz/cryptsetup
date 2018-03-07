@@ -81,7 +81,7 @@ mirror on [kernel.org](https://git.kernel.org/cgit/utils/cryptsetup/cryptsetup.g
 
 For libcryptsetup documentation see [libcryptsetup API](https://gitlab.com/cryptsetup/cryptsetup/wikis/API/index.html) page.
 
-The libcryptsetup API/ABI changes are tracked in [compatibility report](https://gitlab.com/cryptsetup/cryptsetup/wikis/ABI-tracker/timeline/libcryptsetup/index.html).
+The libcryptsetup API/ABI changes are tracked in [compatibility report](https://abi-laboratory.pro/tracker/timeline/cryptsetup/).
 
 NLS PO files are maintained by [TranslationProject](http://translationproject.org/domain/cryptsetup.html).
 
