@@ -1,0 +1,93 @@
+Cryptsetup 2.0.2 Release Notes
+==============================
+Stable and bug-fix release with experimental features.
+
+Cryptsetup 2.x version introduces a new on-disk LUKS2 format.
+
+The legacy LUKS (referenced as LUKS1) will be fully supported
+forever as well as a traditional and fully backward compatible format.
+
+Please note that authenticated disk encryption, non-cryptographic
+data integrity protection (dm-integrity), use of Argon2 Password-Based
+Key Derivation Function and the LUKS2 on-disk format itself are new
+features and can contain some bugs.
+
+To provide all security features of authenticated encryption, we need
+a better nonce-reuse resistant algorithm in the kernel (see note below).
+For now, please use authenticated encryption as an experimental feature.
+
+Please do not use LUKS2 without properly configured backup or in
+production systems that need to be compatible with older systems.
+
+Changes since version 2.0.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix a regression in early detection of inactive keyslot for luksKillSlot.
+  It tried to ask for passphrase even for already erased keyslot.
+
+* Fix a regression in loopaesOpen processing for keyfile on standard input.
+  Use of "-" argument was not working properly.
+
+* Add LUKS2 specific options for cryptsetup-reencrypt.
+  Tokens and persistent flags are now transferred during reencryption;
+  change of PBKDF keyslot parameters is now supported and alllows
+  to set precalculated values (no benchmarks).
+
+* Do not allow LUKS2 --persistent and --test-passphrase cryptsetup flags
+  combination. Persistent flags are now stored only if the device was
+  successfully activated with the specified flags.
+
+* Fix integritysetup format after recent Linux kernel changes that
+  requires to setup key for HMAC in all cases.
+  Previously integritysetup allowed HMAC with zero key that behaves
+  like a plain hash.
+
+* Fix VeraCrypt PIM handling that modified internal iteration counts
+  even for subsequent activations. The PIM count is no longer printed
+  in debug log as it is sensitive information.
+  Also, the code now skips legacy TrueCrypt algorithms if a PIM
+  is specified (they cannot be used with PIM anyway).
+
+* PBKDF values cannot be set (even with force parameters) below
+  hardcoded minimums. For PBKDF2 is it 1000 iterations, for Argon2
+  it is 4 iterations and 32 KiB of memory cost.
+
+* Introduce new crypt_token_is_assigned() API function for reporting
+  the binding between token and keyslots.
+
+* Allow crypt_token_json_set() API function to create internal token types.
+  Do not allow unknown fields in internal token objects.
+
+* Print message in cryptsetup that about was aborted if a user did not
+  answer YES in a query.
+
+Unfinished things & TODO for next releases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* There will be better documentation and examples.
+
+* There will be some more formal definition of the threat model for integrity
+  protection. (And a link to some papers discussing integrity protection,
+  once it is, hopefully, accepted and published.)
+
+* Authenticated encryption will use new algorithms from CAESAR competition
+  https://competitions.cr.yp.to/caesar-submissions.html.
+  We plan to use AEGIS and MORUS, as CAESAR finalists.
+
+  NOTE: Currently available authenticated modes (GCM, Chacha20-poly1305)
+  in the kernel have too small 96-bit nonces that are problematic with
+  randomly generated IVs (the collision probability is not negligible).
+
+* Authenticated encryption do not set encryption for a dm-integrity journal.
+
+  While it does not influence data confidentiality or integrity protection,
+  an attacker can get some more information from data journal or cause that
+  system will corrupt sectors after journal replay. (That corruption will be
+  detected though.)
+
+* There are examples of user-defined tokens inside misc/luks2_keyslot_example
+  directory (like a simple external program that uses libssh to unlock LUKS2
+  using remote keyfile).
+
+* The python binding (pycryptsetup) contains only basic functionality for LUKS1
+  (it is not updated for new features) and will be deprecated in version 2.1
+  in favor of python bindings to the libblockdev library.
