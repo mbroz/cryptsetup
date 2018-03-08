@@ -1443,6 +1443,40 @@ out:
 	return r;
 }
 
+static int action_luksConvertKey(void)
+{
+	struct crypt_device *cd = NULL;
+	char *password = NULL;
+	size_t password_size = 0;
+	int r;
+
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
+		goto out;
+
+	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
+		goto out;
+
+	r = set_pbkdf_params(cd, crypt_get_type(cd));
+	if (r) {
+		log_err(_("Failed to set pbkdf parameters.\n"));
+		goto out;
+	}
+
+	r = tools_get_key(_("Enter passphrase for keylot to be converted: "),
+		      &password, &password_size,
+		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+		      opt_timeout, _verify_passphrase(0), 0, cd);
+	if (r < 0)
+		goto out;
+
+	r = crypt_keyslot_change_by_passphrase(cd, opt_key_slot, opt_key_slot,
+			password, password_size, password, password_size);
+out:
+	crypt_safe_free(password);
+	crypt_free(cd);
+	return r;
+}
+
 static int action_isLuks(void)
 {
 	struct crypt_device *cd = NULL;
@@ -1927,6 +1961,7 @@ static struct action_type {
 	{ "luksAddKey",   action_luksAddKey,   1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
 	{ "luksRemoveKey",action_luksRemoveKey,1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
 	{ "luksChangeKey",action_luksChangeKey,1, 1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
+	{ "luksConvertKey",action_luksConvertKey,1, 1, N_("<device> [<key file>]"), N_("converts a key to new pbkdf parameters") },
 	{ "luksKillSlot", action_luksKillSlot, 2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
 	{ "luksUUID",     action_luksUUID,     1, 0, N_("<device>"), N_("print UUID of LUKS device") },
 	{ "isLuks",       action_isLuks,       1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },

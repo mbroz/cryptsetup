@@ -323,6 +323,30 @@ inaccessible.
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header,
 \-\-disable\-locks].
 .PP
+.PP
+\fIluksConvertKey\fR <device>
+.IP
+Converts an existing LUKS2 keyslot to new pbkdf parameters. The
+passphrase for keyslot to be converted must be supplied interactively
+or via \-\-key\-file. If no \-\-pbkdf parameters are specified LUKS2
+default pbkdf values will apply.
+
+If a keyslot is specified (via \-\-key\-slot), the passphrase for that
+keyslot must be given. If no keyslot is specified and there is still
+a free keyslot, then the new parameters will be put into a free
+keyslot before the keyslot containing the old parameters is
+purged. If there is no free keyslot, then the keyslot with the old
+parameters is overwritten directly.
+
+\fBWARNING:\fR If a keyslot is overwritten, a media failure during
+this operation can cause the overwrite to fail after the old
+parameters have been wiped and make the LUKS container inaccessible.
+
+\fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
+\-\-keyfile\-size, \-\-key\-slot, \-\-header, \-\-disable\-locks,
+\-\-iter-time, \-\-pbkdf, \-\-pbkdf\-force\-iterations,
+\-\-pbkdf\-memory, \-\-pbkdf\-parallel].
+.PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
 Wipe the key-slot number <key slot> from the LUKS device. Except running
