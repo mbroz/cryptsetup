@@ -108,14 +108,14 @@ int crypt_cipher_check_kernel(const char *name, const char *mode,
 			      const char *integrity, size_t key_length);
 
 /* Storage encryption wrappers */
-int crypt_storage_init(struct crypt_storage **ctx, uint64_t sector_start,
+int crypt_storage_init(struct crypt_storage **ctx, size_t sector_size,
 		       const char *cipher, const char *cipher_mode,
 		       const void *key, size_t key_length);
 void crypt_storage_destroy(struct crypt_storage *ctx);
-int crypt_storage_decrypt(struct crypt_storage *ctx, uint64_t sector,
-			  size_t count, char *buffer);
-int crypt_storage_encrypt(struct crypt_storage *ctx, uint64_t sector,
-			  size_t count, char *buffer);
+int crypt_storage_decrypt(struct crypt_storage *ctx, uint64_t iv_offset,
+			  uint64_t length, char *buffer);
+int crypt_storage_encrypt(struct crypt_storage *ctx, uint64_t iv_offset,
+			  uint64_t length, char *buffer);
 
 /* Memzero helper (memset on stack can be optimized out) */
 static inline void crypt_backend_memzero(void *s, size_t n)
