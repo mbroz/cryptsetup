@@ -310,6 +310,42 @@ function checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks, $4 block_s
 	remove_mapping
 }
 
+# $1 size, $2 block size, $3 roots, $4 hash offset, $5 fec offset,
+# $6 one dev(1 - one device, 2 - one device for data and hash, one device for fec data, 3 - three separate devices),
+# $7 #{corrupted bytes}
+function checkUserSpaceRepair()
+{
+	BS=512
+	COUNT=50000
+	dd if=/dev/zero of=$IMG bs=$BS count=$COUNT >/dev/null 2>&1
+	PARAMS="--data-block-size=$2 --hash-block-size=$2 --fec-roots=$3"
+	[ "$1" -gt 0 ] && PARAMS="$PARAMS --data-blocks=$1" && BS=$2 && COUNT=$1
+
+	# different parameters for diffrent number of devices
+	[ "$6" -eq 1 ] && HASH_DEV=$IMG && FEC=$IMG && PARAMS="$PARAMS --hash-offset=$4 --fec-offset=$5" && echo -n "[One device]"
+	[ "$6" -eq 2 ] && HASH_DEV=$IMG && FEC=$FEC_DEV && PARAMS="$PARAMS --hash-offset=$4" && echo -n "[Two separate data/hash and fec devices]"
+	[ "$6" -eq 3 ] && HASH_DEV=$IMG_HASH && FEC=$FEC_DEV && echo -n "[Three separate devices]"
+
+	echo -n "[nroots::$3]"
+
+	ARR=(`$VERITYSETUP format $IMG $HASH_DEV --fec-device $FEC $PARAMS`)
+	ROOT_HASH=${ARR[28]}
+
+	echo -n "[Errors can be corrected]"
+	corrupt_device $IMG $(($BS*$COUNT)) $7
+	$VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS >/dev/null 2>&1
+	RET=$?
+	[ "$RET" -ne 0 ] && fail "Device can be corrected, but it wasn't."
+	echo -n "[OK]"
+
+	echo -n "[Errors cannot be corrected]"
+	dd if=/dev/urandom of=$IMG bs=$BS count=$COUNT conv=notrunc >/dev/null 2>&1
+	$VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS >/dev/null 2>&1
+	RET=$?
+	[ "$RET" -eq 0 ] && fail "Device cannot be correct, but it didn't fail."
+	echo "[OK]"
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$VERITYSETUP" ] && skip "Cannot find $VERITYSETUP, test skipped."
 
@@ -387,6 +423,15 @@ if check_version ; then
 	  echo "[OK]"
 	done
 fi
+
+echo "Correction in userspace: "
+# checkUserSpaceRepair <#blocks> <block_size> <roots> <hash_offset> <fec_offset> <#devices> <#corrupted bytes>
+checkUserSpaceRepair -1  512  2 0       0       3 100
+checkUserSpaceRepair 400 512  2 256000  0       2 50
+checkUserSpaceRepair 500 512  2 2457600  4915200  1 1
+checkUserSpaceRepair -1  4096 2 0       0       3 10
+checkUserSpaceRepair 400 4096 2 2048000 0       2 1
+#checkUserSpaceRepair 500 4096 2 2457600 4915200 1 2 # FIXME
 
 remove_mapping
 exit 0
