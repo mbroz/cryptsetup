@@ -43,11 +43,9 @@ function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
-	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
 	rm -f $IMG $IMG_HDR $ORIG_IMG $KEY1 >/dev/null 2>&1
 	umount $MNT_DIR > /dev/null 2>&1
 	rmdir $MNT_DIR > /dev/null 2>&1
-	LOOPDEV1=""
 	del_scsi_device
 }
 
@@ -82,17 +80,17 @@ function add_scsi_device() {
 function open_crypt() # $1 pwd, $2 hdr
 {
 	if [ -n "$2" ] ; then
-		echo "$1" | $CRYPTSETUP luksOpen $LOOPDEV1 $DEV_NAME --header $2 || fail
+		echo "$1" | $CRYPTSETUP luksOpen $IMG $DEV_NAME --header $2 || fail
 	elif [ -n "$1" ] ; then
-		echo "$1" | $CRYPTSETUP luksOpen $LOOPDEV1 $DEV_NAME || fail
+		echo "$1" | $CRYPTSETUP luksOpen $IMG $DEV_NAME || fail
 	else
-		$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV1 $DEV_NAME || fail
+		$CRYPTSETUP luksOpen -d $KEY1 $IMG $DEV_NAME || fail
 	fi
 }
 
 function wipe_dev() # $1 dev
 {
-	dd if=/dev/zero of=$1 bs=256k >/dev/null 2>&1
+	dd if=/dev/zero of=$1 bs=256k conv=notrunc >/dev/null 2>&1
 }
 
 function wipe() # $1 pass
@@ -108,9 +106,6 @@ function prepare() # $1 dev1_siz
 	remove_mapping
 
 	dd if=/dev/zero of=$IMG      bs=1k count=$1 >/dev/null 2>&1
-	LOOPDEV1=$(losetup -f 2>/dev/null)
-	[ -z "$LOOPDEV1" ] && fail "No free loop device"
-	losetup $LOOPDEV1 $IMG
 
 	if [ ! -e $KEY1 ]; then
 		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
@@ -133,22 +128,18 @@ function check_hash() # $1 pwd, $2 hash, $hdr
 function backup_orig()
 {
 	sync
-	losetup -d $LOOPDEV1
 	cp $IMG $ORIG_IMG
-	losetup $LOOPDEV1 $IMG
 }
 
 function rollback()
 {
 	sync
-	losetup -d $LOOPDEV1
 	cp $ORIG_IMG $IMG
-	losetup $LOOPDEV1 $IMG
 }
 
 function check_slot() #space separeted list of active key slots
 {
-	local _out=$($CRYPTSETUP luksDump $LOOPDEV1 | grep -e ": luks2" | sed -e 's/[[:space:]]*\([0-9]\+\):.*/\1/g')
+	local _out=$($CRYPTSETUP luksDump $IMG | grep -e ": luks2" | sed -e 's/[[:space:]]*\([0-9]\+\):.*/\1/g')
 
 	local _req
 	local _hdr
@@ -191,7 +182,7 @@ function mount_and_test() {
 	}
 	rm $MNT_DIR/* 2>/dev/null
 	cd $MNT_DIR
-	echo $PWD2 | $START_DIR/$REENC $LOOPDEV1 -q --use-fsync --use-directio --write-log $FAST_PBKDF_ARGON || return 1
+	echo $PWD2 | $START_DIR/$REENC $START_DIR/$IMG -q --use-fsync --use-directio --write-log $FAST_PBKDF_ARGON || return 1
 	cd $START_DIR
 	umount $MNT_DIR
 	echo -n [OK]
@@ -226,82 +217,79 @@ HASH6=4d9cbaf3aa0935a8c113f139691b3daf9c94c8d6c278aedc8eec66a4b9f6c8ae
 
 echo "[1] Reencryption"
 prepare 8192
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-plain $FAST_PBKDF_ARGON --align-payload 4096 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-plain $FAST_PBKDF_ARGON --align-payload 4096 $IMG || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF_ARGON
+echo $PWD1 | $REENC $IMG -q $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 $FAST_PBKDF_ARGON
+echo $PWD1 | $REENC $IMG -q -s 256 $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 -c aes-xts-plain64 -h sha256 $FAST_PBKDF_ARGON
+echo $PWD1 | $REENC $IMG -q -s 256 -c aes-xts-plain64 -h sha256 $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q --use-directio $FAST_PBKDF_ARGON
+echo $PWD1 | $REENC $IMG -q --use-directio $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
-$CRYPTSETUP luksDump $LOOPDEV1 | grep -q "luks2" > /dev/null || fail
+$CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
 
 echo "[2] Reencryption with data shift"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF_ARGON --align-payload 2048 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF_ARGON --align-payload 2048 $IMG || fail
 wipe $PWD1
-echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 --reduce-device-size 1024S $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $REENC $IMG -q -s 256 --reduce-device-size 1024S $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH6
-echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $REENC $IMG -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH6
-$CRYPTSETUP luksDump $LOOPDEV1 | grep -q "luks2" > /dev/null || fail
+$CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
 
 echo "[3] Reencryption with keyfile"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -d $KEY1 -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF_ARGON --align-payload 4096 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -d $KEY1 -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF_ARGON --align-payload 4096 $IMG || fail
 wipe
 check_hash "" $HASH5
-echo $PWD1 | $CRYPTSETUP -q luksAddKey -d $KEY1 $LOOPDEV1 $FAST_PBKDF_ARGON || fail
-$REENC $LOOPDEV1 -d $KEY1 $FAST_PBKDF_ARGON -q 2>/dev/null && fail
-$REENC $LOOPDEV1 -d $KEY1 -S 0 $FAST_PBKDF_ARGON -q || fail
+echo $PWD1 | $CRYPTSETUP -q luksAddKey -d $KEY1 $IMG $FAST_PBKDF_ARGON || fail
+$REENC $IMG -d $KEY1 $FAST_PBKDF_ARGON -q 2>/dev/null && fail
+$REENC $IMG -d $KEY1 -S 0 $FAST_PBKDF_ARGON -q || fail
 check_hash "" $HASH5
 check_slot 0 || fail "Only keyslot 0 expected to be enabled"
-$REENC $LOOPDEV1 -d $KEY1 $FAST_PBKDF_ARGON -q || fail
-$CRYPTSETUP luksDump $LOOPDEV1 | grep -q "luks2" > /dev/null || fail
+$REENC $IMG -d $KEY1 $FAST_PBKDF_ARGON -q || fail
+$CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
 # FIXME echo $PWD1 | $REENC ...
 
 echo "[4] Encryption of not yet encrypted device"
 # well, movin' zeroes :-)
 OFFSET=8192 # default LUKS2 header size
-SIZE=$(blockdev --getsz $LOOPDEV1)
-wipe_dev $LOOPDEV1
-dmsetup create $DEV_NAME2 --table "0 $(($SIZE - $OFFSET)) linear $LOOPDEV1 0" || fail
-check_hash_dev /dev/mapper/$DEV_NAME2 $HASH5
-dmsetup remove $DEV_NAME2 || fail
-echo $PWD1 | $REENC --type luks2 $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --reduce-device-size "$OFFSET"S -q $FAST_PBKDF_ARGON
+prepare 8192
+check_hash_dev $IMG $HASH4
+echo $PWD1 | $REENC --type luks2 $IMG -c aes-cbc-essiv:sha256 -s 128 --new --reduce-device-size "$OFFSET"S -q $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
-$CRYPTSETUP luksDump $LOOPDEV1 | grep -q "luks2" > /dev/null || fail
+$CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
 
 echo "[5] Reencryption using specific keyslot"
-echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 1 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 2 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 3 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 4 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 5 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 6 $LOOPDEV1 || fail
-echo -e "$PWD2\n$PWD3" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 22 $LOOPDEV1 || fail
+echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 1 $IMG || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 2 $IMG || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 3 $IMG || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 4 $IMG || fail
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 5 $IMG || fail
+echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 6 $IMG || fail
+echo -e "$PWD2\n$PWD3" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON -S 22 $IMG || fail
 backup_orig
-echo $PWD2 | $REENC $FAST_PBKDF_ARGON -S 0 -q $LOOPDEV1 || fail
+echo $PWD2 | $REENC $FAST_PBKDF_ARGON -S 0 -q $IMG || fail
 check_slot 0 || fail "Only keyslot 0 expected to be enabled"
 wipe $PWD2
 rollback
-echo $PWD1 | $REENC $FAST_PBKDF_ARGON -S 1 -q $LOOPDEV1 || fail
+echo $PWD1 | $REENC $FAST_PBKDF_ARGON -S 1 -q $IMG || fail
 check_slot 1 || fail "Only keyslot 1 expected to be enabled"
 wipe $PWD1
 rollback
-echo $PWD2 | $REENC $FAST_PBKDF_ARGON -S 6 -q $LOOPDEV1 || fail
+echo $PWD2 | $REENC $FAST_PBKDF_ARGON -S 6 -q $IMG || fail
 check_slot 6 || fail "Only keyslot 6 expected to be enabled"
 wipe $PWD2
 rollback
-echo $PWD3 | $REENC $FAST_PBKDF_ARGON -S 22 -q $LOOPDEV1 || fail
+echo $PWD3 | $REENC $FAST_PBKDF_ARGON -S 22 -q $IMG || fail
 check_slot 22 || fail "Only keyslot 22 expected to be enabled"
 wipe $PWD3
 rollback
 
 echo "[6] Reencryption using all active keyslots"
-echo -e "$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD3" | $REENC -q $LOOPDEV1 $FAST_PBKDF_ARGON || fail
+echo -e "$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD1\n$PWD2\n$PWD3" | $REENC -q $IMG $FAST_PBKDF_ARGON || fail
 check_slot 0 1 2 3 4 5 6 22 || fail "All keyslots expected to be enabled"
 
 echo "[7] Reencryption of block devices with different block size"
@@ -314,33 +302,33 @@ simple_scsi_reenc "[4096/512 sector]"
 echo "[OK]"
 
 echo "[8] Header only reencryption (hash and iteration time)"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --pbkdf pbkdf2 --pbkdf-force-iterations 999 2>/dev/null && fail
+echo $PWD1 | $REENC $IMG -q --keep-key --pbkdf pbkdf2 --pbkdf-force-iterations 999 2>/dev/null && fail
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --pbkdf-force-iterations 3 2>/dev/null && fail
+echo $PWD1 | $REENC $IMG -q --keep-key --pbkdf-force-iterations 3 2>/dev/null && fail
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --pbkdf-force-iterations 4 --pbkdf-memory 31 2>/dev/null && fail
+echo $PWD1 | $REENC $IMG -q --keep-key --pbkdf-force-iterations 4 --pbkdf-memory 31 2>/dev/null && fail
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --pbkdf pbkdf2 --pbkdf-force-iterations 1000 --hash sha512
+echo $PWD1 | $REENC $IMG -q --keep-key --pbkdf pbkdf2 --pbkdf-force-iterations 1000 --hash sha512
 check_hash $PWD1 $HASH5
-[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A4 -m1 "0: luks2" | grep PBKDF: | sed -e 's/[[:space:]]\+PBKDF:\ \+//g')" = "pbkdf2" ] || fail
-[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A5 -m1 "0: luks2" | grep Hash:  | sed -e 's/[[:space:]]\+Hash:\ \+//g')" = "sha512" ] || fail
-echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key $FAST_PBKDF_ARGON
+[ "$($CRYPTSETUP luksDump $IMG | grep -A4 -m1 "0: luks2" | grep PBKDF: | sed -e 's/[[:space:]]\+PBKDF:\ \+//g')" = "pbkdf2" ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A5 -m1 "0: luks2" | grep Hash:  | sed -e 's/[[:space:]]\+Hash:\ \+//g')" = "sha512" ] || fail
+echo $PWD1 | $REENC $IMG -q --keep-key $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
-[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A4 -m1 "0: luks2" | grep PBKDF:      | sed -e 's/[[:space:]]\+PBKDF:\ \+//g')" = $DEFAULT_ARGON ] || fail
-[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A5 -m1 "0: luks2" | grep "Time cost" | sed -e 's/[[:space:]]\+Time\ cost:\ \+//g')" -eq 4 ] || fail
-[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A6 -m1 "0: luks2" | grep Memory      | sed -e 's/[[[:space:]]\+Memory:\ \+//g')" -eq 32 ] || fail
-[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A7 -m1 "0: luks2" | grep Threads     | sed -e 's/[[[:space:]]\+Threads:\ \+//g')" -eq 1 ] || fail
-echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey -S21 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
-echo $PWD2 | $REENC -S21 -q --keep-key --pbkdf pbkdf2 --pbkdf-force-iterations 1000 $LOOPDEV1 || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A4 -m1 "0: luks2" | grep PBKDF:      | sed -e 's/[[:space:]]\+PBKDF:\ \+//g')" = $DEFAULT_ARGON ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A5 -m1 "0: luks2" | grep "Time cost" | sed -e 's/[[:space:]]\+Time\ cost:\ \+//g')" -eq 4 ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A6 -m1 "0: luks2" | grep Memory      | sed -e 's/[[[:space:]]\+Memory:\ \+//g')" -eq 32 ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A7 -m1 "0: luks2" | grep Threads     | sed -e 's/[[[:space:]]\+Threads:\ \+//g')" -eq 1 ] || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey -S21 $FAST_PBKDF_ARGON $IMG || fail
+echo $PWD2 | $REENC -S21 -q --keep-key --pbkdf pbkdf2 --pbkdf-force-iterations 1000 $IMG || fail
 check_hash $PWD2 $HASH5
 check_slot 21 || fail "Only keyslot 21 expected to be enabled"
-$CRYPTSETUP luksDump $LOOPDEV1 | grep -q "luks2" > /dev/null || fail
+$CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
 
 echo "[9] Test log I/Os on various underlaying block devices"
-echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG || fail
 add_scsi_device sector_size=512 dev_size_mb=32
 test_logging "[512 sector]" || fail
 add_scsi_device sector_size=4096 dev_size_mb=32
@@ -350,59 +338,59 @@ test_logging "[4096/512 sector]" || fail
 test_logging_tmpfs || fail
 
 echo "[10] Removal of encryption"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt
-check_hash_dev $LOOPDEV1 $HASH4
+echo $PWD1 | $REENC $IMG -q --decrypt
+check_hash_dev $IMG $HASH4
 
 echo "[11] Reencryption with tokens"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
-echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey -S23 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
-echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey -S1 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
-echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey -S3 $FAST_PBKDF_ARGON $LOOPDEV1 || fai
-$CRYPTSETUP token add --key-description key-name0 --key-slot 23 --token-id 0 $LOOPDEV1
-$CRYPTSETUP token add --key-description key-name2 --key-slot 1 --token-id 2 $LOOPDEV1
-$CRYPTSETUP token add --key-description key-name31 --token-id 31 $LOOPDEV1
-echo $PWD1 | $CRYPTSETUP -q luksKillSlot $LOOPDEV1 3 || fail
-echo $PWD2 | $REENC $FAST_PBKDF_ARGON -S 23 -q $LOOPDEV1 || fail
-$CRYPTSETUP luksDump $LOOPDEV1 | grep "0: luks2-keyring" >/dev/null || fail
-[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A2 -m1 "0: luks2-keyring" | grep Keyslot: | sed -e 's/[[[:space:]]\+Keyslot:\ \+//g')" -eq 23 ] || fail
-$CRYPTSETUP luksDump $LOOPDEV1 | grep "2: luks2-keyring" >/dev/null || fail
-$CRYPTSETUP luksDump $LOOPDEV1 | grep "31: luks2-keyring" >/dev/null || fail
-[ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A2 -m1 "31: luks2-keyring" | grep Keyslot: | sed -e 's/[[[:space:]]\+Keyslot:\ \+//g')" -eq 23 ] || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey -S23 $FAST_PBKDF_ARGON $IMG || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey -S1 $FAST_PBKDF_ARGON $IMG || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey -S3 $FAST_PBKDF_ARGON $IMG || fai
+$CRYPTSETUP token add --key-description key-name0 --key-slot 23 --token-id 0 $IMG
+$CRYPTSETUP token add --key-description key-name2 --key-slot 1 --token-id 2 $IMG
+$CRYPTSETUP token add --key-description key-name31 --token-id 31 $IMG
+echo $PWD1 | $CRYPTSETUP -q luksKillSlot $IMG 3 || fail
+echo $PWD2 | $REENC $FAST_PBKDF_ARGON -S 23 -q $IMG || fail
+$CRYPTSETUP luksDump $IMG | grep "0: luks2-keyring" >/dev/null || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A2 -m1 "0: luks2-keyring" | grep Keyslot: | sed -e 's/[[[:space:]]\+Keyslot:\ \+//g')" -eq 23 ] || fail
+$CRYPTSETUP luksDump $IMG | grep "2: luks2-keyring" >/dev/null || fail
+$CRYPTSETUP luksDump $IMG | grep "31: luks2-keyring" >/dev/null || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A2 -m1 "31: luks2-keyring" | grep Keyslot: | sed -e 's/[[[:space:]]\+Keyslot:\ \+//g')" -eq 23 ] || fail
 
 echo "[12] Reencryption with persistent flags"
 dm_crypt_features
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
-echo $PWD1 | $CRYPTSETUP open $LOOPDEV1 $DEV_NAME $ALLOW_DISCARDS $PERF_CPU --persistent || fail
+echo $PWD1 | $CRYPTSETUP open $IMG $DEV_NAME $ALLOW_DISCARDS $PERF_CPU --persistent || fail
 $CRYPTSETUP close $DEV_NAME || fail
-echo $PWD1 | $REENC $FAST_PBKDF_ARGON -q $LOOPDEV1 || fail
+echo $PWD1 | $REENC $FAST_PBKDF_ARGON -q $IMG || fail
 if [ -n "$PERF_CPU" ]; then
-	$CRYPTSETUP luksDump $LOOPDEV1 | grep -m1 Flags: | grep same-cpu-crypt > /dev/null || fail
+	$CRYPTSETUP luksDump $IMG | grep -m1 Flags: | grep same-cpu-crypt > /dev/null || fail
 fi
 if [ -n "$ALLOW_DISCARDS" ]; then
-	$CRYPTSETUP luksDump $LOOPDEV1 | grep -m1 Flags: | grep allow-discards > /dev/null || fail
+	$CRYPTSETUP luksDump $IMG | grep -m1 Flags: | grep allow-discards > /dev/null || fail
 fi
 
 echo "[13] Detached header - adding encryption/reencryption/decryption"
 prepare 8192
 check_hash_dev $IMG $HASH4
-echo $PWD1 | $REENC --type luks2 $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new
+echo $PWD1 | $REENC --type luks2 $IMG -q $FAST_PBKDF --header $IMG_HDR --new
 check_hash $PWD1 $HASH4 $IMG_HDR
-echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR
+echo $PWD1 | $REENC $IMG -q $FAST_PBKDF --header $IMG_HDR
 check_hash $PWD1 $HASH4 $IMG_HDR
-echo $PWD1 | $REENC $LOOPDEV1 -q --header $IMG_HDR --decrypt
+echo $PWD1 | $REENC $IMG -q --header $IMG_HDR --decrypt
 check_hash_dev $IMG $HASH4
 # existing header of zero size
 cat /dev/null >$IMG_HDR
-echo $PWD1 | $REENC --type luks2 $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new
+echo $PWD1 | $REENC --type luks2 $IMG -q $FAST_PBKDF --header $IMG_HDR --new
 check_hash $PWD1 $HASH4 $IMG_HDR
-$CRYPTSETUP isLuks $LOOPDEV1 && fail
+$CRYPTSETUP isLuks $IMG && fail
 $CRYPTSETUP isLuks $IMG_HDR || fail
 $CRYPTSETUP luksDump $IMG_HDR | grep -q "0: luks2" || fail
 
