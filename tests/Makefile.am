@@ -13,7 +13,8 @@ TESTS = api-test \
 	keyring-test \
 	keyring-compat-test \
 	luks2-validation-test \
-	luks2-integrity-test
+	luks2-integrity-test \
+	vectors-test
 
 if VERITYSETUP
 TESTS += verity-compat-test
@@ -79,7 +80,13 @@ api_test_2_LDFLAGS = $(AM_LDFLAGS) -static
 api_test_2_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib/ -I$(top_srcdir)/lib/luks1
 api_test_2_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
-check_PROGRAMS = api-test api-test-2 differ
+vectors_test_SOURCES = crypto-vectors.c
+vectors_test_LDADD = @CRYPTO_LIBS@ @LIBARGON2_LIBS@ ../libcrypto_backend.la
+vectors_test_LDFLAGS = $(AM_LDFLAGS) -static
+vectors_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/crypto_backend/ @CRYPTO_CFLAGS@
+vectors_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
+
+check_PROGRAMS = api-test api-test-2 differ vectors-test
 
 conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz
