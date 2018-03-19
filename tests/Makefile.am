@@ -81,7 +81,7 @@ api_test_2_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib/ -I$(top_srcdi
 api_test_2_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 vectors_test_SOURCES = crypto-vectors.c
-vectors_test_LDADD = @CRYPTO_LIBS@ @LIBARGON2_LIBS@ ../libcrypto_backend.la
+vectors_test_LDADD = ../libcrypto_backend.la @CRYPTO_LIBS@ @LIBARGON2_LIBS@
 vectors_test_LDFLAGS = $(AM_LDFLAGS) -static
 vectors_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/crypto_backend/ @CRYPTO_CFLAGS@
 vectors_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
