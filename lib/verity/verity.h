@@ -59,9 +59,11 @@ int VERITY_create(struct crypt_device *cd,
 		  char *root_hash,
 		  size_t root_hash_size);
 
-int VERITY_FEC_create(struct crypt_device *cd,
+int VERITY_FEC_process(struct crypt_device *cd,
 		      struct crypt_params_verity *params,
-		      struct device *fec_device);
+		      struct device *fec_device,
+		      int check_fec,
+		      unsigned int *errors);
 
 uint64_t VERITY_hash_offset_block(struct crypt_params_verity *params);
 
