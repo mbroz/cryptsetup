@@ -121,8 +121,6 @@ int LUKS2_digest_verify(struct crypt_device *cd,
 	int digest, r;
 
 	digest = LUKS2_digest_by_keyslot(cd, hdr, keyslot);
-	if (digest == -ENOENT)
-		return 0;
 	if (digest < 0)
 		return digest;
 
