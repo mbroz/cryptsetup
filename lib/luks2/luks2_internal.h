@@ -46,7 +46,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr,
  */
 json_object *LUKS2_get_keyslot_jobj(struct luks2_hdr *hdr, int keyslot);
 json_object *LUKS2_get_token_jobj(struct luks2_hdr *hdr, int token);
-json_object *LUKS2_get_digest_jobj(struct luks2_hdr *hdr, int keyslot);
+json_object *LUKS2_get_digest_jobj(struct luks2_hdr *hdr, int digest);
 json_object *LUKS2_get_segment_jobj(struct luks2_hdr *hdr, int segment);
 
 void hexprint_base64(struct crypt_device *cd, json_object *jobj,
