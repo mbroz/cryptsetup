@@ -220,6 +220,12 @@ static int LUKS2_open_and_verify(struct crypt_device *cd,
 	if (!(h = LUKS2_keyslot_handler(cd, keyslot)))
 		return -ENOENT;
 
+	r = h->validate(cd, keyslot);
+	if (r) {
+		log_dbg("Keyslot %d validation failed.", keyslot);
+		return r;
+	}
+
 	r = LUKS2_keyslot_for_segment(hdr, keyslot, segment);
 	if (r) {
 		if (r == -ENOENT)
