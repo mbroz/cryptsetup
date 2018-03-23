@@ -205,6 +205,7 @@ echo $PWD1 | $CRYPTSETUP $FAST_PBKDF_OPT -h sha512 -c aes-cbc-essiv:sha256 -s 12
 prepare "[5] open"
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --test-passphrase || fail
 echo $PWDW | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --test-passphrase 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 check_exists
 
@@ -216,6 +217,7 @@ echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 # Unsuccessful Key Delete - nothing may change
 prepare "[7] unsuccessful delete"
 echo $PWDW | $CRYPTSETUP luksKillSlot $LOOPDEV 1 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksKillSlot should return EPERM exit code"
 #FIXME
 #$CRYPTSETUP -q luksKillSlot $LOOPDEV 8 2>/dev/null && fail
 #$CRYPTSETUP -q luksKillSlot $LOOPDEV 7 2>/dev/null && fail
@@ -225,6 +227,7 @@ echo $PWDW | $CRYPTSETUP luksKillSlot $LOOPDEV 1 2>/dev/null && fail
 prepare "[8] successful delete"
 $CRYPTSETUP -q luksKillSlot $LOOPDEV 1 || fail
 echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME 2> /dev/null && fail
+[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 
 # Key Slot 1 and key material section 1 must change, the rest must not
@@ -352,6 +355,7 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2" || fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2" && fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY1 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksRemoveKey should return EPERM exit code"
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 --keyfile-size 1 2>/dev/null && fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "4: luks2" || fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 || fail
@@ -497,6 +501,7 @@ $CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT -l 13 --new-keyfi
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 2>/dev/null && fail
 $CRYPTSETUP luksRemoveKey $LOOPDEV $KEY2 -l 12 || fail
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksChangeKey should return EPERM exit code"
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 -l 14 2>/dev/null && fail
 $CRYPTSETUP luksChangeKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT -l 13 || fail
 # -l is ignored for stdin if _only_ passphrase is used
@@ -537,7 +542,8 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || 
 echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
 $CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
-echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME -T 1 2>/dev/null && fail
+echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksResume should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
 

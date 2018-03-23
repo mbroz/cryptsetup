@@ -1122,7 +1122,7 @@ static int action_open_luks(void)
 		if (r >= 0 || opt_token_only)
 			goto out;
 
-		tries = (opt_key_file && !tools_is_stdin(opt_key_file)) ? 1 : opt_tries;
+		tries = (tools_is_stdin(opt_key_file) && isatty(STDIN_FILENO)) ? opt_tries : 1;
 		do {
 			r = tools_get_key(NULL, &password, &passwordLen,
 					opt_keyfile_offset, opt_keyfile_size, opt_key_file,
@@ -1590,7 +1590,7 @@ static int action_luksResume(void)
 	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
 		goto out;
 
-	tries = (opt_key_file && !tools_is_stdin(opt_key_file)) ? 1 : opt_tries;
+	tries = (tools_is_stdin(opt_key_file) && isatty(STDIN_FILENO)) ? opt_tries : 1;
 	do {
 		r = tools_get_key(NULL, &password, &passwordLen,
 			opt_keyfile_offset, opt_keyfile_size, opt_key_file,

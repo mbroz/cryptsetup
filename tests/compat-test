@@ -174,6 +174,7 @@ echo "[1] format"
 echo $PWD1 | $CRYPTSETUP luksFormat $IMG $FAST_PBKDF_OPT || fail
 echo "[2] open"
 echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase || fail
 echo "[3] add key"
 echo $PWD1 | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT && fail
@@ -182,14 +183,18 @@ echo -e "$PWD0\n$PWD1" | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT 2>/dev/null
 echo "[4] change key"
 echo -e "$PWD1\n$PWD0\n" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT $IMG || fail
 echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT $IMG 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksChangeKey should return EPERM exit code"
 echo "[5] remove key"
 # delete active keys PWD0, PWD2
 echo $PWD1 | $CRYPTSETUP luksRemoveKey $IMG 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksRemove should return EPERM exit code"
 echo $PWD0 | $CRYPTSETUP luksRemoveKey $IMG || fail
 echo $PWD2 | $CRYPTSETUP luksRemoveKey $IMG || fail
 # check if keys were deleted
 echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo $PWD2 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo "[6] kill slot"
 # format new luks device with active keys PWD1, PWD2
 echo $PWD1 | $CRYPTSETUP luksFormat $IMG $FAST_PBKDF_OPT || fail
@@ -202,6 +207,7 @@ echo $PWD1 | $CRYPTSETUP -q luksKillSlot $IMG 0 2>/dev/null && fail
 echo $PWD2 | $CRYPTSETUP -q luksKillSlot $IMG 0 || fail
 $CRYPTSETUP luksDump $IMG | grep -q "Key Slot 0: DISABLED" || fail
 echo $PWD1 | $CRYPTSETUP -q luksKillSlot $IMG 1 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksKill should return EPERM exit code"
 echo $PWD2 | $CRYPTSETUP -q luksKillSlot $IMG 1 || fail
 $CRYPTSETUP luksDump $IMG | grep -q "Key Slot 1: DISABLED" || fail
 # check if keys were deactivated
@@ -617,7 +623,8 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT $LOOPDEV || fail
 echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
 $CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
-echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME -T 1 2>/dev/null && fail
+echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksResume should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
 
