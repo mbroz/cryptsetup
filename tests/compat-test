@@ -639,9 +639,9 @@ check_exists
 $CRYPTSETUP luksClose $DEV_NAME || fail
 echo -e "$PWD3\n$PWD1" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 0 $LOOPDEV || fail
 check $LUKS_HEADER $KEY_SLOT0 $KEY_MATERIAL0
-echo $PWD3 | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME && fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
-echo $PWD1 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME && fail
+echo $PWD1 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 # second, try it with keyfiles
 $CRYPTSETUP luksFormat -q -S 5 -d $KEY5 $LOOPDEV || fail
@@ -651,9 +651,9 @@ check $LUKS_HEADER $KEY_SLOT1 $KEY_MATERIAL1
 $CRYPTSETUP luksOpen -S 5 -d $KEY5 $LOOPDEV $DEV_NAME || fail
 check_exists
 $CRYPTSETUP luksClose $DEV_NAME || fail
-$CRYPTSETUP luksOpen -S 1 -d $KEY5 $LOOPDEV $DEV_NAME && fail
+$CRYPTSETUP luksOpen -S 1 -d $KEY5 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
-$CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME && fail
+$CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 
 prepare "[28] Detached LUKS header" wipe

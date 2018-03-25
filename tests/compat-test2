@@ -367,7 +367,7 @@ echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 --key-file=- 2>/dev/null && f
 echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 --key-file=- -q 2>/dev/null && fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" || fail
 # kill slot using passphrase from 1
-echo $PWD2 | $CRYPTSETUP luksKillSlot $LOOPDEV 2 || fail
+echo $PWD2 | $CRYPTSETUP luksKillSlot $LOOPDEV 2 2>/dev/null || fail #XXX
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" && fail
 # remove key0 / slot 0
 echo $PWD1 | $CRYPTSETUP luksRemoveKey $LOOPDEV || fail
@@ -556,9 +556,9 @@ echo $PWD3 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME || fail
 check_exists
 $CRYPTSETUP luksClose $DEV_NAME || fail
 echo -e "$PWD3\n$PWD1" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 0 $LOOPDEV || fail
-echo $PWD3 | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME && fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
-echo $PWD1 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME && fail
+echo $PWD1 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 # second, try it with keyfiles
 $CRYPTSETUP luksFormat -q -S 5 $FAST_PBKDF_OPT -d $KEY5 --type luks2 $LOOPDEV || fail
@@ -566,9 +566,9 @@ $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 1 -d $KEY5 $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -S 5 -d $KEY5 $LOOPDEV $DEV_NAME || fail
 check_exists
 $CRYPTSETUP luksClose $DEV_NAME || fail
-$CRYPTSETUP luksOpen -S 1 -d $KEY5 $LOOPDEV $DEV_NAME && fail
+$CRYPTSETUP luksOpen -S 1 -d $KEY5 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
-$CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME && fail
+$CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 # test keyslot not assigned to segment is unable to unlock volume
 # otoh it should be allowed to test for proper passphrase
@@ -578,7 +578,7 @@ echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 echo $PWD1 | $CRYPTSETUP open $HEADER_KEYU $DEV_NAME && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
-echo $PWD0 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU $DEV_NAME && fail
+echo $PWD0 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksKillSlot -q $HEADER_KEYU 0
 $CRYPTSETUP luksDump $HEADER_KEYU | grep -q "0: luks2" && fail
 echo $PWD1 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU || fail
@@ -689,7 +689,7 @@ if [ $HAVE_KEYRING -gt 0 ]; then
 	$CRYPTSETUP open --token-only $LOOPDEV --test-passphrase && fail
 	# wrong passphrase
 	load_key user $TEST_TOKEN0 "blabla" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
-	$CRYPTSETUP open --token-only $LOOPDEV --test-passphrase && fail
+	$CRYPTSETUP open --token-only $LOOPDEV --test-passphrase 2>/dev/null && fail
 	load_key user $TEST_TOKEN0 $PWD1 "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
 	$CRYPTSETUP open --token-only $LOOPDEV --test-passphrase || fail
 	$CRYPTSETUP open --token-only $LOOPDEV $DEV_NAME || fail
@@ -710,13 +710,13 @@ echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $LOOPDEV $FAST_PBKDF_OPT -S 5 ||
 $CRYPTSETUP config $LOOPDEV -S 0 --priority prefer && fail
 $CRYPTSETUP config $LOOPDEV -S 1 --priority bla >/dev/null 2>&1 && fail
 $CRYPTSETUP config $LOOPDEV -S 1 --priority ignore || fail
-echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase && fail
+echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase -S 1 || fail
 echo $PWD2 | $CRYPTSETUP open $LOOPDEV --test-passphrase || fail
 $CRYPTSETUP config $LOOPDEV -S 1 --priority normal || fail
 echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase || fail
 $CRYPTSETUP config $LOOPDEV -S 1 --priority ignore || fail
-echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase && fail
+echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase 2>/dev/null && fail
 
 prepare "[35] LUKS label and subsystem" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail

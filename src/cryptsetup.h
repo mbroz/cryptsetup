@@ -87,6 +87,7 @@ int tools_get_key(const char *prompt,
 		  const char *key_file,
 		  int timeout, int verify, int pwquality,
 		  struct crypt_device *cd);
+void tools_passphrase_msg(int r);
 int tools_is_stdin(const char *key_file);
 int tools_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size);
 int tools_is_cipher_null(const char *cipher);

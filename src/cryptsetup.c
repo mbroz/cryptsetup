@@ -518,7 +518,7 @@ static int action_resize(void)
 					goto out;
 
 				r = crypt_activate_by_passphrase(cd, NULL, opt_key_slot, password, passwordLen, CRYPT_ACTIVATE_KEYRING_KEY);
-
+				tools_passphrase_msg(r);
 				crypt_safe_free(password);
 			}
 		}
@@ -1132,8 +1132,8 @@ static int action_open_luks(void)
 
 			r = crypt_activate_by_passphrase(cd, activated_name,
 				opt_key_slot, password, passwordLen, activate_flags);
+			tools_passphrase_msg(r);
 			check_signal(&r);
-
 			crypt_safe_free(password);
 			password = NULL;
 		} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
@@ -1197,9 +1197,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot,
 	/* Handle inactive keyslots the same as bad password here */
 	if (r == -ENOENT)
 		r = -EPERM;
-
-	if (r == -EPERM)
-		log_err(_("No key available with this passphrase.\n"));
+	tools_passphrase_msg(r);
 out:
 	crypt_safe_free(password);
 	return r;
@@ -1278,6 +1276,7 @@ static int action_luksRemoveKey(void)
 
 	r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT,
 					 password, passwordLen, 0);
+	tools_passphrase_msg(r);
 	check_signal(&r);
 	if (r < 0)
 		goto out;
@@ -1353,6 +1352,7 @@ static int action_luksAddKey(void)
 		r = crypt_keyslot_add_by_keyfile_device_offset(cd, opt_key_slot,
 			opt_key_file, opt_keyfile_size, opt_keyfile_offset,
 			opt_new_key_file, opt_new_keyfile_size, opt_new_keyfile_offset);
+		tools_passphrase_msg(r);
 	} else {
 		r = tools_get_key(_("Enter any existing passphrase: "),
 			      &password, &password_size,
@@ -1366,6 +1366,7 @@ static int action_luksAddKey(void)
 		r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT,
 						 password, password_size, 0);
 		check_signal(&r);
+		tools_passphrase_msg(r);
 		if (r < 0)
 			goto out;
 
@@ -1422,6 +1423,7 @@ static int action_luksChangeKey(void)
 	/* Check password before asking for new one */
 	r = crypt_activate_by_passphrase(cd, NULL, opt_key_slot,
 					 password, password_size, 0);
+	tools_passphrase_msg(r);
 	check_signal(&r);
 	if (r < 0)
 		goto out;
@@ -1471,6 +1473,7 @@ static int action_luksConvertKey(void)
 
 	r = crypt_keyslot_change_by_passphrase(cd, opt_key_slot, opt_key_slot,
 			password, password_size, password, password_size);
+	tools_passphrase_msg(r);
 out:
 	crypt_safe_free(password);
 	crypt_free(cd);
@@ -1553,6 +1556,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 
 	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size,
 				 password, passwordLen);
+	tools_passphrase_msg(r);
 	check_signal(&r);
 	if (r < 0)
 		goto out;
@@ -1634,6 +1638,7 @@ static int action_luksResume(void)
 
 		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
 					       password, passwordLen);
+		tools_passphrase_msg(r);
 		check_signal(&r);
 
 		crypt_safe_free(password);

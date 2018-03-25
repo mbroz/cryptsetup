@@ -1224,7 +1224,7 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 			rc->p[r].passwordLen = passwordLen;
 			break;
 		}
-		log_err(_("No key available with this passphrase.\n"));
+		tools_passphrase_msg(r);
 	}
 
 	password = NULL;
@@ -1260,8 +1260,7 @@ static int init_keyfile(struct reenc_ctx *rc, struct crypt_device *cd, int slot_
 
 	if (r < 0) {
 		crypt_safe_free(password);
-		if (r == -EPERM)
-			log_err(_("No key available with this passphrase.\n"));
+		tools_passphrase_msg(r);
 	} else {
 		rc->keyslot = r;
 		rc->p[r].password = password;

@@ -1061,7 +1061,6 @@ int LUKS_open_key_with_hdr(int keyIndex,
 			return r;
 	}
 	/* Warning, early returns above */
-	log_err(ctx, _("No key available with this passphrase.\n"));
 	return -EPERM;
 }
 

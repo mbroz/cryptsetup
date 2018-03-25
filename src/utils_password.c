@@ -297,3 +297,9 @@ int tools_get_key(const char *prompt,
 
 	return r;
 }
+
+void tools_passphrase_msg(int r)
+{
+	if (r == -EPERM)
+		log_err(_("No key available with this passphrase.\n"));
+}
