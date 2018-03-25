@@ -495,39 +495,44 @@ static int action_resize(void)
 	struct crypt_device *cd = NULL;
 
 	r = crypt_init_by_name_and_header(&cd, action_argv[0], opt_header_device);
-	if (r == 0) {
-		r = crypt_get_active_device(cd, action_argv[0], &cad);
+	if (r)
+		goto out;
 
-		if (!r && (cad.flags & CRYPT_ACTIVATE_KEYRING_KEY)) {
-			if (opt_disable_keyring) {
-				r = -EINVAL;
-				log_err(_("Resize of active device requires volume key in keyring but --disable-keyring option is set.\n"));
+	/* FIXME: resize of LUKS2 in metadata? */
+	r = crypt_get_active_device(cd, action_argv[0], &cad);
+	if (r)
+		goto out;
+
+	if (cad.flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+		if (opt_disable_keyring) {
+			r = -EINVAL;
+			log_err(_("Resize of active device requires volume key "
+				  "in keyring but --disable-keyring option is set.\n"));
 				goto out;
-			}
-
-			/* try load VK in kernel keyring using token */
-			r = crypt_activate_by_token(cd, NULL, opt_token, NULL, CRYPT_ACTIVATE_KEYRING_KEY);
-			if (r < 0) {
-				if (opt_token_only)
-					goto out;
-
-				r = tools_get_key(NULL, &password, &passwordLen,
-						  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
-						  opt_timeout, _verify_passphrase(0), 0, cd);
-				if (r < 0)
-					goto out;
-
-				r = crypt_activate_by_passphrase(cd, NULL, opt_key_slot, password, passwordLen, CRYPT_ACTIVATE_KEYRING_KEY);
-				tools_passphrase_msg(r);
-				crypt_safe_free(password);
-			}
 		}
 
-		if (r >= 0)
-			r = crypt_resize(cd, action_argv[0], opt_size);
-	}
-out:
+		/* try load VK in kernel keyring using token */
+		r = crypt_activate_by_token(cd, NULL, opt_token, NULL,
+					    CRYPT_ACTIVATE_KEYRING_KEY);
+		if (r < 0 && opt_token_only)
+			goto out;
 
+		r = tools_get_key(NULL, &password, &passwordLen,
+				  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+				  opt_timeout, _verify_passphrase(0), 0, cd);
+		if (r < 0)
+			goto out;
+
+		r = crypt_activate_by_passphrase(cd, NULL, opt_key_slot,
+						 password, passwordLen,
+						 CRYPT_ACTIVATE_KEYRING_KEY);
+		tools_passphrase_msg(r);
+		crypt_safe_free(password);
+	}
+
+	if (r >= 0)
+		r = crypt_resize(cd, action_argv[0], opt_size);
+out:
 	crypt_free(cd);
 	return r;
 }
