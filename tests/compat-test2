@@ -754,5 +754,20 @@ echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2i -i 500 --pbkdf-
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 -i 500 $LOOPDEV || fail
 [ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep -m1 "Iterations:" | cut -d' ' -f 2 | sed -e 's/\ //g')" -gt 1000 ] || fail
 
+prepare "[37] LUKS Keyslot convert" wipe
+$CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks1 $LOOPDEV $KEY5 --key-slot 5 || fail
+$CRYPTSETUP -q luksConvertKey $LOOPDEV --key-file $KEY5 && fail
+$CRYPTSETUP -q convert --type luks2 $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
+$CRYPTSETUP -q luksConvertKey $LOOPDEV -S 5 --key-file $KEY5 --pbkdf argon2i -i1 --pbkdf-memory 32 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV -S 1 --key-file $KEY5 || fail
+$CRYPTSETUP -q luksKillSlot $LOOPDEV 5 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
+echo $PWD1 | $CRYPTSETUP -q luksConvertKey $LOOPDEV -S 1 --pbkdf argon2i -i1 --pbkdf-memory 32 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
+
 remove_mapping
 exit 0
