@@ -185,6 +185,7 @@ static void _dm_set_verity_compat(unsigned verity_maj,
 	 * ignore_zero_blocks since 1.3 (kernel 4.5)
 	 * (but some dm-verity targets 1.2 don't support it)
 	 * FEC is added in 1.3 as well.
+	 * Check at most once is added in 1.4 (kernel 4.17).
 	 */
 	if (_dm_satisfies_version(1, 3, 0, verity_maj, verity_min, verity_patch)) {
 		_dm_flags |= DM_VERITY_ON_CORRUPTION_SUPPORTED;
@@ -622,6 +623,8 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS)
 		num_options++;
+	if (flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE)
+		num_options++;
 
 	if (dmd->u.verity.fec_device) {
 		num_options += 8;
@@ -633,10 +636,11 @@ static char *get_dm_verity_params(struct crypt_params_verity *vp,
 		*fec_features = '\0';
 
 	if (num_options)
-		snprintf(features, sizeof(features)-1, " %d%s%s%s", num_options,
+		snprintf(features, sizeof(features)-1, " %d%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? " ignore_corruption" : "",
 		(flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? " restart_on_corruption" : "",
-		(flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? " ignore_zero_blocks" : "");
+		(flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? " ignore_zero_blocks" : "",
+		(flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? " check_at_most_once" : "");
 	else
 		*features = '\0';
 
@@ -1221,7 +1225,8 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 
 	if (r == -EINVAL && dmd_flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
 					  CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
-					  CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) &&
+					  CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS|
+					  CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) &&
 	    !(dmt_flags & DM_VERITY_ON_CORRUPTION_SUPPORTED))
 		log_err(cd, _("Requested dm-verity data corruption handling options are not supported.\n"));
 
@@ -1684,6 +1689,8 @@ static int _dm_query_verity(uint32_t get_flags,
 				dmd->flags |= CRYPT_ACTIVATE_RESTART_ON_CORRUPTION;
 			else if (!strcasecmp(arg, "ignore_zero_blocks"))
 				dmd->flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
+			else if (!strcasecmp(arg, "check_at_most_once"))
+				dmd->flags |= CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE;
 			else if (!strcasecmp(arg, "use_fec_from_device")) {
 				str = strsep(&params, " ");
 				str2 = crypt_lookup_dev(str);

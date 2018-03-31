@@ -932,6 +932,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_RECOVERY (1 << 13)
 /** ignore persistently stored flags */
 #define CRYPT_ACTIVATE_IGNORE_PERSISTENT (1 << 14)
+/** dm-verity: check_at_most_once - check data blocks only the first time */
+#define CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE (1 << 15)
 
 /**
  * Active device runtime attributes

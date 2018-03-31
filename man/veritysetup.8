@@ -39,7 +39,8 @@ Creates a mapping with <name> backed by device <data_device> and using
 The <root_hash> is a hexadecimal string.
 
 \fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock,
-\-\-ignore-corruption or \-\-restart-on-corruption, \-\-ignore-zero-blocks]
+\-\-ignore-corruption or \-\-restart-on-corruption, \-\-ignore-zero-blocks,
+\-\-check-at-most-once]
 
 If option \-\-no-superblock is used, you have to use as the same options
 as in initial format operation.
@@ -132,6 +133,15 @@ and always directly return zeroes instead.
 
 \fBWARNING:\fR Use this option only in very specific cases.
 This option is available since Linux kernel version 4.5.
+.TP
+.B "\-\-check-at-most-once"
+Instruct kernel to verify blocks only the first time they are read
+from the data device, rather than every time.
+
+\fBWARNING:\fR It provides a reduced level of security because only
+offline tampering of the data device's content will be detected,
+not online tampering.
+This option is available since Linux kernel version 4.17.
 .TP
 .B "\-\-hash=hash"
 Hash algorithm for dm-verity. For default see \-\-help option.

@@ -367,7 +367,7 @@ echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 --key-file=- 2>/dev/null && f
 echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 2 --key-file=- -q 2>/dev/null && fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" || fail
 # kill slot using passphrase from 1
-echo $PWD2 | $CRYPTSETUP luksKillSlot $LOOPDEV 2 2>/dev/null || fail #XXX
+echo $PWD2 | $CRYPTSETUP luksKillSlot $LOOPDEV 2 2>/dev/null || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" && fail
 # remove key0 / slot 0
 echo $PWD1 | $CRYPTSETUP luksRemoveKey $LOOPDEV || fail
