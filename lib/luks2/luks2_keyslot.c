@@ -117,6 +117,21 @@ int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 	return num;
 }
 
+static int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd)
+{
+	const char *cipher = crypt_get_cipher(cd);
+
+	/* Keyslot is already authenticated; we cannot use integrity tags here */
+	if (crypt_get_integrity_tag_size(cd) || !cipher)
+		return 1;
+
+	/* protected AES (PAES) is a wrapped key scheme, not a block cipher */
+	if (!strncmp("paes", cipher, 4))
+		return 1;
+
+	return 0;
+}
+
 int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 	size_t key_size, struct luks2_keyslot_params *params)
 {
@@ -140,7 +155,7 @@ int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	/* set keyslot area encryption parameters */
 	/* short circuit authenticated encryption hardcoded defaults */
-	if (crypt_get_integrity_tag_size(cd) || key_size == 0) {
+	if (LUKS2_keyslot_cipher_incompatible(cd) || key_size == 0) {
 		// FIXME: fixed cipher and key size can be wrong
 		snprintf(params->area.raw.encryption, sizeof(params->area.raw.encryption),
 			 "aes-xts-plain64");
