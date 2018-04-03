@@ -47,6 +47,8 @@
 #define CRYPT_DEFAULT_SEGMENT 0
 #define CRYPT_DEFAULT_SEGMENT_STR "0"
 
+#define CRYPT_ANY_DIGEST -1
+
 /*
  * LUKS2 header on-disk.
  *

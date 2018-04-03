@@ -128,8 +128,6 @@ typedef struct  {
 
 const digest_handler *LUKS2_digest_handler_type(struct crypt_device *cd, const char *type);
 
-#define CRYPT_ANY_DIGEST -1
-
 /**
  * LUKS2 token handlers (internal use only)
  */
