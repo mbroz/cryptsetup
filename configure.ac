@@ -553,8 +553,11 @@ CS_NUM_WITH([verity-fec-roots],  [parity bytes for verity FEC], [2])
 
 CS_STR_WITH([tmpfilesdir], [override default path to directory with systemd temporary files], [])
 test -z "$with_tmpfilesdir" && with_tmpfilesdir=$systemd_tmpfilesdir
-test "x$with_tmpfilesdir" == "xno" || {
-	test "${with_tmpfilesdir:0:1}" = "/" || AC_MSG_ERROR([--with-tmpfilesdir argument must be an absolute path.])
+test "x$with_tmpfilesdir" = "xno" || {
+	case "${with_tmpfilesdir}" in
+		/*) ;;
+		*) AC_MSG_ERROR([--with-tmpfilesdir argument must be an absolute path.]);;
+	esac
 	DEFAULT_TMPFILESDIR=$with_tmpfilesdir
 	AC_SUBST(DEFAULT_TMPFILESDIR)
 }
@@ -563,7 +566,10 @@ AM_CONDITIONAL(CRYPTSETUP_TMPFILE, test -n "$DEFAULT_TMPFILESDIR")
 
 CS_STR_WITH([luks2-lock-path], [path to directory for LUKSv2 locks], [/run/cryptsetup])
 test -z "$with_luks2_lock_path" && with_luks2_lock_path=/run/cryptsetup
-test "${with_luks2_lock_path:0:1}" = "/" || AC_MSG_ERROR([--with-luks2-lock-path argument must be an absolute path.])
+case "${with_luks2_lock_path}" in
+	/*) ;;
+	*) AC_MSG_ERROR([--with-luks2-lock-path argument must be an absolute path.]);;
+esac
 DEFAULT_LUKS2_LOCK_PATH=$with_luks2_lock_path
 AC_SUBST(DEFAULT_LUKS2_LOCK_PATH)
 
