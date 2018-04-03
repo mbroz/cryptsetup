@@ -3345,8 +3345,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	size_t passphrase_size)
 {
 	struct volume_key *vk = NULL;
-	unsigned key_len;
-	int r = -EINVAL;
+	int key_len, r = -EINVAL;
 
 	if (crypt_fips_mode()) {
 		log_err(cd, _("Function not available in FIPS mode.\n"));
@@ -3356,7 +3355,14 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	if (!cd || !volume_key || !volume_key_size || (!isTCRYPT(cd->type) && !passphrase))
 		return -EINVAL;
 
-	key_len = crypt_get_volume_key_size(cd);
+	if (isLUKS2(cd->type) && keyslot != CRYPT_ANY_SLOT)
+		key_len = LUKS2_get_keyslot_key_size(&cd->u.luks2.hdr, keyslot);
+	else
+		key_len = crypt_get_volume_key_size(cd);
+
+	if (key_len < 0)
+		return -EINVAL;
+
 	if (key_len > *volume_key_size) {
 		log_err(cd, _("Volume key buffer too small.\n"));
 		return -ENOMEM;
@@ -3371,8 +3377,9 @@ int crypt_volume_key_get(struct crypt_device *cd,
 		r = LUKS_open_key_with_hdr(keyslot, passphrase,
 					passphrase_size, &cd->u.luks1.hdr, &vk, cd);
 	} else if (isLUKS2(cd->type)) {
-		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT, passphrase,
-					passphrase_size, &vk);
+		r = LUKS2_keyslot_open(cd, keyslot,
+				keyslot == CRYPT_ANY_SLOT ? CRYPT_DEFAULT_SEGMENT : CRYPT_ANY_SEGMENT,
+				passphrase, passphrase_size, &vk);
 	} else if (isTCRYPT(cd->type)) {
 		r = TCRYPT_get_volume_key(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params, &vk);
 	} else
