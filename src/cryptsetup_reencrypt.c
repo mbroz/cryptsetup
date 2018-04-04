@@ -1434,14 +1434,16 @@ static void destroy_context(struct reenc_ctx *rc)
 static int luks2_change_pbkdf_params(struct reenc_ctx *rc)
 {
 	int i, r;
-	struct crypt_device *cd;
+	struct crypt_device *cd = NULL;
 
 	if ((r = initialize_passphrase(rc, hdr_device(rc))))
 		return r;
 
 	if (crypt_init(&cd, hdr_device(rc)) ||
-	    crypt_load(cd, CRYPT_LUKS2, NULL))
-		return -EINVAL;
+	    crypt_load(cd, CRYPT_LUKS2, NULL)) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	if ((r = set_pbkdf_params(cd, CRYPT_LUKS2)))
 		goto out;
