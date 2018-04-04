@@ -492,6 +492,13 @@ AC_DEFUN([CS_NUM_WITH], [AC_ARG_WITH([$1],
 	[CS_DEFINE([$1], [$3], [$2])]
 )])
 
+AC_DEFUN([CS_ABSPATH], [
+	case "$1" in
+		/*) ;;
+		*) AC_MSG_ERROR([$2 argument must be an absolute path.]);;
+	esac
+])
+
 dnl ==========================================================================
 dnl Python bindings
 AC_ARG_ENABLE([python], AS_HELP_STRING([--enable-python],[enable Python bindings]),
@@ -554,22 +561,15 @@ CS_NUM_WITH([verity-fec-roots],  [parity bytes for verity FEC], [2])
 CS_STR_WITH([tmpfilesdir], [override default path to directory with systemd temporary files], [])
 test -z "$with_tmpfilesdir" && with_tmpfilesdir=$systemd_tmpfilesdir
 test "x$with_tmpfilesdir" = "xno" || {
-	case "${with_tmpfilesdir}" in
-		/*) ;;
-		*) AC_MSG_ERROR([--with-tmpfilesdir argument must be an absolute path.]);;
-	esac
+	CS_ABSPATH([${with_tmpfilesdir}],[with-tmpfilesdir])
 	DEFAULT_TMPFILESDIR=$with_tmpfilesdir
 	AC_SUBST(DEFAULT_TMPFILESDIR)
 }
 AM_CONDITIONAL(CRYPTSETUP_TMPFILE, test -n "$DEFAULT_TMPFILESDIR")
 
-
 CS_STR_WITH([luks2-lock-path], [path to directory for LUKSv2 locks], [/run/cryptsetup])
 test -z "$with_luks2_lock_path" && with_luks2_lock_path=/run/cryptsetup
-case "${with_luks2_lock_path}" in
-	/*) ;;
-	*) AC_MSG_ERROR([--with-luks2-lock-path argument must be an absolute path.]);;
-esac
+CS_ABSPATH([${with_luks2_lock_path}],[with-luks2-lock-path])
 DEFAULT_LUKS2_LOCK_PATH=$with_luks2_lock_path
 AC_SUBST(DEFAULT_LUKS2_LOCK_PATH)
 
