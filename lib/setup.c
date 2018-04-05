@@ -3164,6 +3164,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
 		if (r == -EPERM || r == -ENOENT)
 			log_err(cd, _("Volume key does not match the volume.\n"));
+		if (r > 0)
+			r = 0;
 
 		if (!r && (name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) &&
 		    crypt_use_keyring_for_vk(cd)) {

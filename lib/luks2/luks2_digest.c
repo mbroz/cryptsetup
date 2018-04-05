@@ -135,7 +135,7 @@ int LUKS2_digest_verify(struct crypt_device *cd,
 		return r;
 	}
 
-	return 0;
+	return digest;
 }
 
 int LUKS2_digest_dump(struct crypt_device *cd, int digest)
@@ -172,7 +172,7 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 		return r;
 	}
 
-	return 0;
+	return digest;
 }
 
 int LUKS2_digest_by_segment(struct crypt_device *cd,
