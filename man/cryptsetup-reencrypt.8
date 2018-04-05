@@ -37,9 +37,9 @@ To start (or continue) re-encryption for <device> use:
 \fB<options>\fR can be [\-\-batch-mode, \-\-block-size, \-\-cipher | \-\-keep-key,
 \-\-debug, \-\-device-size, \-\-hash, \-\-header, \-\-iter-time | \-\-pbkdf\-force\-iterations,
 \-\-key-file, \-\-key-size, \-\-key-slot, \-\-keyfile-offset, \-\-keyfile-size,
-\-\-tries, \-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel, \-\-progress-frequency,
-\-\-use-directio, \-\-use-random | \-\-use-urandom, \-\-use-fsync, \-\-uuid,
-\-\-verbose, \-\-write-log]
+\-\-master\-key\-file, \-\-tries, \-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel,
+\-\-progress-frequency, \-\-use-directio, \-\-use-random | \-\-use-urandom, \-\-use-fsync,
+\-\-uuid, \-\-verbose, \-\-write-log]
 
 To encrypt data on (not yet encrypted) device, use \fI\-\-new\fR with combination
 with \fI\-\-reduce-device-size\fR or with \fI\-\-header\fR option for detached header.
@@ -147,6 +147,9 @@ Skip \fIvalue\fR bytes at the beginning of the key file.
 Read a maximum of \fIvalue\fR bytes from the key file.
 Default is to read the whole file up to the compiled-in
 maximum.
+.TP
+.B "\-\-master\-key\-file"
+Use new volume (master) key stored in a file.
 .TP
 .B "\-\-new, \-N"
 Create new header (encrypt not yet encrypted device).

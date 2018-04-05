@@ -33,6 +33,7 @@
 static const char *opt_cipher = NULL;
 static const char *opt_hash = NULL;
 static const char *opt_key_file = NULL;
+static const char *opt_master_key_file = NULL;
 static const char *opt_uuid = NULL;
 static const char *opt_type = "luks";
 static long opt_keyfile_size = 0;
@@ -666,8 +667,8 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	struct crypt_params_luks2 params2 = {0};
 	struct stat st;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
-	char *old_key = NULL;
-	size_t old_key_size;
+	char *key = NULL;
+	size_t key_size;
 	int r;
 
 	log_dbg("Creating LUKS header backup for device %s.", hdr_device(rc));
@@ -711,26 +712,32 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		}
 	}
 
+	key_size = opt_key_size ? opt_key_size / 8 : crypt_get_volume_key_size(cd);
+
 	if (opt_keep_key) {
 		log_dbg("Keeping key from old header.");
-		old_key_size  = crypt_get_volume_key_size(cd);
-		old_key = crypt_safe_alloc(old_key_size);
-		if (!old_key) {
+		key_size = crypt_get_volume_key_size(cd);
+		key = crypt_safe_alloc(key_size);
+		if (!key) {
 			r = -ENOMEM;
 			goto out;
 		}
-		r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, old_key, &old_key_size,
+		r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size,
 			rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen);
-		if (r < 0)
-			goto out;
+	} else if (opt_master_key_file) {
+		log_dbg("Loading new key from file.");
+		r = tools_read_mk(opt_master_key_file, &key, key_size);
 	}
+
+	if (r < 0)
+		goto out;
 
 	r = create_new_header(rc,
 		opt_cipher ? cipher : crypt_get_cipher(cd),
 		opt_cipher ? cipher_mode : crypt_get_cipher_mode(cd),
 		crypt_get_uuid(cd),
-		old_key,
-		opt_key_size ? opt_key_size / 8 : crypt_get_volume_key_size(cd),
+		key,
+		key_size,
 		rc->type,
 		isLUKS2(rc->type) ? (void*)&params2 : (void*)&params);
 
@@ -738,7 +745,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		r = luks2_metadata_copy(rc);
 out:
 	crypt_free(cd);
-	crypt_safe_free(old_key);
+	crypt_safe_free(key);
 	if (r)
 		log_err(_("Creation of LUKS backup headers failed.\n"));
 	return r;
@@ -1569,6 +1576,7 @@ int main(int argc, const char **argv)
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "keep-key",          '\0', POPT_ARG_NONE, &opt_keep_key,              0, N_("Do not change key, no data area reencryption."), NULL },
 		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            0, N_("Read the key from a file."), NULL },
+		{ "master-key-file",   '\0', POPT_ARG_STRING, &opt_master_key_file,     0, N_("Read new volume (master) key from file."), NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF2 iteration time for LUKS (in ms)"), N_("msecs") },
 		{ "batch-mode",        'q',  POPT_ARG_NONE, &opt_batch_mode,            0, N_("Do not ask for confirmation"), NULL },
 		{ "progress-frequency",'\0', POPT_ARG_INT, &opt_progress_frequency,     0, N_("Progress line update (in seconds)"), N_("secs") },
@@ -1694,7 +1702,7 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce-device-size or --header."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_keep_key && ((!opt_hash && !opt_iteration_time && !opt_pbkdf_iterations) || opt_cipher || opt_new))
+	if (opt_keep_key && ((!opt_hash && !opt_iteration_time && !opt_pbkdf_iterations) || opt_cipher || opt_new || opt_master_key_file))
 		usage(popt_context, EXIT_FAILURE, _("Option --keep-key can be used only with --hash, --iter-time or --pbkdf-force-iterations."),
 		      poptGetInvocationName(popt_context));
 
