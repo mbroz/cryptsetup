@@ -851,6 +851,9 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 /** create keyslot with volume key not associated with current dm-crypt segment */
 #define CRYPT_VOLUME_KEY_NO_SEGMENT (1 << 0)
 
+/** create keyslot with new volume key and assign it to current dm-crypt segment */
+#define CRYPT_VOLUME_KEY_SET (1 << 1)
+
 /**
  * Add key slot using provided key.
  *
