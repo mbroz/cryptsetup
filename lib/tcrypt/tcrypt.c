@@ -44,11 +44,11 @@ static const struct {
 	{ 0, 0, "pbkdf2", "whirlpool", 1000 },
 	{ 1, 0, "pbkdf2", "sha1",      2000 },
 	{ 0, 1, "pbkdf2", "sha512",    500000 },
-	{ 0, 1, "pbkdf2", "ripemd160", 655331 },
-	{ 0, 1, "pbkdf2", "ripemd160", 327661 }, // boot only
 	{ 0, 1, "pbkdf2", "whirlpool", 500000 },
 	{ 0, 1, "pbkdf2", "sha256",    500000 }, // VeraCrypt 1.0f
 	{ 0, 1, "pbkdf2", "sha256",    200000 }, // boot only
+	{ 0, 1, "pbkdf2", "ripemd160", 655331 },
+	{ 0, 1, "pbkdf2", "ripemd160", 327661 }, // boot only
 	{ 0, 0, NULL,     NULL,        0 }
 };
 
