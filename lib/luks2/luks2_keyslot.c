@@ -117,7 +117,7 @@ int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 	return num;
 }
 
-static int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd)
+int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd)
 {
 	const char *cipher = crypt_get_cipher(cd);
 

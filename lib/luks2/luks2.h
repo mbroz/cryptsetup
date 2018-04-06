@@ -155,6 +155,8 @@ int LUKS2_hdr_restore(struct crypt_device *cd,
 uint64_t LUKS2_hdr_and_areas_size(json_object *jobj);
 uint64_t LUKS2_keyslots_size(json_object *jobj);
 
+int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd);
+
 /*
  * Generic LUKS2 keyslot
  */

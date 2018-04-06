@@ -99,6 +99,11 @@ struct luks_phdr {
 int LUKS_verify_volume_key(const struct luks_phdr *hdr,
 			   const struct volume_key *vk);
 
+int LUKS_check_cipher(struct crypt_device *ctx,
+		      size_t keylength,
+		      const char *cipher,
+		      const char *cipher_mode);
+
 int LUKS_generate_phdr(
 	struct luks_phdr *header,
 	const struct volume_key *vk,

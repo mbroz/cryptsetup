@@ -1008,7 +1008,9 @@ static int action_luksFormat(void)
 	if (luks_version != 2 && opt_integrity) {
 		log_err(_("Integrity option can be used only for LUKS2 format.\n"));
 		goto out;
-	} if (opt_integrity) {
+	}
+
+	if (opt_integrity) {
 		r = crypt_parse_integrity_mode(opt_integrity, integrity, &integrity_keysize);
 		if (r < 0) {
 			log_err(_("No known integrity specification pattern detected.\n"));

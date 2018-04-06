@@ -402,6 +402,10 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 		return -EINVAL;
 	}
 
+	r = LUKS_check_cipher(ctx, phdr->keyBytes, phdr->cipherName, phdr->cipherMode);
+	if (r < 0)
+		return -EINVAL;
+
 	vk = crypt_alloc_volume_key(phdr->keyBytes, NULL);
 
 	log_verbose(ctx, _("Repairing keyslots.\n"));
@@ -691,23 +695,22 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 }
 
 /* Check that kernel supports requested cipher by decryption of one sector */
-static int LUKS_check_cipher(struct luks_phdr *hdr, struct crypt_device *ctx)
+int LUKS_check_cipher(struct crypt_device *ctx, size_t keylength, const char *cipher, const char *cipher_mode)
 {
 	int r;
 	struct volume_key *empty_key;
 	char buf[SECTOR_SIZE];
 
-	log_dbg("Checking if cipher %s-%s is usable.", hdr->cipherName, hdr->cipherMode);
+	log_dbg("Checking if cipher %s-%s is usable.", cipher, cipher_mode);
 
-	empty_key = crypt_alloc_volume_key(hdr->keyBytes, NULL);
+	empty_key = crypt_alloc_volume_key(keylength, NULL);
 	if (!empty_key)
 		return -ENOMEM;
 
 	/* No need to get KEY quality random but it must avoid known weak keys. */
 	r = crypt_random_get(ctx, empty_key->key, empty_key->keylength, CRYPT_RND_NORMAL);
 	if (!r)
-		r = LUKS_decrypt_from_storage(buf, sizeof(buf), hdr->cipherName,
-					      hdr->cipherMode, empty_key, 0, ctx);
+		r = LUKS_decrypt_from_storage(buf, sizeof(buf), cipher, cipher_mode, empty_key, 0, ctx);
 
 	crypt_free_volume_key(empty_key);
 	crypt_memzero(buf, sizeof(buf));
@@ -766,10 +769,6 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	header->keyBytes=vk->keylength;
 
 	LUKS_fix_header_compatible(header);
-
-	r = LUKS_check_cipher(header, ctx);
-	if (r < 0)
-		return r;
 
 	log_dbg("Generating LUKS header version %d using hash %s, %s, %s, MK %d bytes",
 		header->version, header->hashSpec ,header->cipherName, header->cipherMode,

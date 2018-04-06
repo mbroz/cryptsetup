@@ -2748,6 +2748,11 @@ static void Luks2Integrity(void)
 	EQ_(32+16, ip.tag_size);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DEVICE_2));
+	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, key_size - 32, &params), "Wrong key size.");
+	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, "xts-plainx", NULL, NULL, key_size, &params), "Wrong cipher.");
+	crypt_free(cd);
 }
 
 static void Luks2Flags(void)

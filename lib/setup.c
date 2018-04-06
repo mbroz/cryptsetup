@@ -1438,6 +1438,10 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
+	r = LUKS_check_cipher(cd, volume_key_size, cipher, cipher_mode);
+	if (r < 0)
+		return r;
+
 	r = LUKS_generate_phdr(&cd->u.luks1.hdr, cd->volume_key, cipher, cipher_mode,
 			       cd->pbkdf.hash, uuid, LUKS_STRIPES,
 			       required_alignment / SECTOR_SIZE,
@@ -1511,7 +1515,10 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			else
 				return -EINVAL;
 		}
-
+		if (INTEGRITY_key_size(cd, integrity) >= volume_key_size) {
+			log_err(cd, _("Volume key is too small for encryption with integrity extensions.\n"));
+			return -EINVAL;
+		}
 	}
 
 	r = device_check_access(cd, crypt_metadata_device(cd), DEV_EXCL);
@@ -1561,6 +1568,14 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (!cd->u.luks2.cipher || !cd->u.luks2.cipher_mode) {
 		r = -ENOMEM;
 		goto out;
+	}
+
+	/* FIXME: we have no way how to check AEAD ciphers,
+	 * only length preserving mode or authenc() composed modes */
+	if (!LUKS2_keyslot_cipher_incompatible(cd)) {
+		r = LUKS_check_cipher(cd, volume_key_size, cipher, cipher_mode);
+		if (r < 0)
+			goto out;
 	}
 
 	r = LUKS2_generate_hdr(cd, &cd->u.luks2.hdr, cd->volume_key,
@@ -3618,10 +3633,10 @@ const char *crypt_get_integrity(struct crypt_device *cd)
 int crypt_get_integrity_key_size(struct crypt_device *cd)
 {
 	if (isINTEGRITY(cd->type))
-		return INTEGRITY_key_size(cd);
+		return INTEGRITY_key_size(cd, crypt_get_integrity(cd));
 
 	if (isLUKS2(cd->type))
-		return INTEGRITY_key_size(cd);
+		return INTEGRITY_key_size(cd, crypt_get_integrity(cd));
 
 	return 0;
 }

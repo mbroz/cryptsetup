@@ -106,10 +106,8 @@ int INTEGRITY_data_sectors(struct crypt_device *cd,
 	return 0;
 }
 
-int INTEGRITY_key_size(struct crypt_device *cd)
+int INTEGRITY_key_size(struct crypt_device *cd, const char *integrity)
 {
-	const char *integrity = crypt_get_integrity(cd);
-
 	if (!integrity)
 		return 0;
 

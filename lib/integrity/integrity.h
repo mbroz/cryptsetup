@@ -50,7 +50,8 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 int INTEGRITY_data_sectors(struct crypt_device *cd,
 			   struct device *device, uint64_t offset,
 			   uint64_t *data_sectors);
-int INTEGRITY_key_size(struct crypt_device *cd);
+int INTEGRITY_key_size(struct crypt_device *cd,
+		       const char *integrity);
 int INTEGRITY_tag_size(struct crypt_device *cd,
 		       const char *integrity,
 		       const char *cipher,
