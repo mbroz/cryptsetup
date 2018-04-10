@@ -95,6 +95,13 @@ typedef int (*keyslot_wipe_func) (struct crypt_device *cd, int keyslot);
 typedef int (*keyslot_dump_func) (struct crypt_device *cd, int keyslot);
 typedef int (*keyslot_validate_func) (struct crypt_device *cd, int keyslot);
 
+/* see LUKS2_luks2_to_luks1 */
+int placeholder_keyslot_alloc(struct crypt_device *cd,
+	int keyslot,
+	uint64_t area_offset,
+	uint64_t area_length,
+	size_t volume_key_len);
+
 int luks2_keyslot_alloc(struct crypt_device *cd,
 	int keyslot,
 	size_t volume_key_len,

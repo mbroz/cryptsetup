@@ -645,7 +645,6 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	uint32_t key_size;
 	int i, r, last_active = 0;
 	uint64_t offset, area_length;
-	struct luks2_keyslot_params params;
 	char buf[256], luksMagic[] = LUKS_MAGIC;
 
 	jobj_digest  = LUKS2_get_digest_jobj(hdr2, 0);
@@ -664,16 +663,10 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return -EINVAL;
 	}
 
-	/* We really do not care about params later except keys_size */
-	r = LUKS2_keyslot_params_default(cd, hdr2, 0, &params);
-	if (r < 0)
-		return -EINVAL;
-
 	r = LUKS2_get_volume_key_size(hdr2, 0);
 	if (r < 0)
 		return -EINVAL;
 	key_size = r;
-	params.area.raw.key_size = key_size;
 
 	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
 		if (LUKS2_keyslot_info(hdr2, i) == CRYPT_SLOT_INACTIVE)
@@ -712,8 +705,12 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		} else {
 			if (LUKS2_find_area_gap(cd, hdr2, key_size, &offset, &area_length))
 				return -EINVAL;
-			/* FIXME: luks2 reload is required! */
-			if (luks2_keyslot_alloc(cd, i, key_size, &params))
+			/*
+			 * We have to create placeholder luks2 keyslots in place of all
+			 * inactive keyslots. Otherwise we would allocate all
+			 * inactive luks1 keyslots over same binary keyslot area.
+			 */
+			if (placeholder_keyslot_alloc(cd, i, offset, area_length, key_size))
 				return -EINVAL;
 		}
 

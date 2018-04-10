@@ -488,3 +488,49 @@ int LUKS2_keyslot_priority_set(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
+
+int placeholder_keyslot_alloc(struct crypt_device *cd,
+	int keyslot,
+	uint64_t area_offset,
+	uint64_t area_length,
+	size_t volume_key_len)
+{
+	struct luks2_hdr *hdr;
+	char num[16];
+	json_object *jobj_keyslots, *jobj_keyslot, *jobj_area;
+
+	log_dbg("Allocating placeholder keyslot %d for LUKS1 down conversion.", keyslot);
+
+	if (!(hdr = crypt_get_hdr(cd, CRYPT_LUKS2)))
+		return -EINVAL;
+
+	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX)
+		return -EINVAL;
+
+	if (LUKS2_get_keyslot_jobj(hdr, keyslot))
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots))
+		return -EINVAL;
+
+	jobj_keyslot = json_object_new_object();
+	json_object_object_add(jobj_keyslot, "type", json_object_new_string("placeholder"));
+	/*
+	 * key_size = -1 makes placeholder keyslot impossible to pass validation.
+	 * It's a safeguard against accidentaly storing temporary conversion
+	 * LUKS2 header.
+	 */
+	json_object_object_add(jobj_keyslot, "key_size", json_object_new_int(-1));
+
+	/* Area object */
+	jobj_area = json_object_new_object();
+	json_object_object_add(jobj_area, "offset", json_object_new_uint64(area_offset));
+	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
+	json_object_object_add(jobj_keyslot, "area", jobj_area);
+
+	snprintf(num, sizeof(num), "%d", keyslot);
+
+	json_object_object_add(jobj_keyslots, num, jobj_keyslot);
+
+	return 0;
+}
