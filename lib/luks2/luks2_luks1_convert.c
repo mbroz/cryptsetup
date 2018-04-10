@@ -475,6 +475,37 @@ static int luks_header_in_use(struct crypt_device *cd)
 	return r;
 }
 
+/* Check if there is a luksmeta area (foreign metadata created by the luksmeta package) */
+static int luksmeta_header_present(struct crypt_device *cd, off_t luks1_size)
+{
+	static const uint8_t LM_MAGIC[] = { 'L', 'U', 'K', 'S', 'M', 'E', 'T', 'A' };
+	struct device *device = crypt_metadata_device(cd);
+	void *buf = NULL;
+	int devfd, r = 0;
+
+	if (posix_memalign(&buf, crypt_getpagesize(), sizeof(LM_MAGIC)))
+		return -ENOMEM;
+
+	devfd = device_open(device, O_RDONLY);
+	if (devfd == -1) {
+		log_dbg("Cannot open device %s.", device_path(device));
+		free(buf);
+		return -EIO;
+	}
+
+	/* Note: we must not detect failure as problem here, header can be trimmed. */
+	if (read_lseek_blockwise(devfd, device_block_size(device), device_alignment(device),
+		buf, sizeof(LM_MAGIC), luks1_size) == (ssize_t)sizeof(LM_MAGIC) &&
+		!memcmp(LM_MAGIC, buf, sizeof(LM_MAGIC))) {
+			log_err(cd, _("Unable to convert header with LUKSMETA additional metadata.\n"));
+			r = -EBUSY;
+	}
+
+	close(devfd);
+	free(buf);
+	return r;
+}
+
 /* Convert LUKS1 -> LUKS2 */
 int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct luks2_hdr *hdr2)
 {
@@ -496,6 +527,9 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 		log_dbg("Unsupported keyslots material offset: %zu.", LUKS_keyslots_offset(hdr1));
 		return -EINVAL;
 	}
+
+	if (luksmeta_header_present(cd, luks1_size))
+		return -EINVAL;
 
 	log_dbg("Max size: %" PRIu64 ", LUKS1 (full) header size %zu , required shift: %zu",
 		max_size, luks1_size, luks1_shift);
