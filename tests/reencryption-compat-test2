@@ -228,6 +228,10 @@ echo $PWD1 | $REENC $IMG -q -s 256 -c aes-xts-plain64 -h sha256 $FAST_PBKDF_ARGO
 check_hash $PWD1 $HASH5
 echo $PWD1 | $REENC $IMG -q --use-directio $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
+echo $PWD1 | $REENC $IMG -q --master-key-file /dev/urandom $FAST_PBKDF_ARGON
+check_hash $PWD1 $HASH5
+echo $PWD1 | $REENC $IMG -q -s 512 --master-key-file /dev/urandom $FAST_PBKDF_ARGON
+check_hash $PWD1 $HASH5
 $CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
 
 echo "[2] Reencryption with data shift"

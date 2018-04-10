@@ -226,6 +226,10 @@ echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 -c aes-xts-plain64 -h sha256 $FAST_PBKDF
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --use-directio $FAST_PBKDF
 check_hash $PWD1 $HASH1
+echo $PWD1 | $REENC $LOOPDEV1 -q --master-key-file /dev/urandom $FAST_PBKDF
+check_hash $PWD1 $HASH1
+echo $PWD1 | $REENC $LOOPDEV1 -q -s 512 --master-key-file /dev/urandom $FAST_PBKDF
+check_hash $PWD1 $HASH1
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[2] Reencryption with data shift"
