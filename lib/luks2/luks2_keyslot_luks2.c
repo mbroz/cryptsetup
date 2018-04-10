@@ -400,7 +400,7 @@ int luks2_keyslot_alloc(struct crypt_device *cd,
 	if (keyslot == CRYPT_ANY_SLOT)
 		keyslot = LUKS2_keyslot_find_empty(hdr, "luks2");
 
-	if (keyslot < 0 || keyslot > LUKS2_KEYSLOTS_MAX)
+	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX)
 		return -ENOMEM;
 
 	if (LUKS2_get_keyslot_jobj(hdr, keyslot)) {
