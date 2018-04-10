@@ -817,32 +817,6 @@ static int action_benchmark(void)
 	return r;
 }
 
-static int _read_mk(const char *file, char **key, int keysize)
-{
-	int fd;
-
-	*key = crypt_safe_alloc(keysize);
-	if (!*key)
-		return -ENOMEM;
-
-	fd = open(file, O_RDONLY);
-	if (fd == -1) {
-		log_err(_("Cannot read keyfile %s.\n"), file);
-		goto fail;
-	}
-	if ((read(fd, *key, keysize) != keysize)) {
-		log_err(_("Cannot read %d bytes from keyfile %s.\n"), keysize, file);
-		close(fd);
-		goto fail;
-	}
-	close(fd);
-	return 0;
-fail:
-	crypt_safe_free(*key);
-	*key = NULL;
-	return -EINVAL;
-}
-
 static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 {
 	struct crypt_pbkdf_type pbkdf = {};
@@ -1044,7 +1018,7 @@ static int action_luksFormat(void)
 		goto out;
 
 	if (opt_master_key_file) {
-		r = _read_mk(opt_master_key_file, &key, keysize);
+		r = tools_read_mk(opt_master_key_file, &key, keysize);
 		if (r < 0)
 			goto out;
 	}
@@ -1119,7 +1093,7 @@ static int action_open_luks(void)
 
 	if (opt_master_key_file) {
 		keysize = crypt_get_volume_key_size(cd);
-		r = _read_mk(opt_master_key_file, &key, keysize);
+		r = tools_read_mk(opt_master_key_file, &key, keysize);
 		if (r < 0)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
@@ -1335,7 +1309,7 @@ static int action_luksAddKey(void)
 	}
 
 	if (opt_master_key_file) {
-		r = _read_mk(opt_master_key_file, &key, keysize);
+		r = tools_read_mk(opt_master_key_file, &key, keysize);
 		if (r < 0)
 			goto out;
 
