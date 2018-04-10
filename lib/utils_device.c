@@ -246,7 +246,9 @@ static int device_open_internal(struct device *device, int flags)
 		devfd = open(device_path(device), flags);
 
 	if (devfd < 0)
-		log_dbg("Cannot open device %s.", device_path(device));
+		log_dbg("Cannot open device %s%s.",
+			device_path(device),
+			(flags & O_ACCMODE) != O_RDONLY ? " for write" : "");
 
 	return devfd;
 }

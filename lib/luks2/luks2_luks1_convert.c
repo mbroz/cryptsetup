@@ -436,7 +436,6 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 
 	devfd = device_open(device, O_RDWR);
 	if (devfd == -1) {
-		log_dbg("Cannot open device %s.", device_path(device));
 		free(buf);
 		return -EIO;
 	}
@@ -488,7 +487,6 @@ static int luksmeta_header_present(struct crypt_device *cd, off_t luks1_size)
 
 	devfd = device_open(device, O_RDONLY);
 	if (devfd == -1) {
-		log_dbg("Cannot open device %s.", device_path(device));
 		free(buf);
 		return -EIO;
 	}
