@@ -2279,7 +2279,7 @@ static void Luks2KeyslotAdd(void)
 	char key[128], key2[128];
 	struct crypt_device *cd;
 	const char *cipher = "aes", *cipher_mode="xts-plain64";
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
 	size_t key_size = strlen(mk_hex) / 2;
 
@@ -2290,8 +2290,8 @@ static void Luks2KeyslotAdd(void)
 	OK_(crypt_init(&cd, DEVICE_1));
 	crypt_set_iteration_time(cd, 1);
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
-	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_add_by_key(cd, 1, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_status(cd, 0), CRYPT_SLOT_ACTIVE_LAST);
 	EQ_(crypt_keyslot_status(cd, 1), CRYPT_SLOT_ACTIVE);
 	/* must not activate volume with keyslot unassigned to a segment */
@@ -2307,6 +2307,26 @@ static void Luks2KeyslotAdd(void)
 	 * even though such keyslot will not be usable for segment encryption */
 	EQ_(crypt_keyslot_add_by_key(cd, 2, key2, key_size-1, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 2);
 	EQ_(crypt_keyslot_add_by_key(cd, 3, key2, 13, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 3);
+
+	/* test force volume key change works as expected */
+	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 0, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_SET), 1);
+	OK_(crypt_activate_by_volume_key(cd, NULL, key2, key_size, 0));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key2, key_size, 0));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(crypt_activate_by_passphrase(cd, NULL, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	/* old keyslot must be unusable */
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "Key doesn't match volume key digest");
+	FAIL_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0), "Key doesn't match volume key digest");
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, 0, PASSPHRASE, strlen(PASSPHRASE), 0), "Keyslot not assigned to volume");
+	EQ_(crypt_keyslot_add_by_passphrase(cd, 5, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE1, strlen(PASSPHRASE1)), 5);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1)), 6);
+	/* regression test. check new keyslot is properly assigned to new volume key digest */
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 5, PASSPHRASE1, strlen(PASSPHRASE1), 0), 5);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE1, strlen(PASSPHRASE1), 0), 6);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	crypt_free(cd);
 }
