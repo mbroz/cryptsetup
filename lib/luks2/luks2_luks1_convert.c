@@ -488,6 +488,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 		return r;
 
 	luks1_size = LUKS_device_sectors(hdr1) << SECTOR_SHIFT;
+	luks1_size = size_round_up(luks1_size, LUKS_ALIGN_KEYSLOTS);
 	if (!luks1_size)
 		return -EINVAL;
 
@@ -499,7 +500,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	log_dbg("Max size: %" PRIu64 ", LUKS1 (full) header size %zu , required shift: %zu",
 		max_size, luks1_size, luks1_shift);
 	if ((max_size - luks1_size) < luks1_shift) {
-		log_err(cd, _("Unable to move keyslot materials. Not enough space\n"));
+		log_err(cd, _("Unable to move keyslot area. Not enough space.\n"));
 		return -EINVAL;
 	}
 
@@ -538,8 +539,10 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	// move keyslots 4k -> 32k offset
 	buf_offset = 2 * LUKS2_HDR_16K_LEN;
 	buf_size   = luks1_size - LUKS_ALIGN_KEYSLOTS;
-	if ((r = move_keyslot_areas(cd, 8 * SECTOR_SIZE, buf_offset, buf_size)) < 0)
+	if ((r = move_keyslot_areas(cd, 8 * SECTOR_SIZE, buf_offset, buf_size)) < 0) {
+		log_err(cd, _("Unable to move keyslot area.\n"));
 		goto out;
+	}
 
 	// Write JSON hdr2
 	r = LUKS2_hdr_write(cd, hdr2);
@@ -787,8 +790,10 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	buf_offset = 2 * LUKS2_HDR_16K_LEN;
 	buf_size   = LUKS2_keyslots_size(hdr2->jobj);
 	r = move_keyslot_areas(cd, buf_offset, 8 * SECTOR_SIZE, buf_size);
-	if (r < 0)
+	if (r < 0) {
+		log_err(cd, _("Unable to move keyslot area.\n"));
 		return r;
+	}
 
 	crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO, 0,
 			  8 * SECTOR_SIZE, 8 * SECTOR_SIZE, NULL, NULL);
