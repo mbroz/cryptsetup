@@ -182,6 +182,7 @@ int LUKS2_token_create(struct crypt_device *cd,
 
 		if (h && h->validate && h->validate(cd, json)) {
 			json_object_put(jobj);
+			log_dbg("Token type %s validation failed.", h->name);
 			return -EINVAL;
 		}
 
