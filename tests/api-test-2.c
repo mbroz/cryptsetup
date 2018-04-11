@@ -1610,6 +1610,7 @@ static void LuksConvert(void)
 	struct crypt_device *cd;
 	uint64_t offset, r_payload_offset;
 
+	const char *json = "{\"type\":\"convert_block\",\"keyslots\":[]}";
 	const struct crypt_pbkdf_type argon = {
 		.type = CRYPT_KDF_ARGON2I,
 		.hash = "sha512",
@@ -1728,6 +1729,13 @@ static void LuksConvert(void)
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 8, NULL, 32, PASSPHRASE1, strlen(PASSPHRASE1)), 8);
 	FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Can't convert keyslot No 8");
+	crypt_free(cd);
+
+	// do not allow conversion with token
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, &luks2));
+	OK_(crypt_token_json_set(cd, CRYPT_ANY_TOKEN, json));
+	FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Can't convert header with token.");
 	crypt_free(cd);
 
 	// should be enough for both luks1 and luks2 devices with all vk lengths
