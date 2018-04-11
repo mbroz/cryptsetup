@@ -664,6 +664,14 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return -EINVAL;
 	}
 
+	r = LUKS2_tokens_count(hdr2);
+	if (r < 0)
+		return r;
+	if (r > 0) {
+		log_err(cd, _("Cannot convert to LUKS1 format - LUKS2 header contains %u token(s).\n"), r);
+		return -EINVAL;
+	}
+
 	r = LUKS2_get_volume_key_size(hdr2, 0);
 	if (r < 0)
 		return -EINVAL;

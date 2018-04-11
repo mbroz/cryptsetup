@@ -251,6 +251,8 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	const char *name,
 	uint32_t flags);
 
+int LUKS2_tokens_count(struct luks2_hdr *hdr);
+
 /*
  * Generic LUKS2 digest
  */

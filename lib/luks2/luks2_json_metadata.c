@@ -120,6 +120,16 @@ json_object *LUKS2_get_keyslot_jobj(struct luks2_hdr *hdr, int keyslot)
 	return jobj2;
 }
 
+json_object *LUKS2_get_tokens_jobj(struct luks2_hdr *hdr)
+{
+	json_object *jobj_tokens;
+
+	if (!hdr || !json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens))
+		return NULL;
+
+	return jobj_tokens;
+}
+
 json_object *LUKS2_get_token_jobj(struct luks2_hdr *hdr, int token)
 {
 	json_object *jobj1, *jobj2;
@@ -128,10 +138,11 @@ json_object *LUKS2_get_token_jobj(struct luks2_hdr *hdr, int token)
 	if (!hdr || token < 0)
 		return NULL;
 
-	if (snprintf(token_name, sizeof(token_name), "%u", token) < 1)
+	jobj1 = LUKS2_get_tokens_jobj(hdr);
+	if (!jobj1)
 		return NULL;
 
-	if (!json_object_object_get_ex(hdr->jobj, "tokens", &jobj1))
+	if (snprintf(token_name, sizeof(token_name), "%u", token) < 1)
 		return NULL;
 
 	json_object_object_get_ex(jobj1, token_name, &jobj2);

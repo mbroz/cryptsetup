@@ -594,3 +594,12 @@ int LUKS2_token_is_assigned(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	return -ENOENT;
 }
+
+int LUKS2_tokens_count(struct luks2_hdr *hdr)
+{
+	json_object *jobj_tokens = LUKS2_get_tokens_jobj(hdr);
+	if (!jobj_tokens)
+		return -EINVAL;
+
+	return json_object_object_length(jobj_tokens);
+}
