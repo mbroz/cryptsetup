@@ -153,7 +153,6 @@ typedef struct {
 int token_keyring_set(json_object **, const void *);
 int token_keyring_get(json_object *, void *);
 
-#define CRYPT_ANY_TOKEN -1
 int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 			size_t keylength, uint64_t *area_offset, uint64_t *area_length);
 
