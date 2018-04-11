@@ -664,6 +664,15 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return -EINVAL;
 	}
 
+	r = crypt_parse_name_and_mode(LUKS2_get_cipher(hdr2, CRYPT_DEFAULT_SEGMENT), cipher, NULL, cipher_mode);
+	if (r < 0)
+		return r;
+
+	if (crypt_cipher_wrapped_key(cipher)) {
+		log_err(cd, _("Cannot convert to LUKS1 format - device uses wrapped key cipher %s.\n"), cipher);
+		return -EINVAL;
+	}
+
 	r = LUKS2_tokens_count(hdr2);
 	if (r < 0)
 		return r;
