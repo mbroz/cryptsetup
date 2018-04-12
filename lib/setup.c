@@ -2345,7 +2345,12 @@ int crypt_suspend(struct crypt_device *cd,
 
 	key_desc = crypt_get_device_key_description(name);
 
-	r = dm_suspend_and_wipe_key(cd, name);
+	/* we can't simply wipe wrapped keys */
+	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd)))
+		r = dm_suspend_device(cd, name);
+	else
+		r = dm_suspend_and_wipe_key(cd, name);
+
 	if (r == -ENOTSUP)
 		log_err(cd, _("Suspend is not supported for device %s.\n"), name);
 	else if (r)
