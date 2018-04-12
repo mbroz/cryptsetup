@@ -668,6 +668,9 @@ $CRYPTSETUP -q status  $DEV_NAME | grep "type:" | grep -q "n/a" || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
 $CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME && fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 5 _fakedev_ --header $HEADER_IMG $KEY5 || fail
 $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "Key Slot 5: ENABLED" || fail
