@@ -22,6 +22,7 @@ PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 PWD3="ocMakf3fAcQO"
 PWDW="rUkL4RUryBom"
+VK_FILE="compattest_vkfile"
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
@@ -49,7 +50,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 >/dev/null 2>&1
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $VK_FILE >/dev/null 2>&1
 }
 
 function force_uevent()
@@ -66,10 +67,15 @@ function fail()
 	exit 2
 }
 
+function fips_mode()
+{
+	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+}
+
 function can_fail_fips()
 {
         # Ignore this fail if running in FIPS mode
-        [ -z "$FIPS_MODE" -o "$FIPS_MODE" -eq 0 ] && fail $1
+	fips_mode || fail $1
 }
 
 function skip()
@@ -130,6 +136,10 @@ function prepare()
 
 	if [ ! -e $KEYE ]; then
 		touch $KEYE
+	fi
+
+	if [ ! -e $VK_FILE ]; then
+		touch $VK_FILE
 	fi
 
 	cp $IMG $ORIG_IMG
@@ -229,6 +239,11 @@ $CRYPTSETUP luksDump $IMG | grep -q $TEST_UUID || fail
 echo $PWDW | $CRYPTSETUP luksDump $IMG --dump-master-key 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksDump $IMG --dump-master-key | grep -q "MK dump:" || can_fail_fips
 $CRYPTSETUP luksDump -q $IMG --dump-master-key -d $KEY1 | grep -q "MK dump:" || can_fail_fips
+echo $PWD1 | $CRYPTSETUP luksDump -q $IMG --dump-master-key --master-key-file missing-file 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksDump -q $IMG --dump-master-key --master-key-file $VK_FILE > /dev/null || can_fail_fips
+fips_mode || {
+	echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --master-key-file $VK_FILE $IMG || fail
+}
 echo "[10] uuid"
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --uuid $TEST_UUID $IMG || fail
 $CRYPTSETUP -q luksUUID $IMG | grep -q $TEST_UUID || fail
@@ -521,6 +536,10 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q $TEST_UUID || fail
 echo $PWDW | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || can_fail_fips
 $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || can_fail_fips
+echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file $VK_FILE > /dev/null || can_fail_fips
+fips_mode || {
+	echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --master-key-file $VK_FILE $LOOPDEV || fail
+}
 
 prepare "[22] remove disappeared device" wipe
 dmsetup create $DEV_NAME --table "0 5000 linear $LOOPDEV 2" || fail

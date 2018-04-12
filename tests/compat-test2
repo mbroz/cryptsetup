@@ -26,6 +26,7 @@ PWDW="rUkL4RUryBom"
 TEST_KEYRING_NAME="compattest2_keyring"
 TEST_TOKEN0="compattest2_desc0"
 TEST_TOKEN1="compattest2_desc1"
+VK_FILE="compattest2_vkfile"
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
@@ -45,7 +46,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE >/dev/null 2>&1
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -66,10 +67,15 @@ function fail()
 	exit 2
 }
 
+function fips_mode()
+{
+	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+}
+
 function can_fail_fips()
 {
         # Ignore this fail if running in FIPS mode
-        [ -z "$FIPS_MODE" -o "$FIPS_MODE" -eq 0 ] && fail $1
+	fips_mode || fail $1
 }
 
 function skip()
@@ -125,6 +131,10 @@ function prepare()
 
 	if [ ! -e $KEYE ]; then
 		touch $KEYE
+	fi
+
+	if [ ! -e $VK_FILE ]; then
+		touch $VK_FILE
 	fi
 
 	cp $IMG $ORIG_IMG
@@ -447,6 +457,11 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q $TEST_UUID || fail
 echo $PWDW | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || can_fail_fips
 $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || can_fail_fips
+echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file missing-file 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file $VK_FILE > /dev/null || can_fail_fips
+fips_mode || {
+	echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --master-key-file $VK_FILE $LOOPDEV || fail
+}
 
 prepare "[22] remove disappeared device" wipe
 dmsetup create $DEV_NAME --table "0 10000 linear $LOOPDEV 2" || fail
