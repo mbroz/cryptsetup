@@ -2044,6 +2044,23 @@ out:
 	return r;
 }
 
+int dm_suspend_device(struct crypt_device *cd, const char *name)
+{
+	int r;
+
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
+	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0))
+		r = -EINVAL;
+	else
+		r = 0;
+
+	dm_exit_context();
+
+	return r;
+}
+
 int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 {
 	uint32_t dmt_flags;

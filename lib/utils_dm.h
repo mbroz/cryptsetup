@@ -138,6 +138,7 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 int dm_create_device(struct crypt_device *cd, const char *name,
 		     const char *type, struct crypt_dm_active_device *dmd,
 		     int reload);
+int dm_suspend_device(struct crypt_device *cd, const char *name);
 int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name);
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				const struct volume_key *vk);
