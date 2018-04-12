@@ -4,6 +4,7 @@ if CRYPTSETUP
 cryptsetup_SOURCES =		\
 	lib/utils_crypt.c	\
 	lib/utils_loop.c	\
+	lib/utils_io.c		\
 	src/utils_tools.c	\
 	src/utils_password.c	\
 	src/cryptsetup.c	\
@@ -91,6 +92,7 @@ endif
 if REENCRYPT
 cryptsetup_reencrypt_SOURCES =		\
 	lib/utils_crypt.c		\
+	lib/utils_io.c			\
 	src/utils_tools.c		\
 	src/utils_password.c		\
 	src/cryptsetup_reencrypt.c	\

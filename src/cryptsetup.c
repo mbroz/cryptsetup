@@ -1542,12 +1542,22 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	if (r < 0)
 		goto out;
 
+	if (opt_master_key_file) {
+		r = tools_write_mk(opt_master_key_file, vk, vk_size);
+		if (r < 0)
+			goto out;
+	}
+
 	log_std("LUKS header information for %s\n", crypt_get_device_name(cd));
 	log_std("Cipher name:   \t%s\n", crypt_get_cipher(cd));
 	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
 	log_std("Payload offset:\t%d\n", (int)crypt_get_data_offset(cd));
 	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
 	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
+	if (opt_master_key_file) {
+		log_std("Key stored to file %s.\n", opt_master_key_file);
+		goto out;
+	}
 	log_std("MK dump:\t");
 
 	for(i = 0; i < vk_size; i++) {

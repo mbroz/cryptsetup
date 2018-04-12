@@ -329,3 +329,22 @@ fail:
 	*key = NULL;
 	return -EINVAL;
 }
+
+int tools_write_mk(const char *file, const char *key, int keysize)
+{
+	int fd, r = -EINVAL;
+
+	fd = open(file, O_WRONLY);
+	if (fd < 0) {
+		log_err(_("Cannot open keyfile %s for write.\n"), file);
+		return r;
+	}
+
+	if (write_buffer(fd, key, keysize) == keysize)
+		r = 0;
+	else
+		log_err(_("Cannot write to keyfile %s.\n"), file);
+
+	close(fd);
+	return r;
+}

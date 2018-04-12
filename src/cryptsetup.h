@@ -43,6 +43,7 @@
 #include "lib/utils_crypt.h"
 #include "lib/utils_loop.h"
 #include "lib/utils_fips.h"
+#include "lib/utils_io.h"
 
 #include "libcryptsetup.h"
 
@@ -99,6 +100,7 @@ void tools_time_progress(uint64_t device_size, uint64_t bytes,
 int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr);
 
 int tools_read_mk(const char *file, char **key, int keysize);
+int tools_write_mk(const char *file, const char *key, int keysize);
 
 /* Log */
 #define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)

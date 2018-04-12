@@ -398,17 +398,19 @@ means the device is a LUKS device.
 Dump the header information of a LUKS device.
 
 If the \-\-dump\-master\-key option is used, the LUKS device master key is
-dumped instead of the keyslot info. Beware that the master key cannot be
-changed and can be used to decrypt the data stored in the LUKS container
-without a passphrase and even without the LUKS header. This means
-that if the master key is compromised, the whole device has to be
-erased to prevent further access. Use this option carefully.
+dumped instead of the keyslot info. Together with \-\-master\-key\-file option,
+master key is dumped to a file instead of standard output. Beware that the
+master key cannot be changed without reencryption and can be used to decrypt
+the data stored in the LUKS container without a passphrase and even without the
+LUKS header. This means that if the master key is compromised, the whole device
+has to be erased to prevent further access. Use this option carefully.
 
 To dump the master key, a passphrase has to be supplied,
 either interactively or via \-\-key\-file.
 
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
-\-\-keyfile\-offset, \-\-keyfile\-size, \-\-header, \-\-disable\-locks].
+\-\-keyfile\-offset, \-\-keyfile\-size, \-\-header, \-\-disable\-locks,
+\-\-master\-key\-file].
 
 \fBWARNING:\fR If \-\-dump\-master\-key is used with \-\-key\-file
 and the argument to \-\-key\-file is '-', no validation question
@@ -793,6 +795,10 @@ master key. If the master key was taken from an existing
 LUKS header and all other parameters are the same,
 then the new header decrypts the data encrypted with the
 header the master key was taken from.
+
+Action \fIluksDump\fR together with \-\-dump\-master\-key
+option: The volume (master) key is stored in a file instead of
+being printed out to standard output.
 
 \fBWARNING:\fR If you create your own master key, you
 need to make sure to do it right. Otherwise, you can end
