@@ -3352,13 +3352,17 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 	int key_len, r = -EINVAL;
 
-	if (crypt_fips_mode()) {
-		log_err(cd, _("Function not available in FIPS mode.\n"));
-		return -EACCES;
-	}
-
 	if (!cd || !volume_key || !volume_key_size || (!isTCRYPT(cd->type) && !passphrase))
 		return -EINVAL;
+
+	/* wrapped keys or unbound keys may be exported */
+	if (crypt_fips_mode() && !crypt_cipher_wrapped_key(crypt_get_cipher(cd))) {
+		if (!isLUKS2(cd->type) || keyslot == CRYPT_ANY_SLOT ||
+		    !LUKS2_keyslot_for_segment(&cd->u.luks2.hdr, keyslot, CRYPT_DEFAULT_SEGMENT)) {
+			log_err(cd, _("Function not available in FIPS mode.\n"));
+			return -EACCES;
+		}
+	}
 
 	if (isLUKS2(cd->type) && keyslot != CRYPT_ANY_SLOT)
 		key_len = LUKS2_get_keyslot_key_size(&cd->u.luks2.hdr, keyslot);
