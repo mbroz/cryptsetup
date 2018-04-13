@@ -870,10 +870,18 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
  * @return allocated key slot number or negative errno otherwise.
  *
  * @note in case volume_key is @e NULL following first matching rule will apply:
- * a) if cd is device handle used in crypt_format() by current process, the volume
- *    key generated (passed) to crypt_format() will be stored in keyslot.
- * b) if CRYPT_VOLUME_KEY_NO_SEGMENT flag is raised the new volume_key will be
- *    generated and stored in keyslot.
+ * @li if cd is device handle used in crypt_format() by current process, the volume
+ *     key generated (or passed) in crypt_format() will be stored in keyslot.
+ * @li if CRYPT_VOLUME_KEY_NO_SEGMENT flag is raised the new volume_key will be
+ *     generated and stored in keyslot. The keyslot will become unbound (unusable to
+ *     dm-crypt device activation).
+ * @li fails with -EINVAL otherwise
+ *
+ * @warning CRYPT_VOLUME_KEY_SET flag force updates volume key. It is @b not @b reencryption!
+ * 	    By doing so you will most probably destroy your ciphertext data device. It's supposed
+ * 	    to be used only in wrapped keys scheme for key refresh process where real (inner) volume
+ * 	    key stays untouched. It may be involed on active @e keyslot which makes the (previously
+ * 	    unbound) keyslot new regular keyslot.
  */
 int crypt_keyslot_add_by_key(struct crypt_device *cd,
 	int keyslot,
