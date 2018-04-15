@@ -100,6 +100,7 @@ uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
 
 /* ciphers */
 int crypt_cipher_blocksize(const char *name);
+int crypt_cipher_wrapped_key(const char *name);
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *key, size_t key_length);
 void crypt_cipher_destroy(struct crypt_cipher *ctx);

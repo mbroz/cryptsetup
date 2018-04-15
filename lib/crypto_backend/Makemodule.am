@@ -8,7 +8,8 @@ libcrypto_backend_la_SOURCES = \
 	lib/crypto_backend/crypto_storage.c \
 	lib/crypto_backend/pbkdf_check.c \
 	lib/crypto_backend/crc32.c \
-	lib/crypto_backend/argon2_generic.c
+	lib/crypto_backend/argon2_generic.c \
+	lib/crypto_backend/cipher_generic.c
 
 if CRYPTO_BACKEND_GCRYPT
 libcrypto_backend_la_SOURCES += lib/crypto_backend/crypto_gcrypt.c

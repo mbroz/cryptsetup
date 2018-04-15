@@ -125,8 +125,8 @@ int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd)
 	if (crypt_get_integrity_tag_size(cd) || !cipher)
 		return 1;
 
-	/* protected AES (PAES) is a wrapped key scheme, not a block cipher */
-	if (!strncmp("paes", cipher, 4))
+	/* Wrapped key schemes cannot be used for keyslot encryption */
+	if (crypt_cipher_wrapped_key(cipher))
 		return 1;
 
 	return 0;
