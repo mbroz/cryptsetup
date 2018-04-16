@@ -270,15 +270,22 @@ Prompts interactively for a passphrase if \-\-key-file is not given.
 .PP
 \fIluksAddKey\fR <device> [<key file with new key>]
 .IP
-adds a new passphrase. An existing passphrase must be supplied
+Adds a new passphrase. An existing passphrase must be supplied
 interactively or via \-\-key-file.
 The new passphrase to be added can be specified interactively
 or read from the file given as positional argument.
 
+\fBNOTE:\fR with \-\-unbound option the action creates new unbound
+LUKS2 keyslot. The keyslot cannot be used for device activation.
+If you don't pass new key via \-\-master\-key\-file option,
+new random key is generated. Existing passphrase for any active keyslot
+is not required.
+
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-master\-key\-file,
-\-\-iter\-time, \-\-force\-password, \-\-header, \-\-disable\-locks].
+\-\-iter\-time, \-\-force\-password, \-\-header, \-\-disable\-locks,
+\-\-unbound].
 .PP
 \fIluksRemoveKey\fR <device> [<key file with passphrase to be removed>]
 .IP
@@ -1165,6 +1172,11 @@ to the sector.
 \fBNOTE:\fR Even some writes to the device can fail if the write is not
 aligned to page size and page-cache initiates read of a sector with invalid
 integrity tag.
+.TP
+.B "\-\-unbound"
+
+Creates new LUKS2 unbound keyslot. See \fIluksAddKey\fR action for more
+details.
 .TP
 .B "\-\-tcrypt\-hidden"
 .B "\-\-tcrypt\-system"

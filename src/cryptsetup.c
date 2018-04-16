@@ -87,6 +87,7 @@ static int opt_sector_size = SECTOR_SIZE;
 static int opt_persistent = 0;
 static const char *opt_label = NULL;
 static const char *opt_subsystem = NULL;
+static int opt_unbound = 0;
 
 static const char **action_argv;
 static int action_argc;
@@ -1280,6 +1281,61 @@ out:
 	return r;
 }
 
+static int luksAddUnboundKey(void)
+{
+	int r = -EINVAL, keysize = 0;
+	char *key = NULL;
+	const char *opt_new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
+	char *password_new = NULL;
+	size_t password_new_size = 0;
+	struct crypt_device *cd = NULL;
+
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
+		goto out;
+
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
+
+	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
+		goto out;
+
+	/* Never call pwquality if using null cipher */
+	if (tools_is_cipher_null(crypt_get_cipher(cd)))
+		opt_force_password = 1;
+
+	keysize = opt_key_size / 8;
+	r = set_pbkdf_params(cd, crypt_get_type(cd));
+	if (r) {
+		log_err(_("Failed to set pbkdf parameters.\n"));
+		goto out;
+	}
+
+	if (opt_master_key_file) {
+		r = tools_read_mk(opt_master_key_file, &key, keysize);
+		if (r < 0)
+			goto out;
+
+		check_signal(&r);
+		if (r < 0)
+			goto out;
+	}
+
+	r = tools_get_key(_("Enter new passphrase for key slot: "),
+			  &password_new, &password_new_size,
+			  opt_new_keyfile_offset, opt_new_keyfile_size,
+			  opt_new_key_file, opt_timeout,
+			  _verify_passphrase(1), 1, cd);
+	if (r < 0)
+		goto out;
+
+	r = crypt_keyslot_add_by_key(cd, opt_key_slot, key, keysize,
+			password_new, password_new_size, CRYPT_VOLUME_KEY_NO_SEGMENT);
+out:
+	crypt_safe_free(password_new);
+	crypt_safe_free(key);
+	crypt_free(cd);
+	return r;
+}
+
 static int action_luksAddKey(void)
 {
 	int r = -EINVAL, keysize = 0;
@@ -1288,6 +1344,10 @@ static int action_luksAddKey(void)
 	char *password = NULL, *password_new = NULL;
 	size_t password_size = 0, password_new_size = 0;
 	struct crypt_device *cd = NULL;
+
+	/* Unbound keyslot (no assigned data segment) is special case */
+	if (opt_unbound)
+		return luksAddUnboundKey();
 
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
@@ -2132,6 +2192,7 @@ int main(int argc, const char **argv)
 		{ "persistent",	       '\0', POPT_ARG_NONE, &opt_persistent,            0, N_("Set activation flags persistent for device."), NULL },
 		{ "label",	       '\0', POPT_ARG_STRING, &opt_label,               0, N_("Set label for the LUKS2 device."), NULL },
 		{ "subsystem",	       '\0', POPT_ARG_STRING, &opt_subsystem,           0, N_("Set subsystem label for the LUKS2 device."), NULL },
+		{ "unbound",           '\0', POPT_ARG_NONE, &opt_unbound,               0, N_("Create unbound (no assigned data segment) LUKS2 keyslot."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -2296,10 +2357,11 @@ int main(int argc, const char **argv)
 	if (opt_key_size &&
 	   strcmp(aname, "luksFormat") &&
 	   strcmp(aname, "open") &&
-	   strcmp(aname, "benchmark"))
+	   strcmp(aname, "benchmark") &&
+	   (strcmp(aname, "luksAddKey") || !opt_unbound))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --key-size is allowed only for luksFormat, open and benchmark.\n"
-		        "To limit read from keyfile use --keyfile-size=(bytes)."),
+		      _("Option --key-size is allowed only for luksFormat, luksAddKey (with --unbound),\n"
+			"open and benchmark actions. To limit read from keyfile use --keyfile-size=(bytes)."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_integrity && strcmp(aname, "luksFormat"))
@@ -2451,6 +2513,16 @@ int main(int argc, const char **argv)
 	    (opt_sector_size & (opt_sector_size - 1)))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Unsupported encryption sector size.\n"),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_unbound && !opt_key_size)
+		usage(popt_context, EXIT_FAILURE,
+		      _("Key size is required with --unbound option.\n"),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_unbound && strcmp(aname, "luksAddKey"))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --unbound may be used only with luksAddKey action.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
