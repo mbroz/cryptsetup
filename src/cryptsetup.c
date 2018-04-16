@@ -1969,6 +1969,7 @@ static void help(poptContext popt_context,
 {
 	if (key->shortName == '?') {
 		struct action_type *action;
+		const struct crypt_pbkdf_type *pbkdf_luks1, *pbkdf_luks2;
 
 		log_std("%s\n",PACKAGE_STRING);
 
@@ -1991,15 +1992,18 @@ static void help(poptContext popt_context,
 			 "<key file> optional key file for the new key for luksAddKey action\n"),
 			crypt_get_dir());
 
+		pbkdf_luks1 = crypt_get_pbkdf_default(CRYPT_LUKS1);
+		pbkdf_luks2 = crypt_get_pbkdf_default(CRYPT_LUKS2);
 		log_std(_("\nDefault compiled-in key and passphrase parameters:\n"
 			 "\tMaximum keyfile size: %dkB, "
 			 "Maximum interactive passphrase length %d (characters)\n"
-			 "Default PBKDF2 iteration time for LUKS: %d (ms)\n"
+			 "Default PBKDF for LUKS1: %s, iteration time: %d (ms)\n"
 			 "Default PBKDF for LUKS2: %s\n"
 			 "\tIteration time: %d, Memory required: %dkB, Parallel threads: %d\n"),
 			 DEFAULT_KEYFILE_SIZE_MAXKB, DEFAULT_PASSPHRASE_SIZE_MAX,
-			 DEFAULT_LUKS1_ITER_TIME, DEFAULT_LUKS2_PBKDF, DEFAULT_LUKS2_ITER_TIME,
-			 DEFAULT_LUKS2_MEMORY_KB, DEFAULT_LUKS2_PARALLEL_THREADS);
+			 pbkdf_luks1->type,  pbkdf_luks1->time_ms,
+			 pbkdf_luks2->type, pbkdf_luks2->time_ms, pbkdf_luks2->max_memory_kb,
+			 pbkdf_luks2->parallel_threads);
 
 		log_std(_("\nDefault compiled-in device cipher parameters:\n"
 			 "\tloop-AES: %s, Key %d bits\n"

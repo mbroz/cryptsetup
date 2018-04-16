@@ -247,7 +247,18 @@ int crypt_set_pbkdf_type(struct crypt_device *cd,
 	 const struct crypt_pbkdf_type *pbkdf);
 
 /**
- * Get current default PBKDF (Password-Based Key Derivation Algorithm) for keyslots.
+ * Get default PBKDF (Password-Based Key Derivation Algorithm) settings for keyslots.
+ * Works only with LUKS device handles (both versions).
+ *
+ * @param type type of device (see @link crypt-type @endlink)
+ *
+ * @return struct on success or NULL value otherwise.
+ *
+ */
+const struct crypt_pbkdf_type *crypt_get_pbkdf_default(const char *type);
+
+/**
+ * Get current PBKDF (Password-Based Key Derivation Algorithm) settings for keyslots.
  * Works only with LUKS device handles (both versions).
  *
  * @param cd crypt device handle

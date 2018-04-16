@@ -2280,6 +2280,22 @@ static void Pbkdf(void)
 	EQ_(pbkdf->flags, CRYPT_PBKDF_NO_BENCHMARK);
 
 	crypt_free(cd);
+
+	NOTNULL_(pbkdf = crypt_get_pbkdf_default(CRYPT_LUKS1));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_PBKDF2));
+	EQ_(pbkdf->time_ms, DEFAULT_LUKS1_ITER_TIME);
+	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
+	EQ_(pbkdf->max_memory_kb, 0);
+	EQ_(pbkdf->parallel_threads, 0);
+
+	NOTNULL_(pbkdf = crypt_get_pbkdf_default(CRYPT_LUKS2));
+	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
+	EQ_(pbkdf->time_ms, DEFAULT_LUKS2_ITER_TIME);
+	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
+	EQ_(pbkdf->max_memory_kb, DEFAULT_LUKS2_MEMORY_KB);
+	EQ_(pbkdf->parallel_threads, DEFAULT_LUKS2_PARALLEL_THREADS);
+
+	NULL_(pbkdf = crypt_get_pbkdf_default(CRYPT_PLAIN));
 }
 
 static void Luks2KeyslotAdd(void)

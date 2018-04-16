@@ -251,6 +251,19 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd)
 	return crypt_get_pbkdf(cd)->type ? crypt_get_pbkdf(cd) : NULL;
 }
 
+const struct crypt_pbkdf_type *crypt_get_pbkdf_default(const char *type)
+{
+	if (!type)
+		return NULL;
+
+	if (!strcmp(type, CRYPT_LUKS1))
+		return &default_luks1;
+	else if (!strcmp(type, CRYPT_LUKS2))
+		return &default_luks2;
+
+	return NULL;
+}
+
 void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_ms)
 {
 	struct crypt_pbkdf_type *pbkdf;
