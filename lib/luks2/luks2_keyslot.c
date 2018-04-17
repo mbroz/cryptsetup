@@ -378,8 +378,16 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 		r = h->alloc(cd, keyslot, vk->keylength, params);
 		if (r)
 			return r;
-	} else if (!(h = LUKS2_keyslot_handler(cd, keyslot)))
-		return -EINVAL;
+	} else {
+		if (!(h = LUKS2_keyslot_handler(cd, keyslot)))
+			return -EINVAL;
+
+		r = h->update(cd, keyslot, params);
+		if (r) {
+			log_dbg("Failed to update keyslot %d json.", keyslot);
+			return r;
+		}
+	}
 
 	r = h->validate(cd, keyslot);
 	if (r) {

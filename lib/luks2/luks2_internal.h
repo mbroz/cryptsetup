@@ -86,6 +86,8 @@ struct json_object *LUKS2_array_remove(struct json_object *array, const char *nu
 typedef int (*keyslot_alloc_func)(struct crypt_device *cd, int keyslot,
 				  size_t volume_key_len,
 				  const struct luks2_keyslot_params *params);
+typedef int (*keyslot_update_func)(struct crypt_device *cd, int keyslot,
+				   const struct luks2_keyslot_params *params);
 typedef int (*keyslot_open_func) (struct crypt_device *cd, int keyslot,
 				  const char *password, size_t password_len,
 				  char *volume_key, size_t volume_key_len);
@@ -111,6 +113,7 @@ int luks2_keyslot_alloc(struct crypt_device *cd,
 typedef struct  {
 	const char *name;
 	keyslot_alloc_func alloc;
+	keyslot_update_func update;
 	keyslot_open_func  open;
 	keyslot_store_func store;
 	keyslot_wipe_func  wipe;
