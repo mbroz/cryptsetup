@@ -154,6 +154,57 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 #endif
 }
 
+static int luks2_keyslot_get_pbkdf_params(json_object *jobj_keyslot,
+		                struct crypt_pbkdf_type *pbkdf, char *salt)
+{
+	json_object *jobj_kdf, *jobj1, *jobj2;
+	size_t salt_len;
+
+	if (!jobj_keyslot || !pbkdf)
+		return -EINVAL;
+
+	memset(pbkdf, 0, sizeof(*pbkdf));
+
+	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf))
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(jobj_kdf, "type", &jobj1))
+		return -EINVAL;
+	pbkdf->type = json_object_get_string(jobj1);
+	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2)) {
+		if (!json_object_object_get_ex(jobj_kdf, "hash", &jobj2))
+			return -EINVAL;
+		pbkdf->hash = json_object_get_string(jobj2);
+		if (!json_object_object_get_ex(jobj_kdf, "iterations", &jobj2))
+			return -EINVAL;
+		pbkdf->iterations = json_object_get_int(jobj2);
+		pbkdf->max_memory_kb = 0;
+		pbkdf->parallel_threads = 0;
+	} else {
+		if (!json_object_object_get_ex(jobj_kdf, "time", &jobj2))
+			return -EINVAL;
+		pbkdf->iterations = json_object_get_int(jobj2);
+		if (!json_object_object_get_ex(jobj_kdf, "memory", &jobj2))
+			return -EINVAL;
+		pbkdf->max_memory_kb = json_object_get_int(jobj2);
+		if (!json_object_object_get_ex(jobj_kdf, "cpus", &jobj2))
+			return -EINVAL;
+		pbkdf->parallel_threads = json_object_get_int(jobj2);
+	}
+
+	if (!json_object_object_get_ex(jobj_kdf, "salt", &jobj2))
+		return -EINVAL;
+	salt_len = LUKS_SALTSIZE;
+	if (!base64_decode(json_object_get_string(jobj2),
+			   json_object_get_string_len(jobj2),
+			   salt, &salt_len))
+		return -EINVAL;
+	if (salt_len != LUKS_SALTSIZE)
+		return -EINVAL;
+
+	return 0;
+}
+
 static int luks2_keyslot_set_key(struct crypt_device *cd,
 	json_object *jobj_keyslot,
 	const char *password, size_t passwordLen,
@@ -270,53 +321,21 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	char *volume_key, size_t volume_key_len)
 {
 	struct volume_key *derived_key;
+	struct crypt_pbkdf_type pbkdf;
 	char *AfKey;
 	size_t AFEKSize;
-	const char *hash = NULL, *af_hash = NULL, *kdf;
+	const char *af_hash = NULL;
 	char salt[LUKS_SALTSIZE], cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
-	json_object *jobj1, *jobj2, *jobj_kdf, *jobj_af, *jobj_area;
-	uint32_t iterations, memory, parallel;
+	json_object *jobj2, *jobj_af, *jobj_area;
 	uint64_t area_offset;
-	size_t salt_len, keyslot_key_len;
+	size_t keyslot_key_len;
 	int r;
 
-	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf) ||
-	    !json_object_object_get_ex(jobj_keyslot, "af", &jobj_af) ||
+	if (!json_object_object_get_ex(jobj_keyslot, "af", &jobj_af) ||
 	    !json_object_object_get_ex(jobj_keyslot, "area", &jobj_area))
 		return -EINVAL;
 
-	if (!json_object_object_get_ex(jobj_kdf, "type", &jobj1))
-		return -EINVAL;
-	kdf = json_object_get_string(jobj1);
-	if (!strcmp(kdf, CRYPT_KDF_PBKDF2)) {
-		if (!json_object_object_get_ex(jobj_kdf, "hash", &jobj2))
-			return -EINVAL;
-		hash = json_object_get_string(jobj2);
-		if (!json_object_object_get_ex(jobj_kdf, "iterations", &jobj2))
-			return -EINVAL;
-		iterations = json_object_get_int(jobj2);
-		memory = 0;
-		parallel = 0;
-	} else {
-		if (!json_object_object_get_ex(jobj_kdf, "time", &jobj2))
-			return -EINVAL;
-		iterations = json_object_get_int(jobj2);
-		if (!json_object_object_get_ex(jobj_kdf, "memory", &jobj2))
-			return -EINVAL;
-		memory = json_object_get_int(jobj2);
-		if (!json_object_object_get_ex(jobj_kdf, "cpus", &jobj2))
-			return -EINVAL;
-		parallel = json_object_get_int(jobj2);
-	}
-
-	if (!json_object_object_get_ex(jobj_kdf, "salt", &jobj2))
-		return -EINVAL;
-	salt_len = LUKS_SALTSIZE;
-	if (!base64_decode(json_object_get_string(jobj2),
-			   json_object_get_string_len(jobj2),
-			   salt, &salt_len))
-		return -EINVAL;
-	if (salt_len != LUKS_SALTSIZE)
+	if (luks2_keyslot_get_pbkdf_params(jobj_keyslot, &pbkdf, salt))
 		return -EINVAL;
 
 	if (!json_object_object_get_ex(jobj_af, "hash", &jobj2))
@@ -353,10 +372,11 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	/*
 	 * Calculate derived key, decrypt keyslot content and merge it.
 	 */
-	r = crypt_pbkdf(kdf, hash, password, passwordLen,
+	r = crypt_pbkdf(pbkdf.type, pbkdf.hash, password, passwordLen,
 			salt, LUKS_SALTSIZE,
 			derived_key->key, derived_key->keylength,
-			iterations, memory, parallel);
+			pbkdf.iterations, pbkdf.max_memory_kb,
+			pbkdf.parallel_threads);
 
 	if (r == 0) {
 		log_dbg("Reading keyslot area [0x%04x].", (unsigned)area_offset);
