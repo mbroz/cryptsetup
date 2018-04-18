@@ -2300,12 +2300,12 @@ static void Pbkdf(void)
 
 static void Luks2KeyslotAdd(void)
 {
-	char key[128], key2[128];
+	char key[128], key2[128], key_ret[128];
 	struct crypt_device *cd;
 	const char *cipher = "aes", *cipher_mode="xts-plain64";
 	const char *mk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
-	size_t key_size = strlen(mk_hex) / 2;
+	size_t key_ret_len, key_size = strlen(mk_hex) / 2;
 
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key2, mk_hex2, key_size);
@@ -2332,9 +2332,20 @@ static void Luks2KeyslotAdd(void)
 	EQ_(crypt_keyslot_add_by_key(cd, 2, key2, key_size-1, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 2);
 	EQ_(crypt_keyslot_add_by_key(cd, 3, key2, 13, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 3);
 
+	key_ret_len = key_size - 1;
+	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), "Wrong size or fips");
+
+	key_ret_len = 13;
+	FAIL_(crypt_volume_key_get(cd, 2, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), "wrong size");
+	EQ_(crypt_volume_key_get(cd, 3, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), 3);
+	FAIL_(crypt_activate_by_volume_key(cd, NULL, key_ret, key_ret_len, 0), "Not a volume key");
+	key_ret_len = key_size;
+	EQ_(crypt_volume_key_get(cd, 1, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), 1);
+
 	/* test force volume key change works as expected */
 	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 0, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_SET), 1);
 	OK_(crypt_activate_by_volume_key(cd, NULL, key2, key_size, 0));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key_ret, key_ret_len, 0));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key2, key_size, 0));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_activate_by_passphrase(cd, NULL, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
