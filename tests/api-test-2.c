@@ -1544,7 +1544,7 @@ static void Tokens(void)
 	EQ_(crypt_token_assign_keyslot(cd, 0, 3), 0);
 
 	EQ_(crypt_activate_by_token(cd, NULL, 2, PASSPHRASE, 0), 0);
-	EQ_(crypt_activate_by_token(cd, NULL, 0, PASSPHRASE1, 0), 3);
+	EQ_(crypt_activate_by_token(cd, NULL, 0, PASSPHRASE1, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 3);
 	// FIXME: useless error message here (or missing one to be specific)
 	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 0, PASSPHRASE1, 0), "No volume key available in token keyslots");
 	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE, 0), 0);
@@ -2317,7 +2317,7 @@ static void Luks2KeyslotAdd(void)
 	EQ_(crypt_keyslot_add_by_key(cd, 1, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_status(cd, 0), CRYPT_SLOT_ACTIVE_LAST);
-	EQ_(crypt_keyslot_status(cd, 1), CRYPT_SLOT_ACTIVE);
+	EQ_(crypt_keyslot_status(cd, 1), CRYPT_SLOT_UNBOUND);
 	/* must not activate volume with keyslot unassigned to a segment */
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key2, key_size, 0), "Key doesn't match volume key digest");
 	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), "Keyslot not assigned to volume");
@@ -2325,8 +2325,8 @@ static void Luks2KeyslotAdd(void)
 	/* unusable for volume activation even in test mode */
 	FAIL_(crypt_activate_by_volume_key(cd, NULL, key2, key_size, 0), "Key doesn't match volume key digest");
 	/* otoh passphrase check should pass */
-	EQ_(crypt_activate_by_passphrase(cd, NULL, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
-	EQ_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
+	EQ_(crypt_activate_by_passphrase(cd, NULL, 1, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 1);
+	EQ_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 1);
 	/* in general crypt_keyslot_add_by_key must allow any reasonable key size
 	 * even though such keyslot will not be usable for segment encryption */
 	EQ_(crypt_keyslot_add_by_key(cd, 2, key2, key_size-1, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 2);
@@ -2391,7 +2391,7 @@ static void Luks2ActivateByKeyring(void)
 	FAIL_(crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST0, 0, 0), "already open");
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
-	EQ_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST1, 1, 0), 1);
+	EQ_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST1, 1, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 1);
 	EQ_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST1, 2, 0), 2);
 	FAIL_(crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST1, 1, 0), "Keyslot not assigned to volume");
 	EQ_(crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST1, 2, 0), 2);

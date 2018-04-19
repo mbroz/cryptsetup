@@ -2916,6 +2916,9 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd))
 		return -EINVAL;
 
+	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
+		return -EINVAL;
+
 	/* plain, use hashed passphrase */
 	if (isPLAIN(cd->type)) {
 		if (!name)
@@ -2939,7 +2942,8 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 		}
 	} else if (isLUKS2(cd->type)) {
 		r = LUKS2_keyslot_open(cd, keyslot,
-				       name ? CRYPT_DEFAULT_SEGMENT : CRYPT_ANY_SEGMENT,
+				       (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
+				       CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
 				       passphrase, passphrase_size, &vk);
 		if (r >= 0) {
 			keyslot = r;
@@ -4023,6 +4027,9 @@ int crypt_activate_by_token(struct crypt_device *cd,
 		return r;
 
 	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd))
+		return -EINVAL;
+
+	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
 		return -EINVAL;
 
 	if (token == CRYPT_ANY_TOKEN)

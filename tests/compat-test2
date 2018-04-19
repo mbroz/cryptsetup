@@ -792,21 +792,30 @@ $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEY5 --key-slot
 # unbound key may have arbitrary size
 echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 16 $LOOPDEV || fail
 echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 32 -S 2 $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2 (unbound)" || fail
 echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 8 -S 3 --master-key-file /dev/urandom $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" || fail
 # unbound key size is required
 echo $PWD1 | $CRYPTSETUP -q luksAddKey --unbound $LOOPDEV 2>/dev/null && fail
 echo $PWD3 | $CRYPTSETUP -q luksAddKey --unbound --master-key-file /dev/urandom $LOOPDEV 2> /dev/null && fail
 # do not allow to replace keyslot by unbound slot
 echo $PWD1 | $CRYPTSETUP -q luksAddKey -S5 --unbound -s 32 $LOOPDEV 2>/dev/null && fail
-echo $PWD2 | $CRYPTSETUP -q open $LOOPDDEV $DEV_NAME 2> /dev/null && fail
-echo $PWD2 | $CRYPTSETUP -q open -S2 $LOOPDDEV $DEV_NAME 2> /dev/null && fail
-echo $PWD1 | $CRYPTSETUP -q open $LOOPDDEV $DEV_NAME 2> /dev/null && fail
+echo $PWD2 | $CRYPTSETUP -q open $LOOPDEV $DEV_NAME 2> /dev/null && fail
+echo $PWD2 | $CRYPTSETUP -q open $LOOPDEV --test-passphrase || fail
+echo $PWD2 | $CRYPTSETUP -q open -S2 $LOOPDEV $DEV_NAME 2> /dev/null && fail
+echo $PWD2 | $CRYPTSETUP -q open -S2 $LOOPDEV --test-passphrase || fail
+echo $PWD1 | $CRYPTSETUP -q open $LOOPDEV $DEV_NAME 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q open $LOOPDEV --test-passphrase || fail
 # do not allow adding keyslot by unbound keyslot
 echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $LOOPDEV 2> /dev/null && fail
 # check adding keyslot works when there's unbound keyslot
 echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --key-file $KEY5 -S8 || fail
 echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP close $DEV_NAME || fail
+$CRYPTSETUP luksKillSlot -q $LOOPDEV 2
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2 (unbound)" && fail
+$CRYPTSETUP luksKillSlot -q $LOOPDEV 3
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" && fail
 
 remove_mapping
 exit 0

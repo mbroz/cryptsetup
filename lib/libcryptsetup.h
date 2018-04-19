@@ -956,6 +956,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_IGNORE_PERSISTENT (1 << 14)
 /** dm-verity: check_at_most_once - check data blocks only the first time */
 #define CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE (1 << 15)
+/** allow activation check including unbound keyslots (kesylots without segments) */
+#define CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY (1 << 16)
 
 /**
  * Active device runtime attributes
@@ -1437,8 +1439,10 @@ typedef enum {
 	CRYPT_SLOT_INVALID,    /**< invalid keyslot */
 	CRYPT_SLOT_INACTIVE,   /**< keyslot is inactive (free) */
 	CRYPT_SLOT_ACTIVE,     /**< keyslot is active (used) */
-	CRYPT_SLOT_ACTIVE_LAST /**< keylost is active (used)
+	CRYPT_SLOT_ACTIVE_LAST,/**< keylost is active (used)
 				 *  and last used at the same time */
+	CRYPT_SLOT_UNBOUND     /**< keyslot is active and not bound
+				 *  to any crypt segment (LUKS2 only) */
 } crypt_keyslot_info;
 
 /**

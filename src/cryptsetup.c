@@ -156,6 +156,10 @@ static void _set_activation_flags(uint32_t *flags)
 	/* In persistent mode, we use what is set on command line */
 	if (opt_persistent)
 		*flags |= CRYPT_ACTIVATE_IGNORE_PERSISTENT;
+
+	/* Only for LUKS2 but ignored elsewhere */
+	if (opt_test_passphrase)
+		*flags |= CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY;
 }
 
 static int action_open_plain(void)
@@ -1132,17 +1136,15 @@ out:
 	return r;
 }
 
-static int verify_keyslot(struct crypt_device *cd, int key_slot,
+static int verify_keyslot(struct crypt_device *cd, int key_slot, crypt_keyslot_info ki,
 			  char *msg_last, char *msg_pass, char *msg_fail,
 			  const char *key_file, uint64_t keyfile_offset,
 			  int keyfile_size)
 {
-	crypt_keyslot_info ki;
 	char *password = NULL;
 	size_t passwordLen;
 	int i, max, r;
 
-	ki = crypt_keyslot_status(cd, key_slot);
 	if (ki == CRYPT_SLOT_ACTIVE_LAST && !opt_batch_mode && !key_file &&
 	    msg_last && !yesDialog(msg_last, msg_fail))
 		return -EPERM;
@@ -1188,6 +1190,7 @@ out:
 static int action_luksKillSlot(void)
 {
 	struct crypt_device *cd = NULL;
+	crypt_keyslot_info ki;
 	int r;
 
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
@@ -1198,9 +1201,11 @@ static int action_luksKillSlot(void)
 	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
 		goto out;
 
-	switch (crypt_keyslot_status(cd, opt_key_slot)) {
+	ki = crypt_keyslot_status(cd, opt_key_slot);
+	switch (ki) {
 	case CRYPT_SLOT_ACTIVE_LAST:
 	case CRYPT_SLOT_ACTIVE:
+	case CRYPT_SLOT_UNBOUND:
 		log_verbose(_("Keyslot %d is selected for deletion.\n"), opt_key_slot);
 		break;
 	case CRYPT_SLOT_INACTIVE:
@@ -1211,7 +1216,7 @@ static int action_luksKillSlot(void)
 	}
 
 	if (!opt_batch_mode || opt_key_file || !isatty(STDIN_FILENO)) {
-		r = verify_keyslot(cd, opt_key_slot,
+		r = verify_keyslot(cd, opt_key_slot, ki,
 			_("This is the last keyslot. Device will become unusable after purging this key."),
 			_("Enter any remaining passphrase: "),
 			_("Operation aborted, the keyslot was NOT wiped.\n"),

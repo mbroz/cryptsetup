@@ -397,7 +397,8 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 		return r;
 
 	r = LUKS2_keyslot_open_by_token(cd, hdr, token,
-					name ? CRYPT_DEFAULT_SEGMENT : CRYPT_ANY_SEGMENT,
+					(flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
+					CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
 					buffer, buffer_len, &vk);
 
 	LUKS2_token_buffer_free(cd, token, buffer, buffer_len);
@@ -442,7 +443,8 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 			continue;
 
 		r = LUKS2_keyslot_open_by_token(cd, hdr, token,
-						name ? CRYPT_DEFAULT_SEGMENT : CRYPT_ANY_SEGMENT,
+						(flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
+						CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
 						buffer, buffer_len, &vk);
 		LUKS2_token_buffer_free(cd, token, buffer, buffer_len);
 		if (r >= 0)

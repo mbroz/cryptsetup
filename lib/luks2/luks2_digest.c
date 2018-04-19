@@ -175,6 +175,7 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	return digest;
 }
 
+/* FIXME: segment can have more digests */
 int LUKS2_digest_by_segment(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int segment)

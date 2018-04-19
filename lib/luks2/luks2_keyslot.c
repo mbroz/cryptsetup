@@ -63,14 +63,6 @@ static const keyslot_handler
 	return LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj2));
 }
 
-static crypt_keyslot_info LUKS2_keyslot_active(struct luks2_hdr *hdr, int keyslot)
-{
-	if (keyslot >= LUKS2_KEYSLOTS_MAX)
-		return CRYPT_SLOT_INVALID;
-
-	return LUKS2_get_keyslot_jobj(hdr, keyslot) ? CRYPT_SLOT_ACTIVE : CRYPT_SLOT_INACTIVE;
-}
-
 int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr, const char *type)
 {
 	int i;
@@ -82,6 +74,7 @@ int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr, const char *type)
 	return -EINVAL;
 }
 
+/* Check if a keyslot is asssigned to specific segment */
 int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 {
 	int keyslot_digest, segment_digest;
@@ -101,6 +94,7 @@ int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 	return segment_digest == keyslot_digest ? 0 : -ENOENT;
 }
 
+/* Number of keyslots assigned to a segment or all keyslots for CRYPT_ANY_SEGMENT */
 int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 {
 	int num = 0;
@@ -176,18 +170,38 @@ int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return 0;
 }
 
+static int LUKS2_keyslot_unbound(struct luks2_hdr *hdr, int keyslot)
+{
+	json_object *jobj_digest, *jobj_segments;
+	int digest = LUKS2_digest_by_keyslot(NULL, hdr, keyslot);
+
+	if (digest < 0)
+		return 0;
+
+	if (!(jobj_digest = LUKS2_get_digest_jobj(hdr, digest)))
+		return 0;
+
+	json_object_object_get_ex(jobj_digest, "segments", &jobj_segments);
+	if (!jobj_segments || !json_object_is_type(jobj_segments, json_type_array) ||
+	    json_object_array_length(jobj_segments) == 0)
+		return 1;
+
+	return 0;
+}
+
 crypt_keyslot_info LUKS2_keyslot_info(struct luks2_hdr *hdr, int keyslot)
 {
-	crypt_keyslot_info ki;
-
 	if(keyslot >= LUKS2_KEYSLOTS_MAX || keyslot < 0)
 		return CRYPT_SLOT_INVALID;
 
-	ki = LUKS2_keyslot_active(hdr, keyslot);
-	if (ki != CRYPT_SLOT_ACTIVE)
-		return ki;
+	if (!LUKS2_get_keyslot_jobj(hdr, keyslot))
+		return CRYPT_SLOT_INACTIVE;
 
-	if (LUKS2_keyslot_active_count(hdr, CRYPT_DEFAULT_SEGMENT) == 1 && !LUKS2_keyslot_for_segment(hdr, keyslot, CRYPT_DEFAULT_SEGMENT))
+	if (LUKS2_keyslot_unbound(hdr, keyslot))
+		return CRYPT_SLOT_UNBOUND;
+
+	if (LUKS2_keyslot_active_count(hdr, CRYPT_DEFAULT_SEGMENT) == 1 &&
+	    !LUKS2_keyslot_for_segment(hdr, keyslot, CRYPT_DEFAULT_SEGMENT))
 		return CRYPT_SLOT_ACTIVE_LAST;
 
 	return CRYPT_SLOT_ACTIVE;

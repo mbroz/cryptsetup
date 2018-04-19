@@ -512,6 +512,8 @@ static PyObject *CryptSetup_killSlot(CryptSetupObject* self, PyObject *args, PyO
 	case CRYPT_SLOT_INVALID:
 		PyErr_SetString(PyExc_ValueError, "Invalid slot");
 		break;
+	default:
+		break;
 	}
 
 	return NULL;

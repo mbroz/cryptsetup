@@ -398,5 +398,16 @@ $CRYPTSETUP isLuks $IMG && fail
 $CRYPTSETUP isLuks $IMG_HDR || fail
 $CRYPTSETUP luksDump $IMG_HDR | grep -q "0: luks2" || fail
 
+echo "[14] Reencryption with unbound keyslot"
+prepare 8192
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG || fail
+echo $PWD2 | $CRYPTSETUP -q luksAddKey -S 3 --unbound --key-size 64 $FAST_PBKDF_ARGON $IMG || fail
+wipe $PWD1
+check_hash $PWD1 $HASH5
+$CRYPTSETUP luksDump $IMG | grep -q "3: luks2 (unbound)" || fail
+echo $PWD2 | $REENC $IMG -q $FAST_PBKDF 2>/dev/null && fail
+echo -e "$PWD1\n$PWD2" | $REENC $IMG -q $FAST_PBKDF || fail
+$CRYPTSETUP luksDump $IMG | grep -q "3: luks2 (unbound)" || fail
+
 remove_mapping
 exit 0

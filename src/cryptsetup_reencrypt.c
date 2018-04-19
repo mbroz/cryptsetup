@@ -533,8 +533,38 @@ static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 
-static int create_new_header(struct reenc_ctx *rc, const char *cipher,
-			     const char *cipher_mode, const char *uuid,
+static int create_new_keyslot(struct reenc_ctx *rc, int keyslot,
+			      struct crypt_device *cd_old,
+			      struct crypt_device *cd_new)
+{
+	int r;
+	char *key = NULL;
+	size_t key_size;
+
+	if (cd_old && crypt_keyslot_status(cd_old, keyslot) == CRYPT_SLOT_UNBOUND) {
+		key_size = 4096;
+		key = crypt_safe_alloc(key_size);
+		if (!key)
+			return -ENOMEM;
+		r = crypt_volume_key_get(cd_old, keyslot, key, &key_size,
+			rc->p[keyslot].password, rc->p[keyslot].passwordLen);
+		if (r == keyslot) {
+			r = crypt_keyslot_add_by_key(cd_new, keyslot, key, key_size,
+				rc->p[keyslot].password, rc->p[keyslot].passwordLen,
+				CRYPT_VOLUME_KEY_NO_SEGMENT);
+		} else
+			r = -EINVAL;
+		crypt_safe_free(key);
+	} else
+		r = crypt_keyslot_add_by_volume_key(cd_new, keyslot, NULL, 0,
+			rc->p[keyslot].password, rc->p[keyslot].passwordLen);
+
+	return r;
+}
+
+static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
+			     const char *cipher, const char *cipher_mode,
+			     const char *uuid,
 			     const char *key, int key_size,
 			     const char *type,
 			     void *params)
@@ -564,8 +594,9 @@ static int create_new_header(struct reenc_ctx *rc, const char *cipher,
 	for (i = 0; i < crypt_keyslot_max(type); i++) {
 		if (!rc->p[i].password)
 			continue;
-		if ((r = crypt_keyslot_add_by_volume_key(cd_new, i,
-			NULL, 0, rc->p[i].password, rc->p[i].passwordLen)) < 0)
+
+		r = create_new_keyslot(rc, i, cd_old, cd_new);
+		if (r < 0)
 			goto out;
 		log_verbose(_("Activated keyslot %i.\n"), r);
 		r = 0;
@@ -732,7 +763,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	if (r < 0)
 		goto out;
 
-	r = create_new_header(rc,
+	r = create_new_header(rc, cd,
 		opt_cipher ? cipher : crypt_get_cipher(cd),
 		opt_cipher ? cipher_mode : crypt_get_cipher_mode(cd),
 		crypt_get_uuid(cd),
@@ -818,7 +849,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		goto out;
 
 	params2.data_alignment = params.data_alignment = ROUND_SECTOR(opt_reduce_size);
-	r = create_new_header(rc,
+	r = create_new_header(rc, NULL,
 		opt_cipher ? cipher : DEFAULT_LUKS1_CIPHER,
 		opt_cipher ? cipher_mode : DEFAULT_LUKS1_MODE,
 		NULL, NULL,
@@ -1195,9 +1226,18 @@ static int initialize_uuid(struct reenc_ctx *rc)
 static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 			    const char *msg, int slot_to_check, int check, int verify)
 {
+	crypt_keyslot_info ki;
 	char *password;
 	int r = -EINVAL, retry_count;
 	size_t passwordLen;
+
+	/* mode ENCRYPT call this without header */
+	if (cd && slot_to_check != CRYPT_ANY_SLOT) {
+		ki = crypt_keyslot_status(cd, slot_to_check);
+		if (ki < CRYPT_SLOT_ACTIVE)
+			return -ENOENT;
+	} else
+		ki = CRYPT_SLOT_ACTIVE;
 
 	retry_count = opt_tries ?: 1;
 	while (retry_count--) {
@@ -1214,7 +1254,7 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 
 		if (check)
 			r = crypt_activate_by_passphrase(cd, NULL, slot_to_check,
-				password, passwordLen, 0);
+				password, passwordLen, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY);
 		else
 			r = (slot_to_check == CRYPT_ANY_SLOT) ? 0 : slot_to_check;
 
@@ -1225,10 +1265,12 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 		}
 		if (r < 0 && r != -EPERM)
 			return r;
+
 		if (r >= 0) {
-			rc->keyslot = r;
 			rc->p[r].password = password;
 			rc->p[r].passwordLen = passwordLen;
+			if (ki != CRYPT_SLOT_UNBOUND)
+				rc->keyslot = r;
 			break;
 		}
 		tools_passphrase_msg(r);
@@ -1283,11 +1325,10 @@ static int init_keyfile(struct reenc_ctx *rc, struct crypt_device *cd, int slot_
 static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 {
 	struct crypt_device *cd = NULL;
-	crypt_keyslot_info ki;
 	char msg[256];
 	int i, r;
 
-	log_dbg("Passhrases initialization.");
+	log_dbg("Passphrases initialization.");
 
 	if (rc->reencrypt_mode == ENCRYPT && !rc->in_progress) {
 		r = init_passphrase1(rc, cd, _("Enter new passphrase: "), opt_key_slot, 0, 1);
@@ -1314,12 +1355,12 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 		   rc->reencrypt_mode == DECRYPT) {
 		r = init_passphrase1(rc, cd, msg, opt_key_slot, 1, 0);
 	} else for (i = 0; i < crypt_keyslot_max(crypt_get_type(cd)); i++) {
-		ki = crypt_keyslot_status(cd, i);
-		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
-			continue;
-
 		snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %u: "), i);
 		r = init_passphrase1(rc, cd, msg, i, 1, 0);
+		if (r == -ENOENT) {
+			r = 0;
+			continue;
+		}
 		if (r < 0)
 			break;
 	}
@@ -1504,6 +1545,7 @@ static int run_reencrypt(const char *device)
 		if ((r = initialize_passphrase(&rc, hdr_device(&rc))))
 			goto out;
 
+		log_dbg("Storing backup of LUKS headers.");
 		if (rc.reencrypt_mode == ENCRYPT) {
 			/* Create fake header for exising device */
 			if ((r = backup_fake_header(&rc)))

@@ -882,17 +882,11 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr)
 	return r;
 }
 
-/* NOTE: is called before LUKS2 validation routines */
-static void LUKS2_hdr_free_unused_objects(struct crypt_device *cd, struct luks2_hdr *hdr)
-{
-	/* erase unused digests (no assigned keyslot or segment) */
-	LUKS2_digests_erase_unused(cd, hdr);
-}
-
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr)
 {
-	/* FIXME: we risk to hide future internal implementation bugs with this */
-	LUKS2_hdr_free_unused_objects(cd, hdr);
+	/* NOTE: is called before LUKS2 validation routines */
+	/* erase unused digests (no assigned keyslot or segment) */
+	LUKS2_digests_erase_unused(cd, hdr);
 
 	if (LUKS2_hdr_validate(hdr->jobj))
 		return -EINVAL;
