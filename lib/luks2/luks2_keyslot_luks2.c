@@ -734,6 +734,43 @@ static int luks2_keyslot_update(struct crypt_device *cd,
 	return r;
 }
 
+static void luks2_keyslot_repair(struct crypt_device *cd, json_object *jobj_keyslot)
+{
+	const char *type;
+	json_object *jobj_kdf, *jobj_type;
+
+	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf) ||
+	    !json_object_is_type(jobj_kdf, json_type_object))
+		return;
+
+	if (!json_object_object_get_ex(jobj_kdf, "type", &jobj_type) ||
+	    !json_object_is_type(jobj_type, json_type_string))
+		return;
+
+	type = json_object_get_string(jobj_type);
+
+	if (!strcmp(type, CRYPT_KDF_PBKDF2)) {
+		/* type, salt, hash, iterations only */
+		json_object_object_foreach(jobj_kdf, key, val) {
+			UNUSED(val);
+			if (!strcmp(key, "type") || !strcmp(key, "salt") ||
+			    !strcmp(key, "hash") || !strcmp(key, "iterations"))
+					continue;
+			json_object_object_del(jobj_kdf, key);
+		}
+	} else if (!strcmp(type, CRYPT_KDF_ARGON2I) || !strcmp(type, CRYPT_KDF_ARGON2ID)) {
+		/* type, salt, time, memory, cpus only */
+		json_object_object_foreach(jobj_kdf, key, val) {
+			UNUSED(val);
+			if (!strcmp(key, "type") || !strcmp(key, "salt") ||
+			    !strcmp(key, "time") || !strcmp(key, "memory") ||
+			    !strcmp(key, "cpus"))
+					continue;
+			json_object_object_del(jobj_kdf, key);
+		}
+	}
+}
+
 const keyslot_handler luks2_keyslot = {
 	.name  = "luks2",
 	.alloc  = luks2_keyslot_alloc,
@@ -743,4 +780,5 @@ const keyslot_handler luks2_keyslot = {
 	.wipe  = luks2_keyslot_wipe,
 	.dump  = luks2_keyslot_dump,
 	.validate = luks2_keyslot_validate,
+	.repair = luks2_keyslot_repair
 };

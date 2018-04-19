@@ -1938,3 +1938,26 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 	/* any remaining unmasked requirement fails the check */
 	return reqs ? -EINVAL : 0;
 }
+
+/*
+ * NOTE: this routine is called on json object that failed validation.
+ * 	 Proceed with caution :)
+ *
+ * known glitches so far:
+ *
+ * any version < 2.0.3:
+ *  - luks2 keyslot pbkdf params change via crypt_keyslot_change_by_passphrase()
+ *    could leave previous type parameters behind. Correct this by purging
+ *    all params not needed by current type.
+ */
+void LUKS2_hdr_repair(json_object *hdr_jobj)
+{
+	json_object *jobj_keyslots;
+
+	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
+		return;
+	if (!json_object_is_type(jobj_keyslots, json_type_object))
+		return;
+
+	LUKS2_keyslots_repair(jobj_keyslots);
+}

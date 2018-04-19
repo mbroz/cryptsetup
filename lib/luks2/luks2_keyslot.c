@@ -608,3 +608,21 @@ int LUKS2_keyslots_validate(json_object *hdr_jobj)
 
 	return 0;
 }
+
+void LUKS2_keyslots_repair(json_object *jobj_keyslots)
+{
+	const keyslot_handler *h;
+	json_object *jobj_type;
+
+	json_object_object_foreach(jobj_keyslots, slot, val) {
+		UNUSED(slot);
+		if (!json_object_is_type(val, json_type_object) ||
+		    !json_object_object_get_ex(val, "type", &jobj_type) ||
+		    !json_object_is_type(jobj_type, json_type_string))
+			continue;
+
+		h = LUKS2_keyslot_handler_type(NULL, json_object_get_string(jobj_type));
+		if (h && h->repair)
+			h->repair(NULL, val);
+	}
+}

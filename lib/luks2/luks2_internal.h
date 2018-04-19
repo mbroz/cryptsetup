@@ -80,6 +80,12 @@ int LUKS2_token_validate(json_object *hdr_jobj, json_object *jobj_token, const c
 void LUKS2_token_dump(struct crypt_device *cd, int token);
 
 /*
+ * LUKS2 JSON repair for known glitches
+ */
+void LUKS2_hdr_repair(json_object *jobj_hdr);
+void LUKS2_keyslots_repair(json_object *jobj_hdr);
+
+/*
  * JSON array helpers
  */
 struct json_object *LUKS2_array_jobj(struct json_object *array, const char *num);
@@ -106,6 +112,7 @@ typedef int (*keyslot_store_func)(struct crypt_device *cd, int keyslot,
 typedef int (*keyslot_wipe_func) (struct crypt_device *cd, int keyslot);
 typedef int (*keyslot_dump_func) (struct crypt_device *cd, int keyslot);
 typedef int (*keyslot_validate_func) (struct crypt_device *cd, json_object *jobj_keyslot);
+typedef void(*keyslot_repair_func) (struct crypt_device *cd, json_object *jobj_keyslot);
 
 /* see LUKS2_luks2_to_luks1 */
 int placeholder_keyslot_alloc(struct crypt_device *cd,
@@ -126,6 +133,7 @@ typedef struct  {
 	keyslot_wipe_func  wipe;
 	keyslot_dump_func  dump;
 	keyslot_validate_func validate;
+	keyslot_repair_func repair;
 } keyslot_handler;
 
 /**

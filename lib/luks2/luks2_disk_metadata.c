@@ -491,6 +491,15 @@ static int validate_luks2_json_object(json_object *jobj_hdr)
 	}
 
 	r = LUKS2_hdr_validate(jobj_hdr);
+	if (r) {
+		log_dbg("Repairing JSON metadata.");
+		/* try to correct known glitches */
+		LUKS2_hdr_repair(jobj_hdr);
+
+		/* run validation again */
+		r = LUKS2_hdr_validate(jobj_hdr);
+	}
+
 	if (r)
 		log_dbg("ERROR: LUKS2 validation failed");
 
