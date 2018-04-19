@@ -346,28 +346,6 @@ static json_bool validate_segments_array(json_object *jarr, json_object *jobj_se
 	return TRUE;
 }
 
-unsigned LUKS2_get_keyslot_digests_count(struct luks2_hdr *hdr, int keyslot)
-{
-	char num[16];
-	json_object *jobj_digests, *jobj_keyslots;
-	unsigned count = 0;
-
-	if (!json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests))
-		return 0;
-
-	if (snprintf(num, sizeof(num), "%u", keyslot) < 0)
-		return 0;
-
-	json_object_object_foreach(jobj_digests, key, val) {
-		UNUSED(key);
-		json_object_object_get_ex(val, "keyslots", &jobj_keyslots);
-		if (LUKS2_array_jobj(jobj_keyslots, num))
-			count++;
-	}
-
-	return count;
-}
-
 static json_bool segment_has_digest(const char *segment_name, json_object *jobj_digests)
 {
 	json_object *jobj_segments;
@@ -846,6 +824,10 @@ int LUKS2_hdr_validate(json_object *hdr_jobj)
 		log_dbg("Json header is too large.");
 		return 1;
 	}
+
+	/* validate keyslot implementations */
+	if (LUKS2_keyslots_validate(hdr_jobj))
+		return 1;
 
 	return 0;
 }

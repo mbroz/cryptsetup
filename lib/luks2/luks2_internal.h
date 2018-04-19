@@ -114,6 +114,9 @@ int luks2_keyslot_alloc(struct crypt_device *cd,
 	size_t volume_key_len,
 	const struct luks2_keyslot_params *params);
 
+/* validate all keyslot implementations in hdr json */
+int LUKS2_keyslots_validate(json_object *hdr_jobj);
+
 typedef struct  {
 	const char *name;
 	keyslot_alloc_func alloc;

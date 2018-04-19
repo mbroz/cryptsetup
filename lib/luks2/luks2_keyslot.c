@@ -255,12 +255,6 @@ static int LUKS2_open_and_verify(struct crypt_device *cd,
 		return r;
 	}
 
-	/* FIXME: this belongs elsewhere, stay tuned */
-	if (LUKS2_get_keyslot_digests_count(hdr, keyslot) != 1) {
-		log_dbg("Keyslot %d is not assigned to exactly 1 digest.");
-		return -EINVAL;
-	}
-
 	r = LUKS2_keyslot_for_segment(hdr, keyslot, segment);
 	if (r) {
 		if (r == -ENOENT)
@@ -399,12 +393,6 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 	if (r) {
 		log_dbg("Keyslot validation failed.");
 		return r;
-	}
-
-	/* FIXME: this belongs elsewhere, stay tuned */
-	if (LUKS2_get_keyslot_digests_count(hdr, keyslot) != 1) {
-		log_dbg("Keyslot %d is not assigned to exactly 1 digest.");
-		return -EINVAL;
 	}
 
 	return h->store(cd, keyslot, password, password_len,
@@ -565,6 +553,58 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 	snprintf(num, sizeof(num), "%d", keyslot);
 
 	json_object_object_add(jobj_keyslots, num, jobj_keyslot);
+
+	return 0;
+}
+
+static unsigned LUKS2_get_keyslot_digests_count(json_object *hdr_jobj, int keyslot)
+{
+	char num[16];
+	json_object *jobj_digests, *jobj_keyslots;
+	unsigned count = 0;
+
+	if (!json_object_object_get_ex(hdr_jobj, "digests", &jobj_digests))
+		return 0;
+
+	if (snprintf(num, sizeof(num), "%u", keyslot) < 0)
+		return 0;
+
+	json_object_object_foreach(jobj_digests, key, val) {
+		UNUSED(key);
+		json_object_object_get_ex(val, "keyslots", &jobj_keyslots);
+		if (LUKS2_array_jobj(jobj_keyslots, num))
+			count++;
+	}
+
+	return count;
+}
+
+/* run only on header that passed basic format validation */
+int LUKS2_keyslots_validate(json_object *hdr_jobj)
+{
+	const keyslot_handler *h;
+	int keyslot;
+	json_object *jobj_keyslots, *jobj_type;
+
+	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
+		return -EINVAL;
+
+	json_object_object_foreach(jobj_keyslots, slot, val) {
+		keyslot = atoi(slot);
+		json_object_object_get_ex(val, "type", &jobj_type);
+		h = LUKS2_keyslot_handler_type(NULL, json_object_get_string(jobj_type));
+		if (!h)
+			return 0;
+		if (h->validate && h->validate(NULL, val)) {
+			log_dbg("Keyslot type %s validation failed on keyslot %d.", h->name, keyslot);
+			return -EINVAL;
+		}
+
+		if (!strcmp(h->name, "luks2") && LUKS2_get_keyslot_digests_count(hdr_jobj, keyslot) != 1) {
+			log_dbg("Keyslot %d is not assigned to exactly 1 digest.", keyslot);
+			return -EINVAL;
+		}
+	}
 
 	return 0;
 }
