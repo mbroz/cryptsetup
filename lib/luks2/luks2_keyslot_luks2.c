@@ -438,7 +438,7 @@ static int luks2_keyslot_update_json(struct crypt_device *cd,
 	return 0;
 }
 
-int luks2_keyslot_alloc(struct crypt_device *cd,
+static int luks2_keyslot_alloc(struct crypt_device *cd,
 	int keyslot,
 	size_t volume_key_len,
 	const struct luks2_keyslot_params *params)
