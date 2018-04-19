@@ -641,22 +641,13 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 	return 0;
 }
 
-static int luks2_keyslot_validate(struct crypt_device *cd, int keyslot)
+static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_keyslot)
 {
-	struct luks2_hdr *hdr;
-	json_object *jobj_keyslot, *jobj_kdf, *jobj_af, *jobj_area, *jobj1;
+	json_object *jobj_kdf, *jobj_af, *jobj_area, *jobj1;
 	const char *type;
-	char num[16];
 	int count;
 
-	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
-
-	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
 	if (!jobj_keyslot)
-		return -EINVAL;
-
-	snprintf(num, sizeof(num), "%d", keyslot);
-	if (LUKS2_keyslot_validate(hdr->jobj, jobj_keyslot, num))
 		return -EINVAL;
 
 	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf) ||
@@ -706,13 +697,6 @@ static int luks2_keyslot_validate(struct crypt_device *cd, int keyslot)
 			return -EINVAL;
 	} else
 		return -EINVAL;
-
-	/* luks2 keyslot must have exactly one digest */
-	count = LUKS2_get_keyslot_digests_count(hdr, keyslot);
-	if (count != 1) {
-		log_dbg("Keyslot %d is assigned to %d digest(s). Expected value is 1.", keyslot, count);
-		return -EINVAL;
-	}
 
 	return 0;
 }

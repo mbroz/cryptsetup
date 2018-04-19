@@ -100,7 +100,7 @@ typedef int (*keyslot_store_func)(struct crypt_device *cd, int keyslot,
 				  const char *volume_key, size_t volume_key_len);
 typedef int (*keyslot_wipe_func) (struct crypt_device *cd, int keyslot);
 typedef int (*keyslot_dump_func) (struct crypt_device *cd, int keyslot);
-typedef int (*keyslot_validate_func) (struct crypt_device *cd, int keyslot);
+typedef int (*keyslot_validate_func) (struct crypt_device *cd, json_object *jobj_keyslot);
 
 /* see LUKS2_luks2_to_luks1 */
 int placeholder_keyslot_alloc(struct crypt_device *cd,

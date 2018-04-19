@@ -249,10 +249,16 @@ static int LUKS2_open_and_verify(struct crypt_device *cd,
 	if (!(h = LUKS2_keyslot_handler(cd, keyslot)))
 		return -ENOENT;
 
-	r = h->validate(cd, keyslot);
+	r = h->validate(cd, LUKS2_get_keyslot_jobj(hdr, keyslot));
 	if (r) {
 		log_dbg("Keyslot %d validation failed.", keyslot);
 		return r;
+	}
+
+	/* FIXME: this belongs elsewhere, stay tuned */
+	if (LUKS2_get_keyslot_digests_count(hdr, keyslot) != 1) {
+		log_dbg("Keyslot %d is not assigned to exactly 1 digest.");
+		return -EINVAL;
 	}
 
 	r = LUKS2_keyslot_for_segment(hdr, keyslot, segment);
@@ -389,10 +395,16 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 		}
 	}
 
-	r = h->validate(cd, keyslot);
+	r = h->validate(cd, LUKS2_get_keyslot_jobj(hdr, keyslot));
 	if (r) {
 		log_dbg("Keyslot validation failed.");
 		return r;
+	}
+
+	/* FIXME: this belongs elsewhere, stay tuned */
+	if (LUKS2_get_keyslot_digests_count(hdr, keyslot) != 1) {
+		log_dbg("Keyslot %d is not assigned to exactly 1 digest.");
+		return -EINVAL;
 	}
 
 	return h->store(cd, keyslot, password, password_len,
