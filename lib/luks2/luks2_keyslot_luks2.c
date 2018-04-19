@@ -641,17 +641,6 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 	return 0;
 }
 
-static int contains(json_object *jobj, const char *key, json_type type)
-{
-	json_object *sobj;
-
-	if (!json_object_object_get_ex(jobj, key, &sobj) ||
-	    !json_object_is_type(sobj, type))
-		return 0;
-
-	return 1;
-}
-
 static int luks2_keyslot_validate(struct crypt_device *cd, int keyslot)
 {
 	struct luks2_hdr *hdr;
@@ -678,23 +667,23 @@ static int luks2_keyslot_validate(struct crypt_device *cd, int keyslot)
 		return -EINVAL;
 
 	if (!strcmp(json_object_get_string(jobj1), CRYPT_KDF_PBKDF2)) {
-		if (!contains(jobj_kdf, "hash", json_type_string) ||
-		    !contains(jobj_kdf, "iterations", json_type_int) ||
-		    !contains(jobj_kdf, "salt", json_type_string))
+		if (!contains(jobj_kdf, "kdf type", "pbkdf2", "hash",	json_type_string) ||
+		    !contains(jobj_kdf, "kdf type", "pbkdf2", "iterations",	json_type_int)	  ||
+		    !contains(jobj_kdf, "kdf type", "pbkdf2", "salt",	json_type_string))
 			return -EINVAL;
 	} else {
-		if (!contains(jobj_kdf, "time", json_type_int) ||
-		    !contains(jobj_kdf, "memory", json_type_int) ||
-		    !contains(jobj_kdf, "cpus", json_type_int) ||
-		    !contains(jobj_kdf, "salt", json_type_string))
+		if (!contains(jobj_kdf, "kdf type", "argon2", "time",	json_type_int) ||
+		    !contains(jobj_kdf, "kdf type", "argon2", "memory",	json_type_int) ||
+		    !contains(jobj_kdf, "kdf type", "argon2", "cpus",	json_type_int) ||
+		    !contains(jobj_kdf, "kdf type", "argon2", "salt",	json_type_string))
 			return -EINVAL;
 	}
 
 	if (!json_object_object_get_ex(jobj_af, "type", &jobj1))
 		return -EINVAL;
 	if (!strcmp(json_object_get_string(jobj1), "luks1")) {
-		if (!contains(jobj_af, "hash", json_type_string) ||
-		    !contains(jobj_af, "stripes", json_type_int))
+		if (!contains(jobj_af, "", "luks1 af", "hash",		json_type_string) ||
+		    !contains(jobj_af, "", "luks1 af", "stripes",	json_type_int))
 			return -EINVAL;
 	} else
 		return -EINVAL;
@@ -703,10 +692,10 @@ static int luks2_keyslot_validate(struct crypt_device *cd, int keyslot)
 	if (!json_object_object_get_ex(jobj_area, "type", &jobj1))
 		return -EINVAL;
 	if (!strcmp(json_object_get_string(jobj1), "raw")) {
-		if (!contains(jobj_area, "encryption", json_type_string) ||
-		    !contains(jobj_area, "key_size", json_type_int) ||
-		    !contains(jobj_area, "offset", json_type_string) ||
-		    !contains(jobj_area, "size", json_type_string))
+		if (!contains(jobj_area, "area", "raw type", "encryption",	json_type_string) ||
+		    !contains(jobj_area, "area", "raw type", "key_size",	json_type_int)	  ||
+		    !contains(jobj_area, "area", "raw type", "offset",		json_type_string) ||
+		    !contains(jobj_area, "area", "raw type", "size",		json_type_string))
 			return -EINVAL;
 	} else
 		return -EINVAL;

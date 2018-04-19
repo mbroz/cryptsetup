@@ -64,6 +64,10 @@ void JSON_DBG(json_object *jobj, const char *desc);
  * LUKS2 JSON validation
  */
 
+/* validation helper */
+json_object *contains(json_object *jobj, const char *name, const char *section,
+		      const char *key, json_type type);
+
 int LUKS2_hdr_validate(json_object *hdr_jobj);
 int LUKS2_keyslot_validate(json_object *hdr_jobj, json_object *hdr_keyslot, const char *key);
 int LUKS2_check_json_size(const struct luks2_hdr *hdr);
