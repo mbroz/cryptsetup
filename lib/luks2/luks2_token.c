@@ -278,7 +278,8 @@ int LUKS2_builtin_token_create(struct crypt_device *cd,
 	// builtin tokens must produce valid json
 	r = LUKS2_token_validate(hdr->jobj, jobj_token, "new");
 	assert(!r);
-	r = th->h->validate(cd, json_object_to_json_string_ext(jobj_token, JSON_C_TO_STRING_PLAIN));
+	r = th->h->validate(cd, json_object_to_json_string_ext(jobj_token,
+		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE));
 	assert(!r);
 
 	json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens);
@@ -475,7 +476,8 @@ void LUKS2_token_dump(struct crypt_device *cd, int token)
 	if (h && h->dump) {
 		jobj_token = LUKS2_get_token_jobj(crypt_get_hdr(cd, CRYPT_LUKS2), token);
 		if (jobj_token)
-			h->dump(cd, json_object_to_json_string_ext(jobj_token, JSON_C_TO_STRING_PLAIN));
+			h->dump(cd, json_object_to_json_string_ext(jobj_token,
+				JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE));
 	}
 }
 
@@ -488,7 +490,8 @@ int LUKS2_token_json_get(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (!jobj_token)
 		return -EINVAL;
 
-	*json = json_object_to_json_string_ext(jobj_token, JSON_C_TO_STRING_PLAIN);
+	*json = json_object_to_json_string_ext(jobj_token,
+		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
 	return 0;
 }
 

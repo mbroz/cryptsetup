@@ -59,7 +59,8 @@ void JSON_DBG(json_object *jobj, const char *desc)
 	/* FIXME: make this conditional and disable for stable release. */
 	if (desc)
 		log_dbg("%s:", desc);
-	log_dbg("%s", json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY));
+	log_dbg("%s", json_object_to_json_string_ext(jobj,
+		JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_NOSLASHESCAPE));
 }
 
 /*
@@ -445,11 +446,18 @@ int LUKS2_token_validate(json_object *hdr_jobj, json_object *jobj_token, const c
 static int hdr_validate_json_size(json_object *hdr_jobj)
 {
 	json_object *jobj, *jobj1;
+	const char *json;
+	size_t json_area_size, json_size;
 
 	json_object_object_get_ex(hdr_jobj, "config", &jobj);
 	json_object_object_get_ex(jobj, "json_size", &jobj1);
 
-	return (strlen(json_object_to_json_string_ext(hdr_jobj, JSON_C_TO_STRING_PLAIN)) > json_object_get_uint64(jobj1));
+	json = json_object_to_json_string_ext(hdr_jobj,
+		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
+	json_area_size = (size_t)json_object_get_uint64(jobj1);
+	json_size = strlen(json);
+
+	return json_size > json_area_size ? 1 : 0;
 }
 
 int LUKS2_check_json_size(const struct luks2_hdr *hdr)
