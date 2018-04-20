@@ -158,6 +158,8 @@ RUN luks2-invalid-keyslots-size-c1.img			"F" "Failed to detect unaligned keyslot
 RUN luks2-invalid-keyslots-size-c2.img			"F" "Failed to detect too small keyslots_size config section"
 RUN luks2-invalid-json-size-c0.img			"F" "Failed to detect invalid json_size config section"
 RUN luks2-invalid-json-size-c1.img			"F" "Failed to detect invalid json_size config section"
+RUN luks2-keyslot-missing-digest.img			"F" "Failed to detect missing keyslot digest."
+RUN luks2-keyslot-too-many-digests.img			"F" "Failed to detect keyslot has too many digests."
 
 echo "[4] Test integers value limits"
 RUN luks2-uint64-max-segment-size.img			"R" "Validation rejected correct value"
