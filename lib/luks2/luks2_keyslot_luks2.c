@@ -225,6 +225,12 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	    !json_object_object_get_ex(jobj_keyslot, "area", &jobj_area))
 		return -EINVAL;
 
+	/* prevent accidental volume key size change after allocation */
+	if (!json_object_object_get_ex(jobj_keyslot, "key_size", &jobj2))
+		return -EINVAL;
+	if (json_object_get_int(jobj2) != (int)volume_key_len)
+		return -EINVAL;
+
 	if (!json_object_object_get_ex(jobj_area, "offset", &jobj2))
 		return -EINVAL;
 	area_offset = json_object_get_uint64(jobj2);
