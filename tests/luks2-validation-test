@@ -139,6 +139,11 @@ RUN luks2-correct-full-json0.img "R" "Failed to parse full and correct json area
 # TODO: detect noop (norecovery, epoch untouched)
 # TODO: check epoch is NOT incresed after recovery of secondary header
 
+# these tests auto-correct json in-memory only. It'll get fixed on-disk after write operation
+RUN luks2-argon2-leftover-params.img   "R" "Failed to repair keyslot with old argon2 parameters."
+RUN luks2-pbkdf2-leftover-params-0.img "R" "Failed to repair keyslot with old pbkdf2 parameters."
+RUN luks2-pbkdf2-leftover-params-1.img "R" "Failed to repair keyslot with old pbkdf2 parameters."
+
 # Secondary header is always broken in following tests
 echo "[3] Test LUKS2 json area restrictions"
 RUN luks2-non-null-byte-beyond-json0.img		"F" "Failed to detect illegal data right beyond json data string"
