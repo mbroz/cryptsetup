@@ -58,13 +58,19 @@ struct device {
 
 static size_t device_fs_block_size_fd(int fd)
 {
+	size_t page_size = crypt_getpagesize();
+
 #ifdef HAVE_SYS_STATVFS_H
 	struct statvfs buf;
 
-	if (!fstatvfs(fd, &buf) && buf.f_bsize)
+	/*
+	 * NOTE: some filesystems (NFS) returns bogus blocksize (1MB).
+	 * Page-size io should always work and avoids increasing IO beyond aligned LUKS header.
+	 */
+	if (!fstatvfs(fd, &buf) && buf.f_bsize && buf.f_bsize <= page_size)
 		return (size_t)buf.f_bsize;
 #endif
-	return crypt_getpagesize();
+	return page_size;
 }
 
 static size_t device_block_size_fd(int fd, size_t *min_size)
