@@ -594,7 +594,7 @@ int LUKS2_keyslots_validate(json_object *hdr_jobj)
 		json_object_object_get_ex(val, "type", &jobj_type);
 		h = LUKS2_keyslot_handler_type(NULL, json_object_get_string(jobj_type));
 		if (!h)
-			return 0;
+			continue;
 		if (h->validate && h->validate(NULL, val)) {
 			log_dbg("Keyslot type %s validation failed on keyslot %d.", h->name, keyslot);
 			return -EINVAL;

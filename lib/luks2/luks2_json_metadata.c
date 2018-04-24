@@ -447,15 +447,15 @@ static int hdr_validate_json_size(json_object *hdr_jobj)
 {
 	json_object *jobj, *jobj1;
 	const char *json;
-	size_t json_area_size, json_size;
+	uint64_t json_area_size, json_size;
 
 	json_object_object_get_ex(hdr_jobj, "config", &jobj);
 	json_object_object_get_ex(jobj, "json_size", &jobj1);
 
 	json = json_object_to_json_string_ext(hdr_jobj,
 		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
-	json_area_size = (size_t)json_object_get_uint64(jobj1);
-	json_size = strlen(json);
+	json_area_size = json_object_get_uint64(jobj1);
+	json_size = (uint64_t)strlen(json);
 
 	return json_size > json_area_size ? 1 : 0;
 }
