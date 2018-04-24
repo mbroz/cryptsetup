@@ -70,7 +70,7 @@ void JSON_DBG(json_object *jobj, const char *desc);
  */
 
 /* validation helper */
-json_object *contains(json_object *jobj, const char *name, const char *section,
+json_object *json_contains(json_object *jobj, const char *name, const char *section,
 		      const char *key, json_type type);
 
 int LUKS2_hdr_validate(json_object *hdr_jobj);

@@ -252,8 +252,8 @@ static json_bool numbered(const char *name, const char *key)
 	return TRUE;
 }
 
-json_object *contains(json_object *jobj, const char *name,
-			     const char *section, const char *key, json_type type)
+json_object *json_contains(json_object *jobj, const char *name,
+			   const char *section, const char *key, json_type type)
 {
 	json_object *sobj;
 
@@ -317,7 +317,8 @@ static json_bool validate_keyslots_array(json_object *jarr, json_object *jobj_ke
 			return FALSE;
 		}
 
-		if (!contains(jobj_keys, "", "Keyslots section", json_object_get_string(jobj), json_type_object))
+		if (!json_contains(jobj_keys, "", "Keyslots section",
+				   json_object_get_string(jobj), json_type_object))
 			return FALSE;
 
 		i++;
@@ -338,7 +339,8 @@ static json_bool validate_segments_array(json_object *jarr, json_object *jobj_se
 			return FALSE;
 		}
 
-		if (!contains(jobj_segments, "", "Segments section", json_object_get_string(jobj), json_type_object))
+		if (!json_contains(jobj_segments, "", "Segments section",
+				   json_object_get_string(jobj), json_type_object))
 			return FALSE;
 
 		i++;
@@ -405,9 +407,9 @@ int LUKS2_keyslot_validate(json_object *hdr_jobj, json_object *hdr_keyslot, cons
 {
 	json_object *jobj_key_size;
 
-	if (!contains(hdr_keyslot, key, "Keyslot", "type", json_type_string))
+	if (!json_contains(hdr_keyslot, key, "Keyslot", "type", json_type_string))
 		return 1;
-	if (!(jobj_key_size = contains(hdr_keyslot, key, "Keyslot", "key_size", json_type_int)))
+	if (!(jobj_key_size = json_contains(hdr_keyslot, key, "Keyslot", "key_size", json_type_int)))
 		return 1;
 
 	/* enforce uint32_t type */
@@ -430,10 +432,10 @@ int LUKS2_token_validate(json_object *hdr_jobj, json_object *jobj_token, const c
 	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
 		return 1;
 
-	if (!contains(jobj_token, key, "Token", "type", json_type_string))
+	if (!json_contains(jobj_token, key, "Token", "type", json_type_string))
 		return 1;
 
-	jarr = contains(jobj_token, key, "Token", "keyslots", json_type_array);
+	jarr = json_contains(jobj_token, key, "Token", "keyslots", json_type_array);
 	if (!jarr)
 		return 1;
 
@@ -528,20 +530,20 @@ static int hdr_validate_segments(json_object *hdr_jobj)
 		if (!numbered("Segment", key))
 			return 1;
 
-		if (!contains(val, key, "Segment", "type",     json_type_string) ||
-		    !(jobj_offset = contains(val, key, "Segment", "offset", json_type_string)) ||
-		    !(jobj_ivoffset = contains(val, key, "Segment", "iv_tweak", json_type_string)) ||
-		    !(jobj_length = contains(val, key, "Segment", "size", json_type_string)) ||
-		    !contains(val, key, "Segment", "encryption",   json_type_string) ||
-		    !(jobj_sector_size = contains(val, key, "Segment", "sector_size", json_type_int)))
+		if (!json_contains(val, key, "Segment", "type", json_type_string) ||
+		    !(jobj_offset = json_contains(val, key, "Segment", "offset", json_type_string)) ||
+		    !(jobj_ivoffset = json_contains(val, key, "Segment", "iv_tweak", json_type_string)) ||
+		    !(jobj_length = json_contains(val, key, "Segment", "size", json_type_string)) ||
+		    !json_contains(val, key, "Segment", "encryption", json_type_string) ||
+		    !(jobj_sector_size = json_contains(val, key, "Segment", "sector_size", json_type_int)))
 			return 1;
 
 		/* integrity */
 		if (json_object_object_get_ex(val, "integrity", &jobj_integrity)) {
-			if (!contains(val, key, "Segment", "integrity", json_type_object) ||
-			    !contains(jobj_integrity, key, "Segment integrity", "type", json_type_string) ||
-			    !contains(jobj_integrity, key, "Segment integrity", "journal_encryption", json_type_string) ||
-			    !contains(jobj_integrity, key, "Segment integrity", "journal_integrity", json_type_string))
+			if (!json_contains(val, key, "Segment", "integrity", json_type_object) ||
+			    !json_contains(jobj_integrity, key, "Segment integrity", "type", json_type_string) ||
+			    !json_contains(jobj_integrity, key, "Segment integrity", "journal_encryption", json_type_string) ||
+			    !json_contains(jobj_integrity, key, "Segment integrity", "journal_integrity", json_type_string))
 				return 1;
 		}
 
@@ -630,9 +632,9 @@ static int hdr_validate_areas(json_object *hdr_jobj)
 
 	json_object_object_foreach(jobj_keyslots, key, val) {
 
-		if (!(jobj_area = contains(val, key, "Keyslot", "area", json_type_object)) ||
-		    !(jobj_offset = contains(jobj_area, key, "Keyslot", "offset", json_type_string)) ||
-		    !(jobj_length = contains(jobj_area, key, "Keyslot", "size", json_type_string)) ||
+		if (!(jobj_area = json_contains(val, key, "Keyslot", "area", json_type_object)) ||
+		    !(jobj_offset = json_contains(jobj_area, key, "Keyslot", "offset", json_type_string)) ||
+		    !(jobj_length = json_contains(jobj_area, key, "Keyslot", "size", json_type_string)) ||
 		    !numbered("offset", json_object_get_string(jobj_offset)) ||
 		    !numbered("size", json_object_get_string(jobj_length))) {
 			free(intervals);
@@ -684,9 +686,9 @@ static int hdr_validate_digests(json_object *hdr_jobj)
 		if (!numbered("Digest", key))
 			return 1;
 
-		if (!contains(val, key, "Digest", "type", json_type_string) ||
-		    !(jarr_keys = contains(val, key, "Digest", "keyslots", json_type_array)) ||
-		    !(jarr_segs = contains(val, key, "Digest", "segments", json_type_array)))
+		if (!json_contains(val, key, "Digest", "type", json_type_string) ||
+		    !(jarr_keys = json_contains(val, key, "Digest", "keyslots", json_type_array)) ||
+		    !(jarr_segs = json_contains(val, key, "Digest", "segments", json_type_array)))
 			return 1;
 
 		if (!validate_keyslots_array(jarr_keys, jobj_keyslots))
@@ -754,7 +756,7 @@ static int hdr_validate_config(json_object *hdr_jobj)
 		return 1;
 	}
 
-	if (!(jobj = contains(jobj_config, "section", "Config", "json_size", json_type_string)) ||
+	if (!(jobj = json_contains(jobj_config, "section", "Config", "json_size", json_type_string)) ||
 	    !json_str_to_uint64(jobj, &json_size))
 		return 1;
 
@@ -769,7 +771,7 @@ static int hdr_validate_config(json_object *hdr_jobj)
 		return 1;
 	}
 
-	if (!(jobj = contains(jobj_config, "section", "Config", "keyslots_size", json_type_string)))
+	if (!(jobj = json_contains(jobj_config, "section", "Config", "keyslots_size", json_type_string)))
 		return 1;
 
 	if (validate_keyslots_size(hdr_jobj, jobj))
@@ -777,7 +779,7 @@ static int hdr_validate_config(json_object *hdr_jobj)
 
 	/* Flags array is optional */
 	if (json_object_object_get_ex(jobj_config, "flags", &jobj)) {
-		if (!contains(jobj_config, "section", "Config", "flags", json_type_array))
+		if (!json_contains(jobj_config, "section", "Config", "flags", json_type_array))
 			return 1;
 
 		/* All array members must be strings */
@@ -788,12 +790,12 @@ static int hdr_validate_config(json_object *hdr_jobj)
 
 	/* Requirements object is optional */
 	if (json_object_object_get_ex(jobj_config, "requirements", &jobj)) {
-		if (!contains(jobj_config, "section", "Config", "requirements", json_type_object))
+		if (!json_contains(jobj_config, "section", "Config", "requirements", json_type_object))
 			return 1;
 
 		/* Mandatory array is optional */
 		if (json_object_object_get_ex(jobj, "mandatory", &jobj1)) {
-			if (!contains(jobj, "section", "Requirements", "mandatory", json_type_array))
+			if (!json_contains(jobj, "section", "Requirements", "mandatory", json_type_array))
 				return 1;
 
 			/* All array members must be strings */
