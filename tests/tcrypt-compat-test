@@ -73,9 +73,11 @@ export LANG=C
 [ ! -d $TST_DIR ] && tar xjf $srcdir/tcrypt-images.tar.bz2 --no-same-owner
 
 echo "HEADER CHECK"
-for file in $(ls $TST_DIR/[tv]c_*) ; do
+for file in $(ls $TST_DIR/[t]c_* $TST_DIR/vcpim_*) ; do
 	echo -n " $file"
-	echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $file >/dev/null || fail
+	PIM_OPT=""
+	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"
+	echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $PIM_OPT $file >/dev/null || fail
 	echo " [OK]"
 done
 
