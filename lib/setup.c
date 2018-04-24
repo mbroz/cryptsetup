@@ -4277,7 +4277,7 @@ static int verify_and_update_segment_digest(struct crypt_device *cd,
 
 	r = update_volume_key_segment_digest(cd, &cd->u.luks2.hdr, digest, 1);
 	if (r)
-		log_err(cd, _("Failed to designate keyslot %u to be new volume keyslot.\n"), keyslot);
+		log_err(cd, _("Failed to assign keyslot %u as the new volume key.\n"), keyslot);
 out:
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;

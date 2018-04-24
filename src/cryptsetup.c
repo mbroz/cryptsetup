@@ -1510,7 +1510,7 @@ static int action_luksConvertKey(void)
 		goto out;
 	}
 
-	r = tools_get_key(_("Enter passphrase for keylot to be converted: "),
+	r = tools_get_key(_("Enter passphrase for keyslot to be converted: "),
 		      &password, &password_size,
 		      opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 		      opt_timeout, _verify_passphrase(0), 0, cd);
