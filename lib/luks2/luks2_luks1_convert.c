@@ -425,12 +425,11 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 {
 	struct device *device = crypt_metadata_device(cd);
 	void *buf = NULL;
-	int devfd = -1;
+	int r = -EIO, devfd = -1;
 
 	log_dbg("Moving keyslot areas of size %zu from %jd to %jd.",
 		buf_size, (intmax_t)offset_from, (intmax_t)offset_to);
 
-	// FIXME: export aligned_malloc from utils
 	if (posix_memalign(&buf, crypt_getpagesize(), buf_size))
 		return -ENOMEM;
 
@@ -440,27 +439,32 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 		return -EIO;
 	}
 
+	/* This can safely fail (for block devices). It only allocates space if it is possible. */
+	posix_fallocate(devfd, offset_to, buf_size);
+
+	/* Try to read *new* area to check that area is there (trimmed backup). */
 	if (read_lseek_blockwise(devfd, device_block_size(device),
 				 device_alignment(device), buf, buf_size,
-				 offset_from)!= (ssize_t)buf_size) {
-		close(devfd);
-		free(buf);
-		return -EIO;
-	}
+				 offset_to)!= (ssize_t)buf_size)
+		goto out;
+
+	if (read_lseek_blockwise(devfd, device_block_size(device),
+				 device_alignment(device), buf, buf_size,
+				 offset_from)!= (ssize_t)buf_size)
+		goto out;
 
 	if (write_lseek_blockwise(devfd, device_block_size(device),
 				  device_alignment(device), buf, buf_size,
-				  offset_to) != (ssize_t)buf_size) {
-		close(devfd);
-		free(buf);
-		return -EIO;
-	}
+				  offset_to) != (ssize_t)buf_size)
+		goto out;
 
+	r = 0;
+out:
 	close(devfd);
 	crypt_memzero(buf, buf_size);
 	free(buf);
 
-	return 0;
+	return r;
 }
 
 static int luks_header_in_use(struct crypt_device *cd)
