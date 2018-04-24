@@ -376,6 +376,8 @@ static int action_status(int arg)
 		log_std("  mode:    %s%s\n",
 			cad.flags & CRYPT_ACTIVATE_READONLY ? "readonly" : "read/write",
 			cad.flags & CRYPT_ACTIVATE_RECOVERY ? " recovery" : "");
+		log_std("  failures: %" PRIu64 "\n",
+			crypt_get_active_integrity_failures(cd, action_argv[0]));
 		if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL) {
 			log_std("  journal: not active\n");
 		} else {

@@ -133,6 +133,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags);
 int dm_status_device(struct crypt_device *cd, const char *name);
 int dm_status_suspended(struct crypt_device *cd, const char *name);
 int dm_status_verity_ok(struct crypt_device *cd, const char *name);
+int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint64_t *count);
 int dm_query_device(struct crypt_device *cd, const char *name,
 		    uint32_t get_flags, struct crypt_dm_active_device *dmd);
 int dm_create_device(struct crypt_device *cd, const char *name,

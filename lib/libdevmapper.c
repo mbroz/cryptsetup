@@ -1365,6 +1365,29 @@ int dm_status_verity_ok(struct crypt_device *cd, const char *name)
 	return r;
 }
 
+int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint64_t *count)
+{
+	int r;
+	struct dm_info dmi;
+	char *status_line = NULL;
+
+	if (dm_init_context(cd, DM_INTEGRITY))
+		return -ENOTSUP;
+
+	r = dm_status_dmi(name, &dmi, DM_INTEGRITY_TARGET, &status_line);
+	if (r < 0 || !status_line) {
+		free(status_line);
+		return r;
+	}
+
+	log_dbg("Integrity volume %s failure status is %s.", name, status_line ?: "");
+	*count = strtoull(status_line, NULL, 10);
+	free(status_line);
+	dm_exit_context();
+
+	return 0;
+}
+
 /* FIXME use hex wrapper, user val wrappers for line parsing */
 static int _dm_query_crypt(uint32_t get_flags,
 			   struct dm_info *dmi,

@@ -3343,6 +3343,25 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	return 0;
 }
 
+uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd, const char *name)
+{
+	struct crypt_dm_active_device dmd;
+	uint64_t failures = 0;
+
+	if (!name)
+		return 0;
+
+	/* FIXME: LUKS2 / dm-crypt does not provide this count. */
+	if (dm_query_device(cd, name, 0, &dmd) < 0)
+		return 0;
+
+	if (dmd.target == DM_INTEGRITY &&
+	    !dm_status_integrity_failures(cd, name, &failures))
+		return failures;
+
+	return 0;
+}
+
 /*
  * Volume key handling
  */

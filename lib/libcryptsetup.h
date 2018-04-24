@@ -980,8 +980,20 @@ struct crypt_active_device {
  *
  */
 int crypt_get_active_device(struct crypt_device *cd,
-			    const char *name,
-			    struct crypt_active_device *cad);
+	const char *name,
+	struct crypt_active_device *cad);
+
+/**
+ * Get detected number of integrity failures.
+ *
+ * @param cd crypt device handle (can be @e NULL)
+ * @param name name of active device
+ *
+ * @return number of integrity failures or @e 0 otherwise
+ *
+ */
+uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd,
+	const char *name);
 /** @} */
 
 /**
