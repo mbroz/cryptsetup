@@ -7,10 +7,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.0.2\n"
+"Project-Id-Version: cryptsetup 2.0.3\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2018-03-01 15:09+0100\n"
-"PO-Revision-Date: 2018-03-02 17:44+0800\n"
+"POT-Creation-Date: 2018-04-24 20:23+0200\n"
+"PO-Revision-Date: 2018-04-25 11:45+0800\n"
 "Last-Translator: Boyuan Yang <073plan@gmail.com>\n"
 "Language-Team: Chinese (simplified) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -21,40 +21,40 @@ msgstr ""
 "X-Generator: Poedit 2.0.6\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/libdevmapper.c:331
+#: lib/libdevmapper.c:332
 msgid "Cannot initialize device-mapper, running as non-root user.\n"
 msgstr "无法初始化设备映射器，正作为非 root 用户运行。\n"
 
-#: lib/libdevmapper.c:334
+#: lib/libdevmapper.c:335
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?\n"
 msgstr "无法初始化设备映射器。dm_mod 内核模块装载了吗？\n"
 
-#: lib/libdevmapper.c:935
+#: lib/libdevmapper.c:939
 msgid "Requested deferred flag is not supported.\n"
 msgstr "不支持请求的推迟（deferred）标记。\n"
 
-#: lib/libdevmapper.c:1000
+#: lib/libdevmapper.c:1004
 #, c-format
 msgid "DM-UUID for device %s was truncated.\n"
 msgstr "设备 %s 的 DM-UUID 被截断。\n"
 
-#: lib/libdevmapper.c:1220
+#: lib/libdevmapper.c:1224
 msgid "Requested dm-crypt performance options are not supported.\n"
 msgstr "不支持请求的 dm-crypt 性能选项。\n"
 
-#: lib/libdevmapper.c:1226
+#: lib/libdevmapper.c:1231
 msgid "Requested dm-verity data corruption handling options are not supported.\n"
 msgstr "不支持请求的 dm-verity 数据损坏处理选项。\n"
 
-#: lib/libdevmapper.c:1230
+#: lib/libdevmapper.c:1235
 msgid "Requested dm-verity FEC options are not supported.\n"
 msgstr "不支持请求的 dm-verity FEC 选项。\n"
 
-#: lib/libdevmapper.c:1234
+#: lib/libdevmapper.c:1239
 msgid "Requested data integrity options are not supported.\n"
 msgstr "不支持请求的数据完整性选项。\n"
 
-#: lib/libdevmapper.c:1236
+#: lib/libdevmapper.c:1241
 msgid "Requested sector_size option is not supported.\n"
 msgstr "不支持请求的 sector_size 选项。\n"
 
@@ -95,7 +95,7 @@ msgstr "无法初始化加密随机数生成器后端。\n"
 msgid "Cannot initialize crypto backend.\n"
 msgstr "无法初始化加密后端。\n"
 
-#: lib/setup.c:237 lib/setup.c:1747 lib/verity/verity.c:123
+#: lib/setup.c:237 lib/setup.c:1762 lib/verity/verity.c:123
 #, c-format
 msgid "Hash algorithm %s not supported.\n"
 msgstr "不支持哈希算法 %s。\n"
@@ -109,7 +109,7 @@ msgstr "密钥处理错误（散列 %s）。\n"
 msgid "Cannot determine device type. Incompatible activation of device?\n"
 msgstr "无法确定设备类型。不兼容的设备激活？\n"
 
-#: lib/setup.c:307 lib/setup.c:2307
+#: lib/setup.c:307 lib/setup.c:2322
 msgid "This operation is supported only for LUKS device.\n"
 msgstr "此操作只适用 LUKS 设备。\n"
 
@@ -140,7 +140,7 @@ msgstr "检测到标头但设备 %s 太小。\n"
 msgid "This operation is not supported for this device type.\n"
 msgstr "不支持在这类设备上执行此操作。\n"
 
-#: lib/setup.c:1236 lib/setup.c:2047 lib/setup.c:3323
+#: lib/setup.c:1236 lib/setup.c:2062 lib/setup.c:3296
 #, c-format
 msgid "Device %s is not active.\n"
 msgstr "设备 %s 未激活。\n"
@@ -154,364 +154,373 @@ msgstr "加密设备 %s 背后的设备消失了。\n"
 msgid "Invalid plain crypt parameters.\n"
 msgstr "无效的纯加密选项。\n"
 
-#: lib/setup.c:1338 lib/setup.c:1661 src/integritysetup.c:68
+#: lib/setup.c:1338 lib/setup.c:1676 src/integritysetup.c:68
 msgid "Invalid key size.\n"
 msgstr "无效的密钥大小。\n"
 
-#: lib/setup.c:1343 lib/setup.c:1666 lib/setup.c:1857
+#: lib/setup.c:1343 lib/setup.c:1681 lib/setup.c:1872
 msgid "UUID is not supported for this crypt type.\n"
 msgstr "此加密类型不支持 UUID。\n"
 
-#: lib/setup.c:1353 lib/setup.c:1493 src/cryptsetup.c:960
-#: src/cryptsetup.c:2418
+#: lib/setup.c:1353 lib/setup.c:1497 src/cryptsetup.c:944
+#: src/cryptsetup.c:2520
 msgid "Unsupported encryption sector size.\n"
 msgstr "不支持的加密扇区大小。\n"
 
-#: lib/setup.c:1399 lib/setup.c:1487
+#: lib/setup.c:1399 lib/setup.c:1491
 msgid "Can't format LUKS without device.\n"
 msgstr "无法在没有设备的情况下格式化 LUKS.\n"
 
-#: lib/setup.c:1457 lib/setup.c:1598 lib/setup.c:1869
+#: lib/setup.c:1461 lib/setup.c:1613 lib/setup.c:1884
 #, c-format
 msgid "Cannot wipe header on device %s.\n"
 msgstr "无法将设备 %s 上的标头擦除。\n"
 
-#: lib/setup.c:1519 lib/utils_device.c:591
+#: lib/setup.c:1519
+msgid "Volume key is too small for encryption with integrity extensions.\n"
+msgstr ""
+
+#: lib/setup.c:1526 lib/utils_device.c:599
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted).\n"
 msgstr "无法使用正被使用的设备 %s（已被映射或挂载）。\n"
 
-#: lib/setup.c:1591
+#: lib/setup.c:1606
 #, c-format
 msgid "Cannot format device %s which is still in use.\n"
 msgstr "无法格式化正在使用的设备 %s。\n"
 
-#: lib/setup.c:1594 lib/setup.c:1629
+#: lib/setup.c:1609 lib/setup.c:1644
 #, c-format
 msgid "Cannot format device %s, permission denied.\n"
 msgstr "无法格式化设备 %s，权限被拒绝。\n"
 
-#: lib/setup.c:1606 lib/luks2/luks2_json_metadata.c:840
-#: lib/luks2/luks2_json_metadata.c:1124 lib/luks2/luks2_keyslot.c:386
+#: lib/setup.c:1621 lib/luks2/luks2_json_metadata.c:863
+#: lib/luks2/luks2_json_metadata.c:1141 lib/luks2/luks2_keyslot.c:429
 #: lib/luks2/luks2_keyslot_luks2.c:40 lib/luks2/luks2_keyslot_luks2.c:69
 #, fuzzy, c-format
 #| msgid "Failed to access temporary keystore device.\n"
 msgid "Failed to acquire write lock on device %s.\n"
 msgstr "无法访问临时密钥存储设备。\n"
 
-#: lib/setup.c:1614 lib/setup.c:1921
+#: lib/setup.c:1629 lib/setup.c:1936
 #, fuzzy, c-format
 #| msgid "Cannot write device %s.\n"
 msgid "Cannot format integrity for device %s.\n"
 msgstr "无法写入设备 %s。\n"
 
-#: lib/setup.c:1626
+#: lib/setup.c:1641
 #, c-format
 msgid "Cannot format device %s in use.\n"
 msgstr "无法格式化正在使用的设备 %s。\n"
 
-#: lib/setup.c:1633
+#: lib/setup.c:1648
 #, c-format
 msgid "Cannot format device %s\n"
 msgstr "无法格式化设备 %s\n"
 
-#: lib/setup.c:1656
+#: lib/setup.c:1671
 msgid "Can't format LOOPAES without device.\n"
 msgstr "无法在没有设备的情况下格式化 LOOPAES.\n"
 
-#: lib/setup.c:1696
+#: lib/setup.c:1711
 msgid "Can't format VERITY without device.\n"
 msgstr "无法在没有设备的情况下格式化 VERIFY.\n"
 
-#: lib/setup.c:1704 lib/verity/verity.c:106
+#: lib/setup.c:1719 lib/verity/verity.c:106
 #, c-format
 msgid "Unsupported VERITY hash type %d.\n"
 msgstr "不支持的真理哈希类型 %d。\n"
 
-#: lib/setup.c:1710 lib/verity/verity.c:114
+#: lib/setup.c:1725 lib/verity/verity.c:114
 msgid "Unsupported VERITY block size.\n"
 msgstr "不支持的真理的块大小。\n"
 
-#: lib/setup.c:1715 lib/verity/verity.c:75
+#: lib/setup.c:1730 lib/verity/verity.c:75
 msgid "Unsupported VERITY hash offset.\n"
 msgstr "不支持的真理哈希偏移量。\n"
 
-#: lib/setup.c:1720
+#: lib/setup.c:1735
 #, fuzzy
 #| msgid "Unsupported VERITY hash offset.\n"
 msgid "Unsupported VERITY FEC offset.\n"
 msgstr "不支持的真理哈希偏移量。\n"
 
-#: lib/setup.c:1741
+#: lib/setup.c:1756
 msgid "Data area overlaps with hash area.\n"
 msgstr ""
 
-#: lib/setup.c:1766
+#: lib/setup.c:1781
 msgid "Hash area overlaps with FEC area.\n"
 msgstr ""
 
-#: lib/setup.c:1773
+#: lib/setup.c:1788
 msgid "Data area overlaps with FEC area.\n"
 msgstr ""
 
-#: lib/setup.c:1978
+#: lib/setup.c:1993
 #, c-format
 msgid "Unknown crypt device type %s requested.\n"
 msgstr "请求了不支持的加密设备类型 %s。\n"
 
-#: lib/setup.c:2079
+#: lib/setup.c:2094
 msgid "Cannot resize loop device.\n"
 msgstr "无法改变回环设备大小。\n"
 
-#: lib/setup.c:2088
+#: lib/setup.c:2103
 #, fuzzy, c-format
 #| msgid "Device %s is too small. (LUKS requires at least %<PRIu64> bytes.)\n"
 msgid "Device %s size is not aligned to requested sector size (%u bytes).\n"
 msgstr "设备 %s  过小。（LUKS 需要至少 %<PRIu64> 字节。）\n"
 
-#: lib/setup.c:2142
+#: lib/setup.c:2157
 msgid "Do you really want to change UUID of device?"
 msgstr "你真的想改变设备的 UUID 吗？"
 
-#: lib/setup.c:2218
+#: lib/setup.c:2233
 #, fuzzy
 #| msgid "Backup file doesn't contain valid LUKS header.\n"
 msgid "Header backup file does not contain compatible LUKS header.\n"
 msgstr "备份文件不包含有效 LUKS 标头。\n"
 
-#: lib/setup.c:2315
+#: lib/setup.c:2330
 #, c-format
 msgid "Volume %s is not active.\n"
 msgstr "卷 %s 未激活。\n"
 
-#: lib/setup.c:2326
+#: lib/setup.c:2341
 #, c-format
 msgid "Volume %s is already suspended.\n"
 msgstr "卷 %s 已暂停。\n"
 
-#: lib/setup.c:2335
+#: lib/setup.c:2355
 #, c-format
 msgid "Suspend is not supported for device %s.\n"
 msgstr "设备 %s 不支持暂停。\n"
 
-#: lib/setup.c:2337
+#: lib/setup.c:2357
 #, c-format
 msgid "Error during suspending device %s.\n"
 msgstr "暂停设备 %s 时出错。\n"
 
-#: lib/setup.c:2370 lib/setup.c:2437
+#: lib/setup.c:2390 lib/setup.c:2457
 #, c-format
 msgid "Volume %s is not suspended.\n"
 msgstr "卷 %s 未暂停。\n"
 
-#: lib/setup.c:2399
+#: lib/setup.c:2419
 #, c-format
 msgid "Resume is not supported for device %s.\n"
 msgstr "设备 %s 不支持恢复。\n"
 
-#: lib/setup.c:2401 lib/setup.c:2469
+#: lib/setup.c:2421 lib/setup.c:2489
 #, c-format
 msgid "Error during resuming device %s.\n"
 msgstr "恢复设备 %s 时出错。\n"
 
-#: lib/setup.c:2537 lib/setup.c:2730
+#: lib/setup.c:2557 lib/setup.c:2750
 msgid "Cannot add key slot, all slots disabled and no volume key provided.\n"
 msgstr "无法添加密钥槽，所有密钥槽已禁用且未提供卷密钥。\n"
 
-#: lib/setup.c:2674
+#: lib/setup.c:2694
 #, c-format
 msgid "Key slot %d changed.\n"
 msgstr "密钥槽 %d 已改变。\n"
 
-#: lib/setup.c:2677
+#: lib/setup.c:2697
 #, c-format
 msgid "Replaced with key slot %d.\n"
 msgstr "替换为密钥槽 %d。\n"
 
-#: lib/setup.c:2682
+#: lib/setup.c:2702
 msgid "Failed to swap new key slot.\n"
 msgstr "交换新密钥槽失败。\n"
 
-#: lib/setup.c:2847 lib/setup.c:3170 lib/setup.c:3183 lib/setup.c:3191
-#: lib/setup.c:3204 lib/setup.c:3446 lib/setup.c:4275
+#: lib/setup.c:2867 lib/setup.c:3141 lib/setup.c:3154 lib/setup.c:3162
+#: lib/setup.c:3175 lib/setup.c:3449 lib/setup.c:4349
 msgid "Volume key does not match the volume.\n"
 msgstr "卷密钥与卷不匹配。\n"
 
-#: lib/setup.c:2868
+#: lib/setup.c:2888
 #, c-format
 msgid "Key slot %d is invalid.\n"
 msgstr "密钥槽 %d 无效。\n"
 
-#: lib/setup.c:2874
+#: lib/setup.c:2894
 #, c-format
 msgid "Key slot %d is not used.\n"
 msgstr "密钥槽 %d 未使用。\n"
 
-#: lib/setup.c:2940 lib/setup.c:3096 lib/setup.c:3255
+#: lib/setup.c:2964 lib/setup.c:3228
 msgid "Device type is not properly initialised.\n"
 msgstr "设备类型不正确初始化。\n"
 
-#: lib/setup.c:2960
+#: lib/setup.c:3006
 #, fuzzy, c-format
 #| msgid "Cannot format device %s which is still in use.\n"
 msgid "Cannot use device %s, name is invalid or still in use.\n"
 msgstr "无法格式化正在使用的设备 %s。\n"
 
-#: lib/setup.c:2963
+#: lib/setup.c:3009
 #, c-format
 msgid "Device %s already exists.\n"
 msgstr "设备 %s 已存在。\n"
 
-#: lib/setup.c:3157
+#: lib/setup.c:3128
 msgid "Incorrect volume key specified for plain device.\n"
 msgstr "为普通设备指定的卷密钥有误。\n"
 
-#: lib/setup.c:3221
+#: lib/setup.c:3194
 msgid "Incorrect root hash specified for verity device.\n"
 msgstr "为真理设备指定的根 hash 不正确。\n"
 
-#: lib/setup.c:3297 lib/setup.c:3312
+#: lib/setup.c:3270 lib/setup.c:3285
 #, c-format
 msgid "Device %s is still in use.\n"
 msgstr "设备 %s 仍在使用。\n"
 
-#: lib/setup.c:3327
+#: lib/setup.c:3300
 #, c-format
 msgid "Invalid device %s.\n"
 msgstr "设备 %s 无效。\n"
 
-#: lib/setup.c:3388
+#: lib/setup.c:3385
 msgid "Function not available in FIPS mode.\n"
 msgstr "功能在 FIPS 模式无效。\n"
 
-#: lib/setup.c:3397
+#: lib/setup.c:3399
 msgid "Volume key buffer too small.\n"
 msgstr "卷密钥缓冲区太小。\n"
 
-#: lib/setup.c:3405
+#: lib/setup.c:3407
 msgid "Cannot retrieve volume key for plain device.\n"
 msgstr "无法获取普通设备的卷密钥。\n"
 
-#: lib/setup.c:3415
+#: lib/setup.c:3418
 #, c-format
 msgid "This operation is not supported for %s crypt device.\n"
 msgstr "不支持在 %s 加密设备上执行此操作。\n"
 
-#: lib/setup.c:3602
+#: lib/setup.c:3605
 msgid "Dump operation is not supported for this device type.\n"
 msgstr "不支持在此类设备上执行导出操作。\n"
 
-#: lib/setup.c:3994
-#, fuzzy, c-format
-#| msgid "Cannot format device %s which is still in use.\n"
+#: lib/setup.c:3997
+#, c-format
 msgid "Cannot convert device %s which is still in use.\n"
-msgstr "无法格式化正在使用的设备 %s。\n"
+msgstr "无法转换正在使用的设备 %s。\n"
 
-#: lib/setup.c:4269
+#: lib/setup.c:4280
+#, fuzzy, c-format
+#| msgid "Failed to swap new key slot.\n"
+msgid "Failed to assign keyslot %u as the new volume key.\n"
+msgstr "交换新密钥槽失败。\n"
+
+#: lib/setup.c:4343
 msgid "Failed to initialise default LUKS2 keyslot parameters.\n"
 msgstr ""
 
-#: lib/setup.c:4281
+#: lib/setup.c:4355
 #, fuzzy, c-format
 #| msgid "Failed to swap new key slot.\n"
 msgid "Failed to assign keyslot %d to digest.\n"
 msgstr "交换新密钥槽失败。\n"
 
-#: lib/setup.c:4362
+#: lib/setup.c:4439
 #, fuzzy
 #| msgid "Failed to open key file.\n"
 msgid "Failed to load key in kernel keyring.\n"
 msgstr "打开 (open) 密钥文件失败。\n"
 
-#: lib/setup.c:4417
+#: lib/setup.c:4494
 #, fuzzy
 #| msgid "This operation is not supported for this device type.\n"
 msgid "Kernel keyring is not supported by the kernel.\n"
 msgstr "不支持在这类设备上执行此操作。\n"
 
-#: lib/setup.c:4427
+#: lib/setup.c:4504
 #, fuzzy, c-format
 #| msgid "Error reading passphrase from terminal.\n"
 msgid "Failed to read passphrase from keyring (error %d)."
 msgstr "从终端读取密码时出错。\n"
 
-#: lib/utils.c:333
+#: lib/utils.c:81
 msgid "Cannot get process priority.\n"
 msgstr "无法获取进程优先级。\n"
 
-#: lib/utils.c:347
+#: lib/utils.c:95
 msgid "Cannot unlock memory.\n"
 msgstr "无法解锁内存。\n"
 
-#: lib/utils.c:421 lib/tcrypt/tcrypt.c:473
+#: lib/utils.c:169 lib/tcrypt/tcrypt.c:473
 msgid "Failed to open key file.\n"
 msgstr "打开 (open) 密钥文件失败。\n"
 
-#: lib/utils.c:426
+#: lib/utils.c:174
 msgid "Cannot read keyfile from a terminal.\n"
 msgstr "无法从终端读取密钥文件 %s。\n"
 
 # stat() 主要就是出来一个各种文件信息……
-#: lib/utils.c:443
+#: lib/utils.c:191
 msgid "Failed to stat key file.\n"
 msgstr "获取 (stat) 密钥文件统计数据失败。\n"
 
-#: lib/utils.c:451 lib/utils.c:472
+#: lib/utils.c:199 lib/utils.c:220
 msgid "Cannot seek to requested keyfile offset.\n"
 msgstr "无法寻找 (seek) 到请求的密钥文件偏移量。\n"
 
-#: lib/utils.c:466 lib/utils.c:481 src/utils_password.c:207
+#: lib/utils.c:214 lib/utils.c:229 src/utils_password.c:207
 #: src/utils_password.c:220
 msgid "Out of memory while reading passphrase.\n"
 msgstr "读取密码时内存耗尽。\n"
 
-#: lib/utils.c:501
+#: lib/utils.c:249
 msgid "Error reading passphrase.\n"
 msgstr "读取密码出错。\n"
 
-#: lib/utils.c:525
+#: lib/utils.c:273
 msgid "Maximum keyfile size exceeded.\n"
 msgstr "超出最大密钥文件大小。\n"
 
-#: lib/utils.c:530
+#: lib/utils.c:278
 msgid "Cannot read requested amount of data.\n"
 msgstr "无法读取请求量的数据。\n"
 
-#: lib/utils_device.c:178 lib/luks1/keyencryption.c:101
+#: lib/utils_device.c:184 lib/luks1/keyencryption.c:101
 #, c-format
 msgid "Device %s doesn't exist or access denied.\n"
 msgstr "设备 %s 不存在或访问被拒绝。\n"
 
-#: lib/utils_device.c:595
+#: lib/utils_device.c:603
 #, fuzzy, c-format
 #| msgid "Cannot write to device %s, permission denied.\n"
 msgid "Cannot use device %s, permission denied.\n"
 msgstr "无法写入到设备 %s，访问被拒绝。\n"
 
-#: lib/utils_device.c:598
+#: lib/utils_device.c:606
 #, c-format
 msgid "Cannot get info about device %s.\n"
 msgstr "无法获取有关设备 %s 的信息。\n"
 
-#: lib/utils_device.c:620
+#: lib/utils_device.c:628
 msgid "Cannot use a loopback device, running as non-root user.\n"
 msgstr "无法使用回环设备，正作为非 root 用户运行。\n"
 
-#: lib/utils_device.c:630
+#: lib/utils_device.c:638
 msgid "Attaching loopback device failed (loop device with autoclear flag is required).\n"
 msgstr "连接回环设备失败（需要有 autoclear 旗标的回环设备）。\n"
 
-#: lib/utils_device.c:676
+#: lib/utils_device.c:684
 #, c-format
 msgid "Requested offset is beyond real size of device %s.\n"
 msgstr "请求的偏移量超出设备 %s 的真实大小。\n"
 
-#: lib/utils_device.c:684
+#: lib/utils_device.c:692
 #, c-format
 msgid "Device %s has zero size.\n"
 msgstr "设备 %s 大小为零。\n"
 
-#: lib/utils_device.c:695
+#: lib/utils_device.c:703
 #, c-format
 msgid "Device %s is too small.\n"
 msgstr "设备 %s 太小。\n"
@@ -606,8 +615,8 @@ msgid "Cipher specification should be in [cipher]-[mode]-[iv] format.\n"
 msgstr ""
 
 #: lib/luks1/keyencryption.c:107 lib/luks1/keymanage.c:362
-#: lib/luks1/keymanage.c:654 lib/luks1/keymanage.c:1096
-#: lib/luks2/luks2_json_metadata.c:1132 lib/luks2/luks2_keyslot.c:403
+#: lib/luks1/keymanage.c:658 lib/luks1/keymanage.c:1094
+#: lib/luks2/luks2_json_metadata.c:1149 lib/luks2/luks2_keyslot.c:446
 #, c-format
 msgid "Cannot write to device %s, permission denied.\n"
 msgstr "无法写入到设备 %s，访问被拒绝。\n"
@@ -640,38 +649,38 @@ msgstr "设备 %s 过小。（LUKS1 需要至少 %<PRIu64> 字节。）\n"
 msgid "LUKS keyslot %u is invalid.\n"
 msgstr "LUKS 密钥槽 %u 无效。\n"
 
-#: lib/luks1/keymanage.c:245 lib/luks1/keymanage.c:490
-#: lib/luks2/luks2_json_metadata.c:966 src/cryptsetup_reencrypt.c:1316
+#: lib/luks1/keymanage.c:245 lib/luks1/keymanage.c:494
+#: lib/luks2/luks2_json_metadata.c:983 src/cryptsetup_reencrypt.c:1394
 #, c-format
 msgid "Device %s is not a valid LUKS device.\n"
 msgstr "%s 不是有效的 LUKS 设备。\n"
 
-#: lib/luks1/keymanage.c:264 lib/luks2/luks2_json_metadata.c:985
+#: lib/luks1/keymanage.c:264 lib/luks2/luks2_json_metadata.c:1002
 #, c-format
 msgid "Requested header backup file %s already exists.\n"
 msgstr "请求的标头备份文件 %s 已存在。\n"
 
-#: lib/luks1/keymanage.c:266 lib/luks2/luks2_json_metadata.c:987
+#: lib/luks1/keymanage.c:266 lib/luks2/luks2_json_metadata.c:1004
 #, c-format
 msgid "Cannot create header backup file %s.\n"
 msgstr "无法创建标头备份文件 %s。\n"
 
-#: lib/luks1/keymanage.c:271 lib/luks2/luks2_json_metadata.c:992
+#: lib/luks1/keymanage.c:271 lib/luks2/luks2_json_metadata.c:1009
 #, c-format
 msgid "Cannot write header backup file %s.\n"
 msgstr "无法写入标头备份文件 %s。\n"
 
-#: lib/luks1/keymanage.c:304 lib/luks2/luks2_json_metadata.c:1041
+#: lib/luks1/keymanage.c:304 lib/luks2/luks2_json_metadata.c:1058
 msgid "Backup file doesn't contain valid LUKS header.\n"
 msgstr "备份文件不包含有效 LUKS 标头。\n"
 
-#: lib/luks1/keymanage.c:317 lib/luks1/keymanage.c:567
-#: lib/luks2/luks2_json_metadata.c:1062
+#: lib/luks1/keymanage.c:317 lib/luks1/keymanage.c:571
+#: lib/luks2/luks2_json_metadata.c:1079
 #, c-format
 msgid "Cannot open header backup file %s.\n"
 msgstr "无法打开备份标头文件 %s。\n"
 
-#: lib/luks1/keymanage.c:323 lib/luks2/luks2_json_metadata.c:1068
+#: lib/luks1/keymanage.c:323 lib/luks2/luks2_json_metadata.c:1085
 #, c-format
 msgid "Cannot read header backup file %s.\n"
 msgstr "无法读取标头备份文件 %s。\n"
@@ -693,7 +702,7 @@ msgstr "不包含 LUKS 标头。替换标头可能损毁设备上的数据。"
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgstr "已包含 LUKS 标头。替换标头将损毁已存在的密钥槽。"
 
-#: lib/luks1/keymanage.c:346 lib/luks2/luks2_json_metadata.c:1104
+#: lib/luks1/keymanage.c:346 lib/luks2/luks2_json_metadata.c:1121
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
@@ -701,13 +710,13 @@ msgstr ""
 "\n"
 "警告: 真实设备标头 UUID 和备份不符！"
 
-#: lib/luks1/keymanage.c:365 lib/luks1/keymanage.c:606
-#: lib/luks1/keymanage.c:657 lib/tcrypt/tcrypt.c:640 lib/verity/verity.c:81
+#: lib/luks1/keymanage.c:365 lib/luks1/keymanage.c:610
+#: lib/luks1/keymanage.c:661 lib/tcrypt/tcrypt.c:640 lib/verity/verity.c:81
 #: lib/verity/verity.c:182 lib/verity/verity_hash.c:308
 #: lib/verity/verity_hash.c:319 lib/verity/verity_hash.c:339
-#: lib/verity/verity_fec.c:218 lib/verity/verity_fec.c:230
-#: lib/verity/verity_fec.c:235 lib/luks2/luks2_json_metadata.c:1135
-#: src/cryptsetup_reencrypt.c:197
+#: lib/verity/verity_fec.c:241 lib/verity/verity_fec.c:253
+#: lib/verity/verity_fec.c:258 lib/luks2/luks2_json_metadata.c:1152
+#: src/cryptsetup_reencrypt.c:205
 #, c-format
 msgid "Cannot open device %s.\n"
 msgstr "无法打开设备 %s。\n"
@@ -720,107 +729,102 @@ msgstr "不标准的密钥大小，需要手动修复。\n"
 msgid "Non standard keyslots alignment, manual repair required.\n"
 msgstr "不标准的密钥槽对齐，需要手动修复。\n"
 
-#: lib/luks1/keymanage.c:407
+#: lib/luks1/keymanage.c:411
 msgid "Repairing keyslots.\n"
 msgstr "正在修复密钥槽。\n"
 
-#: lib/luks1/keymanage.c:427
+#: lib/luks1/keymanage.c:431
 #, c-format
 msgid "Keyslot %i: offset repaired (%u -> %u).\n"
 msgstr "密钥槽 %i: 偏移已修复 (%u -> %u)。\n"
 
-#: lib/luks1/keymanage.c:435
+#: lib/luks1/keymanage.c:439
 #, c-format
 msgid "Keyslot %i: stripes repaired (%u -> %u).\n"
 msgstr "密钥槽 %i：已修复条带（%u -> %u）。\n"
 
-#: lib/luks1/keymanage.c:444
+#: lib/luks1/keymanage.c:448
 #, c-format
 msgid "Keyslot %i: bogus partition signature.\n"
 msgstr "密钥槽 %i：虚假分区签名。\n"
 
-#: lib/luks1/keymanage.c:449
+#: lib/luks1/keymanage.c:453
 #, c-format
 msgid "Keyslot %i: salt wiped.\n"
 msgstr "密钥槽 %i: 已清除盐。\n"
 
-#: lib/luks1/keymanage.c:466
+#: lib/luks1/keymanage.c:470
 msgid "Writing LUKS header to disk.\n"
 msgstr "正在将 LUKS 标头写入磁盘。\n"
 
-#: lib/luks1/keymanage.c:471
+#: lib/luks1/keymanage.c:475
 msgid "Repair failed.\n"
 msgstr "修复失败。\n"
 
-#: lib/luks1/keymanage.c:493
+#: lib/luks1/keymanage.c:497
 #, c-format
 msgid "Unsupported LUKS version %d.\n"
 msgstr "不支持的 LUKS 版本 %d。\n"
 
-#: lib/luks1/keymanage.c:499 lib/luks1/keymanage.c:746
+#: lib/luks1/keymanage.c:503 lib/luks1/keymanage.c:749
 #, c-format
 msgid "Requested LUKS hash %s is not supported.\n"
 msgstr "不支持请求的 LUKS 哈希 %s。\n"
 
-#: lib/luks1/keymanage.c:527 src/cryptsetup.c:882
+#: lib/luks1/keymanage.c:531 src/cryptsetup.c:866
 msgid "No known problems detected for LUKS header.\n"
 msgstr "未在 LUKS 标头发现已知问题。\n"
 
-#: lib/luks1/keymanage.c:679
+#: lib/luks1/keymanage.c:683
 #, c-format
 msgid "Error during update of LUKS header on device %s.\n"
 msgstr "更新设备 %s 上的 LUKS 标头时出错。\n"
 
-#: lib/luks1/keymanage.c:686
+#: lib/luks1/keymanage.c:690
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s.\n"
 msgstr "在更新设备 %s 后重新读取 LUKS 标头失败。\n"
 
-#: lib/luks1/keymanage.c:739
+#: lib/luks1/keymanage.c:742
 #, c-format
 msgid "Data offset for detached LUKS header must be either 0 or higher than header size (%d sectors).\n"
 msgstr ""
 
-#: lib/luks1/keymanage.c:751 lib/luks1/keymanage.c:841
-#: lib/luks2/luks2_json_format.c:145 lib/luks2/luks2_json_metadata.c:877
+#: lib/luks1/keymanage.c:754 lib/luks1/keymanage.c:840
+#: lib/luks2/luks2_json_format.c:145 lib/luks2/luks2_json_metadata.c:894
 msgid "Wrong LUKS UUID format provided.\n"
 msgstr "提供了错误的 LUKS UUID 格式。\n"
 
-#: lib/luks1/keymanage.c:780
+#: lib/luks1/keymanage.c:779
 msgid "Cannot create LUKS header: reading random salt failed.\n"
 msgstr "无法创建 LUKS 标头：读取随机盐失败。\n"
 
-#: lib/luks1/keymanage.c:801
+#: lib/luks1/keymanage.c:800
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s).\n"
 msgstr "无法创建 LUKS 标头：标头摘要失败（正在使用哈希值 %s）。\n"
 
-#: lib/luks1/keymanage.c:864
+#: lib/luks1/keymanage.c:863
 #, c-format
 msgid "Key slot %d active, purge first.\n"
 msgstr "密钥槽 %d 已激活，请先清除。\n"
 
-#: lib/luks1/keymanage.c:870
+#: lib/luks1/keymanage.c:869
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?\n"
 msgstr "密钥槽 %d 条带数过少。标头修改？\n"
 
-#: lib/luks1/keymanage.c:1029
+#: lib/luks1/keymanage.c:1028
 #, c-format
 msgid "Key slot %d unlocked.\n"
 msgstr "密钥槽 %d 已解除阻断。\n"
 
-#: lib/luks1/keymanage.c:1064 src/cryptsetup.c:1202
-#: src/cryptsetup_reencrypt.c:1199 src/cryptsetup_reencrypt.c:1236
-msgid "No key available with this passphrase.\n"
-msgstr "此密码无可用的密钥。\n"
-
-#: lib/luks1/keymanage.c:1082
+#: lib/luks1/keymanage.c:1080
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d.\n"
 msgstr "密钥槽 %d 无效，请选择标号 0 到 %d 间的密钥槽。\n"
 
-#: lib/luks1/keymanage.c:1100 lib/luks2/luks2_keyslot.c:407
+#: lib/luks1/keymanage.c:1098 lib/luks2/luks2_keyslot.c:450
 #, c-format
 msgid "Cannot wipe device %s.\n"
 msgstr "无法清除设备 %s。\n"
@@ -856,11 +860,11 @@ msgstr "超出 TCRYPT 密码长度限制 (%d)。\n"
 msgid "PBKDF2 hash algorithm %s not available, skipping.\n"
 msgstr "PBKDF2 哈希算法 %s 不可用，准备跳过。\n"
 
-#: lib/tcrypt/tcrypt.c:581 src/cryptsetup.c:807
+#: lib/tcrypt/tcrypt.c:581 src/cryptsetup.c:817
 msgid "Required kernel crypto interface not available.\n"
 msgstr "无法找到所需的内核加密接口。\n"
 
-#: lib/tcrypt/tcrypt.c:583 src/cryptsetup.c:809
+#: lib/tcrypt/tcrypt.c:583 src/cryptsetup.c:819
 msgid "Ensure you have algif_skcipher kernel module loaded.\n"
 msgstr "请确定你已载入内核模块 algif_skcipher。\n"
 
@@ -915,11 +919,20 @@ msgstr "为设备 %s 提供的 VERITY UUID 错误。\n"
 msgid "Error during update of verity header on device %s.\n"
 msgstr "更新设备 %s 上的 VERITY 标头时出错。\n"
 
-#: lib/verity/verity.c:294
+#: lib/verity/verity.c:259
+msgid "Errors cannot be repaired with FEC device.\n"
+msgstr ""
+
+#: lib/verity/verity.c:261
+#, c-format
+msgid "Found %u repairable errors with FEC device.\n"
+msgstr ""
+
+#: lib/verity/verity.c:305
 msgid "Kernel doesn't support dm-verity mapping.\n"
 msgstr "内核不支持 dm-verity 映射。\n"
 
-#: lib/verity/verity.c:305
+#: lib/verity/verity.c:316
 msgid "Verity device detected corruption after activation.\n"
 msgstr "在 VERITY 设备激活后探测到损坏。\n"
 
@@ -985,26 +998,37 @@ msgstr "获取 (stat) 密钥文件统计数据失败。\n"
 msgid "Failed to read RS block %<PRIu64> byte %d.\n"
 msgstr ""
 
-#: lib/verity/verity_fec.c:169
+#: lib/verity/verity_fec.c:170
+#, c-format
+msgid "Failed to read parity for RS block %<PRIu64>.\n"
+msgstr ""
+
+#: lib/verity/verity_fec.c:177
+#, fuzzy, c-format
+#| msgid "Failed to access temporary keystore device.\n"
+msgid "Failed to repair parity for block %<PRIu64>.\n"
+msgstr "无法访问临时密钥存储设备。\n"
+
+#: lib/verity/verity_fec.c:188
 #, c-format
 msgid "Failed to write parity for RS block %<PRIu64>.\n"
 msgstr ""
 
-#: lib/verity/verity_fec.c:203
+#: lib/verity/verity_fec.c:223
 msgid "Block sizes must match for FEC.\n"
 msgstr ""
 
-#: lib/verity/verity_fec.c:209
+#: lib/verity/verity_fec.c:229
 msgid "Invalid number of parity bytes.\n"
 msgstr ""
 
-#: lib/verity/verity_fec.c:242
+#: lib/verity/verity_fec.c:265
 #, fuzzy, c-format
 #| msgid "Failed to open temporary keystore device.\n"
 msgid "Failed to determine size for device %s.\n"
 msgstr "打开临时密钥存储设备失败。\n"
 
-#: lib/integrity/integrity.c:221 lib/integrity/integrity.c:272
+#: lib/integrity/integrity.c:219 lib/integrity/integrity.c:270
 #, fuzzy
 #| msgid "Kernel doesn't support dm-verity mapping.\n"
 msgid "Kernel doesn't support dm-integrity mapping.\n"
@@ -1016,7 +1040,7 @@ msgstr "内核不支持 dm-verity 映射。\n"
 msgid "Device %s is too small. (LUKS2 requires at least %<PRIu64> bytes.)\n"
 msgstr "设备 %s  过小。（LUKS 需要至少 %<PRIu64> 字节。）\n"
 
-#: lib/luks2/luks2_disk_metadata.c:427
+#: lib/luks2/luks2_disk_metadata.c:428
 #, fuzzy
 #| msgid "Failed to access temporary keystore device.\n"
 msgid "Failed to acquire write device lock.\n"
@@ -1028,256 +1052,263 @@ msgstr "无法访问临时密钥存储设备。\n"
 msgid "No space for new keyslot.\n"
 msgstr "交换新密钥槽失败。\n"
 
-#: lib/luks2/luks2_json_metadata.c:828 lib/luks2/luks2_json_metadata.c:957
-#: lib/luks2/luks2_json_metadata.c:1030 lib/luks2/luks2_keyslot_luks2.c:103
+#: lib/luks2/luks2_json_metadata.c:851 lib/luks2/luks2_json_metadata.c:974
+#: lib/luks2/luks2_json_metadata.c:1047 lib/luks2/luks2_keyslot_luks2.c:103
 #: lib/luks2/luks2_keyslot_luks2.c:126
 #, fuzzy, c-format
 #| msgid "Failed to access temporary keystore device.\n"
 msgid "Failed to acquire read lock on device %s.\n"
 msgstr "无法访问临时密钥存储设备。\n"
 
-#: lib/luks2/luks2_json_metadata.c:1047
+#: lib/luks2/luks2_json_metadata.c:1064
 #, c-format
 msgid "Forbidden LUKS2 requirements detected in backup %s.\n"
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1088
+#: lib/luks2/luks2_json_metadata.c:1105
 #, fuzzy
 #| msgid "Data offset or key size differs on device and backup, restore failed.\n"
 msgid "Data offset differ on device and backup, restore failed.\n"
 msgstr "源设备和备份上的数据偏移或密钥大小不符，恢复失败。\n"
 
-#: lib/luks2/luks2_json_metadata.c:1094
+#: lib/luks2/luks2_json_metadata.c:1111
 #, fuzzy
 #| msgid "Data offset or key size differs on device and backup, restore failed.\n"
 msgid "Binary header with keyslot areas size differ on device and backup, restore failed.\n"
 msgstr "源设备和备份上的数据偏移或密钥大小不符，恢复失败。\n"
 
-#: lib/luks2/luks2_json_metadata.c:1101
-#, fuzzy, c-format
-#| msgid "Device %s %s%s"
+#: lib/luks2/luks2_json_metadata.c:1118
+#, c-format
 msgid "Device %s %s%s%s%s"
-msgstr "设备 %s %s%s"
+msgstr "设备 %s %s%s%s%s"
 
-#: lib/luks2/luks2_json_metadata.c:1102
+#: lib/luks2/luks2_json_metadata.c:1119
 #, fuzzy
 #| msgid "does not contain LUKS header. Replacing header can destroy data on that device."
 msgid "does not contain LUKS2 header. Replacing header can destroy data on that device."
 msgstr "不包含 LUKS 标头。替换标头可能损毁设备上的数据。"
 
-#: lib/luks2/luks2_json_metadata.c:1103
+#: lib/luks2/luks2_json_metadata.c:1120
 #, fuzzy
 #| msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgid "already contains LUKS2 header. Replacing header will destroy existing keyslots."
 msgstr "已包含 LUKS 标头。替换标头将损毁已存在的密钥槽。"
 
-#: lib/luks2/luks2_json_metadata.c:1105
+#: lib/luks2/luks2_json_metadata.c:1122
 msgid ""
 "\n"
 "WARNING: unknown LUKS2 requirements detected in real device header!\n"
 "Replacing header with backup may corrupt the data on that device!"
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1107
+#: lib/luks2/luks2_json_metadata.c:1124
 msgid ""
 "\n"
 "WARNING: Unfinished offline reencryption detected on the device!\n"
 "Replacing header with backup may corrupt data."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1209
+#: lib/luks2/luks2_json_metadata.c:1226
 #, c-format
 msgid "Ignored unknown flag %s.\n"
-msgstr ""
+msgstr "已忽略未知标签 %s。\n"
 
-#: lib/luks2/luks2_json_metadata.c:1906
+#: lib/luks2/luks2_json_metadata.c:1923
 msgid "Failed to read LUKS2 requirements.\n"
-msgstr ""
+msgstr "读取 LUKS2 要求失败。\n"
 
-#: lib/luks2/luks2_json_metadata.c:1913
+#: lib/luks2/luks2_json_metadata.c:1930
 msgid "Unmet LUKS2 requirements detected.\n"
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1921
+#: lib/luks2/luks2_json_metadata.c:1938
 msgid "Offline reencryption in progress. Aborting.\n"
-msgstr ""
+msgstr "正在进行离线重加密。中止。\n"
 
-#: lib/luks2/luks2_luks1_convert.c:473
+#: lib/luks2/luks2_luks1_convert.c:476
 #, fuzzy, c-format
 #| msgid "Cannot check password quality: %s\n"
 msgid "Can not check status of device with uuid: %s.\n"
 msgstr "无法检查密码质量：%s\n"
 
 #: lib/luks2/luks2_luks1_convert.c:502
-msgid "Unable to move keyslot materials. Not enough space\n"
+msgid "Unable to convert header with LUKSMETA additional metadata.\n"
 msgstr ""
 
-#: lib/luks2/luks2_luks1_convert.c:628
+#: lib/luks2/luks2_luks1_convert.c:539
+msgid "Unable to move keyslot area. Not enough space.\n"
+msgstr ""
+
+#: lib/luks2/luks2_luks1_convert.c:579 lib/luks2/luks2_luks1_convert.c:845
+#, fuzzy
+#| msgid "Failed to open key file.\n"
+msgid "Unable to move keyslot area.\n"
+msgstr "打开 (open) 密钥文件失败。\n"
+
+#: lib/luks2/luks2_luks1_convert.c:667
 msgid "Cannot convert to LUKS1 format - key slot digests are not LUKS1 compatible.\n"
 msgstr ""
 
-#: lib/luks2/luks2_luks1_convert.c:648
+#: lib/luks2/luks2_luks1_convert.c:676
+#, fuzzy, c-format
+#| msgid "LUKS keyslot %u is invalid.\n"
+msgid "Cannot convert to LUKS1 format - device uses wrapped key cipher %s.\n"
+msgstr "LUKS 密钥槽 %u 无效。\n"
+
+#: lib/luks2/luks2_luks1_convert.c:684
+#, fuzzy, c-format
+#| msgid "LUKS keyslot %u is invalid.\n"
+msgid "Cannot convert to LUKS1 format - LUKS2 header contains %u token(s).\n"
+msgstr "LUKS 密钥槽 %u 无效。\n"
+
+#: lib/luks2/luks2_luks1_convert.c:698
 #, fuzzy, c-format
 #| msgid "LUKS keyslot %u is invalid.\n"
 msgid "Cannot convert to LUKS1 format - keyslot %u is in invalid state.\n"
 msgstr "LUKS 密钥槽 %u 无效。\n"
 
-#: lib/luks2/luks2_luks1_convert.c:653
+#: lib/luks2/luks2_luks1_convert.c:703
 #, c-format
 msgid "Cannot convert to LUKS1 format - slot %u (over maximum slots) is still active.\n"
 msgstr ""
 
-#: lib/luks2/luks2_luks1_convert.c:658
+#: lib/luks2/luks2_luks1_convert.c:708
 #, c-format
 msgid "Cannot convert to LUKS1 format - keyslot %u is not LUKS1 compatible.\n"
 msgstr ""
 
-#: lib/luks2/luks2_token.c:265
+#: lib/luks2/luks2_token.c:266
 msgid "No free token slot\n"
 msgstr ""
 
 # stat() 主要就是出来一个各种文件信息……
-#: lib/luks2/luks2_token.c:273
+#: lib/luks2/luks2_token.c:274
 #, fuzzy, c-format
 #| msgid "Failed to stat key file.\n"
 msgid "Failed to create builtin token %s\n"
 msgstr "获取 (stat) 密钥文件统计数据失败。\n"
 
-#: src/cryptsetup.c:131
+#: src/cryptsetup.c:132
 msgid "Can't do passphrase verification on non-tty inputs.\n"
 msgstr "无法从非 TTY 输入验证密码。\n"
 
-#: src/cryptsetup.c:180 src/cryptsetup.c:749 src/cryptsetup.c:999
-#: src/cryptsetup_reencrypt.c:702 src/cryptsetup_reencrypt.c:770
+#: src/cryptsetup.c:185 src/cryptsetup.c:759 src/cryptsetup.c:983
+#: src/cryptsetup_reencrypt.c:741 src/cryptsetup_reencrypt.c:815
 msgid "No known cipher specification pattern detected.\n"
 msgstr "未探测到已知的密文特征。\n"
 
-#: src/cryptsetup.c:188
+#: src/cryptsetup.c:193
 msgid "WARNING: The --hash parameter is being ignored in plain mode with keyfile specified.\n"
 msgstr "警告：在纯文本模式下指定密钥文件时将忽略参数 --hash。\n"
 
-#: src/cryptsetup.c:196
+#: src/cryptsetup.c:201
 msgid "WARNING: The --keyfile-size option is being ignored, the read size is the same as the encryption key size.\n"
 msgstr "警告：将忽略参数 --keyfile-size，读取大小应与加密密钥大小一致。\n"
 
-#: src/cryptsetup.c:258
+#: src/cryptsetup.c:263
 msgid "Option --key-file is required.\n"
 msgstr "需要选项 --key-file。\n"
 
-#: src/cryptsetup.c:303
+#: src/cryptsetup.c:308
 msgid "Enter VeraCrypt PIM: "
-msgstr ""
+msgstr "输入 VeraCrypt PIM: "
 
-#: src/cryptsetup.c:312
+#: src/cryptsetup.c:317
 msgid "Invalid PIM value: parse error\n"
-msgstr ""
+msgstr "无效的 PIM 值：解析错误\n"
 
-#: src/cryptsetup.c:315
-#, fuzzy
-#| msgid "Invalid device %s.\n"
+#: src/cryptsetup.c:320
 msgid "Invalid PIM value: 0\n"
-msgstr "设备 %s 无效。\n"
+msgstr "无效的 PIM 值：0\n"
 
-#: src/cryptsetup.c:318
+#: src/cryptsetup.c:323
 msgid "Invalid PIM value: outside of range\n"
-msgstr ""
+msgstr "无效的 PIM 值：超出范围\n"
 
-#: src/cryptsetup.c:341
+#: src/cryptsetup.c:346
 msgid "No device header detected with this passphrase.\n"
 msgstr "未从此密码中探测到设备标头。\n"
 
-#: src/cryptsetup.c:403 src/cryptsetup.c:1503
+#: src/cryptsetup.c:408 src/cryptsetup.c:1586
 msgid ""
 "Header dump with volume key is sensitive information\n"
 "which allows access to encrypted partition without passphrase.\n"
 "This dump should be always stored encrypted on safe place."
 msgstr ""
 
-#: src/cryptsetup.c:481
+#: src/cryptsetup.c:486
 #, c-format
 msgid "Device %s is still active and scheduled for deferred removal.\n"
 msgstr ""
 
-#: src/cryptsetup.c:504
+#: src/cryptsetup.c:514
 msgid "Resize of active device requires volume key in keyring but --disable-keyring option is set.\n"
 msgstr ""
 
-#: src/cryptsetup.c:690
+#: src/cryptsetup.c:700
 msgid "Result of benchmark is not reliable.\n"
 msgstr "测试结果不可靠。\n"
 
-#: src/cryptsetup.c:741
+#: src/cryptsetup.c:751
 msgid "# Tests are approximate using memory only (no storage IO).\n"
 msgstr "# 测试仅使用内存（无存储 IO）。\n"
 
-#: src/cryptsetup.c:768 src/cryptsetup.c:791
+#: src/cryptsetup.c:778 src/cryptsetup.c:801
 #, fuzzy
 #| msgid "#  Algorithm | Key |  Encryption |  Decryption\n"
 msgid "#     Algorithm | Key |  Encryption |  Decryption\n"
 msgstr "#  算法      | 密钥 | 加密         | 解密\n"
 
-#: src/cryptsetup.c:772
+#: src/cryptsetup.c:782
 #, c-format
 msgid "Cipher %s is not available.\n"
 msgstr "密文 %s 不可用。\n"
 
-#: src/cryptsetup.c:800
+#: src/cryptsetup.c:810
 msgid "N/A"
 msgstr "不可用"
 
-#: src/cryptsetup.c:825 src/integritysetup.c:78
-#, c-format
-msgid "Cannot read keyfile %s.\n"
-msgstr ""
-"无法读取密钥文件 %s。\n"
-"\n"
-
-#: src/cryptsetup.c:829 src/integritysetup.c:82
-#, c-format
-msgid "Cannot read %d bytes from keyfile %s.\n"
-msgstr "无法从密钥文件 %2$s 读取 %1$d 字节。\n"
-
-#: src/cryptsetup.c:886
+#: src/cryptsetup.c:870
 msgid "Really try to repair LUKS device header?"
 msgstr "确定要尝试修复 LUKS 设备标头吗？"
 
-#: src/cryptsetup.c:887 src/cryptsetup.c:968 src/cryptsetup.c:991
-#: src/cryptsetup.c:1476
+#: src/cryptsetup.c:871 src/cryptsetup.c:952 src/cryptsetup.c:975
+#: src/cryptsetup.c:1559
 msgid "Operation aborted.\n"
 msgstr "操作中止。\n"
 
-#: src/cryptsetup.c:902 src/integritysetup.c:140
+#: src/cryptsetup.c:886 src/integritysetup.c:140
 msgid ""
 "Wiping device to initialize integrity checksum.\n"
 "You can interrupt this by pressing CTRL+c (rest of not wiped device will contain invalid checksum).\n"
 msgstr ""
 
-#: src/cryptsetup.c:924 src/integritysetup.c:162
+#: src/cryptsetup.c:908 src/integritysetup.c:162
 #, fuzzy, c-format
 #| msgid "Cannot open temporary LUKS device.\n"
 msgid "Cannot deactivate temporary device %s.\n"
 msgstr "无法打开临时 LUKS 设备。\n"
 
-#: src/cryptsetup.c:974
+#: src/cryptsetup.c:958
 #, fuzzy, c-format
 #| msgid "Cannot create header backup file %s.\n"
 msgid "Cannot create header file %s.\n"
 msgstr "无法创建标头备份文件 %s。\n"
 
-#: src/cryptsetup.c:985
+#: src/cryptsetup.c:969
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr "这将覆盖 %s 上的数据，该动作不可取消。"
 
-#: src/cryptsetup.c:987
+#: src/cryptsetup.c:971
 msgid "memory allocation error in action_luksFormat"
 msgstr "在 action_luksFormat 中发生内存分配错误"
 
-#: src/cryptsetup.c:1004
+#: src/cryptsetup.c:988
 msgid "Integrity option can be used only for LUKS2 format.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1009 src/integritysetup.c:187 src/integritysetup.c:196
+#: src/cryptsetup.c:995 src/integritysetup.c:187 src/integritysetup.c:196
 #: src/integritysetup.c:205 src/integritysetup.c:252 src/integritysetup.c:261
 #: src/integritysetup.c:271
 #, fuzzy
@@ -1285,94 +1316,99 @@ msgstr ""
 msgid "No known integrity specification pattern detected.\n"
 msgstr "未探测到已知的密文特征。\n"
 
-#: src/cryptsetup.c:1022
+#: src/cryptsetup.c:1008
 #, c-format
 msgid "Cannot use %s as on-disk header.\n"
 msgstr "无法将 %s 作为磁盘上的标头使用。\n"
 
 # stat() 主要就是出来一个各种文件信息……
-#: src/cryptsetup.c:1050 src/cryptsetup.c:1327 src/cryptsetup.c:1411
-#, fuzzy
-#| msgid "Failed to stat key file.\n"
+#: src/cryptsetup.c:1036 src/cryptsetup.c:1313 src/cryptsetup.c:1372
+#: src/cryptsetup.c:1458 src/cryptsetup.c:1509
 msgid "Failed to set pbkdf parameters.\n"
-msgstr "获取 (stat) 密钥文件统计数据失败。\n"
+msgstr "设置 pbkdf 参数失败。\n"
 
-#: src/cryptsetup.c:1106
+#: src/cryptsetup.c:1092
 msgid "Reduced data offset is allowed only for detached LUKS header.\n"
 msgstr "仅已脱离的 LUKS 数据头可以使用缩减的数据偏移。\n"
 
-#: src/cryptsetup.c:1145
+#: src/cryptsetup.c:1131
 msgid "Device activated but cannot make flags persistent.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1224
+#: src/cryptsetup.c:1209
 #, fuzzy, c-format
 #| msgid "Key slot %d selected for deletion.\n"
 msgid "Keyslot %d is selected for deletion.\n"
 msgstr "已选中密钥槽 %d 以删除。\n"
 
-#: src/cryptsetup.c:1227
+#: src/cryptsetup.c:1212
 #, fuzzy, c-format
 #| msgid "Key slot %d is not used.\n"
 msgid "Keyslot %d is not active.\n"
 msgstr "密钥槽 %d 未使用。\n"
 
-#: src/cryptsetup.c:1235 src/cryptsetup.c:1289
+#: src/cryptsetup.c:1220 src/cryptsetup.c:1275
 msgid "This is the last keyslot. Device will become unusable after purging this key."
 msgstr "这是最后一个密钥槽。设备在清空此密钥后将不可用。"
 
-#: src/cryptsetup.c:1236
+#: src/cryptsetup.c:1221
 msgid "Enter any remaining passphrase: "
 msgstr "输入任意剩余的密码："
 
-#: src/cryptsetup.c:1237 src/cryptsetup.c:1291
+#: src/cryptsetup.c:1222 src/cryptsetup.c:1277
 msgid "Operation aborted, the keyslot was NOT wiped.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1270
+#: src/cryptsetup.c:1255
 msgid "Enter passphrase to be deleted: "
 msgstr "输入要移除的密码："
 
-#: src/cryptsetup.c:1286
+#: src/cryptsetup.c:1272
 #, c-format
 msgid "Key slot %d selected for deletion.\n"
 msgstr "已选中密钥槽 %d 以删除。\n"
 
-#: src/cryptsetup.c:1341 src/cryptsetup.c:1372
+#: src/cryptsetup.c:1327 src/cryptsetup.c:1386 src/cryptsetup.c:1419
 msgid "Enter new passphrase for key slot: "
 msgstr "输入密钥槽的新密码："
 
-#: src/cryptsetup.c:1357 src/cryptsetup_reencrypt.c:1274
+#: src/cryptsetup.c:1403 src/cryptsetup_reencrypt.c:1349
 #, c-format
 msgid "Enter any existing passphrase: "
 msgstr "输入任意已存在的密码："
 
-#: src/cryptsetup.c:1415
+#: src/cryptsetup.c:1462
 msgid "Enter passphrase to be changed: "
 msgstr "输入要更改的密码："
 
-#: src/cryptsetup.c:1429 src/cryptsetup_reencrypt.c:1259
+#: src/cryptsetup.c:1477 src/cryptsetup_reencrypt.c:1334
 msgid "Enter new passphrase: "
 msgstr "输入新密码："
 
-#: src/cryptsetup.c:1453
+#: src/cryptsetup.c:1513
+#, fuzzy
+#| msgid "Enter passphrase for key slot %u: "
+msgid "Enter passphrase for keyslot to be converted: "
+msgstr "输入密钥槽 %u 的密码："
+
+#: src/cryptsetup.c:1536
 msgid "Only one device argument for isLuks operation is supported.\n"
 msgstr "isLuks 操作仅支持一个设备参数。\n"
 
-#: src/cryptsetup.c:1620 src/cryptsetup.c:1641
+#: src/cryptsetup.c:1715 src/cryptsetup.c:1736
 msgid "Option --header-backup-file is required.\n"
 msgstr "必须指定 --header-backup-file 选项。\n"
 
-#: src/cryptsetup.c:1680
+#: src/cryptsetup.c:1775
 #, c-format
 msgid "Unrecognized metadata device type %s.\n"
 msgstr "无法识别的元数据设备类型 %s。\n"
 
-#: src/cryptsetup.c:1683
+#: src/cryptsetup.c:1778
 msgid "Command requires device and mapped name as arguments.\n"
 msgstr "命令需要设备及映射名作为参数。\n"
 
-#: src/cryptsetup.c:1702
+#: src/cryptsetup.c:1797
 #, c-format
 msgid ""
 "This operation will erase all keyslots on device %s.\n"
@@ -1381,211 +1417,218 @@ msgstr ""
 "该操作将清空设备 %s 上所有的密钥槽。\n"
 "设备在此操作后将不可用。"
 
-#: src/cryptsetup.c:1709
+#: src/cryptsetup.c:1804
 msgid "Operation aborted, keyslots were NOT wiped.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1745
+#: src/cryptsetup.c:1840
 msgid "Missing LUKS target type, option --type is required.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1761
+#: src/cryptsetup.c:1856
 #, fuzzy, c-format
 #| msgid "Device %s already exists.\n"
 msgid "Device is already %s type.\n"
 msgstr "设备 %s 已存在。\n"
 
-#: src/cryptsetup.c:1766
+#: src/cryptsetup.c:1861
 #, fuzzy, c-format
 #| msgid "This operation is not supported for %s crypt device.\n"
 msgid "This operation will convert %s to %s format.\n"
 msgstr "不支持在 %s 加密设备上执行此操作。\n"
 
-#: src/cryptsetup.c:1772
+#: src/cryptsetup.c:1867
 msgid "Operation aborted, device was NOT converted.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1812
+#: src/cryptsetup.c:1907
 msgid "Option --priority, --label or --subsystem is missing.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1843
+#: src/cryptsetup.c:1938
 #, fuzzy, c-format
 #| msgid "Key slot %d is invalid.\n"
 msgid "Token %d is invalid.\n"
 msgstr "密钥槽 %d 无效。\n"
 
-#: src/cryptsetup.c:1846
+#: src/cryptsetup.c:1941
 #, fuzzy, c-format
 #| msgid "Key slot %d is not used.\n"
 msgid "Token %d in use.\n"
 msgstr "密钥槽 %d 未使用。\n"
 
-#: src/cryptsetup.c:1859
+#: src/cryptsetup.c:1954
 #, fuzzy, c-format
 #| msgid "Failed to swap new key slot.\n"
 msgid "Failed to assign token %d to keyslot %d.\n"
 msgstr "交换新密钥槽失败。\n"
 
-#: src/cryptsetup.c:1873
+#: src/cryptsetup.c:1968
 msgid "--key-description parameter is mandatory for token add action.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1879
+#: src/cryptsetup.c:1974
 msgid "Missing --token option specifying token for removal.\n"
 msgstr ""
 
-#: src/cryptsetup.c:1884
+#: src/cryptsetup.c:1979
 #, fuzzy, c-format
 #| msgid "Invalid device %s.\n"
 msgid "Invalid token operation %s.\n"
 msgstr "设备 %s 无效。\n"
 
 # stat() 主要就是出来一个各种文件信息……
-#: src/cryptsetup.c:1899
+#: src/cryptsetup.c:1994
 #, fuzzy, c-format
 #| msgid "Failed to stat key file.\n"
 msgid "Failed to add keyring token %d.\n"
 msgstr "获取 (stat) 密钥文件统计数据失败。\n"
 
-#: src/cryptsetup.c:1901
+#: src/cryptsetup.c:1996
 #, fuzzy, c-format
 #| msgid "Failed to open key file.\n"
 msgid "Failed to remove token %d.\n"
 msgstr "打开 (open) 密钥文件失败。\n"
 
-#: src/cryptsetup.c:1917
+#: src/cryptsetup.c:2012
 msgid "<device> [--type <type>] [<name>]"
 msgstr "<设备> [--type <类型>] [<名称>]"
 
-#: src/cryptsetup.c:1917
+#: src/cryptsetup.c:2012
 msgid "open device as mapping <name>"
 msgstr "以映射 <名称> 打开设备"
 
-#: src/cryptsetup.c:1918 src/cryptsetup.c:1919 src/cryptsetup.c:1920
-#: src/veritysetup.c:361 src/veritysetup.c:362 src/integritysetup.c:425
-#: src/integritysetup.c:426
+#: src/cryptsetup.c:2013 src/cryptsetup.c:2014 src/cryptsetup.c:2015
+#: src/veritysetup.c:366 src/veritysetup.c:367 src/integritysetup.c:427
+#: src/integritysetup.c:428
 msgid "<name>"
 msgstr "<名称>"
 
-#: src/cryptsetup.c:1918
+#: src/cryptsetup.c:2013
 msgid "close device (remove mapping)"
 msgstr "关闭设备（移除映射）"
 
-#: src/cryptsetup.c:1919
+#: src/cryptsetup.c:2014
 msgid "resize active device"
 msgstr "改变活动设备大小。"
 
-#: src/cryptsetup.c:1920
+#: src/cryptsetup.c:2015
 msgid "show device status"
 msgstr "显示设备状态"
 
-#: src/cryptsetup.c:1921
+#: src/cryptsetup.c:2016
 msgid "[--cipher <cipher>]"
 msgstr ""
 
-#: src/cryptsetup.c:1921
+#: src/cryptsetup.c:2016
 msgid "benchmark cipher"
 msgstr "测试密文"
 
-#: src/cryptsetup.c:1922 src/cryptsetup.c:1923 src/cryptsetup.c:1924
-#: src/cryptsetup.c:1925 src/cryptsetup.c:1931 src/cryptsetup.c:1932
-#: src/cryptsetup.c:1933 src/cryptsetup.c:1934 src/cryptsetup.c:1935
-#: src/cryptsetup.c:1936 src/cryptsetup.c:1937 src/cryptsetup.c:1938
+#: src/cryptsetup.c:2017 src/cryptsetup.c:2018 src/cryptsetup.c:2019
+#: src/cryptsetup.c:2020 src/cryptsetup.c:2027 src/cryptsetup.c:2028
+#: src/cryptsetup.c:2029 src/cryptsetup.c:2030 src/cryptsetup.c:2031
+#: src/cryptsetup.c:2032 src/cryptsetup.c:2033 src/cryptsetup.c:2034
 msgid "<device>"
 msgstr "<设备>"
 
-#: src/cryptsetup.c:1922
+#: src/cryptsetup.c:2017
 msgid "try to repair on-disk metadata"
 msgstr "尝试修复磁盘上的元数据"
 
-#: src/cryptsetup.c:1923
+#: src/cryptsetup.c:2018
 msgid "erase all keyslots (remove encryption key)"
 msgstr "清空所有密钥槽（移除加密密钥）"
 
-#: src/cryptsetup.c:1924
+#: src/cryptsetup.c:2019
 msgid "convert LUKS from/to LUKS2 format"
 msgstr ""
 
-#: src/cryptsetup.c:1925
+#: src/cryptsetup.c:2020
 msgid "set permanent configuration options for LUKS2"
 msgstr ""
 
-#: src/cryptsetup.c:1926 src/cryptsetup.c:1927
+#: src/cryptsetup.c:2021 src/cryptsetup.c:2022
 msgid "<device> [<new key file>]"
 msgstr "<设备> [<新密钥文件>]"
 
-#: src/cryptsetup.c:1926
+#: src/cryptsetup.c:2021
 msgid "formats a LUKS device"
 msgstr "格式化一个 LUKS 设备"
 
-#: src/cryptsetup.c:1927
+#: src/cryptsetup.c:2022
 msgid "add key to LUKS device"
 msgstr "向 LUKS 设备添加密钥"
 
-#: src/cryptsetup.c:1928 src/cryptsetup.c:1929
+#: src/cryptsetup.c:2023 src/cryptsetup.c:2024 src/cryptsetup.c:2025
 msgid "<device> [<key file>]"
 msgstr "<设备> [<密钥文件>]"
 
-#: src/cryptsetup.c:1928
+#: src/cryptsetup.c:2023
 msgid "removes supplied key or key file from LUKS device"
 msgstr "移除 LUKS 设备中指定的密钥或密钥文件"
 
-#: src/cryptsetup.c:1929
+#: src/cryptsetup.c:2024
 msgid "changes supplied key or key file of LUKS device"
 msgstr "更改 LUKS 设备中指定的密钥或密钥文件"
 
-#: src/cryptsetup.c:1930
+# stat() 主要就是出来一个各种文件信息……
+#: src/cryptsetup.c:2025
+#, fuzzy
+#| msgid "Failed to stat key file.\n"
+msgid "converts a key to new pbkdf parameters"
+msgstr "获取 (stat) 密钥文件统计数据失败。\n"
+
+#: src/cryptsetup.c:2026
 msgid "<device> <key slot>"
 msgstr "<设备> <密钥槽>"
 
-#: src/cryptsetup.c:1930
+#: src/cryptsetup.c:2026
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr "从 LUKS 设备清理标号为 <key slot> 的密钥"
 
-#: src/cryptsetup.c:1931
+#: src/cryptsetup.c:2027
 msgid "print UUID of LUKS device"
 msgstr "输出 LUKS 设备的 UUID（唯一标识符）"
 
-#: src/cryptsetup.c:1932
+#: src/cryptsetup.c:2028
 msgid "tests <device> for LUKS partition header"
 msgstr "从 <device> 探测 LUKS 分区标头"
 
-#: src/cryptsetup.c:1933
+#: src/cryptsetup.c:2029
 msgid "dump LUKS partition information"
 msgstr "调出 LUKS 分区信息"
 
-#: src/cryptsetup.c:1934
+#: src/cryptsetup.c:2030
 msgid "dump TCRYPT device information"
 msgstr "调出 TCRYPT 设备信息"
 
-#: src/cryptsetup.c:1935
+#: src/cryptsetup.c:2031
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)."
 msgstr "挂起 LUKS 设备并清除密钥（冻结所有 IO 操作）。"
 
-#: src/cryptsetup.c:1936
+#: src/cryptsetup.c:2032
 msgid "Resume suspended LUKS device."
 msgstr "恢复已暂停的 LUKS 设备。"
 
-#: src/cryptsetup.c:1937
+#: src/cryptsetup.c:2033
 msgid "Backup LUKS device header and keyslots"
 msgstr "备份 LUKS 设备标头和密钥槽"
 
-#: src/cryptsetup.c:1938
+#: src/cryptsetup.c:2034
 msgid "Restore LUKS device header and keyslots"
 msgstr "恢复 LUKS 设备标头和密钥槽"
 
-#: src/cryptsetup.c:1939
+#: src/cryptsetup.c:2035
 #, fuzzy
 #| msgid "<data_device> <hash_device>"
 msgid "<add|remove> <device>"
 msgstr "<数据设备> <哈希设备>"
 
-#: src/cryptsetup.c:1939
+#: src/cryptsetup.c:2035
 msgid "Add or remove keyring token"
 msgstr ""
 
-#: src/cryptsetup.c:1956 src/veritysetup.c:378 src/integritysetup.c:442
+#: src/cryptsetup.c:2053 src/veritysetup.c:383 src/integritysetup.c:444
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -1593,7 +1636,7 @@ msgstr ""
 "\n"
 "<动作> 为其中之一：\n"
 
-#: src/cryptsetup.c:1962
+#: src/cryptsetup.c:2059
 msgid ""
 "\n"
 "You can also use old <action> syntax aliases:\n"
@@ -1605,7 +1648,7 @@ msgstr ""
 "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
 "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"
 
-#: src/cryptsetup.c:1966
+#: src/cryptsetup.c:2063
 #, c-format
 msgid ""
 "\n"
@@ -1620,7 +1663,7 @@ msgstr ""
 "<key slot> 为需要更改的 LUKS 密钥槽\n"
 "<key file> 提供给 luksAddKey 动作的密钥文件\n"
 
-#: src/cryptsetup.c:1973
+#: src/cryptsetup.c:2072
 #, fuzzy, c-format
 #| msgid ""
 #| "\n"
@@ -1631,7 +1674,7 @@ msgid ""
 "\n"
 "Default compiled-in key and passphrase parameters:\n"
 "\tMaximum keyfile size: %dkB, Maximum interactive passphrase length %d (characters)\n"
-"Default PBKDF2 iteration time for LUKS: %d (ms)\n"
+"Default PBKDF for LUKS1: %s, iteration time: %d (ms)\n"
 "Default PBKDF for LUKS2: %s\n"
 "\tIteration time: %d, Memory required: %dkB, Parallel threads: %d\n"
 msgstr ""
@@ -1640,7 +1683,7 @@ msgstr ""
 "\t密钥文件的最大大小：%dkB, 交互式密码的最大长度：%d (字符)\n"
 "LUKS 的默认 PBKDF2 迭代时间：%d (毫秒)\n"
 
-#: src/cryptsetup.c:1983
+#: src/cryptsetup.c:2083
 #, c-format
 msgid ""
 "\n"
@@ -1655,559 +1698,575 @@ msgstr ""
 "\tplain：%s, 密钥：%d 位, 密码哈希：%s\n"
 "\tLUKS1：%s, 密钥：%d bits, LUKS 数据头哈希：%s, RNG：%s\n"
 
-#: src/cryptsetup.c:2000 src/veritysetup.c:534 src/integritysetup.c:579
+#: src/cryptsetup.c:2100 src/veritysetup.c:540 src/integritysetup.c:581
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr "%s: 需要 %s 作为参数"
 
-#: src/cryptsetup.c:2033 src/veritysetup.c:418 src/integritysetup.c:476
-#: src/cryptsetup_reencrypt.c:1524
+#: src/cryptsetup.c:2133 src/veritysetup.c:423 src/integritysetup.c:478
+#: src/cryptsetup_reencrypt.c:1606
 msgid "Show this help message"
 msgstr "显示此帮助"
 
-#: src/cryptsetup.c:2034 src/veritysetup.c:419 src/integritysetup.c:477
-#: src/cryptsetup_reencrypt.c:1525
+#: src/cryptsetup.c:2134 src/veritysetup.c:424 src/integritysetup.c:479
+#: src/cryptsetup_reencrypt.c:1607
 msgid "Display brief usage"
 msgstr "显示简短用法"
 
-#: src/cryptsetup.c:2038 src/veritysetup.c:423 src/integritysetup.c:481
-#: src/cryptsetup_reencrypt.c:1529
+#: src/cryptsetup.c:2138 src/veritysetup.c:428 src/integritysetup.c:483
+#: src/cryptsetup_reencrypt.c:1611
 msgid "Help options:"
 msgstr "帮助选项："
 
-#: src/cryptsetup.c:2039 src/veritysetup.c:424 src/integritysetup.c:482
-#: src/cryptsetup_reencrypt.c:1530
+#: src/cryptsetup.c:2139 src/veritysetup.c:429 src/integritysetup.c:484
+#: src/cryptsetup_reencrypt.c:1612
 msgid "Print package version"
 msgstr "打印软件包版本"
 
-#: src/cryptsetup.c:2040 src/veritysetup.c:425 src/integritysetup.c:483
-#: src/cryptsetup_reencrypt.c:1531
+#: src/cryptsetup.c:2140 src/veritysetup.c:430 src/integritysetup.c:485
+#: src/cryptsetup_reencrypt.c:1613
 msgid "Shows more detailed error messages"
 msgstr "显示更详细的错误信息"
 
-#: src/cryptsetup.c:2041 src/veritysetup.c:426 src/integritysetup.c:484
-#: src/cryptsetup_reencrypt.c:1532
+#: src/cryptsetup.c:2141 src/veritysetup.c:431 src/integritysetup.c:486
+#: src/cryptsetup_reencrypt.c:1614
 msgid "Show debug messages"
 msgstr "显示调试信息"
 
-#: src/cryptsetup.c:2042 src/cryptsetup_reencrypt.c:1534
+#: src/cryptsetup.c:2142 src/cryptsetup_reencrypt.c:1616
 msgid "The cipher used to encrypt the disk (see /proc/crypto)"
 msgstr "用于加密磁盘的密文（参见 /proc/crypto）"
 
-#: src/cryptsetup.c:2043 src/cryptsetup_reencrypt.c:1536
+#: src/cryptsetup.c:2143 src/cryptsetup_reencrypt.c:1618
 msgid "The hash used to create the encryption key from the passphrase"
 msgstr "用于从密码创建加密密钥的哈希值"
 
-#: src/cryptsetup.c:2044
+#: src/cryptsetup.c:2144
 msgid "Verifies the passphrase by asking for it twice"
 msgstr "两次询问密码以进行验证"
 
-#: src/cryptsetup.c:2045 src/cryptsetup_reencrypt.c:1538
+#: src/cryptsetup.c:2145 src/cryptsetup_reencrypt.c:1620
 msgid "Read the key from a file."
 msgstr "从文件读取密钥。"
 
-#: src/cryptsetup.c:2046
+#: src/cryptsetup.c:2146
 msgid "Read the volume (master) key from file."
 msgstr "从文件读取卷（主）密钥。"
 
-#: src/cryptsetup.c:2047
+#: src/cryptsetup.c:2147
 msgid "Dump volume (master) key instead of keyslots info."
 msgstr "转储卷（主）密钥而不是键槽信息。"
 
-#: src/cryptsetup.c:2048 src/cryptsetup_reencrypt.c:1535
+#: src/cryptsetup.c:2148 src/cryptsetup_reencrypt.c:1617
 msgid "The size of the encryption key"
 msgstr "加密密钥大小"
 
-#: src/cryptsetup.c:2048 src/integritysetup.c:498 src/integritysetup.c:502
-#: src/integritysetup.c:506 src/cryptsetup_reencrypt.c:1535
+#: src/cryptsetup.c:2148 src/integritysetup.c:500 src/integritysetup.c:504
+#: src/integritysetup.c:508 src/cryptsetup_reencrypt.c:1617
 msgid "BITS"
 msgstr "位"
 
-#: src/cryptsetup.c:2049 src/cryptsetup_reencrypt.c:1550
+#: src/cryptsetup.c:2149 src/cryptsetup_reencrypt.c:1633
 msgid "Limits the read from keyfile"
 msgstr "限制从密钥文件读取"
 
-#: src/cryptsetup.c:2049 src/cryptsetup.c:2050 src/cryptsetup.c:2051
-#: src/cryptsetup.c:2052 src/veritysetup.c:429 src/veritysetup.c:430
-#: src/veritysetup.c:431 src/veritysetup.c:434 src/veritysetup.c:435
-#: src/integritysetup.c:489 src/integritysetup.c:493 src/integritysetup.c:494
-#: src/cryptsetup_reencrypt.c:1549 src/cryptsetup_reencrypt.c:1550
-#: src/cryptsetup_reencrypt.c:1551 src/cryptsetup_reencrypt.c:1552
+#: src/cryptsetup.c:2149 src/cryptsetup.c:2150 src/cryptsetup.c:2151
+#: src/cryptsetup.c:2152 src/veritysetup.c:434 src/veritysetup.c:435
+#: src/veritysetup.c:436 src/veritysetup.c:439 src/veritysetup.c:440
+#: src/integritysetup.c:491 src/integritysetup.c:495 src/integritysetup.c:496
+#: src/cryptsetup_reencrypt.c:1632 src/cryptsetup_reencrypt.c:1633
+#: src/cryptsetup_reencrypt.c:1634 src/cryptsetup_reencrypt.c:1635
 msgid "bytes"
 msgstr "字节"
 
-#: src/cryptsetup.c:2050 src/cryptsetup_reencrypt.c:1549
+#: src/cryptsetup.c:2150 src/cryptsetup_reencrypt.c:1632
 msgid "Number of bytes to skip in keyfile"
 msgstr "要从密钥文件跳过的字节数"
 
-#: src/cryptsetup.c:2051
+#: src/cryptsetup.c:2151
 msgid "Limits the read from newly added keyfile"
 msgstr "限制从新增密钥文件的读取"
 
-#: src/cryptsetup.c:2052
+#: src/cryptsetup.c:2152
 msgid "Number of bytes to skip in newly added keyfile"
 msgstr "要从新增密钥文件跳过的字节数"
 
-#: src/cryptsetup.c:2053
+#: src/cryptsetup.c:2153
 msgid "Slot number for new key (default is first free)"
 msgstr "新密钥的槽号（默认为第一个可用的）"
 
-#: src/cryptsetup.c:2054
+#: src/cryptsetup.c:2154
 msgid "The size of the device"
 msgstr "设备大小"
 
-#: src/cryptsetup.c:2054 src/cryptsetup.c:2055 src/cryptsetup.c:2056
-#: src/cryptsetup.c:2062 src/integritysetup.c:490 src/integritysetup.c:495
+#: src/cryptsetup.c:2154 src/cryptsetup.c:2155 src/cryptsetup.c:2156
+#: src/cryptsetup.c:2162 src/integritysetup.c:492 src/integritysetup.c:497
 msgid "SECTORS"
 msgstr "扇区"
 
-#: src/cryptsetup.c:2055
+#: src/cryptsetup.c:2155
 msgid "The start offset in the backend device"
 msgstr "后端设备的起始偏移量"
 
-#: src/cryptsetup.c:2056
+#: src/cryptsetup.c:2156
 msgid "How many sectors of the encrypted data to skip at the beginning"
 msgstr "从开头要跳过的加密数据扇区数量"
 
-#: src/cryptsetup.c:2057
+#: src/cryptsetup.c:2157
 msgid "Create a readonly mapping"
 msgstr "创建只读映射"
 
-#: src/cryptsetup.c:2058 src/integritysetup.c:485
-#: src/cryptsetup_reencrypt.c:1540
+#: src/cryptsetup.c:2158 src/integritysetup.c:487
+#: src/cryptsetup_reencrypt.c:1623
 msgid "Do not ask for confirmation"
 msgstr "不要请求确认"
 
-#: src/cryptsetup.c:2059
+#: src/cryptsetup.c:2159
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr "交互式密码提示符超时长度（秒）"
 
-#: src/cryptsetup.c:2059 src/cryptsetup.c:2060 src/integritysetup.c:486
-#: src/cryptsetup_reencrypt.c:1541
+#: src/cryptsetup.c:2159 src/cryptsetup.c:2160 src/integritysetup.c:488
+#: src/cryptsetup_reencrypt.c:1624
 msgid "secs"
 msgstr "秒"
 
-#: src/cryptsetup.c:2060 src/integritysetup.c:486
-#: src/cryptsetup_reencrypt.c:1541
+#: src/cryptsetup.c:2160 src/integritysetup.c:488
+#: src/cryptsetup_reencrypt.c:1624
 msgid "Progress line update (in seconds)"
 msgstr ""
 
-#: src/cryptsetup.c:2061 src/cryptsetup_reencrypt.c:1542
+#: src/cryptsetup.c:2161 src/cryptsetup_reencrypt.c:1625
 msgid "How often the input of the passphrase can be retried"
 msgstr "输入密码的最大重试频率"
 
-#: src/cryptsetup.c:2062
+#: src/cryptsetup.c:2162
 msgid "Align payload at <n> sector boundaries - for luksFormat"
 msgstr "于 <n> 个扇区边界处对其载荷数据 - 供 luks 格式用"
 
-#: src/cryptsetup.c:2063
+#: src/cryptsetup.c:2163
 msgid "File with LUKS header and keyslots backup."
 msgstr "带有 LUKS 数据头和密钥槽备份的文件。"
 
-#: src/cryptsetup.c:2064 src/cryptsetup_reencrypt.c:1543
+#: src/cryptsetup.c:2164 src/cryptsetup_reencrypt.c:1626
 msgid "Use /dev/random for generating volume key."
 msgstr "使用 /dev/random 生成卷密钥。"
 
-#: src/cryptsetup.c:2065 src/cryptsetup_reencrypt.c:1544
+#: src/cryptsetup.c:2165 src/cryptsetup_reencrypt.c:1627
 msgid "Use /dev/urandom for generating volume key."
 msgstr "使用 /dev/urandom 生成卷密钥。"
 
-#: src/cryptsetup.c:2066
+#: src/cryptsetup.c:2166
 msgid "Share device with another non-overlapping crypt segment."
 msgstr "与另一个不重合的加密段共享设备。"
 
-#: src/cryptsetup.c:2067 src/veritysetup.c:438
+#: src/cryptsetup.c:2167 src/veritysetup.c:443
 msgid "UUID for device to use."
 msgstr "设备使用的 UUID 已占用。"
 
-#: src/cryptsetup.c:2068
+#: src/cryptsetup.c:2168
 msgid "Allow discards (aka TRIM) requests for device."
 msgstr "允许设备的 discard（或称 TRIM）请求。"
 
-#: src/cryptsetup.c:2069
+#: src/cryptsetup.c:2169 src/cryptsetup_reencrypt.c:1644
 msgid "Device or file with separated LUKS header."
 msgstr "带有分离 LUKS 数据头的设备或文件。"
 
-#: src/cryptsetup.c:2070
+#: src/cryptsetup.c:2170
 msgid "Do not activate device, just check passphrase."
 msgstr "不要激活设备，仅检查密码。"
 
-#: src/cryptsetup.c:2071
+#: src/cryptsetup.c:2171
 msgid "Use hidden header (hidden TCRYPT device)."
 msgstr "使用隐藏数据头（隐藏 TCRYPT 设备）"
 
-#: src/cryptsetup.c:2072
+#: src/cryptsetup.c:2172
 msgid "Device is system TCRYPT drive (with bootloader)."
 msgstr "设备为系统 TCRYPT 驱动器（带有引导器）。"
 
-#: src/cryptsetup.c:2073
+#: src/cryptsetup.c:2173
 msgid "Use backup (secondary) TCRYPT header."
 msgstr "使用备份（次级）TCRYPT 标头。"
 
-#: src/cryptsetup.c:2074
+#: src/cryptsetup.c:2174
 msgid "Scan also for VeraCrypt compatible device."
 msgstr "同时扫描 VeraCrypt 兼容的设备。"
 
-#: src/cryptsetup.c:2075
+#: src/cryptsetup.c:2175
 #, fuzzy
 #| msgid "Scan also for VeraCrypt compatible device."
 msgid "Personal Iteration Multiplier for VeraCrypt compatible device."
 msgstr "同时扫描 VeraCrypt 兼容的设备。"
 
-#: src/cryptsetup.c:2076
+#: src/cryptsetup.c:2176
 #, fuzzy
 #| msgid "Scan also for VeraCrypt compatible device."
 msgid "Query Personal Iteration Multiplier for VeraCrypt compatible device."
 msgstr "同时扫描 VeraCrypt 兼容的设备。"
 
-#: src/cryptsetup.c:2077
+#: src/cryptsetup.c:2177
 msgid "Type of device metadata: luks, plain, loopaes, tcrypt."
 msgstr "设备元数据类型：luks, 纯粹 (plain), loopaes, tcrypt."
 
-#: src/cryptsetup.c:2078
+#: src/cryptsetup.c:2178
 msgid "Disable password quality check (if enabled)."
 msgstr "禁用密码质量检查 (如果已启用)。"
 
-#: src/cryptsetup.c:2079
+#: src/cryptsetup.c:2179
 msgid "Use dm-crypt same_cpu_crypt performance compatibility option."
 msgstr "使用 dm-crypt same_cpu_crypt 性能兼容性选项。"
 
-#: src/cryptsetup.c:2080
+#: src/cryptsetup.c:2180
 msgid "Use dm-crypt submit_from_crypt_cpus performance compatibility option."
 msgstr "使用 dm-crypt submit_from_crypt_cpus 性能兼容性选项。"
 
-#: src/cryptsetup.c:2081
+#: src/cryptsetup.c:2181
 msgid "Device removal is deferred until the last user closes it."
 msgstr ""
 
-#: src/cryptsetup.c:2082
+#: src/cryptsetup.c:2182
 #, fuzzy
 #| msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgid "PBKDF iteration time for LUKS (in ms)"
 msgstr "LUKS 默认 PBKDF2 迭代时间（毫秒）"
 
-#: src/cryptsetup.c:2082 src/cryptsetup_reencrypt.c:1539
+#: src/cryptsetup.c:2182 src/cryptsetup_reencrypt.c:1622
 msgid "msecs"
 msgstr "毫秒"
 
-#: src/cryptsetup.c:2083 src/cryptsetup_reencrypt.c:1557
+#: src/cryptsetup.c:2183 src/cryptsetup_reencrypt.c:1640
 msgid "PBKDF algorithm (for LUKS2) (argon2i/argon2id/pbkdf2)."
 msgstr ""
 
-#: src/cryptsetup.c:2084 src/cryptsetup_reencrypt.c:1558
+#: src/cryptsetup.c:2184 src/cryptsetup_reencrypt.c:1641
 msgid "PBKDF memory cost limit"
 msgstr ""
 
-#: src/cryptsetup.c:2084 src/cryptsetup_reencrypt.c:1558
+#: src/cryptsetup.c:2184 src/cryptsetup_reencrypt.c:1641
 #, fuzzy
 #| msgid "bytes"
 msgid "kilobytes"
 msgstr "字节"
 
-#: src/cryptsetup.c:2085 src/cryptsetup_reencrypt.c:1559
+#: src/cryptsetup.c:2185 src/cryptsetup_reencrypt.c:1642
 msgid "PBKDF parallel cost "
 msgstr ""
 
-#: src/cryptsetup.c:2085 src/cryptsetup_reencrypt.c:1559
+#: src/cryptsetup.c:2185 src/cryptsetup_reencrypt.c:1642
 msgid "threads"
 msgstr ""
 
-#: src/cryptsetup.c:2086 src/cryptsetup_reencrypt.c:1560
+#: src/cryptsetup.c:2186 src/cryptsetup_reencrypt.c:1643
 msgid "PBKDF iterations cost (forced, disables benchmark)"
 msgstr ""
 
-#: src/cryptsetup.c:2087
+#: src/cryptsetup.c:2187
 msgid "Keyslot priority (ignore/normal/prefer)"
 msgstr ""
 
-#: src/cryptsetup.c:2088
+#: src/cryptsetup.c:2188
 #, fuzzy
 #| msgid "try to repair on-disk metadata"
 msgid "Disable locking of on-disk metadata"
 msgstr "尝试修复磁盘上的元数据"
 
-#: src/cryptsetup.c:2089
+#: src/cryptsetup.c:2189
 msgid "Disable loading volume keys via kernel keyring"
 msgstr ""
 
-#: src/cryptsetup.c:2090
+#: src/cryptsetup.c:2190
 msgid "Data integrity algorithm (LUKS2 only)"
 msgstr ""
 
-#: src/cryptsetup.c:2091 src/integritysetup.c:509
+#: src/cryptsetup.c:2191 src/integritysetup.c:511
 #, fuzzy
 #| msgid "Invalid size parameters for verity device.\n"
 msgid "Disable journal for integrity device."
 msgstr "为 VERITY 设备提供的大小指标无效。\n"
 
-#: src/cryptsetup.c:2092 src/integritysetup.c:487
+#: src/cryptsetup.c:2192 src/integritysetup.c:489
 msgid "Do not wipe device after format"
 msgstr ""
 
-#: src/cryptsetup.c:2093
+#: src/cryptsetup.c:2193
 msgid "Do not ask for passphrase if activation by token fails"
 msgstr ""
 
-#: src/cryptsetup.c:2094
+#: src/cryptsetup.c:2194
 msgid "Token number (default: any)"
 msgstr ""
 
-#: src/cryptsetup.c:2095
+#: src/cryptsetup.c:2195
 msgid "Key description"
 msgstr ""
 
-#: src/cryptsetup.c:2096
+#: src/cryptsetup.c:2196
 msgid "Encryption sector size (default: 512 bytes)"
 msgstr ""
 
-#: src/cryptsetup.c:2097
+#: src/cryptsetup.c:2197
 msgid "Set activation flags persistent for device."
 msgstr ""
 
-#: src/cryptsetup.c:2098
+#: src/cryptsetup.c:2198
 #, fuzzy
 #| msgid "formats a LUKS device"
 msgid "Set label for the LUKS2 device."
 msgstr "格式化一个 LUKS 设备"
 
-#: src/cryptsetup.c:2099
+#: src/cryptsetup.c:2199
 msgid "Set subsystem label for the LUKS2 device."
 msgstr ""
 
-#: src/cryptsetup.c:2115 src/veritysetup.c:458 src/integritysetup.c:526
+#: src/cryptsetup.c:2200
+msgid "Create unbound (no assigned data segment) LUKS2 keyslot."
+msgstr ""
+
+#: src/cryptsetup.c:2216 src/veritysetup.c:464 src/integritysetup.c:528
 msgid "[OPTION...] <action> <action-specific>"
 msgstr "[选项…] <动作> <动作特定参数>"
 
-#: src/cryptsetup.c:2172 src/veritysetup.c:498 src/integritysetup.c:543
+#: src/cryptsetup.c:2273 src/veritysetup.c:504 src/integritysetup.c:545
 msgid "Argument <action> missing."
 msgstr "缺失参数 <动作>。"
 
-#: src/cryptsetup.c:2228 src/veritysetup.c:529 src/integritysetup.c:574
+#: src/cryptsetup.c:2329 src/veritysetup.c:535 src/integritysetup.c:576
 msgid "Unknown action."
 msgstr "未知动作。"
 
-#: src/cryptsetup.c:2238
+#: src/cryptsetup.c:2339
 #, fuzzy
 #| msgid "Option --shared is allowed only for open of plain device.\n"
 msgid "Option --deferred is allowed only for close command.\n"
 msgstr "选项 --shared 只适用于打开纯设备。\n"
 
-#: src/cryptsetup.c:2243
+#: src/cryptsetup.c:2344
 msgid "Option --shared is allowed only for open of plain device.\n"
 msgstr "选项 --shared 只适用于打开纯设备。\n"
 
-#: src/cryptsetup.c:2248
+#: src/cryptsetup.c:2349
 msgid "Option --allow-discards is allowed only for open operation.\n"
 msgstr "选项 --allow-discards 只适用于打开操作。\n"
 
-#: src/cryptsetup.c:2253
+#: src/cryptsetup.c:2354
 #, fuzzy
 #| msgid "Option --allow-discards is allowed only for open operation.\n"
 msgid "Option --persistent is allowed only for open operation.\n"
 msgstr "选项 --allow-discards 只适用于打开操作。\n"
 
-#: src/cryptsetup.c:2258
+#: src/cryptsetup.c:2359
 msgid "Option --persistent is not allowed with --test-passphrase.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2266
+#: src/cryptsetup.c:2368
+#, fuzzy
+#| msgid ""
+#| "Option --key-size is allowed only for luksFormat, open and benchmark.\n"
+#| "To limit read from keyfile use --keyfile-size=(bytes)."
 msgid ""
-"Option --key-size is allowed only for luksFormat, open and benchmark.\n"
-"To limit read from keyfile use --keyfile-size=(bytes)."
+"Option --key-size is allowed only for luksFormat, luksAddKey (with --unbound),\n"
+"open and benchmark actions. To limit read from keyfile use --keyfile-size=(bytes)."
 msgstr ""
 "选项 --key-size 只能用于 luksFormat, 打开和性能测试。\n"
 "要限制密钥文件读取请使用 --keyfile-size=(字节数)。"
 
-#: src/cryptsetup.c:2272
+#: src/cryptsetup.c:2374
 #, fuzzy
 #| msgid "Option --align-payload is allowed only for luksFormat."
 msgid "Option --integrity is allowed only for luksFormat (LUKS2).\n"
 msgstr "选项 --align-payload 只允许用于 luksFormat。"
 
-#: src/cryptsetup.c:2277
+#: src/cryptsetup.c:2379
 msgid "Option --integrity-no-wipe can be used only for format action with integrity extension.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2283
+#: src/cryptsetup.c:2385
 #, fuzzy
 #| msgid "Option --uuid is allowed only for luksFormat and luksUUID."
 msgid "Options --label and --subsystem are allowed only for luksFormat and config LUKS2 operations.\n"
 msgstr "选项 --uuid 只允许用于 luksFormat 和 luksUUID。"
 
-#: src/cryptsetup.c:2289
+#: src/cryptsetup.c:2391
 msgid "Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"
 msgstr "选项 --test-passphrase 只能用于打开 LUKS 和 TCRYPT 设备。\n"
 
-#: src/cryptsetup.c:2294 src/cryptsetup_reencrypt.c:1631
+#: src/cryptsetup.c:2396 src/cryptsetup_reencrypt.c:1715
 msgid "Key size must be a multiple of 8 bits"
 msgstr "密钥尺寸必须是 8 的倍数"
 
-#: src/cryptsetup.c:2300 src/cryptsetup_reencrypt.c:1636
+#: src/cryptsetup.c:2402 src/cryptsetup_reencrypt.c:1720
 msgid "Key slot is invalid."
 msgstr "密钥槽无效。"
 
-#: src/cryptsetup.c:2307
+#: src/cryptsetup.c:2409
 msgid "Option --key-file takes precedence over specified key file argument.\n"
 msgstr "选项 --key-file 优先使用指定的密钥文件参数。\n"
 
-#: src/cryptsetup.c:2314 src/veritysetup.c:541 src/integritysetup.c:593
-#: src/cryptsetup_reencrypt.c:1610
+#: src/cryptsetup.c:2416 src/veritysetup.c:547 src/integritysetup.c:595
+#: src/cryptsetup_reencrypt.c:1694
 msgid "Negative number for option not permitted."
 msgstr "不允许在选项中填入负数。"
 
-#: src/cryptsetup.c:2318
+#: src/cryptsetup.c:2420
 msgid "Only one --key-file argument is allowed."
 msgstr "只允许存在一个 --key-file 选项。"
 
-#: src/cryptsetup.c:2322 src/cryptsetup_reencrypt.c:1602
-#: src/cryptsetup_reencrypt.c:1640
+#: src/cryptsetup.c:2424 src/cryptsetup_reencrypt.c:1686
+#: src/cryptsetup_reencrypt.c:1724
 msgid "Only one of --use-[u]random options is allowed."
 msgstr "--use-[u]random 选项只能用一处。"
 
-#: src/cryptsetup.c:2326
+#: src/cryptsetup.c:2428
 msgid "Option --use-[u]random is allowed only for luksFormat."
 msgstr "选项 --use-[u]random 只适用于 luksFormat。"
 
-#: src/cryptsetup.c:2330
+#: src/cryptsetup.c:2432
 msgid "Option --uuid is allowed only for luksFormat and luksUUID."
 msgstr "选项 --uuid 只允许用于 luksFormat 和 luksUUID。"
 
-#: src/cryptsetup.c:2334
+#: src/cryptsetup.c:2436
 msgid "Option --align-payload is allowed only for luksFormat."
 msgstr "选项 --align-payload 只允许用于 luksFormat。"
 
-#: src/cryptsetup.c:2340
+#: src/cryptsetup.c:2442
 msgid "Option --skip is supported only for open of plain and loopaes devices.\n"
 msgstr "选项 --skip 只适用于打开纯设备和 loopaes 设备。\n"
 
-#: src/cryptsetup.c:2346
+#: src/cryptsetup.c:2448
 msgid "Option --offset is supported only for open of plain and loopaes devices.\n"
 msgstr "选项 --offset 只适用于打开纯设备和 loopaes 设备。\n"
 
-#: src/cryptsetup.c:2352
+#: src/cryptsetup.c:2454
 msgid "Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"
 msgstr "选项 --tcrypt-hidden, --tcrypt-system 或 --tcrypt-backup 只支持 TCRYPT 设备。\n"
 
-#: src/cryptsetup.c:2357
+#: src/cryptsetup.c:2459
 msgid "Option --tcrypt-hidden cannot be combined with --allow-discards.\n"
 msgstr "选项 --tcrypt-hidden 不能与 --allow-discards 共用。\n"
 
-#: src/cryptsetup.c:2362
+#: src/cryptsetup.c:2464
 msgid "Option --veracrypt is supported only for TCRYPT device type.\n"
 msgstr "选项 --veracrypt 只支持 TCRYPT 设备类型。\n"
 
-#: src/cryptsetup.c:2368
+#: src/cryptsetup.c:2470
 msgid "Invalid argument for parameter --veracrypt-pim supplied.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2372
+#: src/cryptsetup.c:2474
 #, fuzzy
 #| msgid "Option --veracrypt is supported only for TCRYPT device type.\n"
 msgid "Option --veracrypt-pim is supported only for VeraCrypt compatible devices.\n"
 msgstr "选项 --veracrypt 只支持 TCRYPT 设备类型。\n"
 
-#: src/cryptsetup.c:2380
+#: src/cryptsetup.c:2482
 #, fuzzy
 #| msgid "Option --veracrypt is supported only for TCRYPT device type.\n"
 msgid "Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices.\n"
 msgstr "选项 --veracrypt 只支持 TCRYPT 设备类型。\n"
 
-#: src/cryptsetup.c:2384
+#: src/cryptsetup.c:2486
 msgid "The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2391
+#: src/cryptsetup.c:2493
 msgid "Option --priority can be only ignore/normal/prefer.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2396
+#: src/cryptsetup.c:2498
 msgid "Keyslot specification is required.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2401 src/cryptsetup_reencrypt.c:1616
+#: src/cryptsetup.c:2503 src/cryptsetup_reencrypt.c:1700
 msgid "Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2406 src/cryptsetup_reencrypt.c:1621
+#: src/cryptsetup.c:2508 src/cryptsetup_reencrypt.c:1705
 msgid "PBKDF forced iterations cannot be combined with iteration time option.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2412
+#: src/cryptsetup.c:2514
 #, fuzzy
 #| msgid "This operation is not supported for this device type.\n"
 msgid "Sector size option is not supported for this command.\n"
 msgstr "不支持在这类设备上执行此操作。\n"
 
-#: src/cryptsetup.c:2428
+#: src/cryptsetup.c:2525
+msgid "Key size is required with --unbound option.\n"
+msgstr ""
+
+#: src/cryptsetup.c:2530
+#, fuzzy
+#| msgid "Option --new cannot be used together with --decrypt."
+msgid "Option --unbound may be used only with luksAddKey action.\n"
+msgstr "选项 --new 不可与 --decrypt 共用。"
+
+#: src/cryptsetup.c:2540
 msgid "Cannot disable metadata locking.\n"
 msgstr ""
 
-#: src/veritysetup.c:66
+#: src/veritysetup.c:67
 msgid "Invalid salt string specified.\n"
 msgstr "指定了无效的盐字串。\n"
 
-#: src/veritysetup.c:97
+#: src/veritysetup.c:98
 #, c-format
 msgid "Cannot create hash image %s for writing.\n"
 msgstr "无法为创建哈希映像 %s 以供写入。\n"
 
-#: src/veritysetup.c:107
+#: src/veritysetup.c:108
 #, fuzzy, c-format
 #| msgid "Cannot create hash image %s for writing.\n"
 msgid "Cannot create FEC image %s for writing.\n"
 msgstr "无法为创建哈希映像 %s 以供写入。\n"
 
-#: src/veritysetup.c:178
+#: src/veritysetup.c:181
 msgid "Invalid root hash string specified.\n"
 msgstr "指定了无效的根哈希值字串。\n"
 
-#: src/veritysetup.c:358
+#: src/veritysetup.c:363
 msgid "<data_device> <hash_device>"
 msgstr "<数据设备> <哈希设备>"
 
-#: src/veritysetup.c:358 src/integritysetup.c:423
+#: src/veritysetup.c:363 src/integritysetup.c:425
 msgid "format device"
 msgstr "格式化设备"
 
-#: src/veritysetup.c:359
+#: src/veritysetup.c:364
 msgid "<data_device> <hash_device> <root_hash>"
 msgstr "<数据设备> <哈希设备> <根哈希值>"
 
-#: src/veritysetup.c:359
+#: src/veritysetup.c:364
 msgid "verify device"
 msgstr "验证设备"
 
-#: src/veritysetup.c:360
+#: src/veritysetup.c:365
 #, fuzzy
 #| msgid "<data_device> <hash_device> <root_hash>"
 msgid "<data_device> <name> <hash_device> <root_hash>"
 msgstr "<数据设备> <哈希设备> <根哈希值>"
 
-#: src/veritysetup.c:360 src/integritysetup.c:424
-#, fuzzy
-#| msgid "open device as mapping <name>"
+#: src/veritysetup.c:365 src/integritysetup.c:426
 msgid "open device as <name>"
-msgstr "以映射 <名称> 打开设备"
+msgstr "以 <名称> 打开设备"
 
-#: src/veritysetup.c:361 src/integritysetup.c:425
+#: src/veritysetup.c:366 src/integritysetup.c:427
 #, fuzzy
 #| msgid "close device (remove mapping)"
 msgid "close device (deactivate and remove mapping)"
 msgstr "关闭设备（移除映射）"
 
-#: src/veritysetup.c:362 src/integritysetup.c:426
+#: src/veritysetup.c:367 src/integritysetup.c:428
 msgid "show active device status"
 msgstr "显示已激活的设备信息"
 
-#: src/veritysetup.c:363
+#: src/veritysetup.c:368
 msgid "<hash_device>"
 msgstr "<哈希设备>"
 
-#: src/veritysetup.c:363 src/integritysetup.c:427
+#: src/veritysetup.c:368 src/integritysetup.c:429
 msgid "show on-disk information"
 msgstr "显示磁盘上的信息"
 
-#: src/veritysetup.c:382
+#: src/veritysetup.c:387
 #, c-format
 msgid ""
 "\n"
@@ -2222,7 +2281,7 @@ msgstr ""
 "<哈希设备> 是含有验证信息的设备\n"
 "<根哈希值> 是 <哈希设备> 根节点的哈希值\n"
 
-#: src/veritysetup.c:389
+#: src/veritysetup.c:394
 #, c-format
 msgid ""
 "\n"
@@ -2233,112 +2292,128 @@ msgstr ""
 "编译时决定的默认 dm-verify 参数：\n"
 "\t哈希: %s, 数据块 (字节): %u, 哈希块 (字节): %u, 盐大小: %u, 哈希格式: %u\n"
 
-#: src/veritysetup.c:427
+#: src/veritysetup.c:432
 msgid "Do not use verity superblock"
 msgstr "不使用真理超级块"
 
-#: src/veritysetup.c:428
+#: src/veritysetup.c:433
 msgid "Format type (1 - normal, 0 - original Chrome OS)"
 msgstr "格式类型 (1 - 正常, 0 - 原版 Chrome OS)"
 
-#: src/veritysetup.c:428
+#: src/veritysetup.c:433
 msgid "number"
 msgstr "数字"
 
-#: src/veritysetup.c:429
+#: src/veritysetup.c:434
 msgid "Block size on the data device"
 msgstr "数据设备的块大小"
 
-#: src/veritysetup.c:430
+#: src/veritysetup.c:435
 msgid "Block size on the hash device"
 msgstr "哈希设备的块大小"
 
-#: src/veritysetup.c:431
+#: src/veritysetup.c:436
 msgid "FEC parity bytes"
-msgstr ""
+msgstr "FEC 校验字节"
 
-#: src/veritysetup.c:432
+#: src/veritysetup.c:437
 msgid "The number of blocks in the data file"
 msgstr "数据文件的块数量"
 
-#: src/veritysetup.c:432
+#: src/veritysetup.c:437
 msgid "blocks"
 msgstr "块"
 
-#: src/veritysetup.c:433
+#: src/veritysetup.c:438
 msgid "Path to device with error correction data"
 msgstr ""
 
-#: src/veritysetup.c:433
+#: src/veritysetup.c:438
 msgid "path"
 msgstr ""
 
-#: src/veritysetup.c:434
+#: src/veritysetup.c:439
 msgid "Starting offset on the hash device"
 msgstr "哈希设备开始位置偏移量"
 
-#: src/veritysetup.c:435
+#: src/veritysetup.c:440
 #, fuzzy
 #| msgid "Starting offset on the hash device"
 msgid "Starting offset on the FEC device"
 msgstr "哈希设备开始位置偏移量"
 
-#: src/veritysetup.c:436
+#: src/veritysetup.c:441
 msgid "Hash algorithm"
 msgstr "哈希算法"
 
-#: src/veritysetup.c:436
+#: src/veritysetup.c:441
 msgid "string"
 msgstr "字符串"
 
-#: src/veritysetup.c:437
+#: src/veritysetup.c:442
 msgid "Salt"
 msgstr "盐"
 
-#: src/veritysetup.c:437
+#: src/veritysetup.c:442
 msgid "hex string"
 msgstr "十六进制字符串"
 
-#: src/veritysetup.c:439
+#: src/veritysetup.c:444
 msgid "Restart kernel if corruption is detected"
 msgstr ""
 
-#: src/veritysetup.c:440
+#: src/veritysetup.c:445
 msgid "Ignore corruption, log it only"
-msgstr ""
+msgstr "忽略数据损坏，仅对其进行日志记录"
 
-#: src/veritysetup.c:441
+#: src/veritysetup.c:446
 #, fuzzy
 #| msgid "Do not use verity superblock"
 msgid "Do not verify zeroed blocks"
 msgstr "不使用真理超级块"
 
-#: src/veritysetup.c:547
+#: src/veritysetup.c:447
+msgid "Verify data block only the first time it is read."
+msgstr ""
+
+#: src/veritysetup.c:553
 #, fuzzy
 #| msgid "Option --allow-discards is allowed only for open operation.\n"
 msgid "Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks is allowed only for open operation.\n"
 msgstr "选项 --allow-discards 只适用于打开操作。\n"
 
-#: src/veritysetup.c:552
+#: src/veritysetup.c:558
 msgid "Option --ignore-corruption and --restart-on-corruption cannot be used together.\n"
 msgstr ""
+
+#: src/integritysetup.c:78 src/utils_password.c:317
+#, c-format
+msgid "Cannot read keyfile %s.\n"
+msgstr ""
+"无法读取密钥文件 %s。\n"
+"\n"
+
+#: src/integritysetup.c:82 src/utils_password.c:321
+#, c-format
+msgid "Cannot read %d bytes from keyfile %s.\n"
+msgstr "无法从密钥文件 %2$s 读取 %1$d 字节。\n"
 
 #: src/integritysetup.c:224
 #, c-format
 msgid "Formatted with tag size %u, internal integrity %s.\n"
 msgstr ""
 
-#: src/integritysetup.c:423 src/integritysetup.c:427
+#: src/integritysetup.c:425 src/integritysetup.c:429
 #, fuzzy
 #| msgid "verify device"
 msgid "<integrity_device>"
 msgstr "验证设备"
 
-#: src/integritysetup.c:424
+#: src/integritysetup.c:426
 msgid "<integrity_device> <name>"
 msgstr ""
 
-#: src/integritysetup.c:446
+#: src/integritysetup.c:448
 #, fuzzy, c-format
 #| msgid ""
 #| "\n"
@@ -2357,7 +2432,7 @@ msgstr ""
 "<哈希设备> 是含有验证信息的设备\n"
 "<根哈希值> 是 <哈希设备> 根节点的哈希值\n"
 
-#: src/integritysetup.c:451
+#: src/integritysetup.c:453
 #, fuzzy, c-format
 #| msgid ""
 #| "\n"
@@ -2372,426 +2447,430 @@ msgstr ""
 "编译时决定的默认 dm-verify 参数：\n"
 "\t哈希: %s, 数据块 (字节): %u, 哈希块 (字节): %u, 盐大小: %u, 哈希格式: %u\n"
 
-#: src/integritysetup.c:489
+#: src/integritysetup.c:491
 msgid "Journal size"
-msgstr ""
+msgstr "日志大小"
 
-#: src/integritysetup.c:490
+#: src/integritysetup.c:492
 msgid "Interleave sectors"
 msgstr ""
 
-#: src/integritysetup.c:491
+#: src/integritysetup.c:493
 msgid "Journal watermark"
 msgstr ""
 
-#: src/integritysetup.c:491
+#: src/integritysetup.c:493
 msgid "percent"
 msgstr ""
 
-#: src/integritysetup.c:492
+#: src/integritysetup.c:494
 msgid "Journal commit time"
-msgstr ""
+msgstr "日志提交时间"
 
-#: src/integritysetup.c:492
+#: src/integritysetup.c:494
 msgid "ms"
 msgstr ""
 
-#: src/integritysetup.c:493
+#: src/integritysetup.c:495
 msgid "Tag size per-sector"
 msgstr ""
 
-#: src/integritysetup.c:494
+#: src/integritysetup.c:496
 msgid "Sector size"
 msgstr "扇区大小"
 
-#: src/integritysetup.c:495
-msgid "Buffers size"
-msgstr ""
-
 #: src/integritysetup.c:497
+msgid "Buffers size"
+msgstr "缓冲大小"
+
+#: src/integritysetup.c:499
 msgid "Data integrity algorithm (default "
 msgstr ""
 
-#: src/integritysetup.c:498
+#: src/integritysetup.c:500
 #, fuzzy
 #| msgid "The size of the encryption key"
 msgid "The size of the data integrity key"
 msgstr "加密密钥大小"
 
-#: src/integritysetup.c:499
+#: src/integritysetup.c:501
 #, fuzzy
 #| msgid "Read the key from a file."
 msgid "Read the integrity key from a file."
 msgstr "从文件读取密钥。"
 
-#: src/integritysetup.c:501
+#: src/integritysetup.c:503
 msgid "Journal integrity algorithm"
 msgstr ""
 
-#: src/integritysetup.c:502
+#: src/integritysetup.c:504
 #, fuzzy
 #| msgid "The size of the encryption key"
 msgid "The size of the journal integrity key"
 msgstr "加密密钥大小"
 
-#: src/integritysetup.c:503
+#: src/integritysetup.c:505
 #, fuzzy
 #| msgid "Read the key from a file."
 msgid "Read the journal integrity key from a file."
 msgstr "从文件读取密钥。"
 
-#: src/integritysetup.c:505
+#: src/integritysetup.c:507
 msgid "Journal encryption algorithm"
-msgstr ""
+msgstr "日志加密算法"
 
-#: src/integritysetup.c:506
+#: src/integritysetup.c:508
 #, fuzzy
 #| msgid "The size of the encryption key"
 msgid "The size of the journal encryption key"
 msgstr "加密密钥大小"
 
-#: src/integritysetup.c:507
+#: src/integritysetup.c:509
 #, fuzzy
 #| msgid "Read the key from a file."
 msgid "Read the journal encryption key from a file."
 msgstr "从文件读取密钥。"
 
-#: src/integritysetup.c:510
+#: src/integritysetup.c:512
 msgid "Recovery mode (no journal, no tag checking)."
 msgstr ""
 
-#: src/integritysetup.c:599
+#: src/integritysetup.c:601
 msgid "Options --journal-size, --interleave-sectors, --sector-size, --tag-size and --no-wipe can be used only for format action.\n"
 msgstr ""
 
-#: src/integritysetup.c:605
-#, fuzzy
-#| msgid "Invalid device size specification."
+#: src/integritysetup.c:607
 msgid "Invalid journal size specification."
-msgstr "无效的设备大小指标。"
+msgstr "无效的日志大小指标。"
 
-#: src/integritysetup.c:610
+#: src/integritysetup.c:612
 msgid "Both key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:613
+#: src/integritysetup.c:615
 msgid "Integrity algorithm must be specified if integrity key is used."
 msgstr ""
 
-#: src/integritysetup.c:618
+#: src/integritysetup.c:620
 msgid "Both journal integrity key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:621
+#: src/integritysetup.c:623
 msgid "Journal integrity algorithm must be specified if journal integrity key is used."
 msgstr ""
 
-#: src/integritysetup.c:626
+#: src/integritysetup.c:628
 msgid "Both journal encryption key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:629
+#: src/integritysetup.c:631
 msgid "Journal encryption algorithm must be specified if journal encryption key is used."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:164
+#: src/cryptsetup_reencrypt.c:172
 msgid "Reencryption already in-progress.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:170
+#: src/cryptsetup_reencrypt.c:178
 msgid "Reencryption of device with integrity profile is not supported.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:193
+#: src/cryptsetup_reencrypt.c:201
 #, c-format
 msgid "Cannot exclusively open %s, device in use.\n"
 msgstr "无法独占打开 %s，设备正在使用中。\n"
 
-#: src/cryptsetup_reencrypt.c:207 src/cryptsetup_reencrypt.c:1079
+#: src/cryptsetup_reencrypt.c:215 src/cryptsetup_reencrypt.c:1145
 msgid "Allocation of aligned memory failed.\n"
 msgstr "分配对齐内存失败。\n"
 
-#: src/cryptsetup_reencrypt.c:214
+#: src/cryptsetup_reencrypt.c:222
 #, c-format
 msgid "Cannot read device %s.\n"
 msgstr "无法读取设备 %s.\n"
 
-#: src/cryptsetup_reencrypt.c:225
+#: src/cryptsetup_reencrypt.c:233
 #, fuzzy, c-format
 #| msgid "Marking LUKS device %s unusable.\n"
 msgid "Marking LUKS1 device %s unusable.\n"
 msgstr "正将 LUKS 设备 %s 标为不可用。\n"
 
-#: src/cryptsetup_reencrypt.c:229
+#: src/cryptsetup_reencrypt.c:237
 #, c-format
 msgid "Setting LUKS2 offline reencrypt flag on device %s.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:246
+#: src/cryptsetup_reencrypt.c:254
 #, c-format
 msgid "Cannot write device %s.\n"
 msgstr "无法写入设备 %s。\n"
 
-#: src/cryptsetup_reencrypt.c:330
+#: src/cryptsetup_reencrypt.c:338
 msgid "Cannot write reencryption log file.\n"
 msgstr "无法写入重加密日志文件。\n"
 
-#: src/cryptsetup_reencrypt.c:386
+#: src/cryptsetup_reencrypt.c:394
 msgid "Cannot read reencryption log file.\n"
 msgstr "无法读取重加密日志文件。\n"
 
-#: src/cryptsetup_reencrypt.c:424
+#: src/cryptsetup_reencrypt.c:432
 #, c-format
 msgid "Log file %s exists, resuming reencryption.\n"
 msgstr "日志文件 %s 存在，继续重加密。\n"
 
-#: src/cryptsetup_reencrypt.c:474
+#: src/cryptsetup_reencrypt.c:482
 msgid "Activating temporary device using old LUKS header.\n"
 msgstr "正使用旧 LUKS 标头激活临时设备。\n"
 
-#: src/cryptsetup_reencrypt.c:485
+#: src/cryptsetup_reencrypt.c:493
 msgid "Activating temporary device using new LUKS header.\n"
 msgstr "正使用新 LUKS 标头激活临时设备。\n"
 
-#: src/cryptsetup_reencrypt.c:495
+#: src/cryptsetup_reencrypt.c:503
 msgid "Activation of temporary devices failed.\n"
 msgstr "激活临时设备失败。\n"
 
-#: src/cryptsetup_reencrypt.c:547
+#: src/cryptsetup_reencrypt.c:585
 msgid "Failed to set PBKDF parameters.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:554
+#: src/cryptsetup_reencrypt.c:592
 #, c-format
 msgid "New LUKS header for device %s created.\n"
 msgstr "已创建设备 %s 的新 LUKS 标头。\n"
 
-#: src/cryptsetup_reencrypt.c:562
+#: src/cryptsetup_reencrypt.c:601
 #, c-format
 msgid "Activated keyslot %i.\n"
 msgstr "已激活密钥槽 %i。\n"
 
-#: src/cryptsetup_reencrypt.c:612
+#: src/cryptsetup_reencrypt.c:651
 #, c-format
 msgid "This version of cryptsetup-reencrypt can't handle new internal token type %s.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:634
+#: src/cryptsetup_reencrypt.c:673
 msgid "Failed to read activation flags from backup header.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:638
+#: src/cryptsetup_reencrypt.c:677
 msgid "Failed to write activation flags to new header.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:642 src/cryptsetup_reencrypt.c:646
+#: src/cryptsetup_reencrypt.c:681 src/cryptsetup_reencrypt.c:685
 msgid "Failed to read requirements from backup header.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:682
+#: src/cryptsetup_reencrypt.c:721
 #, fuzzy, c-format
 #| msgid "LUKS header backup of device %s created.\n"
 msgid "%s header backup of device %s created.\n"
 msgstr "已创建设备 %s 的 LUKS 标头备份。\n"
 
-#: src/cryptsetup_reencrypt.c:736
+#: src/cryptsetup_reencrypt.c:781
 msgid "Creation of LUKS backup headers failed.\n"
 msgstr "LUKS 备份标头创建失败。\n"
 
-#: src/cryptsetup_reencrypt.c:849
+#: src/cryptsetup_reencrypt.c:915
 #, fuzzy, c-format
 #| msgid "Cannot restore LUKS header on device %s.\n"
 msgid "Cannot restore %s header on device %s.\n"
 msgstr "无法在设备 %s 上恢复 LUKS 标头。\n"
 
-#: src/cryptsetup_reencrypt.c:851
+#: src/cryptsetup_reencrypt.c:917
 #, fuzzy, c-format
 #| msgid "LUKS header on device %s restored.\n"
 msgid "%s header on device %s restored.\n"
 msgstr "在设备 %s 上的 LUKS 标头已恢复。\n"
 
-#: src/cryptsetup_reencrypt.c:889 src/cryptsetup_reencrypt.c:969
-#: src/cryptsetup_reencrypt.c:1012
+#: src/cryptsetup_reencrypt.c:955 src/cryptsetup_reencrypt.c:1035
+#: src/cryptsetup_reencrypt.c:1078
 msgid "Cannot seek to device offset.\n"
 msgstr "无法寻找到设备偏移位置。\n"
 
-#: src/cryptsetup_reencrypt.c:1051 src/cryptsetup_reencrypt.c:1057
+#: src/cryptsetup_reencrypt.c:1117 src/cryptsetup_reencrypt.c:1123
 msgid "Cannot open temporary LUKS device.\n"
 msgstr "无法打开临时 LUKS 设备。\n"
 
-#: src/cryptsetup_reencrypt.c:1062 src/cryptsetup_reencrypt.c:1067
+#: src/cryptsetup_reencrypt.c:1128 src/cryptsetup_reencrypt.c:1133
 msgid "Cannot get device size.\n"
 msgstr "无法获取设备大小。\n"
 
-#: src/cryptsetup_reencrypt.c:1104
+#: src/cryptsetup_reencrypt.c:1170
 msgid "Interrupted by a signal.\n"
 msgstr "被信号中断。\n"
 
-#: src/cryptsetup_reencrypt.c:1106
+#: src/cryptsetup_reencrypt.c:1172
 msgid "IO error during reencryption.\n"
 msgstr "重加密时发生 IO 错误。\n"
 
-#: src/cryptsetup_reencrypt.c:1137
+#: src/cryptsetup_reencrypt.c:1203
 #, fuzzy
 #| msgid "Key slot is invalid."
 msgid "Provided UUID is invalid.\n"
 msgstr "密钥槽无效。"
 
-#: src/cryptsetup_reencrypt.c:1228
+#: src/cryptsetup_reencrypt.c:1305
 msgid "Key file can be used only with --key-slot or with exactly one key slot active.\n"
 msgstr "密钥文件只能在指定 --key-slot 时或有且只有一个槽启用时使用。\n"
 
-#: src/cryptsetup_reencrypt.c:1272 src/cryptsetup_reencrypt.c:1287
+#: src/cryptsetup_reencrypt.c:1347 src/cryptsetup_reencrypt.c:1358
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr "输入密钥槽 %u 的密码："
 
-#: src/cryptsetup_reencrypt.c:1322
+#: src/cryptsetup_reencrypt.c:1400
 #, fuzzy
 #| msgid "Key slot is invalid."
 msgid "Key slot is invalid.\n"
 msgstr "密钥槽无效。"
 
-#: src/cryptsetup_reencrypt.c:1351
+#: src/cryptsetup_reencrypt.c:1429
 msgid "Cannot open reencryption log file.\n"
 msgstr "无法打开重加密日志文件。\n"
 
-#: src/cryptsetup_reencrypt.c:1357
+#: src/cryptsetup_reencrypt.c:1435
 msgid "No decryption in progress, provided UUID can be used only to resume suspended decryption process.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1429
+#: src/cryptsetup_reencrypt.c:1510
 #, c-format
 msgid "Changed pbkdf parameters in keyslot %i.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1533
+#: src/cryptsetup_reencrypt.c:1615
 msgid "Reencryption block size"
 msgstr "重加密块大小"
 
-#: src/cryptsetup_reencrypt.c:1533
+#: src/cryptsetup_reencrypt.c:1615
 msgid "MiB"
 msgstr "MiB"
 
-#: src/cryptsetup_reencrypt.c:1537
+#: src/cryptsetup_reencrypt.c:1619
 msgid "Do not change key, no data area reencryption."
 msgstr "不要更改密钥，无数据区重加密。"
 
-#: src/cryptsetup_reencrypt.c:1539
+#: src/cryptsetup_reencrypt.c:1621
+#, fuzzy
+#| msgid "Read the volume (master) key from file."
+msgid "Read new volume (master) key from file."
+msgstr "从文件读取卷（主）密钥。"
+
+#: src/cryptsetup_reencrypt.c:1622
 msgid "PBKDF2 iteration time for LUKS (in ms)"
 msgstr "LUKS 默认 PBKDF2 迭代时间（毫秒）"
 
-#: src/cryptsetup_reencrypt.c:1545
+#: src/cryptsetup_reencrypt.c:1628
 msgid "Use direct-io when accessing devices."
 msgstr "在访问设备时使用 direct-io。"
 
-#: src/cryptsetup_reencrypt.c:1546
+#: src/cryptsetup_reencrypt.c:1629
 msgid "Use fsync after each block."
 msgstr "在每个数据块后使用 fsync。"
 
-#: src/cryptsetup_reencrypt.c:1547
+#: src/cryptsetup_reencrypt.c:1630
 msgid "Update log file after every block."
 msgstr "在每个数据块后更新日志文件。"
 
-#: src/cryptsetup_reencrypt.c:1548
+#: src/cryptsetup_reencrypt.c:1631
 msgid "Use only this slot (others will be disabled)."
 msgstr "仅使用这个密钥槽（其他的密钥槽将被禁用）。"
 
-#: src/cryptsetup_reencrypt.c:1551
+#: src/cryptsetup_reencrypt.c:1634
 msgid "Reduce data device size (move data offset). DANGEROUS!"
 msgstr "减少数据设备大小（移动数据偏移量）。危险！"
 
-#: src/cryptsetup_reencrypt.c:1552
+#: src/cryptsetup_reencrypt.c:1635
 msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
 msgstr "只使用指定的设备大小（忽略设备其余部分）。危险！"
 
-#: src/cryptsetup_reencrypt.c:1553
+#: src/cryptsetup_reencrypt.c:1636
 msgid "Create new header on not encrypted device."
 msgstr "在未加密的设备上创建新的标头。"
 
-#: src/cryptsetup_reencrypt.c:1554
+#: src/cryptsetup_reencrypt.c:1637
 msgid "Permanently decrypt device (remove encryption)."
 msgstr "永久解密设备（移除加密）。"
 
-#: src/cryptsetup_reencrypt.c:1555
+#: src/cryptsetup_reencrypt.c:1638
 #, fuzzy
 #| msgid "The size of the encryption key"
 msgid "The uuid used to resume decryption."
 msgstr "加密密钥大小"
 
-#: src/cryptsetup_reencrypt.c:1556
+#: src/cryptsetup_reencrypt.c:1639
 msgid "Type of LUKS metadata (luks1 or luks2)."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1576
+#: src/cryptsetup_reencrypt.c:1660
 msgid "[OPTION...] <device>"
 msgstr "[选项...] <设备>"
 
-#: src/cryptsetup_reencrypt.c:1590
+#: src/cryptsetup_reencrypt.c:1674
 #, fuzzy, c-format
 #| msgid "Reencryption will change: volume key%s%s%s%s.\n"
 msgid "Reencryption will change: %s%s%s%s%s%s.\n"
 msgstr "重加密会改变：卷密钥 %s%s%s%s。\n"
 
-#: src/cryptsetup_reencrypt.c:1591
+#: src/cryptsetup_reencrypt.c:1675
 msgid "volume key"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1593
-#, fuzzy
-#| msgid ", set hash to "
+#: src/cryptsetup_reencrypt.c:1677
 msgid "set hash to "
-msgstr "，设置哈希值为 "
+msgstr "设置哈希值为 "
 
-#: src/cryptsetup_reencrypt.c:1594
+#: src/cryptsetup_reencrypt.c:1678
 msgid ", set cipher to "
 msgstr "，设定密文为 "
 
-#: src/cryptsetup_reencrypt.c:1598
+#: src/cryptsetup_reencrypt.c:1682
 msgid "Argument required."
 msgstr "需要参数。"
 
-#: src/cryptsetup_reencrypt.c:1626
+#: src/cryptsetup_reencrypt.c:1710
 msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
 msgstr "重加密块大小只能是 1 MiB 到 64 MiB 之间的值。"
 
-#: src/cryptsetup_reencrypt.c:1645 src/cryptsetup_reencrypt.c:1650
+#: src/cryptsetup_reencrypt.c:1729 src/cryptsetup_reencrypt.c:1734
 msgid "Invalid device size specification."
 msgstr "无效的设备大小指标。"
 
-#: src/cryptsetup_reencrypt.c:1653
+#: src/cryptsetup_reencrypt.c:1737
 msgid "Maximum device reduce size is 64 MiB."
 msgstr "最大设备缩减大小为 64 MiB。"
 
-#: src/cryptsetup_reencrypt.c:1656
+#: src/cryptsetup_reencrypt.c:1740
 msgid "Reduce size must be multiple of 512 bytes sector."
 msgstr "缩减大小必须为 512 字节扇区的倍数。"
 
-#: src/cryptsetup_reencrypt.c:1660
-msgid "Option --new must be used together with --reduce-device-size."
+#: src/cryptsetup_reencrypt.c:1744
+#, fuzzy
+#| msgid "Option --new must be used together with --reduce-device-size."
+msgid "Option --new must be used together with --reduce-device-size or --header."
 msgstr "选项 --new 必须与 --reduce-device-size 共用。"
 
-#: src/cryptsetup_reencrypt.c:1664
+#: src/cryptsetup_reencrypt.c:1748
 #, fuzzy
 #| msgid "Option --keep-key can be used only with --hash or --iter-time."
 msgid "Option --keep-key can be used only with --hash, --iter-time or --pbkdf-force-iterations."
 msgstr "选项 --keep-key 只能与 --hash 或 --iter-time 共用。"
 
-#: src/cryptsetup_reencrypt.c:1668
+#: src/cryptsetup_reencrypt.c:1752
 msgid "Option --new cannot be used together with --decrypt."
 msgstr "选项 --new 不可与 --decrypt 共用。"
 
-#: src/cryptsetup_reencrypt.c:1672
+#: src/cryptsetup_reencrypt.c:1756
 msgid "Option --decrypt is incompatible with specified parameters."
 msgstr "选项 --decrypt 与选定参数不兼容。"
 
-#: src/cryptsetup_reencrypt.c:1676
+#: src/cryptsetup_reencrypt.c:1760
 #, fuzzy
 #| msgid "Option --new cannot be used together with --decrypt."
 msgid "Option --uuid is allowed only together with --decrypt."
 msgstr "选项 --new 不可与 --decrypt 共用。"
 
-#: src/cryptsetup_reencrypt.c:1680
+#: src/cryptsetup_reencrypt.c:1764
 msgid "Invalid luks type. Use one of these: 'luks', 'luks1' or 'luks2'."
 msgstr ""
 
@@ -2879,6 +2958,23 @@ msgstr "输入密码："
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "输入 %s 的密码："
+
+#: src/utils_password.c:304
+msgid "No key available with this passphrase.\n"
+msgstr "此密码无可用的密钥。\n"
+
+#: src/utils_password.c:339
+#, fuzzy, c-format
+#| msgid "Cannot read keyfile %s.\n"
+msgid "Cannot open keyfile %s for write.\n"
+msgstr ""
+"无法读取密钥文件 %s。\n"
+"\n"
+
+#: src/utils_password.c:346
+#, c-format
+msgid "Cannot write to keyfile %s.\n"
+msgstr "无法写入密钥文件 %s。\n"
 
 #~ msgid "Cannot find a free loopback device.\n"
 #~ msgstr "找不到空闲的回环设备。\n"
