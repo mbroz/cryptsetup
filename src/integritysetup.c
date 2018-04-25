@@ -65,7 +65,7 @@ static int _read_mk(const char *file, char **key, int keysize)
 	int fd;
 
 	if (keysize <= 0 || keysize > MAX_KEY_SIZE) {
-		log_err(_("Invalid key size.\n"));
+		log_err(_("Invalid key size."));
 		return -EINVAL;
 	}
 
@@ -75,11 +75,11 @@ static int _read_mk(const char *file, char **key, int keysize)
 
 	fd = open(file, O_RDONLY);
 	if (fd == -1) {
-		log_err(_("Cannot read keyfile %s.\n"), file);
+		log_err(_("Cannot read keyfile %s."), file);
 		goto fail;
 	}
 	if ((read(fd, *key, keysize) != keysize)) {
-		log_err(_("Cannot read %d bytes from keyfile %s.\n"), keysize, file);
+		log_err(_("Cannot read %d bytes from keyfile %s."), keysize, file);
 		close(fd);
 		goto fail;
 	}
@@ -159,7 +159,7 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 	r = crypt_wipe(cd, tmp_path, CRYPT_WIPE_ZERO, 0, 0, DEFAULT_WIPE_BLOCK,
 		       0, &tools_wipe_progress, NULL);
 	if (crypt_deactivate(cd, tmp_name))
-		log_err(_("Cannot deactivate temporary device %s.\n"), tmp_path);
+		log_err(_("Cannot deactivate temporary device %s."), tmp_path);
 	set_int_block(0);
 
 	return r;
@@ -184,7 +184,7 @@ static int action_format(int arg)
 	if (opt_integrity) {
 		r = crypt_parse_hash_integrity_mode(opt_integrity, integrity);
 		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected.\n"));
+			log_err(_("No known integrity specification pattern detected."));
 			return r;
 		}
 		params.integrity = integrity;
@@ -193,7 +193,7 @@ static int action_format(int arg)
 	if (opt_journal_integrity) {
 		r = crypt_parse_hash_integrity_mode(opt_journal_integrity, journal_integrity);
 		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected.\n"));
+			log_err(_("No known integrity specification pattern detected."));
 			return r;
 		}
 		params.journal_integrity = journal_integrity;
@@ -202,7 +202,7 @@ static int action_format(int arg)
 	if (opt_journal_crypt) {
 		r = crypt_parse_hash_integrity_mode(opt_journal_crypt, journal_crypt);
 		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected.\n"));
+			log_err(_("No known integrity specification pattern detected."));
 			return r;
 		}
 		params.journal_crypt = journal_crypt;
@@ -249,7 +249,7 @@ static int action_open(int arg)
 	if (opt_integrity) {
 		r = crypt_parse_hash_integrity_mode(opt_integrity, integrity);
 		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected.\n"));
+			log_err(_("No known integrity specification pattern detected."));
 			return r;
 		}
 		params.integrity = integrity;
@@ -258,7 +258,7 @@ static int action_open(int arg)
 	if (opt_journal_integrity) {
 		r = crypt_parse_hash_integrity_mode(opt_journal_integrity, journal_integrity);
 		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected.\n"));
+			log_err(_("No known integrity specification pattern detected."));
 			return r;
 
 		}
@@ -268,7 +268,7 @@ static int action_open(int arg)
 	if (opt_journal_crypt) {
 		r = crypt_parse_hash_integrity_mode(opt_journal_crypt, journal_crypt);
 		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected.\n"));
+			log_err(_("No known integrity specification pattern detected."));
 			return r;
 		}
 		params.journal_crypt = journal_crypt;

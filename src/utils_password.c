@@ -40,7 +40,7 @@ static int tools_check_pwquality(const char *password)
 
 	r = pwquality_read_config(pwq, NULL, &auxerror);
 	if (r) {
-		log_err(_("Cannot check password quality: %s\n"),
+		log_err(_("Cannot check password quality: %s"),
 			pwquality_strerror(NULL, 0, r, auxerror));
 		pwquality_free_settings(pwq);
 		return -EINVAL;
@@ -48,7 +48,7 @@ static int tools_check_pwquality(const char *password)
 
 	r = pwquality_check(pwq, password, NULL, NULL, &auxerror);
 	if (r < 0) {
-		log_err(_("Password quality check failed:\n %s\n"),
+		log_err(_("Password quality check failed:\n %s"),
 			pwquality_strerror(NULL, 0, r, auxerror));
 		r = -EPERM;
 	} else {
@@ -72,7 +72,7 @@ static int tools_check_pwquality(const char *password)
 	passwdqc_params_reset(&params);
 
 	if (*config && passwdqc_params_load(&params, &parse_reason, config)) {
-		log_err(_("Cannot check password quality: %s\n"),
+		log_err(_("Cannot check password quality: %s"),
 			(parse_reason ? parse_reason : "Out of memory"));
 		free(parse_reason);
 		return -EINVAL;
@@ -80,7 +80,7 @@ static int tools_check_pwquality(const char *password)
 
 	check_reason = passwdqc_check(&params.qc, password, NULL, NULL);
 	if (check_reason) {
-		log_err(_("Password quality check failed: Bad passphrase (%s)\n"),
+		log_err(_("Password quality check failed: Bad passphrase (%s)"),
 			check_reason);
 		return -EPERM;
 	}
@@ -204,12 +204,12 @@ static int crypt_get_key_tty(const char *prompt,
 
 	pass = crypt_safe_alloc(key_size_max + 1);
 	if (!pass) {
-		log_err( _("Out of memory while reading passphrase.\n"));
+		log_err( _("Out of memory while reading passphrase."));
 		return -ENOMEM;
 	}
 
 	if (interactive_pass(prompt, pass, key_size_max, timeout)) {
-		log_err(_("Error reading passphrase from terminal.\n"));
+		log_err(_("Error reading passphrase from terminal."));
 		goto out_err;
 	}
 	pass[key_size_max] = '\0';
@@ -217,19 +217,19 @@ static int crypt_get_key_tty(const char *prompt,
 	if (verify) {
 		pass_verify = crypt_safe_alloc(key_size_max);
 		if (!pass_verify) {
-			log_err(_("Out of memory while reading passphrase.\n"));
+			log_err(_("Out of memory while reading passphrase."));
 			r = -ENOMEM;
 			goto out_err;
 		}
 
 		if (interactive_pass(_("Verify passphrase: "),
 		    pass_verify, key_size_max, timeout)) {
-			log_err(_("Error reading passphrase from terminal.\n"));
+			log_err(_("Error reading passphrase from terminal."));
 			goto out_err;
 		}
 
 		if (strncmp(pass, pass_verify, key_size_max)) {
-			log_err(_("Passphrases do not match.\n"));
+			log_err(_("Passphrases do not match."));
 			r = -EPERM;
 			goto out_err;
 		}
@@ -266,7 +266,7 @@ int tools_get_key(const char *prompt,
 	if (tools_is_stdin(key_file)) {
 		if (isatty(STDIN_FILENO)) {
 			if (keyfile_offset) {
-				log_err(_("Cannot use offset with terminal input.\n"));
+				log_err(_("Cannot use offset with terminal input."));
 			} else {
 				if (!prompt && !crypt_get_device_name(cd))
 					snprintf(tmp, sizeof(tmp), _("Enter passphrase: "));
@@ -301,7 +301,7 @@ int tools_get_key(const char *prompt,
 void tools_passphrase_msg(int r)
 {
 	if (r == -EPERM)
-		log_err(_("No key available with this passphrase.\n"));
+		log_err(_("No key available with this passphrase."));
 }
 
 int tools_read_mk(const char *file, char **key, int keysize)
@@ -314,11 +314,11 @@ int tools_read_mk(const char *file, char **key, int keysize)
 
 	fd = open(file, O_RDONLY);
 	if (fd == -1) {
-		log_err(_("Cannot read keyfile %s.\n"), file);
+		log_err(_("Cannot read keyfile %s."), file);
 		goto fail;
 	}
 	if ((read(fd, *key, keysize) != keysize)) {
-		log_err(_("Cannot read %d bytes from keyfile %s.\n"), keysize, file);
+		log_err(_("Cannot read %d bytes from keyfile %s."), keysize, file);
 		close(fd);
 		goto fail;
 	}
@@ -336,14 +336,14 @@ int tools_write_mk(const char *file, const char *key, int keysize)
 
 	fd = open(file, O_WRONLY);
 	if (fd < 0) {
-		log_err(_("Cannot open keyfile %s for write.\n"), file);
+		log_err(_("Cannot open keyfile %s for write."), file);
 		return r;
 	}
 
 	if (write_buffer(fd, key, keysize) == keysize)
 		r = 0;
 	else
-		log_err(_("Cannot write to keyfile %s.\n"), file);
+		log_err(_("Cannot write to keyfile %s."), file);
 
 	close(fd);
 	return r;

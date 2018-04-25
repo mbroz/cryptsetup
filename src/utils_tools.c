@@ -99,6 +99,10 @@ void clogger(struct crypt_device *cd, int level, const char *file, int line,
 
 	va_end(argp);
 	free(target);
+
+	/* All verbose and error messages in tools end with EOL. */
+	if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR)
+		crypt_log(cd, level, "\n");
 }
 
 void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
@@ -151,7 +155,7 @@ int yesDialog(const char *msg, void *usrptr)
 			r = 0;
 			/* Aborted by signal */
 			if (!quit)
-				log_err(_("Error reading response from terminal.\n"));
+				log_err(_("Error reading response from terminal."));
 			else
 				log_dbg("Query interrupted on signal.");
 		} else if (strcmp(answer, "YES\n")) {
@@ -230,7 +234,7 @@ __attribute__ ((noreturn)) void usage(poptContext popt_context,
 {
 	poptPrintUsage(popt_context, stderr, 0);
 	if (error)
-		log_err("%s: %s\n", more, error);
+		log_err("%s: %s", more, error);
 	poptFreeContext(popt_context);
 	exit(exitcode);
 }
@@ -419,7 +423,7 @@ int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr)
 	check_signal(&r);
 	if (r) {
 		tools_clear_line();
-		log_err("\nWipe interrupted.\n");
+		log_err("\nWipe interrupted.");
 	}
 
 	return r;

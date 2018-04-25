@@ -129,7 +129,7 @@ static int _verify_passphrase(int def)
 	/* Non-tty input doesn't allow verify */
 	if (def && !isatty(STDIN_FILENO)) {
 		if (opt_verify_passphrase)
-			log_err(_("Can't do passphrase verification on non-tty inputs.\n"));
+			log_err(_("Can't do passphrase verification on non-tty inputs."));
 		def = 0;
 	}
 
@@ -182,7 +182,7 @@ static int action_open_plain(void)
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(PLAIN),
 				      cipher, NULL, cipher_mode);
 	if (r < 0) {
-		log_err(_("No known cipher specification pattern detected.\n"));
+		log_err(_("No known cipher specification pattern detected."));
 		goto out;
 	}
 
@@ -260,7 +260,7 @@ static int action_open_loopaes(void)
 	int r;
 
 	if (!opt_key_file) {
-		log_err(_("Option --key-file is required.\n"));
+		log_err(_("Option --key-file is required."));
 		return -EINVAL;
 	}
 
@@ -314,13 +314,13 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 
 			tmp_pim_ull = strtoull(tmp_pim_nptr, &tmp_pim_end, 10);
 			if (*tmp_pim_nptr == '\0' || !tmp_pim_end || *tmp_pim_end != '\0') {
-				log_err(_("Invalid PIM value: parse error\n"));
+				log_err(_("Invalid PIM value: parse error."));
 				r = -EINVAL;
 			} else if (tmp_pim_ull == 0) {
-				log_err(_("Invalid PIM value: 0\n"));
+				log_err(_("Invalid PIM value: 0."));
 				r = -EINVAL;
 			} else if (tmp_pim_ull > UINT32_MAX) {
-				log_err(_("Invalid PIM value: outside of range\n"));
+				log_err(_("Invalid PIM value: outside of range."));
 				r = -ERANGE;
 			}
 			crypt_safe_free(CONST_CAST(char*)tmp_pim_nptr);
@@ -343,7 +343,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 		r = crypt_load(cd, CRYPT_TCRYPT, params);
 
 		if (r == -EPERM) {
-			log_err(_("No device header detected with this passphrase.\n"));
+			log_err(_("No device header detected with this passphrase."));
 			eperm = 1;
 		}
 
@@ -513,7 +513,7 @@ static int action_resize(void)
 		if (opt_disable_keyring) {
 			r = -EINVAL;
 			log_err(_("Resize of active device requires volume key "
-				  "in keyring but --disable-keyring option is set.\n"));
+				  "in keyring but --disable-keyring option is set."));
 				goto out;
 		}
 
@@ -635,7 +635,7 @@ static int benchmark_callback(uint32_t time_ms, void *usrptr)
 
 	check_signal(&r);
 	if (r)
-		log_err(_("Benchmark interrupted.\n"));
+		log_err(_("Benchmark interrupted."));
 	else
 		log_dbg("PBKDF benchmark: memory cost = %u, iterations = %u, "
 			"threads = %u (took %u ms)", pbkdf->max_memory_kb,
@@ -698,7 +698,7 @@ static int benchmark_cipher_loop(const char *cipher, const char *cipher_mode,
 			if (buffer_size < 1024 * 1024 * 65)
 				buffer_size *= 2;
 			else {
-				log_err(_("Result of benchmark is not reliable.\n"));
+				log_err(_("Result of benchmark is not reliable."));
 				r = -ENOENT;
 			}
 		}
@@ -757,7 +757,7 @@ static int action_benchmark(void)
 	} else if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
 		if (r < 0) {
-			log_err(_("No known cipher specification pattern detected.\n"));
+			log_err(_("No known cipher specification pattern detected."));
 			return r;
 		}
 		if ((c  = strchr(cipher_mode, '-')))
@@ -781,7 +781,7 @@ static int action_benchmark(void)
 			log_std("%11s-%s  %9db  %10.1f MiB/s  %10.1f MiB/s\n",
 				cipher, cipher_mode, key_size*8, enc_mbr, dec_mbr);
 		} else if (r == -ENOENT)
-			log_err(_("Cipher %s is not available.\n"), opt_cipher);
+			log_err(_("Cipher %s is not available."), opt_cipher);
 	} else {
 		for (i = 0; bkdfs[i].type; i++) {
 			r = action_benchmark_kdf(bkdfs[i].type, bkdfs[i].hash, key_size);
@@ -817,9 +817,9 @@ static int action_benchmark(void)
 	}
 
 	if (r == -ENOTSUP) {
-		log_err(_("Required kernel crypto interface not available.\n"));
+		log_err(_("Required kernel crypto interface not available."));
 #ifdef ENABLE_AF_ALG
-		log_err( _("Ensure you have algif_skcipher kernel module loaded.\n"));
+		log_err( _("Ensure you have algif_skcipher kernel module loaded."));
 #endif
 	}
 	return r;
@@ -866,7 +866,7 @@ static int action_luksRepair(void)
 	r = crypt_load(cd, luksType(opt_type), NULL);
 	crypt_set_log_callback(cd, tool_log, NULL);
 	if (r == 0) {
-		log_verbose(_("No known problems detected for LUKS header.\n"));
+		log_verbose(_("No known problems detected for LUKS header."));
 		goto out;
 	}
 
@@ -908,7 +908,7 @@ static int _wipe_data_device(struct crypt_device *cd)
 	r = crypt_wipe(cd, tmp_path, CRYPT_WIPE_ZERO, 0, 0, DEFAULT_WIPE_BLOCK,
 		       0, &tools_wipe_progress, NULL);
 	if (crypt_deactivate(cd, tmp_name))
-		log_err(_("Cannot deactivate temporary device %s.\n"), tmp_path);
+		log_err(_("Cannot deactivate temporary device %s."), tmp_path);
 	set_int_block(0);
 
 	return r;
@@ -944,7 +944,7 @@ static int action_luksFormat(void)
 		luks_version = 1;
 
 	if (opt_sector_size > SECTOR_SIZE && luks_version == 1) {
-		log_err(_("Unsupported encryption sector size.\n"));
+		log_err(_("Unsupported encryption sector size."));
 		return -EINVAL;
 	}
 
@@ -958,7 +958,7 @@ static int action_luksFormat(void)
 		log_dbg("Creating header file.");
 		fd = open(opt_header_device, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IWUSR);
 		if (fd == -1 || posix_fallocate(fd, 0, 4096))
-			log_err(_("Cannot create header file %s.\n"), opt_header_device);
+			log_err(_("Cannot create header file %s."), opt_header_device);
 		else
 			r = 0;
 		if (fd != -1)
@@ -982,19 +982,19 @@ static int action_luksFormat(void)
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
 				      cipher, NULL, cipher_mode);
 	if (r < 0) {
-		log_err(_("No known cipher specification pattern detected.\n"));
+		log_err(_("No known cipher specification pattern detected."));
 		goto out;
 	}
 
 	if (luks_version != 2 && opt_integrity) {
-		log_err(_("Integrity option can be used only for LUKS2 format.\n"));
+		log_err(_("Integrity option can be used only for LUKS2 format."));
 		goto out;
 	}
 
 	if (opt_integrity) {
 		r = crypt_parse_integrity_mode(opt_integrity, integrity, &integrity_keysize);
 		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected.\n"));
+			log_err(_("No known integrity specification pattern detected."));
 			goto out;
 		}
 		params2.integrity = integrity;
@@ -1007,7 +1007,7 @@ static int action_luksFormat(void)
 
 	if ((r = crypt_init(&cd, header_device))) {
 		if (opt_header_device)
-			log_err(_("Cannot use %s as on-disk header.\n"), header_device);
+			log_err(_("Cannot use %s as on-disk header."), header_device);
 		goto out;
 	}
 
@@ -1035,7 +1035,7 @@ static int action_luksFormat(void)
 	else
 		r = set_pbkdf_params(cd, CRYPT_LUKS2);
 	if (r) {
-		log_err(_("Failed to set pbkdf parameters.\n"));
+		log_err(_("Failed to set pbkdf parameters."));
 		goto out;
 	}
 
@@ -1091,7 +1091,7 @@ static int action_open_luks(void)
 		goto out;
 
 	if (!data_device && (crypt_get_data_offset(cd) < 8)) {
-		log_err(_("Reduced data offset is allowed only for detached LUKS header.\n"));
+		log_err(_("Reduced data offset is allowed only for detached LUKS header."));
 		r = -EINVAL;
 		goto out;
 	}
@@ -1130,7 +1130,7 @@ out:
 	if (r >= 0 && opt_persistent &&
 	    (crypt_get_active_device(cd, activated_name, &cad) ||
 	     crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, cad.flags & activate_flags)))
-		log_err(_("Device activated but cannot make flags persistent.\n"));
+		log_err(_("Device activated but cannot make flags persistent."));
 
 	crypt_safe_free(key);
 	crypt_safe_free(password);
@@ -1208,10 +1208,10 @@ static int action_luksKillSlot(void)
 	case CRYPT_SLOT_ACTIVE_LAST:
 	case CRYPT_SLOT_ACTIVE:
 	case CRYPT_SLOT_UNBOUND:
-		log_verbose(_("Keyslot %d is selected for deletion.\n"), opt_key_slot);
+		log_verbose(_("Keyslot %d is selected for deletion."), opt_key_slot);
 		break;
 	case CRYPT_SLOT_INACTIVE:
-		log_err(_("Keyslot %d is not active.\n"), opt_key_slot);
+		log_err(_("Keyslot %d is not active."), opt_key_slot);
 		/* pass through */
 	case CRYPT_SLOT_INVALID:
 		return -EINVAL;
@@ -1271,7 +1271,7 @@ static int action_luksRemoveKey(void)
 		goto out;
 
 	opt_key_slot = r;
-	log_verbose(_("Key slot %d selected for deletion.\n"), opt_key_slot);
+	log_verbose(_("Key slot %d selected for deletion."), opt_key_slot);
 
 	if (crypt_keyslot_status(cd, opt_key_slot) == CRYPT_SLOT_ACTIVE_LAST &&
 	    !yesDialog(_("This is the last keyslot. "
@@ -1312,7 +1312,7 @@ static int luksAddUnboundKey(void)
 	keysize = opt_key_size / 8;
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
 	if (r) {
-		log_err(_("Failed to set pbkdf parameters.\n"));
+		log_err(_("Failed to set pbkdf parameters."));
 		goto out;
 	}
 
@@ -1371,7 +1371,7 @@ static int action_luksAddKey(void)
 	keysize = crypt_get_volume_key_size(cd);
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
 	if (r) {
-		log_err(_("Failed to set pbkdf parameters.\n"));
+		log_err(_("Failed to set pbkdf parameters."));
 		goto out;
 	}
 
@@ -1457,7 +1457,7 @@ static int action_luksChangeKey(void)
 
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
 	if (r) {
-		log_err(_("Failed to set pbkdf parameters.\n"));
+		log_err(_("Failed to set pbkdf parameters."));
 		goto out;
 	}
 
@@ -1508,7 +1508,7 @@ static int action_luksConvertKey(void)
 
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
 	if (r) {
-		log_err(_("Failed to set pbkdf parameters.\n"));
+		log_err(_("Failed to set pbkdf parameters."));
 		goto out;
 	}
 
@@ -1535,7 +1535,7 @@ static int action_isLuks(void)
 
 	/* FIXME: argc > max should be checked for other operations as well */
 	if (action_argc > 1) {
-		log_err(_("Only one device argument for isLuks operation is supported.\n"));
+		log_err(_("Only one device argument for isLuks operation is supported."));
 		return -ENODEV;
 	}
 
@@ -1714,7 +1714,7 @@ static int action_luksBackup(void)
 	int r;
 
 	if (!opt_header_backup_file) {
-		log_err(_("Option --header-backup-file is required.\n"));
+		log_err(_("Option --header-backup-file is required."));
 		return -EINVAL;
 	}
 
@@ -1735,7 +1735,7 @@ static int action_luksRestore(void)
 	int r = 0;
 
 	if (!opt_header_backup_file) {
-		log_err(_("Option --header-backup-file is required.\n"));
+		log_err(_("Option --header-backup-file is required."));
 		return -EINVAL;
 	}
 
@@ -1774,10 +1774,10 @@ static int action_open(void)
 		return action_open_tcrypt();
 	}
 
-	log_err(_("Unrecognized metadata device type %s.\n"), opt_type);
+	log_err(_("Unrecognized metadata device type %s."), opt_type);
 	return -EINVAL;
 args:
-	log_err(_("Command requires device and mapped name as arguments.\n"));
+	log_err(_("Command requires device and mapped name as arguments."));
 	return -EINVAL;
 }
 
@@ -1839,7 +1839,7 @@ static int action_luksConvert(void)
 	} else if (!strcmp(opt_type, "luks1")) {
 		to_type = CRYPT_LUKS1;
 	} else {
-		log_err(_("Missing LUKS target type, option --type is required.\n"));
+		log_err(_("Missing LUKS target type, option --type is required."));
 		return -EINVAL;
 	}
 
@@ -1855,7 +1855,7 @@ static int action_luksConvert(void)
 	}
 
 	if (!strcmp(from_type, to_type)) {
-		log_err(_("Device is already %s type.\n"), to_type);
+		log_err(_("Device is already %s type."), to_type);
 		crypt_free(cd);
 		return -EINVAL;
 	}
@@ -1906,7 +1906,7 @@ static int action_luksConfig(void)
 	int r;
 
 	if (!opt_priority && !opt_label && !opt_subsystem) {
-		log_err(_("Option --priority, --label or --subsystem is missing.\n"));
+		log_err(_("Option --priority, --label or --subsystem is missing."));
 		return -EINVAL;
 	}
 
@@ -1937,10 +1937,10 @@ static int _token_add(struct crypt_device *cd)
 	if (opt_token != CRYPT_ANY_TOKEN) {
 		token_info = crypt_token_status(cd, opt_token, NULL);
 		if (token_info < CRYPT_TOKEN_INACTIVE) {
-			log_err(_("Token %d is invalid.\n"), opt_token);
+			log_err(_("Token %d is invalid."), opt_token);
 			return -EINVAL;
 		} else if (token_info > CRYPT_TOKEN_INACTIVE) {
-			log_err(_("Token %d in use.\n"), opt_token);
+			log_err(_("Token %d in use."), opt_token);
 			return -EINVAL;
 		}
 	}
@@ -1953,7 +1953,7 @@ static int _token_add(struct crypt_device *cd)
 
 	r = crypt_token_assign_keyslot(cd, token, opt_key_slot);
 	if (r < 0) {
-		log_err(_("Failed to assign token %d to keyslot %d.\n"), token, opt_key_slot);
+		log_err(_("Failed to assign token %d to keyslot %d."), token, opt_key_slot);
 		(void) crypt_token_json_set(cd, token, NULL);
 	}
 
@@ -1967,18 +1967,18 @@ static int action_token(void)
 
 	if (!strcmp(action_argv[0], "add")) {
 		if (!opt_key_description) {
-			log_err(_("--key-description parameter is mandatory for token add action.\n"));
+			log_err(_("--key-description parameter is mandatory for token add action."));
 			return -EINVAL;
 		}
 		add = 1;
 	} else if (!strcmp(action_argv[0], "remove")) {
 		if (opt_token == CRYPT_ANY_TOKEN) {
-			log_err(_("Missing --token option specifying token for removal.\n"));
+			log_err(_("Missing --token option specifying token for removal."));
 			return -EINVAL;
 		}
 		add = 0;
 	} else {
-		log_err(_("Invalid token operation %s.\n"), action_argv[0]);
+		log_err(_("Invalid token operation %s."), action_argv[0]);
 		return -EINVAL;
 	}
 
@@ -1993,9 +1993,9 @@ static int action_token(void)
 	r = add ? _token_add(cd) : crypt_token_json_set(cd, opt_token, NULL);
 	if (r < 0) {
 		if (add)
-			log_err(_("Failed to add keyring token %d.\n"), opt_token);
+			log_err(_("Failed to add keyring token %d."), opt_token);
 		else
-			log_err(_("Failed to remove token %d.\n"), opt_token);
+			log_err(_("Failed to remove token %d."), opt_token);
 	}
 
 	crypt_free(cd);
@@ -2408,7 +2408,7 @@ int main(int argc, const char **argv)
 	     !strcmp(aname, "luksFormat")) &&
 	     action_argc > 1) {
 		if (opt_key_file)
-			log_err(_("Option --key-file takes precedence over specified key file argument.\n"));
+			log_err(_("Option --key-file takes precedence over specified key file argument."));
 		else
 			opt_key_file = action_argv[1];
 	}

@@ -169,13 +169,13 @@ static int set_reencrypt_requirement(const struct reenc_ctx *rc)
 
 	/* reencrypt already in-progress */
 	if (reqs & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT) {
-		log_err(_("Reencryption already in-progress.\n"));
+		log_err(_("Reencryption already in-progress."));
 		goto out;
 	}
 
 	/* raw integrity info is available since 2.0 */
 	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
-		log_err(_("Reencryption of device with integrity profile is not supported.\n"));
+		log_err(_("Reencryption of device with integrity profile is not supported."));
 		r = -ENOTSUP;
 		goto out;
 	}
@@ -198,11 +198,11 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 	devfd = open(device, O_RDWR | O_EXCL | O_DIRECT);
 	if (devfd == -1) {
 		if (errno == EBUSY) {
-			log_err(_("Cannot exclusively open %s, device in use.\n"),
+			log_err(_("Cannot exclusively open %s, device in use."),
 				device);
 			return -EBUSY;
 		}
-		log_err(_("Cannot open device %s.\n"), device);
+		log_err(_("Cannot open device %s."), device);
 		return -EINVAL;
 	}
 
@@ -212,14 +212,14 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 	}
 
 	if (posix_memalign((void *)&buf, alignment(devfd), buf_size)) {
-		log_err(_("Allocation of aligned memory failed.\n"));
+		log_err(_("Allocation of aligned memory failed."));
 		r = -ENOMEM;
 		goto out;
 	}
 
 	s = read(devfd, buf, buf_size);
 	if (s < 0 || s != (ssize_t)buf_size) {
-		log_err(_("Cannot read device %s.\n"), device);
+		log_err(_("Cannot read device %s."), device);
 		r = -EIO;
 		goto out;
 	}
@@ -230,11 +230,11 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 
 	if (set_magic == MAKE_UNUSABLE && !memcmp(buf, MAGIC, MAGIC_L) &&
 	    version == 1) {
-		log_verbose(_("Marking LUKS1 device %s unusable.\n"), device);
+		log_verbose(_("Marking LUKS1 device %s unusable."), device);
 		memcpy(buf, NOMAGIC, MAGIC_L);
 		r = 0;
 	} else if (set_magic == MAKE_UNUSABLE && version == 2) {
-		log_verbose(_("Setting LUKS2 offline reencrypt flag on device %s.\n"), device);
+		log_verbose(_("Setting LUKS2 offline reencrypt flag on device %s."), device);
 		r = set_reencrypt_requirement(rc);
 		if (!r)
 			rc->stained = 1;
@@ -251,7 +251,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 			goto out;
 		s = write(devfd, buf, buf_size);
 		if (s < 0 || s != (ssize_t)buf_size) {
-			log_err(_("Cannot write device %s.\n"), device);
+			log_err(_("Cannot write device %s."), device);
 			r = -EIO;
 		}
 		if (s > 0 && set_magic == MAKE_UNUSABLE)
@@ -335,7 +335,7 @@ static int write_log(struct reenc_ctx *rc)
 
 	r = write(rc->log_fd, rc->log_buf, SECTOR_SIZE);
 	if (r < 0 || r != SECTOR_SIZE) {
-		log_err(_("Cannot write reencryption log file.\n"));
+		log_err(_("Cannot write reencryption log file."));
 		return -EIO;
 	}
 
@@ -391,7 +391,7 @@ static int parse_log(struct reenc_ctx *rc)
 
 	s = read(rc->log_fd, rc->log_buf, SECTOR_SIZE);
 	if (s == -1) {
-		log_err(_("Cannot read reencryption log file.\n"));
+		log_err(_("Cannot read reencryption log file."));
 		return -EIO;
 	}
 
@@ -402,7 +402,7 @@ static int parse_log(struct reenc_ctx *rc)
 		if (end) {
 			*end++ = '\0';
 			if (parse_line_log(rc, start)) {
-				log_err("Wrong log format.\n");
+				log_err("Wrong log format.");
 				return -EINVAL;
 			}
 		}
@@ -479,7 +479,7 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 	    (r = crypt_set_data_device(cd, rc->device)))
 		goto out;
 
-	log_verbose(_("Activating temporary device using old LUKS header.\n"));
+	log_verbose(_("Activating temporary device using old LUKS header."));
 	if ((r = crypt_activate_by_passphrase(cd, rc->header_file_org,
 		opt_key_slot, pwd_old, pwd_old_len,
 		CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_PRIVATE)) < 0)
@@ -490,7 +490,7 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 	    (r = crypt_set_data_device(cd_new, rc->device)))
 		goto out;
 
-	log_verbose(_("Activating temporary device using new LUKS header.\n"));
+	log_verbose(_("Activating temporary device using new LUKS header."));
 	if ((r = crypt_activate_by_passphrase(cd_new, rc->header_file_new,
 		opt_key_slot, pwd_new, pwd_new_len,
 		CRYPT_ACTIVATE_SHARED|CRYPT_ACTIVATE_PRIVATE)) < 0)
@@ -500,7 +500,7 @@ out:
 	crypt_free(cd);
 	crypt_free(cd_new);
 	if (r < 0)
-		log_err(_("Activation of temporary devices failed.\n"));
+		log_err(_("Activation of temporary devices failed."));
 	return r;
 }
 
@@ -582,14 +582,14 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 
 	r = set_pbkdf_params(cd_new, type);
 	if (r) {
-		log_err(_("Failed to set PBKDF parameters.\n"));
+		log_err(_("Failed to set PBKDF parameters."));
 		goto out;
 	}
 
 	if ((r = crypt_format(cd_new, type, cipher, cipher_mode,
 			      uuid, key, key_size, params)))
 		goto out;
-	log_verbose(_("New LUKS header for device %s created.\n"), rc->device);
+	log_verbose(_("New LUKS header for device %s created."), rc->device);
 
 	for (i = 0; i < crypt_keyslot_max(type); i++) {
 		if (!rc->p[i].password)
@@ -598,7 +598,7 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 		r = create_new_keyslot(rc, i, cd_old, cd_new);
 		if (r < 0)
 			goto out;
-		log_verbose(_("Activated keyslot %i.\n"), r);
+		log_verbose(_("Activated keyslot %i."), r);
 		r = 0;
 	}
 out:
@@ -648,7 +648,7 @@ static int luks2_metadata_copy(struct reenc_ctx *rc)
 		case CRYPT_TOKEN_INACTIVE:
 			break;
 		case CRYPT_TOKEN_INTERNAL_UNKNOWN:
-			log_err(_("This version of cryptsetup-reencrypt can't handle new internal token type %s.\n"), type);
+			log_err(_("This version of cryptsetup-reencrypt can't handle new internal token type %s."), type);
 			r = -EINVAL;
 			goto out;
 		case CRYPT_TOKEN_INTERNAL:
@@ -670,19 +670,19 @@ static int luks2_metadata_copy(struct reenc_ctx *rc)
 	}
 
 	if ((r = crypt_persistent_flags_get(cd_old, CRYPT_FLAGS_ACTIVATION, &flags))) {
-		log_err(_("Failed to read activation flags from backup header.\n"));
+		log_err(_("Failed to read activation flags from backup header."));
 		goto out;
 	}
 	if ((r = crypt_persistent_flags_set(cd_new, CRYPT_FLAGS_ACTIVATION, flags))) {
-		log_err(_("Failed to write activation flags to new header.\n"));
+		log_err(_("Failed to write activation flags to new header."));
 		goto out;
 	}
 	if ((r = crypt_persistent_flags_get(cd_old, CRYPT_FLAGS_REQUIREMENTS, &flags))) {
-		log_err(_("Failed to read requirements from backup header.\n"));
+		log_err(_("Failed to read requirements from backup header."));
 		goto out;
 	}
 	if ((r = crypt_persistent_flags_set(cd_new, CRYPT_FLAGS_REQUIREMENTS, flags)))
-		log_err(_("Failed to read requirements from backup header.\n"));
+		log_err(_("Failed to read requirements from backup header."));
 out:
 	crypt_free(cd_old);
 	crypt_free(cd_new);
@@ -718,7 +718,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		if ((r = chmod(rc->header_file_tmp, st.st_mode | S_IWUSR)))
 			goto out;
 	}
-	log_verbose(_("%s header backup of device %s created.\n"), rc->device, isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
+	log_verbose(_("%s header backup of device %s created."), rc->device, isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
 
 	/* For decrypt, new header will be fake one, so we are done here. */
 	if (rc->reencrypt_mode == DECRYPT)
@@ -738,7 +738,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
 		if (r < 0) {
-			log_err(_("No known cipher specification pattern detected.\n"));
+			log_err(_("No known cipher specification pattern detected."));
 			goto out;
 		}
 	}
@@ -778,7 +778,7 @@ out:
 	crypt_free(cd);
 	crypt_safe_free(key);
 	if (r)
-		log_err(_("Creation of LUKS backup headers failed.\n"));
+		log_err(_("Creation of LUKS backup headers failed."));
 	return r;
 }
 
@@ -812,7 +812,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	if (opt_cipher) {
 		r = crypt_parse_name_and_mode(opt_cipher, cipher, NULL, cipher_mode);
 		if (r < 0) {
-			log_err(_("No known cipher specification pattern detected.\n"));
+			log_err(_("No known cipher specification pattern detected."));
 			goto out;
 		}
 	}
@@ -912,9 +912,9 @@ static int restore_luks_header(struct reenc_ctx *rc)
 	crypt_free(cd);
 out:
 	if (r)
-		log_err(_("Cannot restore %s header on device %s.\n"), hdr_device(rc), isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
+		log_err(_("Cannot restore %s header on device %s."), hdr_device(rc), isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
 	else {
-		log_verbose(_("%s header on device %s restored.\n"), hdr_device(rc), isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
+		log_verbose(_("%s header on device %s restored."), hdr_device(rc), isLUKS2(rc->type) ? "LUKS2" : "LUKS1");
 		rc->stained = 0;
 	}
 	return r;
@@ -952,7 +952,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 	if (lseek64(fd_old, rc->device_offset, SEEK_SET) < 0 ||
 	    lseek64(fd_new, rc->device_offset, SEEK_SET) < 0) {
-		log_err(_("Cannot seek to device offset.\n"));
+		log_err(_("Cannot seek to device offset."));
 		return -EIO;
 	}
 
@@ -1032,7 +1032,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 		if (lseek64(fd_old, working_offset, SEEK_SET) < 0 ||
 		    lseek64(fd_new, working_offset, SEEK_SET) < 0) {
-			log_err(_("Cannot seek to device offset.\n"));
+			log_err(_("Cannot seek to device offset."));
 			return -EIO;
 		}
 
@@ -1114,23 +1114,23 @@ static int copy_data(struct reenc_ctx *rc)
 
 	fd_old = open(rc->crypt_path_org, O_RDONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_old == -1) {
-		log_err(_("Cannot open temporary LUKS device.\n"));
+		log_err(_("Cannot open temporary LUKS device."));
 		goto out;
 	}
 
 	fd_new = open(rc->crypt_path_new, O_WRONLY | (opt_directio ? O_DIRECT : 0));
 	if (fd_new == -1) {
-		log_err(_("Cannot open temporary LUKS device.\n"));
+		log_err(_("Cannot open temporary LUKS device."));
 		goto out;
 	}
 
 	if (ioctl(fd_old, BLKGETSIZE64, &rc->device_size_org_real) < 0) {
-		log_err(_("Cannot get device size.\n"));
+		log_err(_("Cannot get device size."));
 		goto out;
 	}
 
 	if (ioctl(fd_new, BLKGETSIZE64, &rc->device_size_new_real) < 0) {
-		log_err(_("Cannot get device size.\n"));
+		log_err(_("Cannot get device size."));
 		goto out;
 	}
 
@@ -1142,7 +1142,7 @@ static int copy_data(struct reenc_ctx *rc)
 		rc->device_size = rc->device_size_new_real;
 
 	if (posix_memalign((void *)&buf, alignment(fd_new), block_size)) {
-		log_err(_("Allocation of aligned memory failed.\n"));
+		log_err(_("Allocation of aligned memory failed."));
 		r = -ENOMEM;
 		goto out;
 	}
@@ -1167,9 +1167,9 @@ static int copy_data(struct reenc_ctx *rc)
 	set_int_block(1);
 
 	if (r == -EAGAIN)
-		 log_err(_("Interrupted by a signal.\n"));
+		 log_err(_("Interrupted by a signal."));
 	else if (r < 0)
-		log_err(_("IO error during reencryption.\n"));
+		log_err(_("IO error during reencryption."));
 
 	(void)write_log(rc);
 out:
@@ -1200,7 +1200,7 @@ static int initialize_uuid(struct reenc_ctx *rc)
 		if (!r)
 			rc->device_uuid = strdup(opt_uuid);
 		else
-			log_err(_("Provided UUID is invalid.\n"));
+			log_err(_("Provided UUID is invalid."));
 
 		return r;
 	}
@@ -1303,7 +1303,7 @@ static int init_keyfile(struct reenc_ctx *rc, struct crypt_device *cd, int slot_
 	if (r >= 0 && opt_key_slot == CRYPT_ANY_SLOT &&
 	    crypt_keyslot_status(cd, r) != CRYPT_SLOT_ACTIVE_LAST) {
 		log_err(_("Key file can be used only with --key-slot or with "
-			  "exactly one key slot active.\n"));
+			  "exactly one key slot active."));
 		r = -EINVAL;
 	}
 
@@ -1391,13 +1391,13 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 		return -EINVAL;
 
 	if (initialize_uuid(rc)) {
-		log_err(_("Device %s is not a valid LUKS device.\n"), device);
+		log_err(_("Device %s is not a valid LUKS device."), device);
 		return -EINVAL;
 	}
 
 	if (opt_key_slot != CRYPT_ANY_SLOT &&
 	    opt_key_slot >= crypt_keyslot_max(rc->type)) {
-		log_err(_("Key slot is invalid.\n"));
+		log_err(_("Key slot is invalid."));
 		return -EINVAL;
 	}
 
@@ -1426,14 +1426,14 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 	remove_headers(rc);
 
 	if (open_log(rc) < 0) {
-		log_err(_("Cannot open reencryption log file.\n"));
+		log_err(_("Cannot open reencryption log file."));
 		return -EINVAL;
 	}
 
 	if (!rc->in_progress) {
 		if (opt_uuid) {
 			log_err(_("No decryption in progress, provided UUID can "
-			"be used only to resume suspended decryption process.\n"));
+			"be used only to resume suspended decryption process."));
 			return -EINVAL;
 		}
 
@@ -1507,7 +1507,7 @@ static int luks2_change_pbkdf_params(struct reenc_ctx *rc)
 			rc->p[i].password, rc->p[i].passwordLen,
 			rc->p[i].password, rc->p[i].passwordLen)) < 0)
 			goto out;
-		log_verbose(_("Changed pbkdf parameters in keyslot %i.\n"), r);
+		log_verbose(_("Changed pbkdf parameters in keyslot %i."), r);
 		r = 0;
 	}
 
@@ -1671,7 +1671,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (!opt_batch_mode)
-		log_verbose(_("Reencryption will change: %s%s%s%s%s%s.\n"),
+		log_verbose(_("Reencryption will change: %s%s%s%s%s%s."),
 			opt_keep_key ? "" :  _("volume key"),
 			(!opt_keep_key && opt_hash) ? ", " : "",
 			opt_hash   ? _("set hash to ")    : "", opt_hash   ?: "",

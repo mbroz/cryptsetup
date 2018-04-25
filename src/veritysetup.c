@@ -64,7 +64,7 @@ static int _prepare_format(struct crypt_params_verity *params,
 	} else if (salt_string) {
 		len = crypt_hex_to_bytes(salt_string, &salt, 0);
 		if (len < 0) {
-			log_err(_("Invalid salt string specified.\n"));
+			log_err(_("Invalid salt string specified."));
 			return -EINVAL;
 		}
 		params->salt_size = len;
@@ -95,7 +95,7 @@ static int action_format(int arg)
 	/* Try to create hash image if doesn't exist */
 	r = open(action_argv[1], O_WRONLY | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
 	if (r < 0 && errno != EEXIST) {
-		log_err(_("Cannot create hash image %s for writing.\n"), action_argv[1]);
+		log_err(_("Cannot create hash image %s for writing."), action_argv[1]);
 		return -EINVAL;
 	} else if (r >= 0) {
 		log_dbg("Created hash image %s.", action_argv[1]);
@@ -105,7 +105,7 @@ static int action_format(int arg)
 	if (fec_device) {
 		r = open(fec_device, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
 		if (r < 0 && errno != EEXIST) {
-			log_err(_("Cannot create FEC image %s for writing.\n"), fec_device);
+			log_err(_("Cannot create FEC image %s for writing."), fec_device);
 			return -EINVAL;
 		} else if (r >= 0) {
 			log_dbg("Created FEC image %s.", fec_device);
@@ -178,7 +178,7 @@ static int _activate(const char *dm_device,
 
 	hash_size = crypt_get_volume_key_size(cd);
 	if (crypt_hex_to_bytes(root_hash, &root_hash_bytes, 0) != hash_size) {
-		log_err(_("Invalid root hash string specified.\n"));
+		log_err(_("Invalid root hash string specified."));
 		r = -EINVAL;
 		goto out;
 	}
