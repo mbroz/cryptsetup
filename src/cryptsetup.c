@@ -1210,7 +1210,7 @@ static int action_luksKillSlot(void)
 		break;
 	case CRYPT_SLOT_INACTIVE:
 		log_err(_("Keyslot %d is not active."), opt_key_slot);
-		/* pass through */
+		/* fall through */
 	case CRYPT_SLOT_INVALID:
 		return -EINVAL;
 	}

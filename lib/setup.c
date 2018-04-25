@@ -1476,7 +1476,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       size_t volume_key_size,
 			       struct crypt_params_luks2 *params)
 {
-	int r;
+	int r, integrity_key_size;
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
 	unsigned long alignment_offset = 0;
 	unsigned int sector_size = params ? params->sector_size : SECTOR_SIZE;
@@ -1515,7 +1515,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			else
 				return -EINVAL;
 		}
-		if (INTEGRITY_key_size(cd, integrity) >= volume_key_size) {
+		integrity_key_size = INTEGRITY_key_size(cd, integrity);
+		if ((integrity_key_size < 0) || (integrity_key_size >= (int)volume_key_size)) {
 			log_err(cd, _("Volume key is too small for encryption with integrity extensions.\n"));
 			return -EINVAL;
 		}
@@ -3395,7 +3396,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	if (key_len < 0)
 		return -EINVAL;
 
-	if (key_len > *volume_key_size) {
+	if (key_len > (int)*volume_key_size) {
 		log_err(cd, _("Volume key buffer too small.\n"));
 		return -ENOMEM;
 	}
