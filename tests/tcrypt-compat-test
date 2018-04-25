@@ -47,7 +47,7 @@ function test_required()
 	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && skip
 
 	echo "REQUIRED CIPHERS TEST"
-	echo "#  Algorithm | Key |  Encryption |  Decryption"
+	echo "#     Algorithm         Key        Encryption        Decryption"
 
 	test_one aes-cbc 256
 	test_one aes-lrw 384
