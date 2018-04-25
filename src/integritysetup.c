@@ -498,18 +498,18 @@ int main(int argc, const char **argv)
 
 		{ "integrity",                  'I', POPT_ARG_STRING, &opt_integrity,                 0, N_("Data integrity algorithm"), NULL },
 		{ "integrity-key-size",        '\0', POPT_ARG_INT,    &opt_integrity_key_size,        0, N_("The size of the data integrity key"), N_("BITS") },
-		{ "integrity-key-file",        '\0', POPT_ARG_STRING, &opt_integrity_key_file,        0, N_("Read the integrity key from a file."), NULL },
+		{ "integrity-key-file",        '\0', POPT_ARG_STRING, &opt_integrity_key_file,        0, N_("Read the integrity key from a file"), NULL },
 
 		{ "journal-integrity",         '\0', POPT_ARG_STRING, &opt_journal_integrity,         0, N_("Journal integrity algorithm"), NULL },
 		{ "journal-integrity-key-size",'\0', POPT_ARG_INT,    &opt_journal_integrity_key_size,0, N_("The size of the journal integrity key"), N_("BITS") },
-		{ "journal-integrity-key-file",'\0', POPT_ARG_STRING, &opt_journal_integrity_key_file,0, N_("Read the journal integrity key from a file."), NULL },
+		{ "journal-integrity-key-file",'\0', POPT_ARG_STRING, &opt_journal_integrity_key_file,0, N_("Read the journal integrity key from a file"), NULL },
 
 		{ "journal-crypt",             '\0', POPT_ARG_STRING, &opt_journal_crypt,             0, N_("Journal encryption algorithm"), NULL },
 		{ "journal-crypt-key-size",    '\0', POPT_ARG_INT,    &opt_journal_crypt_key_size,    0, N_("The size of the journal encryption key"), N_("BITS") },
-		{ "journal-crypt-key-file",    '\0', POPT_ARG_STRING, &opt_journal_crypt_key_file,    0, N_("Read the journal encryption key from a file."), NULL },
+		{ "journal-crypt-key-file",    '\0', POPT_ARG_STRING, &opt_journal_crypt_key_file,    0, N_("Read the journal encryption key from a file"), NULL },
 
-		{ "integrity-no-journal",       'D', POPT_ARG_NONE,  &opt_integrity_nojournal, 0, N_("Disable journal for integrity device."), NULL },
-		{ "integrity-recovery-mode",    'R', POPT_ARG_NONE,  &opt_integrity_recovery,  0, N_("Recovery mode (no journal, no tag checking)."), NULL },
+		{ "integrity-no-journal",       'D', POPT_ARG_NONE,  &opt_integrity_nojournal, 0, N_("Disable journal for integrity device"), NULL },
+		{ "integrity-recovery-mode",    'R', POPT_ARG_NONE,  &opt_integrity_recovery,  0, N_("Recovery mode (no journal, no tag checking)"), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;

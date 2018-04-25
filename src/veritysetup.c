@@ -440,11 +440,11 @@ int main(int argc, const char **argv)
 		{ "fec-offset",      0,    POPT_ARG_STRING, &popt_tmp,       3, N_("Starting offset on the FEC device"), N_("bytes") },
 		{ "hash",            'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
 		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },
-		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use."), NULL },
+		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use"), NULL },
 		{ "restart-on-corruption", 0,POPT_ARG_NONE,&opt_restart_on_corruption, 0, N_("Restart kernel if corruption is detected"), NULL },
 		{ "ignore-corruption", 0,  POPT_ARG_NONE, &opt_ignore_corruption,  0, N_("Ignore corruption, log it only"), NULL },
 		{ "ignore-zero-blocks", 0, POPT_ARG_NONE, &opt_ignore_zero_blocks, 0, N_("Do not verify zeroed blocks"), NULL },
-		{ "check-at-most-once", 0, POPT_ARG_NONE, &opt_check_at_most_once, 0, N_("Verify data block only the first time it is read."), NULL },
+		{ "check-at-most-once", 0, POPT_ARG_NONE, &opt_check_at_most_once, 0, N_("Verify data block only the first time it is read"), NULL },
 		POPT_TABLEEND
 	};
 
