@@ -635,7 +635,7 @@ static int benchmark_callback(uint32_t time_ms, void *usrptr)
 
 	check_signal(&r);
 	if (r)
-		log_err("Benchmark interrupted.\n");
+		log_err(_("Benchmark interrupted.\n"));
 	else
 		log_dbg("PBKDF benchmark: memory cost = %u, iterations = %u, "
 			"threads = %u (took %u ms)", pbkdf->max_memory_kb,
@@ -656,9 +656,9 @@ static int action_benchmark_kdf(const char *kdf, const char *hash, size_t key_si
 		r = crypt_benchmark_pbkdf(NULL, &pbkdf, "foo", 3, "bar", 3, key_size,
 					&benchmark_callback, &pbkdf);
 		if (r < 0)
-			log_std("PBKDF2-%-9s     N/A\n", hash);
+			log_std(_("PBKDF2-%-9s     N/A\n"), hash);
 		else
-			log_std("PBKDF2-%-9s %7u iterations per second for %zu-bit key\n",
+			log_std(_("PBKDF2-%-9s %7u iterations per second for %zu-bit key\n"),
 				hash, pbkdf.iterations, key_size * 8);
 	} else {
 		struct crypt_pbkdf_type pbkdf = {
@@ -672,11 +672,11 @@ static int action_benchmark_kdf(const char *kdf, const char *hash, size_t key_si
 			"0123456789abcdef0123456789abcdef", 32,
 			key_size, &benchmark_callback, &pbkdf);
 		if (r < 0)
-			log_std("%-10s N/A\n", kdf);
+			log_std(_("%-10s N/A\n"), kdf);
 		else
-			log_std("%-10s %4u iterations, %5u memory, "
+			log_std(_("%-10s %4u iterations, %5u memory, "
 				"%1u parallel threads (CPUs) for "
-				"%zu-bit key (requested %u ms time)\n", kdf,
+				"%zu-bit key (requested %u ms time)\n"), kdf,
 				pbkdf.iterations, pbkdf.max_memory_kb, pbkdf.parallel_threads,
 				key_size * 8, pbkdf.time_ms);
 	}
@@ -776,8 +776,9 @@ static int action_benchmark(void)
 					  key_size, iv_size,
 					  &enc_mbr, &dec_mbr);
 		if (!r) {
-			log_std(N_("#     Algorithm | Key |  Encryption |  Decryption\n"));
-			log_std("%11s-%s  %4db  %6.1f MiB/s  %6.1f MiB/s\n",
+			/* TRANSLATORS: The string is header of a table and must be exactly (right side) aligned. */
+			log_std(_("#     Algorithm |       Key |      Encryption |      Decryption\n"));
+			log_std("%11s-%s  %9db  %10.1f MiB/s  %10.1f MiB/s\n",
 				cipher, cipher_mode, key_size*8, enc_mbr, dec_mbr);
 		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available.\n"), opt_cipher);
@@ -799,15 +800,16 @@ static int action_benchmark(void)
 			if (r == -ENOENT)
 				skipped++;
 			if (i == 0)
-				log_std(N_("#     Algorithm | Key |  Encryption |  Decryption\n"));
+				/* TRANSLATORS: The string is header of a table and must be exactly (right side) aligned. */
+				log_std(_("#     Algorithm |       Key |      Encryption |      Decryption\n"));
 
 			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
 				 bciphers[i].cipher, bciphers[i].mode);
 			if (!r)
-				log_std("%15s  %4zub  %6.1f MiB/s  %6.1f MiB/s\n",
+				log_std("%15s  %9zub  %10.1f MiB/s  %10.1f MiB/s\n",
 					cipher, bciphers[i].key_size*8, enc_mbr, dec_mbr);
 			else
-				log_std("%15s  %4zub %13s %13s\n", cipher,
+				log_std("%15s  %9zub %17s %17s\n", cipher,
 					bciphers[i].key_size*8, _("N/A"), _("N/A"));
 		}
 		if (skipped && skipped == i)
@@ -967,9 +969,8 @@ static int action_luksFormat(void)
 
 	header_device = opt_header_device ?: action_argv[0];
 
-	if(asprintf(&msg, _("This will overwrite data on %s irrevocably."),
-		    header_device) == -1) {
-		log_err(_("memory allocation error in action_luksFormat"));
+	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), header_device);
+	if (r == -1) {
 		r = -ENOMEM;
 		goto out;
 	}
@@ -2183,7 +2184,7 @@ int main(int argc, const char **argv)
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF iteration time for LUKS (in ms)"), N_("msecs") },
 		{ "pbkdf",             '\0', POPT_ARG_STRING, &opt_pbkdf,               0, N_("PBKDF algorithm (for LUKS2): argon2i, argon2id, pbkdf2"), NULL },
 		{ "pbkdf-memory",      '\0', POPT_ARG_LONG, &opt_pbkdf_memory,          0, N_("PBKDF memory cost limit"), N_("kilobytes") },
-		{ "pbkdf-parallel",    '\0', POPT_ARG_LONG, &opt_pbkdf_parallel,        0, N_("PBKDF parallel cost "), N_("threads") },
+		{ "pbkdf-parallel",    '\0', POPT_ARG_LONG, &opt_pbkdf_parallel,        0, N_("PBKDF parallel cost"), N_("threads") },
 		{ "pbkdf-force-iterations",'\0',POPT_ARG_LONG, &opt_pbkdf_iterations,   0, N_("PBKDF iterations cost (forced, disables benchmark)"), NULL },
 		{ "priority",          '\0', POPT_ARG_STRING, &opt_priority,            0, N_("Keyslot priority: ignore, normal, prefer)"), NULL },
 		{ "disable-locks",     '\0', POPT_ARG_NONE, &opt_disable_locks,         0, N_("Disable locking of on-disk metadata"), NULL },

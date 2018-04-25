@@ -492,7 +492,7 @@ int main(int argc, const char **argv)
 		{ "interleave-sectors", '\0', POPT_ARG_INT,  &opt_interleave_sectors, 0, N_("Interleave sectors"), N_("SECTORS") },
 		{ "journal-watermark",  '\0', POPT_ARG_INT,  &opt_journal_watermark,  0, N_("Journal watermark"),N_("percent") },
 		{ "journal-commit-time",'\0', POPT_ARG_INT,  &opt_journal_commit_time,0, N_("Journal commit time"), N_("ms") },
-		{ "tag-size",            't', POPT_ARG_INT,  &opt_tag_size,           0, N_("Tag size per-sector"), N_("bytes") },
+		{ "tag-size",            't', POPT_ARG_INT,  &opt_tag_size,           0, N_("Tag size (per-sector)"), N_("bytes") },
 		{ "sector-size",         's', POPT_ARG_INT,  &opt_sector_size,        0, N_("Sector size"), N_("bytes") },
 		{ "buffer-sectors",     '\0', POPT_ARG_INT,  &opt_buffer_sectors,     0, N_("Buffers size"), N_("SECTORS") },
 

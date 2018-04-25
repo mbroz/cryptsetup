@@ -271,7 +271,7 @@ int LUKS2_builtin_token_create(struct crypt_device *cd,
 
 	r = th->set(&jobj_token, params);
 	if (r) {
-		log_err(cd, _("Failed to create builtin token %s\n"), type);
+		log_err(cd, _("Failed to create builtin token %s.\n"), type);
 		return r;
 	}
 
