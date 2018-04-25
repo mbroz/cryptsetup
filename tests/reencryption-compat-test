@@ -158,7 +158,7 @@ function check_slot() #space separeted list of ENABLED key slots
 function simple_scsi_reenc()
 {
 	echo -n "$1"
-	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF $SCSI_DEV || fail
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF $SCSI_DEV || fail
 
 	echo $PWD1 | $CRYPTSETUP luksOpen $SCSI_DEV $DEV_NAME || fail
 	HASH=$(sha256sum /dev/mapper/$DEV_NAME | cut -d' ' -f 1)
@@ -215,7 +215,7 @@ HASH4=2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74
 
 echo "[1] Reencryption"
 prepare 8192
-echo $PWD1 | $CRYPTSETUP -q luksFormat -s 128 -c aes-cbc-plain $FAST_PBKDF --align-payload 4096 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -s 128 -c aes-cbc-plain $FAST_PBKDF --align-payload 4096 $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF
@@ -233,7 +233,7 @@ check_hash $PWD1 $HASH1
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[2] Reencryption with data shift"
-echo $PWD1 | $CRYPTSETUP -q luksFormat -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF --align-payload 2048 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF --align-payload 2048 $LOOPDEV1 || fail
 wipe $PWD1
 echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 --reduce-device-size 1024S $FAST_PBKDF || fail
 check_hash $PWD1 $HASH2
@@ -242,7 +242,7 @@ check_hash $PWD1 $HASH2
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[3] Reencryption with keyfile"
-echo $PWD1 | $CRYPTSETUP -q luksFormat -d $KEY1 -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF --align-payload 4096 $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -d $KEY1 -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF --align-payload 4096 $LOOPDEV1 || fail
 wipe
 check_hash "" $HASH1
 echo $PWD1 | $CRYPTSETUP -q luksAddKey -d $KEY1 $LOOPDEV1 $FAST_PBKDF || fail
@@ -261,12 +261,12 @@ wipe_dev $LOOPDEV1
 dmsetup create $DEV_NAME2 --table "0 $(($SIZE - $OFFSET)) linear $LOOPDEV1 0" || fail
 check_hash_dev /dev/mapper/$DEV_NAME2 $HASH3
 dmsetup remove $DEV_NAME2 || fail
-echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --reduce-device-size "$OFFSET"S -q $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --type luks1 --reduce-device-size "$OFFSET"S -q $FAST_PBKDF
 check_hash $PWD1 $HASH3
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[5] Reencryption using specific keyslot"
-echo $PWD2 | $CRYPTSETUP -q luksFormat $FAST_PBKDF $LOOPDEV1 || fail
+echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
 echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF -S 1 $LOOPDEV1 || fail
 echo -e "$PWD2\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF -S 2 $LOOPDEV1 || fail
 echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF -S 3 $LOOPDEV1 || fail
@@ -308,7 +308,7 @@ simple_scsi_reenc "[4096/512 sector]"
 echo "[OK]"
 
 echo "[8] Header only reencryption (hash and iteration time)"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --hash sha1 $FAST_PBKDF $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 --hash sha1 $FAST_PBKDF $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --pbkdf-force-iterations 999 2>/dev/null && fail
@@ -326,7 +326,7 @@ $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
 echo "[9] Test log I/Os on various underlaying block devices"
 prepare 8192
-echo $PWD2 | $CRYPTSETUP -q luksFormat $FAST_PBKDF $LOOPDEV1 || fail
+echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
 add_scsi_device sector_size=512 dev_size_mb=32
 test_logging "[512 sector]" || fail
 add_scsi_device sector_size=4096 dev_size_mb=32
@@ -337,7 +337,7 @@ test_logging_tmpfs || fail
 
 echo "[10] Removal of encryption"
 prepare 8192
-echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt
@@ -346,7 +346,7 @@ check_hash_dev $LOOPDEV1 $HASH4
 echo "[11] Detached header - adding encryption/reencryption/decryption"
 prepare 8192
 check_hash_dev $IMG $HASH4
-echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new --type luks1
 check_hash $PWD1 $HASH4 $IMG_HDR
 echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR
 check_hash $PWD1 $HASH4 $IMG_HDR
@@ -354,7 +354,7 @@ echo $PWD1 | $REENC $LOOPDEV1 -q --header $IMG_HDR --decrypt
 check_hash_dev $IMG $HASH4
 # existing header of zero size
 cat /dev/null >$IMG_HDR
-echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new --type luks1
 check_hash $PWD1 $HASH4 $IMG_HDR
 $CRYPTSETUP isLuks $LOOPDEV1 && fail
 $CRYPTSETUP isLuks $IMG_HDR || fail

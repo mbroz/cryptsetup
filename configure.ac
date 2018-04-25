@@ -578,6 +578,19 @@ test -z "$with_luks2_lock_dir_perms" && with_luks2_lock_dir_perms=0700
 DEFAULT_LUKS2_LOCK_DIR_PERMS=$with_luks2_lock_dir_perms
 AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
 
+dnl Override default LUKS format version (for cryptsetup or cryptsetup-reencrypt format actions only).
+AC_ARG_WITH([default_luks_format],
+	AS_HELP_STRING([--with-default-luks-format=FORMAT], [default LUKS format version (LUKS1/LUKS2) [LUKS1]]),
+	[], with_default_luks_format=LUKS1
+)
+
+case $with_default_luks_format in
+	LUKS1) default_luks=CRYPT_LUKS1 ;;
+	LUKS2) default_luks=CRYPT_LUKS2 ;;
+	*) AC_MSG_ERROR([Unknown default LUKS format. Use LUKS1 or LUKS2 only.]) ;;
+esac
+AC_DEFINE_UNQUOTED([DEFAULT_LUKS_FORMAT], [$default_luks], [default LUKS format version])
+
 dnl ==========================================================================
 
 AC_CONFIG_FILES([ Makefile

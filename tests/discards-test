@@ -65,7 +65,7 @@ add_device dev_size_mb=16 sector_size=512 num_tgts=1 lbpu=1
 # for now just check that flag is enabled
 
 echo "[1] Allowing discards for LUKS device"
-echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q -i1 || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $DEV $DEV_NAME --allow-discards || fail
 $CRYPTSETUP status $DEV_NAME | grep flags | grep discards >/dev/null || fail
 $CRYPTSETUP resize $DEV_NAME --size 100 || fail

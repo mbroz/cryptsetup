@@ -916,37 +916,47 @@ static int _wipe_data_device(struct crypt_device *cd)
 
 static int action_luksFormat(void)
 {
-	int r = -EINVAL, keysize, integrity_keysize = 0, luks_version, fd;
+	int r = -EINVAL, keysize, integrity_keysize = 0, fd;
 	struct stat st;
-	const char *header_device;
+	const char *header_device, *type;
 	char *msg = NULL, *key = NULL, *password = NULL;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], integrity[MAX_CIPHER_LEN];
 	size_t passwordLen;
 	struct crypt_device *cd = NULL;
-	struct crypt_params_luks1 params = {
+	struct crypt_params_luks1 params1 = {
 		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
 		.data_alignment = opt_align_payload,
 		.data_device = opt_header_device ? action_argv[0] : NULL,
 	};
 	struct crypt_params_luks2 params2 = {
-		.data_alignment = params.data_alignment,
-		.data_device = params.data_device,
+		.data_alignment = params1.data_alignment,
+		.data_device = params1.data_device,
 		.sector_size = opt_sector_size,
 		.label = opt_label,
 		.subsystem = opt_subsystem
 	};
+	void *params;
 
-	if (!opt_type)
-		return -EINVAL;
-	else if (!strcmp(opt_type, "luks2"))
-		luks_version = 2;
-	else
-		luks_version = 1;
+	type = luksType(opt_type);
+	if (!type)
+		type = DEFAULT_LUKS_FORMAT;
 
-	if (opt_sector_size > SECTOR_SIZE && luks_version == 1) {
-		log_err(_("Unsupported encryption sector size."));
+	if (!strcmp(type, CRYPT_LUKS2)) {
+		params = &params2;
+	} else if (!strcmp(type, CRYPT_LUKS1)) {
+		params = &params1;
+
+		if (opt_sector_size > SECTOR_SIZE) {
+			log_err(_("Unsupported encryption sector size."));
+			return -EINVAL;
+		}
+
+		if (opt_integrity) {
+			log_err(_("Integrity option can be used only for LUKS2 format."));
+			return -EINVAL;
+		}
+	} else
 		return -EINVAL;
-	}
 
 	/* Create header file (must contain at least one sector)? */
 	if (opt_header_device && stat(opt_header_device, &st) < 0 && errno == ENOENT) {
@@ -983,11 +993,6 @@ static int action_luksFormat(void)
 				      cipher, NULL, cipher_mode);
 	if (r < 0) {
 		log_err(_("No known cipher specification pattern detected."));
-		goto out;
-	}
-
-	if (luks_version != 2 && opt_integrity) {
-		log_err(_("Integrity option can be used only for LUKS2 format."));
 		goto out;
 	}
 
@@ -1030,21 +1035,14 @@ static int action_luksFormat(void)
 			goto out;
 	}
 
-	if (luks_version == 1)
-		r = set_pbkdf_params(cd, CRYPT_LUKS1);
-	else
-		r = set_pbkdf_params(cd, CRYPT_LUKS2);
+	r = set_pbkdf_params(cd, type);
 	if (r) {
 		log_err(_("Failed to set pbkdf parameters."));
 		goto out;
 	}
 
-	if (luks_version == 1)
-		r = crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode,
-				 opt_uuid, key, keysize, &params);
-	else
-		r = crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode,
-				 opt_uuid, key, keysize, &params2);
+	r = crypt_format(cd, type, cipher, cipher_mode,
+			 opt_uuid, key, keysize, params);
 	check_signal(&r);
 	if (r < 0)
 		goto out;
@@ -2068,6 +2066,9 @@ static void help(poptContext popt_context,
 			 "<key slot> is the LUKS key slot number to modify\n"
 			 "<key file> optional key file for the new key for luksAddKey action\n"),
 			crypt_get_dir());
+
+		log_std(_("\nDefault compiled-in metadata format is %s (for luksFormat action).\n"),
+			  DEFAULT_LUKS_FORMAT);
 
 		pbkdf_luks1 = crypt_get_pbkdf_default(CRYPT_LUKS1);
 		pbkdf_luks2 = crypt_get_pbkdf_default(CRYPT_LUKS2);

@@ -58,10 +58,10 @@ format() # key_bits expected [forced]
 {
 	if [ -z "$3" ] ; then
 		echo -n "Formatting using topology info ($1 bits key)..."
-		echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -c aes-cbc-essiv:sha256 -s $1
+		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q -i1 -c aes-cbc-essiv:sha256 -s $1
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key)..."
-		echo $PWD1 | $CRYPTSETUP luksFormat $DEV -q -i1 -s $1 -c aes-cbc-essiv:sha256 --align-payload=$2
+		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q -i1 -s $1 -c aes-cbc-essiv:sha256 --align-payload=$2
 	fi
 
 	ALIGN=$($CRYPTSETUP luksDump $DEV |grep "Payload offset" | sed -e s/.*\\t//)
@@ -89,10 +89,10 @@ format_null()
 {
 	if [ $3 -eq 0 ] ; then
 		echo -n "Formatting using topology info ($1 bits key) [slot 0"
-		echo | $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1
+		echo | $CRYPTSETUP luksFormat --type luks1 $DEV -q -i1 -c null -s $1
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key) [slot 0"
-		echo | $CRYPTSETUP luksFormat $DEV -q -i1 -c null -s $1 --align-payload=$3
+		echo | $CRYPTSETUP luksFormat --type luks1 $DEV -q -i1 -c null -s $1 --align-payload=$3
 	fi
 
 	POFF=$(get_offsets "Payload offset")
@@ -232,8 +232,8 @@ for file in $(ls img_fs_*.img.bz2) ; do
     bzip2 -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
     [ ! -d $MNT_DIR ] && mkdir $MNT_DIR
     mount $DEV $MNT_DIR || skip "Mounting image is not available."
-    echo $PWD1 | $CRYPTSETUP luksFormat -i 1 $MNT_DIR/luks.img || fail
-    echo $PWD2 | $CRYPTSETUP luksFormat -i 1 $MNT_DIR/luks.img --header $MNT_DIR/luks_header.img || fail
+    echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 -i 1 $MNT_DIR/luks.img || fail
+    echo $PWD2 | $CRYPTSETUP luksFormat --type luks1 -i 1 $MNT_DIR/luks.img --header $MNT_DIR/luks_header.img || fail
     umount $MNT_DIR
 done
 cleanup
