@@ -1212,7 +1212,8 @@ static int action_luksKillSlot(void)
 		log_err(_("Keyslot %d is not active."), opt_key_slot);
 		/* fall through */
 	case CRYPT_SLOT_INVALID:
-		return -EINVAL;
+		r = -EINVAL;
+		goto out;
 	}
 
 	if (!opt_batch_mode || opt_key_file || !isatty(STDIN_FILENO)) {
