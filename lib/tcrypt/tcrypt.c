@@ -472,14 +472,14 @@ static int TCRYPT_pool_keyfile(struct crypt_device *cd,
 
 	fd = open(keyfile, O_RDONLY);
 	if (fd < 0) {
-		log_err(cd, _("Failed to open key file.\n"));
+		log_err(cd, _("Failed to open key file."));
 		goto out;
 	}
 
 	data_size = read_buffer(fd, data, TCRYPT_KEYFILE_LEN);
 	close(fd);
 	if (data_size < 0) {
-		log_err(cd, _("Error reading keyfile %s.\n"), keyfile);
+		log_err(cd, _("Error reading keyfile %s."), keyfile);
 		goto out;
 	}
 
@@ -519,7 +519,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		passphrase_size = params->passphrase_size;
 
 	if (params->passphrase_size > TCRYPT_KEY_POOL_LEN) {
-		log_err(cd, _("Maximum TCRYPT passphrase length (%d) exceeded.\n"),
+		log_err(cd, _("Maximum TCRYPT passphrase length (%d) exceeded."),
 			      TCRYPT_KEY_POOL_LEN);
 		goto out;
 	}
@@ -560,7 +560,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 				key, TCRYPT_HDR_KEY_LEN,
 				iterations, 0, 0);
 		if (r < 0 && crypt_hash_size(tcrypt_kdf[i].hash) < 0) {
-			log_verbose(cd, _("PBKDF2 hash algorithm %s not available, skipping.\n"),
+			log_verbose(cd, _("PBKDF2 hash algorithm %s not available, skipping."),
 				      tcrypt_kdf[i].hash);
 			continue;
 		}
@@ -578,9 +578,9 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	}
 
 	if ((r < 0 && r != -EPERM && skipped && skipped == i) || r == -ENOTSUP) {
-		log_err(cd, _("Required kernel crypto interface not available.\n"));
+		log_err(cd, _("Required kernel crypto interface not available."));
 #ifdef ENABLE_AF_ALG
-		log_err(cd, _("Ensure you have algif_skcipher kernel module loaded.\n"));
+		log_err(cd, _("Ensure you have algif_skcipher kernel module loaded."));
 #endif
 	}
 	if (r < 0)
@@ -637,7 +637,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		devfd = device_open(device, O_RDONLY);
 
 	if (devfd < 0) {
-		log_err(cd, _("Cannot open device %s.\n"), device_path(device));
+		log_err(cd, _("Cannot open device %s."), device_path(device));
 		return -EINVAL;
 	}
 
@@ -726,13 +726,13 @@ int TCRYPT_activate(struct crypt_device *cd,
 	}
 
 	if (hdr->d.sector_size && hdr->d.sector_size != SECTOR_SIZE) {
-		log_err(cd, _("Activation is not supported for %d sector size.\n"),
+		log_err(cd, _("Activation is not supported for %d sector size."),
 			hdr->d.sector_size);
 		return -ENOTSUP;
 	}
 
 	if (strstr(params->mode, "-tcrypt")) {
-		log_err(cd, _("Kernel doesn't support activation for this TCRYPT legacy mode.\n"));
+		log_err(cd, _("Kernel doesn't support activation for this TCRYPT legacy mode."));
 		return -ENOTSUP;
 	}
 
@@ -766,7 +766,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 						       dmd.u.crypt.offset, dmd.size);
 		if (part_path) {
 			if (!device_alloc(&part_device, part_path)) {
-				log_verbose(cd, _("Activating TCRYPT system encryption for partition %s.\n"),
+				log_verbose(cd, _("Activating TCRYPT system encryption for partition %s."),
 					    part_path);
 				dmd.data_device = part_device;
 				dmd.u.crypt.offset = 0;
@@ -834,7 +834,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 
 	if (r < 0 &&
 	    (dm_flags(DM_CRYPT, &dmc_flags) || ((dmc_flags & req_flags) != req_flags))) {
-		log_err(cd, _("Kernel doesn't support TCRYPT compatible mapping.\n"));
+		log_err(cd, _("Kernel doesn't support TCRYPT compatible mapping."));
 		r = -ENOTSUP;
 	}
 

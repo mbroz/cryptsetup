@@ -474,7 +474,7 @@ static int luks_header_in_use(struct crypt_device *cd)
 
 	r = lookup_dm_dev_by_uuid(crypt_get_uuid(cd), crypt_get_type(cd));
 	if (r < 0)
-		log_err(cd, _("Can not check status of device with uuid: %s.\n"), crypt_get_uuid(cd));
+		log_err(cd, _("Can not check status of device with uuid: %s."), crypt_get_uuid(cd));
 
 	return r;
 }
@@ -500,7 +500,7 @@ static int luksmeta_header_present(struct crypt_device *cd, off_t luks1_size)
 	if (read_lseek_blockwise(devfd, device_block_size(device), device_alignment(device),
 		buf, sizeof(LM_MAGIC), luks1_size) == (ssize_t)sizeof(LM_MAGIC) &&
 		!memcmp(LM_MAGIC, buf, sizeof(LM_MAGIC))) {
-			log_err(cd, _("Unable to convert header with LUKSMETA additional metadata.\n"));
+			log_err(cd, _("Unable to convert header with LUKSMETA additional metadata."));
 			r = -EBUSY;
 	}
 
@@ -537,7 +537,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	log_dbg("Max size: %" PRIu64 ", LUKS1 (full) header size %zu , required shift: %zu",
 		max_size, luks1_size, luks1_shift);
 	if ((max_size - luks1_size) < luks1_shift) {
-		log_err(cd, _("Unable to move keyslot area. Not enough space.\n"));
+		log_err(cd, _("Unable to move keyslot area. Not enough space."));
 		return -EINVAL;
 	}
 
@@ -577,7 +577,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	buf_offset = 2 * LUKS2_HDR_16K_LEN;
 	buf_size   = luks1_size - LUKS_ALIGN_KEYSLOTS;
 	if ((r = move_keyslot_areas(cd, 8 * SECTOR_SIZE, buf_offset, buf_size)) < 0) {
-		log_err(cd, _("Unable to move keyslot area.\n"));
+		log_err(cd, _("Unable to move keyslot area."));
 		goto out;
 	}
 
@@ -665,7 +665,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	if (!json_object_object_get_ex(jobj_digest, "type", &jobj2) ||
 	    strcmp(json_object_get_string(jobj2), "pbkdf2") ||
 	    json_object_object_length(jobj1) != 1) {
-		log_err(cd, _("Cannot convert to LUKS1 format - key slot digests are not LUKS1 compatible.\n"));
+		log_err(cd, _("Cannot convert to LUKS1 format - key slot digests are not LUKS1 compatible."));
 		return -EINVAL;
 	}
 
@@ -674,7 +674,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return r;
 
 	if (crypt_cipher_wrapped_key(cipher)) {
-		log_err(cd, _("Cannot convert to LUKS1 format - device uses wrapped key cipher %s.\n"), cipher);
+		log_err(cd, _("Cannot convert to LUKS1 format - device uses wrapped key cipher %s."), cipher);
 		return -EINVAL;
 	}
 
@@ -682,7 +682,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	if (r < 0)
 		return r;
 	if (r > 0) {
-		log_err(cd, _("Cannot convert to LUKS1 format - LUKS2 header contains %u token(s).\n"), r);
+		log_err(cd, _("Cannot convert to LUKS1 format - LUKS2 header contains %u token(s)."), r);
 		return -EINVAL;
 	}
 
@@ -696,17 +696,17 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 			continue;
 
 		if (LUKS2_keyslot_info(hdr2, i) == CRYPT_SLOT_INVALID) {
-			log_err(cd, _("Cannot convert to LUKS1 format - keyslot %u is in invalid state.\n"), i);
+			log_err(cd, _("Cannot convert to LUKS1 format - keyslot %u is in invalid state."), i);
 			return -EINVAL;
 		}
 
 		if (i >= LUKS_NUMKEYS) {
-			log_err(cd, _("Cannot convert to LUKS1 format - slot %u (over maximum slots) is still active.\n"), i);
+			log_err(cd, _("Cannot convert to LUKS1 format - slot %u (over maximum slots) is still active."), i);
 			return -EINVAL;
 		}
 
 		if (!keyslot_LUKS1_compatible(hdr2, i, key_size)) {
-			log_err(cd, _("Cannot convert to LUKS1 format - keyslot %u is not LUKS1 compatible.\n"), i);
+			log_err(cd, _("Cannot convert to LUKS1 format - keyslot %u is not LUKS1 compatible."), i);
 			return -EINVAL;
 		}
 	}
@@ -843,7 +843,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	buf_size   = LUKS2_keyslots_size(hdr2->jobj);
 	r = move_keyslot_areas(cd, buf_offset, 8 * SECTOR_SIZE, buf_size);
 	if (r < 0) {
-		log_err(cd, _("Unable to move keyslot area.\n"));
+		log_err(cd, _("Unable to move keyslot area."));
 		return r;
 	}
 

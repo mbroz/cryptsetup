@@ -37,13 +37,13 @@ static void _error_hint(struct crypt_device *ctx, const char *device,
 		return;
 
 	log_err(ctx, _("Failed to setup dm-crypt key mapping for device %s.\n"
-			"Check that kernel supports %s cipher (check syslog for more info).\n"),
+			"Check that kernel supports %s cipher (check syslog for more info)."),
 			device, cipher_spec);
 
 	if (!strncmp(mode, "xts", 3) && (keyLength != 256 && keyLength != 512))
-		log_err(ctx, _("Key size in XTS mode must be 256 or 512 bits.\n"));
+		log_err(ctx, _("Key size in XTS mode must be 256 or 512 bits."));
 	else if (!(c = strchr(mode, '-')) || strlen(c) < 4)
-		log_err(ctx, _("Cipher specification should be in [cipher]-[mode]-[iv] format.\n"));
+		log_err(ctx, _("Cipher specification should be in [cipher]-[mode]-[iv] format."));
 }
 
 static int LUKS_endec_template(char *src, size_t srcLength,
@@ -98,13 +98,13 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	r = device_block_adjust(ctx, dmd.data_device, DEV_OK,
 				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
 	if (r < 0) {
-		log_err(ctx, _("Device %s doesn't exist or access denied.\n"),
+		log_err(ctx, _("Device %s doesn't exist or access denied."),
 			device_path(dmd.data_device));
 		return -EIO;
 	}
 
 	if (mode != O_RDONLY && dmd.flags & CRYPT_ACTIVATE_READONLY) {
-		log_err(ctx, _("Cannot write to device %s, permission denied.\n"),
+		log_err(ctx, _("Cannot write to device %s, permission denied."),
 			device_path(dmd.data_device));
 		return -EACCES;
 	}
@@ -119,14 +119,14 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 	devfd = open(path, mode | O_DIRECT | O_SYNC);
 	if (devfd == -1) {
-		log_err(ctx, _("Failed to open temporary keystore device.\n"));
+		log_err(ctx, _("Failed to open temporary keystore device."));
 		r = -EIO;
 		goto out;
 	}
 
 	r = func(devfd, bsize, alignment, src, srcLength);
 	if (r < 0) {
-		log_err(ctx, _("Failed to access temporary keystore device.\n"));
+		log_err(ctx, _("Failed to access temporary keystore device."));
 		r = -EIO;
 	} else
 		r = 0;
@@ -196,7 +196,7 @@ out:
 	if (devfd >= 0)
 		close(devfd);
 	if (r)
-		log_err(ctx, _("IO error while encrypting keyslot.\n"));
+		log_err(ctx, _("IO error while encrypting keyslot."));
 
 	return r;
 }
@@ -258,7 +258,7 @@ bad:
 	if (devfd >= 0)
 		close(devfd);
 
-	log_err(ctx, _("IO error while decrypting keyslot.\n"));
+	log_err(ctx, _("IO error while decrypting keyslot."));
 	crypt_storage_destroy(s);
 
 	return r;

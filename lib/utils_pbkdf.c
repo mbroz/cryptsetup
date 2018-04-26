@@ -71,7 +71,7 @@ int verify_pbkdf_params(struct crypt_device *cd,
 	/* TODO: initialise crypto and check the hash and pbkdf are both available */
 	r = crypt_parse_pbkdf(pbkdf->type, &pbkdf_type);
 	if (r < 0) {
-		log_err(cd, _("Unknown PBKDF type %s.\n"), pbkdf->type);
+		log_err(cd, _("Unknown PBKDF type %s."), pbkdf->type);
 		return r;
 	}
 
@@ -82,18 +82,18 @@ int verify_pbkdf_params(struct crypt_device *cd,
 	if (crypt_get_type(cd) &&
 	    !strcmp(crypt_get_type(cd), CRYPT_LUKS1) &&
 	    strcmp(pbkdf_type, CRYPT_KDF_PBKDF2)) {
-		log_err(cd, _("Requested PBKDF type is not supported for LUKS1.\n"));
+		log_err(cd, _("Requested PBKDF type is not supported for LUKS1."));
 		return -EINVAL;
 	}
 
 	if (!strcmp(pbkdf_type, CRYPT_KDF_PBKDF2)) {
 		if (pbkdf->max_memory_kb || pbkdf->parallel_threads) {
-			log_err(cd, _("PBKDF max memory or parallel threads must not be set with pbkdf2.\n"));
+			log_err(cd, _("PBKDF max memory or parallel threads must not be set with pbkdf2."));
 			return -EINVAL;
 		}
 		if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK &&
 		    pbkdf->iterations < pbkdf_limits.min_iterations) {
-			log_err(cd, _("Forced iteration count is too low for %s (minimum is %u).\n"),
+			log_err(cd, _("Forced iteration count is too low for %s (minimum is %u)."),
 				pbkdf_type, pbkdf_limits.min_iterations);
 			return -EINVAL;
 		}
@@ -103,32 +103,32 @@ int verify_pbkdf_params(struct crypt_device *cd,
 	/* TODO: properly define minimal iterations and also minimal memory values */
 	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK) {
 		if (pbkdf->iterations < pbkdf_limits.min_iterations) {
-			log_err(cd, _("Forced iteration count is too low for %s (minimum is %u).\n"),
+			log_err(cd, _("Forced iteration count is too low for %s (minimum is %u)."),
 				pbkdf_type, pbkdf_limits.min_iterations);
 			r = -EINVAL;
 		}
 		if (pbkdf->max_memory_kb < pbkdf_limits.min_memory) {
-			log_err(cd, _("Forced memory cost is too low for %s (minimum is %u kilobytes).\n"),
+			log_err(cd, _("Forced memory cost is too low for %s (minimum is %u kilobytes)."),
 				pbkdf_type, pbkdf_limits.min_memory);
 			r = -EINVAL;
 		}
 	}
 
 	if (pbkdf->max_memory_kb > pbkdf_limits.max_memory) {
-		log_err(cd, _("Requested maximum PBKDF memory cost is too high (maximum is %d kilobytes).\n"),
+		log_err(cd, _("Requested maximum PBKDF memory cost is too high (maximum is %d kilobytes)."),
 			pbkdf_limits.max_memory);
 		r = -EINVAL;
 	}
 	if (!pbkdf->max_memory_kb) {
-		log_err(cd, _("Requested maximum PBKDF memory can not be zero.\n"));
+		log_err(cd, _("Requested maximum PBKDF memory can not be zero."));
 		r = -EINVAL;
 	}
 	if (!pbkdf->parallel_threads) {
-		log_err(cd, _("Requested PBKDF parallel threads can not be zero.\n"));
+		log_err(cd, _("Requested PBKDF parallel threads can not be zero."));
 		r = -EINVAL;
 	}
 	if (!pbkdf->time_ms) {
-		log_err(cd, _("Requested PBKDF target time can not be zero.\n"));
+		log_err(cd, _("Requested PBKDF target time can not be zero."));
 		r = -EINVAL;
 	}
 

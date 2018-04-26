@@ -56,7 +56,7 @@ static int verify_zero(struct crypt_device *cd, FILE *wr, size_t bytes)
 	}
 	for (i = 0; i < bytes; i++)
 		if (block[i]) {
-			log_err(cd, _("Spare area is not zeroed at position %" PRIu64 ".\n"),
+			log_err(cd, _("Spare area is not zeroed at position %" PRIu64 "."),
 				ftello(wr) - bytes);
 			return -EPERM;
 		}
@@ -157,7 +157,7 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 
 	if (mult_overflow(&seek_rd, data_block, data_block_size) ||
 	    mult_overflow(&seek_wr, hash_block, hash_block_size)) {
-		log_err(cd, _("Device offset overflow.\n"));
+		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
 
@@ -197,7 +197,7 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 					return -EIO;
 				}
 				if (memcmp(read_digest, calculated_digest, digest_size)) {
-					log_err(cd, _("Verification failed at position %" PRIu64 ".\n"),
+					log_err(cd, _("Verification failed at position %" PRIu64 "."),
 						ftello(rd) - data_block_size);
 					return -EPERM;
 				}
@@ -270,7 +270,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		device_path(hash_device), hash_position);
 
 	if (data_blocks < 0 || hash_position < 0) {
-		log_err(cd, _("Invalid size parameters for verity device.\n"));
+		log_err(cd, _("Invalid size parameters for verity device."));
 		return -EINVAL;
 	}
 
@@ -284,20 +284,20 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		data_file_blocks = data_blocks;
 
 	if (mult_overflow(&data_device_size, data_blocks, data_block_size)) {
-		log_err(cd, _("Device offset overflow.\n"));
+		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
 
 	if (hash_levels(hash_block_size, digest_size, data_file_blocks, &hash_position,
 		&levels, &hash_level_block[0], &hash_level_size[0])) {
-		log_err(cd, _("Hash area overflow.\n"));
+		log_err(cd, _("Hash area overflow."));
 		return -EINVAL;
 	}
 
 	log_dbg("Using %d hash levels.", levels);
 
 	if (mult_overflow(&hash_device_size, hash_position, hash_block_size)) {
-		log_err(cd, _("Device offset overflow.\n"));
+		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
 
@@ -305,7 +305,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		data_device_size);
 	data_file = fopen(device_path(data_device), "r");
 	if (!data_file) {
-		log_err(cd, _("Cannot open device %s.\n"),
+		log_err(cd, _("Cannot open device %s."),
 			device_path(data_device)
 		);
 		r = -EIO;
@@ -316,7 +316,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		hash_device_size);
 	hash_file = fopen(device_path(hash_device), verify ? "r" : "r+");
 	if (!hash_file) {
-		log_err(cd, _("Cannot open device %s.\n"),
+		log_err(cd, _("Cannot open device %s."),
 			device_path(hash_device));
 		r = -EIO;
 		goto out;
@@ -336,7 +336,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 		} else {
 			hash_file_2 = fopen(device_path(hash_device), "r");
 			if (!hash_file_2) {
-				log_err(cd, _("Cannot open device %s.\n"),
+				log_err(cd, _("Cannot open device %s."),
 					device_path(hash_device));
 				r = -EIO;
 				goto out;
@@ -367,20 +367,20 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 out:
 	if (verify) {
 		if (r)
-			log_err(cd, _("Verification of data area failed.\n"));
+			log_err(cd, _("Verification of data area failed."));
 		else {
 			log_dbg("Verification of data area succeeded.");
 			r = memcmp(root_hash, calculated_digest, digest_size) ? -EPERM : 0;
 			if (r)
-				log_err(cd, _("Verification of root hash failed.\n"));
+				log_err(cd, _("Verification of root hash failed."));
 			else
 				log_dbg("Verification of root hash succeeded.");
 		}
 	} else {
 		if (r == -EIO)
-			log_err(cd, _("Input/output error while creating hash area.\n"));
+			log_err(cd, _("Input/output error while creating hash area."));
 		else if (r)
-			log_err(cd, _("Creation of hash area failed.\n"));
+			log_err(cd, _("Creation of hash area failed."));
 		else {
 			fsync(fileno(hash_file));
 			memcpy(root_hash, calculated_digest, digest_size);
@@ -428,7 +428,7 @@ int VERITY_create(struct crypt_device *cd,
 
 	if (verity_hdr->data_block_size > pgsize)
 		log_err(cd, _("WARNING: Kernel cannot activate device if data "
-			      "block size exceeds page size (%u).\n"), pgsize);
+			      "block size exceeds page size (%u)."), pgsize);
 
 	return VERITY_create_or_verify_hash(cd, 0,
 		verity_hdr->hash_type,

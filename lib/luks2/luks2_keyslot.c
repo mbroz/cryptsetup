@@ -426,7 +426,7 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	/* Just check that nobody uses the metadata now */
 	r = device_write_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire write lock on device %s.\n"),
+		log_err(cd, _("Failed to acquire write lock on device %s."),
 			device_path(device));
 		return r;
 	}
@@ -443,11 +443,11 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 			      area_length, area_length, NULL, NULL);
 		if (r) {
 			if (r == -EACCES) {
-				log_err(cd, _("Cannot write to device %s, permission denied.\n"),
+				log_err(cd, _("Cannot write to device %s, permission denied."),
 					device_path(device));
 				r = -EINVAL;
 			} else
-				log_err(cd, _("Cannot wipe device %s.\n"), device_path(device));
+				log_err(cd, _("Cannot wipe device %s."), device_path(device));
 			return r;
 		}
 	}

@@ -78,7 +78,7 @@ int crypt_memlock_inc(struct crypt_device *ctx)
 		}
 		errno = 0;
 		if (((_priority = getpriority(PRIO_PROCESS, 0)) == -1) && errno)
-			log_err(ctx, _("Cannot get process priority.\n"));
+			log_err(ctx, _("Cannot get process priority."));
 		else
 			if (setpriority(PRIO_PROCESS, 0, DEFAULT_PROCESS_PRIORITY))
 				log_dbg("setpriority %d failed: %s",
@@ -92,7 +92,7 @@ int crypt_memlock_dec(struct crypt_device *ctx)
 	if (_memlock_count && (!--_memlock_count)) {
 		log_dbg("Unlocking memory.");
 		if (munlockall() == -1)
-			log_err(ctx, _("Cannot unlock memory.\n"));
+			log_err(ctx, _("Cannot unlock memory."));
 		if (setpriority(PRIO_PROCESS, 0, _priority))
 			log_dbg("setpriority %d failed: %s", _priority, strerror(errno));
 	}
@@ -166,12 +166,12 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 
 	fd = keyfile ? open(keyfile, O_RDONLY) : STDIN_FILENO;
 	if (fd < 0) {
-		log_err(cd, _("Failed to open key file.\n"));
+		log_err(cd, _("Failed to open key file."));
 		return -EINVAL;
 	}
 
 	if (isatty(fd)) {
-		log_err(cd, _("Cannot read keyfile from a terminal.\n"));
+		log_err(cd, _("Cannot read keyfile from a terminal."));
 		r = -EINVAL;
 		goto out_err;
 	}
@@ -188,7 +188,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	regular_file = 0;
 	if (keyfile) {
 		if (stat(keyfile, &st) < 0) {
-			log_err(cd, _("Failed to stat key file.\n"));
+			log_err(cd, _("Failed to stat key file."));
 			goto out_err;
 		}
 		if (S_ISREG(st.st_mode)) {
@@ -196,7 +196,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 			file_read_size = (uint64_t)st.st_size;
 
 			if (keyfile_offset > file_read_size) {
-				log_err(cd, _("Cannot seek to requested keyfile offset.\n"));
+				log_err(cd, _("Cannot seek to requested keyfile offset."));
 				goto out_err;
 			}
 			file_read_size -= keyfile_offset;
@@ -211,13 +211,13 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 
 	pass = crypt_safe_alloc(buflen);
 	if (!pass) {
-		log_err(cd, _("Out of memory while reading passphrase.\n"));
+		log_err(cd, _("Out of memory while reading passphrase."));
 		goto out_err;
 	}
 
 	/* Discard keyfile_offset bytes on input */
 	if (keyfile_offset && keyfile_seek(fd, keyfile_offset) < 0) {
-		log_err(cd, _("Cannot seek to requested keyfile offset.\n"));
+		log_err(cd, _("Cannot seek to requested keyfile offset."));
 		goto out_err;
 	}
 
@@ -226,7 +226,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 			buflen += 4096;
 			pass = crypt_safe_realloc(pass, buflen);
 			if (!pass) {
-				log_err(cd, _("Out of memory while reading passphrase.\n"));
+				log_err(cd, _("Out of memory while reading passphrase."));
 				r = -ENOMEM;
 				goto out_err;
 			}
@@ -246,7 +246,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 		}
 		char_read = read_buffer(fd, &pass[i], char_to_read);
 		if (char_read < 0) {
-			log_err(cd, _("Error reading passphrase.\n"));
+			log_err(cd, _("Error reading passphrase."));
 			r = -EPIPE;
 			goto out_err;
 		}
@@ -270,12 +270,12 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 
 	/* Fail if we exceeded internal default (no specified size) */
 	if (unlimited_read && i == keyfile_size_max) {
-		log_err(cd, _("Maximum keyfile size exceeded.\n"));
+		log_err(cd, _("Maximum keyfile size exceeded."));
 		goto out_err;
 	}
 
 	if (!unlimited_read && i != keyfile_size_max) {
-		log_err(cd, _("Cannot read requested amount of data.\n"));
+		log_err(cd, _("Cannot read requested amount of data."));
 		goto out_err;
 	}
 

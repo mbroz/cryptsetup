@@ -96,7 +96,7 @@ int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	if (get_max_offset(cd) && (offset + length) > get_max_offset(cd)) {
-		log_err(cd, _("No space for new keyslot.\n"));
+		log_err(cd, _("No space for new keyslot."));
 		return -EINVAL;
 	}
 
@@ -142,7 +142,7 @@ int LUKS2_generate_hdr(
 	crypt_random_get(NULL, (char*)hdr->salt2, LUKS2_SALT_L, CRYPT_RND_SALT);
 
 	if (uuid && uuid_parse(uuid, partitionUuid) == -1) {
-		log_err(cd, _("Wrong LUKS UUID format provided.\n"));
+		log_err(cd, _("Wrong LUKS UUID format provided."));
 		return -EINVAL;
 	}
 	if (!uuid)

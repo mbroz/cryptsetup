@@ -37,7 +37,7 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 #ifndef ENABLE_AF_ALG /* Support for old kernel without Crypto API */
 	int r = device_write_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire write lock on device %s.\n"), device_path(device));
+		log_err(cd, _("Failed to acquire write lock on device %s."), device_path(device));
 		return r;
 	}
 	r = LUKS_encrypt_to_storage(src, srcLength, cipher, cipher_mode, vk, sector, cd);
@@ -66,7 +66,7 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 
 	r = device_write_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire write lock on device %s.\n"),
+		log_err(cd, _("Failed to acquire write lock on device %s."),
 			device_path(device));
 		return r;
 	}
@@ -86,7 +86,7 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	device_write_unlock(device);
 
 	if (r)
-		log_err(cd, _("IO error while encrypting keyslot.\n"));
+		log_err(cd, _("IO error while encrypting keyslot."));
 
 	return r;
 #endif
@@ -100,7 +100,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 #ifndef ENABLE_AF_ALG /* Support for old kernel without Crypto API */
 	int r = device_read_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire read lock on device %s.\n"), device_path(device));
+		log_err(cd, _("Failed to acquire read lock on device %s."), device_path(device));
 		return r;
 	}
 	r = LUKS_decrypt_from_storage(dst, dstLength, cipher, cipher_mode, vk, sector, cd);
@@ -123,7 +123,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 
 	r = device_read_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire read lock on device %s.\n"),
+		log_err(cd, _("Failed to acquire read lock on device %s."),
 			device_path(device));
 		crypt_storage_destroy(s);
 		return r;
@@ -147,7 +147,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 	if (!r)
 		r = crypt_storage_decrypt(s, 0, dstLength / SECTOR_SIZE, dst);
 	else
-		log_err(cd, _("IO error while decrypting keyslot.\n"));
+		log_err(cd, _("IO error while decrypting keyslot."));
 
 	crypt_storage_destroy(s);
 	return r;

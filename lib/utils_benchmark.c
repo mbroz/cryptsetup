@@ -301,7 +301,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 	}
 
 	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK) {
-		log_err(cd, _("PBKDF benchmark disabled but iterations not set.\n"));
+		log_err(cd, _("PBKDF benchmark disabled but iterations not set."));
 		return -EINVAL;
 	}
 
@@ -323,7 +323,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 					volume_key_size, &benchmark_callback, pbkdf);
 		pbkdf->time_ms = ms_tmp;
 		if (r < 0) {
-			log_err(cd, _("Not compatible PBKDF2 options (using hash algorithm %s).\n"),
+			log_err(cd, _("Not compatible PBKDF2 options (using hash algorithm %s)."),
 				pbkdf->hash);
 			return r;
 		}
@@ -337,7 +337,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 			"0123456789abcdef0123456789abcdef", 32,
 			volume_key_size, &benchmark_callback, pbkdf);
 		if (r < 0)
-			log_err(cd, _("Not compatible PBKDF options.\n"));
+			log_err(cd, _("Not compatible PBKDF options."));
 	}
 
 	return r;

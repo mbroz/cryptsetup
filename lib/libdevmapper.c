@@ -96,7 +96,6 @@ static void set_dm_error(int level,
 	if (vasprintf(&msg, f, va) > 0) {
 		if (level < 4 && !_quiet_log) {
 			log_err(_context, "%s", msg);
-			log_err(_context, "\n");
 		} else {
 			/* We do not use DM visual stack backtrace here */
 			if (strncmp(msg, "<backtrace>", 11))
@@ -330,10 +329,10 @@ static int dm_init_context(struct crypt_device *cd, dm_target_type target)
 	if (!_dm_check_versions(target)) {
 		if (getuid() || geteuid())
 			log_err(cd, _("Cannot initialize device-mapper, "
-				      "running as non-root user.\n"));
+				      "running as non-root user."));
 		else
 			log_err(cd, _("Cannot initialize device-mapper. "
-				      "Is dm_mod kernel module loaded?\n"));
+				      "Is dm_mod kernel module loaded?"));
 		_context = NULL;
 		return -ENOTSUP;
 	}
@@ -936,7 +935,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 
 	dm_flags(DM_UNKNOWN, &dmt_flags);
 	if (deferred && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
-		log_err(cd, _("Requested deferred flag is not supported.\n"));
+		log_err(cd, _("Requested deferred flag is not supported."));
 		return -ENOTSUP;
 	}
 
@@ -1001,7 +1000,7 @@ static int dm_prepare_uuid(const char *name, const char *type, const char *uuid,
 
 	log_dbg("DM-UUID is %s", buf);
 	if (i >= buflen)
-		log_err(NULL, _("DM-UUID for device %s was truncated.\n"), name);
+		log_err(NULL, _("DM-UUID for device %s was truncated."), name);
 
 	return 1;
 }
@@ -1221,24 +1220,24 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (r == -EINVAL &&
 	    dmd_flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) &&
 	    !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
-		log_err(cd, _("Requested dm-crypt performance options are not supported.\n"));
+		log_err(cd, _("Requested dm-crypt performance options are not supported."));
 
 	if (r == -EINVAL && dmd_flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
 					  CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
 					  CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS|
 					  CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) &&
 	    !(dmt_flags & DM_VERITY_ON_CORRUPTION_SUPPORTED))
-		log_err(cd, _("Requested dm-verity data corruption handling options are not supported.\n"));
+		log_err(cd, _("Requested dm-verity data corruption handling options are not supported."));
 
 	if (r == -EINVAL && dmd->target == DM_VERITY && dmd->u.verity.fec_device &&
 	    !(dmt_flags & DM_VERITY_FEC_SUPPORTED))
-		log_err(cd, _("Requested dm-verity FEC options are not supported.\n"));
+		log_err(cd, _("Requested dm-verity FEC options are not supported."));
 
 	if (r == -EINVAL && dmd->target == DM_CRYPT) {
 		if (dmd->u.crypt.integrity && !(dmt_flags & DM_INTEGRITY_SUPPORTED))
-			log_err(cd, _("Requested data integrity options are not supported.\n"));
+			log_err(cd, _("Requested data integrity options are not supported."));
 		if (dmd->u.crypt.sector_size != SECTOR_SIZE && !(dmt_flags & DM_SECTOR_SIZE_SUPPORTED))
-			log_err(cd, _("Requested sector_size option is not supported.\n"));
+			log_err(cd, _("Requested sector_size option is not supported."));
 	}
 out:
 	crypt_safe_free(table_params);

@@ -263,7 +263,7 @@ int LUKS2_builtin_token_create(struct crypt_device *cd,
 
 	if (token == CRYPT_ANY_TOKEN) {
 		if ((token = LUKS2_token_find_free(hdr)) < 0)
-			log_err(cd, _("No free token slot\n"));
+			log_err(cd, _("No free token slot."));
 	}
 	if (token < 0 || token >= LUKS2_TOKENS_MAX)
 		return -EINVAL;
@@ -271,7 +271,7 @@ int LUKS2_builtin_token_create(struct crypt_device *cd,
 
 	r = th->set(&jobj_token, params);
 	if (r) {
-		log_err(cd, _("Failed to create builtin token %s.\n"), type);
+		log_err(cd, _("Failed to create builtin token %s."), type);
 		return r;
 	}
 

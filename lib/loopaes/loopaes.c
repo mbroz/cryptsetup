@@ -87,7 +87,7 @@ static int hash_keys(struct crypt_device *cd,
 	tweak = get_tweak(keys_count);
 
 	if (!keys_count || !key_len_output || !hash_name || !key_len_input) {
-		log_err(cd, _("Key processing error (using hash %s).\n"),
+		log_err(cd, _("Key processing error (using hash %s)."),
 			hash_name ?: "[none]");
 		return -EINVAL;
 	}
@@ -165,7 +165,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 		}
 		if (offset == buffer_len) {
 			log_dbg("Unterminated key #%d in keyfile.", key_index);
-			log_err(cd, _("Incompatible loop-AES keyfile detected.\n"));
+			log_err(cd, _("Incompatible loop-AES keyfile detected."));
 			return -EINVAL;
 		}
 		while (offset < buffer_len && !buffer[offset])
@@ -185,7 +185,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 
 	if (offset != buffer_len || key_len == 0 ||
 	   (key_index != 1 && key_index !=64 && key_index != 65)) {
-		log_err(cd, _("Incompatible loop-AES keyfile detected.\n"));
+		log_err(cd, _("Incompatible loop-AES keyfile detected."));
 		return -EINVAL;
 	}
 
@@ -243,7 +243,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 
 	if (r < 0 && !dm_flags(DM_CRYPT, &dmc_flags) &&
 	    (dmc_flags & req_flags) != req_flags) {
-		log_err(cd, _("Kernel doesn't support loop-AES compatible mapping.\n"));
+		log_err(cd, _("Kernel doesn't support loop-AES compatible mapping."));
 		r = -ENOTSUP;
 	}
 

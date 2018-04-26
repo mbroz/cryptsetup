@@ -361,7 +361,7 @@ static int LUKS2_check_device_size(struct crypt_device *cd, struct device *devic
 		if (falloc && !device_fallocate(device, hdr_size))
 			return 0;
 
-		log_err(cd, _("Device %s is too small. (LUKS2 requires at least %" PRIu64 " bytes.)\n"),
+		log_err(cd, _("Device %s is too small. (LUKS2 requires at least %" PRIu64 " bytes.)"),
 			device_path(device), hdr_size);
 		return -EINVAL;
 	}
@@ -425,7 +425,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 
 	r = device_write_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire write device lock.\n"));
+		log_err(cd, _("Failed to acquire write device lock."));
 		free(json_area);
 		return r;
 	}

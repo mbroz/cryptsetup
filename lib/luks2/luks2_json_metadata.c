@@ -848,7 +848,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr)
 
 	r = device_read_lock(cd, crypt_metadata_device(cd));
 	if (r) {
-		log_err(cd, _("Failed to acquire read lock on device %s.\n"),
+		log_err(cd, _("Failed to acquire read lock on device %s."),
 			device_path(crypt_metadata_device(cd)));
 		return r;
 	}
@@ -860,7 +860,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr)
 
 		r = device_write_lock(cd, crypt_metadata_device(cd));
 		if (r) {
-			log_err(cd, _("Failed to acquire write lock on device %s.\n"),
+			log_err(cd, _("Failed to acquire write lock on device %s."),
 				device_path(crypt_metadata_device(cd)));
 			return r;
 		}
@@ -891,7 +891,7 @@ int LUKS2_hdr_uuid(struct crypt_device *cd, struct luks2_hdr *hdr, const char *u
 	uuid_t partitionUuid;
 
 	if (uuid && uuid_parse(uuid, partitionUuid) == -1) {
-		log_err(cd, _("Wrong LUKS UUID format provided.\n"));
+		log_err(cd, _("Wrong LUKS UUID format provided."));
 		return -EINVAL;
 	}
 	if (!uuid)
@@ -971,7 +971,7 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	r = device_read_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire read lock on device %s.\n"),
+		log_err(cd, _("Failed to acquire read lock on device %s."),
 			device_path(crypt_metadata_device(cd)));
 		crypt_safe_free(buffer);
 		return r;
@@ -980,7 +980,7 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 	devfd = device_open_locked(device, O_RDONLY);
 	if (devfd < 0) {
 		device_read_unlock(device);
-		log_err(cd, _("Device %s is not a valid LUKS device.\n"), device_path(device));
+		log_err(cd, _("Device %s is not a valid LUKS device."), device_path(device));
 		crypt_safe_free(buffer);
 		return devfd == -1 ? -EINVAL : devfd;
 	}
@@ -999,14 +999,14 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 	devfd = open(backup_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
 	if (devfd == -1) {
 		if (errno == EEXIST)
-			log_err(cd, _("Requested header backup file %s already exists.\n"), backup_file);
+			log_err(cd, _("Requested header backup file %s already exists."), backup_file);
 		else
-			log_err(cd, _("Cannot create header backup file %s.\n"), backup_file);
+			log_err(cd, _("Cannot create header backup file %s."), backup_file);
 		crypt_safe_free(buffer);
 		return -EINVAL;
 	}
 	if (write_buffer(devfd, buffer, buffer_size) < buffer_size) {
-		log_err(cd, _("Cannot write header backup file %s.\n"), backup_file);
+		log_err(cd, _("Cannot write header backup file %s."), backup_file);
 		r = -EIO;
 	} else
 		r = 0;
@@ -1044,7 +1044,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	/* FIXME: why lock backup device ? */
 	r = device_read_lock(cd, backup_device);
 	if (r) {
-		log_err(cd, _("Failed to acquire read lock on device %s.\n"),
+		log_err(cd, _("Failed to acquire read lock on device %s."),
 			device_path(backup_device));
 		device_free(backup_device);
 		return r;
@@ -1055,13 +1055,13 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	device_free(backup_device);
 
 	if (r < 0) {
-		log_err(cd, _("Backup file doesn't contain valid LUKS header.\n"));
+		log_err(cd, _("Backup file doesn't contain valid LUKS header."));
 		goto out;
 	}
 
 	/* do not allow header restore from backup with unmet requirements */
 	if (LUKS2_unmet_requirements(cd, &hdr_file, 0, 1)) {
-		log_err(cd, _("Forbidden LUKS2 requirements detected in backup %s.\n"),
+		log_err(cd, _("Forbidden LUKS2 requirements detected in backup %s."),
 			backup_file);
 		r = -ETXTBSY;
 		goto out;
@@ -1076,13 +1076,13 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	devfd = open(backup_file, O_RDONLY);
 	if (devfd == -1) {
-		log_err(cd, _("Cannot open header backup file %s.\n"), backup_file);
+		log_err(cd, _("Cannot open header backup file %s."), backup_file);
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (read_buffer(devfd, buffer, buffer_size) < buffer_size) {
-		log_err(cd, _("Cannot read header backup file %s.\n"), backup_file);
+		log_err(cd, _("Cannot read header backup file %s."), backup_file);
 		r = -EIO;
 		goto out;
 	}
@@ -1102,13 +1102,13 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		if (!reqs_reencrypt(reqs)) {
 			log_dbg("Checking LUKS2 header size and offsets.");
 			if (LUKS2_get_data_offset(&tmp_hdr) != LUKS2_get_data_offset(&hdr_file)) {
-				log_err(cd, _("Data offset differ on device and backup, restore failed.\n"));
+				log_err(cd, _("Data offset differ on device and backup, restore failed."));
 				r = -EINVAL;
 				goto out;
 			}
 			/* FIXME: what could go wrong? Erase if we're fine with consequences */
 			if (buffer_size != (ssize_t) LUKS2_hdr_and_areas_size(tmp_hdr.jobj)) {
-				log_err(cd, _("Binary header with keyslot areas size differ on device and backup, restore failed.\n"));
+				log_err(cd, _("Binary header with keyslot areas size differ on device and backup, restore failed."));
 				r = -EINVAL;
 				goto out;
 			}
@@ -1138,7 +1138,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	/* TODO: perform header restore on bdev in stand-alone routine? */
 	r = device_write_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire write lock on device %s.\n"),
+		log_err(cd, _("Failed to acquire write lock on device %s."),
 			device_path(device));
 		goto out;
 	}
@@ -1146,10 +1146,10 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	devfd = device_open_locked(device, O_RDWR);
 	if (devfd < 0) {
 		if (errno == EACCES)
-			log_err(cd, _("Cannot write to device %s, permission denied.\n"),
+			log_err(cd, _("Cannot write to device %s, permission denied."),
 				device_path(device));
 		else
-			log_err(cd, _("Cannot open device %s.\n"), device_path(device));
+			log_err(cd, _("Cannot open device %s."), device_path(device));
 		device_write_unlock(device);
 		r = -EINVAL;
 		goto out;
@@ -1223,7 +1223,7 @@ int LUKS2_config_get_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 				found = 1;
 			}
 		if (!found)
-			log_verbose(cd, _("Ignored unknown flag %s.\n"),
+			log_verbose(cd, _("Ignored unknown flag %s."),
 				    json_object_get_string(jobj1));
 	}
 
@@ -1867,7 +1867,7 @@ int LUKS2_activate(struct crypt_device *cd,
 
 	if (dmd.u.crypt.tag_size) {
 		if (!LUKS2_integrity_compatible(hdr)) {
-			log_err(cd, "Unsupported device integrity configuration.\n");
+			log_err(cd, "Unsupported device integrity configuration.");
 			return -EINVAL;
 		}
 
@@ -1894,7 +1894,7 @@ int LUKS2_activate(struct crypt_device *cd,
 					   crypt_get_data_offset(cd) * SECTOR_SIZE,
 					   &dmd.size);
 		if (r < 0) {
-			log_err(cd, "Cannot detect integrity device size.\n");
+			log_err(cd, "Cannot detect integrity device size.");
 			device_free(device);
 			dm_remove_device(cd, dm_int_name, 0);
 			return r;
@@ -1920,14 +1920,14 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 
 	if (r) {
 		if (!quiet)
-			log_err(cd, _("Failed to read LUKS2 requirements.\n"));
+			log_err(cd, _("Failed to read LUKS2 requirements."));
 		return r;
 	}
 
 	/* do not mask unknown requirements check */
 	if (reqs_unknown(reqs)) {
 		if (!quiet)
-			log_err(cd, _("Unmet LUKS2 requirements detected.\n"));
+			log_err(cd, _("Unmet LUKS2 requirements detected."));
 		return -ETXTBSY;
 	}
 
@@ -1935,7 +1935,7 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 	reqs &= ~reqs_mask;
 
 	if (reqs_reencrypt(reqs) && !quiet)
-		log_err(cd, _("Offline reencryption in progress. Aborting.\n"));
+		log_err(cd, _("Offline reencryption in progress. Aborting."));
 
 	/* any remaining unmasked requirement fails the check */
 	return reqs ? -EINVAL : 0;
