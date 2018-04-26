@@ -900,7 +900,7 @@ static int restore_luks_header(struct reenc_ctx *rc)
 			stat(rc->header_file_new, &st) != -1) {
 			fd = open(rc->device_header, O_WRONLY);
 			if (fd != -1) {
-				posix_fallocate(fd, 0, st.st_size);
+				if (posix_fallocate(fd, 0, st.st_size)) {};
 				close(fd);
 			}
 		}

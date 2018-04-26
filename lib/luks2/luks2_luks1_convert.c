@@ -440,7 +440,8 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 	}
 
 	/* This can safely fail (for block devices). It only allocates space if it is possible. */
-	posix_fallocate(devfd, offset_to, buf_size);
+	if (posix_fallocate(devfd, offset_to, buf_size))
+		log_dbg("Preallocation (fallocate) of new keyslot area not available.");
 
 	/* Try to read *new* area to check that area is there (trimmed backup). */
 	if (read_lseek_blockwise(devfd, device_block_size(device),
