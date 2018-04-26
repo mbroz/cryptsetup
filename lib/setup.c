@@ -3782,6 +3782,23 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 	return 0;
 }
 
+int crypt_keyslot_get_key_size(struct crypt_device *cd, int keyslot)
+{
+	if (!cd || !isLUKS(cd->type))
+		return -EINVAL;
+
+	if (keyslot < 0 || keyslot >= crypt_keyslot_max(cd->type))
+		return -EINVAL;
+
+	if (isLUKS1(cd->type))
+		return cd->u.luks1.hdr.keyBytes;
+
+	if (isLUKS2(cd->type))
+		return LUKS2_get_keyslot_key_size(&cd->u.luks2.hdr, keyslot);
+
+	return -EINVAL;
+}
+
 uint64_t crypt_get_data_offset(struct crypt_device *cd)
 {
 	if (!cd)

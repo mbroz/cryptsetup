@@ -2332,6 +2332,13 @@ static void Luks2KeyslotAdd(void)
 	EQ_(crypt_keyslot_add_by_key(cd, 2, key2, key_size-1, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 2);
 	EQ_(crypt_keyslot_add_by_key(cd, 3, key2, 13, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 3);
 
+	FAIL_(crypt_keyslot_get_key_size(cd, CRYPT_ANY_SLOT), "Bad keyslot specification.");
+	EQ_(crypt_get_volume_key_size(cd), key_size);
+	EQ_(crypt_keyslot_get_key_size(cd, 0), key_size);
+	EQ_(crypt_keyslot_get_key_size(cd, 1), key_size);
+	EQ_(crypt_keyslot_get_key_size(cd, 2), key_size-1);
+	EQ_(crypt_keyslot_get_key_size(cd, 3), 13);
+
 	key_ret_len = key_size - 1;
 	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), "Wrong size or fips");
 

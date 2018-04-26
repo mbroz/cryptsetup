@@ -1526,6 +1526,18 @@ int crypt_keyslot_area(struct crypt_device *cd,
 	uint64_t *length);
 
 /**
+ * Get size (in bytes) of key for particular keyslot.
+ * Use for LUKS2 unbound keyslots, for other keyslots it is the same as @ref crypt_get_volume_key_size
+ *
+ * @param cd crypt device handle
+ * @param keyslot keyslot number
+ *
+ * @return volume key size or negative errno value otherwise.
+ *
+ */
+int crypt_keyslot_get_key_size(struct crypt_device *cd, int keyslot);
+
+/**
  * Get directory where mapped crypt devices are created
  *
  * @return the directory path
