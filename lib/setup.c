@@ -154,12 +154,16 @@ void logger(struct crypt_device *cd, int level, const char *file,
 	    int line, const char *format, ...)
 {
 	va_list argp;
-	char *target = NULL;
+	char target[LOG_MAX_LEN + 2];
 
 	va_start(argp, format);
 
-	if (vasprintf(&target, format, argp) > 0 ) {
+	if (vsnprintf(&target[0], LOG_MAX_LEN, format, argp) > 0 ) {
 		if (level >= 0) {
+			/* All verbose and error messages in tools end with EOL. */
+			if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR)
+				strncat(target, "\n", LOG_MAX_LEN);
+
 			crypt_log(cd, level, target);
 #ifdef CRYPT_DEBUG
 		} else if (_debug_level)
@@ -171,7 +175,6 @@ void logger(struct crypt_device *cd, int level, const char *file,
 	}
 
 	va_end(argp);
-	free(target);
 }
 
 static const char *mdata_device_path(struct crypt_device *cd)
