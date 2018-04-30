@@ -717,6 +717,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 			goto out;
 		if ((r = stat(rc->header_file_tmp, &st)))
 			goto out;
+		/* coverity[toctou] */
 		if ((r = chmod(rc->header_file_tmp, st.st_mode | S_IWUSR)))
 			goto out;
 	}
@@ -898,6 +899,7 @@ static int restore_luks_header(struct reenc_ctx *rc)
 			goto out;
 		} else if ((st.st_mode & S_IFMT) == S_IFREG &&
 			stat(rc->header_file_new, &st) != -1) {
+			/* coverity[toctou] */
 			fd = open(rc->device_header, O_WRONLY);
 			if (fd != -1) {
 				if (posix_fallocate(fd, 0, st.st_size)) {};

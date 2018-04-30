@@ -556,7 +556,7 @@ int main(int argc, const char **argv)
 		action_argc++;
 
 	/* Handle aliases */
-	if (!strcmp(aname, "create")) {
+	if (!strcmp(aname, "create") && action_argc > 1) {
 		/* create command had historically switched arguments */
 		if (action_argv[0] && action_argv[1]) {
 			const char *tmp = action_argv[0];

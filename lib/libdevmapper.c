@@ -1517,11 +1517,16 @@ static int _dm_query_crypt(uint32_t get_flags,
 
 		if (get_flags & DM_ACTIVE_CRYPT_KEY) {
 			if (key_[0] == ':') {
-				key_desc = strpbrk(strpbrk(key_ + 1, ":") + 1, ":") + 1;
+				/* :<key_size>:<key_type>:<key_description> */
+				key_desc = NULL;
+				endp = strpbrk(key_ + 1, ":");
+				if (endp)
+					key_desc = strpbrk(endp + 1, ":");
 				if (!key_desc) {
 					r = -ENOMEM;
 					goto err;
 				}
+				key_desc++;
 				crypt_volume_key_set_description(vk, key_desc);
 			} else {
 				buffer[2] = '\0';
@@ -1723,9 +1728,10 @@ static int _dm_query_verity(uint32_t get_flags,
 						goto err;
 					}
 				}
-				if (vp)
+				if (vp) {
+					free(fec_dev_str);
 					fec_dev_str = str2;
-				else
+				} else
 					free(str2);
 				i++;
 			} else if (!strcasecmp(arg, "fec_start")) {

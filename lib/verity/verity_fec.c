@@ -172,6 +172,7 @@ static int FEC_process_inputs(struct crypt_device *cd,
 					goto out;
 				}
 
+				/* coverity[tainted_data] */
 				r = decode_rs_char(rs, rs_block);
 				if (r < 0) {
 					log_err(cd, _("Failed to repair parity for block %" PRIu64 "."), n);

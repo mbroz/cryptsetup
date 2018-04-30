@@ -74,9 +74,10 @@ static int hdr_checksum_calculate(const char *alg, struct luks2_hdr_disk *hdr_di
 				  const char *json_area, size_t json_len)
 {
 	struct crypt_hash *hd = NULL;
-	int r;
+	int hash_size, r;
 
-	if (crypt_hash_size(alg) <= 0 || crypt_hash_init(&hd, alg))
+	hash_size = crypt_hash_size(alg);
+	if (hash_size <= 0 || crypt_hash_init(&hd, alg))
 		return -EINVAL;
 
 	/* Binary header, csum zeroed. */
@@ -87,7 +88,7 @@ static int hdr_checksum_calculate(const char *alg, struct luks2_hdr_disk *hdr_di
 		r = crypt_hash_write(hd, json_area, json_len);
 
 	if (!r)
-		r = crypt_hash_final(hd, (char*)hdr_disk->csum, crypt_hash_size(alg));
+		r = crypt_hash_final(hd, (char*)hdr_disk->csum, (size_t)hash_size);
 
 	crypt_hash_destroy(hd);
 	return r;
@@ -100,9 +101,10 @@ static int hdr_checksum_check(const char *alg, struct luks2_hdr_disk *hdr_disk,
 			      const char *json_area, size_t json_len)
 {
 	struct luks2_hdr_disk hdr_tmp;
-	int r;
+	int hash_size, r;
 
-	if (crypt_hash_size(alg) <= 0)
+	hash_size = crypt_hash_size(alg);
+	if (hash_size <= 0)
 		return -EINVAL;
 
 	/* Copy header and zero checksum. */
@@ -116,7 +118,7 @@ static int hdr_checksum_check(const char *alg, struct luks2_hdr_disk *hdr_disk,
 	log_dbg_checksum(hdr_disk->csum, alg, "on-disk");
 	log_dbg_checksum(hdr_tmp.csum, alg, "in-memory");
 
-	if (memcmp(hdr_tmp.csum, hdr_disk->csum, crypt_hash_size(alg)))
+	if (memcmp(hdr_tmp.csum, hdr_disk->csum, (size_t)hash_size))
 		return -EINVAL;
 
 	return 0;

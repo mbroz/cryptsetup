@@ -966,6 +966,7 @@ static int action_luksFormat(void)
 		    return -EPERM;
 
 		log_dbg("Creating header file.");
+		/* coverity[toctou] */
 		fd = open(opt_header_device, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IWUSR);
 		if (fd == -1 || posix_fallocate(fd, 0, 4096))
 			log_err(_("Cannot create header file %s."), opt_header_device);
