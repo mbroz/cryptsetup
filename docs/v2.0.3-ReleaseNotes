@@ -1,0 +1,121 @@
+Cryptsetup 2.0.3 Release Notes
+==============================
+Stable bug-fix release with new features.
+
+Cryptsetup 2.x version introduces a new on-disk LUKS2 format.
+
+The legacy LUKS (referenced as LUKS1) will be fully supported
+forever as well as a traditional and fully backward compatible format.
+
+Please note that authenticated disk encryption, non-cryptographic
+data integrity protection (dm-integrity), use of Argon2 Password-Based
+Key Derivation Function and the LUKS2 on-disk format itself are new
+features and can contain some bugs.
+
+To provide all security features of authenticated encryption, we need
+a better nonce-reuse resistant algorithm in the kernel (see note below).
+For now, please use authenticated encryption as an experimental feature.
+
+Please do not use LUKS2 without properly configured backup or in
+production systems that need to be compatible with older systems.
+
+Changes since version 2.0.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Expose interface to unbound LUKS2 keyslots.
+  Unbound LUKS2 keyslot allows storing a key material that is independent
+  of master volume key (it is not bound to encrypted data segment).
+
+* New API extensions for unbound keyslots (LUKS2 only)
+  crypt_keyslot_get_key_size() and crypt_volume_key_get()
+  These functions allow to get key and key size for unbound keyslots.
+
+* New enum value CRYPT_SLOT_UNBOUND for keyslot status (LUKS2 only).
+
+* Add --unbound keyslot option to the cryptsetup luksAddKey command.
+
+* Add crypt_get_active_integrity_failures() call to get integrity
+  failure count for dm-integrity devices.
+
+* Add crypt_get_pbkdf_default() function to get per-type PBKDF default
+  setting.
+
+* Add new flag to crypt_keyslot_add_by_key() to force update device
+  volume key. This call is mainly intended for a wrapped key change.
+
+* Allow volume key store in a file with cryptsetup.
+  The --dump-master-key together with --master-key-file allows cryptsetup
+  to store the binary volume key to a file instead of standard output.
+
+* Add support detached header for cryptsetup-reencrypt command.
+
+* Fix VeraCrypt PIM handling - use proper iterations count formula
+  for PBKDF2-SHA512 and PBKDF2-Whirlpool used in system volumes.
+
+* Fix cryptsetup tcryptDump for VeraCrypt PIM (support --veracrypt-pim).
+
+* Add --with-default-luks-format configure time option.
+  (Option to override default LUKS format version.)
+
+* Fix LUKS version conversion for detached (and trimmed) LUKS headers.
+
+* Add luksConvertKey cryptsetup command that converts specific keyslot
+  from one PBKDF to another.
+
+* Do not allow conversion to LUKS2 if LUKSMETA (external tool metadata)
+  header is detected.
+
+* More cleanup and hardening of LUKS2 keyslot specific validation options.
+  Add more checks for cipher validity before writing metadata on-disk.
+
+* Do not allow LUKS1 version downconversion if the header contains tokens.
+
+* Add "paes" family ciphers (AES wrapped key scheme for mainframes)
+  to allowed ciphers.
+  Specific wrapped ley configuration logic must be done by 3rd party tool,
+  LUKS2 stores only keyslot material and allow activation of the device.
+
+* Add support for --check-at-most-once option (kernel 4.17) to veritysetup.
+  This flag can be dangerous; if you can control underlying device
+  (you can change its content after it was verified) it will no longer
+  prevent reading tampered data and also it does not prevent silent
+  data corruptions that appear after the block was once read.
+
+* Fix return code (EPERM instead of EINVAL) and retry count for bad
+  passphrase on non-tty input.
+
+* Enable support for FEC decoding in veritysetup to check dm-verity devices
+  with additional Reed-Solomon code in userspace (verify command).
+
+Unfinished things & TODO for next releases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* There will be better documentation and examples (planned for 2.0.4).
+
+* There will be some more formal definition of the threat model for integrity
+  protection. (And a link to some papers discussing integrity protection,
+  once it is, hopefully, accepted and published.)
+
+* Authenticated encryption will use new algorithms from CAESAR competition
+  https://competitions.cr.yp.to/caesar-submissions.html.
+  We plan to use AEGIS and MORUS, as CAESAR finalists.
+
+  NOTE: Currently available authenticated modes (GCM, Chacha20-poly1305)
+  in the kernel have too small 96-bit nonces that are problematic with
+  randomly generated IVs (the collision probability is not negligible).
+
+* Authenticated encryption do not set encryption for a dm-integrity journal.
+
+  While it does not influence data confidentiality or integrity protection,
+  an attacker can get some more information from data journal or cause that
+  system will corrupt sectors after journal replay. (That corruption will be
+  detected though.)
+
+* There are examples of user-defined tokens inside misc/luks2_keyslot_example
+  directory (like a simple external program that uses libssh to unlock LUKS2
+  using remote keyfile).
+
+* The python binding (pycryptsetup) contains only basic functionality for LUKS1
+  (it is not updated for new features) and will be REMOVED in version 2.1
+  in favor of python bindings to the libblockdev library.
+  See https://github.com/storaged-project/libblockdev/releases/tag/2.17-1 that
+  already supports LUKS2 and VeraCrypt devices handling through libcryptsetup.
