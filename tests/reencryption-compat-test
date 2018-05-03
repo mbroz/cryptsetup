@@ -311,6 +311,8 @@ echo "[8] Header only reencryption (hash and iteration time)"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 --hash sha1 $FAST_PBKDF $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
+echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key || fail
+check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --pbkdf-force-iterations 999 2>/dev/null && fail
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha256 --pbkdf-force-iterations 1001
