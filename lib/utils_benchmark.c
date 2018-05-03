@@ -294,21 +294,20 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 	uint32_t ms_tmp;
 	int r = -EINVAL;
 
-	/* Already benchmarked */
-	if (pbkdf->iterations) {
-		log_dbg("Reusing PBKDF values.");
-		return 0;
-	}
-
-	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK) {
-		log_err(cd, _("PBKDF benchmark disabled but iterations not set."));
-		return -EINVAL;
-	}
-
 	r = crypt_pbkdf_get_limits(pbkdf->type, &pbkdf_limits);
 	if (r)
 		return r;
 
+	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK) {
+		if (pbkdf->iterations) {
+			log_dbg("Reusing PBKDF values (no benchmark flag is set).");
+			return 0;
+		}
+		log_err(cd, _("PBKDF benchmark disabled but iterations not set."));
+		return -EINVAL;
+	}
+
+	/* For PBKDF2 run benchmark always. Also note it depends on volume_key_size! */
 	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2)) {
 		/*
 		 * For PBKDF2 it is enough to run benchmark for only 1 second
@@ -333,6 +332,12 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 			return -EINVAL;
 		pbkdf->iterations = at_least((uint32_t)PBKDF2_tmp, pbkdf_limits.min_iterations);
 	} else {
+		/* Already benchmarked */
+		if (pbkdf->iterations) {
+			log_dbg("Reusing PBKDF values.");
+			return 0;
+		}
+
 		r = crypt_benchmark_pbkdf(cd, pbkdf, "foo", 3,
 			"0123456789abcdef0123456789abcdef", 32,
 			volume_key_size, &benchmark_callback, pbkdf);
