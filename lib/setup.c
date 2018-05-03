@@ -1479,7 +1479,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       size_t volume_key_size,
 			       struct crypt_params_luks2 *params)
 {
-	int r, integrity_key_size;
+	int r, integrity_key_size = 0;
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
 	unsigned long alignment_offset = 0;
 	unsigned int sector_size = params ? params->sector_size : SECTOR_SIZE;
@@ -1576,8 +1576,9 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	/* FIXME: we have no way how to check AEAD ciphers,
 	 * only length preserving mode or authenc() composed modes */
-	if (!LUKS2_keyslot_cipher_incompatible(cd)) {
-		r = LUKS_check_cipher(cd, volume_key_size, cipher, cipher_mode);
+	if ((!integrity || integrity_key_size) && !LUKS2_keyslot_cipher_incompatible(cd)) {
+		r = LUKS_check_cipher(cd, volume_key_size - integrity_key_size,
+				      cipher, cipher_mode);
 		if (r < 0)
 			goto out;
 	}
