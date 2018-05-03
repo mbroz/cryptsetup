@@ -1748,7 +1748,7 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Option --new must be used together with --reduce-device-size or --header."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_keep_key && ((!opt_hash && !opt_iteration_time && !opt_pbkdf_iterations) || opt_cipher || opt_new || opt_master_key_file))
+	if (opt_keep_key && (opt_cipher || opt_new || opt_master_key_file))
 		usage(popt_context, EXIT_FAILURE, _("Option --keep-key can be used only with --hash, --iter-time or --pbkdf-force-iterations."),
 		      poptGetInvocationName(popt_context));
 
