@@ -23,7 +23,7 @@ The reencryption can be temporarily suspended (by TERM signal or by
 using ctrl+c) but you need to retain temporary files named LUKS-<uuid>.[log|org|new].
 LUKS device is unavailable until reencryption is finished though.
 
-Current working directory must by writable and temporary
+Current working directory must be writable and temporary
 files created during reencryption must be present.
 
 For more info about LUKS see cryptsetup(8).
@@ -116,7 +116,7 @@ This option can be combined only with \fI\-\-hash\fR, \fI\-\-iter-time\fR,
 .B "\-\-key-file, \-d \fIname\fR"
 Read the passphrase from file.
 
-\fBWARNING:\fR \-\-key-file option can be used only if there only one active keyslot,
+\fBWARNING:\fR \-\-key-file option can be used only if there is only one active keyslot,
 or alternatively, also if \-\-key-slot option is specified (then all other keyslots
 will be disabled in new LUKS device).
 
