@@ -105,6 +105,9 @@ int crypt_parse_integrity_mode(const char *s, char *integrity,
 	    !strcmp(s, "none")) {
 		strncpy(integrity, s, MAX_CIPHER_LEN);
 		ks = 0;
+	} else if (!strcmp(s, "hmac-sha1")) {
+		strncpy(integrity, "hmac(sha1)", MAX_CIPHER_LEN);
+		ks = 20;
 	} else if (!strcmp(s, "hmac-sha256")) {
 		strncpy(integrity, "hmac(sha256)", MAX_CIPHER_LEN);
 		ks = 32;

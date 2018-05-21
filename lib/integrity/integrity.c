@@ -114,6 +114,8 @@ int INTEGRITY_key_size(struct crypt_device *cd, const char *integrity)
 	//FIXME: use crypto backend hash size
 	if (!strcmp(integrity, "aead"))
 		return 0;
+	else if (!strcmp(integrity, "hmac(sha1)"))
+		return 20;
 	else if (!strcmp(integrity, "hmac(sha256)"))
 		return 32;
 	else if (!strcmp(integrity, "hmac(sha512)"))
@@ -143,6 +145,8 @@ int INTEGRITY_tag_size(struct crypt_device *cd,
 		iv_tag_size = 8;
 	else if (!strcmp(cipher_mode, "ctr-random"))
 		iv_tag_size = 16;
+	else if (!strcmp(cipher, "aegis256") && !strcmp(cipher_mode, "random"))
+		iv_tag_size = 32;
 	else if (!strcmp(cipher_mode, "random"))
 		iv_tag_size = 16;
 
@@ -153,6 +157,8 @@ int INTEGRITY_tag_size(struct crypt_device *cd,
 		auth_tag_size = 16; //FIXME gcm- mode only
 	else if (!strcmp(integrity, "cmac(aes)"))
 		auth_tag_size = 16;
+	else if (!strcmp(integrity, "hmac(sha1)"))
+		auth_tag_size = 20;
 	else if (!strcmp(integrity, "hmac(sha256)"))
 		auth_tag_size = 32;
 	else if (!strcmp(integrity, "hmac(sha512)"))
