@@ -133,6 +133,9 @@ intformat aes-xts-random  hmac-sha256 hmac\(sha256\) 512 256 4096 8c0463f5ac0961
 intformat aes-xts-plain64 hmac-sha512 hmac\(sha512\) 512 512 4096 9873d864fccb866521e79c9f0f75ad0c578d6bd7620399bbf4779e698c6e92fd
 intformat aes-xts-random  hmac-sha512 hmac\(sha512\) 512 512 4096 621f6c03f7361c2bf8f10059ae822339223f8471c750b0cf8584fba7134bd4a2
 
+intformat aes-xts-plain64 hmac-sha1 hmac\(sha1\) 512 160 4096 7370c66a92708fb71b186931468be6aa9b26f4f88373b00b1c57360b9ee1304e
+intformat aes-xts-random  hmac-sha1 hmac\(sha1\) 512 160 4096 8c0463f5ac09613674bdf40b0ff6f985edbc3de04e51fdc688873cb333ef3cda
+
 intformat aes-gcm-random aead aead 128 0  512 5f6f3f6be03c74d9aaaeaf40dd310c99a20e2786045f78a1fc6a0b189d231f57
 intformat aes-gcm-random aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
 intformat aes-gcm-random aead aead 256 0  512 5f6f3f6be03c74d9aaaeaf40dd310c99a20e2786045f78a1fc6a0b189d231f57
@@ -147,5 +150,18 @@ intformat chacha20-plain64 poly1305 poly1305 256 0  512 3f82eae753ff52a689ddc559
 intformat chacha20-random  poly1305 poly1305 256 0  512 5f6f3f6be03c74d9aaaeaf40dd310c99a20e2786045f78a1fc6a0b189d231f57
 intformat chacha20-plain64 poly1305 poly1305 256 0 4096 7370c66a92708fb71b186931468be6aa9b26f4f88373b00b1c57360b9ee1304e
 intformat chacha20-random  poly1305 poly1305 256 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+
+intformat aegis128-random  aead aead 128 0  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c
+intformat aegis128-random  aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+intformat aegis128l-random aead aead 128 0  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c
+intformat aegis128l-random aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+intformat aegis256-random  aead aead 256 0  512 492c2d1cc9e222a850c399bfef4ed5a86bf5afc59e54f0f0c7ba8e2a64548323
+intformat aegis256-random  aead aead 256 0 4096 8c0463f5ac09613674bdf40b0ff6f985edbc3de04e51fdc688873cb333ef3cda
+intformat morus640-random  aead aead 128 0  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c
+intformat morus640-random  aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+intformat morus1280-random aead aead 128 0  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c
+intformat morus1280-random aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+intformat morus1280-random aead aead 256 0  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c
+intformat morus1280-random aead aead 256 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
 
 cleanup
