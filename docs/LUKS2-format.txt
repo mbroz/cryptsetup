@@ -140,7 +140,7 @@ as number (unsigned integer) - for example keyslot "0", "1" etc.
 Every object is typed (must contain attribute "type").
 According to type, library decides how to handle (or ignore) such an object.
 
-Binary data inside JSON (for example salt) is stored in Hexa64 encoding.
+Binary data inside JSON (for example salt) is stored in Base64 encoding.
 
 If a value is needed to be stored as a 64bit integer (usually offset or size),
 it is stored in text format and later converted to the 64bit integer.
