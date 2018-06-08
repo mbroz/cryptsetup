@@ -14,7 +14,8 @@ TESTS = api-test \
 	keyring-compat-test \
 	luks2-validation-test \
 	luks2-integrity-test \
-	vectors-test
+	vectors-test \
+	blockwise-compat
 
 if VERITYSETUP
 TESTS += verity-compat-test
@@ -59,9 +60,10 @@ EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
 	keyring-test \
 	keyring-compat-test \
 	integrity-compat-test \
-	cryptsetup-valg-supps valg.sh valg-api.sh
+	cryptsetup-valg-supps valg.sh valg-api.sh \
+	blockwise-compat
 
-CLEANFILES = cryptsetup-tst* valglog*
+CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log
 clean-local:
 	-rm -rf tcrypt-images luks1-images luks2-images conversion_imgs luks2_valid_hdr.img
 
@@ -86,7 +88,13 @@ vectors_test_LDFLAGS = $(AM_LDFLAGS) -static
 vectors_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/crypto_backend/ @CRYPTO_CFLAGS@
 vectors_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
-check_PROGRAMS = api-test api-test-2 differ vectors-test
+unit_utils_io_SOURCES = unit-utils-io.c
+unit_utils_io_LDADD = ../libutils_io.la
+unit_utils_io_LDFLAGS = $(AM_LDFLAGS) -static
+unit_utils_io_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
+unit_utils_io_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
+
+check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io
 
 conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz

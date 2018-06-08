@@ -1,0 +1,267 @@
+#!/bin/bash
+
+BW_UNIT=./unit-utils-io
+STRACE=strace
+
+cleanup() {
+	if [ -d "$MNT_DIR" ] ; then
+	    umount -f $MNT_DIR 2>/dev/null
+	    rmdir $MNT_DIR 2>/dev/null
+	fi
+	rmmod scsi_debug 2>/dev/null
+}
+
+fail()
+{
+	if [ -n "$1" ] ; then echo "FAIL $1" ; else echo "FAIL" ; fi
+	cleanup
+	exit 100
+}
+
+fail_count()
+{
+	echo "[WRONG]"
+	FAILS=$((FAILS+1))
+}
+
+skip()
+{
+	echo "TEST SKIPPED: $1"
+	cleanup
+	exit 0
+}
+
+add_device() {
+	modprobe scsi_debug $@
+	if [ $? -ne 0 ] ; then
+		echo "This kernel seems to not support proper scsi_debug module, test skipped."
+		exit 77
+	fi
+	DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+	DEV="/dev/$DEV"
+	[ -b $DEV ] || fail "Cannot find $DEV."
+}
+
+RUN() {
+	local _res=$1
+	shift
+	local _dev=$1
+	shift
+	local _fn=$1
+	shift
+
+        case "$_res" in
+        P)
+		echo -n "Testing $_fn with params $@ [should PASS]..."
+		$BW_UNIT $_dev $_fn $@
+		if [ $? -ne 0 ]; then
+			fail_count
+			test -z "$STRACE" || $STRACE -o ./$BW_UNIT-fail-$FAILS-should-pass.log $BW_UNIT $_dev $_fn $@ 2> /dev/null
+		else
+			echo "[OK]"
+		fi
+                ;;
+        F)
+		echo -n "Testing $_fn with params $@ [should FAIL]..."
+		$BW_UNIT $_dev $_fn $@ 2> /dev/null
+		if [ $? -eq 0 ]; then
+			fail_count
+			test -z "$STRACE" || $STRACE -o ./$BW_UNIT-fail-$FAILS-should-fail.log $BW_UNIT $_dev $_fn $@ 2> /dev/null
+		else
+			echo "[OK]"
+		fi
+                ;;
+        *)
+                fail "Internal test error"
+                ;;
+        esac
+}
+
+run_all() {
+	# buffer io support only blocksize aligned ios
+	# device/file fn_name length
+	RUN "P" $DEV read_buffer $BSIZE
+	RUN "P" $DEV read_buffer $((2*BSIZE))
+	RUN "F" $DEV read_buffer $((BSIZE-1))
+	RUN "F" $DEV read_buffer $((BSIZE+1))
+	RUN "P" $DEV read_buffer 0
+
+	RUN "P" $DEV write_buffer $BSIZE
+	RUN "P" $DEV write_buffer $((2*BSIZE))
+	RUN "F" $DEV write_buffer $((BSIZE-1))
+	RUN "F" $DEV write_buffer $((BSIZE+1))
+	RUN "F" $DEV write_buffer 0
+
+	# basic blockwise functions
+	# device/file fn_name length bsize
+	RUN "P" $DEV read_blockwise 0 $BSIZE
+	RUN "P" $DEV read_blockwise $((BSIZE)) $BSIZE
+	RUN "P" $DEV read_blockwise $((BSIZE-1)) $BSIZE
+	RUN "P" $DEV read_blockwise $((BSIZE+1)) $BSIZE
+	RUN "P" $DEV read_blockwise $((DEVSIZE)) $BSIZE
+	RUN "P" $DEV read_blockwise $((DEVSIZE-1)) $BSIZE
+	RUN "F" $DEV read_blockwise $((DEVSIZE+1)) $BSIZE
+
+	RUN "P" $DEV write_blockwise 0 $BSIZE
+	RUN "P" $DEV write_blockwise $((BSIZE)) $BSIZE
+	RUN "P" $DEV write_blockwise $((BSIZE-1)) $BSIZE
+	RUN "P" $DEV write_blockwise $((BSIZE+1)) $BSIZE
+	RUN "P" $DEV write_blockwise $((DEVSIZE)) $BSIZE
+	RUN "P" $DEV write_blockwise $((DEVSIZE-1)) $BSIZE
+	RUN "F" $DEV write_blockwise $((DEVSIZE+1)) $BSIZE
+
+	# seek variant blockwise functions
+	# device/file fn_name length bsize offset
+	RUN "P" $DEV read_lseek_blockwise 0 $BSIZE 0
+	RUN "P" $DEV read_lseek_blockwise 0 $BSIZE 1
+	RUN "P" $DEV read_lseek_blockwise 0 $BSIZE $((DEVSIZE))
+	# length = 0 is significant here
+	RUN "P" $DEV read_lseek_blockwise 0 $BSIZE $((DEVSIZE+1))
+
+	# begining of device
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE 0
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE 1
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE $((BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE $((BSIZE/2))
+
+	# somewhere in the 'middle'
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE $BSIZE
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE $((BSIZE+1))
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE $((2*BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE $((BSIZE+BSIZE/2-1))
+
+	# cross-sector tests
+	RUN "P" $DEV read_lseek_blockwise 2 $BSIZE $((BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+1)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+2)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise 2 $BSIZE $((2*BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+1)) $BSIZE $((2*BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+2)) $BSIZE $((2*BSIZE-1))
+
+	# including one whole sector
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+2)) $BSIZE $((BSIZE))
+	RUN "P" $DEV read_lseek_blockwise $((2*BSIZE)) $BSIZE $((BSIZE+1))
+	RUN "P" $DEV read_lseek_blockwise $((2*BSIZE)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+2)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise $((2*BSIZE)) $BSIZE $((BSIZE+1))
+	RUN "P" $DEV read_lseek_blockwise $((3*BSIZE-2)) $BSIZE $((BSIZE+1))
+
+	# hiting exaclty the sector boundary
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE-1)) $BSIZE 1
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE-1)) $BSIZE $((BSIZE+1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+1)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+1)) $BSIZE $((2*BSIZE-1))
+
+	# device end
+	RUN "P" $DEV read_lseek_blockwise 1 $BSIZE $((DEVSIZE-1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE-1)) $BSIZE $((DEVSIZE-BSIZE+1))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE)) $BSIZE $((DEVSIZE-BSIZE))
+	RUN "P" $DEV read_lseek_blockwise $((BSIZE+1)) $BSIZE $((DEVSIZE-BSIZE-1))
+
+	# this must fail on both device and file
+	RUN "F" $DEV read_lseek_blockwise 1 $BSIZE $((DEVSIZE))
+	RUN "F" $DEV read_lseek_blockwise $((BSIZE-1)) $BSIZE $((DEVSIZE-BSIZE+2))
+	RUN "F" $DEV read_lseek_blockwise $((BSIZE)) $BSIZE $((DEVSIZE-BSIZE+1))
+	RUN "F" $DEV read_lseek_blockwise $((BSIZE+1)) $BSIZE $((DEVSIZE-BSIZE))
+
+	RUN "P" $DEV write_lseek_blockwise 0 $BSIZE 0
+	# TODO: this may pass but must not write a byte (write(0) is undefined).
+	# 	Test it with underlying dm-error or phony read/write syscalls.
+	#	Skipping read is optimization.
+	# HINT: currently it performs useless write and read as well
+	RUN "P" $DEV write_lseek_blockwise 0 $BSIZE 1
+	RUN "P" $DEV write_lseek_blockwise 0 $BSIZE $BSIZE
+
+	# begining of device
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE 0
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE 1
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE $((BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE $((BSIZE/2))
+
+	# somewhere in the 'middle'
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE $BSIZE
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE $((BSIZE+1))
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE $((2*BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE $((BSIZE+BSIZE/2-1))
+
+	# cross-sector tests
+	RUN "P" $DEV write_lseek_blockwise 2 $BSIZE $((BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+1)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+2)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise 2 $BSIZE $((2*BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+1)) $BSIZE $((2*BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+2)) $BSIZE $((2*BSIZE-1))
+
+	# including one whole sector
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+2)) $BSIZE $((BSIZE))
+	RUN "P" $DEV write_lseek_blockwise $((2*BSIZE)) $BSIZE $((BSIZE+1))
+	RUN "P" $DEV write_lseek_blockwise $((2*BSIZE)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+2)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise $((2*BSIZE)) $BSIZE $((BSIZE+1))
+	RUN "P" $DEV write_lseek_blockwise $((3*BSIZE-2)) $BSIZE $((BSIZE+1))
+
+	# hiting exaclty the sector boundary
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE-1)) $BSIZE 1
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE-1)) $BSIZE $((BSIZE+1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+1)) $BSIZE $((BSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+1)) $BSIZE $((2*BSIZE-1))
+
+	# device end
+	RUN "P" $DEV write_lseek_blockwise 1 $BSIZE $((DEVSIZE-1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE-1)) $BSIZE $((DEVSIZE-BSIZE+1))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE)) $BSIZE $((DEVSIZE-BSIZE))
+	RUN "P" $DEV write_lseek_blockwise $((BSIZE+1)) $BSIZE $((DEVSIZE-BSIZE-1))
+
+	# this must fail on device, but pass on file (which is unfortunate and maybe design mistake)
+	RUN "F" $DEV write_lseek_blockwise 1 $BSIZE $((DEVSIZE))
+	RUN "F" $DEV write_lseek_blockwise $((BSIZE-1)) $BSIZE $((DEVSIZE-BSIZE+2))
+	RUN "F" $DEV write_lseek_blockwise $((BSIZE)) $BSIZE $((DEVSIZE-BSIZE+1))
+	RUN "F" $DEV write_lseek_blockwise $((BSIZE+1)) $BSIZE $((DEVSIZE-BSIZE))
+}
+
+which $STRACE > /dev/null 2>&1 || unset STRACE
+test -x $BW_UNIT || skip "Run \"make `basename $BW_UNIT`\" first"
+
+FAILS=0
+DEVSIZEMB=2
+DEVSIZE=$((DEVSIZEMB*1024*1024))
+DEVBSIZE=512
+BSIZE=$DEVBSIZE
+EXP=0
+
+echo "System PAGE_SIZE=`getconf PAGE_SIZE`"
+
+echo "# Create classic 512B drive"
+echo "# (logical_block_size=$DEVBSIZE, physical_block_size=$((DEVBSIZE*(1<<EXP))))"
+add_device dev_size_mb=$DEVSIZEMB sector_size=$DEVBSIZE physblk_exp=$EXP num_tgts=1
+run_all
+
+#TODO: create fs on top of device and repeat
+cleanup
+EXP=3
+echo "# Create desktop-class 4K drive"
+echo "# (logical_block_size=$DEVBSIZE, physical_block_size=$((DEVBSIZE*(1<<EXP))))"
+add_device dev_size_mb=$DEVSIZEMB physblk_exp=$EXP sector_size=$DEVBSIZE num_tgts=1
+run_all
+#TODO: create fs on top of device and repeat
+BSIZE=$((DEVBSIZE*(1<<EXP)))
+run_all
+#TODO: create fs on top of device and repeat
+
+cleanup
+
+DEVBSIZE=4096
+BSIZE=$DEVBSIZE
+EXP=0
+echo "# Create enterprise-class 4K drive"
+echo "# (logical_block_size=$DEVBSIZE, physical_block_size=$((DEVBSIZE*(1<<EXP))))"
+add_device dev_size_mb=$DEVSIZEMB physblk_exp=$EXP sector_size=$DEVBSIZE num_tgts=1
+run_all
+
+cleanup
+test $FAILS -eq 0 || fail "($FAILS wrong result(s) in total)"
+
+#add_device dev_size_mb=2 sector_size=512 physblk_exp=3
+#cleanup
+#add_device dev_size_mb=2 sector_size=4096
+#cleanup
