@@ -3,9 +3,17 @@ pkgconfig_DATA = lib/libcryptsetup.pc
 
 lib_LTLIBRARIES = libcryptsetup.la
 
+noinst_LTLIBRARIES += libutils_io.la
+
 include_HEADERS = lib/libcryptsetup.h
 
 EXTRA_DIST += lib/libcryptsetup.pc.in lib/libcryptsetup.sym
+
+libutils_io_la_CFLAGS = $(AM_CFLAGS)
+
+libutils_io_la_SOURCES = \
+	lib/utils_io.c			\
+	lib/utils_io.h
 
 libcryptsetup_la_CPPFLAGS = $(AM_CPPFLAGS) \
 	-I $(top_srcdir)/lib/crypto_backend	\
@@ -16,7 +24,7 @@ libcryptsetup_la_CPPFLAGS = $(AM_CPPFLAGS) \
 	-I $(top_srcdir)/lib/tcrypt		\
 	-I $(top_srcdir)/lib/integrity
 
-libcryptsetup_la_DEPENDENCIES = libcrypto_backend.la lib/libcryptsetup.sym
+libcryptsetup_la_DEPENDENCIES = libutils_io.la libcrypto_backend.la lib/libcryptsetup.sym
 
 libcryptsetup_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
@@ -30,7 +38,8 @@ libcryptsetup_la_LIBADD = \
 	@CRYPTO_LIBS@		\
 	@LIBARGON2_LIBS@	\
 	@JSON_C_LIBS@		\
-	libcrypto_backend.la
+	libcrypto_backend.la	\
+	libutils_io.la
 
 libcryptsetup_la_SOURCES = \
 	lib/setup.c			\
@@ -54,8 +63,6 @@ libcryptsetup_la_SOURCES = \
 	lib/utils_device_locking.c	\
 	lib/utils_device_locking.h	\
 	lib/utils_pbkdf.c		\
-	lib/utils_io.c			\
-	lib/utils_io.h			\
 	lib/libdevmapper.c		\
 	lib/utils_dm.h			\
 	lib/volumekey.c			\
