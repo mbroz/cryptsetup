@@ -50,9 +50,11 @@ struct crypt_hmac {
 };
 
 /*
- * Compatible wrappers for OpenSSL < 1.1.0
+ * Compatible wrappers for OpenSSL < 1.1.0 and LibreSSL < 2.7.0
  */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || \
+    (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+
 static void openssl_backend_init(void)
 {
 	OpenSSL_add_all_algorithms();
