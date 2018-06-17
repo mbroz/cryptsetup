@@ -42,7 +42,7 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	if (read_lseek_blockwise(devfd, device_block_size(device),
 		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
 	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic)) ||
-	    sb->version != SB_VERSION) {
+	    (sb->version != SB_VERSION_1 && sb->version != SB_VERSION_2)) {
 		log_std(cd, "No integrity superblock detected on %s.\n",
 			device_path(device));
 		r = -EINVAL;
@@ -50,6 +50,8 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 		sb->integrity_tag_size = le16toh(sb->integrity_tag_size);
 		sb->journal_sections = le32toh(sb->journal_sections);
 		sb->provided_data_sectors = le64toh(sb->provided_data_sectors);
+		sb->recalc_sector = le64toh(sb->recalc_sector);
+		sb->flags = le32toh(sb->flags);
 		r = 0;
 	}
 
@@ -82,11 +84,17 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 		return r;
 
 	log_std(cd, "Info for integrity device %s.\n", device_path(device));
+	log_std(cd, "superblock_version %d\n", (unsigned)sb.version);
 	log_std(cd, "log2_interleave_sectors %d\n", sb.log2_interleave_sectors);
 	log_std(cd, "integrity_tag_size %u\n", sb.integrity_tag_size);
 	log_std(cd, "journal_sections %u\n", sb.journal_sections);
 	log_std(cd, "provided_data_sectors %" PRIu64 "\n", sb.provided_data_sectors);
 	log_std(cd, "sector_size %u\n", SECTOR_SIZE << sb.log2_sectors_per_block);
+	if (sb.version == SB_VERSION_2 && (sb.flags & SB_FLAG_RECALCULATING))
+		log_std(cd, "recalc_sector %" PRIu64 "\n", sb.recalc_sector);
+	log_std(cd, "flags %s%s\n",
+		sb.flags & SB_FLAG_HAVE_JOURNAL_MAC ? "have_journal_mac " : "",
+		sb.flags & SB_FLAG_RECALCULATING ? "recalculating " : "");
 
 	return 0;
 }

@@ -30,7 +30,11 @@ struct volume_key;
 
 /* dm-integrity helper */
 #define SB_MAGIC	"integrt"
-#define SB_VERSION	1
+#define SB_VERSION_1	1
+#define SB_VERSION_2	2
+
+#define SB_FLAG_HAVE_JOURNAL_MAC	(1 << 0)
+#define SB_FLAG_RECALCULATING		(1 << 1) /* V2 only */
 
 struct superblock {
 	uint8_t magic[8];
@@ -41,6 +45,8 @@ struct superblock {
 	uint64_t provided_data_sectors;
 	uint32_t flags;
 	uint8_t log2_sectors_per_block;
+        uint8_t pad[3];
+        uint64_t recalc_sector; /* V2 only */
 } __attribute__ ((packed));
 
 int INTEGRITY_read_sb(struct crypt_device *cd, struct crypt_params_integrity *params);
