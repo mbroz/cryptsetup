@@ -216,8 +216,8 @@ ssize_t write_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 		if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
 			goto out;
 
-		r = write_buffer(fd, frontPadBuf, frontHang + innerCount);
-		if (r < 0 || r != (ssize_t)(frontHang + innerCount))
+		r = write_buffer(fd, frontPadBuf, bsize);
+		if (r < 0 || r != (ssize_t)bsize)
 			goto out;
 
 		buf = (char*)buf + innerCount;
