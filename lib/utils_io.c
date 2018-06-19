@@ -199,7 +199,7 @@ ssize_t write_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 	if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
 		return -1;
 
-	if (frontHang) {
+	if (frontHang && length) {
 		if (posix_memalign(&frontPadBuf, alignment, bsize))
 			return -1;
 
@@ -253,7 +253,7 @@ ssize_t read_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 	if (lseek(fd, offset - frontHang, SEEK_SET) < 0)
 		return -1;
 
-	if (frontHang) {
+	if (frontHang && length) {
 		if (posix_memalign(&frontPadBuf, alignment, bsize))
 			return -1;
 
