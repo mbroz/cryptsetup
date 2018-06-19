@@ -105,15 +105,13 @@ ssize_t write_blockwise(int fd, size_t bsize, size_t alignment,
 	if (hangover) {
 		if (posix_memalign(&hangover_buf, alignment, bsize))
 			goto out;
+		memset(hangover_buf, 0, bsize);
 
 		r = read_buffer(fd, hangover_buf, bsize);
-		if (r < 0 || r < (ssize_t)hangover)
+		if (r < 0)
 			goto out;
 
-		if (r < (ssize_t)bsize)
-			bsize = r;
-
-		if (lseek(fd, -(off_t)bsize, SEEK_CUR) < 0)
+		if (lseek(fd, -(off_t)r, SEEK_CUR) < 0)
 			goto out;
 
 		memcpy(hangover_buf, (char*)buf + solid, hangover);
