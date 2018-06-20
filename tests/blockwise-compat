@@ -9,14 +9,28 @@ STRACE=strace
 MNT_DIR=./mnt_bwunit
 LOCAL_FILE=./blocwise_localfile
 
+# $1 path to scsi debug bdev
+scsi_debug_teardown() {
+	local _tries=15;
+
+	while [ -b "$1" -a $_tries -gt 0 ]; do
+		rmmod scsi_debug 2> /dev/null
+		if [ -b "$1" ]; then
+			sleep .1
+			_tries=$((_tries-1))
+		fi
+	done
+
+	test ! -b "$1" || rmmod scsi_debug
+}
+
 cleanup() {
 	if [ -d "$MNT_DIR" ] ; then
 	    umount -f $MNT_DIR 2>/dev/null
 	    rmdir $MNT_DIR 2>/dev/null
 	fi
 	rm -f $LOCAL_FILE 2> /dev/null
-	udevadm settle >/dev/null 2>&1
-	rmmod scsi_debug 2> /dev/null
+	scsi_debug_teardown "$DEV" || exit 100
 }
 
 fail()
