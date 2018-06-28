@@ -644,16 +644,16 @@ struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd)
 /*
  * crypt_load() helpers
  */
-static int _crypt_load_luks2(struct crypt_device *cd, int reload)
+static int _crypt_load_luks2(struct crypt_device *cd, int reload, int repair)
 {
 	int r;
 	char tmp_cipher[MAX_CIPHER_LEN], tmp_cipher_mode[MAX_CIPHER_LEN],
 	     *cipher = NULL, *cipher_mode = NULL, *type = NULL;
 	struct luks2_hdr hdr2 = {};
 
-	log_dbg("%soading LUKS2 header.", reload ? "Rel" : "L");
+	log_dbg("%soading LUKS2 header (repair %sabled).", reload ? "Rel" : "L", repair ? "en" : "dis");
 
-	r = LUKS2_hdr_read(cd, &hdr2);
+	r = LUKS2_hdr_read(cd, &hdr2, repair);
 	if (r)
 		return r;
 
@@ -713,7 +713,7 @@ static void _luks2_reload(struct crypt_device *cd)
 	if (!cd || !isLUKS2(cd->type))
 		return;
 
-	(void) _crypt_load_luks2(cd, 1);
+	(void) _crypt_load_luks2(cd, 1, 0);
 }
 
 static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
@@ -768,7 +768,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 			return -EINVAL;
 		}
 
-		r =  _crypt_load_luks2(cd, cd->type != NULL);
+		r =  _crypt_load_luks2(cd, cd->type != NULL, repair);
 	} else
 		r = -EINVAL;
 out:

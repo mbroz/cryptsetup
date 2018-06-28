@@ -842,7 +842,8 @@ int LUKS2_hdr_validate(json_object *hdr_jobj)
 	return 0;
 }
 
-int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr)
+/* FIXME: should we expose do_recovery parameter explicitly? */
+int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair)
 {
 	int r;
 
@@ -853,7 +854,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr)
 		return r;
 	}
 
-	r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1, 1);
+	r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1, !repair);
 	if (r == -EAGAIN) {
 		/* unlikely: auto-recovery is required and failed due to read lock being held */
 		device_read_unlock(crypt_metadata_device(cd));
@@ -865,7 +866,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr)
 			return r;
 		}
 
-		r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1, 1);
+		r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1, !repair);
 
 		device_write_unlock(crypt_metadata_device(cd));
 	} else
@@ -1050,7 +1051,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		return r;
 	}
 
-	r = LUKS2_disk_hdr_read(cd, &hdr_file, backup_device, 0);
+	r = LUKS2_disk_hdr_read(cd, &hdr_file, backup_device, 0, 0);
 	device_read_unlock(backup_device);
 	device_free(backup_device);
 
@@ -1089,7 +1090,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	close(devfd);
 	devfd = -1;
 
-	r = LUKS2_hdr_read(cd, &tmp_hdr);
+	r = LUKS2_hdr_read(cd, &tmp_hdr, 0);
 	if (r == 0) {
 		log_dbg("Device %s already contains LUKS2 header, checking UUID and requirements.", device_path(device));
 		r = LUKS2_config_get_requirements(cd, &tmp_hdr, &reqs);
@@ -1176,7 +1177,7 @@ out:
 
 	if (!r) {
 		LUKS2_hdr_free(hdr);
-		r = LUKS2_hdr_read(cd, hdr);
+		r = LUKS2_hdr_read(cd, hdr, 1);
 	}
 
 	return r;

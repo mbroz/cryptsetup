@@ -135,7 +135,7 @@ struct luks2_keyslot_params {
 int LUKS2_hdr_version_unlocked(struct crypt_device *cd,
 	const char *backup_file);
 
-int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr);
+int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair);
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr);
 int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr);
 
