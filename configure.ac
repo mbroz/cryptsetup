@@ -438,6 +438,16 @@ if test x$enable_blkid = xyes ; then
 	PKG_CHECK_MODULES([BLKID], [blkid],[AC_DEFINE([HAVE_BLKID], 1, [Define to 1 to use blkid for detection of disk signatures.])],[LIBBLKID_LIBS="-lblkid"])
 
 	AC_CHECK_HEADERS(blkid/blkid.h,,[AC_MSG_ERROR([You need blkid development library installed.])])
+	AC_CHECK_DECL([blkid_do_wipe],
+		      [ AC_DEFINE([HAVE_BLKID_WIPE], 1, [Define to 1 to use blkid_do_wipe.])
+			enable_blkid_wipe=yes
+		      ],,
+		      [#include <blkid/blkid.h>])
+	AC_CHECK_DECL([blkid_probe_step_back],
+		      [ AC_DEFINE([HAVE_BLKID_STEP_BACK], 1, [Define to 1 to use blkid_probe_step_back.])
+			enable_blkid_step_back=yes
+		      ],,
+		      [#include <blkid/blkid.h>])
 	AC_CHECK_DECLS([ blkid_reset_probe,
 			 blkid_probe_set_device,
 			 blkid_probe_filter_superblocks_type,
@@ -449,6 +459,8 @@ if test x$enable_blkid = xyes ; then
 		       [#include <blkid/blkid.h>])
 fi
 AM_CONDITIONAL(HAVE_BLKID, test x$enable_blkid = xyes)
+AM_CONDITIONAL(HAVE_BLKID_WIPE, test x$enable_blkid_wipe = xyes)
+AM_CONDITIONAL(HAVE_BLKID_STEP_BACK, test x$enable_blkid_step_back = xyes)
 
 dnl Magic for cryptsetup.static build.
 if test x$enable_static_cryptsetup = xyes; then
