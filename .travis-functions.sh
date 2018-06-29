@@ -116,6 +116,7 @@ function travis_install_script
 		expect \
 		keyutils \
 		libjson-c-dev \
+		libblkid-dev \
 		|| return
 }
 
