@@ -430,6 +430,26 @@ fi
 AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test x$enable_internal_argon2 = xyes)
 AM_CONDITIONAL(CRYPTO_INTERNAL_SSE_ARGON2, test x$enable_internal_sse_argon2 = xyes)
 
+dnl Link with blkid to check for other device types
+AC_ARG_ENABLE(blkid, AS_HELP_STRING([--disable-blkid],
+	[disable use of blkid for device signature detection and wiping.]), [], [enable_blkid=yes])
+
+if test x$enable_blkid = xyes ; then
+	PKG_CHECK_MODULES([BLKID], [blkid],[AC_DEFINE([HAVE_BLKID], 1, [Define to 1 to use blkid for detection of disk signatures.])],[LIBBLKID_LIBS="-lblkid"])
+
+	AC_CHECK_HEADERS(blkid/blkid.h,,[AC_MSG_ERROR([You need blkid development library installed.])])
+	AC_CHECK_DECLS([ blkid_reset_probe,
+			 blkid_probe_set_device,
+			 blkid_probe_filter_superblocks_type,
+			 blkid_do_safeprobe,
+			 blkid_do_probe,
+			 blkid_probe_lookup_value
+		       ],,
+		       [AC_MSG_ERROR([Can not compile with blkid support, disable it by --disable-blkid.])],
+		       [#include <blkid/blkid.h>])
+fi
+AM_CONDITIONAL(HAVE_BLKID, test x$enable_blkid = xyes)
+
 dnl Magic for cryptsetup.static build.
 if test x$enable_static_cryptsetup = xyes; then
 	saved_PKG_CONFIG=$PKG_CONFIG
@@ -480,6 +500,7 @@ AC_SUBST([CRYPTO_STATIC_LIBS])
 
 AC_SUBST([JSON_C_LIBS])
 AC_SUBST([LIBARGON2_LIBS])
+AC_SUBST([BLKID_LIBS])
 
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
