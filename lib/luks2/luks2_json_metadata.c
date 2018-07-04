@@ -853,7 +853,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr)
 		return r;
 	}
 
-	r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1);
+	r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1, 1);
 	if (r == -EAGAIN) {
 		/* unlikely: auto-recovery is required and failed due to read lock being held */
 		device_read_unlock(crypt_metadata_device(cd));
@@ -865,7 +865,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr)
 			return r;
 		}
 
-		r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1);
+		r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1, 1);
 
 		device_write_unlock(crypt_metadata_device(cd));
 	} else

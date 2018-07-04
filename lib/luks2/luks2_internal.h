@@ -42,7 +42,7 @@
  * On-disk access function prototypes
  */
 int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
-			struct device *device, int do_recovery);
+			struct device *device, int do_recovery, int do_blkprobe);
 int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr,
 			 struct device *device);
 
