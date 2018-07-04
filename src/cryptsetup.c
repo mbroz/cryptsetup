@@ -921,7 +921,7 @@ static int action_luksFormat(void)
 	const char *header_device, *type;
 	char *msg = NULL, *key = NULL, *password = NULL;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], integrity[MAX_CIPHER_LEN];
-	size_t passwordLen;
+	size_t passwordLen, signatures;
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params1 = {
 		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
@@ -980,15 +980,19 @@ static int action_luksFormat(void)
 
 	header_device = opt_header_device ?: action_argv[0];
 
+	/* Print all present signatures in read-only mode */
+	r = tools_detect_signatures(header_device, 0, &signatures);
+	if (r < 0)
+		return r;
+
 	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), header_device);
-	if (r == -1) {
-		r = -ENOMEM;
-		goto out;
-	}
+	if (r == -1)
+		return -ENOMEM;
+
 	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 	free(msg);
 	if (r < 0)
-		goto out;
+		return r;
 
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
 				      cipher, NULL, cipher_mode);
@@ -1014,7 +1018,7 @@ static int action_luksFormat(void)
 	if ((r = crypt_init(&cd, header_device))) {
 		if (opt_header_device)
 			log_err(_("Cannot use %s as on-disk header."), header_device);
-		goto out;
+		return r;
 	}
 
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8 + integrity_keysize;
@@ -1042,6 +1046,10 @@ static int action_luksFormat(void)
 		goto out;
 	}
 
+	/* Signature candidates found */
+	if (signatures && ((r =	tools_wipe_all_signatures(header_device)) < 0))
+		goto out;
+
 	r = crypt_format(cd, type, cipher, cipher_mode,
 			 opt_uuid, key, keysize, params);
 	check_signal(&r);
@@ -1051,7 +1059,7 @@ static int action_luksFormat(void)
 	r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
 					    key, keysize,
 					    password, passwordLen);
-	if (r < 0)
+	if (r < 0) /* FIXME: call wipe signatures again */
 		goto out;
 
 	if (opt_integrity && !opt_integrity_no_wipe)
