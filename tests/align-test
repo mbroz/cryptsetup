@@ -118,7 +118,7 @@ if [ $(id -u) != 0 ]; then
 	exit 77
 fi
 
-modprobe --dry-run scsi_debug || exit 0
+modprobe --dry-run scsi_debug || exit 77
 cleanup
 
 echo "# Create desktop-class 4K drive"
