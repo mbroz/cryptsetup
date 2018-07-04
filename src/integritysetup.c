@@ -178,8 +178,9 @@ static int action_format(int arg)
 		.sector_size = opt_sector_size ?: SECTOR_SIZE,
 	};
 	char integrity[MAX_CIPHER_LEN], journal_integrity[MAX_CIPHER_LEN], journal_crypt[MAX_CIPHER_LEN];
-	char *integrity_key = NULL;
+	char *integrity_key = NULL, *msg = NULL;
 	int r;
+	size_t signatures;
 
 	if (opt_integrity) {
 		r = crypt_parse_hash_integrity_mode(opt_integrity, integrity);
@@ -208,6 +209,19 @@ static int action_format(int arg)
 		params.journal_crypt = journal_crypt;
 	}
 
+	r = tools_detect_signatures(action_argv[0], 0, &signatures);
+	if (r < 0)
+		return r;
+
+	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
+	if (r == -1)
+		return -ENOMEM;
+
+	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+	free(msg);
+	if (r < 0)
+		return r;
+
 	r = _read_keys(&integrity_key, &params);
 	if (r)
 		goto out;
@@ -216,8 +230,12 @@ static int action_format(int arg)
 	if (r < 0)
 		goto out;
 
+	/* Signature candidates found */
+	if (signatures && ((r =	tools_wipe_all_signatures(action_argv[0])) < 0))
+		goto out;
+
 	r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, &params);
-	if (r < 0)
+	if (r < 0) /* FIXME: call wipe signatures again */
 		goto out;
 
 	if (!opt_batch_mode)
