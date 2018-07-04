@@ -1,17 +1,28 @@
+noinst_LTLIBRARIES += libutils_tools.la
+
+libutils_tools_la_SOURCES =	\
+	src/utils_tools.c	\
+	src/utils_password.c	\
+	lib/utils_io.c		\
+	lib/utils_blkid.c	\
+	src/cryptsetup.h
+
+libutils_tools_la_CFLAGS = $(AM_CFLAGS)
+
+libutils_tools_la_LIBADD = -lm @BLKID_LIBS@
+
 # cryptsetup
 if CRYPTSETUP
 
 cryptsetup_SOURCES =		\
 	lib/utils_crypt.c	\
 	lib/utils_loop.c	\
-	lib/utils_io.c		\
-	src/utils_tools.c	\
-	src/utils_password.c	\
 	src/cryptsetup.c	\
 	src/cryptsetup.h
 
-cryptsetup_LDADD = -lm		\
+cryptsetup_LDADD = \
 	libcryptsetup.la	\
+	libutils_tools.la	\
 	@POPT_LIBS@		\
 	@PWQUALITY_LIBS@	\
 	@PASSWDQC_LIBS@		\
@@ -37,12 +48,12 @@ if VERITYSETUP
 veritysetup_SOURCES =		\
 	lib/utils_crypt.c	\
 	lib/utils_loop.c	\
-	src/utils_tools.c	\
 	src/veritysetup.c	\
 	src/cryptsetup.h
 
-veritysetup_LDADD = -lm		\
+veritysetup_LDADD = \
 	libcryptsetup.la	\
+	libutils_tools.la	\
 	@POPT_LIBS@
 
 sbin_PROGRAMS += veritysetup
@@ -65,12 +76,12 @@ if INTEGRITYSETUP
 integritysetup_SOURCES =	\
 	lib/utils_crypt.c	\
 	lib/utils_loop.c	\
-	src/utils_tools.c	\
 	src/integritysetup.c	\
 	src/cryptsetup.h
 
-integritysetup_LDADD = -lm	\
+integritysetup_LDADD = \
 	libcryptsetup.la	\
+	libutils_tools.la	\
 	@POPT_LIBS@		\
 	@UUID_LIBS@
 
@@ -92,18 +103,17 @@ endif
 if REENCRYPT
 cryptsetup_reencrypt_SOURCES =		\
 	lib/utils_crypt.c		\
-	lib/utils_io.c			\
-	src/utils_tools.c		\
-	src/utils_password.c		\
 	src/cryptsetup_reencrypt.c	\
 	src/cryptsetup.h
 
-cryptsetup_reencrypt_LDADD = -lm	\
+cryptsetup_reencrypt_LDADD = \
 	libcryptsetup.la		\
+	libutils_tools.la		\
 	@POPT_LIBS@			\
 	@PWQUALITY_LIBS@		\
 	@PASSWDQC_LIBS@			\
-	@UUID_LIBS@
+	@UUID_LIBS@			\
+	@BLKID_LIBS@
 
 sbin_PROGRAMS += cryptsetup-reencrypt
 

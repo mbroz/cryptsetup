@@ -44,6 +44,7 @@
 #include "lib/utils_loop.h"
 #include "lib/utils_fips.h"
 #include "lib/utils_io.h"
+#include "lib/utils_blkid.h"
 
 #include "libcryptsetup.h"
 
@@ -101,6 +102,9 @@ int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr);
 
 int tools_read_mk(const char *file, char **key, int keysize);
 int tools_write_mk(const char *file, const char *key, int keysize);
+
+int tools_detect_signatures(const char *device, int ignore_luks, size_t *count);
+int tools_wipe_all_signatures(const char *path);
 
 /* Log */
 #define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
