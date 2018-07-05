@@ -508,7 +508,7 @@ int device_fallocate(struct device *device, uint64_t size)
 	struct stat st;
 	int devfd, r = -EINVAL;
 
-	devfd = open(device_path(device), O_WRONLY);
+	devfd = open(device_path(device), O_RDWR);
 	if(devfd == -1)
 		return -EINVAL;
 
