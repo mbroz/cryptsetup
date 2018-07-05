@@ -207,7 +207,7 @@ echo $PWD2 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo "[6] kill slot"
 # format new luks device with active keys PWD1, PWD2
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $IMG $FAST_PBKDF_OPT || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $IMG $FAST_PBKDF_OPT || fail
 echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT || fail
 # deactivate keys by killing slots
 $CRYPTSETUP luksDump $IMG | grep -q "Key Slot 0: ENABLED" || fail
@@ -224,7 +224,7 @@ $CRYPTSETUP luksDump $IMG | grep -q "Key Slot 1: DISABLED" || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 echo $PWD2 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 echo "[7] header backup"
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $IMG $FAST_PBKDF_OPT || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $IMG $FAST_PBKDF_OPT || fail
 $CRYPTSETUP luksHeaderBackup $IMG --header-backup-file $HEADER_IMG || fail
 echo $PWD1 | $CRYPTSETUP luksRemoveKey $IMG || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
@@ -678,8 +678,8 @@ $CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 prepare "[28] Detached LUKS header" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG || fail
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 1 >/dev/null 2>&1 && fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 8192 || fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 8192 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 $CRYPTSETUP -q resize  $DEV_NAME --size 100 --header $HEADER_IMG || fail
 $CRYPTSETUP -q status  $DEV_NAME --header $HEADER_IMG | grep "size:" | grep -q "100 sectors" || fail

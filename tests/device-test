@@ -154,7 +154,7 @@ else
 	echo -e "$PWD1" | $CRYPTSETUP luksFormat --type luks2 -$DEV --sector-size 1234 >/dev/null 2>&1 && fail
 	for S in 512 1024 2048 4096; do
 		echo -n "[$S]"
-		echo -e "$PWD1" | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 --pbkdf-force-iterations 1000 $DEV --sector-size $S || fail
+		echo -e "$PWD1" | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf pbkdf2 --pbkdf-force-iterations 1000 $DEV --sector-size $S || fail
 		echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME || fail
 		check_sector_size $S
 		$CRYPTSETUP close $DEV_NAME || fail

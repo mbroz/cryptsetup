@@ -208,7 +208,7 @@ function load_key()
 
 # LUKS tests
 prepare "[3] format" new
-echo $PWD1 | $CRYPTSETUP $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $LOOPDEV || fail
 prepare "[4] format using hash sha512" wipe
 echo $PWD1 | $CRYPTSETUP $FAST_PBKDF_OPT -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $LOOPDEV || fail
 
@@ -564,7 +564,7 @@ $CRYPTSETUP -q luksClose $DEV_NAME || fail
 
 prepare "[27] luksOpen with specified key slot number" new
 # first, let's try passphrase option
-echo $PWD3 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT -S 5 --type luks2 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -S 5 --type luks2 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 echo $PWD3 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME || fail
@@ -576,7 +576,7 @@ echo $PWD3 | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 # second, try it with keyfiles
-$CRYPTSETUP luksFormat -q -S 5 $FAST_PBKDF_OPT -d $KEY5 --type luks2 $LOOPDEV || fail
+$CRYPTSETUP -q luksFormat -q -S 5 $FAST_PBKDF_OPT -d $KEY5 --type luks2 $LOOPDEV || fail
 $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 1 -d $KEY5 $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -S 5 -d $KEY5 $LOOPDEV $DEV_NAME || fail
 check_exists
@@ -604,8 +604,8 @@ prepare "[28] Detached LUKS header" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
 #FIXME
 #echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 1 >/dev/null 2>&1 && fail
-echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG --align-payload 8192 || fail
-echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG --align-payload 8192 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q resize  $DEV_NAME --size 100 --header $HEADER_IMG || fail
 $CRYPTSETUP -q status  $DEV_NAME --header $HEADER_IMG | grep "size:" | grep -q "100 sectors" || fail
@@ -740,7 +740,7 @@ prepare "[35] LUKS label and subsystem" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Subsystem:" | grep -q "(no subsystem)" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Label:" | grep -q "(no label)" || fail
-echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --subsystem SatelliteTwo --label TheLabel || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --subsystem SatelliteTwo --label TheLabel || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Subsystem:" | grep -q "SatelliteTwo" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Label:" | grep -q "TheLabel" || fail
 $CRYPTSETUP config $LOOPDEV --subsystem SatelliteThree
@@ -754,22 +754,22 @@ prepare "[36] LUKS PBKDF setting" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf bla $LOOPDEV >/dev/null 2>&1 && fail
 # Force setting, no benchmark. PBKDF2 has 1000 iterations as a minimum
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-iterations 999 $LOOPDEV 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-iterations 1234 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-iterations 1234 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Iterations:" | grep -q "1234" || fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 3 $LOOPDEV 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 4 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 3 $LOOPDEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 4 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2id" || fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2i  --pbkdf-force-iterations 4 \
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2i  --pbkdf-force-iterations 4 \
 	--pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2i" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | grep -q "4" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | grep -q "1234" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Threads:" | grep -q "1" || fail
 # Benchmark
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf argon2i -i 500 --pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2i -i 500 --pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || fail
 [ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || fail
 [ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 -i 500 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf pbkdf2 -i 500 $LOOPDEV || fail
 [ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep -m1 "Iterations:" | cut -d' ' -f 2 | sed -e 's/\ //g')" -gt 1000 ] || fail
 
 prepare "[37] LUKS Keyslot convert" wipe
