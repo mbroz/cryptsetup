@@ -22,6 +22,8 @@
 #ifndef _UTILS_KEYRING
 #define _UTILS_KEYRING
 
+#include <stddef.h>
+
 int keyring_check(void);
 
 int keyring_get_passphrase(const char *key_desc,

@@ -22,6 +22,7 @@
 #ifndef _LOOPAES_H
 #define _LOOPAES_H
 
+#include <stdint.h>
 #include <unistd.h>
 
 struct crypt_device;

@@ -24,6 +24,8 @@
 #ifndef INCLUDED_CRYPTSETUP_LUKS_AF_H
 #define INCLUDED_CRYPTSETUP_LUKS_AF_H
 
+#include <stddef.h>
+
 /*
  * AF_split operates on src and produces information split data in
  * dst. src is assumed to be of the length blocksize. The data stripe
