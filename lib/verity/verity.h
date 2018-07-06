@@ -21,6 +21,7 @@
 #ifndef _VERITY_H
 #define _VERITY_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define VERITY_MAX_HASH_TYPE 1

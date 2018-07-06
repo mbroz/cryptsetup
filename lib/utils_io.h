@@ -24,6 +24,8 @@
 #ifndef _CRYPTSETUP_UTILS_IO_H
 #define _CRYPTSETUP_UTILS_IO_H
 
+#include <sys/types.h>
+
 ssize_t read_buffer(int fd, void *buf, size_t length);
 ssize_t write_buffer(int fd, const void *buf, size_t length);
 ssize_t write_blockwise(int fd, size_t bsize, size_t alignment,
