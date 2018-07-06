@@ -408,12 +408,27 @@ if test x$enable_libargon2 = xyes ; then
 	enable_internal_argon2=no
 else
 	AC_MSG_WARN([Argon2 bundled (slow) reference implementation will be used, please consider to use system library with --enable-libargon2.])
+
+	AC_ARG_ENABLE(internal-sse-argon2, AS_HELP_STRING([--enable-internal-sse-argon2],
+		[enable internal SSE implementation of Argon2 PBKDF]),[], [enable_internal_sse_argon2=no])
+
+	if test x$enable_internal_sse_argon2 = xyes ; then
+		AC_MSG_CHECKING(if Argon2 SSE optimization can be used)
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+			#include <emmintrin.h>
+			__m128i testfunc(__m128i *a, __m128i *b) {
+			  return _mm_xor_si128(_mm_loadu_si128(a), _mm_loadu_si128(b));
+			}
+		]])],,[enable_internal_sse_argon2=no])
+		AC_MSG_RESULT($enable_internal_sse_argon2)
+	fi
 fi
 
 if test x$enable_internal_argon2 = xyes ; then
 	AC_DEFINE(USE_INTERNAL_ARGON2, 1, [Use internal Argon2])
 fi
 AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test x$enable_internal_argon2 = xyes)
+AM_CONDITIONAL(CRYPTO_INTERNAL_SSE_ARGON2, test x$enable_internal_sse_argon2 = xyes)
 
 dnl Magic for cryptsetup.static build.
 if test x$enable_static_cryptsetup = xyes; then

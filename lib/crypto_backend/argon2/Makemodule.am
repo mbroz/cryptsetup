@@ -7,16 +7,22 @@ libargon2_la_SOURCES = \
 	lib/crypto_backend/argon2/blake2/blake2b.c \
 	lib/crypto_backend/argon2/blake2/blake2.h \
 	lib/crypto_backend/argon2/blake2/blake2-impl.h \
-	lib/crypto_backend/argon2/blake2/blamka-round-ref.h \
 	lib/crypto_backend/argon2/argon2.c \
 	lib/crypto_backend/argon2/argon2.h \
 	lib/crypto_backend/argon2/core.c \
 	lib/crypto_backend/argon2/core.h \
 	lib/crypto_backend/argon2/encoding.c \
 	lib/crypto_backend/argon2/encoding.h \
-	lib/crypto_backend/argon2/ref.c \
 	lib/crypto_backend/argon2/thread.c \
 	lib/crypto_backend/argon2/thread.h
+
+if CRYPTO_INTERNAL_SSE_ARGON2
+libargon2_la_SOURCES += lib/crypto_backend/argon2/blake2/blamka-round-opt.h \
+			lib/crypto_backend/argon2/opt.c
+else
+libargon2_la_SOURCES += lib/crypto_backend/argon2/blake2/blamka-round-ref.h \
+			lib/crypto_backend/argon2/ref.c
+endif
 
 EXTRA_DIST += lib/crypto_backend/argon2/LICENSE
 EXTRA_DIST += lib/crypto_backend/argon2/README
