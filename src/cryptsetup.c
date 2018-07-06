@@ -2222,10 +2222,10 @@ int main(int argc, const char **argv)
 
 	while((r = poptGetNextOpt(popt_context)) > 0) {
 		unsigned long long ull_value;
-		char *endp, *kf;
+		char *endp;
 
 		if (r == 6) {
-			kf = poptGetOptArg(popt_context);
+			const char *kf = poptGetOptArg(popt_context);
 			if (tools_is_stdin(kf))
 				opt_keyfile_stdin = kf;
 			else if (opt_keyfiles_count < MAX_KEYFILES)
