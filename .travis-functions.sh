@@ -38,6 +38,7 @@ function check_nonroot
 	configure_travis \
 		--enable-python \
 		--enable-cryptsetup-reencrypt \
+		--enable-internal-sse-argon2 \
 		"$cfg_opts" \
 		|| return
 
@@ -62,6 +63,7 @@ function check_root
     configure_travis \
 		--enable-python \
 		--enable-cryptsetup-reencrypt \
+		--enable-internal-sse-argon2 \
 		"$cfg_opts" \
 		|| return
 
@@ -87,6 +89,7 @@ function check_nonroot_compile_only
 	configure_travis \
 		--enable-python \
 		--enable-cryptsetup-reencrypt \
+		--enable-internal-sse-argon2 \
 		"$cfg_opts" \
 		|| return
 
