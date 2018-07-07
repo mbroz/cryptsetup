@@ -1,7 +1,9 @@
 noinst_LTLIBRARIES += libargon2.la
 
 libargon2_la_CFLAGS = $(AM_CFLAGS) -std=c89 -pthread -O3
-libargon2_la_CPPFLAGS = $(AM_CPPFLAGS) -I lib/crypto_backend/argon2/blake2
+libargon2_la_CPPFLAGS = $(AM_CPPFLAGS) \
+	-I lib/crypto_backend/argon2 \
+	-I lib/crypto_backend/argon2/blake2
 
 libargon2_la_SOURCES = \
 	lib/crypto_backend/argon2/blake2/blake2b.c \
