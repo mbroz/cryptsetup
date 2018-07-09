@@ -14,6 +14,7 @@ IMG=luks-test
 IMG10=luks-test-v10
 HEADER_IMG=luks-header
 HEADER_KEYU=luks2_keyslot_unassigned.img
+HEADER_LUKS2_PV=blkid-luks2-pv.img
 KEY1=key1
 KEY2=key2
 KEY5=key5
@@ -46,7 +47,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV >/dev/null 2>&1
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -622,15 +623,16 @@ $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "5: luks2" || fail
 $CRYPTSETUP luksKillSlot -q _fakedev_ --header $HEADER_IMG 5 || fail
 $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "5: luks2" && fail
 
-#prepare "[29] Repair metadata" wipe
-#FIXME
-#$CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT $LOOPDEV $KEY1 --key-slot 0 || fail
-# second sector overwrite should corrupt keyslot 6+7
-#dd if=/dev/urandom of=$LOOPDEV bs=512 seek=1 count=1 >/dev/null 2>&1
-#$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME >/dev/null 2>&1 && fail
-#$CRYPTSETUP -q repair $LOOPDEV >/dev/null 2>&1 || fail
-#$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
-#$CRYPTSETUP luksClose $DEV_NAME || fail
+prepare "[29] Repair metadata" wipe
+xz -dk $HEADER_LUKS2_PV.xz
+$CRYPTSETUP isLuks --disable-locks $HEADER_LUKS2_PV && fail
+$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
+$CRYPTSETUP isLuks --disable-locks --type luks2 $HEADER_LUKS2_PV && fail
+$CRYPTSETUP isLuks --type luks2 $HEADER_LUKS2_PV && fail
+$CRYPTSETUP -q repair $HEADER_LUKS2_PV || fail
+$CRYPTSETUP isLuks $HEADER_LUKS2_PV || fail
+$CRYPTSETUP isLuks --type luks2 $HEADER_LUKS2_PV || fail
+$CRYPTSETUP isLuks --type luks1 $HEADER_LUKS2_PV && fail
 
 prepare "[30] LUKS erase" wipe
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEY5 --key-slot 5 || fail
