@@ -593,7 +593,8 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	uint64_t hdr_size;
 	uint64_t hdr2_offsets[] = LUKS2_HDR2_OFFSETS;
 
-	if (do_recovery && !crypt_metadata_locking_enabled()) {
+	/* Skip auto-recovery if locks are disabled and we're not doing LUKS2 explicit repair */
+	if (do_recovery && do_blkprobe && !crypt_metadata_locking_enabled()) {
 		do_recovery = 0;
 		log_dbg("Disabling header auto-recovery due to locking being disabled.");
 	}
