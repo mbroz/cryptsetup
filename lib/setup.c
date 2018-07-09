@@ -768,6 +768,14 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 			return -EINVAL;
 		}
 
+		/*
+		 * Current LUKS2 repair just overrides blkid probes
+		 * and perform auto-recovery if possible. This is safe
+		 * unless future LUKS2 repair code do something more
+		 * sophisticated. In such case we would need to check
+		 * for LUKS2 requirements and decide if it's safe to
+		 * perform repair.
+		 */
 		r =  _crypt_load_luks2(cd, cd->type != NULL, repair);
 	} else
 		r = -EINVAL;
@@ -2023,8 +2031,7 @@ int crypt_repair(struct crypt_device *cd,
 	if (!crypt_metadata_device(cd))
 		return -EINVAL;
 
-	/* FIXME LUKS2 (if so it also must respect LUKS2 requirements) */
-	if (requested_type && !isLUKS1(requested_type))
+	if (requested_type && !isLUKS(requested_type))
 		return -EINVAL;
 
 	/* Load with repair */
