@@ -624,7 +624,7 @@ int crypt_load(struct crypt_device *cd,
 	void *params);
 
 /**
- * Try to repair crypt device LUKS1 on-disk header if invalid.
+ * Try to repair crypt device LUKS on-disk header if invalid.
  *
  * @param cd crypt device handle
  * @param requested_type @link crypt-type @endlink or @e NULL for all known
@@ -632,9 +632,11 @@ int crypt_load(struct crypt_device *cd,
  *
  * @returns 0 on success or negative errno value otherwise.
  *
- * @note Does not support LUKS2 devices explicitly. LUKS2 header is auto-repaired
- *	 (if exactly one header checksum does not match) automatically on
- *	 crypt_load().
+ * @note For LUKS2 device crypt_repair bypass blkid checks and
+ * 	 perform auto-recovery even though there're third party device
+ * 	 signatures found by blkid probes. Currently the crypt_repair on LUKS2
+ * 	 works only if exactly one header checksum does not match or exactly
+ * 	 one header is missing.
  */
 int crypt_repair(struct crypt_device *cd,
 	const char *requested_type,
