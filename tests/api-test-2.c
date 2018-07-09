@@ -65,6 +65,7 @@ typedef int32_t key_serial_t;
 #define BACKUP_FILE "csetup_backup_file"
 #define IMAGE1 "compatimage2.img"
 #define IMAGE_EMPTY "empty.img"
+#define IMAGE_PV_LUKS2_SEC "blkid-luks2-pv.img"
 
 #define KEYFILE1 "key1.file"
 #define KEY1 "compatkey"
@@ -122,6 +123,7 @@ static char *DEVICE_2 = NULL;
 static char *DEVICE_3 = NULL;
 static char *DEVICE_4 = NULL;
 static char *DEVICE_5 = NULL;
+static char *DEVICE_6 = NULL;
 
 static char *tmp_file_1 = NULL;
 static char *test_loop_file = NULL;
@@ -267,6 +269,9 @@ static void _cleanup(void)
 	if (loop_device(DEVICE_5))
 		loop_detach(DEVICE_5);
 
+	if (loop_device(DEVICE_6))
+		loop_detach(DEVICE_6);
+
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_system("rm -f " IMAGE1, 0);
 	_system("rm -rf " CONV_DIR, 0);
@@ -279,6 +284,8 @@ static void _cleanup(void)
 	remove(REQS_LUKS2_HEADER);
 	remove(NO_REQS_LUKS2_HEADER);
 	remove(BACKUP_FILE);
+	remove(IMAGE_PV_LUKS2_SEC);
+	remove(IMAGE_PV_LUKS2_SEC ".bcp");
 
 	_remove_keyfiles();
 
@@ -290,6 +297,7 @@ static void _cleanup(void)
 	free(DEVICE_3);
 	free(DEVICE_4);
 	free(DEVICE_5);
+	free(DEVICE_6);
 }
 
 static int _setup(void)
@@ -339,6 +347,11 @@ static int _setup(void)
 
 	_system(" [ ! -e " REQS_LUKS2_HEADER " ] && xz -dk " REQS_LUKS2_HEADER ".xz", 1);
 	fd = loop_attach(&DEVICE_5, REQS_LUKS2_HEADER, 0, 0, &ro);
+	close(fd);
+
+	_system(" [ ! -e " IMAGE_PV_LUKS2_SEC " ] && xz -dk " IMAGE_PV_LUKS2_SEC ".xz", 1);
+	_system(" [ ! -e " IMAGE_PV_LUKS2_SEC ".bcp ] && cp " IMAGE_PV_LUKS2_SEC " " IMAGE_PV_LUKS2_SEC ".bcp", 1);
+	fd = loop_attach(&DEVICE_6, IMAGE_PV_LUKS2_SEC, 0, 0, &ro);
 	close(fd);
 
 	_system(" [ ! -d " CONV_DIR " ] && tar xJf " CONV_DIR ".tar.xz", 1);
@@ -2514,8 +2527,8 @@ static void Luks2Requirements(void)
 	FAIL_((r = crypt_set_label(cd, "label", "subsystem")), "Unmet requirements detected");
 	EQ_(r, -ETXTBSY);
 
-	/* crypt_repair (not implemented for luks2) */
-	FAIL_(crypt_repair(cd, CRYPT_LUKS2, NULL), "Not implemented");
+	/* crypt_repair (with current repair capabilities it's unrestricted) */
+	OK_(crypt_repair(cd, CRYPT_LUKS2, NULL));
 
 	/* crypt_keyslot_add_passphrase (restricted) */
 	FAIL_((r = crypt_keyslot_add_by_passphrase(cd, CRYPT_ANY_SLOT, "aaa", 3, "bbb", 3)), "Unmet requirements detected");
@@ -2845,6 +2858,59 @@ static void Luks2Flags(void)
 	crypt_free(cd);
 }
 
+static void Luks2Repair(void)
+{
+	struct crypt_device *cd;
+	char rollback[256];
+
+	snprintf(rollback, sizeof(rollback),
+		 "dd if=" IMAGE_PV_LUKS2_SEC ".bcp of=%s bs=1M 2>/dev/null",
+		 DEVICE_6);
+
+	OK_(crypt_init(&cd, DEVICE_6));
+
+	FAIL_(crypt_load(cd, CRYPT_LUKS, NULL), "Ambiguous signature detected");
+	FAIL_(crypt_repair(cd, CRYPT_LUKS1, NULL), "Not a LUKS2 device");
+
+	/* check explicit LUKS2 repair works */
+	OK_(crypt_repair(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
+	crypt_free(cd);
+	OK_(crypt_init(&cd, DEVICE_6));
+
+	/* rollback */
+	OK_(_system(rollback, 1));
+	FAIL_(crypt_load(cd, CRYPT_LUKS, NULL), "Ambiguous signature detected");
+
+	/* check repair with type detection works */
+	OK_(crypt_repair(cd, CRYPT_LUKS, NULL));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	crypt_free(cd);
+
+	/* repeat with locking disabled (must not have any effect) */
+	OK_(_system(rollback, 1));
+	OK_(crypt_init(&cd, DEVICE_6));
+	OK_(crypt_metadata_locking(cd, 0));
+
+	FAIL_(crypt_load(cd, CRYPT_LUKS, NULL), "Ambiguous signature detected");
+	FAIL_(crypt_repair(cd, CRYPT_LUKS1, NULL), "Not a LUKS2 device");
+
+	/* check explicit LUKS2 repair works */
+	OK_(crypt_repair(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
+	crypt_free(cd);
+	OK_(crypt_init(&cd, DEVICE_6));
+
+	/* rollback */
+	OK_(_system(rollback, 1));
+	FAIL_(crypt_load(cd, CRYPT_LUKS, NULL), "Ambiguous signature detected");
+
+	/* check repair with type detection works */
+	OK_(crypt_repair(cd, CRYPT_LUKS, NULL));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	crypt_free(cd);
+}
+
 static void int_handler(int sig __attribute__((__unused__)))
 {
 	_quit++;
@@ -2896,6 +2962,7 @@ int main(int argc, char *argv[])
 	RUN_(Luks2Requirements, "Test LUKS2 requirements flags");
 	RUN_(Luks2Integrity, "Test LUKS2 with data integrity");
 	RUN_(Luks2Flags, "Test LUKS2 persistent flags");
+	RUN_(Luks2Repair, "Test LUKS2 repair"); // test disables metadata locking. Run alwas last!
 out:
 	_cleanup();
 	return 0;
