@@ -870,6 +870,10 @@ static int action_luksRepair(void)
 		goto out;
 	}
 
+	r = tools_detect_signatures(action_argv[0], 1, NULL);
+	if (r < 0)
+		goto out;
+
 	r = yesDialog(_("Really try to repair LUKS device header?"),
 		       _("Operation aborted.\n")) ? 0 : -EINVAL;
 	if (r == 0)
