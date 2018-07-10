@@ -39,12 +39,20 @@ function dm_crypt_features()
 
 	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
 	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
 
 	[ $VER_MAJ -lt 1 ] && return
-	[ $VER_MAJ -eq 1 -a $VER_MIN -lt 14 ] && return
+	[ $VER_MAJ -gt 1 ] && {
+		DM_PERF_CPU=1
+		DM_SECTOR_SIZE=1
+		return
+	}
+
+	[ $VER_MIN -lt 14 ] && return
 	DM_PERF_CPU=1
-	[ $VER_MAJ -eq 1 -a $VER_MIN -lt 17 ] && return
-	DM_SECTOR_SIZE=1
+	if [ $VER_MIN -ge 17 -o \( $VER_MIN -eq 14 -a $VER_PTC -ge 5 \) ]; then
+		DM_SECTOR_SIZE=1
+	fi
 }
 
 format() # format
