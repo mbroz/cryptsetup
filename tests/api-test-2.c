@@ -2292,6 +2292,34 @@ static void Pbkdf(void)
 	EQ_(pbkdf->iterations, 33);
 	EQ_(pbkdf->flags, CRYPT_PBKDF_NO_BENCHMARK);
 
+	// time may be unset with iterations
+	argon2.time_ms = 0;
+	OK_(crypt_set_pbkdf_type(cd, &argon2));
+	argon2.flags &= ~CRYPT_PBKDF_NO_BENCHMARK;
+	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Illegal time value.");
+
+	pbkdf2.time_ms = 0;
+	pbkdf2.flags = CRYPT_PBKDF_NO_BENCHMARK;
+	pbkdf2.parallel_threads = 0;
+	pbkdf2.max_memory_kb = 0;
+	pbkdf2.iterations = 1000;
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
+	pbkdf2.flags &= ~CRYPT_PBKDF_NO_BENCHMARK;
+	FAIL_(crypt_set_pbkdf_type(cd, &pbkdf2), "Illegal time value.");
+
+	// hash is relevent ony with pbkdf2
+	pbkdf2.time_ms = 9;
+	pbkdf2.hash = NULL;
+	FAIL_(crypt_set_pbkdf_type(cd, &pbkdf2), "Hash is mandatory for pbkdf2");
+	pbkdf2.hash = "sha1";
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
+
+	argon2.time_ms = 9;
+	argon2.hash = "sha1"; // will be ignored
+	OK_(crypt_set_pbkdf_type(cd, &argon2));
+	argon2.hash = NULL;
+	OK_(crypt_set_pbkdf_type(cd, &argon2));
+
 	crypt_free(cd);
 
 	NOTNULL_(pbkdf = crypt_get_pbkdf_default(CRYPT_LUKS1));
