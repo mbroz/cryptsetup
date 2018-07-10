@@ -70,8 +70,8 @@ The following are valid actions for all supported device types.
 .IP
 Opens (creates a mapping with) <name> backed by device <device>.
 
-Device type can be \fIplain\fR, \fIluks\fR (default), \fIloopaes\fR
-or \fItcrypt\fR.
+Device type can be \fIplain\fR, \fIluks\fR (default), \fIluks1\fR, \fIluks2\fR,
+\fIloopaes\fR or \fItcrypt\fR.
 
 For backward compatibility there are \fBopen\fR command aliases:
 
@@ -243,7 +243,7 @@ the command prompts for it interactively.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
 \-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file, \-\-token\-id,
-\-\-token\-only, \-\-disable\-keyring, \-\-disable\-locks].
+\-\-token\-only, \-\-disable\-keyring, \-\-disable\-locks, \-\-type].
 .PP
 \fIluksSuspend\fR <name>
 .IP
@@ -266,7 +266,7 @@ Resumes a suspended device and reinstates the encryption key.
 Prompts interactively for a passphrase if \-\-key-file is not given.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-size, \-\-header,
-\-\-disable\-keyring,\-\-disable\-locks]
+\-\-disable\-keyring, \-\-disable\-locks, \-\-type]
 .PP
 \fIluksAddKey\fR <device> [<key file with new key>]
 .IP
@@ -285,7 +285,7 @@ is not required.
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-master\-key\-file,
 \-\-iter\-time, \-\-force\-password, \-\-header, \-\-disable\-locks,
-\-\-unbound].
+\-\-unbound, \-\-type].
 .PP
 \fIluksRemoveKey\fR <device> [<key file with passphrase to be removed>]
 .IP
@@ -294,7 +294,7 @@ passphrase to be removed can be specified interactively,
 as the positional argument or via \-\-key-file.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size, \-\-header, \-\-disable\-locks]
+\-\-keyfile\-size, \-\-header, \-\-disable\-locks, \-\-type]
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as an argument
@@ -328,7 +328,7 @@ inaccessible.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header,
-\-\-disable\-locks].
+\-\-disable\-locks, \-\-type].
 .PP
 .PP
 \fIluksConvertKey\fR <device>
@@ -364,7 +364,7 @@ an interactive confirmation when doing so. Removing the last
 passphrase makes a LUKS container permanently inaccessible.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size, \-\-header, \-\-disable\-locks].
+\-\-keyfile\-size, \-\-header, \-\-disable\-locks, \-\-type].
 
 \fBWARNING:\fR If you read the passphrase from stdin
 (without further argument or with '-' as an argument
@@ -399,6 +399,8 @@ Set new UUID if \fI\-\-uuid\fR option is specified.
 Returns true, if <device> is a LUKS device, false otherwise.
 Use option \-v to get human-readable feedback. 'Command successful.'
 means the device is a LUKS device.
+
+By specifying \-\-type you may query for specific LUKS version.
 .PP
 \fIluksDump\fR <device>
 .IP
@@ -417,7 +419,7 @@ either interactively or via \-\-key\-file.
 
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
 \-\-keyfile\-offset, \-\-keyfile\-size, \-\-header, \-\-disable\-locks,
-\-\-master\-key\-file].
+\-\-master\-key\-file, \-\-type].
 
 \fBWARNING:\fR If \-\-dump\-master\-key is used with \-\-key\-file
 and the argument to \-\-key\-file is '-', no validation question
@@ -663,7 +665,8 @@ for LUKS device type.
 This command is useful to fix some known benign LUKS metadata
 header corruptions. Only basic corruptions of unused keyslot
 are fixable. This command will only change the LUKS header, not
-any key-slot data.
+any key-slot data. You may enforce LUKS version by adding \-\-type
+option.
 
 \fBWARNING:\fR Always create a binary backup of the original
 header before calling this command.
