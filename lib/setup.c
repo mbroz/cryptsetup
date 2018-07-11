@@ -4538,4 +4538,5 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 static void __attribute__((destructor)) libcryptsetup_exit(void)
 {
 	crypt_backend_destroy();
+	crypt_random_exit();
 }
