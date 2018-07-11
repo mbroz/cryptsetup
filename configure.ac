@@ -485,9 +485,13 @@ AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
 
 dnl ==========================================================================
-AC_ARG_ENABLE([dev-random], AS_HELP_STRING([--enable-dev-random],
-[use blocking /dev/random by default for key generator (otherwise use /dev/urandom)]),
-[default_rng=/dev/random], [default_rng=/dev/urandom])
+AC_ARG_ENABLE([dev-random],
+	AS_HELP_STRING([--enable-dev-random], [use /dev/random by default for key generation (otherwise use /dev/urandom)]))
+if test "x$enable_dev_random" = "xyes"; then
+	default_rng=/dev/random
+else
+	default_rng=/dev/urandom
+fi
 AC_DEFINE_UNQUOTED(DEFAULT_RNG, ["$default_rng"], [default RNG type for key generator])
 
 dnl ==========================================================================
