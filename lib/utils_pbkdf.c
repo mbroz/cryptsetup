@@ -70,7 +70,7 @@ int verify_pbkdf_params(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (!pbkdf->time_ms && !(pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK)) {
-		log_err(cd, _("Requested PBKDF target time can not be zero."));
+		log_err(cd, _("Requested PBKDF target time cannot be zero."));
 		return -EINVAL;
 	}
 
@@ -126,11 +126,11 @@ int verify_pbkdf_params(struct crypt_device *cd,
 		r = -EINVAL;
 	}
 	if (!pbkdf->max_memory_kb) {
-		log_err(cd, _("Requested maximum PBKDF memory can not be zero."));
+		log_err(cd, _("Requested maximum PBKDF memory cannot be zero."));
 		r = -EINVAL;
 	}
 	if (!pbkdf->parallel_threads) {
-		log_err(cd, _("Requested PBKDF parallel threads can not be zero."));
+		log_err(cd, _("Requested PBKDF parallel threads cannot be zero."));
 		r = -EINVAL;
 	}
 
