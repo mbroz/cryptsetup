@@ -223,7 +223,7 @@ static int hdr_read_disk(struct device *device, struct luks2_hdr_disk *hdr_disk,
 	size_t hdr_json_size = 0;
 	int devfd = -1, r;
 
-	log_dbg("Trying to read %s LUKS2 header at offset %" PRIu64 ".",
+	log_dbg("Trying to read %s LUKS2 header at offset 0x%" PRIx64 ".",
 		secondary ? "secondary" : "primary", offset);
 
 	devfd = device_open_locked(device, O_RDONLY);
@@ -544,6 +544,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	json_object *jobj_hdr1 = NULL, *jobj_hdr2 = NULL;
 	int i, r;
 	uint64_t hdr_size;
+	uint64_t hdr2_offsets[] = LUKS2_HDR2_OFFSETS;
 
 	if (do_recovery && !crypt_metadata_locking_enabled()) {
 		do_recovery = 0;
@@ -576,8 +577,8 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 		/*
 		 * No header size, check all known offsets.
 		 */
-		for (r = -EINVAL,i = 2; r < 0 && i <= 1024; i <<= 1)
-			r = hdr_read_disk(device, &hdr_disk2, &json_area2, i * 4096, 1);
+		for (r = -EINVAL,i = 0; r < 0 && i < ARRAY_SIZE(hdr2_offsets); i++)
+			r = hdr_read_disk(device, &hdr_disk2, &json_area2, hdr2_offsets[i], 1);
 
 		if (r == 0) {
 			jobj_hdr2 = parse_and_validate_json(json_area2, be64_to_cpu(hdr_disk2.hdr_size) - LUKS2_HDR_BIN_LEN);

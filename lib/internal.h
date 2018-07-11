@@ -54,6 +54,10 @@
 
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
+#ifndef ARRAY_SIZE
+# define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
+
 struct crypt_device;
 
 struct volume_key {
