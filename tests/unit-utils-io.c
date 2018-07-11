@@ -241,6 +241,7 @@ static void usage(void)
 static int parse_input_params(int argc, char **argv)
 {
 	struct stat st;
+	unsigned long offset;
 
 	if (argc < 4) {
 		usage();
@@ -256,8 +257,11 @@ static int parse_input_params(int argc, char **argv)
 		return 1;
 	if (argc >= 5 && sscanf(argv[4], "%zu", &test_bsize) != 1)
 		return 1;
-	if (argc >= 6 && sscanf(argv[5], "%llu", &test_offset) != 1)
-		return 1;
+	if (argc >= 6) {
+		if (sscanf(argv[5], "%ld", &offset) != 1)
+			return 1;
+		test_offset = offset;
+	}
 
 	if (!strcmp(argv[2], "read_buffer"))
 		test_fn = READ_BUFFER;
