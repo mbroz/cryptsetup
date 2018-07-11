@@ -63,7 +63,9 @@ AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
 AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR([You need the uuid library.])])
 AC_CHECK_HEADER(libdevmapper.h,,[AC_MSG_ERROR([You need the device-mapper library.])])
 
-AC_ARG_ENABLE(keyring, AS_HELP_STRING([--disable-keyring],[disable kernel keyring support and builtin kernel keyring token]),[], [enable_keyring=yes])
+AC_ARG_ENABLE(keyring,
+	AS_HELP_STRING([--disable-keyring], [disable kernel keyring support and builtin kernel keyring token]),
+	[], [enable_keyring=yes])
 if test "x$enable_keyring" = "xyes"; then
 	AC_CHECK_HEADERS(linux/keyctl.h,,[AC_MSG_ERROR([You need Linux kernel headers with kernel keyring service compiled.])])
 
@@ -121,11 +123,9 @@ LIBS=$saved_LIBS
 
 dnl ==========================================================================
 dnl FIPS extensions (only for RHEL)
-AC_ARG_ENABLE([fips], AS_HELP_STRING([--enable-fips],[enable FIPS mode restrictions]),
-[with_fips=$enableval],
-[with_fips=no])
-
-if test "x$with_fips" = "xyes"; then
+AC_ARG_ENABLE([fips],
+	AS_HELP_STRING([--enable-fips], [enable FIPS mode restrictions]))
+if test "x$enable_fips" = "xyes"; then
 	AC_DEFINE(ENABLE_FIPS, 1, [Enable FIPS mode restrictions])
 
 	if test "x$enable_static" = "xyes" -o "x$enable_static_cryptsetup" = "xyes" ; then
@@ -134,7 +134,7 @@ if test "x$with_fips" = "xyes"; then
 fi
 
 AC_DEFUN([NO_FIPS], [
-	if test "x$with_fips" = "xyes"; then
+	if test "x$enable_fips" = "xyes"; then
 		AC_MSG_ERROR([This option is not compatible with FIPS.])
 	fi
 ])
@@ -142,12 +142,9 @@ AC_DEFUN([NO_FIPS], [
 dnl ==========================================================================
 dnl pwquality library (cryptsetup CLI only)
 AC_ARG_ENABLE([pwquality],
-	      AS_HELP_STRING([--enable-pwquality],
-			     [enable password quality checking using pwquality library]),
-	      [with_pwquality=$enableval],
-	      [with_pwquality=no])
+	AS_HELP_STRING([--enable-pwquality], [enable password quality checking using pwquality library]))
 
-if test "x$with_pwquality" = "xyes"; then
+if test "x$enable_pwquality" = "xyes"; then
 	AC_DEFINE(ENABLE_PWQUALITY, 1, [Enable password quality checking using pwquality library])
 	PKG_CHECK_MODULES([PWQUALITY], [pwquality >= 1.0.0],,
 		AC_MSG_ERROR([You need pwquality library.]))
@@ -159,13 +156,11 @@ fi
 dnl ==========================================================================
 dnl passwdqc library (cryptsetup CLI only)
 AC_ARG_ENABLE([passwdqc],
-	      AS_HELP_STRING([--enable-passwdqc@<:@=CONFIG_PATH@:>@],
-			     [enable password quality checking using passwdqc library (optionally with CONFIG_PATH)]),
-	      [enable_passwdqc=$enableval],
-	      [enable_passwdqc=no])
+	AS_HELP_STRING([--enable-passwdqc@<:@=CONFIG_PATH@:>@],
+		       [enable password quality checking using passwdqc library (optionally with CONFIG_PATH)]))
 
 case "$enable_passwdqc" in
-	yes|no) use_passwdqc_config="" ;;
+	""|yes|no) use_passwdqc_config="" ;;
 	/*) use_passwdqc_config="$enable_passwdqc"; enable_passwdqc=yes ;;
 	*) AC_MSG_ERROR([Unrecognized --enable-passwdqc parameter.]) ;;
 esac
@@ -177,7 +172,7 @@ if test "x$enable_passwdqc" = "xyes"; then
 	PASSWDQC_LIBS="-lpasswdqc"
 fi
 
-if test "x$with_pwquality$enable_passwdqc" = "xyesyes"; then
+if test "x$enable_pwquality$enable_passwdqc" = "xyesyes"; then
 	AC_MSG_ERROR([--enable-pwquality and --enable-passwdqc are mutually incompatible.])
 fi
 
@@ -185,13 +180,14 @@ dnl ==========================================================================
 dnl Crypto backend functions
 
 AC_DEFUN([CONFIGURE_GCRYPT], [
-	if test "x$with_fips" = "xyes"; then
+	if test "x$enable_fips" = "xyes"; then
 		GCRYPT_REQ_VERSION=1.4.5
 	else
 		GCRYPT_REQ_VERSION=1.1.42
 	fi
 	dnl Check if we can use gcrypt PBKDF2 (1.6.0 supports empty password)
-	AC_ARG_ENABLE([gcrypt-pbkdf2], AS_HELP_STRING([--enable-gcrypt-pbkdf2],[force enable internal gcrypt PBKDF2]),
+	AC_ARG_ENABLE([gcrypt-pbkdf2],
+		AS_HELP_STRING([--enable-gcrypt-pbkdf2], [force enable internal gcrypt PBKDF2]),
 		if test "x$enableval" = "xyes"; then
 			[use_internal_pbkdf2=0]
 		else
@@ -291,8 +287,7 @@ dnl ==========================================================================
 saved_LIBS=$LIBS
 
 AC_ARG_ENABLE([static-cryptsetup],
-	AS_HELP_STRING([--enable-static-cryptsetup],
-	[enable build of static version of tools]))
+	AS_HELP_STRING([--enable-static-cryptsetup], [enable build of static version of tools]))
 if test x$enable_static_cryptsetup = xyes; then
 	if test x$enable_static = xno; then
 		AC_MSG_WARN([Requested static cryptsetup build, enabling static library.])
@@ -302,32 +297,32 @@ fi
 AM_CONDITIONAL(STATIC_TOOLS, test x$enable_static_cryptsetup = xyes)
 
 AC_ARG_ENABLE(cryptsetup,
-	AS_HELP_STRING([--disable-cryptsetup],
-	[disable cryptsetup support]),[], [enable_cryptsetup=yes])
+	AS_HELP_STRING([--disable-cryptsetup], [disable cryptsetup support]),
+	[], [enable_cryptsetup=yes])
 AM_CONDITIONAL(CRYPTSETUP, test x$enable_cryptsetup = xyes)
 
 AC_ARG_ENABLE(veritysetup,
-	AS_HELP_STRING([--disable-veritysetup],
-	[disable veritysetup support]),[], [enable_veritysetup=yes])
+	AS_HELP_STRING([--disable-veritysetup], [disable veritysetup support]),
+	[], [enable_veritysetup=yes])
 AM_CONDITIONAL(VERITYSETUP, test x$enable_veritysetup = xyes)
 
 AC_ARG_ENABLE([cryptsetup-reencrypt],
-	AS_HELP_STRING([--disable-cryptsetup-reencrypt],
-	[disable cryptsetup-reencrypt tool]),[], [enable_cryptsetup_reencrypt=yes])
+	AS_HELP_STRING([--disable-cryptsetup-reencrypt], [disable cryptsetup-reencrypt tool]),
+	[], [enable_cryptsetup_reencrypt=yes])
 AM_CONDITIONAL(REENCRYPT, test x$enable_cryptsetup_reencrypt = xyes)
 
 AC_ARG_ENABLE(integritysetup,
-	AS_HELP_STRING([--disable-integritysetup],
-	[disable integritysetup support]),[], [enable_integritysetup=yes])
+	AS_HELP_STRING([--disable-integritysetup], [disable integritysetup support]),
+	[], [enable_integritysetup=yes])
 AM_CONDITIONAL(INTEGRITYSETUP, test x$enable_integritysetup = xyes)
 
 AC_ARG_ENABLE(selinux,
-	AS_HELP_STRING([--disable-selinux],
-	[disable selinux support [default=auto]]),[], [])
+	AS_HELP_STRING([--disable-selinux], [disable selinux support [default=auto]]),
+	[], [enable_selinux=yes])
 
 AC_ARG_ENABLE([udev],
-	AS_HELP_STRING([--disable-udev],
-	[disable udev support]),[], enable_udev=yes)
+	AS_HELP_STRING([--disable-udev], [disable udev support]),
+	[], [enable_udev=yes])
 
 dnl Try to use pkg-config for devmapper, but fallback to old detection
 PKG_CHECK_MODULES([DEVMAPPER], [devmapper >= 1.02.03],, [
@@ -361,16 +356,14 @@ PKG_CHECK_MODULES([JSON_C], [json-c])
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
 	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle) [gcrypt]]),
-	[], with_crypto_backend=gcrypt
-)
+	[], [with_crypto_backend=gcrypt])
 
 dnl Kernel crypto API backend needed for benchmark and tcrypt
-AC_ARG_ENABLE([kernel_crypto], AS_HELP_STRING([--disable-kernel_crypto],
-	[disable kernel userspace crypto (no benchmark and tcrypt)]),
-	[with_kernel_crypto=$enableval],
-	[with_kernel_crypto=yes])
+AC_ARG_ENABLE([kernel_crypto],
+	AS_HELP_STRING([--disable-kernel_crypto], [disable kernel userspace crypto (no benchmark and tcrypt)]),
+	[], [enable_kernel_crypto=yes])
 
-if test "x$with_kernel_crypto" = "xyes"; then
+if test "x$enable_kernel_crypto" = "xyes"; then
 	AC_CHECK_HEADERS(linux/if_alg.h,,
 		[AC_MSG_ERROR([You need Linux kernel headers with userspace crypto interface. (Or use --disable-kernel_crypto.)])])
 	AC_DEFINE(ENABLE_AF_ALG, 1, [Enable using of kernel userspace crypto])
@@ -394,11 +387,12 @@ AM_CONDITIONAL(CRYPTO_INTERNAL_PBKDF2, test $use_internal_pbkdf2 = 1)
 AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PBKDF2])
 
 dnl Argon2 implementation
-AC_ARG_ENABLE(internal-argon2, AS_HELP_STRING([--disable-internal-argon2],
-	[disable internal implementation of Argon2 PBKDF]),[], [enable_internal_argon2=yes])
+AC_ARG_ENABLE(internal-argon2,
+	AS_HELP_STRING([--disable-internal-argon2], [disable internal implementation of Argon2 PBKDF])
+	[], [enable_internal_argon2=yes])
 
-AC_ARG_ENABLE([libargon2], AS_HELP_STRING([--enable-libargon2],
-	[enable external libargon2 (PHC) library (disables internal bundled version) ]),[], [enable_libargon2=no])
+AC_ARG_ENABLE([libargon2],
+	AS_HELP_STRING([--enable-libargon2], [enable external libargon2 (PHC) library (disables internal bundled version)]))
 
 if test x$enable_libargon2 = xyes ; then
 	AC_CHECK_HEADERS(argon2.h,,
@@ -409,8 +403,8 @@ if test x$enable_libargon2 = xyes ; then
 else
 	AC_MSG_WARN([Argon2 bundled (slow) reference implementation will be used, please consider to use system library with --enable-libargon2.])
 
-	AC_ARG_ENABLE(internal-sse-argon2, AS_HELP_STRING([--enable-internal-sse-argon2],
-		[enable internal SSE implementation of Argon2 PBKDF]),[], [enable_internal_sse_argon2=no])
+	AC_ARG_ENABLE(internal-sse-argon2,
+		AS_HELP_STRING([--enable-internal-sse-argon2], [enable internal SSE implementation of Argon2 PBKDF]))
 
 	if test x$enable_internal_sse_argon2 = xyes ; then
 		AC_MSG_CHECKING(if Argon2 SSE optimization can be used)
@@ -475,7 +469,7 @@ if test x$enable_static_cryptsetup = xyes; then
 	LIBS="$saved_LIBS -static"
 	PKG_CHECK_MODULES([DEVMAPPER_STATIC], [devmapper >= 1.02.27],,[
 		DEVMAPPER_STATIC_LIBS=$DEVMAPPER_LIBS
-		if test "x$enable_selinux" != xno; then
+		if test "x$enable_selinux" = "xyes"; then
 			AC_CHECK_LIB(sepol, sepol_bool_set)
 			AC_CHECK_LIB(selinux, is_selinux_enabled)
 			DEVMAPPER_STATIC_LIBS="$DEVMAPPER_STATIC_LIBS $LIBS"
@@ -553,15 +547,14 @@ AC_DEFUN([CS_ABSPATH], [
 
 dnl ==========================================================================
 dnl Python bindings
-AC_ARG_ENABLE([python], AS_HELP_STRING([--enable-python],[enable Python bindings]),
-[with_python=$enableval],
-[with_python=no])
+AC_ARG_ENABLE([python],
+	AS_HELP_STRING([--enable-python], [enable Python bindings]))
 
 AC_ARG_WITH([python_version],
 	AS_HELP_STRING([--with-python_version=VERSION], [required Python version [2.6]]),
 	[PYTHON_VERSION=$withval], [PYTHON_VERSION=2.6])
 
-if test "x$with_python" = "xyes"; then
+if test "x$enable_python" = "xyes"; then
 	AM_PATH_PYTHON([$PYTHON_VERSION])
 
 	AC_PATH_PROGS([PYTHON_CONFIG], [python${PYTHON_VERSION}-config python-config], [no])
@@ -579,7 +572,7 @@ if test "x$with_python" = "xyes"; then
 	AC_MSG_RESULT($PYTHON_LIBS)
 	AC_SUBST(PYTHON_LIBS)
 fi
-AM_CONDITIONAL([PYTHON_CRYPTSETUP], [test "x$with_python" = "xyes"])
+AM_CONDITIONAL([PYTHON_CRYPTSETUP], [test "x$enable_python" = "xyes"])
 
 dnl ==========================================================================
 CS_STR_WITH([plain-hash],   [password hashing function for plain mode], [ripemd160])
@@ -633,8 +626,7 @@ AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
 dnl Override default LUKS format version (for cryptsetup or cryptsetup-reencrypt format actions only).
 AC_ARG_WITH([default_luks_format],
 	AS_HELP_STRING([--with-default-luks-format=FORMAT], [default LUKS format version (LUKS1/LUKS2) [LUKS1]]),
-	[], with_default_luks_format=LUKS1
-)
+	[], [with_default_luks_format=LUKS1])
 
 case $with_default_luks_format in
 	LUKS1) default_luks=CRYPT_LUKS1 ;;
