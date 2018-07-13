@@ -9,7 +9,7 @@ libutils_tools_la_SOURCES =	\
 
 libutils_tools_la_CFLAGS = $(AM_CFLAGS)
 
-libutils_tools_la_LIBADD = -lm @BLKID_LIBS@
+libutils_tools_la_LIBADD = -lm @BLKID_LIBS@ @PWQUALITY_LIBS@ @PASSWDQC_LIBS@
 
 # cryptsetup
 if CRYPTSETUP
@@ -24,8 +24,6 @@ cryptsetup_LDADD = \
 	libcryptsetup.la	\
 	libutils_tools.la	\
 	@POPT_LIBS@		\
-	@PWQUALITY_LIBS@	\
-	@PASSWDQC_LIBS@		\
 	@UUID_LIBS@
 
 sbin_PROGRAMS += cryptsetup
@@ -110,10 +108,7 @@ cryptsetup_reencrypt_LDADD = \
 	libcryptsetup.la		\
 	libutils_tools.la		\
 	@POPT_LIBS@			\
-	@PWQUALITY_LIBS@		\
-	@PASSWDQC_LIBS@			\
-	@UUID_LIBS@			\
-	@BLKID_LIBS@
+	@UUID_LIBS@
 
 sbin_PROGRAMS += cryptsetup-reencrypt
 
