@@ -148,7 +148,7 @@ static int keyfile_seek(int fd, uint64_t bytes)
 
 int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 			      char **key, size_t *key_size_read,
-			      uint64_t keyfile_offset, size_t keyfile_size_max,
+			      uint64_t keyfile_offset, size_t key_size,
 			      uint32_t flags)
 {
 	int fd, regular_file, char_to_read = 0, char_read = 0, unlimited_read = 0;
@@ -177,13 +177,13 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	}
 
 	/* If not requested otherwise, we limit input to prevent memory exhaustion */
-	if (keyfile_size_max == 0) {
-		keyfile_size_max = DEFAULT_KEYFILE_SIZE_MAXKB * 1024 + 1;
+	if (key_size == 0) {
+		key_size = DEFAULT_KEYFILE_SIZE_MAXKB * 1024 + 1;
 		unlimited_read = 1;
 		/* use 4k for buffer (page divisor but avoid huge pages) */
 		buflen = 4096 - sizeof(struct safe_allocation);
 	} else
-		buflen = keyfile_size_max;
+		buflen = key_size;
 
 	regular_file = 0;
 	if (keyfile) {
@@ -202,8 +202,8 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 			file_read_size -= keyfile_offset;
 
 			/* known keyfile size, alloc it in one step */
-			if (file_read_size >= (uint64_t)keyfile_size_max)
-				buflen = keyfile_size_max;
+			if (file_read_size >= (uint64_t)key_size)
+				buflen = key_size;
 			else if (file_read_size)
 				buflen = file_read_size;
 		}
@@ -221,7 +221,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 		goto out_err;
 	}
 
-	for (i = 0, newline = 0; i < keyfile_size_max; i += char_read) {
+	for (i = 0, newline = 0; i < key_size; i += char_read) {
 		if (i == buflen) {
 			buflen += 4096;
 			pass = crypt_safe_realloc(pass, buflen);
@@ -240,9 +240,9 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 			 */
 			char_to_read = 1;
 		} else {
-			/* char_to_read = min(keyfile_size_max - i, buflen - i) */
-			char_to_read = keyfile_size_max < buflen ?
-				keyfile_size_max - i : buflen - i;
+			/* char_to_read = min(key_size - i, buflen - i) */
+			char_to_read = key_size < buflen ?
+				key_size - i : buflen - i;
 		}
 		char_read = read_buffer(fd, &pass[i], char_to_read);
 		if (char_read < 0) {
@@ -269,12 +269,12 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	}
 
 	/* Fail if we exceeded internal default (no specified size) */
-	if (unlimited_read && i == keyfile_size_max) {
+	if (unlimited_read && i == key_size) {
 		log_err(cd, _("Maximum keyfile size exceeded."));
 		goto out_err;
 	}
 
-	if (!unlimited_read && i != keyfile_size_max) {
+	if (!unlimited_read && i != key_size) {
 		log_err(cd, _("Cannot read requested amount of data."));
 		goto out_err;
 	}

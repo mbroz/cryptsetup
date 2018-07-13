@@ -1616,17 +1616,20 @@ void crypt_set_debug_level(int level);
  * @param keyfile keyfile to read
  * @param key buffer for key
  * @param key_size_read size of read key
- * @param keyfile_offset keyfile offset
- * @param keyfile_size_max maximal size of keyfile to read
+ * @param keyfile_offset key offset in keyfile
+ * @param key_size exact key length to read from file or 0
  * @param flags keyfile read flags
  *
  * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note If key_size is set to zero we read internal max length
+ * 	 and actual size read is returned via key_size_read parameter.
  */
 int crypt_keyfile_device_read(struct crypt_device *cd,
 	const char *keyfile,
 	char **key, size_t *key_size_read,
 	uint64_t keyfile_offset,
-	size_t keyfile_size_max,
+	size_t key_size,
 	uint32_t flags);
 
 /**
@@ -1636,7 +1639,7 @@ int crypt_keyfile_read(struct crypt_device *cd,
 	const char *keyfile,
 	char **key, size_t *key_size_read,
 	size_t keyfile_offset,
-	size_t keyfile_size_max,
+	size_t key_size,
 	uint32_t flags);
 
 /** Read key only to the first end of line (\\n). */
