@@ -201,6 +201,8 @@ function load_key()
 	keyctl add $@ >/dev/null
 }
 
+export LANG=C
+
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
