@@ -457,9 +457,9 @@ of the LUKS header already on the device and of the header backup
 match. Alternatively, if there is no LUKS header on the device,
 the backup will also be written to it.
 .PP
-\fItoken\fR <add|remove> <device>
+\fItoken\fR <add|remove|import|export> <device>
 .IP
-Adds a new keyring token to enable auto-activation of the device.
+Action \fIadd\fR creates new keyring token to enable auto-activation of the device.
 For the auto-activation, the passphrase must be stored in keyring with the specified
 description. Usually, the passphrase should be stored in \fIuser\fR or
 \fIuser-session\fR keyring.
@@ -475,8 +475,15 @@ To remove existing token, specify the token ID which should be removed with
 \fBWARNING:\fR The action \fItoken remove\fR removes any token type, not just \fIkeyring\fR
 type from token slot specified by \-\-token\-id option.
 
-\fB<options>\fR can be [\-\-header, \-\-token\-id, \-\-key-slot, \-\-key\-description,
-\-\-disable\-locks, \-\-disable\-keyring].
+Action \fIimport\fR can store arbitrary valid token json in LUKS2 header. It may be passed via
+standard input or via file passed in \-\-json\-file option. If you specify \-\-key\-slot then
+successfuly imported token is also assigned to the key slot.
+
+Action \fIexport\fR writes requested token json to a file passed with \-\-json\-file or
+to standard output.
+
+\fB<options>\fR can be [\-\-header, \-\-token\-id, \-\-key\-slot, \-\-key\-description,
+\-\-disable\-locks, \-\-disable\-keyring, \-\-json\-file].
 .PP
 \fIconvert\fR <device> \-\-type <format>
 .IP
@@ -825,6 +832,11 @@ without giving a passphrase.
 For \fIluksDump\fR this option includes the master key in the displayed
 information. Use with care, as the master key can be used to
 bypass the passphrases, see also option \-\-master\-key\-file.
+.TP
+.B "\-\-json\-file"
+Read token json from a file or write token to it. See \fItoken\fR action for more
+information. \-\-json\-file=- reads json from standard input or writes it to
+standard output respectively.
 .TP
 .B "\-\-use\-random"
 .TP

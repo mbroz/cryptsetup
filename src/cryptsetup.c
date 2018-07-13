@@ -28,6 +28,7 @@ static const char *opt_cipher = NULL;
 static const char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
 
+static const char *opt_json_file = NULL;
 static const char *opt_key_file = NULL;
 static const char *opt_keyfile_stdin = NULL;
 static int opt_keyfiles_count = 0;
@@ -1958,8 +1959,10 @@ static int _token_add(struct crypt_device *cd)
 	}
 
 	r = crypt_token_luks2_keyring_set(cd, opt_token, &params);
-	if (r < 0)
+	if (r < 0) {
+		log_err(_("Failed to add luks2-keyring token %d."), opt_token);
 		return r;
+	}
 
 	token = r;
 
@@ -1972,23 +1975,88 @@ static int _token_add(struct crypt_device *cd)
 	return r;
 }
 
+static int _token_import(struct crypt_device *cd)
+{
+	char *json;
+	size_t json_length;
+	crypt_token_info token_info;
+	int r, token;
+
+	if (opt_token != CRYPT_ANY_TOKEN) {
+		token_info = crypt_token_status(cd, opt_token, NULL);
+		if (token_info < CRYPT_TOKEN_INACTIVE) {
+			log_err(_("Token %d is invalid."), opt_token);
+			return -EINVAL;
+		} else if (token_info > CRYPT_TOKEN_INACTIVE) {
+			log_err(_("Token %d in use."), opt_token);
+			return -EINVAL;
+		}
+	}
+
+	r = tools_read_json_file(cd, opt_json_file, &json, &json_length);
+	if (r)
+		return r;
+
+	r = crypt_token_json_set(cd, opt_token, json);
+	free(json);
+	if (r < 0) {
+		log_err(_("Failed to import token from file."));
+		return r;
+	}
+
+	token = r;
+
+	if (opt_key_slot != CRYPT_ANY_SLOT) {
+		r = crypt_token_assign_keyslot(cd, token, opt_key_slot);
+		if (r < 0) {
+			log_err(_("Failed to assign token %d to keyslot %d."), token, opt_key_slot);
+			(void) crypt_token_json_set(cd, token, NULL);
+		}
+	}
+
+	return r;
+}
+
+static int _token_export(struct crypt_device *cd)
+{
+	const char *json;
+	int r;
+
+	r = crypt_token_json_get(cd, opt_token, &json);
+	if (r < 0) {
+		log_err(_("Failed to get token %d for export."), opt_token);
+		return r;
+	}
+
+	return tools_write_json_file(cd, opt_json_file, json);
+}
+
 static int action_token(void)
 {
-	int add, r;
+	int r;
 	struct crypt_device *cd = NULL;
+	enum { ADD = 0, REMOVE, IMPORT, EXPORT } action;
 
 	if (!strcmp(action_argv[0], "add")) {
 		if (!opt_key_description) {
 			log_err(_("--key-description parameter is mandatory for token add action."));
 			return -EINVAL;
 		}
-		add = 1;
+		action = ADD;
 	} else if (!strcmp(action_argv[0], "remove")) {
 		if (opt_token == CRYPT_ANY_TOKEN) {
-			log_err(_("Missing --token option specifying token for removal."));
+			log_err(_("Action requires specific token. Use --token-id parameter."));
 			return -EINVAL;
 		}
-		add = 0;
+		action = REMOVE;
+	} else if (!strcmp(action_argv[0], "import")) {
+		action = IMPORT;
+	} else if (!strcmp(action_argv[0], "export")) {
+		if (opt_token == CRYPT_ANY_TOKEN) {
+			log_err(_("Action requires specific token. Use --token-id parameter."));
+			return -EINVAL;
+		}
+		action = EXPORT;
 	} else {
 		log_err(_("Invalid token operation %s."), action_argv[0]);
 		return -EINVAL;
@@ -2002,12 +2070,23 @@ static int action_token(void)
 		return r;
 	}
 
-	r = add ? _token_add(cd) : crypt_token_json_set(cd, opt_token, NULL);
-	if (r < 0) {
-		if (add)
-			log_err(_("Failed to add keyring token %d."), opt_token);
-		else
-			log_err(_("Failed to remove token %d."), opt_token);
+	switch (action) {
+	case ADD: /* adds only luks2-keyring type */
+		r = _token_add(cd);
+		break;
+	case REMOVE:
+		/* FIXME: add prompt here? a) for all types, b) external only? */
+		r = crypt_token_json_set(cd, opt_token, NULL);
+		break;
+	case IMPORT:
+		r = _token_import(cd);
+		break;
+	case EXPORT:
+		r = _token_export(cd);
+		break;
+	default:
+		log_dbg("Internal token action error.");
+		r = EINVAL;
 	}
 
 	crypt_free(cd);
@@ -2046,7 +2125,7 @@ static struct action_type {
 	{ "luksResume",   action_luksResume,   1, 1, N_("<device>"), N_("Resume suspended LUKS device") },
 	{ "luksHeaderBackup", action_luksBackup,1,1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
 	{ "luksHeaderRestore",action_luksRestore,1,1,N_("<device>"), N_("Restore LUKS device header and keyslots") },
-	{ "token",	  action_token,	       2, 0, N_("<add|remove> <device>"), N_("Add or remove keyring token") },
+	{ "token",	  action_token,	       2, 0, N_("<add|remove|import|export> <device>"), N_("Manipulate LUKS2 tokens") },
 	{}
 };
 
@@ -2215,6 +2294,7 @@ int main(int argc, const char **argv)
 		{ "label",	       '\0', POPT_ARG_STRING, &opt_label,               0, N_("Set label for the LUKS2 device"), NULL },
 		{ "subsystem",	       '\0', POPT_ARG_STRING, &opt_subsystem,           0, N_("Set subsystem label for the LUKS2 device"), NULL },
 		{ "unbound",           '\0', POPT_ARG_NONE, &opt_unbound,               0, N_("Create unbound (no assigned data segment) LUKS2 keyslot"), NULL },
+		{ "json-file",	       '\0', POPT_ARG_STRING, &opt_json_file,           0, N_("Read or write the json from or to a file"), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
