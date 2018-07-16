@@ -28,4 +28,5 @@ install() {
     # shellcheck disable=SC2154
     inst_hook cmdline 30 "$moddir/parse-reencrypt.sh"
     inst_simple "$moddir"/reencrypt.sh /sbin/reencrypt
+    inst_simple "$moddir"/reencrypt-verbose.sh /sbin/cryptsetup-reencrypt-verbose
 }
