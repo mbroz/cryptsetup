@@ -35,8 +35,6 @@ void blk_free(struct blkid_handle *h);
  */
 int blk_init_by_fd(struct blkid_handle **h, int fd);
 
-void blk_free(struct blkid_handle *h);
-
 void blk_set_chains_for_wipes(struct blkid_handle *h);
 
 void blk_set_chains_for_full_print(struct blkid_handle *h);
