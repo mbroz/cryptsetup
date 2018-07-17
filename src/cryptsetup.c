@@ -1851,7 +1851,7 @@ static int action_luksConvert(void)
 	} else if (!strcmp(opt_type, "luks1")) {
 		to_type = CRYPT_LUKS1;
 	} else {
-		log_err(_("Missing LUKS target type, option --type is required."));
+		log_err(_("Invalid LUKS type, only luks1 and luks2 are supported."));
 		return -EINVAL;
 	}
 
