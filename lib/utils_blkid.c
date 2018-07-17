@@ -229,9 +229,10 @@ void blk_free(struct blkid_handle *h)
 #endif
 }
 
-int blk_step_back(struct blkid_handle *h)
-{
 #ifdef HAVE_BLKID
+#ifndef HAVE_BLKID_WIPE
+static int blk_step_back(struct blkid_handle *h)
+{
 #ifdef HAVE_BLKID_STEP_BACK
 	return blkid_probe_step_back(h->pr);
 #else
@@ -239,10 +240,9 @@ int blk_step_back(struct blkid_handle *h)
 	blkid_probe_set_device(h->pr, h->fd, 0, 0);
 	return 0;
 #endif
-#else /* HAVE_BLKID */
-	return -ENOTSUP;
-#endif
 }
+#endif /* not HAVE_BLKID_WIPE */
+#endif /* HAVE_BLKID */
 
 int blk_do_wipe(struct blkid_handle *h)
 {
