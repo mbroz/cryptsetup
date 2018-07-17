@@ -87,7 +87,7 @@ int blk_init_by_path(struct blkid_handle **h, const char *path)
 {
 	int r = -ENOTSUP;
 #ifdef HAVE_BLKID
-	struct blkid_handle *tmp = malloc(sizeof(*h));
+	struct blkid_handle *tmp = malloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
@@ -110,7 +110,7 @@ int blk_init_by_fd(struct blkid_handle **h, int fd)
 {
 	int r = -ENOTSUP;
 #ifdef HAVE_BLKID
-	struct blkid_handle *tmp = malloc(sizeof(*h));
+	struct blkid_handle *tmp = malloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
