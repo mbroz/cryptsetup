@@ -42,7 +42,7 @@ ACLOCAL_AMFLAGS = -I m4
 DISTCHECK_CONFIGURE_FLAGS = 	\
 	--enable-python		\
 	--with-tmpfilesdir=$$dc_install_base/usr/lib/tmpfiles.d \
-	--enable-internal-argon2
+	--enable-internal-argon2 --enable-internal-sse-argon2
 
 distclean-local:
 	-find . -name \*~ -o -name \*.orig -o -name \*.rej | xargs rm -f
