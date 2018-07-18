@@ -600,7 +600,7 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 		r = create_new_keyslot(rc, i, cd_old, cd_new);
 		if (r < 0)
 			goto out;
-		log_verbose(_("Activated keyslot %i."), r);
+		tools_keyslot_msg(r, CREATED);
 		r = 0;
 	}
 out:
@@ -1271,6 +1271,7 @@ static int init_passphrase1(struct reenc_ctx *rc, struct crypt_device *cd,
 			return r;
 
 		if (r >= 0) {
+			tools_keyslot_msg(r, UNLOCKED);
 			rc->p[r].password = password;
 			rc->p[r].passwordLen = passwordLen;
 			if (ki != CRYPT_SLOT_UNBOUND)

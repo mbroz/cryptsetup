@@ -2701,15 +2701,9 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	} else
 		r = -EINVAL;
 
-	if (keyslot_old == keyslot_new) {
-		if (r >= 0)
-			log_verbose(cd, _("Key slot %d changed."), keyslot_new);
-	} else {
-		if (r >= 0) {
-			log_verbose(cd, _("Replaced with key slot %d."), keyslot_new);
-			r = crypt_keyslot_destroy(cd, keyslot_old);
-		}
-	}
+	if (r >= 0 && keyslot_old != keyslot_new)
+		r = crypt_keyslot_destroy(cd, keyslot_old);
+
 	if (r < 0)
 		log_err(cd, _("Failed to swap new key slot."));
 out:

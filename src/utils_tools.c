@@ -272,6 +272,30 @@ int translate_errno(int r)
 	return r;
 }
 
+void tools_keyslot_msg(int keyslot, crypt_object_op op)
+{
+	if (keyslot < 0)
+		return;
+
+	if (op == CREATED)
+		log_verbose(_("Key slot %i created."), keyslot);
+	else if (op == UNLOCKED)
+		log_verbose(_("Key slot %i unlocked."), keyslot);
+	else if (op == REMOVED)
+		log_verbose(_("Key slot %i removed."), keyslot);
+}
+
+void tools_token_msg(int token, crypt_object_op op)
+{
+	if (token < 0)
+		return;
+
+	if (op == CREATED)
+		log_verbose(_("Token %i created."), token);
+	else if (op == REMOVED)
+		log_verbose(_("Token %i removed."), token);
+}
+
 /*
  * Device size string parsing, suffixes:
  * s|S - 512 bytes sectors

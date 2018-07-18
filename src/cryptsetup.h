@@ -62,7 +62,6 @@ extern int opt_batch_mode;
 extern int opt_force_password;
 extern int opt_progress_frequency;
 
-
 /* Common tools */
 void clogger(struct crypt_device *cd, int level, const char *file, int line,
 	     const char *format, ...)  __attribute__ ((format (printf, 5, 6)));
@@ -76,6 +75,10 @@ __attribute__ ((noreturn)) \
 void usage(poptContext popt_context, int exitcode, const char *error, const char *more);
 void dbg_version_and_cmd(int argc, const char **argv);
 int translate_errno(int r);
+
+typedef enum { CREATED, UNLOCKED, REMOVED  } crypt_object_op;
+void tools_keyslot_msg(int keyslot, crypt_object_op op);
+void tools_token_msg(int token, crypt_object_op op);
 
 extern volatile int quit;
 void set_int_block(int block);

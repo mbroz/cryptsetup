@@ -1023,9 +1023,6 @@ static int LUKS_open_key(unsigned int keyIndex,
 	/* Allow only empty passphrase with null cipher */
 	if (!r && !strcmp(hdr->cipherName, "cipher_null") && passwordLen)
 		r = -EPERM;
-
-	if (!r)
-		log_verbose(ctx, _("Key slot %d unlocked."), keyIndex);
 out:
 	crypt_safe_free(AfKey);
 	crypt_free_volume_key(derived_key);
