@@ -30,7 +30,7 @@
 
 #include "utils_io.h"
 
-ssize_t read_buffer(int fd, void *buf, size_t length)
+static ssize_t _read_buffer(int fd, void *buf, size_t length)
 {
 	size_t read_size = 0;
 	ssize_t r;
@@ -53,7 +53,12 @@ ssize_t read_buffer(int fd, void *buf, size_t length)
 	return (ssize_t)length;
 }
 
-ssize_t write_buffer(int fd, const void *buf, size_t length)
+ssize_t read_buffer(int fd, void *buf, size_t length)
+{
+	return _read_buffer(fd, buf, length);
+}
+
+static ssize_t write_buffer(int fd, const void *buf, size_t length)
 {
 	size_t write_size = 0;
 	ssize_t w;
@@ -74,6 +79,11 @@ ssize_t write_buffer(int fd, const void *buf, size_t length)
 	} while (write_size != length);
 
 	return (ssize_t)write_size;
+}
+
+ssize_t write_buffer(int fd, const void *buf, size_t length)
+{
+	return _write_buffer(fd, buf, length);
 }
 
 ssize_t write_blockwise(int fd, size_t bsize, size_t alignment,
