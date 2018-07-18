@@ -27,7 +27,9 @@
 #include <sys/types.h>
 
 ssize_t read_buffer(int fd, void *buf, size_t length);
+ssize_t read_buffer_intr(int fd, void *buf, size_t length, volatile int *quit);
 ssize_t write_buffer(int fd, const void *buf, size_t length);
+ssize_t write_buffer_intr(int fd, const void *buf, size_t length, volatile int *quit);
 ssize_t write_blockwise(int fd, size_t bsize, size_t alignment,
 			void *orig_buf, size_t length);
 ssize_t read_blockwise(int fd, size_t bsize, size_t alignment,

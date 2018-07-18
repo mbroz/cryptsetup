@@ -30,7 +30,7 @@
 
 #include "utils_io.h"
 
-static ssize_t _read_buffer(int fd, void *buf, size_t length)
+static ssize_t _read_buffer(int fd, void *buf, size_t length, volatile int *quit)
 {
 	size_t read_size = 0;
 	ssize_t r;
@@ -42,12 +42,12 @@ static ssize_t _read_buffer(int fd, void *buf, size_t length)
 		r = read(fd, buf, length - read_size);
 		if (r == -1 && errno != EINTR)
 			return r;
-		if (r == 0)
-			return (ssize_t)read_size;
 		if (r > 0) {
 			read_size += (size_t)r;
 			buf = (uint8_t*)buf + r;
 		}
+		if (r == 0 || (quit && *quit))
+			return (ssize_t)read_size;
 	} while (read_size != length);
 
 	return (ssize_t)length;
@@ -55,10 +55,15 @@ static ssize_t _read_buffer(int fd, void *buf, size_t length)
 
 ssize_t read_buffer(int fd, void *buf, size_t length)
 {
-	return _read_buffer(fd, buf, length);
+	return _read_buffer(fd, buf, length, NULL);
 }
 
-static ssize_t write_buffer(int fd, const void *buf, size_t length)
+ssize_t read_buffer_intr(int fd, void *buf, size_t length, volatile int *quit)
+{
+	return _read_buffer(fd, buf, length, quit);
+}
+
+static ssize_t _write_buffer(int fd, const void *buf, size_t length, volatile int *quit)
 {
 	size_t write_size = 0;
 	ssize_t w;
@@ -70,12 +75,12 @@ static ssize_t write_buffer(int fd, const void *buf, size_t length)
 		w = write(fd, buf, length - write_size);
 		if (w < 0 && errno != EINTR)
 			return w;
-		if (w == 0)
-			return (ssize_t)write_size;
 		if (w > 0) {
 			write_size += (size_t) w;
 			buf = (const uint8_t*)buf + w;
 		}
+		if (w == 0 || (quit && *quit))
+			return (ssize_t)write_size;
 	} while (write_size != length);
 
 	return (ssize_t)write_size;
@@ -83,7 +88,12 @@ static ssize_t write_buffer(int fd, const void *buf, size_t length)
 
 ssize_t write_buffer(int fd, const void *buf, size_t length)
 {
-	return _write_buffer(fd, buf, length);
+	return _write_buffer(fd, buf, length, NULL);
+}
+
+ssize_t write_buffer_intr(int fd, const void *buf, size_t length, volatile int *quit)
+{
+	return _write_buffer(fd, buf, length, quit);
 }
 
 ssize_t write_blockwise(int fd, size_t bsize, size_t alignment,
