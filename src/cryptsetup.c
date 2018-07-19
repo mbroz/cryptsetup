@@ -2110,22 +2110,17 @@ static int action_token(void)
 		return r;
 	}
 
-	switch (action) {
-	case ADD: /* adds only luks2-keyring type */
-		r = _token_add(cd);
-		break;
-	case REMOVE:
+	if (action == ADD)
+		r = _token_add(cd); /* adds only luks2-keyring type */
+	else if (action == REMOVE)
 		r = _token_remove(cd);
-		break;
-	case IMPORT:
+	else if (action == IMPORT)
 		r = _token_import(cd);
-		break;
-	case EXPORT:
+	else if (action == EXPORT)
 		r = _token_export(cd);
-		break;
-	default:
+	else {
 		log_dbg("Internal token action error.");
-		r = EINVAL;
+		r = -EINVAL;
 	}
 
 	crypt_free(cd);

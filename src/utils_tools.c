@@ -640,7 +640,7 @@ int tools_read_json_file(struct crypt_device *cd, const char *file, char **json,
 out:
 	if (block && !quit)
 		set_int_block(1);
-	if (fd != STDIN_FILENO)
+	if (fd >= 0 && fd != STDIN_FILENO)
 		close(fd);
 	if (r && buf) {
 		memset(buf, 0, LUKS2_MAX_MDA_SIZE);
@@ -694,7 +694,7 @@ int tools_write_json_file(struct crypt_device *cd, const char *file, const char 
 out:
 	if (block && !quit)
 		set_int_block(1);
-	if (fd != STDOUT_FILENO)
+	if (fd >=0 && fd != STDOUT_FILENO)
 		close(fd);
 	return r;
 }
