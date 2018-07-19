@@ -589,7 +589,8 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	struct luks2_hdr_disk hdr_disk1, hdr_disk2;
 	char *json_area1 = NULL, *json_area2 = NULL;
 	json_object *jobj_hdr1 = NULL, *jobj_hdr2 = NULL;
-	int i, r;
+	unsigned int i;
+	int r;
 	uint64_t hdr_size;
 	uint64_t hdr2_offsets[] = LUKS2_HDR2_OFFSETS;
 

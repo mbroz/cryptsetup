@@ -139,8 +139,9 @@ int blk_superblocks_filter_luks(struct blkid_handle *h)
 {
 	int r = -ENOTSUP;
 #ifdef HAVE_BLKID
+	char luks[] = "crypto_LUKS";
 	char *luks_filter[] = {
-		"crypto_LUKS",
+		luks,
 		NULL
 	};
 	r = blkid_probe_filter_superblocks_type(h->pr, BLKID_FLTR_NOTIN, luks_filter);

@@ -1036,6 +1036,7 @@ static void crypt_free_type(struct crypt_device *cd)
 		crypt_free_volume_key(cd->u.integrity.journal_mac_key);
 	} else if (!cd->type) {
 		free(cd->u.none.active_name);
+		cd->u.none.active_name = NULL;
 	}
 
 	crypt_set_null_type(cd);
