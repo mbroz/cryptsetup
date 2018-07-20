@@ -263,7 +263,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 
 	/* Fail if piped input dies reading nothing */
 	if (!i && !regular_file && !newline) {
-		log_dbg("Nothing read on input.");
+		log_err(cd, _("Nothing to read on input."));
 		r = -EPIPE;
 		goto out_err;
 	}
