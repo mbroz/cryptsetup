@@ -189,7 +189,7 @@ echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase || fail
 echo "[3] add key"
-echo $PWD1 | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT && fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT 2>/dev/null && fail
 echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT || fail
 echo -e "$PWD0\n$PWD1" | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT 2>/dev/null && fail
 echo "[4] change key"
@@ -465,7 +465,7 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: ENABLED" || fail
 echo $PWD2 | $CRYPTSETUP luksKillSlot $LOOPDEV 2 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: DISABLED" || fail
 # kill slot with redirected stdin
-$CRYPTSETUP luksKillSlot $LOOPDEV 3 </dev/null || fail
+$CRYPTSETUP luksKillSlot $LOOPDEV 3 </dev/null 2>/dev/null || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 3: DISABLED" || fail
 # remove key0 / slot 0
 echo $PWD1 | $CRYPTSETUP luksRemoveKey $LOOPDEV || fail
