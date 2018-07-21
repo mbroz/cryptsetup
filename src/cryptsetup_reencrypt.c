@@ -1552,7 +1552,7 @@ static int run_reencrypt(const char *device)
 
 		log_dbg("Storing backup of LUKS headers.");
 		if (rc.reencrypt_mode == ENCRYPT) {
-			/* Create fake header for exising device */
+			/* Create fake header for existing device */
 			if ((r = backup_fake_header(&rc)))
 				goto out;
 		} else {

@@ -2307,7 +2307,7 @@ static void Pbkdf(void)
 	pbkdf2.flags &= ~CRYPT_PBKDF_NO_BENCHMARK;
 	FAIL_(crypt_set_pbkdf_type(cd, &pbkdf2), "Illegal time value.");
 
-	// hash is relevent ony with pbkdf2
+	// hash is relevant only with pbkdf2
 	pbkdf2.time_ms = 9;
 	pbkdf2.hash = NULL;
 	FAIL_(crypt_set_pbkdf_type(cd, &pbkdf2), "Hash is mandatory for pbkdf2");

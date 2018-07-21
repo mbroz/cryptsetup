@@ -5,7 +5,7 @@
  * Copyright (C) 2009-2018, Red Hat, Inc. All rights reserved.
  *
  * AFsplitter diffuses information over a large stripe of data,
- * therefor supporting secure data destruction.
+ * therefore supporting secure data destruction.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

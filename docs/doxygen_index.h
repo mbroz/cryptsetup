@@ -40,7 +40,7 @@
  *		@subsection cformat crypt_format() - header and payload on mutual device
  *	 		This section covers basic use cases for formatting LUKS devices. Format operation
  *			sets device type in context and in case of LUKS header is written at the beginning
- *			of block device. In the example bellow we use the scenario where LUKS header and data
+ *			of block device. In the example below we use the scenario where LUKS header and data
  *			are both stored on the same device. There's also a possibility to store header and
  *			data separately.
  *

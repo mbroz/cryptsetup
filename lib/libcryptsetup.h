@@ -546,8 +546,8 @@ int crypt_format(struct crypt_device *cd,
  *
  * @note Currently, only LUKS1->LUKS2 and LUKS2->LUKS1 conversions are supported.
  *	 Not all LUKS2 devices may be converted back to LUKS1. To make such a conversion
- *	 posible all active LUKS2 keyslots must be in LUKS1 compatible mode (i.e. pbkdf
- *	 type must be PBKDF2) and device cannot be formated with any authenticated
+ *	 possible all active LUKS2 keyslots must be in LUKS1 compatible mode (i.e. pbkdf
+ *	 type must be PBKDF2) and device cannot be formatted with any authenticated
  *	 encryption mode.
  *
  * @note Device must be offline for conversion. UUID change is not possible for active
@@ -1886,7 +1886,7 @@ typedef void (*crypt_token_buffer_free_func) (void *buffer, size_t buffer_len);
 
 /**
  * Token handler validate function prototype.
- * This fuction validates JSON representation of user defined token for additional data
+ * This function validates JSON representation of user defined token for additional data
  * specific for its token type. If defined in the handler, it's called
  * during @link crypt_activate_by_token @endlink. It may also be called during
  * @link crypt_token_json_set @endlink when appropriate token handler was registered before
@@ -1899,7 +1899,7 @@ typedef int (*crypt_token_validate_func) (struct crypt_device *cd, const char *j
 
 /**
  * Token handler dump function prototype.
- * This fuction is supposed to print token implementation specific details. It gets
+ * This function is supposed to print token implementation specific details. It gets
  * called during @link crypt_dump @endlink if token handler was registered before.
  *
  * @param cd crypt device handle

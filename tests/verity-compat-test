@@ -320,7 +320,7 @@ function checkUserSpaceRepair()
 	PARAMS="--data-block-size=$2 --hash-block-size=$2 --fec-roots=$3"
 	[ "$1" -gt 0 ] && PARAMS="$PARAMS --data-blocks=$1" && BS=$2 && COUNT=$1
 
-	# different parameters for diffrent number of devices
+	# different parameters for different number of devices
 	[ "$6" -eq 1 ] && HASH_DEV=$IMG && FEC=$IMG && PARAMS="$PARAMS --hash-offset=$4 --fec-offset=$5" && echo -n "[One device]"
 	[ "$6" -eq 2 ] && HASH_DEV=$IMG && FEC=$FEC_DEV && PARAMS="$PARAMS --hash-offset=$4" && echo -n "[Two separate data/hash and fec devices]"
 	[ "$6" -eq 3 ] && HASH_DEV=$IMG_HASH && FEC=$FEC_DEV && echo -n "[Three separate devices]"

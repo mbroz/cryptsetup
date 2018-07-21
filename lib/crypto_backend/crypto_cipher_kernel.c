@@ -49,7 +49,7 @@ struct crypt_cipher {
  *
  * ENOENT - algorithm not available
  * ENOTSUP - AF_ALG family not available
- * (but cannot check specificaly for skcipher API)
+ * (but cannot check specifically for skcipher API)
  */
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *key, size_t key_length)

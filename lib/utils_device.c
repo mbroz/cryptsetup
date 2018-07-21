@@ -573,7 +573,7 @@ static int device_info(struct crypt_device *cd,
 	} else {
 		/* If the device can be opened read-write, i.e. readonly is still 0, then
 		 * check whether BKROGET says that it is read-only. E.g. read-only loop
-		 * devices may be openend read-write but are read-only according to BLKROGET
+		 * devices may be opened read-write but are read-only according to BLKROGET
 		 */
 		if (real_readonly == 0 && (r = ioctl(fd, BLKROGET, &real_readonly)) < 0)
 			goto out;

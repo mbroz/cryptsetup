@@ -539,7 +539,7 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 	json_object_object_add(jobj_keyslot, "type", json_object_new_string("placeholder"));
 	/*
 	 * key_size = -1 makes placeholder keyslot impossible to pass validation.
-	 * It's a safeguard against accidentaly storing temporary conversion
+	 * It's a safeguard against accidentally storing temporary conversion
 	 * LUKS2 header.
 	 */
 	json_object_object_add(jobj_keyslot, "key_size", json_object_new_int(-1));

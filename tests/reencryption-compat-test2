@@ -137,7 +137,7 @@ function rollback()
 	cp $ORIG_IMG $IMG
 }
 
-function check_slot() #space separeted list of active key slots
+function check_slot() #space separated list of active key slots
 {
 	local _out=$($CRYPTSETUP luksDump $IMG | grep -e ": luks2" | sed -e 's/[[:space:]]*\([0-9]\+\):.*/\1/g')
 

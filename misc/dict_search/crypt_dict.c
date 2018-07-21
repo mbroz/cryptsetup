@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
 	/*
 	 * Need to create temporary keyslot device-mapper devices and allocate loop if needed,
-	 * so root is requried here.
+	 * so root is required here.
 	 */
 	if (getuid() != 0) {
 		printf("You must be root to run this program.\n");

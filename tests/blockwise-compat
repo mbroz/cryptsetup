@@ -185,7 +185,7 @@ run_all() {
 	# length = 0 is significant here
 	RUN "P" $1 read_lseek_blockwise 0 $BSIZE $((DEVSIZE+1))
 
-	# begining of device
+	# beginning of device
 	RUN "P" $1 read_lseek_blockwise 1 $BSIZE 0
 	RUN "P" $1 read_lseek_blockwise 1 $BSIZE 1
 	RUN "P" $1 read_lseek_blockwise 1 $BSIZE $((BSIZE-1))
@@ -239,7 +239,7 @@ run_all() {
 	RUN "P" $1 write_lseek_blockwise 0 $BSIZE 1
 	RUN "P" $1 write_lseek_blockwise 0 $BSIZE $BSIZE
 
-	# begining of device
+	# beginning of device
 	RUN "P" $1 write_lseek_blockwise 1 $BSIZE 0
 	RUN "P" $1 write_lseek_blockwise 1 $BSIZE 1
 	RUN "P" $1 write_lseek_blockwise 1 $BSIZE $((BSIZE-1))
