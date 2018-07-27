@@ -1036,7 +1036,7 @@ typedef enum {
  * 	 stored persistently.
  *
  * @note Only requirements flags recognised by current library may be set.
- *	 CRYPT_REQUIREMENT_FLAG is illegal (output only) in set operation.
+ *	 CRYPT_REQUIREMENT_UNKNOWN is illegal (output only) in set operation.
  */
 int crypt_persistent_flags_set(struct crypt_device *cd,
 	crypt_flags_type type,
