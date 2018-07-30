@@ -89,7 +89,7 @@ int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 
 	segment_digest = LUKS2_digest_by_segment(NULL, hdr, segment);
 	if (segment_digest < 0)
-		return -EINVAL;
+		return segment_digest;
 
 	return segment_digest == keyslot_digest ? 0 : -ENOENT;
 }
