@@ -598,7 +598,7 @@ static int hdr_validate_segments(json_object *hdr_jobj)
 		/* size "dynamic" means whole device starting at 'offset' */
 		if (strcmp(json_object_get_string(jobj_size), "dynamic")) {
 			if (!numbered("size", json_object_get_string(jobj_size)) ||
-			    !json_str_to_uint64(jobj_size, &size))
+			    !json_str_to_uint64(jobj_size, &size) || !size)
 				return 1;
 		} else
 			size = 0;
