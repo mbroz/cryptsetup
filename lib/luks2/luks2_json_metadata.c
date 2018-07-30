@@ -429,6 +429,7 @@ int LUKS2_token_validate(json_object *hdr_jobj, json_object *jobj_token, const c
 {
 	json_object *jarr, *jobj_keyslots;
 
+	/* keyslots are not yet validated, but we need to know token doesn't reference missing keyslot */
 	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
 		return 1;
 
@@ -610,6 +611,7 @@ static int hdr_validate_areas(json_object *hdr_jobj)
 	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
 		return 1;
 
+	/* segments are already validated */
 	if (!json_object_object_get_ex(hdr_jobj, "segments", &jobj_segments))
 		return 1;
 
@@ -674,11 +676,11 @@ static int hdr_validate_digests(json_object *hdr_jobj)
 		return 1;
 	}
 
-	/* keyslots should already be validated */
+	/* keyslots are not yet validated, but we need to know digest doesn't reference missing keyslot */
 	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
 		return 1;
 
-	/* segments are not validated atm, but we need to know digest doesn't reference missing segment */
+	/* segments are not yet validated, but we need to know digest doesn't reference missing segment */
 	if (!json_object_object_get_ex(hdr_jobj, "segments", &jobj_segments))
 		return 1;
 
@@ -813,10 +815,10 @@ int LUKS2_hdr_validate(json_object *hdr_jobj)
 	struct {
 		int (*validate)(json_object *);
 	} checks[] = {
-		{ hdr_validate_keyslots },
 		{ hdr_validate_tokens   },
 		{ hdr_validate_digests  },
 		{ hdr_validate_segments },
+		{ hdr_validate_keyslots },
 		{ hdr_validate_areas    },
 		{ hdr_validate_config   },
 		{ NULL }
