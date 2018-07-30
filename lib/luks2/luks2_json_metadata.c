@@ -506,12 +506,66 @@ static int hdr_validate_tokens(json_object *hdr_jobj)
 	return 0;
 }
 
+static int hdr_validate_crypt_segment(json_object *jobj, const char *key, json_object *jobj_digests,
+	uint64_t offset, uint64_t size)
+{
+	json_object *jobj_ivoffset, *jobj_sector_size, *jobj_integrity;
+	uint32_t sector_size;
+	uint64_t ivoffset;
+
+	if (!(jobj_ivoffset = json_contains(jobj, key, "Segment", "iv_tweak", json_type_string)) ||
+	    !json_contains(jobj, key, "Segment", "encryption", json_type_string) ||
+	    !(jobj_sector_size = json_contains(jobj, key, "Segment", "sector_size", json_type_int)))
+		return 1;
+
+	/* integrity */
+	if (json_object_object_get_ex(jobj, "integrity", &jobj_integrity)) {
+		if (!json_contains(jobj, key, "Segment", "integrity", json_type_object) ||
+		    !json_contains(jobj_integrity, key, "Segment integrity", "type", json_type_string) ||
+		    !json_contains(jobj_integrity, key, "Segment integrity", "journal_encryption", json_type_string) ||
+		    !json_contains(jobj_integrity, key, "Segment integrity", "journal_integrity", json_type_string))
+			return 1;
+	}
+
+	/* enforce uint32_t type */
+	if (!validate_json_uint32(jobj_sector_size)) {
+		log_dbg("Illegal field \"sector_size\":%s.",
+			json_object_get_string(jobj_sector_size));
+		return 1;
+	}
+
+	sector_size = json_object_get_uint32(jobj_sector_size);
+	if (!sector_size || sector_size % SECTOR_SIZE) {
+		log_dbg("Illegal sector size: %" PRIu32, sector_size);
+		return 1;
+	}
+
+	if (!numbered("iv_tweak", json_object_get_string(jobj_ivoffset)) ||
+	    !json_str_to_uint64(jobj_ivoffset, &ivoffset))
+		return 1;
+
+	if (offset % sector_size) {
+		log_dbg("Offset field has to be aligned to sector size: %" PRIu32, sector_size);
+		return 1;
+	}
+
+	if (ivoffset % sector_size) {
+		log_dbg("IV offset field has to be aligned to sector size: %" PRIu32, sector_size);
+		return 1;
+	}
+
+	if (size % sector_size) {
+		log_dbg("Size field has to be aligned to sector size: %" PRIu32, sector_size);
+		return 1;
+	}
+
+	return !segment_has_digest(key, jobj_digests);
+}
+
 static int hdr_validate_segments(json_object *hdr_jobj)
 {
-	json_object *jobj, *jobj_digests, *jobj_offset, *jobj_ivoffset,
-		    *jobj_length, *jobj_sector_size, *jobj_type, *jobj_integrity;
-	uint32_t sector_size;
-	uint64_t ivoffset, offset, length;
+	json_object *jobj, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type;
+	uint64_t offset, size;
 
 	if (!json_object_object_get_ex(hdr_jobj, "segments", &jobj)) {
 		log_dbg("Missing segments section.");
@@ -531,70 +585,37 @@ static int hdr_validate_segments(json_object *hdr_jobj)
 		if (!numbered("Segment", key))
 			return 1;
 
-		if (!json_contains(val, key, "Segment", "type", json_type_string) ||
+		/* those fields are mandatory for all segment types */
+		if (!(jobj_type =   json_contains(val, key, "Segment", "type",   json_type_string)) ||
 		    !(jobj_offset = json_contains(val, key, "Segment", "offset", json_type_string)) ||
-		    !(jobj_ivoffset = json_contains(val, key, "Segment", "iv_tweak", json_type_string)) ||
-		    !(jobj_length = json_contains(val, key, "Segment", "size", json_type_string)) ||
-		    !json_contains(val, key, "Segment", "encryption", json_type_string) ||
-		    !(jobj_sector_size = json_contains(val, key, "Segment", "sector_size", json_type_int)))
+		    !(jobj_size =   json_contains(val, key, "Segment", "size",   json_type_string)))
 			return 1;
-
-		/* integrity */
-		if (json_object_object_get_ex(val, "integrity", &jobj_integrity)) {
-			if (!json_contains(val, key, "Segment", "integrity", json_type_object) ||
-			    !json_contains(jobj_integrity, key, "Segment integrity", "type", json_type_string) ||
-			    !json_contains(jobj_integrity, key, "Segment integrity", "journal_encryption", json_type_string) ||
-			    !json_contains(jobj_integrity, key, "Segment integrity", "journal_integrity", json_type_string))
-				return 1;
-		}
-
-		/* enforce uint32_t type */
-		if (!validate_json_uint32(jobj_sector_size)) {
-			log_dbg("Illegal field \"sector_size\":%s.",
-				json_object_get_string(jobj_sector_size));
-			return 1;
-		}
-
-		sector_size = json_object_get_uint32(jobj_sector_size);
-		if (!sector_size || sector_size % 512) {
-			log_dbg("Illegal sector size: %" PRIu32, sector_size);
-			return 1;
-		}
 
 		if (!numbered("offset", json_object_get_string(jobj_offset)) ||
-		    !numbered("iv_tweak", json_object_get_string(jobj_ivoffset)))
+		    !json_str_to_uint64(jobj_offset, &offset))
 			return 1;
 
-		/* rule out values > UINT64_MAX */
-		if (!json_str_to_uint64(jobj_offset, &offset) ||
-		    !json_str_to_uint64(jobj_ivoffset, &ivoffset))
-			return 1;
-
-		if (offset % sector_size) {
-			log_dbg("Offset field has to be aligned to sector size: %" PRIu32, sector_size);
-			return 1;
-		}
-
-		if (ivoffset % sector_size) {
-			log_dbg("IV offset field has to be aligned to sector size: %" PRIu32, sector_size);
-			return 1;
-		}
-
-		/* length "dynamic" means whole device starting at 'offset' */
-		if (strcmp(json_object_get_string(jobj_length), "dynamic")) {
-			if (!numbered("size", json_object_get_string(jobj_length)) ||
-			    !json_str_to_uint64(jobj_length, &length))
+		/* size "dynamic" means whole device starting at 'offset' */
+		if (strcmp(json_object_get_string(jobj_size), "dynamic")) {
+			if (!numbered("size", json_object_get_string(jobj_size)) ||
+			    !json_str_to_uint64(jobj_size, &size))
 				return 1;
+		} else
+			size = 0;
 
-			if (length % sector_size) {
-				log_dbg("Length field has to be aligned to sector size: %" PRIu32, sector_size);
-				return 1;
-			}
+		/* all device-mapper devices are aligned to 512 sector size */
+		if (offset % SECTOR_SIZE) {
+			log_dbg("Offset field has to be aligned to sector size: %" PRIu32, SECTOR_SIZE);
+			return 1;
+		}
+		if (size % SECTOR_SIZE) {
+			log_dbg("Size field has to be aligned to sector size: %" PRIu32, SECTOR_SIZE);
+			return 1;
 		}
 
-		json_object_object_get_ex(val, "type", &jobj_type);
+		/* crypt */
 		if (!strcmp(json_object_get_string(jobj_type), "crypt") &&
-		    !segment_has_digest(key, jobj_digests))
+		    hdr_validate_crypt_segment(val, key, jobj_digests, offset, size))
 			return 1;
 	}
 
