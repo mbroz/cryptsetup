@@ -1564,11 +1564,11 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 			log_std(cd, "\tlength: %" PRIu64 " [bytes]\n", value);
 		}
 
-		json_object_object_get_ex(val, "encryption", &jobj3);
-		log_std(cd, "\tcipher: %s\n", json_object_get_string(jobj3));
+		if (json_object_object_get_ex(val, "encryption", &jobj3))
+			log_std(cd, "\tcipher: %s\n", json_object_get_string(jobj3));
 
-		json_object_object_get_ex(val, "sector_size", &jobj3);
-		log_std(cd, "\tsector: %" PRIu32 " [bytes]\n", json_object_get_uint32(jobj3));
+		if (json_object_object_get_ex(val, "sector_size", &jobj3))
+			log_std(cd, "\tsector: %" PRIu32 " [bytes]\n", json_object_get_uint32(jobj3));
 
 		if (json_object_object_get_ex(val, "integrity", &jobj2) &&
 		    json_object_object_get_ex(jobj2, "type", &jobj3))
