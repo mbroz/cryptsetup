@@ -1650,10 +1650,12 @@ const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment)
 	if (!json_object_object_get_ex(jobj1, buf, &jobj2))
 		return NULL;
 
-	if (!json_object_object_get_ex(jobj2, "encryption", &jobj3))
-		return NULL;
+	if (json_object_object_get_ex(jobj2, "encryption", &jobj3))
+		return json_object_get_string(jobj3);
 
-	return json_object_get_string(jobj3);
+	/* FIXME: default encryption (for other segment types) must be string here. */
+	return "null";
+
 }
 
 static int luks2_keyslot_af_params(json_object *jobj_af, struct luks2_keyslot_params *params)
