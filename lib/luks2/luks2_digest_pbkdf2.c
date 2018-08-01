@@ -95,7 +95,7 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 {
 	json_object *jobj_digest, *jobj_digests;
 	char salt[LUKS_SALTSIZE], digest_raw[128], num[16];
-	int r;
+	int hmac_size, r;
 	char *base64_str;
 	struct luks2_hdr *hdr;
 	struct crypt_pbkdf_limits pbkdf_limits;
@@ -123,8 +123,12 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 			return r;
 	}
 
+	hmac_size = crypt_hmac_size(pbkdf.hash);
+	if (hmac_size < 0)
+		return hmac_size;
+
 	r = crypt_pbkdf(CRYPT_KDF_PBKDF2, pbkdf.hash, volume_key, volume_key_len,
-			salt, LUKS_SALTSIZE, digest_raw, crypt_hmac_size(pbkdf.hash),
+			salt, LUKS_SALTSIZE, digest_raw, hmac_size,
 			pbkdf.iterations, 0, 0);
 	if (r < 0)
 		return r;
@@ -151,7 +155,7 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 	json_object_object_add(jobj_digest, "salt", json_object_new_string(base64_str));
 	free(base64_str);
 
-	base64_encode_alloc(digest_raw, crypt_hmac_size(pbkdf.hash), &base64_str);
+	base64_encode_alloc(digest_raw, hmac_size, &base64_str);
 	if (!base64_str) {
 		json_object_put(jobj_digest);
 		return -ENOMEM;
