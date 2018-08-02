@@ -3,6 +3,7 @@
 CRYPTSETUP=../cryptsetup
 REENC=../cryptsetup-reencrypt
 FAST_PBKDF_ARGON="--pbkdf-force-iterations 4 --pbkdf-memory 32 --pbkdf-parallel 1"
+FAST_PBKDF_PBKDF2="--pbkdf-force-iterations 1000 --pbkdf pbkdf2"
 DEFAULT_ARGON="argon2i"
 
 DEV_NAME=reenc9768
@@ -211,6 +212,7 @@ which wipefs >/dev/null ||  skip "Cannot find wipefs, test skipped."
 
 # REENCRYPTION tests
 
+HASH1=b69dae56a14d1a8314ed40664c4033ea0a550eea2673e04df42a66ac6b9faf2c
 HASH4=2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74
 HASH5=bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8
 HASH6=4d9cbaf3aa0935a8c113f139691b3daf9c94c8d6c278aedc8eec66a4b9f6c8ae
@@ -410,6 +412,21 @@ $CRYPTSETUP luksDump $IMG | grep -q "3: luks2 (unbound)" || fail
 echo $PWD2 | $REENC $IMG -q $FAST_PBKDF 2>/dev/null && fail
 echo -e "$PWD1\n$PWD2" | $REENC $IMG -q $FAST_PBKDF || fail
 $CRYPTSETUP luksDump $IMG | grep -q "3: luks2 (unbound)" || fail
+
+echo "[15] Reencryption after conversion"
+prepare 8192
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_PBKDF2 $IMG || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+$CRYPTSETUP -q convert --type luks2 $IMG || fail
+echo $PWD1 | $REENC $IMG -q $FAST_PBKDF_PBKDF2 || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_PBKDF2 $IMG || fail
+wipe $PWD1
+check_hash $PWD1 $HASH5
+$CRYPTSETUP -q convert --type luks1 $IMG || fail
+echo $PWD1 | $REENC $IMG -q $FAST_PBKDF_PBKDF2 || fail
+check_hash $PWD1 $HASH5
 
 remove_mapping
 exit 0
