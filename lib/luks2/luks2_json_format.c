@@ -212,7 +212,7 @@ int LUKS2_generate_hdr(
 
 	/* for detached metadata device compute reasonable keyslot areas size */
 	// FIXME: this is coupled with FIXME above
-	if (detached_metadata_device)
+	if (detached_metadata_device && !offset)
 		keyslots_size = LUKS2_HDR_DEFAULT_LEN - get_min_offset(hdr);
 	else
 		keyslots_size = offset - get_min_offset(hdr);
