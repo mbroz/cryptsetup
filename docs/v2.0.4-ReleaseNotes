@@ -1,0 +1,119 @@
+Cryptsetup 2.0.4 Release Notes
+==============================
+Stable bug-fix release with new features.
+
+Cryptsetup 2.x version introduces a new on-disk LUKS2 format.
+
+The legacy LUKS (referenced as LUKS1) will be fully supported
+forever as well as a traditional and fully backward compatible format.
+
+Please note that authenticated disk encryption, non-cryptographic
+data integrity protection (dm-integrity), use of Argon2 Password-Based
+Key Derivation Function and the LUKS2 on-disk format itself are new
+features and can contain some bugs.
+
+To provide all security features of authenticated encryption, we need
+a better nonce-reuse resistant algorithm in the kernel (see note below).
+For now, please use authenticated encryption as an experimental feature.
+
+Please do not use LUKS2 without properly configured backup or in
+production systems that need to be compatible with older systems.
+
+Changes since version 2.0.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Use the libblkid (blockid) library to detect foreign signatures
+  on a device before LUKS format and LUKS2 auto-recovery.
+
+  This change fixes an unexpected recovery using the secondary
+  LUKS2 header after a device was already overwritten with
+  another format (filesystem or LVM physical volume).
+
+  LUKS2 will not recreate a primary header if it detects a valid
+  foreign signature. In this situation, a user must always
+  use cryptsetup repair command for the recovery.
+
+  Note that libcryptsetup and utilities are now linked to libblkid
+  as a new dependence.
+
+  To compile code without blockid support (strongly discouraged),
+  use --disable-blkid configure switch.
+
+* Add prompt for format and repair actions in cryptsetup and
+  integritysetup if foreign signatures are detected on the device
+  through the blockid library.
+
+  After the confirmation, all known signatures are then wiped as
+  part of the format or repair procedure.
+
+* Print consistent verbose message about keyslot and token numbers.
+  For keyslot actions: Key slot <number> unlocked/created/removed.
+  For token actions: Token <number> created/removed.
+
+* Print error, if a non-existent token is tried to be removed.
+
+* Add support for LUKS2 token definition export and import.
+
+  The token command now can export/import customized token JSON file
+  directly from command line. See the man page for more details.
+
+* Add support for new dm-integrity superblock version 2.
+
+* Add an error message when nothing was read from a key file.
+
+* Update cryptsetup man pages, including --type option usage.
+
+* Add a snapshot of LUKS2 format specification to documentation
+  and accordingly fix supported secondary header offsets.
+
+* Add bundled optimized Argon2 SSE (X86_64 platform) code.
+
+  If the bundled Argon2 code is used and the new configure switch
+  --enable-internal-sse-argon2 option is present, and compiler flags
+  support required optimization, the code will try to use optimized
+  and faster variant.
+
+  Always use the shared library (--enable-libargon2) if possible.
+
+  This option was added because an enterprise distribution
+  rejected to support the shared Argon2 library and native support
+  in generic cryptographic libraries is not ready yet.
+
+* Fix compilation with crypto backend for LibreSSL >= 2.7.0.
+  LibreSSL introduced OpenSSL 1.1.x API functions, so compatibility
+  wrapper must be commented out.
+
+* Fix on-disk header size calculation for LUKS2 format if a specific
+  data alignment is requested. Until now, the code used default size
+  that could be wrong for converted devices.
+
+Unfinished things & TODO for next releases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Authenticated encryption will use new algorithms from CAESAR competition
+  https://competitions.cr.yp.to/caesar-submissions.html.
+  We plan to use AEGIS and MORUS (in kernel 4.18), as CAESAR finalists.
+
+  NOTE: Currently available authenticated modes (GCM, Chacha20-poly1305)
+  in the kernel have too small 96-bit nonces that are problematic with
+  randomly generated IVs (the collision probability is not negligible).
+
+  For more info about LUKS2 authenticated encryption, please see our paper
+  https://arxiv.org/abs/1807.00309
+
+* Authenticated encryption do not set encryption for a dm-integrity journal.
+
+  While it does not influence data confidentiality or integrity protection,
+  an attacker can get some more information from data journal or cause that
+  system will corrupt sectors after journal replay. (That corruption will be
+  detected though.)
+
+* There are examples of user-defined tokens inside misc/luks2_keyslot_example
+  directory (like a simple external program that uses libssh to unlock LUKS2
+  using remote keyfile).
+
+* The python binding (pycryptsetup) contains only basic functionality for LUKS1
+  (it is not updated for new features) and will be REMOVED in version 2.1
+  in favor of python bindings to the libblockdev library.
+  See https://github.com/storaged-project/libblockdev/releases that
+  already supports LUKS2 and VeraCrypt devices handling through libcryptsetup.
+
