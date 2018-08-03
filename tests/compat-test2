@@ -28,6 +28,9 @@ TEST_KEYRING_NAME="compattest2_keyring"
 TEST_TOKEN0="compattest2_desc0"
 TEST_TOKEN1="compattest2_desc1"
 VK_FILE="compattest2_vkfile"
+IMPORT_TOKEN="{\"type\":\"some_type\",\"keyslots\":[],\"base64_data\":\"zxI7vKB1Qwl4VPB4D-N-OgcC14hPCG0IDu8O7eCqaQ\"}"
+TOKEN_FILE0=test-token-file0
+TOKEN_FILE1=test-token-file1
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
@@ -47,7 +50,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV missing-file >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV missing-file $TOKEN_FILE0 $TOKEN_FILE1 >/dev/null 2>&1
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -699,12 +702,12 @@ if dm_crypt_keyring_support; then
 fi
 
 # FIXME: candidate for non-root tests
+prepare "[33] tokens" wipe
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
 if [ $HAVE_KEYRING -gt 0 ]; then
-	prepare "[33] tokens" wipe
 
 	test_and_prepare_keyring
 
-	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
 	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 --token-id 3 || fail
 	$CRYPTSETUP luksDump $LOOPDEV | grep -q -e "3: luks2-keyring" || fail
 	# keyslot 5 is inactive
@@ -727,6 +730,18 @@ if [ $HAVE_KEYRING -gt 0 ]; then
 	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN1 --key-slot 4 || fail
 	$CRYPTSETUP -q luksKillSlot $LOOPDEV 4 || fail
 fi
+echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 10 || fail
+echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 11 --json-file - || fail
+echo "$IMPORT_TOKEN" > $TOKEN_FILE0
+$CRYPTSETUP token import $LOOPDEV --token-id 12 --json-file $TOKEN_FILE0 || fail
+$CRYPTSETUP token import $LOOPDEV --token-id 12 --json-file $TOKEN_FILE0 2>/dev/null && fail
+$CRYPTSETUP token export $LOOPDEV --token-id 10 | diff -Z --from-file - $TOKEN_FILE0 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 11 | diff -Z --from-file - $TOKEN_FILE0 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 12 | diff -Z --from-file - $TOKEN_FILE0 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 12 --json-file $TOKEN_FILE1 || fail
+diff -Z $TOKEN_FILE0 $TOKEN_FILE1 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 12 > $TOKEN_FILE1 || fail
+diff -Z $TOKEN_FILE0 $TOKEN_FILE1 || fail
 
 prepare "[34] LUKS keyslot priority" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -S 1 || fail
