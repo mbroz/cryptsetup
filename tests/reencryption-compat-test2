@@ -388,15 +388,15 @@ fi
 echo "[13] Detached header - adding encryption/reencryption/decryption"
 prepare 8192
 check_hash_dev $IMG $HASH4
-echo $PWD1 | $REENC --type luks2 $IMG -q $FAST_PBKDF --header $IMG_HDR --new
+echo $PWD1 | $REENC --type luks2 $IMG -q $FAST_PBKDF_ARGON --header $IMG_HDR --new
 check_hash $PWD1 $HASH4 $IMG_HDR
-echo $PWD1 | $REENC $IMG -q $FAST_PBKDF --header $IMG_HDR
+echo $PWD1 | $REENC $IMG -q $FAST_PBKDF_ARGON --header $IMG_HDR
 check_hash $PWD1 $HASH4 $IMG_HDR
 echo $PWD1 | $REENC $IMG -q --header $IMG_HDR --decrypt
 check_hash_dev $IMG $HASH4
 # existing header of zero size
 cat /dev/null >$IMG_HDR
-echo $PWD1 | $REENC --type luks2 $IMG -q $FAST_PBKDF --header $IMG_HDR --new
+echo $PWD1 | $REENC --type luks2 $IMG -q $FAST_PBKDF_ARGON --header $IMG_HDR --new
 check_hash $PWD1 $HASH4 $IMG_HDR
 $CRYPTSETUP isLuks $IMG && fail
 $CRYPTSETUP isLuks $IMG_HDR || fail
@@ -409,8 +409,8 @@ echo $PWD2 | $CRYPTSETUP -q luksAddKey -S 3 --unbound --key-size 64 $FAST_PBKDF_
 wipe $PWD1
 check_hash $PWD1 $HASH5
 $CRYPTSETUP luksDump $IMG | grep -q "3: luks2 (unbound)" || fail
-echo $PWD2 | $REENC $IMG -q $FAST_PBKDF 2>/dev/null && fail
-echo -e "$PWD1\n$PWD2" | $REENC $IMG -q $FAST_PBKDF || fail
+echo $PWD2 | $REENC $IMG -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+echo -e "$PWD1\n$PWD2" | $REENC $IMG -q $FAST_PBKDF_ARGON || fail
 $CRYPTSETUP luksDump $IMG | grep -q "3: luks2 (unbound)" || fail
 
 echo "[15] Reencryption after conversion"
