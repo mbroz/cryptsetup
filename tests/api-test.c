@@ -279,7 +279,7 @@ static int _setup(void)
 	_system(" [ ! -e " VALID_HEADER " ] && xz -dk " VALID_HEADER ".xz", 1);
 
 	/* Prepare tcrypt images */
-	_system(" [ ! -d tcrypt-images ] && tar xjf tcrypt-images.tar.xz 2>/dev/null", 1);
+	_system(" [ ! -d tcrypt-images ] && tar xJf tcrypt-images.tar.xz 2>/dev/null", 1);
 
 	_system("modprobe dm-crypt", 0);
 	_system("modprobe dm-verity", 0);
