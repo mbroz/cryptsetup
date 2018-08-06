@@ -69,9 +69,9 @@ falloc() {
 }
 
 run_all_in_fs() {
-	for file in $(ls img_fs_*.img.bz2) ; do
+	for file in $(ls img_fs_*.img.xz) ; do
 	    echo "Run tests in $file put on top block device."
-	    bzip2 -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
+	    xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
 	    [ ! -d $MNT_DIR ] && mkdir $MNT_DIR
 	    mount $DEV $MNT_DIR || skip "Mounting image $file failed."
 	    rm -rf $MNT_DIR/* 2>/dev/null

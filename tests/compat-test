@@ -104,19 +104,19 @@ function prepare()
 		;;
 	new)
 		remove_mapping
-		bzip2 -cd compatimage.img.bz2 > $IMG
+		xz -cd compatimage.img.xz > $IMG
 		# FIXME: switch to internal loop (no losetup at all)
 		echo "bad" | $CRYPTSETUP luksOpen --key-slot 0 --test-passphrase $IMG 2>&1 | \
 			grep "autoclear flag" && skip "WARNING: Too old kernel, test skipped."
 		losetup $LOOPDEV $IMG
-		bzip2 -cd compatv10image.img.bz2 > $IMG10
+		xz -cd compatv10image.img.xz > $IMG10
 		;;
 	reuse | *)
 		if [ ! -e $IMG ]; then
-			bzip2 -cd compatimage.img.bz2 > $IMG
+			xz -cd compatimage.img.xz > $IMG
 			losetup $LOOPDEV $IMG
 		fi
-		[ ! -e $IMG10 ] && bzip2 -cd compatv10image.img.bz2 > $IMG10
+		[ ! -e $IMG10 ] && xz -cd compatv10image.img.xz > $IMG10
 		;;
 	esac
 

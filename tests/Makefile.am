@@ -30,22 +30,22 @@ if INTEGRITYSETUP
 TESTS += integrity-compat-test
 endif
 
-EXTRA_DIST = compatimage.img.bz2 compatv10image.img.bz2 \
+EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	compatimage2.img.xz \
 	conversion_imgs.tar.xz \
 	luks2_keyslot_unassigned.img.xz \
-	img_fs_ext4.img.bz2 img_fs_vfat.img.bz2 img_fs_xfs.img.bz2 \
-	valid_header_file.bz2 \
+	img_fs_ext4.img.xz img_fs_vfat.img.xz img_fs_xfs.img.xz \
+	valid_header_file.xz \
 	luks2_valid_hdr.img.xz \
 	luks2_header_requirements.xz \
 	luks2_header_requirements_free.xz \
-	evil_hdr-payload_overwrite.bz2 \
-	evil_hdr-stripes_payload_dmg.bz2 \
-	evil_hdr-luks_hdr_damage.bz2 \
-	evil_hdr-small_luks_device.bz2 \
-	evil_hdr-keyslot_overlap.bz2 \
-	tcrypt-images.tar.bz2 \
-	luks1-images.tar.bz2 \
+	evil_hdr-payload_overwrite.xz \
+	evil_hdr-stripes_payload_dmg.xz \
+	evil_hdr-luks_hdr_damage.xz \
+	evil_hdr-small_luks_device.xz \
+	evil_hdr-keyslot_overlap.xz \
+	tcrypt-images.tar.xz \
+	luks1-images.tar.xz \
 	compat-test \
 	compat-test2 \
 	loopaes-test align-test discards-test mode-test password-hash-test \
@@ -101,7 +101,7 @@ conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz
 
 compatimage.img:
-	@bzip2 -k -d compatimage.img.bz2
+	@xz -k -d compatimage.img.xz
 
 valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./compat-test

@@ -255,7 +255,7 @@ static int _setup(void)
 	_system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"", 1);
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
 
-	_system(" [ ! -e " IMAGE1 " ] && bzip2 -dk " IMAGE1 ".bz2", 1);
+	_system(" [ ! -e " IMAGE1 " ] && xz -dk " IMAGE1 ".xz", 1);
 	fd = loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
 	close(fd);
 
@@ -264,22 +264,22 @@ static int _setup(void)
 	close(fd);
 
 	/* Keymaterial offset is less than 8 sectors */
-	_system(" [ ! -e " EVL_HEADER_1 " ] && bzip2 -dk " EVL_HEADER_1 ".bz2", 1);
+	_system(" [ ! -e " EVL_HEADER_1 " ] && xz -dk " EVL_HEADER_1 ".xz", 1);
 	/* keymaterial offset aims into payload area */
-	_system(" [ ! -e " EVL_HEADER_2 " ] && bzip2 -dk " EVL_HEADER_2 ".bz2", 1);
+	_system(" [ ! -e " EVL_HEADER_2 " ] && xz -dk " EVL_HEADER_2 ".xz", 1);
 	/* keymaterial offset is valid, number of stripes causes payload area to be overwritten */
-	_system(" [ ! -e " EVL_HEADER_3 " ] && bzip2 -dk " EVL_HEADER_3 ".bz2", 1);
+	_system(" [ ! -e " EVL_HEADER_3 " ] && xz -dk " EVL_HEADER_3 ".xz", 1);
 	/* luks device header for data and header on same device. payloadOffset is greater than
 	 * device size (crypt_load() test) */
-	_system(" [ ! -e " EVL_HEADER_4 " ] && bzip2 -dk " EVL_HEADER_4 ".bz2", 1);
+	_system(" [ ! -e " EVL_HEADER_4 " ] && xz -dk " EVL_HEADER_4 ".xz", 1);
 	 /* two keyslots with same offset (overlapping keyslots) */
-	_system(" [ ! -e " EVL_HEADER_5 " ] && bzip2 -dk " EVL_HEADER_5 ".bz2", 1);
+	_system(" [ ! -e " EVL_HEADER_5 " ] && xz -dk " EVL_HEADER_5 ".xz", 1);
 	/* valid header: payloadOffset=4096, key_size=32,
 	 * volume_key = bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a */
-	_system(" [ ! -e " VALID_HEADER " ] && bzip2 -dk " VALID_HEADER ".bz2", 1);
+	_system(" [ ! -e " VALID_HEADER " ] && xz -dk " VALID_HEADER ".xz", 1);
 
 	/* Prepare tcrypt images */
-	_system(" [ ! -d tcrypt-images ] && tar xjf tcrypt-images.tar.bz2 2>/dev/null", 1);
+	_system(" [ ! -d tcrypt-images ] && tar xjf tcrypt-images.tar.xz 2>/dev/null", 1);
 
 	_system("modprobe dm-crypt", 0);
 	_system("modprobe dm-verity", 0);

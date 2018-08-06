@@ -70,7 +70,7 @@ function test_required()
 test_required
 export LANG=C
 
-[ ! -d $TST_DIR ] && tar xjf $srcdir/tcrypt-images.tar.bz2 --no-same-owner
+[ ! -d $TST_DIR ] && tar xJf $srcdir/tcrypt-images.tar.xz --no-same-owner
 
 echo "HEADER CHECK"
 for file in $(ls $TST_DIR/[t]c_* $TST_DIR/vcpim_*) ; do

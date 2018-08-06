@@ -58,7 +58,7 @@ function test_required()
 export LANG=C
 
 test_required
-[ ! -d $TST_DIR ] && tar xjf $srcdir/luks1-images.tar.bz2 --no-same-owner
+[ ! -d $TST_DIR ] && tar xJf $srcdir/luks1-images.tar.xz --no-same-owner
 
 echo "PASSPHRASE CHECK"
 for file in $(ls $TST_DIR/luks1_*) ; do
