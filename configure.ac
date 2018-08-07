@@ -388,7 +388,7 @@ AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PB
 
 dnl Argon2 implementation
 AC_ARG_ENABLE([internal-argon2],
-	AS_HELP_STRING([--disable-internal-argon2], [disable internal implementation of Argon2 PBKDF])
+	AS_HELP_STRING([--disable-internal-argon2], [disable internal implementation of Argon2 PBKDF]),
 	[], [enable_internal_argon2=yes])
 
 AC_ARG_ENABLE([libargon2],
