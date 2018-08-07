@@ -63,7 +63,7 @@ AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h sys/ioctl.h sys/mman.h \
 AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR([You need the uuid library.])])
 AC_CHECK_HEADER(libdevmapper.h,,[AC_MSG_ERROR([You need the device-mapper library.])])
 
-AC_ARG_ENABLE(keyring,
+AC_ARG_ENABLE([keyring],
 	AS_HELP_STRING([--disable-keyring], [disable kernel keyring support and builtin kernel keyring token]),
 	[], [enable_keyring=yes])
 if test "x$enable_keyring" = "xyes"; then
@@ -122,7 +122,7 @@ AC_SUBST(POPT_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
 dnl ==========================================================================
-dnl FIPS extensions (only for RHEL)
+dnl FIPS extensions
 AC_ARG_ENABLE([fips],
 	AS_HELP_STRING([--enable-fips], [enable FIPS mode restrictions]))
 if test "x$enable_fips" = "xyes"; then
@@ -296,12 +296,12 @@ if test x$enable_static_cryptsetup = xyes; then
 fi
 AM_CONDITIONAL(STATIC_TOOLS, test x$enable_static_cryptsetup = xyes)
 
-AC_ARG_ENABLE(cryptsetup,
+AC_ARG_ENABLE([cryptsetup],
 	AS_HELP_STRING([--disable-cryptsetup], [disable cryptsetup support]),
 	[], [enable_cryptsetup=yes])
 AM_CONDITIONAL(CRYPTSETUP, test x$enable_cryptsetup = xyes)
 
-AC_ARG_ENABLE(veritysetup,
+AC_ARG_ENABLE([veritysetup],
 	AS_HELP_STRING([--disable-veritysetup], [disable veritysetup support]),
 	[], [enable_veritysetup=yes])
 AM_CONDITIONAL(VERITYSETUP, test x$enable_veritysetup = xyes)
@@ -311,12 +311,12 @@ AC_ARG_ENABLE([cryptsetup-reencrypt],
 	[], [enable_cryptsetup_reencrypt=yes])
 AM_CONDITIONAL(REENCRYPT, test x$enable_cryptsetup_reencrypt = xyes)
 
-AC_ARG_ENABLE(integritysetup,
+AC_ARG_ENABLE([integritysetup],
 	AS_HELP_STRING([--disable-integritysetup], [disable integritysetup support]),
 	[], [enable_integritysetup=yes])
 AM_CONDITIONAL(INTEGRITYSETUP, test x$enable_integritysetup = xyes)
 
-AC_ARG_ENABLE(selinux,
+AC_ARG_ENABLE([selinux],
 	AS_HELP_STRING([--disable-selinux], [disable selinux support [default=auto]]),
 	[], [enable_selinux=yes])
 
@@ -387,7 +387,7 @@ AM_CONDITIONAL(CRYPTO_INTERNAL_PBKDF2, test $use_internal_pbkdf2 = 1)
 AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PBKDF2])
 
 dnl Argon2 implementation
-AC_ARG_ENABLE(internal-argon2,
+AC_ARG_ENABLE([internal-argon2],
 	AS_HELP_STRING([--disable-internal-argon2], [disable internal implementation of Argon2 PBKDF])
 	[], [enable_internal_argon2=yes])
 
@@ -403,7 +403,7 @@ if test x$enable_libargon2 = xyes ; then
 else
 	AC_MSG_WARN([Argon2 bundled (slow) reference implementation will be used, please consider to use system library with --enable-libargon2.])
 
-	AC_ARG_ENABLE(internal-sse-argon2,
+	AC_ARG_ENABLE([internal-sse-argon2],
 		AS_HELP_STRING([--enable-internal-sse-argon2], [enable internal SSE implementation of Argon2 PBKDF]))
 
 	if test x$enable_internal_sse_argon2 = xyes ; then
@@ -425,8 +425,9 @@ AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test x$enable_internal_argon2 = xyes)
 AM_CONDITIONAL(CRYPTO_INTERNAL_SSE_ARGON2, test x$enable_internal_sse_argon2 = xyes)
 
 dnl Link with blkid to check for other device types
-AC_ARG_ENABLE(blkid, AS_HELP_STRING([--disable-blkid],
-	[disable use of blkid for device signature detection and wiping.]), [], [enable_blkid=yes])
+AC_ARG_ENABLE([blkid],
+	AS_HELP_STRING([--disable-blkid], [disable use of blkid for device signature detection and wiping]),
+	[], [enable_blkid=yes])
 
 if test x$enable_blkid = xyes ; then
 	PKG_CHECK_MODULES([BLKID], [blkid],[AC_DEFINE([HAVE_BLKID], 1, [Define to 1 to use blkid for detection of disk signatures.])],[LIBBLKID_LIBS="-lblkid"])
