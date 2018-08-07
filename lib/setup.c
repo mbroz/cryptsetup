@@ -182,6 +182,11 @@ static const char *mdata_device_path(struct crypt_device *cd)
 	return device_path(cd->metadata_device ?: cd->device);
 }
 
+static const char *data_device_path(struct crypt_device *cd)
+{
+	return device_path(cd->device);
+}
+
 /* internal only */
 struct device *crypt_metadata_device(struct crypt_device *cd)
 {
@@ -1612,28 +1617,28 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	/* Wipe integrity superblock and create integrity superblock */
 	if (crypt_get_integrity_tag_size(cd)) {
 		/* FIXME: this should be locked. */
-		r = crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO,
+		r = crypt_wipe_device(cd, crypt_data_device(cd), CRYPT_WIPE_ZERO,
 				      crypt_get_data_offset(cd) * SECTOR_SIZE,
 				      8 * SECTOR_SIZE, 8 * SECTOR_SIZE, NULL, NULL);
 		if (r < 0) {
 			if (r == -EBUSY)
 				log_err(cd, _("Cannot format device %s which is still in use."),
-					mdata_device_path(cd));
+					data_device_path(cd));
 			else if (r == -EACCES) {
 				log_err(cd, _("Cannot format device %s, permission denied."),
-					mdata_device_path(cd));
+					data_device_path(cd));
 				r = -EINVAL;
 			} else
 				log_err(cd, _("Cannot wipe header on device %s."),
-					mdata_device_path(cd));
+					data_device_path(cd));
 
 			goto out;
 		}
 
-		r = device_write_lock(cd, crypt_metadata_device(cd));
+		r = device_write_lock(cd, crypt_data_device(cd));
 		if (r) {
 			log_err(cd, _("Failed to acquire write lock on device %s."),
-				mdata_device_path(cd));
+				data_device_path(cd));
 			r = -EINVAL;
 			goto out;
 		}
@@ -1641,9 +1646,9 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL, NULL, NULL);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
-				mdata_device_path(cd));
+				data_device_path(cd));
 
-		device_write_unlock(crypt_metadata_device(cd));
+		device_write_unlock(crypt_data_device(cd));
 	}
 
 	if (r < 0)
