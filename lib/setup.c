@@ -1616,7 +1616,6 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	/* Wipe integrity superblock and create integrity superblock */
 	if (crypt_get_integrity_tag_size(cd)) {
-		/* FIXME: this should be locked. */
 		r = crypt_wipe_device(cd, crypt_data_device(cd), CRYPT_WIPE_ZERO,
 				      crypt_get_data_offset(cd) * SECTOR_SIZE,
 				      8 * SECTOR_SIZE, 8 * SECTOR_SIZE, NULL, NULL);
@@ -1635,20 +1634,10 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			goto out;
 		}
 
-		r = device_write_lock(cd, crypt_data_device(cd));
-		if (r) {
-			log_err(cd, _("Failed to acquire write lock on device %s."),
-				data_device_path(cd));
-			r = -EINVAL;
-			goto out;
-		}
-
 		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL, NULL, NULL);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
-
-		device_write_unlock(crypt_data_device(cd));
 	}
 
 	if (r < 0)
