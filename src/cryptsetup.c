@@ -936,7 +936,7 @@ static int action_luksFormat(void)
 		.data_device = opt_header_device ? action_argv[0] : NULL,
 	};
 	struct crypt_params_luks2 params2 = {
-		.data_alignment = params1.data_alignment,
+		.data_alignment = params1.data_alignment / (opt_sector_size >> 9),
 		.data_device = params1.data_device,
 		.sector_size = opt_sector_size,
 		.label = opt_label,
@@ -2650,6 +2650,12 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Unsupported encryption sector size.\n"),
 		      poptGetInvocationName(popt_context));
+
+	if (opt_align_payload % (opt_sector_size / SECTOR_SIZE)) {
+		usage(popt_context, EXIT_FAILURE,
+		      _("Payload alignment (in 512-byte sectors) is not a multiple of requested sector size.\n"),
+		      poptGetInvocationName(popt_context));
+	}
 
 	if (opt_unbound && !opt_key_size)
 		usage(popt_context, EXIT_FAILURE,
