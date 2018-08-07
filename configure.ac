@@ -86,7 +86,7 @@ if test "x$enable_keyring" = "xyes"; then
 
 	AC_DEFINE(KERNEL_KEYRING, 1, [Enable kernel keyring service support])
 fi
-AM_CONDITIONAL(KERNEL_KEYRING, test x$enable_keyring = xyes)
+AM_CONDITIONAL(KERNEL_KEYRING, test "x$enable_keyring" = "xyes")
 
 saved_LIBS=$LIBS
 AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR([You need the uuid library.])])
@@ -96,7 +96,7 @@ LIBS=$saved_LIBS
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 AC_CHECK_FUNCS([posix_memalign clock_gettime posix_fallocate])
 
-if test "x$enable_largefile" = "xno" ; then
+if test "x$enable_largefile" = "xno"; then
   AC_MSG_ERROR([Building with --disable-largefile is not supported, it can cause data corruption.])
 fi
 
@@ -204,7 +204,7 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 		NO_FIPS([])
 	fi
 
-	if test x$enable_static_cryptsetup = xyes; then
+	if test "x$enable_static_cryptsetup" = "xyes"; then
 		saved_LIBS=$LIBS
 		LIBS="$saved_LIBS $LIBGCRYPT_LIBS -static"
 		AC_CHECK_LIB(gcrypt, gcry_check_version,,
@@ -228,7 +228,7 @@ AC_DEFUN([CONFIGURE_OPENSSL], [
 	CRYPTO_LIBS=$OPENSSL_LIBS
 	use_internal_pbkdf2=0
 
-	if test x$enable_static_cryptsetup = xyes; then
+	if test "x$enable_static_cryptsetup" = "xyes"; then
 		saved_PKG_CONFIG=$PKG_CONFIG
 		PKG_CONFIG="$PKG_CONFIG --static"
 		PKG_CHECK_MODULES([OPENSSL_STATIC], [openssl])
@@ -238,7 +238,7 @@ AC_DEFUN([CONFIGURE_OPENSSL], [
 ])
 
 AC_DEFUN([CONFIGURE_NSS], [
-	if test x$enable_static_cryptsetup = xyes; then
+	if test "x$enable_static_cryptsetup" = "xyes"; then
 		AC_MSG_ERROR([Static build of cryptsetup is not supported with NSS.])
 	fi
 
@@ -288,33 +288,33 @@ saved_LIBS=$LIBS
 
 AC_ARG_ENABLE([static-cryptsetup],
 	AS_HELP_STRING([--enable-static-cryptsetup], [enable build of static version of tools]))
-if test x$enable_static_cryptsetup = xyes; then
-	if test x$enable_static = xno; then
+if test "x$enable_static_cryptsetup" = "xyes"; then
+	if test "x$enable_static" = "xno"; then
 		AC_MSG_WARN([Requested static cryptsetup build, enabling static library.])
 		enable_static=yes
 	fi
 fi
-AM_CONDITIONAL(STATIC_TOOLS, test x$enable_static_cryptsetup = xyes)
+AM_CONDITIONAL(STATIC_TOOLS, test "x$enable_static_cryptsetup" = "xyes")
 
 AC_ARG_ENABLE([cryptsetup],
 	AS_HELP_STRING([--disable-cryptsetup], [disable cryptsetup support]),
 	[], [enable_cryptsetup=yes])
-AM_CONDITIONAL(CRYPTSETUP, test x$enable_cryptsetup = xyes)
+AM_CONDITIONAL(CRYPTSETUP, test "x$enable_cryptsetup" = "xyes")
 
 AC_ARG_ENABLE([veritysetup],
 	AS_HELP_STRING([--disable-veritysetup], [disable veritysetup support]),
 	[], [enable_veritysetup=yes])
-AM_CONDITIONAL(VERITYSETUP, test x$enable_veritysetup = xyes)
+AM_CONDITIONAL(VERITYSETUP, test "x$enable_veritysetup" = "xyes")
 
 AC_ARG_ENABLE([cryptsetup-reencrypt],
 	AS_HELP_STRING([--disable-cryptsetup-reencrypt], [disable cryptsetup-reencrypt tool]),
 	[], [enable_cryptsetup_reencrypt=yes])
-AM_CONDITIONAL(REENCRYPT, test x$enable_cryptsetup_reencrypt = xyes)
+AM_CONDITIONAL(REENCRYPT, test "x$enable_cryptsetup_reencrypt" = "xyes")
 
 AC_ARG_ENABLE([integritysetup],
 	AS_HELP_STRING([--disable-integritysetup], [disable integritysetup support]),
 	[], [enable_integritysetup=yes])
-AM_CONDITIONAL(INTEGRITYSETUP, test x$enable_integritysetup = xyes)
+AM_CONDITIONAL(INTEGRITYSETUP, test "x$enable_integritysetup" = "xyes")
 
 AC_ARG_ENABLE([selinux],
 	AS_HELP_STRING([--disable-selinux], [disable selinux support [default=auto]]),
@@ -377,11 +377,11 @@ case $with_crypto_backend in
 	nettle)  CONFIGURE_NETTLE([]) ;;
 	*) AC_MSG_ERROR([Unknown crypto backend.]) ;;
 esac
-AM_CONDITIONAL(CRYPTO_BACKEND_GCRYPT,  test $with_crypto_backend = gcrypt)
-AM_CONDITIONAL(CRYPTO_BACKEND_OPENSSL, test $with_crypto_backend = openssl)
-AM_CONDITIONAL(CRYPTO_BACKEND_NSS,     test $with_crypto_backend = nss)
-AM_CONDITIONAL(CRYPTO_BACKEND_KERNEL,  test $with_crypto_backend = kernel)
-AM_CONDITIONAL(CRYPTO_BACKEND_NETTLE,  test $with_crypto_backend = nettle)
+AM_CONDITIONAL(CRYPTO_BACKEND_GCRYPT,  test "$with_crypto_backend" = "gcrypt")
+AM_CONDITIONAL(CRYPTO_BACKEND_OPENSSL, test "$with_crypto_backend" = "openssl")
+AM_CONDITIONAL(CRYPTO_BACKEND_NSS,     test "$with_crypto_backend" = "nss")
+AM_CONDITIONAL(CRYPTO_BACKEND_KERNEL,  test "$with_crypto_backend" = "kernel")
+AM_CONDITIONAL(CRYPTO_BACKEND_NETTLE,  test "$with_crypto_backend" = "nettle")
 
 AM_CONDITIONAL(CRYPTO_INTERNAL_PBKDF2, test $use_internal_pbkdf2 = 1)
 AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PBKDF2])
@@ -394,7 +394,7 @@ AC_ARG_ENABLE([internal-argon2],
 AC_ARG_ENABLE([libargon2],
 	AS_HELP_STRING([--enable-libargon2], [enable external libargon2 (PHC) library (disables internal bundled version)]))
 
-if test x$enable_libargon2 = xyes ; then
+if test "x$enable_libargon2" = "xyes" ; then
 	AC_CHECK_HEADERS(argon2.h,,
 		[AC_MSG_ERROR([You need libargon2 development library installed.])])
 	AC_CHECK_DECL(Argon2_id,,[AC_MSG_ERROR([You need more recent Argon2 library with support for Argon2id.])], [#include <argon2.h>])
@@ -406,7 +406,7 @@ else
 	AC_ARG_ENABLE([internal-sse-argon2],
 		AS_HELP_STRING([--enable-internal-sse-argon2], [enable internal SSE implementation of Argon2 PBKDF]))
 
-	if test x$enable_internal_sse_argon2 = xyes ; then
+	if test "x$enable_internal_sse_argon2" = "xyes"; then
 		AC_MSG_CHECKING(if Argon2 SSE optimization can be used)
 		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 			#include <emmintrin.h>
@@ -418,18 +418,18 @@ else
 	fi
 fi
 
-if test x$enable_internal_argon2 = xyes ; then
+if test "x$enable_internal_argon2" = "xyes"; then
 	AC_DEFINE(USE_INTERNAL_ARGON2, 1, [Use internal Argon2])
 fi
-AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test x$enable_internal_argon2 = xyes)
-AM_CONDITIONAL(CRYPTO_INTERNAL_SSE_ARGON2, test x$enable_internal_sse_argon2 = xyes)
+AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test "x$enable_internal_argon2" = "xyes")
+AM_CONDITIONAL(CRYPTO_INTERNAL_SSE_ARGON2, test "x$enable_internal_sse_argon2" = "xyes")
 
 dnl Link with blkid to check for other device types
 AC_ARG_ENABLE([blkid],
 	AS_HELP_STRING([--disable-blkid], [disable use of blkid for device signature detection and wiping]),
 	[], [enable_blkid=yes])
 
-if test x$enable_blkid = xyes ; then
+if test "x$enable_blkid" = "xyes"; then
 	PKG_CHECK_MODULES([BLKID], [blkid],[AC_DEFINE([HAVE_BLKID], 1, [Define to 1 to use blkid for detection of disk signatures.])],[LIBBLKID_LIBS="-lblkid"])
 
 	AC_CHECK_HEADERS(blkid/blkid.h,,[AC_MSG_ERROR([You need blkid development library installed.])])
@@ -453,12 +453,12 @@ if test x$enable_blkid = xyes ; then
 		       [AC_MSG_ERROR([Can not compile with blkid support, disable it by --disable-blkid.])],
 		       [#include <blkid/blkid.h>])
 fi
-AM_CONDITIONAL(HAVE_BLKID, test x$enable_blkid = xyes)
-AM_CONDITIONAL(HAVE_BLKID_WIPE, test x$enable_blkid_wipe = xyes)
-AM_CONDITIONAL(HAVE_BLKID_STEP_BACK, test x$enable_blkid_step_back = xyes)
+AM_CONDITIONAL(HAVE_BLKID, test "x$enable_blkid" = "xyes")
+AM_CONDITIONAL(HAVE_BLKID_WIPE, test "x$enable_blkid_wipe" = "xyes")
+AM_CONDITIONAL(HAVE_BLKID_STEP_BACK, test "x$enable_blkid_step_back" = "xyes")
 
 dnl Magic for cryptsetup.static build.
-if test x$enable_static_cryptsetup = xyes; then
+if test "x$enable_static_cryptsetup" = "xyes"; then
 	saved_PKG_CONFIG=$PKG_CONFIG
 	PKG_CONFIG="$PKG_CONFIG --static"
 
