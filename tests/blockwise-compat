@@ -42,8 +42,14 @@ fail()
 
 fail_count()
 {
-	echo "[WRONG]"
+	echo "$MSG[FAIL]"
 	FAILS=$((FAILS+1))
+}
+
+warn_count()
+{
+	echo "$MSG[WARNING]"
+	WARNS=$((WARNS+1))
 }
 
 skip()
@@ -108,25 +114,33 @@ RUN() {
 
         case "$_res" in
         P)
-		echo -n "Testing $_fn on $_type with params $@ [should PASS]..."
+		MSG="Testing $_fn on $_type with params $@ [expecting TRUE]..."
 		$BW_UNIT $_dev $_fn $@
 		if [ $? -ne 0 ]; then
-			fail_count
+			if [ $_type = "file" ]; then
+				warn_count
+			else
+				fail_count
+			fi
 			trunc_file $_fsize $_dev
 			test -z "$STRACE" || $STRACE -o ./$BW_UNIT-fail-$FAILS-should-pass.log $BW_UNIT $_dev $_fn $@ 2> /dev/null
 		else
-			echo "[OK]"
+			MSG="$MSG[OK]"
 		fi
                 ;;
         F)
-		echo -n "Testing $_fn on $_type with params $@ [should FAIL]..."
+		MSG="Testing $_fn on $_type with params $@ [expecting FALSE]..."
 		$BW_UNIT $_dev $_fn $@ 2> /dev/null
 		if [ $? -eq 0 ]; then
-			fail_count
+			if [ $_type = "file" ]; then
+				warn_count
+			else
+				fail_count
+			fi
 			trunc_file $_fsize $_dev
 			test -z "$STRACE" || $STRACE -o ./$BW_UNIT-fail-$FAILS-should-fail.log $BW_UNIT $_dev $_fn $@ 2> /dev/null
 		else
-			echo "[OK]"
+			MSG="$MSG[OK]"
 		fi
                 ;;
         *)
@@ -290,6 +304,7 @@ which $STRACE > /dev/null 2>&1 || unset STRACE
 test -x $BW_UNIT || skip "Run \"make `basename $BW_UNIT`\" first"
 
 FAILS=0
+WARNS=0
 DEVSIZEMB=2
 DEVSIZE=$((DEVSIZEMB*1024*1024))
 
@@ -299,16 +314,12 @@ echo "System PAGE_SIZE=$PAGE_SIZE"
 echo "Run tests in local filesystem"
 falloc $DEVSIZEMB $LOCAL_FILE || fail "Failed to create file in local filesystem."
 BSIZE=$(stat -c "%o" $LOCAL_FILE)
-if [ $BSIZE -gt $PAGE_SIZE ]; then
+if [ $BSIZE -gt $((512*1024)) ]; then
 	echo "Detected file block size: $BSIZE bytes"
-	if [ -n "$_FORCE_LOCAL" ]; then
-		run_all $LOCAL_FILE
-	else
-		echo "Nfs? I'm not going to run blockwise tests on this."
-	fi
-else
-	run_all $LOCAL_FILE
+	echo "Tuning it down to system page size ($PAGE_SIZE bytes)"
+	BSIZE=$PAGE_SIZE
 fi
+run_all $LOCAL_FILE
 
 [ $(id -u) -eq 0 ] || {
 	echo "WARNING: You must be root to run remaining tests."
@@ -356,4 +367,5 @@ add_device dev_size_mb=$DEVSIZEMBIMG sector_size=$DEVBSIZE physblk_exp=$EXP num_
 run_all_in_fs
 cleanup
 
+test $WARNS -eq 0 || echo "(WARNING: $WARNS suspicious result(s) in total)"
 test $FAILS -eq 0 || fail "($FAILS wrong result(s) in total)"
