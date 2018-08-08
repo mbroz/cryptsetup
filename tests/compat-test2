@@ -488,11 +488,11 @@ fips_mode || {
 }
 
 prepare "[22] remove disappeared device" wipe
-dmsetup create $DEV_NAME --table "0 10000 linear $LOOPDEV 2" || fail
+dmsetup create $DEV_NAME --table "0 39998 linear $LOOPDEV 2" || fail
 echo $PWD1 | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 /dev/mapper/$DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 # underlying device now returns error but node is still present
-dmsetup load $DEV_NAME --table "0 10000 error" || fail
+dmsetup load $DEV_NAME --table "0 40000 error" || fail
 dmsetup resume $DEV_NAME || fail
 $CRYPTSETUP -q luksClose $DEV_NAME2 || fail
 dmsetup remove $DEV_NAME || fail
