@@ -750,16 +750,16 @@ if [ $HAVE_KEYRING -gt 0 ]; then
 fi
 echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 10 || fail
 echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 11 --json-file - || fail
-echo "$IMPORT_TOKEN" > $TOKEN_FILE0
+echo -n "$IMPORT_TOKEN" > $TOKEN_FILE0
 $CRYPTSETUP token import $LOOPDEV --token-id 12 --json-file $TOKEN_FILE0 || fail
 $CRYPTSETUP token import $LOOPDEV --token-id 12 --json-file $TOKEN_FILE0 2>/dev/null && fail
-$CRYPTSETUP token export $LOOPDEV --token-id 10 | diff -Z --from-file - $TOKEN_FILE0 || fail
-$CRYPTSETUP token export $LOOPDEV --token-id 11 | diff -Z --from-file - $TOKEN_FILE0 || fail
-$CRYPTSETUP token export $LOOPDEV --token-id 12 | diff -Z --from-file - $TOKEN_FILE0 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 10 | diff --from-file - $TOKEN_FILE0 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 11 | diff --from-file - $TOKEN_FILE0 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 12 | diff --from-file - $TOKEN_FILE0 || fail
 $CRYPTSETUP token export $LOOPDEV --token-id 12 --json-file $TOKEN_FILE1 || fail
-diff -Z $TOKEN_FILE0 $TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
 $CRYPTSETUP token export $LOOPDEV --token-id 12 > $TOKEN_FILE1 || fail
-diff -Z $TOKEN_FILE0 $TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
 
 prepare "[34] LUKS keyslot priority" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -S 1 || fail
