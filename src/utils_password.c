@@ -334,7 +334,7 @@ int tools_write_mk(const char *file, const char *key, int keysize)
 {
 	int fd, r = -EINVAL;
 
-	fd = open(file, O_WRONLY);
+	fd = open(file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
 	if (fd < 0) {
 		log_err(_("Cannot open keyfile %s for write."), file);
 		return r;

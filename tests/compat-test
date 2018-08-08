@@ -138,10 +138,6 @@ function prepare()
 		touch $KEYE
 	fi
 
-	if [ ! -e $VK_FILE ]; then
-		touch $VK_FILE
-	fi
-
 	cp $IMG $ORIG_IMG
 	[ -n "$1" ] && echo "CASE: $1"
 }
@@ -241,8 +237,8 @@ $CRYPTSETUP luksDump $IMG | grep -q $TEST_UUID || fail
 echo $PWDW | $CRYPTSETUP luksDump $IMG --dump-master-key 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksDump $IMG --dump-master-key | grep -q "MK dump:" || can_fail_fips
 $CRYPTSETUP luksDump -q $IMG --dump-master-key -d $KEY1 | grep -q "MK dump:" || can_fail_fips
-echo $PWD1 | $CRYPTSETUP luksDump -q $IMG --dump-master-key --master-key-file missing-file 2> /dev/null && fail
-echo $PWD1 | $CRYPTSETUP luksDump -q $IMG --dump-master-key --master-key-file $VK_FILE > /dev/null || can_fail_fips
+echo $PWD1 | $CRYPTSETUP luksDump -q $IMG --dump-master-key --master-key-file $VK_FILE >/dev/null || can_fail_fips
+echo $PWD1 | $CRYPTSETUP luksDump -q $IMG --dump-master-key --master-key-file $VK_FILE 2>/dev/null && fail
 fips_mode || {
 	echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --master-key-file $VK_FILE $IMG || fail
 }

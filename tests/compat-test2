@@ -137,10 +137,6 @@ function prepare()
 		touch $KEYE
 	fi
 
-	if [ ! -e $VK_FILE ]; then
-		touch $VK_FILE
-	fi
-
 	cp $IMG $ORIG_IMG
 	[ -n "$1" ] && echo "CASE: $1"
 }
@@ -481,8 +477,8 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q $TEST_UUID || fail
 echo $PWDW | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || can_fail_fips
 $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || can_fail_fips
-echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file missing-file 2> /dev/null && fail
-echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file $VK_FILE > /dev/null || can_fail_fips
+echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file $VK_FILE >/dev/null || can_fail_fips
+echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file $VK_FILE 2>/dev/null && fail
 fips_mode || {
 	echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --master-key-file $VK_FILE $LOOPDEV || fail
 }
@@ -694,7 +690,7 @@ if dm_crypt_keyring_flawed; then
 fi
 
 if dm_crypt_keyring_support; then
-	prepare "[32b] LUKS2 key in keyring" wipe
+	prepare "[32] LUKS2 key in keyring" wipe
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
 	# check keyring support detection works as expected
 	rmmod dm-crypt > /dev/null 2>&1 || true
