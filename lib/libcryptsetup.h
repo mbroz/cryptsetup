@@ -368,7 +368,7 @@ struct crypt_params_plain {
  */
 struct crypt_params_luks1 {
 	const char *hash;        /**< hash used in LUKS header */
-	size_t data_alignment;   /**< data alignment in sectors, data offset is multiple of this */
+	size_t data_alignment;   /**< data area alignment in 512B sectors, data offset is multiple of this */
 	const char *data_device; /**< detached encrypted data device or @e NULL */
 };
 
@@ -490,7 +490,7 @@ struct crypt_params_luks2 {
 	const struct crypt_pbkdf_type *pbkdf; /**< PBKDF (and hash) parameters or @e NULL*/
 	const char *integrity;                /**< integrity algorithm or @e NULL */
 	const struct crypt_params_integrity *integrity_params; /**< Data integrity parameters or @e NULL*/
-	size_t data_alignment;   /**< data alignment in sectors, data offset is multiple of this */
+	size_t data_alignment;   /**< data area alignment in 512B sectors, data offset is multiple of this */
 	const char *data_device; /**< detached encrypted data device or @e NULL */
 	uint32_t sector_size;    /**< encryption sector size */
 	const char *label;       /**< header label or @e NULL*/

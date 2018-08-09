@@ -1572,9 +1572,9 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		cd->device = NULL;
 		if (device_alloc(&cd->device, params->data_device) < 0)
 			return -ENOMEM;
-		required_alignment = params->data_alignment * sector_size;
+		required_alignment = params->data_alignment * SECTOR_SIZE;
 	} else if (params && params->data_alignment) {
-		required_alignment = params->data_alignment * sector_size;
+		required_alignment = params->data_alignment * SECTOR_SIZE;
 	} else
 		device_topology_alignment(cd->device,
 				       &required_alignment,
