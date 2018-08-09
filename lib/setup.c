@@ -1602,7 +1602,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       integrity, uuid,
 			       sector_size,
 			       required_alignment / sector_size,
-			       alignment_offset / sector_size,
+			       alignment_offset,
 			       cd->metadata_device ? 1 : 0);
 	if (r < 0)
 		goto out;
