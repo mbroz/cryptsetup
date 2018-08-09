@@ -104,6 +104,7 @@ int device_is_rotational(struct device *device);
 size_t device_alignment(struct device *device);
 int device_direct_io(const struct device *device);
 int device_fallocate(struct device *device, uint64_t size);
+void device_sync(struct device *device, int devfd);
 
 int device_open_locked(struct device *device, int flags);
 int device_read_lock(struct crypt_device *cd, struct device *device);

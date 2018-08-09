@@ -213,7 +213,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 		}
 	}
 
-	fsync(devfd);
+	device_sync(device, devfd);
 out:
 	close(devfd);
 	free(sf);

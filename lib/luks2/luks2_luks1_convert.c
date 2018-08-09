@@ -461,6 +461,7 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 
 	r = 0;
 out:
+	device_sync(device, devfd);
 	close(devfd);
 	crypt_memzero(buf, buf_size);
 	free(buf);

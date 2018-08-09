@@ -378,8 +378,10 @@ int LUKS_hdr_restore(
 	/* Be sure to reload new data */
 	r = LUKS_read_phdr(hdr, 1, 0, ctx);
 out:
-	if (devfd >= 0)
+	if (devfd >= 0) {
+		device_sync(device, devfd);
 		close(devfd);
+	}
 	crypt_safe_free(buffer);
 	return r;
 }
@@ -681,6 +683,8 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 			    &convHdr, hdr_size) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(ctx, _("Error during update of LUKS header on device %s."), device_path(device));
+
+	device_sync(device, devfd);
 	close(devfd);
 
 	/* Re-read header from disk to be sure that in-memory and on-disk data are the same. */

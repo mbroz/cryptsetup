@@ -201,6 +201,8 @@ int VERITY_write_sb(struct crypt_device *cd,
 	if (r)
 		log_err(cd, _("Error during update of verity header on device %s."),
 			device_path(device));
+
+	device_sync(device, devfd);
 	close(devfd);
 
 	return r;

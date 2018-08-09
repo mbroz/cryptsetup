@@ -1195,8 +1195,10 @@ out:
 	crypt_memzero(&tmp_hdr, sizeof(tmp_hdr));
 	crypt_safe_free(buffer);
 
-	if (devfd >= 0)
+	if (devfd >= 0) {
+		device_sync(device, devfd);
 		close(devfd);
+	}
 
 	if (!r) {
 		LUKS2_hdr_free(hdr);

@@ -230,6 +230,16 @@ static int _open_locked(struct device *device, int flags)
 }
 
 /*
+ * Common wrapper for device sync.
+ * FIXME: file descriptor will be in struct later.
+ */
+void device_sync(struct device *device, int devfd)
+{
+	if (fsync(devfd) == -1)
+		log_dbg("Cannot sync device %s.", device_path(device));
+}
+
+/*
  * in non-locked mode returns always fd or -1
  *
  * in locked mode:
@@ -242,7 +252,6 @@ static int device_open_internal(struct device *device, int flags)
 {
 	int devfd;
 
-	flags |= O_SYNC;
 	if (device->o_direct)
 		flags |= O_DIRECT;
 
