@@ -61,7 +61,7 @@ format() # key_bits expected [forced]
 		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q -i1 -c aes-cbc-essiv:sha256 -s $1
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key)..."
-		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q -i1 -s $1 -c aes-cbc-essiv:sha256 --align-payload=$2
+		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q -i1 -s $1 -c aes-cbc-essiv:sha256 --align-payload=$3
 	fi
 
 	ALIGN=$($CRYPTSETUP luksDump $DEV |grep "Payload offset" | sed -e s/.*\\t//)
@@ -125,9 +125,9 @@ echo "# Create desktop-class 4K drive"
 echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=0)"
 add_device dev_size_mb=16 sector_size=512 physblk_exp=3 num_tgts=1
 format 256 4096
-format 256 2112 8
+format 256 2056 8
 format 128 2048
-format 128 1088 8
+format 128 1032 8
 format 256 8192 8192
 format 128 8192 8192
 cleanup
@@ -136,9 +136,9 @@ echo "# Create desktop-class 4K drive with misaligned opt-io (some bad USB enclo
 echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=0, opt-io=1025)"
 add_device dev_size_mb=16 sector_size=512 physblk_exp=3 num_tgts=1 opt_blks=1025
 format 256 4096
-format 256 2112 8
+format 256 2056 8
 format 128 2048
-format 128 1088 8
+format 128 1032 8
 format 256 8192 8192
 format 128 8192 8192
 cleanup
@@ -147,18 +147,18 @@ echo "# Create desktop-class 4K drive w/ 63-sector DOS partition compensation"
 echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=3584)"
 add_device dev_size_mb=16 sector_size=512 physblk_exp=3 lowest_aligned=7 num_tgts=1
 format 256 4103
-format 256 2119 8
+format 256 2056 8
 format 128 2055
-format 128 1095 8
+format 128 1032 8
 cleanup
 
 echo "# Create enterprise-class 4K drive"
 echo "# (logical_block_size=4096, physical_block_size=4096, alignment_offset=0)"
 add_device dev_size_mb=16 sector_size=4096 num_tgts=1 opt_blks=64
 format 256 4096
-format 256 2560 8
+format 256 2056 8
 format 128 2048
-format 128 1536 8
+format 128 1032 8
 cleanup
 
 echo "# Create classic 512B drive and stack dm-linear"
@@ -168,9 +168,9 @@ DEV2=$DEV
 DEV=/dev/mapper/$DEV_STACKED
 dmsetup create $DEV_STACKED --table "0 32768 linear $DEV2 0"
 format 256 4096
-format 256 2112 8
+format 256 2056 8
 format 128 2048
-format 128 1088 8
+format 128 1032 8
 format 128 8192 8192
 cleanup
 
