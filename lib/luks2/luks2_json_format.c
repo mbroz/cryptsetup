@@ -122,9 +122,9 @@ int LUKS2_generate_hdr(
 	const char *cipherMode,
 	const char *integrity,
 	const char *uuid,
-	unsigned int sector_size,
-	unsigned int alignPayload,
-	unsigned int alignOffset,
+	unsigned int sector_size,  /* in bytes */
+	unsigned int alignPayload, /* in bytes */
+	unsigned int alignOffset,  /* in bytes */
 	int detached_metadata_device)
 {
 	struct json_object *jobj_segment, *jobj_integrity, *jobj_keyslots, *jobj_segments, *jobj_config;
@@ -182,11 +182,11 @@ int LUKS2_generate_hdr(
 	jobj_segment = json_object_new_object();
 	json_object_object_add(jobj_segment, "type", json_object_new_string("crypt"));
 	if (detached_metadata_device)
-		offset = (uint64_t)alignPayload * sector_size;
+		offset = (uint64_t)alignPayload;
 	else {
 		//FIXME
 		//offset = size_round_up(areas[7].offset + areas[7].length, alignPayload * SECTOR_SIZE);
-		offset = size_round_up(LUKS2_HDR_DEFAULT_LEN, (size_t)alignPayload * sector_size);
+		offset = size_round_up(LUKS2_HDR_DEFAULT_LEN, (size_t)alignPayload);
 		offset += alignOffset;
 	}
 

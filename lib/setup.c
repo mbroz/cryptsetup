@@ -1601,7 +1601,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       cipher, cipher_mode,
 			       integrity, uuid,
 			       sector_size,
-			       required_alignment / sector_size,
+			       required_alignment,
 			       alignment_offset,
 			       cd->metadata_device ? 1 : 0);
 	if (r < 0)
