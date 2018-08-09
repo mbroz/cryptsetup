@@ -4,6 +4,7 @@ TESTS = api-test \
 	compat-test2 \
 	loopaes-test \
 	align-test \
+	align-test2 \
 	discards-test \
 	mode-test \
 	password-hash-test \
@@ -49,7 +50,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	compat-test \
 	compat-test2 \
 	loopaes-test align-test discards-test mode-test password-hash-test \
-	verity-compat-test \
+	align-test2 verity-compat-test \
 	reencryption-compat-test \
 	reencryption-compat-test2 \
 	tcrypt-compat-test \
