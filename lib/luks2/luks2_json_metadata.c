@@ -544,11 +544,6 @@ static int hdr_validate_crypt_segment(json_object *jobj, const char *key, json_o
 	    !json_str_to_uint64(jobj_ivoffset, &ivoffset))
 		return 1;
 
-	if (offset % sector_size) {
-		log_dbg("Offset field has to be aligned to sector size: %" PRIu32, sector_size);
-		return 1;
-	}
-
 	if (ivoffset % sector_size) {
 		log_dbg("IV offset field has to be aligned to sector size: %" PRIu32, sector_size);
 		return 1;
