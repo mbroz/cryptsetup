@@ -45,7 +45,7 @@ char *THE_LOOP_DEV = NULL;
 int _debug   = 0;
 int global_lines = 0;
 int _quit = 0;
-int _verbose = 1;
+int _verbose = 0;
 uint64_t t_dev_offset = 0;
 
 static void (*_cleanup)(void);

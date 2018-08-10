@@ -354,7 +354,7 @@ static int _setup(void)
 	fd = loop_attach(&DEVICE_6, IMAGE_PV_LUKS2_SEC, 0, 0, &ro);
 	close(fd);
 
-	_system(" [ ! -d " CONV_DIR " ] && tar xJf " CONV_DIR ".tar.xz", 1);
+	_system(" [ ! -d " CONV_DIR " ] && tar xJf " CONV_DIR ".tar.xz 2>/dev/null", 1);
 
 	if (_system("modprobe dm-crypt", 1))
 		return 1;
@@ -2974,23 +2974,23 @@ int main(int argc, char *argv[])
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 
 	RUN_(AddDeviceLuks2, "Format and use LUKS2 device");
-	RUN_(Luks2HeaderLoad, "test header load");
-	RUN_(Luks2HeaderRestore, "test LUKS2 header restore");
-	RUN_(Luks2HeaderBackup, "test LUKS2 header backup");
-	RUN_(ResizeDeviceLuks2, "Luks device resize tests");
+	RUN_(Luks2HeaderLoad, "LUKS2 header load");
+	RUN_(Luks2HeaderRestore, "LUKS2 header restore");
+	RUN_(Luks2HeaderBackup, "LUKS2 header backup");
+	RUN_(ResizeDeviceLuks2, "LUKS2 device resize tests");
 	RUN_(UseLuks2Device, "Use pre-formated LUKS2 device");
-	RUN_(SuspendDevice, "Suspend/Resume test");
+	RUN_(SuspendDevice, "LUKS2 Suspend/Resume");
 	RUN_(UseTempVolumes, "Format and use temporary encrypted device");
-	RUN_(Tokens, "General tokens API tests");
-	RUN_(TokenActivationByKeyring, "Builtin kernel keyring token tests");
-	RUN_(LuksConvert, "Test LUKS1 <-> LUKS2 conversions");
-	RUN_(Pbkdf, "Exercice default pbkdf manipulation routines");
-	RUN_(Luks2KeyslotAdd, "Add new keyslot by unused key");
-	RUN_(Luks2ActivateByKeyring, "Test LUKS2 activation by passphrase in keyring");
-	RUN_(Luks2Requirements, "Test LUKS2 requirements flags");
-	RUN_(Luks2Integrity, "Test LUKS2 with data integrity");
-	RUN_(Luks2Flags, "Test LUKS2 persistent flags");
-	RUN_(Luks2Repair, "Test LUKS2 repair"); // test disables metadata locking. Run alwas last!
+	RUN_(Tokens, "General tokens API");
+	RUN_(TokenActivationByKeyring, "Builtin kernel keyring token");
+	RUN_(LuksConvert, "LUKS1 <-> LUKS2 conversions");
+	RUN_(Pbkdf, "Default PBKDF manipulation routines");
+	RUN_(Luks2KeyslotAdd, "Add a new keyslot by unused key");
+	RUN_(Luks2ActivateByKeyring, "LUKS2 activation by passphrase in keyring");
+	RUN_(Luks2Requirements, "LUKS2 requirements flags");
+	RUN_(Luks2Integrity, "LUKS2 with data integrity");
+	RUN_(Luks2Flags, "LUKS2 persistent flags");
+	RUN_(Luks2Repair, "LUKS2 repair"); // test disables metadata locking. Run always last!
 out:
 	_cleanup();
 	return 0;

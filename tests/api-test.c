@@ -104,7 +104,6 @@ static int get_luks_offsets(int metadata_device,
 		return -1;
 
 	sectors_per_stripes_set = DIV_ROUND_UP(keylength*LUKS_STRIPES, SECTOR_SIZE);
-	printf("sectors_per_stripes %" PRIu32 "\n", sectors_per_stripes_set);
 	current_sector = DIV_ROUND_UP_MODULO(DIV_ROUND_UP(LUKS_PHDR_SIZE_B, SECTOR_SIZE),
 			LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 	for(i=0;i < (LUKS_NUMKEYS - 1);i++)
@@ -1762,20 +1761,20 @@ int main(int argc, char *argv[])
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 
 	RUN_(NonFIPSAlg, "Crypto is properly initialised in format"); //must be the first!
-	RUN_(AddDevicePlain, "plain device API creation exercise");
-	RUN_(HashDevicePlain, "plain device API hash test");
+	RUN_(AddDevicePlain, "A plain device API creation");
+	RUN_(HashDevicePlain, "A plain device API hash");
 	RUN_(AddDeviceLuks, "Format and use LUKS device");
-	RUN_(LuksHeaderLoad, "test header load");
-	RUN_(LuksHeaderRestore, "test LUKS header restore");
-	RUN_(LuksHeaderBackup, "test LUKS header backup");
-	RUN_(ResizeDeviceLuks, "Luks device resize tests");
+	RUN_(LuksHeaderLoad, "Header load");
+	RUN_(LuksHeaderRestore, "LUKS header restore");
+	RUN_(LuksHeaderBackup, "LUKS header backup");
+	RUN_(ResizeDeviceLuks, "LUKS device resize");
 	RUN_(UseLuksDevice, "Use pre-formated LUKS device");
-	RUN_(SuspendDevice, "Suspend/Resume test");
+	RUN_(SuspendDevice, "Suspend/Resume");
 	RUN_(UseTempVolumes, "Format and use temporary encrypted device");
-	RUN_(CallbacksTest, "API callbacks test");
-	RUN_(VerityTest, "DM verity test");
-	RUN_(TcryptTest, "Tcrypt API test");
-	RUN_(IntegrityTest, "Integrity API test");
+	RUN_(CallbacksTest, "API callbacks");
+	RUN_(VerityTest, "DM verity");
+	RUN_(TcryptTest, "Tcrypt API");
+	RUN_(IntegrityTest, "Integrity API");
 out:
 	_cleanup();
 	return 0;
