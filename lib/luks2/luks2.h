@@ -83,7 +83,6 @@ struct luks2_hdr_disk {
 /*
  * LUKS2 header in-memory.
  */
-typedef struct json_object json_object;
 struct luks2_hdr {
 	size_t		hdr_size;
 	uint64_t	seqid;
