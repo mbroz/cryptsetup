@@ -19,7 +19,7 @@ LUKS Design
 **LUKS** is the standard for Linux hard disk encryption. By providing a standard on-disk-format, it does not  
 only facilitate compatibility among distributions, but also provides secure management of multiple user passwords.  
 In contrast to existing solution, LUKS stores all setup necessary setup information in the partition header,  
-enabling the user to transport or migrate his data seamlessly.
+enabling the user to transport or migrate their data seamlessly.
 
 Last version of the LUKS format specification is
 [available here](https://www.kernel.org/pub/linux/utils/cryptsetup/LUKS_docs/on-disk-format.pdf).
