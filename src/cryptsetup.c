@@ -1066,8 +1066,10 @@ static int action_luksFormat(void)
 	r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
 					    key, keysize,
 					    password, passwordLen);
-	if (r < 0) /* FIXME: call wipe signatures again */
+	if (r < 0) {
+		(void) tools_wipe_all_signatures(header_device);
 		goto out;
+	}
 	tools_keyslot_msg(r, CREATED);
 
 	if (opt_integrity && !opt_integrity_no_wipe)
