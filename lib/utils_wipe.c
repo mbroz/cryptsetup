@@ -153,7 +153,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 	/* FIXME: if wipe_block_size < bsize, then a wipe is highly ineffective */
 
 	/* Everything must be aligned to SECTOR_SIZE */
-	if ((offset % SECTOR_SIZE) || (length % SECTOR_SIZE) || (wipe_block_size % SECTOR_SIZE))
+	if (MISALIGNED_512(offset) || MISALIGNED_512(length) || MISALIGNED_512(wipe_block_size))
 		return -EINVAL;
 
 	devfd = device_open(device, O_RDWR);

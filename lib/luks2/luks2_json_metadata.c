@@ -535,14 +535,16 @@ static int hdr_validate_crypt_segment(json_object *jobj, const char *key, json_o
 	}
 
 	sector_size = json_object_get_uint32(jobj_sector_size);
-	if (!sector_size || sector_size % SECTOR_SIZE) {
+	if (!sector_size || MISALIGNED_512(sector_size)) {
 		log_dbg("Illegal sector size: %" PRIu32, sector_size);
 		return 1;
 	}
 
 	if (!numbered("iv_tweak", json_object_get_string(jobj_ivoffset)) ||
-	    !json_str_to_uint64(jobj_ivoffset, &ivoffset))
+	    !json_str_to_uint64(jobj_ivoffset, &ivoffset)) {
+		log_dbg("Illegal iv_tweak value.");
 		return 1;
+	}
 
 	if (size % sector_size) {
 		log_dbg("Size field has to be aligned to sector size: %" PRIu32, sector_size);
@@ -594,11 +596,11 @@ static int hdr_validate_segments(json_object *hdr_jobj)
 			size = 0;
 
 		/* all device-mapper devices are aligned to 512 sector size */
-		if (offset % SECTOR_SIZE) {
+		if (MISALIGNED_512(offset)) {
 			log_dbg("Offset field has to be aligned to sector size: %" PRIu32, SECTOR_SIZE);
 			return 1;
 		}
-		if (size % SECTOR_SIZE) {
+		if (MISALIGNED_512(size)) {
 			log_dbg("Size field has to be aligned to sector size: %" PRIu32, SECTOR_SIZE);
 			return 1;
 		}
@@ -722,7 +724,7 @@ static int validate_keyslots_size(json_object *hdr_jobj, json_object *jobj_keysl
 	if (!json_str_to_uint64(jobj_keyslots_size, &keyslots_size))
 		return 1;
 
-	if (keyslots_size % 4096) {
+	if (MISALIGNED_4K(keyslots_size)) {
 		log_dbg("keyslots_size is not 4 KiB aligned");
 		return 1;
 	}
@@ -779,7 +781,7 @@ static int hdr_validate_config(json_object *hdr_jobj)
 		return 1;
 	}
 
-	if (json_size % 4096) {
+	if (MISALIGNED_4K(json_size)) {
 		log_dbg("Json area is not properly aligned to 4 KiB.");
 		return 1;
 	}

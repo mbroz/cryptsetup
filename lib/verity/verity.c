@@ -71,7 +71,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (sb_offset % 512) {
+	if (MISALIGNED_512(sb_offset)) {
 		log_err(cd, _("Unsupported VERITY hash offset."));
 		return -EINVAL;
 	}

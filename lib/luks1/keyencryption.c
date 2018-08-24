@@ -150,7 +150,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	int devfd = -1, r = 0;
 
 	/* Only whole sector writes supported */
-	if (srcLength % SECTOR_SIZE)
+	if (MISALIGNED_512(srcLength))
 		return -EINVAL;
 
 	/* Encrypt buffer */
@@ -215,7 +215,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	int devfd = -1, r = 0;
 
 	/* Only whole sector reads supported */
-	if (dstLength % SECTOR_SIZE)
+	if (MISALIGNED_512(dstLength))
 		return -EINVAL;
 
 	r = crypt_storage_init(&s, 0, cipher, cipher_mode, vk->key, vk->keylength);

@@ -1366,7 +1366,7 @@ static int _crypt_format_plain(struct crypt_device *cd,
 		sector_size = SECTOR_SIZE;
 
 	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
-	    (sector_size & (sector_size - 1))) {
+	    NOTPOW2(sector_size)) {
 		log_err(cd, _("Unsupported encryption sector size."));
 		return -EINVAL;
 	}
@@ -1510,7 +1510,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	}
 
 	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
-	    (sector_size & (sector_size - 1))) {
+	    NOTPOW2(sector_size)) {
 		log_err(cd, _("Unsupported encryption sector size."));
 		return -EINVAL;
 	}
@@ -1734,12 +1734,12 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (params->hash_area_offset % 512) {
+	if (MISALIGNED_512(params->hash_area_offset)) {
 		log_err(cd, _("Unsupported VERITY hash offset."));
 		return -EINVAL;
 	}
 
-	if (params->fec_area_offset % 512) {
+	if (MISALIGNED_512(params->fec_area_offset)) {
 		log_err(cd, _("Unsupported VERITY FEC offset."));
 		return -EINVAL;
 	}
@@ -2106,7 +2106,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	if (r)
 		goto out;
 
-	if (new_size & ((dmd.u.crypt.sector_size >> SECTOR_SHIFT) - 1)) {
+	if (MISALIGNED(new_size, dmd.u.crypt.sector_size >> SECTOR_SHIFT)) {
 		log_err(cd, _("Device %s size is not aligned to requested sector size (%u bytes)."),
 			crypt_get_device_name(cd), (unsigned)dmd.u.crypt.sector_size);
 		r = -EINVAL;

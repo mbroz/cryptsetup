@@ -46,6 +46,7 @@
 /* to silent gcc -Wcast-qual for const cast */
 #define CONST_CAST(x) (x)(uintptr_t)
 
+#define SHIFT_4K		12
 #define SECTOR_SHIFT		9
 #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
 #define MAX_SECTOR_SIZE		4096 /* min page size among all platforms */
@@ -54,6 +55,11 @@
 #define LOG_MAX_LEN		4096
 
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
+
+#define MISALIGNED(a, b)	((a) & ((b) - 1))
+#define MISALIGNED_4K(a)	MISALIGNED((a), 1 << SHIFT_4K)
+#define MISALIGNED_512(a)	MISALIGNED((a), 1 << SECTOR_SHIFT)
+#define NOTPOW2(a)		MISALIGNED((a), (a))
 
 #ifndef ARRAY_SIZE
 # define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
