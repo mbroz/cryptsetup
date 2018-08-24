@@ -376,15 +376,12 @@ static void hex_key(char *hexkey, size_t key_size, const char *key)
 		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
 }
 
-/* get string length for key_size written in decimal system */
-static size_t get_key_size_strlen(size_t key_size)
+static size_t int_log10(size_t x)
 {
-	size_t ret = 1;
-
-	while ((key_size /= 10))
-		ret++;
-
-	return ret;
+	size_t r = 0;
+	for (x /= 10; x > 0; x /= 10)
+		r++;
+	return r;
 }
 
 #define CLEN    64   /* 2*MAX_CIPHER_LEN */
@@ -561,7 +558,7 @@ static char *get_dm_crypt_params(struct crypt_dm_active_device *dmd, uint32_t fl
 		null_cipher = 1;
 
 	if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		keystr_len = strlen(dmd->u.crypt.vk->key_description) + get_key_size_strlen(dmd->u.crypt.vk->keylength) + 9;
+		keystr_len = strlen(dmd->u.crypt.vk->key_description) + int_log10(dmd->u.crypt.vk->keylength) + 10;
 		hexkey = crypt_safe_alloc(keystr_len);
 	} else
 		hexkey = crypt_safe_alloc(null_cipher ? 2 : (dmd->u.crypt.vk->keylength * 2 + 1));
@@ -2131,7 +2128,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 		goto out;
 
 	if (vk->key_description)
-		msg_size = strlen(vk->key_description) + get_key_size_strlen(vk->keylength) + 17;
+		msg_size = strlen(vk->key_description) + int_log10(vk->keylength) + 18;
 	else
 		msg_size = vk->keylength * 2 + 10; // key set <key>
 
