@@ -1181,6 +1181,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	/* end of TODO */
 
 out:
+	LUKS2_hdr_free(hdr);
 	LUKS2_hdr_free(&hdr_file);
 	LUKS2_hdr_free(&tmp_hdr);
 	crypt_memzero(&hdr_file, sizeof(hdr_file));
@@ -1192,10 +1193,6 @@ out:
 		close(devfd);
 	}
 
-	if (!r) {
-		LUKS2_hdr_free(hdr);
-		r = LUKS2_hdr_read(cd, hdr, 1);
-	}
 
 	return r;
 }

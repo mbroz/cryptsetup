@@ -868,6 +868,7 @@ static void UseTempVolumes(void)
 
 static void Luks2HeaderRestore(void)
 {
+	char key[128];
 	struct crypt_device *cd;
 	struct crypt_pbkdf_type pbkdf = {
 		.type = CRYPT_KDF_ARGON2I,
@@ -890,7 +891,7 @@ static void Luks2HeaderRestore(void)
 	struct crypt_params_luks1 luks1 = {
 		.data_alignment = 8192, // 4M offset to pass alignment test
 	};
-	char key[128];
+	uint32_t flags = 0;
 
 	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
@@ -943,6 +944,22 @@ static void Luks2HeaderRestore(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS2, NO_REQS_LUKS2_HEADER), "LUKS1 format detected");
+	crypt_free(cd);
+
+	/* check crypt_header_restore() properly loads crypt_device context */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_wipe(cd, NULL, CRYPT_WIPE_ZERO, 0, 1*1024*1024, 1*1024*1024, 0, NULL, NULL));
+	OK_(crypt_header_restore(cd, CRYPT_LUKS2, NO_REQS_LUKS2_HEADER));
+	/* check LUKS2 specific API call returns non-error code */
+	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags));
+	EQ_(flags, 0);
+	/* same test, any LUKS */
+	OK_(crypt_wipe(cd, NULL, CRYPT_WIPE_ZERO, 0, 1*1024*1024, 1*1024*1024, 0, NULL, NULL));
+	OK_(crypt_header_restore(cd, CRYPT_LUKS, NO_REQS_LUKS2_HEADER));
+	/* check LUKS2 specific API call returns non-error code */
+	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags));
+	EQ_(flags, 0);
+
 	crypt_free(cd);
 
 	_cleanup_dmdevices();

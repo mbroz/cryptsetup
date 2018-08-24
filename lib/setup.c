@@ -2249,16 +2249,19 @@ int crypt_header_restore(struct crypt_device *cd,
 		else
 			r = LUKS2_hdr_restore(cd, &hdr2, backup_file);
 
-		LUKS2_hdr_free(&hdr2);
 		crypt_memzero(&hdr1, sizeof(hdr1));
 		crypt_memzero(&hdr2, sizeof(hdr2));
 	} else if (isLUKS2(cd->type) && (!requested_type || isLUKS2(requested_type))) {
 		r = LUKS2_hdr_restore(cd, &cd->u.luks2.hdr, backup_file);
-		/* FIXME: if (r != 0) context may be lost */
-	} else if (isLUKS1(cd->type) && (!requested_type || isLUKS1(requested_type))) {
+		if (r)
+			_luks2_reload(cd);
+	} else if (isLUKS1(cd->type) && (!requested_type || isLUKS1(requested_type)))
 		r = LUKS_hdr_restore(backup_file, &cd->u.luks1.hdr, cd);
-	} else
+	else
 		r = -EINVAL;
+
+	if (!r)
+		r = _crypt_load_luks(cd, version == 1 ? CRYPT_LUKS1 : CRYPT_LUKS2, 1, 1);
 
 	return r;
 }

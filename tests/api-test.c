@@ -1071,6 +1071,18 @@ static void LuksHeaderRestore(void)
 	//_system("dmsetup table;sleep 1",1);
 	crypt_free(cd);
 
+	/* check crypt_header_restore() properly loads crypt_device context */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_wipe(cd, NULL, CRYPT_WIPE_ZERO, 0, 1*1024*1024, 1*1024*1024, 0, NULL, NULL));
+	OK_(crypt_header_restore(cd, CRYPT_LUKS1, VALID_HEADER));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
+	/* same test, any LUKS */
+	OK_(crypt_wipe(cd, NULL, CRYPT_WIPE_ZERO, 0, 1*1024*1024, 1*1024*1024, 0, NULL, NULL));
+	OK_(crypt_header_restore(cd, CRYPT_LUKS, VALID_HEADER));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
+
+	crypt_free(cd);
+
 	_cleanup_dmdevices();
 }
 
