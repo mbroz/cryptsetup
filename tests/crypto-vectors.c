@@ -602,6 +602,8 @@ static int hmac_test(void)
 		}
 		printf("\n");
 	}
+
+	return 0;
 }
 
 int main(int argc, char *argv[])
