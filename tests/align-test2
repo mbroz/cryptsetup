@@ -16,7 +16,7 @@ cleanup() {
 	    umount -f $MNT_DIR 2>/dev/null
 	    rmdir $MNT_DIR 2>/dev/null
 	fi
-	[ -b /dev/mapper/$DEV_STACKED ] && dmsetup remove $DEV_STACKED >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_STACKED ] && dmsetup remove --retry $DEV_STACKED >/dev/null 2>&1
 	# FIXME scsi_debug sometimes in-use here
 	sleep 1
 	rmmod scsi_debug 2>/dev/null
