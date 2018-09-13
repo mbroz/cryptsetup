@@ -5281,9 +5281,15 @@ int crypt_keyslot_add_by_key(struct crypt_device *cd,
 	if (digest >= 0)
 		flags &= ~CRYPT_VOLUME_KEY_SET;
 
+	/* if key matches any existing digest, do not create new digest */
+	if (digest < 0 && (flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
+		digest = LUKS2_digest_any_matching(cd, &cd->u.luks2.hdr, vk);
+
 	/* no segment flag or new vk flag requires new key digest */
-	if (flags & (CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET))
-		digest = LUKS2_digest_create(cd, "pbkdf2", &cd->u.luks2.hdr, vk);
+	if (flags & (CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET)) {
+		if (digest < 0 || !(flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
+			digest = LUKS2_digest_create(cd, "pbkdf2", &cd->u.luks2.hdr, vk);
+	}
 
 	r = digest;
 	if (r < 0) {

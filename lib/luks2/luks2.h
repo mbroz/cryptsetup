@@ -281,6 +281,10 @@ void json_segment_remove_flag(json_object *jobj_segment, const char *flag);
 /*
  * Generic LUKS2 digest
  */
+int LUKS2_digest_any_matching(struct crypt_device *cd,
+		struct luks2_hdr *hdr,
+		const struct volume_key *vk);
+
 int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment);
 
 int LUKS2_digest_verify_by_segment(struct crypt_device *cd,

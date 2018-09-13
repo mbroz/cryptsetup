@@ -957,6 +957,9 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 /** create keyslot with new volume key and assign it to current dm-crypt segment */
 #define CRYPT_VOLUME_KEY_SET (1 << 1)
 
+/** Assign key to first matching digest before creating new digest */
+#define CRYPT_VOLUME_KEY_DIGEST_REUSE (1 << 2)
+
 /**
  * Add key slot using provided key.
  *
