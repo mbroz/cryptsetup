@@ -1535,6 +1535,12 @@ static int action_luksConvertKey(void)
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
 		goto out;
 
+	if (crypt_keyslot_status(cd, opt_key_slot) == CRYPT_SLOT_INACTIVE) {
+		r = -EINVAL;
+		log_err(_("Keyslot %d is not active."), opt_key_slot);
+		goto out;
+	}
+
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
 	if (r) {
 		log_err(_("Failed to set pbkdf parameters."));
