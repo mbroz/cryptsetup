@@ -94,7 +94,7 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 	size_t volume_key_len)
 {
 	json_object *jobj_digest, *jobj_digests;
-	char salt[LUKS_SALTSIZE], digest_raw[128], num[16];
+	char salt[LUKS_SALTSIZE], digest_raw[128];
 	int hmac_size, r;
 	char *base64_str;
 	struct luks2_hdr *hdr;
@@ -163,10 +163,8 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 	json_object_object_add(jobj_digest, "digest", json_object_new_string(base64_str));
 	free(base64_str);
 
-	if (jobj_digests) {
-		snprintf(num, sizeof(num), "%d", digest);
-		json_object_object_add(jobj_digests, num, jobj_digest);
-	}
+	if (jobj_digests)
+		json_object_object_add_by_uint(jobj_digests, digest, jobj_digest);
 
 	JSON_DBG(cd, jobj_digest, "Digest JSON");
 	return 0;

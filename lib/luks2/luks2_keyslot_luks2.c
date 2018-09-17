@@ -505,9 +505,7 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
 
-	snprintf(num, sizeof(num), "%d", keyslot);
-
-	json_object_object_add(jobj_keyslots, num, jobj_keyslot);
+	json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
 
 	r = luks2_keyslot_update_json(cd, jobj_keyslot, params);
 
@@ -516,8 +514,10 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 		r = -ENOSPC;
 	}
 
-	if (r)
+	if (r) {
+		snprintf(num, sizeof(num), "%d", keyslot);
 		json_object_object_del(jobj_keyslots, num);
+	}
 
 	return r;
 }

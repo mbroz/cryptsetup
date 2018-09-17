@@ -523,7 +523,6 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 	size_t volume_key_len)
 {
 	struct luks2_hdr *hdr;
-	char num[16];
 	json_object *jobj_keyslots, *jobj_keyslot, *jobj_area;
 
 	log_dbg(cd, "Allocating placeholder keyslot %d for LUKS1 down conversion.", keyslot);
@@ -555,9 +554,7 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
 
-	snprintf(num, sizeof(num), "%d", keyslot);
-
-	json_object_object_add(jobj_keyslots, num, jobj_keyslot);
+	json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
 
 	return 0;
 }

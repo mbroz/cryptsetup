@@ -146,7 +146,7 @@ int LUKS2_generate_hdr(
 	uint64_t keyslots_size)
 {
 	struct json_object *jobj_segment, *jobj_integrity, *jobj_keyslots, *jobj_segments, *jobj_config;
-	char num[24], cipher[128];
+	char cipher[128];
 	uuid_t partitionUuid;
 	int digest;
 
@@ -228,8 +228,7 @@ int LUKS2_generate_hdr(
 		json_object_object_add(jobj_segment, "integrity", jobj_integrity);
 	}
 
-	snprintf(num, sizeof(num), "%u", CRYPT_DEFAULT_SEGMENT);
-	json_object_object_add(jobj_segments, num, jobj_segment);
+	json_object_object_add_by_uint(jobj_segments, CRYPT_DEFAULT_SEGMENT, jobj_segment);
 
 	json_object_object_add(jobj_config, "json_size", json_object_new_uint64(metadata_size - LUKS2_HDR_BIN_LEN));
 	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));

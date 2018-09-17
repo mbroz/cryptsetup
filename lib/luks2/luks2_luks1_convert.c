@@ -93,24 +93,22 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 
 static int json_luks1_keyslots(const struct luks_phdr *hdr_v1, struct json_object **keyslots_object)
 {
-	char keyslot_str[2];
-	int key_slot, r;
+	int keyslot, r;
 	struct json_object *keyslot_obj, *field;
 
 	keyslot_obj = json_object_new_object();
 	if (!keyslot_obj)
 		return -ENOMEM;
 
-	for (key_slot = 0; key_slot < LUKS_NUMKEYS; key_slot++) {
-		if (hdr_v1->keyblock[key_slot].active != LUKS_KEY_ENABLED)
+	for (keyslot = 0; keyslot < LUKS_NUMKEYS; keyslot++) {
+		if (hdr_v1->keyblock[keyslot].active != LUKS_KEY_ENABLED)
 			continue;
-		r = json_luks1_keyslot(hdr_v1, key_slot, &field);
+		r = json_luks1_keyslot(hdr_v1, keyslot, &field);
 		if (r) {
 			json_object_put(keyslot_obj);
 			return r;
 		}
-		(void) snprintf(keyslot_str, sizeof(keyslot_str), "%d", key_slot);
-		json_object_object_add(keyslot_obj, keyslot_str, field);
+		json_object_object_add_by_uint(keyslot_obj, keyslot, field);
 	}
 
 	*keyslots_object = keyslot_obj;
@@ -190,7 +188,6 @@ static int json_luks1_segment(const struct luks_phdr *hdr_v1, struct json_object
 
 static int json_luks1_segments(const struct luks_phdr *hdr_v1, struct json_object **segments_object)
 {
-	char num[16];
 	int r;
 	struct json_object *segments_obj, *field;
 
@@ -203,8 +200,7 @@ static int json_luks1_segments(const struct luks_phdr *hdr_v1, struct json_objec
 		json_object_put(segments_obj);
 		return r;
 	}
-	snprintf(num, sizeof(num), "%u", CRYPT_DEFAULT_SEGMENT);
-	json_object_object_add(segments_obj, num, field);
+	json_object_object_add_by_uint(segments_obj, CRYPT_DEFAULT_SEGMENT, field);
 
 	*segments_object = segments_obj;
 	return 0;
