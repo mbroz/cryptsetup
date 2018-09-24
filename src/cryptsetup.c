@@ -166,7 +166,7 @@ static void _set_activation_flags(uint32_t *flags)
 static int action_open_plain(void)
 {
 	struct crypt_device *cd = NULL;
-	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	char *msg, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	struct crypt_params_plain params = {
 		.hash = opt_hash ?: DEFAULT_PLAIN_HASH,
 		.skip = opt_skip,
@@ -175,8 +175,8 @@ static int action_open_plain(void)
 		.sector_size = opt_sector_size,
 	};
 	char *password = NULL;
-	size_t passwordLen, key_size_max;
-	size_t key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
+	size_t passwordLen, key_size_max, signatures,
+	       key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	uint32_t activate_flags = 0;
 	int r;
 
@@ -204,6 +204,27 @@ static int action_open_plain(void)
 
 	if ((r = crypt_init(&cd, action_argv[0])))
 		goto out;
+
+	/* Skip blkid scan when activating plain device with offset */
+	if (!opt_offset) {
+		/* Print all present signatures in read-only mode */
+		r = tools_detect_signatures(action_argv[0], 0, &signatures);
+		if (r < 0)
+			goto out;
+	}
+
+	if (signatures) {
+		r = asprintf(&msg, _("Detected device signature(s) on %s. Proceeding further may damage existing data."), action_argv[0]);
+		if (r == -1) {
+			r = -ENOMEM;
+			goto out;
+		}
+
+		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+		free(msg);
+		if (r < 0)
+			goto out;
+	}
 
 	r = crypt_format(cd, CRYPT_PLAIN,
 			 cipher, cipher_mode,

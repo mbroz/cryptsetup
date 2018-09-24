@@ -97,11 +97,11 @@ if [ -z "$DM_PERF_CPU" ]; then
 	SKIP_COUNT=$((SKIP_COUNT+1))
 else
 	# plain
-	echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
+	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
+	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
 	$CRYPTSETUP close $DEV_NAME || fail
@@ -152,7 +152,7 @@ else
 	echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --sector-size 1234 >/dev/null 2>&1 && fail
 	for S in 512 1024 2048 4096; do
 		echo -n "[$S]"
-		echo -e "$PWD1" | $CRYPTSETUP open --type plain $DEV $DEV_NAME --sector-size $S || fail
+		echo -e "$PWD1" | $CRYPTSETUP open -q --type plain $DEV $DEV_NAME --sector-size $S || fail
 		check_sector_size $S
 		$CRYPTSETUP close $DEV_NAME || fail
 	done
