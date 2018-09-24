@@ -958,7 +958,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_IGNORE_PERSISTENT (1 << 14)
 /** dm-verity: check_at_most_once - check data blocks only the first time */
 #define CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE (1 << 15)
-/** allow activation check including unbound keyslots (kesylots without segments) */
+/** allow activation check including unbound keyslots (keyslots without segments) */
 #define CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY (1 << 16)
 
 /**

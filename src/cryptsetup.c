@@ -1520,7 +1520,7 @@ static int action_luksChangeKey(void)
 
 	/* Check password before asking for new one */
 	r = crypt_activate_by_passphrase(cd, NULL, opt_key_slot,
-					 password, password_size, 0);
+					 password, password_size, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY);
 	tools_passphrase_msg(r);
 	check_signal(&r);
 	if (r < 0)

@@ -817,6 +817,8 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
 echo $PWD1 | $CRYPTSETUP -q luksConvertKey $LOOPDEV -S 1 --pbkdf argon2i -i1 --pbkdf-memory 32 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 21 --unbound -s 16 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP luksConvertKey --pbkdf-force-iterations 1001 --pbkdf pbkdf2 -S 21 $LOOPDEV || fail
 
 prepare "[38] luksAddKey unbound tests" wipe
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEY5 --key-slot 5 || fail
@@ -837,8 +839,12 @@ echo $PWD2 | $CRYPTSETUP -q open -S2 $LOOPDEV $DEV_NAME 2> /dev/null && fail
 echo $PWD2 | $CRYPTSETUP -q open -S2 $LOOPDEV --test-passphrase || fail
 echo $PWD1 | $CRYPTSETUP -q open $LOOPDEV $DEV_NAME 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q open $LOOPDEV --test-passphrase || fail
+# check we're able to change passphrase for unbound keyslot
+echo -e "$PWD2\n$PWD3" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT -S 2 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP open --test-passphrase $FAST_PBKDF_OPT -S 2 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP -q open -S 2 $LOOPDEV $DEV_NAME 2> /dev/null && fail
 # do not allow adding keyslot by unbound keyslot
-echo -e "$PWD2\n$PWD1" | $CRYPTSETUP -q luksAddKey $LOOPDEV 2> /dev/null && fail
+echo -e "$PWD3\n$PWD1" | $CRYPTSETUP -q luksAddKey $LOOPDEV 2> /dev/null && fail
 # check adding keyslot works when there's unbound keyslot
 echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --key-file $KEY5 -S8 || fail
 echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
