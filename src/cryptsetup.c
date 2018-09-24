@@ -987,20 +987,6 @@ static int action_luksFormat(void)
 
 	header_device = opt_header_device ?: action_argv[0];
 
-	/* Print all present signatures in read-only mode */
-	r = tools_detect_signatures(header_device, 0, &signatures);
-	if (r < 0)
-		return r;
-
-	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), header_device);
-	if (r == -1)
-		return -ENOMEM;
-
-	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
-	free(msg);
-	if (r < 0)
-		return r;
-
 	r = crypt_parse_name_and_mode(opt_cipher ?: DEFAULT_CIPHER(LUKS1),
 				      cipher, NULL, cipher_mode);
 	if (r < 0) {
@@ -1027,6 +1013,22 @@ static int action_luksFormat(void)
 			log_err(_("Cannot use %s as on-disk header."), header_device);
 		return r;
 	}
+
+	/* Print all present signatures in read-only mode */
+	r = tools_detect_signatures(header_device, 0, &signatures);
+	if (r < 0)
+		goto out;
+
+	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), header_device);
+	if (r == -1) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+	free(msg);
+	if (r < 0)
+		goto out;
 
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8 + integrity_keysize;
 

@@ -209,24 +209,26 @@ static int action_format(int arg)
 		params.journal_crypt = journal_crypt;
 	}
 
-	r = tools_detect_signatures(action_argv[0], 0, &signatures);
-	if (r < 0)
-		return r;
-
-	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
-	if (r == -1)
-		return -ENOMEM;
-
-	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
-	free(msg);
-	if (r < 0)
-		return r;
-
 	r = _read_keys(&integrity_key, &params);
 	if (r)
 		goto out;
 
 	r = crypt_init(&cd, action_argv[0]);
+	if (r < 0)
+		goto out;
+
+	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
+	if (r == -1) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+	free(msg);
+	if (r < 0)
+		goto out;
+
+	r = tools_detect_signatures(action_argv[0], 0, &signatures);
 	if (r < 0)
 		goto out;
 
