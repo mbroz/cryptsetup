@@ -452,7 +452,6 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 	const struct luks2_keyslot_params *params)
 {
 	struct luks2_hdr *hdr;
-	char num[16];
 	uint64_t area_offset, area_length;
 	json_object *jobj_keyslots, *jobj_keyslot, *jobj_af, *jobj_area;
 	int r;
@@ -514,10 +513,8 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 		r = -ENOSPC;
 	}
 
-	if (r) {
-		snprintf(num, sizeof(num), "%d", keyslot);
-		json_object_object_del(jobj_keyslots, num);
-	}
+	if (r)
+		json_object_object_del_by_uint(jobj_keyslots, keyslot);
 
 	return r;
 }

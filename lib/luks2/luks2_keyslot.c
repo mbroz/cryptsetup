@@ -411,7 +411,6 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 {
 	struct device *device = crypt_metadata_device(cd);
 	uint64_t area_offset, area_length;
-	char num[16];
 	int r;
 	json_object *jobj_keyslot, *jobj_keyslots;
 	const keyslot_handler *h;
@@ -468,8 +467,7 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	} else
 		log_dbg(cd, "Wiping keyslot %d without specific-slot handler loaded.", keyslot);
 
-	snprintf(num, sizeof(num), "%d", keyslot);
-	json_object_object_del(jobj_keyslots, num);
+	json_object_object_del_by_uint(jobj_keyslots, keyslot);
 
 	return LUKS2_hdr_write(cd, hdr);
 }
