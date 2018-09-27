@@ -830,6 +830,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	hdr1->payloadOffset = offset;
 
 	strncpy(hdr1->uuid, hdr2->uuid, UUID_STRING_L); /* max 36 chars */
+	hdr1->uuid[UUID_STRING_L-1] = '\0';
 
 	memcpy(hdr1->magic, luksMagic, LUKS_MAGIC_L);
 

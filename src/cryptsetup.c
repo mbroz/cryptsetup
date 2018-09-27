@@ -175,7 +175,7 @@ static int action_open_plain(void)
 		.sector_size = opt_sector_size,
 	};
 	char *password = NULL;
-	size_t passwordLen, key_size_max, signatures,
+	size_t passwordLen, key_size_max, signatures = 0,
 	       key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	uint32_t activate_flags = 0;
 	int r;

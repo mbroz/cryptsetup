@@ -394,7 +394,7 @@ static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
 		       char *i_dm, int i_dm_size)
 {
 	int c_size = 0, i_size = 0, i;
-	char cipher[CLEN], mode[CLEN], iv[CLEN], tmp[CLEN];
+	char cipher[CLEN], mode[CLEN], iv[CLEN+1], tmp[CLEN];
 	char capi[CAPIL];
 
 	if (!c_dm || !c_dm_size || !i_dm || !i_dm_size)
@@ -407,7 +407,7 @@ static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
 	i = sscanf(tmp, "%" CLENS "[^-]-%" CLENS "s", mode, iv);
 	if (i == 1) {
 		memset(iv, 0, sizeof(iv));
-		strncpy(iv, mode, sizeof(iv));
+		strncpy(iv, mode, sizeof(iv)-1);
 		*mode = '\0';
 		if (snprintf(capi, sizeof(capi), "%s", cipher) < 0)
 			return -EINVAL;
@@ -454,7 +454,7 @@ static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
 static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
 {
 	char cipher[CLEN], mode[CLEN], iv[CLEN], auth[CLEN];
-	char tmp[CAPIL], dmcrypt_tmp[CAPIL*2], capi[CAPIL];
+	char tmp[CAPIL], dmcrypt_tmp[CAPIL*2], capi[CAPIL+1];
 	size_t len;
 	int i;
 
@@ -497,7 +497,7 @@ static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char 
 		} else
 			*org_i = NULL;
 		memset(capi, 0, sizeof(capi));
-		strncpy(capi, tmp, sizeof(capi));
+		strncpy(capi, tmp, sizeof(capi)-1);
 	}
 
 	i = sscanf(capi, "%" CLENS "[^(](%" CLENS "[^)])", mode, cipher);
