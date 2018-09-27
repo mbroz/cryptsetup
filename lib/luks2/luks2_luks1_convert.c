@@ -645,7 +645,7 @@ static int keyslot_LUKS1_compatible(struct luks2_hdr *hdr, int keyslot, uint32_t
 int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct luks_phdr *hdr1)
 {
 	size_t buf_size, buf_offset;
-	char cipher[LUKS_CIPHERNAME_L], cipher_mode[LUKS_CIPHERMODE_L];
+	char cipher[LUKS_CIPHERNAME_L-1], cipher_mode[LUKS_CIPHERMODE_L-1];
 	char digest[LUKS_DIGESTSIZE], digest_salt[LUKS_SALTSIZE];
 	size_t len;
 	json_object *jobj_keyslot, *jobj_digest, *jobj_segment, *jobj_kdf, *jobj_area, *jobj1, *jobj2;
@@ -829,7 +829,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	/* FIXME: LUKS1 requires offset == 0 || offset >= luks1_hdr_size */
 	hdr1->payloadOffset = offset;
 
-	strncpy(hdr1->uuid, hdr2->uuid, UUID_STRING_L - 1); /* max 36 chars */
+	strncpy(hdr1->uuid, hdr2->uuid, UUID_STRING_L); /* max 36 chars */
 
 	memcpy(hdr1->magic, luksMagic, LUKS_MAGIC_L);
 

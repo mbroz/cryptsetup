@@ -407,7 +407,7 @@ static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
 	i = sscanf(tmp, "%" CLENS "[^-]-%" CLENS "s", mode, iv);
 	if (i == 1) {
 		memset(iv, 0, sizeof(iv));
-		strncpy(iv, mode, sizeof(iv) - 1);
+		strncpy(iv, mode, sizeof(iv));
 		*mode = '\0';
 		if (snprintf(capi, sizeof(capi), "%s", cipher) < 0)
 			return -EINVAL;
@@ -454,7 +454,7 @@ static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
 static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
 {
 	char cipher[CLEN], mode[CLEN], iv[CLEN], auth[CLEN];
-	char tmp[CAPIL*2], capi[CAPIL];
+	char tmp[CAPIL], dmcrypt_tmp[CAPIL*2], capi[CAPIL];
 	size_t len;
 	int i;
 
@@ -497,16 +497,16 @@ static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char 
 		} else
 			*org_i = NULL;
 		memset(capi, 0, sizeof(capi));
-		strncpy(capi, tmp, sizeof(capi) - 1);
+		strncpy(capi, tmp, sizeof(capi));
 	}
 
 	i = sscanf(capi, "%" CLENS "[^(](%" CLENS "[^)])", mode, cipher);
 	if (i == 2)
-		snprintf(tmp, sizeof(tmp), "%s-%s-%s", cipher, mode, iv);
+		snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s-%s", cipher, mode, iv);
 	else
-		snprintf(tmp, sizeof(tmp), "%s-%s", capi, iv);
+		snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s", capi, iv);
 
-	if (!(*org_c = strdup(tmp))) {
+	if (!(*org_c = strdup(dmcrypt_tmp))) {
 		free(*org_i);
 		*org_i = NULL;
 		return -ENOMEM;
@@ -684,7 +684,7 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 {
 	int r, max_size, num_options = 0;
 	char *params, *hexkey, mode;
-	char features[256], feature[256];
+	char features[512], feature[256];
 
 	if (!dmd)
 		return NULL;
