@@ -426,13 +426,11 @@ static int test_open(struct crypt_device *cd,
 		     void *usrptr)
 {
 	const char *str = (const char *)usrptr;
-	char *buf = malloc(strlen(str));
-	if (!buf)
-		return -ENOMEM;
 
-	strncpy(buf, str, strlen(str));
-	*buffer = buf;
-	*buffer_len = strlen(str);
+	*buffer = strdup(str);
+	if (!*buffer)
+		return -ENOMEM;
+	*buffer_len = strlen(*buffer);
 
 	return 0;
 }

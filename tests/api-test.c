@@ -100,13 +100,18 @@ static int get_luks_offsets(int metadata_device,
 	uint64_t current_sector;
 	uint32_t sectors_per_stripes_set;
 
-	if (!keylength)
+	if (!keylength) {
+		if (r_header_size)
+		    *r_header_size = 0;
+		if (r_payload_offset)
+		    *r_payload_offset = 0;
 		return -1;
+	}
 
 	sectors_per_stripes_set = DIV_ROUND_UP(keylength*LUKS_STRIPES, SECTOR_SIZE);
 	current_sector = DIV_ROUND_UP_MODULO(DIV_ROUND_UP(LUKS_PHDR_SIZE_B, SECTOR_SIZE),
 			LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
-	for(i=0;i < (LUKS_NUMKEYS - 1);i++)
+	for (i=0; i < (LUKS_NUMKEYS - 1); i++)
 		current_sector = DIV_ROUND_UP_MODULO(current_sector + sectors_per_stripes_set,
 				LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 	if (r_header_size)
