@@ -13,9 +13,9 @@ PIM=1234
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$MAP ] && dmsetup remove $MAP
-	[ -b /dev/mapper/"$MAP"_1 ] && dmsetup remove "$MAP"_1
-	[ -b /dev/mapper/"$MAP"_2 ] && dmsetup remove "$MAP"_2
+	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
+	[ -b /dev/mapper/"$MAP"_1 ] && dmsetup remove --retry "$MAP"_1
+	[ -b /dev/mapper/"$MAP"_2 ] && dmsetup remove --retry "$MAP"_2
 }
 
 function fail()
@@ -35,7 +35,26 @@ function skip()
 
 function test_one()
 {
-	$CRYPTSETUP benchmark -c "$1" -s "$2" | grep -v "#" || skip
+	$CRYPTSETUP benchmark -c "$1-$2" -s "$3" >/dev/null 2>&1
+	if [ $? -ne 0 ] ; then
+		echo "$1-$2 [N/A]"
+		IMGS=$(ls $TST_DIR/[tv]c* | grep "$1")
+		[ -n "$IMGS" ] && rm $IMGS
+	else
+		echo "$1-$2 [OK]"
+	fi
+}
+
+function test_kdf()
+{
+	$CRYPTSETUP benchmark -h "$1" >/dev/null 2>&1
+	if [ $? -ne 0 ] ; then
+		echo "pbkdf2-$1 [N/A]"
+		IMGS=$(ls $TST_DIR/[tv]c* | grep "$1")
+		[ -n "$IMGS" ] && rm $IMGS
+	else
+		echo "pbkdf2-$1 [OK]"
+	fi
 }
 
 function test_required()
@@ -43,37 +62,40 @@ function test_required()
 	which lsblk >/dev/null 2>&1 || skip "WARNING: lsblk tool required."
 
 	echo "REQUIRED KDF TEST"
-	$CRYPTSETUP benchmark -h ripemd160 | grep "N/A" && skip
-	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && skip
+	test_kdf sha256
+	test_kdf sha512
+	test_kdf ripemd160
+	test_kdf whirlpool
+	test_kdf stribog512
 
 	echo "REQUIRED CIPHERS TEST"
-	echo "#     Algorithm         Key        Encryption        Decryption"
+	test_one aes cbc 256
+	test_one aes lrw 384
+	test_one aes xts 512
 
-	test_one aes-cbc 256
-	test_one aes-lrw 384
-	test_one aes-xts 512
+	test_one twofish cbc 256
+	test_one twofish lrw 384
+	test_one twofish xts 512
 
-	test_one twofish-cbc 256
-	test_one twofish-lrw 384
-	test_one twofish-xts 512
+	test_one serpent cbc 256
+	test_one serpent lrw 384
+	test_one serpent xts 512
 
-	test_one serpent-cbc 256
-	test_one serpent-lrw 384
-	test_one serpent-xts 512
+	test_one blowfish cbc 256
 
-	test_one blowfish-cbc 256
+	test_one des3_ede cbc 192
+	test_one cast5 cbc 128
 
-	test_one des3_ede-cbc 192
-	test_one cast5 128
+	test_one camellia xts 512
+	test_one kuznyechik xts 512
 }
 
-test_required
 export LANG=C
-
 [ ! -d $TST_DIR ] && tar xJf $srcdir/tcrypt-images.tar.xz --no-same-owner
+test_required
 
 echo "HEADER CHECK"
-for file in $(ls $TST_DIR/[t]c_* $TST_DIR/vcpim_*) ; do
+for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_*) ; do
 	echo -n " $file"
 	PIM_OPT=""
 	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"

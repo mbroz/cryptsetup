@@ -51,6 +51,8 @@ static const struct {
 	{ 0, 1, "pbkdf2", "sha256",    200000,     0, 2048 }, // boot only
 	{ 0, 1, "pbkdf2", "ripemd160", 655331, 15000, 1000 },
 	{ 0, 1, "pbkdf2", "ripemd160", 327661,     0, 2048 }, // boot only
+	{ 0, 1, "pbkdf2", "stribog512",500000, 15000, 1000 },
+//	{ 0, 1, "pbkdf2", "stribog512",200000,     0, 2048 }, // boot only
 	{ 0, 0,     NULL,        NULL,      0,     0,    0 }
 };
 
@@ -98,6 +100,26 @@ static struct tcrypt_algs tcrypt_cipher[] = {
 {0,2,128,"serpent-twofish","xts-plain64",
 	{{"serpent",64,16, 0,64,0},
 	 {"twofish",64,16,32,96,0}}},
+{0,1,64,"camellia","xts-plain64",
+	{{"camellia",    64,16,0,32,0}}},
+{0,1,64,"kuznyechik","xts-plain64",
+	{{"kuznyechik",  64,16,0,32,0}}},
+{0,2,128,"kuznyechik-camellia","xts-plain64",
+	{{"kuznyechik",64,16, 0,64,0},
+	 {"camellia",  64,16,32,96,0}}},
+{0,2,128,"twofish-kuznyechik","xts-plain64",
+	{{"twofish",   64,16, 0,64,0},
+	 {"kuznyechik",64,16,32,96,0}}},
+{0,2,128,"serpent-camellia","xts-plain64",
+	{{"serpent",   64,16, 0,64,0},
+	 {"camellia",  64,16,32,96,0}}},
+{0,2,128,"aes-kuznyechik","xts-plain64",
+	{{"aes",       64,16, 0,64,0},
+	 {"kuznyechik",64,16,32,96,0}}},
+{0,3,192,"camellia-serpent-kuznyechik","xts-plain64",
+	{{"camellia",  64,16, 0, 96,0},
+	 {"serpent",   64,16,32,128,0},
+	 {"kuznyechik",64,16,64,160,0}}},
 
 /* LRW mode */
 {0,1,48,"aes","lrw-benbi",
