@@ -1,4 +1,5 @@
-TESTS = api-test \
+TESTS = 00modules-test \
+	api-test \
 	api-test-2 \
 	compat-test \
 	compat-test2 \

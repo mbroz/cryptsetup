@@ -1,0 +1,28 @@
+#!/bin/bash
+
+echo "Cryptsetup test environment ($(date))"
+uname -a
+
+if [ -f /etc/os-release ] ; then
+	source /etc/os-release
+	echo "$PRETTY_NAME ($NAME) $VERSION"
+fi
+
+[ -x ../cryptsetup ] && ../cryptsetup --version
+[ -x ../veritysetup ] && ../veritysetup --version
+[ -x ../integritysetup ] && ../integritysetup --version
+[ -x ../cryptsetup-reencrypt ] && ../cryptsetup-reencrypt --version
+
+[ $(id -u) != 0 ] && exit 77
+
+modprobe dm-crypt     >/dev/null 2>&1
+modprobe dm-verity    >/dev/null 2>&1
+modprobe dm-integrity >/dev/null 2>&1
+modprobe dm-zero      >/dev/null 2>&1
+
+dmsetup version
+
+echo "Device mapper targets:"
+dmsetup targets
+
+exit 0
