@@ -88,6 +88,8 @@ function test_required()
 
 	test_one camellia xts 512
 	test_one kuznyechik xts 512
+
+	ls $TST_DIR/[tv]c* >/dev/null 2>&1 || skip "No remaining images."
 }
 
 export LANG=C
