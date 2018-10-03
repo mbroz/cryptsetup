@@ -71,7 +71,7 @@ add_device() {
 }
 
 falloc() {
-	fallocate -l"$1"m $2 2>/dev/null || dd if=/dev/zero of=$2 bs=1M count=$1 2> /dev/null
+	dd if=/dev/zero of=$2 bs=1M count=$1 2> /dev/null
 }
 
 run_all_in_fs() {
