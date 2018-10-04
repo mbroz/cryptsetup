@@ -155,10 +155,14 @@ int crypt_parse_pbkdf(const char *s, const char **pbkdf)
  */
 void crypt_memzero(void *s, size_t n)
 {
+#ifdef HAVE_EXPLICIT_BZERO
+	explicit_bzero(s, n);
+#else
 	volatile uint8_t *p = (volatile uint8_t *)s;
 
 	while(n--)
 		*p++ = 0;
+#endif
 }
 
 /* safe allocations */

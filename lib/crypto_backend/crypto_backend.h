@@ -124,8 +124,12 @@ int crypt_storage_encrypt(struct crypt_storage *ctx, uint64_t sector,
 /* Memzero helper (memset on stack can be optimized out) */
 static inline void crypt_backend_memzero(void *s, size_t n)
 {
+#ifdef HAVE_EXPLICIT_BZERO
+	explicit_bzero(s, n);
+#else
 	volatile uint8_t *p = (volatile uint8_t *)s;
 	while(n--) *p++ = 0;
+#endif
 }
 
 #endif /* _CRYPTO_BACKEND_H */

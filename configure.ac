@@ -94,7 +94,7 @@ AC_SUBST(UUID_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
-AC_CHECK_FUNCS([posix_memalign clock_gettime posix_fallocate])
+AC_CHECK_FUNCS([posix_memalign clock_gettime posix_fallocate explicit_bzero])
 
 if test "x$enable_largefile" = "xno"; then
   AC_MSG_ERROR([Building with --disable-largefile is not supported, it can cause data corruption.])
