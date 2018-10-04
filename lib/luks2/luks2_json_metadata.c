@@ -556,7 +556,8 @@ static int hdr_validate_crypt_segment(json_object *jobj, const char *key, json_o
 
 static int hdr_validate_segments(json_object *hdr_jobj)
 {
-	json_object *jobj, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type;
+	json_object *jobj, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type, *jobj_flags;
+	int i;
 	uint64_t offset, size;
 
 	if (!json_object_object_get_ex(hdr_jobj, "segments", &jobj)) {
@@ -603,6 +604,15 @@ static int hdr_validate_segments(json_object *hdr_jobj)
 		if (MISALIGNED_512(size)) {
 			log_dbg("Size field has to be aligned to sector size: %" PRIu32, SECTOR_SIZE);
 			return 1;
+		}
+
+		/* flags array is optional and must contain strings */
+		if (json_object_object_get_ex(val, "flags", NULL)) {
+			if (!(jobj_flags = json_contains(val, key, "Segment", "flags", json_type_array)))
+				return 1;
+			for (i = 0; i < (int) json_object_array_length(jobj_flags); i++)
+				if (!json_object_is_type(json_object_array_get_idx(jobj_flags, i), json_type_string))
+					return 1;
 		}
 
 		/* crypt */
