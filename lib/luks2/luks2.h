@@ -35,6 +35,7 @@
 
 #define LUKS2_KEYSLOTS_MAX       32
 #define LUKS2_TOKENS_MAX         32
+#define LUKS2_SEGMENT_MAX        32
 
 #define LUKS2_BUILTIN_TOKEN_PREFIX "luks2-"
 #define LUKS2_BUILTIN_TOKEN_PREFIX_LEN 6
