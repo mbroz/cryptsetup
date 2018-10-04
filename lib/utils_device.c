@@ -190,6 +190,12 @@ static int device_ready(struct device *device)
 		r = -EINVAL;
 	else if (!S_ISBLK(st.st_mode))
 		r = S_ISREG(st.st_mode) ? -ENOTBLK : -EINVAL;
+	if (r == -EINVAL) {
+		log_err(NULL, _("Device %s is not compatible."),
+			device_path(device));
+		close(devfd);
+		return r;
+	}
 
 	/* Allow only increase (loop device) */
 	tmp_size = device_alignment_fd(devfd);
