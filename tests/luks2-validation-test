@@ -190,5 +190,7 @@ RUN luks2-segment-crypt-wrong-sectorsize-1.img		"F" "Failed to detect invalid se
 RUN luks2-segment-crypt-wrong-sectorsize-2.img		"F" "Failed to detect invalid sector_size field"
 RUN luks2-segment-unknown-type.img			"R" "Validation rejected segment with all mandatory fields correct"
 RUN luks2-segment-two.img				"R" "Validation rejected two valid segments"
+RUN luks2-segment-wrong-flags.img			"F" "Failed to detect invalid flags field"
+RUN luks2-segment-wrong-flags-element.img		"F" "Failed to detect invalid flags content"
 
 remove_mapping
