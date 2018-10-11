@@ -612,13 +612,13 @@ out:
 		break;
 	case -EBUSY:
 		log_err(cd, _("Cannot use device %s which is in use "
-			      "(already mapped or mounted)."), device->path);
+			      "(already mapped or mounted)."), device_path(device));
 		break;
 	case -EACCES:
-		log_err(cd, _("Cannot use device %s, permission denied."), device->path);
+		log_err(cd, _("Cannot use device %s, permission denied."), device_path(device));
 		break;
 	default:
-		log_err(cd, _("Cannot get info about device %s."), device->path);
+		log_err(cd, _("Cannot get info about device %s."), device_path(device));
 	}
 
 	return r;
@@ -697,14 +697,14 @@ int device_block_adjust(struct crypt_device *cd,
 
 	if (device_offset >= real_size) {
 		log_err(cd, _("Requested offset is beyond real size of device %s."),
-			device->path);
+			device_path(device));
 		return -EINVAL;
 	}
 
 	if (size && !*size) {
 		*size = real_size;
 		if (!*size) {
-			log_err(cd, _("Device %s has zero size."), device->path);
+			log_err(cd, _("Device %s has zero size."), device_path(device));
 			return -ENOTBLK;
 		}
 		*size -= device_offset;
@@ -715,7 +715,7 @@ int device_block_adjust(struct crypt_device *cd,
 		log_dbg("Device %s: offset = %" PRIu64 " requested size = %" PRIu64
 			", backing device size = %" PRIu64,
 			device->path, device_offset, *size, real_size);
-		log_err(cd, _("Device %s is too small."), device->path);
+		log_err(cd, _("Device %s is too small."), device_path(device));
 		return -EINVAL;
 	}
 
