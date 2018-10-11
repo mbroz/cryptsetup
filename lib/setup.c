@@ -2904,6 +2904,23 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 	return LUKS2_keyslot_wipe(cd, &cd->u.luks2.hdr, keyslot, 0);
 }
 
+static int _check_header_data_overlap(struct crypt_device *cd, const char *name)
+{
+	if (!name || !isLUKS(cd->type))
+		return 0;
+
+	if (!device_is_identical(crypt_data_device(cd), crypt_metadata_device(cd)))
+		return 0;
+
+	/* FIXME: check real header size */
+	if (crypt_get_data_offset(cd) == 0) {
+		log_err(cd, _("Device header overlaps with data area."));
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 /*
  * Activation/deactivation of a device
  */
@@ -2922,6 +2939,10 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 
 	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
 		return -EINVAL;
+
+	r = _check_header_data_overlap(cd, name);
+	if (r < 0)
+		return r;
 
 	/* plain, use hashed passphrase */
 	if (isPLAIN(cd->type)) {
@@ -3120,6 +3141,10 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		name ?: "");
 
 	r = _activate_check_status(cd, name);
+	if (r < 0)
+		return r;
+
+	r = _check_header_data_overlap(cd, name);
 	if (r < 0)
 		return r;
 
