@@ -161,7 +161,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 		return errno ? -errno : -EINVAL;
 
 	r = device_size(device, &dev_size);
-	if (r)
+	if (r || dev_size == 0)
 		goto out;
 
 	if (length) {
