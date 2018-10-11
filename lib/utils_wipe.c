@@ -164,6 +164,9 @@ int crypt_wipe_device(struct crypt_device *cd,
 	if (r || dev_size == 0)
 		goto out;
 
+	if (dev_size < length)
+		length = 0;
+
 	if (length) {
 		if ((dev_size <= offset) || (dev_size - offset) < length) {
 			r = -EINVAL;
