@@ -24,6 +24,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include "luks.h"
 #include "af.h"
 #include "internal.h"
@@ -212,6 +213,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 {
 	struct device *device = crypt_metadata_device(ctx);
 	struct crypt_storage *s;
+	struct stat st;
 	int devfd = -1, r = 0;
 
 	/* Only whole sector reads supported */
@@ -237,30 +239,31 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 
 	log_dbg("Using userspace crypto wrapper to access keyslot area.");
 
-	r = -EIO;
-
 	/* Read buffer from device */
 	devfd = device_open(device, O_RDONLY);
-	if (devfd < 0)
-		goto bad;
+	if (devfd < 0) {
+		log_err(ctx, _("Cannot open device %s."), device_path(device));
+		crypt_storage_destroy(s);
+		return -EIO;
+	}
 
 	if (read_lseek_blockwise(devfd, device_block_size(device),
 				 device_alignment(device), dst, dstLength,
-				 sector * SECTOR_SIZE) < 0)
-		goto bad;
+				 sector * SECTOR_SIZE) < 0) {
+		if (!fstat(devfd, &st) && (st.st_size < dstLength))
+			log_err(ctx, _("Device %s is too small."), device_path(device));
+		else
+			log_err(ctx, _("IO error while decrypting keyslot."));
+
+		close(devfd);
+		crypt_storage_destroy(s);
+		return -EIO;
+	}
 
 	close(devfd);
 
 	/* Decrypt buffer */
 	r = crypt_storage_decrypt(s, 0, dstLength / SECTOR_SIZE, dst);
-	crypt_storage_destroy(s);
-
-	return r;
-bad:
-	if (devfd >= 0)
-		close(devfd);
-
-	log_err(ctx, _("IO error while decrypting keyslot."));
 	crypt_storage_destroy(s);
 
 	return r;
