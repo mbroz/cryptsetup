@@ -83,7 +83,7 @@ function test_and_prepare_keyring() {
 }
 
 add_device() {
-	modprobe scsi_debug $@
+	modprobe scsi_debug $@ delay=0
 	if [ $? -ne 0 ] ; then
 		echo "This kernel seems to not support proper scsi_debug module, test skipped."
 		exit 77

@@ -67,7 +67,7 @@ function skip()
 
 function add_scsi_device() {
 	del_scsi_device
-        modprobe scsi_debug $@
+        modprobe scsi_debug $@ delay=0
         if [ $? -ne 0 ] ; then
                 echo "This kernel seems to not support proper scsi_debug module, test skipped."
                 exit 77
