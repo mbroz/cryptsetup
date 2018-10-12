@@ -782,8 +782,11 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 		 * perform repair.
 		 */
 		r =  _crypt_load_luks2(cd, cd->type != NULL, repair);
-	} else
+	} else {
+		if (version > 2)
+			log_err(cd, _("Unsupported LUKS version %d."), version);
 		r = -EINVAL;
+	}
 out:
 	crypt_memzero(&hdr, sizeof(hdr));
 
