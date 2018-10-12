@@ -576,7 +576,7 @@ static int device_info(struct crypt_device *cd,
 	}
 
 	if (fd == -1) {
-		r = -EINVAL;
+		r = errno ? -errno : -EINVAL;
 		goto out;
 	}
 
@@ -619,6 +619,7 @@ out:
 		break;
 	default:
 		log_err(cd, _("Cannot get info about device %s."), device_path(device));
+		r = -EINVAL;
 	}
 
 	return r;
