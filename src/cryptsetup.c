@@ -944,7 +944,7 @@ static int _wipe_data_device(struct crypt_device *cd)
 
 static int action_luksFormat(void)
 {
-	int r = -EINVAL, keysize, integrity_keysize = 0, fd;
+	int r = -EINVAL, keysize, integrity_keysize = 0, fd, created = 0;
 	struct stat st;
 	const char *header_device, *type;
 	char *msg = NULL, *key = NULL, *password = NULL;
@@ -998,8 +998,10 @@ static int action_luksFormat(void)
 		fd = open(opt_header_device, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IWUSR);
 		if (fd == -1 || posix_fallocate(fd, 0, 4096))
 			log_err(_("Cannot create header file %s."), opt_header_device);
-		else
+		else {
 			r = 0;
+			created = 1;
+		}
 		if (fd != -1)
 			close(fd);
 		if (r < 0)
@@ -1040,16 +1042,18 @@ static int action_luksFormat(void)
 	if (r < 0)
 		goto out;
 
-	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), header_device);
-	if (r == -1) {
-		r = -ENOMEM;
-		goto out;
-	}
+	if (!created) {
+		r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), header_device);
+		if (r == -1) {
+			r = -ENOMEM;
+			goto out;
+		}
 
-	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
-	free(msg);
-	if (r < 0)
-		goto out;
+		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+		free(msg);
+		if (r < 0)
+			goto out;
+	}
 
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8 + integrity_keysize;
 
