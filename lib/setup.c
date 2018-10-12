@@ -1540,12 +1540,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	}
 
 	r = device_check_access(cd, crypt_metadata_device(cd), DEV_EXCL);
-	if (r < 0) {
-		log_err(cd, _("Cannot use device %s which is in use "
-			      "(already mapped or mounted)."),
-			      device_path(crypt_metadata_device(cd)));
+	if (r < 0)
 		return r;
-	}
 
 	if (!(cd->type = strdup(CRYPT_LUKS2)))
 		return -ENOMEM;
