@@ -1127,8 +1127,11 @@ static int action_open_luks(void)
 	if ((r = crypt_init(&cd, header_device)))
 		goto out;
 
-	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
+	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			header_device);
 		goto out;
+	}
 
 	if (data_device &&
 	    (r = crypt_set_data_device(cd, data_device)))
@@ -1246,8 +1249,11 @@ static int action_luksKillSlot(void)
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
-	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
+	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	ki = crypt_keyslot_status(cd, opt_key_slot);
 	switch (ki) {
@@ -1300,8 +1306,11 @@ static int action_luksRemoveKey(void)
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
-	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
+	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	r = tools_get_key(_("Enter passphrase to be deleted: "),
 		      &password, &passwordLen,
@@ -1353,8 +1362,11 @@ static int luksAddUnboundKey(void)
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
-	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
+	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
@@ -1413,8 +1425,11 @@ static int action_luksAddKey(void)
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
-	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
+	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
@@ -1502,8 +1517,11 @@ static int action_luksChangeKey(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
-	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
+	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
@@ -1559,8 +1577,11 @@ static int action_luksConvertKey(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
-	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
+	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	if (crypt_keyslot_status(cd, opt_key_slot) == CRYPT_SLOT_INACTIVE) {
 		r = -EINVAL;
@@ -1712,8 +1733,11 @@ static int action_luksDump(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
-	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
+	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	if (opt_dump_master_key)
 		r = luksDump_with_volume_key(cd);
@@ -1858,8 +1882,11 @@ static int action_luksErase(void)
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
-	if ((r = crypt_load(cd, luksType(opt_type), NULL)))
+	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	if(asprintf(&msg, _("This operation will erase all keyslots on device %s.\n"
 			    "Device will become unusable after this operation."),
@@ -1916,6 +1943,8 @@ static int action_luksConvert(void)
 
 	if ((r = crypt_load(cd, CRYPT_LUKS, NULL)) ||
 	    !(from_type = crypt_get_type(cd))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		crypt_free(cd);
 		return r;
 	}
@@ -1979,8 +2008,11 @@ static int action_luksConfig(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		return r;
 
-	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
+	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device_header(NULL));
 		goto out;
+	}
 
 	if (opt_priority && (r = _config_priority(cd)))
 		goto out;
@@ -2141,6 +2173,8 @@ static int action_token(void)
 		return r;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device(opt_header_device ?: action_argv[1]));
 		crypt_free(cd);
 		return r;
 	}

@@ -805,7 +805,7 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf pbkdf2 -i 500 $LOOPD
 
 prepare "[37] LUKS Keyslot convert" wipe
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks1 $LOOPDEV $KEY5 --key-slot 5 || fail
-$CRYPTSETUP -q luksConvertKey $LOOPDEV --key-file $KEY5 && fail
+$CRYPTSETUP -q luksConvertKey $LOOPDEV --key-file $KEY5 2>/dev/null && fail
 $CRYPTSETUP -q convert --type luks2 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
