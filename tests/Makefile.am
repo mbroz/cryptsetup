@@ -48,6 +48,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	evil_hdr-keyslot_overlap.xz \
 	tcrypt-images.tar.xz \
 	luks1-images.tar.xz \
+	00modules-test \
 	compat-test \
 	compat-test2 \
 	loopaes-test align-test discards-test mode-test password-hash-test \
