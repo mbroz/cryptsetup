@@ -184,7 +184,7 @@ ssize_t read_blockwise(int fd, size_t bsize, size_t alignment,
 out:
 	free(hangover_buf);
 	if (buf != orig_buf) {
-		if (ret == length)
+		if (ret != -1)
 			memcpy(orig_buf, buf, length);
 		free(buf);
 	}

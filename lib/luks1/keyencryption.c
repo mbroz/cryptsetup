@@ -250,7 +250,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	if (read_lseek_blockwise(devfd, device_block_size(device),
 				 device_alignment(device), dst, dstLength,
 				 sector * SECTOR_SIZE) < 0) {
-		if (!fstat(devfd, &st) && (st.st_size < dstLength))
+		if (!fstat(devfd, &st) && (st.st_size < (off_t)dstLength))
 			log_err(ctx, _("Device %s is too small."), device_path(device));
 		else
 			log_err(ctx, _("IO error while decrypting keyslot."));
