@@ -1474,9 +1474,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	/* Wipe first 8 sectors - fs magic numbers etc. */
-	r = crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO, 0,
-			      8 * SECTOR_SIZE, 8 * SECTOR_SIZE, NULL, NULL);
+	r = LUKS_wipe_header_areas(&cd->u.luks1.hdr, cd);
 	if (r < 0) {
 		log_err(cd, _("Cannot wipe header on device %s."),
 			mdata_device_path(cd));
@@ -1611,6 +1609,13 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 				     params->label, params->subsystem, 0);
 		if (r < 0)
 			goto out;
+	}
+
+	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr);
+	if (r < 0) {
+		log_err(cd, _("Cannot wipe header on device %s."),
+			mdata_device_path(cd));
+		goto out;
 	}
 
 	/* Wipe integrity superblock and create integrity superblock */

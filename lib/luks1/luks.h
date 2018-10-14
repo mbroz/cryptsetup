@@ -61,6 +61,9 @@
 /* Offset to keyslot area [in bytes] */
 #define LUKS_ALIGN_KEYSLOTS 4096
 
+/* Maximal LUKS header size, for wipe [in bytes] */
+#define LUKS_MAX_KEYSLOT_SIZE 0x1000000 /* 16 MB, up to 32768 bits key */
+
 /* Any integer values are stored in network byte order on disk and must be
 converted */
 
@@ -166,6 +169,9 @@ int LUKS_open_key_with_hdr(
 int LUKS_del_key(
 	unsigned int keyIndex,
 	struct luks_phdr *hdr,
+	struct crypt_device *ctx);
+
+int LUKS_wipe_header_areas(struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 
 crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot);

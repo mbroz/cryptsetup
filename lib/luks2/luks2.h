@@ -331,6 +331,9 @@ int LUKS2_generate_hdr(
 	unsigned int alignOffset,
 	int detached_metadata_device);
 
+int LUKS2_wipe_header_areas(struct crypt_device *cd,
+	struct luks2_hdr *hdr);
+
 uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr);
 int LUKS2_get_sector_size(struct luks2_hdr *hdr);
 const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment);
