@@ -133,7 +133,8 @@ int keyring_get_passphrase(const char *key_desc,
 
 	if (ret < 0) {
 		err = errno;
-		crypt_memzero(buf, len);
+		if (buf)
+			crypt_memzero(buf, len);
 		free(buf);
 		return -err;
 	}
