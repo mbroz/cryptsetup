@@ -237,13 +237,16 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	uint64_t offset, length;
 	size_t wipe_block;
 
-	/* Wipe complete header, keyslots and padding aread with zeroes. */
+	/* Wipe complete header, keyslots and padding areas with zeroes. */
 	offset = 0;
 	length = LUKS2_get_data_offset(hdr) * SECTOR_SIZE;
 	wipe_block = 1024 * 1024;
 
-	/* On detached header or bogus header wipe at least the first 4k */
-	if (length == 0 || length > LUKS2_MAX_KEYSLOTS_SIZE) {
+	if (LUKS2_hdr_validate(hdr->jobj))
+		return -EINVAL;
+
+	/* On detached header wipe at least the first 4k */
+	if (length == 0) {
 		length = 4096;
 		wipe_block = 4096;
 	}
@@ -260,10 +263,6 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	wipe_block = 1024 * 1024;
 	offset = get_min_offset(hdr);
 	length = LUKS2_keyslots_size(hdr->jobj);
-
-	if (length == 0 || length > LUKS2_MAX_KEYSLOTS_SIZE ||
-	    offset < 4096 || offset > (LUKS2_MAX_KEYSLOTS_SIZE - length))
-		return -EINVAL;
 
 	log_dbg("Wiping keyslots area (0x%06" PRIx64 " - 0x%06" PRIx64") with random data.",
 		offset, length + offset);

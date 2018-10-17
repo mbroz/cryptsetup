@@ -1218,7 +1218,7 @@ int LUKS_wipe_header_areas(struct luks_phdr *hdr,
 	uint64_t offset, length;
 	size_t wipe_block;
 
-	/* Wipe complete header, keyslots and padding aread with zeroes. */
+	/* Wipe complete header, keyslots and padding areas with zeroes. */
 	offset = 0;
 	length = (uint64_t)hdr->payloadOffset * SECTOR_SIZE;
 	wipe_block = 1024 * 1024;
