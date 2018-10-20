@@ -769,7 +769,7 @@ static int action_benchmark(void)
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
-	int iv_size = 16, skipped = 0;
+	int iv_size = 16, skipped = 0, width;
 	char *c;
 	int i, r;
 
@@ -796,13 +796,19 @@ static int action_benchmark(void)
 		if (!strcmp(cipher_mode, "ecb"))
 			iv_size = 0;
 
+		if (!strcmp(cipher_mode, "adiantum"))
+			iv_size = 32;
+
 		r = benchmark_cipher_loop(cipher, cipher_mode,
 					  key_size, iv_size,
 					  &enc_mbr, &dec_mbr);
 		if (!r) {
+			width = strlen(cipher) + strlen(cipher_mode) + 1;
+			if (width < 11)
+				width = 11;
 			/* TRANSLATORS: The string is header of a table and must be exactly (right side) aligned. */
-			log_std(_("#     Algorithm |       Key |      Encryption |      Decryption\n"));
-			log_std("%11s-%s  %9db  %10.1f MiB/s  %10.1f MiB/s\n",
+			log_std(_("#%*s Algorithm |       Key |      Encryption |      Decryption\n"), width - 11, "");
+			log_std("%*s-%s  %9db  %10.1f MiB/s  %10.1f MiB/s\n", width - (int)strlen(cipher_mode) - 1,
 				cipher, cipher_mode, key_size*8, enc_mbr, dec_mbr);
 		} else if (r == -ENOENT)
 			log_err(_("Cipher %s is not available."), opt_cipher);
