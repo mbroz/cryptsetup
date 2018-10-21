@@ -2738,7 +2738,7 @@ int main(int argc, const char **argv)
 
 	if (opt_debug) {
 		opt_verbose = 1;
-		crypt_set_debug_level(-1);
+		crypt_set_debug_level(CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
 	}
 

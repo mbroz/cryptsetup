@@ -141,12 +141,17 @@ void crypt_log(struct crypt_device *cd, int level, const char *msg)
 {
 	if (!msg)
 		return;
+
+	if (level < _debug_level)
+		return;
+
 	if (cd && cd->log)
 		cd->log(level, msg, cd->log_usrptr);
 	else if (_default_log)
 		_default_log(level, msg, NULL);
-	else if (_debug_level)
-		printf("%s", msg);
+	/* Default to stdout/stderr if there is no callback. */
+	else
+		fprintf(level == CRYPT_LOG_ERROR ? stderr : stdout, "%s", msg);
 }
 
 __attribute__((format(printf, 5, 6)))
@@ -159,19 +164,11 @@ void logger(struct crypt_device *cd, int level, const char *file,
 	va_start(argp, format);
 
 	if (vsnprintf(&target[0], LOG_MAX_LEN, format, argp) > 0 ) {
-		if (level >= 0) {
-			/* All verbose and error messages in tools end with EOL. */
-			if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR)
-				strncat(target, "\n", LOG_MAX_LEN);
+		/* All verbose and error messages in tools end with EOL. */
+		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR)
+			strncat(target, "\n", LOG_MAX_LEN);
 
-			crypt_log(cd, level, target);
-#ifdef CRYPT_DEBUG
-		} else if (_debug_level)
-			printf("# %s:%d %s\n", file ?: "?", line, target);
-#else
-		} else if (_debug_level)
-			printf("# %s\n", target);
-#endif
+		crypt_log(cd, level, target);
 	}
 
 	va_end(argp);

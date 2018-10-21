@@ -88,19 +88,11 @@ void clogger(struct crypt_device *cd, int level, const char *file, int line,
 	va_start(argp, format);
 
 	if (vsnprintf(&target[0], LOG_MAX_LEN, format, argp) > 0) {
-		if (level >= 0) {
-			/* All verbose and error messages in tools end with EOL. */
-			if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR)
-				strncat(target, "\n", LOG_MAX_LEN);
+		/* All verbose and error messages in tools end with EOL. */
+		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR)
+			strncat(target, "\n", LOG_MAX_LEN);
 
-			crypt_log(cd, level, target);
-#ifdef CRYPT_DEBUG
-		} else if (opt_debug)
-			printf("# %s:%d %s\n", file ?: "?", line, target);
-#else
-		} else if (opt_debug)
-			printf("# %s\n", target);
-#endif
+		crypt_log(cd, level, target);
 	}
 
 	va_end(argp);
@@ -111,21 +103,18 @@ void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
 	switch(level) {
 
 	case CRYPT_LOG_NORMAL:
-		fputs(msg, stdout);
+		fprintf(stdout, "%s", msg);
 		break;
 	case CRYPT_LOG_VERBOSE:
 		if (opt_verbose)
-			fputs(msg, stdout);
+			fprintf(stdout, "%s", msg);
 		break;
 	case CRYPT_LOG_ERROR:
-		fputs(msg, stderr);
+		fprintf(stderr, "%s", msg);
 		break;
 	case CRYPT_LOG_DEBUG:
 		if (opt_debug)
-			printf("# %s\n", msg);
-		break;
-	default:
-		fprintf(stderr, "Internal error on logging class for msg: %s", msg);
+			fprintf(stdout, "# %s\n", msg);
 		break;
 	}
 }

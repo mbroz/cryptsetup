@@ -256,8 +256,16 @@ void global_log_callback(int level, const char *msg, void *usrptr)
 {
 	int len;
 
-	if (_debug)
-		printf("LOG: %s", msg);
+	if (_debug) {
+		if (level == CRYPT_LOG_DEBUG)
+			fprintf(stdout, "# %s\n", msg);
+		else
+			fprintf(stdout, "%s", msg);
+	}
+
+	if (level == CRYPT_LOG_DEBUG)
+		return;
+
 	strncat(global_log, msg, sizeof(global_log) - strlen(global_log));
 	global_lines++;
 	if (level == CRYPT_LOG_ERROR) {
