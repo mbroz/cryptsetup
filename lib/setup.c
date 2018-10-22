@@ -63,8 +63,8 @@ struct crypt_device {
 	} luks1;
 	struct { /* used in CRYPT_LUKS2 */
 		struct luks2_hdr hdr;
-		char *cipher;		/* only for compatibility, segment 0 */
-		char *cipher_mode;	/* only for compatibility, segment 0 */
+		char cipher[MAX_CIPHER_LEN];	  /* only for compatibility */
+		char cipher_mode[MAX_CIPHER_LEN]; /* only for compatibility */
 	} luks2;
 	struct { /* used in CRYPT_PLAIN */
 		struct crypt_params_plain hdr;
@@ -649,8 +649,7 @@ struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd)
 static int _crypt_load_luks2(struct crypt_device *cd, int reload, int repair)
 {
 	int r;
-	char tmp_cipher[MAX_CIPHER_LEN], tmp_cipher_mode[MAX_CIPHER_LEN],
-	     *cipher = NULL, *cipher_mode = NULL, *type = NULL;
+	char *type = NULL;
 	struct luks2_hdr hdr2 = {};
 
 	log_dbg("%soading LUKS2 header (repair %sabled).", reload ? "Rel" : "L", repair ? "en" : "dis");
@@ -664,43 +663,22 @@ static int _crypt_load_luks2(struct crypt_device *cd, int reload, int repair)
 		goto out;
 	}
 
-	r = crypt_parse_name_and_mode(LUKS2_get_cipher(&hdr2, CRYPT_DEFAULT_SEGMENT),
-				      tmp_cipher, NULL, tmp_cipher_mode);
-	if (r < 0) {
-		log_dbg("Cannot parse cipher and mode from loaded device.");
-		goto out;
-	}
-
-	cipher = strdup(tmp_cipher);
-	cipher_mode = strdup(tmp_cipher_mode);
-	if (!cipher || !cipher_mode) {
-		r = -ENOMEM;
-		goto out;
-	}
-
 	if (verify_pbkdf_params(cd, &cd->pbkdf)) {
 		r = init_pbkdf_type(cd, NULL, CRYPT_LUKS2);
 		if (r)
 			goto out;
 	}
 
-	if (reload) {
+	if (reload)
 		LUKS2_hdr_free(&cd->u.luks2.hdr);
-		free(cd->u.luks2.cipher);
-		free(cd->u.luks2.cipher_mode);
-	} else
+	else
 		cd->type = type;
 
 	r = 0;
 	memcpy(&cd->u.luks2.hdr, &hdr2, sizeof(hdr2));
 
-	/* Save cipher and mode, compatibility only. */
-	cd->u.luks2.cipher = cipher;
-	cd->u.luks2.cipher_mode = cipher_mode;
 out:
 	if (r) {
-		free(cipher);
-		free(cipher_mode);
 		free(type);
 		LUKS2_hdr_free(&hdr2);
 	}
@@ -1019,8 +997,6 @@ static void crypt_free_type(struct crypt_device *cd)
 		free(cd->u.plain.cipher_mode);
 	} else if (isLUKS2(cd->type)) {
 		LUKS2_hdr_free(&cd->u.luks2.hdr);
-		free(cd->u.luks2.cipher);
-		free(cd->u.luks2.cipher_mode);
 	} else if (isLOOPAES(cd->type)) {
 		free(CONST_CAST(void*)cd->u.loopaes.hdr.hash);
 		free(cd->u.loopaes.cipher);
@@ -1574,17 +1550,10 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
-	/* Save cipher and mode, compatibility only. */
-	cd->u.luks2.cipher = strdup(cipher);
-	cd->u.luks2.cipher_mode = strdup(cipher_mode);
-	if (!cd->u.luks2.cipher || !cd->u.luks2.cipher_mode) {
-		r = -ENOMEM;
-		goto out;
-	}
-
 	/* FIXME: we have no way how to check AEAD ciphers,
 	 * only length preserving mode or authenc() composed modes */
-	if ((!integrity || integrity_key_size) && !LUKS2_keyslot_cipher_incompatible(cd)) {
+	if ((!integrity || integrity_key_size) && !crypt_cipher_wrapped_key(cipher) &&
+	    !INTEGRITY_tag_size(cd, NULL, cipher, cipher_mode)) {
 		r = LUKS_check_cipher(cd, volume_key_size - integrity_key_size,
 				      cipher, cipher_mode);
 		if (r < 0)
@@ -1659,13 +1628,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	}
 
 out:
-	if (r) {
+	if (r)
 		LUKS2_hdr_free(&cd->u.luks2.hdr);
-		free(cd->u.luks2.cipher);
-		free(cd->u.luks2.cipher_mode);
-		cd->u.luks2.cipher = NULL;
-		cd->u.luks2.cipher_mode = NULL;
-	}
 
 	return r;
 }
@@ -3647,8 +3611,12 @@ const char *crypt_get_cipher(struct crypt_device *cd)
 	if (isLUKS1(cd->type))
 		return cd->u.luks1.hdr.cipherName;
 
-	if (isLUKS2(cd->type))
+	if (isLUKS2(cd->type)) {
+		if (crypt_parse_name_and_mode(LUKS2_get_cipher(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT),
+					      cd->u.luks2.cipher, NULL, cd->u.luks2.cipher_mode))
+			return NULL;
 		return cd->u.luks2.cipher;
+	}
 
 	if (isLOOPAES(cd->type))
 		return cd->u.loopaes.cipher;
@@ -3673,8 +3641,12 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 	if (isLUKS1(cd->type))
 		return cd->u.luks1.hdr.cipherMode;
 
-	if (isLUKS2(cd->type))
+	if (isLUKS2(cd->type)) {
+		if (crypt_parse_name_and_mode(LUKS2_get_cipher(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT),
+					      cd->u.luks2.cipher, NULL, cd->u.luks2.cipher_mode))
+			return NULL;
 		return cd->u.luks2.cipher_mode;
+	}
 
 	if (isLOOPAES(cd->type))
 		return cd->u.loopaes.cipher_mode;
