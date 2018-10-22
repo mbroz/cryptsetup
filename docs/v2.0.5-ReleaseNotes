@@ -1,0 +1,99 @@
+Cryptsetup 2.0.5 Release Notes
+==============================
+Stable bug-fix release with new features.
+
+Cryptsetup 2.x version introduces a new on-disk LUKS2 format.
+
+The legacy LUKS (referenced as LUKS1) will be fully supported
+forever as well as a traditional and fully backward compatible format.
+
+Please note that authenticated disk encryption, non-cryptographic
+data integrity protection (dm-integrity), use of Argon2 Password-Based
+Key Derivation Function and the LUKS2 on-disk format itself are new
+features and can contain some bugs.
+
+Please do not use LUKS2 without properly configured backup or in
+production systems that need to be compatible with older systems.
+
+Changes since version 2.0.4
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Wipe full header areas (including unused) during LUKS format.
+
+  Since this version, the whole area up to the data offset is zeroed,
+  and subsequently, all keyslots areas are wiped with random data.
+  This ensures that no remaining old data remains in the LUKS header
+  areas, but it could slow down format operation on some devices.
+  Previously only first 4k (or 32k for LUKS2) and the used keyslot
+  was overwritten in the format operation.
+
+* Several fixes to error messages that were unintentionally replaced
+  in previous versions with a silent exit code.
+  More descriptive error messages were added, including error
+  messages if
+   - a device is unusable (not a block device, no access, etc.),
+   - a LUKS device is not detected,
+   - LUKS header load code detects unsupported version,
+   - a keyslot decryption fails (also happens in the cipher check),
+   - converting an inactive keyslot.
+
+* Device activation fails if data area overlaps with LUKS header.
+
+* Code now uses explicit_bzero to wipe memory if available
+  (instead of own implementation).
+
+* Additional VeraCrypt modes are now supported, including Camellia
+  and Kuznyechik symmetric ciphers (and cipher chains) and Streebog
+  hash function. These were introduced in a recent VeraCrypt upstream.
+
+  Note that Kuznyechik requires out-of-tree kernel module and
+  Streebog hash function is available only with the gcrypt cryptographic
+  backend for now.
+
+* Fixes static build for integritysetup if the pwquality library is used.
+
+* Allows passphrase change for unbound keyslots.
+
+* Adds blkid scan when attempting to open a plain device and warn the user
+  about existing device signatures in a ciphertext device.
+
+* Remove LUKS header signature if luksFormat fails to add the first keyslot.
+
+* Remove O_SYNC from device open and use fsync() to speed up
+  wipe operation considerably.
+
+* Create --master-key-file in luksDump and fail if the file already exists.
+
+* Fixes a bug when LUKS2 authenticated encryption with a detached header
+  wiped the header device instead of dm-integrity data device area (causing
+  unnecessary LUKS2 header auto recovery).
+
+Unfinished things & TODO for next releases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Authenticated encryption should use new algorithms from CAESAR competition
+  https://competitions.cr.yp.to/caesar-submissions.html.
+  AEGIS and MORUS are already available in kernel 4.18.
+
+  For more info about LUKS2 authenticated encryption, please see our paper
+  https://arxiv.org/abs/1807.00309
+
+  Please note that authenticated encryption is still an experimental feature
+  and can have performance problems for hish-speed devices and device
+  with larger IO blocks (like RAID).
+
+* Authenticated encryption do not set encryption for a dm-integrity journal.
+
+  While it does not influence data confidentiality or integrity protection,
+  an attacker can get some more information from data journal or cause that
+  system will corrupt sectors after journal replay. (That corruption will be
+  detected though.)
+
+* There are examples of user-defined tokens inside misc/luks2_keyslot_example
+  directory (like a simple external program that uses libssh to unlock LUKS2
+  using remote keyfile).
+
+* The python binding (pycryptsetup) contains only basic functionality for LUKS1
+  (it is not updated for new features) and will be REMOVED in version 2.1
+  in favor of python bindings to the libblockdev library.
+  See https://github.com/storaged-project/libblockdev/releases that
+  already supports LUKS2 and VeraCrypt devices handling through libcryptsetup.
