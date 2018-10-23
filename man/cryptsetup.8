@@ -487,9 +487,14 @@ to standard output.
 .PP
 \fIconvert\fR <device> \-\-type <format>
 .IP
-Converts the device between LUKS and LUKS2 format (if possible).
-The conversion will not be performed if there is an additional LUKS2 feature or LUKS has
+Converts the device between LUKS1 and LUKS2 format (if possible).
+The conversion will not be performed if there is an additional LUKS2 feature or LUKS1 has
 unsupported header size.
+
+Conversion (both directions) must be performed on inactive device. There must not be active
+dm-crypt mapping established for LUKS header requested for conversion.
+
+\fB\-\-type\fR option is mandatory with following accepted values: \fIluks1\fR or \fIluks2\fR.
 
 \fBWARNING:\fR The \fIconvert\fR action can destroy the LUKS header in the case of a crash
 during conversion or if a media error occurs.
