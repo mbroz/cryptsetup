@@ -849,7 +849,7 @@ prepare "[37] Interactive add key." new
 expect - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
 set timeout 10
-eval spawn $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -v $LOOPDEV
+eval spawn $CRYPTSETUP luksAddKey -S 2 $FAST_PBKDF_OPT -v $LOOPDEV
 expect timeout abort "Enter any existing passphrase:"
 sleep 0.1
 send "$PWD0\n"
@@ -866,6 +866,15 @@ expect timeout abort "Enter passphrase"
 sleep 0.1
 send "$PWD1\n"
 expect timeout abort "Command successful."
+expect timeout abort eof
+eval spawn $CRYPTSETUP luksKillSlot -v $LOOPDEV 1
+expect timeout abort "Keyslot 1 is not active."
+expect timeout abort eof
+eval spawn $CRYPTSETUP luksKillSlot -v $LOOPDEV 2
+expect timeout abort "Enter any remaining passphrase:"
+sleep 0.1
+send "$PWD0\n"
+expect timeout abort "Key slot 2 removed."
 expect timeout abort eof
 exit
 EOF

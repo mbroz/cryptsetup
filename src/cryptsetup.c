@@ -1288,7 +1288,7 @@ static int action_luksKillSlot(void)
 	}
 
 	r = crypt_keyslot_destroy(cd, opt_key_slot);
-	tools_keyslot_msg(r, REMOVED);
+	tools_keyslot_msg(opt_key_slot, REMOVED);
 out:
 	crypt_free(cd);
 	return r;
@@ -1341,7 +1341,7 @@ static int action_luksRemoveKey(void)
 	}
 
 	r = crypt_keyslot_destroy(cd, opt_key_slot);
-	tools_keyslot_msg(r, REMOVED);
+	tools_keyslot_msg(opt_key_slot, REMOVED);
 out:
 	crypt_safe_free(password);
 	crypt_free(cd);
@@ -1911,7 +1911,7 @@ static int action_luksErase(void)
 			r = crypt_keyslot_destroy(cd, i);
 			if (r < 0)
 				goto out;
-			tools_keyslot_msg(r, REMOVED);
+			tools_keyslot_msg(i, REMOVED);
 		}
 	}
 out:
