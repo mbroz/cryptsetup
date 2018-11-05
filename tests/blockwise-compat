@@ -79,7 +79,11 @@ run_all_in_fs() {
 	    echo "Run tests in $file put on top block device."
 	    xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
 	    [ ! -d $MNT_DIR ] && mkdir $MNT_DIR
-	    mount $DEV $MNT_DIR || skip "Mounting image $file failed."
+	    mount $DEV $MNT_DIR
+	    if [ $? -ne 0 ]; then
+	        echo "Mounting image $file failed, skipped."
+	        continue;
+	    fi
 	    rm -rf $MNT_DIR/* 2>/dev/null
 	    local tfile=$MNT_DIR/bwunit_tstfile
 	    falloc $DEVSIZEMB $tfile || fail "enospc?"
