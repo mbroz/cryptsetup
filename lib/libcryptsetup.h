@@ -65,6 +65,23 @@ struct crypt_device; /* crypt device handle */
 int crypt_init(struct crypt_device **cd, const char *device);
 
 /**
+ * Initialize crypt device handle with optional data device and check
+ * if devices exist.
+ *
+ * @param cd Returns pointer to crypt device handle
+ * @param device Path to the backing device or detached header.
+ * @param device_device Path to the data device or @e NULL.
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note Note that logging is not initialized here, possible messages use
+ * 	 default log function.
+ */
+int crypt_init_data_device(struct crypt_device **cd,
+	const char *device,
+	const char *data_device);
+
+/**
  * Initialize crypt device handle from provided active device name,
  * and, optionally, from separate metadata (header) device
  * and check if provided device exists.
@@ -1316,6 +1333,16 @@ const char *crypt_get_uuid(struct crypt_device *cd);
  *
  */
 const char *crypt_get_device_name(struct crypt_device *cd);
+
+/**
+ * Get path to detached metadata device or @e NULL if it is not detached.
+ *
+ * @param cd crypt device handle
+ *
+ * @return path to underlaying device name
+ *
+ */
+const char *crypt_get_metadata_device_name(struct crypt_device *cd);
 
 /**
  * Get device offset in 512-bytes sectors where real data starts (on underlying device).

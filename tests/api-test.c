@@ -457,6 +457,12 @@ static void AddDevicePlain(void)
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	crypt_free(cd);
 
+	// init with detached header is not supported
+	OK_(crypt_init_data_device(&cd, DEVICE_2, DEVICE_1));
+	FAIL_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params),
+	      "can't use plain with separate metadata device");
+	crypt_free(cd);
+
 	FAIL_(crypt_init_by_name_and_header(&cd, CDEVICE_1, H_DEVICE),"can't init plain device by header device");
 	OK_(crypt_init_by_name(&cd, CDEVICE_1));
 	OK_(strcmp(cipher_mode,crypt_get_cipher_mode(cd)));
@@ -474,6 +480,7 @@ static void AddDevicePlain(void)
 
 	// crypt_set_data_device
 	FAIL_(crypt_set_data_device(cd,H_DEVICE),"can't set data device for plain device");
+	NULL_(crypt_get_metadata_device_name(cd));
 
 	// crypt_get_type
 	OK_(strcmp(crypt_get_type(cd),CRYPT_PLAIN));
@@ -1142,7 +1149,19 @@ static void LuksHeaderLoad(void)
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(!crypt_get_metadata_device_name(cd));
+	EQ_(strcmp(DMDIR H_DEVICE, crypt_get_metadata_device_name(cd)), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	// repeat with init with two devices
+	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	crypt_free(cd);
+	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	OK_(!crypt_get_metadata_device_name(cd));
+	EQ_(strcmp(DMDIR H_DEVICE, crypt_get_metadata_device_name(cd)), 0);
 	crypt_free(cd);
 
 	// bad header: device too small (payloadOffset > device_size)
@@ -1493,6 +1512,12 @@ static void VerityTest(void)
 	OK_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params));
 	crypt_free(cd);
 
+	params.data_device = NULL;
+	OK_(crypt_init_data_device(&cd, DEVICE_2, DEVICE_EMPTY));
+	OK_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params));
+	EQ_(strcmp(DEVICE_2, crypt_get_metadata_device_name(cd)), 0);
+	crypt_free(cd);
+
 	/* Verify */
 	OK_(crypt_init(&cd, DEVICE_2));
 	memset(&params, 0, sizeof(params));
@@ -1614,6 +1639,7 @@ static void TcryptTest(void)
 	reset_log();
 
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, CRYPT_ACTIVATE_READONLY));
+	NULL_(crypt_get_metadata_device_name(cd));
 	crypt_free(cd);
 
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, NULL));
@@ -1635,6 +1661,11 @@ static void TcryptTest(void)
 	EQ_(72, cad.size);
 
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	// init with detached header is not supported
+	OK_(crypt_init_data_device(&cd, tcrypt_dev2, DEVICE_2));
+	FAIL_(crypt_load(cd, CRYPT_TCRYPT, &params), "can't use tcrypt with separate metadata device");
 	crypt_free(cd);
 
 	// Following test uses non-FIPS algorithms in the cipher chain

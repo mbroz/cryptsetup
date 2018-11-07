@@ -1022,7 +1022,19 @@ static void Luks2HeaderLoad(void)
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(!crypt_get_metadata_device_name(cd));
+	EQ_(strcmp(DMDIR H_DEVICE, crypt_get_metadata_device_name(cd)), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	// repeat with init with two devices
+	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	crypt_free(cd);
+	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(!crypt_get_metadata_device_name(cd));
+	EQ_(strcmp(DMDIR H_DEVICE, crypt_get_metadata_device_name(cd)), 0);
 	crypt_free(cd);
 
 	// bad header: device too small (payloadOffset > device_size)

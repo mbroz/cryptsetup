@@ -1130,7 +1130,7 @@ static int action_open_luks(void)
 
 	activated_name = opt_test_passphrase ? NULL : action_argv[1];
 
-	if ((r = crypt_init(&cd, header_device)))
+	if ((r = crypt_init_data_device(&cd, header_device, data_device)))
 		goto out;
 
 	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
@@ -1138,10 +1138,6 @@ static int action_open_luks(void)
 			header_device);
 		goto out;
 	}
-
-	if (data_device &&
-	    (r = crypt_set_data_device(cd, data_device)))
-		goto out;
 
 	if (!data_device && (crypt_get_data_offset(cd) < 8)) {
 		log_err(_("Reduced data offset is allowed only for detached LUKS header."));

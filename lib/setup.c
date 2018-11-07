@@ -604,24 +604,10 @@ static int crypt_check_data_device_size(struct crypt_device *cd)
 	return r;
 }
 
-int crypt_set_data_device(struct crypt_device *cd, const char *device)
+static int _crypt_set_data_device(struct crypt_device *cd, const char *device)
 {
 	struct device *dev = NULL;
 	int r;
-
-	if (!cd)
-		return -EINVAL;
-
-	log_dbg(cd, "Setting ciphertext data device to %s.", device ?: "(none)");
-
-	if (!isLUKS1(cd->type) && !isLUKS2(cd->type) && !isVERITY(cd->type)) {
-		log_err(cd, _("This operation is not supported for this device type."));
-		return  -EINVAL;
-	}
-
-	/* metadata device must be set */
-	if (!cd->device || !device)
-		return -EINVAL;
 
 	r = device_alloc(cd, &dev, device);
 	if (r < 0)
@@ -636,6 +622,42 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 
 	return crypt_check_data_device_size(cd);
 }
+
+int crypt_set_data_device(struct crypt_device *cd, const char *device)
+{
+	/* metadata device must be set */
+	if (!cd || !cd->device || !device)
+		return -EINVAL;
+
+	log_dbg(cd, "Setting ciphertext data device to %s.", device ?: "(none)");
+
+	if (!isLUKS1(cd->type) && !isLUKS2(cd->type) && !isVERITY(cd->type)) {
+		log_err(cd, _("This operation is not supported for this device type."));
+		return  -EINVAL;
+	}
+
+	return _crypt_set_data_device(cd, device);
+}
+
+int crypt_init_data_device(struct crypt_device **cd, const char *device, const char *data_device)
+{
+	int r;
+
+	if (!cd)
+		return -EINVAL;
+
+	r = crypt_init(cd, device);
+	if (r || !data_device)
+		return r;
+
+	log_dbg(NULL, "Setting ciphertext data device to %s.", data_device ?: "(none)");
+	r = _crypt_set_data_device(*cd, data_device);
+	if (r)
+		crypt_free(*cd);
+
+	return r;
+}
+
 
 /* internal only */
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd)
@@ -774,6 +796,11 @@ static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcryp
 
 	if (!params)
 		return -EINVAL;
+
+	if (cd->metadata_device) {
+		log_err(cd, _("Detached metadata device is not supported for this crypt type."));
+		return -EINVAL;
+	}
 
 	r = init_crypto(cd);
 	if (r < 0)
@@ -1338,6 +1365,11 @@ static int _crypt_format_plain(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (cd->metadata_device) {
+		log_err(cd, _("Detached metadata device is not supported for this crypt type."));
+		return -EINVAL;
+	}
+
 	/* For compatibility with old params structure */
 	if (!sector_size)
 		sector_size = SECTOR_SIZE;
@@ -1429,14 +1461,18 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	}
 
 	if (params && params->data_device) {
-		cd->metadata_device = cd->device;
+		if (!cd->metadata_device)
+			cd->metadata_device = cd->device;
+		else
+			device_free(cd, cd->device);
 		cd->device = NULL;
 		if (device_alloc(cd, &cd->device, params->data_device) < 0)
 			return -ENOMEM;
+	}
+
+	if (params && (params->data_alignment || cd->metadata_device))
 		required_alignment = params->data_alignment * SECTOR_SIZE;
-	} else if (params && params->data_alignment) {
-		required_alignment = params->data_alignment * SECTOR_SIZE;
-	} else
+	else
 		device_topology_alignment(cd, cd->device,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
@@ -1549,14 +1585,18 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		return r;
 
 	if (params && params->data_device) {
-		cd->metadata_device = cd->device;
+		if (!cd->metadata_device)
+			cd->metadata_device = cd->device;
+		else
+			device_free(cd, cd->device);
 		cd->device = NULL;
 		if (device_alloc(cd, &cd->device, params->data_device) < 0)
 			return -ENOMEM;
+	}
+
+	if (params && (params->data_alignment || cd->metadata_device))
 		required_alignment = params->data_alignment * SECTOR_SIZE;
-	} else if (params && params->data_alignment) {
-		required_alignment = params->data_alignment * SECTOR_SIZE;
-	} else
+	else
 		device_topology_alignment(cd, cd->device,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
@@ -1683,6 +1723,11 @@ static int _crypt_format_loopaes(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (cd->metadata_device) {
+		log_err(cd, _("Detached metadata device is not supported for this crypt type."));
+		return -EINVAL;
+	}
+
 	if (!(cd->type = strdup(CRYPT_LOOPAES)))
 		return -ENOMEM;
 
@@ -1713,7 +1758,10 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (!params || !params->data_device)
+	if (!params)
+		return -EINVAL;
+
+	if (!params->data_device && !cd->metadata_device)
 		return -EINVAL;
 
 	if (params->hash_type > VERITY_MAX_HASH_TYPE) {
@@ -1740,9 +1788,12 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	if (!(cd->type = strdup(CRYPT_VERITY)))
 		return -ENOMEM;
 
-	r = crypt_set_data_device(cd, params->data_device);
-	if (r)
-		return r;
+	if (params->data_device) {
+		r = crypt_set_data_device(cd, params->data_device);
+		if (r)
+			return r;
+	}
+
 	if (!params->data_size) {
 		r = device_size(cd->device, &data_device_size);
 		if (r < 0)
@@ -3779,6 +3830,20 @@ const char *crypt_get_device_name(struct crypt_device *cd)
 	path = device_block_path(cd->device);
 	if (!path)
 		path = device_path(cd->device);
+
+	return path;
+}
+
+const char *crypt_get_metadata_device_name(struct crypt_device *cd)
+{
+	const char *path;
+
+	if (!cd || !cd->metadata_device)
+		return NULL;
+
+	path = device_block_path(cd->metadata_device);
+	if (!path)
+		path = device_path(cd->metadata_device);
 
 	return path;
 }

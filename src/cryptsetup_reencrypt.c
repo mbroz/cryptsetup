@@ -480,9 +480,8 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 	} else
 		return -EINVAL;
 
-	if ((r = crypt_init(&cd, rc->header_file_org)) ||
-	    (r = crypt_load(cd, CRYPT_LUKS, NULL)) ||
-	    (r = crypt_set_data_device(cd, rc->device)))
+	if ((r = crypt_init_data_device(&cd, rc->header_file_org, rc->device)) ||
+	    (r = crypt_load(cd, CRYPT_LUKS, NULL)))
 		goto out;
 
 	log_verbose(_("Activating temporary device using old LUKS header."));
@@ -491,9 +490,8 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 		CRYPT_ACTIVATE_READONLY|CRYPT_ACTIVATE_PRIVATE)) < 0)
 		goto out;
 
-	if ((r = crypt_init(&cd_new, rc->header_file_new)) ||
-	    (r = crypt_load(cd_new, CRYPT_LUKS, NULL)) ||
-	    (r = crypt_set_data_device(cd_new, rc->device)))
+	if ((r = crypt_init_data_device(&cd_new, rc->header_file_new, rc->device)) ||
+	    (r = crypt_load(cd_new, CRYPT_LUKS, NULL)))
 		goto out;
 
 	log_verbose(_("Activating temporary device using new LUKS header."));
@@ -1348,9 +1346,8 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 		return r > 0 ? 0 : r;
 	}
 
-	if ((r = crypt_init(&cd, device)) ||
-	    (r = crypt_load(cd, CRYPT_LUKS, NULL)) ||
-	    (r = crypt_set_data_device(cd, rc->device))) {
+	if ((r = crypt_init_data_device(&cd, device, rc->device)) ||
+	    (r = crypt_load(cd, CRYPT_LUKS, NULL))) {
 		crypt_free(cd);
 		return r;
 	}
