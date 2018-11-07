@@ -32,7 +32,7 @@ Open a mapping with <name> backed by device <device>.
 
 \fB<options>\fR can be [\-\-batch\-mode, \-\-journal\-watermark, \-\-journal\-commit\-time,
 \-\-buffer\-sectors, \-\-integrity, \-\-integrity\-key\-size, \-\-integrity\-key\-file,
-\-\-integrity\-no\-journal, \-\-integrity\-recovery\-mode]
+\-\-integrity\-no\-journal, \-\-integrity\-recalculate, \-\-integrity\-recovery\-mode]
 
 .PP
 \fIclose\fR <name>
@@ -76,6 +76,12 @@ Size of the journal.
 .TP
 .B "\-\-interleave\-sectors SECTORS"
 The number of interleaved sectors.
+.TP
+.B "\-\-integrity\-recalculate"
+Automatically recalculate integrity tags in kernel on activation.
+The device can be used during automatic integrity recalculation but becomes fully
+integrity protected only after the backgroud operation is finished.
+This option is available since the Linux kernel version 4.19.
 .TP
 .B "\-\-journal\-watermark PERCENT"
 Journal watermark in percents. When the size of the journal exceeds this watermark,

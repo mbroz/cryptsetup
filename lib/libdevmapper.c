@@ -209,6 +209,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 
 	_dm_flags |= DM_INTEGRITY_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 2, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_RECALC_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -683,7 +686,7 @@ out:
 
 }
 
-static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_t flags)
+static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_t flags, uint32_t dmflags)
 {
 	int r, max_size, num_options = 0;
 	char *params, *hexkey, mode;
@@ -799,6 +802,12 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 			 dmd->u.integrity.journal_crypt, hexkey ? ":" : "", hexkey ?: "");
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
+	}
+
+	if ((dmflags & DM_INTEGRITY_RECALC_SUPPORTED) && (flags & CRYPT_ACTIVATE_RECALCULATE)) {
+		num_options++;
+		snprintf(feature, sizeof(feature), "recalculate ");
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 
 	if (flags & CRYPT_ACTIVATE_RECOVERY)
@@ -1194,14 +1203,14 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		return -ENOTSUP;
 
 	dmd_flags = dmd->flags;
-	dmt_flags = 0;
+	dm_flags(cd, dmd->target, &dmt_flags);
 
 	if (dmd->target == DM_CRYPT)
 		table_params = get_dm_crypt_params(dmd, dmd_flags);
 	else if (dmd->target == DM_VERITY)
 		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd, dmd_flags);
 	else if (dmd->target == DM_INTEGRITY)
-		table_params = get_dm_integrity_params(dmd, dmd_flags);
+		table_params = get_dm_integrity_params(dmd, dmd_flags, dmt_flags);
 	else
 		goto out;
 
@@ -1928,6 +1937,8 @@ static int _dm_query_integrity(struct crypt_device *cd,
 						goto err;
 					}
 				}
+			} else if (!strcmp(arg, "recalculate")) {
+				dmd->flags |= CRYPT_ACTIVATE_RECALCULATE;
 			} else /* unknown option */
 				goto err;
 		}

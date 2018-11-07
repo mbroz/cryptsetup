@@ -311,4 +311,15 @@ int_mode sha256      32 512
 int_mode hmac-sha256 32 512  $KEY_FILE 32
 int_mode hmac-sha256 32 4096 $KEY_FILE 32
 
+echo -n "Recalculate tags in-kernel:"
+$INTSETUP format -q $DEV --no-wipe || fail "Cannot format device."
+$INTSETUP open $DEV $DEV_NAME --integrity-recalculate || fail "Cannot activate device with journal."
+$INTSETUP dump $DEV | grep -q recalculating
+if [ $? -eq 0 ] ; then
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=1M 2>/dev/null || fail "Cannot tags recalculate in-kernel"
+	echo "[OK]"
+else
+	echo "[N/A]"
+fi
+
 cleanup

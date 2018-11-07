@@ -977,6 +977,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE (1 << 15)
 /** allow activation check including unbound keyslots (keyslots without segments) */
 #define CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY (1 << 16)
+/** dm-integrity: activate automatic recalculation */
+#define CRYPT_ACTIVATE_RECALCULATE (1 << 17)
 
 /**
  * Active device runtime attributes

@@ -54,6 +54,8 @@ static int opt_journal_crypt_key_size = 0;
 static int opt_integrity_nojournal = 0;
 static int opt_integrity_recovery = 0;
 
+static int opt_integrity_recalculate = 0;
+
 static int opt_version_mode = 0;
 
 static const char **action_argv;
@@ -299,6 +301,9 @@ static int action_open(int arg)
 	if (opt_integrity_recovery)
 		activate_flags |= CRYPT_ACTIVATE_RECOVERY;
 
+	if (opt_integrity_recalculate)
+		activate_flags |= CRYPT_ACTIVATE_RECALCULATE;
+
 	r = _read_keys(&integrity_key, &params);
 	if (r)
 		goto out;
@@ -530,6 +535,7 @@ int main(int argc, const char **argv)
 
 		{ "integrity-no-journal",       'D', POPT_ARG_NONE,  &opt_integrity_nojournal, 0, N_("Disable journal for integrity device"), NULL },
 		{ "integrity-recovery-mode",    'R', POPT_ARG_NONE,  &opt_integrity_recovery,  0, N_("Recovery mode (no journal, no tag checking)"), NULL },
+		{ "integrity-recalculate",     '\0', POPT_ARG_NONE,  &opt_integrity_recalculate,  0, N_("Recalculate initial tags automatically."), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -605,6 +611,11 @@ int main(int argc, const char **argv)
 
 	if (!strcmp(aname, "format") && opt_tag_size == 0)
 		opt_tag_size = DEFAULT_TAG_SIZE;
+
+	if (opt_integrity_recalculate && strcmp(aname, "open"))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --integrity-recalculate can be used only for open action."),
+		      poptGetInvocationName(popt_context));
 
 	if (opt_interleave_sectors < 0 || opt_journal_watermark < 0 ||
 	    opt_journal_commit_time < 0 || opt_tag_size < 0 ||
