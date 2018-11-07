@@ -39,6 +39,8 @@ static int opt_buffer_sectors = 0;
 
 static int opt_no_wipe = 0;
 
+static const char *opt_data_device = NULL;
+
 static const char *opt_integrity = DEFAULT_ALG_NAME;
 static const char *opt_integrity_key_file = NULL;
 static int opt_integrity_key_size = 0;
@@ -215,7 +217,7 @@ static int action_format(int arg)
 	if (r)
 		goto out;
 
-	r = crypt_init(&cd, action_argv[0]);
+	r = crypt_init_data_device(&cd, action_argv[0], opt_data_device);
 	if (r < 0)
 		goto out;
 
@@ -308,12 +310,13 @@ static int action_open(int arg)
 	if (r)
 		goto out;
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	if ((r = crypt_init_data_device(&cd, action_argv[0], opt_data_device)))
 		goto out;
 
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
 	if (r)
 		goto out;
+
 	r = crypt_activate_by_volume_key(cd, action_argv[1], integrity_key,
 					 opt_integrity_key_size, activate_flags);
 out:
@@ -344,7 +347,7 @@ static int action_status(int arg)
 	struct crypt_params_integrity ip = {};
 	struct crypt_device *cd = NULL;
 	char *backing_file;
-	const char *device;
+	const char *device, *metadata_device;
 	int path = 0, r = 0;
 
 	/* perhaps a path, not a dm device name */
@@ -389,11 +392,20 @@ static int action_status(int arg)
 		log_std("  tag size: %u\n", ip.tag_size);
 		log_std("  integrity: %s\n", ip.integrity ?: "(none)");
 		device = crypt_get_device_name(cd);
-		log_std("  device:  %s\n", device);
+		metadata_device = crypt_get_metadata_device_name(cd);
+		log_std("  device:  %s%s\n", device, metadata_device ? " (detached)" : "");
 		if (crypt_loop_device(device)) {
 			backing_file = crypt_loop_backing_file(device);
 			log_std("  loop:    %s\n", backing_file);
 			free(backing_file);
+		}
+		if (metadata_device) {
+			log_std("  metadata device:  %s\n", metadata_device);
+			if (crypt_loop_device(metadata_device)) {
+				backing_file = crypt_loop_backing_file(metadata_device);
+				log_std("  loop:    %s\n", backing_file);
+				free(backing_file);
+			}
 		}
 		log_std("  sector size:  %u bytes\n", crypt_get_sector_size(cd));
 		log_std("  interleave sectors: %u\n", ip.interleave_sectors);
@@ -512,6 +524,8 @@ int main(int argc, const char **argv)
 		{ "batch-mode",          'q', POPT_ARG_NONE, &opt_batch_mode,         0, N_("Do not ask for confirmation"), NULL },
 		{ "progress-frequency", '\0', POPT_ARG_INT,  &opt_progress_frequency, 0, N_("Progress line update (in seconds)"), N_("secs") },
 		{ "no-wipe",            '\0', POPT_ARG_NONE, &opt_no_wipe,            0, N_("Do not wipe device after format"), NULL },
+
+		{ "data-device",        '\0', POPT_ARG_STRING, &opt_data_device,      0, N_("Path to data device (if separated)"), N_("path") },
 
 		{ "journal-size",        'j', POPT_ARG_STRING,&opt_journal_size_str,  0, N_("Journal size"), N_("bytes") },
 		{ "interleave-sectors", '\0', POPT_ARG_INT,  &opt_interleave_sectors, 0, N_("Interleave sectors"), N_("SECTORS") },

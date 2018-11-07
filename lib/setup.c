@@ -631,7 +631,8 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 
 	log_dbg(cd, "Setting ciphertext data device to %s.", device ?: "(none)");
 
-	if (!isLUKS1(cd->type) && !isLUKS2(cd->type) && !isVERITY(cd->type)) {
+	if (!isLUKS1(cd->type) && !isLUKS2(cd->type) && !isVERITY(cd->type) &&
+	    !isINTEGRITY(cd->type)) {
 		log_err(cd, _("This operation is not supported for this device type."));
 		return  -EINVAL;
 	}
@@ -1220,6 +1221,9 @@ static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
 			cd->u.integrity.params.journal_integrity_key_size = dmd.u.integrity.journal_integrity_key->keylength;
 		if (dmd.u.integrity.journal_crypt_key)
 			cd->u.integrity.params.integrity_key_size = dmd.u.integrity.journal_crypt_key->keylength;
+
+		cd->metadata_device = dmd.u.integrity.meta_device;
+
 		integrity_type = 1;
 	}
 out:

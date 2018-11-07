@@ -64,7 +64,7 @@ int INTEGRITY_read_sb(struct crypt_device *cd, struct crypt_params_integrity *pa
 	struct superblock sb;
 	int r;
 
-	r = INTEGRITY_read_superblock(cd, crypt_data_device(cd), 0, &sb);
+	r = INTEGRITY_read_superblock(cd, crypt_metadata_device(cd), 0, &sb);
 	if (r)
 		return r;
 
@@ -204,7 +204,10 @@ int INTEGRITY_activate(struct crypt_device *cd,
 	};
 	int r;
 
-	r = INTEGRITY_data_sectors(cd, dmdi.data_device,
+	if (dmdi.data_device != crypt_metadata_device(cd))
+		dmdi.u.integrity.meta_device = crypt_metadata_device(cd);
+
+	r = INTEGRITY_data_sectors(cd, crypt_metadata_device(cd),
 				   dmdi.u.integrity.offset * SECTOR_SIZE, &dmdi.size);
 	if (r < 0)
 		return r;
@@ -227,6 +230,12 @@ int INTEGRITY_activate(struct crypt_device *cd,
 				dmdi.u.integrity.offset, NULL, &dmdi.flags);
 	if (r)
 		return r;
+
+	if (dmdi.u.integrity.meta_device) {
+		r = device_block_adjust(cd, dmdi.u.integrity.meta_device, DEV_EXCL, 0, NULL, NULL);
+		if (r)
+			return r;
+	}
 
 	r = dm_create_device(cd, name, "INTEGRITY", &dmdi, 0);
 	if (r < 0 && (dm_flags(cd, DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
@@ -260,6 +269,9 @@ int INTEGRITY_format(struct crypt_device *cd,
 	int r;
 	uuid_t tmp_uuid_bin;
 
+	if (dmdi.data_device != crypt_metadata_device(cd))
+		dmdi.u.integrity.meta_device = crypt_metadata_device(cd);
+
 	if (params) {
 		dmdi.u.integrity.journal_size = params->journal_size;
 		dmdi.u.integrity.journal_watermark = params->journal_watermark;
@@ -286,6 +298,12 @@ int INTEGRITY_format(struct crypt_device *cd,
 	}
 	if (r)
 		return r;
+
+	if (dmdi.u.integrity.meta_device) {
+		r = device_block_adjust(cd, dmdi.u.integrity.meta_device, DEV_EXCL, 0, NULL, NULL);
+		if (r)
+			return r;
+	}
 
 	/* There is no data area, we can actually use fake zeroed key */
 	if (params && params->integrity_key_size)

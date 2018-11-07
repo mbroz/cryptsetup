@@ -696,6 +696,7 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 		return NULL;
 
 	max_size = strlen(device_block_path(dmd->data_device)) +
+			(dmd->u.integrity.meta_device ? strlen(device_block_path(dmd->u.integrity.meta_device)) : 0) +
 			(dmd->u.integrity.vk ? dmd->u.integrity.vk->keylength * 2 : 0) +
 			(dmd->u.integrity.journal_integrity_key ? dmd->u.integrity.journal_integrity_key->keylength * 2 : 0) +
 			(dmd->u.integrity.journal_crypt_key ? dmd->u.integrity.journal_crypt_key->keylength * 2 : 0) +
@@ -807,6 +808,13 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 	if ((dmflags & DM_INTEGRITY_RECALC_SUPPORTED) && (flags & CRYPT_ACTIVATE_RECALCULATE)) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "recalculate ");
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
+	}
+
+	if (dmd->u.integrity.meta_device) {
+		num_options++;
+		snprintf(feature, sizeof(feature), "meta_device:%s ",
+			 device_block_path(dmd->u.integrity.meta_device));
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 
@@ -1814,7 +1822,7 @@ static int _dm_query_integrity(struct crypt_device *cd,
 	unsigned int i, features, val;
 	ssize_t len;
 	int r;
-	struct device *data_device = NULL;
+	struct device *data_device = NULL, *meta_device = NULL;
 	char *integrity = NULL, *journal_crypt = NULL, *journal_integrity = NULL;
 	struct volume_key *vk = NULL;
 
@@ -1917,6 +1925,14 @@ static int _dm_query_integrity(struct crypt_device *cd,
 					if (r < 0)
 						goto err;
 				}
+			} else if (!strncmp(arg, "meta_device:", 12) && !meta_device) {
+				if (get_flags & DM_ACTIVE_DEVICE) {
+					str = crypt_lookup_dev(&arg[12]);
+					r = device_alloc(cd, &meta_device, str);
+					free(str);
+					if (r < 0 && r != -ENOTBLK)
+						goto err;
+				}
 			} else if (!strncmp(arg, "journal_crypt:", 14) && !journal_crypt) {
 				str = &arg[14];
 				arg = strsep(&str, ":");
@@ -1952,6 +1968,8 @@ static int _dm_query_integrity(struct crypt_device *cd,
 
 	if (data_device)
 		dmd->data_device = data_device;
+	if (meta_device)
+		dmd->u.integrity.meta_device = meta_device;
 	if (integrity)
 		dmd->u.integrity.integrity = integrity;
 	if (journal_crypt)
@@ -1963,6 +1981,7 @@ static int _dm_query_integrity(struct crypt_device *cd,
 	return 0;
 err:
 	device_free(cd, data_device);
+	device_free(cd, meta_device);
 	free(integrity);
 	free(journal_crypt);
 	free(journal_integrity);

@@ -122,6 +122,8 @@ struct crypt_dm_active_device {
 
 		const char *journal_crypt;
 		struct volume_key *journal_crypt_key;
+
+		struct device *meta_device;
 	} integrity;
 	} u;
 };
