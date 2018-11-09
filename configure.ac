@@ -547,35 +547,6 @@ AC_DEFUN([CS_ABSPATH], [
 ])
 
 dnl ==========================================================================
-dnl Python bindings
-AC_ARG_ENABLE([python],
-	AS_HELP_STRING([--enable-python], [enable Python bindings]))
-
-AC_ARG_WITH([python_version],
-	AS_HELP_STRING([--with-python_version=VERSION], [required Python version [2.6]]),
-	[PYTHON_VERSION=$withval], [PYTHON_VERSION=2.6])
-
-if test "x$enable_python" = "xyes"; then
-	AM_PATH_PYTHON([$PYTHON_VERSION])
-
-	AC_PATH_PROGS([PYTHON_CONFIG], [python${PYTHON_VERSION}-config python-config], [no])
-	if test "${PYTHON_CONFIG}" = "no"; then
-		AC_MSG_ERROR([cannot find python${PYTHON_VERSION}-config or python-config in PATH])
-	fi
-
-	AC_MSG_CHECKING(for python headers using $PYTHON_CONFIG --includes)
-	PYTHON_INCLUDES=$($PYTHON_CONFIG --includes)
-	AC_MSG_RESULT($PYTHON_INCLUDES)
-	AC_SUBST(PYTHON_INCLUDES)
-
-	AC_MSG_CHECKING(for python libraries using $PYTHON_CONFIG --libs)
-	PYTHON_LIBS=$($PYTHON_CONFIG --libs)
-	AC_MSG_RESULT($PYTHON_LIBS)
-	AC_SUBST(PYTHON_LIBS)
-fi
-AM_CONDITIONAL([PYTHON_CRYPTSETUP], [test "x$enable_python" = "xyes"])
-
-dnl ==========================================================================
 CS_STR_WITH([plain-hash],   [password hashing function for plain mode], [ripemd160])
 CS_STR_WITH([plain-cipher], [cipher for plain mode], [aes])
 CS_STR_WITH([plain-mode],   [cipher mode for plain mode], [cbc-essiv:sha256])
