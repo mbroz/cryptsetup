@@ -36,7 +36,6 @@ function check_nonroot
 	[ -z "$cfg_opts" ] && return
 
 	configure_travis \
-		--enable-python \
 		--enable-cryptsetup-reencrypt \
 		--enable-internal-sse-argon2 \
 		"$cfg_opts" \
@@ -54,7 +53,6 @@ function check_root
 	[ -z "$cfg_opts" ] && return
 
     configure_travis \
-		--enable-python \
 		--enable-cryptsetup-reencrypt \
 		--enable-internal-sse-argon2 \
 		"$cfg_opts" \
@@ -73,7 +71,6 @@ function check_nonroot_compile_only
 	[ -z "$cfg_opts" ] && return
 
 	configure_travis \
-		--enable-python \
 		--enable-cryptsetup-reencrypt \
 		--enable-internal-sse-argon2 \
 		"$cfg_opts" \
@@ -87,7 +84,6 @@ function travis_install_script
 	# install some packages from Ubuntu's default sources
 	sudo apt-get -qq update
 	sudo apt-get install -qq >/dev/null \
-		python-dev \
 		sharutils \
 		libgcrypt20-dev \
 		libssl-dev \
