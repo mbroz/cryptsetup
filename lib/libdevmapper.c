@@ -900,6 +900,8 @@ out:
 	return r;
 }
 
+static int _dm_resume_device(const char *name, uint32_t flags);
+
 static int _error_device(const char *name, size_t size)
 {
 	struct dm_task *dmt;
@@ -923,7 +925,7 @@ static int _error_device(const char *name, size_t size)
 	if (!dm_task_run(dmt))
 		goto error;
 
-	if (!_dm_simple(DM_DEVICE_RESUME, name, 1)) {
+	if (_dm_resume_device(name, 0)) {
 		_dm_simple(DM_DEVICE_CLEAR, name, 0);
 		goto error;
 	}
@@ -1051,16 +1053,14 @@ int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char 
 static int _dm_create_device(struct crypt_device *cd, const char *name, const char *type,
 			     struct device *device, uint32_t flags,
 			     const char *uuid, uint64_t size,
-			     dm_target_type target, char *params, int reload)
+			     dm_target_type target, char *params)
 {
 	struct dm_task *dmt = NULL;
 	struct dm_info dmi;
 	char dev_uuid[DM_UUID_LEN] = {0};
 	const char *target_name;
 	int r = -EINVAL;
-	uint32_t read_ahead = 0;
-	uint32_t cookie = 0;
-	uint32_t dmt_flags;
+	uint32_t dmt_flags, cookie = 0, read_ahead = 0;
 	uint16_t udev_flags = DM_UDEV_DISABLE_LIBRARY_FALLBACK;
 
 	/* Only need DM_SECURE_SUPPORTED, no target specific fail matters */
@@ -1082,74 +1082,49 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 		udev_flags |= CRYPT_TEMP_UDEV_FLAGS;
 
 	/* All devices must have DM_UUID, only resize on old device is exception */
-	if (reload) {
-		if (!(dmt = dm_task_create(DM_DEVICE_RELOAD)))
-			goto out_no_removal;
+	if (!dm_prepare_uuid(cd, name, type, uuid, dev_uuid, sizeof(dev_uuid)))
+		goto out;
 
-		if (!dm_task_set_name(dmt, name))
-			goto out_no_removal;
-	} else {
-		if (!dm_prepare_uuid(cd, name, type, uuid, dev_uuid, sizeof(dev_uuid)))
-			goto out_no_removal;
+	if (!(dmt = dm_task_create(DM_DEVICE_CREATE)))
+		goto out;
 
-		if (!(dmt = dm_task_create(DM_DEVICE_CREATE)))
-			goto out_no_removal;
+	if (!dm_task_set_name(dmt, name))
+		goto out;
 
-		if (!dm_task_set_name(dmt, name))
-			goto out_no_removal;
-
-		if (!dm_task_set_uuid(dmt, dev_uuid))
-			goto out_no_removal;
-	}
+	if (!dm_task_set_uuid(dmt, dev_uuid))
+		goto out;
 
 	if ((dmt_flags & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
-		goto out_no_removal;
+		goto out;
 	if ((flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
-		goto out_no_removal;
+		goto out;
 
 	if (!dm_task_add_target(dmt, 0, size, target_name, params))
-		goto out_no_removal;
+		goto out;
 
 #ifdef DM_READ_AHEAD_MINIMUM_FLAG
 	if (device_read_ahead(device, &read_ahead) &&
 	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
-		goto out_no_removal;
+		goto out;
 #endif
-	/* do not set cookie for DM_DEVICE_RELOAD task */
-	if (!reload && _dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
-		goto out_no_removal;
-
-	if (!dm_task_run(dmt))
-		goto out_no_removal;
-
-	if (reload) {
-		dm_task_destroy(dmt);
-		if (!(dmt = dm_task_create(DM_DEVICE_RESUME)))
-			goto out;
-		if (!dm_task_set_name(dmt, name))
-			goto out;
-		if (uuid && !dm_task_set_uuid(dmt, dev_uuid))
-			goto out;
-		if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
-			goto out;
-		if (!dm_task_run(dmt))
-			goto out;
-	}
-
-	if (!dm_task_get_info(dmt, &dmi))
+	if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
 		goto out;
 
-	r = 0;
-out:
+	if (!dm_task_run(dmt))
+		goto out;
+
+	if (dm_task_get_info(dmt, &dmi))
+		r = 0;
+
 	if (_dm_use_udev()) {
 		(void)_dm_udev_wait(cookie);
 		cookie = 0;
 	}
 
-	if (r < 0 && !reload)
+	if (r < 0)
 		_dm_remove(name, 1, 0);
 
-out_no_removal:
+out:
 	if (cookie && _dm_use_udev())
 		(void)_dm_udev_wait(cookie);
 
@@ -1157,6 +1132,96 @@ out_no_removal:
 		dm_task_destroy(dmt);
 
 	dm_task_update_nodes();
+
+	/* If code just loaded target module, update versions */
+	_dm_check_versions(cd, target);
+
+	return r;
+}
+
+static int _dm_resume_device(const char *name, uint32_t flags)
+{
+	struct dm_task *dmt;
+	int r = -EINVAL;
+	uint32_t cookie = 0;
+	uint16_t udev_flags = DM_UDEV_DISABLE_LIBRARY_FALLBACK;
+
+	if (flags & CRYPT_ACTIVATE_PRIVATE)
+		udev_flags |= CRYPT_TEMP_UDEV_FLAGS;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_RESUME)))
+		return r;
+
+	if (!dm_task_set_name(dmt, name))
+		goto out;
+
+	if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
+		goto out;
+
+	if (dm_task_run(dmt))
+		r = 0;
+out:
+	if (cookie && _dm_use_udev())
+		(void)_dm_udev_wait(cookie);
+
+	dm_task_destroy(dmt);
+
+	dm_task_update_nodes();
+
+	return r;
+}
+
+static int _dm_reload_device(struct crypt_device *cd,
+			     const char *name, struct device *device,
+			     uint32_t flags, uint64_t size,
+			     dm_target_type target, const char *params)
+{
+	const char *target_name;
+	int r = -EINVAL;
+	struct dm_task *dmt = NULL;
+	uint32_t dmt_flags = 0, read_ahead = 0;
+
+	if (target == DM_CRYPT)
+		target_name = DM_CRYPT_TARGET;
+	else if (target == DM_VERITY)
+		target_name = DM_VERITY_TARGET;
+	else if (target == DM_INTEGRITY)
+		target_name = DM_INTEGRITY_TARGET;
+	else
+		return -EINVAL;
+
+	/* All devices must have DM_UUID, only resize on old device is exception */
+	if (!(dmt = dm_task_create(DM_DEVICE_RELOAD)))
+		goto out;
+
+	if (!dm_task_set_name(dmt, name))
+		goto out;
+
+	if (dm_flags(cd, target, &dmt_flags))
+		goto out;
+
+	if ((dmt_flags & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
+		goto out;
+
+	/* FIXME: resume only ?*/
+	if ((flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
+		goto out;
+
+	if (!dm_task_add_target(dmt, 0, size, target_name, params))
+		goto out;
+
+#ifdef DM_READ_AHEAD_MINIMUM_FLAG
+	if (device_read_ahead(device, &read_ahead) &&
+	    !dm_task_set_read_ahead(dmt, read_ahead, DM_READ_AHEAD_MINIMUM_FLAG))
+		goto out;
+#endif
+
+	if (dm_task_run(dmt))
+		r = 0;
+
+out:
+	if (dmt)
+		dm_task_destroy(dmt);
 
 	/* If code just loaded target module, update versions */
 	_dm_check_versions(cd, target);
@@ -1197,8 +1262,7 @@ static int check_retry(struct crypt_device *cd, uint32_t *dmd_flags, uint32_t dm
 
 int dm_create_device(struct crypt_device *cd, const char *name,
 		     const char *type,
-		     struct crypt_dm_active_device *dmd,
-		     int reload)
+		     struct crypt_dm_active_device *dmd)
 {
 	char *table_params = NULL;
 	uint32_t dmd_flags, dmt_flags;
@@ -1223,16 +1287,16 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		goto out;
 
 	r = _dm_create_device(cd, name, type, dmd->data_device, dmd_flags,
-			      dmd->uuid, dmd->size, dmd->target, table_params, reload);
+			      dmd->uuid, dmd->size, dmd->target, table_params);
 
 	if (r < 0 && dm_flags(cd, dmd->target, &dmt_flags))
 		goto out;
 
-	if (!reload && r && dmd->target == DM_CRYPT && check_retry(cd, &dmd_flags, dmt_flags)) {
+	if (r && dmd->target == DM_CRYPT && check_retry(cd, &dmd_flags, dmt_flags)) {
 		crypt_safe_free(table_params);
 		table_params = get_dm_crypt_params(dmd, dmd_flags);
 		r = _dm_create_device(cd, name, type, dmd->data_device, dmd_flags,
-				      dmd->uuid, dmd->size, dmd->target, table_params, reload);
+				      dmd->uuid, dmd->size, dmd->target, table_params);
 	}
 
 	if (r == -EINVAL &&
@@ -1259,6 +1323,46 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	}
 out:
 	crypt_safe_free(table_params);
+	dm_exit_context();
+	return r;
+}
+
+int dm_reload_device(struct crypt_device *cd, const char *name,
+		     struct crypt_dm_active_device *dmd, unsigned resume)
+{
+	char *table_params = NULL;
+	uint32_t dmt_flags;
+	int r = -EINVAL;
+
+	if (dm_init_context(cd, dmd->target))
+		return -ENOTSUP;
+
+	dm_flags(cd, dmd->target, &dmt_flags);
+
+	if (dmd->target == DM_CRYPT)
+		table_params = get_dm_crypt_params(dmd, dmd->flags);
+	else if (dmd->target == DM_VERITY)
+		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd, dmd->flags);
+	else if (dmd->target == DM_INTEGRITY)
+		table_params = get_dm_integrity_params(dmd, dmd->flags, dmt_flags);
+	else
+		return r;
+
+	r = _dm_reload_device(cd, name, dmd->data_device, dmd->flags, dmd->size,
+			      dmd->target, table_params);
+
+	if (r == -EINVAL && dmd->target == DM_CRYPT) {
+		if ((dmd->flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)) &&
+		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
+			log_err(cd, _("Requested dm-crypt performance options are not supported."));
+		if ((dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
+		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_DISCARDS_SUPPORTED))
+			log_err(cd, _("Discard/TRIM is not supported."));
+	}
+
+	if (!r && resume)
+		r = _dm_resume_device(name, dmd->flags);
+
 	dm_exit_context();
 	return r;
 }
@@ -2138,7 +2242,7 @@ int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 	}
 
 	if (!_dm_message(name, "key wipe", dmt_flags)) {
-		_dm_simple(DM_DEVICE_RESUME, name, 1);
+		_dm_resume_device(name, 0);
 		r = -EINVAL;
 		goto out;
 	}
@@ -2180,7 +2284,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 		hex_key(&msg[8], vk->keylength, vk->key);
 
 	if (!_dm_message(name, msg, dmt_flags) ||
-	    !_dm_simple(DM_DEVICE_RESUME, name, 1)) {
+	    _dm_resume_device(name, 0)) {
 		r = -EINVAL;
 		goto out;
 	}

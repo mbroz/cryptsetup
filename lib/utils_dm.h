@@ -139,8 +139,9 @@ int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint
 int dm_query_device(struct crypt_device *cd, const char *name,
 		    uint32_t get_flags, struct crypt_dm_active_device *dmd);
 int dm_create_device(struct crypt_device *cd, const char *name,
-		     const char *type, struct crypt_dm_active_device *dmd,
-		     int reload);
+		     const char *type, struct crypt_dm_active_device *dmd);
+int dm_reload_device(struct crypt_device *cd, const char *name,
+		     struct crypt_dm_active_device *dmd, unsigned resume);
 int dm_suspend_device(struct crypt_device *cd, const char *name);
 int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name);
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,

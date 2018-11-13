@@ -517,7 +517,7 @@ int PLAIN_activate(struct crypt_device *cd,
 	log_dbg(cd, "Trying to activate PLAIN device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
-	r = dm_create_device(cd, name, CRYPT_PLAIN, &dmd, 0);
+	r = dm_create_device(cd, name, CRYPT_PLAIN, &dmd);
 
 	free(dm_cipher);
 	return r;
@@ -2211,7 +2211,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		else if (isLUKS2(cd->type))
 			r = LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0, 0);
 		if (!r)
-			r = dm_create_device(cd, name, cd->type, &dmd, 1);
+			r = dm_reload_device(cd, name, &dmd, 1);
 	}
 out:
 	if (dmd.target == DM_CRYPT) {

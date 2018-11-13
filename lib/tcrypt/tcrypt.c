@@ -846,7 +846,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 
 		log_dbg(cd, "Trying to activate TCRYPT device %s using cipher %s.",
 			dm_name, dmd.u.crypt.cipher);
-		r = dm_create_device(cd, dm_name, CRYPT_TCRYPT, &dmd, 0);
+		r = dm_create_device(cd, dm_name, CRYPT_TCRYPT, &dmd);
 
 		device_free(cd, device);
 		device = NULL;

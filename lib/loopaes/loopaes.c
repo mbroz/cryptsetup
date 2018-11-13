@@ -239,7 +239,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 	log_dbg(cd, "Trying to activate loop-AES device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
-	r = dm_create_device(cd, name, CRYPT_LOOPAES, &dmd, 0);
+	r = dm_create_device(cd, name, CRYPT_LOOPAES, &dmd);
 
 	if (r < 0 && !dm_flags(cd, DM_CRYPT, &dmc_flags) &&
 	    (dmc_flags & req_flags) != req_flags) {

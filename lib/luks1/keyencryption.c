@@ -110,7 +110,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 		return -EACCES;
 	}
 
-	r = dm_create_device(ctx, name, "TEMP", &dmd, 0);
+	r = dm_create_device(ctx, name, "TEMP", &dmd);
 	if (r < 0) {
 		if (r != -EACCES && r != -ENOTSUP)
 			_error_hint(ctx, device_path(dmd.data_device),

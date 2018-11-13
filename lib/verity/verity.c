@@ -303,7 +303,7 @@ int VERITY_activate(struct crypt_device *cd,
 			return r;
 	}
 
-	r = dm_create_device(cd, name, CRYPT_VERITY, &dmd, 0);
+	r = dm_create_device(cd, name, CRYPT_VERITY, &dmd);
 	if (r < 0 && (dm_flags(cd, DM_VERITY, &dmv_flags) || !(dmv_flags & DM_VERITY_SUPPORTED))) {
 		log_err(cd, _("Kernel doesn't support dm-verity mapping."));
 		return -ENOTSUP;
