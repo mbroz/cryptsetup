@@ -892,7 +892,11 @@ actions.
 .B "\-\-offset, \-o <number of 512 byte sectors>"
 Start offset in the backend device in 512-byte sectors.
 This option is only relevant for the \fIopen\fR action with plain
-or loopaes device types.
+or loopaes device types or for LUKS devices in \fIluksFormat\fR.
+
+For LUKS, the \-\-offset option sets the data offset (payload) of data
+device and must be be aligned to 4096-byte sectors (must be multiple of 8).
+This option cannot be combined with \-\-align\-payload option.
 .TP
 .B "\-\-skip, \-p <number of 512 byte sectors>"
 Start offset used in IV calculation in 512-byte sectors

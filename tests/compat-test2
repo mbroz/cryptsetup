@@ -209,6 +209,17 @@ export LANG=C
 [ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."
 [ -d "$LOCK_DIR" ] || skip "WARNING: LUKS2 locking directory ($LOCK_DIR) is missing, test skipped."
 
+prepare "[1] Data offset" wipe
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --offset 1 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --offset 16385 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --offset 32 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --align-payload 16384 --offset 16384 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --offset 16384 || fail
+$CRYPTSETUP -q luksDump  $LOOPDEV | grep -q "offset: $((512 * 16384)) \[bytes\]" || fail
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --sector-size 1024 --offset 16384 || fail
+$CRYPTSETUP -q luksDump  $LOOPDEV | grep -q "offset: $((512 * 16384)) \[bytes\]" || fail
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --offset 80000 2>/dev/null && fail
+
 prepare "[2] Sector size and old payload alignment" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --sector-size  511 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --sector-size  256 2>/dev/null && fail

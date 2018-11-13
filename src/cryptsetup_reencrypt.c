@@ -78,6 +78,7 @@ struct reenc_ctx {
 	uint64_t device_size_org_real;
 	uint64_t device_offset;
 	uint64_t device_shift;
+	uint64_t data_offset;
 
 	unsigned int stained:1;
 	unsigned int in_progress:1;
@@ -590,6 +591,12 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 		goto out;
 	}
 
+	r = crypt_set_data_offset(cd_new, rc->data_offset);
+	if (r) {
+		log_err(_("Failed to set data offset."));
+		goto out;
+	}
+
 	r = crypt_format(cd_new, type, cipher, cipher_mode, uuid, key, key_size, params);
 	check_signal(&r);
 	if (r < 0)
@@ -731,14 +738,12 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	if (rc->reencrypt_mode == DECRYPT)
 		goto out;
 
-	if ((r = create_empty_header(rc->header_file_new, rc->header_file_org,
-		crypt_get_data_offset(cd))))
+	rc->data_offset = crypt_get_data_offset(cd) + ROUND_SECTOR(opt_reduce_size);
+
+	if ((r = create_empty_header(rc->header_file_new, rc->header_file_org, rc->data_offset)))
 		goto out;
 
 	params.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
-	params.data_alignment = crypt_get_data_offset(cd);
-	params.data_alignment += ROUND_SECTOR(opt_reduce_size);
-	params2.data_alignment = params.data_alignment;
 	params2.data_device = params.data_device = rc->device;
 	params2.sector_size = crypt_get_sector_size(cd);
 

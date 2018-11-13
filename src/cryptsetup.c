@@ -1043,6 +1043,12 @@ static int action_luksFormat(void)
 		return r;
 	}
 
+	if (opt_offset) {
+		r = crypt_set_data_offset(cd, opt_offset);
+		if (r < 0)
+			goto out;
+	}
+
 	/* Print all present signatures in read-only mode */
 	r = tools_detect_signatures(header_device, 0, &signatures);
 	if (r < 0)
@@ -2638,16 +2644,21 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Option --align-payload is allowed only for luksFormat."),
 		      poptGetInvocationName(popt_context));
 
+	if (opt_align_payload && opt_offset)
+		usage(popt_context, EXIT_FAILURE, _("Option --align-payload and --offset cannot be combined."),
+		      poptGetInvocationName(popt_context));
+
 	if (opt_skip && (strcmp(aname, "open") ||
 	    (strcmp(opt_type, "plain") && strcmp(opt_type, "loopaes"))))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --skip is supported only for open of plain and loopaes devices.\n"),
 		poptGetInvocationName(popt_context));
 
-	if (opt_offset && (strcmp(aname, "open") ||
-	    (strcmp(opt_type, "plain") && strcmp(opt_type, "loopaes"))))
+	if (opt_offset && ((strcmp(aname, "open") && strcmp(aname, "luksFormat")) ||
+	    (!strcmp(aname, "open") && strcmp(opt_type, "plain") && strcmp(opt_type, "loopaes")) ||
+	    (!strcmp(aname, "luksFormat") && strncmp(opt_type, "luks", 4))))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --offset is supported only for open of plain and loopaes devices.\n"),
+		_("Option --offset is supported only for open of plain and loopaes devices and for luksFormat.\n"),
 		poptGetInvocationName(popt_context));
 
 	if ((opt_tcrypt_hidden || opt_tcrypt_system || opt_tcrypt_backup) && strcmp(aname, "tcryptDump") &&
