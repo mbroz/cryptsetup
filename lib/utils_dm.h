@@ -79,7 +79,6 @@ struct crypt_dm_active_device {
 	struct {
 		const char *cipher;
 		const char *integrity;
-		char *key_description;
 
 		/* Active key for device */
 		struct volume_key *vk;
