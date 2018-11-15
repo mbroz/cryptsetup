@@ -134,6 +134,9 @@ int device_block_adjust(struct crypt_device *cd,
 			uint32_t *flags);
 size_t size_round_up(size_t size, size_t block);
 
+int create_or_reload_device(struct crypt_device *cd, const char *name,
+		     const char *type, struct crypt_dm_active_device *dmd);
+
 /* Receive backend devices from context helpers */
 struct device *crypt_metadata_device(struct crypt_device *cd);
 struct device *crypt_data_device(struct crypt_device *cd);

@@ -1934,7 +1934,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	r = device_block_adjust(cd, dmd.data_device, device_check,
 				 dmd.u.crypt.offset, &dmd.size, &dmd.flags);
 	if (!r)
-		r = dm_create_device(cd, name, CRYPT_LUKS2, &dmd);
+		r = create_or_reload_device(cd, name, CRYPT_LUKS2, &dmd);
 
 	if (r < 0 && dmd.u.crypt.integrity)
 		dm_remove_device(cd, dm_int_name, 0);

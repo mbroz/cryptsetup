@@ -1336,6 +1336,9 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 	else
 		return r;
 
+	if (!table_params)
+		return -EINVAL;
+
 	r = _dm_reload_device(cd, name, dmd->data_device, dmd->flags, dmd->size,
 			      dmd->target, table_params);
 

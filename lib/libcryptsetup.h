@@ -1033,6 +1033,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY (1 << 16)
 /** dm-integrity: activate automatic recalculation */
 #define CRYPT_ACTIVATE_RECALCULATE (1 << 17)
+/** reactivate existing and update flags, input only */
+#define CRYPT_ACTIVATE_REFRESH	(1 << 18)
 
 /**
  * Active device runtime attributes

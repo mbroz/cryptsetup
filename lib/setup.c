@@ -517,7 +517,7 @@ int PLAIN_activate(struct crypt_device *cd,
 	log_dbg(cd, "Trying to activate PLAIN device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
-	r = dm_create_device(cd, name, CRYPT_PLAIN, &dmd);
+	r = create_or_reload_device(cd, name, CRYPT_PLAIN, &dmd);
 
 	free(dm_cipher);
 	return r;
@@ -2129,6 +2129,178 @@ int crypt_repair(struct crypt_device *cd,
 	return r;
 }
 
+/* compare volume keys */
+static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only, struct volume_key *tvk, unsigned tkeyring_only)
+{
+	if (!svk && !tvk)
+		return 0;
+	else if (!svk || !tvk)
+		return 1;
+
+	if (svk->keylength != tvk->keylength)
+		return 1;
+
+	if (!skeyring_only && !tkeyring_only)
+		return memcmp(svk->key, tvk->key, svk->keylength);
+
+	return 0;
+}
+
+/* compare two strings (allows NULL) */
+static int _strcmp_null(const char *a, const char *b)
+{
+	if (!a && !b)
+		return 0;
+	else if (!a || !b)
+		return 1;
+	return strcmp(a, b);
+}
+
+static int _compare_crypt_devices(struct crypt_device *cd,
+			       const struct crypt_dm_active_device *src,
+			       const struct crypt_dm_active_device *tgt)
+{
+	if (!tgt->uuid) {
+		log_dbg(cd, "Missing device uuid in target device.");
+		return -EINVAL;
+	}
+
+	/* UUID checks */
+	if (strncmp(cd->type, tgt->uuid, strlen(cd->type))) {
+		log_dbg(cd, "Unexpected uuid prefix %s in target device.", tgt->uuid);
+		return -EINVAL;
+	}
+
+	/* Only LUKS devices support full UUID string */
+	if (isLUKS(cd->type) && (!src->uuid || crypt_uuid_cmp(tgt->uuid, src->uuid))) {
+		log_dbg(cd, "UUID mismatch.");
+		return -EINVAL;
+	}
+
+	/* for crypt devices keys are mandatory */
+	if (!src->u.crypt.vk || !tgt->u.crypt.vk)
+		return -EINVAL;
+
+	if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->flags & CRYPT_ACTIVATE_KEYRING_KEY)) {
+		log_dbg(cd, "Keys in context and target device do not match.");
+		return -EINVAL;
+	}
+
+	/* CIPHER checks */
+	if (!src->u.crypt.cipher || !tgt->u.crypt.cipher)
+		return -EINVAL;
+	if (strcmp(src->u.crypt.cipher, tgt->u.crypt.cipher)) {
+		log_dbg(cd, "Cipher specs do not match.");
+		return -EINVAL;
+	}
+	if (_strcmp_null(src->u.crypt.integrity, tgt->u.crypt.integrity)) {
+		log_dbg(cd, "Integrity parameters do not match.");
+		return -EINVAL;
+	}
+
+	if (src->u.crypt.offset      != tgt->u.crypt.offset ||
+	    src->u.crypt.sector_size != tgt->u.crypt.sector_size ||
+	    src->u.crypt.iv_offset   != tgt->u.crypt.iv_offset ||
+	    src->u.crypt.tag_size    != tgt->u.crypt.tag_size) {
+		log_dbg(cd, "Integer parameters do not match.");
+		return -EINVAL;
+	}
+
+	if (!device_is_identical(src->data_device, tgt->data_device)) {
+		log_dbg(cd, "Data devices do not match.");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int _compare_dm_devices(struct crypt_device *cd,
+			       const struct crypt_dm_active_device *src,
+			       const struct crypt_dm_active_device *tgt)
+{
+	/* target types must match */
+	if (src->target != tgt->target) {
+		log_dbg(cd, "type mismatch.");
+		return -EINVAL;
+	}
+
+	switch (src->target) {
+	case DM_CRYPT:
+		return _compare_crypt_devices(cd, src, tgt);
+	default:
+			return -ENOTSUP;
+	}
+}
+
+static int _reload_device(struct crypt_device *cd, const char *name,
+			  struct crypt_dm_active_device *sdmd)
+{
+	int r;
+	struct crypt_dm_active_device tdmd = {};
+
+	if (!cd || !cd->type || !name || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
+		return -EINVAL;
+
+	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
+				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
+				  DM_ACTIVE_CRYPT_KEY, &tdmd);
+	if (r < 0) {
+		log_err(cd, _("Device %s is not active."), name);
+		return -EINVAL;
+	}
+
+	if (tdmd.target != DM_CRYPT || tdmd.u.crypt.tag_size) {
+		r = -ENOTSUP;
+		log_err(cd, _("Unsupported parameters on device %s."), name);
+		goto out;
+	}
+
+	r = _compare_dm_devices(cd, sdmd, &tdmd);
+	if (r) {
+		log_err(cd, _("Mismatching parameters on device %s."), name);
+		goto out;
+	}
+
+	/* Changing read only flag for active device makes no sense */
+	if (tdmd.flags & CRYPT_ACTIVATE_READONLY)
+		sdmd->flags |= CRYPT_ACTIVATE_READONLY;
+	else
+		sdmd->flags &= ~CRYPT_ACTIVATE_READONLY;
+
+	if (sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+		r = crypt_volume_key_set_description(tdmd.u.crypt.vk, sdmd->u.crypt.vk->key_description);
+		if (r)
+			goto out;
+	} else {
+		crypt_free_volume_key(tdmd.u.crypt.vk);
+		tdmd.u.crypt.vk = crypt_alloc_volume_key(sdmd->u.crypt.vk->keylength, sdmd->u.crypt.vk->key);
+		if (!tdmd.u.crypt.vk) {
+			r = -ENOMEM;
+			goto out;
+		}
+	}
+
+	r = device_block_adjust(cd, sdmd->data_device, DEV_OK,
+				sdmd->u.crypt.offset, &sdmd->size, NULL);
+	if (r)
+		goto out;
+
+	tdmd.flags = sdmd->flags;
+	tdmd.size = sdmd->size;
+
+	r = dm_reload_device(cd, name, &tdmd, 1);
+out:
+	if (tdmd.target == DM_CRYPT) {
+		crypt_free_volume_key(tdmd.u.crypt.vk);
+		free(CONST_CAST(void*)tdmd.u.crypt.cipher);
+		free(CONST_CAST(void*)tdmd.u.crypt.integrity);
+	}
+	device_free(cd, tdmd.data_device);
+	free(CONST_CAST(void*)tdmd.uuid);
+
+	return r;
+}
+
 int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 {
 	struct crypt_dm_active_device dmd = {};
@@ -3008,6 +3180,30 @@ static int _check_header_data_overlap(struct crypt_device *cd, const char *name)
 	return 0;
 }
 
+int create_or_reload_device(struct crypt_device *cd, const char *name,
+		     const char *type, struct crypt_dm_active_device *dmd)
+{
+	int r;
+
+	if (!type)
+		return -EINVAL;
+
+	r = dm_status_device(cd, name);
+	if (r >= 0 && !(dmd->flags & CRYPT_ACTIVATE_REFRESH))
+		return -EBUSY;
+	if (r < 0 && r != -ENODEV)
+		return r;
+	if (r < 0)
+		dmd->flags &= ~CRYPT_ACTIVATE_REFRESH;
+
+	if (dmd->flags &= ~CRYPT_ACTIVATE_REFRESH)
+		r = _reload_device(cd, name, dmd);
+	else
+		r = dm_create_device(cd, name, type, dmd);
+
+	return r;
+}
+
 /*
  * Activation/deactivation of a device
  */
@@ -3106,7 +3302,7 @@ static int _activate_loopaes(struct crypt_device *cd,
 	return r;
 }
 
-static int _activate_check_status(struct crypt_device *cd, const char *name)
+static int _activate_check_status(struct crypt_device *cd, const char *name, unsigned reload)
 {
 	crypt_status_info ci;
 
@@ -3117,7 +3313,7 @@ static int _activate_check_status(struct crypt_device *cd, const char *name)
 	if (ci == CRYPT_INVALID) {
 		log_err(cd, _("Cannot use device %s, name is invalid or still in use."), name);
 		return -EINVAL;
-	} else if (ci >= CRYPT_ACTIVE) {
+	} else if (ci >= CRYPT_ACTIVE && !reload) {
 		log_err(cd, _("Device %s already exists."), name);
 		return -EEXIST;
 	}
@@ -3135,14 +3331,14 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 {
 	int r;
 
-	if (!cd || !passphrase)
+	if (!cd || !passphrase || (!name && (flags & CRYPT_ACTIVATE_REFRESH)))
 		return -EINVAL;
 
 	log_dbg(cd, "%s volume %s [keyslot %d] using passphrase.",
 		name ? "Activating" : "Checking", name ?: "passphrase",
 		keyslot);
 
-	r = _activate_check_status(cd, name);
+	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
 	if (r < 0)
 		return r;
 
@@ -3168,7 +3364,7 @@ int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	log_dbg(cd, "%s volume %s [keyslot %d] using keyfile %s.",
 		name ? "Activating" : "Checking", name ?: "passphrase", keyslot, keyfile);
 
-	r = _activate_check_status(cd, name);
+	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
 	if (r < 0)
 		return r;
 
@@ -3227,7 +3423,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	log_dbg(cd, "%s volume %s by volume key.", name ? "Activating" : "Checking",
 		name ?: "");
 
-	r = _activate_check_status(cd, name);
+	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
 	if (r < 0)
 		return r;
 
@@ -4726,7 +4922,7 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = _activate_check_status(cd, name);
+	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
 	if (r < 0)
 		return r;
 
