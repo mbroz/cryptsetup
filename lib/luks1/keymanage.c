@@ -1157,7 +1157,6 @@ int LUKS1_activate(struct crypt_device *cd,
 		   uint32_t flags)
 {
 	int r;
-	char *dm_cipher = NULL;
 	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
@@ -1166,7 +1165,7 @@ int LUKS1_activate(struct crypt_device *cd,
 		.size   = 0,
 		.data_device = crypt_data_device(cd),
 		.u.crypt = {
-			.cipher = NULL,
+			.cipher = crypt_get_cipher_spec(cd),
 			.vk     = vk,
 			.offset = crypt_get_data_offset(cd),
 			.iv_offset = 0,
@@ -1184,14 +1183,8 @@ int LUKS1_activate(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	r = asprintf(&dm_cipher, "%s-%s", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
-	if (r < 0)
-		return -ENOMEM;
-
-	dmd.u.crypt.cipher = dm_cipher;
 	r = create_or_reload_device(cd, name, CRYPT_LUKS1, &dmd);
 
-	free(dm_cipher);
 	return r;
 }
 

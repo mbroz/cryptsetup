@@ -87,6 +87,7 @@ int verify_pbkdf_params(struct crypt_device *cd,
 int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 				   struct crypt_pbkdf_type *pbkdf,
 				   size_t volume_key_size);
+const char *crypt_get_cipher_spec(struct crypt_device *cd);
 
 /* Device backend */
 struct device;
