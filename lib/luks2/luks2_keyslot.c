@@ -123,6 +123,10 @@ int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd)
 	if (crypt_cipher_wrapped_key(cipher))
 		return 1;
 
+	/* Check if crypto backend can use the cipher */
+	if (crypt_cipher_blocksize(cipher) < 0)
+		return 1;
+
 	return 0;
 }
 
