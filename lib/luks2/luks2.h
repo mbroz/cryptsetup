@@ -331,6 +331,9 @@ int LUKS2_generate_hdr(
 	unsigned int alignOffset,
 	int detached_metadata_device);
 
+int LUKS2_check_metadata_area_size(uint64_t metadata_size);
+int LUKS2_check_keyslots_area_size(uint64_t keyslots_size);
+
 int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	struct luks2_hdr *hdr);
 
