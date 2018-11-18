@@ -90,6 +90,11 @@ static const char *opt_label = NULL;
 static const char *opt_subsystem = NULL;
 static int opt_unbound = 0;
 
+static const char *opt_luks2_metadata_size_str = NULL;
+static uint64_t opt_luks2_metadata_size = 0;
+static const char *opt_luks2_keyslots_size_str = NULL;
+static uint64_t opt_luks2_keyslots_size = 0;
+
 static const char **action_argv;
 static int action_argc;
 static const char *null_action_argv[] = {NULL, NULL};
@@ -989,6 +994,11 @@ static int action_luksFormat(void)
 			log_err(_("Integrity option can be used only for LUKS2 format."));
 			return -EINVAL;
 		}
+
+		if (opt_luks2_keyslots_size || opt_luks2_metadata_size) {
+			log_err(_("Unsupported LUKS2 metadata size options."));
+			return -EINVAL;
+		}
 	} else
 		return -EINVAL;
 
@@ -1041,6 +1051,14 @@ static int action_luksFormat(void)
 		if (opt_header_device)
 			log_err(_("Cannot use %s as on-disk header."), header_device);
 		return r;
+	}
+
+	if (opt_luks2_keyslots_size || opt_luks2_metadata_size) {
+		r = crypt_set_metadata_size(cd, opt_luks2_metadata_size, opt_luks2_keyslots_size);
+		if (r < 0) {
+			log_err(_("Unsupported LUKS2 metadata size options."));
+			goto out;
+		}
 	}
 
 	if (opt_offset) {
@@ -2406,6 +2424,8 @@ int main(int argc, const char **argv)
 		{ "subsystem",	       '\0', POPT_ARG_STRING, &opt_subsystem,           0, N_("Set subsystem label for the LUKS2 device"), NULL },
 		{ "unbound",           '\0', POPT_ARG_NONE, &opt_unbound,               0, N_("Create unbound (no assigned data segment) LUKS2 keyslot"), NULL },
 		{ "json-file",	       '\0', POPT_ARG_STRING, &opt_json_file,           0, N_("Read or write the json from or to a file"), NULL },
+		{ "luks2-metadata-size",'\0',POPT_ARG_STRING,&opt_luks2_metadata_size_str,0,N_("LUKS2 header metadata area size"), N_("bytes") },
+		{ "luks2-keyslots-size",'\0',POPT_ARG_STRING,&opt_luks2_keyslots_size_str,0,N_("LUKS2 header keyslots area size"), N_("bytes") },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -2642,6 +2662,19 @@ int main(int argc, const char **argv)
 
 	if (opt_align_payload && strcmp(aname, "luksFormat"))
 		usage(popt_context, EXIT_FAILURE, _("Option --align-payload is allowed only for luksFormat."),
+		      poptGetInvocationName(popt_context));
+
+	if ((opt_luks2_metadata_size_str || opt_luks2_keyslots_size_str) && strcmp(aname, "luksFormat"))
+		usage(popt_context, EXIT_FAILURE, _("Options --luks2-metadata-size and --opt-luks2-keyslots-size "
+		"are allowed only for luksFormat with LUKS2."),
+		      poptGetInvocationName(popt_context));
+	if (opt_luks2_metadata_size_str &&
+	    tools_string_to_size(NULL, opt_luks2_metadata_size_str, &opt_luks2_metadata_size))
+		usage(popt_context, EXIT_FAILURE, _("Invalid LUKS2 metadata size specification."),
+		      poptGetInvocationName(popt_context));
+	if (opt_luks2_keyslots_size_str &&
+	    tools_string_to_size(NULL, opt_luks2_keyslots_size_str, &opt_luks2_keyslots_size))
+		usage(popt_context, EXIT_FAILURE, _("Invalid LUKS2 keyslots size specification."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_align_payload && opt_offset)

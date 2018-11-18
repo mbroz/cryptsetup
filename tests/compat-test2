@@ -881,5 +881,20 @@ for mda in 16 32 64 128 256 512 1024 2048 4096 ; do
 done
 echo
 
+prepare "[40] LUKS2 metadata areas" wipe
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks1 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=128k 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=127k 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=127k --luks2-keyslots-size=128k 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=128M 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=128k || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --key-size 256 --luks2-metadata-size=128k || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "4161536 \[bytes\]" || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-keyslots-size=128k || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Metadata area:" | grep -q "16384 \[bytes\]" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
+
 remove_mapping
 exit 0

@@ -223,7 +223,8 @@ For LUKS2, additional \fB<options>\fR can be
 [\-\-integrity, \-\-integrity\-no\-wipe, \-\-sector\-size,
 \-\-label, \-\-subsystem,
 \-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel,
-\-\-disable\-locks, \-\-disable\-keyring].
+\-\-disable\-locks, \-\-disable\-keyring.
+\-\-luks2\-metadata\-size, \-\-luks2\-keyslots\-size].
 
 \fBWARNING:\fR Doing a luksFormat on an existing LUKS container will
 make all data the old container permanently irretrievable unless
@@ -1184,6 +1185,20 @@ For native AEAD modes, also enable "User-space interface for AEAD cipher algorit
 in "Cryptographic API" section (CONFIG_CRYPTO_USER_API_AEAD .config option).
 
 For more info, see \fIAUTHENTICATED DISK ENCRYPTION\fR section.
+.TP
+.B "\-\-luks2\-metadata\-size <size>"
+This option can be used to enlarge the LUKS2 metadata (JSON) area.
+The size includes 4096 bytes for binary metadata (usable JSON area is smaller
+of the binary area).
+According to LUKS2 specification, only these values are valid:
+16, 32, 64, 128, 256, 512, 1024, 2048 and 4096 kB
+The <size> can be specified with unit suffix (for example 128k).
+.TP
+.B "\-\-luks2\-keyslots\-size <size>"
+This option can be used to set specific size of the LUKS2 binary keyslot area
+(key material is encrypted there). The value must be aligned to multiple
+of 4096 bytes with maximum size 128MB.
+The <size> can be specified with unit suffix (for example 128k).
 .TP
 .B "\-\-integrity\-no\-journal"
 Activate device with integrity protection without using data journal (direct
