@@ -726,30 +726,18 @@ static int hdr_validate_digests(json_object *hdr_jobj)
 }
 
 /* requires keyslots and segments sections being already validated */
-static int validate_keyslots_size(json_object *hdr_jobj, json_object *jobj_keyslots_size)
+static int validate_keyslots_size(json_object *hdr_jobj, uint64_t metadata_size, uint64_t keyslots_size)
 {
 	json_object *jobj_keyslots, *jobj, *jobj1;
-	uint64_t keyslots_size, segment_offset, keyslots_area_sum = 0;
-
-	if (!json_str_to_uint64(jobj_keyslots_size, &keyslots_size))
-		return 1;
-
-	if (MISALIGNED_4K(keyslots_size)) {
-		log_dbg("keyslots_size is not 4 KiB aligned");
-		return 1;
-	}
-
-	if (keyslots_size > LUKS2_MAX_KEYSLOTS_SIZE) {
-		log_dbg("keyslots_size is too large. The cap is %" PRIu64 " bytes", (uint64_t) LUKS2_MAX_KEYSLOTS_SIZE);
-		return 1;
-	}
+	uint64_t segment_offset, keyslots_area_sum = 0;
 
 	json_object_object_get_ex(hdr_jobj, "segments", &jobj);
 	segment_offset = get_first_data_offset(jobj, "crypt");
 	if (segment_offset &&
 	    (segment_offset < keyslots_size ||
-	     (segment_offset - keyslots_size) < (2 * LUKS2_HDR_16K_LEN))) {
-		log_dbg("keyslots_size is too large %" PRIu64 " (bytes). Data offset: %" PRIu64 ", keyslots offset: %d", keyslots_size, segment_offset, 2 * LUKS2_HDR_16K_LEN);
+	     (segment_offset - keyslots_size) < (2 * metadata_size))) {
+		log_dbg("keyslots_size is too large %" PRIu64 " (bytes). Data offset: %" PRIu64
+			", keyslots offset: %" PRIu64, keyslots_size, segment_offset, 2 * metadata_size);
 		return 1;
 	}
 
@@ -763,7 +751,8 @@ static int validate_keyslots_size(json_object *hdr_jobj, json_object *jobj_keysl
 	}
 
 	if (keyslots_area_sum > keyslots_size) {
-		log_dbg("Sum of all keyslot area sizes (%" PRIu64 ") is greater than value in config section %" PRIu64, keyslots_area_sum, keyslots_size);
+		log_dbg("Sum of all keyslot area sizes (%" PRIu64 ") is greater than value in config section %"
+			PRIu64, keyslots_area_sum, keyslots_size);
 		return 1;
 	}
 
@@ -774,7 +763,7 @@ static int hdr_validate_config(json_object *hdr_jobj)
 {
 	json_object *jobj_config, *jobj, *jobj1;
 	int i;
-	uint64_t json_size;
+	uint64_t json_size, keyslots_size;
 
 	if (!json_object_object_get_ex(hdr_jobj, "config", &jobj_config)) {
 		log_dbg("Missing config section.");
@@ -785,21 +774,21 @@ static int hdr_validate_config(json_object *hdr_jobj)
 	    !json_str_to_uint64(jobj, &json_size))
 		return 1;
 
-	/* currently it's hardcoded */
-	if (json_size != (LUKS2_HDR_16K_LEN - LUKS2_HDR_BIN_LEN)) {
-		log_dbg("Invalid json_size %" PRIu64, json_size);
+	if (!(jobj = json_contains(jobj_config, "section", "Config", "keyslots_size", json_type_string)) ||
+	    !json_str_to_uint64(jobj, &keyslots_size))
+		return 1;
+
+	if (LUKS2_check_metadata_area_size(json_size + LUKS2_HDR_BIN_LEN)) {
+		log_dbg("Unsupported LUKS2 header size (%" PRIu64 ").", json_size + LUKS2_HDR_BIN_LEN);
 		return 1;
 	}
 
-	if (MISALIGNED_4K(json_size)) {
-		log_dbg("Json area is not properly aligned to 4 KiB.");
+	if (LUKS2_check_keyslots_area_size(keyslots_size)) {
+		log_dbg("Unsupported LUKS2 keyslots size (%" PRIu64 ").", keyslots_size);
 		return 1;
 	}
 
-	if (!(jobj = json_contains(jobj_config, "section", "Config", "keyslots_size", json_type_string)))
-		return 1;
-
-	if (validate_keyslots_size(hdr_jobj, jobj))
+	if (validate_keyslots_size(hdr_jobj, json_size + LUKS2_HDR_BIN_LEN, keyslots_size))
 		return 1;
 
 	/* Flags array is optional */

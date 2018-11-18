@@ -388,11 +388,6 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 		return -EINVAL;
 	}
 
-	if (hdr->hdr_size != LUKS2_HDR_16K_LEN) {
-		log_dbg("Unsupported LUKS2 header size (%zu).", hdr->hdr_size);
-		return -EINVAL;
-	}
-
 	r = LUKS2_check_device_size(cd, crypt_metadata_device(cd), LUKS2_hdr_and_areas_size(hdr->jobj), 1);
 	if (r)
 		return r;
