@@ -1,9 +1,17 @@
 #!/bin/bash
 
-# all in 512 bytes blocks
-# LUKS2 with 16KiB header
-LUKS2_HDR_SIZE=32 # 16 KiB
-LUKS2_BIN_HDR_SIZE=8 # 4096 B
+# all in 512 bytes blocks (including binary hdr (4KiB))
+LUKS2_HDR_SIZE=32		#  16 KiB
+LUKS2_HDR_SIZE_32K=64		#  32 KiB
+LUKS2_HDR_SIZE_64K=128		#  64 KiB
+LUKS2_HDR_SIZE_128K=256		# 128 KiB
+LUKS2_HDR_SIZE_256K=512		# 256 KiB
+LUKS2_HDR_SIZE_512K=1024	# 512 KiB
+LUKS2_HDR_SIZE_1M=2048		#   1 MiB
+LUKS2_HDR_SIZE_2M=4096		#   2 MiB
+LUKS2_HDR_SIZE_4M=8192		#   4 MiB
+
+LUKS2_BIN_HDR_SIZE=8		#   4 KiB
 LUKS2_JSON_SIZE=$((LUKS2_HDR_SIZE-LUKS2_BIN_HDR_SIZE))
 
 LUKS2_BIN_HDR_CHKS_OFFSET=0x1C0
@@ -30,57 +38,88 @@ function test_img_name()
 	echo $str
 }
 
+# read primary bin hdr
+# 1:from 2:to
 function read_luks2_bin_hdr0()
 {
 	_dd if=$1 of=$2 bs=512 count=$LUKS2_BIN_HDR_SIZE
 }
 
+# read primary json area
+# 1:from 2:to 3:[json only size (defaults to 12KiB)]
 function read_luks2_json0()
 {
-	_dd if=$1 of=$2 bs=512 skip=$LUKS2_BIN_HDR_SIZE count=$LUKS2_JSON_SIZE
+	local _js=${4:-$LUKS2_JSON_SIZE}
+	local _js=$((_js*512/4096))
+	_dd if=$1 of=$2 bs=4096 skip=1 count=$_js
 }
 
+# read secondary bin hdr
+# 1:from 2:to 3:[metadata size (defaults to 16KiB)]
 function read_luks2_bin_hdr1()
 {
-	_dd if=$1 of=$2 skip=$LUKS2_HDR_SIZE bs=512 count=$LUKS2_BIN_HDR_SIZE
+	_dd if=$1 of=$2 skip=${3:-$LUKS2_HDR_SIZE} bs=512 count=$LUKS2_BIN_HDR_SIZE
 }
 
+# read secondary json area
+# 1:from 2:to 3:[json only size (defaults to 12KiB)]
 function read_luks2_json1()
 {
-	_dd if=$1 of=$2 bs=512 skip=$((LUKS2_BIN_HDR_SIZE+LUKS2_HDR_SIZE)) count=$LUKS2_JSON_SIZE
+	local _js=${3:-$LUKS2_JSON_SIZE}
+	_dd if=$1 of=$2 bs=512 skip=$((2*LUKS2_BIN_HDR_SIZE+_js)) count=$_js
 }
 
+# read primary metadata area (bin + json)
+# 1:from 2:to 3:[metadata size (defaults to 16KiB)]
 function read_luks2_hdr_area0()
 {
-	_dd if=$1 of=$2 bs=512 count=$LUKS2_HDR_SIZE
+	local _as=${3:-$LUKS2_HDR_SIZE}
+	local _as=$((_as*512))
+	_dd if=$1 of=$2 bs=$_as count=1
 }
 
+# read secondary metadata area (bin + json)
+# 1:from 2:to 3:[metadata size (defaults to 16KiB)]
 function read_luks2_hdr_area1()
 {
-	_dd if=$1 of=$2 bs=512 skip=$LUKS2_HDR_SIZE count=$LUKS2_HDR_SIZE
+	local _as=${3:-$LUKS2_HDR_SIZE}
+	local _as=$((_as*512))
+	_dd if=$1 of=$2 bs=$_as skip=1 count=1
 }
 
+# write secondary bin hdr
+# 1:from 2:to 3:[metadata size (defaults to 16KiB)]
 function write_luks2_bin_hdr1()
 {
-	_dd if=$1 of=$2 bs=512 seek=$LUKS2_HDR_SIZE count=$LUKS2_BIN_HDR_SIZE conv=notrunc
+	_dd if=$1 of=$2 bs=512 seek=${3:-$LUKS2_HDR_SIZE} count=$LUKS2_BIN_HDR_SIZE conv=notrunc
 }
 
+# write primary metadata area (bin + json)
+# 1:from 2:to 3:[metadata size (defaults to 16KiB)]
 function write_luks2_hdr0()
 {
-	_dd if=$1 of=$2 bs=512 count=$LUKS2_HDR_SIZE conv=notrunc
+	local _as=${3:-$LUKS2_HDR_SIZE}
+	local _as=$((_as*512))
+	_dd if=$1 of=$2 bs=$_as count=1 conv=notrunc
 }
 
+# write secondary metadata area (bin + json)
+# 1:from 2:to 3:[metadata size (defaults to 16KiB)]
 function write_luks2_hdr1()
 {
-	_dd if=$1 of=$2 bs=512 seek=$LUKS2_HDR_SIZE count=$LUKS2_HDR_SIZE conv=notrunc
+	local _as=${3:-$LUKS2_HDR_SIZE}
+	local _as=$((_as*512))
+	_dd if=$1 of=$2 bs=$_as seek=1 count=1 conv=notrunc
 }
 
-# 1 - json str
+# write json (includes padding)
+# 1:json_string 2:to 3:[json size (defaults to 12KiB)]
 function write_luks2_json()
 {
+	local _js=${3:-$LUKS2_JSON_SIZE}
 	local len=${#1}
-	printf '%s' "$1" | _dd of=$2 bs=1 count=$len conv=notrunc
-	_dd if=/dev/zero of=$2 bs=1 seek=$len count=$((LUKS2_JSON_SIZE*512-len))
+	_dd if=/dev/zero of=$2 bs=$((_js*512)) count=1
+	printf '%s' "$1" | _dd of=$2 bs=$len count=1 conv=notrunc
 }
 
 function kill_bin_hdr()
@@ -117,17 +156,26 @@ function calc_sha256_checksum_stdin()
 	sha256sum - | cut -d ' ' -f 1
 }
 
-# 1 - bin
-# 2 - json
-# 3 - luks2_hdr_area
+# merge bin hdr with json to form metadata area
+# 1:bin_hdr 2:json 3:to 4:[json size (defaults to 12KiB)]
 function merge_bin_hdr_with_json()
 {
-	_dd if=$1 of=$3 bs=512 count=$LUKS2_BIN_HDR_SIZE
-	_dd if=$2 of=$3 bs=512 seek=$LUKS2_BIN_HDR_SIZE count=$LUKS2_JSON_SIZE
+	local _js=${4:-$LUKS2_JSON_SIZE}
+	local _js=$((_js*512/4096))
+	_dd if=$1 of=$3 bs=4096 count=1
+	_dd if=$2 of=$3 bs=4096 seek=1 count=$_js
 }
 
 function _dd()
 {
 	dd $@ 2>/dev/null
 	#dd $@
+}
+
+function write_bin_hdr_size() {
+        printf '%016x' $2 | xxd -r -p -l 16 | _dd of=$1 bs=8 count=1 seek=1 conv=notrunc
+}
+
+function write_bin_hdr_offset() {
+        printf '%016x' $2 | xxd -r -p -l 16 | _dd of=$1 bs=8 count=1 seek=32 conv=notrunc
 }
