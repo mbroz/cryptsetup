@@ -8,9 +8,6 @@ CRYPTSETUP=../cryptsetup
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs
 
-DM_CRYPT_SECTOR=512
-LUKS2_HDR_SIZE=2112 # 16 KiB version, stored twice, including luks2 areas with keyslots
-
 START_DIR=$(pwd)
 
 IMG=luks2-backend.img
@@ -18,6 +15,8 @@ ORIG_IMG=luks2_valid_hdr.img
 TST_IMGS=$START_DIR/luks2-images
 
 GEN_DIR=generators
+
+FAILS=0
 
 [ -z "$srcdir" ] && srcdir="."
 
@@ -33,6 +32,12 @@ function fail()
 	cd $START_DIR
 	remove_mapping
 	exit 2
+}
+
+fail_count()
+{
+	echo "$1"
+	FAILS=$((FAILS+1))
 }
 
 function skip()
@@ -61,23 +66,24 @@ function test_load()
 	case "$1" in
 	R)
 		if [ -n "$_debug" ]; then
-			$CRYPTSETUP luksDump $_debug $IMG || fail "$2"
+			$CRYPTSETUP luksDump $_debug $IMG
 		else
-			$CRYPTSETUP luksDump $_debug $IMG > /dev/null || fail "$2"
+			$CRYPTSETUP luksDump $_debug $IMG > /dev/null 2>&1
 		fi
+		test $? -eq 0 || return 1
 		;;
 	F)
 		if [ -n "$_debug" ]; then
-			$CRYPTSETUP luksDump $_debug $IMG && fail "$2"
+			$CRYPTSETUP luksDump $_debug $IMG
 		else
-			$CRYPTSETUP luksDump $_debug $IMG > /dev/null 2>&1 && fail "$2"
+			$CRYPTSETUP luksDump $_debug $IMG > /dev/null 2>&1
 		fi
+		test $? -ne 0 || return 1
 		;;
 	*)
 		fail "Internal test error"
 		;;
 	esac
-
 }
 
 function RUN()
@@ -85,7 +91,11 @@ function RUN()
 	echo -n "Test image: $1..."
 	cp $TST_IMGS/$1 $IMG || fail "Missing test image"
 	test_load $2 "$3"
-	echo "OK"
+	if [ $? -ne 0 ]; then
+		fail_count "$3"
+	else
+		echo "OK"
+	fi
 }
 
 function valgrind_setup()
@@ -194,5 +204,25 @@ RUN luks2-invalid-keyslots-size-c1.img			"F" "Failed to detect unaligned keyslot
 RUN luks2-invalid-keyslots-size-c2.img			"F" "Failed to detect too small keyslots_size config section"
 RUN luks2-invalid-json-size-c0.img			"F" "Failed to detect invalid json_size config section"
 RUN luks2-invalid-json-size-c1.img			"F" "Failed to detect invalid json_size config section"
+RUN luks2-invalid-json-size-c2.img			"F" "Failed to detect mismatching json size in config and binary hdr"
+RUN luks2-metadata-size-32k.img				"R" "Valid 32KiB metadata size failed to validate"
+RUN luks2-metadata-size-64k.img				"R" "Valid 64KiB metadata size failed to validate"
+RUN luks2-metadata-size-128k.img			"R" "Valid 128KiB metadata size failed to validate"
+RUN luks2-metadata-size-256k.img			"R" "Valid 256KiB metadata size failed to validate"
+RUN luks2-metadata-size-512k.img			"R" "Valid 512KiB metadata size failed to validate"
+RUN luks2-metadata-size-1m.img				"R" "Valid 1MiB metadata size failed to validate"
+RUN luks2-metadata-size-2m.img				"R" "Valid 2MiB metadata size failed to validate"
+RUN luks2-metadata-size-4m.img				"R" "Valid 4MiB metadata size failed to validate"
+RUN luks2-metadata-size-16k-secondary.img		"R" "Valid 16KiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-32k-secondary.img		"R" "Valid 32KiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-64k-secondary.img		"R" "Valid 64KiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-128k-secondary.img		"R" "Valid 128KiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-256k-secondary.img		"R" "Valid 256KiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-512k-secondary.img		"R" "Valid 512KiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-1m-secondary.img		"R" "Valid 1MiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-2m-secondary.img		"R" "Valid 2MiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-4m-secondary.img		"R" "Valid 4MiB metadata size in secondary hdr failed to validate"
 
 remove_mapping
+
+test $FAILS -eq 0 || fail "($FAILS wrong result(s) in total)"
