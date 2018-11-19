@@ -158,11 +158,6 @@ RUN luks2-area-in-json-hdr-space-json0.img		"F" "Failed to detect area referenci
 RUN luks2-missing-keyslot-referenced-in-digest.img	"F" "Failed to detect missing keyslot referenced in digest"
 RUN luks2-missing-segment-referenced-in-digest.img	"F" "Failed to detect missing segment referenced in digest"
 RUN luks2-missing-keyslot-referenced-in-token.img	"F" "Failed to detect missing keyslots referenced in token"
-RUN luks2-invalid-keyslots-size-c0.img			"F" "Failed to detect too large keyslots_size in config section"
-RUN luks2-invalid-keyslots-size-c1.img			"F" "Failed to detect unaligned keyslots_size in config section"
-RUN luks2-invalid-keyslots-size-c2.img			"F" "Failed to detect too small keyslots_size config section"
-RUN luks2-invalid-json-size-c0.img			"F" "Failed to detect invalid json_size config section"
-RUN luks2-invalid-json-size-c1.img			"F" "Failed to detect invalid json_size config section"
 RUN luks2-keyslot-missing-digest.img			"F" "Failed to detect missing keyslot digest."
 RUN luks2-keyslot-too-many-digests.img			"F" "Failed to detect keyslot has too many digests."
 
@@ -192,5 +187,12 @@ RUN luks2-segment-unknown-type.img			"R" "Validation rejected segment with all m
 RUN luks2-segment-two.img				"R" "Validation rejected two valid segments"
 RUN luks2-segment-wrong-flags.img			"F" "Failed to detect invalid flags field"
 RUN luks2-segment-wrong-flags-element.img		"F" "Failed to detect invalid flags content"
+
+echo "[6] Test metadata size and keyslots size (config section)"
+RUN luks2-invalid-keyslots-size-c0.img			"F" "Failed to detect too large keyslots_size in config section"
+RUN luks2-invalid-keyslots-size-c1.img			"F" "Failed to detect unaligned keyslots_size in config section"
+RUN luks2-invalid-keyslots-size-c2.img			"F" "Failed to detect too small keyslots_size config section"
+RUN luks2-invalid-json-size-c0.img			"F" "Failed to detect invalid json_size config section"
+RUN luks2-invalid-json-size-c1.img			"F" "Failed to detect invalid json_size config section"
 
 remove_mapping
