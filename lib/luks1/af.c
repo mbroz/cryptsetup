@@ -64,31 +64,34 @@ out:
 /* diffuse: Information spreading over the whole dataset with
  * the help of hash function.
  */
-
 static int diffuse(char *src, char *dst, size_t size, const char *hash_name)
 {
 	int hash_size = crypt_hash_size(hash_name);
 	unsigned int digest_size;
-	unsigned int i, blocks, padding;
+	unsigned int i, r, blocks, padding;
 
 	if (hash_size <= 0)
-		return 1;
+		return -EINVAL;
 	digest_size = hash_size;
 
 	blocks = size / digest_size;
 	padding = size % digest_size;
 
-	for (i = 0; i < blocks; i++)
-		if(hash_buf(src + digest_size * i,
+	for (i = 0; i < blocks; i++) {
+		r = hash_buf(src + digest_size * i,
 			    dst + digest_size * i,
-			    i, (size_t)digest_size, hash_name))
-			return 1;
+			    i, (size_t)digest_size, hash_name);
+		if (r < 0)
+			return r;
+	}
 
-	if(padding)
-		if(hash_buf(src + digest_size * i,
+	if (padding) {
+		r = hash_buf(src + digest_size * i,
 			    dst + digest_size * i,
-			    i, (size_t)padding, hash_name))
-			return 1;
+			    i, (size_t)padding, hash_name);
+		if (r < 0)
+			return r;
+	}
 
 	return 0;
 }
@@ -104,17 +107,19 @@ int AF_split(const char *src, char *dst, size_t blocksize,
 {
 	unsigned int i;
 	char *bufblock;
-	int r = -EINVAL;
+	int r;
 
 	if((bufblock = calloc(blocksize, 1)) == NULL) return -ENOMEM;
 
 	/* process everything except the last block */
 	for(i=0; i<blocknumbers-1; i++) {
 		r = crypt_random_get(NULL, dst+(blocksize*i), blocksize, CRYPT_RND_NORMAL);
-		if(r < 0) goto out;
+		if (r < 0)
+			goto out;
 
 		XORblock(dst+(blocksize*i),bufblock,bufblock,blocksize);
-		if(diffuse(bufblock, bufblock, blocksize, hash))
+		r = diffuse(bufblock, bufblock, blocksize, hash);
+		if (r < 0)
 			goto out;
 	}
 	/* the last block is computed */
@@ -130,7 +135,7 @@ int AF_merge(const char *src, char *dst, size_t blocksize,
 {
 	unsigned int i;
 	char *bufblock;
-	int r = -EINVAL;
+	int r;
 
 	if((bufblock = calloc(blocksize, 1)) == NULL)
 		return -ENOMEM;
@@ -138,7 +143,8 @@ int AF_merge(const char *src, char *dst, size_t blocksize,
 	memset(bufblock,0,blocksize);
 	for(i=0; i<blocknumbers-1; i++) {
 		XORblock(src+(blocksize*i),bufblock,bufblock,blocksize);
-		if(diffuse(bufblock, bufblock, blocksize, hash))
+		r = diffuse(bufblock, bufblock, blocksize, hash);
+		if (r < 0)
 			goto out;
 	}
 	XORblock(src + blocksize * i, bufblock, dst, blocksize);
