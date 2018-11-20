@@ -258,7 +258,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	length = LUKS2_get_data_offset(hdr) * SECTOR_SIZE;
 	wipe_block = 1024 * 1024;
 
-	if (LUKS2_hdr_validate(hdr->jobj))
+	if (LUKS2_hdr_validate(hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
 		return -EINVAL;
 
 	/* On detached header wipe at least the first 4k */

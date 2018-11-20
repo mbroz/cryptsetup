@@ -478,7 +478,7 @@ static int validate_json_area(const char *json_area, uint64_t json_len, uint64_t
 	return 0;
 }
 
-static int validate_luks2_json_object(json_object *jobj_hdr)
+static int validate_luks2_json_object(json_object *jobj_hdr, uint64_t length)
 {
 	int r;
 
@@ -489,14 +489,14 @@ static int validate_luks2_json_object(json_object *jobj_hdr)
 		return r;
 	}
 
-	r = LUKS2_hdr_validate(jobj_hdr);
+	r = LUKS2_hdr_validate(jobj_hdr, length);
 	if (r) {
 		log_dbg("Repairing JSON metadata.");
 		/* try to correct known glitches */
 		LUKS2_hdr_repair(jobj_hdr);
 
 		/* run validation again */
-		r = LUKS2_hdr_validate(jobj_hdr);
+		r = LUKS2_hdr_validate(jobj_hdr, length);
 	}
 
 	if (r)
@@ -518,7 +518,7 @@ static json_object *parse_and_validate_json(const char *json_area, uint64_t max_
 
 	r = validate_json_area(json_area, json_len, max_length);
 	if (!r)
-		r = validate_luks2_json_object(jobj);
+		r = validate_luks2_json_object(jobj, max_length);
 
 	if (r) {
 		json_object_put(jobj);
