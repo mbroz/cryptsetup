@@ -25,7 +25,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netinet/in.h>
 #include <errno.h>
 #include "internal.h"
 #include "af.h"
@@ -34,7 +33,7 @@ static void XORblock(const char *src1, const char *src2, char *dst, size_t n)
 {
 	size_t j;
 
-	for(j = 0; j < n; ++j)
+	for (j = 0; j < n; j++)
 		dst[j] = src1[j] ^ src2[j];
 }
 
@@ -45,7 +44,7 @@ static int hash_buf(const char *src, char *dst, uint32_t iv,
 	char *iv_char = (char *)&iv;
 	int r;
 
-	iv = htonl(iv);
+	iv = be32_to_cpu(iv);
 	if (crypt_hash_init(&hd, hash_name))
 		return -EINVAL;
 
@@ -61,7 +60,8 @@ out:
 	return r;
 }
 
-/* diffuse: Information spreading over the whole dataset with
+/*
+ * diffuse: Information spreading over the whole dataset with
  * the help of hash function.
  */
 static int diffuse(char *src, char *dst, size_t size, const char *hash_name)
@@ -101,7 +101,6 @@ static int diffuse(char *src, char *dst, size_t size, const char *hash_name)
  * blocknumbers. The same blocksize and blocknumbers values
  * must be supplied to AF_merge to recover information.
  */
-
 int AF_split(const char *src, char *dst, size_t blocksize,
 	     unsigned int blocknumbers, const char *hash)
 {
@@ -109,24 +108,26 @@ int AF_split(const char *src, char *dst, size_t blocksize,
 	char *bufblock;
 	int r;
 
-	if((bufblock = calloc(blocksize, 1)) == NULL) return -ENOMEM;
+	bufblock = crypt_safe_alloc(blocksize);
+	if (!bufblock)
+		return -ENOMEM;
 
 	/* process everything except the last block */
-	for(i=0; i<blocknumbers-1; i++) {
-		r = crypt_random_get(NULL, dst+(blocksize*i), blocksize, CRYPT_RND_NORMAL);
+	for (i = 0; i < blocknumbers - 1; i++) {
+		r = crypt_random_get(NULL, dst + blocksize * i, blocksize, CRYPT_RND_NORMAL);
 		if (r < 0)
 			goto out;
 
-		XORblock(dst+(blocksize*i),bufblock,bufblock,blocksize);
+		XORblock(dst + blocksize * i, bufblock, bufblock, blocksize);
 		r = diffuse(bufblock, bufblock, blocksize, hash);
 		if (r < 0)
 			goto out;
 	}
 	/* the last block is computed */
-	XORblock(src,bufblock,dst+(i*blocksize),blocksize);
+	XORblock(src, bufblock, dst + blocksize * i, blocksize);
 	r = 0;
 out:
-	free(bufblock);
+	crypt_safe_free(bufblock);
 	return r;
 }
 
@@ -137,12 +138,12 @@ int AF_merge(const char *src, char *dst, size_t blocksize,
 	char *bufblock;
 	int r;
 
-	if((bufblock = calloc(blocksize, 1)) == NULL)
+	bufblock = crypt_safe_alloc(blocksize);
+	if (!bufblock)
 		return -ENOMEM;
 
-	memset(bufblock,0,blocksize);
-	for(i=0; i<blocknumbers-1; i++) {
-		XORblock(src+(blocksize*i),bufblock,bufblock,blocksize);
+	for(i = 0; i < blocknumbers - 1; i++) {
+		XORblock(src + blocksize * i, bufblock, bufblock, blocksize);
 		r = diffuse(bufblock, bufblock, blocksize, hash);
 		if (r < 0)
 			goto out;
@@ -150,7 +151,7 @@ int AF_merge(const char *src, char *dst, size_t blocksize,
 	XORblock(src + blocksize * i, bufblock, dst, blocksize);
 	r = 0;
 out:
-	free(bufblock);
+	crypt_safe_free(bufblock);
 	return r;
 }
 
