@@ -63,7 +63,11 @@ int verify_pbkdf_params(struct crypt_device *cd,
 {
 	struct crypt_pbkdf_limits pbkdf_limits;
 	const char *pbkdf_type;
-	int r = 0;
+	int r;
+
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
 
 	if (!pbkdf->type ||
 	    (!pbkdf->hash && !strcmp(pbkdf->type, "pbkdf2")))
@@ -74,11 +78,15 @@ int verify_pbkdf_params(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	/* TODO: initialise crypto and check the hash and pbkdf are both available */
 	r = crypt_parse_pbkdf(pbkdf->type, &pbkdf_type);
 	if (r < 0) {
 		log_err(cd, _("Unknown PBKDF type %s."), pbkdf->type);
 		return r;
+	}
+
+	if (pbkdf->hash && crypt_hash_size(pbkdf->hash) < 0) {
+		log_err(cd, _("Requested hash %s is not supported."), pbkdf->hash);
+		return -EINVAL;
 	}
 
 	r = crypt_pbkdf_get_limits(pbkdf->type, &pbkdf_limits);
@@ -161,11 +169,6 @@ int init_pbkdf_type(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	/*
-	 * Crypto backend may be not initialized here,
-	 * cannot check if algorithms are really available.
-	 * It will fail later anyway :-)
-	 */
 	type = strdup(pbkdf->type);
 	hash = pbkdf->hash ? strdup(pbkdf->hash) : NULL;
 

@@ -48,7 +48,7 @@ int crypt_pbkdf_get_limits(const char *kdf, struct crypt_pbkdf_limits *limits)
 		limits->min_parallel   = 0; /* N/A */
 		limits->max_parallel   = 0; /* N/A */
 		return 0;
-	} else if (!strncmp(kdf, "argon2", 6)) {
+	} else if (!strcmp(kdf, "argon2i") || !strcmp(kdf, "argon2id")) {
 		limits->min_iterations = 4;
 		limits->max_iterations = UINT32_MAX;
 		limits->min_memory     = 32;

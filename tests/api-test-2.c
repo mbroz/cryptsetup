@@ -2269,9 +2269,8 @@ static void Pbkdf(void)
 	bad.type = NULL;
 	bad.hash = DEFAULT_LUKS1_HASH;
 	FAIL_(crypt_set_pbkdf_type(cd, &bad), "Pbkdf type member is empty");
-	// following test fails atm
-	// bad.hash = "hamster_hash";
-	// FAIL_(crypt_set_pbkdf_type(cd, &pbkdf2), "Unknown hash member");
+	bad.hash = "hamster_hash";
+	FAIL_(crypt_set_pbkdf_type(cd, &pbkdf2), "Unknown hash member");
 	crypt_free(cd);
 	// test whether crypt_get_pbkdf_type() behaves accordingly after second crypt_load() call
 	OK_(crypt_init(&cd, DEVICE_1));
