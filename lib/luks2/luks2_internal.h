@@ -58,7 +58,7 @@ json_object *LUKS2_get_tokens_jobj(struct luks2_hdr *hdr);
 void hexprint_base64(struct crypt_device *cd, json_object *jobj,
 		     const char *sep, const char *line_sep);
 
-json_object *parse_json_len(const char *json_area, int length, int *end_offset);
+json_object *parse_json_len(const char *json_area, uint64_t max_length, int *json_len);
 uint64_t json_object_get_uint64(json_object *jobj);
 uint32_t json_object_get_uint32(json_object *jobj);
 json_object *json_object_new_uint64(uint64_t value);

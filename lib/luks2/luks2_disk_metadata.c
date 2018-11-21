@@ -26,12 +26,13 @@
 /*
  * Helper functions
  */
-json_object *parse_json_len(const char *json_area, int length, int *end_offset)
+json_object *parse_json_len(const char *json_area, uint64_t max_length, int *json_len)
 {
 	json_object *jobj;
 	struct json_tokener *jtok;
 
-	if (!json_area || length <= 0)
+	 /* INT32_MAX is internal (json-c) json_tokener_parse_ex() limit */
+	if (!json_area || max_length > INT32_MAX)
 		return NULL;
 
 	jtok = json_tokener_new();
@@ -40,13 +41,13 @@ json_object *parse_json_len(const char *json_area, int length, int *end_offset)
 		return NULL;
 	}
 
-	jobj = json_tokener_parse_ex(jtok, json_area, length);
+	jobj = json_tokener_parse_ex(jtok, json_area, max_length);
 	if (!jobj)
 		log_dbg("ERROR: Failed to parse json data (%d): %s",
 			json_tokener_get_error(jtok),
 			json_tokener_error_desc(json_tokener_get_error(jtok)));
 	else
-		*end_offset = jtok->char_offset;
+		*json_len = jtok->char_offset;
 
 	json_tokener_free(jtok);
 
@@ -444,7 +445,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	return r;
 }
 
-static int validate_json_area(const char *json_area, int start, int length)
+static int validate_json_area(const char *json_area, uint64_t json_len, uint64_t max_length)
 {
 	char c;
 
@@ -454,7 +455,7 @@ static int validate_json_area(const char *json_area, int start, int length)
 		return -EINVAL;
 	}
 
-	if (start >= length) {
+	if (json_len >= max_length) {
 		log_dbg("ERROR: Missing trailing null byte beyond parsed json data string.");
 		return -EINVAL;
 	}
@@ -462,17 +463,17 @@ static int validate_json_area(const char *json_area, int start, int length)
 	/*
 	 * TODO:
 	 *	validate there are legal json format characters between
-	 *	'json_area' and 'json_area + start'
+	 *	'json_area' and 'json_area + json_len'
 	 */
 
 	do {
-		c = *(json_area + start);
+		c = *(json_area + json_len);
 		if (c != '\0') {
-			log_dbg("ERROR: Forbidden ascii code 0x%02hhx found beyond json data string at offset %d.",
-				c, start);
+			log_dbg("ERROR: Forbidden ascii code 0x%02hhx found beyond json data string at offset %" PRIu64,
+				c, json_len);
 			return -EINVAL;
 		}
-	} while (++start < length);
+	} while (++json_len < max_length);
 
 	return 0;
 }
@@ -504,18 +505,18 @@ static int validate_luks2_json_object(json_object *jobj_hdr)
 	return r;
 }
 
-static json_object *parse_and_validate_json(const char *json_area, int length)
+static json_object *parse_and_validate_json(const char *json_area, uint64_t max_length)
 {
-	int offset, r;
-	json_object *jobj = parse_json_len(json_area, length, &offset);
+	int json_len, r;
+	json_object *jobj = parse_json_len(json_area, max_length, &json_len);
 
 	if (!jobj)
 		return NULL;
 
 	/* successful parse_json_len must not return offset <= 0 */
-	assert(offset > 0);
+	assert(json_len > 0);
 
-	r = validate_json_area(json_area, offset, length);
+	r = validate_json_area(json_area, json_len, max_length);
 	if (!r)
 		r = validate_luks2_json_object(jobj);
 
