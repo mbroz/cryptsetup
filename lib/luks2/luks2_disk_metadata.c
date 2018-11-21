@@ -205,6 +205,12 @@ static int hdr_disk_sanity_check_pre(struct luks2_hdr_disk *hdr,
 		return -EINVAL;
 	}
 
+	if (secondary && (offset != be64_to_cpu(hdr->hdr_size))) {
+		log_dbg("LUKS2 offset 0x%04x in secondary header doesn't match size 0x%04x.",
+			(unsigned)offset, (unsigned)be64_to_cpu(hdr->hdr_size));
+		return -EINVAL;
+	}
+
 	/* FIXME: sanity check checksum alg. */
 
 	log_dbg("LUKS2 header version %u of size %u bytes, checksum %s.",
