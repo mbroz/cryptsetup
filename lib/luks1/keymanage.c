@@ -37,23 +37,6 @@
 #include "af.h"
 #include "internal.h"
 
-/* Get size of struct luks_phdr with all keyslots material space */
-static size_t LUKS_calculate_device_sectors(size_t keyLen)
-{
-	size_t keyslot_sectors, sector;
-	int i;
-
-	keyslot_sectors = AF_split_sectors(keyLen, LUKS_STRIPES);
-	sector = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
-
-	for (i = 0; i < LUKS_NUMKEYS; i++) {
-		sector = size_round_up(sector, LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
-		sector += keyslot_sectors;
-	}
-
-	return sector;
-}
-
 int LUKS_keyslot_area(const struct luks_phdr *hdr,
 	int keyslot,
 	uint64_t *offset,
@@ -416,8 +399,8 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	/* cipherName, cipherMode, hashSpec, uuid are already null terminated */
 	/* payloadOffset - cannot check */
 	r = LUKS_generate_phdr(&temp_phdr, vk, phdr->cipherName, phdr->cipherMode,
-			       phdr->hashSpec,phdr->uuid, LUKS_STRIPES,
-			       phdr->payloadOffset * SECTOR_SIZE, 0, true, ctx);
+			       phdr->hashSpec, phdr->uuid,
+			       phdr->payloadOffset * SECTOR_SIZE, 0, 0, ctx);
 	if (r < 0)
 		goto out;
 
@@ -721,29 +704,52 @@ int LUKS_check_cipher(struct crypt_device *ctx, size_t keylength, const char *ci
 }
 
 int LUKS_generate_phdr(struct luks_phdr *header,
-		       const struct volume_key *vk,
-		       const char *cipherName, const char *cipherMode, const char *hashSpec,
-		       const char *uuid, unsigned int stripes,
-		       uint64_t data_offset,
-		       uint64_t align_offset,
-		       bool fixed_data_offset,
-		       struct crypt_device *ctx)
+	const struct volume_key *vk,
+	const char *cipherName,
+	const char *cipherMode,
+	const char *hashSpec,
+	const char *uuid,
+	uint64_t data_offset,        /* in bytes */
+	uint64_t align_offset,       /* in bytes */
+	uint64_t required_alignment, /* in bytes */
+	struct crypt_device *ctx)
 {
-	unsigned int i = 0, alignPayload, alignOffset, hdr_sectors = LUKS_calculate_device_sectors(vk->keylength);
-	size_t blocksPerStripeSet, currentSector;
-	int r;
+	int i, r;
+	size_t keyslot_sectors, header_sectors;
 	uuid_t partitionUuid;
 	struct crypt_pbkdf_type *pbkdf;
 	double PBKDF2_temp;
 	char luksMagic[] = LUKS_MAGIC;
 
-	if (data_offset % SECTOR_SIZE || align_offset % SECTOR_SIZE)
+	if (data_offset % SECTOR_SIZE || align_offset % SECTOR_SIZE ||
+	    required_alignment % SECTOR_SIZE)
 		return -EINVAL;
-	alignPayload = data_offset / SECTOR_SIZE;
-	alignOffset = align_offset / SECTOR_SIZE;
 
-	if (alignPayload && fixed_data_offset && alignPayload < hdr_sectors) {
-		log_err(ctx, _("Data offset for detached LUKS header must be "
+	memset(header, 0, sizeof(struct luks_phdr));
+
+	keyslot_sectors = AF_split_sectors(vk->keylength, LUKS_STRIPES);
+	header_sectors = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
+
+	for (i = 0; i < LUKS_NUMKEYS; i++) {
+		header->keyblock[i].active = LUKS_KEY_DISABLED;
+		header->keyblock[i].keyMaterialOffset = header_sectors;
+		header->keyblock[i].stripes = LUKS_STRIPES;
+		header_sectors = size_round_up(header_sectors + keyslot_sectors,
+					       LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
+	}
+	/* In sector is now size of all keyslot material space */
+
+	/* Data offset has priority */
+	if (data_offset)
+		header->payloadOffset = data_offset / SECTOR_SIZE;
+	else if (required_alignment) {
+		header->payloadOffset = size_round_up(header_sectors, (required_alignment / SECTOR_SIZE));
+		header->payloadOffset += (align_offset / SECTOR_SIZE);
+	} else
+		header->payloadOffset = 0;
+
+	if (header->payloadOffset && header->payloadOffset < header_sectors) {
+		log_err(ctx, _("Data offset for LUKS header must be "
 			       "either 0 or higher than header size."));
 		return -EINVAL;
 	}
@@ -759,8 +765,6 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	}
 	if (!uuid)
 		uuid_generate(partitionUuid);
-
-	memset(header,0,sizeof(struct luks_phdr));
 
 	/* Set Magic */
 	memcpy(header->magic,luksMagic,LUKS_MAGIC_L);
@@ -799,29 +803,10 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 			header->mkDigestSalt, LUKS_SALTSIZE,
 			header->mkDigest,LUKS_DIGESTSIZE,
 			header->mkDigestIterations, 0, 0);
-	if(r < 0) {
+	if (r < 0) {
 		log_err(ctx, _("Cannot create LUKS header: header digest failed (using hash %s)."),
 			header->hashSpec);
 		return r;
-	}
-
-	currentSector = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
-	blocksPerStripeSet = AF_split_sectors(vk->keylength, stripes);
-	for(i = 0; i < LUKS_NUMKEYS; ++i) {
-		header->keyblock[i].active = LUKS_KEY_DISABLED;
-		header->keyblock[i].keyMaterialOffset = currentSector;
-		header->keyblock[i].stripes = stripes;
-		currentSector = size_round_up(currentSector + blocksPerStripeSet,
-						LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
-	}
-
-	if (fixed_data_offset) {
-		/* for separate metadata device use alignPayload directly */
-		header->payloadOffset = alignPayload;
-	} else {
-		/* alignOffset - offset from natural device alignment provided by topology info */
-		currentSector = size_round_up(currentSector, alignPayload);
-		header->payloadOffset = currentSector + alignOffset;
 	}
 
         uuid_unparse(partitionUuid, header->uuid);

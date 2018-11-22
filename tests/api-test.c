@@ -1144,6 +1144,7 @@ static void LuksHeaderLoad(void)
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size;
+	uint64_t mdata_size, keyslots_size;
 
 	crypt_decode_key(key, mk_hex, key_size);
 
@@ -1201,6 +1202,10 @@ static void LuksHeaderLoad(void)
 	params.data_device = NULL;
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_0S));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	FAIL_(crypt_set_metadata_size(cd, 0x004000, 0x004000), "Wrong context type");
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, LUKS_ALIGN_KEYSLOTS);
+	EQ_(keyslots_size, r_header_size * SECTOR_SIZE - mdata_size);
 	crypt_free(cd);
 	// load should be ok
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_0S));
@@ -1222,6 +1227,8 @@ static void LuksHeaderLoad(void)
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
 	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, key, key_size, &pl_params));
 	FAIL_(crypt_load(cd, CRYPT_LUKS1, NULL), "Can't load over nonLUKS device type");
+	FAIL_(crypt_set_metadata_size(cd, 0x004000, 0x004000), "Wrong context type");
+	FAIL_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size), "Wrong context type");
 	crypt_free(cd);
 
 	/* check load sets proper device type */

@@ -345,6 +345,39 @@ int crypt_memory_lock(struct crypt_device *cd, int lock);
  * 	 In current version locking can be only switched off and cannot be switched on later.
  */
 int crypt_metadata_locking(struct crypt_device *cd, int enable);
+
+/**
+ * Set metadata header area sizes. This applies only to LUKS2.
+ * These values limit amount of metadata anf number of supportable keyslots.
+ *
+ * @param cd crypt device handle, can be @e NULL
+ * @param metadata_size size in bytes of JSON area + 4k binary header
+ * @param keyslots_size size in bytes of binary keyslots area
+ *
+ * @returns @e 0 on success or negative errno value otherwise.
+ *
+ * @note The metadata area is stored twice and both copies contain 4k binary header.
+ * Only 16,32,64,128,256,512,1024,2048 and 4096 kB value is allowed (see LUKS2 specification).
+ * @note Keyslots area size must be multiple of 4k with maximum 128MB.
+ */
+int crypt_set_metadata_size(struct crypt_device *cd,
+	uint64_t metadata_size,
+	uint64_t keyslots_size);
+
+/**
+ * Get metadata header area sizes. This applies only to LUKS2.
+ * These values limit amount of metadata anf number of supportable keyslots.
+ *
+ * @param cd crypt device handle
+ * @param metadata_size size in bytes of JSON area + 4k binary header
+ * @param keyslots_size size in bytes of binary keyslots area
+ *
+ * @returns @e 0 on success or negative errno value otherwise.
+ */
+int crypt_get_metadata_size(struct crypt_device *cd,
+	uint64_t *metadata_size,
+	uint64_t *keyslots_size);
+
 /** @} */
 
 /**

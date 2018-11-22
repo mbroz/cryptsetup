@@ -22,7 +22,6 @@
 #ifndef _CRYPTSETUP_LUKS2_ONDISK_H
 #define _CRYPTSETUP_LUKS2_ONDISK_H
 
-#include <stdbool.h>
 #include "libcryptsetup.h"
 
 #define LUKS2_MAGIC_1ST "LUKS\xba\xbe"
@@ -126,7 +125,7 @@ struct luks2_keyslot_params {
 
 #define LUKS2_HDR_BIN_LEN sizeof(struct luks2_hdr_disk)
 
-#define LUKS2_HDR_DEFAULT_LEN 0x400000 /* 4 MiB */
+#define LUKS2_DEFAULT_KEYSLOTS_SIZE (0x400000 - 2*LUKS2_HDR_16K_LEN) /* 4 MiB */
 
 #define LUKS2_MAX_KEYSLOTS_SIZE 0x8000000 /* 128 MiB */
 
@@ -162,6 +161,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd,
 
 uint64_t LUKS2_hdr_and_areas_size(json_object *jobj);
 uint64_t LUKS2_keyslots_size(json_object *jobj);
+uint64_t LUKS2_metadata_size(json_object *jobj);
 
 int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd);
 
@@ -326,7 +326,9 @@ int LUKS2_generate_hdr(
 	unsigned int sector_size,
 	uint64_t data_offset,
 	uint64_t align_offset,
-	bool fixed_data_offset);
+	uint64_t required_alignment,
+	uint64_t metadata_size,
+	uint64_t keyslots_size);
 
 int LUKS2_check_metadata_area_size(uint64_t metadata_size);
 int LUKS2_check_keyslots_area_size(uint64_t keyslots_size);

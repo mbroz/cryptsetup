@@ -633,7 +633,7 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 	return 0;
 }
 
-static uint64_t LUKS2_metadata_size(json_object *jobj)
+uint64_t LUKS2_metadata_size(json_object *jobj)
 {
 	json_object *jobj1, *jobj2;
 	uint64_t json_size;

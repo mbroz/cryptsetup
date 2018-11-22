@@ -141,15 +141,32 @@ int LUKS2_generate_hdr(
 	unsigned int sector_size,  /* in bytes */
 	uint64_t data_offset,      /* in bytes */
 	uint64_t align_offset,     /* in bytes */
-	bool fixed_data_offset)
+	uint64_t required_alignment,
+	uint64_t metadata_size,
+	uint64_t keyslots_size)
 {
 	struct json_object *jobj_segment, *jobj_integrity, *jobj_keyslots, *jobj_segments, *jobj_config;
 	char num[24], cipher[128];
-	uint64_t offset, json_size, keyslots_size;
 	uuid_t partitionUuid;
 	int digest;
 
-	hdr->hdr_size = LUKS2_HDR_16K_LEN;
+	if (!metadata_size)
+		metadata_size = LUKS2_HDR_16K_LEN;
+	hdr->hdr_size = metadata_size;
+
+	if (!keyslots_size)
+		keyslots_size = LUKS2_DEFAULT_KEYSLOTS_SIZE;
+
+	/* Decrease keyslots_size if we have smaller data_offset */
+	if (data_offset && (keyslots_size + get_min_offset(hdr)) > data_offset)
+		keyslots_size = data_offset - get_min_offset(hdr);
+
+	/* Data offset has priority */
+	if (!data_offset && required_alignment) {
+		data_offset = size_round_up(get_min_offset(hdr) + keyslots_size, (size_t)required_alignment);
+		data_offset += align_offset;
+	}
+
 	hdr->seqid = 1;
 	hdr->version = 2;
 	memset(hdr->label, 0, LUKS2_LABEL_L);
@@ -197,16 +214,7 @@ int LUKS2_generate_hdr(
 
 	jobj_segment = json_object_new_object();
 	json_object_object_add(jobj_segment, "type", json_object_new_string("crypt"));
-	if (fixed_data_offset)
-		offset = data_offset;
-	else {
-		//FIXME
-		//offset = size_round_up(areas[7].offset + areas[7].length, alignPayload * SECTOR_SIZE);
-		offset = size_round_up(LUKS2_HDR_DEFAULT_LEN, (size_t)data_offset);
-		offset += align_offset;
-	}
-
-	json_object_object_add(jobj_segment, "offset", json_object_new_uint64(offset));
+	json_object_object_add(jobj_segment, "offset", json_object_new_uint64(data_offset));
 	json_object_object_add(jobj_segment, "iv_tweak", json_object_new_string("0"));
 	json_object_object_add(jobj_segment, "size", json_object_new_string("dynamic"));
 	json_object_object_add(jobj_segment, "encryption", json_object_new_string(cipher));
@@ -223,23 +231,7 @@ int LUKS2_generate_hdr(
 	snprintf(num, sizeof(num), "%u", CRYPT_DEFAULT_SEGMENT);
 	json_object_object_add(jobj_segments, num, jobj_segment);
 
-	json_size = hdr->hdr_size - LUKS2_HDR_BIN_LEN;
-	json_object_object_add(jobj_config, "json_size", json_object_new_uint64(json_size));
-
-	/* for detached metadata device compute reasonable keyslot areas size */
-	// FIXME: this is coupled with FIXME above
-	if (fixed_data_offset && !offset)
-		keyslots_size = LUKS2_HDR_DEFAULT_LEN - get_min_offset(hdr);
-	else
-		keyslots_size = offset - get_min_offset(hdr);
-
-	/* keep keyslots_size reasonable for custom data alignments */
-	if (keyslots_size > LUKS2_MAX_KEYSLOTS_SIZE)
-		keyslots_size = LUKS2_MAX_KEYSLOTS_SIZE;
-
-	/* keyslots size has to be 4 KiB aligned */
-	keyslots_size -= (keyslots_size % 4096);
-
+	json_object_object_add(jobj_config, "json_size", json_object_new_uint64(metadata_size - LUKS2_HDR_BIN_LEN));
 	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));
 
 	JSON_DBG(cd, hdr->jobj, "Header JSON");

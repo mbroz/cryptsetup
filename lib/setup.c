@@ -55,6 +55,8 @@ struct crypt_device {
 	unsigned key_in_keyring:1;
 
 	uint64_t data_offset;
+	uint64_t metadata_size; /* Used in LUKS2 format */
+	uint64_t keyslots_size; /* Used in LUKS2 format */
 
 	// FIXME: private binary headers and access it properly
 	// through sub-library (LUKS1, TCRYPT)
@@ -102,7 +104,6 @@ struct crypt_device {
 		char cipher[MAX_CIPHER_LEN];
 		char cipher_mode[MAX_CIPHER_LEN];
 		unsigned int key_size;
-		unsigned int veracrypt_pim;
 	} none;
 	} u;
 
@@ -362,6 +363,8 @@ static void crypt_set_null_type(struct crypt_device *cd)
 	cd->type = NULL;
 	cd->u.none.active_name = NULL;
 	cd->data_offset = 0;
+	cd->metadata_size = 0;
+	cd->keyslots_size = 0;
 }
 
 static void crypt_reset_null_type(struct crypt_device *cd)
@@ -949,6 +952,8 @@ int crypt_load(struct crypt_device *cd,
 
 	crypt_reset_null_type(cd);
 	cd->data_offset = 0;
+	cd->metadata_size = 0;
+	cd->keyslots_size = 0;
 
 	if (!requested_type || isLUKS1(requested_type) || isLUKS2(requested_type)) {
 		if (cd->type && !isLUKS1(cd->type) && !isLUKS2(cd->type)) {
@@ -1500,18 +1505,10 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	/* New data_offset has priority */
-	if (cd->data_offset) {
-		required_alignment = cd->data_offset * SECTOR_SIZE;
-		/* Check overflow */
-		if (required_alignment != (cd->data_offset * (uint64_t)SECTOR_SIZE))
-			return -EINVAL;
-	}
-
 	r = LUKS_generate_phdr(&cd->u.luks1.hdr, cd->volume_key, cipher, cipher_mode,
-			       cd->pbkdf.hash, uuid, LUKS_STRIPES,
-			       required_alignment, alignment_offset,
-			       (cd->data_offset || cd->metadata_device), cd);
+			       cd->pbkdf.hash, uuid,
+			       cd->data_offset * SECTOR_SIZE,
+			       alignment_offset, required_alignment, cd);
 	if (r < 0)
 		return r;
 
@@ -1660,23 +1657,14 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			goto out;
 	}
 
-	/* New data_offset has priority */
-	if (cd->data_offset) {
-		required_alignment = cd->data_offset * SECTOR_SIZE;
-		/* Check overflow */
-		if (required_alignment != (cd->data_offset * (uint64_t)SECTOR_SIZE)) {
-			r = -EINVAL;
-			goto out;
-		}
-	}
-
 	r = LUKS2_generate_hdr(cd, &cd->u.luks2.hdr, cd->volume_key,
 			       cipher, cipher_mode,
 			       integrity, uuid,
 			       sector_size,
-			       required_alignment,
+			       cd->data_offset * SECTOR_SIZE,
 			       alignment_offset,
-			       (cd->data_offset || cd->metadata_device));
+			       required_alignment,
+			       cd->metadata_size, cd->keyslots_size);
 	if (r < 0)
 		goto out;
 
@@ -3966,6 +3954,57 @@ int crypt_set_data_offset(struct crypt_device *cd, uint64_t data_offset)
 
 	cd->data_offset = data_offset;
 	log_dbg(cd, "Data offset set to %" PRIu64 " (512-byte) sectors.", data_offset);
+
+	return 0;
+}
+
+int crypt_set_metadata_size(struct crypt_device *cd,
+	uint64_t metadata_size,
+	uint64_t keyslots_size)
+{
+	if (!cd)
+		return -EINVAL;
+
+	if (cd->type && !isLUKS2(cd->type))
+		return -EINVAL;
+
+	if (metadata_size && LUKS2_check_metadata_area_size(metadata_size))
+		return -EINVAL;
+
+	if (keyslots_size && LUKS2_check_keyslots_area_size(keyslots_size))
+		return -EINVAL;
+
+	cd->metadata_size = metadata_size;
+	cd->keyslots_size = keyslots_size;
+
+	return 0;
+}
+
+int crypt_get_metadata_size(struct crypt_device *cd,
+	uint64_t *metadata_size,
+	uint64_t *keyslots_size)
+{
+	uint64_t msize, ksize;
+
+	if (!cd)
+		return -EINVAL;
+
+	if (!cd->type) {
+		msize = cd->metadata_size;
+		ksize = cd->keyslots_size;
+	} else if (isLUKS1(cd->type)) {
+		msize = LUKS_ALIGN_KEYSLOTS;
+		ksize = LUKS_device_sectors(&cd->u.luks1.hdr) * SECTOR_SIZE - msize;
+	} else if (isLUKS2(cd->type)) {
+		msize = LUKS2_metadata_size(cd->u.luks2.hdr.jobj);
+		ksize = LUKS2_keyslots_size(cd->u.luks2.hdr.jobj);
+	} else
+		return -EINVAL;
+
+	if (metadata_size)
+		*metadata_size = msize;
+	if (keyslots_size)
+		*keyslots_size = ksize;
 
 	return 0;
 }

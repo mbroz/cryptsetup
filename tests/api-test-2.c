@@ -579,6 +579,7 @@ static void AddDeviceLuks2(void)
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size_1;
+	uint64_t mdata_size, keyslots_size;
 
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key3, mk_hex2, key_size);
@@ -587,6 +588,47 @@ static void AddDeviceLuks2(void)
 	OK_(get_luks2_offsets(1, 0, 0, 0, &r_header_size, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_header_size - 1));
+
+	//default metadata sizes
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0);
+	EQ_(keyslots_size, 0);
+	OK_(crypt_set_metadata_size(cd, 0, 0));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0);
+	EQ_(keyslots_size, 0);
+	OK_(crypt_set_metadata_size(cd, 0x004000, 0x004000));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0x004000);
+	EQ_(keyslots_size, 0x004000);
+	OK_(crypt_set_metadata_size(cd, 0x008000, 0x008000));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0x008000);
+	EQ_(keyslots_size, 0x008000);
+	FAIL_(crypt_set_metadata_size(cd, 0x008001, 0x008000), "Wrong size");
+	FAIL_(crypt_set_metadata_size(cd, 0x008000, 0x008001), "Wrong size");
+	crypt_free(cd);
+
+	// metadata settings
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_set_metadata_size(cd, 0x080000, 0x080000));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), 7);
+	crypt_free(cd);
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0x080000);
+	EQ_(keyslots_size, 0x080000);
+	crypt_free(cd);
+	// default
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0x04000);
+	EQ_(keyslots_size, 0x3f8000);
+	crypt_free(cd);
 
 	// format
 	OK_(crypt_init(&cd, DMDIR H_DEVICE_WRONG));
