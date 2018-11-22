@@ -1585,8 +1585,16 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		goto out;
 	}
 
-	/* FIXME: we have no way how to check AEAD ciphers,
-	 * only length preserving mode or authenc() composed modes */
+	/* FIXME: allow this later also for normal ciphers (check AF_ALG availability. */
+	if (integrity && !integrity_key_size) {
+		r = crypt_cipher_check(cipher, cipher_mode, integrity, volume_key_size);
+		if (r < 0) {
+			log_err(cd, _("Cipher %s-%s (key size %zd bits) is not available."),
+				cipher, cipher_mode, volume_key_size * 8);
+			goto out;
+		}
+	}
+
 	if ((!integrity || integrity_key_size) && !LUKS2_keyslot_cipher_incompatible(cd)) {
 		r = LUKS_check_cipher(cd, volume_key_size - integrity_key_size,
 				      cipher, cipher_mode);

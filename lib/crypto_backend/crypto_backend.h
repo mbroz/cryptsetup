@@ -111,6 +111,10 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length);
 
+/* Check availability of a cipher */
+int crypt_cipher_check(const char *name, const char *mode,
+		       const char *integrity, size_t key_length);
+
 /* storage encryption wrappers */
 int crypt_storage_init(struct crypt_storage **ctx, uint64_t sector_start,
 		       const char *cipher, const char *cipher_mode,

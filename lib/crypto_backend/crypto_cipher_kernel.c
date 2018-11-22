@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -51,21 +52,15 @@ struct crypt_cipher {
  * ENOTSUP - AF_ALG family not available
  * (but cannot check specifically for skcipher API)
  */
-int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
-		    const char *mode, const void *key, size_t key_length)
+static int _crypt_cipher_init(struct crypt_cipher **ctx,
+			      const void *key, size_t key_length,
+			      struct sockaddr_alg *sa)
 {
 	struct crypt_cipher *h;
-	struct sockaddr_alg sa = {
-		.salg_family = AF_ALG,
-		.salg_type = "skcipher",
-	};
 
 	h = malloc(sizeof(*h));
 	if (!h)
 		return -ENOMEM;
-
-	snprintf((char *)sa.salg_name, sizeof(sa.salg_name),
-		 "%s(%s)", mode, name);
 
 	h->opfd = -1;
 	h->tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
@@ -74,13 +69,10 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		return -ENOTSUP;
 	}
 
-	if (bind(h->tfmfd, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+	if (bind(h->tfmfd, (struct sockaddr *)sa, sizeof(*sa)) < 0) {
 		crypt_cipher_destroy(h);
 		return -ENOENT;
 	}
-
-	if (!strcmp(name, "cipher_null"))
-		key_length = 0;
 
 	if (setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, key, key_length) < 0) {
 		crypt_cipher_destroy(h);
@@ -95,6 +87,22 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 
 	*ctx = h;
 	return 0;
+}
+
+int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
+		      const char *mode, const void *key, size_t key_length)
+{
+	struct sockaddr_alg sa = {
+		.salg_family = AF_ALG,
+		.salg_type = "skcipher",
+	};
+
+	if (!strcmp(name, "cipher_null"))
+		key_length = 0;
+
+	snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s(%s)", mode, name);
+
+	return _crypt_cipher_init(ctx, key, key_length, &sa);
 }
 
 /* The in/out should be aligned to page boundary */
@@ -191,6 +199,61 @@ void crypt_cipher_destroy(struct crypt_cipher *ctx)
 	free(ctx);
 }
 
+int crypt_cipher_check(const char *name, const char *mode,
+		       const char *integrity, size_t key_length)
+{
+	struct crypt_cipher *c = NULL;
+	char mode_name[64], *real_mode = NULL, *cipher_iv = NULL, *key, *salg_type;
+	bool aead;
+	int r;
+	struct sockaddr_alg sa = {
+		.salg_family = AF_ALG,
+	};
+
+	aead = integrity && strcmp(integrity, "none");
+
+	/* Remove IV if present */
+	if (mode) {
+		strncpy(mode_name, mode, sizeof(mode_name));
+		mode_name[sizeof(mode_name) - 1] = 0;
+		cipher_iv = strchr(mode_name, '-');
+		if (cipher_iv) {
+			*cipher_iv = '\0';
+			real_mode = mode_name;
+		}
+	}
+
+	salg_type = aead ? "aead" : "skcipher";
+	snprintf((char *)sa.salg_type, sizeof(sa.salg_type), "%s", salg_type);
+
+	/* FIXME: this is duplicating a part of devmapper backend */
+	if (aead && !strcmp(integrity, "poly1305"))
+		snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "rfc7539(%s,%s)", name, integrity);
+	else if (!real_mode)
+		snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s", name);
+	else if (aead && !strcmp(real_mode, "ccm"))
+		snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "rfc4309(%s(%s))", real_mode, name);
+	else
+		snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s(%s)", real_mode, name);
+
+	key = malloc(key_length);
+	if (!key)
+		return -ENOMEM;
+
+	r = crypt_backend_rng(key, key_length, CRYPT_RND_NORMAL, 0);
+	if (r < 0) {
+		free (key);
+		return r;
+	}
+
+	r = _crypt_cipher_init(&c, key, key_length, &sa);
+	if (c)
+		crypt_cipher_destroy(c);
+	free(key);
+
+	return r;
+}
+
 #else /* ENABLE_AF_ALG */
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *buffer, size_t length)
@@ -214,5 +277,10 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *iv, size_t iv_length)
 {
 	return -EINVAL;
+}
+int crypt_cipher_check(const char *name, const char *mode,
+		       const char *integrity, size_t key_length)
+{
+	return 0;
 }
 #endif
