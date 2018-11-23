@@ -114,17 +114,18 @@ int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd)
 {
 	const char *cipher = crypt_get_cipher(cd);
+	const char *cipher_mode = crypt_get_cipher_mode(cd);
 
 	/* Keyslot is already authenticated; we cannot use integrity tags here */
 	if (crypt_get_integrity_tag_size(cd) || !cipher)
 		return 1;
 
 	/* Wrapped key schemes cannot be used for keyslot encryption */
-	if (crypt_cipher_wrapped_key(cipher))
+	if (crypt_cipher_wrapped_key(cipher, cipher_mode))
 		return 1;
 
 	/* Check if crypto backend can use the cipher */
-	if (crypt_cipher_blocksize(cipher) < 0)
+	if (crypt_cipher_ivsize(cipher, cipher_mode) < 0)
 		return 1;
 
 	return 0;
