@@ -73,7 +73,7 @@ dmcrypt_check() # device outstring
 	dmremove $1
 }
 
-dmcrypt_check_sum() # cipher device outstring
+dmcrypt_check_sum() # cipher device
 {
 	EXPSUM="c036cbb7553a909f8b8877d4461924307f27ecb66cff928eeeafd569c3887e29"
 	# Fill device with zeroes and reopen it
@@ -99,28 +99,35 @@ dmcrypt()
 {
 	OUT=$2
 	[ -z "$OUT" ] && OUT=$1
-	printf "%-25s" "$1"
+	printf "%-31s" "$1"
 
-	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 "$DEV_NAME"_"$1" /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
 		echo -n -e "PLAIN:"
-		dmcrypt_check "$DEV_NAME"_"$1" $OUT
+		dmcrypt_check "$DEV_NAME"_tstdev $OUT
 	else
 		echo -n "[n/a]"
 	fi
 
-	echo $PASSWORD | $CRYPTSETUP luksFormat -i 1 -c $1 -s 256 /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks1 -i 1 -c $1 -s 256 /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
-		echo -n -e " LUKS:"
-		echo $PASSWORD | $CRYPTSETUP luksOpen /dev/mapper/$DEV_NAME "$DEV_NAME"_"$1" >/dev/null 2>&1
-		dmcrypt_check "$DEV_NAME"_"$1" $OUT
+		echo -n -e " LUKS1:"
+		echo $PASSWORD | $CRYPTSETUP luksOpen /dev/mapper/$DEV_NAME "$DEV_NAME"_tstdev >/dev/null 2>&1
+		dmcrypt_check "$DEV_NAME"_tstdev $OUT
+	fi
+
+	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 -i 1 -c $1 -s 256 /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+		echo -n -e " LUKS2:"
+		echo $PASSWORD | $CRYPTSETUP luksOpen /dev/mapper/$DEV_NAME "$DEV_NAME"_tstdev >/dev/null 2>&1
+		dmcrypt_check "$DEV_NAME"_tstdev $OUT
 	fi
 
 	# repeated device creation must return the same checksum
-	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 "$DEV_NAME"_"$1" /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
 		echo -n -e " CHECKSUM:"
-		dmcrypt_check_sum "$1" "$DEV_NAME"_"$1"
+		dmcrypt_check_sum "$1" "$DEV_NAME"_tstdev
 	fi
 	echo
 }
@@ -153,5 +160,8 @@ for cipher in $CIPHERS ; do
 		done
 	done
 done
+
+dmcrypt xchacha12,aes-adiantum-plain64
+dmcrypt xchacha20,aes-adiantum-plain64
 
 cleanup

@@ -60,7 +60,7 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 {
 	memset(ctx, 0, sizeof(*ctx));
 
-	ctx->iv_size = crypt_cipher_blocksize(cipher_name);
+	ctx->iv_size = crypt_cipher_ivsize(cipher_name, mode_name);
 	if (ctx->iv_size < 8)
 		return -ENOENT;
 

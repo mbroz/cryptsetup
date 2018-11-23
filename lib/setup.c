@@ -1560,7 +1560,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		}
 	}
 
-	if ((!integrity || integrity_key_size) && !crypt_cipher_wrapped_key(cipher) &&
+	if ((!integrity || integrity_key_size) && !crypt_cipher_wrapped_key(cipher, cipher_mode) &&
 	    !INTEGRITY_tag_size(cd, NULL, cipher, cipher_mode)) {
 		r = LUKS_check_cipher(cd, volume_key_size - integrity_key_size,
 				      cipher, cipher_mode);
@@ -2329,7 +2329,7 @@ int crypt_suspend(struct crypt_device *cd,
 	key_desc = crypt_get_device_key_description(name);
 
 	/* we can't simply wipe wrapped keys */
-	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd)))
+	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd), crypt_get_cipher_mode(cd)))
 		r = dm_suspend_device(cd, name);
 	else
 		r = dm_suspend_and_wipe_key(cd, name);
@@ -3381,7 +3381,8 @@ int crypt_volume_key_get(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* wrapped keys or unbound keys may be exported */
-	if (crypt_fips_mode() && !crypt_cipher_wrapped_key(crypt_get_cipher(cd))) {
+	if (crypt_fips_mode() &&
+	    !crypt_cipher_wrapped_key(crypt_get_cipher(cd), crypt_get_cipher_mode(cd))) {
 		if (!isLUKS2(cd->type) || keyslot == CRYPT_ANY_SLOT ||
 		    !LUKS2_keyslot_for_segment(&cd->u.luks2.hdr, keyslot, CRYPT_DEFAULT_SEGMENT)) {
 			log_err(cd, _("Function not available in FIPS mode."));
