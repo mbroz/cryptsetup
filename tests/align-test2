@@ -3,6 +3,7 @@
 CRYPTSETUP="../cryptsetup"
 DEV=""
 DEV_STACKED="luks0xbabe"
+DEV_NAME="dummyalign"
 MNT_DIR="./mnt_luks"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
@@ -17,6 +18,7 @@ cleanup() {
 	    rmdir $MNT_DIR 2>/dev/null
 	fi
 	[ -b /dev/mapper/$DEV_STACKED ] && dmsetup remove --retry $DEV_STACKED >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME >/dev/null 2>&1
 	# FIXME scsi_debug sometimes in-use here
 	sleep 1
 	rmmod scsi_debug 2>/dev/null
@@ -81,6 +83,10 @@ format() # expected [forced] [encryption_sector_size]
 		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --align-payload=$2 --sector-size $_sec_size || fail
 	fi
 
+	# check the device can be activated
+	echo $PWD1 | $CRYPTSETUP luksOpen $DEV $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
 	ALIGN=$($CRYPTSETUP luksDump $DEV | tee  /tmp/last_dump | grep -A1 "0: crypt" | grep "offset:" | cut -d ' ' -f2)
 	# echo "ALIGN = $ALIGN"
 
@@ -94,6 +100,32 @@ format() # expected [forced] [encryption_sector_size]
 
 	$CRYPTSETUP -q luksKillSlot $DEV 1
 	[ $? -ne 0 ] && fail "Keyslot removal failed."
+
+	echo "PASSED"
+}
+
+format_fail() # expected [forced] [encryption_sector_size]
+{
+	local _sec_size=512
+
+	local _exp=$1
+
+	if [ "${2:0:1}" = "s" ]; then
+		_sec_size=${2:1}
+		shift
+	fi
+
+	test "${3:0:1}" = "s" && _sec_size=${3:1}
+
+	test $_sec_size -eq 512 || local _smsg=" (encryption sector size $_sec_size)"
+
+	if [ -z "$2" ] ; then
+		echo -n "Formatting using topology info$_smsg (must fail)..."
+		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --sector-size $_sec_size >/dev/null 2>&1 && fail
+	else
+		echo -n "Formatting using forced sector alignment $2$_smsg (must fail)..."
+		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --align-payload=$2 --sector-size $_sec_size >/dev/null 2>&1 && fail
+	fi
 
 	echo "PASSED"
 }
@@ -122,9 +154,9 @@ format $EXPCT 8 s1024
 format $EXPCT 8 s2048
 format $EXPCT 8 s4096
 format $((EXPCT+1)) $((EXPCT+1))
-format $((EXPCT+1)) $((EXPCT+1)) s1024
-format $((EXPCT+1)) $((EXPCT+1)) s2048
-format $((EXPCT+1)) $((EXPCT+1)) s4096
+format_fail $((EXPCT+1)) $((EXPCT+1)) s1024
+format_fail $((EXPCT+1)) $((EXPCT+1)) s2048
+format_fail $((EXPCT+1)) $((EXPCT+1)) s4096
 format $EXPCT $EXPCT
 format $EXPCT $EXPCT s1024
 format $EXPCT $EXPCT s2048
@@ -147,9 +179,9 @@ format $EXPCT 8 s1024
 format $EXPCT 8 s2048
 format $EXPCT 8 s4096
 format $((EXPCT+1)) $((EXPCT+1))
-format $((EXPCT+1)) $((EXPCT+1)) s1024
-format $((EXPCT+1)) $((EXPCT+1)) s2048
-format $((EXPCT+1)) $((EXPCT+1)) s4096
+format_fail $((EXPCT+1)) $((EXPCT+1)) s1024
+format_fail $((EXPCT+1)) $((EXPCT+1)) s2048
+format_fail $((EXPCT+1)) $((EXPCT+1)) s4096
 format $EXPCT $EXPCT
 format $EXPCT $EXPCT s1024
 format $EXPCT $EXPCT s2048
@@ -160,9 +192,9 @@ echo "# Create desktop-class 4K drive w/ 1-sector shift (original bug report)"
 echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=512)"
 add_device dev_size_mb=16 sector_size=512 physblk_exp=3 lowest_aligned=1 num_tgts=1
 format $((EXPCT+1))
-format $((EXPCT+1)) s1024
-format $((EXPCT+1)) s2048
-format $((EXPCT+1)) s4096
+format_fail $((EXPCT+1)) s1024
+format_fail $((EXPCT+1)) s2048
+format_fail $((EXPCT+1)) s4096
 format $EXPCT 1
 format $EXPCT 1 s1024
 format $EXPCT 1 s2048
@@ -172,9 +204,9 @@ format $EXPCT 8 s1024
 format $EXPCT 8 s2048
 format $EXPCT 8 s4096
 format $((EXPCT+1)) $((EXPCT+1))
-format $((EXPCT+1)) $((EXPCT+1)) s1024
-format $((EXPCT+1)) $((EXPCT+1)) s2048
-format $((EXPCT+1)) $((EXPCT+1)) s4096
+format_fail $((EXPCT+1)) $((EXPCT+1)) s1024
+format_fail $((EXPCT+1)) $((EXPCT+1)) s2048
+format_fail $((EXPCT+1)) $((EXPCT+1)) s4096
 format $EXPCT $EXPCT
 format $EXPCT $EXPCT s1024
 format $EXPCT $EXPCT s2048
@@ -185,9 +217,9 @@ echo "# Create desktop-class 4K drive w/ 63-sector DOS partition compensation"
 echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=3584)"
 add_device dev_size_mb=16 sector_size=512 physblk_exp=3 lowest_aligned=7 num_tgts=1
 format $((EXPCT+7))
-format $((EXPCT+7)) s1024
-format $((EXPCT+7)) s2048
-format $((EXPCT+7)) s4096
+format_fail $((EXPCT+7)) s1024
+format_fail $((EXPCT+7)) s2048
+format_fail $((EXPCT+7)) s4096
 format $EXPCT 1
 format $EXPCT 1 s1024
 format $EXPCT 1 s2048
@@ -197,9 +229,9 @@ format $EXPCT 8 s1024
 format $EXPCT 8 s2048
 format $EXPCT 8 s4096
 format $((EXPCT+1)) $((EXPCT+1))
-format $((EXPCT+1)) $((EXPCT+1)) s1024
-format $((EXPCT+1)) $((EXPCT+1)) s2048
-format $((EXPCT+1)) $((EXPCT+1)) s4096
+format_fail $((EXPCT+1)) $((EXPCT+1)) s1024
+format_fail $((EXPCT+1)) $((EXPCT+1)) s2048
+format_fail $((EXPCT+1)) $((EXPCT+1)) s4096
 format $EXPCT $EXPCT
 format $EXPCT $EXPCT s1024
 format $EXPCT $EXPCT s2048
@@ -221,10 +253,11 @@ format $EXPCT 8
 format $EXPCT 8 s1024
 format $EXPCT 8 s2048
 format $EXPCT 8 s4096
-format $((EXPCT+1)) $((EXPCT+1))
-format $((EXPCT+1)) $((EXPCT+1)) s1024
-format $((EXPCT+1)) $((EXPCT+1)) s2048
-format $((EXPCT+1)) $((EXPCT+1)) s4096
+#FIXME: kernel limits issue?
+##format $((EXPCT+1)) $((EXPCT+1))
+format_fail $((EXPCT+1)) $((EXPCT+1)) s1024
+format_fail $((EXPCT+1)) $((EXPCT+1)) s2048
+format_fail $((EXPCT+1)) $((EXPCT+1)) s4096
 format $EXPCT $EXPCT
 format $EXPCT $EXPCT s1024
 format $EXPCT $EXPCT s2048
@@ -250,9 +283,9 @@ format $EXPCT 8 s1024
 format $EXPCT 8 s2048
 format $EXPCT 8 s4096
 format $((EXPCT+1)) $((EXPCT+1))
-format $((EXPCT+1)) $((EXPCT+1)) s1024
-format $((EXPCT+1)) $((EXPCT+1)) s2048
-format $((EXPCT+1)) $((EXPCT+1)) s4096
+format_fail $((EXPCT+1)) $((EXPCT+1)) s1024
+format_fail $((EXPCT+1)) $((EXPCT+1)) s2048
+format_fail $((EXPCT+1)) $((EXPCT+1)) s4096
 format $EXPCT $EXPCT
 format $EXPCT $EXPCT s1024
 format $EXPCT $EXPCT s2048

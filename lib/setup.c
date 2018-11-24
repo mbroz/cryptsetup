@@ -1321,6 +1321,7 @@ static int _crypt_format_plain(struct crypt_device *cd,
 			       struct crypt_params_plain *params)
 {
 	unsigned int sector_size = params ? params->sector_size : SECTOR_SIZE;
+	uint64_t dev_size;
 
 	if (!cipher || !cipher_mode) {
 		log_err(cd, _("Invalid plain crypt parameters."));
@@ -1345,6 +1346,15 @@ static int _crypt_format_plain(struct crypt_device *cd,
 	    NOTPOW2(sector_size)) {
 		log_err(cd, _("Unsupported encryption sector size."));
 		return -EINVAL;
+	}
+
+	if (sector_size > SECTOR_SIZE && !device_size(cd->device, &dev_size)) {
+		if (params && params->offset)
+			dev_size -= (params->offset * SECTOR_SIZE);
+		if (dev_size % sector_size) {
+			log_err(cd, _("Device size is not aligned to requested sector size."));
+			return -EINVAL;
+		}
 	}
 
 	if (!(cd->type = strdup(CRYPT_PLAIN)))
@@ -1472,6 +1482,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	unsigned long alignment_offset = 0;
 	unsigned int sector_size = params ? params->sector_size : SECTOR_SIZE;
 	const char *integrity = params ? params->integrity : NULL;
+	uint64_t dev_size;
 
 	cd->u.luks2.hdr.jobj = NULL;
 
@@ -1577,6 +1588,15 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       cd->metadata_device ? 1 : 0);
 	if (r < 0)
 		goto out;
+
+	if (!integrity && sector_size > SECTOR_SIZE && !device_size(crypt_data_device(cd), &dev_size)) {
+		dev_size -= (crypt_get_data_offset(cd) * SECTOR_SIZE);
+		if (dev_size % sector_size) {
+			log_err(cd, _("Device size is not aligned to requested sector size."));
+			r = -EINVAL;
+			goto out;
+		}
+	}
 
 	if (params && (params->label || params->subsystem)) {
 		r = LUKS2_hdr_labels(cd, &cd->u.luks2.hdr,
