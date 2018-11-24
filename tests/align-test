@@ -37,6 +37,29 @@ skip()
 	exit 0
 }
 
+function dm_crypt_features()
+{
+	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
+
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
+
+	[ $VER_MAJ -lt 1 ] && return
+	[ $VER_MAJ -gt 1 ] && {
+		DM_PERF_CPU=1
+		DM_SECTOR_SIZE=1
+		return
+	}
+
+	[ $VER_MIN -lt 14 ] && return
+	DM_PERF_CPU=1
+	if [ $VER_MIN -ge 17 -o \( $VER_MIN -eq 14 -a $VER_PTC -ge 5 \) ]; then
+		DM_SECTOR_SIZE=1
+	fi
+}
+
 add_device() {
 	modprobe scsi_debug $@ delay=0
 	if [ $? -ne 0 ] ; then
@@ -127,16 +150,24 @@ format_null()
 format_plain() # sector size
 {
 	echo -n "Formatting plain device (sector size $1)..."
-	echo $PWD1 | $CRYPTSETUP open --type plain --sector-size $1 $DEV $DEV_NAME || fail
-	$CRYPTSETUP close $DEV_NAME || fail
-	echo "PASSED"
+	if [ -n "$DM_SECTOR_SIZE" ] ; then
+		echo $PWD1 | $CRYPTSETUP open --type plain --sector-size $1 $DEV $DEV_NAME || fail
+		$CRYPTSETUP close $DEV_NAME || fail
+		echo "PASSED"
+	else
+		echo "N/A"
+	fi
 }
 
 format_plain_fail() # sector size
 {
 	echo -n "Formatting plain device (sector size $1, must fail)..."
-	echo $PWD1 | $CRYPTSETUP open --type plain --sector-size $1 $DEV $DEV_NAME >/dev/null 2>&1 && fail
-	echo "PASSED"
+	if [ -n "$DM_SECTOR_SIZE" ] ; then
+		echo $PWD1 | $CRYPTSETUP open --type plain --sector-size $1 $DEV $DEV_NAME >/dev/null 2>&1 && fail
+		echo "PASSED"
+	else
+		echo "N/A"
+	fi
 }
 
 if [ $(id -u) != 0 ]; then
@@ -144,6 +175,7 @@ if [ $(id -u) != 0 ]; then
 	exit 77
 fi
 
+dm_crypt_features
 modprobe --dry-run scsi_debug || exit 77
 cleanup
 
