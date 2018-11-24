@@ -588,8 +588,9 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 		goto out;
 	}
 
-	if ((r = crypt_format(cd_new, type, cipher, cipher_mode,
-			      uuid, key, key_size, params)))
+	r = crypt_format(cd_new, type, cipher, cipher_mode, uuid, key, key_size, params);
+	check_signal(&r);
+	if (r < 0)
 		goto out;
 	log_verbose(_("New LUKS header for device %s created."), rc->device);
 
@@ -598,6 +599,7 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 			continue;
 
 		r = create_new_keyslot(rc, i, cd_old, cd_new);
+		check_signal(&r);
 		if (r < 0)
 			goto out;
 		tools_keyslot_msg(r, CREATED);
@@ -835,11 +837,13 @@ static int backup_fake_header(struct reenc_ctx *rc)
 
 	r = crypt_format(cd_new, CRYPT_LUKS1, "cipher_null", "ecb",
 			 NO_UUID, NULL, opt_key_size / 8, &params);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
 	r = crypt_keyslot_add_by_volume_key(cd_new, rc->keyslot, NULL, 0,
 			rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen);
+	check_signal(&r);
 	if (r < 0)
 		goto out;
 
@@ -1535,6 +1539,8 @@ static int run_reencrypt(const char *device)
 		.stained = 1
 	};
 
+	set_int_handler(0);
+
 	if (initialize_context(&rc, device))
 		goto out;
 
@@ -1653,8 +1659,6 @@ int main(int argc, const char **argv)
 	int r;
 
 	crypt_set_log_callback(NULL, tool_log, NULL);
-
-	set_int_block(1);
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
