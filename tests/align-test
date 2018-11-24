@@ -3,6 +3,7 @@
 CRYPTSETUP="../cryptsetup"
 DEV=""
 DEV_STACKED="luks0xbabe"
+DEV_NAME="dummyalign"
 MNT_DIR="./mnt_luks"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
@@ -15,6 +16,7 @@ cleanup() {
 	    rmdir $MNT_DIR 2>/dev/null
 	fi
 	[ -b /dev/mapper/$DEV_STACKED ] && dmsetup remove --retry $DEV_STACKED >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME >/dev/null 2>&1
 	# FIXME scsi_debug sometimes in-use here
 	sleep 1
 	rmmod scsi_debug 2>/dev/null
@@ -59,11 +61,15 @@ format() # key_bits expected [forced]
 {
 	if [ -z "$3" ] ; then
 		echo -n "Formatting using topology info ($1 bits key)..."
-		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q $FAST_PBKDF -c aes-cbc-essiv:sha256 -s $1
+		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q $FAST_PBKDF -c aes-cbc-essiv:sha256 -s $1 || fail
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key)..."
-		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q $FAST_PBKDF -s $1 -c aes-cbc-essiv:sha256 --align-payload=$3
+		echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $DEV -q $FAST_PBKDF -s $1 -c aes-cbc-essiv:sha256 --align-payload=$3 ||fail
 	fi
+
+	# check the device can be activated
+	echo $PWD1 | $CRYPTSETUP luksOpen $DEV $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
 
 	ALIGN=$($CRYPTSETUP luksDump $DEV |grep "Payload offset" | sed -e s/.*\\t//)
 	#echo "ALIGN = $ALIGN"
@@ -90,11 +96,15 @@ format_null()
 {
 	if [ $3 -eq 0 ] ; then
 		echo -n "Formatting using topology info ($1 bits key) [slot 0"
-		echo | $CRYPTSETUP luksFormat --type luks1 $DEV -q $FAST_PBKDF -c null -s $1
+		echo | $CRYPTSETUP luksFormat --type luks1 $DEV -q $FAST_PBKDF -c null -s $1 || fail
 	else
 		echo -n "Formatting using forced sector alignment $3 ($1 bits key) [slot 0"
-		echo | $CRYPTSETUP luksFormat --type luks1 $DEV -q $FAST_PBKDF -c null -s $1 --align-payload=$3
+		echo | $CRYPTSETUP luksFormat --type luks1 $DEV -q $FAST_PBKDF -c null -s $1 --align-payload=$3 || fail
 	fi
+
+	# check the device can be activated
+	echo | $CRYPTSETUP luksOpen $DEV $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
 
 	POFF=$(get_offsets "Payload offset")
 	[ -z "$POFF" ] && fail
@@ -112,6 +122,21 @@ format_null()
 	fi
 
 	echo "]...PASSED"
+}
+
+format_plain() # sector size
+{
+	echo -n "Formatting plain device (sector size $1)..."
+	echo $PWD1 | $CRYPTSETUP open --type plain --sector-size $1 $DEV $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo "PASSED"
+}
+
+format_plain_fail() # sector size
+{
+	echo -n "Formatting plain device (sector size $1, must fail)..."
+	echo $PWD1 | $CRYPTSETUP open --type plain --sector-size $1 $DEV $DEV_NAME >/dev/null 2>&1 && fail
+	echo "PASSED"
 }
 
 if [ $(id -u) != 0 ]; then
@@ -173,6 +198,26 @@ format 256 2056 8
 format 128 2048
 format 128 1032 8
 format 128 8192 8192
+cleanup
+
+echo "# Create classic 512B drive and stack dm-linear (plain mode)"
+add_device dev_size_mb=16 sector_size=512 num_tgts=1
+DEV2=$DEV
+DEV=/dev/mapper/$DEV_STACKED
+dmsetup create $DEV_STACKED --table "0 32768 linear $DEV2 0"
+format_plain 512
+format_plain 1024
+format_plain 2048
+format_plain 4096
+format_plain_fail 1111
+format_plain_fail 8192
+echo "# Create classic 512B drive, unaligned to 4096 and stack dm-linear (plain mode)"
+dmsetup remove --retry $DEV_STACKED >/dev/null 2>&1
+dmsetup create $DEV_STACKED --table "0 32762 linear $DEV2 0"
+format_plain 512
+format_plain 1024
+format_plain_fail 2048
+format_plain_fail 4096
 cleanup
 
 echo "# Offset check: 512B sector drive"
