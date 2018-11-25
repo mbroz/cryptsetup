@@ -203,7 +203,8 @@ int crypt_cipher_check(const char *name, const char *mode,
 		       const char *integrity, size_t key_length)
 {
 	struct crypt_cipher *c = NULL;
-	char mode_name[64], *real_mode = NULL, *cipher_iv = NULL, *key, *salg_type;
+	char mode_name[64], tmp_salg_name[180], *real_mode = NULL, *cipher_iv = NULL, *key;
+	const char *salg_type;
 	bool aead;
 	int r;
 	struct sockaddr_alg sa = {
@@ -225,16 +226,22 @@ int crypt_cipher_check(const char *name, const char *mode,
 
 	salg_type = aead ? "aead" : "skcipher";
 	snprintf((char *)sa.salg_type, sizeof(sa.salg_type), "%s", salg_type);
+	memset(tmp_salg_name, 0, sizeof(tmp_salg_name));
 
 	/* FIXME: this is duplicating a part of devmapper backend */
 	if (aead && !strcmp(integrity, "poly1305"))
-		snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "rfc7539(%s,%s)", name, integrity);
+		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "rfc7539(%s,%s)", name, integrity);
 	else if (!real_mode)
-		snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s", name);
+		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s", name);
 	else if (aead && !strcmp(real_mode, "ccm"))
-		snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "rfc4309(%s(%s))", real_mode, name);
+		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "rfc4309(%s(%s))", real_mode, name);
 	else
-		snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s(%s)", real_mode, name);
+		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s(%s)", real_mode, name);
+
+	if (r <= 0 || r > (sizeof(sa.salg_name) - 1))
+		return -EINVAL;
+
+	memcpy(sa.salg_name, tmp_salg_name, sizeof(sa.salg_name));
 
 	key = malloc(key_length);
 	if (!key)
