@@ -238,7 +238,7 @@ int crypt_cipher_check(const char *name, const char *mode,
 	else
 		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s(%s)", real_mode, name);
 
-	if (r <= 0 || r > (sizeof(sa.salg_name) - 1))
+	if (r <= 0 || r > (int)(sizeof(sa.salg_name) - 1))
 		return -EINVAL;
 
 	memcpy(sa.salg_name, tmp_salg_name, sizeof(sa.salg_name));
