@@ -1263,9 +1263,11 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 	jobj_flags = json_object_new_array();
 
 	for (i = 0; persistent_flags[i].description; i++) {
-		if (flags & persistent_flags[i].flag)
+		if (flags & persistent_flags[i].flag) {
+			log_dbg("Setting persistent flag: %s.", persistent_flags[i].description);
 			json_object_array_add(jobj_flags,
 				json_object_new_string(persistent_flags[i].description));
+		}
 	}
 
 	/* Replace or add new flags array */
@@ -1912,7 +1914,7 @@ int LUKS2_activate(struct crypt_device *cd,
 		}
 
 		snprintf(dm_int_name, sizeof(dm_int_name), "%s_dif", name);
-		r = INTEGRITY_activate(cd, dm_int_name, NULL, NULL, NULL, NULL, flags);
+		r = INTEGRITY_activate(cd, dm_int_name, NULL, NULL, NULL, NULL, dmd.flags);
 		if (r)
 			return r;
 
