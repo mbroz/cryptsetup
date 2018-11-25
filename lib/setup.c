@@ -3337,13 +3337,14 @@ int crypt_deactivate(struct crypt_device *cd, const char *name)
 int crypt_get_active_device(struct crypt_device *cd, const char *name,
 			    struct crypt_active_device *cad)
 {
-	struct crypt_dm_active_device dmd;
+	struct crypt_dm_active_device dmd = {}, dmdi = {};
+	const char *namei = NULL;
 	int r;
 
 	if (!cd || !name || !cad)
 		return -EINVAL;
 
-	r = dm_query_device(cd, name, 0, &dmd);
+	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE, &dmd);
 	if (r < 0)
 		return r;
 
@@ -3351,6 +3352,14 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	    dmd.target != DM_VERITY &&
 	    dmd.target != DM_INTEGRITY)
 		return -ENOTSUP;
+
+	/* For LUKS2 with integrity we need flags from underlying dm-integrity */
+	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd)) {
+		namei = device_dm_name(dmd.data_device);
+		if (namei && dm_query_device(cd, namei, 0, &dmdi) >= 0)
+			dmd.flags |= dmdi.flags;
+	}
+	device_free(dmd.data_device);
 
 	if (cd && isTCRYPT(cd->type)) {
 		cad->offset	= TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
