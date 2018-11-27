@@ -41,6 +41,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	luks2_valid_hdr.img.xz \
 	luks2_header_requirements.xz \
 	luks2_header_requirements_free.xz \
+	luks2_mda_images.tar.xz \
 	evil_hdr-payload_overwrite.xz \
 	evil_hdr-stripes_payload_dmg.xz \
 	evil_hdr-luks_hdr_damage.xz \
