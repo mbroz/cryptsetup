@@ -85,8 +85,8 @@ void LUKS2_token_dump(struct crypt_device *cd, int token);
 /*
  * LUKS2 JSON repair for known glitches
  */
-void LUKS2_hdr_repair(json_object *jobj_hdr);
-void LUKS2_keyslots_repair(json_object *jobj_hdr);
+void LUKS2_hdr_repair(struct crypt_device *cd, json_object *jobj_hdr);
+void LUKS2_keyslots_repair(struct crypt_device *cd, json_object *jobj_hdr);
 
 /*
  * JSON array helpers

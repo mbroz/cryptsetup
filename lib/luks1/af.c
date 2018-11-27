@@ -101,8 +101,8 @@ static int diffuse(char *src, char *dst, size_t size, const char *hash_name)
  * blocknumbers. The same blocksize and blocknumbers values
  * must be supplied to AF_merge to recover information.
  */
-int AF_split(const char *src, char *dst, size_t blocksize,
-	     unsigned int blocknumbers, const char *hash)
+int AF_split(struct crypt_device *ctx, const char *src, char *dst,
+	     size_t blocksize, unsigned int blocknumbers, const char *hash)
 {
 	unsigned int i;
 	char *bufblock;
@@ -114,7 +114,7 @@ int AF_split(const char *src, char *dst, size_t blocksize,
 
 	/* process everything except the last block */
 	for (i = 0; i < blocknumbers - 1; i++) {
-		r = crypt_random_get(NULL, dst + blocksize * i, blocksize, CRYPT_RND_NORMAL);
+		r = crypt_random_get(ctx, dst + blocksize * i, blocksize, CRYPT_RND_NORMAL);
 		if (r < 0)
 			goto out;
 
@@ -131,8 +131,8 @@ out:
 	return r;
 }
 
-int AF_merge(const char *src, char *dst, size_t blocksize,
-	     unsigned int blocknumbers, const char *hash)
+int AF_merge(struct crypt_device *ctx __attribute__((unused)), const char *src, char *dst,
+	     size_t blocksize, unsigned int blocknumbers, const char *hash)
 {
 	unsigned int i;
 	char *bufblock;

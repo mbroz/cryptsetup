@@ -1998,7 +1998,7 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
  *    could leave previous type parameters behind. Correct this by purging
  *    all params not needed by current type.
  */
-void LUKS2_hdr_repair(json_object *hdr_jobj)
+void LUKS2_hdr_repair(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	json_object *jobj_keyslots;
 
@@ -2007,5 +2007,5 @@ void LUKS2_hdr_repair(json_object *hdr_jobj)
 	if (!json_object_is_type(jobj_keyslots, json_type_object))
 		return;
 
-	LUKS2_keyslots_repair(jobj_keyslots);
+	LUKS2_keyslots_repair(cd, jobj_keyslots);
 }

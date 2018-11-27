@@ -52,7 +52,8 @@ static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)
 	}
 }
 
-static int crypt_wipe_special(int fd, size_t bsize, size_t alignment, char *buffer,
+static int crypt_wipe_special(struct crypt_device *cd, int fd, size_t bsize,
+			      size_t alignment, char *buffer,
 			      uint64_t offset, size_t size)
 {
 	int r;
@@ -61,12 +62,12 @@ static int crypt_wipe_special(int fd, size_t bsize, size_t alignment, char *buff
 
 	for (i = 0; i < 39; ++i) {
 		if (i <  5) {
-			r = crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL);
+			r = crypt_random_get(cd, buffer, size, CRYPT_RND_NORMAL);
 		} else if (i >=  5 && i < 32) {
 			wipeSpecial(buffer, size, i - 5);
 			r = 0;
 		} else if (i >= 32 && i < 38) {
-			r = crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL);
+			r = crypt_random_get(cd, buffer, size, CRYPT_RND_NORMAL);
 		} else if (i >= 38 && i < 39) {
 			memset(buffer, 0xFF, size);
 			r = 0;
@@ -81,7 +82,7 @@ static int crypt_wipe_special(int fd, size_t bsize, size_t alignment, char *buff
 	}
 
 	/* Rewrite it finally with random */
-	if (crypt_random_get(NULL, buffer, size, CRYPT_RND_NORMAL) < 0)
+	if (crypt_random_get(cd, buffer, size, CRYPT_RND_NORMAL) < 0)
 		return -EIO;
 
 	written = write_lseek_blockwise(fd, bsize, alignment, buffer, size, offset);
@@ -91,14 +92,14 @@ static int crypt_wipe_special(int fd, size_t bsize, size_t alignment, char *buff
 	return 0;
 }
 
-static int wipe_block(int devfd, crypt_wipe_pattern pattern, char *sf,
-		      size_t device_block_size, size_t alignment,
+static int wipe_block(struct crypt_device *cd, int devfd, crypt_wipe_pattern pattern,
+		      char *sf, size_t device_block_size, size_t alignment,
 		      size_t wipe_block_size, uint64_t offset, bool *need_block_init)
 {
 	int r;
 
 	if (pattern == CRYPT_WIPE_SPECIAL)
-		return crypt_wipe_special(devfd, device_block_size, alignment,
+		return crypt_wipe_special(cd, devfd, device_block_size, alignment,
 					  sf, offset, wipe_block_size);
 
 	if (*need_block_init) {
@@ -107,12 +108,12 @@ static int wipe_block(int devfd, crypt_wipe_pattern pattern, char *sf,
 			*need_block_init = false;
 			r = 0;
 		} else if (pattern == CRYPT_WIPE_RANDOM) {
-			r = crypt_random_get(NULL, sf, wipe_block_size,
+			r = crypt_random_get(cd, sf, wipe_block_size,
 					     CRYPT_RND_NORMAL) ? -EIO : 0;
 			*need_block_init = true;
 		} else if (pattern == CRYPT_WIPE_ENCRYPTED_ZERO) {
 			// FIXME
-			r = crypt_random_get(NULL, sf, wipe_block_size,
+			r = crypt_random_get(cd, sf, wipe_block_size,
 					     CRYPT_RND_NORMAL) ? -EIO : 0;
 			*need_block_init = true;
 		} else
@@ -201,7 +202,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 
 		//log_dbg("Wipe %012" PRIu64 "-%012" PRIu64 " bytes", offset, offset + wipe_block_size);
 
-		r = wipe_block(devfd, pattern, sf, bsize, alignment,
+		r = wipe_block(cd, devfd, pattern, sf, bsize, alignment,
 			       wipe_block_size, offset, &need_block_init);
 		if (r) {
 			log_err(cd, "Device wipe error, offset %" PRIu64 ".", offset);

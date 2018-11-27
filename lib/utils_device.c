@@ -225,7 +225,7 @@ static int _open_locked(struct crypt_device *cd, struct device *device, int flag
 	if (fd < 0)
 		return -errno;
 
-	if (device_locked_verify(NULL, fd, device->lh)) {
+	if (device_locked_verify(cd, fd, device->lh)) {
 		/* fd doesn't correspond to a locked resource */
 		close(fd);
 		log_dbg(cd, "Failed to verify lock resource for device %s.", device_path(device));

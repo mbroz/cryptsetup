@@ -39,8 +39,10 @@
  * On error, both functions return -1, 0 otherwise.
  */
 
-int AF_split(const char *src, char *dst, size_t blocksize, unsigned int blocknumbers, const char *hash);
-int AF_merge(const char *src, char *dst, size_t blocksize, unsigned int blocknumbers, const char *hash);
+int AF_split(struct crypt_device *ctx, const char *src, char *dst,
+	     size_t blocksize, unsigned int blocknumbers, const char *hash);
+int AF_merge(struct crypt_device *ctx, const char *src, char *dst, size_t blocksize,
+	     unsigned int blocknumbers, const char *hash);
 size_t AF_split_sectors(size_t blocksize, unsigned int blocknumbers);
 
 int LUKS_encrypt_to_storage(

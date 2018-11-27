@@ -919,7 +919,7 @@ int LUKS_set_key(unsigned int keyIndex,
 
 	log_dbg(ctx, "Using hash %s for AF in key slot %d, %d stripes",
 		hdr->hashSpec, keyIndex, hdr->keyblock[keyIndex].stripes);
-	r = AF_split(vk->key,AfKey,vk->keylength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
+	r = AF_split(ctx, vk->key, AfKey, vk->keylength, hdr->keyblock[keyIndex].stripes, hdr->hashSpec);
 	if (r < 0)
 		goto out;
 
@@ -1018,7 +1018,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 	if (r < 0)
 		goto out;
 
-	r = AF_merge(AfKey,vk->key,vk->keylength,hdr->keyblock[keyIndex].stripes,hdr->hashSpec);
+	r = AF_merge(ctx, AfKey, vk->key, vk->keylength, hdr->keyblock[keyIndex].stripes, hdr->hashSpec);
 	if (r < 0)
 		goto out;
 

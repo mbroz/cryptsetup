@@ -2059,7 +2059,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
 				  DM_ACTIVE_CRYPT_KEY, &dmd);
 	if (r < 0) {
-		log_err(NULL, _("Device %s is not active."), name);
+		log_err(cd, _("Device %s is not active."), name);
 		return -EINVAL;
 	}
 
@@ -2091,7 +2091,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 			crypt_get_device_name(cd));
 		/* Here we always use default size not new_size */
 		if (crypt_loop_resize(crypt_get_device_name(cd)))
-			log_err(NULL, _("Cannot resize loop device."));
+			log_err(cd, _("Cannot resize loop device."));
 	}
 
 	r = device_block_adjust(cd, dmd.data_device, DEV_OK,
@@ -2282,12 +2282,12 @@ void crypt_free(struct crypt_device *cd)
 	free(cd);
 }
 
-static char *crypt_get_device_key_description(const char *name)
+static char *crypt_get_device_key_description(struct crypt_device *cd, const char *name)
 {
 	char *tmp = NULL;
 	struct crypt_dm_active_device dmd;
 
-	if (dm_query_device(NULL, name, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmd) < 0)
+	if (dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmd) < 0)
 		return NULL;
 
 	if (dmd.target == DM_CRYPT) {
@@ -2346,7 +2346,7 @@ int crypt_suspend(struct crypt_device *cd,
 		goto out;
 	}
 
-	key_desc = crypt_get_device_key_description(name);
+	key_desc = crypt_get_device_key_description(cd, name);
 
 	/* we can't simply wipe wrapped keys */
 	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd), crypt_get_cipher_mode(cd)))
@@ -2635,7 +2635,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 		r = LUKS2_keyslot_open(cd, keyslot_old, CRYPT_ANY_SEGMENT, passphrase, passphrase_size, &vk);
 		/* will fail for keyslots w/o digest. fix if supported in a future */
 		if (r >= 0) {
-			digest = LUKS2_digest_by_keyslot(cd, &cd->u.luks2.hdr, r);
+			digest = LUKS2_digest_by_keyslot(&cd->u.luks2.hdr, r);
 			if (digest < 0)
 				r = -EINVAL;
 		}
@@ -3297,7 +3297,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 					namei = device_dm_name(dmd.data_device);
 			}
 
-			key_desc = crypt_get_device_key_description(name);
+			key_desc = crypt_get_device_key_description(cd, name);
 
 			if (isTCRYPT(cd->type))
 				r = TCRYPT_deactivate(cd, name, flags);

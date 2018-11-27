@@ -83,11 +83,11 @@ int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 	if (segment == CRYPT_ANY_SEGMENT)
 		return 0;
 
-	keyslot_digest = LUKS2_digest_by_keyslot(NULL, hdr, keyslot);
+	keyslot_digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 	if (keyslot_digest < 0)
 		return -EINVAL;
 
-	segment_digest = LUKS2_digest_by_segment(NULL, hdr, segment);
+	segment_digest = LUKS2_digest_by_segment(hdr, segment);
 	if (segment_digest < 0)
 		return segment_digest;
 
@@ -178,7 +178,7 @@ int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 static int LUKS2_keyslot_unbound(struct luks2_hdr *hdr, int keyslot)
 {
 	json_object *jobj_digest, *jobj_segments;
-	int digest = LUKS2_digest_by_keyslot(NULL, hdr, keyslot);
+	int digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 
 	if (digest < 0)
 		return 0;
@@ -597,10 +597,10 @@ int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_foreach(jobj_keyslots, slot, val) {
 		keyslot = atoi(slot);
 		json_object_object_get_ex(val, "type", &jobj_type);
-		h = LUKS2_keyslot_handler_type(NULL, json_object_get_string(jobj_type));
+		h = LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj_type));
 		if (!h)
 			continue;
-		if (h->validate && h->validate(NULL, val)) {
+		if (h->validate && h->validate(cd, val)) {
 			log_dbg(cd, "Keyslot type %s validation failed on keyslot %d.", h->name, keyslot);
 			return -EINVAL;
 		}
@@ -614,7 +614,7 @@ int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 	return 0;
 }
 
-void LUKS2_keyslots_repair(json_object *jobj_keyslots)
+void LUKS2_keyslots_repair(struct crypt_device *cd, json_object *jobj_keyslots)
 {
 	const keyslot_handler *h;
 	json_object *jobj_type;
@@ -626,8 +626,8 @@ void LUKS2_keyslots_repair(json_object *jobj_keyslots)
 		    !json_object_is_type(jobj_type, json_type_string))
 			continue;
 
-		h = LUKS2_keyslot_handler_type(NULL, json_object_get_string(jobj_type));
+		h = LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj_type));
 		if (h && h->repair)
-			h->repair(NULL, val);
+			h->repair(cd, val);
 	}
 }

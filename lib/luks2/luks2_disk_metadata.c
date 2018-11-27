@@ -504,7 +504,7 @@ static int validate_luks2_json_object(struct crypt_device *cd, json_object *jobj
 	if (r) {
 		log_dbg(cd, "Repairing JSON metadata.");
 		/* try to correct known glitches */
-		LUKS2_hdr_repair(jobj_hdr);
+		LUKS2_hdr_repair(cd, jobj_hdr);
 
 		/* run validation again */
 		r = LUKS2_hdr_validate(cd, jobj_hdr, length);
@@ -683,7 +683,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 		if (do_recovery) {
 			memcpy(&hdr_disk2, &hdr_disk1, LUKS2_HDR_BIN_LEN);
-			r = crypt_random_get(NULL, (char*)hdr_disk2.salt, sizeof(hdr_disk2.salt), CRYPT_RND_SALT);
+			r = crypt_random_get(cd, (char*)hdr_disk2.salt, sizeof(hdr_disk2.salt), CRYPT_RND_SALT);
 			if (r)
 				log_dbg(cd, "Cannot generate master salt.");
 			else {
@@ -704,7 +704,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 		if (do_recovery) {
 			memcpy(&hdr_disk1, &hdr_disk2, LUKS2_HDR_BIN_LEN);
-			r = crypt_random_get(NULL, (char*)hdr_disk1.salt, sizeof(hdr_disk1.salt), CRYPT_RND_SALT);
+			r = crypt_random_get(cd, (char*)hdr_disk1.salt, sizeof(hdr_disk1.salt), CRYPT_RND_SALT);
 			if (r)
 				log_dbg(cd, "Cannot generate master salt.");
 			else {

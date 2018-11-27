@@ -261,9 +261,7 @@ int LUKS2_tokens_count(struct luks2_hdr *hdr);
 /*
  * Generic LUKS2 digest
  */
-int LUKS2_digest_by_segment(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int segment);
+int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment);
 
 int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
@@ -295,9 +293,7 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd,
 	int assign,
 	int commit);
 
-int LUKS2_digest_by_keyslot(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot);
+int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot);
 
 int LUKS2_digest_create(struct crypt_device *cd,
 	const char *type,

@@ -91,9 +91,7 @@ int LUKS2_digest_create(struct crypt_device *cd,
 	return dh->store(cd, digest, vk->key, vk->keylength) ?: digest;
 }
 
-int LUKS2_digest_by_keyslot(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot)
+int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 {
 	char keyslot_name[16];
 	json_object *jobj_digests, *jobj_digest_keyslots;
@@ -120,7 +118,7 @@ int LUKS2_digest_verify(struct crypt_device *cd,
 	const digest_handler *h;
 	int digest, r;
 
-	digest = LUKS2_digest_by_keyslot(cd, hdr, keyslot);
+	digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 	if (digest < 0)
 		return digest;
 
@@ -156,7 +154,7 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	const digest_handler *h;
 	int digest, r;
 
-	digest = LUKS2_digest_by_segment(cd, hdr, segment);
+	digest = LUKS2_digest_by_segment(hdr, segment);
 	if (digest < 0)
 		return digest;
 
@@ -176,9 +174,7 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 }
 
 /* FIXME: segment can have more digests */
-int LUKS2_digest_by_segment(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int segment)
+int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment)
 {
 	char segment_name[16];
 	json_object *jobj_digests, *jobj_digest_segments;
@@ -374,7 +370,7 @@ static char *get_key_description_by_digest(struct crypt_device *cd, int digest)
 int LUKS2_key_description_by_segment(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int segment)
 {
-	char *desc = get_key_description_by_digest(cd, LUKS2_digest_by_segment(cd, hdr, segment));
+	char *desc = get_key_description_by_digest(cd, LUKS2_digest_by_segment(hdr, segment));
 	int r;
 
 	r = crypt_volume_key_set_description(vk, desc);
@@ -385,7 +381,7 @@ int LUKS2_key_description_by_segment(struct crypt_device *cd,
 int LUKS2_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int keyslot)
 {
-	char *desc = get_key_description_by_digest(cd, LUKS2_digest_by_keyslot(cd, hdr, keyslot));
+	char *desc = get_key_description_by_digest(cd, LUKS2_digest_by_keyslot(hdr, keyslot));
 	int r;
 
 	r = crypt_volume_key_set_description(vk, desc);

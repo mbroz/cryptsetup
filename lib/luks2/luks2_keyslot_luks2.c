@@ -281,7 +281,7 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 		return -ENOMEM;
 	}
 
-	r = AF_split(volume_key, AfKey, volume_key_len, LUKS_STRIPES, af_hash);
+	r = AF_split(cd, volume_key, AfKey, volume_key_len, LUKS_STRIPES, af_hash);
 
 	if (r == 0) {
 		log_dbg(cd, "Updating keyslot area [0x%04x].", (unsigned)area_offset);
@@ -369,7 +369,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	}
 
 	if (r == 0)
-		r = AF_merge(AfKey, volume_key, volume_key_len, LUKS_STRIPES, af_hash);
+		r = AF_merge(cd, AfKey, volume_key, volume_key_len, LUKS_STRIPES, af_hash);
 
 	crypt_free_volume_key(derived_key);
 	crypt_safe_free(AfKey);
