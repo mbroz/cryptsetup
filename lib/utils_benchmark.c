@@ -269,13 +269,18 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	return r;
 }
 
+struct benchmark_usrptr {
+	struct crypt_device *cd;
+	struct crypt_pbkdf_type *pbkdf;
+};
+
 static int benchmark_callback(uint32_t time_ms, void *usrptr)
 {
-	struct crypt_pbkdf_type *pbkdf = usrptr;
+	struct benchmark_usrptr *u = usrptr;
 
-	log_dbg(NULL, "PBKDF benchmark: memory cost = %u, iterations = %u, "
-		"threads = %u (took %u ms)", pbkdf->max_memory_kb,
-		pbkdf->iterations, pbkdf->parallel_threads, time_ms);
+	log_dbg(u->cd, "PBKDF benchmark: memory cost = %u, iterations = %u, "
+		"threads = %u (took %u ms)", u->pbkdf->max_memory_kb,
+		u->pbkdf->iterations, u->pbkdf->parallel_threads, time_ms);
 
 	return 0;
 }
@@ -295,6 +300,10 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 	double PBKDF2_tmp;
 	uint32_t ms_tmp;
 	int r = -EINVAL;
+	struct benchmark_usrptr u = {
+		.cd = cd,
+		.pbkdf = pbkdf
+	};
 
 	r = crypt_pbkdf_get_limits(pbkdf->type, &pbkdf_limits);
 	if (r)
@@ -321,7 +330,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 		pbkdf->max_memory_kb = 0; /* N/A in PBKDF2 */
 
 		r = crypt_benchmark_pbkdf(cd, pbkdf, "foo", 3, "bar", 3,
-					volume_key_size, &benchmark_callback, pbkdf);
+					volume_key_size, &benchmark_callback, &u);
 		pbkdf->time_ms = ms_tmp;
 		if (r < 0) {
 			log_err(cd, _("Not compatible PBKDF2 options (using hash algorithm %s)."),
@@ -342,7 +351,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 
 		r = crypt_benchmark_pbkdf(cd, pbkdf, "foo", 3,
 			"0123456789abcdef0123456789abcdef", 32,
-			volume_key_size, &benchmark_callback, pbkdf);
+			volume_key_size, &benchmark_callback, &u);
 		if (r < 0)
 			log_err(cd, _("Not compatible PBKDF options."));
 	}
