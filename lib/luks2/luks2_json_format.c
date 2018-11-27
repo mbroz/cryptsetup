@@ -126,7 +126,7 @@ int LUKS2_check_metadata_area_size(uint64_t metadata_size)
 
 int LUKS2_check_keyslots_area_size(uint64_t keyslots_size)
 {
-	return (!keyslots_size || MISALIGNED_4K(keyslots_size) ||
+	return (MISALIGNED_4K(keyslots_size) ||
 		keyslots_size > LUKS2_MAX_KEYSLOTS_SIZE);
 }
 
