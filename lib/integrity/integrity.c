@@ -220,7 +220,7 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		dmdi.u.integrity.journal_crypt = params->journal_crypt;
 	}
 
-	log_dbg("Trying to activate INTEGRITY device on top of %s, using name %s, tag size %d, provided sectors %" PRIu64".",
+	log_dbg(cd, "Trying to activate INTEGRITY device on top of %s, using name %s, tag size %d, provided sectors %" PRIu64".",
 		device_path(dmdi.data_device), name, dmdi.u.integrity.tag_size, dmdi.size);
 
 	r = device_block_adjust(cd, dmdi.data_device, DEV_EXCL,
@@ -276,7 +276,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 
 	snprintf(tmp_name, sizeof(tmp_name), "temporary-cryptsetup-%s", tmp_uuid);
 
-	log_dbg("Trying to format INTEGRITY device on top of %s, tmp name %s, tag size %d.",
+	log_dbg(cd, "Trying to format INTEGRITY device on top of %s, tmp name %s, tag size %d.",
 		device_path(dmdi.data_device), tmp_name, dmdi.u.integrity.tag_size);
 
 	r = device_block_adjust(cd, dmdi.data_device, DEV_EXCL, dmdi.u.integrity.offset, NULL, NULL);

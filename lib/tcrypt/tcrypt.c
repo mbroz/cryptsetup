@@ -202,7 +202,8 @@ static struct tcrypt_algs tcrypt_cipher[] = {
 {}
 };
 
-static int TCRYPT_hdr_from_disk(struct tcrypt_phdr *hdr,
+static int TCRYPT_hdr_from_disk(struct crypt_device *cd,
+				struct tcrypt_phdr *hdr,
 				struct crypt_params_tcrypt *params,
 				int kdf_index, int cipher_index)
 {
@@ -214,14 +215,14 @@ static int TCRYPT_hdr_from_disk(struct tcrypt_phdr *hdr,
 	crc32 = crypt_crc32(~0, (unsigned char*)&hdr->d, size) ^ ~0;
 	if (be16_to_cpu(hdr->d.version) > 3 &&
 	    crc32 != be32_to_cpu(hdr->d.header_crc32)) {
-		log_dbg("TCRYPT header CRC32 mismatch.");
+		log_dbg(cd, "TCRYPT header CRC32 mismatch.");
 		return -EINVAL;
 	}
 
 	/* Check CRC32 of keys */
 	crc32 = crypt_crc32(~0, (unsigned char*)hdr->d.keys, sizeof(hdr->d.keys)) ^ ~0;
 	if (crc32 != be32_to_cpu(hdr->d.keys_crc32)) {
-		log_dbg("TCRYPT keys CRC32 mismatch.");
+		log_dbg(cd, "TCRYPT keys CRC32 mismatch.");
 		return -EINVAL;
 	}
 
@@ -433,7 +434,7 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 	for (i = 0; tcrypt_cipher[i].chain_count; i++) {
 		if (!(flags & CRYPT_TCRYPT_LEGACY_MODES) && tcrypt_cipher[i].legacy)
 			continue;
-		log_dbg("TCRYPT:  trying cipher %s-%s",
+		log_dbg(cd, "TCRYPT:  trying cipher %s-%s",
 			tcrypt_cipher[i].long_name, tcrypt_cipher[i].mode);
 
 		memcpy(&hdr2.e, &hdr->e, TCRYPT_HDR_LEN);
@@ -450,7 +451,7 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 		}
 
 		if (r < 0) {
-			log_dbg("TCRYPT:   returned error %d, skipped.", r);
+			log_dbg(cd, "TCRYPT:   returned error %d, skipped.", r);
 			if (r == -ENOTSUP)
 				break;
 			r = -ENOENT;
@@ -458,14 +459,14 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 		}
 
 		if (!strncmp(hdr2.d.magic, TCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
-			log_dbg("TCRYPT: Signature magic detected.");
+			log_dbg(cd, "TCRYPT: Signature magic detected.");
 			memcpy(&hdr->e, &hdr2.e, TCRYPT_HDR_LEN);
 			r = i;
 			break;
 		}
 		if ((flags & CRYPT_TCRYPT_VERA_MODES) &&
 		     !strncmp(hdr2.d.magic, VCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
-			log_dbg("TCRYPT: Signature magic detected (Veracrypt).");
+			log_dbg(cd, "TCRYPT: Signature magic detected (Veracrypt).");
 			memcpy(&hdr->e, &hdr2.e, TCRYPT_HDR_LEN);
 			r = i;
 			break;
@@ -485,7 +486,7 @@ static int TCRYPT_pool_keyfile(struct crypt_device *cd,
 	int i, j, fd, data_size, r = -EIO;
 	uint32_t crc;
 
-	log_dbg("TCRYPT: using keyfile %s.", keyfile);
+	log_dbg(cd, "TCRYPT: using keyfile %s.", keyfile);
 
 	data = malloc(TCRYPT_KEYFILE_LEN);
 	if (!data)
@@ -573,7 +574,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			iterations = tcrypt_kdf[i].iterations;
 
 		/* Derive header key */
-		log_dbg("TCRYPT: trying KDF: %s-%s-%d%s.",
+		log_dbg(cd, "TCRYPT: trying KDF: %s-%s-%d%s.",
 			tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations,
 			params->veracrypt_pim && tcrypt_kdf[i].veracrypt ? "-PIM" : "");
 		r = crypt_pbkdf(tcrypt_kdf[i].name, tcrypt_kdf[i].hash,
@@ -608,15 +609,15 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = TCRYPT_hdr_from_disk(hdr, params, i, r);
+	r = TCRYPT_hdr_from_disk(cd, hdr, params, i, r);
 	if (!r) {
-		log_dbg("TCRYPT: Magic: %s, Header version: %d, req. %d, sector %d"
+		log_dbg(cd, "TCRYPT: Magic: %s, Header version: %d, req. %d, sector %d"
 			", mk_offset %" PRIu64 ", hidden_size %" PRIu64
 			", volume size %" PRIu64, tcrypt_kdf[i].veracrypt ?
 			VCRYPT_HDR_MAGIC : TCRYPT_HDR_MAGIC,
 			(int)hdr->d.version, (int)hdr->d.version_tc, (int)hdr->d.sector_size,
 			hdr->d.mk_offset, hdr->d.hidden_volume_size, hdr->d.volume_size);
-		log_dbg("TCRYPT: Header cipher %s-%s, key size %zu",
+		log_dbg(cd, "TCRYPT: Header cipher %s-%s, key size %zu",
 			params->cipher, params->mode, params->key_size);
 	}
 out:
@@ -638,14 +639,14 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 
 	assert(sizeof(struct tcrypt_phdr) == 512);
 
-	log_dbg("Reading TCRYPT header of size %zu bytes from device %s.",
+	log_dbg(cd, "Reading TCRYPT header of size %zu bytes from device %s.",
 		hdr_size, device_path(device));
 
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER &&
 	    crypt_dev_is_partition(device_path(device))) {
 		base_device_path = crypt_get_base_device(device_path(device));
 
-		log_dbg("Reading TCRYPT system header from device %s.", base_device_path ?: "?");
+		log_dbg(cd, "Reading TCRYPT system header from device %s.", base_device_path ?: "?");
 		if (!base_device_path)
 			return -EINVAL;
 
@@ -743,7 +744,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	};
 
 	if (!hdr->d.version) {
-		log_dbg("TCRYPT: this function is not supported without encrypted header load.");
+		log_dbg(cd, "TCRYPT: this function is not supported without encrypted header load.");
 		return -ENOTSUP;
 	}
 
@@ -843,7 +844,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 			dmd.u.crypt.offset = 0;
 		}
 
-		log_dbg("Trying to activate TCRYPT device %s using cipher %s.",
+		log_dbg(cd, "Trying to activate TCRYPT device %s using cipher %s.",
 			dm_name, dmd.u.crypt.cipher);
 		r = dm_create_device(cd, dm_name, CRYPT_TCRYPT, &dmd, 0);
 

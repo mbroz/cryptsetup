@@ -160,7 +160,7 @@ static int device_ready(struct device *device)
 	size_t tmp_size;
 
 	if (device->o_direct) {
-		log_dbg("Trying to open and read device %s with direct-io.",
+		log_dbg(NULL, "Trying to open and read device %s with direct-io.",
 			device_path(device));
 		device->o_direct = 0;
 		devfd = open(device_path(device), O_RDONLY | O_DIRECT);
@@ -175,7 +175,7 @@ static int device_ready(struct device *device)
 	}
 
 	if (devfd < 0) {
-		log_dbg("Trying to open device %s without direct-io.",
+		log_dbg(NULL, "Trying to open device %s without direct-io.",
 			device_path(device));
 		devfd = open(device_path(device), O_RDONLY);
 	}
@@ -214,10 +214,10 @@ static int _open_locked(struct device *device, int flags)
 {
 	int fd;
 
-	log_dbg("Opening locked device %s", device_path(device));
+	log_dbg(NULL, "Opening locked device %s", device_path(device));
 
 	if ((flags & O_ACCMODE) != O_RDONLY && device_locked_readonly(device->lh)) {
-		log_dbg("Can not open locked device %s in write mode. Read lock held.", device_path(device));
+		log_dbg(NULL, "Can not open locked device %s in write mode. Read lock held.", device_path(device));
 		return -EAGAIN;
 	}
 
@@ -225,10 +225,10 @@ static int _open_locked(struct device *device, int flags)
 	if (fd < 0)
 		return -errno;
 
-	if (device_locked_verify(fd, device->lh)) {
+	if (device_locked_verify(NULL, fd, device->lh)) {
 		/* fd doesn't correspond to a locked resource */
 		close(fd);
-		log_dbg("Failed to verify lock resource for device %s.", device_path(device));
+		log_dbg(NULL, "Failed to verify lock resource for device %s.", device_path(device));
 		return -EINVAL;
 	}
 
@@ -242,7 +242,7 @@ static int _open_locked(struct device *device, int flags)
 void device_sync(struct device *device, int devfd)
 {
 	if (fsync(devfd) == -1)
-		log_dbg("Cannot sync device %s.", device_path(device));
+		log_dbg(NULL, "Cannot sync device %s.", device_path(device));
 }
 
 /*
@@ -267,7 +267,7 @@ static int device_open_internal(struct device *device, int flags)
 		devfd = open(device_path(device), flags);
 
 	if (devfd < 0)
-		log_dbg("Cannot open device %s%s.",
+		log_dbg(NULL, "Cannot open device %s%s.",
 			device_path(device),
 			(flags & O_ACCMODE) != O_RDONLY ? " for write" : "");
 
@@ -345,7 +345,7 @@ void device_free(struct device *device)
 		return;
 
 	if (device->loop_fd != -1) {
-		log_dbg("Closed loop %s (%s).", device->path, device->file_path);
+		log_dbg(NULL, "Closed loop %s (%s).", device->path, device->file_path);
 		close(device->loop_fd);
 	}
 
@@ -421,7 +421,7 @@ void device_topology_alignment(struct device *device,
 
 	/* minimum io size */
 	if (ioctl(fd, BLKIOMIN, &min_io_size) == -1) {
-		log_dbg("Topology info for %s not supported, using default offset %lu bytes.",
+		log_dbg(NULL, "Topology info for %s not supported, using default offset %lu bytes.",
 			device->path, default_alignment);
 		goto out;
 	}
@@ -446,7 +446,7 @@ void device_topology_alignment(struct device *device,
 	if (temp_alignment && (default_alignment % temp_alignment))
 		*required_alignment = temp_alignment;
 
-	log_dbg("Topology: IO (%u/%u), offset = %lu; Required alignment is %lu bytes.",
+	log_dbg(NULL, "Topology: IO (%u/%u), offset = %lu; Required alignment is %lu bytes.",
 		min_io_size, opt_io_size, *alignment_offset, *required_alignment);
 out:
 	(void)close(fd);
@@ -469,7 +469,7 @@ size_t device_block_size(struct device *device)
 	}
 
 	if (!device->block_size)
-		log_dbg("Cannot get block size for device %s.", device_path(device));
+		log_dbg(NULL, "Cannot get block size for device %s.", device_path(device));
 
 	return device->block_size;
 }
@@ -646,7 +646,7 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 		return -ENOTSUP;
 	}
 
-	log_dbg("Allocating a free loop device.");
+	log_dbg(cd, "Allocating a free loop device.");
 
 	/* Keep the loop open, dettached on last close. */
 	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly);
@@ -713,7 +713,7 @@ int device_block_adjust(struct crypt_device *cd,
 
 	/* in case of size is set by parameter */
 	if (size && ((real_size - device_offset) < *size)) {
-		log_dbg("Device %s: offset = %" PRIu64 " requested size = %" PRIu64
+		log_dbg(cd, "Device %s: offset = %" PRIu64 " requested size = %" PRIu64
 			", backing device size = %" PRIu64,
 			device->path, device_offset, *size, real_size);
 		log_err(cd, _("Device %s is too small."), device_path(device));
@@ -724,7 +724,7 @@ int device_block_adjust(struct crypt_device *cd,
 		*flags |= CRYPT_ACTIVATE_READONLY;
 
 	if (size)
-		log_dbg("Calculated device size is %" PRIu64" sectors (%s), offset %" PRIu64 ".",
+		log_dbg(cd, "Calculated device size is %" PRIu64" sectors (%s), offset %" PRIu64 ".",
 		*size, real_readonly ? "RO" : "RW", device_offset);
 	return 0;
 }
@@ -798,7 +798,7 @@ int device_read_lock(struct crypt_device *cd, struct device *device)
 	device->lh = device_read_lock_handle(cd, device_path(device));
 
 	if (device_locked(device->lh)) {
-		log_dbg("Device %s READ lock taken.", device_path(device));
+		log_dbg(cd, "Device %s READ lock taken.", device_path(device));
 		return 0;
 	}
 
@@ -815,7 +815,7 @@ int device_write_lock(struct crypt_device *cd, struct device *device)
 	device->lh = device_write_lock_handle(cd, device_path(device));
 
 	if (device_locked(device->lh)) {
-		log_dbg("Device %s WRITE lock taken.", device_path(device));
+		log_dbg(cd, "Device %s WRITE lock taken.", device_path(device));
 		return 0;
 	}
 
@@ -829,9 +829,9 @@ void device_read_unlock(struct device *device)
 
 	assert(device_locked(device->lh) && device_locked_readonly(device->lh));
 
-	device_unlock_handle(device->lh);
+	device_unlock_handle(NULL, device->lh);
 
-	log_dbg("Device %s READ lock released.", device_path(device));
+	log_dbg(NULL, "Device %s READ lock released.", device_path(device));
 
 	device->lh = NULL;
 }
@@ -843,9 +843,9 @@ void device_write_unlock(struct device *device)
 
 	assert(device_locked(device->lh) && !device_locked_readonly(device->lh));
 
-	device_unlock_handle(device->lh);
+	device_unlock_handle(NULL, device->lh);
 
-	log_dbg("Device %s WRITE lock released.", device_path(device));
+	log_dbg(NULL, "Device %s WRITE lock released.", device_path(device));
 
 	device->lh = NULL;
 }

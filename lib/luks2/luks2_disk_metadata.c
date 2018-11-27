@@ -26,7 +26,8 @@
 /*
  * Helper functions
  */
-json_object *parse_json_len(const char *json_area, uint64_t max_length, int *json_len)
+json_object *parse_json_len(struct crypt_device *cd, const char *json_area,
+			    uint64_t max_length, int *json_len)
 {
 	json_object *jobj;
 	struct json_tokener *jtok;
@@ -37,13 +38,13 @@ json_object *parse_json_len(const char *json_area, uint64_t max_length, int *jso
 
 	jtok = json_tokener_new();
 	if (!jtok) {
-		log_dbg("ERROR: Failed to init json tokener");
+		log_dbg(cd, "ERROR: Failed to init json tokener");
 		return NULL;
 	}
 
 	jobj = json_tokener_parse_ex(jtok, json_area, max_length);
 	if (!jobj)
-		log_dbg("ERROR: Failed to parse json data (%d): %s",
+		log_dbg(cd, "ERROR: Failed to parse json data (%d): %s",
 			json_tokener_get_error(jtok),
 			json_tokener_error_desc(json_tokener_get_error(jtok)));
 	else
@@ -54,7 +55,8 @@ json_object *parse_json_len(const char *json_area, uint64_t max_length, int *jso
 	return jobj;
 }
 
-static void log_dbg_checksum(const uint8_t *csum, const char *csum_alg, const char *info)
+static void log_dbg_checksum(struct crypt_device *cd,
+			     const uint8_t *csum, const char *csum_alg, const char *info)
 {
 	char csum_txt[2*LUKS2_CHECKSUM_L+1];
 	int i;
@@ -63,7 +65,7 @@ static void log_dbg_checksum(const uint8_t *csum, const char *csum_alg, const ch
 		snprintf(&csum_txt[i*2], 3, "%02hhx", (const char)csum[i]);
 	csum_txt[i*2+1] = '\0'; /* Just to be safe, sprintf should write \0 there. */
 
-	log_dbg("Checksum:%s (%s)", &csum_txt[0], info);
+	log_dbg(cd, "Checksum:%s (%s)", &csum_txt[0], info);
 }
 
 /*
@@ -98,7 +100,8 @@ static int hdr_checksum_calculate(const char *alg, struct luks2_hdr_disk *hdr_di
 /*
  * Compare hash (checksum) of on-disk and in-memory header.
  */
-static int hdr_checksum_check(const char *alg, struct luks2_hdr_disk *hdr_disk,
+static int hdr_checksum_check(struct crypt_device *cd,
+			      const char *alg, struct luks2_hdr_disk *hdr_disk,
 			      const char *json_area, size_t json_len)
 {
 	struct luks2_hdr_disk hdr_tmp;
@@ -116,8 +119,8 @@ static int hdr_checksum_check(const char *alg, struct luks2_hdr_disk *hdr_disk,
 	if (r < 0)
 		return r;
 
-	log_dbg_checksum(hdr_disk->csum, alg, "on-disk");
-	log_dbg_checksum(hdr_tmp.csum, alg, "in-memory");
+	log_dbg_checksum(cd, hdr_disk->csum, alg, "on-disk");
+	log_dbg_checksum(cd, hdr_tmp.csum, alg, "in-memory");
 
 	if (memcmp(hdr_tmp.csum, hdr_disk->csum, (size_t)hash_size))
 		return -EINVAL;
@@ -187,7 +190,8 @@ static void hdr_to_disk(struct luks2_hdr *hdr,
 /*
  * Sanity checks before checksum is validated
  */
-static int hdr_disk_sanity_check_pre(struct luks2_hdr_disk *hdr,
+static int hdr_disk_sanity_check_pre(struct crypt_device *cd,
+				     struct luks2_hdr_disk *hdr,
 				     size_t *hdr_json_size, int secondary,
 				     uint64_t offset)
 {
@@ -195,25 +199,25 @@ static int hdr_disk_sanity_check_pre(struct luks2_hdr_disk *hdr,
 		return -EINVAL;
 
 	if (be16_to_cpu(hdr->version) != 2) {
-		log_dbg("Unsupported LUKS2 header version %u.", be16_to_cpu(hdr->version));
+		log_dbg(cd, "Unsupported LUKS2 header version %u.", be16_to_cpu(hdr->version));
 		return -EINVAL;
 	}
 
 	if (offset != be64_to_cpu(hdr->hdr_offset)) {
-		log_dbg("LUKS2 offset 0x%04x on device differs to expected offset 0x%04x.",
+		log_dbg(cd, "LUKS2 offset 0x%04x on device differs to expected offset 0x%04x.",
 			(unsigned)be64_to_cpu(hdr->hdr_offset), (unsigned)offset);
 		return -EINVAL;
 	}
 
 	if (secondary && (offset != be64_to_cpu(hdr->hdr_size))) {
-		log_dbg("LUKS2 offset 0x%04x in secondary header doesn't match size 0x%04x.",
+		log_dbg(cd, "LUKS2 offset 0x%04x in secondary header doesn't match size 0x%04x.",
 			(unsigned)offset, (unsigned)be64_to_cpu(hdr->hdr_size));
 		return -EINVAL;
 	}
 
 	/* FIXME: sanity check checksum alg. */
 
-	log_dbg("LUKS2 header version %u of size %u bytes, checksum %s.",
+	log_dbg(cd, "LUKS2 header version %u of size %u bytes, checksum %s.",
 		(unsigned)be16_to_cpu(hdr->version), (unsigned)be64_to_cpu(hdr->hdr_size),
 		hdr->checksum_alg);
 
@@ -224,13 +228,14 @@ static int hdr_disk_sanity_check_pre(struct luks2_hdr_disk *hdr,
 /*
  * Read LUKS2 header from disk at specific offset.
  */
-static int hdr_read_disk(struct device *device, struct luks2_hdr_disk *hdr_disk,
+static int hdr_read_disk(struct crypt_device *cd,
+			 struct device *device, struct luks2_hdr_disk *hdr_disk,
 			 char **json_area, uint64_t offset, int secondary)
 {
 	size_t hdr_json_size = 0;
 	int devfd = -1, r;
 
-	log_dbg("Trying to read %s LUKS2 header at offset 0x%" PRIx64 ".",
+	log_dbg(cd, "Trying to read %s LUKS2 header at offset 0x%" PRIx64 ".",
 		secondary ? "secondary" : "primary", offset);
 
 	devfd = device_open_locked(device, O_RDONLY);
@@ -248,7 +253,7 @@ static int hdr_read_disk(struct device *device, struct luks2_hdr_disk *hdr_disk,
 		return -EIO;
 	}
 
-	r = hdr_disk_sanity_check_pre(hdr_disk, &hdr_json_size, secondary, offset);
+	r = hdr_disk_sanity_check_pre(cd, hdr_disk, &hdr_json_size, secondary, offset);
 	if (r < 0) {
 		close(devfd);
 		return r;
@@ -277,9 +282,9 @@ static int hdr_read_disk(struct device *device, struct luks2_hdr_disk *hdr_disk,
 	/*
 	 * Calculate and validate checksum and zero it afterwards.
 	 */
-	if (hdr_checksum_check(hdr_disk->checksum_alg, hdr_disk,
+	if (hdr_checksum_check(cd, hdr_disk->checksum_alg, hdr_disk,
 				*json_area, hdr_json_size)) {
-		log_dbg("LUKS2 header checksum error (offset %" PRIu64 ").", offset);
+		log_dbg(cd, "LUKS2 header checksum error (offset %" PRIu64 ").", offset);
 		r = -EINVAL;
 	}
 	memset(hdr_disk->csum, 0, LUKS2_CHECKSUM_L);
@@ -290,15 +295,16 @@ static int hdr_read_disk(struct device *device, struct luks2_hdr_disk *hdr_disk,
 /*
  * Write LUKS2 header to disk at specific offset.
  */
-static int hdr_write_disk(struct device *device, struct luks2_hdr *hdr,
-		   const char *json_area, int secondary)
+static int hdr_write_disk(struct crypt_device *cd,
+			  struct device *device, struct luks2_hdr *hdr,
+			  const char *json_area, int secondary)
 {
 	struct luks2_hdr_disk hdr_disk;
 	uint64_t offset = secondary ? hdr->hdr_size : 0;
 	size_t hdr_json_len;
 	int devfd = -1, r;
 
-	log_dbg("Trying to write LUKS2 header (%zu bytes) at offset %" PRIu64 ".",
+	log_dbg(cd, "Trying to write LUKS2 header (%zu bytes) at offset %" PRIu64 ".",
 		hdr->hdr_size, offset);
 
 	/* FIXME: read-only device silent fail? */
@@ -341,7 +347,7 @@ static int hdr_write_disk(struct device *device, struct luks2_hdr *hdr,
 		close(devfd);
 		return r;
 	}
-	log_dbg_checksum(hdr_disk.csum, hdr_disk.checksum_alg, "in-memory");
+	log_dbg_checksum(cd, hdr_disk.csum, hdr_disk.checksum_alg, "in-memory");
 
 	if (write_lseek_blockwise(devfd, device_block_size(device),
 				  device_alignment(device), (char *)&hdr_disk,
@@ -359,12 +365,11 @@ static int LUKS2_check_device_size(struct crypt_device *cd, struct device *devic
 	uint64_t dev_size;
 
 	if (device_size(device, &dev_size)) {
-		log_dbg("Cannot get device size for device %s.", device_path(device));
+		log_dbg(cd, "Cannot get device size for device %s.", device_path(device));
 		return -EIO;
 	}
 
-	log_dbg("Device size %" PRIu64 ", header size %"
-		PRIu64 ".", dev_size, hdr_size);
+	log_dbg(cd, "Device size %" PRIu64 ", header size %" PRIu64 ".", dev_size, hdr_size);
 
 	if (hdr_size > dev_size) {
 		/* If it is header file, increase its size */
@@ -391,7 +396,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	int r;
 
 	if (hdr->version != 2) {
-		log_dbg("Unsupported LUKS2 header version (%u).", hdr->version);
+		log_dbg(cd, "Unsupported LUKS2 header version (%u).", hdr->version);
 		return -EINVAL;
 	}
 
@@ -414,12 +419,12 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	json_text = json_object_to_json_string_ext(hdr->jobj,
 			JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
 	if (!json_text || !*json_text) {
-		log_dbg("Cannot parse JSON object to text representation.");
+		log_dbg(cd, "Cannot parse JSON object to text representation.");
 		free(json_area);
 		return -ENOMEM;
 	}
 	if (strlen(json_text) > (json_area_len - 1)) {
-		log_dbg("JSON is too large (%zu > %zu).", strlen(json_text), json_area_len);
+		log_dbg(cd, "JSON is too large (%zu > %zu).", strlen(json_text), json_area_len);
 		free(json_area);
 		return -EINVAL;
 	}
@@ -436,12 +441,12 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	}
 
 	/* Write primary and secondary header */
-	r = hdr_write_disk(device, hdr, json_area, 0);
+	r = hdr_write_disk(cd, device, hdr, json_area, 0);
 	if (!r)
-		r = hdr_write_disk(device, hdr, json_area, 1);
+		r = hdr_write_disk(cd, device, hdr, json_area, 1);
 
 	if (r)
-		log_dbg("LUKS2 header write failed (%d).", r);
+		log_dbg(cd, "LUKS2 header write failed (%d).", r);
 
 	device_write_unlock(device);
 
@@ -450,19 +455,19 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	free(json_area);
 	return r;
 }
-
-static int validate_json_area(const char *json_area, uint64_t json_len, uint64_t max_length)
+static int validate_json_area(struct crypt_device *cd, const char *json_area,
+			      uint64_t json_len, uint64_t max_length)
 {
 	char c;
 
 	/* Enforce there are no needless opening bytes */
 	if (*json_area != '{') {
-		log_dbg("ERROR: Opening character must be left curly bracket: '{'.");
+		log_dbg(cd, "ERROR: Opening character must be left curly bracket: '{'.");
 		return -EINVAL;
 	}
 
 	if (json_len >= max_length) {
-		log_dbg("ERROR: Missing trailing null byte beyond parsed json data string.");
+		log_dbg(cd, "ERROR: Missing trailing null byte beyond parsed json data string.");
 		return -EINVAL;
 	}
 
@@ -475,7 +480,7 @@ static int validate_json_area(const char *json_area, uint64_t json_len, uint64_t
 	do {
 		c = *(json_area + json_len);
 		if (c != '\0') {
-			log_dbg("ERROR: Forbidden ascii code 0x%02hhx found beyond json data string at offset %" PRIu64,
+			log_dbg(cd, "ERROR: Forbidden ascii code 0x%02hhx found beyond json data string at offset %" PRIu64,
 				c, json_len);
 			return -EINVAL;
 		}
@@ -484,37 +489,38 @@ static int validate_json_area(const char *json_area, uint64_t json_len, uint64_t
 	return 0;
 }
 
-static int validate_luks2_json_object(json_object *jobj_hdr, uint64_t length)
+static int validate_luks2_json_object(struct crypt_device *cd, json_object *jobj_hdr, uint64_t length)
 {
 	int r;
 
 	/* we require top level object to be of json_type_object */
 	r = !json_object_is_type(jobj_hdr, json_type_object);
 	if (r) {
-		log_dbg("ERROR: Resulting object is not a json object type");
+		log_dbg(cd, "ERROR: Resulting object is not a json object type");
 		return r;
 	}
 
-	r = LUKS2_hdr_validate(jobj_hdr, length);
+	r = LUKS2_hdr_validate(cd, jobj_hdr, length);
 	if (r) {
-		log_dbg("Repairing JSON metadata.");
+		log_dbg(cd, "Repairing JSON metadata.");
 		/* try to correct known glitches */
 		LUKS2_hdr_repair(jobj_hdr);
 
 		/* run validation again */
-		r = LUKS2_hdr_validate(jobj_hdr, length);
+		r = LUKS2_hdr_validate(cd, jobj_hdr, length);
 	}
 
 	if (r)
-		log_dbg("ERROR: LUKS2 validation failed");
+		log_dbg(cd, "ERROR: LUKS2 validation failed");
 
 	return r;
 }
 
-static json_object *parse_and_validate_json(const char *json_area, uint64_t max_length)
+static json_object *parse_and_validate_json(struct crypt_device *cd,
+					    const char *json_area, uint64_t max_length)
 {
 	int json_len, r;
-	json_object *jobj = parse_json_len(json_area, max_length, &json_len);
+	json_object *jobj = parse_json_len(cd, json_area, max_length, &json_len);
 
 	if (!jobj)
 		return NULL;
@@ -522,9 +528,9 @@ static json_object *parse_and_validate_json(const char *json_area, uint64_t max_
 	/* successful parse_json_len must not return offset <= 0 */
 	assert(json_len > 0);
 
-	r = validate_json_area(json_area, json_len, max_length);
+	r = validate_json_area(cd, json_area, json_len, max_length);
 	if (!r)
-		r = validate_luks2_json_object(jobj, max_length);
+		r = validate_luks2_json_object(cd, jobj, max_length);
 
 	if (r) {
 		json_object_put(jobj);
@@ -534,19 +540,19 @@ static json_object *parse_and_validate_json(const char *json_area, uint64_t max_
 	return jobj;
 }
 
-static int detect_device_signatures(const char *path)
+static int detect_device_signatures(struct crypt_device *cd, const char *path)
 {
 	blk_probe_status prb_state;
 	int r;
 	struct blkid_handle *h;
 
 	if (!blk_supported()) {
-		log_dbg("Blkid probing of device signatures disabled.");
+		log_dbg(cd, "Blkid probing of device signatures disabled.");
 		return 0;
 	}
 
 	if ((r = blk_init_by_path(&h, path))) {
-		log_dbg("Failed to initialize blkid_handle by path.");
+		log_dbg(cd, "Failed to initialize blkid_handle by path.");
 		return -EINVAL;
 	}
 
@@ -560,22 +566,22 @@ static int detect_device_signatures(const char *path)
 
 	switch (prb_state) {
 	case PRB_AMBIGUOUS:
-		log_dbg("Blkid probe couldn't decide device type unambiguously.");
+		log_dbg(cd, "Blkid probe couldn't decide device type unambiguously.");
 		/* fall through */
 	case PRB_FAIL:
-		log_dbg("Blkid probe failed.");
+		log_dbg(cd, "Blkid probe failed.");
 		r = -EINVAL;
 		break;
 	case PRB_OK: /* crypto_LUKS type is filtered out */
 		r = -EINVAL;
 
 		if (blk_is_partition(h))
-			log_dbg("Blkid probe detected partition type '%s'", blk_get_partition_type(h));
+			log_dbg(cd, "Blkid probe detected partition type '%s'", blk_get_partition_type(h));
 		else if (blk_is_superblock(h))
-			log_dbg("blkid probe detected superblock type '%s'", blk_get_superblock_type(h));
+			log_dbg(cd, "blkid probe detected superblock type '%s'", blk_get_superblock_type(h));
 		break;
 	case PRB_EMPTY:
-		log_dbg("Blkid probe detected no foreign device signature.");
+		log_dbg(cd, "Blkid probe detected no foreign device signature.");
 	}
 	blk_free(h);
 	return r;
@@ -600,16 +606,16 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	/* Skip auto-recovery if locks are disabled and we're not doing LUKS2 explicit repair */
 	if (do_recovery && do_blkprobe && !crypt_metadata_locking_enabled()) {
 		do_recovery = 0;
-		log_dbg("Disabling header auto-recovery due to locking being disabled.");
+		log_dbg(cd, "Disabling header auto-recovery due to locking being disabled.");
 	}
 
 	/*
 	 * Read primary LUKS2 header (offset 0).
 	 */
 	state_hdr1 = HDR_FAIL;
-	r = hdr_read_disk(device, &hdr_disk1, &json_area1, 0, 0);
+	r = hdr_read_disk(cd, device, &hdr_disk1, &json_area1, 0, 0);
 	if (r == 0) {
-		jobj_hdr1 = parse_and_validate_json(json_area1, be64_to_cpu(hdr_disk1.hdr_size) - LUKS2_HDR_BIN_LEN);
+		jobj_hdr1 = parse_and_validate_json(cd, json_area1, be64_to_cpu(hdr_disk1.hdr_size) - LUKS2_HDR_BIN_LEN);
 		state_hdr1 = jobj_hdr1 ? HDR_OK : HDR_OBSOLETE;
 	} else if (r == -EIO)
 		state_hdr1 = HDR_FAIL_IO;
@@ -619,9 +625,9 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	 */
 	state_hdr2 = HDR_FAIL;
 	if (state_hdr1 != HDR_FAIL && state_hdr1 != HDR_FAIL_IO) {
-		r = hdr_read_disk(device, &hdr_disk2, &json_area2, be64_to_cpu(hdr_disk1.hdr_size), 1);
+		r = hdr_read_disk(cd, device, &hdr_disk2, &json_area2, be64_to_cpu(hdr_disk1.hdr_size), 1);
 		if (r == 0) {
-			jobj_hdr2 = parse_and_validate_json(json_area2, be64_to_cpu(hdr_disk2.hdr_size) - LUKS2_HDR_BIN_LEN);
+			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size) - LUKS2_HDR_BIN_LEN);
 			state_hdr2 = jobj_hdr2 ? HDR_OK : HDR_OBSOLETE;
 		} else if (r == -EIO)
 			state_hdr2 = HDR_FAIL_IO;
@@ -630,10 +636,10 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 		 * No header size, check all known offsets.
 		 */
 		for (r = -EINVAL,i = 0; r < 0 && i < ARRAY_SIZE(hdr2_offsets); i++)
-			r = hdr_read_disk(device, &hdr_disk2, &json_area2, hdr2_offsets[i], 1);
+			r = hdr_read_disk(cd, device, &hdr_disk2, &json_area2, hdr2_offsets[i], 1);
 
 		if (r == 0) {
-			jobj_hdr2 = parse_and_validate_json(json_area2, be64_to_cpu(hdr_disk2.hdr_size) - LUKS2_HDR_BIN_LEN);
+			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size) - LUKS2_HDR_BIN_LEN);
 			state_hdr2 = jobj_hdr2 ? HDR_OK : HDR_OBSOLETE;
 		} else if (r == -EIO)
 			state_hdr2 = HDR_FAIL_IO;
@@ -667,9 +673,9 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	 * Try to rewrite (recover) bad header. Always regenerate salt for bad header.
 	 */
 	if (state_hdr1 == HDR_OK && state_hdr2 != HDR_OK) {
-		log_dbg("Secondary LUKS2 header requires recovery.");
+		log_dbg(cd, "Secondary LUKS2 header requires recovery.");
 
-		if (do_blkprobe && (r = detect_device_signatures(device_path(device)))) {
+		if (do_blkprobe && (r = detect_device_signatures(cd, device_path(device)))) {
 			log_err(cd, _("Device contains ambiguous signatures, cannot auto-recover LUKS2.\n"
 				      "Please run \"cryptsetup repair\" for recovery."));
 			goto err;
@@ -679,18 +685,18 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 			memcpy(&hdr_disk2, &hdr_disk1, LUKS2_HDR_BIN_LEN);
 			r = crypt_random_get(NULL, (char*)hdr_disk2.salt, sizeof(hdr_disk2.salt), CRYPT_RND_SALT);
 			if (r)
-				log_dbg("Cannot generate master salt.");
+				log_dbg(cd, "Cannot generate master salt.");
 			else {
 				hdr_from_disk(&hdr_disk1, &hdr_disk2, hdr, 0);
-				r = hdr_write_disk(device, hdr, json_area1, 1);
+				r = hdr_write_disk(cd, device, hdr, json_area1, 1);
 			}
 			if (r)
-				log_dbg("Secondary LUKS2 header recovery failed.");
+				log_dbg(cd, "Secondary LUKS2 header recovery failed.");
 		}
 	} else if (state_hdr1 != HDR_OK && state_hdr2 == HDR_OK) {
-		log_dbg("Primary LUKS2 header requires recovery.");
+		log_dbg(cd, "Primary LUKS2 header requires recovery.");
 
-		if (do_blkprobe && (r = detect_device_signatures(device_path(device)))) {
+		if (do_blkprobe && (r = detect_device_signatures(cd, device_path(device)))) {
 			log_err(cd, _("Device contains ambiguous signatures, cannot auto-recover LUKS2.\n"
 				      "Please run \"cryptsetup repair\" for recovery."));
 			goto err;
@@ -700,13 +706,13 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 			memcpy(&hdr_disk1, &hdr_disk2, LUKS2_HDR_BIN_LEN);
 			r = crypt_random_get(NULL, (char*)hdr_disk1.salt, sizeof(hdr_disk1.salt), CRYPT_RND_SALT);
 			if (r)
-				log_dbg("Cannot generate master salt.");
+				log_dbg(cd, "Cannot generate master salt.");
 			else {
 				hdr_from_disk(&hdr_disk2, &hdr_disk1, hdr, 1);
-				r = hdr_write_disk(device, hdr, json_area2, 0);
+				r = hdr_write_disk(cd, device, hdr, json_area2, 0);
 			}
 			if (r)
-				log_dbg("Primary LUKS2 header recovery failed.");
+				log_dbg(cd, "Primary LUKS2 header recovery failed.");
 		}
 	}
 
@@ -738,7 +744,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	 */
 	return 0;
 err:
-	log_dbg("LUKS2 header read failed (%d).", r);
+	log_dbg(cd, "LUKS2 header read failed (%d).", r);
 
 	free(json_area1);
 	free(json_area2);

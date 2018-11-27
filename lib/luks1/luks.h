@@ -177,7 +177,8 @@ int LUKS_wipe_header_areas(struct luks_phdr *hdr,
 crypt_keyslot_info LUKS_keyslot_info(struct luks_phdr *hdr, int keyslot);
 int LUKS_keyslot_find_empty(struct luks_phdr *hdr);
 int LUKS_keyslot_active_count(struct luks_phdr *hdr);
-int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable);
+int LUKS_keyslot_set(struct luks_phdr *hdr, int keyslot, int enable,
+		     struct crypt_device *ctx);
 int LUKS_keyslot_area(const struct luks_phdr *hdr,
 	int keyslot,
 	uint64_t *offset,

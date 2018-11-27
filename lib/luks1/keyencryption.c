@@ -73,7 +73,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	int r, devfd = -1;
 	size_t bsize, keyslot_alignment, alignment;
 
-	log_dbg("Using dmcrypt to access keyslot area.");
+	log_dbg(ctx, "Using dmcrypt to access keyslot area.");
 
 	bsize = device_block_size(dmd.data_device);
 	alignment = device_alignment(dmd.data_device);
@@ -158,7 +158,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	r = crypt_storage_init(&s, 0, cipher, cipher_mode, vk->key, vk->keylength);
 
 	if (r)
-		log_dbg("Userspace crypto wrapper cannot use %s-%s (%d).",
+		log_dbg(ctx, "Userspace crypto wrapper cannot use %s-%s (%d).",
 			cipher, cipher_mode, r);
 
 	/* Fallback to old temporary dmcrypt device */
@@ -172,7 +172,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 		return r;
 	}
 
-	log_dbg("Using userspace crypto wrapper to access keyslot area.");
+	log_dbg(ctx, "Using userspace crypto wrapper to access keyslot area.");
 
 	r = crypt_storage_encrypt(s, 0, srcLength / SECTOR_SIZE, src);
 	crypt_storage_destroy(s);
@@ -223,7 +223,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	r = crypt_storage_init(&s, 0, cipher, cipher_mode, vk->key, vk->keylength);
 
 	if (r)
-		log_dbg("Userspace crypto wrapper cannot use %s-%s (%d).",
+		log_dbg(ctx, "Userspace crypto wrapper cannot use %s-%s (%d).",
 			cipher, cipher_mode, r);
 
 	/* Fallback to old temporary dmcrypt device */
@@ -237,7 +237,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 		return r;
 	}
 
-	log_dbg("Using userspace crypto wrapper to access keyslot area.");
+	log_dbg(ctx, "Using userspace crypto wrapper to access keyslot area.");
 
 	/* Read buffer from device */
 	devfd = device_open(device, O_RDONLY);

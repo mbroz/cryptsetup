@@ -256,14 +256,14 @@ static int LUKS2_open_and_verify(struct crypt_device *cd,
 
 	r = h->validate(cd, LUKS2_get_keyslot_jobj(hdr, keyslot));
 	if (r) {
-		log_dbg("Keyslot %d validation failed.", keyslot);
+		log_dbg(cd, "Keyslot %d validation failed.", keyslot);
 		return r;
 	}
 
 	r = LUKS2_keyslot_for_segment(hdr, keyslot, segment);
 	if (r) {
 		if (r == -ENOENT)
-			log_dbg("Keyslot %d unusable for segment %d.", keyslot, segment);
+			log_dbg(cd, "Keyslot %d unusable for segment %d.", keyslot, segment);
 		return r;
 	}
 
@@ -279,7 +279,7 @@ static int LUKS2_open_and_verify(struct crypt_device *cd,
 
 	r = h->open(cd, keyslot, password, password_len, (*vk)->key, (*vk)->keylength);
 	if (r < 0)
-		log_dbg("Keyslot %d (%s) open failed with %d.", keyslot, h->name, r);
+		log_dbg(cd, "Keyslot %d (%s) open failed with %d.", keyslot, h->name, r);
 	else
 		r = LUKS2_digest_verify(cd, hdr, *vk, keyslot);
 
@@ -313,7 +313,7 @@ static int LUKS2_keyslot_open_priority(struct crypt_device *cd,
 
 		keyslot = atoi(slot);
 		if (slot_priority != priority) {
-			log_dbg("Keyslot %d priority %d != %d (required), skipped.",
+			log_dbg(cd, "Keyslot %d priority %d != %d (required), skipped.",
 				keyslot, slot_priority, priority);
 			continue;
 		}
@@ -389,14 +389,14 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 
 		r = h->update(cd, keyslot, params);
 		if (r) {
-			log_dbg("Failed to update keyslot %d json.", keyslot);
+			log_dbg(cd, "Failed to update keyslot %d json.", keyslot);
 			return r;
 		}
 	}
 
 	r = h->validate(cd, LUKS2_get_keyslot_jobj(hdr, keyslot));
 	if (r) {
-		log_dbg("Keyslot validation failed.");
+		log_dbg(cd, "Keyslot validation failed.");
 		return r;
 	}
 
@@ -426,7 +426,7 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 		return -ENOENT;
 
 	if (wipe_area_only)
-		log_dbg("Wiping keyslot %d area only.", keyslot);
+		log_dbg(cd, "Wiping keyslot %d area only.", keyslot);
 
 	/* Just check that nobody uses the metadata now */
 	r = device_write_lock(cd, device);
@@ -466,7 +466,7 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 	} else
-		log_dbg("Wiping keyslot %d without specific-slot handler loaded.", keyslot);
+		log_dbg(cd, "Wiping keyslot %d without specific-slot handler loaded.", keyslot);
 
 	snprintf(num, sizeof(num), "%d", keyslot);
 	json_object_object_del(jobj_keyslots, num);
@@ -526,7 +526,7 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 	char num[16];
 	json_object *jobj_keyslots, *jobj_keyslot, *jobj_area;
 
-	log_dbg("Allocating placeholder keyslot %d for LUKS1 down conversion.", keyslot);
+	log_dbg(cd, "Allocating placeholder keyslot %d for LUKS1 down conversion.", keyslot);
 
 	if (!(hdr = crypt_get_hdr(cd, CRYPT_LUKS2)))
 		return -EINVAL;
@@ -585,7 +585,7 @@ static unsigned LUKS2_get_keyslot_digests_count(json_object *hdr_jobj, int keysl
 }
 
 /* run only on header that passed basic format validation */
-int LUKS2_keyslots_validate(json_object *hdr_jobj)
+int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	const keyslot_handler *h;
 	int keyslot;
@@ -601,12 +601,12 @@ int LUKS2_keyslots_validate(json_object *hdr_jobj)
 		if (!h)
 			continue;
 		if (h->validate && h->validate(NULL, val)) {
-			log_dbg("Keyslot type %s validation failed on keyslot %d.", h->name, keyslot);
+			log_dbg(cd, "Keyslot type %s validation failed on keyslot %d.", h->name, keyslot);
 			return -EINVAL;
 		}
 
 		if (!strcmp(h->name, "luks2") && LUKS2_get_keyslot_digests_count(hdr_jobj, keyslot) != 1) {
-			log_dbg("Keyslot %d is not assigned to exactly 1 digest.", keyslot);
+			log_dbg(cd, "Keyslot %d is not assigned to exactly 1 digest.", keyslot);
 			return -EINVAL;
 		}
 	}

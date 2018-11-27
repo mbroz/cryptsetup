@@ -150,7 +150,7 @@ int LUKS2_hdr_labels(struct crypt_device *cd,
 	const char *subsystem,
 	int commit);
 
-void LUKS2_hdr_free(struct luks2_hdr *hdr);
+void LUKS2_hdr_free(struct crypt_device *cd, struct luks2_hdr *hdr);
 
 int LUKS2_hdr_backup(struct crypt_device *cd,
 		     struct luks2_hdr *hdr,

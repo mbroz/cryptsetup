@@ -244,7 +244,7 @@ int VERITY_FEC_process(struct crypt_device *cd,
 	}
 
 	if (lseek(fd, params->fec_area_offset, SEEK_SET) < 0) {
-		log_dbg("Cannot seek to requested position in FEC device.");
+		log_dbg(cd, "Cannot seek to requested position in FEC device.");
 		goto out;
 	}
 

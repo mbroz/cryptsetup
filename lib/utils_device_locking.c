@@ -75,7 +75,7 @@ static int open_lock_dir(struct crypt_device *cd, const char *dir, const char *b
 
 	dirfd = open(dir, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 	if (dirfd < 0) {
-		log_dbg("Failed to open directory %s: (%d: %s).", dir, errno, strerror(errno));
+		log_dbg(cd, "Failed to open directory %s: (%d: %s).", dir, errno, strerror(errno));
 		if (errno == ENOTDIR || errno == ENOENT)
 			log_err(cd, _("Locking aborted. The locking path %s/%s is unusable (not a directory or missing)."), dir, base);
 		return -EINVAL;
@@ -88,11 +88,11 @@ static int open_lock_dir(struct crypt_device *cd, const char *dir, const char *b
 
 			/* success or failure w/ errno == EEXIST either way just try to open the 'base' directory again */
 			if (mkdirat(dirfd, base, DEFAULT_LUKS2_LOCK_DIR_PERMS) && errno != EEXIST)
-				log_dbg("Failed to create directory %s in %s (%d: %s).", base, dir, errno, strerror(errno));
+				log_dbg(cd, "Failed to create directory %s in %s (%d: %s).", base, dir, errno, strerror(errno));
 			else
 				lockdfd = openat(dirfd, base, O_RDONLY | O_NOFOLLOW | O_DIRECTORY | O_CLOEXEC);
 		} else {
-			log_dbg("Failed to open directory %s/%s: (%d: %s)", dir, base, errno, strerror(errno));
+			log_dbg(cd, "Failed to open directory %s/%s: (%d: %s)", dir, base, errno, strerror(errno));
 			if (errno == ENOTDIR || errno == ELOOP)
 				log_err(cd, _("Locking aborted. The locking path %s/%s is unusable (%s is not a directory)."), dir, base, base);
 		}
@@ -112,7 +112,7 @@ static int open_resource(struct crypt_device *cd, const char *res)
 	if (lockdir_fd < 0)
 		return -EINVAL;
 
-	log_dbg("Opening lock resource file %s/%s", DEFAULT_LUKS2_LOCK_PATH, res);
+	log_dbg(cd, "Opening lock resource file %s/%s", DEFAULT_LUKS2_LOCK_PATH, res);
 	r = openat(lockdir_fd, res, O_CREAT | O_NOFOLLOW | O_RDWR | O_CLOEXEC, 0777);
 	err = errno;
 
@@ -169,7 +169,7 @@ static int acquire_lock_handle(struct crypt_device *cd, const char *device_path,
 	return 0;
 }
 
-static void release_lock_handle(struct crypt_lock_handle *h)
+static void release_lock_handle(struct crypt_device *cd, struct crypt_lock_handle *h)
 {
 	char res[PATH_MAX];
 	struct stat buf_a, buf_b;
@@ -182,11 +182,11 @@ static void release_lock_handle(struct crypt_lock_handle *h)
 	    same_inode(buf_a, buf_b)) { /* is it same id as the one referenced by fd? */
 		/* coverity[toctou] */
 		if (unlink(res)) /* yes? unlink the file */
-			log_dbg("Failed to unlink resource file: %s", res);
+			log_dbg(cd, "Failed to unlink resource file: %s", res);
 	}
 
 	if (close(h->flock_fd))
-		log_dbg("Failed to close resource fd (%d).", h->flock_fd);
+		log_dbg(cd, "Failed to close resource fd (%d).", h->flock_fd);
 }
 
 int device_locked(struct crypt_lock_handle *h)
@@ -230,16 +230,16 @@ struct crypt_lock_handle *device_read_lock_handle(struct crypt_device *cd, const
 		if (r)
 			break;
 
-		log_dbg("Acquiring read lock for device %s.", device_path);
+		log_dbg(cd, "Acquiring read lock for device %s.", device_path);
 
 		if (flock(h->flock_fd, LOCK_SH)) {
-			log_dbg("Shared flock failed with errno %d.", errno);
+			log_dbg(cd, "Shared flock failed with errno %d.", errno);
 			r = -EINVAL;
-			release_lock_handle(h);
+			release_lock_handle(cd, h);
 			break;
 		}
 
-		log_dbg("Verifying read lock handle for device %s.", device_path);
+		log_dbg(cd, "Verifying read lock handle for device %s.", device_path);
 
 		/*
 		 * check whether another libcryptsetup process removed resource file before this
@@ -248,8 +248,8 @@ struct crypt_lock_handle *device_read_lock_handle(struct crypt_device *cd, const
 		r = verify_lock_handle(device_path, h);
 		if (r) {
 			flock(h->flock_fd, LOCK_UN);
-			release_lock_handle(h);
-			log_dbg("Read lock handle verification failed.");
+			release_lock_handle(cd, h);
+			log_dbg(cd, "Read lock handle verification failed.");
 		}
 	} while (r == -EAGAIN);
 
@@ -276,16 +276,16 @@ struct crypt_lock_handle *device_write_lock_handle(struct crypt_device *cd, cons
 		if (r)
 			break;
 
-		log_dbg("Acquiring write lock for device %s.", device_path);
+		log_dbg(cd, "Acquiring write lock for device %s.", device_path);
 
 		if (flock(h->flock_fd, LOCK_EX)) {
-			log_dbg("Exclusive flock failed with errno %d.", errno);
+			log_dbg(cd, "Exclusive flock failed with errno %d.", errno);
 			r = -EINVAL;
-			release_lock_handle(h);
+			release_lock_handle(cd, h);
 			break;
 		}
 
-		log_dbg("Verifying write lock handle for device %s.", device_path);
+		log_dbg(cd, "Verifying write lock handle for device %s.", device_path);
 
 		/*
 		 * check whether another libcryptsetup process removed resource file before this
@@ -294,8 +294,8 @@ struct crypt_lock_handle *device_write_lock_handle(struct crypt_device *cd, cons
 		r = verify_lock_handle(device_path, h);
 		if (r) {
 			flock(h->flock_fd, LOCK_UN);
-			release_lock_handle(h);
-			log_dbg("Write lock handle verification failed.");
+			release_lock_handle(cd, h);
+			log_dbg(cd, "Write lock handle verification failed.");
 		}
 	} while (r == -EAGAIN);
 
@@ -309,17 +309,17 @@ struct crypt_lock_handle *device_write_lock_handle(struct crypt_device *cd, cons
 	return h;
 }
 
-void device_unlock_handle(struct crypt_lock_handle *h)
+void device_unlock_handle(struct crypt_device *cd, struct crypt_lock_handle *h)
 {
 	if (flock(h->flock_fd, LOCK_UN))
-		log_dbg("flock on fd %d failed.", h->flock_fd);
+		log_dbg(cd, "flock on fd %d failed.", h->flock_fd);
 
-	release_lock_handle(h);
+	release_lock_handle(cd, h);
 
 	free(h);
 }
 
-int device_locked_verify(int dev_fd, struct crypt_lock_handle *h)
+int device_locked_verify(struct crypt_device *cd, int dev_fd, struct crypt_lock_handle *h)
 {
 	char res[PATH_MAX];
 	struct stat dev_st, lck_st, st;
@@ -329,11 +329,11 @@ int device_locked_verify(int dev_fd, struct crypt_lock_handle *h)
 
 	/* if device handle is regular file the handle must match the lock handle */
 	if (S_ISREG(dev_st.st_mode)) {
-		log_dbg("Veryfing locked device handle (regular file)");
+		log_dbg(cd, "Veryfing locked device handle (regular file)");
 		if (!same_inode(dev_st, lck_st))
 			return 1;
 	} else if (S_ISBLK(dev_st.st_mode)) {
-		log_dbg("Veryfing locked device handle (bdev)");
+		log_dbg(cd, "Veryfing locked device handle (bdev)");
 		if (resource_by_devno(res, sizeof(res), dev_st.st_rdev, 1) ||
 		    stat(res, &st) ||
 		    !same_inode(lck_st, st))

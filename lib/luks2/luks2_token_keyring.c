@@ -44,10 +44,10 @@ static int keyring_open(struct crypt_device *cd,
 
 	r = keyring_get_passphrase(json_object_get_string(jobj_key), buffer, buffer_len);
 	if (r == -ENOTSUP) {
-		log_dbg("Kernel keyring features disabled.");
+		log_dbg(cd, "Kernel keyring features disabled.");
 		return -EINVAL;
 	} else if (r < 0) {
-		log_dbg("keyring_get_passphrase failed (error %d)", r);
+		log_dbg(cd, "keyring_get_passphrase failed (error %d)", r);
 		return -EINVAL;
 	}
 
@@ -61,26 +61,26 @@ static int keyring_validate(struct crypt_device *cd __attribute__((unused)),
 	json_object *jobj_token, *jobj_key;
 	int r = 1;
 
-	log_dbg("Validating keyring token json");
+	log_dbg(cd, "Validating keyring token json");
 
 	jobj_token = json_tokener_parse_verbose(json, &jerr);
 	if (!jobj_token) {
-		log_dbg("Keyring token JSON parse failed.");
+		log_dbg(cd, "Keyring token JSON parse failed.");
 		return r;
 	}
 
 	if (json_object_object_length(jobj_token) != 3) {
-		log_dbg("Keyring token is expected to have exactly 3 fields.");
+		log_dbg(cd, "Keyring token is expected to have exactly 3 fields.");
 		goto out;
 	}
 
 	if (!json_object_object_get_ex(jobj_token, "key_description", &jobj_key)) {
-		log_dbg("missing key_description field.");
+		log_dbg(cd, "missing key_description field.");
 		goto out;
 	}
 
 	if (!json_object_is_type(jobj_key, json_type_string)) {
-		log_dbg("key_description is not a string.");
+		log_dbg(cd, "key_description is not a string.");
 		goto out;
 	}
 

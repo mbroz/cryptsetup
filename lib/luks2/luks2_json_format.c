@@ -100,7 +100,7 @@ int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 		return -EINVAL;
 	}
 
-	log_dbg("Found area %zu -> %zu", offset, length + offset);
+	log_dbg(cd, "Found area %zu -> %zu", offset, length + offset);
 /*
 	log_dbg("Area offset min: %zu, max %zu, slots max %u",
 	       get_min_offset(hdr), get_max_offset(cd), LUKS2_KEYSLOTS_MAX);
@@ -242,7 +242,7 @@ int LUKS2_generate_hdr(
 
 	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));
 
-	JSON_DBG(hdr->jobj, "Header JSON");
+	JSON_DBG(cd, hdr->jobj, "Header JSON");
 	return 0;
 }
 
@@ -258,7 +258,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	length = LUKS2_get_data_offset(hdr) * SECTOR_SIZE;
 	wipe_block = 1024 * 1024;
 
-	if (LUKS2_hdr_validate(hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
+	if (LUKS2_hdr_validate(cd, hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
 		return -EINVAL;
 
 	/* On detached header wipe at least the first 4k */
@@ -267,7 +267,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 		wipe_block = 4096;
 	}
 
-	log_dbg("Wiping LUKS areas (0x%06" PRIx64 " - 0x%06" PRIx64") with zeroes.",
+	log_dbg(cd, "Wiping LUKS areas (0x%06" PRIx64 " - 0x%06" PRIx64") with zeroes.",
 		offset, length + offset);
 
 	r = crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO,
@@ -280,7 +280,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	offset = get_min_offset(hdr);
 	length = LUKS2_keyslots_size(hdr->jobj);
 
-	log_dbg("Wiping keyslots area (0x%06" PRIx64 " - 0x%06" PRIx64") with random data.",
+	log_dbg(cd, "Wiping keyslots area (0x%06" PRIx64 " - 0x%06" PRIx64") with random data.",
 		offset, length + offset);
 
 	return crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_RANDOM,

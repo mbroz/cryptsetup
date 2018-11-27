@@ -86,7 +86,7 @@ int LUKS2_digest_create(struct crypt_device *cd,
 	if (digest < 0)
 		return -EINVAL;
 
-	log_dbg("Creating new digest %d (%s).", digest, type);
+	log_dbg(cd, "Creating new digest %d (%s).", digest, type);
 
 	return dh->store(cd, digest, vk->key, vk->keylength) ?: digest;
 }
@@ -124,14 +124,14 @@ int LUKS2_digest_verify(struct crypt_device *cd,
 	if (digest < 0)
 		return digest;
 
-	log_dbg("Verifying key from keyslot %d, digest %d.", keyslot, digest);
+	log_dbg(cd, "Verifying key from keyslot %d, digest %d.", keyslot, digest);
 	h = LUKS2_digest_handler(cd, digest);
 	if (!h)
 		return -EINVAL;
 
 	r = h->verify(cd, digest, vk->key, vk->keylength);
 	if (r < 0) {
-		log_dbg("Digest %d (%s) verify failed with %d.", digest, h->name, r);
+		log_dbg(cd, "Digest %d (%s) verify failed with %d.", digest, h->name, r);
 		return r;
 	}
 
@@ -160,7 +160,7 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	if (digest < 0)
 		return digest;
 
-	log_dbg("Verifying key digest %d.", digest);
+	log_dbg(cd, "Verifying key digest %d.", digest);
 
 	h = LUKS2_digest_handler(cd, digest);
 	if (!h)
@@ -168,7 +168,7 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 
 	r = h->verify(cd, digest, vk->key, vk->keylength);
 	if (r < 0) {
-		log_dbg("Digest %d (%s) verify failed with %d.", digest, h->name, r);
+		log_dbg(cd, "Digest %d (%s) verify failed with %d.", digest, h->name, r);
 		return r;
 	}
 
@@ -205,7 +205,7 @@ static int assign_one_digest(struct crypt_device *cd, struct luks2_hdr *hdr,
 	json_object *jobj1, *jobj_digest, *jobj_digest_keyslots;
 	char num[16];
 
-	log_dbg("Keyslot %i %s digest %i.", keyslot, assign ? "assigned to" : "unassigned from", digest);
+	log_dbg(cd, "Keyslot %i %s digest %i.", keyslot, assign ? "assigned to" : "unassigned from", digest);
 
 	jobj_digest = LUKS2_get_digest_jobj(hdr, digest);
 	if (!jobj_digest)
@@ -260,7 +260,7 @@ static int assign_one_segment(struct crypt_device *cd, struct luks2_hdr *hdr,
 	json_object *jobj1, *jobj_digest, *jobj_digest_segments;
 	char num[16];
 
-	log_dbg("Segment %i %s digest %i.", segment, assign ? "assigned to" : "unassigned from", digest);
+	log_dbg(cd, "Segment %i %s digest %i.", segment, assign ? "assigned to" : "unassigned from", digest);
 
 	jobj_digest = LUKS2_get_digest_jobj(hdr, digest);
 	if (!jobj_digest)
@@ -335,7 +335,7 @@ void LUKS2_digests_erase_unused(struct crypt_device *cd,
 
 	json_object_object_foreach(jobj_digests, key, val) {
 		if (digest_unused(val)) {
-			log_dbg("Erasing unused digest %d.", atoi(key));
+			log_dbg(cd, "Erasing unused digest %d.", atoi(key));
 			json_object_object_del(jobj_digests, key);
 		}
 	}

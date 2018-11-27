@@ -99,7 +99,7 @@ static void set_dm_error(int level,
 		} else {
 			/* We do not use DM visual stack backtrace here */
 			if (strncmp(msg, "<backtrace>", 11))
-				log_dbg("%s", msg);
+				log_dbg(_context, "%s", msg);
 		}
 	}
 	free(msg);
@@ -130,13 +130,13 @@ static void _dm_set_crypt_compat(unsigned crypt_maj,
 	if (_dm_crypt_checked || crypt_maj == 0)
 		return;
 
-	log_dbg("Detected dm-crypt version %i.%i.%i.",
+	log_dbg(NULL, "Detected dm-crypt version %i.%i.%i.",
 		crypt_maj, crypt_min, crypt_patch);
 
 	if (_dm_satisfies_version(1, 2, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_KEY_WIPE_SUPPORTED;
 	else
-		log_dbg("Suspend and resume disabled, no wipe key support.");
+		log_dbg(NULL, "Suspend and resume disabled, no wipe key support.");
 
 	if (_dm_satisfies_version(1, 10, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_LMK_SUPPORTED;
@@ -174,7 +174,7 @@ static void _dm_set_verity_compat(unsigned verity_maj,
 	if (_dm_verity_checked || verity_maj == 0)
 		return;
 
-	log_dbg("Detected dm-verity version %i.%i.%i.",
+	log_dbg(NULL, "Detected dm-verity version %i.%i.%i.",
 		verity_maj, verity_min, verity_patch);
 
 	_dm_flags |= DM_VERITY_SUPPORTED;
@@ -201,7 +201,7 @@ static void _dm_set_integrity_compat(unsigned integrity_maj,
 	if (_dm_integrity_checked || integrity_maj == 0)
 		return;
 
-	log_dbg("Detected dm-integrity version %i.%i.%i.",
+	log_dbg(NULL, "Detected dm-integrity version %i.%i.%i.",
 		integrity_maj, integrity_min, integrity_patch);
 
 	_dm_flags |= DM_INTEGRITY_SUPPORTED;
@@ -239,7 +239,7 @@ static int _dm_check_versions(dm_target_type target_type)
 	if (!_dm_ioctl_checked) {
 		if (sscanf(dm_version, "%u.%u.%u", &dm_maj, &dm_min, &dm_patch) != 3)
 			goto out;
-		log_dbg("Detected dm-ioctl version %u.%u.%u.", dm_maj, dm_min, dm_patch);
+		log_dbg(NULL, "Detected dm-ioctl version %u.%u.%u.", dm_maj, dm_min, dm_patch);
 
 		if (_dm_satisfies_version(4, 20, 0, dm_maj, dm_min, dm_patch))
 			_dm_flags |= DM_SECURE_SUPPORTED;
@@ -270,7 +270,7 @@ static int _dm_check_versions(dm_target_type target_type)
 
 	r = 1;
 	if (!_dm_ioctl_checked)
-		log_dbg("Device-mapper backend running with UDEV support %sabled.",
+		log_dbg(NULL, "Device-mapper backend running with UDEV support %sabled.",
 			_dm_use_udev() ? "en" : "dis");
 
 	_dm_ioctl_checked = true;
@@ -303,7 +303,7 @@ int dm_flags(dm_target_type target, uint32_t *flags)
 void dm_backend_init(void)
 {
 	if (!_dm_use_count++) {
-		log_dbg("Initialising device-mapper backend library.");
+		log_dbg(NULL, "Initialising device-mapper backend library.");
 		dm_log_init(set_dm_error);
 		dm_log_init_verbose(10);
 	}
@@ -312,7 +312,7 @@ void dm_backend_init(void)
 void dm_backend_exit(void)
 {
 	if (_dm_use_count && (!--_dm_use_count)) {
-		log_dbg("Releasing device-mapper backend.");
+		log_dbg(NULL, "Releasing device-mapper backend.");
 		dm_log_init_verbose(0);
 		dm_log_init(NULL);
 		dm_lib_release();
@@ -939,7 +939,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	do {
 		r = _dm_remove(name, 1, deferred) ? 0 : -EINVAL;
 		if (--retries && r) {
-			log_dbg("WARNING: other process locked internal device %s, %s.",
+			log_dbg(NULL, "WARNING: other process locked internal device %s, %s.",
 				name, retries ? "retrying remove" : "giving up");
 			sleep(1);
 			if ((flags & CRYPT_DEACTIVATE_FORCE) && !error_target) {
@@ -979,7 +979,7 @@ static int dm_prepare_uuid(const char *name, const char *type, const char *uuid,
 	/* Remove '-' chars */
 	if (uuid) {
 		if (uuid_parse(uuid, uu) < 0) {
-			log_dbg("Requested UUID %s has invalid format.", uuid);
+			log_dbg(NULL, "Requested UUID %s has invalid format.", uuid);
 			return 0;
 		}
 
@@ -995,7 +995,7 @@ static int dm_prepare_uuid(const char *name, const char *type, const char *uuid,
 		uuid2[0] ? uuid2 : "", uuid2[0] ? "-" : "",
 		name);
 
-	log_dbg("DM-UUID is %s", buf);
+	log_dbg(NULL, "DM-UUID is %s", buf);
 	if (i >= buflen)
 		log_err(NULL, _("DM-UUID for device %s was truncated."), name);
 
@@ -1020,7 +1020,7 @@ int lookup_dm_dev_by_uuid(const char *uuid, const char *type)
 
 	r = lookup_by_disk_id(dev_uuid);
 	if (r == -ENOENT) {
-		log_dbg("Search by disk id not available. Using sysfs instead.");
+		log_dbg(NULL, "Search by disk id not available. Using sysfs instead.");
 		r = lookup_by_sysfs_uuid_field(dev_uuid + DM_BY_ID_PREFIX_LEN, DM_UUID_LEN);
 	}
 
@@ -1150,7 +1150,7 @@ static int check_retry(uint32_t *dmd_flags, uint32_t dmt_flags)
 	/* If discard not supported try to load without discard */
 	if ((*dmd_flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
 	    !(dmt_flags & DM_DISCARDS_SUPPORTED)) {
-		log_dbg("Discard/TRIM is not supported");
+		log_dbg(NULL, "Discard/TRIM is not supported");
 		*dmd_flags = *dmd_flags & ~CRYPT_ACTIVATE_ALLOW_DISCARDS;
 		ret = 1;
 	}
@@ -1158,7 +1158,7 @@ static int check_retry(uint32_t *dmd_flags, uint32_t dmt_flags)
 	/* If kernel keyring is not supported load key directly in dm-crypt */
 	if ((*dmd_flags & CRYPT_ACTIVATE_KEYRING_KEY) &&
 	    !(dmt_flags & DM_KERNEL_KEYRING_SUPPORTED)) {
-		log_dbg("dm-crypt doesn't support kernel keyring");
+		log_dbg(NULL, "dm-crypt doesn't support kernel keyring");
 		*dmd_flags = *dmd_flags & ~CRYPT_ACTIVATE_KEYRING_KEY;
 		ret = 1;
 	}
@@ -1166,7 +1166,7 @@ static int check_retry(uint32_t *dmd_flags, uint32_t dmt_flags)
 	/* Drop performance options if not supported */
 	if ((*dmd_flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)) &&
 	    !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED | DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED))) {
-		log_dbg("dm-crypt doesn't support performance options");
+		log_dbg(NULL, "dm-crypt doesn't support performance options");
 		*dmd_flags = *dmd_flags & ~(CRYPT_ACTIVATE_SAME_CPU_CRYPT | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS);
 		ret = 1;
 	}
@@ -1343,7 +1343,7 @@ static int _dm_status_verity_ok(const char *name)
 		return r;
 	}
 
-	log_dbg("Verity volume %s status is %s.", name, status_line ?: "");
+	log_dbg(NULL, "Verity volume %s status is %s.", name, status_line ?: "");
 	r = status_line[0] == 'V' ? 1 : 0;
 	free(status_line);
 
@@ -1376,7 +1376,7 @@ int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint
 		return r;
 	}
 
-	log_dbg("Integrity volume %s failure status is %s.", name, status_line ?: "");
+	log_dbg(NULL, "Integrity volume %s failure status is %s.", name, status_line ?: "");
 	*count = strtoull(status_line, NULL, 10);
 	free(status_line);
 	dm_exit_context();
@@ -1491,7 +1491,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 
 	/* Never allow to return empty key */
 	if ((get_flags & DM_ACTIVE_CRYPT_KEY) && dmi->suspended) {
-		log_dbg("Cannot read volume key while suspended.");
+		log_dbg(NULL, "Cannot read volume key while suspended.");
 		goto err;
 	}
 

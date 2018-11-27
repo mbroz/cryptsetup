@@ -62,7 +62,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	int devfd = 0, sb_version;
 
-	log_dbg("Reading VERITY header of size %zu on device %s, offset %" PRIu64 ".",
+	log_dbg(cd, "Reading VERITY header of size %zu on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
@@ -162,7 +162,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	uuid_t uuid;
 	int r, devfd = 0;
 
-	log_dbg("Updating VERITY header of size %zu on device %s, offset %" PRIu64 ".",
+	log_dbg(cd, "Updating VERITY header of size %zu on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (!uuid_string || uuid_parse(uuid_string, uuid) == -1) {
@@ -247,15 +247,15 @@ int VERITY_activate(struct crypt_device *cd,
 	unsigned int fec_errors = 0;
 	int r;
 
-	log_dbg("Trying to activate VERITY device %s using hash %s.",
+	log_dbg(cd, "Trying to activate VERITY device %s using hash %s.",
 		name ?: "[none]", verity_hdr->hash_name);
 
 	if (verity_hdr->flags & CRYPT_VERITY_CHECK_HASH) {
-		log_dbg("Verification of data in userspace required.");
+		log_dbg(cd, "Verification of data in userspace required.");
 		r = VERITY_verify(cd, verity_hdr, root_hash, root_hash_size);
 
 		if (r == -EPERM && fec_device) {
-			log_dbg("Verification failed, trying to repair with FEC device.");
+			log_dbg(cd, "Verification failed, trying to repair with FEC device.");
 			r = VERITY_FEC_process(cd, verity_hdr, fec_device, 1, &fec_errors);
 			if (r < 0)
 				log_err(cd, _("Errors cannot be repaired with FEC device."));

@@ -70,9 +70,9 @@ static int _memlock_count = 0;
 int crypt_memlock_inc(struct crypt_device *ctx)
 {
 	if (!_memlock_count++) {
-		log_dbg("Locking memory.");
+		log_dbg(ctx, "Locking memory.");
 		if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
-			log_dbg("Cannot lock memory with mlockall.");
+			log_dbg(ctx, "Cannot lock memory with mlockall.");
 			_memlock_count--;
 			return 0;
 		}
@@ -81,7 +81,7 @@ int crypt_memlock_inc(struct crypt_device *ctx)
 			log_err(ctx, _("Cannot get process priority."));
 		else
 			if (setpriority(PRIO_PROCESS, 0, DEFAULT_PROCESS_PRIORITY))
-				log_dbg("setpriority %d failed: %s",
+				log_dbg(ctx, "setpriority %d failed: %s",
 					DEFAULT_PROCESS_PRIORITY, strerror(errno));
 	}
 	return _memlock_count ? 1 : 0;
@@ -90,11 +90,11 @@ int crypt_memlock_inc(struct crypt_device *ctx)
 int crypt_memlock_dec(struct crypt_device *ctx)
 {
 	if (_memlock_count && (!--_memlock_count)) {
-		log_dbg("Unlocking memory.");
+		log_dbg(ctx, "Unlocking memory.");
 		if (munlockall() == -1)
 			log_err(ctx, _("Cannot unlock memory."));
 		if (setpriority(PRIO_PROCESS, 0, _priority))
-			log_dbg("setpriority %d failed: %s", _priority, strerror(errno));
+			log_dbg(ctx, "setpriority %d failed: %s", _priority, strerror(errno));
 	}
 	return _memlock_count ? 1 : 0;
 }

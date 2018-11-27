@@ -63,7 +63,8 @@ static int time_ms(struct timespec *start, struct timespec *end, double *ms)
 	return 0;
 }
 
-static int cipher_perf_one(struct cipher_perf *cp, char *buf,
+static int cipher_perf_one(struct crypt_device *cd,
+			   struct cipher_perf *cp, char *buf,
 			   size_t buf_size, int enc)
 {
 	struct crypt_cipher *cipher = NULL;
@@ -75,7 +76,7 @@ static int cipher_perf_one(struct cipher_perf *cp, char *buf,
 
 	r = crypt_cipher_init(&cipher, cp->name, cp->mode, cp->key, cp->key_length);
 	if (r < 0) {
-		log_dbg("Cannot initialise cipher %s, mode %s.", cp->name, cp->mode);
+		log_dbg(cd, "Cannot initialise cipher %s, mode %s.", cp->name, cp->mode);
 		return r;
 	}
 
@@ -99,7 +100,8 @@ static int cipher_perf_one(struct cipher_perf *cp, char *buf,
 
 	return r;
 }
-static int cipher_measure(struct cipher_perf *cp, char *buf,
+static int cipher_measure(struct crypt_device *cd,
+			  struct cipher_perf *cp, char *buf,
 			  size_t buf_size, int encrypt, double *ms)
 {
 	struct timespec start, end;
@@ -112,7 +114,7 @@ static int cipher_measure(struct cipher_perf *cp, char *buf,
 	if (clock_gettime(CLOCK_MONOTONIC, &start) < 0)
 		return -EINVAL;
 
-	r = cipher_perf_one(cp, buf, buf_size, encrypt);
+	r = cipher_perf_one(cd, cp, buf, buf_size, encrypt);
 	if (r < 0)
 		return r;
 
@@ -124,7 +126,7 @@ static int cipher_measure(struct cipher_perf *cp, char *buf,
 		return r;
 
 	if (*ms < CIPHER_TIME_MIN_MS) {
-		log_dbg("Measured cipher runtime (%1.6f) is too low.", *ms);
+		log_dbg(cd, "Measured cipher runtime (%1.6f) is too low.", *ms);
 		return -ERANGE;
 	}
 
@@ -138,7 +140,7 @@ static double speed_mbs(unsigned long bytes, double ms)
 	return speed / (1024 * 1024) / s;
 }
 
-static int cipher_perf(struct cipher_perf *cp,
+static int cipher_perf(struct crypt_device *cd, struct cipher_perf *cp,
 	double *encryption_mbs, double *decryption_mbs)
 {
 	double ms_enc, ms_dec, ms;
@@ -151,7 +153,7 @@ static int cipher_perf(struct cipher_perf *cp,
 	ms_enc = 0.0;
 	repeat_enc = 1;
 	while (ms_enc < 1000.0) {
-		r = cipher_measure(cp, buf, cp->buffer_size, 1, &ms);
+		r = cipher_measure(cd, cp, buf, cp->buffer_size, 1, &ms);
 		if (r < 0) {
 			free(buf);
 			return r;
@@ -163,7 +165,7 @@ static int cipher_perf(struct cipher_perf *cp,
 	ms_dec = 0.0;
 	repeat_dec = 1;
 	while (ms_dec < 1000.0) {
-		r = cipher_measure(cp, buf, cp->buffer_size, 0, &ms);
+		r = cipher_measure(cd, cp, buf, cp->buffer_size, 0, &ms);
 		if (r < 0) {
 			free(buf);
 			return r;
@@ -224,7 +226,7 @@ int crypt_benchmark(struct crypt_device *cd,
 	if ((c  = strchr(cp.mode, '-')))
 		*c = '\0';
 
-	r = cipher_perf(&cp, encryption_mbs, decryption_mbs);
+	r = cipher_perf(cd, &cp, encryption_mbs, decryption_mbs);
 out:
 	free(cp.key);
 	free(cp.iv);
@@ -253,7 +255,7 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 
 	kdf_opt = !strcmp(pbkdf->type, CRYPT_KDF_PBKDF2) ? pbkdf->hash : "";
 
-	log_dbg("Running %s(%s) benchmark.", pbkdf->type, kdf_opt);
+	log_dbg(cd, "Running %s(%s) benchmark.", pbkdf->type, kdf_opt);
 
 	r = crypt_pbkdf_perf(pbkdf->type, pbkdf->hash, password, password_size,
 			     salt, salt_size, volume_key_size, pbkdf->time_ms,
@@ -261,7 +263,7 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 			     &pbkdf->iterations, &pbkdf->max_memory_kb, progress, usrptr);
 
 	if (!r)
-		log_dbg("Benchmark returns %s(%s) %u iterations, %u memory, %u threads (for %zu-bits key).",
+		log_dbg(cd, "Benchmark returns %s(%s) %u iterations, %u memory, %u threads (for %zu-bits key).",
 			pbkdf->type, kdf_opt, pbkdf->iterations, pbkdf->max_memory_kb,
 			pbkdf->parallel_threads, volume_key_size * 8);
 	return r;
@@ -271,7 +273,7 @@ static int benchmark_callback(uint32_t time_ms, void *usrptr)
 {
 	struct crypt_pbkdf_type *pbkdf = usrptr;
 
-	log_dbg("PBKDF benchmark: memory cost = %u, iterations = %u, "
+	log_dbg(NULL, "PBKDF benchmark: memory cost = %u, iterations = %u, "
 		"threads = %u (took %u ms)", pbkdf->max_memory_kb,
 		pbkdf->iterations, pbkdf->parallel_threads, time_ms);
 
@@ -300,7 +302,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 
 	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK) {
 		if (pbkdf->iterations) {
-			log_dbg("Reusing PBKDF values (no benchmark flag is set).");
+			log_dbg(cd, "Reusing PBKDF values (no benchmark flag is set).");
 			return 0;
 		}
 		log_err(cd, _("PBKDF benchmark disabled but iterations not set."));
@@ -334,7 +336,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 	} else {
 		/* Already benchmarked */
 		if (pbkdf->iterations) {
-			log_dbg("Reusing PBKDF values.");
+			log_dbg(cd, "Reusing PBKDF values.");
 			return 0;
 		}
 

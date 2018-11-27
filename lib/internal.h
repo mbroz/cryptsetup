@@ -152,7 +152,7 @@ uint64_t crypt_getphysmemory_kb(void);
 int init_crypto(struct crypt_device *ctx);
 
 void logger(struct crypt_device *cd, int level, const char *file, int line, const char *format, ...) __attribute__ ((format (printf, 5, 6)));
-#define log_dbg(x...) logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
+#define log_dbg(c, x...) logger(c, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
 #define log_verbose(c, x...) logger(c, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
 #define log_err(c, x...) logger(c, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
@@ -169,7 +169,7 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 void crypt_random_exit(void);
 int crypt_random_default_key_rng(void);
 
-int crypt_plain_hash(struct crypt_device *ctx,
+int crypt_plain_hash(struct crypt_device *cd,
 		     const char *hash_name,
 		     char *key, size_t key_size,
 		     const char *passphrase, size_t passphrase_size);

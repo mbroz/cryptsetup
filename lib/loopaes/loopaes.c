@@ -137,7 +137,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 	unsigned int key_lengths[LOOPAES_KEYS_MAX];
 	unsigned int i, key_index, key_len, offset;
 
-	log_dbg("Parsing loop-AES keyfile of size %zu.", buffer_len);
+	log_dbg(cd, "Parsing loop-AES keyfile of size %zu.", buffer_len);
 
 	if (!buffer_len)
 		return -EINVAL;
@@ -164,7 +164,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 			key_lengths[key_index]++;
 		}
 		if (offset == buffer_len) {
-			log_dbg("Unterminated key #%d in keyfile.", key_index);
+			log_dbg(cd, "Unterminated key #%d in keyfile.", key_index);
 			log_err(cd, _("Incompatible loop-AES keyfile detected."));
 			return -EINVAL;
 		}
@@ -177,7 +177,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 	key_len = key_lengths[0];
 	for (i = 0; i < key_index; i++)
 		if (!key_lengths[i] || (key_lengths[i] != key_len)) {
-			log_dbg("Unexpected length %d of key #%d (should be %d).",
+			log_dbg(cd, "Unexpected length %d of key #%d (should be %d).",
 				key_lengths[i], i, key_len);
 			key_len = 0;
 			break;
@@ -189,7 +189,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	log_dbg("Keyfile: %d keys of length %d.", key_index, key_len);
+	log_dbg(cd, "Keyfile: %d keys of length %d.", key_index, key_len);
 
 	*keys_count = key_index;
 	return hash_keys(cd, vk, hash, keys, key_index,
@@ -236,7 +236,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 		return -ENOMEM;
 
 	dmd.u.crypt.cipher = cipher;
-	log_dbg("Trying to activate loop-AES device %s using cipher %s.",
+	log_dbg(cd, "Trying to activate loop-AES device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
 	r = dm_create_device(cd, name, CRYPT_LOOPAES, &dmd, 0);

@@ -105,7 +105,7 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 		.time_ms = LUKS_MKD_ITERATIONS_MS,
 	};
 
-	log_dbg("Setting PBKDF2 type key digest %d.", digest);
+	log_dbg(cd, "Setting PBKDF2 type key digest %d.", digest);
 
 	r = crypt_random_get(cd, salt, LUKS_SALTSIZE, CRYPT_RND_SALT);
 	if (r < 0)
@@ -168,7 +168,7 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 		json_object_object_add(jobj_digests, num, jobj_digest);
 	}
 
-	JSON_DBG(jobj_digest, "Digest JSON");
+	JSON_DBG(cd, jobj_digest, "Digest JSON");
 	return 0;
 }
 

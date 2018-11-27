@@ -191,7 +191,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 	}
 
 	if (pattern == CRYPT_WIPE_SPECIAL && !device_is_rotational(device)) {
-		log_dbg("Non-rotational device, using random data wipe mode.");
+		log_dbg(cd, "Non-rotational device, using random data wipe mode.");
 		pattern = CRYPT_WIPE_RANDOM;
 	}
 
@@ -253,7 +253,7 @@ int crypt_wipe(struct crypt_device *cd,
 	if (!wipe_block_size)
 		wipe_block_size = 1024*1024;
 
-	log_dbg("Wipe [%u] device %s, offset %" PRIu64 ", length %" PRIu64 ", block %zu.",
+	log_dbg(cd, "Wipe [%u] device %s, offset %" PRIu64 ", length %" PRIu64 ", block %zu.",
 		(unsigned)pattern, device_path(device), offset, length, wipe_block_size);
 
 	r = crypt_wipe_device(cd, device, pattern, offset, length,
