@@ -23,6 +23,7 @@ PWD0="compatkey"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 PWD3="ocMakf3fAcQO"
+PWD4="Qx3qn46vq0v"
 PWDW="rUkL4RUryBom"
 TEST_KEYRING_NAME="compattest2_keyring"
 TEST_TOKEN0="compattest2_desc0"
@@ -50,7 +51,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV missing-file $TOKEN_FILE0 $TOKEN_FILE1 >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* >/dev/null 2>&1
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -853,6 +854,22 @@ $CRYPTSETUP luksKillSlot -q $LOOPDEV 2
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2 (unbound)" && fail
 $CRYPTSETUP luksKillSlot -q $LOOPDEV 3
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" && fail
+
+prepare "[39] LUKS2 metadata variants" wipe
+tar xJf luks2_mda_images.tar.xz
+echo -n "$IMPORT_TOKEN" > $TOKEN_FILE0
+for mda in 16 32 64 128 256 512 1024 2048 4096 ; do
+	echo -n "[$mda KiB]"
+	echo $PWD4 | $CRYPTSETUP open test_image_$mda $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo -e "$PWD4\n$PWD3" | $CRYPTSETUP luksAddKey -S9 $FAST_PBKDF_OPT test_image_$mda || fail
+	echo $PWD4 | $CRYPTSETUP open --test-passphrase test_image_$mda || fail
+	echo $PWD3 | $CRYPTSETUP open -S9 --test-passphrase test_image_$mda || fail
+	echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import test_image_$mda --token-id 10 || fail
+	$CRYPTSETUP token export test_image_$mda --token-id 10 | diff --from-file - $TOKEN_FILE0 || fail
+	echo -n "[OK]"
+done
+echo
 
 remove_mapping
 exit 0
