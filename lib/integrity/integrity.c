@@ -229,7 +229,7 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		return r;
 
 	r = dm_create_device(cd, name, "INTEGRITY", &dmdi, 0);
-	if (r < 0 && (dm_flags(DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
+	if (r < 0 && (dm_flags(cd, DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
 		log_err(cd, _("Kernel doesn't support dm-integrity mapping."));
 		return -ENOTSUP;
 	}
@@ -280,7 +280,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 		device_path(dmdi.data_device), tmp_name, dmdi.u.integrity.tag_size);
 
 	r = device_block_adjust(cd, dmdi.data_device, DEV_EXCL, dmdi.u.integrity.offset, NULL, NULL);
-	if (r < 0 && (dm_flags(DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
+	if (r < 0 && (dm_flags(cd, DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
 		log_err(cd, _("Kernel doesn't support dm-integrity mapping."));
 		return -ENOTSUP;
 	}

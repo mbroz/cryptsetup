@@ -52,7 +52,7 @@ struct device;
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_UNKNOWN } dm_target_type;
 
-int dm_flags(dm_target_type target, uint32_t *flags);
+int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)
 #define DM_ACTIVE_UUID		(1 << 1)
@@ -125,8 +125,8 @@ struct crypt_dm_active_device {
 	} u;
 };
 
-void dm_backend_init(void);
-void dm_backend_exit(void);
+void dm_backend_init(struct crypt_device *cd);
+void dm_backend_exit(struct crypt_device *cd);
 
 int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags);
 int dm_status_device(struct crypt_device *cd, const char *name);
@@ -145,7 +145,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 
 const char *dm_get_dir(void);
 
-int lookup_dm_dev_by_uuid(const char *uuid, const char *type);
+int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char *type);
 
 /* These are DM helpers used only by utils_devpath file */
 int dm_is_dm_device(int major, int minor);

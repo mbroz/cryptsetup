@@ -473,7 +473,7 @@ static int luks_header_in_use(struct crypt_device *cd)
 {
 	int r;
 
-	r = lookup_dm_dev_by_uuid(crypt_get_uuid(cd), crypt_get_type(cd));
+	r = lookup_dm_dev_by_uuid(cd, crypt_get_uuid(cd), crypt_get_type(cd));
 	if (r < 0)
 		log_err(cd, _("Can not check status of device with uuid: %s."), crypt_get_uuid(cd));
 

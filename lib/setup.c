@@ -571,7 +571,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	if (r < 0)
 		goto bad;
 
-	dm_backend_init();
+	dm_backend_init(NULL);
 
 	h->rng_type = crypt_random_default_key_rng();
 
@@ -2266,7 +2266,7 @@ void crypt_free(struct crypt_device *cd)
 
 	log_dbg(cd, "Releasing crypt device %s context.", mdata_device_path(cd));
 
-	dm_backend_exit();
+	dm_backend_exit(cd);
 	crypt_free_volume_key(cd->volume_key);
 
 	device_free(cd, cd->device);
@@ -2334,7 +2334,7 @@ int crypt_suspend(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	dm_backend_init();
+	dm_backend_init(cd);
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -2362,7 +2362,7 @@ int crypt_suspend(struct crypt_device *cd,
 		crypt_drop_keyring_key(cd, key_desc);
 	free(key_desc);
 out:
-	dm_backend_exit();
+	dm_backend_exit(cd);
 	return r;
 }
 
@@ -3525,12 +3525,12 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 		return CRYPT_INVALID;
 
 	if (!cd)
-		dm_backend_init();
+		dm_backend_init(cd);
 
 	r = dm_status_device(cd, name);
 
 	if (!cd)
-		dm_backend_exit();
+		dm_backend_exit(cd);
 
 	if (r < 0 && r != -ENODEV)
 		return CRYPT_INVALID;
@@ -4452,7 +4452,7 @@ static int dmcrypt_keyring_bug(void)
 	return kversion < version(4,15,0,0);
 }
 
-int crypt_use_keyring_for_vk(const struct crypt_device *cd)
+int crypt_use_keyring_for_vk(struct crypt_device *cd)
 {
 	uint32_t dmc_flags;
 
@@ -4463,7 +4463,7 @@ int crypt_use_keyring_for_vk(const struct crypt_device *cd)
 	if (!_vk_via_keyring || !kernel_keyring_support())
 		return 0;
 
-	if (dm_flags(DM_CRYPT, &dmc_flags))
+	if (dm_flags(cd, DM_CRYPT, &dmc_flags))
 		return dmcrypt_keyring_bug() ? 0 : 1;
 
 	return (dmc_flags & DM_KERNEL_KEYRING_SUPPORTED);

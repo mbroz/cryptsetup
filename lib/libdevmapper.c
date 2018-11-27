@@ -123,20 +123,21 @@ static int _dm_satisfies_version(unsigned target_maj, unsigned target_min, unsig
 	return 0;
 }
 
-static void _dm_set_crypt_compat(unsigned crypt_maj,
+static void _dm_set_crypt_compat(struct crypt_device *cd,
+				 unsigned crypt_maj,
 				 unsigned crypt_min,
 				 unsigned crypt_patch)
 {
 	if (_dm_crypt_checked || crypt_maj == 0)
 		return;
 
-	log_dbg(NULL, "Detected dm-crypt version %i.%i.%i.",
+	log_dbg(cd, "Detected dm-crypt version %i.%i.%i.",
 		crypt_maj, crypt_min, crypt_patch);
 
 	if (_dm_satisfies_version(1, 2, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_KEY_WIPE_SUPPORTED;
 	else
-		log_dbg(NULL, "Suspend and resume disabled, no wipe key support.");
+		log_dbg(cd, "Suspend and resume disabled, no wipe key support.");
 
 	if (_dm_satisfies_version(1, 10, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_LMK_SUPPORTED;
@@ -167,14 +168,15 @@ static void _dm_set_crypt_compat(unsigned crypt_maj,
 	_dm_crypt_checked = true;
 }
 
-static void _dm_set_verity_compat(unsigned verity_maj,
+static void _dm_set_verity_compat(struct crypt_device *cd,
+				  unsigned verity_maj,
 				  unsigned verity_min,
 				  unsigned verity_patch)
 {
 	if (_dm_verity_checked || verity_maj == 0)
 		return;
 
-	log_dbg(NULL, "Detected dm-verity version %i.%i.%i.",
+	log_dbg(cd, "Detected dm-verity version %i.%i.%i.",
 		verity_maj, verity_min, verity_patch);
 
 	_dm_flags |= DM_VERITY_SUPPORTED;
@@ -194,14 +196,15 @@ static void _dm_set_verity_compat(unsigned verity_maj,
 	_dm_verity_checked = true;
 }
 
-static void _dm_set_integrity_compat(unsigned integrity_maj,
+static void _dm_set_integrity_compat(struct crypt_device *cd,
+				     unsigned integrity_maj,
 				     unsigned integrity_min,
 				     unsigned integrity_patch)
 {
 	if (_dm_integrity_checked || integrity_maj == 0)
 		return;
 
-	log_dbg(NULL, "Detected dm-integrity version %i.%i.%i.",
+	log_dbg(cd, "Detected dm-integrity version %i.%i.%i.",
 		integrity_maj, integrity_min, integrity_patch);
 
 	_dm_flags |= DM_INTEGRITY_SUPPORTED;
@@ -209,7 +212,7 @@ static void _dm_set_integrity_compat(unsigned integrity_maj,
 	_dm_integrity_checked = true;
 }
 
-static int _dm_check_versions(dm_target_type target_type)
+static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_type)
 {
 	struct dm_task *dmt;
 	struct dm_versions *target, *last_target;
@@ -239,7 +242,7 @@ static int _dm_check_versions(dm_target_type target_type)
 	if (!_dm_ioctl_checked) {
 		if (sscanf(dm_version, "%u.%u.%u", &dm_maj, &dm_min, &dm_patch) != 3)
 			goto out;
-		log_dbg(NULL, "Detected dm-ioctl version %u.%u.%u.", dm_maj, dm_min, dm_patch);
+		log_dbg(cd, "Detected dm-ioctl version %u.%u.%u.", dm_maj, dm_min, dm_patch);
 
 		if (_dm_satisfies_version(4, 20, 0, dm_maj, dm_min, dm_patch))
 			_dm_flags |= DM_SECURE_SUPPORTED;
@@ -253,15 +256,15 @@ static int _dm_check_versions(dm_target_type target_type)
 	do {
 		last_target = target;
 		if (!strcmp(DM_CRYPT_TARGET, target->name)) {
-			_dm_set_crypt_compat((unsigned)target->version[0],
+			_dm_set_crypt_compat(cd, (unsigned)target->version[0],
 					     (unsigned)target->version[1],
 					     (unsigned)target->version[2]);
 		} else if (!strcmp(DM_VERITY_TARGET, target->name)) {
-			_dm_set_verity_compat((unsigned)target->version[0],
+			_dm_set_verity_compat(cd, (unsigned)target->version[0],
 					      (unsigned)target->version[1],
 					      (unsigned)target->version[2]);
 		} else if (!strcmp(DM_INTEGRITY_TARGET, target->name)) {
-			_dm_set_integrity_compat((unsigned)target->version[0],
+			_dm_set_integrity_compat(cd, (unsigned)target->version[0],
 						 (unsigned)target->version[1],
 						 (unsigned)target->version[2]);
 		}
@@ -270,7 +273,7 @@ static int _dm_check_versions(dm_target_type target_type)
 
 	r = 1;
 	if (!_dm_ioctl_checked)
-		log_dbg(NULL, "Device-mapper backend running with UDEV support %sabled.",
+		log_dbg(cd, "Device-mapper backend running with UDEV support %sabled.",
 			_dm_use_udev() ? "en" : "dis");
 
 	_dm_ioctl_checked = true;
@@ -282,9 +285,9 @@ out:
 	return r;
 }
 
-int dm_flags(dm_target_type target, uint32_t *flags)
+int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags)
 {
-	_dm_check_versions(target);
+	_dm_check_versions(cd, target);
 	*flags = _dm_flags;
 
 	if (target == DM_UNKNOWN &&
@@ -300,19 +303,19 @@ int dm_flags(dm_target_type target, uint32_t *flags)
 }
 
 /* This doesn't run any kernel checks, just set up userspace libdevmapper */
-void dm_backend_init(void)
+void dm_backend_init(struct crypt_device *cd)
 {
 	if (!_dm_use_count++) {
-		log_dbg(NULL, "Initialising device-mapper backend library.");
+		log_dbg(cd, "Initialising device-mapper backend library.");
 		dm_log_init(set_dm_error);
 		dm_log_init_verbose(10);
 	}
 }
 
-void dm_backend_exit(void)
+void dm_backend_exit(struct crypt_device *cd)
 {
 	if (_dm_use_count && (!--_dm_use_count)) {
-		log_dbg(NULL, "Releasing device-mapper backend.");
+		log_dbg(cd, "Releasing device-mapper backend.");
 		dm_log_init_verbose(0);
 		dm_log_init(NULL);
 		dm_lib_release();
@@ -326,7 +329,7 @@ void dm_backend_exit(void)
 static int dm_init_context(struct crypt_device *cd, dm_target_type target)
 {
 	_context = cd;
-	if (!_dm_check_versions(target)) {
+	if (!_dm_check_versions(cd, target)) {
 		if (getuid() || geteuid())
 			log_err(cd, _("Cannot initialize device-mapper, "
 				      "running as non-root user."));
@@ -930,7 +933,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	dm_flags(DM_UNKNOWN, &dmt_flags);
+	dm_flags(cd, DM_UNKNOWN, &dmt_flags);
 	if (deferred && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
 		log_err(cd, _("Requested deferred flag is not supported."));
 		return -ENOTSUP;
@@ -939,7 +942,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	do {
 		r = _dm_remove(name, 1, deferred) ? 0 : -EINVAL;
 		if (--retries && r) {
-			log_dbg(NULL, "WARNING: other process locked internal device %s, %s.",
+			log_dbg(cd, "WARNING: other process locked internal device %s, %s.",
 				name, retries ? "retrying remove" : "giving up");
 			sleep(1);
 			if ((flags & CRYPT_DEACTIVATE_FORCE) && !error_target) {
@@ -970,7 +973,8 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
  * CRYPT-LUKS1-00000000000000000000000000000000-name
  * CRYPT-TEMP-name
  */
-static int dm_prepare_uuid(const char *name, const char *type, const char *uuid, char *buf, size_t buflen)
+static int dm_prepare_uuid(struct crypt_device *cd, const char *name, const char *type,
+			    const char *uuid, char *buf, size_t buflen)
 {
 	char *ptr, uuid2[UUID_LEN] = {0};
 	uuid_t uu;
@@ -979,7 +983,7 @@ static int dm_prepare_uuid(const char *name, const char *type, const char *uuid,
 	/* Remove '-' chars */
 	if (uuid) {
 		if (uuid_parse(uuid, uu) < 0) {
-			log_dbg(NULL, "Requested UUID %s has invalid format.", uuid);
+			log_dbg(cd, "Requested UUID %s has invalid format.", uuid);
 			return 0;
 		}
 
@@ -995,20 +999,20 @@ static int dm_prepare_uuid(const char *name, const char *type, const char *uuid,
 		uuid2[0] ? uuid2 : "", uuid2[0] ? "-" : "",
 		name);
 
-	log_dbg(NULL, "DM-UUID is %s", buf);
+	log_dbg(cd, "DM-UUID is %s", buf);
 	if (i >= buflen)
-		log_err(NULL, _("DM-UUID for device %s was truncated."), name);
+		log_err(cd, _("DM-UUID for device %s was truncated."), name);
 
 	return 1;
 }
 
-int lookup_dm_dev_by_uuid(const char *uuid, const char *type)
+int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char *type)
 {
 	int r;
 	char *c;
 	char dev_uuid[DM_UUID_LEN + DM_BY_ID_PREFIX_LEN] = DM_BY_ID_PREFIX;
 
-	if (!dm_prepare_uuid("", type, uuid, dev_uuid + DM_BY_ID_PREFIX_LEN, DM_UUID_LEN))
+	if (!dm_prepare_uuid(cd, "", type, uuid, dev_uuid + DM_BY_ID_PREFIX_LEN, DM_UUID_LEN))
 		return -EINVAL;
 
 	c = strrchr(dev_uuid, '-');
@@ -1020,14 +1024,14 @@ int lookup_dm_dev_by_uuid(const char *uuid, const char *type)
 
 	r = lookup_by_disk_id(dev_uuid);
 	if (r == -ENOENT) {
-		log_dbg(NULL, "Search by disk id not available. Using sysfs instead.");
+		log_dbg(cd, "Search by disk id not available. Using sysfs instead.");
 		r = lookup_by_sysfs_uuid_field(dev_uuid + DM_BY_ID_PREFIX_LEN, DM_UUID_LEN);
 	}
 
 	return r;
 }
 
-static int _dm_create_device(const char *name, const char *type,
+static int _dm_create_device(struct crypt_device *cd, const char *name, const char *type,
 			     struct device *device, uint32_t flags,
 			     const char *uuid, uint64_t size,
 			     dm_target_type target, char *params, int reload)
@@ -1043,7 +1047,7 @@ static int _dm_create_device(const char *name, const char *type,
 	uint16_t udev_flags = DM_UDEV_DISABLE_LIBRARY_FALLBACK;
 
 	/* Only need DM_SECURE_SUPPORTED, no target specific fail matters */
-	dm_flags(target, &dmt_flags);
+	dm_flags(cd, target, &dmt_flags);
 
 	if (target == DM_CRYPT)
 		target_name = DM_CRYPT_TARGET;
@@ -1068,7 +1072,7 @@ static int _dm_create_device(const char *name, const char *type,
 		if (!dm_task_set_name(dmt, name))
 			goto out_no_removal;
 	} else {
-		if (!dm_prepare_uuid(name, type, uuid, dev_uuid, sizeof(dev_uuid)))
+		if (!dm_prepare_uuid(cd, name, type, uuid, dev_uuid, sizeof(dev_uuid)))
 			goto out_no_removal;
 
 		if (!(dmt = dm_task_create(DM_DEVICE_CREATE)))
@@ -1138,19 +1142,19 @@ out_no_removal:
 	dm_task_update_nodes();
 
 	/* If code just loaded target module, update versions */
-	_dm_check_versions(target);
+	_dm_check_versions(cd, target);
 
 	return r;
 }
 
-static int check_retry(uint32_t *dmd_flags, uint32_t dmt_flags)
+static int check_retry(struct crypt_device *cd, uint32_t *dmd_flags, uint32_t dmt_flags)
 {
 	int ret = 0;
 
 	/* If discard not supported try to load without discard */
 	if ((*dmd_flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
 	    !(dmt_flags & DM_DISCARDS_SUPPORTED)) {
-		log_dbg(NULL, "Discard/TRIM is not supported");
+		log_dbg(cd, "Discard/TRIM is not supported");
 		*dmd_flags = *dmd_flags & ~CRYPT_ACTIVATE_ALLOW_DISCARDS;
 		ret = 1;
 	}
@@ -1158,7 +1162,7 @@ static int check_retry(uint32_t *dmd_flags, uint32_t dmt_flags)
 	/* If kernel keyring is not supported load key directly in dm-crypt */
 	if ((*dmd_flags & CRYPT_ACTIVATE_KEYRING_KEY) &&
 	    !(dmt_flags & DM_KERNEL_KEYRING_SUPPORTED)) {
-		log_dbg(NULL, "dm-crypt doesn't support kernel keyring");
+		log_dbg(cd, "dm-crypt doesn't support kernel keyring");
 		*dmd_flags = *dmd_flags & ~CRYPT_ACTIVATE_KEYRING_KEY;
 		ret = 1;
 	}
@@ -1166,7 +1170,7 @@ static int check_retry(uint32_t *dmd_flags, uint32_t dmt_flags)
 	/* Drop performance options if not supported */
 	if ((*dmd_flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)) &&
 	    !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED | DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED))) {
-		log_dbg(NULL, "dm-crypt doesn't support performance options");
+		log_dbg(cd, "dm-crypt doesn't support performance options");
 		*dmd_flags = *dmd_flags & ~(CRYPT_ACTIVATE_SAME_CPU_CRYPT | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS);
 		ret = 1;
 	}
@@ -1201,16 +1205,16 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	else
 		goto out;
 
-	r = _dm_create_device(name, type, dmd->data_device, dmd_flags,
+	r = _dm_create_device(cd, name, type, dmd->data_device, dmd_flags,
 			      dmd->uuid, dmd->size, dmd->target, table_params, reload);
 
-	if (r < 0 && dm_flags(dmd->target, &dmt_flags))
+	if (r < 0 && dm_flags(cd, dmd->target, &dmt_flags))
 		goto out;
 
-	if (!reload && r && dmd->target == DM_CRYPT && check_retry(&dmd_flags, dmt_flags)) {
+	if (!reload && r && dmd->target == DM_CRYPT && check_retry(cd, &dmd_flags, dmt_flags)) {
 		crypt_safe_free(table_params);
 		table_params = get_dm_crypt_params(dmd, dmd_flags);
-		r = _dm_create_device(name, type, dmd->data_device, dmd_flags,
+		r = _dm_create_device(cd, name, type, dmd->data_device, dmd_flags,
 				      dmd->uuid, dmd->size, dmd->target, table_params, reload);
 	}
 
@@ -1331,7 +1335,7 @@ int dm_status_suspended(struct crypt_device *cd, const char *name)
 	return dmi.suspended ? 1 : 0;
 }
 
-static int _dm_status_verity_ok(const char *name)
+static int _dm_status_verity_ok(struct crypt_device *cd, const char *name)
 {
 	int r;
 	struct dm_info dmi;
@@ -1343,7 +1347,7 @@ static int _dm_status_verity_ok(const char *name)
 		return r;
 	}
 
-	log_dbg(NULL, "Verity volume %s status is %s.", name, status_line ?: "");
+	log_dbg(cd, "Verity volume %s status is %s.", name, status_line ?: "");
 	r = status_line[0] == 'V' ? 1 : 0;
 	free(status_line);
 
@@ -1356,7 +1360,7 @@ int dm_status_verity_ok(struct crypt_device *cd, const char *name)
 
 	if (dm_init_context(cd, DM_VERITY))
 		return -ENOTSUP;
-	r = _dm_status_verity_ok(name);
+	r = _dm_status_verity_ok(cd, name);
 	dm_exit_context();
 	return r;
 }
@@ -1376,7 +1380,7 @@ int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint
 		return r;
 	}
 
-	log_dbg(NULL, "Integrity volume %s failure status is %s.", name, status_line ?: "");
+	log_dbg(cd, "Integrity volume %s failure status is %s.", name, status_line ?: "");
 	*count = strtoull(status_line, NULL, 10);
 	free(status_line);
 	dm_exit_context();
@@ -1385,7 +1389,8 @@ int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint
 }
 
 /* FIXME use hex wrapper, user val wrappers for line parsing */
-static int _dm_query_crypt(uint32_t get_flags,
+static int _dm_query_crypt(struct crypt_device *cd,
+			   uint32_t get_flags,
 			   struct dm_info *dmi,
 			   char *params,
 			   struct crypt_dm_active_device *dmd)
@@ -1423,7 +1428,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 	rdevice = strsep(&params, " ");
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		arg = crypt_lookup_dev(rdevice);
-		r = device_alloc(NULL, &data_device, arg);
+		r = device_alloc(cd, &data_device, arg);
 		free(arg);
 		if (r < 0 && r != -ENOTBLK)
 			goto err;
@@ -1490,10 +1495,8 @@ static int _dm_query_crypt(uint32_t get_flags,
 	r = -EINVAL;
 
 	/* Never allow to return empty key */
-	if ((get_flags & DM_ACTIVE_CRYPT_KEY) && dmi->suspended) {
-		log_dbg(NULL, "Cannot read volume key while suspended.");
+	if ((get_flags & DM_ACTIVE_CRYPT_KEY) && dmi->suspended)
 		goto err;
-	}
 
 	if (key_[0] == ':')
 		dmd->flags |= CRYPT_ACTIVATE_KEYRING_KEY;
@@ -1552,15 +1555,16 @@ static int _dm_query_crypt(uint32_t get_flags,
 err:
 	free(cipher);
 	free(integrity);
-	device_free(NULL, data_device);
+	device_free(cd, data_device);
 	crypt_free_volume_key(vk);
 	return r;
 }
 
-static int _dm_query_verity(uint32_t get_flags,
-			     struct dm_info *dmi,
-			     char *params,
-			     struct crypt_dm_active_device *dmd)
+static int _dm_query_verity(struct crypt_device *cd,
+			    uint32_t get_flags,
+			    struct dm_info *dmi,
+			    char *params,
+			    struct crypt_dm_active_device *dmd)
 {
 	struct crypt_params_verity *vp = NULL;
 	uint32_t val32;
@@ -1594,7 +1598,7 @@ static int _dm_query_verity(uint32_t get_flags,
 		return -EINVAL;
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(NULL, &data_device, str2);
+		r = device_alloc(cd, &data_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
 			return r;
@@ -1608,7 +1612,7 @@ static int _dm_query_verity(uint32_t get_flags,
 		goto err;
 	if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(NULL, &hash_device, str2);
+		r = device_alloc(cd, &hash_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
 			goto err;
@@ -1719,7 +1723,7 @@ static int _dm_query_verity(uint32_t get_flags,
 				str = strsep(&params, " ");
 				str2 = crypt_lookup_dev(str);
 				if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE) {
-					r = device_alloc(NULL, &fec_device, str2);
+					r = device_alloc(cd, &fec_device, str2);
 					if (r < 0 && r != -ENOTBLK) {
 						free(str2);
 						goto err;
@@ -1779,9 +1783,9 @@ static int _dm_query_verity(uint32_t get_flags,
 		vp->fec_device = fec_dev_str;
 	return 0;
 err:
-	device_free(NULL, data_device);
-	device_free(NULL, hash_device);
-	device_free(NULL, fec_device);
+	device_free(cd, data_device);
+	device_free(cd, hash_device);
+	device_free(cd, fec_device);
 	free(root_hash);
 	free(hash_name);
 	free(salt);
@@ -1789,10 +1793,11 @@ err:
 	return r;
 }
 
-static int _dm_query_integrity(uint32_t get_flags,
-			     struct dm_info *dmi,
-			     char *params,
-			     struct crypt_dm_active_device *dmd)
+static int _dm_query_integrity(struct crypt_device *cd,
+			       uint32_t get_flags,
+			       struct dm_info *dmi,
+			       char *params,
+			       struct crypt_dm_active_device *dmd)
 {
 	uint32_t val32;
 	uint64_t val64;
@@ -1812,7 +1817,7 @@ static int _dm_query_integrity(uint32_t get_flags,
 	str = strsep(&params, " ");
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(NULL, &data_device, str2);
+		r = device_alloc(cd, &data_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
 			return r;
@@ -1946,7 +1951,7 @@ static int _dm_query_integrity(uint32_t get_flags,
 		dmd->u.integrity.vk = vk;
 	return 0;
 err:
-	device_free(NULL, data_device);
+	device_free(cd, data_device);
 	free(integrity);
 	free(journal_crypt);
 	free(journal_integrity);
@@ -1970,7 +1975,7 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 		return -ENOTSUP;
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
 		goto out;
-	dm_flags(DM_UNKNOWN, &dmt_flags);
+	dm_flags(cd, DM_UNKNOWN, &dmt_flags);
 	if ((dmt_flags & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
 		goto out;
 	if (!dm_task_set_name(dmt, name))
@@ -1995,19 +2000,19 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 		goto out;
 
 	if (!strcmp(target_type, DM_CRYPT_TARGET)) {
-		r = _dm_query_crypt(get_flags, &dmi, params, dmd);
+		r = _dm_query_crypt(cd, get_flags, &dmi, params, dmd);
 	} else if (!strcmp(target_type, DM_VERITY_TARGET)) {
-		r = _dm_query_verity(get_flags, &dmi, params, dmd);
+		r = _dm_query_verity(cd, get_flags, &dmi, params, dmd);
 		if (r < 0)
 			goto out;
-		r = _dm_status_verity_ok(name);
+		r = _dm_status_verity_ok(cd, name);
 		if (r < 0)
 			goto out;
 		if (r == 0)
 			dmd->flags |= CRYPT_ACTIVATE_CORRUPTED;
 		r = 0;
 	} else if (!strcmp(target_type, DM_INTEGRITY_TARGET)) {
-		r = _dm_query_integrity(get_flags, &dmi, params, dmd);
+		r = _dm_query_integrity(cd, get_flags, &dmi, params, dmd);
 	} else
 		r = -EINVAL;
 
@@ -2091,7 +2096,7 @@ int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 	uint32_t dmt_flags;
 	int r = -ENOTSUP;
 
-	if (dm_init_context(cd, DM_CRYPT) || dm_flags(DM_CRYPT, &dmt_flags))
+	if (dm_init_context(cd, DM_CRYPT) || dm_flags(cd, DM_CRYPT, &dmt_flags))
 		return -ENOTSUP;
 
 	if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
@@ -2121,7 +2126,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	char *msg = NULL;
 	int r = -ENOTSUP;
 
-	if (dm_init_context(cd, DM_CRYPT) || dm_flags(DM_CRYPT, &dmt_flags))
+	if (dm_init_context(cd, DM_CRYPT) || dm_flags(cd, DM_CRYPT, &dmt_flags))
 		return -ENOTSUP;
 
 	if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
