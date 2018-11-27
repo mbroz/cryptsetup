@@ -435,7 +435,7 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 			device_path(device));
 		return r;
 	}
-	device_write_unlock(device);
+	device_write_unlock(cd, device);
 
 	/* secure deletion of possible key material in keyslot area */
 	r = crypt_keyslot_area(cd, keyslot, &area_offset, &area_length);

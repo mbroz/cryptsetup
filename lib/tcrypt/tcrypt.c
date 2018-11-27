@@ -650,14 +650,14 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		if (!base_device_path)
 			return -EINVAL;
 
-		r = device_alloc(&base_device, base_device_path);
+		r = device_alloc(cd, &base_device, base_device_path);
 		free(base_device_path);
 		if (r < 0)
 			return r;
-		devfd = device_open(base_device, O_RDONLY);
-		device_free(base_device);
+		devfd = device_open(cd, base_device, O_RDONLY);
+		device_free(cd, base_device);
 	} else
-		devfd = device_open(device, O_RDONLY);
+		devfd = device_open(cd, device, O_RDONLY);
 
 	if (devfd < 0) {
 		log_err(cd, _("Cannot open device %s."), device_path(device));
@@ -666,33 +666,33 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 
 	r = -EIO;
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
-		if (read_lseek_blockwise(devfd, device_block_size(device),
+		if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 			device_alignment(device), hdr, hdr_size,
 			TCRYPT_HDR_SYSTEM_OFFSET) == hdr_size) {
 			r = TCRYPT_init_hdr(cd, hdr, params);
 		}
 	} else if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
 		if (params->flags & CRYPT_TCRYPT_BACKUP_HEADER) {
-			if (read_lseek_blockwise(devfd, device_block_size(device),
+			if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				device_alignment(device), hdr, hdr_size,
 				TCRYPT_HDR_HIDDEN_OFFSET_BCK) == hdr_size)
 				r = TCRYPT_init_hdr(cd, hdr, params);
 		} else {
-			if (read_lseek_blockwise(devfd, device_block_size(device),
+			if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				device_alignment(device), hdr, hdr_size,
 				TCRYPT_HDR_HIDDEN_OFFSET) == hdr_size)
 				r = TCRYPT_init_hdr(cd, hdr, params);
-			if (r && read_lseek_blockwise(devfd, device_block_size(device),
+			if (r && read_lseek_blockwise(devfd, device_block_size(cd, device),
 				device_alignment(device), hdr, hdr_size,
 				TCRYPT_HDR_HIDDEN_OFFSET_OLD) == hdr_size)
 				r = TCRYPT_init_hdr(cd, hdr, params);
 		}
 	} else if (params->flags & CRYPT_TCRYPT_BACKUP_HEADER) {
-		if (read_lseek_blockwise(devfd, device_block_size(device),
+		if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 			device_alignment(device), hdr, hdr_size,
 			TCRYPT_HDR_OFFSET_BCK) == hdr_size)
 			r = TCRYPT_init_hdr(cd, hdr, params);
-	} else if (read_blockwise(devfd, device_block_size(device),
+	} else if (read_blockwise(devfd, device_block_size(cd, device),
 			device_alignment(device), hdr, hdr_size) == hdr_size)
 		r = TCRYPT_init_hdr(cd, hdr, params);
 
@@ -788,7 +788,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		part_path = crypt_get_partition_device(device_path(dmd.data_device),
 						       dmd.u.crypt.offset, dmd.size);
 		if (part_path) {
-			if (!device_alloc(&part_device, part_path)) {
+			if (!device_alloc(cd, &part_device, part_path)) {
 				log_verbose(cd, _("Activating TCRYPT system encryption for partition %s."),
 					    part_path);
 				dmd.data_device = part_device;
@@ -806,7 +806,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	r = device_block_adjust(cd, dmd.data_device, device_check,
 				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
 	if (r) {
-		device_free(part_device);
+		device_free(cd, part_device);
 		return r;
 	}
 
@@ -814,7 +814,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	dmd.u.crypt.vk = crypt_alloc_volume_key(algs->cipher[0].key_size +
 						algs->cipher[0].key_extra_size, NULL);
 	if (!dmd.u.crypt.vk) {
-		device_free(part_device);
+		device_free(cd, part_device);
 		return -ENOMEM;
 	}
 
@@ -837,7 +837,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		if (algs->chain_count != i) {
 			snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d",
 				 dm_get_dir(), name, i);
-			r = device_alloc(&device, dm_dev_name);
+			r = device_alloc(cd, &device, dm_dev_name);
 			if (r)
 				break;
 			dmd.data_device = device;
@@ -848,7 +848,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 			dm_name, dmd.u.crypt.cipher);
 		r = dm_create_device(cd, dm_name, CRYPT_TCRYPT, &dmd, 0);
 
-		device_free(device);
+		device_free(cd, device);
 		device = NULL;
 
 		if (r)
@@ -861,7 +861,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		r = -ENOTSUP;
 	}
 
-	device_free(part_device);
+	device_free(cd, part_device);
 	crypt_free_volume_key(dmd.u.crypt.vk);
 	return r;
 }
@@ -944,10 +944,10 @@ static int TCRYPT_status_one(struct crypt_device *cd, const char *name,
 		strncat(cipher, dmd.u.crypt.cipher, MAX_CIPHER_LEN);
 		*key_size += dmd.u.crypt.vk->keylength;
 		*data_offset = dmd.u.crypt.offset * SECTOR_SIZE;
-		device_free(*device);
+		device_free(cd, *device);
 		*device = dmd.data_device;
 	} else {
-		device_free(dmd.data_device);
+		device_free(cd, dmd.data_device);
 		r = -ENODEV;
 	}
 

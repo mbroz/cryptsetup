@@ -34,12 +34,12 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 {
 	int devfd, r;
 
-	devfd = device_open(device, O_RDONLY);
+	devfd = device_open(cd, device, O_RDONLY);
 	if(devfd < 0) {
 		return -EINVAL;
 	}
 
-	if (read_lseek_blockwise(devfd, device_block_size(device),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
 	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic)) ||
 	    (sb->version != SB_VERSION_1 && sb->version != SB_VERSION_2)) {

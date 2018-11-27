@@ -567,7 +567,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 
 	memset(h, 0, sizeof(*h));
 
-	r = device_alloc(&h->device, device);
+	r = device_alloc(NULL, &h->device, device);
 	if (r < 0)
 		goto bad;
 
@@ -578,7 +578,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	*cd = h;
 	return 0;
 bad:
-	device_free(h->device);
+	device_free(NULL, h->device);
 	free(h);
 	return r;
 }
@@ -623,14 +623,14 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 	if (!cd->device || !device)
 		return -EINVAL;
 
-	r = device_alloc(&dev, device);
+	r = device_alloc(cd, &dev, device);
 	if (r < 0)
 		return r;
 
 	if (!cd->metadata_device) {
 		cd->metadata_device = cd->device;
 	} else
-		device_free(cd->device);
+		device_free(cd, cd->device);
 
 	cd->device = dev;
 
@@ -839,7 +839,7 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 		return r;
 
 	if (params && params->fec_device) {
-		r = device_alloc(&cd->u.verity.fec_device, params->fec_device);
+		r = device_alloc(cd, &cd->u.verity.fec_device, params->fec_device);
 		if (r < 0)
 			return r;
 		cd->u.verity.hdr.fec_area_offset = params->fec_area_offset;
@@ -1008,7 +1008,7 @@ static void crypt_free_type(struct crypt_device *cd)
 		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
 		free(cd->u.verity.root_hash);
 		free(cd->u.verity.uuid);
-		device_free(cd->u.verity.fec_device);
+		device_free(cd, cd->u.verity.fec_device);
 	} else if (isINTEGRITY(cd->type)) {
 		free(CONST_CAST(void*)cd->u.integrity.params.integrity);
 		free(CONST_CAST(void*)cd->u.integrity.params.journal_integrity);
@@ -1050,10 +1050,10 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		if (r < 0)
 			goto out;
 		if (dmdi.target == DM_INTEGRITY && !cd->metadata_device) {
-			device_free(cd->device);
+			device_free(cd, cd->device);
 			cd->device = dmdi.data_device;
 		} else
-			device_free(dmdi.data_device);
+			device_free(cd, dmdi.data_device);
 	}
 
 	if (isPLAIN(cd->type)) {
@@ -1101,7 +1101,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	}
 out:
 	crypt_free_volume_key(dmd.u.crypt.vk);
-	device_free(dmd.data_device);
+	device_free(cd, dmd.data_device);
 	free(CONST_CAST(void*)dmd.u.crypt.cipher);
 	free(CONST_CAST(void*)dmd.u.crypt.integrity);
 	free(CONST_CAST(void*)dmd.uuid);
@@ -1155,7 +1155,7 @@ out:
 		free(CONST_CAST(void*)params.salt);
 		free(CONST_CAST(void*)params.fec_device);
 	}
-	device_free(dmd.data_device);
+	device_free(cd, dmd.data_device);
 	return r;
 }
 
@@ -1204,7 +1204,7 @@ out:
 	crypt_free_volume_key(dmd.u.integrity.vk);
 	crypt_free_volume_key(dmd.u.integrity.journal_integrity_key);
 	crypt_free_volume_key(dmd.u.integrity.journal_crypt_key);
-	device_free(dmd.data_device);
+	device_free(cd, dmd.data_device);
 	return r;
 }
 
@@ -1248,7 +1248,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 
 		/* Underlying device is not readable but crypt mapping exists */
 		if (r == -ENOTBLK) {
-			device_free(dmd.data_device);
+			device_free(NULL, dmd.data_device);
 			dmd.data_device = NULL;
 			r = crypt_init(cd, NULL);
 		}
@@ -1300,7 +1300,7 @@ out:
 		(*cd)->u.none.active_name = strdup(name);
 	}
 
-	device_free(dmd.data_device);
+	device_free(NULL, dmd.data_device);
 	free(CONST_CAST(void*)dmd.uuid);
 	return r;
 }
@@ -1431,13 +1431,13 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (params && params->data_device) {
 		cd->metadata_device = cd->device;
 		cd->device = NULL;
-		if (device_alloc(&cd->device, params->data_device) < 0)
+		if (device_alloc(cd, &cd->device, params->data_device) < 0)
 			return -ENOMEM;
 		required_alignment = params->data_alignment * SECTOR_SIZE;
 	} else if (params && params->data_alignment) {
 		required_alignment = params->data_alignment * SECTOR_SIZE;
 	} else
-		device_topology_alignment(cd->device,
+		device_topology_alignment(cd, cd->device,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
@@ -1551,13 +1551,13 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (params && params->data_device) {
 		cd->metadata_device = cd->device;
 		cd->device = NULL;
-		if (device_alloc(&cd->device, params->data_device) < 0)
+		if (device_alloc(cd, &cd->device, params->data_device) < 0)
 			return -ENOMEM;
 		required_alignment = params->data_alignment * SECTOR_SIZE;
 	} else if (params && params->data_alignment) {
 		required_alignment = params->data_alignment * SECTOR_SIZE;
 	} else
-		device_topology_alignment(cd->device,
+		device_topology_alignment(cd, cd->device,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
@@ -1770,7 +1770,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		fec_device_path = strdup(params->fec_device);
 		if (!fec_device_path)
 			return -ENOMEM;
-		r = device_alloc(&fec_device, params->fec_device);
+		r = device_alloc(cd, &fec_device, params->fec_device);
 		if (r < 0) {
 			r = -ENOMEM;
 			goto err;
@@ -1848,7 +1848,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 
 err:
 	if (r) {
-		device_free(fec_device);
+		device_free(cd, fec_device);
 		free(root_hash);
 		free(hash_name);
 		free(fec_device_path);
@@ -2125,7 +2125,7 @@ out:
 		free(CONST_CAST(void*)dmd.u.crypt.cipher);
 		free(CONST_CAST(void*)dmd.u.crypt.integrity);
 	}
-	device_free(dmd.data_device);
+	device_free(cd, dmd.data_device);
 	free(CONST_CAST(void*)dmd.uuid);
 
 	return r;
@@ -2269,8 +2269,8 @@ void crypt_free(struct crypt_device *cd)
 	dm_backend_exit();
 	crypt_free_volume_key(cd->volume_key);
 
-	device_free(cd->device);
-	device_free(cd->metadata_device);
+	device_free(cd, cd->device);
+	device_free(cd, cd->metadata_device);
 
 	free(CONST_CAST(void*)cd->pbkdf.type);
 	free(CONST_CAST(void*)cd->pbkdf.hash);
@@ -3323,7 +3323,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 			r = -EINVAL;
 	}
 
-	device_free(dmd.data_device);
+	device_free(cd, dmd.data_device);
 	crypt_free(fake_cd);
 
 	return r;
@@ -3359,7 +3359,7 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 		if (namei && dm_query_device(cd, namei, 0, &dmdi) >= 0)
 			dmd.flags |= dmdi.flags;
 	}
-	device_free(dmd.data_device);
+	device_free(cd, dmd.data_device);
 
 	if (cd && isTCRYPT(cd->type)) {
 		cad->offset	= TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);

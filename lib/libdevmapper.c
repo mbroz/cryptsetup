@@ -1423,7 +1423,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 	rdevice = strsep(&params, " ");
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		arg = crypt_lookup_dev(rdevice);
-		r = device_alloc(&data_device, arg);
+		r = device_alloc(NULL, &data_device, arg);
 		free(arg);
 		if (r < 0 && r != -ENOTBLK)
 			goto err;
@@ -1552,7 +1552,7 @@ static int _dm_query_crypt(uint32_t get_flags,
 err:
 	free(cipher);
 	free(integrity);
-	device_free(data_device);
+	device_free(NULL, data_device);
 	crypt_free_volume_key(vk);
 	return r;
 }
@@ -1594,7 +1594,7 @@ static int _dm_query_verity(uint32_t get_flags,
 		return -EINVAL;
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(&data_device, str2);
+		r = device_alloc(NULL, &data_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
 			return r;
@@ -1608,7 +1608,7 @@ static int _dm_query_verity(uint32_t get_flags,
 		goto err;
 	if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(&hash_device, str2);
+		r = device_alloc(NULL, &hash_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
 			goto err;
@@ -1719,7 +1719,7 @@ static int _dm_query_verity(uint32_t get_flags,
 				str = strsep(&params, " ");
 				str2 = crypt_lookup_dev(str);
 				if (get_flags & DM_ACTIVE_VERITY_HASH_DEVICE) {
-					r = device_alloc(&fec_device, str2);
+					r = device_alloc(NULL, &fec_device, str2);
 					if (r < 0 && r != -ENOTBLK) {
 						free(str2);
 						goto err;
@@ -1779,9 +1779,9 @@ static int _dm_query_verity(uint32_t get_flags,
 		vp->fec_device = fec_dev_str;
 	return 0;
 err:
-	device_free(data_device);
-	device_free(hash_device);
-	device_free(fec_device);
+	device_free(NULL, data_device);
+	device_free(NULL, hash_device);
+	device_free(NULL, fec_device);
 	free(root_hash);
 	free(hash_name);
 	free(salt);
@@ -1812,7 +1812,7 @@ static int _dm_query_integrity(uint32_t get_flags,
 	str = strsep(&params, " ");
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		str2 = crypt_lookup_dev(str);
-		r = device_alloc(&data_device, str2);
+		r = device_alloc(NULL, &data_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
 			return r;
@@ -1946,7 +1946,7 @@ static int _dm_query_integrity(uint32_t get_flags,
 		dmd->u.integrity.vk = vk;
 	return 0;
 err:
-	device_free(data_device);
+	device_free(NULL, data_device);
 	free(integrity);
 	free(journal_crypt);
 	free(journal_integrity);

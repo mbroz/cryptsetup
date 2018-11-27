@@ -76,13 +76,13 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	devfd = device_open(device, O_RDONLY);
+	devfd = device_open(cd, device, O_RDONLY);
 	if (devfd < 0) {
 		log_err(cd, _("Cannot open device %s."), device_path(device));
 		return -EINVAL;
 	}
 
-	if (read_lseek_blockwise(devfd, device_block_size(device),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), &sb, hdr_size,
 				 sb_offset) < hdr_size) {
 		close(devfd);
@@ -177,7 +177,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	devfd = device_open(device, O_RDWR);
+	devfd = device_open(cd, device, O_RDWR);
 	if (devfd < 0) {
 		log_err(cd, _("Cannot open device %s."), device_path(device));
 		return -EINVAL;
@@ -196,13 +196,13 @@ int VERITY_write_sb(struct crypt_device *cd,
 	memcpy(sb.salt, params->salt, params->salt_size);
 	memcpy(sb.uuid, uuid, sizeof(sb.uuid));
 
-	r = write_lseek_blockwise(devfd, device_block_size(device), device_alignment(device),
+	r = write_lseek_blockwise(devfd, device_block_size(cd, device), device_alignment(device),
 				  (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(cd, _("Error during update of verity header on device %s."),
 			device_path(device));
 
-	device_sync(device, devfd);
+	device_sync(cd, device, devfd);
 	close(devfd);
 
 	return r;

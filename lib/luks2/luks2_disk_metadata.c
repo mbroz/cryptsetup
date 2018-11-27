@@ -238,7 +238,7 @@ static int hdr_read_disk(struct crypt_device *cd,
 	log_dbg(cd, "Trying to read %s LUKS2 header at offset 0x%" PRIx64 ".",
 		secondary ? "secondary" : "primary", offset);
 
-	devfd = device_open_locked(device, O_RDONLY);
+	devfd = device_open_locked(cd, device, O_RDONLY);
 	if (devfd < 0)
 		return devfd == -1 ? -EIO : devfd;
 
@@ -246,7 +246,7 @@ static int hdr_read_disk(struct crypt_device *cd,
 	 * Read binary header and run sanity check before reading
 	 * JSON area and validating checksum.
 	 */
-	if (read_lseek_blockwise(devfd, device_block_size(device),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), hdr_disk,
 				 LUKS2_HDR_BIN_LEN, offset) != LUKS2_HDR_BIN_LEN) {
 		close(devfd);
@@ -268,7 +268,7 @@ static int hdr_read_disk(struct crypt_device *cd,
 		return -ENOMEM;
 	}
 
-	if (read_lseek_blockwise(devfd, device_block_size(device),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), *json_area, hdr_json_size,
 				 offset + LUKS2_HDR_BIN_LEN) != (ssize_t)hdr_json_size) {
 		close(devfd);
@@ -309,7 +309,7 @@ static int hdr_write_disk(struct crypt_device *cd,
 
 	/* FIXME: read-only device silent fail? */
 
-	devfd = device_open_locked(device, O_RDWR);
+	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd < 0)
 		return devfd == -1 ? -EINVAL : devfd;
 
@@ -320,7 +320,7 @@ static int hdr_write_disk(struct crypt_device *cd,
 	/*
 	 * Write header without checksum but with proper seqid.
 	 */
-	if (write_lseek_blockwise(devfd, device_block_size(device),
+	if (write_lseek_blockwise(devfd, device_block_size(cd, device),
 				  device_alignment(device), (char *)&hdr_disk,
 				  LUKS2_HDR_BIN_LEN, offset) < (ssize_t)LUKS2_HDR_BIN_LEN) {
 		close(devfd);
@@ -330,7 +330,7 @@ static int hdr_write_disk(struct crypt_device *cd,
 	/*
 	 * Write json area.
 	 */
-	if (write_lseek_blockwise(devfd, device_block_size(device),
+	if (write_lseek_blockwise(devfd, device_block_size(cd, device),
 				  device_alignment(device),
 				  CONST_CAST(char*)json_area, hdr_json_len,
 				  LUKS2_HDR_BIN_LEN + offset) < (ssize_t)hdr_json_len) {
@@ -349,12 +349,12 @@ static int hdr_write_disk(struct crypt_device *cd,
 	}
 	log_dbg_checksum(cd, hdr_disk.csum, hdr_disk.checksum_alg, "in-memory");
 
-	if (write_lseek_blockwise(devfd, device_block_size(device),
+	if (write_lseek_blockwise(devfd, device_block_size(cd, device),
 				  device_alignment(device), (char *)&hdr_disk,
 				  LUKS2_HDR_BIN_LEN, offset) < (ssize_t)LUKS2_HDR_BIN_LEN)
 		r = -EIO;
 
-	device_sync(device, devfd);
+	device_sync(cd, device, devfd);
 	close(devfd);
 	return r;
 }
@@ -448,7 +448,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	if (r)
 		log_dbg(cd, "LUKS2 header write failed (%d).", r);
 
-	device_write_unlock(device);
+	device_write_unlock(cd, device);
 
 	/* FIXME: try recovery here? */
 
@@ -765,7 +765,7 @@ int LUKS2_hdr_version_unlocked(struct crypt_device *cd, const char *backup_file)
 
 	if (!backup_file)
 		device = crypt_metadata_device(cd);
-	else if (device_alloc(&device, backup_file) < 0)
+	else if (device_alloc(cd, &device, backup_file) < 0)
 		return 0;
 
 	if (!device)
@@ -779,7 +779,7 @@ int LUKS2_hdr_version_unlocked(struct crypt_device *cd, const char *backup_file)
 	if (devfd < 0)
 		goto err;
 
-	if ((read_lseek_blockwise(devfd, device_block_size(device),
+	if ((read_lseek_blockwise(devfd, device_block_size(cd, device),
 	     device_alignment(device), &hdr, sizeof(hdr), 0) == sizeof(hdr)) &&
 	    !memcmp(hdr.magic, LUKS2_MAGIC_1ST, LUKS2_MAGIC_L))
 		r = (int)be16_to_cpu(hdr.version);
@@ -788,7 +788,7 @@ err:
 		close(devfd);
 
 	if (backup_file)
-		device_free(device);
+		device_free(cd, device);
 
 	return r;
 }

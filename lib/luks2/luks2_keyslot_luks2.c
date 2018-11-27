@@ -41,7 +41,7 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 		return r;
 	}
 	r = LUKS_encrypt_to_storage(src, srcLength, cipher, cipher_mode, vk, sector, cd);
-	device_write_unlock(crypt_metadata_device(cd));
+	device_write_unlock(cd, crypt_metadata_device(cd));
 	return r;
 #else
 	struct crypt_storage *s;
@@ -71,21 +71,21 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 		return r;
 	}
 
-	devfd = device_open_locked(device, O_RDWR);
+	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd >= 0) {
-		if (write_lseek_blockwise(devfd, device_block_size(device),
+		if (write_lseek_blockwise(devfd, device_block_size(cd, device),
 					  device_alignment(device), src,
 					  srcLength, sector * SECTOR_SIZE) < 0)
 			r = -EIO;
 		else
 			r = 0;
 
-		device_sync(device, devfd);
+		device_sync(cd, device, devfd);
 		close(devfd);
 	} else
 		r = -EIO;
 
-	device_write_unlock(device);
+	device_write_unlock(cd, device);
 
 	if (r)
 		log_err(cd, _("IO error while encrypting keyslot."));
@@ -106,7 +106,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 		return r;
 	}
 	r = LUKS_decrypt_from_storage(dst, dstLength, cipher, cipher_mode, vk, sector, cd);
-	device_read_unlock(crypt_metadata_device(cd));
+	device_read_unlock(cd, crypt_metadata_device(cd));
 	return r;
 #else
 	struct crypt_storage *s;
@@ -131,9 +131,9 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 		return r;
 	}
 
-	devfd = device_open_locked(device, O_RDONLY);
+	devfd = device_open_locked(cd, device, O_RDONLY);
 	if (devfd >= 0) {
-		if (read_lseek_blockwise(devfd, device_block_size(device),
+		if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 					 device_alignment(device), dst,
 					 dstLength, sector * SECTOR_SIZE) < 0)
 			r = -EIO;
@@ -143,7 +143,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 	} else
 		r = -EIO;
 
-	device_read_unlock(device);
+	device_read_unlock(cd, device);
 
 	/* Decrypt buffer */
 	if (!r)

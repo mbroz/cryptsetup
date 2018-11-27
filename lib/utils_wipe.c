@@ -145,7 +145,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 	bool need_block_init = true;
 
 	/* Note: LUKS1 calls it with wipe_block not aligned to multiple of bsize */
-	bsize = device_block_size(device);
+	bsize = device_block_size(cd, device);
 	alignment = device_alignment(device);
 	if (!bsize || !alignment || !wipe_block_size)
 		return -EINVAL;
@@ -156,7 +156,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 	if (MISALIGNED_512(offset) || MISALIGNED_512(length) || MISALIGNED_512(wipe_block_size))
 		return -EINVAL;
 
-	devfd = device_open(device, O_RDWR);
+	devfd = device_open(cd, device, O_RDWR);
 	if (devfd < 0)
 		return errno ? -errno : -EINVAL;
 
@@ -216,7 +216,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 		}
 	}
 
-	device_sync(device, devfd);
+	device_sync(cd, device, devfd);
 out:
 	close(devfd);
 	free(sf);
@@ -260,7 +260,7 @@ int crypt_wipe(struct crypt_device *cd,
 			      wipe_block_size, progress, usrptr);
 
 	if (dev_path)
-		device_free(device);
+		device_free(cd, device);
 
 	return r;
 }

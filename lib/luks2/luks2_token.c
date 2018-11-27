@@ -56,10 +56,8 @@ int crypt_token_register(const crypt_token_handler *handler)
 		}
 	}
 
-	if (i == LUKS2_TOKENS_MAX) {
-		log_dbg(NULL, "No more space for another token handler.");
+	if (i == LUKS2_TOKENS_MAX)
 		return -EINVAL;
-	}
 
 	token_handlers[i].h = handler;
 	return 0;

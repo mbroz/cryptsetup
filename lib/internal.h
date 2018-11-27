@@ -90,33 +90,34 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 
 /* Device backend */
 struct device;
-int device_alloc(struct device **device, const char *path);
+int device_alloc(struct crypt_device *cd, struct device **device, const char *path);
 int device_alloc_no_check(struct device **device, const char *path);
-void device_free(struct device *device);
+void device_free(struct crypt_device *cd, struct device *device);
 const char *device_path(const struct device *device);
 const char *device_dm_name(const struct device *device);
 const char *device_block_path(const struct device *device);
-void device_topology_alignment(struct device *device,
-			    unsigned long *required_alignment, /* bytes */
-			    unsigned long *alignment_offset,   /* bytes */
-			    unsigned long default_alignment);
-size_t device_block_size(struct device *device);
+void device_topology_alignment(struct crypt_device *cd,
+			       struct device *device,
+			       unsigned long *required_alignment, /* bytes */
+			       unsigned long *alignment_offset,   /* bytes */
+			       unsigned long default_alignment);
+size_t device_block_size(struct crypt_device *cd, struct device *device);
 int device_read_ahead(struct device *device, uint32_t *read_ahead);
 int device_size(struct device *device, uint64_t *size);
-int device_open(struct device *device, int flags);
+int device_open(struct crypt_device *cd, struct device *device, int flags);
 void device_disable_direct_io(struct device *device);
 int device_is_identical(struct device *device1, struct device *device2);
 int device_is_rotational(struct device *device);
 size_t device_alignment(struct device *device);
 int device_direct_io(const struct device *device);
 int device_fallocate(struct device *device, uint64_t size);
-void device_sync(struct device *device, int devfd);
+void device_sync(struct crypt_device *cd, struct device *device, int devfd);
 
-int device_open_locked(struct device *device, int flags);
+int device_open_locked(struct crypt_device *cd, struct device *device, int flags);
 int device_read_lock(struct crypt_device *cd, struct device *device);
 int device_write_lock(struct crypt_device *cd, struct device *device);
-void device_read_unlock(struct device *device);
-void device_write_unlock(struct device *device);
+void device_read_unlock(struct crypt_device *cd, struct device *device);
+void device_write_unlock(struct crypt_device *cd, struct device *device);
 
 enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
 int device_check_access(struct crypt_device *cd,

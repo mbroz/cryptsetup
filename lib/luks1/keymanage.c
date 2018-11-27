@@ -240,14 +240,14 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 
 	log_dbg(ctx, "Output backup file size: %zu bytes.", buffer_size);
 
-	devfd = device_open(device, O_RDONLY);
+	devfd = device_open(ctx, device, O_RDONLY);
 	if (devfd < 0) {
 		log_err(ctx, _("Device %s is not a valid LUKS device."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
 
-	if (read_blockwise(devfd, device_block_size(device), device_alignment(device),
+	if (read_blockwise(devfd, device_block_size(ctx, device), device_alignment(device),
 			   buffer, hdr_size) < (ssize_t)hdr_size) {
 		r = -EIO;
 		goto out;
@@ -356,7 +356,7 @@ int LUKS_hdr_restore(
 	log_dbg(ctx, "Storing backup of header (%zu bytes) and keyslot area (%zu bytes) to device %s.",
 		sizeof(*hdr), buffer_size - LUKS_ALIGN_KEYSLOTS, device_path(device));
 
-	devfd = device_open(device, O_RDWR);
+	devfd = device_open(ctx, device, O_RDWR);
 	if (devfd < 0) {
 		if (errno == EACCES)
 			log_err(ctx, _("Cannot write to device %s, permission denied."),
@@ -367,7 +367,7 @@ int LUKS_hdr_restore(
 		goto out;
 	}
 
-	if (write_blockwise(devfd, device_block_size(device), device_alignment(device),
+	if (write_blockwise(devfd, device_block_size(ctx, device), device_alignment(device),
 			    buffer, buffer_size) < buffer_size) {
 		r = -EIO;
 		goto out;
@@ -379,7 +379,7 @@ int LUKS_hdr_restore(
 	r = LUKS_read_phdr(hdr, 1, 0, ctx);
 out:
 	if (devfd >= 0) {
-		device_sync(device, devfd);
+		device_sync(ctx, device, devfd);
 		close(devfd);
 	}
 	crypt_safe_free(buffer);
@@ -607,13 +607,13 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 	log_dbg(ctx, "Reading LUKS header of size %zu from device %s",
 		hdr_size, device_path(device));
 
-	devfd = device_open(device, O_RDONLY);
+	devfd = device_open(ctx, device, O_RDONLY);
 	if (devfd < 0) {
 		log_err(ctx, _("Cannot open device %s."), device_path(device));
 		return -EINVAL;
 	}
 
-	if (read_blockwise(devfd, device_block_size(device), device_alignment(device),
+	if (read_blockwise(devfd, device_block_size(ctx, device), device_alignment(device),
 			   hdr, hdr_size) < hdr_size)
 		r = -EIO;
 	else
@@ -654,7 +654,7 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 	if (r)
 		return r;
 
-	devfd = device_open(device, O_RDWR);
+	devfd = device_open(ctx, device, O_RDWR);
 	if (devfd < 0) {
 		if (errno == EACCES)
 			log_err(ctx, _("Cannot write to device %s, permission denied."),
@@ -679,12 +679,12 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 		convHdr.keyblock[i].stripes            = htonl(hdr->keyblock[i].stripes);
 	}
 
-	r = write_blockwise(devfd, device_block_size(device), device_alignment(device),
+	r = write_blockwise(devfd, device_block_size(ctx, device), device_alignment(device),
 			    &convHdr, hdr_size) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(ctx, _("Error during update of LUKS header on device %s."), device_path(device));
 
-	device_sync(device, devfd);
+	device_sync(ctx, device, devfd);
 	close(devfd);
 
 	/* Re-read header from disk to be sure that in-memory and on-disk data are the same. */

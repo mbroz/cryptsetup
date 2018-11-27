@@ -883,7 +883,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair)
 	r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1, !repair);
 	if (r == -EAGAIN) {
 		/* unlikely: auto-recovery is required and failed due to read lock being held */
-		device_read_unlock(crypt_metadata_device(cd));
+		device_read_unlock(cd, crypt_metadata_device(cd));
 
 		r = device_write_lock(cd, crypt_metadata_device(cd));
 		if (r) {
@@ -894,9 +894,9 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair)
 
 		r = LUKS2_disk_hdr_read(cd, hdr, crypt_metadata_device(cd), 1, !repair);
 
-		device_write_unlock(crypt_metadata_device(cd));
+		device_write_unlock(cd, crypt_metadata_device(cd));
 	} else
-		device_read_unlock(crypt_metadata_device(cd));
+		device_read_unlock(cd, crypt_metadata_device(cd));
 
 	return r;
 }
@@ -1004,24 +1004,24 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 		return r;
 	}
 
-	devfd = device_open_locked(device, O_RDONLY);
+	devfd = device_open_locked(cd, device, O_RDONLY);
 	if (devfd < 0) {
-		device_read_unlock(device);
+		device_read_unlock(cd, device);
 		log_err(cd, _("Device %s is not a valid LUKS device."), device_path(device));
 		crypt_safe_free(buffer);
 		return devfd == -1 ? -EINVAL : devfd;
 	}
 
-	if (read_blockwise(devfd, device_block_size(device),
+	if (read_blockwise(devfd, device_block_size(cd, device),
 			   device_alignment(device), buffer, hdr_size) < hdr_size) {
 		close(devfd);
-		device_read_unlock(device);
+		device_read_unlock(cd, device);
 		crypt_safe_free(buffer);
 		return -EIO;
 	}
 	close(devfd);
 
-	device_read_unlock(device);
+	device_read_unlock(cd, device);
 
 	devfd = open(backup_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
 	if (devfd == -1) {
@@ -1064,7 +1064,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	struct luks2_hdr tmp_hdr = {};
 	uint32_t reqs = 0;
 
-	r = device_alloc(&backup_device, backup_file);
+	r = device_alloc(cd, &backup_device, backup_file);
 	if (r < 0)
 		return r;
 
@@ -1073,13 +1073,13 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (r) {
 		log_err(cd, _("Failed to acquire read lock on device %s."),
 			device_path(backup_device));
-		device_free(backup_device);
+		device_free(cd, backup_device);
 		return r;
 	}
 
 	r = LUKS2_disk_hdr_read(cd, &hdr_file, backup_device, 0, 0);
-	device_read_unlock(backup_device);
-	device_free(backup_device);
+	device_read_unlock(cd, backup_device);
+	device_free(cd, backup_device);
 
 	if (r < 0) {
 		log_err(cd, _("Backup file doesn't contain valid LUKS header."));
@@ -1170,25 +1170,25 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		goto out;
 	}
 
-	devfd = device_open_locked(device, O_RDWR);
+	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd < 0) {
 		if (errno == EACCES)
 			log_err(cd, _("Cannot write to device %s, permission denied."),
 				device_path(device));
 		else
 			log_err(cd, _("Cannot open device %s."), device_path(device));
-		device_write_unlock(device);
+		device_write_unlock(cd, device);
 		r = -EINVAL;
 		goto out;
 	}
 
-	if (write_blockwise(devfd, device_block_size(device),
+	if (write_blockwise(devfd, device_block_size(cd, device),
 			    device_alignment(device), buffer, buffer_size) < buffer_size)
 		r = -EIO;
 	else
 		r = 0;
 
-	device_write_unlock(device);
+	device_write_unlock(cd, device);
 	/* end of TODO */
 
 out:
@@ -1200,7 +1200,7 @@ out:
 	crypt_safe_free(buffer);
 
 	if (devfd >= 0) {
-		device_sync(device, devfd);
+		device_sync(cd, device, devfd);
 		close(devfd);
 	}
 
@@ -1923,7 +1923,7 @@ int LUKS2_activate(struct crypt_device *cd,
 			return r;
 
 		snprintf(dm_int_dev_name, sizeof(dm_int_dev_name), "%s/%s", dm_get_dir(), dm_int_name);
-		r = device_alloc(&device, dm_int_dev_name);
+		r = device_alloc(cd, &device, dm_int_dev_name);
 		if (r) {
 			dm_remove_device(cd, dm_int_name, 0);
 			return r;
@@ -1941,7 +1941,7 @@ int LUKS2_activate(struct crypt_device *cd,
 					   &dmd.size);
 		if (r < 0) {
 			log_err(cd, "Cannot detect integrity device size.");
-			device_free(device);
+			device_free(cd, device);
 			dm_remove_device(cd, dm_int_name, 0);
 			return r;
 		}
@@ -1955,7 +1955,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	if (r < 0 && dmd.u.crypt.integrity)
 		dm_remove_device(cd, dm_int_name, 0);
 
-	device_free(device);
+	device_free(cd, device);
 	return r;
 }
 

@@ -433,7 +433,7 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 	if (posix_memalign(&buf, crypt_getpagesize(), buf_size))
 		return -ENOMEM;
 
-	devfd = device_open(device, O_RDWR);
+	devfd = device_open(cd, device, O_RDWR);
 	if (devfd == -1) {
 		free(buf);
 		return -EIO;
@@ -444,24 +444,24 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 		log_dbg(cd, "Preallocation (fallocate) of new keyslot area not available.");
 
 	/* Try to read *new* area to check that area is there (trimmed backup). */
-	if (read_lseek_blockwise(devfd, device_block_size(device),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), buf, buf_size,
 				 offset_to)!= (ssize_t)buf_size)
 		goto out;
 
-	if (read_lseek_blockwise(devfd, device_block_size(device),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), buf, buf_size,
 				 offset_from)!= (ssize_t)buf_size)
 		goto out;
 
-	if (write_lseek_blockwise(devfd, device_block_size(device),
+	if (write_lseek_blockwise(devfd, device_block_size(cd, device),
 				  device_alignment(device), buf, buf_size,
 				  offset_to) != (ssize_t)buf_size)
 		goto out;
 
 	r = 0;
 out:
-	device_sync(device, devfd);
+	device_sync(cd, device, devfd);
 	close(devfd);
 	crypt_memzero(buf, buf_size);
 	free(buf);
@@ -491,14 +491,14 @@ static int luksmeta_header_present(struct crypt_device *cd, off_t luks1_size)
 	if (posix_memalign(&buf, crypt_getpagesize(), sizeof(LM_MAGIC)))
 		return -ENOMEM;
 
-	devfd = device_open(device, O_RDONLY);
+	devfd = device_open(cd, device, O_RDONLY);
 	if (devfd == -1) {
 		free(buf);
 		return -EIO;
 	}
 
 	/* Note: we must not detect failure as problem here, header can be trimmed. */
-	if (read_lseek_blockwise(devfd, device_block_size(device), device_alignment(device),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, device), device_alignment(device),
 		buf, sizeof(LM_MAGIC), luks1_size) == (ssize_t)sizeof(LM_MAGIC) &&
 		!memcmp(LM_MAGIC, buf, sizeof(LM_MAGIC))) {
 			log_err(cd, _("Unable to convert header with LUKSMETA additional metadata."));

@@ -75,7 +75,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 	log_dbg(ctx, "Using dmcrypt to access keyslot area.");
 
-	bsize = device_block_size(dmd.data_device);
+	bsize = device_block_size(ctx, dmd.data_device);
 	alignment = device_alignment(dmd.data_device);
 	if (!bsize || !alignment)
 		return -EINVAL;
@@ -183,11 +183,11 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	r = -EIO;
 
 	/* Write buffer to device */
-	devfd = device_open(device, O_RDWR);
+	devfd = device_open(ctx, device, O_RDWR);
 	if (devfd < 0)
 		goto out;
 
-	if (write_lseek_blockwise(devfd, device_block_size(device),
+	if (write_lseek_blockwise(devfd, device_block_size(ctx, device),
 				  device_alignment(device), src, srcLength,
 				  sector * SECTOR_SIZE) < 0)
 		goto out;
@@ -195,7 +195,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	r = 0;
 out:
 	if (devfd >= 0) {
-		device_sync(device, devfd);
+		device_sync(ctx, device, devfd);
 		close(devfd);
 	}
 	if (r)
@@ -240,14 +240,14 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	log_dbg(ctx, "Using userspace crypto wrapper to access keyslot area.");
 
 	/* Read buffer from device */
-	devfd = device_open(device, O_RDONLY);
+	devfd = device_open(ctx, device, O_RDONLY);
 	if (devfd < 0) {
 		log_err(ctx, _("Cannot open device %s."), device_path(device));
 		crypt_storage_destroy(s);
 		return -EIO;
 	}
 
-	if (read_lseek_blockwise(devfd, device_block_size(device),
+	if (read_lseek_blockwise(devfd, device_block_size(ctx, device),
 				 device_alignment(device), dst, dstLength,
 				 sector * SECTOR_SIZE) < 0) {
 		if (!fstat(devfd, &st) && (st.st_size < (off_t)dstLength))
