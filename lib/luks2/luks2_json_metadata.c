@@ -364,12 +364,13 @@ static json_bool segment_has_digest(const char *segment_name, json_object *jobj_
 }
 
 static json_bool validate_intervals(struct crypt_device *cd,
-				    int length, const struct interval *ix, uint64_t *data_offset)
+				    int length, const struct interval *ix,
+				    uint64_t metadata_size, uint64_t keyslots_area_end)
 {
 	int j, i = 0;
 
 	while (i < length) {
-		if (ix[i].offset < 2 * LUKS2_HDR_16K_LEN) {
+		if (ix[i].offset < 2 * metadata_size) {
 			log_dbg(cd, "Illegal area offset: %" PRIu64 ".", ix[i].offset);
 			return FALSE;
 		}
@@ -379,10 +380,9 @@ static json_bool validate_intervals(struct crypt_device *cd,
 			return FALSE;
 		}
 
-		/* first segment at offset 0 means we have detached header. Do not check then. */
-		if (*data_offset && (ix[i].offset + ix[i].length) > *data_offset) {
-			log_dbg(cd, "Area [%" PRIu64 ", %" PRIu64 "] intersects with segment starting at offset: %" PRIu64,
-				ix[i].offset, ix[i].offset + ix[i].length, *data_offset);
+		if ((ix[i].offset + ix[i].length) > keyslots_area_end) {
+			log_dbg(cd, "Area [%" PRIu64 ", %" PRIu64 "] overflows binary keyslots area (ends at offset: %" PRIu64 ").",
+				ix[i].offset, ix[i].offset + ix[i].length, keyslots_area_end);
 			return FALSE;
 		}
 
@@ -633,12 +633,24 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 	return 0;
 }
 
+static uint64_t LUKS2_metadata_size(json_object *jobj)
+{
+	json_object *jobj1, *jobj2;
+	uint64_t json_size;
+
+	json_object_object_get_ex(jobj, "config", &jobj1);
+	json_object_object_get_ex(jobj1, "json_size", &jobj2);
+	json_str_to_uint64(jobj2, &json_size);
+
+	return json_size + LUKS2_HDR_BIN_LEN;
+}
+
 static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	struct interval *intervals;
 	json_object *jobj_keyslots, *jobj_offset, *jobj_length, *jobj_segments, *jobj_area;
 	int length, ret, i = 0;
-	uint64_t first_offset, keyslots_size, keyslots_area_sum = 0;
+	uint64_t keyslots_size, metadata_size, keyslots_area_sum = 0;
 
 	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
 		return 1;
@@ -649,6 +661,7 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 
 	/* config is already validated */
 	keyslots_size = LUKS2_keyslots_size(hdr_jobj);
+	metadata_size = LUKS2_metadata_size(hdr_jobj);
 
 	length = json_object_object_length(jobj_keyslots);
 
@@ -701,9 +714,7 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 		return 1;
 	}
 
-	first_offset = get_first_data_offset(jobj_segments, NULL);
-
-	ret = validate_intervals(cd, length, intervals, &first_offset) ? 0 : 1;
+	ret = validate_intervals(cd, length, intervals, metadata_size, LUKS2_hdr_and_areas_size(hdr_jobj)) ? 0 : 1;
 
 	free(intervals);
 
@@ -954,14 +965,7 @@ uint64_t LUKS2_keyslots_size(json_object *jobj)
 
 uint64_t LUKS2_hdr_and_areas_size(json_object *jobj)
 {
-	json_object *jobj1, *jobj2;
-	uint64_t json_size;
-
-	json_object_object_get_ex(jobj, "config", &jobj1);
-	json_object_object_get_ex(jobj1, "json_size", &jobj2);
-	json_str_to_uint64(jobj2, &json_size);
-
-	return 2 * (json_size + LUKS2_HDR_BIN_LEN) + LUKS2_keyslots_size(jobj);
+	return 2 * LUKS2_metadata_size(jobj) + LUKS2_keyslots_size(jobj);
 }
 
 int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
