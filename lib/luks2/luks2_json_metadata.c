@@ -403,7 +403,6 @@ static json_bool validate_intervals(struct crypt_device *cd,
 	return TRUE;
 }
 
-static int hdr_validate_areas(struct crypt_device *, json_object *hdr_jobj);
 int LUKS2_keyslot_validate(struct crypt_device *cd, json_object *hdr_jobj, json_object *hdr_keyslot, const char *key)
 {
 	json_object *jobj_key_size;
@@ -419,9 +418,6 @@ int LUKS2_keyslot_validate(struct crypt_device *cd, json_object *hdr_jobj, json_
 			json_object_get_string(jobj_key_size));
 		return 1;
 	}
-
-	if (hdr_validate_areas(cd, hdr_jobj))
-		return 1;
 
 	return 0;
 }
