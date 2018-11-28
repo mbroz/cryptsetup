@@ -402,7 +402,6 @@ static json_bool validate_intervals(int length, const struct interval *ix, uint6
 	return TRUE;
 }
 
-static int hdr_validate_areas(json_object *hdr_jobj);
 int LUKS2_keyslot_validate(json_object *hdr_jobj, json_object *hdr_keyslot, const char *key)
 {
 	json_object *jobj_key_size;
@@ -418,9 +417,6 @@ int LUKS2_keyslot_validate(json_object *hdr_jobj, json_object *hdr_keyslot, cons
 			json_object_get_string(jobj_key_size));
 		return 1;
 	}
-
-	if (hdr_validate_areas(hdr_jobj))
-		return 1;
 
 	return 0;
 }
