@@ -650,7 +650,7 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 	struct interval *intervals;
 	json_object *jobj_keyslots, *jobj_offset, *jobj_length, *jobj_segments, *jobj_area;
 	int length, ret, i = 0;
-	uint64_t keyslots_size, metadata_size, keyslots_area_sum = 0;
+	uint64_t metadata_size;
 
 	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
 		return 1;
@@ -660,7 +660,6 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 		return 1;
 
 	/* config is already validated */
-	keyslots_size = LUKS2_keyslots_size(hdr_jobj);
 	metadata_size = LUKS2_metadata_size(hdr_jobj);
 
 	length = json_object_object_length(jobj_keyslots);
@@ -698,19 +697,11 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 			return 1;
 		}
 
-		keyslots_area_sum += intervals[i].length;
-
 		i++;
 	}
 
 	if (length != i) {
 		free(intervals);
-		return 1;
-	}
-
-	if (keyslots_area_sum > keyslots_size) {
-		log_dbg(cd, "Sum of all keyslot area sizes (%" PRIu64 ") is greater than value in config section %"
-			PRIu64, keyslots_area_sum, keyslots_size);
 		return 1;
 	}
 
