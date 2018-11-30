@@ -1862,7 +1862,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	int r;
 	enum devcheck device_check;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
-	struct crypt_dm_active_device dmd = {
+	struct crypt_dm_active_device dmdi, dmd = {
 		.target = DM_CRYPT,
 		.uuid   = crypt_get_uuid(cd),
 		.size   = 0,
@@ -1901,34 +1901,30 @@ int LUKS2_activate(struct crypt_device *cd,
 			return -EINVAL;
 		}
 
-		snprintf(dm_int_name, sizeof(dm_int_name), "%s_dif", name);
-		r = INTEGRITY_activate(cd, dm_int_name, NULL, NULL, NULL, NULL, dmd.flags);
+		r = INTEGRITY_create_dmd_device(cd, NULL, NULL, NULL, NULL, &dmdi, dmd.flags);
 		if (r)
 			return r;
 
+		snprintf(dm_int_name, sizeof(dm_int_name), "%s_dif", name);
 		snprintf(dm_int_dev_name, sizeof(dm_int_dev_name), "%s/%s", dm_get_dir(), dm_int_name);
-		r = device_alloc(cd, &device, dm_int_dev_name);
-		if (r) {
-			dm_remove_device(cd, dm_int_name, 0);
-			return r;
-		}
 
 		/* Space for IV metadata only */
 		if (!dmd.u.crypt.integrity)
 			dmd.u.crypt.integrity = "none";
 
-		dmd.data_device = device;
 		dmd.u.crypt.offset = 0;
+		dmd.size = dmdi.size;
 
-		r = INTEGRITY_data_sectors(cd, crypt_data_device(cd),
-					   crypt_get_data_offset(cd) * SECTOR_SIZE,
-					   &dmd.size);
-		if (r < 0) {
-			log_err(cd, "Cannot detect integrity device size.");
-			device_free(cd, device);
+		r = INTEGRITY_activate_dmd_device(cd, dm_int_name, &dmdi);
+		if (r < 0)
+			return r;
+
+		r = device_alloc(cd, &device, dm_int_dev_name);
+		if (r) {
 			dm_remove_device(cd, dm_int_name, 0);
 			return r;
 		}
+		dmd.data_device = device;
 	}
 
 	r = device_block_adjust(cd, dmd.data_device, device_check,
