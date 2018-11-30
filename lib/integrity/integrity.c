@@ -180,16 +180,20 @@ int INTEGRITY_tag_size(struct crypt_device *cd,
 	return iv_tag_size + auth_tag_size;
 }
 
-int INTEGRITY_activate(struct crypt_device *cd,
-		       const char *name,
+int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 		       const struct crypt_params_integrity *params,
 		       struct volume_key *vk,
 		       struct volume_key *journal_crypt_key,
 		       struct volume_key *journal_mac_key,
+		       struct crypt_dm_active_device *dmd,
 		       uint32_t flags)
 {
-	uint32_t dmi_flags;
-	struct crypt_dm_active_device dmdi = {
+	int r;
+
+	if (!dmd)
+		return -EINVAL;
+
+	*dmd = (struct crypt_dm_active_device) {
 		.target      = DM_INTEGRITY,
 		.data_device = crypt_data_device(cd),
 		.flags = flags,
@@ -202,48 +206,74 @@ int INTEGRITY_activate(struct crypt_device *cd,
 			.journal_integrity_key = journal_mac_key,
 		}
 	};
-	int r;
 
-	if (dmdi.data_device != crypt_metadata_device(cd))
-		dmdi.u.integrity.meta_device = crypt_metadata_device(cd);
+	if (dmd->data_device != crypt_metadata_device(cd))
+		dmd->u.integrity.meta_device = crypt_metadata_device(cd);
 
 	r = INTEGRITY_data_sectors(cd, crypt_metadata_device(cd),
-				   dmdi.u.integrity.offset * SECTOR_SIZE, &dmdi.size);
+				   dmd->u.integrity.offset * SECTOR_SIZE, &dmd->size);
 	if (r < 0)
 		return r;
 
 	if (params) {
-		dmdi.u.integrity.journal_size = params->journal_size;
-		dmdi.u.integrity.journal_watermark = params->journal_watermark;
-		dmdi.u.integrity.journal_commit_time = params->journal_commit_time;
-		dmdi.u.integrity.interleave_sectors = params->interleave_sectors;
-		dmdi.u.integrity.buffer_sectors = params->buffer_sectors;
-		dmdi.u.integrity.integrity = params->integrity;
-		dmdi.u.integrity.journal_integrity = params->journal_integrity;
-		dmdi.u.integrity.journal_crypt = params->journal_crypt;
+		dmd->u.integrity.journal_size = params->journal_size;
+		dmd->u.integrity.journal_watermark = params->journal_watermark;
+		dmd->u.integrity.journal_commit_time = params->journal_commit_time;
+		dmd->u.integrity.interleave_sectors = params->interleave_sectors;
+		dmd->u.integrity.buffer_sectors = params->buffer_sectors;
+		dmd->u.integrity.integrity = params->integrity;
+		dmd->u.integrity.journal_integrity = params->journal_integrity;
+		dmd->u.integrity.journal_crypt = params->journal_crypt;
 	}
 
-	log_dbg(cd, "Trying to activate INTEGRITY device on top of %s, using name %s, tag size %d, provided sectors %" PRIu64".",
-		device_path(dmdi.data_device), name, dmdi.u.integrity.tag_size, dmdi.size);
+	return r;
+}
 
-	r = device_block_adjust(cd, dmdi.data_device, DEV_EXCL,
-				dmdi.u.integrity.offset, NULL, &dmdi.flags);
+int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
+		       const char *name,
+		       struct crypt_dm_active_device *dmd)
+{
+	int r;
+	uint32_t dmi_flags;
+
+	log_dbg(cd, "Trying to activate INTEGRITY device on top of %s, using name %s, tag size %d, provided sectors %" PRIu64".",
+		device_path(dmd->data_device), name, dmd->u.integrity.tag_size, dmd->size);
+
+	r = device_block_adjust(cd, dmd->data_device, DEV_EXCL,
+				dmd->u.integrity.offset, NULL, &dmd->flags);
 	if (r)
 		return r;
 
-	if (dmdi.u.integrity.meta_device) {
-		r = device_block_adjust(cd, dmdi.u.integrity.meta_device, DEV_EXCL, 0, NULL, NULL);
+	if (dmd->u.integrity.meta_device) {
+		r = device_block_adjust(cd, dmd->u.integrity.meta_device, DEV_EXCL, 0, NULL, NULL);
 		if (r)
 			return r;
 	}
 
-	r = dm_create_device(cd, name, "INTEGRITY", &dmdi);
+	r = dm_create_device(cd, name, "INTEGRITY", dmd);
 	if (r < 0 && (dm_flags(cd, DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
 		log_err(cd, _("Kernel doesn't support dm-integrity mapping."));
 		return -ENOTSUP;
 	}
 
 	return r;
+}
+
+int INTEGRITY_activate(struct crypt_device *cd,
+		       const char *name,
+		       const struct crypt_params_integrity *params,
+		       struct volume_key *vk,
+		       struct volume_key *journal_crypt_key,
+		       struct volume_key *journal_mac_key,
+		       uint32_t flags)
+{
+	struct crypt_dm_active_device dmd = {};
+	int r = INTEGRITY_create_dmd_device(cd, params, vk, journal_crypt_key, journal_mac_key, &dmd, flags);
+
+	if (r < 0)
+		return r;
+
+	return INTEGRITY_activate_dmd_device(cd, name, &dmd);
 }
 
 int INTEGRITY_format(struct crypt_device *cd,

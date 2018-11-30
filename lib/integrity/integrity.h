@@ -27,6 +27,7 @@ struct crypt_device;
 struct device;
 struct crypt_params_integrity;
 struct volume_key;
+struct crypt_dm_active_device;
 
 /* dm-integrity helper */
 #define SB_MAGIC	"integrt"
@@ -75,4 +76,16 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		       struct volume_key *journal_crypt_key,
 		       struct volume_key *journal_mac_key,
 		       uint32_t flags);
+
+int INTEGRITY_create_dmd_device(struct crypt_device *cd,
+		       const struct crypt_params_integrity *params,
+		       struct volume_key *vk,
+		       struct volume_key *journal_crypt_key,
+		       struct volume_key *journal_mac_key,
+		       struct crypt_dm_active_device *dmd,
+		       uint32_t flags);
+
+int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
+		       const char *name,
+		       struct crypt_dm_active_device *dmd);
 #endif
