@@ -1176,6 +1176,9 @@ Specify integrity algorithm to be used for authenticated disk encryption in LUKS
 
 \fBWARNING: This extension is EXPERIMENTAL\fR and requires dm-integrity
 kernel target (available since kernel version 4.12).
+For native AEAD modes, also enable "User-space interface for AEAD cipher algorithms"
+in "Cryptographic API" section (CONFIG_CRYPTO_USER_API_AEAD .config option).
+
 For more info, see \fIAUTHENTICATED DISK ENCRYPTION\fR section.
 .TP
 .B "\-\-integrity\-no\-journal"

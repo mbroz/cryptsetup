@@ -1,0 +1,97 @@
+Cryptsetup 2.0.6 Release Notes
+==============================
+Stable bug-fix release.
+All users of cryptsetup 2.0.x should upgrade to this version.
+
+Cryptsetup 2.x version introduces a new on-disk LUKS2 format.
+
+The legacy LUKS (referenced as LUKS1) will be fully supported
+forever as well as a traditional and fully backward compatible format.
+
+Please note that authenticated disk encryption, non-cryptographic
+data integrity protection (dm-integrity), use of Argon2 Password-Based
+Key Derivation Function and the LUKS2 on-disk format itself are new
+features and can contain some bugs.
+
+Please do not use LUKS2 without properly configured backup or in
+production systems that need to be compatible with older systems.
+
+Changes since version 2.0.5
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix support of larger metadata areas in LUKS2 header.
+
+  This release properly supports all specified metadata areas, as documented
+  in LUKS2 format description (see docs/on-disk-format-luks2.pdf in archive).
+
+  Currently, only default metadata area size is used (in format or convert).
+  Later cryptsetup versions will allow increasing this metadata area size.
+
+* If AEAD (authenticated encryption) is used, cryptsetup now tries to check
+  if the requested AEAD algorithm with specified key size is available
+  in kernel crypto API.
+  This change avoids formatting a device that cannot be later activated.
+
+  For this function, the kernel must be compiled with the
+  CONFIG_CRYPTO_USER_API_AEAD option enabled.
+  Note that kernel user crypto API options (CONFIG_CRYPTO_USER_API and
+  CONFIG_CRYPTO_USER_API_SKCIPHER) are already mandatory for LUKS2.
+
+* Fix setting of integrity no-journal flag.
+  Now you can store this flag to metadata using --persistent option.
+
+* Fix cryptsetup-reencrypt to not keep temporary reencryption headers
+  if interrupted during initial password prompt.
+
+* Adds early check to plain and LUKS2 formats to disallow device format
+  if device size is not aligned to requested sector size.
+  Previously it was possible, and the device was rejected to activate by
+  kernel later.
+
+* Fix checking of hash algorithms availability for PBKDF early.
+  Previously LUKS2 format allowed non-existent hash algorithm with
+  invalid keyslot preventing the device from activation.
+
+* Allow Adiantum cipher construction (a non-authenticated length-preserving
+  fast encryption scheme), so it can be used both for data encryption and
+  keyslot encryption in LUKS1/2 devices.
+
+  For benchmark, use:
+    # cryptsetup benchmark -c xchacha12,aes-adiantum
+    # cryptsetup benchmark -c xchacha20,aes-adiantum
+
+  For LUKS format:
+    # cryptsetup luksFormat -c xchacha20,aes-adiantum-plain64 -s 256 <device>
+
+  The support for Adiantum will be merged in Linux kernel 4.21.
+  For more info see the paper https://eprint.iacr.org/2018/720.
+
+Unfinished things & TODO for next releases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Authenticated encryption should use new algorithms from CAESAR competition
+  https://competitions.cr.yp.to/caesar-submissions.html.
+  AEGIS and MORUS are already available in kernel 4.18.
+
+  For more info about LUKS2 authenticated encryption, please see our paper
+  https://arxiv.org/abs/1807.00309
+
+  Please note that authenticated encryption is still an experimental feature
+  and can have performance problems for high-speed devices and device
+  with larger IO blocks (like RAID).
+
+* Authenticated encryption do not set encryption for a dm-integrity journal.
+
+  While it does not influence data confidentiality or integrity protection,
+  an attacker can get some more information from data journal or cause that
+  system will corrupt sectors after journal replay. (That corruption will be
+  detected though.)
+
+* There are examples of user-defined tokens inside misc/luks2_keyslot_example
+  directory (like a simple external program that uses libssh to unlock LUKS2
+  using remote keyfile).
+
+* The python binding (pycryptsetup) contains only basic functionality for LUKS1
+  (it is not updated for new features) and will be REMOVED in version 2.1
+  in favor of python bindings to the libblockdev library.
+  See https://github.com/storaged-project/libblockdev/releases that
+  already supports LUKS2 and VeraCrypt devices handling through libcryptsetup.
