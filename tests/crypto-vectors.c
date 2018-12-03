@@ -432,7 +432,7 @@ static int pbkdf_test_vectors(void)
 }
 
 
-const char* get_vec(struct hash_out* out, int i)
+static const char* get_vec(struct hash_out* out, int i)
 {
 	switch (i) {
 	case 0:
@@ -467,7 +467,7 @@ static int hash_test(void)
 
 		// CRC32 vector test
 		printf("Hash vector %02d: [CRC32]", i);
-		crc32 = crypt_crc32(~0, in_vec->buffer, in_vec->length) ^ ~0;
+		crc32 = crypt_crc32(~0, (const unsigned char*)in_vec->buffer, in_vec->length) ^ ~0;
 		if (crc32 != out_vec->crc32_out) {
 			printf("expected output [FAILED].\n");
 			printf(" got: %x\n", crc32);
@@ -516,7 +516,7 @@ static int hash_test(void)
 	return 0;
 }
 
-const char* get_hmac_res(struct hmac_test_vector* out, int i)
+static const char* get_hmac_res(struct hmac_test_vector* out, int i)
 {
 	switch (i) {
 	case 0:
@@ -536,8 +536,8 @@ static int hmac_test(void)
 	struct crypt_hmac *hmac;
 	struct hmac_test_vector *vector;
 	struct crypt_hash *h;
-	unsigned int hmac_length;
-	int i, j, r;
+	unsigned int i, j;
+	int hmac_length, r;
 
 	char result[64];
 	char key[MAX_BLOCK_SIZE];

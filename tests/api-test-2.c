@@ -1495,6 +1495,8 @@ static void Tokens(void)
 	const char *dummy;
 	const char *cipher = "aes";
 	const char *cipher_mode = "xts-plain64";
+	char passptr[] = PASSPHRASE;
+	char passptr1[] = PASSPHRASE1;
 
 	static const crypt_token_handler th = {
 		.name = "test_token",
@@ -1534,8 +1536,8 @@ static void Tokens(void)
 	FAIL_(crypt_token_json_set(cd, CRYPT_ANY_TOKEN, TEST_TOKEN_JSON_INVALID("\"0\"")), "Token validation failed");
 	EQ_(crypt_token_json_set(cd, CRYPT_ANY_TOKEN, TEST_TOKEN_JSON("\"0\"")), 0);
 	EQ_(crypt_token_status(cd, 0, NULL), CRYPT_TOKEN_EXTERNAL);
-	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 0, PASSPHRASE, 0), 0);
-	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 0, PASSPHRASE, 0), "already active");
+	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 0, passptr, 0), 0);
+	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 0, passptr, 0), "already active");
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	// write invalid token and verify that validate() can detect it after handler being registered
@@ -1544,11 +1546,11 @@ static void Tokens(void)
 	EQ_(crypt_token_json_set(cd, CRYPT_ANY_TOKEN, TEST_TOKEN1_JSON("\"1\"")), 2);
 	EQ_(crypt_token_status(cd, 2, &dummy), CRYPT_TOKEN_EXTERNAL_UNKNOWN);
 	OK_(strcmp(dummy, "test_token1"));
-	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 1, PASSPHRASE1, 0), "Unknown token handler");
-	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE1, 0), "Unknown token handler");
+	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 1, passptr1, 0), "Unknown token handler");
+	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr1, 0), "Unknown token handler");
 	OK_(crypt_token_register(&th3));
-	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 1, PASSPHRASE1, 0), "Token validation failed");
-	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE1, 0), 1);
+	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 1, passptr1, 0), "Token validation failed");
+	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr1, 0), 1);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	// test crypt_token_json_get returns correct token id
@@ -1556,10 +1558,10 @@ static void Tokens(void)
 
 	// exercise assign/unassign keyslots API
 	EQ_(crypt_token_unassign_keyslot(cd, 2, 1), 2);
-	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE1, 0), "Token assigned to no keyslot");
+	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr1, 0), "Token assigned to no keyslot");
 	EQ_(crypt_token_assign_keyslot(cd, 2, 0), 2);
-	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE1, 0), "Wrong passphrase");
-	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE, 0), 0);
+	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr1, 0), "Wrong passphrase");
+	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr, 0), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_token_json_set(cd, 1, NULL), 1);
 	FAIL_(crypt_token_json_get(cd, 1, &dummy), "Token is not there");
@@ -1571,31 +1573,31 @@ static void Tokens(void)
 	EQ_(crypt_token_assign_keyslot(cd, 2, 0), 2);
 	EQ_(crypt_token_assign_keyslot(cd, 0, 3), 0);
 
-	EQ_(crypt_activate_by_token(cd, NULL, 2, PASSPHRASE, 0), 0);
-	EQ_(crypt_activate_by_token(cd, NULL, 0, PASSPHRASE1, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 3);
+	EQ_(crypt_activate_by_token(cd, NULL, 2, passptr, 0), 0);
+	EQ_(crypt_activate_by_token(cd, NULL, 0, passptr1, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 3);
 	// FIXME: useless error message here (or missing one to be specific)
-	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 0, PASSPHRASE1, 0), "No volume key available in token keyslots");
-	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE, 0), 0);
+	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 0, passptr1, 0), "No volume key available in token keyslots");
+	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr, 0), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_token_assign_keyslot(cd, 0, 1), 0);
 	OK_(crypt_token_is_assigned(cd, 0, 1));
-	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 0, PASSPHRASE1, 0), 1);
+	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 0, passptr1, 0), 1);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	EQ_(crypt_token_assign_keyslot(cd, 2, 3), 2);
 	OK_(crypt_token_is_assigned(cd, 2, 3));
-	EQ_(crypt_activate_by_token(cd, NULL, 2, PASSPHRASE, 0), 0);
-	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, PASSPHRASE, 0), 0);
+	EQ_(crypt_activate_by_token(cd, NULL, 2, passptr, 0), 0);
+	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr, 0), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 #ifdef KERNEL_KEYRING
 	if (t_dm_crypt_keyring_support()) {
-		EQ_(crypt_activate_by_token(cd, NULL, 2, PASSPHRASE, CRYPT_ACTIVATE_KEYRING_KEY), 0);
+		EQ_(crypt_activate_by_token(cd, NULL, 2, passptr, CRYPT_ACTIVATE_KEYRING_KEY), 0);
 		OK_(_volume_key_in_keyring(cd, 0));
 	}
 	OK_(crypt_volume_key_keyring(cd, 0));
 #endif
-	FAIL_(crypt_activate_by_token(cd, NULL, 2, PASSPHRASE, CRYPT_ACTIVATE_KEYRING_KEY), "Can't use keyring when disabled in library");
+	FAIL_(crypt_activate_by_token(cd, NULL, 2, passptr, CRYPT_ACTIVATE_KEYRING_KEY), "Can't use keyring when disabled in library");
 	OK_(crypt_volume_key_keyring(cd, 1));
 
 	EQ_(crypt_token_luks2_keyring_set(cd, 5, &params), 5);

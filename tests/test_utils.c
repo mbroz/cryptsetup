@@ -254,7 +254,7 @@ int crypt_decode_key(char *key, const char *hex, unsigned int size)
 
 void global_log_callback(int level, const char *msg, void *usrptr)
 {
-	int len;
+	size_t len;
 
 	if (_debug) {
 		if (level == CRYPT_LOG_DEBUG)
