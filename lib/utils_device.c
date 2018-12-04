@@ -49,7 +49,7 @@ struct device {
 	struct crypt_lock_handle *lh;
 
 	unsigned int o_direct:1;
-	unsigned int init_done:1;
+	unsigned int init_done:1; /* path is bdev or loop already initialized */
 
 	/* cached values */
 	size_t alignment;
@@ -772,6 +772,16 @@ int device_direct_io(const struct device *device)
 	return device->o_direct;
 }
 
+static dev_t device_devno(const struct device *device)
+{
+	struct stat st;
+
+	if (stat(device->path, &st) || !S_ISBLK(st.st_mode))
+		return 0;
+
+	return st.st_rdev;
+}
+
 int device_is_identical(struct device *device1, struct device *device2)
 {
 	if (!device1 || !device2)
@@ -780,7 +790,11 @@ int device_is_identical(struct device *device1, struct device *device2)
 	if (device1 == device2)
 		return 1;
 
-	/* This should be better check - major/minor for block device etc */
+	if (device1->init_done && device2->init_done)
+		return (device_devno(device1) == device_devno(device2));
+	else if (device1->init_done || device2->init_done)
+		return 0;
+
 	if (!strcmp(device_path(device1), device_path(device2)))
 		return 1;
 
