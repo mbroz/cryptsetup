@@ -28,20 +28,21 @@ if [ -n "$4" ]; then
 fi
 
 reenc_readkey() {
-    local keypath="${1#*:}"
-    local keydev="${1%%:*}"
+    keypath="${1#*:}"
+    keydev="${1%%:*}"
 
-    local mntp="/tmp/reencrypted-mount-tmp"
+    mntp="/tmp/reencrypted-mount-tmp"
     mkdir "$mntp"
     mount -r "$keydev" "$mntp" && cat "$mntp/$keypath"
     umount "$mntp"
     rm -r "$mntp"
 }
 
+# shellcheck disable=SC2086
+# shellcheck disable=SC2164
 reenc_run() {
-    local cwd
     cwd=$(pwd)
-    local _prompt="LUKS password for REENCRYPTING $device"
+    _prompt="LUKS password for REENCRYPTING $device"
     cd /tmp
     udevadm settle
     if [ "$1" = "none" ] ; then
@@ -61,12 +62,14 @@ reenc_run() {
 
 info "REENCRYPT $device requested"
 # flock against other interactive activities
+# shellcheck disable=SC2086
 { flock -s 9;
     reenc_run $2 $3
 } 9>/.console_lock
 
 if [ $_ret -eq 0 ]; then
     # do not ask again
+    # shellcheck disable=SC2188
     >> /tmp/reencrypted
     warn "Reencryption of device $device has finished successfully. Use previous"
     warn "initramfs image (without reencrypt module) to boot the system. When"
