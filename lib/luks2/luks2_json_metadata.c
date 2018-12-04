@@ -1222,7 +1222,8 @@ int LUKS2_config_get_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 
 	for (i = 0; i < (int) json_object_array_length(jobj_flags); i++) {
 		jobj1 = json_object_array_get_idx(jobj_flags, i);
-		for (j = 0, found = 0; persistent_flags[j].description && !found; j++)
+		found = 0;
+		for (j = 0; persistent_flags[j].description && !found; j++)
 			if (!strcmp(persistent_flags[j].description,
 				    json_object_get_string(jobj1))) {
 				*flags |= persistent_flags[j].flag;

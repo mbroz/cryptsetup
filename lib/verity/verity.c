@@ -226,7 +226,8 @@ int VERITY_UUID_generate(struct crypt_device *cd, char **uuid_string)
 {
 	uuid_t uuid;
 
-	if (!(*uuid_string = malloc(40)))
+	*uuid_string = malloc(40);
+	if (!*uuid_string)
 		return -ENOMEM;
 	uuid_generate(uuid);
 	uuid_unparse(uuid, *uuid_string);
