@@ -274,6 +274,7 @@ int argon2_verify(const char *encoded, const void *pwd, const size_t pwdlen,
     }
 
     /* No field can be longer than the encoded length */
+    /* coverity[strlen_assign] */
     max_field_len = (uint32_t)encoded_len;
 
     ctx.saltlen = max_field_len;
