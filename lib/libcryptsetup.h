@@ -148,8 +148,29 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param device path to device
  *
+ * @returns 0 on success or negative errno value otherwise.
  */
 int crypt_set_data_device(struct crypt_device *cd, const char *device);
+
+/**
+ * Set data device offset in 512-byte sectors.
+ * Used for LUKS.
+ * This function is replacement for data alignment fields in LUKS param struct.
+ * If set to 0 (default), old behaviour is preserved.
+ * This value is reset on @link crypt_load @endlink.
+ *
+ * @param cd crypt device handle
+ * @param data_offset data offset in bytes
+ *
+ * @returns 0 on success or negative errno value otherwise.
+ *
+ * @note Data offset must be aligned to multiple of 8 (alignment to 4096-byte sectors)
+ * and must be big enough to accomodate the whole LUKS header with all keyslots.
+ * @note Data offset is enforced by this function, device topology
+ * information is no longer used after calling this function.
+ */
+int crypt_set_data_offset(struct crypt_device *cd, uint64_t data_offset);
+
 /** @} */
 
 /**

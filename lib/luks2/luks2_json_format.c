@@ -139,9 +139,9 @@ int LUKS2_generate_hdr(
 	const char *integrity,
 	const char *uuid,
 	unsigned int sector_size,  /* in bytes */
-	unsigned int alignPayload, /* in bytes */
-	unsigned int alignOffset,  /* in bytes */
-	int detached_metadata_device)
+	uint64_t data_offset,      /* in bytes */
+	uint64_t align_offset,     /* in bytes */
+	bool fixed_data_offset)
 {
 	struct json_object *jobj_segment, *jobj_integrity, *jobj_keyslots, *jobj_segments, *jobj_config;
 	char num[24], cipher[128];
@@ -197,13 +197,13 @@ int LUKS2_generate_hdr(
 
 	jobj_segment = json_object_new_object();
 	json_object_object_add(jobj_segment, "type", json_object_new_string("crypt"));
-	if (detached_metadata_device)
-		offset = (uint64_t)alignPayload;
+	if (fixed_data_offset)
+		offset = data_offset;
 	else {
 		//FIXME
 		//offset = size_round_up(areas[7].offset + areas[7].length, alignPayload * SECTOR_SIZE);
-		offset = size_round_up(LUKS2_HDR_DEFAULT_LEN, (size_t)alignPayload);
-		offset += alignOffset;
+		offset = size_round_up(LUKS2_HDR_DEFAULT_LEN, (size_t)data_offset);
+		offset += align_offset;
 	}
 
 	json_object_object_add(jobj_segment, "offset", json_object_new_uint64(offset));
@@ -228,7 +228,7 @@ int LUKS2_generate_hdr(
 
 	/* for detached metadata device compute reasonable keyslot areas size */
 	// FIXME: this is coupled with FIXME above
-	if (detached_metadata_device && !offset)
+	if (fixed_data_offset && !offset)
 		keyslots_size = LUKS2_HDR_DEFAULT_LEN - get_min_offset(hdr);
 	else
 		keyslots_size = offset - get_min_offset(hdr);

@@ -734,10 +734,11 @@ static void SuspendDevice(void)
 
 static void AddDeviceLuks(void)
 {
+	enum { OFFSET_1M = 2048 , OFFSET_2M = 4096, OFFSET_4M = 8192, OFFSET_8M = 16384 };
 	struct crypt_device *cd;
 	struct crypt_params_luks1 params = {
 		.hash = "sha512",
-		.data_alignment = 2048, // 4M, data offset will be 4096
+		.data_alignment = OFFSET_1M, // 4M, data offset will be 4096
 		.data_device = DEVICE_2
 	};
 	char key[128], key2[128], key3[128];
@@ -779,10 +780,35 @@ static void AddDeviceLuks(void)
 	OK_(!(crypt_get_data_offset(cd) > 0));
 	crypt_free(cd);
 
+	// set_data_offset has priority, alignment must be 0 or must be compatible
+	params.data_alignment = 0;
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_set_data_offset(cd, OFFSET_8M));
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	EQ_(crypt_get_data_offset(cd), OFFSET_8M);
+	crypt_free(cd);
+
+	// Load gets the value from metadata
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_set_data_offset(cd, OFFSET_2M));
+	OK_(crypt_load(cd, CRYPT_LUKS1, DEVICE_2));
+	EQ_(crypt_get_data_offset(cd), OFFSET_8M);
+	crypt_free(cd);
+
+	params.data_alignment = OFFSET_4M;
+	OK_(crypt_init(&cd, DEVICE_2));
+	FAIL_(crypt_set_data_offset(cd, OFFSET_2M + 1), "Not aligned to 4096"); // must be aligned to 4k
+	OK_(crypt_set_data_offset(cd, OFFSET_2M));
+	FAIL_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params), "Alignment not compatible");
+	OK_(crypt_set_data_offset(cd, OFFSET_4M));
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	EQ_(crypt_get_data_offset(cd), OFFSET_4M);
+	crypt_free(cd);
+
 	/*
 	 * test limit values for backing device size
 	 */
-	params.data_alignment = 4096;
+	params.data_alignment = OFFSET_2M;
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_0S, r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
@@ -844,7 +870,7 @@ static void AddDeviceLuks(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 
-	params.data_alignment = 2048;
+	params.data_alignment = OFFSET_1M;
 	params.data_device = NULL;
 
 	// test uuid mismatch and _init_by_name_and_header
@@ -936,7 +962,7 @@ static void AddDeviceLuks(void)
 	OK_(strcmp(cipher, crypt_get_cipher(cd)));
 	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
 	EQ_((int)key_size, crypt_get_volume_key_size(cd));
-	EQ_(4096, crypt_get_data_offset(cd));
+	EQ_(OFFSET_2M, crypt_get_data_offset(cd));
 	OK_(strcmp(DEVICE_2, crypt_get_device_name(cd)));
 
 	reset_log();

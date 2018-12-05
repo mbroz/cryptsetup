@@ -54,6 +54,8 @@ struct crypt_device {
 	/* global context scope settings */
 	unsigned key_in_keyring:1;
 
+	uint64_t data_offset;
+
 	// FIXME: private binary headers and access it properly
 	// through sub-library (LUKS1, TCRYPT)
 
@@ -359,6 +361,7 @@ static void crypt_set_null_type(struct crypt_device *cd)
 	free(cd->type);
 	cd->type = NULL;
 	cd->u.none.active_name = NULL;
+	cd->data_offset = 0;
 }
 
 static void crypt_reset_null_type(struct crypt_device *cd)
@@ -945,6 +948,7 @@ int crypt_load(struct crypt_device *cd,
 		return -EINVAL;
 
 	crypt_reset_null_type(cd);
+	cd->data_offset = 0;
 
 	if (!requested_type || isLUKS1(requested_type) || isLUKS2(requested_type)) {
 		if (cd->type && !isLUKS1(cd->type) && !isLUKS2(cd->type)) {
@@ -1439,6 +1443,12 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (params && cd->data_offset && params->data_alignment &&
+	   (cd->data_offset % params->data_alignment)) {
+		log_err(cd, _("Requested data alignment is not compatible with data offset."));
+		return -EINVAL;
+	}
+
 	if (!(cd->type = strdup(CRYPT_LUKS1)))
 		return -ENOMEM;
 
@@ -1474,9 +1484,14 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 			return -ENOMEM;
 	}
 
-	if (params && (params->data_alignment || cd->metadata_device))
+	if (params && cd->metadata_device) {
+		/* For detached header the alignment is used directly as data offset */
+		if (!cd->data_offset)
+			cd->data_offset = params->data_alignment;
 		required_alignment = params->data_alignment * SECTOR_SIZE;
-	else
+	} else if (params && params->data_alignment) {
+		required_alignment = params->data_alignment * SECTOR_SIZE;
+	} else
 		device_topology_alignment(cd, cd->device,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
@@ -1485,11 +1500,18 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	/* New data_offset has priority */
+	if (cd->data_offset) {
+		required_alignment = cd->data_offset * SECTOR_SIZE;
+		/* Check overflow */
+		if (required_alignment != (cd->data_offset * (uint64_t)SECTOR_SIZE))
+			return -EINVAL;
+	}
+
 	r = LUKS_generate_phdr(&cd->u.luks1.hdr, cd->volume_key, cipher, cipher_mode,
 			       cd->pbkdf.hash, uuid, LUKS_STRIPES,
-			       required_alignment / SECTOR_SIZE,
-			       alignment_offset / SECTOR_SIZE,
-			       cd->metadata_device ? 1 : 0, cd);
+			       required_alignment, alignment_offset,
+			       (cd->data_offset || cd->metadata_device), cd);
 	if (r < 0)
 		return r;
 
@@ -1531,6 +1553,12 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	if (!crypt_metadata_device(cd)) {
 		log_err(cd, _("Can't format LUKS without device."));
+		return -EINVAL;
+	}
+
+	if (params && cd->data_offset && params->data_alignment &&
+	   (cd->data_offset % params->data_alignment)) {
+		log_err(cd, _("Requested data alignment is not compatible with data offset."));
 		return -EINVAL;
 	}
 
@@ -1598,9 +1626,14 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			return -ENOMEM;
 	}
 
-	if (params && (params->data_alignment || cd->metadata_device))
+	if (params && cd->metadata_device) {
+		/* For detached header the alignment is used directly as data offset */
+		if (!cd->data_offset)
+			cd->data_offset = params->data_alignment;
 		required_alignment = params->data_alignment * SECTOR_SIZE;
-	else
+	} else if (params && params->data_alignment) {
+		required_alignment = params->data_alignment * SECTOR_SIZE;
+	} else
 		device_topology_alignment(cd, cd->device,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
@@ -1623,13 +1656,23 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			goto out;
 	}
 
+	/* New data_offset has priority */
+	if (cd->data_offset) {
+		required_alignment = cd->data_offset * SECTOR_SIZE;
+		/* Check overflow */
+		if (required_alignment != (cd->data_offset * (uint64_t)SECTOR_SIZE)) {
+			r = -EINVAL;
+			goto out;
+		}
+	}
+
 	r = LUKS2_generate_hdr(cd, &cd->u.luks2.hdr, cd->volume_key,
 			       cipher, cipher_mode,
 			       integrity, uuid,
 			       sector_size,
 			       required_alignment,
 			       alignment_offset,
-			       cd->metadata_device ? 1 : 0);
+			       (cd->data_offset || cd->metadata_device));
 	if (r < 0)
 		goto out;
 
@@ -3904,6 +3947,21 @@ int crypt_keyslot_get_key_size(struct crypt_device *cd, int keyslot)
 	return -EINVAL;
 }
 
+int crypt_set_data_offset(struct crypt_device *cd, uint64_t data_offset)
+{
+	if (!cd)
+		return -EINVAL;
+	if (data_offset % (MAX_SECTOR_SIZE >> SECTOR_SHIFT)) {
+		log_err(cd, "Data offset is not multiple of %u bytes.", MAX_SECTOR_SIZE);
+		return -EINVAL;
+	}
+
+	cd->data_offset = data_offset;
+	log_dbg(cd, "Data offset set to %" PRIu64 " (512-byte) sectors.", data_offset);
+
+	return 0;
+}
+
 uint64_t crypt_get_data_offset(struct crypt_device *cd)
 {
 	if (!cd)
@@ -3924,7 +3982,7 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 	if (isTCRYPT(cd->type))
 		return TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
-	return 0;
+	return cd->data_offset;
 }
 
 uint64_t crypt_get_iv_offset(struct crypt_device *cd)

@@ -26,6 +26,7 @@
  * LUKS partition header
  */
 
+#include <stdbool.h>
 #include "libcryptsetup.h"
 
 #define LUKS_CIPHERNAME_L 32
@@ -115,9 +116,9 @@ int LUKS_generate_phdr(
 	const char *hashSpec,
 	const char *uuid,
 	unsigned int stripes,
-	unsigned int alignPayload,
-	unsigned int alignOffset,
-	int detached_metadata_device,
+	uint64_t data_offset,
+	uint64_t align_offset,
+	bool fixed_data_offset,
 	struct crypt_device *ctx);
 
 int LUKS_read_phdr(

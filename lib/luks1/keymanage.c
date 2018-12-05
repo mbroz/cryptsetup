@@ -417,8 +417,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	/* payloadOffset - cannot check */
 	r = LUKS_generate_phdr(&temp_phdr, vk, phdr->cipherName, phdr->cipherMode,
 			       phdr->hashSpec,phdr->uuid, LUKS_STRIPES,
-			       phdr->payloadOffset, 0,
-			       1, ctx);
+			       phdr->payloadOffset * SECTOR_SIZE, 0, true, ctx);
 	if (r < 0)
 		goto out;
 
@@ -725,12 +724,12 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		       const struct volume_key *vk,
 		       const char *cipherName, const char *cipherMode, const char *hashSpec,
 		       const char *uuid, unsigned int stripes,
-		       unsigned int alignPayload,
-		       unsigned int alignOffset,
-		       int detached_metadata_device,
+		       uint64_t data_offset,
+		       uint64_t align_offset,
+		       bool fixed_data_offset,
 		       struct crypt_device *ctx)
 {
-	unsigned int i = 0, hdr_sectors = LUKS_calculate_device_sectors(vk->keylength);
+	unsigned int i = 0, alignPayload, alignOffset, hdr_sectors = LUKS_calculate_device_sectors(vk->keylength);
 	size_t blocksPerStripeSet, currentSector;
 	int r;
 	uuid_t partitionUuid;
@@ -738,14 +737,14 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	double PBKDF2_temp;
 	char luksMagic[] = LUKS_MAGIC;
 
-	/* For separate metadata device allow zero alignment */
-	if (alignPayload == 0 && !detached_metadata_device)
-		alignPayload = DEFAULT_DISK_ALIGNMENT / SECTOR_SIZE;
+	if (data_offset % SECTOR_SIZE || align_offset % SECTOR_SIZE)
+		return -EINVAL;
+	alignPayload = data_offset / SECTOR_SIZE;
+	alignOffset = align_offset / SECTOR_SIZE;
 
-	if (alignPayload && detached_metadata_device && alignPayload < hdr_sectors) {
+	if (alignPayload && fixed_data_offset && alignPayload < hdr_sectors) {
 		log_err(ctx, _("Data offset for detached LUKS header must be "
-			       "either 0 or higher than header size (%d sectors)."),
-			       hdr_sectors);
+			       "either 0 or higher than header size."));
 		return -EINVAL;
 	}
 
@@ -816,7 +815,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 						LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE);
 	}
 
-	if (detached_metadata_device) {
+	if (fixed_data_offset) {
 		/* for separate metadata device use alignPayload directly */
 		header->payloadOffset = alignPayload;
 	} else {

@@ -22,6 +22,7 @@
 #ifndef _CRYPTSETUP_LUKS2_ONDISK_H
 #define _CRYPTSETUP_LUKS2_ONDISK_H
 
+#include <stdbool.h>
 #include "libcryptsetup.h"
 
 #define LUKS2_MAGIC_1ST "LUKS\xba\xbe"
@@ -323,9 +324,9 @@ int LUKS2_generate_hdr(
 	const char *integrity,
 	const char *uuid,
 	unsigned int sector_size,
-	unsigned int alignPayload,
-	unsigned int alignOffset,
-	int detached_metadata_device);
+	uint64_t data_offset,
+	uint64_t align_offset,
+	bool fixed_data_offset);
 
 int LUKS2_check_metadata_area_size(uint64_t metadata_size);
 int LUKS2_check_keyslots_area_size(uint64_t keyslots_size);
