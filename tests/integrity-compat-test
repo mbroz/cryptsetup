@@ -347,7 +347,7 @@ else
 	echo "[N/A]"
 fi
 
-echo -n "Recalculate tags in-kernel + separate device:"
+echo -n "Separate metadata device:"
 if [ -n "$DM_INTEGRITY_META" ] ; then
 	add_device
 	$INTSETUP format -q $DEV --data-device $DEV2 || fail "Cannot format device."
