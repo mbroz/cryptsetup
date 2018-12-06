@@ -106,8 +106,6 @@ static void set_dm_error(int level,
 	va_end(va);
 }
 
-static int _dm_simple(int task, const char *name, int udev_wait);
-
 static int _dm_satisfies_version(unsigned target_maj, unsigned target_min, unsigned target_patch,
 				 unsigned actual_maj, unsigned actual_min, unsigned actual_patch)
 {
@@ -873,14 +871,10 @@ out:
 	return r;
 }
 
-static int _dm_simple(int task, const char *name, int udev_wait)
+static int _dm_simple(int task, const char *name)
 {
 	int r = 0;
 	struct dm_task *dmt;
-	uint32_t cookie = 0;
-
-	if (!_dm_use_udev())
-		udev_wait = 0;
 
 	if (!(dmt = dm_task_create(task)))
 		return 0;
@@ -888,13 +882,7 @@ static int _dm_simple(int task, const char *name, int udev_wait)
 	if (name && !dm_task_set_name(dmt, name))
 		goto out;
 
-	if (udev_wait && !_dm_task_set_cookie(dmt, &cookie, DM_UDEV_DISABLE_LIBRARY_FALLBACK))
-		goto out;
-
 	r = dm_task_run(dmt);
-
-	if (udev_wait)
-		(void)_dm_udev_wait(cookie);
 out:
 	dm_task_destroy(dmt);
 	return r;
@@ -926,7 +914,7 @@ static int _error_device(const char *name, size_t size)
 		goto error;
 
 	if (_dm_resume_device(name, 0)) {
-		_dm_simple(DM_DEVICE_CLEAR, name, 0);
+		_dm_simple(DM_DEVICE_CLEAR, name);
 		goto error;
 	}
 
@@ -2215,7 +2203,7 @@ int dm_suspend_device(struct crypt_device *cd, const char *name)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0))
+	if (!_dm_simple(DM_DEVICE_SUSPEND, name))
 		r = -EINVAL;
 	else
 		r = 0;
@@ -2236,7 +2224,7 @@ int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 	if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
 		goto out;
 
-	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0)) {
+	if (!_dm_simple(DM_DEVICE_SUSPEND, name)) {
 		r = -EINVAL;
 		goto out;
 	}
