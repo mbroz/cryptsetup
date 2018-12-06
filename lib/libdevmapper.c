@@ -2243,6 +2243,20 @@ out:
 	return r;
 }
 
+int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t flags)
+{
+	int r;
+
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
+	r = _dm_resume_device(name, flags);
+
+	dm_exit_context();
+
+	return r;
+}
+
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				const struct volume_key *vk)
 {
