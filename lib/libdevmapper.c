@@ -944,6 +944,24 @@ int dm_error_device(struct crypt_device *cd, const char *name)
 	return r;
 }
 
+int dm_clear_device(struct crypt_device *cd, const char *name)
+{
+	int r = -EINVAL;
+
+	if (!name)
+		return r;
+
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
+	if (_dm_simple(DM_DEVICE_CLEAR, name))
+		r = 0;
+
+	dm_exit_context();
+
+	return r;
+}
+
 int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 {
 	struct crypt_dm_active_device dmd = {};

@@ -1877,8 +1877,6 @@ int LUKS2_activate(struct crypt_device *cd,
 			.sector_size = crypt_get_sector_size(cd)
 		}
 	};
-	char dm_int_name[512], dm_int_dev_name[PATH_MAX];
-	struct device *device = NULL;
 
 	/* do not allow activation when particular requirements detected */
 	if ((r = LUKS2_unmet_requirements(cd, hdr, 0, 0)))
@@ -1905,9 +1903,6 @@ int LUKS2_activate(struct crypt_device *cd,
 		if (r)
 			return r;
 
-		snprintf(dm_int_name, sizeof(dm_int_name), "%s_dif", name);
-		snprintf(dm_int_dev_name, sizeof(dm_int_dev_name), "%s/%s", dm_get_dir(), dm_int_name);
-
 		/* Space for IV metadata only */
 		if (!dmd.u.crypt.integrity)
 			dmd.u.crypt.integrity = "none";
@@ -1915,28 +1910,14 @@ int LUKS2_activate(struct crypt_device *cd,
 		dmd.u.crypt.offset = 0;
 		dmd.size = dmdi.size;
 
-		r = INTEGRITY_activate_dmd_device(cd, dm_int_name, &dmdi);
-		if (r < 0)
-			return r;
-
-		r = device_alloc(cd, &device, dm_int_dev_name);
-		if (r) {
-			dm_remove_device(cd, dm_int_name, 0);
-			return r;
-		}
-		dmd.data_device = device;
+		return create_or_reload_device_with_integrity(cd, name, CRYPT_LUKS2, &dmd, &dmdi);
 	}
 
+	/* TODO: move down to create_or_reload */
 	r = device_block_adjust(cd, dmd.data_device, device_check,
 				 dmd.u.crypt.offset, &dmd.size, &dmd.flags);
-	if (!r)
-		r = create_or_reload_device(cd, name, CRYPT_LUKS2, &dmd);
 
-	if (r < 0 && dmd.u.crypt.integrity)
-		dm_remove_device(cd, dm_int_name, 0);
-
-	device_free(cd, device);
-	return r;
+	return r ?: create_or_reload_device(cd, name, CRYPT_LUKS2, &dmd);
 }
 
 int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet)

@@ -148,6 +148,7 @@ int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t flags);
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				const struct volume_key *vk);
 int dm_error_device(struct crypt_device *cd, const char *name);
+int dm_clear_device(struct crypt_device *cd, const char *name);
 
 const char *dm_get_dir(void);
 

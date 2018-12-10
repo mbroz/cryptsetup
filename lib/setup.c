@@ -2243,6 +2243,71 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 	return 0;
 }
 
+static int _compare_integrity_devices(struct crypt_device *cd,
+			       const struct crypt_dm_active_device *src,
+			       const struct crypt_dm_active_device *tgt)
+{
+	/*
+	 * some parameters may be implicit (and set in dm-integrity ctor)
+	 *
+	 *	journal_size
+	 *	journal_watermark
+	 *	journal_commit_time
+	 *	buffer_sectors
+	 *	interleave_sectors
+	 */
+
+	if (!tgt->uuid) {
+		log_dbg(cd, "Missing device uuid in target device.");
+		return -EINVAL;
+	}
+
+	/* UUID checks */
+	if (strncmp("INTEGRITY-", tgt->uuid, strlen("INTEGRITY-"))) {
+		log_dbg(cd, "Unexpected uuid prefix %s in target device.", tgt->uuid);
+		return -EINVAL;
+	}
+
+	/* check remaining integer values that makes sense */
+	if (src->u.integrity.tag_size	  != tgt->u.integrity.tag_size ||
+	    src->u.integrity.offset	  != tgt->u.integrity.offset   ||
+	    src->u.integrity.sector_size  != tgt->u.integrity.sector_size) {
+		log_dbg(cd, "Integer parameters do not match.");
+		return -EINVAL;
+	}
+
+	if (_strcmp_null(src->u.integrity.integrity,	     tgt->u.integrity.integrity) ||
+	    _strcmp_null(src->u.integrity.journal_integrity, tgt->u.integrity.journal_integrity) ||
+	    _strcmp_null(src->u.integrity.journal_crypt,     tgt->u.integrity.journal_crypt)) {
+		log_dbg(cd, "Journal parameters do not match.");
+		return -EINVAL;
+	}
+
+	/* unfortunately dm-integrity doesn't support keyring */
+	if (_compare_volume_keys(src->u.integrity.vk, 0, tgt->u.integrity.vk, 0) ||
+	    _compare_volume_keys(src->u.integrity.journal_integrity_key, 0, tgt->u.integrity.journal_integrity_key, 0) ||
+	    _compare_volume_keys(src->u.integrity.journal_crypt_key, 0, tgt->u.integrity.journal_crypt_key, 0)) {
+		log_dbg(cd, "Journal keys do not match.");
+		return -EINVAL;
+	}
+
+	/* unsupported underneath dm-crypt with auth. encryption */
+	if (src->u.integrity.meta_device || tgt->u.integrity.meta_device)
+		return -ENOTSUP;
+
+	if (src->size != tgt->size) {
+		log_dbg(cd, "Device size parameters do not match.");
+		return -EINVAL;
+	}
+
+	if (!device_is_identical(src->data_device, tgt->data_device)) {
+		log_dbg(cd, "Data devices do not match.");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int _compare_dm_devices(struct crypt_device *cd,
 			       const struct crypt_dm_active_device *src,
 			       const struct crypt_dm_active_device *tgt)
@@ -2256,6 +2321,8 @@ static int _compare_dm_devices(struct crypt_device *cd,
 	switch (src->target) {
 	case DM_CRYPT:
 		return _compare_crypt_devices(cd, src, tgt);
+	case DM_INTEGRITY:
+		return _compare_integrity_devices(cd, src, tgt);
 	default:
 			return -ENOTSUP;
 	}
@@ -2326,6 +2393,177 @@ out:
 	}
 	device_free(cd, tdmd.data_device);
 	free(CONST_CAST(void*)tdmd.uuid);
+
+	return r;
+}
+
+static int _reload_device_with_integrity(struct crypt_device *cd,
+	const char *name,
+	const char *iname,
+	const char *ipath,
+	struct crypt_dm_active_device *sdmd,
+	struct crypt_dm_active_device *sdmdi)
+{
+	int r;
+	struct crypt_dm_active_device tdmd = {}, tdmdi = {};
+	struct device *data_device = NULL;
+
+	if (!cd || !cd->type || !name || !iname || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
+		return -EINVAL;
+
+	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
+				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
+				  DM_ACTIVE_CRYPT_KEY, &tdmd);
+	if (r < 0) {
+		log_err(cd, _("Device %s is not active."), name);
+		return -EINVAL;
+	}
+
+	if (tdmd.target != DM_CRYPT || !tdmd.u.crypt.tag_size) {
+		r = -ENOTSUP;
+		log_err(cd, _("Unsupported parameters on device %s."), name);
+		goto out;
+	}
+
+	r = dm_query_device(cd, iname, DM_ACTIVE_DEVICE | DM_ACTIVE_UUID, &tdmdi);
+	if (r < 0) {
+		log_err(cd, _("Device %s is not active."), iname);
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (tdmdi.target != DM_INTEGRITY) {
+		r = -ENOTSUP;
+		log_err(cd, _("Unsupported parameters on device %s."), iname);
+		goto out;
+	}
+
+	r = _compare_dm_devices(cd, sdmdi, &tdmdi);
+	if (r) {
+		log_err(cd, _("Mismatching parameters on device %s."), iname);
+		goto out;
+	}
+
+	r = device_alloc(cd, &data_device, ipath);
+	if (r < 0)
+		goto out;
+
+	r = device_block_adjust(cd, sdmdi->data_device, DEV_OK,
+				sdmdi->u.integrity.offset, &sdmdi->size, NULL);
+	if (r)
+		goto out;
+
+	sdmd->data_device = data_device;
+
+	r = _compare_dm_devices(cd, sdmd, &tdmd);
+	if (r) {
+		log_err(cd, "Crypt devices mismatch.");
+		goto out;
+	}
+
+	/* Changing read only flag for active device makes no sense */
+	if (tdmd.flags & CRYPT_ACTIVATE_READONLY)
+		sdmd->flags |= CRYPT_ACTIVATE_READONLY;
+	else
+		sdmd->flags &= ~CRYPT_ACTIVATE_READONLY;
+
+	if (tdmdi.flags & CRYPT_ACTIVATE_READONLY)
+		sdmdi->flags |= CRYPT_ACTIVATE_READONLY;
+	else
+		sdmdi->flags &= ~CRYPT_ACTIVATE_READONLY;
+
+	if (sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+		r = crypt_volume_key_set_description(tdmd.u.crypt.vk, sdmd->u.crypt.vk->key_description);
+		if (r)
+			goto out;
+	} else {
+		crypt_free_volume_key(tdmd.u.crypt.vk);
+		tdmd.u.crypt.vk = crypt_alloc_volume_key(sdmd->u.crypt.vk->keylength, sdmd->u.crypt.vk->key);
+		if (!tdmd.u.crypt.vk) {
+			r = -ENOMEM;
+			goto out;
+		}
+	}
+
+	r = device_block_adjust(cd, sdmd->data_device, DEV_OK,
+				sdmd->u.crypt.offset, &sdmd->size, NULL);
+	if (r)
+		goto out;
+
+	tdmd.flags = sdmd->flags;
+	tdmd.size = sdmd->size;
+
+	if ((r = dm_reload_device(cd, iname, sdmdi, 0))) {
+		log_dbg(cd, "Failed to reload device %s.", iname);
+		goto out;
+	}
+
+	if ((r = dm_reload_device(cd, name, &tdmd, 0))) {
+		log_dbg(cd, "Failed to reload device %s.", name);
+		goto err_clear;
+	}
+
+	if ((r = dm_suspend_device(cd, name))) {
+		log_dbg(cd, "Failed to suspend device %s.", name);
+		goto err_clear;
+	}
+
+	if ((r = dm_suspend_device(cd, iname))) {
+		log_err(cd, "Failed to suspend device %s.", iname);
+		goto err_clear;
+	}
+
+	if ((r = dm_resume_device(cd, iname, sdmdi->flags))) {
+		log_err(cd, "Failed to resume device %s.", iname);
+		goto err_clear;
+	}
+
+	r = dm_resume_device(cd, name, tdmd.flags);
+	if (!r)
+		goto out;
+
+	/*
+	 * This is worst case scenario. We have active underlying dm-integrity device with
+	 * new table but dm-crypt resume failed for some reason. Tear everything down and
+	 * burn it for good.
+	 */
+
+	log_err(cd, "Fatal error while reloading device %s (on top of device %s).", name, iname);
+
+	if (dm_error_device(cd, name))
+		log_err(cd, "Failed to switch device %s to dm-error.", name);
+	if (dm_error_device(cd, iname))
+		log_err(cd, "Failed to switch device %s to dm-error.", iname);
+	goto out;
+
+err_clear:
+	dm_clear_device(cd, name);
+	dm_clear_device(cd, iname);
+
+	if (dm_status_suspended(cd, name) > 0)
+		dm_resume_device(cd, name, 0);
+	if (dm_status_suspended(cd, iname) > 0)
+		dm_resume_device(cd, iname, 0);
+out:
+	if (tdmd.target == DM_CRYPT) {
+		crypt_free_volume_key(tdmd.u.crypt.vk);
+		free(CONST_CAST(void*)tdmd.u.crypt.cipher);
+		free(CONST_CAST(void*)tdmd.u.crypt.integrity);
+	}
+	if (tdmdi.target == DM_INTEGRITY) {
+		free(CONST_CAST(void*)tdmdi.u.integrity.integrity);
+		crypt_free_volume_key(tdmdi.u.integrity.vk);
+		free(CONST_CAST(void*)tdmdi.u.integrity.journal_integrity);
+		crypt_free_volume_key(tdmdi.u.integrity.journal_integrity_key);
+		free(CONST_CAST(void*)tdmdi.u.integrity.journal_crypt);
+		crypt_free_volume_key(tdmdi.u.integrity.journal_crypt_key);
+		device_free(cd, tdmdi.u.integrity.meta_device);
+	}
+	device_free(cd, tdmdi.data_device);
+	free(CONST_CAST(void*)tdmdi.uuid);
+	device_free(cd, tdmd.data_device);
+	free(CONST_CAST(void*)tdmd.uuid);
+	device_free(cd, data_device);
 
 	return r;
 }
@@ -3204,26 +3442,121 @@ static int _check_header_data_overlap(struct crypt_device *cd, const char *name)
 	return 0;
 }
 
+static int check_devices(struct crypt_device *cd, const char *name, const char *iname, uint32_t *flags)
+{
+	int r;
+
+	if (!flags || !name)
+		return -EINVAL;
+
+	if (iname) {
+		r = dm_status_device(cd, iname);
+		if (r >= 0 && !(*flags & CRYPT_ACTIVATE_REFRESH))
+			return -EBUSY;
+		if (r < 0 && r != -ENODEV)
+			return r;
+		if (r == -ENODEV)
+			*flags &= ~CRYPT_ACTIVATE_REFRESH;
+	}
+
+	r = dm_status_device(cd, name);
+	if (r >= 0 && !(*flags & CRYPT_ACTIVATE_REFRESH))
+		return -EBUSY;
+	if (r < 0 && r != -ENODEV)
+		return r;
+	if (r == -ENODEV)
+		*flags &= ~CRYPT_ACTIVATE_REFRESH;
+
+	return 0;
+}
+
+static int _create_device_with_integrity(struct crypt_device *cd,
+	const char *type, const char *name, const char *iname,
+	const char *ipath, struct crypt_dm_active_device *dmd,
+	struct crypt_dm_active_device *dmdi)
+{
+	int r;
+	enum devcheck device_check;
+	struct device *device = NULL;
+
+	device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
+
+	r = INTEGRITY_activate_dmd_device(cd, iname, dmdi);
+	if (r)
+		return r;
+
+	r = device_alloc(cd, &device, ipath);
+	if (r < 0)
+		goto out;
+	dmd->data_device = device;
+
+	r = device_block_adjust(cd, dmd->data_device, device_check,
+				dmd->u.crypt.offset, &dmd->size, &dmd->flags);
+
+	if (!r)
+		r = dm_create_device(cd, name, type, dmd);
+out:
+	if (r < 0)
+		dm_remove_device(cd, iname, 0);
+
+	device_free(cd, device);
+	return r;
+}
+
 int create_or_reload_device(struct crypt_device *cd, const char *name,
 		     const char *type, struct crypt_dm_active_device *dmd)
 {
 	int r;
+	enum devcheck device_check;
 
-	if (!type)
+	if (!type || !name || !dmd)
 		return -EINVAL;
 
-	r = dm_status_device(cd, name);
-	if (r >= 0 && !(dmd->flags & CRYPT_ACTIVATE_REFRESH))
-		return -EBUSY;
-	if (r < 0 && r != -ENODEV)
+	/* drop CRYPT_ACTIVATE_REFRESH flag if any device is inactive */
+	r = check_devices(cd, name, NULL, &dmd->flags);
+	if (r)
 		return r;
-	if (r < 0)
-		dmd->flags &= ~CRYPT_ACTIVATE_REFRESH;
 
-	if (dmd->flags &= ~CRYPT_ACTIVATE_REFRESH)
+	if (dmd->flags & CRYPT_ACTIVATE_REFRESH)
 		r = _reload_device(cd, name, dmd);
+	else {
+		device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
+
+		r = device_block_adjust(cd, dmd->data_device, device_check,
+					dmd->u.crypt.offset, &dmd->size, &dmd->flags);
+		if (!r)
+			r = dm_create_device(cd, name, type, dmd);
+	}
+
+	return r;
+}
+
+int create_or_reload_device_with_integrity(struct crypt_device *cd, const char *name,
+		     const char *type, struct crypt_dm_active_device *dmd,
+		     struct crypt_dm_active_device *dmdi)
+{
+	int r;
+	const char *iname = NULL;
+	char *ipath = NULL;
+
+	if (!type || !name || !dmd || !dmdi)
+		return -EINVAL;
+
+	if (asprintf(&ipath, "%s/%s_dif", dm_get_dir(), name) < 0)
+		return -ENOMEM;
+	iname = ipath + strlen(dm_get_dir()) + 1;
+
+	/* drop CRYPT_ACTIVATE_REFRESH flag if any device is inactive */
+	r = check_devices(cd, name, iname, &dmd->flags);
+	if (r)
+		goto out;
+
+	if (dmd->flags & CRYPT_ACTIVATE_REFRESH)
+		r = _reload_device_with_integrity(cd, name, iname, ipath, dmd, dmdi);
 	else
-		r = dm_create_device(cd, name, type, dmd);
+		r = _create_device_with_integrity(cd, type, name, iname, ipath, dmd, dmdi);
+out:
+	free(ipath);
 
 	return r;
 }
