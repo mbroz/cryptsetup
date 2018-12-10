@@ -1860,7 +1860,6 @@ int LUKS2_activate(struct crypt_device *cd,
 	uint32_t flags)
 {
 	int r;
-	enum devcheck device_check;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	struct crypt_dm_active_device dmdi, dmd = {
 		.target = DM_CRYPT,
@@ -1888,11 +1887,6 @@ int LUKS2_activate(struct crypt_device *cd,
 
 	dmd.flags |= flags;
 
-	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
-		device_check = DEV_SHARED;
-	else
-		device_check = DEV_EXCL;
-
 	if (dmd.u.crypt.tag_size) {
 		if (!LUKS2_integrity_compatible(hdr)) {
 			log_err(cd, "Unsupported device integrity configuration.");
@@ -1913,11 +1907,7 @@ int LUKS2_activate(struct crypt_device *cd,
 		return create_or_reload_device_with_integrity(cd, name, CRYPT_LUKS2, &dmd, &dmdi);
 	}
 
-	/* TODO: move down to create_or_reload */
-	r = device_block_adjust(cd, dmd.data_device, device_check,
-				 dmd.u.crypt.offset, &dmd.size, &dmd.flags);
-
-	return r ?: create_or_reload_device(cd, name, CRYPT_LUKS2, &dmd);
+	return create_or_reload_device(cd, name, CRYPT_LUKS2, &dmd);
 }
 
 int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet)

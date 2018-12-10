@@ -1156,8 +1156,6 @@ int LUKS1_activate(struct crypt_device *cd,
 		   struct volume_key *vk,
 		   uint32_t flags)
 {
-	int r;
-	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.uuid   = crypt_get_uuid(cd),
@@ -1173,19 +1171,7 @@ int LUKS1_activate(struct crypt_device *cd,
 		}
 	};
 
-	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
-		device_check = DEV_SHARED;
-	else
-		device_check = DEV_EXCL;
-
-	r = device_block_adjust(cd, dmd.data_device, device_check,
-				 dmd.u.crypt.offset, &dmd.size, &dmd.flags);
-	if (r)
-		return r;
-
-	r = create_or_reload_device(cd, name, CRYPT_LUKS1, &dmd);
-
-	return r;
+	return create_or_reload_device(cd, name, CRYPT_LUKS1, &dmd);
 }
 
 int LUKS_wipe_header_areas(struct luks_phdr *hdr,

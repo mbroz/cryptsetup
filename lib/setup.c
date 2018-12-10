@@ -483,8 +483,6 @@ int PLAIN_activate(struct crypt_device *cd,
 		     uint64_t size,
 		     uint32_t flags)
 {
-	int r;
-	enum devcheck device_check;
 	struct crypt_dm_active_device dmd = {
 		.target = DM_CRYPT,
 		.size   = size,
@@ -499,22 +497,10 @@ int PLAIN_activate(struct crypt_device *cd,
 		}
 	};
 
-	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
-		device_check = DEV_SHARED;
-	else
-		device_check = DEV_EXCL;
-
-	r = device_block_adjust(cd, dmd.data_device, device_check,
-				dmd.u.crypt.offset, &dmd.size, &dmd.flags);
-	if (r)
-		return r;
-
 	log_dbg(cd, "Trying to activate PLAIN device %s using cipher %s.",
 		name, dmd.u.crypt.cipher);
 
-	r = create_or_reload_device(cd, name, CRYPT_PLAIN, &dmd);
-
-	return r;
+	return create_or_reload_device(cd, name, CRYPT_PLAIN, &dmd);
 }
 
 int crypt_confirm(struct crypt_device *cd, const char *msg)
