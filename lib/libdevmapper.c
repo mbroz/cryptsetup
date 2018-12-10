@@ -925,6 +925,25 @@ error:
 	return r;
 }
 
+int dm_error_device(struct crypt_device *cd, const char *name)
+{
+	int r = -EINVAL;
+	struct crypt_dm_active_device dmd = {};
+
+	if (!name)
+		return -EINVAL;
+
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
+	if (dm_query_device(cd, name, 0, &dmd) && _error_device(name, dmd.size))
+		r = 0;
+
+	dm_exit_context();
+
+	return r;
+}
+
 int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 {
 	struct crypt_dm_active_device dmd = {};
