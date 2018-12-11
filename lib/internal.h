@@ -123,7 +123,7 @@ int device_write_lock(struct crypt_device *cd, struct device *device);
 void device_read_unlock(struct crypt_device *cd, struct device *device);
 void device_write_unlock(struct crypt_device *cd, struct device *device);
 
-enum devcheck { DEV_OK = 0, DEV_EXCL = 1, DEV_SHARED = 2 };
+enum devcheck { DEV_OK = 0, DEV_EXCL = 1 };
 int device_check_access(struct crypt_device *cd,
 			struct device *device,
 			enum devcheck device_check);
