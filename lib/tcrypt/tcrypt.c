@@ -779,7 +779,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		dmd.size = hdr->d.volume_size / hdr->d.sector_size;
 
 	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
-		device_check = DEV_SHARED;
+		device_check = DEV_OK;
 	else
 		device_check = DEV_EXCL;
 
@@ -800,7 +800,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 			 * System encryption use the whole device mapping, there can
 			 * be active partitions.
 			 */
-			device_check = DEV_SHARED;
+			device_check = DEV_OK;
 	}
 
 	r = device_block_adjust(cd, dmd.data_device, device_check,
