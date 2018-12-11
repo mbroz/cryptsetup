@@ -263,7 +263,7 @@ static int _setup(void)
 	fd = loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
 	close(fd);
 
-	_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=4 2>/dev/null", 1);
+	_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=10 2>/dev/null", 1);
 	fd = loop_attach(&DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
 	close(fd);
 

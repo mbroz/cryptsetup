@@ -1519,6 +1519,10 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	r = device_check_size(cd, crypt_data_device(cd), crypt_get_data_offset(cd) * SECTOR_SIZE, 0);
+	if (r < 0)
+		return r;
+
 	r = LUKS_wipe_header_areas(&cd->u.luks1.hdr, cd);
 	if (r < 0) {
 		log_err(cd, _("Cannot wipe header on device %s."),
@@ -1675,6 +1679,10 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       (cd->data_offset || cd->metadata_device));
 	if (r < 0)
 		goto out;
+
+	r = device_check_size(cd, crypt_data_device(cd), crypt_get_data_offset(cd) * SECTOR_SIZE, 0);
+	if (r < 0)
+		return r;
 
 	if (!integrity && sector_size > SECTOR_SIZE && !device_size(crypt_data_device(cd), &dev_size)) {
 		dev_size -= (crypt_get_data_offset(cd) * SECTOR_SIZE);

@@ -112,6 +112,9 @@ size_t device_alignment(struct device *device);
 int device_direct_io(const struct device *device);
 int device_fallocate(struct device *device, uint64_t size);
 void device_sync(struct crypt_device *cd, struct device *device, int devfd);
+int device_check_size(struct crypt_device *cd,
+		      struct device *device,
+		      uint64_t req_offset, int falloc);
 
 int device_open_locked(struct crypt_device *cd, struct device *device, int flags);
 int device_read_lock(struct crypt_device *cd, struct device *device);

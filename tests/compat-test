@@ -679,6 +679,7 @@ echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --head
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 8192 || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 0 || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --align-payload 8192 --offset 8192 >/dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --offset 80000 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --offset 8192 || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --header $HEADER_IMG --offset 0 || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
