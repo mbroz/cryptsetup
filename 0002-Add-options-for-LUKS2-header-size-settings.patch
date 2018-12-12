@@ -1,0 +1,74 @@
+From aebd14e7aa2ff91e2168c7f65e8506a94e46034a Mon Sep 17 00:00:00 2001
+From: Milan Broz <gmazyland@gmail.com>
+Date: Sun, 18 Nov 2018 21:13:52 +0100
+Subject: [PATCH 2/2] Add options for LUKS2 header size settings.
+
+(work in progress)
+---
+ src/cryptsetup.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/src/cryptsetup.c b/src/cryptsetup.c
+index 9d6198a..3d7db1d 100644
+--- a/src/cryptsetup.c
++++ b/src/cryptsetup.c
+@@ -90,6 +90,11 @@ static const char *opt_label = NULL;
+ static const char *opt_subsystem = NULL;
+ static int opt_unbound = 0;
+ 
++static const char *opt_luks2_metadata_size_str = NULL;
++static uint64_t opt_luks2_metadata_size = 0;
++static const char *opt_luks2_keyslots_size_str = NULL;
++static uint64_t opt_luks2_keyslots_size = 0;
++
+ static const char **action_argv;
+ static int action_argc;
+ static const char *null_action_argv[] = {NULL, NULL};
+@@ -1043,6 +1048,14 @@ static int action_luksFormat(void)
+ 		return r;
+ 	}
+ 
++	if (opt_luks2_keyslots_size || opt_luks2_metadata_size) {
++		r = crypt_set_metadata_size(cd, opt_luks2_metadata_size, opt_luks2_keyslots_size);
++		if (r < 0) {
++			log_err(_("Unsupported LUKS2 metadata size options."));
++			goto out;
++		}
++	}
++
+ 	if (opt_offset) {
+ 		r = crypt_set_data_offset(cd, opt_offset);
+ 		if (r < 0)
+@@ -2406,6 +2419,8 @@ int main(int argc, const char **argv)
+ 		{ "subsystem",	       '\0', POPT_ARG_STRING, &opt_subsystem,           0, N_("Set subsystem label for the LUKS2 device"), NULL },
+ 		{ "unbound",           '\0', POPT_ARG_NONE, &opt_unbound,               0, N_("Create unbound (no assigned data segment) LUKS2 keyslot"), NULL },
+ 		{ "json-file",	       '\0', POPT_ARG_STRING, &opt_json_file,           0, N_("Read or write the json from or to a file"), NULL },
++		{ "luks2-metadata-size",'\0',POPT_ARG_STRING,&opt_luks2_metadata_size_str,0,N_("LUKS2 header metadata area size"), N_("bytes") },
++		{ "luks2-keyslots-size",'\0',POPT_ARG_STRING,&opt_luks2_keyslots_size_str,0,N_("LUKS2 header keyslots area size"), N_("bytes") },
+ 		POPT_TABLEEND
+ 	};
+ 	poptContext popt_context;
+@@ -2644,6 +2659,20 @@ int main(int argc, const char **argv)
+ 		usage(popt_context, EXIT_FAILURE, _("Option --align-payload is allowed only for luksFormat."),
+ 		      poptGetInvocationName(popt_context));
+ 
++	if ((opt_luks2_metadata_size_str || opt_luks2_keyslots_size_str) &&
++	    (strcmp(aname, "luksFormat") || strcmp(opt_type, "luks2")))
++		usage(popt_context, EXIT_FAILURE, _("Options --luks2-metadata-size and --opt-luks2-keyslots-size "
++		"are allowed only for luksFormat with LUKS2."),
++		      poptGetInvocationName(popt_context));
++	if (opt_luks2_metadata_size_str &&
++	    tools_string_to_size(NULL, opt_luks2_metadata_size_str, &opt_luks2_metadata_size))
++		usage(popt_context, EXIT_FAILURE, _("Invalid LUKS2 metadata size specification."),
++		      poptGetInvocationName(popt_context));
++	if (opt_luks2_keyslots_size_str &&
++	    tools_string_to_size(NULL, opt_luks2_keyslots_size_str, &opt_luks2_keyslots_size))
++		usage(popt_context, EXIT_FAILURE, _("Invalid LUKS2 keyslots size specification."),
++		      poptGetInvocationName(popt_context));
++
+ 	if (opt_align_payload && opt_offset)
+ 		usage(popt_context, EXIT_FAILURE, _("Option --align-payload and --offset cannot be combined."),
+ 		      poptGetInvocationName(popt_context));
+-- 
+2.20.0.rc2
+

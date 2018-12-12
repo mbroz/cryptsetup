@@ -791,7 +791,7 @@ static void AddDeviceLuks(void)
 	// Load gets the value from metadata
 	OK_(crypt_init(&cd, DEVICE_2));
 	OK_(crypt_set_data_offset(cd, OFFSET_2M));
-	OK_(crypt_load(cd, CRYPT_LUKS1, DEVICE_2));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
 	EQ_(crypt_get_data_offset(cd), OFFSET_8M);
 	crypt_free(cd);
 
