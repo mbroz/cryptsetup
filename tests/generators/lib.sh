@@ -118,8 +118,8 @@ function write_luks2_json()
 {
 	local _js=${3:-$LUKS2_JSON_SIZE}
 	local len=${#1}
-	_dd if=/dev/zero of=$2 bs=$((_js*512)) count=1
-	printf '%s' "$1" | _dd of=$2 bs=$len count=1 conv=notrunc
+	echo -n -E "$1" > $2
+	truncate -s $((_js*512)) $2
 }
 
 function kill_bin_hdr()
@@ -168,8 +168,7 @@ function merge_bin_hdr_with_json()
 
 function _dd()
 {
-	dd $@ 2>/dev/null
-	#dd $@
+	dd $@ status=none
 }
 
 function write_bin_hdr_size() {
