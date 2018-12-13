@@ -1251,7 +1251,7 @@ static void Luks2HeaderBackup(void)
 
 static void ResizeDeviceLuks2(void)
 {
-	struct crypt_device *cd;
+	struct crypt_device *cd, *cd2;
 	struct crypt_pbkdf_type pbkdf = {
 		.type = CRYPT_KDF_ARGON2I,
 		.hash = "sha256",
@@ -1280,6 +1280,7 @@ static void ResizeDeviceLuks2(void)
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
 	OK_(create_dmdevice_over_loop(L_DEVICE_0S, 1000));
+	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_payload_offset + 1000));
 
 	// test header and encrypted payload all in one device
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
@@ -1372,6 +1373,36 @@ static void ResizeDeviceLuks2(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 #endif
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, NULL, NULL));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+
+	/* create second LUKS2 device */
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
+	OK_(crypt_format(cd2, CRYPT_LUKS2, cipher, cipher_mode, crypt_get_uuid(cd), key, key_size, &params));
+	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
+	/* do not allow resize of other device */
+	FAIL_(crypt_resize(cd2, CDEVICE_1, 1), "Device got resized by wrong device context.");
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	crypt_free(cd2);
+
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
+	crypt_set_iteration_time(cd2, 1);
+	OK_(crypt_format(cd2, CRYPT_LUKS1, cipher, cipher_mode, crypt_get_uuid(cd), key, key_size, NULL));
+	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
+	FAIL_(crypt_resize(cd2, CDEVICE_1, 1), "Device got resized by wrong device context.");
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	crypt_free(cd2);
+
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
+	OK_(crypt_format(cd2, CRYPT_PLAIN, cipher, cipher_mode, NULL, key, key_size, NULL));
+	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
+	FAIL_(crypt_resize(cd2, CDEVICE_1, 1), "Device got resized by wrong device context.");
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	crypt_free(cd2);
+
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
 
 	_cleanup_dmdevices();
 }

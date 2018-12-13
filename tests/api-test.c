@@ -1324,7 +1324,7 @@ static void LuksHeaderBackup(void)
 
 static void ResizeDeviceLuks(void)
 {
-	struct crypt_device *cd;
+	struct crypt_device *cd, *cd2;
 	struct crypt_params_luks1 params = {
 		.hash = "sha512",
 		.data_alignment = 2048,
@@ -1345,6 +1345,7 @@ static void ResizeDeviceLuks(void)
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
 	OK_(create_dmdevice_over_loop(L_DEVICE_0S, 1000));
+	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_payload_offset + 1000));
 
 	// test header and encrypted payload all in one device
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
@@ -1381,6 +1382,28 @@ static void ResizeDeviceLuks(void)
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
 		EQ_(1000, r_size >> SECTOR_SHIFT);
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, NULL, NULL));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+
+	/* do not allow resize of other device */
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
+	OK_(crypt_format(cd2, CRYPT_LUKS1, cipher, cipher_mode, crypt_get_uuid(cd), key, key_size, &params));
+	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
+	FAIL_(crypt_resize(cd2, CDEVICE_1, 1), "Device got resized by wrong device context.");
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	crypt_free(cd2);
+
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
+	OK_(crypt_format(cd2, CRYPT_PLAIN, cipher, cipher_mode, NULL, key, key_size, NULL));
+	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
+	FAIL_(crypt_resize(cd2, CDEVICE_1, 1), "Device got resized by wrong device context.");
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	crypt_free(cd2);
+
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 
