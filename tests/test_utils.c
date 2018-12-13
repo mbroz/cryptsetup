@@ -421,6 +421,17 @@ int t_dm_crypt_keyring_support(void)
 	return t_dm_crypt_flags & T_DM_KERNEL_KEYRING_SUPPORTED;
 }
 
+int t_dm_crypt_cpu_switch_support(void)
+{
+	return t_dm_crypt_flags & (T_DM_SAME_CPU_CRYPT_SUPPORTED |
+				   T_DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED);
+}
+
+int t_dm_crypt_discard_support(void)
+{
+	return t_dm_crypt_flags & T_DM_DISCARDS_SUPPORTED;
+}
+
 /* loop helpers */
 
 #define LOOP_DEV_MAJOR 7

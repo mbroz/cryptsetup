@@ -2954,6 +2954,177 @@ static void Luks2Integrity(void)
 	crypt_free(cd);
 }
 
+static int set_fast_pbkdf(struct crypt_device *cd)
+{
+	struct crypt_pbkdf_type pbkdf = {
+		.type = "argon2id",
+		.hash = "sha256",
+		.iterations = 4,
+		.max_memory_kb = 32,
+		.parallel_threads = 1,
+		.flags = CRYPT_PBKDF_NO_BENCHMARK
+	};
+	return crypt_set_pbkdf_type(cd, &pbkdf);
+}
+
+static int check_flag(uint32_t flags, uint32_t flag)
+{
+	return (flags & flag) ? 0 : -1;
+}
+
+static void Luks2Refresh(void)
+{
+	uint64_t r_payload_offset;
+	struct crypt_device *cd1, *cd2;
+	char key[128], key1[128];
+	const char *cipher = "aes", *mode = "xts-plain64";
+	const char *mk_hex =  "bb21158c733229347bd4e681891e213d94c645be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex2 = "bb22158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
+	size_t key_size = strlen(mk_hex) / 2;
+	struct crypt_params_luks2 params = {
+		.sector_size = 512,
+		.integrity = "aead"
+	};
+	struct crypt_active_device cad = {};
+
+	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key1, mk_hex2, key_size);
+
+	OK_(get_luks2_offsets(0, 8192, 0, 0, NULL, &r_payload_offset));
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
+	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_payload_offset + 5000));
+	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
+	OK_(create_dmdevice_over_loop(H_DEVICE, r_payload_offset));
+
+	/* prepare test device */
+	OK_(crypt_init(&cd1, DMDIR L_DEVICE_OK));
+	OK_(set_fast_pbkdf(cd1));
+	OK_(crypt_format(cd1, CRYPT_LUKS2, cipher, mode, NULL, key, 32, NULL));
+	OK_(crypt_keyslot_add_by_volume_key(cd1, CRYPT_ANY_SLOT, key, 32, "aaa", 3));
+	OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, 0));
+
+	/* check we can refresh significant flags */
+	if (t_dm_crypt_discard_support()) {
+		OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_ALLOW_DISCARDS));
+		OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+		OK_(check_flag(cad.flags, CRYPT_ACTIVATE_ALLOW_DISCARDS));
+		cad.flags = 0;
+	}
+
+	if (t_dm_crypt_cpu_switch_support()) {
+		OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_SAME_CPU_CRYPT));
+		OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+		OK_(check_flag(cad.flags, CRYPT_ACTIVATE_SAME_CPU_CRYPT));
+		cad.flags = 0;
+
+		OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS));
+		OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+		OK_(check_flag(cad.flags, CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS));
+		cad.flags = 0;
+
+		OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS));
+		OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+		OK_(check_flag(cad.flags, CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS));
+		cad.flags = 0;
+	}
+
+	OK_(crypt_volume_key_keyring(cd1, 0));
+	OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH));
+	OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+	FAIL_(check_flag(cad.flags, CRYPT_ACTIVATE_KEYRING_KEY), "Unexpected flag raised.");
+	cad.flags = 0;
+
+#ifdef KERNEL_KEYRING
+	if (t_dm_crypt_keyring_support()) {
+		OK_(crypt_volume_key_keyring(cd1, 1));
+		OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH));
+		OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+		OK_(check_flag(cad.flags, CRYPT_ACTIVATE_KEYRING_KEY));
+		cad.flags = 0;
+	}
+#endif
+
+	/* multiple flags at once */
+	if (t_dm_crypt_discard_support() && t_dm_crypt_cpu_switch_support()) {
+		OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS | CRYPT_ACTIVATE_ALLOW_DISCARDS));
+		OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+		OK_(check_flag(cad.flags, CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS | CRYPT_ACTIVATE_ALLOW_DISCARDS));
+		cad.flags = 0;
+	}
+
+	/* do not allow reactivation with read-only (and drop flag silently because activation behaves exactly same) */
+	OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_READONLY));
+	OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+	FAIL_(check_flag(cad.flags, CRYPT_ACTIVATE_READONLY), "Reactivated with read-only flag.");
+	cad.flags = 0;
+
+	/* reload flag is dropped silently */
+	OK_(crypt_deactivate(cd1, CDEVICE_1));
+	OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH));
+
+	/* check read-only flag is not lost after reload */
+	OK_(crypt_deactivate(cd1, CDEVICE_1));
+	OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_READONLY));
+	OK_(crypt_activate_by_passphrase(cd1, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH));
+	OK_(crypt_get_active_device(cd1, CDEVICE_1, &cad));
+	OK_(check_flag(cad.flags, CRYPT_ACTIVATE_READONLY));
+	cad.flags = 0;
+
+	/* check LUKS2 with auth. enc. reload */
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
+	if (!crypt_format(cd2, CRYPT_LUKS2, "aes", "gcm-random", crypt_get_uuid(cd1), key, 32, &params)) {
+		OK_(crypt_keyslot_add_by_volume_key(cd2, 0, key, 32, "aaa", 3));
+		OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, 32, 0));
+		OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, 32, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_NO_JOURNAL));
+		OK_(crypt_get_active_device(cd2, CDEVICE_2, &cad));
+		OK_(check_flag(cad.flags, CRYPT_ACTIVATE_NO_JOURNAL));
+		cad.flags = 0;
+		OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, 32, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_NO_JOURNAL | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS));
+		OK_(crypt_get_active_device(cd2, CDEVICE_2, &cad));
+		OK_(check_flag(cad.flags, CRYPT_ACTIVATE_NO_JOURNAL | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS));
+		cad.flags = 0;
+		OK_(crypt_activate_by_passphrase(cd2, CDEVICE_2, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH));
+		OK_(crypt_get_active_device(cd2, CDEVICE_2, &cad));
+		FAIL_(check_flag(cad.flags, CRYPT_ACTIVATE_NO_JOURNAL), "");
+		FAIL_(check_flag(cad.flags, CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS), "");
+		FAIL_(crypt_activate_by_passphrase(cd2, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH), "Refreshed LUKS2 device with LUKS2/aead context");
+		OK_(crypt_deactivate(cd2, CDEVICE_2));
+	} else {
+		printf("WARNING: cannot format integrity device, skipping few reload tests.\n");
+	}
+	crypt_free(cd2);
+
+	/* Use LUKS1 context on LUKS2 device */
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_1S));
+	OK_(crypt_format(cd2, CRYPT_LUKS1, cipher, mode, crypt_get_uuid(cd1), key, 32, NULL));
+	OK_(crypt_keyslot_add_by_volume_key(cd2, CRYPT_ANY_SLOT, NULL, 32, "aaa", 3));
+	FAIL_(crypt_activate_by_passphrase(cd2, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH), "Refreshed LUKS2 device with LUKS1 context");
+	crypt_free(cd2);
+
+	/* Use PLAIN context on LUKS2 device */
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_1S));
+	OK_(crypt_format(cd2, CRYPT_PLAIN, cipher, mode, NULL, key, 32, NULL));
+	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
+	FAIL_(crypt_activate_by_volume_key(cd2, CDEVICE_1, key, key_size, CRYPT_ACTIVATE_REFRESH), "Refreshed LUKS2 device with PLAIN context");
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	crypt_free(cd2);
+
+	/* (snapshot-like case) */
+	/* try to refresh almost identical device (differs only in major:minor of data device) */
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
+	OK_(set_fast_pbkdf(cd2));
+	OK_(crypt_format(cd2, CRYPT_LUKS2, cipher, mode, crypt_get_uuid(cd1), key, 32, NULL));
+	OK_(crypt_keyslot_add_by_volume_key(cd2, CRYPT_ANY_SLOT, key, 32, "aaa", 3));
+	FAIL_(crypt_activate_by_passphrase(cd2, CDEVICE_1, 0, "aaa", 3, CRYPT_ACTIVATE_REFRESH), "Refreshed dm-crypt mapped over mismatching data device");
+
+	OK_(crypt_deactivate(cd1, CDEVICE_1));
+
+	crypt_free(cd1);
+	crypt_free(cd2);
+
+	_cleanup_dmdevices();
+}
+
 static void Luks2Flags(void)
 {
 	struct crypt_device *cd;
@@ -3085,6 +3256,7 @@ int main(int argc, char *argv[])
 	RUN_(Luks2ActivateByKeyring, "LUKS2 activation by passphrase in keyring");
 	RUN_(Luks2Requirements, "LUKS2 requirements flags");
 	RUN_(Luks2Integrity, "LUKS2 with data integrity");
+	RUN_(Luks2Refresh, "Active device table refresh");
 	RUN_(Luks2Flags, "LUKS2 persistent flags");
 	RUN_(Luks2Repair, "LUKS2 repair"); // test disables metadata locking. Run always last!
 out:

@@ -36,6 +36,8 @@ extern uint64_t t_dev_offset;
 int t_device_size(const char *device, uint64_t *size);
 int t_dm_check_versions(void);
 int t_dm_crypt_keyring_support(void);
+int t_dm_crypt_cpu_switch_support(void);
+int t_dm_crypt_discard_support(void);
 
 int fips_mode(void);
 
