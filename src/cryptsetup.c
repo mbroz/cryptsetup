@@ -89,6 +89,7 @@ static int opt_persistent = 0;
 static const char *opt_label = NULL;
 static const char *opt_subsystem = NULL;
 static int opt_unbound = 0;
+static int opt_refresh = 0;
 
 static const char *opt_luks2_metadata_size_str = NULL;
 static uint64_t opt_luks2_metadata_size = 0;
@@ -170,8 +171,10 @@ static void _set_activation_flags(uint32_t *flags)
 
 static int action_open_plain(void)
 {
-	struct crypt_device *cd = NULL;
+	struct crypt_device *cd = NULL, *cd1 = NULL;
+	const char *pcipher, *pmode;
 	char *msg, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	struct crypt_active_device cad;
 	struct crypt_params_plain params = {
 		.hash = opt_hash ?: DEFAULT_PLAIN_HASH,
 		.skip = opt_skip,
@@ -180,6 +183,7 @@ static int action_open_plain(void)
 		.sector_size = opt_sector_size,
 	};
 	char *password = NULL;
+	const char *activated_name = NULL;
 	size_t passwordLen, key_size_max, signatures = 0,
 	       key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	uint32_t activate_flags = 0;
@@ -207,32 +211,61 @@ static int action_open_plain(void)
 		log_std(_("WARNING: The --keyfile-size option is being ignored, "
 			 "the read size is the same as the encryption key size.\n"));
 
-	if ((r = crypt_init(&cd, action_argv[0])))
-		goto out;
-
-	/* Skip blkid scan when activating plain device with offset */
-	if (!opt_offset) {
-		/* Print all present signatures in read-only mode */
-		r = tools_detect_signatures(action_argv[0], 0, &signatures);
-		if (r < 0)
+	if (opt_refresh) {
+		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
+		r = crypt_init_by_name_and_header(&cd1, activated_name, NULL);
+		if (r)
 			goto out;
-	}
-
-	if (signatures) {
-		r = asprintf(&msg, _("Detected device signature(s) on %s. Proceeding further may damage existing data."), action_argv[0]);
-		if (r == -1) {
-			r = -ENOMEM;
+		r = crypt_get_active_device(cd1, activated_name, &cad);
+		if (r)
 			goto out;
+
+		/* copy known parameters from existing device */
+		params.skip = crypt_get_iv_offset(cd1);
+		params.offset = crypt_get_data_offset(cd1);
+		params.size = cad.size;
+		params.sector_size = crypt_get_sector_size(cd1);
+		key_size = crypt_get_volume_key_size(cd1);
+
+		if ((r = crypt_init(&cd, crypt_get_device_name(cd1))))
+			goto out;
+
+		activate_flags |= CRYPT_ACTIVATE_REFRESH;
+
+		pcipher = crypt_get_cipher(cd1);
+		pmode = crypt_get_cipher_mode(cd1);
+	} else {
+		activated_name = action_argv[1];
+		if ((r = crypt_init(&cd, action_argv[0])))
+			goto out;
+
+		/* Skip blkid scan when activating plain device with offset */
+		if (!opt_offset) {
+			/* Print all present signatures in read-only mode */
+			r = tools_detect_signatures(action_argv[0], 0, &signatures);
+			if (r < 0)
+				goto out;
 		}
 
-		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
-		free(msg);
-		if (r < 0)
-			goto out;
+		if (signatures) {
+			r = asprintf(&msg, _("Detected device signature(s) on %s. Proceeding further may damage existing data."), action_argv[0]);
+			if (r == -1) {
+				r = -ENOMEM;
+				goto out;
+			}
+
+			r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+			free(msg);
+			if (r < 0)
+				goto out;
+		}
+
+		pcipher = cipher;
+		pmode = cipher_mode;
 	}
 
 	r = crypt_format(cd, CRYPT_PLAIN,
-			 cipher, cipher_mode,
+			 pcipher, pmode,
 			 NULL, NULL,
 			 key_size,
 			 &params);
@@ -264,11 +297,12 @@ static int action_open_plain(void)
 		if (r < 0)
 			goto out;
 
-		r = crypt_activate_by_passphrase(cd, action_argv[1],
+		r = crypt_activate_by_passphrase(cd, activated_name,
 			CRYPT_ANY_SLOT, password, passwordLen, activate_flags);
 	}
 out:
 	crypt_free(cd);
+	crypt_free(cd1);
 	crypt_safe_free(password);
 
 	return r;
@@ -284,6 +318,7 @@ static int action_open_loopaes(void)
 	};
 	unsigned int key_size = (opt_key_size ?: DEFAULT_LOOPAES_KEYBITS) / 8;
 	uint32_t activate_flags = 0;
+	const char *activated_name = NULL;
 	int r;
 
 	if (!opt_key_file) {
@@ -291,18 +326,26 @@ static int action_open_loopaes(void)
 		return -EINVAL;
 	}
 
+	if (opt_refresh) {
+		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
+		if ((r = crypt_init_by_name(&cd, activated_name)))
+			goto out;
+		activate_flags |= CRYPT_ACTIVATE_REFRESH;
+	} else {
+		activated_name = action_argv[1];
+		if ((r = crypt_init(&cd, action_argv[0])))
+			goto out;
+
+		r = crypt_format(cd, CRYPT_LOOPAES, opt_cipher ?: DEFAULT_LOOPAES_CIPHER,
+				 NULL, NULL, NULL, key_size, &params);
+		check_signal(&r);
+		if (r < 0)
+			goto out;
+	}
+
 	_set_activation_flags(&activate_flags);
 
-	if ((r = crypt_init(&cd, action_argv[0])))
-		goto out;
-
-	r = crypt_format(cd, CRYPT_LOOPAES, opt_cipher ?: DEFAULT_LOOPAES_CIPHER,
-			 NULL, NULL, NULL, key_size, &params);
-	check_signal(&r);
-	if (r < 0)
-		goto out;
-
-	r = crypt_activate_by_keyfile_device_offset(cd, action_argv[1], CRYPT_ANY_SLOT,
+	r = crypt_activate_by_keyfile_device_offset(cd, activated_name, CRYPT_ANY_SLOT,
 		tools_is_stdin(opt_key_file) ? "/dev/stdin" : opt_key_file, opt_keyfile_size,
 		opt_keyfile_offset, activate_flags);
 out:
@@ -531,7 +574,7 @@ static int action_resize(void)
 	if (r)
 		goto out;
 
-	/* FIXME: resize of LUKS2 in metadata? */
+	/* FIXME: LUKS2 may enforce fixed size and it must not be changed */
 	r = crypt_get_active_device(cd, action_argv[0], &cad);
 	if (r)
 		goto out;
@@ -1150,23 +1193,31 @@ static int action_open_luks(void)
 	char *password = NULL;
 	size_t passwordLen;
 
-	header_device = uuid_or_device_header(&data_device);
+	if (opt_refresh) {
+		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
+		r = crypt_init_by_name_and_header(&cd, activated_name, opt_header_device);
+		if (r)
+			goto out;
+		activate_flags |= CRYPT_ACTIVATE_REFRESH;
+	} else {
+		header_device = uuid_or_device_header(&data_device);
 
-	activated_name = opt_test_passphrase ? NULL : action_argv[1];
+		activated_name = opt_test_passphrase ? NULL : action_argv[1];
 
-	if ((r = crypt_init_data_device(&cd, header_device, data_device)))
-		goto out;
+		if ((r = crypt_init_data_device(&cd, header_device, data_device)))
+			goto out;
 
-	if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
-			header_device);
-		goto out;
-	}
+		if ((r = crypt_load(cd, luksType(opt_type), NULL))) {
+			log_err(_("Device %s is not a valid LUKS device."),
+				header_device);
+			goto out;
+		}
 
-	if (!data_device && (crypt_get_data_offset(cd) < 8)) {
-		log_err(_("Reduced data offset is allowed only for detached LUKS header."));
-		r = -EINVAL;
-		goto out;
+		if (!data_device && (crypt_get_data_offset(cd) < 8)) {
+			log_err(_("Reduced data offset is allowed only for detached LUKS header."));
+			r = -EINVAL;
+			goto out;
+		}
 	}
 
 	_set_activation_flags(&activate_flags);
@@ -1864,23 +1915,63 @@ out:
 	return r;
 }
 
+static const char *_get_device_type(void)
+{
+	const char *type, *name = NULL;
+	struct crypt_device *cd = NULL;
+
+	if (action_argc > 1)
+		name = action_argv[1];
+	else if (action_argc == 1)
+		name = action_argv[0];
+
+	if (crypt_init_by_name_and_header(&cd, name, opt_header_device))
+		return NULL;
+
+	type = crypt_get_type(cd);
+	if (!type) {
+		crypt_free(cd);
+		log_err(_("%s is not cryptsetup managed device."), name);
+		return NULL;
+	}
+
+	if (!strncmp(type, "LUKS", 4))
+		type = "luks";
+	else if (!strcmp(type, CRYPT_PLAIN))
+		type = "plain";
+	else if (!strcmp(type, CRYPT_LOOPAES))
+		type = "loopaes";
+	else {
+		log_err(_("Refresh is not supported for device type %s"), type);
+		type = NULL;
+	}
+
+	crypt_free(cd);
+
+	return type;
+}
+
 static int action_open(void)
 {
+	if (opt_refresh && !opt_type)
+		/* read device type from active mapping */
+		opt_type = _get_device_type();
+
 	if (!opt_type)
 		return -EINVAL;
 
 	if (!strcmp(opt_type, "luks") ||
 	    !strcmp(opt_type, "luks1") ||
 	    !strcmp(opt_type, "luks2")) {
-		if (action_argc < 2 && !opt_test_passphrase)
+		if (action_argc < 2 && (!opt_test_passphrase && !opt_refresh))
 			goto args;
 		return action_open_luks();
 	} else if (!strcmp(opt_type, "plain")) {
-		if (action_argc < 2)
+		if (action_argc < 2 && !opt_refresh)
 			goto args;
 		return action_open_plain();
 	} else if (!strcmp(opt_type, "loopaes")) {
-		if (action_argc < 2)
+		if (action_argc < 2 && !opt_refresh)
 			goto args;
 		return action_open_loopaes();
 	} else if (!strcmp(opt_type, "tcrypt")) {
@@ -2350,6 +2441,11 @@ static int run_action(struct action_type *action)
 	return translate_errno(r);
 }
 
+static int strcmp_or_null(const char *str, const char *expected)
+{
+	return !str ? 0 : strcmp(str, expected);
+}
+
 int main(int argc, const char **argv)
 {
 	static char *popt_tmp;
@@ -2426,6 +2522,7 @@ int main(int argc, const char **argv)
 		{ "json-file",	       '\0', POPT_ARG_STRING, &opt_json_file,           0, N_("Read or write the json from or to a file"), NULL },
 		{ "luks2-metadata-size",'\0',POPT_ARG_STRING,&opt_luks2_metadata_size_str,0,N_("LUKS2 header metadata area size"), N_("bytes") },
 		{ "luks2-keyslots-size",'\0',POPT_ARG_STRING,&opt_luks2_keyslots_size_str,0,N_("LUKS2 header keyslots area size"), N_("bytes") },
+		{ "refresh",           '\0', POPT_ARG_NONE, &opt_refresh,               0, N_("Refresh (reactivate) device with new parameters"), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -2547,7 +2644,14 @@ int main(int argc, const char **argv)
 	} else if (!strcmp(aname, "luksConfig")) {
 		aname = "config";
 		opt_type = "luks2";
+	} else if (!strcmp(aname, "refresh")) {
+		aname = "open";
+		opt_refresh = 1;
 	}
+
+	/* ignore user supplied type and query device type instead */
+	if (opt_refresh)
+		opt_type = NULL;
 
 	for(action = action_types; action->type; action++)
 		if (strcmp(action->type, aname) == 0)
@@ -2562,12 +2666,22 @@ int main(int argc, const char **argv)
 
 	/* FIXME: rewrite this from scratch */
 
+	if (opt_refresh && strcmp(aname, "open"))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Parameter --refresh is only allowed with open or refresh commands.\n"),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_refresh && opt_test_passphrase)
+		usage(popt_context, EXIT_FAILURE,
+		      _("Options --refresh and --test-passphrase are mutually exclusive.\n"),
+		      poptGetInvocationName(popt_context));
+
 	if (opt_deferred_remove && strcmp(aname, "close"))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --deferred is allowed only for close command.\n"),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_shared && (strcmp(aname, "open") || strcmp(opt_type, "plain")) )
+	if (opt_shared && (strcmp(aname, "open") || strcmp_or_null(opt_type, "plain")))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --shared is allowed only for open of plain device.\n"),
 		      poptGetInvocationName(popt_context));
@@ -2613,7 +2727,7 @@ int main(int argc, const char **argv)
 		      _("Options --label and --subsystem are allowed only for luksFormat and config LUKS2 operations.\n"),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_test_passphrase && (strcmp(aname, "open") ||
+	if (opt_test_passphrase && (strcmp(aname, "open") || !opt_type ||
 	    (strncmp(opt_type, "luks", 4) && strcmp(opt_type, "tcrypt"))))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"),
@@ -2644,7 +2758,7 @@ int main(int argc, const char **argv)
 		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));
 
-	if (total_keyfiles > 1 && strcmp(opt_type, "tcrypt"))
+	if (total_keyfiles > 1 && (strcmp_or_null(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE, _("Only one --key-file argument is allowed."),
 		      poptGetInvocationName(popt_context));
 
@@ -2682,13 +2796,13 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (opt_skip && (strcmp(aname, "open") ||
-	    (strcmp(opt_type, "plain") && strcmp(opt_type, "loopaes"))))
+	    (strcmp_or_null(opt_type, "plain") && strcmp(opt_type, "loopaes"))))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --skip is supported only for open of plain and loopaes devices.\n"),
 		poptGetInvocationName(popt_context));
 
 	if (opt_offset && ((strcmp(aname, "open") && strcmp(aname, "luksFormat")) ||
-	    (!strcmp(aname, "open") && strcmp(opt_type, "plain") && strcmp(opt_type, "loopaes")) ||
+	    (!strcmp(aname, "open") && strcmp_or_null(opt_type, "plain") && strcmp(opt_type, "loopaes")) ||
 	    (!strcmp(aname, "luksFormat") && strncmp(opt_type, "luks", 4))))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --offset is supported only for open of plain and loopaes devices and for luksFormat.\n"),
@@ -2705,7 +2819,7 @@ int main(int argc, const char **argv)
 		_("Option --tcrypt-hidden cannot be combined with --allow-discards.\n"),
 		poptGetInvocationName(popt_context));
 
-	if (opt_veracrypt && strcmp(opt_type, "tcrypt"))
+	if (opt_veracrypt && (!opt_type || strcmp(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --veracrypt is supported only for TCRYPT device type.\n"),
 		poptGetInvocationName(popt_context));
@@ -2755,7 +2869,7 @@ int main(int argc, const char **argv)
 		poptGetInvocationName(popt_context));
 
 	if (opt_sector_size != SECTOR_SIZE && strcmp(aname, "luksFormat") &&
-	    (strcmp(aname, "open") || strcmp(opt_type, "plain")))
+	    (strcmp(aname, "open") || strcmp_or_null(opt_type, "plain")))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Sector size option is not supported for this command.\n"),
 		      poptGetInvocationName(popt_context));
@@ -2774,6 +2888,11 @@ int main(int argc, const char **argv)
 	if (opt_unbound && strcmp(aname, "luksAddKey"))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --unbound may be used only with luksAddKey action.\n"),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_refresh && strcmp(aname, "open"))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --refresh may be used only with open action.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
