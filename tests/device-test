@@ -3,6 +3,7 @@
 CRYPTSETUP="../cryptsetup"
 MNT_DIR="./mnt_luks"
 DEV_NAME="dummy"
+DEV_NAME2="ymmud"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
@@ -45,6 +46,7 @@ function dm_crypt_features()
 	[ $VER_MAJ -gt 1 ] && {
 		DM_PERF_CPU=1
 		DM_SECTOR_SIZE=1
+		DM_KEYRING=1
 		return
 	}
 
@@ -53,6 +55,24 @@ function dm_crypt_features()
 	if [ $VER_MIN -ge 17 -o \( $VER_MIN -eq 14 -a $VER_PTC -ge 5 \) ]; then
 		DM_SECTOR_SIZE=1
 	fi
+	if [ $VER_MIN -gt 18 -o \( $VER_MIN -eq 18 -a $VER_PTC -ge 1 \) ]; then
+		DM_KEYRING=1
+	fi
+}
+
+function dm_crypt_keyring_support()
+{
+	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
+
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+
+	# run the test with dm-crypt v1.15.0+ on purpose
+	# the fix is in dm-crypt v1.18.1+
+	[ $VER_MAJ -gt 1 ] && return 0
+	[ $VER_MAJ -lt 1 ] && return 1
+	[ $VER_MIN -ge 15 ]
 }
 
 format() # format
@@ -105,6 +125,20 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
 	$CRYPTSETUP close $DEV_NAME || fail
+	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain $DEV $DEV_NAME || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh -q $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
+	# Hash affects volume key for plain device. Check we can detect it
+	echo -e "$PWD1" | $CRYPTSETUP refresh -q $DEV_NAME --hash sha512 --perf-same_cpu_crypt --allow-discards 2>/dev/null && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh -q $DEV_NAME --allow-discards || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh -q $DEV_NAME || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
+	$CRYPTSETUP close $DEV_NAME || fail
 	# LUKS
 	echo -e "$PWD1" | $CRYPTSETUP open --type luks1 $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
@@ -113,6 +147,18 @@ else
 	echo -e "$PWD1" | $CRYPTSETUP open --type luks1 $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME --allow-discards || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME --allow-discards --perf-same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail
 
 	format luks2
@@ -132,6 +178,40 @@ else
 	echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME --persistent || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus --persistent || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards --persistent || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --perf-submit_from_crypt_cpus || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --persistent || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q discards && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --disable-keyring || fail
+	$CRYPTSETUP status $DEV_NAME | grep -q keyring && fail
+	if [ -n "$DM_KEYRING" ]; then
+		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q keyring || fail
+	fi
+	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail
 fi
 
