@@ -927,7 +927,7 @@ error:
 
 int dm_error_device(struct crypt_device *cd, const char *name)
 {
-	int r = -EINVAL;
+	int r;
 	struct crypt_dm_active_device dmd = {};
 
 	if (!name)
@@ -938,6 +938,8 @@ int dm_error_device(struct crypt_device *cd, const char *name)
 
 	if (dm_query_device(cd, name, 0, &dmd) && _error_device(name, dmd.size))
 		r = 0;
+	else
+		r = -EINVAL;
 
 	dm_exit_context();
 
@@ -946,16 +948,18 @@ int dm_error_device(struct crypt_device *cd, const char *name)
 
 int dm_clear_device(struct crypt_device *cd, const char *name)
 {
-	int r = -EINVAL;
+	int r;
 
 	if (!name)
-		return r;
+		return -EINVAL;
 
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
 	if (_dm_simple(DM_DEVICE_CLEAR, name))
 		r = 0;
+	else
+		r = -EINVAL;
 
 	dm_exit_context();
 
@@ -980,6 +984,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	dm_flags(cd, DM_UNKNOWN, &dmt_flags);
 	if (deferred && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
 		log_err(cd, _("Requested deferred flag is not supported."));
+		dm_exit_context();
 		return -ENOTSUP;
 	}
 
@@ -1371,10 +1376,10 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 	else if (dmd->target == DM_INTEGRITY)
 		table_params = get_dm_integrity_params(dmd, dmd->flags, dmt_flags);
 	else
-		return r;
+		goto out;
 
 	if (!table_params)
-		return -EINVAL;
+		goto out;
 
 	r = _dm_reload_device(cd, name, dmd->data_device, dmd->flags, dmd->size,
 			      dmd->target, table_params);
@@ -1390,7 +1395,7 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 
 	if (!r && resume)
 		r = _dm_resume_device(name, dmd->flags);
-
+out:
 	dm_exit_context();
 	return r;
 }
@@ -1463,10 +1468,11 @@ int dm_status_device(struct crypt_device *cd, const char *name)
 		return -ENOTSUP;
 	r = dm_status_dmi(name, &dmi, NULL, NULL);
 	dm_exit_context();
+
 	if (r < 0)
 		return r;
 
-	return (dmi.open_count > 0);
+	return (dmi.open_count > 0) ? 1 : 0;
 }
 
 int dm_status_suspended(struct crypt_device *cd, const char *name)
@@ -1478,6 +1484,7 @@ int dm_status_suspended(struct crypt_device *cd, const char *name)
 		return -ENOTSUP;
 	r = dm_status_dmi(name, &dmi, NULL, NULL);
 	dm_exit_context();
+
 	if (r < 0)
 		return r;
 
@@ -1526,6 +1533,7 @@ int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint
 	r = dm_status_dmi(name, &dmi, DM_INTEGRITY_TARGET, &status_line);
 	if (r < 0 || !status_line) {
 		free(status_line);
+		dm_exit_context();
 		return r;
 	}
 
@@ -2258,8 +2266,11 @@ int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 	uint32_t dmt_flags;
 	int r = -ENOTSUP;
 
-	if (dm_init_context(cd, DM_CRYPT) || dm_flags(cd, DM_CRYPT, &dmt_flags))
+	if (dm_init_context(cd, DM_CRYPT))
 		return -ENOTSUP;
+
+	if (dm_flags(cd, DM_CRYPT, &dmt_flags))
+		goto out;
 
 	if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
 		goto out;
