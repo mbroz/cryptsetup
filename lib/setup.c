@@ -996,7 +996,8 @@ static int _init_by_name_crypt_none(struct crypt_device *cd)
 					      _mode);
 
 	if (!r) {
-		sprintf(cd->u.none.cipher_spec, "%s-%s", cd->u.none.cipher, _mode);
+		snprintf(cd->u.none.cipher_spec, sizeof(cd->u.none.cipher_spec),
+			 "%s-%s", cd->u.none.cipher, _mode);
 		cd->u.none.cipher_mode = cd->u.none.cipher_spec + strlen(cd->u.none.cipher) + 1;
 		cd->u.none.key_size = dmd.u.crypt.vk->keylength;
 	}
