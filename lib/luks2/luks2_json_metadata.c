@@ -1963,24 +1963,24 @@ void LUKS2_hdr_repair(struct crypt_device *cd, json_object *hdr_jobj)
 
 void json_object_object_del_by_uint(json_object *jobj, unsigned key)
 {
-	int r;
-	char key_name[4];
+	char key_name[16];
 
-	r = snprintf(key_name, sizeof(key_name), "%u", key);
-	if (r >= 0 && (size_t)r < sizeof(key_name))
-		json_object_object_del(jobj, key_name);
+	if (snprintf(key_name, sizeof(key_name), "%u", key) < 1)
+		return;
+	json_object_object_del(jobj, key_name);
 }
 
 int json_object_object_add_by_uint(json_object *jobj, unsigned key, json_object *jobj_val)
 {
-	int r;
-	char key_name[4];
+	char key_name[16];
 
-	r = snprintf(key_name, sizeof(key_name), "%u", key);
-	if (r < 0 || (size_t)r >= sizeof(key_name))
+	if (snprintf(key_name, sizeof(key_name), "%u", key) < 1)
 		return -EINVAL;
 
-    json_object_object_add(jobj, key_name, jobj_val);
-
-    return 0;
+#if HAVE_DECL_JSON_OBJECT_OBJECT_ADD_EX
+	return json_object_object_add_ex(jobj, key_name, jobj_val, 0) ? -ENOMEM : 0;
+#else
+	json_object_object_add(jobj, key_name, jobj_val);
+	return 0;
+#endif
 }
