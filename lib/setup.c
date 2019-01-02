@@ -1686,7 +1686,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	r = device_check_size(cd, crypt_data_device(cd), crypt_get_data_offset(cd) * SECTOR_SIZE, 0);
 	if (r < 0)
-		return r;
+		goto out;
 
 	if (!integrity && sector_size > SECTOR_SIZE && !device_size(crypt_data_device(cd), &dev_size)) {
 		dev_size -= (crypt_get_data_offset(cd) * SECTOR_SIZE);
