@@ -1519,11 +1519,6 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	if (asprintf(&cd->u.luks1.cipher_spec, "%s-%s", cipher, cipher_mode) < 0) {
-		cd->u.luks1.cipher_spec = NULL;
-		return -ENOMEM;
-	}
-
 	r = LUKS_generate_phdr(&cd->u.luks1.hdr, cd->volume_key, cipher, cipher_mode,
 			       cd->pbkdf.hash, uuid,
 			       cd->data_offset * SECTOR_SIZE,
@@ -1539,14 +1534,22 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	if (asprintf(&cd->u.luks1.cipher_spec, "%s-%s", cipher, cipher_mode) < 0) {
+		cd->u.luks1.cipher_spec = NULL;
+		return -ENOMEM;
+	}
+
 	r = LUKS_wipe_header_areas(&cd->u.luks1.hdr, cd);
 	if (r < 0) {
+		free(cd->u.luks1.cipher_spec);
 		log_err(cd, _("Cannot wipe header on device %s."),
 			mdata_device_path(cd));
 		return r;
 	}
 
 	r = LUKS_write_phdr(&cd->u.luks1.hdr, cd);
+	if (r)
+		free(cd->u.luks1.cipher_spec);
 
 	return r;
 }
