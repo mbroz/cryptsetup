@@ -684,7 +684,7 @@ out:
 
 }
 
-static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_t flags, uint32_t dmflags)
+static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_t flags)
 {
 	int r, max_size, num_options = 0;
 	char *params, *hexkey, mode;
@@ -803,7 +803,7 @@ static char *get_dm_integrity_params(struct crypt_dm_active_device *dmd, uint32_
 		crypt_safe_free(hexkey);
 	}
 
-	if ((dmflags & DM_INTEGRITY_RECALC_SUPPORTED) && (flags & CRYPT_ACTIVATE_RECALCULATE)) {
+	if (flags & CRYPT_ACTIVATE_RECALCULATE) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "recalculate ");
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
@@ -1312,7 +1312,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	else if (dmd->target == DM_VERITY)
 		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd, dmd_flags);
 	else if (dmd->target == DM_INTEGRITY)
-		table_params = get_dm_integrity_params(dmd, dmd_flags, dmt_flags);
+		table_params = get_dm_integrity_params(dmd, dmd_flags);
 	else
 		goto out;
 
@@ -1351,6 +1351,10 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		if (dmd->u.crypt.sector_size != SECTOR_SIZE && !(dmt_flags & DM_SECTOR_SIZE_SUPPORTED))
 			log_err(cd, _("Requested sector_size option is not supported."));
 	}
+
+	if (r == -EINVAL && dmd->target == DM_INTEGRITY && (dmd_flags & CRYPT_ACTIVATE_RECALCULATE) &&
+	    !(dmt_flags & DM_INTEGRITY_RECALC_SUPPORTED))
+		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
 out:
 	crypt_safe_free(table_params);
 	dm_exit_context();
@@ -1374,7 +1378,7 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 	else if (dmd->target == DM_VERITY)
 		table_params = get_dm_verity_params(dmd->u.verity.vp, dmd, dmd->flags);
 	else if (dmd->target == DM_INTEGRITY)
-		table_params = get_dm_integrity_params(dmd, dmd->flags, dmt_flags);
+		table_params = get_dm_integrity_params(dmd, dmd->flags);
 	else
 		goto out;
 
