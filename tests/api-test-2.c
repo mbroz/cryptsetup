@@ -2267,6 +2267,15 @@ static void Pbkdf(void)
 		.data_alignment = 2048,
 	};
 
+	NULL_(crypt_get_pbkdf_type_params(NULL));
+	NULL_(crypt_get_pbkdf_type_params("suslik"));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type_params(CRYPT_KDF_PBKDF2));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_PBKDF2));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type_params(CRYPT_KDF_ARGON2I));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_ARGON2I));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type_params(CRYPT_KDF_ARGON2ID));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_ARGON2ID));
+
 	// test empty context
 	OK_(crypt_init(&cd, DEVICE_1));
 	NULL_(crypt_get_pbkdf_type(cd));

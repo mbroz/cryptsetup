@@ -24,19 +24,42 @@
 
 #include "internal.h"
 
-const struct crypt_pbkdf_type default_luks2 = {
-	.type = DEFAULT_LUKS2_PBKDF,
+const struct crypt_pbkdf_type default_pbkdf2 = {
+	.type = CRYPT_KDF_PBKDF2,
+	.hash = DEFAULT_LUKS1_HASH,
+	.time_ms = DEFAULT_LUKS1_ITER_TIME
+};
+
+const struct crypt_pbkdf_type default_argon2i = {
+	.type = CRYPT_KDF_ARGON2I,
 	.hash = DEFAULT_LUKS1_HASH,
 	.time_ms = DEFAULT_LUKS2_ITER_TIME,
 	.max_memory_kb = DEFAULT_LUKS2_MEMORY_KB,
 	.parallel_threads = DEFAULT_LUKS2_PARALLEL_THREADS
 };
 
-const struct crypt_pbkdf_type default_luks1 = {
-	.type = CRYPT_KDF_PBKDF2,
+const struct crypt_pbkdf_type default_argon2id = {
+	.type = CRYPT_KDF_ARGON2ID,
 	.hash = DEFAULT_LUKS1_HASH,
-	.time_ms = DEFAULT_LUKS1_ITER_TIME
+	.time_ms = DEFAULT_LUKS2_ITER_TIME,
+	.max_memory_kb = DEFAULT_LUKS2_MEMORY_KB,
+	.parallel_threads = DEFAULT_LUKS2_PARALLEL_THREADS
 };
+
+const struct crypt_pbkdf_type *crypt_get_pbkdf_type_params(const char *pbkdf_type)
+{
+	if (!pbkdf_type)
+		return NULL;
+
+	if (!strcmp(pbkdf_type, CRYPT_KDF_PBKDF2))
+		return &default_pbkdf2;
+	else if (!strcmp(pbkdf_type, CRYPT_KDF_ARGON2I))
+		return &default_argon2i;
+	else if (!strcmp(pbkdf_type, CRYPT_KDF_ARGON2ID))
+		return &default_argon2id;
+
+	return NULL;
+}
 
 static uint32_t adjusted_phys_memory(void)
 {
@@ -157,9 +180,9 @@ int init_pbkdf_type(struct crypt_device *cd,
 	int r;
 
 	if (!pbkdf && dev_type && !strcmp(dev_type, CRYPT_LUKS2))
-		pbkdf = &default_luks2;
+		pbkdf = crypt_get_pbkdf_type_params(DEFAULT_LUKS2_PBKDF);
 	else if (!pbkdf)
-		pbkdf = &default_luks1;
+		pbkdf = crypt_get_pbkdf_type_params(CRYPT_KDF_PBKDF2);
 
 	r = verify_pbkdf_params(cd, pbkdf);
 	if (r)
@@ -262,9 +285,9 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_default(const char *type)
 		return NULL;
 
 	if (!strcmp(type, CRYPT_LUKS1))
-		return &default_luks1;
+		return crypt_get_pbkdf_type_params(CRYPT_KDF_PBKDF2);
 	else if (!strcmp(type, CRYPT_LUKS2))
-		return &default_luks2;
+		return crypt_get_pbkdf_type_params(DEFAULT_LUKS2_PBKDF);
 
 	return NULL;
 }
