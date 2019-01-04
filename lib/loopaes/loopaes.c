@@ -143,7 +143,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (keyfile_is_gpg(buffer, buffer_len)) {
-		log_err(cd, _("Detected not yet supported GPG encrypted keyfile.\n"));
+		log_err(cd, _("Detected not yet supported GPG encrypted keyfile."));
 		log_std(cd, _("Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"));
 		return -EINVAL;
 	}
