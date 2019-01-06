@@ -1457,6 +1457,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	int r;
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
 	unsigned long alignment_offset = 0;
+	uint64_t dev_size;
 
 	if (!cipher || !cipher_mode)
 		return -EINVAL;
@@ -1534,9 +1535,9 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	r = device_check_size(cd, crypt_data_device(cd), crypt_get_data_offset(cd) * SECTOR_SIZE, 0);
-	if (r < 0)
-		return r;
+	if (!device_size(crypt_data_device(cd), &dev_size) &&
+	    dev_size < (crypt_get_data_offset(cd) * SECTOR_SIZE))
+		log_std(cd, _("WARNING: Data offset is outside of currently available data device.\n"));
 
 	if (asprintf(&cd->u.luks1.cipher_spec, "%s-%s", cipher, cipher_mode) < 0) {
 		cd->u.luks1.cipher_spec = NULL;
@@ -1695,11 +1696,14 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = device_check_size(cd, crypt_data_device(cd), crypt_get_data_offset(cd) * SECTOR_SIZE, 0);
+	r = device_size(crypt_data_device(cd), &dev_size);
 	if (r < 0)
 		goto out;
 
-	if (!integrity && sector_size > SECTOR_SIZE && !device_size(crypt_data_device(cd), &dev_size)) {
+	if (dev_size < (crypt_get_data_offset(cd) * SECTOR_SIZE))
+		log_std(cd, _("WARNING: Data offset is outside of currently available data device.\n"));
+
+	if (!integrity && sector_size > SECTOR_SIZE) {
 		dev_size -= (crypt_get_data_offset(cd) * SECTOR_SIZE);
 		if (dev_size % sector_size) {
 			log_err(cd, _("Device size is not aligned to requested sector size."));

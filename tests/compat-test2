@@ -218,7 +218,8 @@ echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --o
 $CRYPTSETUP -q luksDump  $LOOPDEV | grep -q "offset: $((512 * 16384)) \[bytes\]" || fail
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --sector-size 1024 --offset 16384 || fail
 $CRYPTSETUP -q luksDump  $LOOPDEV | grep -q "offset: $((512 * 16384)) \[bytes\]" || fail
-echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --offset 80000 2>/dev/null && fail
+truncate -s 4096 $HEADER_IMG
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG -q --offset 80000 >/dev/null 2>&1 || fail
 
 prepare "[2] Sector size and old payload alignment" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --sector-size  511 2>/dev/null && fail
@@ -885,7 +886,7 @@ prepare "[40] LUKS2 metadata areas" wipe
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks1 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=128k 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=127k 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=127k --luks2-keyslots-size=128k 2> /dev/null && fail
-echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=128M 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=128M >/dev/null 2>&1 && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --luks2-metadata-size=128k --luks2-keyslots-size=128k || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
