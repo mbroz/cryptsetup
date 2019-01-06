@@ -896,5 +896,26 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --l
 $CRYPTSETUP luksDump $LOOPDEV | grep "Metadata area:" | grep -q "16384 \[bytes\]" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
 
+prepare "[41] Per-keyslot encryption parameters" wipe
+KEYSLOT_CIPHER="aes-cbc-plain64"
+$CRYPTSETUP -q luksFormat --type luks2 $LOOPDEV $KEY1 $FAST_PBKDF_OPT --key-slot 0 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "0: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "0: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT --key-slot 1 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "1: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "1: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT --key-slot 2 || fail
+$CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY2 $KEY1 --key-slot 2 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "2: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "2: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+# unbound keyslot
+echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --key-slot 21 --unbound -s 32 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 $LOOPDEV || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "21: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "21: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --key-slot 22 --unbound -s 32 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP luksConvertKey --key-slot 22 $LOOPDEV --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 $LOOPDEV || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "22: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "22: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+
 remove_mapping
 exit 0

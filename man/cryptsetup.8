@@ -254,8 +254,9 @@ For LUKS2, additional \fB<options>\fR can be
 [\-\-integrity, \-\-integrity\-no\-wipe, \-\-sector\-size,
 \-\-label, \-\-subsystem,
 \-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel,
-\-\-disable\-locks, \-\-disable\-keyring.
-\-\-luks2\-metadata\-size, \-\-luks2\-keyslots\-size].
+\-\-disable\-locks, \-\-disable\-keyring,
+\-\-luks2\-metadata\-size, \-\-luks2\-keyslots\-size,
+\-\-keyslot\-cipher, \-\-keyslot\-key\-size].
 
 \fBWARNING:\fR Doing a luksFormat on an existing LUKS container will
 make all data the old container permanently irretrievable unless
@@ -317,7 +318,7 @@ is not required.
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-master\-key\-file,
 \-\-iter\-time, \-\-force\-password, \-\-header, \-\-disable\-locks,
-\-\-unbound, \-\-type].
+\-\-unbound, \-\-type, \-\-keyslot\-cipher, \-\-keyslot\-key\-size].
 .PP
 \fIluksRemoveKey\fR <device> [<key file with passphrase to be removed>]
 .IP
@@ -360,7 +361,7 @@ inaccessible.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header,
-\-\-disable\-locks, \-\-type].
+\-\-disable\-locks, \-\-type, \-\-keyslot\-cipher, \-\-keyslot\-key\-size].
 .PP
 .PP
 \fIluksConvertKey\fR <device>
@@ -384,7 +385,8 @@ parameters have been wiped and make the LUKS container inaccessible.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-key\-slot, \-\-header, \-\-disable\-locks,
 \-\-iter-time, \-\-pbkdf, \-\-pbkdf\-force\-iterations,
-\-\-pbkdf\-memory, \-\-pbkdf\-parallel].
+\-\-pbkdf\-memory, \-\-pbkdf\-parallel,
+\-\-keyslot\-cipher, \-\-keyslot\-key\-size].
 .PP
 \fIluksKillSlot\fR <device> <key slot number>
 .IP
@@ -1234,6 +1236,12 @@ This option can be used to set specific size of the LUKS2 binary keyslot area
 (key material is encrypted there). The value must be aligned to multiple
 of 4096 bytes with maximum size 128MB.
 The <size> can be specified with unit suffix (for example 128k).
+.TP
+.B "\-\-keyslot\-cipher <cipher\-spec>"
+This option can be used to set specific cipher encryption for the LUKS2 keyslot area.
+.TP
+.B "\-\-keyslot\-key\-size <bits>"
+This option can be used to set specific key size for the LUKS2 keyslot area.
 .TP
 .B "\-\-integrity\-no\-journal"
 Activate device with integrity protection without using data journal (direct

@@ -111,13 +111,18 @@ int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 	return num;
 }
 
-int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd)
+int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd, const char *cipher_spec)
 {
-	const char *cipher = crypt_get_cipher(cd);
-	const char *cipher_mode = crypt_get_cipher_mode(cd);
+	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+
+	if (!cipher_spec || !strcmp(cipher_spec, "null") || !strcmp(cipher_spec, "cipher_null"))
+		return 1;
+
+	if (crypt_parse_name_and_mode(cipher_spec, cipher, NULL, cipher_mode) < 0)
+		return 1;
 
 	/* Keyslot is already authenticated; we cannot use integrity tags here */
-	if (crypt_get_integrity_tag_size(cd) || !cipher)
+	if (crypt_get_integrity_tag_size(cd))
 		return 1;
 
 	/* Wrapped key schemes cannot be used for keyslot encryption */
@@ -132,45 +137,38 @@ int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd)
 }
 
 int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
-	size_t key_size, struct luks2_keyslot_params *params)
+				 struct luks2_keyslot_params *params)
 {
-	int r, integrity_key_size = crypt_get_integrity_key_size(cd);
 	const struct crypt_pbkdf_type *pbkdf = crypt_get_pbkdf_type(cd);
+	const char *cipher_spec;
+	size_t key_size;
+	int r;
 
 	if (!hdr || !pbkdf || !params)
 		return -EINVAL;
 
-	params->af_type   = LUKS2_KEYSLOT_AF_LUKS1;
+	/*
+	 * set keyslot area encryption parameters
+	 */
 	params->area_type = LUKS2_KEYSLOT_AREA_RAW;
-
-	/* set keyslot AF parameters */
-	/* currently we use hash for AF from pbkdf settings */
-	r = snprintf(params->af.luks1.hash, sizeof(params->af.luks1.hash),
-		     "%s", pbkdf->hash);
-	if (r < 0 || (size_t)r >= sizeof(params->af.luks1.hash))
+	cipher_spec = crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size);
+	if (!cipher_spec || !key_size)
 		return -EINVAL;
 
-	params->af.luks1.stripes = 4000;
-
-	/* set keyslot area encryption parameters */
-	/* short circuit authenticated encryption hardcoded defaults */
-	if (LUKS2_keyslot_cipher_incompatible(cd) || key_size == 0) {
-		// FIXME: fixed cipher and key size can be wrong
-		snprintf(params->area.raw.encryption, sizeof(params->area.raw.encryption),
-			 "aes-xts-plain64");
-		params->area.raw.key_size = 32;
-		return 0;
-	}
-
-	r = snprintf(params->area.raw.encryption, sizeof(params->area.raw.encryption),
-		     "%s", LUKS2_get_cipher(hdr, CRYPT_DEFAULT_SEGMENT));
+	params->area.raw.key_size = key_size;
+	r = snprintf(params->area.raw.encryption, sizeof(params->area.raw.encryption), "%s", cipher_spec);
 	if (r < 0 || (size_t)r >= sizeof(params->area.raw.encryption))
 		return -EINVAL;
 
-	/* Slot encryption tries to use the same key size as for the main algorithm */
-	if ((size_t)integrity_key_size > key_size)
+	/*
+	 * set keyslot AF parameters
+	 */
+	params->af_type = LUKS2_KEYSLOT_AF_LUKS1;
+	/* currently we use hash for AF from pbkdf settings */
+	r = snprintf(params->af.luks1.hash, sizeof(params->af.luks1.hash), "%s", pbkdf->hash);
+	if (r < 0 || (size_t)r >= sizeof(params->af.luks1.hash))
 		return -EINVAL;
-	params->area.raw.key_size = key_size - integrity_key_size;
+	params->af.luks1.stripes = 4000;
 
 	return 0;
 }

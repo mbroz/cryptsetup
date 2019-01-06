@@ -564,6 +564,9 @@ CS_NUM_WITH([luks2-iter-time],       [Argon2 PBKDF iteration time for LUKS2 (in 
 CS_NUM_WITH([luks2-memory-kb],       [Argon2 PBKDF memory cost for LUKS2 (in kB)], [1048576])
 CS_NUM_WITH([luks2-parallel-threads],[Argon2 PBKDF max parallel cost for LUKS2 (if CPUs available)], [4])
 
+CS_STR_WITH([luks2-keyslot-cipher], [fallback cipher for LUKS2 keyslot (if data encryption is incompatible)], [aes-xts-plain64])
+CS_NUM_WITH([luks2-keyslot-keybits],[fallback key size for LUKS2 keyslot (if data encryption is incompatible)], [512])
+
 CS_STR_WITH([loopaes-cipher], [cipher for loop-AES mode], [aes])
 CS_NUM_WITH([loopaes-keybits],[key length in bits for loop-AES mode], [256])
 

@@ -1635,6 +1635,39 @@ int crypt_keyslot_area(struct crypt_device *cd,
 int crypt_keyslot_get_key_size(struct crypt_device *cd, int keyslot);
 
 /**
+ * Get cipher and key size for keyslot encryption.
+ * Use for LUKS2 keyslot to set different encryption type than for data encryption.
+ * Parameters will be used for next keyslot operations.
+ *
+ * @param cd crypt device handle
+ * @param keyslot keyslot number of CRYPT_ANY_SLOT for default
+ * @param key_size encryption key size (in bytes)
+ *
+ * @return cipher specification on success or @e NULL.
+ *
+ * @note This is the encryption of keyslot itself, not the data encryption algorithm!
+ */
+const char *crypt_keyslot_get_encryption(struct crypt_device *cd, int keyslot, size_t *key_size);
+
+/**
+ * Set encryption for keyslot.
+ * Use for LUKS2 keyslot to set different encryption type than for data encryption.
+ * Parameters will be used for next keyslot operations that create or change a keyslot.
+ *
+ * @param cd crypt device handle
+ * @param cipher (e.g. "aes-xts-plain64")
+ * @param key_size encryption key size (in bytes)
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note To reset to default keyslot encryption (the same as for data)
+ *       set cipher to NULL and key size to 0.
+ */
+int crypt_keyslot_set_encryption(struct crypt_device *cd,
+	const char *cipher,
+	size_t key_size);
+
+/**
  * Get directory where mapped crypt devices are created
  *
  * @return the directory path

@@ -25,6 +25,7 @@
 #include <uuid/uuid.h>
 
 static const char *opt_cipher = NULL;
+static const char *opt_keyslot_cipher = NULL;
 static const char *opt_hash = NULL;
 static int opt_verify_passphrase = 0;
 
@@ -40,6 +41,7 @@ static const char *opt_uuid = NULL;
 static const char *opt_header_device = NULL;
 static const char *opt_type = "luks";
 static int opt_key_size = 0;
+static int opt_keyslot_key_size = 0;
 static long opt_keyfile_size = 0;
 static long opt_new_keyfile_size = 0;
 static uint64_t opt_keyfile_offset = 0;
@@ -167,6 +169,21 @@ static void _set_activation_flags(uint32_t *flags)
 	/* Only for LUKS2 but ignored elsewhere */
 	if (opt_test_passphrase)
 		*flags |= CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY;
+}
+
+static int _set_keyslot_encryption_params(struct crypt_device *cd)
+{
+	const char *type = crypt_get_type(cd);
+
+	if (!opt_keyslot_key_size && !opt_keyslot_cipher)
+		return 0;
+
+	if (!type || strcmp(type, CRYPT_LUKS2)) {
+		log_err(_("Keyslot encryption parameters can be set only for LUKS2 device."));
+		return -EINVAL;
+	}
+
+	return crypt_keyslot_set_encryption(cd, opt_keyslot_cipher, opt_keyslot_key_size / 8);
 }
 
 static int action_open_plain(void)
@@ -1163,6 +1180,10 @@ static int action_luksFormat(void)
 	if (r < 0)
 		goto out;
 
+	r = _set_keyslot_encryption_params(cd);
+	if (r < 0)
+		goto out;
+
 	r = crypt_keyslot_add_by_volume_key(cd, opt_key_slot,
 					    key, keysize,
 					    password, passwordLen);
@@ -1445,6 +1466,10 @@ static int luksAddUnboundKey(void)
 		goto out;
 	}
 
+	r = _set_keyslot_encryption_params(cd);
+	if (r < 0)
+		goto out;
+
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
 		opt_force_password = 1;
@@ -1507,6 +1532,10 @@ static int action_luksAddKey(void)
 			uuid_or_device_header(NULL));
 		goto out;
 	}
+
+	r = _set_keyslot_encryption_params(cd);
+	if (r < 0)
+		goto out;
 
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
@@ -1600,6 +1629,10 @@ static int action_luksChangeKey(void)
 		goto out;
 	}
 
+	r = _set_keyslot_encryption_params(cd);
+	if (r < 0)
+		goto out;
+
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
 		opt_force_password = 1;
@@ -1659,6 +1692,10 @@ static int action_luksConvertKey(void)
 			uuid_or_device_header(NULL));
 		goto out;
 	}
+
+	r = _set_keyslot_encryption_params(cd);
+	if (r < 0)
+		goto out;
 
 	if (crypt_keyslot_status(cd, opt_key_slot) == CRYPT_SLOT_INACTIVE) {
 		r = -EINVAL;
@@ -2523,6 +2560,8 @@ int main(int argc, const char **argv)
 		{ "luks2-metadata-size",'\0',POPT_ARG_STRING,&opt_luks2_metadata_size_str,0,N_("LUKS2 header metadata area size"), N_("bytes") },
 		{ "luks2-keyslots-size",'\0',POPT_ARG_STRING,&opt_luks2_keyslots_size_str,0,N_("LUKS2 header keyslots area size"), N_("bytes") },
 		{ "refresh",           '\0', POPT_ARG_NONE, &opt_refresh,               0, N_("Refresh (reactivate) device with new parameters"), NULL },
+		{ "keyslot-key-size",  '\0', POPT_ARG_INT, &opt_keyslot_key_size,       0, N_("LUKS2 keyslot: The size of the encryption key"), N_("BITS") },
+		{ "keyslot-cipher",    '\0', POPT_ARG_STRING, &opt_keyslot_cipher,      0, N_("LUKS2 keyslot: The cipher used for keyslot encryption"), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -2733,7 +2772,7 @@ int main(int argc, const char **argv)
 		      _("Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_key_size % 8)
+	if (opt_key_size % 8 || opt_keyslot_key_size % 8)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Key size must be a multiple of 8 bits"),
 		      poptGetInvocationName(popt_context));

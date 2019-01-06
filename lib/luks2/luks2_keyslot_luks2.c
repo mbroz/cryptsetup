@@ -388,27 +388,25 @@ static int luks2_keyslot_update_json(struct crypt_device *cd,
 	const struct luks2_keyslot_params *params)
 {
 	const struct crypt_pbkdf_type *pbkdf;
-	json_object *jobj_af, *jobj_area, *jobj_kdf, *jobj1;
+	json_object *jobj_af, *jobj_area, *jobj_kdf;
 	char salt[LUKS_SALTSIZE], *salt_base64 = NULL;
-	int r, keyslot_key_len;
+	int r;
 
 	/* jobj_keyslot is not yet validated */
 
 	if (!json_object_object_get_ex(jobj_keyslot, "af", &jobj_af) ||
-	    !json_object_object_get_ex(jobj_keyslot, "area", &jobj_area) ||
-	    !json_object_object_get_ex(jobj_area, "key_size", &jobj1))
+	    !json_object_object_get_ex(jobj_keyslot, "area", &jobj_area))
 		return -EINVAL;
 
-	/* we do not allow any 'area' object modifications yet */
-	keyslot_key_len = json_object_get_int(jobj1);
-	if (keyslot_key_len < 0)
-		return -EINVAL;
+	/* update area encryption parameters */
+	json_object_object_add(jobj_area, "encryption", json_object_new_string(params->area.raw.encryption));
+	json_object_object_add(jobj_area, "key_size", json_object_new_int(params->area.raw.key_size));
 
 	pbkdf = crypt_get_pbkdf_type(cd);
 	if (!pbkdf)
 		return -EINVAL;
 
-	r = crypt_benchmark_pbkdf_internal(cd, CONST_CAST(struct crypt_pbkdf_type *)pbkdf, keyslot_key_len);
+	r = crypt_benchmark_pbkdf_internal(cd, CONST_CAST(struct crypt_pbkdf_type *)pbkdf, params->area.raw.key_size);
 	if (r < 0)
 		return r;
 
@@ -498,8 +496,6 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 	/* Area object */
 	jobj_area = json_object_new_object();
 	json_object_object_add(jobj_area, "type", json_object_new_string("raw"));
-	json_object_object_add(jobj_area, "encryption", json_object_new_string(params->area.raw.encryption));
-	json_object_object_add(jobj_area, "key_size", json_object_new_int(params->area.raw.key_size));
 	json_object_object_add(jobj_area, "offset", json_object_new_uint64(area_offset));
 	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
@@ -609,6 +605,9 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 
 	json_object_object_get_ex(jobj_area, "encryption", &jobj1);
 	log_std(cd, "\tCipher:     %s\n", json_object_get_string(jobj1));
+
+	json_object_object_get_ex(jobj_area, "key_size", &jobj1);
+	log_std(cd, "\tCipher key: %u bits\n", json_object_get_uint32(jobj1) * 8);
 
 	json_object_object_get_ex(jobj_kdf, "type", &jobj1);
 	log_std(cd, "\tPBKDF:      %s\n", json_object_get_string(jobj1));

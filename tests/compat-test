@@ -398,6 +398,9 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT -s 256 --mas
 $CRYPTSETUP luksOpen --master-key-file /dev/urandom $LOOPDEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksOpen --master-key-file $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
+# unsupported pe-keyslot encryption
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT -s 128 --keyslot-cipher "aes-cbc-plain" $LOOPDEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT -s 128 --keyslot-key-size 256 $LOOPDEV 2>/dev/null && fail
 
 prepare "[17] AddKey volume key, passphrase and keyfile" wipe
 # masterkey

@@ -591,7 +591,8 @@ static int keyslot_LUKS1_compatible(struct crypt_device *cd,
 {
 	json_object *jobj_keyslot, *jobj, *jobj_kdf, *jobj_af;
 	uint64_t l2_offset, l2_length;
-	int ks_key_size;
+	size_t ks_key_size;
+	const char *ks_cipher, *data_cipher;
 
 	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
 	if (!jobj_keyslot)
@@ -621,9 +622,10 @@ static int keyslot_LUKS1_compatible(struct crypt_device *cd,
 
 	/* FIXME: should this go to validation code instead (aka invalid luks2 header if assigned to segment 0)? */
 	/* FIXME: check all keyslots are assigned to segment id 0, and segments count == 1 */
-	ks_key_size = LUKS2_get_keyslot_stored_key_size(hdr, keyslot);
-	if (ks_key_size < 0 || (int)key_size != LUKS2_get_keyslot_stored_key_size(hdr, keyslot)) {
-		log_dbg(cd, "Key length in keyslot %d is different from volume key length", keyslot);
+	ks_cipher = LUKS2_get_keyslot_cipher(hdr, keyslot, &ks_key_size);
+	data_cipher = LUKS2_get_cipher(hdr, CRYPT_DEFAULT_SEGMENT);
+	if (!ks_cipher || !data_cipher || key_size != ks_key_size || strcmp(ks_cipher, data_cipher)) {
+		log_dbg(cd, "Cipher in keyslot %d is different from volume key encryption.", keyslot);
 		return 0;
 	}
 

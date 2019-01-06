@@ -2550,6 +2550,126 @@ static void Luks2KeyslotAdd(void)
 	crypt_free(cd);
 }
 
+static void Luks2KeyslotParams(void)
+{
+	char key[128], key2[128];
+	struct crypt_device *cd;
+	const char *cipher = "aes", *cipher_mode="xts-plain64";
+	const char *cipher_spec = "aes-xts-plain64", *cipher_keyslot = "aes-cbc-essiv:sha256";
+	const char *mk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
+	size_t key_size_ret, key_size = strlen(mk_hex) / 2, keyslot_key_size = 16;
+
+	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key2, mk_hex2, key_size);
+
+	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(prepare_keyfile(KEYFILE2, PASSPHRASE1, strlen(PASSPHRASE1)));
+
+	EQ_(key_size, 2 * keyslot_key_size);
+	/* test crypt_keyslot_add_by_key */
+	OK_(crypt_init(&cd, DEVICE_1));
+	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
+	NULL_(crypt_keyslot_get_encryption(cd, 0, &key_size_ret));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+
+	// Normal slots
+	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)));
+	EQ_(1, crypt_keyslot_add_by_passphrase(cd, 1, PASSPHRASE, strlen(PASSPHRASE), PASSPHRASE1,strlen(PASSPHRASE1)));
+	EQ_(2, crypt_keyslot_add_by_key(cd, 2, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT));
+	EQ_(6, crypt_keyslot_add_by_keyfile(cd, 6, KEYFILE1, 0, KEYFILE2, 0));
+
+	// Slots with different encryption type
+	OK_(crypt_keyslot_set_encryption(cd, cipher_keyslot, keyslot_key_size));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_keyslot));
+	EQ_(key_size_ret, keyslot_key_size);
+
+	EQ_(3, crypt_keyslot_add_by_volume_key(cd, 3, key, key_size, PASSPHRASE, strlen(PASSPHRASE)));
+	EQ_(4, crypt_keyslot_add_by_passphrase(cd, 4, PASSPHRASE, strlen(PASSPHRASE), PASSPHRASE1,strlen(PASSPHRASE1)));
+	EQ_(5, crypt_keyslot_add_by_key(cd, 5, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT));
+	EQ_(7, crypt_keyslot_add_by_keyfile(cd, 7, KEYFILE1, 0, KEYFILE2, 0));
+
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+
+	EQ_(crypt_keyslot_status(cd, 0), CRYPT_SLOT_ACTIVE);
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 0, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+
+	EQ_(crypt_keyslot_status(cd, 1), CRYPT_SLOT_ACTIVE);
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 1, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+
+	EQ_(crypt_keyslot_status(cd, 2), CRYPT_SLOT_UNBOUND);
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 2, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+
+	EQ_(crypt_keyslot_status(cd, 6), CRYPT_SLOT_ACTIVE);
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 6, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+
+	EQ_(crypt_keyslot_status(cd, 3), CRYPT_SLOT_ACTIVE);
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 3, &key_size_ret), cipher_keyslot));
+	EQ_(key_size_ret, keyslot_key_size);
+
+	EQ_(crypt_keyslot_status(cd, 4), CRYPT_SLOT_ACTIVE);
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 4, &key_size_ret), cipher_keyslot));
+	EQ_(key_size_ret, keyslot_key_size);
+
+	EQ_(crypt_keyslot_status(cd, 5), CRYPT_SLOT_UNBOUND);
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 5, &key_size_ret), cipher_keyslot));
+	EQ_(key_size_ret, keyslot_key_size);
+
+	EQ_(crypt_keyslot_status(cd, 7), CRYPT_SLOT_ACTIVE);
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 7, &key_size_ret), cipher_keyslot));
+	EQ_(key_size_ret, keyslot_key_size);
+
+	crypt_set_iteration_time(cd, 1);
+	EQ_(8, crypt_keyslot_change_by_passphrase(cd, 1, 8, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 8, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+
+	/* Revert to default */
+	EQ_(9, crypt_keyslot_change_by_passphrase(cd, 5, 9, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 9, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+
+	/* Set new encryption params */
+	OK_(crypt_keyslot_set_encryption(cd, cipher_keyslot, keyslot_key_size));
+
+	EQ_(1, crypt_keyslot_change_by_passphrase(cd, 8, 1, PASSPHRASE, strlen(PASSPHRASE), PASSPHRASE1, strlen(PASSPHRASE1)));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 1, &key_size_ret), cipher_keyslot));
+	EQ_(key_size_ret, keyslot_key_size);
+
+	EQ_(10, crypt_keyslot_change_by_passphrase(cd, 2, 10, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 10, &key_size_ret), cipher_keyslot));
+	EQ_(key_size_ret, keyslot_key_size);
+
+	EQ_(0, crypt_keyslot_change_by_passphrase(cd, 0, 0, PASSPHRASE, strlen(PASSPHRASE), PASSPHRASE1, strlen(PASSPHRASE1)));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 0, &key_size_ret), cipher_keyslot));
+	EQ_(key_size_ret, keyslot_key_size);
+
+	crypt_free(cd);
+
+	/* LUKS1 compatible calls */
+	OK_(crypt_init(&cd, DEVICE_1));
+	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, NULL));
+	NULL_(crypt_keyslot_get_encryption(cd, 0, &key_size_ret));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(strcmp(crypt_keyslot_get_encryption(cd, 0, &key_size_ret), cipher_spec));
+	EQ_(key_size_ret, key_size);
+	crypt_free(cd);
+
+	_remove_keyfiles();
+}
+
 static void Luks2ActivateByKeyring(void)
 {
 #ifdef KERNEL_KEYRING
@@ -3293,6 +3413,7 @@ int main(int argc, char *argv[])
 	RUN_(LuksConvert, "LUKS1 <-> LUKS2 conversions");
 	RUN_(Pbkdf, "Default PBKDF manipulation routines");
 	RUN_(Luks2KeyslotAdd, "Add a new keyslot by unused key");
+	RUN_(Luks2KeyslotParams, "Add a new keyslot with different encryption");
 	RUN_(Luks2ActivateByKeyring, "LUKS2 activation by passphrase in keyring");
 	RUN_(Luks2Requirements, "LUKS2 requirements flags");
 	RUN_(Luks2Integrity, "LUKS2 with data integrity");
