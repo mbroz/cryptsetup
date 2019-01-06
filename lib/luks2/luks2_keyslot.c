@@ -269,7 +269,7 @@ static int LUKS2_open_and_verify(struct crypt_device *cd,
 
 	key_size = LUKS2_get_volume_key_size(hdr, segment);
 	if (key_size < 0)
-		key_size = LUKS2_get_keyslot_key_size(hdr, keyslot);
+		key_size = LUKS2_get_keyslot_stored_key_size(hdr, keyslot);
 	if (key_size < 0)
 		return -EINVAL;
 

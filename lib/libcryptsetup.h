@@ -1623,7 +1623,7 @@ int crypt_keyslot_area(struct crypt_device *cd,
 	uint64_t *length);
 
 /**
- * Get size (in bytes) of key for particular keyslot.
+ * Get size (in bytes) of stored key in particular keyslot.
  * Use for LUKS2 unbound keyslots, for other keyslots it is the same as @ref crypt_get_volume_key_size
  *
  * @param cd crypt device handle

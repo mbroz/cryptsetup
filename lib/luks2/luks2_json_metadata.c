@@ -1801,7 +1801,8 @@ static int LUKS2_keyslot_get_volume_key_size(struct luks2_hdr *hdr, const char *
 	return json_object_get_int(jobj3);
 }
 
-int LUKS2_get_keyslot_key_size(struct luks2_hdr *hdr, int keyslot)
+/* Key size used for encryption of keyslot */
+int LUKS2_get_keyslot_stored_key_size(struct luks2_hdr *hdr, int keyslot)
 {
 	char keyslot_name[16];
 

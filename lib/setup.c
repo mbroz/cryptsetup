@@ -4116,7 +4116,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	}
 
 	if (isLUKS2(cd->type) && keyslot != CRYPT_ANY_SLOT)
-		key_len = LUKS2_get_keyslot_key_size(&cd->u.luks2.hdr, keyslot);
+		key_len = LUKS2_get_keyslot_stored_key_size(&cd->u.luks2.hdr, keyslot);
 	else
 		key_len = crypt_get_volume_key_size(cd);
 
@@ -4559,7 +4559,7 @@ int crypt_keyslot_get_key_size(struct crypt_device *cd, int keyslot)
 		return cd->u.luks1.hdr.keyBytes;
 
 	if (isLUKS2(cd->type))
-		return LUKS2_get_keyslot_key_size(&cd->u.luks2.hdr, keyslot);
+		return LUKS2_get_keyslot_stored_key_size(&cd->u.luks2.hdr, keyslot);
 
 	return -EINVAL;
 }

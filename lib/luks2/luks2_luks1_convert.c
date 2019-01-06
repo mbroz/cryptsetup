@@ -621,8 +621,8 @@ static int keyslot_LUKS1_compatible(struct crypt_device *cd,
 
 	/* FIXME: should this go to validation code instead (aka invalid luks2 header if assigned to segment 0)? */
 	/* FIXME: check all keyslots are assigned to segment id 0, and segments count == 1 */
-	ks_key_size = LUKS2_get_keyslot_key_size(hdr, keyslot);
-	if (ks_key_size < 0 || (int)key_size != LUKS2_get_keyslot_key_size(hdr, keyslot)) {
+	ks_key_size = LUKS2_get_keyslot_stored_key_size(hdr, keyslot);
+	if (ks_key_size < 0 || (int)key_size != LUKS2_get_keyslot_stored_key_size(hdr, keyslot)) {
 		log_dbg(cd, "Key length in keyslot %d is different from volume key length", keyslot);
 		return 0;
 	}
