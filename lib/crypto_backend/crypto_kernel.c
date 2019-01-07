@@ -48,12 +48,21 @@ struct hash_alg {
 };
 
 static struct hash_alg hash_algs[] = {
-	{ "sha1",      "sha1",   20,  64 },
-	{ "sha256",    "sha256", 32,  64 },
-	{ "sha512",    "sha512", 64, 128 },
-	{ "ripemd160", "rmd160", 20,  64 },
-	{ "whirlpool", "wp512",  64,  64 },
-	{ NULL,        NULL,      0,   0 }
+	{ "sha1",      "sha1",        20,  64 },
+	{ "sha224",    "sha224",      28,  64 },
+	{ "sha256",    "sha256",      32,  64 },
+	{ "sha384",    "sha384",      48, 128 },
+	{ "sha512",    "sha512",      64, 128 },
+	{ "ripemd160", "rmd160",      20,  64 },
+	{ "whirlpool", "wp512",       64,  64 },
+	{ "sha3-224",  "sha3-224",    28, 144 },
+	{ "sha3-256",  "sha3-256",    32, 136 },
+	{ "sha3-384",  "sha3-384",    48, 104 },
+	{ "sha3-512",  "sha3-512",    64,  72 },
+	{ "stribog256","streebog256", 32,  64 },
+	{ "stribog512","streebog512", 64,  64 },
+	{ "sm3",       "sm3",         32,  64 },
+	{ NULL,        NULL,           0,   0 }
 };
 
 struct crypt_hash {
