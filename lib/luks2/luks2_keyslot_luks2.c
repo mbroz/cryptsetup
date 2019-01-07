@@ -636,6 +636,9 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 	json_object_object_get_ex(jobj_af, "stripes", &jobj1);
 	log_std(cd, "\tAF stripes: %u\n", json_object_get_int(jobj1));
 
+	json_object_object_get_ex(jobj_af, "hash", &jobj1);
+	log_std(cd, "\tAF hash:    %s\n", json_object_get_string(jobj1));
+
 	json_object_object_get_ex(jobj_area, "offset", &jobj1);
 	log_std(cd, "\tArea offset:%" PRIu64 " [bytes]\n", json_object_get_uint64(jobj1));
 
