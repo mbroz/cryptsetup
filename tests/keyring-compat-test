@@ -21,6 +21,9 @@ NAME=testcryptdev
 CHKS_DMCRYPT=vk_in_dmcrypt.chk
 CHKS_KEYRING=vk_in_keyring.chk
 
+PWD="aaa"
+CRYPTSETUP=../cryptsetup
+
 function remove_mapping()
 {
 	[ -b /dev/mapper/$NAME ] && dmsetup remove $NAME
@@ -180,6 +183,17 @@ dmsetup resume $NAME || fail
 sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
 dmsetup remove $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
+echo "OK"
+
+echo -n "Test LUKS2 key refresh..."
+echo $PWD | $CRYPTSETUP luksFormat --type luks2 --luks2-metadata-size 16k --luks2-keyslots-size 4064k --pbkdf pbkdf2 --pbkdf-force-iterations 1000 --force-password $DEV || fail
+echo $PWD | $CRYPTSETUP open $DEV $NAME || fail
+$CRYPTSETUP status $NAME | grep -q -i "location:.*keyring" || skip "LUKS2 can't use keyring. Test skipped."
+dd if=/dev/mapper/$NAME bs=1M iflag=direct status=none | sha1sum > $CHKS_KEYRING || fail
+echo $PWD | $CRYPTSETUP refresh $NAME --disable-keyring || fail
+$CRYPTSETUP status $NAME | grep -q -i "location:.*keyring" && fail "Key is still in keyring"
+dd if=/dev/mapper/$NAME bs=1M iflag=direct status=none | sha1sum > $CHKS_DMCRYPT || fail
+diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksum mismatch (corruption)"
 echo "OK"
 
 remove_mapping
