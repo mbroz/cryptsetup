@@ -425,6 +425,13 @@ int crypt_get_metadata_size(struct crypt_device *cd,
 const char *crypt_get_type(struct crypt_device *cd);
 
 /**
+ * Get device default LUKS type
+ *
+ * @return string according to device type (CRYPT_LUKS1 or CRYPT_LUKS2).
+ */
+const char *crypt_get_default_type(void);
+
+/**
  *
  * Structure used as parameter for PLAIN device type.
  *

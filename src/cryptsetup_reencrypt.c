@@ -148,7 +148,7 @@ static const char *luksType(const char *type)
 		return CRYPT_LUKS1;
 
 	if (!type || !strcmp(type, "luks"))
-		return DEFAULT_LUKS_FORMAT;
+		return crypt_get_default_type();
 
 	return NULL;
 }

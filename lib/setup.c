@@ -4810,6 +4810,11 @@ const char *crypt_get_type(struct crypt_device *cd)
 	return cd ? cd->type : NULL;
 }
 
+const char *crypt_get_default_type(void)
+{
+	return DEFAULT_LUKS_FORMAT;
+}
+
 int crypt_get_verity_info(struct crypt_device *cd,
 	struct crypt_params_verity *vp)
 {

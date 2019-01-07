@@ -1038,7 +1038,7 @@ static int action_luksFormat(void)
 
 	type = luksType(opt_type);
 	if (!type)
-		type = DEFAULT_LUKS_FORMAT;
+		type = crypt_get_default_type();
 
 	if (!strcmp(type, CRYPT_LUKS2)) {
 		params = &params2;
@@ -2418,7 +2418,7 @@ static void help(poptContext popt_context,
 			crypt_get_dir());
 
 		log_std(_("\nDefault compiled-in metadata format is %s (for luksFormat action).\n"),
-			  DEFAULT_LUKS_FORMAT);
+			  crypt_get_default_type());
 
 		pbkdf_luks1 = crypt_get_pbkdf_default(CRYPT_LUKS1);
 		pbkdf_luks2 = crypt_get_pbkdf_default(CRYPT_LUKS2);
