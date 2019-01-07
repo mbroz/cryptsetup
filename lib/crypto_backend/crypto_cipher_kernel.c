@@ -247,11 +247,9 @@ int crypt_cipher_check(const char *name, const char *mode,
 	if (!key)
 		return -ENOMEM;
 
-	r = crypt_backend_rng(key, key_length, CRYPT_RND_NORMAL, 0);
-	if (r < 0) {
-		free (key);
-		return r;
-	}
+	/* We cannot use RNG yet, any key works here, tweak the first part if it is split key (XTS). */
+	memset(key, 0xab, key_length);
+	*key = 0xef;
 
 	r = _crypt_cipher_init(&c, key, key_length, &sa);
 	if (c)
