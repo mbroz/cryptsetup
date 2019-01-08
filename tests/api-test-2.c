@@ -3412,8 +3412,8 @@ int main(int argc, char *argv[])
 	RUN_(TokenActivationByKeyring, "Builtin kernel keyring token");
 	RUN_(LuksConvert, "LUKS1 <-> LUKS2 conversions");
 	RUN_(Pbkdf, "Default PBKDF manipulation routines");
-	RUN_(Luks2KeyslotAdd, "Add a new keyslot by unused key");
 	RUN_(Luks2KeyslotParams, "Add a new keyslot with different encryption");
+	RUN_(Luks2KeyslotAdd, "Add a new keyslot by unused key");
 	RUN_(Luks2ActivateByKeyring, "LUKS2 activation by passphrase in keyring");
 	RUN_(Luks2Requirements, "LUKS2 requirements flags");
 	RUN_(Luks2Integrity, "LUKS2 with data integrity");
