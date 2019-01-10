@@ -189,6 +189,8 @@ int crypt_set_data_offset(struct crypt_device *cd, uint64_t data_offset);
 #define CRYPT_LOG_VERBOSE  2
 /** debug log level - always on stdout */
 #define CRYPT_LOG_DEBUG -1
+/** debug log level - additional JSON output (for LUKS2) */
+#define CRYPT_LOG_DEBUG_JSON -2
 
 /**
  * Set log function.
@@ -1726,6 +1728,8 @@ int crypt_header_restore(struct crypt_device *cd,
 
 /** Debug all */
 #define CRYPT_DEBUG_ALL  -1
+/** Debug all with adidtional JSON dump (for LUKS2) */
+#define CRYPT_DEBUG_JSON  -2
 /** Debug none */
 #define CRYPT_DEBUG_NONE  0
 

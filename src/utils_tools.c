@@ -27,6 +27,7 @@
 
 int opt_verbose = 0;
 int opt_debug = 0;
+int opt_debug_json = 0;
 int opt_batch_mode = 0;
 int opt_progress_frequency = 0;
 
@@ -112,6 +113,7 @@ void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
 	case CRYPT_LOG_ERROR:
 		fprintf(stderr, "%s", msg);
 		break;
+	case CRYPT_LOG_DEBUG_JSON:
 	case CRYPT_LOG_DEBUG:
 		if (opt_debug)
 			fprintf(stdout, "# %s\n", msg);

@@ -56,10 +56,9 @@ void hexprint_base64(struct crypt_device *cd, json_object *jobj,
 
 void JSON_DBG(struct crypt_device *cd, json_object *jobj, const char *desc)
 {
-	/* FIXME: make this conditional and disable for stable release. */
 	if (desc)
-		log_dbg(cd, "%s:", desc);
-	log_dbg(cd, "%s", json_object_to_json_string_ext(jobj,
+		crypt_log(cd, CRYPT_LOG_DEBUG_JSON, desc);
+	crypt_log(cd, CRYPT_LOG_DEBUG_JSON, json_object_to_json_string_ext(jobj,
 		JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_NOSLASHESCAPE));
 }
 

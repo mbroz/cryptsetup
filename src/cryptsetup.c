@@ -2497,6 +2497,7 @@ int main(int argc, const char **argv)
 		{ "version",           '\0', POPT_ARG_NONE, &opt_version_mode,          0, N_("Print package version"), NULL },
 		{ "verbose",           'v',  POPT_ARG_NONE, &opt_verbose,               0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",             '\0', POPT_ARG_NONE, &opt_debug,                 0, N_("Show debug messages"), NULL },
+		{ "debug-json",        '\0', POPT_ARG_NONE, &opt_debug_json,            0, N_("Show debug messages including JSON metadata"), NULL },
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE, &opt_verify_passphrase,     0, N_("Verifies the passphrase by asking for it twice"), NULL },
@@ -2934,9 +2935,10 @@ int main(int argc, const char **argv)
 		      _("Option --refresh may be used only with open action.\n"),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_debug) {
+	if (opt_debug || opt_debug_json) {
+		opt_debug = 1;
 		opt_verbose = 1;
-		crypt_set_debug_level(CRYPT_DEBUG_ALL);
+		crypt_set_debug_level(opt_debug_json? CRYPT_DEBUG_JSON : CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
 	}
 

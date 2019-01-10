@@ -263,7 +263,7 @@ void global_log_callback(int level, const char *msg, void *usrptr)
 			fprintf(stdout, "%s", msg);
 	}
 
-	if (level == CRYPT_LOG_DEBUG)
+	if (level <= CRYPT_LOG_DEBUG)
 		return;
 
 	strncat(global_log, msg, sizeof(global_log) - strlen(global_log));

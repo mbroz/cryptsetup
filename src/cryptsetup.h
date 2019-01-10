@@ -57,6 +57,7 @@
 #define DEFAULT_WIPE_BLOCK	1048576 /* 1 MiB */
 
 extern int opt_debug;
+extern int opt_debug_json;
 extern int opt_verbose;
 extern int opt_batch_mode;
 extern int opt_force_password;

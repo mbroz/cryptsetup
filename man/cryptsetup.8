@@ -740,9 +740,10 @@ If you are configuring kernel yourself, enable
 .B "\-\-verbose, \-v"
 Print more information on command execution.
 .TP
-.B "\-\-debug"
+.B "\-\-debug or \-\-debug\-json"
 Run in debug mode with full diagnostic logs. Debug output
 lines are always prefixed by '#'.
+If \-\-debug\-json is used, additional LUKS2 JSON data structures are printed.
 .TP
 .B "\-\-type <device-type>
 Specifies required device type, for more info

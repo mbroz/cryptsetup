@@ -233,7 +233,7 @@ int LUKS2_generate_hdr(
 	json_object_object_add(jobj_config, "json_size", json_object_new_uint64(metadata_size - LUKS2_HDR_BIN_LEN));
 	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));
 
-	JSON_DBG(cd, hdr->jobj, "Header JSON");
+	JSON_DBG(cd, hdr->jobj, "Header JSON:");
 	return 0;
 }
 

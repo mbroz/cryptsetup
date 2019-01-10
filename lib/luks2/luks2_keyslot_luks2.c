@@ -440,7 +440,7 @@ static int luks2_keyslot_update_json(struct crypt_device *cd,
 	/* update 'af' hash */
 	json_object_object_add(jobj_af, "hash", json_object_new_string(params->af.luks1.hash));
 
-	JSON_DBG(cd, jobj_keyslot, "Keyslot JSON");
+	JSON_DBG(cd, jobj_keyslot, "Keyslot JSON:");
 	return 0;
 }
 
