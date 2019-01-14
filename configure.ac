@@ -185,8 +185,12 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 	else
 		GCRYPT_REQ_VERSION=1.1.42
 	fi
-	dnl Check if we can use gcrypt PBKDF2 (1.6.0 supports empty password)
+
+	dnl libgcrypt rejects to use pkgconfig, use AM_PATH_LIBGCRYPT from gcrypt-devel here.
+	dnl Do not require gcrypt-devel if other crypto backend is used.
+	m4_ifdef([AM_PATH_LIBGCRYPT],[
 	AC_ARG_ENABLE([gcrypt-pbkdf2],
+		dnl Check if we can use gcrypt PBKDF2 (1.6.0 supports empty password)
 		AS_HELP_STRING([--enable-gcrypt-pbkdf2], [force enable internal gcrypt PBKDF2]),
 		if test "x$enableval" = "xyes"; then
 			[use_internal_pbkdf2=0]
@@ -194,7 +198,8 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 			[use_internal_pbkdf2=1]
 		fi,
 		[AM_PATH_LIBGCRYPT([1.6.1], [use_internal_pbkdf2=0], [use_internal_pbkdf2=1])])
-	AM_PATH_LIBGCRYPT($GCRYPT_REQ_VERSION,,[AC_MSG_ERROR([You need the gcrypt library.])])
+	AM_PATH_LIBGCRYPT($GCRYPT_REQ_VERSION,,[AC_MSG_ERROR([You need the gcrypt library.])])],
+	AC_MSG_ERROR([Missing support for gcrypt: install gcrypt and regenerate configure.]))
 
 	AC_MSG_CHECKING([if internal cryptsetup PBKDF2 is compiled-in])
 	if test $use_internal_pbkdf2 = 0; then
