@@ -715,15 +715,21 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 {
 	char *cipher_spec;
 	struct luks_phdr hdr = {};
-	int r, version = 0;
+	int r, version;
 
 	r = init_crypto(cd);
 	if (r < 0)
 		return r;
 
 	/* This will return 0 if primary LUKS2 header is damaged */
-	if (!requested_type)
-		version = LUKS2_hdr_version_unlocked(cd, NULL);
+	version = LUKS2_hdr_version_unlocked(cd, NULL);
+
+	if ((isLUKS1(requested_type) && version == 2) ||
+	    (isLUKS2(requested_type) && version == 1))
+		return -EINVAL;
+
+	if (requested_type)
+		version = 0;
 
 	if (isLUKS1(requested_type) || version == 1) {
 		if (cd->type && isLUKS2(cd->type)) {
