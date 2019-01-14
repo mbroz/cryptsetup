@@ -136,6 +136,13 @@ function travis_script
 	openssl_compile)
 		check_nonroot_compile_only "--with-crypto_backend=openssl"
 		;;
+	kernel)
+		check_nonroot "--with-crypto_backend=kernel" && \
+		check_root "--with-crypto_backend=kernel"
+		;;
+	kernel_compile)
+		check_nonroot_compile_only "--with-crypto_backend=kernel"
+		;;
 	*)
 		echo "error, check environment (travis.yml)" >&2
 		false
