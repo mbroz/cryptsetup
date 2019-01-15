@@ -100,10 +100,10 @@ format() # expected [forced] [encryption_sector_size]
 
 	if [ -z "$2" ] ; then
 		echo -n "Formatting using topology info$_smsg..."
-		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --sector-size $_sec_size || fail
+		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --sector-size $_sec_size >/dev/null || fail
 	else
 		echo -n "Formatting using forced sector alignment $2$_smsg..."
-		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --align-payload=$2 --sector-size $_sec_size || fail
+		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --align-payload=$2 --sector-size $_sec_size >/dev/null || fail
 	fi
 
 	# check the device can be activated
