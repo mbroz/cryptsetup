@@ -190,7 +190,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 	}
 	h->hash_len = ha->length;
 
-	strncpy((char *)sa.salg_name, ha->kernel_name, sizeof(sa.salg_name));
+	strncpy((char *)sa.salg_name, ha->kernel_name, sizeof(sa.salg_name)-1);
 
 	if (crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd, NULL, 0) < 0) {
 		free(h);
