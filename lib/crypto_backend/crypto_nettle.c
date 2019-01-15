@@ -105,6 +105,7 @@ struct crypt_hash {
 		struct sha256_ctx sha256;
 		struct sha384_ctx sha384;
 		struct sha512_ctx sha512;
+		struct ripemd160_ctx ripemd160;
 	} nettle_ctx;
 };
 
@@ -116,6 +117,7 @@ struct crypt_hmac {
 		struct hmac_sha256_ctx sha256;
 		struct hmac_sha384_ctx sha384;
 		struct hmac_sha512_ctx sha512;
+		struct hmac_ripemd160_ctx ripemd160;
 	} nettle_ctx;
 	size_t key_length;
 	uint8_t *key;
