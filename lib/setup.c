@@ -1579,6 +1579,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	unsigned int sector_size = params ? params->sector_size : SECTOR_SIZE;
 	const char *integrity = params ? params->integrity : NULL;
 	uint64_t dev_size;
+	uint32_t dmc_flags;
 
 	cd->u.luks2.hdr.jobj = NULL;
 	cd->u.luks2.keyslot_cipher = NULL;
@@ -1602,6 +1603,10 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		log_err(cd, _("Unsupported encryption sector size."));
 		return -EINVAL;
 	}
+	if (sector_size != SECTOR_SIZE && !dm_flags(cd, DM_CRYPT, &dmc_flags) &&
+	    !(dmc_flags & DM_SECTOR_SIZE_SUPPORTED))
+		log_std(cd, _("WARNING: The device activation will fail, dm-crypt is missing "
+			      "support for requested encryption sector size.\n"));
 
 	if (integrity) {
 		if (params->integrity_params) {
