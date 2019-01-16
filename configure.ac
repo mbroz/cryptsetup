@@ -276,6 +276,7 @@ AC_DEFUN([CONFIGURE_KERNEL], [
 AC_DEFUN([CONFIGURE_NETTLE], [
 	AC_CHECK_HEADERS(nettle/sha.h,,
 		[AC_MSG_ERROR([You need Nettle cryptographic library.])])
+	AC_CHECK_HEADERS(nettle/version.h)
 
 	saved_LIBS=$LIBS
 	AC_CHECK_LIB(nettle, nettle_pbkdf2_hmac_sha256,,

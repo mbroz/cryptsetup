@@ -411,6 +411,10 @@ static int pbkdf_test_vectors(void)
 	for (i = 0; i < (sizeof(kdf_test_vectors) / sizeof(*kdf_test_vectors)); i++) {
 		vec = &kdf_test_vectors[i];
 		printf("PBKDF vector %02d %s ", i, vec->type);
+		if (vec->hash && crypt_hash_size(vec->hash) < 0) {
+			printf("[%s N/A]\n", vec->hash);
+			continue;
+		}
 		if (crypt_pbkdf(vec->type, vec->hash,
 		    vec->password, vec->password_length,
 		    vec->salt, vec->salt_length,
