@@ -1463,7 +1463,6 @@ static void HashDevicePlain(void)
 	OK_(strncmp(key, mk_hex, key_size));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
-
 	// Now without explicit limit
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
@@ -1471,6 +1470,22 @@ static void HashDevicePlain(void)
 	OK_(strncmp(key, mk_hex, key_size));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
+
+	_remove_keyfiles();
+
+	// Handling of legacy "plain" hash (no hash)
+	params.hash = "plain";
+	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
+	mk_hex = "aabbcaffeecaffeecaffeecaffeecaff";
+	key_size = 16;
+	crypt_decode_key(key, mk_hex, key_size);
+	OK_(prepare_keyfile(KEYFILE1, key, strlen(mk_hex) / 2));
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, &params));
+	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
+	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
+	OK_(strcmp(key, mk_hex));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	_remove_keyfiles();
 
