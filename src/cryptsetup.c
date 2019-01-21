@@ -2843,13 +2843,13 @@ int main(int argc, const char **argv)
 
 	if (opt_offset && ((strcmp(aname, "open") && strcmp(aname, "luksFormat")) ||
 	    (!strcmp(aname, "open") && strcmp_or_null(opt_type, "plain") && strcmp(opt_type, "loopaes")) ||
-	    (!strcmp(aname, "luksFormat") && strncmp(opt_type, "luks", 4))))
+	    (!strcmp(aname, "luksFormat") && opt_type && strncmp(opt_type, "luks", 4))))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --offset is supported only for open of plain and loopaes devices and for luksFormat.\n"),
 		poptGetInvocationName(popt_context));
 
 	if ((opt_tcrypt_hidden || opt_tcrypt_system || opt_tcrypt_backup) && strcmp(aname, "tcryptDump") &&
-	    (strcmp(aname, "open") || strcmp(opt_type, "tcrypt")))
+	    (strcmp(aname, "open") || !opt_type || strcmp(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"),
 		poptGetInvocationName(popt_context));
