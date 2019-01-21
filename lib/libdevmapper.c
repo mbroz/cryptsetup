@@ -359,6 +359,7 @@ char *dm_device_path(const char *prefix, int major, int minor)
 		return NULL;
 	if (!dm_task_set_minor(dmt, minor) ||
 	    !dm_task_set_major(dmt, major) ||
+	    !dm_task_no_flush(dmt) ||
 	    !dm_task_run(dmt) ||
 	    !(name = dm_task_get_name(dmt))) {
 		dm_task_destroy(dmt);
@@ -1560,6 +1561,9 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi,
 	int r = -EINVAL;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
+		goto out;
+
+	if (!dm_task_no_flush(dmt))
 		goto out;
 
 	if (!dm_task_set_name(dmt, name))
