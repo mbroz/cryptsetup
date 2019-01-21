@@ -1006,8 +1006,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	dm_flags(cd, DM_UNKNOWN, &dmt_flags);
-	if (deferred && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
+	if (deferred && !dm_flags(cd, DM_UNKNOWN, &dmt_flags) && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
 		log_err(cd, _("Requested deferred flag is not supported."));
 		dm_exit_context();
 		return -ENOTSUP;
@@ -1187,11 +1186,8 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 	struct dm_info dmi;
 	char dev_uuid[DM_UUID_LEN] = {0};
 	int r = -EINVAL;
-	uint32_t cookie = 0, dmt_flags = 0, read_ahead = 0;
+	uint32_t cookie = 0, read_ahead = 0;
 	uint16_t udev_flags = DM_UDEV_DISABLE_LIBRARY_FALLBACK;
-
-	/* Only need DM_SECURE_SUPPORTED, no target specific fail matters */
-	dm_flags(cd, dmd->segment.type, &dmt_flags);
 
 	if (dmd->flags & CRYPT_ACTIVATE_PRIVATE)
 		udev_flags |= CRYPT_TEMP_UDEV_FLAGS;
@@ -1209,7 +1205,7 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 	if (!dm_task_set_uuid(dmt, dev_uuid))
 		goto out;
 
-	if ((dmt_flags & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
+	if (!dm_task_secure_data(dmt))
 		goto out;
 	if ((dmd->flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
 		goto out;
@@ -1300,7 +1296,7 @@ static int _dm_reload_device(struct crypt_device *cd, const char *name,
 {
 	int r = -EINVAL;
 	struct dm_task *dmt = NULL;
-	uint32_t dmt_flags = 0, read_ahead = 0;
+	uint32_t read_ahead = 0;
 
 	/* All devices must have DM_UUID, only resize on old device is exception */
 	if (!(dmt = dm_task_create(DM_DEVICE_RELOAD)))
@@ -1309,10 +1305,7 @@ static int _dm_reload_device(struct crypt_device *cd, const char *name,
 	if (!dm_task_set_name(dmt, name))
 		goto out;
 
-	if (dm_flags(cd, dmd->segment.type, &dmt_flags))
-		goto out;
-
-	if ((dmt_flags & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
+	if (!dm_task_secure_data(dmt))
 		goto out;
 	if ((dmd->flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
 		goto out;
@@ -2356,7 +2349,6 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 	struct dm_task *dmt;
 	struct dm_info dmi;
 	uint64_t start, length;
-	uint32_t dmt_flags;
 	char *target_type, *params;
 	const char *tmp_uuid;
 	void *next = NULL;
@@ -2373,8 +2365,7 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
 		goto out;
-	dm_flags(cd, DM_UNKNOWN, &dmt_flags);
-	if ((dmt_flags & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
+	if (!dm_task_secure_data(dmt))
 		goto out;
 	if (!dm_task_set_name(dmt, name))
 		goto out;
@@ -2457,7 +2448,7 @@ out:
 	return r;
 }
 
-static int _dm_message(const char *name, const char *msg, uint32_t dmt_flags)
+static int _dm_message(const char *name, const char *msg)
 {
 	int r = 0;
 	struct dm_task *dmt;
@@ -2465,7 +2456,7 @@ static int _dm_message(const char *name, const char *msg, uint32_t dmt_flags)
 	if (!(dmt = dm_task_create(DM_DEVICE_TARGET_MSG)))
 		return 0;
 
-	if ((dmt_flags & DM_SECURE_SUPPORTED) && !dm_task_secure_data(dmt))
+	if (!dm_task_secure_data(dmt))
 		goto out;
 
 	if (name && !dm_task_set_name(dmt, name))
@@ -2519,7 +2510,7 @@ int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 		goto out;
 	}
 
-	if (!_dm_message(name, "key wipe", dmt_flags)) {
+	if (!_dm_message(name, "key wipe")) {
 		_dm_resume_device(name, 0);
 		r = -EINVAL;
 		goto out;
@@ -2575,7 +2566,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	else
 		hex_key(&msg[8], vk->keylength, vk->key);
 
-	if (!_dm_message(name, msg, dmt_flags) ||
+	if (!_dm_message(name, msg) ||
 	    _dm_resume_device(name, 0)) {
 		r = -EINVAL;
 		goto out;
