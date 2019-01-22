@@ -1852,16 +1852,21 @@ static void LuksConvert(void)
 
 	// exercice LUKSv2 conversion with single pbkdf2 keyslot being active
 	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
 	offset = crypt_get_data_offset(cd);
-	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	OK_(crypt_set_pbkdf_type(cd, &argon));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 1);
+	FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Different hash for digest and keyslot.");
+	OK_(crypt_keyslot_destroy(cd, 1));
 	OK_(crypt_convert(cd, CRYPT_LUKS1, NULL));
 	EQ_(crypt_get_data_offset(cd), offset);
 	crypt_free(cd);
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
 	EQ_(crypt_get_data_offset(cd), offset);
+	EQ_(crypt_activate_by_passphrase(cd, NULL, 0, PASSPHRASE, strlen(PASSPHRASE), 0), 0);
 	crypt_free(cd);
 
 	// do not allow conversion on keyslot No > 7
@@ -3398,7 +3403,7 @@ int main(int argc, char *argv[])
 	if (_setup())
 		goto out;
 
-	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
+	crypt_set_debug_level(_debug ? CRYPT_DEBUG_JSON : CRYPT_DEBUG_NONE);
 
 	RUN_(AddDeviceLuks2, "Format and use LUKS2 device");
 	RUN_(Luks2HeaderLoad, "LUKS2 header load");

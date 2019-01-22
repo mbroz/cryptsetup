@@ -586,8 +586,8 @@ out:
 	return r;
 }
 
-static int keyslot_LUKS1_compatible(struct crypt_device *cd,
-				    struct luks2_hdr *hdr, int keyslot, uint32_t key_size)
+static int keyslot_LUKS1_compatible(struct crypt_device *cd, struct luks2_hdr *hdr,
+				    int keyslot, uint32_t key_size, const char *hash)
 {
 	json_object *jobj_keyslot, *jobj, *jobj_kdf, *jobj_af;
 	uint64_t l2_offset, l2_length;
@@ -606,7 +606,9 @@ static int keyslot_LUKS1_compatible(struct crypt_device *cd,
 	jobj = NULL;
 	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf) ||
 	    !json_object_object_get_ex(jobj_kdf, "type", &jobj) ||
-	    strcmp(json_object_get_string(jobj), CRYPT_KDF_PBKDF2))
+	    strcmp(json_object_get_string(jobj), CRYPT_KDF_PBKDF2) ||
+	    !json_object_object_get_ex(jobj_kdf, "hash", &jobj) ||
+	    strcmp(json_object_get_string(jobj), hash))
 		return 0;
 
 	jobj = NULL;
@@ -617,7 +619,8 @@ static int keyslot_LUKS1_compatible(struct crypt_device *cd,
 
 	jobj = NULL;
 	if (!json_object_object_get_ex(jobj_af, "hash", &jobj) ||
-	    crypt_hash_size(json_object_get_string(jobj)) < 0)
+	    (crypt_hash_size(json_object_get_string(jobj)) < 0) ||
+	    strcmp(json_object_get_string(jobj), hash))
 		return 0;
 
 	/* FIXME: should this go to validation code instead (aka invalid luks2 header if assigned to segment 0)? */
@@ -646,6 +649,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	size_t buf_size, buf_offset;
 	char cipher[LUKS_CIPHERNAME_L-1], cipher_mode[LUKS_CIPHERMODE_L-1];
 	char digest[LUKS_DIGESTSIZE], digest_salt[LUKS_SALTSIZE];
+	const char *hash;
 	size_t len;
 	json_object *jobj_keyslot, *jobj_digest, *jobj_segment, *jobj_kdf, *jobj_area, *jobj1, *jobj2;
 	uint32_t key_size;
@@ -668,6 +672,9 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		log_err(cd, _("Cannot convert to LUKS1 format - key slot digests are not LUKS1 compatible."));
 		return -EINVAL;
 	}
+	if (!json_object_object_get_ex(jobj_digest, "hash", &jobj2))
+		return -EINVAL;
+	hash = json_object_get_string(jobj2);
 
 	r = crypt_parse_name_and_mode(LUKS2_get_cipher(hdr2, CRYPT_DEFAULT_SEGMENT), cipher, NULL, cipher_mode);
 	if (r < 0)
@@ -705,7 +712,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 			return -EINVAL;
 		}
 
-		if (!keyslot_LUKS1_compatible(cd, hdr2, i, key_size)) {
+		if (!keyslot_LUKS1_compatible(cd, hdr2, i, key_size, hash)) {
 			log_err(cd, _("Cannot convert to LUKS1 format - keyslot %u is not LUKS1 compatible."), i);
 			return -EINVAL;
 		}

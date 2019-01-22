@@ -683,6 +683,14 @@ $CRYPTSETUP -q convert --type luks2 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
 $CRYPTSETUP -q convert --type luks1 $LOOPDEV || fail
+# hash test
+$CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEY5 -S 0 --hash sha1 || fail
+$CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 1 -d $KEY5 $LOOPDEV $KEY1 --hash sha256 || fail
+$CRYPTSETUP -q convert --type luks1 $LOOPDEV >/dev/null 2>&1 && fail
+$CRYPTSETUP -q luksKillSlot $LOOPDEV 1 || fail
+$CRYPTSETUP -q convert --type luks1 $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 0: ENABLED" || fail
+$CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 0 -d $KEY5 || fail
 
 if dm_crypt_keyring_flawed; then
 	prepare "[32a] LUKS2 keyring dm-crypt bug" wipe
