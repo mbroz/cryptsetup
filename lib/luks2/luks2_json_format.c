@@ -154,18 +154,47 @@ int LUKS2_generate_hdr(
 		metadata_size = LUKS2_HDR_16K_LEN;
 	hdr->hdr_size = metadata_size;
 
+	if (data_offset && data_offset < get_min_offset(hdr)) {
+		log_err(cd, _("Requested data offset is too small."));
+		return -EINVAL;
+	}
+
+	/* Increase keyslot size according to data offset */
+	if (!keyslots_size && data_offset)
+		keyslots_size = data_offset - get_min_offset(hdr);
+
+	/* keyslots size has to be 4 KiB aligned */
+	keyslots_size -= (keyslots_size % 4096);
+
+	if (keyslots_size > LUKS2_MAX_KEYSLOTS_SIZE)
+		keyslots_size = LUKS2_MAX_KEYSLOTS_SIZE;
+
 	if (!keyslots_size)
 		keyslots_size = LUKS2_DEFAULT_KEYSLOTS_SIZE;
 
 	/* Decrease keyslots_size if we have smaller data_offset */
-	if (data_offset && (keyslots_size + get_min_offset(hdr)) > data_offset)
+	if (data_offset && (keyslots_size + get_min_offset(hdr)) > data_offset) {
 		keyslots_size = data_offset - get_min_offset(hdr);
+		log_dbg(cd, "Decreasing keyslot area size to %" PRIu64
+			" bytes due to the requested data offset %"
+			PRIu64 " bytes.", keyslots_size, data_offset);
+	}
 
 	/* Data offset has priority */
 	if (!data_offset && required_alignment) {
-		data_offset = size_round_up(get_min_offset(hdr) + keyslots_size, (size_t)required_alignment);
+		data_offset = size_round_up(get_min_offset(hdr) + keyslots_size,
+					    (size_t)required_alignment);
 		data_offset += align_offset;
 	}
+
+	log_dbg(cd, "Formatting LUKS2 with JSON metadata area %" PRIu64
+		" bytes and keyslots area %" PRIu64 " bytes.",
+		metadata_size - LUKS2_HDR_BIN_LEN, keyslots_size);
+
+	if (keyslots_size < LUKS2_DEFAULT_KEYSLOTS_SIZE)
+		log_std(cd, _("WARNING: keyslots area (%" PRIu64 " bytes) is very small,"
+			" available LUKS2 keyslot count is very limited.\n"),
+			keyslots_size);
 
 	hdr->seqid = 1;
 	hdr->version = 2;

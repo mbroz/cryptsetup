@@ -1053,6 +1053,11 @@ data is by default aligned to a 1MiB boundary (i.e. 2048 512-byte sectors).
 
 For a detached LUKS header, this option specifies the offset on the
 data device. See also the \-\-header option.
+
+\fBWARNING:\fR This option is DEPRECATED and has often unexpected impact
+to the data offset and keyslot area size (for LUKS2) due to the complex rounding.
+For fixed data device offset use \fI\-\-offset\fR option instead.
+
 .TP
 .B "\-\-uuid=\fIUUID\fR"
 Use the provided \fIUUID\fR for the \fIluksFormat\fR command
