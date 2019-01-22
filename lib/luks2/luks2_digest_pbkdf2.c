@@ -99,11 +99,18 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 	char *base64_str;
 	struct luks2_hdr *hdr;
 	struct crypt_pbkdf_limits pbkdf_limits;
+	const struct crypt_pbkdf_type *pbkdf_cd;
 	struct crypt_pbkdf_type pbkdf = {
 		.type = CRYPT_KDF_PBKDF2,
-		.hash = "sha256",
 		.time_ms = LUKS_MKD_ITERATIONS_MS,
 	};
+
+	/* Inherit hash from PBKDF setting */
+	pbkdf_cd = crypt_get_pbkdf_type(cd);
+	if (pbkdf_cd)
+		pbkdf.hash = pbkdf_cd->hash;
+	if (!pbkdf.hash)
+		pbkdf.hash = DEFAULT_LUKS1_HASH;
 
 	log_dbg(cd, "Setting PBKDF2 type key digest %d.", digest);
 

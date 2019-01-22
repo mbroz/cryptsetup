@@ -240,6 +240,7 @@ prepare "[3] format" new
 echo $PWD1 | $CRYPTSETUP -q $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $LOOPDEV || fail
 prepare "[4] format using hash sha512" wipe
 echo $PWD1 | $CRYPTSETUP $FAST_PBKDF_OPT -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $LOOPDEV || fail
+$CRYPTSETUP -q luksDump  $LOOPDEV | grep "0: pbkdf2" -A2 | grep "Hash:" | grep -qe sha512 || fail
 
 prepare "[5] open"
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME --test-passphrase || fail
