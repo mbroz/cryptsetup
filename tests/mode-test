@@ -23,8 +23,8 @@ dmremove() { # device
 cleanup() {
 	for dev in $(dmsetup status --target crypt | sed s/\:\ .*// | grep "^$DEV_NAME"_); do
 		dmremove $dev
+		sleep 2
 	done
-	sleep 2
 	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $HEADER_IMG >/dev/null 2>&1
@@ -44,6 +44,7 @@ skip()
 }
 
 add_device() {
+	cleanup
 	dd if=/dev/zero of=$HEADER_IMG bs=1M count=6 >/dev/null 2>&1
 	sync
 	losetup $LOOPDEV $HEADER_IMG >/dev/null 2>&1
