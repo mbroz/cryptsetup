@@ -922,24 +922,20 @@ static int action_benchmark(void)
 
 static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 {
+	const struct crypt_pbkdf_type *pbkdf_default;
 	struct crypt_pbkdf_type pbkdf = {};
 
-	if (!strcmp(dev_type, CRYPT_LUKS1)) {
-		if (opt_pbkdf && strcmp(opt_pbkdf, CRYPT_KDF_PBKDF2))
-			return -EINVAL;
-		pbkdf.type = CRYPT_KDF_PBKDF2;
-		pbkdf.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
-		pbkdf.time_ms = opt_iteration_time ?: DEFAULT_LUKS1_ITER_TIME;
-	} else if (!strcmp(dev_type, CRYPT_LUKS2)) {
-		pbkdf.type = opt_pbkdf ?: DEFAULT_LUKS2_PBKDF;
-		pbkdf.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
-		pbkdf.time_ms = opt_iteration_time ?: DEFAULT_LUKS2_ITER_TIME;
-		if (strcmp(pbkdf.type, CRYPT_KDF_PBKDF2)) {
-			pbkdf.max_memory_kb = opt_pbkdf_memory;
-			pbkdf.parallel_threads = opt_pbkdf_parallel;
-		}
-	} else
-		return 0;
+	pbkdf_default = crypt_get_pbkdf_default(dev_type);
+	if (!pbkdf_default)
+		return -EINVAL;
+
+	pbkdf.type = opt_pbkdf ?: pbkdf_default->type;
+	pbkdf.hash = opt_hash ?: pbkdf_default->hash;
+	pbkdf.time_ms = opt_iteration_time ?: pbkdf_default->time_ms;
+	if (strcmp(pbkdf.type, CRYPT_KDF_PBKDF2)) {
+		pbkdf.max_memory_kb = opt_pbkdf_memory ?: pbkdf_default->max_memory_kb;
+		pbkdf.parallel_threads = opt_pbkdf_parallel ?: pbkdf_default->parallel_threads;
+	}
 
 	if (opt_pbkdf_iterations) {
 		pbkdf.iterations = opt_pbkdf_iterations;

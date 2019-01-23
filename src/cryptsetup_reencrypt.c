@@ -511,24 +511,20 @@ out:
 
 static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 {
+	const struct crypt_pbkdf_type *pbkdf_default;
 	struct crypt_pbkdf_type pbkdf = {};
 
-	if (!strcmp(dev_type, CRYPT_LUKS1)) {
-		if (opt_pbkdf && strcmp(opt_pbkdf, CRYPT_KDF_PBKDF2))
-			return -EINVAL;
-		pbkdf.type = CRYPT_KDF_PBKDF2;
-		pbkdf.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
-		pbkdf.time_ms = opt_iteration_time ?: DEFAULT_LUKS1_ITER_TIME;
-	} else if (!strcmp(dev_type, CRYPT_LUKS2)) {
-		pbkdf.type = opt_pbkdf ?: DEFAULT_LUKS2_PBKDF;
-		pbkdf.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
-		pbkdf.time_ms = opt_iteration_time ?: DEFAULT_LUKS2_ITER_TIME;
-		if (strcmp(pbkdf.type, CRYPT_KDF_PBKDF2)) {
-			pbkdf.max_memory_kb = opt_pbkdf_memory;
-			pbkdf.parallel_threads = opt_pbkdf_parallel;
-		}
-	} else
+	pbkdf_default = crypt_get_pbkdf_default(dev_type);
+	if (!pbkdf_default)
 		return -EINVAL;
+
+	pbkdf.type = opt_pbkdf ?: pbkdf_default->type;
+	pbkdf.hash = opt_hash ?: pbkdf_default->hash;
+	pbkdf.time_ms = opt_iteration_time ?: pbkdf_default->time_ms;
+	if (strcmp(pbkdf.type, CRYPT_KDF_PBKDF2)) {
+		pbkdf.max_memory_kb = opt_pbkdf_memory ?: pbkdf_default->max_memory_kb;
+		pbkdf.parallel_threads = opt_pbkdf_parallel ?: pbkdf_default->parallel_threads;
+	}
 
 	if (opt_pbkdf_iterations) {
 		pbkdf.iterations = opt_pbkdf_iterations;
@@ -799,16 +795,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd_new = NULL;
 	struct crypt_params_luks1 params = {0};
-	const struct crypt_pbkdf_type luks2_pbkdf = {
-		.type = DEFAULT_LUKS2_PBKDF,
-		.hash = opt_hash ?: DEFAULT_LUKS1_HASH,
-		.time_ms = DEFAULT_LUKS2_ITER_TIME,
-		.max_memory_kb = DEFAULT_LUKS2_MEMORY_KB,
-		.parallel_threads = DEFAULT_LUKS2_PARALLEL_THREADS
-	};
-	struct crypt_params_luks2 params2 = {
-		.pbkdf = &luks2_pbkdf
-	};
+	struct crypt_params_luks2 params2 = {0};
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	const char *header_file_fake;
 	int r;
@@ -837,6 +824,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	params2.data_alignment = params.data_alignment = 0;
 	params2.data_device = params.data_device = rc->device;
 	params2.sector_size = crypt_get_sector_size(NULL);
+	params2.pbkdf = crypt_get_pbkdf_default(CRYPT_LUKS2);
 
 	r = crypt_init(&cd_new, header_file_fake);
 	if (r < 0)
