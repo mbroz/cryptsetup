@@ -581,6 +581,13 @@ static void AddDeviceLuks2(void)
 	uint64_t r_payload_offset, r_header_size, r_size_1;
 	uint64_t mdata_size, keyslots_size;
 
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+	}
+
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key3, mk_hex2, key_size);
 
@@ -965,6 +972,13 @@ static void Luks2HeaderRestore(void)
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
 
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+	}
+
 	crypt_decode_key(key, mk_hex, key_size);
 
 	OK_(get_luks2_offsets(0, params.data_alignment, 0, 0, NULL, &r_payload_offset));
@@ -1060,6 +1074,13 @@ static void Luks2HeaderLoad(void)
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size;
+
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+	}
 
 	crypt_decode_key(key, mk_hex, key_size);
 
@@ -1185,6 +1206,13 @@ static void Luks2HeaderBackup(void)
 
 	const char *passphrase = PASSPHRASE;
 
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+	}
+
 	crypt_decode_key(key, mk_hex, key_size);
 
 	OK_(get_luks2_offsets(0, params.data_alignment, 0, 0, NULL, &r_payload_offset));
@@ -1271,6 +1299,13 @@ static void ResizeDeviceLuks2(void)
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size;
+
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+	}
 
 	crypt_decode_key(key, mk_hex, key_size);
 
@@ -1834,12 +1869,14 @@ static void LuksConvert(void)
 	crypt_free(cd);
 
 	// exercice non-pbkdf2 LUKSv2 conversion
-	OK_(crypt_init(&cd, DEVICE_1));
-	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
-	OK_(crypt_set_pbkdf_type(cd, &argon));
-	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
-	FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Incompatible pbkdf with LUKSv1 format");
-	crypt_free(cd);
+	if (!_fips_mode) {
+		OK_(crypt_init(&cd, DEVICE_1));
+		OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
+		OK_(crypt_set_pbkdf_type(cd, &argon));
+		EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
+		FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Incompatible pbkdf with LUKSv1 format");
+		crypt_free(cd);
+	}
 
 	// exercice non LUKS1 compatible keyslot
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -1856,10 +1893,12 @@ static void LuksConvert(void)
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
 	offset = crypt_get_data_offset(cd);
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
-	OK_(crypt_set_pbkdf_type(cd, &argon));
-	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 1);
-	FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Different hash for digest and keyslot.");
-	OK_(crypt_keyslot_destroy(cd, 1));
+	if (!_fips_mode) {
+		OK_(crypt_set_pbkdf_type(cd, &argon));
+		EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 1);
+		FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Different hash for digest and keyslot.");
+		OK_(crypt_keyslot_destroy(cd, 1));
+	}
 	OK_(crypt_convert(cd, CRYPT_LUKS1, NULL));
 	EQ_(crypt_get_data_offset(cd), offset);
 	crypt_free(cd);
@@ -2271,6 +2310,10 @@ static void Pbkdf(void)
 		.hash = "whirlpool", // test non-standard hash
 		.data_alignment = 2048,
 	};
+
+	/* Only PBKDF2 is allowed in FIPS, these tests cannot be run. */
+	if (_fips_mode)
+		return;
 
 	NULL_(crypt_get_pbkdf_type_params(NULL));
 	NULL_(crypt_get_pbkdf_type_params("suslik"));
@@ -2793,8 +2836,11 @@ static void Luks2Requirements(void)
 	reset_log();
 
 	/* get & set pbkdf params (unrestricted) */
-	OK_(crypt_set_pbkdf_type(cd, &argon2));
-	NOTNULL_(crypt_get_pbkdf_type(cd));
+	if (!_fips_mode) {
+		OK_(crypt_set_pbkdf_type(cd, &argon2));
+		NOTNULL_(crypt_get_pbkdf_type(cd));
+	}
+
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
 	NOTNULL_(crypt_get_pbkdf_type(cd));
 
@@ -2836,9 +2882,11 @@ static void Luks2Requirements(void)
 	EQ_(r, -ETXTBSY);
 
 	/* crypt_volume_key_get (unrestricted, but see below) */
-	/* FIXME: eventual fips requirement should stop this */
-	if (!_fips_mode)
-		OK_(crypt_volume_key_get(cd, 0, key, &key_size, "aaa", 3));
+	/* FIXME: FIPS requirement stop this, restructure the whole order of calls */
+	if (_fips_mode)
+		goto out;
+
+	OK_(crypt_volume_key_get(cd, 0, key, &key_size, "aaa", 3));
 
 	/* crypt_keyslot_add_by_volume_key (restricted) */
 	FAIL_((r = crypt_keyslot_add_by_volume_key(cd, CRYPT_ANY_SLOT, key, key_size, "xxx", 3)), "Unmet requirements detected");
@@ -3069,7 +3117,7 @@ static void Luks2Requirements(void)
 
 	/* crypt_keyslot_destroy (unrestricted) */
 	OK_(crypt_keyslot_destroy(cd, 0));
-
+out:
 	crypt_free(cd);
 
 	_cleanup_dmdevices();
@@ -3129,6 +3177,14 @@ static int set_fast_pbkdf(struct crypt_device *cd)
 		.parallel_threads = 1,
 		.flags = CRYPT_PBKDF_NO_BENCHMARK
 	};
+
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+		pbkdf.iterations = 1000;
+	}
 	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 

@@ -179,6 +179,15 @@ int init_pbkdf_type(struct crypt_device *cd,
 	uint32_t old_flags, memory_kb;
 	int r;
 
+	if (crypt_fips_mode()) {
+		if (pbkdf && strcmp(pbkdf->type, CRYPT_KDF_PBKDF2)) {
+			log_err(cd, "Only PBKDF2 is supported in FIPS mode.");
+			return -EINVAL;
+		}
+		if (!pbkdf)
+			pbkdf = crypt_get_pbkdf_type_params(CRYPT_KDF_PBKDF2);
+	}
+
 	if (!pbkdf && dev_type && !strcmp(dev_type, CRYPT_LUKS2))
 		pbkdf = crypt_get_pbkdf_type_params(DEFAULT_LUKS2_PBKDF);
 	else if (!pbkdf)
@@ -284,7 +293,7 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_default(const char *type)
 	if (!type)
 		return NULL;
 
-	if (!strcmp(type, CRYPT_LUKS1))
+	if (!strcmp(type, CRYPT_LUKS1) || crypt_fips_mode())
 		return crypt_get_pbkdf_type_params(CRYPT_KDF_PBKDF2);
 	else if (!strcmp(type, CRYPT_LUKS2))
 		return crypt_get_pbkdf_type_params(DEFAULT_LUKS2_PBKDF);

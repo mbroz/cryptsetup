@@ -809,18 +809,18 @@ echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-iterations 1234 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Iterations:" | grep -q "1234" || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 3 $LOOPDEV 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 4 --pbkdf-memory 100000 $LOOPDEV || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2id" || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 4 --pbkdf-memory 100000 $LOOPDEV || can_fail_fips
+$CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2id" || can_fail_fips
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2i  --pbkdf-force-iterations 4 \
-	--pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2i" || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | grep -q "4" || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | grep -q "1234" || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "Threads:" | grep -q "1" || fail
+	--pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || can_fail_fips
+$CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2i" || can_fail_fips
+$CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | grep -q "4" || can_fail_fips
+$CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | grep -q "1234" || can_fail_fips
+$CRYPTSETUP luksDump $LOOPDEV | grep "Threads:" | grep -q "1" || can_fail_fips
 # Benchmark
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2i -i 500 --pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || fail
-[ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || fail
-[ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2i -i 500 --pbkdf-memory 1234 --pbkdf-parallel 1 $LOOPDEV || can_fail_fips
+[ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Time cost:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || can_fail_fips
+[ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep "Memory:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || can_fail_fips
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf pbkdf2 -i 500 $LOOPDEV || fail
 [ 0"$($CRYPTSETUP luksDump $LOOPDEV | grep -m1 "Iterations:" | cut -d' ' -f 2 | sed -e 's/\ //g')" -gt 1000 ] || fail
 
@@ -830,14 +830,14 @@ $CRYPTSETUP -q luksConvertKey $LOOPDEV --key-file $KEY5 2>/dev/null && fail
 $CRYPTSETUP -q convert --type luks2 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
-$CRYPTSETUP -q luksConvertKey $LOOPDEV -S 5 --key-file $KEY5 --pbkdf argon2i -i1 --pbkdf-memory 32 || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
+$CRYPTSETUP -q luksConvertKey $LOOPDEV -S 5 --key-file $KEY5 --pbkdf argon2i -i1 --pbkdf-memory 32 || can_fail_fips
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || can_fail_fips
 echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV -S 1 --key-file $KEY5 || fail
 $CRYPTSETUP -q luksKillSlot $LOOPDEV 5 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
-echo $PWD1 | $CRYPTSETUP -q luksConvertKey $LOOPDEV -S 1 --pbkdf argon2i -i1 --pbkdf-memory 32 || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
+echo $PWD1 | $CRYPTSETUP -q luksConvertKey $LOOPDEV -S 1 --pbkdf argon2i -i1 --pbkdf-memory 32 || can_fail_fips
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || can_fail_fips
 echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 21 --unbound -s 16 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP luksConvertKey --pbkdf-force-iterations 1001 --pbkdf pbkdf2 -S 21 $LOOPDEV || fail
 

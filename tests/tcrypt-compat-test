@@ -33,19 +33,20 @@ function skip()
 	exit 77
 }
 
-function test_one()
+function test_one() # cipher mode keysize rm_pattern
 {
 	$CRYPTSETUP benchmark -c "$1-$2" -s "$3" >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		echo "$1-$2 [N/A]"
-		IMGS=$(ls $TST_DIR/[tv]c* | grep "$1")
+		IMGS=$(ls $TST_DIR/[tv]c* | grep "$4")
 		[ -n "$IMGS" ] && rm $IMGS
+		#echo $IMGS
 	else
 		echo "$1-$2 [OK]"
 	fi
 }
 
-function test_kdf()
+function test_kdf() # hash
 {
 	$CRYPTSETUP benchmark -h "$1" >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
@@ -69,25 +70,27 @@ function test_required()
 	test_kdf stribog512
 
 	echo "REQUIRED CIPHERS TEST"
-	test_one aes cbc 256
-	test_one aes lrw 384
-	test_one aes xts 512
+	test_one aes cbc 256 cbc-aes
+	test_one aes lrw 384 lrw-aes
+	test_one aes xts 512 xts-aes
 
-	test_one twofish cbc 256
-	test_one twofish lrw 384
-	test_one twofish xts 512
+	test_one twofish ecb 256 twofish
+	test_one twofish cbc 256 cbc-twofish
+	test_one twofish lrw 384 lrw-twofish
+	test_one twofish xts 512 xts-twofish
 
-	test_one serpent cbc 256
-	test_one serpent lrw 384
-	test_one serpent xts 512
+	test_one serpent ecb 256 serpent
+	test_one serpent cbc 256 cbc-serpent
+	test_one serpent lrw 384 lrw-serpent
+	test_one serpent xts 512 xts-serpent
 
-	test_one blowfish cbc 256
+	test_one blowfish cbc 256 blowfish
 
-	test_one des3_ede cbc 192
-	test_one cast5 cbc 128
+	test_one des3_ede cbc 192 des3_ede
+	test_one cast5 cbc 128 cast5
 
-	test_one camellia xts 512
-	test_one kuznyechik xts 512
+	test_one camellia xts 512 camellia
+	test_one kuznyechik xts 512 kuznyechik
 
 	ls $TST_DIR/[tv]c* >/dev/null 2>&1 || skip "No remaining images."
 }

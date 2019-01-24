@@ -16,6 +16,12 @@ PWD3="1-9Qu5Ejfnqv"
 
 MNT_DIR=./mnt_luks
 START_DIR=$(pwd)
+[ -f /etc/system-fips ] && FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+
+function fips_mode()
+{
+	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+}
 
 function del_scsi_device()
 {
@@ -205,6 +211,7 @@ function test_logging() {
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$REENC" ] && skip "Cannot find $REENC, test skipped."
 which wipefs >/dev/null 2>&1 ||  skip "Cannot find wipefs, test skipped."
+fips_mode && skip "This test cannot be run in FIPS mode."
 
 # REENCRYPTION tests
 

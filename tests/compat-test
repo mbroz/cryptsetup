@@ -721,8 +721,8 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 5: DISABLED" || fail
 
 prepare "[31] Deferred removal of device" wipe
-echo $PWD1 | $CRYPTSETUP open --type plain $LOOPDEV $DEV_NAME || fail
-echo $PWD2 | $CRYPTSETUP open --type plain /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
+echo $PWD1 | $CRYPTSETUP open --type plain --hash sha256 $LOOPDEV $DEV_NAME || fail
+echo $PWD2 | $CRYPTSETUP open --type plain --hash sha256 /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 $CRYPTSETUP close $DEV_NAME >/dev/null 2>&1 && fail
 $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
 $CRYPTSETUP close --deferred $DEV_NAME >/dev/null 2>&1
