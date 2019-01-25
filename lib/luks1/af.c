@@ -1,8 +1,8 @@
 /*
  * AFsplitter - Anti forensic information splitter
  *
- * Copyright (C) 2004, Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2018, Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2004 Clemens Fruhwirth <clemens@endorphin.org>
+ * Copyright (C) 2009-2019 Red Hat, Inc. All rights reserved.
  *
  * AFsplitter diffuses information over a large stripe of data,
  * therefore supporting secure data destruction.

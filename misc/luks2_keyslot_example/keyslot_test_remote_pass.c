@@ -1,7 +1,7 @@
 /*
  * Example of LUKS2 token storing third party metadata (EXAMPLE)
  *
- * Copyright (C) 2016-2018 Milan Broz <gmazyland@gmail.com>
+ * Copyright (C) 2016-2019 Milan Broz <gmazyland@gmail.com>
  *
  * Use:
  *  - generate LUKS device
