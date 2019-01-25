@@ -564,6 +564,13 @@ CS_STR_WITH([luks1-cipher], [cipher for LUKS1], [aes])
 CS_STR_WITH([luks1-mode],   [cipher mode for LUKS1], [xts-plain64])
 CS_NUM_WITH([luks1-keybits],[key length in bits for LUKS1], [256])
 
+AC_ARG_ENABLE([luks_adjust_xts_keysize], AS_HELP_STRING([--disable-luks-adjust-xts-keysize],
+	[XTS mode requires two keys, double default LUKS keysize if needed]),
+	[], [enable_luks_adjust_xts_keysize=yes])
+if test "x$enable_luks_adjust_xts_keysize" = "xyes"; then
+	AC_DEFINE(ENABLE_LUKS_ADJUST_XTS_KEYSIZE, 1, [XTS mode - double default LUKS keysize if needed])
+fi
+
 CS_STR_WITH([luks2-pbkdf],           [Default PBKDF algorithm (pbkdf2 or argon2i/argon2id) for LUKS2], [argon2i])
 CS_NUM_WITH([luks1-iter-time],       [PBKDF2 iteration time for LUKS1 (in ms)], [2000])
 CS_NUM_WITH([luks2-iter-time],       [Argon2 PBKDF iteration time for LUKS2 (in ms)], [2000])

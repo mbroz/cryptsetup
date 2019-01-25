@@ -1141,6 +1141,14 @@ static int action_luksFormat(void)
 			goto out;
 	}
 
+#ifdef ENABLE_LUKS_ADJUST_XTS_KEYSIZE
+	if (!opt_key_size && !strncmp(cipher_mode, "xts-", 4)) {
+		if (DEFAULT_LUKS1_KEYBITS == 128)
+			opt_key_size = 256;
+		else if (DEFAULT_LUKS1_KEYBITS == 256)
+			opt_key_size = 512;
+	}
+#endif
 	keysize = (opt_key_size ?: DEFAULT_LUKS1_KEYBITS) / 8 + integrity_keysize;
 
 	if (opt_random)
@@ -2432,11 +2440,14 @@ static void help(poptContext popt_context,
 		log_std(_("\nDefault compiled-in device cipher parameters:\n"
 			 "\tloop-AES: %s, Key %d bits\n"
 			 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
-			 "\tLUKS1: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"),
+			 "\tLUKS: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"),
 			 DEFAULT_LOOPAES_CIPHER, DEFAULT_LOOPAES_KEYBITS,
 			 DEFAULT_CIPHER(PLAIN), DEFAULT_PLAIN_KEYBITS, DEFAULT_PLAIN_HASH,
 			 DEFAULT_CIPHER(LUKS1), DEFAULT_LUKS1_KEYBITS, DEFAULT_LUKS1_HASH,
 			 DEFAULT_RNG);
+#if defined(ENABLE_LUKS_ADJUST_XTS_KEYSIZE) && DEFAULT_LUKS1_KEYBITS != 512
+		log_std(_("\tLUKS: Default keysize with XTS mode (two internal keys) will be doubled.\n"));
+#endif
 		exit(EXIT_SUCCESS);
 	} else
 		usage(popt_context, EXIT_SUCCESS, NULL, NULL);
