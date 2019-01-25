@@ -14,7 +14,7 @@ cleanup() {
 
 fail()
 {
-	echo "FAILED"
+	echo "FAILED at line $(caller)"
 	cleanup
 	exit 100
 }

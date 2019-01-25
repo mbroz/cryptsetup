@@ -33,6 +33,7 @@ cleanup() {
 fail()
 {
 	[ -n "$1" ] && echo "$1"
+	echo "FAILED at line $(caller)"
 	cleanup
 	exit 100
 }

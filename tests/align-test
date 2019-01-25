@@ -25,7 +25,8 @@ cleanup() {
 
 fail()
 {
-	if [ -n "$1" ] ; then echo "FAIL $1" ; else echo "FAIL" ; fi
+	if [ -n "$1" ] ; then echo "FAIL $1" ; fi
+	echo "FAILED at line $(caller)"
 	cleanup
 	exit 100
 }
@@ -310,8 +311,8 @@ for file in $(ls img_fs_*.img.xz) ; do
     xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
     [ ! -d $MNT_DIR ] && mkdir $MNT_DIR
     mount $DEV $MNT_DIR || skip "Mounting image is not available."
-    echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF $MNT_DIR/luks.img || fail
-    echo $PWD2 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF $MNT_DIR/luks.img --header $MNT_DIR/luks_header.img || fail
+    echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 --key-size 256 $FAST_PBKDF $MNT_DIR/luks.img || fail
+    echo $PWD2 | $CRYPTSETUP luksFormat --type luks1 --key-size 256 $FAST_PBKDF $MNT_DIR/luks.img --header $MNT_DIR/luks_header.img || fail
     umount $MNT_DIR
 done
 cleanup

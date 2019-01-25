@@ -28,7 +28,7 @@ function remove_mapping()
 function fail()
 {
 	[ -n "$1" ] && echo "$1"
-	echo "FAILED"
+	echo "FAILED at line $(caller)"
 	cd $START_DIR
 	remove_mapping
 	exit 2

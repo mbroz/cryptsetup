@@ -28,8 +28,8 @@ function remove_mapping()
 
 function fail()
 {
+	echo "FAILED at line $(caller)"
 	remove_mapping
-	echo "FAILED"
 	exit 2
 }
 

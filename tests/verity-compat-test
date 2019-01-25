@@ -23,7 +23,7 @@ function remove_mapping()
 function fail()
 {
 	[ -n "$1" ] && echo "$1"
-	echo "FAILED"
+	echo "FAILED at line $(caller)"
 	[ -f $DEV_OUT ] && cat $DEV_OUT
 	remove_mapping
 	exit 2
