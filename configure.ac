@@ -362,8 +362,8 @@ AC_CHECK_DECLS([json_object_object_add_ex], [], [], [#include <json-c/json.h>])
 
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
-	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle) [gcrypt]]),
-	[], [with_crypto_backend=gcrypt])
+	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle) [openssl]]),
+	[], [with_crypto_backend=openssl])
 
 dnl Kernel crypto API backend needed for benchmark and tcrypt
 AC_ARG_ENABLE([kernel_crypto],
