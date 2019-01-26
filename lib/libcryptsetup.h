@@ -70,7 +70,7 @@ int crypt_init(struct crypt_device **cd, const char *device);
  *
  * @param cd Returns pointer to crypt device handle
  * @param device Path to the backing device or detached header.
- * @param device_device Path to the data device or @e NULL.
+ * @param data_device Path to the data device or @e NULL.
  *
  * @return @e 0 on success or negative errno value otherwise.
  *
@@ -289,7 +289,7 @@ int crypt_set_pbkdf_type(struct crypt_device *cd,
 /**
  * Get PBKDF (Password-Based Key Derivation Algorithm) parameters.
  *
- * @param type type of PBKDF
+ * @param pbkdf_type type of PBKDF
  *
  * @return struct on success or NULL value otherwise.
  *
