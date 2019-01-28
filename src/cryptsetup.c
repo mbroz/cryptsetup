@@ -2839,7 +2839,7 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (opt_align_payload && opt_offset)
-		usage(popt_context, EXIT_FAILURE, _("Option --align-payload and --offset cannot be combined."),
+		usage(popt_context, EXIT_FAILURE, _("Options --align-payload and --offset cannot be combined."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_skip && (strcmp(aname, "open") ||

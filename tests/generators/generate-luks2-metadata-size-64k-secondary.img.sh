@@ -6,7 +6,7 @@
 # *** Description ***
 #
 # generate secondary header with one of allowed json area
-# size values. Test wheter auto-recovery code is able
+# size values. Test whether auto-recovery code is able
 # to validate secondary header with non-default json area
 # size.
 #
