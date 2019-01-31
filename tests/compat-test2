@@ -183,6 +183,18 @@ function dm_crypt_keyring_flawed()
 	return 1
 }
 
+function dm_crypt_keyring_new_kernel()
+{
+	KER_STR=$(uname -r)
+	[ -z "$KER_STR" ] && fail "Failed to parse kernel version."
+	KER_MAJ=$(echo $KER_STR | cut -f 1 -d.)
+	KER_MIN=$(echo $KER_STR | cut -f 2 -d.)
+
+	[ $KER_MAJ -ge 5 ] && return 0
+	[ $KER_MAJ -eq 4 -a $KER_MIN -ge 15 ] && return 0
+	return 1
+}
+
 function test_and_prepare_keyring() {
 	which keyctl > /dev/null 2>&1 || skip "Cannot find keyctl, test skipped"
 	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
@@ -706,15 +718,16 @@ if dm_crypt_keyring_flawed; then
 	fi
 fi
 
-if dm_crypt_keyring_support; then
+if dm_crypt_keyring_support && dm_crypt_keyring_new_kernel; then
 	prepare "[32] LUKS2 key in keyring" wipe
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
+
 	# check keyring support detection works as expected
 	rmmod dm-crypt > /dev/null 2>&1 || true
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "keyring" || fail
-
 	$CRYPTSETUP close $DEV_NAME || fail
+
 	echo $PWD1 | $CRYPTSETUP open  $LOOPDEV --disable-keyring --header $HEADER_IMG $DEV_NAME || fail
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
