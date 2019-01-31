@@ -614,8 +614,8 @@ AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
 
 dnl Override default LUKS format version (for cryptsetup or cryptsetup-reencrypt format actions only).
 AC_ARG_WITH([default_luks_format],
-	AS_HELP_STRING([--with-default-luks-format=FORMAT], [default LUKS format version (LUKS1/LUKS2) [LUKS1]]),
-	[], [with_default_luks_format=LUKS1])
+	AS_HELP_STRING([--with-default-luks-format=FORMAT], [default LUKS format version (LUKS1/LUKS2) [LUKS2]]),
+	[], [with_default_luks_format=LUKS2])
 
 case $with_default_luks_format in
 	LUKS1) default_luks=CRYPT_LUKS1 ;;
