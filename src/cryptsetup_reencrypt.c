@@ -1054,9 +1054,9 @@ static void zero_rest_of_device(int fd, size_t block_size, void *buf,
 			s1 = *bytes;
 
 		s2 = write(fd, buf, s1);
-		if (s2 < 0) {
-			log_dbg("Write error, expecting %zu, got %zd.",
-				block_size, s2);
+		if (s2 != s1) {
+			log_dbg("Write error, expecting %zd, got %zd.",
+				s1, s2);
 			return;
 		}
 
