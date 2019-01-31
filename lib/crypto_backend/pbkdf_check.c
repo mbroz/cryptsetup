@@ -202,7 +202,7 @@ static int next_argon2_params(uint32_t *t_cost, uint32_t *m_cost,
 static int crypt_argon2_check(const char *kdf, const char *password,
 			      size_t password_length, const char *salt,
 			      size_t salt_length, size_t key_length,
-			      uint32_t min_t_cost, uint32_t max_m_cost,
+			      uint32_t min_t_cost, uint32_t min_m_cost, uint32_t max_m_cost,
 			      uint32_t parallel, uint32_t target_ms,
 			      uint32_t *out_t_cost, uint32_t *out_m_cost,
 			      int (*progress)(uint32_t time_ms, void *usrptr),
@@ -210,13 +210,16 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 {
 	int r = 0;
 	char *key = NULL;
-	uint32_t t_cost, m_cost, min_m_cost = 8 * parallel;
+	uint32_t t_cost, m_cost;
 	long ms;
 	long ms_atleast = (long)target_ms * BENCH_PERCENT_ATLEAST / 100;
 	long ms_atmost = (long)target_ms * BENCH_PERCENT_ATMOST / 100;
 
 	if (key_length <= 0 || target_ms <= 0)
 		return -EINVAL;
+
+	if (min_m_cost < (parallel * 8))
+		min_m_cost = parallel * 8;
 
 	if (max_m_cost < min_m_cost)
 		return -EINVAL;
@@ -403,6 +406,7 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 	if (!kdf || !iterations_out || !memory_out)
 		return -EINVAL;
 
+	/* FIXME: whole limits propagation should be more clear here */
 	r = crypt_pbkdf_get_limits(kdf, &pbkdf_limits);
 	if (r < 0)
 		return r;
@@ -418,7 +422,9 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 	else if (!strncmp(kdf, "argon2", 6))
 		r = crypt_argon2_check(kdf, password, password_size,
 				       salt, salt_size, volume_key_size,
-				       pbkdf_limits.min_iterations, max_memory_kb,
+				       pbkdf_limits.min_iterations,
+				       pbkdf_limits.min_memory,
+				       max_memory_kb,
 				       parallel_threads, time_ms, iterations_out,
 				       memory_out, progress, usrptr);
 	return r;
