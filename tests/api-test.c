@@ -283,7 +283,7 @@ static int _setup(void)
 	_system(" [ ! -e " VALID_HEADER " ] && xz -dk " VALID_HEADER ".xz", 1);
 
 	/* Prepare tcrypt images */
-	_system(" [ ! -d tcrypt-images ] && tar xJf tcrypt-images.tar.xz 2>/dev/null", 1);
+	_system("tar xJf tcrypt-images.tar.xz 2>/dev/null", 1);
 
 	_system("modprobe dm-crypt", 0);
 	_system("modprobe dm-verity", 0);
@@ -1746,7 +1746,12 @@ static void TcryptTest(void)
 	OK_(crypt_init(&cd, tcrypt_dev2));
 	params.keyfiles = NULL;
 	params.keyfiles_count = 0;
-	OK_(crypt_load(cd, CRYPT_TCRYPT, &params));
+	r = crypt_load(cd, CRYPT_TCRYPT, &params);
+	if (r < 0) {
+		printf("WARNING: cannot use non-AES encryption, skipping test.\n");
+		crypt_free(cd);
+		return;
+	}
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, CRYPT_ACTIVATE_READONLY));
 	crypt_free(cd);
 
