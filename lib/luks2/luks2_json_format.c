@@ -191,7 +191,7 @@ int LUKS2_generate_hdr(
 		" bytes and keyslots area %" PRIu64 " bytes.",
 		metadata_size - LUKS2_HDR_BIN_LEN, keyslots_size);
 
-	if (keyslots_size < LUKS2_DEFAULT_KEYSLOTS_SIZE)
+	if (keyslots_size < (0x400000 - 2*LUKS2_HDR_16K_LEN))
 		log_std(cd, _("WARNING: keyslots area (%" PRIu64 " bytes) is very small,"
 			" available LUKS2 keyslot count is very limited.\n"),
 			keyslots_size);
