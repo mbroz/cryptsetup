@@ -579,7 +579,7 @@ static void AddDeviceLuks2(void)
 		.parallel_threads = 4,
 		.max_memory_kb = 1024,
 		.time_ms = 1
-	};
+	}, pbkdf_tmp;
 	struct crypt_params_luks2 params = {
 		.pbkdf = &pbkdf,
 		.data_device = DEVICE_2,
@@ -748,6 +748,15 @@ static void AddDeviceLuks2(void)
 	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), 7);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 7, passphrase, strlen(passphrase) ,0), 7);
+
+	OK_(crypt_keyslot_get_pbkdf(cd, 7, &pbkdf_tmp));
+	OK_(strcmp(pbkdf_tmp.type, pbkdf.type));
+	NULL_(pbkdf_tmp.hash);
+	EQ_(0, pbkdf_tmp.time_ms); /* not usable in per-keyslot call */
+	OK_(!(pbkdf_tmp.iterations >= 4));
+	OK_(!(pbkdf_tmp.max_memory_kb >= 32));
+	OK_(!(pbkdf_tmp.parallel_threads >= 1));
+
 	crypt_free(cd);
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, DMDIR H_DEVICE));
 	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formatted");

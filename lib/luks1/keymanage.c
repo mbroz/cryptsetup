@@ -1226,3 +1226,18 @@ int LUKS_wipe_header_areas(struct luks_phdr *hdr,
 
 	return r;
 }
+
+int LUKS_keyslot_pbkdf(struct luks_phdr *hdr, int keyslot, struct crypt_pbkdf_type *pbkdf)
+{
+	if (keyslot >= LUKS_NUMKEYS || keyslot < 0)
+		return -EINVAL;
+
+	pbkdf->type = CRYPT_KDF_PBKDF2;
+	pbkdf->hash = hdr->hashSpec;
+	pbkdf->iterations = hdr->keyblock[keyslot].passwordIterations;
+	pbkdf->max_memory_kb = 0;
+	pbkdf->parallel_threads = 0;
+	pbkdf->time_ms = 0;
+	pbkdf->flags = 0;
+	return 0;
+}

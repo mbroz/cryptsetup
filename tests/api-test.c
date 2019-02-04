@@ -750,6 +750,7 @@ static void AddDeviceLuks(void)
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size_1;
+	struct crypt_pbkdf_type pbkdf;
 
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key3, mk_hex2, key_size);
@@ -913,6 +914,16 @@ static void AddDeviceLuks(void)
 
 	crypt_set_iteration_time(cd, 1);
 	EQ_(1, crypt_keyslot_add_by_volume_key(cd, 1, key, key_size, KEY1, strlen(KEY1)));
+
+	// PBKDF info (in LUKS1 slots are ther same)
+	FAIL_(crypt_keyslot_get_pbkdf(cd, 1, NULL), "PBKDF struct required");
+	OK_(crypt_keyslot_get_pbkdf(cd, 1, &pbkdf));
+	OK_(strcmp(pbkdf.type, CRYPT_KDF_PBKDF2));
+	OK_(strcmp(pbkdf.hash, params.hash));
+	EQ_(1000, pbkdf.iterations); /* set by minimum iterations above */
+	EQ_(0, pbkdf.max_memory_kb);
+	EQ_(0, pbkdf.parallel_threads);
+
 	OK_(prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	OK_(prepare_keyfile(KEYFILE2, KEY2, strlen(KEY2)));
 	EQ_(2, crypt_keyslot_add_by_keyfile(cd, 2, KEYFILE1, 0, KEYFILE2, 0));

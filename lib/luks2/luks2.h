@@ -354,6 +354,8 @@ int LUKS2_keyslot_area(struct luks2_hdr *hdr,
 	int keyslot,
 	uint64_t *offset,
 	uint64_t *length);
+int LUKS2_keyslot_pbkdf(struct luks2_hdr *hdr, int keyslot, struct crypt_pbkdf_type *pbkdf);
+
 /*
  * Permanent activation flags stored in header
  */

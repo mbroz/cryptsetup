@@ -4640,6 +4640,19 @@ const char *crypt_keyslot_get_encryption(struct crypt_device *cd, int keyslot, s
 	return DEFAULT_LUKS2_KEYSLOT_CIPHER;
 }
 
+int crypt_keyslot_get_pbkdf(struct crypt_device *cd, int keyslot, struct crypt_pbkdf_type *pbkdf)
+{
+	if (!cd || !pbkdf || keyslot == CRYPT_ANY_SLOT)
+		return -EINVAL;
+
+	if (isLUKS1(cd->type))
+		return LUKS_keyslot_pbkdf(&cd->u.luks1.hdr, keyslot, pbkdf);
+	else if (isLUKS2(cd->type))
+		return LUKS2_keyslot_pbkdf(&cd->u.luks2.hdr, keyslot, pbkdf);
+
+	return -EINVAL;
+}
+
 int crypt_set_data_offset(struct crypt_device *cd, uint64_t data_offset)
 {
 	if (!cd)

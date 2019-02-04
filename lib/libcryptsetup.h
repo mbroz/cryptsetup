@@ -1659,6 +1659,17 @@ int crypt_keyslot_get_key_size(struct crypt_device *cd, int keyslot);
 const char *crypt_keyslot_get_encryption(struct crypt_device *cd, int keyslot, size_t *key_size);
 
 /**
+ * Get PBKDF parameters for keyslot.
+ *
+ * @param cd crypt device handle
+ * @param keyslot keyslot number
+ * @param pbkdf struct with returned PBKDF parameters
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_keyslot_get_pbkdf(struct crypt_device *cd, int keyslot, struct crypt_pbkdf_type *pbkdf);
+
+/**
  * Set encryption for keyslot.
  * Use for LUKS2 keyslot to set different encryption type than for data encryption.
  * Parameters will be used for next keyslot operations that create or change a keyslot.

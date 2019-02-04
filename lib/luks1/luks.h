@@ -183,6 +183,8 @@ int LUKS_keyslot_area(const struct luks_phdr *hdr,
 	uint64_t *length);
 size_t LUKS_device_sectors(const struct luks_phdr *hdr);
 size_t LUKS_keyslots_offset(const struct luks_phdr *hdr);
+int LUKS_keyslot_pbkdf(struct luks_phdr *hdr, int keyslot,
+		       struct crypt_pbkdf_type *pbkdf);
 
 int LUKS1_activate(struct crypt_device *cd,
 		   const char *name,
