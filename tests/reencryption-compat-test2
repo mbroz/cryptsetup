@@ -119,13 +119,17 @@ function prepare() # $1 dev1_siz
 	fi
 }
 
-function check_hash_dev() # $1 dev, $2 hash
+function check_hash_dev() # $1 dev, $2 hash, $3 size
 {
-	HASH=$(sha256sum $1 | cut -d' ' -f 1)
+	if [ -n "$3" ]; then
+		HASH=$(head -c $3 $1 | sha256sum | cut -d' ' -f 1)
+	else
+		HASH=$(sha256sum $1 | cut -d' ' -f 1)
+	fi
 	[ $HASH != "$2" ] && fail "HASH differs ($HASH)"
 }
 
-function check_hash() # $1 pwd, $2 hash, $hdr
+function check_hash() # $1 pwd, $2 hash, $3 hdr
 {
 	open_crypt $1 $3
 	check_hash_dev /dev/mapper/$DEV_NAME $2
@@ -223,6 +227,7 @@ HASH1=b69dae56a14d1a8314ed40664c4033ea0a550eea2673e04df42a66ac6b9faf2c
 HASH4=2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74
 HASH5=bb9f8df61474d25e71fa00722318cd387396ca1736605e1248821cc0de3d3af8
 HASH6=4d9cbaf3aa0935a8c113f139691b3daf9c94c8d6c278aedc8eec66a4b9f6c8ae
+HASH7=5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef
 
 echo "[1] Reencryption"
 prepare 8192
@@ -270,9 +275,17 @@ echo "[4] Encryption of not yet encrypted device"
 OFFSET=8192 # default LUKS2 header size
 prepare 8192
 check_hash_dev $IMG $HASH4
-echo $PWD1 | $REENC --type luks2 $IMG -c aes-cbc-essiv:sha256 -s 128 --new --reduce-device-size "$OFFSET"S -q $FAST_PBKDF_ARGON
+echo $PWD1 | $REENC --type luks2 $IMG -c aes-cbc-essiv:sha256 -s 128 --new --reduce-device-size "$OFFSET"S -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH5
 $CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
+# 64MiB + 1 KiB
+prepare 65537
+OFFSET=131072
+check_hash_dev $IMG $HASH7 1024
+echo $PWD1 | $REENC --type luks2 $IMG -c aes-cbc-essiv:sha256 -s 128 --new --reduce-device-size "$OFFSET"S -q $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH7
+$CRYPTSETUP --type luks2 luksDump $IMG > /dev/null || fail
+prepare 8192
 
 echo "[5] Reencryption using specific keyslot"
 echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG || fail

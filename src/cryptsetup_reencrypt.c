@@ -28,7 +28,6 @@
 #define PACKAGE_REENC "crypt_reencrypt"
 
 #define NO_UUID "cafecafe-cafe-cafe-cafe-cafecafeeeee"
-#define MAX_BCK_SECTORS 8192
 
 static const char *opt_cipher = NULL;
 static const char *opt_hash = NULL;
@@ -270,59 +269,24 @@ out:
 	return r;
 }
 
-static int create_empty_header(const char *new_file, const char *old_file,
-			       uint64_t data_sector)
+static int create_empty_header(const char *new_file, uint64_t data_sectors)
 {
-	struct stat st;
-	ssize_t size = 0;
 	int fd, r = 0;
-	char *buf;
 
-	/* Never create header > 4MiB */
-	if (data_sector > MAX_BCK_SECTORS)
-		data_sector = MAX_BCK_SECTORS;
+	data_sectors *= SECTOR_SIZE;
 
-	/* new header file of the same size as old backup */
-	if (old_file) {
-		if (stat(old_file, &st) == -1 ||
-		    (st.st_mode & S_IFMT) != S_IFREG ||
-		    (st.st_size > 16 * 1024 * 1024))
-			return -EINVAL;
-		size = st.st_size;
-	}
+	if (!data_sectors)
+		data_sectors = 4096;
 
-	/*
-	 * if requesting key size change, try to use offset
-	 * here can be enough space to fit new key.
-	 */
-	if (opt_key_size && data_sector)
-		size = data_sector * SECTOR_SIZE;
+	log_dbg("Creating empty file %s of size %" PRIu64 ".", new_file, data_sectors);
 
-	/* if reducing size, be sure we have enough space */
-	if (opt_reduce_size)
-		size += opt_reduce_size;
+	/* coverity[toctou] */
+	fd = open(new_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IWUSR);
+	if (fd == -1 || posix_fallocate(fd, 0, data_sectors))
+		r = -EINVAL;
+	if (fd >= 0)
+		close(fd);
 
-	log_dbg("Creating empty file %s of size %lu.", new_file, (unsigned long)size);
-
-	if (!size)
-		return -EINVAL;
-
-	buf = malloc(size);
-	if (!buf)
-		return -ENOMEM;
-	memset(buf, 0, size);
-
-	fd = creat(new_file, S_IRUSR|S_IWUSR);
-	if(fd == -1) {
-		free(buf);
-		return -EINVAL;
-	}
-
-	if (write(fd, buf, size) < size)
-		r = -EIO;
-
-	close(fd);
-	free(buf);
 	return r;
 }
 
@@ -736,7 +700,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 
 	rc->data_offset = crypt_get_data_offset(cd) + ROUND_SECTOR(opt_reduce_size);
 
-	if ((r = create_empty_header(rc->header_file_new, rc->header_file_org, rc->data_offset)))
+	if ((r = create_empty_header(rc->header_file_new, rc->data_offset)))
 		goto out;
 
 	params.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
@@ -816,7 +780,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		}
 	}
 
-	r = create_empty_header(header_file_fake, NULL, MAX_BCK_SECTORS);
+	r = create_empty_header(header_file_fake, 0);
 	if (r < 0)
 		return r;
 
@@ -846,7 +810,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	if (rc->reencrypt_mode == DECRYPT)
 		goto out;
 
-	r = create_empty_header(rc->header_file_new, rc->header_file_org, 0);
+	r = create_empty_header(rc->header_file_new, ROUND_SECTOR(opt_reduce_size));
 	if (r < 0)
 		goto out;
 

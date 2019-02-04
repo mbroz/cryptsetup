@@ -219,6 +219,7 @@ HASH1=b69dae56a14d1a8314ed40664c4033ea0a550eea2673e04df42a66ac6b9faf2c
 HASH2=d85ef2a08aeac2812a648deb875485a6e3848fc3d43ce4aa380937f08199f86b
 HASH3=e4e5749032a5163c45125eccf3e8598ba5ed840df442c97e1d5ad4ad84359605
 HASH4=2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74
+HASH5=5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef
 
 echo "[1] Reencryption"
 prepare 8192
@@ -268,9 +269,21 @@ wipe_dev $LOOPDEV1
 dmsetup create $DEV_NAME2 --table "0 $(($SIZE - $OFFSET)) linear $LOOPDEV1 0" || fail
 check_hash_dev /dev/mapper/$DEV_NAME2 $HASH3
 dmsetup remove $DEV_NAME2 || fail
-echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --type luks1 --reduce-device-size "$OFFSET"S -q $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --type luks1 --reduce-device-size "$OFFSET"S -q $FAST_PBKDF || fail
 check_hash $PWD1 $HASH3
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
+# 64MiB + 1 KiB
+prepare 65537
+OFFSET=131072
+SIZE=$(blockdev --getsz $LOOPDEV1)
+wipe_dev $LOOPDEV1
+dmsetup create $DEV_NAME2 --table "0 $(($SIZE - $OFFSET)) linear $LOOPDEV1 0" || fail
+check_hash_dev /dev/mapper/$DEV_NAME2 $HASH5
+dmsetup remove $DEV_NAME2 || fail
+echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --type luks1 --reduce-device-size "$OFFSET"S $FAST_PBKDF || fail
+check_hash $PWD1 $HASH5
+$CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
+prepare 8192
 
 echo "[5] Reencryption using specific keyslot"
 echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
