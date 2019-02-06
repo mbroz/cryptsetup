@@ -97,7 +97,7 @@ function prepare()
 	case "$2" in
 	wipe)
 		remove_mapping
-		dd if=/dev/zero of=$IMG bs=4096 count=5000 >/dev/null 2>&1
+		dd if=/dev/zero of=$IMG bs=1M count=40 >/dev/null 2>&1
 		sync
 		losetup $LOOPDEV $IMG
 		;;
@@ -248,7 +248,7 @@ echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --s
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --sector-size 4096 --align-payload 32768 >/dev/null || fail
 $CRYPTSETUP -q luksDump  $LOOPDEV | grep -q "offset: $((512 * 32768)) \[bytes\]" || fail
 
-prepare "[3] format" new
+prepare "[3] format" wipe
 echo $PWD1 | $CRYPTSETUP -q $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $LOOPDEV || fail
 prepare "[4] format using hash sha512" wipe
 echo $PWD1 | $CRYPTSETUP $FAST_PBKDF_OPT -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $LOOPDEV || fail
@@ -437,11 +437,11 @@ $CRYPTSETUP -q status  $DEV_NAME | grep "mode:" | grep -q "readonly" || fail
 $CRYPTSETUP -q resize  $DEV_NAME --size 100 || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
 $CRYPTSETUP -q resize  $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "39997 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "81917 sectors" || fail
 # Resize underlying loop device as well
-truncate -s 16M $IMG || fail
+truncate -s 20M $IMG || fail
 $CRYPTSETUP -q resize  $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "32765 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "40957 sectors" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME >/dev/null && fail
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
@@ -604,7 +604,7 @@ echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
 
-prepare "[27] luksOpen with specified key slot number" new
+prepare "[27] luksOpen with specified key slot number" wipe
 # first, let's try passphrase option
 echo $PWD3 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -S 5 --type luks2 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME && fail
@@ -629,6 +629,7 @@ $CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 # test keyslot not assigned to segment is unable to unlock volume
 # otoh it should be allowed to test for proper passphrase
+prepare "" new
 echo $PWD1 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU || fail
 echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_KEYU || fail
 echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME && fail
@@ -905,6 +906,8 @@ done
 echo
 
 prepare "[40] LUKS2 metadata areas" wipe
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV 2> /dev/null || fail
+DEFAULT_OFFSET=$($CRYPTSETUP luksDump $LOOPDEV | grep "offset: " | cut -f 2 -d ' ')
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks1 $LOOPDEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=128k 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=127k 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --key-size 256 --luks2-metadata-size=127k --luks2-keyslots-size=128k 2> /dev/null && fail
@@ -914,7 +917,7 @@ $CRYPTSETUP luksDump $LOOPDEV | grep "Metadata area:" | grep -q "131072 \[bytes\
 $CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --key-size 256 --luks2-metadata-size=128k || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "4161536 \[bytes\]" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "$((DEFAULT_OFFSET-2*131072)) \[bytes\]" || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --key-size 256 --luks2-keyslots-size=128k >/dev/null || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Metadata area:" | grep -q "16384 \[bytes\]" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
