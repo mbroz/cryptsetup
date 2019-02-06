@@ -161,19 +161,16 @@ int crypt_wipe_device(struct crypt_device *cd,
 	if (devfd < 0)
 		return errno ? -errno : -EINVAL;
 
-	r = device_size(device, &dev_size);
-	if (r || dev_size == 0)
-		goto out;
-
-	if (dev_size < length)
-		length = 0;
-
-	if (length) {
-		if ((dev_size <= offset) || (dev_size - offset) < length) {
-			r = -EINVAL;
-			goto out;
-		}
+	if (length)
 		dev_size = offset + length;
+	else {
+		r = device_size(device, &dev_size);
+		if (r)
+			return r;
+
+		if (dev_size <= offset)
+			return -EINVAL;
+		length = dev_size - offset;
 	}
 
 	r = posix_memalign((void **)&sf, alignment, wipe_block_size);
