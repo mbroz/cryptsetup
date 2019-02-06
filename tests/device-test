@@ -81,7 +81,7 @@ function dm_crypt_keyring_support()
 
 format() # format
 {
-	dd if=/dev/zero of=$DEV bs=1M count=9 >/dev/null 2>&1
+	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
 
 	echo $PWD1 | $CRYPTSETUP luksFormat --type $1 $DEV -q  $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256
 	[ $? -ne 0 ] && fail "Format failed."

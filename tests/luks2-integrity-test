@@ -91,7 +91,7 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 	echo -n "[$1:$2:$4:$6]"
 	echo -n "[FORMAT]"
 	$CRYPTSETUP luksFormat --type luks2 -q -c $1 --integrity $2 --sector-size $6 -s $4 \
-		$FAST_PBKDF_OPT -d $KEY_FILE $DEV >/dev/null 2>&1
+		$FAST_PBKDF_OPT -d $KEY_FILE $DEV --offset 8192 >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		echo "[N/A]"
 		return
