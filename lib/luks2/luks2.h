@@ -125,8 +125,8 @@ struct luks2_keyslot_params {
 
 #define LUKS2_HDR_BIN_LEN sizeof(struct luks2_hdr_disk)
 
-#define LUKS2_DEFAULT_KEYSLOTS_SIZE (0x400000 - 2*LUKS2_HDR_16K_LEN) /* 4 MiB */
-//#define LUKS2_DEFAULT_KEYSLOTS_SIZE (0x1000000 - 2*LUKS2_HDR_16K_LEN) /* 16 MiB */
+#define LUKS2_DEFAULT_KHDR_SIZE 0x400000  /* 4 MiB */
+//#define LUKS2_DEFAULT_HDR_SIZE 0x1000000 /* 16 MiB */
 
 #define LUKS2_MAX_KEYSLOTS_SIZE 0x8000000 /* 128 MiB */
 

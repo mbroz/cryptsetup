@@ -170,7 +170,7 @@ int LUKS2_generate_hdr(
 		keyslots_size = LUKS2_MAX_KEYSLOTS_SIZE;
 
 	if (!keyslots_size)
-		keyslots_size = LUKS2_DEFAULT_KEYSLOTS_SIZE;
+		keyslots_size = LUKS2_DEFAULT_HDR_SIZE - get_min_offset(hdr);
 
 	/* Decrease keyslots_size if we have smaller data_offset */
 	if (data_offset && (keyslots_size + get_min_offset(hdr)) > data_offset) {
