@@ -1550,7 +1550,6 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi,
 	struct dm_task *dmt;
 	uint64_t start, length;
 	char *target_type, *params = NULL;
-	void *next = NULL;
 	int r = -EINVAL;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
@@ -1573,8 +1572,8 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi,
 		goto out;
 	}
 
-	next = dm_get_next_target(dmt, next, &start, &length,
-	                          &target_type, &params);
+	dm_get_next_target(dmt, NULL, &start, &length,
+			   &target_type, &params);
 
 	if (!target_type || start != 0)
 		goto out;
@@ -2416,7 +2415,7 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 
 		dmd->size += length;
 		t = t->next;
-	} while (next);
+	} while (next && t);
 
 	if (dmi.read_only)
 		dmd->flags |= CRYPT_ACTIVATE_READONLY;

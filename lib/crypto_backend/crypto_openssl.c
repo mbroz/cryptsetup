@@ -324,7 +324,7 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 			return -EINVAL;
 
 		if (!PKCS5_PBKDF2_HMAC(password, (int)password_length,
-		    (unsigned char *)salt, (int)salt_length,
+		    (const unsigned char *)salt, (int)salt_length,
 	            (int)iterations, hash_id, (int)key_length, (unsigned char *)key))
 			return -EINVAL;
 		return 0;

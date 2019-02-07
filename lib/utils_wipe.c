@@ -170,7 +170,6 @@ int crypt_wipe_device(struct crypt_device *cd,
 
 		if (dev_size <= offset)
 			return -EINVAL;
-		length = dev_size - offset;
 	}
 
 	r = posix_memalign((void **)&sf, alignment, wipe_block_size);

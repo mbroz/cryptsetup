@@ -931,7 +931,7 @@ static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 
 	pbkdf.type = opt_pbkdf ?: pbkdf_default->type;
 	pbkdf.hash = opt_hash ?: pbkdf_default->hash;
-	pbkdf.time_ms = opt_iteration_time ?: pbkdf_default->time_ms;
+	pbkdf.time_ms = (uint32_t)opt_iteration_time ?: pbkdf_default->time_ms;
 	if (strcmp(pbkdf.type, CRYPT_KDF_PBKDF2)) {
 		pbkdf.max_memory_kb = opt_pbkdf_memory ?: pbkdf_default->max_memory_kb;
 		pbkdf.parallel_threads = opt_pbkdf_parallel ?: pbkdf_default->parallel_threads;
