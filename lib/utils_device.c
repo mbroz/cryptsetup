@@ -525,11 +525,11 @@ int device_fallocate(struct device *device, uint64_t size)
 	int devfd, r = -EINVAL;
 
 	devfd = open(device_path(device), O_RDWR);
-	if(devfd == -1)
+	if (devfd == -1)
 		return -EINVAL;
 
 	if (!fstat(devfd, &st) && S_ISREG(st.st_mode) &&
-	    !posix_fallocate(devfd, 0, size)) {
+	    ((uint64_t)st.st_size >= size || !posix_fallocate(devfd, 0, size))) {
 		r = 0;
 		if (device->file_path && crypt_loop_resize(device->path))
 			r = -EINVAL;
