@@ -9,8 +9,6 @@ PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 FAST_PBKDF="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
-EXPCT=32768
-
 cleanup() {
 	udevadm settle >/dev/null 2>&1
 	if [ -d "$MNT_DIR" ] ; then
@@ -162,6 +160,14 @@ fi
 
 dm_crypt_features
 modprobe --dry-run scsi_debug || exit 77
+cleanup
+
+add_device dev_size_mb=32
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q  >/dev/null || fail
+EXPCT=$($CRYPTSETUP luksDump $DEV | grep "offset: " | cut -f 2 -d ' ')
+test "$EXPCT" -gt 512 || fail
+EXPCT=$((EXPCT/512))
+echo "Default alignment detected: $EXPCT sectors"
 cleanup
 
 echo "# Create desktop-class 4K drive"
