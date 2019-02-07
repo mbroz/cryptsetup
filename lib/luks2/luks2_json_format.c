@@ -21,6 +21,7 @@
 
 #include "luks2_internal.h"
 #include <uuid/uuid.h>
+#include <assert.h>
 
 struct area {
 	uint64_t offset;
@@ -169,8 +170,10 @@ int LUKS2_generate_hdr(
 	if (keyslots_size > LUKS2_MAX_KEYSLOTS_SIZE)
 		keyslots_size = LUKS2_MAX_KEYSLOTS_SIZE;
 
-	if (!keyslots_size)
+	if (!keyslots_size) {
+		assert(LUKS2_DEFAULT_HDR_SIZE > 2 * LUKS2_HDR_OFFSET_MAX);
 		keyslots_size = LUKS2_DEFAULT_HDR_SIZE - get_min_offset(hdr);
+	}
 
 	/* Decrease keyslots_size if we have smaller data_offset */
 	if (data_offset && (keyslots_size + get_min_offset(hdr)) > data_offset) {
@@ -191,7 +194,7 @@ int LUKS2_generate_hdr(
 		" bytes and keyslots area %" PRIu64 " bytes.",
 		metadata_size - LUKS2_HDR_BIN_LEN, keyslots_size);
 
-	if (keyslots_size < (0x400000 - 2*LUKS2_HDR_16K_LEN))
+	if (keyslots_size < (LUKS2_HDR_OFFSET_MAX - 2*LUKS2_HDR_16K_LEN))
 		log_std(cd, _("WARNING: keyslots area (%" PRIu64 " bytes) is very small,"
 			" available LUKS2 keyslot count is very limited.\n"),
 			keyslots_size);
