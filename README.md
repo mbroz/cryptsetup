@@ -20,7 +20,10 @@ LUKS Design
 only facilitate compatibility among distributions, but also provides secure management of multiple user passwords.  
 LUKS stores all necessary setup information in the partition header, enabling to transport or migrate data seamlessly.
 
-Last version of the LUKS format specification is
+Last version of the LUKS2 format specification is
+[available here](https://gitlab.com/cryptsetup/LUKS2-docs).
+
+Last version of the LUKS1 format specification is
 [available here](https://www.kernel.org/pub/linux/utils/cryptsetup/LUKS_docs/on-disk-format.pdf).
 
 Why LUKS?
@@ -41,13 +44,16 @@ Download
 --------
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
 
-**The latest cryptsetup version is 2.0.6**
-  * [cryptsetup-2.0.6.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.6.tar.xz)
-  * Signature [cryptsetup-2.0.6.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.6.tar.sign)
+**The latest cryptsetup version is 2.1.0**
+  * [cryptsetup-2.1.0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.1/cryptsetup-2.1.0.tar.xz)
+  * Signature [cryptsetup-2.1.0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.1/cryptsetup-2.1.0.tar.sign)
     _(You need to decompress file first to check signature.)_
-  * [Cryptsetup 2.0.6 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/v2.0.6-ReleaseNotes).
+  * [Cryptsetup 2.1.0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.1/v2.1.0-ReleaseNotes).
 
 Previous versions
+ * [Version 2.0.6](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.6.tar.xz) -
+   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.6.tar.sign) -
+   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/v2.0.6-ReleaseNotes).
  * [Version 2.0.5](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.5.tar.xz) -
    [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.5.tar.sign) -
    [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/v2.0.5-ReleaseNotes).
