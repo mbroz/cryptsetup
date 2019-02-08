@@ -1,0 +1,210 @@
+Cryptsetup 2.1.0 Release Notes
+==============================
+Stable release with new features and bug fixes.
+
+Cryptsetup 2.1 version uses a new on-disk LUKS2 format as the default
+LUKS format and increases default LUKS2 header size.
+
+The legacy LUKS (referenced as LUKS1) will be fully supported forever
+as well as a traditional and fully backward compatible format.
+
+When upgrading a stable distribution, please use configure option
+--with-default-luks-format=LUKS1 to maintain backward compatibility.
+
+This release also switches to OpenSSL as a default cryptographic
+backend for LUKS header processing. Use --with-crypto_backend=gcrypt
+configure option if you need to preserve legacy libgcrypt backend.
+
+Please do not use LUKS2 without properly configured backup or
+in production systems that need to be compatible with older systems.
+
+Changes since version 2.0.6
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* The default for cryptsetup LUKS format action is now LUKS2.
+  You can use LUKS1 with cryptsetup option --type luks1.
+
+* The default size of the LUKS2 header is increased to 16 MB.
+  It includes metadata and the area used for binary keyslots;
+  it means that LUKS header backup is now 16MB in size.
+
+  Note, that used keyslot area is much smaller, but this increase
+  of reserved space allows implementation of later extensions
+  (like online reencryption).
+  It is fully compatible with older cryptsetup 2.0.x versions.
+  If you require to create LUKS2 header with the same size as
+  in the 2.0.x version, use --offset 8192 option for luksFormat
+  (units are in 512-bytes sectors; see notes below).
+
+* Cryptsetup now doubles LUKS default key size if XTS mode is used
+  (XTS mode uses two internal keys). This does not apply if key size
+  is explicitly specified on the command line and it does not apply
+  for the plain mode.
+  This fixes a confusion with AES and 256bit key in XTS mode where
+  code used AES128 and not AES256 as often expected.
+
+  Also, the default keyslot encryption algorithm (if cannot be derived
+  from data encryption algorithm) is now available as configure
+  options --with-luks2-keyslot-cipher and --with-luks2-keyslot-keybits.
+  The default is aes-xts-plain64 with 2 * 256-bits key.
+
+* Default cryptographic backend used for LUKS header processing is now
+  OpenSSL. For years, OpenSSL provided better performance for PBKDF.
+
+  NOTE: Cryptsetup/libcryptsetup supports several cryptographic
+  library backends. The fully supported are libgcrypt, OpenSSL and
+  kernel crypto API. FIPS mode extensions are maintained only for
+  libgcrypt and OpenSSL. Nettle and NSS are usable only for some
+  subset of algorithms and cannot provide full backward compatibility.
+  You can always switch to other backends by using a configure switch,
+  for libgcrypt (compatibility for older distributions) use:
+  --with-crypto_backend=gcrypt
+
+* The Python bindings are no longer supported and the code was removed
+  from cryptsetup distribution. Please use the libblockdev project
+  that already covers most of the libcryptsetup functionality
+  including LUKS2.
+
+* Cryptsetup now allows using --offset option also for luksFormat.
+  It means that the specified offset value is used for data offset.
+  LUKS2 header areas are automatically adjusted according to this value.
+  (Note units are in 512-byte sectors due to the previous definition
+  of this option in plain mode.)
+  This option can replace --align-payload with absolute alignment value.
+
+* Cryptsetup now supports new refresh action (that is the alias for
+  "open --refresh").
+  It allows changes of parameters for an active device (like root
+  device mapping), for example, it can enable or disable TRIM support
+  on-the-fly.
+  It is supported for LUKS1, LUKS2, plain and loop-AES devices.
+
+* Integritysetup now supports mode with detached data device through
+  new --data-device option.
+  Since kernel 4.18 there is a possibility to specify external data
+  device for dm-integrity that stores all integrity tags.
+
+* Integritysetup now supports automatic integrity recalculation
+  through new --integrity-recalculate option.
+  Linux kernel since version 4.18 supports automatic background
+  recalculation of integrity tags for dm-integrity.
+
+Other changes and fixes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix for crypt_wipe call to allocate space if the header is backed
+  by a file. This means that if you use detached header file, it will
+  now have always the full size after luksFormat, even if only
+  a few keyslots are used.
+
+* Fixes to offline cryptsetup-reencrypt to preserve LUKS2 keyslots
+  area sizes after reencryption and fixes for some other issues when
+  creating temporary reencryption headers.
+
+* Added some FIPS mode workarounds. We cannot (yet) use Argon2 in
+  FIPS mode, libcryptsetup now fallbacks to use PBKDF2 in FIPS mode.
+
+* Rejects conversion to LUKS1 if PBKDF2 hash algorithms
+  in keyslots differ.
+
+* The hash setting on command line now applies also to LUKS2 PBKDF2
+  digest. In previous versions, the LUKS2 key digest used PBKDF2-SHA256
+  (except for converted headers).
+
+* Allow LUKS2 keyslots area to increase if data offset allows it.
+  Cryptsetup can fine-tune LUKS2 metadata area sizes through
+  --luks2-metadata-size=BYTES and --luks2-keyslots-size=BYTES.
+  Please DO NOT use these low-level options until you need it for
+  some very specific additional feature.
+  Also, the code now prints these LUKS2 header area sizes in dump
+  command.
+
+* For LUKS2, keyslot can use different encryption that data with
+  new options --keyslot-key-size=BITS and --keyslot-cipher=STRING
+  in all commands that create new LUKS keyslot.
+  Please DO NOT use these low-level options until you need it for
+  some very specific additional feature.
+
+* Code now avoids data flush when reading device status through
+  device-mapper.
+
+* The Nettle crypto backend and the userspace kernel crypto API
+  backend were enhanced to allow more available hash functions
+  (like SHA3 variants).
+
+* Upstream code now does not require libgcrypt-devel
+  for autoconfigure, because OpenSSL is the default.
+  The libgcrypt does not use standard pkgconfig detection and
+  requires specific macro (part of libgcrypt development files)
+  to be always present during autoconfigure.
+  With other crypto backends, like OpenSSL, this makes no sense,
+  so this part of autoconfigure is now optional.
+
+* Cryptsetup now understands new --debug-json option that allows
+  an additional dump of some JSON information. These are no longer
+  present in standard debug output because it could contain some
+  specific LUKS header parameters.
+
+* The luksDump contains the hash algorithm used in Anti-Forensic
+  function.
+
+* All debug messages are now sent through configured log callback
+  functions, so an application can easily use own debug messages
+  handling. In previous versions debug messages were printed directly
+  to standard output.)
+
+Libcryptsetup API additions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These new calls are now exported, for details see libcryptsetup.h:
+
+ * crypt_init_data_device
+ * crypt_get_metadata_device_name
+     functions to init devices with separate metadata and data device
+     before a format function is called.
+
+ * crypt_set_data_offset
+     sets the data offset for LUKS to the specified value
+     in 512-byte sectors.
+     It should replace alignment calculation in LUKS param structures.
+
+ * crypt_get_metadata_size
+ * crypt_set_metadata_size
+     allows to set/get area sizes in LUKS header
+     (according to specification).
+
+ * crypt_get_default_type
+     get default compiled-in LUKS type (version).
+
+ * crypt_get_pbkdf_type_params
+     allows to get compiled-in PBKDF parameters.
+
+ * crypt_keyslot_set_encryption
+ * crypt_keyslot_get_encryption
+     allows to set/get per-keyslot encryption algorithm for LUKS2.
+
+ * crypt_keyslot_get_pbkdf
+     allows to get PBKDF parameters per-keyslot.
+
+ and these new defines:
+ * CRYPT_LOG_DEBUG_JSON (message type for JSON debug)
+ * CRYPT_DEBUG_JSON (log level for JSON debug)
+ * CRYPT_ACTIVATE_RECALCULATE (dm-integrity recalculate flag)
+ * CRYPT_ACTIVATE_REFRESH (new open with refresh flag)
+
+All existing API calls should remain backward compatible.
+
+Unfinished things & TODO for next releases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Optional authenticated encryption is still an experimental feature
+  and can have performance problems for high-speed devices and device
+  with larger IO blocks (like RAID).
+
+* Authenticated encryption does not use encryption for a dm-integrity
+  journal. While it does not influence data confidentiality or
+  integrity protection, an attacker can get some more information
+  from data journal or cause that system will corrupt sectors after
+  journal replay. (That corruption will be detected though.)
+
+* The LUKS2 metadata area increase is mainly needed for the new online
+  reencryption as the major feature for the next release.
