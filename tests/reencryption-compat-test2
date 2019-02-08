@@ -247,6 +247,13 @@ check_hash $PWD1 $HASH5
 echo $PWD1 | $REENC $IMG -q -s 512 --master-key-file /dev/urandom $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
 $CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 --luks2-metadata-size 128k -c aes-cbc-plain $FAST_PBKDF_ARGON --offset 8192 $IMG > /dev/null || fail
+wipe $PWD1
+check_hash $PWD1 $HASH5
+echo $PWD1 | $REENC $IMG -q $FAST_PBKDF_ARGON > /dev/null || fail
+check_hash $PWD1 $HASH5
+MDA_SIZE=$($CRYPTSETUP luksDump $IMG | grep "Metadata area: " | cut -f 3 -d ' ')
+test "$MDA_SIZE" -eq 131072 || fail "Unexpected Metadata area size $MDA_SIZE"
 
 echo "[2] Reencryption with data shift"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c aes-cbc-essiv:sha256 -s 128 $FAST_PBKDF_ARGON --offset 8192 $IMG || fail

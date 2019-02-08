@@ -532,6 +532,8 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 			     const char *uuid,
 			     const char *key, int key_size,
 			     const char *type,
+			     uint64_t metadata_size,
+			     uint64_t keyslots_size,
 			     void *params)
 {
 	struct crypt_device *cd_new = NULL;
@@ -554,6 +556,12 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 	r = crypt_set_data_offset(cd_new, rc->data_offset);
 	if (r) {
 		log_err(_("Failed to set data offset."));
+		goto out;
+	}
+
+	r = crypt_set_metadata_size(cd_new, metadata_size, keyslots_size);
+	if (r) {
+		log_err(_("Failed to set metadata size."));
 		goto out;
 	}
 
@@ -673,6 +681,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char *key = NULL;
 	size_t key_size;
+	uint64_t mdata_size = 0, keyslots_size = 0;
 	int r;
 
 	log_dbg("Creating LUKS header backup for device %s.", hdr_device(rc));
@@ -735,6 +744,9 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	if (r < 0)
 		goto out;
 
+	if (isLUKS2(crypt_get_type(cd)) && crypt_get_metadata_size(cd, &mdata_size, &keyslots_size))
+		goto out;
+
 	r = create_new_header(rc, cd,
 		opt_cipher ? cipher : crypt_get_cipher(cd),
 		opt_cipher ? cipher_mode : crypt_get_cipher_mode(cd),
@@ -742,6 +754,8 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		key,
 		key_size,
 		rc->type,
+		mdata_size,
+		keyslots_size,
 		isLUKS2(rc->type) ? (void*)&params2 : (void*)&params);
 
 	if (!r && isLUKS2(rc->type))
@@ -821,6 +835,8 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		NULL, NULL,
 		(opt_key_size ? opt_key_size : DEFAULT_LUKS1_KEYBITS) / 8,
 		rc->type,
+		0,
+		0,
 		isLUKS2(rc->type) ? (void*)&params2 : (void*)&params);
 out:
 	crypt_free(cd_new);
