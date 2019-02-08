@@ -1497,6 +1497,7 @@ static void HashDevicePlain(void)
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
 	OK_(strcmp(key, mk_hex));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_free(cd);
 
 	_remove_keyfiles();
 
