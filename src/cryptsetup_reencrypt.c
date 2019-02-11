@@ -269,20 +269,15 @@ out:
 	return r;
 }
 
-static int create_empty_header(const char *new_file, uint64_t data_sectors)
+static int create_empty_header(const char *new_file)
 {
 	int fd, r = 0;
 
-	data_sectors *= SECTOR_SIZE;
-
-	if (!data_sectors)
-		data_sectors = 4096;
-
-	log_dbg("Creating empty file %s of size %" PRIu64 ".", new_file, data_sectors);
+	log_dbg("Creating empty file %s of size 4096.", new_file);
 
 	/* coverity[toctou] */
 	fd = open(new_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IWUSR);
-	if (fd == -1 || posix_fallocate(fd, 0, data_sectors))
+	if (fd == -1 || posix_fallocate(fd, 0, 4096))
 		r = -EINVAL;
 	if (fd >= 0)
 		close(fd);
@@ -709,7 +704,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 
 	rc->data_offset = crypt_get_data_offset(cd) + ROUND_SECTOR(opt_reduce_size);
 
-	if ((r = create_empty_header(rc->header_file_new, rc->data_offset)))
+	if ((r = create_empty_header(rc->header_file_new)))
 		goto out;
 
 	params.hash = opt_hash ?: DEFAULT_LUKS1_HASH;
@@ -794,7 +789,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		}
 	}
 
-	r = create_empty_header(header_file_fake, 0);
+	r = create_empty_header(header_file_fake);
 	if (r < 0)
 		return r;
 
@@ -824,7 +819,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	if (rc->reencrypt_mode == DECRYPT)
 		goto out;
 
-	r = create_empty_header(rc->header_file_new, ROUND_SECTOR(opt_reduce_size));
+	r = create_empty_header(rc->header_file_new);
 	if (r < 0)
 		goto out;
 
