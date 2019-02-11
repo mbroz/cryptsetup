@@ -258,9 +258,13 @@ int init_pbkdf_type(struct crypt_device *cd,
 		}
 	}
 
-	log_dbg(cd, "PBKDF %s, hash %s, time_ms %u (iterations %u), max_memory_kb %u, parallel_threads %u.",
-		cd_pbkdf->type ?: "(none)", cd_pbkdf->hash ?: "(none)", cd_pbkdf->time_ms,
-		cd_pbkdf->iterations, cd_pbkdf->max_memory_kb, cd_pbkdf->parallel_threads);
+	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2))
+		log_dbg(cd, "PBKDF %s-%s, time_ms %u (iterations %u).",
+			cd_pbkdf->type, cd_pbkdf->hash, cd_pbkdf->time_ms, cd_pbkdf->iterations);
+	else
+		log_dbg(cd, "PBKDF %s, time_ms %u (iterations %u), max_memory_kb %u, parallel_threads %u.",
+			cd_pbkdf->type, cd_pbkdf->time_ms, cd_pbkdf->iterations,
+			cd_pbkdf->max_memory_kb, cd_pbkdf->parallel_threads);
 
 	return 0;
 }
