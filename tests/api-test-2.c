@@ -1282,8 +1282,8 @@ static void Luks2HeaderBackup(void)
 
 	// exercise luksOpen using backup header on block device
 	fd = loop_attach(&DEVICE_3, BACKUP_FILE, 0, 0, &ro);
+	NOTFAIL_(fd, "Bad loop device.");
 	close(fd);
-	OK_(fd < 0);
 	OK_(crypt_init(&cd, DEVICE_3));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));

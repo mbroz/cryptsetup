@@ -527,8 +527,8 @@ static void AddDevicePlain(void)
 		EQ_(r_size>>SECTOR_SHIFT, params.size + 10);
 	EQ_(crypt_status(cd,CDEVICE_1),CRYPT_ACTIVE);
 	fd = open(path, O_RDONLY);
+	NOTFAIL_(fd, "Bad loop device.");
 	close(fd);
-	OK_(fd < 0);
 
 	// resize to minimal size
 	OK_(crypt_resize(cd,CDEVICE_1, 1)); // minimal device size
@@ -1312,8 +1312,8 @@ static void LuksHeaderBackup(void)
 
 	// exercise luksOpen using backup header on block device
 	fd = loop_attach(&DEVICE_3, BACKUP_FILE, 0, 0, &ro);
+	NOTFAIL_(fd, "Bad loop device.");
 	close(fd);
-	OK_(fd < 0);
 	OK_(crypt_init(&cd, DEVICE_3));
 	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
