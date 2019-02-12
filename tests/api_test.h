@@ -58,6 +58,7 @@ int _system(const char *command, int warn);
 void register_cleanup(void (*cleanup)(void));
 
 void check_ok(int status, int line, const char *func);
+void check_ok_return(int status, int line, const char *func);
 void check_ko(int status, int line, const char *func);
 void check_equal(int line, const char *func, int64_t x, int64_t y);
 void check_null(int line, const char *func, const void *x);
@@ -67,6 +68,9 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 /* crypt_device context must be "cd" to parse error properly here */
 #define OK_(x)		do { xlog("(success)", #x, __FUNCTION__, __LINE__, NULL); \
 			     check_ok((x), __LINE__, __FUNCTION__); \
+			} while(0)
+#define NOTFAIL_(x, y)	do { xlog("(notfail)", #x, __FUNCTION__, __LINE__, y); \
+			     check_ok_return((x), __LINE__, __FUNCTION__); \
 			} while(0)
 #define FAIL_(x, y)	do { xlog("(fail)   ", #x, __FUNCTION__, __LINE__, y); \
 			     check_ko((x), __LINE__, __FUNCTION__); \

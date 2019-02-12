@@ -1484,11 +1484,13 @@ static void TokenActivationByKeyring(void)
 	};
 	uint64_t r_payload_offset;
 
-	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
-	if (kid < 0) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
+	if (!t_dm_crypt_keyring_support()) {
+		printf("WARNING: Kernel keyring not supported, skipping test.\n");
+		return;
 	}
+
+	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
+	NOTFAIL_(kid, "Test or kernel keyring are broken.");
 
 	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
@@ -1510,16 +1512,10 @@ static void TokenActivationByKeyring(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 
-	if (keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING)) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
 
 	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_PROCESS_KEYRING);
-	if (kid < 0) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(kid, "Test or kernel keyring are broken.");
 
 	// add token 1 with process keyring key
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
@@ -1537,23 +1533,14 @@ static void TokenActivationByKeyring(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 
-	if (keyctl_unlink(kid, KEY_SPEC_PROCESS_KEYRING)) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(keyctl_unlink(kid, KEY_SPEC_PROCESS_KEYRING), "Test or kernel keyring are broken.");
 
 	// create two tokens and let the cryptsetup unlock the volume with the valid one
 	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
-	if (kid < 0) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(kid, "Test or kernel keyring are broken.");
 
 	kid1 = add_key("user", KEY_DESC_TEST1, PASSPHRASE1, strlen(PASSPHRASE1), KEY_SPEC_THREAD_KEYRING);
-	if (kid1 < 0) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(kid1, "Test or kernel keyring are broken.");
 
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
@@ -1575,10 +1562,7 @@ static void TokenActivationByKeyring(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 
-	if (keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING)) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
 
 	// activate by any token with token 0 having absent pass from keyring
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
@@ -1588,10 +1572,7 @@ static void TokenActivationByKeyring(void)
 	crypt_free(cd);
 
 	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
-	if (kid < 0) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(kid, "Test or kernel keyring are broken.");
 
 	// replace pass for keyslot 0 making token 0 invalid
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
@@ -1622,16 +1603,10 @@ static void TokenActivationByKeyring(void)
 	EQ_(crypt_token_assign_keyslot(cd, 2, 1), 2);
 	crypt_free(cd);
 
-	if (keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING)) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
 
 	kid1 = add_key("user", KEY_DESC_TEST1, PASSPHRASE1, strlen(PASSPHRASE1), KEY_SPEC_THREAD_KEYRING);
-	if (kid1 < 0) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(kid1, "Test or kernel keyring are broken.");
 
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
@@ -2789,12 +2764,15 @@ static void Luks2ActivateByKeyring(void)
 	const char *cipher = "aes";
 	const char *cipher_mode = "xts-plain64";
 
-	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
-	kid1 = add_key("user", KEY_DESC_TEST1, PASSPHRASE1, strlen(PASSPHRASE1), KEY_SPEC_THREAD_KEYRING);
-	if (kid < 0 || kid1 < 0) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
+	if (!t_dm_crypt_keyring_support()) {
+		printf("WARNING: Kernel keyring not supported, skipping test.\n");
+		return;
 	}
+
+	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
+	NOTFAIL_(kid, "Test or kernel keyring are broken.");
+	kid1 = add_key("user", KEY_DESC_TEST1, PASSPHRASE1, strlen(PASSPHRASE1), KEY_SPEC_THREAD_KEYRING);
+	NOTFAIL_(kid1, "Test or kernel keyring are broken.");
 
 	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
@@ -2830,15 +2808,8 @@ static void Luks2ActivateByKeyring(void)
 	FAIL_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST1, 0, 0), "Failed to unclock keyslot");
 	crypt_free(cd);
 
-	if (keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING)) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
-
-	if (keyctl_unlink(kid1, KEY_SPEC_THREAD_KEYRING)) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	NOTFAIL_(keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
+	NOTFAIL_(keyctl_unlink(kid1, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
 
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
@@ -2993,17 +2964,16 @@ static void Luks2Requirements(void)
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 
 #ifdef KERNEL_KEYRING
-	kid = add_key("user", KEY_DESC_TEST0, "aaa", 3, KEY_SPEC_THREAD_KEYRING);
-	if (kid < 0) {
-		printf("Test or kernel keyring are broken.\n");
-		exit(1);
-	}
+	if (t_dm_crypt_keyring_support()) {
+		kid = add_key("user", KEY_DESC_TEST0, "aaa", 3, KEY_SPEC_THREAD_KEYRING);
+		NOTFAIL_(kid, "Test or kernel keyring are broken.");
 
-	/* crypt_activate_by_keyring (restricted for activation only) */
-	FAIL_((r = crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST0, 0, 0)), "Unmet requirements detected");
-	EQ_(r, -ETXTBSY);
-	OK_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST0, 0, 0));
-	OK_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST0, 0, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
+		/* crypt_activate_by_keyring (restricted for activation only) */
+		FAIL_((r = crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST0, 0, 0)), "Unmet requirements detected");
+		EQ_(r, t_dm_crypt_keyring_support() ? -ETXTBSY : -EINVAL);
+		OK_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST0, 0, 0));
+		OK_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST0, 0, CRYPT_ACTIVATE_KEYRING_KEY));
+	}
 #endif
 
 	/* crypt_volume_key_verify (unrestricted) */
@@ -3087,10 +3057,12 @@ static void Luks2Requirements(void)
 
 	/* crypt_activate_by_token (restricted for activation only) */
 #ifdef KERNEL_KEYRING
-	FAIL_((r = crypt_activate_by_token(cd, CDEVICE_1, 1, NULL, 0)), ""); // supposed to be silent
-	EQ_(r, -ETXTBSY);
-	OK_(crypt_activate_by_token(cd, NULL, 1, NULL, 0));
-	OK_(crypt_activate_by_token(cd, NULL, 1, NULL, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
+	if (t_dm_crypt_keyring_support()) {
+		FAIL_((r = crypt_activate_by_token(cd, CDEVICE_1, 1, NULL, 0)), ""); // supposed to be silent
+		EQ_(r, -ETXTBSY);
+		OK_(crypt_activate_by_token(cd, NULL, 1, NULL, 0));
+		OK_(crypt_activate_by_token(cd, NULL, 1, NULL, CRYPT_ACTIVATE_KEYRING_KEY));
+	}
 #endif
 	OK_(get_luks2_offsets(1, 8192, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 2));
