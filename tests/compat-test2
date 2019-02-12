@@ -168,6 +168,8 @@ function dm_crypt_keyring_support()
 	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
 	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
 
+	test -d /proc/sys/kernel/keys || return 1
+
 	[ $VER_MAJ -gt 1 ] && return 0
 	[ $VER_MAJ -eq 1 -a $VER_MIN -gt 18 ] && return 0
 	[ $VER_MAJ -eq 1 -a $VER_MIN -eq 18 -a $VER_PTC -ge 1 ] && return 0
@@ -749,7 +751,7 @@ fi
 # FIXME: candidate for non-root tests
 prepare "[33] tokens" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
-if [ $HAVE_KEYRING -gt 0 ]; then
+if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 
 	test_and_prepare_keyring
 

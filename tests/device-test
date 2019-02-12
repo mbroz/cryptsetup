@@ -50,7 +50,7 @@ function dm_crypt_features()
 	[ $VER_MAJ -gt 1 ] && {
 		DM_PERF_CPU=1
 		DM_SECTOR_SIZE=1
-		DM_KEYRING=1
+		test -d /proc/sys/kernel/keys && DM_KEYRING=1
 		return
 	}
 
@@ -60,7 +60,7 @@ function dm_crypt_features()
 		DM_SECTOR_SIZE=1
 	fi
 	if [ $VER_MIN -gt 18 -o \( $VER_MIN -eq 18 -a $VER_PTC -ge 1 \) ]; then
-		DM_KEYRING=1
+		 test -d /proc/sys/kernel/keys && DM_KEYRING=1
 	fi
 }
 
