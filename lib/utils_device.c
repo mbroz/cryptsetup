@@ -349,7 +349,7 @@ void device_free(struct crypt_device *cd, struct device *device)
 		close(device->loop_fd);
 	}
 
-	assert (!device_locked(device->lh));
+	assert(!device_locked(device->lh));
 
 	free(device->file_path);
 	free(device->path);
@@ -829,21 +829,25 @@ size_t device_alignment(struct device *device)
 	return device->alignment;
 }
 
+void device_set_lock_handle(struct device *device, struct crypt_lock_handle *h)
+{
+	device->lh = h;
+}
+
+struct crypt_lock_handle *device_get_lock_handle(struct device *device)
+{
+	return device->lh;
+}
+
 int device_read_lock(struct crypt_device *cd, struct device *device)
 {
 	if (!crypt_metadata_locking_enabled())
 		return 0;
 
-	assert(!device_locked(device->lh));
+	if (device_read_lock_internal(cd, device))
+		return -EBUSY;
 
-	device->lh = device_read_lock_handle(cd, device_path(device));
-
-	if (device_locked(device->lh)) {
-		log_dbg(cd, "Device %s READ lock taken.", device_path(device));
-		return 0;
-	}
-
-	return -EBUSY;
+	return 0;
 }
 
 int device_write_lock(struct crypt_device *cd, struct device *device)
@@ -851,16 +855,12 @@ int device_write_lock(struct crypt_device *cd, struct device *device)
 	if (!crypt_metadata_locking_enabled())
 		return 0;
 
-	assert(!device_locked(device->lh));
+	assert(!device_locked(device->lh) || !device_locked_readonly(device->lh));
 
-	device->lh = device_write_lock_handle(cd, device_path(device));
+	if (device_write_lock_internal(cd, device))
+		return -EBUSY;
 
-	if (device_locked(device->lh)) {
-		log_dbg(cd, "Device %s WRITE lock taken.", device_path(device));
-		return 0;
-	}
-
-	return -EBUSY;
+	return 0;
 }
 
 void device_read_unlock(struct crypt_device *cd, struct device *device)
@@ -868,13 +868,9 @@ void device_read_unlock(struct crypt_device *cd, struct device *device)
 	if (!crypt_metadata_locking_enabled())
 		return;
 
-	assert(device_locked(device->lh) && device_locked_readonly(device->lh));
+	assert(device_locked(device->lh));
 
-	device_unlock_handle(cd, device->lh);
-
-	log_dbg(cd, "Device %s READ lock released.", device_path(device));
-
-	device->lh = NULL;
+	device_unlock_internal(cd, device);
 }
 
 void device_write_unlock(struct crypt_device *cd, struct device *device)
@@ -884,11 +880,7 @@ void device_write_unlock(struct crypt_device *cd, struct device *device)
 
 	assert(device_locked(device->lh) && !device_locked_readonly(device->lh));
 
-	device_unlock_handle(cd, device->lh);
-
-	log_dbg(cd, "Device %s WRITE lock released.", device_path(device));
-
-	device->lh = NULL;
+	device_unlock_internal(cd, device);
 }
 
 bool device_is_locked(struct device *device)

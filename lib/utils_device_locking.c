@@ -33,6 +33,7 @@
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
 #include <libgen.h>
+#include <assert.h>
 
 #include "internal.h"
 #include "utils_device_locking.h"
@@ -52,6 +53,7 @@ enum lock_type {
 
 struct crypt_lock_handle {
 	dev_t devno;
+	unsigned refcnt;
 	int flock_fd;
 	enum lock_type type;
 	__typeof__( ((struct stat*)0)->st_mode) mode;
@@ -186,7 +188,7 @@ static void release_lock_handle(struct crypt_device *cd, struct crypt_lock_handl
 	}
 
 	if (close(h->flock_fd))
-		log_dbg(cd, "Failed to close resource fd (%d).", h->flock_fd);
+		log_dbg(cd, "Failed to close lock resource fd (%d).", h->flock_fd);
 }
 
 int device_locked(struct crypt_lock_handle *h)
@@ -217,20 +219,43 @@ static int verify_lock_handle(const char *device_path, struct crypt_lock_handle 
 	return (stat(res, &res_st) || !same_inode(lck_st, res_st)) ? -EAGAIN : 0;
 }
 
-struct crypt_lock_handle *device_read_lock_handle(struct crypt_device *cd, const char *device_path)
+static void device_lock_inc(struct crypt_lock_handle *h)
+{
+	h->refcnt++;
+}
+
+static unsigned device_lock_dec(struct crypt_lock_handle *h)
+{
+	assert(h->refcnt);
+
+	return --h->refcnt;
+}
+
+int device_read_lock_internal(struct crypt_device *cd, struct device *device)
 {
 	int r;
-	struct crypt_lock_handle *h = malloc(sizeof(*h));
+	struct crypt_lock_handle *h;
 
-	if (!h)
-		return NULL;
+	if (!device)
+		return -EINVAL;
+
+	h = device_get_lock_handle(device);
+
+	if (device_locked(h)) {
+		device_lock_inc(h);
+		log_dbg(cd, "Device %s READ lock (or higher) already held.", device_path(device));
+		return 0;
+	}
+
+	if (!(h = malloc(sizeof(*h))))
+		return -ENOMEM;
 
 	do {
-		r = acquire_lock_handle(cd, device_path, h);
+		r = acquire_lock_handle(cd, device_path(device), h);
 		if (r)
 			break;
 
-		log_dbg(cd, "Acquiring read lock for device %s.", device_path);
+		log_dbg(cd, "Acquiring read lock for device %s.", device_path(device));
 
 		if (flock(h->flock_fd, LOCK_SH)) {
 			log_dbg(cd, "Shared flock failed with errno %d.", errno);
@@ -239,13 +264,13 @@ struct crypt_lock_handle *device_read_lock_handle(struct crypt_device *cd, const
 			break;
 		}
 
-		log_dbg(cd, "Verifying read lock handle for device %s.", device_path);
+		log_dbg(cd, "Verifying read lock handle for device %s.", device_path(device));
 
 		/*
 		 * check whether another libcryptsetup process removed resource file before this
 		 * one managed to flock() it. See release_lock_handle() for details
 		 */
-		r = verify_lock_handle(device_path, h);
+		r = verify_lock_handle(device_path(device), h);
 		if (r) {
 			flock(h->flock_fd, LOCK_UN);
 			release_lock_handle(cd, h);
@@ -255,28 +280,43 @@ struct crypt_lock_handle *device_read_lock_handle(struct crypt_device *cd, const
 
 	if (r) {
 		free(h);
-		return NULL;
+		return r;
 	}
 
 	h->type = DEV_LOCK_READ;
+	h->refcnt = 1;
+	device_set_lock_handle(device, h);
 
-	return h;
+	log_dbg(cd, "Device %s READ lock taken.", device_path(device));
+
+	return 0;
 }
 
-struct crypt_lock_handle *device_write_lock_handle(struct crypt_device *cd, const char *device_path)
+int device_write_lock_internal(struct crypt_device *cd, struct device *device)
 {
 	int r;
-	struct crypt_lock_handle *h = malloc(sizeof(*h));
+	struct crypt_lock_handle *h;
 
-	if (!h)
-		return NULL;
+	if (!device)
+		return -EINVAL;
+
+	h = device_get_lock_handle(device);
+
+	if (device_locked(h)) {
+		device_lock_inc(h);
+		log_dbg(cd, "Device %s WRITE lock already held.", device_path(device));
+		return 0;
+	}
+
+	if (!(h = malloc(sizeof(*h))))
+		return -ENOMEM;
 
 	do {
-		r = acquire_lock_handle(cd, device_path, h);
+		r = acquire_lock_handle(cd, device_path(device), h);
 		if (r)
 			break;
 
-		log_dbg(cd, "Acquiring write lock for device %s.", device_path);
+		log_dbg(cd, "Acquiring write lock for device %s.", device_path(device));
 
 		if (flock(h->flock_fd, LOCK_EX)) {
 			log_dbg(cd, "Exclusive flock failed with errno %d.", errno);
@@ -285,13 +325,13 @@ struct crypt_lock_handle *device_write_lock_handle(struct crypt_device *cd, cons
 			break;
 		}
 
-		log_dbg(cd, "Verifying write lock handle for device %s.", device_path);
+		log_dbg(cd, "Verifying write lock handle for device %s.", device_path(device));
 
 		/*
 		 * check whether another libcryptsetup process removed resource file before this
 		 * one managed to flock() it. See release_lock_handle() for details
 		 */
-		r = verify_lock_handle(device_path, h);
+		r = verify_lock_handle(device_path(device), h);
 		if (r) {
 			flock(h->flock_fd, LOCK_UN);
 			release_lock_handle(cd, h);
@@ -301,22 +341,36 @@ struct crypt_lock_handle *device_write_lock_handle(struct crypt_device *cd, cons
 
 	if (r) {
 		free(h);
-		return NULL;
+		return r;
 	}
 
 	h->type = DEV_LOCK_WRITE;
+	h->refcnt = 1;
+	device_set_lock_handle(device, h);
 
-	return h;
+	log_dbg(cd, "Device %s WRITE lock taken.", device_path(device));
+
+	return 0;
 }
 
-void device_unlock_handle(struct crypt_device *cd, struct crypt_lock_handle *h)
+void device_unlock_internal(struct crypt_device *cd, struct device *device)
 {
+	struct crypt_lock_handle *h = device_get_lock_handle(device);
+	unsigned u = device_lock_dec(h);
+
+	if (u)
+		return;
+
 	if (flock(h->flock_fd, LOCK_UN))
 		log_dbg(cd, "flock on fd %d failed.", h->flock_fd);
 
 	release_lock_handle(cd, h);
 
+	log_dbg(cd, "Device %s %s lock released.", device_path(device),
+		device_locked_readonly(h) ? "READ" : "WRITE");
+
 	free(h);
+	device_set_lock_handle(device, NULL);
 }
 
 int device_locked_verify(struct crypt_device *cd, int dev_fd, struct crypt_lock_handle *h)
