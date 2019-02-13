@@ -283,6 +283,8 @@ void tools_passphrase_msg(int r)
 {
 	if (r == -EPERM)
 		log_err(_("No key available with this passphrase."));
+	else if (r == -ENOENT)
+		log_err(_("No usable keyslot is available."));
 }
 
 int tools_read_mk(const char *file, char **key, int keysize)

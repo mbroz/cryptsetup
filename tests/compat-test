@@ -200,9 +200,9 @@ echo $PWD0 | $CRYPTSETUP luksRemoveKey $IMG || fail
 echo $PWD2 | $CRYPTSETUP luksRemoveKey $IMG || fail
 # check if keys were deleted
 echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
-[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
+[ $? -ne 1 ] && fail "luksOpen should return ENOENT exit code"
 echo $PWD2 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
-[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
+[ $? -ne 1 ] && fail "luksOpen should return ENOENT exit code"
 echo "[6] kill slot"
 # format new luks device with active keys PWD1, PWD2
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $IMG $FAST_PBKDF_OPT || fail
@@ -652,7 +652,7 @@ prepare "[27] luksOpen with specified key slot number" wipe
 # first, let's try passphrase option
 echo $PWD3 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT -S 5 $LOOPDEV || fail
 check $LUKS_HEADER $KEY_SLOT5 $KEY_MATERIAL5
-echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME && fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 echo $PWD3 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME || fail
 check_exists
@@ -848,7 +848,7 @@ eval spawn $CRYPTSETUP luksOpen -v $LOOPDEV -T 1 --test-passphrase
 expect timeout abort "Enter passphrase for $LOOPDEV:"
 sleep 0.1
 send "$PWD0\n"
-expect timeout abort "No key available with this passphrase."
+expect timeout abort "No usable keyslot is available."
 expect timeout abort eof
 exit
 EOF

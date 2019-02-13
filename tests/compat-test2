@@ -609,7 +609,7 @@ $CRYPTSETUP -q luksClose $DEV_NAME || fail
 prepare "[27] luksOpen with specified key slot number" wipe
 # first, let's try passphrase option
 echo $PWD3 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -S 5 --type luks2 $LOOPDEV || fail
-echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME && fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 echo $PWD3 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME || fail
 check_exists
@@ -634,16 +634,16 @@ $CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 prepare "" new
 echo $PWD1 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU || fail
 echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_KEYU || fail
-echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME && fail
+echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
-echo $PWD1 | $CRYPTSETUP open $HEADER_KEYU $DEV_NAME && fail
+echo $PWD1 | $CRYPTSETUP open $HEADER_KEYU $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 echo $PWD0 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksKillSlot -q $HEADER_KEYU 0
 $CRYPTSETUP luksDump $HEADER_KEYU | grep -q "0: luks2" && fail
 echo $PWD1 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU || fail
 echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_KEYU || fail
-echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME && fail
+echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME 2>/dev/null && fail
 
 prepare "[28] Detached LUKS header" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail

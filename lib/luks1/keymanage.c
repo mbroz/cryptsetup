@@ -1024,7 +1024,7 @@ int LUKS_open_key_with_hdr(int keyIndex,
 			   struct volume_key **vk,
 			   struct crypt_device *ctx)
 {
-	unsigned int i;
+	unsigned int i, tried = 0;
 	int r;
 
 	*vk = crypt_alloc_volume_key(hdr->keyBytes, NULL);
@@ -1034,7 +1034,7 @@ int LUKS_open_key_with_hdr(int keyIndex,
 		return (r < 0) ? r : keyIndex;
 	}
 
-	for(i = 0; i < LUKS_NUMKEYS; i++) {
+	for (i = 0; i < LUKS_NUMKEYS; i++) {
 		r = LUKS_open_key(i, password, passwordLen, hdr, *vk, ctx);
 		if(r == 0)
 			return i;
@@ -1043,9 +1043,11 @@ int LUKS_open_key_with_hdr(int keyIndex,
 		   former meaning password wrong, latter key slot inactive */
 		if ((r != -EPERM) && (r != -ENOENT))
 			return r;
+		if (r == -EPERM)
+			tried++;
 	}
 	/* Warning, early returns above */
-	return -EPERM;
+	return tried ? -EPERM : -ENOENT;
 }
 
 int LUKS_del_key(unsigned int keyIndex,
