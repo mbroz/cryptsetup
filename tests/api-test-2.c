@@ -221,27 +221,29 @@ static void _remove_keyfiles(void)
 #define DM_RETRY ""
 #endif
 
+#define DM_NOSTDERR " 2>/dev/null"
+
 static void _cleanup_dmdevices(void)
 {
 	struct stat st;
 
 	if (!stat(DMDIR H_DEVICE, &st))
-		_system("dmsetup remove " DM_RETRY H_DEVICE, 0);
+		_system("dmsetup remove " DM_RETRY H_DEVICE DM_NOSTDERR, 0);
 
 	if (!stat(DMDIR H_DEVICE_WRONG, &st))
-		_system("dmsetup remove " DM_RETRY H_DEVICE_WRONG, 0);
+		_system("dmsetup remove " DM_RETRY H_DEVICE_WRONG DM_NOSTDERR, 0);
 
 	if (!stat(DMDIR L_DEVICE_0S, &st))
-		_system("dmsetup remove " DM_RETRY L_DEVICE_0S, 0);
+		_system("dmsetup remove " DM_RETRY L_DEVICE_0S DM_NOSTDERR, 0);
 
 	if (!stat(DMDIR L_DEVICE_1S, &st))
-		_system("dmsetup remove " DM_RETRY L_DEVICE_1S, 0);
+		_system("dmsetup remove " DM_RETRY L_DEVICE_1S DM_NOSTDERR, 0);
 
 	if (!stat(DMDIR L_DEVICE_WRONG, &st))
-		_system("dmsetup remove " DM_RETRY L_DEVICE_WRONG, 0);
+		_system("dmsetup remove " DM_RETRY L_DEVICE_WRONG DM_NOSTDERR, 0);
 
 	if (!stat(DMDIR L_DEVICE_OK, &st))
-		_system("dmsetup remove " DM_RETRY L_DEVICE_OK, 0);
+		_system("dmsetup remove " DM_RETRY L_DEVICE_OK DM_NOSTDERR, 0);
 
 	t_dev_offset = 0;
 }
@@ -253,16 +255,16 @@ static void _cleanup(void)
 	//_system("udevadm settle", 0);
 
 	if (!stat(DMDIR CDEVICE_1, &st))
-		_system("dmsetup remove " CDEVICE_1, 0);
+		_system("dmsetup remove " CDEVICE_1 DM_NOSTDERR, 0);
 
 	if (!stat(DMDIR CDEVICE_2, &st))
-		_system("dmsetup remove " CDEVICE_2, 0);
+		_system("dmsetup remove " CDEVICE_2 DM_NOSTDERR, 0);
 
 	if (!stat(DEVICE_EMPTY, &st))
-		_system("dmsetup remove " DEVICE_EMPTY_name, 0);
+		_system("dmsetup remove " DEVICE_EMPTY_name DM_NOSTDERR, 0);
 
 	if (!stat(DEVICE_ERROR, &st))
-		_system("dmsetup remove " DEVICE_ERROR_name, 0);
+		_system("dmsetup remove " DEVICE_ERROR_name DM_NOSTDERR, 0);
 
 	_cleanup_dmdevices();
 
