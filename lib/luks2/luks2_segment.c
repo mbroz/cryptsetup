@@ -42,6 +42,9 @@ uint64_t json_segments_get_minimal_offset(json_object *jobj_segments, unsigned b
 	json_object_object_foreach(jobj_segments, key, val) {
 		UNUSED(key);
 
+		if (LUKS2_segment_ignore(val))
+			continue;
+
 		tmp = json_segment_get_offset(val, blockwise);
 
 		if (!tmp)
@@ -146,10 +149,18 @@ json_object *json_segments_get_segment(json_object *jobj_segments, int segment)
 
 int json_segments_count(json_object *jobj_segments)
 {
+	int count = 0;
+
 	if (!jobj_segments)
 		return -EINVAL;
 
-	return json_object_object_length(jobj_segments);
+	json_object_object_foreach(jobj_segments, slot, val) {
+		UNUSED(slot);
+		if (!LUKS2_segment_ignore(val))
+			count++;
+	}
+
+	return count;
 }
 
 static void _get_segment_or_id_by_flag(json_object *jobj_segments, const char *flag, unsigned id, void *retval)
@@ -218,14 +229,18 @@ static json_object *_segment_create_generic(const char *type, uint64_t offset, c
 	return jobj;
 }
 
-json_object *json_segment_create_linear(uint64_t offset, const uint64_t *length)
+json_object *json_segment_create_linear(uint64_t offset, const uint64_t *length, unsigned reencryption)
 {
-	return _segment_create_generic("linear", offset, length);
+	json_object *jobj = _segment_create_generic("linear", offset, length);
+	if (reencryption)
+		LUKS2_segment_set_flag(jobj, "in-reencryption");
+	return jobj;
 }
 
 json_object *json_segment_create_crypt(uint64_t offset,
 				  uint64_t iv_offset, const uint64_t *length,
-				  const char *cipher, uint32_t sector_size)
+				  const char *cipher, uint32_t sector_size,
+				  unsigned reencryption)
 {
 	json_object *jobj = _segment_create_generic("crypt", offset, length);
 	if (!jobj)
@@ -234,6 +249,8 @@ json_object *json_segment_create_crypt(uint64_t offset,
 	json_object_object_add(jobj, "iv_tweak",	json_object_new_uint64(iv_offset));
 	json_object_object_add(jobj, "encryption",	json_object_new_string(cipher));
 	json_object_object_add(jobj, "sector_size",	json_object_new_int(sector_size));
+	if (reencryption)
+		LUKS2_segment_set_flag(jobj, "in-reencryption");
 
 	return jobj;
 }

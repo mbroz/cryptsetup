@@ -231,7 +231,7 @@ int LUKS2_generate_hdr(
 	if (LUKS2_digest_segment_assign(cd, hdr, CRYPT_DEFAULT_SEGMENT, digest, 1, 0) < 0)
 		goto err;
 
-	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher, sector_size);
+	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher, sector_size, 0);
 	if (!jobj_segment)
 		goto err;
 
