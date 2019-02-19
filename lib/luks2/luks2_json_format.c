@@ -102,14 +102,7 @@ int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	log_dbg(cd, "Found area %zu -> %zu", offset, length + offset);
-/*
-	log_dbg("Area offset min: %zu, max %zu, slots max %u",
-	       get_min_offset(hdr), get_max_offset(cd), LUKS2_KEYSLOTS_MAX);
-	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++)
-		log_dbg("SLOT[%02i]: %-8" PRIu64 " -> %-8" PRIu64, i,
-			sorted_areas[i].offset,
-			sorted_areas[i].length + sorted_areas[i].offset);
-*/
+
 	*area_offset = offset;
 	*area_length = length;
 	return 0;
