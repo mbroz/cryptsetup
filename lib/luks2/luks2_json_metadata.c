@@ -171,22 +171,7 @@ json_object *LUKS2_get_digest_jobj(struct luks2_hdr *hdr, int digest)
 
 json_object *LUKS2_get_segment_jobj(struct luks2_hdr *hdr, int segment)
 {
-	json_object *jobj1, *jobj2;
-	char segment_name[16];
-
-	if (!hdr || segment < 0)
-		return NULL;
-
-	if (snprintf(segment_name, sizeof(segment_name), "%u", segment) < 1)
-		return NULL;
-
-	if (!json_object_object_get_ex(hdr->jobj, "segments", &jobj1))
-		return NULL;
-
-	if (!json_object_object_get_ex(jobj1, segment_name, &jobj2))
-		return NULL;
-
-	return jobj2;
+	return hdr ? json_segments_get_segment(json_get_segments_jobj(hdr->jobj), segment) : NULL;
 }
 
 /*
@@ -1643,24 +1628,17 @@ uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr)
 
 const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment)
 {
-	json_object *jobj1, *jobj2, *jobj3;
-	char buf[16];
+	json_object *jobj_segment;
 
-	if (segment < 0 || snprintf(buf, sizeof(buf), "%u", segment) < 1)
+	if (!hdr)
 		return NULL;
 
-	if (!json_object_object_get_ex(hdr->jobj, "segments", &jobj1))
+	jobj_segment = json_segments_get_segment(json_get_segments_jobj(hdr->jobj), segment);
+	if (!jobj_segment)
 		return NULL;
-
-	if (!json_object_object_get_ex(jobj1, buf, &jobj2))
-		return NULL;
-
-	if (json_object_object_get_ex(jobj2, "encryption", &jobj3))
-		return json_object_get_string(jobj3);
 
 	/* FIXME: default encryption (for other segment types) must be string here. */
-	return "null";
-
+	return json_segment_get_cipher(jobj_segment) ?: "null";
 }
 
 const char *LUKS2_get_keyslot_cipher(struct luks2_hdr *hdr, int keyslot, size_t *key_size)
