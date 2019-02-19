@@ -222,9 +222,10 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 	unsigned dm_maj, dm_min, dm_patch;
 	int r = 0;
 
-	if (((target_type == DM_CRYPT || target_type == DM_LINEAR) && _dm_crypt_checked) ||
+	if ((target_type == DM_CRYPT	 && _dm_crypt_checked) ||
 	    (target_type == DM_VERITY    && _dm_verity_checked) ||
 	    (target_type == DM_INTEGRITY && _dm_integrity_checked) ||
+	    (target_type == DM_LINEAR) ||
 	    (_dm_crypt_checked && _dm_verity_checked && _dm_integrity_checked))
 		return 1;
 
@@ -296,9 +297,10 @@ int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags)
 	    _dm_crypt_checked && _dm_verity_checked && _dm_integrity_checked)
 		return 0;
 
-	if (((target == DM_CRYPT || target == DM_LINEAR) && _dm_crypt_checked) ||
+	if ((target == DM_CRYPT	    && _dm_crypt_checked) ||
 	    (target == DM_VERITY    && _dm_verity_checked) ||
-	    (target == DM_INTEGRITY && _dm_integrity_checked))
+	    (target == DM_INTEGRITY && _dm_integrity_checked) ||
+	    (target == DM_LINEAR)) /* nothing to check with linear */
 		return 0;
 
 	return -ENODEV;
