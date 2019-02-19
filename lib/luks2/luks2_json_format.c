@@ -39,9 +39,9 @@ static size_t get_min_offset(struct luks2_hdr *hdr)
 	return 2 * hdr->hdr_size;
 }
 
-static size_t get_max_offset(struct crypt_device *cd)
+static size_t get_max_offset(struct luks2_hdr *hdr)
 {
-	return crypt_get_data_offset(cd) * SECTOR_SIZE;
+	return LUKS2_hdr_and_areas_size(hdr->jobj);
 }
 
 int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
@@ -62,7 +62,7 @@ int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 	/* sort table */
 	k = 0; /* index in sorted table */
 	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
-		offset = get_max_offset(cd) ?: UINT64_MAX;
+		offset = get_max_offset(hdr) ?: UINT64_MAX;
 		area_i = -1;
 		/* search for the smallest offset in table */
 		for (j = 0; j < LUKS2_KEYSLOTS_MAX; j++)
@@ -96,7 +96,7 @@ int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 		offset = sorted_areas[i].offset + sorted_areas[i].length;
 	}
 
-	if (get_max_offset(cd) && (offset + length) > get_max_offset(cd)) {
+	if ((offset + length) > get_max_offset(hdr)) {
 		log_err(cd, _("No space for new keyslot."));
 		return -EINVAL;
 	}
