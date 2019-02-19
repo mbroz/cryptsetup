@@ -130,7 +130,7 @@ static int _digest_verify(struct crypt_device *cd,
 
 int LUKS2_digest_verify(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	struct volume_key *vk,
+	const struct volume_key *vk,
 	int keyslot)
 {
 	int digest, r;
