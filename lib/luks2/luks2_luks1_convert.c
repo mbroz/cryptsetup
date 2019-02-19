@@ -200,7 +200,7 @@ static int json_luks1_segments(const struct luks_phdr *hdr_v1, struct json_objec
 		json_object_put(segments_obj);
 		return r;
 	}
-	json_object_object_add_by_uint(segments_obj, CRYPT_DEFAULT_SEGMENT, field);
+	json_object_object_add_by_uint(segments_obj, 0, field);
 
 	*segments_object = segments_obj;
 	return 0;

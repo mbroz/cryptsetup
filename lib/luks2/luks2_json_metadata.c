@@ -171,7 +171,13 @@ json_object *LUKS2_get_digest_jobj(struct luks2_hdr *hdr, int digest)
 
 json_object *LUKS2_get_segment_jobj(struct luks2_hdr *hdr, int segment)
 {
-	return hdr ? json_segments_get_segment(json_get_segments_jobj(hdr->jobj), segment) : NULL;
+	if (!hdr)
+		return NULL;
+
+	if (segment == CRYPT_DEFAULT_SEGMENT)
+		segment = LUKS2_get_default_segment(hdr);
+
+	return json_segments_get_segment(json_get_segments_jobj(hdr->jobj), segment);
 }
 
 json_object *LUKS2_get_segments_jobj(struct luks2_hdr *hdr)
@@ -187,6 +193,14 @@ int LUKS2_segments_count(struct luks2_hdr *hdr)
 		return -EINVAL;
 
 	return json_segments_count(jobj_segments);
+}
+
+int LUKS2_get_default_segment(struct luks2_hdr *hdr)
+{
+	if (LUKS2_segments_count(hdr) == 1)
+		return 0;
+
+	return -EINVAL;
 }
 
 /*
@@ -1614,6 +1628,9 @@ const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment)
 	if (!hdr)
 		return NULL;
 
+	if (segment == CRYPT_DEFAULT_SEGMENT)
+		segment = LUKS2_get_default_segment(hdr);
+
 	jobj_segment = json_segments_get_segment(json_get_segments_jobj(hdr->jobj), segment);
 	if (!jobj_segment)
 		return NULL;
@@ -1650,25 +1667,19 @@ const char *LUKS2_get_keyslot_cipher(struct luks2_hdr *hdr, int keyslot, size_t 
 
 const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment)
 {
-	json_object *jobj1, *jobj2, *jobj3, *jobj4;
-	char buf[16];
+	json_object *jobj1, *jobj2, *jobj3;
 
-	if (segment < 0 || snprintf(buf, sizeof(buf), "%u", segment) < 1)
+	jobj1 = LUKS2_get_segment_jobj(hdr, segment);
+	if (!jobj1)
 		return NULL;
 
-	if (!json_object_object_get_ex(hdr->jobj, "segments", &jobj1))
+	if (!json_object_object_get_ex(jobj1, "integrity", &jobj2))
 		return NULL;
 
-	if (!json_object_object_get_ex(jobj1, buf, &jobj2))
+	if (!json_object_object_get_ex(jobj2, "type", &jobj3))
 		return NULL;
 
-	if (!json_object_object_get_ex(jobj2, "integrity", &jobj3))
-		return NULL;
-
-	if (!json_object_object_get_ex(jobj3, "type", &jobj4))
-		return NULL;
-
-	return json_object_get_string(jobj4);
+	return json_object_get_string(jobj3);
 }
 
 /* FIXME: this only ensures that once we have journal encryption, it is not ignored. */
@@ -1680,7 +1691,7 @@ static int LUKS2_integrity_compatible(struct luks2_hdr *hdr)
 	if (!json_object_object_get_ex(hdr->jobj, "segments", &jobj1))
 		return 0;
 
-	if (!json_object_object_get_ex(jobj1, CRYPT_DEFAULT_SEGMENT_STR, &jobj2))
+	if (!(jobj2 = LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT)))
 		return 0;
 
 	if (!json_object_object_get_ex(jobj2, "integrity", &jobj3))
@@ -1730,6 +1741,9 @@ int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment)
 {
 	json_object *jobj_digests, *jobj_digest_segments, *jobj_digest_keyslots, *jobj1;
 	char buf[16];
+
+	if (segment == CRYPT_DEFAULT_SEGMENT)
+		segment = LUKS2_get_default_segment(hdr);
 
 	if (snprintf(buf, sizeof(buf), "%u", segment) < 1)
 		return -1;

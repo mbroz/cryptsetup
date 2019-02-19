@@ -228,7 +228,7 @@ int LUKS2_generate_hdr(
 	if (digest < 0)
 		goto err;
 
-	if (LUKS2_digest_segment_assign(cd, hdr, CRYPT_DEFAULT_SEGMENT, digest, 1, 0) < 0)
+	if (LUKS2_digest_segment_assign(cd, hdr, 0, digest, 1, 0) < 0)
 		goto err;
 
 	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher, sector_size, 0);
@@ -243,7 +243,7 @@ int LUKS2_generate_hdr(
 		json_object_object_add(jobj_segment, "integrity", jobj_integrity);
 	}
 
-	json_object_object_add_by_uint(jobj_segments, CRYPT_DEFAULT_SEGMENT, jobj_segment);
+	json_object_object_add_by_uint(jobj_segments, 0, jobj_segment);
 
 	json_object_object_add(jobj_config, "json_size", json_object_new_uint64(metadata_size - LUKS2_HDR_BIN_LEN));
 	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));

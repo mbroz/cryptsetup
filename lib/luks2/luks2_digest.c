@@ -193,6 +193,9 @@ int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment)
 	char segment_name[16];
 	json_object *jobj_digests, *jobj_digest_segments;
 
+	if (segment == CRYPT_DEFAULT_SEGMENT)
+		segment = LUKS2_get_default_segment(hdr);
+
 	json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests);
 
 	if (snprintf(segment_name, sizeof(segment_name), "%u", segment) < 1)
@@ -299,6 +302,9 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 {
 	json_object *jobj_digests;
 	int r = 0;
+
+	if (segment == CRYPT_DEFAULT_SEGMENT)
+		segment = LUKS2_get_default_segment(hdr);
 
 	if (digest == CRYPT_ANY_DIGEST) {
 		json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests);
