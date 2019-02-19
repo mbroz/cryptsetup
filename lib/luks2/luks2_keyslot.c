@@ -435,6 +435,9 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 		return r;
 	}
 
+	if (LUKS2_hdr_validate(cd, hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
+		return -EINVAL;
+
 	return h->store(cd, keyslot, password, password_len,
 			vk->key, vk->keylength);
 }
