@@ -2614,6 +2614,7 @@ int dm_crypt_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_siz
 	tgt->data_device = data_device;
 
 	tgt->type = DM_CRYPT;
+	tgt->direction = TARGET_SET;
 	tgt->u.crypt.vk = vk;
 	tgt->offset = seg_offset;
 	tgt->size = seg_size;
