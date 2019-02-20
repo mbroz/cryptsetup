@@ -116,7 +116,9 @@ json_object *LUKS2_get_keyslot_jobj(struct luks2_hdr *hdr, int keyslot)
 	if (!json_object_object_get_ex(hdr->jobj, "keyslots", &jobj1))
 		return NULL;
 
-	json_object_object_get_ex(jobj1, keyslot_name, &jobj2);
+	if (!json_object_object_get_ex(jobj1, keyslot_name, &jobj2))
+		return NULL;
+
 	return jobj2;
 }
 
