@@ -213,6 +213,25 @@ uint32_t json_object_get_uint32(json_object *jobj)
 }
 
 /* jobj has to be json_type_string and numbered */
+static json_bool json_str_to_int64(json_object *jobj, int64_t *value)
+{
+	char *endptr;
+	long long int tmp;
+
+	errno = 0;
+	tmp = strtoll(json_object_get_string(jobj), &endptr, 10);
+	if (*endptr || errno) {
+		log_dbg(NULL, "Failed to parse int64_t type from string %s.",
+			json_object_get_string(jobj));
+		*value = 0;
+		return FALSE;
+	}
+
+	*value = tmp;
+	return TRUE;
+}
+
+/* jobj has to be json_type_string and numbered */
 static json_bool json_str_to_uint64(json_object *jobj, uint64_t *value)
 {
 	char *endptr;
@@ -229,10 +248,18 @@ static json_bool json_str_to_uint64(json_object *jobj, uint64_t *value)
 	return TRUE;
 }
 
+int64_t json_object_get_int64_ex(json_object *jobj)
+{
+	int64_t r;
+	json_str_to_int64(jobj, &r);
+	return r;
+}
+
 uint64_t json_object_get_uint64(json_object *jobj)
 {
 	uint64_t r;
-	return json_str_to_uint64(jobj, &r) ? r : 0;
+	json_str_to_uint64(jobj, &r);
+	return r;
 }
 
 json_object *json_object_new_uint64(uint64_t value)
@@ -243,6 +270,21 @@ json_object *json_object_new_uint64(uint64_t value)
 	json_object *jobj;
 
 	r = snprintf(num, sizeof(num), "%" PRIu64, value);
+	if (r < 0 || (size_t)r >= sizeof(num))
+		return NULL;
+
+	jobj = json_object_new_string(num);
+	return jobj;
+}
+
+json_object *json_object_new_int64_ex(int64_t value)
+{
+	/* 18446744073709551615 */
+	char num[21];
+	int r;
+	json_object *jobj;
+
+	r = snprintf(num, sizeof(num), "%" PRIi64, value);
 	if (r < 0 || (size_t)r >= sizeof(num))
 		return NULL;
 
