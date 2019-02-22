@@ -44,6 +44,80 @@ static size_t get_max_offset(struct luks2_hdr *hdr)
 	return LUKS2_hdr_and_areas_size(hdr->jobj);
 }
 
+int LUKS2_find_area_max_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
+			uint64_t *area_offset, uint64_t *area_length)
+{
+	struct area areas[LUKS2_KEYSLOTS_MAX], sorted_areas[LUKS2_KEYSLOTS_MAX+1] = {};
+	int i, j, k, area_i;
+	size_t valid_offset, offset, length;
+
+	/* fill area offset + length table */
+	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
+		if (!LUKS2_keyslot_area(hdr, i, &areas[i].offset, &areas[i].length))
+			continue;
+		areas[i].length = 0;
+		areas[i].offset = 0;
+	}
+
+	/* sort table */
+	k = 0; /* index in sorted table */
+	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
+		offset = get_max_offset(hdr) ?: UINT64_MAX;
+		area_i = -1;
+		/* search for the smallest offset in table */
+		for (j = 0; j < LUKS2_KEYSLOTS_MAX; j++)
+			if (areas[j].offset && areas[j].offset <= offset) {
+				area_i = j;
+				offset = areas[j].offset;
+			}
+
+		if (area_i >= 0) {
+			sorted_areas[k].length = areas[area_i].length;
+			sorted_areas[k].offset = areas[area_i].offset;
+			areas[area_i].length = 0;
+			areas[area_i].offset = 0;
+			k++;
+		}
+	}
+
+	sorted_areas[LUKS2_KEYSLOTS_MAX].offset = get_max_offset(hdr);
+	sorted_areas[LUKS2_KEYSLOTS_MAX].length = 1;
+
+	/* search for the gap we can use */
+	length = valid_offset = 0;
+	offset = get_min_offset(hdr);
+	for (i = 0; i < LUKS2_KEYSLOTS_MAX+1; i++) {
+		/* skip empty */
+		if (sorted_areas[i].offset == 0 || sorted_areas[i].length == 0)
+			continue;
+
+		/* found bigger gap than the last one */
+		if ((offset < sorted_areas[i].offset) && (sorted_areas[i].offset - offset) > length) {
+			length = sorted_areas[i].offset - offset;
+			valid_offset = offset;
+		}
+
+		/* move beyond allocated area */
+		offset = sorted_areas[i].offset + sorted_areas[i].length;
+	}
+
+	/* this search 'algorithm' does not work with unaligned areas */
+	assert(length == size_round_up(length, 4096));
+	assert(valid_offset == size_round_up(valid_offset, 4096));
+
+	if (!length) {
+		log_dbg(cd, "Not enough space in header keyslot area.");
+		return -EINVAL;
+	}
+
+	log_dbg(cd, "Found largest free area %zu -> %zu", valid_offset, length + valid_offset);
+
+	*area_offset = valid_offset;
+	*area_length = length;
+
+	return 0;
+}
+
 int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 			size_t keylength, uint64_t *area_offset, uint64_t *area_length)
 {

@@ -183,5 +183,7 @@ int token_keyring_get(json_object *, void *);
 
 int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 			size_t keylength, uint64_t *area_offset, uint64_t *area_length);
+int LUKS2_find_area_max_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
+			    uint64_t *area_offset, uint64_t *area_length);
 
 #endif
