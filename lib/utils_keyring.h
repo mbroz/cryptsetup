@@ -26,6 +26,10 @@
 
 int keyring_check(void);
 
+int keyring_get_key(const char *key_desc,
+		    char **key,
+		    size_t *key_size);
+
 int keyring_get_passphrase(const char *key_desc,
 		      char **passphrase,
 		      size_t *passphrase_len);
@@ -35,6 +39,18 @@ int keyring_add_logon_key_in_thread_keyring(
 	const void *key,
 	size_t key_size);
 
+int keyring_add_user_key_in_thread_keyring(
+	const char *key_desc,
+	const void *key,
+	size_t key_size);
+
+int keyring_add_key_in_user_keyring(
+	const char *type,
+	const char *key_desc,
+	const void *key,
+	size_t key_size);
+
 int keyring_revoke_and_unlink_logon_key(const char *key_desc);
+int keyring_revoke_and_unlink_user_key(const char *key_desc);
 
 #endif

@@ -101,6 +101,45 @@ int keyring_add_logon_key_in_thread_keyring(const char *key_desc, const void *ke
 #endif
 }
 
+int keyring_add_user_key_in_thread_keyring(const char *key_desc, const void *key, size_t key_size)
+{
+#ifdef KERNEL_KEYRING
+	key_serial_t kid;
+
+	kid = add_key("user", key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
+	if (kid < 0)
+		return -errno;
+
+	return 0;
+#else
+	return -ENOTSUP;
+#endif
+}
+
+/* currently used in client utilities only */
+int keyring_add_key_in_user_keyring(const char *type, const char *key_desc, const void *key, size_t key_size)
+{
+#ifdef KERNEL_KEYRING
+	key_serial_t kid;
+
+	kid = add_key(type, key_desc, key, key_size, KEY_SPEC_USER_KEYRING);
+	if (kid < 0)
+		return -errno;
+
+	return 0;
+#else
+	return -ENOTSUP;
+#endif
+}
+
+/* alias for the same code */
+int keyring_get_key(const char *key_desc,
+		    char **key,
+		    size_t *key_size)
+{
+	return keyring_get_passphrase(key_desc, key, key_size);
+}
+
 int keyring_get_passphrase(const char *key_desc,
 		      char **passphrase,
 		      size_t *passphrase_len)
@@ -148,13 +187,13 @@ int keyring_get_passphrase(const char *key_desc,
 #endif
 }
 
-int keyring_revoke_and_unlink_logon_key(const char *key_desc)
+static int keyring_revoke_and_unlink_key_type(const char *type, const char *key_desc)
 {
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
 
 	do
-		kid = request_key("logon", key_desc, NULL, 0);
+		kid = request_key(type, key_desc, NULL, 0);
 	while (kid < 0 && errno == EINTR);
 
 	if (kid < 0)
@@ -176,4 +215,14 @@ int keyring_revoke_and_unlink_logon_key(const char *key_desc)
 #else
 	return -ENOTSUP;
 #endif
+}
+
+int keyring_revoke_and_unlink_logon_key(const char *key_desc)
+{
+	return keyring_revoke_and_unlink_key_type("logon", key_desc);
+}
+
+int keyring_revoke_and_unlink_user_key(const char *key_desc)
+{
+	return keyring_revoke_and_unlink_key_type("user", key_desc);
 }
