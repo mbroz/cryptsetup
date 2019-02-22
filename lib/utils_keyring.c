@@ -86,7 +86,7 @@ int keyring_check(void)
 #endif
 }
 
-int keyring_add_key_in_thread_keyring(const char *key_desc, const void *key, size_t key_size)
+int keyring_add_logon_key_in_thread_keyring(const char *key_desc, const void *key, size_t key_size)
 {
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
@@ -148,7 +148,7 @@ int keyring_get_passphrase(const char *key_desc,
 #endif
 }
 
-int keyring_revoke_and_unlink_key(const char *key_desc)
+int keyring_revoke_and_unlink_logon_key(const char *key_desc)
 {
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
