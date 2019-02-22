@@ -267,6 +267,36 @@ int LUKS2_digest_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
 
+static int assign_all_segments(struct crypt_device *cd, struct luks2_hdr *hdr,
+			     int digest, int assign)
+{
+	json_object *jobj1, *jobj_digest, *jobj_digest_segments;
+
+	jobj_digest = LUKS2_get_digest_jobj(hdr, digest);
+	if (!jobj_digest)
+		return -EINVAL;
+
+	json_object_object_get_ex(jobj_digest, "segments", &jobj_digest_segments);
+	if (!jobj_digest_segments)
+		return -EINVAL;
+
+	if (assign) {
+		json_object_object_foreach(LUKS2_get_segments_jobj(hdr), key, value) {
+			UNUSED(value);
+			jobj1 = LUKS2_array_jobj(jobj_digest_segments, key);
+			if (!jobj1)
+				json_object_array_add(jobj_digest_segments, json_object_new_string(key));
+		}
+	} else {
+		jobj1 = json_object_new_array();
+		if (!jobj1)
+			return -ENOMEM;
+		json_object_object_add(jobj_digest, "segments", jobj1);
+	}
+
+	return 0;
+}
+
 static int assign_one_segment(struct crypt_device *cd, struct luks2_hdr *hdr,
 			     int segment, int digest, int assign)
 {
@@ -311,12 +341,19 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 		json_object_object_foreach(jobj_digests, key, val) {
 			UNUSED(val);
-			r = assign_one_segment(cd, hdr, segment, atoi(key), assign);
+			if (segment == CRYPT_ANY_SEGMENT)
+				r = assign_all_segments(cd, hdr, atoi(key), assign);
+			else
+				r = assign_one_segment(cd, hdr, segment, atoi(key), assign);
 			if (r < 0)
 				break;
 		}
-	} else
-		r = assign_one_segment(cd, hdr, segment, digest, assign);
+	} else {
+		if (segment == CRYPT_ANY_SEGMENT)
+			r = assign_all_segments(cd, hdr, digest, assign);
+		else
+			r = assign_one_segment(cd, hdr, segment, digest, assign);
+	}
 
 	if (r < 0)
 		return r;
