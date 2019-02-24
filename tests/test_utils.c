@@ -307,7 +307,7 @@ int _system(const char *command, int warn)
 	return r;
 }
 
-int keyring_check(void)
+static int keyring_check(void)
 {
 #ifdef KERNEL_KEYRING
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
