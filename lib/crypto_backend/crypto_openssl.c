@@ -49,6 +49,10 @@ struct crypt_hmac {
 	int hash_len;
 };
 
+struct crypt_cipher {
+	struct crypt_cipher_kernel ck;
+};
+
 /*
  * Compatible wrappers for OpenSSL < 1.1.0 and LibreSSL < 2.7.0
  */
@@ -340,24 +344,39 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *key, size_t key_length)
 {
-	return crypt_cipher_init_kernel(ctx, name, mode, key, key_length);
+	struct crypt_cipher *h;
+	int r;
+
+	h = malloc(sizeof(*h));
+	if (!h)
+		return -ENOMEM;
+
+	r = crypt_cipher_init_kernel(&h->ck, name, mode, key, key_length);
+	if (r < 0) {
+		free(h);
+		return r;
+	}
+
+	*ctx = h;
+	return 0;
 }
 
 void crypt_cipher_destroy(struct crypt_cipher *ctx)
 {
-	crypt_cipher_destroy_kernel(ctx);
+	crypt_cipher_destroy_kernel(&ctx->ck);
+	free(ctx);
 }
 
 int crypt_cipher_encrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length)
 {
-	return crypt_cipher_encrypt_kernel(ctx, in, out, length, iv, iv_length);
+	return crypt_cipher_encrypt_kernel(&ctx->ck, in, out, length, iv, iv_length);
 }
 
 int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length)
 {
-	return crypt_cipher_decrypt_kernel(ctx, in, out, length, iv, iv_length);
+	return crypt_cipher_decrypt_kernel(&ctx->ck, in, out, length, iv, iv_length);
 }

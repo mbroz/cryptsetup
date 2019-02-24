@@ -40,14 +40,20 @@ int argon2(const char *type, const char *password, size_t password_length,
 	   uint32_t iterations, uint32_t memory, uint32_t parallel);
 
 /* Block ciphers: fallback to kernel crypto API */
-int crypt_cipher_init_kernel(struct crypt_cipher **ctx, const char *name,
+
+struct crypt_cipher_kernel {
+	int tfmfd;
+	int opfd;
+};
+
+int crypt_cipher_init_kernel(struct crypt_cipher_kernel *ctx, const char *name,
 			     const char *mode, const void *key, size_t key_length);
-int crypt_cipher_encrypt_kernel(struct crypt_cipher *ctx,
+int crypt_cipher_encrypt_kernel(struct crypt_cipher_kernel *ctx,
 				const char *in, char *out, size_t length,
 				const char *iv, size_t iv_length);
-int crypt_cipher_decrypt_kernel(struct crypt_cipher *ctx,
+int crypt_cipher_decrypt_kernel(struct crypt_cipher_kernel *ctx,
 				const char *in, char *out, size_t length,
 				const char *iv, size_t iv_length);
-void crypt_cipher_destroy_kernel(struct crypt_cipher *ctx);
+void crypt_cipher_destroy_kernel(struct crypt_cipher_kernel *ctx);
 
 #endif /* _CRYPTO_BACKEND_INTERNAL_H */
