@@ -27,7 +27,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include "crypto_backend.h"
+#include "crypto_backend_internal.h"
 
 #ifdef ENABLE_AF_ALG
 
@@ -65,23 +65,23 @@ static int _crypt_cipher_init(struct crypt_cipher **ctx,
 	h->opfd = -1;
 	h->tfmfd = socket(AF_ALG, SOCK_SEQPACKET, 0);
 	if (h->tfmfd < 0) {
-		crypt_cipher_destroy(h);
+		crypt_cipher_destroy_kernel(h);
 		return -ENOTSUP;
 	}
 
 	if (bind(h->tfmfd, (struct sockaddr *)sa, sizeof(*sa)) < 0) {
-		crypt_cipher_destroy(h);
+		crypt_cipher_destroy_kernel(h);
 		return -ENOENT;
 	}
 
 	if (setsockopt(h->tfmfd, SOL_ALG, ALG_SET_KEY, key, key_length) < 0) {
-		crypt_cipher_destroy(h);
+		crypt_cipher_destroy_kernel(h);
 		return -EINVAL;
 	}
 
 	h->opfd = accept(h->tfmfd, NULL, 0);
 	if (h->opfd < 0) {
-		crypt_cipher_destroy(h);
+		crypt_cipher_destroy_kernel(h);
 		return -EINVAL;
 	}
 
@@ -89,8 +89,8 @@ static int _crypt_cipher_init(struct crypt_cipher **ctx,
 	return 0;
 }
 
-int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
-		      const char *mode, const void *key, size_t key_length)
+int crypt_cipher_init_kernel(struct crypt_cipher **ctx, const char *name,
+			     const char *mode, const void *key, size_t key_length)
 {
 	struct sockaddr_alg sa = {
 		.salg_family = AF_ALG,
@@ -106,10 +106,10 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 }
 
 /* The in/out should be aligned to page boundary */
-static int crypt_cipher_crypt(struct crypt_cipher *ctx,
-			 const char *in, char *out, size_t length,
-			 const char *iv, size_t iv_length,
-			 uint32_t direction)
+static int _crypt_cipher_crypt(struct crypt_cipher *ctx,
+			       const char *in, char *out, size_t length,
+			       const char *iv, size_t iv_length,
+			       uint32_t direction)
 {
 	int r = 0;
 	ssize_t len;
@@ -173,23 +173,23 @@ bad:
 	return r;
 }
 
-int crypt_cipher_encrypt(struct crypt_cipher *ctx,
-			 const char *in, char *out, size_t length,
-			 const char *iv, size_t iv_length)
+int crypt_cipher_encrypt_kernel(struct crypt_cipher *ctx,
+				const char *in, char *out, size_t length,
+				const char *iv, size_t iv_length)
 {
-	return crypt_cipher_crypt(ctx, in, out, length,
-				  iv, iv_length, ALG_OP_ENCRYPT);
+	return _crypt_cipher_crypt(ctx, in, out, length,
+				   iv, iv_length, ALG_OP_ENCRYPT);
 }
 
-int crypt_cipher_decrypt(struct crypt_cipher *ctx,
-			 const char *in, char *out, size_t length,
-			 const char *iv, size_t iv_length)
+int crypt_cipher_decrypt_kernel(struct crypt_cipher *ctx,
+				const char *in, char *out, size_t length,
+				const char *iv, size_t iv_length)
 {
-	return crypt_cipher_crypt(ctx, in, out, length,
-				  iv, iv_length, ALG_OP_DECRYPT);
+	return _crypt_cipher_crypt(ctx, in, out, length,
+				   iv, iv_length, ALG_OP_DECRYPT);
 }
 
-void crypt_cipher_destroy(struct crypt_cipher *ctx)
+void crypt_cipher_destroy_kernel(struct crypt_cipher *ctx)
 {
 	if (ctx->tfmfd >= 0)
 		close(ctx->tfmfd);
@@ -199,8 +199,8 @@ void crypt_cipher_destroy(struct crypt_cipher *ctx)
 	free(ctx);
 }
 
-int crypt_cipher_check(const char *name, const char *mode,
-		       const char *integrity, size_t key_length)
+int crypt_cipher_check_kernel(const char *name, const char *mode,
+			      const char *integrity, size_t key_length)
 {
 	struct crypt_cipher *c = NULL;
 	char mode_name[64], tmp_salg_name[180], *real_mode = NULL, *cipher_iv = NULL, *key;
@@ -253,39 +253,40 @@ int crypt_cipher_check(const char *name, const char *mode,
 
 	r = _crypt_cipher_init(&c, key, key_length, &sa);
 	if (c)
-		crypt_cipher_destroy(c);
+		crypt_cipher_destroy_kernel(c);
 	free(key);
 
 	return r;
 }
 
 #else /* ENABLE_AF_ALG */
-int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
-		    const char *mode, const void *buffer, size_t length)
+int crypt_cipher_init_kernel(struct crypt_cipher **ctx, const char *name,
+			     const char *mode, const void *key, size_t key_length)
 {
 	return -ENOTSUP;
 }
 
-void crypt_cipher_destroy(struct crypt_cipher *ctx)
+void crypt_cipher_destroy_kernel(struct crypt_cipher *ctx)
 {
 	return;
 }
 
-int crypt_cipher_encrypt(struct crypt_cipher *ctx,
-			 const char *in, char *out, size_t length,
-			 const char *iv, size_t iv_length)
+int crypt_cipher_encrypt_kernel(struct crypt_cipher *ctx,
+				const char *in, char *out, size_t length,
+				const char *iv, size_t iv_length)
 {
 	return -EINVAL;
 }
-int crypt_cipher_decrypt(struct crypt_cipher *ctx,
-			 const char *in, char *out, size_t length,
-			 const char *iv, size_t iv_length)
+int crypt_cipher_decrypt_kernel(struct crypt_cipher *ctx,
+				const char *in, char *out, size_t length,
+				const char *iv, size_t iv_length)
 {
 	return -EINVAL;
 }
-int crypt_cipher_check(const char *name, const char *mode,
-		       const char *integrity, size_t key_length)
+int crypt_cipher_check_kernel(const char *name, const char *mode,
+			      const char *integrity, size_t key_length)
 {
+	/* Cannot check, expect success. */
 	return 0;
 }
 #endif

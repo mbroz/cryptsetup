@@ -83,7 +83,7 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 /* CRC32 */
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
 
-/* ciphers */
+/* Block ciphers */
 int crypt_cipher_ivsize(const char *name, const char *mode);
 int crypt_cipher_wrapped_key(const char *name, const char *mode);
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
@@ -96,11 +96,11 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length);
 
-/* Check availability of a cipher */
-int crypt_cipher_check(const char *name, const char *mode,
-		       const char *integrity, size_t key_length);
+/* Check availability of a cipher (in kernel only) */
+int crypt_cipher_check_kernel(const char *name, const char *mode,
+			      const char *integrity, size_t key_length);
 
-/* storage encryption wrappers */
+/* Storage encryption wrappers */
 int crypt_storage_init(struct crypt_storage **ctx, uint64_t sector_start,
 		       const char *cipher, const char *cipher_mode,
 		       const void *key, size_t key_length);

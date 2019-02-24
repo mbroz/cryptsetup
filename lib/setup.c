@@ -1682,7 +1682,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	/* FIXME: allow this later also for normal ciphers (check AF_ALG availability. */
 	if (integrity && !integrity_key_size) {
-		r = crypt_cipher_check(cipher, cipher_mode, integrity, volume_key_size);
+		r = crypt_cipher_check_kernel(cipher, cipher_mode, integrity, volume_key_size);
 		if (r < 0) {
 			log_err(cd, _("Cipher %s-%s (key size %zd bits) is not available."),
 				cipher, cipher_mode, volume_key_size * 8);

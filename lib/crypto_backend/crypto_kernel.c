@@ -342,3 +342,29 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 
 	return -EINVAL;
 }
+
+/* Block ciphers */
+int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
+		    const char *mode, const void *key, size_t key_length)
+{
+	return crypt_cipher_init_kernel(ctx, name, mode, key, key_length);
+}
+
+void crypt_cipher_destroy(struct crypt_cipher *ctx)
+{
+	crypt_cipher_destroy_kernel(ctx);
+}
+
+int crypt_cipher_encrypt(struct crypt_cipher *ctx,
+			 const char *in, char *out, size_t length,
+			 const char *iv, size_t iv_length)
+{
+	return crypt_cipher_encrypt_kernel(ctx, in, out, length, iv, iv_length);
+}
+
+int crypt_cipher_decrypt(struct crypt_cipher *ctx,
+			 const char *in, char *out, size_t length,
+			 const char *iv, size_t iv_length)
+{
+	return crypt_cipher_decrypt_kernel(ctx, in, out, length, iv, iv_length);
+}
