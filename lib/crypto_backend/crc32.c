@@ -42,7 +42,6 @@
 
 #include "crypto_backend.h"
 
-
 static const uint32_t crc32_tab[] = {
 	0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
 	0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
@@ -113,4 +112,3 @@ uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len)
 
 	return crc;
 }
-

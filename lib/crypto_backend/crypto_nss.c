@@ -23,7 +23,7 @@
 #include <errno.h>
 #include <nss.h>
 #include <pk11pub.h>
-#include "crypto_backend.h"
+#include "crypto_backend_internal.h"
 
 #define CONST_CAST(x) (x)(uintptr_t)
 

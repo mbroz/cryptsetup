@@ -27,7 +27,7 @@
 #include <sys/socket.h>
 #include <sys/utsname.h>
 #include <linux/if_alg.h>
-#include "crypto_backend.h"
+#include "crypto_backend_internal.h"
 
 /* FIXME: remove later */
 #ifndef AF_ALG

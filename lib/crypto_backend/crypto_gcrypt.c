@@ -24,7 +24,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <gcrypt.h>
-#include "crypto_backend.h"
+#include "crypto_backend_internal.h"
 
 static int crypto_backend_initialised = 0;
 static int crypto_backend_secmem = 1;

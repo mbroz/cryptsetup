@@ -26,7 +26,7 @@
 #include <nettle/sha3.h>
 #include <nettle/hmac.h>
 #include <nettle/pbkdf2.h>
-#include "crypto_backend.h"
+#include "crypto_backend_internal.h"
 
 #if HAVE_NETTLE_VERSION_H
 #include <nettle/version.h>

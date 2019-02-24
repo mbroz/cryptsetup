@@ -33,7 +33,7 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
-#include "crypto_backend.h"
+#include "crypto_backend_internal.h"
 
 static int crypto_backend_initialised = 0;
 

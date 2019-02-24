@@ -4,6 +4,7 @@ libcrypto_backend_la_CFLAGS = $(AM_CFLAGS) @CRYPTO_CFLAGS@
 
 libcrypto_backend_la_SOURCES = \
 	lib/crypto_backend/crypto_backend.h \
+	lib/crypto_backend/crypto_backend_internal.h \
 	lib/crypto_backend/crypto_cipher_kernel.c \
 	lib/crypto_backend/crypto_storage.c \
 	lib/crypto_backend/pbkdf_check.c \

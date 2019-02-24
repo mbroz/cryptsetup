@@ -58,14 +58,15 @@ void crypt_hmac_destroy(struct crypt_hmac *ctx);
 enum { CRYPT_RND_NORMAL = 0, CRYPT_RND_KEY = 1, CRYPT_RND_SALT = 2 };
 int crypt_backend_rng(char *buffer, size_t length, int quality, int fips);
 
+
+/* PBKDF*/
 struct crypt_pbkdf_limits {
 	uint32_t min_iterations, max_iterations;
 	uint32_t min_memory, max_memory;
 	uint32_t min_parallel, max_parallel;
 };
-int crypt_pbkdf_get_limits(const char *kdf, struct crypt_pbkdf_limits *l);
 
-/* PBKDF*/
+int crypt_pbkdf_get_limits(const char *kdf, struct crypt_pbkdf_limits *l);
 int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
 		const char *salt, size_t salt_length,
@@ -78,22 +79,6 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 		uint32_t max_memory_kb, uint32_t parallel_threads,
 		uint32_t *iterations_out, uint32_t *memory_out,
 		int (*progress)(uint32_t time_ms, void *usrptr), void *usrptr);
-
-#if USE_INTERNAL_PBKDF2
-/* internal PBKDF2 implementation */
-int pkcs5_pbkdf2(const char *hash,
-		 const char *P, size_t Plen,
-		 const char *S, size_t Slen,
-		 unsigned int c,
-		 unsigned int dkLen, char *DK,
-		 unsigned int hash_block_size);
-#endif
-
-/* Argon2 implementation wrapper */
-int argon2(const char *type, const char *password, size_t password_length,
-	   const char *salt, size_t salt_length,
-	   char *key, size_t key_length,
-	   uint32_t iterations, uint32_t memory, uint32_t parallel);
 
 /* CRC32 */
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
