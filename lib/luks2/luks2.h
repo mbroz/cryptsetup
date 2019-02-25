@@ -263,6 +263,22 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 int LUKS2_tokens_count(struct luks2_hdr *hdr);
 
 /*
+ * Generic LUKS2 segment
+ */
+json_object *json_get_segments_jobj(json_object *hdr_jobj);
+uint64_t json_segment_get_offset(json_object *jobj_segment, unsigned blockwise);
+const char *json_segment_type(json_object *jobj_segment);
+uint64_t json_segment_get_iv_offset(json_object *jobj_segment);
+uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise);
+const char *json_segment_get_cipher(json_object *jobj_segment);
+int json_segment_get_sector_size(json_object *jobj_segment);
+json_object *json_segment_get_flags(json_object *jobj_segment);
+json_object *json_segments_get_segment(json_object *jobj_segments, int segment);
+int json_segments_count(json_object *jobj_segments);
+json_object *json_segments_get_segment_by_flag(json_object *jobj_segments, const char *flag);
+void json_segment_remove_flag(json_object *jobj_segment, const char *flag);
+
+/*
  * Generic LUKS2 digest
  */
 int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment);
