@@ -21,6 +21,34 @@
 
 #include "luks2_internal.h"
 
+/* use only on already validated 'segments' object */
+static uint64_t get_first_data_offset(json_object *jobj_segs, const char *type)
+{
+	json_object *jobj_offset, *jobj_type;
+	uint64_t tmp, min = UINT64_MAX;
+
+	json_object_object_foreach(jobj_segs, key, val) {
+		UNUSED(key);
+
+		if (type) {
+			json_object_object_get_ex(val, "type", &jobj_type);
+			if (strcmp(type, json_object_get_string(jobj_type)))
+				continue;
+		}
+
+		json_object_object_get_ex(val, "offset", &jobj_offset);
+		tmp = json_object_get_uint64(jobj_offset);
+
+		if (!tmp)
+			return tmp;
+
+		if (tmp < min)
+			min = tmp;
+	}
+
+	return min;
+}
+
 json_object *json_get_segments_jobj(json_object *hdr_jobj)
 {
 	json_object *jobj_segments;
@@ -29,6 +57,13 @@ json_object *json_get_segments_jobj(json_object *hdr_jobj)
 		return NULL;
 
 	return jobj_segments;
+}
+
+uint64_t json_segments_get_minimal_offset(json_object *jobj_segments, unsigned blockwise)
+{
+	if (!jobj_segments)
+		return 0;
+	return blockwise ? get_first_data_offset(jobj_segments, NULL) >> SECTOR_SHIFT : get_first_data_offset(jobj_segments, NULL);
 }
 
 uint64_t json_segment_get_offset(json_object *jobj_segment, unsigned blockwise)

@@ -174,6 +174,11 @@ json_object *LUKS2_get_segment_jobj(struct luks2_hdr *hdr, int segment)
 	return hdr ? json_segments_get_segment(json_get_segments_jobj(hdr->jobj), segment) : NULL;
 }
 
+json_object *LUKS2_get_segments_jobj(struct luks2_hdr *hdr)
+{
+	return hdr ? json_get_segments_jobj(hdr->jobj) : NULL;
+}
+
 /*
  * json_type_int needs to be validated first.
  * See validate_json_uint32()
@@ -249,34 +254,6 @@ json_object *json_contains(struct crypt_device *cd, json_object *jobj, const cha
 	}
 
 	return sobj;
-}
-
-/* use only on already validated 'segments' object */
-static uint64_t get_first_data_offset(json_object *jobj_segs, const char *type)
-{
-	json_object *jobj_offset, *jobj_type;
-	uint64_t tmp, min = UINT64_MAX;
-
-	json_object_object_foreach(jobj_segs, key, val) {
-		UNUSED(key);
-
-		if (type) {
-			json_object_object_get_ex(val, "type", &jobj_type);
-			if (strcmp(type, json_object_get_string(jobj_type)))
-				continue;
-		}
-
-		json_object_object_get_ex(val, "offset", &jobj_offset);
-		tmp = json_object_get_uint64(jobj_offset);
-
-		if (!tmp)
-			return tmp;
-
-		if (tmp < min)
-			min = tmp;
-	}
-
-	return min;
 }
 
 static json_bool validate_json_uint32(json_object *jobj)
@@ -770,8 +747,7 @@ static int hdr_validate_config(struct crypt_device *cd, json_object *hdr_jobj)
 	 * validate keyslots_size fits in between (2 * metadata_size) and first
 	 * segment_offset (except detached header)
 	 */
-	json_object_object_get_ex(hdr_jobj, "segments", &jobj);
-	segment_offset = get_first_data_offset(jobj, "crypt");
+	segment_offset = json_segments_get_minimal_offset(json_get_segments_jobj(hdr_jobj), 0);
 	if (segment_offset &&
 	    (segment_offset < keyslots_size ||
 	     (segment_offset - keyslots_size) < (2 * metadata_size))) {
@@ -1618,12 +1594,7 @@ int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr)
 
 uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr)
 {
-	json_object *jobj1;
-
-	if (!json_object_object_get_ex(hdr->jobj, "segments", &jobj1))
-		return 0;
-
-	return get_first_data_offset(jobj1, "crypt") / SECTOR_SIZE;
+	return json_segments_get_minimal_offset(LUKS2_get_segments_jobj(hdr), 1);
 }
 
 const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment)

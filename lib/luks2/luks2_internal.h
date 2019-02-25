@@ -54,6 +54,7 @@ json_object *LUKS2_get_token_jobj(struct luks2_hdr *hdr, int token);
 json_object *LUKS2_get_digest_jobj(struct luks2_hdr *hdr, int digest);
 json_object *LUKS2_get_segment_jobj(struct luks2_hdr *hdr, int segment);
 json_object *LUKS2_get_tokens_jobj(struct luks2_hdr *hdr);
+json_object *LUKS2_get_segments_jobj(struct luks2_hdr *hdr);
 
 void hexprint_base64(struct crypt_device *cd, json_object *jobj,
 		     const char *sep, const char *line_sep);
