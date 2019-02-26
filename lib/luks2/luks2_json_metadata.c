@@ -179,6 +179,16 @@ json_object *LUKS2_get_segments_jobj(struct luks2_hdr *hdr)
 	return hdr ? json_get_segments_jobj(hdr->jobj) : NULL;
 }
 
+int LUKS2_segments_count(struct luks2_hdr *hdr)
+{
+	json_object *jobj_segments;
+
+	if (!hdr || !(jobj_segments = LUKS2_get_segments_jobj(hdr)))
+		return -EINVAL;
+
+	return json_segments_count(jobj_segments);
+}
+
 /*
  * json_type_int needs to be validated first.
  * See validate_json_uint32()
