@@ -204,3 +204,36 @@ void json_segment_remove_flag(json_object *jobj_segment, const char *flag)
 	} else
 		json_object_object_add(jobj_segment, "flags", jobj_flags_new);
 }
+
+static json_object *_segment_create_generic(const char *type, uint64_t offset, const uint64_t *length)
+{
+	json_object *jobj = json_object_new_object();
+	if (!jobj)
+		return NULL;
+
+	json_object_object_add(jobj, "type",		json_object_new_string(type));
+	json_object_object_add(jobj, "offset",		json_object_new_uint64(offset));
+	json_object_object_add(jobj, "size",		length ? json_object_new_uint64(*length) : json_object_new_string("dynamic"));
+
+	return jobj;
+}
+
+json_object *json_segment_create_linear(uint64_t offset, const uint64_t *length)
+{
+	return _segment_create_generic("linear", offset, length);
+}
+
+json_object *json_segment_create_crypt(uint64_t offset,
+				  uint64_t iv_offset, const uint64_t *length,
+				  const char *cipher, uint32_t sector_size)
+{
+	json_object *jobj = _segment_create_generic("crypt", offset, length);
+	if (!jobj)
+		return NULL;
+
+	json_object_object_add(jobj, "iv_tweak",	json_object_new_uint64(iv_offset));
+	json_object_object_add(jobj, "encryption",	json_object_new_string(cipher));
+	json_object_object_add(jobj, "sector_size",	json_object_new_int(sector_size));
+
+	return jobj;
+}

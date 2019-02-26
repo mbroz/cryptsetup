@@ -278,6 +278,8 @@ int json_segments_count(json_object *jobj_segments);
 json_object *json_segments_get_segment_by_flag(json_object *jobj_segments, const char *flag);
 void json_segment_remove_flag(json_object *jobj_segment, const char *flag);
 uint64_t json_segments_get_minimal_offset(json_object *jobj_segments, unsigned blockwise);
+json_object *json_segment_create_linear(uint64_t offset, const uint64_t *length);
+json_object *json_segment_create_crypt(uint64_t offset, uint64_t iv_offset, const uint64_t *length, const char *cipher, uint32_t sector_size);
 
 /*
  * Generic LUKS2 digest

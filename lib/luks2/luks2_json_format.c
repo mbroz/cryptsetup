@@ -225,25 +225,15 @@ int LUKS2_generate_hdr(
 	json_object_object_add(hdr->jobj, "config", jobj_config);
 
 	digest = LUKS2_digest_create(cd, "pbkdf2", hdr, vk);
-	if (digest < 0) {
-		json_object_put(hdr->jobj);
-		hdr->jobj = NULL;
-		return -EINVAL;
-	}
+	if (digest < 0)
+		goto err;
 
-	if (LUKS2_digest_segment_assign(cd, hdr, CRYPT_DEFAULT_SEGMENT, digest, 1, 0) < 0) {
-		json_object_put(hdr->jobj);
-		hdr->jobj = NULL;
-		return -EINVAL;
-	}
+	if (LUKS2_digest_segment_assign(cd, hdr, CRYPT_DEFAULT_SEGMENT, digest, 1, 0) < 0)
+		goto err;
 
-	jobj_segment = json_object_new_object();
-	json_object_object_add(jobj_segment, "type", json_object_new_string("crypt"));
-	json_object_object_add(jobj_segment, "offset", json_object_new_uint64(data_offset));
-	json_object_object_add(jobj_segment, "iv_tweak", json_object_new_string("0"));
-	json_object_object_add(jobj_segment, "size", json_object_new_string("dynamic"));
-	json_object_object_add(jobj_segment, "encryption", json_object_new_string(cipher));
-	json_object_object_add(jobj_segment, "sector_size", json_object_new_int(sector_size));
+	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher, sector_size);
+	if (!jobj_segment)
+		goto err;
 
 	if (integrity) {
 		jobj_integrity = json_object_new_object();
@@ -260,6 +250,10 @@ int LUKS2_generate_hdr(
 
 	JSON_DBG(cd, hdr->jobj, "Header JSON:");
 	return 0;
+err:
+	json_object_put(hdr->jobj);
+	hdr->jobj = NULL;
+	return -EINVAL;
 }
 
 int LUKS2_wipe_header_areas(struct crypt_device *cd,
