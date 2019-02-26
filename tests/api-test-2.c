@@ -916,6 +916,25 @@ static void AddDeviceLuks2(void)
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key3, key_size, 0), "VK doesn't match any digest assigned to segment 0");
 	crypt_free(cd);
 
+	/*
+	 * Check regression in getting keyslot encryption parameters when
+	 * volume key size is unknown (no active keyslots).
+	 */
+	if (!_fips_mode) {
+		OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+		crypt_set_iteration_time(cd, 1);
+		OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
+		EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
+		/* drop context copy of volume key */
+		crypt_free(cd);
+		OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+		OK_(crypt_load(cd, CRYPT_LUKS, NULL));
+		EQ_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
+		OK_(crypt_keyslot_destroy(cd, 0));
+		EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
+		crypt_free(cd);
+	}
+
 	_cleanup_dmdevices();
 }
 
