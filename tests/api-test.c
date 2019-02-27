@@ -922,7 +922,7 @@ static void AddDeviceLuks(void)
 	OK_(crypt_keyslot_get_pbkdf(cd, 1, &pbkdf));
 	OK_(strcmp(pbkdf.type, CRYPT_KDF_PBKDF2));
 	OK_(strcmp(pbkdf.hash, params.hash));
-	EQ_(1000, pbkdf.iterations); /* set by minimum iterations above */
+	OK_(pbkdf.iterations < 1000); /* set by minimum iterations above */
 	EQ_(0, pbkdf.max_memory_kb);
 	EQ_(0, pbkdf.parallel_threads);
 
