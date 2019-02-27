@@ -313,3 +313,8 @@ void crypt_storage_destroy(struct crypt_storage *ctx)
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 }
+
+bool crypt_storage_kernel_only(struct crypt_storage *ctx)
+{
+	return crypt_cipher_kernel_only(ctx->cipher);
+}

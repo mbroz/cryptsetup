@@ -117,6 +117,8 @@ int crypt_storage_decrypt(struct crypt_storage *ctx, uint64_t iv_offset,
 int crypt_storage_encrypt(struct crypt_storage *ctx, uint64_t iv_offset,
 			  uint64_t length, char *buffer);
 
+bool crypt_storage_kernel_only(struct crypt_storage *ctx);
+
 /* Memzero helper (memset on stack can be optimized out) */
 static inline void crypt_backend_memzero(void *s, size_t n)
 {
