@@ -890,3 +890,8 @@ void device_write_unlock(struct crypt_device *cd, struct device *device)
 
 	device->lh = NULL;
 }
+
+bool device_is_locked(struct device *device)
+{
+	return device ? device_locked(device->lh) : 0;
+}
