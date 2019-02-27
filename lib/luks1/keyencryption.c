@@ -181,7 +181,10 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 	r = -EIO;
 
 	/* Write buffer to device */
-	devfd = device_open(ctx, device, O_RDWR);
+	if (device_is_locked(device))
+		devfd = device_open_locked(ctx, device, O_RDWR);
+	else
+		devfd = device_open(ctx, device, O_RDWR);
 	if (devfd < 0)
 		goto out;
 
@@ -238,7 +241,10 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	log_dbg(ctx, "Using userspace crypto wrapper to access keyslot area.");
 
 	/* Read buffer from device */
-	devfd = device_open(ctx, device, O_RDONLY);
+	if (device_is_locked(device))
+		devfd = device_open_locked(ctx, device, O_RDONLY);
+	else
+		devfd = device_open(ctx, device, O_RDONLY);
 	if (devfd < 0) {
 		log_err(ctx, _("Cannot open device %s."), device_path(device));
 		crypt_storage_destroy(s);
