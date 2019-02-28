@@ -40,6 +40,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	vk->key_description = NULL;
 	vk->keylength = keylength;
 	vk->id = -1;
+	vk->next = NULL;
 
 	/* keylength 0 is valid => no key */
 	if (vk->keylength) {
@@ -76,13 +77,30 @@ int crypt_volume_key_get_id(const struct volume_key *vk)
 	return vk ? vk->id : -1;
 }
 
+struct volume_key *crypt_volume_key_by_id(struct volume_key *vks, int id)
+{
+	struct volume_key *vk = vks;
+
+	if (id < 0)
+		return NULL;
+
+	while (vk && vk->id != id)
+		vk = vk->next;
+
+	return vk;
+}
+
 void crypt_free_volume_key(struct volume_key *vk)
 {
-	if (vk) {
+	struct volume_key *vk_next;
+
+	while (vk) {
 		crypt_memzero(vk->key, vk->keylength);
 		vk->keylength = 0;
 		free(CONST_CAST(void*)vk->key_description);
+		vk_next = vk->next;
 		free(vk);
+		vk = vk_next;
 	}
 }
 
