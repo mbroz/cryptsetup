@@ -665,6 +665,11 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	if (!jobj_segment)
 		return -EINVAL;
 
+	if (json_segment_get_sector_size(jobj_segment) != SECTOR_SIZE) {
+		log_err(cd, _("Cannot convert to LUKS1 format - default segment encryption sector size is not 512 bytes."));
+		return -EINVAL;
+	}
+
 	json_object_object_get_ex(hdr2->jobj, "digests", &jobj1);
 	if (!json_object_object_get_ex(jobj_digest, "type", &jobj2) ||
 	    strcmp(json_object_get_string(jobj2), "pbkdf2") ||
