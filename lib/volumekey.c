@@ -90,6 +90,26 @@ struct volume_key *crypt_volume_key_by_id(struct volume_key *vks, int id)
 	return vk;
 }
 
+void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk)
+{
+	struct volume_key *tmp;
+
+	if (!vks)
+		return;
+
+	if (!*vks) {
+		*vks = vk;
+		return;
+	}
+
+	tmp = *vks;
+
+	while (tmp->next)
+		tmp = tmp->next;
+
+	tmp->next = vk;
+}
+
 void crypt_free_volume_key(struct volume_key *vk)
 {
 	struct volume_key *vk_next;
