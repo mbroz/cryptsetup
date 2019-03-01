@@ -50,7 +50,15 @@ struct crypt_hmac {
 };
 
 struct crypt_cipher {
-	struct crypt_cipher_kernel ck;
+	bool use_kernel;
+	union {
+	struct crypt_cipher_kernel kernel;
+	struct {
+		EVP_CIPHER_CTX *hd_enc;
+		EVP_CIPHER_CTX *hd_dec;
+		size_t iv_length;
+	} lib;
+	} u;
 };
 
 /*
@@ -341,6 +349,59 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 }
 
 /* Block ciphers */
+static void _cipher_destroy(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec)
+{
+	EVP_CIPHER_CTX_free(*hd_enc);
+	*hd_enc = NULL;
+
+	EVP_CIPHER_CTX_free(*hd_dec);
+	*hd_dec = NULL;
+}
+
+static int _cipher_init(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const char *name,
+			const char *mode, const void *key, size_t key_length, size_t *iv_length)
+{
+	char cipher_name[256];
+	const EVP_CIPHER *type;
+	int r, key_bits;
+
+	key_bits = key_length * 8;
+	if (!strcmp(mode, "xts"))
+		key_bits /= 2;
+
+	r = snprintf(cipher_name, sizeof(cipher_name), "%s-%d-%s", name, key_bits, mode);
+	if (r < 0 || r >= (int)sizeof(cipher_name))
+		return -EINVAL;
+
+	type = EVP_get_cipherbyname(cipher_name);
+	if (!type)
+		return -ENOENT;
+
+	if (EVP_CIPHER_key_length(type) != (int)key_length)
+		return -EINVAL;
+
+	*hd_enc = EVP_CIPHER_CTX_new();
+	*hd_dec = EVP_CIPHER_CTX_new();
+	*iv_length = EVP_CIPHER_iv_length(type);
+
+	if (!*hd_enc || !*hd_dec)
+		return -EINVAL;
+
+	if (EVP_EncryptInit_ex(*hd_enc, type, NULL, key, NULL) != 1 ||
+	    EVP_DecryptInit_ex(*hd_dec, type, NULL, key, NULL) != 1) {
+		_cipher_destroy(hd_enc, hd_dec);
+		return -EINVAL;
+	}
+
+	if (EVP_CIPHER_CTX_set_padding(*hd_enc, 0) != 1 ||
+	    EVP_CIPHER_CTX_set_padding(*hd_dec, 0) != 1) {
+		_cipher_destroy(hd_enc, hd_dec);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *key, size_t key_length)
 {
@@ -351,32 +412,91 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 	if (!h)
 		return -ENOMEM;
 
-	r = crypt_cipher_init_kernel(&h->ck, name, mode, key, key_length);
+	if (!_cipher_init(&h->u.lib.hd_enc, &h->u.lib.hd_dec, name, mode, key,
+			  key_length, &h->u.lib.iv_length)) {
+		h->use_kernel = false;
+		*ctx = h;
+		return 0;
+	}
+
+	r = crypt_cipher_init_kernel(&h->u.kernel, name, mode, key, key_length);
 	if (r < 0) {
 		free(h);
 		return r;
 	}
 
+	h->use_kernel = true;
 	*ctx = h;
 	return 0;
 }
 
 void crypt_cipher_destroy(struct crypt_cipher *ctx)
 {
-	crypt_cipher_destroy_kernel(&ctx->ck);
+	if (ctx->use_kernel)
+		crypt_cipher_destroy_kernel(&ctx->u.kernel);
+	else
+		_cipher_destroy(&ctx->u.lib.hd_enc, &ctx->u.lib.hd_dec);
 	free(ctx);
+}
+
+static int _cipher_encrypt(struct crypt_cipher *ctx, const unsigned char *in, unsigned char *out,
+			   int length, const unsigned char *iv, size_t iv_length)
+{
+	int len;
+
+	if (ctx->u.lib.iv_length != iv_length)
+		return -EINVAL;
+
+	if (EVP_EncryptInit_ex(ctx->u.lib.hd_enc, NULL, NULL, NULL, iv) != 1)
+		return -EINVAL;
+
+	if (EVP_EncryptUpdate(ctx->u.lib.hd_enc, out, &len, in, length) != 1)
+		return -EINVAL;
+
+	if (EVP_EncryptFinal(ctx->u.lib.hd_enc, out + len, &len) != 1)
+		return -EINVAL;
+
+	return 0;
+}
+
+static int _cipher_decrypt(struct crypt_cipher *ctx, const unsigned char *in, unsigned char *out,
+			   int length, const unsigned char *iv, size_t iv_length)
+{
+	int len;
+
+	if (ctx->u.lib.iv_length != iv_length)
+		return -EINVAL;
+
+	if (EVP_DecryptInit_ex(ctx->u.lib.hd_dec, NULL, NULL, NULL, iv) != 1)
+		return -EINVAL;
+
+	if (EVP_DecryptUpdate(ctx->u.lib.hd_dec, out, &len, in, length) != 1)
+		return -EINVAL;
+
+	if (EVP_DecryptFinal(ctx->u.lib.hd_dec, out + len, &len) != 1)
+		return -EINVAL;
+
+	return 0;
 }
 
 int crypt_cipher_encrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length)
 {
-	return crypt_cipher_encrypt_kernel(&ctx->ck, in, out, length, iv, iv_length);
+	if (ctx->use_kernel)
+		return crypt_cipher_encrypt_kernel(&ctx->u.kernel, in, out, length, iv, iv_length);
+
+	return _cipher_encrypt(ctx, (const unsigned char*)in,
+			       (unsigned char *)out, length, (const unsigned char*)iv, iv_length);
 }
 
 int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length)
 {
-	return crypt_cipher_decrypt_kernel(&ctx->ck, in, out, length, iv, iv_length);
+	if (ctx->use_kernel)
+		return crypt_cipher_decrypt_kernel(&ctx->u.kernel, in, out, length, iv, iv_length);
+
+	return _cipher_decrypt(ctx, (const unsigned char*)in,
+			       (unsigned char *)out, length, (const unsigned char*)iv, iv_length);
 }

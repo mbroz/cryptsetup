@@ -209,6 +209,8 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 		NO_FIPS([])
 	fi
 
+	AC_CHECK_DECLS([GCRY_CIPHER_MODE_XTS], [], [], [#include <gcrypt.h>])
+
 	if test "x$enable_static_cryptsetup" = "xyes"; then
 		saved_LIBS=$LIBS
 		LIBS="$saved_LIBS $LIBGCRYPT_LIBS -static"

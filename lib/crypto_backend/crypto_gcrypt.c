@@ -44,7 +44,11 @@ struct crypt_hmac {
 };
 
 struct crypt_cipher {
-	struct crypt_cipher_kernel ck;
+	bool use_kernel;
+	union {
+	struct crypt_cipher_kernel kernel;
+	gcry_cipher_hd_t hd;
+	} u;
 };
 
 /*
@@ -372,6 +376,37 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 }
 
 /* Block ciphers */
+static int _cipher_init(gcry_cipher_hd_t *hd, const char *name,
+			const char *mode, const void *buffer, size_t length)
+{
+	int cipher_id, mode_id;
+
+	cipher_id = gcry_cipher_map_name(name);
+	if (cipher_id == GCRY_CIPHER_MODE_NONE)
+		return -ENOENT;
+
+	if (!strcmp(mode, "ecb"))
+		mode_id = GCRY_CIPHER_MODE_ECB;
+	else if (!strcmp(mode, "cbc"))
+		mode_id = GCRY_CIPHER_MODE_CBC;
+#if HAVE_DECL_GCRY_CIPHER_MODE_XTS
+	else if (!strcmp(mode, "xts"))
+		mode_id = GCRY_CIPHER_MODE_XTS;
+#endif
+	else
+		return -ENOENT;
+
+	if (gcry_cipher_open(hd, cipher_id, mode_id, 0))
+		return -EINVAL;
+
+	if (gcry_cipher_setkey(*hd, buffer, length)) {
+		gcry_cipher_close(*hd);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 		    const char *mode, const void *key, size_t key_length)
 {
@@ -382,19 +417,29 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 	if (!h)
 		return -ENOMEM;
 
-	r = crypt_cipher_init_kernel(&h->ck, name, mode, key, key_length);
+	if (!_cipher_init(&h->u.hd, name, mode, key, key_length)) {
+		h->use_kernel = false;
+		*ctx = h;
+		return 0;
+	}
+
+	r = crypt_cipher_init_kernel(&h->u.kernel, name, mode, key, key_length);
 	if (r < 0) {
 		free(h);
 		return r;
 	}
 
+	h->use_kernel = true;
 	*ctx = h;
 	return 0;
 }
 
 void crypt_cipher_destroy(struct crypt_cipher *ctx)
 {
-	crypt_cipher_destroy_kernel(&ctx->ck);
+	if (ctx->use_kernel)
+		crypt_cipher_destroy_kernel(&ctx->u.kernel);
+	else
+		gcry_cipher_close(ctx->u.hd);
 	free(ctx);
 }
 
@@ -402,12 +447,30 @@ int crypt_cipher_encrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length)
 {
-	return crypt_cipher_encrypt_kernel(&ctx->ck, in, out, length, iv, iv_length);
+	if (ctx->use_kernel)
+		return crypt_cipher_encrypt_kernel(&ctx->u.kernel, in, out, length, iv, iv_length);
+
+	if (iv && gcry_cipher_setiv(ctx->u.hd, iv, iv_length))
+		return -EINVAL;
+
+	if (gcry_cipher_encrypt(ctx->u.hd, out, length, in, length))
+		return -EINVAL;
+
+	return 0;
 }
 
 int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length)
 {
-	return crypt_cipher_decrypt_kernel(&ctx->ck, in, out, length, iv, iv_length);
+	if (ctx->use_kernel)
+		return crypt_cipher_decrypt_kernel(&ctx->u.kernel, in, out, length, iv, iv_length);
+
+	if (iv && gcry_cipher_setiv(ctx->u.hd, iv, iv_length))
+		return -EINVAL;
+
+	if (gcry_cipher_decrypt(ctx->u.hd, out, length, in, length))
+		return -EINVAL;
+
+	return 0;
 }
