@@ -428,3 +428,8 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 {
 	return crypt_cipher_decrypt_kernel(&ctx->ck, in, out, length, iv, iv_length);
 }
+
+bool crypt_cipher_kernel_only(struct crypt_cipher *ctx)
+{
+	return true;
+}

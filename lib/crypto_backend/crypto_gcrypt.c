@@ -474,3 +474,8 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 
 	return 0;
 }
+
+bool crypt_cipher_kernel_only(struct crypt_cipher *ctx)
+{
+	return ctx->use_kernel;
+}

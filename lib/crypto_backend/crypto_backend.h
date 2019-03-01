@@ -96,6 +96,7 @@ int crypt_cipher_encrypt(struct crypt_cipher *ctx,
 int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length);
+bool crypt_cipher_kernel_only(struct crypt_cipher *ctx);
 
 /* Benchmark of kernel cipher performance */
 int crypt_cipher_perf_kernel(const char *name, const char *mode, char *buffer, size_t buffer_size,

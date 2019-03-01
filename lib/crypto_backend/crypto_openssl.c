@@ -500,3 +500,8 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 	return _cipher_decrypt(ctx, (const unsigned char*)in,
 			       (unsigned char *)out, length, (const unsigned char*)iv, iv_length);
 }
+
+bool crypt_cipher_kernel_only(struct crypt_cipher *ctx)
+{
+	return ctx->use_kernel;
+}
