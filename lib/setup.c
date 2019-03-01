@@ -2928,7 +2928,7 @@ int crypt_suspend(struct crypt_device *cd,
 	else if (r)
 		log_err(cd, _("Error during suspending device %s."), name);
 	else
-		crypt_drop_keyring_key(cd, key_desc);
+		crypt_drop_keyring_key_by_description(cd, key_desc, LOGON_KEY);
 	free(key_desc);
 out:
 	dm_backend_exit(cd);
@@ -2992,8 +2992,8 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	else if (r)
 		log_err(cd, _("Error during resuming device %s."), name);
 out:
-	if (r < 0 && vk)
-		crypt_drop_keyring_key(cd, vk->key_description);
+	if (r < 0)
+		crypt_drop_keyring_key(cd, vk);
 	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
@@ -3061,8 +3061,8 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 		log_err(cd, _("Error during resuming device %s."), name);
 out:
 	crypt_safe_free(passphrase_read);
-	if (r < 0 && vk)
-		crypt_drop_keyring_key(cd, vk->key_description);
+	if (r < 0)
+		crypt_drop_keyring_key(cd, vk);
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
 }
@@ -3687,8 +3687,8 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 		r = -EINVAL;
 	}
 out:
-	if (r < 0 && vk)
-		crypt_drop_keyring_key(cd, vk->key_description);
+	if (r < 0)
+		crypt_drop_keyring_key(cd, vk);
 	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
@@ -3955,8 +3955,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		r = -EINVAL;
 	}
 
-	if (r < 0 && vk)
-		crypt_drop_keyring_key(cd, vk->key_description);
+	if (r < 0)
+		crypt_drop_keyring_key(cd, vk);
 	crypt_free_volume_key(vk);
 
 	return r;
@@ -4016,7 +4016,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 				r = dm_remove_device(cd, namei, 0);
 			}
 			if (!r)
-				crypt_drop_keyring_key(cd, key_desc);
+				crypt_drop_keyring_key_by_description(cd, key_desc, LOGON_KEY);
 			free(key_desc);
 			break;
 		case CRYPT_INACTIVE:
@@ -5413,19 +5413,31 @@ void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring)
 }
 
 /* internal only */
-void crypt_drop_keyring_key(struct crypt_device *cd, const char *key_description)
+void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *key_description, key_type_t ktype)
 {
 	int r;
+	const char *type_name = key_type_name(ktype);
 
-	if (!key_description)
+	if (!key_description || !type_name)
 		return;
 
-	log_dbg(cd, "Requesting keyring logon key for revoke and unlink.");
+	log_dbg(cd, "Requesting keyring %s key for revoke and unlink.", type_name);
 
-	r = keyring_revoke_and_unlink_key(LOGON_KEY, key_description);
+	r = keyring_revoke_and_unlink_key(ktype, key_description);
 	if (r)
-		log_dbg(cd, "keyring_revoke_and_unlink_logon_key failed (error %d)", r);
+		log_dbg(cd, "keyring_revoke_and_unlink_key failed (error %d)", r);
 	crypt_set_key_in_keyring(cd, 0);
+}
+
+/* internal only */
+void crypt_drop_keyring_key(struct crypt_device *cd, struct volume_key *vks)
+{
+	struct volume_key *vk = vks;
+
+	while (vk) {
+		crypt_drop_keyring_key_by_description(cd, vk->key_description, LOGON_KEY);
+		vk = crypt_volume_key_next(vk);
+	}
 }
 
 int crypt_activate_by_keyring(struct crypt_device *cd,
