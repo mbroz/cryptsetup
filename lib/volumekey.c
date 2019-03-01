@@ -110,6 +110,11 @@ void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk)
 	tmp->next = vk;
 }
 
+struct volume_key *crypt_volume_key_next(struct volume_key *vk)
+{
+	return vk ? vk->next : NULL;
+}
+
 void crypt_free_volume_key(struct volume_key *vk)
 {
 	struct volume_key *vk_next;

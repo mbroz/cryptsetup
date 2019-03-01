@@ -89,6 +89,7 @@ int crypt_volume_key_set_description(struct volume_key *key, const char *key_des
 void crypt_volume_key_set_id(struct volume_key *vk, int id);
 int crypt_volume_key_get_id(const struct volume_key *vk);
 void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk);
+struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
 
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd);
