@@ -21,166 +21,8 @@
 
 #include <stdlib.h>
 #include <errno.h>
-#include <time.h>
 
 #include "internal.h"
-
-/*
- * This is not simulating storage, so using disk block causes extreme overhead.
- * Let's use some fixed block size where results are more reliable...
- */
-#define CIPHER_BLOCK_BYTES 65536
-
-/*
- * If the measured value is lower, encrypted buffer is probably too small
- * and calculated values are not reliable.
- */
-#define CIPHER_TIME_MIN_MS 0.001
-
-/*
- * The whole test depends on Linux kernel usermode crypto API for now.
- * (The same implementations are used in dm-crypt though.)
- */
-
-struct cipher_perf {
-	char name[32];
-	char mode[32];
-	char *key;
-	size_t key_length;
-	char *iv;
-	size_t iv_length;
-	size_t buffer_size;
-};
-
-static int time_ms(struct timespec *start, struct timespec *end, double *ms)
-{
-	double start_ms, end_ms;
-
-	start_ms = start->tv_sec * 1000.0 + start->tv_nsec / (1000.0 * 1000);
-	end_ms   = end->tv_sec * 1000.0 + end->tv_nsec / (1000.0 * 1000);
-
-	*ms = end_ms - start_ms;
-	return 0;
-}
-
-static int cipher_perf_one(struct crypt_device *cd,
-			   struct cipher_perf *cp, char *buf,
-			   size_t buf_size, int enc)
-{
-	struct crypt_cipher *cipher = NULL;
-	size_t done = 0, block = CIPHER_BLOCK_BYTES;
-	int r;
-
-	if (buf_size < block)
-		block = buf_size;
-
-	r = crypt_cipher_init(&cipher, cp->name, cp->mode, cp->key, cp->key_length);
-	if (r < 0) {
-		log_dbg(cd, "Cannot initialise cipher %s, mode %s.", cp->name, cp->mode);
-		return r;
-	}
-
-	while (done < buf_size) {
-		if ((done + block) > buf_size)
-			block = buf_size - done;
-
-		if (enc)
-			r = crypt_cipher_encrypt(cipher, &buf[done], &buf[done],
-						 block, cp->iv, cp->iv_length);
-		else
-			r = crypt_cipher_decrypt(cipher, &buf[done], &buf[done],
-						 block, cp->iv, cp->iv_length);
-		if (r < 0)
-			break;
-
-		done += block;
-	}
-
-	crypt_cipher_destroy(cipher);
-
-	return r;
-}
-static int cipher_measure(struct crypt_device *cd,
-			  struct cipher_perf *cp, char *buf,
-			  size_t buf_size, int encrypt, double *ms)
-{
-	struct timespec start, end;
-	int r;
-
-	/*
-	 * Using getrusage would be better here but the precision
-	 * is not adequate, so better stick with CLOCK_MONOTONIC
-	 */
-	if (clock_gettime(CLOCK_MONOTONIC, &start) < 0)
-		return -EINVAL;
-
-	r = cipher_perf_one(cd, cp, buf, buf_size, encrypt);
-	if (r < 0)
-		return r;
-
-	if (clock_gettime(CLOCK_MONOTONIC, &end) < 0)
-		return -EINVAL;
-
-	r = time_ms(&start, &end, ms);
-	if (r < 0)
-		return r;
-
-	if (*ms < CIPHER_TIME_MIN_MS) {
-		log_dbg(cd, "Measured cipher runtime (%1.6f) is too low.", *ms);
-		return -ERANGE;
-	}
-
-	return 0;
-}
-
-static double speed_mbs(unsigned long bytes, double ms)
-{
-	double speed = bytes, s = ms / 1000.;
-
-	return speed / (1024 * 1024) / s;
-}
-
-static int cipher_perf(struct crypt_device *cd, struct cipher_perf *cp,
-	double *encryption_mbs, double *decryption_mbs)
-{
-	double ms_enc, ms_dec, ms;
-	int r, repeat_enc, repeat_dec;
-	void *buf = NULL;
-
-	if (posix_memalign(&buf, crypt_getpagesize(), cp->buffer_size))
-		return -ENOMEM;
-
-	ms_enc = 0.0;
-	repeat_enc = 1;
-	while (ms_enc < 1000.0) {
-		r = cipher_measure(cd, cp, buf, cp->buffer_size, 1, &ms);
-		if (r < 0) {
-			free(buf);
-			return r;
-		}
-		ms_enc += ms;
-		repeat_enc++;
-	}
-
-	ms_dec = 0.0;
-	repeat_dec = 1;
-	while (ms_dec < 1000.0) {
-		r = cipher_measure(cd, cp, buf, cp->buffer_size, 0, &ms);
-		if (r < 0) {
-			free(buf);
-			return r;
-		}
-		ms_dec += ms;
-		repeat_dec++;
-	}
-
-	free(buf);
-
-	*encryption_mbs = speed_mbs(cp->buffer_size * repeat_enc, ms_enc);
-	*decryption_mbs = speed_mbs(cp->buffer_size * repeat_dec, ms_dec);
-
-	return  0;
-}
 
 int crypt_benchmark(struct crypt_device *cd,
 	const char *cipher,
@@ -191,12 +33,8 @@ int crypt_benchmark(struct crypt_device *cd,
 	double *encryption_mbs,
 	double *decryption_mbs)
 {
-	struct cipher_perf cp = {
-		.key_length = volume_key_size,
-		.iv_length = iv_size,
-		.buffer_size = buffer_size,
-	};
-	char *c;
+	void *buffer = NULL;
+	char *iv = NULL, *key = NULL, mode[MAX_CIPHER_LEN], *c;
 	int r;
 
 	if (!cipher || !cipher_mode || !volume_key_size || !encryption_mbs || !decryption_mbs)
@@ -207,29 +45,40 @@ int crypt_benchmark(struct crypt_device *cd,
 		return r;
 
 	r = -ENOMEM;
-	if (iv_size) {
-		cp.iv = malloc(iv_size);
-		if (!cp.iv)
-			goto out;
-		crypt_random_get(cd, cp.iv, iv_size, CRYPT_RND_NORMAL);
-	}
-
-	cp.key = malloc(volume_key_size);
-	if (!cp.key)
+	if (posix_memalign(&buffer, crypt_getpagesize(), buffer_size))
 		goto out;
 
-	crypt_random_get(cd, cp.key, volume_key_size, CRYPT_RND_NORMAL);
-	strncpy(cp.name, cipher, sizeof(cp.name)-1);
-	strncpy(cp.mode, cipher_mode, sizeof(cp.mode)-1);
+	if (iv_size) {
+		iv = malloc(iv_size);
+		if (!iv)
+			goto out;
+		crypt_random_get(cd, iv, iv_size, CRYPT_RND_NORMAL);
+	}
 
+	key = malloc(volume_key_size);
+	if (!key)
+		goto out;
+
+	crypt_random_get(cd, key, volume_key_size, CRYPT_RND_NORMAL);
+
+	strncpy(mode, cipher_mode, sizeof(mode)-1);
 	/* Ignore IV generator */
-	if ((c  = strchr(cp.mode, '-')))
+	if ((c  = strchr(mode, '-')))
 		*c = '\0';
 
-	r = cipher_perf(cd, &cp, encryption_mbs, decryption_mbs);
+	r = crypt_cipher_perf_kernel(cipher, cipher_mode, buffer, buffer_size, key, volume_key_size,
+				     iv, iv_size, encryption_mbs, decryption_mbs);
+
+	if (r == -ERANGE)
+		log_dbg(cd, "Measured cipher runtime is too low.");
+	else if (r == -ENOTSUP || r == -ENOENT)
+		log_dbg(cd, "Cannot initialise cipher %s, mode %s.", cipher, cipher_mode);
+
 out:
-	free(cp.key);
-	free(cp.iv);
+	free(buffer);
+	free(key);
+	free(iv);
+
 	return r;
 }
 

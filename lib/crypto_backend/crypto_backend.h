@@ -96,6 +96,11 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length);
 
+/* Benchmark of kernel cipher performance */
+int crypt_cipher_perf_kernel(const char *name, const char *mode, char *buffer, size_t buffer_size,
+			     const char *key, size_t key_size, const char *iv, size_t iv_size,
+			     double *encryption_mbs, double *decryption_mbs);
+
 /* Check availability of a cipher (in kernel only) */
 int crypt_cipher_check_kernel(const char *name, const char *mode,
 			      const char *integrity, size_t key_length);
