@@ -34,7 +34,19 @@ typedef int32_t key_serial_t;
 #include "utils_crypt.h"
 #include "utils_keyring.h"
 
+#ifndef ARRAY_SIZE
+# define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
+
 #ifdef KERNEL_KEYRING
+
+static const struct {
+	key_type_t type;
+	const char *type_name;
+} key_types[] = {
+	{ LOGON_KEY,	"logon" },
+	{ USER_KEY,	"user"	},
+};
 
 #include <linux/keyctl.h>
 
@@ -86,27 +98,16 @@ int keyring_check(void)
 #endif
 }
 
-int keyring_add_logon_key_in_thread_keyring(const char *key_desc, const void *key, size_t key_size)
+int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
+	const char *type_name = key_type_name(ktype);
 
-	kid = add_key("logon", key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
-	if (kid < 0)
-		return -errno;
+	if (!type_name || !key_desc)
+		return -EINVAL;
 
-	return 0;
-#else
-	return -ENOTSUP;
-#endif
-}
-
-int keyring_add_user_key_in_thread_keyring(const char *key_desc, const void *key, size_t key_size)
-{
-#ifdef KERNEL_KEYRING
-	key_serial_t kid;
-
-	kid = add_key("user", key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
+	kid = add_key(type_name, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
 	if (kid < 0)
 		return -errno;
 
@@ -117,12 +118,16 @@ int keyring_add_user_key_in_thread_keyring(const char *key_desc, const void *key
 }
 
 /* currently used in client utilities only */
-int keyring_add_key_in_user_keyring(const char *type, const char *key_desc, const void *key, size_t key_size)
+int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
 #ifdef KERNEL_KEYRING
+	const char *type_name = key_type_name(ktype);
 	key_serial_t kid;
 
-	kid = add_key(type, key_desc, key, key_size, KEY_SPEC_USER_KEYRING);
+	if (!type_name || !key_desc)
+		return -EINVAL;
+
+	kid = add_key(type_name, key_desc, key, key_size, KEY_SPEC_USER_KEYRING);
 	if (kid < 0)
 		return -errno;
 
@@ -152,7 +157,7 @@ int keyring_get_passphrase(const char *key_desc,
 	size_t len = 0;
 
 	do
-		kid = request_key("user", key_desc, NULL, 0);
+		kid = request_key(key_type_name(USER_KEY), key_desc, NULL, 0);
 	while (kid < 0 && errno == EINTR);
 
 	if (kid < 0)
@@ -187,13 +192,16 @@ int keyring_get_passphrase(const char *key_desc,
 #endif
 }
 
-static int keyring_revoke_and_unlink_key_type(const char *type, const char *key_desc)
+static int keyring_revoke_and_unlink_key_type(const char *type_name, const char *key_desc)
 {
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
 
+	if (!type_name || !key_desc)
+		return -EINVAL;
+
 	do
-		kid = request_key(type, key_desc, NULL, 0);
+		kid = request_key(type_name, key_desc, NULL, 0);
 	while (kid < 0 && errno == EINTR);
 
 	if (kid < 0)
@@ -217,12 +225,19 @@ static int keyring_revoke_and_unlink_key_type(const char *type, const char *key_
 #endif
 }
 
-int keyring_revoke_and_unlink_logon_key(const char *key_desc)
+const char *key_type_name(key_type_t type)
 {
-	return keyring_revoke_and_unlink_key_type("logon", key_desc);
+#ifdef KERNEL_KEYRING
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(key_types); i++)
+		if (type == key_types[i].type)
+			return key_types[i].type_name;
+#endif
+	return NULL;
 }
 
-int keyring_revoke_and_unlink_user_key(const char *key_desc)
+int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
 {
-	return keyring_revoke_and_unlink_key_type("user", key_desc);
+	return keyring_revoke_and_unlink_key_type(key_type_name(ktype), key_desc);
 }

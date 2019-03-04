@@ -5375,8 +5375,9 @@ int crypt_volume_key_keyring(struct crypt_device *cd, int enable)
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
 	int r;
+	const char *type_name = key_type_name(LOGON_KEY);
 
-	if (!vk || !cd)
+	if (!vk || !cd || !type_name)
 		return -EINVAL;
 
 	if (!vk->key_description) {
@@ -5384,11 +5385,11 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "Loading key (%zu bytes, type %s) in thread keyring.", vk->keylength, "logon");
+	log_dbg(cd, "Loading key (%zu bytes, type %s) in thread keyring.", vk->keylength, type_name);
 
-	r = keyring_add_logon_key_in_thread_keyring(vk->key_description, vk->key, vk->keylength);
+	r = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
 	if (r) {
-		log_dbg(cd, "keyring_add_logon_key_in_thread_keyring failed (error %d)", r);
+		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", r);
 		log_err(cd, _("Failed to load key in kernel keyring."));
 	} else
 		crypt_set_key_in_keyring(cd, 1);
@@ -5421,7 +5422,7 @@ void crypt_drop_keyring_key(struct crypt_device *cd, const char *key_description
 
 	log_dbg(cd, "Requesting keyring logon key for revoke and unlink.");
 
-	r = keyring_revoke_and_unlink_logon_key(key_description);
+	r = keyring_revoke_and_unlink_key(LOGON_KEY, key_description);
 	if (r)
 		log_dbg(cd, "keyring_revoke_and_unlink_logon_key failed (error %d)", r);
 	crypt_set_key_in_keyring(cd, 0);
