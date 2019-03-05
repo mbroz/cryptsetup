@@ -920,9 +920,10 @@ out:
 }
 
 static int TCRYPT_status_one(struct crypt_device *cd, const char *name,
-			      const char *base_uuid, int index,
-			      size_t *key_size, char *cipher,
-			      uint64_t *data_offset, struct device **device)
+			     const char *base_uuid, int index,
+			     size_t *key_size, char *cipher,
+			     struct tcrypt_phdr *tcrypt_hdr,
+			     struct device **device)
 {
 	struct crypt_dm_active_device dmd;
 	struct dm_target *tgt = &dmd.segment;
@@ -955,7 +956,7 @@ static int TCRYPT_status_one(struct crypt_device *cd, const char *name,
 		strcat(cipher, "-");
 		strncat(cipher, tgt->u.crypt.cipher, MAX_CIPHER_LEN);
 		*key_size += tgt->u.crypt.vk->keylength;
-		*data_offset = tgt->u.crypt.offset * SECTOR_SIZE;
+		tcrypt_hdr->d.mk_offset = tgt->u.crypt.offset * SECTOR_SIZE;
 		device_free(cd, *device);
 		MOVE_REF(*device, tgt->data_device);
 	} else
@@ -993,10 +994,10 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 
 	key_size = tgt->u.crypt.vk->keylength;
 	r = TCRYPT_status_one(cd, name, uuid, 1, &key_size,
-			      cipher, &tcrypt_hdr->d.mk_offset, device);
+			      cipher, tcrypt_hdr, device);
 	if (!r)
 		r = TCRYPT_status_one(cd, name, uuid, 2, &key_size,
-				      cipher, &tcrypt_hdr->d.mk_offset, device);
+				      cipher, tcrypt_hdr, device);
 
 	if (r < 0 && r != -ENODEV)
 		return r;
