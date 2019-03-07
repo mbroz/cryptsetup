@@ -1,6 +1,7 @@
 #!/bin/bash
 
-CRYPTSETUP="../cryptsetup"
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 DEV=""
 DEV_STACKED="luks0xbabe"
 DEV_NAME="dummyalign"

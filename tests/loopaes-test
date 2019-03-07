@@ -1,6 +1,7 @@
 #!/bin/bash
 
-CRYPTSETUP=../cryptsetup
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 
 # try to validate using loop-AES losetup/kernel if available
 LOSETUP_AES=/losetup-aes.old

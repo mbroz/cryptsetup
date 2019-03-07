@@ -1,7 +1,8 @@
 #!/bin/bash
 
 PS4='$LINENO:'
-CRYPTSETUP=../cryptsetup
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs

@@ -1,7 +1,8 @@
 #!/bin/bash
 
-CRYPTSETUP=../cryptsetup
-REENC=../cryptsetup-reencrypt
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+REENC=$CRYPTSETUP_PATH/cryptsetup-reencrypt
 FAST_PBKDF_ARGON="--pbkdf-force-iterations 4 --pbkdf-memory 32 --pbkdf-parallel 1"
 FAST_PBKDF_PBKDF2="--pbkdf-force-iterations 1000 --pbkdf pbkdf2"
 DEFAULT_ARGON="argon2i"
@@ -193,7 +194,13 @@ function mount_and_test() {
 	}
 	rm $MNT_DIR/* 2>/dev/null
 	cd $MNT_DIR
-	echo $PWD2 | $START_DIR/$REENC $START_DIR/$IMG -q --use-fsync --use-directio --write-log $FAST_PBKDF_ARGON || return 1
+
+	if [ "${REENC:0:1}" != "/" ] ; then
+		MNT_REENC=$START_DIR/$REENC
+	else
+		MNT_REENC=$REENC
+	fi
+	echo $PWD2 | $MNT_REENC $START_DIR/$IMG -q --use-fsync --use-directio --write-log $FAST_PBKDF_ARGON || return 1
 	cd $START_DIR
 	umount $MNT_DIR
 	echo -n [OK]

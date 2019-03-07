@@ -893,6 +893,11 @@ static void __attribute__((noreturn)) exit_test(const char *msg, int r)
 
 int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[])
 {
+	if (getenv("CRYPTSETUP_PATH")) {
+		printf("Cannot run this test with CRYPTSETUP_PATH set.\n");
+		exit(77);
+	}
+
 	if (crypt_backend_init(NULL))
 		exit_test("Crypto backend init error.", EXIT_FAILURE);
 

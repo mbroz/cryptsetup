@@ -2,7 +2,8 @@
 #
 # Test cryptsetup/authenticated encryption compatibility.
 #
-CRYPTSETUP=../cryptsetup
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 DEV_NAME=dmi_test
 DEV=mode-test.img
 PWD1=nHjJHjI23JK

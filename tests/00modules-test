@@ -1,5 +1,16 @@
 #!/bin/bash
 
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+
+function pversion() {
+	if [ ! -x $CRYPTSETUP_PATH/$1 ] ; then
+		return
+	fi
+
+	echo -n "$CRYPTSETUP_PATH/"
+	$CRYPTSETUP_PATH/$1 --version
+}
+
 echo "Cryptsetup test environment ($(date))"
 uname -a
 
@@ -8,10 +19,10 @@ if [ -f /etc/os-release ] ; then
 	echo "$PRETTY_NAME ($NAME) $VERSION"
 fi
 
-[ -x ../cryptsetup ] && ../cryptsetup --version
-[ -x ../veritysetup ] && ../veritysetup --version
-[ -x ../integritysetup ] && ../integritysetup --version
-[ -x ../cryptsetup-reencrypt ] && ../cryptsetup-reencrypt --version
+pversion cryptsetup
+pversion veritysetup
+pversion integritysetup
+pversion cryptsetup-reencrypt
 
 [ $(id -u) != 0 ] && exit 77
 

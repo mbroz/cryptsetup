@@ -1,6 +1,7 @@
 #!/bin/bash
 
-VERITYSETUP=../veritysetup
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+VERITYSETUP=$CRYPTSETUP_PATH/veritysetup
 VERITYSETUP_VALGRIND=../.libs/veritysetup
 VERITYSETUP_LIB_VALGRIND=../.libs
 

@@ -22,7 +22,9 @@ CHKS_DMCRYPT=vk_in_dmcrypt.chk
 CHKS_KEYRING=vk_in_keyring.chk
 
 PWD="aaa"
-CRYPTSETUP=../cryptsetup
+
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 
 function remove_mapping()
 {

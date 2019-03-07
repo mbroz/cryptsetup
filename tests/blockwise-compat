@@ -304,6 +304,8 @@ run_all() {
 	RUN "$BD_FAIL" $1 write_lseek_blockwise $((BSIZE+1)) $BSIZE $((DEVSIZE-BSIZE))
 }
 
+[ -n "$CRYPTSETUP_PATH" ] && skip "Cannot run this test with CRYPTSETUP_PATH set."
+
 which $STRACE > /dev/null 2>&1 || unset STRACE
 test -x $BW_UNIT || skip "Run \"make `basename $BW_UNIT`\" first"
 

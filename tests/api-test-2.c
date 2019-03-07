@@ -3500,6 +3500,11 @@ int main(int argc, char *argv[])
 		exit(77);
 	}
 
+	if (getenv("CRYPTSETUP_PATH")) {
+		printf("Cannot run this test with CRYPTSETUP_PATH set.\n");
+		exit(77);
+	}
+
 	for (i = 1; i < argc; i++) {
 		if (!strcmp("-v", argv[i]) || !strcmp("--verbose", argv[i]))
 			_verbose = 1;

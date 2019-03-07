@@ -2,7 +2,8 @@
 
 # check tcrypt images parsing
 
-CRYPTSETUP=../cryptsetup
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 TST_DIR=tcrypt-images
 MAP=tctst
 PASSWORD="aaaaaaaaaaaa"

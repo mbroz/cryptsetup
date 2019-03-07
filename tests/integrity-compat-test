@@ -2,7 +2,9 @@
 #
 # Test integritysetup compatibility.
 #
-INTSETUP=../integritysetup
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+INTSETUP=$CRYPTSETUP_PATH/integritysetup
+
 INTSETUP_VALGRIND=../.libs/integritysetup
 INTSETUP_LIB_VALGRIND=../.libs
 
