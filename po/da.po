@@ -4,8 +4,10 @@
 # Joe Hansen <joedalton2@yahoo.dk>, 2015, 2016, 2017, 2018, 2019.
 #
 # Konventioner
+# argument -> argument
 # deferred -> udskudt
 # iteration -> iteration (gennemløb)
+# parameter -> parameter
 # probe -> undersøge (bedre mulighed?)
 # reencryption -> omkryptering
 # suspended -> suspenderet (skal det være standset i stedet for?)
@@ -16,7 +18,7 @@ msgstr ""
 "Project-Id-Version: cryptsetup-2.1.0\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
 "POT-Creation-Date: 2019-01-26 19:02+0100\n"
-"PO-Revision-Date: 2019-02-05 22:30+0200\n"
+"PO-Revision-Date: 2019-03-03 22:35+0200\n"
 "Last-Translator: Joe Hansen <joedalton2@yahoo.dk>\n"
 "Language-Team: Danish <dansk@dansk-gruppen.dk>\n"
 "Language: da\n"
@@ -35,7 +37,7 @@ msgstr "Kan ikke initialisere enhedsoversætter. Er dm_mod-kernemodulet indlæst
 
 #: lib/libdevmapper.c:1010
 msgid "Requested deferred flag is not supported."
-msgstr "Det anmodte udskudte flag er ikke understøttet."
+msgstr "Det anmodede udskudte flag er ikke understøttet."
 
 #: lib/libdevmapper.c:1077
 #, c-format
@@ -199,7 +201,7 @@ msgstr "Sektorstørrelsen på krypteringen er ikke understøttet."
 
 #: lib/setup.c:1421 lib/setup.c:1720
 msgid "Device size is not aligned to requested sector size."
-msgstr "Enhedsstørrelsen er ikke justeret til den anmodte sektorstørrelse."
+msgstr "Enhedsstørrelsen er ikke justeret til den anmodede sektorstørrelse."
 
 #: lib/setup.c:1472 lib/setup.c:1591
 msgid "Can't format LUKS without device."
@@ -211,7 +213,7 @@ msgstr "Forespurgte datajustering er ikke kompatibel med dataforskydning."
 
 #: lib/setup.c:1546 lib/setup.c:1715
 msgid "WARNING: Data offset is outside of currently available data device.\n"
-msgstr "ADVARSEL: Dataforskydning er uden for nuværende tilgængelig dataenhed.\n"
+msgstr "ADVARSEL: Dataforskydning er uden for nuværende tilgængelige dataenhed.\n"
 
 #: lib/setup.c:1556 lib/setup.c:1735 lib/setup.c:1754 lib/setup.c:2021
 #, c-format
@@ -315,7 +317,7 @@ msgstr "Kan ikke ændre størrelse på loop-enhed."
 #: lib/setup.c:2666
 #, c-format
 msgid "Device %s size is not aligned to requested sector size (%u bytes)."
-msgstr "Enhedsstørrelsen for %s er ikke justeret til den anmodte sektorstørrelse (%u byte)."
+msgstr "Enhedsstørrelsen for %s er ikke justeret til den anmodede sektorstørrelse (%u byte)."
 
 #: lib/setup.c:2725
 msgid "Do you really want to change UUID of device?"
@@ -421,7 +423,7 @@ msgstr "Ugyldig enhed %s."
 
 #: lib/setup.c:4134
 msgid "Function not available in FIPS mode."
-msgstr "Funkton er ikke tilgængelig i FIPS-tilstand."
+msgstr "Funktion er ikke tilgængelig i FIPS-tilstand."
 
 #: lib/setup.c:4148
 msgid "Volume key buffer too small."
@@ -494,7 +496,7 @@ msgstr "Kunne ikke køre stat på nøglefil."
 
 #: lib/utils.c:199 lib/utils.c:220
 msgid "Cannot seek to requested keyfile offset."
-msgstr "Kan ikke søge til anmodte nøglefilsforskydning."
+msgstr "Kan ikke søge til anmodede nøglefilsforskydning."
 
 #: lib/utils.c:214 lib/utils.c:229 src/utils_password.c:188
 #: src/utils_password.c:201
@@ -515,7 +517,7 @@ msgstr "Nøglefilsstørrelsen er over maksimum."
 
 #: lib/utils.c:278
 msgid "Cannot read requested amount of data."
-msgstr "Kan ikke læse den anmodte datamængde."
+msgstr "Kan ikke læse den anmodede datamængde."
 
 #: lib/utils_device.c:184 lib/luks1/keyencryption.c:92
 #, c-format
@@ -572,7 +574,7 @@ msgstr "Enheden %s er for lille."
 
 #: lib/utils_pbkdf.c:100
 msgid "Requested PBKDF target time cannot be zero."
-msgstr "Anmodte PBKDF-måltidspunkt kan ikke være nul."
+msgstr "Anmodede PBKDF-måltidspunkt kan ikke være nul."
 
 #: lib/utils_pbkdf.c:106
 #, c-format
@@ -582,11 +584,11 @@ msgstr "Ukendt PBKDF-type %s."
 #: lib/utils_pbkdf.c:111
 #, c-format
 msgid "Requested hash %s is not supported."
-msgstr "Den anmodte hash %s er ikke understøttet."
+msgstr "Den anmodede hash %s er ikke understøttet."
 
 #: lib/utils_pbkdf.c:122
 msgid "Requested PBKDF type is not supported for LUKS1."
-msgstr "Den anmodte PBKDF-type er ikke understøttet for LUKS1."
+msgstr "Den anmodede PBKDF-type er ikke understøttet for LUKS1."
 
 #: lib/utils_pbkdf.c:128
 msgid "PBKDF max memory or parallel threads must not be set with pbkdf2."
@@ -605,15 +607,15 @@ msgstr "Tvungen hukommelsesomkostning er for lav for %s (minimum er %u kilobyte)
 #: lib/utils_pbkdf.c:155
 #, c-format
 msgid "Requested maximum PBKDF memory cost is too high (maximum is %d kilobytes)."
-msgstr "Anmodte maksimal PBKDF-hukommelsesomkostning er for høj (maksimum er %d kilobyte)."
+msgstr "Anmodede maksimal PBKDF-hukommelsesomkostning er for høj (maksimum er %d kilobyte)."
 
 #: lib/utils_pbkdf.c:160
 msgid "Requested maximum PBKDF memory cannot be zero."
-msgstr "Anmodte maksimal PBKDF-hukommelse kan ikke være nul."
+msgstr "Anmodede maksimal PBKDF-hukommelse kan ikke være nul."
 
 #: lib/utils_pbkdf.c:164
 msgid "Requested PBKDF parallel threads cannot be zero."
-msgstr "Anmodte PBKDF parallelle tråde kan ikke være nul."
+msgstr "Anmodede PBKDF parallelle tråde kan ikke være nul."
 
 #: lib/utils_benchmark.c:317
 msgid "PBKDF benchmark disabled but iterations not set."
@@ -719,7 +721,7 @@ msgstr "Enheden %s er ikke en gyldig LUKS-enhed."
 #: lib/luks1/keymanage.c:247 lib/luks2/luks2_json_metadata.c:1010
 #, c-format
 msgid "Requested header backup file %s already exists."
-msgstr "Den anmodte sikkerhedskopifil %s for teksthoveder findes allerede."
+msgstr "Den anmodede sikkerhedskopifil %s for teksthoveder findes allerede."
 
 #: lib/luks1/keymanage.c:249 lib/luks2/luks2_json_metadata.c:1012
 #, c-format
@@ -814,7 +816,7 @@ msgstr "Reparation mislykkedes."
 #: lib/luks1/keymanage.c:487 lib/luks1/keymanage.c:758
 #, c-format
 msgid "Requested LUKS hash %s is not supported."
-msgstr "Den anmodte LUKS-hash %s er ikke understøttet."
+msgstr "Den anmodede LUKS-hash %s er ikke understøttet."
 
 #: lib/luks1/keymanage.c:515 src/cryptsetup.c:960
 msgid "No known problems detected for LUKS header."
@@ -832,7 +834,7 @@ msgstr "Fejl under genlæsning af LUKS-teksthoved efter opdatering på enheden %
 
 #: lib/luks1/keymanage.c:752
 msgid "Data offset for LUKS header must be either 0 or higher than header size."
-msgstr "Dataforskydning for LUKS-teksthoved skal være enten 0 eller højere end teksthovedstørrelse."
+msgstr "Dataforskydning for LUKS-teksthoved skal være enten 0 eller større end teksthovedstørrelse."
 
 #: lib/luks1/keymanage.c:763 lib/luks1/keymanage.c:828
 #: lib/luks2/luks2_json_format.c:207 lib/luks2/luks2_json_metadata.c:909
@@ -1082,12 +1084,12 @@ msgstr "Ingen plads for ny nøgleplads."
 
 #: lib/luks2/luks2_json_format.c:158
 msgid "Requested data offset is too small."
-msgstr "Forespurgt dataforskydning er for lille."
+msgstr "Forespurgte dataforskydning er for lille."
 
 #: lib/luks2/luks2_json_format.c:195
 #, c-format
 msgid "WARNING: keyslots area (%<PRIu64> bytes) is very small, available LUKS2 keyslot count is very limited.\n"
-msgstr "ADVARSEL: nøglepladsområde (%<PRIu64> byte) er meget lille, tilgængelig LUKS2-nøglepladsantal er meget begrænset.\n"
+msgstr "ADVARSEL: nøglepladsområde (%<PRIu64> byte) er meget lille, tilgængelige LUKS2-nøglepladsantal er meget begrænset.\n"
 
 #: lib/luks2/luks2_json_metadata.c:866 lib/luks2/luks2_json_metadata.c:982
 #: lib/luks2/luks2_json_metadata.c:1055 lib/luks2/luks2_keyslot_luks2.c:105
@@ -1253,7 +1255,7 @@ msgstr "ADVARSEL: Tilvalget --keyfile-size bliver ignoreret, læsestørrelsen er
 #: src/cryptsetup.c:268
 #, c-format
 msgid "Detected device signature(s) on %s. Proceeding further may damage existing data."
-msgstr "Registrerede enhedssignaturer på %s. Videre behanding kan beskadige eksisterende data."
+msgstr "Registrerede enhedssignaturer på %s. Videre behandling kan beskadige eksisterende data."
 
 #: src/cryptsetup.c:274 src/cryptsetup.c:969 src/cryptsetup.c:1065
 #: src/cryptsetup.c:1138 src/cryptsetup.c:1763 src/integritysetup.c:230
@@ -1853,7 +1855,7 @@ msgstr "Dump diskenheds (master) nøgle i stedet for information om nøgleplads"
 
 #: src/cryptsetup.c:2514 src/cryptsetup_reencrypt.c:1622
 msgid "The size of the encryption key"
-msgstr "Størrelsen for den krypterede nøgle"
+msgstr "Krypteringsnøglens størrelse"
 
 #: src/cryptsetup.c:2514 src/cryptsetup.c:2571 src/integritysetup.c:539
 #: src/integritysetup.c:543 src/integritysetup.c:547
@@ -2121,7 +2123,7 @@ msgstr "Opdater (genaktiver) enhed med nye parametre"
 
 #: src/cryptsetup.c:2571
 msgid "LUKS2 keyslot: The size of the encryption key"
-msgstr "LUKS2-nøgleplads: Størrelsen for den krypterede nøgle"
+msgstr "LUKS2-nøgleplads: Krypteringsnøglens størrelse"
 
 #: src/cryptsetup.c:2572
 msgid "LUKS2 keyslot: The cipher used for keyslot encryption"
@@ -2141,7 +2143,7 @@ msgstr "Ukendt handling."
 
 #: src/cryptsetup.c:2718
 msgid "Parameter --refresh is only allowed with open or refresh commands.\n"
-msgstr "Parameter --refresh er kun tilladt for kommandoerne open (åbn) eller refresh (opdater).\n"
+msgstr "Parameteren --refresh er kun tilladt for kommandoerne open (åbn) eller refresh (opdater).\n"
 
 #: src/cryptsetup.c:2723
 msgid "Options --refresh and --test-passphrase are mutually exclusive.\n"
@@ -2212,7 +2214,7 @@ msgstr "Negativ nummer for tilvalg er ikke tilladt."
 
 #: src/cryptsetup.c:2809
 msgid "Only one --key-file argument is allowed."
-msgstr "Kun en parameter for --key-file er tilladt."
+msgstr "Kun et argument for --key-file er tilladt."
 
 #: src/cryptsetup.c:2813 src/cryptsetup_reencrypt.c:1689
 #: src/cryptsetup_reencrypt.c:1727
@@ -2245,7 +2247,7 @@ msgstr "Ugyldig specifikation for størrelsen på LUKS2-nøgleplads."
 
 #: src/cryptsetup.c:2842
 msgid "Option --align-payload and --offset cannot be combined."
-msgstr "Tilvalget --align-payload og --offset kan ikke kombineres."
+msgstr "Tilvalgene --align-payload og --offset kan ikke kombineres."
 
 #: src/cryptsetup.c:2848
 msgid "Option --skip is supported only for open of plain and loopaes devices.\n"
@@ -2269,7 +2271,7 @@ msgstr "Tilvalget --veracrypt er kun understøttet for TCRYPT-enhedstype.\n"
 
 #: src/cryptsetup.c:2877
 msgid "Invalid argument for parameter --veracrypt-pim supplied.\n"
-msgstr "Ugyldigt argument for parameter --veracrypt-pim angivet.\n"
+msgstr "Ugyldigt argument for parameteren --veracrypt-pim angivet.\n"
 
 #: src/cryptsetup.c:2881
 msgid "Option --veracrypt-pim is supported only for VeraCrypt compatible devices.\n"
@@ -2542,7 +2544,7 @@ msgstr ""
 
 #: src/integritysetup.c:528
 msgid "Path to data device (if separated)"
-msgstr "Sti til datatjeneste (hvis adskilt)"
+msgstr "Sti til dataenhed (hvis adskilt)"
 
 #: src/integritysetup.c:530
 msgid "Journal size"
