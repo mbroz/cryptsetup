@@ -1,0 +1,723 @@
+#!/bin/bash
+
+PS4='$LINENO:'
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
+FAST_PBKDF_ARGON="--pbkdf-force-iterations 4 --pbkdf-memory 32 --pbkdf-parallel 1"
+FAST_PBKDF_PBKDF2="--pbkdf-force-iterations 1000 --pbkdf pbkdf2"
+DEFAULT_ARGON="argon2i"
+
+DEV=""
+OVRDEV="123reenc321"
+DEVBIG="reenc2134"
+DEV_NAME=reenc9768
+IMG=reenc-data
+IMG_HDR=/tmp/$IMG.hdr
+KEY1=key1
+PWD1="93R4P4pIqAH8"
+PWD2="1cND4319812f"
+PWD3="1-9Qu5Ejfnqv"
+
+HAVE_KEYRING=$(grep -e "#define KERNEL_KEYRING" ../config.h)
+test -n "$HAVE_KEYRING" || HAVE_KEYRING=0
+HAVE_KEYRING=${HAVE_KEYRING: -1}
+
+function dm_crypt_features()
+{
+	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
+
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
+
+	[ $VER_MAJ -lt 1 ] && return
+	[ $VER_MAJ -gt 1 ] && {
+		DM_PERF_CPU=1
+		DM_SECTOR_SIZE=1
+		return
+	}
+
+	[ $VER_MIN -lt 14 ] && return
+	DM_PERF_CPU=1
+	if [ $VER_MIN -ge 17 -o \( $VER_MIN -eq 14 -a $VER_PTC -ge 5 \) ]; then
+		DM_SECTOR_SIZE=1
+	fi
+}
+
+function dm_delay_features()
+{
+	local _ver_str=$(dmsetup targets | grep delay | cut -f2 -dv)
+	[ -z "$_ver_str" ] && return 1
+	return 0
+}
+
+# $1 path to scsi debug bdev
+scsi_debug_teardown() {
+	local _tries=15;
+
+	while [ -b "$1" -a $_tries -gt 0 ]; do
+		rmmod scsi_debug 2> /dev/null
+		if [ -b "$1" ]; then
+			sleep .1
+			_tries=$((_tries-1))
+		fi
+	done
+
+	test ! -b "$1" || rmmod scsi_debug 2> /dev/null
+}
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ -b /dev/mapper/$OVRDEV ] && dmsetup remove --retry $OVRDEV 2>/dev/null
+	[ -b /dev/mapper/$OVRDEV-err ] && dmsetup remove --retry $OVRDEV-err 2>/dev/null
+	[ -n "$LOOPDEV" ] && losetup -d $LOOPDEV
+	unset LOOPDEV
+	rm -f $IMG $IMG_HDR $KEY1 $DEVBIG >/dev/null 2>&1
+	rmmod scsi_debug 2> /dev/null
+	scsi_debug_teardown $DEV
+}
+
+function fail()
+{
+	local frame=0
+	[ -n "$1" ] && echo "$1"
+	echo "FAILED backtrace:"
+	while caller $frame; do	((frame++)); done
+	remove_mapping
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 77
+}
+
+function add_scsi_device() {
+	scsi_debug_teardown $DEV
+        modprobe scsi_debug $@ delay=0
+        if [ $? -ne 0 ] ; then
+                echo "This kernel seems to not support proper scsi_debug module, test skipped."
+                exit 77
+        fi
+
+        sleep 1
+        DEV="/dev/"$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+        [ -b $DEV ] || fail "Cannot find $DEV."
+}
+
+function open_crypt() # $1 pwd, $2 hdr
+{
+	if [ -n "$2" ] ; then
+		echo "$1" | $CRYPTSETUP luksOpen $DEV $DEV_NAME --header $2 || fail
+	elif [ -n "$1" ] ; then
+		echo "$1" | $CRYPTSETUP luksOpen $DEV $DEV_NAME || fail
+	else
+		$CRYPTSETUP luksOpen -d $KEY1 $DEV $DEV_NAME || fail
+	fi
+}
+
+function wipe_dev() # $1 dev
+{
+	if [ -b $1 ] ; then
+		blkdiscard --zeroout $1 2>/dev/null || dd if=/dev/zero of=$1 bs=1M conv=notrunc >/dev/null 2>&1
+	else
+		local size=$(stat --printf="%s" $1)
+		truncate -s 0 $1
+		truncate -s $size $1
+	fi
+}
+
+function wipe() # $1 pass, $2 hdr
+{
+	open_crypt $1 $2
+	wipe_dev /dev/mapper/$DEV_NAME
+	udevadm settle >/dev/null 2>&1
+	$CRYPTSETUP luksClose $DEV_NAME || fail
+}
+
+function prepare() # $1 dev1_siz
+{
+	remove_mapping
+
+	if [ ! -e $KEY1 ]; then
+		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
+	fi
+
+	add_scsi_device $@
+}
+
+function preparebig() # $1 dev1_siz
+{
+	remove_mapping
+
+	if [ ! -e $KEY1 ]; then
+		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
+	fi
+
+	truncate -s "$1"M $DEVBIG
+	LOOPDEV=$(losetup -f)
+	losetup -f $DEVBIG || fail
+	DEV=$LOOPDEV
+}
+
+function check_hash_dev() # $1 dev, $2 hash
+{
+	HASH=$(sha256sum $1 | cut -d' ' -f 1)
+	[ $HASH != "$2" ] && fail "HASH differs (expected: $2) (result $HASH)"
+}
+
+function check_hash() # $1 pwd, $2 hash, $3 hdr
+{
+	open_crypt $1 $3
+	check_hash_dev /dev/mapper/$DEV_NAME $2
+	$CRYPTSETUP remove $DEV_NAME || fail
+}
+
+function check_hash_head() # $1 pwd, $2 len, $3 hash, $4 hdr
+{
+	open_crypt $1 $4
+	test -z "$3" || echo $1 | $CRYPTSETUP resize $DEV_NAME --size $2 || fail
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+	$CRYPTSETUP remove $DEV_NAME || fail
+}
+
+function resize_file() # $1 dev, $2 shrink bytes
+{
+	local size=$(stat --printf="%s" $1)
+	truncate -s $(($size + $2)) $1
+	losetup -c $LOOPDEV
+}
+
+function error_writes() { # $1 dmdev, $2 data dev, $3 offset, $4 size
+	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
+	local _offset=$(($3+$4))
+	local _size=$((_dev_size-_offset))
+	local _err=$1-err
+	dmsetup create $_err --table "0 $_dev_size error" || fail
+echo -e "0 $3 linear $2 0\n
+$3 $4 delay $2 $3 0 /dev/mapper/$_err $3 0\n
+$_offset $_size linear $2 $_offset" | dmsetup load $1 || fail
+	dmsetup resume $1 || fail
+	blockdev --setra 0 /dev/mapper/$1
+	blockdev --setra 0 /dev/mapper/$_err
+}
+
+function fix_writes() { # $1 dmdev, $2 data dev
+	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
+	dmsetup load $1 --table "0 $_dev_size linear $2 0" || fail
+	dmsetup resume $1 || fail
+	dmsetup remove --retry $1-err 2>/dev/null || fail
+}
+
+function prepare_linear_dev() {
+	if [ "$1" -gt 32 ]; then
+		preparebig $1
+	else
+		prepare dev_size_mb=$1
+	fi
+
+	local _size=$(blockdev --getsz $DEV)
+
+	dmsetup create $OVRDEV --table "0 $_size linear $DEV 0" || fail
+	blockdev --setra 0 /dev/mapper/$OVRDEV
+
+	OLD_DEV=$DEV
+	DEV=/dev/mapper/$OVRDEV
+}
+
+function get_error_offsets() # $1 devsize, $2 minimal offset, $3 sector_size [512 if ommited], $4 max offset
+{
+	local _devsize=$(($1*1024*2))
+	local _sector_size=${3:-512}
+	local _max_offset=${4:-$_devsize}
+	_sector_size=$((_sector_size/512))
+
+	# 8 sectors minimal size (4096)
+	ERRLENGTH=$((($RANDOM%56)+8))
+	ERRLENGTH=$(($ERRLENGTH-($ERRLENGTH%$_sector_size)))
+
+	ERROFFSET=$(($2+((2*$RANDOM)%($_max_offset-$2-$ERRLENGTH))))
+	ERROFFSET=$(($ERROFFSET-($ERROFFSET%$_sector_size)))
+}
+
+function reencrypt_recover() { # $1 sector size, $2 resilience, $3 digest
+	echo -n "resilience mode: $2 ..."
+
+	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+	fix_writes $OVRDEV $OLD_DEV
+
+	# TODO: replace with cryptsetup repair when available
+	echo $PWD1 | $CRYPTSETUP open $DEV dummydev || fail
+	$CRYPTSETUP close dummydev || fail
+
+	check_hash $PWD1 $3
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON || fail
+	check_hash $PWD1 $3
+
+	echo "[OK]"
+}
+
+function encrypt_recover() { # $1 sector size, $2 reduce size, $3 digest, $4 device size in sectors, $5 origin digest
+	wipe_dev $DEV
+	check_hash_dev $DEV $5
+
+	echo -n "resilience mode: datashift ..."
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size $2 --sector-size $1 -q $FAST_PBKDF_ARGON --init-only >/dev/null 2>&1 || fail
+
+	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q >/dev/null 2>&1 && fail
+	fix_writes $OVRDEV $OLD_DEV
+
+	# TODO: replace with cryptsetup repair when available
+	echo $PWD1 | $CRYPTSETUP open $DEV dummydev || fail
+	$CRYPTSETUP close dummydev || fail
+
+	$CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt"
+	if [ $? -eq 0 ]; then
+		check_hash $PWD1 $3
+		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --sector-size $1 -q $FAST_PBKDF_ARGON || fail
+	fi
+
+	check_hash_head $PWD1 $4 $3
+
+	echo "[OK]"
+}
+
+function reencrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+	echo -n "resilience mode: $2 ..."
+
+	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --hotzone-size 1M --header $4 --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+	fix_writes $OVRDEV $OLD_DEV
+
+	# TODO: replace with cryptsetup repair when available
+	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 dummydev || fail
+	$CRYPTSETUP close dummydev || fail
+
+	check_hash $PWD1 $3 $4
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON || fail
+	check_hash $PWD1 $3 $4
+
+	echo "[OK]"
+}
+
+function encrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+	wipe_dev $DEV
+	check_hash_dev $DEV $3
+
+	echo -n "resilience mode: $2 ..."
+
+	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --hotzone-size 1M --header $4 --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+	fix_writes $OVRDEV $OLD_DEV
+
+	# TODO: replace with cryptsetup repair when available
+	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 dummydev || fail
+	$CRYPTSETUP close dummydev || fail
+
+	check_hash $PWD1 $3 $4
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON || fail
+	check_hash $PWD1 $3 $4
+
+	echo "[OK]"
+}
+
+function decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size $1 --header $4 $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1 $4
+	check_hash $PWD1 $3 $4
+
+	echo -n "resilience mode: $2 ..."
+
+	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --decrypt --hotzone-size 1M --header $4 --resilience $2 -q 2>/dev/null && fail
+	fix_writes $OVRDEV $OLD_DEV
+
+	# TODO: replace with cryptsetup repair when available
+	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 dummydev || fail
+	$CRYPTSETUP close dummydev || fail
+
+	# $CRYPTSETUP luksDump $IMG_HDR
+
+	$CRYPTSETUP luksDump $4 | grep -q "online-reencrypt"
+	if [ $? -eq 0 ]; then
+		check_hash $PWD1 $3 $4
+		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 -q || fail
+	fi
+
+	check_hash_dev $DEV $3
+
+	echo "[OK]"
+}
+
+function valgrind_setup()
+{
+	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
+
+[ "$HAVE_KEYRING" -eq 1 ] || skip "cryptsetup compiled without kernel keyring support."
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+modprobe --dry-run scsi_debug || exit 77
+modprobe dm-crypt || fail "dm-crypt failed to load"
+modprobe dm-delay > /dev/null 2>&1
+dm_crypt_features
+
+export LANG=C
+
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+
+# REENCRYPTION tests
+
+# 28 MiBs of zeros (32MiBs - 4MiB LUKS2 header)
+HASH1=f8280c81b347b01405277bf9e8bf0685ae8be863ff104797c65b7169f8203fd2
+# 1 MiB of zeros
+HASH2=30e14955ebf1352266dc2ff8067e68104607e750abb9d3b36582b8af909fcb58
+# 256 MiBs of zeros
+HASH3=a6d72ac7690f53be6ae46ba88506bd97302a093f7108472bd9efc3cefda06484
+# 64 MiBs of zeroes
+HASH4=3b6a07d0d404fab4e23b6d34bc6696a6a312dd92821332385e5af7c01c421351
+# 56 MiBs of zeroes
+HASH5=8afcb7e7189ce4d112fd245eaa60c3cfcf5a5d5e1d6bf4eb85941d73ef8cfbd5
+# 43 MiBs of zeroes
+HASH6=39f7c6d38af574fe2c90ef400dfaba8ef8edccd11bdac998a3f8143a86837331
+# 31 MiBs of zeroes
+HASH7=18a393d1a505e22ccf3e29effe3005ea8627e4c36b7cca0e53f58121f49b67e1
+# 60 MiBs of zeroes
+HASH8=cf5ac69ca412f9b3b1a8b8de27d368c5c05ed4b1b6aa40e6c38d9cbf23711342
+
+echo "[1] Reencryption"
+echo -n "[512 sector]"
+prepare dev_size_mb=32
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 128 -c aes-cbc-essiv:sha256 --resilience checksum $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo -n "[OK][4096 sector]"
+prepare sector_size=4096 dev_size_mb=32
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 128 -c aes-cbc-essiv:sha256 --resilience checksum $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+if [ -n "$DM_SECTOR_SIZE" ]; then
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON --sector-size 4096 || fail
+	check_hash $PWD1 $HASH1
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal --sector-size 2048 $FAST_PBKDF_ARGON || fail
+	check_hash $PWD1 $HASH1
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON --sector-size 1024 || fail
+	check_hash $PWD1 $HASH1
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 128 -c aes-cbc-essiv:sha256 --resilience checksum --sector-size 512 $FAST_PBKDF_ARGON || fail
+	check_hash $PWD1 $HASH1
+fi
+echo -n "[OK][4096/512 sector]"
+prepare sector_size=512 physblk_exp=3 dev_size_mb=32
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 128 -c aes-cbc-essiv:sha256 --resilience checksum $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+echo "[OK]"
+
+# reencrypt minimal device size (FIXME: change data device size to single encryption sector size)
+# temporary small device size is default luks2 hdr size + 1MiB
+echo -n "[small device reencryption]"
+prepare dev_size_mb=5
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 128 -c aes-cbc-essiv:sha256 --resilience checksum $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH2
+if [ -n "$DM_SECTOR_SIZE" ]; then
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON --sector-size 4096 || fail
+	check_hash $PWD1 $HASH2
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal --sector-size 2048 $FAST_PBKDF_ARGON || fail
+	check_hash $PWD1 $HASH2
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON --sector-size 1024 || fail
+	check_hash $PWD1 $HASH2
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 128 -c aes-cbc-essiv:sha256 --resilience checksum --sector-size 512 $FAST_PBKDF_ARGON || fail
+	check_hash $PWD1 $HASH2
+fi
+echo "[OK]"
+
+#TODO:
+# echo "[2] Reencryption with data shift"
+
+echo "[2] Encryption with data shift"
+# well, movin' zeroes :-)
+preparebig 64
+wipe_dev $DEV
+check_hash_dev $DEV $HASH4
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON || fail
+check_hash_head $PWD1 $((56*1024*2)) $HASH5
+wipe_dev $DEV
+check_hash_dev $DEV $HASH4
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c twofish-cbc-essiv:sha256 -s 128 --reduce-device-size 21M -q $FAST_PBKDF_ARGON || fail
+check_hash_head $PWD1 $((43*1024*2)) $HASH6
+wipe_dev $DEV
+# offset 21504 equals 10,5MiBs, equals --reduce-device-size 21M from test above (30M is ignored here, we'll reduce it to 21M in cryptsetup anyway)
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c twofish-cbc-essiv:sha256 -s 128 --offset 21504 --reduce-device-size 30M -q $FAST_PBKDF_ARGON > /dev/null || fail
+check_hash_head $PWD1 $((43*1024*2)) $HASH6
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 33M -q $FAST_PBKDF_ARGON || fail
+check_hash_head $PWD1 $((31*1024*2)) $HASH7
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 64M -q $FAST_PBKDF_ARGON > /dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 8M --init-only -q $FAST_PBKDF_ARGON $DEV || fail
+resize_file $DEVBIG -512
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV 2> /dev/null && fail
+resize_file $DEVBIG 512
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --offset 32760 --reduce-device-size 8M -q $FAST_PBKDF_ARGON --init-only >/dev/null 2>&1 && fail
+# data offset at 21MiB
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --header $IMG_HDR --offset 43008 --reduce-device-size 21M -q $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH6 $IMG_HDR
+$CRYPTSETUP luksHeaderRestore --header-backup-file $IMG_HDR $DEV -q || fail
+check_hash $PWD1 $HASH6
+
+echo "[3] Encryption with detached header"
+preparebig 256
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH3 $IMG_HDR
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --resilience journal --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH3 $IMG_HDR
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c twofish-cbc-essiv:sha256 -s 128 --resilience none --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH3 $IMG_HDR
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c serpent-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH3 $IMG_HDR
+
+echo "[4] Reencryption with detached header"
+wipe $PWD1 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH3 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt --resilience journal --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH3 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt -c twofish-cbc-essiv:sha256 -s 128 --resilience none --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH3 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt -c serpent-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH3 $IMG_HDR
+
+echo "[5] Decryption with detached header"
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --header $IMG_HDR $DEV || fail
+check_hash_dev $DEV $HASH3
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience journal --header $IMG_HDR $DEV || fail
+check_hash_dev $DEV $HASH3
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c twofish-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience none --header $IMG_HDR $DEV || fail
+check_hash_dev $DEV $HASH3
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c serpent-xts-plain --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience checksum --header $IMG_HDR $DEV || fail
+check_hash_dev $DEV $HASH3
+
+if ! dm_delay_features; then
+	echo "dm-delay target is missing, skipping recovery tests."
+	remove_mapping
+	exit 0
+fi
+
+echo "[6] Reencryption recovery"
+prepare_linear_dev 32
+OFFSET=8192
+
+echo "sector size 512->512"
+
+get_error_offsets 32 $OFFSET
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+
+echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+reencrypt_recover 512 checksum $HASH1
+reencrypt_recover 512 journal $HASH1
+
+if [ -n "$DM_SECTOR_SIZE" ]; then
+	echo "sector size 512->4096"
+
+	get_error_offsets 32 $OFFSET 4096
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1
+	check_hash $PWD1 $HASH1
+
+	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover 4096 checksum $HASH1
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1
+	check_hash $PWD1 $HASH1
+	reencrypt_recover 4096 journal $HASH1
+
+	echo "sector size 4096->4096"
+
+	get_error_offsets 32 $OFFSET 4096
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 --sector-size 4096 -c aes-cbc-essiv:sha256 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1
+	check_hash $PWD1 $HASH1
+
+	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover 4096 checksum $HASH1
+	reencrypt_recover 4096 journal $HASH1
+fi
+
+echo "[7] Reencryption with detached header recovery"
+prepare_linear_dev 31
+
+echo "sector size 512->512"
+
+get_error_offsets 31 0
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1 $IMG_HDR
+check_hash $PWD1 $HASH7 $IMG_HDR
+
+echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+reencrypt_recover_detached 512 checksum $HASH7 $IMG_HDR
+reencrypt_recover_detached 512 journal $HASH7 $IMG_HDR
+
+if [ -n "$DM_SECTOR_SIZE" ]; then
+	echo "sector size 512->4096"
+	# ERR writes to sectors [56038,56098]
+
+	get_error_offsets 31 0 4096
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1 $IMG_HDR
+	check_hash $PWD1 $HASH7 $IMG_HDR
+
+	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_detached 4096 checksum $HASH7 $IMG_HDR
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1 $IMG_HDR
+	check_hash $PWD1 $HASH7 $IMG_HDR
+	reencrypt_recover_detached 4096 journal $HASH7 $IMG_HDR
+
+	echo "sector size 4096->4096"
+
+	get_error_offsets 31 0 4096
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 4096 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1 $IMG_HDR
+	check_hash $PWD1 $HASH7 $IMG_HDR
+
+	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_detached 4096 checksum $HASH7 $IMG_HDR
+	reencrypt_recover_detached 4096 journal $HASH7 $IMG_HDR
+fi
+
+echo "[8] Encryption recovery"
+prepare_linear_dev 64
+OFFSET=$((2*1024*2))
+
+echo "sector size 512"
+
+get_error_offsets 64 $OFFSET 512 $((62*1024*2))
+
+echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+encrypt_recover 512 4M $HASH8 $((60*1024*2)) $HASH4
+
+if [ -n "$DM_SECTOR_SIZE" ]; then
+	echo "sector size 4096"
+
+	get_error_offsets 64 $OFFSET 4096 $((62*1024*2))
+
+	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	encrypt_recover 4096 4M $HASH8 $((60*1024*2)) $HASH4
+fi
+
+echo "[9] Encryption with detached header recovery"
+prepare_linear_dev 31
+
+get_error_offsets 31 0
+
+echo "sector size 512"
+
+echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+encrypt_recover_detached 512 checksum $HASH7 $IMG_HDR
+encrypt_recover_detached 512 journal $HASH7 $IMG_HDR
+
+if [ -n "$DM_SECTOR_SIZE" ]; then
+	get_error_offsets 31 0 4096
+
+	echo "sector size 4096"
+
+	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	encrypt_recover_detached 4096 checksum $HASH7 $IMG_HDR
+	encrypt_recover_detached 4096 journal $HASH7 $IMG_HDR
+fi
+
+echo "[10] Decryption with detached header recovery"
+prepare_linear_dev 31
+
+echo "sector size 512"
+
+# TODO: What should decryption do when it finishes decryption during recovery (with open)
+get_error_offsets 31 2049
+
+echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+decrypt_recover_detached 512 journal $HASH7 $IMG_HDR
+decrypt_recover_detached 512 checksum $HASH7 $IMG_HDR
+
+if [ -n "$DM_SECTOR_SIZE" ]; then
+	echo "sector size 4096"
+
+	# TODO: What should decryption do when it finishes decryption during recovery (with open)
+	get_error_offsets 31 2048 4096
+
+	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	decrypt_recover_detached 4096 checksum $HASH7 $IMG_HDR
+	decrypt_recover_detached 4096 journal $HASH7 $IMG_HDR
+fi
+
+remove_mapping
+exit 0
