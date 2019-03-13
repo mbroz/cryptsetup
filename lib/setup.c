@@ -2876,6 +2876,7 @@ int crypt_suspend(struct crypt_device *cd,
 	char *key_desc;
 	crypt_status_info ci;
 	int r;
+	uint32_t dmflags = DM_SUSPEND_WIPE_KEY;
 
 	/* FIXME: check context uuid matches the dm-crypt device uuid (onlyLUKS branching) */
 
@@ -2919,10 +2920,9 @@ int crypt_suspend(struct crypt_device *cd,
 
 	/* we can't simply wipe wrapped keys */
 	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd), crypt_get_cipher_mode(cd)))
-		r = dm_suspend_device(cd, name, 0);
-	else
-		r = dm_suspend_and_wipe_key(cd, name);
+		dmflags &= ~DM_SUSPEND_WIPE_KEY;
 
+	r = dm_suspend_device(cd, name, dmflags);
 	if (r == -ENOTSUP)
 		log_err(cd, _("Suspend is not supported for device %s."), name);
 	else if (r)

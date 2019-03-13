@@ -195,7 +195,6 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 int dm_reload_device(struct crypt_device *cd, const char *name,
 		     struct crypt_dm_active_device *dmd, uint32_t dmflags, unsigned resume);
 int dm_suspend_device(struct crypt_device *cd, const char *name, uint32_t dmflags);
-int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name);
 int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t dmflags);
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				const struct volume_key *vk);
