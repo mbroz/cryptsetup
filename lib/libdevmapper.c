@@ -907,6 +907,10 @@ static int _dm_simple(int task, const char *name, uint32_t dmflags)
 	if (name && !dm_task_set_name(dmt, name))
 		goto out;
 
+	if (task == DM_DEVICE_SUSPEND &&
+	    (dmflags & DM_SUSPEND_SKIP_LOCKFS) && !dm_task_skip_lockfs(dmt))
+		goto out;
+
 	r = dm_task_run(dmt);
 out:
 	dm_task_destroy(dmt);
@@ -1275,6 +1279,9 @@ static int _dm_resume_device(const char *name, uint32_t dmflags)
 		return r;
 
 	if (!dm_task_set_name(dmt, name))
+		goto out;
+
+	if ((dmflags & DM_SUSPEND_SKIP_LOCKFS) && !dm_task_skip_lockfs(dmt))
 		goto out;
 
 	if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
