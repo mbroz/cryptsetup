@@ -97,7 +97,7 @@ int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	if ((offset + length) > get_max_offset(hdr)) {
-		log_err(cd, _("No space for new keyslot."));
+		log_dbg(cd, "Not enough space in header keyslot area.");
 		return -EINVAL;
 	}
 

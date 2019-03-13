@@ -480,8 +480,10 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 		return -EINVAL;
 
 	r = LUKS2_find_area_gap(cd, hdr, volume_key_len, &area_offset, &area_length);
-	if (r < 0)
+	if (r < 0) {
+		log_err(cd, _("No space for new keyslot."));
 		return r;
+	}
 
 	jobj_keyslot = json_object_new_object();
 	json_object_object_add(jobj_keyslot, "type", json_object_new_string("luks2"));
