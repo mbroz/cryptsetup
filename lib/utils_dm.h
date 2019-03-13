@@ -33,6 +33,14 @@ struct crypt_params_verity;
 struct device;
 struct crypt_params_integrity;
 
+/* Device mapper internal flags */
+#define DM_RESUME_PRIVATE      (1 << 4) /* CRYPT_ACTIVATE_PRIVATE */
+
+static inline uint32_t act2dmflags(uint32_t act_flags)
+{
+	return (act_flags & DM_RESUME_PRIVATE);
+}
+
 /* Device mapper backend - kernel support flags */
 #define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
 #define DM_LMK_SUPPORTED      (1 << 1)	/* lmk mode */
@@ -183,10 +191,10 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 int dm_create_device(struct crypt_device *cd, const char *name,
 		     const char *type, struct crypt_dm_active_device *dmd);
 int dm_reload_device(struct crypt_device *cd, const char *name,
-		     struct crypt_dm_active_device *dmd, unsigned resume);
-int dm_suspend_device(struct crypt_device *cd, const char *name);
+		     struct crypt_dm_active_device *dmd, uint32_t dmflags, unsigned resume);
+int dm_suspend_device(struct crypt_device *cd, const char *name, uint32_t dmflags);
 int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name);
-int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t flags);
+int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t dmflags);
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				const struct volume_key *vk);
 int dm_error_device(struct crypt_device *cd, const char *name);

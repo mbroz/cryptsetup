@@ -2436,7 +2436,7 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	tdmd.flags = sdmd->flags;
 	tgt->size = tdmd.size = sdmd->size;
 
-	r = dm_reload_device(cd, name, &tdmd, 1);
+	r = dm_reload_device(cd, name, &tdmd, 0, 1);
 out:
 	dm_targets_free(cd, &tdmd);
 	free(CONST_CAST(void*)tdmd.uuid);
@@ -2544,32 +2544,32 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	tdmd.flags = sdmd->flags;
 	tdmd.size = sdmd->size;
 
-	if ((r = dm_reload_device(cd, iname, sdmdi, 0))) {
+	if ((r = dm_reload_device(cd, iname, sdmdi, 0, 0))) {
 		log_dbg(cd, "Failed to reload device %s.", iname);
 		goto out;
 	}
 
-	if ((r = dm_reload_device(cd, name, &tdmd, 0))) {
+	if ((r = dm_reload_device(cd, name, &tdmd, 0, 0))) {
 		log_dbg(cd, "Failed to reload device %s.", name);
 		goto err_clear;
 	}
 
-	if ((r = dm_suspend_device(cd, name))) {
+	if ((r = dm_suspend_device(cd, name, 0))) {
 		log_dbg(cd, "Failed to suspend device %s.", name);
 		goto err_clear;
 	}
 
-	if ((r = dm_suspend_device(cd, iname))) {
+	if ((r = dm_suspend_device(cd, iname, 0))) {
 		log_err(cd, "Failed to suspend device %s.", iname);
 		goto err_clear;
 	}
 
-	if ((r = dm_resume_device(cd, iname, sdmdi->flags))) {
+	if ((r = dm_resume_device(cd, iname, act2dmflags(sdmdi->flags)))) {
 		log_err(cd, "Failed to resume device %s.", iname);
 		goto err_clear;
 	}
 
-	r = dm_resume_device(cd, name, tdmd.flags);
+	r = dm_resume_device(cd, name, act2dmflags(tdmd.flags));
 	if (!r)
 		goto out;
 
@@ -2919,7 +2919,7 @@ int crypt_suspend(struct crypt_device *cd,
 
 	/* we can't simply wipe wrapped keys */
 	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd), crypt_get_cipher_mode(cd)))
-		r = dm_suspend_device(cd, name);
+		r = dm_suspend_device(cd, name, 0);
 	else
 		r = dm_suspend_and_wipe_key(cd, name);
 

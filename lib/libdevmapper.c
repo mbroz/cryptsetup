@@ -896,7 +896,7 @@ out:
 	return r;
 }
 
-static int _dm_simple(int task, const char *name)
+static int _dm_simple(int task, const char *name, uint32_t dmflags)
 {
 	int r = 0;
 	struct dm_task *dmt;
@@ -939,7 +939,7 @@ static int _error_device(const char *name, size_t size)
 		goto error;
 
 	if (_dm_resume_device(name, 0)) {
-		_dm_simple(DM_DEVICE_CLEAR, name);
+		_dm_simple(DM_DEVICE_CLEAR, name, 0);
 		goto error;
 	}
 
@@ -983,7 +983,7 @@ int dm_clear_device(struct crypt_device *cd, const char *name)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	if (_dm_simple(DM_DEVICE_CLEAR, name))
+	if (_dm_simple(DM_DEVICE_CLEAR, name, 0))
 		r = 0;
 	else
 		r = -EINVAL;
@@ -1261,14 +1261,14 @@ out:
 	return r;
 }
 
-static int _dm_resume_device(const char *name, uint32_t flags)
+static int _dm_resume_device(const char *name, uint32_t dmflags)
 {
 	struct dm_task *dmt;
 	int r = -EINVAL;
 	uint32_t cookie = 0;
 	uint16_t udev_flags = DM_UDEV_DISABLE_LIBRARY_FALLBACK;
 
-	if (flags & CRYPT_ACTIVATE_PRIVATE)
+	if (dmflags & DM_RESUME_PRIVATE)
 		udev_flags |= CRYPT_TEMP_UDEV_FLAGS;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_RESUME)))
@@ -1514,7 +1514,7 @@ out:
 }
 
 int dm_reload_device(struct crypt_device *cd, const char *name,
-		     struct crypt_dm_active_device *dmd, unsigned resume)
+		     struct crypt_dm_active_device *dmd, uint32_t dmflags, unsigned resume)
 {
 	int r;
 	uint32_t dmt_flags;
@@ -1540,7 +1540,7 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 	}
 
 	if (!r && resume)
-		r = _dm_resume_device(name, dmd->flags);
+		r = _dm_resume_device(name, dmflags | act2dmflags(dmd->flags));
 
 	dm_exit_context();
 	return r;
@@ -2475,14 +2475,14 @@ out:
 	return r;
 }
 
-int dm_suspend_device(struct crypt_device *cd, const char *name)
+int dm_suspend_device(struct crypt_device *cd, const char *name, uint32_t dmflags)
 {
 	int r;
 
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	if (!_dm_simple(DM_DEVICE_SUSPEND, name))
+	if (!_dm_simple(DM_DEVICE_SUSPEND, name, dmflags))
 		r = -EINVAL;
 	else
 		r = 0;
@@ -2506,7 +2506,7 @@ int dm_suspend_and_wipe_key(struct crypt_device *cd, const char *name)
 	if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
 		goto out;
 
-	if (!_dm_simple(DM_DEVICE_SUSPEND, name)) {
+	if (!_dm_simple(DM_DEVICE_SUSPEND, name, 0)) {
 		r = -EINVAL;
 		goto out;
 	}
@@ -2522,14 +2522,14 @@ out:
 	return r;
 }
 
-int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t flags)
+int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t dmflags)
 {
 	int r;
 
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	r = _dm_resume_device(name, flags);
+	r = _dm_resume_device(name, dmflags);
 
 	dm_exit_context();
 
