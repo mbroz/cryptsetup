@@ -2484,18 +2484,35 @@ out:
 
 int dm_suspend_device(struct crypt_device *cd, const char *name, uint32_t dmflags)
 {
-	int r;
+	uint32_t dmt_flags;
+	int r = -ENOTSUP;
 
 	if (dm_init_context(cd, DM_UNKNOWN))
-		return -ENOTSUP;
+		return r;
+
+	if (dmflags & DM_SUSPEND_WIPE_KEY) {
+		if (dm_flags(cd, DM_CRYPT, &dmt_flags))
+			goto out;
+
+		if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
+			goto out;
+	}
+
+	r = -EINVAL;
 
 	if (!_dm_simple(DM_DEVICE_SUSPEND, name, dmflags))
-		r = -EINVAL;
-	else
-		r = 0;
+		goto out;
 
+	if (dmflags & DM_SUSPEND_WIPE_KEY) {
+		if (!_dm_message(name, "key wipe")) {
+			_dm_resume_device(name, 0);
+			goto out;
+		}
+	}
+
+	r = 0;
+out:
 	dm_exit_context();
-
 	return r;
 }
 

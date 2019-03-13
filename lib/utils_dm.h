@@ -36,6 +36,7 @@ struct crypt_params_integrity;
 /* Device mapper internal flags */
 #define DM_RESUME_PRIVATE      (1 << 4) /* CRYPT_ACTIVATE_PRIVATE */
 #define DM_SUSPEND_SKIP_LOCKFS (1 << 5)
+#define DM_SUSPEND_WIPE_KEY    (1 << 6)
 
 static inline uint32_t act2dmflags(uint32_t act_flags)
 {
