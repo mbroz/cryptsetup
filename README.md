@@ -2,13 +2,13 @@
 
 What the ...?
 =============
-**Cryptsetup** is utility used to conveniently setup disk encryption based
-on [DMCrypt](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt) kernel module.
+**Cryptsetup** is a utility used to conveniently set up disk encryption based
+on the [DMCrypt](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt) kernel module.
 
 These include **plain** **dm-crypt** volumes, **LUKS** volumes, **loop-AES**
-and **TrueCrypt** (including **VeraCrypt** extension) format.
+and **TrueCrypt** (including **VeraCrypt** extension) formats.
 
-Project also includes **veritysetup** utility used to conveniently setup
+The project also includes a **veritysetup** utility used to conveniently setup
 [DMVerity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity) block integrity checking kernel module
 and, since version 2.0,  **integritysetup** to setup
 [DMIntegrity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMIntegrity) block integrity kernel module.
