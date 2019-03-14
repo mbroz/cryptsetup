@@ -5224,6 +5224,8 @@ static int verify_and_update_segment_digest(struct crypt_device *cd,
 	if (r >= 0)
 		goto out;
 
+	/* FIXME: check new volume key is usable with current default segment */
+
 	r = update_volume_key_segment_digest(cd, &cd->u.luks2.hdr, digest, 1);
 	if (r)
 		log_err(cd, _("Failed to assign keyslot %u as the new volume key."), keyslot);

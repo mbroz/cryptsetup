@@ -2587,6 +2587,18 @@ static void Luks2KeyslotAdd(void)
 	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
 	size_t key_ret_len, key_size = strlen(mk_hex) / 2;
 	uint64_t r_payload_offset;
+	const struct crypt_pbkdf_type argon2kdf = {
+		.type = "argon2i",
+		.hash = "sha256",
+		.iterations = 4,
+		.max_memory_kb = 32,
+		.parallel_threads = 1,
+		.flags = CRYPT_PBKDF_NO_BENCHMARK,
+	};
+	struct crypt_params_luks2 params2 = {
+		.pbkdf = &argon2kdf,
+		.sector_size = SECTOR_SIZE
+	};
 
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key2, mk_hex2, key_size);
@@ -2596,8 +2608,7 @@ static void Luks2KeyslotAdd(void)
 
 	/* test crypt_keyslot_add_by_key */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	crypt_set_iteration_time(cd, 1);
-	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params2));
 	EQ_(crypt_keyslot_add_by_key(cd, 1, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_status(cd, 0), CRYPT_SLOT_ACTIVE_LAST);
@@ -2652,6 +2663,45 @@ static void Luks2KeyslotAdd(void)
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 5, PASSPHRASE1, strlen(PASSPHRASE1), 0), 5);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE1, strlen(PASSPHRASE1), 0), 6);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params2));
+	/* keyslot 0, volume key, digest 0 */
+	EQ_(crypt_keyslot_add_by_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE), 0), 0);
+	 /* keyslot 1, unbound key, digest 1 */
+	EQ_(crypt_keyslot_add_by_key(cd, 1, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
+	 /* keyslot 2, unbound key, digest 1 */
+	EQ_(crypt_keyslot_add_by_key(cd, 2, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_DIGEST_REUSE), 2);
+	 /* keyslot 3, unbound key, digest 2 */
+	EQ_(crypt_keyslot_add_by_key(cd, 3, key2, key_size - 1, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_DIGEST_REUSE), 3);
+	 /* keyslot 4, unbound key, digest 1 */
+	EQ_(crypt_keyslot_add_by_key(cd, CRYPT_ANY_SLOT, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_DIGEST_REUSE), 4);
+	FAIL_(crypt_keyslot_add_by_key(cd, CRYPT_ANY_SLOT, key, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET), "Illegal");
+	FAIL_(crypt_keyslot_add_by_key(cd, CRYPT_ANY_SLOT, key, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET | CRYPT_VOLUME_KEY_DIGEST_REUSE), "Illegal");
+	/* Such key doesn't exist, nothing to reuse */
+	FAIL_(crypt_keyslot_add_by_key(cd, CRYPT_ANY_SLOT, key2, key_size - 2, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_DIGEST_REUSE), "Key digest doesn't match any existing.");
+	/* Keyslot 5, volume key, digest 0 */
+	EQ_(crypt_keyslot_add_by_key(cd, 5, key, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_DIGEST_REUSE), 5);
+
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
+	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_SET), 1);
+	OK_(crypt_activate_by_volume_key(cd, NULL, key2, key_size, 0));
+	FAIL_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0), "Not a volume key");
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 2, PASSPHRASE1, strlen(PASSPHRASE1), 0), 2);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, 0, PASSPHRASE, strlen(PASSPHRASE), 0), "No volume key keyslot");
+
+	/* TODO: key is unusable with aes-xts */
+	// FAIL_(crypt_keyslot_add_by_key(cd, 3, NULL, 0, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_SET), "Unusable key with segment cipher");
+
+	EQ_(crypt_keyslot_add_by_key(cd, 5, NULL, 0, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_SET), 5);
+	FAIL_(crypt_activate_by_volume_key(cd, NULL, key2, key_size, 0), "Not a volume key");
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 5, PASSPHRASE1, strlen(PASSPHRASE1), 0), 5);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	crypt_free(cd);
