@@ -42,21 +42,26 @@
 	((buf1).st_ino == (buf2).st_ino && \
 	 (buf1).st_dev == (buf2).st_dev)
 
-#ifndef __GNUC__
-# define __typeof__ typeof
-#endif
-
 enum lock_type {
 	DEV_LOCK_READ = 0,
 	DEV_LOCK_WRITE
 };
 
+enum lock_mode {
+	DEV_LOCK_FILE = 0,
+	DEV_LOCK_BDEV
+};
+
 struct crypt_lock_handle {
-	dev_t devno;
 	unsigned refcnt;
 	int flock_fd;
 	enum lock_type type;
-	__typeof__( ((struct stat*)0)->st_mode) mode;
+	enum lock_mode mode;
+	union {
+	struct {
+		dev_t devno;
+	} bdev;
+	} u;
 };
 
 static int resource_by_devno(char *res, size_t res_size, dev_t devno, unsigned fullpath)
@@ -150,7 +155,8 @@ static int acquire_lock_handle(struct crypt_device *cd, const char *device_path,
 			return fd;
 
 		h->flock_fd = fd;
-		h->devno = st.st_rdev;
+		h->u.bdev.devno = st.st_rdev;
+		h->mode = DEV_LOCK_BDEV;
 	} else if (S_ISREG(st.st_mode)) {
 		// FIXME: workaround for nfsv4
 		fd = open(device_path, O_RDWR | O_NONBLOCK | O_CLOEXEC);
@@ -160,13 +166,12 @@ static int acquire_lock_handle(struct crypt_device *cd, const char *device_path,
 			h->flock_fd = fd;
 			close(dev_fd);
 		}
+		h->mode = DEV_LOCK_FILE;
 	} else {
 		/* Wrong device type */
 		close(dev_fd);
 		return -EINVAL;
 	}
-
-	h->mode = st.st_mode;
 
 	return 0;
 }
@@ -176,9 +181,9 @@ static void release_lock_handle(struct crypt_device *cd, struct crypt_lock_handl
 	char res[PATH_MAX];
 	struct stat buf_a, buf_b;
 
-	if (S_ISBLK(h->mode) && /* was it block device */
+	if ((h->mode == DEV_LOCK_BDEV) && /* was it block device */
 	    !flock(h->flock_fd, LOCK_EX | LOCK_NB) && /* lock to drop the file */
-	    !resource_by_devno(res, sizeof(res), h->devno, 1) && /* acquire lock resource name */
+	    !resource_by_devno(res, sizeof(res), h->u.bdev.devno, 1) && /* acquire lock resource name */
 	    !fstat(h->flock_fd, &buf_a) && /* read inode id referred by fd */
 	    !stat(res, &buf_b) && /* does path file still exist? */
 	    same_inode(buf_a, buf_b)) { /* is it same id as the one referenced by fd? */
@@ -207,10 +212,10 @@ static int verify_lock_handle(const char *device_path, struct crypt_lock_handle 
 	struct stat lck_st, res_st;
 
 	/* we locked a regular file, check during device_open() instead. No reason to check now */
-	if (S_ISREG(h->mode))
+	if (h->mode == DEV_LOCK_FILE)
 		return 0;
 
-	if (resource_by_devno(res, sizeof(res), h->devno, 1))
+	if (resource_by_devno(res, sizeof(res), h->u.bdev.devno, 1))
 		return -EINVAL;
 
 	if (fstat(h->flock_fd, &lck_st))
