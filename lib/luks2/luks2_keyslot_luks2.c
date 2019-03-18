@@ -565,17 +565,21 @@ static int luks2_keyslot_store(struct crypt_device *cd,
 	if (!jobj_keyslot)
 		return -EINVAL;
 
+	if ((r = device_write_lock(cd, crypt_metadata_device(cd)))) {
+		log_err(cd, _("Failed to acquire write lock on device %s."),
+			device_path(crypt_metadata_device(cd)));
+		return r;
+	}
+
 	r = luks2_keyslot_set_key(cd, jobj_keyslot,
 				  password, password_len,
 				  volume_key, volume_key_len);
-	if (r < 0)
-		return r;
+	if (!r)
+		r = LUKS2_hdr_write(cd, hdr);
 
-	r = LUKS2_hdr_write(cd, hdr);
-	if (r < 0)
-		return r;
+	device_write_unlock(cd, crypt_metadata_device(cd));
 
-	return keyslot;
+	return r < 0 ? r : keyslot;
 }
 
 static int luks2_keyslot_wipe(struct crypt_device *cd, int keyslot)
