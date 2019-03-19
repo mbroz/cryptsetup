@@ -128,13 +128,13 @@ static int open_resource(struct crypt_device *cd, const char *res)
 	return r < 0 ? -err : r;
 }
 
-static int acquire_lock_handle(struct crypt_device *cd, const char *device_path, struct crypt_lock_handle *h)
+static int acquire_lock_handle(struct crypt_device *cd, struct device *device, struct crypt_lock_handle *h)
 {
 	char res[PATH_MAX];
 	int dev_fd, fd;
 	struct stat st;
 
-	dev_fd = open(device_path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+	dev_fd = open(device_path(device), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (dev_fd < 0)
 		return -EINVAL;
 
@@ -159,7 +159,7 @@ static int acquire_lock_handle(struct crypt_device *cd, const char *device_path,
 		h->mode = DEV_LOCK_BDEV;
 	} else if (S_ISREG(st.st_mode)) {
 		// FIXME: workaround for nfsv4
-		fd = open(device_path, O_RDWR | O_NONBLOCK | O_CLOEXEC);
+		fd = open(device_path(device), O_RDWR | O_NONBLOCK | O_CLOEXEC);
 		if (fd < 0)
 			h->flock_fd = dev_fd;
 		else {
@@ -236,6 +236,50 @@ static unsigned device_lock_dec(struct crypt_lock_handle *h)
 	return --h->refcnt;
 }
 
+static int acquire_and_verify(struct crypt_device *cd, struct device *device, int flock_op, struct crypt_lock_handle **lock)
+{
+	int r;
+	struct crypt_lock_handle *h = malloc(sizeof(*h));
+
+	if (!h)
+		return -ENOMEM;
+
+	do {
+		r = acquire_lock_handle(cd, device, h);
+		if (r)
+			break;
+
+		if (flock(h->flock_fd, flock_op)) {
+			log_dbg(cd, "Flock on fd %d failed with errno %d.", h->flock_fd, errno);
+			r = -EINVAL;
+			release_lock_handle(cd, h);
+			break;
+		}
+
+		log_dbg(cd, "Verifying lock handle for %s.", device_path(device));
+
+		/*
+		 * check whether another libcryptsetup process removed resource file before this
+		 * one managed to flock() it. See release_lock_handle() for details
+		 */
+		r = verify_lock_handle(device_path(device), h);
+		if (r) {
+			flock(h->flock_fd, LOCK_UN);
+			release_lock_handle(cd, h);
+			log_dbg(cd, "Lock handle verification failed.");
+		}
+	} while (r == -EAGAIN);
+
+	if (r) {
+		free(h);
+		return r;
+	}
+
+	*lock = h;
+
+	return 0;
+}
+
 int device_read_lock_internal(struct crypt_device *cd, struct device *device)
 {
 	int r;
@@ -252,41 +296,11 @@ int device_read_lock_internal(struct crypt_device *cd, struct device *device)
 		return 0;
 	}
 
-	if (!(h = malloc(sizeof(*h))))
-		return -ENOMEM;
+	log_dbg(cd, "Acquiring read lock for device %s.", device_path(device));
 
-	do {
-		r = acquire_lock_handle(cd, device_path(device), h);
-		if (r)
-			break;
-
-		log_dbg(cd, "Acquiring read lock for device %s.", device_path(device));
-
-		if (flock(h->flock_fd, LOCK_SH)) {
-			log_dbg(cd, "Shared flock failed with errno %d.", errno);
-			r = -EINVAL;
-			release_lock_handle(cd, h);
-			break;
-		}
-
-		log_dbg(cd, "Verifying read lock handle for device %s.", device_path(device));
-
-		/*
-		 * check whether another libcryptsetup process removed resource file before this
-		 * one managed to flock() it. See release_lock_handle() for details
-		 */
-		r = verify_lock_handle(device_path(device), h);
-		if (r) {
-			flock(h->flock_fd, LOCK_UN);
-			release_lock_handle(cd, h);
-			log_dbg(cd, "Read lock handle verification failed.");
-		}
-	} while (r == -EAGAIN);
-
-	if (r) {
-		free(h);
+	r = acquire_and_verify(cd, device, LOCK_SH, &h);
+	if (r < 0)
 		return r;
-	}
 
 	h->type = DEV_LOCK_READ;
 	h->refcnt = 1;
@@ -313,41 +327,11 @@ int device_write_lock_internal(struct crypt_device *cd, struct device *device)
 		return 0;
 	}
 
-	if (!(h = malloc(sizeof(*h))))
-		return -ENOMEM;
+	log_dbg(cd, "Acquiring write lock for device %s.", device_path(device));
 
-	do {
-		r = acquire_lock_handle(cd, device_path(device), h);
-		if (r)
-			break;
-
-		log_dbg(cd, "Acquiring write lock for device %s.", device_path(device));
-
-		if (flock(h->flock_fd, LOCK_EX)) {
-			log_dbg(cd, "Exclusive flock failed with errno %d.", errno);
-			r = -EINVAL;
-			release_lock_handle(cd, h);
-			break;
-		}
-
-		log_dbg(cd, "Verifying write lock handle for device %s.", device_path(device));
-
-		/*
-		 * check whether another libcryptsetup process removed resource file before this
-		 * one managed to flock() it. See release_lock_handle() for details
-		 */
-		r = verify_lock_handle(device_path(device), h);
-		if (r) {
-			flock(h->flock_fd, LOCK_UN);
-			release_lock_handle(cd, h);
-			log_dbg(cd, "Write lock handle verification failed.");
-		}
-	} while (r == -EAGAIN);
-
-	if (r) {
-		free(h);
+	r = acquire_and_verify(cd, device, LOCK_EX, &h);
+	if (r < 0)
 		return r;
-	}
 
 	h->type = DEV_LOCK_WRITE;
 	h->refcnt = 1;
