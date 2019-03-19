@@ -5152,7 +5152,7 @@ int crypt_persistent_flags_set(struct crypt_device *cd, crypt_flags_type type, u
 		return LUKS2_config_set_flags(cd, &cd->u.luks2.hdr, flags);
 
 	if (type == CRYPT_FLAGS_REQUIREMENTS)
-		return LUKS2_config_set_requirements(cd, &cd->u.luks2.hdr, flags);
+		return LUKS2_config_set_requirements(cd, &cd->u.luks2.hdr, flags, true);
 
 	return -EINVAL;
 }

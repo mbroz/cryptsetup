@@ -1363,7 +1363,7 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 	return 0;
 }
 
-int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs)
+int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs, bool commit)
 {
 	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
 	int i, r = -EINVAL;
@@ -1419,7 +1419,7 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 	if (!json_object_object_length(jobj_requirements))
 		json_object_object_del(jobj_config, "requirements");
 
-	return LUKS2_hdr_write(cd, hdr);
+	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 err:
 	json_object_put(jobj_mandatory);
 	return r;
