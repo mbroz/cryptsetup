@@ -116,6 +116,16 @@ typedef int32_t key_serial_t;
 #define PASS7 "bbb"
 #define PASS8 "iii"
 
+/* Allow to run without config.h */
+#ifndef DEFAULT_LUKS1_HASH
+  #define DEFAULT_LUKS1_HASH "sha256"
+  #define DEFAULT_LUKS1_ITER_TIME 2000
+  #define DEFAULT_LUKS2_ITER_TIME 2000
+  #define DEFAULT_LUKS2_MEMORY_KB 1048576
+  #define DEFAULT_LUKS2_PARALLEL_THREADS 4
+  #define DEFAULT_LUKS2_PBKDF "argon2i"
+#endif
+
 static int _fips_mode = 0;
 
 static char *DEVICE_1 = NULL;
@@ -3499,12 +3509,12 @@ int main(int argc, char *argv[])
 		printf("You must be root to run this test.\n");
 		exit(77);
 	}
-
+#ifndef NO_CRYPTSETUP_PATH
 	if (getenv("CRYPTSETUP_PATH")) {
 		printf("Cannot run this test with CRYPTSETUP_PATH set.\n");
 		exit(77);
 	}
-
+#endif
 	for (i = 1; i < argc; i++) {
 		if (!strcmp("-v", argv[i]) || !strcmp("--verbose", argv[i]))
 			_verbose = 1;

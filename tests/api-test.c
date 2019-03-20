@@ -1878,12 +1878,12 @@ int main(int argc, char *argv[])
 		printf("You must be root to run this test.\n");
 		exit(77);
 	}
-
+#ifndef NO_CRYPTSETUP_PATH
 	if (getenv("CRYPTSETUP_PATH")) {
 		printf("Cannot run this test with CRYPTSETUP_PATH set.\n");
 		exit(77);
 	}
-
+#endif
 	for (i = 1; i < argc; i++) {
 		if (!strcmp("-v", argv[i]) || !strcmp("--verbose", argv[i]))
 			_verbose = 1;

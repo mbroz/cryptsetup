@@ -66,7 +66,8 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	integrity-compat-test \
 	cryptsetup-valg-supps valg.sh valg-api.sh \
 	blockwise-compat \
-	blkid-luks2-pv.img.xz
+	blkid-luks2-pv.img.xz \
+	Makefile.localtest
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log
 clean-local:
