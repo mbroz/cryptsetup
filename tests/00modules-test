@@ -19,6 +19,9 @@ if [ -f /etc/os-release ] ; then
 	echo "$PRETTY_NAME ($NAME) $VERSION"
 fi
 
+echo "Memory"
+free --mega -w -h
+
 pversion cryptsetup
 pversion veritysetup
 pversion integritysetup
