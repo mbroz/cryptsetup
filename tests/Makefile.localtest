@@ -21,6 +21,7 @@ tests: differ $(TESTS)
 		echo [$$test]; \
 		./$$test; \
 		[ $$? -ne 77 -a $$? -ne 0 ] && exit 1; \
+		true; \
 	done;
 
 clean:
