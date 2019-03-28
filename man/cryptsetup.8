@@ -276,7 +276,8 @@ the command prompts for it interactively.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
 \-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file, \-\-token\-id,
-\-\-token\-only, \-\-disable\-keyring, \-\-disable\-locks, \-\-type, \-\-refresh].
+\-\-token\-only, \-\-disable\-keyring, \-\-disable\-locks, \-\-type, \-\-refresh,
+\-\-serialize\-memory\-hard\-pbkdf].
 .PP
 \fIluksSuspend\fR <name>
 .IP
@@ -1283,6 +1284,16 @@ See \fITCRYPT\fR section for more info.
 .B "\-\-veracrypt\-query\-pim"
 Use a custom Personal Iteration Multiplier (PIM) for VeraCrypt device.
 See \fITCRYPT\fR section for more info.
+.TP
+.B "\-\-serialize\-memory\-hard\-pbkdf"
+Use a global lock to serialize unlocking of keyslots using memory-hard PBKDF.
+
+\fBNOTE:\fR This is (ugly) workaround for a specific situation when multiple
+devices are activated in parallel and system instead of reporting out of memory
+starts unconditionally stop processes using out-of-memory killer.
+
+\fBDO NOT USE\fR this switch until you are implementing boot environment
+with parallel devices activation!
 .TP
 .B "\-\-version"
 Show the program version.

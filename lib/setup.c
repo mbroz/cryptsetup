@@ -36,6 +36,7 @@
 #include "verity.h"
 #include "tcrypt.h"
 #include "integrity.h"
+#include "utils_device_locking.h"
 #include "internal.h"
 
 #define CRYPT_CD_UNRESTRICTED	(1 << 0)
@@ -57,6 +58,10 @@ struct crypt_device {
 	uint64_t data_offset;
 	uint64_t metadata_size; /* Used in LUKS2 format */
 	uint64_t keyslots_size; /* Used in LUKS2 format */
+
+	/* Workaround for OOM during parallel activation (like in systemd) */
+	bool memory_hard_pbkdf_lock_enabled;
+	struct crypt_lock_handle *pbkdf_memory_hard_lock;
 
 	// FIXME: private binary headers and access it properly
 	// through sub-library (LUKS1, TCRYPT)
@@ -3641,10 +3646,14 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	if (flags & CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF)
+		cd->memory_hard_pbkdf_lock_enabled = true;
+
 	/* plain, use hashed passphrase */
 	if (isPLAIN(cd->type)) {
+		r = -EINVAL;
 		if (!name)
-			return -EINVAL;
+			goto out;
 
 		r = process_key(cd, cd->u.plain.hdr.hash,
 				cd->u.plain.key_size,
@@ -3690,6 +3699,8 @@ out:
 	if (r < 0)
 		crypt_drop_keyring_key(cd, vk);
 	crypt_free_volume_key(vk);
+
+	cd->memory_hard_pbkdf_lock_enabled = false;
 
 	return r < 0 ? r : keyslot;
 }
@@ -5479,6 +5490,35 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 	free(passphrase);
 
 	return r;
+}
+
+/*
+ * Workaround for serialization of parallel activation and memory-hard PBKDF
+ * In specific situation (systemd activation) this causes OOM killer activation.
+ * For now, let's provide this ugly way to serialize unlocking of devices.
+ */
+int crypt_serialize_lock(struct crypt_device *cd)
+{
+	if (!cd->memory_hard_pbkdf_lock_enabled )
+		return 0;
+
+	log_dbg(cd, "Taking global memory-hard access serialization lock.");
+	if (crypt_write_lock(cd, "memory-hard-access", true, &cd->pbkdf_memory_hard_lock)) {
+		log_err(cd, "Failed to acquire global memory-hard access serialization lock.");
+		cd->pbkdf_memory_hard_lock = NULL;
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+void crypt_serialize_unlock(struct crypt_device *cd)
+{
+	if (!cd->memory_hard_pbkdf_lock_enabled )
+		return;
+
+	crypt_unlock_internal(cd, cd->pbkdf_memory_hard_lock);
+	cd->pbkdf_memory_hard_lock = NULL;
 }
 
 static void __attribute__((destructor)) libcryptsetup_exit(void)

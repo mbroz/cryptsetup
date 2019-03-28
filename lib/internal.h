@@ -236,4 +236,7 @@ static inline uint64_t version(uint16_t major, uint16_t minor, uint16_t patch, u
 
 int kernel_version(uint64_t *kversion);
 
+int crypt_serialize_lock(struct crypt_device *cd);
+void crypt_serialize_unlock(struct crypt_device *cd);
+
 #endif /* INTERNAL_H */

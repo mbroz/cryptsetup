@@ -1057,6 +1057,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_RECALCULATE (1 << 17)
 /** reactivate existing and update flags, input only */
 #define CRYPT_ACTIVATE_REFRESH	(1 << 18)
+/** Use global lock to serialize memory hard KDF on activation (OOM workaround) */
+#define CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF (1 << 19)
 
 /**
  * Active device runtime attributes

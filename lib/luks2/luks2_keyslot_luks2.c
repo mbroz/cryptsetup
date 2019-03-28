@@ -340,6 +340,12 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	keyslot_key_len = json_object_get_int(jobj2);
 
 	/*
+	 * If requested, serialize unlocking for memory-hard KDF. Usually NOOP.
+	 */
+	if (pbkdf.max_memory_kb && crypt_serialize_lock(cd))
+		return -EINVAL;
+
+	/*
 	 * Allocate derived key storage space.
 	 */
 	derived_key = crypt_alloc_volume_key(keyslot_key_len, NULL);
@@ -360,6 +366,9 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 			derived_key->key, derived_key->keylength,
 			pbkdf.iterations, pbkdf.max_memory_kb,
 			pbkdf.parallel_threads);
+
+	if (pbkdf.max_memory_kb)
+		crypt_serialize_unlock(cd);
 
 	if (r == 0) {
 		log_dbg(cd, "Reading keyslot area [0x%04x].", (unsigned)area_offset);

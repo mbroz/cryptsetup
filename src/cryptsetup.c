@@ -73,6 +73,7 @@ static int opt_veracrypt = 0;
 static int opt_veracrypt_pim = -1;
 static int opt_veracrypt_query_pim = 0;
 static int opt_deferred_remove = 0;
+static int opt_serialize_memory_hard_pbkdf = 0;
 //FIXME: check uint32 overflow for long type
 static const char *opt_pbkdf = NULL;
 static long opt_pbkdf_memory = DEFAULT_LUKS2_MEMORY_KB;
@@ -169,6 +170,9 @@ static void _set_activation_flags(uint32_t *flags)
 	/* Only for LUKS2 but ignored elsewhere */
 	if (opt_test_passphrase)
 		*flags |= CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY;
+
+	if (opt_serialize_memory_hard_pbkdf)
+		*flags |= CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF;
 }
 
 static int _set_keyslot_encryption_params(struct crypt_device *cd)
@@ -2545,6 +2549,7 @@ int main(int argc, const char **argv)
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option"), NULL },
 		{ "perf-submit_from_crypt_cpus",'\0', POPT_ARG_NONE, &opt_perf_submit_from_crypt_cpus,0,N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option"), NULL },
 		{ "deferred",          '\0', POPT_ARG_NONE, &opt_deferred_remove,       0, N_("Device removal is deferred until the last user closes it"), NULL },
+		{ "serialize-memory-hard-pbkdf", '\0', POPT_ARG_NONE, &opt_serialize_memory_hard_pbkdf, 0, N_("Use global lock to serialize memory hard PBKDF (OOM workaround)"), NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF iteration time for LUKS (in ms)"), N_("msecs") },
 		{ "pbkdf",             '\0', POPT_ARG_STRING, &opt_pbkdf,               0, N_("PBKDF algorithm (for LUKS2): argon2i, argon2id, pbkdf2"), NULL },
 		{ "pbkdf-memory",      '\0', POPT_ARG_LONG, &opt_pbkdf_memory,          0, N_("PBKDF memory cost limit"), N_("kilobytes") },
@@ -2741,6 +2746,11 @@ int main(int argc, const char **argv)
 	if (opt_persistent && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --persistent is allowed only for open operation.\n"),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_serialize_memory_hard_pbkdf && strcmp(aname, "open"))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --serialize-memory-hard-pbkdf is allowed only for open operation.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_persistent && opt_test_passphrase)
