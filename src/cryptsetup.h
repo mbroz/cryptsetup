@@ -114,6 +114,9 @@ int tools_write_json_file(struct crypt_device *cd, const char *file, const char 
 int tools_detect_signatures(const char *device, int ignore_luks, size_t *count);
 int tools_wipe_all_signatures(const char *path);
 
+int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
+		const char *data_device_path, char *name, size_t name_length);
+
 /* Log */
 #define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(x...) clogger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
