@@ -592,3 +592,19 @@ int tools_is_stdin(const char *key_file)
 
 	return strcmp(key_file, "-") ? 0 : 1;
 }
+
+int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr)
+{
+	static struct timeval start_time = {}, end_time = {};
+	int r = 0;
+
+	tools_time_progress(size, offset, &start_time, &end_time);
+
+	check_signal(&r);
+	if (r) {
+		tools_clear_line();
+		log_err("\nReencrypt interrupted.");
+	}
+
+	return r;
+}
