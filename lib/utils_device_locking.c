@@ -311,7 +311,7 @@ static int acquire_and_verify(struct crypt_device *cd, struct device *device, co
 
 	do {
 		r = device ? acquire_lock_handle(cd, device, h) : acquire_lock_handle_by_name(cd, resource, h);
-		if (r)
+		if (r < 0)
 			break;
 
 		if (flock(h->flock_fd, flock_op)) {
@@ -328,7 +328,7 @@ static int acquire_and_verify(struct crypt_device *cd, struct device *device, co
 		 * one managed to flock() it. See release_lock_handle() for details
 		 */
 		r = verify_lock_handle(device_path(device), h);
-		if (r) {
+		if (r < 0) {
 			if (flock(h->flock_fd, LOCK_UN))
 				log_dbg(cd, "flock on fd %d failed.", h->flock_fd);
 			release_lock_handle(cd, h);
@@ -336,9 +336,9 @@ static int acquire_and_verify(struct crypt_device *cd, struct device *device, co
 		}
 	} while (r == -EAGAIN);
 
-	if (r) {
+	if (r < 0) {
 		free(h);
-		return -EINVAL;
+		return r;
 	}
 
 	*lock = h;
