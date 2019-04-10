@@ -432,7 +432,7 @@ int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment);
 int LUKS2_get_keyslot_stored_key_size(struct luks2_hdr *hdr, int keyslot);
 const char *LUKS2_get_keyslot_cipher(struct luks2_hdr *hdr, int keyslot, size_t *key_size);
-int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr, const char *type);
+int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr);
 int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment);
 int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment);
 crypt_keyslot_info LUKS2_keyslot_info(struct luks2_hdr *hdr, int keyslot);

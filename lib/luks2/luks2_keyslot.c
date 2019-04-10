@@ -63,7 +63,7 @@ static const keyslot_handler
 	return LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj2));
 }
 
-int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr, const char *type)
+int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr)
 {
 	int i;
 
