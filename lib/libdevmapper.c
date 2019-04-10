@@ -969,7 +969,7 @@ int dm_error_device(struct crypt_device *cd, const char *name)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	if (dm_query_device(cd, name, 0, &dmd) && _error_device(name, dmd.size))
+	if (!dm_query_device(cd, name, 0, &dmd) && _error_device(name, dmd.size))
 		r = 0;
 	else
 		r = -EINVAL;
@@ -2369,14 +2369,15 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 	void *next = NULL;
 	int r = -EINVAL;
 
-	if (dm_init_context(cd, DM_UNKNOWN))
-		return -ENOTSUP;
 	if (!dmd)
 		return -EINVAL;
 
-	t = &dmd->segment;
-
 	memset(dmd, 0, sizeof(*dmd));
+
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
+	t = &dmd->segment;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
 		goto out;
