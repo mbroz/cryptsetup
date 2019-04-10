@@ -246,7 +246,7 @@ int crypt_storage_decrypt(struct crypt_storage *ctx,
 		       uint64_t iv_offset,
 		       uint64_t length, char *buffer)
 {
-	unsigned int i;
+	uint64_t i;
 	int r = 0;
 
 	if (length & ((1 << ctx->sector_shift) - 1))
@@ -275,7 +275,7 @@ int crypt_storage_encrypt(struct crypt_storage *ctx,
 		       uint64_t iv_offset,
 		       uint64_t length, char *buffer)
 {
-	unsigned int i;
+	uint64_t i;
 	int r = 0;
 
 	if (length & ((1 << ctx->sector_shift) - 1))

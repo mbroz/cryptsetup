@@ -185,6 +185,7 @@ int crypt_storage_wrapper_init(struct crypt_device *cd,
 		return -ENOMEM;
 
 	memset(w, 0, sizeof(*w));
+	w->dev_fd = -1;
 	w->data_offset = data_offset;
 	w->mem_alignment = device_alignment(device);
 	w->block_size = device_block_size(cd, device);
@@ -376,7 +377,8 @@ void crypt_storage_wrapper_destroy(struct crypt_storage_wrapper *cw)
 		dm_remove_device(NULL, cw->u.dm.name, CRYPT_DEACTIVATE_FORCE);
 	}
 
-	close(cw->dev_fd);
+	if (cw->dev_fd >= 0)
+		close(cw->dev_fd);
 
 	free(cw);
 }

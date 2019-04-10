@@ -301,12 +301,12 @@ static unsigned device_lock_dec(struct crypt_lock_handle *h)
 static int acquire_and_verify(struct crypt_device *cd, struct device *device, const char *resource, int flock_op, struct crypt_lock_handle **lock)
 {
 	int r;
-	struct crypt_lock_handle *h = malloc(sizeof(*h));
+	struct crypt_lock_handle *h;
 
 	if (device && resource)
 		return -EINVAL;
 
-	if (!h)
+	if (!(h = malloc(sizeof(*h))))
 		return -ENOMEM;
 
 	do {
@@ -329,7 +329,8 @@ static int acquire_and_verify(struct crypt_device *cd, struct device *device, co
 		 */
 		r = verify_lock_handle(device_path(device), h);
 		if (r) {
-			flock(h->flock_fd, LOCK_UN);
+			if (flock(h->flock_fd, LOCK_UN))
+				log_dbg(cd, "flock on fd %d failed.", h->flock_fd);
 			release_lock_handle(cd, h);
 			log_dbg(cd, "Lock handle verification failed.");
 		}
@@ -337,7 +338,7 @@ static int acquire_and_verify(struct crypt_device *cd, struct device *device, co
 
 	if (r) {
 		free(h);
-		return r;
+		return -EINVAL;
 	}
 
 	*lock = h;
