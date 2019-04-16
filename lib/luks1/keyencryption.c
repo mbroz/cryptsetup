@@ -60,7 +60,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	struct crypt_dm_active_device dmd = {
 		.flags = CRYPT_ACTIVATE_PRIVATE,
 	};
-	int r, devfd = -1;
+	int r, devfd = -1, remove_dev = 0;
 	size_t bsize, keyslot_alignment, alignment;
 
 	log_dbg(ctx, "Using dmcrypt to access keyslot area.");
@@ -114,6 +114,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 		r = -EIO;
 		goto out;
 	}
+	remove_dev = 1;
 
 	devfd = open(path, mode | O_DIRECT | O_SYNC);
 	if (devfd == -1) {
@@ -132,7 +133,8 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	dm_targets_free(ctx, &dmd);
 	if (devfd != -1)
 		close(devfd);
-	dm_remove_device(ctx, name, CRYPT_DEACTIVATE_FORCE);
+	if (remove_dev)
+		dm_remove_device(ctx, name, CRYPT_DEACTIVATE_FORCE);
 	return r;
 }
 
