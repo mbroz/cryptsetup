@@ -5499,7 +5499,7 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
  */
 int crypt_serialize_lock(struct crypt_device *cd)
 {
-	if (!cd->memory_hard_pbkdf_lock_enabled )
+	if (!cd->memory_hard_pbkdf_lock_enabled)
 		return 0;
 
 	log_dbg(cd, "Taking global memory-hard access serialization lock.");
@@ -5514,7 +5514,7 @@ int crypt_serialize_lock(struct crypt_device *cd)
 
 void crypt_serialize_unlock(struct crypt_device *cd)
 {
-	if (!cd->memory_hard_pbkdf_lock_enabled )
+	if (!cd->memory_hard_pbkdf_lock_enabled)
 		return;
 
 	crypt_unlock_internal(cd, cd->pbkdf_memory_hard_lock);

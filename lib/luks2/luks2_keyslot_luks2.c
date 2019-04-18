@@ -28,6 +28,9 @@
 #define LUKS_SLOT_ITERATIONS_MIN 1000
 #define LUKS_STRIPES 4000
 
+/* Serialize memory-hard keyslot access: opttional workaround for parallel processing */
+#define MIN_MEMORY_FOR_SERIALIZE_LOCK_KB 32*1024 /* 32MB */
+
 static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	const char *cipher, const char *cipher_mode,
 	struct volume_key *vk, unsigned int sector,
@@ -312,6 +315,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	json_object *jobj2, *jobj_af, *jobj_area;
 	uint64_t area_offset;
 	size_t keyslot_key_len;
+	bool try_serialize_lock = false;
 	int r;
 
 	if (!json_object_object_get_ex(jobj_keyslot, "af", &jobj_af) ||
@@ -342,9 +346,10 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	/*
 	 * If requested, serialize unlocking for memory-hard KDF. Usually NOOP.
 	 */
-	if (pbkdf.max_memory_kb && crypt_serialize_lock(cd))
+	if (pbkdf.max_memory_kb > MIN_MEMORY_FOR_SERIALIZE_LOCK_KB)
+		try_serialize_lock = true;
+	if (try_serialize_lock && crypt_serialize_lock(cd))
 		return -EINVAL;
-
 	/*
 	 * Allocate derived key storage space.
 	 */
@@ -367,7 +372,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 			pbkdf.iterations, pbkdf.max_memory_kb,
 			pbkdf.parallel_threads);
 
-	if (pbkdf.max_memory_kb)
+	if (try_serialize_lock)
 		crypt_serialize_unlock(cd);
 
 	if (r == 0) {
