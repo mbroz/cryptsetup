@@ -1855,7 +1855,7 @@ int LUKS2_activate(struct crypt_device *cd,
 
 	if (crypt_get_integrity_tag_size(cd)) {
 		if (!LUKS2_integrity_compatible(hdr)) {
-			log_err(cd, "Unsupported device integrity configuration.");
+			log_err(cd, _("Unsupported device integrity configuration."));
 			return -EINVAL;
 		}
 

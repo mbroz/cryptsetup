@@ -179,7 +179,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 		goto out;
 
 	if (lseek64(devfd, offset, SEEK_SET) < 0) {
-		log_err(cd, "Cannot seek to device offset.");
+		log_err(cd, _("Cannot seek to device offset."));
 		r = -EINVAL;
 		goto out;
 	}
@@ -203,7 +203,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 		r = wipe_block(cd, devfd, pattern, sf, bsize, alignment,
 			       wipe_block_size, offset, &need_block_init);
 		if (r) {
-			log_err(cd, "Device wipe error, offset %" PRIu64 ".", offset);
+			log_err(cd,_("Device wipe error, offset %" PRIu64 "."), offset);
 			break;
 		}
 

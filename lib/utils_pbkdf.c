@@ -181,7 +181,7 @@ int init_pbkdf_type(struct crypt_device *cd,
 
 	if (crypt_fips_mode()) {
 		if (pbkdf && strcmp(pbkdf->type, CRYPT_KDF_PBKDF2)) {
-			log_err(cd, "Only PBKDF2 is supported in FIPS mode.");
+			log_err(cd, _("Only PBKDF2 is supported in FIPS mode."));
 			return -EINVAL;
 		}
 		if (!pbkdf)

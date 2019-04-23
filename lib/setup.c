@@ -2513,7 +2513,7 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 
 	r = _compare_dm_devices(cd, sdmd, &tdmd);
 	if (r) {
-		log_err(cd, "Crypt devices mismatch.");
+		log_err(cd, _("Crypt devices mismatch."));
 		goto out;
 	}
 
@@ -2565,12 +2565,12 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	}
 
 	if ((r = dm_suspend_device(cd, iname, 0))) {
-		log_err(cd, "Failed to suspend device %s.", iname);
+		log_err(cd, _("Failed to suspend device %s."), iname);
 		goto err_clear;
 	}
 
 	if ((r = dm_resume_device(cd, iname, act2dmflags(sdmdi->flags)))) {
-		log_err(cd, "Failed to resume device %s.", iname);
+		log_err(cd, _("Failed to resume device %s."), iname);
 		goto err_clear;
 	}
 
@@ -2584,12 +2584,12 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	 * burn it for good.
 	 */
 
-	log_err(cd, "Fatal error while reloading device %s (on top of device %s).", name, iname);
+	log_err(cd, _("Fatal error while reloading device %s (on top of device %s)."), name, iname);
 
 	if (dm_error_device(cd, name))
-		log_err(cd, "Failed to switch device %s to dm-error.", name);
+		log_err(cd, _("Failed to switch device %s to dm-error."), name);
 	if (dm_error_device(cd, iname))
-		log_err(cd, "Failed to switch device %s to dm-error.", iname);
+		log_err(cd, _("Failed to switch device %s to dm-error."), iname);
 	goto out;
 
 err_clear:
@@ -4672,7 +4672,7 @@ int crypt_set_data_offset(struct crypt_device *cd, uint64_t data_offset)
 	if (!cd)
 		return -EINVAL;
 	if (data_offset % (MAX_SECTOR_SIZE >> SECTOR_SHIFT)) {
-		log_err(cd, "Data offset is not multiple of %u bytes.", MAX_SECTOR_SIZE);
+		log_err(cd, _("Data offset is not multiple of %u bytes."), MAX_SECTOR_SIZE);
 		return -EINVAL;
 	}
 
@@ -5504,7 +5504,7 @@ int crypt_serialize_lock(struct crypt_device *cd)
 
 	log_dbg(cd, "Taking global memory-hard access serialization lock.");
 	if (crypt_write_lock(cd, "memory-hard-access", true, &cd->pbkdf_memory_hard_lock)) {
-		log_err(cd, "Failed to acquire global memory-hard access serialization lock.");
+		log_err(cd, _("Failed to acquire global memory-hard access serialization lock."));
 		cd->pbkdf_memory_hard_lock = NULL;
 		return -EINVAL;
 	}

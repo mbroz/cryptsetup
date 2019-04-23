@@ -1396,7 +1396,7 @@ static void _dm_target_free_query_path(struct crypt_device *cd, struct dm_target
 	case DM_LINEAR:
 		break;
 	default:
-		log_err(NULL, "Unknown dm target type.");
+		log_err(cd, _("Unknown dm target type."));
 		return;
 	}
 
