@@ -711,6 +711,7 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_foreach(jobj_keyslots, key, val) {
 
 		if (!(jobj_area = json_contains(cd, val, key, "Keyslot", "area", json_type_object)) ||
+		    !json_contains(cd, jobj_area, key, "Keyslot area", "type", json_type_string) ||
 		    !(jobj_offset = json_contains(cd, jobj_area, key, "Keyslot", "offset", json_type_string)) ||
 		    !(jobj_length = json_contains(cd, jobj_area, key, "Keyslot", "size", json_type_string)) ||
 		    !numbered(cd, "offset", json_object_get_string(jobj_offset)) ||
