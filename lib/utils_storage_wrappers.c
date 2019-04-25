@@ -383,14 +383,14 @@ void crypt_storage_wrapper_destroy(struct crypt_storage_wrapper *cw)
 	free(cw);
 }
 
-void crypt_storage_wrapper_datasync(const struct crypt_storage_wrapper *cw)
+int crypt_storage_wrapper_datasync(const struct crypt_storage_wrapper *cw)
 {
 	if (!cw)
-		return;
+		return -EINVAL;
 	if (cw->type == DMCRYPT)
-		fdatasync(cw->u.dm.dmcrypt_fd);
+		return fdatasync(cw->u.dm.dmcrypt_fd);
 	else
-		fdatasync(cw->dev_fd);
+		return fdatasync(cw->dev_fd);
 }
 
 crypt_storage_wrapper_type crypt_storage_wrapper_get_type(const struct crypt_storage_wrapper *cw)

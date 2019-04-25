@@ -65,7 +65,7 @@ ssize_t crypt_storage_wrapper_encrypt_write(struct crypt_storage_wrapper *cw,
 ssize_t crypt_storage_wrapper_encrypt(struct crypt_storage_wrapper *cw,
 		off_t offset, void *buffer, size_t buffer_length);
 
-void crypt_storage_wrapper_datasync(const struct crypt_storage_wrapper *cw);
+int crypt_storage_wrapper_datasync(const struct crypt_storage_wrapper *cw);
 
 crypt_storage_wrapper_type crypt_storage_wrapper_get_type(const struct crypt_storage_wrapper *cw);
 #endif
