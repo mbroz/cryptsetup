@@ -2586,7 +2586,7 @@ const char *dm_get_dir(void)
 	return dm_dir();
 }
 
-int dm_is_dm_device(int major, int minor)
+int dm_is_dm_device(int major)
 {
 	return dm_is_dm_major((uint32_t)major);
 }

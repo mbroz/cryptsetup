@@ -207,7 +207,7 @@ const char *dm_get_dir(void);
 int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char *type);
 
 /* These are DM helpers used only by utils_devpath file */
-int dm_is_dm_device(int major, int minor);
+int dm_is_dm_device(int major);
 int dm_is_dm_kernel_name(const char *name);
 char *dm_device_path(const char *prefix, int major, int minor);
 

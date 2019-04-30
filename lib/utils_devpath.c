@@ -111,7 +111,7 @@ static char *lookup_dev_old(int major, int minor)
 		return result;
 
 	/* If it is dm, try DM dir  */
-	if (dm_is_dm_device(major, minor)) {
+	if (dm_is_dm_device(major)) {
 		strncpy(buf, dm_get_dir(), PATH_MAX);
 		if ((result = __lookup_dev(buf, dev, 0, 0)))
 			return result;
