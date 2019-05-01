@@ -2357,7 +2357,7 @@ static int dm_target_query(struct crypt_device *cd, struct dm_target *tgt, const
 	return r;
 }
 
-int dm_query_device(struct crypt_device *cd, const char *name,
+static int _dm_query_device(struct crypt_device *cd, const char *name,
 		    uint32_t get_flags, struct crypt_dm_active_device *dmd)
 {
 	struct dm_target *t;
@@ -2369,18 +2369,10 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 	void *next = NULL;
 	int r = -EINVAL;
 
-	if (!dmd)
-		return -EINVAL;
-
-	memset(dmd, 0, sizeof(*dmd));
-
-	if (dm_init_context(cd, DM_UNKNOWN))
-		return -ENOTSUP;
-
 	t = &dmd->segment;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
-		goto out;
+		return r;
 	if (!dm_task_secure_data(dmt))
 		goto out;
 	if (!dm_task_set_name(dmt, name))
@@ -2459,6 +2451,24 @@ out:
 
 	if (r < 0)
 		dm_targets_free(cd, dmd);
+
+	return r;
+}
+
+int dm_query_device(struct crypt_device *cd, const char *name,
+		    uint32_t get_flags, struct crypt_dm_active_device *dmd)
+{
+	int r;
+
+	if (!dmd)
+		return -EINVAL;
+
+	memset(dmd, 0, sizeof(*dmd));
+
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
+	r = _dm_query_device(cd, name, get_flags, dmd);
 
 	dm_exit_context();
 	return r;
