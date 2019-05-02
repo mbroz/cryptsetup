@@ -43,6 +43,7 @@
 #define DM_VERITY_TARGET	"verity"
 #define DM_INTEGRITY_TARGET	"integrity"
 #define DM_LINEAR_TARGET	"linear"
+#define DM_ERROR_TARGET         "error"
 #define RETRY_COUNT		5
 
 /* Set if DM target versions were probed */
@@ -1394,6 +1395,8 @@ static void _dm_target_free_query_path(struct crypt_device *cd, struct dm_target
 		free(CONST_CAST(void*)tgt->u.verity.root_hash);
 		/* fall through */
 	case DM_LINEAR:
+		/* fall through */
+	case DM_ERROR:
 		break;
 	default:
 		log_err(cd, _("Unknown dm target type."));
@@ -1601,7 +1604,8 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi,
 	if (!target && (strcmp(target_type, DM_CRYPT_TARGET) &&
 			strcmp(target_type, DM_VERITY_TARGET) &&
 			strcmp(target_type, DM_INTEGRITY_TARGET) &&
-			strcmp(target_type, DM_LINEAR_TARGET)))
+			strcmp(target_type, DM_LINEAR_TARGET) &&
+			strcmp(target_type, DM_ERROR_TARGET)))
 		goto out;
 	r = 0;
 out:
@@ -2329,6 +2333,14 @@ err:
 	return r;
 }
 
+static int _dm_target_query_error(struct crypt_device *cd, struct dm_target *tgt)
+{
+	tgt->type = DM_ERROR;
+	tgt->direction = TARGET_QUERY;
+
+	return 0;
+}
+
 /*
  * on error retval has to be negative
  *
@@ -2348,6 +2360,8 @@ static int dm_target_query(struct crypt_device *cd, struct dm_target *tgt, const
 		r = _dm_target_query_integrity(cd, get_flags, params, tgt, act_flags);
 	else if (!strcmp(target_type, DM_LINEAR_TARGET))
 		r = _dm_target_query_linear(cd, tgt, get_flags, params);
+	else if (!strcmp(target_type, DM_ERROR_TARGET))
+		r = _dm_target_query_error(cd, tgt);
 
 	if (!r) {
 		tgt->offset = *start;

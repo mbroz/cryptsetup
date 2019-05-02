@@ -63,7 +63,7 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_DEFERRED_SUPPORTED (1 << 15) /* deferred removal of device */
 #define DM_INTEGRITY_RECALC_SUPPORTED (1 << 16) /* dm-integrity automatic recalculation supported */
 
-typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_UNKNOWN } dm_target_type;
+typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_SET = 1, TARGET_QUERY };
 
 int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags);
