@@ -31,6 +31,9 @@
 #include <linux/fs.h>
 #include <uuid/uuid.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_SYSMACROS_H
+# include <sys/sysmacros.h>     /* for major, minor */
+#endif
 
 #include "internal.h"
 
@@ -2483,6 +2486,118 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 		return -ENOTSUP;
 
 	r = _dm_query_device(cd, name, get_flags, dmd);
+
+	dm_exit_context();
+	return r;
+}
+
+static bool name_in_list(char **names, const char *name)
+{
+	while (*names) {
+		if (!strcmp(*names++, name))
+			return true;
+	}
+
+	return false;
+}
+
+static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_deps *deps, char **names, size_t names_offset, size_t names_length)
+{
+	struct crypt_dm_active_device dmd;
+	char dmname[PATH_MAX];
+	unsigned i;
+	int r, major, minor, count = 0;
+
+	if (!prefix || !deps)
+		return -EINVAL;
+
+	for (i = 0; i < deps->count; i++) {
+		major = major(deps->device[i]);
+		if (!dm_is_dm_major(major))
+			continue;
+
+		minor = minor(deps->device[i]);
+		if (!dm_device_get_name(major, minor, 0, dmname, PATH_MAX))
+			return -EINVAL;
+
+		memset(&dmd, 0, sizeof(dmd));
+		r = _dm_query_device(cd, dmname, DM_ACTIVE_UUID, &dmd);
+		if (r < 0)
+			continue;
+
+		if (!dmd.uuid ||
+		    strncmp(prefix, dmd.uuid, strlen(prefix)) ||
+		    name_in_list(names, dmname))
+			*dmname = '\0';
+
+		dm_targets_free(cd, &dmd);
+		free(CONST_CAST(void*)dmd.uuid);
+
+		if ((size_t)count >= (names_length - names_offset))
+			return -ENOMEM;
+
+		if (*dmname && !(names[names_offset + count++] = strdup(dmname)))
+			return -ENOMEM;
+	}
+
+	return count;
+}
+
+int dm_device_deps(struct crypt_device *cd, const char *name, const char *prefix, char **names, size_t names_length)
+{
+	struct dm_task *dmt;
+	struct dm_info dmi;
+	struct dm_deps *deps;
+	int r = -EINVAL;
+	size_t i, last = 0, offset = 0;
+
+	if (!name || !names_length || !names)
+		return -EINVAL;
+
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
+	while (name) {
+		if (!(dmt = dm_task_create(DM_DEVICE_DEPS)))
+			goto out;
+		if (!dm_task_set_name(dmt, name))
+			goto out;
+
+		r = -ENODEV;
+		if (!dm_task_run(dmt))
+			goto out;
+
+		r = -EINVAL;
+		if (!dm_task_get_info(dmt, &dmi))
+			goto out;
+		if (!(deps = dm_task_get_deps(dmt)))
+			goto out;
+
+		r = -ENODEV;
+		if (!dmi.exists)
+			goto out;
+
+		r = _process_deps(cd, prefix, deps, names, offset, names_length - 1);
+		if (r < 0)
+			goto out;
+
+		dm_task_destroy(dmt);
+		dmt = NULL;
+
+		offset += r;
+		name = names[last++];
+	}
+
+	r = 0;
+out:
+	if (r < 0) {
+		for (i = 0; i < names_length - 1; i++)
+			free(names[i]);
+		*names = NULL;
+	}
+
+	if (dmt)
+		dm_task_destroy(dmt);
 
 	dm_exit_context();
 	return r;
