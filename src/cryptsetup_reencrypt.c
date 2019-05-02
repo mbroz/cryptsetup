@@ -25,7 +25,7 @@
 #include <arpa/inet.h>
 #include <uuid/uuid.h>
 
-#define PACKAGE_REENC "crypt_reencrypt"
+#define PACKAGE_REENC "cryptsetup-reencrypt"
 
 #define NO_UUID "cafecafe-cafe-cafe-cafe-cafecafeeeee"
 
