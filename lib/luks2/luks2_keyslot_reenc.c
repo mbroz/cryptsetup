@@ -94,7 +94,7 @@ int reenc_keyslot_alloc(struct crypt_device *cd,
 		return -ENOSPC;
 	}
 
-	log_dbg(cd, "JSON: %s", json_object_to_json_string_ext(hdr->jobj, JSON_C_TO_STRING_PRETTY));
+	JSON_DBG(cd, hdr->jobj, "JSON:");
 
 	return 0;
 }

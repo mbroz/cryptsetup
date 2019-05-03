@@ -413,8 +413,6 @@ int LUKS2_segment_is_type(struct luks2_hdr *hdr,
 	int segment,
 	const char *type);
 
-const char *LUKS2_debug_dump_segments(struct luks2_hdr *hdr);
-
 int LUKS2_segment_by_type(struct luks2_hdr *hdr,
 	const char *type);
 

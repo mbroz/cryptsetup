@@ -414,11 +414,6 @@ int LUKS2_segments_set(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
 
-const char *LUKS2_debug_dump_segments(struct luks2_hdr *hdr)
-{
-	return json_object_to_json_string_ext(LUKS2_get_segments_jobj(hdr), JSON_C_TO_STRING_PRETTY);
-}
-
 int LUKS2_get_segment_id_by_flag(struct luks2_hdr *hdr, const char *flag)
 {
 	int ret = -ENOENT;
