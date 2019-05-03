@@ -1,0 +1,219 @@
+Cryptsetup 2.2.0-rc0 Release Notes
+==================================
+Testing release with new experimental features and bug fixes.
+
+Cryptsetup 2.2 version introduces a new LUKS2 online reencryption
+extension that allows reencryption of mounted LUKS2 devices
+(device in use) in the background.
+
+This testing release is intended for more extensive testing
+of very complex online reencryption feature; it is expected
+that it contains bugs, performance issues and that some functions
+are in this testing release limited.
+
+Please do not use this testing version in production environments.
+Also, use it only if you have a full data backup.
+
+Changes since version 2.1.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+LUKS2 online reencryption
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The reencryption is intended to provide a reliable way to change
+volume key or an algorithm change while the encrypted device is still
+in use.
+
+It is based on userspace-only approach (no kernel changes needed)
+that uses the device-mapper subsystem to remap active devices on-the-fly
+dynamically. The device is split into several segments (encrypted by old
+key, new key and so-called hotzone, where reencryption is actively running).
+
+The flexible LUKS2 metadata format is used to store intermediate states
+(segment mappings) and both version of keyslots (old and new keys).
+Also, it provides a binary area (in the unused keyslot area space)
+to provide recovery metadata in the case of unexpected failure during
+reencryption. LUKS2 header is during the reencryption marked with
+"online-reencryption" keyword. After the reencryption is finished,
+this keyword is removed, and the device is backward compatible with all
+older cryptsetup tools (that support LUKS2).
+
+The recovery supports three resilience modes:
+
+  - checksum: default mode, where individual checksums of ciphertext hotzone
+    sectors are stored, so the recovery process can detect which sectors where
+    already reencrypted. It requires that the device sector write is atomic.
+
+  - journal: the hotzone is journaled in the binary area
+    (so the data are written twice)
+
+  - none: performance mode; there is no protection
+    (similar to old offline reencryption)
+
+These resilience modes are not available if reencryption uses data shift.
+
+
+Note: until we have full documentation (both of the process and metadata),
+please refer to Ondrej's slides (some slight details are no longer relevant)
+https://okozina.fedorapeople.org/online-disk-reencryption-with-luks2.pdf
+
+The offline reencryption tool (cryptsetup-reencrypt) is still supported
+for both LUKS1 and LUKS2 format.
+
+Cryptsetup examples for reencryption
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The reencryption feature is integrated directly into cryptsetup utility
+as the new "reencrypt" action (command).
+
+There are three basic modes - to perform reencryption (change of already
+existing LUKS2 device), to add encryption to plaintext device and to remove
+encryption from a device (decryption).
+
+In all cases, if existing LUKS2 metadata contains information about
+the ongoing reencryption process, following reecrypt command continues
+with the ongoing reencryption process until it is finished.
+
+You can activate a device with ongoing reencryption as the standard LUKS2
+device, but the reencryption process will not continue until the cryptsetup
+reencrypt command is issued.
+
+
+1) Reencryption
+~~~~~~~~~~~~~~~
+This mode is intended to change any attribute of the data encryption
+(change of the volume key, algorithm or sector size).
+Note that authenticated encryption is not yet supported.
+
+You can start the reencryption process by specifying a LUKS2 device or with
+a detached LUKS2 header.
+The code should automatically recognize if the device is in use (and if it
+should use online mode of reencryption).
+
+If you do not specify parameters, only volume key is changed
+(a new random key is generated).
+
+# cryptsetup reencrypt <device> [--header <hdr>]
+
+You can also start reencryption using active mapped device name:
+  # cryptsetup reencrypt --active-name <name>
+
+You can also specify the resilience mode (none, checksum, journal) with
+--resilience=<mode> option, for checksum mode also the hash algorithm with
+--resilience-hash=<alg> (only hash algorithms supported by cryptographic
+backend are available).
+
+The maximal size of reencryption hotzone can be limited by
+--hotzone-size=<size> option and applies to all reencryption modes.
+Note that for checksum and journal mode hotzone size is also limited
+by available space in binary keyslot area.
+
+2) Encryption
+~~~~~~~~~~~~~
+This mode provides a way to encrypt a plaintext device to LUKS2 format.
+This option requires reduction of device size (for LUKS2 header) or new
+detached header.
+
+  # cryptsetup reencrypt <device> --encrypt --reduce-device-size <size>
+
+Or with detached header:
+  # cryptsetup reencrypt <device> --encrypt --header <hdr>
+
+3) Decryption
+~~~~~~~~~~~~~
+This mode provides the removal of existing LUKS2 encryption and replacing
+a device with plaintext content only.
+For now, we support only decryption with a detached header.
+
+  # cryptsetup reencrypt <device> --decrypt --header <hdr>
+
+For all three modes, you can split the process to metadata initialization
+(prepare keyslots and segments but do not run reencryption yet) and the data
+reencryption step by using --init-only option.
+
+Prepares metadata:
+  # cryptsetup reencrypt --init-only <parameters>
+
+Starts the data processing:
+  # cryptsetup reencrypt <device>
+
+Please note, that due to the Linux kernel limitation, the encryption or
+decryption process cannot be run entirely online - there must be at least
+small operation that adds/removes device-mapper crypt (LUKS2) layer.
+This step should also include modification of /etc/crypttab and fstab UUIDs,
+but it is out of the scope of cryptsetup tools.
+
+Limitations
+~~~~~~~~~~~
+Most of these limitations will be (hopefully) fixed in next versions.
+
+* Only one active keyslot is supported (all old keyslots will be removed
+  after reencryption).
+
+* Only block devices are now supported as parameters. As a workaround
+  for images in a file, please explicitly map a loop device over the image
+  and use the loop device as the parameter.
+
+* Devices with authenticated encryption are not supported. (Later it will
+  be limited by the fixed per-sector metadata, per-sector metadata size
+  cannot be changed without a new device format operation.)
+
+* The reencryption uses userspace crypto library, with fallback to
+  the kernel (if available). There can be some specific configurations
+  where the fallback does not provide optimal performance.
+
+* There are no translations of error messages until the final release
+  (some messages can be rephrased as well).
+
+* The repair command is not finished; the recovery of interrupted
+  reencryption is made automatically on the first activation or during
+  an explicit reencrypt command.
+
+New libcryptsetup reencryption API
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The libcryptsetup contains new API calls that are used to setup and
+run the reencryption.
+
+Note that there can be some changes in API implementation of these functions
+and/or some new function can be introduced in final cryptsetup 2.2 release.
+
+New API symbols (see documentation in libcryptsetup.h)
+* struct crypt_params_reencrypt - reencryption parameters
+
+* crypt_reencrypt_init_by_passphrase
+* crypt_reencrypt_init_by_keyring
+  - function to configure LUKS2 metadata for reencryption;
+    if metadata already exists, it configures the context from this metadata
+
+* crypt_reencrypt
+  - run the reencryption process (processing the data)
+  - the optional callback function can be used to interrupt the reencryption
+    or report the progress.
+
+* crypt_reencrypt_status
+  - function to query LUKS2 metadata about the reencryption state
+
+Other changes and fixes
+~~~~~~~~~~~~~~~~~~~~~~~
+* Add optional global serialization lock for memory hard PBKDF.
+  (The --serialize-memory-hard-pbkdf option in cryptsetup and
+  CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF in activation flag.)
+
+  This is an "ugly" optional workaround for a situation when multiple devices
+  are being activated in parallel (like systemd crypttab activation).
+  The system instead of returning ENOMEM (no memory available) starts
+  out-of-memory (OOM) killer to kill processes randomly.
+
+  Until we find a reliable way how to work with memory-hard function
+  in these situations, cryptsetup provide a way how to serialize memory-hard
+  unlocking among parallel cryptsetup instances to workaround this problem.
+  This flag is intended to be used only in very specific situations,
+  never use it directly :-)
+
+* Abort conversion to LUKS1 with incompatible sector size that is
+  not supported in LUKS1.
+
+* Report error (-ENOENT) if no LUKS keyslots are available. User can now
+  distinguish between a wrong passphrase and no keyslot available.
+
+* Fix a possible segfault in detached header handling (double free).
