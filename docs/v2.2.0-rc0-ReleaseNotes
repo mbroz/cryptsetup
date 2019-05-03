@@ -41,7 +41,7 @@ older cryptsetup tools (that support LUKS2).
 The recovery supports three resilience modes:
 
   - checksum: default mode, where individual checksums of ciphertext hotzone
-    sectors are stored, so the recovery process can detect which sectors where
+    sectors are stored, so the recovery process can detect which sectors were
     already reencrypted. It requires that the device sector write is atomic.
 
   - journal: the hotzone is journaled in the binary area
@@ -55,7 +55,7 @@ These resilience modes are not available if reencryption uses data shift.
 
 Note: until we have full documentation (both of the process and metadata),
 please refer to Ondrej's slides (some slight details are no longer relevant)
-https://okozina.fedorapeople.org/online-disk-reencryption-with-luks2.pdf
+https://okozina.fedorapeople.org/online-disk-reencryption-with-luks2-compact.pdf
 
 The offline reencryption tool (cryptsetup-reencrypt) is still supported
 for both LUKS1 and LUKS2 format.
@@ -71,7 +71,7 @@ existing LUKS2 device), to add encryption to plaintext device and to remove
 encryption from a device (decryption).
 
 In all cases, if existing LUKS2 metadata contains information about
-the ongoing reencryption process, following reecrypt command continues
+the ongoing reencryption process, following reencrypt command continues
 with the ongoing reencryption process until it is finished.
 
 You can activate a device with ongoing reencryption as the standard LUKS2
@@ -139,7 +139,7 @@ Starts the data processing:
 
 Please note, that due to the Linux kernel limitation, the encryption or
 decryption process cannot be run entirely online - there must be at least
-small operation that adds/removes device-mapper crypt (LUKS2) layer.
+short offline window where operation adds/removes device-mapper crypt (LUKS2) layer.
 This step should also include modification of /etc/crypttab and fstab UUIDs,
 but it is out of the scope of cryptsetup tools.
 
@@ -166,8 +166,11 @@ Most of these limitations will be (hopefully) fixed in next versions.
   (some messages can be rephrased as well).
 
 * The repair command is not finished; the recovery of interrupted
-  reencryption is made automatically on the first activation or during
-  an explicit reencrypt command.
+  reencryption is made automatically on the first device activation.
+
+* Reencryption triggers too many udev scans on metadata updates (on closing
+  write enabled file descriptors). This has a negative performance impact on the whole
+  reencryption and generates excessive I/O load on the system.
 
 New libcryptsetup reencryption API
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
