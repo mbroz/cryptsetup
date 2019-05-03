@@ -1226,11 +1226,12 @@ out:
 		*r_cd = cd;
 		*r_password = password;
 		*r_passwordLen = passwordLen;
-		return 0;
+	} else {
+		crypt_free(cd);
+		crypt_safe_free(password);
 	}
-	crypt_free(cd);
+
 	crypt_safe_free(key);
-	crypt_safe_free(password);
 
 	return r;
 }
