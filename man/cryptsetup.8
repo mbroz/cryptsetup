@@ -160,6 +160,40 @@ above in LUKS2 metadata (only after successful refresh operation).
 \-\-disable\-keyring parameter refreshes a device with volume key passed
 in dm-crypt driver.
 
+.PP
+\fIreencrypt\fR <device> or --active-name <name>
+.IP
+Run resilient reencryption (LUKS2 device only).
+
+There are 3 basic modes of operation:
+
+\(bu device reencryption (\fIreencrypt\fR)
+
+\(bu device encryption (\fIreencrypt\fR \-\-encrypt)
+
+\(bu device decryption (\fIreencrypt\fR \-\-decrypt)
+
+<device> or --active-name <name> is mandatory parameter.
+
+With <device> parameter cryptsetup looks up active <device> dm mapping.
+If no active mapping is detected, it starts offline reencryption otherwise online
+reencryption takes place.
+
+Reencryption process may be safely interrupted by a user via SIGTERM signal (ctrl+c).
+
+To resume already initialized or interrupted reencryption, just run the cryptsetup
+\fIreencrypt\fR command again to continue the reencryption operation.
+Reencryption may be resumed with different \-\-resilience or \-\-hotzone\-size unless
+implicit datashift resilience mode is used (reencrypt \-\-encrypt with \-\-reduce-device-size
+option).
+
+If the reencryption process was interrupted abruptly (reencryption process crash, system crash, poweroff)
+it may require recovery. The recovery is currently run automatically on next activation (action \fIopen\fR)
+when needed.
+
+Action supports following additional \fB<options>\fR [\-\-encrypt, \-\-decrypt, \-\-resilience,
+\-\-resilience-hash, \-\-hotzone-size, \-\-init\-only, \-\-reduce\-device\-size].
+
 .SH PLAIN MODE
 Plain dm-crypt encrypts the device sector-by-sector with a
 single, non-salted hash of the passphrase. No checks
@@ -1296,6 +1330,52 @@ starts unconditionally stop processes using out-of-memory killer.
 
 \fBDO NOT USE\fR this switch until you are implementing boot environment
 with parallel devices activation!
+.TP
+.B "\-\-encrypt"
+Initialize (and run) device encryption (\fIreencrypt\fR action parameter)
+.TP
+.B "\-\-decrypt"
+Initialize (and run) device decryption (\fIreencrypt\fR action parameter)
+.TP
+.B "\-\-init\-only"
+Initialize reencryption (any variant) operation in LUKS2 metadata only and exit. If any
+reencrypt operation is already initialized in metadata, the command with \-\-init\-only
+parameter fails.
+.TP
+.B "\-\-resilience <mode>"
+Reencryption resilience mode can be one of \fIchecksum\fR, \fIjournal\fR or \fInone\fR.
+
+\fIchecksum\fR: default mode, where individual checksums of ciphertext hotzone sectors are stored,
+so the recovery process can detect which sectors where already reencrypted. It requires that the device sector write is atomic.
+
+\fIjournal\fR: the hotzone is journaled in the binary area (so the data are written twice).
+
+\fInone\fR: performance mode. There is no protection and the only way it's safe to interrupt
+the reencryption is similar to old offline reencryption utility. (ctrl+c).
+
+The option is ignored if reencryption with datashift mode is in progress.
+.TP
+.B "\-\-resilience-hash <hash>"
+The hash algorithm used with "\-\-resilience checksum" only. The default hash is sha256. With other resilience modes, the hash parameter is ignored.
+.TP
+.B "\-\-hotzone-size <size>"
+This option can be used to set an upper limit on the size of reencryption area (hotzone).
+The <size> can be specified with unit suffix (for example 50M). Note that actual hotzone
+size may be less than specified <size> due to other limitations (free space in keyslots area or
+available memory).
+.TP
+.B "\-\-reduce\-device\-size <size>"
+Initialize LUKS2 reencryption with data device size reduction (currently only \-\-encrypt variant is supported).
+
+Last <size> sectors of <device> will be used to properly initialize device reencryption. That means any
+data at last <size> sectors will be lost.
+
+It could be useful if you added some space to underlying partition or logical volume (so last <size> sectors contains no data).
+
+Recommended minimal size is twice the default LUKS2 header size (\-\-reduce\-device\-size 32M) for \-\-encrypt use case. Be sure to
+have enough (at least \-\-reduce\-device\-size value of free space at the end of <device>).
+
+WARNING: This is a destructive operation and cannot be reverted.  Use with extreme care - accidentally overwritten filesystems are usually unrecoverable.
 .TP
 .B "\-\-version"
 Show the program version.
