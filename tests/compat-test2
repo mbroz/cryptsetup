@@ -41,11 +41,6 @@ TEST_UUID="12345678-1234-1234-1234-123456789abc"
 LOOPDEV=$(losetup -f 2>/dev/null)
 [ -f /etc/system-fips ] && FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
-LOCK_DIR=$(grep DEFAULT_LUKS2_LOCK_PATH ../config.h | cut -d\" -f 2)
-HAVE_KEYRING=$(grep -e "#define KERNEL_KEYRING" ../config.h)
-test -n "$HAVE_KEYRING" || HAVE_KEYRING=0
-HAVE_KEYRING=${HAVE_KEYRING: -1}
-
 function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove $DEV_NAME3
@@ -216,13 +211,28 @@ function load_key()
 	keyctl add $@ >/dev/null
 }
 
-export LANG=C
+function setup_luks2_env() {
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $LOOPDEV || fail
+	$CRYPTSETUP luksDump $LOOPDEV >/dev/null || fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
+	HAVE_KEYRING=$($CRYPTSETUP status $DEV_NAME | grep "keyring")
+	if [ -n "$HAVE_KEYRING" ]; then
+		HAVE_KEYRING=1
+	else
+		HAVE_KEYRING=0
+	fi
+	$CRYPTSETUP close $DEV_NAME || fail
+}
 
-[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+export LANG=C
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."
-[ -d "$LOCK_DIR" ] || skip "WARNING: LUKS2 locking directory ($LOCK_DIR) is missing, test skipped."
+
+prepare "[0] Detect LUKS2 environment" wipe
+setup_luks2_env
+
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
 prepare "[1] Data offset" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --offset 1 2>/dev/null && fail

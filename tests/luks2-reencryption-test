@@ -375,14 +375,29 @@ function valgrind_run()
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
+function setup_luks2_env() {
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV || fail
+	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+	HAVE_KEYRING=$($CRYPTSETUP status $DEV_NAME | grep "keyring")
+	if [ -n "$HAVE_KEYRING" ]; then
+		HAVE_KEYRING=1
+	else
+		HAVE_KEYRING=0
+	fi
+	$CRYPTSETUP close $DEV_NAME || fail
+}
 
-[ "$HAVE_KEYRING" -eq 1 ] || skip "cryptsetup compiled without kernel keyring support."
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 modprobe --dry-run scsi_debug || exit 77
 modprobe dm-crypt || fail "dm-crypt failed to load"
 modprobe dm-delay > /dev/null 2>&1
 dm_crypt_features
+
+prepare dev_size_mb=32
+setup_luks2_env
+
+[ "$HAVE_KEYRING" -eq 1 ] || skip "cryptsetup compiled without kernel keyring support."
 
 export LANG=C
 
