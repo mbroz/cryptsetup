@@ -2,7 +2,7 @@
 # Makefile to run tests with system binaries
 # USE: make -f Makefile.localtest tests CRYPTSETUP_PATH=/sbin
 #
-CPPFLAGS=-I../lib/ -I../lib/luks1 -DKERNEL_KEYRING -DHAVE_SYS_SYSMACROS_H -DNO_CRYPTSETUP_PATH
+CPPFLAGS=-I../lib/ -I../lib/luks1 -DHAVE_DECL_DM_TASK_RETRY_REMOVE -DKERNEL_KEYRING -DHAVE_SYS_SYSMACROS_H -DNO_CRYPTSETUP_PATH
 CFLAGS=-O2 -g -Wall
 LDLIBS=-lcryptsetup -ldevmapper
 TESTS=$(wildcard *-test *-test2) api-test api-test-2
