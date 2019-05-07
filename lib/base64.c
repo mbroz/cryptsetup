@@ -84,6 +84,7 @@ base64_encode_fast (const char *restrict in, size_t inlen, char *restrict out)
    If OUTLEN is less than BASE64_LENGTH(INLEN), write as many bytes as
    possible.  If OUTLEN is larger than BASE64_LENGTH(INLEN), also zero
    terminate the output buffer. */
+/* coverity[-tainted_data_sink: arg-0] */
 void
 base64_encode (const char *restrict in, size_t inlen,
                char *restrict out, size_t outlen)
