@@ -658,6 +658,8 @@ void LUKS2_reenc_context_free(struct crypt_device *cd, struct luks2_reenc_contex
 	rh->jobj_segment_old = NULL;
 	json_object_put(rh->jobj_segment_new);
 	rh->jobj_segment_new = NULL;
+	json_object_put(rh->jobj_segment_moved);
+	rh->jobj_segment_moved = NULL;
 
 	free(rh->reenc_buffer);
 	rh->reenc_buffer = NULL;
