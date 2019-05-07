@@ -2680,8 +2680,10 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 	uint32_t flags = params ? params->flags : 0;
 
 	if (cipher) {
-		r = LUKS2_check_cipher(cd, crypt_keyslot_get_key_size(cd, keyslot_new),
-			       cipher, cipher_mode);
+		r = crypt_keyslot_get_key_size(cd, keyslot_new);
+		if (r < 0)
+			return r;
+		r = LUKS2_check_cipher(cd, r, cipher, cipher_mode);
 		if (r < 0)
 			return r;
 	}
