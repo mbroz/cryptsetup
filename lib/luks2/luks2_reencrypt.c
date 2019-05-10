@@ -2304,11 +2304,12 @@ static int _reencrypt_init(struct crypt_device *cd,
 			log_err(cd, _("Data shift (%" PRIu64 " sectors) is less than future data offset (%" PRIu64 " sectors)."), params->data_shift, LUKS2_get_data_offset(hdr));
 			return -EINVAL;
 		}
-		/* FIXME: This is broken with current commit. Will get fixed with next one */
 		devfd = device_open_excl(cd, crypt_data_device(cd), O_RDWR);
 		if (devfd < 0) {
-			log_err(cd, _("Failed to open %s in exclusive mode (perhaps already mapped or mounted)."),
-				device_path(crypt_data_device(cd)));
+			if (devfd == -EBUSY)
+				log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."), device_path(crypt_data_device(cd)));
+			else
+				log_err(cd,_("Failed to open %s in exclusive mode."), device_path(crypt_data_device(cd)));
 			return -EINVAL;
 		}
 	}
@@ -2348,6 +2349,7 @@ static int _reencrypt_init(struct crypt_device *cd,
 	} else
 		r = reencrypt_keyslot;
 err:
+	device_release_excl(cd, crypt_data_device(cd));
 	if (r < 0)
 		crypt_load(cd, CRYPT_LUKS2, NULL);
 
@@ -2973,7 +2975,7 @@ static int _reencrypt_free(struct crypt_device *cd, struct luks2_hdr *hdr, struc
 int crypt_reencrypt(struct crypt_device *cd,
 		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
 {
-	int r, excl_devfd = -1;
+	int r;
 	crypt_reencrypt_info ri;
 	struct luks2_hdr *hdr;
 	struct luks2_reenc_context *rh;
@@ -3008,10 +3010,8 @@ int crypt_reencrypt(struct crypt_device *cd,
 	} else {
 		if (crypt_storage_wrapper_get_type(rh->cw1) != DMCRYPT &&
 		    crypt_storage_wrapper_get_type(rh->cw2) != DMCRYPT) {
-			/* FIXME: This is broken with current commit. Will get fixed with next one */
-			excl_devfd = device_open_excl(cd, crypt_data_device(cd), O_RDONLY);
-			if (excl_devfd < 0) {
-				log_err(cd, _("Failed to open device %s in exclusive mode. Already mounted?."), device_path(crypt_data_device(cd)));
+			if (device_open_excl(cd, crypt_data_device(cd), O_RDONLY) < 0) {
+				log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."), device_path(crypt_data_device(cd)));
 				return -EBUSY;
 			}
 		}
@@ -3044,6 +3044,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 	}
 
 	r = _reencrypt_free(cd, hdr, rh, rs, progress);
+	device_release_excl(cd, crypt_data_device(cd));
 	return r;
 }
 

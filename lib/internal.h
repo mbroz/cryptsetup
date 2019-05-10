@@ -123,6 +123,7 @@ int device_read_ahead(struct device *device, uint32_t *read_ahead);
 int device_size(struct device *device, uint64_t *size);
 int device_open(struct crypt_device *cd, struct device *device, int flags);
 int device_open_excl(struct crypt_device *cd, struct device *device, int flags);
+void device_release_excl(struct crypt_device *cd, struct device *device);
 void device_disable_direct_io(struct device *device);
 int device_is_identical(struct device *device1, struct device *device2);
 int device_is_rotational(struct device *device);

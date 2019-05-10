@@ -48,6 +48,7 @@ struct device {
 
 	int ro_dev_fd;
 	int dev_fd;
+	int dev_fd_excl;
 
 	struct crypt_lock_handle *lh;
 
@@ -306,15 +307,42 @@ int device_open(struct crypt_device *cd, struct device *device, int flags)
 
 int device_open_excl(struct crypt_device *cd, struct device *device, int flags)
 {
+	const char *path;
 	struct stat st;
 
-	if (stat(device_path(device), &st))
+	if (!device)
 		return -EINVAL;
-	if (S_ISBLK(st.st_mode))
-		flags |= O_EXCL;
 
 	assert(!device_locked(device->lh));
+
+	if (device->dev_fd_excl < 0) {
+		path = device_path(device);
+		if (stat(path, &st))
+			return -EINVAL;
+		if (!S_ISBLK(st.st_mode))
+			log_dbg(cd, "%s is not a block device. Can't open in exclusive mode.",
+				path);
+		else {
+			device->dev_fd_excl = open(path, O_RDONLY | O_EXCL);
+			if (device->dev_fd_excl < 0)
+				return errno == EBUSY ? -EBUSY : device->dev_fd_excl;
+			log_dbg(cd, "Device %s is blocked for exclusive open.", path);
+		}
+	}
+
 	return device_open_internal(cd, device, flags);
+}
+
+void device_release_excl(struct crypt_device *cd, struct device *device)
+{
+	if (device && device->dev_fd_excl >= 0) {
+		if (close(device->dev_fd_excl))
+			log_dbg(cd, "Failed to release exclusive handle on device %s.",
+				device_path(device));
+		else
+			log_dbg(cd, "Closed exclusive fd for %s.", device_path(device));
+		device->dev_fd_excl = -1;
+	}
 }
 
 int device_open_locked(struct crypt_device *cd, struct device *device, int flags)
@@ -346,6 +374,7 @@ int device_alloc_no_check(struct device **device, const char *path)
 	dev->loop_fd = -1;
 	dev->ro_dev_fd = -1;
 	dev->dev_fd = -1;
+	dev->dev_fd_excl = -1;
 	dev->o_direct = 1;
 
 	*device = dev;
@@ -391,6 +420,11 @@ void device_free(struct crypt_device *cd, struct device *device)
 	if (device->dev_fd != -1) {
 		log_dbg(cd, "Closed read write fd for %s.", device_path(device));
 		close(device->dev_fd);
+	}
+
+	if (device->dev_fd_excl != -1) {
+		log_dbg(cd, "Closed exclusive fd for %s.", device_path(device));
+		close(device->dev_fd_excl);
 	}
 
 	if (device->loop_fd != -1) {
