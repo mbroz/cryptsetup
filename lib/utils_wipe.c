@@ -139,7 +139,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 	int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
 	void *usrptr)
 {
-	int r, devfd = -1;
+	int r, devfd;
 	size_t bsize, alignment;
 	char *sf = NULL;
 	uint64_t dev_size;
@@ -217,7 +217,6 @@ int crypt_wipe_device(struct crypt_device *cd,
 
 	device_sync(cd, device, devfd);
 out:
-	close(devfd);
 	free(sf);
 	return r;
 }

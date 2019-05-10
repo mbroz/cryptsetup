@@ -1034,9 +1034,9 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 		     const char *backup_file)
 {
 	struct device *device = crypt_metadata_device(cd);
-	int r = 0, devfd = -1;
+	int fd, devfd, r = 0;
 	ssize_t hdr_size;
-	ssize_t buffer_size;
+	ssize_t ret, buffer_size;
 	char *buffer = NULL;
 
 	hdr_size = LUKS2_hdr_and_areas_size(hdr->jobj);
@@ -1065,19 +1065,17 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 		return devfd == -1 ? -EINVAL : devfd;
 	}
 
-	if (read_blockwise(devfd, device_block_size(cd, device),
-			   device_alignment(device), buffer, hdr_size) < hdr_size) {
-		close(devfd);
+	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
+			   device_alignment(device), buffer, hdr_size, 0) < hdr_size) {
 		device_read_unlock(cd, device);
 		crypt_safe_free(buffer);
 		return -EIO;
 	}
-	close(devfd);
 
 	device_read_unlock(cd, device);
 
-	devfd = open(backup_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
-	if (devfd == -1) {
+	fd = open(backup_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
+	if (fd == -1) {
 		if (errno == EEXIST)
 			log_err(cd, _("Requested header backup file %s already exists."), backup_file);
 		else
@@ -1085,13 +1083,14 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 		crypt_safe_free(buffer);
 		return -EINVAL;
 	}
-	if (write_buffer(devfd, buffer, buffer_size) < buffer_size) {
+	ret = write_buffer(fd, buffer, buffer_size);
+	close(fd);
+	if (ret < buffer_size) {
 		log_err(cd, _("Cannot write header backup file %s."), backup_file);
 		r = -EIO;
 	} else
 		r = 0;
 
-	close(devfd);
 	crypt_safe_free(buffer);
 	return r;
 }
@@ -1115,8 +1114,8 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		     const char *backup_file)
 {
 	struct device *backup_device, *device = crypt_metadata_device(cd);
-	int r, devfd = -1, diff_uuid = 0;
-	ssize_t buffer_size = 0;
+	int r, fd, devfd = -1, diff_uuid = 0;
+	ssize_t ret, buffer_size = 0;
 	char *buffer = NULL, msg[1024];
 	struct luks2_hdr hdr_file;
 	struct luks2_hdr tmp_hdr = {};
@@ -1159,20 +1158,20 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		goto out;
 	}
 
-	devfd = open(backup_file, O_RDONLY);
-	if (devfd == -1) {
+	fd = open(backup_file, O_RDONLY);
+	if (fd == -1) {
 		log_err(cd, _("Cannot open header backup file %s."), backup_file);
 		r = -EINVAL;
 		goto out;
 	}
 
-	if (read_buffer(devfd, buffer, buffer_size) < buffer_size) {
+	ret = read_buffer(fd, buffer, buffer_size);
+	close(fd);
+	if (ret < buffer_size) {
 		log_err(cd, _("Cannot read header backup file %s."), backup_file);
 		r = -EIO;
 		goto out;
 	}
-	close(devfd);
-	devfd = -1;
 
 	r = LUKS2_hdr_read(cd, &tmp_hdr, 0);
 	if (r == 0) {
@@ -1240,8 +1239,8 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		goto out;
 	}
 
-	if (write_blockwise(devfd, device_block_size(cd, device),
-			    device_alignment(device), buffer, buffer_size) < buffer_size)
+	if (write_lseek_blockwise(devfd, device_block_size(cd, device),
+			    device_alignment(device), buffer, buffer_size, 0) < buffer_size)
 		r = -EIO;
 	else
 		r = 0;
@@ -1257,11 +1256,8 @@ out:
 	crypt_memzero(&tmp_hdr, sizeof(tmp_hdr));
 	crypt_safe_free(buffer);
 
-	if (devfd >= 0) {
+	if (devfd >= 0)
 		device_sync(cd, device, devfd);
-		close(devfd);
-	}
-
 
 	return r;
 }

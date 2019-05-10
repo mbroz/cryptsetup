@@ -134,7 +134,6 @@ static int reenc_keyslot_store_data(struct crypt_device *cd,
 			r = -EIO;
 		else
 			r = 0;
-		close(devfd);
 	} else
 		r = -EINVAL;
 

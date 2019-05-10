@@ -233,7 +233,7 @@ static int hdr_read_disk(struct crypt_device *cd,
 			 char **json_area, uint64_t offset, int secondary)
 {
 	size_t hdr_json_size = 0;
-	int devfd = -1, r;
+	int devfd, r;
 
 	log_dbg(cd, "Trying to read %s LUKS2 header at offset 0x%" PRIx64 ".",
 		secondary ? "secondary" : "primary", offset);
@@ -249,13 +249,11 @@ static int hdr_read_disk(struct crypt_device *cd,
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), hdr_disk,
 				 LUKS2_HDR_BIN_LEN, offset) != LUKS2_HDR_BIN_LEN) {
-		close(devfd);
 		return -EIO;
 	}
 
 	r = hdr_disk_sanity_check_pre(cd, hdr_disk, &hdr_json_size, secondary, offset);
 	if (r < 0) {
-		close(devfd);
 		return r;
 	}
 
@@ -264,20 +262,16 @@ static int hdr_read_disk(struct crypt_device *cd,
 	 */
 	*json_area = malloc(hdr_json_size);
 	if (!*json_area) {
-		close(devfd);
 		return -ENOMEM;
 	}
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), *json_area, hdr_json_size,
 				 offset + LUKS2_HDR_BIN_LEN) != (ssize_t)hdr_json_size) {
-		close(devfd);
 		free(*json_area);
 		*json_area = NULL;
 		return -EIO;
 	}
-
-	close(devfd);
 
 	/*
 	 * Calculate and validate checksum and zero it afterwards.
@@ -302,7 +296,7 @@ static int hdr_write_disk(struct crypt_device *cd,
 	struct luks2_hdr_disk hdr_disk;
 	uint64_t offset = secondary ? hdr->hdr_size : 0;
 	size_t hdr_json_len;
-	int devfd = -1, r;
+	int devfd, r;
 
 	log_dbg(cd, "Trying to write LUKS2 header (%zu bytes) at offset %" PRIu64 ".",
 		hdr->hdr_size, offset);
@@ -323,7 +317,6 @@ static int hdr_write_disk(struct crypt_device *cd,
 	if (write_lseek_blockwise(devfd, device_block_size(cd, device),
 				  device_alignment(device), (char *)&hdr_disk,
 				  LUKS2_HDR_BIN_LEN, offset) < (ssize_t)LUKS2_HDR_BIN_LEN) {
-		close(devfd);
 		return -EIO;
 	}
 
@@ -334,7 +327,6 @@ static int hdr_write_disk(struct crypt_device *cd,
 				  device_alignment(device),
 				  CONST_CAST(char*)json_area, hdr_json_len,
 				  LUKS2_HDR_BIN_LEN + offset) < (ssize_t)hdr_json_len) {
-		close(devfd);
 		return -EIO;
 	}
 
@@ -344,7 +336,6 @@ static int hdr_write_disk(struct crypt_device *cd,
 	r = hdr_checksum_calculate(hdr_disk.checksum_alg, &hdr_disk,
 				   json_area, hdr_json_len);
 	if (r < 0) {
-		close(devfd);
 		return r;
 	}
 	log_dbg_checksum(cd, hdr_disk.csum, hdr_disk.checksum_alg, "in-memory");
@@ -355,7 +346,6 @@ static int hdr_write_disk(struct crypt_device *cd,
 		r = -EIO;
 
 	device_sync(cd, device, devfd);
-	close(devfd);
 	return r;
 }
 

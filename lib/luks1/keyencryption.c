@@ -145,10 +145,9 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 			    unsigned int sector,
 			    struct crypt_device *ctx)
 {
-
 	struct device *device = crypt_metadata_device(ctx);
 	struct crypt_storage *s;
-	int devfd = -1, r = 0;
+	int devfd, r = 0;
 
 	/* Only whole sector writes supported */
 	if (MISALIGNED_512(srcLength))
@@ -197,10 +196,8 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 
 	r = 0;
 out:
-	if (devfd >= 0) {
+	if (devfd >= 0)
 		device_sync(ctx, device, devfd);
-		close(devfd);
-	}
 	if (r)
 		log_err(ctx, _("IO error while encrypting keyslot."));
 
@@ -217,7 +214,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	struct device *device = crypt_metadata_device(ctx);
 	struct crypt_storage *s;
 	struct stat st;
-	int devfd = -1, r = 0;
+	int devfd, r = 0;
 
 	/* Only whole sector reads supported */
 	if (MISALIGNED_512(dstLength))
@@ -261,12 +258,9 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 		else
 			log_err(ctx, _("IO error while decrypting keyslot."));
 
-		close(devfd);
 		crypt_storage_destroy(s);
 		return -EIO;
 	}
-
-	close(devfd);
 
 	/* Decrypt buffer */
 	r = crypt_storage_decrypt(s, 0, dstLength, dst);

@@ -46,6 +46,9 @@ struct device {
 	char *file_path;
 	int loop_fd;
 
+	int ro_dev_fd;
+	int dev_fd;
+
 	struct crypt_lock_handle *lh;
 
 	unsigned int o_direct:1;
@@ -256,20 +259,39 @@ void device_sync(struct crypt_device *cd, struct device *device, int devfd)
  */
 static int device_open_internal(struct crypt_device *cd, struct device *device, int flags)
 {
-	int devfd;
+	int access, devfd;
 
 	if (device->o_direct)
 		flags |= O_DIRECT;
+
+	access = flags & O_ACCMODE;
+	if (access == O_WRONLY)
+		access = O_RDWR;
+
+	if (access == O_RDONLY && device->ro_dev_fd >= 0) {
+		log_dbg(cd, "Reusing open r%c fd on device %s", 'o', device_path(device));
+		return device->ro_dev_fd;
+	} else if (access == O_RDWR && device->dev_fd >= 0) {
+		log_dbg(cd, "Reusing open r%c fd on device %s", 'w', device_path(device));
+		return device->dev_fd;
+	}
 
 	if (device_locked(device->lh))
 		devfd = _open_locked(cd, device, flags);
 	else
 		devfd = open(device_path(device), flags);
 
-	if (devfd < 0)
+	if (devfd < 0) {
 		log_dbg(cd, "Cannot open device %s%s.",
 			device_path(device),
-			(flags & O_ACCMODE) != O_RDONLY ? " for write" : "");
+			access != O_RDONLY ? " for write" : "");
+		return devfd;
+	}
+
+	if (access == O_RDONLY)
+		device->ro_dev_fd = devfd;
+	else
+		device->dev_fd = devfd;
 
 	return devfd;
 }
@@ -320,6 +342,8 @@ int device_alloc_no_check(struct device **device, const char *path)
 		return -ENOMEM;
 	}
 	dev->loop_fd = -1;
+	dev->ro_dev_fd = -1;
+	dev->dev_fd = -1;
 	dev->o_direct = 1;
 
 	*device = dev;
@@ -356,6 +380,16 @@ void device_free(struct crypt_device *cd, struct device *device)
 {
 	if (!device)
 		return;
+
+	if (device->ro_dev_fd != -1) {
+		log_dbg(cd, "Closed read only fd for %s.", device_path(device));
+		close(device->ro_dev_fd);
+	}
+
+	if (device->dev_fd != -1) {
+		log_dbg(cd, "Closed read write fd for %s.", device_path(device));
+		close(device->dev_fd);
+	}
 
 	if (device->loop_fd != -1) {
 		log_dbg(cd, "Closed loop %s (%s).", device->path, device->file_path);

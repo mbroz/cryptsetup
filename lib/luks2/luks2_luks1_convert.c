@@ -427,9 +427,9 @@ static void move_keyslot_offset(json_object *jobj, int offset_add)
 static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 			      off_t offset_to, size_t buf_size)
 {
+	int devfd, r = -EIO;
 	struct device *device = crypt_metadata_device(cd);
 	void *buf = NULL;
-	int r = -EIO, devfd = -1;
 
 	log_dbg(cd, "Moving keyslot areas of size %zu from %jd to %jd.",
 		buf_size, (intmax_t)offset_from, (intmax_t)offset_to);
@@ -438,7 +438,7 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 		return -ENOMEM;
 
 	devfd = device_open(cd, device, O_RDWR);
-	if (devfd == -1) {
+	if (devfd < 0) {
 		free(buf);
 		return -EIO;
 	}
@@ -466,7 +466,6 @@ static int move_keyslot_areas(struct crypt_device *cd, off_t offset_from,
 	r = 0;
 out:
 	device_sync(cd, device, devfd);
-	close(devfd);
 	crypt_memzero(buf, buf_size);
 	free(buf);
 
@@ -487,16 +486,16 @@ static int luks_header_in_use(struct crypt_device *cd)
 /* Check if there is a luksmeta area (foreign metadata created by the luksmeta package) */
 static int luksmeta_header_present(struct crypt_device *cd, off_t luks1_size)
 {
+	int devfd, r = 0;
 	static const uint8_t LM_MAGIC[] = { 'L', 'U', 'K', 'S', 'M', 'E', 'T', 'A' };
 	struct device *device = crypt_metadata_device(cd);
 	void *buf = NULL;
-	int devfd, r = 0;
 
 	if (posix_memalign(&buf, crypt_getpagesize(), sizeof(LM_MAGIC)))
 		return -ENOMEM;
 
 	devfd = device_open(cd, device, O_RDONLY);
-	if (devfd == -1) {
+	if (devfd < 0) {
 		free(buf);
 		return -EIO;
 	}
@@ -509,7 +508,6 @@ static int luksmeta_header_present(struct crypt_device *cd, off_t luks1_size)
 			r = -EBUSY;
 	}
 
-	close(devfd);
 	free(buf);
 	return r;
 }

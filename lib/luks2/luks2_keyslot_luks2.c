@@ -48,7 +48,7 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	return r;
 #else
 	struct crypt_storage *s;
-	int devfd = -1, r;
+	int devfd, r;
 
 	/* Only whole sector writes supported */
 	if (MISALIGNED_512(srcLength))
@@ -84,7 +84,6 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 			r = 0;
 
 		device_sync(cd, device, devfd);
-		close(devfd);
 	} else
 		r = -EIO;
 
@@ -113,7 +112,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 	return r;
 #else
 	struct crypt_storage *s;
-	int devfd = -1, r;
+	int devfd, r;
 
 	/* Only whole sector writes supported */
 	if (MISALIGNED_512(dstLength))
@@ -142,7 +141,6 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 			r = -EIO;
 		else
 			r = 0;
-		close(devfd);
 	} else
 		r = -EIO;
 

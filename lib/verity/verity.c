@@ -60,7 +60,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 	struct device *device = crypt_metadata_device(cd);
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
-	int devfd = 0, sb_version;
+	int devfd, sb_version;
 
 	log_dbg(cd, "Reading VERITY header of size %zu on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device_path(device), sb_offset);
@@ -84,11 +84,8 @@ int VERITY_read_sb(struct crypt_device *cd,
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), &sb, hdr_size,
-				 sb_offset) < hdr_size) {
-		close(devfd);
+				 sb_offset) < hdr_size)
 		return -EIO;
-	}
-	close(devfd);
 
 	if (memcmp(sb.signature, VERITY_SIGNATURE, sizeof(sb.signature))) {
 		log_err(cd, _("Device %s is not a valid VERITY device."),
@@ -160,7 +157,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	ssize_t hdr_size = sizeof(struct verity_sb);
 	char *algorithm;
 	uuid_t uuid;
-	int r, devfd = 0;
+	int r, devfd;
 
 	log_dbg(cd, "Updating VERITY header of size %zu on device %s, offset %" PRIu64 ".",
 		sizeof(struct verity_sb), device_path(device), sb_offset);
@@ -203,7 +200,6 @@ int VERITY_write_sb(struct crypt_device *cd,
 			device_path(device));
 
 	device_sync(cd, device, devfd);
-	close(devfd);
 
 	return r;
 }

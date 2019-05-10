@@ -35,9 +35,8 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	int devfd, r;
 
 	devfd = device_open(cd, device, O_RDONLY);
-	if(devfd < 0) {
+	if(devfd < 0)
 		return -EINVAL;
-	}
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
@@ -55,7 +54,6 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 		r = 0;
 	}
 
-	close(devfd);
 	return r;
 }
 

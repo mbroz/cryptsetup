@@ -1190,7 +1190,7 @@ int LUKS2_reenc_recover(struct crypt_device *cd,
 	unsigned resilience;
 	uint64_t area_offset, area_length, area_length_read, crash_iv_offset,
 		 data_offset = crypt_get_data_offset(cd) << SECTOR_SHIFT;
-	int r, new_sector_size, old_sector_size, rseg = json_segments_segment_in_reencrypt(rh->jobj_segs_pre), fd = -1;
+	int devfd, r, new_sector_size, old_sector_size, rseg = json_segments_segment_in_reencrypt(rh->jobj_segs_pre);
 	char *checksum_tmp = NULL, *data_buffer = NULL;
 	struct crypt_storage_wrapper *cw1 = NULL, *cw2 = NULL;
 
@@ -1259,16 +1259,15 @@ int LUKS2_reenc_recover(struct crypt_device *cd,
 		}
 
 		/* TODO: lock for read */
-		fd = device_open(cd, crypt_metadata_device(cd), O_RDONLY);
-		if (fd < 0) {
+		devfd = device_open(cd, crypt_metadata_device(cd), O_RDONLY);
+		if (devfd < 0) {
 			log_err(cd, _("Failed to open mdata device."));
 			goto out;
 		}
 
 		/* read old data checksums */
-		read = read_lseek_blockwise(fd, device_block_size(cd, crypt_metadata_device(cd)),
+		read = read_lseek_blockwise(devfd, device_block_size(cd, crypt_metadata_device(cd)),
 					device_alignment(crypt_metadata_device(cd)), rh->rp.p.csum.checksums, area_length_read, area_offset);
-		close(fd);
 		if (read < 0 || (size_t)read != area_length_read) {
 			log_err(cd, _("Failed to read checksums."));
 			r = -EINVAL;
@@ -2305,6 +2304,7 @@ static int _reencrypt_init(struct crypt_device *cd,
 			log_err(cd, _("Data shift (%" PRIu64 " sectors) is less than future data offset (%" PRIu64 " sectors)."), params->data_shift, LUKS2_get_data_offset(hdr));
 			return -EINVAL;
 		}
+		/* FIXME: This is broken with current commit. Will get fixed with next one */
 		devfd = device_open_excl(cd, crypt_data_device(cd), O_RDWR);
 		if (devfd < 0) {
 			log_err(cd, _("Failed to open %s in exclusive mode (perhaps already mapped or mounted)."),
@@ -2348,9 +2348,6 @@ static int _reencrypt_init(struct crypt_device *cd,
 	} else
 		r = reencrypt_keyslot;
 err:
-	if (devfd >= 0)
-		close(devfd);
-
 	if (r < 0)
 		crypt_load(cd, CRYPT_LUKS2, NULL);
 
@@ -3011,6 +3008,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 	} else {
 		if (crypt_storage_wrapper_get_type(rh->cw1) != DMCRYPT &&
 		    crypt_storage_wrapper_get_type(rh->cw2) != DMCRYPT) {
+			/* FIXME: This is broken with current commit. Will get fixed with next one */
 			excl_devfd = device_open_excl(cd, crypt_data_device(cd), O_RDONLY);
 			if (excl_devfd < 0) {
 				log_err(cd, _("Failed to open device %s in exclusive mode. Already mounted?."), device_path(crypt_data_device(cd)));
@@ -3046,8 +3044,6 @@ int crypt_reencrypt(struct crypt_device *cd,
 	}
 
 	r = _reencrypt_free(cd, hdr, rh, rs, progress);
-	if (excl_devfd >= 0)
-		close(excl_devfd);
 	return r;
 }
 

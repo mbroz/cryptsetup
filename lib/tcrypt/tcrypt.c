@@ -635,7 +635,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 	struct device *base_device, *device = crypt_metadata_device(cd);
 	ssize_t hdr_size = sizeof(struct tcrypt_phdr);
 	char *base_device_path;
-	int devfd = 0, r;
+	int devfd, r;
 
 	assert(sizeof(struct tcrypt_phdr) == 512);
 
@@ -692,11 +692,10 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 			device_alignment(device), hdr, hdr_size,
 			TCRYPT_HDR_OFFSET_BCK) == hdr_size)
 			r = TCRYPT_init_hdr(cd, hdr, params);
-	} else if (read_blockwise(devfd, device_block_size(cd, device),
-			device_alignment(device), hdr, hdr_size) == hdr_size)
+	} else if (read_lseek_blockwise(devfd, device_block_size(cd, device),
+			device_alignment(device), hdr, hdr_size, 0) == hdr_size)
 		r = TCRYPT_init_hdr(cd, hdr, params);
 
-	close(devfd);
 	if (r < 0)
 		memset(hdr, 0, sizeof (*hdr));
 	return r;
