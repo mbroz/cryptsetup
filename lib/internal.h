@@ -129,7 +129,7 @@ int device_is_rotational(struct device *device);
 size_t device_alignment(struct device *device);
 int device_direct_io(const struct device *device);
 int device_fallocate(struct device *device, uint64_t size);
-void device_sync(struct crypt_device *cd, struct device *device, int devfd);
+void device_sync(struct crypt_device *cd, struct device *device);
 int device_check_size(struct crypt_device *cd,
 		      struct device *device,
 		      uint64_t req_offset, int falloc);

@@ -196,8 +196,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 
 	r = 0;
 out:
-	if (devfd >= 0)
-		device_sync(ctx, device, devfd);
+	device_sync(ctx, device);
 	if (r)
 		log_err(ctx, _("IO error while encrypting keyslot."));
 

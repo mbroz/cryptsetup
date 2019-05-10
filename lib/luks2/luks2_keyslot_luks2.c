@@ -83,7 +83,7 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 		else
 			r = 0;
 
-		device_sync(cd, device, devfd);
+		device_sync(cd, device);
 	} else
 		r = -EIO;
 

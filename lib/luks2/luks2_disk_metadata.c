@@ -345,7 +345,7 @@ static int hdr_write_disk(struct crypt_device *cd,
 				  LUKS2_HDR_BIN_LEN, offset) < (ssize_t)LUKS2_HDR_BIN_LEN)
 		r = -EIO;
 
-	device_sync(cd, device, devfd);
+	device_sync(cd, device);
 	return r;
 }
 

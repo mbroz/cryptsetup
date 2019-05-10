@@ -240,11 +240,13 @@ static int _open_locked(struct crypt_device *cd, struct device *device, int flag
 
 /*
  * Common wrapper for device sync.
- * FIXME: file descriptor will be in struct later.
  */
-void device_sync(struct crypt_device *cd, struct device *device, int devfd)
+void device_sync(struct crypt_device *cd, struct device *device)
 {
-	if (fsync(devfd) == -1)
+	if (!device || device->dev_fd < 0)
+		return;
+
+	if (fsync(device->dev_fd) == -1)
 		log_dbg(cd, "Cannot sync device %s.", device_path(device));
 }
 

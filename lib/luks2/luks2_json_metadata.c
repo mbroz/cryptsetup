@@ -1256,8 +1256,7 @@ out:
 	crypt_memzero(&tmp_hdr, sizeof(tmp_hdr));
 	crypt_safe_free(buffer);
 
-	if (devfd >= 0)
-		device_sync(cd, device, devfd);
+	device_sync(cd, device);
 
 	return r;
 }
