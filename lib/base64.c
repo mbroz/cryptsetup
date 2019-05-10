@@ -1,5 +1,5 @@
 /* base64.c -- Encode binary data using printable characters.
-   Copyright (C) 1999-2001, 2004-2006, 2009-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2001, 2004-2006, 2009-2019 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ base64_encode_fast (const char *restrict in, size_t inlen, char *restrict out)
 {
   while (inlen)
     {
-      *out++ = b64c[to_uchar (in[0]) >> 2];
+      *out++ = b64c[(to_uchar (in[0]) >> 2) & 0x3f];
       *out++ = b64c[((to_uchar (in[0]) << 4) + (to_uchar (in[1]) >> 4)) & 0x3f];
       *out++ = b64c[((to_uchar (in[1]) << 2) + (to_uchar (in[2]) >> 6)) & 0x3f];
       *out++ = b64c[to_uchar (in[2]) & 0x3f];
@@ -84,7 +84,6 @@ base64_encode_fast (const char *restrict in, size_t inlen, char *restrict out)
    If OUTLEN is less than BASE64_LENGTH(INLEN), write as many bytes as
    possible.  If OUTLEN is larger than BASE64_LENGTH(INLEN), also zero
    terminate the output buffer. */
-/* coverity[-tainted_data_sink: arg-0] */
 void
 base64_encode (const char *restrict in, size_t inlen,
                char *restrict out, size_t outlen)
@@ -104,7 +103,7 @@ base64_encode (const char *restrict in, size_t inlen,
 
   while (inlen && outlen)
     {
-      *out++ = b64c[to_uchar (in[0]) >> 2];
+      *out++ = b64c[(to_uchar (in[0]) >> 2) & 0x3f];
       if (!--outlen)
         break;
       *out++ = b64c[((to_uchar (in[0]) << 4)
