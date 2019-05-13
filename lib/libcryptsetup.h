@@ -2118,6 +2118,8 @@ int crypt_activate_by_token(struct crypt_device *cd,
 #define CRYPT_REENCRYPT_INITIALIZE_ONLY    (1 << 0)
 /** Move the first segment; used only with data shift. */
 #define CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT (1 << 1)
+/** Resume already initialized reencryption only. */
+#define CRYPT_REENCRYPT_RESUME_ONLY        (1 << 2)
 
 /**
  * Reencryption direction

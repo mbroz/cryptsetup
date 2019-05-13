@@ -2496,7 +2496,10 @@ int LUKS2_reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 		r = _LUKS2_reenc_load(cd, hdr, device_size, &tmp, params);
 	else if (ri == CRYPT_REENCRYPT_CRASH)
 		r = LUKS2_reenc_load_crashed(cd, hdr, device_size, &tmp);
-	else
+	else if (ri == CRYPT_REENCRYPT_NONE) {
+		log_err(cd, _("No LUKS2 reencryption in progress."));
+		return -EINVAL;
+	} else
 		r = -EINVAL;
 
 	if (r < 0 || !tmp) {
@@ -2709,7 +2712,7 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 	/* r == 0, proceed with initialization */
 	/* r == -EBUSY, skip initialization and proceed with reencrypt load */
 
-	if (!r)
+	if (!r && !(flags & CRYPT_REENCRYPT_RESUME_ONLY))
 		r = _reencrypt_init(cd, hdr, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params, &vks);
 	else if (r == -EBUSY) {
 		log_dbg(cd, "LUKS2 reencryption already initialized.");
@@ -2744,6 +2747,8 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 
 	if (onlyLUKS2mask(cd, CRYPT_REQUIREMENT_ONLINE_REENCRYPT) || !passphrase_description)
 		return -EINVAL;
+	if (params && (params->flags & CRYPT_REENCRYPT_INITIALIZE_ONLY) && (params->flags & CRYPT_REENCRYPT_RESUME_ONLY))
+		return -EINVAL;
 
 	r = keyring_get_passphrase(passphrase_description, &passphrase, &passphrase_size);
 	if (r < 0) {
@@ -2770,6 +2775,8 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const struct crypt_params_reencrypt *params)
 {
 	if (onlyLUKS2mask(cd, CRYPT_REQUIREMENT_ONLINE_REENCRYPT) || !passphrase)
+		return -EINVAL;
+	if (params && (params->flags & CRYPT_REENCRYPT_INITIALIZE_ONLY) && (params->flags & CRYPT_REENCRYPT_RESUME_ONLY))
 		return -EINVAL;
 
 	return _reencrypt_init_by_passphrase(cd, name, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params);
