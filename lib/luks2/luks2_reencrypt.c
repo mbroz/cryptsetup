@@ -2632,10 +2632,8 @@ static int _reencrypt_load(struct crypt_device *cd,
 	}
 
 	r = LUKS2_reenc_load(cd, hdr, device_size, params, &rh);
-	if (r < 0 || !rh) {
-		log_err(cd, _("Failed to load reenc context."));
+	if (r < 0 || !rh)
 		goto err;
-	}
 
 	r = LUKS2_verify_and_upload_keys(cd, hdr, rh->digest_old, rh->digest_new, *vks);
 	if (r == -ENOENT) {
