@@ -192,7 +192,7 @@ it may require recovery. The recovery is currently run automatically on next act
 when needed.
 
 Action supports following additional \fB<options>\fR [\-\-encrypt, \-\-decrypt, \-\-resilience,
-\-\-resilience-hash, \-\-hotzone-size, \-\-init\-only, \-\-reduce\-device\-size].
+\-\-resilience-hash, \-\-hotzone-size, \-\-init\-only, \-\-resume\-only, \-\-reduce\-device\-size].
 
 .SH PLAIN MODE
 Plain dm-crypt encrypts the device sector-by-sector with a
@@ -1341,6 +1341,12 @@ Initialize (and run) device decryption (\fIreencrypt\fR action parameter)
 Initialize reencryption (any variant) operation in LUKS2 metadata only and exit. If any
 reencrypt operation is already initialized in metadata, the command with \-\-init\-only
 parameter fails.
+.TP
+.B "\-\-resume\-only"
+Resume reencryption (any variant) operation already described in LUKS2 metadata. If no
+reencrypt operation is initialized, the command with \-\-resume\-only
+parameter fails. Useful for resuming reencrypt operation without accidentaly trigerring
+new reencryption operation.
 .TP
 .B "\-\-resilience <mode>"
 Reencryption resilience mode can be one of \fIchecksum\fR, \fIjournal\fR or \fInone\fR.

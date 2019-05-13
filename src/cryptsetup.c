@@ -101,6 +101,7 @@ static const char *opt_resilience_mode = "checksum"; // TODO: default resilience
 static const char *opt_resilience_hash = "sha256"; // TODO: default checksum hash
 static int opt_encrypt = 0;
 static int opt_reencrypt_init_only = 0;
+static int opt_reencrypt_resume_only = 0;
 static int opt_decrypt = 0;
 
 static const char *opt_reduce_size_str = NULL;
@@ -191,6 +192,15 @@ static void _set_activation_flags(uint32_t *flags)
 
 	if (opt_serialize_memory_hard_pbkdf)
 		*flags |= CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF;
+}
+
+static void _set_reencryption_flags(uint32_t *flags)
+{
+	if (opt_reencrypt_init_only)
+		*flags |= CRYPT_REENCRYPT_INITIALIZE_ONLY;
+
+	if (opt_reencrypt_resume_only)
+		*flags |= CRYPT_REENCRYPT_RESUME_ONLY;
 }
 
 static int _set_keyslot_encryption_params(struct crypt_device *cd)
@@ -2438,23 +2448,26 @@ static int action_reencrypt_load(struct crypt_device *cd)
 	struct crypt_params_reencrypt params = {
 		.resilience = opt_resilience_mode,
 		.hash = opt_resilience_hash,
-		.max_hotzone_size = opt_hotzone_size
+		.max_hotzone_size = opt_hotzone_size,
+		.flags = CRYPT_REENCRYPT_RESUME_ONLY
 	};
-
-	if (!opt_active_name) {
-		r = _get_device_active_name(cd, action_argv[0], dm_name, sizeof(dm_name));
-		if (r > 0)
-			active_name = dm_name;
-		if (r < 0)
-			return -EINVAL;
-	} else
-		active_name = opt_active_name;
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			opt_timeout, _verify_passphrase(0), 0, cd);
 	if (r < 0)
 		return r;
+
+	if (!opt_active_name) {
+		r = _get_device_active_name(cd, action_argv[0], dm_name, sizeof(dm_name));
+		if (r > 0)
+			active_name = dm_name;
+		if (r < 0) {
+			crypt_safe_free(password);
+			return -EINVAL;
+		}
+	} else
+		active_name = opt_active_name;
 
 	r = crypt_reencrypt_init_by_passphrase(cd, active_name, password, passwordLen, opt_key_slot, opt_key_slot, NULL, NULL, &params);
 
@@ -2482,6 +2495,8 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		.luks2 = &luks2_params,
 		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
 	};
+
+	_set_reencryption_flags(&params.flags);
 
 	type = luksType(opt_type);
 	if (!type)
@@ -2639,9 +2654,10 @@ static int action_decrypt_luks2(struct crypt_device *cd)
 		.hash = opt_resilience_hash,
 		.data_shift = imaxabs(opt_data_shift) / SECTOR_SIZE,
 		.max_hotzone_size = opt_hotzone_size,
-		.flags = opt_reencrypt_init_only ? CRYPT_REENCRYPT_INITIALIZE_ONLY : 0
 	};
 	size_t passwordLen;
+
+	_set_reencryption_flags(&params.flags);
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			opt_keyfile_offset, opt_keyfile_size, opt_key_file,
@@ -2683,8 +2699,9 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 		.data_shift = imaxabs(opt_data_shift) / SECTOR_SIZE,
 		.max_hotzone_size = opt_hotzone_size,
 		.luks2 = &luks2_params,
-		.flags = opt_reencrypt_init_only ? CRYPT_REENCRYPT_INITIALIZE_ONLY : 0
 	};
+
+	_set_reencryption_flags(&params.flags);
 
 	if (!opt_cipher) {
 		strncpy(cipher, crypt_get_cipher(cd), MAX_CIPHER_LEN - 1);
@@ -2730,16 +2747,16 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 	} else
 		keyslot_new = keyslot_old;
 
-	if (!opt_active_name) {
+	if (!opt_active_name && !opt_reencrypt_init_only) {
 		r = _get_device_active_name(cd, action_argv[0], dm_name, sizeof(dm_name));
 		if (r > 0)
 			active_name = dm_name;
 		if (r < 0)
 			goto err;
-	} else
+	} else if (opt_active_name)
 		active_name = opt_active_name;
 
-	if (!active_name)
+	if (!active_name && !opt_reencrypt_init_only)
 		log_dbg("Device %s seems unused. Proceeding with offline operation.", action_argv[0]);
 
 	r = crypt_reencrypt_init_by_passphrase(cd, active_name, password, passwordLen, keyslot_old, keyslot_new, cipher, mode, &params);
@@ -2764,7 +2781,7 @@ static int action_reencrypt(void)
 		return -EINVAL;
 	}
 
-	if (!opt_encrypt) {
+	if (!opt_encrypt || opt_reencrypt_resume_only) {
 		if (opt_active_name) {
 			if ((r = crypt_init_by_name_and_header(&cd, opt_active_name, opt_header_device)))
 				return r;
@@ -2811,9 +2828,12 @@ static int action_reencrypt(void)
 			log_err(_("LUKS2 reencryption already initialized. Aborting operation."));
 		else
 			r = action_reencrypt_load(cd);
+	} else if (!r && opt_reencrypt_resume_only) {
+		log_err(_("LUKS2 device is not in reencryption."));
+		r = -EINVAL;
 	} else if (opt_decrypt)
 		r = action_decrypt_luks2(cd);
-	else if (opt_encrypt)
+	else if (opt_encrypt && !opt_reencrypt_resume_only)
 		r = action_encrypt_luks2(&cd);
 	else
 		r = action_reencrypt_luks2(cd);
@@ -3048,6 +3068,7 @@ int main(int argc, const char **argv)
 		{ "encrypt",           '\0', POPT_ARG_NONE, &opt_encrypt,               0, N_("Encrypt LUKS2 device (in-place encryption)."), NULL },
 		{ "decrypt",	       '\0', POPT_ARG_NONE, &opt_decrypt,		0, N_("Decrypt LUKS2 device (remove encryption)."), NULL },
 		{ "init-only",         '\0', POPT_ARG_NONE, &opt_reencrypt_init_only,	0, N_("Initialize LUKS2 reencryption in metadata only."), NULL },
+		{ "resume-only",       '\0', POPT_ARG_NONE, &opt_reencrypt_resume_only,	0, N_("Resume initialized LUKS2 reencryption only."), NULL },
 		{ "reduce-device-size",'\0', POPT_ARG_STRING, &opt_reduce_size_str,     0, N_("Reduce data device size (move data offset). DANGEROUS!"), N_("bytes") },
 		{ "hotzone-size",      '\0', POPT_ARG_STRING, &opt_hotzone_size_str,    0, N_("Maximal reencryption hotzone size."), N_("bytes") },
 		{ "resilience",	       '\0', POPT_ARG_STRING, &opt_resilience_mode,     0, N_("Reencryption hotzone resilience type (checksum,journal,none)"), NULL },
