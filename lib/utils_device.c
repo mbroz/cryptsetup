@@ -323,10 +323,18 @@ int device_open_excl(struct crypt_device *cd, struct device *device, int flags)
 			log_dbg(cd, "%s is not a block device. Can't open in exclusive mode.",
 				path);
 		else {
+			/* open(2) with O_EXCL (w/o O_CREAT) on regular file is undefined behaviour according to man page */
+			/* coverity[toctou] */
 			device->dev_fd_excl = open(path, O_RDONLY | O_EXCL);
 			if (device->dev_fd_excl < 0)
 				return errno == EBUSY ? -EBUSY : device->dev_fd_excl;
-			log_dbg(cd, "Device %s is blocked for exclusive open.", path);
+			if (fstat(device->dev_fd_excl, &st) || !S_ISBLK(st.st_mode)) {
+				log_dbg(cd, "%s is not a block device. Can't open in exclusive mode.",
+					path);
+				close(device->dev_fd_excl);
+				device->dev_fd_excl = -1;
+			} else
+				log_dbg(cd, "Device %s is blocked for exclusive open.", path);
 		}
 	}
 
