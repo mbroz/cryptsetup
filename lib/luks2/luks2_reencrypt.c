@@ -312,9 +312,9 @@ static json_object *_reenc_segments_forward_after(struct crypt_device *cd,
 	uint64_t data_offset)
 {
 	int reenc_seg;
-	json_object *jobj_new_seg_after, *jobj_old_seg,
+	json_object *jobj_new_seg_after, *jobj_old_seg, *jobj_old_seg_copy = NULL,
 		    *jobj_segs_after = json_object_new_object();
-	uint64_t tmp = rh->offset + rh->length;
+	uint64_t fixed_length = rh->offset + rh->length;
 
 	if (!rh->jobj_segs_pre || !jobj_segs_after)
 		goto err;
@@ -329,14 +329,24 @@ static json_object *_reenc_segments_forward_after(struct crypt_device *cd,
 	 * if there's no old segment after reencryption, we're done.
 	 * Set size to 'dynamic' again.
 	 */
-	jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, 0, 0, jobj_old_seg ? &tmp : NULL);
+	jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, 0, 0, jobj_old_seg ? &fixed_length : NULL);
 	if (!jobj_new_seg_after)
 		goto err;
 	JSON_DBG(cd, jobj_new_seg_after, "jobj_new_seg_after:");
 	json_object_object_add_by_uint(jobj_segs_after, 0, jobj_new_seg_after);
 
-	if (jobj_old_seg)
-		json_object_object_add_by_uint(jobj_segs_after, 1, json_object_get(jobj_old_seg));
+	if (jobj_old_seg) {
+		if (rh->fixed_length) {
+			if (json_object_copy(jobj_old_seg, &jobj_old_seg_copy))
+				goto err;
+			jobj_old_seg = jobj_old_seg_copy;
+			fixed_length = rh->device_size - fixed_length;
+			json_object_object_add(jobj_old_seg, "size", json_object_new_uint64(fixed_length));
+			JSON_DBG(cd, jobj_old_seg, "fixed size jobj_old_seg:");
+		} else
+			json_object_get(jobj_old_seg);
+		json_object_object_add_by_uint(jobj_segs_after, 1, jobj_old_seg);
+	}
 
 	return jobj_segs_after;
 err:
@@ -350,6 +360,8 @@ static json_object *_reenc_segments_backward_after(struct crypt_device *cd,
 	uint64_t data_offset)
 {
 	int reenc_seg;
+	uint64_t fixed_length;
+
 	json_object *jobj_new_seg_after, *jobj_old_seg,
 		    *jobj_segs_after = json_object_new_object();
 
@@ -363,7 +375,11 @@ static json_object *_reenc_segments_backward_after(struct crypt_device *cd,
 	jobj_old_seg = json_segments_get_segment(rh->jobj_segs_pre, reenc_seg - 1);
 	if (jobj_old_seg)
 		json_object_object_add_by_uint(jobj_segs_after, reenc_seg - 1, json_object_get(jobj_old_seg));
-	jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset, rh->offset, NULL);
+	if (rh->fixed_length) {
+		fixed_length = rh->device_size - data_offset - rh->offset + rh->data_shift;
+		jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset, rh->offset, &fixed_length);
+	} else
+		jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset, rh->offset, NULL);
 	if (!jobj_new_seg_after)
 		goto err;
 	JSON_DBG(cd, jobj_new_seg_after, "jobj_new_seg_after:");
@@ -431,8 +447,8 @@ static json_object *_reenc_segments_forward_pre(struct crypt_device *cd,
 		uint64_t data_offset)
 {
 	json_object *jobj_segs_pre, *jobj_reenc_seg, *jobj_old_seg, *jobj_new_seg;
+	uint64_t fixed_length, tmp = rh->offset + rh->length;
 	unsigned int sg = 0;
-	uint64_t tmp = rh->offset + rh->length;
 
 	jobj_segs_pre = json_object_new_object();
 	if (!jobj_segs_pre)
@@ -455,7 +471,8 @@ static json_object *_reenc_segments_forward_pre(struct crypt_device *cd,
 	json_object_object_add_by_uint(jobj_segs_pre, sg++, jobj_reenc_seg);
 
 	if (tmp < device_size) {
-		jobj_old_seg = LUKS2_create_segment_old(cd, hdr, rh, data_offset + rh->data_shift, rh->offset + rh->length, NULL);
+		fixed_length = device_size - tmp;
+		jobj_old_seg = LUKS2_create_segment_old(cd, hdr, rh, data_offset + rh->data_shift, rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
 		if (!jobj_old_seg)
 			goto err;
 		JSON_DBG(cd, jobj_old_seg, "jobj_old_seg:");
@@ -477,7 +494,7 @@ static json_object *_reenc_segments_backward_pre(struct crypt_device *cd,
 	json_object *jobj_reenc_seg, *jobj_new_seg, *jobj_old_seg = NULL,
 		    *jobj_segs_pre = json_object_new_object();
 	int sg = 0;
-	uint64_t tmp = rh->offset + rh->length;
+	uint64_t fixed_length, tmp = rh->offset + rh->length;
 
 	if (!jobj_segs_pre)
 		return NULL;
@@ -500,7 +517,8 @@ static json_object *_reenc_segments_backward_pre(struct crypt_device *cd,
 	json_object_object_add_by_uint(jobj_segs_pre, sg++, jobj_reenc_seg);
 
 	if (tmp < device_size) {
-		jobj_new_seg = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset + rh->length, rh->offset + rh->length, NULL);
+		fixed_length = device_size - tmp;
+		jobj_new_seg = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset + rh->length, rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
 		if (!jobj_new_seg)
 			goto err;
 		JSON_DBG(cd, jobj_new_seg, "jobj_new_seg:");
@@ -605,7 +623,7 @@ const char *LUKS2_reencrypt_mode(struct luks2_hdr *hdr)
 	return json_object_get_string(jobj_mode);
 }
 
-static int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di)
+int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di)
 {
 	const char *value;
 	json_object *jobj_keyslot, *jobj_mode;
@@ -740,8 +758,6 @@ static int _offset_backward_moved(struct luks2_hdr *hdr, json_object *jobj_segme
 
 	/* all active linear segments length */
 	if (linear_length) {
-		log_dbg(NULL, "linear length: %" PRIu64, linear_length);
-		/* this must not happen. first linear segment is exaclty data offset long */
 		if (linear_length < data_shift)
 			return -EINVAL;
 		tmp = linear_length - data_shift;
@@ -920,6 +936,13 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 		return -EINVAL;
 	}
 
+	if (params->device_size) {
+		log_dbg(cd, "Switching reencryption to fixed size mode.");
+		device_size = params->device_size;
+		rh->fixed_length = true;
+	} else
+		rh->fixed_length = false;
+
 	rh->length = LUKS2_get_reencrypt_length(hdr, rh, area_length, params->max_hotzone_size);
 	if (LUKS2_get_reencrypt_offset(hdr, rh->direction, device_size, &rh->length, &rh->offset)) {
 		log_err(cd, _("Failed to get reencryption offset."));
@@ -978,17 +1001,17 @@ static int _LUKS2_reenc_load(struct crypt_device *cd,
 	int r;
 	const struct crypt_params_reencrypt hdr_reenc_params = {
 		.resilience = LUKS2_reencrypt_protection_type(hdr),
-		.hash = LUKS2_reencrypt_protection_hash(hdr)
+		.hash = LUKS2_reencrypt_protection_hash(hdr),
+		.device_size = params ? params->device_size : 0
 	};
 	struct luks2_reenc_context *tmp = calloc(1, sizeof (*tmp));
 
 	if (!tmp)
 		return -ENOMEM;
 
-	if (!hdr_reenc_params.resilience) {
-		r = -EINVAL;
+	r = -EINVAL;
+	if (!hdr_reenc_params.resilience)
 		goto err;
-	}
 
 	/* skip context update if data shift is detected in header */
 	if (!strcmp(hdr_reenc_params.resilience, "datashift"))
@@ -996,7 +1019,7 @@ static int _LUKS2_reenc_load(struct crypt_device *cd,
 
 	log_dbg(cd, "Initializing reencryption context (%s).", params ? "update" : "load");
 
-	if (!params)
+	if (!params || !params->resilience)
 		params = &hdr_reenc_params;
 
 	r = _reenc_load(cd, hdr, tmp, device_size, params);
@@ -1065,9 +1088,18 @@ static int _load_segments_crashed(struct crypt_device *cd,
 static int LUKS2_reenc_load_crashed(struct crypt_device *cd,
 	struct luks2_hdr *hdr, uint64_t device_size, struct luks2_reenc_context **rh)
 {
+	bool dynamic;
+	uint64_t minimal_size;
 	int r, reenc_seg;
+	struct crypt_params_reencrypt params = {};
 
-	r = _LUKS2_reenc_load(cd, hdr, device_size, rh, NULL);
+	if (LUKS2_get_data_size(hdr, &minimal_size, &dynamic))
+		return -EINVAL;
+
+	if (!dynamic)
+		params.device_size = minimal_size;
+
+	r = _LUKS2_reenc_load(cd, hdr, device_size, rh, &params);
 
 	if (!r) {
 		reenc_seg = json_segments_segment_in_reencrypt(LUKS2_get_segments_jobj(hdr));
@@ -1775,7 +1807,6 @@ out:
 static int reenc_replace_device(struct crypt_device *cd, const char *target, const char *source, uint32_t flags)
 {
 	int r, exists = 1;
-	uint64_t size = 0;
 	struct crypt_dm_active_device dmd_source, dmd_target = {};
 	uint32_t dmflags = DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH;
 
@@ -1796,23 +1827,19 @@ static int reenc_replace_device(struct crypt_device *cd, const char *target, con
 	if (r < 0)
 		return r;
 
+	if (exists && ((r = dm_query_device(cd, target, 0, &dmd_target)) < 0))
+		goto err;
+
 	dmd_source.flags |= flags;
 	dmd_source.uuid = crypt_get_uuid(cd);
 
-	r = device_block_adjust(cd, crypt_data_device(cd), DEV_OK,
-				crypt_get_data_offset(cd), &size, &dmd_source.flags);
-
-	if (r)
-		goto err;
-
-	if (exists && size != dmd_source.size) {
-		log_err(cd, _("Source and target device sizes don't match. Source %" PRIu64 ", target: %" PRIu64 "."),
-			dmd_source.size, size);
-		r = -EINVAL;
-		goto err;
-	}
-
 	if (exists) {
+		if (dmd_target.size != dmd_source.size) {
+			log_err(cd, _("Source and target device sizes don't match. Source %" PRIu64 ", target: %" PRIu64 "."),
+				dmd_source.size, dmd_target.size);
+			r = -EINVAL;
+			goto err;
+		}
 		r = dm_reload_device(cd, target, &dmd_source, 0, 0);
 		if (!r) {
 			log_dbg(cd, "Resuming device %s", target);
@@ -1874,14 +1901,15 @@ out:
 	return r;
 }
 
-static int reenc_activate_hotzone_device(struct crypt_device *cd, const char *name, uint32_t flags)
+static int reenc_activate_hotzone_device(struct crypt_device *cd, const char *name, uint64_t device_size, uint32_t flags)
 {
 	int r;
 	uint64_t new_offset = LUKS2_reencrypt_get_data_offset_new(crypt_get_hdr(cd, CRYPT_LUKS2)) >> SECTOR_SHIFT;
 
 	struct crypt_dm_active_device dmd = {
 		.flags = flags,
-		.uuid = crypt_get_uuid(cd)
+		.uuid = crypt_get_uuid(cd),
+		.size = device_size >> SECTOR_SHIFT
 	};
 
 	log_dbg(cd, "Activating hotzone device %s.", name);
@@ -1904,16 +1932,14 @@ err:
 
 /* pass reenc context instead? */
 static int reenc_init_helper_devices(struct crypt_device *cd,
-				     const char *name,
-				     const char *hotzone,
-				     const char *overlay)
+		                     const struct luks2_reenc_context *rh)
 {
 	int r;
 
 	/* Activate hotzone device 1:1 linear mapping to data_device */
-	r = reenc_activate_hotzone_device(cd, hotzone, CRYPT_ACTIVATE_PRIVATE);
+	r = reenc_activate_hotzone_device(cd, rh->hotzone_name, rh->device_size, CRYPT_ACTIVATE_PRIVATE);
 	if (r) {
-		log_err(cd, _("Failed to activate hotzone device %s."), hotzone);
+		log_err(cd, _("Failed to activate hotzone device %s."), rh->hotzone_name);
 		return r;
 	}
 
@@ -1928,16 +1954,16 @@ static int reenc_init_helper_devices(struct crypt_device *cd,
 	 *
 	 * TODO: in crypt_activate_by*
 	 */
-	r = reenc_replace_device(cd, overlay, name, CRYPT_ACTIVATE_PRIVATE);
+	r = reenc_replace_device(cd, rh->overlay_name, rh->device_name, CRYPT_ACTIVATE_PRIVATE);
 	if (r) {
-		log_err(cd, _("Failed to activate overlay device %s with actual origin table."), overlay);
+		log_err(cd, _("Failed to activate overlay device %s with actual origin table."), rh->overlay_name);
 		goto err;
 	}
 
 	/* swap origin mapping to overlay device */
-	r = reenc_swap_backing_device(cd, name, overlay, CRYPT_ACTIVATE_KEYRING_KEY);
+	r = reenc_swap_backing_device(cd, rh->device_name, rh->overlay_name, CRYPT_ACTIVATE_KEYRING_KEY);
 	if (r) {
-		log_err(cd, _("Failed to load new maping for device %s."), name);
+		log_err(cd, _("Failed to load new maping for device %s."), rh->device_name);
 		goto err;
 	}
 
@@ -1949,8 +1975,8 @@ static int reenc_init_helper_devices(struct crypt_device *cd,
 	return 0;
 err:
 	/* TODO: force error helper devices on error path */
-	dm_remove_device(cd, overlay, 0);
-	dm_remove_device(cd, hotzone, 0);
+	dm_remove_device(cd, rh->overlay_name, 0);
+	dm_remove_device(cd, rh->hotzone_name, 0);
 
 	return r;
 }
@@ -2138,7 +2164,7 @@ static int _create_backup_segments(struct crypt_device *cd,
 	if (digest_old >= 0)
 		json_object_copy(LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT), &jobj_segment_old);
 	else if (!strcmp(params->mode, "encrypt")) {
-		r = LUKS2_get_data_size(hdr, &tmp);
+		r = LUKS2_get_data_size(hdr, &tmp, NULL);
 		if (r)
 			goto err;
 		jobj_segment_old = json_segment_create_linear(0, tmp ? &tmp : NULL, 0);
@@ -2599,11 +2625,19 @@ static int _reencrypt_load(struct crypt_device *cd,
 		struct volume_key **vks,
 		const struct crypt_params_reencrypt *params)
 {
-	int r;
+	int r, old_ss, new_ss;
 	struct luks2_hdr *hdr;
 	struct crypt_lock_handle *reencrypt_lock;
 	struct luks2_reenc_context *rh;
-	uint64_t device_size;
+	struct crypt_dm_active_device dmd;
+	uint64_t minimal_size, device_size, mapping_size = 0, required_size = 0;
+	bool dynamic;
+	struct crypt_params_reencrypt rparams = {};
+
+	if (params) {
+		rparams = *params;
+		required_size = params->device_size;
+	}
 
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
 
@@ -2622,13 +2656,60 @@ static int _reencrypt_load(struct crypt_device *cd,
 
 	/* From now on we hold reencryption lock */
 
+	if (LUKS2_get_data_size(hdr, &minimal_size, &dynamic))
+		return -EINVAL;
+
 	/* some configurations provides fixed device size */
-	if ((r = luks2_check_device_size(cd, hdr, &device_size, false))) {
+	if ((r = luks2_check_device_size(cd, hdr, minimal_size >> SECTOR_SHIFT, &device_size, false))) {
 		r = -EINVAL;
 		goto err;
 	}
 
-	r = LUKS2_reenc_load(cd, hdr, device_size, params, &rh);
+	old_ss = LUKS2_reencrypt_get_sector_size_old(hdr);
+	new_ss = LUKS2_reencrypt_get_sector_size_new(hdr);
+
+	if (name) {
+		r = dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd);
+		if (r < 0) {
+			log_err(cd, _("Failed to read device info from %s."), name);
+			r = -EINVAL;
+			goto err;
+		}
+		if (crypt_uuid_cmp(dmd.uuid, hdr->uuid)) {
+			log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
+				hdr->uuid, dmd.uuid);
+			r = -EINVAL;
+		}
+		dm_targets_free(cd, &dmd);
+		free(CONST_CAST(void*)dmd.uuid);
+		if (r < 0)
+			goto err;
+		mapping_size = dmd.size << SECTOR_SHIFT;
+	}
+
+	r = -EINVAL;
+	if (required_size && mapping_size && (required_size != mapping_size)) {
+		log_err(cd, _("Active device size and requested reencryption size don't match."));
+		goto err;
+	}
+
+	if (mapping_size)
+		required_size = mapping_size;
+
+	if (required_size) {
+		/* TODO: Add support for chaning fixed minimal size in reencryption mda where possible */
+		if ((minimal_size && (required_size < minimal_size)) ||
+		    (required_size > device_size) ||
+		    (!dynamic && (required_size != minimal_size)) ||
+		    (old_ss > 0 && MISALIGNED(required_size, old_ss)) ||
+		    (new_ss > 0 && MISALIGNED(required_size, new_ss))) {
+			log_err(cd, _("Illegal device size requested in reencryption parameters."));
+			goto err;
+		}
+		rparams.device_size = required_size;
+	}
+
+	r = LUKS2_reenc_load(cd, hdr, device_size, &rparams, &rh);
 	if (r < 0 || !rh)
 		goto err;
 
@@ -2901,7 +2982,7 @@ static int _reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr
 	}
 
 	if (rh->online) {
-		r = LUKS2_reload(cd, rh->device_name, rh->vks, CRYPT_ACTIVATE_KEYRING_KEY | CRYPT_ACTIVATE_SHARED);
+		r = LUKS2_reload(cd, rh->device_name, rh->vks, rh->device_size, CRYPT_ACTIVATE_KEYRING_KEY | CRYPT_ACTIVATE_SHARED);
 		if (r)
 			log_err(cd, _("Failed to reload %s device."), rh->device_name);
 		if (!r) {
@@ -3004,7 +3085,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 	log_dbg(cd, "Resuming LUKS2 reencryption.");
 
 	if (rh->online) {
-		r = reenc_init_helper_devices(cd, rh->device_name, rh->hotzone_name, rh->overlay_name);
+		r = reenc_init_helper_devices(cd, rh);
 		if (r) {
 			log_err(cd, _("Failed to initalize reencryption device stack."));
 			return -EINVAL;
@@ -3076,30 +3157,11 @@ int reenc_erase_backup_segments(struct crypt_device *cd,
 }
 
 /* internal only */
-int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t *device_size, bool activation)
+int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *device_size, bool activation)
 {
 	int r;
-	int64_t data_shift;
-	uint64_t check_size, real_size = 0;
+	uint64_t real_size = 0;
 
-	/*
-	 * Calculate sum of all segments. The last dynamic segment adds one encryption sector to the sum
-	 * If there's only single dynamic segment it returns 0 which later reads data device size (minus offset)
-	 */
-	if (LUKS2_get_data_size(hdr, &check_size))
-		return -EINVAL;
-
-	data_shift = LUKS2_reencrypt_data_shift(hdr);
-	/* initial data device reduction must be extended for spare space for data shift
-	 * layout looks like:
-	 * [LUKS2 hdr (data offset)][segment s with fixed size] [spare space for shift] [moved segment]
-	 */
-	if (LUKS2_get_segment_id_by_flag(hdr, "backup-moved-segment") >= 0)
-		check_size += data_shift;
-
-	check_size >>= SECTOR_SHIFT;
-
-	/* Here we check minimal size */
 	r = device_block_adjust(cd, crypt_data_device(cd), activation ? DEV_EXCL : DEV_OK,
 				crypt_get_data_offset(cd), &check_size, NULL);
 
@@ -3113,5 +3175,5 @@ int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint
 
 	*device_size = real_size << SECTOR_SHIFT;
 
-	return r;
+	return 0;
 }

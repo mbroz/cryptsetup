@@ -1702,11 +1702,17 @@ int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr)
 	return 0;
 }
 
-int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size)
+int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic)
 {
+	crypt_reencrypt_direction_info di;
+	int sector_size;
 	json_object *jobj_segments, *jobj_size;
 	uint64_t tmp = 0;
-	int sector_size;
+
+	/* for reencryption with data shift and moved segment we have to add datashift to minimal required size */
+	if (!LUKS2_reencrypt_direction(hdr, &di) && (di == CRYPT_REENCRYPT_BACKWARD) &&
+	    LUKS2_get_segment_by_flag(hdr, "backup-moved-segment"))
+		tmp += LUKS2_reencrypt_data_shift(hdr);
 
 	if (!size || !json_object_object_get_ex(hdr->jobj, "segments", &jobj_segments))
 		return -EINVAL;
@@ -1724,17 +1730,21 @@ int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size)
 				*size = tmp + (sector_size > 0 ? sector_size : SECTOR_SIZE);
 			else
 				*size = 0;
+			if (dynamic)
+				*dynamic = true;
 			return 0;
 		}
 
 		tmp += json_object_get_uint64(jobj_size);
 	}
 
-	/* impossible, segments with size set to 0 are illegal */
+	/* impossible, real device size must not be zero */
 	if (!tmp)
 		return -EINVAL;
 
 	*size = tmp;
+	if (dynamic)
+		*dynamic = false;
 	return 0;
 }
 
@@ -2024,12 +2034,14 @@ static int _reload_custom_multi(struct crypt_device *cd,
 	const char *name,
 	struct volume_key *vks,
 	json_object *jobj_segments,
+	uint64_t device_size,
 	uint32_t flags)
 {
 	int r, count = json_segments_count(jobj_segments);
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	struct crypt_dm_active_device dmd =  {
 		.uuid   = crypt_get_uuid(cd),
+		.size = device_size >> SECTOR_SHIFT
 	};
 
 	if (count < 0)
@@ -2062,13 +2074,14 @@ static int _reload_custom_multi(struct crypt_device *cd,
 int LUKS2_reload(struct crypt_device *cd,
 	const char *name,
 	struct volume_key *vks,
+	uint64_t device_size,
 	uint32_t flags)
 {
 	if (crypt_get_integrity_tag_size(cd))
 		return -ENOTSUP;
 
 	return _reload_custom_multi(cd, name, vks,
-			LUKS2_get_segments_jobj(crypt_get_hdr(cd, CRYPT_LUKS2)), flags);
+			LUKS2_get_segments_jobj(crypt_get_hdr(cd, CRYPT_LUKS2)), device_size, flags);
 }
 
 int LUKS2_activate_multi(struct crypt_device *cd,

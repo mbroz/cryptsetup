@@ -435,7 +435,7 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 /*
  * compares UUIDs returned by device-mapper (striped by cryptsetup) and uuid in header
  */
-static int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
+int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
 {
 	int i, j;
 	char *str;
@@ -3704,7 +3704,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	uint32_t flags)
 {
 	crypt_reencrypt_info ri;
-	uint64_t device_size;
+	uint64_t check_size, device_size;
 	bool use_keyring, keys_ready = false;
 	struct volume_key *vks = NULL;
 	int r = 0;
@@ -3727,8 +3727,13 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 
 	ri = LUKS2_reenc_status(hdr);
 
-	if (name && (r = luks2_check_device_size(cd, hdr, &device_size, true)))
-		goto err;
+	if (name) {
+		r = -EINVAL;
+		if (LUKS2_get_data_size(hdr, &check_size, NULL))
+			goto err;
+		if (luks2_check_device_size(cd, hdr, check_size >> SECTOR_SHIFT, &device_size, true))
+			goto err;
+	}
 
 	if (name && ri == CRYPT_REENCRYPT_CRASH) {
 		log_dbg(cd, _("Entering reencryption crash recovery."));

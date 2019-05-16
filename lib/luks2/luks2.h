@@ -153,6 +153,7 @@ struct luks2_reenc_context {
 	size_t alignment;
 	uint64_t device_size;
 	bool online;
+	bool fixed_length;
 	crypt_reencrypt_direction_info direction;
 
 	enum { REENCRYPT = 0, ENCRYPT, DECRYPT } type;
@@ -427,6 +428,7 @@ const char *LUKS2_reencrypt_protection_type(struct luks2_hdr *hdr);
 const char *LUKS2_reencrypt_protection_hash(struct luks2_hdr *hdr);
 uint64_t LUKS2_reencrypt_data_shift(struct luks2_hdr *hdr);
 const char *LUKS2_reencrypt_mode(struct luks2_hdr *hdr);
+int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di);
 
 /*
  * Generic LUKS2 digest
@@ -503,6 +505,7 @@ int LUKS2_deactivate(struct crypt_device *cd,
 int LUKS2_reload(struct crypt_device *cd,
 	const char *name,
 	struct volume_key *vks,
+	uint64_t device_size,
 	uint32_t flags);
 
 int LUKS2_keyslot_luks2_format(struct crypt_device *cd,
@@ -533,7 +536,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	struct luks2_hdr *hdr);
 
 uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr);
-int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size);
+int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic);
 int LUKS2_get_sector_size(struct luks2_hdr *hdr);
 const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment);
 const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment);
@@ -618,6 +621,6 @@ int reenc_erase_backup_segments(struct crypt_device *cd, struct luks2_hdr *hdr);
 int crypt_reencrypt_lock(struct crypt_device *cd, const char *uuid, struct crypt_lock_handle **reencrypt_lock);
 void crypt_reencrypt_unlock(struct crypt_device *cd, struct crypt_lock_handle *reencrypt_lock);
 
-int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t *device_size, bool activation);
+int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *device_size, bool activation);
 
 #endif
