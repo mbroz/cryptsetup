@@ -125,6 +125,21 @@ The file with the integrity key.
 .TP
 .B "\-\-integrity\-no\-journal, \-D"
 Disable journal for integrity device.
+.TP
+.B "\-\-integrity\-bitmap\-mode. \-B"
+Use alternate bitmap mode (available since Linux kernel 5.2)  where dm-integrity uses bitmap
+instead of a journal. If a bit in the bitmap is 1, the corresponding region's data and integrity tags
+are not synchronized - if the machine crashes, the unsynchronized regions will be recalculated.
+The bitmap mode is faster than the journal mode, because we don't have to write the data
+twice, but it is also less reliable, because if data corruption happens
+when the machine crashes, it may not be detected.
+.TP
+.B "\-\-bitmap\-sectors\-per\-bit SECTORS"
+Number of 512-byte sectors per bitmap bit, the value must be power of two.
+.TP
+.B "\-\-bitmap\-flush\-time MS"
+Bitmap flush time in milliseconds.
+.TP
 
 \fBWARNING:\fR
 In case of a crash, it is possible that the data and integrity tag doesn't match

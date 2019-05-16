@@ -62,6 +62,7 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_CAPI_STRING_SUPPORTED (1 << 14) /* support for cryptoapi format cipher definition */
 #define DM_DEFERRED_SUPPORTED (1 << 15) /* deferred removal of device */
 #define DM_INTEGRITY_RECALC_SUPPORTED (1 << 16) /* dm-integrity automatic recalculation supported */
+#define DM_INTEGRITY_BITMAP_SUPPORTED (1 << 17) /* dm-integrity bitmap mode supported */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_SET = 1, TARGET_QUERY };

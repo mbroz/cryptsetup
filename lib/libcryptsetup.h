@@ -546,11 +546,15 @@ struct crypt_params_tcrypt {
  *
  * @see crypt_format, crypt_load
  *
+ * @note In bitmap tracking mode, the journal is implicitly disabled.
+ *       As an ugly workaround for compatibility, journal_watermark is overloaded
+ *       to mean 512-bytes sectors-per-bit and journal_commit_time means bitmap flush time.
+ *       All other journal parameters are not applied in the bitmap mode.
  */
 struct crypt_params_integrity {
 	uint64_t journal_size;               /**< size of journal in bytes */
-	unsigned int journal_watermark;      /**< journal flush watermark in percents */
-	unsigned int journal_commit_time;    /**< journal commit time in ms */
+	unsigned int journal_watermark;      /**< journal flush watermark in percents; in bitmap mode sectors-per-bit  */
+	unsigned int journal_commit_time;    /**< journal commit time (or bitmap flush time) in ms */
 	uint32_t interleave_sectors;         /**< number of interleave sectors (power of two) */
 	uint32_t tag_size;                   /**< tag size per-sector in bytes */
 	uint32_t sector_size;                /**< sector size in bytes */
@@ -1059,6 +1063,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_REFRESH	(1 << 18)
 /** Use global lock to serialize memory hard KDF on activation (OOM workaround) */
 #define CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF (1 << 19)
+/** dm-integrity: direct writes, use bitmap to track dirty sectors */
+#define CRYPT_ACTIVATE_NO_JOURNAL_BITMAP (1 << 20)
 
 /**
  * Active device runtime attributes

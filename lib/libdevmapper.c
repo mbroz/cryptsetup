@@ -215,6 +215,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 2, 0, integrity_maj, integrity_min, integrity_patch))
 		_dm_flags |= DM_INTEGRITY_RECALC_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 3, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_BITMAP_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -709,7 +712,7 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 			(tgt->u.integrity.journal_crypt_key ? tgt->u.integrity.journal_crypt_key->keylength * 2 : 0) +
 			(tgt->u.integrity.integrity ? strlen(tgt->u.integrity.integrity) : 0) +
 			(tgt->u.integrity.journal_integrity ? strlen(tgt->u.integrity.journal_integrity) : 0) +
-			(tgt->u.integrity.journal_crypt ? strlen(tgt->u.integrity.journal_crypt) : 0) +	128;
+			(tgt->u.integrity.journal_crypt ? strlen(tgt->u.integrity.journal_crypt) : 0) + 128;
 
 	params = crypt_safe_alloc(max_size);
 	if (!params)
@@ -724,13 +727,17 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	}
 	if (tgt->u.integrity.journal_watermark) {
 		num_options++;
-		snprintf(feature, sizeof(feature), "journal_watermark:%u ",
+		snprintf(feature, sizeof(feature),
+			 /* bitmap oveloaded values */
+			 (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) ? "sectors_per_bit:%u " : "journal_watermark:%u ",
 			 tgt->u.integrity.journal_watermark);
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 	if (tgt->u.integrity.journal_commit_time) {
 		num_options++;
-		snprintf(feature, sizeof(feature), "commit_time:%u ",
+		snprintf(feature, sizeof(feature),
+			 /* bitmap oveloaded values */
+			 (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) ? "bitmap_flush_interval:%u " : "commit_time:%u ",
 			 tgt->u.integrity.journal_commit_time);
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
@@ -824,7 +831,9 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 
-	if (flags & CRYPT_ACTIVATE_RECOVERY)
+	if (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP)
+		mode = 'B';
+	else if (flags & CRYPT_ACTIVATE_RECOVERY)
 		mode = 'R';
 	else if (flags & CRYPT_ACTIVATE_NO_JOURNAL)
 		mode = 'D';
@@ -1528,6 +1537,10 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE) &&
 	    !(dmt_flags & DM_INTEGRITY_RECALC_SUPPORTED))
 		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
+
+	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) &&
+	    !(dmt_flags & DM_INTEGRITY_BITMAP_SUPPORTED))
+		log_err(cd, _("Requested dm-integtity bitmap mode is not supported."));
 out:
 	dm_exit_context();
 	return r;
@@ -2165,12 +2178,16 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 
 	/* journal */
 	c = toupper(*(++params));
-	if (!*params || *(++params) != ' ' || (c != 'D' && c != 'J' && c != 'R'))
+	if (!*params || *(++params) != ' ' || (c != 'D' && c != 'J' && c != 'R' && c != 'B'))
 		goto err;
 	if (c == 'D')
 		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
 	if (c == 'R')
 		*act_flags |= CRYPT_ACTIVATE_RECOVERY;
+	if (c == 'B') {
+		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
+		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL_BITMAP;
+	}
 
 	tgt->u.integrity.sector_size = SECTOR_SIZE;
 
@@ -2192,7 +2209,15 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 				tgt->u.integrity.journal_size = val * SECTOR_SIZE;
 			else if (sscanf(arg, "journal_watermark:%u", &val) == 1)
 				tgt->u.integrity.journal_watermark = val;
-			else if (sscanf(arg, "commit_time:%u", &val) == 1)
+			else if (sscanf(arg, "sectors_per_bit:%" PRIu64, &val64) == 1) {
+				if (val64 > UINT_MAX)
+					goto err;
+				/* overrloaded value for bitmap mode */
+				tgt->u.integrity.journal_watermark = (unsigned int)val64;
+			} else if (sscanf(arg, "commit_time:%u", &val) == 1)
+				tgt->u.integrity.journal_commit_time = val;
+			else if (sscanf(arg, "bitmap_flush_interval:%u", &val) == 1)
+				/* overrloaded value for bitmap mode */
 				tgt->u.integrity.journal_commit_time = val;
 			else if (sscanf(arg, "interleave_sectors:%u", &val) == 1)
 				tgt->u.integrity.interleave_sectors = val;

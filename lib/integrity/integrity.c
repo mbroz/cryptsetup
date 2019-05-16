@@ -41,7 +41,8 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
 	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic)) ||
-	    (sb->version != SB_VERSION_1 && sb->version != SB_VERSION_2)) {
+	    (sb->version != SB_VERSION_1 && sb->version != SB_VERSION_2 &&
+	     sb->version != SB_VERSION_3)) {
 		log_std(cd, "No integrity superblock detected on %s.\n",
 			device_path(device));
 		r = -EINVAL;
@@ -90,9 +91,11 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 	log_std(cd, "sector_size %u\n", SECTOR_SIZE << sb.log2_sectors_per_block);
 	if (sb.version == SB_VERSION_2 && (sb.flags & SB_FLAG_RECALCULATING))
 		log_std(cd, "recalc_sector %" PRIu64 "\n", sb.recalc_sector);
-	log_std(cd, "flags %s%s\n",
+	log_std(cd, "log2_blocks_per_bitmap %u\n", sb.log2_blocks_per_bitmap_bit);
+	log_std(cd, "flags %s%s%s\n",
 		sb.flags & SB_FLAG_HAVE_JOURNAL_MAC ? "have_journal_mac " : "",
-		sb.flags & SB_FLAG_RECALCULATING ? "recalculating " : "");
+		sb.flags & SB_FLAG_RECALCULATING ? "recalculating " : "",
+		sb.flags & SB_FLAG_DIRTY_BITMAP ? "dirty_bitmap " : "");
 
 	return 0;
 }

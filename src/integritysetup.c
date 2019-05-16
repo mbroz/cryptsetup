@@ -32,7 +32,9 @@ static const char *opt_journal_size_str = NULL;
 static uint64_t opt_journal_size = 0;
 static int opt_interleave_sectors = 0;
 static int opt_journal_watermark = 0;
+static int opt_bitmap_sectors_per_bit = 0;
 static int opt_journal_commit_time = 0;
+static int opt_bitmap_flush_time = 0;
 static int opt_tag_size = 0;
 static int opt_sector_size = 0;
 static int opt_buffer_sectors = 0;
@@ -55,6 +57,7 @@ static int opt_journal_crypt_key_size = 0;
 
 static int opt_integrity_nojournal = 0;
 static int opt_integrity_recovery = 0;
+static int opt_integrity_bitmap = 0;
 
 static int opt_integrity_recalculate = 0;
 
@@ -175,8 +178,9 @@ static int action_format(int arg)
 	struct crypt_params_integrity params = {
 		.journal_size = opt_journal_size,
 		.interleave_sectors = opt_interleave_sectors,
-		.journal_watermark = opt_journal_watermark,
-		.journal_commit_time = opt_journal_commit_time,
+		/* in bitmap mode we have to overload these values... */
+		.journal_watermark = opt_integrity_bitmap ? opt_bitmap_sectors_per_bit : opt_journal_watermark,
+		.journal_commit_time = opt_integrity_bitmap ? opt_bitmap_flush_time : opt_journal_commit_time,
 		.buffer_sectors = opt_buffer_sectors,
 		.tag_size = opt_tag_size,
 		.sector_size = opt_sector_size ?: SECTOR_SIZE,
@@ -261,8 +265,9 @@ static int action_open(int arg)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_integrity params = {
-		.journal_watermark = opt_journal_watermark,
-		.journal_commit_time = opt_journal_commit_time,
+		/* in bitmap mode we have to overload these values... */
+		.journal_watermark = opt_integrity_bitmap ? opt_bitmap_sectors_per_bit : opt_journal_watermark,
+		.journal_commit_time = opt_integrity_bitmap ? opt_bitmap_flush_time : opt_journal_commit_time,
 		.buffer_sectors = opt_buffer_sectors,
 	};
 	uint32_t activate_flags = 0;
@@ -298,10 +303,12 @@ static int action_open(int arg)
 		params.journal_crypt = journal_crypt;
 	}
 
-	if (opt_integrity_nojournal)
+	if (opt_integrity_nojournal || opt_integrity_bitmap)
 		activate_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
 	if (opt_integrity_recovery)
 		activate_flags |= CRYPT_ACTIVATE_RECOVERY;
+	if (opt_integrity_bitmap)
+		activate_flags |= CRYPT_ACTIVATE_NO_JOURNAL_BITMAP;
 
 	if (opt_integrity_recalculate)
 		activate_flags |= CRYPT_ACTIVATE_RECALCULATE;
@@ -415,7 +422,10 @@ static int action_status(int arg)
 			cad.flags & CRYPT_ACTIVATE_RECOVERY ? " recovery" : "");
 		log_std("  failures: %" PRIu64 "\n",
 			crypt_get_active_integrity_failures(cd, action_argv[0]));
-		if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL) {
+		if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) {
+			log_std("  bitmap 512-byte sectors per bit: %u\n", ip.journal_watermark);
+			log_std("  bitmap flush interval: %u ms\n", ip.journal_commit_time);
+		} if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL) {
 			log_std("  journal: not active\n");
 		} else {
 			log_std("  journal size: %" PRIu64 " bytes\n", ip.journal_size);
@@ -531,6 +541,8 @@ int main(int argc, const char **argv)
 		{ "interleave-sectors", '\0', POPT_ARG_INT,  &opt_interleave_sectors, 0, N_("Interleave sectors"), N_("SECTORS") },
 		{ "journal-watermark",  '\0', POPT_ARG_INT,  &opt_journal_watermark,  0, N_("Journal watermark"),N_("percent") },
 		{ "journal-commit-time",'\0', POPT_ARG_INT,  &opt_journal_commit_time,0, N_("Journal commit time"), N_("ms") },
+		{ "bitmap-sectors-per-bit",'\0', POPT_ARG_INT,&opt_bitmap_sectors_per_bit, 0, N_("Number of 512-byte sectors per bit (bitmap mode)."), NULL },
+		{ "bitmap-flush-time",  '\0', POPT_ARG_INT,  &opt_bitmap_flush_time,  0, N_("Bitmap mode flush time"), N_("ms") },
 		{ "tag-size",            't', POPT_ARG_INT,  &opt_tag_size,           0, N_("Tag size (per-sector)"), N_("bytes") },
 		{ "sector-size",         's', POPT_ARG_INT,  &opt_sector_size,        0, N_("Sector size"), N_("bytes") },
 		{ "buffer-sectors",     '\0', POPT_ARG_INT,  &opt_buffer_sectors,     0, N_("Buffers size"), N_("SECTORS") },
@@ -549,6 +561,7 @@ int main(int argc, const char **argv)
 
 		{ "integrity-no-journal",       'D', POPT_ARG_NONE,  &opt_integrity_nojournal, 0, N_("Disable journal for integrity device"), NULL },
 		{ "integrity-recovery-mode",    'R', POPT_ARG_NONE,  &opt_integrity_recovery,  0, N_("Recovery mode (no journal, no tag checking)"), NULL },
+		{ "integrity-bitmap-mode",      'B', POPT_ARG_NONE,  &opt_integrity_bitmap, 0, N_("Use bitmap to track changes and disable journal for integrity device"), NULL },
 		{ "integrity-recalculate",     '\0', POPT_ARG_NONE,  &opt_integrity_recalculate,  0, N_("Recalculate initial tags automatically."), NULL },
 		POPT_TABLEEND
 	};
@@ -635,7 +648,7 @@ int main(int argc, const char **argv)
 	    opt_journal_commit_time < 0 || opt_tag_size < 0 ||
 	    opt_sector_size < 0 || opt_buffer_sectors < 0 ||
 	    opt_integrity_key_size < 0 || opt_journal_integrity_key_size < 0 ||
-	    opt_journal_crypt_key_size < 0)
+	    opt_journal_crypt_key_size < 0 || opt_bitmap_flush_time < 0 || opt_bitmap_sectors_per_bit < 0)
                 usage(popt_context, EXIT_FAILURE,
                       _("Negative number for option not permitted."),
                       poptGetInvocationName(popt_context));
@@ -674,6 +687,18 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 	if (!opt_journal_crypt && opt_journal_crypt_key_file)
 		usage(popt_context, EXIT_FAILURE, _("Journal encryption algorithm must be specified if journal encryption key is used."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_integrity_recovery && opt_integrity_bitmap)
+		usage(popt_context, EXIT_FAILURE, _("Recovery and bitmap mode options are mutually exclusive."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_integrity_bitmap && (opt_journal_integrity_key_file || opt_journal_crypt || opt_journal_watermark || opt_journal_commit_time))
+		usage(popt_context, EXIT_FAILURE, _("Journal options cannot be used in bitmap mode."),
+		      poptGetInvocationName(popt_context));
+
+	if (!opt_integrity_bitmap && (opt_bitmap_flush_time || opt_bitmap_sectors_per_bit))
+		usage(popt_context, EXIT_FAILURE, _("Bitmap options can be used only in bitmap mode."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
