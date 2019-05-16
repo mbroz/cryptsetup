@@ -834,7 +834,7 @@ static uint64_t LUKS2_get_reencrypt_length(struct luks2_hdr *hdr, struct luks2_r
 	uint64_t length;
 
 	if (rh->rp.type == REENC_PROTECTION_NOOP)
-		length = length_max;
+		length = length_max ?: LUKS2_DEFAULT_NONE_REENCRYPTION_LENGTH;
 	else if (rh->rp.type == REENC_PROTECTION_CHECKSUM)
 		length = (keyslot_area_length / rh->rp.p.csum.hash_size) * rh->alignment;
 	else if (rh->rp.type == REENC_PROTECTION_DATASHIFT)
@@ -914,8 +914,6 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 			return -ENOMEM;
 	} else if (!strcmp(params->resilience, "none")) {
 		log_dbg(cd, "Initializaing reencryption context with none resilience.");
-		if (!params->max_hotzone_size)
-			return -EINVAL;
 		rh->rp.type = REENC_PROTECTION_NOOP;
 	} else {
 		log_err(cd, _("Unsupported resilience mode %s"), params->resilience);
@@ -980,8 +978,7 @@ static int _LUKS2_reenc_load(struct crypt_device *cd,
 	int r;
 	const struct crypt_params_reencrypt hdr_reenc_params = {
 		.resilience = LUKS2_reencrypt_protection_type(hdr),
-		.hash = LUKS2_reencrypt_protection_hash(hdr),
-		.max_hotzone_size = LUKS2_DEFAULT_REENCRYPTION_LENGTH
+		.hash = LUKS2_reencrypt_protection_hash(hdr)
 	};
 	struct luks2_reenc_context *tmp = calloc(1, sizeof (*tmp));
 
