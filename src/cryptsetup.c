@@ -110,6 +110,9 @@ static uint64_t opt_reduce_size = 0;
 static const char *opt_hotzone_size_str = NULL;
 static uint64_t opt_hotzone_size = 0;
 
+static const char *opt_device_size_str = NULL;
+static uint64_t opt_device_size = 0;
+
 /* do not set from command line, use helpers above */
 static int64_t opt_data_shift;
 
@@ -2449,6 +2452,7 @@ static int action_reencrypt_load(struct crypt_device *cd)
 		.resilience = opt_resilience_mode,
 		.hash = opt_resilience_hash,
 		.max_hotzone_size = opt_hotzone_size,
+		.device_size = opt_device_size,
 		.flags = CRYPT_REENCRYPT_RESUME_ONLY
 	};
 
@@ -2492,6 +2496,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		.resilience = opt_resilience_mode,
 		.hash = opt_resilience_hash,
 		.max_hotzone_size = opt_hotzone_size,
+		.device_size = opt_device_size,
 		.luks2 = &luks2_params,
 		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
 	};
@@ -2653,6 +2658,7 @@ static int action_decrypt_luks2(struct crypt_device *cd)
 		.resilience = opt_data_shift ? "datashift" : opt_resilience_mode,
 		.hash = opt_resilience_hash,
 		.data_shift = imaxabs(opt_data_shift) / SECTOR_SIZE,
+		.device_size = opt_device_size,
 		.max_hotzone_size = opt_hotzone_size,
 	};
 	size_t passwordLen;
@@ -2698,6 +2704,7 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 		.hash = opt_resilience_hash,
 		.data_shift = imaxabs(opt_data_shift) / SECTOR_SIZE,
 		.max_hotzone_size = opt_hotzone_size,
+		.device_size = opt_device_size,
 		.luks2 = &luks2_params,
 	};
 
@@ -3012,6 +3019,7 @@ int main(int argc, const char **argv)
 		{ "new-keyfile-offset",'\0', POPT_ARG_STRING, &popt_tmp,                5, N_("Number of bytes to skip in newly added keyfile"), N_("bytes") },
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Slot number for new key (default is first free)"), NULL },
 		{ "size",              'b',  POPT_ARG_STRING, &popt_tmp,                1, N_("The size of the device"), N_("SECTORS") },
+		{ "device-size",      '\0',  POPT_ARG_STRING, &opt_device_size_str,     0, N_("Use only specified device size (ignore rest of device). DANGEROUS!"), N_("bytes") },
 		{ "offset",            'o',  POPT_ARG_STRING, &popt_tmp,                2, N_("The start offset in the backend device"), N_("SECTORS") },
 		{ "skip",              'p',  POPT_ARG_STRING, &popt_tmp,                3, N_("How many sectors of the encrypted data to skip at the beginning"), N_("SECTORS") },
 		{ "readonly",          'r',  POPT_ARG_NONE, &opt_readonly,              0, N_("Create a readonly mapping"), NULL },
@@ -3487,6 +3495,11 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Reduce size must be multiple of 512 bytes sector."),
 		      poptGetInvocationName(popt_context));
 
+	if (opt_device_size_str &&
+	    tools_string_to_size(NULL, opt_device_size_str, &opt_device_size))
+		usage(popt_context, EXIT_FAILURE, _("Invalid data size specification."),
+		      poptGetInvocationName(popt_context));
+
 	opt_data_shift = -(int64_t)opt_reduce_size;
 	if (opt_data_shift > 0)
 		usage(popt_context, EXIT_FAILURE, _("Reduce size overflow."),
@@ -3494,6 +3507,10 @@ int main(int argc, const char **argv)
 
 	if (opt_decrypt && !opt_header_device)
 		usage(popt_context, EXIT_FAILURE, _("LUKS2 decryption requires option --header."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_data_shift && opt_device_size)
+		usage(popt_context, EXIT_FAILURE, _("Options --reduce-device-size and --data-size cannot be combined."),
 		      poptGetInvocationName(popt_context));
 
 	r = run_action(action);

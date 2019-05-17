@@ -191,8 +191,9 @@ If the reencryption process was interrupted abruptly (reencryption process crash
 it may require recovery. The recovery is currently run automatically on next activation (action \fIopen\fR)
 when needed.
 
-Action supports following additional \fB<options>\fR [\-\-encrypt, \-\-decrypt, \-\-resilience,
-\-\-resilience-hash, \-\-hotzone-size, \-\-init\-only, \-\-resume\-only, \-\-reduce\-device\-size].
+Action supports following additional \fB<options>\fR [\-\-encrypt, \-\-decrypt, \-\-device\-size,
+\-\-resilience, \-\-resilience-hash, \-\-hotzone-size, \-\-init\-only, \-\-resume\-only,
+\-\-reduce\-device\-size].
 
 .SH PLAIN MODE
 Plain dm-crypt encrypts the device sector-by-sector with a
@@ -979,6 +980,19 @@ or loopaes device types.
 Hence, if \-\-offset \fIn\fR, and \-\-skip \fIs\fR, sector \fIn\fR
 (the first sector of the encrypted device) will get a sector number
 of \fIs\fR for the IV calculation.
+.TP
+.B "\-\-device-size \fIsize[units]\fR"
+Instead of real device size, use specified value.
+
+It means that only specified area (from the start of the device
+to the specified size) will be reencrypted.
+
+If no unit suffix is specified, the size is in bytes.
+
+Unit suffix can be S for 512 byte sectors, K/M/G/T (or KiB,MiB,GiB,TiB)
+for units with 1024 base or KB/MB/GB/TB for 1000 base (SI scale).
+
+\fBWARNING:\fR This is destructive operation when used with reencrypt command.
 .TP
 .B "\-\-readonly, \-r"
 set up a read-only mapping.
