@@ -184,7 +184,11 @@ function check_hash() # $1 pwd, $2 hash, $3 hdr
 function check_hash_head() # $1 pwd, $2 len, $3 hash, $4 hdr
 {
 	open_crypt $1 $4
-	test -z "$3" || echo $1 | $CRYPTSETUP resize $DEV_NAME --size $2 || fail
+	if [ -n "$4" ]; then
+		echo $1 | $CRYPTSETUP resize $DEV_NAME --size $2 --header $4 || fail
+	else
+		echo $1 | $CRYPTSETUP resize $DEV_NAME --size $2 || fail
+	fi
 	check_hash_dev /dev/mapper/$DEV_NAME $3
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
@@ -227,7 +231,6 @@ function prepare_linear_dev() {
 	local _size=$(blockdev --getsz $DEV)
 
 	dmsetup create $OVRDEV --table "0 $_size linear $DEV 0" || fail
-	blockdev --setra 0 /dev/mapper/$OVRDEV
 
 	OLD_DEV=$DEV
 	DEV=/dev/mapper/$OVRDEV
@@ -361,6 +364,162 @@ function decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest
 	check_hash_dev $DEV $3
 
 	echo "[OK]"
+}
+
+# sector size (bytes)
+# reenc dev size (sectors)
+# reenc dev digest
+# resilience
+# orig size
+# orig size digest
+# hdr (optional)
+function reencrypt_offline_fixed_size() {
+	local _esz=$(($1>>9))
+	local _hdr=""
+	test -z "$7" || _hdr="--header $7"
+
+	# reencrypt with fixed device size
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV  $_hdr --sector-size $1 --device-size $2s --resilience $4 || fail
+	check_hash_head $PWD1 $2 $3 $7
+	wipe $PWD1 $7
+
+	# try to reencrypt device size + 1 encryption sector size
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --sector-size $1 --init-only || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --device-size $(($5+_esz))s --resilience $4 2>/dev/null && fail
+	check_hash $PWD1 $6 $7
+
+	# misaligned reencryption size
+	if [ $_esz -gt 1 ]; then
+		echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --device-size $(($2+_esz-1))s --resilience $4 2>/dev/null && fail
+		$CRYPTSETUP luksDump ${7:-$DEV} | grep -q "2: crypt" || fail
+		$CRYPTSETUP luksDump ${7:-$DEV} | grep -q "3: crypt" && fail
+		check_hash $PWD1 $6 $7
+	fi
+}
+
+# sector size (bytes)
+# reenc dev size (sectors)
+# reenc dev digest
+# resilience
+# orig size
+# orig size digest
+# hdr
+function encrypt_offline_fixed_size() {
+	local _esz=$(($1>>9))
+
+	# reencrypt with fixed device size
+	wipe_dev $DEV
+	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -q $FAST_PBKDF_ARGON $DEV --header $7 --sector-size $1 --device-size $2s --resilience $4 || fail
+	check_hash_head $PWD1 $2 $3 $7
+
+	# try to reencrypt device size + 1 encryption sector size
+	wipe_dev $DEV
+	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -q $FAST_PBKDF_ARGON $DEV --header $7 --sector-size $1 --init-only || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV  --header $7 --device-size $(($5+_esz))s --resilience $4 2>/dev/null && fail
+	check_hash $PWD1 $6 $7
+
+	# misaligned reencryption size
+	if [ $_esz -gt 1 ]; then
+		echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -q $FAST_PBKDF_ARGON $DEV --header $7 --sector-size $1 --init-only || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt -q $DEV --header $7 --device-size $(($2+_esz-1))s --resilience $4 2>/dev/null && fail
+		$CRYPTSETUP luksDump $7 | grep -q "2: crypt" || fail
+		$CRYPTSETUP luksDump $7 | grep -q "3: crypt" && fail
+		check_hash $PWD1 $6 $7
+	fi
+}
+
+# sector size (bytes)
+# reenc dev size (sectors)
+# reenc dev digest
+# resilience
+# orig size
+# orig size digest
+# hdr
+function decrypt_offline_fixed_size() {
+	local _esz=$(($1>>9))
+
+	# decrypt with fixed device size
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -q $FAST_PBKDF_ARGON $DEV --header $7 --sector-size $1 || fail
+	wipe $PWD1 $7
+	echo $PWD1 | $CRYPTSETUP reencrypt --decrypt -q $DEV --header $7 --device-size $2s --resilience $4 || fail
+
+	dmsetup load $OVRDEV --table "0 $2 linear $OLD_DEV 0" || fail
+	dmsetup resume $OVRDEV || fail
+	check_hash_dev $DEV $3
+	dmsetup load $OVRDEV --table "0 $5 linear $OLD_DEV 0" || fail
+	dmsetup resume $OVRDEV || fail
+
+	# try to decrypt device size + 1 encryption sector size
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -q $FAST_PBKDF_ARGON $DEV --header $7 --sector-size $1 || fail
+	wipe $PWD1 $7
+	echo $PWD1 | $CRYPTSETUP reencrypt --decrypt -q $FAST_PBKDF_ARGON $DEV --header $7 --init-only || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV --header $7 --device-size $(($5+_esz))s --resilience $4 2>/dev/null && fail
+	check_hash $PWD1 $6 $7
+
+	# misaligned reencryption size
+	if [ $_esz -gt 1 ]; then
+		echo $PWD1 | $CRYPTSETUP reencrypt -q $DEV --header $7 --device-size $(($2+_esz-1))s --resilience $4 2>/dev/null && fail
+		$CRYPTSETUP luksDump $7 | grep -q "2: linear\|2: crypt" || fail
+		$CRYPTSETUP luksDump $7 | grep -q "3: crypt\|3: linear" && fail
+		check_hash $PWD1 $6 $7
+	fi
+}
+
+# sector size (bytes)
+# reenc dev size (sectors)
+# reenc dev digest
+# resilience
+# orig size
+# orig size digest
+# hdr (optional)
+function reencrypt_online_fixed_size() {
+	local _esz=$(($1>>9))
+	local _hdr=""
+	test -z "$7" || _hdr="--header $7"
+
+	if [ -z "$_hdr" ]; then
+		echo $PWD1 | $CRYPTSETUP -q luksFormat --sector-size 512 --type luks2 --offset 16384 $FAST_PBKDF_ARGON $DEV || fail
+	else
+		echo $PWD1 | $CRYPTSETUP -q luksFormat --sector-size 512 --type luks2 $_hdr $FAST_PBKDF_ARGON $DEV || fail
+	fi
+	wipe $PWD1 $7
+
+	# reencrypt with fixed device size
+	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP resize $DEV_NAME $_hdr --size $2 || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --sector-size $1 --resilience $4 || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "$2 sectors" || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	check_hash_head $PWD1 $2 $3 $7
+	wipe $PWD1 $7
+
+	# active device != requested reencryption size
+	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP resize $DEV_NAME $_hdr --size $2 || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --sector-size $1 --init-only || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --device-size $(($2-_esz))s --resilience $4 2>/dev/null && fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --device-size $2s --resilience $4 || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "$2 sectors" || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	check_hash_head $PWD1 $2 $3 $7
+
+	# misaligned reencryption size
+	if [ $_esz -gt 1 ]; then
+		if [ -z "$_hdr" ]; then
+			echo $PWD1 | $CRYPTSETUP -q luksFormat --sector-size 512 --type luks2 --offset 16384 $FAST_PBKDF_ARGON $DEV || fail
+		else
+			echo $PWD1 | $CRYPTSETUP -q luksFormat --sector-size 512 --type luks2 $_hdr $FAST_PBKDF_ARGON $DEV || fail
+		fi
+		wipe $PWD1 $7
+		check_hash $PWD1 $6 $7
+
+		echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
+		echo $PWD1 | $CRYPTSETUP resize $DEV_NAME $_hdr --size $(($2+_esz-1)) || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --sector-size $1 --init-only || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --resilience $4 2>/dev/null && fail
+		$CRYPTSETUP close $DEV_NAME || fail
+		check_hash $PWD1 $6 $7
+	fi
 }
 
 function valgrind_setup()
@@ -733,6 +892,95 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	decrypt_recover_detached 4096 checksum $HASH7 $IMG_HDR
 	decrypt_recover_detached 4096 journal $HASH7 $IMG_HDR
 fi
+
+echo "[11] Offline reencryption with fixed device size."
+preparebig 68
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --offset 16384 $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH8
+
+for test_ss in 512 2048 4096; do
+printf "sector size %4s: " $test_ss
+for test_res in checksum journal none; do
+	echo -n "[$test_res]"
+	reencrypt_offline_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8
+	reencrypt_offline_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8
+	reencrypt_offline_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8
+	echo -n "[OK]"
+done
+echo ""
+done
+
+echo "[12] Online reencryption with fixed device size."
+for test_ss in 512 2048 4096; do
+printf "sector size %4s: " $test_ss
+for test_res in checksum journal none; do
+	echo -n "[$test_res]"
+	reencrypt_online_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8
+	reencrypt_online_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8
+	reencrypt_online_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8
+	echo -n "[OK]"
+done
+echo ""
+done
+
+echo "[13] Offline reencryption with fixed device size (detached header)."
+preparebig 60
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1 $IMG_HDR
+check_hash $PWD1 $HASH8 $IMG_HDR
+
+for test_ss in 512 2048 4096; do
+printf "sector size %4s: " $test_ss
+for test_res in checksum journal none; do
+	echo -n "[$test_res]"
+	reencrypt_offline_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_offline_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_offline_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	echo -n "[OK]"
+done
+echo ""
+done
+
+echo "[14] Online reencryption with fixed device size (detached header)."
+for test_ss in 512 2048 4096; do
+printf "sector size %4s: " $test_ss
+for test_res in checksum journal none; do
+	echo -n "[$test_res]"
+	reencrypt_online_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_online_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_online_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	echo -n "[OK]"
+done
+echo ""
+done
+
+echo "[15] Offline encryption with fixed device size (detached header)."
+for test_ss in 512 2048 4096; do
+printf "sector size %4s: " $test_ss
+for test_res in checksum journal none; do
+	echo -n "[$test_res]"
+	encrypt_offline_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	encrypt_offline_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	encrypt_offline_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	echo -n "[OK]"
+done
+echo ""
+done
+
+echo "[16] Offline decryption with fixed device size (detached header)."
+prepare_linear_dev 60
+for test_ss in 512 2048 4096; do
+printf "sector size %4s: " $test_ss
+for test_res in checksum journal none; do
+	echo -n "[$test_res]"
+	decrypt_offline_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	decrypt_offline_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	decrypt_offline_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	echo -n "[OK]"
+done
+echo ""
+done
 
 remove_mapping
 exit 0
