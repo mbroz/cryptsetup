@@ -67,6 +67,7 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_INTEGRITY_FIX_PADDING_SUPPORTED (1 << 19) /* supports the parameter fix_padding that fixes a bug that caused excessive padding */
 #define DM_BITLK_EBOIV_SUPPORTED (1 << 20) /* EBOIV for BitLocker supported */
 #define DM_BITLK_ELEPHANT_SUPPORTED (1 << 21) /* Elephant diffuser for BitLocker supported */
+#define DM_VERITY_SIGNATURE_SUPPORTED (1 << 22) /* Verity option root_hash_sig_key_desc supported */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_SET = 1, TARGET_QUERY };
@@ -113,6 +114,7 @@ struct dm_target {
 
 		const char *root_hash;
 		uint32_t root_hash_size;
+		const char *root_hash_sig_key_desc;
 
 		uint64_t hash_offset;	/* hash offset in blocks (not header) */
 		uint64_t hash_blocks;	/* size of hash device (in hash blocks) */
@@ -182,8 +184,8 @@ int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg
 	uint32_t tag_size, uint32_t sector_size);
 int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
-	const char *root_hash, uint32_t root_hash_size, uint64_t hash_offset_block,
-	uint64_t hash_blocks, struct crypt_params_verity *vp);
+	const char *root_hash, uint32_t root_hash_size, const char *root_hash_sig_key_desc,
+	uint64_t hash_offset_block, uint64_t hash_blocks, struct crypt_params_verity *vp);
 int dm_integrity_target_set(struct crypt_device *cd,
 	struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *meta_device,

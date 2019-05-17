@@ -235,6 +235,7 @@ int VERITY_activate(struct crypt_device *cd,
 		     const char *name,
 		     const char *root_hash,
 		     size_t root_hash_size,
+		     const char *signature_description,
 		     struct device *fec_device,
 		     struct crypt_params_verity *verity_hdr,
 		     uint32_t activation_flags)
@@ -252,6 +253,11 @@ int VERITY_activate(struct crypt_device *cd,
 		name ?: "[none]", verity_hdr->hash_name);
 
 	if (verity_hdr->flags & CRYPT_VERITY_CHECK_HASH) {
+		if (signature_description) {
+			log_err(cd, _("Root hash signature verification is not supported."));
+			return -EINVAL;
+		}
+
 		log_dbg(cd, "Verification of data in userspace required.");
 		r = VERITY_verify(cd, verity_hdr, root_hash, root_hash_size);
 
@@ -291,7 +297,8 @@ int VERITY_activate(struct crypt_device *cd,
 
 	r = dm_verity_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
 			crypt_metadata_device(cd), fec_device, root_hash,
-			root_hash_size, VERITY_hash_offset_block(verity_hdr),
+			root_hash_size, signature_description,
+			VERITY_hash_offset_block(verity_hdr),
 			VERITY_hash_blocks(cd, verity_hdr), verity_hdr);
 
 	if (r)
@@ -300,6 +307,10 @@ int VERITY_activate(struct crypt_device *cd,
 	r = dm_create_device(cd, name, CRYPT_VERITY, &dmd);
 	if (r < 0 && (dm_flags(cd, DM_VERITY, &dmv_flags) || !(dmv_flags & DM_VERITY_SUPPORTED))) {
 		log_err(cd, _("Kernel doesn't support dm-verity mapping."));
+		r = -ENOTSUP;
+	}
+	if (r < 0 && signature_description && !(dmv_flags & DM_VERITY_SIGNATURE_SUPPORTED)) {
+		log_err(cd, _("Kernel doesn't support dm-verity signature option."));
 		r = -ENOTSUP;
 	}
 	if (r < 0)

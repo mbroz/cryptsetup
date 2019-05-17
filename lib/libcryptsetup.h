@@ -1291,6 +1291,31 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	uint32_t flags);
 
 /**
+ * Activate VERITY device using provided key and optional signature).
+ *
+ * @param cd crypt device handle
+ * @param name name of device to create
+ * @param volume_key provided volume key
+ * @param volume_key_size size of volume_key
+ * @param signature buffer with signature for the key
+ * @param signature_size bsize of signature buffer
+ * @param flags activation flags
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note For VERITY the volume key means root hash required for activation.
+ *	Because kernel dm-verity is always read only, you have to provide
+ *	CRYPT_ACTIVATE_READONLY flag always.
+ */
+int crypt_activate_by_signed_key(struct crypt_device *cd,
+	const char *name,
+	const char *volume_key,
+	size_t volume_key_size,
+	const char *signature,
+	size_t signature_size,
+	uint32_t flags);
+
+/**
  * Activate device using passphrase stored in kernel keyring.
  *
  * @param cd crypt device handle

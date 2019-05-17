@@ -40,7 +40,7 @@ The <root_hash> is a hexadecimal string.
 
 \fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock,
 \-\-ignore-corruption or \-\-restart-on-corruption, \-\-ignore-zero-blocks,
-\-\-check-at-most-once]
+\-\-check-at-most-once, \-\-root-hash-signature]
 
 If option \-\-no-superblock is used, you have to use as the same options
 as in initial format operation.
@@ -164,6 +164,10 @@ This is the offset, in bytes, from the start of the FEC device to the beginning 
 .B "\-\-fec-roots=num"
 Number of generator roots. This equals to the number of parity bytes in the encoding data.
 In RS(M, N) encoding, the number of roots is M-N. M is 255 and M-N is between 2 and 24 (including).
+.TP
+.B "\-\-root-hash-signature=FILE"
+Path to roothash signature file used to verify the root hash (in kernel).
+This feature requires Linux kernel version 5.4 or more recent.
 .TP
 .SH RETURN CODES
 Veritysetup returns 0 on success and a non-zero value on error.

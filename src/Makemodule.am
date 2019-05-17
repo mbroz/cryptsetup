@@ -44,12 +44,15 @@ veritysetup_SOURCES =		\
 	lib/utils_io.c		\
 	lib/utils_blkid.c	\
 	src/utils_tools.c	\
+	src/utils_password.c	\
 	src/veritysetup.c	\
 	src/cryptsetup.h
 
 veritysetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
 	@POPT_LIBS@		\
+	@PWQUALITY_LIBS@	\
+	@PASSWDQC_LIBS@		\
 	@BLKID_LIBS@
 
 sbin_PROGRAMS += veritysetup

@@ -203,6 +203,9 @@ static void _dm_set_verity_compat(struct crypt_device *cd,
 		_dm_flags |= DM_VERITY_FEC_SUPPORTED;
 	}
 
+	if (_dm_satisfies_version(1, 5, 0, verity_maj, verity_min, verity_patch))
+		_dm_flags |= DM_VERITY_SIGNATURE_SUPPORTED;
+
 	_dm_verity_checked = true;
 }
 
@@ -677,7 +680,7 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 	int max_size, r, num_options = 0;
 	struct crypt_params_verity *vp;
 	char *params = NULL, *hexroot = NULL, *hexsalt = NULL;
-	char features[256], fec_features[256];
+	char features[256], fec_features[256], verity_verify_args[512+32];
 
 	if (!tgt || !tgt->u.verity.vp)
 		return NULL;
@@ -707,6 +710,13 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 	} else
 		*fec_features = '\0';
 
+	if (tgt->u.verity.root_hash_sig_key_desc) {
+		num_options += 2;
+		snprintf(verity_verify_args, sizeof(verity_verify_args)-1,
+				" root_hash_sig_key_desc %s", tgt->u.verity.root_hash_sig_key_desc);
+	} else
+		*verity_verify_args = '\0';
+
 	if (num_options)
 		snprintf(features, sizeof(features)-1, " %d%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? " ignore_corruption" : "",
@@ -732,19 +742,22 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 	max_size = strlen(hexroot) + strlen(hexsalt) +
 		   strlen(device_block_path(tgt->data_device)) +
 		   strlen(device_block_path(tgt->u.verity.hash_device)) +
-		   strlen(vp->hash_name) + strlen(features) + strlen(fec_features) + 128;
+		   strlen(vp->hash_name) + strlen(features) + strlen(fec_features) + 128 +
+		   strlen(verity_verify_args);
 
 	params = crypt_safe_alloc(max_size);
 	if (!params)
 		goto out;
 
 	r = snprintf(params, max_size,
-		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s%s%s",
+		     "%u %s %s %u %u %" PRIu64 " %" PRIu64 " %s %s %s%s%s%s",
 		     vp->hash_type, device_block_path(tgt->data_device),
 		     device_block_path(tgt->u.verity.hash_device),
 		     vp->data_block_size, vp->hash_block_size,
 		     vp->data_size, tgt->u.verity.hash_offset,
-		     vp->hash_name, hexroot, hexsalt, features, fec_features);
+		     vp->hash_name, hexroot, hexsalt, features, fec_features,
+		     verity_verify_args);
+
 	if (r < 0 || r >= max_size) {
 		crypt_safe_free(params);
 		params = NULL;
@@ -1484,6 +1497,7 @@ static void _dm_target_free_query_path(struct crypt_device *cd, struct dm_target
 		crypt_free_verity_params(tgt->u.verity.vp);
 		device_free(cd, tgt->u.verity.hash_device);
 		free(CONST_CAST(void*)tgt->u.verity.root_hash);
+		free(CONST_CAST(void*)tgt->u.verity.root_hash_sig_key_desc);
 		/* fall through */
 	case DM_LINEAR:
 		/* fall through */
@@ -1991,6 +2005,7 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 	int r;
 	struct device *data_device = NULL, *hash_device = NULL, *fec_device = NULL;
 	char *hash_name = NULL, *root_hash = NULL, *salt = NULL, *fec_dev_str = NULL;
+	char *root_hash_sig_key_desc = NULL;
 
 	if (get_flags & DM_ACTIVE_VERITY_PARAMS) {
 		vp = crypt_zalloc(sizeof(*vp));
@@ -2174,6 +2189,12 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 				if (vp)
 					vp->fec_roots = val32;
 				i++;
+			} else if (!strcasecmp(arg, "root_hash_sig_key_desc")) {
+				str = strsep(&params, " ");
+				if (!str)
+					goto err;
+				root_hash_sig_key_desc = strdup(str);
+				i++;
 			} else /* unknown option */
 				goto err;
 		}
@@ -2199,6 +2220,9 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 		vp->salt = salt;
 	if (vp && fec_dev_str)
 		vp->fec_device = fec_dev_str;
+	if (root_hash_sig_key_desc)
+		tgt->u.verity.root_hash_sig_key_desc = root_hash_sig_key_desc;
+
 	return 0;
 err:
 	device_free(cd, data_device);
@@ -2890,8 +2914,8 @@ err:
 
 int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
-	const char *root_hash, uint32_t root_hash_size, uint64_t hash_offset_block,
-	uint64_t hash_blocks, struct crypt_params_verity *vp)
+	const char *root_hash, uint32_t root_hash_size, const char *root_hash_sig_key_desc,
+	uint64_t hash_offset_block, uint64_t hash_blocks, struct crypt_params_verity *vp)
 {
 	if (!data_device || !hash_device || !vp)
 		return -EINVAL;
@@ -2906,6 +2930,7 @@ int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t se
 	tgt->u.verity.fec_device = fec_device;
 	tgt->u.verity.root_hash = root_hash;
 	tgt->u.verity.root_hash_size = root_hash_size;
+	tgt->u.verity.root_hash_sig_key_desc = root_hash_sig_key_desc;
 	tgt->u.verity.hash_offset = hash_offset_block;
 	tgt->u.verity.fec_offset = vp->fec_area_offset / vp->hash_block_size;
 	tgt->u.verity.hash_blocks = hash_blocks;

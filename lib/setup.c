@@ -3759,6 +3759,27 @@ out:
 	return r;
 }
 
+static int kernel_keyring_support(void)
+{
+	static unsigned _checked = 0;
+
+	if (!_checked) {
+		_kernel_keyring_supported = keyring_check();
+		_checked = 1;
+	}
+
+	return _kernel_keyring_supported;
+}
+
+static int dmcrypt_keyring_bug(void)
+{
+	uint64_t kversion;
+
+	if (kernel_version(&kversion))
+		return 1;
+	return kversion < version(4,15,0,0);
+}
+
 int create_or_reload_device(struct crypt_device *cd, const char *name,
 		     const char *type, struct crypt_dm_active_device *dmd)
 {
@@ -4234,7 +4255,6 @@ int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
 	return crypt_activate_by_keyfile_device_offset(cd, name, keyslot, keyfile,
 					keyfile_size, keyfile_offset, flags);
 }
-
 int crypt_activate_by_volume_key(struct crypt_device *cd,
 	const char *name,
 	const char *volume_key,
@@ -4329,24 +4349,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (!r && name)
 			r = LUKS2_activate(cd, name, vk, flags);
 	} else if (isVERITY(cd->type)) {
-		/* volume_key == root hash */
-		if (!volume_key || !volume_key_size) {
-			log_err(cd, _("Incorrect root hash specified for verity device."));
-			return -EINVAL;
-		}
-
-		free(CONST_CAST(void*)cd->u.verity.root_hash);
-		cd->u.verity.root_hash = NULL;
-
-		r = VERITY_activate(cd, name, volume_key, volume_key_size, cd->u.verity.fec_device,
-				    &cd->u.verity.hdr, flags|CRYPT_ACTIVATE_READONLY);
-
-		if (!r) {
-			cd->u.verity.root_hash_size = volume_key_size;
-			cd->u.verity.root_hash = malloc(volume_key_size);
-			if (cd->u.verity.root_hash)
-				memcpy(CONST_CAST(void*)cd->u.verity.root_hash, volume_key, volume_key_size);
-		}
+		r = crypt_activate_by_signed_key(cd, name, volume_key, volume_key_size, NULL, 0, flags);
 	} else if (isTCRYPT(cd->type)) {
 		if (!name)
 			return 0;
@@ -4372,6 +4375,72 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	if (r < 0)
 		crypt_drop_keyring_key(cd, vk);
 	crypt_free_volume_key(vk);
+
+	return r;
+}
+
+int crypt_activate_by_signed_key(struct crypt_device *cd,
+	const char *name,
+	const char *volume_key,
+	size_t volume_key_size,
+	const char *signature,
+	size_t signature_size,
+	uint32_t flags)
+{
+	char description[512];
+	int r;
+
+	if (!cd || !isVERITY(cd->type))
+		return -EINVAL;
+
+	if (!volume_key || !volume_key_size || (!name && signature)) {
+		log_err(cd, _("Incorrect root hash specified for verity device."));
+		return -EINVAL;
+	}
+
+	log_dbg(cd, "%s volume %s by signed key.", name ? "Activating" : "Checking", name ?: "");
+
+	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
+	if (r < 0)
+		return r;
+
+	if (signature && !kernel_keyring_support()) {
+		log_err(cd, _("Kernel keyring missing: required for passing signature to kernel"));
+		return -EINVAL;
+	}
+
+	/* volume_key == root hash */
+	free(CONST_CAST(void*)cd->u.verity.root_hash);
+	cd->u.verity.root_hash = NULL;
+
+	if (signature) {
+		r = snprintf(description, sizeof(description)-1, "cryptsetup:%s%s%s",
+			     crypt_get_uuid(cd) ?: "", crypt_get_uuid(cd) ? "-" : "", name);
+		if (r < 0)
+			return -EINVAL;
+
+		log_dbg(cd, _("Adding signature into keyring %s"), description);
+		r = keyring_add_key_in_thread_keyring(USER_KEY, description, signature, signature_size);
+		if (r) {
+			log_err(cd, _("Failed to load key in kernel keyring."));
+			return r;
+		}
+	}
+
+	r = VERITY_activate(cd, name, volume_key, volume_key_size,
+			    signature ? description : NULL,
+			    cd->u.verity.fec_device,
+			    &cd->u.verity.hdr, flags | CRYPT_ACTIVATE_READONLY);
+
+	if (!r) {
+		cd->u.verity.root_hash_size = volume_key_size;
+		cd->u.verity.root_hash = malloc(volume_key_size);
+		if (cd->u.verity.root_hash)
+			memcpy(CONST_CAST(void*)cd->u.verity.root_hash, volume_key, volume_key_size);
+	}
+
+	if (signature)
+		crypt_drop_keyring_key_by_description(cd, description, USER_KEY);
 
 	return r;
 }
@@ -5784,27 +5853,6 @@ out:
 /*
  * Keyring handling
  */
-
-static int kernel_keyring_support(void)
-{
-	static unsigned _checked = 0;
-
-	if (!_checked) {
-		_kernel_keyring_supported = keyring_check();
-		_checked = 1;
-	}
-
-	return _kernel_keyring_supported;
-}
-
-static int dmcrypt_keyring_bug(void)
-{
-	uint64_t kversion;
-
-	if (kernel_version(&kversion))
-		return 1;
-	return kversion < version(4,15,0,0);
-}
 
 int crypt_use_keyring_for_vk(struct crypt_device *cd)
 {
