@@ -2426,7 +2426,8 @@ static int _get_device_active_name(struct crypt_device *cd, const char *data_dev
 			log_err("Device %s is in use.", data_device);
 			return -EINVAL;
 		}
-		log_std("Autodetected active dm device %s for data device %s.\n", buffer, data_device);
+		if (!opt_batch_mode)
+			log_std("Autodetected active dm device %s for data device %s.\n", buffer, data_device);
 	}
 	if (r < 0) {
 		if (r == -ENOTBLK)
