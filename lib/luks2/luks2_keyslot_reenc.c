@@ -200,7 +200,7 @@ int reenc_keyslot_update(struct crypt_device *cd,
 		json_object_object_add(jobj_area, "type", json_object_new_string("checksum"));
 		json_object_object_add(jobj_area, "hash", json_object_new_string(rh->rp.p.csum.hash));
 		json_object_object_add(jobj_area, "sector_size", json_object_new_int64(rh->alignment));
-	} else if (rh->rp.type == REENC_PROTECTION_NOOP) {
+	} else if (rh->rp.type == REENC_PROTECTION_NONE) {
 		log_dbg(cd, "Updating reencrypt keyslot for none protection.");
 		json_object_object_add(jobj_area, "type", json_object_new_string("none"));
 		json_object_object_del(jobj_area, "hash");

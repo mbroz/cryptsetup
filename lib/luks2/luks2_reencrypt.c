@@ -849,7 +849,7 @@ static uint64_t LUKS2_get_reencrypt_length(struct luks2_hdr *hdr, struct luks2_r
 {
 	uint64_t length;
 
-	if (rh->rp.type == REENC_PROTECTION_NOOP)
+	if (rh->rp.type == REENC_PROTECTION_NONE)
 		length = length_max ?: LUKS2_DEFAULT_NONE_REENCRYPTION_LENGTH;
 	else if (rh->rp.type == REENC_PROTECTION_CHECKSUM)
 		length = (keyslot_area_length / rh->rp.p.csum.hash_size) * rh->alignment;
@@ -930,7 +930,7 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 			return -ENOMEM;
 	} else if (!strcmp(params->resilience, "none")) {
 		log_dbg(cd, "Initializaing reencryption context with none resilience.");
-		rh->rp.type = REENC_PROTECTION_NOOP;
+		rh->rp.type = REENC_PROTECTION_NONE;
 	} else {
 		log_err(cd, _("Unsupported resilience mode %s"), params->resilience);
 		return -EINVAL;
@@ -2387,7 +2387,7 @@ static int reencrypt_hotzone_protect_final(struct crypt_device *cd,
 	size_t data_offset, len;
 	int r;
 
-	if (rh->rp.type == REENC_PROTECTION_NOOP)
+	if (rh->rp.type == REENC_PROTECTION_NONE)
 		return 0;
 
 	if (rh->rp.type == REENC_PROTECTION_CHECKSUM) {
@@ -2944,13 +2944,13 @@ static reenc_status_t _reencrypt_step(struct crypt_device *cd,
 		return REENC_FATAL;
 	}
 
-	if (rh->rp.type != REENC_PROTECTION_NOOP && crypt_storage_wrapper_datasync(rh->cw2)) {
+	if (rh->rp.type != REENC_PROTECTION_NONE && crypt_storage_wrapper_datasync(rh->cw2)) {
 		log_err(cd, _("Failed to sync data."));
 		return REENC_FATAL;
 	}
 
 	/* metadata commit safe point */
-	r = reenc_assign_segments(cd, hdr, rh, 0, rh->rp.type != REENC_PROTECTION_NOOP);
+	r = reenc_assign_segments(cd, hdr, rh, 0, rh->rp.type != REENC_PROTECTION_NONE);
 	if (r) {
 		/* severity fatal */
 		log_err(cd, _("Failed to update metadata or reassign device segments."));
@@ -2975,7 +2975,7 @@ static int _reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr
 	int i, r;
 	bool finished = (!continue_reencryption(cd, rh, rh->device_size));
 
-	if (rh->rp.type == REENC_PROTECTION_NOOP &&
+	if (rh->rp.type == REENC_PROTECTION_NONE &&
 	    LUKS2_hdr_write(cd, hdr)) {
 		log_err(cd, _("Failed to write LUKS2 metadata."));
 		return -EINVAL;

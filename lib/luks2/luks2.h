@@ -123,7 +123,7 @@ struct luks2_keyslot_params {
 };
 
 struct reenc_protection {
-	enum { REENC_PROTECTION_NOOP = 0, /* none should be 0 always */
+	enum { REENC_PROTECTION_NONE = 0, /* none should be 0 always */
 	       REENC_PROTECTION_CHECKSUM,
 	       REENC_PROTECTION_JOURNAL,
                REENC_PROTECTION_DATASHIFT } type;
