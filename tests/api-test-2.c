@@ -1504,6 +1504,7 @@ static void TokenActivationByKeyring(void)
 #ifdef KERNEL_KEYRING
 	key_serial_t kid, kid1;
 	struct crypt_device *cd;
+	struct crypt_active_device cad;
 
 	const char *cipher = "aes";
 	const char *cipher_mode = "xts-plain64";
@@ -1588,6 +1589,10 @@ static void TokenActivationByKeyring(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 0, NULL, 0), 0);
+	if (t_dm_crypt_keyring_support()) {
+		OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+		EQ_(cad.flags & CRYPT_ACTIVATE_KEYRING_KEY, CRYPT_ACTIVATE_KEYRING_KEY);
+	}
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 1, NULL, 0), 1);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -1599,6 +1604,10 @@ static void TokenActivationByKeyring(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_activate_by_token(cd, CDEVICE_1, CRYPT_ANY_TOKEN, NULL, 0), 1);
+	if (t_dm_crypt_keyring_support()) {
+		OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+		EQ_(cad.flags & CRYPT_ACTIVATE_KEYRING_KEY, CRYPT_ACTIVATE_KEYRING_KEY);
+	}
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_free(cd);
 
