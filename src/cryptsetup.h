@@ -70,6 +70,7 @@ void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)));
 void quiet_log(int level, const char *msg, void *usrptr);
 
 int yesDialog(const char *msg, void *usrptr);
+int noDialog(const char *msg, void *usrptr);
 void show_status(int errcode);
 const char *uuid_or_device(const char *spec);
 __attribute__ ((noreturn)) \

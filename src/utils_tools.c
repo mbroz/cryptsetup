@@ -169,6 +169,11 @@ int yesDialog(const char *msg, void *usrptr)
 	return _dialog(msg, usrptr, 1);
 }
 
+int noDialog(const char *msg, void *usrptr)
+{
+	return _dialog(msg, usrptr, 0);
+}
+
 void show_status(int errcode)
 {
 	char *crypt_error;
