@@ -2418,26 +2418,32 @@ static int auto_detect_active_name(struct crypt_device *cd, const char *data_dev
 
 static int _get_device_active_name(struct crypt_device *cd, const char *data_device, char *buffer, size_t buffer_size)
 {
+	char *msg;
 	int r;
 
 	r = auto_detect_active_name(cd, action_argv[0], buffer, buffer_size);
 	if (r > 0) {
 		if (*buffer == '\0') {
-			log_err("Device %s is in use.", data_device);
+			log_err(_("Device %s is still in use."), data_device);
 			return -EINVAL;
 		}
 		if (!opt_batch_mode)
-			log_std("Autodetected active dm device %s for data device %s.\n", buffer, data_device);
+			log_std(_("Auto-detected active dm device '%s' for data device %s.\n"), buffer, data_device);
 	}
 	if (r < 0) {
 		if (r == -ENOTBLK)
-			log_err("Device %s is not a block device.", data_device);
+			log_std(_("Device %s is not a block device.\n"), data_device);
 		else
-			log_err("Failed to auto-detect device %s holders.", data_device);
-		log_err("To run online LUKS2 reencryption activate the device manually first and\n"
-			"use --active-name parameter to identify the mapped device directly.");
-		/* TODO: prompth with "Do you want to contine with LUKS2 reencryption in offline mode?" */
-		return -EINVAL;
+			log_err(_("Failed to auto-detect device %s holders."), data_device);
+
+		r = asprintf(&msg, _("Unable to decide if device %s is activated or not.\n"
+				     "Are you sure you want to proceed with reencryption in offline mode?\n"
+				     "It may lead to data corruption if the device is actually activated.\n"
+				     "To run reencryption in online mode, use --active-name parameter instead.\n"), data_device);
+		if (r < 0)
+			return -ENOMEM;
+		r = noDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+		free(msg);
 	}
 
 	return r;
