@@ -1440,6 +1440,9 @@ static int _reenc_recover(struct crypt_device *cd,
 	default:
 		r = -EINVAL;
 	}
+
+	if (!r)
+		rh->read = rh->length;
 out:
 	free(data_buffer);
 	free(checksum_tmp);
@@ -3028,10 +3031,6 @@ static int _reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr
 			log_err(cd, _("Failed to disable reencryption requirement flag."));
 	}
 
-	/* this frees reencryption lock */
-	LUKS2_reenc_context_free(cd, rh);
-	crypt_set_reenc_context(cd, NULL);
-
 	return 0;
 }
 
@@ -3044,33 +3043,36 @@ static void _reencrypt_teardown_fatal(struct crypt_device *cd, struct luks2_hdr 
 		log_err(cd, "Reencryption was run in online mode.");
 		if (dm_status_suspended(cd, rh->hotzone_name) > 0) {
 			log_dbg(cd, "Hotzone device %s suspended, replacing with dm-error.", rh->hotzone_name);
-			if (dm_error_device(cd, rh->hotzone_name)) {
+			if (dm_error_device(cd, rh->hotzone_name))
 				log_err(cd, _("Failed to replace hotzone device %s with error target.\n" \
 					      "Do not resume the device unless replaced with error target manually."), rh->hotzone_name);
-				goto out;
-			}
 		}
 	}
-out:
-	/* this frees reencryption lock */
-	LUKS2_reenc_context_free(cd, rh);
-	crypt_set_reenc_context(cd, NULL);
 }
 
 static int _reencrypt_free(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh, reenc_status_t rs,
 		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
 {
+	int r;
+
 	switch (rs) {
 	case REENC_OK:
 		if (progress)
 			progress(rh->device_size, rh->progress, NULL);
-		return _reencrypt_teardown_ok(cd, hdr, rh);
+		r = _reencrypt_teardown_ok(cd, hdr, rh);
+		break;
 	case REENC_FATAL:
 		_reencrypt_teardown_fatal(cd, hdr, rh);
 		/* fall-through */
 	default:
-		return -EIO;
+		r = -EIO;
 	}
+
+	/* this frees reencryption lock */
+	LUKS2_reenc_context_free(cd, rh);
+	crypt_set_reenc_context(cd, NULL);
+
+	return r;
 }
 
 int crypt_reencrypt(struct crypt_device *cd,
@@ -3167,17 +3169,18 @@ static int _reencrypt_recover(struct crypt_device *cd,
 	if (r < 0)
 		goto err;
 
-	if ((r = reenc_assign_segments(cd, hdr, rh, 0, 1)))
+	if ((r = reenc_assign_segments(cd, hdr, rh, 0, 0)))
 		goto err;
 
-	/* FIXME: Create unified cleanup routine when reencryption is finished */
-	if (LUKS2_segments_count(hdr) == 1) {
-		/* FIXME: remove also keyslots assigned to old digest */
-		crypt_keyslot_destroy(cd, rh->reenc_keyslot);
-		reenc_erase_backup_segments(cd, hdr);
-		if (update_reencryption_flag(cd, 0, true))
-			r = -EINVAL;
+	r = _update_reencrypt_context(cd, rh);
+	if (r) {
+		log_err(cd, _("Failed to update reencryption context."));
+		goto err;
 	}
+
+	r = _reencrypt_teardown_ok(cd, hdr, rh);
+	if (!r)
+		r = LUKS2_hdr_write(cd, hdr);
 err:
 	LUKS2_reenc_context_free(cd, rh);
 
