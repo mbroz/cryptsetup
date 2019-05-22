@@ -192,10 +192,6 @@ struct luks2_reenc_context {
 	struct crypt_lock_handle *reenc_lock;
 };
 
-int LUKS2_reenc_load_segments(struct crypt_device *cd,
-				struct luks2_hdr *hdr,
-			        struct luks2_reenc_context *rh);
-
 crypt_reencrypt_info LUKS2_reenc_status(struct luks2_hdr *hdr);
 /*
  * Supportable header sizes (hdr_disk + JSON area)
@@ -599,24 +595,19 @@ int LUKS2_verify_and_upload_keys(struct crypt_device *cd,
 	int digest_new,
 	struct volume_key *vks);
 
-int LUKS2_reenc_load(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	uint64_t device_size,
-	const struct crypt_params_reencrypt *params,
-	struct luks2_reenc_context **rh);
-
 int LUKS2_reenc_update_segments(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		struct luks2_reenc_context *rh);
 
-int LUKS2_reenc_recover(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	struct luks2_reenc_context *rh,
-	struct volume_key *vks);
+int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
+	int keyslot_old,
+	int keyslot_new,
+	const char *passphrase,
+	size_t passphrase_size,
+	uint32_t flags,
+	struct volume_key **vks);
 
 void LUKS2_reenc_context_free(struct crypt_device *cd, struct luks2_reenc_context *rh);
-
-int reenc_erase_backup_segments(struct crypt_device *cd, struct luks2_hdr *hdr);
 
 int crypt_reencrypt_lock(struct crypt_device *cd, const char *uuid, struct crypt_lock_handle **reencrypt_lock);
 void crypt_reencrypt_unlock(struct crypt_device *cd, struct crypt_lock_handle *reencrypt_lock);

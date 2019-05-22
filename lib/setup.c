@@ -3753,11 +3753,13 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	uint32_t flags)
 {
 	crypt_reencrypt_info ri;
-	uint64_t check_size, device_size;
+	uint64_t minimal_size, device_size;
 	struct volume_key *vks = NULL;
 	int r = 0;
 	struct crypt_lock_handle *reencrypt_lock = NULL;
-	struct luks2_reenc_context *rh = NULL;
+
+	if (crypt_use_keyring_for_vk(cd))
+		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 
 	r = crypt_reencrypt_lock(cd, NULL, &reencrypt_lock);
 	if (r) {
@@ -3773,50 +3775,14 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 
 	ri = LUKS2_reenc_status(hdr);
 
-	r = -EINVAL;
-	if (LUKS2_get_data_size(hdr, &check_size, NULL))
-		goto err;
-	if (luks2_check_device_size(cd, hdr, check_size >> SECTOR_SHIFT, &device_size, true))
-		goto err;
-
-	if (crypt_use_keyring_for_vk(cd))
-		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
-
 	if (ri == CRYPT_REENCRYPT_CRASH) {
-		log_dbg(cd, _("Entering reencryption crash recovery."));
-
-		r = _open_all_keys(cd, hdr, keyslot, passphrase, passphrase_size, flags, &vks);
+		r = LUKS2_reencrypt_locked_recovery_by_passphrase(cd, keyslot,
+				keyslot, passphrase, passphrase_size, flags, &vks);
 		if (r < 0)
 			goto err;
 		keyslot = r;
 
-		r = LUKS2_reenc_load(cd, hdr, device_size, NULL, &rh);
-		if (r < 0) {
-			log_err(cd, _("Failed to load reencryption context from LUKS2 header."));
-			goto err;
-		}
-
-		r = LUKS2_reenc_recover(cd, hdr, rh, vks);
-		if (r < 0)
-			goto err;
-
-		if ((r = LUKS2_reenc_update_segments(cd, hdr, rh)))
-			goto err;
-
-		/* FIXME: Create unified cleanup routine when reencryption is finished */
-		if (LUKS2_segments_count(hdr) == 1) {
-			/* FIXME: remove also keyslots assigned to old digest */
-			crypt_keyslot_destroy(cd, rh->reenc_keyslot);
-			reenc_erase_backup_segments(cd, hdr);
-			if (update_reencryption_flag(cd, 0, true)) {
-				r = -EINVAL;
-				goto err;
-			}
-		}
-
 		ri = LUKS2_reenc_status(hdr);
-		LUKS2_reenc_context_free(cd, rh);
-		rh = NULL;
 	}
 
 	/* recovery finished reencryption or it's already finished */
@@ -3832,6 +3798,9 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 		goto err;
 	}
 
+	if (LUKS2_get_data_size(hdr, &minimal_size, NULL))
+		goto err;
+
 	if (!vks) {
 		r = _open_all_keys(cd, hdr, keyslot, passphrase, passphrase_size, flags, &vks);
 		if (r >= 0)
@@ -3839,6 +3808,10 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	}
 
 	log_dbg(cd, "Entering clean reencryption state mode.");
+
+	if (r >= 0)
+		r = luks2_check_device_size(cd, hdr, minimal_size >> SECTOR_SHIFT,
+					    &device_size, true);
 
 	if (r >= 0)
 		r = LUKS2_activate_multi(cd, name, vks, flags);
