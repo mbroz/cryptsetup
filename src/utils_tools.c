@@ -128,12 +128,12 @@ void quiet_log(int level, const char *msg, void *usrptr)
 	tool_log(level, msg, usrptr);
 }
 
-int yesDialog(const char *msg, void *usrptr)
+static int _dialog(const char *msg, void *usrptr, int default_answer)
 {
 	const char *fail_msg = (const char *)usrptr;
 	char *answer = NULL;
 	size_t size = 0;
-	int r = 1, block;
+	int r = default_answer, block;
 
 	block = tools_signals_blocked();
 	if (block)
@@ -150,9 +150,9 @@ int yesDialog(const char *msg, void *usrptr)
 				log_err(_("Error reading response from terminal."));
 			else
 				log_dbg("Query interrupted on signal.");
-		} else if (strcmp(answer, "YES\n")) {
-			r = 0;
-			if (fail_msg)
+		} else {
+			r = !strcmp(answer, "YES\n");
+			if (!r && fail_msg)
 				log_err("%s", fail_msg);
 		}
 	}
@@ -162,6 +162,11 @@ int yesDialog(const char *msg, void *usrptr)
 
 	free(answer);
 	return r;
+}
+
+int yesDialog(const char *msg, void *usrptr)
+{
+	return _dialog(msg, usrptr, 1);
 }
 
 void show_status(int errcode)
