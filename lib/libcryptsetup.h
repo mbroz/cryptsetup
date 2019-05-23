@@ -2126,6 +2126,8 @@ int crypt_activate_by_token(struct crypt_device *cd,
 #define CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT (1 << 1)
 /** Resume already initialized reencryption only. */
 #define CRYPT_REENCRYPT_RESUME_ONLY        (1 << 2)
+/** Run reencryption recovery only */
+#define CRYPT_REENCRYPT_RECOVERY           (1 << 3)
 
 /**
  * Reencryption direction

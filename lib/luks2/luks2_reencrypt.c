@@ -2740,6 +2740,48 @@ err:
 	return r;
 }
 
+static int _reencrypt_recovery_by_passphrase(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot_old,
+	int keyslot_new,
+	const char *passphrase,
+	size_t passphrase_size)
+{
+	int r;
+	crypt_reencrypt_info ri;
+	struct crypt_lock_handle *reencrypt_lock;
+
+	r = crypt_reencrypt_lock(cd, NULL, &reencrypt_lock);
+	if (r) {
+		if (r == -EBUSY)
+			log_err(cd, _("Reencryption in-progress. Cannot perform recovery."));
+		else
+			log_err(cd, _("Failed to get reencryption lock."));
+		return r;
+	}
+
+	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
+		crypt_reencrypt_unlock(cd, reencrypt_lock);
+		return r;
+	}
+
+	ri = LUKS2_reenc_status(hdr);
+	if (ri == CRYPT_REENCRYPT_INVALID) {
+		crypt_reencrypt_unlock(cd, reencrypt_lock);
+		return -EINVAL;
+	}
+
+	if (ri == CRYPT_REENCRYPT_CRASH)
+		r = LUKS2_reencrypt_locked_recovery_by_passphrase(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, 0, NULL);
+	else {
+		log_dbg(cd, "No LUKS2 reencryption recovery needed.");
+		r = 0;
+	}
+
+	crypt_reencrypt_unlock(cd, reencrypt_lock);
+	return r;
+}
+
 static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *name,
 	const char *passphrase,
@@ -2750,10 +2792,14 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *cipher_mode,
 	const struct crypt_params_reencrypt *params)
 {
-	struct luks2_hdr *hdr;
 	int r;
 	struct volume_key *vks = NULL;
 	uint32_t flags = params ? params->flags : 0;
+	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+
+	/* short-circuit in recovery and finish immediately. */
+	if (flags & CRYPT_REENCRYPT_RECOVERY)
+		return _reencrypt_recovery_by_passphrase(cd, hdr, keyslot_old, keyslot_new, passphrase, passphrase_size);
 
 	if (cipher) {
 		r = crypt_keyslot_get_key_size(cd, keyslot_new);
@@ -2763,8 +2809,6 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 	}
-
-	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 
 	r = device_write_lock(cd, crypt_metadata_device(cd));
 	if (r) {
