@@ -2378,7 +2378,7 @@ static int dm_target_query(struct crypt_device *cd, struct dm_target *tgt, const
 		    const uint64_t *length, const char *target_type,
 		    char *params, uint32_t get_flags, uint32_t *act_flags)
 {
-	int r = -EINVAL;
+	int r = -ENOTSUP;
 
 	if (!strcmp(target_type, DM_CRYPT_TARGET))
 		r = _dm_target_query_crypt(cd, get_flags, params, tgt, act_flags);
@@ -2460,7 +2460,8 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 		}
 
 		if (r < 0) {
-			log_err(cd, _("Failed to query dm-%s segment."), target_type);
+			if (r != -ENOTSUP)
+				log_err(cd, _("Failed to query dm-%s segment."), target_type);
 			goto out;
 		}
 
