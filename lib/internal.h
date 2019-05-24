@@ -109,6 +109,7 @@ const char *crypt_get_cipher_spec(struct crypt_device *cd);
 struct device;
 int device_alloc(struct crypt_device *cd, struct device **device, const char *path);
 int device_alloc_no_check(struct device **device, const char *path);
+void device_close(struct crypt_device *cd, struct device *device);
 void device_free(struct crypt_device *cd, struct device *device);
 const char *device_path(const struct device *device);
 const char *device_dm_name(const struct device *device);

@@ -420,15 +420,7 @@ void device_free(struct crypt_device *cd, struct device *device)
 	if (!device)
 		return;
 
-	if (device->ro_dev_fd != -1) {
-		log_dbg(cd, "Closed read only fd for %s.", device_path(device));
-		close(device->ro_dev_fd);
-	}
-
-	if (device->dev_fd != -1) {
-		log_dbg(cd, "Closed read write fd for %s.", device_path(device));
-		close(device->dev_fd);
-	}
+	device_close(cd, device);
 
 	if (device->dev_fd_excl != -1) {
 		log_dbg(cd, "Closed exclusive fd for %s.", device_path(device));
@@ -977,4 +969,24 @@ void device_write_unlock(struct crypt_device *cd, struct device *device)
 bool device_is_locked(struct device *device)
 {
 	return device ? device_locked(device->lh) : 0;
+}
+
+void device_close(struct crypt_device *cd, struct device *device)
+{
+	if (!device)
+		return;
+
+	if (device->ro_dev_fd != -1) {
+		log_dbg(cd, "Closing read only fd for %s.", device_path(device));
+		if (close(device->ro_dev_fd))
+			log_dbg(cd, "Failed to close read only fd for %s.", device_path(device));
+		device->ro_dev_fd = -1;
+	}
+
+	if (device->dev_fd != -1) {
+		log_dbg(cd, "Closing read write fd for %s.", device_path(device));
+		if (close(device->dev_fd))
+			log_dbg(cd, "Failed to close read write fd for %s.", device_path(device));
+		device->dev_fd = -1;
+	}
 }
