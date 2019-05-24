@@ -623,7 +623,7 @@ const char *LUKS2_reencrypt_mode(struct luks2_hdr *hdr)
 	return json_object_get_string(jobj_mode);
 }
 
-int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di)
+static int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di)
 {
 	const char *value;
 	json_object *jobj_keyslot, *jobj_mode;
@@ -3235,7 +3235,12 @@ err:
 int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *device_size, bool activation)
 {
 	int r;
+	crypt_reencrypt_direction_info di;
 	uint64_t real_size = 0;
+
+	if (!LUKS2_reencrypt_direction(hdr, &di) && (di == CRYPT_REENCRYPT_BACKWARD) &&
+	    LUKS2_get_segment_by_flag(hdr, "backup-moved-segment"))
+		check_size += LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
 
 	r = device_block_adjust(cd, crypt_data_device(cd), activation ? DEV_EXCL : DEV_OK,
 				crypt_get_data_offset(cd), &check_size, NULL);

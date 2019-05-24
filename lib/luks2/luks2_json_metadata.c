@@ -1704,15 +1704,9 @@ int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr)
 
 int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic)
 {
-	crypt_reencrypt_direction_info di;
 	int sector_size;
 	json_object *jobj_segments, *jobj_size;
 	uint64_t tmp = 0;
-
-	/* for reencryption with data shift and moved segment we have to add datashift to minimal required size */
-	if (!LUKS2_reencrypt_direction(hdr, &di) && (di == CRYPT_REENCRYPT_BACKWARD) &&
-	    LUKS2_get_segment_by_flag(hdr, "backup-moved-segment"))
-		tmp += LUKS2_reencrypt_data_shift(hdr);
 
 	if (!size || !json_object_object_get_ex(hdr->jobj, "segments", &jobj_segments))
 		return -EINVAL;
