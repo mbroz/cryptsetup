@@ -1169,6 +1169,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			if (r < 0) {
 				log_dbg(cd, "LUKS device header does not match active device.");
 				crypt_set_null_type(cd);
+				device_close(cd, cd->metadata_device);
+				device_close(cd, cd->device);
 				r = 0;
 				goto out;
 			}
