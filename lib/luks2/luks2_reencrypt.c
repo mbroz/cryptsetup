@@ -3035,6 +3035,23 @@ static int reenc_erase_backup_segments(struct crypt_device *cd,
 	return 0;
 }
 
+static int _wipe_moved_segment(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh)
+{
+	int r = 0;
+	uint64_t offset, length;
+
+	if (rh->jobj_segment_moved) {
+		offset = json_segment_get_offset(rh->jobj_segment_moved, 0);
+		length = json_segment_get_size(rh->jobj_segment_moved, 0);
+		log_dbg(cd, "Wiping %" PRIu64 " bytes of backup segment data at offset %" PRIu64,
+			length, offset);
+		r = crypt_wipe_device(cd, crypt_data_device(cd), CRYPT_WIPE_RANDOM,
+				offset, length, 1024 * 1024, NULL, NULL);
+	}
+
+	return r;
+}
+
 static int _reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh)
 {
 	int i, r;
@@ -3060,6 +3077,8 @@ static int _reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr
 	}
 
 	if (finished) {
+		if (_wipe_moved_segment(cd, hdr, rh))
+			log_err(cd, _("Failed to wipe backup segment data."));
 		if (LUKS2_reencrypt_get_data_offset_new(hdr) && LUKS2_set_keyslots_size(cd, hdr, LUKS2_reencrypt_get_data_offset_new(hdr)))
 			log_err(cd, _("Failed to set new keyslots_size after reencryption"));
 		if (rh->digest_old >= 0 && rh->digest_new != rh->digest_old)
