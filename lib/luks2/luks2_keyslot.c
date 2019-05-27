@@ -125,9 +125,6 @@ int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 	if (r < 0)
 		return r;
 
-	if (segment == CRYPT_ONE_SEGMENT)
-		log_dbg(NULL, "At least one segment variant");
-
 	return r >= 1 ? 0 : -ENOENT;
 }
 
