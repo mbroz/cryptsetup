@@ -28,7 +28,7 @@ static int reenc_keyslot_open(struct crypt_device *cd,
 	char *volume_key,
 	size_t volume_key_len)
 {
-	return -ENOENT; /* TODO: */
+	return -ENOENT;
 }
 
 int reenc_keyslot_alloc(struct crypt_device *cd,
@@ -221,6 +221,39 @@ static int reenc_keyslot_wipe(struct crypt_device *cd, int keyslot)
 
 static int reenc_keyslot_dump(struct crypt_device *cd, int keyslot)
 {
+	json_object *jobj_keyslot, *jobj_area, *jobj_direction, *jobj_mode, *jobj_resilience,
+		    *jobj1;
+
+	jobj_keyslot = LUKS2_get_keyslot_jobj(crypt_get_hdr(cd, CRYPT_LUKS2), keyslot);
+	if (!jobj_keyslot)
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(jobj_keyslot, "direction", &jobj_direction) ||
+	    !json_object_object_get_ex(jobj_keyslot, "mode", &jobj_mode) ||
+	    !json_object_object_get_ex(jobj_keyslot, "area", &jobj_area) ||
+	    !json_object_object_get_ex(jobj_area, "type", &jobj_resilience))
+		return -EINVAL;
+
+	log_std(cd, "\t%-12s%s\n", "Mode:", json_object_get_string(jobj_mode));
+	log_std(cd, "\t%-12s%s\n", "Direction:", json_object_get_string(jobj_direction));
+	log_std(cd, "\t%-12s%s\n", "Resilience:", json_object_get_string(jobj_resilience));
+
+	if (!strcmp(json_object_get_string(jobj_resilience), "checksum")) {
+		json_object_object_get_ex(jobj_area, "hash", &jobj1);
+		log_std(cd, "\t%-12s%s\n", "Hash:", json_object_get_string(jobj1));
+		json_object_object_get_ex(jobj_area, "sector_size", &jobj1);
+		log_std(cd, "\t%-12s%d [bytes]\n", "Granularity:", json_object_get_int(jobj1));
+	} else if (!strcmp(json_object_get_string(jobj_resilience), "datashift")) {
+		json_object_object_get_ex(jobj_area, "shift_size", &jobj1);
+		log_std(cd, "\t%-12s%" PRIu64 "[bytes]\n", "Shift size:", json_object_get_uint64(jobj1));
+	}
+
+	json_object_object_get_ex(jobj_area, "offset", &jobj1);
+	log_std(cd, "\tArea offset:%" PRIu64 " [bytes]\n", json_object_get_uint64(jobj1));
+
+	json_object_object_get_ex(jobj_area, "size", &jobj1);
+	log_std(cd, "\tArea length:%" PRIu64 " [bytes]\n", json_object_get_uint64(jobj1));
+
 	return 0;
 }
 
