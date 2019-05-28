@@ -2462,10 +2462,7 @@ static int auto_detect_active_name(struct crypt_device *cd, const char *data_dev
 	int r;
 
 	r = tools_lookup_crypt_device(cd, crypt_get_type(cd), data_device, dm_name, dm_name_len);
-	if (r < 0)
-		return r;
-
-	if (r >= 0)
+	if (r > 0)
 		log_dbg("Device %s has %d active holders.", data_device, r);
 
 	return r;
