@@ -711,7 +711,7 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 
 	/* Just check that nobody uses the metadata now */
 	r = device_write_lock(cd, device);
-	if (r) {
+	if (r < 0) {
 		log_err(cd, _("Failed to acquire write lock on device %s."),
 			device_path(device));
 		return r;

@@ -286,9 +286,9 @@ static int verify_lock_handle(const char *device_path, struct crypt_lock_handle 
 	return (stat(res, &res_st) || !same_inode(lck_st, res_st)) ? -EAGAIN : 0;
 }
 
-static void device_lock_inc(struct crypt_lock_handle *h)
+static unsigned device_lock_inc(struct crypt_lock_handle *h)
 {
-	h->refcnt++;
+	return ++h->refcnt;
 }
 
 static unsigned device_lock_dec(struct crypt_lock_handle *h)
@@ -388,9 +388,8 @@ int device_write_lock_internal(struct crypt_device *cd, struct device *device)
 	h = device_get_lock_handle(device);
 
 	if (device_locked(h)) {
-		device_lock_inc(h);
 		log_dbg(cd, "Device %s WRITE lock already held.", device_path(device));
-		return 0;
+		return device_lock_inc(h);
 	}
 
 	log_dbg(cd, "Acquiring write lock for device %s.", device_path(device));
@@ -405,7 +404,7 @@ int device_write_lock_internal(struct crypt_device *cd, struct device *device)
 
 	log_dbg(cd, "Device %s WRITE lock taken.", device_path(device));
 
-	return 0;
+	return 1;
 }
 
 int crypt_read_lock(struct crypt_device *cd, const char *resource, bool blocking, struct crypt_lock_handle **lock)

@@ -120,7 +120,7 @@ static int reenc_keyslot_store_data(struct crypt_device *cd,
 		return -EINVAL;
 
 	r = device_write_lock(cd, device);
-	if (r) {
+	if (r < 0) {
 		log_err(cd, _("Failed to acquire write lock on device %s."),
 			device_path(device));
 		return r;

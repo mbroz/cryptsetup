@@ -940,10 +940,7 @@ int device_write_lock(struct crypt_device *cd, struct device *device)
 
 	assert(!device_locked(device->lh) || !device_locked_readonly(device->lh));
 
-	if (device_write_lock_internal(cd, device))
-		return -EBUSY;
-
-	return 0;
+	return device_write_lock_internal(cd, device);
 }
 
 void device_read_unlock(struct crypt_device *cd, struct device *device)

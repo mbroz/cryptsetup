@@ -946,7 +946,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair)
 		device_read_unlock(cd, crypt_metadata_device(cd));
 
 		r = device_write_lock(cd, crypt_metadata_device(cd));
-		if (r) {
+		if (r < 0) {
 			log_err(cd, _("Failed to acquire write lock on device %s."),
 				device_path(crypt_metadata_device(cd)));
 			return r;
@@ -1221,7 +1221,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	/* TODO: perform header restore on bdev in stand-alone routine? */
 	r = device_write_lock(cd, device);
-	if (r) {
+	if (r < 0) {
 		log_err(cd, _("Failed to acquire write lock on device %s."),
 			device_path(device));
 		goto out;

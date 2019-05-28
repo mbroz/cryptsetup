@@ -399,7 +399,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	hdr->seqid++;
 
 	r = device_write_lock(cd, device);
-	if (r) {
+	if (r < 0) {
 		log_err(cd, _("Failed to acquire write device lock."));
 		free(json_area);
 		return r;

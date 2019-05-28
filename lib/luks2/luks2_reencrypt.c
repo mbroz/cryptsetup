@@ -2811,7 +2811,7 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 	}
 
 	r = device_write_lock(cd, crypt_metadata_device(cd));
-	if (r) {
+	if (r < 0) {
 		log_err(cd, _("Failed to acquire write lock on device %s."),
 			device_path(crypt_metadata_device(cd)));
 		return r;
