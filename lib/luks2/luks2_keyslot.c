@@ -709,13 +709,10 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	if (wipe_area_only)
 		log_dbg(cd, "Wiping keyslot %d area only.", keyslot);
 
-	/* Just check that nobody uses the metadata now */
-	r = device_write_lock(cd, device);
-	if (r < 0) {
-		log_err(cd, _("Failed to acquire write lock on device %s."),
-			device_path(device));
+	/* FIXME: crypt_wipe_device requires 'locked' variant. */
+	r = LUKS2_device_write_lock(cd, hdr, device);
+	if (r)
 		return r;
-	}
 	device_write_unlock(cd, device);
 
 	/* secure deletion of possible key material in keyslot area */

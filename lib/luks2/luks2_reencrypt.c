@@ -2810,12 +2810,9 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 			return r;
 	}
 
-	r = device_write_lock(cd, crypt_metadata_device(cd));
-	if (r < 0) {
-		log_err(cd, _("Failed to acquire write lock on device %s."),
-			device_path(crypt_metadata_device(cd)));
+	r = LUKS2_device_write_lock(cd, hdr, crypt_metadata_device(cd));
+	if (r)
 		return r;
-	}
 
 	r = atomic_get_reencryption_flag(cd);
 

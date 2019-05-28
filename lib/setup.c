@@ -1796,7 +1796,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = LUKS2_hdr_write(cd, &cd->u.luks2.hdr);
+	/* override sequence id check with format */
+	r = LUKS2_hdr_write_force(cd, &cd->u.luks2.hdr);
 	if (r < 0) {
 		if (r == -EBUSY)
 			log_err(cd, _("Cannot format device %s in use."),

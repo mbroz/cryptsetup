@@ -38,13 +38,11 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 {
 	struct device *device = crypt_metadata_device(cd);
 #ifndef ENABLE_AF_ALG /* Support for old kernel without Crypto API */
-	int r = device_write_lock(cd, device);
-	if (r < 0) {
-		log_err(cd, _("Failed to acquire write lock on device %s."), device_path(device));
+	int r = LUKS2_device_write_lock(cd, crypt_get_hdr(cd, CRYPT_LUKS2), device);
+	if (r)
 		return r;
-	}
 	r = LUKS_encrypt_to_storage(src, srcLength, cipher, cipher_mode, vk, sector, cd);
-	device_write_unlock(cd, crypt_metadata_device(cd));
+	device_write_unlock(cd, device);
 	return r;
 #else
 	struct crypt_storage *s;
@@ -67,12 +65,9 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	if (r)
 		return r;
 
-	r = device_write_lock(cd, device);
-	if (r < 0) {
-		log_err(cd, _("Failed to acquire write lock on device %s."),
-			device_path(device));
+	r = LUKS2_device_write_lock(cd, crypt_get_hdr(cd, CRYPT_LUKS2), device);
+	if (r)
 		return r;
-	}
 
 	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd >= 0) {
@@ -577,11 +572,9 @@ static int luks2_keyslot_store(struct crypt_device *cd,
 	if (!jobj_keyslot)
 		return -EINVAL;
 
-	if ((r = device_write_lock(cd, crypt_metadata_device(cd))) < 0) {
-		log_err(cd, _("Failed to acquire write lock on device %s."),
-			device_path(crypt_metadata_device(cd)));
+	r = LUKS2_device_write_lock(cd, hdr, crypt_metadata_device(cd));
+	if(r)
 		return r;
-	}
 
 	r = luks2_keyslot_set_key(cd, jobj_keyslot,
 				  password, password_len,

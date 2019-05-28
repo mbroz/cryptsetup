@@ -55,6 +55,8 @@
 /* 20 MiBs */
 #define LUKS2_DEFAULT_NONE_REENCRYPTION_LENGTH 0x1400000
 
+struct device;
+
 /*
  * LUKS2 header on-disk.
  *
@@ -215,8 +217,12 @@ crypt_reencrypt_info LUKS2_reenc_status(struct luks2_hdr *hdr);
 int LUKS2_hdr_version_unlocked(struct crypt_device *cd,
 	const char *backup_file);
 
+int LUKS2_device_write_lock(struct crypt_device *cd,
+	struct luks2_hdr *hdr, struct device *device);
+
 int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair);
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr);
+int LUKS2_hdr_write_force(struct crypt_device *cd, struct luks2_hdr *hdr);
 int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr);
 
 int LUKS2_hdr_uuid(struct crypt_device *cd,

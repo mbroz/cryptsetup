@@ -945,6 +945,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair)
 		/* unlikely: auto-recovery is required and failed due to read lock being held */
 		device_read_unlock(cd, crypt_metadata_device(cd));
 
+		/* Do not use LUKS2_device_write lock. Recovery. */
 		r = device_write_lock(cd, crypt_metadata_device(cd));
 		if (r < 0) {
 			log_err(cd, _("Failed to acquire write lock on device %s."),
@@ -961,6 +962,18 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair)
 	return r;
 }
 
+int LUKS2_hdr_write_force(struct crypt_device *cd, struct luks2_hdr *hdr)
+{
+	/* NOTE: is called before LUKS2 validation routines */
+	/* erase unused digests (no assigned keyslot or segment) */
+	LUKS2_digests_erase_unused(cd, hdr);
+
+	if (LUKS2_hdr_validate(cd, hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
+		return -EINVAL;
+
+	return LUKS2_disk_hdr_write(cd, hdr, crypt_metadata_device(cd), false);
+}
+
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr)
 {
 	/* NOTE: is called before LUKS2 validation routines */
@@ -970,7 +983,7 @@ int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr)
 	if (LUKS2_hdr_validate(cd, hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
 		return -EINVAL;
 
-	return LUKS2_disk_hdr_write(cd, hdr, crypt_metadata_device(cd));
+	return LUKS2_disk_hdr_write(cd, hdr, crypt_metadata_device(cd), true);
 }
 
 int LUKS2_hdr_uuid(struct crypt_device *cd, struct luks2_hdr *hdr, const char *uuid)
@@ -1125,7 +1138,6 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (r < 0)
 		return r;
 
-	/* FIXME: why lock backup device ? */
 	r = device_read_lock(cd, backup_device);
 	if (r) {
 		log_err(cd, _("Failed to acquire read lock on device %s."),
@@ -1219,7 +1231,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	log_dbg(cd, "Storing backup of header (%zu bytes) to device %s.", buffer_size, device_path(device));
 
-	/* TODO: perform header restore on bdev in stand-alone routine? */
+	/* Do not use LUKS2_device_write lock for checking sequence id on restore */
 	r = device_write_lock(cd, device);
 	if (r < 0) {
 		log_err(cd, _("Failed to acquire write lock on device %s."),
@@ -1246,8 +1258,6 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		r = 0;
 
 	device_write_unlock(cd, device);
-	/* end of TODO */
-
 out:
 	LUKS2_hdr_free(cd, hdr);
 	LUKS2_hdr_free(cd, &hdr_file);

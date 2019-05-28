@@ -349,11 +349,59 @@ static int hdr_write_disk(struct crypt_device *cd,
 	return r;
 }
 
+static int LUKS2_check_sequence_id(struct crypt_device *cd, struct luks2_hdr *hdr, struct device *device)
+{
+	int devfd;
+	struct luks2_hdr_disk dhdr;
+
+	if (!hdr)
+		return -EINVAL;
+
+	devfd = device_open_locked(cd, device, O_RDONLY);
+	if (devfd < 0)
+		return devfd == -1 ? -EINVAL : devfd;
+
+	/* we need only first 512 bytes, see luks2_hdr_disk structure */
+	if ((read_lseek_blockwise(devfd, device_block_size(cd, device),
+	     device_alignment(device), &dhdr, 512, 0) != 512))
+		return -EIO;
+
+	/* there's nothing to check if there's no LUKS2 header */
+	if ((be16_to_cpu(dhdr.version) != 2) ||
+	    memcmp(dhdr.magic, LUKS2_MAGIC_1ST, LUKS2_MAGIC_L) ||
+	    strcmp(dhdr.uuid, hdr->uuid))
+		return 0;
+
+	return hdr->seqid != be64_to_cpu(dhdr.seqid);
+}
+
+int LUKS2_device_write_lock(struct crypt_device *cd, struct luks2_hdr *hdr, struct device *device)
+{
+	int r = device_write_lock(cd, device);
+
+	if (r < 0) {
+		log_err(cd, _("Failed to acquire write lock on device %s."), device_path(device));
+		return r;
+	}
+
+	/* run sequence id check only on first write lock (r == 1) and w/o LUKS2 reencryption in-progress */
+	if (r == 1 && !crypt_get_reenc_context(cd)) {
+		log_dbg(cd, "Checking context sequence id matches value stored on disk.");
+		if (LUKS2_check_sequence_id(cd, hdr, device)) {
+			device_write_unlock(cd, device);
+			log_err(cd, _("Detected attempt for concurrent LUKS2 metadata update. Aborting operation."));
+			return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+
 /*
  * Convert in-memory LUKS2 header and write it to disk.
  * This will increase sequence id, write both header copies and calculate checksum.
  */
-int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct device *device)
+int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct device *device, bool seqid_check)
 {
 	char *json_area;
 	const char *json_text;
@@ -395,15 +443,17 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	}
 	strncpy(json_area, json_text, json_area_len);
 
-	/* Increase sequence id before writing it to disk. */
-	hdr->seqid++;
-
-	r = device_write_lock(cd, device);
+	if (seqid_check)
+		r = LUKS2_device_write_lock(cd, hdr, device);
+	else
+		r = device_write_lock(cd, device);
 	if (r < 0) {
-		log_err(cd, _("Failed to acquire write device lock."));
 		free(json_area);
 		return r;
 	}
+
+	/* Increase sequence id before writing it to disk. */
+	hdr->seqid++;
 
 	/* Write primary and secondary header */
 	r = hdr_write_disk(cd, device, hdr, json_area, 0);
@@ -414,8 +464,6 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 		log_dbg(cd, "LUKS2 header write failed (%d).", r);
 
 	device_write_unlock(cd, device);
-
-	/* FIXME: try recovery here? */
 
 	free(json_area);
 	return r;

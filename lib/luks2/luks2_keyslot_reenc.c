@@ -119,12 +119,9 @@ static int reenc_keyslot_store_data(struct crypt_device *cd,
 	if (!area_offset || !area_length || ((uint64_t)buffer_len > area_length))
 		return -EINVAL;
 
-	r = device_write_lock(cd, device);
-	if (r < 0) {
-		log_err(cd, _("Failed to acquire write lock on device %s."),
-			device_path(device));
+	r = LUKS2_device_write_lock(cd, crypt_get_hdr(cd, CRYPT_LUKS2), device);
+	if (r)
 		return r;
-	}
 
 	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd >= 0) {
