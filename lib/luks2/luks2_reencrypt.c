@@ -2232,22 +2232,6 @@ static int parse_reencryption_mode(const char *mode)
 		(strcmp(mode, "reencrypt") && strcmp(mode, "encrypt") && strcmp(mode, "decrypt")));
 }
 
-static int atomic_get_reencryption_flag(struct crypt_device *cd)
-{
-	int r;
-	crypt_reencrypt_info ri;
-
-	r = crypt_load(cd, CRYPT_LUKS2, NULL);
-	if (r)
-		return r;
-
-	ri = LUKS2_reenc_status(crypt_get_hdr(cd, CRYPT_LUKS2));
-	if (ri > CRYPT_REENCRYPT_NONE)
-		return -EBUSY;
-
-	return 0;
-}
-
 /* This function must be called with metadata lock held */
 static int _reencrypt_init(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
@@ -2793,6 +2777,7 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const struct crypt_params_reencrypt *params)
 {
 	int r;
+	crypt_reencrypt_info ri;
 	struct volume_key *vks = NULL;
 	uint32_t flags = params ? params->flags : 0;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
@@ -2814,20 +2799,21 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	r = atomic_get_reencryption_flag(cd);
-
-	if (r && (flags & CRYPT_REENCRYPT_INITIALIZE_ONLY)) {
+	ri = LUKS2_reenc_status(hdr);
+	if (ri == CRYPT_REENCRYPT_INVALID) {
 		device_write_unlock(cd, crypt_metadata_device(cd));
-		log_err(cd, _("LUKS2 reencryption already initialized."));
-		return r;
+		return -EINVAL;
 	}
 
-	/* r == 0, proceed with initialization */
-	/* r == -EBUSY, skip initialization and proceed with reencrypt load */
+	if ((ri > CRYPT_REENCRYPT_NONE) && (flags & CRYPT_REENCRYPT_INITIALIZE_ONLY)) {
+		device_write_unlock(cd, crypt_metadata_device(cd));
+		log_err(cd, _("LUKS2 reencryption already initialized."));
+		return -EBUSY;
+	}
 
-	if (!r && !(flags & CRYPT_REENCRYPT_RESUME_ONLY))
+	if (ri == CRYPT_REENCRYPT_NONE && !(flags & CRYPT_REENCRYPT_RESUME_ONLY))
 		r = _reencrypt_init(cd, hdr, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params, &vks);
-	else if (r == -EBUSY) {
+	else if (ri > CRYPT_REENCRYPT_NONE) {
 		log_dbg(cd, "LUKS2 reencryption already initialized.");
 		r = 0;
 	}
