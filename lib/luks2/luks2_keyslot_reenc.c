@@ -119,10 +119,6 @@ static int reenc_keyslot_store_data(struct crypt_device *cd,
 	if (!area_offset || !area_length || ((uint64_t)buffer_len > area_length))
 		return -EINVAL;
 
-	r = LUKS2_device_write_lock(cd, crypt_get_hdr(cd, CRYPT_LUKS2), device);
-	if (r)
-		return r;
-
 	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd >= 0) {
 		if (write_lseek_blockwise(devfd, device_block_size(cd, device),
@@ -133,8 +129,6 @@ static int reenc_keyslot_store_data(struct crypt_device *cd,
 			r = 0;
 	} else
 		r = -EINVAL;
-
-	device_write_unlock(cd, device);
 
 	if (r)
 		log_err(cd, _("IO error while encrypting keyslot."));
@@ -165,15 +159,21 @@ static int reenc_keyslot_store(struct crypt_device *cd,
 	if (!jobj_keyslot)
 		return -EINVAL;
 
-	r = reenc_keyslot_store_data(cd, jobj_keyslot, buffer, buffer_len);
-	if (r < 0)
+	r = LUKS2_device_write_lock(cd, hdr, crypt_metadata_device(cd));
+	if (r)
 		return r;
+
+	r = reenc_keyslot_store_data(cd, jobj_keyslot, buffer, buffer_len);
+	if (r < 0) {
+		device_write_unlock(cd, crypt_metadata_device(cd));
+		return r;
+	}
 
 	r = LUKS2_hdr_write(cd, hdr);
-	if (r < 0)
-		return r;
 
-	return keyslot;
+	device_write_unlock(cd, crypt_metadata_device(cd));
+
+	return r < 0 ? r : keyslot;
 }
 
 int reenc_keyslot_update(struct crypt_device *cd,
