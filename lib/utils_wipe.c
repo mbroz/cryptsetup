@@ -157,7 +157,10 @@ int crypt_wipe_device(struct crypt_device *cd,
 	if (MISALIGNED_512(offset) || MISALIGNED_512(length) || MISALIGNED_512(wipe_block_size))
 		return -EINVAL;
 
-	devfd = device_open(cd, device, O_RDWR);
+	if (device_is_locked(device))
+		devfd = device_open_locked(cd, device, O_RDWR);
+	else
+		devfd = device_open(cd, device, O_RDWR);
 	if (devfd < 0)
 		return errno ? -errno : -EINVAL;
 
