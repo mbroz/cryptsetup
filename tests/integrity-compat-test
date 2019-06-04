@@ -51,6 +51,9 @@ function dm_integrity_features()
 		DM_INTEGRITY_META=1
 		DM_INTEGRITY_RECALC=1
 	}
+	[ $VER_MIN -gt 2 ] && {
+		DM_INTEGRITY_BITMAP=1
+	}
 }
 
 add_device() {
@@ -156,24 +159,29 @@ intformat() # alg alg_out tagsize sector_size csum [keyfile keysize]
 	echo "[OK]"
 }
 
-int_error_detection() # alg tagsize sector_size key_file key_size
+int_error_detection() # mode alg tagsize sector_size key_file key_size
 {
-	if [ -n "$5" ] ; then
-		KEY_PARAMS="--integrity-key-file $4 --integrity-key-size $5"
+	if [ "$1" == "B" ] ; then
+		INT_MODE="-B"
+	else
+		INT_MODE=""
+	fi
+	if [ -n "$6" ] ; then
+		KEY_PARAMS="--integrity-key-file $5 --integrity-key-size $6"
 	else
 		KEY_PARAMS=""
 	fi
 	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
 
-	echo -n "[INTEGRITY:$1:$2:$3]"
+	echo -n "[INTEGRITY:$1:$2:$3:$4]"
 	echo -n "[FORMAT]"
-	$INTSETUP format -q --integrity $1 --tag-size $2 --sector-size $3 $KEY_PARAMS $DEV || fail "Cannot format device."
+	$INTSETUP format -q --integrity $2 --tag-size $3 --sector-size $4 $KEY_PARAMS $DEV $INT_MODE || fail "Cannot format device."
 	echo -n "[ACTIVATE]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 --integrity-no-journal $KEY_PARAMS || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity $2 --integrity-no-journal $KEY_PARAMS $INT_MODE || fail "Cannot activate device."
 
-	if [ -n "$4" -a -n "$5" ]; then
+	if [ -n "$5" -a -n "$6" ]; then
 		echo -n "[KEYED HASH]"
-		KEY_HEX=$(xxd -c 256 -l $5 -p $4)
+		KEY_HEX=$(xxd -c 256 -l $6 -p $5)
 		[ -z "$KEY_HEX" ] && fail "Cannot decode key."
 		dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
 	fi
@@ -191,9 +199,8 @@ int_error_detection() # alg tagsize sector_size key_file key_size
 	echo -n "Z" | dd of=$DEV bs=1 seek=$OFF_DEC conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
 
 	echo -n "[DETECT ERROR]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity $2 $KEY_PARAMS $INT_MODE || fail "Cannot activate device."
 	dd if=/dev/mapper/$DEV_NAME  >/dev/null 2>&1 && fail "Error detection failed."
-
 	echo -n "[REMOVE]"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
@@ -301,19 +308,19 @@ intformat sha256      sha256         32 4096 33f7dfa5163ca9f740383fb8b0919574e38
 intformat hmac-sha256 hmac\(sha256\) 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4 $KEY_FILE 32
 
 echo "Error detection tests:"
-int_error_detection crc32c      4  512
-int_error_detection crc32c      4  4096
-int_error_detection crc32       4  512
-int_error_detection crc32       4  4096
-int_error_detection sha1        20 512
-int_error_detection sha1        16 512
-int_error_detection sha1        20 4096
-int_error_detection sha256      32 512
-int_error_detection sha256      32 4096
+int_error_detection J crc32c      4  512
+int_error_detection J crc32c      4  4096
+int_error_detection J crc32       4  512
+int_error_detection J crc32       4  4096
+int_error_detection J sha1        20 512
+int_error_detection J sha1        16 512
+int_error_detection J sha1        20 4096
+int_error_detection J sha256      32 512
+int_error_detection J sha256      32 4096
 
 which xxd >/dev/null 2>&1 || skip "WARNING: xxd tool required."
-int_error_detection hmac-sha256 32 512 $KEY_FILE 32
-int_error_detection hmac-sha256 32 4096 $KEY_FILE 32
+int_error_detection J hmac-sha256 32 512 $KEY_FILE 32
+int_error_detection J hmac-sha256 32 4096 $KEY_FILE 32
 
 echo "Journal parameters tests:"
 # Watermark is calculated in kernel, so it can be rounded down/up
@@ -358,6 +365,26 @@ if [ -n "$DM_INTEGRITY_META" ] ; then
 	$INTSETUP status $DEV_NAME | grep -q 'metadata device:' || fail
 	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
 	echo "[OK]"
+else
+	echo "[N/A]"
+fi
+
+echo -n "Bitmap mode parameters:"
+if [ -n "$DM_INTEGRITY_BITMAP" ] ; then
+	add_device
+	$INTSETUP format -q $DEV --integrity-bitmap-mode $DEV2 || fail "Cannot format device."
+	$INTSETUP open $DEV --integrity-bitmap-mode --bitmap-sectors-per-bit 65536 --bitmap-flush-time 5000 $DEV_NAME || fail "Cannot activate device."
+	$INTSETUP status $DEV_NAME | grep -q 'bitmap 512-byte sectors per bit: 65536' || fail
+	$INTSETUP status $DEV_NAME | grep -q 'bitmap flush interval: 5000 ms' || fail
+	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+	echo "[OK]"
+	echo "Bitmap error detection tests:"
+	int_error_detection B crc32c      4  512
+	int_error_detection B crc32c      4  4096
+	int_error_detection B sha256      32 512
+	int_error_detection B sha256      32 4096
+	int_error_detection B hmac-sha256 32 512 $KEY_FILE 32
+	int_error_detection B hmac-sha256 32 4096 $KEY_FILE 32
 else
 	echo "[N/A]"
 fi
