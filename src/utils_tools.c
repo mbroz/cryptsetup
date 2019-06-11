@@ -116,7 +116,7 @@ void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
 	case CRYPT_LOG_DEBUG_JSON:
 	case CRYPT_LOG_DEBUG:
 		if (opt_debug)
-			fprintf(stdout, "# %s\n", msg);
+			fprintf(stdout, "# %s", msg);
 		break;
 	}
 }

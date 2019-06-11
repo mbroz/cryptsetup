@@ -175,12 +175,15 @@ void logger(struct crypt_device *cd, int level, const char *file,
 {
 	va_list argp;
 	char target[LOG_MAX_LEN + 2];
+	int len;
 
 	va_start(argp, format);
 
-	if (vsnprintf(&target[0], LOG_MAX_LEN, format, argp) > 0 ) {
+	len = vsnprintf(&target[0], LOG_MAX_LEN, format, argp);
+	if (len > 0 && len < LOG_MAX_LEN) {
 		/* All verbose and error messages in tools end with EOL. */
-		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR)
+		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR ||
+		    level == CRYPT_LOG_DEBUG || level == CRYPT_LOG_DEBUG_JSON)
 			strncat(target, "\n", LOG_MAX_LEN);
 
 		crypt_log(cd, level, target);
