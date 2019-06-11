@@ -36,17 +36,12 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	struct volume_key *vk, unsigned int sector,
 	struct crypt_device *cd)
 {
-	struct device *device = crypt_metadata_device(cd);
 #ifndef ENABLE_AF_ALG /* Support for old kernel without Crypto API */
-	int r = LUKS2_device_write_lock(cd, crypt_get_hdr(cd, CRYPT_LUKS2), device);
-	if (r)
-		return r;
-	r = LUKS_encrypt_to_storage(src, srcLength, cipher, cipher_mode, vk, sector, cd);
-	device_write_unlock(cd, device);
-	return r;
+	return LUKS_encrypt_to_storage(src, srcLength, cipher, cipher_mode, vk, sector, cd);
 #else
 	struct crypt_storage *s;
 	int devfd, r;
+	struct device *device = crypt_metadata_device(cd);
 
 	/* Only whole sector writes supported */
 	if (MISALIGNED_512(srcLength))
@@ -65,10 +60,6 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	if (r)
 		return r;
 
-	r = LUKS2_device_write_lock(cd, crypt_get_hdr(cd, CRYPT_LUKS2), device);
-	if (r)
-		return r;
-
 	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd >= 0) {
 		if (write_lseek_blockwise(devfd, device_block_size(cd, device),
@@ -81,8 +72,6 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 		device_sync(cd, device);
 	} else
 		r = -EIO;
-
-	device_write_unlock(cd, device);
 
 	if (r)
 		log_err(cd, _("IO error while encrypting keyslot."));
