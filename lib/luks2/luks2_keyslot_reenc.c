@@ -239,7 +239,7 @@ static int reenc_keyslot_dump(struct crypt_device *cd, int keyslot)
 		json_object_object_get_ex(jobj_area, "hash", &jobj1);
 		log_std(cd, "\t%-12s%s\n", "Hash:", json_object_get_string(jobj1));
 		json_object_object_get_ex(jobj_area, "sector_size", &jobj1);
-		log_std(cd, "\t%-12s%d [bytes]\n", "Granularity:", json_object_get_int(jobj1));
+		log_std(cd, "\t%-12s%d [bytes]\n", "Hash data:", json_object_get_int(jobj1));
 	} else if (!strcmp(json_object_get_string(jobj_resilience), "datashift")) {
 		json_object_object_get_ex(jobj_area, "shift_size", &jobj1);
 		log_std(cd, "\t%-12s%" PRIu64 "[bytes]\n", "Shift size:", json_object_get_uint64(jobj1));
