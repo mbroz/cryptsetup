@@ -709,18 +709,15 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	if (wipe_area_only)
 		log_dbg(cd, "Wiping keyslot %d area only.", keyslot);
 
-	/* FIXME: crypt_wipe_device requires 'locked' variant. */
 	r = LUKS2_device_write_lock(cd, hdr, device);
 	if (r)
 		return r;
-	device_write_unlock(cd, device);
 
 	/* secure deletion of possible key material in keyslot area */
 	r = crypt_keyslot_area(cd, keyslot, &area_offset, &area_length);
 	if (r && r != -ENOENT)
-		return r;
+		goto out;
 
-	/* We can destroy the binary keyslot area now without lock */
 	if (!r) {
 		r = crypt_wipe_device(cd, device, CRYPT_WIPE_SPECIAL, area_offset,
 			      area_length, area_length, NULL, NULL);
@@ -731,24 +728,27 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 				r = -EINVAL;
 			} else
 				log_err(cd, _("Cannot wipe device %s."), device_path(device));
-			return r;
+			goto out;
 		}
 	}
 
 	if (wipe_area_only)
-		return r;
+		goto out;
 
 	/* Slot specific wipe */
 	if (h) {
 		r = h->wipe(cd, keyslot);
 		if (r < 0)
-			return r;
+			goto out;
 	} else
 		log_dbg(cd, "Wiping keyslot %d without specific-slot handler loaded.", keyslot);
 
 	json_object_object_del_by_uint(jobj_keyslots, keyslot);
 
-	return LUKS2_hdr_write(cd, hdr);
+	r = LUKS2_hdr_write(cd, hdr);
+out:
+	device_write_unlock(cd, crypt_metadata_device(cd));
+	return r;
 }
 
 int LUKS2_keyslot_dump(struct crypt_device *cd, int keyslot)
