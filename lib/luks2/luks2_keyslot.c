@@ -199,7 +199,7 @@ int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 	 */
 	params->af_type = LUKS2_KEYSLOT_AF_LUKS1;
 	/* currently we use hash for AF from pbkdf settings */
-	r = snprintf(params->af.luks1.hash, sizeof(params->af.luks1.hash), "%s", pbkdf->hash);
+	r = snprintf(params->af.luks1.hash, sizeof(params->af.luks1.hash), "%s", pbkdf->hash ?: DEFAULT_LUKS1_HASH);
 	if (r < 0 || (size_t)r >= sizeof(params->af.luks1.hash))
 		return -EINVAL;
 	params->af.luks1.stripes = 4000;
