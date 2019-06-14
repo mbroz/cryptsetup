@@ -705,9 +705,10 @@ static int _crypt_load_luks2(struct crypt_device *cd, int reload, int repair)
 			goto out;
 	}
 
-	if (reload)
+	if (reload) {
 		LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
-	else
+		free(cd->u.luks2.keyslot_cipher);
+	} else
 		cd->type = type;
 
 	r = 0;
@@ -4815,14 +4816,17 @@ int crypt_keyslot_set_encryption(struct crypt_device *cd,
 	const char *cipher,
 	size_t key_size)
 {
+	char *tmp;
+
 	if (!cd || !cipher || ! key_size || !isLUKS2(cd->type))
 		return -EINVAL;
 
 	if (LUKS2_keyslot_cipher_incompatible(cd, cipher))
 		return -EINVAL;
 
+	tmp = strdup(cipher);
 	free(cd->u.luks2.keyslot_cipher);
-	cd->u.luks2.keyslot_cipher = strdup(cipher);
+	cd->u.luks2.keyslot_cipher = tmp;
 	if (!cd->u.luks2.keyslot_cipher)
 		return -ENOMEM;
 	cd->u.luks2.keyslot_key_size = key_size;
