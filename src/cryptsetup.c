@@ -2874,13 +2874,13 @@ static int _check_luks2_keyslots(struct crypt_device *cd)
 	}
 
 	/* at least one keyslot for reencryption plus new volume key */
-	if (active + unbound >= max - 2) {
+	if (active + unbound > max - 2) {
 		log_err(_("Not enough free keyslots for reencryption."));
 		return -EINVAL;
 	}
 
 	if ((opt_key_slot == CRYPT_ANY_SLOT) &&
-            (2 * active + unbound + 1 >= max)) {
+            (2 * active + unbound > max - 1)) {
 		log_err(_("Not enough free keyslots for reencryption."));
 		return -EINVAL;
 	}
