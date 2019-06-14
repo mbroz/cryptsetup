@@ -1,4 +1,4 @@
-Cryptsetup 2.2.0-rc0 Release Notes
+Cryptsetup 2.2.0-rc1 Release Notes
 ==================================
 Testing release with new experimental features and bug fixes.
 
@@ -13,6 +13,50 @@ are in this testing release limited.
 
 Please do not use this testing version in production environments.
 Also, use it only if you have a full data backup.
+
+Changes since version 2.2.0-rc0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Add integritysetup support for bitmap mode introduced in Linux kernel 5.2.
+  Integritysetup now supports --integrity-bitmap-mode option and
+  --bitmap-sector-per-bit and --bitmap-flush-time commandline options.
+
+  In the bitmap operation mode, if a bit in the bitmap is 1, the corresponding
+  region's data and integrity tags are not synchronized - if the machine
+  crashes, the unsynchronized regions will be recalculated.
+  The bitmap mode is faster than the journal mode because we don't have
+  to write the data twice, but it is also less reliable, because if data
+  corruption happens when the machine crashes, it may not be detected.
+  This can be used only for standalone devices, not with dm-crypt.
+
+* The libcryptsetup now keeps all file descriptors to underlying device
+  open during the whole lifetime of crypt device context to avoid excessive
+  scanning in udev (udev run scan on every descriptor close).
+
+* The luksDump command now prints more info for reencryption keyslot
+  (when a device is in-reencryption).
+
+* New --device-size parameter is supported for LUKS2 reencryption.
+  It may be used to encrypt/reencrypt only the initial part of the data
+  device if the user is aware that the rest of the device is empty.
+
+  Note: This change causes API break since the last rc0 release
+  (crypt_params_reencrypt structure contains additional field).
+
+* New --resume-only parameter is supported for LUKS2 reencryption.
+  This flag resumes reencryption process if it exists (not starting
+  new reencryption).
+
+* The repair command now tries LUKS2 reencryption recovery if needed.
+
+* If reencryption device is a file image, an interactive dialog now
+  asks if reencryption should be run safely in offline mode
+  (if autodetection of active devices failed).
+
+* Fix activation through a token where dm-crypt volume key was not
+  set through keyring (but using old device-mapper table parameter mode).
+
+* Online reencryption can now retain all keyslots (if all passphrases
+  are provided). Note that keyslot numbers will change in this case.
 
 Changes since version 2.1.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
