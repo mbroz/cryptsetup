@@ -7,6 +7,7 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs
 
+FAST_PBKDF2="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 FAST_PBKDF_ARGON="--pbkdf-force-iterations 4 --pbkdf-memory 32 --pbkdf-parallel 1"
 DEFAULT_ARGON="argon2i"
 
@@ -1204,6 +1205,71 @@ for test_res in checksum journal none; do
 done
 echo ""
 done
+
+echo "[22] Multi-keyslot device reencryption"
+prepare dev_size_mb=17
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --offset 32768 $FAST_PBKDF_ARGON $DEV || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF2 $DEV || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH2
+
+echo -e "$PWD1\n$PWD2\n$PWD3" | $CRYPTSETUP reencrypt $DEV -q || fail
+check_hash $PWD1 $HASH2
+check_hash $PWD2 $HASH2
+check_hash $PWD3 $HASH2
+
+# check at least pbkdf type is preserved
+$CRYPTSETUP luksDump $DEV | grep -e "3: luks2" -A5 | grep -q "argon2" || fail
+$CRYPTSETUP luksDump $DEV | grep -e "4: luks2" -A5 | grep -q "pbkdf2" || fail
+$CRYPTSETUP luksDump $DEV | grep -e "5: luks2" -A5 | grep -q "argon2" || fail
+
+echo $PWD1 | $CRYPTSETUP -q luksAddKey $FAST_PBKDF2 $DEV $KEY1 || fail
+
+# with more keyslots, specific has to be selected
+$CRYPTSETUP reencrypt $DEV -d $KEY1 -q 2>/dev/null && fail
+$CRYPTSETUP reencrypt $DEV -d $KEY1 -q -S0 || fail
+open_crypt
+check_hash_dev /dev/mapper/$DEV_NAME $HASH2
+$CRYPTSETUP close $DEV_NAME
+
+# there should be single keyslot now
+$CRYPTSETUP reencrypt $DEV -d $KEY1 -q || fail
+echo $PWD1 | $CRYPTSETUP -q luksAddKey $FAST_PBKDF2 $DEV -S1 -d $KEY1 || fail
+
+echo $PWD3 | $CRYPTSETUP -q luksAddKey $FAST_PBKDF2 $DEV -S2 --unbound --key-size 32 || fail
+echo $PWD3 | $CRYPTSETUP -q luksAddKey $FAST_PBKDF2 $DEV -S22 --unbound --key-size 32 || fail
+echo $PWD3 | $CRYPTSETUP -q luksAddKey $FAST_PBKDF2 $DEV -S23 --unbound --key-size 32 || fail
+
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -S1 -q || fail
+$CRYPTSETUP open --test-passphrase -d $KEY1 $DEV 2>/dev/null && fail
+echo $PWD3 | $CRYPTSETUP open --test-passphrase -S2 $DEV || fail
+echo $PWD3 | $CRYPTSETUP open --test-passphrase -S22 $DEV || fail
+check_hash $PWD1 $HASH2
+
+# fill 31 keyslots
+COUNT=27
+while [ $COUNT -gt 0 ]; do
+	echo -e "$PWD1\n$PWD1" | $CRYPTSETUP luksAddKey $DEV -q $FAST_PBKDF_ARGON || fail
+	COUNT=$((COUNT-1))
+done
+
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -S0 -q 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksKillSlot $DEV 30 || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -S0 || fail
+
+COUNT=14
+while [ $COUNT -gt 0 ]; do
+	echo -e "$PWD1\n$PWD1" | $CRYPTSETUP luksAddKey $DEV -q $FAST_PBKDF_ARGON || fail
+	COUNT=$((COUNT-1))
+done
+
+echo -e "$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1" | $CRYPTSETUP reencrypt $DEV -q 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksKillSlot $DEV 1 || fail
+# one wrong passphrase
+echo -e "$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD2" | $CRYPTSETUP reencrypt $DEV -q 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --resume-only -q 2>/dev/null && fail
+echo -e "$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1" | $CRYPTSETUP reencrypt $DEV -q  || fail
 
 remove_mapping
 exit 0
