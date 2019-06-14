@@ -3343,7 +3343,7 @@ int main(int argc, const char **argv)
 		{ "veracrypt",         '\0', POPT_ARG_NONE, &opt_veracrypt,             0, N_("Scan also for VeraCrypt compatible device"), NULL },
 		{ "veracrypt-pim",     '\0', POPT_ARG_INT, &opt_veracrypt_pim,          0, N_("Personal Iteration Multiplier for VeraCrypt compatible device"), NULL },
 		{ "veracrypt-query-pim", '\0', POPT_ARG_NONE, &opt_veracrypt_query_pim, 0, N_("Query Personal Iteration Multiplier for VeraCrypt compatible device"), NULL },
-		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, plain, loopaes, tcrypt"), NULL },
+		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, luks1, luks2, plain, loopaes, tcrypt"), NULL },
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)"), NULL },
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option"), NULL },
 		{ "perf-submit_from_crypt_cpus",'\0', POPT_ARG_NONE, &opt_perf_submit_from_crypt_cpus,0,N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option"), NULL },
