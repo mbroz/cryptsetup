@@ -977,7 +977,7 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 	log_dbg(cd, "reencrypt length: %" PRIu64, rh->length);
 	log_dbg(cd, "reencrypt offset: %" PRIu64, rh->offset);
 	log_dbg(cd, "reencrypt shift: %s%" PRIu64, (rh->data_shift && rh->direction == CRYPT_REENCRYPT_BACKWARD ? "-" : ""), rh->data_shift);
-	log_dbg(cd, "reencrypt alignemnt: %zu", rh->alignment);
+	log_dbg(cd, "reencrypt alignment: %zu", rh->alignment);
 	log_dbg(cd, "reencrypt progress: %" PRIu64, rh->progress);
 
 	rh->device_size = device_size;
@@ -1794,7 +1794,7 @@ static int reenc_load_overlay_device(struct crypt_device *cd, struct luks2_hdr *
 
 	r = device_alloc(cd, &hz_dev, hz_path);
 	if (r) {
-		log_err(cd, _("Failed to alocate device %s."), hz_path);
+		log_err(cd, _("Failed to allocate device %s."), hz_path);
 		goto out;
 	}
 
@@ -3153,7 +3153,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 	if (rh->online) {
 		r = reenc_init_helper_devices(cd, rh);
 		if (r) {
-			log_err(cd, _("Failed to initalize reencryption device stack."));
+			log_err(cd, _("Failed to initialize reencryption device stack."));
 			return -EINVAL;
 		}
 	} else {
