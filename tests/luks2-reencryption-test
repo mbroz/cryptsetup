@@ -22,10 +22,6 @@ PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
 
-HAVE_KEYRING=$(grep -e "#define KERNEL_KEYRING" ../config.h)
-test -n "$HAVE_KEYRING" || HAVE_KEYRING=0
-HAVE_KEYRING=${HAVE_KEYRING: -1}
-
 function dm_crypt_features()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
