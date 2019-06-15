@@ -864,7 +864,7 @@ static int restore_luks_header(struct reenc_ctx *rc)
 
 	/*
 	 * For new encryption and new detached header in file just move it.
-	 * For existing file try to ensure we have prealocated space for restore.
+	 * For existing file try to ensure we have preallocated space for restore.
 	 */
 	if (opt_new && rc->device_header) {
 		r = stat(rc->device_header, &st);
