@@ -43,9 +43,9 @@ LOOPDEV=$(losetup -f 2>/dev/null)
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove $DEV_NAME3
-	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove --retry $DEV_NAME3
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* >/dev/null 2>&1
 
@@ -88,7 +88,7 @@ function skip()
 
 function prepare()
 {
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 
 	case "$2" in
 	wipe)
@@ -526,7 +526,7 @@ echo $PWD1 | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 dmsetup load $DEV_NAME --table "0 40000 error" || fail
 dmsetup resume $DEV_NAME || fail
 $CRYPTSETUP -q luksClose $DEV_NAME2 || fail
-dmsetup remove $DEV_NAME || fail
+dmsetup remove --retry $DEV_NAME || fail
 
 prepare "[23] ChangeKey passphrase and keyfile" wipe
 # [0]$KEY1 [1]key0

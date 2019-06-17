@@ -16,7 +16,7 @@ KEYFILE=keyfile1
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$MAP ] && dmsetup remove $MAP
+	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
 }
 
 function fail()

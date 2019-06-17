@@ -28,7 +28,7 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$NAME ] && dmsetup remove $NAME
+	[ -b /dev/mapper/$NAME ] && dmsetup remove --retry $NAME
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -119,23 +119,23 @@ dd if=/dev/urandom of=$DEV bs=1M count=$DEVSIZEMB oflag=direct > /dev/null 2>&1 
 echo -n "Testing $CIPHER_XTS_PLAIN..."
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_XTS_PLAIN $HEXKEY_32 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 load_key "$HEXKEY_32" logon  $LOGON_KEY_32_OK "$TEST_KEYRING" || fail "Cannot load 32 byte logon key type"
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_XTS_PLAIN :32:logon:$LOGON_KEY_32_OK 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 # same test using message
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_XTS_PLAIN $HEXKEY_32 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_XTS_PLAIN $HEXKEY_32 0 $DEV 0" || fail
 dmsetup suspend $NAME || fail
 dmsetup message $NAME 0 key wipe || fail
 dmsetup message $NAME 0 "key set :32:logon:$LOGON_KEY_32_OK" || fail
 dmsetup resume $NAME || fail
 sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 echo "OK"
 
@@ -143,23 +143,23 @@ echo "OK"
 echo -n "Testing $CIPHER_CBC_ESSIV..."
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_ESSIV $HEXKEY_16 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 load_key "$HEXKEY_16" logon  $LOGON_KEY_16_OK "$TEST_KEYRING" || fail "Cannot load 16 byte logon key type"
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_ESSIV :16:logon:$LOGON_KEY_16_OK 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 # same test using message
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_ESSIV $HEXKEY_16 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_ESSIV $HEXKEY_16 0 $DEV 0" || fail
 dmsetup suspend $NAME || fail
 dmsetup message $NAME 0 key wipe || fail
 dmsetup message $NAME 0 "key set :16:logon:$LOGON_KEY_16_OK" || fail
 dmsetup resume $NAME || fail
 sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 echo "OK"
 
@@ -167,23 +167,23 @@ echo "OK"
 echo -n "Testing $CIPHER_CBC_TCW..."
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW $HEXKEY_64 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 load_key "$HEXKEY_64" logon  $LOGON_KEY_64_OK "$TEST_KEYRING" || fail "Cannot load 16 byte logon key type"
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW :64:logon:$LOGON_KEY_64_OK 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksum mismatch (corruption)"
 # same test using message
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW $HEXKEY_64 0 $DEV 0" || fail
 sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW $HEXKEY_64 0 $DEV 0" || fail
 dmsetup suspend $NAME || fail
 dmsetup message $NAME 0 key wipe || fail
 dmsetup message $NAME 0 "key set :64:logon:$LOGON_KEY_64_OK" || fail
 dmsetup resume $NAME || fail
 sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
-dmsetup remove $NAME || fail
+dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 echo "OK"
 

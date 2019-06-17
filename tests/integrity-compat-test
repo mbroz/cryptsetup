@@ -15,7 +15,7 @@ KEY_FILE=key.img
 
 dmremove() { # device
 	udevadm settle >/dev/null 2>&1
-	dmsetup remove $1 >/dev/null 2>&1
+	dmsetup remove --retry $1 >/dev/null 2>&1
 }
 
 cleanup() {

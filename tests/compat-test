@@ -47,9 +47,9 @@ LOOPDEV=$(losetup -f 2>/dev/null)
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove $DEV_NAME3 >/dev/null 2>&1
-	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 >/dev/null 2>&1
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove --retry $DEV_NAME3 >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2 >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME >/dev/null 2>&1
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $VK_FILE missing-file >/dev/null 2>&1
 }
@@ -89,7 +89,7 @@ function skip()
 
 function prepare()
 {
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME >/dev/null 2>&1
 
 	case "$2" in
 	file)
@@ -551,7 +551,7 @@ echo $PWD1 | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 dmsetup load $DEV_NAME --table "0 5000 error" || fail
 dmsetup resume $DEV_NAME || fail
 $CRYPTSETUP -q luksClose $DEV_NAME2 || fail
-dmsetup remove $DEV_NAME || fail
+dmsetup remove --retry $DEV_NAME || fail
 
 prepare "[23] ChangeKey passphrase and keyfile" wipe
 # [0]$KEY1 [1]key0
@@ -623,7 +623,7 @@ $CRYPTSETUP --key-file=/dev/mapper/$DEV_NAME2 -l 13 --keyfile-offset 5120000000 
 $CRYPTSETUP luksClose $DEV_NAME || fail
 $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d /dev/mapper/$DEV_NAME2 \
   --keyfile-offset 5120000000 -l 13 /dev/mapper/$DEV_NAME2 --new-keyfile-offset 5120000001 --new-keyfile-size 15 || fail
-dmsetup remove $DEV_NAME2
+dmsetup remove --retry $DEV_NAME2
 
 prepare "[25] Create shared segments" wipe
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha1 --offset   0 --size 256 || fail

@@ -16,7 +16,7 @@ LOOPDEV=$(losetup -f 2>/dev/null)
 
 function dmremove() { # device
 	udevadm settle >/dev/null 2>&1
-	dmsetup remove $1 >/dev/null 2>&1
+	dmsetup remove --retry $1 >/dev/null 2>&1
 }
 
 function remove_mapping()

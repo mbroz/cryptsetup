@@ -22,8 +22,8 @@ HEXKEY_31="bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a"
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$DEV_CRYPT ] && dmsetup remove $DEV_CRYPT
-	[ -b /dev/mapper/$DEV_ZERO ] && dmsetup remove $DEV_ZERO
+	[ -b /dev/mapper/$DEV_CRYPT ] && dmsetup remove --retry $DEV_CRYPT
+	[ -b /dev/mapper/$DEV_ZERO ] && dmsetup remove --retry $DEV_ZERO
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -95,13 +95,13 @@ echo "[1] Valid keyring keys"
 KEY=":32:logon:$LOGON_KEY_32_OK"
 dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" || fail
 dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER $KEY 0" || fail
-dmsetup remove $DEV_CRYPT || fail
+dmsetup remove --retry $DEV_CRYPT || fail
 
 # load user type kernel key
 KEY=":32:user:$USER_KEY_32_OK"
 dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $KEY 0 /dev/mapper/$DEV_ZERO 0" || fail
 dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER $KEY 0" || fail
-dmsetup remove $DEV_CRYPT || fail
+dmsetup remove --retry $DEV_CRYPT || fail
 
 # load logon type kernel key...
 KEY=":32:logon:$LOGON_KEY_32_OK"
@@ -119,7 +119,7 @@ dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER :32:user:$USER_KEY_
 dmsetup message $DEV_CRYPT 0 "key set $HEXKEY_32" || fail
 dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER $HEXKEY_32 0" || fail
 dmsetup resume $DEV_CRYPT || fail
-dmsetup remove $DEV_CRYPT || fail
+dmsetup remove --retry $DEV_CRYPT || fail
 
 dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $HEXKEY_32 0 /dev/mapper/$DEV_ZERO 0" || fail
 dmsetup suspend $DEV_CRYPT || fail
@@ -129,7 +129,7 @@ dmsetup resume $DEV_CRYPT || fail
 dmsetup suspend $DEV_CRYPT || fail
 dmsetup message $DEV_CRYPT 0 "key set :32:logon:$LOGON_KEY_32_OK" || fail
 dmsetup resume $DEV_CRYPT || fail
-dmsetup remove $DEV_CRYPT || fail
+dmsetup remove --retry $DEV_CRYPT || fail
 
 echo "[2] message ioctl"
 dmsetup create $DEV_CRYPT --table "0 100 crypt $CIPHER $HEXKEY_32 0 /dev/mapper/$DEV_ZERO 0" || fail
@@ -159,7 +159,7 @@ dmsetup message $DEV_CRYPT 0 "key set :32:logon:" 2> /dev/null && fail
 dmsetup table --showkeys $DEV_CRYPT | grep -q "crypt $CIPHER :32:user:$USER_KEY_32_OK 0" || fail
 dmsetup message $DEV_CRYPT 0 "key set :32:user:$USER_KEY_32_OK" || fail
 dmsetup resume $DEV_CRYPT || fail
-dmsetup remove $DEV_CRYPT || fail
+dmsetup remove --retry $DEV_CRYPT || fail
 
 echo "[3] bOrked keys"
 # declare the key having 32 bytes but load key which has in fact 31 bytes only
