@@ -699,17 +699,12 @@ static size_t _reenc_alignment(struct crypt_device *cd,
 		struct luks2_hdr *hdr)
 {
 	int ss;
-	/* FIXME: logical block size would make better sense */
 	size_t alignment = device_block_size(cd, crypt_data_device(cd));
 
-	log_dbg(cd, "data device sector size: %zu", alignment);
-
 	ss = LUKS2_reencrypt_get_sector_size_old(hdr);
-	log_dbg(cd, "Old sector size: %d", ss);
 	if (ss > 0 && (size_t)ss > alignment)
 		alignment = ss;
 	ss = LUKS2_reencrypt_get_sector_size_new(hdr);
-	log_dbg(cd, "New sector size: %d", ss);
 	if (ss > 0 && (size_t)ss > alignment)
 		alignment = (size_t)ss;
 
@@ -889,6 +884,20 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 	rh->alignment = _reenc_alignment(cd, hdr);
 	if (!rh->alignment)
 		return -EINVAL;
+
+	log_dbg(cd, "Requested hotzone size: %" PRIu64 ", requested device size: %" PRIu64
+		", calculated alignment: %zu", params->max_hotzone_size,
+		params->device_size, rh->alignment);
+
+	if (params->max_hotzone_size % rh->alignment) {
+		log_err(cd, _("Hotzone size must be multiple of calculated zone alignment (%zu bytes)."), rh->alignment);
+		return -EINVAL;
+	}
+
+	if (params->device_size % rh->alignment) {
+		log_err(cd, _("Device size must be multiple of calculated zone alignment (%zu bytes)."), rh->alignment);
+		return -EINVAL;
+	}
 
 	r = LUKS2_reencrypt_direction(hdr, &rh->direction);
 	if (r)
