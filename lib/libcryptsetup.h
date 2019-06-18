@@ -2146,7 +2146,7 @@ struct crypt_params_reencrypt {
 	const char *resilience;                   /**< Resilience mode: "none", "checksum", "journal" or "shift" (only "shift" is immutable after init) */
 	const char *hash;                         /**< Used hash for "checksum" resilience type, ignored otherwise. */
 	uint64_t data_shift;                      /**< Used in "shift" mode, must be non-zero, immutable after first init. */
-	uint64_t max_hotzone_size;                /**< Hotzone size for "none" mode; maximum hotzone size for "checksum" mode. */
+	uint64_t max_hotzone_size;                /**< Exact hotzone size for "none" mode. Maximum hotzone size for "checksum" and "journal" modes. */
 	uint64_t device_size;			  /**< Reencrypt only initial part of the data device. */
 	const struct crypt_params_luks2 *luks2;   /**< LUKS2 parameters for the final reencryption volume.*/
 	uint32_t flags;                           /**< Reencryption flags. */
