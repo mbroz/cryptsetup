@@ -2506,7 +2506,7 @@ static int LUKS2_reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 		r = -EINVAL;
 
 	if (r < 0 || !tmp) {
-		log_err(cd, _("Failed to load reenc context."));
+		log_err(cd, _("Failed to load LUKS2 reencryption context."));
 		return r;
 	}
 
@@ -3207,7 +3207,7 @@ static int _reencrypt_recover(struct crypt_device *cd,
 
 	r = LUKS2_reenc_load(cd, hdr, device_size, NULL, &rh);
 	if (r < 0) {
-		log_err(cd, _("Failed to load reencryption context from LUKS2 header."));
+		log_err(cd, _("Failed to load LUKS2 reencryption context."));
 		return r;
 	}
 
