@@ -90,7 +90,8 @@ void clogger(struct crypt_device *cd, int level, const char *file, int line,
 
 	if (vsnprintf(&target[0], LOG_MAX_LEN, format, argp) > 0) {
 		/* All verbose and error messages in tools end with EOL. */
-		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR)
+		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR ||
+		    level == CRYPT_LOG_DEBUG || level == CRYPT_LOG_DEBUG_JSON)
 			strncat(target, "\n", LOG_MAX_LEN);
 
 		crypt_log(cd, level, target);
