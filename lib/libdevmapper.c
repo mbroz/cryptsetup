@@ -2517,16 +2517,6 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 	return r;
 }
 
-static bool name_in_list(char **names, const char *name)
-{
-	while (*names) {
-		if (!strcmp(*names++, name))
-			return true;
-	}
-
-	return false;
-}
-
 static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_deps *deps, char **names, size_t names_offset, size_t names_length)
 {
 	struct crypt_dm_active_device dmd;
@@ -2553,7 +2543,7 @@ static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_
 
 		if (!dmd.uuid ||
 		    strncmp(prefix, dmd.uuid, strlen(prefix)) ||
-		    name_in_list(names, dmname))
+		    crypt_string_in(dmname, names, names_length))
 			*dmname = '\0';
 
 		dm_targets_free(cd, &dmd);

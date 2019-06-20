@@ -250,4 +250,6 @@ int kernel_version(uint64_t *kversion);
 int crypt_serialize_lock(struct crypt_device *cd);
 void crypt_serialize_unlock(struct crypt_device *cd);
 
+bool crypt_string_in(const char *str, char **list, size_t list_size);
+
 #endif /* INTERNAL_H */
