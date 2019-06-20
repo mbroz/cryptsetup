@@ -271,7 +271,7 @@ void global_log_callback(int level, const char *msg, void *usrptr)
 
 	if (_debug) {
 		if (level == CRYPT_LOG_DEBUG)
-			fprintf(stdout, "# %s\n", msg);
+			fprintf(stdout, "# %s", msg);
 		else
 			fprintf(stdout, "%s", msg);
 	}
