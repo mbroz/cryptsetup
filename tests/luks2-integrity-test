@@ -25,7 +25,8 @@ fail()
 {
 	echo
 	[ -n "$1" ] && echo "FAIL: $1"
-	echo "FAILED at line $(caller)"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
 	cleanup
 	exit 100
 }

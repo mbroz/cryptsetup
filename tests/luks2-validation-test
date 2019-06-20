@@ -29,7 +29,8 @@ function remove_mapping()
 function fail()
 {
 	[ -n "$1" ] && echo "$1"
-	echo "FAILED at line $(caller)"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
 	cd $START_DIR
 	remove_mapping
 	exit 2

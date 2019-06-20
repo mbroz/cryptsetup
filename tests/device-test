@@ -22,11 +22,9 @@ cleanup() {
 
 fail()
 {
-	if [ -n "$1" ] ; then
-		echo "FAIL $1 at line $(caller)"
-	else
-		echo "FAIL at line $(caller)"
-	fi
+	[ -n "$1" ] && echo "FAIL $1"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
 	cleanup
 	exit 100
 }

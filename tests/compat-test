@@ -64,7 +64,8 @@ function fail()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
-	echo "FAILED at line $(caller)"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
 	exit 2
 }
 

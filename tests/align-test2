@@ -27,7 +27,8 @@ cleanup() {
 fail()
 {
 	if [ -n "$1" ] ; then echo "FAIL $1" ; fi
-	echo "FAILED at line $(caller)"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
 	cleanup
 	exit 100
 }

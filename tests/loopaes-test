@@ -29,7 +29,8 @@ function remove_mapping()
 
 function fail()
 {
-	echo "FAILED at line $(caller)"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
 	remove_mapping
 	exit 2
 }
