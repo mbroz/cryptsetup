@@ -2135,7 +2135,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	int r;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	struct crypt_dm_active_device dmdi = {}, dmd = {
-		.uuid   = crypt_get_uuid(cd),
+		.uuid   = crypt_get_uuid(cd)
 	};
 
 	/* do not allow activation when particular requirements detected */
@@ -2165,6 +2165,7 @@ int LUKS2_activate(struct crypt_device *cd,
 		if (r)
 			return r;
 
+		dmdi.flags |= CRYPT_ACTIVATE_PRIVATE;
 		dmd.segment.u.crypt.offset = 0;
 		dmd.segment.size = dmdi.segment.size;
 
