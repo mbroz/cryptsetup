@@ -90,5 +90,6 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 
 int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 		       const char *name,
+		       const char *type,
 		       struct crypt_dm_active_device *dmd);
 #endif

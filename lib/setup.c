@@ -3560,7 +3560,7 @@ static int _create_device_with_integrity(struct crypt_device *cd,
 
 	device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
 
-	r = INTEGRITY_activate_dmd_device(cd, iname, dmdi);
+	r = INTEGRITY_activate_dmd_device(cd, iname, CRYPT_INTEGRITY, dmdi);
 	if (r)
 		return r;
 
