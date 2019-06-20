@@ -2239,9 +2239,9 @@ static int _compare_device_types(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (isLUKS2(cd->type) && !src->uuid) {
-		if (strncmp("INTEGRITY-", tgt->uuid, strlen("INTEGRITY-"))) {
-			log_dbg(cd, "Unexpected uuid prefix %s in target integrity device.", tgt->uuid);
+	if (isLUKS2(cd->type) && !strncmp("INTEGRITY-", tgt->uuid, strlen("INTEGRITY-"))) {
+		if (crypt_uuid_cmp(tgt->uuid, src->uuid)) {
+			log_dbg(cd, "LUKS UUID mismatch.");
 			return -EINVAL;
 		}
 	} else if (isLUKS(cd->type)) {

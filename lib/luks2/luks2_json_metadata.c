@@ -2166,6 +2166,7 @@ int LUKS2_activate(struct crypt_device *cd,
 			return r;
 
 		dmdi.flags |= CRYPT_ACTIVATE_PRIVATE;
+		dmdi.uuid = dmd.uuid;
 		dmd.segment.u.crypt.offset = 0;
 		dmd.segment.size = dmdi.segment.size;
 
