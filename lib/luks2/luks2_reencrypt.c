@@ -1013,7 +1013,7 @@ static int _LUKS2_reenc_load(struct crypt_device *cd,
 		.hash = LUKS2_reencrypt_protection_hash(hdr),
 		.device_size = params ? params->device_size : 0
 	};
-	struct luks2_reenc_context *tmp = calloc(1, sizeof (*tmp));
+	struct luks2_reenc_context *tmp = crypt_zalloc(sizeof (*tmp));
 
 	if (!tmp)
 		return -ENOMEM;

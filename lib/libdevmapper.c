@@ -1449,10 +1449,9 @@ int dm_targets_allocate(struct dm_target *first, unsigned count)
 		return -EINVAL;
 
 	while (--count) {
-		first->next = malloc(sizeof(*first));
+		first->next = crypt_zalloc(sizeof(*first));
 		if (!first->next)
 			return -ENOMEM;
-		memset(first->next, 0, sizeof(*first));
 		first = first->next;
 	}
 
@@ -1911,10 +1910,9 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 	char *hash_name = NULL, *root_hash = NULL, *salt = NULL, *fec_dev_str = NULL;
 
 	if (get_flags & DM_ACTIVE_VERITY_PARAMS) {
-		vp = malloc(sizeof(*vp));
+		vp = crypt_zalloc(sizeof(*vp));
 		if (!vp)
 			return -ENOMEM;
-		memset(vp, 0, sizeof(*vp));
 	}
 
 	tgt->type = DM_VERITY;

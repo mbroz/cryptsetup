@@ -421,10 +421,9 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	 * Allocate and zero JSON area (of proper header size).
 	 */
 	json_area_len = hdr->hdr_size - LUKS2_HDR_BIN_LEN;
-	json_area = malloc(json_area_len);
+	json_area = crypt_zalloc(json_area_len);
 	if (!json_area)
 		return -ENOMEM;
-	memset(json_area, 0, json_area_len);
 
 	/*
 	 * Generate text space-efficient JSON representation to json area.
