@@ -4271,6 +4271,7 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	struct crypt_dm_active_device dmd, dmdi = {};
 	const char *namei = NULL;
 	struct dm_target *tgt = &dmd.segment;
+	uint64_t min_offset = UINT64_MAX;
 
 	if (!cd || !name || !cad)
 		return -EINVAL;
@@ -4279,21 +4280,8 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	if (r < 0)
 		return r;
 
-	if (!single_segment(&dmd)) {
-		log_dbg(cd, "Unexpected multi-segment device detected.");
-		r = -ENOTSUP;
-		goto out;
-	}
-
-	if (tgt->type != DM_CRYPT &&
-	    tgt->type != DM_VERITY &&
-	    tgt->type != DM_INTEGRITY) {
-		r = -ENOTSUP;
-		goto out;
-	}
-
 	/* For LUKS2 with integrity we need flags from underlying dm-integrity */
-	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd)) {
+	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd) && single_segment(&dmd)) {
 		namei = device_dm_name(tgt->data_device);
 		if (namei && dm_query_device(cd, namei, 0, &dmdi) >= 0)
 			dmd.flags |= dmdi.flags;
@@ -4302,15 +4290,29 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	if (cd && isTCRYPT(cd->type)) {
 		cad->offset	= TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 		cad->iv_offset	= TCRYPT_get_iv_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
-	} else if (tgt->type == DM_CRYPT) {
-		cad->offset	= tgt->u.crypt.offset;
-		cad->iv_offset	= tgt->u.crypt.iv_offset;
+	} else {
+		while (tgt) {
+			if (tgt->type == DM_CRYPT && (min_offset > tgt->u.crypt.offset)) {
+				min_offset = tgt->u.crypt.offset;
+				cad->iv_offset = tgt->u.crypt.iv_offset;
+			} else if (tgt->type == DM_INTEGRITY && (min_offset > tgt->u.integrity.offset)) {
+				min_offset = tgt->u.integrity.offset;
+				cad->iv_offset = 0;
+			} else if (tgt->type == DM_LINEAR && (min_offset > tgt->u.linear.offset)) {
+				min_offset = tgt->u.linear.offset;
+				cad->iv_offset = 0;
+			}
+			tgt = tgt->next;
+		}
 	}
+
+	if (min_offset != UINT64_MAX)
+		cad->offset = min_offset;
+
 	cad->size	= dmd.size;
 	cad->flags	= dmd.flags;
 
 	r = 0;
-out:
 	dm_targets_free(cd, &dmd);
 	dm_targets_free(cd, &dmdi);
 
