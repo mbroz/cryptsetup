@@ -1100,10 +1100,11 @@ static void crypt_free_type(struct crypt_device *cd)
 
 static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 {
-	char *cipher_spec = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
-	const char *namei;
+	bool found = false;
+	char **dep, *cipher_spec = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = {};
+	const char *dev, *dm_dev, *namei;
 	int key_nums, r;
-	struct crypt_dm_active_device dmd, dmdi = {};
+	struct crypt_dm_active_device dmd, dmdi = {}, dmdep = {};
 	struct dm_target *tgt = &dmd.segment, *tgti = &dmdi.segment;
 
 	r = dm_query_device(cd, name,
@@ -1114,11 +1115,24 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	if (r < 0)
 		return r;
 
-	/* TODO: segment count */
-	if (!(tgt->type == DM_CRYPT || tgt->type == DM_LINEAR)) {
+	if (tgt->type != DM_CRYPT && tgt->type != DM_LINEAR) {
 		log_dbg(cd, "Unsupported device table detected in %s.", name);
 		r = -EINVAL;
 		goto out;
+	}
+
+	r = -EINVAL;
+
+	if (dmd.uuid) {
+		r = snprintf(deps_uuid_prefix, sizeof(deps_uuid_prefix), CRYPT_SUBDEV "-%.32s", dmd.uuid + 6);
+		if (r < 0 || (size_t)r != (sizeof(deps_uuid_prefix) - 1))
+			r = -EINVAL;
+	}
+
+	if (r >= 0) {
+		r = dm_device_deps(cd, name, deps_uuid_prefix, deps, ARRAY_SIZE(deps));
+		if (r)
+			goto out;
 	}
 
 	r = crypt_parse_name_and_mode(tgt->type == DM_LINEAR ? "null" : tgt->u.crypt.cipher, cipher,
@@ -1127,6 +1141,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		log_dbg(cd, "Cannot parse cipher and mode from active device.");
 		goto out;
 	}
+
+	dep = deps;
 
 	if (tgt->type == DM_CRYPT && tgt->u.crypt.integrity && (namei = device_dm_name(tgt->data_device))) {
 		r = dm_query_device(cd, namei, DM_ACTIVE_DEVICE, &dmdi);
@@ -1143,13 +1159,45 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		}
 	}
 
+	/* do not try to lookup LUKS2 header in detached header mode */
+	if (!cd->metadata_device && !found) {
+		while (*dep && !found) {
+			r = dm_query_device(cd, *dep, DM_ACTIVE_DEVICE, &dmdep);
+			if (r < 0)
+				goto out;
+
+			tgt = &dmdep.segment;
+
+			while (tgt && !found) {
+				dev = device_path(tgt->data_device);
+				if (!dev) {
+					tgt = tgt->next;
+					continue;
+				}
+				log_dbg(cd, "candidate new data device: %s", dev);
+				dm_dev = strstr(dev, dm_get_dir());
+				if (!dm_dev || !crypt_string_in(dm_dev, deps, ARRAY_SIZE(deps))) {
+					device_free(cd, cd->device);
+					MOVE_REF(cd->device, tgt->data_device);
+					found = true;
+				}
+				tgt = tgt->next;
+			}
+			dep++;
+			dm_targets_free(cd, &dmdep);
+		}
+	}
+
 	if (asprintf(&cipher_spec, "%s-%s", cipher, cipher_mode) < 0) {
 		cipher_spec = NULL;
 		r = -ENOMEM;
 		goto out;
 	}
 
-	if (isPLAIN(cd->type)) {
+	tgt = &dmd.segment;
+	r = 0;
+
+	if (isPLAIN(cd->type) && single_segment(&dmd) && tgt->type == DM_CRYPT) {
 		cd->u.plain.hdr.hash = NULL; /* no way to get this */
 		cd->u.plain.hdr.offset = tgt->u.crypt.offset;
 		cd->u.plain.hdr.skip = tgt->u.crypt.iv_offset;
@@ -1158,7 +1206,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		cd->u.plain.cipher = strdup(cipher);
 		MOVE_REF(cd->u.plain.cipher_spec, cipher_spec);
 		cd->u.plain.cipher_mode = cd->u.plain.cipher_spec + strlen(cipher) + 1;
-	} else if (isLOOPAES(cd->type)) {
+	} else if (isLOOPAES(cd->type) && single_segment(&dmd) && tgt->type == DM_CRYPT) {
 		cd->u.loopaes.hdr.offset = tgt->u.crypt.offset;
 		cd->u.loopaes.cipher = strdup(cipher);
 		MOVE_REF(cd->u.loopaes.cipher_spec, cipher_spec);
@@ -1192,15 +1240,19 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			crypt_set_null_type(cd);
 			r = 0;
 		}
-	} else if (isTCRYPT(cd->type)) {
+	} else if (isTCRYPT(cd->type) && single_segment(&dmd) && tgt->type == DM_CRYPT) {
 		r = TCRYPT_init_by_name(cd, name, dmd.uuid, tgt, &cd->device,
 					&cd->u.tcrypt.params, &cd->u.tcrypt.hdr);
 	}
 out:
 	dm_targets_free(cd, &dmd);
 	dm_targets_free(cd, &dmdi);
+	dm_targets_free(cd, &dmdep);
 	free(CONST_CAST(void*)dmd.uuid);
 	free(cipher_spec);
+	dep = deps;
+	while (*dep)
+		free(*dep++);
 	return r;
 }
 
@@ -1321,13 +1373,6 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	r = dm_query_device(NULL, name, DM_ACTIVE_DEVICE | DM_ACTIVE_UUID, &dmd);
 	if (r < 0)
 		return r;
-	/* TODO: segment count */
-	/*
-	if (dmd.segment_count > 4) {
-		log_dbg(NULL, "Unsupported device table detected in %s.", name);
-		r = -EINVAL;
-		goto out;
-	}*/
 
 	*cd = NULL;
 
