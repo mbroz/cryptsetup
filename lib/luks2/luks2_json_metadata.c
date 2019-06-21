@@ -2209,20 +2209,20 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	struct dm_target *tgt;
 	crypt_status_info ci;
 	struct crypt_dm_active_device dmdc;
-	char **dep, uuid[37], deps_uuid_prefix[38], *deps[MAX_DM_DEPS+1] = { 0 };
+	char **dep, uuid[37], deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = { 0 };
 	const char *namei = NULL;
 	struct crypt_lock_handle *reencrypt_lock = NULL;
 
 	if (!dmd || !dmd->uuid)
 		return -EINVAL;
 
-	r = snprintf(deps_uuid_prefix, sizeof(deps_uuid_prefix), "TEMP-%.32s", dmd->uuid + 6);
-	if (r < 0 || (size_t)r != 37)
+	r = snprintf(deps_uuid_prefix, sizeof(deps_uuid_prefix), CRYPT_SUBDEV "-%.32s", dmd->uuid + 6);
+	if (r < 0 || (size_t)r != (sizeof(deps_uuid_prefix) - 1))
 		return -EINVAL;
 
 	r = snprintf(uuid, sizeof(uuid), "%.8s-%.4s-%.4s-%.4s-%.12s",
 		 dmd->uuid + 6, dmd->uuid + 14, dmd->uuid + 18, dmd->uuid + 22, dmd->uuid + 26);
-	if (r < 0 || (size_t)r != 36)
+	if (r < 0 || (size_t)r != (sizeof(uuid) - 1))
 		return -EINVAL;
 
 	/* uuid mismatch with metadata (if available) */

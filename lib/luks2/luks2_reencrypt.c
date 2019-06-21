@@ -1877,7 +1877,7 @@ static int reenc_replace_device(struct crypt_device *cd, const char *target, con
 			r = dm_resume_device(cd, target, dmflags | act2dmflags(dmd_source.flags));
 		}
 	} else
-		r = dm_create_device(cd, target, "TEMP", &dmd_source);
+		r = dm_create_device(cd, target, CRYPT_SUBDEV, &dmd_source);
 err:
 	dm_targets_free(cd, &dmd_source);
 	dm_targets_free(cd, &dmd_target);
@@ -1954,7 +1954,7 @@ static int reenc_activate_hotzone_device(struct crypt_device *cd, const char *na
 	if (r)
 		goto err;
 
-	r = dm_create_device(cd, name, "TEMP", &dmd);
+	r = dm_create_device(cd, name, CRYPT_SUBDEV, &dmd);
 err:
 	dm_targets_free(cd, &dmd);
 

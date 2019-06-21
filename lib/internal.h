@@ -56,6 +56,8 @@
 #define LOG_MAX_LEN		4096
 #define MAX_DM_DEPS		32
 
+#define CRYPT_SUBDEV           "SUBDEV" /* prefix for sublayered devices underneath public crypt types */
+
 #define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
 
 #define MISALIGNED(a, b)	((a) & ((b) - 1))
