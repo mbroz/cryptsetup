@@ -669,6 +669,7 @@ out:
 static int action_status(void)
 {
 	crypt_status_info ci;
+	crypt_reencrypt_info ri;
 	struct crypt_active_device cad;
 	struct crypt_params_integrity ip = {};
 	struct crypt_device *cd = NULL;
@@ -710,6 +711,10 @@ static int action_status(void)
 		/* Print only CRYPT type devices */
 		if (!crypt_get_cipher(cd))
 			goto out;
+
+		ri = crypt_reencrypt_status(cd, NULL);
+		if (ri > CRYPT_REENCRYPT_NONE && ri < CRYPT_REENCRYPT_INVALID)
+			log_std("  reencryption:  in-progress\n");
 
 		r = crypt_get_active_device(cd, action_argv[0], &cad);
 		if (r < 0)
