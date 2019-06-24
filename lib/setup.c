@@ -3862,8 +3862,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	log_dbg(cd, "Entering clean reencryption state mode.");
 
 	if (r >= 0)
-		r = luks2_check_device_size(cd, hdr, minimal_size >> SECTOR_SHIFT,
-					    &device_size, true);
+		r = luks2_check_device_size(cd, hdr, minimal_size, &device_size, true);
 
 	if (r >= 0)
 		r = LUKS2_activate_multi(cd, name, vks, flags);

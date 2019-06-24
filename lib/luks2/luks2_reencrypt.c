@@ -1144,7 +1144,7 @@ static int _init_storage_wrappers(struct crypt_device *cd,
 {
 	int r;
 	struct volume_key *vk;
-	uint32_t wrapper_flags = DISABLE_KCAPI;
+	uint32_t wrapper_flags = (getuid() || geteuid()) ? 0 : DISABLE_KCAPI;
 
 	vk = crypt_volume_key_by_id(vks, rh->digest_old);
 	r = crypt_storage_wrapper_init(cd, &rh->cw1, crypt_data_device(cd),
@@ -2190,7 +2190,7 @@ static int _create_backup_segments(struct crypt_device *cd,
 	segment++;
 
 	if (digest_new >= 0) {
-		segment_offset = data_offset * SECTOR_SIZE;
+		segment_offset = data_offset;
 		if (strcmp(params->mode, "encrypt") && modify_offset(&segment_offset, data_shift, params->direction)) {
 			r = -EINVAL;
 			goto err;
@@ -2199,7 +2199,7 @@ static int _create_backup_segments(struct crypt_device *cd,
 							crypt_get_iv_offset(cd),
 							NULL, cipher, sector_size, 0);
 	} else if (!strcmp(params->mode, "decrypt")) {
-		segment_offset = data_offset * SECTOR_SIZE;
+		segment_offset = data_offset;
 		if (modify_offset(&segment_offset, data_shift, params->direction)) {
 			r = -EINVAL;
 			goto err;
@@ -2287,14 +2287,23 @@ static int _reencrypt_init(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	data_offset = LUKS2_get_data_offset(hdr);
+	data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT;
 
-	r = device_block_adjust(cd, crypt_data_device(cd), DEV_OK,
-				data_offset, &dev_size, NULL);
+	r = device_check_access(cd, crypt_data_device(cd), DEV_OK);
 	if (r)
 		return r;
 
-	if (MISALIGNED(dev_size, sector_size >> SECTOR_SHIFT)) {
+	r = device_check_size(cd, crypt_data_device(cd), data_offset, 1);
+	if (r)
+		return r;
+
+	r = device_size(crypt_data_device(cd), &dev_size);
+	if (r)
+		return r;
+
+	dev_size -= data_offset;
+
+	if (MISALIGNED(dev_size, sector_size)) {
 		log_err(cd, _("Data device is not aligned to requested encryption sector size (%" PRIu32 " bytes)."), sector_size);
 		return -EINVAL;
 	}
@@ -2328,7 +2337,7 @@ static int _reencrypt_init(struct crypt_device *cd,
 
 	if (!strcmp(params->mode, "encrypt")) {
 		/* in-memory only */
-		r = _encrypt_set_segments(cd, hdr, dev_size << SECTOR_SHIFT, params->data_shift << SECTOR_SHIFT, move_first_segment, params->direction);
+		r = _encrypt_set_segments(cd, hdr, dev_size, params->data_shift << SECTOR_SHIFT, move_first_segment, params->direction);
 		if (r)
 			goto err;
 	}
@@ -2654,7 +2663,8 @@ static int _reencrypt_load(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* some configurations provides fixed device size */
-	if ((r = luks2_check_device_size(cd, hdr, minimal_size >> SECTOR_SHIFT, &device_size, false))) {
+	r = luks2_check_device_size(cd, hdr, minimal_size, &device_size, false);
+	if (r) {
 		r = -EINVAL;
 		goto err;
 	}
@@ -3248,28 +3258,36 @@ err:
 }
 
 /* internal only */
-int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *device_size, bool activation)
+int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *dev_size, bool activation)
 {
 	int r;
 	crypt_reencrypt_direction_info di;
-	uint64_t real_size = 0;
+	uint64_t data_offset, real_size = 0;
 
 	if (!LUKS2_reencrypt_direction(hdr, &di) && (di == CRYPT_REENCRYPT_BACKWARD) &&
 	    LUKS2_get_segment_by_flag(hdr, "backup-moved-segment"))
-		check_size += LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
+		check_size += LUKS2_reencrypt_data_shift(hdr);
 
-	r = device_block_adjust(cd, crypt_data_device(cd), activation ? DEV_EXCL : DEV_OK,
-				crypt_get_data_offset(cd), &check_size, NULL);
-
+	r = device_check_access(cd, crypt_data_device(cd), activation ? DEV_EXCL : DEV_OK);
 	if (r)
 		return r;
 
-	r = device_block_adjust(cd, crypt_data_device(cd), DEV_OK,
-				crypt_get_data_offset(cd), &real_size, NULL);
+	data_offset = crypt_get_data_offset(cd) << SECTOR_SHIFT;
+
+	r = device_check_size(cd, crypt_data_device(cd), data_offset, 1);
 	if (r)
 		return r;
 
-	*device_size = real_size << SECTOR_SHIFT;
+	r = device_size(crypt_data_device(cd), &real_size);
+	if (r)
+		return r;
+
+	if (real_size < data_offset || (check_size && (real_size - data_offset) < check_size)) {
+		log_err(cd, _("Device %s is too small."), device_path(crypt_data_device(cd)));
+		return -EINVAL;
+	}
+
+	*dev_size = real_size - data_offset;
 
 	return 0;
 }
@@ -3307,8 +3325,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 		vk = vk->next;
 	}
 
-	if (luks2_check_device_size(cd, hdr, minimal_size >> SECTOR_SHIFT,
-				    &device_size, true))
+	if (luks2_check_device_size(cd, hdr, minimal_size, &device_size, true))
 		goto err;
 
 	r = _reencrypt_recover(cd, hdr, device_size, _vks);
