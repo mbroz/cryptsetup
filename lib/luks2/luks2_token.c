@@ -26,13 +26,10 @@
 /* Builtin tokens */
 extern const crypt_token_handler keyring_handler;
 
-static token_handler token_handlers[LUKS2_TOKENS_MAX] = {
+static const crypt_token_handler *token_handlers[LUKS2_TOKENS_MAX] = {
 	/* keyring builtin token */
-	{
-	  .get = token_keyring_get,
-	  .set = token_keyring_set,
-	  .h = &keyring_handler
-	},
+	&keyring_handler,
+	NULL
 };
 
 static int is_builtin_candidate(const char *type)
@@ -49,8 +46,8 @@ int crypt_token_register(const crypt_token_handler *handler)
 		return -EINVAL;
 	}
 
-	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].h; i++) {
-		if (!strcmp(token_handlers[i].h->name, handler->name)) {
+	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i]; i++) {
+		if (!strcmp(token_handlers[i]->name, handler->name)) {
 			log_dbg(NULL, "Keyslot handler %s is already registered.", handler->name);
 			return -EINVAL;
 		}
@@ -59,32 +56,24 @@ int crypt_token_register(const crypt_token_handler *handler)
 	if (i == LUKS2_TOKENS_MAX)
 		return -EINVAL;
 
-	token_handlers[i].h = handler;
+	token_handlers[i] = handler;
 	return 0;
-}
-
-static const token_handler
-*LUKS2_token_handler_type_internal(struct crypt_device *cd, const char *type)
-{
-	int i;
-
-	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].h; i++)
-		if (!strcmp(token_handlers[i].h->name, type))
-			return token_handlers + i;
-
-	return NULL;
 }
 
 static const crypt_token_handler
 *LUKS2_token_handler_type(struct crypt_device *cd, const char *type)
 {
-	const token_handler *th = LUKS2_token_handler_type_internal(cd, type);
+	int i;
 
-	return th ? th->h : NULL;
+	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i]; i++)
+		if (!strcmp(token_handlers[i]->name, type))
+			return token_handlers[i];
+
+	return NULL;
 }
 
-static const token_handler
-*LUKS2_token_handler_internal(struct crypt_device *cd, int token)
+static const crypt_token_handler
+*LUKS2_token_handler(struct crypt_device *cd, int token)
 {
 	struct luks2_hdr *hdr;
 	json_object *jobj1, *jobj2;
@@ -101,15 +90,7 @@ static const token_handler
 	if (!json_object_object_get_ex(jobj1, "type", &jobj2))
 		return NULL;
 
-	return LUKS2_token_handler_type_internal(cd, json_object_get_string(jobj2));
-}
-
-static const crypt_token_handler
-*LUKS2_token_handler(struct crypt_device *cd, int token)
-{
-	const token_handler *th = LUKS2_token_handler_internal(cd, token);
-
-	return th ? th->h : NULL;
+	return LUKS2_token_handler_type(cd, json_object_get_string(jobj2));
 }
 
 static int LUKS2_token_find_free(struct luks2_hdr *hdr)
@@ -130,7 +111,6 @@ int LUKS2_token_create(struct crypt_device *cd,
 	int commit)
 {
 	const crypt_token_handler *h;
-	const token_handler *th;
 	json_object *jobj_tokens, *jobj_type, *jobj;
 	enum json_tokener_error jerr;
 	char num[16];
@@ -166,16 +146,14 @@ int LUKS2_token_create(struct crypt_device *cd,
 		}
 
 		json_object_object_get_ex(jobj, "type", &jobj_type);
-		if (is_builtin_candidate(json_object_get_string(jobj_type))) {
-			th = LUKS2_token_handler_type_internal(cd, json_object_get_string(jobj_type));
-			if (!th || !th->set) {
-				log_dbg(cd, "%s is builtin token candidate with missing handler", json_object_get_string(jobj_type));
-				json_object_put(jobj);
-				return -EINVAL;
-			}
-			h = th->h;
-		} else
-			h = LUKS2_token_handler_type(cd, json_object_get_string(jobj_type));
+		h = LUKS2_token_handler_type(cd, json_object_get_string(jobj_type));
+
+		if (is_builtin_candidate(json_object_get_string(jobj_type)) && !h) {
+			log_dbg(cd, "%s is builtin token candidate with missing handler",
+				json_object_get_string(jobj_type));
+			json_object_put(jobj);
+			return -EINVAL;
+		}
 
 		if (h && h->validate && h->validate(cd, json)) {
 			json_object_put(jobj);
@@ -203,7 +181,7 @@ crypt_token_info LUKS2_token_status(struct crypt_device *cd,
 	const char **type)
 {
 	const char *tmp;
-	const token_handler *th;
+	const crypt_token_handler *th;
 	json_object *jobj_type, *jobj_token;
 
 	if (token < 0 || token >= LUKS2_TOKENS_MAX)
@@ -215,80 +193,16 @@ crypt_token_info LUKS2_token_status(struct crypt_device *cd,
 	json_object_object_get_ex(jobj_token, "type", &jobj_type);
 	tmp = json_object_get_string(jobj_type);
 
-	if ((th = LUKS2_token_handler_type_internal(cd, tmp))) {
+	if ((th = LUKS2_token_handler_type(cd, tmp))) {
 		if (type)
-			*type = th->h->name;
-		return th->set ? CRYPT_TOKEN_INTERNAL : CRYPT_TOKEN_EXTERNAL;
+			*type = th->name;
+		return is_builtin_candidate(tmp) ? CRYPT_TOKEN_INTERNAL : CRYPT_TOKEN_EXTERNAL;
 	}
 
 	if (type)
 		*type = tmp;
 
 	return is_builtin_candidate(tmp) ? CRYPT_TOKEN_INTERNAL_UNKNOWN : CRYPT_TOKEN_EXTERNAL_UNKNOWN;
-}
-
-int LUKS2_builtin_token_get(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int token,
-	const char *type,
-	void *params)
-{
-	const token_handler *th = LUKS2_token_handler_type_internal(cd, type);
-
-	// internal error
-	assert(th && th->get);
-
-	return th->get(LUKS2_get_token_jobj(hdr, token), params) ?: token;
-}
-
-int LUKS2_builtin_token_create(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int token,
-	const char *type,
-	const void *params,
-	int commit)
-{
-	const token_handler *th;
-	int r;
-	json_object *jobj_token, *jobj_tokens;
-
-	th = LUKS2_token_handler_type_internal(cd, type);
-
-	// at this point all builtin handlers must exist and have validate fn defined
-	assert(th && th->set && th->h->validate);
-
-	if (token == CRYPT_ANY_TOKEN) {
-		if ((token = LUKS2_token_find_free(hdr)) < 0)
-			log_err(cd, _("No free token slot."));
-	}
-	if (token < 0 || token >= LUKS2_TOKENS_MAX)
-		return -EINVAL;
-
-	r = th->set(&jobj_token, params);
-	if (r) {
-		log_err(cd, _("Failed to create builtin token %s."), type);
-		return r;
-	}
-
-	// builtin tokens must produce valid json
-	r = LUKS2_token_validate(cd, hdr->jobj, jobj_token, "new");
-	assert(!r);
-	r = th->h->validate(cd, json_object_to_json_string_ext(jobj_token,
-		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE));
-	assert(!r);
-
-	json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens);
-	json_object_object_add_by_uint(jobj_tokens, token, jobj_token);
-	if (LUKS2_check_json_size(cd, hdr)) {
-		log_dbg(cd, "Not enough space in header json area for new %s token.", type);
-		json_object_object_del_by_uint(jobj_tokens, token);
-		return -ENOSPC;
-	}
-
-	if (commit)
-		return LUKS2_hdr_write(cd, hdr) ?: token;
-
-	return token;
 }
 
 static int LUKS2_token_open(struct crypt_device *cd,

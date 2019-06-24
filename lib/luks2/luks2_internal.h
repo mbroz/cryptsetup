@@ -164,23 +164,6 @@ typedef struct  {
 	digest_dump_func   dump;
 } digest_handler;
 
-/**
- * LUKS2 token handlers (internal use only)
- */
-typedef int (*builtin_token_get_func) (json_object *jobj_token, void *params);
-typedef int (*builtin_token_set_func) (json_object **jobj_token, const void *params);
-
-typedef struct {
-	/* internal only section used by builtin tokens */
-	builtin_token_get_func get;
-	builtin_token_set_func set;
-	/* public token handler */
-	const crypt_token_handler *h;
-} token_handler;
-
-int token_keyring_set(json_object **, const void *);
-int token_keyring_get(json_object *, void *);
-
 int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 			size_t keylength, uint64_t *area_offset, uint64_t *area_length);
 int LUKS2_find_area_max_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
