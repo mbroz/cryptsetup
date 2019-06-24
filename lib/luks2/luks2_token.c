@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <ctype.h>
+#include <dlfcn.h>
 #include <assert.h>
 
 #include "luks2_internal.h"
@@ -33,23 +35,68 @@ static token_handler token_handlers[LUKS2_TOKENS_MAX] = {
 	}
 };
 
+static const crypt_token_handler
+*crypt_token_load_external(const char *name)
+{
+	const crypt_token_handler *token = NULL;
+	void *handle;
+	char *error;
+	char buf[512];
+	int i, r;
+
+	if (!name || strlen(name) > 64)
+		return NULL;
+
+	for (i = 0; name[i]; i++)
+		if (!isalnum(name[i]))
+			return NULL;
+
+	r = snprintf(buf, sizeof(buf), "libcryptsetup-token-%s.so", name);
+	if (r < 0 || (size_t)r >= sizeof(buf))
+		return NULL;
+
+	log_dbg(NULL, "Trying to load %s.", buf);
+
+	handle = dlopen(buf, RTLD_LAZY);
+	if (!handle) {
+		log_dbg(NULL, "%s", dlerror());
+		return NULL;
+	}
+	dlerror();
+
+	token = dlvsym(handle, CRYPT_TOKEN_ABI_HANDLER, CRYPT_TOKEN_ABI_VERSION1);
+	error = dlerror();
+	if (error) {
+		log_dbg(NULL, "%s", dlerror());
+		dlclose(handle);
+		return NULL;
+	}
+
+	if (crypt_token_register(token) < 0) {
+		dlclose(handle);
+		return NULL;
+	}
+
+	return token;
+}
+
 static int is_builtin_candidate(const char *type)
 {
 	return !strncmp(type, LUKS2_BUILTIN_TOKEN_PREFIX, LUKS2_BUILTIN_TOKEN_PREFIX_LEN);
 }
 
-int crypt_token_register(const crypt_token_handler *handler)
+static int crypt_token_find_free(const char *name, int *index)
 {
 	int i;
 
-	if (is_builtin_candidate(handler->name)) {
+	if (is_builtin_candidate(name)) {
 		log_dbg(NULL, "'" LUKS2_BUILTIN_TOKEN_PREFIX "' is reserved prefix for builtin tokens.");
 		return -EINVAL;
 	}
 
 	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].h; i++) {
-		if (!strcmp(token_handlers[i].h->name, handler->name)) {
-			log_dbg(NULL, "Keyslot handler %s is already registered.", handler->name);
+		if (!strcmp(token_handlers[i].h->name, name)) {
+			log_dbg(NULL, "Keyslot handler %s is already registered.", name);
 			return -EINVAL;
 		}
 	}
@@ -57,8 +104,35 @@ int crypt_token_register(const crypt_token_handler *handler)
 	if (i == LUKS2_TOKENS_MAX)
 		return -EINVAL;
 
+	if (index)
+		*index = i;
+
+	return 0;
+}
+
+int crypt_token_register(const crypt_token_handler *handler)
+{
+	int i, r;
+
+	r = crypt_token_find_free(handler->name, &i);
+	if (r < 0)
+		return r;
+
 	token_handlers[i].h = handler;
 	return 0;
+}
+
+int crypt_token_load(const char *name)
+{
+	int i, r;
+
+	r = crypt_token_find_free(name, &i);
+	if (r < 0)
+		return r;
+
+	token_handlers[i].h = crypt_token_load_external(name);
+
+	return token_handlers[i].h ? 0 : -ENOENT;
 }
 
 static const crypt_token_handler
@@ -70,7 +144,10 @@ static const crypt_token_handler
 		if (!strcmp(token_handlers[i].h->name, type))
 			return token_handlers[i].h;
 
-	return NULL;
+	if (is_builtin_candidate(type))
+		return NULL;
+
+	return crypt_token_load_external(type);
 }
 
 static const crypt_token_handler
