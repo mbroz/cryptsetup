@@ -2159,6 +2159,20 @@ typedef struct  {
  */
 int crypt_token_register(const crypt_token_handler *handler);
 
+/** ABI version for external token in libcryptsetup-token-<name>.so */
+#define CRYPT_TOKEN_ABI_VERSION1 "CRYPTSETUP_TOKEN_1.0"
+/** ABI exported symbol for external token */
+#define CRYPT_TOKEN_ABI_HANDLER  "cryptsetup_token_handler"
+
+/**
+ * Find external library, load and register token handler
+ *
+ * @param name token name to register
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_token_load(const char *name);
+
 /**
  * Activate device or check key using a token.
  *
