@@ -2540,6 +2540,11 @@ int crypt_reencrypt_lock(struct crypt_device *cd, const char *uuid, struct crypt
 	if (strcmp(uuid, tmp))
 		return -EINVAL;
 
+	if (!crypt_metadata_locking_enabled()) {
+		*reencrypt_lock = NULL;
+		return 0;
+	}
+
 	r = asprintf(&lock_resource, "LUKS2-reencryption-%s", uuid);
 	if (r < 0)
 		return -ENOMEM;
@@ -3152,7 +3157,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 	}
 
 	rh = crypt_get_reenc_context(cd);
-	if (!rh || !rh->reenc_lock) {
+	if (!rh || (!rh->reenc_lock && crypt_metadata_locking_enabled())) {
 		log_err(cd, _("Missing or invalid reencrypt context."));
 		return -EINVAL;
 	}
