@@ -253,19 +253,6 @@ crypt_token_info LUKS2_token_status(struct crypt_device *cd,
 	int token,
 	const char **type);
 
-int LUKS2_builtin_token_get(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int token,
-	const char *type,
-	void *params);
-
-int LUKS2_builtin_token_create(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int token,
-	const char *type,
-	const void *params,
-	int commit);
-
 int LUKS2_token_open_and_activate(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		int token,
@@ -277,6 +264,14 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const char *name,
 	uint32_t flags);
+
+int LUKS2_token_keyring_get(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int token,
+	struct crypt_token_params_luks2_keyring *keyring_params);
+
+int LUKS2_token_keyring_json(char *buffer, size_t buffer_size,
+	const struct crypt_token_params_luks2_keyring *keyring_params);
 
 /*
  * Generic LUKS2 digest

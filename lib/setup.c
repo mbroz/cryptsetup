@@ -5617,7 +5617,7 @@ int crypt_token_luks2_keyring_get(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	return LUKS2_builtin_token_get(cd, &cd->u.luks2.hdr, token, LUKS2_TOKEN_KEYRING, params);
+	return LUKS2_token_keyring_get(cd, &cd->u.luks2.hdr, token, params);
 }
 
 int crypt_token_luks2_keyring_set(struct crypt_device *cd,
@@ -5625,6 +5625,7 @@ int crypt_token_luks2_keyring_set(struct crypt_device *cd,
 	const struct crypt_token_params_luks2_keyring *params)
 {
 	int r;
+	char json[4096];
 
 	if (!params)
 		return -EINVAL;
@@ -5634,7 +5635,9 @@ int crypt_token_luks2_keyring_set(struct crypt_device *cd,
 	if ((r = onlyLUKS2(cd)))
 		return r;
 
-	return LUKS2_builtin_token_create(cd, &cd->u.luks2.hdr, token, LUKS2_TOKEN_KEYRING, params, 1);
+	LUKS2_token_keyring_json(json, sizeof(json), params);
+
+	return LUKS2_token_create(cd, &cd->u.luks2.hdr, token, json, 1);
 }
 
 int crypt_token_assign_keyslot(struct crypt_device *cd, int token, int keyslot)
