@@ -1,4 +1,4 @@
-EXTRA_DIST = COPYING.LGPL FAQ docs misc
+EXTRA_DIST = COPYING.LGPL FAQ docs misc tokens
 SUBDIRS = po tests
 CLEANFILES =
 DISTCLEAN_TARGETS =
@@ -38,6 +38,7 @@ include lib/crypto_backend/Makemodule.am
 include lib/Makemodule.am
 
 include src/Makemodule.am
+include tokens/Makemodule.am
 
 ACLOCAL_AMFLAGS = -I m4
 

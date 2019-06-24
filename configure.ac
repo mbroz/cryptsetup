@@ -347,6 +347,10 @@ AC_ARG_ENABLE([udev],
 	AS_HELP_STRING([--disable-udev], [disable udev support]),
 	[], [enable_udev=yes])
 
+AC_ARG_ENABLE([ssh-token],
+	AS_HELP_STRING([--enable-ssh-token], [enable build of ssh-token]))
+AM_CONDITIONAL(SSHPLUGIN_TOKEN, test "x$enable_ssh_token" = "xyes")
+
 dnl Try to use pkg-config for devmapper, but fallback to old detection
 PKG_CHECK_MODULES([DEVMAPPER], [devmapper >= 1.02.03],, [
 	AC_CHECK_LIB(devmapper, dm_task_set_name,,
@@ -379,6 +383,11 @@ dnl Check for JSON-C used in LUKS2
 PKG_CHECK_MODULES([JSON_C], [json-c])
 AC_CHECK_DECLS([json_object_object_add_ex], [], [], [#include <json-c/json.h>])
 AC_CHECK_DECLS([json_object_deep_copy], [], [], [#include <json-c/json.h>])
+
+dnl Check for libssh for SSH plugin
+if test "x$enable_ssh_token" = "xyes"; then
+	PKG_CHECK_MODULES([LIBSSH], [libssh])
+fi
 
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],

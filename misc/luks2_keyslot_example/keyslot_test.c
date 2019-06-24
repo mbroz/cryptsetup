@@ -242,7 +242,7 @@ static int _password_auth(struct crypt_device *cd, ssh_session ssh, password_cb_
 	return r;
 }
 
-static int SSHTEST_token_open(struct crypt_device *cd,
+static int SSHPLUGIN_token_open(struct crypt_device *cd,
 	int token,
 	char **password,
 	size_t *password_len,
@@ -280,9 +280,9 @@ static int SSHTEST_token_open(struct crypt_device *cd,
 	return r ? -EINVAL : r;
 }
 
-const crypt_token_handler SSHTEST_token = {
+const crypt_token_handler SSHPLUGIN_token = {
 	.name  = "sshkeytest",
-	.open  = SSHTEST_token_open,
+	.open  = SSHPLUGIN_token_open,
 };
 
 static int token_add(const char *device, const char *server,
@@ -292,7 +292,7 @@ static int token_add(const char *device, const char *server,
 	json_object *jobj = NULL, *jobj_keyslots;
 	int r;
 
-	r = crypt_token_register(&SSHTEST_token);
+	r = crypt_token_register(&SSHPLUGIN_token);
 	if (r < 0)
 		return EXIT_FAILURE;
 
@@ -307,7 +307,7 @@ static int token_add(const char *device, const char *server,
 	}
 
 	jobj = json_object_new_object();
-	json_object_object_add(jobj, "type", json_object_new_string(SSHTEST_token.name)); /* mandatory */
+	json_object_object_add(jobj, "type", json_object_new_string(SSHPLUGIN_token.name)); /* mandatory */
 
 	jobj_keyslots = json_object_new_array();
 	json_object_array_add(jobj_keyslots, json_object_new_string("0")); /* assign to first keyslot only */
@@ -361,7 +361,7 @@ static int open_by_token(const char *device, const char *name)
 	struct crypt_device *cd = NULL;
 	int r;
 
-	r = crypt_token_register(&SSHTEST_token);
+	r = crypt_token_register(&SSHPLUGIN_token);
 	if (r < 0)
 		return EXIT_FAILURE;
 
