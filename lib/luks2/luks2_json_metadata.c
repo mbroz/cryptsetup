@@ -2209,7 +2209,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	struct dm_target *tgt;
 	crypt_status_info ci;
 	struct crypt_dm_active_device dmdc;
-	char **dep, uuid[37], deps_uuid_prefix[38], *deps[65] = { 0 };
+	char **dep, uuid[37], deps_uuid_prefix[38], *deps[MAX_DM_DEPS+1] = { 0 };
 	const char *namei = NULL;
 	struct crypt_lock_handle *reencrypt_lock = NULL;
 
