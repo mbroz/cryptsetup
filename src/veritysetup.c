@@ -257,21 +257,22 @@ static int action_status(int arg)
 				ci == CRYPT_BUSY ? " and is in use" : "");
 
 		r = crypt_init_by_name_and_header(&cd, action_argv[0], NULL);
-		if (r < 0 || !crypt_get_type(cd))
+		if (r < 0)
 			goto out;
 
-		log_std("  type:        %s\n", crypt_get_type(cd));
+		log_std("  type:        %s\n", crypt_get_type(cd) ?: "n/a");
 
 		r = crypt_get_active_device(cd, action_argv[0], &cad);
 		if (r < 0)
 			goto out;
 
-		log_std("  status:      %s\n",
-			cad.flags & CRYPT_ACTIVATE_CORRUPTED ? "corrupted" : "verified");
-
+		/* Print only VERITY type devices */
 		r = crypt_get_verity_info(cd, &vp);
 		if (r < 0)
 			goto out;
+
+		log_std("  status:      %s\n",
+			cad.flags & CRYPT_ACTIVATE_CORRUPTED ? "corrupted" : "verified");
 
 		log_std("  hash type:   %u\n", vp.hash_type);
 		log_std("  data block:  %u\n", vp.data_block_size);

@@ -392,6 +392,7 @@ static int action_status(int arg)
 		if (r < 0)
 			goto out;
 
+		/* Print only INTEGRITY (and LUKS2 with integrity) info */
 		r = crypt_get_integrity_info(cd, &ip);
 		if (r < 0)
 			goto out;

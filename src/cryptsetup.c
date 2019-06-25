@@ -707,6 +707,10 @@ static int action_status(void)
 
 		log_std("  type:    %s\n", crypt_get_type(cd) ?: "n/a");
 
+		/* Print only CRYPT type devices */
+		if (!crypt_get_cipher(cd))
+			goto out;
+
 		r = crypt_get_active_device(cd, action_argv[0], &cad);
 		if (r < 0)
 			goto out;
