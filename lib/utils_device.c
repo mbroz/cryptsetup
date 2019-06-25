@@ -152,7 +152,7 @@ static int device_read_test(int devfd)
 /*
  * The direct-io is always preferred. The header is usually mapped to the same
  * device and can be accessed when the rest of device is mapped to data device.
- * Using dirct-io encsures that we do not mess with data in cache.
+ * Using direct-io ensures that we do not mess with data in cache.
  * (But proper alignment should prevent this in the first place.)
  * The read test is needed to detect broken configurations (seen with remote
  * block devices) that allow open with direct-io but then fails on read.
