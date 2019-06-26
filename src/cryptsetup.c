@@ -3819,6 +3819,10 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("LUKS2 decryption requires option --header."),
 		      poptGetInvocationName(popt_context));
 
+	if (opt_device_size % SECTOR_SIZE)
+		usage(popt_context, EXIT_FAILURE, _("Device size must be multiple of 512 bytes sector."),
+		      poptGetInvocationName(popt_context));
+
 	if (opt_data_shift && opt_device_size)
 		usage(popt_context, EXIT_FAILURE, _("Options --reduce-device-size and --data-size cannot be combined."),
 		      poptGetInvocationName(popt_context));
