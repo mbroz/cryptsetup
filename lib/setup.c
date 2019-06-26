@@ -1820,7 +1820,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 				      8 * SECTOR_SIZE, 8 * SECTOR_SIZE, NULL, NULL);
 		if (r < 0) {
 			if (r == -EBUSY)
-				log_err(cd, _("Cannot format device %s which is still in use."),
+				log_err(cd, _("Cannot format device %s in use."),
 					data_device_path(cd));
 			else if (r == -EACCES) {
 				log_err(cd, _("Cannot format device %s, permission denied."),
@@ -2620,17 +2620,17 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	tdmd.size = sdmd->size;
 
 	if ((r = dm_reload_device(cd, iname, sdmdi, 0, 0))) {
-		log_dbg(cd, "Failed to reload device %s.", iname);
+		log_err(cd, _("Failed to reload device %s."), iname);
 		goto out;
 	}
 
 	if ((r = dm_reload_device(cd, name, &tdmd, 0, 0))) {
-		log_dbg(cd, "Failed to reload device %s.", name);
+		log_err(cd, _("Failed to reload device %s."), name);
 		goto err_clear;
 	}
 
 	if ((r = dm_suspend_device(cd, name, 0))) {
-		log_dbg(cd, "Failed to suspend device %s.", name);
+		log_err(cd, _("Failed to suspend device %s."), name);
 		goto err_clear;
 	}
 
@@ -2740,8 +2740,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		goto out;
 
 	if (MISALIGNED(new_size, tgt->u.crypt.sector_size >> SECTOR_SHIFT)) {
-		log_err(cd, _("Device %s size is not aligned to requested sector size (%u bytes)."),
-			crypt_get_device_name(cd), (unsigned)tgt->u.crypt.sector_size);
+		log_err(cd, _("Device size is not aligned to requested sector size."));
 		r = -EINVAL;
 		goto out;
 	}
@@ -3532,7 +3531,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 
 	if (isLUKS1(cd->type)) {
 		if (ki == CRYPT_SLOT_INACTIVE) {
-			log_err(cd, _("Key slot %d is not used."), keyslot);
+			log_err(cd, _("Keyslot %d is not active."), keyslot);
 			return -EINVAL;
 		}
 		return LUKS_del_key(keyslot, &cd->u.luks1.hdr, cd);

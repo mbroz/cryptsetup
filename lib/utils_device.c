@@ -221,7 +221,7 @@ static int _open_locked(struct crypt_device *cd, struct device *device, int flag
 	log_dbg(cd, "Opening locked device %s", device_path(device));
 
 	if ((flags & O_ACCMODE) != O_RDONLY && device_locked_readonly(device->lh)) {
-		log_dbg(cd, "Can not open locked device %s in write mode. Read lock held.", device_path(device));
+		log_dbg(cd, "Cannot open locked device %s in write mode. Read lock held.", device_path(device));
 		return -EAGAIN;
 	}
 

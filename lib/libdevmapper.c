@@ -1565,7 +1565,7 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 	if (r == -EINVAL && (dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR)) {
 		if ((dmd->flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)) &&
 	    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
-			log_err(cd, _("Requested dmcrypt performance options are not supported."));
+			log_err(cd, _("Requested dm-crypt performance options are not supported."));
 		if ((dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
 		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_DISCARDS_SUPPORTED))
 			log_err(cd, _("Discard/TRIM is not supported."));

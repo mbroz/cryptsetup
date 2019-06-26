@@ -544,7 +544,7 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 
 	r = set_pbkdf_params(cd_new, type);
 	if (r) {
-		log_err(_("Failed to set PBKDF parameters."));
+		log_err(_("Failed to set pbkdf parameters."));
 		goto out;
 	}
 
@@ -1053,7 +1053,7 @@ static void zero_rest_of_device(int fd, size_t block_size, void *buf,
 	log_dbg("Zeroing rest of device.");
 
 	if (lseek64(fd, offset, SEEK_SET) < 0) {
-		log_dbg(_("Cannot seek to device offset.\n"));
+		log_dbg("Cannot seek to device offset.");
 		return;
 	}
 
@@ -1322,7 +1322,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 
 	if (opt_key_slot != CRYPT_ANY_SLOT)
 		snprintf(msg, sizeof(msg),
-			 _("Enter passphrase for key slot %u: "), opt_key_slot);
+			 _("Enter passphrase for key slot %d: "), opt_key_slot);
 	else
 		snprintf(msg, sizeof(msg), _("Enter any existing passphrase: "));
 
@@ -1333,7 +1333,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 		   rc->reencrypt_mode == DECRYPT) {
 		r = init_passphrase1(rc, cd, msg, opt_key_slot, 1, 0);
 	} else for (i = 0; i < crypt_keyslot_max(crypt_get_type(cd)); i++) {
-		snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %u: "), i);
+		snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), i);
 		r = init_passphrase1(rc, cd, msg, i, 1, 0);
 		if (r == -ENOENT) {
 			r = 0;

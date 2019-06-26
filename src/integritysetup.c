@@ -472,7 +472,7 @@ static struct action_type {
 } action_types[] = {
 	{ "format",	action_format, 1, N_("<integrity_device>"),N_("format device") },
 	{ "open",	action_open,   2, N_("<integrity_device> <name>"),N_("open device as <name>") },
-	{ "close",	action_close,  1, N_("<name>"),N_("close device (deactivate and remove mapping)") },
+	{ "close",	action_close,  1, N_("<name>"),N_("close device (remove mapping)") },
 	{ "status",	action_status, 1, N_("<name>"),N_("show active device status") },
 	{ "dump",	action_dump,   1, N_("<integrity_device>"),N_("show on-disk information") },
 	{ NULL, NULL, 0, NULL, NULL }

@@ -361,7 +361,7 @@ static struct action_type {
 	{ "format",	action_format, 2, N_("<data_device> <hash_device>"),N_("format device") },
 	{ "verify",	action_verify, 3, N_("<data_device> <hash_device> <root_hash>"),N_("verify device") },
 	{ "open",	action_open,   4, N_("<data_device> <name> <hash_device> <root_hash>"),N_("open device as <name>") },
-	{ "close",	action_close,  1, N_("<name>"),N_("close device (deactivate and remove mapping)") },
+	{ "close",	action_close,  1, N_("<name>"),N_("close device (remove mapping)") },
 	{ "status",	action_status, 1, N_("<name>"),N_("show active device status") },
 	{ "dump",	action_dump,   1, N_("<hash_device>"),N_("show on-disk information") },
 	{ NULL, NULL, 0, NULL, NULL }

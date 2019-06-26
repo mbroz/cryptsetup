@@ -1567,7 +1567,7 @@ static int action_luksRemoveKey(void)
 	tools_keyslot_msg(r, UNLOCKED);
 
 	opt_key_slot = r;
-	log_verbose(_("Key slot %d selected for deletion."), opt_key_slot);
+	log_verbose(_("Keyslot %d is selected for deletion."), opt_key_slot);
 
 	if (crypt_keyslot_status(cd, opt_key_slot) == CRYPT_SLOT_ACTIVE_LAST &&
 	    !yesDialog(_("This is the last keyslot. "
@@ -3173,7 +3173,7 @@ static struct action_type {
 	const char *arg_desc;
 	const char *desc;
 } action_types[] = {
-	{ "open",         action_open,         1, 1, N_("<device> [--type <type>] [<name>]"),N_("open device as mapping <name>") },
+	{ "open",         action_open,         1, 1, N_("<device> [--type <type>] [<name>]"),N_("open device as <name>") },
 	{ "close",        action_close,        1, 1, N_("<name>"), N_("close device (remove mapping)") },
 	{ "resize",       action_resize,       1, 1, N_("<name>"), N_("resize active device") },
 	{ "status",       action_status,       1, 0, N_("<name>"), N_("show device status") },
