@@ -194,6 +194,22 @@ function dm_crypt_keyring_new_kernel()
 	return 1
 }
 
+function dm_crypt_sector_size_support()
+{
+	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
+
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
+
+	if [ $VER_MIN -ge 17 -o \( $VER_MIN -eq 14 -a $VER_PTC -ge 5 \) ]; then
+		return 0
+	fi
+
+	return 1
+}
+
 function test_and_prepare_keyring() {
 	which keyctl > /dev/null 2>&1 || skip "Cannot find keyctl, test skipped"
 	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
@@ -484,6 +500,13 @@ if dm_crypt_keyring_support; then
 fi
 echo $PWD1 | $CRYPTSETUP -q resize --size 100 $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+echo $PWD1 | $CRYPTSETUP -q resize --device-size 51200 $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+echo $PWD1 | $CRYPTSETUP -q resize --device-size 1M $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+echo $PWD1 | $CRYPTSETUP -q resize --device-size 512k --size 1024 $DEV_NAME > /dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP -q resize --device-size 4097 $DEV_NAME > /dev/null 2>&1 && fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
 $CRYPTSETUP close $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP luksOpen --disable-keyring $LOOPDEV $DEV_NAME || fail
 echo | $CRYPTSETUP -q resize --size 100 $DEV_NAME || fail
@@ -492,6 +515,16 @@ $CRYPTSETUP close $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 if dm_crypt_keyring_support; then
 	$CRYPTSETUP -q resize --disable-keyring --size 100 $DEV_NAME 2>/dev/null && fail
+fi
+if dm_crypt_sector_size_support; then
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 4096 $LOOPDEV > /dev/null || fail
+	echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP -q resize --device-size 1M $DEV_NAME || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+	echo $PWD1 | $CRYPTSETUP -q resize --device-size 2049s $DEV_NAME > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP -q resize --size 2049 $DEV_NAME > /dev/null 2>&1 && fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
 fi
 
 prepare "[20] Disallow open/create if already mapped." wipe
