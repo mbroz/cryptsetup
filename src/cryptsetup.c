@@ -659,6 +659,9 @@ static int action_resize(void)
 		crypt_safe_free(password);
 	}
 
+	if (opt_device_size)
+		opt_size = opt_device_size / SECTOR_SIZE;
+
 	if (r >= 0)
 		r = crypt_resize(cd, action_argv[0], opt_size);
 out:
@@ -3825,6 +3828,10 @@ int main(int argc, const char **argv)
 
 	if (opt_data_shift && opt_device_size)
 		usage(popt_context, EXIT_FAILURE, _("Options --reduce-device-size and --data-size cannot be combined."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_device_size && opt_size)
+		usage(popt_context, EXIT_FAILURE, _("Options --device-size and --size cannot be combined."),
 		      poptGetInvocationName(popt_context));
 
 	r = run_action(action);

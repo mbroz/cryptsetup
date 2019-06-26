@@ -110,9 +110,9 @@ Reports the status for the mapping <name>.
 .IP
 Resizes an active mapping <name>.
 
-If \-\-size (in 512-bytes sectors) is not specified, the size is computed
-from the underlying device. For LUKS it is the size of the
-underlying device without the area reserved for LUKS header
+If \-\-size (in 512-bytes sectors) or \-\-device\-size are not specified,
+the size is computed from the underlying device. For LUKS it is the size
+of the underlying device without the area reserved for LUKS header
 (see data payload offset in \fBluksDump\fR command).
 For plain crypt device, the whole device size is used.
 
@@ -981,11 +981,14 @@ Hence, if \-\-offset \fIn\fR, and \-\-skip \fIs\fR, sector \fIn\fR
 (the first sector of the encrypted device) will get a sector number
 of \fIs\fR for the IV calculation.
 .TP
-.B "\-\-device-size \fIsize[units]\fR"
+.B "\-\-device\-size \fIsize[units]\fR"
 Instead of real device size, use specified value.
 
-It means that only specified area (from the start of the device
-to the specified size) will be reencrypted.
+With \fIreencrypt\fR action it means that only specified area
+(from the start of the device to the specified size) will be
+reencrypted.
+
+With \fIresize\fR action it sets new size of the device.
 
 If no unit suffix is specified, the size is in bytes.
 
