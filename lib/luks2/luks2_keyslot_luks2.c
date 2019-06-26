@@ -50,15 +50,16 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	/* Encrypt buffer */
 	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, vk->key, vk->keylength);
 	if (r) {
-		log_dbg(cd, "Userspace crypto wrapper cannot use %s-%s (%d).",
-			cipher, cipher_mode, r);
+		log_err(cd, _("Cannot use %s-%s cipher for keyslot encryption."), cipher, cipher_mode);
 		return r;
 	}
 
 	r = crypt_storage_encrypt(s, 0, srcLength, src);
 	crypt_storage_destroy(s);
-	if (r)
+	if (r) {
+		log_err(cd, _("IO error while encrypting keyslot."));
 		return r;
+	}
 
 	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd >= 0) {
@@ -104,8 +105,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 
 	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, vk->key, vk->keylength);
 	if (r) {
-		log_dbg(cd, "Userspace crypto wrapper cannot use %s-%s (%d).",
-			cipher, cipher_mode, r);
+		log_err(cd, _("Cannot use %s-%s cipher for keyslot encryption."), cipher, cipher_mode);
 		return r;
 	}
 
