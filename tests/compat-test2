@@ -459,40 +459,6 @@ $CRYPTSETUP luksKillSlot -q $LOOPDEV 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" && fail
 
 prepare "[19] create & status & resize" wipe
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash xxx 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --cipher aes-cbc-essiv:sha256 --offset 3 --skip 4 --readonly || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "offset:" | grep -q "3 sectors" || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "skipped:" | grep -q "4 sectors" || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "mode:" | grep -q "readonly" || fail
-$CRYPTSETUP -q resize  $DEV_NAME --size 100 || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
-$CRYPTSETUP -q resize  $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "81917 sectors" || fail
-# Resize underlying loop device as well
-truncate -s 20M $IMG || fail
-$CRYPTSETUP -q resize  $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "40957 sectors" || fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME >/dev/null && fail
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
-echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME --hash sha1 $LOOPDEV || fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
-echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME --hash sha1 --size 100 $LOOPDEV || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
-# verify is ignored on non-tty input
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --verify-passphrase 2>/dev/null || fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size 255 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size -1 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 -l -1 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1  || fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d blah 2>/dev/null && fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d /dev/urandom || fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 if dm_crypt_keyring_support; then
@@ -529,8 +495,6 @@ fi
 
 prepare "[20] Disallow open/create if already mapped." wipe
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME2 $LOOPDEV -d $KEY1 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV 2>/dev/null && fail
 $CRYPTSETUP remove  $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
@@ -627,20 +591,7 @@ $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY2 --keyfile-offset 1 $
 $CRYPTSETUP luksOpen -d $KEY2 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 
-prepare "[25] Create shared segments" wipe
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha1 --offset   0 --size 256 || fail
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha1 --offset 512 --size 256 --shared || fail
-$CRYPTSETUP -q remove  $DEV_NAME2 || fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
-
 prepare "[26] Suspend/Resume" wipe
-# only LUKS is supported
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha1 $LOOPDEV || fail
-$CRYPTSETUP luksSuspend $DEV_NAME 2>/dev/null && fail
-$CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
-$CRYPTSETUP -q remove  $DEV_NAME || fail
-$CRYPTSETUP luksSuspend $DEV_NAME 2>/dev/null && fail
 # LUKS
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
 echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
