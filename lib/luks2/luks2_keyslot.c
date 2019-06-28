@@ -76,7 +76,7 @@ int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr)
 	return -EINVAL;
 }
 
-/* Check if a keyslot is asssigned to specific segment */
+/* Check if a keyslot is assigned to specific segment */
 static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 {
 	int keyslot_digest, segment_digest, s, count = 0;

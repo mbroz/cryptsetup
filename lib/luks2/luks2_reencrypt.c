@@ -1658,7 +1658,7 @@ static int _encrypt_set_segments(struct crypt_device *cd, struct luks2_hdr *hdr,
 		first_segment_offset = data_offset;
 		first_segment_length = dev_size;
 	} else {
-		/* future data_device layout with deatached header: [first data segment] */
+		/* future data_device layout with detached header: [first data segment] */
 		first_segment_offset = data_offset;
 		first_segment_length = 0; /* dynamic */
 	}
@@ -1993,7 +1993,7 @@ static int reenc_init_helper_devices(struct crypt_device *cd,
 	/* swap origin mapping to overlay device */
 	r = reenc_swap_backing_device(cd, rh->device_name, rh->overlay_name, CRYPT_ACTIVATE_KEYRING_KEY);
 	if (r) {
-		log_err(cd, _("Failed to load new maping for device %s."), rh->device_name);
+		log_err(cd, _("Failed to load new mapping for device %s."), rh->device_name);
 		goto err;
 	}
 
@@ -2013,7 +2013,7 @@ err:
 
 /* TODO:
  * 	1) audit error path. any error in this routine is fatal and should be unlikely.
- * 	   usualy it would hint some collision with another userspace process touching
+ * 	   usually it would hint some collision with another userspace process touching
  * 	   dm devices directly.
  */
 static int reenc_refresh_helper_devices(struct crypt_device *cd, const char *overlay, const char *hotzone)
@@ -2021,7 +2021,7 @@ static int reenc_refresh_helper_devices(struct crypt_device *cd, const char *ove
 	int r;
 
 	/*
-	 * we have to explicitely suspend the overlay device before suspending
+	 * we have to explicitly suspend the overlay device before suspending
 	 * the hotzone one. Resuming overlay device (aka switching tables) only
 	 * after suspending the hotzone may lead to deadlock.
 	 *

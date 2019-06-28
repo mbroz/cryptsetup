@@ -28,7 +28,7 @@
 #define LUKS_SLOT_ITERATIONS_MIN 1000
 #define LUKS_STRIPES 4000
 
-/* Serialize memory-hard keyslot access: opttional workaround for parallel processing */
+/* Serialize memory-hard keyslot access: optional workaround for parallel processing */
 #define MIN_MEMORY_FOR_SERIALIZE_LOCK_KB 32*1024 /* 32MB */
 
 static int luks2_encrypt_to_storage(char *src, size_t srcLength,
