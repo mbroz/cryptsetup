@@ -69,17 +69,21 @@ scsi_debug_teardown() {
 
 function remove_mapping()
 {
-	[ -b /dev/mapper/$DEV_NAME-hotzone ] && {
-		dmsetup resume $DEV_NAME-hotzone
-		dmsetup remove --retry $DEV_NAME-hotzone
+	[ -b /dev/mapper/$DEV_NAME ] && {
+		dmsetup resume $DEV_NAME
+		dmsetup remove --retry $DEV_NAME
 	}
 	[ -b /dev/mapper/$DEV_NAME-overlay ] && {
 		dmsetup resume $DEV_NAME-overlay
 		dmsetup remove --retry $DEV_NAME-overlay
 	}
-	[ -b /dev/mapper/$DEV_NAME ] && {
-		dmsetup resume $DEV_NAME
-		dmsetup remove --retry $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME-hotzone-forward ] && {
+		dmsetup resume $DEV_NAME-hotzone-forward
+		dmsetup remove --retry $DEV_NAME-hotzone-forward
+	}
+	[ -b /dev/mapper/$DEV_NAME-hotzone-backward ] && {
+		dmsetup resume $DEV_NAME-hotzone-backward
+		dmsetup remove --retry $DEV_NAME-hotzone-backward
 	}
 	[ -b /dev/mapper/$OVRDEV ] && dmsetup remove --retry $OVRDEV 2>/dev/null
 	[ -b /dev/mapper/$OVRDEV-err ] && dmsetup remove --retry $OVRDEV-err 2>/dev/null
@@ -284,7 +288,8 @@ function reencrypt_recover_online() { # $1 sector size, $2 resilience, $3 digest
 	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
-	echo $PWD1 | $CRYPTSETUP reencrypt $DEV $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+	$CRYPTSETUP status $DEV_NAME $_hdr | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	fix_writes $OVRDEV $OLD_DEV
 
@@ -292,8 +297,12 @@ function reencrypt_recover_online() { # $1 sector size, $2 resilience, $3 digest
 	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
 	check_hash_dev /dev/mapper/$DEV_NAME $3
 
-	echo $PWD1 | $CRYPTSETUP reencrypt $DEV $_hdr --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON || fail
-	check_hash_dev /dev/mapper/$DEV_NAME $3
+	$CRYPTSETUP luksDump ${4:-$DEV} | grep -q "online-reencrypt"
+	if [ $? -eq 0 ]; then
+		$CRYPTSETUP status $DEV_NAME $_hdr | grep -q "reencryption:  in-progress" || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --resilience $2 --resume-only -q || fail
+		check_hash_dev /dev/mapper/$DEV_NAME $3
+	fi
 
 	$CRYPTSETUP close $DEV_NAME || fail
 	echo "[OK]"
@@ -335,6 +344,7 @@ function encrypt_recover_online() { # $1 sector size, $2 reduce size, $3 digest,
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q >/dev/null 2>&1 && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	fix_writes $OVRDEV $OLD_DEV
 
@@ -343,8 +353,9 @@ function encrypt_recover_online() { # $1 sector size, $2 reduce size, $3 digest,
 
 	$CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt"
 	if [ $? -eq 0 ]; then
+		$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" || fail
 		check_hash_dev /dev/mapper/$DEV_NAME $3
-		echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt --resume-only --active-name $DEV_NAME -q || fail
 	fi
 
 	$CRYPTSETUP close $DEV_NAME || fail
@@ -384,14 +395,16 @@ function encrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 	echo $PWD1 | $CRYPTSETUP reencrypt -q $DEV --header $4 --hotzone-size 1M  2>/dev/null && fail
+	$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	fix_writes $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 $DEV_NAME || fail
+	$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
 
 	check_hash_dev /dev/mapper/$DEV_NAME $3
 
-	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME --resume-only --header $4 --resilience $2 -q || fail
 	check_hash_dev /dev/mapper/$DEV_NAME $3
 
 	$CRYPTSETUP close $DEV_NAME || fail
@@ -415,7 +428,7 @@ function decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest
 	$CRYPTSETUP luksDump $4 | grep -q "online-reencrypt"
 	if [ $? -eq 0 ]; then
 		check_hash $PWD1 $3 $4
-		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 -q || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --resume-only --header $4 --resilience $2 -q || fail
 	fi
 
 	check_hash_dev $DEV $3
@@ -433,6 +446,7 @@ function decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --decrypt --hotzone-size 1M --header $4 --resilience $2 -q 2>/dev/null && fail
+	$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	fix_writes $OVRDEV $OLD_DEV
 
@@ -441,6 +455,7 @@ function decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 
 	$CRYPTSETUP luksDump $4 | grep -q "online-reencrypt"
 	if [ $? -eq 0 ]; then
+		$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
 		check_hash_dev /dev/mapper/$DEV_NAME $3
 		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 -q || fail
 	fi
