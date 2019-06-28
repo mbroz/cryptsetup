@@ -1102,7 +1102,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 {
 	bool found = false;
 	char **dep, *cipher_spec = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = {};
-	const char *dev, *dm_dev, *namei;
+	const char *dev, *namei;
 	int key_nums, r;
 	struct crypt_dm_active_device dmd, dmdi = {}, dmdep = {};
 	struct dm_target *tgt = &dmd.segment, *tgti = &dmdi.segment;
@@ -1174,9 +1174,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 					tgt = tgt->next;
 					continue;
 				}
-				log_dbg(cd, "candidate new data device: %s", dev);
-				dm_dev = strstr(dev, dm_get_dir());
-				if (!dm_dev || !crypt_string_in(dm_dev, deps, ARRAY_SIZE(deps))) {
+				if (!strstr(dev, dm_get_dir()) ||
+				    !crypt_string_in(dev + strlen(dm_get_dir()) + 1, deps, ARRAY_SIZE(deps))) {
 					device_free(cd, cd->device);
 					MOVE_REF(cd->device, tgt->data_device);
 					found = true;
