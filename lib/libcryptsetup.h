@@ -1752,7 +1752,7 @@ int crypt_header_restore(struct crypt_device *cd,
 
 /** Debug all */
 #define CRYPT_DEBUG_ALL  -1
-/** Debug all with adidtional JSON dump (for LUKS2) */
+/** Debug all with additional JSON dump (for LUKS2) */
 #define CRYPT_DEBUG_JSON  -2
 /** Debug none */
 #define CRYPT_DEBUG_NONE  0
@@ -2236,7 +2236,7 @@ typedef enum {
  * LUKS2 reencryption status.
  *
  * @param cd crypt device handle
- * @param params reecryption parameters
+ * @param params reencryption parameters
  *
  * @return reencryption status info and parameters.
  */

@@ -758,7 +758,7 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 
 	log_dbg(cd, "Allocating a free loop device.");
 
-	/* Keep the loop open, dettached on last close. */
+	/* Keep the loop open, detached on last close. */
 	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly);
 	if (loop_fd == -1) {
 		log_err(cd, _("Attaching loopback device failed "

@@ -1,5 +1,5 @@
 /*
- * Integrity header defitinion
+ * Integrity header definition
  *
  * Copyright (C) 2016-2019 Milan Broz
  *

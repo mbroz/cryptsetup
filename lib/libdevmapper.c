@@ -728,7 +728,7 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	if (tgt->u.integrity.journal_watermark) {
 		num_options++;
 		snprintf(feature, sizeof(feature),
-			 /* bitmap oveloaded values */
+			 /* bitmap overloaded values */
 			 (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) ? "sectors_per_bit:%u " : "journal_watermark:%u ",
 			 tgt->u.integrity.journal_watermark);
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
@@ -736,7 +736,7 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	if (tgt->u.integrity.journal_commit_time) {
 		num_options++;
 		snprintf(feature, sizeof(feature),
-			 /* bitmap oveloaded values */
+			 /* bitmap overloaded values */
 			 (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) ? "bitmap_flush_interval:%u " : "commit_time:%u ",
 			 tgt->u.integrity.journal_commit_time);
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
@@ -1539,7 +1539,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 
 	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) &&
 	    !(dmt_flags & DM_INTEGRITY_BITMAP_SUPPORTED))
-		log_err(cd, _("Requested dm-integtity bitmap mode is not supported."));
+		log_err(cd, _("Requested dm-integrity bitmap mode is not supported."));
 out:
 	dm_exit_context();
 	return r;
@@ -2210,12 +2210,12 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 			else if (sscanf(arg, "sectors_per_bit:%" PRIu64, &val64) == 1) {
 				if (val64 > UINT_MAX)
 					goto err;
-				/* overrloaded value for bitmap mode */
+				/* overloaded value for bitmap mode */
 				tgt->u.integrity.journal_watermark = (unsigned int)val64;
 			} else if (sscanf(arg, "commit_time:%u", &val) == 1)
 				tgt->u.integrity.journal_commit_time = val;
 			else if (sscanf(arg, "bitmap_flush_interval:%u", &val) == 1)
-				/* overrloaded value for bitmap mode */
+				/* overloaded value for bitmap mode */
 				tgt->u.integrity.journal_commit_time = val;
 			else if (sscanf(arg, "interleave_sectors:%u", &val) == 1)
 				tgt->u.integrity.interleave_sectors = val;

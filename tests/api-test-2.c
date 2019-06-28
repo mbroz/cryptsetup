@@ -966,7 +966,7 @@ static void UseTempVolumes(void)
 	crypt_free(cd);
 
 	// Dirty checks: device without UUID
-	// we should be able to remove it but not manuipulate with it
+	// we should be able to remove it but not manipulate with it
 	snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
 		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
 		"%s 2048\"", CDEVICE_2, DEVICE_2);

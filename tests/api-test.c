@@ -917,7 +917,7 @@ static void AddDeviceLuks(void)
 	crypt_set_iteration_time(cd, 1);
 	EQ_(1, crypt_keyslot_add_by_volume_key(cd, 1, key, key_size, KEY1, strlen(KEY1)));
 
-	// PBKDF info (in LUKS1 slots are ther same)
+	// PBKDF info (in LUKS1 slots are the same)
 	FAIL_(crypt_keyslot_get_pbkdf(cd, 1, NULL), "PBKDF struct required");
 	OK_(crypt_keyslot_get_pbkdf(cd, 1, &pbkdf));
 	OK_(strcmp(pbkdf.type, CRYPT_KDF_PBKDF2));
@@ -1010,7 +1010,7 @@ static void UseTempVolumes(void)
 	crypt_free(cd);
 
 	// Dirty checks: device without UUID
-	// we should be able to remove it but not manuipulate with it
+	// we should be able to remove it but not manipulate with it
 	snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
 		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
 		"%s 2048\"", CDEVICE_2, DEVICE_2);
@@ -1571,11 +1571,11 @@ static void VerityTest(void)
 	/* block size */
 	params.data_block_size = 333;
 	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
-		"Unsupppored block size.");
+		"Unsupported block size.");
 	params.data_block_size = 4096;
 	params.hash_block_size = 333;
 	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
-		"Unsupppored block size.");
+		"Unsupported block size.");
 	params.hash_block_size = 4096;
 
 	/* salt size */
