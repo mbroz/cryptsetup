@@ -2254,7 +2254,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	while (*dep) {
 		if (is_reencryption_helper(*dep) && (dm_status_suspended(cd, *dep) > 0)) {
 			if (dm_error_device(cd, *dep))
-				log_err(cd, _("Failed to error suspended device %s."), *dep);
+				log_err(cd, _("Failed to replace suspended device %s with dm-error target."), *dep);
 		}
 		dep++;
 	}

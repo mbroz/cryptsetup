@@ -3828,8 +3828,10 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	if (ri == CRYPT_REENCRYPT_CRASH) {
 		r = LUKS2_reencrypt_locked_recovery_by_passphrase(cd, keyslot,
 				keyslot, passphrase, passphrase_size, flags, &vks);
-		if (r < 0)
+		if (r < 0) {
+			log_err(cd, _("LUKS2 reencryption recovery failed."));
 			goto err;
+		}
 		keyslot = r;
 
 		ri = LUKS2_reenc_status(hdr);
