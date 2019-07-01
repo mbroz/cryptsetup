@@ -400,12 +400,14 @@ function encrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 	fix_writes $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 $DEV_NAME || fail
-	$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
-
 	check_hash_dev /dev/mapper/$DEV_NAME $3
 
-	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME --resume-only --header $4 --resilience $2 -q || fail
-	check_hash_dev /dev/mapper/$DEV_NAME $3
+	$CRYPTSETUP luksDump $4 | grep -q "online-reencrypt"
+	if [ $? -eq 0 ]; then
+		$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME --resume-only --header $4 --resilience $2 -q || fail
+		check_hash_dev /dev/mapper/$DEV_NAME $3
+	fi
 
 	$CRYPTSETUP close $DEV_NAME || fail
 
