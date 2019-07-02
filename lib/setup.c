@@ -5564,10 +5564,10 @@ int crypt_keyslot_add_by_key(struct crypt_device *cd,
 
 	if (volume_key)
 		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
-	else if (cd->volume_key)
-		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
 	else if (flags & CRYPT_VOLUME_KEY_NO_SEGMENT)
 		vk = crypt_generate_volume_key(cd, volume_key_size);
+	else if (cd->volume_key)
+		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
 	else
 		return -EINVAL;
 
