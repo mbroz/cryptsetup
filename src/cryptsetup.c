@@ -93,6 +93,7 @@ static const char *opt_label = NULL;
 static const char *opt_subsystem = NULL;
 static int opt_unbound = 0;
 static int opt_refresh = 0;
+static const char *opt_key_prompt = NULL;
 
 /* LUKS2 reencryption parameters */
 static const char *opt_active_name = NULL;
@@ -341,7 +342,7 @@ static int action_open_plain(void)
 			opt_keyfile_offset, activate_flags);
 	} else {
 		key_size_max = (opt_key_file && !params.hash) ? key_size : (size_t)opt_keyfile_size;
-		r = tools_get_key(NULL, &password, &passwordLen,
+		r = tools_get_key(opt_key_prompt, &password, &passwordLen,
 				  opt_keyfile_offset, key_size_max,
 				  opt_key_file, opt_timeout,
 				  _verify_passphrase(0), 0, cd);
@@ -414,7 +415,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 
 	do {
 		/* TCRYPT header is encrypted, get passphrase now */
-		r = tools_get_key(NULL, CONST_CAST(char**)&params->passphrase,
+		r = tools_get_key(opt_key_prompt, CONST_CAST(char**)&params->passphrase,
 				  &params->passphrase_size, 0, 0, opt_keyfile_stdin, opt_timeout,
 				 _verify_passphrase(0), 0, cd);
 		if (r < 0)
@@ -645,7 +646,7 @@ static int action_resize(void)
 		if (r < 0 && opt_token_only)
 			goto out;
 
-		r = tools_get_key(NULL, &password, &passwordLen,
+		r = tools_get_key(opt_key_prompt, &password, &passwordLen,
 				  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 				  opt_timeout, _verify_passphrase(0), 0, cd);
 		if (r < 0)
@@ -1282,7 +1283,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 	else if (opt_urandom)
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
-	r = tools_get_key(NULL, &password, &passwordLen,
+	r = tools_get_key(opt_key_prompt, &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			  opt_timeout, _verify_passphrase(1), 1, cd);
 	if (r < 0)
@@ -1400,7 +1401,7 @@ static int action_open_luks(void)
 
 		tries = (tools_is_stdin(opt_key_file) && isatty(STDIN_FILENO)) ? opt_tries : 1;
 		do {
-			r = tools_get_key(NULL, &password, &passwordLen,
+			r = tools_get_key(opt_key_prompt, &password, &passwordLen,
 					opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 					opt_timeout, _verify_passphrase(0), 0, cd);
 			if (r < 0)
@@ -1936,7 +1937,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = tools_get_key(NULL, &password, &passwordLen,
+	r = tools_get_key(opt_key_prompt, &password, &passwordLen,
 			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			  opt_timeout, 0, 0, cd);
 	if (r < 0)
@@ -2032,7 +2033,7 @@ static int action_luksResume(void)
 
 	tries = (tools_is_stdin(opt_key_file) && isatty(STDIN_FILENO)) ? opt_tries : 1;
 	do {
-		r = tools_get_key(NULL, &password, &passwordLen,
+		r = tools_get_key(opt_key_prompt, &password, &passwordLen,
 			opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			opt_timeout, _verify_passphrase(0), 0, cd);
 		if (r < 0)
@@ -2551,7 +2552,7 @@ static int action_reencrypt_load(struct crypt_device *cd)
 		.flags = CRYPT_REENCRYPT_RESUME_ONLY
 	};
 
-	r = tools_get_key(NULL, &password, &passwordLen,
+	r = tools_get_key(opt_key_prompt, &password, &passwordLen,
 			opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			opt_timeout, _verify_passphrase(0), 0, cd);
 	if (r < 0)
@@ -2760,7 +2761,7 @@ static int action_decrypt_luks2(struct crypt_device *cd)
 
 	_set_reencryption_flags(&params.flags);
 
-	r = tools_get_key(NULL, &password, &passwordLen,
+	r = tools_get_key(opt_key_prompt, &password, &passwordLen,
 			opt_keyfile_offset, opt_keyfile_size, opt_key_file,
 			opt_timeout, _verify_passphrase(0), 0, cd);
 	if (r < 0)
@@ -3395,6 +3396,7 @@ int main(int argc, const char **argv)
 		{ "resilience",	       '\0', POPT_ARG_STRING, &opt_resilience_mode,     0, N_("Reencryption hotzone resilience type (checksum,journal,none)"), NULL },
 		{ "resilience-hash",   '\0', POPT_ARG_STRING, &opt_resilience_hash,     0, N_("Reencryption hotzone checksums hash"), NULL },
 		{ "active-name",       '\0', POPT_ARG_STRING, &opt_active_name,		0, N_("Override device autodetection of dm device to be reencrypted"), NULL },
+		{ "key-prompt",        '\0', POPT_ARG_STRING, &opt_key_prompt,          0, N_("Set prompt for requesting key"), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
