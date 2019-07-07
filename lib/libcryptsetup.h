@@ -2103,6 +2103,27 @@ typedef int (*crypt_token_open_func) (
 	void *usrptr);
 
 /**
+ * Token handler open with passphrase/PIN function prototype.
+ * This function retrieves password from a token and return allocated buffer
+ * containing this password. This buffer has to be deallocated by calling
+ * free() function and content should be wiped before deallocation.
+ *
+ * @param cd crypt device handle
+ * @param token token id
+ * @param pin passphrase (or PIN) to unlock token
+ * @param buffer returned allocated buffer with password
+ * @param buffer_len length of the buffer
+ * @param usrptr user data in @link crypt_activate_by_token @endlink
+ */
+typedef int (*crypt_token_open_pin_func) (
+	struct crypt_device *cd,
+	int token,
+	const char *pin,
+	char **buffer,
+	size_t *buffer_len,
+	void *usrptr);
+
+/**
  * Token handler buffer free function prototype.
  * This function is used by library to free the buffer with keyslot
  * passphrase when it's no longer needed. If not defined the library
@@ -2148,6 +2169,7 @@ typedef struct  {
 	crypt_token_buffer_free_func buffer_free; /**< token handler buffer_free function (optional) */
 	crypt_token_validate_func validate; /**< token handler validate function (optional) */
 	crypt_token_dump_func dump; /**< token handler dump function (optional) */
+	crypt_token_open_pin_func open_pin; /**< open with passphrase function (optional) */
 } crypt_token_handler;
 
 /**
@@ -2183,10 +2205,32 @@ int crypt_token_load(const char *name);
  * @param flags activation flags
  *
  * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note EAGAIN errno means that token is PIN protected and you should call
+ *       @link crypt_activate_by_pin_token @endlink with PIN
  */
 int crypt_activate_by_token(struct crypt_device *cd,
 	const char *name,
 	int token,
+	void *usrptr,
+	uint32_t flags);
+
+/**
+ * Activate device or check key using a token with PIN.
+ *
+ * @param cd crypt device handle
+ * @param name name of device to create, if @e NULL only check token
+ * @param token requested token to check or CRYPT_ANY_TOKEN to check all
+ * @param pin passphrase (or PIN) to unlock token
+ * @param usrptr provided identification in callback
+ * @param flags activation flags
+ *
+ * @return unlocked key slot number or negative errno otherwise.
+ */
+int crypt_activate_by_pin_token(struct crypt_device *cd,
+	const char *name,
+	int token,
+	const char *pin,
 	void *usrptr,
 	uint32_t flags);
 /** @} */

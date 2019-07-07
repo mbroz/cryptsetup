@@ -116,6 +116,9 @@ int crypt_token_register(const crypt_token_handler *handler)
 {
 	int i, r;
 
+	if (!handler->name || !handler->open)
+		return -EINVAL;
+
 	r = crypt_token_find_free(handler->name, &i);
 	if (r < 0)
 		return r;
@@ -307,6 +310,7 @@ crypt_token_info LUKS2_token_status(struct crypt_device *cd,
 static int LUKS2_token_open(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
+	const char *pin,
 	char **buffer,
 	size_t *buffer_len,
 	void *usrptr)
@@ -328,7 +332,12 @@ static int LUKS2_token_open(struct crypt_device *cd,
 		}
 	}
 
-	r = h->open(cd, token, buffer, buffer_len, usrptr);
+	if (pin && !h->open_pin)
+		r = -ENOENT;
+	else if (pin)
+		r = h->open_pin(cd, token, pin, buffer, buffer_len, usrptr);
+	else
+		r = h->open(cd, token, buffer, buffer_len, usrptr);
 	if (r < 0)
 		log_dbg(cd, "Token %d (%s) open failed with %d.", token, h->name, r);
 
@@ -390,18 +399,19 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 }
 
 int LUKS2_token_open_and_activate(struct crypt_device *cd,
-		struct luks2_hdr *hdr,
-		int token,
-		const char *name,
-		uint32_t flags,
-		void *usrptr)
+	struct luks2_hdr *hdr,
+	int token,
+	const char *name,
+	const char *pin,
+	uint32_t flags,
+	void *usrptr)
 {
 	int keyslot, r;
 	char *buffer;
 	size_t buffer_len;
 	struct volume_key *vk = NULL;
 
-	r = LUKS2_token_open(cd, hdr, token, &buffer, &buffer_len, usrptr);
+	r = LUKS2_token_open(cd, hdr, token, pin, &buffer, &buffer_len, usrptr);
 	if (r < 0)
 		return r;
 
@@ -435,6 +445,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const char *name,
+	const char *pin,
 	uint32_t flags)
 {
 	char *buffer;
@@ -449,7 +460,7 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 		UNUSED(val);
 		token = atoi(slot);
 
-		r = LUKS2_token_open(cd, hdr, token, &buffer, &buffer_len, NULL);
+		r = LUKS2_token_open(cd, hdr, token, pin, &buffer, &buffer_len, NULL);
 		if (r < 0)
 			continue;
 
