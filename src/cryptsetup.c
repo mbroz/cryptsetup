@@ -1495,6 +1495,18 @@ static int action_open_luks(void)
 	} else {
 		r = crypt_activate_by_token(cd, activated_name, opt_token, NULL, activate_flags);
 		tools_keyslot_msg(r, UNLOCKED);
+
+		/* Token requires PIN, but ask only there will be no password query later */
+		if (opt_token_only && r == -EAGAIN) {
+			r = tools_get_key(_("Enter token PIN:"), &password, &passwordLen, 0, 0, NULL,
+					opt_timeout, _verify_passphrase(0), 0, cd);
+			if (r < 0)
+				goto out;
+			r = crypt_activate_by_pin_token(cd, activated_name, opt_token,
+							password, NULL, activate_flags);
+			tools_keyslot_msg(r, UNLOCKED);
+		}
+
 		if (r >= 0 || opt_token_only)
 			goto out;
 

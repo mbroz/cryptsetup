@@ -254,15 +254,17 @@ crypt_token_info LUKS2_token_status(struct crypt_device *cd,
 	const char **type);
 
 int LUKS2_token_open_and_activate(struct crypt_device *cd,
-		struct luks2_hdr *hdr,
-		int token,
-		const char *name,
-		uint32_t flags,
-		void *usrptr);
+	struct luks2_hdr *hdr,
+	int token,
+	const char *name,
+	const char *pin,
+	uint32_t flags,
+	void *usrptr);
 
 int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const char *name,
+	const char *pin,
 	uint32_t flags);
 
 int LUKS2_token_keyring_get(struct crypt_device *cd,
