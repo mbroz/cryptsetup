@@ -414,6 +414,8 @@ int crypt_get_metadata_size(struct crypt_device *cd,
 #define CRYPT_TCRYPT "TCRYPT"
 /** INTEGRITY dm-integrity device */
 #define CRYPT_INTEGRITY "INTEGRITY"
+/** BITLK (BitLocker-compatible mode) */
+#define CRYPT_BITLK "BITLK"
 
 /** LUKS any version */
 #define CRYPT_LUKS NULL
@@ -589,6 +591,15 @@ struct crypt_params_luks2 {
 	uint32_t sector_size;    /**< encryption sector size */
 	const char *label;       /**< header label or @e NULL*/
 	const char *subsystem;   /**< header subsystem label or @e NULL*/
+};
+
+/**
+ * Structure used as parameter for BITLK device type.
+ *
+ * @see crypt_format, crypt_load
+ *
+ */
+struct crypt_params_bitlk {
 };
 /** @} */
 
