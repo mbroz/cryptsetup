@@ -2546,7 +2546,7 @@ static int action_reencrypt_load(struct crypt_device *cd)
 	struct crypt_params_reencrypt params = {
 		.resilience = opt_resilience_mode,
 		.hash = opt_resilience_hash,
-		.max_hotzone_size = opt_hotzone_size,
+		.max_hotzone_size = opt_hotzone_size / SECTOR_SIZE,
 		.device_size = opt_device_size / SECTOR_SIZE,
 		.flags = CRYPT_REENCRYPT_RESUME_ONLY
 	};
@@ -2590,7 +2590,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		.direction = opt_data_shift < 0 ? CRYPT_REENCRYPT_BACKWARD : CRYPT_REENCRYPT_FORWARD,
 		.resilience = opt_resilience_mode,
 		.hash = opt_resilience_hash,
-		.max_hotzone_size = opt_hotzone_size,
+		.max_hotzone_size = opt_hotzone_size / SECTOR_SIZE,
 		.device_size = opt_device_size / SECTOR_SIZE,
 		.luks2 = &luks2_params,
 		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
@@ -2754,7 +2754,7 @@ static int action_decrypt_luks2(struct crypt_device *cd)
 		.hash = opt_resilience_hash,
 		.data_shift = imaxabs(opt_data_shift) / SECTOR_SIZE,
 		.device_size = opt_device_size / SECTOR_SIZE,
-		.max_hotzone_size = opt_hotzone_size,
+		.max_hotzone_size = opt_hotzone_size / SECTOR_SIZE,
 	};
 	size_t passwordLen;
 
@@ -2966,7 +2966,7 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 		.resilience = opt_data_shift ? "datashift" : opt_resilience_mode,
 		.hash = opt_resilience_hash,
 		.data_shift = imaxabs(opt_data_shift) / SECTOR_SIZE,
-		.max_hotzone_size = opt_hotzone_size,
+		.max_hotzone_size = opt_hotzone_size / SECTOR_SIZE,
 		.device_size = opt_device_size / SECTOR_SIZE,
 		.luks2 = &luks2_params,
 	};

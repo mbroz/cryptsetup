@@ -886,10 +886,10 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 		return -EINVAL;
 
 	log_dbg(cd, "Requested hotzone size: %" PRIu64 ", requested device size: %" PRIu64
-		", calculated alignment: %zu", params->max_hotzone_size,
+		", calculated alignment: %zu", params->max_hotzone_size << SECTOR_SHIFT,
 		params->device_size << SECTOR_SHIFT, rh->alignment);
 
-	if (params->max_hotzone_size % rh->alignment) {
+	if ((params->max_hotzone_size << SECTOR_SHIFT) % rh->alignment) {
 		log_err(cd, _("Hotzone size must be multiple of calculated zone alignment (%zu bytes)."), rh->alignment);
 		return -EINVAL;
 	}
@@ -952,7 +952,7 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 	} else
 		rh->fixed_length = false;
 
-	rh->length = LUKS2_get_reencrypt_length(hdr, rh, area_length, params->max_hotzone_size);
+	rh->length = LUKS2_get_reencrypt_length(hdr, rh, area_length, params->max_hotzone_size << SECTOR_SHIFT);
 	if (LUKS2_get_reencrypt_offset(hdr, rh->direction, device_size, &rh->length, &rh->offset)) {
 		log_dbg(cd, "Failed to get reencryption offset.");
 		return -EINVAL;
