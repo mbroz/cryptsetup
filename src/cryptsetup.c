@@ -517,6 +517,48 @@ out:
 	return r;
 }
 
+static int action_open_bitlk(void)
+{
+	struct crypt_device *cd = NULL;
+	const char *activated_name;
+	uint32_t activate_flags = 0;
+	int r, tries;
+	char *password = NULL;
+	size_t passwordLen;
+
+	activated_name = opt_test_passphrase ? NULL : action_argv[1];
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	r = crypt_load(cd, CRYPT_BITLK, NULL);
+	if (r < 0) {
+		log_err(_("Device %s is not a valid BITLK device."), action_argv[0]);
+		goto out;
+	}
+	_set_activation_flags(&activate_flags);
+
+	tries = (tools_is_stdin(opt_key_file) && isatty(STDIN_FILENO)) ? opt_tries : 1;
+	do {
+		r = tools_get_key(NULL, &password, &passwordLen,
+				opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+				opt_timeout, _verify_passphrase(0), 0, cd);
+		if (r < 0)
+			goto out;
+
+		r = crypt_activate_by_passphrase(cd, activated_name, CRYPT_ANY_SLOT,
+						 password, passwordLen, activate_flags);
+		tools_passphrase_msg(r);
+		check_signal(&r);
+		crypt_safe_free(password);
+		password = NULL;
+	} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
+out:
+	crypt_safe_free(password);
+	crypt_free(cd);
+	return r;
+}
+
 static int tcryptDump_with_volume_key(struct crypt_device *cd)
 {
 	char *vk = NULL;
@@ -585,6 +627,24 @@ static int action_tcryptDump(void)
 out:
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
+	return r;
+}
+
+static int action_bitlkDump(void)
+{
+	struct crypt_device *cd = NULL;
+	int r;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	r = crypt_load(cd, CRYPT_BITLK, NULL);
+	if (r < 0)
+		goto out;
+
+	r = crypt_dump(cd);
+out:
+	crypt_free(cd);
 	return r;
 }
 
@@ -2175,6 +2235,10 @@ static int action_open(void)
 		if (action_argc < 2 && !opt_test_passphrase)
 			goto args;
 		return action_open_tcrypt();
+	} else if (!strcmp(opt_type, "bitlk")) {
+		if (action_argc < 2 && !opt_test_passphrase)
+			goto args;
+		return action_open_bitlk();
 	}
 
 	log_err(_("Unrecognized metadata device type %s."), opt_type);
@@ -3232,6 +3296,7 @@ static struct action_type {
 	{ "isLuks",       action_isLuks,       1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
 	{ "luksDump",     action_luksDump,     1, 1, N_("<device>"), N_("dump LUKS partition information") },
 	{ "tcryptDump",   action_tcryptDump,   1, 1, N_("<device>"), N_("dump TCRYPT device information") },
+	{ "bitlkDump",    action_bitlkDump,    1, 1, N_("<device>"), N_("dump BITLK device information") },
 	{ "luksSuspend",  action_luksSuspend,  1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen)") },
 	{ "luksResume",   action_luksResume,   1, 1, N_("<device>"), N_("Resume suspended LUKS device") },
 	{ "luksHeaderBackup", action_luksBackup,1,1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
@@ -3538,8 +3603,13 @@ int main(int argc, const char **argv)
 	} else if (!strcmp(aname, "tcryptOpen")) {
 		aname = "open";
 		opt_type = "tcrypt";
+	} else if (!strcmp(aname, "bitlkOpen")) {
+		aname = "open";
+		opt_type = "bitlk";
 	} else if (!strcmp(aname, "tcryptDump")) {
 		opt_type = "tcrypt";
+	} else if (!strcmp(aname, "bitlkDump")) {
+		opt_type = "bitlk";
 	} else if (!strcmp(aname, "remove") ||
 		   !strcmp(aname, "plainClose") ||
 		   !strcmp(aname, "luksClose") ||
@@ -3642,7 +3712,7 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (opt_test_passphrase && (strcmp(aname, "open") || !opt_type ||
-	    (strncmp(opt_type, "luks", 4) && strcmp(opt_type, "tcrypt"))))
+	    (strncmp(opt_type, "luks", 4) && strcmp(opt_type, "tcrypt") && strcmp(opt_type, "bitlk"))))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"),
 		      poptGetInvocationName(popt_context));
