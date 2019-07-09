@@ -47,6 +47,7 @@
 #define DM_INTEGRITY_TARGET	"integrity"
 #define DM_LINEAR_TARGET	"linear"
 #define DM_ERROR_TARGET         "error"
+#define DM_ZERO_TARGET		"zero"
 #define RETRY_COUNT		5
 
 /* Set if DM target versions were probed */
@@ -268,7 +269,7 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 	if ((target_type == DM_CRYPT	 && _dm_crypt_checked) ||
 	    (target_type == DM_VERITY    && _dm_verity_checked) ||
 	    (target_type == DM_INTEGRITY && _dm_integrity_checked) ||
-	    (target_type == DM_LINEAR) ||
+	    (target_type == DM_LINEAR) || (target_type == DM_ZERO) ||
 	    (_dm_crypt_checked && _dm_verity_checked && _dm_integrity_checked))
 		return 1;
 
@@ -349,7 +350,7 @@ int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags)
 	if ((target == DM_CRYPT	    && _dm_crypt_checked) ||
 	    (target == DM_VERITY    && _dm_verity_checked) ||
 	    (target == DM_INTEGRITY && _dm_integrity_checked) ||
-	    (target == DM_LINEAR)) /* nothing to check with linear */
+	    (target == DM_LINEAR) || (target == DM_ZERO)) /* nothing to check */
 		return 0;
 
 	return -ENODEV;
@@ -930,6 +931,16 @@ static char *get_dm_linear_params(const struct dm_target *tgt, uint32_t flags)
 	return params;
 }
 
+static char *get_dm_zero_params(const struct dm_target *tgt, uint32_t flags)
+{
+	char *params = crypt_safe_alloc(1);
+	if (!params)
+		return NULL;
+
+	params[0] = 0;
+	return params;
+}
+
 /* DM helpers */
 static int _dm_remove(const char *name, int udev_wait, int deferred)
 {
@@ -1203,6 +1214,9 @@ static int _add_dm_targets(struct dm_task *dmt, struct crypt_dm_active_device *d
 		case DM_LINEAR:
 			target = DM_LINEAR_TARGET;
 			break;
+		case DM_ZERO:
+			target = DM_ZERO_TARGET;
+			break;
 		default:
 			return -ENOTSUP;
 		}
@@ -1241,6 +1255,8 @@ static int _create_dm_targets_params(struct crypt_dm_active_device *dmd)
 			tgt->params = get_dm_integrity_params(tgt, dmd->flags);
 		else if (tgt->type == DM_LINEAR)
 			tgt->params = get_dm_linear_params(tgt, dmd->flags);
+		else if (tgt->type == DM_ZERO)
+			tgt->params = get_dm_zero_params(tgt, dmd->flags);
 		else {
 			r = -ENOTSUP;
 			goto err;
@@ -1466,6 +1482,8 @@ static void _dm_target_free_query_path(struct crypt_device *cd, struct dm_target
 	case DM_LINEAR:
 		/* fall through */
 	case DM_ERROR:
+		/* fall through */
+	case DM_ZERO:
 		break;
 	default:
 		log_err(cd, _("Unknown dm target type."));
@@ -1564,7 +1582,8 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (r < 0 && dm_flags(cd, dmd->segment.type, &dmt_flags))
 		goto out;
 
-	if (r && (dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR) && check_retry(cd, &dmd->flags, dmt_flags))
+	if (r && (dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR || dmd->segment.type == DM_ZERO) &&
+		check_retry(cd, &dmd->flags, dmt_flags))
 		r = _dm_create_device(cd, name, type, dmd->uuid, dmd);
 
 	if (r == -EINVAL &&
@@ -1677,6 +1696,7 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi,
 			strcmp(target_type, DM_VERITY_TARGET) &&
 			strcmp(target_type, DM_INTEGRITY_TARGET) &&
 			strcmp(target_type, DM_LINEAR_TARGET) &&
+			strcmp(target_type, DM_ZERO_TARGET) &&
 			strcmp(target_type, DM_ERROR_TARGET)))
 		goto out;
 	r = 0;
@@ -2426,6 +2446,14 @@ static int _dm_target_query_error(struct crypt_device *cd, struct dm_target *tgt
 	return 0;
 }
 
+static int _dm_target_query_zero(struct crypt_device *cd, struct dm_target *tgt)
+{
+	tgt->type = DM_ZERO;
+	tgt->direction = TARGET_QUERY;
+
+	return 0;
+}
+
 /*
  * on error retval has to be negative
  *
@@ -2447,6 +2475,8 @@ static int dm_target_query(struct crypt_device *cd, struct dm_target *tgt, const
 		r = _dm_target_query_linear(cd, tgt, get_flags, params);
 	else if (!strcmp(target_type, DM_ERROR_TARGET))
 		r = _dm_target_query_error(cd, tgt);
+	else if (!strcmp(target_type, DM_ZERO_TARGET))
+		r = _dm_target_query_zero(cd, tgt);
 
 	if (!r) {
 		tgt->offset = *start;
@@ -2940,6 +2970,16 @@ int dm_linear_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t se
 	tgt->data_device = data_device;
 
 	tgt->u.linear.offset = data_offset;
+
+	return 0;
+}
+
+int dm_zero_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size)
+{
+	tgt->type = DM_ZERO;
+	tgt->direction = TARGET_SET;
+	tgt->offset = seg_offset;
+	tgt->size = seg_size;
 
 	return 0;
 }

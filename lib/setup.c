@@ -36,6 +36,7 @@
 #include "verity.h"
 #include "tcrypt.h"
 #include "integrity.h"
+#include "bitlk.h"
 #include "utils_device_locking.h"
 #include "internal.h"
 
@@ -111,6 +112,9 @@ struct crypt_device {
 		struct volume_key *journal_crypt_key;
 		uint32_t sb_flags;
 	} integrity;
+	struct { /* used in CRYPT_BITLK */
+		struct crypt_params_bitlk params;
+	} bitlk;
 	struct { /* used if initialized without header by name */
 		char *active_name;
 		/* buffers, must refresh from kernel on every query */
@@ -315,6 +319,11 @@ static int isTCRYPT(const char *type)
 static int isINTEGRITY(const char *type)
 {
 	return (type && !strcmp(CRYPT_INTEGRITY, type));
+}
+
+static int isBITLK(const char *type)
+{
+	return (type && !strcmp(CRYPT_BITLK, type));
 }
 
 static int _onlyLUKS(struct crypt_device *cd, uint32_t cdflags)
@@ -964,6 +973,25 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 	return 0;
 }
 
+static int _crypt_load_bitlk(struct crypt_device *cd,
+			     struct crypt_params_bitlk *params)
+{
+	int r;
+
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
+	r = BITLK_read_sb(cd, &cd->u.bitlk.params);
+	if (r < 0)
+		return r;
+
+	if (!cd->type && !(cd->type = strdup(CRYPT_BITLK)))
+		return -ENOMEM;
+
+	return 0;
+}
+
 int crypt_load(struct crypt_device *cd,
 	       const char *requested_type,
 	       void *params)
@@ -1009,6 +1037,12 @@ int crypt_load(struct crypt_device *cd,
 			return -EINVAL;
 		}
 		r = _crypt_load_integrity(cd, params);
+	} else if (isBITLK(requested_type)) {
+		if (cd->type && !isBITLK(cd->type)) {
+			log_dbg(cd, "Context is already initialised to type %s", cd->type);
+			return -EINVAL;
+		}
+		r = _crypt_load_bitlk(cd, params);
 	} else
 		return -EINVAL;
 
@@ -1246,6 +1280,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	} else if (isTCRYPT(cd->type) && single_segment(&dmd) && tgt->type == DM_CRYPT) {
 		r = TCRYPT_init_by_name(cd, name, dmd.uuid, tgt, &cd->device,
 					&cd->u.tcrypt.params, &cd->u.tcrypt.hdr);
+	} else if (isBITLK(cd->type)) {
+		r = 0; // FIXME
 	}
 out:
 	dm_targets_free(cd, &dmd);
@@ -1412,6 +1448,8 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			(*cd)->type = strdup(CRYPT_TCRYPT);
 		else if (!strncmp(CRYPT_INTEGRITY, dmd.uuid, sizeof(CRYPT_INTEGRITY)-1))
 			(*cd)->type = strdup(CRYPT_INTEGRITY);
+		else if (!strncmp(CRYPT_BITLK, dmd.uuid, sizeof(CRYPT_BITLK)-1))
+			(*cd)->type = strdup(CRYPT_BITLK);
 		else
 			log_dbg(NULL, "Unknown UUID set, some parameters are not set.");
 	} else
@@ -4032,6 +4070,10 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 	} else if (isLUKS2(cd->type)) {
 		r = _open_and_activate_luks2(cd, keyslot, name, passphrase, passphrase_size, flags);
 		keyslot = r;
+	} else if (isBITLK(cd->type)) {
+		r = BITLK_activate(cd, name, passphrase, passphrase_size,
+				   &cd->u.bitlk.params, flags);
+		keyslot = 0;
 	} else {
 		log_err(cd, _("Device type is not properly initialised."));
 		r = -EINVAL;
@@ -4708,6 +4750,8 @@ int crypt_dump(struct crypt_device *cd)
 		return TCRYPT_dump(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 	else if (isINTEGRITY(cd->type))
 		return INTEGRITY_dump(cd, crypt_data_device(cd), 0);
+	else if (isBITLK(cd->type))
+		return BITLK_dump(cd, crypt_data_device(cd));
 
 	log_err(cd, _("Dump operation is not supported for this device type."));
 	return -EINVAL;
