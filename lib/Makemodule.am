@@ -22,7 +22,8 @@ libcryptsetup_la_CPPFLAGS = $(AM_CPPFLAGS) \
 	-I $(top_srcdir)/lib/loopaes		\
 	-I $(top_srcdir)/lib/verity		\
 	-I $(top_srcdir)/lib/tcrypt		\
-	-I $(top_srcdir)/lib/integrity
+	-I $(top_srcdir)/lib/integrity		\
+	-I $(top_srcdir)/lib/bitlk
 
 libcryptsetup_la_DEPENDENCIES = libutils_io.la libcrypto_backend.la lib/libcryptsetup.sym
 
@@ -107,4 +108,6 @@ libcryptsetup_la_SOURCES = \
 	lib/luks2/luks2_internal.h	\
 	lib/luks2/luks2.h		\
 	lib/utils_blkid.c		\
-	lib/utils_blkid.h
+	lib/utils_blkid.h		\
+	lib/bitlk/bitlk.h		\
+	lib/bitlk/bitlk.c
