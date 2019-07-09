@@ -887,14 +887,14 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 
 	log_dbg(cd, "Requested hotzone size: %" PRIu64 ", requested device size: %" PRIu64
 		", calculated alignment: %zu", params->max_hotzone_size,
-		params->device_size, rh->alignment);
+		params->device_size << SECTOR_SHIFT, rh->alignment);
 
 	if (params->max_hotzone_size % rh->alignment) {
 		log_err(cd, _("Hotzone size must be multiple of calculated zone alignment (%zu bytes)."), rh->alignment);
 		return -EINVAL;
 	}
 
-	if (params->device_size % rh->alignment) {
+	if ((params->device_size << SECTOR_SHIFT) % rh->alignment) {
 		log_err(cd, _("Device size must be multiple of calculated zone alignment (%zu bytes)."), rh->alignment);
 		return -EINVAL;
 	}
@@ -947,7 +947,7 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 
 	if (params->device_size) {
 		log_dbg(cd, "Switching reencryption to fixed size mode.");
-		device_size = params->device_size;
+		device_size = params->device_size << SECTOR_SHIFT;
 		rh->fixed_length = true;
 	} else
 		rh->fixed_length = false;
@@ -1106,7 +1106,7 @@ static int LUKS2_reenc_load_crashed(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (!dynamic)
-		params.device_size = minimal_size;
+		params.device_size = minimal_size >> SECTOR_SHIFT;
 
 	r = _LUKS2_reenc_load(cd, hdr, device_size, rh, &params);
 
@@ -2651,6 +2651,8 @@ static int _reencrypt_load(struct crypt_device *cd,
 		goto err;
 	}
 
+	minimal_size >>= SECTOR_SHIFT;
+
 	old_ss = LUKS2_reencrypt_get_sector_size_old(hdr);
 	new_ss = LUKS2_reencrypt_get_sector_size_new(hdr);
 
@@ -2669,7 +2671,7 @@ static int _reencrypt_load(struct crypt_device *cd,
 		free(CONST_CAST(void*)dmd.uuid);
 		if (r < 0)
 			goto err;
-		mapping_size = dmd.size << SECTOR_SHIFT;
+		mapping_size = dmd.size;
 	}
 
 	r = -EINVAL;
@@ -2684,10 +2686,10 @@ static int _reencrypt_load(struct crypt_device *cd,
 	if (required_size) {
 		/* TODO: Add support for chaning fixed minimal size in reencryption mda where possible */
 		if ((minimal_size && (required_size < minimal_size)) ||
-		    (required_size > device_size) ||
+		    (required_size > (device_size >> SECTOR_SHIFT)) ||
 		    (!dynamic && (required_size != minimal_size)) ||
-		    (old_ss > 0 && MISALIGNED(required_size, old_ss)) ||
-		    (new_ss > 0 && MISALIGNED(required_size, new_ss))) {
+		    (old_ss > 0 && MISALIGNED(required_size, old_ss >> SECTOR_SHIFT)) ||
+		    (new_ss > 0 && MISALIGNED(required_size, new_ss >> SECTOR_SHIFT))) {
 			log_err(cd, _("Illegal device size requested in reencryption parameters."));
 			goto err;
 		}
