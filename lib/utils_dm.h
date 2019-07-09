@@ -64,7 +64,7 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_INTEGRITY_RECALC_SUPPORTED (1 << 16) /* dm-integrity automatic recalculation supported */
 #define DM_INTEGRITY_BITMAP_SUPPORTED (1 << 17) /* dm-integrity bitmap mode supported */
 
-typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_UNKNOWN } dm_target_type;
+typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_SET = 1, TARGET_QUERY };
 
 int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags);
@@ -141,6 +141,8 @@ struct dm_target {
 	struct {
 		uint64_t offset;
 	} linear;
+	struct {
+	} zero;
 	} u;
 
 	char *params;
@@ -184,6 +186,7 @@ int dm_integrity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t
 	const struct crypt_params_integrity *ip);
 int dm_linear_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, uint64_t data_offset);
+int dm_zero_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size);
 
 int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags);
 int dm_status_device(struct crypt_device *cd, const char *name);
