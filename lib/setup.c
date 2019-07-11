@@ -1809,6 +1809,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (r < 0) {
 		log_err(cd, _("Cannot wipe header on device %s."),
 			mdata_device_path(cd));
+		if (dev_size < LUKS2_hdr_and_areas_size(cd->u.luks2.hdr.jobj))
+			log_err(cd, _("Device %s is too small."), device_path(crypt_metadata_device(cd)));
 		goto out;
 	}
 
