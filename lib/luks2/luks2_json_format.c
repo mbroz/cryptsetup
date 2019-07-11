@@ -217,6 +217,7 @@ int LUKS2_generate_hdr(
 	char cipher[128];
 	uuid_t partitionUuid;
 	int digest;
+	uint64_t mdev_size;
 
 	if (!metadata_size)
 		metadata_size = LUKS2_HDR_16K_LEN;
@@ -240,6 +241,11 @@ int LUKS2_generate_hdr(
 	if (!keyslots_size) {
 		assert(LUKS2_DEFAULT_HDR_SIZE > 2 * LUKS2_HDR_OFFSET_MAX);
 		keyslots_size = LUKS2_DEFAULT_HDR_SIZE - get_min_offset(hdr);
+		/* Decrease keyslots_size due to metadata device being too small */
+		if (!device_size(crypt_metadata_device(cd), &mdev_size) &&
+		    ((keyslots_size + get_min_offset(hdr)) > mdev_size) &&
+		    device_fallocate(crypt_metadata_device(cd), keyslots_size + get_min_offset(hdr)))
+			keyslots_size = mdev_size - get_min_offset(hdr);
 	}
 
 	/* Decrease keyslots_size if we have smaller data_offset */
