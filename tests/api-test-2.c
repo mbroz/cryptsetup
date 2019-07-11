@@ -606,7 +606,6 @@ static void AddDeviceLuks2(void)
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size_1;
-	uint64_t mdata_size, keyslots_size;
 
 	/* Cannot use Argon2 in FIPS */
 	if (_fips_mode) {
@@ -623,46 +622,6 @@ static void AddDeviceLuks2(void)
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_header_size - 1));
 
-	//default metadata sizes
-	OK_(crypt_init(&cd, DMDIR H_DEVICE));
-	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
-	EQ_(mdata_size, 0);
-	EQ_(keyslots_size, 0);
-	OK_(crypt_set_metadata_size(cd, 0, 0));
-	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
-	EQ_(mdata_size, 0);
-	EQ_(keyslots_size, 0);
-	OK_(crypt_set_metadata_size(cd, 0x004000, 0x004000));
-	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
-	EQ_(mdata_size, 0x004000);
-	EQ_(keyslots_size, 0x004000);
-	OK_(crypt_set_metadata_size(cd, 0x008000, 0x008000));
-	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
-	EQ_(mdata_size, 0x008000);
-	EQ_(keyslots_size, 0x008000);
-	FAIL_(crypt_set_metadata_size(cd, 0x008001, 0x008000), "Wrong size");
-	FAIL_(crypt_set_metadata_size(cd, 0x008000, 0x008001), "Wrong size");
-	crypt_free(cd);
-
-	// metadata settings
-	OK_(crypt_init(&cd, DMDIR H_DEVICE));
-	OK_(crypt_set_metadata_size(cd, 0x080000, 0x080000));
-	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
-	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), 7);
-	crypt_free(cd);
-	OK_(crypt_init(&cd, DMDIR H_DEVICE));
-	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
-	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
-	EQ_(mdata_size, 0x080000);
-	EQ_(keyslots_size, 0x080000);
-	crypt_free(cd);
-	// default
-	OK_(crypt_init(&cd, DMDIR H_DEVICE));
-	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
-	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
-	EQ_(mdata_size, 0x04000);
-	EQ_(keyslots_size, (r_header_size * 512) - 2 * 0x04000);
-	crypt_free(cd);
 
 	// format
 	OK_(crypt_init(&cd, DMDIR H_DEVICE_WRONG));
@@ -944,6 +903,89 @@ static void AddDeviceLuks2(void)
 		EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 		crypt_free(cd);
 	}
+
+	_cleanup_dmdevices();
+}
+
+static void Luks2MetadataSize(void)
+{
+	struct crypt_device *cd;
+	struct crypt_pbkdf_type pbkdf = {
+		.type = CRYPT_KDF_ARGON2I,
+		.hash = "sha256",
+		.parallel_threads = 1,
+		.max_memory_kb = 128,
+		.iterations = 4,
+		.flags = CRYPT_PBKDF_NO_BENCHMARK
+	};
+	struct crypt_params_luks2 params = {
+		.pbkdf = &pbkdf,
+		.data_device = DEVICE_2,
+		.sector_size = 512
+	};
+	char key[128];
+
+	const char *passphrase = "blabla";
+	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(mk_hex) / 2;
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
+	uint64_t r_header_size;
+	uint64_t mdata_size, keyslots_size;
+
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+		pbkdf.iterations = 1000;
+	}
+
+	crypt_decode_key(key, mk_hex, key_size);
+
+	// init test devices
+	OK_(get_luks2_offsets(1, 0, 0, &r_header_size, NULL));
+	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
+	//default metadata sizes
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0);
+	EQ_(keyslots_size, 0);
+	OK_(crypt_set_metadata_size(cd, 0, 0));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0);
+	EQ_(keyslots_size, 0);
+	OK_(crypt_set_metadata_size(cd, 0x004000, 0x004000));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0x004000);
+	EQ_(keyslots_size, 0x004000);
+	OK_(crypt_set_metadata_size(cd, 0x008000, 0x008000));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0x008000);
+	EQ_(keyslots_size, 0x008000);
+	FAIL_(crypt_set_metadata_size(cd, 0x008001, 0x008000), "Wrong size");
+	FAIL_(crypt_set_metadata_size(cd, 0x008000, 0x008001), "Wrong size");
+	crypt_free(cd);
+
+	// metadata settings
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_set_metadata_size(cd, 0x080000, 0x080000));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), 7);
+	crypt_free(cd);
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0x080000);
+	EQ_(keyslots_size, 0x080000);
+	crypt_free(cd);
+	// default
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, 0x04000);
+	EQ_(keyslots_size, (r_header_size * 512) - 2 * 0x04000);
+	crypt_free(cd);
 
 	_cleanup_dmdevices();
 }
@@ -3594,6 +3636,7 @@ int main(int argc, char *argv[])
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_JSON : CRYPT_DEBUG_NONE);
 
 	RUN_(AddDeviceLuks2, "Format and use LUKS2 device");
+	RUN_(Luks2MetadataSize, "LUKS2 metadata settings");
 	RUN_(Luks2HeaderLoad, "LUKS2 header load");
 	RUN_(Luks2HeaderRestore, "LUKS2 header restore");
 	RUN_(Luks2HeaderBackup, "LUKS2 header backup");
