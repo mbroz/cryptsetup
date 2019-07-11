@@ -187,3 +187,133 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 			st.st_rdev, name, name_length);
 	return r;
 }
+
+
+static void report_partition(const char *value, const char *device)
+{
+	if (opt_batch_mode)
+		log_dbg("Device %s already contains a '%s' partition signature.", device, value);
+	else
+		log_std(_("WARNING: Device %s already contains a '%s' partition signature.\n"), device, value);
+}
+
+static void report_superblock(const char *value, const char *device)
+{
+	if (opt_batch_mode)
+		log_dbg("Device %s already contains a '%s' superblock signature.", device, value);
+	else
+		log_std(_("WARNING: Device %s already contains a '%s' superblock signature.\n"), device, value);
+}
+
+int tools_detect_signatures(const char *device, int ignore_luks, size_t *count)
+{
+	int r;
+	size_t tmp_count;
+	struct blkid_handle *h;
+	blk_probe_status pr;
+
+	if (!count)
+		count = &tmp_count;
+
+	*count = 0;
+
+	if (!blk_supported()) {
+		log_dbg("Blkid support disabled.");
+		return 0;
+	}
+
+	if ((r = blk_init_by_path(&h, device))) {
+		log_err(_("Failed to initialize device signature probes."));
+		return -EINVAL;
+	}
+
+	blk_set_chains_for_full_print(h);
+
+	if (ignore_luks && blk_superblocks_filter_luks(h)) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	while ((pr = blk_probe(h)) < PRB_EMPTY) {
+		if (blk_is_partition(h))
+			report_partition(blk_get_partition_type(h), device);
+		else if (blk_is_superblock(h))
+			report_superblock(blk_get_superblock_type(h), device);
+		else {
+			log_dbg("Internal tools_detect_signatures() error.");
+			r = -EINVAL;
+			goto out;
+		}
+		(*count)++;
+	}
+
+	if (pr == PRB_FAIL)
+		r = -EINVAL;
+out:
+	blk_free(h);
+	return r;
+}
+
+int tools_wipe_all_signatures(const char *path)
+{
+	int fd, flags, r;
+	blk_probe_status pr;
+	struct stat st;
+	struct blkid_handle *h = NULL;
+
+	if (!blk_supported()) {
+		log_dbg("Blkid support disabled.");
+		return 0;
+	}
+
+	if (stat(path, &st)) {
+		log_err(_("Failed to stat device %s."), path);
+		return -EINVAL;
+	}
+
+	flags = O_RDWR;
+	if (S_ISBLK(st.st_mode))
+		flags |= O_EXCL;
+
+	/* better than opening regular file with O_EXCL (undefined) */
+	/* coverity[toctou] */
+	fd = open(path, flags);
+	if (fd < 0) {
+		if (errno == EBUSY)
+			log_err(_("Device %s is in use. Can not proceed with format operation."), path);
+		else
+			log_err(_("Failed to open file %s in read/write mode."), path);
+		return -EINVAL;
+	}
+
+	if ((r = blk_init_by_fd(&h, fd))) {
+		log_err(_("Failed to initialize device signature probes."));
+		r = -EINVAL;
+		goto out;
+	}
+
+	blk_set_chains_for_wipes(h);
+
+	while ((pr = blk_probe(h)) < PRB_EMPTY) {
+		if (blk_is_partition(h))
+			log_verbose("Existing '%s' partition signature on device %s will be wiped.",
+				    blk_get_partition_type(h), path);
+		if (blk_is_superblock(h))
+			log_verbose("Existing '%s' superblock signature on device %s will be wiped.",
+				    blk_get_superblock_type(h), path);
+		if (blk_do_wipe(h)) {
+			log_err(_("Failed to wipe device signature."));
+			r = -EINVAL;
+			goto out;
+		}
+	}
+
+	if (pr != PRB_EMPTY) {
+		log_err(_("Failed to probe device %s for a signature."), path);
+		r = -EINVAL;
+	}
+out:
+	close(fd);
+	blk_free(h);
+	return r;
+}
