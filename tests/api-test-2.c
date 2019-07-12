@@ -65,6 +65,7 @@ typedef int32_t key_serial_t;
 #define BACKUP_FILE "csetup_backup_file"
 #define IMAGE1 "compatimage2.img"
 #define IMAGE_EMPTY "empty.img"
+#define IMAGE_EMPTY_SMALL "empty_small.img"
 #define IMAGE_PV_LUKS2_SEC "blkid-luks2-pv.img"
 
 #define KEYFILE1 "key1.file"
@@ -313,6 +314,7 @@ static void _cleanup(void)
 	remove(BACKUP_FILE);
 	remove(IMAGE_PV_LUKS2_SEC);
 	remove(IMAGE_PV_LUKS2_SEC ".bcp");
+	remove(IMAGE_EMPTY_SMALL);
 
 	_remove_keyfiles();
 
@@ -367,6 +369,8 @@ static int _setup(void)
 	_system("dd if=/dev/zero of=" IMAGE_EMPTY " bs=1M count=32 2>/dev/null", 1);
 	fd = loop_attach(&DEVICE_2, IMAGE_EMPTY, 0, 0, &ro);
 	close(fd);
+
+	_system("dd if=/dev/zero of=" IMAGE_EMPTY_SMALL " bs=1M count=7 2>/dev/null", 1);
 
 	_system(" [ ! -e " NO_REQS_LUKS2_HEADER " ] && xz -dk " NO_REQS_LUKS2_HEADER ".xz", 1);
 	fd = loop_attach(&DEVICE_4, NO_REQS_LUKS2_HEADER, 0, 0, &ro);
@@ -923,15 +927,15 @@ static void Luks2MetadataSize(void)
 		.data_device = DEVICE_2,
 		.sector_size = 512
 	};
-	char key[128];
+	char key[128], tmp[128];
 
 	const char *passphrase = "blabla";
 	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
-	uint64_t r_header_size;
-	uint64_t mdata_size, keyslots_size;
+	uint64_t r_header_size, default_mdata_size, default_keyslots_size, mdata_size,
+		 keyslots_size, r_header_wrong_size = 14336;
 
 	/* Cannot use Argon2 in FIPS */
 	if (_fips_mode) {
@@ -946,6 +950,7 @@ static void Luks2MetadataSize(void)
 	// init test devices
 	OK_(get_luks2_offsets(1, 0, 0, &r_header_size, NULL));
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
+	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_header_wrong_size)); /* 7 MiBs only */
 	//default metadata sizes
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
 	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
@@ -982,9 +987,67 @@ static void Luks2MetadataSize(void)
 	// default
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	OK_(crypt_get_metadata_size(cd, &default_mdata_size, &default_keyslots_size));
+	EQ_(default_mdata_size, 0x04000);
+	EQ_(default_keyslots_size, (r_header_size * 512) - 2 * 0x04000);
+	crypt_free(cd);
+	// check keyslots size calculation is correct
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_set_metadata_size(cd, 0x80000, 0));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
-	EQ_(mdata_size, 0x04000);
-	EQ_(keyslots_size, (r_header_size * 512) - 2 * 0x04000);
+	EQ_(mdata_size, 0x80000);
+	EQ_(keyslots_size, (r_header_size * 512) - 2 * 0x80000);
+	crypt_free(cd);
+
+	// various metadata size checks combined with data offset
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_set_metadata_size(cd, 0, default_keyslots_size + 4096));
+	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params), "Device is too small.");
+	OK_(crypt_set_metadata_size(cd, 0x20000, (r_header_size * 512) - 2 * 0x20000 + 4096));
+	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params), "Device is too small.");
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_set_metadata_size(cd, 0x80000, 0));
+	OK_(crypt_set_data_offset(cd, 0x80000 / 512 - 8));
+	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params), "Data offset is too small.");
+	crypt_free(cd);
+
+	// H_DEVICE_WRONG size is 7MiB
+	OK_(crypt_init(&cd, DMDIR H_DEVICE_WRONG));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, default_mdata_size);
+	EQ_(keyslots_size, (r_header_wrong_size * 512) - 2 * default_mdata_size);
+	crypt_free(cd);
+
+	OK_(crypt_init(&cd, DMDIR H_DEVICE_WRONG));
+	OK_(crypt_set_metadata_size(cd, 0x400000, 0));
+	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params), "Device is too small.");
+	crypt_free(cd);
+
+	// IMAGE_EMPTY_SMALL size is 7MiB but now it's regulare file
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, default_mdata_size);
+	EQ_(keyslots_size, default_keyslots_size);
+	EQ_(crypt_get_data_offset(cd), 0);
+	crypt_free(cd);
+
+	sprintf(tmp, "truncate -s %" PRIu64 " " IMAGE_EMPTY_SMALL, r_header_wrong_size * 512);
+	_system(tmp, 1);
+
+	// check explicit keyslots size and data offset are respected even with regular file mdevice
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL));
+	OK_(crypt_set_metadata_size(cd, 0, default_keyslots_size));
+	OK_(crypt_set_data_offset(cd, r_header_size + 8));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
+	OK_(crypt_get_metadata_size(cd, &mdata_size, &keyslots_size));
+	EQ_(mdata_size, default_mdata_size);
+	EQ_(keyslots_size, default_keyslots_size);
+	EQ_(crypt_get_data_offset(cd), r_header_size + 8);
 	crypt_free(cd);
 
 	_cleanup_dmdevices();
