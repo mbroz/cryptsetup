@@ -1789,6 +1789,14 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (dev_size < (crypt_get_data_offset(cd) * SECTOR_SIZE))
 		log_std(cd, _("WARNING: Data offset is outside of currently available data device.\n"));
 
+	if (cd->metadata_size && (cd->metadata_size != LUKS2_metadata_size(cd->u.luks2.hdr.jobj)))
+		log_std(cd, _("WARNING: LUKS2 metadata size changed to %" PRIu64 " bytes.\n"),
+			LUKS2_metadata_size(cd->u.luks2.hdr.jobj));
+
+	if (cd->keyslots_size && (cd->keyslots_size != LUKS2_keyslots_size(cd->u.luks2.hdr.jobj)))
+		log_std(cd, _("WARNING: LUKS2 keyslots area size changed to %" PRIu64 " bytes.\n"),
+			LUKS2_keyslots_size(cd->u.luks2.hdr.jobj));
+
 	if (!integrity && sector_size > SECTOR_SIZE) {
 		dev_size -= (crypt_get_data_offset(cd) * SECTOR_SIZE);
 		if (dev_size % sector_size) {
