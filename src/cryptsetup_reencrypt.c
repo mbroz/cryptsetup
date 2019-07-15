@@ -816,8 +816,10 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		goto out;
 
 	/* The real header is backup header created in backup_luks_headers() */
-	if (rc->reencrypt_mode == DECRYPT)
+	if (rc->reencrypt_mode == DECRYPT) {
+		r = 0;
 		goto out;
+	}
 
 	r = create_empty_header(rc->header_file_new);
 	if (r < 0)
