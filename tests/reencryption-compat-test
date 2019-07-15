@@ -371,7 +371,13 @@ prepare 8192
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
-echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt
+echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt || fail
+check_hash_dev $LOOPDEV1 $HASH4
+
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -S5 $FAST_PBKDF $LOOPDEV1 || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt || fail
 check_hash_dev $LOOPDEV1 $HASH4
 
 echo "[11] Detached header - adding encryption/reencryption/decryption"

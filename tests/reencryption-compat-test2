@@ -384,7 +384,13 @@ echo "[10] Removal of encryption"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG --offset 8192 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
-echo $PWD1 | $REENC $IMG -q --decrypt
+echo $PWD1 | $REENC $IMG -q --decrypt || fail
+check_hash_dev $IMG $HASH4
+
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -S5 $FAST_PBKDF_ARGON $IMG --offset 8192 || fail
+wipe $PWD1
+check_hash $PWD1 $HASH5
+echo $PWD1 | $REENC $IMG -q --decrypt || fail
 check_hash_dev $IMG $HASH4
 
 echo "[11] Reencryption with tokens"
