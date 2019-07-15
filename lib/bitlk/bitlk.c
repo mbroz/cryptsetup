@@ -29,6 +29,7 @@
 #include <uuid/uuid.h>
 #include <time.h>
 #include <iconv.h>
+#include <openssl/evp.h>
 
 #include "libcryptsetup.h"
 #include "bitlk.h"
@@ -46,6 +47,16 @@
 #define BITLK_FVE_METADATA_SIZE 64 * 1024
 #define BITLK_ENTRY_HEADER_LEN 8
 #define BITLK_VMK_HEADER_LEN 28
+
+#define BITLK_OPEN_KEY_METADATA_LEN 12
+
+#define BITLK_RECOVERY_KEY_LEN 55
+#define BITLK_RECOVERY_PARTS 8
+#define BITLK_RECOVERY_PART_LEN 6
+
+#define BITLK_KDF_HASH "sha256"
+#define BITLK_KDF_ITERATION_COUNT 0x100000
+
 
 /* January 1, 1970 as MS file time */
 #define EPOCH_AS_FILETIME 116444736000000000
@@ -114,6 +125,13 @@ struct bitlk_entry_vmk {
 	uint16_t _unknown;
 	uint16_t protection;
 } __attribute__ ((packed));
+
+struct bitlk_kdf_data {
+	char last_sha256[32];
+	char initial_sha256[32];
+	char salt[16];
+	uint64_t count;
+};
 
 static BITLKVMKProtection get_vmk_protection(uint16_t protection)
 {
@@ -197,6 +215,38 @@ static int convert_to_utf8(struct crypt_device *cd, uint8_t *input, size_t inlen
 	}
 
 	free(outbuf);
+	return r;
+}
+
+static int passphrase_to_utf16(struct crypt_device *cd, char *input, size_t inlen, char **out)
+{
+	char *outbuf = NULL;
+	iconv_t ic;
+	size_t ic_inlen = inlen;
+	size_t ic_outlen = inlen * 2;
+	char *ic_outbuf = NULL;
+	size_t r = 0;
+
+	outbuf = crypt_safe_alloc(inlen * 2);
+	if (outbuf == NULL)
+		return -ENOMEM;
+
+	memset(outbuf, 0, inlen * 2);
+	ic_outbuf = outbuf;
+
+	ic = iconv_open("UTF-16LE", "UTF-8");
+	r = iconv(ic, &input, &ic_inlen, &ic_outbuf, &ic_outlen);
+	iconv_close(ic);
+
+	if (r == 0) {
+		*out = outbuf;
+	} else {
+		*out = NULL;
+		free(outbuf);
+		log_dbg(cd, "Failed to covert passphrase: %s", strerror(errno));
+		r = -errno;
+	}
+
 	return r;
 }
 
@@ -606,6 +656,152 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 	return 0;
 }
 
+/* check if given passphrase can be a recovery key (has right format) and convert it */
+static int get_recovery_key(struct crypt_device *cd,
+			    const char *password,
+			    size_t passwordLen,
+			    struct volume_key **rc_key)
+{
+	int i, j = 0;
+	uint16_t parts[BITLK_RECOVERY_PARTS] = {0};
+	char part_str[BITLK_RECOVERY_PART_LEN + 1] = {0};
+	long part_num = 0;
+
+	/* check the passphrase it should be:
+	    - 55 characters
+	    - 8 groups of 6 divided by '-'
+	    - each part is a number dividable by 11
+	*/
+	if (passwordLen != BITLK_RECOVERY_KEY_LEN)
+		return 0;
+
+	for (i = BITLK_RECOVERY_PART_LEN; i < passwordLen; i += BITLK_RECOVERY_PART_LEN + 1) {
+		if (password[i] != '-')
+			return 0;
+	}
+
+	for (i = 0, j = 0; i < passwordLen; i += BITLK_RECOVERY_PART_LEN + 1, j++) {
+		strncpy(part_str, password + i, BITLK_RECOVERY_PART_LEN);
+
+		errno = 0;
+		part_num = strtol(part_str, NULL, 10);
+		if ((errno == ERANGE && (part_num == LONG_MAX || part_num == LONG_MIN)) ||
+		    (errno != 0 && part_num == 0))
+			return -errno;
+
+		if (part_num % 11 != 0)
+			return 0;
+		parts[j] = cpu_to_le16(part_num / 11);
+	}
+
+	*rc_key = crypt_alloc_volume_key(16, (const char*) parts);
+	if (*rc_key == NULL)
+		return -ENOMEM;
+
+	return 0;
+}
+
+static int bitlk_kdf(struct crypt_device *cd,
+		     const char *password,
+		     size_t passwordLen,
+		     bool recovery,
+		     const uint8_t *salt,
+		     struct volume_key **vk)
+{
+	struct bitlk_kdf_data kdf = {0};
+	struct crypt_hash *hd = NULL;
+	int len = 0;
+	char *utf16Password = NULL;
+	int r = 0;
+
+	memcpy(kdf.salt, salt, 16);
+
+	r = crypt_hash_init(&hd, BITLK_KDF_HASH);
+	if (r < 0)
+		return r;
+	len = crypt_hash_size(BITLK_KDF_HASH);
+	if (len < 0) {
+		crypt_hash_destroy(hd);
+		return len;
+	}
+
+	if (!recovery) {
+		/* passphrase: convert to UTF-16 first, then sha256(sha256(pw)) */
+		r = passphrase_to_utf16(cd, (char *)password, passwordLen, &utf16Password);
+		if (r < 0)
+			goto out;
+
+		crypt_hash_write(hd, utf16Password, passwordLen * 2);
+		r = crypt_hash_final(hd, kdf.initial_sha256, len);
+		if (r < 0)
+			goto out;
+
+		crypt_hash_write(hd, kdf.initial_sha256, len);
+		r = crypt_hash_final(hd, kdf.initial_sha256, len);
+		if (r < 0)
+			goto out;
+	} else {
+		/* recovery passphrase: already converted in #get_recovery_key, now just sha256(rpw) */
+		crypt_hash_write(hd, password, passwordLen);
+		r = crypt_hash_final(hd, kdf.initial_sha256, len);
+		if (r < 0)
+			goto out;
+	}
+
+	for (int i = 0; i < BITLK_KDF_ITERATION_COUNT; i++) {
+		crypt_hash_write(hd, (const char*) &kdf, sizeof(kdf));
+		r = crypt_hash_final(hd, kdf.last_sha256, len);
+		if (r < 0)
+			goto out;
+		kdf.count++;
+	}
+
+	*vk = crypt_alloc_volume_key(len, kdf.last_sha256);
+
+out:
+	crypt_safe_free(utf16Password);
+	if (hd)
+		crypt_hash_destroy(hd);
+	return r;
+}
+
+static struct volume_key *decrypt_key(struct volume_key *enc_key,
+				      struct volume_key *key,
+				      const uint8_t *tag, size_t tag_size,
+				      const uint8_t *iv, size_t iv_size)
+{
+	EVP_CIPHER_CTX *ctx = NULL;
+	struct volume_key *vk = NULL;
+	int len = 0;
+	unsigned char outbuf[1024] = {0};
+	uint32_t key_data_size = 0;
+
+	ctx = EVP_CIPHER_CTX_new();
+
+	EVP_DecryptInit_ex(ctx, EVP_aes_256_ccm(), NULL, NULL, NULL);
+
+	EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, iv_size, NULL);
+	EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_size, (void *)tag);
+
+	EVP_DecryptInit_ex(ctx, NULL, NULL, (const unsigned char *) key->key, iv);
+
+	if (EVP_DecryptUpdate(ctx, outbuf, &len,
+			      (const unsigned char *) enc_key->key, enc_key->keylength) != 1)
+		return NULL;
+
+	/* key_data has it's size as part of the metadata */
+	memcpy(&key_data_size, outbuf, sizeof(key_data_size));
+	if (key_data_size != len)
+		return NULL;
+
+	vk = crypt_alloc_volume_key(len - BITLK_OPEN_KEY_METADATA_LEN,
+				    (const char *) (outbuf + BITLK_OPEN_KEY_METADATA_LEN));
+
+	EVP_CIPHER_CTX_free(ctx);
+
+	return vk;
+}
+
 int BITLK_activate(struct crypt_device *cd,
 		   const char *name,
 		   const char *password,
@@ -613,40 +809,226 @@ int BITLK_activate(struct crypt_device *cd,
 		   const struct bitlk_metadata *params,
 		   uint32_t flags)
 {
-	int r;
+	int r = 0;
+	uint64_t start = 0;
+	uint64_t size = 0;
 	struct crypt_dm_active_device dmd = {
 		.flags = flags,
 	};
+	struct dm_target *next_segment = NULL;
+	struct volume_key *open_vmk_key = NULL;
+	struct volume_key *open_fvek_key = NULL;
+	struct volume_key *vmk_dec_key = NULL;
+	struct volume_key *recovery_key = NULL;
+	const struct bitlk_vmk *next_vmk = NULL;
 
-	/* FIXME: Password verify only */
-	if (!name)
-		return -EINVAL;
+	next_vmk = params->vmks;
+	while (next_vmk) {
+		if (next_vmk->protection == BITLK_PROTECTION_PASSPHRASE) {
+			r = bitlk_kdf(cd, password, passwordLen, false, next_vmk->salt, &vmk_dec_key);
+			if (r)
+				return r;
+		} else if (next_vmk->protection == BITLK_PROTECTION_RECOVERY_PASSPHRASE) {
+			r = get_recovery_key(cd, password, passwordLen, &recovery_key);
+			if (r)
+				return r;
+			if (recovery_key == NULL) {
+				/* r = 0 but no key -> given passphrase is not a recovery passphrase */
+				r = -EPERM;
+				next_vmk = next_vmk->next;
+				continue;
+			}
+			log_dbg(cd, "Trying to use given password as a recovery key.");
+			r = bitlk_kdf(cd, recovery_key->key, recovery_key->keylength,
+				      true, next_vmk->salt, &vmk_dec_key);
+			crypt_free_volume_key(recovery_key);
+			if (r)
+				return r;
+		} else {
+			/* only passphrase and recovery passphrase VMKs supported right now */
+			log_dbg(cd, "Skipping %s", get_vmk_protection_string(next_vmk->protection));
+			next_vmk = next_vmk->next;
+			continue;
+		}
+
+		log_dbg(cd, "Trying to decrypt %s.", get_vmk_protection_string(next_vmk->protection));
+		open_vmk_key = decrypt_key(next_vmk->vk, vmk_dec_key,
+					   next_vmk->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
+					   next_vmk->nonce, BITLK_NONCE_SIZE);
+		if (!open_vmk_key) {
+			log_dbg(cd, "Failed to decrypt VMK using provided passphrase.");
+			r = -EPERM;
+			crypt_free_volume_key(vmk_dec_key);
+			next_vmk = next_vmk->next;
+			continue;
+		}
+		crypt_free_volume_key(vmk_dec_key);
+
+		open_fvek_key = decrypt_key(params->fvek->vk, open_vmk_key,
+					    params->fvek->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
+					    params->fvek->nonce, BITLK_NONCE_SIZE);
+		if (!open_fvek_key) {
+			log_dbg(cd, "Failed to decrypt FVEK using VMK.");
+			r = -ENOTRECOVERABLE;
+			crypt_free_volume_key(open_vmk_key);
+		} else {
+			r = 0;
+			crypt_free_volume_key(open_vmk_key);
+			break;
+		}
+
+		next_vmk = next_vmk->next;
+	}
+
+	if (r) {
+		log_dbg(cd, "No more VMKs to try.");
+		return r;
+	}
+
+	/* Password verify only */
+	if (!name) {
+		crypt_free_volume_key(open_fvek_key);
+		return r;
+	}
 
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
 				crypt_get_data_offset(cd), &dmd.size, &dmd.flags);
-	if (r)
+	if (r) {
+		crypt_free_volume_key(open_fvek_key);
 		return r;
+	}
 
-	/* FIXME: Example - two segments device */
-	r = dm_targets_allocate(&dmd.segment, 2);
+	r = dm_targets_allocate(&dmd.segment, 9);
+	if (r)
+		goto out;
+	next_segment = &dmd.segment;
+
+	/* filesystem header (moved from the special location) */
+	start = 0;
+	size = params->volume_header_size / SECTOR_SIZE;
+	r = dm_crypt_target_set(next_segment,
+				start, size,
+				crypt_data_device(cd),
+				open_fvek_key,
+				crypt_get_cipher_spec(cd),
+				params->volume_header_offset / SECTOR_SIZE,
+				params->volume_header_offset / SECTOR_SIZE,
+				NULL, 0,
+				SECTOR_SIZE);
+	if (r)
+		goto out;
+	start += size;
+	next_segment = next_segment->next;
+
+
+	/* first data part up to the first fve header */
+	size = (params->metadata_offset[0] / SECTOR_SIZE) - start;
+	r = dm_crypt_target_set(next_segment,
+				start, size,
+				crypt_data_device(cd),
+				open_fvek_key,
+				crypt_get_cipher_spec(cd),
+				start,
+				start,
+				NULL, 0,
+				SECTOR_SIZE);
+	if (r)
+		goto out;
+	start += size;
+	next_segment = next_segment->next;
+
+	/* zeroes instead of the first fve header */
+	size = BITLK_FVE_METADATA_SIZE / SECTOR_SIZE;
+	r = dm_zero_target_set(next_segment,
+			       start,
+			       size);
+	if (r)
+		goto out;
+	start += size;
+	next_segment = next_segment->next;
+
+	/* zeroes instead of the the encrypted filesystem header */
+	size = params->volume_header_size / SECTOR_SIZE;
+	r = dm_zero_target_set(next_segment,
+			       start,
+			       size);
+	if (r)
+		goto out;
+	start += size;
+	next_segment = next_segment->next;
+
+	/* second data part up to the second fve header */
+	size = (params->metadata_offset[1] / SECTOR_SIZE) - start;
+	r = dm_crypt_target_set(next_segment,
+				start, size,
+				crypt_data_device(cd),
+				open_fvek_key,
+				crypt_get_cipher_spec(cd),
+				start,
+				start,
+				NULL, 0,
+				SECTOR_SIZE);
+	if (r)
+		goto out;
+	start += size;
+	next_segment = next_segment->next;
+
+	/* zeroes instead of the second fve header */
+	size = BITLK_FVE_METADATA_SIZE / SECTOR_SIZE;
+	r = dm_zero_target_set(next_segment,
+			       start,
+			       size);
+	if (r)
+		goto out;
+	start += size;
+	next_segment = next_segment->next;
+
+	/* third data part up to the third fve header */
+	size = (params->metadata_offset[2] / SECTOR_SIZE) - start;
+	r = dm_crypt_target_set(next_segment,
+				start, size,
+				crypt_data_device(cd),
+				open_fvek_key,
+				crypt_get_cipher_spec(cd),
+				start,
+				start,
+				NULL, 0,
+				SECTOR_SIZE);
+	if (r)
+		goto out;
+	start += size;
+	next_segment = next_segment->next;
+
+	/* zeroes instead of the third fve header */
+	size = BITLK_FVE_METADATA_SIZE / SECTOR_SIZE;
+	r = dm_zero_target_set(next_segment,
+			       start,
+			       size);
+	if (r)
+		goto out;
+	start += size;
+	next_segment = next_segment->next;
+
+	/* fourth (and last) part of the data */
+	size = dmd.size - start;
+	r = dm_crypt_target_set(next_segment,
+				start, size,
+				crypt_data_device(cd),
+				open_fvek_key,
+				crypt_get_cipher_spec(cd),
+				start,
+				start,
+				NULL, 0,
+				SECTOR_SIZE);
 	if (r)
 		goto out;
 
-	/* First sector mapped to DM_LINEAR */
-	r = dm_linear_target_set(&dmd.segment, 0, 1, crypt_data_device(cd), 0);
-		if (r)
-		goto out;
-
-	/* The rest is mapped to DM_ZERO (for now) */
-	r = dm_zero_target_set(dmd.segment.next, 1, dmd.size - 1);
-	if (r)
-		goto out;
-
-	log_dbg(cd, "Trying to activate BITLK on device %s%s%s.",
-		device_path(crypt_data_device(cd)), name ? "with name " :"", name ?: "");
+	log_dbg(cd, "Trying to activate BITLK on device %s%s%s.\n",
+		device_path(crypt_data_device(cd)), name ? " with name " :"", name ?: "");
 
 	r = dm_create_device(cd, name, CRYPT_BITLK, &dmd);
 out:
 	dm_targets_free(cd, &dmd);
+	crypt_free_volume_key(open_fvek_key);
 	return r;
 }
