@@ -3107,14 +3107,15 @@ static void _reencrypt_teardown_fatal(struct crypt_device *cd, struct luks2_hdr 
 	}
 }
 
-static int _reencrypt_free(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh, reenc_status_t rs,
-		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
+static int _reencrypt_free(struct crypt_device *cd, struct luks2_hdr *hdr,
+		struct luks2_reenc_context *rh, reenc_status_t rs, bool interrupted,
+		int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
 {
 	int r;
 
 	switch (rs) {
 	case REENC_OK:
-		if (progress)
+		if (progress && !interrupted)
 			progress(rh->device_size, rh->progress, NULL);
 		r = _reencrypt_teardown_ok(cd, hdr, rh);
 		break;
@@ -3178,8 +3179,6 @@ int crypt_reencrypt(struct crypt_device *cd,
 	}
 
 	log_dbg(cd, "Progress %" PRIu64 ", device_size %" PRIu64, rh->progress, rh->device_size);
-	if (progress && progress(rh->device_size, rh->progress, NULL))
-		quit = true;
 
 	rs = REENC_OK;
 
@@ -3203,7 +3202,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 		log_dbg(cd, "Next reencryption chunk size will be %" PRIu64 " sectors).", rh->length);
 	}
 
-	r = _reencrypt_free(cd, hdr, rh, rs, progress);
+	r = _reencrypt_free(cd, hdr, rh, rs, quit, progress);
 	device_release_excl(cd, crypt_data_device(cd));
 	return r;
 }
