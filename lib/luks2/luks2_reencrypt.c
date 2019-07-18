@@ -691,6 +691,7 @@ void LUKS2_reenc_context_free(struct crypt_device *cd, struct luks2_reenc_contex
 	free(rh->hotzone_name);
 	crypt_drop_keyring_key(cd, rh->vks);
 	crypt_free_volume_key(rh->vks);
+	device_release_excl(cd, crypt_data_device(cd));
 	crypt_unlock_internal(cd, rh->reenc_lock);
 	free(rh);
 }
@@ -2715,9 +2716,33 @@ static int _reencrypt_load(struct crypt_device *cd,
 	if (name && (r = LUKS2_reenc_context_set_name(rh, name)))
 		goto err;
 
+	/* Reassure device is not mounted and there's no dm mapping active */
+	if (!name && (device_open_excl(cd, crypt_data_device(cd), O_RDONLY) < 0)) {
+		log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."), device_path(crypt_data_device(cd)));
+		r = -EBUSY;
+		goto err;
+	}
+	device_release_excl(cd, crypt_data_device(cd));
+
+	/* FIXME: There's a race for dm device activation not managed by cryptsetup.
+	 *
+	 * 1) excl close
+	 * 2) rogue dm device activation
+	 * 3) one or more dm-crypt based wrapper activation
+	 * 4) next excl open get's skipped due to 3) device from 2) remains undetected.
+	 */
 	r = _init_storage_wrappers(cd, hdr, rh, *vks);
 	if (r)
 		goto err;
+
+	/* If one of wrappers is based on dmcrypt fallback it already blocked mount */
+	if (!name && crypt_storage_wrapper_get_type(rh->cw1) != DMCRYPT &&
+	    crypt_storage_wrapper_get_type(rh->cw2) != DMCRYPT) {
+		if (device_open_excl(cd, crypt_data_device(cd), O_RDONLY) < 0) {
+			log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."), device_path(crypt_data_device(cd)));
+			return -EBUSY;
+		}
+	}
 
 	MOVE_REF(rh->vks, *vks);
 	MOVE_REF(rh->reenc_lock, reencrypt_lock);
@@ -3162,20 +3187,9 @@ int crypt_reencrypt(struct crypt_device *cd,
 
 	log_dbg(cd, "Resuming LUKS2 reencryption.");
 
-	if (rh->online) {
-		r = reenc_init_helper_devices(cd, rh);
-		if (r) {
-			log_err(cd, _("Failed to initialize reencryption device stack."));
-			return -EINVAL;
-		}
-	} else {
-		if (crypt_storage_wrapper_get_type(rh->cw1) != DMCRYPT &&
-		    crypt_storage_wrapper_get_type(rh->cw2) != DMCRYPT) {
-			if (device_open_excl(cd, crypt_data_device(cd), O_RDONLY) < 0) {
-				log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."), device_path(crypt_data_device(cd)));
-				return -EBUSY;
-			}
-		}
+	if (rh->online && reenc_init_helper_devices(cd, rh)) {
+		log_err(cd, _("Failed to initialize reencryption device stack."));
+		return -EINVAL;
 	}
 
 	log_dbg(cd, "Progress %" PRIu64 ", device_size %" PRIu64, rh->progress, rh->device_size);
@@ -3203,7 +3217,6 @@ int crypt_reencrypt(struct crypt_device *cd,
 	}
 
 	r = _reencrypt_free(cd, hdr, rh, rs, quit, progress);
-	device_release_excl(cd, crypt_data_device(cd));
 	return r;
 }
 
