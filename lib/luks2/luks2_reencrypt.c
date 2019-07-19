@@ -1207,13 +1207,13 @@ static int modify_offset(uint64_t *offset, uint64_t data_shift, crypt_reencrypt_
 		return r;
 
 	if (di == CRYPT_REENCRYPT_FORWARD) {
-		*offset += data_shift;
-		r = 0;
-	} else if (di == CRYPT_REENCRYPT_BACKWARD) {
 		if (*offset >= data_shift) {
 			*offset -= data_shift;
 			r = 0;
 		}
+	} else if (di == CRYPT_REENCRYPT_BACKWARD) {
+		*offset += data_shift;
+		r = 0;
 	}
 
 	return r;
@@ -2206,8 +2206,8 @@ static int _create_backup_segments(struct crypt_device *cd,
 		LUKS2_digest_segment_assign(cd, hdr, segment, digest_new, 1, 0);
 
 	/* FIXME: also check occupied space by keyslot in shrunk area */
-	if (data_shift && (crypt_metadata_device(cd) == crypt_data_device(cd))
-	    && LUKS2_set_keyslots_size(cd, hdr, json_segment_get_offset(jobj_segment_new, 0))) {
+	if (params->direction == CRYPT_REENCRYPT_FORWARD && data_shift && (crypt_metadata_device(cd) == crypt_data_device(cd))
+	    && LUKS2_set_keyslots_size(cd, hdr, json_segment_get_offset(LUKS2_reencrypt_segment_new(hdr), 0))) {
 		log_err(cd, _("Failed to set new keyslots area size."));
 		r = -EINVAL;
 		goto err;
