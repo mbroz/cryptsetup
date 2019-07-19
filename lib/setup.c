@@ -5824,7 +5824,7 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 	params->mode = LUKS2_reencrypt_mode(hdr);
 	params->resilience = LUKS2_reencrypt_protection_type(hdr);
 	params->hash = LUKS2_reencrypt_protection_hash(hdr);
-	params->data_shift = LUKS2_reencrypt_data_shift(hdr);
+	params->data_shift = LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
 	params->max_hotzone_size = 0;
 
 	return ri;
