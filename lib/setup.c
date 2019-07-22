@@ -5822,6 +5822,8 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 		return ri;
 
 	params->mode = LUKS2_reencrypt_mode(hdr);
+	if (LUKS2_reencrypt_direction(hdr, &params->direction))
+		return CRYPT_REENCRYPT_INVALID;
 	params->resilience = LUKS2_reencrypt_protection_type(hdr);
 	params->hash = LUKS2_reencrypt_protection_hash(hdr);
 	params->data_shift = LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;

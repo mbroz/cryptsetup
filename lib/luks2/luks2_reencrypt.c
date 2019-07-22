@@ -623,7 +623,11 @@ const char *LUKS2_reencrypt_mode(struct luks2_hdr *hdr)
 	return json_object_get_string(jobj_mode);
 }
 
-static int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di)
+/*
+ * FIXME: Return crypt_reencrypt_direction_info directly. The errors here should be
+ * 	  covered by reencryption keyslot validation
+ */
+int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di)
 {
 	const char *value;
 	json_object *jobj_keyslot, *jobj_mode;
