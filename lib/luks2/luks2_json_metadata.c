@@ -2091,13 +2091,15 @@ int LUKS2_reload(struct crypt_device *cd,
 int LUKS2_activate_multi(struct crypt_device *cd,
 	const char *name,
 	struct volume_key *vks,
+	uint64_t device_size,
 	uint32_t flags)
 {
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	json_object *jobj_segments = LUKS2_get_segments_jobj(hdr);
 	int r, count = json_segments_count(jobj_segments);
 	struct crypt_dm_active_device dmd = {
-		.uuid   = crypt_get_uuid(cd),
+		.size	= device_size,
+		.uuid   = crypt_get_uuid(cd)
 	};
 
 	if (count < 0)

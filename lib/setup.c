@@ -3812,6 +3812,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	size_t passphrase_size,
 	uint32_t flags)
 {
+	bool dynamic_size;
 	crypt_reencrypt_info ri;
 	uint64_t minimal_size, device_size;
 	struct volume_key *vks = NULL;
@@ -3860,7 +3861,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 		goto err;
 	}
 
-	if (LUKS2_get_data_size(hdr, &minimal_size, NULL))
+	if (LUKS2_get_data_size(hdr, &minimal_size, &dynamic_size))
 		goto err;
 
 	if (!vks) {
@@ -3872,10 +3873,10 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	log_dbg(cd, "Entering clean reencryption state mode.");
 
 	if (r >= 0)
-		r = luks2_check_device_size(cd, hdr, minimal_size, &device_size, true);
+		r = luks2_check_device_size(cd, hdr, minimal_size, &device_size, true, dynamic_size);
 
 	if (r >= 0)
-		r = LUKS2_activate_multi(cd, name, vks, flags);
+		r = LUKS2_activate_multi(cd, name, vks, device_size >> SECTOR_SHIFT, flags);
 err:
 	crypt_reencrypt_unlock(cd, reencrypt_lock);
 	if (r < 0)

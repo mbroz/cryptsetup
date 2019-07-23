@@ -2652,7 +2652,7 @@ static int _reencrypt_load(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* some configurations provides fixed device size */
-	r = luks2_check_device_size(cd, hdr, minimal_size, &device_size, false);
+	r = luks2_check_device_size(cd, hdr, minimal_size, &device_size, false, dynamic);
 	if (r) {
 		r = -EINVAL;
 		goto err;
@@ -3263,14 +3263,14 @@ err:
 }
 
 /* internal only */
-int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *dev_size, bool activation)
+int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *dev_size, bool activation, bool dynamic)
 {
 	int r;
 	crypt_reencrypt_direction_info di;
 	uint64_t data_offset, real_size = 0;
 
 	if (!LUKS2_reencrypt_direction(hdr, &di) && (di == CRYPT_REENCRYPT_BACKWARD) &&
-	    LUKS2_get_segment_by_flag(hdr, "backup-moved-segment"))
+	    (LUKS2_get_segment_by_flag(hdr, "backup-moved-segment") || dynamic))
 		check_size += LUKS2_reencrypt_data_shift(hdr);
 
 	r = device_check_access(cd, crypt_data_device(cd), activation ? DEV_EXCL : DEV_OK);
@@ -3330,7 +3330,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 		vk = vk->next;
 	}
 
-	if (luks2_check_device_size(cd, hdr, minimal_size, &device_size, true))
+	if (luks2_check_device_size(cd, hdr, minimal_size, &device_size, true, false))
 		goto err;
 
 	r = _reencrypt_recover(cd, hdr, device_size, _vks);
