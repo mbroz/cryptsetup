@@ -1754,16 +1754,14 @@ int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic)
 
 uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr)
 {
-	uint64_t new = 0, old = 0;
+	crypt_reencrypt_info ri;
 	json_object *jobj;
 
-	jobj = LUKS2_get_segment_by_flag(hdr, "backup-final");
-	if (jobj) {
-		new = json_segment_get_offset(jobj, 1);
-		jobj = LUKS2_get_segment_by_flag(hdr, "backup-previous");
+	ri = LUKS2_reenc_status(hdr);
+	if (ri == CRYPT_REENCRYPT_CLEAN || CRYPT_REENCRYPT_CRASH) {
+		jobj = LUKS2_get_segment_by_flag(hdr, "backup-final");
 		if (jobj)
-			old = json_segment_get_offset(jobj, 1);
-		return new > old ? new : old;
+			return json_segment_get_offset(jobj, 1);
 	}
 
 	return json_segments_get_minimal_offset(LUKS2_get_segments_jobj(hdr), 1);
