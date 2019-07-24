@@ -375,8 +375,8 @@ static json_object *_reenc_segments_backward_after(struct crypt_device *cd,
 	jobj_old_seg = json_segments_get_segment(rh->jobj_segs_pre, reenc_seg - 1);
 	if (jobj_old_seg)
 		json_object_object_add_by_uint(jobj_segs_after, reenc_seg - 1, json_object_get(jobj_old_seg));
-	if (rh->fixed_length) {
-		fixed_length = rh->device_size - data_offset - rh->offset + rh->data_shift;
+	if (rh->fixed_length && rh->offset) {
+		fixed_length = rh->device_size - rh->offset;
 		jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset, rh->offset, &fixed_length);
 	} else
 		jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset, rh->offset, NULL);
