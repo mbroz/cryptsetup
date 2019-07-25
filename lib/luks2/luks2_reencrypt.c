@@ -623,34 +623,24 @@ const char *LUKS2_reencrypt_mode(struct luks2_hdr *hdr)
 	return json_object_get_string(jobj_mode);
 }
 
-/*
- * FIXME: Return crypt_reencrypt_direction_info directly. The errors here should be
- * 	  covered by reencryption keyslot validation
- */
-int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di)
+crypt_reencrypt_direction_info LUKS2_reencrypt_direction(struct luks2_hdr *hdr)
 {
 	const char *value;
 	json_object *jobj_keyslot, *jobj_mode;
-	int r, ks = LUKS2_find_keyslot(hdr, "reencrypt");
+	crypt_reencrypt_direction_info di = CRYPT_REENCRYPT_FORWARD;
 
-	if (ks < 0)
-		return -EINVAL;
+	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, LUKS2_find_keyslot(hdr, "reencrypt"));
+	if (!jobj_keyslot)
+		return di;
 
-	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, ks);
 	json_object_object_get_ex(jobj_keyslot, "direction", &jobj_mode);
-
 	value = json_object_get_string(jobj_mode);
 
-	if (!strcmp(value, "forward")) {
-		*di = CRYPT_REENCRYPT_FORWARD;
-		r = 0;
-	} else if (!strcmp(value, "backward")) {
-		*di = CRYPT_REENCRYPT_BACKWARD;
-		r = 0;
-	} else
-		r = -EINVAL;
+	/* validation enforces allowed values */
+	if (strcmp(value, "forward"))
+		di = CRYPT_REENCRYPT_BACKWARD;
 
-	return r;
+	return di;
 }
 
 typedef enum { REENC_OK = 0, REENC_ERR, REENC_ROLLBACK, REENC_FATAL } reenc_status_t;
@@ -904,9 +894,7 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 		return -EINVAL;
 	}
 
-	r = LUKS2_reencrypt_direction(hdr, &rh->direction);
-	if (r)
-		return r;
+	rh->direction = LUKS2_reencrypt_direction(hdr);
 
 	if (!strcmp(params->resilience, "datashift")) {
 		log_dbg(cd, "Initializaing reencryption context with data_shift resilience.");
@@ -3268,10 +3256,9 @@ err:
  */
 int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 {
-	crypt_reencrypt_direction_info di;
 	uint64_t data_offset = LUKS2_get_data_offset(hdr);
 
-	if (!LUKS2_reencrypt_direction(hdr, &di) && (di == CRYPT_REENCRYPT_FORWARD))
+	if (LUKS2_reencrypt_direction(hdr) == CRYPT_REENCRYPT_FORWARD)
 		data_offset += LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
 
 	return blockwise ? data_offset : data_offset << SECTOR_SHIFT;
@@ -3281,10 +3268,9 @@ int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *dev_size, bool activation, bool dynamic)
 {
 	int r;
-	crypt_reencrypt_direction_info di;
 	uint64_t data_offset, real_size = 0;
 
-	if (!LUKS2_reencrypt_direction(hdr, &di) && (di == CRYPT_REENCRYPT_BACKWARD) &&
+	if (LUKS2_reencrypt_direction(hdr) == CRYPT_REENCRYPT_BACKWARD &&
 	    (LUKS2_get_segment_by_flag(hdr, "backup-moved-segment") || dynamic))
 		check_size += LUKS2_reencrypt_data_shift(hdr);
 
