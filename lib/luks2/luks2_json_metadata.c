@@ -1965,13 +1965,7 @@ static int _prepare_multi_dmd(struct crypt_device *cd,
 	else
 		device_check = DEV_EXCL;
 
-	/* FIXME: replace == 0 with < LUKS2_header_size() */
-	data_offset = json_segments_get_minimal_offset(jobj_segments, 1);
-	if (data_offset == 0 &&
-	    crypt_data_device(cd) == crypt_metadata_device(cd)) {
-		log_dbg(cd, "Internal error. Wrong data offset");
-		return -EINVAL;
-	}
+	data_offset = LUKS2_reencrypt_data_offset(hdr, true);
 
 	r = device_block_adjust(cd, crypt_data_device(cd), device_check,
 			                                data_offset, &dmd->size, &dmd->flags);

@@ -3262,6 +3262,21 @@ err:
 	return r;
 }
 
+/*
+ * use only for calculation of minimal data device size.
+ * The real data offset is taken directly from segments!
+ */
+int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
+{
+	crypt_reencrypt_direction_info di;
+	uint64_t data_offset = LUKS2_get_data_offset(hdr);
+
+	if (!LUKS2_reencrypt_direction(hdr, &di) && (di == CRYPT_REENCRYPT_FORWARD))
+		data_offset += LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
+
+	return blockwise ? data_offset : data_offset << SECTOR_SHIFT;
+}
+
 /* internal only */
 int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *dev_size, bool activation, bool dynamic)
 {
@@ -3277,7 +3292,7 @@ int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint
 	if (r)
 		return r;
 
-	data_offset = crypt_get_data_offset(cd) << SECTOR_SHIFT;
+	data_offset = LUKS2_reencrypt_data_offset(hdr, false);
 
 	r = device_check_size(cd, crypt_data_device(cd), data_offset, 1);
 	if (r)
@@ -3286,6 +3301,12 @@ int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint
 	r = device_size(crypt_data_device(cd), &real_size);
 	if (r)
 		return r;
+
+	log_dbg(cd, "Required minimal device size: %" PRIu64 " (%" PRIu64 " sectors)"
+		    ", real device size: %" PRIu64 " (%" PRIu64 " sectors)\n"
+		    "calculated device size: %" PRIu64 " (%" PRIu64 " sectors)",
+		    check_size, check_size >> SECTOR_SHIFT, real_size, real_size >> SECTOR_SHIFT,
+		    real_size - data_offset, (real_size - data_offset) >> SECTOR_SHIFT);
 
 	if (real_size < data_offset || (check_size && (real_size - data_offset) < check_size)) {
 		log_err(cd, _("Device %s is too small."), device_path(crypt_data_device(cd)));

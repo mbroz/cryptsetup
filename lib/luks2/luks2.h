@@ -431,6 +431,7 @@ const char *LUKS2_reencrypt_protection_hash(struct luks2_hdr *hdr);
 uint64_t LUKS2_reencrypt_data_shift(struct luks2_hdr *hdr);
 const char *LUKS2_reencrypt_mode(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_direction(struct luks2_hdr *hdr, crypt_reencrypt_direction_info *di);
+int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
 
 /*
  * Generic LUKS2 digest
