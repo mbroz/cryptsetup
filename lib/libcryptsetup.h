@@ -2120,13 +2120,13 @@ int crypt_activate_by_token(struct crypt_device *cd,
  * @{
  */
 
-/** Initialize reencryption metadata but do not run reencryption yet. */
+/** Initialize reencryption metadata but do not run reencryption yet. (in) */
 #define CRYPT_REENCRYPT_INITIALIZE_ONLY    (1 << 0)
-/** Move the first segment; used only with data shift. */
+/** Move the first segment, used only with data shift. (in/out) */
 #define CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT (1 << 1)
-/** Resume already initialized reencryption only. */
+/** Resume already initialized reencryption only. (in) */
 #define CRYPT_REENCRYPT_RESUME_ONLY        (1 << 2)
-/** Run reencryption recovery only */
+/** Run reencryption recovery only. (in) */
 #define CRYPT_REENCRYPT_RECOVERY           (1 << 3)
 
 /**
