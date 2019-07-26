@@ -5828,6 +5828,8 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 	params->hash = LUKS2_reencrypt_protection_hash(hdr);
 	params->data_shift = LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
 	params->max_hotzone_size = 0;
+	if (LUKS2_get_segment_id_by_flag(hdr, "backup-moved-segment") >= 0)
+		params->flags |= CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT;
 
 	return ri;
 }
