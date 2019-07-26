@@ -1664,8 +1664,8 @@ static int _encrypt_set_segments(struct crypt_device *cd, struct luks2_hdr *hdr,
 	r = -EINVAL;
 	if (move_first_segment) {
 		jobj_segment_first =  json_segment_create_linear(first_segment_offset, &first_segment_length, 0);
-		jobj_segment_second = json_segment_create_linear(second_segment_offset, &second_segment_length, 0);
-		if (!jobj_segment_second) {
+		if (second_segment_length &&
+		    !(jobj_segment_second = json_segment_create_linear(second_segment_offset, &second_segment_length, 0))) {
 			log_dbg(cd, "Failed generate 2nd segment.");
 			goto err;
 		}
@@ -2135,7 +2135,7 @@ static int _create_backup_segments(struct crypt_device *cd,
 	if (segment < 0)
 		return -EINVAL;
 
-	if (!strcmp(params->mode, "encrypt") && segment > 1) {
+	if (!strcmp(params->mode, "encrypt") && (params->flags & CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT)) {
 		json_object_copy(LUKS2_get_segment_jobj(hdr, 0), &jobj_segment_bcp);
 		r = LUKS2_segment_set_flag(jobj_segment_bcp, "backup-moved-segment");
 		if (r)
