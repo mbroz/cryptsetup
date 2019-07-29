@@ -1461,6 +1461,8 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd);
  *
  * @return volume key size
  *
+ * @note For LUKS2, this function can be used only if there is at least
+ *       one keyslot assigned to data segment.
  */
 int crypt_get_volume_key_size(struct crypt_device *cd);
 
