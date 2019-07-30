@@ -2402,7 +2402,7 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 	return 0;
 }
 
-static int _compare_dm_devices(struct crypt_device *cd,
+int crypt_compare_dm_devices(struct crypt_device *cd,
 			       const struct crypt_dm_active_device *src,
 			       const struct crypt_dm_active_device *tgt)
 {
@@ -2475,7 +2475,7 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		goto out;
 	}
 
-	r = _compare_dm_devices(cd, sdmd, &tdmd);
+	r = crypt_compare_dm_devices(cd, sdmd, &tdmd);
 	if (r) {
 		log_err(cd, _("Mismatching parameters on device %s."), name);
 		goto out;
@@ -2560,7 +2560,7 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = _compare_dm_devices(cd, sdmdi, &tdmdi);
+	r = crypt_compare_dm_devices(cd, sdmdi, &tdmdi);
 	if (r) {
 		log_err(cd, _("Mismatching parameters on device %s."), iname);
 		goto out;
@@ -2580,7 +2580,7 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 
 	src->data_device = data_device;
 
-	r = _compare_dm_devices(cd, sdmd, &tdmd);
+	r = crypt_compare_dm_devices(cd, sdmd, &tdmd);
 	if (r) {
 		log_err(cd, _("Crypt devices mismatch."));
 		goto out;

@@ -256,6 +256,9 @@ void crypt_serialize_unlock(struct crypt_device *cd);
 
 bool crypt_string_in(const char *str, char **list, size_t list_size);
 int crypt_strcmp(const char *a, const char *b);
+int crypt_compare_dm_devices(struct crypt_device *cd,
+			       const struct crypt_dm_active_device *src,
+			       const struct crypt_dm_active_device *tgt);
 static inline void *crypt_zalloc(size_t size) { return calloc(1, size); }
 
 #endif /* INTERNAL_H */
