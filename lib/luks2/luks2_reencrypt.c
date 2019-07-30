@@ -2614,7 +2614,10 @@ static int _reencrypt_load(struct crypt_device *cd,
 	struct luks2_hdr *hdr;
 	struct crypt_lock_handle *reencrypt_lock;
 	struct luks2_reenc_context *rh;
-	struct crypt_dm_active_device dmd;
+	struct crypt_dm_active_device dmd_target, dmd_source = {
+		.uuid = crypt_get_uuid(cd),
+		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
+	};
 	uint64_t minimal_size, device_size, mapping_size = 0, required_size = 0;
 	bool dynamic;
 	struct crypt_params_reencrypt rparams = {};
@@ -2656,22 +2659,38 @@ static int _reencrypt_load(struct crypt_device *cd,
 	old_ss = LUKS2_reencrypt_get_sector_size_old(hdr);
 	new_ss = LUKS2_reencrypt_get_sector_size_new(hdr);
 
-	if (name) {
-		r = dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd);
-		if (r < 0) {
-			r = -EINVAL;
-			goto err;
-		}
-		if (crypt_uuid_cmp(dmd.uuid, hdr->uuid)) {
-			log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
-				hdr->uuid, dmd.uuid);
-			r = -EINVAL;
-		}
-		dm_targets_free(cd, &dmd);
-		free(CONST_CAST(void*)dmd.uuid);
+	r = LUKS2_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
+	if (r == -ENOENT) {
+		log_dbg(cd, "Keys are not ready. Unlocking all volume keys.");
+		r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
 		if (r < 0)
 			goto err;
-		mapping_size = dmd.size;
+		r = LUKS2_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
+	}
+
+	if (r < 0)
+		goto err;
+
+	if (name) {
+		r = dm_query_device(cd, name, DM_ACTIVE_UUID | DM_ACTIVE_DEVICE |
+				    DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY |
+				    DM_ACTIVE_CRYPT_CIPHER, &dmd_target);
+		if (r < 0)
+			goto err;
+
+		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, LUKS2_get_segments_jobj(hdr), &dmd_source);
+		if (!r) {
+			r = crypt_compare_dm_devices(cd, &dmd_source, &dmd_target);
+			if (r)
+				log_err(cd, _("Mismatching parameters on device %s."), name);
+		}
+
+		dm_targets_free(cd, &dmd_source);
+		dm_targets_free(cd, &dmd_target);
+		free(CONST_CAST(void*)dmd_target.uuid);
+		if (r)
+			goto err;
+		mapping_size = dmd_target.size;
 	}
 
 	r = -EINVAL;
@@ -2698,18 +2717,6 @@ static int _reencrypt_load(struct crypt_device *cd,
 
 	r = LUKS2_reenc_load(cd, hdr, device_size, &rparams, &rh);
 	if (r < 0 || !rh)
-		goto err;
-
-	r = LUKS2_verify_and_upload_keys(cd, hdr, rh->digest_old, rh->digest_new, *vks);
-	if (r == -ENOENT) {
-		log_dbg(cd, "Keys are not ready. Unlocking all volume keys.");
-		r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
-		if (r < 0)
-			goto err;
-		r = LUKS2_verify_and_upload_keys(cd, hdr, rh->digest_old, rh->digest_new, *vks);
-	}
-
-	if (r < 0)
 		goto err;
 
 	if (name && (r = LUKS2_reenc_context_set_name(rh, name)))
