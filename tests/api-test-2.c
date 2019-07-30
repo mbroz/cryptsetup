@@ -4144,8 +4144,11 @@ int main(int argc, char *argv[])
 	register_cleanup(_cleanup);
 
 	_cleanup();
-	if (_setup())
-		goto out;
+	if (_setup()) {
+		printf("Cannot set test devices.\n");
+		_cleanup();
+		exit(77);
+	}
 
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_JSON : CRYPT_DEBUG_NONE);
 
@@ -4171,7 +4174,6 @@ int main(int argc, char *argv[])
 	RUN_(Luks2Flags, "LUKS2 persistent flags");
 	RUN_(Luks2Reencryption, "LUKS2 reencryption");
 	RUN_(Luks2Repair, "LUKS2 repair"); // test disables metadata locking. Run always last!
-out:
-	_cleanup();
+
 	return 0;
 }

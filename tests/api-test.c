@@ -1888,8 +1888,11 @@ int main(int argc, char *argv[])
 	register_cleanup(_cleanup);
 
 	_cleanup();
-	if (_setup())
-		goto out;
+	if (_setup()) {
+		printf("Cannot set test devices.\n");
+		_cleanup();
+		exit(77);
+	}
 
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_ALL : CRYPT_DEBUG_NONE);
 
@@ -1908,7 +1911,6 @@ int main(int argc, char *argv[])
 	RUN_(VerityTest, "DM verity");
 	RUN_(TcryptTest, "Tcrypt API");
 	RUN_(IntegrityTest, "Integrity API");
-out:
-	_cleanup();
+
 	return 0;
 }
