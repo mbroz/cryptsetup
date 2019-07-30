@@ -89,6 +89,8 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 			     printf("%s: %s\n", #x, (y)); x(); \
 			} while (0)
 
+#define CRYPT_FREE(x) do { crypt_free(x); x = NULL; } while (0)
+
 #define SECTOR_SHIFT 9L
 #define SECTOR_SIZE 512
 #define TST_LOOP_FILE_SIZE (((1<<20)*100)>>SECTOR_SHIFT)
