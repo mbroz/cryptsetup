@@ -518,18 +518,17 @@ static void UseLuks2Device(void)
 	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(8192, crypt_get_data_offset(cd));
 
-	if (!_fips_mode) {
-		EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
-		OK_(crypt_volume_key_verify(cd, key, key_size));
-		OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
-		OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-		EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
-		OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
+	OK_(crypt_volume_key_verify(cd, key, key_size));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
 
-		key[1] = ~key[1];
-		FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
-		FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
-	}
+	key[1] = ~key[1];
+	FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
+
 	CRYPT_FREE(cd);
 }
 
@@ -835,12 +834,10 @@ static void AddDeviceLuks2(void)
 	EQ_(7, crypt_activate_by_passphrase(cd, NULL, 7, passphrase2, strlen(passphrase2), 0));
 	EQ_(6, crypt_keyslot_change_by_passphrase(cd, CRYPT_ANY_SLOT, 6, passphrase2, strlen(passphrase2), passphrase, strlen(passphrase)));
 
-	if (!_fips_mode) {
-		EQ_(6, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
-		OK_(crypt_volume_key_verify(cd, key2, key_size));
+	EQ_(6, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
+	OK_(crypt_volume_key_verify(cd, key2, key_size));
+	OK_(memcmp(key, key2, key_size));
 
-		OK_(memcmp(key, key2, key_size));
-	}
 	OK_(strcmp(cipher, crypt_get_cipher(cd)));
 	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
 	EQ_((int)key_size, crypt_get_volume_key_size(cd));
@@ -898,20 +895,18 @@ static void AddDeviceLuks2(void)
 	 * Check regression in getting keyslot encryption parameters when
 	 * volume key size is unknown (no active keyslots).
 	 */
-	if (!_fips_mode) {
-		OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
-		crypt_set_iteration_time(cd, 1);
-		OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
-		EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
-		/* drop context copy of volume key */
-		CRYPT_FREE(cd);
-		OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
-		OK_(crypt_load(cd, CRYPT_LUKS, NULL));
-		EQ_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
-		OK_(crypt_keyslot_destroy(cd, 0));
-		EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
-		CRYPT_FREE(cd);
-	}
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	/* drop context copy of volume key */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
+	EQ_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	OK_(crypt_keyslot_destroy(cd, 0));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
 }
@@ -2743,7 +2738,7 @@ static void Luks2KeyslotAdd(void)
 	EQ_(crypt_keyslot_get_key_size(cd, 3), 13);
 
 	key_ret_len = key_size - 1;
-	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), "Wrong size or fips");
+	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), "Wrong size");
 
 	key_ret_len = 13;
 	FAIL_(crypt_volume_key_get(cd, 2, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), "wrong size");
@@ -3104,10 +3099,6 @@ static void Luks2Requirements(void)
 	EQ_(r, -ETXTBSY);
 
 	/* crypt_volume_key_get (unrestricted, but see below) */
-	/* FIXME: FIPS requirement stop this, restructure the whole order of calls */
-	if (_fips_mode)
-		goto out;
-
 	OK_(crypt_volume_key_get(cd, 0, key, &key_size, "aaa", 3));
 
 	/* crypt_keyslot_add_by_volume_key (restricted) */
@@ -3340,9 +3331,8 @@ static void Luks2Requirements(void)
 
 	/* crypt_keyslot_destroy (unrestricted) */
 	OK_(crypt_keyslot_destroy(cd, 0));
-out:
-	CRYPT_FREE(cd);
 
+	CRYPT_FREE(cd);
 	_cleanup_dmdevices();
 }
 

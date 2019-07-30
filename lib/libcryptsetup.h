@@ -874,10 +874,6 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
  * @return allocated key slot number or negative errno otherwise.
- *
- * @note This function is just internal implementation of luksChange
- * command to avoid reading of volume key outside libcryptsetup boundary
- * in FIPS mode.
  */
 int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	int keyslot_old,

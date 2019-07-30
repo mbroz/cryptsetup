@@ -560,16 +560,14 @@ static void AddDevicePlain(void)
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 
 	// retrieve volume key check
-	if (!_fips_mode) {
-		memset(key2, 0, key_size);
-		key_size--;
-		// small buffer
-		FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)), "small buffer");
-		key_size++;
-		OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
+	memset(key2, 0, key_size);
+	key_size--;
+	// small buffer
+	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)), "small buffer");
+	key_size++;
+	OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
+	OK_(memcmp(key, key2, key_size));
 
-		OK_(memcmp(key, key2, key_size));
-	}
 	OK_(strcmp(cipher, crypt_get_cipher(cd)));
 	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
 	EQ_((int)key_size, crypt_get_volume_key_size(cd));
@@ -664,18 +662,17 @@ static void UseLuksDevice(void)
 	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(1032, crypt_get_data_offset(cd));
 
-	if (!_fips_mode) {
-		EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
-		OK_(crypt_volume_key_verify(cd, key, key_size));
-		OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
-		OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-		EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
-		OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
+	OK_(crypt_volume_key_verify(cd, key, key_size));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
 
-		key[1] = ~key[1];
-		FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
-		FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
-	}
+	key[1] = ~key[1];
+	FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
+	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
+
 	CRYPT_FREE(cd);
 }
 
@@ -966,12 +963,11 @@ static void AddDeviceLuks(void)
 	EQ_(7, crypt_activate_by_passphrase(cd, NULL, 7, passphrase2, strlen(passphrase2), 0));
 	EQ_(6, crypt_keyslot_change_by_passphrase(cd, CRYPT_ANY_SLOT, 6, passphrase2, strlen(passphrase2), passphrase, strlen(passphrase)));
 
-	if (!_fips_mode) {
-		EQ_(6, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
-		OK_(crypt_volume_key_verify(cd, key2, key_size));
+	EQ_(6, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key2, &key_size, passphrase, strlen(passphrase)));
+	OK_(crypt_volume_key_verify(cd, key2, key_size));
 
-		OK_(memcmp(key, key2, key_size));
-	}
+	OK_(memcmp(key, key2, key_size));
+
 	OK_(strcmp(cipher, crypt_get_cipher(cd)));
 	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
 	EQ_((int)key_size, crypt_get_volume_key_size(cd));
@@ -1701,14 +1697,13 @@ static void TcryptTest(void)
 	EQ_(256, crypt_get_data_offset(cd));
 
 	memset(key, 0, key_size);
-	if (!_fips_mode) {
-		key_size--;
-		// small buffer
-		FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, NULL, 0), "small buffer");
-		key_size++;
-		OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, NULL, 0));
-		OK_(memcmp(key, key_def, key_size));
-	}
+
+	key_size--;
+	// small buffer
+	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, NULL, 0), "small buffer");
+	key_size++;
+	OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, NULL, 0));
+	OK_(memcmp(key, key_def, key_size));
 
 	reset_log();
 	OK_(crypt_dump(cd));
