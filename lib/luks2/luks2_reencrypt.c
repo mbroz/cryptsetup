@@ -2224,6 +2224,7 @@ static int parse_reencryption_mode(const char *mode)
 
 /* This function must be called with metadata lock held */
 static int _reencrypt_init(struct crypt_device *cd,
+		const char *name,
 		struct luks2_hdr *hdr,
 		const char *passphrase,
 		size_t passphrase_size,
@@ -2239,6 +2240,10 @@ static int _reencrypt_init(struct crypt_device *cd,
 	uint32_t sector_size;
 	int r, reencrypt_keyslot, devfd = -1;
 	uint64_t data_offset, dev_size = 0;
+	struct crypt_dm_active_device dmd_target, dmd_source = {
+		.uuid = crypt_get_uuid(cd),
+		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
+	};
 
 	if (!params || parse_reencryption_mode(params->mode))
 		return -EINVAL;
@@ -2338,6 +2343,32 @@ static int _reencrypt_init(struct crypt_device *cd,
 	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
 	if (r < 0)
 		goto err;
+
+	if (name && strcmp(params->mode, "encrypt")) {
+		r = LUKS2_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
+		if (r)
+			goto err;
+
+		r = dm_query_device(cd, name, DM_ACTIVE_UUID | DM_ACTIVE_DEVICE |
+				    DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY |
+				    DM_ACTIVE_CRYPT_CIPHER, &dmd_target);
+		if (r < 0)
+			goto err;
+
+		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, LUKS2_get_segments_jobj(hdr), &dmd_source);
+		if (!r) {
+			r = crypt_compare_dm_devices(cd, &dmd_source, &dmd_target);
+			if (r)
+				log_err(cd, _("Mismatching parameters on device %s."), name);
+		}
+
+		dm_targets_free(cd, &dmd_source);
+		dm_targets_free(cd, &dmd_target);
+		free(CONST_CAST(void*)dmd_target.uuid);
+
+		if (r)
+			goto err;
+	}
 
 	if (move_first_segment && move_data(cd, devfd, params->data_shift << SECTOR_SHIFT)) {
 		r = -EIO;
@@ -2853,7 +2884,7 @@ static int _reencrypt_init_by_passphrase(struct crypt_device *cd,
 	}
 
 	if (ri == CRYPT_REENCRYPT_NONE && !(flags & CRYPT_REENCRYPT_RESUME_ONLY)) {
-		r = _reencrypt_init(cd, hdr, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params, &vks);
+		r = _reencrypt_init(cd, name, hdr, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params, &vks);
 		if (r < 0)
 			log_err(cd, _("Failed to initialize LUKS2 reencryption in metadata."));
 	} else if (ri > CRYPT_REENCRYPT_NONE) {
