@@ -1556,10 +1556,14 @@ static int _assign_segments_simple(struct crypt_device *cd,
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
 
-static int reenc_assign_segments(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh, unsigned pre, unsigned commit)
+static int reenc_assign_segments(struct crypt_device *cd,
+		struct luks2_hdr *hdr,
+		struct luks2_reenc_context *rh,
+		unsigned pre,
+		unsigned commit)
 {
 	bool forward;
-	int r, rseg, scount;
+	int rseg, scount, r = -EINVAL;
 
 	/* FIXME: validate in reencrypt context load */
 	if (rh->digest_new < 0 && rh->type != DECRYPT)
@@ -1582,8 +1586,10 @@ static int reenc_assign_segments(struct crypt_device *cd, struct luks2_hdr *hdr,
 		r = LUKS2_segments_set(cd, hdr, rh->jobj_segs_after, 0);
 		if (!r)
 			rh->jobj_segs_after = NULL;
-	} else
-		return -EINVAL;
+	}
+
+	if (r)
+		return r;
 
 	scount = LUKS2_segments_count(hdr);
 
@@ -1608,10 +1614,6 @@ static int reenc_assign_segments(struct crypt_device *cd, struct luks2_hdr *hdr,
 		if (scount > 1)
 			LUKS2_digest_segment_assign(cd, hdr, 1, forward ? rh->digest_old : rh->digest_new, 1, 0);
 	}
-
-	/* FIXME: this doesn't look right */
-	if (r)
-		return r;
 
 	r = _add_backup_segment(cd, hdr, rh, 0);
 	if (r) {
