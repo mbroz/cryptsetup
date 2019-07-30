@@ -2440,6 +2440,9 @@ int crypt_compare_dm_devices(struct crypt_device *cd,
 		case DM_INTEGRITY:
 			r = _compare_integrity_devices(cd, s, t);
 			break;
+		case DM_LINEAR:
+			r = (s->u.linear.offset == t->u.linear.offset) ? 0 : -EINVAL;
+			break;
 		default:
 			r = -ENOTSUP;
 		}
