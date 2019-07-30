@@ -2274,16 +2274,6 @@ static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only, 
 	return 0;
 }
 
-/* compare two strings (allows NULL) */
-static int _strcmp_null(const char *a, const char *b)
-{
-	if (!a && !b)
-		return 0;
-	else if (!a || !b)
-		return 1;
-	return strcmp(a, b);
-}
-
 static int _compare_device_types(struct crypt_device *cd,
 			       const struct crypt_dm_active_device *src,
 			       const struct crypt_dm_active_device *tgt)
@@ -2337,7 +2327,7 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 		log_dbg(cd, "Cipher specs do not match.");
 		return -EINVAL;
 	}
-	if (_strcmp_null(src->u.crypt.integrity, tgt->u.crypt.integrity)) {
+	if (crypt_strcmp(src->u.crypt.integrity, tgt->u.crypt.integrity)) {
 		log_dbg(cd, "Integrity parameters do not match.");
 		return -EINVAL;
 	}
@@ -2380,9 +2370,9 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (_strcmp_null(src->u.integrity.integrity,	     tgt->u.integrity.integrity) ||
-	    _strcmp_null(src->u.integrity.journal_integrity, tgt->u.integrity.journal_integrity) ||
-	    _strcmp_null(src->u.integrity.journal_crypt,     tgt->u.integrity.journal_crypt)) {
+	if (crypt_strcmp(src->u.integrity.integrity,	     tgt->u.integrity.integrity) ||
+	    crypt_strcmp(src->u.integrity.journal_integrity, tgt->u.integrity.journal_integrity) ||
+	    crypt_strcmp(src->u.integrity.journal_crypt,     tgt->u.integrity.journal_crypt)) {
 		log_dbg(cd, "Journal parameters do not match.");
 		return -EINVAL;
 	}
