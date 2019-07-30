@@ -617,6 +617,12 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 
 void LUKS2_reenc_context_free(struct crypt_device *cd, struct luks2_reenc_context *rh);
 
+int LUKS2_assembly_multisegment_dmd(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	struct volume_key *vks,
+	json_object *jobj_segments,
+	struct crypt_dm_active_device *dmd);
+
 int crypt_reencrypt_lock(struct crypt_device *cd, const char *uuid, struct crypt_lock_handle **reencrypt_lock);
 void crypt_reencrypt_unlock(struct crypt_device *cd, struct crypt_lock_handle *reencrypt_lock);
 

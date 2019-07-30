@@ -1944,7 +1944,7 @@ int LUKS2_get_sector_size(struct luks2_hdr *hdr)
 	return json_segment_get_sector_size(jobj_segment) ?: SECTOR_SIZE;
 }
 
-static int _prepare_multi_dmd(struct crypt_device *cd,
+int LUKS2_assembly_multisegment_dmd(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	struct volume_key *vks,
 	json_object *jobj_segments,
@@ -1970,13 +1970,18 @@ static int _prepare_multi_dmd(struct crypt_device *cd,
 	if (r)
 		return r;
 
+	r = dm_targets_allocate(&dmd->segment, json_segments_count(jobj_segments));
+	if (r)
+		goto err;
+
 	r = -EINVAL;
 
 	while (t) {
 		jobj = json_segments_get_segment(jobj_segments, s);
 		if (!jobj) {
 			log_dbg(cd, "Internal error. Segment %u is null.", s);
-			return -EINVAL;
+			r = -EINVAL;
+			goto err;
 		}
 
 		segment_offset = json_segment_get_offset(jobj, 1);
@@ -1986,14 +1991,16 @@ static int _prepare_multi_dmd(struct crypt_device *cd,
 			segment_size = dmd->size - segment_start;
 		if (!segment_size) {
 			log_dbg(cd, "Internal error. Wrong segment size %u", s);
-			return -EINVAL;
+			r = -EINVAL;
+			goto err;
 		}
 
 		if (!strcmp(json_segment_type(jobj), "crypt")) {
 			vk = crypt_volume_key_by_id(vks, LUKS2_digest_by_segment(hdr, s));
 			if (!vk) {
 				log_err(cd, _("Missing key for dm-crypt segment %u"), s);
-				return -EINVAL;
+				r = -EINVAL;
+				goto err;
 			}
 
 			r = dm_crypt_target_set(t, segment_start, segment_size,
@@ -2004,22 +2011,27 @@ static int _prepare_multi_dmd(struct crypt_device *cd,
 					json_segment_get_sector_size(jobj));
 			if (r) {
 				log_err(cd, _("Failed to set dm-crypt segment."));
-				return r;
+				goto err;
 			}
 		} else if (!strcmp(json_segment_type(jobj), "linear")) {
 			r = dm_linear_target_set(t, segment_start, segment_size, crypt_data_device(cd), segment_offset);
 			if (r) {
 				log_err(cd, _("Failed to set dm-linear segment."));
-				return r;
+				goto err;
 			}
-		} else
-			return -EINVAL;
+		} else {
+			r = -EINVAL;
+			goto err;
+		}
 
 		segment_start += segment_size;
 		t = t->next;
 		s++;
 	}
 
+	return r;
+err:
+	dm_targets_free(cd, dmd);
 	return r;
 }
 
@@ -2031,7 +2043,7 @@ static int _reload_custom_multi(struct crypt_device *cd,
 	uint64_t device_size,
 	uint32_t flags)
 {
-	int r, count = json_segments_count(jobj_segments);
+	int r;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	struct crypt_dm_active_device dmd =  {
 		.uuid   = crypt_get_uuid(cd),
@@ -2048,13 +2060,7 @@ static int _reload_custom_multi(struct crypt_device *cd,
 
 	dmd.flags |= (flags | CRYPT_ACTIVATE_SHARED);
 
-	r = dm_targets_allocate(&dmd.segment, count);
-	if (r) {
-		dm_targets_free(cd, &dmd);
-		return r;
-	}
-
-	r = _prepare_multi_dmd(cd, hdr, vks, jobj_segments, &dmd);
+	r = LUKS2_assembly_multisegment_dmd(cd, hdr, vks, jobj_segments, &dmd);
 	if (!r)
 		r = dm_reload_device(cd, name, &dmd, 0, 0);
 
@@ -2083,7 +2089,7 @@ int LUKS2_activate_multi(struct crypt_device *cd,
 {
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	json_object *jobj_segments = LUKS2_get_segments_jobj(hdr);
-	int r, count = json_segments_count(jobj_segments);
+	int r;
 	struct crypt_dm_active_device dmd = {
 		.size	= device_size,
 		.uuid   = crypt_get_uuid(cd)
@@ -2099,13 +2105,7 @@ int LUKS2_activate_multi(struct crypt_device *cd,
 
 	dmd.flags |= flags;
 
-	r = dm_targets_allocate(&dmd.segment, count);
-	if (r) {
-		dm_targets_free(cd, &dmd);
-		return r;
-	}
-
-	r = _prepare_multi_dmd(cd, hdr, vks, jobj_segments, &dmd);
+	r = LUKS2_assembly_multisegment_dmd(cd, hdr, vks, jobj_segments, &dmd);
 	if (!r)
 		r = dm_create_device(cd, name, CRYPT_LUKS2, &dmd);
 
