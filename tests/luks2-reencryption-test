@@ -22,6 +22,8 @@ PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
 
+[ -f /etc/system-fips ] && FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+
 function dm_crypt_features()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
@@ -108,6 +110,11 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 77
+}
+
+function fips_mode()
+{
+	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
 }
 
 function add_scsi_device() {
@@ -650,6 +657,7 @@ function setup_luks2_env() {
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+fips_mode && skip "This test cannot be run in FIPS mode."
 modprobe --dry-run scsi_debug || exit 77
 modprobe dm-crypt || fail "dm-crypt failed to load"
 modprobe dm-delay > /dev/null 2>&1
