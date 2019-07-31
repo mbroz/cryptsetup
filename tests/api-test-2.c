@@ -4168,5 +4168,6 @@ int main(int argc, char *argv[])
 	RUN_(Luks2Reencryption, "LUKS2 reencryption");
 	RUN_(Luks2Repair, "LUKS2 repair"); // test disables metadata locking. Run always last!
 
+	_cleanup();
 	return 0;
 }

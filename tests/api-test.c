@@ -1907,5 +1907,6 @@ int main(int argc, char *argv[])
 	RUN_(TcryptTest, "Tcrypt API");
 	RUN_(IntegrityTest, "Integrity API");
 
+	_cleanup();
 	return 0;
 }
