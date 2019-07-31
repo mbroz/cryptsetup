@@ -383,6 +383,16 @@ char *dm_device_path(const char *prefix, int major, int minor)
 	return strdup(path);
 }
 
+char *dm_device_name(const char *path)
+{
+	struct stat st;
+
+	if (stat(path, &st) < 0 || !S_ISBLK(st.st_mode))
+		return NULL;
+
+	return dm_device_path(NULL, major(st.st_rdev), minor(st.st_rdev));
+}
+
 static void hex_key(char *hexkey, size_t key_size, const char *key)
 {
 	unsigned i;

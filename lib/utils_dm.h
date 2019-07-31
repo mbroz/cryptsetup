@@ -213,5 +213,6 @@ int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char 
 int dm_is_dm_device(int major);
 int dm_is_dm_kernel_name(const char *name);
 char *dm_device_path(const char *prefix, int major, int minor);
+char *dm_device_name(const char *path);
 
 #endif /* _UTILS_DM_H */
