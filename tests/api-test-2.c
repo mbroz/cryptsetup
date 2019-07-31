@@ -730,11 +730,14 @@ static void AddDeviceLuks2(void)
 
 	OK_(crypt_keyslot_get_pbkdf(cd, 7, &pbkdf_tmp));
 	OK_(strcmp(pbkdf_tmp.type, pbkdf.type));
-	NULL_(pbkdf_tmp.hash);
-	EQ_(0, pbkdf_tmp.time_ms); /* not usable in per-keyslot call */
+	if (!_fips_mode) {
+		NULL_(pbkdf_tmp.hash);
+		OK_(!(pbkdf_tmp.max_memory_kb >= 32));
+		OK_(!(pbkdf_tmp.parallel_threads >= 1));
+	} else
+		OK_(strcmp(pbkdf_tmp.hash, pbkdf.hash));
 	OK_(!(pbkdf_tmp.iterations >= 4));
-	OK_(!(pbkdf_tmp.max_memory_kb >= 32));
-	OK_(!(pbkdf_tmp.parallel_threads >= 1));
+	EQ_(0, pbkdf_tmp.time_ms); /* not usable in per-keyslot call */
 
 	CRYPT_FREE(cd);
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, DMDIR H_DEVICE));

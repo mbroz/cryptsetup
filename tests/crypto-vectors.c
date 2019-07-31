@@ -656,7 +656,7 @@ static int pbkdf_test_vectors(void)
 		crypt_backend_memzero(result, sizeof(result));
 		vec = &kdf_test_vectors[i];
 		printf("PBKDF vector %02d %s ", i, vec->type);
-		if (vec->hash && crypt_hash_size(vec->hash) < 0) {
+		if (vec->hash && crypt_hmac_size(vec->hash) < 0) {
 			printf("[%s N/A]\n", vec->hash);
 			continue;
 		}
@@ -664,9 +664,9 @@ static int pbkdf_test_vectors(void)
 		    vec->password, vec->password_length,
 		    vec->salt, vec->salt_length,
 		    result, vec->output_length,
-		    vec->iterations, vec->memory, vec->parallelism)) {
-			printf("[FAILED]\n");
-			return EXIT_FAILURE;
+		    vec->iterations, vec->memory, vec->parallelism) < 0) {
+			printf("[%s-%s N/A]\n", vec->type, vec->hash);
+			continue;
 		}
 		if (memcmp(result, vec->output, vec->output_length)) {
 			printf("[FAILED]\n");
@@ -737,8 +737,10 @@ static int hash_test(void)
 			crypt_backend_memzero(result, sizeof(result));
 			printf("[%s]", vector->out[j].name);
 
-			if (crypt_hash_init(&h, vector->out[j].name))
-				return EXIT_FAILURE;
+			if (crypt_hash_init(&h, vector->out[j].name)) {
+				printf("[%s N/A (init)]", vector->out[j].name);
+				continue;
+			}
 
 			r = crypt_hash_write(h, vector->data, vector->data_length);
 			if (!r)
@@ -893,6 +895,8 @@ static void __attribute__((noreturn)) exit_test(const char *msg, int r)
 
 int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[])
 {
+	setvbuf(stdout, NULL, _IONBF, 0);
+
 	if (getenv("CRYPTSETUP_PATH")) {
 		printf("Cannot run this test with CRYPTSETUP_PATH set.\n");
 		exit(77);
