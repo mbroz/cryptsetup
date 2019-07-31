@@ -15,6 +15,7 @@ DEV=""
 OVRDEV="123reenc321"
 DEVBIG="reenc2134"
 DEV_NAME=reenc9768
+DEV_NAME2=reenc97682
 IMG=reenc-data
 IMG_HDR=/tmp/$IMG.hdr
 KEY1=key1
@@ -74,6 +75,10 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME ] && {
 		dmsetup resume $DEV_NAME
 		dmsetup remove --retry $DEV_NAME
+	}
+	[ -b /dev/mapper/$DEV_NAME2 ] && {
+		dmsetup resume $DEV_NAME2
+		dmsetup remove --retry $DEV_NAME2
 	}
 	[ -b /dev/mapper/$DEV_NAME-overlay ] && {
 		dmsetup resume $DEV_NAME-overlay
@@ -827,6 +832,18 @@ echo $PWD1 | $CRYPTSETUP reencrypt -c twofish-cbc-essiv:sha256 -s 128 --resilien
 check_hash $PWD1 $HASH3 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt -c serpent-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
+# trivial check for detached header misuse
+dd if=/dev/zero of=$IMG bs=4k count=1 >/dev/null 2>&1
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP open $IMG $DEV_NAME --header $IMG_HDR || fail
+echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME2 --header $IMG_HDR || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME --header $IMG_HDR -q || fail
+# key description mismatch in active device
+echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME2 --header $IMG_HDR >/dev/null 2>&1 && fail
+# also check it can abort initialization in this case
+$CRYPTSETUP luksDump $IMG_HDR | grep -q "online-reencrypt" && fail
+$CRYPTSETUP close $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME2 || fail
 
 echo "[5] Decryption with detached header"
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
