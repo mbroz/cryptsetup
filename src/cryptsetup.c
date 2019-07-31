@@ -3103,9 +3103,8 @@ static int action_reencrypt(void)
 
 	if (!opt_encrypt || opt_reencrypt_resume_only) {
 		if (opt_active_name) {
-			if ((r = crypt_init_by_name_and_header(&cd, opt_active_name, opt_header_device)))
-				return r;
-			if (!crypt_get_type(cd) || strcmp(crypt_get_type(cd), CRYPT_LUKS2)) {
+			r = crypt_init_by_name_and_header(&cd, opt_active_name, opt_header_device);
+			if (r || !crypt_get_type(cd) || strcmp(crypt_get_type(cd), CRYPT_LUKS2)) {
 				log_err(_("Device %s is not a valid LUKS device."), opt_active_name);
 				r = -EINVAL;
 				goto out;
