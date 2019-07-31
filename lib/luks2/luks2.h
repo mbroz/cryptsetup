@@ -379,7 +379,7 @@ json_object *json_segment_get_flags(json_object *jobj_segment);
 bool json_segment_is_backup(json_object *jobj_segment);
 bool json_segment_is_reencrypt(json_object *jobj_segment);
 json_object *json_segments_get_segment(json_object *jobj_segments, int segment);
-int json_segments_count(json_object *jobj_segments);
+unsigned json_segments_count(json_object *jobj_segments);
 json_object *json_segments_get_segment_by_flag(json_object *jobj_segments, const char *flag);
 void json_segment_remove_flag(json_object *jobj_segment, const char *flag);
 uint64_t json_segments_get_minimal_offset(json_object *jobj_segments, unsigned blockwise);

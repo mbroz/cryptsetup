@@ -178,12 +178,12 @@ json_object *json_segments_get_segment(json_object *jobj_segments, int segment)
 	return jobj;
 }
 
-int json_segments_count(json_object *jobj_segments)
+unsigned json_segments_count(json_object *jobj_segments)
 {
-	int count = 0;
+	unsigned count = 0;
 
 	if (!jobj_segments)
-		return -EINVAL;
+		return 0;
 
 	json_object_object_foreach(jobj_segments, slot, val) {
 		UNUSED(slot);

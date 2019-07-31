@@ -187,12 +187,10 @@ json_object *LUKS2_get_segments_jobj(struct luks2_hdr *hdr)
 
 int LUKS2_segments_count(struct luks2_hdr *hdr)
 {
-	json_object *jobj_segments;
-
-	if (!hdr || !(jobj_segments = LUKS2_get_segments_jobj(hdr)))
+	if (!hdr)
 		return -EINVAL;
 
-	return json_segments_count(jobj_segments);
+	return json_segments_count(LUKS2_get_segments_jobj(hdr));
 }
 
 int LUKS2_get_default_segment(struct luks2_hdr *hdr)
@@ -2040,9 +2038,6 @@ static int _reload_custom_multi(struct crypt_device *cd,
 		.size = device_size >> SECTOR_SHIFT
 	};
 
-	if (count < 0)
-		return -EINVAL;
-
 	/* do not allow activation when particular requirements detected */
 	if ((r = LUKS2_unmet_requirements(cd, hdr, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 0)))
 		return r;
@@ -2093,9 +2088,6 @@ int LUKS2_activate_multi(struct crypt_device *cd,
 		.size	= device_size,
 		.uuid   = crypt_get_uuid(cd)
 	};
-
-	if (count < 0)
-		return -EINVAL;
 
 	/* do not allow activation when particular requirements detected */
 	if ((r = LUKS2_unmet_requirements(cd, hdr, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 0)))
