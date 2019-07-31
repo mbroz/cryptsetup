@@ -1175,14 +1175,18 @@ static int LUKS2_reenc_context_set_name(struct luks2_reenc_context *rh, const ch
 	if (!rh | !name)
 		return -EINVAL;
 
-	if (!(rh->device_name = strdup(name)))
+	if (*name == '/') {
+		if (!(rh->device_name = dm_device_name(name)))
+			return -EINVAL;
+	} else if (!(rh->device_name = strdup(name)))
 		return -ENOMEM;
-	if (asprintf(&rh->hotzone_name, "%s-hotzone-%s", name,
+
+	if (asprintf(&rh->hotzone_name, "%s-hotzone-%s", rh->device_name,
 		     rh->direction == CRYPT_REENCRYPT_FORWARD ? "forward" : "backward") < 0) {
 		rh->hotzone_name = NULL;
 		return -ENOMEM;
 	}
-	if (asprintf(&rh->overlay_name, "%s-overlay", name) < 0) {
+	if (asprintf(&rh->overlay_name, "%s-overlay", rh->device_name) < 0) {
 		rh->overlay_name = NULL;
 		return -ENOMEM;
 	}
