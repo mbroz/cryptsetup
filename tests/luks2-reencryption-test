@@ -710,6 +710,11 @@ echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON |
 check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 128 -c aes-cbc-essiv:sha256 --resilience checksum $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
+# simple test --active-name can consume absolute path to mapping
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -c aes-xts-plain64 --init-only $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --active-name /dev/mapper/$DEV_NAME --resilience none -q || fail
+echo $PWD1 | $CRYPTSETUP close $DEV_NAME || fail
 echo -n "[OK][4096 sector]"
 prepare sector_size=4096 dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
