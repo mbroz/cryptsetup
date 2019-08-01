@@ -2136,10 +2136,19 @@ typedef enum {
 } crypt_reencrypt_direction_info;
 
 /**
+ * Reencryption mode
+ */
+typedef enum {
+	CRYPT_REENCRYPT_REENCRYPT = 0, /**< Reencryption mode */
+	CRYPT_REENCRYPT_ENCRYPT,       /**< Encryption mode */
+	CRYPT_REENCRYPT_DECRYPT,       /**< Decryption mode */
+} crypt_reencrypt_mode_info;
+
+/**
  * LUKS2 reencryption options.
  */
 struct crypt_params_reencrypt {
-	const char *mode;                         /**< Mode as "encrypt" / "reencrypt" / "decrypt", immutable after first init. */
+	crypt_reencrypt_mode_info mode;           /**< Reencryption mode, immutable after first init. */
 	crypt_reencrypt_direction_info direction; /**< Reencryption direction, immutable after first init. */
 	const char *resilience;                   /**< Resilience mode: "none", "checksum", "journal" or "shift" (only "shift" is immutable after init) */
 	const char *hash;                         /**< Used hash for "checksum" resilience type, ignored otherwise. */

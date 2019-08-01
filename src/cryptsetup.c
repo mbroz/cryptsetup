@@ -2586,7 +2586,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		.sector_size = opt_sector_size ?: SECTOR_SIZE
 	};
 	struct crypt_params_reencrypt params = {
-		.mode = "encrypt",
+		.mode = CRYPT_REENCRYPT_ENCRYPT,
 		.direction = opt_data_shift < 0 ? CRYPT_REENCRYPT_BACKWARD : CRYPT_REENCRYPT_FORWARD,
 		.resilience = opt_resilience_mode,
 		.hash = opt_resilience_hash,
@@ -2748,7 +2748,7 @@ static int action_decrypt_luks2(struct crypt_device *cd)
 	char dm_name[PATH_MAX], *password = NULL;
 	const char *active_name = NULL;
 	struct crypt_params_reencrypt params = {
-		.mode = "decrypt",
+		.mode = CRYPT_REENCRYPT_DECRYPT,
 		.direction = opt_data_shift > 0 ? CRYPT_REENCRYPT_FORWARD : CRYPT_REENCRYPT_BACKWARD,
 		.resilience = opt_data_shift ? "datashift" : opt_resilience_mode,
 		.hash = opt_resilience_hash,
@@ -2961,7 +2961,7 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 	struct keyslot_passwords *kp;
 	struct crypt_params_luks2 luks2_params = {};
 	struct crypt_params_reencrypt params = {
-		.mode = "reencrypt",
+		.mode = CRYPT_REENCRYPT_REENCRYPT,
 		.direction = opt_data_shift < 0 ? CRYPT_REENCRYPT_BACKWARD : CRYPT_REENCRYPT_FORWARD,
 		.resilience = opt_data_shift ? "datashift" : opt_resilience_mode,
 		.hash = opt_resilience_hash,

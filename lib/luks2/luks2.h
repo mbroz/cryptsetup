@@ -157,8 +157,7 @@ struct luks2_reenc_context {
 	bool online;
 	bool fixed_length;
 	crypt_reencrypt_direction_info direction;
-
-	enum { REENCRYPT = 0, ENCRYPT, DECRYPT } type;
+	crypt_reencrypt_mode_info mode;
 
 	char *device_name;
 	char *hotzone_name;
@@ -429,7 +428,7 @@ int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr);
 const char *LUKS2_reencrypt_protection_type(struct luks2_hdr *hdr);
 const char *LUKS2_reencrypt_protection_hash(struct luks2_hdr *hdr);
 uint64_t LUKS2_reencrypt_data_shift(struct luks2_hdr *hdr);
-const char *LUKS2_reencrypt_mode(struct luks2_hdr *hdr);
+crypt_reencrypt_mode_info LUKS2_reencrypt_mode(struct luks2_hdr *hdr);
 crypt_reencrypt_direction_info LUKS2_reencrypt_direction(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
 

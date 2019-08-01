@@ -195,4 +195,16 @@ int LUKS2_check_cipher(struct crypt_device *cd,
 		      size_t keylength,
 		      const char *cipher,
 		      const char *cipher_mode);
+
+static inline const char *crypt_reencrypt_mode_to_str(crypt_reencrypt_mode_info mi)
+{
+	if (mi == CRYPT_REENCRYPT_REENCRYPT)
+		return "reencrypt";
+	if (mi == CRYPT_REENCRYPT_ENCRYPT)
+		return "encrypt";
+	if (mi == CRYPT_REENCRYPT_DECRYPT)
+		return "decrypt";
+	return "<unknown>";
+}
+
 #endif

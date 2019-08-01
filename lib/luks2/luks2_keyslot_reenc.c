@@ -77,7 +77,7 @@ int reenc_keyslot_alloc(struct crypt_device *cd,
 
 	json_object_object_add(jobj_keyslot, "type", json_object_new_string("reencrypt"));
 	json_object_object_add(jobj_keyslot, "key_size", json_object_new_int(1)); /* useless but mandatory */
-	json_object_object_add(jobj_keyslot, "mode", json_object_new_string(params->mode));
+	json_object_object_add(jobj_keyslot, "mode", json_object_new_string(crypt_reencrypt_mode_to_str(params->mode)));
 	if (params->direction == CRYPT_REENCRYPT_FORWARD)
 		json_object_object_add(jobj_keyslot, "direction", json_object_new_string("forward"));
 	else if (params->direction == CRYPT_REENCRYPT_BACKWARD)
