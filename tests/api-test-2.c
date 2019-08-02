@@ -190,7 +190,6 @@ static int get_luks2_offsets(int metadata_device,
 	struct crypt_device *cd = NULL;
 	static uint64_t default_header_size = 0;
 
-
 	if (!default_header_size) {
 		if (crypt_init(&cd, THE_LOOP_DEV))
 			return -EINVAL;
@@ -3603,6 +3602,7 @@ static void Luks2Reencryption(void)
 	 */
 	uint32_t getflags;
 	uint64_t r_header_size;
+	size_t r_size_1;
 	struct crypt_active_device cad;
 	struct crypt_pbkdf_type pbkdf = {
 		.type = CRYPT_KDF_ARGON2I,
@@ -4042,6 +4042,173 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 30, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 30);
 	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, "aes", "xts-plain64", &rparams), "Data device is too small");
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	CRYPT_FREE(cd);
+
+	_cleanup_dmdevices();
+	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_header_size + 1));
+
+	/* decryption backward  */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	params2.data_device = NULL;
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
+	memset(&rparams, 0, sizeof(rparams));
+	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
+	rparams.direction = CRYPT_REENCRYPT_BACKWARD;
+	rparams.resilience = "none";
+	rparams.max_hotzone_size = 2048;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
+	OK_(crypt_reencrypt(cd, NULL));
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	EQ_(crypt_get_data_offset(cd), r_header_size);
+	EQ_(crypt_get_volume_key_size(cd), 0);
+	OK_(strcmp(crypt_get_cipher(cd), "cipher_null"));
+	CRYPT_FREE(cd);
+
+	/* decryption forward */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	params2.data_device = NULL;
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
+	memset(&rparams, 0, sizeof(rparams));
+	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
+	rparams.direction = CRYPT_REENCRYPT_FORWARD;
+	rparams.resilience = "none";
+	rparams.max_hotzone_size = 2048;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
+	OK_(crypt_reencrypt(cd, NULL));
+	CRYPT_FREE(cd);
+
+	/* decryption with data shift */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	params2.data_device = NULL;
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
+	remove(BACKUP_FILE);
+	OK_(crypt_header_backup(cd, CRYPT_LUKS2, BACKUP_FILE));
+	CRYPT_FREE(cd);
+	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	EQ_(crypt_get_data_offset(cd), r_header_size);
+	memset(&rparams, 0, sizeof(rparams));
+	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
+	rparams.direction = CRYPT_REENCRYPT_FORWARD;
+	rparams.resilience = "datashift";
+	rparams.data_shift = r_header_size;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
+	EQ_(crypt_get_data_offset(cd), 0);
+	OK_(crypt_reencrypt(cd, NULL));
+	remove(BACKUP_FILE);
+	CRYPT_FREE(cd);
+
+	/* online decryption with data shift (future feature) */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	params2.data_device = NULL;
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
+	remove(BACKUP_FILE);
+	OK_(crypt_header_backup(cd, CRYPT_LUKS2, BACKUP_FILE));
+	CRYPT_FREE(cd);
+	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	EQ_(crypt_get_data_offset(cd), r_header_size);
+	memset(&rparams, 0, sizeof(rparams));
+	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
+	rparams.direction = CRYPT_REENCRYPT_FORWARD;
+	rparams.resilience = "datashift";
+	rparams.data_shift = r_header_size;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
+	EQ_(crypt_get_data_offset(cd), 0);
+	OK_(crypt_reencrypt(cd, NULL));
+	remove(BACKUP_FILE);
+	OK_(t_device_size(DMDIR CDEVICE_1, &r_size_1));
+	EQ_(r_size_1, 512);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
+
+	_cleanup_dmdevices();
+	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_header_size));
+	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_header_size));
+
+	/* check detached header misuse (mismatching keys in table and mda) */
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	params2.data_device = DMDIR L_DEVICE_WRONG;
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
+	/* activate second device using same header */
+	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd2, CRYPT_LUKS2, NULL));
+	OK_(crypt_set_pbkdf_type(cd2, &pbkdf));
+	EQ_(crypt_activate_by_passphrase(cd2, CDEVICE_2, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
+	CRYPT_FREE(cd2);
+	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 32, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
+
+	memset(&rparams, 0, sizeof(rparams));
+	rparams.resilience = "none";
+	rparams.max_hotzone_size = 16*2048;
+	rparams.luks2 = &params2;
+
+	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
+	OK_(crypt_reencrypt(cd, NULL));
+
+	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd2, CRYPT_LUKS2, NULL));
+	OK_(crypt_set_pbkdf_type(cd2, &pbkdf));
+	EQ_(crypt_keyslot_add_by_key(cd2, 2, NULL, 32, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 2);
+	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd2, CDEVICE_2, PASSPHRASE, strlen(PASSPHRASE), 1, 2, "aes", "cbc-essiv:sha256", &rparams), "Mismatching parameters in device table.");
+	OK_(crypt_reencrypt_init_by_passphrase(cd2, NULL, PASSPHRASE, strlen(PASSPHRASE), 1, 2, "aes", "cbc-essiv:sha256", &rparams));
+	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd2, CDEVICE_2, PASSPHRASE, strlen(PASSPHRASE), 1, 2, "aes", "cbc-essiv:sha256", &rparams), "Mismatching parameters in device table.");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	CRYPT_FREE(cd);
+	CRYPT_FREE(cd2);
+
+	/* check detached header misuse (mismatching progress data in active device and mda) */
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	params2.data_device = DMDIR L_DEVICE_WRONG;
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
+	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 32, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
+	rparams.flags = 0;
+	rparams.max_hotzone_size = 8;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
+	/* reencrypt 8 srectors of device */
+	test_progress_steps = 1;
+	OK_(crypt_reencrypt(cd, &test_progress));
+
+	/* activate another data device with same LUKS2 header (this is wrong, but we can't detect such mistake) */
+	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd2, CRYPT_LUKS2, NULL));
+	NOTFAIL_(crypt_activate_by_passphrase(cd2, CDEVICE_2, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), "Failed to activate device in reencryption.");
+	CRYPT_FREE(cd2);
+
+	/* reencrypt yet another 8 sectors of first device */
+	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
+	test_progress_steps = 1;
+	OK_(crypt_reencrypt(cd, &test_progress));
+
+	/* Now active mapping for second data device does not match its metadata */
+	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd2, CRYPT_LUKS2, NULL));
+	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd2, CDEVICE_2, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams), "Mismatching device table.");
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	CRYPT_FREE(cd2);
 	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
