@@ -169,8 +169,8 @@ struct luks2_reenc_context {
 	int reenc_keyslot;
 
 	/* already running reencryption */
-	json_object *jobj_segs_pre;
-	json_object *jobj_segs_after;
+	json_object *jobj_segs_hot;
+	json_object *jobj_segs_post;
 
 	/* backup segments */
 	json_object *jobj_segment_new;
