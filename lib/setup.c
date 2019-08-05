@@ -5799,6 +5799,9 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 	crypt_reencrypt_info ri;
 	struct luks2_hdr *hdr;
 
+	if (!cd || !isLUKS2(cd->type))
+		return CRYPT_REENCRYPT_NONE;
+
 	if (_onlyLUKS2(cd, CRYPT_CD_QUIET, CRYPT_REQUIREMENT_ONLINE_REENCRYPT))
 		return CRYPT_REENCRYPT_INVALID;
 
