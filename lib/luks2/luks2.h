@@ -622,6 +622,9 @@ int LUKS2_assembly_multisegment_dmd(struct crypt_device *cd,
 	json_object *jobj_segments,
 	struct crypt_dm_active_device *dmd);
 
+crypt_reencrypt_info LUKS2_reencrypt_status(struct crypt_device *cd,
+	struct crypt_params_reencrypt *params);
+
 int crypt_reencrypt_lock(struct crypt_device *cd, const char *uuid, struct crypt_lock_handle **reencrypt_lock);
 void crypt_reencrypt_unlock(struct crypt_device *cd, struct crypt_lock_handle *reencrypt_lock);
 

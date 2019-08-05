@@ -3356,3 +3356,24 @@ err:
 
 	return r < 0 ? r : keyslot;
 }
+
+crypt_reencrypt_info LUKS2_reencrypt_status(struct crypt_device *cd, struct crypt_params_reencrypt *params)
+{
+	crypt_reencrypt_info ri;
+	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+
+	ri = LUKS2_reenc_status(hdr);
+	if (ri == CRYPT_REENCRYPT_NONE || ri == CRYPT_REENCRYPT_INVALID || !params)
+		return ri;
+
+	params->mode = LUKS2_reencrypt_mode(hdr);
+	params->direction = LUKS2_reencrypt_direction(hdr);
+	params->resilience = LUKS2_reencrypt_protection_type(hdr);
+	params->hash = LUKS2_reencrypt_protection_hash(hdr);
+	params->data_shift = LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
+	params->max_hotzone_size = 0;
+	if (LUKS2_get_segment_id_by_flag(hdr, "backup-moved-segment") >= 0)
+		params->flags |= CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT;
+
+	return ri;
+}
