@@ -928,24 +928,3 @@ int LUKS2_find_keyslot(struct luks2_hdr *hdr, const char *type)
 
 	return -ENOENT;
 }
-
-int LUKS2_find_keyslot_for_segment(struct luks2_hdr *hdr, int segment, const char *type)
-{
-	int i;
-	json_object *jobj_keyslot, *jobj_type;
-
-	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
-		jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, i);
-		if (!jobj_keyslot)
-			continue;
-
-		json_object_object_get_ex(jobj_keyslot, "type", &jobj_type);
-		if (strcmp(json_object_get_string(jobj_type), type))
-			continue;
-
-		if (!LUKS2_keyslot_for_segment(hdr, i, segment))
-			return i;
-	}
-
-	return -EINVAL;
-}

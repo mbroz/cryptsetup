@@ -21,16 +21,6 @@
 
 #include "luks2_internal.h"
 
-json_object *json_get_segments_jobj(json_object *hdr_jobj)
-{
-	json_object *jobj_segments;
-
-	if (!hdr_jobj || !json_object_object_get_ex(hdr_jobj, "segments", &jobj_segments))
-		return NULL;
-
-	return jobj_segments;
-}
-
 /* use only on already validated 'segments' object */
 uint64_t json_segments_get_minimal_offset(json_object *jobj_segments, unsigned blockwise)
 {
@@ -124,7 +114,7 @@ int json_segment_get_sector_size(json_object *jobj_segment)
 	return json_object_get_int(jobj);
 }
 
-json_object *json_segment_get_flags(json_object *jobj_segment)
+static json_object *json_segment_get_flags(json_object *jobj_segment)
 {
 	json_object *jobj;
 
@@ -157,11 +147,6 @@ static bool json_segment_contains_flag(json_object *jobj_segment, const char *fl
 bool json_segment_is_backup(json_object *jobj_segment)
 {
 	return json_segment_contains_flag(jobj_segment, "backup-", 7);
-}
-
-bool json_segment_is_reencrypt(json_object *jobj_segment)
-{
-	return json_segment_contains_flag(jobj_segment, "in-reencryption", 0);
 }
 
 json_object *json_segments_get_segment(json_object *jobj_segments, int segment)
@@ -213,16 +198,6 @@ static void _get_segment_or_id_by_flag(json_object *jobj_segments, const char *f
 			return;
 		}
 	}
-}
-
-json_object *json_segments_get_segment_by_flag(json_object *jobj_segments, const char *flag)
-{
-	json_object *jobj_segment = NULL;
-
-	if (jobj_segments)
-		_get_segment_or_id_by_flag(jobj_segments, flag, 0, &jobj_segment);
-
-	return jobj_segment;
 }
 
 void json_segment_remove_flag(json_object *jobj_segment, const char *flag)
@@ -434,21 +409,4 @@ json_object *LUKS2_get_segment_by_flag(struct luks2_hdr *hdr, const char *flag)
 		_get_segment_or_id_by_flag(jobj_segments, flag, 0, &jobj_segment);
 
 	return jobj_segment;
-}
-
-json_object *LUKS2_get_ignored_segments(struct luks2_hdr *hdr)
-{
-	json_object *jobj_segments, *jobj = json_object_new_object();
-	int i = 0;
-
-	if (!jobj || !json_object_object_get_ex(hdr->jobj, "segments", &jobj_segments))
-		return NULL;
-
-	json_object_object_foreach(jobj_segments, key, value) {
-		UNUSED(key);
-		if (json_segment_is_backup(value))
-			json_object_object_add_by_uint(jobj, i++, json_object_get(value));
-	}
-
-	return jobj;
 }

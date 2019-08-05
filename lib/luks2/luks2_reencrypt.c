@@ -107,7 +107,7 @@ int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr)
 }
 
 /* none, checksums, journal or shift */
-const char *LUKS2_reencrypt_protection_type(struct luks2_hdr *hdr)
+static const char *reencrypt_resilience_type(struct luks2_hdr *hdr)
 {
 	json_object *jobj_keyslot, *jobj_area, *jobj_type;
 	int ks = LUKS2_find_keyslot(hdr, "reencrypt");
@@ -124,7 +124,7 @@ const char *LUKS2_reencrypt_protection_type(struct luks2_hdr *hdr)
 	return json_object_get_string(jobj_type);
 }
 
-const char *LUKS2_reencrypt_protection_hash(struct luks2_hdr *hdr)
+static const char *reencrypt_resilience_hash(struct luks2_hdr *hdr)
 {
 	json_object *jobj_keyslot, *jobj_area, *jobj_type, *jobj_hash;
 	int ks = LUKS2_find_keyslot(hdr, "reencrypt");
@@ -561,7 +561,7 @@ static int reencrypt_make_post_segments(struct crypt_device *cd,
 	return rh->jobj_segs_post ? 0 : -EINVAL;
 }
 
-uint64_t LUKS2_reencrypt_data_shift(struct luks2_hdr *hdr)
+static uint64_t reencrypt_data_shift(struct luks2_hdr *hdr)
 {
 	json_object *jobj_keyslot, *jobj_area, *jobj_data_shift;
 	int ks = LUKS2_find_keyslot(hdr, "reencrypt");
@@ -578,7 +578,7 @@ uint64_t LUKS2_reencrypt_data_shift(struct luks2_hdr *hdr)
 	return json_object_get_uint64(jobj_data_shift);
 }
 
-crypt_reencrypt_mode_info LUKS2_reencrypt_mode(struct luks2_hdr *hdr)
+static crypt_reencrypt_mode_info reencrypt_mode(struct luks2_hdr *hdr)
 {
 	const char *mode;
 	crypt_reencrypt_mode_info mi = CRYPT_REENCRYPT_REENCRYPT;
@@ -600,7 +600,7 @@ crypt_reencrypt_mode_info LUKS2_reencrypt_mode(struct luks2_hdr *hdr)
 	return mi;
 }
 
-crypt_reencrypt_direction_info LUKS2_reencrypt_direction(struct luks2_hdr *hdr)
+static crypt_reencrypt_direction_info reencrypt_direction(struct luks2_hdr *hdr)
 {
 	const char *value;
 	json_object *jobj_keyslot, *jobj_mode;
@@ -792,7 +792,7 @@ static int reencrypt_offset(struct luks2_hdr *hdr,
 {
 	int sg;
 	json_object *jobj_segments;
-	uint64_t data_shift = LUKS2_reencrypt_data_shift(hdr);
+	uint64_t data_shift = reencrypt_data_shift(hdr);
 
 	if (!offset)
 		return -EINVAL;
@@ -808,7 +808,7 @@ static int reencrypt_offset(struct luks2_hdr *hdr,
 	if (di == CRYPT_REENCRYPT_FORWARD)
 		return _offset_forward(hdr, jobj_segments, offset);
 	else if (di == CRYPT_REENCRYPT_BACKWARD) {
-		if (LUKS2_reencrypt_mode(hdr) == CRYPT_REENCRYPT_ENCRYPT &&
+		if (reencrypt_mode(hdr) == CRYPT_REENCRYPT_ENCRYPT &&
 		    LUKS2_get_segment_id_by_flag(hdr, "backup-moved-segment") >= 0)
 			return reencrypt_offset_backward_moved(hdr, jobj_segments, reencrypt_length, data_shift, offset);
 		return _offset_backward(hdr, jobj_segments, device_size, reencrypt_length, offset);
@@ -826,7 +826,7 @@ static uint64_t reencrypt_length(struct luks2_hdr *hdr, struct luks2_reenc_conte
 	else if (rh->rp.type == REENC_PROTECTION_CHECKSUM)
 		length = (keyslot_area_length / rh->rp.p.csum.hash_size) * rh->alignment;
 	else if (rh->rp.type == REENC_PROTECTION_DATASHIFT)
-		return LUKS2_reencrypt_data_shift(hdr);
+		return reencrypt_data_shift(hdr);
 	else
 		length = keyslot_area_length;
 
@@ -849,7 +849,7 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 	if (LUKS2_keyslot_area(hdr, rh->reenc_keyslot, &dummy, &area_length) < 0)
 		return -EINVAL;
 
-	rh->mode = LUKS2_reencrypt_mode(hdr);
+	rh->mode = reencrypt_mode(hdr);
 
 	rh->alignment = reencrypt_get_alignment(cd, hdr);
 	if (!rh->alignment)
@@ -869,12 +869,12 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 		return -EINVAL;
 	}
 
-	rh->direction = LUKS2_reencrypt_direction(hdr);
+	rh->direction = reencrypt_direction(hdr);
 
 	if (!strcmp(params->resilience, "datashift")) {
 		log_dbg(cd, "Initializaing reencryption context with data_shift resilience.");
 		rh->rp.type = REENC_PROTECTION_DATASHIFT;
-		rh->data_shift = LUKS2_reencrypt_data_shift(hdr);
+		rh->data_shift = reencrypt_data_shift(hdr);
 	} else if (!strcmp(params->resilience, "journal")) {
 		log_dbg(cd, "Initializaing reencryption context with journal resilience.");
 		rh->rp.type = REENC_PROTECTION_JOURNAL;
@@ -968,8 +968,8 @@ static int reencrypt_load_clean(struct crypt_device *cd,
 {
 	int r;
 	const struct crypt_params_reencrypt hdr_reenc_params = {
-		.resilience = LUKS2_reencrypt_protection_type(hdr),
-		.hash = LUKS2_reencrypt_protection_hash(hdr),
+		.resilience = reencrypt_resilience_type(hdr),
+		.hash = reencrypt_resilience_hash(hdr),
 		.device_size = params ? params->device_size : 0
 	};
 	struct luks2_reenc_context *tmp = crypt_zalloc(sizeof (*tmp));
@@ -2192,6 +2192,46 @@ err:
 	return r;
 }
 
+static int reencrypt_verify_and_upload_keys(struct crypt_device *cd, struct luks2_hdr *hdr, int digest_old, int digest_new, struct volume_key *vks)
+{
+	int r;
+	struct volume_key *vk;
+
+	if (digest_new >= 0) {
+		vk = crypt_volume_key_by_id(vks, digest_new);
+		if (!vk)
+			return -ENOENT;
+		else {
+			if (LUKS2_digest_verify_by_digest(cd, hdr, digest_new, vk) != digest_new)
+				return -EINVAL;
+			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
+			if (r)
+				return r;
+		}
+	}
+
+	if (digest_old >= 0 && digest_old != digest_new) {
+		vk = crypt_volume_key_by_id(vks, digest_old);
+		if (!vk) {
+			r = -ENOENT;
+			goto err;
+		} else {
+			if (LUKS2_digest_verify_by_digest(cd, hdr, digest_old, vk) != digest_old) {
+				r = -EINVAL;
+				goto err;
+			}
+			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
+			if (r)
+				goto err;
+		}
+	}
+
+	return 0;
+err:
+	crypt_drop_keyring_key(cd, vks);
+	return r;
+}
+
 /* This function must be called with metadata lock held */
 static int reencrypt_init(struct crypt_device *cd,
 		const char *name,
@@ -2317,7 +2357,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		goto err;
 
 	if (name && params->mode != CRYPT_REENCRYPT_ENCRYPT) {
-		r = LUKS2_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
+		r = reencrypt_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 		if (r)
 			goto err;
 
@@ -2441,46 +2481,6 @@ static int reencrypt_context_update(struct crypt_device *cd,
 	rh->progress += (uint64_t)rh->read;
 
 	return 0;
-}
-
-int LUKS2_verify_and_upload_keys(struct crypt_device *cd, struct luks2_hdr *hdr, int digest_old, int digest_new, struct volume_key *vks)
-{
-	int r;
-	struct volume_key *vk;
-
-	if (digest_new >= 0) {
-		vk = crypt_volume_key_by_id(vks, digest_new);
-		if (!vk)
-			return -ENOENT;
-		else {
-			if (LUKS2_digest_verify_by_digest(cd, hdr, digest_new, vk) != digest_new)
-				return -EINVAL;
-			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
-			if (r)
-				return r;
-		}
-	}
-
-	if (digest_old >= 0 && digest_old != digest_new) {
-		vk = crypt_volume_key_by_id(vks, digest_old);
-		if (!vk) {
-			r = -ENOENT;
-			goto err;
-		} else {
-			if (LUKS2_digest_verify_by_digest(cd, hdr, digest_old, vk) != digest_old) {
-				r = -EINVAL;
-				goto err;
-			}
-			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
-			if (r)
-				goto err;
-		}
-	}
-
-	return 0;
-err:
-	crypt_drop_keyring_key(cd, vks);
-	return r;
 }
 
 static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
@@ -2656,13 +2656,13 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	old_ss = reencrypt_get_sector_size_old(hdr);
 	new_ss = reencrypt_get_sector_size_new(hdr);
 
-	r = LUKS2_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
+	r = reencrypt_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 	if (r == -ENOENT) {
 		log_dbg(cd, "Keys are not ready. Unlocking all volume keys.");
 		r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
 		if (r < 0)
 			goto err;
-		r = LUKS2_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
+		r = reencrypt_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 	}
 
 	if (r < 0)
@@ -3263,8 +3263,8 @@ int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 {
 	uint64_t data_offset = LUKS2_get_data_offset(hdr);
 
-	if (LUKS2_reencrypt_direction(hdr) == CRYPT_REENCRYPT_FORWARD)
-		data_offset += LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
+	if (reencrypt_direction(hdr) == CRYPT_REENCRYPT_FORWARD)
+		data_offset += reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
 
 	return blockwise ? data_offset : data_offset << SECTOR_SHIFT;
 }
@@ -3275,9 +3275,9 @@ int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint
 	int r;
 	uint64_t data_offset, real_size = 0;
 
-	if (LUKS2_reencrypt_direction(hdr) == CRYPT_REENCRYPT_BACKWARD &&
+	if (reencrypt_direction(hdr) == CRYPT_REENCRYPT_BACKWARD &&
 	    (LUKS2_get_segment_by_flag(hdr, "backup-moved-segment") || dynamic))
-		check_size += LUKS2_reencrypt_data_shift(hdr);
+		check_size += reencrypt_data_shift(hdr);
 
 	r = device_check_access(cd, crypt_data_device(cd), activation ? DEV_EXCL : DEV_OK);
 	if (r)
@@ -3366,11 +3366,11 @@ crypt_reencrypt_info LUKS2_reencrypt_status(struct crypt_device *cd, struct cryp
 	if (ri == CRYPT_REENCRYPT_NONE || ri == CRYPT_REENCRYPT_INVALID || !params)
 		return ri;
 
-	params->mode = LUKS2_reencrypt_mode(hdr);
-	params->direction = LUKS2_reencrypt_direction(hdr);
-	params->resilience = LUKS2_reencrypt_protection_type(hdr);
-	params->hash = LUKS2_reencrypt_protection_hash(hdr);
-	params->data_shift = LUKS2_reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
+	params->mode = reencrypt_mode(hdr);
+	params->direction = reencrypt_direction(hdr);
+	params->resilience = reencrypt_resilience_type(hdr);
+	params->hash = reencrypt_resilience_hash(hdr);
+	params->data_shift = reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
 	params->max_hotzone_size = 0;
 	if (LUKS2_get_segment_id_by_flag(hdr, "backup-moved-segment") >= 0)
 		params->flags |= CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT;

@@ -169,6 +169,16 @@ json_object *LUKS2_get_digest_jobj(struct luks2_hdr *hdr, int digest)
 	return jobj2;
 }
 
+static json_object *json_get_segments_jobj(json_object *hdr_jobj)
+{
+	json_object *jobj_segments;
+
+	if (!hdr_jobj || !json_object_object_get_ex(hdr_jobj, "segments", &jobj_segments))
+		return NULL;
+
+	return jobj_segments;
+}
+
 json_object *LUKS2_get_segment_jobj(struct luks2_hdr *hdr, int segment)
 {
 	if (!hdr)
@@ -393,7 +403,7 @@ static json_bool validate_intervals(struct crypt_device *cd,
 	return TRUE;
 }
 
-int LUKS2_keyslot_validate(struct crypt_device *cd, json_object *hdr_jobj, json_object *hdr_keyslot, const char *key)
+static int LUKS2_keyslot_validate(struct crypt_device *cd, json_object *hdr_jobj, json_object *hdr_keyslot, const char *key)
 {
 	json_object *jobj_key_size;
 

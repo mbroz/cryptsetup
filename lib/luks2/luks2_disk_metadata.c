@@ -26,7 +26,7 @@
 /*
  * Helper functions
  */
-json_object *parse_json_len(struct crypt_device *cd, const char *json_area,
+static json_object *parse_json_len(struct crypt_device *cd, const char *json_area,
 			    uint64_t max_length, int *json_len)
 {
 	json_object *jobj;

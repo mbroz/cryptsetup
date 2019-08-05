@@ -59,8 +59,6 @@ json_object *LUKS2_get_segments_jobj(struct luks2_hdr *hdr);
 void hexprint_base64(struct crypt_device *cd, json_object *jobj,
 		     const char *sep, const char *line_sep);
 
-json_object *parse_json_len(struct crypt_device *cd, const char *json_area,
-			    uint64_t max_length, int *json_len);
 uint64_t json_object_get_uint64(json_object *jobj);
 uint32_t json_object_get_uint32(json_object *jobj);
 json_object *json_object_new_uint64(uint64_t value);
@@ -81,8 +79,6 @@ json_object *json_contains(struct crypt_device *cd, json_object *jobj, const cha
 			   const char *section, const char *key, json_type type);
 
 int LUKS2_hdr_validate(struct crypt_device *cd, json_object *hdr_jobj, uint64_t json_size);
-int LUKS2_keyslot_validate(struct crypt_device *cd, json_object *hdr_jobj,
-			   json_object *hdr_keyslot, const char *key);
 int LUKS2_check_json_size(struct crypt_device *cd, const struct luks2_hdr *hdr);
 int LUKS2_token_validate(struct crypt_device *cd, json_object *hdr_jobj,
 			 json_object *jobj_token, const char *key);
@@ -166,8 +162,6 @@ typedef struct  {
 	digest_store_func  store;
 	digest_dump_func   dump;
 } digest_handler;
-
-const digest_handler *LUKS2_digest_handler_type(struct crypt_device *cd, const char *type);
 
 /**
  * LUKS2 token handlers (internal use only)

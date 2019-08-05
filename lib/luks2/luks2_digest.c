@@ -28,7 +28,7 @@ static const digest_handler *digest_handlers[LUKS2_DIGEST_MAX] = {
 	NULL
 };
 
-const digest_handler *LUKS2_digest_handler_type(struct crypt_device *cd, const char *type)
+static const digest_handler *LUKS2_digest_handler_type(struct crypt_device *cd, const char *type)
 {
 	int i;
 
@@ -413,11 +413,6 @@ static char *get_key_description_by_digest(struct crypt_device *cd, int digest)
 	}
 
 	return desc;
-}
-
-char *LUKS2_key_description_by_digest(struct crypt_device *cd, int digest)
-{
-	return get_key_description_by_digest(cd, digest);
 }
 
 int LUKS2_key_description_by_segment(struct crypt_device *cd,

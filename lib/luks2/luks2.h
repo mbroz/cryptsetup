@@ -367,19 +367,15 @@ int LUKS2_tokens_count(struct luks2_hdr *hdr);
 /*
  * Generic LUKS2 segment
  */
-json_object *json_get_segments_jobj(json_object *hdr_jobj);
 uint64_t json_segment_get_offset(json_object *jobj_segment, unsigned blockwise);
 const char *json_segment_type(json_object *jobj_segment);
 uint64_t json_segment_get_iv_offset(json_object *jobj_segment);
 uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise);
 const char *json_segment_get_cipher(json_object *jobj_segment);
 int json_segment_get_sector_size(json_object *jobj_segment);
-json_object *json_segment_get_flags(json_object *jobj_segment);
 bool json_segment_is_backup(json_object *jobj_segment);
-bool json_segment_is_reencrypt(json_object *jobj_segment);
 json_object *json_segments_get_segment(json_object *jobj_segments, int segment);
 unsigned json_segments_count(json_object *jobj_segments);
-json_object *json_segments_get_segment_by_flag(json_object *jobj_segments, const char *flag);
 void json_segment_remove_flag(json_object *jobj_segment, const char *flag);
 uint64_t json_segments_get_minimal_offset(json_object *jobj_segments, unsigned blockwise);
 json_object *json_segment_create_linear(uint64_t offset, const uint64_t *length, unsigned reencryption);
@@ -395,8 +391,6 @@ int LUKS2_segment_set_flag(json_object *jobj_segment, const char *flag);
 json_object *LUKS2_get_segment_by_flag(struct luks2_hdr *hdr, const char *flag);
 
 int LUKS2_get_segment_id_by_flag(struct luks2_hdr *hdr, const char *flag);
-
-json_object *LUKS2_get_ignored_segments(struct luks2_hdr *hdr);
 
 int LUKS2_segments_set(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
@@ -425,11 +419,6 @@ int LUKS2_get_default_segment(struct luks2_hdr *hdr);
 
 int LUKS2_reencrypt_digest_new(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr);
-const char *LUKS2_reencrypt_protection_type(struct luks2_hdr *hdr);
-const char *LUKS2_reencrypt_protection_hash(struct luks2_hdr *hdr);
-uint64_t LUKS2_reencrypt_data_shift(struct luks2_hdr *hdr);
-crypt_reencrypt_mode_info LUKS2_reencrypt_mode(struct luks2_hdr *hdr);
-crypt_reencrypt_direction_info LUKS2_reencrypt_direction(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
 
 /*
@@ -511,12 +500,6 @@ int LUKS2_reload(struct crypt_device *cd,
 	uint64_t device_size,
 	uint32_t flags);
 
-int LUKS2_keyslot_luks2_format(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot,
-	const char *cipher,
-	size_t keylength);
-
 int LUKS2_generate_hdr(
 	struct crypt_device *cd,
 	struct luks2_hdr *hdr,
@@ -552,7 +535,6 @@ int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr);
 int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment);
 int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment);
 int LUKS2_find_keyslot(struct luks2_hdr *hdr, const char *type);
-int LUKS2_find_keyslot_for_segment(struct luks2_hdr *hdr, int segment, const char *type);
 crypt_keyslot_info LUKS2_keyslot_info(struct luks2_hdr *hdr, int keyslot);
 int LUKS2_keyslot_area(struct luks2_hdr *hdr,
 	int keyslot,
@@ -577,7 +559,6 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 
 int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet);
 
-char *LUKS2_key_description_by_digest(struct crypt_device *cd, int digest);
 int LUKS2_key_description_by_segment(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int segment);
 int LUKS2_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd,
@@ -596,16 +577,6 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd,
 /*
  * LUKS2 reencryption
  */
-int LUKS2_verify_and_upload_keys(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int digest_old,
-	int digest_new,
-	struct volume_key *vks);
-
-int LUKS2_reenc_update_segments(struct crypt_device *cd,
-		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh);
-
 int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 	int keyslot_old,
 	int keyslot_new,
