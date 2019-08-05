@@ -873,8 +873,8 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 	if (!rh->alignment)
 		return -EINVAL;
 
-	log_dbg(cd, "Requested hotzone size: %" PRIu64 ", requested device size: %" PRIu64
-		", calculated alignment: %zu", params->max_hotzone_size << SECTOR_SHIFT,
+	log_dbg(cd, "Hotzone size: %" PRIu64 ", device size: %" PRIu64 ", alignment: %zu.",
+		params->max_hotzone_size << SECTOR_SHIFT,
 		params->device_size << SECTOR_SHIFT, rh->alignment);
 
 	if ((params->max_hotzone_size << SECTOR_SHIFT) % rh->alignment) {
