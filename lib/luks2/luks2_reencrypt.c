@@ -207,7 +207,6 @@ static json_object *_enc_create_segments_shift_after(struct crypt_device *cd,
 
 	/* alter size of new segment, reenc_seg == 0 we're finished */
 	json_object_object_add(jobj_seg_new, "size", reenc_seg > 0 ? json_object_new_uint64(tmp) : json_object_new_string("dynamic"));
-	JSON_DBG(cd, jobj_seg_new, "jobj_new_seg_after:");
 	json_object_object_add_by_uint(jobj_segs_after, reenc_seg, jobj_seg_new);
 
 	return jobj_segs_after;
@@ -244,7 +243,6 @@ static json_object *_enc_create_segments_shift_pre(struct crypt_device *cd,
 						      LUKS2_reencrypt_segment_cipher_new(hdr),
 						      LUKS2_reencrypt_get_sector_size_new(hdr),
 						      1);
-	JSON_DBG(cd, jobj_enc_seg, "jobj_enc_seg:");
 
 	while (i < sg) {
 		jobj_copy = LUKS2_get_segment_jobj(hdr, i);
@@ -260,7 +258,6 @@ static json_object *_enc_create_segments_shift_pre(struct crypt_device *cd,
 			goto err;
 		json_object_object_add(jobj_seg_shrunk, "size", json_object_new_uint64(segment_size - rh->length));
 		json_object_object_add_by_uint(jobj_segs_pre, sg++, jobj_seg_shrunk);
-		JSON_DBG(cd, jobj_seg_shrunk, "jobj_seg_shrunk:");
 	}
 
 	json_object_object_add_by_uint(jobj_segs_pre, sg++, jobj_enc_seg);
@@ -272,7 +269,6 @@ static json_object *_enc_create_segments_shift_pre(struct crypt_device *cd,
 		if (!jobj_seg_new)
 			goto err;
 		json_object_object_add_by_uint(jobj_segs_pre, sg, json_object_get(jobj_seg_new));
-		JSON_DBG(cd, jobj_seg_new, "jobj_seg_new:");
 	}
 
 	return jobj_segs_pre;
@@ -332,7 +328,6 @@ static json_object *_reenc_segments_forward_after(struct crypt_device *cd,
 	jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, 0, 0, jobj_old_seg ? &fixed_length : NULL);
 	if (!jobj_new_seg_after)
 		goto err;
-	JSON_DBG(cd, jobj_new_seg_after, "jobj_new_seg_after:");
 	json_object_object_add_by_uint(jobj_segs_after, 0, jobj_new_seg_after);
 
 	if (jobj_old_seg) {
@@ -342,7 +337,6 @@ static json_object *_reenc_segments_forward_after(struct crypt_device *cd,
 			jobj_old_seg = jobj_old_seg_copy;
 			fixed_length = rh->device_size - fixed_length;
 			json_object_object_add(jobj_old_seg, "size", json_object_new_uint64(fixed_length));
-			JSON_DBG(cd, jobj_old_seg, "fixed size jobj_old_seg:");
 		} else
 			json_object_get(jobj_old_seg);
 		json_object_object_add_by_uint(jobj_segs_after, 1, jobj_old_seg);
@@ -382,7 +376,6 @@ static json_object *_reenc_segments_backward_after(struct crypt_device *cd,
 		jobj_new_seg_after = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset, rh->offset, NULL);
 	if (!jobj_new_seg_after)
 		goto err;
-	JSON_DBG(cd, jobj_new_seg_after, "jobj_new_seg_after:");
 	json_object_object_add_by_uint(jobj_segs_after, reenc_seg, jobj_new_seg_after);
 
 	return jobj_segs_after;
@@ -458,15 +451,12 @@ static json_object *_reenc_segments_forward_pre(struct crypt_device *cd,
 		jobj_new_seg = LUKS2_create_segment_new(cd, hdr, rh, data_offset, 0, 0, &rh->offset);
 		if (!jobj_new_seg)
 			goto err;
-		JSON_DBG(cd, jobj_new_seg, "jobj_new_seg:");
 		json_object_object_add_by_uint(jobj_segs_pre, sg++, jobj_new_seg);
 	}
 
 	jobj_reenc_seg = LUKS2_create_segment_reenc(cd, hdr, rh, data_offset, rh->offset, rh->offset, &rh->length);
 	if (!jobj_reenc_seg)
 		goto err;
-
-	JSON_DBG(cd, jobj_reenc_seg, "jobj_reenc_seg:");
 
 	json_object_object_add_by_uint(jobj_segs_pre, sg++, jobj_reenc_seg);
 
@@ -475,7 +465,6 @@ static json_object *_reenc_segments_forward_pre(struct crypt_device *cd,
 		jobj_old_seg = LUKS2_create_segment_old(cd, hdr, rh, data_offset + rh->data_shift, rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
 		if (!jobj_old_seg)
 			goto err;
-		JSON_DBG(cd, jobj_old_seg, "jobj_old_seg:");
 		json_object_object_add_by_uint(jobj_segs_pre, sg, jobj_old_seg);
 	}
 
@@ -504,8 +493,6 @@ static json_object *_reenc_segments_backward_pre(struct crypt_device *cd,
 			goto err;
 		json_object_object_add(jobj_old_seg, "size", json_object_new_uint64(rh->offset));
 
-		JSON_DBG(cd, jobj_old_seg, "jobj_old_seg:");
-
 		json_object_object_add_by_uint(jobj_segs_pre, sg++, jobj_old_seg);
 	}
 
@@ -513,7 +500,6 @@ static json_object *_reenc_segments_backward_pre(struct crypt_device *cd,
 	if (!jobj_reenc_seg)
 		goto err;
 
-	JSON_DBG(cd, jobj_reenc_seg, "jobj_reenc_seg:");
 	json_object_object_add_by_uint(jobj_segs_pre, sg++, jobj_reenc_seg);
 
 	if (tmp < device_size) {
@@ -521,7 +507,6 @@ static json_object *_reenc_segments_backward_pre(struct crypt_device *cd,
 		jobj_new_seg = LUKS2_create_segment_new(cd, hdr, rh, data_offset, rh->offset + rh->length, rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
 		if (!jobj_new_seg)
 			goto err;
-		JSON_DBG(cd, jobj_new_seg, "jobj_new_seg:");
 		json_object_object_add_by_uint(jobj_segs_pre, sg, jobj_new_seg);
 	}
 
@@ -974,16 +959,7 @@ static int _reenc_load(struct crypt_device *cd, struct luks2_hdr *hdr, struct lu
 		rh->progress = rh->offset;
 
 	log_dbg(cd, "backup-previous digest id: %d", rh->digest_old);
-	if (rh->jobj_segment_old)
-		JSON_DBG(cd, rh->jobj_segment_old, "backup-previous segment:");
-	else
-		log_dbg(cd, "backup-previous segment: <missing>");
 	log_dbg(cd, "backup-final digest id: %d", rh->digest_new);
-	if (rh->jobj_segment_new)
-		JSON_DBG(cd, rh->jobj_segment_new, "backup-final segment:");
-	else
-		log_dbg(cd, "backup-final segment: <missing>");
-
 	log_dbg(cd, "reencrypt length: %" PRIu64, rh->length);
 	log_dbg(cd, "reencrypt offset: %" PRIu64, rh->offset);
 	log_dbg(cd, "reencrypt shift: %s%" PRIu64, (rh->data_shift && rh->direction == CRYPT_REENCRYPT_BACKWARD ? "-" : ""), rh->data_shift);
@@ -2986,15 +2962,11 @@ static reenc_status_t _reencrypt_step(struct crypt_device *cd,
 	if (r)
 		return REENC_ERR;
 
-	JSON_DBG(cd, LUKS2_get_segments_jobj(hdr), "Actual luks2 header segments:");
-
 	r = reenc_assign_segments(cd, hdr, rh, 1, 0);
 	if (r) {
 		log_err(cd, _("Failed to set device segments for next reencryption hotzone."));
 		return REENC_ERR;
 	}
-
-	JSON_DBG(cd, LUKS2_get_segments_jobj(hdr), "Actual header segments post pre assign:");
 
 	if (online) {
 		r = reenc_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name, rh->vks, rh->device_size);
