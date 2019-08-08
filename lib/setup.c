@@ -2918,12 +2918,13 @@ void crypt_free(struct crypt_device *cd)
 	dm_backend_exit(cd);
 	crypt_free_volume_key(cd->volume_key);
 
+	crypt_free_type(cd);
+
 	device_free(cd, cd->device);
 	device_free(cd, cd->metadata_device);
 
 	free(CONST_CAST(void*)cd->pbkdf.type);
 	free(CONST_CAST(void*)cd->pbkdf.hash);
-	crypt_free_type(cd);
 
 	/* Some structures can contain keys (TCRYPT), wipe it */
 	crypt_memzero(cd, sizeof(*cd));
