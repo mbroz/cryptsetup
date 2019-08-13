@@ -3262,9 +3262,10 @@ err:
  */
 int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 {
+	crypt_reencrypt_info ri = LUKS2_reenc_status(hdr);
 	uint64_t data_offset = LUKS2_get_data_offset(hdr);
 
-	if (reencrypt_direction(hdr) == CRYPT_REENCRYPT_FORWARD)
+	if (ri == CRYPT_REENCRYPT_CLEAN && reencrypt_direction(hdr) == CRYPT_REENCRYPT_FORWARD)
 		data_offset += reencrypt_data_shift(hdr) >> SECTOR_SHIFT;
 
 	return blockwise ? data_offset : data_offset << SECTOR_SHIFT;
