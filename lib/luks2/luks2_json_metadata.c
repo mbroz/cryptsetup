@@ -1766,7 +1766,7 @@ uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr)
 	json_object *jobj;
 
 	ri = LUKS2_reenc_status(hdr);
-	if (ri == CRYPT_REENCRYPT_CLEAN || CRYPT_REENCRYPT_CRASH) {
+	if (ri == CRYPT_REENCRYPT_CLEAN || ri == CRYPT_REENCRYPT_CRASH) {
 		jobj = LUKS2_get_segment_by_flag(hdr, "backup-final");
 		if (jobj)
 			return json_segment_get_offset(jobj, 1);

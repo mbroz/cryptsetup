@@ -2743,7 +2743,8 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	    crypt_storage_wrapper_get_type(rh->cw2) != DMCRYPT) {
 		if (device_open_excl(cd, crypt_data_device(cd), O_RDONLY) < 0) {
 			log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."), device_path(crypt_data_device(cd)));
-			return -EBUSY;
+			r = -EBUSY;
+			goto err;
 		}
 	}
 
