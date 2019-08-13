@@ -3601,8 +3601,7 @@ static void Luks2Reencryption(void)
 	 *  - reencryption requires luks2 paramters. can we avoid it?
 	 */
 	uint32_t getflags;
-	uint64_t r_header_size;
-	size_t r_size_1;
+	uint64_t r_header_size, r_size_1;
 	struct crypt_active_device cad;
 	struct crypt_pbkdf_type pbkdf = {
 		.type = CRYPT_KDF_ARGON2I,
@@ -4093,6 +4092,8 @@ static void Luks2Reencryption(void)
 	remove(BACKUP_FILE);
 	OK_(crypt_header_backup(cd, CRYPT_LUKS2, BACKUP_FILE));
 	CRYPT_FREE(cd);
+	// FIXME: we need write flock
+	OK_(chmod(BACKUP_FILE, S_IRUSR|S_IWUSR));
 	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_get_data_offset(cd), r_header_size);
@@ -4117,6 +4118,8 @@ static void Luks2Reencryption(void)
 	remove(BACKUP_FILE);
 	OK_(crypt_header_backup(cd, CRYPT_LUKS2, BACKUP_FILE));
 	CRYPT_FREE(cd);
+	// FIXME: we need write flock
+	OK_(chmod(BACKUP_FILE, S_IRUSR|S_IWUSR));
 	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_get_data_offset(cd), r_header_size);
