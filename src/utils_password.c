@@ -291,6 +291,9 @@ int tools_read_mk(const char *file, char **key, int keysize)
 {
 	int fd;
 
+	if (!keysize || !key)
+		return -EINVAL;
+
 	*key = crypt_safe_alloc(keysize);
 	if (!*key)
 		return -ENOMEM;
@@ -300,7 +303,8 @@ int tools_read_mk(const char *file, char **key, int keysize)
 		log_err(_("Cannot read keyfile %s."), file);
 		goto fail;
 	}
-	if ((read(fd, *key, keysize) != keysize)) {
+
+	if (read_buffer(fd, *key, keysize) != keysize) {
 		log_err(_("Cannot read %d bytes from keyfile %s."), keysize, file);
 		close(fd);
 		goto fail;
