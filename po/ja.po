@@ -1,0 +1,3736 @@
+# Japanese messages for cryptsetup.
+# Copyright (C) 2019 Free Software Foundation, Inc.
+# This file is put in the public domain, to the extent permitted under applicable law.
+# Hiroshi Takekawa <sian@big.or.jp>, <sian.ht@gmail.com>, 2019
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: cryptsetup 2.2.0\n"
+"Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
+"POT-Creation-Date: 2019-06-27 14:46+0200\n"
+"PO-Revision-Date: 2019-08-15 00:09+0900\n"
+"Last-Translator: Hiroshi Takekawa <sian@big.or.jp>\n"
+"Language-Team: Japanese <translation-team-ja@lists.sourceforge.net>\n"
+"Language: ja\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: lib/libdevmapper.c:345
+msgid "Cannot initialize device-mapper, running as non-root user."
+msgstr "device-mapper を初期化できません、non-root で実行します。"
+
+#: lib/libdevmapper.c:348
+msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?"
+msgstr "device-mapper を初期化できません。dm_mod モジュールはロードされてますか？"
+
+#: lib/libdevmapper.c:1033
+msgid "Requested deferred flag is not supported."
+msgstr "指定された延期フラグはサポートされていません。"
+
+#: lib/libdevmapper.c:1100
+#, c-format
+msgid "DM-UUID for device %s was truncated."
+msgstr "デバイス %s の DM-UUID は短縮されています。"
+
+#: lib/libdevmapper.c:1414
+msgid "Unknown dm target type."
+msgstr "不明な dm target タイプです。"
+
+#: lib/libdevmapper.c:1516 lib/libdevmapper.c:1568
+msgid "Requested dm-crypt performance options are not supported."
+msgstr "指定された dm-crypt パフォーマンスオプションはサポートされていません。"
+
+#: lib/libdevmapper.c:1523
+msgid "Requested dm-verity data corruption handling options are not supported."
+msgstr "指定された dm-verity のデータ破壊時の対応についてのオプションはサポートされていません。"
+
+#: lib/libdevmapper.c:1527
+msgid "Requested dm-verity FEC options are not supported."
+msgstr "指定された dm-verity の誤り訂正(FEC)オプションはサポートされていません。"
+
+#: lib/libdevmapper.c:1531
+msgid "Requested data integrity options are not supported."
+msgstr "指定されたデータの無改ざん確認のオプションはサポートされていません。"
+
+#: lib/libdevmapper.c:1533
+msgid "Requested sector_size option is not supported."
+msgstr "指定された sector_size オプションはサポートされていません。"
+
+#: lib/libdevmapper.c:1538
+msgid "Requested automatic recalculation of integrity tags is not supported."
+msgstr "指定された改ざん確認タグの自動再計算はサポートされていません。"
+
+#: lib/libdevmapper.c:1542
+msgid "Requested dm-integtity bitmap mode is not supported."
+msgstr "要求された dm-integtity のビットマップモードはサポートされていません。"
+
+#: lib/libdevmapper.c:1571
+msgid "Discard/TRIM is not supported."
+msgstr "Discard/TRIM はサポートしていません。"
+
+#: lib/libdevmapper.c:2462
+#, c-format
+msgid "Failed to query dm-%s segment."
+msgstr "dm-%s のクエリーに失敗しました。"
+
+#: lib/random.c:80
+msgid ""
+"System is out of entropy while generating volume key.\n"
+"Please move mouse or type some text in another window to gather some random events.\n"
+msgstr ""
+"ボリュームキーを生成するためのエントロピー(この文脈では乱数の乱れ度合)が足りません。\n"
+"マウスを動かしたり、他のウィンドウで文字を入力したりしてみてください。\n"
+
+#: lib/random.c:84
+#, c-format
+msgid "Generating key (%d%% done).\n"
+msgstr "キー生成中 (%d%% 完了)。\n"
+
+#: lib/random.c:170
+msgid "Running in FIPS mode."
+msgstr "FIPS モードで実行中。"
+
+#: lib/random.c:176
+msgid "Fatal error during RNG initialisation."
+msgstr "RNG(乱数生成器)初期化中に重大なエラーが発生しました。"
+
+#: lib/random.c:213
+msgid "Unknown RNG quality requested."
+msgstr "不明な RNG(乱数生成器) の質(quality)が要求されました。"
+
+#: lib/random.c:218
+msgid "Error reading from RNG."
+msgstr "RNG(乱数生成器)から読み込み中にエラー。"
+
+#: lib/setup.c:223
+msgid "Cannot initialize crypto RNG backend."
+msgstr "暗号向けRNG(乱数生成器)バックエンドの初期化ができません。"
+
+#: lib/setup.c:229
+msgid "Cannot initialize crypto backend."
+msgstr "暗号バックエンドの初期化ができません。"
+
+#: lib/setup.c:260 lib/setup.c:1976 lib/verity/verity.c:120
+#, c-format
+msgid "Hash algorithm %s not supported."
+msgstr "ハッシュアルゴリズム %s がサポートされていません。"
+
+#: lib/setup.c:263 lib/loopaes/loopaes.c:90
+#, c-format
+msgid "Key processing error (using hash %s)."
+msgstr "鍵の処理でエラー (ハッシュ %s を使用)。"
+
+#: lib/setup.c:324 lib/setup.c:351
+msgid "Cannot determine device type. Incompatible activation of device?"
+msgstr "デバイスタイプがわかりません。互換性のないデバイスのアクティベーションをしようとしていませんか？"
+
+#: lib/setup.c:330 lib/setup.c:2968
+msgid "This operation is supported only for LUKS device."
+msgstr "この操作は LUKS デバイスでしかサポートされていません。"
+
+#: lib/setup.c:357
+msgid "This operation is supported only for LUKS2 device."
+msgstr "この操作は LUKS2 デバイスでしかサポートされていません。"
+
+#: lib/setup.c:412 lib/luks2/luks2_reencrypt.c:2312
+msgid "All key slots full."
+msgstr "キースロットがいっぱいです。"
+
+#: lib/setup.c:423
+#, c-format
+msgid "Key slot %d is invalid, please select between 0 and %d."
+msgstr "キースロット %d は不正です。0 から %d の間を選んでください。"
+
+#: lib/setup.c:429
+#, c-format
+msgid "Key slot %d is full, please select another one."
+msgstr "キースロット %d は使われています。別の番号を選んでください。"
+
+#: lib/setup.c:605
+#, c-format
+msgid "Header detected but device %s is too small."
+msgstr "ヘッダが検出されましたがデバイス %s が小さすぎます。"
+
+#: lib/setup.c:642
+msgid "This operation is not supported for this device type."
+msgstr "この操作はこのデバイスタイプではサポートされていません。"
+
+#: lib/setup.c:647
+msgid "Illegal operation with reencryption in-progress."
+msgstr "オフラインでの再暗号化中です。中止します。"
+
+#: lib/setup.c:816 lib/luks1/keymanage.c:476
+#, c-format
+msgid "Unsupported LUKS version %d."
+msgstr "LUKS バージョン %d はサポートされていません。"
+
+#: lib/setup.c:833 lib/setup.c:1479 lib/setup.c:1889
+msgid "Detached metadata device is not supported for this crypt type."
+msgstr "分離したメタデータデバイスはこの暗号タイプではサポートされていません。"
+
+#: lib/setup.c:1369 lib/setup.c:2469 lib/setup.c:2541 lib/setup.c:2553
+#: lib/setup.c:2702 lib/setup.c:4290
+#, c-format
+msgid "Device %s is not active."
+msgstr "デバイス %s はアクティブではありません。"
+
+#: lib/setup.c:1386
+#, c-format
+msgid "Underlying device for crypt device %s disappeared."
+msgstr "暗号化されたデバイス %s の元になるデバイスが消滅しました。"
+
+#: lib/setup.c:1464
+msgid "Invalid plain crypt parameters."
+msgstr "不正な plain crypt のパラメータ。"
+
+#: lib/setup.c:1469 lib/setup.c:1879 src/integritysetup.c:75
+msgid "Invalid key size."
+msgstr "不正なキーサイズ。"
+
+#: lib/setup.c:1474 lib/setup.c:1884 lib/setup.c:2086
+msgid "UUID is not supported for this crypt type."
+msgstr "UUID はこの暗号タイプではサポートされていません。"
+
+#: lib/setup.c:1489 lib/setup.c:1679 lib/luks2/luks2_reencrypt.c:2275
+#: src/cryptsetup.c:1171
+msgid "Unsupported encryption sector size."
+msgstr "サポートされていない暗号化セクタサイズです。"
+
+#: lib/setup.c:1497 lib/setup.c:1796 lib/setup.c:2743
+msgid "Device size is not aligned to requested sector size."
+msgstr "デバイスサイズが要求されたセクタサイズのアライメントに合いません。"
+
+#: lib/setup.c:1548 lib/setup.c:1667
+msgid "Can't format LUKS without device."
+msgstr "デバイスなしには LUKS 形式にフォーマットできません。"
+
+#: lib/setup.c:1554 lib/setup.c:1673
+msgid "Requested data alignment is not compatible with data offset."
+msgstr "要求されたデータアライメントとデータオフセットが合いません。"
+
+#: lib/setup.c:1622 lib/setup.c:1791
+msgid "WARNING: Data offset is outside of currently available data device.\n"
+msgstr "警告: データオフセットが現在利用可能なデータの外にあります。\n"
+
+#: lib/setup.c:1632 lib/setup.c:1811 lib/setup.c:1830 lib/setup.c:2098
+#, c-format
+msgid "Cannot wipe header on device %s."
+msgstr "デバイス %s のヘッダを消し去れません。"
+
+#: lib/setup.c:1684
+msgid "WARNING: The device activation will fail, dm-crypt is missing support for requested encryption sector size.\n"
+msgstr "警告: デバイスアクティベーションが失敗しました。dm-crypt が要求された暗号セクタサイズをサポートしていません。\n"
+
+#: lib/setup.c:1706
+msgid "Volume key is too small for encryption with integrity extensions."
+msgstr "ボリュームキーは改ざん耐性拡張のため暗号には鍵長が小さすぎます。"
+
+#: lib/setup.c:1761
+#, c-format
+msgid "Cipher %s-%s (key size %zd bits) is not available."
+msgstr "暗号 %s-%s (キーサイズ %zd ビット) は利用できません。"
+
+#: lib/setup.c:1823 lib/setup.c:1849
+#, c-format
+msgid "Cannot format device %s in use."
+msgstr "デバイス %s は使用中のためフォーマットできません。"
+
+#: lib/setup.c:1826 lib/setup.c:1852
+#, c-format
+msgid "Cannot format device %s, permission denied."
+msgstr "デバイス %s は権限がないためフォーマットできません。"
+
+#: lib/setup.c:1838 lib/setup.c:2150
+#, c-format
+msgid "Cannot format integrity for device %s."
+msgstr "デバイス %s を改ざん耐性がつくようフォーマットできません。"
+
+#: lib/setup.c:1856
+#, c-format
+msgid "Cannot format device %s."
+msgstr "デバイス %s をフォーマットできません。"
+
+#: lib/setup.c:1874
+msgid "Can't format LOOPAES without device."
+msgstr "LOOPAES としてフォーマットするにはデバイスが必要です。"
+
+#: lib/setup.c:1919
+msgid "Can't format VERITY without device."
+msgstr "VERITY としてフォーマットするにはデバイスが必要です。"
+
+#: lib/setup.c:1930 lib/verity/verity.c:103
+#, c-format
+msgid "Unsupported VERITY hash type %d."
+msgstr "VERITY ハッシュタイプ %d はサポートしていません。"
+
+#: lib/setup.c:1936 lib/verity/verity.c:111
+msgid "Unsupported VERITY block size."
+msgstr "サポートしていない VERITY ブロックサイズです。"
+
+#: lib/setup.c:1941 lib/verity/verity.c:75
+msgid "Unsupported VERITY hash offset."
+msgstr "サポートしていない VERITY ハッシュオフセットです。"
+
+#: lib/setup.c:1946
+msgid "Unsupported VERITY FEC offset."
+msgstr "サポートしていない VERITY FEC オフセットです。"
+
+#: lib/setup.c:1970
+msgid "Data area overlaps with hash area."
+msgstr "データ領域がハッシュ領域と重なっています。"
+
+#: lib/setup.c:1995
+msgid "Hash area overlaps with FEC area."
+msgstr "ハッシュ領域が FEC 領域と重なっています。"
+
+#: lib/setup.c:2002
+msgid "Data area overlaps with FEC area."
+msgstr "データ領域が FEC 領域と重なっています。"
+
+#: lib/setup.c:2207
+#, c-format
+msgid "Unknown crypt device type %s requested."
+msgstr "不明な暗号デバイスタイプ %s が指定されました。"
+
+#: lib/setup.c:2475 lib/setup.c:2547 lib/setup.c:2560
+#, c-format
+msgid "Unsupported parameters on device %s."
+msgstr "デバイス %s のパラメータはサポートしていません。"
+
+#: lib/setup.c:2481 lib/setup.c:2566
+#, c-format
+msgid "Mismatching parameters on device %s."
+msgstr "デバイス %s のパラメータがミスマッチしています。"
+
+#: lib/setup.c:2586
+msgid "Crypt devices mismatch."
+msgstr "Crypt デバイスが一致しません。"
+
+#: lib/setup.c:2623 lib/setup.c:2628
+#, c-format
+msgid "Failed to reload device %s."
+msgstr "デバイス %s のリロードに失敗しました。"
+
+#: lib/setup.c:2633 lib/setup.c:2638 lib/luks2/luks2_reencrypt.c:2032
+#: lib/luks2/luks2_reencrypt.c:2041
+#, c-format
+msgid "Failed to suspend device %s."
+msgstr "デバイス %s のサスペンドに失敗しました。"
+
+#: lib/setup.c:2643 lib/luks2/luks2_reencrypt.c:2050
+#: lib/luks2/luks2_reencrypt.c:3009 lib/luks2/luks2_reencrypt.c:3077
+#, c-format
+msgid "Failed to resume device %s."
+msgstr "デバイス %s のリジュームに失敗しました。"
+
+#: lib/setup.c:2657
+#, c-format
+msgid "Fatal error while reloading device %s (on top of device %s)."
+msgstr "デバイス %s のリロード中に致命的なエラー(デバイス %s の上で)。"
+
+#: lib/setup.c:2660 lib/setup.c:2662
+#, c-format
+msgid "Failed to switch device %s to dm-error."
+msgstr "デバイス %s を dm-error にスイッチできません。"
+
+#: lib/setup.c:2734
+msgid "Cannot resize loop device."
+msgstr "ループデバイスはリサイズできません。"
+
+#: lib/setup.c:2801
+msgid "Do you really want to change UUID of device?"
+msgstr "デバイスの UUID を本当に変更してもいいですか？"
+
+#: lib/setup.c:2877
+msgid "Header backup file does not contain compatible LUKS header."
+msgstr "ヘッダのバックアップファイルの中味が LUKS ヘッダと互換性がありません。"
+
+#: lib/setup.c:2976
+#, c-format
+msgid "Volume %s is not active."
+msgstr "ボリューム %s はアクティブではありません。"
+
+#: lib/setup.c:2987
+#, c-format
+msgid "Volume %s is already suspended."
+msgstr "ボリューム %s は既に停止されています。"
+
+#: lib/setup.c:3000
+#, c-format
+msgid "Suspend is not supported for device %s."
+msgstr "デバイス %s の停止はサポートされていません。"
+
+#: lib/setup.c:3002
+#, c-format
+msgid "Error during suspending device %s."
+msgstr "デバイス %s 停止中にエラー。"
+
+#: lib/setup.c:3035 lib/setup.c:3102
+#, c-format
+msgid "Volume %s is not suspended."
+msgstr "ボリューム %s は停止されていません。"
+
+#: lib/setup.c:3064
+#, c-format
+msgid "Resume is not supported for device %s."
+msgstr "デバイス %s は再開をサポートしていません。"
+
+#: lib/setup.c:3066 lib/setup.c:3134
+#, c-format
+msgid "Error during resuming device %s."
+msgstr "デバイス %s の再開中にエラー。"
+
+#: lib/setup.c:3202 lib/setup.c:3390
+msgid "Cannot add key slot, all slots disabled and no volume key provided."
+msgstr "キースロットを追加できません。全てのスロットが無効でボリュームキーが渡されませんでした。"
+
+#: lib/setup.c:3342
+msgid "Failed to swap new key slot."
+msgstr "新しいキースロットを交換できませんでした。"
+
+#: lib/setup.c:3507 lib/setup.c:4141 lib/setup.c:4154 lib/setup.c:4162
+#: lib/setup.c:4175 lib/setup.c:4470 lib/setup.c:5583
+msgid "Volume key does not match the volume."
+msgstr "ボリュームキーがボリュームに合いません。"
+
+#: lib/setup.c:3528
+#, c-format
+msgid "Key slot %d is invalid."
+msgstr "キースロット %d は不正です。"
+
+#: lib/setup.c:3534 src/cryptsetup.c:1506 src/cryptsetup.c:1844
+#, c-format
+msgid "Keyslot %d is not active."
+msgstr "キースロット %d は非アクティブです。"
+
+#: lib/setup.c:3553
+msgid "Device header overlaps with data area."
+msgstr "デバイスヘッダがデータ領域に重なっています。"
+
+#: lib/setup.c:3818
+msgid "Reencryption in-progress. Cannot activate device."
+msgstr "既に再暗号化中です。デバイスをアクティベートできません。"
+
+#: lib/setup.c:3820 lib/luks2/luks2_json_metadata.c:2248
+#: lib/luks2/luks2_reencrypt.c:2764
+msgid "Failed to get reencryption lock."
+msgstr "再暗号化ロックを取得できません。"
+
+#: lib/setup.c:3958 lib/setup.c:4228
+msgid "Device type is not properly initialised."
+msgstr "デバイスタイプが正しく初期化されていません。"
+
+#: lib/setup.c:4002
+#, c-format
+msgid "Cannot use device %s, name is invalid or still in use."
+msgstr "デバイス %s を使えません。名前が不正か使用中です。"
+
+#: lib/setup.c:4005
+#, c-format
+msgid "Device %s already exists."
+msgstr "デバイス %s は既に存在します。"
+
+#: lib/setup.c:4128
+msgid "Incorrect volume key specified for plain device."
+msgstr "正しくないボリュームキーがプレーンデバイスに指定されました。"
+
+#: lib/setup.c:4194
+msgid "Incorrect root hash specified for verity device."
+msgstr "正しくないルートハッシュが verity デバイスに指定されました。"
+
+#: lib/setup.c:4269 lib/setup.c:4285 lib/luks2/luks2_json_metadata.c:2301
+#: src/cryptsetup.c:2515
+#, c-format
+msgid "Device %s is still in use."
+msgstr "デバイス %s は使用中です。"
+
+#: lib/setup.c:4294
+#, c-format
+msgid "Invalid device %s."
+msgstr "デバイス %s は不正です。"
+
+#: lib/setup.c:4406
+msgid "Function not available in FIPS mode."
+msgstr "FIPS モードでは使えません。"
+
+#: lib/setup.c:4420
+msgid "Volume key buffer too small."
+msgstr "ボリュームキーのバッファが小さすぎます。"
+
+#: lib/setup.c:4428
+msgid "Cannot retrieve volume key for plain device."
+msgstr "プレーンデバイス向けのボリュームキーが取得できません。"
+
+#: lib/setup.c:4439
+#, c-format
+msgid "This operation is not supported for %s crypt device."
+msgstr "この操作は %s 暗号化デバイスではサポートされていません。"
+
+#: lib/setup.c:4626
+msgid "Dump operation is not supported for this device type."
+msgstr "このデバイスタイプはダンプ操作をサポートしていません。"
+
+#: lib/setup.c:4937
+#, c-format
+msgid "Data offset is not multiple of %u bytes."
+msgstr "データオフセットが %u バイトの倍数である必要があります。"
+
+#: lib/setup.c:5219
+#, c-format
+msgid "Cannot convert device %s which is still in use."
+msgstr "使用中のデバイス %s を変換できません。"
+
+#: lib/setup.c:5516
+#, c-format
+msgid "Failed to assign keyslot %u as the new volume key."
+msgstr "新しいボリュームキー向けのキースロット %u を確保できません。"
+
+#: lib/setup.c:5589
+msgid "Failed to initialise default LUKS2 keyslot parameters."
+msgstr "デフォルト LUKS2 キースロットパラメータを初期化できません。"
+
+#: lib/setup.c:5595
+#, c-format
+msgid "Failed to assign keyslot %d to digest."
+msgstr "ダイジェストするためのキースロット %d が確保できません。"
+
+#: lib/setup.c:5680
+msgid "Failed to load key in kernel keyring."
+msgstr "キーをカーネルキーリングにロードできません。"
+
+#: lib/setup.c:5747
+msgid "Kernel keyring is not supported by the kernel."
+msgstr "カーネルがカーネルキーリングをサポートしていません。"
+
+#: lib/setup.c:5757 lib/luks2/luks2_reencrypt.c:2875
+#, c-format
+msgid "Failed to read passphrase from keyring (error %d)."
+msgstr "キーリングからパスフレーズが読み出せません (エラー %d)。"
+
+#: lib/setup.c:5781
+msgid "Failed to acquire global memory-hard access serialization lock."
+msgstr "グローバル memory-hard アクセス直列化ロックが取れません。"
+
+#: lib/utils.c:81
+msgid "Cannot get process priority."
+msgstr "プロセス優先度を取得できません。"
+
+#: lib/utils.c:95
+msgid "Cannot unlock memory."
+msgstr "メモリをアンロックできません。"
+
+#: lib/utils.c:169 lib/tcrypt/tcrypt.c:498
+msgid "Failed to open key file."
+msgstr "キーファイルがオープンできません。"
+
+#: lib/utils.c:174
+msgid "Cannot read keyfile from a terminal."
+msgstr "ターミナルからキーファイルを読みこめません。"
+
+#: lib/utils.c:191
+msgid "Failed to stat key file."
+msgstr "キーファイルを stat() できません。"
+
+#: lib/utils.c:199 lib/utils.c:220
+msgid "Cannot seek to requested keyfile offset."
+msgstr "指定されたキーファイルオフセットにシークできません。"
+
+#: lib/utils.c:214 lib/utils.c:229 src/utils_password.c:188
+#: src/utils_password.c:201
+msgid "Out of memory while reading passphrase."
+msgstr "パスフレーズ読み込み中にメモリが不足しました。"
+
+#: lib/utils.c:249
+msgid "Error reading passphrase."
+msgstr "パスフレーズの読み込みでエラー。"
+
+#: lib/utils.c:266
+msgid "Nothing to read on input."
+msgstr "読もうとしたら入力が空です。"
+
+#: lib/utils.c:273
+msgid "Maximum keyfile size exceeded."
+msgstr "キーファイルが最大サイズを超えています。"
+
+#: lib/utils.c:278
+msgid "Cannot read requested amount of data."
+msgstr "指定されたサイズのデータを読み込めません。"
+
+#: lib/utils_device.c:188 lib/utils_storage_wrappers.c:111
+#: lib/luks1/keyencryption.c:92
+#, c-format
+msgid "Device %s doesn't exist or access denied."
+msgstr "デバイス %s は存在しないかアクセスが拒否されました。"
+
+#: lib/utils_device.c:198
+#, c-format
+msgid "Device %s is not compatible."
+msgstr "デバイス %s は互換性がありません。"
+
+#: lib/utils_device.c:643
+#, c-format
+msgid "Device %s is too small. Need at least %<PRIu64> bytes."
+msgstr "デバイス %s が小さすぎます。少なくとも %<PRIu64> バイト必要です。"
+
+#: lib/utils_device.c:724
+#, c-format
+msgid "Cannot use device %s which is in use (already mapped or mounted)."
+msgstr "デバイス %s は使用中で使えません (既にマップされているかマウントされています)。"
+
+#: lib/utils_device.c:728
+#, c-format
+msgid "Cannot use device %s, permission denied."
+msgstr "デバイス %s が使えません、拒否されました。"
+
+#: lib/utils_device.c:731
+#, c-format
+msgid "Cannot get info about device %s."
+msgstr "デバイス %s についての情報が取得できません。"
+
+#: lib/utils_device.c:754
+msgid "Cannot use a loopback device, running as non-root user."
+msgstr "ループバックデバイスが使えません、非 root ユーザで実行していませんか。"
+
+#: lib/utils_device.c:764
+msgid "Attaching loopback device failed (loop device with autoclear flag is required)."
+msgstr "ループデバイスのアタッチできません (autoclear 付きのループデバイスが必要です)。"
+
+#: lib/utils_device.c:810
+#, c-format
+msgid "Requested offset is beyond real size of device %s."
+msgstr "指定されたオフセットはデバイス %s の実際のサイズを超えています。"
+
+#: lib/utils_device.c:818
+#, c-format
+msgid "Device %s has zero size."
+msgstr "デバイス %s のサイズが 0 です。"
+
+#: lib/utils_device.c:829 lib/luks1/keyencryption.c:256
+#: lib/luks2/luks2_reencrypt.c:3283
+#, c-format
+msgid "Device %s is too small."
+msgstr "デバイス %s のサイズが小さすぎます。"
+
+#: lib/utils_pbkdf.c:100
+msgid "Requested PBKDF target time cannot be zero."
+msgstr "要求された PBKDF の目標時間は 0 ではいけません。"
+
+#: lib/utils_pbkdf.c:106
+#, c-format
+msgid "Unknown PBKDF type %s."
+msgstr "%s は不明な PBKDF タイプです。"
+
+#: lib/utils_pbkdf.c:111
+#, c-format
+msgid "Requested hash %s is not supported."
+msgstr "要求されたハッシュ %s はサポートしていません。"
+
+#: lib/utils_pbkdf.c:122
+msgid "Requested PBKDF type is not supported for LUKS1."
+msgstr "要求された PBKDF タイプは LUKS1 ではサポートされていません。"
+
+#: lib/utils_pbkdf.c:128
+msgid "PBKDF max memory or parallel threads must not be set with pbkdf2."
+msgstr "PBKDF の max memory や parallel threads は pbkdf2 の時は設定できません。"
+
+#: lib/utils_pbkdf.c:133 lib/utils_pbkdf.c:143
+#, c-format
+msgid "Forced iteration count is too low for %s (minimum is %u)."
+msgstr "%s について強制される最小繰り返し回数が小さすぎます (最小 %u)。"
+
+#: lib/utils_pbkdf.c:148
+#, c-format
+msgid "Forced memory cost is too low for %s (minimum is %u kilobytes)."
+msgstr "%s について強制されるメモリコストが小さすぎます (最小 %u KB)。"
+
+#: lib/utils_pbkdf.c:155
+#, c-format
+msgid "Requested maximum PBKDF memory cost is too high (maximum is %d kilobytes)."
+msgstr "指定された PBKDF メモリコストが大きすぎます (最大 %d KB)。"
+
+#: lib/utils_pbkdf.c:160
+msgid "Requested maximum PBKDF memory cannot be zero."
+msgstr "PBKDF メモリは 0 ではいけません。"
+
+#: lib/utils_pbkdf.c:164
+msgid "Requested PBKDF parallel threads cannot be zero."
+msgstr "要求された PBKDF 並列スレッド数は 0 ではいけません。"
+
+#: lib/utils_pbkdf.c:184
+msgid "Only PBKDF2 is supported in FIPS mode."
+msgstr "FIPS モードでは PBKDF2 しかサポートしていません。"
+
+#: lib/utils_benchmark.c:166
+msgid "PBKDF benchmark disabled but iterations not set."
+msgstr "PBKDF ベンチマークが無効ですが繰り返し回数が設定されていません。"
+
+#: lib/utils_benchmark.c:185
+#, c-format
+msgid "Not compatible PBKDF2 options (using hash algorithm %s)."
+msgstr "PBKDF2 と互換性のないオプションです (ハッシュアルゴリズム %s)。"
+
+#: lib/utils_benchmark.c:205
+msgid "Not compatible PBKDF options."
+msgstr "互換性のない PBKDF オプションです。"
+
+#: lib/utils_device_locking.c:103
+#, c-format
+msgid "Locking aborted. The locking path %s/%s is unusable (not a directory or missing)."
+msgstr "ロックを中止します。ロックに使うパス %s/%s が使用できません (ディレクトリでないか存在していません)。"
+
+#: lib/utils_device_locking.c:110
+#, c-format
+msgid "WARNING: Locking directory %s/%s is missing!\n"
+msgstr "警告: ロックに使うディレクトリ %s/%s がありません！\n"
+
+#: lib/utils_device_locking.c:120
+#, c-format
+msgid "Locking aborted. The locking path %s/%s is unusable (%s is not a directory)."
+msgstr "ロックを中止します。ロックに使うパス %s/%s が使用できません (%s はディレクトリではありません)。"
+
+#: lib/utils_wipe.c:185 src/cryptsetup_reencrypt.c:933
+#: src/cryptsetup_reencrypt.c:1013
+msgid "Cannot seek to device offset."
+msgstr "デバイスオフセットまで seek できません。"
+
+#: lib/utils_wipe.c:209
+#, c-format
+msgid "Device wipe error, offset %<PRIu64>."
+msgstr "デバイスのワイプでエラー, オフセット %<PRIu64>."
+
+#: lib/luks1/keyencryption.c:40
+#, c-format
+msgid ""
+"Failed to setup dm-crypt key mapping for device %s.\n"
+"Check that kernel supports %s cipher (check syslog for more info)."
+msgstr ""
+"デバイス %s の dm-crypt のキーマッピングの設定に失敗しました。\n"
+"カーネルが暗号 %s をサポートしているか確認してください (syslog にさらに情報があります)。"
+
+#: lib/luks1/keyencryption.c:45
+msgid "Key size in XTS mode must be 256 or 512 bits."
+msgstr "XTS モードのキーサイズは 256 か 512 ビットでなければなりません。"
+
+#: lib/luks1/keyencryption.c:47
+msgid "Cipher specification should be in [cipher]-[mode]-[iv] format."
+msgstr "暗号の指定は [暗号]-[モード]-[初期ベクタ] という形式であるべきです。"
+
+#: lib/luks1/keyencryption.c:98 lib/luks1/keymanage.c:345
+#: lib/luks1/keymanage.c:636 lib/luks1/keymanage.c:1074
+#: lib/luks2/luks2_json_metadata.c:1245 lib/luks2/luks2_keyslot.c:726
+#, c-format
+msgid "Cannot write to device %s, permission denied."
+msgstr "デバイス %s に書き込めません。パーミッションがありません。"
+
+#: lib/luks1/keyencryption.c:121
+msgid "Failed to open temporary keystore device."
+msgstr "一時的なキーストアデバイスを開けません。"
+
+#: lib/luks1/keyencryption.c:128
+msgid "Failed to access temporary keystore device."
+msgstr "一時的なキーストアデバイスにアクセスできません。"
+
+#: lib/luks1/keyencryption.c:201 lib/luks2/luks2_keyslot_luks2.c:60
+#: lib/luks2/luks2_keyslot_luks2.c:78 lib/luks2/luks2_keyslot_reenc.c:134
+msgid "IO error while encrypting keyslot."
+msgstr "キースロットを暗号化中にI/Oエラーが発生しました。"
+
+#: lib/luks1/keyencryption.c:247 lib/luks1/keymanage.c:348
+#: lib/luks1/keymanage.c:589 lib/luks1/keymanage.c:639 lib/tcrypt/tcrypt.c:663
+#: lib/verity/verity.c:81 lib/verity/verity.c:179 lib/verity/verity_hash.c:308
+#: lib/verity/verity_hash.c:319 lib/verity/verity_hash.c:339
+#: lib/verity/verity_fec.c:242 lib/verity/verity_fec.c:254
+#: lib/verity/verity_fec.c:259 lib/luks2/luks2_json_metadata.c:1248
+#: src/cryptsetup_reencrypt.c:207
+#, c-format
+msgid "Cannot open device %s."
+msgstr "デバイス %s を開けません。"
+
+#: lib/luks1/keyencryption.c:258 lib/luks2/luks2_keyslot_luks2.c:137
+msgid "IO error while decrypting keyslot."
+msgstr "キースロットを復号化中にI/Oエラーが発生しました。"
+
+#: lib/luks1/keymanage.c:111
+#, c-format
+msgid "Device %s is too small. (LUKS1 requires at least %<PRIu64> bytes.)"
+msgstr "デバイス %s が小さすぎます。(LUKS1 は最低でも %<PRIu64> バイト必要です。)"
+
+#: lib/luks1/keymanage.c:132 lib/luks1/keymanage.c:140
+#: lib/luks1/keymanage.c:152 lib/luks1/keymanage.c:163
+#: lib/luks1/keymanage.c:175
+#, c-format
+msgid "LUKS keyslot %u is invalid."
+msgstr "LUKS キースロット %u は不正です。"
+
+#: lib/luks1/keymanage.c:229 lib/luks1/keymanage.c:473
+#: lib/luks2/luks2_json_metadata.c:1076 src/cryptsetup.c:1374
+#: src/cryptsetup.c:1493 src/cryptsetup.c:1550 src/cryptsetup.c:1606
+#: src/cryptsetup.c:1673 src/cryptsetup.c:1769 src/cryptsetup.c:1833
+#: src/cryptsetup.c:1993 src/cryptsetup.c:2182 src/cryptsetup.c:2242
+#: src/cryptsetup.c:2308 src/cryptsetup.c:2472 src/cryptsetup.c:3109
+#: src/cryptsetup.c:3118 src/cryptsetup_reencrypt.c:1372
+#, c-format
+msgid "Device %s is not a valid LUKS device."
+msgstr "デバイス %s は有効な LUKS デバイスではありません。"
+
+#: lib/luks1/keymanage.c:247 lib/luks2/luks2_json_metadata.c:1093
+#, c-format
+msgid "Requested header backup file %s already exists."
+msgstr "要求されたヘッダバックアップファイル %s は既に存在しています。"
+
+#: lib/luks1/keymanage.c:249 lib/luks2/luks2_json_metadata.c:1095
+#, c-format
+msgid "Cannot create header backup file %s."
+msgstr "ヘッダバックアップファイル %s が作成できません。"
+
+#: lib/luks1/keymanage.c:256 lib/luks2/luks2_json_metadata.c:1102
+#, c-format
+msgid "Cannot write header backup file %s."
+msgstr "ヘッダバックアップファイル %s に書き込めません。"
+
+#: lib/luks1/keymanage.c:287 lib/luks2/luks2_json_metadata.c:1154
+msgid "Backup file doesn't contain valid LUKS header."
+msgstr "バックアップファイルが有効な LUKS ヘッダを含んでいません。"
+
+#: lib/luks1/keymanage.c:300 lib/luks1/keymanage.c:550
+#: lib/luks2/luks2_json_metadata.c:1175
+#, c-format
+msgid "Cannot open header backup file %s."
+msgstr "ヘッダバックアップファイル %s をオープンできません。"
+
+#: lib/luks1/keymanage.c:308 lib/luks2/luks2_json_metadata.c:1183
+#, c-format
+msgid "Cannot read header backup file %s."
+msgstr "ヘッダバックアップファイル %s を読めません。"
+
+#: lib/luks1/keymanage.c:318
+msgid "Data offset or key size differs on device and backup, restore failed."
+msgstr "データオフセットかキーサイズがデバイスとバックアップで異なるのでリストアできません。"
+
+#: lib/luks1/keymanage.c:326
+#, c-format
+msgid "Device %s %s%s"
+msgstr "デバイス %s %s%s"
+
+#: lib/luks1/keymanage.c:327
+msgid "does not contain LUKS header. Replacing header can destroy data on that device."
+msgstr "LUKS ヘッダが含まれていません。ヘッダを置き換えるとデバイスのデータを破壊する恐れがあります。"
+
+#: lib/luks1/keymanage.c:328
+msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
+msgstr "LUKS ヘッダを既に含んでいます。ヘッダを置き換えると既にあるキースロットを破壊します。"
+
+#: lib/luks1/keymanage.c:329 lib/luks2/luks2_json_metadata.c:1217
+msgid ""
+"\n"
+"WARNING: real device header has different UUID than backup!"
+msgstr ""
+"\n"
+"警告: 実デバイスのヘッダはバックアップとUUIDが異なります！"
+
+#: lib/luks1/keymanage.c:376
+msgid "Non standard key size, manual repair required."
+msgstr "標準的でないキーサイズなので、手動の修復が必要です。"
+
+#: lib/luks1/keymanage.c:381
+msgid "Non standard keyslots alignment, manual repair required."
+msgstr "標準的でないキースロットアライメントなので、手動の修復が必要です。"
+
+#: lib/luks1/keymanage.c:391
+msgid "Repairing keyslots."
+msgstr "キースロットを修復中です。"
+
+#: lib/luks1/keymanage.c:410
+#, c-format
+msgid "Keyslot %i: offset repaired (%u -> %u)."
+msgstr "キースロット %i: オフセットを修復 (%u -> %u)."
+
+#: lib/luks1/keymanage.c:418
+#, c-format
+msgid "Keyslot %i: stripes repaired (%u -> %u)."
+msgstr "キースロット %i: のストライプを修復 (%u -> %u)."
+
+#: lib/luks1/keymanage.c:427
+#, c-format
+msgid "Keyslot %i: bogus partition signature."
+msgstr "キースロット %i: パーティションの印(signature)がおかしいです。"
+
+#: lib/luks1/keymanage.c:432
+#, c-format
+msgid "Keyslot %i: salt wiped."
+msgstr "キースロット %i: ソルトを消しました。"
+
+#: lib/luks1/keymanage.c:449
+msgid "Writing LUKS header to disk."
+msgstr "LUKS ヘッダを書きこんでいます。"
+
+#: lib/luks1/keymanage.c:454
+msgid "Repair failed."
+msgstr "修復に失敗しました。"
+
+#: lib/luks1/keymanage.c:482 lib/luks1/keymanage.c:751
+#, c-format
+msgid "Requested LUKS hash %s is not supported."
+msgstr "要求された LUKS ハッシュ %s はサポートしていません。"
+
+#: lib/luks1/keymanage.c:510 src/cryptsetup.c:1083
+msgid "No known problems detected for LUKS header."
+msgstr "LUKS ヘッダに既知の不具合は検出されませんでした。"
+
+#: lib/luks1/keymanage.c:661
+#, c-format
+msgid "Error during update of LUKS header on device %s."
+msgstr "デバイス %s の LUKS ヘッダを更新中にエラーが発生しました。"
+
+#: lib/luks1/keymanage.c:669
+#, c-format
+msgid "Error re-reading LUKS header after update on device %s."
+msgstr "デバイス %s の LUKS ヘッダを更新後の再読み込み中にエラーが発生しました。"
+
+#: lib/luks1/keymanage.c:745
+msgid "Data offset for LUKS header must be either 0 or higher than header size."
+msgstr "LUKS ヘッダのデータへのオフセットは 0 かヘッダサイズより大きくなければいけません。"
+
+#: lib/luks1/keymanage.c:756 lib/luks1/keymanage.c:821
+#: lib/luks2/luks2_json_format.c:277 lib/luks2/luks2_json_metadata.c:994
+#: src/cryptsetup.c:2634
+msgid "Wrong LUKS UUID format provided."
+msgstr "LUKS UUID の形式が間違っています。"
+
+#: lib/luks1/keymanage.c:779
+msgid "Cannot create LUKS header: reading random salt failed."
+msgstr "LUKS ヘッダを作成できません: ランダムなソルトを読み込めません。"
+
+#: lib/luks1/keymanage.c:800
+#, c-format
+msgid "Cannot create LUKS header: header digest failed (using hash %s)."
+msgstr "LUKS ヘッダを作成できません: ヘッダのハッシュが求められません (ハッシュには %s を使用)。"
+
+#: lib/luks1/keymanage.c:844
+#, c-format
+msgid "Key slot %d active, purge first."
+msgstr "キースロット %d が使用中なので、パージしてください。"
+
+#: lib/luks1/keymanage.c:850
+#, c-format
+msgid "Key slot %d material includes too few stripes. Header manipulation?"
+msgstr "キースロット %d のストライプが少なすぎます。ヘッダを細工でもしましたか？"
+
+#: lib/luks1/keymanage.c:1060
+#, c-format
+msgid "Key slot %d is invalid, please select keyslot between 0 and %d."
+msgstr "キースロット %d は不正です。0 から %d の間を選んでください。"
+
+#: lib/luks1/keymanage.c:1078 lib/luks2/luks2_keyslot.c:730
+#, c-format
+msgid "Cannot wipe device %s."
+msgstr "デバイス %s をワイプできません。"
+
+#: lib/loopaes/loopaes.c:146
+msgid "Detected not yet supported GPG encrypted keyfile."
+msgstr "GPG の暗号化されたキーファイルがまだサポートされていません。"
+
+#: lib/loopaes/loopaes.c:147
+msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "以下のようにしてください。 gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+
+#: lib/loopaes/loopaes.c:168 lib/loopaes/loopaes.c:188
+msgid "Incompatible loop-AES keyfile detected."
+msgstr "互換性のない loop-AES キーファイルが検出されました。"
+
+#: lib/loopaes/loopaes.c:245
+msgid "Kernel doesn't support loop-AES compatible mapping."
+msgstr "カーネルが loop-AES 互換マッピングをサポートしていません。"
+
+#: lib/tcrypt/tcrypt.c:505
+#, c-format
+msgid "Error reading keyfile %s."
+msgstr "キーファイル %s を読み込み中にエラー。"
+
+#: lib/tcrypt/tcrypt.c:545
+#, c-format
+msgid "Maximum TCRYPT passphrase length (%d) exceeded."
+msgstr "TCRYPT パスフレーズの最大長 (%d) を超えました。"
+
+#: lib/tcrypt/tcrypt.c:586
+#, c-format
+msgid "PBKDF2 hash algorithm %s not available, skipping."
+msgstr "PBKDF2 ハッシュアルゴリズム %s が利用できないのでスキップします。"
+
+#: lib/tcrypt/tcrypt.c:604 src/cryptsetup.c:961
+msgid "Required kernel crypto interface not available."
+msgstr "必要なカーネル crypto インターフェースが使用できません。"
+
+#: lib/tcrypt/tcrypt.c:606 src/cryptsetup.c:963
+msgid "Ensure you have algif_skcipher kernel module loaded."
+msgstr "algif_skcipher カーネルモジュールをロードしてください。"
+
+#: lib/tcrypt/tcrypt.c:745
+#, c-format
+msgid "Activation is not supported for %d sector size."
+msgstr "アクティベーションは %d セクタサイズではサポートしていません。"
+
+#: lib/tcrypt/tcrypt.c:751
+msgid "Kernel doesn't support activation for this TCRYPT legacy mode."
+msgstr "カーネルが TCRYPT レガシーモードのアクティベーションをサポートしていません。"
+
+#: lib/tcrypt/tcrypt.c:785
+#, c-format
+msgid "Activating TCRYPT system encryption for partition %s."
+msgstr "TCRYPT システム暗号をパーティション %s に対してアクティベーションしました。"
+
+#: lib/tcrypt/tcrypt.c:863
+msgid "Kernel doesn't support TCRYPT compatible mapping."
+msgstr "カーネルが TCRYPT 互換のマッピングをサポートしていません。"
+
+#: lib/tcrypt/tcrypt.c:1085
+msgid "This function is not supported without TCRYPT header load."
+msgstr "この機能は TCRYPT ヘッダの読み込みなしではサポートしません。"
+
+#: lib/verity/verity.c:69 lib/verity/verity.c:172
+#, c-format
+msgid "Verity device %s doesn't use on-disk header."
+msgstr "Verity デバイス %s はディスク上のヘッダを使いません。"
+
+#: lib/verity/verity.c:91
+#, c-format
+msgid "Device %s is not a valid VERITY device."
+msgstr "デバイス %s が有効な VERITY デバイスではありません。"
+
+#: lib/verity/verity.c:98
+#, c-format
+msgid "Unsupported VERITY version %d."
+msgstr "VERITY バージョン %d はサポートされていません。"
+
+#: lib/verity/verity.c:129
+msgid "VERITY header corrupted."
+msgstr "VERITY ヘッダが壊れています。"
+
+#: lib/verity/verity.c:166
+#, c-format
+msgid "Wrong VERITY UUID format provided on device %s."
+msgstr "デバイス %s の VERITY UUID フォーマットが間違っています。"
+
+#: lib/verity/verity.c:199
+#, c-format
+msgid "Error during update of verity header on device %s."
+msgstr "デバイス %s の verity ヘッダを更新中にエラー。"
+
+#: lib/verity/verity.c:262
+msgid "Errors cannot be repaired with FEC device."
+msgstr "FEC デバイスのエラーが修復できません。"
+
+#: lib/verity/verity.c:264
+#, c-format
+msgid "Found %u repairable errors with FEC device."
+msgstr "FEC デバイスに %u 個の修復可能なエラーが見つかりました。"
+
+#: lib/verity/verity.c:302
+msgid "Kernel doesn't support dm-verity mapping."
+msgstr "カーネルが dm-verity マッピングをサポートしていません。"
+
+#: lib/verity/verity.c:313
+msgid "Verity device detected corruption after activation."
+msgstr "アクティベーションされた Verity デバイスが破損が見つかりました。"
+
+#: lib/verity/verity_hash.c:59
+#, c-format
+msgid "Spare area is not zeroed at position %<PRIu64>."
+msgstr "ポジション %<PRIu64> にあるスペア領域が 0 埋めされていません。"
+
+#: lib/verity/verity_hash.c:160 lib/verity/verity_hash.c:287
+#: lib/verity/verity_hash.c:300
+msgid "Device offset overflow."
+msgstr "デバイスオフセットオーバーフロー。"
+
+#: lib/verity/verity_hash.c:200
+#, c-format
+msgid "Verification failed at position %<PRIu64>."
+msgstr "検証がポジション %<PRIu64> で失敗しました。"
+
+#: lib/verity/verity_hash.c:273
+msgid "Invalid size parameters for verity device."
+msgstr "verity デバイスのパラメータサイズが不正です。"
+
+#: lib/verity/verity_hash.c:293
+msgid "Hash area overflow."
+msgstr "ハッシュ領域がオーバーフロー。"
+
+#: lib/verity/verity_hash.c:370
+msgid "Verification of data area failed."
+msgstr "データ領域の検証に失敗しました。"
+
+#: lib/verity/verity_hash.c:375
+msgid "Verification of root hash failed."
+msgstr "ルートハッシュの検証に失敗しました。"
+
+#: lib/verity/verity_hash.c:381
+msgid "Input/output error while creating hash area."
+msgstr "ハッシュ領域を生成中に I/O エラー。"
+
+#: lib/verity/verity_hash.c:383
+msgid "Creation of hash area failed."
+msgstr "ハッシュ領域の作成に失敗しました。"
+
+#: lib/verity/verity_hash.c:430
+#, c-format
+msgid "WARNING: Kernel cannot activate device if data block size exceeds page size (%u)."
+msgstr "警告: カーネルはデータブロックサイズがページサイズ (%u) を超えているとアクティベートできません。"
+
+#: lib/verity/verity_fec.c:132
+msgid "Failed to allocate RS context."
+msgstr "Reed-Solomon 処理のためのコンテキストが確保できません。"
+
+#: lib/verity/verity_fec.c:147
+msgid "Failed to allocate buffer."
+msgstr "バッファを確保できませんでした。"
+
+#: lib/verity/verity_fec.c:157
+#, c-format
+msgid "Failed to read RS block %<PRIu64> byte %d."
+msgstr "Reed-Solomon ブロック %<PRIu64> バイト %d を読み込めませんでした。"
+
+#: lib/verity/verity_fec.c:170
+#, c-format
+msgid "Failed to read parity for RS block %<PRIu64>."
+msgstr "Reed-Solomon ブロック %<PRIu64> のパリティを読み込めませんでした。"
+
+#: lib/verity/verity_fec.c:178
+#, c-format
+msgid "Failed to repair parity for block %<PRIu64>."
+msgstr "ブロック %<PRIu64> のパリティが修復できませんでした。"
+
+#: lib/verity/verity_fec.c:189
+#, c-format
+msgid "Failed to write parity for RS block %<PRIu64>."
+msgstr "Reed-Solomon ブロック %<PRIu64> のパリティの書き込みに失敗しました。"
+
+#: lib/verity/verity_fec.c:224
+msgid "Block sizes must match for FEC."
+msgstr "ブロックサイズが FEC と合っていません。"
+
+#: lib/verity/verity_fec.c:230
+msgid "Invalid number of parity bytes."
+msgstr "パリティのバイト数が不正です。"
+
+#: lib/verity/verity_fec.c:266
+#, c-format
+msgid "Failed to determine size for device %s."
+msgstr "デバイス %s のサイズが不明です。"
+
+#: lib/integrity/integrity.c:241 lib/integrity/integrity.c:306
+msgid "Kernel doesn't support dm-integrity mapping."
+msgstr "カーネルが dm-integrity マッピングをサポートしていません。"
+
+#: lib/luks2/luks2_disk_metadata.c:383 lib/luks2/luks2_json_metadata.c:951
+#: lib/luks2/luks2_json_metadata.c:1237
+#, c-format
+msgid "Failed to acquire write lock on device %s."
+msgstr "デバイス %s の書き込みのためのロックを取得できませんでした。"
+
+#: lib/luks2/luks2_disk_metadata.c:392
+msgid "Detected attempt for concurrent LUKS2 metadata update. Aborting operation."
+msgstr "LUKS2 メタデータの更新の並列実行をしそうになりました。実行を中止します。"
+
+#: lib/luks2/luks2_disk_metadata.c:691 lib/luks2/luks2_disk_metadata.c:712
+msgid ""
+"Device contains ambiguous signatures, cannot auto-recover LUKS2.\n"
+"Please run \"cryptsetup repair\" for recovery."
+msgstr ""
+"デバイスのシグネチャが曖昧なので、LUKS2 の自動修復ができません。.\n"
+"修復するには \"cryptsetup repair\" を実行してください。"
+
+#: lib/luks2/luks2_json_format.c:226
+msgid "Requested data offset is too small."
+msgstr "要求されたデータオフセットが小さすぎます。"
+
+#: lib/luks2/luks2_json_format.c:265
+#, c-format
+msgid "WARNING: keyslots area (%<PRIu64> bytes) is very small, available LUKS2 keyslot count is very limited.\n"
+msgstr "警告: キースロット領域 (%<PRIu64> バイト) がとても小さいため、利用可能な LUKS2 キースロット数が制限されます。\n"
+
+#: lib/luks2/luks2_json_metadata.c:938 lib/luks2/luks2_json_metadata.c:1067
+#: lib/luks2/luks2_json_metadata.c:1143 lib/luks2/luks2_keyslot_luks2.c:92
+#: lib/luks2/luks2_keyslot_luks2.c:114
+#, c-format
+msgid "Failed to acquire read lock on device %s."
+msgstr "デバイス %s の読み込みのためのロックを取得できませんでした。"
+
+#: lib/luks2/luks2_json_metadata.c:1160
+#, c-format
+msgid "Forbidden LUKS2 requirements detected in backup %s."
+msgstr "禁止された LUKS2 要求がバックアップ %s に検出されました。"
+
+#: lib/luks2/luks2_json_metadata.c:1201
+msgid "Data offset differ on device and backup, restore failed."
+msgstr "データオフセットがデバイスとバックアップと異なるため修復できません。"
+
+#: lib/luks2/luks2_json_metadata.c:1207
+msgid "Binary header with keyslot areas size differ on device and backup, restore failed."
+msgstr "キースロット領域のあるバイナリヘッダのサイズがデバイスとバックアップで異なるため修復できません。"
+
+#: lib/luks2/luks2_json_metadata.c:1214
+#, c-format
+msgid "Device %s %s%s%s%s"
+msgstr "デバイス %s %s%s%s%s"
+
+#: lib/luks2/luks2_json_metadata.c:1215
+msgid "does not contain LUKS2 header. Replacing header can destroy data on that device."
+msgstr "LUKS2 ヘッダが含まれていません。ヘッダを置き換えるとデータを破壊しかねません。"
+
+#: lib/luks2/luks2_json_metadata.c:1216
+msgid "already contains LUKS2 header. Replacing header will destroy existing keyslots."
+msgstr "既に LUKS2 ヘッダがあります。ヘッダを置き換えると既にあるキースロットを破壊します。"
+
+#: lib/luks2/luks2_json_metadata.c:1218
+msgid ""
+"\n"
+"WARNING: unknown LUKS2 requirements detected in real device header!\n"
+"Replacing header with backup may corrupt the data on that device!"
+msgstr ""
+"\n"
+"警告: 不明な LUKS2 への要求がリアルデバイスヘッダにあります！\n"
+"ヘッダをバックアップで置き換えるとデータを破壊する恐れがあります！"
+
+#: lib/luks2/luks2_json_metadata.c:1220
+msgid ""
+"\n"
+"WARNING: Unfinished offline reencryption detected on the device!\n"
+"Replacing header with backup may corrupt data."
+msgstr ""
+"\n"
+"警告: オフラインの再暗号化が終了していません！\n"
+"ヘッダを置き換えるとデータを破壊しかねません。"
+
+#: lib/luks2/luks2_json_metadata.c:1316
+#, c-format
+msgid "Ignored unknown flag %s."
+msgstr "不明なフラグ %s を無視しました。"
+
+#: lib/luks2/luks2_json_metadata.c:2005 lib/luks2/luks2_reencrypt.c:1736
+#, c-format
+msgid "Missing key for dm-crypt segment %u"
+msgstr "dm-crypt セグメント %u にキーがありません"
+
+#: lib/luks2/luks2_json_metadata.c:2016 lib/luks2/luks2_reencrypt.c:1754
+msgid "Failed to set dm-crypt segment."
+msgstr "dm-crypt セグメントの設定に失敗しました。"
+
+#: lib/luks2/luks2_json_metadata.c:2022 lib/luks2/luks2_reencrypt.c:1760
+msgid "Failed to set dm-linear segment."
+msgstr "dm-linear セグメントの設定に失敗しました。"
+
+#: lib/luks2/luks2_json_metadata.c:2160
+msgid "Unsupported device integrity configuration."
+msgstr "サポートしていないデバイス整合性設定です。"
+
+#: lib/luks2/luks2_json_metadata.c:2246
+msgid "Reencryption in-progress. Cannot deactivate device."
+msgstr "再暗号化が実行中なのでデバイスのデアクティベートできません。. Cannot deactivate device."
+
+#: lib/luks2/luks2_json_metadata.c:2257
+#, c-format
+msgid "Failed to error suspended device %s."
+msgstr "デバイス %s をサスペンド中にエラー。"
+
+#: lib/luks2/luks2_json_metadata.c:2337
+msgid "Failed to read LUKS2 requirements."
+msgstr "LUKS2 の必要条件を読み込めませんでした。"
+
+#: lib/luks2/luks2_json_metadata.c:2344
+msgid "Unmet LUKS2 requirements detected."
+msgstr "満たせない LUKS2 の必要条件があります。"
+
+#: lib/luks2/luks2_json_metadata.c:2352
+msgid "Offline reencryption in progress. Aborting."
+msgstr "オフラインでの再暗号化中です。中止します。"
+
+#: lib/luks2/luks2_json_metadata.c:2354
+msgid "Online reencryption in progress. Aborting."
+msgstr "オフラインでの再暗号化中です。中止します。"
+
+#: lib/luks2/luks2_keyslot_luks2.c:53 lib/luks2/luks2_keyslot_luks2.c:108
+#, c-format
+msgid "Cannot use %s-%s cipher for keyslot encryption."
+msgstr "キースロットの暗号化に %s- %s 暗号は使えません。"
+
+#: lib/luks2/luks2_keyslot_luks2.c:480
+msgid "No space for new keyslot."
+msgstr "新しいキースロット用の領域がありません。"
+
+#: lib/luks2/luks2_luks1_convert.c:481
+#, c-format
+msgid "Cannot check status of device with uuid: %s."
+msgstr "UUID が %s のデバイスの状態が確認できません。"
+
+#: lib/luks2/luks2_luks1_convert.c:507
+msgid "Unable to convert header with LUKSMETA additional metadata."
+msgstr "LUKSMETA メタデータ付きのヘッダは変換できません。"
+
+#: lib/luks2/luks2_luks1_convert.c:543
+msgid "Unable to move keyslot area. Not enough space."
+msgstr "領域が足りないのでキースロット領域を動かせません。"
+
+#: lib/luks2/luks2_luks1_convert.c:583 lib/luks2/luks2_luks1_convert.c:865
+msgid "Unable to move keyslot area."
+msgstr "キースロット領域を動かせません。"
+
+#: lib/luks2/luks2_luks1_convert.c:675
+msgid "Cannot convert to LUKS1 format - default segment encryption sector size is not 512 bytes."
+msgstr "LUKS1 形式に変換できません - デフォルトの暗号セクタサイズが 512 バイトではありません。"
+
+#: lib/luks2/luks2_luks1_convert.c:683
+msgid "Cannot convert to LUKS1 format - key slot digests are not LUKS1 compatible."
+msgstr "LUKS1 形式に変換できません - キースロットのハッシュ関数が LUKS1 互換ではありません。"
+
+#: lib/luks2/luks2_luks1_convert.c:695
+#, c-format
+msgid "Cannot convert to LUKS1 format - device uses wrapped key cipher %s."
+msgstr "LUKS1 形式に変換できません - ラップされたキーの暗号に %s が使われています。"
+
+#: lib/luks2/luks2_luks1_convert.c:703
+#, c-format
+msgid "Cannot convert to LUKS1 format - LUKS2 header contains %u token(s)."
+msgstr "LUKS1 形式に変換できません - LUKS2 ヘッダ %u 個のトークンを含んでいます。"
+
+#: lib/luks2/luks2_luks1_convert.c:717
+#, c-format
+msgid "Cannot convert to LUKS1 format - keyslot %u is in invalid state."
+msgstr "LUKS1 形式に変換できません - キースロット %u が不正な状態です。"
+
+#: lib/luks2/luks2_luks1_convert.c:722
+#, c-format
+msgid "Cannot convert to LUKS1 format - slot %u (over maximum slots) is still active."
+msgstr "LUKS1 形式に変換できません - スロット %u が(最大個数を超過して)有効です。"
+
+#: lib/luks2/luks2_luks1_convert.c:727
+#, c-format
+msgid "Cannot convert to LUKS1 format - keyslot %u is not LUKS1 compatible."
+msgstr "LUKS1 形式に変換できません - キースロット %u が LUKS1 と互換ではありません。"
+
+#: lib/luks2/luks2_reencrypt.c:893
+#, c-format
+msgid "Hotzone size must be multiple of calculated zone alignment (%zu bytes)."
+msgstr "ホットゾーンサイズは計算されたゾーンアライメントの倍数である必要がありす (%zu バイト)."
+
+#: lib/luks2/luks2_reencrypt.c:898
+#, c-format
+msgid "Device size must be multiple of calculated zone alignment (%zu bytes)."
+msgstr "デバイスサイズが計算ゾーンアライメント (%zu バイト) に合っていません。"
+
+#: lib/luks2/luks2_reencrypt.c:944
+#, c-format
+msgid "Unsupported resilience mode %s"
+msgstr "弾性(resilience)モード %s はサポートしていません"
+
+#: lib/luks2/luks2_reencrypt.c:957
+msgid "Failed to get reencryption offset."
+msgstr "再暗号化オフセットの取得に失敗しました。"
+
+#: lib/luks2/luks2_reencrypt.c:1061
+msgid "Failed to create reencryption segments."
+msgstr "再暗号化セグメントを作成できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1157 lib/luks2/luks2_reencrypt.c:1308
+#: lib/luks2/luks2_reencrypt.c:1391 lib/luks2/luks2_reencrypt.c:1425
+#: lib/luks2/luks2_reencrypt.c:2959
+msgid "Failed to initialize old segment storage wrapper."
+msgstr "古いセグメントのストレージラッパの初期化に失敗しました。"
+
+#: lib/luks2/luks2_reencrypt.c:1171 lib/luks2/luks2_reencrypt.c:1286
+msgid "Failed to initialize new segment storage wrapper."
+msgstr "新しいセグメントのストレージラッパの初期化に失敗しました。"
+
+#: lib/luks2/luks2_reencrypt.c:1335
+msgid "Failed to read checksums."
+msgstr "チェックサムを読み込めません。"
+
+#: lib/luks2/luks2_reencrypt.c:1342 lib/luks2/luks2_reencrypt.c:2967
+#, c-format
+msgid "Failed to read hotzone area starting at %<PRIu64>."
+msgstr "%<PRIu64> から始めるホットゾーンエリアを読み込めません。"
+
+#: lib/luks2/luks2_reencrypt.c:1349
+msgid "Failed to write hash."
+msgstr "ハッシュを書き込めません。"
+
+#: lib/luks2/luks2_reencrypt.c:1354
+msgid "Failed to finalize hash."
+msgstr "ハッシュのファイナライズができません。"
+
+#: lib/luks2/luks2_reencrypt.c:1361
+#, c-format
+msgid "Failed to decrypt sector %zu."
+msgstr "セクタ %zu を復号できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1367
+#, c-format
+msgid "Failed to recover sector %zu."
+msgstr "セクタ %zu を復元できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1382
+msgid "Invalid resilience parameters (internal error)."
+msgstr "不正な弾性(resilience)パラメータ (内部エラー)."
+
+#: lib/luks2/luks2_reencrypt.c:1533
+msgid "Failed to assign new enc segments."
+msgstr "新しい暗号化セグメントを確保できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1558
+#, c-format
+msgid "Failed to assign digest %u to segment %u."
+msgstr "ダイジェスト %u をセグメント %u に割り当てられません。"
+
+#: lib/luks2/luks2_reencrypt.c:1618
+msgid "Failed to set segments."
+msgstr "セグメントを設定できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1624
+msgid "Failed to assign reencrypt previous backup segment."
+msgstr "一つ前の再暗号化バックアップセグメントを確保できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1629
+msgid "Failed to assign reencrypt final backup segment."
+msgstr "最終の再暗号化バックアップセグメントを確保できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1675
+msgid "Failed generate 2nd segment."
+msgstr "セカントセグメントを生成できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1682
+msgid "Failed generate 1st segment."
+msgstr "ファーストセグメントを生成できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1805
+#, c-format
+msgid "Failed to allocate device %s."
+msgstr "デバイス %s の確保に失敗しました。"
+
+#: lib/luks2/luks2_reencrypt.c:1811
+msgid "Failed to allocate dm segments."
+msgstr "dm セグメントが確保できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1817
+msgid "Failed to create dm segments."
+msgstr "dm セグメントが作成できません。"
+
+#: lib/luks2/luks2_reencrypt.c:1868
+#, c-format
+msgid "Source and target device sizes don't match. Source %<PRIu64>, target: %<PRIu64>."
+msgstr "ソースとターゲットデバイスのサイズが一致しません。ソース %<PRIu64>, ターゲット: %<PRIu64>."
+
+#: lib/luks2/luks2_reencrypt.c:1908
+msgid "Failed to allocate device for new backing device."
+msgstr "新しいバッキングデバイス向けのデバイスを確保できません"
+
+#: lib/luks2/luks2_reencrypt.c:1972
+#, c-format
+msgid "Failed to activate hotzone device %s."
+msgstr "ホットゾーンデバイス %s がアクティベートできません。"
+
+#: lib/luks2/luks2_reencrypt.c:1989
+#, c-format
+msgid "Failed to activate overlay device %s with actual origin table."
+msgstr "実際の origin table があるオーバーレイデバイス %s をアクティベートできません。"
+
+#: lib/luks2/luks2_reencrypt.c:1996
+#, c-format
+msgid "Failed to load new maping for device %s."
+msgstr "デバイス %s の新しいマッピングをロードできません。"
+
+#: lib/luks2/luks2_reencrypt.c:2066
+#, c-format
+msgid "Failed to reload overlay device %s."
+msgstr "オーバーレイデバイス %s をリロードできません。"
+
+#: lib/luks2/luks2_reencrypt.c:2072
+msgid "Failed to refresh helper devices."
+msgstr "ヘルパデバイスをリフレッシュできません。"
+
+#: lib/luks2/luks2_reencrypt.c:2225 lib/luks2/luks2_reencrypt.c:3087
+msgid "Failed to set new keyslots area size."
+msgstr "新しいキースロットエリアサイズを設定できません。"
+
+#: lib/luks2/luks2_reencrypt.c:2285
+#, c-format
+msgid "Data shift is not aligned to requested encryption sector size (%<PRIu32> bytes)."
+msgstr "データシフトが要求された暗号化セクタサイズにアラインされていません(%<PRIu32> bytes)。"
+
+#: lib/luks2/luks2_reencrypt.c:2306
+#, c-format
+msgid "Data device is not aligned to requested encryption sector size (%<PRIu32> bytes)."
+msgstr "データデバイスが要求された暗号化セクタサイズにアラインされていません(%<PRIu32> bytes)."
+
+#: lib/luks2/luks2_reencrypt.c:2324
+#, c-format
+msgid "Data shift (%<PRIu64> sectors) is less than future data offset (%<PRIu64> sectors)."
+msgstr "データシフト (%<PRIu64> セクタ) が今後のデータオフセットより少ないです (%<PRIu64> セクタ)。"
+
+#: lib/luks2/luks2_reencrypt.c:2330 lib/luks2/luks2_reencrypt.c:3184
+#, c-format
+msgid "Failed to open %s in exclusive mode (already mapped or mounted)."
+msgstr "デバイス %s を排他モードでオープンでません (既にマップされているかマウントされています)。"
+
+#: lib/luks2/luks2_reencrypt.c:2349
+msgid "Failed to create reencryption backup segments."
+msgstr "再暗号化バックアップセグメントを作成できません。"
+
+#: lib/luks2/luks2_reencrypt.c:2365
+msgid "Failed to set online-reencryption requirement."
+msgstr "オンライン再暗号化の requirement を設定できません。"
+
+#: lib/luks2/luks2_reencrypt.c:2393
+#, c-format
+msgid "Failed to hash sector at offset %zu."
+msgstr "オフセット %zu のセクタをハッシュできません。"
+
+#: lib/luks2/luks2_reencrypt.c:2397
+msgid "Failed to read sector hash."
+msgstr "セクタハッシュを読み込めません。"
+
+#: lib/luks2/luks2_reencrypt.c:2455
+#, c-format
+msgid "Error: Calculated reencryption offset %<PRIu64> is beyond device size %<PRIu64>."
+msgstr "エラー: 計算された再暗号化オフセット %<PRIu64> はデバイスサイズ %<PRIu64> を超えています。"
+
+#: lib/luks2/luks2_reencrypt.c:2518
+msgid "No LUKS2 reencryption in progress."
+msgstr "LUKS2 再暗号化が実行中ではありません。"
+
+#: lib/luks2/luks2_reencrypt.c:2524 lib/luks2/luks2_reencrypt.c:3231
+msgid "Failed to load LUKS2 reencryption context."
+msgstr "LUKS2 再暗号化コンテキストをロードできません。"
+
+#: lib/luks2/luks2_reencrypt.c:2584
+msgid "Failed to read reencryption state."
+msgstr "再暗号化状態を読み込めません。"
+
+#: lib/luks2/luks2_reencrypt.c:2588
+msgid "Device is not in reencryption."
+msgstr "デバイス %s は再暗号化中ではありません。"
+
+#: lib/luks2/luks2_reencrypt.c:2595
+msgid "Reencryption process is already running."
+msgstr "既に再暗号化中です。"
+
+#: lib/luks2/luks2_reencrypt.c:2597
+msgid "Failed to acquire reencryption lock."
+msgstr "再暗号化ロックを取得できません。"
+
+#: lib/luks2/luks2_reencrypt.c:2615
+msgid "Device is not in clean reencryption state."
+msgstr "デバイスはクリーンな再暗号化状態ではありません。"
+
+#: lib/luks2/luks2_reencrypt.c:2675
+#, c-format
+msgid "Failed to read device info from %s."
+msgstr "デバイス %s の情報の読み込めません。"
+
+#: lib/luks2/luks2_reencrypt.c:2693
+msgid "Active device size and requested reencryption size don't match."
+msgstr "実際のデバイスサイズと要求された再暗号化サイズが一致しません。"
+
+#: lib/luks2/luks2_reencrypt.c:2707
+msgid "Illegal device size requested in reencryption parameters."
+msgstr "再暗号化のパラメータとして不正なデバイスサイズが要求されました。"
+
+#: lib/luks2/luks2_reencrypt.c:2762
+msgid "Reencryption in-progress. Cannot perform recovery."
+msgstr "既に再暗号化中です。復元を実行できません。"
+
+#: lib/luks2/luks2_reencrypt.c:2831
+msgid "LUKS2 reencryption already initialized."
+msgstr "LUKS2 の再暗号化は既に初期化されました。"
+
+#: lib/luks2/luks2_reencrypt.c:2923
+msgid "Failed to calculate new segments."
+msgstr "新しいセグメントを計算できません。"
+
+#: lib/luks2/luks2_reencrypt.c:2931
+msgid "Failed to assign pre reenc segments."
+msgstr "前もって再暗号化するセグメントを確保できません。"
+
+#: lib/luks2/luks2_reencrypt.c:2975
+#, c-format
+msgid "Failed finalize hotzone resilience, retval = %d"
+msgstr "ホットゾーン弾性(resilience)を完成できません。retval = %d"
+
+#: lib/luks2/luks2_reencrypt.c:2982
+msgid "Decryption failed."
+msgstr "復号に失敗しました。"
+
+#: lib/luks2/luks2_reencrypt.c:2987
+msgid "Failed to write data."
+msgstr "データが書き込めません。"
+
+#: lib/luks2/luks2_reencrypt.c:2992
+msgid "Failed to sync data."
+msgstr "データを sync できません。"
+
+#: lib/luks2/luks2_reencrypt.c:3000
+msgid "Failed to update metadata or reassign device segments."
+msgstr "メタデータの更新かデバイスセグメントの再割り当てに失敗しました。"
+
+#: lib/luks2/luks2_reencrypt.c:3066
+msgid "Failed to write LUKS2 metadata."
+msgstr "LUKS2 メタデータが書き込めません。"
+
+#: lib/luks2/luks2_reencrypt.c:3073
+#, c-format
+msgid "Failed to reload %s device."
+msgstr "デバイス %s をリロードできません。"
+
+#: lib/luks2/luks2_reencrypt.c:3085
+msgid "Failed to wipe backup segment data."
+msgstr "バックアップセグメントデータを消せません。"
+
+#: lib/luks2/luks2_reencrypt.c:3094
+msgid "Failed to erase backup segments"
+msgstr "バックアップセグメントを消せません。"
+
+#: lib/luks2/luks2_reencrypt.c:3098
+msgid "Failed to disable reencryption requirement flag."
+msgstr "再暗号化の要求(requirement)フラグを禁止できません。"
+
+#: lib/luks2/luks2_reencrypt.c:3106
+#, c-format
+msgid "Fatal error while reencrypting chunk starting at %<PRIu64>, %<PRIu64> sectors long."
+msgstr "%<PRIu64> から %<PRIu64> セクタのチャンクの再暗号化中に致命的なエラー。"
+
+#: lib/luks2/luks2_reencrypt.c:3114
+#, c-format
+msgid ""
+"Failed to replace hotzone device %s with error target.\n"
+"Do not resume the device unless replaced with error target manually."
+msgstr ""
+" ホットゾーンデバイス %s をエラーターゲットに置き換えられません。\n"
+"手動でエラーターゲットに置き換えた場合以外はデバイスのレジュームをしないでください。"
+
+#: lib/luks2/luks2_reencrypt.c:3162
+msgid "Can't resume reencryption. Unexpected reencryption status."
+msgstr "再暗号化を再開できません。予期しない再暗号化状態です。"
+
+#: lib/luks2/luks2_reencrypt.c:3168
+msgid "Missing or invalid reencrypt context."
+msgstr "ないか不正な再暗号化コンテキストです。"
+
+#: lib/luks2/luks2_reencrypt.c:3177
+msgid "Failed to initialize reencryption device stack."
+msgstr "再暗号化デバイススタックの初期化に失敗しました。"
+
+#: lib/luks2/luks2_reencrypt.c:3207 lib/luks2/luks2_reencrypt.c:3244
+msgid "Failed to update reencryption context."
+msgstr "再暗号化コンテキストが更新できません。"
+
+#: lib/luks2/luks2_token.c:262
+msgid "No free token slot."
+msgstr "空きトークンスロットがありません。"
+
+#: lib/luks2/luks2_token.c:269
+#, c-format
+msgid "Failed to create builtin token %s."
+msgstr "ビルトイントークン %s が作成できません。"
+
+#: src/cryptsetup.c:163
+msgid "Can't do passphrase verification on non-tty inputs."
+msgstr "tty 入力以外ではパスフレーズ認証できません。"
+
+#: src/cryptsetup.c:216
+msgid "Keyslot encryption parameters can be set only for LUKS2 device."
+msgstr "キースロットの暗号化パラメータは LUKS2 デバイスでしか設定できません。"
+
+#: src/cryptsetup.c:246 src/cryptsetup.c:895 src/cryptsetup.c:1214
+#: src/cryptsetup.c:2982 src/cryptsetup_reencrypt.c:717
+#: src/cryptsetup_reencrypt.c:787
+msgid "No known cipher specification pattern detected."
+msgstr "未知の暗号スペックです。"
+
+#: src/cryptsetup.c:254
+msgid "WARNING: The --hash parameter is being ignored in plain mode with keyfile specified.\n"
+msgstr "警告: --hash パラメータは plain モードでキーファイルが指定されていると無視されます。\n"
+
+#: src/cryptsetup.c:262
+msgid "WARNING: The --keyfile-size option is being ignored, the read size is the same as the encryption key size.\n"
+msgstr "警告: --keyfile-size オプションは無視されて、読み込みサイズは暗号鍵のサイズと同じになります。\n"
+
+#: src/cryptsetup.c:302
+#, c-format
+msgid "Detected device signature(s) on %s. Proceeding further may damage existing data."
+msgstr "%s にデバイス署名が検出されました。既にあるデータを破壊しかねません。"
+
+#: src/cryptsetup.c:308 src/cryptsetup.c:1040 src/cryptsetup.c:1092
+#: src/cryptsetup.c:1191 src/cryptsetup.c:1264 src/cryptsetup.c:1901
+#: src/cryptsetup.c:2533 src/cryptsetup.c:2655 src/integritysetup.c:234
+msgid "Operation aborted.\n"
+msgstr "中止されました。\n"
+
+#: src/cryptsetup.c:376
+msgid "Option --key-file is required."
+msgstr "オプション --key-file が必要です。"
+
+#: src/cryptsetup.c:429
+msgid "Enter VeraCrypt PIM: "
+msgstr "VeraCrypt PIM を入力してください: "
+
+#: src/cryptsetup.c:438
+msgid "Invalid PIM value: parse error."
+msgstr "不正な PIM: 解釈できません。"
+
+#: src/cryptsetup.c:441
+msgid "Invalid PIM value: 0."
+msgstr "不正 PIM の値で 0 です。"
+
+#: src/cryptsetup.c:444
+msgid "Invalid PIM value: outside of range."
+msgstr "不正な PIM の値: 範囲外です。"
+
+#: src/cryptsetup.c:467
+msgid "No device header detected with this passphrase."
+msgstr "このパスフレーズではデバイスヘッダが検出されませんでした。"
+
+#: src/cryptsetup.c:529 src/cryptsetup.c:1928
+msgid ""
+"Header dump with volume key is sensitive information\n"
+"which allows access to encrypted partition without passphrase.\n"
+"This dump should be always stored encrypted on safe place."
+msgstr ""
+"ボリュームキーを有効にしたヘッダダンプは\n"
+"暗号化されたパーティションにパスフレーズなしでアクセス可能にます。\n"
+"このダンプは暗号化された安全な所に保存してください。"
+
+#: src/cryptsetup.c:608
+#, c-format
+msgid "Device %s is still active and scheduled for deferred removal.\n"
+msgstr "デバイス %s はまたアクティブで後から削除される予定になっています。.\n"
+
+#: src/cryptsetup.c:636
+msgid "Resize of active device requires volume key in keyring but --disable-keyring option is set."
+msgstr "アクティブなデバイスをリサイズするにはボリュームキーがキーリングに必要ですが、--disable-keyring が指定されています。"
+
+#: src/cryptsetup.c:773
+msgid "Benchmark interrupted."
+msgstr "ベンチマークが中止されました。"
+
+#: src/cryptsetup.c:794
+#, c-format
+msgid "PBKDF2-%-9s     N/A\n"
+msgstr "PBKDF2-%-9s     計測値なし\n"
+
+#: src/cryptsetup.c:796
+#, c-format
+msgid "PBKDF2-%-9s %7u iterations per second for %zu-bit key\n"
+msgstr "PBKDF2-%-9s %7u 回/秒 (%zu ビットの鍵)\n"
+
+#: src/cryptsetup.c:810
+#, c-format
+msgid "%-10s N/A\n"
+msgstr "%-10s 計測値なし\n"
+
+#: src/cryptsetup.c:812
+#, c-format
+msgid "%-10s %4u iterations, %5u memory, %1u parallel threads (CPUs) for %zu-bit key (requested %u ms time)\n"
+msgstr "%-10s %4u 回, %5u KB使用, %1u スレッド (%zu のビットの鍵) (%u ms 計測)\n"
+
+#: src/cryptsetup.c:836
+msgid "Result of benchmark is not reliable."
+msgstr "ベンチマークの結果は信頼できません。"
+
+#: src/cryptsetup.c:887
+msgid "# Tests are approximate using memory only (no storage IO).\n"
+msgstr "# テストはストレージI/Oがなくメモリ上のもののため目安です。\n"
+
+#. TRANSLATORS: The string is header of a table and must be exactly (right side) aligned.
+#: src/cryptsetup.c:921
+#, c-format
+msgid "#%*s Algorithm |       Key |      Encryption |      Decryption\n"
+msgstr "#%*s Algorithm |      キー |          暗号化 |           復号化\n"
+
+#: src/cryptsetup.c:925
+#, c-format
+msgid "Cipher %s is not available."
+msgstr "暗号 %s は使えません。"
+
+#. TRANSLATORS: The string is header of a table and must be exactly (right side) aligned.
+#: src/cryptsetup.c:945
+msgid "#     Algorithm |       Key |      Encryption |      Decryption\n"
+msgstr "#     Algorithm |      キー |          暗号化 |           復号化\n"
+
+#: src/cryptsetup.c:954
+msgid "N/A"
+msgstr "計測値なし"
+
+#: src/cryptsetup.c:1033
+msgid ""
+"Seems device does not require reencryption recovery.\n"
+"Do you want to proceed anyway?"
+msgstr ""
+"デバイスは再暗号化のリカバリを必要としていなそうです。\n"
+"本当にやりますか？"
+
+#: src/cryptsetup.c:1039
+msgid "Really proceed with LUKS2 reencryption recovery?"
+msgstr "本当に LUKS2 再暗号化リカバリを行いますか？"
+
+#: src/cryptsetup.c:1048
+msgid "Enter passphrase for reencryption recovery: "
+msgstr "再暗号化のリカバリのためのパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:1091
+msgid "Really try to repair LUKS device header?"
+msgstr "本当に LUKS デバイスヘッダの復元を試みていいですか？"
+
+#: src/cryptsetup.c:1110 src/integritysetup.c:147
+msgid ""
+"Wiping device to initialize integrity checksum.\n"
+"You can interrupt this by pressing CTRL+c (rest of not wiped device will contain invalid checksum).\n"
+msgstr ""
+"整合性チェックサムの初期化のためにデバイスのデータを消去しています。\n"
+"CTRL+c で中止できます (初期化されなかったデバイスのチェックサムは正しくなくなります)。\n"
+
+#: src/cryptsetup.c:1132 src/integritysetup.c:169
+#, c-format
+msgid "Cannot deactivate temporary device %s."
+msgstr "一時的デバイス %s を非アクティブにできません。"
+
+#: src/cryptsetup.c:1176
+msgid "Integrity option can be used only for LUKS2 format."
+msgstr "整合性オプションは LUKS2 形式でしか使えません。"
+
+#: src/cryptsetup.c:1181 src/cryptsetup.c:1241
+msgid "Unsupported LUKS2 metadata size options."
+msgstr "サポートされていない LUKS2 メタデータのサイズオプションです。"
+
+#: src/cryptsetup.c:1198
+#, c-format
+msgid "Cannot create header file %s."
+msgstr "ヘッダファイル %s を作成できません。"
+
+#: src/cryptsetup.c:1221 src/integritysetup.c:196 src/integritysetup.c:205
+#: src/integritysetup.c:214 src/integritysetup.c:281 src/integritysetup.c:290
+#: src/integritysetup.c:300
+msgid "No known integrity specification pattern detected."
+msgstr "サポートしている整合性確認方式が検出されませんでした。"
+
+#: src/cryptsetup.c:1234
+#, c-format
+msgid "Cannot use %s as on-disk header."
+msgstr "%s を on-disk ヘッダとして使えません。"
+
+#: src/cryptsetup.c:1258 src/integritysetup.c:228
+#, c-format
+msgid "This will overwrite data on %s irrevocably."
+msgstr "%s のデータを上書きします。戻せません。"
+
+#: src/cryptsetup.c:1299 src/cryptsetup.c:1622 src/cryptsetup.c:1689
+#: src/cryptsetup.c:1784 src/cryptsetup.c:1850 src/cryptsetup_reencrypt.c:547
+msgid "Failed to set pbkdf parameters."
+msgstr "pbkdf パラメータを設定できません。"
+
+#: src/cryptsetup.c:1380
+msgid "Reduced data offset is allowed only for detached LUKS header."
+msgstr "分離された LUKS ヘッダでのみ少ないデータオフセットが使えます。"
+
+#: src/cryptsetup.c:1422
+msgid "Device activated but cannot make flags persistent."
+msgstr "デバイスはアクティベートされましたが、フラグを恒常的なものにできません。"
+
+#: src/cryptsetup.c:1503 src/cryptsetup.c:1573
+#, c-format
+msgid "Keyslot %d is selected for deletion."
+msgstr "キースロット %d は削除対象として選択されました。"
+
+#: src/cryptsetup.c:1515 src/cryptsetup.c:1576
+msgid "This is the last keyslot. Device will become unusable after purging this key."
+msgstr "これは最後のキースロットです。このキーがなくなるとデバイスは使用不能になります。"
+
+#: src/cryptsetup.c:1516
+msgid "Enter any remaining passphrase: "
+msgstr "残っているパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:1517 src/cryptsetup.c:1578
+msgid "Operation aborted, the keyslot was NOT wiped.\n"
+msgstr "操作は中止されました。キースロットは消去されていません。\n"
+
+#: src/cryptsetup.c:1555
+msgid "Enter passphrase to be deleted: "
+msgstr "削除するキーのパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:1636 src/cryptsetup.c:1703 src/cryptsetup.c:1737
+msgid "Enter new passphrase for key slot: "
+msgstr "キースロットの新しいパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:1720 src/cryptsetup_reencrypt.c:1327
+#, c-format
+msgid "Enter any existing passphrase: "
+msgstr "有効なパスフレーズをどれか入力してください: "
+
+#: src/cryptsetup.c:1788
+msgid "Enter passphrase to be changed: "
+msgstr "変更するキーのパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:1804 src/cryptsetup_reencrypt.c:1313
+msgid "Enter new passphrase: "
+msgstr "新しいキーのパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:1854
+msgid "Enter passphrase for keyslot to be converted: "
+msgstr "変換されるキースロットのパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:1878
+msgid "Only one device argument for isLuks operation is supported."
+msgstr "isLuks は一つのデバイス引数しかサポートしていません。"
+
+#: src/cryptsetup.c:2062 src/cryptsetup.c:2083
+msgid "Option --header-backup-file is required."
+msgstr "オプション --header-backup-file が必要です。"
+
+#: src/cryptsetup.c:2113
+#, c-format
+msgid "%s is not cryptsetup managed device."
+msgstr "%s は cryptsetup で管理されているデバイスではありません。"
+
+#: src/cryptsetup.c:2124
+#, c-format
+msgid "Refresh is not supported for device type %s"
+msgstr "リフレッシュはデバイスタイプ %s ではサポートされていません。"
+
+#: src/cryptsetup.c:2162
+#, c-format
+msgid "Unrecognized metadata device type %s."
+msgstr "%s は認識できないメタデータデータタイプです。"
+
+#: src/cryptsetup.c:2165
+msgid "Command requires device and mapped name as arguments."
+msgstr "コマンドはデバイスとマップされた名前を引数として必要とします。"
+
+#: src/cryptsetup.c:2187
+#, c-format
+msgid ""
+"This operation will erase all keyslots on device %s.\n"
+"Device will become unusable after this operation."
+msgstr ""
+"この処理はデバイス %s の全てのキースロットを消去します。\n"
+"デバイスのデータは使用できなくなります。"
+
+#: src/cryptsetup.c:2194
+msgid "Operation aborted, keyslots were NOT wiped.\n"
+msgstr "処理は中止されました。キースロットは消去されません。\n"
+
+#: src/cryptsetup.c:2231
+msgid "Invalid LUKS type, only luks1 and luks2 are supported."
+msgstr "不正な LUKS タイプです。luks1 と luks2 しかサポートしていません。"
+
+#: src/cryptsetup.c:2249
+#, c-format
+msgid "Device is already %s type."
+msgstr "デバイスは既にタイプ %s です。"
+
+#: src/cryptsetup.c:2254
+#, c-format
+msgid "This operation will convert %s to %s format.\n"
+msgstr "この処理は %s から %s フォーマットに変換します。\n"
+
+#: src/cryptsetup.c:2260
+msgid "Operation aborted, device was NOT converted.\n"
+msgstr "処理は中止されました。デバイスは変換されませんでした。\n"
+
+#: src/cryptsetup.c:2300
+msgid "Option --priority, --label or --subsystem is missing."
+msgstr "オプション --priority, --label か --subsystem がありません。"
+
+#: src/cryptsetup.c:2334 src/cryptsetup.c:2367 src/cryptsetup.c:2390
+#, c-format
+msgid "Token %d is invalid."
+msgstr "トークン %d は不正です。"
+
+#: src/cryptsetup.c:2337 src/cryptsetup.c:2393
+#, c-format
+msgid "Token %d in use."
+msgstr "トークン %d は使用中です。"
+
+#: src/cryptsetup.c:2344
+#, c-format
+msgid "Failed to add luks2-keyring token %d."
+msgstr "luks2-キーリングトークン %d を追加できませんでした。"
+
+#: src/cryptsetup.c:2353 src/cryptsetup.c:2415
+#, c-format
+msgid "Failed to assign token %d to keyslot %d."
+msgstr "トークン %d をキースロット %d に割りあてられませんでした。"
+
+#: src/cryptsetup.c:2370
+#, c-format
+msgid "Token %d is not in use."
+msgstr "トークン %d は使われていません。"
+
+#: src/cryptsetup.c:2405
+msgid "Failed to import token from file."
+msgstr "ファイルからトークンをインポートできません。"
+
+#: src/cryptsetup.c:2430
+#, c-format
+msgid "Failed to get token %d for export."
+msgstr "トークン %d をエクスポートのために取得できませんでした。"
+
+#: src/cryptsetup.c:2445
+msgid "--key-description parameter is mandatory for token add action."
+msgstr "--key-description はトークン追加には必須です。"
+
+#: src/cryptsetup.c:2451 src/cryptsetup.c:2459
+msgid "Action requires specific token. Use --token-id parameter."
+msgstr "トークンを必要としています。--token-id を使用してください。"
+
+#: src/cryptsetup.c:2464
+#, c-format
+msgid "Invalid token operation %s."
+msgstr "%s は不正なトークン処理です。"
+
+#: src/cryptsetup.c:2519
+#, c-format
+msgid "Auto-detected active dm device '%s' for data device %s.\n"
+msgstr "データデバイス %2s のアクティブな dm デバイス '%1s'を自動検出しました。\n"
+
+#: src/cryptsetup.c:2523
+#, c-format
+msgid "Device %s is not a block device.\n"
+msgstr "デバイス %s は有効なブロックデバイスではありません。\n"
+
+#: src/cryptsetup.c:2525
+#, c-format
+msgid "Failed to auto-detect device %s holders."
+msgstr "デバイス %s のホルダ(holders)を自動検出できません。"
+
+#: src/cryptsetup.c:2527
+#, c-format
+msgid ""
+"Unable to decide if device %s is activated or not.\n"
+"Are you sure you want to proceed with reencryption in offline mode?\n"
+"It may lead to data corruption if the device is actually activated.\n"
+"To run reencryption in online mode, use --active-name parameter instead.\n"
+msgstr ""
+"デバイス %s がアクティベートされているかどうか判断できません。\n"
+"オフラインでの再暗号化を進めていいですか？\n"
+"アクティベートされていたらデータが破壊されるかもしれません。\n"
+"再暗号化をオンラインで行う場合は --active-name を代わりに使ってください。\n"
+
+#: src/cryptsetup.c:2606
+msgid "Invalid LUKS device type."
+msgstr "LUKS デバイスタイプが不正です。"
+
+#: src/cryptsetup.c:2611
+msgid "Encryption without detached header (--header) is not possible without data device size reduction (--reduce-device-size)."
+msgstr "データデバイスサイズの縮小(--reduce-device-size)なしに分離ヘッダ(--header)による暗号化はできません。"
+
+#: src/cryptsetup.c:2616
+msgid "Requested data offset must be less than or equal to half of --reduce-device-size parameter."
+msgstr "要求されたデータオフセットは --reduce-device-size パラメータの半分以下である必要があります。"
+
+#: src/cryptsetup.c:2625
+#, c-format
+msgid "Adjusting --reduce-device-size value to twice the --offset %<PRIu64> (sectors).\n"
+msgstr "--reduce-device-size の値を --offset %<PRIu64> (セクタ) の倍にします。\n"
+
+#: src/cryptsetup.c:2629
+msgid "Encryption is supported only for LUKS2 format."
+msgstr "暗号化は LUKS2 形式でしか使えません。"
+
+#: src/cryptsetup.c:2651
+#, c-format
+msgid "Detected LUKS device on %s. Do you want to encrypt that LUKS device again?"
+msgstr "LUKS デバイスが %s に検出されました。もう一度 LUKS デバイスを暗号化したいのですか？"
+
+#: src/cryptsetup.c:2666
+#, c-format
+msgid "Temporary header file %s already exists. Aborting."
+msgstr "テンポラリヘッダファイル %s は既に存在しているので、中止します。"
+
+#: src/cryptsetup.c:2668 src/cryptsetup.c:2675
+#, c-format
+msgid "Cannot create temporary header file %s."
+msgstr "テンポラリヘッダファイル %s を作成できません。"
+
+#: src/cryptsetup.c:2890 src/cryptsetup.c:2896
+msgid "Not enough free keyslots for reencryption."
+msgstr "再暗号化に必要な空きキースロットがありません。"
+
+#: src/cryptsetup.c:2916 src/cryptsetup_reencrypt.c:1284
+msgid "Key file can be used only with --key-slot or with exactly one key slot active."
+msgstr "キーファイルは --key-slot と使うか、1 つのキースロットだけアクティブの時にしか使えません。"
+
+#: src/cryptsetup.c:2925 src/cryptsetup_reencrypt.c:1325
+#: src/cryptsetup_reencrypt.c:1336
+#, c-format
+msgid "Enter passphrase for key slot %d: "
+msgstr "キースロット %d のパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:2933
+#, c-format
+msgid "Enter passphrase for key slot %u: "
+msgstr "キースロット %u のパスフレーズを入力してください: "
+
+#: src/cryptsetup.c:3100
+msgid "Command requires device as argument."
+msgstr "コマンドはデバイスを引数として必要とします。"
+
+#: src/cryptsetup.c:3130
+msgid "Legacy offline reencryption already in-progress. Use cryptsetup-reencrypt utility."
+msgstr "古いオフライン再暗号化が実行中です。cryptsetup-reencrypt を使ってください。"
+
+#: src/cryptsetup.c:3140 src/cryptsetup_reencrypt.c:180
+msgid "Reencryption of device with integrity profile is not supported."
+msgstr "整合性プロファイルつきのデバイスの再暗号化はサポートされていません。"
+
+#: src/cryptsetup.c:3148
+msgid "LUKS2 reencryption already initialized. Aborting operation."
+msgstr "LUKS2 再暗号化が既に初期化済なので操作を中止します。"
+
+#: src/cryptsetup.c:3152
+msgid "LUKS2 device is not in reencryption."
+msgstr "LUKS2 デバイスは再暗号化中ではありません。"
+
+#: src/cryptsetup.c:3179
+msgid "<device> [--type <type>] [<name>]"
+msgstr "<デバイス> [--type <タイプ>] [<名前>]"
+
+#: src/cryptsetup.c:3179 src/veritysetup.c:363 src/integritysetup.c:474
+msgid "open device as <name>"
+msgstr "デバイスを <名前> としてオープン"
+
+#: src/cryptsetup.c:3180 src/cryptsetup.c:3181 src/cryptsetup.c:3182
+#: src/veritysetup.c:364 src/veritysetup.c:365 src/integritysetup.c:475
+#: src/integritysetup.c:476
+msgid "<name>"
+msgstr "<名前>"
+
+#: src/cryptsetup.c:3180 src/veritysetup.c:364 src/integritysetup.c:475
+msgid "close device (remove mapping)"
+msgstr "デバイスをクローズします (マッピングを削除します)"
+
+#: src/cryptsetup.c:3181
+msgid "resize active device"
+msgstr "アクティブデバイスをリサイズ"
+
+#: src/cryptsetup.c:3182
+msgid "show device status"
+msgstr "デバイスステータスを表示"
+
+#: src/cryptsetup.c:3183
+msgid "[--cipher <cipher>]"
+msgstr "[--cipher <暗号>]"
+
+#: src/cryptsetup.c:3183
+msgid "benchmark cipher"
+msgstr "暗号ベンチマーク"
+
+#: src/cryptsetup.c:3184 src/cryptsetup.c:3185 src/cryptsetup.c:3186
+#: src/cryptsetup.c:3187 src/cryptsetup.c:3188 src/cryptsetup.c:3195
+#: src/cryptsetup.c:3196 src/cryptsetup.c:3197 src/cryptsetup.c:3198
+#: src/cryptsetup.c:3199 src/cryptsetup.c:3200 src/cryptsetup.c:3201
+#: src/cryptsetup.c:3202
+msgid "<device>"
+msgstr "<デバイス>"
+
+#: src/cryptsetup.c:3184
+msgid "try to repair on-disk metadata"
+msgstr "on-disk メタデータを修復しようとしています"
+
+#: src/cryptsetup.c:3185
+msgid "reencrypt LUKS2 device"
+msgstr "LUKS2 デバイスを再暗号化"
+
+#: src/cryptsetup.c:3186
+msgid "erase all keyslots (remove encryption key)"
+msgstr "全てのキースロットを消去します (暗号鍵も削除します)"
+
+#: src/cryptsetup.c:3187
+msgid "convert LUKS from/to LUKS2 format"
+msgstr "LUKS2 から LUKS もしくは LUKS から LUKS2 形式に変換します"
+
+#: src/cryptsetup.c:3188
+msgid "set permanent configuration options for LUKS2"
+msgstr "LUKS2 の permanent configuration オプションを設定します"
+
+#: src/cryptsetup.c:3189 src/cryptsetup.c:3190
+msgid "<device> [<new key file>]"
+msgstr "<デバイス> [<新しいキーファイル>]"
+
+#: src/cryptsetup.c:3189
+msgid "formats a LUKS device"
+msgstr "LUKS デバイスをフォーマットします"
+
+#: src/cryptsetup.c:3190
+msgid "add key to LUKS device"
+msgstr "LUKS デバイスにキーを追加します"
+
+#: src/cryptsetup.c:3191 src/cryptsetup.c:3192 src/cryptsetup.c:3193
+msgid "<device> [<key file>]"
+msgstr "<デバイス> [<キーファイル>]"
+
+#: src/cryptsetup.c:3191
+msgid "removes supplied key or key file from LUKS device"
+msgstr "与えられたキーかキーファイルを LUKS デバイスから削除します。"
+
+#: src/cryptsetup.c:3192
+msgid "changes supplied key or key file of LUKS device"
+msgstr "与えられた LUKS デバイスのキーかキーファイルを変更します"
+
+#: src/cryptsetup.c:3193
+msgid "converts a key to new pbkdf parameters"
+msgstr "キーを新しい pbkdf パラメータに変換します"
+
+#: src/cryptsetup.c:3194
+msgid "<device> <key slot>"
+msgstr "<デバイス> <キースロット>"
+
+#: src/cryptsetup.c:3194
+msgid "wipes key with number <key slot> from LUKS device"
+msgstr "<キースロット>のキーを LUKS デバイスから削除します"
+
+#: src/cryptsetup.c:3195
+msgid "print UUID of LUKS device"
+msgstr "LUKS デバイスの UUID を表示"
+
+#: src/cryptsetup.c:3196
+msgid "tests <device> for LUKS partition header"
+msgstr "<デバイス> の LUKS パーティションヘッダをテストします"
+
+#: src/cryptsetup.c:3197
+msgid "dump LUKS partition information"
+msgstr "LUKS パーティション情報をダンプします"
+
+#: src/cryptsetup.c:3198
+msgid "dump TCRYPT device information"
+msgstr "TCRYPT デバイス情報をダンプします"
+
+#: src/cryptsetup.c:3199
+msgid "Suspend LUKS device and wipe key (all IOs are frozen)"
+msgstr "LUKS デバイスを停止してキーを削除します (全てのI/Oは停止します)"
+
+#: src/cryptsetup.c:3200
+msgid "Resume suspended LUKS device"
+msgstr "停止していた LUKS デバイスを再開します"
+
+#: src/cryptsetup.c:3201
+msgid "Backup LUKS device header and keyslots"
+msgstr "LUKS デバイスヘッダとキースロットをバックアップします"
+
+#: src/cryptsetup.c:3202
+msgid "Restore LUKS device header and keyslots"
+msgstr "LUKS デバイスヘッダとキースロットをリストアします"
+
+#: src/cryptsetup.c:3203
+msgid "<add|remove|import|export> <device>"
+msgstr "<add|remove|import|export> <デバイス>"
+
+#: src/cryptsetup.c:3203
+msgid "Manipulate LUKS2 tokens"
+msgstr "LUKS2 トークンを操作します"
+
+#: src/cryptsetup.c:3221 src/veritysetup.c:381 src/integritysetup.c:492
+msgid ""
+"\n"
+"<action> is one of:\n"
+msgstr ""
+"\n"
+"<action> は以下のうちの一つです:\n"
+
+#: src/cryptsetup.c:3227
+msgid ""
+"\n"
+"You can also use old <action> syntax aliases:\n"
+"\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
+"\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"
+msgstr ""
+"\n"
+"古い <アクション> という形式も使えます:\n"
+"\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
+"\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"
+
+#: src/cryptsetup.c:3231
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<device> is the encrypted device\n"
+"<key slot> is the LUKS key slot number to modify\n"
+"<key file> optional key file for the new key for luksAddKey action\n"
+msgstr ""
+"\n"
+"<名前> は %s に作られるデバイス名\n"
+"<デバイス> は暗号化デバイス\n"
+"<キースロット> は変更する LUKS キースロット番号\n"
+"<キーファイル> は luskAddKey でオプションで与えられる新しいキーのキーファイル\n"
+
+#: src/cryptsetup.c:3238
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in metadata format is %s (for luksFormat action).\n"
+msgstr ""
+"\n"
+"デフォルトのコンパイル時に決められたメタデータ形式は %s です(luksFormat で使われます)。\n"
+
+#: src/cryptsetup.c:3243
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in key and passphrase parameters:\n"
+"\tMaximum keyfile size: %dkB, Maximum interactive passphrase length %d (characters)\n"
+"Default PBKDF for LUKS1: %s, iteration time: %d (ms)\n"
+"Default PBKDF for LUKS2: %s\n"
+"\tIteration time: %d, Memory required: %dkB, Parallel threads: %d\n"
+msgstr ""
+"\n"
+"デフォルトのコンパイル時に決められたキーとパスフレーズのパラメータ:\n"
+"\t最大キーファイルサイズ: %dkB, 最大パスフレーズ長 %d (文字数)\n"
+"デフォルト LUKS1 向け PBKDF: %s, 繰り返す時間: %d (ms)\n"
+"デフォルト LUKS2 向け PBKDF: %s\n"
+"\t繰り返す時間: %d, 使うメモリ: %dkB, 並列スレッド: %d\n"
+
+#: src/cryptsetup.c:3254
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in device cipher parameters:\n"
+"\tloop-AES: %s, Key %d bits\n"
+"\tplain: %s, Key: %d bits, Password hashing: %s\n"
+"\tLUKS: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
+msgstr ""
+"\n"
+"デフォルトのコンパイル時に決められたデバイス暗号化のパラメータ:\n"
+"\tloop-AES: %s, キー %d ビット\n"
+"\tplain: %s, キー: %d ビット, パスワードハッシュ: %s\n"
+"\tLUKS: %s, キー: %d ビット, LUKS ヘッダハッシュ: %s, 乱数生成: %s\n"
+
+#: src/cryptsetup.c:3263
+msgid "\tLUKS: Default keysize with XTS mode (two internal keys) will be doubled.\n"
+msgstr "\tLUKS: XTS モードのデフォルトキーサイズは (2つの内部キーがあるため) 倍になります。\n"
+
+#: src/cryptsetup.c:3274 src/veritysetup.c:538 src/integritysetup.c:635
+#, c-format
+msgid "%s: requires %s as arguments"
+msgstr "%s: は %s を引数で与える必要があります"
+
+#: src/cryptsetup.c:3312 src/veritysetup.c:421 src/integritysetup.c:526
+#: src/cryptsetup_reencrypt.c:1586
+msgid "Show this help message"
+msgstr "このヘルプを表示します"
+
+#: src/cryptsetup.c:3313 src/veritysetup.c:422 src/integritysetup.c:527
+#: src/cryptsetup_reencrypt.c:1587
+msgid "Display brief usage"
+msgstr "コンパクトな使用法表示をします"
+
+#: src/cryptsetup.c:3317 src/veritysetup.c:426 src/integritysetup.c:531
+#: src/cryptsetup_reencrypt.c:1591
+msgid "Help options:"
+msgstr "ヘルプオプション:"
+
+#: src/cryptsetup.c:3318 src/veritysetup.c:427 src/integritysetup.c:532
+#: src/cryptsetup_reencrypt.c:1592
+msgid "Print package version"
+msgstr "パッケージのバージョンを表示"
+
+#: src/cryptsetup.c:3319 src/veritysetup.c:428 src/integritysetup.c:533
+#: src/cryptsetup_reencrypt.c:1593
+msgid "Shows more detailed error messages"
+msgstr "より詳細なエラーメッセージを表示"
+
+#: src/cryptsetup.c:3320 src/veritysetup.c:429 src/integritysetup.c:534
+#: src/cryptsetup_reencrypt.c:1594
+msgid "Show debug messages"
+msgstr "デバッグメッセージを表示"
+
+#: src/cryptsetup.c:3321
+msgid "Show debug messages including JSON metadata"
+msgstr "JSON メタデータを含むデバッグメッセージを表示"
+
+#: src/cryptsetup.c:3322 src/cryptsetup_reencrypt.c:1596
+msgid "The cipher used to encrypt the disk (see /proc/crypto)"
+msgstr "ディスクを暗号化するのに用いられる暗号 (/proc/crypto を参照のこと)"
+
+#: src/cryptsetup.c:3323 src/cryptsetup_reencrypt.c:1598
+msgid "The hash used to create the encryption key from the passphrase"
+msgstr "パスフレーズから暗号鍵を作るのに使われるハッシュ"
+
+#: src/cryptsetup.c:3324
+msgid "Verifies the passphrase by asking for it twice"
+msgstr "パスフレーズは2回入力してもらって検証します"
+
+#: src/cryptsetup.c:3325 src/cryptsetup_reencrypt.c:1600
+msgid "Read the key from a file"
+msgstr "ファイルからキーを読む"
+
+#: src/cryptsetup.c:3326
+msgid "Read the volume (master) key from file."
+msgstr "ボリューム(マスター)キーをファイルから読む。"
+
+#: src/cryptsetup.c:3327
+msgid "Dump volume (master) key instead of keyslots info"
+msgstr "ボリューム(マスター)キーをキースロット情報の代わりにダンプします"
+
+#: src/cryptsetup.c:3328 src/cryptsetup_reencrypt.c:1597
+msgid "The size of the encryption key"
+msgstr "暗号鍵のサイズ"
+
+#: src/cryptsetup.c:3328 src/cryptsetup.c:3387 src/integritysetup.c:552
+#: src/integritysetup.c:556 src/integritysetup.c:560
+#: src/cryptsetup_reencrypt.c:1597
+msgid "BITS"
+msgstr "ビット"
+
+#: src/cryptsetup.c:3329 src/cryptsetup_reencrypt.c:1613
+msgid "Limits the read from keyfile"
+msgstr "キーファイルから読み込みの制限"
+
+#: src/cryptsetup.c:3329 src/cryptsetup.c:3330 src/cryptsetup.c:3331
+#: src/cryptsetup.c:3332 src/cryptsetup.c:3335 src/cryptsetup.c:3384
+#: src/cryptsetup.c:3385 src/cryptsetup.c:3393 src/cryptsetup.c:3394
+#: src/veritysetup.c:432 src/veritysetup.c:433 src/veritysetup.c:434
+#: src/veritysetup.c:437 src/veritysetup.c:438 src/integritysetup.c:541
+#: src/integritysetup.c:547 src/integritysetup.c:548
+#: src/cryptsetup_reencrypt.c:1612 src/cryptsetup_reencrypt.c:1613
+#: src/cryptsetup_reencrypt.c:1614 src/cryptsetup_reencrypt.c:1615
+msgid "bytes"
+msgstr "バイト"
+
+#: src/cryptsetup.c:3330 src/cryptsetup_reencrypt.c:1612
+msgid "Number of bytes to skip in keyfile"
+msgstr "キーファイルでスキップするバイト数"
+
+#: src/cryptsetup.c:3331
+msgid "Limits the read from newly added keyfile"
+msgstr "新しく追加するキーファイルの読み込みの制限"
+
+#: src/cryptsetup.c:3332
+msgid "Number of bytes to skip in newly added keyfile"
+msgstr "新しく追加するキーファイルでスキップするバイト数"
+
+#: src/cryptsetup.c:3333
+msgid "Slot number for new key (default is first free)"
+msgstr "新しいキーのスロット番号 (デフォルトは最初の空き)"
+
+#: src/cryptsetup.c:3334
+msgid "The size of the device"
+msgstr "デバイスのサイズ"
+
+#: src/cryptsetup.c:3334 src/cryptsetup.c:3336 src/cryptsetup.c:3337
+#: src/cryptsetup.c:3343 src/integritysetup.c:542 src/integritysetup.c:549
+msgid "SECTORS"
+msgstr "セクタ"
+
+#: src/cryptsetup.c:3335 src/cryptsetup_reencrypt.c:1615
+msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
+msgstr "指定されたデバイスサイズ分だけ使います (デバイスの残りは無視します). 危険！"
+
+#: src/cryptsetup.c:3336
+msgid "The start offset in the backend device"
+msgstr "バックエンドデバイスの開始オフセット"
+
+#: src/cryptsetup.c:3337
+msgid "How many sectors of the encrypted data to skip at the beginning"
+msgstr "最初の暗号化データのセクタを何セクタスキップするか"
+
+#: src/cryptsetup.c:3338
+msgid "Create a readonly mapping"
+msgstr "読み込み専用のマッピングを作成"
+
+#: src/cryptsetup.c:3339 src/integritysetup.c:535
+#: src/cryptsetup_reencrypt.c:1603
+msgid "Do not ask for confirmation"
+msgstr "確認をしません"
+
+#: src/cryptsetup.c:3340
+msgid "Timeout for interactive passphrase prompt (in seconds)"
+msgstr "パスフレーズの対話的入力のタイムアウト (秒単位)"
+
+#: src/cryptsetup.c:3340 src/cryptsetup.c:3341 src/integritysetup.c:536
+#: src/cryptsetup_reencrypt.c:1604
+msgid "secs"
+msgstr "秒"
+
+#: src/cryptsetup.c:3341 src/integritysetup.c:536
+#: src/cryptsetup_reencrypt.c:1604
+msgid "Progress line update (in seconds)"
+msgstr "進捗線の更新(秒単位)"
+
+#: src/cryptsetup.c:3342 src/cryptsetup_reencrypt.c:1605
+msgid "How often the input of the passphrase can be retried"
+msgstr "パスフレーズの再試行の回数"
+
+#: src/cryptsetup.c:3343
+msgid "Align payload at <n> sector boundaries - for luksFormat"
+msgstr "luksFormat 向けにペイロードを <n> セクタ境界に合わせます"
+
+#: src/cryptsetup.c:3344
+msgid "File with LUKS header and keyslots backup"
+msgstr "LUKS ヘッダとキースロットバックアップのファイル"
+
+#: src/cryptsetup.c:3345 src/cryptsetup_reencrypt.c:1606
+msgid "Use /dev/random for generating volume key"
+msgstr "ボリュームキーの生成に /dev/random を使います"
+
+#: src/cryptsetup.c:3346 src/cryptsetup_reencrypt.c:1607
+msgid "Use /dev/urandom for generating volume key"
+msgstr "ボリュームキーの生成に /dev/urandom (擬似乱数)を使います"
+
+#: src/cryptsetup.c:3347
+msgid "Share device with another non-overlapping crypt segment"
+msgstr "オーバーラップしない暗号セグメントのあるデバイスと共有します"
+
+#: src/cryptsetup.c:3348 src/veritysetup.c:441
+msgid "UUID for device to use"
+msgstr "使用するデバイスの UUID"
+
+#: src/cryptsetup.c:3349
+msgid "Allow discards (aka TRIM) requests for device"
+msgstr "デバイスに discards (TRIM) 処理を許可します"
+
+#: src/cryptsetup.c:3350 src/cryptsetup_reencrypt.c:1624
+msgid "Device or file with separated LUKS header"
+msgstr "デバイスかファイルにある分離された LUKS ヘッダ"
+
+#: src/cryptsetup.c:3351
+msgid "Do not activate device, just check passphrase"
+msgstr "デバイスをアクティベートせず、パスフレーズだけ確認する"
+
+#: src/cryptsetup.c:3352
+msgid "Use hidden header (hidden TCRYPT device)"
+msgstr "隠されたヘッダを使う (隠された TCRYPT デバイス)"
+
+#: src/cryptsetup.c:3353
+msgid "Device is system TCRYPT drive (with bootloader)"
+msgstr "デバイスはシステム TCRYPT ドライブ (ブートローダの対応が必要)"
+
+#: src/cryptsetup.c:3354
+msgid "Use backup (secondary) TCRYPT header"
+msgstr "バックアップ (セカンダリ) TCRYPT ヘッダを使います"
+
+#: src/cryptsetup.c:3355
+msgid "Scan also for VeraCrypt compatible device"
+msgstr "VeraCrypt 互換デバイスも探します"
+
+#: src/cryptsetup.c:3356
+msgid "Personal Iteration Multiplier for VeraCrypt compatible device"
+msgstr "VeraCrypt 互換デバイス向けの Personal Iteration Multiplier"
+
+#: src/cryptsetup.c:3357
+msgid "Query Personal Iteration Multiplier for VeraCrypt compatible device"
+msgstr "VeraCrypt互換デバイス向けの Query Personal Iteration Multiplier"
+
+#: src/cryptsetup.c:3358
+msgid "Type of device metadata: luks, luks1, luks2, plain, loopaes, tcrypt"
+msgstr "デバイスメタデータのタイプ: luks, luks1, luks2, plain, loopaes, tcrypt"
+
+#: src/cryptsetup.c:3359
+msgid "Disable password quality check (if enabled)"
+msgstr "パスワードの質の確認を無効にする (もし有効なら)"
+
+#: src/cryptsetup.c:3360
+msgid "Use dm-crypt same_cpu_crypt performance compatibility option"
+msgstr "dm-crypt の same_cpu_crypt performance compatibility オプションを使う"
+
+#: src/cryptsetup.c:3361
+msgid "Use dm-crypt submit_from_crypt_cpus performance compatibility option"
+msgstr "dm-crypt の submit_from_crypt_cpus performance compatibility オプションを使う"
+
+#: src/cryptsetup.c:3362
+msgid "Device removal is deferred until the last user closes it"
+msgstr "デバイスの削除はデバイス上のリソースを使う人がいなくなるまで遅延されます"
+
+#: src/cryptsetup.c:3363
+msgid "Use global lock to serialize memory hard PBKDF (OOM workaround)"
+msgstr "OOM Killer を回避するために PBKDF メモリのシリアライズにグローバルロックを使います"
+
+#: src/cryptsetup.c:3364
+msgid "PBKDF iteration time for LUKS (in ms)"
+msgstr "LUKS 向けの PBKDF の繰り返し時間 (ms単位)"
+
+#: src/cryptsetup.c:3364 src/cryptsetup_reencrypt.c:1602
+msgid "msecs"
+msgstr "ミリ秒"
+
+#: src/cryptsetup.c:3365 src/cryptsetup_reencrypt.c:1620
+msgid "PBKDF algorithm (for LUKS2): argon2i, argon2id, pbkdf2"
+msgstr "LUKS2 向けの PBKDF アルゴリズム: argon2i, argon2id, pbkdf2"
+
+#: src/cryptsetup.c:3366 src/cryptsetup_reencrypt.c:1621
+msgid "PBKDF memory cost limit"
+msgstr "PBKDF メモリコスト制限"
+
+#: src/cryptsetup.c:3366 src/cryptsetup_reencrypt.c:1621
+msgid "kilobytes"
+msgstr "キロバイト"
+
+#: src/cryptsetup.c:3367 src/cryptsetup_reencrypt.c:1622
+msgid "PBKDF parallel cost"
+msgstr "PBKDF 並列コスト"
+
+#: src/cryptsetup.c:3367 src/cryptsetup_reencrypt.c:1622
+msgid "threads"
+msgstr "スレッド"
+
+#: src/cryptsetup.c:3368 src/cryptsetup_reencrypt.c:1623
+msgid "PBKDF iterations cost (forced, disables benchmark)"
+msgstr "PBKDF 繰り返しコスト (強制する, ベンチマークしない)"
+
+#: src/cryptsetup.c:3369
+msgid "Keyslot priority: ignore, normal, prefer"
+msgstr "キースロット優先度: ignore, normal, prefer"
+
+#: src/cryptsetup.c:3370
+msgid "Disable locking of on-disk metadata"
+msgstr "ディスク上のメタデータのロックをしない"
+
+#: src/cryptsetup.c:3371
+msgid "Disable loading volume keys via kernel keyring"
+msgstr "ボリュームキーの読み込みをカーネルキーリング経由で行わない"
+
+#: src/cryptsetup.c:3372
+msgid "Data integrity algorithm (LUKS2 only)"
+msgstr "データ改ざん検出アルゴリズム (LUKS2 のみ)"
+
+#: src/cryptsetup.c:3373 src/integritysetup.c:563
+msgid "Disable journal for integrity device"
+msgstr "データ改ざん検出が有効なデバイスのジャーナリングを禁止します"
+
+#: src/cryptsetup.c:3374 src/integritysetup.c:537
+msgid "Do not wipe device after format"
+msgstr "フォーマット後にデバイスのデータを消去しない"
+
+#: src/cryptsetup.c:3375
+msgid "Do not ask for passphrase if activation by token fails"
+msgstr "トークンによるアクティベーションが失敗したらパスフレーズを入力させません"
+
+#: src/cryptsetup.c:3376
+msgid "Token number (default: any)"
+msgstr "トークンナンバー (デフォルト: 任意)"
+
+#: src/cryptsetup.c:3377
+msgid "Key description"
+msgstr "キーデスクリプション"
+
+#: src/cryptsetup.c:3378
+msgid "Encryption sector size (default: 512 bytes)"
+msgstr "暗号化セクタサイズ (デフォルト: 512 バイト)"
+
+#: src/cryptsetup.c:3379
+msgid "Set activation flags persistent for device"
+msgstr "デバイスのアクティベーションフラグを持続的にします"
+
+#: src/cryptsetup.c:3380
+msgid "Set label for the LUKS2 device"
+msgstr "LUKS2 デバイスのラベルを設定"
+
+#: src/cryptsetup.c:3381
+msgid "Set subsystem label for the LUKS2 device"
+msgstr "LUKS2 デバイスにサブシステムレベルを設定します"
+
+#: src/cryptsetup.c:3382
+msgid "Create unbound (no assigned data segment) LUKS2 keyslot"
+msgstr "場所の束縛のない LUKS2 キースロットを作成します"
+
+#: src/cryptsetup.c:3383
+msgid "Read or write the json from or to a file"
+msgstr "json をファイルに読み書きする"
+
+#: src/cryptsetup.c:3384
+msgid "LUKS2 header metadata area size"
+msgstr "LUKS2 ヘッダメタデータ領域サイズ"
+
+#: src/cryptsetup.c:3385
+msgid "LUKS2 header keyslots area size"
+msgstr "LUKS2 ヘッダキースロット領域サイズ"
+
+#: src/cryptsetup.c:3386
+msgid "Refresh (reactivate) device with new parameters"
+msgstr "デバイスを新しいパラメータデリフレッシュ(再アクティベート)する"
+
+#: src/cryptsetup.c:3387
+msgid "LUKS2 keyslot: The size of the encryption key"
+msgstr "LUKS2 キースロット: 暗号鍵のサイズ"
+
+#: src/cryptsetup.c:3388
+msgid "LUKS2 keyslot: The cipher used for keyslot encryption"
+msgstr "LUKS2 キースロット: キースロットの暗号化に使う暗号"
+
+#: src/cryptsetup.c:3389
+msgid "Encrypt LUKS2 device (in-place encryption)."
+msgstr "LUKS2 デバイスを暗号化 (in-place で暗号化)"
+
+#: src/cryptsetup.c:3390
+msgid "Decrypt LUKS2 device (remove encryption)."
+msgstr "LUKS2 デバイスを復号 (つまり暗号化をやめる)"
+
+#: src/cryptsetup.c:3391
+msgid "Initialize LUKS2 reencryption in metadata only."
+msgstr "LUKS2 再暗号化をメタデータだけ初期化。"
+
+#: src/cryptsetup.c:3392
+msgid "Resume initialized LUKS2 reencryption only."
+msgstr "初期化済 LUKS2 再暗号化だけ再開。"
+
+#: src/cryptsetup.c:3393 src/cryptsetup_reencrypt.c:1614
+msgid "Reduce data device size (move data offset). DANGEROUS!"
+msgstr "データデバイスサイズを減らす (データオフセットを移動する). 危険！"
+
+#: src/cryptsetup.c:3394
+msgid "Maximal reencryption hotzone size."
+msgstr "最大再暗号化ホットゾーンサイズ"
+
+#: src/cryptsetup.c:3395
+msgid "Reencryption hotzone resilience type (checksum,journal,none)"
+msgstr "再暗号化ホットゾーン弾性(resilience)タイプe (checksum,journal,none)"
+
+#: src/cryptsetup.c:3396
+msgid "Reencryption hotzone checksums hash"
+msgstr "再暗号化ホットゾーンチェックサムハッシュ"
+
+#: src/cryptsetup.c:3397
+msgid "Override device autodetection of dm device to be reencrypted"
+msgstr "再暗号化する dm デバイスの自動検出を上書きする"
+
+#: src/cryptsetup.c:3413 src/veritysetup.c:462 src/integritysetup.c:582
+msgid "[OPTION...] <action> <action-specific>"
+msgstr "[オプション...] <アクション> <アクション特有>"
+
+#: src/cryptsetup.c:3470 src/veritysetup.c:502 src/integritysetup.c:599
+msgid "Argument <action> missing."
+msgstr "<アクション> がありません。"
+
+#: src/cryptsetup.c:3533 src/veritysetup.c:533 src/integritysetup.c:630
+msgid "Unknown action."
+msgstr "未知のアクションです。"
+
+#: src/cryptsetup.c:3543
+msgid "Parameter --refresh is only allowed with open or refresh commands.\n"
+msgstr "--refresh は open か refresh の時にしか使えません。\n"
+
+#: src/cryptsetup.c:3548
+msgid "Options --refresh and --test-passphrase are mutually exclusive.\n"
+msgstr "--refresh と --test-passphrase は同時には使えません。\n"
+
+#: src/cryptsetup.c:3553
+msgid "Option --deferred is allowed only for close command.\n"
+msgstr "--deferred は close でしか使えません。\n"
+
+#: src/cryptsetup.c:3558
+msgid "Option --shared is allowed only for open of plain device.\n"
+msgstr "--shared は open の plain デバイスにしか使えません。\n"
+
+#: src/cryptsetup.c:3563
+msgid "Option --allow-discards is allowed only for open operation.\n"
+msgstr "--allow-discards は open でしか使えません。\n"
+
+#: src/cryptsetup.c:3568
+msgid "Option --persistent is allowed only for open operation.\n"
+msgstr "--persistent は open でしか使えません。\n"
+
+#: src/cryptsetup.c:3573
+msgid "Option --serialize-memory-hard-pbkdf is allowed only for open operation.\n"
+msgstr "--serialize-memory-hard-pbkdf は open でしか使えません。\n"
+
+#: src/cryptsetup.c:3578
+msgid "Option --persistent is not allowed with --test-passphrase.\n"
+msgstr "--persistent は --test-passphrase と一緒には使えません。\n"
+
+#: src/cryptsetup.c:3588
+msgid ""
+"Option --key-size is allowed only for luksFormat, luksAddKey (with --unbound),\n"
+"open and benchmark actions. To limit read from keyfile use --keyfile-size=(bytes)."
+msgstr ""
+"--key-size は luksFormat か luksAddKey で --unbound をつけた場合か、\n"
+"open, benchmark の時しか使えません。キーファイルについて制限をつけたい場合は --keyfile-size=(バイト) を使ってください。"
+
+#: src/cryptsetup.c:3594
+msgid "Option --integrity is allowed only for luksFormat (LUKS2).\n"
+msgstr "--integrity は luksFormat (LUKS2) でしか使えません。\n"
+
+#: src/cryptsetup.c:3599
+msgid "Option --integrity-no-wipe can be used only for format action with integrity extension.\n"
+msgstr "--integrity-no-wipe は format で integrity extension 付きの時しか使えません。\n"
+
+#: src/cryptsetup.c:3605
+msgid "Options --label and --subsystem are allowed only for luksFormat and config LUKS2 operations.\n"
+msgstr "--label と --subsystem は luksFormat で config LUKS2 operations にしか使えません。\n"
+
+#: src/cryptsetup.c:3611
+msgid "Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"
+msgstr "--test-passphrase は LUKS か TCRYPT デバイスの open にしか使えません。.\n"
+
+#: src/cryptsetup.c:3616 src/cryptsetup_reencrypt.c:1693
+msgid "Key size must be a multiple of 8 bits"
+msgstr "キーサイズは 8bit の倍数でなければなりません"
+
+#: src/cryptsetup.c:3622 src/cryptsetup_reencrypt.c:1378
+#: src/cryptsetup_reencrypt.c:1698
+msgid "Key slot is invalid."
+msgstr "キースロットは不正です。"
+
+#: src/cryptsetup.c:3629
+msgid "Option --key-file takes precedence over specified key file argument."
+msgstr "--key-file は他で指定されたキーファイルを上書きします。"
+
+#: src/cryptsetup.c:3636 src/veritysetup.c:545 src/integritysetup.c:654
+#: src/cryptsetup_reencrypt.c:1672
+msgid "Negative number for option not permitted."
+msgstr "オプションに負の数を与えられません。"
+
+#: src/cryptsetup.c:3640
+msgid "Only one --key-file argument is allowed."
+msgstr "--key-file は一つしか使えません。"
+
+#: src/cryptsetup.c:3644 src/cryptsetup_reencrypt.c:1664
+#: src/cryptsetup_reencrypt.c:1702
+msgid "Only one of --use-[u]random options is allowed."
+msgstr "--use-[u]random は一つしか使えません。"
+
+#: src/cryptsetup.c:3648
+msgid "Option --use-[u]random is allowed only for luksFormat."
+msgstr "--use-[u]random は luksFormat にしか使えません。"
+
+#: src/cryptsetup.c:3652
+msgid "Option --uuid is allowed only for luksFormat and luksUUID."
+msgstr "--uuid は luksFormat か luksUUID でしか使えません。"
+
+#: src/cryptsetup.c:3656
+msgid "Option --align-payload is allowed only for luksFormat."
+msgstr "--align-payload は luksFormat でしか使えません。"
+
+#: src/cryptsetup.c:3660
+msgid "Options --luks2-metadata-size and --opt-luks2-keyslots-size are allowed only for luksFormat with LUKS2."
+msgstr "--luks2-metadata-size と --opt-luks2-keyslots-size は LUKS2 で luksFormat でしか使えません。"
+
+#: src/cryptsetup.c:3665
+msgid "Invalid LUKS2 metadata size specification."
+msgstr "不正なLUKS2 メタデータサイズです。"
+
+#: src/cryptsetup.c:3669
+msgid "Invalid LUKS2 keyslots size specification."
+msgstr "不正な LUKS2 キースロットサイズです。"
+
+#: src/cryptsetup.c:3673
+msgid "Options --align-payload and --offset cannot be combined."
+msgstr "--align-payload と --offset は一緒に使えません。"
+
+#: src/cryptsetup.c:3679
+msgid "Option --skip is supported only for open of plain and loopaes devices.\n"
+msgstr "--skip は plain の open か loopaes デバイスにしか使えません。\n"
+
+#: src/cryptsetup.c:3686
+msgid "Option --offset is supported only for open of plain and loopaes devices, luksFormat and device reencryption.\n"
+msgstr "--offset は plain の open か loopaes デバイス、luksFormat と再暗号化にしか使えません。\n"
+
+#: src/cryptsetup.c:3692
+msgid "Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"
+msgstr "--tcrypt-hidden と --tcrypt-system と --tcrypt-backup は TCRYPT デバイスしか使えません。\n"
+
+#: src/cryptsetup.c:3697
+msgid "Option --tcrypt-hidden cannot be combined with --allow-discards.\n"
+msgstr "--tcrypt-hidden は --allow-discards と一緒に使えません。\n"
+
+#: src/cryptsetup.c:3702
+msgid "Option --veracrypt is supported only for TCRYPT device type.\n"
+msgstr "--veracrypt は TCRYPT デバイスでしか使えません。\n"
+
+#: src/cryptsetup.c:3708
+msgid "Invalid argument for parameter --veracrypt-pim supplied.\n"
+msgstr "--veracrypt-pim の引数が不正です。\n"
+
+#: src/cryptsetup.c:3712
+msgid "Option --veracrypt-pim is supported only for VeraCrypt compatible devices.\n"
+msgstr "--veracrypt-pim は VeraCrypt 互換デバイスにしか使えません。\n"
+
+#: src/cryptsetup.c:3720
+msgid "Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices.\n"
+msgstr "--veracrypt-query-pim は VeraCrypt 互換デバイスにしか使えません。\n"
+
+#: src/cryptsetup.c:3724
+msgid "The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive.\n"
+msgstr "--veracrypt-pim と --veracrypt-query-pim はどちらかしか使えません。\n"
+
+#: src/cryptsetup.c:3731
+msgid "Option --priority can be only ignore/normal/prefer.\n"
+msgstr "--priority の引数は ignore/normal/prefer のいずれかのみです。\n"
+
+#: src/cryptsetup.c:3736
+msgid "Keyslot specification is required.\n"
+msgstr "キースロットの指定が必要です。\n"
+
+#: src/cryptsetup.c:3741 src/cryptsetup_reencrypt.c:1678
+msgid "Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id.\n"
+msgstr "パスワードからキーを作る関数 (PBKDF) は pbkdf2 argon2i argon2id のいずれかのみです。\n"
+
+#: src/cryptsetup.c:3746 src/cryptsetup_reencrypt.c:1683
+msgid "PBKDF forced iterations cannot be combined with iteration time option.\n"
+msgstr "PBKDF の繰り返し回数の強制と回数指定オプションは共存できません。\n"
+
+#: src/cryptsetup.c:3752
+msgid "Sector size option is not supported for this command.\n"
+msgstr "このコマンドではセクタサイズオプションはサポートされていません。\n"
+
+#: src/cryptsetup.c:3758
+msgid "Unsupported encryption sector size.\n"
+msgstr "サポートしていない暗号化セクタサイズです。\n"
+
+#: src/cryptsetup.c:3763
+msgid "Key size is required with --unbound option.\n"
+msgstr "--unbound にはキーサイズが必要です。\n"
+
+#: src/cryptsetup.c:3768
+msgid "Option --unbound may be used only with luksAddKey action.\n"
+msgstr "--unbound は luksAddKey でしか使えません。\n"
+
+#: src/cryptsetup.c:3773
+msgid "Option --refresh may be used only with open action.\n"
+msgstr "--refresh は open でしか使えません。\n"
+
+#: src/cryptsetup.c:3784
+msgid "Cannot disable metadata locking.\n"
+msgstr "メタデータロックを禁止できません。\n"
+
+#: src/cryptsetup.c:3794
+msgid "Invalid max reencryption hotzone size specification."
+msgstr "再暗号化ホットゾーン最大サイズの指定が不正です。"
+
+#: src/cryptsetup.c:3802 src/cryptsetup_reencrypt.c:1707
+#: src/cryptsetup_reencrypt.c:1712
+msgid "Invalid device size specification."
+msgstr "デバイスサイズの指定が不正です。"
+
+#: src/cryptsetup.c:3805
+msgid "Maximum device reduce size is 1 GiB."
+msgstr "デバイスを減らせる最大値は 1 GiB です。"
+
+#: src/cryptsetup.c:3808 src/cryptsetup_reencrypt.c:1718
+msgid "Reduce size must be multiple of 512 bytes sector."
+msgstr "減らすサイズは 512 バイトセクタの倍数である必要があります。"
+
+#: src/cryptsetup.c:3813
+msgid "Invalid data size specification."
+msgstr "データサイズの指定が不正です。"
+
+#: src/cryptsetup.c:3818
+msgid "Reduce size overflow."
+msgstr "減らすサイズのオーバーフロー。"
+
+#: src/cryptsetup.c:3822
+msgid "LUKS2 decryption requires option --header."
+msgstr "LUKS2 復号には --header が必要です。"
+
+#: src/cryptsetup.c:3826
+msgid "Device size must be multiple of 512 bytes sector."
+msgstr "デバイスサイズは 512 バイトセクタの倍数である必要があります。"
+
+#: src/cryptsetup.c:3830
+msgid "Options --reduce-device-size and --data-size cannot be combined."
+msgstr "--reduce-device-size と --data-size は一緒に使えません。"
+
+#: src/cryptsetup.c:3834
+msgid "Options --device-size and --size cannot be combined."
+msgstr "--device-size と --size は一緒に使えません。"
+
+#: src/veritysetup.c:67
+msgid "Invalid salt string specified."
+msgstr "不正なソルト文字列が指定されました。"
+
+#: src/veritysetup.c:98
+#, c-format
+msgid "Cannot create hash image %s for writing."
+msgstr "ハッシュイメージ %s を書けるように作成できませんでした。"
+
+#: src/veritysetup.c:108
+#, c-format
+msgid "Cannot create FEC image %s for writing."
+msgstr "FEC イメージ %s を書けるように作成できませんでした。"
+
+#: src/veritysetup.c:178
+msgid "Invalid root hash string specified."
+msgstr "不正なルートハッシュ文字列が指定されました。"
+
+#: src/veritysetup.c:361
+msgid "<data_device> <hash_device>"
+msgstr "<データデバイス> <ハッシュデバイス>"
+
+#: src/veritysetup.c:361 src/integritysetup.c:473
+msgid "format device"
+msgstr "デバイスをフォーマット"
+
+#: src/veritysetup.c:362
+msgid "<data_device> <hash_device> <root_hash>"
+msgstr "<データデバイス> <ハッシュデバイス> <ルートハッシュ>"
+
+#: src/veritysetup.c:362
+msgid "verify device"
+msgstr "デバイスを検証"
+
+#: src/veritysetup.c:363
+msgid "<data_device> <name> <hash_device> <root_hash>"
+msgstr "<データデバイス> <名前> <ハッシュデバイス> <ルートハッシュ>"
+
+#: src/veritysetup.c:365 src/integritysetup.c:476
+msgid "show active device status"
+msgstr "アクティブデバイスのステータスを表示"
+
+#: src/veritysetup.c:366
+msgid "<hash_device>"
+msgstr "<ハッシュデバイス>"
+
+#: src/veritysetup.c:366 src/integritysetup.c:477
+msgid "show on-disk information"
+msgstr "ディスク上の情報を表示"
+
+#: src/veritysetup.c:385
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<data_device> is the data device\n"
+"<hash_device> is the device containing verification data\n"
+"<root_hash> hash of the root node on <hash_device>\n"
+msgstr ""
+"\n"
+"<名前> は %s に作られるデバイス\n"
+"<データデバイス> はデータが入るデバイス\n"
+"<ハッシュデバイス> は検証用データが入るデバイス\n"
+"<ルートハッシュ> は <ハッシュデバイス> のルートノードのハッシュ\n"
+
+#: src/veritysetup.c:392
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in dm-verity parameters:\n"
+"\tHash: %s, Data block (bytes): %u, Hash block (bytes): %u, Salt size: %u, Hash format: %u\n"
+msgstr ""
+"\n"
+"コンパイル時に決めた dm-verity のデフォルトパラメータ:\n"
+"\tハッシュ: %s, データブロック (バイト): %u, ハッシュブロック (バイト): %u, ソルトサイズ: %u, ハッシュフォーマット: %u\n"
+
+#: src/veritysetup.c:430
+msgid "Do not use verity superblock"
+msgstr "verity スーパーブロックを使いません"
+
+#: src/veritysetup.c:431
+msgid "Format type (1 - normal, 0 - original Chrome OS)"
+msgstr "フォーマットタイプ (1 - ノーマル, 0 - Chrome OS 形式)"
+
+#: src/veritysetup.c:431
+msgid "number"
+msgstr "数字"
+
+#: src/veritysetup.c:432
+msgid "Block size on the data device"
+msgstr "データデバイスのブロックサイズ"
+
+#: src/veritysetup.c:433
+msgid "Block size on the hash device"
+msgstr "ハッシュデバイスのブロックサイズ"
+
+#: src/veritysetup.c:434
+msgid "FEC parity bytes"
+msgstr "FEC パリティバイト"
+
+#: src/veritysetup.c:435
+msgid "The number of blocks in the data file"
+msgstr "データファイルのブロック数"
+
+#: src/veritysetup.c:435
+msgid "blocks"
+msgstr "ブロック"
+
+#: src/veritysetup.c:436
+msgid "Path to device with error correction data"
+msgstr "誤り訂正用データが格納されるデバイスのパス"
+
+#: src/veritysetup.c:436 src/integritysetup.c:539
+msgid "path"
+msgstr "パス"
+
+#: src/veritysetup.c:437
+msgid "Starting offset on the hash device"
+msgstr "ハッシュデバイスの開始オフセット"
+
+#: src/veritysetup.c:438
+msgid "Starting offset on the FEC device"
+msgstr "FEC デバイスの開始オフセット"
+
+#: src/veritysetup.c:439
+msgid "Hash algorithm"
+msgstr "ハッシュアルゴリズム"
+
+#: src/veritysetup.c:439
+msgid "string"
+msgstr "文字列"
+
+#: src/veritysetup.c:440
+msgid "Salt"
+msgstr "ソルト"
+
+#: src/veritysetup.c:440
+msgid "hex string"
+msgstr "16進数文字列"
+
+#: src/veritysetup.c:442
+msgid "Restart kernel if corruption is detected"
+msgstr "破損が検出されたらカーネルを再起動する"
+
+#: src/veritysetup.c:443
+msgid "Ignore corruption, log it only"
+msgstr "破損はログするだけで再起動まではしない"
+
+#: src/veritysetup.c:444
+msgid "Do not verify zeroed blocks"
+msgstr "0 埋めされたブロックは検証しない"
+
+#: src/veritysetup.c:445
+msgid "Verify data block only the first time it is read"
+msgstr "最初に読む時一度だけデータブロックを検証する"
+
+#: src/veritysetup.c:551
+msgid "Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks is allowed only for open operation.\n"
+msgstr "--ignore-corruption, --restart-on-corruption, --ignore-zero-blocks は open 時にか使えません。\n"
+
+#: src/veritysetup.c:556
+msgid "Option --ignore-corruption and --restart-on-corruption cannot be used together.\n"
+msgstr "--ignore-corruption と --restart-on-corruption は同時に使えません。\n"
+
+#: src/integritysetup.c:85 src/utils_password.c:300
+#, c-format
+msgid "Cannot read keyfile %s."
+msgstr "キーファイル %s を読みこめませんでした。"
+
+#: src/integritysetup.c:89 src/utils_password.c:304
+#, c-format
+msgid "Cannot read %d bytes from keyfile %s."
+msgstr "%d バイトをキーファイル %s から読みこめませんでした。"
+
+#: src/integritysetup.c:252
+#, c-format
+msgid "Formatted with tag size %u, internal integrity %s.\n"
+msgstr "タグサイズ %u、内部整合性は %s でフォーマットされました。\n"
+
+#: src/integritysetup.c:473 src/integritysetup.c:477
+msgid "<integrity_device>"
+msgstr "<整合性デバイス>"
+
+#: src/integritysetup.c:474
+msgid "<integrity_device> <name>"
+msgstr "<整合性デバイス> <名前>"
+
+#: src/integritysetup.c:496
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<integrity_device> is the device containing data with integrity tags\n"
+msgstr ""
+"\n"
+"<名前> は %s に作られるデバイス\n"
+"<整合性デバイス> は整合性タグを格納するデバイス\n"
+
+#: src/integritysetup.c:501
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in dm-integrity parameters:\n"
+"\tTag size: %u bytes, Checksum algorithm: %s\n"
+msgstr ""
+"\n"
+"コンパイル時に決められたデフォルトの dm-integrity のパラメータ:\n"
+"\tタグサイズ: %u バイト, チェックサムアルゴリズム: %s\n"
+
+#: src/integritysetup.c:539
+msgid "Path to data device (if separated)"
+msgstr "データデバイスのパス (分離されている場合)"
+
+#: src/integritysetup.c:541
+msgid "Journal size"
+msgstr "ジャーナルサイズ"
+
+#: src/integritysetup.c:542
+msgid "Interleave sectors"
+msgstr "インターリーブするセクタ数"
+
+#: src/integritysetup.c:543
+msgid "Journal watermark"
+msgstr "ジャーナルをフラッシュする閾値"
+
+#: src/integritysetup.c:543
+msgid "percent"
+msgstr "パーセント"
+
+#: src/integritysetup.c:544
+msgid "Journal commit time"
+msgstr "ジャーナルがコミットされるまでの時間"
+
+#: src/integritysetup.c:544 src/integritysetup.c:546
+msgid "ms"
+msgstr "ミリ秒"
+
+#: src/integritysetup.c:545
+msgid "Number of 512-byte sectors per bit (bitmap mode)."
+msgstr "ビットあたりの 512 バイトセクタ (bitmap モード)。"
+
+#: src/integritysetup.c:546
+msgid "Bitmap mode flush time"
+msgstr "Bitmap モードのフラッシュ時間"
+
+#: src/integritysetup.c:547
+msgid "Tag size (per-sector)"
+msgstr "タグサイズ (セクタ毎)"
+
+#: src/integritysetup.c:548
+msgid "Sector size"
+msgstr "セクタサイズ"
+
+#: src/integritysetup.c:549
+msgid "Buffers size"
+msgstr "バッファサイズ"
+
+#: src/integritysetup.c:551
+msgid "Data integrity algorithm"
+msgstr "データ整合性アルゴリズム"
+
+#: src/integritysetup.c:552
+msgid "The size of the data integrity key"
+msgstr "データ整合性キーのサイズ"
+
+#: src/integritysetup.c:553
+msgid "Read the integrity key from a file"
+msgstr "整合性キーをファイルから読み込む"
+
+#: src/integritysetup.c:555
+msgid "Journal integrity algorithm"
+msgstr "ジャーナル整合性アルゴリズム"
+
+#: src/integritysetup.c:556
+msgid "The size of the journal integrity key"
+msgstr "ジャーナル整合性キーのサイズ"
+
+#: src/integritysetup.c:557
+msgid "Read the journal integrity key from a file"
+msgstr "ジャーナル整合性キーをファイルから読み込む"
+
+#: src/integritysetup.c:559
+msgid "Journal encryption algorithm"
+msgstr "ジャーナル暗号化アルゴリズム"
+
+#: src/integritysetup.c:560
+msgid "The size of the journal encryption key"
+msgstr "ジャーナル暗号化キーのサイズ"
+
+#: src/integritysetup.c:561
+msgid "Read the journal encryption key from a file"
+msgstr "ジャーナル暗号化キーをファイルから読み込む"
+
+#: src/integritysetup.c:564
+msgid "Recovery mode (no journal, no tag checking)"
+msgstr "リカバリモード (ジャーナル不使用、タグ確認なし)"
+
+#: src/integritysetup.c:565
+msgid "Use bitmap to track changes and disable journal for integrity device"
+msgstr "変更の追跡に bitmap を使いジャーナルの整合性デバイスの無効にします"
+
+#: src/integritysetup.c:566
+msgid "Recalculate initial tags automatically."
+msgstr "初期タグを自動で再計算する。"
+
+#: src/integritysetup.c:645
+msgid "Option --integrity-recalculate can be used only for open action."
+msgstr "--integrity-recalculate は open でしか使えません。"
+
+#: src/integritysetup.c:660
+msgid "Options --journal-size, --interleave-sectors, --sector-size, --tag-size and --no-wipe can be used only for format action.\n"
+msgstr "--journal-size, --interleave-sectors, --sector-size, --tag-size, --no-wipe format でしか使えません。\n"
+
+#: src/integritysetup.c:666
+msgid "Invalid journal size specification."
+msgstr "不正なジャーナルサイズの指定です。"
+
+#: src/integritysetup.c:671
+msgid "Both key file and key size options must be specified."
+msgstr "キーファイルとキーサイズの両方の指定が必要です。"
+
+#: src/integritysetup.c:674
+msgid "Integrity algorithm must be specified if integrity key is used."
+msgstr "整合性キーを使う場合はアルゴリズムの指定が必要です。"
+
+#: src/integritysetup.c:679
+msgid "Both journal integrity key file and key size options must be specified."
+msgstr "ジャーナル整合性キーファイルとキーサイズの両方の指定が必要です。"
+
+#: src/integritysetup.c:682
+msgid "Journal integrity algorithm must be specified if journal integrity key is used."
+msgstr "ジャーナル整合性キーを使う場合はアルゴリズムの指定が必要です。"
+
+#: src/integritysetup.c:687
+msgid "Both journal encryption key file and key size options must be specified."
+msgstr "ジャーナル暗号キーファイルとキーサイズの両方の指定が必要です。"
+
+#: src/integritysetup.c:690
+msgid "Journal encryption algorithm must be specified if journal encryption key is used."
+msgstr "ジャーナル暗号キーを使う場合はアルゴリズムの指定が必要です。"
+
+#: src/integritysetup.c:694
+msgid "Recovery and bitmap mode options are mutually exclusive."
+msgstr "リカバリと bitmap モードオプションは同時には使えません。"
+
+#: src/integritysetup.c:698
+msgid "Journal options cannot be used in bitmap mode."
+msgstr "ジャーナルオプションは bitmap モードでは使えません。"
+
+#: src/integritysetup.c:702
+msgid "Bitmap options can be used only in bitmap mode."
+msgstr "bitmap オプションは bitmap モードでしか使えません。"
+
+#: src/cryptsetup_reencrypt.c:174
+msgid "Reencryption already in-progress."
+msgstr "既に再暗号化中です。"
+
+#: src/cryptsetup_reencrypt.c:203
+#, c-format
+msgid "Cannot exclusively open %s, device in use."
+msgstr "デバイスが使用中のため %s を排他的にオープンできません。"
+
+#: src/cryptsetup_reencrypt.c:217 src/cryptsetup_reencrypt.c:1123
+msgid "Allocation of aligned memory failed."
+msgstr "アライメントつきメモリの確保ができませんでした。"
+
+#: src/cryptsetup_reencrypt.c:224
+#, c-format
+msgid "Cannot read device %s."
+msgstr "デバイス %s を読めません。"
+
+#: src/cryptsetup_reencrypt.c:235
+#, c-format
+msgid "Marking LUKS1 device %s unusable."
+msgstr "LUKS1 デバイス %s を使用不可としてマークします。"
+
+#: src/cryptsetup_reencrypt.c:239
+#, c-format
+msgid "Setting LUKS2 offline reencrypt flag on device %s."
+msgstr "LUKS2 offline reencrypt フラグをデバイス %s に設定します。"
+
+#: src/cryptsetup_reencrypt.c:256
+#, c-format
+msgid "Cannot write device %s."
+msgstr "デバイス %s に書き込めません。"
+
+#: src/cryptsetup_reencrypt.c:304
+msgid "Cannot write reencryption log file."
+msgstr "再暗号化ログファイルに書きこめません。"
+
+#: src/cryptsetup_reencrypt.c:360
+msgid "Cannot read reencryption log file."
+msgstr "再暗号化ログファイルを読み込めません。"
+
+#: src/cryptsetup_reencrypt.c:398
+#, c-format
+msgid "Log file %s exists, resuming reencryption.\n"
+msgstr "ログファイル %s が既にあるので再暗号化を再開します。\n"
+
+#: src/cryptsetup_reencrypt.c:447
+msgid "Activating temporary device using old LUKS header."
+msgstr "古い LUKS ヘッダを使っているテンポラリデバイスを有効にします。"
+
+#: src/cryptsetup_reencrypt.c:457
+msgid "Activating temporary device using new LUKS header."
+msgstr "新しい LUKS ヘッダを使っているテンポラリデバイスを有効にします。"
+
+#: src/cryptsetup_reencrypt.c:467
+msgid "Activation of temporary devices failed."
+msgstr "テンポラリデバイスの有効化に失敗しました。"
+
+#: src/cryptsetup_reencrypt.c:553
+msgid "Failed to set data offset."
+msgstr "データオフセットの設定に失敗しました。"
+
+#: src/cryptsetup_reencrypt.c:559
+msgid "Failed to set metadata size."
+msgstr "メタデータサイズの設定に失敗しました。"
+
+#: src/cryptsetup_reencrypt.c:567
+#, c-format
+msgid "New LUKS header for device %s created."
+msgstr "デバイス %s の新しい LUKS ヘッダを作成しました。"
+
+#: src/cryptsetup_reencrypt.c:627
+#, c-format
+msgid "This version of cryptsetup-reencrypt can't handle new internal token type %s."
+msgstr "このバージョンの cryptsetup-reencrypt は新しい内部トークンタイプ %s を扱えません。"
+
+#: src/cryptsetup_reencrypt.c:649
+msgid "Failed to read activation flags from backup header."
+msgstr "アクティベーションフラグをバックアップヘッダから読み込めません。"
+
+#: src/cryptsetup_reencrypt.c:653
+msgid "Failed to write activation flags to new header."
+msgstr "アクティベーションフラグを新しいヘッダに書き込めません。"
+
+#: src/cryptsetup_reencrypt.c:657 src/cryptsetup_reencrypt.c:661
+msgid "Failed to read requirements from backup header."
+msgstr "バックアップヘッダから要求(requirements)を読み込めません。"
+
+#: src/cryptsetup_reencrypt.c:699
+#, c-format
+msgid "%s header backup of device %s created."
+msgstr "%s ヘッダバックアップデバイス %s が作成されました。"
+
+#: src/cryptsetup_reencrypt.c:762
+msgid "Creation of LUKS backup headers failed."
+msgstr "LUKS バックアップヘッダが作成できません。"
+
+#: src/cryptsetup_reencrypt.c:893
+#, c-format
+msgid "Cannot restore %s header on device %s."
+msgstr "デバイス %2s の %1s ヘッダが復元できません。"
+
+#: src/cryptsetup_reencrypt.c:895
+#, c-format
+msgid "%s header on device %s restored."
+msgstr "デバイス %2s の %1s ヘッダを復元しました。"
+
+#: src/cryptsetup_reencrypt.c:1095 src/cryptsetup_reencrypt.c:1101
+msgid "Cannot open temporary LUKS device."
+msgstr "テンポラリ LUKS デバイスをオープンできません。"
+
+#: src/cryptsetup_reencrypt.c:1106 src/cryptsetup_reencrypt.c:1111
+msgid "Cannot get device size."
+msgstr "デバイスサイズを取得できません。"
+
+#: src/cryptsetup_reencrypt.c:1148
+msgid "Interrupted by a signal."
+msgstr "シグナルで中断されました。"
+
+#: src/cryptsetup_reencrypt.c:1150
+msgid "IO error during reencryption."
+msgstr "再暗号化中に I/O エラーが発生しました。"
+
+#: src/cryptsetup_reencrypt.c:1181
+msgid "Provided UUID is invalid."
+msgstr "与えられた UUID が不正です。"
+
+#: src/cryptsetup_reencrypt.c:1407
+msgid "Cannot open reencryption log file."
+msgstr "再暗号化ログファイルを開けません。"
+
+#: src/cryptsetup_reencrypt.c:1413
+msgid "No decryption in progress, provided UUID can be used only to resume suspended decryption process."
+msgstr "復号を実行中ではありません。与えられた UUID は中止された復号を再開するためだけに使えます。"
+
+#: src/cryptsetup_reencrypt.c:1488
+#, c-format
+msgid "Changed pbkdf parameters in keyslot %i."
+msgstr "キースロット %i の pbkdf パラメータを変更しました。"
+
+#: src/cryptsetup_reencrypt.c:1595
+msgid "Reencryption block size"
+msgstr "再暗号化のブロックサイズ"
+
+#: src/cryptsetup_reencrypt.c:1595
+msgid "MiB"
+msgstr "MiB"
+
+#: src/cryptsetup_reencrypt.c:1599
+msgid "Do not change key, no data area reencryption"
+msgstr "キーを変えず、データ領域の再暗号化を行わない"
+
+#: src/cryptsetup_reencrypt.c:1601
+msgid "Read new volume (master) key from file"
+msgstr "新しいボリューム(マスター)キーをファイルから読み込む"
+
+#: src/cryptsetup_reencrypt.c:1602
+msgid "PBKDF2 iteration time for LUKS (in ms)"
+msgstr "LUKS 向け PBKDF2 の繰り返し時間 (ミリ秒単位)"
+
+#: src/cryptsetup_reencrypt.c:1608
+msgid "Use direct-io when accessing devices"
+msgstr "デバイスアクセス時に direct-io を使う"
+
+#: src/cryptsetup_reencrypt.c:1609
+msgid "Use fsync after each block"
+msgstr "ブロック毎に fsync() する"
+
+#: src/cryptsetup_reencrypt.c:1610
+msgid "Update log file after every block"
+msgstr "ログファイルをブロック毎に更新する"
+
+#: src/cryptsetup_reencrypt.c:1611
+msgid "Use only this slot (others will be disabled)"
+msgstr "このスロットだけ使う (残りは無効化されます)"
+
+#: src/cryptsetup_reencrypt.c:1616
+msgid "Create new header on not encrypted device"
+msgstr "暗号化されていないデバイスに新しいヘッダを作成する"
+
+#: src/cryptsetup_reencrypt.c:1617
+msgid "Permanently decrypt device (remove encryption)"
+msgstr "デバイスを恒久的に復号状態にする (つまり暗号化をやめる)"
+
+#: src/cryptsetup_reencrypt.c:1618
+msgid "The UUID used to resume decryption"
+msgstr "復号の再開に使う UUID"
+
+#: src/cryptsetup_reencrypt.c:1619
+msgid "Type of LUKS metadata: luks1, luks2"
+msgstr "メタデータタイプ: luks1, luks2"
+
+#: src/cryptsetup_reencrypt.c:1638
+msgid "[OPTION...] <device>"
+msgstr "[オプション...] <デバイス>"
+
+#: src/cryptsetup_reencrypt.c:1652
+#, c-format
+msgid "Reencryption will change: %s%s%s%s%s%s."
+msgstr "再暗号化で以下が変わります: %s%s%s%s%s%s."
+
+#: src/cryptsetup_reencrypt.c:1653
+msgid "volume key"
+msgstr "ボリュームキー"
+
+#: src/cryptsetup_reencrypt.c:1655
+msgid "set hash to "
+msgstr "ハッシュ"
+
+#: src/cryptsetup_reencrypt.c:1656
+msgid ", set cipher to "
+msgstr "暗号(cipher)"
+
+#: src/cryptsetup_reencrypt.c:1660
+msgid "Argument required."
+msgstr "引数が必要です。"
+
+#: src/cryptsetup_reencrypt.c:1688
+msgid "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
+msgstr "再暗号化のブロックサイズは 1 MiB から 64 MiB までの値しか使えません。"
+
+#: src/cryptsetup_reencrypt.c:1715
+msgid "Maximum device reduce size is 64 MiB."
+msgstr "デバイスを減らせる最大値は 64 MiB です。"
+
+#: src/cryptsetup_reencrypt.c:1722
+msgid "Option --new must be used together with --reduce-device-size or --header."
+msgstr "--new は --reduce-device-size か --header と一緒に使う必要があります"
+
+#: src/cryptsetup_reencrypt.c:1726
+msgid "Option --keep-key can be used only with --hash, --iter-time or --pbkdf-force-iterations."
+msgstr "--keep-key は --hash か --iter-time か --pbkdf-force-iterations と使う必要があります。"
+
+#: src/cryptsetup_reencrypt.c:1730
+msgid "Option --new cannot be used together with --decrypt."
+msgstr "--new は --decrypt と一緒に使えません。"
+
+#: src/cryptsetup_reencrypt.c:1734
+msgid "Option --decrypt is incompatible with specified parameters."
+msgstr "--decrypt は指定されたパラメータと互換性がありません。"
+
+#: src/cryptsetup_reencrypt.c:1738
+msgid "Option --uuid is allowed only together with --decrypt."
+msgstr "--uuid は --decrypt と一緒にしか使えません。"
+
+#: src/cryptsetup_reencrypt.c:1742
+msgid "Invalid luks type. Use one of these: 'luks', 'luks1' or 'luks2'."
+msgstr "不正な luks タイプです。'luks', 'luks1', 'luks2' のいずれかを使ってください。"
+
+#: src/utils_tools.c:151
+msgid "Error reading response from terminal."
+msgstr "端末から応答を読み込み中にエラー。"
+
+#: src/utils_tools.c:186
+msgid "Command successful.\n"
+msgstr "コマンド成功。\n"
+
+#: src/utils_tools.c:194
+msgid "wrong or missing parameters"
+msgstr "パラメータが間違っているか指定されていません"
+
+#: src/utils_tools.c:196
+msgid "no permission or bad passphrase"
+msgstr "権限がないかパスフレーズが間違っています"
+
+#: src/utils_tools.c:198
+msgid "out of memory"
+msgstr "メモリ不足"
+
+#: src/utils_tools.c:200
+msgid "wrong device or file specified"
+msgstr "間違ったデバイスかファイルが指定されました"
+
+#: src/utils_tools.c:202
+msgid "device already exists or device is busy"
+msgstr "デバイスが既にあるかビジーです"
+
+#: src/utils_tools.c:204
+msgid "unknown error"
+msgstr "不明なエラー"
+
+#: src/utils_tools.c:206
+#, c-format
+msgid "Command failed with code %i (%s).\n"
+msgstr "コマンド失敗：コード %i (%s)\n"
+
+#: src/utils_tools.c:283
+#, c-format
+msgid "Key slot %i created."
+msgstr "キースロット %i が作成されました。"
+
+#: src/utils_tools.c:285
+#, c-format
+msgid "Key slot %i unlocked."
+msgstr "キースロット %i がアンロックされました。"
+
+#: src/utils_tools.c:287
+#, c-format
+msgid "Key slot %i removed."
+msgstr "キースロット %i が削除されました。"
+
+#: src/utils_tools.c:296
+#, c-format
+msgid "Token %i created."
+msgstr "トークン %i が作成されました。"
+
+#: src/utils_tools.c:298
+#, c-format
+msgid "Token %i removed."
+msgstr "トークン %i が削除されました。"
+
+#: src/utils_tools.c:464
+#, c-format
+msgid "WARNING: Device %s already contains a '%s' partition signature.\n"
+msgstr "警告: デバイス %s が既に '%s' パーティションシグネチャを含んでいます。\n"
+
+#: src/utils_tools.c:472
+#, c-format
+msgid "WARNING: Device %s already contains a '%s' superblock signature.\n"
+msgstr "警告: デバイス %s が既に '%s' のスーパーブロックシグネチャを含んでいます。\n"
+
+#: src/utils_tools.c:493 src/utils_tools.c:557
+msgid "Failed to initialize device signature probes."
+msgstr "デバイスシグネチャ検出の初期化に失敗しました。"
+
+#: src/utils_tools.c:537
+#, c-format
+msgid "Failed to stat device %s."
+msgstr "デバイス %s の stat() に失敗しました。"
+
+#: src/utils_tools.c:550
+#, c-format
+msgid "Device %s is in use. Can not proceed with format operation."
+msgstr "デバイス %s は使用中です。フォーマットを始められません。"
+
+#: src/utils_tools.c:552
+#, c-format
+msgid "Failed to open file %s in read/write mode."
+msgstr "ファイル %s を読み書き可能なモードでオープンできません。"
+
+#: src/utils_tools.c:572
+msgid "Failed to wipe device signature."
+msgstr "デバイスシグネチャを消せません。"
+
+#: src/utils_tools.c:579
+#, c-format
+msgid "Failed to probe device %s for a signature."
+msgstr "デバイス %s のシグネチャが検出できません。"
+
+#: src/utils_password.c:43 src/utils_password.c:75
+#, c-format
+msgid "Cannot check password quality: %s"
+msgstr "パスワードの質を確認できません: %s"
+
+#: src/utils_password.c:51
+#, c-format
+msgid ""
+"Password quality check failed:\n"
+" %s"
+msgstr ""
+"パスワードの質の確認に失敗:\n"
+" %s"
+
+#: src/utils_password.c:83
+#, c-format
+msgid "Password quality check failed: Bad passphrase (%s)"
+msgstr "パスワードの質が確認できません: 質の悪いパスフレーズ (%s)"
+
+#: src/utils_password.c:193 src/utils_password.c:208
+msgid "Error reading passphrase from terminal."
+msgstr "端末からパスフレーズを読み込めません。"
+
+#: src/utils_password.c:206
+msgid "Verify passphrase: "
+msgstr "同じパスフレーズを入力してください: "
+
+#: src/utils_password.c:213
+msgid "Passphrases do not match."
+msgstr "パスフレーズが一致しません。"
+
+#: src/utils_password.c:250
+msgid "Cannot use offset with terminal input."
+msgstr "端末からの入力でオフセットは使用できません。"
+
+#: src/utils_password.c:253
+#, c-format
+msgid "Enter passphrase: "
+msgstr "パスフレーズを入力してください: "
+
+#: src/utils_password.c:255
+#, c-format
+msgid "Enter passphrase for %s: "
+msgstr "%s のパスフレーズを入力してください: "
+
+#: src/utils_password.c:285
+msgid "No key available with this passphrase."
+msgstr "このパスフレーズで使用可能なキーはありません。"
+
+#: src/utils_password.c:287
+msgid "No usable keyslot is available."
+msgstr "使用可能なキースロットがありません。"
+
+#: src/utils_password.c:322
+#, c-format
+msgid "Cannot open keyfile %s for write."
+msgstr "キーファイル %s を書き込み用にオープンできません。"
+
+#: src/utils_password.c:329
+#, c-format
+msgid "Cannot write to keyfile %s."
+msgstr "キーファイル %s に書き込めません。"
+
+#: src/utils_luks2.c:47
+#, c-format
+msgid "Failed to open file %s in read-only mode."
+msgstr "ファイル %s を読み込み専用モードでオープンできません。"
+
+#: src/utils_luks2.c:60
+msgid "Provide valid LUKS2 token JSON:\n"
+msgstr "妥当な LUKS2 トークンを JSON で与えてください:\n"
+
+#: src/utils_luks2.c:67
+msgid "Failed to read JSON file."
+msgstr "JSON ファイルを読み込めません。"
+
+#: src/utils_luks2.c:72
+msgid ""
+"\n"
+"Read interrupted."
+msgstr ""
+"\n"
+"読み込みが中断されました。"
+
+#: src/utils_luks2.c:113
+#, c-format
+msgid "Failed to open file %s in write mode."
+msgstr "ファイル %s を書き込みモードでオープンできません。"
+
+#: src/utils_luks2.c:122
+msgid ""
+"\n"
+"Write interrupted."
+msgstr ""
+"\n"
+"書き込みが中断されました。"
+
+#: src/utils_luks2.c:126
+msgid "Failed to write JSON file."
+msgstr "JSON ファイルに書き込めません。"
