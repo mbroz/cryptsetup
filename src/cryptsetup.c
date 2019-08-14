@@ -1387,6 +1387,13 @@ static int action_open_luks(void)
 
 	if (opt_master_key_file) {
 		keysize = crypt_get_volume_key_size(cd);
+		if (!keysize && !opt_key_size) {
+			log_err(_("Cannot dermine volume key size for LUKS without keyslots, please use --key-size option."));
+			r = -EINVAL;
+			goto out;
+		} else if (!keysize)
+			keysize = opt_key_size / 8;
+
 		r = tools_read_mk(opt_master_key_file, &key, keysize);
 		if (r < 0)
 			goto out;
@@ -1691,6 +1698,13 @@ static int action_luksAddKey(void)
 	}
 
 	if (opt_master_key_file) {
+		if (!keysize && !opt_key_size) {
+			log_err(_("Cannot dermine volume key size for LUKS without keyslots, please use --key-size option."));
+			r = -EINVAL;
+			goto out;
+		} else if (!keysize)
+			keysize = opt_key_size / 8;
+
 		r = tools_read_mk(opt_master_key_file, &key, keysize);
 		if (r < 0)
 			goto out;
@@ -3587,9 +3601,9 @@ int main(int argc, const char **argv)
 	   strcmp(aname, "luksFormat") &&
 	   strcmp(aname, "open") &&
 	   strcmp(aname, "benchmark") &&
-	   (strcmp(aname, "luksAddKey") || !opt_unbound))
+	   strcmp(aname, "luksAddKey"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --key-size is allowed only for luksFormat, luksAddKey (with --unbound),\n"
+		      _("Option --key-size is allowed only for luksFormat, luksAddKey,\n"
 			"open and benchmark actions. To limit read from keyfile use --keyfile-size=(bytes)."),
 		      poptGetInvocationName(popt_context));
 
