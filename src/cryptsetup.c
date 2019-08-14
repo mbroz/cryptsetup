@@ -3113,9 +3113,14 @@ static int action_reencrypt(void)
 			if ((r = crypt_init_data_device(&cd, uuid_or_device(opt_header_device ?: action_argv[0]), action_argv[0])))
 				return r;
 
-			if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
+			if ((r = crypt_load(cd, CRYPT_LUKS, NULL))) {
 				log_err(_("Device %s is not a valid LUKS device."),
 					uuid_or_device(opt_header_device ?: action_argv[0]));
+				goto out;
+			}
+			if (strcmp(crypt_get_type(cd), CRYPT_LUKS2)) {
+				log_err(_("Only LUKS2 format is currently supported. Please use cryptsetup-reencrypt tool for LUKS1."));
+				r = -EINVAL;
 				goto out;
 			}
 		}
