@@ -1,62 +1,13 @@
-Cryptsetup 2.2.0-rc1 Release Notes
-==================================
-Testing release with new experimental features and bug fixes.
+Cryptsetup 2.2.0 Release Notes
+==============================
+Stable release with new experimental features and bug fixes.
 
 Cryptsetup 2.2 version introduces a new LUKS2 online reencryption
 extension that allows reencryption of mounted LUKS2 devices
 (device in use) in the background.
 
-This testing release is intended for more extensive testing
-of very complex online reencryption feature; it is expected
-that it contains bugs, performance issues and that some functions
-are in this testing release limited.
-
-Please do not use this testing version in production environments.
-Also, use it only if you have a full data backup.
-
-Changes since version 2.2.0-rc0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* Add integritysetup support for bitmap mode introduced in Linux kernel 5.2.
-  Integritysetup now supports --integrity-bitmap-mode option and
-  --bitmap-sector-per-bit and --bitmap-flush-time commandline options.
-
-  In the bitmap operation mode, if a bit in the bitmap is 1, the corresponding
-  region's data and integrity tags are not synchronized - if the machine
-  crashes, the unsynchronized regions will be recalculated.
-  The bitmap mode is faster than the journal mode because we don't have
-  to write the data twice, but it is also less reliable, because if data
-  corruption happens when the machine crashes, it may not be detected.
-  This can be used only for standalone devices, not with dm-crypt.
-
-* The libcryptsetup now keeps all file descriptors to underlying device
-  open during the whole lifetime of crypt device context to avoid excessive
-  scanning in udev (udev run scan on every descriptor close).
-
-* The luksDump command now prints more info for reencryption keyslot
-  (when a device is in-reencryption).
-
-* New --device-size parameter is supported for LUKS2 reencryption.
-  It may be used to encrypt/reencrypt only the initial part of the data
-  device if the user is aware that the rest of the device is empty.
-
-  Note: This change causes API break since the last rc0 release
-  (crypt_params_reencrypt structure contains additional field).
-
-* New --resume-only parameter is supported for LUKS2 reencryption.
-  This flag resumes reencryption process if it exists (not starting
-  new reencryption).
-
-* The repair command now tries LUKS2 reencryption recovery if needed.
-
-* If reencryption device is a file image, an interactive dialog now
-  asks if reencryption should be run safely in offline mode
-  (if autodetection of active devices failed).
-
-* Fix activation through a token where dm-crypt volume key was not
-  set through keyring (but using old device-mapper table parameter mode).
-
-* Online reencryption can now retain all keyslots (if all passphrases
-  are provided). Note that keyslot numbers will change in this case.
+Online reencryption is a complex feature. Please be sure you
+have a full data backup before using this feature.
 
 Changes since version 2.1.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +46,6 @@ The recovery supports three resilience modes:
     (similar to old offline reencryption)
 
 These resilience modes are not available if reencryption uses data shift.
-
 
 Note: until we have full documentation (both of the process and metadata),
 please refer to Ondrej's slides (some slight details are no longer relevant)
@@ -264,3 +214,66 @@ Other changes and fixes
   distinguish between a wrong passphrase and no keyslot available.
 
 * Fix a possible segfault in detached header handling (double free).
+
+* Add integritysetup support for bitmap mode introduced in Linux kernel 5.2.
+  Integritysetup now supports --integrity-bitmap-mode option and
+  --bitmap-sector-per-bit and --bitmap-flush-time commandline options.
+
+  In the bitmap operation mode, if a bit in the bitmap is 1, the corresponding
+  region's data and integrity tags are not synchronized - if the machine
+  crashes, the unsynchronized regions will be recalculated.
+  The bitmap mode is faster than the journal mode because we don't have
+  to write the data twice, but it is also less reliable, because if data
+  corruption happens when the machine crashes, it may not be detected.
+  This can be used only for standalone devices, not with dm-crypt.
+
+* The libcryptsetup now keeps all file descriptors to underlying device
+  open during the whole lifetime of crypt device context to avoid excessive
+  scanning in udev (udev run scan on every descriptor close).
+
+* The luksDump command now prints more info for reencryption keyslot
+  (when a device is in-reencryption).
+
+* New --device-size parameter is supported for LUKS2 reencryption.
+  It may be used to encrypt/reencrypt only the initial part of the data
+  device if the user is aware that the rest of the device is empty.
+
+  Note: This change causes API break since the last rc0 release
+  (crypt_params_reencrypt structure contains additional field).
+
+* New --resume-only parameter is supported for LUKS2 reencryption.
+  This flag resumes reencryption process if it exists (not starting
+  new reencryption).
+
+* The repair command now tries LUKS2 reencryption recovery if needed.
+
+* If reencryption device is a file image, an interactive dialog now
+  asks if reencryption should be run safely in offline mode
+  (if autodetection of active devices failed).
+
+* Fix activation through a token where dm-crypt volume key was not
+  set through keyring (but using old device-mapper table parameter mode).
+
+* Online reencryption can now retain all keyslots (if all passphrases
+  are provided). Note that keyslot numbers will change in this case.
+
+* Allow volume key file to be used if no LUKS2 keyslots are present.
+  If all keyslots are removed, LUKS2 has no longer information about
+  the volume key size (there is only key digest present).
+  Please use --key-size option to open the device or add a new keyslot
+  in these cases.
+
+* Print a warning if online reencrypt is called over LUKS1 (not supported).
+
+* Fix TCRYPT KDF failure in FIPS mode.
+  Some crypto backends support plain hash in FIPS mode but not for PBKDF2.
+
+* Remove FIPS mode restriction for crypt_volume_key_get.
+  It is an application responsibility to use this API in the proper context.
+
+* Reduce keyslots area size in luksFormat when the header device is too small.
+  Unless user explicitly asks for keyslots areas size  (either via
+  --luks2-keyslots-size or --offset) reduce keyslots size so that it fits
+  in metadata device.
+
+* Make resize action accept --device-size parameter (supports units suffix).
