@@ -14,6 +14,10 @@ unclocked by passphrase), \fBcipher\fR, \fBcipher mode\fR.
 Cryptsetup-reencrypt reencrypts data on LUKS device in-place. During
 reencryption process the LUKS device is marked unavailable.
 
+\fINOTE\fR: If you're looking for LUKS2 online reencryption manual please read cryptsetup(8)
+man page instead (see reencrypt action). This page is for legacy offline reencryption
+utility only.
+
 \fIWARNING\fR: The cryptsetup-reencrypt program is not resistant to hardware
 or kernel failures during reencryption (you can lose your data in this case).
 
