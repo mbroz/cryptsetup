@@ -103,11 +103,13 @@ export LANG=C
 test_required
 
 echo "HEADER CHECK"
-for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_*) ; do
+for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_* $TST_DIR/sys_[tv]c_*) ; do
 	echo -n " $file"
 	PIM_OPT=""
 	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"
-	echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $PIM_OPT $file >/dev/null || fail
+	SYS_OPT=""
+	[[ $file =~ sys_.* ]] && SYS_OPT="--tcrypt-system"
+	echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $SYS_OPT $PIM_OPT $file >/dev/null || fail
 	echo " [OK]"
 done
 
@@ -132,11 +134,13 @@ if [ $(id -u) != 0 ]; then
 fi
 
 echo "ACTIVATION FS UUID CHECK"
-for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_*) ; do
+for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_* $TST_DIR/sys_[tv]c_*) ; do
 	echo -n " $file"
 	PIM_OPT=""
 	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"
-	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen --veracrypt $PIM_OPT -r $file $MAP 2>&1)
+	SYS_OPT=""
+	[[ $file =~ sys_.* ]] && SYS_OPT="--tcrypt-system"
+	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen --veracrypt $SYS_OPT $PIM_OPT -r $file $MAP 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
