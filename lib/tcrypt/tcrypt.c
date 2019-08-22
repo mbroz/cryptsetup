@@ -630,7 +630,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		     struct tcrypt_phdr *hdr,
 		     struct crypt_params_tcrypt *params)
 {
-	struct device *base_device, *device = crypt_metadata_device(cd);
+	struct device *base_device = NULL, *device = crypt_metadata_device(cd);
 	ssize_t hdr_size = sizeof(struct tcrypt_phdr);
 	char *base_device_path;
 	int devfd, r;
@@ -653,11 +653,11 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 		devfd = device_open(cd, base_device, O_RDONLY);
-		device_free(cd, base_device);
 	} else
 		devfd = device_open(cd, device, O_RDONLY);
 
 	if (devfd < 0) {
+		device_free(cd, base_device);
 		log_err(cd, _("Cannot open device %s."), device_path(device));
 		return -EINVAL;
 	}
@@ -694,6 +694,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 			device_alignment(device), hdr, hdr_size, 0) == hdr_size)
 		r = TCRYPT_init_hdr(cd, hdr, params);
 
+	device_free(cd, base_device);
 	if (r < 0)
 		memset(hdr, 0, sizeof (*hdr));
 	return r;
