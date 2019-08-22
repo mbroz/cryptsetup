@@ -2692,7 +2692,7 @@ static void Luks2KeyslotAdd(void)
 	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
 	size_t key_ret_len, key_size = strlen(mk_hex) / 2;
 	uint64_t r_payload_offset;
-	const struct crypt_pbkdf_type argon2kdf = {
+	struct crypt_pbkdf_type pbkdf = {
 		.type = "argon2i",
 		.hash = "sha256",
 		.iterations = 4,
@@ -2701,12 +2701,20 @@ static void Luks2KeyslotAdd(void)
 		.flags = CRYPT_PBKDF_NO_BENCHMARK,
 	};
 	struct crypt_params_luks2 params2 = {
-		.pbkdf = &argon2kdf,
+		.pbkdf = &pbkdf,
 		.sector_size = SECTOR_SIZE
 	};
 
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key2, mk_hex2, key_size);
+
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+		pbkdf.iterations = 1000;
+	}
 
 	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
@@ -3625,6 +3633,14 @@ static void Luks2Reencryption(void)
 	/* reencryption currently depends on kernel keyring support in dm-crypt */
 	if (!t_dm_crypt_keyring_support())
 		return;
+
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode) {
+		pbkdf.type = CRYPT_KDF_PBKDF2;
+		pbkdf.parallel_threads = 0;
+		pbkdf.max_memory_kb = 0;
+		pbkdf.iterations = 1000;
+	}
 
 	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, NULL));
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
