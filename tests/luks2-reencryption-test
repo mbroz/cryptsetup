@@ -244,15 +244,16 @@ function fix_writes() { # $1 dmdev, $2 data dev
 }
 
 function prepare_linear_dev() {
-	if [ "$1" -gt 32 ]; then
-		preparebig $1
+	local _sizemb=$1
+	shift
+
+	if [ "$_sizemb" -gt 32 ]; then
+		preparebig $_sizemb
 	else
-		prepare dev_size_mb=$1
+		prepare dev_size_mb=$_sizemb $@
 	fi
 
-	local _size=$(blockdev --getsz $DEV)
-
-	dmsetup create $OVRDEV --table "0 $_size linear $DEV 0" || fail
+	dmsetup create $OVRDEV --table "0 $((_sizemb*1024*2)) linear $DEV 0" || fail
 
 	OLD_DEV=$DEV
 	DEV=/dev/mapper/$OVRDEV
@@ -875,7 +876,9 @@ if ! dm_delay_features; then
 fi
 
 echo "[6] Reencryption recovery"
-prepare_linear_dev 32
+# (check opt-io size optimization in reencryption code does not affect recovery)
+# device with opt-io size 32k
+prepare_linear_dev 32 opt_blks=64 opt_xferlen_exp=6
 OFFSET=8192
 
 echo "sector size 512->512"
@@ -957,7 +960,7 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 fi
 
 echo "[8] Reencryption with detached header recovery"
-prepare_linear_dev 31
+prepare_linear_dev 31 opt_blks=64 opt_xferlen_exp=6
 
 echo "sector size 512->512"
 
@@ -1076,7 +1079,7 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 fi
 
 echo "[12] Encryption with detached header recovery"
-prepare_linear_dev 31
+prepare_linear_dev 31 opt_blks=64 opt_xferlen_exp=6
 
 get_error_offsets 31 0
 
