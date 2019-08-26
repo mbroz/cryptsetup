@@ -2759,9 +2759,9 @@ int dm_is_dm_kernel_name(const char *name)
 	return strncmp(name, "dm-", 3) ? 0 : 1;
 }
 
-int dm_crypt_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_size,
+int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct volume_key *vk, const char *cipher,
-	size_t iv_offset, size_t data_offset, const char *integrity, uint32_t tag_size,
+	uint64_t iv_offset, uint64_t data_offset, const char *integrity, uint32_t tag_size,
 	uint32_t sector_size)
 {
 	int r = -EINVAL;
@@ -2800,7 +2800,7 @@ err:
 	return r;
 }
 
-int dm_verity_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_size,
+int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
 	const char *root_hash, uint32_t root_hash_size, uint64_t hash_offset_block,
 	uint64_t hash_blocks, struct crypt_params_verity *vp)
@@ -2826,7 +2826,7 @@ int dm_verity_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_si
 	return 0;
 }
 
-int dm_integrity_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_size,
+int dm_integrity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 			struct device *meta_device,
 		        struct device *data_device, uint64_t tag_size, uint64_t offset,
 			uint32_t sector_size, struct volume_key *vk,
@@ -2865,8 +2865,8 @@ int dm_integrity_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg
 	return 0;
 }
 
-int dm_linear_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_size,
-	struct device *data_device, size_t data_offset)
+int dm_linear_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
+	struct device *data_device, uint64_t data_offset)
 {
 	if (!data_device)
 		return -EINVAL;

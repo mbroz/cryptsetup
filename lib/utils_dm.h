@@ -168,22 +168,22 @@ void dm_backend_exit(struct crypt_device *cd);
 int dm_targets_allocate(struct dm_target *first, unsigned count);
 void dm_targets_free(struct crypt_device *cd, struct crypt_dm_active_device *dmd);
 
-int dm_crypt_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_size,
+int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct volume_key *vk, const char *cipher,
-	size_t iv_offset, size_t data_offset, const char *integrity,
+	uint64_t iv_offset, uint64_t data_offset, const char *integrity,
 	uint32_t tag_size, uint32_t sector_size);
-int dm_verity_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_size,
+int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
 	const char *root_hash, uint32_t root_hash_size, uint64_t hash_offset_block,
 	uint64_t hash_blocks, struct crypt_params_verity *vp);
-int dm_integrity_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_size,
+int dm_integrity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *meta_device,
 	struct device *data_device, uint64_t tag_size, uint64_t offset, uint32_t sector_size,
 	struct volume_key *vk,
 	struct volume_key *journal_crypt_key, struct volume_key *journal_mac_key,
 	const struct crypt_params_integrity *ip);
-int dm_linear_target_set(struct dm_target *tgt, size_t seg_offset, size_t seg_size,
-	struct device *data_device, size_t data_offset);
+int dm_linear_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
+	struct device *data_device, uint64_t data_offset);
 
 int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags);
 int dm_status_device(struct crypt_device *cd, const char *name);

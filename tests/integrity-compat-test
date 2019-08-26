@@ -9,6 +9,8 @@ INTSETUP_VALGRIND=../.libs/integritysetup
 INTSETUP_LIB_VALGRIND=../.libs
 
 DEV_NAME=dmc_test
+DEV_NAME_BIG=dmc_fake
+DEV_LOOP=""
 DEV=test123.img
 DEV2=test124.img
 KEY_FILE=key.img
@@ -20,6 +22,9 @@ dmremove() { # device
 
 cleanup() {
 	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME_BIG ] && dmremove $DEV_NAME_BIG
+	[ -n "$DEV_LOOP" ] && losetup -d "$DEV_LOOP"
+	DEV_LOOP=""
 	rm -f $DEV $DEV2 $KEY_FILE >/dev/null 2>&1
 }
 
@@ -292,6 +297,7 @@ int_mode() # alg tag_size sector_size [keyfile keysize]
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$INTSETUP" ] && skip "Cannot find $INTSETUP, test skipped."
+which blockdev >/dev/null || skip "Cannot find blockdev utility, test skipped."
 
 [ -n "$VALG" ] && valgrind_setup && INTSETUP=valgrind_run
 which hexdump >/dev/null 2>&1 || skip "WARNING: hexdump tool required."
@@ -385,6 +391,26 @@ if [ -n "$DM_INTEGRITY_BITMAP" ] ; then
 	int_error_detection B sha256      32 4096
 	int_error_detection B hmac-sha256 32 512 $KEY_FILE 32
 	int_error_detection B hmac-sha256 32 4096 $KEY_FILE 32
+else
+	echo "[N/A]"
+fi
+
+echo -n "Big device:"
+add_device
+DEV_LOOP=$(losetup -f $DEV --show)
+if [ -n "$DEV_LOOP" ] ; then
+dmsetup create $DEV_NAME_BIG <<EOF
+0 16284 linear $DEV_LOOP 0
+16284 80000000000 zero
+EOF
+	[ ! -b /dev/mapper/$DEV_NAME_BIG ] && fail
+	$INTSETUP format -q -s 512 --no-wipe /dev/mapper/$DEV_NAME_BIG
+	$INTSETUP open /dev/mapper/$DEV_NAME_BIG $DEV_NAME || fail
+	D_SIZE=$($INTSETUP dump /dev/mapper/$DEV_NAME_BIG | grep provided_data_sectors | sed -e 's/.*provided_data_sectors\ \+//g')
+	A_SIZE=$(blockdev --getsz /dev/mapper/$DEV_NAME)
+	# Compare strings (to avoid 64bit integers), not integers
+	[ -n "$A_SIZE" -a "$D_SIZE" != "$A_SIZE" ] && fail
+	echo "[OK]"
 else
 	echo "[N/A]"
 fi
