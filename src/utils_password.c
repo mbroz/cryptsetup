@@ -237,7 +237,7 @@ int tools_get_key(const char *prompt,
 		  int timeout, int verify, int pwquality,
 		  struct crypt_device *cd)
 {
-	char tmp[1024];
+	char tmp[PATH_MAX], *backing_file;
 	int r = -EINVAL, block;
 
 	block = tools_signals_blocked();
@@ -251,9 +251,11 @@ int tools_get_key(const char *prompt,
 			} else {
 				if (!prompt && !crypt_get_device_name(cd))
 					snprintf(tmp, sizeof(tmp), _("Enter passphrase: "));
-				else if (!prompt)
-					snprintf(tmp, sizeof(tmp), _("Enter passphrase for %s: "),
-						crypt_get_device_name(cd));
+				else if (!prompt) {
+					backing_file = crypt_loop_backing_file(crypt_get_device_name(cd));
+					snprintf(tmp, sizeof(tmp), _("Enter passphrase for %s: "), backing_file ?: crypt_get_device_name(cd));
+					free(backing_file);
+				}
 				r = crypt_get_key_tty(prompt ?: tmp, key, key_size, timeout, verify, cd);
 			}
 		} else {
