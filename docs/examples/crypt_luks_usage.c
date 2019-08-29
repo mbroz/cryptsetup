@@ -29,7 +29,6 @@
 static int format_and_add_keyslots(const char *path)
 {
 	struct crypt_device *cd;
-	struct crypt_params_luks1 params;
 	int r;
 
 	/*
@@ -54,35 +53,11 @@ static int format_and_add_keyslots(const char *path)
 
 	/*
 	 * So far no data were written on your device. This will change with call of
-	 * crypt_format() only if you specify CRYPT_LUKS1 as device type.
+	 * crypt_format() only if you specify CRYPT_LUKS2 as device type.
 	 */
 	printf("Device %s will be formatted to LUKS device after 5 seconds.\n"
 	       "Press CTRL+C now if you want to cancel this operation.\n", path);
 	sleep(5);
-
-
-	/*
-	 * Prepare LUKS format parameters
-	 *
-	 * hash parameter defines PBKDF2 hash algorithm used in LUKS header.
-	 * For compatibility reason we use SHA1 here.
-	 */
-	params.hash = "sha1";
-
-	/*
-	 * data_alignment parameter is relevant only in case of the luks header
-	 * and the payload are both stored on same device.
-	 *
-	 * if you set data_alignment = 0, cryptsetup will autodetect
-	 * data_alignment according to underlaying device topology.
-	 */
-	params.data_alignment = 0;
-
-	/*
-	 * data_device parameter defines that no external device
-	 * for luks header will be used
-	 */
-	params.data_device = NULL;
 
 	/*
 	 * NULLs for uuid and volume_key means that these attributes will be
@@ -92,13 +67,13 @@ static int format_and_add_keyslots(const char *path)
 	 * crypt_format() checks device size (LUKS header must fit there).
 	 */
 	r = crypt_format(cd,		/* crypt context */
-			 CRYPT_LUKS1,	/* LUKS1 is standard LUKS header */
+			 CRYPT_LUKS2,	/* LUKS2 is new LUKS header; use CRYPT_LUKS1 for LUKS1 */
 			 "aes",		/* used cipher */
 			 "xts-plain64",	/* used block mode and IV generator*/
 			 NULL,		/* generate UUID */
 			 NULL,		/* generate volume key from RNG */
-			 256 / 8,	/* 256bit key - here AES-128 in XTS mode, size is in bytes */
-			 &params);	/* parameters above */
+			 512 / 8,	/* 512bit key - here AES-256 in XTS mode, size is in bytes */
+			 NULL);		/* default parameters */
 
 	if(r < 0) {
 		printf("crypt_format() failed on device %s\n", crypt_get_device_name(cd));
@@ -107,7 +82,7 @@ static int format_and_add_keyslots(const char *path)
 	}
 
 	/*
-	 * The device now contains LUKS1 header, but there is
+	 * The device now contains LUKS header, but there is
 	 * no active keyslot with encrypted volume key yet.
 	 */
 
@@ -178,7 +153,7 @@ static int activate_and_check_status(const char *path, const char *device_name)
 	 * into crypt_device context.
 	 */
 	r = crypt_load(cd,		/* crypt context */
-		       CRYPT_LUKS1,	/* requested type */
+		       CRYPT_LUKS,	/* requested type - here LUKS of any type */
 		       NULL);		/* additional parameters (not used) */
 
 	if (r < 0) {
@@ -201,7 +176,7 @@ static int activate_and_check_status(const char *path, const char *device_name)
 		return r;
 	}
 
-	printf("LUKS device %s/%s is active.\n", crypt_get_dir(), device_name);
+	printf("%s device %s/%s is active.\n", crypt_get_type(cd), crypt_get_dir(), device_name);
 	printf("\tcipher used: %s\n", crypt_get_cipher(cd));
 	printf("\tcipher mode: %s\n", crypt_get_cipher_mode(cd));
 	printf("\tdevice UUID: %s\n", crypt_get_uuid(cd));
