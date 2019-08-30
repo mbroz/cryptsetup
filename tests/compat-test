@@ -751,11 +751,8 @@ fi
 which expect >/dev/null 2>&1 || skip "WARNING: expect tool missing, interactive test will be skipped." 0
 
 prepare "[32] Interactive password retry from terminal." new
-if [ "$(pwd)" = "/" ]; then
-	EXPECT_DEV=/$IMG
-else
-	EXPECT_DEV=$(pwd)/$IMG
-fi
+EXPECT_DEV=$(losetup $LOOPDEV | sed -e "s/.*(\(.*\))/\1/")
+
 expect - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
 set timeout 10
