@@ -166,7 +166,7 @@ static int FEC_process_inputs(struct crypt_device *cd,
 
 			/* decoding from parity device */
 			if (decode) {
-				if (read_buffer(fd, &rs_block[ctx.rsn], ctx.roots) != ctx.roots) {
+				if (read_buffer(fd, &rs_block[ctx.rsn], ctx.roots) < 0) {
 					log_err(cd, _("Failed to read parity for RS block %" PRIu64 "."), n);
 					r = -EIO;
 					goto out;
@@ -185,7 +185,7 @@ static int FEC_process_inputs(struct crypt_device *cd,
 			} else {
 				/* encoding and writing parity data to fec device */
 				encode_rs_char(rs, rs_block, &rs_block[ctx.rsn]);
-				if (write_buffer(fd, &rs_block[ctx.rsn], ctx.roots) != ctx.roots) {
+				if (write_buffer(fd, &rs_block[ctx.rsn], ctx.roots) < 0) {
 					log_err(cd, _("Failed to write parity for RS block %" PRIu64 "."), n);
 					r = -EIO;
 					goto out;

@@ -151,7 +151,7 @@ static int next_argon2_params(uint32_t *t_cost, uint32_t *m_cost,
 	old_t_cost = *t_cost;
 	old_m_cost = *m_cost;
 
-	if (ms > target_ms) {
+	if ((uint32_t)ms > target_ms) {
 		/* decreasing, first try to lower t_cost, then m_cost */
 		num = (uint64_t)*t_cost * (uint64_t)target_ms;
 		denom = (uint64_t)ms;
