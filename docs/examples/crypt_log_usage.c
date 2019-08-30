@@ -1,5 +1,5 @@
 /*
- * An example of using logging through libcryptsetup API
+ * libcryptsetup API log example
  *
  * Copyright (C) 2011-2019 Red Hat, Inc. All rights reserved.
  *
@@ -25,10 +25,8 @@
 #include <libcryptsetup.h>
 
 /*
- * This is an example of function that can be registered using crypt_set_log_callback API.
+ * This is an example of crypt_set_log_callback API callback.
  *
- * Its prototype is void (*log)(int level, const char *msg, void *usrptr) as defined
- * in crypt_set_log_callback
  */
 static void simple_syslog_wrapper(int level, const char *msg, void *usrptr)
 {
@@ -71,7 +69,7 @@ int main(void)
 		return 2;
 	}
 
-	/* crypt_set_log_callback() - register a log function for crypt context */
+	/* crypt_set_log_callback() - register a log callback for crypt context */
 	crypt_set_log_callback(cd, &simple_syslog_wrapper, (void *)usrprefix);
 
 	/* send messages ithrough the crypt_log() interface */
@@ -83,7 +81,7 @@ int main(void)
 	/* release crypt context */
 	crypt_free(cd);
 
-	/* Initialize default (global) log function */
+	/* Initialize default (global) log callback */
 	crypt_set_log_callback(NULL, &simple_syslog_wrapper, NULL);
 
 	crypt_log(NULL, CRYPT_LOG_NORMAL, "This is normal log message");
