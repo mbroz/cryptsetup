@@ -891,14 +891,14 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 	rh->direction = reencrypt_direction(hdr);
 
 	if (!strcmp(params->resilience, "datashift")) {
-		log_dbg(cd, "Initializaing reencryption context with data_shift resilience.");
+		log_dbg(cd, "Initializing reencryption context with data_shift resilience.");
 		rh->rp.type = REENC_PROTECTION_DATASHIFT;
 		rh->data_shift = reencrypt_data_shift(hdr);
 	} else if (!strcmp(params->resilience, "journal")) {
-		log_dbg(cd, "Initializaing reencryption context with journal resilience.");
+		log_dbg(cd, "Initializing reencryption context with journal resilience.");
 		rh->rp.type = REENC_PROTECTION_JOURNAL;
 	} else if (!strcmp(params->resilience, "checksum")) {
-		log_dbg(cd, "Initializaing reencryption context with checksum resilience.");
+		log_dbg(cd, "Initializing reencryption context with checksum resilience.");
 		rh->rp.type = REENC_PROTECTION_CHECKSUM;
 
 		r = snprintf(rh->rp.p.csum.hash,
@@ -925,7 +925,7 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 				   rh->rp.p.csum.checksums_len))
 			return -ENOMEM;
 	} else if (!strcmp(params->resilience, "none")) {
-		log_dbg(cd, "Initializaing reencryption context with none resilience.");
+		log_dbg(cd, "Initializing reencryption context with none resilience.");
 		rh->rp.type = REENC_PROTECTION_NONE;
 	} else {
 		log_err(cd, _("Unsupported resilience mode %s"), params->resilience);
@@ -2719,7 +2719,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		required_size = mapping_size;
 
 	if (required_size) {
-		/* TODO: Add support for chaning fixed minimal size in reencryption mda where possible */
+		/* TODO: Add support for changing fixed minimal size in reencryption mda where possible */
 		if ((minimal_size && (required_size < minimal_size)) ||
 		    (required_size > (device_size >> SECTOR_SHIFT)) ||
 		    (!dynamic && (required_size != minimal_size)) ||

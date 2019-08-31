@@ -1388,7 +1388,7 @@ static int action_open_luks(void)
 	if (opt_master_key_file) {
 		keysize = crypt_get_volume_key_size(cd);
 		if (!keysize && !opt_key_size) {
-			log_err(_("Cannot dermine volume key size for LUKS without keyslots, please use --key-size option."));
+			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
 			r = -EINVAL;
 			goto out;
 		} else if (!keysize)
@@ -1699,7 +1699,7 @@ static int action_luksAddKey(void)
 
 	if (opt_master_key_file) {
 		if (!keysize && !opt_key_size) {
-			log_err(_("Cannot dermine volume key size for LUKS without keyslots, please use --key-size option."));
+			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
 			r = -EINVAL;
 			goto out;
 		} else if (!keysize)
