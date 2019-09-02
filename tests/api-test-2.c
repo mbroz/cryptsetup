@@ -3606,7 +3606,7 @@ static void Luks2Reencryption(void)
 /* reencryption currently depends on kernel keyring support */
 #if KERNEL_KEYRING
 	/* NOTES:
-	 *  - reencryption requires luks2 paramters. can we avoid it?
+	 *  - reencryption requires luks2 parameters. can we avoid it?
 	 */
 	uint32_t getflags;
 	uint64_t r_header_size, r_size_1;
@@ -3700,7 +3700,7 @@ static void Luks2Reencryption(void)
 	/* keyslot assigned to old segment remains active */
 	EQ_(crypt_keyslot_status(cd, 21), CRYPT_SLOT_ACTIVE);
 
-	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 10, "aes", "xts-plain", &rparams), "Reencryption already initalized.");
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 10, "aes", "xts-plain", &rparams), "Reencryption already initialized.");
 
 	rparams.flags = 0;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams));
@@ -3767,7 +3767,7 @@ static void Luks2Reencryption(void)
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams));
 	OK_(crypt_reencrypt(cd, NULL));
 
-	/* FIXME: this is a bug, but not critical (data shift paramter is ignored after initialzation) */
+	/* FIXME: this is a bug, but not critical (data shift parameter is ignored after initialization) */
 	//rparams.data_shift = 8;
 	//FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams), "Invalid reencryption parameters.");
 
@@ -3927,7 +3927,7 @@ static void Luks2Reencryption(void)
 	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 1, 0, "aes", "xts-plain64", &rparams), "Device is too small.");
 	CRYPT_FREE(cd);
 	// BUG: We need reencrypt abort flag
-	/* it fails, but it's already initalized and we have no way to abort yet */
+	/* it fails, but it's already initialized and we have no way to abort yet */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
