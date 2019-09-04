@@ -67,6 +67,7 @@ typedef int32_t key_serial_t;
 #define IMAGE1 "compatimage2.img"
 #define IMAGE_EMPTY "empty.img"
 #define IMAGE_EMPTY_SMALL "empty_small.img"
+#define IMAGE_EMPTY_SMALL_2 "empty_small2.img"
 #define IMAGE_PV_LUKS2_SEC "blkid-luks2-pv.img"
 
 #define KEYFILE1 "key1.file"
@@ -322,6 +323,7 @@ static void _cleanup(void)
 	remove(IMAGE_PV_LUKS2_SEC);
 	remove(IMAGE_PV_LUKS2_SEC ".bcp");
 	remove(IMAGE_EMPTY_SMALL);
+	remove(IMAGE_EMPTY_SMALL_2);
 
 	_remove_keyfiles();
 
@@ -378,6 +380,8 @@ static int _setup(void)
 	close(fd);
 
 	_system("dd if=/dev/zero of=" IMAGE_EMPTY_SMALL " bs=1M count=7 2>/dev/null", 1);
+
+	_system("dd if=/dev/zero of=" IMAGE_EMPTY_SMALL_2 " bs=512 count=2050 2>/dev/null", 1);
 
 	_system(" [ ! -e " NO_REQS_LUKS2_HEADER " ] && xz -dk " NO_REQS_LUKS2_HEADER ".xz", 1);
 	fd = loop_attach(&DEVICE_4, NO_REQS_LUKS2_HEADER, 0, 0, &ro);
@@ -1949,6 +1953,11 @@ static void LuksConvert(void)
 		.time_ms = 1
 	};
 
+	struct crypt_params_luks1 luks1 = {
+		.hash = "sha256",
+		.data_device = DMDIR L_DEVICE_1S
+	};
+
 	struct crypt_params_luks2 luks2 = {
 		.pbkdf = &pbkdf2,
 		.sector_size = 512
@@ -2430,6 +2439,26 @@ static void LuksConvert(void)
 	EQ_(crypt_activate_by_passphrase(cd, NULL, 4, PASS4, strlen(PASS4), 0), 4);
 	EQ_(crypt_activate_by_passphrase(cd, NULL, 5, PASS5, strlen(PASS5), 0), 5);
 	EQ_(crypt_activate_by_passphrase(cd, NULL, 6, PASS6, strlen(PASS6), 0), 6);
+	CRYPT_FREE(cd);
+
+	// detached LUKS1 header upconversion
+	OK_(create_dmdevice_over_loop(H_DEVICE, 2050)); // default LUKS1 header should fit there
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	crypt_set_iteration_time(cd, 1);
+	//OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
+	OK_(crypt_format(cd, CRYPT_LUKS1, "aes", "xts-plain64", NULL, NULL, 32, &luks1));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 7);
+	FAIL_(crypt_convert(cd, CRYPT_LUKS2, NULL), "Unable to move keyslots. Not enough space.");
+	CRYPT_FREE(cd);
+
+	// 2050 sectors, empty file
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL_2));
+	//OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
+	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_format(cd, CRYPT_LUKS1, "aes", "xts-plain64", NULL, NULL, 32, &luks1));
+	EQ_(crypt_get_data_offset(cd), 0);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 7);
+	OK_(crypt_convert(cd, CRYPT_LUKS2, NULL));
 	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();

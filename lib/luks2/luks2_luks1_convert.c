@@ -518,7 +518,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	int r;
 	json_object *jobj = NULL;
 	size_t buf_size, buf_offset, luks1_size, luks1_shift = 2 * LUKS2_HDR_16K_LEN - LUKS_ALIGN_KEYSLOTS;
-	uint64_t max_size = crypt_get_data_offset(cd) * SECTOR_SIZE;
+	uint64_t required_size, max_size = crypt_get_data_offset(cd) * SECTOR_SIZE;
 
 	/* for detached headers max size == device size */
 	if (!max_size && (r = device_size(crypt_metadata_device(cd), &max_size)))
@@ -539,10 +539,17 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 
 	log_dbg(cd, "Max size: %" PRIu64 ", LUKS1 (full) header size %zu , required shift: %zu",
 		max_size, luks1_size, luks1_shift);
-	if ((max_size - luks1_size) < luks1_shift) {
+
+	required_size = luks1_size + luks1_shift;
+
+	if ((max_size < required_size) &&
+	    device_fallocate(crypt_metadata_device(cd), required_size)) {
 		log_err(cd, _("Unable to move keyslot area. Not enough space."));
 		return -EINVAL;
 	}
+
+	if (max_size < required_size)
+		max_size = required_size;
 
 	r = json_luks1_object(hdr1, &jobj, max_size - 2 * LUKS2_HDR_16K_LEN);
 	if (r < 0)
