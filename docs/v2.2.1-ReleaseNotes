@@ -1,0 +1,36 @@
+Cryptsetup 2.2.1 Release Notes
+==============================
+Stable bug-fix release.
+
+This version contains a fix for a possible data corruption bug
+on 32-bit platforms.
+All users of cryptsetup 2.1 and 2.2 should upgrade to this version.
+
+Changes since version 2.2.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix possible data length and IV offset overflow on 32bit architectures.
+  Other 64-bit architectures are not affected.
+
+  The flawed helper function prototypes (introduced in version 2.1.0) used
+  size_t type, that is 32-bit integer on 32-bit systems.
+  This patch fixes the problem to properly use 64-bit types.
+
+  If the offset parameter addresses devices larger than 2TB, the value
+  overflows and stores incorrect information in the metadata.
+  For example, integrity device is smaller than expected size if used
+  over large disk on 32-bit architecture.
+
+  This issue is not present with the standard LUKS1/LUKS2 devices without
+  integrity extensions.
+
+* Fix a regression in TrueCrypt/VeraCrypt system partition activation.
+
+* Reinstate missing backing file hint for loop device.
+
+  If the encrypted device is backed by a file (loopback), cryptsetup now
+  shows the path to the backing file in passphrase query (as in 1.x version).
+
+* LUKS2 reencryption block size is now aligned to reported optimal IO size.
+  This change eliminates possible non-aligned device warnings in kernel log
+  during reencryption.
