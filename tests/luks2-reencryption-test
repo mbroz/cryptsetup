@@ -227,10 +227,20 @@ function error_writes() { # $1 dmdev, $2 data dev, $3 offset, $4 size
 	local _offset=$(($3+$4))
 	local _size=$((_dev_size-_offset))
 	local _err=$1-err
+	local _table=
 	dmsetup create $_err --table "0 $_dev_size error" || fail
-echo -e "0 $3 linear $2 0\n
-$3 $4 delay $2 $3 0 /dev/mapper/$_err $3 0\n
-$_offset $_size linear $2 $_offset" | dmsetup load $1 || fail
+
+	if [ $3 -ne 0 ]; then
+		_table="0 $3 linear $2 0\n"
+	fi
+
+	_table=$_table"$3 $4 delay $2 $3 0 /dev/mapper/$_err $3 0"
+
+	if [ $_size -ne 0 ]; then
+		_table="$_table\n$_offset $_size linear $2 $_offset"
+	fi
+
+	echo -e "$_table" | dmsetup load $1 || fail
 	dmsetup resume $1 || fail
 	blockdev --setra 0 /dev/mapper/$1
 	blockdev --setra 0 /dev/mapper/$_err
