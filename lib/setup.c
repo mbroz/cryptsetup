@@ -111,7 +111,8 @@ struct crypt_device {
 		struct volume_key *journal_crypt_key;
 	} integrity;
 	struct { /* used in CRYPT_BITLK */
-		struct crypt_params_bitlk params;
+		struct bitlk_metadata params;
+		char *cipher_spec;
 	} bitlk;
 	struct { /* used if initialized without header by name */
 		char *active_name;
@@ -970,7 +971,7 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 }
 
 static int _crypt_load_bitlk(struct crypt_device *cd,
-			     struct crypt_params_bitlk *params)
+			     struct bitlk_metadata *params)
 {
 	int r;
 
@@ -981,6 +982,12 @@ static int _crypt_load_bitlk(struct crypt_device *cd,
 	r = BITLK_read_sb(cd, &cd->u.bitlk.params);
 	if (r < 0)
 		return r;
+
+	if (asprintf(&cd->u.bitlk.cipher_spec, "%s-%s",
+		     cd->u.bitlk.params.cipher, cd->u.bitlk.params.cipher_mode) < 0) {
+		cd->u.bitlk.cipher_spec = NULL;
+		return -ENOMEM;
+	}
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_BITLK)))
 		return -ENOMEM;
@@ -1124,6 +1131,9 @@ static void crypt_free_type(struct crypt_device *cd)
 		free(CONST_CAST(void*)cd->u.integrity.params.journal_crypt);
 		crypt_free_volume_key(cd->u.integrity.journal_crypt_key);
 		crypt_free_volume_key(cd->u.integrity.journal_mac_key);
+	} else if (isBITLK(cd->type)) {
+		free(cd->u.bitlk.cipher_spec);
+		BITLK_bitlk_metadata_free(&cd->u.bitlk.params);
 	} else if (!cd->type) {
 		free(cd->u.none.active_name);
 		cd->u.none.active_name = NULL;
@@ -4664,7 +4674,7 @@ int crypt_dump(struct crypt_device *cd)
 	else if (isINTEGRITY(cd->type))
 		return INTEGRITY_dump(cd, crypt_data_device(cd), 0);
 	else if (isBITLK(cd->type))
-		return BITLK_dump(cd, crypt_data_device(cd));
+		return BITLK_dump(cd, crypt_data_device(cd), &cd->u.bitlk.params);
 
 	log_err(cd, _("Dump operation is not supported for this device type."));
 	return -EINVAL;
@@ -4683,6 +4693,8 @@ const char *crypt_get_cipher_spec(struct crypt_device *cd)
 		return cd->u.plain.cipher_spec;
 	else if (isLOOPAES(cd->type))
 		return cd->u.loopaes.cipher_spec;
+	else if (isBITLK(cd->type))
+		return cd->u.bitlk.cipher_spec;
 	else if (!cd->type && !_init_by_name_crypt_none(cd))
 		return cd->u.none.cipher_spec;
 
@@ -4713,6 +4725,9 @@ const char *crypt_get_cipher(struct crypt_device *cd)
 	if (isTCRYPT(cd->type))
 		return cd->u.tcrypt.params.cipher;
 
+	if (isBITLK(cd->type))
+		return cd->u.bitlk.params.cipher;
+
 	if (!cd->type && !_init_by_name_crypt_none(cd))
 		return cd->u.none.cipher;
 
@@ -4742,6 +4757,9 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 
 	if (isTCRYPT(cd->type))
 		return cd->u.tcrypt.params.mode;
+
+	if (isBITLK(cd->type))
+		return cd->u.bitlk.params.cipher_mode;
 
 	if (!cd->type && !_init_by_name_crypt_none(cd))
 		return cd->u.none.cipher_mode;
@@ -4817,6 +4835,9 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 	if (isVERITY(cd->type))
 		return cd->u.verity.uuid;
 
+	if (isBITLK(cd->type))
+		return cd->u.bitlk.params.guid;
+
 	return NULL;
 }
 
@@ -4876,6 +4897,9 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 
 	if (isTCRYPT(cd->type))
 		return cd->u.tcrypt.params.key_size;
+
+	if (isBITLK(cd->type))
+		return cd->u.bitlk.params.key_size;
 
 	if (!cd->type && !_init_by_name_crypt_none(cd))
 		return cd->u.none.key_size;
