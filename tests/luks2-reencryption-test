@@ -823,6 +823,26 @@ check_hash $PWD1 $HASH6 $IMG_HDR
 $CRYPTSETUP luksHeaderRestore --header-backup-file $IMG_HDR $DEV -q || fail
 check_hash $PWD1 $HASH6
 
+# Device activation after encryption initialization
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --init-only -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON $DEV_NAME >/dev/null || fail
+$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
+check_hash_dev /dev/mapper/$DEV_NAME $HASH5
+echo $PWD1 | $CRYPTSETUP reencrypt --resume-only $DEV -q || fail
+check_hash_dev /dev/mapper/$DEV_NAME $HASH5
+
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP close $DEV_NAME
+check_hash_head $PWD1 $((56*1024*2)) $HASH5
+
+# Device activation using key file
+wipe_dev $DEV
+echo -n $PWD1 > $KEY1
+$CRYPTSETUP reencrypt $DEV --encrypt --init-only -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M --key-file $KEY1 -q $FAST_PBKDF_ARGON $DEV_NAME >/dev/null || fail
+$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
+$CRYPTSETUP close $DEV_NAME
+echo $PWD1 | $CRYPTSETUP open $DEV --test-passphrase || fail
+
 echo "[3] Encryption with detached header"
 preparebig 256
 wipe_dev $DEV
@@ -837,6 +857,25 @@ check_hash $PWD1 $HASH3 $IMG_HDR
 wipe_dev $DEV
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c serpent-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
+
+# Device activation after encryption initialization
+wipe_dev $DEV
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --init-only -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV $DEV_NAME >/dev/null || fail
+$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
+check_hash_dev /dev/mapper/$DEV_NAME $HASH3
+echo $PWD1 | $CRYPTSETUP reencrypt --resume-only --header $IMG_HDR --active-name $DEV_NAME -q || fail
+check_hash_dev /dev/mapper/$DEV_NAME $HASH3
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP close $DEV_NAME
+check_hash $PWD1 $HASH3 $IMG_HDR
+
+# Device activation using key file
+wipe_dev $DEV
+echo -n $PWD1 > $KEY1
+$CRYPTSETUP reencrypt $DEV --encrypt --init-only -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR --key-file $KEY1 -q $FAST_PBKDF_ARGON $DEV_NAME >/dev/null || fail
+$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
+$CRYPTSETUP close $DEV_NAME
+echo $PWD1 | $CRYPTSETUP open --header $IMG_HDR $DEV --test-passphrase || fail
 
 echo "[4] Reencryption with detached header"
 wipe $PWD1 $IMG_HDR

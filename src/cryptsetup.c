@@ -2591,11 +2591,12 @@ static int action_reencrypt_load(struct crypt_device *cd)
 
 static int action_encrypt_luks2(struct crypt_device **cd)
 {
-	const char *type;
+	const char *type, *activated_name = NULL;
 	int keyslot, r, fd;
 	uuid_t uuid;
 	size_t passwordLen;
 	char *msg, uuid_str[37], header_file[PATH_MAX] = { 0 }, *password = NULL;
+	uint32_t activate_flags = 0;
 	const struct crypt_params_luks2 luks2_params = {
 		.sector_size = opt_sector_size ?: SECTOR_SIZE
 	};
@@ -2729,6 +2730,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		goto err;
 	}
 
+	/* Restore temporary header in head of data device */
 	if (*header_file) {
 		crypt_free(*cd);
 		*cd = NULL;
@@ -2743,10 +2745,22 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		}
 	}
 
+	/* activate device */
+	if (action_argc > 1) {
+		activated_name = action_argv[1];
+		_set_activation_flags(&activate_flags);
+		r = crypt_activate_by_passphrase(*cd, activated_name, opt_key_slot, password, passwordLen, activate_flags);
+		if (r >= 0)
+			log_std(_("%s/%s is now active.\n"), crypt_get_dir(), activated_name);
+	}
+
+	if (r < 0)
+		goto err;
+
 	/* just load reencryption context to continue reencryption */
-	if (r >= 0 && !opt_reencrypt_init_only) {
+	if (!opt_reencrypt_init_only) {
 		params.flags &= ~CRYPT_REENCRYPT_INITIALIZE_ONLY;
-		r = crypt_reencrypt_init_by_passphrase(*cd, NULL, password, passwordLen,
+		r = crypt_reencrypt_init_by_passphrase(*cd, activated_name, password, passwordLen,
 				CRYPT_ANY_SLOT, keyslot, NULL, NULL, &params);
 	}
 err:

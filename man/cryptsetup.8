@@ -161,7 +161,7 @@ above in LUKS2 metadata (only after successful refresh operation).
 in dm-crypt driver.
 
 .PP
-\fIreencrypt\fR <device> or --active-name <name>
+\fIreencrypt\fR <device> or --active-name <name> [<new_name>]
 .IP
 Run resilient reencryption (LUKS2 device only).
 
@@ -190,6 +190,10 @@ option).
 If the reencryption process was interrupted abruptly (reencryption process crash, system crash, poweroff)
 it may require recovery. The recovery is currently run automatically on next activation (action \fIopen\fR)
 when needed.
+
+Optional parameter <new_name> takes effect only with \-\-encrypt option and it activates device <new_name>
+immediately after encryption initialization gets finished. That's useful when device needs to be ready
+as soon as possible and mounted (used) before full data area encryption is completed.
 
 Action supports following additional \fB<options>\fR [\-\-encrypt, \-\-decrypt, \-\-device\-size,
 \-\-resilience, \-\-resilience-hash, \-\-hotzone-size, \-\-init\-only, \-\-resume\-only,
