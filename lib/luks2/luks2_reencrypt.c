@@ -1777,14 +1777,15 @@ out:
  * 	2) can't we derive hotzone device name from crypt context? (unlocked name, device uuid, etc?)
  */
 static int reencrypt_load_overlay_device(struct crypt_device *cd, struct luks2_hdr *hdr,
-	const char *overlay, const char *hotzone, struct volume_key *vks, uint64_t size)
+	const char *overlay, const char *hotzone, struct volume_key *vks, uint64_t size,
+	uint32_t flags)
 {
 	char hz_path[PATH_MAX];
 	int r;
 
 	struct device *hz_dev = NULL;
 	struct crypt_dm_active_device dmd = {
-		.flags = CRYPT_ACTIVATE_KEYRING_KEY,
+		.flags = flags,
 	};
 
 	log_dbg(cd, "Loading new table for overlay device %s.", overlay);
@@ -2033,9 +2034,10 @@ static int reencrypt_refresh_overlay_devices(struct crypt_device *cd,
 		const char *overlay,
 		const char *hotzone,
 		struct volume_key *vks,
-		uint64_t device_size)
+		uint64_t device_size,
+		uint32_t flags)
 {
-	int r = reencrypt_load_overlay_device(cd, hdr, overlay, hotzone, vks, device_size);
+	int r = reencrypt_load_overlay_device(cd, hdr, overlay, hotzone, vks, device_size, flags);
 	if (r) {
 		log_err(cd, _("Failed to reload device %s."), overlay);
 		return REENC_ERR;
@@ -2637,6 +2639,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	uint64_t minimal_size, device_size, mapping_size = 0, required_size = 0;
 	bool dynamic;
 	struct crypt_params_reencrypt rparams = {};
+	uint32_t flags = 0;
 
 	if (params) {
 		rparams = *params;
@@ -2693,6 +2696,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 				    DM_ACTIVE_CRYPT_CIPHER, &dmd_target);
 		if (r < 0)
 			goto err;
+		flags = dmd_target.flags;
 
 		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, LUKS2_get_segments_jobj(hdr), &dmd_source);
 		if (!r) {
@@ -2766,6 +2770,8 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 			goto err;
 		}
 	}
+
+	rh->flags = flags;
 
 	MOVE_REF(rh->vks, *vks);
 	MOVE_REF(rh->reenc_lock, reencrypt_lock);
@@ -2968,7 +2974,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	}
 
 	if (online) {
-		r = reencrypt_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name, rh->vks, rh->device_size);
+		r = reencrypt_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name, rh->vks, rh->device_size, rh->flags);
 		/* Teardown overlay devices with dm-error. None bio shall pass! */
 		if (r != REENC_OK)
 			return r;
@@ -3101,7 +3107,7 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	if (rh->online) {
-		r = LUKS2_reload(cd, rh->device_name, rh->vks, rh->device_size, CRYPT_ACTIVATE_KEYRING_KEY);
+		r = LUKS2_reload(cd, rh->device_name, rh->vks, rh->device_size, rh->flags);
 		if (r)
 			log_err(cd, _("Failed to reload device %s."), rh->device_name);
 		if (!r) {

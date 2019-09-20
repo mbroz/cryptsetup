@@ -162,6 +162,7 @@ struct luks2_reenc_context {
 	char *device_name;
 	char *hotzone_name;
 	char *overlay_name;
+	uint32_t flags;
 
 	/* reencryption window persistence attributes */
 	struct reenc_protection rp;

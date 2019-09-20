@@ -4260,6 +4260,44 @@ static void Luks2Reencryption(void)
 	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_header_size + 16));
+
+	/* Test LUKS2 reencryption honors flags device was activate with */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	params2.sector_size = 512;
+	params2.data_device = NULL;
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
+	OK_(crypt_volume_key_keyring(cd, 0)); /* disable keyring */
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ACTIVATE_ALLOW_DISCARDS), 6);
+	OK_(crypt_volume_key_keyring(cd, 1));
+	rparams.mode = CRYPT_REENCRYPT_REENCRYPT;
+	rparams.direction = CRYPT_REENCRYPT_FORWARD,
+	rparams.resilience = "none",
+	rparams.max_hotzone_size = 8;
+	rparams.luks2 = &params2;
+	rparams.flags = 0;
+	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
+	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "xts-plain64", &rparams));
+	test_progress_steps = 1;
+	OK_(crypt_reencrypt(cd, &test_progress));
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_CLEAN);
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS, CRYPT_ACTIVATE_ALLOW_DISCARDS);
+	EQ_(cad.flags & CRYPT_ACTIVATE_KEYRING_KEY, 0);
+	CRYPT_FREE(cd);
+	OK_(crypt_init_by_name(&cd, CDEVICE_1));
+	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "xts-plain64", &rparams));
+	OK_(crypt_reencrypt(cd, NULL));
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS, CRYPT_ACTIVATE_ALLOW_DISCARDS);
+	EQ_(cad.flags & CRYPT_ACTIVATE_KEYRING_KEY, 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
+
+	_cleanup_dmdevices();
 #endif
 }
 
