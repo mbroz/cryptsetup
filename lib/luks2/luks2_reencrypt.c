@@ -1900,7 +1900,7 @@ static int reencrypt_swap_backing_device(struct crypt_device *cd, const char *na
 	r = dm_reload_device(cd, name, &dmd, 0, 0);
 	if (!r) {
 		log_dbg(cd, "Resuming device %s", name);
-		r = dm_resume_device(cd, name, dmd.flags);
+		r = dm_resume_device(cd, name, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
 	}
 
 out:
@@ -3108,7 +3108,7 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 		if (r)
 			log_err(cd, _("Failed to reload device %s."), rh->device_name);
 		if (!r) {
-			r = dm_resume_device(cd, rh->device_name, 0);
+			r = dm_resume_device(cd, rh->device_name, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
 			if (r)
 				log_err(cd, _("Failed to resume device %s."), rh->device_name);
 		}
