@@ -1869,15 +1869,12 @@ err:
 }
 
 static int reencrypt_swap_backing_device(struct crypt_device *cd, const char *name,
-			      const char *new_backend_name, uint32_t flags)
+			      const char *new_backend_name)
 {
 	int r;
 	struct device *overlay_dev = NULL;
 	char overlay_path[PATH_MAX] = { 0 };
-
-	struct crypt_dm_active_device dmd = {
-		.flags = flags,
-	};
+	struct crypt_dm_active_device dmd = {};
 
 	log_dbg(cd, "Redirecting %s mapping to new backing device: %s.", name, new_backend_name);
 
@@ -1972,7 +1969,7 @@ static int reencrypt_init_device_stack(struct crypt_device *cd,
 	}
 
 	/* swap origin mapping to overlay device */
-	r = reencrypt_swap_backing_device(cd, rh->device_name, rh->overlay_name, CRYPT_ACTIVATE_KEYRING_KEY);
+	r = reencrypt_swap_backing_device(cd, rh->device_name, rh->overlay_name);
 	if (r) {
 		log_err(cd, _("Failed to load new mapping for device %s."), rh->device_name);
 		goto err;
