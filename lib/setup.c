@@ -2750,6 +2750,12 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		goto out;
 	}
 
+	if (MISALIGNED(new_size, device_block_size(cd, crypt_data_device(cd)) >> SECTOR_SHIFT)) {
+		log_err(cd, _("Device size is not aligned to device logical block size."));
+		r = -EINVAL;
+		goto out;
+	}
+
 	dmd.uuid = crypt_get_uuid(cd);
 	dmd.size = new_size;
 	dmd.flags = dmdq.flags | CRYPT_ACTIVATE_REFRESH;

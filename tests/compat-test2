@@ -52,6 +52,9 @@ function remove_mapping()
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
 	unset TEST_KEYRING
+
+	rmmod scsi_debug 2> /dev/null
+	scsi_debug_teardown $DEV
 }
 
 function force_uevent()
@@ -239,6 +242,34 @@ function setup_luks2_env() {
 		HAVE_KEYRING=0
 	fi
 	$CRYPTSETUP close $DEV_NAME || fail
+}
+
+# $1 path to scsi debug bdev
+scsi_debug_teardown() {
+	local _tries=15;
+
+	while [ -b "$1" -a $_tries -gt 0 ]; do
+		rmmod scsi_debug 2> /dev/null
+		if [ -b "$1" ]; then
+			sleep .1
+			_tries=$((_tries-1))
+		fi
+	done
+
+	test ! -b "$1" || rmmod scsi_debug 2> /dev/null
+}
+
+function add_scsi_device() {
+	scsi_debug_teardown $DEV
+        modprobe scsi_debug $@ delay=0
+        if [ $? -ne 0 ] ; then
+                echo "This kernel seems to not support proper scsi_debug module, test skipped."
+                exit 77
+        fi
+
+        sleep 1
+        DEV="/dev/"$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+        [ -b $DEV ] || fail "Cannot find $DEV."
 }
 
 export LANG=C
@@ -492,6 +523,17 @@ if dm_crypt_sector_size_support; then
 	echo $PWD1 | $CRYPTSETUP -q resize --size 2049 $DEV_NAME > /dev/null 2>&1 && fail
 	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
 fi
+$CRYPTSETUP close $DEV_NAME || fail
+# Resize not aligned to logical block size
+add_scsi_device dev_size_mb=32 sector_size=4096
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $DEV || fail
+echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+OLD_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/')
+echo $PWD1 | $CRYPTSETUP resize $DEV_NAME -b 7 2> /dev/null && fail
+dmsetup info $DEV_NAME | grep -q SUSPENDED && fail
+NEW_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/')
+test $OLD_SIZE -eq $NEW_SIZE || fail
+$CRYPTSETUP close $DEV_NAME || fail
 
 prepare "[20] Disallow open/create if already mapped." wipe
 $CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail

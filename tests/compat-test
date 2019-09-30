@@ -52,6 +52,8 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME >/dev/null 2>&1
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $VK_FILE missing-file >/dev/null 2>&1
+	rmmod scsi_debug 2> /dev/null
+	scsi_debug_teardown $DEV
 }
 
 function force_uevent()
@@ -155,6 +157,34 @@ function check_exists()
 {
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 	check $1
+}
+
+# $1 path to scsi debug bdev
+scsi_debug_teardown() {
+	local _tries=15;
+
+	while [ -b "$1" -a $_tries -gt 0 ]; do
+		rmmod scsi_debug 2> /dev/null
+		if [ -b "$1" ]; then
+			sleep .1
+			_tries=$((_tries-1))
+		fi
+	done
+
+	test ! -b "$1" || rmmod scsi_debug 2> /dev/null
+}
+
+function add_scsi_device() {
+	scsi_debug_teardown $DEV
+        modprobe scsi_debug $@ delay=0
+        if [ $? -ne 0 ] ; then
+                echo "This kernel seems to not support proper scsi_debug module, test skipped."
+                exit 77
+        fi
+
+        sleep 1
+        DEV="/dev/"$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+        [ -b $DEV ] || fail "Cannot find $DEV."
 }
 
 function valgrind_setup()
@@ -515,6 +545,15 @@ if [ $? -eq 0 ] ; then
 	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "16 sectors" || fail
 	$CRYPTSETUP -q remove  $DEV_NAME || fail
 fi
+# Resize not aligned to logical block size
+add_scsi_device dev_size_mb=32 sector_size=4096
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha1 $DEV || fail
+OLD_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/')
+$CRYPTSETUP resize $DEV_NAME -b 7 2> /dev/null && fail
+dmsetup info $DEV_NAME | grep -q SUSPENDED && fail
+NEW_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/')
+test $OLD_SIZE -eq $NEW_SIZE || fail
+$CRYPTSETUP close $DEV_NAME || fail
 # verify is ignored on non-tty input
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --verify-passphrase 2>/dev/null || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
