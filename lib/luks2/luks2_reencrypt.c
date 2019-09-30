@@ -824,7 +824,7 @@ static uint64_t reencrypt_length(struct crypt_device *cd,
 		uint64_t length_max)
 {
 	unsigned long dummy, optimal_alignment;
-	uint64_t length;
+	uint64_t length, soft_mem_limit;
 
 	if (rh->rp.type == REENC_PROTECTION_NONE)
 		length = length_max ?: LUKS2_DEFAULT_NONE_REENCRYPTION_LENGTH;
@@ -834,6 +834,16 @@ static uint64_t reencrypt_length(struct crypt_device *cd,
 		return reencrypt_data_shift(hdr);
 	else
 		length = keyslot_area_length;
+
+	/* hard limit */
+	if (length > LUKS2_REENCRYPT_MAX_HOTZONE_LENGTH)
+		length = LUKS2_REENCRYPT_MAX_HOTZONE_LENGTH;
+
+	/* soft limit is 1/4 of system memory */
+	soft_mem_limit = crypt_getphysmemory_kb() << 8; /* multiply by (1024/4) */
+
+	if (soft_mem_limit && length > soft_mem_limit)
+		length = soft_mem_limit;
 
 	if (length_max && length > length_max)
 		length = length_max;
