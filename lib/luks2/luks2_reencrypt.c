@@ -3110,6 +3110,7 @@ static int reencrypt_wipe_moved_segment(struct crypt_device *cd, struct luks2_hd
 static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh)
 {
 	int i, r;
+	uint32_t dmt_flags;
 	bool finished = !(rh->device_size > rh->progress);
 
 	if (rh->rp.type == REENC_PROTECTION_NONE &&
@@ -3129,6 +3130,10 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 		}
 		dm_remove_device(cd, rh->overlay_name, 0);
 		dm_remove_device(cd, rh->hotzone_name, 0);
+
+		if (!r && finished && rh->mode == CRYPT_REENCRYPT_DECRYPT &&
+		    !dm_flags(cd, DM_LINEAR, &dmt_flags) && (dmt_flags & DM_DEFERRED_SUPPORTED))
+		    dm_remove_device(cd, rh->device_name, CRYPT_DEACTIVATE_DEFERRED);
 	}
 
 	if (finished) {

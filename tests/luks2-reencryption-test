@@ -485,7 +485,7 @@ function decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 -q || fail
 	fi
 
-	$CRYPTSETUP close $DEV_NAME || fail
+	$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 	check_hash_dev $DEV $3
 
 	echo "[OK]"
@@ -917,6 +917,15 @@ echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c serpent-xts-plain --header $
 wipe $PWD1 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience checksum --header $IMG_HDR $DEV || fail
 check_hash_dev $DEV $HASH3
+
+# check deferred remove works as expected after decryption
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c serpent-xts-plain --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+open_crypt $PWD1 $IMG_HDR
+dmsetup create $DEV_NAME2 --table "0 1 linear /dev/mapper/$DEV_NAME 0" || fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience checksum --header $IMG_HDR --active-name $DEV_NAME || fail
+$CRYPTSETUP status $DEV_NAME >/dev/null || fail
+dmsetup remove --retry $DEV_NAME2
+$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 
 if ! dm_delay_features; then
 	echo "dm-delay target is missing, skipping recovery tests."
