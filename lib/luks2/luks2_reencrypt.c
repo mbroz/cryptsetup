@@ -950,6 +950,11 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 		rh->fixed_length = false;
 
 	rh->length = reencrypt_length(cd, hdr, rh, area_length, params->max_hotzone_size << SECTOR_SHIFT);
+	if (!rh->length) {
+		log_dbg(cd, "Invalid reencryption length.");
+		return -EINVAL;
+	}
+
 	if (reencrypt_offset(hdr, rh->direction, device_size, &rh->length, &rh->offset)) {
 		log_dbg(cd, "Failed to get reencryption offset.");
 		return -EINVAL;
