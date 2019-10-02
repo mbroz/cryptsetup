@@ -554,6 +554,9 @@ dmsetup info $DEV_NAME | grep -q SUSPENDED && fail
 NEW_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/')
 test $OLD_SIZE -eq $NEW_SIZE || fail
 $CRYPTSETUP close $DEV_NAME || fail
+# Add check for unaligned plain crypt activation
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha1 $DEV -b 7 2>/dev/null && fail
+$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 # verify is ignored on non-tty input
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha1 --verify-passphrase 2>/dev/null || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail

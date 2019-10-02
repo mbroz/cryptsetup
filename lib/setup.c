@@ -510,6 +510,11 @@ int PLAIN_activate(struct crypt_device *cd,
 	log_dbg(cd, "Trying to activate PLAIN device %s using cipher %s.",
 		name, crypt_get_cipher_spec(cd));
 
+	if (MISALIGNED(size, device_block_size(cd, crypt_data_device(cd)) >> SECTOR_SHIFT)) {
+		log_err(cd, _("Device size is not aligned to device logical block size."));
+		return -EINVAL;
+	}
+
 	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
 			vk, crypt_get_cipher_spec(cd), crypt_get_iv_offset(cd),
 			crypt_get_data_offset(cd), crypt_get_integrity(cd),
