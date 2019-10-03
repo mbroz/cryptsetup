@@ -252,7 +252,12 @@ static char *_sysfs_backing_file(const char *loop)
 
 char *crypt_loop_backing_file(const char *loop)
 {
-	char *bf = _sysfs_backing_file(loop);
+	char *bf;
+
+	if (!crypt_loop_device(loop))
+		return NULL;
+
+	bf = _sysfs_backing_file(loop);
 	return bf ?: _ioctl_backing_file(loop);
 }
 

@@ -287,8 +287,7 @@ static int action_status(int arg)
 		log_std("\n");
 
 		log_std("  data device: %s\n", vp.data_device);
-		if (crypt_loop_device(vp.data_device)) {
-			backing_file = crypt_loop_backing_file(vp.data_device);
+		if ((backing_file = crypt_loop_backing_file(vp.data_device))) {
 			log_std("  data loop:   %s\n", backing_file);
 			free(backing_file);
 		}
@@ -297,8 +296,7 @@ static int action_status(int arg)
 					   "readonly" : "read/write");
 
 		log_std("  hash device: %s\n", vp.hash_device);
-		if (crypt_loop_device(vp.hash_device)) {
-			backing_file = crypt_loop_backing_file(vp.hash_device);
+		if ((backing_file = crypt_loop_backing_file(vp.hash_device))) {
 			log_std("  hash loop:   %s\n", backing_file);
 			free(backing_file);
 		}
@@ -307,8 +305,7 @@ static int action_status(int arg)
 
 		if (vp.fec_device) {
 			log_std("  FEC device:  %s\n", vp.fec_device);
-			if (crypt_loop_device(vp.fec_device)) {
-				backing_file = crypt_loop_backing_file(vp.fec_device);
+			if ((backing_file = crypt_loop_backing_file(vp.fec_device))) {
 				log_std("  FEC loop:    %s\n", backing_file);
 				free(backing_file);
 			}

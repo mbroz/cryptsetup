@@ -402,15 +402,13 @@ static int action_status(int arg)
 		device = crypt_get_device_name(cd);
 		metadata_device = crypt_get_metadata_device_name(cd);
 		log_std("  device:  %s%s\n", device, metadata_device ? " (detached)" : "");
-		if (crypt_loop_device(device)) {
-			backing_file = crypt_loop_backing_file(device);
+		if ((backing_file = crypt_loop_backing_file(device))) {
 			log_std("  loop:    %s\n", backing_file);
 			free(backing_file);
 		}
 		if (metadata_device) {
 			log_std("  metadata device:  %s\n", metadata_device);
-			if (crypt_loop_device(metadata_device)) {
-				backing_file = crypt_loop_backing_file(metadata_device);
+			if ((backing_file = crypt_loop_backing_file(metadata_device))) {
 				log_std("  loop:    %s\n", backing_file);
 				free(backing_file);
 			}

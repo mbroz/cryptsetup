@@ -736,8 +736,7 @@ static int action_status(void)
 			log_std("  integrity keysize: %d bits\n", ip.integrity_key_size * 8);
 		device = crypt_get_device_name(cd);
 		log_std("  device:  %s\n", device);
-		if (crypt_loop_device(device)) {
-			backing_file = crypt_loop_backing_file(device);
+		if ((backing_file = crypt_loop_backing_file(device))) {
 			log_std("  loop:    %s\n", backing_file);
 			free(backing_file);
 		}
