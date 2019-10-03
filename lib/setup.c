@@ -667,7 +667,7 @@ int crypt_init_data_device(struct crypt_device **cd, const char *device, const c
 	if (r || !data_device)
 		return r;
 
-	log_dbg(NULL, "Setting ciphertext data device to %s.", data_device ?: "(none)");
+	log_dbg(NULL, "Setting ciphertext data device to %s.", data_device);
 	r = _crypt_set_data_device(*cd, data_device);
 	if (r) {
 		crypt_free(*cd);
