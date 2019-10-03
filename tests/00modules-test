@@ -13,6 +13,9 @@ function pversion() {
 
 echo "Cryptsetup test environment ($(date))"
 uname -a
+if [ "$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)" = "1" ] ; then
+	echo "Kernel running in FIPS mode."
+fi
 
 if [ -f /etc/os-release ] ; then
 	source /etc/os-release
