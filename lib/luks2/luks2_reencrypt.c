@@ -2237,8 +2237,9 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd, struct luks
 		else {
 			if (LUKS2_digest_verify_by_digest(cd, hdr, digest_new, vk) != digest_new)
 				return -EINVAL;
-			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
-			if (r)
+
+			if (crypt_use_keyring_for_vk(cd) &&
+			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk))))
 				return r;
 		}
 	}
@@ -2253,8 +2254,8 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd, struct luks
 				r = -EINVAL;
 				goto err;
 			}
-			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
-			if (r)
+			if (crypt_use_keyring_for_vk(cd) &&
+			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk))))
 				goto err;
 		}
 	}
@@ -3365,7 +3366,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 	uint64_t minimal_size, device_size;
 	int keyslot, r = -EINVAL;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
-	struct volume_key *vk, *_vks = NULL;
+	struct volume_key *vk = NULL, *_vks = NULL;
 
 	log_dbg(cd, "Entering reencryption crash recovery.");
 
@@ -3378,7 +3379,9 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 		goto err;
 	keyslot = r;
 
-	vk = _vks;
+	if (crypt_use_keyring_for_vk(cd))
+		vk = _vks;
+
 	while (vk) {
 		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
 		if (r < 0)
