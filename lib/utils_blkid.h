@@ -59,4 +59,6 @@ int blk_do_wipe(struct blkid_handle *h);
 
 int blk_supported(void);
 
+off_t blk_get_offset(struct blkid_handle *h);
+
 #endif

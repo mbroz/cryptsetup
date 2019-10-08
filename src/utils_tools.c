@@ -563,11 +563,11 @@ int tools_wipe_all_signatures(const char *path)
 
 	while ((pr = blk_probe(h)) < PRB_EMPTY) {
 		if (blk_is_partition(h))
-			log_verbose("Existing '%s' partition signature on device %s will be wiped.",
-				    blk_get_partition_type(h), path);
+			log_verbose("Existing '%s' partition signature (offset: %" PRIi64 " bytes) on device %s will be wiped.",
+				    blk_get_partition_type(h), blk_get_offset(h), path);
 		if (blk_is_superblock(h))
-			log_verbose("Existing '%s' superblock signature on device %s will be wiped.",
-				    blk_get_superblock_type(h), path);
+			log_verbose("Existing '%s' superblock signature (offset: %" PRIi64 " bytes) on device %s will be wiped.",
+				    blk_get_superblock_type(h), blk_get_offset(h), path);
 		if (blk_do_wipe(h)) {
 			log_err(_("Failed to wipe device signature."));
 			r = -EINVAL;

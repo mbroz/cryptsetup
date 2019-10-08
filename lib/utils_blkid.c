@@ -307,3 +307,17 @@ int blk_supported(void)
 #endif
 	return r;
 }
+
+off_t blk_get_offset(struct blkid_handle *h)
+{
+	const char *offset;
+	off_t offset_value = -1;
+#ifdef HAVE_BLKID
+	if (blk_is_superblock(h)) {
+		if (!blkid_probe_lookup_value(h->pr, "SBMAGIC_OFFSET", &offset, NULL))
+			offset_value = strtoll(offset, NULL, 10);
+	} else if (blk_is_partition(h) && !blkid_probe_lookup_value(h->pr, "PTMAGIC_OFFSET", &offset, NULL))
+		offset_value = strtoll(offset, NULL, 10);
+#endif
+	return offset_value;
+}
