@@ -348,6 +348,7 @@ AC_CHECK_DECLS([dm_task_retry_remove], [], [], [#include <libdevmapper.h>])
 AC_CHECK_DECLS([dm_task_deferred_remove], [], [], [#include <libdevmapper.h>])
 AC_CHECK_DECLS([dm_device_has_mounted_fs], [], [], [#include <libdevmapper.h>])
 AC_CHECK_DECLS([dm_device_has_holders], [], [], [#include <libdevmapper.h>])
+AC_CHECK_DECLS([DM_GET_TARGET_VERSION], [], [], [#include <libdevmapper.h>])
 AC_CHECK_DECLS([DM_UDEV_DISABLE_DISK_RULES_FLAG], [have_cookie=yes], [have_cookie=no], [#include <libdevmapper.h>])
 if test "x$enable_udev" = xyes; then
 	if test "x$have_cookie" = xno; then

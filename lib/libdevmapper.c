@@ -221,6 +221,39 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	_dm_integrity_checked = true;
 }
 
+/* We use this for loading target module */
+static void _dm_check_target(dm_target_type target_type)
+{
+#if HAVE_DECL_DM_GET_TARGET_VERSION
+	struct dm_task *dmt;
+	const char *target_name = NULL;
+
+	if (!(_dm_flags & DM_GET_TARGET_VERSION_SUPPORTED))
+		return;
+
+	if (target_type == DM_CRYPT)
+		target_name = DM_CRYPT_TARGET;
+	else if (target_type == DM_VERITY)
+		target_name = DM_VERITY_TARGET;
+	else if (target_type == DM_INTEGRITY)
+		target_name = DM_INTEGRITY_TARGET;
+	else
+		return;
+
+	if (!(dmt = dm_task_create(DM_GET_TARGET_VERSION)))
+		goto out;
+
+	if (!dm_task_set_name(dmt, target_name))
+		goto out;
+
+	if (!dm_task_run(dmt))
+		goto out;
+out:
+	if (dmt)
+		dm_task_destroy(dmt);
+#endif
+}
+
 static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_type)
 {
 	struct dm_task *dmt;
@@ -238,6 +271,8 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 
 	/* Shut up DM while checking */
 	_quiet_log = 1;
+
+	_dm_check_target(target_type);
 
 	/* FIXME: add support to DM so it forces crypt target module load here */
 	if (!(dmt = dm_task_create(DM_DEVICE_LIST_VERSIONS)))
@@ -259,6 +294,10 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 #if HAVE_DECL_DM_TASK_DEFERRED_REMOVE
 		if (_dm_satisfies_version(4, 27, 0, dm_maj, dm_min, dm_patch))
 			_dm_flags |= DM_DEFERRED_SUPPORTED;
+#endif
+#if HAVE_DECL_DM_GET_TARGET_VERSION
+		if (_dm_satisfies_version(4, 41, 0, dm_maj, dm_min, dm_patch))
+			_dm_flags |= DM_GET_TARGET_VERSION_SUPPORTED;
 #endif
 	}
 
