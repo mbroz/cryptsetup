@@ -2750,7 +2750,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		_set_activation_flags(&activate_flags);
 		r = crypt_activate_by_passphrase(*cd, activated_name, opt_key_slot, password, passwordLen, activate_flags);
 		if (r >= 0)
-			log_std(_("%s/%s is now active.\n"), crypt_get_dir(), activated_name);
+			log_std(_("%s/%s is now active and ready for online encryption."), crypt_get_dir(), activated_name);
 	}
 
 	if (r < 0)
