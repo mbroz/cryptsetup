@@ -673,7 +673,7 @@ else
 	TEST_SECTORS="512"
 fi
 
-modprobe scsi_debug dev_size_mb=1 opt_xferlen_exp=6 delay=0 2>/dev/null && OPT_XFERLEN_EXP=6
+modinfo scsi_debug -p | grep -q opt_xferlen_exp && OPT_XFERLEN_EXP="opt_xferlen_exp=6"
 
 export LANG=C
 

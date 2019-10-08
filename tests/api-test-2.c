@@ -4159,7 +4159,11 @@ static void Luks2Reencryption(void)
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
-	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_2, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
+	OK_(t_device_size(DMDIR CDEVICE_2, &r_size_1));
+	EQ_(r_size_1, 512);
+	// create placeholder device to block automatic deactivation after decryption
+	OK_(_system("dmsetup create " CDEVICE_1 " --table \"0 1 linear " DMDIR CDEVICE_2 " 0\"", 1));
 	remove(BACKUP_FILE);
 	OK_(crypt_header_backup(cd, CRYPT_LUKS2, BACKUP_FILE));
 	CRYPT_FREE(cd);
@@ -4173,16 +4177,13 @@ static void Luks2Reencryption(void)
 	rparams.direction = CRYPT_REENCRYPT_FORWARD;
 	rparams.resilience = "datashift";
 	rparams.data_shift = r_header_size;
-	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
+	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_2, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
 	EQ_(crypt_get_data_offset(cd), 0);
 	OK_(crypt_reencrypt(cd, NULL));
 	remove(BACKUP_FILE);
-	/* FIXME: needs to get updated. Decryption closes device with deferred remove flag */
-	/*
-	OK_(t_device_size(DMDIR CDEVICE_1, &r_size_1));
+	OK_(t_device_size(DMDIR CDEVICE_2, &r_size_1));
 	EQ_(r_size_1, 512);
-	OK_(crypt_deactivate(cd, CDEVICE_1));
-	*/
+	OK_(_system("dmsetup remove " DM_RETRY CDEVICE_1 DM_NOSTDERR, 0));
 	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
