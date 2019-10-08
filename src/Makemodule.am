@@ -13,7 +13,7 @@ cryptsetup_SOURCES =		\
 	src/cryptsetup.c	\
 	src/cryptsetup.h
 
-cryptsetup_LDADD = -lm		\
+cryptsetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
 	@POPT_LIBS@		\
 	@PWQUALITY_LIBS@	\
@@ -47,7 +47,7 @@ veritysetup_SOURCES =		\
 	src/veritysetup.c	\
 	src/cryptsetup.h
 
-veritysetup_LDADD = -lm		\
+veritysetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
 	@POPT_LIBS@		\
 	@BLKID_LIBS@
@@ -78,7 +78,7 @@ integritysetup_SOURCES =	\
 	src/integritysetup.c	\
 	src/cryptsetup.h
 
-integritysetup_LDADD = -lm	\
+integritysetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
 	@POPT_LIBS@		\
 	@UUID_LIBS@		\
@@ -110,7 +110,7 @@ cryptsetup_reencrypt_SOURCES =		\
 	src/cryptsetup_reencrypt.c	\
 	src/cryptsetup.h
 
-cryptsetup_reencrypt_LDADD = -lm	\
+cryptsetup_reencrypt_LDADD = $(LDADD)	\
 	libcryptsetup.la		\
 	@POPT_LIBS@			\
 	@PWQUALITY_LIBS@		\

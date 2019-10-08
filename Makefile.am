@@ -15,6 +15,8 @@ AM_CPPFLAGS = \
 AM_CFLAGS = -Wall
 AM_LDFLAGS =
 
+LDADD = $(LTLIBINTL) -lm
+
 tmpfilesddir = @DEFAULT_TMPFILESDIR@
 
 noinst_LTLIBRARIES =
