@@ -380,7 +380,7 @@ void tools_clear_line(void)
 	log_std("\33[2K\r");
 }
 
-static void tools_time_progress(uint64_t device_size, uint64_t bytes,
+static void tools_time_progress(uint64_t device_size, uint64_t bytes, uint64_t *start_bytes,
 			 struct timeval *start_time, struct timeval *end_time)
 {
 	struct timeval now_time;
@@ -396,6 +396,7 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes,
 	if (start_time->tv_sec == 0 && start_time->tv_usec == 0) {
 		*start_time = now_time;
 		*end_time = now_time;
+		*start_bytes = bytes;
 		return;
 	}
 
@@ -417,11 +418,11 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes,
 		return;
 
 	mbytes = bytes  / 1024 / 1024;
-	mib = (double)(mbytes) / tdiff;
+	mib = (double)((bytes - *start_bytes) / 1024 / 1024) / tdiff;
 	if (!mib)
 		return;
 
-	/* FIXME: calculate this from last minute only and remaining space */
+	/* FIXME: calculate this from last minute only. */
 	eta = (unsigned long long)(device_size / 1024 / 1024 / mib - tdiff);
 
 	tools_clear_line();
@@ -443,9 +444,10 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes,
 int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr)
 {
 	static struct timeval start_time = {}, end_time = {};
+	static uint64_t start_offset = 0;
 	int r = 0;
 
-	tools_time_progress(size, offset, &start_time, &end_time);
+	tools_time_progress(size, offset, &start_offset, &start_time, &end_time);
 
 	check_signal(&r);
 	if (r) {
@@ -607,9 +609,10 @@ int tools_is_stdin(const char *key_file)
 int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr)
 {
 	static struct timeval start_time = {}, end_time = {};
+	static uint64_t start_offset = 0;
 	int r = 0;
 
-	tools_time_progress(size, offset, &start_time, &end_time);
+	tools_time_progress(size, offset, &start_offset, &start_time, &end_time);
 
 	check_signal(&r);
 	if (r) {
