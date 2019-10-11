@@ -385,9 +385,9 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, uint64_t *
 {
 	struct timeval now_time;
 	unsigned long long mbytes, eta;
-	double tdiff, mib, frequency;
+	double tdiff, uib, frequency;
 	int final = (bytes == device_size);
-	const char *eol;
+	const char *eol, *ustr = "";
 
 	if (opt_batch_mode)
 		return;
@@ -418,26 +418,35 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, uint64_t *
 		return;
 
 	mbytes = bytes  / 1024 / 1024;
-	mib = (double)((bytes - *start_bytes) / 1024 / 1024) / tdiff;
-	if (!mib)
-		return;
+	uib = (double)(bytes - *start_bytes) / tdiff;
 
 	/* FIXME: calculate this from last minute only. */
-	eta = (unsigned long long)(device_size / 1024 / 1024 / mib - tdiff);
+	eta = (unsigned long long)(device_size / uib - tdiff);
+
+	if (uib > 1073741824.0f) {
+		uib /= 1073741824.0f;
+		ustr = "Gi";
+	} else if (uib > 1048576.0f) {
+		uib /= 1048576.0f;
+		ustr = "Mi";
+	} else if (uib > 1024.0f) {
+		uib /= 1024.0f;
+		ustr = "Ki";
+	}
 
 	tools_clear_line();
 	if (final)
 		log_std("Finished, time %02llu:%02llu.%03llu, "
-			"%4llu MiB written, speed %5.1f MiB/s\n",
+			"%4llu MiB written, speed %5.1f %sB/s\n",
 			(unsigned long long)tdiff / 60,
 			(unsigned long long)tdiff % 60,
 			(unsigned long long)((tdiff - floor(tdiff)) * 1000.0),
-			mbytes, mib);
+			mbytes, uib, ustr);
 	else
 		log_std("Progress: %5.1f%%, ETA %02llu:%02llu, "
-			"%4llu MiB written, speed %5.1f MiB/s%s",
+			"%4llu MiB written, speed %5.1f %sB/s%s",
 			(double)bytes / device_size * 100,
-			eta / 60, eta % 60, mbytes, mib, eol);
+			eta / 60, eta % 60, mbytes, uib, ustr, eol);
 	fflush(stdout);
 }
 
