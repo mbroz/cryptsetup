@@ -461,7 +461,7 @@ int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr)
 	check_signal(&r);
 	if (r) {
 		tools_clear_line();
-		log_err("\nWipe interrupted.");
+		log_err(_("\nWipe interrupted."));
 	}
 
 	return r;
@@ -626,7 +626,7 @@ int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr)
 	check_signal(&r);
 	if (r) {
 		tools_clear_line();
-		log_err("\nReencrypt interrupted.");
+		log_err(_("\nReencryption interrupted."));
 	}
 
 	return r;
