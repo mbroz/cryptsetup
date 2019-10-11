@@ -547,6 +547,11 @@ out:
 	if (r < 0) {
 		crypt_free_volume_key(*vks);
 		*vks = NULL;
+
+		if (r == -ENOMEM)
+			log_err(cd, _("Not enough available memory to open a keyslot."));
+		else if (r != -EPERM)
+			log_err(cd, _("Keyslot open failed."));
 	}
 	return r;
 }
@@ -578,6 +583,13 @@ int LUKS2_keyslot_open(struct crypt_device *cd,
 			r = r_prio;
 	} else
 		r = LUKS2_open_and_verify(cd, hdr, keyslot, segment, password, password_len, vk);
+
+	if (r < 0) {
+		if (r == -ENOMEM)
+			log_err(cd, _("Not enough available memory to open a keyslot."));
+		else if (r != -EPERM)
+			log_err(cd, _("Keyslot open failed."));
+	}
 
 	return r;
 }
