@@ -101,8 +101,6 @@ int tools_is_cipher_null(const char *cipher);
 
 void tools_clear_line(void);
 
-void tools_time_progress(uint64_t device_size, uint64_t bytes,
-			 struct timeval *start_time, struct timeval *end_time);
 int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr);
 int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr);
 

@@ -380,7 +380,7 @@ void tools_clear_line(void)
 	log_std("\33[2K\r");
 }
 
-void tools_time_progress(uint64_t device_size, uint64_t bytes,
+static void tools_time_progress(uint64_t device_size, uint64_t bytes,
 			 struct timeval *start_time, struct timeval *end_time)
 {
 	struct timeval now_time;

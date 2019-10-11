@@ -99,7 +99,6 @@ struct reenc_ctx {
 	} p[MAX_SLOT];
 	int keyslot;
 
-	struct timeval start_time, end_time;
 	uint64_t resume_bytes;
 };
 
@@ -937,6 +936,8 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 	rc->resume_bytes = *bytes = rc->device_offset;
 
+	tools_reencrypt_progress(rc->device_size, *bytes, NULL);
+
 	if (write_log(rc) < 0)
 		return -EIO;
 
@@ -970,8 +971,8 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		}
 
 		*bytes += (uint64_t)s2;
-		tools_time_progress(rc->device_size, *bytes,
-				    &rc->start_time, &rc->end_time);
+
+		tools_reencrypt_progress(rc->device_size, *bytes, NULL);
 	}
 
 	return quit ? -EAGAIN : 0;
@@ -993,6 +994,8 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		rc->resume_bytes = rc->device_size - rc->device_offset;
 		*bytes = rc->resume_bytes;
 	}
+
+	tools_reencrypt_progress(rc->device_size, *bytes, NULL);
 
 	if (write_log(rc) < 0)
 		return -EIO;
@@ -1039,8 +1042,8 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		}
 
 		*bytes += (uint64_t)s2;
-		tools_time_progress(rc->device_size, *bytes,
-				    &rc->start_time, &rc->end_time);
+
+		tools_reencrypt_progress(rc->device_size, *bytes, NULL);
 	}
 
 	return quit ? -EAGAIN : 0;
@@ -1127,8 +1130,6 @@ static int copy_data(struct reenc_ctx *rc)
 	}
 
 	set_int_handler(0);
-	tools_time_progress(rc->device_size, bytes,
-			    &rc->start_time, &rc->end_time);
 
 	if (rc->reencrypt_direction == FORWARD)
 		r = copy_data_forward(rc, fd_old, fd_new, block_size, buf, &bytes);
@@ -1145,9 +1146,7 @@ static int copy_data(struct reenc_ctx *rc)
 
 	set_int_block(1);
 
-	if (r == -EAGAIN)
-		 log_err(_("Interrupted by a signal."));
-	else if (r < 0)
+	if (r < 0 && r != -EAGAIN)
 		log_err(_("IO error during reencryption."));
 
 	(void)write_log(rc);
