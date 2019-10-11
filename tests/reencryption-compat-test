@@ -282,7 +282,7 @@ wipe_dev $LOOPDEV1
 dmsetup create $DEV_NAME2 --table "0 $(($SIZE - $OFFSET)) linear $LOOPDEV1 0" || fail
 check_hash_dev /dev/mapper/$DEV_NAME2 $HASH5
 dmsetup remove --retry $DEV_NAME2 || fail
-echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --type luks1 --reduce-device-size "$OFFSET"S $FAST_PBKDF || fail
+echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --type luks1 --reduce-device-size "$OFFSET"S -q $FAST_PBKDF || fail
 check_hash $PWD1 $HASH5
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 prepare 8192
