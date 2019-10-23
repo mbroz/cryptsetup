@@ -17,7 +17,8 @@ TESTS = 00modules-test \
 	luks2-validation-test \
 	luks2-integrity-test \
 	vectors-test \
-	blockwise-compat
+	blockwise-compat \
+	bitlk-compat-test
 
 if VERITYSETUP
 TESTS += verity-compat-test
@@ -67,11 +68,12 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	cryptsetup-valg-supps valg.sh valg-api.sh \
 	blockwise-compat \
 	blkid-luks2-pv.img.xz \
-	Makefile.localtest
+	Makefile.localtest \
+	bitlk-images.tar.xz
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log
 clean-local:
-	-rm -rf tcrypt-images luks1-images luks2-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp
+	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp
 
 differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
