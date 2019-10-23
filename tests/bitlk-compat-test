@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# check bitlk images parsing
+
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+TST_DIR=bitlk-images
+MAP=bitlktst
+EBOIV_VERSION="1.19.0"
+
+[ -z "$srcdir" ] && srcdir="."
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
+}
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	echo " [FAILED]"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
+	remove_mapping
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	echo "Test skipped."
+	exit 77
+}
+
+function check_eboiv()
+{
+	crypt_version=$(dmsetup targets | grep crypt | cut -d"v" -f2)
+	[ ! -z "$crypt_version" ] || exit 1
+
+	[ "$(printf '%s\n' "$crypt_version" | sort -V | head -1)" = "$EBOIV_VERSION" ]
+}
+
+function load_vars()
+{
+        source <(grep = <(grep -A7 "\[$1\]" $TST_DIR/images.conf))
+}
+
+function check_dump()
+{
+        dump=$1
+        file=$2
+
+        # load variables for this image from config file
+        load_vars ${file:`expr length $TST_DIR` + 1:-4}
+
+        # GUID
+        dump_guid=$(echo "$dump" | grep Version -A 1 | tail -1 | cut -d: -f2 | tr -d "\t\n ")
+        [ ! -z "$GUID" -a "$dump_guid" = "$GUID"  ] || fail " GUID check from dump failed."
+
+        # cipher
+        dump_cipher=$(echo "$dump" | grep "Cipher name" | cut -d: -f2 | tr -d "\t\n ")
+        dump_mode=$(echo "$dump" | grep "Cipher mode" | cut -d: -f2 | tr -d "\t\n ")
+        cipher=$(echo "$dump_cipher-$dump_mode")
+        [ ! -z "$CIPHER" -a "$cipher" = "$CIPHER" ] || fail " cipher check from dump failed."
+
+        # password protected VMK GUID
+        dump_pw_vmk=$(echo "$dump" | grep "VMK protected with passphrase" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
+        [ ! -z "$PW_VMK_GUID" -a "$dump_pw_vmk" = "$PW_VMK_GUID" ] || fail " password protected VMK GUID check from dump failed."
+
+         # recovery password protected VMK GUID
+        dump_rp_vmk=$(echo "$dump" | grep "VMK protected with recovery passphrase" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
+        [ ! -z "$RP_VMK_GUID" -a "$dump_rp_vmk" = "$RP_VMK_GUID" ] || fail " recovery password protected VMK GUID check from dump failed."
+
+}
+
+export LANG=C
+[ ! -d $TST_DIR ] && tar xJf $srcdir/bitlk-images.tar.xz --no-same-owner
+
+echo "HEADER CHECK"
+for file in $(ls $TST_DIR/bitlk-*) ; do
+	echo -n " $file"
+	out=$($CRYPTSETUP bitlkDump $file)
+        check_dump "$out" "$file"
+	echo " [OK]"
+done
+
+if [ $(id -u) != 0 ]; then
+	echo "WARNING: You must be root to run activation part of test, test skipped."
+	exit 0
+fi
+
+check_eboiv
+has_eboiv=$?
+
+echo "ACTIVATION FS UUID CHECK"
+for file in $(ls $TST_DIR/bitlk-*) ; do
+	# load variables for this image from config file
+        load_vars ${file:`expr length $TST_DIR` + 1:-4}
+
+	# test with both passphrase and recovery passphrase
+	for PASSPHRASE in $PW $RP ; do
+		echo -n " $file"
+		[ $has_eboiv -eq 1 ] && [ "$CIPHER" = "aes-cbc-eboiv" ] && echo " eboiv not supported [N/A]" && continue
+		out=$(echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file $MAP 2>&1)
+		ret=$?
+		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "cbc-elephant" ) && echo " [N/A]" && continue
+		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "clearkey" ) && echo " [N/A]" && continue
+		[ $ret -eq 0 ] || fail " failed to open $file"
+		$CRYPTSETUP status $MAP >/dev/null || fail
+		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
+		uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
+		$CRYPTSETUP remove $MAP || fail
+		[ "$uuid" = "$UUID" ] || fail " UUID check failed."
+		echo " [OK]"
+	done
+done
