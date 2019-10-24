@@ -891,6 +891,13 @@ int BITLK_activate(struct crypt_device *cd,
 		return r;
 	}
 
+	if (strcmp(params->cipher_mode, "cbc-elephant") == 0) {
+		log_err(cd, _("Activation of BitLocker devices encrypted using AES-CBC with " \
+		              "the Elephant Diffuser is currently not supported"));
+		crypt_free_volume_key(open_fvek_key);
+		return -ENOTSUP;
+	}
+
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
 				crypt_get_data_offset(cd), &dmd.size, &dmd.flags);
 	if (r) {
