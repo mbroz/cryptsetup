@@ -224,7 +224,7 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 /* We use this for loading target module */
 static void _dm_check_target(dm_target_type target_type)
 {
-#if HAVE_DECL_DM_GET_TARGET_VERSION
+#if HAVE_DECL_DM_DEVICE_GET_TARGET_VERSION
 	struct dm_task *dmt;
 	const char *target_name = NULL;
 
@@ -240,7 +240,7 @@ static void _dm_check_target(dm_target_type target_type)
 	else
 		return;
 
-	if (!(dmt = dm_task_create(DM_GET_TARGET_VERSION)))
+	if (!(dmt = dm_task_create(DM_DEVICE_GET_TARGET_VERSION)))
 		goto out;
 
 	if (!dm_task_set_name(dmt, target_name))
@@ -295,7 +295,7 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 		if (_dm_satisfies_version(4, 27, 0, dm_maj, dm_min, dm_patch))
 			_dm_flags |= DM_DEFERRED_SUPPORTED;
 #endif
-#if HAVE_DECL_DM_GET_TARGET_VERSION
+#if HAVE_DECL_DM_DEVICE_GET_TARGET_VERSION
 		if (_dm_satisfies_version(4, 41, 0, dm_maj, dm_min, dm_patch))
 			_dm_flags |= DM_GET_TARGET_VERSION_SUPPORTED;
 #endif
