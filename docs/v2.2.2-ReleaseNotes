@@ -1,0 +1,56 @@
+Cryptsetup 2.2.2 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.1 and 2.2 should upgrade to this version.
+
+Changes since version 2.2.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Print error message if a keyslot open failed for a different reason
+  than wrong passwords (for example there is not enough memory).
+  Only an exit code was present in this case.
+
+* The progress function switches unit sizes (B/s to GiB/s) according
+  to the actual speed. Also, it properly calculates speed in the case
+  of a resumed reencryption operation.
+
+* The --version now supports short -V short option and better handles
+  common option priorities.
+
+* If cryptsetup wipes signatures during format actions through blkid,
+  it also prints signature device offsets.
+
+* Compilation now properly uses LTLIBINTL gettext setting in Makefiles.
+
+* Device-mapper backend now supports new DM_GET_TARGET_VERSION ioctl
+  (available since Linux kernel 5.4).
+  This should help to detect some kernel/userspace incompatibilities
+  earlier later after a failed device activation.
+
+* Fixes LUKS2 reencryption on systems without kernel keyring.
+
+* Fixes unlocking prompt for partitions mapped through loop devices
+  (to properly show the backing device).
+
+* For LUKS2 decryption, a device is now marked for deferred removal
+  to be automatically deactivated.
+
+* Reencryption now limits hotzone size to be maximal 1 GiB or 1/4
+  system memory (if lower).
+
+* Reencryption now retains activation flags during online reencryption.
+
+* Reencryption now allows LUKS2 device to activate device right after
+  LUKS2 encryption is initialized through optional active device name
+  for cryptsetup reencrypt --encrypt command.
+  This could help with automated encryption during boot.
+
+  NOTE: It means that part of the device is still not encrypted during
+  activation. Use with care!
+
+* Fixes failure in resize and plain format activation if activated device
+  size was not aligned to underlying logical device size.
+
+* Fixes conversion to LUKS2 format with detached header if a detached
+  header size was smaller than the expected aligned LUKS1 header size.
