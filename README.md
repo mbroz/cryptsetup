@@ -44,15 +44,15 @@ Download
 --------
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
 
-**The latest cryptsetup version is 2.2.1**
-  * [cryptsetup-2.2.1.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.1.tar.xz)
-  * Signature [cryptsetup-2.2.1.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.1.tar.sign)
+**The latest cryptsetup version is 2.2.2**
+  * [cryptsetup-2.2.2.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.2.tar.xz)
+  * Signature [cryptsetup-2.2.2.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.2.tar.sign)
     _(You need to decompress file first to check signature.)_
-  * [Cryptsetup 2.2.1 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/v2.2.1-ReleaseNotes).
+  * [Cryptsetup 2.2.2 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/v2.2.2-ReleaseNotes).
 
 Previous versions
- * [Version 2.2.0](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.0.tar.xz) -
-   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.0.tar.sign) -
+ * [Version 2.2.1](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.1.tar.xz) -
+   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.1.tar.sign) -
    [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/v2.2.0-ReleaseNotes).
  * [Version 2.0.6](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.6.tar.xz) -
    [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.6.tar.sign) -
