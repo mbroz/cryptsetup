@@ -311,6 +311,9 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 			 * crypt_volume_key_add_next(&((*vmk)->vk), vk);
 			 */
 			log_dbg(cd, "Skipping clear key metadata entry.");
+		/* unknown timestamps in recovery protected VMK */
+		} else if (key_entry_value == BITLK_ENTRY_VALUE_RECOVERY_TIME) {
+			;
 		} else {
 			log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
 			return -EINVAL;
@@ -889,6 +892,23 @@ int BITLK_activate(struct crypt_device *cd,
 	if (!name) {
 		crypt_free_volume_key(open_fvek_key);
 		return r;
+	}
+
+	next_vmk = params->vmks;
+	while (next_vmk) {
+		if (next_vmk->protection == BITLK_PROTECTION_CLEAR_KEY) {
+			crypt_free_volume_key(open_fvek_key);
+			log_err(cd, _("Activation of partially decrypted BitLocker devices is not supported."));
+			return -ENOTSUP;
+		}
+		next_vmk = next_vmk->next;
+	}
+
+	if (strcmp(params->cipher_mode, "cbc-elephant") == 0) {
+		log_err(cd, _("Activation of BitLocker devices encrypted using AES-CBC with " \
+		              "the Elephant Diffuser is currently not supported"));
+		crypt_free_volume_key(open_fvek_key);
+		return -ENOTSUP;
 	}
 
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
