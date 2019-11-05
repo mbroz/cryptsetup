@@ -311,6 +311,9 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 			 * crypt_volume_key_add_next(&((*vmk)->vk), vk);
 			 */
 			log_dbg(cd, "Skipping clear key metadata entry.");
+		/* unknown timestamps in recovery protected VMK */
+		} else if (key_entry_value == BITLK_ENTRY_VALUE_RECOVERY_TIME) {
+			;
 		} else {
 			log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
 			return -EINVAL;
