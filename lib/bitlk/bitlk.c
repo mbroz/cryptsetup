@@ -774,37 +774,40 @@ out:
 	return r;
 }
 
-static struct volume_key *decrypt_key(struct crypt_device *cd,
-				      struct volume_key *enc_key,
-				      struct volume_key *key,
-				      const uint8_t *tag, size_t tag_size,
-				      const uint8_t *iv, size_t iv_size)
+static int decrypt_key(struct crypt_device *cd,
+		       struct volume_key **vk,
+		       struct volume_key *enc_key,
+		       struct volume_key *key,
+		       const uint8_t *tag, size_t tag_size,
+		       const uint8_t *iv, size_t iv_size)
 {
-	struct volume_key *vk = NULL;
 	char *outbuf;
 	int r;
 
 	outbuf = crypt_safe_alloc(enc_key->keylength);
 	if (!outbuf)
-		return NULL;
+		return -ENOMEM;
 
 	r = crypt_bitlk_decrypt_key(key->key, key->keylength, enc_key->key, outbuf, enc_key->keylength,
 				(const char*)iv, iv_size, (const char*)tag, tag_size);
 	if (r < 0) {
 		log_err(cd, _("This operation is not supported."));
 		crypt_safe_free(outbuf);
-		return NULL;
+		return r;
 	}
 
 	/* key_data has it's size as part of the metadata */
-	if (enc_key->keylength == le32_to_cpu((uint32_t)*outbuf))
-		vk = crypt_alloc_volume_key(enc_key->keylength - BITLK_OPEN_KEY_METADATA_LEN,
+	if (enc_key->keylength == le32_to_cpu((uint32_t)*outbuf)) {
+		*vk = crypt_alloc_volume_key(enc_key->keylength - BITLK_OPEN_KEY_METADATA_LEN,
 					    (const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
-	else
+		r = *vk ? 0 : -ENOMEM;
+	} else {
 		log_err(cd, _("Wrong key size."));
+		r = -EINVAL;
+	}
 
 	crypt_safe_free(outbuf);
-	return vk;
+	return r;
 }
 
 int BITLK_activate(struct crypt_device *cd,
@@ -857,27 +860,24 @@ int BITLK_activate(struct crypt_device *cd,
 		}
 
 		log_dbg(cd, "Trying to decrypt %s.", get_vmk_protection_string(next_vmk->protection));
-		open_vmk_key = decrypt_key(cd, next_vmk->vk, vmk_dec_key,
-					   next_vmk->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
-					   next_vmk->nonce, BITLK_NONCE_SIZE);
-		if (!open_vmk_key) {
+		r = decrypt_key(cd, &open_vmk_key, next_vmk->vk, vmk_dec_key,
+				next_vmk->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
+				next_vmk->nonce, BITLK_NONCE_SIZE);
+		if (r < 0) {
 			log_dbg(cd, "Failed to decrypt VMK using provided passphrase.");
-			r = -EPERM;
 			crypt_free_volume_key(vmk_dec_key);
 			next_vmk = next_vmk->next;
 			continue;
 		}
 		crypt_free_volume_key(vmk_dec_key);
 
-		open_fvek_key = decrypt_key(cd, params->fvek->vk, open_vmk_key,
-					    params->fvek->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
-					    params->fvek->nonce, BITLK_NONCE_SIZE);
-		if (!open_fvek_key) {
+		r = decrypt_key(cd, &open_fvek_key, params->fvek->vk, open_vmk_key,
+				params->fvek->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
+				params->fvek->nonce, BITLK_NONCE_SIZE);
+		if (r < 0) {
 			log_dbg(cd, "Failed to decrypt FVEK using VMK.");
-			r = -ENOTRECOVERABLE;
 			crypt_free_volume_key(open_vmk_key);
 		} else {
-			r = 0;
 			crypt_free_volume_key(open_vmk_key);
 			break;
 		}
