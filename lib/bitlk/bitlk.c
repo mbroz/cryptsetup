@@ -866,6 +866,8 @@ int BITLK_activate(struct crypt_device *cd,
 		if (r < 0) {
 			log_dbg(cd, "Failed to decrypt VMK using provided passphrase.");
 			crypt_free_volume_key(vmk_dec_key);
+			if (r == -ENOTSUP)
+				return r;
 			next_vmk = next_vmk->next;
 			continue;
 		}
@@ -877,6 +879,8 @@ int BITLK_activate(struct crypt_device *cd,
 		if (r < 0) {
 			log_dbg(cd, "Failed to decrypt FVEK using VMK.");
 			crypt_free_volume_key(open_vmk_key);
+			if (r == -ENOTSUP)
+				return r;
 		} else {
 			crypt_free_volume_key(open_vmk_key);
 			break;
