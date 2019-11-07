@@ -62,6 +62,11 @@
 #define EPOCH_AS_FILETIME 116444736000000000
 #define HUNDREDS_OF_NANOSECONDS 10000000
 
+/* not available in older version of libuuid */
+#ifndef UUID_STR_LEN
+#define UUID_STR_LEN	37
+#endif
+
 /* taken from libfdisk gpt.c -- TODO: this is a good candidate for adding to libuuid */
 struct bitlk_guid {
 	uint32_t   time_low;
