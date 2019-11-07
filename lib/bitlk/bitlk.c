@@ -374,6 +374,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	char guid_buf[UUID_STR_LEN] = {0};
 	uint16_t entry_size = 0;
 	uint16_t entry_type = 0;
+	int i = 0;
 	int r = 0;
 	int start = 0;
 	int end = 0;
@@ -443,7 +444,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	}
 
 	params->metadata_version = le32_to_cpu(fve.fve_version);
-	for (int i = 0; i < 3; i++)
+	for (i = 0; i < 3; i++)
 		params->metadata_offset[i] = le64_to_cpu(sb.fve_offset[i]);
 
 	switch (fve.encryption) {
@@ -720,6 +721,7 @@ static int bitlk_kdf(struct crypt_device *cd,
 	struct crypt_hash *hd = NULL;
 	int len = 0;
 	char *utf16Password = NULL;
+	int i = 0;
 	int r = 0;
 
 	memcpy(kdf.salt, salt, 16);
@@ -756,7 +758,7 @@ static int bitlk_kdf(struct crypt_device *cd,
 			goto out;
 	}
 
-	for (int i = 0; i < BITLK_KDF_ITERATION_COUNT; i++) {
+	for (i = 0; i < BITLK_KDF_ITERATION_COUNT; i++) {
 		crypt_hash_write(hd, (const char*) &kdf, sizeof(kdf));
 		r = crypt_hash_final(hd, kdf.last_sha256, len);
 		if (r < 0)
