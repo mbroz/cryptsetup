@@ -100,6 +100,9 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 	# test with both passphrase and recovery passphrase
 	for PASSPHRASE in $PW $RP ; do
 		echo -n " $file"
+		out=$(echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file --test-passphrase 2>&1)
+		ret=$?
+		[ $ret -eq 1 ] && echo " [N/A]" && continue
 		[ $has_eboiv -eq 1 ] && [ "$CIPHER" = "aes-cbc-eboiv" ] && echo " eboiv not supported [N/A]" && continue
 		out=$(echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file $MAP 2>&1)
 		ret=$?
