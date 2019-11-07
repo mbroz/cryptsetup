@@ -485,5 +485,37 @@ int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
 			    const char *iv, size_t iv_length,
 			    const char *tag, size_t tag_length)
 {
+#ifdef GCRY_CCM_BLOCK_LEN
+	gcry_cipher_hd_t hd;
+	uint64_t l[3];
+	int r = -EINVAL;
+
+	if (gcry_cipher_open(&hd, GCRY_CIPHER_AES256, GCRY_CIPHER_MODE_CCM, 0))
+		return -EINVAL;
+
+	if (gcry_cipher_setkey(hd, key, key_length))
+		goto out;
+
+	if (gcry_cipher_setiv(hd, iv, iv_length))
+		goto out;
+
+	l[0] = length;
+	l[1] = 0;
+	l[2] = tag_length;
+	if (gcry_cipher_ctl(hd, GCRYCTL_SET_CCM_LENGTHS, l, sizeof(l)))
+		goto out;
+
+	if (gcry_cipher_decrypt(hd, out, length, in, length))
+		goto out;
+
+	if (gcry_cipher_checktag(hd, tag, tag_length))
+		goto out;
+
+	r = 0;
+out:
+	gcry_cipher_close(hd);
+	return r;
+#else
 	return -ENOTSUP;
+#endif
 }
