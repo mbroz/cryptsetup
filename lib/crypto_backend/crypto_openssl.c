@@ -35,6 +35,8 @@
 #include <openssl/rand.h>
 #include "crypto_backend_internal.h"
 
+#define CONST_CAST(x) (x)(uintptr_t)
+
 static int crypto_backend_initialised = 0;
 
 struct crypt_hash {
@@ -504,4 +506,41 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 bool crypt_cipher_kernel_only(struct crypt_cipher *ctx)
 {
 	return ctx->use_kernel;
+}
+
+int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
+			    const char *in, char *out, size_t length,
+			    const char *iv, size_t iv_length,
+			    const char *tag, size_t tag_length)
+{
+#ifdef EVP_CTRL_CCM_SET_IVLEN
+	EVP_CIPHER_CTX *ctx;
+	int len = 0, r = -EINVAL;
+
+	ctx = EVP_CIPHER_CTX_new();
+	if (!ctx)
+		return -EINVAL;
+
+	if (EVP_DecryptInit_ex(ctx, EVP_aes_256_ccm(), NULL, NULL, NULL) != 1)
+		goto out;
+
+	//EVP_CIPHER_CTX_key_length(ctx)
+	//EVP_CIPHER_CTX_iv_length(ctx)
+
+	if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, iv_length, NULL) != 1)
+		goto out;
+	if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_TAG, tag_length, CONST_CAST(void*)tag) != 1)
+		goto out;
+
+	if (EVP_DecryptInit_ex(ctx, NULL, NULL, key, (const unsigned char*)iv) != 1)
+		goto out;
+
+	if (EVP_DecryptUpdate(ctx, (unsigned char*)out, &len, (const unsigned char*)in, length) == 1)
+		r = 0;
+out:
+	EVP_CIPHER_CTX_free(ctx);
+	return r;
+#else
+	return -ENOTSUP;
+#endif
 }

@@ -29,7 +29,6 @@
 #include <uuid/uuid.h>
 #include <time.h>
 #include <iconv.h>
-#include <openssl/evp.h>
 
 #include "libcryptsetup.h"
 #include "bitlk.h"
@@ -775,40 +774,36 @@ out:
 	return r;
 }
 
-static struct volume_key *decrypt_key(struct volume_key *enc_key,
+static struct volume_key *decrypt_key(struct crypt_device *cd,
+				      struct volume_key *enc_key,
 				      struct volume_key *key,
 				      const uint8_t *tag, size_t tag_size,
 				      const uint8_t *iv, size_t iv_size)
 {
-	EVP_CIPHER_CTX *ctx = NULL;
 	struct volume_key *vk = NULL;
-	int len = 0;
-	unsigned char outbuf[1024] = {0};
-	uint32_t key_data_size = 0;
+	char *outbuf;
+	int r;
 
-	ctx = EVP_CIPHER_CTX_new();
-
-	EVP_DecryptInit_ex(ctx, EVP_aes_256_ccm(), NULL, NULL, NULL);
-
-	EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, iv_size, NULL);
-	EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_size, (void *)tag);
-
-	EVP_DecryptInit_ex(ctx, NULL, NULL, (const unsigned char *) key->key, iv);
-
-	if (EVP_DecryptUpdate(ctx, outbuf, &len,
-			      (const unsigned char *) enc_key->key, enc_key->keylength) != 1)
+	outbuf = crypt_safe_alloc(enc_key->keylength);
+	if (!outbuf)
 		return NULL;
+
+	r = crypt_bitlk_decrypt_key(key->key, key->keylength, enc_key->key, outbuf, enc_key->keylength,
+				(const char*)iv, iv_size, (const char*)tag, tag_size);
+	if (r < 0) {
+		log_err(cd, _("This operation is not supported."));
+		crypt_safe_free(outbuf);
+		return NULL;
+	}
 
 	/* key_data has it's size as part of the metadata */
-	memcpy(&key_data_size, outbuf, sizeof(key_data_size));
-	if (key_data_size != len)
-		return NULL;
+	if (enc_key->keylength == le32_to_cpu((uint32_t)*outbuf))
+		vk = crypt_alloc_volume_key(enc_key->keylength - BITLK_OPEN_KEY_METADATA_LEN,
+					    (const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
+	else
+		log_err(cd, _("Wrong key size."));
 
-	vk = crypt_alloc_volume_key(len - BITLK_OPEN_KEY_METADATA_LEN,
-				    (const char *) (outbuf + BITLK_OPEN_KEY_METADATA_LEN));
-
-	EVP_CIPHER_CTX_free(ctx);
-
+	crypt_safe_free(outbuf);
 	return vk;
 }
 
@@ -862,7 +857,7 @@ int BITLK_activate(struct crypt_device *cd,
 		}
 
 		log_dbg(cd, "Trying to decrypt %s.", get_vmk_protection_string(next_vmk->protection));
-		open_vmk_key = decrypt_key(next_vmk->vk, vmk_dec_key,
+		open_vmk_key = decrypt_key(cd, next_vmk->vk, vmk_dec_key,
 					   next_vmk->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
 					   next_vmk->nonce, BITLK_NONCE_SIZE);
 		if (!open_vmk_key) {
@@ -874,7 +869,7 @@ int BITLK_activate(struct crypt_device *cd,
 		}
 		crypt_free_volume_key(vmk_dec_key);
 
-		open_fvek_key = decrypt_key(params->fvek->vk, open_vmk_key,
+		open_fvek_key = decrypt_key(cd, params->fvek->vk, open_vmk_key,
 					    params->fvek->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
 					    params->fvek->nonce, BITLK_NONCE_SIZE);
 		if (!open_fvek_key) {
