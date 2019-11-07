@@ -433,3 +433,11 @@ bool crypt_cipher_kernel_only(struct crypt_cipher *ctx)
 {
 	return true;
 }
+
+int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
+			    const char *in, char *out, size_t length,
+			    const char *iv, size_t iv_length,
+			    const char *tag, size_t tag_length)
+{
+	return -ENOTSUP;
+}

@@ -119,6 +119,12 @@ int crypt_storage_encrypt(struct crypt_storage *ctx, uint64_t iv_offset,
 
 bool crypt_storage_kernel_only(struct crypt_storage *ctx);
 
+/* Temporary Bitlk helper */
+int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
+			    const char *in, char *out, size_t length,
+			    const char *iv, size_t iv_length,
+			    const char *tag, size_t tag_length);
+
 /* Memzero helper (memset on stack can be optimized out) */
 static inline void crypt_backend_memzero(void *s, size_t n)
 {
