@@ -42,7 +42,8 @@ function check_eboiv()
 
 function load_vars()
 {
-        source <(grep = <(grep -A7 "\[$1\]" $TST_DIR/images.conf))
+        local file=$(echo $1 | sed -e s/^$TST_DIR\\/// | sed -e s/\.img$//)
+        source <(grep = <(grep -A7 "\[$file\]" $TST_DIR/images.conf))
 }
 
 function check_dump()
@@ -51,7 +52,7 @@ function check_dump()
         file=$2
 
         # load variables for this image from config file
-        load_vars ${file:`expr length $TST_DIR` + 1:-4}
+        load_vars $file
 
         # GUID
         dump_guid=$(echo "$dump" | grep Version -A 1 | tail -1 | cut -d: -f2 | tr -d "\t\n ")
@@ -95,7 +96,7 @@ has_eboiv=$?
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/bitlk-*) ; do
 	# load variables for this image from config file
-        load_vars ${file:`expr length $TST_DIR` + 1:-4}
+        load_vars $file
 
 	# test with both passphrase and recovery passphrase
 	for PASSPHRASE in $PW $RP ; do
