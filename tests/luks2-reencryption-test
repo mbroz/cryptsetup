@@ -816,7 +816,7 @@ check_hash $PWD1 $HASH6
 
 # Device activation after encryption initialization
 wipe_dev $DEV
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --init-only -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON $DEV_NAME >/dev/null || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --init-only -c aes-cbc-essiv:sha256 -s 128 -S11 --reduce-device-size 8M -q $FAST_PBKDF_ARGON $DEV_NAME >/dev/null || fail
 $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
 check_hash_dev /dev/mapper/$DEV_NAME $HASH5
 echo $PWD1 | $CRYPTSETUP reencrypt --resume-only $DEV -q || fail

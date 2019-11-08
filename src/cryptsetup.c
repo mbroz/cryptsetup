@@ -1324,7 +1324,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 	if (opt_integrity && !opt_integrity_no_wipe)
 		r = _wipe_data_device(cd);
 out:
-	if (r == 0 && r_cd && r_password && r_passwordLen) {
+	if (r >= 0 && r_cd && r_password && r_passwordLen) {
 		*r_cd = cd;
 		*r_password = password;
 		*r_passwordLen = passwordLen;
