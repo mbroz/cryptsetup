@@ -2748,11 +2748,8 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		activated_name = action_argv[1];
 		_set_activation_flags(&activate_flags);
 		r = crypt_activate_by_passphrase(*cd, activated_name, opt_key_slot, password, passwordLen, activate_flags);
-		if (r >= 0) {
-			log_std(_("%s/%s is now active and ready for online encryption."), crypt_get_dir(), activated_name);
-			/* FIXME: Hotfix for 2.2.2 only. Fix the translated string correctly in next relese. */
-			log_std("\n");
-		}
+		if (r >= 0)
+			log_std(_("%s/%s is now active and ready for online encryption.\n"), crypt_get_dir(), activated_name);
 	}
 
 	if (r < 0)
