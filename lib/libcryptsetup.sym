@@ -118,6 +118,11 @@ CRYPTSETUP_2.0 {
 		crypt_reencrypt_init_by_keyring;
 		crypt_reencrypt;
 		crypt_reencrypt_status;
+
+		crypt_safe_alloc;
+		crypt_safe_realloc;
+		crypt_safe_free;
+		crypt_safe_memzero;
 	local:
 		*;
 };

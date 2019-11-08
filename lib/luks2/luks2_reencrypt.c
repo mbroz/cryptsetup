@@ -1401,12 +1401,12 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 			log_dbg(cd, "Failed to read journaled data.");
 			r = -EIO;
 			/* may content plaintext */
-			crypt_memzero(data_buffer, rh->length);
+			crypt_safe_memzero(data_buffer, rh->length);
 			goto out;
 		}
 		read = crypt_storage_wrapper_encrypt_write(cw2, 0, data_buffer, rh->length);
 		/* may content plaintext */
-		crypt_memzero(data_buffer, rh->length);
+		crypt_safe_memzero(data_buffer, rh->length);
 		if (read < 0 || (size_t)read != rh->length) {
 			log_dbg(cd, "recovery write failed.");
 			r = -EINVAL;
@@ -1436,13 +1436,13 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 			log_dbg(cd, "Failed to read data.");
 			r = -EIO;
 			/* may content plaintext */
-			crypt_memzero(data_buffer, rh->length);
+			crypt_safe_memzero(data_buffer, rh->length);
 			goto out;
 		}
 
 		read = crypt_storage_wrapper_encrypt_write(cw2, 0, data_buffer, rh->length);
 		/* may content plaintext */
-		crypt_memzero(data_buffer, rh->length);
+		crypt_safe_memzero(data_buffer, rh->length);
 		if (read < 0 || (size_t)read != rh->length) {
 			log_dbg(cd, "recovery write failed.");
 			r = -EINVAL;
@@ -2936,7 +2936,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 
 	r = reencrypt_init_by_passphrase(cd, name, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params);
 
-	crypt_memzero(passphrase, passphrase_size);
+	crypt_safe_memzero(passphrase, passphrase_size);
 	free(passphrase);
 
 	return r;

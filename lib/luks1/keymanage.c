@@ -260,7 +260,7 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 
 	r = 0;
 out:
-	crypt_memzero(&hdr, sizeof(hdr));
+	crypt_safe_memzero(&hdr, sizeof(hdr));
 	crypt_safe_free(buffer);
 	return r;
 }
@@ -453,7 +453,7 @@ out:
 	if (r)
 		log_err(ctx, _("Repair failed."));
 	crypt_free_volume_key(vk);
-	crypt_memzero(&temp_phdr, sizeof(temp_phdr));
+	crypt_safe_memzero(&temp_phdr, sizeof(temp_phdr));
 	return r;
 }
 
@@ -692,7 +692,7 @@ int LUKS_check_cipher(struct crypt_device *ctx, size_t keylength, const char *ci
 		r = LUKS_decrypt_from_storage(buf, sizeof(buf), cipher, cipher_mode, empty_key, 0, ctx);
 
 	crypt_free_volume_key(empty_key);
-	crypt_memzero(buf, sizeof(buf));
+	crypt_safe_memzero(buf, sizeof(buf));
 	return r;
 }
 

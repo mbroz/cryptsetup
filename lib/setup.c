@@ -726,9 +726,6 @@ out:
 		free(type);
 		LUKS2_hdr_free(cd, &hdr2);
 	}
-	/* FIXME: why? */
-	crypt_memzero(&hdr2, sizeof(hdr2));
-
 	return r;
 }
 
@@ -822,7 +819,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 		r = -EINVAL;
 	}
 out:
-	crypt_memzero(&hdr, sizeof(hdr));
+	crypt_safe_memzero(&hdr, sizeof(hdr));
 
 	return r;
 }
@@ -886,7 +883,7 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
 		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
 		free(cd->u.verity.uuid);
-		crypt_memzero(&cd->u.verity.hdr, sizeof(cd->u.verity.hdr));
+		crypt_safe_memzero(&cd->u.verity.hdr, sizeof(cd->u.verity.hdr));
 		return -ENOMEM;
 	}
 
@@ -2902,8 +2899,8 @@ int crypt_header_restore(struct crypt_device *cd,
 		else
 			r = LUKS2_hdr_restore(cd, &hdr2, backup_file);
 
-		crypt_memzero(&hdr1, sizeof(hdr1));
-		crypt_memzero(&hdr2, sizeof(hdr2));
+		crypt_safe_memzero(&hdr1, sizeof(hdr1));
+		crypt_safe_memzero(&hdr2, sizeof(hdr2));
 	} else if (isLUKS2(cd->type) && (!requested_type || isLUKS2(requested_type))) {
 		r = LUKS2_hdr_restore(cd, &cd->u.luks2.hdr, backup_file);
 		if (r)
@@ -2938,7 +2935,7 @@ void crypt_free(struct crypt_device *cd)
 	free(CONST_CAST(void*)cd->pbkdf.hash);
 
 	/* Some structures can contain keys (TCRYPT), wipe it */
-	crypt_memzero(cd, sizeof(*cd));
+	crypt_safe_memzero(cd, sizeof(*cd));
 	free(cd);
 }
 
@@ -5770,7 +5767,7 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 
 	r = _activate_by_passphrase(cd, name, keyslot, passphrase, passphrase_size, flags);
 
-	crypt_memzero(passphrase, passphrase_size);
+	crypt_safe_memzero(passphrase, passphrase_size);
 	free(passphrase);
 
 	return r;

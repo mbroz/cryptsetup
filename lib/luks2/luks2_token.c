@@ -332,7 +332,7 @@ static void LUKS2_token_buffer_free(struct crypt_device *cd,
 	if (h->buffer_free)
 		h->buffer_free(buffer, buffer_len);
 	else {
-		crypt_memzero(buffer, buffer_len);
+		crypt_safe_memzero(buffer, buffer_len);
 		free(buffer);
 	}
 }

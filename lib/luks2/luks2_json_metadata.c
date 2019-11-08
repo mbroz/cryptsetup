@@ -1270,8 +1270,8 @@ out:
 	LUKS2_hdr_free(cd, hdr);
 	LUKS2_hdr_free(cd, &hdr_file);
 	LUKS2_hdr_free(cd, &tmp_hdr);
-	crypt_memzero(&hdr_file, sizeof(hdr_file));
-	crypt_memzero(&tmp_hdr, sizeof(tmp_hdr));
+	crypt_safe_memzero(&hdr_file, sizeof(hdr_file));
+	crypt_safe_memzero(&tmp_hdr, sizeof(tmp_hdr));
 	crypt_safe_free(buffer);
 
 	device_sync(cd, device);

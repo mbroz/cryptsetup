@@ -145,7 +145,7 @@ static int device_read_test(int devfd)
 	if (read_blockwise(devfd, blocksize, alignment, buffer, minsize) == (ssize_t)minsize)
 		r = 0;
 
-	crypt_memzero(buffer, sizeof(buffer));
+	crypt_safe_memzero(buffer, sizeof(buffer));
 	return r;
 }
 

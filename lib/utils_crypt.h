@@ -29,26 +29,12 @@
 #define MAX_CIPHER_LEN_STR	"31"
 #define MAX_KEYFILES		32
 
-struct crypt_device;
-
-/* Not to be used directly */
-struct safe_allocation {
-	size_t	size;
-	char	data[0];
-};
-
 int crypt_parse_name_and_mode(const char *s, char *cipher,
 			      int *key_nums, char *cipher_mode);
 int crypt_parse_hash_integrity_mode(const char *s, char *integrity);
 int crypt_parse_integrity_mode(const char *s, char *integrity,
 			       int *integrity_key_size);
 int crypt_parse_pbkdf(const char *s, const char **pbkdf);
-
-void *crypt_safe_alloc(size_t size);
-void crypt_safe_free(void *data);
-void *crypt_safe_realloc(void *data, size_t size);
-
-void crypt_memzero(void *s, size_t n);
 
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc);
 

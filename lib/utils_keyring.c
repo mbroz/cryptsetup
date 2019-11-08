@@ -25,14 +25,13 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
+#include "libcryptsetup.h"
+#include "utils_keyring.h"
+
 #ifndef HAVE_KEY_SERIAL_T
 #define HAVE_KEY_SERIAL_T
-#include <stdint.h>
 typedef int32_t key_serial_t;
 #endif
-
-#include "utils_crypt.h"
-#include "utils_keyring.h"
 
 #ifndef ARRAY_SIZE
 # define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -178,7 +177,7 @@ int keyring_get_passphrase(const char *key_desc,
 	if (ret < 0) {
 		err = errno;
 		if (buf)
-			crypt_memzero(buf, len);
+			crypt_safe_memzero(buf, len);
 		free(buf);
 		return -err;
 	}

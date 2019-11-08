@@ -130,7 +130,7 @@ static int keyfile_seek(int fd, uint64_t bytes)
 			if (errno == EINTR)
 				continue;
 
-			crypt_memzero(tmp, sizeof(tmp));
+			crypt_safe_memzero(tmp, sizeof(tmp));
 			/* read error */
 			return -1;
 		}
@@ -142,7 +142,7 @@ static int keyfile_seek(int fd, uint64_t bytes)
 		bytes -= bytes_r;
 	}
 
-	crypt_memzero(tmp, sizeof(tmp));
+	crypt_safe_memzero(tmp, sizeof(tmp));
 	return bytes == 0 ? 0 : -1;
 }
 
@@ -181,7 +181,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 		key_size = DEFAULT_KEYFILE_SIZE_MAXKB * 1024 + 1;
 		unlimited_read = 1;
 		/* use 4k for buffer (page divisor but avoid huge pages) */
-		buflen = 4096 - sizeof(struct safe_allocation);
+		buflen = 4096 - sizeof(size_t); // sizeof(struct safe_allocation);
 	} else
 		buflen = key_size;
 

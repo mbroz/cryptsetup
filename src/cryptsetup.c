@@ -448,7 +448,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 				continue;
 
 			params->veracrypt_pim = (uint32_t)tmp_pim_ull;
-			crypt_memzero(&tmp_pim_ull, sizeof(tmp_pim_ull));
+			crypt_safe_memzero(&tmp_pim_ull, sizeof(tmp_pim_ull));
 		}
 
 		if (opt_tcrypt_hidden)
@@ -512,7 +512,7 @@ static int action_open_tcrypt(void)
 out:
 	crypt_free(cd);
 	crypt_safe_free(CONST_CAST(char*)params.passphrase);
-	crypt_memzero(&params.veracrypt_pim, sizeof(params.veracrypt_pim));
+	crypt_safe_memzero(&params.veracrypt_pim, sizeof(params.veracrypt_pim));
 	return r;
 }
 
