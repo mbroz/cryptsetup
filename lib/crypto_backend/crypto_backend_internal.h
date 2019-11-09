@@ -55,5 +55,9 @@ int crypt_cipher_decrypt_kernel(struct crypt_cipher_kernel *ctx,
 				const char *in, char *out, size_t length,
 				const char *iv, size_t iv_length);
 void crypt_cipher_destroy_kernel(struct crypt_cipher_kernel *ctx);
+int crypt_bitlk_decrypt_key_kernel(const void *key, size_t key_length,
+				   const char *in, char *out, size_t length,
+				   const char *iv, size_t iv_length,
+				   const char *tag, size_t tag_length);
 
 #endif /* _CRYPTO_BACKEND_INTERNAL_H */
