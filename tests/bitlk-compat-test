@@ -92,6 +92,7 @@ fi
 
 check_eboiv
 has_eboiv=$?
+blkid --list-filesystems 2>/dev/null | grep -i -q bitlocker || skip " Cannot check UUID (old blkid?)."
 
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/bitlk-*) ; do
@@ -114,7 +115,6 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
 		uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
 		$CRYPTSETUP remove $MAP || fail
-		blkid --list-filesystems | grep -i -q bitlocker || skip " Cannot check UUID (old blkid?)."
 		[ "$uuid" = "$UUID" ] || fail " UUID check failed."
 		echo " [OK]"
 	done
