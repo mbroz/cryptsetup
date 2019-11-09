@@ -40,6 +40,10 @@
 #define SOL_ALG 279
 #endif
 
+#ifndef ALG_SET_AEAD_AUTHSIZE
+#define ALG_SET_AEAD_AUTHSIZE 5
+#endif
+
 /*
  * ciphers
  *
