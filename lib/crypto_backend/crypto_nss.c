@@ -387,5 +387,6 @@ int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
 			    const char *iv, size_t iv_length,
 			    const char *tag, size_t tag_length)
 {
-	return -ENOTSUP;
+	return crypt_bitlk_decrypt_key_kernel(key, key_length, in, out, length,
+					      iv, iv_length, tag, tag_length);
 }
