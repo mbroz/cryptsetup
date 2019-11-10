@@ -21,19 +21,15 @@
  */
 
 #include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include <assert.h>
 #include <uuid/uuid.h>
 #include <time.h>
 #include <iconv.h>
+#include <limits.h>
 
-#include "libcryptsetup.h"
 #include "bitlk.h"
 #include "internal.h"
-#include "bitops.h"
 
 #define BITLK_BOOTCODE_V1 "\xeb\x52\x90"
 #define BITLK_BOOTCODE_V2 "\xeb\x58\x90"
@@ -364,10 +360,10 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 {
 	int devfd;
 	struct device *device = crypt_metadata_device(cd);
-	struct bitlk_signature sig = {0};
-	struct bitlk_superblock sb = {0};
-	struct bitlk_fve_metadata fve = {0};
-	struct bitlk_entry_vmk entry_vmk = {0};
+	struct bitlk_signature sig = {};
+	struct bitlk_superblock sb = {};
+	struct bitlk_fve_metadata fve = {};
+	struct bitlk_entry_vmk entry_vmk = {};
 	uint8_t *fve_entries = NULL;
 	int fve_offset = 0;
 	char guid_buf[UUID_STR_LEN] = {0};
@@ -716,7 +712,7 @@ static int bitlk_kdf(struct crypt_device *cd,
 		     const uint8_t *salt,
 		     struct volume_key **vk)
 {
-	struct bitlk_kdf_data kdf = {0};
+	struct bitlk_kdf_data kdf = {};
 	struct crypt_hash *hd = NULL;
 	int len = 0;
 	char *utf16Password = NULL;

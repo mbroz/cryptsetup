@@ -23,14 +23,12 @@
 #ifndef _CRYPTSETUP_BITLK_H
 #define _CRYPTSETUP_BITLK_H
 
-#include <stdint.h>
 #include <stddef.h>
-
-#include "internal.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 struct crypt_device;
 struct device;
-struct crypt_params_bitlk;
 
 #define BITLK_NONCE_SIZE 12
 #define BITLK_SALT_SIZE 16
