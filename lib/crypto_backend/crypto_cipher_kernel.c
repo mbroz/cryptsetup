@@ -277,7 +277,7 @@ int crypt_bitlk_decrypt_key_kernel(const void *key, size_t key_length,
 	if (length + tag_length > sizeof(buffer))
 		return -EINVAL;
 
-	if (iv_length > sizeof(ccm_iv) - 1)
+	if (iv_length > sizeof(ccm_iv) - 2)
 		return -EINVAL;
 
 	r = _crypt_cipher_init(&c, key, key_length, tag_length, &sa);
