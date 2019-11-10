@@ -666,7 +666,7 @@ static int get_recovery_key(struct crypt_device *cd,
 			    size_t passwordLen,
 			    struct volume_key **rc_key)
 {
-	int i, j = 0;
+	unsigned int i, j = 0;
 	uint16_t parts[BITLK_RECOVERY_PARTS] = {0};
 	char part_str[BITLK_RECOVERY_PART_LEN + 1] = {0};
 	long part_num = 0;
@@ -732,7 +732,7 @@ static int bitlk_kdf(struct crypt_device *cd,
 
 	if (!recovery) {
 		/* passphrase: convert to UTF-16 first, then sha256(sha256(pw)) */
-		r = passphrase_to_utf16(cd, (char *)password, passwordLen, &utf16Password);
+		r = passphrase_to_utf16(cd, CONST_CAST(char*)password, passwordLen, &utf16Password);
 		if (r < 0)
 			goto out;
 
