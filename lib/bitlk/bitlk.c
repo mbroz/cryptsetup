@@ -852,6 +852,9 @@ int BITLK_activate(struct crypt_device *cd,
 			/* only passphrase and recovery passphrase VMKs supported right now */
 			log_dbg(cd, "Skipping %s", get_vmk_protection_string(next_vmk->protection));
 			next_vmk = next_vmk->next;
+			if (r == 0)
+				/* we need to set error code in case we have only unsupported VMKs */
+				r = -ENOTSUP;
 			continue;
 		}
 
