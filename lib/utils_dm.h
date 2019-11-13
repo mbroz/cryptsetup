@@ -64,6 +64,7 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_INTEGRITY_RECALC_SUPPORTED (1 << 16) /* dm-integrity automatic recalculation supported */
 #define DM_INTEGRITY_BITMAP_SUPPORTED (1 << 17) /* dm-integrity bitmap mode supported */
 #define DM_GET_TARGET_VERSION_SUPPORTED (1 << 18) /* dm DM_GET_TARGET version ioctl supported */
+#define DM_INTEGRITY_FIX_PADDING_SUPPORTED (1 << 19) /* supports the parameter fix_padding that fixes a bug that caused excessive padding */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_SET = 1, TARGET_QUERY };
@@ -138,6 +139,8 @@ struct dm_target {
 		struct volume_key *journal_crypt_key;
 
 		struct device *meta_device;
+
+		bool fix_padding;
 	} integrity;
 	struct {
 		uint64_t offset;
@@ -177,7 +180,8 @@ int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t se
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
 	const char *root_hash, uint32_t root_hash_size, uint64_t hash_offset_block,
 	uint64_t hash_blocks, struct crypt_params_verity *vp);
-int dm_integrity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
+int dm_integrity_target_set(struct crypt_device *cd,
+	struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *meta_device,
 	struct device *data_device, uint64_t tag_size, uint64_t offset, uint32_t sector_size,
 	struct volume_key *vk,

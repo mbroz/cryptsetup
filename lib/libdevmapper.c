@@ -218,6 +218,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 3, 0, integrity_maj, integrity_min, integrity_patch))
 		_dm_flags |= DM_INTEGRITY_BITMAP_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 4, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_FIX_PADDING_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -865,6 +868,11 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 			 tgt->u.integrity.journal_crypt, hexkey ? ":" : "", hexkey ?: "");
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
+	}
+	if (tgt->u.integrity.fix_padding) {
+		num_options++;
+		snprintf(feature, sizeof(feature), "fix_padding ");
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 
 	if (flags & CRYPT_ACTIVATE_RECALCULATE) {
@@ -2334,6 +2342,8 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 				}
 			} else if (!strcmp(arg, "recalculate")) {
 				*act_flags |= CRYPT_ACTIVATE_RECALCULATE;
+			} else if (!strcmp(arg, "fix_padding")) {
+				tgt->u.integrity.fix_padding = true;
 			} else /* unknown option */
 				goto err;
 		}
@@ -2868,15 +2878,20 @@ int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t se
 	return 0;
 }
 
-int dm_integrity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
+int dm_integrity_target_set(struct crypt_device *cd,
+			struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 			struct device *meta_device,
 		        struct device *data_device, uint64_t tag_size, uint64_t offset,
 			uint32_t sector_size, struct volume_key *vk,
 			struct volume_key *journal_crypt_key, struct volume_key *journal_mac_key,
 			const struct crypt_params_integrity *ip)
 {
+	uint32_t dmi_flags;
+
 	if (!data_device)
 		return -EINVAL;
+
+	_dm_check_versions(cd, DM_INTEGRITY);
 
 	tgt->type = DM_INTEGRITY;
 	tgt->direction = TARGET_SET;
@@ -2892,6 +2907,9 @@ int dm_integrity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t
 	tgt->u.integrity.vk = vk;
 	tgt->u.integrity.journal_crypt_key = journal_crypt_key;
 	tgt->u.integrity.journal_integrity_key = journal_mac_key;
+
+	if (!dm_flags(cd, DM_INTEGRITY, &dmi_flags) && dmi_flags & DM_INTEGRITY_FIX_PADDING_SUPPORTED)
+		tgt->u.integrity.fix_padding = true;
 
 	if (ip) {
 		tgt->u.integrity.journal_size = ip->journal_size;

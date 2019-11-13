@@ -41,8 +41,7 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
 	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic)) ||
-	    (sb->version != SB_VERSION_1 && sb->version != SB_VERSION_2 &&
-	     sb->version != SB_VERSION_3)) {
+	    sb->version < SB_VERSION_1 || sb->version > SB_VERSION_4) {
 		log_std(cd, "No integrity superblock detected on %s.\n",
 			device_path(device));
 		r = -EINVAL;
@@ -203,7 +202,7 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	return dm_integrity_target_set(&dmd->segment, 0, dmd->size,
+	return dm_integrity_target_set(cd, &dmd->segment, 0, dmd->size,
 			crypt_metadata_device(cd), crypt_data_device(cd),
 			crypt_get_integrity_tag_size(cd), crypt_get_data_offset(cd),
 			crypt_get_sector_size(cd), vk, journal_crypt_key,
@@ -289,7 +288,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 	if (params && params->integrity_key_size)
 		vk = crypt_alloc_volume_key(params->integrity_key_size, NULL);
 
-	r = dm_integrity_target_set(tgt, 0, dmdi.size, crypt_metadata_device(cd),
+	r = dm_integrity_target_set(cd, tgt, 0, dmdi.size, crypt_metadata_device(cd),
 			crypt_data_device(cd), crypt_get_integrity_tag_size(cd),
 			crypt_get_data_offset(cd), crypt_get_sector_size(cd), vk,
 			journal_crypt_key, journal_mac_key, params);
