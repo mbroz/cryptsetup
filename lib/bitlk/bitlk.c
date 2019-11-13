@@ -202,7 +202,7 @@ static int convert_to_utf8(struct crypt_device *cd, uint8_t *input, size_t inlen
 	memset(outbuf, 0, inlen);
 	ic_outbuf = outbuf;
 
-	ic = iconv_open("UTF-8", "UTF-16");
+	ic = iconv_open("UTF-8", "UTF-16LE");
 	r = iconv(ic, (char **) &input, &ic_inlen, &ic_outbuf, &ic_outlen);
 	iconv_close(ic);
 
@@ -262,6 +262,7 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 	while (end - start > 2) {
 		/* size of this entry */
 		memcpy(&key_entry_size, data + start, sizeof(key_entry_size));
+		key_entry_size = le16_to_cpu(key_entry_size);
 		if (key_entry_size == 0)
 			break;
 
@@ -270,6 +271,8 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		memcpy(&key_entry_value,
 		       data + start + sizeof(key_entry_size) + sizeof(key_entry_type),
 		       sizeof(key_entry_value));
+		key_entry_type = le16_to_cpu(key_entry_type);
+		key_entry_value = le16_to_cpu(key_entry_value);
 
 		if (key_entry_type != BITLK_ENTRY_TYPE_PROPERTY) {
 			log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
@@ -365,6 +368,8 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	struct bitlk_fve_metadata fve = {};
 	struct bitlk_entry_vmk entry_vmk = {};
 	uint8_t *fve_entries = NULL;
+	uint16_t fve_size = 0;
+	uint32_t fve_metadata_size = 0;
 	int fve_offset = 0;
 	char guid_buf[UUID_STR_LEN] = {0};
 	uint16_t entry_size = 0;
@@ -425,24 +430,27 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		goto out;
 	}
 
+	for (i = 0; i < 3; i++)
+		params->metadata_offset[i] = le64_to_cpu(sb.fve_offset[i]);
+
 	log_dbg(cd, "Reading BitLocker FVE metadata of size %zu on device %s, offset %" PRIu64 ".",
-		sizeof(fve), device_path(device), sb.fve_offset[0]);
+		sizeof(fve), device_path(device), params->metadata_offset[0]);
 
 	/* read FVE metadata from the first metadata area */
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
-		device_alignment(device), &fve, sizeof(fve), sb.fve_offset[0]) != sizeof(fve) ||
+		device_alignment(device), &fve, sizeof(fve), params->metadata_offset[0]) != sizeof(fve) ||
 		memcmp(fve.signature, BITLK_SIGNATURE, sizeof(fve.signature)) ||
-		fve.fve_version != 2) {
+		le16_to_cpu(fve.fve_version) != 2) {
 		log_err(cd, _("Failed to read BitLocker FVE metadata from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
 
-	params->metadata_version = le32_to_cpu(fve.fve_version);
-	for (i = 0; i < 3; i++)
-		params->metadata_offset[i] = le64_to_cpu(sb.fve_offset[i]);
+	params->metadata_version = le16_to_cpu(fve.fve_version);
+	fve_size = le16_to_cpu(fve.fve_size);
+	fve_metadata_size = le32_to_cpu(fve.metadata_size);
 
-	switch (fve.encryption) {
+	switch (le16_to_cpu(fve.encryption)) {
 	/* AES-CBC with Elephant difuser */
 	case 0x8000:
 		params->key_size = 128;
@@ -496,34 +504,36 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	params->creation_time = filetime_to_unixtime(le64_to_cpu(fve.creation_time));
 
 	/* read and parse all FVE metadata entries */
-	fve_entries = malloc(fve.metadata_size - fve.fve_size);
+	fve_entries = malloc(fve_metadata_size - fve_size);
 	if (!fve_entries) {
 		r = -ENOMEM;
 		goto out;
 	}
-	memset(fve_entries, 0, (fve.metadata_size - fve.fve_size));
+	memset(fve_entries, 0, (fve_metadata_size - fve_size));
 
 	log_dbg(cd, "Reading BitLocker FVE metadata entries of size %" PRIu32 " on device %s, offset %" PRIu64 ".",
-		fve.metadata_size - fve.fve_size, device_path(device),
-		sb.fve_offset[0] + BITLK_FVE_METADATA_HEADER_LEN);
+		fve_metadata_size - fve_size, device_path(device),
+		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADER_LEN);
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
-		device_alignment(device), fve_entries, fve.metadata_size - fve.fve_size,
-		sb.fve_offset[0] + BITLK_FVE_METADATA_HEADER_LEN) != fve.metadata_size - fve.fve_size) {
+		device_alignment(device), fve_entries, fve_metadata_size - fve_size,
+		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADER_LEN) != fve_metadata_size - fve_size) {
 		log_err(cd, _("Failed to read BitLocker metadata entries from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
 
-	end = fve.metadata_size - fve.fve_size;
+	end = fve_metadata_size - fve_size;
 	while (end - start > 2) {
 		/* size of this entry */
 		memcpy(&entry_size, fve_entries + start, sizeof(entry_size));
+		entry_size = le16_to_cpu(entry_size);
 		if (entry_size == 0)
 			break;
 
 		/* type of this entry */
 		memcpy(&entry_type, fve_entries + start + sizeof(entry_size), sizeof(entry_type));
+		entry_type = le16_to_cpu(entry_type);
 
 		/* VMK */
 		if (entry_type == BITLK_ENTRY_TYPE_VMK) {
@@ -538,7 +548,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			guid_to_string(&entry_vmk.guid, guid_buf);
 			vmk->guid = strdup (guid_buf);
 
-			vmk->protection = get_vmk_protection(entry_vmk.protection);
+			vmk->protection = get_vmk_protection(le16_to_cpu(entry_vmk.protection));
 
 			/* more data in another entry list */
 			r = parse_vmk_entry(cd, fve_entries,
@@ -758,7 +768,7 @@ static int bitlk_kdf(struct crypt_device *cd,
 		r = crypt_hash_final(hd, kdf.last_sha256, len);
 		if (r < 0)
 			goto out;
-		kdf.count++;
+		kdf.count = cpu_to_le64(le64_to_cpu(kdf.count) + 1);
 	}
 
 	*vk = crypt_alloc_volume_key(len, kdf.last_sha256);
@@ -779,6 +789,7 @@ static int decrypt_key(struct crypt_device *cd,
 {
 	char *outbuf;
 	int r;
+	uint32_t key_size = 0;
 
 	outbuf = crypt_safe_alloc(enc_key->keylength);
 	if (!outbuf)
@@ -794,7 +805,8 @@ static int decrypt_key(struct crypt_device *cd,
 	}
 
 	/* key_data has it's size as part of the metadata */
-	if (enc_key->keylength == le32_to_cpu((uint32_t)*outbuf)) {
+	memcpy(&key_size, outbuf, 4);
+	if (enc_key->keylength == le32_to_cpu(key_size)) {
 		*vk = crypt_alloc_volume_key(enc_key->keylength - BITLK_OPEN_KEY_METADATA_LEN,
 					    (const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
 		r = *vk ? 0 : -ENOMEM;
