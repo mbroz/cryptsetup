@@ -787,7 +787,8 @@ static int decrypt_key(struct crypt_device *cd,
 	r = crypt_bitlk_decrypt_key(key->key, key->keylength, enc_key->key, outbuf, enc_key->keylength,
 				(const char*)iv, iv_size, (const char*)tag, tag_size);
 	if (r < 0) {
-		log_err(cd, _("This operation is not supported."));
+		if (r == -ENOTSUP)
+			log_err(cd, _("This operation is not supported."));
 		crypt_safe_free(outbuf);
 		return r;
 	}
