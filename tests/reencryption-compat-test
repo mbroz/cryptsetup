@@ -286,6 +286,10 @@ echo $PWD1 | $REENC $LOOPDEV1 -c aes-cbc-essiv:sha256 -s 128 --new --type luks1 
 check_hash $PWD1 $HASH5
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 prepare 8192
+OFFSET=4096
+echo fake | $REENC $LOOPDEV1 -d $KEY1 --new --type luks1 --reduce-device-size "$OFFSET"S -q $FAST_PBKDF || fail
+$CRYPTSETUP open --test-passphrase $LOOPDEV1 -d $KEY1 || fail
+wipe_dev $LOOPDEV1
 
 echo "[5] Reencryption using specific keyslot"
 echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
