@@ -1374,7 +1374,7 @@ static int action_open_luks(void)
 			goto out;
 		}
 
-		if (!data_device && (crypt_get_data_offset(cd) < 8)) {
+		if (!data_device && (crypt_get_data_offset(cd) < 8) && !opt_test_passphrase) {
 			log_err(_("Reduced data offset is allowed only for detached LUKS header."));
 			r = -EINVAL;
 			goto out;

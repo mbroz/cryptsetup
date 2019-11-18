@@ -216,6 +216,10 @@ echo "[2] open"
 echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksOpen $IMG --test-passphrase || fail
+# test detached header --test-passphrase
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT --header $HEADER_IMG $IMG || fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_IMG || fail
+rm -f $HEADER_IMG
 echo "[3] add key"
 echo $PWD1 | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT 2>/dev/null && fail
 echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT || fail
@@ -753,6 +757,7 @@ echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 5 _fakedev_ --header $HEA
 $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "Key Slot 5: ENABLED" || fail
 $CRYPTSETUP luksKillSlot -q _fakedev_ --header $HEADER_IMG 5 || fail
 $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "Key Slot 5: DISABLED" || fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_IMG || fail
 
 prepare "[29] Repair metadata" wipe
 $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV $KEY1 --key-slot 0 || fail

@@ -709,6 +709,7 @@ echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 5 _fakedev_ --header $HEA
 $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "5: luks2" || fail
 $CRYPTSETUP luksKillSlot -q _fakedev_ --header $HEADER_IMG 5 || fail
 $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "5: luks2" && fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_IMG || fail
 
 prepare "[29] Repair metadata" wipe
 xz -dk $HEADER_LUKS2_PV.xz
