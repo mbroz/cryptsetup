@@ -787,10 +787,15 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	assert(pbkdf->iterations);
 
-	PBKDF2_temp = (double)pbkdf->iterations * LUKS_MKD_ITERATIONS_MS / pbkdf->time_ms;
+	if (pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK && pbkdf->time_ms == 0)
+		PBKDF2_temp = LUKS_MKD_ITERATIONS_MIN;
+	else	/* iterations per ms * LUKS_MKD_ITERATIONS_MS */
+		PBKDF2_temp = (double)pbkdf->iterations * LUKS_MKD_ITERATIONS_MS / pbkdf->time_ms;
+
 	if (PBKDF2_temp > (double)UINT32_MAX)
 		return -EINVAL;
 	header->mkDigestIterations = at_least((uint32_t)PBKDF2_temp, LUKS_MKD_ITERATIONS_MIN);
+	assert(header->mkDigestIterations);
 
 	r = crypt_pbkdf(CRYPT_KDF_PBKDF2, header->hashSpec, vk->key,vk->keylength,
 			header->mkDigestSalt, LUKS_SALTSIZE,

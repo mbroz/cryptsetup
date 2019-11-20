@@ -985,6 +985,18 @@ static void AddDeviceLuks(void)
 
 	FAIL_(crypt_deactivate(cd, CDEVICE_2), "not active");
 	CRYPT_FREE(cd);
+
+	// No benchmark PBKDF2
+	pbkdf.flags = CRYPT_PBKDF_NO_BENCHMARK;
+	pbkdf.hash = "sha256";
+	pbkdf.iterations = 1000;
+	pbkdf.time_ms = 0;
+
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	CRYPT_FREE(cd);
+
 	_cleanup_dmdevices();
 }
 

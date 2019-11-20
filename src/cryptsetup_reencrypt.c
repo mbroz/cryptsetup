@@ -485,6 +485,7 @@ static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 
 	if (opt_pbkdf_iterations) {
 		pbkdf.iterations = opt_pbkdf_iterations;
+		pbkdf.time_ms = 0;
 		pbkdf.flags |= CRYPT_PBKDF_NO_BENCHMARK;
 	}
 
