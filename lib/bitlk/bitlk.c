@@ -227,6 +227,9 @@ static int passphrase_to_utf16(struct crypt_device *cd, char *input, size_t inle
 	char *ic_outbuf = NULL;
 	size_t r = 0;
 
+	if (inlen == 0)
+		return r;
+
 	outbuf = crypt_safe_alloc(inlen * 2);
 	if (outbuf == NULL)
 		return -ENOMEM;
