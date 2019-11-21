@@ -92,7 +92,6 @@ fi
 
 check_eboiv
 has_eboiv=$?
-blkid --list-filesystems 2>/dev/null | grep -i -q bitlocker || skip " Cannot check UUID (old blkid?)."
 
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/bitlk-*) ; do
