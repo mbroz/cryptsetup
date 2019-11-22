@@ -843,7 +843,7 @@ expect - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
 set timeout 10
 eval spawn $CRYPTSETUP luksKillSlot -v $LOOPDEV 0
-expect timeout abort "Are you sure? (Type uppercase yes):"
+expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
 expect timeout abort "Enter any remaining passphrase:"
 sleep 0.1
@@ -862,7 +862,7 @@ expect - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
 set timeout 10
 eval spawn $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT -v $LOOPDEV
-expect timeout abort "Are you sure? (Type uppercase yes):"
+expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
 expect timeout abort "Enter passphrase for $EXPECT_DEV:"
 sleep 0.1
@@ -887,12 +887,12 @@ expect - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
 set timeout 10
 eval spawn $CRYPTSETUP erase -v $LOOPDEV
-expect timeout abort "Are you sure? (Type uppercase yes):"
+expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
 expect timeout abort "Command successful."
 expect timeout abort eof
 eval spawn $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT -v $LOOPDEV
-expect timeout abort "Are you sure? (Type uppercase yes):"
+expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
 expect timeout abort "Enter passphrase for $EXPECT_DEV:"
 sleep 0.1

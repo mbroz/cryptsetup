@@ -142,7 +142,7 @@ static int _dialog(const char *msg, void *usrptr, int default_answer)
 
 	if (isatty(STDIN_FILENO) && !opt_batch_mode) {
 		log_std("\nWARNING!\n========\n");
-		log_std("%s\n\nAre you sure? (Type uppercase yes): ", msg);
+		log_std("%s\n\nAre you sure? (Type 'yes' in capital letters): ", msg);
 		fflush(stdout);
 		if(getline(&answer, &size, stdin) == -1) {
 			r = 0;
