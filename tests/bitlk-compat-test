@@ -43,7 +43,7 @@ function check_eboiv()
 function load_vars()
 {
         local file=$(echo $1 | sed -e s/^$TST_DIR\\/// | sed -e s/\.img$//)
-        source <(grep = <(grep -A7 "\[$file\]" $TST_DIR/images.conf))
+        source <(grep = <(grep -A8 "\[$file\]" $TST_DIR/images.conf))
 }
 
 function check_dump()
@@ -113,8 +113,10 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		$CRYPTSETUP status $MAP >/dev/null || fail
 		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
 		uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
+		sha256sum=$(sha256sum /dev/mapper/$MAP | cut -d" " -f1)
 		$CRYPTSETUP remove $MAP || fail
 		[ "$uuid" = "$UUID" ] || fail " UUID check failed."
+		[ "$sha256sum" = "$SHA256SUM" ] || fail " SHA256 sum check failed."
 		echo " [OK]"
 	done
 done
