@@ -75,7 +75,7 @@ function check_dump()
 }
 
 export LANG=C
-[ ! -d $TST_DIR ] && tar xJf $srcdir/bitlk-images.tar.xz --no-same-owner
+[ ! -d $TST_DIR ] && tar xJSf $srcdir/bitlk-images.tar.xz --no-same-owner
 
 echo "HEADER CHECK"
 for file in $(ls $TST_DIR/bitlk-*) ; do
