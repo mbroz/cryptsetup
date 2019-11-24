@@ -3144,7 +3144,7 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 	}
 
 	r = dm_resume_and_reinstate_key(cd, name, vk);
-	if (r)
+	if (r < 0)
 		log_err(cd, _("Error during resuming device %s."), name);
 out:
 	crypt_safe_free(passphrase_read);
@@ -3173,6 +3173,65 @@ int crypt_resume_by_keyfile_offset(struct crypt_device *cd,
 {
 	return crypt_resume_by_keyfile_device_offset(cd, name, keyslot,
 				      keyfile, keyfile_size, keyfile_offset);
+}
+
+int crypt_resume_by_volume_key(struct crypt_device *cd,
+	const char *name,
+	const char *volume_key,
+	size_t volume_key_size)
+{
+	struct volume_key *vk = NULL;
+	int r;
+
+	if (!name || !volume_key)
+		return -EINVAL;
+
+	log_dbg(cd, "Resuming volume %s by volume key.", name);
+
+	if ((r = onlyLUKS(cd)))
+		return r;
+
+	r = dm_status_suspended(cd, name);
+	if (r < 0)
+		return r;
+
+	if (!r) {
+		log_err(cd, _("Volume %s is not suspended."), name);
+		return -EINVAL;
+	}
+
+	vk = crypt_alloc_volume_key(volume_key_size, volume_key);
+	if (!vk)
+		return -ENOMEM;
+
+	if (isLUKS1(cd->type))
+		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
+	else if (isLUKS2(cd->type))
+		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
+	else
+		r = -EINVAL;
+	if (r == -EPERM || r == -ENOENT)
+		log_err(cd, _("Volume key does not match the volume."));
+	if  (r < 0)
+		goto out;
+	r = 0;
+
+	if (crypt_use_keyring_for_vk(cd)) {
+		r = LUKS2_key_description_by_segment(cd, &cd->u.luks2.hdr, vk, CRYPT_DEFAULT_SEGMENT);
+		if (!r)
+			r = crypt_volume_key_load_in_keyring(cd, vk);
+	}
+	if  (r < 0)
+		goto out;
+
+	r = dm_resume_and_reinstate_key(cd, name, vk);
+	if (r < 0)
+		log_err(cd, _("Error during resuming device %s."), name);
+out:
+	if (r < 0)
+		crypt_drop_keyring_key(cd, vk);
+	crypt_free_volume_key(vk);
+	return r;
 }
 
 /*
@@ -4472,6 +4531,9 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
 	else if (isLUKS2(cd->type))
 		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
+	else
+		r = -EINVAL;
+
 
 	if (r == -EPERM)
 		log_err(cd, _("Volume key does not match the volume."));

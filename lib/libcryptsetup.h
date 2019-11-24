@@ -828,6 +828,20 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
 	int keyslot,
 	const char *keyfile,
 	size_t keyfile_size);
+/**
+ * Resume crypt device using provided volume key.
+ *
+ * @param cd crypt device handle
+ * @param name name of device to resume
+ * @param volume_key provided volume key
+ * @param volume_key_size size of volume_key
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_resume_by_volume_key(struct crypt_device *cd,
+	const char *name,
+	const char *volume_key,
+	size_t volume_key_size);
 /** @} */
 
 /**
