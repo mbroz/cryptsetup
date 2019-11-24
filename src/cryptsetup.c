@@ -744,8 +744,9 @@ static int action_status(void)
 		log_std("  size:    %" PRIu64 " sectors\n", cad.size);
 		if (cad.iv_offset)
 			log_std("  skipped: %" PRIu64 " sectors\n", cad.iv_offset);
-		log_std("  mode:    %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
-					   "readonly" : "read/write");
+		log_std("  mode:    %s%s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
+					   "readonly" : "read/write",
+					   (cad.flags & CRYPT_ACTIVATE_SUSPENDED) ? " (suspended)" : "");
 		if (cad.flags & (CRYPT_ACTIVATE_ALLOW_DISCARDS|
 				 CRYPT_ACTIVATE_SAME_CPU_CRYPT|
 				 CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS))

@@ -2519,6 +2519,9 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 	if (dmi.read_only)
 		dmd->flags |= CRYPT_ACTIVATE_READONLY;
 
+	if (dmi.suspended)
+		dmd->flags |= CRYPT_ACTIVATE_SUSPENDED;
+
 	tmp_uuid = dm_task_get_uuid(dmt);
 	if (!tmp_uuid)
 		dmd->flags |= CRYPT_ACTIVATE_NO_UUID;

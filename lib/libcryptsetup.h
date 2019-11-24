@@ -1061,6 +1061,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF (1 << 19)
 /** dm-integrity: direct writes, use bitmap to track dirty sectors */
 #define CRYPT_ACTIVATE_NO_JOURNAL_BITMAP (1 << 20)
+/** device is suspended (key should be wiped from memory), output only */
+#define CRYPT_ACTIVATE_SUSPENDED (1 << 21)
 
 /**
  * Active device runtime attributes
