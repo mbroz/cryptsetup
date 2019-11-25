@@ -85,6 +85,7 @@ static const char *opt_priority = NULL; /* normal */
 static const char *opt_integrity = NULL; /* none */
 static int opt_integrity_nojournal = 0;
 static int opt_integrity_no_wipe = 0;
+static int opt_integrity_legacy_padding = 0;
 static const char *opt_key_description = NULL;
 static int opt_sector_size = 0;
 static int opt_persistent = 0;
@@ -1303,6 +1304,9 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 	/* Signature candidates found */
 	if (signatures && ((r =	tools_wipe_all_signatures(header_device)) < 0))
 		goto out;
+
+	if (opt_integrity_legacy_padding)
+		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);
 
 	r = crypt_format(cd, type, cipher, cipher_mode,
 			 opt_uuid, key, keysize, params);
@@ -3409,6 +3413,7 @@ int main(int argc, const char **argv)
 		{ "integrity",          'I', POPT_ARG_STRING, &opt_integrity,           0, N_("Data integrity algorithm (LUKS2 only)"), NULL },
 		{ "integrity-no-journal",'\0',POPT_ARG_NONE, &opt_integrity_nojournal,  0, N_("Disable journal for integrity device"), NULL },
 		{ "integrity-no-wipe", '\0', POPT_ARG_NONE, &opt_integrity_no_wipe,     0, N_("Do not wipe device after format"), NULL },
+		{ "integrity-legacy-padding",'\0', POPT_ARG_NONE, &opt_integrity_legacy_padding,0, N_("Use inefficient legacy padding (old kernels)"), NULL },
 		{ "token-only",        '\0', POPT_ARG_NONE, &opt_token_only,            0, N_("Do not ask for passphrase if activation by token fails"), NULL },
 		{ "token-id",          '\0', POPT_ARG_INT, &opt_token,                  0, N_("Token number (default: any)"), NULL },
 		{ "key-description",   '\0', POPT_ARG_STRING, &opt_key_description,     0, N_("Key description"), NULL },

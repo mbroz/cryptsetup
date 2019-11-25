@@ -151,7 +151,7 @@ intformat() # alg alg_out tagsize sector_size csum [keyfile keysize]
 
 	echo -n "[INTEGRITY:$2:$3:$4]"
 	echo -n "[FORMAT]"
-	$INTSETUP format -q --integrity $1 --tag-size $3 --sector-size $4 $KEY_PARAMS $DEV || fail "Cannot format device."
+	$INTSETUP format --integrity-legacy-padding -q --integrity $1 --tag-size $3 --sector-size $4 $KEY_PARAMS $DEV || fail "Cannot format device."
 	dump_check "tag_size" $3
 	dump_check "sector_size" $4
 	echo -n "[ACTIVATE]"

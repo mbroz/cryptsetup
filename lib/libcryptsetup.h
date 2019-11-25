@@ -630,6 +630,26 @@ int crypt_format(struct crypt_device *cd,
 	void *params);
 
 /**
+ * Set format compatibility flags.
+ *
+ * @param cd crypt device handle
+ * @param flags CRYPT_COMPATIBILITY_* flags
+ */
+void crypt_set_compatibility(struct crypt_device *cd, uint32_t flags);
+
+/**
+ * Get compatibility flags.
+ *
+ * @param cd crypt device handle
+ *
+ * @returns compatibility flags
+ */
+uint32_t crypt_get_compatibility(struct crypt_device *cd);
+
+/** dm-integrity device uses less effective (legacy) padding (old kernels) */
+#define CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING (1 << 0)
+
+/**
  * Convert to new type for already existing device.
  *
  * @param cd crypt device handle

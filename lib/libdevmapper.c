@@ -2908,7 +2908,9 @@ int dm_integrity_target_set(struct crypt_device *cd,
 	tgt->u.integrity.journal_crypt_key = journal_crypt_key;
 	tgt->u.integrity.journal_integrity_key = journal_mac_key;
 
-	if (!dm_flags(cd, DM_INTEGRITY, &dmi_flags) && dmi_flags & DM_INTEGRITY_FIX_PADDING_SUPPORTED)
+	if (!dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
+	    (dmi_flags & DM_INTEGRITY_FIX_PADDING_SUPPORTED) &&
+	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING))
 		tgt->u.integrity.fix_padding = true;
 
 	if (ip) {

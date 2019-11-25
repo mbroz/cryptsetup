@@ -50,6 +50,7 @@ struct crypt_device {
 
 	struct volume_key *volume_key;
 	int rng_type;
+	uint32_t compatibility;
 	struct crypt_pbkdf_type pbkdf;
 
 	/* global context scope settings */
@@ -4572,6 +4573,20 @@ int crypt_get_rng_type(struct crypt_device *cd)
 int crypt_memory_lock(struct crypt_device *cd, int lock)
 {
 	return lock ? crypt_memlock_inc(cd) : crypt_memlock_dec(cd);
+}
+
+void crypt_set_compatibility(struct crypt_device *cd, uint32_t flags)
+{
+	if (cd)
+		cd->compatibility = flags;
+}
+
+uint32_t crypt_get_compatibility(struct crypt_device *cd)
+{
+	if (cd)
+		return cd->compatibility;
+
+	return 0;
 }
 
 /*

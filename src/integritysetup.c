@@ -58,6 +58,7 @@ static int opt_journal_crypt_key_size = 0;
 static int opt_integrity_nojournal = 0;
 static int opt_integrity_recovery = 0;
 static int opt_integrity_bitmap = 0;
+static int opt_integrity_legacy_padding = 0;
 
 static int opt_integrity_recalculate = 0;
 
@@ -241,6 +242,9 @@ static int action_format(int arg)
 	/* Signature candidates found */
 	if (signatures && ((r =	tools_wipe_all_signatures(action_argv[0])) < 0))
 		goto out;
+
+	if (opt_integrity_legacy_padding)
+		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);
 
 	r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, &params);
 	if (r < 0) /* FIXME: call wipe signatures again */
@@ -565,6 +569,7 @@ int main(int argc, const char **argv)
 		{ "integrity-recovery-mode",    'R', POPT_ARG_NONE,  &opt_integrity_recovery,  0, N_("Recovery mode (no journal, no tag checking)"), NULL },
 		{ "integrity-bitmap-mode",      'B', POPT_ARG_NONE,  &opt_integrity_bitmap, 0, N_("Use bitmap to track changes and disable journal for integrity device"), NULL },
 		{ "integrity-recalculate",     '\0', POPT_ARG_NONE,  &opt_integrity_recalculate,  0, N_("Recalculate initial tags automatically."), NULL },
+		{ "integrity-legacy-padding",  '\0', POPT_ARG_NONE,  &opt_integrity_legacy_padding, 0, N_("Use inefficient legacy padding (old kernels)"), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
