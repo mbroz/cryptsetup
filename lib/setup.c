@@ -108,6 +108,7 @@ struct crypt_device {
 		struct crypt_params_integrity params;
 		struct volume_key *journal_mac_key;
 		struct volume_key *journal_crypt_key;
+		uint32_t sb_flags;
 	} integrity;
 	struct { /* used if initialized without header by name */
 		char *active_name;
@@ -919,7 +920,7 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	r = INTEGRITY_read_sb(cd, &cd->u.integrity.params);
+	r = INTEGRITY_read_sb(cd, &cd->u.integrity.params, &cd->u.integrity.sb_flags);
 	if (r < 0)
 		return r;
 
@@ -3677,7 +3678,7 @@ static int _create_device_with_integrity(struct crypt_device *cd,
 
 	device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
 
-	r = INTEGRITY_activate_dmd_device(cd, iname, CRYPT_INTEGRITY, dmdi);
+	r = INTEGRITY_activate_dmd_device(cd, iname, CRYPT_INTEGRITY, dmdi, 0);
 	if (r)
 		return r;
 
@@ -4299,7 +4300,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		}
 		r = INTEGRITY_activate(cd, name, &cd->u.integrity.params, vk,
 				       cd->u.integrity.journal_crypt_key,
-				       cd->u.integrity.journal_mac_key, flags);
+				       cd->u.integrity.journal_mac_key, flags,
+				       cd->u.integrity.sb_flags);
 	} else {
 		log_err(cd, _("Device type is not properly initialised."));
 		r = -EINVAL;

@@ -57,7 +57,9 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	return r;
 }
 
-int INTEGRITY_read_sb(struct crypt_device *cd, struct crypt_params_integrity *params)
+int INTEGRITY_read_sb(struct crypt_device *cd,
+		      struct crypt_params_integrity *params,
+		      uint32_t *flags)
 {
 	struct superblock sb;
 	int r;
@@ -68,6 +70,9 @@ int INTEGRITY_read_sb(struct crypt_device *cd, struct crypt_params_integrity *pa
 
 	params->sector_size = SECTOR_SIZE << sb.log2_sectors_per_block;
 	params->tag_size = sb.integrity_tag_size;
+
+	if (flags)
+		*flags = sb.flags;
 
 	return 0;
 }
@@ -91,10 +96,11 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 	if (sb.version == SB_VERSION_2 && (sb.flags & SB_FLAG_RECALCULATING))
 		log_std(cd, "recalc_sector %" PRIu64 "\n", sb.recalc_sector);
 	log_std(cd, "log2_blocks_per_bitmap %u\n", sb.log2_blocks_per_bitmap_bit);
-	log_std(cd, "flags %s%s%s\n",
+	log_std(cd, "flags %s%s%s%s\n",
 		sb.flags & SB_FLAG_HAVE_JOURNAL_MAC ? "have_journal_mac " : "",
 		sb.flags & SB_FLAG_RECALCULATING ? "recalculating " : "",
-		sb.flags & SB_FLAG_DIRTY_BITMAP ? "dirty_bitmap " : "");
+		sb.flags & SB_FLAG_DIRTY_BITMAP ? "dirty_bitmap " : "",
+		sb.flags & SB_FLAG_FIXED_PADDING ? "fix_padding " : "");
 
 	return 0;
 }
@@ -212,7 +218,8 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 		       const char *name,
 		       const char *type,
-		       struct crypt_dm_active_device *dmd)
+		       struct crypt_dm_active_device *dmd,
+		       uint32_t sb_flags)
 {
 	int r;
 	uint32_t dmi_flags;
@@ -241,6 +248,12 @@ int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 		return -ENOTSUP;
 	}
 
+	if (r < 0 && (sb_flags & SB_FLAG_FIXED_PADDING) && !dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
+	    !(dmi_flags & DM_INTEGRITY_FIX_PADDING_SUPPORTED)) {
+		log_err(cd, _("Kernel doesn't support dm-integrity fixed metadata alignment."));
+		return -ENOTSUP;
+	}
+
 	return r;
 }
 
@@ -250,7 +263,7 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		       struct volume_key *vk,
 		       struct volume_key *journal_crypt_key,
 		       struct volume_key *journal_mac_key,
-		       uint32_t flags)
+		       uint32_t flags, uint32_t sb_flags)
 {
 	struct crypt_dm_active_device dmd = {};
 	int r = INTEGRITY_create_dmd_device(cd, params, vk, journal_crypt_key, journal_mac_key, &dmd, flags);
@@ -258,7 +271,7 @@ int INTEGRITY_activate(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	r = INTEGRITY_activate_dmd_device(cd, name, CRYPT_INTEGRITY, &dmd);
+	r = INTEGRITY_activate_dmd_device(cd, name, CRYPT_INTEGRITY, &dmd, sb_flags);
 	dm_targets_free(cd, &dmd);
 	return r;
 }

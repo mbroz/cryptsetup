@@ -55,7 +55,9 @@ struct superblock {
 	uint64_t recalc_sector; /* V2 only */
 } __attribute__ ((packed));
 
-int INTEGRITY_read_sb(struct crypt_device *cd, struct crypt_params_integrity *params);
+int INTEGRITY_read_sb(struct crypt_device *cd,
+		      struct crypt_params_integrity *params,
+		      uint32_t *flags);
 
 int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offset);
 
@@ -80,7 +82,7 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		       struct volume_key *vk,
 		       struct volume_key *journal_crypt_key,
 		       struct volume_key *journal_mac_key,
-		       uint32_t flags);
+		       uint32_t flags, uint32_t sb_flags);
 
 int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 		       const struct crypt_params_integrity *params,
@@ -93,5 +95,6 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 		       const char *name,
 		       const char *type,
-		       struct crypt_dm_active_device *dmd);
+		       struct crypt_dm_active_device *dmd,
+		       uint32_t sb_flags);
 #endif
