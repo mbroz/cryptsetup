@@ -2205,24 +2205,19 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	struct dm_target *tgt;
 	crypt_status_info ci;
 	struct crypt_dm_active_device dmdc;
-	char **dep, uuid[37], deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = { 0 };
+	char **dep, deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = { 0 };
 	const char *namei = NULL;
 	struct crypt_lock_handle *reencrypt_lock = NULL;
 
-	if (!dmd || !dmd->uuid)
+	if (!dmd || !dmd->uuid || strncmp(CRYPT_LUKS2, dmd->uuid, sizeof(CRYPT_LUKS2)-1))
+		return -EINVAL;
+
+	/* uuid mismatch with metadata (if available) */
+	if (hdr && crypt_uuid_cmp(dmd->uuid, hdr->uuid))
 		return -EINVAL;
 
 	r = snprintf(deps_uuid_prefix, sizeof(deps_uuid_prefix), CRYPT_SUBDEV "-%.32s", dmd->uuid + 6);
 	if (r < 0 || (size_t)r != (sizeof(deps_uuid_prefix) - 1))
-		return -EINVAL;
-
-	r = snprintf(uuid, sizeof(uuid), "%.8s-%.4s-%.4s-%.4s-%.12s",
-		 dmd->uuid + 6, dmd->uuid + 14, dmd->uuid + 18, dmd->uuid + 22, dmd->uuid + 26);
-	if (r < 0 || (size_t)r != (sizeof(uuid) - 1))
-		return -EINVAL;
-
-	/* uuid mismatch with metadata (if available) */
-	if (hdr && strcmp(hdr->uuid, uuid))
 		return -EINVAL;
 
 	tgt = &dmd->segment;
@@ -2236,7 +2231,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		goto out;
 
 	if (contains_reencryption_helper(deps)) {
-		r = crypt_reencrypt_lock(cd, uuid, &reencrypt_lock);
+		r = crypt_reencrypt_lock_by_dm_uuid(cd, dmd->uuid, &reencrypt_lock);
 		if (r) {
 			if (r == -EBUSY)
 				log_err(cd, _("Reencryption in-progress. Cannot deactivate device."));

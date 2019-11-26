@@ -3888,7 +3888,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	if (crypt_use_keyring_for_vk(cd))
 		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 
-	r = crypt_reencrypt_lock(cd, NULL, &reencrypt_lock);
+	r = crypt_reencrypt_lock(cd, &reencrypt_lock);
 	if (r) {
 		if (r == -EBUSY)
 			log_err(cd, _("Reencryption in-progress. Cannot activate device."));
@@ -4354,7 +4354,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 			if (isLUKS2(cd->type))
 				hdr2 = crypt_get_hdr(cd, CRYPT_LUKS2);
 
-			if (!strncmp(CRYPT_LUKS2, dmd.uuid ?: "", sizeof(CRYPT_LUKS2)-1) || hdr2)
+			if ((dmd.uuid && !strncmp(CRYPT_LUKS2, dmd.uuid, sizeof(CRYPT_LUKS2)-1)) || hdr2)
 				r = LUKS2_deactivate(cd, name, hdr2, &dmd, flags);
 			else if (isTCRYPT(cd->type))
 				r = TCRYPT_deactivate(cd, name, flags);

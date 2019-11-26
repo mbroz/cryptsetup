@@ -2546,21 +2546,10 @@ static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return 0;
 }
 
-/* internal only */
-int crypt_reencrypt_lock(struct crypt_device *cd, const char *uuid, struct crypt_lock_handle **reencrypt_lock)
+static int reencrypt_lock_internal(struct crypt_device *cd, const char *uuid, struct crypt_lock_handle **reencrypt_lock)
 {
 	int r;
 	char *lock_resource;
-	const char *tmp = crypt_get_uuid(cd);
-
-	if (!tmp && !uuid)
-		return -EINVAL;
-	if (!uuid)
-		uuid = tmp;
-	if (!tmp)
-		 tmp = uuid;
-	if (strcmp(uuid, tmp))
-		return -EINVAL;
 
 	if (!crypt_metadata_locking_enabled()) {
 		*reencrypt_lock = NULL;
@@ -2580,6 +2569,36 @@ out:
 	free(lock_resource);
 
 	return r;
+}
+
+/* internal only */
+int crypt_reencrypt_lock_by_dm_uuid(struct crypt_device *cd, const char *dm_uuid, struct crypt_lock_handle **reencrypt_lock)
+{
+	int r;
+	char hdr_uuid[37];
+	const char *uuid = crypt_get_uuid(cd);
+
+	if (!dm_uuid)
+		return -EINVAL;
+
+	if (!uuid) {
+		r = snprintf(hdr_uuid, sizeof(hdr_uuid), "%.8s-%.4s-%.4s-%.4s-%.12s",
+			 dm_uuid + 6, dm_uuid + 14, dm_uuid + 18, dm_uuid + 22, dm_uuid + 26);
+		if (r < 0 || (size_t)r != (sizeof(hdr_uuid) - 1))
+			return -EINVAL;
+	} else if (crypt_uuid_cmp(dm_uuid, uuid))
+		return -EINVAL;
+
+	return reencrypt_lock_internal(cd, uuid, reencrypt_lock);
+}
+
+/* internal only */
+int crypt_reencrypt_lock(struct crypt_device *cd, struct crypt_lock_handle **reencrypt_lock)
+{
+	if (!cd || !crypt_get_type(cd) || strcmp(crypt_get_type(cd), CRYPT_LUKS2))
+		return -EINVAL;
+
+	return reencrypt_lock_internal(cd, crypt_get_uuid(cd), reencrypt_lock);
 }
 
 /* internal only */
@@ -2605,7 +2624,7 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 		return -EINVAL;
 	}
 
-	r = crypt_reencrypt_lock(cd, NULL, &h);
+	r = crypt_reencrypt_lock(cd, &h);
 	if (r < 0) {
 		if (r == -EBUSY)
 			log_err(cd, _("Reencryption process is already running."));
@@ -2809,7 +2828,7 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 	crypt_reencrypt_info ri;
 	struct crypt_lock_handle *reencrypt_lock;
 
-	r = crypt_reencrypt_lock(cd, NULL, &reencrypt_lock);
+	r = crypt_reencrypt_lock(cd, &reencrypt_lock);
 	if (r) {
 		if (r == -EBUSY)
 			log_err(cd, _("Reencryption in-progress. Cannot perform recovery."));
