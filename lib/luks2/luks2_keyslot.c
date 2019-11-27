@@ -324,6 +324,12 @@ static int LUKS2_open_and_verify_by_digest(struct crypt_device *cd,
 	if (!(h = LUKS2_keyslot_handler(cd, keyslot)))
 		return -ENOENT;
 
+	r = h->validate(cd, LUKS2_get_keyslot_jobj(hdr, keyslot));
+	if (r) {
+		log_dbg(cd, "Keyslot %d validation failed.", keyslot);
+		return r;
+	}
+
 	r = _keyslot_for_digest(hdr, keyslot, digest);
 	if (r) {
 		if (r == -ENOENT)
@@ -348,7 +354,8 @@ static int LUKS2_open_and_verify_by_digest(struct crypt_device *cd,
 	if (r < 0) {
 		crypt_free_volume_key(*vk);
 		*vk = NULL;
-	}
+	} else
+		crypt_volume_key_set_id(*vk, r);
 
 	return r < 0 ? r : keyslot;
 }
