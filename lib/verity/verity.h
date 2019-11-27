@@ -57,7 +57,7 @@ int VERITY_verify(struct crypt_device *cd,
 
 int VERITY_create(struct crypt_device *cd,
 		  struct crypt_params_verity *verity_hdr,
-		  char *root_hash,
+		  const char *root_hash,
 		  size_t root_hash_size);
 
 int VERITY_FEC_process(struct crypt_device *cd,

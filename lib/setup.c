@@ -97,7 +97,7 @@ struct crypt_device {
 	} loopaes;
 	struct { /* used in CRYPT_VERITY */
 		struct crypt_params_verity hdr;
-		char *root_hash;
+		const char *root_hash;
 		unsigned int root_hash_size;
 		char *uuid;
 		struct device *fec_device;
@@ -1126,7 +1126,7 @@ static void crypt_free_type(struct crypt_device *cd)
 		free(CONST_CAST(void*)cd->u.verity.hdr.hash_device);
 		free(CONST_CAST(void*)cd->u.verity.hdr.fec_device);
 		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
-		free(cd->u.verity.root_hash);
+		free(CONST_CAST(void*)cd->u.verity.root_hash);
 		free(cd->u.verity.uuid);
 		device_free(cd, cd->u.verity.fec_device);
 	} else if (isINTEGRITY(cd->type)) {
@@ -1314,6 +1314,7 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 	r = dm_query_device(cd, name,
 				DM_ACTIVE_DEVICE |
 				DM_ACTIVE_VERITY_HASH_DEVICE |
+				DM_ACTIVE_VERITY_ROOT_HASH |
 				DM_ACTIVE_VERITY_PARAMS, &dmd);
 	if (r < 0)
 		return r;
@@ -1345,6 +1346,7 @@ static int _init_by_name_verity(struct crypt_device *cd, const char *name)
 		cd->u.verity.hdr.fec_roots = tgt->u.verity.vp->fec_roots;
 		MOVE_REF(cd->u.verity.fec_device, tgt->u.verity.fec_device);
 		MOVE_REF(cd->metadata_device, tgt->u.verity.hash_device);
+		MOVE_REF(cd->u.verity.root_hash, tgt->u.verity.root_hash);
 	}
 out:
 	dm_targets_free(cd, &dmd);
@@ -4333,18 +4335,17 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 			return -EINVAL;
 		}
 
+		free(CONST_CAST(void*)cd->u.verity.root_hash);
+		cd->u.verity.root_hash = NULL;
+
 		r = VERITY_activate(cd, name, volume_key, volume_key_size, cd->u.verity.fec_device,
 				    &cd->u.verity.hdr, flags|CRYPT_ACTIVATE_READONLY);
 
-		if (r == -EPERM) {
-			free(cd->u.verity.root_hash);
-			cd->u.verity.root_hash = NULL;
-		} if (!r) {
+		if (!r) {
 			cd->u.verity.root_hash_size = volume_key_size;
-			if (!cd->u.verity.root_hash)
-				cd->u.verity.root_hash = malloc(volume_key_size);
+			cd->u.verity.root_hash = malloc(volume_key_size);
 			if (cd->u.verity.root_hash)
-				memcpy(cd->u.verity.root_hash, volume_key, volume_key_size);
+				memcpy(CONST_CAST(void*)cd->u.verity.root_hash, volume_key, volume_key_size);
 		}
 	} else if (isTCRYPT(cd->type)) {
 		if (!name)
@@ -4534,7 +4535,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 	int key_len, r = -EINVAL;
 
-	if (!cd || !volume_key || !volume_key_size || (!isTCRYPT(cd->type) && !passphrase))
+	if (!cd || !volume_key || !volume_key_size || (!isTCRYPT(cd->type) && !isVERITY(cd->type) && !passphrase))
 		return -EINVAL;
 
 	if (isLUKS2(cd->type) && keyslot != CRYPT_ANY_SLOT)
@@ -4564,10 +4565,18 @@ int crypt_volume_key_get(struct crypt_device *cd,
 				passphrase, passphrase_size, &vk);
 	} else if (isTCRYPT(cd->type)) {
 		r = TCRYPT_get_volume_key(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params, &vk);
+	} else if (isVERITY(cd->type)) {
+		/* volume_key == root hash */
+		if (cd->u.verity.root_hash) {
+			memcpy(volume_key, cd->u.verity.root_hash, cd->u.verity.root_hash_size);
+			*volume_key_size = cd->u.verity.root_hash_size;
+			r = 0;
+		} else
+			log_err(cd, _("Cannot retrieve root hash for verity device."));
 	} else
 		log_err(cd, _("This operation is not supported for %s crypt device."), cd->type ?: "(none)");
 
-	if (r >= 0) {
+	if (r >= 0 && vk) {
 		memcpy(volume_key, vk->key, vk->keylength);
 		*volume_key_size = vk->keylength;
 	}

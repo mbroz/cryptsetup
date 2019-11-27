@@ -1570,7 +1570,8 @@ static void VerityTest(void)
 {
 	const char *salt_hex =  "20c28ffc129c12360ba6ceea2b6cf04e89c2b41cfe6b8439eb53c1897f50df7b";
 	const char *root_hex =  "ab018b003a967fc782effb293b6dccb60b4f40c06bf80d16391acf686d28b5d6";
-	char salt[256], root_hash[256];
+	char salt[256], root_hash[256], root_hash_out[256];
+	size_t root_hash_out_size = 256;
 	struct crypt_active_device cad;
 	struct crypt_params_verity params = {
 		.data_device = DEVICE_EMPTY,
@@ -1657,6 +1658,10 @@ static void VerityTest(void)
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init_by_name(&cd, CDEVICE_1));
+	memset(root_hash_out, 0, root_hash_out_size);
+	OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, root_hash_out, &root_hash_out_size, NULL, 0));
+	EQ_(32, root_hash_out_size);
+	OK_(memcmp(root_hash, root_hash_out, root_hash_out_size));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	/* hash fail */

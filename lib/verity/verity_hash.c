@@ -418,7 +418,7 @@ int VERITY_verify(struct crypt_device *cd,
 /* Create verity hash */
 int VERITY_create(struct crypt_device *cd,
 		  struct crypt_params_verity *verity_hdr,
-		  char *root_hash,
+		  const char *root_hash,
 		  size_t root_hash_size)
 {
 	unsigned pgsize = (unsigned)crypt_getpagesize();
@@ -439,7 +439,7 @@ int VERITY_create(struct crypt_device *cd,
 		verity_hdr->data_block_size,
 		verity_hdr->data_size,
 		VERITY_hash_offset_block(verity_hdr),
-		root_hash,
+		CONST_CAST(char*)root_hash,
 		root_hash_size,
 		verity_hdr->salt,
 		verity_hdr->salt_size);

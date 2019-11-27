@@ -1360,6 +1360,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name);
  *
  * @note For TCRYPT cipher chain is the volume key concatenated
  * 	 for all ciphers in chain.
+ * @note For VERITY the volume key means root hash used for activation.
  */
 int crypt_volume_key_get(struct crypt_device *cd,
 	int keyslot,

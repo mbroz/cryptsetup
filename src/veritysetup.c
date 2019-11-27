@@ -225,7 +225,8 @@ static int action_status(int arg)
 	struct crypt_params_verity vp = {};
 	struct crypt_device *cd = NULL;
 	struct stat st;
-	char *backing_file;
+	char *backing_file, *root_hash;
+	size_t root_hash_size;
 	unsigned i, path = 0;
 	int r = 0;
 
@@ -311,6 +312,19 @@ static int action_status(int arg)
 				vp.fec_area_offset * vp.hash_block_size / 512);
 			log_std("  FEC roots:   %u\n", vp.fec_roots);
 		}
+
+		root_hash_size = crypt_get_volume_key_size(cd);
+		if (root_hash_size > 0 && (root_hash = malloc(root_hash_size))) {
+			r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, root_hash, &root_hash_size, NULL, 0);
+			if (!r) {
+				log_std("  root hash:   ");
+				for (i = 0; i < root_hash_size; i++)
+					log_std("%02hhx", (const char)root_hash[i]);
+				log_std("\n");
+			}
+			free(root_hash);
+		}
+
 		if (cad.flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
 				 CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
 				 CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS|
