@@ -89,7 +89,7 @@ static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 		segment_digest = LUKS2_digest_by_segment(hdr, segment);
 		return segment_digest == keyslot_digest;
 	}
-	for (s = 0; s < 3; s++) {
+	for (s = 0; s < json_segments_count(LUKS2_get_segments_jobj(hdr)); s++) {
 		segment_digest = LUKS2_digest_by_segment(hdr, s);
 		if (segment_digest == keyslot_digest)
 			count++;
