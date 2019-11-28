@@ -52,6 +52,8 @@
 #define BITLK_KDF_HASH "sha256"
 #define BITLK_KDF_ITERATION_COUNT 0x100000
 
+/* maximum number of segments for the DM device */
+#define MAX_BITLK_SEGMENTS 10
 
 /* January 1, 1970 as MS file time */
 #define EPOCH_AS_FILETIME 116444736000000000
@@ -82,6 +84,18 @@ static void guid_to_string(struct bitlk_guid *guid, char *out) {
 	swap_guid(guid);
 	uuid_unparse((unsigned char *) guid, out);
 }
+
+typedef enum {
+	BITLK_SEGTYPE_CRYPT,
+	BITLK_SEGTYPE_ZERO,
+} BitlkSegmentType;
+
+struct segment {
+	uint64_t offset;
+	uint64_t length;
+	uint64_t iv_offset;
+	BitlkSegmentType type;
+};
 
 struct bitlk_signature {
 	uint8_t boot_code[3];
@@ -830,8 +844,10 @@ int BITLK_activate(struct crypt_device *cd,
 		   uint32_t flags)
 {
 	int r = 0;
-	uint64_t start = 0;
-	uint64_t size = 0;
+	int i = 0;
+	int j = 0;
+	int min = 0;
+	int num_segments = 0;
 	struct crypt_dm_active_device dmd = {
 		.flags = flags,
 	};
@@ -841,6 +857,11 @@ int BITLK_activate(struct crypt_device *cd,
 	struct volume_key *vmk_dec_key = NULL;
 	struct volume_key *recovery_key = NULL;
 	const struct bitlk_vmk *next_vmk = NULL;
+	struct segment segments[MAX_BITLK_SEGMENTS] = {};
+	struct segment temp;
+	uint64_t next_start = 0;
+	uint64_t next_end = 0;
+	uint64_t last_segment = 0;
 
 	next_vmk = params->vmks;
 	while (next_vmk) {
@@ -939,130 +960,118 @@ int BITLK_activate(struct crypt_device *cd,
 		return r;
 	}
 
-	r = dm_targets_allocate(&dmd.segment, 9);
+	/* there will be always 4 dm-zero segments: 3x metadata, 1x FS header */
+	for (i = 0; i < 3; i++) {
+		segments[num_segments].offset = params->metadata_offset[i] / SECTOR_SIZE;
+		segments[num_segments].length = BITLK_FVE_METADATA_SIZE / SECTOR_SIZE;
+		segments[num_segments].iv_offset = 0;
+		segments[num_segments].type = BITLK_SEGTYPE_ZERO;
+		num_segments++;
+	}
+	segments[num_segments].offset = params->volume_header_offset / SECTOR_SIZE;
+	segments[num_segments].length = params->volume_header_size / SECTOR_SIZE;
+	segments[num_segments].iv_offset = 0;
+	segments[num_segments].type = BITLK_SEGTYPE_ZERO;
+	num_segments++;
+
+	/* filesystem header (moved from the special location) */
+	segments[num_segments].offset = 0;
+	segments[num_segments].length = params->volume_header_size / SECTOR_SIZE;
+	segments[num_segments].iv_offset = params->volume_header_offset / SECTOR_SIZE;
+	segments[num_segments].type = BITLK_SEGTYPE_CRYPT;
+	num_segments++;
+
+	/* now fill gaps between the dm-zero segments with dm-crypt */
+	last_segment = params->volume_header_size / SECTOR_SIZE;
+	while (true) {
+		next_start = dmd.size;
+		next_end = dmd.size;
+
+		/* start of the next segment: end of the first existing segment after the last added */
+		for (i = 0; i < num_segments; i++)
+			if (segments[i].offset + segments[i].length < next_start && segments[i].offset + segments[i].length >= last_segment)
+				next_start = segments[i].offset + segments[i].length;
+
+		/* end of the next segment: start of the next segment after start we found above */
+		for (i = 0; i < num_segments; i++)
+			if (segments[i].offset < next_end && segments[i].offset >= next_start)
+				next_end = segments[i].offset;
+
+		/* two zero segments next to each other, just bump the last_segment
+		   so the algorithm moves */
+		if (next_end - next_start == 0) {
+			last_segment = next_end + 1;
+			continue;
+		}
+
+		segments[num_segments].offset = next_start;
+		segments[num_segments].length = next_end - next_start;
+		segments[num_segments].iv_offset = next_start;
+		segments[num_segments].type = BITLK_SEGTYPE_CRYPT;
+		last_segment = next_end;
+		num_segments++;
+
+		if (next_end == dmd.size)
+			break;
+
+		if (num_segments == 10) {
+			log_err(cd, "Failed to calculate number of dm-crypt segments for open.");
+			r = -EINVAL;
+			goto out;
+		}
+	}
+
+	/* device mapper needs the segment sorted */
+	for (i = 0; i < num_segments - 1; i++) {
+		min = i;
+		for (j = i + 1; j < num_segments; j++)
+			if (segments[j].offset < segments[min].offset)
+				min = j;
+
+		if (min != i) {
+			temp.offset = segments[min].offset;
+			temp.length = segments[min].length;
+			temp.iv_offset = segments[min].iv_offset;
+			temp.type = segments[min].type;
+
+			segments[min].offset = segments[i].offset;
+			segments[min].length = segments[i].length;
+			segments[min].iv_offset = segments[i].iv_offset;
+			segments[min].type = segments[i].type;
+
+			segments[i].offset = temp.offset;
+			segments[i].length = temp.length;
+			segments[i].iv_offset = temp.iv_offset;
+			segments[i].type = temp.type;
+		}
+	}
+
+	r = dm_targets_allocate(&dmd.segment, num_segments);
 	if (r)
 		goto out;
 	next_segment = &dmd.segment;
 
-	/* filesystem header (moved from the special location) */
-	start = 0;
-	size = params->volume_header_size / SECTOR_SIZE;
-	r = dm_crypt_target_set(next_segment,
-				start, size,
-				crypt_data_device(cd),
-				open_fvek_key,
-				crypt_get_cipher_spec(cd),
-				params->volume_header_offset / SECTOR_SIZE,
-				params->volume_header_offset / SECTOR_SIZE,
-				NULL, 0,
-				SECTOR_SIZE);
-	if (r)
-		goto out;
-	start += size;
-	next_segment = next_segment->next;
+	for (i = 0; i < num_segments; i++) {
+		if (segments[i].type == BITLK_SEGTYPE_ZERO)
+			r = dm_zero_target_set(next_segment,
+					       segments[i].offset,
+					       segments[i].length);
+		else if (segments[i].type == BITLK_SEGTYPE_CRYPT)
+			r = dm_crypt_target_set(next_segment,
+						segments[i].offset,
+						segments[i].length,
+						crypt_data_device(cd),
+						open_fvek_key,
+						crypt_get_cipher_spec(cd),
+						segments[i].iv_offset,
+						segments[i].iv_offset,
+						NULL, 0,
+						SECTOR_SIZE);
+		if (r)
+			goto out;
 
-
-	/* first data part up to the first fve header */
-	size = (params->metadata_offset[0] / SECTOR_SIZE) - start;
-	r = dm_crypt_target_set(next_segment,
-				start, size,
-				crypt_data_device(cd),
-				open_fvek_key,
-				crypt_get_cipher_spec(cd),
-				start,
-				start,
-				NULL, 0,
-				SECTOR_SIZE);
-	if (r)
-		goto out;
-	start += size;
-	next_segment = next_segment->next;
-
-	/* zeroes instead of the first fve header */
-	size = BITLK_FVE_METADATA_SIZE / SECTOR_SIZE;
-	r = dm_zero_target_set(next_segment,
-			       start,
-			       size);
-	if (r)
-		goto out;
-	start += size;
-	next_segment = next_segment->next;
-
-	/* zeroes instead of the the encrypted filesystem header */
-	size = params->volume_header_size / SECTOR_SIZE;
-	r = dm_zero_target_set(next_segment,
-			       start,
-			       size);
-	if (r)
-		goto out;
-	start += size;
-	next_segment = next_segment->next;
-
-	/* second data part up to the second fve header */
-	size = (params->metadata_offset[1] / SECTOR_SIZE) - start;
-	r = dm_crypt_target_set(next_segment,
-				start, size,
-				crypt_data_device(cd),
-				open_fvek_key,
-				crypt_get_cipher_spec(cd),
-				start,
-				start,
-				NULL, 0,
-				SECTOR_SIZE);
-	if (r)
-		goto out;
-	start += size;
-	next_segment = next_segment->next;
-
-	/* zeroes instead of the second fve header */
-	size = BITLK_FVE_METADATA_SIZE / SECTOR_SIZE;
-	r = dm_zero_target_set(next_segment,
-			       start,
-			       size);
-	if (r)
-		goto out;
-	start += size;
-	next_segment = next_segment->next;
-
-	/* third data part up to the third fve header */
-	size = (params->metadata_offset[2] / SECTOR_SIZE) - start;
-	r = dm_crypt_target_set(next_segment,
-				start, size,
-				crypt_data_device(cd),
-				open_fvek_key,
-				crypt_get_cipher_spec(cd),
-				start,
-				start,
-				NULL, 0,
-				SECTOR_SIZE);
-	if (r)
-		goto out;
-	start += size;
-	next_segment = next_segment->next;
-
-	/* zeroes instead of the third fve header */
-	size = BITLK_FVE_METADATA_SIZE / SECTOR_SIZE;
-	r = dm_zero_target_set(next_segment,
-			       start,
-			       size);
-	if (r)
-		goto out;
-	start += size;
-	next_segment = next_segment->next;
-
-	/* fourth (and last) part of the data */
-	size = dmd.size - start;
-	r = dm_crypt_target_set(next_segment,
-				start, size,
-				crypt_data_device(cd),
-				open_fvek_key,
-				crypt_get_cipher_spec(cd),
-				start,
-				start,
-				NULL, 0,
-				SECTOR_SIZE);
-	if (r)
-		goto out;
+		next_segment = next_segment->next;
+	}
 
 	log_dbg(cd, "Trying to activate BITLK on device %s%s%s.\n",
 		device_path(crypt_data_device(cd)), name ? " with name " :"", name ?: "");
