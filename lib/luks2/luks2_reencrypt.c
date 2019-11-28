@@ -2531,7 +2531,7 @@ static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 	else if (ri == CRYPT_REENCRYPT_CRASH)
 		r = reencrypt_load_crashed(cd, hdr, device_size, &tmp);
 	else if (ri == CRYPT_REENCRYPT_NONE) {
-		log_err(cd, _("No LUKS2 reencryption in progress."));
+		log_err(cd, _("Device not marked for LUKS2 reencryption."));
 		return -EINVAL;
 	} else
 		r = -EINVAL;

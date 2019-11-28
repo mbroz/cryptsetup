@@ -2340,9 +2340,9 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 	reqs &= ~reqs_mask;
 
 	if (reqs_reencrypt(reqs) && !quiet)
-		log_err(cd, _("Offline reencryption in progress. Aborting."));
+		log_err(cd, _("Operation incompatible with device marked for legacy reencryption. Aborting."));
 	if (reqs_reencrypt_online(reqs) && !quiet)
-		log_err(cd, _("Online reencryption in progress. Aborting."));
+		log_err(cd, _("Operation incompatible with device marked for LUKS2 reencryption. Aborting."));
 
 	/* any remaining unmasked requirement fails the check */
 	return reqs ? -EINVAL : 0;
