@@ -535,7 +535,6 @@ int LUKS2_keyslot_open_all_segments(struct crypt_device *cd,
 		r = LUKS2_keyslot_open_by_digest(cd, hdr, keyslot_old, digest_old, password, password_len, &vk);
 		if (r < 0)
 			goto out;
-		crypt_volume_key_set_id(vk, digest_old);
 		crypt_volume_key_add_next(vks, vk);
 	}
 
@@ -545,7 +544,6 @@ int LUKS2_keyslot_open_all_segments(struct crypt_device *cd,
 		r = LUKS2_keyslot_open_by_digest(cd, hdr, keyslot_new, digest_new, password, password_len, &vk);
 		if (r < 0)
 			goto out;
-		crypt_volume_key_set_id(vk, digest_new);
 		crypt_volume_key_add_next(vks, vk);
 	}
 out:
