@@ -310,6 +310,39 @@ int LUKS2_keyslot_area(struct luks2_hdr *hdr,
 	return 0;
 }
 
+static int _open_and_verify(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const keyslot_handler *h,
+	int keyslot,
+	const char *password,
+	size_t password_len,
+	struct volume_key **vk)
+{
+	int r, key_size = LUKS2_get_keyslot_stored_key_size(hdr, keyslot);
+
+	if (key_size < 0)
+		return -EINVAL;
+
+	*vk = crypt_alloc_volume_key(key_size, NULL);
+	if (!*vk)
+		return -ENOMEM;
+
+	r = h->open(cd, keyslot, password, password_len, (*vk)->key, (*vk)->keylength);
+	if (r < 0)
+		log_dbg(cd, "Keyslot %d (%s) open failed with %d.", keyslot, h->name, r);
+	else
+		r = LUKS2_digest_verify(cd, hdr, *vk, keyslot);
+
+	if (r < 0) {
+		crypt_free_volume_key(*vk);
+		*vk = NULL;
+	}
+
+	crypt_volume_key_set_id(*vk, r);
+
+	return r < 0 ? r : keyslot;
+}
+
 static int LUKS2_open_and_verify_by_digest(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
