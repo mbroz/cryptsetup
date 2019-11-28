@@ -2136,7 +2136,7 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 				   const char *uuid,
 				   struct crypt_params_integrity *params)
 {
-	int r;
+	int r, integrity_tag_size;
 	char *integrity = NULL, *journal_integrity = NULL, *journal_crypt = NULL;
 	struct volume_key *journal_crypt_key = NULL, *journal_mac_key = NULL;
 
@@ -2193,6 +2193,14 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 		goto err;
 	}
 
+	integrity_tag_size = INTEGRITY_hash_tag_size(integrity);
+	if (integrity_tag_size > 0 && params->tag_size && integrity_tag_size != params->tag_size)
+		log_std(cd, _("WARNING: Requested tag size %d bytes differs from %s size output (%d bytes).\n"),
+			params->tag_size, integrity, integrity_tag_size);
+
+	if (params->tag_size)
+		integrity_tag_size = params->tag_size;
+
 	cd->u.integrity.journal_crypt_key = journal_crypt_key;
 	cd->u.integrity.journal_mac_key = journal_mac_key;
 	cd->u.integrity.params.journal_size = params->journal_size;
@@ -2201,7 +2209,7 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 	cd->u.integrity.params.interleave_sectors = params->interleave_sectors;
 	cd->u.integrity.params.buffer_sectors = params->buffer_sectors;
 	cd->u.integrity.params.sector_size = params->sector_size;
-	cd->u.integrity.params.tag_size = params->tag_size;
+	cd->u.integrity.params.tag_size = integrity_tag_size;
 	cd->u.integrity.params.integrity = integrity;
 	cd->u.integrity.params.journal_integrity = journal_integrity;
 	cd->u.integrity.params.journal_crypt = journal_crypt;

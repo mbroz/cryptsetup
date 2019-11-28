@@ -24,7 +24,6 @@
 
 #define PACKAGE_INTEGRITY "integritysetup"
 
-#define DEFAULT_TAG_SIZE 4
 #define DEFAULT_ALG_NAME "crc32c"
 #define MAX_KEY_SIZE 4096
 
@@ -183,7 +182,7 @@ static int action_format(int arg)
 		.buffer_sectors = opt_buffer_sectors,
 		.tag_size = opt_tag_size,
 		.sector_size = opt_sector_size ?: SECTOR_SIZE,
-	};
+	}, params2;
 	char integrity[MAX_CIPHER_LEN], journal_integrity[MAX_CIPHER_LEN], journal_crypt[MAX_CIPHER_LEN];
 	char *integrity_key = NULL, *msg = NULL;
 	int r;
@@ -250,8 +249,9 @@ static int action_format(int arg)
 	if (r < 0) /* FIXME: call wipe signatures again */
 		goto out;
 
-	if (!opt_batch_mode)
-		log_std(_("Formatted with tag size %u, internal integrity %s.\n"), opt_tag_size, opt_integrity);
+	if (!opt_batch_mode && !crypt_get_integrity_info(cd, &params2))
+		log_std(_("Formatted with tag size %u, internal integrity %s.\n"),
+			params2.tag_size, params2.integrity);
 
 	if (!opt_no_wipe)
 		r = _wipe_data_device(cd, integrity_key);
@@ -499,8 +499,7 @@ static void help(poptContext popt_context,
 			crypt_get_dir());
 
 		log_std(_("\nDefault compiled-in dm-integrity parameters:\n"
-			  "\tTag size: %u bytes, Checksum algorithm: %s\n"),
-			  DEFAULT_TAG_SIZE, DEFAULT_ALG_NAME);
+			  "\tChecksum algorithm: %s\n"), DEFAULT_ALG_NAME);
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else if (key->shortName == 'V') {
@@ -636,9 +635,6 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, buf,
 		      poptGetInvocationName(popt_context));
 	}
-
-	if (!strcmp(aname, "format") && opt_tag_size == 0)
-		opt_tag_size = DEFAULT_TAG_SIZE;
 
 	if (opt_integrity_recalculate && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,

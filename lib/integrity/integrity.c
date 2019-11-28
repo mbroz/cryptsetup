@@ -142,6 +142,27 @@ int INTEGRITY_key_size(struct crypt_device *cd, const char *integrity)
 	return -EINVAL;
 }
 
+/* Return hash or hmac(hash) size, if known */
+int INTEGRITY_hash_tag_size(const char *integrity)
+{
+	char hash[MAX_CIPHER_LEN];
+	int r;
+
+	if (!integrity)
+		return 0;
+
+	if (!strcmp(integrity, "crc32") || !strcmp(integrity, "crc32c"))
+		return 4;
+
+	r = sscanf(integrity, "hmac(%" MAX_CIPHER_LEN_STR "[^)]s", hash);
+	if (r == 1)
+		r = crypt_hash_size(hash);
+	else
+		r = crypt_hash_size(integrity);
+
+	return r < 0 ? 0 : r;
+}
+
 int INTEGRITY_tag_size(struct crypt_device *cd,
 		       const char *integrity,
 		       const char *cipher,

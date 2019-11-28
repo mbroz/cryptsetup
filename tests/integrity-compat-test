@@ -141,53 +141,64 @@ int_check_sum() # alg checksum [keyfile keysize]
 	int_check_sum_only $2
 }
 
-intformat() # alg alg_out tagsize sector_size csum [keyfile keysize]
+intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 {
-	if [ -n "$7" ] ; then
-		KEY_PARAMS="--integrity-key-file $6 --integrity-key-size $7"
+	if [ -n "$8" ] ; then
+		KEY_PARAMS="--integrity-key-file $7 --integrity-key-size $8"
 	else
 		KEY_PARAMS=""
 	fi
 
-	echo -n "[INTEGRITY:$2:$3:$4]"
+	if [ $3 -ne 0 ] ; then
+		TAG_PARAMS="--tag-size $3"
+	else
+		TAG_PARAMS=""
+	fi
+
+	echo -n "[INTEGRITY:$2:$4:$5]"
 	echo -n "[FORMAT]"
-	$INTSETUP format --integrity-legacy-padding -q --integrity $1 --tag-size $3 --sector-size $4 $KEY_PARAMS $DEV || fail "Cannot format device."
-	dump_check "tag_size" $3
-	dump_check "sector_size" $4
+	$INTSETUP format --integrity-legacy-padding -q --integrity $1 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV >/dev/null || fail "Cannot format device."
+	dump_check "tag_size" $4
+	dump_check "sector_size" $5
 	echo -n "[ACTIVATE]"
 	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
-	status_check "tag size" $3
+	status_check "tag size" $4
 	status_check "integrity" $2
-	status_check "sector size" "$4 bytes"
-	int_check_sum $1 $5 $6 $7
+	status_check "sector size" "$5 bytes"
+	int_check_sum $1 $6 $7 $8
 	echo -n "[REMOVE]"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 }
 
-int_error_detection() # mode alg tagsize sector_size key_file key_size
+int_error_detection() # mode alg tagsize outtagsize sector_size key_file key_size
 {
 	if [ "$1" == "B" ] ; then
 		INT_MODE="-B"
 	else
 		INT_MODE=""
 	fi
-	if [ -n "$6" ] ; then
-		KEY_PARAMS="--integrity-key-file $5 --integrity-key-size $6"
+	if [ -n "$7" ] ; then
+		KEY_PARAMS="--integrity-key-file $6 --integrity-key-size $7"
 	else
 		KEY_PARAMS=""
 	fi
+	if [ $3 -ne 0 ] ; then
+		TAG_PARAMS="--tag-size $3"
+	else
+		TAG_PARAMS=""
+	fi
 	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
 
-	echo -n "[INTEGRITY:$1:$2:$3:$4]"
+	echo -n "[INTEGRITY:$1:$2:$4:$5]"
 	echo -n "[FORMAT]"
-	$INTSETUP format -q --integrity $2 --tag-size $3 --sector-size $4 $KEY_PARAMS $DEV $INT_MODE || fail "Cannot format device."
+	$INTSETUP format -q --integrity $2 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV $INT_MODE >/dev/null || fail "Cannot format device."
 	echo -n "[ACTIVATE]"
 	$INTSETUP open $DEV $DEV_NAME --integrity $2 --integrity-no-journal $KEY_PARAMS $INT_MODE || fail "Cannot activate device."
 
-	if [ -n "$5" -a -n "$6" ]; then
+	if [ -n "$6" -a -n "$7" ]; then
 		echo -n "[KEYED HASH]"
-		KEY_HEX=$(xxd -c 256 -l $6 -p $5)
+		KEY_HEX=$(xxd -c 256 -l $7 -p $6)
 		[ -z "$KEY_HEX" ] && fail "Cannot decode key."
 		dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
 	fi
@@ -305,29 +316,29 @@ modprobe dm-integrity >/dev/null 2>&1
 dm_integrity_features
 
 add_device
-intformat crc32c      crc32c          4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
-intformat crc32       crc32           4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
-intformat sha1        sha1           20  512 6eedd6344dab8875cd185fcd6565dfc869ab36bc57e577f40c685290b1fa7fe7
-intformat sha1        sha1           16 4096 e152ec88227b539cd9cafd8bdb587a1072d720cd6bcebe1398d4136c9e7f337b
-intformat sha256      sha256         32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
-intformat hmac-sha256 hmac\(sha256\) 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11 $KEY_FILE 32
-intformat sha256      sha256         32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4
-intformat hmac-sha256 hmac\(sha256\) 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4 $KEY_FILE 32
+intformat crc32c      crc32c          0  4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
+intformat crc32       crc32           0  4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
+intformat sha1        sha1            0 20  512 6eedd6344dab8875cd185fcd6565dfc869ab36bc57e577f40c685290b1fa7fe7
+intformat sha1        sha1           16 16 4096 e152ec88227b539cd9cafd8bdb587a1072d720cd6bcebe1398d4136c9e7f337b
+intformat sha256      sha256          0 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
+intformat hmac-sha256 hmac\(sha256\)  0 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11 $KEY_FILE 32
+intformat sha256      sha256          0 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4
+intformat hmac-sha256 hmac\(sha256\)  0 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4 $KEY_FILE 32
 
 echo "Error detection tests:"
-int_error_detection J crc32c      4  512
-int_error_detection J crc32c      4  4096
-int_error_detection J crc32       4  512
-int_error_detection J crc32       4  4096
-int_error_detection J sha1        20 512
-int_error_detection J sha1        16 512
-int_error_detection J sha1        20 4096
-int_error_detection J sha256      32 512
-int_error_detection J sha256      32 4096
+int_error_detection J crc32c  0  4  512
+int_error_detection J crc32c  0  4  4096
+int_error_detection J crc32   0  4  512
+int_error_detection J crc32   0  4  4096
+int_error_detection J sha1    0 20 512
+int_error_detection J sha1   16 16 512
+int_error_detection J sha1    0 20 4096
+int_error_detection J sha256  0 32 512
+int_error_detection J sha256  0 32 4096
 
 which xxd >/dev/null 2>&1 || skip "WARNING: xxd tool required."
-int_error_detection J hmac-sha256 32 512 $KEY_FILE 32
-int_error_detection J hmac-sha256 32 4096 $KEY_FILE 32
+int_error_detection J hmac-sha256  0 32 512 $KEY_FILE 32
+int_error_detection J hmac-sha256  0 32 4096 $KEY_FILE 32
 
 echo "Journal parameters tests:"
 # Watermark is calculated in kernel, so it can be rounded down/up
@@ -385,12 +396,12 @@ if [ -n "$DM_INTEGRITY_BITMAP" ] ; then
 	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
 	echo "[OK]"
 	echo "Bitmap error detection tests:"
-	int_error_detection B crc32c      4  512
-	int_error_detection B crc32c      4  4096
-	int_error_detection B sha256      32 512
-	int_error_detection B sha256      32 4096
-	int_error_detection B hmac-sha256 32 512 $KEY_FILE 32
-	int_error_detection B hmac-sha256 32 4096 $KEY_FILE 32
+	int_error_detection B crc32c      0  4 512
+	int_error_detection B crc32c      0  4 4096
+	int_error_detection B sha256      0 32 512
+	int_error_detection B sha256      0 32 4096
+	int_error_detection B hmac-sha256 0 32 512 $KEY_FILE 32
+	int_error_detection B hmac-sha256 0 32 4096 $KEY_FILE 32
 else
 	echo "[N/A]"
 fi
