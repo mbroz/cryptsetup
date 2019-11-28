@@ -79,19 +79,17 @@ int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr)
 /* Check if a keyslot is assigned to specific segment */
 static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 {
-	int keyslot_digest, segment_digest, s, count = 0;
+	int keyslot_digest, s, count = 0;
 
 	keyslot_digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 	if (keyslot_digest < 0)
 		return keyslot_digest;
 
-	if (segment >= 0) {
-		segment_digest = LUKS2_digest_by_segment(hdr, segment);
-		return segment_digest == keyslot_digest;
-	}
+	if (segment >= 0)
+		return keyslot_digest == LUKS2_digest_by_segment(hdr, segment);
+
 	for (s = 0; s < json_segments_count(LUKS2_get_segments_jobj(hdr)); s++) {
-		segment_digest = LUKS2_digest_by_segment(hdr, s);
-		if (segment_digest == keyslot_digest)
+		if (keyslot_digest == LUKS2_digest_by_segment(hdr, s))
 			count++;
 	}
 
