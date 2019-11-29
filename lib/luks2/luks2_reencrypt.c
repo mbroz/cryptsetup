@@ -3405,7 +3405,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
 		if (r < 0)
 			goto err;
-		vk = vk->next;
+		vk = crypt_volume_key_next(vk);
 	}
 
 	if (luks2_check_device_size(cd, hdr, minimal_size, &device_size, true, false))

@@ -3831,7 +3831,7 @@ static int load_all_keys(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
 		if (r < 0)
 			return r;
-		vk = vk->next;
+		vk = crypt_volume_key_next(vk);
 	}
 
 	return 0;
