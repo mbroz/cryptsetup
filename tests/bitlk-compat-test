@@ -34,6 +34,7 @@ function skip()
 
 function check_eboiv()
 {
+	modprobe dm-crypt >/dev/null 2>&1
 	crypt_version=$(dmsetup targets | grep crypt | cut -d"v" -f2)
 	[ ! -z "$crypt_version" ] || exit 1
 
@@ -92,6 +93,7 @@ fi
 
 check_eboiv
 has_eboiv=$?
+remove_mapping
 
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/bitlk-*) ; do
@@ -101,15 +103,15 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 	# test with both passphrase and recovery passphrase
 	for PASSPHRASE in $PW $RP ; do
 		echo -n " $file"
-		out=$(echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file --test-passphrase 2>&1)
+		echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file --test-passphrase >/dev/null 2>&1
 		ret=$?
 		[ $ret -eq 1 ] && echo " [N/A]" && continue
 		[ $has_eboiv -eq 1 ] && [ "$CIPHER" = "aes-cbc-eboiv" ] && echo " eboiv not supported [N/A]" && continue
-		out=$(echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file $MAP 2>&1)
+		echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file $MAP >/dev/null 2>&1
 		ret=$?
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "cbc-elephant" ) && echo " [N/A]" && continue
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "clearkey" ) && echo " [N/A]" && continue
-		[ $ret -eq 0 ] || fail " failed to open $file"
+		[ $ret -eq 0 ] || fail " failed to open $file ($ret)"
 		$CRYPTSETUP status $MAP >/dev/null || fail
 		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
 		uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
