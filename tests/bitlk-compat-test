@@ -65,11 +65,17 @@ function check_dump()
         cipher=$(echo "$dump_cipher-$dump_mode")
         [ ! -z "$CIPHER" -a "$cipher" = "$CIPHER" ] || fail " cipher check from dump failed."
 
-        # password protected VMK GUID
-        dump_pw_vmk=$(echo "$dump" | grep "VMK protected with passphrase" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
-        [ ! -z "$PW_VMK_GUID" -a "$dump_pw_vmk" = "$PW_VMK_GUID" ] || fail " password protected VMK GUID check from dump failed."
+        if echo "$file" | grep -q -e "smart-card"; then
+                # smart card protected VMK GUID
+                dump_sc_vmk=$(echo "$dump" | grep "VMK protected with smart card" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
+                [ ! -z "$SC_VMK_GUID" -a "$dump_sc_vmk" = "$SC_VMK_GUID" ] || fail " smart card protected VMK GUID check from dump failed."
+        else
+                # password protected VMK GUID
+                dump_pw_vmk=$(echo "$dump" | grep "VMK protected with passphrase" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
+                [ ! -z "$PW_VMK_GUID" -a "$dump_pw_vmk" = "$PW_VMK_GUID" ] || fail " password protected VMK GUID check from dump failed."
+        fi
 
-         # recovery password protected VMK GUID
+        # recovery password protected VMK GUID
         dump_rp_vmk=$(echo "$dump" | grep "VMK protected with recovery passphrase" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
         [ ! -z "$RP_VMK_GUID" -a "$dump_rp_vmk" = "$RP_VMK_GUID" ] || fail " recovery password protected VMK GUID check from dump failed."
 

@@ -160,6 +160,8 @@ static BITLKVMKProtection get_vmk_protection(uint16_t protection)
 		return BITLK_PROTECTION_TPM_PIN;
 	case 0x0800:
 		return BITLK_PROTECTION_RECOVERY_PASSPHRASE;
+	case 0x1000:
+		return BITLK_PROTECTION_SMART_CARD;
 	case 0x2000:
 		return BITLK_PROTECTION_PASSPHRASE;
 	default:
@@ -182,6 +184,8 @@ static const char* get_vmk_protection_string(BITLKVMKProtection protection)
 		return "VMK protected with passphrase";
 	case BITLK_PROTECTION_RECOVERY_PASSPHRASE:
 		return "VMK protected with recovery passphrase";
+	case BITLK_PROTECTION_SMART_CARD:
+		return "VMK protected with smart card";
 	default:
 		return "VMK with unknown protection";
 	}
