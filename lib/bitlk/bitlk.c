@@ -275,6 +275,10 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 	size_t key_size = 0;
 	const char *key = NULL;
 	struct volume_key *vk = NULL;
+	bool supported = false;
+
+	/* only passphrase or recovery passphrase vmks are supported (can be used to activate) */
+	supported = (*vmk)->protection == BITLK_PROTECTION_PASSPHRASE || (*vmk)->protection == BITLK_PROTECTION_RECOVERY_PASSPHRASE;
 
 	while (end - start > 2) {
 		/* size of this entry */
@@ -292,8 +296,12 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		key_entry_value = le16_to_cpu(key_entry_value);
 
 		if (key_entry_type != BITLK_ENTRY_TYPE_PROPERTY) {
-			log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
-			return -EINVAL;
+			if (supported) {
+				log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
+				return -EINVAL;
+			} else {
+				log_dbg(cd, "Unknown metadata entry type '%u' found when parsing VMK.", key_entry_type);
+			}
 		}
 
 		/* stretch key with salt, skip 4 B (encryption method of the stretch key) */
@@ -335,8 +343,12 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_RECOVERY_TIME) {
 			;
 		} else {
-			log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
-			return -EINVAL;
+			if (supported) {
+				log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
+				return -EINVAL;
+			} else {
+				log_dbg(cd, "Unknown metadata entry value '%u' found when parsing VMK.", key_entry_value);
+			}
 		}
 
 		start += key_entry_size;
