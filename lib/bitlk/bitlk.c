@@ -671,10 +671,10 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 		log_std(cd, "\tProtection: \t%s\n", get_vmk_protection_string (vmk_p->protection));
 		log_std(cd, "\tSalt:       \t");
 		hexprint(cd, (const char *) vmk_p->salt, 16, "");
+		log_std(cd, "\n");
 
-		vk_p = params->vmks->vk;
+		vk_p = vmk_p->vk;
 		while (vk_p) {
-			log_std(cd, "\n");
 			log_std(cd, "\tKey data size:\t%zu [bytes]\n", vk_p->keylength);
 			vk_p = vk_p->next;
 		}
