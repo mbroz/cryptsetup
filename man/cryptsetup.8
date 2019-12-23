@@ -1128,6 +1128,7 @@ e.g. 12345678-1234-1234-1234-123456789abc.
 .B "\-\-allow\-discards\fR"
 Allow the use of discard (TRIM) requests for the device.
 This option is only relevant for \fIopen\fR action.
+This is also not supported for LUKS2 devices with data integrity protection.
 
 \fBWARNING:\fR This command can have a negative security impact
 because it can make filesystem-level operations visible on
@@ -1575,6 +1576,9 @@ by cryptsetup, there is no difference in using \fIluksOpen\fR
 for integrity protected devices.
 If you want to format LUKS2 device with data integrity protection,
 use \fI\-\-integrity\fR option.
+
+Since dm-integrity doesn't support discards (TRIM), dm-crypt device on top of it
+inherits this, so integrity protection mode doesn't support discards either.
 
 Some integrity modes requires two independent keys (key for encryption
 and for authentication). Both these keys are stored in one LUKS keyslot.
