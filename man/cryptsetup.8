@@ -12,7 +12,7 @@ and can hence offer more features than plain dm-crypt. On the other
 hand, the header is visible and vulnerable to damage.
 
 In addition, cryptsetup provides limited support for the use of
-loop-AES volumes and for TrueCrypt compatible volumes.
+loop-AES volumes, TrueCrypt, VeraCrypt and BitLocker compatible volumes.
 
 .SH PLAIN DM-CRYPT OR LUKS?
 .PP
@@ -84,6 +84,8 @@ For backward compatibility there are \fBopen\fR command aliases:
 \fBloopaesOpen\fR: open \-\-type loopaes
 .br
 \fBtcryptOpen\fR: open \-\-type tcrypt
+.br
+\fBbitlkOpen\fR: open \-\-type bitlk
 
 \fB<options>\fR are type specific and are described below
 for individual device types. For \fBcreate\fR, the order of the <name>
@@ -742,6 +744,45 @@ See also \fBhttps://en.wikipedia.org/wiki/TrueCrypt\fR for more information rega
 TrueCrypt.
 
 Please note that cryptsetup does not use TrueCrypt code, please report
+all problems related to this compatibility extension to the cryptsetup project.
+
+.SH BITLK (Windows BitLocker-compatible) EXTENSION
+cryptsetup supports mapping of BitLocker and BitLocker to Go encrypted partition
+using a native Linux kernel API.
+Header formatting and BITLK header changes are not supported, cryptsetup
+never changes BITLK header on-device.
+
+BITLK extension requires kernel userspace crypto API to be available
+(for details see TCRYPT section).
+
+Cryptsetup should recognize all BITLK header variants, except legacy
+header used in Windows Vista systems and partially decrypted BitLocker devices.
+Activation of legacy devices encrypted in CBC mode requires at least
+Linux kernel version 5.3 and for devices using Elephant diffuser kernel 5.6.
+
+The \fBbitlkDump\fR command should work for all recognized BITLK devices
+and doesn't require superuser privilege.
+
+For unlocking with the \fBopen\fR a password or a recovery passphrase must
+be provided. Other unlocking methods (TPM, SmartCard) are not supported.
+
+.PP
+\fIopen\fR \-\-type bitlk <device> <name>
+.br
+\fIbitlkOpen\fR <device> <name>  (\fBold syntax\fR)
+.IP
+Opens the BITLK (a BitLocker-compatible) <device> and sets up
+a mapping <name>.
+
+\fB<options>\fR can be [\-\-key\-file, \-\-readonly, \-\-test\-passphrase,
+\-\-allow-discards].
+
+.PP
+\fIbitlkDump\fR <device>
+.IP
+Dump the header information of a BITLK device.
+
+Please note that cryptsetup does not use any Windows BitLocker code, please report
 all problems related to this compatibility extension to the cryptsetup project.
 .SH MISCELLANEOUS
 .PP
