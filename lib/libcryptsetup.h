@@ -592,15 +592,6 @@ struct crypt_params_luks2 {
 	const char *label;       /**< header label or @e NULL*/
 	const char *subsystem;   /**< header subsystem label or @e NULL*/
 };
-
-/**
- * Structure used as parameter for BITLK device type.
- *
- * @see crypt_format, crypt_load
- *
- */
-struct crypt_params_bitlk {
-};
 /** @} */
 
 /**
