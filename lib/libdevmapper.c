@@ -169,6 +169,12 @@ static void _dm_set_crypt_compat(struct crypt_device *cd,
 		_dm_flags |= DM_CAPI_STRING_SUPPORTED;
 	}
 
+	if (_dm_satisfies_version(1, 19, 0, crypt_maj, crypt_min, crypt_patch))
+		_dm_flags |= DM_BITLK_EBOIV_SUPPORTED;
+
+	if (_dm_satisfies_version(1, 20, 0, crypt_maj, crypt_min, crypt_patch))
+		_dm_flags |= DM_BITLK_ELEPHANT_SUPPORTED;
+
 	_dm_crypt_checked = true;
 }
 

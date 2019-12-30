@@ -878,6 +878,7 @@ int BITLK_activate(struct crypt_device *cd,
 	uint64_t next_start = 0;
 	uint64_t next_end = 0;
 	uint64_t last_segment = 0;
+	uint32_t dmt_flags;
 
 	next_vmk = params->vmks;
 	while (next_vmk) {
@@ -960,13 +961,6 @@ int BITLK_activate(struct crypt_device *cd,
 			return -ENOTSUP;
 		}
 		next_vmk = next_vmk->next;
-	}
-
-	if (strcmp(params->cipher_mode, "cbc-elephant") == 0) {
-		log_err(cd, _("Activation of BitLocker devices encrypted using AES-CBC with " \
-		              "the Elephant Diffuser is currently not supported"));
-		crypt_free_volume_key(open_fvek_key);
-		return -ENOTSUP;
 	}
 
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
@@ -1093,6 +1087,17 @@ int BITLK_activate(struct crypt_device *cd,
 		device_path(crypt_data_device(cd)), name ? " with name " :"", name ?: "");
 
 	r = dm_create_device(cd, name, CRYPT_BITLK, &dmd);
+	if (r < 0) {
+		dm_flags(cd, DM_CRYPT, &dmt_flags);
+		if (!strcmp(params->cipher_mode, "cbc-eboiv") && !(dmt_flags & DM_BITLK_EBOIV_SUPPORTED)) {
+			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for BitLocker IV."));
+			r = -ENOTSUP;
+		}
+		if (!strcmp(params->cipher_mode, "cbc-elephant") && !(dmt_flags & DM_BITLK_ELEPHANT_SUPPORTED)) {
+			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for BitLocker Elephant diffuser."));
+			r = -ENOTSUP;
+		}
+	}
 out:
 	dm_targets_free(cd, &dmd);
 	crypt_free_volume_key(open_fvek_key);
