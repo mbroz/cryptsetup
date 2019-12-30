@@ -3327,8 +3327,8 @@ static void help(poptContext popt_context,
 
 		log_std(_("\n"
 			  "You can also use old <action> syntax aliases:\n"
-			  "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen\n"
-			  "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose\n"));
+			  "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen, bitlkOpen\n"
+			  "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose, bitlkClose\n"));
 		log_std(_("\n"
 			 "<name> is the device to create under %s\n"
 			 "<device> is the encrypted device\n"
@@ -3461,7 +3461,7 @@ int main(int argc, const char **argv)
 		{ "veracrypt",         '\0', POPT_ARG_NONE, &opt_veracrypt,             0, N_("Scan also for VeraCrypt compatible device"), NULL },
 		{ "veracrypt-pim",     '\0', POPT_ARG_INT, &opt_veracrypt_pim,          0, N_("Personal Iteration Multiplier for VeraCrypt compatible device"), NULL },
 		{ "veracrypt-query-pim", '\0', POPT_ARG_NONE, &opt_veracrypt_query_pim, 0, N_("Query Personal Iteration Multiplier for VeraCrypt compatible device"), NULL },
-		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, luks1, luks2, plain, loopaes, tcrypt"), NULL },
+		{ "type",               'M', POPT_ARG_STRING, &opt_type,                0, N_("Type of device metadata: luks, luks1, luks2, plain, loopaes, tcrypt, bitlk"), NULL },
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)"), NULL },
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option"), NULL },
 		{ "perf-submit_from_crypt_cpus",'\0', POPT_ARG_NONE, &opt_perf_submit_from_crypt_cpus,0,N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option"), NULL },
@@ -3614,7 +3614,8 @@ int main(int argc, const char **argv)
 		   !strcmp(aname, "plainClose") ||
 		   !strcmp(aname, "luksClose") ||
 		   !strcmp(aname, "loopaesClose") ||
-		   !strcmp(aname, "tcryptClose")) {
+		   !strcmp(aname, "tcryptClose") ||
+		   !strcmp(aname, "bitlkClose")) {
 		aname = "close";
 	} else if (!strcmp(aname, "luksErase")) {
 		aname = "erase";
@@ -3714,7 +3715,7 @@ int main(int argc, const char **argv)
 	if (opt_test_passphrase && (strcmp(aname, "open") || !opt_type ||
 	    (strncmp(opt_type, "luks", 4) && strcmp(opt_type, "tcrypt") && strcmp(opt_type, "bitlk"))))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --test-passphrase is allowed only for open of LUKS and TCRYPT devices.\n"),
+		      _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK devices.\n"),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size % 8 || opt_keyslot_key_size % 8)
