@@ -426,13 +426,13 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	/* read and check the BitLocker signature */
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), &sig, sizeof(sig), 0) != sizeof(sig)) {
-		log_err(cd, _("Failed to read bitlocker signature from %s."), device_path(device));
+		log_err(cd, _("Failed to read BitLocker signature from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (memcmp(sig.boot_code, BITLK_BOOTCODE_V1, sizeof(sig.boot_code)) == 0) {
-		log_err(cd, _("BitLocker version from Windows Vista is currently not supported"));
+		log_err(cd, _("BitLocker version from Windows Vista is currently not supported."));
 		r = -ENOTSUP;
 		goto out;
 	} else if (memcmp(sig.boot_code, BITLK_BOOTCODE_V2, sizeof(sig.boot_code)) == 0)
@@ -518,7 +518,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		params->cipher_mode = "xts-plain64";
 		break;
 	default:
-		log_err (cd, _("Unknown or unsupported encryption"));
+		log_err(cd, _("Unknown or unsupported encryption."));
 		params->key_size = 0;
 		params->cipher = NULL;
 		params->cipher_mode = NULL;
@@ -957,7 +957,7 @@ int BITLK_activate(struct crypt_device *cd,
 	while (next_vmk) {
 		if (next_vmk->protection == BITLK_PROTECTION_CLEAR_KEY) {
 			crypt_free_volume_key(open_fvek_key);
-			log_err(cd, _("Activation of partially decrypted BitLocker devices is not supported."));
+			log_err(cd, _("Activation of partially decrypted BitLocker device is not supported."));
 			return -ENOTSUP;
 		}
 		next_vmk = next_vmk->next;
@@ -1025,7 +1025,7 @@ int BITLK_activate(struct crypt_device *cd,
 			break;
 
 		if (num_segments == 10) {
-			log_err(cd, "Failed to calculate number of dm-crypt segments for open.");
+			log_dbg(cd, "Failed to calculate number of dm-crypt segments for open.");
 			r = -EINVAL;
 			goto out;
 		}
