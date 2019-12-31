@@ -69,6 +69,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	blockwise-compat \
 	blkid-luks2-pv.img.xz \
 	Makefile.localtest \
+	bitlk-compat-test \
 	bitlk-images.tar.xz
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log
