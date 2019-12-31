@@ -79,7 +79,8 @@ int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr)
 /* Check if a keyslot is assigned to specific segment */
 static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 {
-	int keyslot_digest, s, count = 0;
+	int keyslot_digest, count = 0;
+	unsigned s;
 
 	keyslot_digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 	if (keyslot_digest < 0)
@@ -516,7 +517,7 @@ int LUKS2_keyslot_open_all_segments(struct crypt_device *cd,
 	size_t password_len,
 	struct volume_key **vks)
 {
-	struct volume_key *vk;
+	struct volume_key *vk = NULL;
 	int digest_old, digest_new, r = -EINVAL;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 
