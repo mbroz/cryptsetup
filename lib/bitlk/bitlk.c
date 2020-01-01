@@ -301,10 +301,10 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 
 		if (key_entry_type != BITLK_ENTRY_TYPE_PROPERTY) {
 			if (supported) {
-				log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
+				log_err(cd, "Unexpected metadata entry type '%u' found when parsing supported VMK.", key_entry_type);
 				return -EINVAL;
 			} else {
-				log_dbg(cd, "Unknown metadata entry type '%u' found when parsing VMK.", key_entry_type);
+				log_dbg(cd, "Unexpected metadata entry type '%u' found when parsing unsupported VMK.", key_entry_type);
 			}
 		}
 
@@ -348,10 +348,10 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 			;
 		} else {
 			if (supported) {
-				log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
+				log_err(cd, "Unexpected metadata entry value '%u' found when parsing supported VMK.", key_entry_value);
 				return -EINVAL;
 			} else {
-				log_dbg(cd, "Unknown metadata entry value '%u' found when parsing VMK.", key_entry_value);
+				log_dbg(cd, "Unexpected metadata entry value '%u' found when parsing unsupported VMK.", key_entry_value);
 			}
 		}
 
