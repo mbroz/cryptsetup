@@ -73,6 +73,7 @@ typedef enum {
 
 struct bitlk_vmk {
 	char *guid;
+	char *name;
 	BITLKVMKProtection protection;
 	uint8_t salt[BITLK_SALT_SIZE];
 	uint8_t mac_tag[BITLK_VMK_MAC_TAG_SIZE];
