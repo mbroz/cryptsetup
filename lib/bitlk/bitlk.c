@@ -277,6 +277,7 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 	uint16_t key_entry_type = 0;
 	uint16_t key_entry_value = 0;
 	size_t key_size = 0;
+	char *string = NULL;
 	const char *key = NULL;
 	struct volume_key *vk = NULL;
 	bool supported = false;
@@ -301,10 +302,10 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 
 		if (key_entry_type != BITLK_ENTRY_TYPE_PROPERTY) {
 			if (supported) {
-				log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
+				log_err(cd, _("Unexpected metadata entry type '%u' found when parsing supported VMK."), key_entry_type);
 				return -EINVAL;
 			} else {
-				log_dbg(cd, "Unknown metadata entry type '%u' found when parsing VMK.", key_entry_type);
+				log_dbg(cd, "Unexpected metadata entry type '%u' found when parsing unsupported VMK.", key_entry_type);
 			}
 		}
 
@@ -346,12 +347,28 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		/* unknown timestamps in recovery protected VMK */
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_RECOVERY_TIME) {
 			;
+		} else if (key_entry_value == BITLK_ENTRY_VALUE_STRING) {
+			if (convert_to_utf8(cd, data + start + BITLK_ENTRY_HEADER_LEN, key_entry_size - BITLK_ENTRY_HEADER_LEN, &string) < 0) {
+				log_err(cd, _("Invalid string found when parsing VMK."));
+				return -EINVAL;
+			} else if ((*vmk)->name != NULL) {
+				if (supported) {
+					log_err(cd, _("Unexpected string ('%s') found when parsing supported VMK."), string);
+					return -EINVAL;
+				} else {
+					log_dbg(cd, "Unexpected string ('%s') found when parsing unsupported VMK.", string);
+				}
+			} else {
+				// Assume that strings in VMK are the name of the VMK
+				(*vmk)->name = string;
+				string = NULL;
+			}
 		} else {
 			if (supported) {
-				log_err(cd, _("Unexpected metadata entry found when parsing VMK."));
+				log_err(cd, _("Unexpected metadata entry value '%u' found when parsing supported VMK."), key_entry_value);
 				return -EINVAL;
 			} else {
-				log_dbg(cd, "Unknown metadata entry value '%u' found when parsing VMK.", key_entry_value);
+				log_dbg(cd, "Unexpected metadata entry value '%u' found when parsing unsupported VMK.", key_entry_value);
 			}
 		}
 
@@ -376,6 +393,8 @@ void BITLK_bitlk_vmk_free(struct bitlk_vmk *vmk)
 	while (vmk) {
 		if (vmk->guid)
 			free(vmk->guid);
+		if (vmk->name)
+			free(vmk->name);
 		crypt_free_volume_key(vmk->vk);
 		vmk_next = vmk->next;
 		free(vmk);
@@ -581,6 +600,8 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			guid_to_string(&entry_vmk.guid, guid_buf);
 			vmk->guid = strdup (guid_buf);
 
+			vmk->name = NULL;
+
 			vmk->protection = get_vmk_protection(le16_to_cpu(entry_vmk.protection));
 
 			/* more data in another entry list */
@@ -667,6 +688,9 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 	vmk_p = params->vmks;
 	while (vmk_p) {
 		log_std(cd, " %d: VMK\n", next_id);
+		if (vmk_p->name != NULL) {
+			log_std(cd, "\tName:       \t%s\n", vmk_p->name);
+		}
 		log_std(cd, "\tGUID:       \t%s\n", vmk_p->guid);
 		log_std(cd, "\tProtection: \t%s\n", get_vmk_protection_string (vmk_p->protection));
 		log_std(cd, "\tSalt:       \t");
