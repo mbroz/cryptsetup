@@ -2193,7 +2193,8 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 				str = strsep(&params, " ");
 				if (!str)
 					goto err;
-				root_hash_sig_key_desc = strdup(str);
+				if (!root_hash_sig_key_desc)
+					root_hash_sig_key_desc = strdup(str);
 				i++;
 			} else /* unknown option */
 				goto err;
@@ -2228,6 +2229,7 @@ err:
 	device_free(cd, data_device);
 	device_free(cd, hash_device);
 	device_free(cd, fec_device);
+	free(root_hash_sig_key_desc);
 	free(root_hash);
 	free(hash_name);
 	free(salt);

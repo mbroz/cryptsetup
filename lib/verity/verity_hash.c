@@ -102,7 +102,7 @@ static int hash_levels(size_t hash_block_size, size_t digest_size,
 		       off_t *hash_level_block, off_t *hash_level_size)
 {
 	size_t hash_per_block_bits;
-	off_t s;
+	off_t s, s_shift;
 	int i;
 
 	if (!digest_size)
@@ -124,7 +124,10 @@ static int hash_levels(size_t hash_block_size, size_t digest_size,
 		if (hash_level_block)
 			hash_level_block[i] = *hash_position;
 		// verity position of block data_file_blocks at level i
-		s = (data_file_blocks + ((off_t)1 << ((i + 1) * hash_per_block_bits)) - 1) >> ((i + 1) * hash_per_block_bits);
+		s_shift = (i + 1) * hash_per_block_bits;
+		if (s_shift > 63)
+			return -EINVAL;
+		s = (data_file_blocks + ((off_t)1 << s_shift) - 1) >> ((i + 1) * hash_per_block_bits);
 		if (hash_level_size)
 			hash_level_size[i] = s;
 		if ((*hash_position + s) < *hash_position ||
