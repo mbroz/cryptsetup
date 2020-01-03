@@ -6,7 +6,6 @@
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 TST_DIR=bitlk-images
 MAP=bitlktst
-EBOIV_VERSION="1.19.0"
 
 [ -z "$srcdir" ] && srcdir="."
 
@@ -30,15 +29,6 @@ function skip()
 	[ -n "$1" ] && echo "$1"
 	echo "Test skipped."
 	exit 77
-}
-
-function check_eboiv()
-{
-	modprobe dm-crypt >/dev/null 2>&1
-	crypt_version=$(dmsetup targets | grep crypt | cut -d"v" -f2)
-	[ ! -z "$crypt_version" ] || exit 1
-
-	[ "$(printf '%s\n' "$crypt_version" | sort -V | head -1)" = "$EBOIV_VERSION" ]
 }
 
 function load_vars()
@@ -97,8 +87,6 @@ if [ $(id -u) != 0 ]; then
 	exit 0
 fi
 
-check_eboiv
-has_eboiv=$?
 remove_mapping
 
 echo "ACTIVATION FS UUID CHECK"
@@ -112,10 +100,10 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file --test-passphrase >/dev/null 2>&1
 		ret=$?
 		[ $ret -eq 1 ] && echo " [N/A]" && continue
-		[ $has_eboiv -eq 1 ] && [ "$CIPHER" = "aes-cbc-eboiv" ] && echo " eboiv not supported [N/A]" && continue
 		echo $PASSPHRASE | $CRYPTSETUP bitlkOpen -r $file $MAP >/dev/null 2>&1
 		ret=$?
-		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "cbc-elephant" ) && echo " [N/A]" && continue
+		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc" ) && echo " [N/A]" && continue
+		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc-elephant" ) && echo " [N/A]" && continue
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "clearkey" ) && echo " [N/A]" && continue
 		[ $ret -eq 0 ] || fail " failed to open $file ($ret)"
 		$CRYPTSETUP status $MAP >/dev/null || fail
