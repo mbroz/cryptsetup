@@ -1291,7 +1291,12 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		r = TCRYPT_init_by_name(cd, name, dmd.uuid, tgt, &cd->device,
 					&cd->u.tcrypt.params, &cd->u.tcrypt.hdr);
 	} else if (isBITLK(cd->type)) {
-		r = 0; // FIXME
+		r = _crypt_load_bitlk(cd, NULL);
+		if (r < 0) {
+			log_dbg(cd, "BITLK device header not available.");
+			crypt_set_null_type(cd);
+			r = 0;
+		}
 	}
 out:
 	dm_targets_free(cd, &dmd);
@@ -5072,7 +5077,7 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 		return cd->u.tcrypt.params.key_size;
 
 	if (isBITLK(cd->type))
-		return cd->u.bitlk.params.key_size;
+		return cd->u.bitlk.params.key_size / 8;
 
 	if (!cd->type && !_init_by_name_crypt_none(cd))
 		return cd->u.none.key_size;
