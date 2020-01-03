@@ -2143,7 +2143,8 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 				   const char *uuid,
 				   struct crypt_params_integrity *params)
 {
-	int r, integrity_tag_size;
+	int r;
+	uint32_t integrity_tag_size;
 	char *integrity = NULL, *journal_integrity = NULL, *journal_crypt = NULL;
 	struct volume_key *journal_crypt_key = NULL, *journal_mac_key = NULL;
 
