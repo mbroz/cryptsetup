@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2002, Phil Karn, KA9Q
  * libcryptsetup modifications
- *   Copyright (C) 2017-2019 Red Hat, Inc. All rights reserved.
+ *   Copyright (C) 2017-2020 Red Hat, Inc. All rights reserved.
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

@@ -1,8 +1,8 @@
 /*
  * loopback block device utilities
  *
- * Copyright (C) 2009-2019 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2019 Milan Broz
+ * Copyright (C) 2009-2020 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2020 Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

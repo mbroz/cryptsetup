@@ -1,8 +1,8 @@
 /*
  * loop-AES compatible volume handling
  *
- * Copyright (C) 2011-2019 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2011-2019 Milan Broz
+ * Copyright (C) 2011-2020 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2011-2020 Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

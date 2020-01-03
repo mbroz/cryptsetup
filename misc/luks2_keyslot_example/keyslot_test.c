@@ -1,7 +1,7 @@
 /*
  * Example of LUKS2 kesylot handler (EXAMPLE)
  *
- * Copyright (C) 2016-2019 Milan Broz <gmazyland@gmail.com>
+ * Copyright (C) 2016-2020 Milan Broz <gmazyland@gmail.com>
  *
  * Use:
  *  - generate LUKS device
