@@ -350,16 +350,19 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_STRING) {
 			if (convert_to_utf8(cd, data + start + BITLK_ENTRY_HEADER_LEN, key_entry_size - BITLK_ENTRY_HEADER_LEN, &string) < 0) {
 				log_err(cd, _("Invalid string found when parsing VMK."));
+				free(string);
 				return -EINVAL;
 			} else if ((*vmk)->name != NULL) {
 				if (supported) {
 					log_err(cd, _("Unexpected string ('%s') found when parsing supported VMK."), string);
+					free(string);
 					return -EINVAL;
-				} else {
-					log_dbg(cd, "Unexpected string ('%s') found when parsing unsupported VMK.", string);
 				}
+				log_dbg(cd, "Unexpected string ('%s') found when parsing unsupported VMK.", string);
+				free(string);
+				string = NULL;
 			} else {
-				// Assume that strings in VMK are the name of the VMK
+				/* Assume that strings in VMK are the name of the VMK */
 				(*vmk)->name = string;
 				string = NULL;
 			}
