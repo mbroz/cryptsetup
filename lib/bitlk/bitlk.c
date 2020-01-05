@@ -845,7 +845,8 @@ static int decrypt_key(struct crypt_device *cd,
 		       struct volume_key *enc_key,
 		       struct volume_key *key,
 		       const uint8_t *tag, size_t tag_size,
-		       const uint8_t *iv, size_t iv_size)
+		       const uint8_t *iv, size_t iv_size,
+		       bool is_fvek)
 {
 	char *outbuf;
 	int r;
@@ -860,21 +861,32 @@ static int decrypt_key(struct crypt_device *cd,
 	if (r < 0) {
 		if (r == -ENOTSUP)
 			log_err(cd, _("This operation is not supported."));
-		crypt_safe_free(outbuf);
-		return r;
+		goto out;
 	}
 
 	/* key_data has it's size as part of the metadata */
 	memcpy(&key_size, outbuf, 4);
-	if (enc_key->keylength == le32_to_cpu(key_size)) {
-		*vk = crypt_alloc_volume_key(enc_key->keylength - BITLK_OPEN_KEY_METADATA_LEN,
-					    (const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
-		r = *vk ? 0 : -ENOMEM;
-	} else {
+	key_size = le32_to_cpu(key_size);
+	if (enc_key->keylength != key_size) {
 		log_err(cd, _("Wrong key size."));
 		r = -EINVAL;
+		goto out;
 	}
 
+	if (is_fvek && strcmp(crypt_get_cipher_mode(cd), "cbc-elephant") == 0 &&
+		crypt_get_volume_key_size(cd) == 16) {
+		/* 128bit AES-CBC with Elephant -- key size is 256 bit (2 keys) but key data is 512 bits,
+		   data: 16B CBC key, 16B empty, 16B elephant key, 16B empty */
+		memcpy(outbuf + 16 + BITLK_OPEN_KEY_METADATA_LEN,
+			outbuf + 2 * 16 + BITLK_OPEN_KEY_METADATA_LEN, 16);
+		key_size = 32 + BITLK_OPEN_KEY_METADATA_LEN;
+	}
+
+
+	*vk = crypt_alloc_volume_key(key_size - BITLK_OPEN_KEY_METADATA_LEN,
+					(const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
+	r = *vk ? 0 : -ENOMEM;
+out:
 	crypt_safe_free(outbuf);
 	return r;
 }
@@ -942,7 +954,7 @@ int BITLK_activate(struct crypt_device *cd,
 		log_dbg(cd, "Trying to decrypt %s.", get_vmk_protection_string(next_vmk->protection));
 		r = decrypt_key(cd, &open_vmk_key, next_vmk->vk, vmk_dec_key,
 				next_vmk->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
-				next_vmk->nonce, BITLK_NONCE_SIZE);
+				next_vmk->nonce, BITLK_NONCE_SIZE, false);
 		if (r < 0) {
 			log_dbg(cd, "Failed to decrypt VMK using provided passphrase.");
 			crypt_free_volume_key(vmk_dec_key);
@@ -955,7 +967,7 @@ int BITLK_activate(struct crypt_device *cd,
 
 		r = decrypt_key(cd, &open_fvek_key, params->fvek->vk, open_vmk_key,
 				params->fvek->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
-				params->fvek->nonce, BITLK_NONCE_SIZE);
+				params->fvek->nonce, BITLK_NONCE_SIZE, true);
 		if (r < 0) {
 			log_dbg(cd, "Failed to decrypt FVEK using VMK.");
 			crypt_free_volume_key(open_vmk_key);
