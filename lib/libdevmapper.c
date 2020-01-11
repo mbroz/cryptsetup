@@ -2196,6 +2196,8 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 				if (!root_hash_sig_key_desc)
 					root_hash_sig_key_desc = strdup(str);
 				i++;
+				if (vp)
+					vp->flags |= CRYPT_VERITY_ROOT_HASH_SIGNATURE;
 			} else /* unknown option */
 				goto err;
 		}

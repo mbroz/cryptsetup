@@ -4406,6 +4406,11 @@ int crypt_activate_by_signed_key(struct crypt_device *cd,
 
 	log_dbg(cd, "%s volume %s by signed key.", name ? "Activating" : "Checking", name ?: "");
 
+	if (cd->u.verity.hdr.flags & CRYPT_VERITY_ROOT_HASH_SIGNATURE && !signature) {
+		log_err(cd, _("Root hash signature required."));
+		return -EINVAL;
+	}
+
 	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
 	if (r < 0)
 		return r;
@@ -5380,7 +5385,7 @@ int crypt_get_verity_info(struct crypt_device *cd,
 	vp->data_size = cd->u.verity.hdr.data_size;
 	vp->hash_area_offset = cd->u.verity.hdr.hash_area_offset;
 	vp->hash_type = cd->u.verity.hdr.hash_type;
-	vp->flags = cd->u.verity.hdr.flags & CRYPT_VERITY_NO_HEADER;
+	vp->flags = cd->u.verity.hdr.flags & (CRYPT_VERITY_NO_HEADER | CRYPT_VERITY_ROOT_HASH_SIGNATURE);
 	return 0;
 }
 

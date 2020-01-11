@@ -213,7 +213,8 @@ static int action_open(int arg)
 	return _activate(action_argv[1],
 			 action_argv[0],
 			 action_argv[2],
-			 action_argv[3], 0);
+			 action_argv[3],
+			 opt_root_hash_signature ? CRYPT_VERITY_ROOT_HASH_SIGNATURE : 0);
 }
 
 static int action_verify(int arg)
@@ -290,8 +291,9 @@ static int action_status(int arg)
 		if (r < 0)
 			goto out;
 
-		log_std("  status:      %s\n",
-			cad.flags & CRYPT_ACTIVATE_CORRUPTED ? "corrupted" : "verified");
+		log_std("  status:      %s%s\n",
+			cad.flags & CRYPT_ACTIVATE_CORRUPTED ? "corrupted" : "verified",
+			vp.flags & CRYPT_VERITY_ROOT_HASH_SIGNATURE ? " (with signature)" : "");
 
 		log_std("  hash type:   %u\n", vp.hash_type);
 		log_std("  data block:  %u\n", vp.data_block_size);

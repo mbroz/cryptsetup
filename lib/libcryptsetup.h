@@ -507,6 +507,8 @@ struct crypt_params_verity {
 #define CRYPT_VERITY_CHECK_HASH  (1 << 1)
 /** Create hash - format hash device */
 #define CRYPT_VERITY_CREATE_HASH (1 << 2)
+/** Root hash signature required for activation */
+#define CRYPT_VERITY_ROOT_HASH_SIGNATURE (1 << 3)
 
 /**
  *
