@@ -459,12 +459,12 @@ static int hdr_validate_json_size(struct crypt_device *cd, json_object *hdr_jobj
 	json_size = (uint64_t)strlen(json);
 
 	if (hdr_json_size != json_area_size) {
-		log_dbg(cd, "JSON area size doesn't match value in binary header.");
+		log_dbg(cd, "JSON area size does not match value in binary header.");
 		return 1;
 	}
 
 	if (json_size > json_area_size) {
-		log_dbg(cd, "JSON doesn't fit in the designated area.");
+		log_dbg(cd, "JSON does not fit in the designated area.");
 		return 1;
 	}
 
@@ -1159,7 +1159,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	device_free(cd, backup_device);
 
 	if (r < 0) {
-		log_err(cd, _("Backup file doesn't contain valid LUKS header."));
+		log_err(cd, _("Backup file does not contain valid LUKS header."));
 		goto out;
 	}
 
@@ -2395,7 +2395,7 @@ int json_object_object_add_by_uint(json_object *jobj, unsigned key, json_object 
 #endif
 }
 
-/* jobj_dst must contain pointer initialised to NULL (see json-c json_object_deep_copy API) */
+/* jobj_dst must contain pointer initialized to NULL (see json-c json_object_deep_copy API) */
 int json_object_copy(json_object *jobj_src, json_object **jobj_dst)
 {
 	if (!jobj_src || !jobj_dst || *jobj_dst)

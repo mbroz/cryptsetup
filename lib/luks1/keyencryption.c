@@ -89,7 +89,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	r = device_block_adjust(ctx, crypt_metadata_device(ctx), DEV_OK,
 				sector, &dmd.size, &dmd.flags);
 	if (r < 0) {
-		log_err(ctx, _("Device %s doesn't exist or access denied."),
+		log_err(ctx, _("Device %s does not exist or access denied."),
 			device_path(crypt_metadata_device(ctx)));
 		return -EIO;
 	}

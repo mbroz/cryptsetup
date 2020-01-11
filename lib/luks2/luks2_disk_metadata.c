@@ -210,7 +210,7 @@ static int hdr_disk_sanity_check_pre(struct crypt_device *cd,
 	}
 
 	if (secondary && (offset != be64_to_cpu(hdr->hdr_size))) {
-		log_dbg(cd, "LUKS2 offset 0x%04x in secondary header doesn't match size 0x%04x.",
+		log_dbg(cd, "LUKS2 offset 0x%04x in secondary header does not match size 0x%04x.",
 			(unsigned)offset, (unsigned)be64_to_cpu(hdr->hdr_size));
 		return -EINVAL;
 	}

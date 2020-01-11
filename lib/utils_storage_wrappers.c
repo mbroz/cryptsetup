@@ -108,7 +108,7 @@ static int crypt_storage_dmcrypt_init(
 	r = device_block_adjust(cd, device, DEV_OK,
 				device_offset, &dmd.size, &dmd.flags);
 	if (r < 0) {
-		log_err(cd, _("Device %s doesn't exist or access denied."),
+		log_err(cd, _("Device %s does not exist or access denied."),
 			device_path(device));
 		return -EIO;
 	}

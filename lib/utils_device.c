@@ -185,7 +185,7 @@ static int device_ready(struct crypt_device *cd, struct device *device)
 	}
 
 	if (devfd < 0) {
-		log_err(cd, _("Device %s doesn't exist or access denied."),
+		log_err(cd, _("Device %s does not exist or access denied."),
 			device_path(device));
 		return -EINVAL;
 	}

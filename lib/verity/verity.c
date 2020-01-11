@@ -66,7 +66,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 		sizeof(struct verity_sb), device_path(device), sb_offset);
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
-		log_err(cd, _("Verity device %s doesn't use on-disk header."),
+		log_err(cd, _("Verity device %s does not use on-disk header."),
 			device_path(device));
 		return -EINVAL;
 	}
@@ -169,7 +169,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	}
 
 	if (params->flags & CRYPT_VERITY_NO_HEADER) {
-		log_err(cd, _("Verity device %s doesn't use on-disk header."),
+		log_err(cd, _("Verity device %s does not use on-disk header."),
 			device_path(device));
 		return -EINVAL;
 	}
@@ -306,11 +306,11 @@ int VERITY_activate(struct crypt_device *cd,
 
 	r = dm_create_device(cd, name, CRYPT_VERITY, &dmd);
 	if (r < 0 && (dm_flags(cd, DM_VERITY, &dmv_flags) || !(dmv_flags & DM_VERITY_SUPPORTED))) {
-		log_err(cd, _("Kernel doesn't support dm-verity mapping."));
+		log_err(cd, _("Kernel does not support dm-verity mapping."));
 		r = -ENOTSUP;
 	}
 	if (r < 0 && signature_description && !(dmv_flags & DM_VERITY_SIGNATURE_SUPPORTED)) {
-		log_err(cd, _("Kernel doesn't support dm-verity signature option."));
+		log_err(cd, _("Kernel does not support dm-verity signature option."));
 		r = -ENOTSUP;
 	}
 	if (r < 0)

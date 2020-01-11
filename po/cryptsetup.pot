@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cryptsetup 2.3.0-git\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2019-12-31 12:30+0100\n"
+"POT-Creation-Date: 2020-01-11 22:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,60 +16,60 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/libdevmapper.c:394
+#: lib/libdevmapper.c:397
 msgid "Cannot initialize device-mapper, running as non-root user."
 msgstr ""
 
-#: lib/libdevmapper.c:397
+#: lib/libdevmapper.c:400
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?"
 msgstr ""
 
-#: lib/libdevmapper.c:1107
+#: lib/libdevmapper.c:1120
 msgid "Requested deferred flag is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1174
+#: lib/libdevmapper.c:1187
 #, c-format
 msgid "DM-UUID for device %s was truncated."
 msgstr ""
 
-#: lib/libdevmapper.c:1495
+#: lib/libdevmapper.c:1509
 msgid "Unknown dm target type."
 msgstr ""
 
-#: lib/libdevmapper.c:1598 lib/libdevmapper.c:1650
+#: lib/libdevmapper.c:1612 lib/libdevmapper.c:1664
 msgid "Requested dm-crypt performance options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1605
+#: lib/libdevmapper.c:1619
 msgid "Requested dm-verity data corruption handling options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1609
+#: lib/libdevmapper.c:1623
 msgid "Requested dm-verity FEC options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1613
+#: lib/libdevmapper.c:1627
 msgid "Requested data integrity options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1615
+#: lib/libdevmapper.c:1629
 msgid "Requested sector_size option is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1620
+#: lib/libdevmapper.c:1634
 msgid "Requested automatic recalculation of integrity tags is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1624
+#: lib/libdevmapper.c:1638
 msgid "Requested dm-integrity bitmap mode is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1653
+#: lib/libdevmapper.c:1667
 msgid "Discard/TRIM is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:2557
+#: lib/libdevmapper.c:2585
 #, c-format
 msgid "Failed to query dm-%s segment."
 msgstr ""
@@ -110,7 +110,7 @@ msgstr ""
 msgid "Cannot initialize crypto backend."
 msgstr ""
 
-#: lib/setup.c:267 lib/setup.c:2037 lib/verity/verity.c:120
+#: lib/setup.c:267 lib/setup.c:2044 lib/verity/verity.c:120
 #, c-format
 msgid "Hash algorithm %s not supported."
 msgstr ""
@@ -124,7 +124,7 @@ msgstr ""
 msgid "Cannot determine device type. Incompatible activation of device?"
 msgstr ""
 
-#: lib/setup.c:342 lib/setup.c:3032
+#: lib/setup.c:342 lib/setup.c:3048
 msgid "This operation is supported only for LUKS device."
 msgstr ""
 
@@ -146,7 +146,7 @@ msgstr ""
 msgid "Key slot %d is full, please select another one."
 msgstr ""
 
-#: lib/setup.c:526 lib/setup.c:2806
+#: lib/setup.c:526 lib/setup.c:2822
 msgid "Device size is not aligned to device logical block size."
 msgstr ""
 
@@ -168,370 +168,389 @@ msgstr ""
 msgid "Unsupported LUKS version %d."
 msgstr ""
 
-#: lib/setup.c:847 lib/setup.c:1530 lib/setup.c:1950
+#: lib/setup.c:847 lib/setup.c:1537 lib/setup.c:1957
 msgid "Detached metadata device is not supported for this crypt type."
 msgstr ""
 
-#: lib/setup.c:1418 lib/setup.c:2526 lib/setup.c:2598 lib/setup.c:2610
-#: lib/setup.c:2759 lib/setup.c:4421
+#: lib/setup.c:1425 lib/setup.c:2542 lib/setup.c:2614 lib/setup.c:2626
+#: lib/setup.c:2775 lib/setup.c:4510
 #, c-format
 msgid "Device %s is not active."
 msgstr ""
 
-#: lib/setup.c:1435
+#: lib/setup.c:1442
 #, c-format
 msgid "Underlying device for crypt device %s disappeared."
 msgstr ""
 
-#: lib/setup.c:1515
+#: lib/setup.c:1522
 msgid "Invalid plain crypt parameters."
 msgstr ""
 
-#: lib/setup.c:1520 lib/setup.c:1940 src/integritysetup.c:74
+#: lib/setup.c:1527 lib/setup.c:1947 src/integritysetup.c:73
 msgid "Invalid key size."
 msgstr ""
 
-#: lib/setup.c:1525 lib/setup.c:1945 lib/setup.c:2147
+#: lib/setup.c:1532 lib/setup.c:1952 lib/setup.c:2155
 msgid "UUID is not supported for this crypt type."
 msgstr ""
 
-#: lib/setup.c:1540 lib/setup.c:1730 lib/luks2/luks2_reencrypt.c:2308
+#: lib/setup.c:1547 lib/setup.c:1737 lib/luks2/luks2_reencrypt.c:2308
 #: src/cryptsetup.c:1232
 msgid "Unsupported encryption sector size."
 msgstr ""
 
-#: lib/setup.c:1548 lib/setup.c:1855 lib/setup.c:2800
+#: lib/setup.c:1555 lib/setup.c:1862 lib/setup.c:2816
 msgid "Device size is not aligned to requested sector size."
 msgstr ""
 
-#: lib/setup.c:1599 lib/setup.c:1718
+#: lib/setup.c:1606 lib/setup.c:1725
 msgid "Can't format LUKS without device."
 msgstr ""
 
-#: lib/setup.c:1605 lib/setup.c:1724
+#: lib/setup.c:1612 lib/setup.c:1731
 msgid "Requested data alignment is not compatible with data offset."
 msgstr ""
 
-#: lib/setup.c:1673 lib/setup.c:1842
+#: lib/setup.c:1680 lib/setup.c:1849
 msgid "WARNING: Data offset is outside of currently available data device.\n"
 msgstr ""
 
-#: lib/setup.c:1683 lib/setup.c:1870 lib/setup.c:1891 lib/setup.c:2159
+#: lib/setup.c:1690 lib/setup.c:1877 lib/setup.c:1898 lib/setup.c:2167
 #, c-format
 msgid "Cannot wipe header on device %s."
 msgstr ""
 
-#: lib/setup.c:1735
+#: lib/setup.c:1742
 msgid ""
 "WARNING: The device activation will fail, dm-crypt is missing support for "
 "requested encryption sector size.\n"
 msgstr ""
 
-#: lib/setup.c:1757
+#: lib/setup.c:1764
 msgid "Volume key is too small for encryption with integrity extensions."
 msgstr ""
 
-#: lib/setup.c:1812
+#: lib/setup.c:1819
 #, c-format
 msgid "Cipher %s-%s (key size %zd bits) is not available."
 msgstr ""
 
-#: lib/setup.c:1845
+#: lib/setup.c:1852
 #, c-format
 msgid "WARNING: LUKS2 metadata size changed to %<PRIu64> bytes.\n"
 msgstr ""
 
-#: lib/setup.c:1849
+#: lib/setup.c:1856
 #, c-format
 msgid "WARNING: LUKS2 keyslots area size changed to %<PRIu64> bytes.\n"
 msgstr ""
 
-#: lib/setup.c:1873 lib/utils_device.c:829 lib/luks1/keyencryption.c:256
+#: lib/setup.c:1880 lib/utils_device.c:829 lib/luks1/keyencryption.c:256
 #: lib/luks2/luks2_reencrypt.c:2356 lib/luks2/luks2_reencrypt.c:3367
 #, c-format
 msgid "Device %s is too small."
 msgstr ""
 
-#: lib/setup.c:1884 lib/setup.c:1910
+#: lib/setup.c:1891 lib/setup.c:1917
 #, c-format
 msgid "Cannot format device %s in use."
 msgstr ""
 
-#: lib/setup.c:1887 lib/setup.c:1913
+#: lib/setup.c:1894 lib/setup.c:1920
 #, c-format
 msgid "Cannot format device %s, permission denied."
 msgstr ""
 
-#: lib/setup.c:1899 lib/setup.c:2211
+#: lib/setup.c:1906 lib/setup.c:2227
 #, c-format
 msgid "Cannot format integrity for device %s."
 msgstr ""
 
-#: lib/setup.c:1917
+#: lib/setup.c:1924
 #, c-format
 msgid "Cannot format device %s."
 msgstr ""
 
-#: lib/setup.c:1935
+#: lib/setup.c:1942
 msgid "Can't format LOOPAES without device."
 msgstr ""
 
-#: lib/setup.c:1980
+#: lib/setup.c:1987
 msgid "Can't format VERITY without device."
 msgstr ""
 
-#: lib/setup.c:1991 lib/verity/verity.c:103
+#: lib/setup.c:1998 lib/verity/verity.c:103
 #, c-format
 msgid "Unsupported VERITY hash type %d."
 msgstr ""
 
-#: lib/setup.c:1997 lib/verity/verity.c:111
+#: lib/setup.c:2004 lib/verity/verity.c:111
 msgid "Unsupported VERITY block size."
 msgstr ""
 
-#: lib/setup.c:2002 lib/verity/verity.c:75
+#: lib/setup.c:2009 lib/verity/verity.c:75
 msgid "Unsupported VERITY hash offset."
 msgstr ""
 
-#: lib/setup.c:2007
+#: lib/setup.c:2014
 msgid "Unsupported VERITY FEC offset."
 msgstr ""
 
-#: lib/setup.c:2031
+#: lib/setup.c:2038
 msgid "Data area overlaps with hash area."
 msgstr ""
 
-#: lib/setup.c:2056
+#: lib/setup.c:2063
 msgid "Hash area overlaps with FEC area."
 msgstr ""
 
-#: lib/setup.c:2063
+#: lib/setup.c:2070
 msgid "Data area overlaps with FEC area."
 msgstr ""
 
-#: lib/setup.c:2268
+#: lib/setup.c:2206
+#, c-format
+msgid ""
+"WARNING: Requested tag size %d bytes differs from %s size output (%d "
+"bytes).\n"
+msgstr ""
+
+#: lib/setup.c:2284
 #, c-format
 msgid "Unknown crypt device type %s requested."
 msgstr ""
 
-#: lib/setup.c:2532 lib/setup.c:2604 lib/setup.c:2617
+#: lib/setup.c:2548 lib/setup.c:2620 lib/setup.c:2633
 #, c-format
 msgid "Unsupported parameters on device %s."
 msgstr ""
 
-#: lib/setup.c:2538 lib/setup.c:2623 lib/luks2/luks2_reencrypt.c:2408
+#: lib/setup.c:2554 lib/setup.c:2639 lib/luks2/luks2_reencrypt.c:2408
 #: lib/luks2/luks2_reencrypt.c:2737
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr ""
 
-#: lib/setup.c:2643
+#: lib/setup.c:2659
 msgid "Crypt devices mismatch."
 msgstr ""
 
-#: lib/setup.c:2680 lib/setup.c:2685 lib/luks2/luks2_reencrypt.c:2054
+#: lib/setup.c:2696 lib/setup.c:2701 lib/luks2/luks2_reencrypt.c:2054
 #: lib/luks2/luks2_reencrypt.c:3145
 #, c-format
 msgid "Failed to reload device %s."
 msgstr ""
 
-#: lib/setup.c:2690 lib/setup.c:2695 lib/luks2/luks2_reencrypt.c:2025
+#: lib/setup.c:2706 lib/setup.c:2711 lib/luks2/luks2_reencrypt.c:2025
 #: lib/luks2/luks2_reencrypt.c:2032
 #, c-format
 msgid "Failed to suspend device %s."
 msgstr ""
 
-#: lib/setup.c:2700 lib/luks2/luks2_reencrypt.c:2039
+#: lib/setup.c:2716 lib/luks2/luks2_reencrypt.c:2039
 #: lib/luks2/luks2_reencrypt.c:3080 lib/luks2/luks2_reencrypt.c:3149
 #, c-format
 msgid "Failed to resume device %s."
 msgstr ""
 
-#: lib/setup.c:2714
+#: lib/setup.c:2730
 #, c-format
 msgid "Fatal error while reloading device %s (on top of device %s)."
 msgstr ""
 
-#: lib/setup.c:2717 lib/setup.c:2719
+#: lib/setup.c:2733 lib/setup.c:2735
 #, c-format
 msgid "Failed to switch device %s to dm-error."
 msgstr ""
 
-#: lib/setup.c:2791
+#: lib/setup.c:2807
 msgid "Cannot resize loop device."
 msgstr ""
 
-#: lib/setup.c:2864
+#: lib/setup.c:2880
 msgid "Do you really want to change UUID of device?"
 msgstr ""
 
-#: lib/setup.c:2940
+#: lib/setup.c:2956
 msgid "Header backup file does not contain compatible LUKS header."
 msgstr ""
 
-#: lib/setup.c:3040
+#: lib/setup.c:3056
 #, c-format
 msgid "Volume %s is not active."
 msgstr ""
 
-#: lib/setup.c:3051
+#: lib/setup.c:3067
 #, c-format
 msgid "Volume %s is already suspended."
 msgstr ""
 
-#: lib/setup.c:3064
+#: lib/setup.c:3080
 #, c-format
 msgid "Suspend is not supported for device %s."
 msgstr ""
 
-#: lib/setup.c:3066
+#: lib/setup.c:3082
 #, c-format
 msgid "Error during suspending device %s."
 msgstr ""
 
-#: lib/setup.c:3099 lib/setup.c:3166 lib/setup.c:3249
+#: lib/setup.c:3115 lib/setup.c:3182 lib/setup.c:3265
 #, c-format
 msgid "Volume %s is not suspended."
 msgstr ""
 
-#: lib/setup.c:3128
+#: lib/setup.c:3144
 #, c-format
 msgid "Resume is not supported for device %s."
 msgstr ""
 
-#: lib/setup.c:3130 lib/setup.c:3198 lib/setup.c:3279
+#: lib/setup.c:3146 lib/setup.c:3214 lib/setup.c:3295
 #, c-format
 msgid "Error during resuming device %s."
 msgstr ""
 
-#: lib/setup.c:3264 lib/setup.c:3630 lib/setup.c:4271 lib/setup.c:4284
-#: lib/setup.c:4292 lib/setup.c:4305 lib/setup.c:4594 lib/setup.c:5737
+#: lib/setup.c:3280 lib/setup.c:3646 lib/setup.c:4307 lib/setup.c:4320
+#: lib/setup.c:4328 lib/setup.c:4341 lib/setup.c:4691 lib/setup.c:5834
 msgid "Volume key does not match the volume."
 msgstr ""
 
-#: lib/setup.c:3325 lib/setup.c:3513
+#: lib/setup.c:3341 lib/setup.c:3529
 msgid "Cannot add key slot, all slots disabled and no volume key provided."
 msgstr ""
 
-#: lib/setup.c:3465
+#: lib/setup.c:3481
 msgid "Failed to swap new key slot."
 msgstr ""
 
-#: lib/setup.c:3651
+#: lib/setup.c:3667
 #, c-format
 msgid "Key slot %d is invalid."
 msgstr ""
 
-#: lib/setup.c:3657 src/cryptsetup.c:1577 src/cryptsetup.c:1922
+#: lib/setup.c:3673 src/cryptsetup.c:1577 src/cryptsetup.c:1922
 #, c-format
 msgid "Keyslot %d is not active."
 msgstr ""
 
-#: lib/setup.c:3676
+#: lib/setup.c:3692
 msgid "Device header overlaps with data area."
 msgstr ""
 
-#: lib/setup.c:3942
+#: lib/setup.c:3979
 msgid "Reencryption in-progress. Cannot activate device."
 msgstr ""
 
-#: lib/setup.c:3944 lib/luks2/luks2_json_metadata.c:2239
+#: lib/setup.c:3981 lib/luks2/luks2_json_metadata.c:2239
 #: lib/luks2/luks2_reencrypt.c:2836
 msgid "Failed to get reencryption lock."
 msgstr ""
 
-#: lib/setup.c:3957 lib/luks2/luks2_reencrypt.c:2855
+#: lib/setup.c:3994 lib/luks2/luks2_reencrypt.c:2855
 msgid "LUKS2 reencryption recovery failed."
 msgstr ""
 
-#: lib/setup.c:4088 lib/setup.c:4359
-msgid "Device type is not properly initialised."
+#: lib/setup.c:4125 lib/setup.c:4377
+msgid "Device type is not properly initialized."
 msgstr ""
 
-#: lib/setup.c:4132
+#: lib/setup.c:4169
 #, c-format
 msgid "Cannot use device %s, name is invalid or still in use."
 msgstr ""
 
-#: lib/setup.c:4135
+#: lib/setup.c:4172
 #, c-format
 msgid "Device %s already exists."
 msgstr ""
 
-#: lib/setup.c:4258
+#: lib/setup.c:4294
 msgid "Incorrect volume key specified for plain device."
 msgstr ""
 
-#: lib/setup.c:4324
+#: lib/setup.c:4403
 msgid "Incorrect root hash specified for verity device."
 msgstr ""
 
-#: lib/setup.c:4400 lib/setup.c:4416 lib/luks2/luks2_json_metadata.c:2292
+#: lib/setup.c:4410
+msgid "Root hash signature required."
+msgstr ""
+
+#: lib/setup.c:4419
+msgid "Kernel keyring missing: required for passing signature to kernel."
+msgstr ""
+
+#: lib/setup.c:4436 lib/setup.c:5910
+msgid "Failed to load key in kernel keyring."
+msgstr ""
+
+#: lib/setup.c:4489 lib/setup.c:4505 lib/luks2/luks2_json_metadata.c:2292
 #: src/cryptsetup.c:2597
 #, c-format
 msgid "Device %s is still in use."
 msgstr ""
 
-#: lib/setup.c:4425
+#: lib/setup.c:4514
 #, c-format
 msgid "Invalid device %s."
 msgstr ""
 
-#: lib/setup.c:4541
+#: lib/setup.c:4630
 msgid "Volume key buffer too small."
 msgstr ""
 
-#: lib/setup.c:4549
+#: lib/setup.c:4638
 msgid "Cannot retrieve volume key for plain device."
 msgstr ""
 
-#: lib/setup.c:4560
+#: lib/setup.c:4655
+msgid "Cannot retrieve root hash for verity device."
+msgstr ""
+
+#: lib/setup.c:4657
 #, c-format
 msgid "This operation is not supported for %s crypt device."
 msgstr ""
 
-#: lib/setup.c:4766
+#: lib/setup.c:4863
 msgid "Dump operation is not supported for this device type."
 msgstr ""
 
-#: lib/setup.c:5091
+#: lib/setup.c:5188
 #, c-format
 msgid "Data offset is not multiple of %u bytes."
 msgstr ""
 
-#: lib/setup.c:5373
+#: lib/setup.c:5470
 #, c-format
 msgid "Cannot convert device %s which is still in use."
 msgstr ""
 
-#: lib/setup.c:5670
+#: lib/setup.c:5767
 #, c-format
 msgid "Failed to assign keyslot %u as the new volume key."
 msgstr ""
 
-#: lib/setup.c:5743
-msgid "Failed to initialise default LUKS2 keyslot parameters."
+#: lib/setup.c:5840
+msgid "Failed to initialize default LUKS2 keyslot parameters."
 msgstr ""
 
-#: lib/setup.c:5749
+#: lib/setup.c:5846
 #, c-format
 msgid "Failed to assign keyslot %d to digest."
 msgstr ""
 
-#: lib/setup.c:5834
-msgid "Failed to load key in kernel keyring."
-msgstr ""
-
-#: lib/setup.c:5901
+#: lib/setup.c:5977
 msgid "Kernel keyring is not supported by the kernel."
 msgstr ""
 
-#: lib/setup.c:5911 lib/luks2/luks2_reencrypt.c:2952
+#: lib/setup.c:5987 lib/luks2/luks2_reencrypt.c:2952
 #, c-format
 msgid "Failed to read passphrase from keyring (error %d)."
 msgstr ""
 
-#: lib/setup.c:5935
+#: lib/setup.c:6011
 msgid "Failed to acquire global memory-hard access serialization lock."
 msgstr ""
 
@@ -583,7 +602,7 @@ msgstr ""
 #: lib/utils_device.c:188 lib/utils_storage_wrappers.c:111
 #: lib/luks1/keyencryption.c:92
 #, c-format
-msgid "Device %s doesn't exist or access denied."
+msgid "Device %s does not exist or access denied."
 msgstr ""
 
 #: lib/utils_device.c:198
@@ -739,7 +758,7 @@ msgstr ""
 
 #: lib/luks1/keyencryption.c:98 lib/luks1/keymanage.c:345
 #: lib/luks1/keymanage.c:636 lib/luks1/keymanage.c:1079
-#: lib/luks2/luks2_json_metadata.c:1253 lib/luks2/luks2_keyslot.c:733
+#: lib/luks2/luks2_json_metadata.c:1253 lib/luks2/luks2_keyslot.c:734
 #, c-format
 msgid "Cannot write to device %s, permission denied."
 msgstr ""
@@ -759,8 +778,8 @@ msgstr ""
 
 #: lib/luks1/keyencryption.c:247 lib/luks1/keymanage.c:348
 #: lib/luks1/keymanage.c:589 lib/luks1/keymanage.c:639 lib/tcrypt/tcrypt.c:661
-#: lib/verity/verity.c:81 lib/verity/verity.c:179 lib/verity/verity_hash.c:308
-#: lib/verity/verity_hash.c:319 lib/verity/verity_hash.c:339
+#: lib/verity/verity.c:81 lib/verity/verity.c:179 lib/verity/verity_hash.c:311
+#: lib/verity/verity_hash.c:322 lib/verity/verity_hash.c:342
 #: lib/verity/verity_fec.c:242 lib/verity/verity_fec.c:254
 #: lib/verity/verity_fec.c:259 lib/luks2/luks2_json_metadata.c:1256
 #: src/cryptsetup_reencrypt.c:205
@@ -811,7 +830,7 @@ msgid "Cannot write header backup file %s."
 msgstr ""
 
 #: lib/luks1/keymanage.c:287 lib/luks2/luks2_json_metadata.c:1162
-msgid "Backup file doesn't contain valid LUKS header."
+msgid "Backup file does not contain valid LUKS header."
 msgstr ""
 
 #: lib/luks1/keymanage.c:300 lib/luks1/keymanage.c:550
@@ -946,7 +965,7 @@ msgstr ""
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d."
 msgstr ""
 
-#: lib/luks1/keymanage.c:1083 lib/luks2/luks2_keyslot.c:737
+#: lib/luks1/keymanage.c:1083 lib/luks2/luks2_keyslot.c:738
 #, c-format
 msgid "Cannot wipe device %s."
 msgstr ""
@@ -964,7 +983,7 @@ msgid "Incompatible loop-AES keyfile detected."
 msgstr ""
 
 #: lib/loopaes/loopaes.c:245
-msgid "Kernel doesn't support loop-AES compatible mapping."
+msgid "Kernel does not support loop-AES compatible mapping."
 msgstr ""
 
 #: lib/tcrypt/tcrypt.c:505
@@ -996,7 +1015,7 @@ msgid "Activation is not supported for %d sector size."
 msgstr ""
 
 #: lib/tcrypt/tcrypt.c:750
-msgid "Kernel doesn't support activation for this TCRYPT legacy mode."
+msgid "Kernel does not support activation for this TCRYPT legacy mode."
 msgstr ""
 
 #: lib/tcrypt/tcrypt.c:784
@@ -1005,79 +1024,99 @@ msgid "Activating TCRYPT system encryption for partition %s."
 msgstr ""
 
 #: lib/tcrypt/tcrypt.c:862
-msgid "Kernel doesn't support TCRYPT compatible mapping."
+msgid "Kernel does not support TCRYPT compatible mapping."
 msgstr ""
 
 #: lib/tcrypt/tcrypt.c:1084
 msgid "This function is not supported without TCRYPT header load."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:304 lib/bitlk/bitlk.c:351
-msgid "Unexpected metadata entry found when parsing VMK."
-msgstr ""
-
-#: lib/bitlk/bitlk.c:429
+#: lib/bitlk/bitlk.c:305
 #, c-format
-msgid "Failed to read BitLocker signature from %s."
+msgid ""
+"Unexpected metadata entry type '%u' found when parsing supported Volume "
+"Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:435
-msgid "BitLocker version from Windows Vista is currently not supported."
+#: lib/bitlk/bitlk.c:352
+msgid "Invalid string found when parsing Volume Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:441
-msgid "Invalid or unknown boot signature for a BitLocker device."
-msgstr ""
-
-#: lib/bitlk/bitlk.c:453
-msgid "Invalid or unknown signature for a BitLocker device."
-msgstr ""
-
-#: lib/bitlk/bitlk.c:461
+#: lib/bitlk/bitlk.c:357
 #, c-format
-msgid "Failed to read BitLocker header from %s."
+msgid ""
+"Unexpected string ('%s') found when parsing supported Volume Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:477
+#: lib/bitlk/bitlk.c:371
 #, c-format
-msgid "Failed to read BitLocker FVE metadata from %s."
+msgid ""
+"Unexpected metadata entry value '%u' found when parsing supported Volume "
+"Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:521
-msgid "Unknown or unsupported encryption."
-msgstr ""
-
-#: lib/bitlk/bitlk.c:554
+#: lib/bitlk/bitlk.c:451
 #, c-format
-msgid "Failed to read BitLocker metadata entries from %s."
+msgid "Failed to read BITLK signature from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:835
+#: lib/bitlk/bitlk.c:457
+msgid "BITLK version 1 is currently not supported."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:463
+msgid "Invalid or unknown boot signature for BITLK device."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:475
+msgid "Invalid or unknown signature for BITLK device."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:483
+#, c-format
+msgid "Failed to read BITLK header from %s."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:499
+#, c-format
+msgid "Failed to read BITLK FVE metadata from %s."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:543
+msgid "Unknown or unsupported encryption type."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:576
+#, c-format
+msgid "Failed to read BITLK metadata entries from %s."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:863
 msgid "This operation is not supported."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:847
+#: lib/bitlk/bitlk.c:871
 msgid "Wrong key size."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:960
-msgid "Activation of partially decrypted BitLocker device is not supported."
+#: lib/bitlk/bitlk.c:999
+msgid "Activation of partially decrypted BITLK device is not supported."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:1093
+#: lib/bitlk/bitlk.c:1132
 msgid ""
-"Cannot activate device, kernel dm-crypt is missing support for BitLocker IV."
+"Cannot activate device, kernel dm-crypt is missing support for BITLK IV."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:1097
+#: lib/bitlk/bitlk.c:1136
 msgid ""
-"Cannot activate device, kernel dm-crypt is missing support for BitLocker "
+"Cannot activate device, kernel dm-crypt is missing support for BITLK "
 "Elephant diffuser."
 msgstr ""
 
 #: lib/verity/verity.c:69 lib/verity/verity.c:172
 #, c-format
-msgid "Verity device %s doesn't use on-disk header."
+msgid "Verity device %s does not use on-disk header."
 msgstr ""
 
 #: lib/verity/verity.c:91
@@ -1104,20 +1143,28 @@ msgstr ""
 msgid "Error during update of verity header on device %s."
 msgstr ""
 
-#: lib/verity/verity.c:262
+#: lib/verity/verity.c:257
+msgid "Root hash signature verification is not supported."
+msgstr ""
+
+#: lib/verity/verity.c:268
 msgid "Errors cannot be repaired with FEC device."
 msgstr ""
 
-#: lib/verity/verity.c:264
+#: lib/verity/verity.c:270
 #, c-format
 msgid "Found %u repairable errors with FEC device."
 msgstr ""
 
-#: lib/verity/verity.c:302
-msgid "Kernel doesn't support dm-verity mapping."
+#: lib/verity/verity.c:309
+msgid "Kernel does not support dm-verity mapping."
 msgstr ""
 
 #: lib/verity/verity.c:313
+msgid "Kernel does not support dm-verity signature option."
+msgstr ""
+
+#: lib/verity/verity.c:324
 msgid "Verity device detected corruption after activation."
 msgstr ""
 
@@ -1126,41 +1173,41 @@ msgstr ""
 msgid "Spare area is not zeroed at position %<PRIu64>."
 msgstr ""
 
-#: lib/verity/verity_hash.c:160 lib/verity/verity_hash.c:287
-#: lib/verity/verity_hash.c:300
+#: lib/verity/verity_hash.c:163 lib/verity/verity_hash.c:290
+#: lib/verity/verity_hash.c:303
 msgid "Device offset overflow."
 msgstr ""
 
-#: lib/verity/verity_hash.c:200
+#: lib/verity/verity_hash.c:203
 #, c-format
 msgid "Verification failed at position %<PRIu64>."
 msgstr ""
 
-#: lib/verity/verity_hash.c:273
+#: lib/verity/verity_hash.c:276
 msgid "Invalid size parameters for verity device."
 msgstr ""
 
-#: lib/verity/verity_hash.c:293
+#: lib/verity/verity_hash.c:296
 msgid "Hash area overflow."
 msgstr ""
 
-#: lib/verity/verity_hash.c:370
+#: lib/verity/verity_hash.c:373
 msgid "Verification of data area failed."
 msgstr ""
 
-#: lib/verity/verity_hash.c:375
+#: lib/verity/verity_hash.c:378
 msgid "Verification of root hash failed."
 msgstr ""
 
-#: lib/verity/verity_hash.c:381
+#: lib/verity/verity_hash.c:384
 msgid "Input/output error while creating hash area."
 msgstr ""
 
-#: lib/verity/verity_hash.c:383
+#: lib/verity/verity_hash.c:386
 msgid "Creation of hash area failed."
 msgstr ""
 
-#: lib/verity/verity_hash.c:430
+#: lib/verity/verity_hash.c:433
 #, c-format
 msgid ""
 "WARNING: Kernel cannot activate device if data block size exceeds page size "
@@ -1208,12 +1255,12 @@ msgstr ""
 msgid "Failed to determine size for device %s."
 msgstr ""
 
-#: lib/integrity/integrity.c:247 lib/integrity/integrity.c:318
-msgid "Kernel doesn't support dm-integrity mapping."
+#: lib/integrity/integrity.c:268 lib/integrity/integrity.c:339
+msgid "Kernel does not support dm-integrity mapping."
 msgstr ""
 
-#: lib/integrity/integrity.c:253
-msgid "Kernel doesn't support dm-integrity fixed metadata alignment."
+#: lib/integrity/integrity.c:274
+msgid "Kernel does not support dm-integrity fixed metadata alignment."
 msgstr ""
 
 #: lib/luks2/luks2_disk_metadata.c:383 lib/luks2/luks2_json_metadata.c:959
@@ -1346,11 +1393,11 @@ msgid ""
 "Operation incompatible with device marked for LUKS2 reencryption. Aborting."
 msgstr ""
 
-#: lib/luks2/luks2_keyslot.c:546 lib/luks2/luks2_keyslot.c:583
+#: lib/luks2/luks2_keyslot.c:547 lib/luks2/luks2_keyslot.c:584
 msgid "Not enough available memory to open a keyslot."
 msgstr ""
 
-#: lib/luks2/luks2_keyslot.c:548 lib/luks2/luks2_keyslot.c:585
+#: lib/luks2/luks2_keyslot.c:549 lib/luks2/luks2_keyslot.c:586
 msgid "Keyslot open failed."
 msgstr ""
 
@@ -1675,7 +1722,7 @@ msgstr ""
 
 #: src/cryptsetup.c:308 src/cryptsetup.c:1101 src/cryptsetup.c:1153
 #: src/cryptsetup.c:1252 src/cryptsetup.c:1325 src/cryptsetup.c:1979
-#: src/cryptsetup.c:2615 src/cryptsetup.c:2738 src/integritysetup.c:233
+#: src/cryptsetup.c:2615 src/cryptsetup.c:2738 src/integritysetup.c:232
 msgid "Operation aborted.\n"
 msgstr ""
 
@@ -1798,14 +1845,14 @@ msgstr ""
 msgid "Really try to repair LUKS device header?"
 msgstr ""
 
-#: src/cryptsetup.c:1171 src/integritysetup.c:146
+#: src/cryptsetup.c:1171 src/integritysetup.c:145
 msgid ""
 "Wiping device to initialize integrity checksum.\n"
 "You can interrupt this by pressing CTRL+c (rest of not wiped device will "
 "contain invalid checksum).\n"
 msgstr ""
 
-#: src/cryptsetup.c:1193 src/integritysetup.c:168
+#: src/cryptsetup.c:1193 src/integritysetup.c:167
 #, c-format
 msgid "Cannot deactivate temporary device %s."
 msgstr ""
@@ -1823,8 +1870,8 @@ msgstr ""
 msgid "Cannot create header file %s."
 msgstr ""
 
-#: src/cryptsetup.c:1282 src/integritysetup.c:195 src/integritysetup.c:204
-#: src/integritysetup.c:213 src/integritysetup.c:283 src/integritysetup.c:292
+#: src/cryptsetup.c:1282 src/integritysetup.c:194 src/integritysetup.c:203
+#: src/integritysetup.c:212 src/integritysetup.c:283 src/integritysetup.c:292
 #: src/integritysetup.c:302
 msgid "No known integrity specification pattern detected."
 msgstr ""
@@ -1834,7 +1881,7 @@ msgstr ""
 msgid "Cannot use %s as on-disk header."
 msgstr ""
 
-#: src/cryptsetup.c:1319 src/integritysetup.c:227
+#: src/cryptsetup.c:1319 src/integritysetup.c:226
 #, c-format
 msgid "This will overwrite data on %s irrevocably."
 msgstr ""
@@ -2133,17 +2180,17 @@ msgstr ""
 msgid "<device> [--type <type>] [<name>]"
 msgstr ""
 
-#: src/cryptsetup.c:3279 src/veritysetup.c:358 src/integritysetup.c:474
+#: src/cryptsetup.c:3279 src/veritysetup.c:394 src/integritysetup.c:474
 msgid "open device as <name>"
 msgstr ""
 
 #: src/cryptsetup.c:3280 src/cryptsetup.c:3281 src/cryptsetup.c:3282
-#: src/veritysetup.c:359 src/veritysetup.c:360 src/integritysetup.c:475
+#: src/veritysetup.c:395 src/veritysetup.c:396 src/integritysetup.c:475
 #: src/integritysetup.c:476
 msgid "<name>"
 msgstr ""
 
-#: src/cryptsetup.c:3280 src/veritysetup.c:359 src/integritysetup.c:475
+#: src/cryptsetup.c:3280 src/veritysetup.c:395 src/integritysetup.c:475
 msgid "close device (remove mapping)"
 msgstr ""
 
@@ -2271,7 +2318,7 @@ msgstr ""
 msgid "Manipulate LUKS2 tokens"
 msgstr ""
 
-#: src/cryptsetup.c:3322 src/veritysetup.c:376 src/integritysetup.c:492
+#: src/cryptsetup.c:3322 src/veritysetup.c:412 src/integritysetup.c:492
 msgid ""
 "\n"
 "<action> is one of:\n"
@@ -2330,37 +2377,37 @@ msgid ""
 "\tLUKS: Default keysize with XTS mode (two internal keys) will be doubled.\n"
 msgstr ""
 
-#: src/cryptsetup.c:3380 src/veritysetup.c:532 src/integritysetup.c:635
+#: src/cryptsetup.c:3380 src/veritysetup.c:569 src/integritysetup.c:634
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr ""
 
-#: src/cryptsetup.c:3418 src/veritysetup.c:421 src/integritysetup.c:531
+#: src/cryptsetup.c:3418 src/veritysetup.c:457 src/integritysetup.c:530
 #: src/cryptsetup_reencrypt.c:1600
 msgid "Show this help message"
 msgstr ""
 
-#: src/cryptsetup.c:3419 src/veritysetup.c:422 src/integritysetup.c:532
+#: src/cryptsetup.c:3419 src/veritysetup.c:458 src/integritysetup.c:531
 #: src/cryptsetup_reencrypt.c:1601
 msgid "Display brief usage"
 msgstr ""
 
-#: src/cryptsetup.c:3420 src/veritysetup.c:423 src/integritysetup.c:533
+#: src/cryptsetup.c:3420 src/veritysetup.c:459 src/integritysetup.c:532
 #: src/cryptsetup_reencrypt.c:1602
 msgid "Print package version"
 msgstr ""
 
-#: src/cryptsetup.c:3424 src/veritysetup.c:427 src/integritysetup.c:537
+#: src/cryptsetup.c:3424 src/veritysetup.c:463 src/integritysetup.c:536
 #: src/cryptsetup_reencrypt.c:1606
 msgid "Help options:"
 msgstr ""
 
-#: src/cryptsetup.c:3425 src/veritysetup.c:428 src/integritysetup.c:538
+#: src/cryptsetup.c:3425 src/veritysetup.c:464 src/integritysetup.c:537
 #: src/cryptsetup_reencrypt.c:1607
 msgid "Shows more detailed error messages"
 msgstr ""
 
-#: src/cryptsetup.c:3426 src/veritysetup.c:429 src/integritysetup.c:539
+#: src/cryptsetup.c:3426 src/veritysetup.c:465 src/integritysetup.c:538
 #: src/cryptsetup_reencrypt.c:1608
 msgid "Show debug messages"
 msgstr ""
@@ -2397,8 +2444,8 @@ msgstr ""
 msgid "The size of the encryption key"
 msgstr ""
 
-#: src/cryptsetup.c:3434 src/cryptsetup.c:3494 src/integritysetup.c:557
-#: src/integritysetup.c:561 src/integritysetup.c:565
+#: src/cryptsetup.c:3434 src/cryptsetup.c:3494 src/integritysetup.c:556
+#: src/integritysetup.c:560 src/integritysetup.c:564
 #: src/cryptsetup_reencrypt.c:1611
 msgid "BITS"
 msgstr ""
@@ -2410,9 +2457,9 @@ msgstr ""
 #: src/cryptsetup.c:3435 src/cryptsetup.c:3436 src/cryptsetup.c:3437
 #: src/cryptsetup.c:3438 src/cryptsetup.c:3441 src/cryptsetup.c:3491
 #: src/cryptsetup.c:3492 src/cryptsetup.c:3500 src/cryptsetup.c:3501
-#: src/veritysetup.c:432 src/veritysetup.c:433 src/veritysetup.c:434
-#: src/veritysetup.c:437 src/veritysetup.c:438 src/integritysetup.c:546
-#: src/integritysetup.c:552 src/integritysetup.c:553
+#: src/veritysetup.c:468 src/veritysetup.c:469 src/veritysetup.c:470
+#: src/veritysetup.c:473 src/veritysetup.c:474 src/integritysetup.c:545
+#: src/integritysetup.c:551 src/integritysetup.c:552
 #: src/cryptsetup_reencrypt.c:1626 src/cryptsetup_reencrypt.c:1627
 #: src/cryptsetup_reencrypt.c:1628 src/cryptsetup_reencrypt.c:1629
 msgid "bytes"
@@ -2439,7 +2486,7 @@ msgid "The size of the device"
 msgstr ""
 
 #: src/cryptsetup.c:3440 src/cryptsetup.c:3442 src/cryptsetup.c:3443
-#: src/cryptsetup.c:3449 src/integritysetup.c:547 src/integritysetup.c:554
+#: src/cryptsetup.c:3449 src/integritysetup.c:546 src/integritysetup.c:553
 msgid "SECTORS"
 msgstr ""
 
@@ -2459,7 +2506,7 @@ msgstr ""
 msgid "Create a readonly mapping"
 msgstr ""
 
-#: src/cryptsetup.c:3445 src/integritysetup.c:540
+#: src/cryptsetup.c:3445 src/integritysetup.c:539
 #: src/cryptsetup_reencrypt.c:1617
 msgid "Do not ask for confirmation"
 msgstr ""
@@ -2468,12 +2515,12 @@ msgstr ""
 msgid "Timeout for interactive passphrase prompt (in seconds)"
 msgstr ""
 
-#: src/cryptsetup.c:3446 src/cryptsetup.c:3447 src/integritysetup.c:541
+#: src/cryptsetup.c:3446 src/cryptsetup.c:3447 src/integritysetup.c:540
 #: src/cryptsetup_reencrypt.c:1618
 msgid "secs"
 msgstr ""
 
-#: src/cryptsetup.c:3447 src/integritysetup.c:541
+#: src/cryptsetup.c:3447 src/integritysetup.c:540
 #: src/cryptsetup_reencrypt.c:1618
 msgid "Progress line update (in seconds)"
 msgstr ""
@@ -2502,7 +2549,7 @@ msgstr ""
 msgid "Share device with another non-overlapping crypt segment"
 msgstr ""
 
-#: src/cryptsetup.c:3454 src/veritysetup.c:441
+#: src/cryptsetup.c:3454 src/veritysetup.c:477
 msgid "UUID for device to use"
 msgstr ""
 
@@ -2615,15 +2662,15 @@ msgstr ""
 msgid "Data integrity algorithm (LUKS2 only)"
 msgstr ""
 
-#: src/cryptsetup.c:3479 src/integritysetup.c:568
+#: src/cryptsetup.c:3479 src/integritysetup.c:567
 msgid "Disable journal for integrity device"
 msgstr ""
 
-#: src/cryptsetup.c:3480 src/integritysetup.c:542
+#: src/cryptsetup.c:3480 src/integritysetup.c:541
 msgid "Do not wipe device after format"
 msgstr ""
 
-#: src/cryptsetup.c:3481 src/integritysetup.c:572
+#: src/cryptsetup.c:3481 src/integritysetup.c:571
 msgid "Use inefficient legacy padding (old kernels)"
 msgstr ""
 
@@ -2719,15 +2766,15 @@ msgstr ""
 msgid "Override device autodetection of dm device to be reencrypted"
 msgstr ""
 
-#: src/cryptsetup.c:3520 src/veritysetup.c:462 src/integritysetup.c:588
+#: src/cryptsetup.c:3520 src/veritysetup.c:499 src/integritysetup.c:587
 msgid "[OPTION...] <action> <action-specific>"
 msgstr ""
 
-#: src/cryptsetup.c:3571 src/veritysetup.c:496 src/integritysetup.c:599
+#: src/cryptsetup.c:3571 src/veritysetup.c:533 src/integritysetup.c:598
 msgid "Argument <action> missing."
 msgstr ""
 
-#: src/cryptsetup.c:3640 src/veritysetup.c:527 src/integritysetup.c:630
+#: src/cryptsetup.c:3640 src/veritysetup.c:564 src/integritysetup.c:629
 msgid "Unknown action."
 msgstr ""
 
@@ -2806,7 +2853,7 @@ msgstr ""
 msgid "Option --key-file takes precedence over specified key file argument."
 msgstr ""
 
-#: src/cryptsetup.c:3743 src/veritysetup.c:539 src/integritysetup.c:654
+#: src/cryptsetup.c:3743 src/veritysetup.c:576 src/integritysetup.c:650
 #: src/cryptsetup_reencrypt.c:1680
 msgid "Negative number for option not permitted."
 msgstr ""
@@ -2980,57 +3027,67 @@ msgstr ""
 msgid "Options --device-size and --size cannot be combined."
 msgstr ""
 
-#: src/veritysetup.c:65
+#: src/veritysetup.c:66
 msgid "Invalid salt string specified."
 msgstr ""
 
-#: src/veritysetup.c:96
+#: src/veritysetup.c:97
 #, c-format
 msgid "Cannot create hash image %s for writing."
 msgstr ""
 
-#: src/veritysetup.c:106
+#: src/veritysetup.c:107
 #, c-format
 msgid "Cannot create FEC image %s for writing."
 msgstr ""
 
-#: src/veritysetup.c:176
+#: src/veritysetup.c:179
 msgid "Invalid root hash string specified."
 msgstr ""
 
-#: src/veritysetup.c:356
+#: src/veritysetup.c:187
+#, c-format
+msgid "Invalid signature file %s."
+msgstr ""
+
+#: src/veritysetup.c:194
+#, c-format
+msgid "Cannot read signature file %s."
+msgstr ""
+
+#: src/veritysetup.c:392
 msgid "<data_device> <hash_device>"
 msgstr ""
 
-#: src/veritysetup.c:356 src/integritysetup.c:473
+#: src/veritysetup.c:392 src/integritysetup.c:473
 msgid "format device"
 msgstr ""
 
-#: src/veritysetup.c:357
+#: src/veritysetup.c:393
 msgid "<data_device> <hash_device> <root_hash>"
 msgstr ""
 
-#: src/veritysetup.c:357
+#: src/veritysetup.c:393
 msgid "verify device"
 msgstr ""
 
-#: src/veritysetup.c:358
+#: src/veritysetup.c:394
 msgid "<data_device> <name> <hash_device> <root_hash>"
 msgstr ""
 
-#: src/veritysetup.c:360 src/integritysetup.c:476
+#: src/veritysetup.c:396 src/integritysetup.c:476
 msgid "show active device status"
 msgstr ""
 
-#: src/veritysetup.c:361
+#: src/veritysetup.c:397
 msgid "<hash_device>"
 msgstr ""
 
-#: src/veritysetup.c:361 src/integritysetup.c:477
+#: src/veritysetup.c:397 src/integritysetup.c:477
 msgid "show on-disk information"
 msgstr ""
 
-#: src/veritysetup.c:380
+#: src/veritysetup.c:416
 #, c-format
 msgid ""
 "\n"
@@ -3040,7 +3097,7 @@ msgid ""
 "<root_hash> hash of the root node on <hash_device>\n"
 msgstr ""
 
-#: src/veritysetup.c:387
+#: src/veritysetup.c:423
 #, c-format
 msgid ""
 "\n"
@@ -3049,109 +3106,117 @@ msgid ""
 "Hash format: %u\n"
 msgstr ""
 
-#: src/veritysetup.c:430
+#: src/veritysetup.c:466
 msgid "Do not use verity superblock"
 msgstr ""
 
-#: src/veritysetup.c:431
+#: src/veritysetup.c:467
 msgid "Format type (1 - normal, 0 - original Chrome OS)"
 msgstr ""
 
-#: src/veritysetup.c:431
+#: src/veritysetup.c:467
 msgid "number"
 msgstr ""
 
-#: src/veritysetup.c:432
+#: src/veritysetup.c:468
 msgid "Block size on the data device"
 msgstr ""
 
-#: src/veritysetup.c:433
+#: src/veritysetup.c:469
 msgid "Block size on the hash device"
 msgstr ""
 
-#: src/veritysetup.c:434
+#: src/veritysetup.c:470
 msgid "FEC parity bytes"
 msgstr ""
 
-#: src/veritysetup.c:435
+#: src/veritysetup.c:471
 msgid "The number of blocks in the data file"
 msgstr ""
 
-#: src/veritysetup.c:435
+#: src/veritysetup.c:471
 msgid "blocks"
 msgstr ""
 
-#: src/veritysetup.c:436
+#: src/veritysetup.c:472
 msgid "Path to device with error correction data"
 msgstr ""
 
-#: src/veritysetup.c:436 src/integritysetup.c:544
+#: src/veritysetup.c:472 src/integritysetup.c:543
 msgid "path"
 msgstr ""
 
-#: src/veritysetup.c:437
+#: src/veritysetup.c:473
 msgid "Starting offset on the hash device"
 msgstr ""
 
-#: src/veritysetup.c:438
+#: src/veritysetup.c:474
 msgid "Starting offset on the FEC device"
 msgstr ""
 
-#: src/veritysetup.c:439
+#: src/veritysetup.c:475
 msgid "Hash algorithm"
 msgstr ""
 
-#: src/veritysetup.c:439
+#: src/veritysetup.c:475
 msgid "string"
 msgstr ""
 
-#: src/veritysetup.c:440
+#: src/veritysetup.c:476
 msgid "Salt"
 msgstr ""
 
-#: src/veritysetup.c:440
+#: src/veritysetup.c:476
 msgid "hex string"
 msgstr ""
 
-#: src/veritysetup.c:442
+#: src/veritysetup.c:478
+msgid "Path to root hash signature file"
+msgstr ""
+
+#: src/veritysetup.c:479
 msgid "Restart kernel if corruption is detected"
 msgstr ""
 
-#: src/veritysetup.c:443
+#: src/veritysetup.c:480
 msgid "Ignore corruption, log it only"
 msgstr ""
 
-#: src/veritysetup.c:444
+#: src/veritysetup.c:481
 msgid "Do not verify zeroed blocks"
 msgstr ""
 
-#: src/veritysetup.c:445
+#: src/veritysetup.c:482
 msgid "Verify data block only the first time it is read"
 msgstr ""
 
-#: src/veritysetup.c:545
+#: src/veritysetup.c:582
 msgid ""
 "Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks "
 "is allowed only for open operation.\n"
 msgstr ""
 
-#: src/veritysetup.c:550
+#: src/veritysetup.c:587
+msgid "Option --root-hash-signature can be used only for open operation.\n"
+msgstr ""
+
+#: src/veritysetup.c:592
 msgid ""
 "Option --ignore-corruption and --restart-on-corruption cannot be used "
 "together.\n"
 msgstr ""
 
-#: src/integritysetup.c:84 src/utils_password.c:305
+#: src/integritysetup.c:83 src/utils_password.c:305
 #, c-format
 msgid "Cannot read keyfile %s."
 msgstr ""
 
-#: src/integritysetup.c:88 src/utils_password.c:310
+#: src/integritysetup.c:87 src/utils_password.c:310
 #, c-format
 msgid "Cannot read %d bytes from keyfile %s."
 msgstr ""
 
-#: src/integritysetup.c:254
+#: src/integritysetup.c:253
 #, c-format
 msgid "Formatted with tag size %u, internal integrity %s.\n"
 msgstr ""
@@ -3177,157 +3242,157 @@ msgstr ""
 msgid ""
 "\n"
 "Default compiled-in dm-integrity parameters:\n"
-"\tTag size: %u bytes, Checksum algorithm: %s\n"
+"\tChecksum algorithm: %s\n"
 msgstr ""
 
-#: src/integritysetup.c:544
+#: src/integritysetup.c:543
 msgid "Path to data device (if separated)"
 msgstr ""
 
-#: src/integritysetup.c:546
+#: src/integritysetup.c:545
 msgid "Journal size"
 msgstr ""
 
-#: src/integritysetup.c:547
+#: src/integritysetup.c:546
 msgid "Interleave sectors"
 msgstr ""
 
-#: src/integritysetup.c:548
+#: src/integritysetup.c:547
 msgid "Journal watermark"
 msgstr ""
 
-#: src/integritysetup.c:548
+#: src/integritysetup.c:547
 msgid "percent"
 msgstr ""
 
-#: src/integritysetup.c:549
+#: src/integritysetup.c:548
 msgid "Journal commit time"
 msgstr ""
 
-#: src/integritysetup.c:549 src/integritysetup.c:551
+#: src/integritysetup.c:548 src/integritysetup.c:550
 msgid "ms"
 msgstr ""
 
-#: src/integritysetup.c:550
+#: src/integritysetup.c:549
 msgid "Number of 512-byte sectors per bit (bitmap mode)."
 msgstr ""
 
-#: src/integritysetup.c:551
+#: src/integritysetup.c:550
 msgid "Bitmap mode flush time"
 msgstr ""
 
-#: src/integritysetup.c:552
+#: src/integritysetup.c:551
 msgid "Tag size (per-sector)"
 msgstr ""
 
-#: src/integritysetup.c:553
+#: src/integritysetup.c:552
 msgid "Sector size"
 msgstr ""
 
-#: src/integritysetup.c:554
+#: src/integritysetup.c:553
 msgid "Buffers size"
 msgstr ""
 
-#: src/integritysetup.c:556
+#: src/integritysetup.c:555
 msgid "Data integrity algorithm"
 msgstr ""
 
-#: src/integritysetup.c:557
+#: src/integritysetup.c:556
 msgid "The size of the data integrity key"
 msgstr ""
 
-#: src/integritysetup.c:558
+#: src/integritysetup.c:557
 msgid "Read the integrity key from a file"
 msgstr ""
 
-#: src/integritysetup.c:560
+#: src/integritysetup.c:559
 msgid "Journal integrity algorithm"
 msgstr ""
 
-#: src/integritysetup.c:561
+#: src/integritysetup.c:560
 msgid "The size of the journal integrity key"
 msgstr ""
 
-#: src/integritysetup.c:562
+#: src/integritysetup.c:561
 msgid "Read the journal integrity key from a file"
 msgstr ""
 
-#: src/integritysetup.c:564
+#: src/integritysetup.c:563
 msgid "Journal encryption algorithm"
 msgstr ""
 
-#: src/integritysetup.c:565
+#: src/integritysetup.c:564
 msgid "The size of the journal encryption key"
 msgstr ""
 
-#: src/integritysetup.c:566
+#: src/integritysetup.c:565
 msgid "Read the journal encryption key from a file"
 msgstr ""
 
-#: src/integritysetup.c:569
+#: src/integritysetup.c:568
 msgid "Recovery mode (no journal, no tag checking)"
 msgstr ""
 
-#: src/integritysetup.c:570
+#: src/integritysetup.c:569
 msgid "Use bitmap to track changes and disable journal for integrity device"
 msgstr ""
 
-#: src/integritysetup.c:571
+#: src/integritysetup.c:570
 msgid "Recalculate initial tags automatically."
 msgstr ""
 
-#: src/integritysetup.c:645
+#: src/integritysetup.c:641
 msgid "Option --integrity-recalculate can be used only for open action."
 msgstr ""
 
-#: src/integritysetup.c:660
+#: src/integritysetup.c:656
 msgid ""
 "Options --journal-size, --interleave-sectors, --sector-size, --tag-size and "
 "--no-wipe can be used only for format action.\n"
 msgstr ""
 
-#: src/integritysetup.c:666
+#: src/integritysetup.c:662
 msgid "Invalid journal size specification."
 msgstr ""
 
-#: src/integritysetup.c:671
+#: src/integritysetup.c:667
 msgid "Both key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:674
+#: src/integritysetup.c:670
 msgid "Integrity algorithm must be specified if integrity key is used."
 msgstr ""
 
-#: src/integritysetup.c:679
+#: src/integritysetup.c:675
 msgid "Both journal integrity key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:682
+#: src/integritysetup.c:678
 msgid ""
 "Journal integrity algorithm must be specified if journal integrity key is "
 "used."
 msgstr ""
 
-#: src/integritysetup.c:687
+#: src/integritysetup.c:683
 msgid ""
 "Both journal encryption key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:690
+#: src/integritysetup.c:686
 msgid ""
 "Journal encryption algorithm must be specified if journal encryption key is "
 "used."
 msgstr ""
 
-#: src/integritysetup.c:694
+#: src/integritysetup.c:690
 msgid "Recovery and bitmap mode options are mutually exclusive."
 msgstr ""
 
-#: src/integritysetup.c:698
+#: src/integritysetup.c:694
 msgid "Journal options cannot be used in bitmap mode."
 msgstr ""
 
-#: src/integritysetup.c:702
+#: src/integritysetup.c:698
 msgid "Bitmap options can be used only in bitmap mode."
 msgstr ""
 

@@ -284,7 +284,7 @@ int LUKS_hdr_restore(
 		buffer_size = LUKS_device_sectors(&hdr_file) << SECTOR_SHIFT;
 
 	if (r || buffer_size < LUKS_ALIGN_KEYSLOTS) {
-		log_err(ctx, _("Backup file doesn't contain valid LUKS header."));
+		log_err(ctx, _("Backup file does not contain valid LUKS header."));
 		r = -EINVAL;
 		goto out;
 	}

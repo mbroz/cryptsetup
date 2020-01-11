@@ -65,8 +65,8 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_INTEGRITY_BITMAP_SUPPORTED (1 << 17) /* dm-integrity bitmap mode supported */
 #define DM_GET_TARGET_VERSION_SUPPORTED (1 << 18) /* dm DM_GET_TARGET version ioctl supported */
 #define DM_INTEGRITY_FIX_PADDING_SUPPORTED (1 << 19) /* supports the parameter fix_padding that fixes a bug that caused excessive padding */
-#define DM_BITLK_EBOIV_SUPPORTED (1 << 20) /* EBOIV for BitLocker supported */
-#define DM_BITLK_ELEPHANT_SUPPORTED (1 << 21) /* Elephant diffuser for BitLocker supported */
+#define DM_BITLK_EBOIV_SUPPORTED (1 << 20) /* EBOIV for BITLK supported */
+#define DM_BITLK_ELEPHANT_SUPPORTED (1 << 21) /* Elephant diffuser for BITLK supported */
 #define DM_VERITY_SIGNATURE_SUPPORTED (1 << 22) /* Verity option root_hash_sig_key_desc supported */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;

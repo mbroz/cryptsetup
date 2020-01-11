@@ -72,7 +72,7 @@ int crypt_benchmark(struct crypt_device *cd,
 	if (r == -ERANGE)
 		log_dbg(cd, "Measured cipher runtime is too low.");
 	else if (r == -ENOTSUP || r == -ENOENT)
-		log_dbg(cd, "Cannot initialise cipher %s, mode %s.", cipher, cipher_mode);
+		log_dbg(cd, "Cannot initialize cipher %s, mode %s.", cipher, cipher_mode);
 
 out:
 	free(buffer);

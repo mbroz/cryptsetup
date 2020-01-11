@@ -772,7 +772,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 
 	if (isLUKS1(requested_type) || version == 1) {
 		if (cd->type && isLUKS2(cd->type)) {
-			log_dbg(cd, "Context is already initialised to type %s", cd->type);
+			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
 
@@ -812,7 +812,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 		memcpy(&cd->u.luks1.hdr, &hdr, sizeof(hdr));
 	} else if (isLUKS2(requested_type) || version == 2 || version == 0) {
 		if (cd->type && isLUKS1(cd->type)) {
-			log_dbg(cd, "Context is already initialised to type %s", cd->type);
+			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
 
@@ -1021,32 +1021,32 @@ int crypt_load(struct crypt_device *cd,
 
 	if (!requested_type || isLUKS1(requested_type) || isLUKS2(requested_type)) {
 		if (cd->type && !isLUKS1(cd->type) && !isLUKS2(cd->type)) {
-			log_dbg(cd, "Context is already initialised to type %s", cd->type);
+			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
 
 		r = _crypt_load_luks(cd, requested_type, 1, 0);
 	} else if (isVERITY(requested_type)) {
 		if (cd->type && !isVERITY(cd->type)) {
-			log_dbg(cd, "Context is already initialised to type %s", cd->type);
+			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
 		r = _crypt_load_verity(cd, params);
 	} else if (isTCRYPT(requested_type)) {
 		if (cd->type && !isTCRYPT(cd->type)) {
-			log_dbg(cd, "Context is already initialised to type %s", cd->type);
+			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
 		r = _crypt_load_tcrypt(cd, params);
 	} else if (isINTEGRITY(requested_type)) {
 		if (cd->type && !isINTEGRITY(cd->type)) {
-			log_dbg(cd, "Context is already initialised to type %s", cd->type);
+			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
 		r = _crypt_load_integrity(cd, params);
 	} else if (isBITLK(requested_type)) {
 		if (cd->type && !isBITLK(cd->type)) {
-			log_dbg(cd, "Context is already initialised to type %s", cd->type);
+			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
 		r = _crypt_load_bitlk(cd, params);
@@ -1478,7 +1478,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			goto out;
 	}
 
-	/* Try to initialise basic parameters from active device */
+	/* Try to initialize basic parameters from active device */
 
 	if (tgt->type == DM_CRYPT || tgt->type == DM_LINEAR)
 		r = _init_by_name_crypt(*cd, name);
@@ -2764,7 +2764,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	 *	  explicit size stored in metadata (length != "dynamic")
 	 */
 
-	/* Device context type must be initialised */
+	/* Device context type must be initialized */
 	if (!cd || !cd->type || !name)
 		return -EINVAL;
 
@@ -4122,7 +4122,7 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 				   &cd->u.bitlk.params, flags);
 		keyslot = 0;
 	} else {
-		log_err(cd, _("Device type is not properly initialised."));
+		log_err(cd, _("Device type is not properly initialized."));
 		r = -EINVAL;
 	}
 out:
@@ -4374,7 +4374,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 				       cd->u.integrity.journal_mac_key, flags,
 				       cd->u.integrity.sb_flags);
 	} else {
-		log_err(cd, _("Device type is not properly initialised."));
+		log_err(cd, _("Device type is not properly initialized."));
 		r = -EINVAL;
 	}
 
@@ -4416,7 +4416,7 @@ int crypt_activate_by_signed_key(struct crypt_device *cd,
 		return r;
 
 	if (signature && !kernel_keyring_support()) {
-		log_err(cd, _("Kernel keyring missing: required for passing signature to kernel"));
+		log_err(cd, _("Kernel keyring missing: required for passing signature to kernel."));
 		return -EINVAL;
 	}
 
@@ -4430,7 +4430,7 @@ int crypt_activate_by_signed_key(struct crypt_device *cd,
 		if (r < 0)
 			return -EINVAL;
 
-		log_dbg(cd, _("Adding signature into keyring %s"), description);
+		log_dbg(cd, "Adding signature into keyring %s", description);
 		r = keyring_add_key_in_thread_keyring(USER_KEY, description, signature, signature_size);
 		if (r) {
 			log_err(cd, _("Failed to load key in kernel keyring."));
@@ -5837,7 +5837,7 @@ int crypt_keyslot_add_by_key(struct crypt_device *cd,
 
 	r = LUKS2_keyslot_params_default(cd, &cd->u.luks2.hdr, &params);
 	if (r < 0) {
-		log_err(cd, _("Failed to initialise default LUKS2 keyslot parameters."));
+		log_err(cd, _("Failed to initialize default LUKS2 keyslot parameters."));
 		goto out;
 	}
 
@@ -5869,7 +5869,7 @@ int crypt_use_keyring_for_vk(struct crypt_device *cd)
 {
 	uint32_t dmc_flags;
 
-	/* dm backend must be initialised */
+	/* dm backend must be initialized */
 	if (!cd || !isLUKS2(cd->type))
 		return 0;
 

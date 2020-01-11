@@ -242,7 +242,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 
 	if (r < 0 && !dm_flags(cd, DM_CRYPT, &dmc_flags) &&
 	    (dmc_flags & req_flags) != req_flags) {
-		log_err(cd, _("Kernel doesn't support loop-AES compatible mapping."));
+		log_err(cd, _("Kernel does not support loop-AES compatible mapping."));
 		r = -ENOTSUP;
 	}
 

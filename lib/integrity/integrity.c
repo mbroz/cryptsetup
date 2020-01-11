@@ -265,13 +265,13 @@ int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 
 	r = dm_create_device(cd, name, type, dmd);
 	if (r < 0 && (dm_flags(cd, DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
-		log_err(cd, _("Kernel doesn't support dm-integrity mapping."));
+		log_err(cd, _("Kernel does not support dm-integrity mapping."));
 		return -ENOTSUP;
 	}
 
 	if (r < 0 && (sb_flags & SB_FLAG_FIXED_PADDING) && !dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
 	    !(dmi_flags & DM_INTEGRITY_FIX_PADDING_SUPPORTED)) {
-		log_err(cd, _("Kernel doesn't support dm-integrity fixed metadata alignment."));
+		log_err(cd, _("Kernel does not support dm-integrity fixed metadata alignment."));
 		return -ENOTSUP;
 	}
 
@@ -336,7 +336,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 
 	r = device_block_adjust(cd, tgt->data_device, DEV_EXCL, tgt->u.integrity.offset, NULL, NULL);
 	if (r < 0 && (dm_flags(cd, DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
-		log_err(cd, _("Kernel doesn't support dm-integrity mapping."));
+		log_err(cd, _("Kernel does not support dm-integrity mapping."));
 		r = -ENOTSUP;
 	}
 	if (r) {

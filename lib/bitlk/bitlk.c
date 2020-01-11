@@ -228,7 +228,7 @@ static int convert_to_utf8(struct crypt_device *cd, uint8_t *input, size_t inlen
 		*out = strdup(outbuf);
 	else {
 		*out = NULL;
-		log_dbg(cd, "Failed to covert volume description: %s", strerror(errno));
+		log_dbg(cd, "Failed to convert volume description: %s", strerror(errno));
 		r = 0;
 	}
 
@@ -264,7 +264,7 @@ static int passphrase_to_utf16(struct crypt_device *cd, char *input, size_t inle
 	} else {
 		*out = NULL;
 		free(outbuf);
-		log_dbg(cd, "Failed to covert passphrase: %s", strerror(errno));
+		log_dbg(cd, "Failed to convert passphrase: %s", strerror(errno));
 		r = -errno;
 	}
 
@@ -302,7 +302,7 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 
 		if (key_entry_type != BITLK_ENTRY_TYPE_PROPERTY) {
 			if (supported) {
-				log_err(cd, _("Unexpected metadata entry type '%u' found when parsing supported VMK."), key_entry_type);
+				log_err(cd, _("Unexpected metadata entry type '%u' found when parsing supported Volume Master Key."), key_entry_type);
 				return -EINVAL;
 			} else {
 				log_dbg(cd, "Unexpected metadata entry type '%u' found when parsing unsupported VMK.", key_entry_type);
@@ -349,12 +349,12 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 			;
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_STRING) {
 			if (convert_to_utf8(cd, data + start + BITLK_ENTRY_HEADER_LEN, key_entry_size - BITLK_ENTRY_HEADER_LEN, &string) < 0) {
-				log_err(cd, _("Invalid string found when parsing VMK."));
+				log_err(cd, _("Invalid string found when parsing Volume Master Key."));
 				free(string);
 				return -EINVAL;
 			} else if ((*vmk)->name != NULL) {
 				if (supported) {
-					log_err(cd, _("Unexpected string ('%s') found when parsing supported VMK."), string);
+					log_err(cd, _("Unexpected string ('%s') found when parsing supported Volume Master Key."), string);
 					free(string);
 					return -EINVAL;
 				}
@@ -368,7 +368,7 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 			}
 		} else {
 			if (supported) {
-				log_err(cd, _("Unexpected metadata entry value '%u' found when parsing supported VMK."), key_entry_value);
+				log_err(cd, _("Unexpected metadata entry value '%u' found when parsing supported Volume Master Key."), key_entry_value);
 				return -EINVAL;
 			} else {
 				log_dbg(cd, "Unexpected metadata entry value '%u' found when parsing unsupported VMK.", key_entry_value);
@@ -445,22 +445,22 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		goto out;
 	}
 
-	/* read and check the BitLocker signature */
+	/* read and check the signature */
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), &sig, sizeof(sig), 0) != sizeof(sig)) {
-		log_err(cd, _("Failed to read BitLocker signature from %s."), device_path(device));
+		log_err(cd, _("Failed to read BITLK signature from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (memcmp(sig.boot_code, BITLK_BOOTCODE_V1, sizeof(sig.boot_code)) == 0) {
-		log_err(cd, _("BitLocker version from Windows Vista is currently not supported."));
+		log_err(cd, _("BITLK version 1 is currently not supported."));
 		r = -ENOTSUP;
 		goto out;
 	} else if (memcmp(sig.boot_code, BITLK_BOOTCODE_V2, sizeof(sig.boot_code)) == 0)
 		;
 	else {
-		log_std(cd, _("Invalid or unknown boot signature for a BitLocker device."));
+		log_err(cd, _("Invalid or unknown boot signature for BITLK device."));
 		r = -EINVAL;
 		goto out;
 	}
@@ -472,7 +472,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		params->togo = true;
 		fve_offset = BITLK_HEADER_METADATA_OFFSET_TOGO;
 	} else {
-		log_std(cd, _("Invalid or unknown signature for a BitLocker device."));
+		log_err(cd, _("Invalid or unknown signature for BITLK device."));
 		r = -EINVAL;
 		goto out;
 	}
@@ -480,7 +480,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	/* read GUID and FVE metadata offsets */
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), &sb, sizeof(sb), fve_offset) != sizeof(sb)) {
-		log_err(cd, _("Failed to read BitLocker header from %s."), device_path(device));
+		log_err(cd, _("Failed to read BITLK header from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
@@ -488,7 +488,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	for (i = 0; i < 3; i++)
 		params->metadata_offset[i] = le64_to_cpu(sb.fve_offset[i]);
 
-	log_dbg(cd, "Reading BitLocker FVE metadata of size %zu on device %s, offset %" PRIu64 ".",
+	log_dbg(cd, "Reading BITLK FVE metadata of size %zu on device %s, offset %" PRIu64 ".",
 		sizeof(fve), device_path(device), params->metadata_offset[0]);
 
 	/* read FVE metadata from the first metadata area */
@@ -496,7 +496,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		device_alignment(device), &fve, sizeof(fve), params->metadata_offset[0]) != sizeof(fve) ||
 		memcmp(fve.signature, BITLK_SIGNATURE, sizeof(fve.signature)) ||
 		le16_to_cpu(fve.fve_version) != 2) {
-		log_err(cd, _("Failed to read BitLocker FVE metadata from %s."), device_path(device));
+		log_err(cd, _("Failed to read BITLK FVE metadata from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
@@ -540,7 +540,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		params->cipher_mode = "xts-plain64";
 		break;
 	default:
-		log_err(cd, _("Unknown or unsupported encryption."));
+		log_err(cd, _("Unknown or unsupported encryption type."));
 		params->key_size = 0;
 		params->cipher = NULL;
 		params->cipher_mode = NULL;
@@ -548,7 +548,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		goto out;
 	};
 
-	/* BitLocker device GUID */
+	/* device GUID */
 	guid_to_string(&fve.guid, guid_buf);
 	params->guid = strdup(guid_buf);
 	if (!params->guid) {
@@ -566,14 +566,14 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	}
 	memset(fve_entries, 0, (fve_metadata_size - fve_size));
 
-	log_dbg(cd, "Reading BitLocker FVE metadata entries of size %" PRIu32 " on device %s, offset %" PRIu64 ".",
+	log_dbg(cd, "Reading BITLK FVE metadata entries of size %" PRIu32 " on device %s, offset %" PRIu64 ".",
 		fve_metadata_size - fve_size, device_path(device),
 		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADER_LEN);
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), fve_entries, fve_metadata_size - fve_size,
 		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADER_LEN) != fve_metadata_size - fve_size) {
-		log_err(cd, _("Failed to read BitLocker metadata entries from %s."), device_path(device));
+		log_err(cd, _("Failed to read BITLK metadata entries from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
@@ -996,7 +996,7 @@ int BITLK_activate(struct crypt_device *cd,
 	while (next_vmk) {
 		if (next_vmk->protection == BITLK_PROTECTION_CLEAR_KEY) {
 			crypt_free_volume_key(open_fvek_key);
-			log_err(cd, _("Activation of partially decrypted BitLocker device is not supported."));
+			log_err(cd, _("Activation of partially decrypted BITLK device is not supported."));
 			return -ENOTSUP;
 		}
 		next_vmk = next_vmk->next;
@@ -1129,11 +1129,11 @@ int BITLK_activate(struct crypt_device *cd,
 	if (r < 0) {
 		dm_flags(cd, DM_CRYPT, &dmt_flags);
 		if (!strcmp(params->cipher_mode, "cbc-eboiv") && !(dmt_flags & DM_BITLK_EBOIV_SUPPORTED)) {
-			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for BitLocker IV."));
+			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for BITLK IV."));
 			r = -ENOTSUP;
 		}
 		if (!strcmp(params->cipher_mode, "cbc-elephant") && !(dmt_flags & DM_BITLK_ELEPHANT_SUPPORTED)) {
-			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for BitLocker Elephant diffuser."));
+			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for BITLK Elephant diffuser."));
 			r = -ENOTSUP;
 		}
 	}

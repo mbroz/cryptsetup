@@ -747,7 +747,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	}
 
 	if (strstr(params->mode, "-tcrypt")) {
-		log_err(cd, _("Kernel doesn't support activation for this TCRYPT legacy mode."));
+		log_err(cd, _("Kernel does not support activation for this TCRYPT legacy mode."));
 		return -ENOTSUP;
 	}
 
@@ -859,7 +859,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 
 	if (r < 0 &&
 	    (dm_flags(cd, DM_CRYPT, &dmc_flags) || ((dmc_flags & req_flags) != req_flags))) {
-		log_err(cd, _("Kernel doesn't support TCRYPT compatible mapping."));
+		log_err(cd, _("Kernel does not support TCRYPT compatible mapping."));
 		r = -ENOTSUP;
 	}
 
