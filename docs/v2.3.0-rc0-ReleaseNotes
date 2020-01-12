@@ -1,0 +1,206 @@
+Cryptsetup 2.3.0-RC0 Release Notes
+==================================
+Testing release with new and experimental features and bug fixes.
+
+Cryptsetup 2.3 version introduces support for BitLocker-compatible
+devices (BITLK format). This format is used in Windows systems,
+and in combination with a filesystem driver, cryptsetup now provides
+native read-write access BitLocker Full Disk Encryption devices.
+
+The BITLK implementation is based on publicly available information
+and is an independent and opensource implementation of this proprietary
+format.
+
+Changes since version 2.2.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* BITLK (Windows BitLocker compatible) device access
+
+  BITLK userspace implementation is based on the master thesis and code
+  provided by Vojtech Trefny. Also, thanks to other opensource projects
+  like libbde that provide alternative approaches we used for comparison
+  of cryptsetup implementation.
+
+  NOTE: Support for the BITLK device is EXPERIMENTAL and will require
+  a lot of testing. If you get some error message (mainly unsupported
+  metadata in the on-disk header), please help us by submitting an issue
+  to cryptsetup project, so we can fix it. Thank you!
+
+  Cryptsetup supports BITLK activation through passphrase or recovery
+  passphrase for existing devices (BitLocker and Bitlocker to Go).
+
+  Activation through TPM, SmartCard, or any other key protector
+  is not supported. And in some situations, mainly for TPM bind to some
+  PCR registers, it could be even impossible on Linux in the future.
+
+  All metadata (key protectors) are handled read-only, cryptsetup cannot
+  create or modify them. Except for old devices (created in old Vista
+  systems), all format variants should be recognized.
+
+  Data devices can be activated read-write (followed by mounting through
+  the proper filesystem driver).
+
+  Activation is supported for AES-XTS encryption on all recent Linux kernels.
+
+  For older AES-CBC encryption, Linux Kernel version 5.3 is required
+  (support for special IV variant); for AES-CBC with Elephant diffuser Linux,
+  Kernel 5.6 will be required (patch for dm-crypt is already available).
+
+  Please note that CBC variants are legacy, and we provide it only
+  for backward compatibility (to be able to access old drives).
+
+  Cryptsetup command now supports the new "bitlk" format and implement dump,
+  open, status, and close actions.
+
+  To activate a BITLK device, use
+
+    # cryptsetup open --type bitlk <device> <name>
+      or with alias
+    # cryptsetup bitlkOpen <device> <name>
+
+  Then with properly installed fs driver (usually NTFS, vfat or exFAT),
+  you can mount the plaintext device /dev/mapper<name> device as a common
+  filesystem.
+
+ To print metadata information about BITLK device, use
+   # crypotsetup bitlkDump <device>
+
+ To print information about the active device, use
+   # cryptsetup status <name>
+
+ Example (activation of disk image):
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # Recent blkid recognizes BitLocker device,just to verity
+  # blkid bitlocker_xts_ntfs.img
+    bitlocker_xts_ntfs.img: TYPE="BitLocker"
+
+  # Print visible metadata information (on-disk, form the image)
+  # cryptsetup bitlkDump bitlocker_xts_ntfs.img
+    Info for BITLK device bitlocker_xts_ntfs.img.
+    Version:        2
+    GUID:           ...
+    Created:        Wed Oct 23 17:38:15 2019
+    Description:    DESKTOP-xxxxxxx E: 23.10.2019
+    Cipher name:    aes
+    Cipher mode:    xts-plain64
+    Cipher key:     128 bits
+
+    Keyslots:
+     0: VMK
+            GUID:           ...
+            Protection:     VMK protected with passphrase
+            Salt:           ...
+            Key data size:  44 [bytes]
+     1: VMK
+            GUID:           ...
+            Protection:     VMK protected with recovery passphrase
+            Salt:           ...
+            Key data size:  44 [bytes]
+     2: FVEK
+           Key data size:  44 [bytes]
+
+  # Activation (recovery passphrase works the same as password)
+  # cryptsetup bitlkOpen bitlocker_xts_ntfs.img test -v
+    Enter passphrase for bitlocker_xts_ntfs.img:
+    Command successful.
+
+  # Information about the active device
+  # cryptsetup status test
+    /dev/mapper/test is active.
+    type:    BITLK
+    cipher:  aes-xts-plain64
+    keysize: 128 bits
+    ...
+
+  # Plaintext device should now contain decrypted NTFS filesystem
+  # blkid /dev/mapper/test
+    /dev/mapper/test: UUID="..." TYPE="ntfs"
+
+  # And can be mounted
+  # mount /dev/mapper/test /mnt/tst
+
+  # Deactivation
+  # umount /mnt/tst
+  # cryptsetup close test
+
+* Veritysetup now supports activation with additional PKCS7 signature
+  of root hash through --root-hash-signature option.
+  The signature uses an in-kernel trusted key to validate the signature
+  of the root hash during activation. This option requires Linux kernel
+  5.4 with DM_VERITY_VERIFY_ROOTHASH_SIG option.
+
+  Verity devices activated with signature now has a special flag
+  (with signature) active in device status (veritysetup status <name>).
+
+  Usage:
+  # veritysetup open <data_device> name <hash_device> <root_hash> \
+    --root-hash-signature=<roothash_p7_sig_file>
+
+* Integritysetup now calculates hash integrity size according to algorithm
+  instead of requiring an explicit tag size.
+
+  Previously, when integritysetup formats a device with hash or
+  HMAC integrity checksums, it required explicitly tag size entry from
+  a user (or used default value).
+  This led to confusion and unexpected shortened tag sizes.
+
+  Now, libcryptsetup calculates tag size according to real hash output.
+  Tag size can also be specified, then it warns if these values differ.
+
+* Integritysetup now supports fixed padding for dm-integrity devices.
+
+  There was an in-kernel bug that wasted a lot of space when using metadata
+  areas for integrity-protected devices if a larger sector size than
+  512 bytes was used.
+  This problem affects both stand-alone dm-integrity and also LUKS2 with
+  authenticated encryption and larger sector size.
+
+  The new extension to dm-integrity superblock is needed, so devices
+  with the new optimal padding cannot be activated on older systems.
+
+  Integritysetup/Cryptsetup will use new padding automatically if it
+  detects the proper kernel. To create a compatible device with
+  the old padding, use --integrity-legacy-padding option.
+
+* A lot of fixes to online LUKS2 reecryption.
+
+* Add crypt_resume_by_volume_key() function to libcryptsetup.
+  If a user has a volume key available, the LUKS device can be resumed
+  directly using the provided volume key.
+  No keyslot derivation is needed, only the key digest is checked.
+
+* Implement active device suspend info.
+  Add CRYPT_ACTIVATE_SUSPENDED bit to crypt_get_active_device() flags
+  that informs the caller that device is suspended (luksSuspend).
+
+* Allow --test-passphrase for a detached header.
+  Before this fix, we required a data device specified on the command
+  line even though it was not necessary for the passphrase check.
+
+* Allow --key-file option in legacy offline encryption.
+  The option was ignored for LUKS1 encryption initialization.
+
+* Export memory safe functions.
+  To make developing of some extensions simpler, we now export
+  functions to handle memory with proper wipe on deallocation.
+
+Libcryptsetup API extensions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+THe libcryptsetup is backward compatible for other symbols.
+
+New symbols
+ crypt_set_compatibility
+ crypt_get_compatibility;
+ crypt_resume_by_volume_key;
+ crypt_activate_by_signed_key;
+ crypt_safe_alloc;
+ crypt_safe_realloc;
+ crypt_safe_free;
+ crypt_safe_memzero;
+
+New defines introduced :
+  CRYPT_BITLK "BITLK" - BITLK (BitLocker-compatible mode
+  CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING - dm-integrity legacy padding
+  CRYPT_VERITY_ROOT_HASH_SIGNATURE - dm-verity root hash signature
+  CRYPT_ACTIVATE_SUSPENDED - device suspended info flag
