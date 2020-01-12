@@ -1122,7 +1122,7 @@ int BITLK_activate(struct crypt_device *cd,
 		next_segment = next_segment->next;
 	}
 
-	log_dbg(cd, "Trying to activate BITLK on device %s%s%s.\n",
+	log_dbg(cd, "Trying to activate BITLK on device %s%s%s.",
 		device_path(crypt_data_device(cd)), name ? " with name " :"", name ?: "");
 
 	r = dm_create_device(cd, name, CRYPT_BITLK, &dmd);
