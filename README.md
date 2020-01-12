@@ -5,8 +5,8 @@ What the ...?
 **Cryptsetup** is a utility used to conveniently set up disk encryption based
 on the [DMCrypt](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt) kernel module.
 
-These include **plain** **dm-crypt** volumes, **LUKS** volumes, **loop-AES**
-and **TrueCrypt** (including **VeraCrypt** extension) formats.
+These include **plain** **dm-crypt** volumes, **LUKS** volumes, **loop-AES**,
+**TrueCrypt** (including **VeraCrypt** extension) and BitLocker formats.
 
 The project also includes a **veritysetup** utility used to conveniently setup
 [DMVerity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity) block integrity checking kernel module
@@ -44,7 +44,13 @@ Download
 --------
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
 
-**The latest cryptsetup version is 2.2.2**
+**The latest testing cryptsetup version is 2.3.0-rc0**
+  * [cryptsetup-2.3.0-rc0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/cryptsetup-2.3.0-rc0.tar.xz)
+  * Signature [cryptsetup-2.3.0-rc0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/cryptsetup-2.3.0-rc0.tar.sign)
+    _(You need to decompress file first to check signature.)_
+  * [Cryptsetup 2.3.0-rc0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/v2.3.0-rc0-ReleaseNotes).
+
+**The latest stable cryptsetup version is 2.2.2**
   * [cryptsetup-2.2.2.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.2.tar.xz)
   * Signature [cryptsetup-2.2.2.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.2.tar.sign)
     _(You need to decompress file first to check signature.)_
