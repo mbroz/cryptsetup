@@ -1003,7 +1003,7 @@ int BITLK_activate(struct crypt_device *cd,
 	}
 
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
-				crypt_get_data_offset(cd), &dmd.size, &dmd.flags);
+				0, &dmd.size, &dmd.flags);
 	if (r) {
 		crypt_free_volume_key(open_fvek_key);
 		return r;
