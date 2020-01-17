@@ -5266,6 +5266,9 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 	if (isTCRYPT(cd->type))
 		return TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
+	if (isBITLK(cd->type))
+		return cd->u.bitlk.params.volume_header_size / SECTOR_SIZE;
+
 	return cd->data_offset;
 }
 
