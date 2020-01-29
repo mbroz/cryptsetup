@@ -36,6 +36,8 @@ struct device;
 
 #define BITLK_VMK_OPEN_KEY "openkey"
 
+#define BITLK_STATE_NORMAL 0x0004
+
 typedef enum {
 	BITLK_PROTECTION_CLEAR_KEY = 0,
 	BITLK_PROTECTION_TPM,
@@ -90,6 +92,7 @@ struct bitlk_fvek {
 
 struct bitlk_metadata {
 	bool togo;
+	bool state;
 	const char *cipher;
 	const char *cipher_mode;
 	uint16_t key_size;

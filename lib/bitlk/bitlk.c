@@ -118,7 +118,8 @@ struct bitlk_fve_metadata {
 	uint8_t signature[8];
 	uint16_t fve_size;
 	uint16_t fve_version;
-	uint32_t unknown;
+	uint16_t curr_state;
+	uint16_t next_state;
 	uint64_t volume_size;
 	uint32_t unknown2;
 	uint32_t volume_header_size;
@@ -506,6 +507,14 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		log_err(cd, _("Failed to read BITLK FVE metadata from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
+	}
+
+	/* check encryption state for the device */
+	params->state = true;
+	if (le16_to_cpu(fve.curr_state) != BITLK_STATE_NORMAL || le16_to_cpu(fve.next_state) != BITLK_STATE_NORMAL) {
+		params->state = false;
+		log_dbg(cd, "Unknown/unsupported state detected. Current state: %"PRIu16", next state: %"PRIu16".",
+			le16_to_cpu(fve.curr_state), le16_to_cpu(fve.next_state));
 	}
 
 	params->metadata_version = le16_to_cpu(fve.fve_version);
@@ -924,6 +933,12 @@ int BITLK_activate(struct crypt_device *cd,
 	uint64_t next_end = 0;
 	uint64_t last_segment = 0;
 	uint32_t dmt_flags;
+
+	if (!params->state) {
+		log_err(cd, _("This BITLK device is in an unsupported state and can't be activated."));
+		r = -ENOTSUP;
+		goto out;
+	}
 
 	next_vmk = params->vmks;
 	while (next_vmk) {
