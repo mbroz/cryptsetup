@@ -70,6 +70,12 @@
 #define UUID_STR_LEN	37
 #endif
 
+/* known types of GUIDs from the BITLK superblock */
+const uint8_t BITLK_GUID_NORMAL[16] = { 0x3b, 0xd6, 0x67, 0x49, 0x29, 0x2e, 0xd8, 0x4a,
+					0x83, 0x99, 0xf6, 0xa3, 0x39, 0xe3, 0xd0, 0x01 };
+const uint8_t BITLK_GUID_EOW[16] = { 0x3b, 0x4d, 0xa8, 0x92, 0x80, 0xdd, 0x0e, 0x4d,
+				     0x9e, 0x4e, 0xb1, 0xe3, 0x28, 0x4e, 0xae, 0xd8 };
+
 /* taken from libfdisk gpt.c -- TODO: this is a good candidate for adding to libuuid */
 struct bitlk_guid {
 	uint32_t   time_low;
@@ -197,6 +203,19 @@ static const char* get_vmk_protection_string(BITLKVMKProtection protection)
 		return "VMK protected with smart card";
 	default:
 		return "VMK with unknown protection";
+	}
+}
+
+static const char* get_bitlk_type_string(BITLKEncryptionType type)
+{
+	switch (type)
+	{
+	case BITLK_ENCRYPTION_TYPE_NORMAL:
+		return "normal";
+	case BITLK_ENCRYPTION_TYPE_EOW:
+		return "encrypt-on-write";
+	default:
+		return "unknown";
 	}
 }
 
@@ -492,6 +511,15 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		r = -EINVAL;
 		goto out;
 	}
+
+	/* get encryption "type" based on the GUID from BITLK superblock */
+	if (memcmp(&sb.guid, BITLK_GUID_NORMAL, 16) == 0)
+		params->type = BITLK_ENCRYPTION_TYPE_NORMAL;
+	else if (memcmp(&sb.guid, BITLK_GUID_EOW, 16) == 0)
+		params->type = BITLK_ENCRYPTION_TYPE_EOW;
+	else
+		params->type = BITLK_ENCRYPTION_TYPE_UNKNOWN;
+	log_dbg(cd, "BITLK type from GUID: %s.", get_bitlk_type_string(params->type));
 
 	for (i = 0; i < 3; i++)
 		params->metadata_offset[i] = le64_to_cpu(sb.fve_offset[i]);
@@ -935,7 +963,13 @@ int BITLK_activate(struct crypt_device *cd,
 	uint32_t dmt_flags;
 
 	if (!params->state) {
-		log_err(cd, _("This BITLK device is in an unsupported state and can't be activated."));
+		log_err(cd, _("This BITLK device is in an unsupported state and cannot be activated."));
+		r = -ENOTSUP;
+		goto out;
+	}
+
+	if (params->type != BITLK_ENCRYPTION_TYPE_NORMAL) {
+		log_err(cd, _("BITLK devices with type '%s' cannot be activated."), get_bitlk_type_string(params->type));
 		r = -ENOTSUP;
 		goto out;
 	}

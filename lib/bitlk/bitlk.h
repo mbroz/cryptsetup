@@ -39,6 +39,12 @@ struct device;
 #define BITLK_STATE_NORMAL 0x0004
 
 typedef enum {
+	BITLK_ENCRYPTION_TYPE_NORMAL = 0,
+	BITLK_ENCRYPTION_TYPE_EOW,
+	BITLK_ENCRYPTION_TYPE_UNKNOWN,
+} BITLKEncryptionType;
+
+typedef enum {
 	BITLK_PROTECTION_CLEAR_KEY = 0,
 	BITLK_PROTECTION_TPM,
 	BITLK_PROTECTION_STARTUP_KEY,
@@ -93,6 +99,7 @@ struct bitlk_fvek {
 struct bitlk_metadata {
 	bool togo;
 	bool state;
+	BITLKEncryptionType type;
 	const char *cipher;
 	const char *cipher_mode;
 	uint16_t key_size;
