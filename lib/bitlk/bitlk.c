@@ -38,8 +38,14 @@
 #define BITLK_HEADER_METADATA_OFFSET 160
 #define BITLK_HEADER_METADATA_OFFSET_TOGO 424
 
-#define BITLK_FVE_METADATA_HEADER_LEN 64 + 48
+/* FVE metadata header is split into two parts */
+#define BITLK_FVE_METADATA_BLOCK_HEADER_LEN 64
+#define BITLK_FVE_METADATA_HEADER_LEN 48
+#define BITLK_FVE_METADATA_HEADERS_LEN BITLK_FVE_METADATA_BLOCK_HEADER_LEN + BITLK_FVE_METADATA_HEADER_LEN
+
+/* total size of the FVE area (64 KiB) */
 #define BITLK_FVE_METADATA_SIZE 64 * 1024
+
 #define BITLK_ENTRY_HEADER_LEN 8
 #define BITLK_VMK_HEADER_LEN 28
 
@@ -108,6 +114,7 @@ struct bitlk_superblock {
 } __attribute__ ((packed));
 
 struct bitlk_fve_metadata {
+	/* FVE metadata block header */
 	uint8_t signature[8];
 	uint16_t fve_size;
 	uint16_t fve_version;
@@ -117,6 +124,7 @@ struct bitlk_fve_metadata {
 	uint32_t volume_header_size;
 	uint64_t fve_offset[3];
 	uint64_t volume_header_offset;
+	/* FVE metadata header */
 	uint32_t metadata_size;
 	uint32_t metadata_version;
 	uint32_t metadata_header_size;
@@ -423,7 +431,6 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	struct bitlk_fve_metadata fve = {};
 	struct bitlk_entry_vmk entry_vmk = {};
 	uint8_t *fve_entries = NULL;
-	uint16_t fve_size = 0;
 	uint32_t fve_metadata_size = 0;
 	int fve_offset = 0;
 	char guid_buf[UUID_STR_LEN] = {0};
@@ -502,7 +509,6 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	}
 
 	params->metadata_version = le16_to_cpu(fve.fve_version);
-	fve_size = le16_to_cpu(fve.fve_size);
 	fve_metadata_size = le32_to_cpu(fve.metadata_size);
 
 	switch (le16_to_cpu(fve.encryption)) {
@@ -559,26 +565,26 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	params->creation_time = filetime_to_unixtime(le64_to_cpu(fve.creation_time));
 
 	/* read and parse all FVE metadata entries */
-	fve_entries = malloc(fve_metadata_size - fve_size);
+	fve_entries = malloc(fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN);
 	if (!fve_entries) {
 		r = -ENOMEM;
 		goto out;
 	}
-	memset(fve_entries, 0, (fve_metadata_size - fve_size));
+	memset(fve_entries, 0, (fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN));
 
 	log_dbg(cd, "Reading BITLK FVE metadata entries of size %" PRIu32 " on device %s, offset %" PRIu64 ".",
-		fve_metadata_size - fve_size, device_path(device),
-		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADER_LEN);
+		fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN, device_path(device),
+		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN);
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
-		device_alignment(device), fve_entries, fve_metadata_size - fve_size,
-		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADER_LEN) != fve_metadata_size - fve_size) {
+		device_alignment(device), fve_entries, fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN,
+		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN) != fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN) {
 		log_err(cd, _("Failed to read BITLK metadata entries from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
 
-	end = fve_metadata_size - fve_size;
+	end = fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN;
 	while (end - start > 2) {
 		/* size of this entry */
 		memcpy(&entry_size, fve_entries + start, sizeof(entry_size));
