@@ -34,8 +34,6 @@ struct device;
 #define BITLK_SALT_SIZE 16
 #define BITLK_VMK_MAC_TAG_SIZE 16
 
-#define BITLK_VMK_OPEN_KEY "openkey"
-
 #define BITLK_STATE_NORMAL 0x0004
 
 typedef enum {
