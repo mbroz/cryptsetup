@@ -38,8 +38,14 @@
 #define BITLK_HEADER_METADATA_OFFSET 160
 #define BITLK_HEADER_METADATA_OFFSET_TOGO 424
 
-#define BITLK_FVE_METADATA_HEADER_LEN 64 + 48
+/* FVE metadata header is split into two parts */
+#define BITLK_FVE_METADATA_BLOCK_HEADER_LEN 64
+#define BITLK_FVE_METADATA_HEADER_LEN 48
+#define BITLK_FVE_METADATA_HEADERS_LEN BITLK_FVE_METADATA_BLOCK_HEADER_LEN + BITLK_FVE_METADATA_HEADER_LEN
+
+/* total size of the FVE area (64 KiB) */
 #define BITLK_FVE_METADATA_SIZE 64 * 1024
+
 #define BITLK_ENTRY_HEADER_LEN 8
 #define BITLK_VMK_HEADER_LEN 28
 
@@ -63,6 +69,12 @@
 #ifndef UUID_STR_LEN
 #define UUID_STR_LEN	37
 #endif
+
+/* known types of GUIDs from the BITLK superblock */
+const uint8_t BITLK_GUID_NORMAL[16] = { 0x3b, 0xd6, 0x67, 0x49, 0x29, 0x2e, 0xd8, 0x4a,
+					0x83, 0x99, 0xf6, 0xa3, 0x39, 0xe3, 0xd0, 0x01 };
+const uint8_t BITLK_GUID_EOW[16] = { 0x3b, 0x4d, 0xa8, 0x92, 0x80, 0xdd, 0x0e, 0x4d,
+				     0x9e, 0x4e, 0xb1, 0xe3, 0x28, 0x4e, 0xae, 0xd8 };
 
 /* taken from libfdisk gpt.c -- TODO: this is a good candidate for adding to libuuid */
 struct bitlk_guid {
@@ -108,15 +120,18 @@ struct bitlk_superblock {
 } __attribute__ ((packed));
 
 struct bitlk_fve_metadata {
+	/* FVE metadata block header */
 	uint8_t signature[8];
 	uint16_t fve_size;
 	uint16_t fve_version;
-	uint32_t unknown;
+	uint16_t curr_state;
+	uint16_t next_state;
 	uint64_t volume_size;
 	uint32_t unknown2;
 	uint32_t volume_header_size;
 	uint64_t fve_offset[3];
 	uint64_t volume_header_offset;
+	/* FVE metadata header */
 	uint32_t metadata_size;
 	uint32_t metadata_version;
 	uint32_t metadata_header_size;
@@ -188,6 +203,19 @@ static const char* get_vmk_protection_string(BITLKVMKProtection protection)
 		return "VMK protected with smart card";
 	default:
 		return "VMK with unknown protection";
+	}
+}
+
+static const char* get_bitlk_type_string(BITLKEncryptionType type)
+{
+	switch (type)
+	{
+	case BITLK_ENCRYPTION_TYPE_NORMAL:
+		return "normal";
+	case BITLK_ENCRYPTION_TYPE_EOW:
+		return "encrypt-on-write";
+	default:
+		return "unknown";
 	}
 }
 
@@ -423,7 +451,6 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	struct bitlk_fve_metadata fve = {};
 	struct bitlk_entry_vmk entry_vmk = {};
 	uint8_t *fve_entries = NULL;
-	uint16_t fve_size = 0;
 	uint32_t fve_metadata_size = 0;
 	int fve_offset = 0;
 	char guid_buf[UUID_STR_LEN] = {0};
@@ -485,6 +512,15 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		goto out;
 	}
 
+	/* get encryption "type" based on the GUID from BITLK superblock */
+	if (memcmp(&sb.guid, BITLK_GUID_NORMAL, 16) == 0)
+		params->type = BITLK_ENCRYPTION_TYPE_NORMAL;
+	else if (memcmp(&sb.guid, BITLK_GUID_EOW, 16) == 0)
+		params->type = BITLK_ENCRYPTION_TYPE_EOW;
+	else
+		params->type = BITLK_ENCRYPTION_TYPE_UNKNOWN;
+	log_dbg(cd, "BITLK type from GUID: %s.", get_bitlk_type_string(params->type));
+
 	for (i = 0; i < 3; i++)
 		params->metadata_offset[i] = le64_to_cpu(sb.fve_offset[i]);
 
@@ -501,8 +537,15 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		goto out;
 	}
 
+	/* check encryption state for the device */
+	params->state = true;
+	if (le16_to_cpu(fve.curr_state) != BITLK_STATE_NORMAL || le16_to_cpu(fve.next_state) != BITLK_STATE_NORMAL) {
+		params->state = false;
+		log_dbg(cd, "Unknown/unsupported state detected. Current state: %"PRIu16", next state: %"PRIu16".",
+			le16_to_cpu(fve.curr_state), le16_to_cpu(fve.next_state));
+	}
+
 	params->metadata_version = le16_to_cpu(fve.fve_version);
-	fve_size = le16_to_cpu(fve.fve_size);
 	fve_metadata_size = le32_to_cpu(fve.metadata_size);
 
 	switch (le16_to_cpu(fve.encryption)) {
@@ -559,26 +602,26 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	params->creation_time = filetime_to_unixtime(le64_to_cpu(fve.creation_time));
 
 	/* read and parse all FVE metadata entries */
-	fve_entries = malloc(fve_metadata_size - fve_size);
+	fve_entries = malloc(fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN);
 	if (!fve_entries) {
 		r = -ENOMEM;
 		goto out;
 	}
-	memset(fve_entries, 0, (fve_metadata_size - fve_size));
+	memset(fve_entries, 0, (fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN));
 
 	log_dbg(cd, "Reading BITLK FVE metadata entries of size %" PRIu32 " on device %s, offset %" PRIu64 ".",
-		fve_metadata_size - fve_size, device_path(device),
-		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADER_LEN);
+		fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN, device_path(device),
+		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN);
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
-		device_alignment(device), fve_entries, fve_metadata_size - fve_size,
-		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADER_LEN) != fve_metadata_size - fve_size) {
+		device_alignment(device), fve_entries, fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN,
+		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN) != fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN) {
 		log_err(cd, _("Failed to read BITLK metadata entries from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
 
-	end = fve_metadata_size - fve_size;
+	end = fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN;
 	while (end - start > 2) {
 		/* size of this entry */
 		memcpy(&entry_size, fve_entries + start, sizeof(entry_size));
@@ -918,6 +961,18 @@ int BITLK_activate(struct crypt_device *cd,
 	uint64_t next_end = 0;
 	uint64_t last_segment = 0;
 	uint32_t dmt_flags;
+
+	if (!params->state) {
+		log_err(cd, _("This BITLK device is in an unsupported state and cannot be activated."));
+		r = -ENOTSUP;
+		goto out;
+	}
+
+	if (params->type != BITLK_ENCRYPTION_TYPE_NORMAL) {
+		log_err(cd, _("BITLK devices with type '%s' cannot be activated."), get_bitlk_type_string(params->type));
+		r = -ENOTSUP;
+		goto out;
+	}
 
 	next_vmk = params->vmks;
 	while (next_vmk) {

@@ -34,7 +34,13 @@ struct device;
 #define BITLK_SALT_SIZE 16
 #define BITLK_VMK_MAC_TAG_SIZE 16
 
-#define BITLK_VMK_OPEN_KEY "openkey"
+#define BITLK_STATE_NORMAL 0x0004
+
+typedef enum {
+	BITLK_ENCRYPTION_TYPE_NORMAL = 0,
+	BITLK_ENCRYPTION_TYPE_EOW,
+	BITLK_ENCRYPTION_TYPE_UNKNOWN,
+} BITLKEncryptionType;
 
 typedef enum {
 	BITLK_PROTECTION_CLEAR_KEY = 0,
@@ -90,6 +96,8 @@ struct bitlk_fvek {
 
 struct bitlk_metadata {
 	bool togo;
+	bool state;
+	BITLKEncryptionType type;
 	const char *cipher;
 	const char *cipher_mode;
 	uint16_t key_size;

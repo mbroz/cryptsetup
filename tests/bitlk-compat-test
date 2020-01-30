@@ -105,6 +105,7 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc" ) && echo " [N/A]" && continue
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc-elephant" ) && echo " [N/A]" && continue
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "clearkey" ) && echo " [N/A]" && continue
+		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "eow" ) && echo " [N/A]" && continue
 		[ $ret -eq 0 ] || fail " failed to open $file ($ret)"
 		$CRYPTSETUP status $MAP >/dev/null || fail
 		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
