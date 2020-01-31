@@ -1229,7 +1229,7 @@ int LUKS_wipe_header_areas(struct luks_phdr *hdr,
 
 int LUKS_keyslot_pbkdf(struct luks_phdr *hdr, int keyslot, struct crypt_pbkdf_type *pbkdf)
 {
-	if (keyslot >= LUKS_NUMKEYS || keyslot < 0)
+	if (LUKS_keyslot_info(hdr, keyslot) < CRYPT_SLOT_ACTIVE)
 		return -EINVAL;
 
 	pbkdf->type = CRYPT_KDF_PBKDF2;

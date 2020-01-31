@@ -939,6 +939,7 @@ static void AddDeviceLuks(void)
 	OK_(pbkdf.iterations < 1000); /* set by minimum iterations above */
 	EQ_(0, pbkdf.max_memory_kb);
 	EQ_(0, pbkdf.parallel_threads);
+	FAIL_(crypt_keyslot_get_pbkdf(cd, 2, &pbkdf), "Keyslot 2 is inactive.");
 
 	OK_(prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	OK_(prepare_keyfile(KEYFILE2, KEY2, strlen(KEY2)));
