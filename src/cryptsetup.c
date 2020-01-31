@@ -84,6 +84,7 @@ static int opt_disable_keyring = 0;
 static const char *opt_priority = NULL; /* normal */
 static const char *opt_integrity = NULL; /* none */
 static int opt_integrity_nojournal = 0;
+static int opt_integrity_recovery = 0;
 static int opt_integrity_no_wipe = 0;
 static int opt_integrity_legacy_padding = 0;
 static const char *opt_key_description = NULL;
@@ -183,6 +184,8 @@ static void _set_activation_flags(uint32_t *flags)
 
 	if (opt_integrity_nojournal)
 		*flags |= CRYPT_ACTIVATE_NO_JOURNAL;
+	if (opt_integrity_recovery)
+		*flags |= CRYPT_ACTIVATE_RECOVERY;
 
 	/* In persistent mode, we use what is set on command line */
 	if (opt_persistent)
@@ -3477,6 +3480,7 @@ int main(int argc, const char **argv)
 		{ "disable-keyring",   '\0', POPT_ARG_NONE, &opt_disable_keyring,       0, N_("Disable loading volume keys via kernel keyring"), NULL },
 		{ "integrity",          'I', POPT_ARG_STRING, &opt_integrity,           0, N_("Data integrity algorithm (LUKS2 only)"), NULL },
 		{ "integrity-no-journal",'\0',POPT_ARG_NONE, &opt_integrity_nojournal,  0, N_("Disable journal for integrity device"), NULL },
+		{ "integrity-recovery-mode", 'R', POPT_ARG_NONE,  &opt_integrity_recovery,  0, N_("Recovery mode for integrity device (no journal, no tag checking)"), NULL },
 		{ "integrity-no-wipe", '\0', POPT_ARG_NONE, &opt_integrity_no_wipe,     0, N_("Do not wipe device after format"), NULL },
 		{ "integrity-legacy-padding",'\0', POPT_ARG_NONE, &opt_integrity_legacy_padding,0, N_("Use inefficient legacy padding (old kernels)"), NULL },
 		{ "token-only",        '\0', POPT_ARG_NONE, &opt_token_only,            0, N_("Do not ask for passphrase if activation by token fails"), NULL },
