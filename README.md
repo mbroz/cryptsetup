@@ -6,7 +6,7 @@ What the ...?
 on the [DMCrypt](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt) kernel module.
 
 These include **plain** **dm-crypt** volumes, **LUKS** volumes, **loop-AES**,
-**TrueCrypt** (including **VeraCrypt** extension) and BitLocker formats.
+**TrueCrypt** (including **VeraCrypt** extension) and **BitLocker** formats.
 
 The project also includes a **veritysetup** utility used to conveniently setup
 [DMVerity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity) block integrity checking kernel module
@@ -44,22 +44,16 @@ Download
 --------
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
 
-**The latest testing cryptsetup version is 2.3.0-rc0**
-  * [cryptsetup-2.3.0-rc0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/cryptsetup-2.3.0-rc0.tar.xz)
-  * Signature [cryptsetup-2.3.0-rc0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/cryptsetup-2.3.0-rc0.tar.sign)
+**The latest stable cryptsetup version is 2.3.0**
+  * [cryptsetup-2.3.0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/cryptsetup-2.3.0.tar.xz)
+  * Signature [cryptsetup-2.3.0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/cryptsetup-2.3.0.tar.sign)
     _(You need to decompress file first to check signature.)_
-  * [Cryptsetup 2.3.0-rc0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/v2.3.0-rc0-ReleaseNotes).
-
-**The latest stable cryptsetup version is 2.2.2**
-  * [cryptsetup-2.2.2.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.2.tar.xz)
-  * Signature [cryptsetup-2.2.2.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.2.tar.sign)
-    _(You need to decompress file first to check signature.)_
-  * [Cryptsetup 2.2.2 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/v2.2.2-ReleaseNotes).
+  * [Cryptsetup 2.3.0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.3/v2.3.0-ReleaseNotes).
 
 Previous versions
- * [Version 2.2.1](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.1.tar.xz) -
-   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.1.tar.sign) -
-   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/v2.2.0-ReleaseNotes).
+ * [Version 2.2.2](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.2.tar.xz) -
+   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/cryptsetup-2.2.2.tar.sign) -
+   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.2/v2.2.2-ReleaseNotes).
  * [Version 2.0.6](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.6.tar.xz) -
    [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/cryptsetup-2.0.6.tar.sign) -
    [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/v2.0.6-ReleaseNotes).
