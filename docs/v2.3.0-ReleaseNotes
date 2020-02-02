@@ -1,15 +1,15 @@
-Cryptsetup 2.3.0-RC0 Release Notes
-==================================
-Testing release with new and experimental features and bug fixes.
+Cryptsetup 2.3.0 Release Notes
+==============================
+Stable release with new experimental features and bug fixes.
 
 Cryptsetup 2.3 version introduces support for BitLocker-compatible
 devices (BITLK format). This format is used in Windows systems,
 and in combination with a filesystem driver, cryptsetup now provides
-native read-write access BitLocker Full Disk Encryption devices.
+native read-write access to BitLocker Full Disk Encryption devices.
 
 The BITLK implementation is based on publicly available information
-and is an independent and opensource implementation of this proprietary
-format.
+and it is an independent and opensource implementation that allows
+to access this proprietary disk encryption.
 
 Changes since version 2.2.2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,8 +18,8 @@ Changes since version 2.2.2
 
   BITLK userspace implementation is based on the master thesis and code
   provided by Vojtech Trefny. Also, thanks to other opensource projects
-  like libbde that provide alternative approaches we used for comparison
-  of cryptsetup implementation.
+  like libbde (that provide alternative approach to decode this format)
+  we were able to verify cryptsetup implementation.
 
   NOTE: Support for the BITLK device is EXPERIMENTAL and will require
   a lot of testing. If you get some error message (mainly unsupported
@@ -38,13 +38,14 @@ Changes since version 2.2.2
   systems), all format variants should be recognized.
 
   Data devices can be activated read-write (followed by mounting through
-  the proper filesystem driver).
+  the proper filesystem driver). To access filesystem on the decrypted device
+  you need properly installed driver (vfat, NTFS or exFAT).
 
-  Activation is supported for AES-XTS encryption on all recent Linux kernels.
+  Foe AES-XTS, activation is supported on all recent Linux kernels.
 
   For older AES-CBC encryption, Linux Kernel version 5.3 is required
-  (support for special IV variant); for AES-CBC with Elephant diffuser Linux,
-  Kernel 5.6 will be required (patch for dm-crypt is already available).
+  (support for special IV variant); for AES-CBC with Elephant diffuser,
+  Linux Kernel 5.6 is required.
 
   Please note that CBC variants are legacy, and we provide it only
   for backward compatibility (to be able to access old drives).
@@ -185,9 +186,11 @@ Changes since version 2.2.2
   To make developing of some extensions simpler, we now export
   functions to handle memory with proper wipe on deallocation.
 
+* Fail crypt_keyslot_get_pbkdf for inactive LUKS1 keyslot.
+
 Libcryptsetup API extensions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-THe libcryptsetup is backward compatible for other symbols.
+The libcryptsetup API is backward compatible for existing symbols.
 
 New symbols
  crypt_set_compatibility
