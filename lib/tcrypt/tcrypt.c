@@ -479,8 +479,8 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 }
 
 static int TCRYPT_pool_keyfile(struct crypt_device *cd,
-				unsigned char pool[TCRYPT_KEY_POOL_LEN],
-				const char *keyfile)
+				unsigned char pool[VCRYPT_KEY_POOL_LEN],
+				const char *keyfile, int keyfiles_pool_length)
 {
 	unsigned char *data;
 	int i, j, fd, data_size, r = -EIO;
@@ -512,7 +512,7 @@ static int TCRYPT_pool_keyfile(struct crypt_device *cd,
 		pool[j++] += (unsigned char)(crc >> 16);
 		pool[j++] += (unsigned char)(crc >>  8);
 		pool[j++] += (unsigned char)(crc);
-		j %= TCRYPT_KEY_POOL_LEN;
+		j %= keyfiles_pool_length;
 	}
 	r = 0;
 out:
@@ -527,29 +527,41 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			   struct tcrypt_phdr *hdr,
 			   struct crypt_params_tcrypt *params)
 {
-	unsigned char pwd[TCRYPT_KEY_POOL_LEN] = {};
-	size_t passphrase_size;
+	unsigned char pwd[VCRYPT_KEY_POOL_LEN] = {};
+	size_t passphrase_size, max_passphrase_size;
 	char *key;
 	unsigned int i, skipped = 0, iterations;
-	int r = -EPERM;
+	int r = -EPERM, keyfiles_pool_length;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
 
+	if (params->flags & CRYPT_TCRYPT_VERA_MODES) {
+		max_passphrase_size = VCRYPT_KEY_POOL_LEN;
+		/* Really. Keyfile pool length depends on passphrase size in Veracrypt. */
+		if (params->passphrase_size > TCRYPT_KEY_POOL_LEN)
+			keyfiles_pool_length = VCRYPT_KEY_POOL_LEN;
+		else
+			keyfiles_pool_length = TCRYPT_KEY_POOL_LEN;
+	} else {
+		max_passphrase_size = TCRYPT_KEY_POOL_LEN;
+		keyfiles_pool_length = TCRYPT_KEY_POOL_LEN;
+	}
+
 	if (params->keyfiles_count)
-		passphrase_size = TCRYPT_KEY_POOL_LEN;
+		passphrase_size = max_passphrase_size;
 	else
 		passphrase_size = params->passphrase_size;
 
-	if (params->passphrase_size > TCRYPT_KEY_POOL_LEN) {
-		log_err(cd, _("Maximum TCRYPT passphrase length (%d) exceeded."),
-			      TCRYPT_KEY_POOL_LEN);
+	if (params->passphrase_size > max_passphrase_size) {
+		log_err(cd, _("Maximum TCRYPT passphrase length (%zu) exceeded."),
+			      max_passphrase_size);
 		goto out;
 	}
 
 	/* Calculate pool content from keyfiles */
 	for (i = 0; i < params->keyfiles_count; i++) {
-		r = TCRYPT_pool_keyfile(cd, pwd, params->keyfiles[i]);
+		r = TCRYPT_pool_keyfile(cd, pwd, params->keyfiles[i], keyfiles_pool_length);
 		if (r < 0)
 			goto out;
 	}
