@@ -754,6 +754,12 @@ $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 0 -d $KEY5 || fail
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 1024 $LOOPDEV $KEY5 || fail
 $CRYPTSETUP -q convert --type luks1 $LOOPDEV >/dev/null 2>&1 && fail
 
+# create LUKS1 with data offset not aligned to 4KiB
+$CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks1 $LOOPDEV $KEY5 --align-payload 4097 || fail
+$CRYPTSETUP -q convert --type luks2 $LOOPDEV || fail
+$CRYPTSETUP isLuks --type luks2 $LOOPDEV || fail
+$CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 0 -d $KEY5 || fail
+
 if dm_crypt_keyring_flawed; then
 	prepare "[32a] LUKS2 keyring dm-crypt bug" wipe
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
