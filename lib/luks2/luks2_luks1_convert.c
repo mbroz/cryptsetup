@@ -402,6 +402,7 @@ static int json_luks1_object(struct luks_phdr *hdr_v1, struct json_object **luks
 
 	json_size = LUKS2_HDR_16K_LEN - LUKS2_HDR_BIN_LEN;
 	json_object_object_add(field, "json_size", json_object_new_uint64(json_size));
+	keyslots_size -= (keyslots_size % 4096);
 	json_object_object_add(field, "keyslots_size", json_object_new_uint64(keyslots_size));
 
 	*luks1_object = luks1_obj;
@@ -586,6 +587,14 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	// move keyslots 4k -> 32k offset
 	buf_offset = 2 * LUKS2_HDR_16K_LEN;
 	buf_size   = luks1_size - LUKS_ALIGN_KEYSLOTS;
+
+	/* check future LUKS2 keyslots area is at least as large as LUKS1 keyslots area */
+	if (buf_size > LUKS2_keyslots_size(hdr2->jobj)) {
+		log_err(cd, _("Unable to move keyslot area. LUKS2 keyslots area too small."));
+		r = -EINVAL;
+		goto out;
+	}
+
 	if ((r = move_keyslot_areas(cd, 8 * SECTOR_SIZE, buf_offset, buf_size)) < 0) {
 		log_err(cd, _("Unable to move keyslot area."));
 		goto out;
