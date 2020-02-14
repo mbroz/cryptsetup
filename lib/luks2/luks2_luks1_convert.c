@@ -577,6 +577,11 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 		goto out;
 	}
 
+	/* check future LUKS2 metadata before moving keyslots area */
+	r = LUKS2_hdr_validate(cd, hdr2->jobj, hdr2->hdr_size - LUKS2_HDR_BIN_LEN);
+	if (r)
+		goto out;
+
 	if ((r = luks_header_in_use(cd))) {
 		if (r > 0)
 			r = -EBUSY;
