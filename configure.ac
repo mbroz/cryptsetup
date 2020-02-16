@@ -469,7 +469,7 @@ AM_CONDITIONAL(HAVE_BLKID_WIPE, test "x$enable_blkid_wipe" = "xyes")
 AM_CONDITIONAL(HAVE_BLKID_STEP_BACK, test "x$enable_blkid_step_back" = "xyes")
 
 dnl Check if we need to link against libiconv
-AC_CHECK_LIB(iconv, libiconv_open, [ICONV_LIBS="-liconv"])
+AC_CHECK_LIB(iconv, iconv_open, ICONV_LIBS="-liconv")
 
 dnl Magic for cryptsetup.static build.
 if test "x$enable_static_cryptsetup" = "xyes"; then
