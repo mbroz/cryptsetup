@@ -468,6 +468,9 @@ AM_CONDITIONAL(HAVE_BLKID, test "x$enable_blkid" = "xyes")
 AM_CONDITIONAL(HAVE_BLKID_WIPE, test "x$enable_blkid_wipe" = "xyes")
 AM_CONDITIONAL(HAVE_BLKID_STEP_BACK, test "x$enable_blkid_step_back" = "xyes")
 
+dnl Check if we need to link against libiconv
+AC_CHECK_LIB(iconv, libiconv_open, [ICONV_LIBS="-liconv"])
+
 dnl Magic for cryptsetup.static build.
 if test "x$enable_static_cryptsetup" = "xyes"; then
 	saved_PKG_CONFIG=$PKG_CONFIG
@@ -519,6 +522,7 @@ AC_SUBST([CRYPTO_STATIC_LIBS])
 AC_SUBST([JSON_C_LIBS])
 AC_SUBST([LIBARGON2_LIBS])
 AC_SUBST([BLKID_LIBS])
+AC_SUBST([ICONV_LIBS])
 
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
