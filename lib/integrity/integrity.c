@@ -213,7 +213,7 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 		       struct volume_key *journal_crypt_key,
 		       struct volume_key *journal_mac_key,
 		       struct crypt_dm_active_device *dmd,
-		       uint32_t flags)
+		       uint32_t flags, uint32_t sb_flags)
 {
 	int r;
 
@@ -223,6 +223,10 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 	*dmd = (struct crypt_dm_active_device) {
 		.flags = flags,
 	};
+
+	/* Workaround for kernel dm-integrity table bug */
+	if (sb_flags & SB_FLAG_RECALCULATING)
+		dmd->flags |= CRYPT_ACTIVATE_RECALCULATE;
 
 	r = INTEGRITY_data_sectors(cd, crypt_metadata_device(cd),
 				   crypt_get_data_offset(cd) * SECTOR_SIZE, &dmd->size);
@@ -287,7 +291,8 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		       uint32_t flags, uint32_t sb_flags)
 {
 	struct crypt_dm_active_device dmd = {};
-	int r = INTEGRITY_create_dmd_device(cd, params, vk, journal_crypt_key, journal_mac_key, &dmd, flags);
+	int r = INTEGRITY_create_dmd_device(cd, params, vk, journal_crypt_key,
+					    journal_mac_key, &dmd, flags, sb_flags);
 
 	if (r < 0)
 		return r;

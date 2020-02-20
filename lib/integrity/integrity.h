@@ -91,7 +91,7 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 		       struct volume_key *journal_crypt_key,
 		       struct volume_key *journal_mac_key,
 		       struct crypt_dm_active_device *dmd,
-		       uint32_t flags);
+		       uint32_t flags, uint32_t sb_flags);
 
 int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 		       const char *name,

@@ -2156,7 +2156,7 @@ int LUKS2_activate(struct crypt_device *cd,
 			return -EINVAL;
 		}
 
-		r = INTEGRITY_create_dmd_device(cd, NULL, NULL, NULL, NULL, &dmdi, dmd.flags);
+		r = INTEGRITY_create_dmd_device(cd, NULL, NULL, NULL, NULL, &dmdi, dmd.flags, 0);
 		if (r)
 			return r;
 
