@@ -987,8 +987,10 @@ static int LUKS_open_key(unsigned int keyIndex,
 			hdr->keyblock[keyIndex].passwordSalt, LUKS_SALTSIZE,
 			derived_key->key, hdr->keyBytes,
 			hdr->keyblock[keyIndex].passwordIterations, 0, 0);
-	if (r < 0)
+	if (r < 0) {
+		log_err(ctx, _("Cannot open keyslot (using hash %s)."), hdr->hashSpec);
 		goto out;
+	}
 
 	log_dbg(ctx, "Reading key slot %d area.", keyIndex);
 	r = LUKS_decrypt_from_storage(AfKey,
