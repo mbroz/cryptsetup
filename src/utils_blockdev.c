@@ -103,11 +103,11 @@ static int lookup_holder_dm_name(const char *dm_uuid, size_t max_len, dev_t devn
 		}
 
 		/* looking for dm-X/dm directory, symlinks are fine */
-		dmfd = openat(dirfd(dir), dm_subpath, O_DIRECTORY | O_RDONLY | O_CLOEXEC);
+		dmfd = openat(dirfd(dir), dm_subpath, O_DIRECTORY | O_RDONLY);
 		if (dmfd < 0)
 			continue;
 
-		fd = openat(dmfd, "uuid", O_RDONLY | O_CLOEXEC);
+		fd = openat(dmfd, "uuid", O_RDONLY);
 		if (fd < 0) {
 			close(dmfd);
 			continue;
@@ -130,7 +130,7 @@ static int lookup_holder_dm_name(const char *dm_uuid, size_t max_len, dev_t devn
 			continue;
 		}
 
-		fd = openat(dmfd, "name", O_RDONLY | O_CLOEXEC);
+		fd = openat(dmfd, "name", O_RDONLY);
 		if (fd < 0) {
 			close(dmfd);
 			continue;
