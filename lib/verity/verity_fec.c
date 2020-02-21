@@ -20,7 +20,6 @@
  */
 
 #include <stdlib.h>
-#include <fcntl.h>
 #include <errno.h>
 
 #include "verity.h"

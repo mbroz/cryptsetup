@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <fcntl.h>
 
 #include "nls.h"
 #include "bitops.h"
@@ -76,6 +77,10 @@
 		*_px = *_py; \
 		*_py = NULL; \
 	} while (0)
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
 
 struct crypt_device;
 struct luks2_reenc_context;

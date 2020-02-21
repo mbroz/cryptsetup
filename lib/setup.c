@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <sys/utsname.h>
-#include <fcntl.h>
 #include <errno.h>
 
 #include "libcryptsetup.h"

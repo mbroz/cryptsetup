@@ -23,7 +23,6 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/stat.h>

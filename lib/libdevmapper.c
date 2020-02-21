@@ -27,7 +27,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <libdevmapper.h>
-#include <fcntl.h>
 #include <linux/fs.h>
 #include <uuid/uuid.h>
 #include <sys/stat.h>

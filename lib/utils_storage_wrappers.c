@@ -20,7 +20,6 @@
  */
 
 #include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>

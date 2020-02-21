@@ -20,7 +20,6 @@
  */
 
 #include <errno.h>
-#include <fcntl.h>
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>

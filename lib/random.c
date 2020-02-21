@@ -20,17 +20,12 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 #include <errno.h>
 #include <assert.h>
 #include <sys/select.h>
 
 #include "libcryptsetup.h"
 #include "internal.h"
-
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 0
-#endif
 
 static int random_initialised = 0;
 
