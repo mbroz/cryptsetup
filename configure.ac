@@ -33,6 +33,7 @@ AC_PROG_MAKE_SET
 AC_ENABLE_STATIC(no)
 LT_INIT
 PKG_PROG_PKG_CONFIG
+AM_ICONV
 
 dnl ==========================================================================
 dnl define PKG_CHECK_VAR for old pkg-config <= 0.28

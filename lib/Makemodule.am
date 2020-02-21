@@ -40,6 +40,7 @@ libcryptsetup_la_LIBADD = \
 	@LIBARGON2_LIBS@	\
 	@JSON_C_LIBS@		\
 	@BLKID_LIBS@		\
+	$(LTLIBICONV)		\
 	libcrypto_backend.la	\
 	libutils_io.la
 
