@@ -81,7 +81,7 @@ static int hash_keys(struct crypt_device *cd,
 	const char *hash_name;
 	char tweak, *key_ptr;
 	unsigned int i;
-	int r;
+	int r = 0;
 
 	hash_name = hash_override ?: get_hash(key_len_output);
 	tweak = get_tweak(keys_count);

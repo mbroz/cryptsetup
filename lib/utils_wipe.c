@@ -55,7 +55,7 @@ static int crypt_wipe_special(struct crypt_device *cd, int fd, size_t bsize,
 			      size_t alignment, char *buffer,
 			      uint64_t offset, size_t size)
 {
-	int r;
+	int r = 0;
 	unsigned int i;
 	ssize_t written;
 
