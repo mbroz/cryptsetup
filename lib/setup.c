@@ -583,6 +583,9 @@ int crypt_init(struct crypt_device **cd, const char *device)
 		return -EINVAL;
 
 	log_dbg(NULL, "Allocating context for crypt device %s.", device ?: "(none)");
+#if !HAVE_DECL_O_CLOEXEC
+	log_dbg(NULL, "Running without O_CLOEXEC.");
+#endif
 
 	if (!(h = malloc(sizeof(struct crypt_device))))
 		return -ENOMEM;
