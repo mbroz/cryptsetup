@@ -27,6 +27,10 @@
 #include <sys/resource.h>
 #include "crypto_backend.h"
 
+#ifndef CLOCK_MONOTONIC_RAW
+#define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
+#endif
+
 #define BENCH_MIN_MS 250
 #define BENCH_MIN_MS_FAST 10
 #define BENCH_PERCENT_ATLEAST 95

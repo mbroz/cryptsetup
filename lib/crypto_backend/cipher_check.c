@@ -23,6 +23,10 @@
 #include <time.h>
 #include "crypto_backend_internal.h"
 
+#ifndef CLOCK_MONOTONIC_RAW
+#define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
+#endif
+
 /*
  * This is not simulating storage, so using disk block causes extreme overhead.
  * Let's use some fixed block size where results are more reliable...
