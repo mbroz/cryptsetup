@@ -2642,6 +2642,7 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 
 static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_deps *deps, char **names, size_t names_offset, size_t names_length)
 {
+#if HAVE_DECL_DM_DEVICE_GET_NAME
 	struct crypt_dm_active_device dmd;
 	char dmname[PATH_MAX];
 	unsigned i;
@@ -2680,6 +2681,9 @@ static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_
 	}
 
 	return count;
+#else
+	return -EINVAL;
+#endif
 }
 
 int dm_device_deps(struct crypt_device *cd, const char *name, const char *prefix, char **names, size_t names_length)
