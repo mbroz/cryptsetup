@@ -310,9 +310,9 @@ int blk_supported(void)
 
 off_t blk_get_offset(struct blkid_handle *h)
 {
-	const char *offset;
 	off_t offset_value = -1;
 #ifdef HAVE_BLKID
+	const char *offset;
 	if (blk_is_superblock(h)) {
 		if (!blkid_probe_lookup_value(h->pr, "SBMAGIC_OFFSET", &offset, NULL))
 			offset_value = strtoll(offset, NULL, 10);
