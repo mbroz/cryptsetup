@@ -788,8 +788,14 @@ static int get_recovery_key(struct crypt_device *cd,
 	    - 8 groups of 6 divided by '-'
 	    - each part is a number dividable by 11
 	*/
-	if (passwordLen != BITLK_RECOVERY_KEY_LEN)
-		return 0;
+	if (passwordLen != BITLK_RECOVERY_KEY_LEN) {
+                if (passwordLen == BITLK_RECOVERY_KEY_LEN + 1 && password[passwordLen - 1] == '\n') {
+                        /* looks like a recovery key with an extra newline, possibly from a key file */
+                        passwordLen--;
+                        log_dbg(cd, "Possible extra EOL stripped from the recovery key.");
+                } else
+                        return 0;
+        }
 
 	for (i = BITLK_RECOVERY_PART_LEN; i < passwordLen; i += BITLK_RECOVERY_PART_LEN + 1) {
 		if (password[i] != '-')
