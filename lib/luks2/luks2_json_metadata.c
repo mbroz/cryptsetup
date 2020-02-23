@@ -45,11 +45,11 @@ void hexprint_base64(struct crypt_device *cd, json_object *jobj,
 				 &buf, &buf_len))
 		return;
 
-	for (i = 0; i < buf_len / 2; i++)
+	for (i = 0; i < buf_len; i++) {
+		if (i && !(i % 16))
+			log_std(cd, "\n\t%s", line_sep);
 		log_std(cd, "%02hhx%s", buf[i], sep);
-	log_std(cd, "\n\t%s", line_sep);
-	for (i = buf_len / 2; i < buf_len; i++)
-		log_std(cd, "%02hhx%s", buf[i], sep);
+	}
 	log_std(cd, "\n");
 	free(buf);
 }
