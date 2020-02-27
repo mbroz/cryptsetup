@@ -1196,6 +1196,11 @@ static int _wipe_data_device(struct crypt_device *cd)
 	return r;
 }
 
+static int strcmp_or_null(const char *str, const char *expected)
+{
+	return !str ? 0 : strcmp(str, expected);
+}
+
 static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen)
 {
 	int r = -EINVAL, keysize, integrity_keysize = 0, fd, created = 0;
@@ -1387,7 +1392,8 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 	}
 	tools_keyslot_msg(r, CREATED);
 
-	if (opt_integrity && !opt_integrity_no_wipe)
+	if (opt_integrity && !opt_integrity_no_wipe &&
+	    strcmp_or_null(params2.integrity, "none"))
 		r = _wipe_data_device(cd);
 out:
 	if (r >= 0 && r_cd && r_password && r_passwordLen) {
@@ -3403,11 +3409,6 @@ static int run_action(struct action_type *action)
 
 	show_status(r);
 	return translate_errno(r);
-}
-
-static int strcmp_or_null(const char *str, const char *expected)
-{
-	return !str ? 0 : strcmp(str, expected);
 }
 
 int main(int argc, const char **argv)
