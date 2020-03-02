@@ -13,3 +13,36 @@ TOKENS_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
 # cryptsetup_sshtest_SOURCES = tokens/cryptsetup-sshtest.c
 # cryptsetup_sshtest_LDADD = -lm libcryptsetup.la @JSON_C_LIBS@
 # sbin_PROGRAMS += cryptsetup-sshtest
+# cryptsetup_sshtest_SOURCES = tokens/cryptsetup-sshtest.c
+# cryptsetup_sshtest_LDADD = -lm libcryptsetup.la @JSON_C_LIBS@
+# sbin_PROGRAMS += cryptsetup-sshtest
+
+# TPM2 token and app
+libcryptsetup_token_tpm2_la_LDFLAGS = $(TOKENS_LDFLAGS)
+libcryptsetup_token_tpm2_la_SOURCES = \
+	tokens/tpm2/libcryptsetup-token-tpm2.c \
+	tokens/tpm2/utils_tpm2.h \
+	tokens/tpm2/utils_tpm2.c \
+	tokens/tpm2/utils_tpm2_json.c
+
+libcryptsetup_token_tpm2_la_LIBADD = -lm libcryptsetup.la libcryptsetup_cli.la @JSON_C_LIBS@ @TSS2_ESYS_LIBS@ @TSS2_RC_LIBS@
+lib_LTLIBRARIES += libcryptsetup-token-tpm2.la
+
+cryptsetup_tpm2_SOURCES = \
+	tokens/tpm2/cryptsetup-tpm2.c \
+	tokens/tpm2/utils_tpm2.h \
+	tokens/tpm2/utils_tpm2.c \
+	tokens/tpm2/utils_tpm2_json.c \
+	src/cryptsetup.h \
+	src/utils_tools.c \
+	lib/utils_io.c \
+	lib/utils_crypt.c \
+	lib/utils_loop.c
+
+cryptsetup_tpm2_LDADD = -lm libcryptsetup.la libcryptsetup_cli.la \
+	@JSON_C_LIBS@		\
+	@TSS2_ESYS_LIBS@	\
+	@TSS2_RC_LIBS@		\
+	@POPT_LIBS@
+cryptsetup_tpm2_CFLAGS = $(AM_CFLAGS)
+sbin_PROGRAMS += cryptsetup-tpm2

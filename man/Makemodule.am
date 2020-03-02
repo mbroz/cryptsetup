@@ -1,6 +1,8 @@
-EXTRA_DIST += man/cryptsetup.8 man/integritysetup.8 man/veritysetup.8 man/cryptsetup-reencrypt.8
+EXTRA_DIST += man/cryptsetup.8 man/cryptsetup-tpm2.8 man/integritysetup.8 man/veritysetup.8 man/cryptsetup-reencrypt.8
 
 man8_MANS += man/cryptsetup.8
+
+man8_MANS += man/cryptsetup-tpm2.8
 
 if VERITYSETUP
 man8_MANS += man/veritysetup.8

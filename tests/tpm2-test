@@ -1,0 +1,119 @@
+#!/bin/bash
+
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTSETUP_TPM2=$CRYPTSETUP_PATH/cryptsetup-tpm2
+MNT_DIR="./mnt_luks_tpm"
+DEV_NAME="dummy"
+PWD="93R4P4pIqAH8"
+TPM_PWD="mymJeD8ivEhE"
+FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+TPM_PCR=8
+
+cleanup() {
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
+	udevadm settle >/dev/null 2>&1
+	if [ -d "$MNT_DIR" ] ; then
+	    umount -f $MNT_DIR 2>/dev/null
+	    rmdir $MNT_DIR 2>/dev/null
+	fi
+	sleep 2
+}
+
+fail()
+{
+	[ -n "$1" ] && echo "FAIL $1"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
+	cleanup
+	exit 100
+}
+
+
+format() # format
+{
+	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
+
+	echo $PWD | $CRYPTSETUP luksFormat --type luks2 $DEV -q  $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256
+	[ $? -ne 0 ] && fail "Format failed."
+}
+
+skip()
+{
+        echo "TEST SKIPPED: $1"
+        cleanup
+        exit 77
+}
+
+test_sealing()
+{
+	if [ "`tpm2_getcap pcrs | grep $1 | cut -d "[" -f2 | cut -d "]" -f1 | grep " $TPM_PCR,"`" = "" ]; then
+		echo "PCR $TPM_PCR doesn't support $1 hash algorithm"
+
+		echo -e "$PWD\n$TPM_PWD\n$TPM_PWD" | $CRYPTSETUP_TPM2 add $DEV --tpm2-pcr=$TPM_PCR --tpm2-bank=$1
+		[ $? -eq 0 ] && fail "Successfully sealed to PCR $TPM_PCR using $1 hash algorithm even though it is not supported by TPM."
+
+		return 77
+	fi
+
+	echo "TPM supports $1"
+
+	echo -e "$PWD\n$TPM_PWD\n$TPM_PWD" | $CRYPTSETUP_TPM2 add $DEV --tpm2-pcr=$TPM_PCR --tpm2-bank=$1
+	[ $? -ne 0 ] && fail "Failed to add TPM2 token sealed to PCR."
+
+	echo $TPM_PWD | $CRYPTSETUP --token-only luksOpen $DEV $DEV_NAME
+	[ $? -ne 0 ] && fail "Failed open device by TPM2 token sealed to PCR."
+
+	if [ $1 = "sha1" ]; then
+		tpm2_pcrextend 8:sha1=`printf '0%.0s' {1..40}`
+	fi
+
+	if [ $1 = "sha256" ]; then
+		tpm2_pcrextend 8:sha256=`printf '0%.0s' {1..64}`
+	fi
+
+	if [ $1 = "sha512" ]; then
+		tpm2_pcrextend 8:sha512=`printf '0%.0s' {1..128}`
+	fi
+
+	echo $TPM_PWD | $CRYPTSETUP --token-only luksOpen $DEV $DEV_NAME
+	[ $? -eq 0 ] && fail "Opened device by TPM2 token sealed to PCR even though registers have been changed."
+
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	echo -e "$PWD\n$TPM_PWD\n$TPM_PWD" | $CRYPTSETUP_TPM2 kill $DEV --token-id=0
+	[ $? -ne 0 ] && fail "Failed to kill TPM2 token sealed to PCR."
+}
+
+if [ $(id -u) != 0 ]; then
+	skip "You must be root to run this test, test skipped."
+fi
+
+if [ "`ls /dev/tpm*`" == "" ]; then
+	fail "No TPM device found."
+fi
+
+[ ! -d $MNT_DIR ] && mkdir $MNT_DIR
+
+echo "[1] Using tmpfs for image"
+DEV="$MNT_DIR/test.img"
+mount -t tmpfs none $MNT_DIR || skip "Mounting tmpfs not available."
+format
+
+# basic test
+echo -e "$PWD\n$TPM_PWD\n$TPM_PWD" | $CRYPTSETUP_TPM2 add $DEV
+[ $? -ne 0 ] && fail "Failed to add TPM2 token."
+
+echo $TPM_PWD | $CRYPTSETUP --token-only luksOpen $DEV $DEV_NAME
+[ $? -ne 0 ] && fail "Failed open device by TPM2 token."
+
+$CRYPTSETUP close $DEV_NAME || fail
+
+echo -e "$PWD\n$TPM_PWD\n$TPM_PWD" | $CRYPTSETUP_TPM2 kill $DEV --token-id=0
+[ $? -ne 0 ] && fail "Failed to kill TPM2 token."
+
+test_sealing sha1
+test_sealing sha256
+test_sealing sha512
+
+cleanup

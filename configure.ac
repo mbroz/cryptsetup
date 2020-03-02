@@ -375,6 +375,9 @@ PKG_CHECK_MODULES([JSON_C], [json-c])
 AC_CHECK_DECLS([json_object_object_add_ex], [], [], [#include <json-c/json.h>])
 AC_CHECK_DECLS([json_object_deep_copy], [], [], [#include <json-c/json.h>])
 
+PKG_CHECK_MODULES([TSS2_ESYS], [tss2-esys])
+PKG_CHECK_MODULES([TSS2_RC], [tss2-rc])
+
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
 	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle) [openssl]]),
@@ -530,6 +533,8 @@ AC_SUBST([CRYPTO_STATIC_LIBS])
 AC_SUBST([JSON_C_LIBS])
 AC_SUBST([LIBARGON2_LIBS])
 AC_SUBST([BLKID_LIBS])
+AC_SUBST([TSS2_ESYS_LIBS])
+AC_SUBST([TSS2_RC_LIBS])
 
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])

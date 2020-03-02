@@ -1,0 +1,187 @@
+.TH CRYPTSETUP-TPM2 "8" "December 2019" "cryptsetup-tpm2" "Maintenance Commands"
+.SH NAME
+cryptsetup-tpm2 - tool for activating LUKS2 encrypted volumes using TPM2
+.SH SYNOPSIS
+.B cryptsetup-tpm2 <options> <action> <action args>
+.SH DESCRIPTION
+.PP
+cryptsetup-tpm2 is used to conveniently lock and activate LUKS2 volumes using a
+passphrase stored in a \fBTPM 2.0\fR. \fBTPM\fR is a secure cryptoprocessor
+(similar to a smartcard) present in most of the recent laptops (and some desktops).
+cryptsetup-tpm2 stores metadata in a \fItpm2\fR token inside the \fItokens\fR
+section of the LUKS2 header (see \fILUKS2 On-Disk Format Specification\fR).
+
+This utility supports sealing the TPM key to a current HW/SW state. To fully
+utilize this feature, it is required that the state is measured to the PCR banks
+by BIOS/UEFI, bootloader (e.g. \fITrustedGrub\fR) and kernel (IMA subsystem).
+If anything in the boot chain deviates from the pre-measured state, the passphrase
+won't be released from the TPM.
+
+You can seal the passphrase to a specified PCR. They have the following meaning:
+.IP
+\fIPCR#0-7\fR Measured by BIOS/EFI. includes measurement of items like boot
+options and order, microcode or secure boot status.
+.IP
+\fIPCR#16\fR Debug register
+
+.PP
+In TrustedGrub2 PCRs contain the following measurements:
+.IP
+\fIPCR#8\fR
+First sector of TrustedGRUB2 kernel (diskboot.img)
+.IP
+\fIPCR#9\fR
+TrustedGRUB2 kernel (core.img)
+.IP
+\fIPCR#10\fR
+Loader measurements - currently linux-kernel, initrd, ntldr, chainloader, multiboot, module
+.IP
+\fIPCR#11\fR
+Contains all commandline arguments from scripts (e.g. grub.cfg) and those entered in the shell
+.IP
+\fIPCR#12\fR
+LUKS-header
+.IP
+\fIPCR#13\fR
+Parts of GRUB2 that are loaded from disk like GRUB2-modules
+
+.PP
+To protect the TPM-stored passphrase \fIdictionary attack (DA) protection\fR
+can be enabled inside the TPM. \fBBe careful not to enter wrong TPM password
+too many times with this option enabled.\fR
+
+\fBIt is strongly recommended to have a least one regular (non-TPM) passphrase
+added.\fR This will prevent a lockout in case of changed PCR configuration
+(e.g. after kernel update or kernel command line change) or after exceeded
+number of attempts on a DA-protected passphrase.
+
+.SH BASIC COMMANDS
+
+\fIadd\fR <data_device> <options>
+.IP
+This will generate a random LUKS2 passphrase (using random data supplied from
+the TPM) and store the passphrase inside NV memory of the TPM.
+
+\fB<options>\fR can be [--tpm2-nv, --tpm2-pcr, --tpm2-bank, --tpm2-daprotect,
+--tpm2-no-pin, --tpm2-key-size, --timeout=secs]
+
+
+.PP
+\fIopen\fR <data_device> <name>
+.IP
+Retrieves a LUKS2 passphrase from the TPM's NV index stored in the header
+metadata. If the NV index is PIN protected, the user will be asked for the PIN.
+Then \fB<data_device>\fR will be activated using the passphrase and opened as
+\fB<name>\fR.
+
+\fB<options>\fR can be [--token-id]
+
+.PP
+\fIkill\fR <data_device> --token-id <id> or --tpm2-nv=<nvindex>
+.IP
+This will remove the randomly generated passphrase from the TPM and the
+associated LUKS2 keyslot. Specifying either token ID or NV index is mandatory.
+
+.PP
+\fIdump\fR <data_device>
+.IP
+The LUKS2 header will be dumped in a human-readable way. This includes the
+fields specific to TPM2 token.
+
+.PP
+\fIlist\fR
+.IP
+This action does not operate on any data device. It only lists supported PCRs
+for every bank.
+
+.SH OPTIONS
+.TP
+.B --tpm2-nv=<0x01800000..0x01BFFFFF>
+Specify an index on which to store the randomly generated passphrase if none is
+supplied a free one is found.
+.TP
+.B --tpm2-pcr=<pcr>[,<pcr>[,<pcr>[...]]]
+When supplied, the randomly generated passphrase will will be sealed to current
+values of the specified PCRs.
+.TP
+.B --tpm2-bank=<hash1>[,<hash2>[,<hash3>[...]]]
+Selection of banks for PCR sealing
+.TP
+.B --tpm2-daprotect
+Enable dictionary attack protection on the TPM stored passphrase.
+.TP
+.B --tpm2-no-pin
+Don't PIN-protect TPM NV index. This way you don't have to enter any
+passphrase/PIN when activating the disk. \fBWhen enabled, it is strongly
+recommended to have TPM enabled bootloader and kernel which make measurements
+of the current state and to seal the passphrase to the appropriate PCRs. Even
+then, the system is susceptible to cold-boot attacks.\fR
+.TP
+.B --tpm2-key-size=<bytes>
+Size of a randomly generated passphrase which will be stored in the TPM. It
+makes no sense to set it to a greater number than the master key length.
+.TP
+.B --token-id=INT
+Specify the token number (as listed by the \fIlist\fR command)
+.TP
+.B --timeout=secs
+Timeout for TPM PIN interactive passphrase prompt (in seconds)
+.TP
+.B --debug
+Run in debug mode with full diagnostic logs. Debug output lines are always
+prefixed by '#'.
+
+.SH RETURN CODES
+Cryptsetup returns 0 on success and a non-zero value on error.
+
+Error codes are: 1 wrong parameters, 2 no permission (bad passphrase),
+3 out of memory, 4 wrong device specified, 5 device already exists
+or device is busy.
+
+.SH AUTHORS
+cryptsetup-tpm2 is based on code originally written by Andreas Fuchs from
+Fraunhofer SIT sponsored by Infineon Technologies AG and further extended by
+Daniel Zatovic <dan.zatovic@gmail.com>
+.br
+The cryptsetup-tpm2 man page was written by Daniel Zatovic
+<dan.zatovic@gmail.com>
+.br
+
+.SH COPYRIGHT
+Copyright \(co 2018-2019 Fraunhofer SIT sponsored by Infineon Technologies AG
+.br
+Copyright \(co 2019-2020 Red Hat, Inc. All rights reserved.
+.br
+Copyright \(co 2019-2020 Daniel Zatovic
+.br
+Copyright \(co 2009-2020 Milan Broz
+.br
+
+.B libcryptsetup
+
+.IP
+Copyright \(co 2004 Jana Saout
+.br
+Copyright \(co 2004-2006 Clemens Fruhwirth
+.br
+Copyright \(co 2012-2014 Arno Wagner
+.br
+Copyright \(co 2009-2020 Red Hat, Inc.
+.br
+Copyright \(co 2009-2020 Milan Broz
+.br
+
+.PP
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+.SH SEE ALSO
+The LUKS website at \fBhttps://gitlab.com/cryptsetup/cryptsetup/\fR
+
+The cryptsetup FAQ, contained in the distribution package and
+online at
+\fBhttps://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions\fR
+
+The cryptsetup mailing list and list archive, see FAQ entry 1.6.
+
+The LUKS on-disk format specification available at
+\fBhttps://gitlab.com/cryptsetup/cryptsetup/wikis/Specification\fR
