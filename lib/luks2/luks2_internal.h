@@ -164,6 +164,11 @@ typedef struct  {
 	digest_dump_func   dump;
 } digest_handler;
 
+typedef struct {
+	/* public token handler */
+	const crypt_token_handler *h;
+} token_handler;
+
 int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 			size_t keylength, uint64_t *area_offset, uint64_t *area_length);
 int LUKS2_find_area_max_gap(struct crypt_device *cd, struct luks2_hdr *hdr,

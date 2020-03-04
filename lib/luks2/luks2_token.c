@@ -26,10 +26,11 @@
 /* Builtin tokens */
 extern const crypt_token_handler keyring_handler;
 
-static const crypt_token_handler *token_handlers[LUKS2_TOKENS_MAX] = {
+static token_handler token_handlers[LUKS2_TOKENS_MAX] = {
 	/* keyring builtin token */
-	&keyring_handler,
-	NULL
+	{
+	  .h = &keyring_handler
+	}
 };
 
 static int is_builtin_candidate(const char *type)
@@ -46,8 +47,8 @@ int crypt_token_register(const crypt_token_handler *handler)
 		return -EINVAL;
 	}
 
-	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i]; i++) {
-		if (!strcmp(token_handlers[i]->name, handler->name)) {
+	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].h; i++) {
+		if (!strcmp(token_handlers[i].h->name, handler->name)) {
 			log_dbg(NULL, "Keyslot handler %s is already registered.", handler->name);
 			return -EINVAL;
 		}
@@ -56,7 +57,7 @@ int crypt_token_register(const crypt_token_handler *handler)
 	if (i == LUKS2_TOKENS_MAX)
 		return -EINVAL;
 
-	token_handlers[i] = handler;
+	token_handlers[i].h = handler;
 	return 0;
 }
 
@@ -65,9 +66,9 @@ static const crypt_token_handler
 {
 	int i;
 
-	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i]; i++)
-		if (!strcmp(token_handlers[i]->name, type))
-			return token_handlers[i];
+	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].h; i++)
+		if (!strcmp(token_handlers[i].h->name, type))
+			return token_handlers[i].h;
 
 	return NULL;
 }
