@@ -35,8 +35,8 @@ static token_handler token_handlers[LUKS2_TOKENS_MAX] = {
 	}
 };
 
-static const crypt_token_handler
-*crypt_token_load_external(const char *name)
+static int
+crypt_token_load_external(const char *name, token_handler *ret)
 {
 	const crypt_token_handler *token = NULL;
 	void *handle;
@@ -44,23 +44,23 @@ static const crypt_token_handler
 	char buf[512];
 	int i, r;
 
-	if (!name || strlen(name) > 64)
-		return NULL;
+	if (!ret || !name || strlen(name) > 64)
+		return -EINVAL;
 
 	for (i = 0; name[i]; i++)
 		if (!isalnum(name[i]))
-			return NULL;
+			return -EINVAL;
 
 	r = snprintf(buf, sizeof(buf), "libcryptsetup-token-%s.so", name);
 	if (r < 0 || (size_t)r >= sizeof(buf))
-		return NULL;
+		return -EINVAL;
 
 	log_dbg(NULL, "Trying to load %s.", buf);
 
 	handle = dlopen(buf, RTLD_LAZY);
 	if (!handle) {
 		log_dbg(NULL, "%s", dlerror());
-		return NULL;
+		return -EINVAL;
 	}
 	dlerror();
 
@@ -69,10 +69,13 @@ static const crypt_token_handler
 	if (error) {
 		log_dbg(NULL, "%s", error);
 		dlclose(handle);
-		return NULL;
+		return -EINVAL;
 	}
 
-	return token;
+	ret->h = token;
+	ret->dlhandle = handle;
+
+	return 0;
 }
 
 static int is_builtin_candidate(const char *type)
@@ -125,9 +128,7 @@ int crypt_token_load(const char *name)
 	if (r < 0)
 		return r;
 
-	token_handlers[i].h = crypt_token_load_external(name);
-
-	return token_handlers[i].h ? 0 : -ENOENT;
+	return crypt_token_load_external(name, &token_handlers[i]);
 }
 
 static const crypt_token_handler
@@ -145,7 +146,8 @@ static const crypt_token_handler
 	if (is_builtin_candidate(type))
 		return NULL;
 
-	token_handlers[i].h = crypt_token_load_external(type);
+	if (crypt_token_load_external(type, &token_handlers[i]))
+		return NULL;
 
 	return token_handlers[i].h;
 }
