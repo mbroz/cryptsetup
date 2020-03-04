@@ -167,6 +167,8 @@ typedef struct  {
 typedef struct {
 	/* public token handler */
 	const crypt_token_handler *h;
+	/* dynamic loadable plugin dlopen handle */
+	const void *dlhandle;
 } token_handler;
 
 int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
