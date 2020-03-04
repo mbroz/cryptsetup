@@ -67,12 +67,7 @@ static const crypt_token_handler
 	token = dlvsym(handle, CRYPT_TOKEN_ABI_HANDLER, CRYPT_TOKEN_ABI_VERSION1);
 	error = dlerror();
 	if (error) {
-		log_dbg(NULL, "%s", dlerror());
-		dlclose(handle);
-		return NULL;
-	}
-
-	if (crypt_token_register(token) < 0) {
+		log_dbg(NULL, "%s", error);
 		dlclose(handle);
 		return NULL;
 	}
@@ -144,10 +139,15 @@ static const crypt_token_handler
 		if (!strcmp(token_handlers[i].h->name, type))
 			return token_handlers[i].h;
 
+	if (i >= LUKS2_TOKENS_MAX)
+		return NULL;
+
 	if (is_builtin_candidate(type))
 		return NULL;
 
-	return crypt_token_load_external(type);
+	token_handlers[i].h = crypt_token_load_external(type);
+
+	return token_handlers[i].h;
 }
 
 static const crypt_token_handler
