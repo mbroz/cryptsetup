@@ -273,6 +273,8 @@ int LUKS2_token_keyring_get(struct crypt_device *cd,
 int LUKS2_token_keyring_json(char *buffer, size_t buffer_size,
 	const struct crypt_token_params_luks2_keyring *keyring_params);
 
+void crypt_token_unload_external_all(struct crypt_device *cd);
+
 /*
  * Generic LUKS2 digest
  */
