@@ -6047,6 +6047,8 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 
 static void __attribute__((destructor)) libcryptsetup_exit(void)
 {
+	crypt_token_unload_external_all(NULL);
+
 	crypt_backend_destroy();
 	crypt_random_exit();
 }
