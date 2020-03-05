@@ -131,6 +131,21 @@ int crypt_token_load(const char *name)
 	return crypt_token_load_external(name, &token_handlers[i]);
 }
 
+void crypt_token_unload_external_all(struct crypt_device *cd)
+{
+	int i;
+
+	for (i = LUKS2_TOKENS_MAX - 1; i >= 0; i--) {
+		if (!token_handlers[i].dlhandle)
+			continue;
+
+		log_dbg(cd, "Unloading %s token handler.", token_handlers[i].h->name);
+
+		if (dlclose(CONST_CAST(void *)token_handlers[i].dlhandle))
+			log_dbg(cd, "%s", dlerror());
+	}
+}
+
 static const crypt_token_handler
 *LUKS2_token_handler_type(struct crypt_device *cd, const char *type)
 {
