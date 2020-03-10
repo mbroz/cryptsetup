@@ -746,11 +746,13 @@ TrueCrypt.
 Please note that cryptsetup does not use TrueCrypt code, please report
 all problems related to this compatibility extension to the cryptsetup project.
 
-.SH BITLK (Windows BitLocker-compatible) EXTENSION
+.SH BITLK (Windows BitLocker-compatible) EXTENSION (EXPERIMENTAL)
 cryptsetup supports mapping of BitLocker and BitLocker to Go encrypted partition
 using a native Linux kernel API.
 Header formatting and BITLK header changes are not supported, cryptsetup
 never changes BITLK header on-device.
+
+\fBWARNING:\fR This extension is EXPERIMENTAL.
 
 BITLK extension requires kernel userspace crypto API to be available
 (for details see TCRYPT section).
