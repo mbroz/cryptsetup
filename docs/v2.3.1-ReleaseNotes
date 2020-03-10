@@ -1,0 +1,45 @@
+Cryptsetup 2.3.1 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.x should upgrade to this version.
+
+Changes since version 2.3.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Support VeraCrypt 128 bytes passwords.
+  VeraCrypt now allows passwords of maximal length 128 bytes
+  (compared to legacy TrueCrypt where it was limited by 64 bytes).
+
+* Strip extra newline from BitLocker recovery keys
+  There might be a trailing newline added by the text editor when
+  the recovery passphrase was passed using the --key-file option.
+
+* Detect separate libiconv library.
+  It should fix compilation issues on distributions with iconv
+  implemented in a separate library.
+
+* Various fixes and workarounds to build on old Linux distributions.
+
+* Split lines with hexadecimal digest printing for large key-sizes.
+
+* Do not wipe the device with no integrity profile.
+  With --integrity none we performed useless full device wipe.
+
+* Workaround for dm-integrity kernel table bug.
+  Some kernels show an invalid dm-integrity mapping table
+  if superblock contains the "recalculate" bit. This causes
+  integritysetup to not recognize the dm-integrity device.
+  Integritysetup now specifies kernel options such a way that
+  even on unpatched kernels mapping table is correct.
+
+* Print error message if LUKS1 keyslot cannot be processed.
+  If the crypto backend is missing support for hash algorithms
+  used in PBKDF2, the error message was not visible.
+
+* Properly align LUKS2 keyslots area on conversion.
+  If the LUKS1 payload offset (data offset) is not aligned
+  to 4 KiB code, create properly aligned LUKS2 keyslots area.
+
+* Validate LUKS2 earlier on conversion to not corrupt the device
+  if binary keyslots areas metadata are not correct.
