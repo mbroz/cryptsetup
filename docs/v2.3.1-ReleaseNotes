@@ -39,7 +39,7 @@ Changes since version 2.3.0
 
 * Properly align LUKS2 keyslots area on conversion.
   If the LUKS1 payload offset (data offset) is not aligned
-  to 4 KiB code, create properly aligned LUKS2 keyslots area.
+  to 4 KiB boundary, new LUKS2 keyslots area in now aligned properly.
 
 * Validate LUKS2 earlier on conversion to not corrupt the device
   if binary keyslots areas metadata are not correct.
