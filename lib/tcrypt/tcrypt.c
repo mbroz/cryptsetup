@@ -535,13 +535,11 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
 		return -ENOMEM;
 
-	if (params->flags & CRYPT_TCRYPT_VERA_MODES) {
-		max_passphrase_size = VCRYPT_KEY_POOL_LEN;
+	if (params->flags & CRYPT_TCRYPT_VERA_MODES &&
+	    params->passphrase_size > TCRYPT_KEY_POOL_LEN) {
 		/* Really. Keyfile pool length depends on passphrase size in Veracrypt. */
-		if (params->passphrase_size > TCRYPT_KEY_POOL_LEN)
-			keyfiles_pool_length = VCRYPT_KEY_POOL_LEN;
-		else
-			keyfiles_pool_length = TCRYPT_KEY_POOL_LEN;
+		max_passphrase_size = VCRYPT_KEY_POOL_LEN;
+		keyfiles_pool_length = VCRYPT_KEY_POOL_LEN;
 	} else {
 		max_passphrase_size = TCRYPT_KEY_POOL_LEN;
 		keyfiles_pool_length = TCRYPT_KEY_POOL_LEN;

@@ -8,6 +8,7 @@ TST_DIR=tcrypt-images
 MAP=tctst
 PASSWORD="aaaaaaaaaaaa"
 PASSWORD_HIDDEN="bbbbbbbbbbbb"
+PASSWORD_72C="aaaaaaaaaaaabbbbbbbbbbbbccccccccccccddddddddddddeeeeeeeeeeeeffffffffffff"
 PIM=1234
 
 [ -z "$srcdir" ] && srcdir="."
@@ -123,7 +124,10 @@ done
 echo "HEADER KEYFILES CHECK"
 for file in $(ls $TST_DIR/[tv]ck_*) ; do
 	echo -n " $file"
-	echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt -d $TST_DIR/keyfile1 -d $TST_DIR/keyfile2 $file >/dev/null || fail
+	PWD=$PASSWORD
+	[[ $file =~ vck_1_nopw.* ]] && PWD=""
+	[[ $file =~ vck_1_pw72.* ]] && PWD=$PASSWORD_72C
+	echo $PWD | $CRYPTSETUP tcryptDump --veracrypt -d $TST_DIR/keyfile1 -d $TST_DIR/keyfile2 $file >/dev/null || fail
 	echo " [OK]"
 done
 
