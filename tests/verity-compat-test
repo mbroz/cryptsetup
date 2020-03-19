@@ -11,6 +11,9 @@ IMG=verity-data
 IMG_HASH=verity-hash
 IMG_TMP=tst-dev
 FEC_DEV=tst_fec123
+# If we need deterministic image creation
+DEV_SALT=9e7457222290f1bac0d42ad2de2d602a87bb871c22ab70ca040bad450578a436
+DEV_UUID=a60c98d2-ae9b-4865-bfcb-b4e3ace11033
 
 function remove_mapping()
 {
@@ -329,7 +332,7 @@ function checkUserSpaceRepair()
 
 	echo -n "[nroots::$3]"
 
-	ARR=(`$VERITYSETUP format $IMG $HASH_DEV --fec-device $FEC $PARAMS`)
+	ARR=(`$VERITYSETUP format $IMG $HASH_DEV --fec-device $FEC $PARAMS --salt=$DEV_SALT --uuid=$DEV_UUID`)
 	ROOT_HASH=${ARR[28]}
 
 	echo -n "[Errors can be corrected]"
