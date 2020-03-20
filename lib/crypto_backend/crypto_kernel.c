@@ -110,7 +110,7 @@ static int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *op
 	return 0;
 }
 
-int crypt_backend_init(struct crypt_device *ctx)
+int crypt_backend_init(void)
 {
 	struct utsname uts;
 	struct sockaddr_alg sa = {

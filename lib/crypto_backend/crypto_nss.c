@@ -75,7 +75,7 @@ static struct hash_alg *_get_alg(const char *name)
 	return NULL;
 }
 
-int crypt_backend_init(struct crypt_device *ctx)
+int crypt_backend_init(void)
 {
 	if (crypto_backend_initialised)
 		return 0;

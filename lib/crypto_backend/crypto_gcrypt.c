@@ -89,7 +89,7 @@ static void crypt_hash_test_whirlpool_bug(void)
 		crypto_backend_whirlpool_bug = 1;
 }
 
-int crypt_backend_init(struct crypt_device *ctx)
+int crypt_backend_init(void)
 {
 	if (crypto_backend_initialised)
 		return 0;

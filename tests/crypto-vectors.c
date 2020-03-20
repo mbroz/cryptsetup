@@ -902,7 +902,7 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 		exit(77);
 	}
 
-	if (crypt_backend_init(NULL))
+	if (crypt_backend_init())
 		exit_test("Crypto backend init error.", EXIT_FAILURE);
 
 	printf("Test vectors using %s crypto backend.\n", crypt_backend_version());
