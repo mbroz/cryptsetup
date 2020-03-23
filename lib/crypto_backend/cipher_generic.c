@@ -51,6 +51,7 @@ static const struct cipher_alg cipher_algs[] = {
 	{ "paes",        NULL, 16,  true }, /* protected AES, s390 wrapped key scheme */
 	{ "xchacha12,aes", "adiantum", 32, false },
 	{ "xchacha20,aes", "adiantum", 32, false },
+	{ "sm4",         NULL, 16, false },
 	{ NULL,          NULL,  0, false }
 };
 
@@ -72,7 +73,13 @@ int crypt_cipher_ivsize(const char *name, const char *mode)
 {
 	const struct cipher_alg *ca = _get_alg(name, mode);
 
-	return ca ? ca->blocksize : -EINVAL;
+	if (!ca)
+		return -EINVAL;
+
+	if (mode && !strcasecmp(mode, "ecb"))
+		return 0;
+
+	return ca->blocksize;
 }
 
 int crypt_cipher_wrapped_key(const char *name, const char *mode)

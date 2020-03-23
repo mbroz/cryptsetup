@@ -880,14 +880,14 @@ static int action_benchmark_kdf(const char *kdf, const char *hash, size_t key_si
 }
 
 static int benchmark_cipher_loop(const char *cipher, const char *cipher_mode,
-				 size_t volume_key_size, size_t iv_size,
+				 size_t volume_key_size,
 				 double *encryption_mbs, double *decryption_mbs)
 {
 	int r, buffer_size = 1024 * 1024;
 
 	do {
 		r = crypt_benchmark(NULL, cipher, cipher_mode,
-				    volume_key_size, iv_size, buffer_size,
+				    volume_key_size, 0, buffer_size,
 				    encryption_mbs, decryption_mbs);
 		if (r == -ERANGE) {
 			if (buffer_size < 1024 * 1024 * 65)
@@ -908,21 +908,20 @@ static int action_benchmark(void)
 		const char *cipher;
 		const char *mode;
 		size_t key_size;
-		size_t iv_size;
 	} bciphers[] = {
-		{ "aes",     "cbc", 16, 16 },
-		{ "serpent", "cbc", 16, 16 },
-		{ "twofish", "cbc", 16, 16 },
-		{ "aes",     "cbc", 32, 16 },
-		{ "serpent", "cbc", 32, 16 },
-		{ "twofish", "cbc", 32, 16 },
-		{ "aes",     "xts", 32, 16 },
-		{ "serpent", "xts", 32, 16 },
-		{ "twofish", "xts", 32, 16 },
-		{ "aes",     "xts", 64, 16 },
-		{ "serpent", "xts", 64, 16 },
-		{ "twofish", "xts", 64, 16 },
-		{  NULL, NULL, 0, 0 }
+		{ "aes",     "cbc", 16 },
+		{ "serpent", "cbc", 16 },
+		{ "twofish", "cbc", 16 },
+		{ "aes",     "cbc", 32 },
+		{ "serpent", "cbc", 32 },
+		{ "twofish", "cbc", 32 },
+		{ "aes",     "xts", 32 },
+		{ "serpent", "xts", 32 },
+		{ "twofish", "xts", 32 },
+		{ "aes",     "xts", 64 },
+		{ "serpent", "xts", 64 },
+		{ "twofish", "xts", 64 },
+		{  NULL, NULL, 0 }
 	};
 	static struct {
 		const char *type;
@@ -940,7 +939,7 @@ static int action_benchmark(void)
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (opt_key_size ?: DEFAULT_PLAIN_KEYBITS) / 8;
-	int iv_size = 16, skipped = 0, width;
+	int skipped = 0, width;
 	char *c;
 	int i, r;
 
@@ -958,21 +957,7 @@ static int action_benchmark(void)
 		if ((c  = strchr(cipher_mode, '-')))
 			*c = '\0';
 
-		/* FIXME: not really clever :) */
-		if (strstr(cipher, "des") ||
-		    strstr(cipher, "blowfish") ||
-		    strstr(cipher, "cast5"))
-			iv_size = 8;
-
-		if (!strcmp(cipher_mode, "ecb"))
-			iv_size = 0;
-
-		if (!strcmp(cipher_mode, "adiantum"))
-			iv_size = 32;
-
-		r = benchmark_cipher_loop(cipher, cipher_mode,
-					  key_size, iv_size,
-					  &enc_mbr, &dec_mbr);
+		r = benchmark_cipher_loop(cipher, cipher_mode, key_size, &enc_mbr, &dec_mbr);
 		if (!r) {
 			width = strlen(cipher) + strlen(cipher_mode) + 1;
 			if (width < 11)
@@ -981,8 +966,8 @@ static int action_benchmark(void)
 			log_std(_("#%*s Algorithm |       Key |      Encryption |      Decryption\n"), width - 11, "");
 			log_std("%*s-%s  %9db  %10.1f MiB/s  %10.1f MiB/s\n", width - (int)strlen(cipher_mode) - 1,
 				cipher, cipher_mode, key_size*8, enc_mbr, dec_mbr);
-		} else if (r == -ENOENT)
-			log_err(_("Cipher %s is not available."), opt_cipher);
+		} else if (r < 0)
+			log_err(_("Cipher %s (with %i bits key) is not available."), opt_cipher, key_size * 8);
 	} else {
 		for (i = 0; bkdfs[i].type; i++) {
 			r = action_benchmark_kdf(bkdfs[i].type, bkdfs[i].hash, key_size);
@@ -993,8 +978,7 @@ static int action_benchmark(void)
 
 		for (i = 0; bciphers[i].cipher; i++) {
 			r = benchmark_cipher_loop(bciphers[i].cipher, bciphers[i].mode,
-					    bciphers[i].key_size, bciphers[i].iv_size,
-					    &enc_mbr, &dec_mbr);
+						  bciphers[i].key_size, &enc_mbr, &dec_mbr);
 			check_signal(&r);
 			if (r == -ENOTSUP || r == -EINTR)
 				break;

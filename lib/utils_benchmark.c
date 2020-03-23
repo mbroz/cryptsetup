@@ -48,6 +48,12 @@ int crypt_benchmark(struct crypt_device *cd,
 	if (posix_memalign(&buffer, crypt_getpagesize(), buffer_size))
 		goto out;
 
+	r = crypt_cipher_ivsize(cipher, cipher_mode);
+	if (r >= 0 && iv_size != (size_t)r) {
+		log_dbg(cd, "IV length for benchmark adjusted to %i bytes (requested %zu).", r, iv_size);
+		iv_size = r;
+	}
+
 	if (iv_size) {
 		iv = malloc(iv_size);
 		if (!iv)
@@ -71,9 +77,9 @@ int crypt_benchmark(struct crypt_device *cd,
 
 	if (r == -ERANGE)
 		log_dbg(cd, "Measured cipher runtime is too low.");
-	else if (r == -ENOTSUP || r == -ENOENT)
-		log_dbg(cd, "Cannot initialize cipher %s, mode %s.", cipher, cipher_mode);
-
+	else if (r)
+		log_dbg(cd, "Cannot initialize cipher %s, mode %s, key size %zu, IV size %zu.",
+			cipher, cipher_mode, volume_key_size, iv_size);
 out:
 	free(buffer);
 	free(key);
