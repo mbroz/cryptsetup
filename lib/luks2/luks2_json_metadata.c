@@ -1625,7 +1625,7 @@ static void hdr_dump_tokens(struct crypt_device *cd, json_object *hdr_jobj)
 		json_object_object_get_ex(val, "keyslots", &jobj2);
 		for (i = 0; i < (int) json_object_array_length(jobj2); i++) {
 			jobj3 = json_object_array_get_idx(jobj2, i);
-			log_std(cd, "\tKeyslot:  %s\n", json_object_get_string(jobj3));
+			log_std(cd, "\tKeyslot:    %s\n", json_object_get_string(jobj3));
 		}
 	}
 }
