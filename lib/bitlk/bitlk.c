@@ -290,7 +290,7 @@ static int passphrase_to_utf16(struct crypt_device *cd, char *input, size_t inle
 		*out = outbuf;
 	} else {
 		*out = NULL;
-		free(outbuf);
+		crypt_safe_free(outbuf);
 		log_dbg(cd, "Failed to convert passphrase: %s", strerror(errno));
 		r = -errno;
 	}
