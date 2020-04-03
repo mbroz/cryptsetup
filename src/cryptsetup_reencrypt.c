@@ -194,8 +194,14 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 	ssize_t s;
 	uint16_t version;
 	size_t buf_size = pagesize();
+	struct stat st;
 
-	devfd = open(device, O_RDWR | O_EXCL | O_DIRECT);
+	if (stat(device, &st)) {
+		log_err(_("Cannot open device %s."), device);
+		return -EINVAL;
+	}
+
+	devfd = open(device, O_RDWR | (S_ISBLK(st.st_mode) ? O_EXCL : 0));
 	if (devfd == -1) {
 		if (errno == EBUSY) {
 			log_err(_("Cannot exclusively open %s, device in use."),
