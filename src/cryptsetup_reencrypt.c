@@ -201,6 +201,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 		return -EINVAL;
 	}
 
+	/* coverity[toctou] */
 	devfd = open(device, O_RDWR | (S_ISBLK(st.st_mode) ? O_EXCL : 0));
 	if (devfd == -1) {
 		if (errno == EBUSY) {
