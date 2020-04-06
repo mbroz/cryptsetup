@@ -36,7 +36,7 @@ static token_handler token_handlers[LUKS2_TOKENS_MAX] = {
 };
 
 static int
-crypt_token_load_external(const char *name, token_handler *ret)
+crypt_token_load_external(struct crypt_device *cd, const char *name, token_handler *ret)
 {
 #if USE_EXTERNAL_TOKENS
 	const crypt_token_handler *token = NULL;
@@ -56,7 +56,7 @@ crypt_token_load_external(const char *name, token_handler *ret)
 	if (r < 0 || (size_t)r >= sizeof(buf))
 		return -EINVAL;
 
-	log_dbg(NULL, "Trying to load %s.", buf);
+	log_dbg(cd, "Trying to load %s.", buf);
 
 	handle = dlopen(buf, RTLD_LAZY);
 	if (!handle) {
@@ -68,7 +68,7 @@ crypt_token_load_external(const char *name, token_handler *ret)
 	token = dlvsym(handle, CRYPT_TOKEN_ABI_HANDLER, CRYPT_TOKEN_ABI_VERSION1);
 	error = dlerror();
 	if (error) {
-		log_dbg(NULL, "%s", error);
+		log_dbg(cd, "%s", error);
 		dlclose(handle);
 		return -EINVAL;
 	}
@@ -87,18 +87,18 @@ static int is_builtin_candidate(const char *type)
 	return !strncmp(type, LUKS2_BUILTIN_TOKEN_PREFIX, LUKS2_BUILTIN_TOKEN_PREFIX_LEN);
 }
 
-static int crypt_token_find_free(const char *name, int *index)
+static int crypt_token_find_free(struct crypt_device *cd, const char *name, int *index)
 {
 	int i;
 
 	if (is_builtin_candidate(name)) {
-		log_dbg(NULL, "'" LUKS2_BUILTIN_TOKEN_PREFIX "' is reserved prefix for builtin tokens.");
+		log_dbg(cd, "'" LUKS2_BUILTIN_TOKEN_PREFIX "' is reserved prefix for builtin tokens.");
 		return -EINVAL;
 	}
 
 	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].h; i++) {
 		if (!strcmp(token_handlers[i].h->name, name)) {
-			log_dbg(NULL, "Keyslot handler %s is already registered.", name);
+			log_dbg(cd, "Keyslot handler %s is already registered.", name);
 			return -EINVAL;
 		}
 	}
@@ -119,7 +119,7 @@ int crypt_token_register(const crypt_token_handler *handler)
 	if (!handler->name || !handler->open)
 		return -EINVAL;
 
-	r = crypt_token_find_free(handler->name, &i);
+	r = crypt_token_find_free(NULL, handler->name, &i);
 	if (r < 0)
 		return r;
 
@@ -127,15 +127,15 @@ int crypt_token_register(const crypt_token_handler *handler)
 	return 0;
 }
 
-int crypt_token_load(const char *name)
+int crypt_token_load(struct crypt_device *cd, const char *name)
 {
 	int i, r;
 
-	r = crypt_token_find_free(name, &i);
+	r = crypt_token_find_free(cd, name, &i);
 	if (r < 0)
 		return r;
 
-	return crypt_token_load_external(name, &token_handlers[i]);
+	return crypt_token_load_external(cd, name, &token_handlers[i]);
 }
 
 void crypt_token_unload_external_all(struct crypt_device *cd)
@@ -168,7 +168,7 @@ static const crypt_token_handler
 	if (is_builtin_candidate(type))
 		return NULL;
 
-	if (crypt_token_load_external(type, &token_handlers[i]))
+	if (crypt_token_load_external(cd, type, &token_handlers[i]))
 		return NULL;
 
 	return token_handlers[i].h;

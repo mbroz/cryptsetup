@@ -2193,7 +2193,7 @@ int crypt_token_register(const crypt_token_handler *handler);
  *
  * @return @e 0 on success or negative errno value otherwise.
  */
-int crypt_token_load(const char *name);
+int crypt_token_load(struct crypt_device *cd, const char *name);
 
 /**
  * Activate device or check key using a token.
