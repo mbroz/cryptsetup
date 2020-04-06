@@ -123,7 +123,7 @@ static void keyslot_help(void)
 
 int main(int argc, char *argv[])
 {
-	if (crypt_token_load(TOKEN_NAME)) {
+	if (crypt_token_load(NULL, TOKEN_NAME)) {
 		printf("Cannot find token lib %s.\n", TOKEN_NAME);
 		return EXIT_FAILURE;
 	}
