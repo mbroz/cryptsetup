@@ -125,6 +125,7 @@ static const char *set_pbkdf = NULL;
 static const char **action_argv;
 static int action_argc;
 static const char *null_action_argv[] = {NULL, NULL};
+static int total_keyfiles = 0;
 
 void tools_cleanup(void)
 {
@@ -3609,7 +3610,7 @@ int main(int argc, const char **argv)
 	poptContext popt_context;
 	struct action_type *action;
 	const char *aname;
-	int r, total_keyfiles = 0;
+	int r;
 
 	crypt_set_log_callback(NULL, tool_log, NULL);
 
