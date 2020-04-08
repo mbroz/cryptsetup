@@ -230,6 +230,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 4, 0, integrity_maj, integrity_min, integrity_patch))
 		_dm_flags |= DM_INTEGRITY_FIX_PADDING_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 6, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_DISCARDS_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -897,6 +900,12 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	if (flags & CRYPT_ACTIVATE_RECALCULATE) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "recalculate ");
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
+	}
+
+	if (flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) {
+		num_options++;
+		snprintf(feature, sizeof(feature), "allow_discards ");
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 
@@ -1632,6 +1641,10 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	    !(dmt_flags & DM_INTEGRITY_RECALC_SUPPORTED))
 		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
 
+	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
+	    !(dmt_flags & DM_INTEGRITY_DISCARDS_SUPPORTED))
+		log_err(cd, _("Discard/TRIM is not supported."));
+
 	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) &&
 	    !(dmt_flags & DM_INTEGRITY_BITMAP_SUPPORTED))
 		log_err(cd, _("Requested dm-integrity bitmap mode is not supported."));
@@ -1663,6 +1676,9 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 			log_err(cd, _("Requested dm-crypt performance options are not supported."));
 		if ((dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
 		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_DISCARDS_SUPPORTED))
+			log_err(cd, _("Discard/TRIM is not supported."));
+		if ((dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
+		    !dm_flags(cd, DM_INTEGRITY, &dmt_flags) && !(dmt_flags & DM_INTEGRITY_DISCARDS_SUPPORTED))
 			log_err(cd, _("Discard/TRIM is not supported."));
 	}
 
@@ -2397,6 +2413,8 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 				*act_flags |= CRYPT_ACTIVATE_RECALCULATE;
 			} else if (!strcmp(arg, "fix_padding")) {
 				tgt->u.integrity.fix_padding = true;
+			} else if (!strcmp(arg, "allow_discards")) {
+				*act_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 			} else /* unknown option */
 				goto err;
 		}

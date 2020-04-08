@@ -33,7 +33,7 @@ Open a mapping with <name> backed by device <device>.
 \fB<options>\fR can be [\-\-data\-device, \-\-batch\-mode, \-\-journal\-watermark,
 \-\-journal\-commit\-time, \-\-buffer\-sectors, \-\-integrity, \-\-integrity\-key\-size,
 \-\-integrity\-key\-file, \-\-integrity\-no\-journal, \-\-integrity\-recalculate,
-\-\-integrity\-recovery\-mode]
+\-\-integrity\-recovery\-mode, \-\-allow\-discards]
 
 .PP
 \fIclose\fR <name>
@@ -173,6 +173,10 @@ The size of the journal encryption key.
 .TP
 .B "\-\-journal\-crypt\-key\-file FILE"
 The file with the journal encryption key.
+.TP
+.B "\-\-allow\-discards\fR"
+Allow the use of discard (TRIM) requests for the device.
+This option is available since the Linux kernel version 5.7.
 .TP
 The dm-integrity target is available since Linux kernel version 4.12.
 .TP
