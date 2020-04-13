@@ -58,9 +58,11 @@ json_object *LUKS2_get_segments_jobj(struct luks2_hdr *hdr);
 void hexprint_base64(struct crypt_device *cd, json_object *jobj,
 		     const char *sep, const char *line_sep);
 
+#if !(defined JSON_C_VERSION_NUM && JSON_C_VERSION_NUM >= ((13 << 8) | 99))
 uint64_t json_object_get_uint64(json_object *jobj);
-uint32_t json_object_get_uint32(json_object *jobj);
 json_object *json_object_new_uint64(uint64_t value);
+#endif
+uint32_t json_object_get_uint32(json_object *jobj);
 
 int json_object_object_add_by_uint(json_object *jobj, unsigned key, json_object *jobj_val);
 void json_object_object_del_by_uint(json_object *jobj, unsigned key);
