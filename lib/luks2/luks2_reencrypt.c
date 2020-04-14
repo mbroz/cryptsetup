@@ -165,7 +165,7 @@ static uint32_t reencrypt_alignment(struct luks2_hdr *hdr)
 	if (!json_object_object_get_ex(jobj_area, "sector_size", &jobj_sector_size))
 		return 0;
 
-	return json_object_get_uint32(jobj_sector_size);
+	return crypt_jobj_get_uint32(jobj_sector_size);
 }
 
 static json_object *_enc_create_segments_shift_after(struct crypt_device *cd,
@@ -200,13 +200,13 @@ static json_object *_enc_create_segments_shift_after(struct crypt_device *cd,
 		json_segment_remove_flag(jobj_seg_new, "in-reencryption");
 		tmp = rh->length;
 	} else {
-		json_object_object_add(jobj_seg_new, "offset", json_object_new_uint64(rh->offset + data_offset));
-		json_object_object_add(jobj_seg_new, "iv_tweak", json_object_new_uint64(rh->offset >> SECTOR_SHIFT));
+		json_object_object_add(jobj_seg_new, "offset", crypt_jobj_new_uint64(rh->offset + data_offset));
+		json_object_object_add(jobj_seg_new, "iv_tweak", crypt_jobj_new_uint64(rh->offset >> SECTOR_SHIFT));
 		tmp = json_segment_get_size(jobj_seg_new, 0) + rh->length;
 	}
 
 	/* alter size of new segment, reenc_seg == 0 we're finished */
-	json_object_object_add(jobj_seg_new, "size", reenc_seg > 0 ? json_object_new_uint64(tmp) : json_object_new_string("dynamic"));
+	json_object_object_add(jobj_seg_new, "size", reenc_seg > 0 ? crypt_jobj_new_uint64(tmp) : json_object_new_string("dynamic"));
 	json_object_object_add_by_uint(jobj_segs_post, reenc_seg, jobj_seg_new);
 
 	return jobj_segs_post;
@@ -256,7 +256,7 @@ static json_object *reencrypt_make_hot_segments_encrypt_shift(struct crypt_devic
 		jobj_seg_shrunk = NULL;
 		if (json_object_copy(LUKS2_get_segment_jobj(hdr, sg), &jobj_seg_shrunk))
 			goto err;
-		json_object_object_add(jobj_seg_shrunk, "size", json_object_new_uint64(segment_size - rh->length));
+		json_object_object_add(jobj_seg_shrunk, "size", crypt_jobj_new_uint64(segment_size - rh->length));
 		json_object_object_add_by_uint(jobj_segs_hot, sg++, jobj_seg_shrunk);
 	}
 
@@ -336,7 +336,7 @@ static json_object *reencrypt_make_post_segments_forward(struct crypt_device *cd
 				goto err;
 			jobj_old_seg = jobj_old_seg_copy;
 			fixed_length = rh->device_size - fixed_length;
-			json_object_object_add(jobj_old_seg, "size", json_object_new_uint64(fixed_length));
+			json_object_object_add(jobj_old_seg, "size", crypt_jobj_new_uint64(fixed_length));
 		} else
 			json_object_get(jobj_old_seg);
 		json_object_object_add_by_uint(jobj_segs_post, 1, jobj_old_seg);
@@ -491,7 +491,7 @@ static json_object *reencrypt_make_hot_segments_backward(struct crypt_device *cd
 	if (rh->offset) {
 		if (json_object_copy(LUKS2_get_segment_jobj(hdr, 0), &jobj_old_seg))
 			goto err;
-		json_object_object_add(jobj_old_seg, "size", json_object_new_uint64(rh->offset));
+		json_object_object_add(jobj_old_seg, "size", crypt_jobj_new_uint64(rh->offset));
 
 		json_object_object_add_by_uint(jobj_segs_hot, sg++, jobj_old_seg);
 	}
@@ -575,7 +575,7 @@ static uint64_t reencrypt_data_shift(struct luks2_hdr *hdr)
 	if (!json_object_object_get_ex(jobj_area, "shift_size", &jobj_data_shift))
 		return 0;
 
-	return json_object_get_uint64(jobj_data_shift);
+	return crypt_jobj_get_uint64(jobj_data_shift);
 }
 
 static crypt_reencrypt_mode_info reencrypt_mode(struct luks2_hdr *hdr)

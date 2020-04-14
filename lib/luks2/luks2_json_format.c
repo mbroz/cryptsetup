@@ -325,8 +325,8 @@ int LUKS2_generate_hdr(
 
 	json_object_object_add_by_uint(jobj_segments, 0, jobj_segment);
 
-	json_object_object_add(jobj_config, "json_size", json_object_new_uint64(metadata_size - LUKS2_HDR_BIN_LEN));
-	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));
+	json_object_object_add(jobj_config, "json_size", crypt_jobj_new_uint64(metadata_size - LUKS2_HDR_BIN_LEN));
+	json_object_object_add(jobj_config, "keyslots_size", crypt_jobj_new_uint64(keyslots_size));
 
 	JSON_DBG(cd, hdr->jobj, "Header JSON:");
 	return 0;
@@ -400,6 +400,6 @@ int LUKS2_set_keyslots_size(struct crypt_device *cd,
 	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
 		return 1;
 
-	json_object_object_add(jobj_config, "keyslots_size", json_object_new_uint64(keyslots_size));
+	json_object_object_add(jobj_config, "keyslots_size", crypt_jobj_new_uint64(keyslots_size));
 	return 0;
 }

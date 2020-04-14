@@ -219,7 +219,7 @@ int LUKS2_get_default_segment(struct luks2_hdr *hdr)
  * json_type_int needs to be validated first.
  * See validate_json_uint32()
  */
-uint32_t json_object_get_uint32(json_object *jobj)
+uint32_t crypt_jobj_get_uint32(json_object *jobj)
 {
 	return json_object_get_int64(jobj);
 }
@@ -241,15 +241,14 @@ static json_bool json_str_to_uint64(json_object *jobj, uint64_t *value)
 	return 1;
 }
 
-#if !(defined JSON_C_VERSION_NUM && JSON_C_VERSION_NUM >= ((13 << 8) | 99))
-uint64_t json_object_get_uint64(json_object *jobj)
+uint64_t crypt_jobj_get_uint64(json_object *jobj)
 {
 	uint64_t r;
 	json_str_to_uint64(jobj, &r);
 	return r;
 }
 
-json_object *json_object_new_uint64(uint64_t value)
+json_object *crypt_jobj_new_uint64(uint64_t value)
 {
 	/* 18446744073709551615 */
 	char num[21];
@@ -263,7 +262,6 @@ json_object *json_object_new_uint64(uint64_t value)
 	jobj = json_object_new_string(num);
 	return jobj;
 }
-#endif
 
 /*
  * Validate helpers
@@ -457,7 +455,7 @@ static int hdr_validate_json_size(struct crypt_device *cd, json_object *hdr_jobj
 
 	json = json_object_to_json_string_ext(hdr_jobj,
 		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
-	json_area_size = json_object_get_uint64(jobj1);
+	json_area_size = crypt_jobj_get_uint64(jobj1);
 	json_size = (uint64_t)strlen(json);
 
 	if (hdr_json_size != json_area_size) {
@@ -545,7 +543,7 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd,
 		return 1;
 	}
 
-	sector_size = json_object_get_uint32(jobj_sector_size);
+	sector_size = crypt_jobj_get_uint32(jobj_sector_size);
 	if (!sector_size || MISALIGNED_512(sector_size)) {
 		log_dbg(cd, "Illegal sector size: %" PRIu32, sector_size);
 		return 1;
@@ -1569,7 +1567,7 @@ static void hdr_dump_keyslots(struct crypt_device *cd, json_object *hdr_jobj)
 		log_std(cd, "  %s: %s%s\n", slot, tmps, r == -ENOENT ? " (unbound)" : "");
 
 		if (json_object_object_get_ex(val, "key_size", &jobj2))
-			log_std(cd, "\tKey:        %u bits\n", json_object_get_uint32(jobj2) * 8);
+			log_std(cd, "\tKey:        %u bits\n", crypt_jobj_get_uint32(jobj2) * 8);
 
 		log_std(cd, "\tPriority:   %s\n", get_priority_desc(val));
 
@@ -1652,7 +1650,7 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 			log_std(cd, "\tcipher: %s\n", json_object_get_string(jobj1));
 
 		if (json_object_object_get_ex(jobj_segment, "sector_size", &jobj1))
-			log_std(cd, "\tsector: %" PRIu32 " [bytes]\n", json_object_get_uint32(jobj1));
+			log_std(cd, "\tsector: %" PRIu32 " [bytes]\n", crypt_jobj_get_uint32(jobj1));
 
 		if (json_object_object_get_ex(jobj_segment, "integrity", &jobj1) &&
 		    json_object_object_get_ex(jobj1, "type", &jobj2))
@@ -1749,7 +1747,7 @@ int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic)
 			return 0;
 		}
 
-		tmp += json_object_get_uint64(jobj_size);
+		tmp += crypt_jobj_get_uint64(jobj_size);
 	}
 
 	/* impossible, real device size must not be zero */
