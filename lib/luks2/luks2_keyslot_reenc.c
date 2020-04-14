@@ -67,13 +67,13 @@ int reenc_keyslot_alloc(struct crypt_device *cd,
 
 	if (params->data_shift) {
 		json_object_object_add(jobj_area, "type", json_object_new_string("datashift"));
-		json_object_object_add(jobj_area, "shift_size", json_object_new_uint64(params->data_shift << SECTOR_SHIFT));
+		json_object_object_add(jobj_area, "shift_size", crypt_jobj_new_uint64(params->data_shift << SECTOR_SHIFT));
 	} else
 		/* except data shift protection, initial setting is irrelevant. Type can be changed during reencryption */
 		json_object_object_add(jobj_area, "type", json_object_new_string("none"));
 
-	json_object_object_add(jobj_area, "offset", json_object_new_uint64(area_offset));
-	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
+	json_object_object_add(jobj_area, "offset", crypt_jobj_new_uint64(area_offset));
+	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
 
 	json_object_object_add(jobj_keyslot, "type", json_object_new_string("reencrypt"));
 	json_object_object_add(jobj_keyslot, "key_size", json_object_new_int(1)); /* useless but mandatory */
@@ -113,8 +113,8 @@ static int reenc_keyslot_store_data(struct crypt_device *cd,
 	    !json_object_object_get_ex(jobj_area, "size", &jobj_length))
 		return -EINVAL;
 
-	area_offset = json_object_get_uint64(jobj_offset);
-	area_length = json_object_get_uint64(jobj_length);
+	area_offset = crypt_jobj_get_uint64(jobj_offset);
+	area_length = crypt_jobj_get_uint64(jobj_length);
 
 	if (!area_offset || !area_length || ((uint64_t)buffer_len > area_length))
 		return -EINVAL;
@@ -242,14 +242,14 @@ static int reenc_keyslot_dump(struct crypt_device *cd, int keyslot)
 		log_std(cd, "\t%-12s%d [bytes]\n", "Hash data:", json_object_get_int(jobj1));
 	} else if (!strcmp(json_object_get_string(jobj_resilience), "datashift")) {
 		json_object_object_get_ex(jobj_area, "shift_size", &jobj1);
-		log_std(cd, "\t%-12s%" PRIu64 "[bytes]\n", "Shift size:", json_object_get_uint64(jobj1));
+		log_std(cd, "\t%-12s%" PRIu64 "[bytes]\n", "Shift size:", crypt_jobj_get_uint64(jobj1));
 	}
 
 	json_object_object_get_ex(jobj_area, "offset", &jobj1);
-	log_std(cd, "\tArea offset:%" PRIu64 " [bytes]\n", json_object_get_uint64(jobj1));
+	log_std(cd, "\tArea offset:%" PRIu64 " [bytes]\n", crypt_jobj_get_uint64(jobj1));
 
 	json_object_object_get_ex(jobj_area, "size", &jobj1);
-	log_std(cd, "\tArea length:%" PRIu64 " [bytes]\n", json_object_get_uint64(jobj1));
+	log_std(cd, "\tArea length:%" PRIu64 " [bytes]\n", crypt_jobj_get_uint64(jobj1));
 
 	return 0;
 }
@@ -304,7 +304,7 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 			return -EINVAL;
 		if (!validate_json_uint32(jobj_sector_size))
 			return -EINVAL;
-		sector_size = json_object_get_uint32(jobj_sector_size);
+		sector_size = crypt_jobj_get_uint32(jobj_sector_size);
 		if (sector_size < SECTOR_SIZE || NOTPOW2(sector_size)) {
 			log_dbg(cd, "Invalid sector_size (%" PRIu32 ") for checksum resilience mode.", sector_size);
 			return -EINVAL;
@@ -313,7 +313,7 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 		if (!(jobj_shift_size = json_contains(cd, jobj_area, "type:datashift", "Keyslot area", "shift_size", json_type_string)))
 			return -EINVAL;
 
-		shift_size = json_object_get_uint64(jobj_shift_size);
+		shift_size = crypt_jobj_get_uint64(jobj_shift_size);
 		if (!shift_size)
 			return -EINVAL;
 

@@ -220,7 +220,7 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 
 	if (!json_object_object_get_ex(jobj_area, "offset", &jobj2))
 		return -EINVAL;
-	area_offset = json_object_get_uint64(jobj2);
+	area_offset = crypt_jobj_get_uint64(jobj2);
 
 	if (!json_object_object_get_ex(jobj_area, "encryption", &jobj2))
 		return -EINVAL;
@@ -313,7 +313,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 
 	if (!json_object_object_get_ex(jobj_area, "offset", &jobj2))
 		return -EINVAL;
-	area_offset = json_object_get_uint64(jobj2);
+	area_offset = crypt_jobj_get_uint64(jobj2);
 
 	if (!json_object_object_get_ex(jobj_area, "encryption", &jobj2))
 		return -EINVAL;
@@ -494,8 +494,8 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 	/* Area object */
 	jobj_area = json_object_new_object();
 	json_object_object_add(jobj_area, "type", json_object_new_string("raw"));
-	json_object_object_add(jobj_area, "offset", json_object_new_uint64(area_offset));
-	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
+	json_object_object_add(jobj_area, "offset", crypt_jobj_new_uint64(area_offset));
+	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
 
 	json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
@@ -607,7 +607,7 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 	log_std(cd, "\tCipher:     %s\n", json_object_get_string(jobj1));
 
 	json_object_object_get_ex(jobj_area, "key_size", &jobj1);
-	log_std(cd, "\tCipher key: %u bits\n", json_object_get_uint32(jobj1) * 8);
+	log_std(cd, "\tCipher key: %u bits\n", crypt_jobj_get_uint32(jobj1) * 8);
 
 	json_object_object_get_ex(jobj_kdf, "type", &jobj1);
 	log_std(cd, "\tPBKDF:      %s\n", json_object_get_string(jobj1));
@@ -617,7 +617,7 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 		log_std(cd, "\tHash:       %s\n", json_object_get_string(jobj1));
 
 		json_object_object_get_ex(jobj_kdf, "iterations", &jobj1);
-		log_std(cd, "\tIterations: %" PRIu64 "\n", json_object_get_uint64(jobj1));
+		log_std(cd, "\tIterations: %" PRIu64 "\n", crypt_jobj_get_uint64(jobj1));
 	} else {
 		json_object_object_get_ex(jobj_kdf, "time", &jobj1);
 		log_std(cd, "\tTime cost:  %" PRIu64 "\n", json_object_get_int64(jobj1));
@@ -640,10 +640,10 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 	log_std(cd, "\tAF hash:    %s\n", json_object_get_string(jobj1));
 
 	json_object_object_get_ex(jobj_area, "offset", &jobj1);
-	log_std(cd, "\tArea offset:%" PRIu64 " [bytes]\n", json_object_get_uint64(jobj1));
+	log_std(cd, "\tArea offset:%" PRIu64 " [bytes]\n", crypt_jobj_get_uint64(jobj1));
 
 	json_object_object_get_ex(jobj_area, "size", &jobj1);
-	log_std(cd, "\tArea length:%" PRIu64 " [bytes]\n", json_object_get_uint64(jobj1));
+	log_std(cd, "\tArea length:%" PRIu64 " [bytes]\n", crypt_jobj_get_uint64(jobj1));
 
 	return 0;
 }

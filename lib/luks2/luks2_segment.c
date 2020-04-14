@@ -55,7 +55,7 @@ uint64_t json_segment_get_offset(json_object *jobj_segment, unsigned blockwise)
 	    !json_object_object_get_ex(jobj_segment, "offset", &jobj))
 		return 0;
 
-	return blockwise ? json_object_get_uint64(jobj) >> SECTOR_SHIFT : json_object_get_uint64(jobj);
+	return blockwise ? crypt_jobj_get_uint64(jobj) >> SECTOR_SHIFT : crypt_jobj_get_uint64(jobj);
 }
 
 const char *json_segment_type(json_object *jobj_segment)
@@ -77,7 +77,7 @@ uint64_t json_segment_get_iv_offset(json_object *jobj_segment)
 	    !json_object_object_get_ex(jobj_segment, "iv_tweak", &jobj))
 		return 0;
 
-	return json_object_get_uint64(jobj);
+	return crypt_jobj_get_uint64(jobj);
 }
 
 uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise)
@@ -88,7 +88,7 @@ uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise)
 	    !json_object_object_get_ex(jobj_segment, "size", &jobj))
 		return 0;
 
-	return blockwise ? json_object_get_uint64(jobj) >> SECTOR_SHIFT : json_object_get_uint64(jobj);
+	return blockwise ? crypt_jobj_get_uint64(jobj) >> SECTOR_SHIFT : crypt_jobj_get_uint64(jobj);
 }
 
 const char *json_segment_get_cipher(json_object *jobj_segment)
@@ -229,8 +229,8 @@ static json_object *_segment_create_generic(const char *type, uint64_t offset, c
 		return NULL;
 
 	json_object_object_add(jobj, "type",		json_object_new_string(type));
-	json_object_object_add(jobj, "offset",		json_object_new_uint64(offset));
-	json_object_object_add(jobj, "size",		length ? json_object_new_uint64(*length) : json_object_new_string("dynamic"));
+	json_object_object_add(jobj, "offset",		crypt_jobj_new_uint64(offset));
+	json_object_object_add(jobj, "size",		length ? crypt_jobj_new_uint64(*length) : json_object_new_string("dynamic"));
 
 	return jobj;
 }
@@ -252,7 +252,7 @@ json_object *json_segment_create_crypt(uint64_t offset,
 	if (!jobj)
 		return NULL;
 
-	json_object_object_add(jobj, "iv_tweak",	json_object_new_uint64(iv_offset));
+	json_object_object_add(jobj, "iv_tweak",	crypt_jobj_new_uint64(iv_offset));
 	json_object_object_add(jobj, "encryption",	json_object_new_string(cipher));
 	json_object_object_add(jobj, "sector_size",	json_object_new_int(sector_size));
 	if (reencryption)

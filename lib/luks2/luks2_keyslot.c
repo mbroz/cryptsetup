@@ -300,11 +300,11 @@ int LUKS2_keyslot_area(struct luks2_hdr *hdr,
 
 	if (!json_object_object_get_ex(jobj_area, "offset", &jobj))
 		return -EINVAL;
-	*offset = json_object_get_uint64(jobj);
+	*offset = crypt_jobj_get_uint64(jobj);
 
 	if (!json_object_object_get_ex(jobj_area, "size", &jobj))
 		return -EINVAL;
-	*length = json_object_get_uint64(jobj);
+	*length = crypt_jobj_get_uint64(jobj);
 
 	return 0;
 }
@@ -835,8 +835,8 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 
 	/* Area object */
 	jobj_area = json_object_new_object();
-	json_object_object_add(jobj_area, "offset", json_object_new_uint64(area_offset));
-	json_object_object_add(jobj_area, "size", json_object_new_uint64(area_length));
+	json_object_object_add(jobj_area, "offset", crypt_jobj_new_uint64(area_offset));
+	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
 
 	json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
