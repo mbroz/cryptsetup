@@ -33,6 +33,8 @@ VK_FILE="compattest2_vkfile"
 IMPORT_TOKEN="{\"type\":\"some_type\",\"keyslots\":[],\"base64_data\":\"zxI7vKB1Qwl4VPB4D-N-OgcC14hPCG0IDu8O7eCqaQ\"}"
 TOKEN_FILE0=test-token-file0
 TOKEN_FILE1=test-token-file1
+KEY_FILE0=test-key-file0
+KEY_FILE1=test-key-file1
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
@@ -47,7 +49,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* $KEY_FILE0 $KEY_FILE1 >/dev/null 2>&1
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -916,7 +918,8 @@ $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEY5 --key-slot
 echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 16 $LOOPDEV || fail
 echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 32 -S 2 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2 (unbound)" || fail
-echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 8 -S 3 --master-key-file /dev/urandom $LOOPDEV || fail
+dd if=/dev/urandom of=$KEY_FILE0 bs=64 count=1 > /dev/null 2>&1 || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 512 -S 3 --master-key-file $KEY_FILE0 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" || fail
 # unbound key size is required
 echo $PWD1 | $CRYPTSETUP -q luksAddKey --unbound $LOOPDEV 2>/dev/null && fail
@@ -941,7 +944,16 @@ echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP close $DEV_NAME || fail
 $CRYPTSETUP luksKillSlot -q $LOOPDEV 2
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2 (unbound)" && fail
-$CRYPTSETUP luksKillSlot -q $LOOPDEV 3
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --master-key-file $KEY_FILE1 $LOOPDEV 2> /dev/null && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound 2> /dev/null $LOOPDEV 2> /dev/null && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --master-key-file $KEY_FILE1 -S3 $LOOPDEV > /dev/null || fail
+diff $KEY_FILE0 $KEY_FILE1 || fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --master-key-file $KEY_FILE1 -S3 $LOOPDEV 2> /dev/null && fail
+diff $KEY_FILE0 $KEY_FILE1 || fail
+rm $KEY_FILE1 || fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --master-key-file $KEY_FILE1 -S3 $LOOPDEV | grep -q "Unbound Key:" && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound -S3 $LOOPDEV | grep -q "Unbound Key:" || fail
+$CRYPTSETUP luksKillSlot -q $LOOPDEV 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" && fail
 
 prepare "[39] LUKS2 metadata variants" wipe

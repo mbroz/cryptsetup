@@ -490,14 +490,18 @@ master key is dumped to a file instead of standard output. Beware that the
 master key cannot be changed without reencryption and can be used to decrypt
 the data stored in the LUKS container without a passphrase and even without the
 LUKS header. This means that if the master key is compromised, the whole device
-has to be erased to prevent further access. Use this option carefully.
+has to be erased or reencrypted to prevent further access. Use this option carefully.
 
 To dump the master key, a passphrase has to be supplied,
 either interactively or via \-\-key\-file.
 
+To dump unbound key (LUKS2 format only), \-\-unbound parameter, specific \-\-key-slot
+id and proper passphrase has to be supplied, either interactively or via \-\-key\-file.
+Optional \-\-master\-key\-file parameter enables unbound keyslot dump to a file.
+
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
 \-\-keyfile\-offset, \-\-keyfile\-size, \-\-header, \-\-disable\-locks,
-\-\-master\-key\-file, \-\-type].
+\-\-master\-key\-file, \-\-type, \-\-unbound, \-\-key-slot].
 
 \fBWARNING:\fR If \-\-dump\-master\-key is used with \-\-key\-file
 and the argument to \-\-key\-file is '-', no validation question
@@ -1368,8 +1372,9 @@ integrity tag.
 .TP
 .B "\-\-unbound"
 
-Creates new LUKS2 unbound keyslot. See \fIluksAddKey\fR action for more
-details.
+Creates new or dumps existing LUKS2 unbound keyslot. See \fIluksAddKey\fR or
+\fIluksDump\fR actions for more details.
+
 .TP
 .B "\-\-tcrypt\-hidden"
 .B "\-\-tcrypt\-system"

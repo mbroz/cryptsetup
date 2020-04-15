@@ -2049,6 +2049,76 @@ out:
 	return r;
 }
 
+static int luksDump_with_unbound_key(struct crypt_device *cd)
+{
+	crypt_keyslot_info ki;
+	char *uk = NULL, *password = NULL;
+	size_t uk_size, passwordLen = 0;
+	int i, r;
+
+	ki = crypt_keyslot_status(cd, opt_key_slot);
+	if (ki != CRYPT_SLOT_UNBOUND) {
+		log_err(_("Keyslot %d does not contain unbound key."), opt_key_slot);
+		return -EINVAL;
+	}
+
+	crypt_set_confirm_callback(cd, yesDialog, NULL);
+	if (!yesDialog(
+	    _("Header dump with unbound key could contain sensitive information.\n"
+	      "This dump should be stored encrypted on safe place."),
+	      NULL))
+		return -EPERM;
+
+	r = crypt_keyslot_get_key_size(cd, opt_key_slot);
+	if (r < 0)
+		return -EINVAL;
+	uk_size = r;
+	uk = crypt_safe_alloc(uk_size);
+	if (!uk)
+		return -ENOMEM;
+
+	r = tools_get_key(NULL, &password, &passwordLen,
+			  opt_keyfile_offset, opt_keyfile_size, opt_key_file,
+			  opt_timeout, 0, 0, cd);
+	if (r < 0)
+		goto out;
+
+	r = crypt_volume_key_get(cd, opt_key_slot, uk, &uk_size,
+				 password, passwordLen);
+	tools_passphrase_msg(r);
+	check_signal(&r);
+	if (r < 0)
+		goto out;
+	tools_keyslot_msg(r, UNLOCKED);
+
+	if (opt_master_key_file) {
+		r = tools_write_mk(opt_master_key_file, uk, uk_size);
+		if (r < 0)
+			goto out;
+	}
+
+	log_std("LUKS header information for %s\n", crypt_get_device_name(cd));
+	log_std("UUID:    \t%s\n", crypt_get_uuid(cd));
+	log_std("Keyslot: \t%d\n", opt_key_slot);
+	log_std("Key bits:\t%d\n", (int)uk_size * 8);
+	if (opt_master_key_file) {
+		log_std("Key stored to file %s.\n", opt_master_key_file);
+		goto out;
+	}
+	log_std("Unbound Key:\t");
+
+	for(i = 0; i < uk_size; i++) {
+		if (i && !(i % 16))
+			log_std("\n\t\t");
+		log_std("%02hhx ", (char)uk[i]);
+	}
+	log_std("\n");
+out:
+	crypt_safe_free(password);
+	crypt_safe_free(uk);
+	return r;
+}
+
 static int action_luksDump(void)
 {
 	struct crypt_device *cd = NULL;
@@ -2065,6 +2135,8 @@ static int action_luksDump(void)
 
 	if (opt_dump_master_key)
 		r = luksDump_with_volume_key(cd);
+	else if (opt_unbound)
+		r = luksDump_with_unbound_key(cd);
 	else
 		r = crypt_dump(cd);
 out:
@@ -3471,7 +3543,7 @@ int main(int argc, const char **argv)
 		{ "persistent",	       '\0', POPT_ARG_NONE, &opt_persistent,            0, N_("Set activation flags persistent for device"), NULL },
 		{ "label",	       '\0', POPT_ARG_STRING, &opt_label,               0, N_("Set label for the LUKS2 device"), NULL },
 		{ "subsystem",	       '\0', POPT_ARG_STRING, &opt_subsystem,           0, N_("Set subsystem label for the LUKS2 device"), NULL },
-		{ "unbound",           '\0', POPT_ARG_NONE, &opt_unbound,               0, N_("Create unbound (no assigned data segment) LUKS2 keyslot"), NULL },
+		{ "unbound",           '\0', POPT_ARG_NONE, &opt_unbound,               0, N_("Create or dump unbound (no assigned data segment) LUKS2 keyslot"), NULL },
 		{ "json-file",	       '\0', POPT_ARG_STRING, &opt_json_file,           0, N_("Read or write the json from or to a file"), NULL },
 		{ "luks2-metadata-size",'\0',POPT_ARG_STRING,&opt_luks2_metadata_size_str,0,N_("LUKS2 header metadata area size"), N_("bytes") },
 		{ "luks2-keyslots-size",'\0',POPT_ARG_STRING,&opt_luks2_keyslots_size_str,0,N_("LUKS2 header keyslots area size"), N_("bytes") },
@@ -3850,14 +3922,19 @@ int main(int argc, const char **argv)
 		      _("Unsupported encryption sector size."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_unbound && !opt_key_size)
+	if (opt_unbound && !opt_key_size && !strcmp(aname, "luksAddKey"))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Key size is required with --unbound option."),
 		      poptGetInvocationName(popt_context));
 
-	if (opt_unbound && strcmp(aname, "luksAddKey"))
+	if (opt_unbound && !strcmp(aname, "luksDump") && opt_key_slot == CRYPT_ANY_SLOT)
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --unbound may be used only with luksAddKey action."),
+		      _("Keyslot specification is required."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_unbound && strcmp(aname, "luksAddKey") && strcmp(aname, "luksDump"))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Option --unbound may be used only with luksAddKey and luksDump actions."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_refresh && strcmp(aname, "open"))
