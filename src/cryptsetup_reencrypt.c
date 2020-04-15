@@ -257,7 +257,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 		if (lseek(devfd, 0, SEEK_SET) == -1)
 			goto out;
 		s = write(devfd, buf, buf_size);
-		if (s < 0 || s != (ssize_t)buf_size) {
+		if (s < 0 || s != (ssize_t)buf_size || fsync(devfd) < 0) {
 			log_err(_("Cannot write device %s."), device);
 			r = -EIO;
 		}
