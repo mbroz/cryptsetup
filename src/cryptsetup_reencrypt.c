@@ -1690,12 +1690,12 @@ int main(int argc, const char **argv)
 
 	if (opt_pbkdf && crypt_parse_pbkdf(opt_pbkdf, &opt_pbkdf))
 		usage(popt_context, EXIT_FAILURE,
-		_("Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id.\n"),
+		_("Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_pbkdf_iterations && opt_iteration_time)
 		usage(popt_context, EXIT_FAILURE,
-		_("PBKDF forced iterations cannot be combined with iteration time option.\n"),
+		_("PBKDF forced iterations cannot be combined with iteration time option."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_bsize < 1 || opt_bsize > 64)

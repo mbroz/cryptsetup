@@ -651,7 +651,7 @@ int main(int argc, const char **argv)
 
 	if (opt_allow_discards && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --allow-discards is allowed only for open operation.\n"),
+		      _("Option --allow-discards is allowed only for open operation."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_interleave_sectors < 0 || opt_journal_watermark < 0 ||
@@ -667,7 +667,7 @@ int main(int argc, const char **argv)
 		opt_sector_size || opt_tag_size || opt_no_wipe ))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Options --journal-size, --interleave-sectors, --sector-size, --tag-size"
-		        " and --no-wipe can be used only for format action.\n"),
+		        " and --no-wipe can be used only for format action."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_journal_size_str &&

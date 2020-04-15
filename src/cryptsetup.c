@@ -3632,42 +3632,42 @@ int main(int argc, const char **argv)
 
 	if (opt_refresh && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Parameter --refresh is only allowed with open or refresh commands.\n"),
+		      _("Parameter --refresh is only allowed with open or refresh commands."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_refresh && opt_test_passphrase)
 		usage(popt_context, EXIT_FAILURE,
-		      _("Options --refresh and --test-passphrase are mutually exclusive.\n"),
+		      _("Options --refresh and --test-passphrase are mutually exclusive."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_deferred_remove && strcmp(aname, "close"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --deferred is allowed only for close command.\n"),
+		      _("Option --deferred is allowed only for close command."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_shared && (strcmp(aname, "open") || strcmp_or_null(opt_type, "plain")))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --shared is allowed only for open of plain device.\n"),
+		      _("Option --shared is allowed only for open of plain device."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_allow_discards && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --allow-discards is allowed only for open operation.\n"),
+		      _("Option --allow-discards is allowed only for open operation."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_persistent && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --persistent is allowed only for open operation.\n"),
+		      _("Option --persistent is allowed only for open operation."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_serialize_memory_hard_pbkdf && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --serialize-memory-hard-pbkdf is allowed only for open operation.\n"),
+		      _("Option --serialize-memory-hard-pbkdf is allowed only for open operation."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_persistent && opt_test_passphrase)
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --persistent is not allowed with --test-passphrase.\n"),
+		      _("Option --persistent is not allowed with --test-passphrase."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size &&
@@ -3683,24 +3683,24 @@ int main(int argc, const char **argv)
 
 	if (opt_integrity && strcmp(aname, "luksFormat"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --integrity is allowed only for luksFormat (LUKS2).\n"),
+		      _("Option --integrity is allowed only for luksFormat (LUKS2)."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_integrity_no_wipe && !opt_integrity)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Option --integrity-no-wipe"
-		        " can be used only for format action with integrity extension.\n"),
+		        " can be used only for format action with integrity extension."),
 		      poptGetInvocationName(popt_context));
 
 	if ((opt_label || opt_subsystem) && strcmp(aname, "luksFormat") && strcmp(aname, "config"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Options --label and --subsystem are allowed only for luksFormat and config LUKS2 operations.\n"),
+		      _("Options --label and --subsystem are allowed only for luksFormat and config LUKS2 operations."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_test_passphrase && (strcmp(aname, "open") || !opt_type ||
 	    (strncmp(opt_type, "luks", 4) && strcmp(opt_type, "tcrypt") && strcmp(opt_type, "bitlk"))))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK devices.\n"),
+		      _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK devices."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_key_size % 8 || opt_keyslot_key_size % 8)
@@ -3768,40 +3768,40 @@ int main(int argc, const char **argv)
 	if (opt_skip && (strcmp(aname, "open") ||
 	    (strcmp_or_null(opt_type, "plain") && strcmp(opt_type, "loopaes"))))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --skip is supported only for open of plain and loopaes devices.\n"),
+		_("Option --skip is supported only for open of plain and loopaes devices."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_offset && ((strcmp(aname, "reencrypt") && strcmp(aname, "open") && strcmp(aname, "luksFormat")) ||
 	    (!strcmp(aname, "open") && strcmp_or_null(opt_type, "plain") && strcmp(opt_type, "loopaes")) ||
 	    (!strcmp(aname, "luksFormat") && opt_type && strncmp(opt_type, "luks", 4))))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --offset is supported only for open of plain and loopaes devices, luksFormat and device reencryption.\n"),
+		_("Option --offset is supported only for open of plain and loopaes devices, luksFormat and device reencryption."),
 		poptGetInvocationName(popt_context));
 
 	if ((opt_tcrypt_hidden || opt_tcrypt_system || opt_tcrypt_backup) && strcmp(aname, "tcryptDump") &&
 	    (strcmp(aname, "open") || !opt_type || strcmp(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.\n"),
+		_("Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_tcrypt_hidden && opt_allow_discards)
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --tcrypt-hidden cannot be combined with --allow-discards.\n"),
+		_("Option --tcrypt-hidden cannot be combined with --allow-discards."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_veracrypt && (!opt_type || strcmp(opt_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --veracrypt is supported only for TCRYPT device type.\n"),
+		_("Option --veracrypt is supported only for TCRYPT device type."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_veracrypt_pim != -1) {
 		if (opt_veracrypt_pim < -1) {
 			usage(popt_context, EXIT_FAILURE,
-			_("Invalid argument for parameter --veracrypt-pim supplied.\n"),
+			_("Invalid argument for parameter --veracrypt-pim supplied."),
 			poptGetInvocationName(popt_context));
 		} else if (!opt_veracrypt) {
 			usage(popt_context, EXIT_FAILURE,
-			_("Option --veracrypt-pim is supported only for VeraCrypt compatible devices.\n"),
+			_("Option --veracrypt-pim is supported only for VeraCrypt compatible devices."),
 			poptGetInvocationName(popt_context));
 		}
 	}
@@ -3809,60 +3809,60 @@ int main(int argc, const char **argv)
 	if (opt_veracrypt_query_pim) {
 		if (!opt_veracrypt) {
 			usage(popt_context, EXIT_FAILURE,
-			_("Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices.\n"),
+			_("Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices."),
 			poptGetInvocationName(popt_context));
 		} else if (opt_veracrypt_pim != -1) {
 			usage(popt_context, EXIT_FAILURE,
-			_("The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive.\n"),
+			_("The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive."),
 			poptGetInvocationName(popt_context));
 		}
 	}
 
 	if (opt_priority && strcmp(opt_priority, "normal") && strcmp(opt_priority, "prefer") && strcmp(opt_priority, "ignore"))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --priority can be only ignore/normal/prefer.\n"),
+		_("Option --priority can be only ignore/normal/prefer."),
 		poptGetInvocationName(popt_context));
 
 	if (!strcmp(aname, "config") && opt_priority && opt_key_slot == CRYPT_ANY_SLOT)
 		usage(popt_context, EXIT_FAILURE,
-		_("Keyslot specification is required.\n"),
+		_("Keyslot specification is required."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_pbkdf && crypt_parse_pbkdf(opt_pbkdf, &opt_pbkdf))
 		usage(popt_context, EXIT_FAILURE,
-		_("Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id.\n"),
+		_("Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_pbkdf_iterations && opt_iteration_time)
 		usage(popt_context, EXIT_FAILURE,
-		_("PBKDF forced iterations cannot be combined with iteration time option.\n"),
+		_("PBKDF forced iterations cannot be combined with iteration time option."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_sector_size && strcmp(aname, "reencrypt") && strcmp(aname, "luksFormat") &&
 	    (strcmp(aname, "open") || strcmp_or_null(opt_type, "plain")))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Sector size option is not supported for this command.\n"),
+		      _("Sector size option is not supported for this command."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_sector_size && (opt_sector_size < SECTOR_SIZE || opt_sector_size > MAX_SECTOR_SIZE ||
 	    (opt_sector_size & (opt_sector_size - 1))))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Unsupported encryption sector size.\n"),
+		      _("Unsupported encryption sector size."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_unbound && !opt_key_size)
 		usage(popt_context, EXIT_FAILURE,
-		      _("Key size is required with --unbound option.\n"),
+		      _("Key size is required with --unbound option."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_unbound && strcmp(aname, "luksAddKey"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --unbound may be used only with luksAddKey action.\n"),
+		      _("Option --unbound may be used only with luksAddKey action."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_refresh && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		      _("Option --refresh may be used only with open action.\n"),
+		      _("Option --refresh may be used only with open action."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_debug || opt_debug_json) {
@@ -3873,7 +3873,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (opt_disable_locks && crypt_metadata_locking(NULL, 0)) {
-		log_std(_("Cannot disable metadata locking.\n"));
+		log_std(_("Cannot disable metadata locking."));
 		poptFreeContext(popt_context);
 		exit(EXIT_FAILURE);
 	}

@@ -579,17 +579,17 @@ int main(int argc, const char **argv)
 
 	if ((opt_ignore_corruption || opt_restart_on_corruption || opt_ignore_zero_blocks) && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks is allowed only for open operation.\n"),
+		_("Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks is allowed only for open operation."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_root_hash_signature && strcmp(aname, "open"))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --root-hash-signature can be used only for open operation.\n"),
+		_("Option --root-hash-signature can be used only for open operation."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_ignore_corruption && opt_restart_on_corruption)
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --ignore-corruption and --restart-on-corruption cannot be used together.\n"),
+		_("Option --ignore-corruption and --restart-on-corruption cannot be used together."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {
