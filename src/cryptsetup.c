@@ -1993,9 +1993,9 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	if (!yesDialog(
-	    _("Header dump with volume key is sensitive information\n"
-	      "which allows access to encrypted partition without passphrase.\n"
-	      "This dump should be always stored encrypted on safe place."),
+	    _("The header dump with volume key is sensitive information\n"
+	      "that allows access to encrypted partition without a passphrase.\n"
+	      "This dump should be stored encrypted in a safe place."),
 	      NULL))
 		return -EPERM;
 
@@ -2064,8 +2064,8 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 
 	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	if (!yesDialog(
-	    _("Header dump with unbound key could contain sensitive information.\n"
-	      "This dump should be stored encrypted on safe place."),
+	    _("The header dump with unbound key is sensitive information.\n"
+	      "This dump should be stored encrypted in a safe place."),
 	      NULL))
 		return -EPERM;
 
