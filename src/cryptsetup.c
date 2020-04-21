@@ -3702,11 +3702,6 @@ int main(int argc, const char **argv)
 
 	/* FIXME: rewrite this from scratch */
 
-	if (opt_refresh && strcmp(aname, "open"))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Parameter --refresh is only allowed with open or refresh commands."),
-		      poptGetInvocationName(popt_context));
-
 	if (opt_refresh && opt_test_passphrase)
 		usage(popt_context, EXIT_FAILURE,
 		      _("Options --refresh and --test-passphrase are mutually exclusive."),
