@@ -187,14 +187,12 @@ static int action_format(int arg)
 	int r;
 	size_t signatures;
 
-	if (integrity_alg) {
-		r = crypt_parse_hash_integrity_mode(integrity_alg, integrity);
-		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected."));
-			return r;
-		}
-		params.integrity = integrity;
+	r = crypt_parse_hash_integrity_mode(integrity_alg, integrity);
+	if (r < 0) {
+		log_err(_("No known integrity specification pattern detected."));
+		return r;
 	}
+	params.integrity = integrity;
 
 	if (opt_journal_integrity) {
 		r = crypt_parse_hash_integrity_mode(opt_journal_integrity, journal_integrity);
@@ -276,14 +274,12 @@ static int action_open(int arg)
 	char *integrity_key = NULL;
 	int r;
 
-	if (integrity_alg) {
-		r = crypt_parse_hash_integrity_mode(integrity_alg, integrity);
-		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected."));
-			return r;
-		}
-		params.integrity = integrity;
+	r = crypt_parse_hash_integrity_mode(integrity_alg, integrity);
+	if (r < 0) {
+		log_err(_("No known integrity specification pattern detected."));
+		return r;
 	}
+	params.integrity = integrity;
 
 	if (opt_journal_integrity) {
 		r = crypt_parse_hash_integrity_mode(opt_journal_integrity, journal_integrity);
@@ -679,9 +675,6 @@ int main(int argc, const char **argv)
 	if ((opt_integrity_key_file && !opt_integrity_key_size) ||
 	   (!opt_integrity_key_file && opt_integrity_key_size))
 		usage(popt_context, EXIT_FAILURE, _("Both key file and key size options must be specified."),
-		      poptGetInvocationName(popt_context));
-	if (!integrity_alg && opt_integrity_key_file)
-		usage(popt_context, EXIT_FAILURE, _("Integrity algorithm must be specified if integrity key is used."),
 		      poptGetInvocationName(popt_context));
 
 	if ((opt_journal_integrity_key_file && !opt_journal_integrity_key_size) ||
