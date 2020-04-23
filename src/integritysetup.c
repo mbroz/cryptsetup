@@ -27,8 +27,19 @@
 #define DEFAULT_ALG_NAME "crc32c"
 #define MAX_KEY_SIZE 4096
 
+static const char *opt_data_device = NULL;
+static const char *opt_integrity = DEFAULT_ALG_NAME;
+static const char *opt_integrity_key_file = NULL;
+static const char *opt_journal_integrity = NULL; /* none */
+static const char *opt_journal_integrity_key_file = NULL;
+static const char *opt_journal_crypt = NULL; /* none */
+static const char *opt_journal_crypt_key_file = NULL;
+
+/* helper strings converted to uint64_t later */
 static const char *opt_journal_size_str = NULL;
+
 static uint64_t opt_journal_size = 0;
+
 static int opt_interleave_sectors = 0;
 static int opt_journal_watermark = 0;
 static int opt_bitmap_sectors_per_bit = 0;
@@ -37,28 +48,14 @@ static int opt_bitmap_flush_time = 0;
 static int opt_tag_size = 0;
 static int opt_sector_size = 0;
 static int opt_buffer_sectors = 0;
-
 static int opt_no_wipe = 0;
-
-static const char *opt_data_device = NULL;
-
-static const char *opt_integrity = DEFAULT_ALG_NAME;
-static const char *opt_integrity_key_file = NULL;
 static int opt_integrity_key_size = 0;
-
-static const char *opt_journal_integrity = NULL; /* none */
-static const char *opt_journal_integrity_key_file = NULL;
 static int opt_journal_integrity_key_size = 0;
-
-static const char *opt_journal_crypt = NULL; /* none */
-static const char *opt_journal_crypt_key_file = NULL;
 static int opt_journal_crypt_key_size = 0;
-
 static int opt_integrity_nojournal = 0;
 static int opt_integrity_recovery = 0;
 static int opt_integrity_bitmap = 0;
 static int opt_integrity_legacy_padding = 0;
-
 static int opt_integrity_recalculate = 0;
 static int opt_allow_discards = 0;
 

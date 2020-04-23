@@ -23,25 +23,25 @@
 
 #define PACKAGE_VERITY "veritysetup"
 
-static int opt_use_superblock = 1;
-
 static const char *opt_fec_device = NULL;
-static int opt_fec_roots = DEFAULT_VERITY_FEC_ROOTS;
 static const char *opt_hash_algorithm = NULL;
+static const char *opt_salt = NULL;
+static const char *opt_uuid = NULL;
+static const char *opt_root_hash_signature = NULL;
+
+static int opt_use_superblock = 1;
+static int opt_fec_roots = DEFAULT_VERITY_FEC_ROOTS;
 static int opt_hash_type = 1;
 static int opt_data_block_size = DEFAULT_VERITY_DATA_BLOCK;
 static int opt_hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
 static uint64_t data_blocks = 0;
-static const char *opt_salt = NULL;
 static uint64_t hash_offset = 0;
 static uint64_t fec_offset = 0;
-static const char *opt_uuid = NULL;
 static int opt_restart_on_corruption = 0;
 static int opt_panic_on_corruption = 0;
 static int opt_ignore_corruption = 0;
 static int opt_ignore_zero_blocks = 0;
 static int opt_check_at_most_once = 0;
-static const char *opt_root_hash_signature = NULL;
 
 static const char **action_argv;
 static int action_argc;
