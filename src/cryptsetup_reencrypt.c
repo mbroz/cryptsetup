@@ -35,10 +35,19 @@ static const char *opt_key_file = NULL;
 static const char *opt_master_key_file = NULL;
 static const char *opt_uuid = NULL;
 static const char *opt_type = "luks";
+static const char *opt_pbkdf = NULL;
+static const char *opt_header_device = NULL;
+
+/* helper strings converted to uint64_t later */
+static const char *opt_reduce_size_str = NULL;
+static const char *opt_device_size_str = NULL;
+
+static uint64_t opt_reduce_size = 0;
+static uint64_t opt_device_size = 0;
+
 static long opt_keyfile_size = 0;
 static long opt_keyfile_offset = 0;
 static int opt_iteration_time = 0;
-static const char *opt_pbkdf = NULL;
 static long opt_pbkdf_memory = DEFAULT_LUKS2_MEMORY_KB;
 static long opt_pbkdf_parallel = DEFAULT_LUKS2_PARALLEL_THREADS;
 static long opt_pbkdf_iterations = 0;
@@ -54,13 +63,6 @@ static int opt_key_size = 0;
 static int opt_new = 0;
 static int opt_keep_key = 0;
 static int opt_decrypt = 0;
-static const char *opt_header_device = NULL;
-
-static const char *opt_reduce_size_str = NULL;
-static uint64_t opt_reduce_size = 0;
-
-static const char *opt_device_size_str = NULL;
-static uint64_t opt_device_size = 0;
 
 static const char **action_argv;
 

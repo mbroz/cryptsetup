@@ -27,19 +27,40 @@
 static const char *opt_cipher = NULL;
 static const char *opt_keyslot_cipher = NULL;
 static const char *opt_hash = NULL;
-static int opt_verify_passphrase = 0;
-
 static const char *opt_json_file = NULL;
 static const char *opt_key_file = NULL;
 static const char *opt_keyfile_stdin = NULL;
-static int opt_keyfiles_count = 0;
 static const char *opt_keyfiles[MAX_KEYFILES];
-
 static const char *opt_master_key_file = NULL;
 static const char *opt_header_backup_file = NULL;
 static const char *opt_uuid = NULL;
 static const char *opt_header_device = NULL;
 static const char *opt_type = "luks";
+static const char *opt_pbkdf = NULL;
+static const char *opt_priority = NULL; /* normal */
+static const char *opt_integrity = NULL; /* none */
+static const char *opt_key_description = NULL;
+static const char *opt_label = NULL;
+static const char *opt_subsystem = NULL;
+static const char *opt_active_name = NULL;
+static const char *opt_resilience_mode = "checksum"; // TODO: default resilience
+static const char *opt_resilience_hash = "sha256"; // TODO: default checksum hash
+
+/* helper strings converted to uint64_t later */
+static const char *opt_reduce_size_str = NULL;
+static const char *opt_hotzone_size_str = NULL;
+static const char *opt_device_size_str = NULL;
+static const char *opt_luks2_metadata_size_str = NULL;
+static const char *opt_luks2_keyslots_size_str = NULL;
+
+static uint64_t opt_reduce_size = 0;
+static uint64_t opt_hotzone_size = 0;
+static uint64_t opt_device_size = 0;
+static uint64_t opt_luks2_metadata_size = 0;
+static uint64_t opt_luks2_keyslots_size = 0;
+
+static int opt_keyfiles_count = 0;
+static int opt_verify_passphrase = 0;
 static int opt_key_size = 0;
 static int opt_keyslot_key_size = 0;
 static long opt_keyfile_size = 0;
@@ -74,52 +95,29 @@ static int opt_veracrypt_query_pim = 0;
 static int opt_deferred_remove = 0;
 static int opt_serialize_memory_hard_pbkdf = 0;
 //FIXME: check uint32 overflow for long type
-static const char *opt_pbkdf = NULL;
 static long opt_pbkdf_memory = DEFAULT_LUKS2_MEMORY_KB;
 static long opt_pbkdf_parallel = DEFAULT_LUKS2_PARALLEL_THREADS;
 static long opt_pbkdf_iterations = 0;
 static int opt_iteration_time = 0;
 static int opt_disable_locks = 0;
 static int opt_disable_keyring = 0;
-static const char *opt_priority = NULL; /* normal */
-static const char *opt_integrity = NULL; /* none */
 static int opt_integrity_nojournal = 0;
 static int opt_integrity_no_wipe = 0;
 static int opt_integrity_legacy_padding = 0;
-static const char *opt_key_description = NULL;
 static int opt_sector_size = 0;
 static int opt_iv_large_sectors = 0;
 static int opt_persistent = 0;
-static const char *opt_label = NULL;
-static const char *opt_subsystem = NULL;
 static int opt_unbound = 0;
 static int opt_refresh = 0;
 
 /* LUKS2 reencryption parameters */
-static const char *opt_active_name = NULL;
-static const char *opt_resilience_mode = "checksum"; // TODO: default resilience
-static const char *opt_resilience_hash = "sha256"; // TODO: default checksum hash
 static int opt_encrypt = 0;
 static int opt_reencrypt_init_only = 0;
 static int opt_reencrypt_resume_only = 0;
 static int opt_decrypt = 0;
 
-static const char *opt_reduce_size_str = NULL;
-static uint64_t opt_reduce_size = 0;
-
-static const char *opt_hotzone_size_str = NULL;
-static uint64_t opt_hotzone_size = 0;
-
-static const char *opt_device_size_str = NULL;
-static uint64_t opt_device_size = 0;
-
 /* do not set from command line, use helpers above */
 static int64_t opt_data_shift;
-
-static const char *opt_luks2_metadata_size_str = NULL;
-static uint64_t opt_luks2_metadata_size = 0;
-static const char *opt_luks2_keyslots_size_str = NULL;
-static uint64_t opt_luks2_keyslots_size = 0;
 
 static const char **action_argv;
 static int action_argc;
