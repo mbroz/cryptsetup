@@ -23,16 +23,16 @@
 
 #define PACKAGE_VERITY "veritysetup"
 
-static int use_superblock = 1;
+static int opt_use_superblock = 1;
 
-static const char *fec_device = NULL;
-static int fec_roots = DEFAULT_VERITY_FEC_ROOTS;
-static const char *hash_algorithm = NULL;
-static int hash_type = 1;
-static int data_block_size = DEFAULT_VERITY_DATA_BLOCK;
-static int hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
+static const char *opt_fec_device = NULL;
+static int opt_fec_roots = DEFAULT_VERITY_FEC_ROOTS;
+static const char *opt_hash_algorithm = NULL;
+static int opt_hash_type = 1;
+static int opt_data_block_size = DEFAULT_VERITY_DATA_BLOCK;
+static int opt_hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
 static uint64_t data_blocks = 0;
-static const char *salt_string = NULL;
+static const char *opt_salt = NULL;
 static uint64_t hash_offset = 0;
 static uint64_t fec_offset = 0;
 static const char *opt_uuid = NULL;
@@ -53,16 +53,16 @@ static int _prepare_format(struct crypt_params_verity *params,
 	char *salt = NULL;
 	int len;
 
-	params->hash_name = hash_algorithm ?: DEFAULT_VERITY_HASH;
+	params->hash_name = opt_hash_algorithm ?: DEFAULT_VERITY_HASH;
 	params->data_device = data_device;
-	params->fec_device = fec_device;
-	params->fec_roots = fec_roots;
+	params->fec_device = opt_fec_device;
+	params->fec_roots = opt_fec_roots;
 
-	if (salt_string && !strcmp(salt_string, "-")) {
+	if (opt_salt && !strcmp(opt_salt, "-")) {
 		params->salt_size = 0;
 		params->salt = NULL;
-	} else if (salt_string) {
-		len = crypt_hex_to_bytes(salt_string, &salt, 0);
+	} else if (opt_salt) {
+		len = crypt_hex_to_bytes(opt_salt, &salt, 0);
 		if (len < 0) {
 			log_err(_("Invalid salt string specified."));
 			return -EINVAL;
@@ -74,12 +74,12 @@ static int _prepare_format(struct crypt_params_verity *params,
 		params->salt = NULL;
 	}
 
-	params->data_block_size = data_block_size;
-	params->hash_block_size = hash_block_size;
+	params->data_block_size = opt_data_block_size;
+	params->hash_block_size = opt_hash_block_size;
 	params->data_size = data_blocks;
 	params->hash_area_offset = hash_offset;
 	params->fec_area_offset = fec_offset;
-	params->hash_type = hash_type;
+	params->hash_type = opt_hash_type;
 	params->flags = flags;
 
 	return 0;
@@ -102,13 +102,13 @@ static int action_format(int arg)
 		close(r);
 	}
 	/* Try to create FEC image if doesn't exist */
-	if (fec_device) {
-		r = open(fec_device, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
+	if (opt_fec_device) {
+		r = open(opt_fec_device, O_WRONLY | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
 		if (r < 0 && errno != EEXIST) {
-			log_err(_("Cannot create FEC image %s for writing."), fec_device);
+			log_err(_("Cannot create FEC image %s for writing."), opt_fec_device);
 			return -EINVAL;
 		} else if (r >= 0) {
-			log_dbg("Created FEC image %s.", fec_device);
+			log_dbg("Created FEC image %s.", opt_fec_device);
 			close(r);
 		}
 	}
@@ -116,7 +116,7 @@ static int action_format(int arg)
 	if ((r = crypt_init(&cd, action_argv[1])))
 		goto out;
 
-	if (!use_superblock)
+	if (!opt_use_superblock)
 		flags |= CRYPT_VERITY_NO_HEADER;
 
 	r = _prepare_format(&params, action_argv[0], flags);
@@ -161,12 +161,12 @@ static int _activate(const char *dm_device,
 	if (opt_check_at_most_once)
 		activate_flags |= CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE;
 
-	if (use_superblock) {
+	if (opt_use_superblock) {
 		params.flags = flags;
 		params.hash_area_offset = hash_offset;
 		params.fec_area_offset = fec_offset;
-		params.fec_device = fec_device;
-		params.fec_roots = fec_roots;
+		params.fec_device = opt_fec_device;
+		params.fec_roots = opt_fec_roots;
 		r = crypt_load(cd, CRYPT_VERITY, &params);
 	} else {
 		r = _prepare_format(&params, data_device, flags | CRYPT_VERITY_NO_HEADER);
@@ -329,7 +329,7 @@ static int action_status(int arg)
 
 		if (vp.fec_device) {
 			log_std("  FEC device:  %s\n", vp.fec_device);
-			if ((backing_file = crypt_loop_backing_file(vp.fec_device))) {
+			if ((backing_file = crypt_loop_backing_file(opt_fec_device))) {
 				log_std("  FEC loop:    %s\n", backing_file);
 				free(backing_file);
 			}
@@ -468,17 +468,17 @@ int main(int argc, const char **argv)
 		{ NULL,              '\0', POPT_ARG_INCLUDE_TABLE, popt_help_options, 0, N_("Help options:"), NULL },
 		{ "verbose",         'v',  POPT_ARG_NONE, &opt_verbose,      0, N_("Shows more detailed error messages"), NULL },
 		{ "debug",           '\0', POPT_ARG_NONE, &opt_debug,        0, N_("Show debug messages"), NULL },
-		{ "no-superblock",   0,    POPT_ARG_VAL,  &use_superblock,   0, N_("Do not use verity superblock"), NULL },
-		{ "format",          0,    POPT_ARG_INT,  &hash_type,        0, N_("Format type (1 - normal, 0 - original Chrome OS)"), N_("number") },
-		{ "data-block-size", 0,    POPT_ARG_INT,  &data_block_size,  0, N_("Block size on the data device"), N_("bytes") },
-		{ "hash-block-size", 0,    POPT_ARG_INT,  &hash_block_size,  0, N_("Block size on the hash device"), N_("bytes") },
-		{ "fec-roots",       0,    POPT_ARG_INT,  &fec_roots,        0, N_("FEC parity bytes"), N_("bytes") },
+		{ "no-superblock",   0,    POPT_ARG_VAL,  &opt_use_superblock,   0, N_("Do not use verity superblock"), NULL },
+		{ "format",          0,    POPT_ARG_INT,  &opt_hash_type,        0, N_("Format type (1 - normal, 0 - original Chrome OS)"), N_("number") },
+		{ "data-block-size", 0,    POPT_ARG_INT,  &opt_data_block_size,  0, N_("Block size on the data device"), N_("bytes") },
+		{ "hash-block-size", 0,    POPT_ARG_INT,  &opt_hash_block_size,  0, N_("Block size on the hash device"), N_("bytes") },
+		{ "fec-roots",       0,    POPT_ARG_INT,  &opt_fec_roots,        0, N_("FEC parity bytes"), N_("bytes") },
 		{ "data-blocks",     0,    POPT_ARG_STRING, &popt_tmp,       1, N_("The number of blocks in the data file"), N_("blocks") },
-		{ "fec-device",      0,    POPT_ARG_STRING, &fec_device,     0, N_("Path to device with error correction data"), N_("path") },
+		{ "fec-device",      0,    POPT_ARG_STRING, &opt_fec_device,     0, N_("Path to device with error correction data"), N_("path") },
 		{ "hash-offset",     0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting offset on the hash device"), N_("bytes") },
 		{ "fec-offset",      0,    POPT_ARG_STRING, &popt_tmp,       3, N_("Starting offset on the FEC device"), N_("bytes") },
-		{ "hash",            'h',  POPT_ARG_STRING, &hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
-		{ "salt",            's',  POPT_ARG_STRING, &salt_string,    0, N_("Salt"), N_("hex string") },
+		{ "hash",            'h',  POPT_ARG_STRING, &opt_hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
+		{ "salt",            's',  POPT_ARG_STRING, &opt_salt,    0, N_("Salt"), N_("hex string") },
 		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use"), NULL },
 		{ "root-hash-signature",'\0', POPT_ARG_STRING, &opt_root_hash_signature,  0, N_("Path to root hash signature file"), NULL },
 		{ "restart-on-corruption", 0,POPT_ARG_NONE,&opt_restart_on_corruption, 0, N_("Restart kernel if corruption is detected"), NULL },
@@ -577,7 +577,7 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 	}
 
-	if (data_block_size < 0 || hash_block_size < 0 || hash_type < 0) {
+	if (opt_data_block_size < 0 || opt_hash_block_size < 0 || opt_hash_type < 0) {
 		usage(popt_context, EXIT_FAILURE,
 		      _("Negative number for option not permitted."),
 		      poptGetInvocationName(popt_context));
