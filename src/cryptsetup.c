@@ -127,6 +127,34 @@ static const char *null_action_argv[] = {NULL, NULL};
 
 void tools_cleanup(void)
 {
+	FREE_AND_NULL(opt_cipher);
+	FREE_AND_NULL(opt_keyslot_cipher);
+	FREE_AND_NULL(opt_hash);
+	FREE_AND_NULL(opt_json_file);
+	FREE_AND_NULL(opt_key_file);
+	FREE_AND_NULL(opt_keyfile_stdin);
+	FREE_AND_NULL(opt_master_key_file);
+	FREE_AND_NULL(opt_header_backup_file);
+	FREE_AND_NULL(opt_uuid);
+	FREE_AND_NULL(opt_header_device);
+	FREE_AND_NULL(opt_type);
+	FREE_AND_NULL(opt_pbkdf);
+	FREE_AND_NULL(opt_priority);
+	FREE_AND_NULL(opt_integrity);
+	FREE_AND_NULL(opt_key_description);
+	FREE_AND_NULL(opt_label);
+	FREE_AND_NULL(opt_subsystem);
+	FREE_AND_NULL(opt_active_name);
+	FREE_AND_NULL(opt_resilience_mode);
+	FREE_AND_NULL(opt_resilience_hash);
+	FREE_AND_NULL(opt_reduce_size_str);
+	FREE_AND_NULL(opt_hotzone_size_str);
+	FREE_AND_NULL(opt_device_size_str);
+	FREE_AND_NULL(opt_luks2_metadata_size_str);
+	FREE_AND_NULL(opt_luks2_keyslots_size_str);
+
+	while (opt_keyfiles_count)
+		free(opt_keyfiles[--opt_keyfiles_count]);
 }
 
 static const char *uuid_or_device_header(const char **data_device)
@@ -3438,10 +3466,12 @@ static void help(poptContext popt_context,
 #if defined(ENABLE_LUKS_ADJUST_XTS_KEYSIZE) && DEFAULT_LUKS1_KEYBITS != 512
 		log_std(_("\tLUKS: Default keysize with XTS mode (two internal keys) will be doubled.\n"));
 #endif
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else if (key->shortName == 'V') {
 		log_std("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else
@@ -3482,7 +3512,6 @@ static int run_action(struct action_type *action)
 
 int main(int argc, const char **argv)
 {
-	static char *popt_tmp;
 	static struct poptOption popt_help_options[] = {
 		{ NULL,    '\0', POPT_ARG_CALLBACK, help, 0, NULL,                         NULL },
 		{ "help",  '?',  POPT_ARG_NONE,     NULL, 0, N_("Show this help message"), NULL },
@@ -3498,19 +3527,19 @@ int main(int argc, const char **argv)
 		{ "cipher",            'c',  POPT_ARG_STRING, &opt_cipher,              0, N_("The cipher used to encrypt the disk (see /proc/crypto)"), NULL },
 		{ "hash",              'h',  POPT_ARG_STRING, &opt_hash,                0, N_("The hash used to create the encryption key from the passphrase"), NULL },
 		{ "verify-passphrase", 'y',  POPT_ARG_NONE, &opt_verify_passphrase,     0, N_("Verifies the passphrase by asking for it twice"), NULL },
-		{ "key-file",          'd',  POPT_ARG_STRING, &opt_key_file,            6, N_("Read the key from a file"), NULL },
+		{ "key-file",          'd',  POPT_ARG_STRING, NULL,                     6, N_("Read the key from a file"), NULL },
 		{ "master-key-file",  '\0',  POPT_ARG_STRING, &opt_master_key_file,     0, N_("Read the volume (master) key from file."), NULL },
 		{ "dump-master-key",  '\0',  POPT_ARG_NONE, &opt_dump_master_key,       0, N_("Dump volume (master) key instead of keyslots info"), NULL },
 		{ "key-size",          's',  POPT_ARG_INT, &opt_key_size,               0, N_("The size of the encryption key"), N_("BITS") },
 		{ "keyfile-size",      'l',  POPT_ARG_LONG, &opt_keyfile_size,          0, N_("Limits the read from keyfile"), N_("bytes") },
-		{ "keyfile-offset",   '\0',  POPT_ARG_STRING, &popt_tmp,                4, N_("Number of bytes to skip in keyfile"), N_("bytes") },
+		{ "keyfile-offset",   '\0',  POPT_ARG_STRING, NULL,                     4, N_("Number of bytes to skip in keyfile"), N_("bytes") },
 		{ "new-keyfile-size", '\0',  POPT_ARG_LONG, &opt_new_keyfile_size,      0, N_("Limits the read from newly added keyfile"), N_("bytes") },
-		{ "new-keyfile-offset",'\0', POPT_ARG_STRING, &popt_tmp,                5, N_("Number of bytes to skip in newly added keyfile"), N_("bytes") },
+		{ "new-keyfile-offset",'\0', POPT_ARG_STRING, NULL,                     5, N_("Number of bytes to skip in newly added keyfile"), N_("bytes") },
 		{ "key-slot",          'S',  POPT_ARG_INT, &opt_key_slot,               0, N_("Slot number for new key (default is first free)"), NULL },
-		{ "size",              'b',  POPT_ARG_STRING, &popt_tmp,                1, N_("The size of the device"), N_("SECTORS") },
+		{ "size",              'b',  POPT_ARG_STRING, NULL,                     1, N_("The size of the device"), N_("SECTORS") },
 		{ "device-size",      '\0',  POPT_ARG_STRING, &opt_device_size_str,     0, N_("Use only specified device size (ignore rest of device). DANGEROUS!"), N_("bytes") },
-		{ "offset",            'o',  POPT_ARG_STRING, &popt_tmp,                2, N_("The start offset in the backend device"), N_("SECTORS") },
-		{ "skip",              'p',  POPT_ARG_STRING, &popt_tmp,                3, N_("How many sectors of the encrypted data to skip at the beginning"), N_("SECTORS") },
+		{ "offset",            'o',  POPT_ARG_STRING, NULL,                     2, N_("The start offset in the backend device"), N_("SECTORS") },
+		{ "skip",              'p',  POPT_ARG_STRING, NULL,                     3, N_("How many sectors of the encrypted data to skip at the beginning"), N_("SECTORS") },
 		{ "readonly",          'r',  POPT_ARG_NONE, &opt_readonly,              0, N_("Create a readonly mapping"), NULL },
 		{ "batch-mode",        'q',  POPT_ARG_NONE, &opt_batch_mode,            0, N_("Do not ask for confirmation"), NULL },
 		{ "timeout",           't',  POPT_ARG_INT, &opt_timeout,                0, N_("Timeout for interactive passphrase prompt (in seconds)"), N_("secs") },
@@ -3592,24 +3621,28 @@ int main(int argc, const char **argv)
 
 	while((r = poptGetNextOpt(popt_context)) > 0) {
 		unsigned long long ull_value;
-		char *endp;
+		char *endp, *str = poptGetOptArg(popt_context);
 
 		if (r == 6) {
-			char *kf = poptGetOptArg(popt_context);
-			if (tools_is_stdin(kf))
-				opt_keyfile_stdin = kf;
-			else if (opt_keyfiles_count < MAX_KEYFILES)
-				opt_keyfiles[opt_keyfiles_count++] = kf;
+			free(opt_key_file);
+			opt_key_file = str;
+			if (tools_is_stdin(str)) {
+				free(opt_keyfile_stdin);
+				opt_keyfile_stdin = strdup(str);
+			} else if (opt_keyfiles_count < MAX_KEYFILES)
+				opt_keyfiles[opt_keyfiles_count++] = strdup(str);
 			total_keyfiles++;
 			continue;
 		}
 
 		errno = 0;
-		ull_value = strtoull(popt_tmp, &endp, 0);
-		if (*endp || !*popt_tmp || !isdigit(*popt_tmp) ||
+		ull_value = strtoull(str, &endp, 0);
+		if (*endp || !*str || !isdigit(*str) ||
 		    (errno == ERANGE && ull_value == ULLONG_MAX) ||
 		    (errno != 0 && ull_value == 0))
 			r = POPT_ERROR_BADNUMBER;
+
+		free(str);
 
 		switch(r) {
 			case 1:
@@ -3967,6 +4000,7 @@ int main(int argc, const char **argv)
 
 	if (opt_disable_locks && crypt_metadata_locking(NULL, 0)) {
 		log_std(_("Cannot disable metadata locking."));
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_FAILURE);
 	}
@@ -4024,6 +4058,7 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	r = run_action(action);
+	tools_cleanup();
 	poptFreeContext(popt_context);
 	return r;
 }

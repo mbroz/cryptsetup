@@ -119,6 +119,8 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 /* each utility is required to implement it */
 void tools_cleanup(void);
 
+#define FREE_AND_NULL(x) do { free(x); x = NULL; } while (0)
+
 /* Log */
 #define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
 #define log_std(x...) clogger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)

@@ -65,6 +65,14 @@ static int action_argc;
 
 void tools_cleanup(void)
 {
+	FREE_AND_NULL(opt_data_device);
+	FREE_AND_NULL(opt_integrity);
+	FREE_AND_NULL(opt_integrity_key_file);
+	FREE_AND_NULL(opt_journal_integrity);
+	FREE_AND_NULL(opt_journal_integrity_key_file);
+	FREE_AND_NULL(opt_journal_crypt);
+	FREE_AND_NULL(opt_journal_crypt_key_file);
+	FREE_AND_NULL(opt_journal_size_str);
 }
 
 // FIXME: move this to tools and handle EINTR
@@ -504,10 +512,12 @@ static void help(poptContext popt_context,
 
 		log_std(_("\nDefault compiled-in dm-integrity parameters:\n"
 			  "\tChecksum algorithm: %s\n"), DEFAULT_ALG_NAME);
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else if (key->shortName == 'V') {
 		log_std("%s %s\n", PACKAGE_INTEGRITY, PACKAGE_VERSION);
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else
@@ -716,6 +726,7 @@ int main(int argc, const char **argv)
 	}
 
 	r = run_action(action);
+	tools_cleanup();
 	poptFreeContext(popt_context);
 	return r;
 }
