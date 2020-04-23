@@ -34,7 +34,7 @@ static const char *opt_hash = NULL;
 static const char *opt_key_file = NULL;
 static const char *opt_master_key_file = NULL;
 static const char *opt_uuid = NULL;
-static const char *opt_type = "luks";
+static const char *opt_type = NULL;
 static const char *opt_pbkdf = NULL;
 static const char *opt_header_device = NULL;
 
@@ -65,6 +65,8 @@ static int opt_keep_key = 0;
 static int opt_decrypt = 0;
 
 static const char **action_argv;
+
+static const char *set_pbkdf = NULL;
 
 #define MAX_SLOT 32
 #define MAX_TOKEN 32
@@ -484,7 +486,7 @@ static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 	if (!pbkdf_default)
 		return -EINVAL;
 
-	pbkdf.type = opt_pbkdf ?: pbkdf_default->type;
+	pbkdf.type = set_pbkdf ?: pbkdf_default->type;
 	pbkdf.hash = opt_hash ?: pbkdf_default->hash;
 	pbkdf.time_ms = (uint32_t)opt_iteration_time ?: pbkdf_default->time_ms;
 	if (strcmp(pbkdf.type, CRYPT_KDF_PBKDF2)) {
@@ -1690,7 +1692,7 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 	}
 
-	if (opt_pbkdf && crypt_parse_pbkdf(opt_pbkdf, &opt_pbkdf))
+	if (opt_pbkdf && crypt_parse_pbkdf(opt_pbkdf, &set_pbkdf))
 		usage(popt_context, EXIT_FAILURE,
 		_("Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id."),
 		poptGetInvocationName(popt_context));

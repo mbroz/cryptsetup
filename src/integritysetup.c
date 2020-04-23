@@ -28,7 +28,7 @@
 #define MAX_KEY_SIZE 4096
 
 static const char *opt_data_device = NULL;
-static const char *opt_integrity = DEFAULT_ALG_NAME;
+static const char *opt_integrity = NULL; /* DEFAULT_ALG_NAME */
 static const char *opt_integrity_key_file = NULL;
 static const char *opt_journal_integrity = NULL; /* none */
 static const char *opt_journal_integrity_key_file = NULL;
@@ -59,6 +59,7 @@ static int opt_integrity_legacy_padding = 0;
 static int opt_integrity_recalculate = 0;
 static int opt_allow_discards = 0;
 
+static const char *integrity_alg = DEFAULT_ALG_NAME;
 static const char **action_argv;
 static int action_argc;
 
@@ -186,8 +187,8 @@ static int action_format(int arg)
 	int r;
 	size_t signatures;
 
-	if (opt_integrity) {
-		r = crypt_parse_hash_integrity_mode(opt_integrity, integrity);
+	if (integrity_alg) {
+		r = crypt_parse_hash_integrity_mode(integrity_alg, integrity);
 		if (r < 0) {
 			log_err(_("No known integrity specification pattern detected."));
 			return r;
@@ -275,8 +276,8 @@ static int action_open(int arg)
 	char *integrity_key = NULL;
 	int r;
 
-	if (opt_integrity) {
-		r = crypt_parse_hash_integrity_mode(opt_integrity, integrity);
+	if (integrity_alg) {
+		r = crypt_parse_hash_integrity_mode(integrity_alg, integrity);
 		if (r < 0) {
 			log_err(_("No known integrity specification pattern detected."));
 			return r;
@@ -626,6 +627,9 @@ int main(int argc, const char **argv)
 		aname = "close";
 	}
 
+	if (opt_integrity)
+		integrity_alg = opt_integrity;
+
 	for (action = action_types; action->type; action++)
 		if (strcmp(action->type, aname) == 0)
 			break;
@@ -676,7 +680,7 @@ int main(int argc, const char **argv)
 	   (!opt_integrity_key_file && opt_integrity_key_size))
 		usage(popt_context, EXIT_FAILURE, _("Both key file and key size options must be specified."),
 		      poptGetInvocationName(popt_context));
-	if (!opt_integrity && opt_integrity_key_file)
+	if (!integrity_alg && opt_integrity_key_file)
 		usage(popt_context, EXIT_FAILURE, _("Integrity algorithm must be specified if integrity key is used."),
 		      poptGetInvocationName(popt_context));
 
