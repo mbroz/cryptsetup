@@ -48,6 +48,11 @@ static int action_argc;
 
 void tools_cleanup(void)
 {
+	FREE_AND_NULL(opt_fec_device);
+	FREE_AND_NULL(opt_hash_algorithm);
+	FREE_AND_NULL(opt_salt);
+	FREE_AND_NULL(opt_uuid);
+	FREE_AND_NULL(opt_root_hash_signature);
 }
 
 static int _prepare_format(struct crypt_params_verity *params,
@@ -435,10 +440,12 @@ static void help(poptContext popt_context,
 			DEFAULT_VERITY_HASH, DEFAULT_VERITY_DATA_BLOCK,
 			DEFAULT_VERITY_HASH_BLOCK, DEFAULT_VERITY_SALT_SIZE,
 			1);
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else if (key->shortName == 'V') {
 		log_std("%s %s\n", PACKAGE_VERITY, PACKAGE_VERSION);
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else
@@ -459,7 +466,6 @@ static int run_action(struct action_type *action)
 
 int main(int argc, const char **argv)
 {
-	static char *popt_tmp;
 	static const char *null_action_argv[] = {NULL};
 	static struct poptOption popt_help_options[] = {
 		{ NULL,    '\0', POPT_ARG_CALLBACK, help, 0, NULL,                         NULL },
@@ -477,10 +483,10 @@ int main(int argc, const char **argv)
 		{ "data-block-size", 0,    POPT_ARG_INT,  &opt_data_block_size,  0, N_("Block size on the data device"), N_("bytes") },
 		{ "hash-block-size", 0,    POPT_ARG_INT,  &opt_hash_block_size,  0, N_("Block size on the hash device"), N_("bytes") },
 		{ "fec-roots",       0,    POPT_ARG_INT,  &opt_fec_roots,        0, N_("FEC parity bytes"), N_("bytes") },
-		{ "data-blocks",     0,    POPT_ARG_STRING, &popt_tmp,       1, N_("The number of blocks in the data file"), N_("blocks") },
+		{ "data-blocks",     0,    POPT_ARG_STRING, NULL,       1, N_("The number of blocks in the data file"), N_("blocks") },
 		{ "fec-device",      0,    POPT_ARG_STRING, &opt_fec_device,     0, N_("Path to device with error correction data"), N_("path") },
-		{ "hash-offset",     0,    POPT_ARG_STRING, &popt_tmp,       2, N_("Starting offset on the hash device"), N_("bytes") },
-		{ "fec-offset",      0,    POPT_ARG_STRING, &popt_tmp,       3, N_("Starting offset on the FEC device"), N_("bytes") },
+		{ "hash-offset",     0,    POPT_ARG_STRING, NULL,       2, N_("Starting offset on the hash device"), N_("bytes") },
+		{ "fec-offset",      0,    POPT_ARG_STRING, NULL,       3, N_("Starting offset on the FEC device"), N_("bytes") },
 		{ "hash",            'h',  POPT_ARG_STRING, &opt_hash_algorithm, 0, N_("Hash algorithm"), N_("string") },
 		{ "salt",            's',  POPT_ARG_STRING, &opt_salt,    0, N_("Salt"), N_("hex string") },
 		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use"), NULL },
@@ -510,14 +516,16 @@ int main(int argc, const char **argv)
 
 	while((r = poptGetNextOpt(popt_context)) > 0) {
 		unsigned long long ull_value;
-		char *endp;
+		char *endp, *str = poptGetOptArg(popt_context);
 
 		errno = 0;
-		ull_value = strtoull(popt_tmp, &endp, 10);
-		if (*endp || !*popt_tmp || !isdigit(*popt_tmp) ||
+		ull_value = strtoull(str, &endp, 10);
+		if (*endp || !*str || !isdigit(*str) ||
 		    (errno == ERANGE && ull_value == ULLONG_MAX) ||
 		    (errno != 0 && ull_value == 0))
 			r = POPT_ERROR_BADNUMBER;
+
+		free(str);
 
 		switch(r) {
 			case 1:
@@ -614,6 +622,7 @@ int main(int argc, const char **argv)
 	}
 
 	r = run_action(action);
+	tools_cleanup();
 	poptFreeContext(popt_context);
 	return r;
 }

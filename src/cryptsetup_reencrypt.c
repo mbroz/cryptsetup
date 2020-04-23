@@ -119,6 +119,16 @@ typedef enum {
 
 void tools_cleanup(void)
 {
+	FREE_AND_NULL(opt_cipher);
+	FREE_AND_NULL(opt_hash);
+	FREE_AND_NULL(opt_key_file);
+	FREE_AND_NULL(opt_master_key_file);
+	FREE_AND_NULL(opt_uuid);
+	FREE_AND_NULL(opt_type);
+	FREE_AND_NULL(opt_pbkdf);
+	FREE_AND_NULL(opt_header_device);
+	FREE_AND_NULL(opt_reduce_size_str);
+	FREE_AND_NULL(opt_device_size_str);
 }
 
 static void _quiet_log(int level, const char *msg, void *usrptr)
@@ -1598,10 +1608,12 @@ static void help(poptContext popt_context,
 	if (key->shortName == '?') {
 		log_std("%s %s\n", PACKAGE_REENC, PACKAGE_VERSION);
 		poptPrintHelp(popt_context, stdout, 0);
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else if (key->shortName == 'V') {
 		log_std("%s %s\n", PACKAGE_REENC, PACKAGE_VERSION);
+		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else
@@ -1772,8 +1784,7 @@ int main(int argc, const char **argv)
 	}
 
 	r = run_reencrypt(action_argv[0]);
-
+	tools_cleanup();
 	poptFreeContext(popt_context);
-
 	return translate_errno(r);
 }
