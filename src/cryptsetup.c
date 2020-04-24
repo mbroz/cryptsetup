@@ -2107,7 +2107,7 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 	}
 	log_std("Unbound Key:\t");
 
-	for(i = 0; i < uk_size; i++) {
+	for(i = 0; i < (int)uk_size; i++) {
 		if (i && !(i % 16))
 			log_std("\n\t\t");
 		log_std("%02hhx ", (char)uk[i]);
