@@ -238,6 +238,7 @@ __attribute__ ((noreturn)) void usage(poptContext popt_context,
 	poptPrintUsage(popt_context, stderr, 0);
 	if (error)
 		log_err("%s: %s", more, error);
+	tools_cleanup();
 	poptFreeContext(popt_context);
 	exit(exitcode);
 }

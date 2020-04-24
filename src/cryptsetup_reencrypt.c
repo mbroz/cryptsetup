@@ -117,6 +117,10 @@ typedef enum {
 	CHECK_OPEN,
 } header_magic;
 
+void tools_cleanup(void)
+{
+}
+
 static void _quiet_log(int level, const char *msg, void *usrptr)
 {
 	if (!opt_debug)
