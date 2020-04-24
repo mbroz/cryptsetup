@@ -45,6 +45,10 @@ static int opt_check_at_most_once = 0;
 static const char **action_argv;
 static int action_argc;
 
+void tools_cleanup(void)
+{
+}
+
 static int _prepare_format(struct crypt_params_verity *params,
 			   const char *data_device,
 			   uint32_t flags)

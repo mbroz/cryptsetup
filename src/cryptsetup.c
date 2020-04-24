@@ -125,6 +125,10 @@ static const char **action_argv;
 static int action_argc;
 static const char *null_action_argv[] = {NULL, NULL};
 
+void tools_cleanup(void)
+{
+}
+
 static const char *uuid_or_device_header(const char **data_device)
 {
 	if (data_device)

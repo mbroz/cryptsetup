@@ -63,6 +63,10 @@ static const char *integrity_alg = DEFAULT_ALG_NAME;
 static const char **action_argv;
 static int action_argc;
 
+void tools_cleanup(void)
+{
+}
+
 // FIXME: move this to tools and handle EINTR
 static int _read_mk(const char *file, char **key, int keysize)
 {
