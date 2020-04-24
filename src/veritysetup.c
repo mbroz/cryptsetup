@@ -23,11 +23,11 @@
 
 #define PACKAGE_VERITY "veritysetup"
 
-static const char *opt_fec_device = NULL;
-static const char *opt_hash_algorithm = NULL;
-static const char *opt_salt = NULL;
-static const char *opt_uuid = NULL;
-static const char *opt_root_hash_signature = NULL;
+static char *opt_fec_device = NULL;
+static char *opt_hash_algorithm = NULL;
+static char *opt_salt = NULL;
+static char *opt_uuid = NULL;
+static char *opt_root_hash_signature = NULL;
 
 static int opt_use_superblock = 1;
 static int opt_fec_roots = DEFAULT_VERITY_FEC_ROOTS;

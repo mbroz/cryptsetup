@@ -27,16 +27,16 @@
 #define DEFAULT_ALG_NAME "crc32c"
 #define MAX_KEY_SIZE 4096
 
-static const char *opt_data_device = NULL;
-static const char *opt_integrity = NULL; /* DEFAULT_ALG_NAME */
-static const char *opt_integrity_key_file = NULL;
-static const char *opt_journal_integrity = NULL; /* none */
-static const char *opt_journal_integrity_key_file = NULL;
-static const char *opt_journal_crypt = NULL; /* none */
-static const char *opt_journal_crypt_key_file = NULL;
+static char *opt_data_device = NULL;
+static char *opt_integrity = NULL; /* DEFAULT_ALG_NAME */
+static char *opt_integrity_key_file = NULL;
+static char *opt_journal_integrity = NULL; /* none */
+static char *opt_journal_integrity_key_file = NULL;
+static char *opt_journal_crypt = NULL; /* none */
+static char *opt_journal_crypt_key_file = NULL;
 
 /* helper strings converted to uint64_t later */
-static const char *opt_journal_size_str = NULL;
+static char *opt_journal_size_str = NULL;
 
 static uint64_t opt_journal_size = 0;
 

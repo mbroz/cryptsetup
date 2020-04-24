@@ -29,18 +29,18 @@
 
 #define NO_UUID "cafecafe-cafe-cafe-cafe-cafecafeeeee"
 
-static const char *opt_cipher = NULL;
-static const char *opt_hash = NULL;
-static const char *opt_key_file = NULL;
-static const char *opt_master_key_file = NULL;
-static const char *opt_uuid = NULL;
-static const char *opt_type = NULL;
-static const char *opt_pbkdf = NULL;
-static const char *opt_header_device = NULL;
+static char *opt_cipher = NULL;
+static char *opt_hash = NULL;
+static char *opt_key_file = NULL;
+static char *opt_master_key_file = NULL;
+static char *opt_uuid = NULL;
+static char *opt_type = NULL;
+static char *opt_pbkdf = NULL;
+static char *opt_header_device = NULL;
 
 /* helper strings converted to uint64_t later */
-static const char *opt_reduce_size_str = NULL;
-static const char *opt_device_size_str = NULL;
+static char *opt_reduce_size_str = NULL;
+static char *opt_device_size_str = NULL;
 
 static uint64_t opt_reduce_size = 0;
 static uint64_t opt_device_size = 0;
