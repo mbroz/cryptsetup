@@ -24,34 +24,34 @@
 #include "cryptsetup.h"
 #include <uuid/uuid.h>
 
-static const char *opt_cipher = NULL;
-static const char *opt_keyslot_cipher = NULL;
-static const char *opt_hash = NULL;
-static const char *opt_json_file = NULL;
-static const char *opt_key_file = NULL;
-static const char *opt_keyfile_stdin = NULL;
-static const char *opt_keyfiles[MAX_KEYFILES];
-static const char *opt_master_key_file = NULL;
-static const char *opt_header_backup_file = NULL;
-static const char *opt_uuid = NULL;
-static const char *opt_header_device = NULL;
-static const char *opt_type = NULL;
-static const char *opt_pbkdf = NULL;
-static const char *opt_priority = NULL; /* normal */
-static const char *opt_integrity = NULL; /* none */
-static const char *opt_key_description = NULL;
-static const char *opt_label = NULL;
-static const char *opt_subsystem = NULL;
-static const char *opt_active_name = NULL;
-static const char *opt_resilience_mode = NULL; /* default value "checksum" */
-static const char *opt_resilience_hash = NULL; /* default value "sha256" */
+static char *opt_cipher = NULL;
+static char *opt_keyslot_cipher = NULL;
+static char *opt_hash = NULL;
+static char *opt_json_file = NULL;
+static char *opt_key_file = NULL;
+static char *opt_keyfile_stdin = NULL;
+static char *opt_keyfiles[MAX_KEYFILES];
+static char *opt_master_key_file = NULL;
+static char *opt_header_backup_file = NULL;
+static char *opt_uuid = NULL;
+static char *opt_header_device = NULL;
+static char *opt_type = NULL;
+static char *opt_pbkdf = NULL;
+static char *opt_priority = NULL; /* normal */
+static char *opt_integrity = NULL; /* none */
+static char *opt_key_description = NULL;
+static char *opt_label = NULL;
+static char *opt_subsystem = NULL;
+static char *opt_active_name = NULL;
+static char *opt_resilience_mode = NULL; /* default value "checksum" */
+static char *opt_resilience_hash = NULL; /* default value "sha256" */
 
 /* helper strings converted to uint64_t later */
-static const char *opt_reduce_size_str = NULL;
-static const char *opt_hotzone_size_str = NULL;
-static const char *opt_device_size_str = NULL;
-static const char *opt_luks2_metadata_size_str = NULL;
-static const char *opt_luks2_keyslots_size_str = NULL;
+static char *opt_reduce_size_str = NULL;
+static char *opt_hotzone_size_str = NULL;
+static char *opt_device_size_str = NULL;
+static char *opt_luks2_metadata_size_str = NULL;
+static char *opt_luks2_keyslots_size_str = NULL;
 
 static uint64_t opt_reduce_size = 0;
 static uint64_t opt_hotzone_size = 0;
@@ -492,7 +492,7 @@ static int action_open_tcrypt(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_tcrypt params = {
-		.keyfiles = opt_keyfiles,
+		.keyfiles = CONST_CAST(const char **)opt_keyfiles,
 		.keyfiles_count = opt_keyfiles_count,
 		.flags = CRYPT_TCRYPT_LEGACY_MODES |
 			 (opt_veracrypt ? CRYPT_TCRYPT_VERA_MODES : 0),
@@ -610,7 +610,7 @@ static int action_tcryptDump(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_tcrypt params = {
-		.keyfiles = opt_keyfiles,
+		.keyfiles = CONST_CAST(const char **)opt_keyfiles,
 		.keyfiles_count = opt_keyfiles_count,
 		.flags = CRYPT_TCRYPT_LEGACY_MODES |
 			 (opt_veracrypt ? CRYPT_TCRYPT_VERA_MODES : 0),
@@ -3591,7 +3591,7 @@ int main(int argc, const char **argv)
 		char *endp;
 
 		if (r == 6) {
-			const char *kf = poptGetOptArg(popt_context);
+			char *kf = poptGetOptArg(popt_context);
 			if (tools_is_stdin(kf))
 				opt_keyfile_stdin = kf;
 			else if (opt_keyfiles_count < MAX_KEYFILES)
