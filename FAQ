@@ -2183,19 +2183,20 @@ A. Contributors
   damage the key-slots in part or in full.  See also last item.
 
 
-  * 6.10 How do I recover the master key from a mapped LUKS container?
+  * 6.10 How do I recover the master key from a mapped LUKS1 container?
 
-  Note: I have only tried this for LUKS1, hence it may or may not
-  work for LUKS2. 
+  Note: LUKS2 uses the kernel keyring to store keys and hence this 
+  procedure does not work unless you have explicitly disabled the
+  use of the keyring with "--disable-keyring" on opening. 
  
-  This is typically only needed if you managed to damage your LUKS
+  This is typically only needed if you managed to damage your LUKS1
   header, but the container is still mapped, i.e.  "luksOpen"ed.  It
   also helps if you have a mapped container that you forgot or do not
   know a passphrase for (e.g.  on a long running server.)
 
   WARNING: Things go wrong, do a full backup before trying this!
 
-  WARNING: This exposes the master key of the LUKS container.  Note
+  WARNING: This exposes the master key of the LUKS1 container.  Note
   that both ways to recreate a LUKS header with the old master key
   described below will write the master key to disk.  Unless you are
   sure you have securely erased it afterwards, e.g.  by writing it to
@@ -2235,7 +2236,7 @@ A. Contributors
     echo "a1704d9....53d0d09" | xxd -r -p > <master-key-file>
 
 
-  - Do a luksFormat to create a new LUKS header.
+  - Do a luksFormat to create a new LUKS1 header.
 
     NOTE: If your header is intact and you just forgot the passphrase,
     you can just set a new passphrase, see next sub-item.
