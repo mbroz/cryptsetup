@@ -2908,6 +2908,34 @@ offset  length  name                  data type  description
   the "cryptsetup repair" command.
 
 
+  * 10.9 What is an unbound keyslot and what is it used for?
+
+  Quite simply, an 'unbound key' is an independent 'key' stored in a luks2 
+  keyslot that cannot be used to unlock LUKS2 data device. More specifically, 
+  an 'unbound key' or 'unbound luks2 keyslot' contains a secret stored in a 
+  LUKS2 keyslot that is not currently associated with any data/crypt segment 
+  (encrypted area) in the LUKS2 'Segments' section.
+
+  This is a bit of a more general idea. It basically allows to use a keyslot
+  as a container for a key to be used in other things than decrypting a 
+  data area.
+
+  As of April 2020, the following uses are defined:
+
+  1) LUKS2 reencryption. The new volume key is stored in an unbound keyslot 
+     and it becomes a regular LUKS2 keyslot later when it is used to actually 
+     decrypt/encrypt some crypt segment.
+  
+  2) Somewhat similar is the use with a wrapped key scheme (e.g. with the 
+     paes cipher). The VK (Volume Key) stored in a keyslot is in this case 
+     an encrypted binary binary blob. The KEK (Key Encryption Key) for that 
+     binary blob may be refreshed (The KEK is in this case not managed by 
+     cryptsetup!) and the binary blob gets changed. The KEK refresh process 
+     uses an 'unbound keyslot'. First the future effective VK is placed 
+     in an unbound keyslot and later it gets turned into the new real VK 
+     (and bound to the respective crypt segment).
+
+
 11. References and Further Reading
 
   * Purpose of this Section
