@@ -1,0 +1,42 @@
+Cryptsetup 2.3.2 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.x should upgrade to this version.
+
+Changes since version 2.3.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Support compilation with json-c library version 0.14.
+
+* Update FAQ document for some LUKS2 specific information.
+
+* Add option to dump content of LUKS2 unbound keyslot:
+    cryptsetup luksDump --unbound -S <slot> <device>
+  or optionally with --master-key-file option.
+
+  The slot number --key-slot (-S) option is mandatory here.
+
+  An unbound keyslot store a key is that is not assigned to data
+  area on disk (LUKS2 allows to store arbitrary keys).
+
+* Rephrase some error messages and remove redundant end-of-lines.
+
+* Add support for discards (TRIM) for standalone dm-integrity devices.
+  Linux kernel 5.7 adds support for optional discard/TRIM operation
+  over dm-integrity devices.
+
+  It is now supported through --allow-discards integritysetup option.
+  Note you need to add this flag in all activation calls.
+
+  Note that this option cannot be used for LUKS2 authenticated encryption
+  (that uses dm-integrity for storing additional per-sector metadata).
+
+* Fix cryptsetup-reencrypt to work on devices that do not allow
+  direct-io device access.
+
+* Fix a crash in the BitLocker-compatible code error path.
+
+* Fix Veracrypt compatible support for longer (>64 bytes) passphrases.
+  It allows some older images to be correctly opened again.
+  The issue was introduced in version 2.3.1.
