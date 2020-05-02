@@ -2156,7 +2156,7 @@ int LUKS2_activate(struct crypt_device *cd,
 			return -EINVAL;
 		}
 
-		if (flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) {
+		if (dmd.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) {
 			log_err(cd, _("Discard/TRIM is not supported."));
 			return -EINVAL;
 		}

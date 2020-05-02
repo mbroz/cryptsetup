@@ -1306,10 +1306,15 @@ performance on most of the modern storage devices and also with some
 hw encryption accelerators.
 .TP
 .B "\-\-persistent"
-If used with LUKS2 devices and activation commands like \fIopen\fR,
+If used with LUKS2 devices and activation commands like \fIopen\fR or \fIrefresh\fR,
 the specified activation flags are persistently written into metadata
 and used next time automatically even for normal activation.
 (No need to use cryptab or other system configuration files.)
+
+If you need to remove a persistent flag, use \fI\-\-persistent\fR without
+the flag you want to remove (e.g. to disable persistently stored discard flag,
+use \fI\-\-persistent\fR without \fI\-\-allow-discards\fR).
+
 Only \fI\-\-allow-discards\fR, \fI\-\-perf\-same_cpu_crypt\fR,
 \fI\-\-perf\-submit_from_crypt_cpus\fR and \fI\-\-integrity\-no\-journal\fR
 can be stored persistently.
