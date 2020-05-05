@@ -1101,6 +1101,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_NO_JOURNAL_BITMAP (1 << 20)
 /** device is suspended (key should be wiped from memory), output only */
 #define CRYPT_ACTIVATE_SUSPENDED (1 << 21)
+/** use native sector size for IV instead of SECTOR_SIZE */
+#define CRYPT_ACTIVATE_IV_LARGE_SECTORS (1 << 22)
 
 /**
  * Active device runtime attributes
