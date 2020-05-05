@@ -95,6 +95,7 @@ struct bitlk_fvek {
 };
 
 struct bitlk_metadata {
+	uint16_t sector_size;
 	bool togo;
 	bool state;
 	BITLKEncryptionType type;
