@@ -615,6 +615,8 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)
 		num_options++;
+	if (flags & CRYPT_ACTIVATE_IV_LARGE_SECTORS)
+		num_options++;
 	if (tgt->u.crypt.integrity)
 		num_options++;
 
@@ -625,10 +627,11 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		*sector_feature = '\0';
 
 	if (num_options) {
-		snprintf(features, sizeof(features)-1, " %d%s%s%s%s%s", num_options,
+		snprintf(features, sizeof(features)-1, " %d%s%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? " allow_discards" : "",
 		(flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? " same_cpu_crypt" : "",
 		(flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? " submit_from_crypt_cpus" : "",
+		(flags & CRYPT_ACTIVATE_IV_LARGE_SECTORS) ? " iv_large_sectors" : "",
 		sector_feature, integrity_dm);
 	} else
 		*features = '\0';
@@ -1915,6 +1918,8 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				*act_flags |= CRYPT_ACTIVATE_SAME_CPU_CRYPT;
 			else if (!strcasecmp(arg, "submit_from_crypt_cpus"))
 				*act_flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
+			else if (!strcasecmp(arg, "iv_large_sectors"))
+				*act_flags |= CRYPT_ACTIVATE_IV_LARGE_SECTORS;
 			else if (sscanf(arg, "integrity:%u:", &val) == 1) {
 				tgt->u.crypt.tag_size = val;
 				rintegrity = strchr(arg + strlen("integrity:"), ':');
