@@ -729,7 +729,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 	log_std(cd, "Info for BITLK%s device %s.\n", params->togo ? " To Go" : "", device_path(device));
 	log_std(cd, "Version:      \t%u\n", params->metadata_version);
 	log_std(cd, "GUID:         \t%s\n", params->guid);
-	log_std(cd, "Sector size:  \t%u\n", params->sector_size);
+	log_std(cd, "Sector size:  \t%u [bytes]\n", params->sector_size);
 	log_std(cd, "Created:      \t%s", ctime((time_t *)&(params->creation_time)));
 	log_std(cd, "Description:  \t%s\n", params->description);
 	log_std(cd, "Cipher name:  \t%s\n", params->cipher);
