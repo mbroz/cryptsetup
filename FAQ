@@ -2911,30 +2911,50 @@ offset  length  name                  data type  description
   * 10.9 What is an unbound keyslot and what is it used for?
 
   Quite simply, an 'unbound key' is an independent 'key' stored in a luks2 
-  keyslot that cannot be used to unlock LUKS2 data device. More specifically, 
-  an 'unbound key' or 'unbound luks2 keyslot' contains a secret stored in a 
-  LUKS2 keyslot that is not currently associated with any data/crypt segment 
-  (encrypted area) in the LUKS2 'Segments' section.
+  keyslot that cannot be used to unlock a LUKS2 data device. More specifically, 
+  an 'unbound key' or 'unbound luks2 keyslot' contains a secret that is not
+  currently associated with any data/crypt segment (encrypted area) in the 
+  LUKS2 'Segments' section (displayed by luksDump).
 
   This is a bit of a more general idea. It basically allows to use a keyslot
   as a container for a key to be used in other things than decrypting a 
-  data area.
+  data segment.
 
   As of April 2020, the following uses are defined:
 
-  1) LUKS2 reencryption. The new volume key is stored in an unbound keyslot 
-     and it becomes a regular LUKS2 keyslot later when it is used to actually 
-     decrypt/encrypt some crypt segment.
+  1) LUKS2 re-encryption. The new volume key is stored in an unbound keyslot 
+     which becomes a regular LUKS2 keyslot later when re-encryption is 
+     finished.
   
   2) Somewhat similar is the use with a wrapped key scheme (e.g. with the 
-     paes cipher). The VK (Volume Key) stored in a keyslot is in this case 
-     an encrypted binary binary blob. The KEK (Key Encryption Key) for that 
-     binary blob may be refreshed (The KEK is in this case not managed by 
+     paes cipher). In this case, the VK (Volume Key) stored in a keyslot 
+     is an encrypted binary binary blob. The KEK (Key Encryption Key) for 
+     that blob may be refreshed (Note that this KEK is not managed by 
      cryptsetup!) and the binary blob gets changed. The KEK refresh process 
      uses an 'unbound keyslot'. First the future effective VK is placed 
-     in an unbound keyslot and later it gets turned into the new real VK 
+     in the unbound keyslot and later it gets turned into the new real VK 
      (and bound to the respective crypt segment).
 
+
+  * 10.10 What about the size of the LUKS2 header?
+
+  While the LUKS1 header has a fixed size that is determined by the cipher
+  spec (see Item 6.12), LUKS2 is more variable. The default size is 16MB,
+  but it can be adjusted on creation by using the --luks2-metadata-size 
+  and --luks2-keyslots-size options. Refer to the man-page for details.
+  While adjusting the size in an existing LUKS2 container is possible,
+  it is somewhat complicated and risky. My advice is to do a backup, 
+  recreate the container with changed parameters and restore that backup.
+
+
+  * 10.11 Does LUKS2 store metadata anywhere except in the header?
+ 
+  It does not. But note that if you use the experimental integrity support,
+  there will be an integrity header as well at the start of the data area 
+  and things  get a bit more complicated. All metadata will still be at the 
+  start of the device, nothing gets stored somewhere in the middle or at 
+  the end. 
+  
 
 11. References and Further Reading
 
