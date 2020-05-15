@@ -88,6 +88,7 @@ static int opt_integrity_no_wipe = 0;
 static int opt_integrity_legacy_padding = 0;
 static const char *opt_key_description = NULL;
 static int opt_sector_size = 0;
+static int opt_iv_large_sectors = 0;
 static int opt_persistent = 0;
 static const char *opt_label = NULL;
 static const char *opt_subsystem = NULL;
@@ -194,6 +195,10 @@ static void _set_activation_flags(uint32_t *flags)
 
 	if (opt_serialize_memory_hard_pbkdf)
 		*flags |= CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF;
+
+	/* Only for plain */
+	if (opt_iv_large_sectors)
+		*flags |= CRYPT_ACTIVATE_IV_LARGE_SECTORS;
 }
 
 static void _set_reencryption_flags(uint32_t *flags)
@@ -3540,6 +3545,7 @@ int main(int argc, const char **argv)
 		{ "token-id",          '\0', POPT_ARG_INT, &opt_token,                  0, N_("Token number (default: any)"), NULL },
 		{ "key-description",   '\0', POPT_ARG_STRING, &opt_key_description,     0, N_("Key description"), NULL },
 		{ "sector-size",       '\0', POPT_ARG_INT, &opt_sector_size,            0, N_("Encryption sector size (default: 512 bytes)"), NULL },
+		{ "iv-large-sectors",  '\0', POPT_ARG_NONE, &opt_iv_large_sectors,      0, N_("Use IV counted in sector size (not in 512 bytes)"), NULL },
 		{ "persistent",	       '\0', POPT_ARG_NONE, &opt_persistent,            0, N_("Set activation flags persistent for device"), NULL },
 		{ "label",	       '\0', POPT_ARG_STRING, &opt_label,               0, N_("Set label for the LUKS2 device"), NULL },
 		{ "subsystem",	       '\0', POPT_ARG_STRING, &opt_subsystem,           0, N_("Set subsystem label for the LUKS2 device"), NULL },
@@ -3915,6 +3921,12 @@ int main(int argc, const char **argv)
 	    (opt_sector_size & (opt_sector_size - 1))))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Unsupported encryption sector size."),
+		      poptGetInvocationName(popt_context));
+
+	if (opt_iv_large_sectors && (strcmp(aname, "open") || strcmp_or_null(opt_type, "plain") ||
+	    opt_sector_size <= SECTOR_SIZE))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Large IV sectors option is supported only for opening plain type device with sector size larger than 512 bytes."),
 		      poptGetInvocationName(popt_context));
 
 	if (opt_unbound && !opt_key_size && !strcmp(aname, "luksAddKey"))

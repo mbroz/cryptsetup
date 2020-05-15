@@ -1305,6 +1305,15 @@ Increasing sector size from 512 bytes to 4096 bytes can provide better
 performance on most of the modern storage devices and also with some
 hw encryption accelerators.
 .TP
+.B "\-\-iv-large-sectors"
+Count Initialization Vector (IV) in larger sector size (if set) instead
+of 512 bytes sectors. This option can be used only for \fIopen\fR command
+and \fIplain\fR encryption type.
+
+\fBNOTE:\fR This option does not have any performance or security impact,
+use it only for accessing incompatible existing disk images from other systems
+that require this option.
+.TP
 .B "\-\-persistent"
 If used with LUKS2 devices and activation commands like \fIopen\fR or \fIrefresh\fR,
 the specified activation flags are persistently written into metadata

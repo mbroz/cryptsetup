@@ -239,6 +239,15 @@ else
 		check_sector_size $S
 		$CRYPTSETUP close $DEV_NAME || fail
 	done
+
+	echo -e "$PWD1" | $CRYPTSETUP open --type plain --hash sha256 $DEV $DEV_NAME --iv-large-sectors >/dev/null 2>&1 && fail
+	for S in 1024 2048 4096; do
+		echo -n "[$S/IV]"
+		echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --sector-size $S --iv-large-sectors || fail
+		check_sector_size $S
+		dmsetup table $DEV_NAME | grep -q "iv_large_sectors" || fail
+		$CRYPTSETUP close $DEV_NAME || fail
+	done
 	echo
 
 	echo -n "LUKS2 sector size:"
