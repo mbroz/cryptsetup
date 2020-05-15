@@ -4010,6 +4010,10 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Options --device-size and --size cannot be combined."),
 		      poptGetInvocationName(popt_context));
 
+	if ((opt_keyslot_cipher && !opt_keyslot_key_size) || (!opt_keyslot_cipher && opt_keyslot_key_size))
+		usage(popt_context, EXIT_FAILURE, _("Options --keyslot-cipher and --keyslot-key-size must be used together."),
+		      poptGetInvocationName(popt_context));
+
 	r = run_action(action);
 	poptFreeContext(popt_context);
 	return r;
