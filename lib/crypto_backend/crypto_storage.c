@@ -31,11 +31,11 @@
  * IV documentation: https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt
  */
 struct crypt_sector_iv {
-	enum { IV_NONE, IV_NULL, IV_PLAIN, IV_PLAIN64, IV_ESSIV, IV_BENBI, IV_PLAIN64BE } type;
+	enum { IV_NONE, IV_NULL, IV_PLAIN, IV_PLAIN64, IV_ESSIV, IV_BENBI, IV_PLAIN64BE, IV_EBOIV } type;
 	int iv_size;
 	char *iv;
-	struct crypt_cipher *essiv_cipher;
-	int benbi_shift;
+	struct crypt_cipher *cipher;
+	int shift;
 };
 
 /* Block encryption storage context */
@@ -56,8 +56,10 @@ static int int_log2(unsigned int x)
 
 static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 			 const char *cipher_name, const char *mode_name,
-			 const char *iv_name, const void *key, size_t key_length)
+			 const char *iv_name, const void *key, size_t key_length, size_t sector_size)
 {
+	int r;
+
 	memset(ctx, 0, sizeof(*ctx));
 
 	ctx->iv_size = crypt_cipher_ivsize(cipher_name, mode_name);
@@ -86,7 +88,6 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 		char *hash_name = strchr(iv_name, ':');
 		int hash_size;
 		char tmp[256];
-		int r;
 
 		if (!hash_name)
 			return -EINVAL;
@@ -114,7 +115,7 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 			return r;
 		}
 
-		r = crypt_cipher_init(&ctx->essiv_cipher, cipher_name, "ecb",
+		r = crypt_cipher_init(&ctx->cipher, cipher_name, "ecb",
 				      tmp, hash_size);
 		crypt_backend_memzero(tmp, sizeof(tmp));
 		if (r)
@@ -127,7 +128,15 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 			return -EINVAL;
 
 		ctx->type = IV_BENBI;
-		ctx->benbi_shift = SECTOR_SHIFT - log;
+		ctx->shift = SECTOR_SHIFT - log;
+	} else if (!strncasecmp(iv_name, "eboiv", 5)) {
+		r = crypt_cipher_init(&ctx->cipher, cipher_name, "ecb",
+				      key, key_length);
+		if (r)
+			return r;
+
+		ctx->type = IV_EBOIV;
+		ctx->shift = int_log2(sector_size);
 	} else
 		return -ENOENT;
 
@@ -163,13 +172,19 @@ static int crypt_sector_iv_generate(struct crypt_sector_iv *ctx, uint64_t sector
 	case IV_ESSIV:
 		memset(ctx->iv, 0, ctx->iv_size);
 		*(uint64_t *)ctx->iv = cpu_to_le64(sector);
-		return crypt_cipher_encrypt(ctx->essiv_cipher,
+		return crypt_cipher_encrypt(ctx->cipher,
 			ctx->iv, ctx->iv, ctx->iv_size, NULL, 0);
 		break;
 	case IV_BENBI:
 		memset(ctx->iv, 0, ctx->iv_size);
-		val = cpu_to_be64((sector << ctx->benbi_shift) + 1);
+		val = cpu_to_be64((sector << ctx->shift) + 1);
 		memcpy(ctx->iv + ctx->iv_size - sizeof(val), &val, sizeof(val));
+		break;
+	case IV_EBOIV:
+		memset(ctx->iv, 0, ctx->iv_size);
+		*(uint64_t *)ctx->iv = cpu_to_le64(sector << ctx->shift);
+		return crypt_cipher_encrypt(ctx->cipher,
+			ctx->iv, ctx->iv, ctx->iv_size, NULL, 0);
 		break;
 	default:
 		return -EINVAL;
@@ -180,8 +195,8 @@ static int crypt_sector_iv_generate(struct crypt_sector_iv *ctx, uint64_t sector
 
 static void crypt_sector_iv_destroy(struct crypt_sector_iv *ctx)
 {
-	if (ctx->type == IV_ESSIV)
-		crypt_cipher_destroy(ctx->essiv_cipher);
+	if (ctx->type == IV_ESSIV || ctx->type == IV_EBOIV)
+		crypt_cipher_destroy(ctx->cipher);
 
 	if (ctx->iv) {
 		memset(ctx->iv, 0, ctx->iv_size);
@@ -229,7 +244,7 @@ int crypt_storage_init(struct crypt_storage **ctx,
 		return r;
 	}
 
-	r = crypt_sector_iv_init(&s->cipher_iv, cipher, mode_name, cipher_iv, key, key_length);
+	r = crypt_sector_iv_init(&s->cipher_iv, cipher, mode_name, cipher_iv, key, key_length, sector_size);
 	if (r) {
 		crypt_storage_destroy(s);
 		return r;
