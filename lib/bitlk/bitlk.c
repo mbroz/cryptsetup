@@ -415,6 +415,7 @@ void BITLK_bitlk_fvek_free(struct bitlk_fvek *fvek)
 		return;
 
 	crypt_free_volume_key(fvek->vk);
+	free(fvek);
 }
 
 void BITLK_bitlk_vmk_free(struct bitlk_vmk *vmk)
