@@ -112,6 +112,7 @@ int tpm_get_random(struct crypt_device *cd, char *random_bytes, size_t len);
  */
 
 int tpm2_token_add(struct crypt_device *cd,
+	int token,
 	uint32_t tpm_nv,
 	uint32_t tpm_pcr,
 	uint32_t pcrbanks,

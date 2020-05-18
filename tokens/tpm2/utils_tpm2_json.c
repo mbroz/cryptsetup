@@ -219,6 +219,7 @@ out:
 }
 
 int tpm2_token_add(struct crypt_device *cd,
+	int token,
 	uint32_t tpm_nv,
 	uint32_t tpm_pcr,
 	uint32_t pcrbanks,
@@ -226,7 +227,6 @@ int tpm2_token_add(struct crypt_device *cd,
 	bool pin,
 	size_t nvkey_size)
 {
-	int token;
 	json_object *jobj, *jobj_token;
 	const char *string_token;
 
@@ -280,7 +280,7 @@ int tpm2_token_add(struct crypt_device *cd,
 
 	l_dbg(cd, "Token JSON: %s\n", string_token);
 
-	token = crypt_token_json_set(cd, CRYPT_ANY_TOKEN, string_token);
+	token = crypt_token_json_set(cd, token, string_token);
 	if (token < 0)
 		goto out;
 

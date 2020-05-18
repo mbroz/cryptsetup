@@ -185,7 +185,7 @@ static int action_tpm2_add(struct crypt_device *cd)
 	keyslot = r;
 	l_std(cd, "Using keyslot %d.\n", keyslot);
 
-	r = tpm2_token_add(cd, opt_tpmnv, opt_tpmpcr, opt_tpmbanks, opt_tpmdaprotect, !opt_no_tpm_pin, opt_pass_size);
+	r = tpm2_token_add(cd, CRYPT_ANY_TOKEN, opt_tpmnv, opt_tpmpcr, opt_tpmbanks, opt_tpmdaprotect, !opt_no_tpm_pin, opt_pass_size);
 	if (r < 0) {
 		tpm_nv_undefine(cd, opt_tpmnv);
 		crypt_keyslot_destroy(cd, keyslot);
