@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cryptsetup 2.3.3-rc0\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2020-05-15 10:45+0200\n"
+"POT-Creation-Date: 2020-05-24 23:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1061,74 +1061,74 @@ msgid ""
 "Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:478
+#: lib/bitlk/bitlk.c:479
 #, c-format
 msgid "Failed to read BITLK signature from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:484
+#: lib/bitlk/bitlk.c:485
 msgid "BITLK version 1 is currently not supported."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:490
+#: lib/bitlk/bitlk.c:491
 msgid "Invalid or unknown boot signature for BITLK device."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:502
+#: lib/bitlk/bitlk.c:503
 msgid "Invalid or unknown signature for BITLK device."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:509
+#: lib/bitlk/bitlk.c:510
 #, c-format
 msgid "Unsupported sector size %<PRIu16>."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:517
+#: lib/bitlk/bitlk.c:518
 #, c-format
 msgid "Failed to read BITLK header from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:542
+#: lib/bitlk/bitlk.c:543
 #, c-format
 msgid "Failed to read BITLK FVE metadata from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:593
+#: lib/bitlk/bitlk.c:594
 msgid "Unknown or unsupported encryption type."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:626
+#: lib/bitlk/bitlk.c:627
 #, c-format
 msgid "Failed to read BITLK metadata entries from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:920
+#: lib/bitlk/bitlk.c:921
 msgid "This operation is not supported."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:928
+#: lib/bitlk/bitlk.c:929
 msgid "Wrong key size."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:980
+#: lib/bitlk/bitlk.c:981
 msgid "This BITLK device is in an unsupported state and cannot be activated."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:986
+#: lib/bitlk/bitlk.c:987
 #, c-format
 msgid "BITLK devices with type '%s' cannot be activated."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:1068
+#: lib/bitlk/bitlk.c:1069
 msgid "Activation of partially decrypted BITLK device is not supported."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:1204
+#: lib/bitlk/bitlk.c:1205
 msgid ""
 "Cannot activate device, kernel dm-crypt is missing support for BITLK IV."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:1208
+#: lib/bitlk/bitlk.c:1209
 msgid ""
 "Cannot activate device, kernel dm-crypt is missing support for BITLK "
 "Elephant diffuser."
@@ -3066,6 +3066,10 @@ msgstr ""
 
 #: src/cryptsetup.c:4010
 msgid "Options --device-size and --size cannot be combined."
+msgstr ""
+
+#: src/cryptsetup.c:4014
+msgid "Options --keyslot-cipher and --keyslot-key-size must be used together."
 msgstr ""
 
 #: src/veritysetup.c:66
