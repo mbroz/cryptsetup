@@ -7,6 +7,9 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 TST_DIR=bitlk-images
 MAP=bitlktst
 
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
 [ -z "$srcdir" ] && srcdir="."
 
 function remove_mapping()
@@ -71,8 +74,22 @@ function check_dump()
 
 }
 
+function valgrind_setup()
+{
+	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
 export LANG=C
 [ ! -d $TST_DIR ] && tar xJSf $srcdir/bitlk-images.tar.xz --no-same-owner
+
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
 echo "HEADER CHECK"
 for file in $(ls $TST_DIR/bitlk-*) ; do
