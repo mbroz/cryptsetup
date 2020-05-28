@@ -1,0 +1,42 @@
+Cryptsetup 2.3.3 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.x should upgrade to this version.
+
+Changes since version 2.3.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix BitLocker compatible device access that uses native 4kB sectors.
+
+  Devices formatted with storage that natively support 4096-bytes
+  sectors can also use this sector size for encryption units.
+
+* Support large IV count (--iv-large-sectors) cryptsetup option
+  for plain device mapping.
+
+  The large IV count is supported in dm-crypt together with larger
+  sector encryption. It counts the Initialization Vector (IV) in
+  a larger sector size instead of 512-bytes sectors.
+
+  This option does not have any performance or security impact,
+  but it can be used for accessing incompatible existing disk images
+  from other systems.
+
+  Only open action with plain device type and sector size > 512 bytes
+  are supported.
+
+* Fix a memory leak in BitLocker compatible handling.
+
+* Allow EBOIV (Initialization Vector algorithm) use.
+
+  The EBOIV initialization vector is intended to be used internally
+  with BitLocker devices (for CBC mode). It can now be used also
+  outside of the BitLocker compatible code.
+
+* Require both keyslot cipher and key size options.
+
+  If these LUKS2 keyslot parameters were not specified together,
+  cryptsetup silently failed.
+
+* Update to man pages and FAQ.
