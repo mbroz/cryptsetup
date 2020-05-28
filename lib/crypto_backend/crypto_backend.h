@@ -109,7 +109,7 @@ int crypt_cipher_check_kernel(const char *name, const char *mode,
 /* Storage encryption wrappers */
 int crypt_storage_init(struct crypt_storage **ctx, size_t sector_size,
 		       const char *cipher, const char *cipher_mode,
-		       const void *key, size_t key_length);
+		       const void *key, size_t key_length, bool large_iv);
 void crypt_storage_destroy(struct crypt_storage *ctx);
 int crypt_storage_decrypt(struct crypt_storage *ctx, uint64_t iv_offset,
 			  uint64_t length, char *buffer);
