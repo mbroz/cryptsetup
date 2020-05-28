@@ -31,6 +31,7 @@ struct crypt_device;
 #define DISABLE_KCAPI	(1 << 1)
 #define DISABLE_DMCRYPT	(1 << 2)
 #define OPEN_READONLY	(1 << 3)
+#define LARGE_IV	(1 << 4)
 
 typedef enum {
 	NONE = 0,

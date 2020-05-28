@@ -40,7 +40,7 @@ struct crypt_sector_iv {
 
 /* Block encryption storage context */
 struct crypt_storage {
-	unsigned sector_shift;
+	size_t sector_size;
 	unsigned iv_shift;
 	struct crypt_cipher *cipher;
 	struct crypt_sector_iv cipher_iv;
@@ -56,7 +56,8 @@ static int int_log2(unsigned int x)
 
 static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 			 const char *cipher_name, const char *mode_name,
-			 const char *iv_name, const void *key, size_t key_length, size_t sector_size)
+			 const char *iv_name, const void *key, size_t key_length,
+			 size_t sector_size)
 {
 	int r;
 
@@ -212,7 +213,8 @@ int crypt_storage_init(struct crypt_storage **ctx,
 		       size_t sector_size,
 		       const char *cipher,
 		       const char *cipher_mode,
-		       const void *key, size_t key_length)
+		       const void *key, size_t key_length,
+		       bool large_iv)
 {
 	struct crypt_storage *s;
 	char mode_name[64];
@@ -250,8 +252,8 @@ int crypt_storage_init(struct crypt_storage **ctx,
 		return r;
 	}
 
-	s->sector_shift = int_log2(sector_size);
-	s->iv_shift = s->sector_shift - SECTOR_SHIFT;
+	s->sector_size = sector_size;
+	s->iv_shift = large_iv ? int_log2(sector_size) - SECTOR_SHIFT : 0;
 
 	*ctx = s;
 	return 0;
@@ -264,19 +266,20 @@ int crypt_storage_decrypt(struct crypt_storage *ctx,
 	uint64_t i;
 	int r = 0;
 
-	if (length & ((1 << ctx->sector_shift) - 1))
+	if (length & (ctx->sector_size - 1))
 		return -EINVAL;
 
-	length >>= ctx->sector_shift;
+	if (iv_offset & ((ctx->sector_size >> SECTOR_SHIFT) - 1))
+		return -EINVAL;
 
-	for (i = 0; i < length; i++) {
-		r = crypt_sector_iv_generate(&ctx->cipher_iv, iv_offset + (uint64_t)(i << ctx->iv_shift));
+	for (i = 0; i < length; i += ctx->sector_size) {
+		r = crypt_sector_iv_generate(&ctx->cipher_iv, (iv_offset + (i >> SECTOR_SHIFT)) >> ctx->iv_shift);
 		if (r)
 			break;
 		r = crypt_cipher_decrypt(ctx->cipher,
-					 &buffer[i << ctx->sector_shift],
-					 &buffer[i << ctx->sector_shift],
-					 1 << ctx->sector_shift,
+					 &buffer[i],
+					 &buffer[i],
+					 ctx->sector_size,
 					 ctx->cipher_iv.iv,
 					 ctx->cipher_iv.iv_size);
 		if (r)
@@ -293,19 +296,20 @@ int crypt_storage_encrypt(struct crypt_storage *ctx,
 	uint64_t i;
 	int r = 0;
 
-	if (length & ((1 << ctx->sector_shift) - 1))
+	if (length & (ctx->sector_size - 1))
 		return -EINVAL;
 
-	length >>= ctx->sector_shift;
+	if (iv_offset & ((ctx->sector_size >> SECTOR_SHIFT) - 1))
+		return -EINVAL;
 
-	for (i = 0; i < length; i++) {
-		r = crypt_sector_iv_generate(&ctx->cipher_iv, iv_offset + (i << ctx->iv_shift));
+	for (i = 0; i < length; i += ctx->sector_size) {
+		r = crypt_sector_iv_generate(&ctx->cipher_iv, (iv_offset + (i >> SECTOR_SHIFT)) >> ctx->iv_shift);
 		if (r)
 			break;
 		r = crypt_cipher_encrypt(ctx->cipher,
-					 &buffer[i << ctx->sector_shift],
-					 &buffer[i << ctx->sector_shift],
-					 1 << ctx->sector_shift,
+					 &buffer[i],
+					 &buffer[i],
+					 ctx->sector_size,
 					 ctx->cipher_iv.iv,
 					 ctx->cipher_iv.iv_size);
 		if (r)

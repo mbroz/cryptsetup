@@ -62,7 +62,7 @@ static int crypt_storage_backend_init(struct crypt_device *cd,
 	struct crypt_storage *s;
 
 	/* iv_start, sector_size */
-	r = crypt_storage_init(&s, sector_size, cipher, cipher_mode, vk->key, vk->keylength);
+	r = crypt_storage_init(&s, sector_size, cipher, cipher_mode, vk->key, vk->keylength, flags & LARGE_IV);
 	if (r)
 		return r;
 
