@@ -337,7 +337,7 @@ err:
 }
 
 int LUKS2_wipe_header_areas(struct crypt_device *cd,
-	struct luks2_hdr *hdr)
+	struct luks2_hdr *hdr, bool detached_header)
 {
 	int r;
 	uint64_t offset, length;
@@ -352,7 +352,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* On detached header wipe at least the first 4k */
-	if (length == 0) {
+	if (detached_header) {
 		length = 4096;
 		wipe_block = 4096;
 	}

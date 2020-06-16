@@ -713,6 +713,12 @@ $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "5: luks2" || fail
 $CRYPTSETUP luksKillSlot -q _fakedev_ --header $HEADER_IMG 5 || fail
 $CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "5: luks2" && fail
 echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_IMG || fail
+rm $HEADER_IMG || fail
+# create exactly 16 MiBs LUKS2 header
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG --luks2-keyslots-size 16352k --luks2-metadata-size 16k --offset 131072 >/dev/null || fail
+SIZE=$(stat --printf=%s $HEADER_IMG)
+test $SIZE -eq 16777216 || fail
+$CRYPTSETUP -q luksDump  $HEADER_IMG | grep -q "offset: $((512 * 131072)) \[bytes\]" || fail
 
 prepare "[29] Repair metadata" wipe
 xz -dk $HEADER_LUKS2_PV.xz
