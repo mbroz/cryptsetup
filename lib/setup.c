@@ -1874,7 +1874,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			goto out;
 	}
 
-	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr);
+	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr, cd->metadata_device != NULL);
 	if (r < 0) {
 		log_err(cd, _("Cannot wipe header on device %s."),
 			mdata_device_path(cd));
