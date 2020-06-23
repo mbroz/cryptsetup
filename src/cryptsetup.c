@@ -109,6 +109,7 @@ static int opt_iv_large_sectors = 0;
 static int opt_persistent = 0;
 static int opt_unbound = 0;
 static int opt_refresh = 0;
+static int opt_test_args = 0;
 
 /* LUKS2 reencryption parameters */
 static int opt_encrypt = 0;
@@ -3602,6 +3603,7 @@ int main(int argc, const char **argv)
 		{ "resilience",	       '\0', POPT_ARG_STRING, &opt_resilience_mode,     0, N_("Reencryption hotzone resilience type (checksum,journal,none)"), NULL },
 		{ "resilience-hash",   '\0', POPT_ARG_STRING, &opt_resilience_hash,     0, N_("Reencryption hotzone checksums hash"), NULL },
 		{ "active-name",       '\0', POPT_ARG_STRING, &opt_active_name,		0, N_("Override device autodetection of dm device to be reencrypted"), NULL },
+		{ "test-args",	       '\0', POPT_ARG_NONE,   &opt_test_args,		0, N_("Do not run action, just validate all command line parameters"), NULL },
 		POPT_TABLEEND
 	};
 	poptContext popt_context;
@@ -3998,14 +4000,14 @@ int main(int argc, const char **argv)
 		dbg_version_and_cmd(argc, argv);
 	}
 
-	if (opt_disable_locks && crypt_metadata_locking(NULL, 0)) {
+	if (!opt_test_args && opt_disable_locks && crypt_metadata_locking(NULL, 0)) {
 		log_std(_("Cannot disable metadata locking."));
 		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_FAILURE);
 	}
 
-	if (opt_disable_keyring)
+	if (!opt_test_args && opt_disable_keyring)
 		(void) crypt_volume_key_keyring(NULL, 0);
 
 	if (opt_hotzone_size_str &&
@@ -4057,7 +4059,12 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Options --keyslot-cipher and --keyslot-key-size must be used together."),
 		      poptGetInvocationName(popt_context));
 
-	r = run_action(action);
+	if (!opt_test_args) {
+		r = run_action(action);
+	} else {
+		r = 0;
+		log_std(_("No action taken. Invoked with --test-args option.\n"));
+	}
 	tools_cleanup();
 	poptFreeContext(popt_context);
 	return r;
