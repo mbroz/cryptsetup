@@ -1,6 +1,7 @@
 TESTS = 00modules-test \
 	api-test \
 	api-test-2 \
+	compat-test-args \
 	compat-test \
 	compat-test2 \
 	loopaes-test \
@@ -50,6 +51,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	tcrypt-images.tar.xz \
 	luks1-images.tar.xz \
 	00modules-test \
+	compat-test-args \
 	compat-test \
 	compat-test2 \
 	loopaes-test align-test discards-test mode-test password-hash-test \
@@ -112,6 +114,7 @@ compatimage.img:
 	@xz -k -d compatimage.img.xz
 
 valgrind-check: api-test api-test-2 differ
+	@VALG=1 ./compat-test-args
 	@VALG=1 ./compat-test2
 	@VALG=1 ./luks2-validation-test
 	@VALG=1 ./verity-compat-test
