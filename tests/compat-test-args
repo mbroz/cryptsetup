@@ -1,0 +1,288 @@
+#!/bin/bash
+
+PS4='$LINENO:'
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
+TEST_UUID="12345678-1234-1234-1234-123456789abc"
+
+TFILE=test-args.out
+
+function cleanup()
+{
+	rm -f $TFILE 2> /dev/null
+}
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
+	cleanup
+	exit 2
+}
+
+function valgrind_setup()
+{
+	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
+function xxx()
+{
+	$CRYPTSETUP --test-args $@ > $TFILE 2>&1
+	local ret=$?
+
+	grep -q -e ": unknown option\|Argument <action> missing" $TFILE && {
+		echo "'$CRYPTSETUP --test-args $@' command:"
+		cat $TFILE
+		fail "Probably typo in test"
+	}
+	test $ret -ne 0 || fail
+}
+
+function exp_fail()
+{
+	# xxx $@
+	$CRYPTSETUP --test-args $@ 2>/dev/null && fail
+}
+
+function exp_pass()
+{
+	$CRYPTSETUP --test-args $@ >/dev/null || fail
+}
+
+export LANG=C
+
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+
+# initial test constructed acccording to current cryptsetup content
+echo "[1] Current state"
+exp_fail resize NAME --test-passphrase
+exp_fail close NAME --test-passphrase
+exp_pass open DEV NAME --test-passphrase --type bitlk
+exp_pass open DEV NAME --test-passphrase --type luks
+exp_pass open DEV NAME --test-passphrase --type luks1
+exp_pass open DEV NAME --test-passphrase --type luks2
+exp_fail open DEV NAME --test-passphrase --type plain
+
+exp_fail open DEV NAME --deferred
+exp_pass close NAME --deferred
+
+exp_pass open DEV NAME --type plain --shared
+exp_fail open DEV NAME --type luks1 --shared
+exp_fail close NAME --shared
+
+exp_pass open DEV NAME --allow-discards
+exp_fail close NAME --allow-discards
+
+exp_fail close NAME --persistent
+exp_pass open DEV NAME --persistent
+exp_fail open DEV NAME --persistent --test-passphrase
+
+exp_fail luksFormat DEV --serialize-memory-hard-pbkdf
+exp_pass open DEV NAME --serialize-memory-hard-pbkdf
+
+exp_pass reencrypt DEV --key-size 32
+exp_fail reencrypt DEV --key-size 31
+exp_fail reencrypt DEV --key-size -32
+exp_pass luksFormat DEV --key-size 32
+exp_fail luksFormat DEV --key-size 31
+exp_fail luksFormat DEV --key-size -32
+exp_pass open DEV NAME --key-size 32 # --type plain -c aes-xts-plain64
+exp_fail open DEV NAME --key-size 31 # --type plain -c aes-xts-plain64
+exp_pass benchmark --key-size 32
+exp_fail benchmark --key-size 31
+exp_pass luksAddKey DEV --key-size 32 # --unbound
+exp_fail luksAddKey DEV --key-size 31 # --unbound
+
+exp_fail close NAME --key-size 32
+exp_fail luksUUID DEV --key-size 32
+
+# bug
+# exp_fail luksFormat DEV --type luks1 --integrity hmac-sha256
+exp_pass luksFormat DEV --type luks2 --integrity hmac-sha256
+exp_fail open DEV NAME --integrity hmac-sha256
+
+exp_pass luksFormat DEV --type luks2 --integrity hmac-sha256 --integrity-no-wipe
+exp_fail luksFormat DEV --type luks2 --integrity-no-wipe
+# bug
+# exp_fail luksFormat DEV --type luks1 --integrity hmac-sha256 --integrity-no-wipe
+exp_fail open DEV NAME --integrity-no-wipe
+exp_fail open DEV NAME --integrity-no-wipe --integrity hmac-sha256
+
+exp_pass luksFormat --label L --subsystem S DEV # --type luks2
+exp_pass luksFormat --label L DEV # --type luks2
+exp_pass luksFormat --subsystem S DEV # --type luks2
+exp_pass config --label L --subsystem S DEV
+exp_pass config --label L DEV
+exp_pass config --subsystem S DEV
+# bug
+#exp_fail luksFormat --label L --subsystem S DEV --type luks1
+#exp_fail luksFormat --label L DEV --type luks1
+#exp_fail luksFormat --subsystem S DEV --type luks1
+exp_fail open DEV NAME --label L --subsystem S
+exp_fail open DEV NAME --label L
+exp_fail open DEV NAME --subsystem S
+
+exp_fail luksFormat DEV -S-2
+# bug
+# exp_fail luksFormat DEV -S-1
+
+# prob. many bug: accepts --[new-]keyfile-size w/o --[new-]key-file
+exp_pass luksFormat DEV --keyfile-size 42 --key-file F
+exp_fail luksFormat DEV --keyfile-size -1 --key-file F
+# bug (is it? e.g. empty passphrase)
+# exp_fail luksFormat DEV --keyfile-size 0
+exp_pass luksAddKey DEV --keyfile-size 42 --key-file F --new-keyfile-size 42 NF
+exp_fail luksAddKey DEV --new-keyfile-size -42 NF
+exp_fail luksAddKey DEV --keyfile-size 42 --key-file F --new-keyfile-size -42 NF
+exp_fail luksFormat DEV --keyfile-size -1 --key-file F
+# bug (is it? e.g. empty passphrase)
+# exp_fail luksFormat DEV --keyfile-size 0
+
+exp_fail open DEV NAME --key-file F0 --key-file F1
+exp_pass open DEV NAME --key-file F0 --key-file F1 --type tcrypt
+
+# why? (luksAddKey fail)
+exp_fail luksAddKey DEV --use-random
+exp_fail luksAddKey DEV --use-urandom
+exp_fail luksAddKey DEV --use-urandom --use-random
+exp_fail luksFormat DEV --use-urandom --use-random
+exp_pass luksFormat DEV --use-random
+exp_pass luksFormat DEV --use-urandom
+
+exp_fail open DEV NAME --uuid $TEST_UUID
+exp_pass luksFormat DEV --uuid $TEST_UUID
+exp_pass luksUUID DEV --uuid $TEST_UUID
+
+exp_fail open DEV NAME --align-payload 8192
+exp_fail open DEV NAME --align-payload 8292 --type plain
+exp_pass luksFormat DEV --align-payload 8192
+exp_fail luksFormat DEV --align-payload 8192 --offset 16384
+exp_fail luksFormat DEV --align-payload 8192 --offset 8192
+
+exp_fail resize NAME --luks2-metadata-size 16k
+exp_fail resize NAME --luks2-keyslots-size 16m
+exp_pass luksFormat DEV --luks2-keyslots-size 16m
+exp_pass luksFormat DEV --luks2-metadata-size 16k
+exp_pass reencrypt DEV --luks2-keyslots-size 16m
+exp_pass reencrypt DEV --luks2-metadata-size 16k
+
+exp_fail luksFormat DEV --skip 8192
+exp_fail open DEV NAME --skip 8192
+exp_pass open DEV NAME --skip 8192 --type plain
+exp_pass open DEV NAME --skip 8192 --type loopaes
+
+exp_fail resize NAME --offset 8292
+exp_pass luksFormat DEV --offset 16384
+exp_fail open DEV NAME --offset 16384
+exp_pass open DEV NAME --offset 16384 --type plain
+exp_pass open DEV NAME --offset 16384 --type loopaes
+
+exp_fail open DEV NAME --tcrypt-hidden
+exp_fail open DEV NAME --tcrypt-system
+exp_fail open DEV NAME --tcrypt-backup
+# bug
+# exp_fail open DEV NAME --tcrypt-hidden --tcrypt-system --tcrypt-backup --type tcrypt
+exp_pass open DEV NAME --tcrypt-hidden --type tcrypt
+exp_pass open DEV NAME --tcrypt-backup --type tcrypt
+exp_pass open DEV NAME --tcrypt-system --type tcrypt
+exp_pass tcryptDump DEV NAME --tcrypt-hidden --type tcrypt
+exp_pass tcryptDump DEV NAME --tcrypt-backup --type tcrypt
+exp_pass tcryptDump DEV NAME --tcrypt-system --type tcrypt
+exp_fail tcryptDump DEV NAME --allow-discards --tcrypt-hidden --type tcrypt
+
+# bug
+# exp_fail close NAME --type tcrypt --veracrypt
+exp_fail open DEV NAME --veracrypt
+exp_pass open DEV NAME --type tcrypt --veracrypt
+exp_pass open DEV NAME --type tcrypt --veracrypt --veracrypt-pim 1
+exp_fail open DEV NAME --type tcrypt --veracrypt --veracrypt-pim -2
+exp_fail open DEV NAME --type tcrypt --veracrypt-pim 1
+# bug
+# exp_fail open DEV NAME --type tcrypt --veracrypt --veracrypt-pim -1
+exp_fail open DEV NAME --type tcrypt --veracrypt-query-pim
+exp_fail open DEV NAME --type tcrypt --veracrypt-query-pim --veracrypt-pim 1
+exp_fail open DEV NAME --veracrypt-query-pim
+
+# bug
+# exp_fail open DEV NAME --priority normal
+exp_fail config DEV --priority normal
+exp_fail config DEV -S1 --priority norma
+exp_pass config DEV -S1 --priority normal
+exp_pass config DEV -S1 --priority ignore
+exp_pass config DEV -S1 --priority prefer
+
+# bug
+# exp_fail open DEV NAME --pbkdf argon2i
+exp_fail luksFormat DEV --pbkdf blah
+exp_pass luksFormat DEV --pbkdf argon2i
+exp_pass luksFormat DEV --pbkdf pbkdf2
+exp_pass luksFormat DEV --pbkdf argon2id
+exp_fail luksFormat DEV --type luks2 --pbkdf-force-iterations 4 -i1
+exp_fail luksFormat DEV --type luks1 --pbkdf-force-iterations 1001 -i1
+
+exp_fail open DEV NAME --sector-size 1024
+exp_pass open DEV NAME --type plain --sector-size 1024
+# bug
+# exp_fail luksFormat DEV --sector-size 0
+exp_fail luksFormat DEV --sector-size 511
+exp_fail luksFormat DEV --sector-size 8192
+exp_pass reencrypt DEV --sector-size 1024
+exp_pass luksFormat DEV --sector-size 1024
+
+exp_fail luksFormat DEV --iv-large-sectors
+exp_fail open DEV --type tcrypt --iv-large-sectors
+exp_fail open DEV --type plain --iv-large-sectors --sector-size 512
+exp_pass open DEV --type plain --iv-large-sectors --sector-size 1024
+
+exp_fail luksAddKey DEV --unbound
+exp_fail luksAddKey DEV --unbound --key-size 0
+exp_pass luksAddKey DEV --unbound --key-size 8
+exp_pass luksDump DEV --unbound -S5
+exp_fail luksDump DEV --unbound
+
+exp_fail resize NAME --refresh
+exp_fail open DEV NAME --test-passphrase --refresh
+exp_pass open DEV NAME --refresh
+exp_pass refresh DEV NAME
+exp_fail refresh DEV NAME --test-passphrase
+
+# bug
+# exp_fail luksFormat DEV --reduce-device-size 64m
+exp_fail reencrypt DEV --reduce-device-size 2G # max 1g
+exp_fail reencrypt DEV --reduce-device-size $((64*1024*1024+1))
+exp_fail reencrypt DEV --reduce-device-size -64m
+exp_pass reencrypt DEV --reduce-device-size 64m
+exp_fail reencrypt DEV --reduce-device-size 64m --device-size 100g
+exp_fail reencrypt DEV --decrypt
+# bugs
+# exp_fail open DEV --decrypt --header H
+# exp_fail open DEV --encrypt
+# exp_fail open DEV NAME --device-size 32m
+# exp_fail open DEV NAME --size 100
+exp_pass open DEV NAME --device-size 32m --type plain
+exp_pass open DEV NAME --size 100 --type plain
+exp_fail open DEV NAME --size 100 --device-size $((512*100)) --type plain
+exp_fail reencrypt DEV --device-size $((32*1024*1024+1))
+exp_pass reencrypt DEV --device-size 32m
+
+exp_fail luksFormat DEV NAME --keyslot-cipher ks
+exp_fail luksFormat DEV NAME --keyslot-key-size 32
+exp_pass luksFormat DEV NAME --keyslot-cipher ks --keyslot-key-size 32
+# bugs
+# exp_fail open DEV NAME --keyslot-cipher ks --keyslot-key-size 32
+# exp_fail luksFormat --type luks1 DEV NAME --keyslot-cipher ks --keyslot-key-size 32
+
+cleanup
+exit 0
