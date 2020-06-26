@@ -1,11 +1,11 @@
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = lib/libcryptsetup.pc
+pkgconfig_DATA += lib/libcryptsetup.pc
 
-lib_LTLIBRARIES = libcryptsetup.la
+lib_LTLIBRARIES += libcryptsetup.la
 
 noinst_LTLIBRARIES += libutils_io.la
 
-include_HEADERS = lib/libcryptsetup.h
+include_HEADERS += lib/libcryptsetup.h
 
 EXTRA_DIST += lib/libcryptsetup.pc.in lib/libcryptsetup.sym
 
