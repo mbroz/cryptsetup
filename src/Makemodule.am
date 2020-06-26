@@ -1,6 +1,9 @@
 # cryptsetup
 if CRYPTSETUP
 
+# cryptsetup_CPPFLAGS = $(AM_CPPFLAGS) \
+# 	-I $(top_srcdir)/lib/cli
+
 cryptsetup_SOURCES =		\
 	lib/utils_crypt.c	\
 	lib/utils_loop.c	\
@@ -20,9 +23,8 @@ cryptsetup_SOURCES =		\
 
 cryptsetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
+	libcryptsetup_cli.la	\
 	@POPT_LIBS@		\
-	@PWQUALITY_LIBS@	\
-	@PASSWDQC_LIBS@		\
 	@UUID_LIBS@		\
 	@BLKID_LIBS@
 
@@ -60,9 +62,8 @@ veritysetup_SOURCES =		\
 
 veritysetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
+	libcryptsetup_cli.la	\
 	@POPT_LIBS@		\
-	@PWQUALITY_LIBS@	\
-	@PASSWDQC_LIBS@		\
 	@BLKID_LIBS@
 
 sbin_PROGRAMS += veritysetup
@@ -99,6 +100,7 @@ integritysetup_SOURCES =	\
 
 integritysetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
+	libcryptsetup_cli.la	\
 	@POPT_LIBS@		\
 	@UUID_LIBS@		\
 	@BLKID_LIBS@
@@ -134,9 +136,8 @@ cryptsetup_reencrypt_SOURCES =		\
 
 cryptsetup_reencrypt_LDADD = $(LDADD)	\
 	libcryptsetup.la		\
+	libcryptsetup_cli.la		\
 	@POPT_LIBS@			\
-	@PWQUALITY_LIBS@		\
-	@PASSWDQC_LIBS@			\
 	@UUID_LIBS@			\
 	@BLKID_LIBS@
 

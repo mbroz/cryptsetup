@@ -24,6 +24,7 @@
 
 #include "utils_arg_names.h"
 #include "utils_arg_macros.h"
+#include "lib/cli/cli_internal.h"
 
 #define BITLKDUMP_ACTION	"bitlkDump"
 #define BENCHMARK_ACTION	"benchmark"
