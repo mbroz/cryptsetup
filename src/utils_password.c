@@ -22,8 +22,6 @@
 #include "cryptsetup.h"
 #include <termios.h>
 
-int opt_force_password = 0;
-
 #if defined ENABLE_PWQUALITY
 #include <pwquality.h>
 
@@ -275,7 +273,7 @@ int tools_get_key(const char *prompt,
 		set_int_block(1);
 
 	/* Check pwquality for password (not keyfile) */
-	if (pwquality && !opt_force_password && !key_file && !r)
+	if (pwquality && !key_file && !r)
 		r = tools_check_pwquality(*key);
 
 	return r;

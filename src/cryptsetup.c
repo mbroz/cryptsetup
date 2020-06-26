@@ -1271,7 +1271,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), 1, cd);
+			  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 	if (r < 0)
 		goto out;
 
@@ -1647,7 +1647,7 @@ static int luksAddUnboundKey(void)
 			  &password_new, &password_new_size,
 			  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID),
 			  new_key_file, ARG_UINT32(OPT_TIMEOUT_ID),
-			  _verify_passphrase(1), 1, cd);
+			  _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 	if (r < 0)
 		goto out;
 
@@ -1721,7 +1721,7 @@ static int action_luksAddKey(void)
 				  &password_new, &password_new_size,
 				  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID),
 				  new_key_file, ARG_UINT32(OPT_TIMEOUT_ID),
-				  _verify_passphrase(1), 1, cd);
+				  _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 		if (r < 0)
 			goto out;
 
@@ -1754,7 +1754,7 @@ static int action_luksAddKey(void)
 		r = tools_get_key(_("Enter new passphrase for key slot: "),
 				  &password_new, &password_new_size,
 				  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID), new_key_file,
-				  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), 1, cd);
+				  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 		if (r < 0)
 			goto out;
 
@@ -1822,7 +1822,7 @@ static int action_luksChangeKey(void)
 			  &password_new, &password_new_size,
 			  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID),
 			  new_key_file,
-			  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), 1, cd);
+			  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 	if (r < 0)
 		goto out;
 
