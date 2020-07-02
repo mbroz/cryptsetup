@@ -77,29 +77,6 @@ void check_signal(int *r)
 		*r = -EINTR;
 }
 
-#define LOG_MAX_LEN 4096
-
-__attribute__((format(printf, 5, 6)))
-void clogger(struct crypt_device *cd, int level, const char *file, int line,
-	     const char *format, ...)
-{
-	va_list argp;
-	char target[LOG_MAX_LEN + 2];
-
-	va_start(argp, format);
-
-	if (vsnprintf(&target[0], LOG_MAX_LEN, format, argp) > 0) {
-		/* All verbose and error messages in tools end with EOL. */
-		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR ||
-		    level == CRYPT_LOG_DEBUG || level == CRYPT_LOG_DEBUG_JSON)
-			strncat(target, "\n", LOG_MAX_LEN);
-
-		crypt_log(cd, level, target);
-	}
-
-	va_end(argp);
-}
-
 void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
 {
 	switch(level) {

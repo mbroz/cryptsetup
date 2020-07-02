@@ -71,8 +71,6 @@ extern int opt_batch_mode;
 extern int opt_progress_frequency;
 
 /* Common tools */
-void clogger(struct crypt_device *cd, int level, const char *file, int line,
-	     const char *format, ...)  __attribute__ ((format (printf, 5, 6)));
 void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)));
 void quiet_log(int level, const char *msg, void *usrptr);
 
@@ -128,11 +126,5 @@ void tools_check_args(const char *action, const struct tools_arg *args, size_t a
 void tools_cleanup(void);
 
 #define FREE_AND_NULL(x) do { free(x); x = NULL; } while (0)
-
-/* Log */
-#define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
-#define log_std(x...) clogger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
-#define log_verbose(x...) clogger(NULL, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
-#define log_err(x...) clogger(NULL, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
 
 #endif /* CRYPTSETUP_H */

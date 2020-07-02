@@ -56,6 +56,15 @@ int crypt_cli_arg_value(struct crypt_cli *ctx, const char *name, void *value);
 
 int crypt_cli_arg_type(struct crypt_cli *ctx, const char *name, crypt_arg_type_info *type);
 
+void crypt_cli_logger(struct crypt_device *cd, int level, const char *file, int line,
+	     const char *format, ...);
+
+/* Log */
+#define log_dbg(x...) crypt_cli_logger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
+#define log_std(x...) crypt_cli_logger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
+#define log_verbose(x...) crypt_cli_logger(NULL, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
+#define log_err(x...) crypt_cli_logger(NULL, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
+
 #ifdef __cplusplus
 }
 #endif
