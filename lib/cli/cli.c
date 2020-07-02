@@ -39,11 +39,6 @@
 #include "libcryptsetup_cli.h"
 #include "cli_internal.h"
 
-#define log_dbg(x...) clogger(NULL, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
-#define log_std(x...) clogger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
-#define log_verbose(x...) clogger(NULL, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
-#define log_err(x...) clogger(NULL, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
-
 #define LOG_MAX_LEN 4096
 
 /* Password reading helpers */
@@ -421,4 +416,25 @@ bool crypt_cli_arg_set(struct crypt_cli *ctx, const char *name)
 		return false;
 
 	return arg->set;
+}
+
+__attribute__((format(printf, 5, 6)))
+void crypt_cli_logger(struct crypt_device *cd, int level, const char *file, int line,
+	     const char *format, ...)
+{
+	va_list argp;
+	char target[LOG_MAX_LEN + 2];
+
+	va_start(argp, format);
+
+	if (vsnprintf(&target[0], LOG_MAX_LEN, format, argp) > 0) {
+		/* All verbose and error messages in tools end with EOL. */
+		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR || level == CRYPT_LOG_DEBUG ||
+		    level == CRYPT_LOG_DEBUG_JSON)
+			strncat(target, "\n", LOG_MAX_LEN);
+
+		crypt_log(cd, level, target);
+	}
+
+	va_end(argp);
 }
