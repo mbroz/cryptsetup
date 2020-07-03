@@ -42,6 +42,9 @@ typedef void (*crypt_token_handle_free_func) (void *handle);
 typedef int (*crypt_token_create_func) (struct crypt_device *cd, void *token_handle);
 typedef int (*crypt_token_validate_create_params_func) (struct crypt_device *cd, void *token_handle);
 
+typedef int (*crypt_token_remove_func) (struct crypt_device *cd, void *token_handle);
+typedef int (*crypt_token_validate_remove_params_func) (struct crypt_device *cd, void *token_handle);
+
 typedef crypt_token_arg_item* (*crypt_token_params_func) (void);
 
 #endif

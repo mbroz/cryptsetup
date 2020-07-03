@@ -59,6 +59,9 @@ struct tools_token_handler {
 	crypt_token_validate_create_params_func validate_create_params;
 	crypt_token_create_func create;
 
+	crypt_token_validate_remove_params_func validate_remove_params;
+	crypt_token_remove_func remove;
+
 	const char *type;
 	void *dlhandle;
 	struct poptOption *popt_plugin;
@@ -2645,6 +2648,51 @@ err:
 	return r;
 }
 
+static int token_plugin_remove(void)
+{
+	int r;
+	struct crypt_device *cd;
+	void *phandle = NULL;
+
+	if (!token_handler.type)
+		return -EINVAL;
+
+	if (!token_handler.remove) {
+		log_err(_("Plugin %s does not support token remove action."), token_handler.type);
+		return -ENOTSUP;
+	}
+
+	if ((r = crypt_init(&cd, uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[1]))))
+		return r;
+
+	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[1]));
+		goto err;
+	}
+
+	r = token_handler.init(&tool_ctx, &phandle);
+	if (r) {
+		log_err(_("Failed to initalize plugin handle."));
+		goto err;
+	}
+
+	if (token_handler.validate_remove_params && (r = token_handler.validate_remove_params(cd, phandle))) {
+		log_verbose(_("Invalid command line arguments for plugin (%s) token remove action."), token_handler.type);
+		goto err;
+	}
+
+	r = token_handler.remove(cd, phandle);
+	if (r < 0)
+		log_verbose(_("Plugin (%s) token remove action failed."), token_handler.type);
+
+err:
+	token_handler.free(phandle);
+	crypt_free(cd);
+
+	return r;
+}
+
 static int action_token(void)
 {
 	int r;
@@ -2660,6 +2708,8 @@ static int action_token(void)
 		}
 		action = ADD;
 	} else if (!strcmp(action_argv[0], "remove")) {
+		if (token_handler.type)
+			return token_plugin_remove();
 		if (ARG_INT32(OPT_TOKEN_ID_ID) == CRYPT_ANY_TOKEN) {
 			log_err(_("Action requires specific token. Use --token-id parameter."));
 			return -EINVAL;
@@ -3629,6 +3679,10 @@ static int tools_load_plugin(const char *type, struct tools_token_handler *th, b
 	tools_plugin_load_optional_symbol("crypt_token_validate_create_params", h, (void **)&th->validate_create_params);
 
 	tools_plugin_load_optional_symbol("crypt_token_create", h, (void **)&th->create);
+
+	tools_plugin_load_optional_symbol("crypt_token_validate_remove_params", h, (void **)&th->validate_remove_params);
+
+	tools_plugin_load_optional_symbol("crypt_token_remove", h, (void **)&th->remove);
 
 	th->type = strdup(type);
 	if (!th->type) {
