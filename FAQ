@@ -1317,7 +1317,7 @@ A. Contributors
   Overwriting the LUKS header in part or in full is the most common reason
   why access to LUKS containers is lost permanently.  Overwriting can be
   done in a number of fashions, like creating a new filesystem on the raw
-  LUKS partition, making the raw partition part of a raid array and just
+  LUKS partition, making the raw partition part of a RAID array and just
   writing to the raw partition.
 
   The LUKS1 header contains a 256 bit "salt" per key-slot and without that
@@ -1409,7 +1409,7 @@ A. Contributors
   combination of 12 truly random letters and digits.
 
   For passphrase generation, do not use lines from very well-known texts
-  (religious texts, Harry potter, etc.) as they are too easy to guess. 
+  (religious texts, Harry Potter, etc.) as they are too easy to guess.
   For example, the total Harry Potter has about 1'500'000 words (my
   estimation).  Trying every 64 character sequence starting and ending at
   a word boundary would take only something like 20 days on a single CPU
