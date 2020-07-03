@@ -26,7 +26,7 @@
 
 /*
  * Wipe using Peter Gutmann method described in
- * http://www.cs.auckland.ac.nz/~pgut001/pubs/secure_del.html
+ * https://www.cs.auckland.ac.nz/~pgut001/pubs/secure_del.html
  * Note: used only for rotational device (and even there it is not needed today...)
  */
 static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)

@@ -53,7 +53,7 @@ struct crypt_cipher {
 
 /*
  * Test for wrong Whirlpool variant,
- * Ref: http://lists.gnupg.org/pipermail/gcrypt-devel/2014-January/002889.html
+ * Ref: https://lists.gnupg.org/pipermail/gcrypt-devel/2014-January/002889.html
  */
 static void crypt_hash_test_whirlpool_bug(void)
 {
