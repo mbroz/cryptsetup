@@ -908,7 +908,7 @@ static int decrypt_key(struct crypt_device *cd,
 {
 	char *outbuf;
 	int r;
-	uint32_t key_size = 0;
+	uint16_t key_size = 0;
 
 	outbuf = crypt_safe_alloc(enc_key->keylength);
 	if (!outbuf)
@@ -923,10 +923,12 @@ static int decrypt_key(struct crypt_device *cd,
 	}
 
 	/* key_data has it's size as part of the metadata */
-	memcpy(&key_size, outbuf, 4);
-	key_size = le32_to_cpu(key_size);
+	memcpy(&key_size, outbuf, 2);
+	key_size = le16_to_cpu(key_size);
 	if (enc_key->keylength != key_size) {
-		log_err(cd, _("Wrong key size."));
+		log_err(cd, _("Unexpected key data size."));
+		log_dbg(cd, "Expected key data size: %zu, got %" PRIu16 "", enc_key->keylength, key_size);
+
 		r = -EINVAL;
 		goto out;
 	}
