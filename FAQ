@@ -295,7 +295,7 @@ A. Contributors
 
   Just follow the on-screen instructions.
 
-  Note: Passprase iteration count is based on time and hence security
+  Note: Passphrase iteration count is based on time and hence security
   level depends on CPU power of the system the LUKS container is created
   on.  For example on a Raspberry Pi and LUKS1, I found some time ago that
   the iteration count is 15 times lower than for a regular PC (well, for
@@ -473,7 +473,7 @@ A. Contributors
   That is it. Reboot or start it manually to activate encrypted swap. 
   Manual start would look like this:
 
-    /etc/init.d/crypdisks start
+    /etc/init.d/cryptdisks start
     swapon /dev/mapper/swap
 
 
@@ -787,7 +787,7 @@ A. Contributors
   The conventional recommendation if you want to do more than just a
   zero-wipe is to use something like
 
-    cat /dev/urandom >  <taget-device>
+    cat /dev/urandom >  <target-device>
 
   That used to very slow and painful at 10-20MB/s on a fast computer, but
   newer kernels can give you > 200MB/s (depending on hardware).  An
@@ -2828,7 +2828,7 @@ offset  length  name                  data type  description
   there to prevent precomputation.
 
   The problem with that is that if you use a graphics card, you can massively
-  speed up these computations as PBKDF2 needs very little memeory to compute
+  speed up these computations as PBKDF2 needs very little memory to compute
   it.  A graphics card is (grossly simplified) a mass of small CPUs with some
   small very fast local memory per CPU and a large slow memory (the 4/6/8 GB
   a current card may have).  If you can keep a computation in the small,
@@ -2841,7 +2841,7 @@ offset  length  name                  data type  description
   if you set, for example, 4GB of memory, computing Argon2 on a graphics card
   with around 100kB of memory per "CPU" makes no sense at all because it is
   far too slow.  An attacker has hence to use real CPUs and furthermore is
-  limited by main memory bandwith.
+  limited by main memory bandwidth.
 
   Hence the large amount of memory used is a security feature and should not
   be turned off or reduced.  If you really (!) understand what you are doing
