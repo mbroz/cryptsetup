@@ -73,7 +73,7 @@ For libcryptsetup documentation see [libcryptsetup API](https://mbroz.fedorapeop
 
 The libcryptsetup API/ABI changes are tracked in [compatibility report](https://abi-laboratory.pro/tracker/timeline/cryptsetup/).
 
-NLS PO files are maintained by [TranslationProject](http://translationproject.org/domain/cryptsetup.html).
+NLS PO files are maintained by [TranslationProject](https://translationproject.org/domain/cryptsetup.html).
 
 Help!
 -----
@@ -82,5 +82,5 @@ For cryptsetup and LUKS related questions, please use the dm-crypt mailing list,
 
 If you want to subscribe just send an empty mail to [dm-crypt-subscribe@saout.de](mailto:dm-crypt-subscribe@saout.de).
 
-You can also browse [list archive](http://www.saout.de/pipermail/dm-crypt/) or read it through
+You can also browse [list archive](https://www.saout.de/pipermail/dm-crypt/) or read it through
 [web interface](https://marc.info/?l=dm-crypt).
