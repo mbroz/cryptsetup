@@ -78,7 +78,7 @@ struct crypt_device {
 		char cipher_mode[MAX_CIPHER_LEN]; /* only for compatibility */
 		char *keyslot_cipher;
 		unsigned int keyslot_key_size;
-		struct luks2_reenc_context *rh;
+		struct luks2_reencrypt *rh;
 	} luks2;
 	struct { /* used in CRYPT_PLAIN */
 		struct crypt_params_plain hdr;
@@ -5533,13 +5533,13 @@ void *crypt_get_hdr(struct crypt_device *cd, const char *type)
 }
 
 /* internal only */
-struct luks2_reenc_context *crypt_get_luks2_reencrypt(struct crypt_device *cd)
+struct luks2_reencrypt *crypt_get_luks2_reencrypt(struct crypt_device *cd)
 {
 	return cd->u.luks2.rh;
 }
 
 /* internal only */
-void crypt_set_luks2_reencrypt(struct crypt_device *cd, struct luks2_reenc_context *rh)
+void crypt_set_luks2_reencrypt(struct crypt_device *cd, struct luks2_reencrypt *rh)
 {
 	cd->u.luks2.rh = rh;
 }
