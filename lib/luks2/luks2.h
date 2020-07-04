@@ -178,10 +178,9 @@ int LUKS2_hdr_restore(struct crypt_device *cd,
 		      struct luks2_hdr *hdr,
 		      const char *backup_file);
 
-/* FIXME: json object remove */
-uint64_t LUKS2_hdr_and_areas_size(struct json_object *jobj);
-uint64_t LUKS2_keyslots_size(struct json_object *jobj);
-uint64_t LUKS2_metadata_size(struct json_object *jobj);
+uint64_t LUKS2_hdr_and_areas_size(struct luks2_hdr *hdr);
+uint64_t LUKS2_keyslots_size(struct luks2_hdr *hdr);
+uint64_t LUKS2_metadata_size(struct luks2_hdr *hdr);
 
 int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd, const char *cipher_spec);
 

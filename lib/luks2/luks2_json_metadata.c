@@ -720,7 +720,7 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 	return 0;
 }
 
-uint64_t LUKS2_metadata_size(json_object *jobj)
+static uint64_t LUKS2_metadata_size_jobj(json_object *jobj)
 {
 	json_object *jobj1, *jobj2;
 	uint64_t json_size;
@@ -730,6 +730,11 @@ uint64_t LUKS2_metadata_size(json_object *jobj)
 	json_str_to_uint64(jobj2, &json_size);
 
 	return json_size + LUKS2_HDR_BIN_LEN;
+}
+
+uint64_t LUKS2_metadata_size(struct luks2_hdr *hdr)
+{
+	return LUKS2_metadata_size_jobj(hdr->jobj);
 }
 
 static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
@@ -747,7 +752,7 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 		return 1;
 
 	/* config is already validated */
-	metadata_size = LUKS2_metadata_size(hdr_jobj);
+	metadata_size = LUKS2_metadata_size_jobj(hdr_jobj);
 
 	length = json_object_object_length(jobj_keyslots);
 
@@ -793,7 +798,7 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 		return 1;
 	}
 
-	ret = validate_intervals(cd, length, intervals, metadata_size, LUKS2_hdr_and_areas_size(hdr_jobj)) ? 0 : 1;
+	ret = validate_intervals(cd, length, intervals, metadata_size, LUKS2_hdr_and_areas_size_jobj(hdr_jobj)) ? 0 : 1;
 
 	free(intervals);
 
@@ -1041,7 +1046,7 @@ void LUKS2_hdr_free(struct crypt_device *cd, struct luks2_hdr *hdr)
 		log_dbg(cd, "LUKS2 header still in use");
 }
 
-uint64_t LUKS2_keyslots_size(json_object *jobj)
+static uint64_t LUKS2_keyslots_size_jobj(json_object *jobj)
 {
 	json_object *jobj1, *jobj2;
 	uint64_t keyslots_size;
@@ -1053,9 +1058,19 @@ uint64_t LUKS2_keyslots_size(json_object *jobj)
 	return keyslots_size;
 }
 
-uint64_t LUKS2_hdr_and_areas_size(json_object *jobj)
+uint64_t LUKS2_keyslots_size(struct luks2_hdr *hdr)
 {
-	return 2 * LUKS2_metadata_size(jobj) + LUKS2_keyslots_size(jobj);
+	return LUKS2_keyslots_size_jobj(hdr->jobj);
+}
+
+uint64_t LUKS2_hdr_and_areas_size_jobj(json_object *jobj)
+{
+	return 2 * LUKS2_metadata_size_jobj(jobj) + LUKS2_keyslots_size_jobj(jobj);
+}
+
+uint64_t LUKS2_hdr_and_areas_size(struct luks2_hdr *hdr)
+{
+	return LUKS2_hdr_and_areas_size_jobj(hdr->jobj);
 }
 
 int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
@@ -1067,7 +1082,7 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 	ssize_t ret, buffer_size;
 	char *buffer = NULL;
 
-	hdr_size = LUKS2_hdr_and_areas_size(hdr->jobj);
+	hdr_size = LUKS2_hdr_and_areas_size(hdr);
 	buffer_size = size_round_up(hdr_size, crypt_getpagesize());
 
 	buffer = crypt_safe_alloc(buffer_size);
@@ -1178,7 +1193,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 		goto out;
 	}
 
-	buffer_size = LUKS2_hdr_and_areas_size(hdr_file.jobj);
+	buffer_size = LUKS2_hdr_and_areas_size(&hdr_file);
 	buffer = crypt_safe_alloc(buffer_size);
 	if (!buffer) {
 		r = -ENOMEM;
@@ -1218,7 +1233,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 				goto out;
 			}
 			/* FIXME: what could go wrong? Erase if we're fine with consequences */
-			if (buffer_size != (ssize_t) LUKS2_hdr_and_areas_size(tmp_hdr.jobj)) {
+			if (buffer_size != (ssize_t) LUKS2_hdr_and_areas_size(&tmp_hdr)) {
 				log_err(cd, _("Binary header with keyslot areas size differ on device and backup, restore failed."));
 				r = -EINVAL;
 				goto out;
@@ -1714,8 +1729,8 @@ int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr)
 	log_std(cd, "LUKS header information\n");
 	log_std(cd, "Version:       \t%u\n", hdr->version);
 	log_std(cd, "Epoch:         \t%" PRIu64 "\n", hdr->seqid);
-	log_std(cd, "Metadata area: \t%" PRIu64 " [bytes]\n", LUKS2_metadata_size(hdr->jobj));
-	log_std(cd, "Keyslots area: \t%" PRIu64 " [bytes]\n", LUKS2_keyslots_size(hdr->jobj));
+	log_std(cd, "Metadata area: \t%" PRIu64 " [bytes]\n", LUKS2_metadata_size(hdr));
+	log_std(cd, "Keyslots area: \t%" PRIu64 " [bytes]\n", LUKS2_keyslots_size(hdr));
 	log_std(cd, "UUID:          \t%s\n", *hdr->uuid ? hdr->uuid : "(no UUID)");
 	log_std(cd, "Label:         \t%s\n", *hdr->label ? hdr->label : "(no label)");
 	log_std(cd, "Subsystem:     \t%s\n", *hdr->subsystem ? hdr->subsystem : "(no subsystem)");

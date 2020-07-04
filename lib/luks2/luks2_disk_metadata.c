@@ -413,7 +413,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 		return -EINVAL;
 	}
 
-	r = device_check_size(cd, crypt_metadata_device(cd), LUKS2_hdr_and_areas_size(hdr->jobj), 1);
+	r = device_check_size(cd, crypt_metadata_device(cd), LUKS2_hdr_and_areas_size(hdr), 1);
 	if (r)
 		return r;
 
@@ -669,9 +669,9 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	/* check header with keyslots to fit the device */
 	if (state_hdr1 == HDR_OK)
-		hdr_size = LUKS2_hdr_and_areas_size(jobj_hdr1);
+		hdr_size = LUKS2_hdr_and_areas_size_jobj(jobj_hdr1);
 	else if (state_hdr2 == HDR_OK)
-		hdr_size = LUKS2_hdr_and_areas_size(jobj_hdr2);
+		hdr_size = LUKS2_hdr_and_areas_size_jobj(jobj_hdr2);
 	else {
 		r = (state_hdr1 == HDR_FAIL_IO && state_hdr2 == HDR_FAIL_IO) ? -EIO : -EINVAL;
 		goto err;

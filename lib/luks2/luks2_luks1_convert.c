@@ -573,7 +573,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	 * It duplicates check in LUKS2_hdr_write() but we don't want to move
 	 * keyslot areas in case it would fail later
 	 */
-	if (max_size < LUKS2_hdr_and_areas_size(hdr2->jobj)) {
+	if (max_size < LUKS2_hdr_and_areas_size(hdr2)) {
 		r = -EINVAL;
 		goto out;
 	}
@@ -595,7 +595,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	buf_size   = luks1_size - LUKS_ALIGN_KEYSLOTS;
 
 	/* check future LUKS2 keyslots area is at least as large as LUKS1 keyslots area */
-	if (buf_size > LUKS2_keyslots_size(hdr2->jobj)) {
+	if (buf_size > LUKS2_keyslots_size(hdr2)) {
 		log_err(cd, _("Unable to move keyslot area. LUKS2 keyslots area too small."));
 		r = -EINVAL;
 		goto out;
@@ -883,7 +883,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 
 	// move keyslots 32k -> 4k offset
 	buf_offset = 2 * LUKS2_HDR_16K_LEN;
-	buf_size   = LUKS2_keyslots_size(hdr2->jobj);
+	buf_size   = LUKS2_keyslots_size(hdr2);
 	r = move_keyslot_areas(cd, buf_offset, 8 * SECTOR_SIZE, buf_size);
 	if (r < 0) {
 		log_err(cd, _("Unable to move keyslot area."));

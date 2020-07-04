@@ -1850,13 +1850,13 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (dev_size < (crypt_get_data_offset(cd) * SECTOR_SIZE))
 		log_std(cd, _("WARNING: Data offset is outside of currently available data device.\n"));
 
-	if (cd->metadata_size && (cd->metadata_size != LUKS2_metadata_size(cd->u.luks2.hdr.jobj)))
+	if (cd->metadata_size && (cd->metadata_size != LUKS2_metadata_size(&cd->u.luks2.hdr)))
 		log_std(cd, _("WARNING: LUKS2 metadata size changed to %" PRIu64 " bytes.\n"),
-			LUKS2_metadata_size(cd->u.luks2.hdr.jobj));
+			LUKS2_metadata_size(&cd->u.luks2.hdr));
 
-	if (cd->keyslots_size && (cd->keyslots_size != LUKS2_keyslots_size(cd->u.luks2.hdr.jobj)))
+	if (cd->keyslots_size && (cd->keyslots_size != LUKS2_keyslots_size(&cd->u.luks2.hdr)))
 		log_std(cd, _("WARNING: LUKS2 keyslots area size changed to %" PRIu64 " bytes.\n"),
-			LUKS2_keyslots_size(cd->u.luks2.hdr.jobj));
+			LUKS2_keyslots_size(&cd->u.luks2.hdr));
 
 	if (!integrity && sector_size > SECTOR_SIZE) {
 		dev_size -= (crypt_get_data_offset(cd) * SECTOR_SIZE);
@@ -1878,7 +1878,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (r < 0) {
 		log_err(cd, _("Cannot wipe header on device %s."),
 			mdata_device_path(cd));
-		if (dev_size < LUKS2_hdr_and_areas_size(cd->u.luks2.hdr.jobj))
+		if (dev_size < LUKS2_hdr_and_areas_size(&cd->u.luks2.hdr))
 			log_err(cd, _("Device %s is too small."), device_path(crypt_metadata_device(cd)));
 		goto out;
 	}
@@ -5258,8 +5258,8 @@ int crypt_get_metadata_size(struct crypt_device *cd,
 		msize = LUKS_ALIGN_KEYSLOTS;
 		ksize = LUKS_device_sectors(&cd->u.luks1.hdr) * SECTOR_SIZE - msize;
 	} else if (isLUKS2(cd->type)) {
-		msize = LUKS2_metadata_size(cd->u.luks2.hdr.jobj);
-		ksize = LUKS2_keyslots_size(cd->u.luks2.hdr.jobj);
+		msize = LUKS2_metadata_size(&cd->u.luks2.hdr);
+		ksize = LUKS2_keyslots_size(&cd->u.luks2.hdr);
 	} else
 		return -EINVAL;
 
