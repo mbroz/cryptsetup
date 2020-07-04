@@ -1113,7 +1113,7 @@ static void crypt_free_type(struct crypt_device *cd)
 		free(cd->u.plain.cipher);
 		free(cd->u.plain.cipher_spec);
 	} else if (isLUKS2(cd->type)) {
-		LUKS2_reenc_context_free(cd, cd->u.luks2.rh);
+		LUKS2_reencrypt_free(cd, cd->u.luks2.rh);
 		LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
 		free(cd->u.luks2.keyslot_cipher);
 	} else if (isLUKS1(cd->type)) {
@@ -3975,7 +3975,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	if (crypt_use_keyring_for_vk(cd))
 		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 
-	r = crypt_reencrypt_lock(cd, &reencrypt_lock);
+	r = LUKS2_reencrypt_lock(cd, &reencrypt_lock);
 	if (r) {
 		if (r == -EBUSY)
 			log_err(cd, _("Reencryption in-progress. Cannot activate device."));
@@ -4005,7 +4005,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	if (ri == CRYPT_REENCRYPT_NONE) {
 		crypt_drop_keyring_key(cd, vks);
 		crypt_free_volume_key(vks);
-		crypt_reencrypt_unlock(cd, reencrypt_lock);
+		LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 		return _open_and_activate(cd, keyslot, name, passphrase, passphrase_size, flags);
 	}
 
@@ -4026,12 +4026,12 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	log_dbg(cd, "Entering clean reencryption state mode.");
 
 	if (r >= 0)
-		r = luks2_check_device_size(cd, hdr, minimal_size, &device_size, true, dynamic_size);
+		r = LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size, true, dynamic_size);
 
 	if (r >= 0)
 		r = LUKS2_activate_multi(cd, name, vks, device_size >> SECTOR_SHIFT, flags);
 err:
-	crypt_reencrypt_unlock(cd, reencrypt_lock);
+	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 	if (r < 0)
 		crypt_drop_keyring_key(cd, vks);
 	crypt_free_volume_key(vks);

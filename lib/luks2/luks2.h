@@ -416,15 +416,27 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 	uint32_t flags,
 	struct volume_key **vks);
 
-void LUKS2_reenc_context_free(struct crypt_device *cd, struct luks2_reenc_context *rh);
+void LUKS2_reencrypt_free(struct crypt_device *cd,
+	struct luks2_reenc_context *rh);
 
 crypt_reencrypt_info LUKS2_reencrypt_status(struct crypt_device *cd,
 	struct crypt_params_reencrypt *params);
 
-int crypt_reencrypt_lock(struct crypt_device *cd, struct crypt_lock_handle **reencrypt_lock);
-int crypt_reencrypt_lock_by_dm_uuid(struct crypt_device *cd, const char *dm_uuid, struct crypt_lock_handle **reencrypt_lock);
-void crypt_reencrypt_unlock(struct crypt_device *cd, struct crypt_lock_handle *reencrypt_lock);
+int LUKS2_reencrypt_lock(struct crypt_device *cd,
+	struct crypt_lock_handle **reencrypt_lock);
 
-int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *dev_size, bool activation, bool dynamic);
+int LUKS2_reencrypt_lock_by_dm_uuid(struct crypt_device *cd,
+	const char *dm_uuid,
+	struct crypt_lock_handle **reencrypt_lock);
+
+void LUKS2_reencrypt_unlock(struct crypt_device *cd,
+	struct crypt_lock_handle *reencrypt_lock);
+
+int LUKS2_reencrypt_check_device_size(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	uint64_t check_size,
+	uint64_t *dev_size,
+	bool activation,
+	bool dynamic);
 
 #endif
