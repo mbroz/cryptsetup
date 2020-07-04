@@ -727,7 +727,7 @@ static crypt_reencrypt_direction_info reencrypt_direction(struct luks2_hdr *hdr)
 
 typedef enum { REENC_OK = 0, REENC_ERR, REENC_ROLLBACK, REENC_FATAL } reenc_status_t;
 
-void LUKS2_reenc_context_free(struct crypt_device *cd, struct luks2_reenc_context *rh)
+void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reenc_context *rh)
 {
 	if (!rh)
 		return;
@@ -1143,7 +1143,7 @@ static int reencrypt_load_clean(struct crypt_device *cd,
 
 	return 0;
 err:
-	LUKS2_reenc_context_free(cd, tmp);
+	LUKS2_reencrypt_free(cd, tmp);
 
 	return r;
 }
@@ -1237,7 +1237,7 @@ static int reencrypt_load_crashed(struct crypt_device *cd,
 		r = reencrypt_make_segments_crashed(cd, hdr, *rh);
 
 	if (r) {
-		LUKS2_reenc_context_free(cd, *rh);
+		LUKS2_reencrypt_free(cd, *rh);
 		*rh = NULL;
 	}
 	return r;
@@ -2679,7 +2679,8 @@ out:
 }
 
 /* internal only */
-int crypt_reencrypt_lock_by_dm_uuid(struct crypt_device *cd, const char *dm_uuid, struct crypt_lock_handle **reencrypt_lock)
+int LUKS2_reencrypt_lock_by_dm_uuid(struct crypt_device *cd, const char *dm_uuid,
+	struct crypt_lock_handle **reencrypt_lock)
 {
 	int r;
 	char hdr_uuid[37];
@@ -2700,7 +2701,7 @@ int crypt_reencrypt_lock_by_dm_uuid(struct crypt_device *cd, const char *dm_uuid
 }
 
 /* internal only */
-int crypt_reencrypt_lock(struct crypt_device *cd, struct crypt_lock_handle **reencrypt_lock)
+int LUKS2_reencrypt_lock(struct crypt_device *cd, struct crypt_lock_handle **reencrypt_lock)
 {
 	if (!cd || !crypt_get_type(cd) || strcmp(crypt_get_type(cd), CRYPT_LUKS2))
 		return -EINVAL;
@@ -2709,7 +2710,7 @@ int crypt_reencrypt_lock(struct crypt_device *cd, struct crypt_lock_handle **ree
 }
 
 /* internal only */
-void crypt_reencrypt_unlock(struct crypt_device *cd, struct crypt_lock_handle *reencrypt_lock)
+void LUKS2_reencrypt_unlock(struct crypt_device *cd, struct crypt_lock_handle *reencrypt_lock)
 {
 	crypt_unlock_internal(cd, reencrypt_lock);
 }
@@ -2731,7 +2732,7 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 		return -EINVAL;
 	}
 
-	r = crypt_reencrypt_lock(cd, &h);
+	r = LUKS2_reencrypt_lock(cd, &h);
 	if (r < 0) {
 		if (r == -EBUSY)
 			log_err(cd, _("Reencryption process is already running."));
@@ -2743,7 +2744,7 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 	/* With reencryption lock held, reload device context and verify metadata state */
 	r = crypt_load(cd, CRYPT_LUKS2, NULL);
 	if (r) {
-		crypt_reencrypt_unlock(cd, h);
+		LUKS2_reencrypt_unlock(cd, h);
 		return r;
 	}
 
@@ -2753,7 +2754,7 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 		return 0;
 	}
 
-	crypt_reencrypt_unlock(cd, h);
+	LUKS2_reencrypt_unlock(cd, h);
 	log_err(cd, _("Cannot proceed with reencryption. Run reencryption recovery first."));
 	return -EINVAL;
 }
@@ -2790,7 +2791,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 
 	rh = crypt_get_reenc_context(cd);
 	if (rh) {
-		LUKS2_reenc_context_free(cd, rh);
+		LUKS2_reencrypt_free(cd, rh);
 		crypt_set_reenc_context(cd, NULL);
 		rh = NULL;
 	}
@@ -2807,7 +2808,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* some configurations provides fixed device size */
-	r = luks2_check_device_size(cd, hdr, minimal_size, &device_size, false, dynamic);
+	r = LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size, false, dynamic);
 	if (r) {
 		r = -EINVAL;
 		goto err;
@@ -2933,8 +2934,8 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 
 	return 0;
 err:
-	crypt_reencrypt_unlock(cd, reencrypt_lock);
-	LUKS2_reenc_context_free(cd, rh);
+	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
+	LUKS2_reencrypt_free(cd, rh);
 	return r;
 }
 
@@ -2949,7 +2950,7 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 	crypt_reencrypt_info ri;
 	struct crypt_lock_handle *reencrypt_lock;
 
-	r = crypt_reencrypt_lock(cd, &reencrypt_lock);
+	r = LUKS2_reencrypt_lock(cd, &reencrypt_lock);
 	if (r) {
 		if (r == -EBUSY)
 			log_err(cd, _("Reencryption in-progress. Cannot perform recovery."));
@@ -2959,13 +2960,13 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 	}
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		crypt_reencrypt_unlock(cd, reencrypt_lock);
+		LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 		return r;
 	}
 
 	ri = LUKS2_reenc_status(hdr);
 	if (ri == CRYPT_REENCRYPT_INVALID) {
-		crypt_reencrypt_unlock(cd, reencrypt_lock);
+		LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 		return -EINVAL;
 	}
 
@@ -2979,7 +2980,7 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 		r = 0;
 	}
 
-	crypt_reencrypt_unlock(cd, reencrypt_lock);
+	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 	return r;
 }
 
@@ -3335,7 +3336,7 @@ static int reencrypt_teardown(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	/* this frees reencryption lock */
-	LUKS2_reenc_context_free(cd, rh);
+	LUKS2_reencrypt_free(cd, rh);
 	crypt_set_reenc_context(cd, NULL);
 
 	return r;
@@ -3434,7 +3435,7 @@ static int reencrypt_recovery(struct crypt_device *cd,
 	if (!r)
 		r = LUKS2_hdr_write(cd, hdr);
 err:
-	LUKS2_reenc_context_free(cd, rh);
+	LUKS2_reencrypt_free(cd, rh);
 
 	return r;
 }
@@ -3455,7 +3456,8 @@ int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 }
 
 /* internal only */
-int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *dev_size, bool activation, bool dynamic)
+int LUKS2_reencrypt_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr,
+	uint64_t check_size, uint64_t *dev_size, bool activation, bool dynamic)
 {
 	int r;
 	uint64_t data_offset, real_size = 0;
@@ -3529,7 +3531,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 		vk = crypt_volume_key_next(vk);
 	}
 
-	if (luks2_check_device_size(cd, hdr, minimal_size, &device_size, true, false))
+	if (LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size, true, false))
 		goto err;
 
 	r = reencrypt_recovery(cd, hdr, device_size, _vks);

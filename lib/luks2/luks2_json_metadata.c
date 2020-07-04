@@ -2260,7 +2260,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		goto out;
 
 	if (contains_reencryption_helper(deps)) {
-		r = crypt_reencrypt_lock_by_dm_uuid(cd, dmd->uuid, &reencrypt_lock);
+		r = LUKS2_reencrypt_lock_by_dm_uuid(cd, dmd->uuid, &reencrypt_lock);
 		if (r) {
 			if (r == -EBUSY)
 				log_err(cd, _("Reencryption in-progress. Cannot deactivate device."));
@@ -2339,7 +2339,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	}
 
 out:
-	crypt_reencrypt_unlock(cd, reencrypt_lock);
+	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 	dep = deps;
 	while (*dep)
 		free(*dep++);
