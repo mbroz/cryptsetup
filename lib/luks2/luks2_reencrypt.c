@@ -92,7 +92,7 @@ struct luks2_reencrypt {
 	struct crypt_lock_handle *reenc_lock;
 };
 
-static int reenc_keyslot_update(struct crypt_device *cd,
+static int reencrypt_keyslot_update(struct crypt_device *cd,
 	const struct luks2_reencrypt *rh)
 {
 	json_object *jobj_keyslot, *jobj_area, *jobj_area_type;
@@ -3094,7 +3094,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	int r;
 
 	/* update reencrypt keyslot protection parameters in memory only */
-	r = reenc_keyslot_update(cd, rh);
+	r = reencrypt_keyslot_update(cd, rh);
 	if (r < 0) {
 		log_dbg(cd, "Keyslot update failed.");
 		return REENC_ERR;
