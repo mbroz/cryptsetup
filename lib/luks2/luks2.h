@@ -61,9 +61,10 @@
 #define LUKS2_REENCRYPT_MAX_HOTZONE_LENGTH 0x40000000
 
 struct device;
-struct json_object;
 struct luks2_reenc_context;
 struct crypt_lock_handle;
+struct crypt_dm_active_device;
+struct luks_phdr; /* LUKS1 for conversion */
 
 /*
  * LUKS2 header on-disk.
@@ -109,7 +110,7 @@ struct luks2_hdr {
 	uint8_t		salt1[LUKS2_SALT_L];
 	uint8_t		salt2[LUKS2_SALT_L];
 	char		uuid[LUKS2_UUID_L];
-	struct json_object	*jobj;
+	void		*jobj;
 };
 
 struct luks2_keyslot_params {
@@ -340,8 +341,6 @@ int LUKS2_activate_multi(struct crypt_device *cd,
 	uint64_t device_size,
 	uint32_t flags);
 
-struct crypt_dm_active_device;
-
 int LUKS2_deactivate(struct crypt_device *cd,
 	const char *name,
 	struct luks2_hdr *hdr,
@@ -409,7 +408,6 @@ int LUKS2_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd,
 int LUKS2_volume_key_load_in_keyring_by_digest(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int digest);
 
-struct luks_phdr;
 int LUKS2_luks1_to_luks2(struct crypt_device *cd,
 			 struct luks_phdr *hdr1,
 			 struct luks2_hdr *hdr2);
