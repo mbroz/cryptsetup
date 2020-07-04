@@ -2631,7 +2631,7 @@ static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 {
 	int r;
 	struct luks2_reenc_context *tmp = NULL;
-	crypt_reencrypt_info ri = LUKS2_reenc_status(hdr);
+	crypt_reencrypt_info ri = LUKS2_reencrypt_status(hdr);
 
 	if (ri == CRYPT_REENCRYPT_CLEAN)
 		r = reencrypt_load_clean(cd, hdr, device_size, &tmp, params);
@@ -2722,7 +2722,7 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 	crypt_reencrypt_info ri;
 	struct crypt_lock_handle *h;
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_INVALID) {
 		log_err(cd, _("Failed to get reencryption state."));
 		return -EINVAL;
@@ -2748,7 +2748,7 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 		return r;
 	}
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_CLEAN) {
 		*reencrypt_lock = h;
 		return 0;
@@ -2964,7 +2964,7 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 		return r;
 	}
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_INVALID) {
 		LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 		return -EINVAL;
@@ -3017,7 +3017,7 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_INVALID) {
 		device_write_unlock(cd, crypt_metadata_device(cd));
 		return -EINVAL;
@@ -3357,7 +3357,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 
 	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 	if (ri > CRYPT_REENCRYPT_CLEAN) {
 		log_err(cd, _("Cannot proceed with reencryption. Unexpected reencryption status."));
 		return -EINVAL;
@@ -3446,7 +3446,7 @@ err:
  */
 int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 {
-	crypt_reencrypt_info ri = LUKS2_reenc_status(hdr);
+	crypt_reencrypt_info ri = LUKS2_reencrypt_status(hdr);
 	uint64_t data_offset = LUKS2_get_data_offset(hdr);
 
 	if (ri == CRYPT_REENCRYPT_CLEAN && reencrypt_direction(hdr) == CRYPT_REENCRYPT_FORWARD)
@@ -3551,7 +3551,7 @@ crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
 {
 	crypt_reencrypt_info ri;
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_NONE || ri == CRYPT_REENCRYPT_INVALID || !params)
 		return ri;
 

@@ -3929,7 +3929,7 @@ static int _open_all_keys(struct crypt_device *cd,
 {
 	int r, segment;
 	struct volume_key *_vks = NULL;
-	crypt_reencrypt_info ri = LUKS2_reenc_status(hdr);
+	crypt_reencrypt_info ri = LUKS2_reencrypt_status(hdr);
 
 	segment = (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ? CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT;
 
@@ -3997,7 +3997,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
 		goto err;
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 
 	if (ri == CRYPT_REENCRYPT_CRASH) {
 		r = LUKS2_reencrypt_locked_recovery_by_passphrase(cd, keyslot,
@@ -4008,7 +4008,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 		}
 		keyslot = r;
 
-		ri = LUKS2_reenc_status(hdr);
+		ri = LUKS2_reencrypt_status(hdr);
 	}
 
 	/* recovery finished reencryption or it's already finished */
@@ -4063,7 +4063,7 @@ static int _open_and_activate_luks2(struct crypt_device *cd,
 	int r;
 	struct luks2_hdr *hdr = &cd->u.luks2.hdr;
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_INVALID)
 		return -EINVAL;
 
