@@ -429,7 +429,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 void LUKS2_reencrypt_free(struct crypt_device *cd,
 	struct luks2_reenc_context *rh);
 
-crypt_reencrypt_info LUKS2_reencrypt_status(struct crypt_device *cd,
+crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
 	struct crypt_params_reencrypt *params);
 
 int LUKS2_reencrypt_lock(struct crypt_device *cd,

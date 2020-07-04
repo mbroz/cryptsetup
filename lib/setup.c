@@ -6062,7 +6062,7 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 	if (_onlyLUKS2(cd, CRYPT_CD_QUIET, CRYPT_REQUIREMENT_ONLINE_REENCRYPT))
 		return CRYPT_REENCRYPT_INVALID;
 
-	return LUKS2_reencrypt_status(cd, params);
+	return LUKS2_reencrypt_get_params(&cd->u.luks2.hdr, params);
 }
 
 static void __attribute__((destructor)) libcryptsetup_exit(void)

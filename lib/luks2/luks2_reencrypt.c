@@ -3546,10 +3546,10 @@ err:
 	return r < 0 ? r : keyslot;
 }
 
-crypt_reencrypt_info LUKS2_reencrypt_status(struct crypt_device *cd, struct crypt_params_reencrypt *params)
+crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
+	struct crypt_params_reencrypt *params)
 {
 	crypt_reencrypt_info ri;
-	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 
 	ri = LUKS2_reenc_status(hdr);
 	if (ri == CRYPT_REENCRYPT_NONE || ri == CRYPT_REENCRYPT_INVALID || !params)
