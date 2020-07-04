@@ -1779,7 +1779,7 @@ uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr)
 	crypt_reencrypt_info ri;
 	json_object *jobj;
 
-	ri = LUKS2_reenc_status(hdr);
+	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_CLEAN || ri == CRYPT_REENCRYPT_CRASH) {
 		jobj = LUKS2_get_segment_by_flag(hdr, "backup-final");
 		if (jobj)
@@ -1807,7 +1807,7 @@ const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment)
 	return json_segment_get_cipher(jobj_segment) ?: "null";
 }
 
-crypt_reencrypt_info LUKS2_reenc_status(struct luks2_hdr *hdr)
+crypt_reencrypt_info LUKS2_reencrypt_status(struct luks2_hdr *hdr)
 {
 	uint32_t reqs;
 

@@ -130,7 +130,6 @@ struct luks2_keyslot_params {
 	} area;
 };
 
-crypt_reencrypt_info LUKS2_reenc_status(struct luks2_hdr *hdr);
 /*
  * Supportable header sizes (hdr_disk + JSON area)
  * Also used as offset for the 2nd header.
@@ -418,6 +417,8 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 
 void LUKS2_reencrypt_free(struct crypt_device *cd,
 	struct luks2_reenc_context *rh);
+
+crypt_reencrypt_info LUKS2_reencrypt_status(struct luks2_hdr *hdr);
 
 crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
 	struct crypt_params_reencrypt *params);
