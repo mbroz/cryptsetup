@@ -59,7 +59,7 @@
 #define LUKS2_REENCRYPT_MAX_HOTZONE_LENGTH 0x40000000
 
 struct device;
-struct luks2_reenc_context;
+struct luks2_reencrypt;
 struct crypt_lock_handle;
 struct crypt_dm_active_device;
 struct luks_phdr; /* LUKS1 for conversion */
@@ -416,7 +416,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 	struct volume_key **vks);
 
 void LUKS2_reencrypt_free(struct crypt_device *cd,
-	struct luks2_reenc_context *rh);
+	struct luks2_reencrypt *rh);
 
 crypt_reencrypt_info LUKS2_reencrypt_status(struct luks2_hdr *hdr);
 

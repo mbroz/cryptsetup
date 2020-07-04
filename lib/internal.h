@@ -83,7 +83,7 @@
 #endif
 
 struct crypt_device;
-struct luks2_reenc_context;
+struct luks2_reencrypt;
 
 struct volume_key {
 	int id;
@@ -222,8 +222,8 @@ int PLAIN_activate(struct crypt_device *cd,
 		     uint32_t flags);
 
 void *crypt_get_hdr(struct crypt_device *cd, const char *type);
-void crypt_set_luks2_reencrypt(struct crypt_device *cd, struct luks2_reenc_context *rh);
-struct luks2_reenc_context *crypt_get_luks2_reencrypt(struct crypt_device *cd);
+void crypt_set_luks2_reencrypt(struct crypt_device *cd, struct luks2_reencrypt *rh);
+struct luks2_reencrypt *crypt_get_luks2_reencrypt(struct crypt_device *cd);
 
 int onlyLUKS2(struct crypt_device *cd);
 int onlyLUKS2mask(struct crypt_device *cd, uint32_t mask);

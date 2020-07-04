@@ -44,7 +44,7 @@ struct reenc_protection {
 	} p;
 };
 
-struct luks2_reenc_context {
+struct luks2_reencrypt {
 	/* reencryption window attributes */
 	uint64_t offset;
 	uint64_t progress;
@@ -93,7 +93,7 @@ struct luks2_reenc_context {
 };
 
 static int reenc_keyslot_update(struct crypt_device *cd,
-	const struct luks2_reenc_context *rh)
+	const struct luks2_reencrypt *rh)
 {
 	json_object *jobj_keyslot, *jobj_area, *jobj_area_type;
 	struct luks2_hdr *hdr;
@@ -275,7 +275,7 @@ static uint32_t reencrypt_alignment(struct luks2_hdr *hdr)
 
 static json_object *_enc_create_segments_shift_after(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	struct luks2_reenc_context *rh,
+	struct luks2_reencrypt *rh,
 	uint64_t data_offset)
 {
 	int reenc_seg, i = 0;
@@ -322,7 +322,7 @@ err:
 
 static json_object *reencrypt_make_hot_segments_encrypt_shift(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	struct luks2_reenc_context *rh,
+	struct luks2_reencrypt *rh,
 	uint64_t data_offset)
 {
 	int sg, crypt_seg, i = 0;
@@ -386,7 +386,7 @@ err:
 
 static json_object *reencrypt_make_segment_new(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		const struct luks2_reenc_context *rh,
+		const struct luks2_reencrypt *rh,
 		uint64_t data_offset,
 		uint64_t segment_offset,
 		uint64_t iv_offset,
@@ -409,7 +409,7 @@ static json_object *reencrypt_make_segment_new(struct crypt_device *cd,
 
 static json_object *reencrypt_make_post_segments_forward(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	struct luks2_reenc_context *rh,
+	struct luks2_reencrypt *rh,
 	uint64_t data_offset)
 {
 	int reenc_seg;
@@ -455,7 +455,7 @@ err:
 
 static json_object *reencrypt_make_post_segments_backward(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	struct luks2_reenc_context *rh,
+	struct luks2_reencrypt *rh,
 	uint64_t data_offset)
 {
 	int reenc_seg;
@@ -491,7 +491,7 @@ err:
 
 static json_object *reencrypt_make_segment_reencrypt(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		const struct luks2_reenc_context *rh,
+		const struct luks2_reencrypt *rh,
 		uint64_t data_offset,
 		uint64_t segment_offset,
 		uint64_t iv_offset,
@@ -514,7 +514,7 @@ static json_object *reencrypt_make_segment_reencrypt(struct crypt_device *cd,
 
 static json_object *reencrypt_make_segment_old(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		const struct luks2_reenc_context *rh,
+		const struct luks2_reencrypt *rh,
 		uint64_t data_offset,
 		uint64_t segment_offset,
 		const uint64_t *segment_length)
@@ -540,7 +540,7 @@ static json_object *reencrypt_make_segment_old(struct crypt_device *cd,
 
 static json_object *reencrypt_make_hot_segments_forward(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		uint64_t device_size,
 		uint64_t data_offset)
 {
@@ -581,7 +581,7 @@ err:
 
 static json_object *reencrypt_make_hot_segments_backward(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		uint64_t device_size,
 		uint64_t data_offset)
 {
@@ -623,7 +623,7 @@ err:
 
 static int reencrypt_make_hot_segments(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		uint64_t device_size,
 		uint64_t data_offset)
 {
@@ -646,7 +646,7 @@ static int reencrypt_make_hot_segments(struct crypt_device *cd,
 
 static int reencrypt_make_post_segments(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		uint64_t data_offset)
 {
 	rh->jobj_segs_post = NULL;
@@ -727,7 +727,7 @@ static crypt_reencrypt_direction_info reencrypt_direction(struct luks2_hdr *hdr)
 
 typedef enum { REENC_OK = 0, REENC_ERR, REENC_ROLLBACK, REENC_FATAL } reenc_status_t;
 
-void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reenc_context *rh)
+void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reencrypt *rh)
 {
 	if (!rh)
 		return;
@@ -790,7 +790,7 @@ static size_t reencrypt_get_alignment(struct crypt_device *cd,
 
 /* returns void because it must not fail on valid LUKS2 header */
 static void _load_backup_segments(struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh)
+		struct luks2_reencrypt *rh)
 {
 	int segment = LUKS2_get_segment_id_by_flag(hdr, "backup-final");
 
@@ -924,7 +924,7 @@ static int reencrypt_offset(struct luks2_hdr *hdr,
 
 static uint64_t reencrypt_length(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		uint64_t keyslot_area_length,
 		uint64_t length_max)
 {
@@ -972,7 +972,7 @@ static uint64_t reencrypt_length(struct crypt_device *cd,
 	return length;
 }
 
-static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh, uint64_t device_size, const struct crypt_params_reencrypt *params)
+static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reencrypt *rh, uint64_t device_size, const struct crypt_params_reencrypt *params)
 {
 	int r;
 	uint64_t dummy, area_length;
@@ -1092,7 +1092,7 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 	return rh->length < 512 ? -EINVAL : 0;
 }
 
-static size_t reencrypt_buffer_length(struct luks2_reenc_context *rh)
+static size_t reencrypt_buffer_length(struct luks2_reencrypt *rh)
 {
 	if (rh->data_shift)
 		return rh->data_shift;
@@ -1102,7 +1102,7 @@ static size_t reencrypt_buffer_length(struct luks2_reenc_context *rh)
 static int reencrypt_load_clean(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	uint64_t device_size,
-	struct luks2_reenc_context **rh,
+	struct luks2_reencrypt **rh,
 	const struct crypt_params_reencrypt *params)
 {
 	int r;
@@ -1111,7 +1111,7 @@ static int reencrypt_load_clean(struct crypt_device *cd,
 		.hash = reencrypt_resilience_hash(hdr),
 		.device_size = params ? params->device_size : 0
 	};
-	struct luks2_reenc_context *tmp = crypt_zalloc(sizeof (*tmp));
+	struct luks2_reencrypt *tmp = crypt_zalloc(sizeof (*tmp));
 
 	if (!tmp)
 		return -ENOMEM;
@@ -1150,7 +1150,7 @@ err:
 
 static int reencrypt_make_segments(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	struct luks2_reenc_context *rh,
+	struct luks2_reencrypt *rh,
 	uint64_t device_size)
 {
 	int r;
@@ -1173,7 +1173,7 @@ static int reencrypt_make_segments(struct crypt_device *cd,
 
 static int reencrypt_make_segments_crashed(struct crypt_device *cd,
 				struct luks2_hdr *hdr,
-			        struct luks2_reenc_context *rh)
+			        struct luks2_reencrypt *rh)
 {
 	int r;
 	uint64_t data_offset = crypt_get_data_offset(cd) << SECTOR_SHIFT;
@@ -1201,7 +1201,7 @@ static int reencrypt_make_segments_crashed(struct crypt_device *cd,
 }
 
 static int reencrypt_load_crashed(struct crypt_device *cd,
-	struct luks2_hdr *hdr, uint64_t device_size, struct luks2_reenc_context **rh)
+	struct luks2_hdr *hdr, uint64_t device_size, struct luks2_reencrypt **rh)
 {
 	bool dynamic;
 	uint64_t minimal_size;
@@ -1245,7 +1245,7 @@ static int reencrypt_load_crashed(struct crypt_device *cd,
 
 static int reencrypt_init_storage_wrappers(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		struct volume_key *vks)
 {
 	int r;
@@ -1283,7 +1283,7 @@ static int reencrypt_init_storage_wrappers(struct crypt_device *cd,
 	return 0;
 }
 
-static int reencrypt_context_set_names(struct luks2_reenc_context *rh, const char *name)
+static int reencrypt_context_set_names(struct luks2_reencrypt *rh, const char *name)
 {
 	if (!rh | !name)
 		return -EINVAL;
@@ -1356,7 +1356,7 @@ static int reencrypt_update_flag(struct crypt_device *cd, int enable, bool commi
 
 static int reencrypt_recover_segment(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	struct luks2_reenc_context *rh,
+	struct luks2_reencrypt *rh,
 	struct volume_key *vks)
 {
 	struct volume_key *vk_old, *vk_new;
@@ -1572,7 +1572,7 @@ out:
 
 static int reencrypt_add_moved_segment(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh)
+		struct luks2_reencrypt *rh)
 {
 	int s = LUKS2_segment_first_unused_id(hdr);
 
@@ -1592,7 +1592,7 @@ static int reencrypt_add_moved_segment(struct crypt_device *cd,
 
 static int reencrypt_add_backup_segment(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		unsigned final)
 {
 	int digest, s = LUKS2_segment_first_unused_id(hdr);
@@ -1617,7 +1617,7 @@ static int reencrypt_add_backup_segment(struct crypt_device *cd,
 
 static int reencrypt_assign_segments_simple(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	struct luks2_reenc_context *rh,
+	struct luks2_reencrypt *rh,
 	unsigned hot,
 	unsigned commit)
 {
@@ -1675,7 +1675,7 @@ static int reencrypt_assign_segments_simple(struct crypt_device *cd,
 
 static int reencrypt_assign_segments(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		unsigned hot,
 		unsigned commit)
 {
@@ -2060,7 +2060,7 @@ err:
 }
 
 static int reencrypt_init_device_stack(struct crypt_device *cd,
-		                     const struct luks2_reenc_context *rh)
+		                     const struct luks2_reencrypt *rh)
 {
 	int r;
 
@@ -2542,7 +2542,7 @@ err:
 }
 
 static int reencrypt_hotzone_protect_final(struct crypt_device *cd,
-	struct luks2_hdr *hdr, struct luks2_reenc_context *rh,
+	struct luks2_hdr *hdr, struct luks2_reencrypt *rh,
 	const void *buffer, size_t buffer_len)
 {
 	const void *pbuffer;
@@ -2584,7 +2584,7 @@ static int reencrypt_hotzone_protect_final(struct crypt_device *cd,
 }
 
 static int reencrypt_context_update(struct crypt_device *cd,
-	struct luks2_reenc_context *rh)
+	struct luks2_reencrypt *rh)
 {
 	if (rh->read < 0)
 		return -EINVAL;
@@ -2625,10 +2625,10 @@ static int reencrypt_context_update(struct crypt_device *cd,
 static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 		uint64_t device_size,
 		const struct crypt_params_reencrypt *params,
-		struct luks2_reenc_context **rh)
+		struct luks2_reencrypt **rh)
 {
 	int r;
-	struct luks2_reenc_context *tmp = NULL;
+	struct luks2_reencrypt *tmp = NULL;
 	crypt_reencrypt_info ri = LUKS2_reencrypt_status(hdr);
 
 	if (ri == CRYPT_REENCRYPT_CLEAN)
@@ -2769,7 +2769,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	int r, old_ss, new_ss;
 	struct luks2_hdr *hdr;
 	struct crypt_lock_handle *reencrypt_lock;
-	struct luks2_reenc_context *rh;
+	struct luks2_reencrypt *rh;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
@@ -3087,7 +3087,7 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 
 static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh,
+		struct luks2_reencrypt *rh,
 		uint64_t device_size,
 		bool online)
 {
@@ -3216,7 +3216,7 @@ static int reencrypt_erase_backup_segments(struct crypt_device *cd,
 	return 0;
 }
 
-static int reencrypt_wipe_moved_segment(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh)
+static int reencrypt_wipe_moved_segment(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reencrypt *rh)
 {
 	int r = 0;
 	uint64_t offset, length;
@@ -3233,7 +3233,7 @@ static int reencrypt_wipe_moved_segment(struct crypt_device *cd, struct luks2_hd
 	return r;
 }
 
-static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh)
+static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reencrypt *rh)
 {
 	int i, r;
 	uint32_t dmt_flags;
@@ -3283,7 +3283,7 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return 0;
 }
 
-static void reencrypt_teardown_fatal(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reenc_context *rh)
+static void reencrypt_teardown_fatal(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reencrypt *rh)
 {
 	log_err(cd, _("Fatal error while reencrypting chunk starting at %" PRIu64 ", %" PRIu64 " sectors long."),
 		(rh->offset >> SECTOR_SHIFT) + crypt_get_data_offset(cd), rh->length >> SECTOR_SHIFT);
@@ -3301,7 +3301,7 @@ static void reencrypt_teardown_fatal(struct crypt_device *cd, struct luks2_hdr *
 }
 
 static int reencrypt_teardown(struct crypt_device *cd, struct luks2_hdr *hdr,
-		struct luks2_reenc_context *rh, reenc_status_t rs, bool interrupted,
+		struct luks2_reencrypt *rh, reenc_status_t rs, bool interrupted,
 		int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
 {
 	int r;
@@ -3332,7 +3332,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 	int r;
 	crypt_reencrypt_info ri;
 	struct luks2_hdr *hdr;
-	struct luks2_reenc_context *rh;
+	struct luks2_reencrypt *rh;
 	reenc_status_t rs;
 	bool quit = false;
 
@@ -3394,7 +3394,7 @@ static int reencrypt_recovery(struct crypt_device *cd,
 		struct volume_key *vks)
 {
 	int r;
-	struct luks2_reenc_context *rh = NULL;
+	struct luks2_reencrypt *rh = NULL;
 
 	r = reencrypt_load(cd, hdr, device_size, NULL, &rh);
 	if (r < 0) {
