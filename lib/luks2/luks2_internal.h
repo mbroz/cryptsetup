@@ -44,6 +44,8 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 			struct device *device, int do_recovery, int do_blkprobe);
 int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr,
 			 struct device *device, bool seqid_check);
+int LUKS2_device_write_lock(struct crypt_device *cd,
+	struct luks2_hdr *hdr, struct device *device);
 
 /*
  * JSON struct access helpers
@@ -92,8 +94,8 @@ void LUKS2_keyslots_repair(struct crypt_device *cd, json_object *jobj_hdr);
 /*
  * JSON array helpers
  */
-struct json_object *LUKS2_array_jobj(struct json_object *array, const char *num);
-struct json_object *LUKS2_array_remove(struct json_object *array, const char *num);
+json_object *LUKS2_array_jobj(json_object *array, const char *num);
+json_object *LUKS2_array_remove(json_object *array, const char *num);
 
 /*
  * Plugins API
@@ -199,5 +201,120 @@ static inline const char *crypt_reencrypt_mode_to_str(crypt_reencrypt_mode_info 
 		return "decrypt";
 	return "<unknown>";
 }
+
+/*
+ * Generic LUKS2 keyslot
+ */
+int LUKS2_keyslot_reencrypt_store(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const void *buffer,
+	size_t buffer_length);
+
+int LUKS2_keyslot_reencrypt_create(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const struct crypt_params_reencrypt *params);
+
+int LUKS2_keyslot_dump(struct crypt_device *cd,
+	int keyslot);
+
+/* JSON helpers */
+uint64_t json_segment_get_offset(json_object *jobj_segment, unsigned blockwise);
+const char *json_segment_type(json_object *jobj_segment);
+uint64_t json_segment_get_iv_offset(json_object *jobj_segment);
+uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise);
+const char *json_segment_get_cipher(json_object *jobj_segment);
+int json_segment_get_sector_size(json_object *jobj_segment);
+bool json_segment_is_backup(json_object *jobj_segment);
+json_object *json_segments_get_segment(json_object *jobj_segments, int segment);
+unsigned json_segments_count(json_object *jobj_segments);
+void json_segment_remove_flag(json_object *jobj_segment, const char *flag);
+uint64_t json_segments_get_minimal_offset(json_object *jobj_segments, unsigned blockwise);
+json_object *json_segment_create_linear(uint64_t offset, const uint64_t *length, unsigned reencryption);
+json_object *json_segment_create_crypt(uint64_t offset, uint64_t iv_offset, const uint64_t *length, const char *cipher, uint32_t sector_size, unsigned reencryption);
+int json_segments_segment_in_reencrypt(json_object *jobj_segments);
+
+int LUKS2_assembly_multisegment_dmd(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	struct volume_key *vks,
+	json_object *jobj_segments,
+	struct crypt_dm_active_device *dmd);
+
+/*
+ * Generic LUKS2 segment
+ */
+int LUKS2_segments_count(struct luks2_hdr *hdr);
+
+int LUKS2_segment_first_unused_id(struct luks2_hdr *hdr);
+
+int LUKS2_segment_set_flag(json_object *jobj_segment, const char *flag);
+
+json_object *LUKS2_get_segment_by_flag(struct luks2_hdr *hdr, const char *flag);
+
+int LUKS2_get_segment_id_by_flag(struct luks2_hdr *hdr, const char *flag);
+
+int LUKS2_segments_set(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	json_object *jobj_segments,
+	int commit);
+
+uint64_t LUKS2_segment_offset(struct luks2_hdr *hdr,
+	int segment,
+	unsigned blockwise);
+
+uint64_t LUKS2_segment_size(struct luks2_hdr *hdr,
+	int segment,
+	unsigned blockwise);
+
+int LUKS2_segment_is_type(struct luks2_hdr *hdr,
+	int segment,
+	const char *type);
+
+int LUKS2_segment_by_type(struct luks2_hdr *hdr,
+	const char *type);
+
+int LUKS2_last_segment_by_type(struct luks2_hdr *hdr,
+	const char *type);
+
+int LUKS2_get_default_segment(struct luks2_hdr *hdr);
+
+int LUKS2_reencrypt_digest_new(struct luks2_hdr *hdr);
+int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr);
+int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
+
+/*
+ * Generic LUKS2 digest
+ */
+int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int digest,
+	const struct volume_key *vk);
+
+void LUKS2_digests_erase_unused(struct crypt_device *cd,
+	struct luks2_hdr *hdr);
+
+int LUKS2_digest_dump(struct crypt_device *cd,
+	int digest);
+
+/*
+ * Generic LUKS2 token
+ */
+int LUKS2_tokens_count(struct luks2_hdr *hdr);
+
+/*
+ * LUKS2 generic
+ */
+int LUKS2_reload(struct crypt_device *cd,
+	const char *name,
+	struct volume_key *vks,
+	uint64_t device_size,
+	uint32_t flags);
+
+int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment);
+int LUKS2_find_keyslot(struct luks2_hdr *hdr, const char *type);
+int LUKS2_set_keyslots_size(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	uint64_t data_offset);
 
 #endif

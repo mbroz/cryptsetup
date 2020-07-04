@@ -22,6 +22,111 @@
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
 
+struct reenc_protection {
+	enum { REENC_PROTECTION_NONE = 0, /* none should be 0 always */
+	       REENC_PROTECTION_CHECKSUM,
+	       REENC_PROTECTION_JOURNAL,
+               REENC_PROTECTION_DATASHIFT } type;
+
+	union {
+	struct {
+	} none;
+	struct {
+		char hash[LUKS2_CHECKSUM_ALG_L]; // or include luks.h
+		struct crypt_hash *ch;
+		size_t hash_size;
+		/* buffer for checksums */
+		void *checksums;
+		size_t checksums_len;
+	} csum;
+	struct {
+	} ds;
+	} p;
+};
+
+struct luks2_reenc_context {
+	/* reencryption window attributes */
+	uint64_t offset;
+	uint64_t progress;
+	uint64_t length;
+	uint64_t data_shift;
+	size_t alignment;
+	uint64_t device_size;
+	bool online;
+	bool fixed_length;
+	crypt_reencrypt_direction_info direction;
+	crypt_reencrypt_mode_info mode;
+
+	char *device_name;
+	char *hotzone_name;
+	char *overlay_name;
+	uint32_t flags;
+
+	/* reencryption window persistence attributes */
+	struct reenc_protection rp;
+
+	int reenc_keyslot;
+
+	/* already running reencryption */
+	json_object *jobj_segs_hot;
+	struct json_object *jobj_segs_post;
+
+	/* backup segments */
+	json_object *jobj_segment_new;
+	int digest_new;
+	json_object *jobj_segment_old;
+	int digest_old;
+	json_object *jobj_segment_moved;
+
+	struct volume_key *vks;
+
+	void *reenc_buffer;
+	ssize_t read;
+
+	struct crypt_storage_wrapper *cw1;
+	struct crypt_storage_wrapper *cw2;
+
+	uint32_t wflags1;
+	uint32_t wflags2;
+
+	struct crypt_lock_handle *reenc_lock;
+};
+
+static int reenc_keyslot_update(struct crypt_device *cd,
+	const struct luks2_reenc_context *rh)
+{
+	json_object *jobj_keyslot, *jobj_area, *jobj_area_type;
+	struct luks2_hdr *hdr;
+
+	if (!(hdr = crypt_get_hdr(cd, CRYPT_LUKS2)))
+		return -EINVAL;
+
+	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, rh->reenc_keyslot);
+	if (!jobj_keyslot)
+		return -EINVAL;
+
+	json_object_object_get_ex(jobj_keyslot, "area", &jobj_area);
+	json_object_object_get_ex(jobj_area, "type", &jobj_area_type);
+
+	if (rh->rp.type == REENC_PROTECTION_CHECKSUM) {
+		log_dbg(cd, "Updating reencrypt keyslot for checksum protection.");
+		json_object_object_add(jobj_area, "type", json_object_new_string("checksum"));
+		json_object_object_add(jobj_area, "hash", json_object_new_string(rh->rp.p.csum.hash));
+		json_object_object_add(jobj_area, "sector_size", json_object_new_int64(rh->alignment));
+	} else if (rh->rp.type == REENC_PROTECTION_NONE) {
+		log_dbg(cd, "Updating reencrypt keyslot for none protection.");
+		json_object_object_add(jobj_area, "type", json_object_new_string("none"));
+		json_object_object_del(jobj_area, "hash");
+	} else if (rh->rp.type == REENC_PROTECTION_JOURNAL) {
+		log_dbg(cd, "Updating reencrypt keyslot for journal protection.");
+		json_object_object_add(jobj_area, "type", json_object_new_string("journal"));
+		json_object_object_del(jobj_area, "hash");
+	} else
+		log_dbg(cd, "No update of reencrypt keyslot needed.");
+
+	return 0;
+}
+
 static json_object *reencrypt_segment(struct luks2_hdr *hdr, unsigned new)
 {
 	return LUKS2_get_segment_by_flag(hdr, new ? "backup-final" : "backup-previous");
