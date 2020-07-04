@@ -2789,10 +2789,10 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
 
-	rh = crypt_get_reenc_context(cd);
+	rh = crypt_get_luks2_reencrypt(cd);
 	if (rh) {
 		LUKS2_reencrypt_free(cd, rh);
-		crypt_set_reenc_context(cd, NULL);
+		crypt_set_luks2_reencrypt(cd, NULL);
 		rh = NULL;
 	}
 
@@ -2930,7 +2930,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	MOVE_REF(rh->vks, *vks);
 	MOVE_REF(rh->reenc_lock, reencrypt_lock);
 
-	crypt_set_reenc_context(cd, rh);
+	crypt_set_luks2_reencrypt(cd, rh);
 
 	return 0;
 err:
@@ -3337,7 +3337,7 @@ static int reencrypt_teardown(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	/* this frees reencryption lock */
 	LUKS2_reencrypt_free(cd, rh);
-	crypt_set_reenc_context(cd, NULL);
+	crypt_set_luks2_reencrypt(cd, NULL);
 
 	return r;
 }
@@ -3363,7 +3363,7 @@ int crypt_reencrypt(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	rh = crypt_get_reenc_context(cd);
+	rh = crypt_get_luks2_reencrypt(cd);
 	if (!rh || (!rh->reenc_lock && crypt_metadata_locking_enabled())) {
 		log_err(cd, _("Missing or invalid reencrypt context."));
 		return -EINVAL;
