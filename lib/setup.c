@@ -662,7 +662,7 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 		return -EINVAL;
 	}
 
-	if (isLUKS2(cd->type) && crypt_get_reenc_context(cd)) {
+	if (isLUKS2(cd->type) && crypt_get_luks2_reencrypt(cd)) {
 		log_err(cd, _("Illegal operation with reencryption in-progress."));
 		return -EINVAL;
 	}
@@ -5510,13 +5510,13 @@ void *crypt_get_hdr(struct crypt_device *cd, const char *type)
 }
 
 /* internal only */
-struct luks2_reenc_context *crypt_get_reenc_context(struct crypt_device *cd)
+struct luks2_reenc_context *crypt_get_luks2_reencrypt(struct crypt_device *cd)
 {
 	return cd->u.luks2.rh;
 }
 
 /* internal only */
-void crypt_set_reenc_context(struct crypt_device *cd, struct luks2_reenc_context *rh)
+void crypt_set_luks2_reencrypt(struct crypt_device *cd, struct luks2_reenc_context *rh)
 {
 	cd->u.luks2.rh = rh;
 }

@@ -385,7 +385,7 @@ int LUKS2_device_write_lock(struct crypt_device *cd, struct luks2_hdr *hdr, stru
 	}
 
 	/* run sequence id check only on first write lock (r == 1) and w/o LUKS2 reencryption in-progress */
-	if (r == 1 && !crypt_get_reenc_context(cd)) {
+	if (r == 1 && !crypt_get_luks2_reencrypt(cd)) {
 		log_dbg(cd, "Checking context sequence id matches value stored on disk.");
 		if (LUKS2_check_sequence_id(cd, hdr, device)) {
 			device_write_unlock(cd, device);
