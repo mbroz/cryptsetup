@@ -125,7 +125,7 @@ void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
 void quiet_log(int level, const char *msg, void *usrptr)
 {
 	if (!opt_verbose && (level == CRYPT_LOG_ERROR || level == CRYPT_LOG_NORMAL))
-		level = CRYPT_LOG_VERBOSE;
+		return;
 	tool_log(level, msg, usrptr);
 }
 
