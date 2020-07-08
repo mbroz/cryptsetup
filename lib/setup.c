@@ -5659,15 +5659,30 @@ const char *name,
 		log_err(cd, _("Kernel keyring missing: required for passing signature to kernel."));
 		return -EINVAL;
 	}
+
+	/*
+	 * The same verity device cannot be activated multiple times at the same time, it will fail and
+	 * require complex, slow and error-prone retry logic in all clients. Use a writer lock around the
+	 * device to ensure all attempts are properly sequential and do not intersecate. Note that this
+	 * must include checking for the status, it's not enough to wrap VERITY_activate().
+	 */
+	if (isVERITY(cd->type)) {
+		r = device_write_lock(cd, crypt_metadata_device(cd));
+		if (r < 0) {
+			log_err(cd, _("Failed to acquire write lock on device %s."), device_path(crypt_metadata_device(cd)));
+			return r;
+		}
+	}
+
 	r = _check_header_data_overlap(cd, name);
 	if (r < 0)
-		return r;
+		goto out;
 	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
 	if (r < 0)
-		return r;
+		goto out;
 
 	/* for TCRYPT and token skip passphrase activation */
-	if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN && !isTCRYPT(cd->type)) {
+	if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN && !isTCRYPT(cd->type) && !isVERITY(cd->type)) {
 		r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
 		if (r < 0)
 			return r;
@@ -5822,6 +5837,8 @@ out:
 	crypt_free_volume_key(crypt_key);
 	crypt_free_volume_key(opal_key);
 	crypt_free_volume_key(vk_sign);
+	if (isVERITY(cd->type))
+		device_write_unlock(cd, crypt_metadata_device(cd));
 	return r;
 }
 
