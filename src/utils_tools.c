@@ -373,7 +373,7 @@ static double time_diff(struct timeval *start, struct timeval *end)
 		+ (end->tv_usec - start->tv_usec) / 1E6;
 }
 
-void tools_clear_line(void)
+static void tools_clear_line(void)
 {
 	if (opt_progress_frequency)
 		return;
