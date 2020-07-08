@@ -119,6 +119,8 @@ ARG(OPT_PERF_SUBMIT_FROM_CRYPT_CPUS, '\0', POPT_ARG_NONE, N_("Use dm-crypt submi
 
 ARG(OPT_PERSISTENT, '\0', POPT_ARG_NONE, N_("Set activation flags persistent for device"), NULL, CRYPT_ARG_BOOL, {}, OPT_PERSISTENT_ACTIONS)
 
+ARG(OPT_PLUGIN, '\0', POPT_ARG_STRING, N_("Load token plugin"), NULL, CRYPT_ARG_STRING, {}, OPT_PLUGIN_ACTIONS)
+
 ARG(OPT_PRIORITY, '\0', POPT_ARG_STRING, N_("Keyslot priority: ignore, normal, prefer"), NULL, CRYPT_ARG_STRING, {}, OPT_PRIORITY_ACTIONS)
 
 ARG(OPT_PROGRESS_FREQUENCY, '\0', POPT_ARG_STRING, N_("Progress line update (in seconds)"), N_("secs"), CRYPT_ARG_UINT32, {}, {})

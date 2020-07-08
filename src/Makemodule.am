@@ -21,6 +21,8 @@ cryptsetup_SOURCES =		\
 	src/cryptsetup_args.h	\
 	src/cryptsetup_arg_list.h
 
+cryptsetup_LDFLAGS = -ldl
+
 cryptsetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
 	libcryptsetup_cli.la	\

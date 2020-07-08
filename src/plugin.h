@@ -1,8 +1,7 @@
 /*
- * libcryptsetup_cli - cryptsetup command line tools library
+ * cryptsetup command line plugin API
  *
- * Copyright (C) 2012-2020 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2020 Milan Broz
+ * Copyright (C) 2020 Red Hat, Inc. All rights reserved.
  * Copyright (C) 2020 Ondrej Kozina
  *
  * This file is free software; you can redistribute it and/or
@@ -20,38 +19,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef CLI_INTERNAL_H
-#define CLI_INTERNAL_H
+#ifndef PLUGIN_H
+#define PLUGIN_H
 
 #include <stdbool.h>
-#include <sys/types.h>
 
-#define MAX_ACTIONS 16
+#include "libcryptsetup_cli.h"
 
-struct tools_arg {
+/* plugin command line argument prefix */
+#define CRYPT_PLUGIN "plugin"
+
+typedef struct crypt_token_arg_item {
 	const char *name;
-	bool set;
-	crypt_arg_type_info type;
-	union {
-		char *str_value;
-		uint64_t u64_value;
-		uint32_t u32_value;
-		int32_t i32_value;
-		int64_t i64_value;
-	} u;
-	const char *actions_array[MAX_ACTIONS];
-};
+	const char *desc; /* optional */
+	crypt_arg_type_info arg_type;
+	const struct crypt_token_arg_item *next;
+} crypt_token_arg_item;
 
-struct plugin_args {
-	const char *name;
-	const struct tools_arg *args;
-	size_t count;
-};
+typedef int (*crypt_token_handle_init_func) (struct crypt_cli *ctx, void **handle);
+typedef void (*crypt_token_handle_free_func) (void *handle);
 
-struct crypt_cli {
-	const struct tools_arg *core_args;
-	size_t core_args_count;
-	struct plugin_args plugin_args;
-};
+typedef int (*crypt_token_create_func) (struct crypt_device *cd, void *token_handle);
+typedef int (*crypt_token_validate_create_params_func) (struct crypt_device *cd, void *token_handle);
+
+typedef crypt_token_arg_item* (*crypt_token_params_func) (void);
 
 #endif

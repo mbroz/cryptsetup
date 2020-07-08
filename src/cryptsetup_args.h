@@ -80,6 +80,7 @@
 #define OPT_USE_RANDOM_ACTIONS			{ FORMAT_ACTION }
 #define OPT_USE_URANDOM_ACTIONS			{ FORMAT_ACTION }
 #define OPT_UUID_ACTIONS			{ FORMAT_ACTION, UUID_ACTION }
+#define OPT_PLUGIN_ACTIONS			{ TOKEN_ACTION }
 
 enum {
 OPT_UNUSED_ID = 0, /* leave unused due to popt library */

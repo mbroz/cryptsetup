@@ -346,9 +346,25 @@ static const struct tools_arg *find_arg_in_args(const char *name, const struct t
 	return NULL;
 }
 
+static const struct tools_arg *find_arg_by_name_plugin(struct crypt_cli *ctx, const char *name)
+{
+	const char *p = strstr(name, "-");
+
+	if (!p || p == name || !ctx)
+		return NULL;
+
+	if (!strncmp(name, ctx->plugin_args.name, p - name))
+		return find_arg_in_args(p + 1, ctx->plugin_args.args, ctx->plugin_args.count);
+
+	return NULL;
+}
+
 static const struct tools_arg *find_arg_by_name(struct crypt_cli *ctx, const char *name)
 {
-	return find_arg_in_args(name, ctx->core_args, ctx->core_args_count);
+	if (!strncmp(name, "plugin-", 7))
+		return find_arg_by_name_plugin(ctx, name + 7);
+	else
+		return find_arg_in_args(name, ctx->core_args, ctx->core_args_count);
 }
 
 int crypt_cli_arg_value(struct crypt_cli *ctx, const char *name, void *value)
