@@ -3365,7 +3365,7 @@ static int action_reencrypt(void)
 
 	if (r >= 0 && !opt_reencrypt_init_only) {
 		set_int_handler(0);
-		r = crypt_reencrypt(cd, tools_reencrypt_progress);
+		r = crypt_reencrypt(cd, tools_reencrypt_progress, NULL);
 	}
 out:
 	crypt_free(cd);

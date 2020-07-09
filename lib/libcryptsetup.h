@@ -2291,11 +2291,13 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param progress is a callback funtion reporting device \b size,
  * current \b offset of reencryption and provided \b usrptr identification
+ * @param usrptr progress specific data
  *
  * @return @e 0 on success or negative errno value otherwise.
  */
 int crypt_reencrypt(struct crypt_device *cd,
-		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr));
+		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
+		    void *usrptr);
 
 /**
  * Reencryption status info
