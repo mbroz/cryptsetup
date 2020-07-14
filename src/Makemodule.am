@@ -82,9 +82,14 @@ integritysetup_SOURCES =	\
 	lib/utils_loop.c	\
 	lib/utils_io.c		\
 	lib/utils_blkid.c	\
+	src/utils_args.c	\
+	src/utils_arg_names.h	\
+	src/utils_arg_macros.h	\
 	src/utils_tools.c	\
 	src/utils_blockdev.c	\
 	src/integritysetup.c	\
+	src/integritysetup_arg_list.h \
+	src/integritysetup_args.h \
 	src/cryptsetup.h
 
 integritysetup_LDADD = $(LDADD)	\
