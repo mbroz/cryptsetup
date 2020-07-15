@@ -24,6 +24,7 @@
 #ifndef CRYPTSETUP_H
 #define CRYPTSETUP_H
 
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -55,6 +56,11 @@
 #define ROUND_SECTOR(x) (((x) + SECTOR_SIZE - 1) / SECTOR_SIZE)
 
 #define DEFAULT_WIPE_BLOCK	1048576 /* 1 MiB */
+#define MAX_ACTIONS 16
+
+#ifndef ARRAY_SIZE
+# define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
 
 extern int opt_debug;
 extern int opt_debug_json;
@@ -126,5 +132,34 @@ void tools_cleanup(void);
 #define log_std(x...) clogger(NULL, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
 #define log_verbose(x...) clogger(NULL, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
 #define log_err(x...) clogger(NULL, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
+
+typedef enum {
+	CRYPT_ARG_BOOL = 0,
+	CRYPT_ARG_STRING,
+	CRYPT_ARG_INT32,
+	CRYPT_ARG_UINT32,
+	CRYPT_ARG_INT64,
+	CRYPT_ARG_UINT64
+} crypt_arg_type_info;
+
+struct tools_arg {
+	const char *name;
+	bool set;
+	crypt_arg_type_info type;
+	union {
+		char *str_value;
+		uint64_t u64_value;
+		uint32_t u32_value;
+		int32_t i32_value;
+		int64_t i64_value;
+	} u;
+	const char *actions_array[MAX_ACTIONS];
+};
+
+void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, struct tools_arg *arg, const char *popt_arg, int popt_val, bool(*needs_size_conv_fn)(unsigned arg_id));
+
+void tools_args_free(struct tools_arg *args, size_t args_count);
+
+void tools_check_args(const char *action, const struct tools_arg *args, size_t args_size, poptContext popt_context);
 
 #endif /* CRYPTSETUP_H */
