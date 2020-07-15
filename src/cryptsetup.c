@@ -617,6 +617,8 @@ static int action_close(void)
 
 	if (ARG_SET(OPT_DEFERRED_ID))
 		flags |= CRYPT_DEACTIVATE_DEFERRED;
+	if (ARG_SET(OPT_CANCEL_DEFERRED_ID))
+		flags |= CRYPT_DEACTIVATE_DEFERRED_CANCEL;
 
 	r = crypt_init_by_name(&cd, action_argv[0]);
 	if (r == 0)
@@ -3677,6 +3679,11 @@ int main(int argc, const char **argv)
 	if (ARG_SET(OPT_REFRESH_ID) && ARG_SET(OPT_TEST_PASSPHRASE_ID))
 		usage(popt_context, EXIT_FAILURE,
 		      _("Options --refresh and --test-passphrase are mutually exclusive."),
+		      poptGetInvocationName(popt_context));
+
+	if (ARG_SET(OPT_CANCEL_DEFERRED_ID) && ARG_SET(OPT_DEFERRED_ID))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Options --cancel-deferred and --deferred cannot be used at the same time."),
 		      poptGetInvocationName(popt_context));
 
 	/* open action specific check */

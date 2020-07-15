@@ -101,7 +101,7 @@ For backward compatibility there are \fBclose\fR command aliases:
 \fBtcryptClose\fR (all behaves exactly the same, device type is
 determined automatically from active device).
 
-\fB<options>\fR can be [\-\-deferred]
+\fB<options>\fR can be [\-\-deferred] or [\-\-cancel\-deferred]
 
 .PP
 \fIstatus\fR <name>
@@ -1266,6 +1266,9 @@ for \fBpwquality.conf(5)\fR and \fBpasswdqc.conf(5)\fR.
 .TP
 .B "\-\-deferred"
 Defers device removal in \fIclose\fR command until the last user closes it.
+.TP
+.B "\-\-cancel\-deferred"
+Removes a previously configured deferred device removal in \fIclose\fR command.
 .TP
 .B "\-\-disable\-locks"
 Disable lock protection for metadata on disk.

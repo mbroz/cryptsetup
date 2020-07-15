@@ -30,6 +30,7 @@
 #define OPT_BITMAP_SECTORS_PER_BIT	"bitmap-sectors-per-bit"
 #define OPT_BLOCK_SIZE			"block-size"
 #define OPT_BUFFER_SECTORS		"buffer-sectors"
+#define OPT_CANCEL_DEFERRED		"cancel-deferred"
 #define OPT_CHECK_AT_MOST_ONCE		"check-at-most-once"
 #define OPT_CIPHER			"cipher"
 #define OPT_DATA_BLOCK_SIZE		"data-block-size"
