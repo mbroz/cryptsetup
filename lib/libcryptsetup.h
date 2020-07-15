@@ -1351,6 +1351,8 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 #define CRYPT_DEACTIVATE_DEFERRED (1 << 0)
 /** force deactivation - if the device is busy, it is replaced by error device */
 #define CRYPT_DEACTIVATE_FORCE    (1 << 1)
+/** if set, remove lazy deactivation */
+#define CRYPT_DEACTIVATE_DEFERRED_CANCEL (1 << 2)
 
 /**
  * Deactivate crypt device. This function tries to remove active device-mapper

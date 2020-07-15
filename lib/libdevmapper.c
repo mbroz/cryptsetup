@@ -2942,6 +2942,11 @@ out:
 	return r;
 }
 
+int dm_cancel_deferred_removal(const char *name)
+{
+	return _dm_message(name, "@cancel_deferred_remove") ? 0 : -ENOTSUP;
+}
+
 const char *dm_get_dir(void)
 {
 	return dm_dir();
