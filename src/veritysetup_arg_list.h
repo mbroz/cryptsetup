@@ -21,6 +21,8 @@
 
 /* long name, short name, popt type, help description, units, internal argument type, default value, allowed actions (empty=global) */
 
+ARG(OPT_CANCEL_DEFERRED, '\0', POPT_ARG_NONE, N_("Cancel a previously set deferred device removal"), NULL, CRYPT_ARG_BOOL, {}, OPT_DEFERRED_ACTIONS)
+
 ARG(OPT_CHECK_AT_MOST_ONCE, '\0', POPT_ARG_NONE, N_("Verify data block only the first time it is read"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_DATA_BLOCK_SIZE, '\0', POPT_ARG_STRING, N_("Block size on the data device"), N_("bytes"), CRYPT_ARG_UINT32, { .u32_value = DEFAULT_VERITY_DATA_BLOCK }, {})
@@ -28,6 +30,8 @@ ARG(OPT_DATA_BLOCK_SIZE, '\0', POPT_ARG_STRING, N_("Block size on the data devic
 ARG(OPT_DATA_BLOCKS, '\0', POPT_ARG_STRING, N_("The number of blocks in the data file"), N_("blocks"), CRYPT_ARG_UINT64, {}, {})
 
 ARG(OPT_DEBUG, '\0', POPT_ARG_NONE, N_("Show debug messages"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+ARG(OPT_DEFERRED, '\0', POPT_ARG_NONE, N_("Device removal is deferred until the last user closes it"), NULL, CRYPT_ARG_BOOL, {}, OPT_DEFERRED_ACTIONS)
 
 ARG(OPT_FEC_DEVICE, '\0', POPT_ARG_STRING, N_("Path to device with error correction data"), N_("path"), CRYPT_ARG_STRING, {}, {})
 

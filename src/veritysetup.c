@@ -218,11 +218,25 @@ static int action_verify(int arg)
 static int action_close(int arg)
 {
 	struct crypt_device *cd = NULL;
+	crypt_status_info ci;
+	uint32_t flags = 0;
 	int r;
+
+	if (ARG_SET(OPT_DEFERRED_ID))
+		flags |= CRYPT_DEACTIVATE_DEFERRED;
+	if (ARG_SET(OPT_CANCEL_DEFERRED_ID))
+		flags |= CRYPT_DEACTIVATE_DEFERRED_CANCEL;
 
 	r = crypt_init_by_name(&cd, action_argv[0]);
 	if (r == 0)
-		r = crypt_deactivate(cd, action_argv[0]);
+		r = crypt_deactivate_by_name(cd, action_argv[0], flags);
+
+	if (!r && ARG_SET(OPT_DEFERRED_ID)) {
+		ci = crypt_status(cd, action_argv[0]);
+		if (ci == CRYPT_ACTIVE || ci == CRYPT_BUSY)
+			log_std(_("Device %s is still active and scheduled for deferred removal.\n"),
+				  action_argv[0]);
+	}
 
 	crypt_free(cd);
 	return r;
@@ -547,6 +561,11 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --panic-on-corruption and --restart-on-corruption cannot be used together."),
 		poptGetInvocationName(popt_context));
+
+	if (ARG_SET(OPT_CANCEL_DEFERRED_ID) && ARG_SET(OPT_DEFERRED_ID))
+		usage(popt_context, EXIT_FAILURE,
+		      _("Options --cancel-deferred and --deferred cannot be used at the same time."),
+		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_DEBUG_ID)) {
 		ARG_SET_TRUE(OPT_VERBOSE_ID);

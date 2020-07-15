@@ -65,6 +65,9 @@ Removes existing mapping <name>.
 
 For backward compatibility there is \fBremove\fR command alias
 for \fBclose\fR command.
+
+\fB<options>\fR can be [\-\-deferred] or [\-\-cancel\-deferred]
+
 .PP
 \fIstatus\fR <name>
 .IP
@@ -170,6 +173,12 @@ In RS(M, N) encoding, the number of roots is M-N. M is 255 and M-N is between 2 
 .B "\-\-root-hash-signature=FILE"
 Path to roothash signature file used to verify the root hash (in kernel).
 This feature requires Linux kernel version 5.4 or more recent.
+.TP
+.B "\-\-deferred"
+Defers device removal in \fIclose\fR command until the last user closes it.
+.TP
+.B "\-\-cancel\-deferred"
+Removes a previously configured deferred device removal in \fIclose\fR command.
 .TP
 .SH RETURN CODES
 Veritysetup returns 0 on success and a non-zero value on error.
