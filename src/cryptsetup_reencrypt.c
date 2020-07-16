@@ -854,7 +854,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		opt_cipher ? cipher : DEFAULT_LUKS1_CIPHER,
 		opt_cipher ? cipher_mode : DEFAULT_LUKS1_MODE,
 		NULL, NULL,
-		(opt_key_size ? opt_key_size : DEFAULT_LUKS1_KEYBITS) / 8,
+		opt_key_size / 8,
 		rc->type,
 		0,
 		0,
