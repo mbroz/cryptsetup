@@ -11,8 +11,12 @@ cryptsetup_SOURCES =		\
 	src/utils_password.c	\
 	src/utils_luks2.c	\
 	src/utils_blockdev.c	\
+	src/utils_arg_names.h	\
+	src/utils_arg_macros.h	\
 	src/cryptsetup.c	\
-	src/cryptsetup.h
+	src/cryptsetup.h	\
+	src/cryptsetup_args.h	\
+	src/cryptsetup_arg_list.h
 
 cryptsetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
