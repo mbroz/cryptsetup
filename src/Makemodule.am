@@ -48,9 +48,14 @@ veritysetup_SOURCES =		\
 	lib/utils_loop.c	\
 	lib/utils_io.c		\
 	lib/utils_blkid.c	\
+	src/utils_args.c	\
+	src/utils_arg_names.h	\
+	src/utils_arg_macros.h	\
 	src/utils_tools.c	\
 	src/utils_password.c	\
 	src/veritysetup.c	\
+	src/veritysetup_args.h	\
+	src/veritysetup_arg_list.h	\
 	src/cryptsetup.h
 
 veritysetup_LDADD = $(LDADD)	\
