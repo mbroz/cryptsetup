@@ -1023,5 +1023,14 @@ echo $PWD3 | $CRYPTSETUP luksConvertKey --key-slot 22 $LOOPDEV --keyslot-cipher 
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "22: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "22: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
 
+prepare "[42] Some encryption compatibility mode tests" wipe
+CIPHERS="aes-ecb aes-cbc-null aes-cbc-plain64 aes-cbc-essiv:sha256 aes-xts-plain64"
+key_size=256
+for cipher in $CIPHERS ; do
+	echo -n "[$cipher/$key_size]"
+	$CRYPTSETUP -q luksFormat --type luks2 $LOOPDEV $KEY1 $FAST_PBKDF_OPT --cipher $cipher --key-size $key_size || fail
+done
+echo
+
 remove_mapping
 exit 0
