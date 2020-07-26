@@ -749,7 +749,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		return -ENOTSUP;
 	}
 
-	if (hdr->d.sector_size && hdr->d.sector_size != SECTOR_SIZE) {
+	if (hdr->d.sector_size % SECTOR_SIZE) {
 		log_err(cd, _("Activation is not supported for %d sector size."),
 			hdr->d.sector_size);
 		return -ENOTSUP;
@@ -769,15 +769,12 @@ int TCRYPT_activate(struct crypt_device *cd,
 	if (!algs)
 		return -EINVAL;
 
-	if (hdr->d.sector_size == 0)
-		return -EINVAL;
-
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
 		dmd.size = 0;
 	else if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER)
-		dmd.size = hdr->d.hidden_volume_size / hdr->d.sector_size;
+		dmd.size = hdr->d.hidden_volume_size / SECTOR_SIZE;
 	else
-		dmd.size = hdr->d.volume_size / hdr->d.sector_size;
+		dmd.size = hdr->d.volume_size / SECTOR_SIZE;
 
 	if (dmd.flags & CRYPT_ACTIVATE_SHARED)
 		device_check = DEV_OK;
@@ -1042,11 +1039,11 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 
 		if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
 			if (hdr->d.version > 3)
-				return (hdr->d.mk_offset / hdr->d.sector_size);
+				return (hdr->d.mk_offset / SECTOR_SIZE);
 			if (device_size(crypt_metadata_device(cd), &size) < 0)
 				return 0;
 			return (size - hdr->d.hidden_volume_size +
-				(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / hdr->d.sector_size;
+				(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / SECTOR_SIZE;
 		}
 		goto hdr_offset;
 	}
@@ -1055,11 +1052,11 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 		if (device_size(crypt_metadata_device(cd), &size) < 0)
 			return 0;
 		return (size - hdr->d.hidden_volume_size +
-			(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / hdr->d.sector_size;
+			(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / SECTOR_SIZE;
 	}
 
 hdr_offset:
-	return hdr->d.mk_offset / hdr->d.sector_size;
+	return hdr->d.mk_offset / SECTOR_SIZE;
 }
 
 uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
@@ -1073,7 +1070,7 @@ uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
 	else if (params->mode && !strncmp(params->mode, "lrw", 3))
 		iv_offset = 0;
 	else
-		iv_offset = hdr->d.mk_offset / hdr->d.sector_size;
+		iv_offset = hdr->d.mk_offset / SECTOR_SIZE;
 
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
 		iv_offset += crypt_dev_partition_offset(device_path(crypt_metadata_device(cd)));
