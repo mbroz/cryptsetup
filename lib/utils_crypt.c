@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 
 #include "libcryptsetup.h"
@@ -76,8 +77,10 @@ int crypt_parse_hash_integrity_mode(const char *s, char *integrity)
 		return -EINVAL;
 
 	r = sscanf(s, "%" MAX_CIPHER_LEN_STR "[^-]-%" MAX_CIPHER_LEN_STR "s", mode, hash);
-	if (r == 2)
+	if (r == 2 && !isdigit(hash[0]))
 		r = snprintf(integrity, MAX_CIPHER_LEN, "%s(%s)", mode, hash);
+	else if (r == 2)
+		r = snprintf(integrity, MAX_CIPHER_LEN, "%s-%s", mode, hash);
 	else if (r == 1)
 		r = snprintf(integrity, MAX_CIPHER_LEN, "%s", mode);
 	else
