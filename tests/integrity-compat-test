@@ -30,7 +30,7 @@ cleanup() {
 
 fail()
 {
-	echo
+	[ -n "$1" ] && echo "$1"
 	echo "FAILED backtrace:"
 	while caller $frame; do ((frame++)); done
 	cleanup
@@ -157,7 +157,15 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 
 	echo -n "[INTEGRITY:$2:$4:$5]"
 	echo -n "[FORMAT]"
-	$INTSETUP format --integrity-legacy-padding -q --integrity $1 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV >/dev/null || fail "Cannot format device."
+	$INTSETUP format --integrity-legacy-padding -q --integrity $1 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV >/dev/null 2>&1
+	if [ $? -ne 0 ] ; then
+		if ! grep -q $1 /proc/crypto ; then
+			echo "[N/A]"
+			return
+		fi
+		fail "Cannot format device."
+	fi
+
 	dump_check "tag_size" $4
 	dump_check "sector_size" $5
 	echo -n "[ACTIVATE]"
@@ -316,6 +324,8 @@ modprobe dm-integrity >/dev/null 2>&1
 dm_integrity_features
 
 add_device
+intformat blake2s-256 blake2s-256    32 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
+intformat blake2b-256 blake2b-256    32 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
 intformat crc32c      crc32c          0  4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
 intformat crc32       crc32           0  4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
 intformat sha1        sha1            0 20  512 6eedd6344dab8875cd185fcd6565dfc869ab36bc57e577f40c685290b1fa7fe7
