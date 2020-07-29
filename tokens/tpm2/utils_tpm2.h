@@ -73,6 +73,7 @@ const alg_info *get_alg_info_by_id(TPM2_ALG_ID id);
 const alg_info *get_alg_info_by_crypt_id(uint32_t crypt_id);
 
 TSS2_RC tpm_nv_read(struct crypt_device *cd,
+	ESYS_CONTEXT *ctx,
 	uint32_t tpm_nv,
 	const char *pin,
 	size_t pin_size,
@@ -81,7 +82,9 @@ TSS2_RC tpm_nv_read(struct crypt_device *cd,
 	char *nvkey,
 	size_t nvkey_size);
 
+
 TSS2_RC tpm_nv_write(struct crypt_device *cd,
+	ESYS_CONTEXT *ctx,
 	uint32_t tpm_nv,
 	const char *pin,
 	size_t pin_size,
@@ -89,6 +92,7 @@ TSS2_RC tpm_nv_write(struct crypt_device *cd,
 	size_t buffer_size);
 
 TSS2_RC tpm_nv_define(struct crypt_device *cd,
+	ESYS_CONTEXT *ctx,
 	uint32_t tpm_nv,
 	const char *pin,
 	size_t pin_size,
@@ -99,13 +103,15 @@ TSS2_RC tpm_nv_define(struct crypt_device *cd,
 	size_t ownerpw_size,
 	size_t nvkey_size);
 
-TSS2_RC tpm_nv_undefine(struct crypt_device *cd, uint32_t tpm_nv);
+TSS2_RC tpm_init(struct crypt_device *cd, ESYS_CONTEXT **ctx, const char *tcti_conf);
 
-TSS2_RC tpm_nv_find(struct crypt_device *cd, uint32_t *tpm_nv);
+TSS2_RC tpm_nv_undefine(struct crypt_device *cd, ESYS_CONTEXT *ctx, uint32_t tpm_nv);
 
-TSS2_RC tpm_nv_exists(struct crypt_device *cd, uint32_t tpm_nv, bool *exists);
+TSS2_RC tpm_nv_find(struct crypt_device *cd, ESYS_CONTEXT *ctx, uint32_t *tpm_nv);
 
-int tpm_get_random(struct crypt_device *cd, char *random_bytes, size_t len);
+TSS2_RC tpm_nv_exists(struct crypt_device *cd, ESYS_CONTEXT *ctx, uint32_t tpm_nv, bool *exists);
+
+int tpm_get_random(struct crypt_device *cd, ESYS_CONTEXT *ctx, char *random_bytes, size_t len);
 
 /*
  * TPM2 token helpers
@@ -131,13 +137,13 @@ int tpm2_token_read(struct crypt_device *cd,
 
 int tpm2_token_by_nvindex(struct crypt_device *cd, uint32_t tpm_nv);
 
-int tpm2_token_kill(struct crypt_device *cd, int token);
+int tpm2_token_kill(struct crypt_device *cd, ESYS_CONTEXT *ctx, int token);
 int tpm2_token_validate(const char *json);
 
 int tpm2_token_get_pcrbanks(const char *pcrbanks_str, uint32_t *pcrbanks);
 int tpm2_token_get_pcrs(const char *pcrs_str, uint32_t *pcrs);
 TPMS_PCR_SELECTION *tpm2_get_pcrs_by_alg(TPMS_CAPABILITY_DATA *savedPCRs, uint32_t pcrbank);
-TSS2_RC getPCRsCapability(struct crypt_device *cd, TPMS_CAPABILITY_DATA **savedPCRs);
-TSS2_RC tpm2_supports_algs_for_pcrs(struct crypt_device *cd, uint32_t pcrbanks, uint32_t pcrs, bool *supports);
+TSS2_RC getPCRsCapability(struct crypt_device *cd, ESYS_CONTEXT *ctx, TPMS_CAPABILITY_DATA **savedPCRs);
+TSS2_RC tpm2_supports_algs_for_pcrs(struct crypt_device *cd, ESYS_CONTEXT *ctx, uint32_t pcrbanks, uint32_t pcrs, bool *supports);
 
 #endif /* _UTILS_TPM2_H */

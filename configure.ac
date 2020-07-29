@@ -377,6 +377,7 @@ AC_CHECK_DECLS([json_object_deep_copy], [], [], [#include <json-c/json.h>])
 
 PKG_CHECK_MODULES([TSS2_ESYS], [tss2-esys])
 PKG_CHECK_MODULES([TSS2_RC], [tss2-rc])
+PKG_CHECK_MODULES([TSS2_TCTILDR], [tss2-tctildr])
 
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
@@ -535,6 +536,7 @@ AC_SUBST([LIBARGON2_LIBS])
 AC_SUBST([BLKID_LIBS])
 AC_SUBST([TSS2_ESYS_LIBS])
 AC_SUBST([TSS2_RC_LIBS])
+AC_SUBST([TSS2_TCTILDR_LIBS])
 
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])

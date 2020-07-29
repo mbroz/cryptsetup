@@ -27,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <tss2/tss2_esys.h>
+#include <tss2/tss2_tctildr.h>
 #include "utils_tpm2.h"
 #include "libcryptsetup.h"
 
@@ -67,12 +68,19 @@ const alg_info *get_alg_info_by_crypt_id(uint32_t crypt_id) {
  * Initialize the TPM including a potentially necessary TPM2_Startup command,
  * which is needed for simulators and RPi TPM hats.
  */
-static TSS2_RC tpm_init(struct crypt_device *cd, ESYS_CONTEXT **ctx)
+TSS2_RC tpm_init(struct crypt_device *cd, ESYS_CONTEXT **ctx, const char *tcti_conf)
 {
 	TSS2_RC r;
 	l_dbg(cd, "Initializing ESYS connection");
 
-	r = Esys_Initialize(ctx, NULL, NULL);
+	TSS2_TCTI_CONTEXT *tcti_ctx = NULL;
+	r = Tss2_TctiLdr_Initialize (tcti_conf, &tcti_ctx);
+	if (r != TSS2_RC_SUCCESS) {
+		l_err(cd, "Error initializing TCTI");
+		return r;
+	}
+
+	r = Esys_Initialize(ctx, tcti_ctx, NULL);
 	if (r != TSS2_RC_SUCCESS) {
 		l_err(cd, "Error initializing ESYS");
 		return r;
@@ -262,10 +270,10 @@ static TSS2_RC tpm_policy_Read(struct crypt_device *cd,
 }
 
 static TSS2_RC tpm_nv_prep(struct crypt_device *cd,
+	ESYS_CONTEXT *ctx,
 	uint32_t tpm_nv,
 	const char *pin,
 	size_t pin_size,
-	ESYS_CONTEXT **ctx,
 	ESYS_TR *nvIndex)
 {
 	TSS2_RC r;
@@ -285,20 +293,14 @@ static TSS2_RC tpm_nv_prep(struct crypt_device *cd,
 		return TSS2_BASE_RC_BAD_SIZE;
 	}
 
-	r = tpm_init(cd, ctx);
-	if (r != TSS2_RC_SUCCESS)
-		return r;
-
-	r = Esys_TR_FromTPMPublic(*ctx, tpm_nv, ESYS_TR_NONE, ESYS_TR_NONE,
+	r = Esys_TR_FromTPMPublic(ctx, tpm_nv, ESYS_TR_NONE, ESYS_TR_NONE,
 				  ESYS_TR_NONE, nvIndex);
 	if (r != TSS2_RC_SUCCESS) {
-		Esys_Finalize(ctx);
 		return r;
 	}
 
-	r = Esys_TR_SetAuth(*ctx, *nvIndex, &tpm_pin);
+	r = Esys_TR_SetAuth(ctx, *nvIndex, &tpm_pin);
 	if (r != TSS2_RC_SUCCESS) {
-		Esys_Finalize(ctx);
 		return r;
 	}
 
@@ -306,6 +308,7 @@ static TSS2_RC tpm_nv_prep(struct crypt_device *cd,
 }
 
 TSS2_RC tpm_nv_read(struct crypt_device *cd,
+	ESYS_CONTEXT *ctx,
 	uint32_t tpm_nv,
 	const char *pin,
 	size_t pin_size,
@@ -315,11 +318,10 @@ TSS2_RC tpm_nv_read(struct crypt_device *cd,
 	size_t nvkey_size)
 {
 	TSS2_RC r;
-	ESYS_CONTEXT *ctx;
 	ESYS_TR nvIndex, session;
 	TPM2B_MAX_NV_BUFFER *nv_pass = NULL;
 
-	r = tpm_nv_prep(cd, tpm_nv, pin, pin_size, &ctx, &nvIndex);
+	r = tpm_nv_prep(cd, ctx, tpm_nv, pin, pin_size, &nvIndex);
 	if (r != TSS2_RC_SUCCESS)
 		return r;
 
@@ -345,12 +347,12 @@ TSS2_RC tpm_nv_read(struct crypt_device *cd,
 	memcpy(nvkey, &nv_pass->buffer[0], nvkey_size);
 out:
 	free(nv_pass);
-	Esys_Finalize(&ctx);
 
 	return r;
 }
 
 TSS2_RC tpm_nv_write(struct crypt_device *cd,
+	ESYS_CONTEXT *ctx,
 	uint32_t tpm_nv,
 	const char *pin,
 	size_t pin_size,
@@ -358,7 +360,6 @@ TSS2_RC tpm_nv_write(struct crypt_device *cd,
 	size_t buffer_size)
 {
 	TSS2_RC r;
-	ESYS_CONTEXT *ctx;
 	ESYS_TR nvIndex;
 	TPM2B_MAX_NV_BUFFER nv_pass = {
 		.size = buffer_size,
@@ -370,18 +371,18 @@ TSS2_RC tpm_nv_write(struct crypt_device *cd,
 
 	memcpy(&nv_pass.buffer[0], buffer, buffer_size);
 
-	r = tpm_nv_prep(cd, tpm_nv, pin, pin_size, &ctx, &nvIndex);
+	r = tpm_nv_prep(cd, ctx, tpm_nv, pin, pin_size, &nvIndex);
 	if (r != TSS2_RC_SUCCESS)
 		return r;
 
 	r = Esys_NV_Write(ctx, nvIndex, nvIndex, ESYS_TR_PASSWORD, ESYS_TR_NONE,
 			  ESYS_TR_NONE, &nv_pass, 0);
-	Esys_Finalize(&ctx);
 
 	return r;
 }
 
 TSS2_RC tpm_nv_define(struct crypt_device *cd,
+	ESYS_CONTEXT *ctx,
 	uint32_t tpm_nv,
 	const char *pin,
 	size_t pin_size,
@@ -393,7 +394,6 @@ TSS2_RC tpm_nv_define(struct crypt_device *cd,
 	size_t nvkey_size)
 {
 	TSS2_RC r;
-	ESYS_CONTEXT *ctx;
 	ESYS_TR nvIndex;
 	TPM2B_AUTH tpm_pin = {
 		.size = pin_size,
@@ -434,10 +434,6 @@ TSS2_RC tpm_nv_define(struct crypt_device *cd,
 		return TPM2_RC_FAILURE;
 	}
 
-	r = tpm_init(cd, &ctx);
-	if (r != TSS2_RC_SUCCESS)
-		return r;
-
 	if (ownerpw != NULL) {
 		if (ownerpw_size > sizeof(ownerauth.buffer))
 			return TPM2_RC_FAILURE;
@@ -445,30 +441,27 @@ TSS2_RC tpm_nv_define(struct crypt_device *cd,
 
 		r = Esys_TR_SetAuth(ctx, ESYS_TR_RH_OWNER, &ownerauth);
 		if (r != TSS2_RC_SUCCESS)
-			goto out;
+			return r;
 	}
 
 	r = tpm_policy_Read(cd, ctx, tpm_pcr, pcrbanks, NULL, &nvInfo.nvPublic.authPolicy);
 	if (r != TSS2_RC_SUCCESS)
-		goto out;
+		return r;
 
 	l_dbg(cd, "Defining TPM handle 0x%08x.", tpm_nv);
 
 	r = Esys_NV_DefineSpace(ctx, ESYS_TR_RH_OWNER, ESYS_TR_PASSWORD, ESYS_TR_NONE,
 				ESYS_TR_NONE, &tpm_pin, &nvInfo, &nvIndex);
-out:
-	Esys_Finalize(&ctx);
-
 	return r;
 }
 
-TSS2_RC tpm_nv_undefine(struct crypt_device *cd, uint32_t tpm_nv)
+TSS2_RC tpm_nv_undefine(struct crypt_device *cd, ESYS_CONTEXT *ctx, uint32_t tpm_nv)
 {
 	TSS2_RC r;
-	ESYS_CONTEXT *ctx;
+	;
 	ESYS_TR nvIndex;
 
-	r = tpm_nv_prep(cd, tpm_nv, NULL, 0, &ctx, &nvIndex);
+	r = tpm_nv_prep(cd, ctx, tpm_nv, NULL, 0, &nvIndex);
 	if (r != TSS2_RC_SUCCESS)
 		return r;
 
@@ -476,28 +469,22 @@ TSS2_RC tpm_nv_undefine(struct crypt_device *cd, uint32_t tpm_nv)
 
 	r = Esys_NV_UndefineSpace(ctx, ESYS_TR_RH_OWNER, nvIndex, ESYS_TR_PASSWORD,
 				  ESYS_TR_NONE, ESYS_TR_NONE);
-	Esys_Finalize(&ctx);
 
 	return r;
 }
 
-TSS2_RC tpm_nv_find(struct crypt_device *cd, uint32_t *tpm_nv)
+TSS2_RC tpm_nv_find(struct crypt_device *cd, ESYS_CONTEXT *ctx, uint32_t *tpm_nv)
 {
 	TSS2_RC r;
-	ESYS_CONTEXT *ctx;
+	;
 	ESYS_TR nvIndex;
 	TPMS_CAPABILITY_DATA *capabilityData;
 	int i;
 
 	*tpm_nv = 0;
 
-	r = tpm_init(cd, &ctx);
-	if (r != TSS2_RC_SUCCESS)
-		return r;
-
 	r = Esys_GetCapability(ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
 			       TPM2_CAP_HANDLES, 0x01000000, 0xffff, NULL, &capabilityData);
-	Esys_Finalize(&ctx);
 	if (r != TSS2_RC_SUCCESS)
 		return r;
 
@@ -520,20 +507,14 @@ TSS2_RC tpm_nv_find(struct crypt_device *cd, uint32_t *tpm_nv)
 	return r;
 }
 
-TSS2_RC tpm_nv_exists(struct crypt_device *cd, uint32_t tpm_nv, bool *exists)
+TSS2_RC tpm_nv_exists(struct crypt_device *cd, ESYS_CONTEXT *ctx, uint32_t tpm_nv, bool *exists)
 {
 	TSS2_RC r;
-	ESYS_CONTEXT *ctx;
 	TPMS_CAPABILITY_DATA *capabilityData;
 	int i;
 
-	r = tpm_init(cd, &ctx);
-	if (r != TSS2_RC_SUCCESS)
-		return r;
-
 	r = Esys_GetCapability(ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
 			       TPM2_CAP_HANDLES, 0x01000000, 0xffff, NULL, &capabilityData);
-	Esys_Finalize(&ctx);
 	if (r != TSS2_RC_SUCCESS) {
 		l_err(cd, "Error retrieving TPM capabilities.");
 		return r;
@@ -552,20 +533,15 @@ TSS2_RC tpm_nv_exists(struct crypt_device *cd, uint32_t tpm_nv, bool *exists)
 	return r;
 }
 
-int tpm_get_random(struct crypt_device *cd, char *random_bytes, size_t len)
+int tpm_get_random(struct crypt_device *cd, ESYS_CONTEXT *ctx, char *random_bytes, size_t len)
 {
 	TSS2_RC r;
-	ESYS_CONTEXT *ctx;
 	TPM2B_DIGEST *random_bytes_in;
 	unsigned int i = 0;
 	unsigned int j;
 	unsigned int retries = 5;
 
 	if (len > UINT16_MAX)
-		return -EINVAL;
-
-	r = tpm_init(cd, &ctx);
-	if (r != TSS2_RC_SUCCESS)
 		return -EINVAL;
 
 	while (retries && i < len) {
@@ -587,8 +563,6 @@ int tpm_get_random(struct crypt_device *cd, char *random_bytes, size_t len)
 
 		free(random_bytes_in);
 	}
-
-	Esys_Finalize(&ctx);
 
 	if (i < len) {
 		return -EINVAL;
@@ -628,17 +602,13 @@ TPMS_PCR_SELECTION *tpm2_get_pcrs_by_alg(TPMS_CAPABILITY_DATA *savedPCRs, uint32
 	return NULL;
 }
 
-TSS2_RC getPCRsCapability(struct crypt_device *cd, TPMS_CAPABILITY_DATA **savedPCRs)
+TSS2_RC getPCRsCapability(struct crypt_device *cd, ESYS_CONTEXT *ctx, TPMS_CAPABILITY_DATA **savedPCRs)
 {
-	ESYS_CONTEXT *ctx;
 	TSS2_RC r;
 	TPMS_CAPABILITY_DATA *currentPCRs;
 	TPMI_YES_NO more_data;
 	size_t current_count = 0;
 
-	r = tpm_init(cd, &ctx);
-	if (r != TSS2_RC_SUCCESS)
-		return r;
 	*savedPCRs = NULL;
 
 	do {
@@ -668,18 +638,17 @@ TSS2_RC getPCRsCapability(struct crypt_device *cd, TPMS_CAPABILITY_DATA **savedP
 	} while (more_data && current_count < TPM2_NUM_PCR_BANKS);
 
 out:
-	Esys_Finalize(&ctx);
 	return r;
 }
 
-TSS2_RC tpm2_supports_algs_for_pcrs(struct crypt_device *cd, uint32_t pcrbanks, uint32_t pcrs, bool *supports)
+TSS2_RC tpm2_supports_algs_for_pcrs(struct crypt_device *cd, ESYS_CONTEXT *ctx, uint32_t pcrbanks, uint32_t pcrs, bool *supports)
 {
 	TSS2_RC r = TSS2_RC_SUCCESS;
 	TPMS_CAPABILITY_DATA *savedPCRs;
 	TPMS_PCR_SELECTION *supported_pcrs_selection;
 	unsigned int i = 0;
 
-	r = getPCRsCapability(cd, &savedPCRs);
+	r = getPCRsCapability(cd, ctx, &savedPCRs);
 	if (r != TSS2_RC_SUCCESS)
 		return r;
 

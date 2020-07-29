@@ -336,7 +336,7 @@ int tpm2_token_by_nvindex(struct crypt_device *cd, uint32_t tpm_nv)
 	return -ENOENT;
 }
 
-int tpm2_token_kill(struct crypt_device *cd, int token)
+int tpm2_token_kill(struct crypt_device *cd, ESYS_CONTEXT *ctx, int token)
 {
 	uint32_t nvindex;
 	TSS2_RC r;
@@ -347,7 +347,7 @@ int tpm2_token_kill(struct crypt_device *cd, int token)
 
 	bool exists;
 
-	r = tpm_nv_exists(cd, nvindex, &exists);
+	r = tpm_nv_exists(cd, ctx, nvindex, &exists);
 	if (r != TSS2_RC_SUCCESS) {
 		l_err(cd, "Failed to check if TPM2 NV-Index 0x%x exists.", nvindex);
 		LOG_TPM_ERR(cd, r);
@@ -355,7 +355,7 @@ int tpm2_token_kill(struct crypt_device *cd, int token)
 	}
 
 	if (exists) {
-		r = tpm_nv_undefine(cd, nvindex);
+		r = tpm_nv_undefine(cd, ctx, nvindex);
 		if (r) {
 			l_err(cd, "Failed to undefine TPM2 NV-Index 0x%x.", nvindex);
 			return -EINVAL;

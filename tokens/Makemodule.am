@@ -29,10 +29,11 @@ libcryptsetup_token_tpm2_la_SOURCES = \
 	tokens/tpm2/utils_tpm2_json.c \
 	src/plugins.h
 
-libcryptsetup_token_tpm2_la_LIBADD = -lm libcryptsetup.la libcryptsetup_cli.la @JSON_C_LIBS@ @TSS2_ESYS_LIBS@ @TSS2_RC_LIBS@
+libcryptsetup_token_tpm2_la_LIBADD = -lm libcryptsetup.la libcryptsetup_cli.la @JSON_C_LIBS@ @TSS2_ESYS_LIBS@ @TSS2_RC_LIBS@ @TSS2_TCTILDR_LIBS@
 lib_LTLIBRARIES += libcryptsetup-token-tpm2.la
 
 # cryptsetup_tpm2_SOURCES = \
+#cryptsetup_tpm2_SOURCES = \
 #	tokens/tpm2/cryptsetup-tpm2.c \
 #	tokens/tpm2/utils_tpm2.h \
 #	tokens/tpm2/utils_tpm2.c \
