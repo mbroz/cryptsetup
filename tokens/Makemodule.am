@@ -5,11 +5,11 @@ TOKENS_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
 	-version-info 0:0:0
 
 # SSHTEST token an app
-libcryptsetup_token_sshtest_la_LDFLAGS = $(TOKENS_LDFLAGS)
-libcryptsetup_token_sshtest_la_SOURCES = tokens/libcryptsetup-token-sshtest.c
-libcryptsetup_token_sshtest_la_LIBADD = -lssh libcryptsetup.la @JSON_C_LIBS@
-lib_LTLIBRARIES += libcryptsetup-token-sshtest.la
+# libcryptsetup_token_sshtest_la_LDFLAGS = $(TOKENS_LDFLAGS)
+# libcryptsetup_token_sshtest_la_SOURCES = tokens/libcryptsetup-token-sshtest.c
+# libcryptsetup_token_sshtest_la_LIBADD = -lssh libcryptsetup.la @JSON_C_LIBS@
+# lib_LTLIBRARIES += libcryptsetup-token-sshtest.la
 
-cryptsetup_sshtest_SOURCES = tokens/cryptsetup-sshtest.c
-cryptsetup_sshtest_LDADD = -lm libcryptsetup.la @JSON_C_LIBS@
-sbin_PROGRAMS += cryptsetup-sshtest
+# cryptsetup_sshtest_SOURCES = tokens/cryptsetup-sshtest.c
+# cryptsetup_sshtest_LDADD = -lm libcryptsetup.la @JSON_C_LIBS@
+# sbin_PROGRAMS += cryptsetup-sshtest
