@@ -154,6 +154,25 @@ static int _set_keyslot_encryption_params(struct crypt_device *cd)
 	return crypt_keyslot_set_encryption(cd, ARG_STR(OPT_KEYSLOT_CIPHER_ID), ARG_UINT32(OPT_KEYSLOT_KEY_SIZE_ID) / 8);
 }
 
+static int tools_write_mk(const char *file, const char *key, int keysize)
+{
+	int fd, r = -EINVAL;
+
+	fd = open(file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
+	if (fd < 0) {
+		log_err(_("Cannot open keyfile %s for write."), file);
+		return r;
+	}
+
+	if (write_buffer(fd, key, keysize) == keysize)
+		r = 0;
+	else
+		log_err(_("Cannot write to keyfile %s."), file);
+
+	close(fd);
+	return r;
+}
+
 static int action_open_plain(void)
 {
 	struct crypt_device *cd = NULL, *cd1 = NULL;

@@ -29,25 +29,6 @@ void tools_passphrase_msg(int r)
 		log_err(_("No usable keyslot is available."));
 }
 
-int tools_write_mk(const char *file, const char *key, int keysize)
-{
-	int fd, r = -EINVAL;
-
-	fd = open(file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
-	if (fd < 0) {
-		log_err(_("Cannot open keyfile %s for write."), file);
-		return r;
-	}
-
-	if (write_buffer(fd, key, keysize) == keysize)
-		r = 0;
-	else
-		log_err(_("Cannot write to keyfile %s."), file);
-
-	close(fd);
-	return r;
-}
-
 /*
  * Only tool that currently blocks signals explicitely is cryptsetup-reencrypt.
  * Leave the tools_get_key stub with signals handling here and remove it later
