@@ -109,7 +109,6 @@ int tools_is_cipher_null(const char *cipher);
 int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr);
 int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr);
 
-int tools_read_mk(const char *file, char **key, int keysize);
 int tools_write_mk(const char *file, const char *key, int keysize);
 
 int tools_read_json_file(struct crypt_device *cd, const char *file, char **json, size_t *json_size);
