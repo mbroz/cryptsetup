@@ -20,7 +20,6 @@
  */
 
 #include "cryptsetup.h"
-#include <termios.h>
 
 void tools_passphrase_msg(int r)
 {
@@ -28,36 +27,6 @@ void tools_passphrase_msg(int r)
 		log_err(_("No key available with this passphrase."));
 	else if (r == -ENOENT)
 		log_err(_("No usable keyslot is available."));
-}
-
-int tools_read_mk(const char *file, char **key, int keysize)
-{
-	int fd;
-
-	if (!keysize || !key)
-		return -EINVAL;
-
-	*key = crypt_safe_alloc(keysize);
-	if (!*key)
-		return -ENOMEM;
-
-	fd = open(file, O_RDONLY);
-	if (fd == -1) {
-		log_err(_("Cannot read keyfile %s."), file);
-		goto fail;
-	}
-
-	if (read_buffer(fd, *key, keysize) != keysize) {
-		log_err(_("Cannot read %d bytes from keyfile %s."), keysize, file);
-		close(fd);
-		goto fail;
-	}
-	close(fd);
-	return 0;
-fail:
-	crypt_safe_free(*key);
-	*key = NULL;
-	return -EINVAL;
 }
 
 int tools_write_mk(const char *file, const char *key, int keysize)

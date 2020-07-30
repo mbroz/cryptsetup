@@ -48,6 +48,8 @@ int crypt_cli_get_key(const char *prompt,
 		  int timeout, int verify, int pwquality,
 		  struct crypt_device *cd, struct crypt_cli *ctx);
 
+int crypt_cli_read_mk(const char *file, char **key, size_t keysize);
+
 bool crypt_cli_arg_set(struct crypt_cli *ctx, const char *name);
 
 int crypt_cli_arg_value(struct crypt_cli *ctx, const char *name, void *value);

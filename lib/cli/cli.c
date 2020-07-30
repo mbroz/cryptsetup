@@ -34,6 +34,7 @@
 
 #include "nls.h"
 #include "utils_loop.h"
+#include "utils_io.h"
 #include "libcryptsetup.h"
 #include "libcryptsetup_cli.h"
 #include "cli_internal.h"
@@ -301,6 +302,38 @@ int crypt_cli_get_key(const char *prompt,
 		r = tools_check_pwquality(*key);
 
 	return r;
+}
+
+int crypt_cli_read_mk(const char *file, char **key, size_t keysize)
+{
+	int fd;
+	ssize_t ret;
+
+	if (!keysize || !key)
+		return -EINVAL;
+
+	*key = crypt_safe_alloc(keysize);
+	if (!*key)
+		return -ENOMEM;
+
+	fd = open(file, O_RDONLY);
+	if (fd == -1) {
+		log_err(_("Cannot read keyfile %s."), file);
+		goto fail;
+	}
+
+	ret = read_buffer(fd, *key, keysize);
+	if (ret < 0 || (size_t)ret != keysize) {
+		log_err(_("Cannot read %d bytes from keyfile %s."), keysize, file);
+		close(fd);
+		goto fail;
+	}
+	close(fd);
+	return 0;
+fail:
+	crypt_safe_free(*key);
+	*key = NULL;
+	return -EINVAL;
 }
 
 static const struct tools_arg *find_arg_in_args(const char *name, const struct tools_arg *args, size_t args_len)
