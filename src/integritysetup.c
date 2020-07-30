@@ -39,52 +39,20 @@ void tools_cleanup(void)
 	tools_args_free(tool_core_args, ARRAY_SIZE(tool_core_args));
 }
 
-// FIXME: move this to tools and handle EINTR
-static int _read_mk(const char *file, char **key, int keysize)
-{
-	int fd;
-
-	if (keysize <= 0 || keysize > MAX_KEY_SIZE) {
-		log_err(_("Invalid key size."));
-		return -EINVAL;
-	}
-
-	*key = crypt_safe_alloc(keysize);
-	if (!*key)
-		return -ENOMEM;
-
-	fd = open(file, O_RDONLY);
-	if (fd == -1) {
-		log_err(_("Cannot read keyfile %s."), file);
-		goto fail;
-	}
-	if ((read(fd, *key, keysize) != keysize)) {
-		log_err(_("Cannot read %d bytes from keyfile %s."), keysize, file);
-		close(fd);
-		goto fail;
-	}
-	close(fd);
-	return 0;
-fail:
-	crypt_safe_free(*key);
-	*key = NULL;
-	return -EINVAL;
-}
-
 static int _read_keys(char **integrity_key, struct crypt_params_integrity *params)
 {
 	char *int_key = NULL, *journal_integrity_key = NULL, *journal_crypt_key = NULL;
 	int r;
 
 	if (integrity_key && ARG_SET(OPT_INTEGRITY_KEY_FILE_ID)) {
-		r = _read_mk(ARG_STR(OPT_INTEGRITY_KEY_FILE_ID), &int_key, ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID));
+		r = crypt_cli_read_mk(ARG_STR(OPT_INTEGRITY_KEY_FILE_ID), &int_key, ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID));
 		if (r < 0)
 			return r;
 		params->integrity_key_size = ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID);
 	}
 
 	if (ARG_SET(OPT_JOURNAL_INTEGRITY_KEY_FILE_ID)) {
-		r = _read_mk(ARG_STR(OPT_JOURNAL_INTEGRITY_KEY_FILE_ID), &journal_integrity_key, ARG_UINT32(OPT_JOURNAL_INTEGRITY_KEY_SIZE_ID));
+		r = crypt_cli_read_mk(ARG_STR(OPT_JOURNAL_INTEGRITY_KEY_FILE_ID), &journal_integrity_key, ARG_UINT32(OPT_JOURNAL_INTEGRITY_KEY_SIZE_ID));
 		if (r < 0) {
 			crypt_safe_free(int_key);
 			return r;
@@ -94,7 +62,7 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 	}
 
 	if (ARG_SET(OPT_JOURNAL_CRYPT_KEY_FILE_ID)) {
-		r = _read_mk(ARG_STR(OPT_JOURNAL_CRYPT_KEY_FILE_ID), &journal_crypt_key, ARG_UINT32(OPT_JOURNAL_CRYPT_KEY_SIZE_ID));
+		r = crypt_cli_read_mk(ARG_STR(OPT_JOURNAL_CRYPT_KEY_FILE_ID), &journal_crypt_key, ARG_UINT32(OPT_JOURNAL_CRYPT_KEY_SIZE_ID));
 		if (r < 0) {
 			crypt_safe_free(int_key);
 			crypt_safe_free(journal_integrity_key);
@@ -511,7 +479,23 @@ static void basic_options_cb(poptContext popt_context,
 		 const char *arg,
 		 void *data __attribute__((unused)))
 {
+	char msg[256];
+
 	tools_parse_arg_value(popt_context, tool_core_args[key->val].type, tool_core_args + key->val, arg, key->val, needs_size_conversion);
+
+	/* special cases additional handling */
+	switch (key->val) {
+	case OPT_INTEGRITY_KEY_SIZE_ID:
+		/* fall through */
+	case OPT_JOURNAL_INTEGRITY_KEY_SIZE_ID:
+		/* fall through */
+	case OPT_JOURNAL_CRYPT_KEY_SIZE_ID:
+		if (ARG_UINT32(key->val) > MAX_KEY_SIZE) {
+			snprintf(msg, sizeof(msg), _("Invalid --%s size."), key->longName);
+			usage(popt_context, EXIT_FAILURE, msg,
+			      poptGetInvocationName(popt_context));
+		}
+	}
 }
 
 int main(int argc, const char **argv)
