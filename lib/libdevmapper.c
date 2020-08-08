@@ -1305,6 +1305,12 @@ err:
 	return r;
 }
 
+static bool dm_device_exists(struct crypt_device *cd, const char *name)
+{
+	int r = dm_status_device(cd, name);
+	return (r >= 0 || r == -EEXIST);
+}
+
 static int _dm_create_device(struct crypt_device *cd, const char *name, const char *type,
 			     const char *uuid, struct crypt_dm_active_device *dmd)
 {
@@ -1354,8 +1360,11 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 	if (_dm_use_udev() && !_dm_task_set_cookie(dmt, &cookie, udev_flags))
 		goto out;
 
-	if (!dm_task_run(dmt))
+	if (!dm_task_run(dmt)) {
+		if (dm_device_exists(cd, name))
+			r = -EEXIST;
 		goto out;
+	}
 
 	if (dm_task_get_info(dmt, &dmi))
 		r = 0;
@@ -1720,6 +1729,7 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi,
 		goto out;
 	}
 
+	r = -EEXIST;
 	dm_get_next_target(dmt, NULL, &start, &length,
 			   &target_type, &params);
 
