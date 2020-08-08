@@ -42,6 +42,9 @@ Removes existing mapping <name>.
 
 For backward compatibility, there is \fBremove\fR command alias
 for the \fBclose\fR command.
+
+\fB<options>\fR can be [\-\-deferred] or [\-\-cancel\-deferred]
+
 .PP
 \fIstatus\fR <name>
 .IP
@@ -177,6 +180,12 @@ The file with the journal encryption key.
 .B "\-\-allow\-discards\fR"
 Allow the use of discard (TRIM) requests for the device.
 This option is available since the Linux kernel version 5.7.
+.TP
+.B "\-\-deferred"
+Defers device removal in \fIclose\fR command until the last user closes it.
+.TP
+.B "\-\-cancel\-deferred"
+Removes a previously configured deferred device removal in \fIclose\fR command.
 .TP
 The dm-integrity target is available since Linux kernel version 4.12.
 .TP
