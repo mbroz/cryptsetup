@@ -4161,21 +4161,26 @@ static int _activate_loopaes(struct crypt_device *cd,
 
 static int _activate_check_status(struct crypt_device *cd, const char *name, unsigned reload)
 {
-	crypt_status_info ci;
+	int r;
 
 	if (!name)
 		return 0;
 
-	ci = crypt_status(cd, name);
-	if (ci == CRYPT_INVALID) {
-		log_err(cd, _("Cannot use device %s, name is invalid or still in use."), name);
-		return -EINVAL;
-	} else if (ci >= CRYPT_ACTIVE && !reload) {
+	r = dm_status_device(cd, name);
+
+	if (r >= 0 && reload)
+		return 0;
+
+	if (r >= 0 || r == -EEXIST) {
 		log_err(cd, _("Device %s already exists."), name);
 		return -EEXIST;
 	}
 
-	return 0;
+	if (r == -ENODEV)
+		return 0;
+
+	log_err(cd, _("Cannot use device %s, name is invalid or still in use."), name);
+	return r;
 }
 
 // activation/deactivation of device mapping
