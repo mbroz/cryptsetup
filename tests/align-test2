@@ -112,7 +112,7 @@ format() # expected [forced] [encryption_sector_size]
 		$CRYPTSETUP close $DEV_NAME || fail
 	fi
 
-	ALIGN=$($CRYPTSETUP luksDump $DEV | tee  /tmp/last_dump | grep -A1 "0: crypt" | grep "offset:" | cut -d ' ' -f2)
+	ALIGN=$($CRYPTSETUP luksDump $DEV | grep -A1 "0: crypt" | grep "offset:" | cut -d ' ' -f2)
 	# echo "ALIGN = $ALIGN"
 
 	[ -z "$ALIGN" ] && fail
