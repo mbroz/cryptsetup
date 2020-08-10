@@ -29,7 +29,7 @@ ARG(OPT_BUFFER_SECTORS, '\0', POPT_ARG_STRING, N_("Buffers size"), N_("SECTORS")
 
 ARG(OPT_BITMAP_FLUSH_TIME, '\0', POPT_ARG_STRING, N_("Bitmap mode flush time"), N_("ms"), CRYPT_ARG_UINT32, {}, {})
 
-ARG(OPT_BITMAP_SECTORS_PER_BIT, '\0', POPT_ARG_STRING, N_("Number of 512-byte sectors per bit (bitmap mode)."), NULL, CRYPT_ARG_UINT32, {}, {})
+ARG(OPT_BITMAP_SECTORS_PER_BIT, '\0', POPT_ARG_STRING, N_("Number of 512-byte sectors per bit (bitmap mode)."), "INT", CRYPT_ARG_UINT32, {}, {})
 
 ARG(OPT_DATA_DEVICE, '\0', POPT_ARG_STRING, N_("Path to data device (if separated)"), N_("path"), CRYPT_ARG_STRING, {}, {})
 

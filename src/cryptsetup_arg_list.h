@@ -81,7 +81,7 @@ ARG(OPT_KEY_FILE, 'd', POPT_ARG_STRING, N_("Read the key from a file"), NULL, CR
 
 ARG(OPT_KEY_SIZE, 's', POPT_ARG_STRING, N_("The size of the encryption key"), N_("BITS"), CRYPT_ARG_UINT32, {}, OPT_KEY_SIZE_ACTIONS)
 
-ARG(OPT_KEY_SLOT, 'S', POPT_ARG_STRING, N_("Slot number for new key (default is first free)"), NULL, CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_SLOT }, OPT_KEY_SLOT_ACTIONS)
+ARG(OPT_KEY_SLOT, 'S', POPT_ARG_STRING, N_("Slot number for new key (default is first free)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_SLOT }, OPT_KEY_SLOT_ACTIONS)
 
 ARG(OPT_KEYFILE_OFFSET, '\0', POPT_ARG_STRING, N_("Number of bytes to skip in keyfile"), N_("bytes"), CRYPT_ARG_UINT64, {}, {})
 
@@ -107,7 +107,7 @@ ARG(OPT_OFFSET, 'o', POPT_ARG_STRING, N_("The start offset in the backend device
 
 ARG(OPT_PBKDF, '\0', POPT_ARG_STRING, N_("PBKDF algorithm (for LUKS2): argon2i, argon2id, pbkdf2"), NULL, CRYPT_ARG_STRING, {}, {})
 
-ARG(OPT_PBKDF_FORCE_ITERATIONS, '\0', POPT_ARG_STRING, N_("PBKDF iterations cost (forced, disables benchmark)"), NULL, CRYPT_ARG_UINT32, {}, {})
+ARG(OPT_PBKDF_FORCE_ITERATIONS, '\0', POPT_ARG_STRING, N_("PBKDF iterations cost (forced, disables benchmark)"), "LONG", CRYPT_ARG_UINT32, {}, {})
 
 ARG(OPT_PBKDF_MEMORY, '\0', POPT_ARG_STRING, N_("PBKDF memory cost limit"), N_("kilobytes"), CRYPT_ARG_UINT32, { .u32_value = DEFAULT_LUKS2_MEMORY_KB }, {})
 
@@ -135,7 +135,7 @@ ARG(OPT_RESILIENCE_HASH, '\0', POPT_ARG_STRING, N_("Reencryption hotzone checksu
 
 ARG(OPT_RESUME_ONLY, '\0', POPT_ARG_NONE, N_("Resume initialized LUKS2 reencryption only."), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_SECTOR_SIZE, '\0', POPT_ARG_STRING, N_("Encryption sector size (default: 512 bytes)"), NULL, CRYPT_ARG_UINT32, {}, OPT_SECTOR_SIZE_ACTIONS)
+ARG(OPT_SECTOR_SIZE, '\0', POPT_ARG_STRING, N_("Encryption sector size (default: 512 bytes)"), "INT", CRYPT_ARG_UINT32, {}, OPT_SECTOR_SIZE_ACTIONS)
 
 ARG(OPT_SERIALIZE_MEMORY_HARD_PBKDF, '\0', POPT_ARG_NONE, N_("Use global lock to serialize memory hard PBKDF (OOM workaround)"), NULL, CRYPT_ARG_BOOL, {}, OPT_SERIALIZE_MEMORY_HARD_PBKDF_ACTIONS)
 
@@ -159,11 +159,11 @@ ARG(OPT_TEST_PASSPHRASE, '\0', POPT_ARG_NONE, N_("Do not activate device, just c
 
 ARG(OPT_TIMEOUT, 't', POPT_ARG_STRING, N_("Timeout for interactive passphrase prompt (in seconds)"), N_("secs"), CRYPT_ARG_UINT32, {}, {})
 
-ARG(OPT_TOKEN_ID, '\0', POPT_ARG_STRING, N_("Token number (default: any)"), NULL, CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_TOKEN }, {})
+ARG(OPT_TOKEN_ID, '\0', POPT_ARG_STRING, N_("Token number (default: any)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_TOKEN }, {})
 
 ARG(OPT_TOKEN_ONLY, '\0', POPT_ARG_NONE, N_("Do not ask for passphrase if activation by token fails"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_TRIES, 'T', POPT_ARG_STRING, N_("How often the input of the passphrase can be retried"), NULL, CRYPT_ARG_UINT32, { .u32_value = 3 }, {})
+ARG(OPT_TRIES, 'T', POPT_ARG_STRING, N_("How often the input of the passphrase can be retried"), "INT", CRYPT_ARG_UINT32, { .u32_value = 3 }, {})
 
 ARG(OPT_TYPE, 'M', POPT_ARG_STRING, N_("Type of device metadata: luks, luks1, luks2, plain, loopaes, tcrypt, bitlk"), NULL, CRYPT_ARG_STRING, {}, {})
 
@@ -177,7 +177,7 @@ ARG(OPT_UUID, '\0', POPT_ARG_STRING, N_("UUID for device to use"), NULL, CRYPT_A
 
 ARG(OPT_VERACRYPT, '\0', POPT_ARG_NONE, N_("Scan also for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_VERACRYPT_PIM, '\0', POPT_ARG_STRING, N_("Personal Iteration Multiplier for VeraCrypt compatible device"), NULL, CRYPT_ARG_UINT32, {}, {})
+ARG(OPT_VERACRYPT_PIM, '\0', POPT_ARG_STRING, N_("Personal Iteration Multiplier for VeraCrypt compatible device"), "INT", CRYPT_ARG_UINT32, {}, {})
 
 ARG(OPT_VERACRYPT_QUERY_PIM, '\0', POPT_ARG_NONE, N_("Query Personal Iteration Multiplier for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, {})
 

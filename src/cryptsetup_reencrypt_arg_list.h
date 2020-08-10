@@ -49,7 +49,7 @@ ARG(OPT_KEYFILE_OFFSET, '\0', POPT_ARG_STRING, N_("Number of bytes to skip in ke
 
 ARG(OPT_KEYFILE_SIZE, 'l', POPT_ARG_STRING, N_("Limits the read from keyfile"), N_("bytes"), CRYPT_ARG_UINT32, {})
 
-ARG(OPT_KEY_SLOT, 'S', POPT_ARG_STRING, N_("Use only this slot (others will be disabled)"), NULL, CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_SLOT })
+ARG(OPT_KEY_SLOT, 'S', POPT_ARG_STRING, N_("Use only this slot (others will be disabled)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_SLOT })
 
 ARG(OPT_MASTER_KEY_FILE, '\0', POPT_ARG_STRING, N_("Read new volume (master) key from file"), NULL, CRYPT_ARG_STRING, {})
 
@@ -57,7 +57,7 @@ ARG(OPT_NEW, 'N', POPT_ARG_NONE, N_("Create new header on not encrypted device")
 
 ARG(OPT_PBKDF, '\0', POPT_ARG_STRING, N_("PBKDF algorithm (for LUKS2): argon2i, argon2id, pbkdf2"), NULL, CRYPT_ARG_STRING, {})
 
-ARG(OPT_PBKDF_FORCE_ITERATIONS, '\0', POPT_ARG_STRING, N_("PBKDF iterations cost (forced, disables benchmark)"), NULL, CRYPT_ARG_UINT32, {})
+ARG(OPT_PBKDF_FORCE_ITERATIONS, '\0', POPT_ARG_STRING, N_("PBKDF iterations cost (forced, disables benchmark)"), "LONG", CRYPT_ARG_UINT32, {})
 
 ARG(OPT_PBKDF_MEMORY, '\0', POPT_ARG_STRING, N_("PBKDF memory cost limit"), N_("kilobytes"), CRYPT_ARG_UINT32, { .u32_value = DEFAULT_LUKS2_MEMORY_KB })
 
@@ -67,7 +67,7 @@ ARG(OPT_PROGRESS_FREQUENCY, '\0', POPT_ARG_STRING, N_("Progress line update (in 
 
 ARG(OPT_REDUCE_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Reduce data device size (move data offset). DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {})
 
-ARG(OPT_TRIES, 'T', POPT_ARG_STRING, N_("How often the input of the passphrase can be retried"), NULL, CRYPT_ARG_UINT32, { .u32_value = 3 })
+ARG(OPT_TRIES, 'T', POPT_ARG_STRING, N_("How often the input of the passphrase can be retried"), "INT", CRYPT_ARG_UINT32, { .u32_value = 3 })
 
 ARG(OPT_TYPE, 'M', POPT_ARG_STRING,  N_("Type of LUKS metadata: luks1, luks2"), NULL, CRYPT_ARG_STRING, {})
 
