@@ -117,6 +117,14 @@ AC_FUNC_STRERROR_R
 
 dnl ==========================================================================
 
+AC_ARG_ENABLE([external-tokens],
+	AS_HELP_STRING([--enable-external-tokens], [enable external LUKS2 tokens]))
+if test "x$enable_external_tokens" = "xyes"; then
+	AC_DEFINE(USE_EXTERNAL_TOKENS, 1, [Use external tokens])
+fi
+
+dnl ==========================================================================
+
 AM_GNU_GETTEXT([external],[need-ngettext])
 AM_GNU_GETTEXT_VERSION([0.18.3])
 

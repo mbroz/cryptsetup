@@ -38,6 +38,7 @@ static token_handler token_handlers[LUKS2_TOKENS_MAX] = {
 static int
 crypt_token_load_external(const char *name, token_handler *ret)
 {
+#if USE_EXTERNAL_TOKENS
 	const crypt_token_handler *token = NULL;
 	void *handle;
 	char *error;
@@ -76,6 +77,9 @@ crypt_token_load_external(const char *name, token_handler *ret)
 	ret->dlhandle = handle;
 
 	return 0;
+#else
+	return -ENOTSUP;
+#endif
 }
 
 static int is_builtin_candidate(const char *type)
