@@ -24,9 +24,7 @@
 void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, struct tools_arg *arg, const char *popt_arg, int popt_val, bool(*needs_size_conv_fn)(unsigned arg_id))
 {
 	char *end, msg[128];
-	long int l;
 	long long int ll;
-	long unsigned int ul;
 	long long unsigned int ull;
 
 	errno = 0;
@@ -40,18 +38,18 @@ void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, s
 		arg->u.str_value = poptGetOptArg(popt_context);
 		break;
 	case CRYPT_ARG_INT32:
-		l = strtol(popt_arg, &end, 10);
-		if (*end || !*popt_arg || l > INT32_MAX || l < INT32_MIN || errno == ERANGE)
+		ll = strtoll(popt_arg, &end, 10);
+		if (*end || !*popt_arg || ll > INT32_MAX || ll < INT32_MIN || errno == ERANGE)
 			usage(popt_context, EXIT_FAILURE, poptStrerror(POPT_ERROR_BADNUMBER),
 			      poptGetInvocationName(popt_context));
-		arg->u.i32_value = l;
+		arg->u.i32_value = (int32_t)ll;
 		break;
 	case CRYPT_ARG_UINT32:
-		ul = strtoul(popt_arg, &end, 0);
-		if (*end || !*popt_arg || ul > UINT32_MAX || errno == ERANGE)
+		ull = strtoull(popt_arg, &end, 0);
+		if (*end || !*popt_arg || ull > UINT32_MAX || errno == ERANGE)
 			usage(popt_context, EXIT_FAILURE, poptStrerror(POPT_ERROR_BADNUMBER),
 			      poptGetInvocationName(popt_context));
-		arg->u.u32_value = ul;
+		arg->u.u32_value = (uint32_t)ull;
 		break;
 	case CRYPT_ARG_INT64:
 		ll = strtoll(popt_arg, &end, 10);
