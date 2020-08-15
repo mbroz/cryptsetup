@@ -93,8 +93,8 @@ integritysetup_SOURCES =	\
 	src/utils_tools.c	\
 	src/utils_blockdev.c	\
 	src/integritysetup.c	\
-	src/integritysetup_arg_list.h \
 	src/integritysetup_args.h \
+	src/integritysetup_arg_list.h \
 	src/cryptsetup.h
 
 integritysetup_LDADD = $(LDADD)	\
@@ -128,6 +128,8 @@ cryptsetup_reencrypt_SOURCES =		\
 	src/utils_args.c		\
 	src/utils_password.c		\
 	src/cryptsetup_reencrypt.c	\
+	src/cryptsetup_reencrypt_args.h	\
+	src/cryptsetup_reencrypt_arg_list.h \
 	src/cryptsetup.h
 
 cryptsetup_reencrypt_LDADD = $(LDADD)	\
