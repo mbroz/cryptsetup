@@ -191,7 +191,7 @@ A. Contributors
 
   * 1.7 Is there a mailing-list?
 
-  Instructions on how to subscribe to the mailing-list are at on the
+  Instructions on how to subscribe to the mailing-list are on the
   project website.  People are generally helpful and friendly on the
   list.
 
@@ -241,7 +241,7 @@ A. Contributors
   * 2.1 LUKS Container Setup mini-HOWTO
 
   This item tries to give you a very brief list of all the steps you
-  should go though when creating a new LUKS encrypted container, i.e. 
+  should go through when creating a new LUKS encrypted container, i.e.
   encrypted disk, partition or loop-file.
 
   01) All data will be lost, if there is data on the target, make a
@@ -343,7 +343,7 @@ A. Contributors
       See Section 6 for details.
 
   Done.  You can now use the encrypted file system to store data.  Be sure
-  to read though the rest of the FAQ, these are just the very basics.  In
+  to read through the rest of the FAQ, these are just the very basics.  In
   particular, there are a number of mistakes that are easy to make, but
   will compromise your security.
 
@@ -821,7 +821,7 @@ A. Contributors
   Remove the mapping at the end and you are done.
 
 
-  * 2.20 How to I wipe only the LUKS header?
+  * 2.20 How do I wipe only the LUKS header?
 
   This does _not_ describe an emergency wipe procedure, see Item 5.4 for
   that.  This procedure here is intended to be used when the data should
@@ -911,10 +911,10 @@ A. Contributors
   much longer.  Also take into account that up to 8 key-slots (LUKS2: up
   to 32 key-slots) have to be tried in order to find the right one.
 
-  If this is problem, you can add another key-slot using the slow machine
-  with the same passphrase and then remove the old key-slot.  The new
-  key-slot will have the unlock time adjusted to the slow machine.  Use
-  luksKeyAdd and then luksKillSlot or luksRemoveKey.  You can also use 
+  If this is the problem, you can add another key-slot using the slow
+  machine with the same passphrase and then remove the old key-slot.  The
+  new key-slot will have the unlock time adjusted to the slow machine.
+  Use luksKeyAdd and then luksKillSlot or luksRemoveKey.  You can also use
   the -i option to reduce iteration time (and security level) when setting 
   a passphrase.  Default is 1000 (1 sec) for LUKS1 and 2000 (2sec) for
   LUKS2.
@@ -991,7 +991,7 @@ A. Contributors
   LUKS and dm-crypt can give the RAM quite a workout, especially when
   combined with software RAID.  In particular the combination RAID5 +
   LUKS1 + XFS seems to uncover RAM problems that do not cause obvious
-  problems otherwise.  Symptoms vary, but often the problem manifest
+  problems otherwise.  Symptoms vary, but often the problem manifests
   itself when copying large amounts of data, typically several times
   larger than your main memory.
 
@@ -1085,7 +1085,7 @@ A. Contributors
 5. Security Aspects
 
 
-  * 5.1 How long is a secure passphrase ?
+  * 5.1 How long is a secure passphrase?
 
   This is just the short answer.  For more info and explanation of some of
   the terms used in this item, read the rest of Section 5.  The actual
@@ -1124,7 +1124,7 @@ A. Contributors
   i.e.  I estimated the attack to be too easy.  Nobody noticed ;-) On the
   plus side, the tables are now (2017) pretty much accurate.
 
-  More references can be found a the end of this document.  Note that
+  More references can be found at the end of this document.  Note that
   these are estimates from the defender side, so assuming something is
   easier than it actually is is fine.  An attacker may still have
   significantly higher cost than estimated here.
@@ -1215,7 +1215,7 @@ A. Contributors
   already lock you up.  Hidden containers (encryption hidden within
   encryption), as possible with Truecrypt, do not help either.  They will
   just assume the hidden container is there and unless you hand over the
-  key, you will stay locked up.  Don't have a hidden container?  Though
+  key, you will stay locked up.  Don't have a hidden container?  Tough
   luck.  Anybody could claim that.
 
   Still, if you are concerned about the LUKS header, use plain dm-crypt
@@ -1295,7 +1295,7 @@ A. Contributors
   medium.
 
   If your backup is on magnetic tape, I advise physical destruction by
-  shredding or burning, after (!) overwriting .  The problem with magnetic
+  shredding or burning, after (!) overwriting.  The problem with magnetic
   tape is that it has a higher dynamic range than HDDs and older data may
   well be recoverable after overwrites.  Also write-head alignment issues
   can lead to data not actually being deleted during overwrites.
@@ -1848,7 +1848,7 @@ A. Contributors
   document.  It does require advanced skills in this age of pervasive
   surveillance.)
 
-  Hence, LUKS has not kill option because it would do much more harm than
+  Hence, LUKS has no kill option because it would do much more harm than
   good.
 
   Still, if you have a good use-case (i.e.  non-abstract real-world
@@ -1918,7 +1918,7 @@ A. Contributors
 
     cryptsetup --header <file> luksOpen <device> </dev/mapper/name>
 
-  If that unlocks your keys-lot, you are good. Do not forget to close
+  If that unlocks your key-slot, you are good. Do not forget to close
   the device again.
 
   Under some circumstances (damaged header), this fails.  Then use the
@@ -2038,7 +2038,7 @@ A. Contributors
 
 
   * 6.5 Do I need a backup of the full partition? Would the header
-    and  key-slots not be enough?
+    and key-slots not be enough?
 
   Backup protects you against two things: Disk loss or corruption and user
   error.  By far the most questions on the dm-crypt mailing list about how
@@ -2781,7 +2781,7 @@ offset  length  name                  data type  description
 
   Mostly not.  The header has changed in its structure, but the
   crytpgraphy is the same.  The one exception is that PBKDF2 has been
-  replaced by Argon2 to give better resilience against attacks attacks by
+  replaced by Argon2 to give better resilience against attacks by
   graphics cards and other hardware with lots of computing power but
   limited local memory per computing element.
 
@@ -2865,7 +2865,7 @@ offset  length  name                  data type  description
   second/slot unlock time, LUKS2 adjusts the memory parameter down if
   needed.  In the other direction, it will respect available memory and not
   exceed it.  On a current PC, the memory parameter will be somewhere around
-  1GB, which should quite generous.  The minimum I was able to set in an
+  1GB, which should be quite generous.  The minimum I was able to set in an
   experiment with "-i 1" was 400kB of memory and that is too low to be
   secure.  A Raspberry Pi would probably end up somewhere around 50MB (have
   not tried it) and that should still be plenty.
