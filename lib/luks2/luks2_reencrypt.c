@@ -2882,7 +2882,7 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	if (flags & CRYPT_REENCRYPT_RECOVERY)
 		return reencrypt_recovery_by_passphrase(cd, hdr, keyslot_old, keyslot_new, passphrase, passphrase_size);
 
-	if (cipher) {
+	if (cipher && !crypt_cipher_wrapped_key(cipher, cipher_mode)) {
 		r = crypt_keyslot_get_key_size(cd, keyslot_new);
 		if (r < 0)
 			return r;
