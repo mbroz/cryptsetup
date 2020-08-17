@@ -45,7 +45,7 @@ void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, s
 		arg->u.i32_value = (int32_t)ll;
 		break;
 	case CRYPT_ARG_UINT32:
-		ull = strtoull(popt_arg, &end, 0);
+		ull = strtoull(popt_arg, &end, 10);
 		if (*end || !*popt_arg || ull > UINT32_MAX || errno == ERANGE)
 			usage(popt_context, EXIT_FAILURE, poptStrerror(POPT_ERROR_BADNUMBER),
 			      poptGetInvocationName(popt_context));
@@ -67,7 +67,7 @@ void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, s
 				      poptGetInvocationName(popt_context));
 			}
 		} else {
-			ull = strtoull(popt_arg, &end, 0);
+			ull = strtoull(popt_arg, &end, 10);
 			if (*end || !*popt_arg || errno == ERANGE)
 				usage(popt_context, EXIT_FAILURE, poptStrerror(POPT_ERROR_BADNUMBER),
 				      poptGetInvocationName(popt_context));
