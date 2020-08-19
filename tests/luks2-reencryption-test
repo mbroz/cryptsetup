@@ -19,6 +19,7 @@ DEV_NAME2=reenc97682
 IMG=reenc-data
 IMG_HDR=/tmp/$IMG.hdr
 KEY1=key1
+VKEY1=vkey1
 PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
@@ -96,7 +97,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$OVRDEV-err ] && dmsetup remove --retry $OVRDEV-err 2>/dev/null
 	[ -n "$LOOPDEV" ] && losetup -d $LOOPDEV
 	unset LOOPDEV
-	rm -f $IMG $IMG_HDR $KEY1 $DEVBIG >/dev/null 2>&1
+	rm -f $IMG $IMG_HDR $KEY1 $VKEY1 $DEVBIG >/dev/null 2>&1
 	rmmod scsi_debug 2> /dev/null
 	scsi_debug_teardown $DEV
 }
@@ -171,6 +172,11 @@ function prepare() # $1 dev1_siz
 
 	if [ ! -e $KEY1 ]; then
 		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
+	fi
+
+	if [ ! -e $VKEY1 ]; then
+		echo -n $'\x44\xc6\x74\x4f\x41\x4e\x50\xc0\x79\xc2\x2d\x5b\x5f\x68\x84\x17' >$VKEY1
+		echo -n $'\x9c\x03\xba\xbe\x4d\x0f\x9a\x75\xb3\x90\x70\x32\x0a\xf8\xae\xc4'>>$VKEY1
 	fi
 
 	add_scsi_device $@
@@ -1365,6 +1371,18 @@ echo $PWD1 | $CRYPTSETUP luksKillSlot $DEV 1 || fail
 echo -e "$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD2" | $CRYPTSETUP reencrypt $DEV -q 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --resume-only -q 2>/dev/null && fail
 echo -e "$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1" | $CRYPTSETUP reencrypt $DEV -q  || fail
+
+echo "[23] Reencryption with specified new volume key"
+prepare dev_size_mb=32
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 256 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -S0 $FAST_PBKDF_ARGON --master-key-file $VKEY1 -s 128 || fail
+check_hash $PWD1 $HASH1
+$CRYPTSETUP luksErase -q $DEV || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_ARGON --master-key-file $VKEY1 -s 128 $DEV || fail
+check_hash $PWD1 $HASH1
 
 remove_mapping
 exit 0
