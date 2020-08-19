@@ -3675,6 +3675,12 @@ static void Luks2Reencryption(void)
 		.luks2 = &params2,
 	};
 
+	const char *mk_hex = "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(mk_hex) / 2;
+	char key[128];
+
+	crypt_decode_key(key, mk_hex, key_size);
+
 	/* reencryption currently depends on kernel keyring support in dm-crypt */
 	if (!t_dm_crypt_keyring_support())
 		return;
@@ -4316,6 +4322,33 @@ static void Luks2Reencryption(void)
 	EQ_(cad.flags & CRYPT_ACTIVATE_KEYRING_KEY, 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
+
+	_cleanup_dmdevices();
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_header_size + 16));
+
+	rparams.mode = CRYPT_REENCRYPT_REENCRYPT;
+	rparams.direction = CRYPT_REENCRYPT_FORWARD;
+	rparams.resilience = "none";
+	rparams.hash = NULL;
+	rparams.data_shift = 0;
+	rparams.max_hotzone_size = 0;
+	rparams.device_size = 0;
+	rparams.luks2 = &params2;
+	rparams.flags = 0;
+
+	/* Test support for specific key reencryption */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 3, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 3);
+	EQ_(crypt_keyslot_add_by_key(cd, 9, key, key_size, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 9);
+	EQ_(crypt_keyslot_add_by_key(cd, 10, key, key_size, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_DIGEST_REUSE ), 10);
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 3, 9, "aes", "xts-plain64", &rparams));
+	OK_(crypt_reencrypt(cd, NULL));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
+	OK_(crypt_keyslot_destroy(cd, 9));
+	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
+	crypt_free(cd);
 
 	_cleanup_dmdevices();
 #endif
