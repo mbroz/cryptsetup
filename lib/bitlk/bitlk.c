@@ -506,6 +506,11 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	}
 
 	params->sector_size = le16_to_cpu(sig.sector_size);
+	if (params->sector_size == 0) {
+		log_dbg(cd, "Got sector size 0, assuming 512.");
+		params->sector_size = SECTOR_SIZE;
+	}
+
 	if (!(params->sector_size == 512 || params->sector_size == 4096)) {
 		log_err(cd, _("Unsupported sector size %" PRIu16 "."), params->sector_size);
 		r = -EINVAL;
