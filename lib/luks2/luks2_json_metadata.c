@@ -1289,6 +1289,8 @@ static const struct  {
 	{ CRYPT_ACTIVATE_SAME_CPU_CRYPT,         "same-cpu-crypt" },
 	{ CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS, "submit-from-crypt-cpus" },
 	{ CRYPT_ACTIVATE_NO_JOURNAL,             "no-journal" },
+	{ CRYPT_ACTIVATE_NO_READ_WORKQUEUE,      "no-read-workqueue" },
+	{ CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE,     "no-write-workqueue" },
 	{ 0, NULL }
 };
 

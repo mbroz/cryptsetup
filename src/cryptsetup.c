@@ -64,6 +64,8 @@ static int opt_shared = 0;
 static int opt_allow_discards = 0;
 static int opt_perf_same_cpu_crypt = 0;
 static int opt_perf_submit_from_crypt_cpus = 0;
+static int opt_perf_no_read_workqueue = 0;
+static int opt_perf_no_write_workqueue = 0;
 static int opt_test_passphrase = 0;
 static int opt_tcrypt_hidden = 0;
 static int opt_tcrypt_system = 0;
@@ -181,6 +183,12 @@ static void _set_activation_flags(uint32_t *flags)
 
 	if (opt_perf_submit_from_crypt_cpus)
 		*flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
+
+	if (opt_perf_no_read_workqueue)
+		*flags |= CRYPT_ACTIVATE_NO_READ_WORKQUEUE;
+
+	if (opt_perf_no_write_workqueue)
+		*flags |= CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE;
 
 	if (opt_integrity_nojournal)
 		*flags |= CRYPT_ACTIVATE_NO_JOURNAL;
@@ -815,11 +823,15 @@ static int action_status(void)
 					   (cad.flags & CRYPT_ACTIVATE_SUSPENDED) ? " (suspended)" : "");
 		if (cad.flags & (CRYPT_ACTIVATE_ALLOW_DISCARDS|
 				 CRYPT_ACTIVATE_SAME_CPU_CRYPT|
-				 CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS))
-			log_std("  flags:   %s%s%s\n",
+				 CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS|
+				 CRYPT_ACTIVATE_NO_READ_WORKQUEUE|
+				 CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE))
+			log_std("  flags:   %s%s%s%s%s\n",
 				(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? "discards " : "",
 				(cad.flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? "same_cpu_crypt " : "",
-				(cad.flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? "submit_from_crypt_cpus" : "");
+				(cad.flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? "submit_from_crypt_cpus " : "",
+				(cad.flags & CRYPT_ACTIVATE_NO_READ_WORKQUEUE) ? "no_read_workqueue " : "",
+				(cad.flags & CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) ? "no_write_workqueue" : "");
 	}
 out:
 	crypt_free(cd);
@@ -3535,6 +3547,8 @@ int main(int argc, const char **argv)
 		{ "force-password",    '\0', POPT_ARG_NONE, &opt_force_password,        0, N_("Disable password quality check (if enabled)"), NULL },
 		{ "perf-same_cpu_crypt",'\0', POPT_ARG_NONE, &opt_perf_same_cpu_crypt,  0, N_("Use dm-crypt same_cpu_crypt performance compatibility option"), NULL },
 		{ "perf-submit_from_crypt_cpus",'\0', POPT_ARG_NONE, &opt_perf_submit_from_crypt_cpus,0,N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option"), NULL },
+		{ "perf-no_read_workqueue",'\0', POPT_ARG_NONE, &opt_perf_no_read_workqueue,0,N_("Bypass dm-crypt workqueue and process read requests synchronously"), NULL },
+		{ "perf-no_write_workqueue",'\0', POPT_ARG_NONE, &opt_perf_no_write_workqueue,0,N_("Bypass dm-crypt workqueue and process write requests synchronously"), NULL },
 		{ "deferred",          '\0', POPT_ARG_NONE, &opt_deferred_remove,       0, N_("Device removal is deferred until the last user closes it"), NULL },
 		{ "serialize-memory-hard-pbkdf", '\0', POPT_ARG_NONE, &opt_serialize_memory_hard_pbkdf, 0, N_("Use global lock to serialize memory hard PBKDF (OOM workaround)"), NULL },
 		{ "iter-time",         'i',  POPT_ARG_INT, &opt_iteration_time,         0, N_("PBKDF iteration time for LUKS (in ms)"), N_("msecs") },

@@ -174,6 +174,9 @@ static void _dm_set_crypt_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 20, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_BITLK_ELEPHANT_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 22, 0, crypt_maj, crypt_min, crypt_patch))
+		_dm_flags |= DM_CRYPT_NO_WORKQUEUE_SUPPORTED;
+
 	_dm_crypt_checked = true;
 }
 
@@ -618,6 +621,10 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)
 		num_options++;
+	if (flags & CRYPT_ACTIVATE_NO_READ_WORKQUEUE)
+		num_options++;
+	if (flags & CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE)
+		num_options++;
 	if (flags & CRYPT_ACTIVATE_IV_LARGE_SECTORS)
 		num_options++;
 	if (tgt->u.crypt.integrity)
@@ -630,10 +637,12 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		*sector_feature = '\0';
 
 	if (num_options) {
-		snprintf(features, sizeof(features)-1, " %d%s%s%s%s%s%s", num_options,
+		snprintf(features, sizeof(features)-1, " %d%s%s%s%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? " allow_discards" : "",
 		(flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? " same_cpu_crypt" : "",
 		(flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? " submit_from_crypt_cpus" : "",
+		(flags & CRYPT_ACTIVATE_NO_READ_WORKQUEUE) ? " no_read_workqueue" : "",
+		(flags & CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) ? " no_write_workqueue" : "",
 		(flags & CRYPT_ACTIVATE_IV_LARGE_SECTORS) ? " iv_large_sectors" : "",
 		sector_feature, integrity_dm);
 	} else
@@ -1610,6 +1619,14 @@ static int check_retry(struct crypt_device *cd, uint32_t *dmd_flags, uint32_t dm
 		ret = 1;
 	}
 
+	/* Drop no workqueue options if not supported */
+	if ((*dmd_flags & (CRYPT_ACTIVATE_NO_READ_WORKQUEUE | CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE)) &&
+	    !(dmt_flags & DM_CRYPT_NO_WORKQUEUE_SUPPORTED)) {
+		log_dbg(cd, "dm-crypt does not support performance options");
+		*dmd_flags = *dmd_flags & ~(CRYPT_ACTIVATE_NO_READ_WORKQUEUE | CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE);
+		ret = 1;
+	}
+
 	return ret;
 }
 
@@ -1632,12 +1649,19 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		goto out;
 
 	if (r && (dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR || dmd->segment.type == DM_ZERO) &&
-		check_retry(cd, &dmd->flags, dmt_flags))
+		check_retry(cd, &dmd->flags, dmt_flags)) {
+		log_dbg(cd, "Retrying open without incompatible options.");
 		r = _dm_create_device(cd, name, type, dmd->uuid, dmd);
+	}
 
 	if (r == -EINVAL &&
 	    dmd->flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) &&
 	    !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
+		log_err(cd, _("Requested dm-crypt performance options are not supported."));
+
+	if (r == -EINVAL &&
+	    dmd->flags & (CRYPT_ACTIVATE_NO_READ_WORKQUEUE | CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) &&
+	    !(dmt_flags & DM_CRYPT_NO_WORKQUEUE_SUPPORTED))
 		log_err(cd, _("Requested dm-crypt performance options are not supported."));
 
 	if (r == -EINVAL && dmd->flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
@@ -1697,7 +1721,10 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 
 	if (r == -EINVAL && (dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR)) {
 		if ((dmd->flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)) &&
-	    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
+		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED | DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
+			log_err(cd, _("Requested dm-crypt performance options are not supported."));
+		if ((dmd->flags & (CRYPT_ACTIVATE_NO_READ_WORKQUEUE | CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE)) &&
+		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_CRYPT_NO_WORKQUEUE_SUPPORTED))
 			log_err(cd, _("Requested dm-crypt performance options are not supported."));
 		if ((dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
 		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_DISCARDS_SUPPORTED))
@@ -1941,6 +1968,10 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				*act_flags |= CRYPT_ACTIVATE_SAME_CPU_CRYPT;
 			else if (!strcasecmp(arg, "submit_from_crypt_cpus"))
 				*act_flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
+			else if (!strcasecmp(arg, "no_read_workqueue"))
+				*act_flags |= CRYPT_ACTIVATE_NO_READ_WORKQUEUE;
+			else if (!strcasecmp(arg, "no_write_workqueue"))
+				*act_flags |= CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE;
 			else if (!strcasecmp(arg, "iv_large_sectors"))
 				*act_flags |= CRYPT_ACTIVATE_IV_LARGE_SECTORS;
 			else if (sscanf(arg, "integrity:%u:", &val) == 1) {
