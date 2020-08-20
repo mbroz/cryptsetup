@@ -123,11 +123,12 @@ if [ -z "$DM_PERF_CPU" ]; then
 	echo "TEST SKIPPED: dmcrypt options not available"
 	SKIP_COUNT=$((SKIP_COUNT+1))
 else
-	# plain
+	echo -n "PLAIN: same_cpu_crypt submit_from_cpus "
 	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
 	$CRYPTSETUP close $DEV_NAME || fail
+	echo -n "allow_discards "
 	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
@@ -146,17 +147,20 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
 	echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 $DEV $DEV_NAME2 2>/dev/null && fail
 	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
+		echo -n "no_read_workqueue no_write_workqueue"
 		echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 -q $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
 	fi
 	$CRYPTSETUP close $DEV_NAME || fail
+	echo
 
-	# LUKS
+	echo -n "LUKS: same_cpu_crypt submit_from_cpus "
 	echo -e "$PWD1" | $CRYPTSETUP open --type luks1 $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
 	$CRYPTSETUP close $DEV_NAME || fail
+	echo -n "allow_discards "
 	echo -e "$PWD1" | $CRYPTSETUP open --type luks1 $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
@@ -173,13 +177,16 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
 	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
 	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
+		echo -n "no_read_workqueue no_write_workqueue"
 		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME  --perf-no_read_workqueue --perf-no_write_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
 	fi
 	$CRYPTSETUP close $DEV_NAME || fail
+	echo
 
 	format luks2
+	echo -n "LUKS2: same_cpu_crypt submit_from_cpus "
 	echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus --persistent || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
@@ -189,6 +196,7 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
 	$CRYPTSETUP close $DEV_NAME || fail
+	echo -n "allow_discards [persistent flags] "
 	echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards --persistent || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
@@ -226,10 +234,12 @@ else
 	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --disable-keyring || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q keyring && fail
 	if [ -n "$DM_KEYRING" ]; then
+		echo -n "keyring "
 		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q keyring || fail
 	fi
 	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
+		echo -n "no_read_workqueue no_write_workqueue"
 		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue --persistent || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
@@ -240,6 +250,7 @@ else
 	fi
 	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail
+	echo
 fi
 
 echo "[3] Kernel dmcrypt sector size options"
