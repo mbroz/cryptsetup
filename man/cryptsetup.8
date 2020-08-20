@@ -146,7 +146,8 @@ Mandatory parametrs are identical to those of an open action for respective
 device type.
 
 You may change following parameters on all devices \-\-perf\-same_cpu_crypt,
-\-\-perf\-submit_from_crypt_cpus and \-\-allow\-discards.
+\-\-perf\-submit_from_crypt_cpus, \-\-perf-no_read_workqueue, \-\-no_write_workqueue
+and \-\-allow\-discards.
 
 Refreshing device without any optional parameter will refresh the device
 with default setting (respective to device type).
@@ -1209,6 +1210,15 @@ This option is only relevant for \fIopen\fR action.
 performance tuning, use only if you need a change to default dm-crypt
 behaviour. Needs kernel 4.0 or later.
 .TP
+.B "\-\-perf\-no_read_workqueue, \-\-perf\-no_write_workqueue\fR"
+Bypass dm-crypt internal workqueue and process read or write requests
+synchronously.
+This option is only relevant for \fIopen\fR action.
+
+\fBNOTE:\fR These options are available only for low-level dm-crypt
+performance tuning, use only if you need a change to default dm-crypt
+behaviour. Needs kernel 5.9 or later.
+.TP
 .B "\-\-test\-passphrase\fR"
 Do not activate the device, just verify passphrase.
 This option is only relevant for \fIopen\fR action (the device
@@ -1325,7 +1335,8 @@ the flag you want to remove (e.g. to disable persistently stored discard flag,
 use \fI\-\-persistent\fR without \fI\-\-allow-discards\fR).
 
 Only \fI\-\-allow-discards\fR, \fI\-\-perf\-same_cpu_crypt\fR,
-\fI\-\-perf\-submit_from_crypt_cpus\fR and \fI\-\-integrity\-no\-journal\fR
+\fI\-\-perf\-submit_from_crypt_cpus\fR, \fI\-\-perf\-no_read_workqueue\fR,
+\fI\-\-perf\-no_write_workqueue\fR and \fI\-\-integrity\-no\-journal\fR
 can be stored persistently.
 .TP
 .B "\-\-refresh"

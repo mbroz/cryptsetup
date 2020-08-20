@@ -111,6 +111,12 @@ static void _set_activation_flags(uint32_t *flags)
 	if (ARG_SET(OPT_PERF_SUBMIT_FROM_CRYPT_CPUS_ID))
 		*flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
 
+	if (ARG_SET(OPT_PERF_NO_READ_WORKQUEUE_ID))
+		*flags |= CRYPT_ACTIVATE_NO_READ_WORKQUEUE;
+
+	if (ARG_SET(OPT_PERF_NO_WRITE_WORKQUEUE_ID))
+		*flags |= CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE;
+
 	if (ARG_SET(OPT_INTEGRITY_NO_JOURNAL_ID))
 		*flags |= CRYPT_ACTIVATE_NO_JOURNAL;
 
@@ -766,11 +772,15 @@ static int action_status(void)
 					   (cad.flags & CRYPT_ACTIVATE_SUSPENDED) ? " (suspended)" : "");
 		if (cad.flags & (CRYPT_ACTIVATE_ALLOW_DISCARDS|
 				 CRYPT_ACTIVATE_SAME_CPU_CRYPT|
-				 CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS))
-			log_std("  flags:   %s%s%s\n",
+				 CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS|
+				 CRYPT_ACTIVATE_NO_READ_WORKQUEUE|
+				 CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE))
+			log_std("  flags:   %s%s%s%s%s\n",
 				(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? "discards " : "",
 				(cad.flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? "same_cpu_crypt " : "",
-				(cad.flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? "submit_from_crypt_cpus" : "");
+				(cad.flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? "submit_from_crypt_cpus " : "",
+				(cad.flags & CRYPT_ACTIVATE_NO_READ_WORKQUEUE) ? "no_read_workqueue " : "",
+				(cad.flags & CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) ? "no_write_workqueue" : "");
 	}
 out:
 	crypt_free(cd);

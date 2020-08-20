@@ -38,6 +38,7 @@ skip()
 
 function dm_crypt_features()
 {
+	modprobe dm-crypt || fail "dm-crypt failed to load"
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
 
@@ -61,6 +62,9 @@ function dm_crypt_features()
 	if [ $VER_MIN -gt 18 -o \( $VER_MIN -eq 18 -a $VER_PTC -ge 1 \) ]; then
 		 test -d /proc/sys/kernel/keys && DM_KEYRING=1
 	fi
+
+	[ $VER_MIN -lt 22 ] && return
+	DM_PERF_NO_WORKQUEUE=1
 }
 
 function dm_crypt_keyring_support()
@@ -141,7 +145,13 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q discards && fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
 	echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 $DEV $DEV_NAME2 2>/dev/null && fail
+	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
+		echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 -q $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
+	fi
 	$CRYPTSETUP close $DEV_NAME || fail
+
 	# LUKS
 	echo -e "$PWD1" | $CRYPTSETUP open --type luks1 $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
@@ -162,6 +172,11 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q discards && fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
 	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
+	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
+		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME  --perf-no_read_workqueue --perf-no_write_workqueue || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
+	fi
 	$CRYPTSETUP close $DEV_NAME || fail
 
 	format luks2
@@ -213,6 +228,15 @@ else
 	if [ -n "$DM_KEYRING" ]; then
 		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q keyring || fail
+	fi
+	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
+		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue --persistent || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
+		$CRYPTSETUP close $DEV_NAME || fail
+		echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
 	fi
 	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail

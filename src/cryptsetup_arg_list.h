@@ -113,6 +113,10 @@ ARG(OPT_PBKDF_MEMORY, '\0', POPT_ARG_STRING, N_("PBKDF memory cost limit"), N_("
 
 ARG(OPT_PBKDF_PARALLEL, '\0', POPT_ARG_STRING, N_("PBKDF parallel cost"), N_("threads"), CRYPT_ARG_UINT32, { .u32_value = DEFAULT_LUKS2_PARALLEL_THREADS }, {})
 
+ARG(OPT_PERF_NO_READ_WORKQUEUE, '\0', POPT_ARG_NONE, N_("Bypass dm-crypt workqueue and process read requests synchronously"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+ARG(OPT_PERF_NO_WRITE_WORKQUEUE, '\0', POPT_ARG_NONE, N_("Bypass dm-crypt workqueue and process write requests synchronously"), NULL, CRYPT_ARG_BOOL, {}, {})
+
 ARG(OPT_PERF_SAME_CPU_CRYPT, '\0', POPT_ARG_NONE, N_("Use dm-crypt same_cpu_crypt performance compatibility option"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_PERF_SUBMIT_FROM_CRYPT_CPUS, '\0', POPT_ARG_NONE, N_("Use dm-crypt submit_from_crypt_cpus performance compatibility option"), NULL, CRYPT_ARG_BOOL, {}, {})
