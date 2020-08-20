@@ -37,6 +37,7 @@ static uint64_t hash_offset = 0;
 static uint64_t fec_offset = 0;
 static const char *opt_uuid = NULL;
 static int opt_restart_on_corruption = 0;
+static int opt_panic_on_corruption = 0;
 static int opt_ignore_corruption = 0;
 static int opt_ignore_zero_blocks = 0;
 static int opt_check_at_most_once = 0;
@@ -153,6 +154,8 @@ static int _activate(const char *dm_device,
 		activate_flags |= CRYPT_ACTIVATE_IGNORE_CORRUPTION;
 	if (opt_restart_on_corruption)
 		activate_flags |= CRYPT_ACTIVATE_RESTART_ON_CORRUPTION;
+	if (opt_panic_on_corruption)
+		activate_flags |= CRYPT_ACTIVATE_PANIC_ON_CORRUPTION;
 	if (opt_ignore_zero_blocks)
 		activate_flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
 	if (opt_check_at_most_once)
@@ -349,11 +352,13 @@ static int action_status(int arg)
 
 		if (cad.flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
 				 CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
+				 CRYPT_ACTIVATE_PANIC_ON_CORRUPTION|
 				 CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS|
 				 CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE))
-			log_std("  flags:       %s%s%s%s\n",
+			log_std("  flags:       %s%s%s%s%s\n",
 				(cad.flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? "ignore_corruption " : "",
 				(cad.flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? "restart_on_corruption " : "",
+				(cad.flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION) ? "panic_on_corruption " : "",
 				(cad.flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? "ignore_zero_blocks " : "",
 				(cad.flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? "check_at_most_once" : "");
 	}
@@ -477,6 +482,7 @@ int main(int argc, const char **argv)
 		{ "uuid",            '\0', POPT_ARG_STRING, &opt_uuid,       0, N_("UUID for device to use"), NULL },
 		{ "root-hash-signature",'\0', POPT_ARG_STRING, &opt_root_hash_signature,  0, N_("Path to root hash signature file"), NULL },
 		{ "restart-on-corruption", 0,POPT_ARG_NONE,&opt_restart_on_corruption, 0, N_("Restart kernel if corruption is detected"), NULL },
+		{ "panic-on-corruption", 0,POPT_ARG_NONE, &opt_panic_on_corruption, 0, N_("Panic kernel if corruption is detected"), NULL },
 		{ "ignore-corruption", 0,  POPT_ARG_NONE, &opt_ignore_corruption,  0, N_("Ignore corruption, log it only"), NULL },
 		{ "ignore-zero-blocks", 0, POPT_ARG_NONE, &opt_ignore_zero_blocks, 0, N_("Do not verify zeroed blocks"), NULL },
 		{ "check-at-most-once", 0, POPT_ARG_NONE, &opt_check_at_most_once, 0, N_("Verify data block only the first time it is read"), NULL },
@@ -590,6 +596,11 @@ int main(int argc, const char **argv)
 	if (opt_ignore_corruption && opt_restart_on_corruption)
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --ignore-corruption and --restart-on-corruption cannot be used together."),
+		poptGetInvocationName(popt_context));
+
+	if (opt_panic_on_corruption && opt_restart_on_corruption)
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --panic-on-corruption and --restart-on-corruption cannot be used together."),
 		poptGetInvocationName(popt_context));
 
 	if (opt_debug) {

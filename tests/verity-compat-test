@@ -399,6 +399,9 @@ if check_version 1 3; then
 	if check_version 1 4; then
 		check_option 512 $HASH $SALT 1 sha256 "--check-at-most-once" "check_at_most_once"
 	fi
+	if check_version 1 7; then
+		check_option 512 $HASH $SALT 1 sha256 "--panic-on-corruption" "panic_on_corruption"
+	fi
 fi
 
 echo "Veritysetup [hash-offset bigger than 2G works] "

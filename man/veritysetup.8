@@ -40,8 +40,8 @@ Creates a mapping with <name> backed by device <data_device> and using
 The <root_hash> is a hexadecimal string.
 
 \fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock,
-\-\-ignore-corruption or \-\-restart-on-corruption, \-\-ignore-zero-blocks,
-\-\-check-at-most-once, \-\-root-hash-signature]
+\-\-ignore-corruption or \-\-restart-on-corruption, \-\-panic-on-corruption,
+\-\-ignore-zero-blocks, \-\-check-at-most-once, \-\-root-hash-signature]
 
 If option \-\-no-superblock is used, you have to use as the same options
 as in initial format operation.
@@ -117,12 +117,13 @@ Use the provided UUID for format command instead of generating new one.
 The UUID must be provided in standard UUID format,
 e.g. 12345678-1234-1234-1234-123456789abc.
 .TP
-.B "\-\-ignore-corruption", "\-\-restart-on-corruption"
+.B "\-\-ignore-corruption", "\-\-restart-on-corruption", "\-\-panic-on-corruption"
 Defines what to do if data integrity problem is detected (data corruption).
 
 Without these options kernel fails the IO operation with I/O error.
 With \-\-ignore-corruption option the corruption is only logged.
-With \-\-restart-on-corruption the kernel is restarted immediately.
+With \-\-restart-on-corruption or  \-\-panic-on-corruption the kernel
+is restarted (panicked) immediately.
 (You have to provide way how to avoid restart loops.)
 
 \fBWARNING:\fR Use these options only for very specific cases.
