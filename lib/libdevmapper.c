@@ -205,6 +205,9 @@ static void _dm_set_verity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 5, 0, verity_maj, verity_min, verity_patch))
 		_dm_flags |= DM_VERITY_SIGNATURE_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 7, 0, verity_maj, verity_min, verity_patch))
+		_dm_flags |= DM_VERITY_PANIC_CORRUPTION_SUPPORTED;
+
 	_dm_verity_checked = true;
 }
 
@@ -693,13 +696,18 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 	vp = tgt->u.verity.vp;
 
 	/* These flags are not compatible */
+	if ((flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) &&
+	    (flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION))
+		flags &= ~CRYPT_ACTIVATE_RESTART_ON_CORRUPTION;
 	if ((flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) &&
-	    (flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION))
+	    (flags & (CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|CRYPT_ACTIVATE_PANIC_ON_CORRUPTION)))
 		flags &= ~CRYPT_ACTIVATE_IGNORE_CORRUPTION;
 
 	if (flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION)
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION)
+		num_options++;
+	if (flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION)
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS)
 		num_options++;
@@ -723,9 +731,10 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 		*verity_verify_args = '\0';
 
 	if (num_options)
-		snprintf(features, sizeof(features)-1, " %d%s%s%s%s", num_options,
+		snprintf(features, sizeof(features)-1, " %d%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? " ignore_corruption" : "",
 		(flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? " restart_on_corruption" : "",
+		(flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION) ? " panic_on_corruption" : "",
 		(flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? " ignore_zero_blocks" : "",
 		(flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? " check_at_most_once" : "");
 	else
@@ -1638,6 +1647,10 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	    !(dmt_flags & DM_VERITY_ON_CORRUPTION_SUPPORTED))
 		log_err(cd, _("Requested dm-verity data corruption handling options are not supported."));
 
+	if (r == -EINVAL && dmd->flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION &&
+	    !(dmt_flags & DM_VERITY_PANIC_CORRUPTION_SUPPORTED))
+		log_err(cd, _("Requested dm-verity data corruption handling options are not supported."));
+
 	if (r == -EINVAL && dmd->segment.type == DM_VERITY &&
 	    dmd->segment.u.verity.fec_device && !(dmt_flags & DM_VERITY_FEC_SUPPORTED))
 		log_err(cd, _("Requested dm-verity FEC options are not supported."));
@@ -2178,6 +2191,8 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 				*act_flags |= CRYPT_ACTIVATE_IGNORE_CORRUPTION;
 			else if (!strcasecmp(arg, "restart_on_corruption"))
 				*act_flags |= CRYPT_ACTIVATE_RESTART_ON_CORRUPTION;
+			else if (!strcasecmp(arg, "panic_on_corruption"))
+				*act_flags |= CRYPT_ACTIVATE_PANIC_ON_CORRUPTION;
 			else if (!strcasecmp(arg, "ignore_zero_blocks"))
 				*act_flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
 			else if (!strcasecmp(arg, "check_at_most_once"))

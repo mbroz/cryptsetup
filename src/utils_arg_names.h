@@ -99,6 +99,7 @@
 #define OPT_NEW_KEYFILE_OFFSET		"new-keyfile-offset"
 #define OPT_NEW_KEYFILE_SIZE		"new-keyfile-size"
 #define OPT_OFFSET			"offset"
+#define OPT_PANIC_ON_CORRUPTION		"panic-on-corruption"
 #define OPT_PBKDF			"pbkdf"
 #define OPT_PBKDF_FORCE_ITERATIONS	"pbkdf-force-iterations"
 #define OPT_PBKDF_MEMORY		"pbkdf-memory"
