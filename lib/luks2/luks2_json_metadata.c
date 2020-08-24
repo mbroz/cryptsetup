@@ -679,11 +679,10 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 	if (first_backup < 0)
 		first_backup = count;
 
-	intervals = malloc(first_backup * sizeof(*intervals));
-	if (!intervals) {
-		log_dbg(cd, "Not enough memory.");
-		return 1;
-	}
+	if (first_backup <= count && (size_t)first_backup < SIZE_MAX / sizeof(*intervals))
+		intervals = malloc(first_backup * sizeof(*intervals));
+	else
+		intervals = NULL;
 
 	for (i = 0; i < first_backup; i++) {
 		jobj = json_segments_get_segment(jobj_segments, i);
@@ -692,8 +691,14 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 			free(intervals);
 			return 1;
 		}
-		intervals[i].offset = json_segment_get_offset(jobj, 0);
-		intervals[i].length = json_segment_get_size(jobj, 0) ?: UINT64_MAX;
+		if (intervals != NULL) {
+			intervals[i].offset = json_segment_get_offset(jobj, 0);
+			intervals[i].length = json_segment_get_size(jobj, 0) ?: UINT64_MAX;
+		}
+	}
+	if (intervals == NULL) {
+		log_dbg(cd, "Not enough memory.");
+		return 1;
 	}
 
 	r = !validate_segment_intervals(cd, first_backup, intervals);
