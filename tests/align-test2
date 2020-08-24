@@ -100,7 +100,7 @@ format() # expected [forced] [encryption_sector_size]
 
 	if [ -z "$2" ] ; then
 		echo -n "Formatting using topology info$_smsg..."
-		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --sector-size $_sec_size >/dev/null || fail
+		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --sector-size $_sec_size >/dev/null 2>&1 || fail
 	else
 		echo -n "Formatting using forced sector alignment $2$_smsg..."
 		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --align-payload=$2 --sector-size $_sec_size >/dev/null || fail
@@ -200,6 +200,31 @@ cleanup
 echo "# Create desktop-class 4K drive with misaligned opt-io (some bad USB enclosures)"
 echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=0, opt-io=1025)"
 add_device dev_size_mb=32 sector_size=512 physblk_exp=3 num_tgts=1 opt_blks=1025
+format $EXPCT
+format $EXPCT s1024
+format $EXPCT s2048
+format $EXPCT s4096
+format $EXPCT 1
+format $EXPCT 1 s1024
+format $EXPCT 1 s2048
+format $EXPCT 1 s4096
+format $EXPCT 8
+format $EXPCT 8 s1024
+format $EXPCT 8 s2048
+format $EXPCT 8 s4096
+format $((EXPCT+1)) $((EXPCT+1))
+format_fail $((EXPCT+1)) $((EXPCT+1)) s1024
+format_fail $((EXPCT+1)) $((EXPCT+1)) s2048
+format_fail $((EXPCT+1)) $((EXPCT+1)) s4096
+format $EXPCT $EXPCT
+format $EXPCT $EXPCT s1024
+format $EXPCT $EXPCT s2048
+format $EXPCT $EXPCT s4096
+cleanup
+
+echo "# Create drive with misaligned opt-io to page-size (some bad USB enclosures)"
+echo "# (logical_block_size=512, physical_block_size=512, alignment_offset=0, opt-io=33553920)"
+add_device dev_size_mb=32 sector_size=512 num_tgts=1 opt_blks=65535
 format $EXPCT
 format $EXPCT s1024
 format $EXPCT s2048
