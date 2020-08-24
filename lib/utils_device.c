@@ -520,10 +520,16 @@ void device_topology_alignment(struct crypt_device *cd,
 
 	temp_alignment = (unsigned long)min_io_size;
 
-	/* Ignore bogus opt-io that could break alignment */
+	/*
+	 * Ignore bogus opt-io that could break alignment.
+	 * Also real opt_io_size should be aligned to minimal page size (4k).
+	 * Some bogus USB enclosures reports wrong data here.
+	 */
 	if ((temp_alignment < (unsigned long)opt_io_size) &&
-	    !((unsigned long)opt_io_size % temp_alignment))
+	    !((unsigned long)opt_io_size % temp_alignment) && !MISALIGNED_4K(opt_io_size))
 		temp_alignment = (unsigned long)opt_io_size;
+	else if (opt_io_size)
+		log_err(cd, "Ignoring bogus optimal-io size for data device (%u bytes).", opt_io_size);
 
 	/* If calculated alignment is multiple of default, keep default */
 	if (temp_alignment && (default_alignment % temp_alignment))
