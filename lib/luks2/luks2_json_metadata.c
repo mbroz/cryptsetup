@@ -676,10 +676,16 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 		return 1;
 	}
 
+	/* avoid needlessly large allocation when first backup segment is invalid */
+	if (first_backup >= count) {
+		log_dbg(cd, "Gap between last regular segment and backup segment at key %d.", first_backup);
+		return 1;
+	}
+
 	if (first_backup < 0)
 		first_backup = count;
 
-	if (first_backup <= count && (size_t)first_backup < SIZE_MAX / sizeof(*intervals))
+	if ((size_t)first_backup < SIZE_MAX / sizeof(*intervals))
 		intervals = malloc(first_backup * sizeof(*intervals));
 	else
 		intervals = NULL;
