@@ -279,7 +279,14 @@ void global_log_callback(int level, const char *msg, void *usrptr)
 	if (level <= CRYPT_LOG_DEBUG)
 		return;
 
-	strncat(global_log, msg, sizeof(global_log) - strlen(global_log));
+	len = strlen(global_log);
+
+	if (len + strlen(msg) > sizeof(global_log)) {
+			printf("Log buffer is too small, fix the test.\n");
+			return;
+	}
+
+	strncat(global_log, msg, sizeof(global_log) - len);
 	global_lines++;
 	if (level == CRYPT_LOG_ERROR) {
 		len = strlen(msg);
