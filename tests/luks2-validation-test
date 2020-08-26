@@ -199,6 +199,8 @@ RUN luks2-segment-unknown-type.img			"R" "Validation rejected segment with all m
 RUN luks2-segment-two.img				"R" "Validation rejected two valid segments"
 RUN luks2-segment-wrong-flags.img			"F" "Failed to detect invalid flags field"
 RUN luks2-segment-wrong-flags-element.img		"F" "Failed to detect invalid flags content"
+RUN luks2-segment-wrong-backup-key-0.img		"F" "Failed to detect gap in backup segments"
+RUN luks2-segment-wrong-backup-key-1.img		"F" "Failed to detect gap in backup segments"
 
 echo "[6] Test metadata size and keyslots size (config section)"
 RUN luks2-invalid-keyslots-size-c0.img			"F" "Failed to detect too large keyslots_size in config section"
