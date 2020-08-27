@@ -825,8 +825,8 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return r;
 
 	strncpy(hdr1->cipherName, cipher, LUKS_CIPHERNAME_L - 1);
-	strncpy(hdr1->cipherMode, cipher_mode, LUKS_CIPHERMODE_L - 1);
 	hdr1->cipherName[LUKS_CIPHERNAME_L-1] = '\0';
+	strncpy(hdr1->cipherMode, cipher_mode, LUKS_CIPHERMODE_L - 1);
 	hdr1->cipherMode[LUKS_CIPHERMODE_L-1] = '\0';
 
 	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf))
