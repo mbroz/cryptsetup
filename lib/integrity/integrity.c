@@ -92,7 +92,7 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 	log_std(cd, "journal_sections %u\n", sb.journal_sections);
 	log_std(cd, "provided_data_sectors %" PRIu64 "\n", sb.provided_data_sectors);
 	log_std(cd, "sector_size %u\n", SECTOR_SIZE << sb.log2_sectors_per_block);
-	if (sb.version == SB_VERSION_2 && (sb.flags & SB_FLAG_RECALCULATING))
+	if (sb.version >= SB_VERSION_2 && (sb.flags & SB_FLAG_RECALCULATING))
 		log_std(cd, "recalc_sector %" PRIu64 "\n", sb.recalc_sector);
 	log_std(cd, "log2_blocks_per_bitmap %u\n", sb.log2_blocks_per_bitmap_bit);
 	log_std(cd, "flags %s%s%s%s\n",
