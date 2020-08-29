@@ -99,7 +99,7 @@ static int test_write_buffer(void)
 	if (ret < 0)
 		goto out;
 
-	return (size_t) ret == test_length ? 0 : -EIO;
+	ret = (size_t) ret == test_length ? 0 : -EIO;
 out:
 	if (fd >= 0)
 		close(fd);
