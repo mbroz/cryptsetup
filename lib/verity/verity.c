@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
@@ -145,6 +146,13 @@ int VERITY_read_sb(struct crypt_device *cd,
 	return 0;
 }
 
+static void _to_lower(char *str)
+{
+	for(; *str; str++)
+		if (isupper(*str))
+			*str = tolower(*str);
+}
+
 /* Write verity superblock to disk */
 int VERITY_write_sb(struct crypt_device *cd,
 		   uint64_t sb_offset,
@@ -186,9 +194,13 @@ int VERITY_write_sb(struct crypt_device *cd,
 	sb.hash_block_size = cpu_to_le32(params->hash_block_size);
 	sb.salt_size       = cpu_to_le16(params->salt_size);
 	sb.data_blocks     = cpu_to_le64(params->data_size);
+
+	/* Kernel always use lower-case */
 	algorithm = (char *)sb.algorithm;
+	strncpy(algorithm, params->hash_name, sizeof(sb.algorithm));
 	algorithm[sizeof(sb.algorithm)-1] = '\0';
-	strncpy(algorithm, params->hash_name, sizeof(sb.algorithm)-1);
+	_to_lower(algorithm);
+
 	memcpy(sb.salt, params->salt, params->salt_size);
 	memcpy(sb.uuid, uuid, sizeof(sb.uuid));
 
