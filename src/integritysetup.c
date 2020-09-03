@@ -622,7 +622,7 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_DEBUG_ID)) {
-		ARG_SET(OPT_VERBOSE_ID) = true;
+		ARG_SET_TRUE(OPT_VERBOSE_ID);
 		crypt_set_debug_level(CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
 	}

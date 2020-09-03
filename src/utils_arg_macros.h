@@ -24,7 +24,7 @@
 
 #include <assert.h>
 
-#define ARG_SET(X) tool_core_args[(X)].set
+#define ARG_SET(X) !!tool_core_args[(X)].set
 
 #define ARG_STR(X) ({ \
 	assert(tool_core_args[(X)].type == CRYPT_ARG_STRING); \
@@ -50,6 +50,10 @@
 	assert(tool_core_args[(X)].type == CRYPT_ARG_UINT64); \
 	tool_core_args[(X)].u.u64_value; \
 })
+
+#define ARG_SET_TRUE(X) do { \
+        tool_core_args[(X)].set = true; \
+} while (0)
 
 #define ARG_SET_STR(X, Y) \
 do { \

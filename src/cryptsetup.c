@@ -1243,7 +1243,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(cipher))
-		ARG_SET(OPT_FORCE_PASSWORD_ID) = true;
+		ARG_SET_TRUE(OPT_FORCE_PASSWORD_ID);
 
 	if ((r = crypt_init(&cd, header_device))) {
 		if (ARG_SET(OPT_HEADER_ID))
@@ -1653,7 +1653,7 @@ static int luksAddUnboundKey(void)
 
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
-		ARG_SET(OPT_FORCE_PASSWORD_ID) = true;
+		ARG_SET_TRUE(OPT_FORCE_PASSWORD_ID);
 
 	keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
@@ -1720,7 +1720,7 @@ static int action_luksAddKey(void)
 
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
-		ARG_SET(OPT_FORCE_PASSWORD_ID) = true;
+		ARG_SET_TRUE(OPT_FORCE_PASSWORD_ID);
 
 	keysize = crypt_get_volume_key_size(cd);
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
@@ -1823,7 +1823,7 @@ static int action_luksChangeKey(void)
 
 	/* Never call pwquality if using null cipher */
 	if (tools_is_cipher_null(crypt_get_cipher(cd)))
-		ARG_SET(OPT_FORCE_PASSWORD_ID) = true;
+		ARG_SET_TRUE(OPT_FORCE_PASSWORD_ID);
 
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
 	if (r) {
@@ -3651,7 +3651,7 @@ int main(int argc, const char **argv)
 		device_type = "luks2";
 	} else if (!strcmp(aname, "refresh")) {
 		aname = OPEN_ACTION;
-		ARG_SET(OPT_REFRESH_ID) = true;
+		ARG_SET_TRUE(OPT_REFRESH_ID);
 	} else if (ARG_SET(OPT_TYPE_ID))
 		device_type = ARG_STR(OPT_TYPE_ID);
 
@@ -3815,8 +3815,8 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_DEBUG_ID) || ARG_SET(OPT_DEBUG_JSON_ID)) {
-		ARG_SET(OPT_DEBUG_ID) = true;
-		ARG_SET(OPT_VERBOSE_ID) = true;
+		ARG_SET_TRUE(OPT_DEBUG_ID);
+		ARG_SET_TRUE(OPT_VERBOSE_ID);
 		crypt_set_debug_level(ARG_SET(OPT_DEBUG_JSON_ID)? CRYPT_DEBUG_JSON : CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
 	}
