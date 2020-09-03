@@ -89,6 +89,7 @@ void tools_args_free(struct tools_arg *args, size_t args_size)
 	for (i = 0; i < args_size; i++) {
 		if (args[i].set && args[i].type == CRYPT_ARG_STRING)
 			free(args[i].u.str_value);
+		args[i].set = false;
 	}
 }
 
