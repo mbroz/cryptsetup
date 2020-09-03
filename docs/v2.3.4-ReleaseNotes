@@ -1,0 +1,112 @@
+Cryptsetup 2.3.4 Release Notes
+==============================
+Stable bug-fix release with a security fix (32-bit only).
+
+All users of cryptsetup 2.2.x and later should upgrade to this version.
+
+Changes since version 2.3.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix a possible out-of-bounds memory write while validating LUKS2 data
+  segments metadata (CVE-2020-14382).
+
+  This problem can be triggered only on 32-bit builds (64-bit systems
+  are not affected).
+
+  LUKS2 format validation code contains a bug in segments validation code
+  where the code does not check for possible overflow on memory allocation.
+
+  Due to the bug, the libcryptsetup can be tricked to expect such allocation
+  was successful. Later it may read data from image crafted by an attacker and
+  actually write such data beyond allocated memory.
+
+  The bug was introduced in cryptsetup 2.2.0. All later releases until 2.3.4
+  are affected.
+
+  If you only backport the fix for this CVE, these master branch git commits
+  should be backported:
+    52f5cb8cedf22fb3e14c744814ec8af7614146c7
+    46ee71edcd13e1dad50815ad65c28779aa6f7503
+    752c9a52798f11d3b765b673ebaa3058eb25316e
+
+  Thanks to Tobias Stoeckmann for discovering this issue.
+
+* Ignore reported optimal IO size if not aligned to minimal page size.
+
+  Some USB enclosures report bogus block device topology (see lsblk -t) that
+  prevents LUKS2 format with 4k sector size (reported values are not correctly
+  aligned). The code now ignores such values and uses the default alignment.
+
+* Added support for new no_read/write_wrokqueue dm-crypt options (kernel 5.9).
+
+  These performance options, introduced in kernel 5.9, configure dm-crypt
+  to bypass read or write workqueues and run encryption synchronously.
+
+  Use --perf-no_read_workqueue or --perf-no_write_workqueue cryptsetup arguments
+  to use these dm-crypt flags.
+
+  These options are available only for low-level dm-crypt performance tuning,
+  use only if you need a change to default dm-crypt behavior.
+
+  For LUKS2, these flags can be persistently stored in metadata with
+  the --persistent option.
+
+* Added support panic_on_corruption option for dm-verity devices (kernel 5.9).
+
+  Veritysetup now supports --panic-on-corruption argument that configures
+  the dm-verity device to panics kernel if a corruption is detected.
+
+  This option is intended for specific configurations, do not use it in
+  standard configurations.
+
+* Support --master-key-file option for online LUKS2 reencryption
+
+  This can be used for reencryption of devices that uses protected key AES cipher
+  on some mainframes crypto accelerators.
+
+* Always return EEXIST error code if a device already exists.
+
+  Some libcryptsetup functions (activate_by*) now return EEXIST error code,
+  so the caller can distinguish that call fails because some parallel process
+  already activated the device.
+  Previously all fails returned EINVAL (invalid value).
+
+* Fix a problem in integritysetup if a hash algorithm has dash in the name.
+
+  If users want to use blake2b/blake2s, the kernel algorithm name includes
+  a dash (like "blake2s-256").
+  Theses algorithms can now be used for integritysetup devices.
+
+* Fix crypto backend to properly handle ECB mode.
+
+  Even though it should never be used, it should still work for testing :)
+  This fixes a bug introduced in cryptsetup version 2.3.2.
+
+* TrueCrypt/VeraCrypt compatible mode now supports the activation of devices
+  with a larger sector.
+
+  TrueCrypt/VeraCrypt always uses 512-byte sector for encryption, but for devices
+  with a larger native sector, it stores this value in the header.
+
+  This patch allows activation of such devices, basically ignoring
+  the mentioned sector size.
+
+* LUKS2: Do not create excessively large headers.
+
+  When creating a LUKS2 header with a specified --offset larger than
+  the LUKS2 header size, do not create a larger file than needed.
+
+* Fix unspecified sector size for BitLocker compatible mode.
+
+  Some BitLocker devices can contain zeroed sector size in the header.
+  In this case, the 512-byte sector should be used.
+  The bug was introduced in version 2.3.3.
+
+* Fix reading key data size in metadata for BitLocker compatible mode.
+
+  Such devices with an unexpected entry in metadata can now be activated.
+
+  Thanks to all users reporting these problems, BitLocker metadata documentation
+  is not publicly available, and we depend only on these reports.
+
+* Fix typos in documentation.
