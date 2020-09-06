@@ -9,16 +9,23 @@ DIE=0
 (autopoint --version) < /dev/null > /dev/null 2>&1 || {
   echo
   echo "**Error**: You must have autopoint installed."
-  echo "Download the appropriate package for your distribution,"
-  echo "or see http://www.gnu.org/software/gettext"
+  echo "Download the appropriate package for your distribution."
   DIE=1
+}
+
+
+(msgfmt --version) < /dev/null > /dev/null 2>&1 || {
+  echo
+  echo "**Warning**: You should have gettext installed."
+  echo "Download the appropriate package for your distribution."
+  echo "To disable translation, you can also use --disable-nls"
+  echo "configure option."
 }
 
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
   echo
-  echo "**Error**: You must have autoconf installed to."
-  echo "Download the appropriate package for your distribution,"
-  echo "or get the source tarball at ftp://ftp.gnu.org/pub/gnu/"
+  echo "**Error**: You must have autoconf installed."
+  echo "Download the appropriate package for your distribution."
   DIE=1
 }
 
@@ -26,8 +33,7 @@ DIE=0
   (libtool --version) < /dev/null > /dev/null 2>&1 || {
     echo
     echo "**Error**: You must have libtool installed."
-    echo "Get ftp://ftp.gnu.org/pub/gnu/"
-    echo "(or a newer version if it is available)"
+    echo "Download the appropriate package for your distribution."
     DIE=1
   }
 }
@@ -35,8 +41,7 @@ DIE=0
 (automake --version) < /dev/null > /dev/null 2>&1 || {
   echo
   echo "**Error**: You must have automake installed."
-  echo "Get ftp://ftp.gnu.org/pub/gnu/"
-  echo "(or a newer version if it is available)"
+  echo "Download the appropriate package for your distribution."
   DIE=1
   NO_AUTOMAKE=yes
 }
@@ -47,8 +52,6 @@ test -n "$NO_AUTOMAKE" || (aclocal --version) < /dev/null > /dev/null 2>&1 || {
   echo
   echo "**Error**: Missing aclocal.  The version of automake"
   echo "installed doesn't appear recent enough."
-  echo "Get ftp://ftp.gnu.org/pub/gnu/"
-  echo "(or a newer version if it is available)"
   DIE=1
 }
 
