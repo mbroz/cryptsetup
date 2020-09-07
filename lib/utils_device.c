@@ -528,7 +528,7 @@ void device_topology_alignment(struct crypt_device *cd,
 	if ((temp_alignment < (unsigned long)opt_io_size) &&
 	    !((unsigned long)opt_io_size % temp_alignment) && !MISALIGNED_4K(opt_io_size))
 		temp_alignment = (unsigned long)opt_io_size;
-	else if (opt_io_size)
+	else if (opt_io_size && (opt_io_size != min_io_size))
 		log_err(cd, _("Ignoring bogus optimal-io size for data device (%u bytes)."), opt_io_size);
 
 	/* If calculated alignment is multiple of default, keep default */
