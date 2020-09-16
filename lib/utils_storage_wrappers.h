@@ -22,6 +22,9 @@
 #ifndef _UTILS_STORAGE_WRAPPERS_H
 #define _UTILS_STORAGE_WRAPPERS_H
 
+#include <stdint.h>
+#include <sys/types.h>
+
 struct crypt_storage_wrapper;
 struct device;
 struct volume_key;

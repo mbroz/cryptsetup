@@ -21,6 +21,8 @@
 #ifndef _UTILS_BLKID_H
 #define _UTILS_BLKID_H
 
+#include <sys/types.h>
+
 struct blkid_handle;
 
 typedef enum { PRB_OK = 0, PRB_EMPTY, PRB_AMBIGUOUS, PRB_FAIL } blk_probe_status;

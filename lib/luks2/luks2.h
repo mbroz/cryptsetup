@@ -23,6 +23,8 @@
 #define _CRYPTSETUP_LUKS2_ONDISK_H
 
 #include <stdbool.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 #include "libcryptsetup.h"
 
