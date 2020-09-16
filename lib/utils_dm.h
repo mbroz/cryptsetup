@@ -25,7 +25,8 @@
 #define _UTILS_DM_H
 
 /* device-mapper library helpers */
-#include <inttypes.h>
+#include <stddef.h>
+#include <stdint.h>
 
 struct crypt_device;
 struct volume_key;
