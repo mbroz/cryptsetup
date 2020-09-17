@@ -62,6 +62,10 @@ function check_dump()
                 # smart card protected VMK GUID
                 dump_sc_vmk=$(echo "$dump" | grep "VMK protected with smart card" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
                 [ ! -z "$SC_VMK_GUID" -a "$dump_sc_vmk" = "$SC_VMK_GUID" ] || fail " smart card protected VMK GUID check from dump failed."
+	elif echo "$file" | grep -q -e "startup-key"; then
+                # startup key protected VMK GUID
+                dump_sk_vmk=$(echo "$dump" | grep "VMK protected with startup key" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
+                [ ! -z "$SK_VMK_GUID" -a "$dump_sk_vmk" = "$SK_VMK_GUID" ] || fail " startup key protected VMK GUID check from dump failed."
         else
                 # password protected VMK GUID
                 dump_pw_vmk=$(echo "$dump" | grep "VMK protected with passphrase" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
@@ -134,4 +138,25 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		[ "$sha256sum" = "$SHA256SUM" ] || fail " SHA256 sum check failed."
 		echo " [OK]"
 	done
+
+	# startup key test -- we need to use BEK file from the archive
+	if echo "$file" | grep -q -e "startup-key"; then
+		echo -n " $file"
+		bek_file=$(echo $SK_VMK_GUID.BEK | tr /a-z/ /A-Z/)
+		$CRYPTSETUP bitlkOpen -r $file --test-passphrase --key-file $TST_DIR/$bek_file
+		ret=$?
+		[ $ret -eq 1 ] && echo " [N/A]" && continue
+		$CRYPTSETUP bitlkOpen -r $file $MAP --key-file $TST_DIR/$bek_file >/dev/null 2>&1
+		ret=$?
+		[ $ret -eq 0 ] || fail " failed to open $file ($ret)"
+		$CRYPTSETUP status $MAP >/dev/null || fail
+		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
+		uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
+		sha256sum=$(sha256sum /dev/mapper/$MAP | cut -d" " -f1)
+		$CRYPTSETUP remove $MAP || fail
+		[ "$uuid" = "$UUID" ] || fail " UUID check failed."
+		[ "$sha256sum" = "$SHA256SUM" ] || fail " SHA256 sum check failed."
+		echo " [OK]"
+
+	fi
 done
