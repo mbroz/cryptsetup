@@ -1000,12 +1000,18 @@ int BITLK_activate(struct crypt_device *cd,
 	while (next_vmk) {
 		if (next_vmk->protection == BITLK_PROTECTION_PASSPHRASE) {
 			r = bitlk_kdf(cd, password, passwordLen, false, next_vmk->salt, &vmk_dec_key);
-			if (r)
-				return r;
+			if (r) {
+				/* something wrong happend, but we still want to check other key slots */
+				next_vmk = next_vmk->next;
+				continue;
+			}
 		} else if (next_vmk->protection == BITLK_PROTECTION_RECOVERY_PASSPHRASE) {
 			r = get_recovery_key(cd, password, passwordLen, &recovery_key);
-			if (r)
-				return r;
+			if (r) {
+				/* something wrong happend, but we still want to check other key slots */
+				next_vmk = next_vmk->next;
+				continue;
+			}
 			if (recovery_key == NULL) {
 				/* r = 0 but no key -> given passphrase is not a recovery passphrase */
 				r = -EPERM;
