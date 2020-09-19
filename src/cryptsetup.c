@@ -544,7 +544,8 @@ static int action_open_tcrypt(void)
 
 	activated_name = opt_test_passphrase ? NULL : action_argv[1];
 
-	if ((r = crypt_init(&cd, action_argv[0])))
+	r = crypt_init_data_device(&cd, opt_header_device ?: action_argv[0], action_argv[0]);
+	if (r < 0)
 		goto out;
 
 	r = tcrypt_load(cd, &params);
@@ -657,8 +658,8 @@ static int action_tcryptDump(void)
 		.veracrypt_pim = (opt_veracrypt_pim > 0) ? opt_veracrypt_pim : 0,
 	};
 	int r;
-
-	if ((r = crypt_init(&cd, action_argv[0])))
+	r = crypt_init_data_device(&cd, opt_header_device ?: action_argv[0], action_argv[0]);
+	if (r < 0)
 		goto out;
 
 	r = tcrypt_load(cd, &params);
