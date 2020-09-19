@@ -2770,6 +2770,11 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	if (!cd || !cd->type || !name)
 		return -EINVAL;
 
+	if (isTCRYPT(cd->type) || isBITLK(cd->type)) {
+		log_err(cd, _("This operation is not supported for this device type."));
+		return -ENOTSUP;
+	}
+
 	log_dbg(cd, "Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 
 	r = dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY, &dmdq);
