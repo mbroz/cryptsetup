@@ -657,7 +657,7 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device)
 	log_dbg(cd, "Setting ciphertext data device to %s.", device ?: "(none)");
 
 	if (!isLUKS1(cd->type) && !isLUKS2(cd->type) && !isVERITY(cd->type) &&
-	    !isINTEGRITY(cd->type)) {
+	    !isINTEGRITY(cd->type) && !isTCRYPT(cd->type)) {
 		log_err(cd, _("This operation is not supported for this device type."));
 		return -EINVAL;
 	}
@@ -844,11 +844,6 @@ static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcryp
 
 	if (!params)
 		return -EINVAL;
-
-	if (cd->metadata_device) {
-		log_err(cd, _("Detached metadata device is not supported for this crypt type."));
-		return -EINVAL;
-	}
 
 	r = init_crypto(cd);
 	if (r < 0)
