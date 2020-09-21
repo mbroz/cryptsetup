@@ -648,7 +648,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), fve_entries, fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN,
-		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN) != fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN) {
+		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN) != (ssize_t)(fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN)) {
 		log_err(cd, _("Failed to read BITLK metadata entries from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
