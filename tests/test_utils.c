@@ -41,6 +41,16 @@
 #include "api_test.h"
 #include "libcryptsetup.h"
 
+#ifndef LOOP_CONFIGURE
+#define LOOP_CONFIGURE 0x4C0A
+struct loop_config {
+  __u32 fd;
+  __u32 block_size;
+  struct loop_info64 info;
+  __u64 __reserved[8];
+};
+#endif
+
 static char last_error[256];
 static char global_log[4096];
 static uint32_t t_dm_crypt_flags = 0;
@@ -544,9 +554,10 @@ static char *crypt_loop_get_device(void)
 int loop_attach(char **loop, const char *file, int offset,
 		      int autoclear, int *readonly)
 {
-	struct loop_info64 lo64 = {0};
+	struct loop_config config = {0};
 	char *lo_file_name;
 	int loop_fd = -1, file_fd = -1, r = 1;
+	int fallback = 0;
 
 	*loop = NULL;
 
@@ -558,6 +569,15 @@ int loop_attach(char **loop, const char *file, int offset,
 	if (file_fd < 0)
 		goto out;
 
+	config.fd = file_fd;
+
+	lo_file_name = (char*)config.info.lo_file_name;
+	lo_file_name[LO_NAME_SIZE-1] = '\0';
+	strncpy(lo_file_name, file, LO_NAME_SIZE-1);
+	config.info.lo_offset = offset;
+	if (autoclear)
+		config.info.lo_flags |= LO_FLAGS_AUTOCLEAR;
+
 	while (loop_fd < 0)  {
 		*loop = crypt_loop_get_device();
 		if (!*loop)
@@ -566,8 +586,18 @@ int loop_attach(char **loop, const char *file, int offset,
 		loop_fd = open(*loop, *readonly ? O_RDONLY : O_RDWR);
 		if (loop_fd < 0)
 			goto out;
+		if (ioctl(loop_fd, LOOP_CONFIGURE, &config) < 0) {
+			if (errno == EINVAL) {
+				free(*loop);
+				*loop = NULL;
 
-		if (ioctl(loop_fd, LOOP_SET_FD, file_fd) < 0) {
+				close(loop_fd);
+				loop_fd = -1;
+
+				/* kernel doesn't support LOOP_CONFIGURE */
+				fallback = 1;
+				break;
+			}
 			if (errno != EBUSY)
 				goto out;
 			free(*loop);
@@ -578,23 +608,38 @@ int loop_attach(char **loop, const char *file, int offset,
 		}
 	}
 
-	lo_file_name = (char*)lo64.lo_file_name;
-	lo_file_name[LO_NAME_SIZE-1] = '\0';
-	strncpy(lo_file_name, file, LO_NAME_SIZE-1);
-	lo64.lo_offset = offset;
-	if (autoclear)
-		lo64.lo_flags |= LO_FLAGS_AUTOCLEAR;
+	if (fallback)
+	{
+		while (loop_fd < 0)  {
+			*loop = crypt_loop_get_device();
+			if (!*loop)
+				goto out;
 
-	if (ioctl(loop_fd, LOOP_SET_STATUS64, &lo64) < 0) {
-		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
-		goto out;
+			loop_fd = open(*loop, *readonly ? O_RDONLY : O_RDWR);
+			if (loop_fd < 0)
+				goto out;
+			if (ioctl(loop_fd, LOOP_SET_FD, file_fd) < 0) {
+				if (errno != EBUSY)
+					goto out;
+				free(*loop);
+				*loop = NULL;
+
+				close(loop_fd);
+				loop_fd = -1;
+			}
+		}
+
+		if (ioctl(loop_fd, LOOP_SET_STATUS64, &config.info) < 0) {
+			(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
+			goto out;
+		}
 	}
 
 	/* Verify that autoclear is really set */
 	if (autoclear) {
-		memset(&lo64, 0, sizeof(lo64));
-		if (ioctl(loop_fd, LOOP_GET_STATUS64, &lo64) < 0 ||
-		   !(lo64.lo_flags & LO_FLAGS_AUTOCLEAR)) {
+		memset(&config.info, 0, sizeof(config.info));
+		if (ioctl(loop_fd, LOOP_GET_STATUS64, &config.info) < 0 ||
+		   !(config.info.lo_flags & LO_FLAGS_AUTOCLEAR)) {
 		(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
 			goto out;
 		}
