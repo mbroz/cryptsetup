@@ -501,18 +501,6 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		goto out;
 	}
 
-	if (memcmp(sig.boot_code, BITLK_BOOTCODE_V1, sizeof(sig.boot_code)) == 0) {
-		log_err(cd, _("BITLK version 1 is currently not supported."));
-		r = -ENOTSUP;
-		goto out;
-	} else if (memcmp(sig.boot_code, BITLK_BOOTCODE_V2, sizeof(sig.boot_code)) == 0)
-		;
-	else {
-		log_err(cd, _("Invalid or unknown boot signature for BITLK device."));
-		r = -EINVAL;
-		goto out;
-	}
-
 	if (memcmp(sig.signature, BITLK_SIGNATURE, sizeof(sig.signature)) == 0) {
 		params->togo = false;
 		fve_offset = BITLK_HEADER_METADATA_OFFSET;
@@ -521,6 +509,18 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		fve_offset = BITLK_HEADER_METADATA_OFFSET_TOGO;
 	} else {
 		log_err(cd, _("Invalid or unknown signature for BITLK device."));
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (memcmp(sig.boot_code, BITLK_BOOTCODE_V1, sizeof(sig.boot_code)) == 0) {
+		log_err(cd, _("BITLK version 1 is currently not supported."));
+		r = -ENOTSUP;
+		goto out;
+	} else if (memcmp(sig.boot_code, BITLK_BOOTCODE_V2, sizeof(sig.boot_code)) == 0)
+		;
+	else {
+		log_err(cd, _("Invalid or unknown boot signature for BITLK device."));
 		r = -EINVAL;
 		goto out;
 	}
