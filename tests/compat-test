@@ -787,6 +787,9 @@ $CRYPTSETUP close --deferred $DEV_NAME >/dev/null 2>&1
 if [ $? -eq 0 ] ; then
   dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
   $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
+  $CRYPTSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
+  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
+  $CRYPTSETUP close --deferred $DEV_NAME >/dev/null 2>&1
   $CRYPTSETUP close $DEV_NAME2 || fail
   $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 && fail
 else

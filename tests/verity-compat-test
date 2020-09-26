@@ -6,6 +6,7 @@ VERITYSETUP_VALGRIND=../.libs/veritysetup
 VERITYSETUP_LIB_VALGRIND=../.libs
 
 DEV_NAME=verity3273
+DEV_NAME2=verity3273x
 DEV_OUT="$DEV_NAME.out"
 IMG=verity-data
 IMG_HASH=verity-hash
@@ -17,6 +18,7 @@ DEV_UUID=a60c98d2-ae9b-4865-bfcb-b4e3ace11033
 
 function remove_mapping()
 {
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 >/dev/null 2>&1
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
 	rm -f $IMG $IMG_HASH $DEV_OUT $FEC_DEV $IMG_TMP  >/dev/null 2>&1
@@ -468,9 +470,32 @@ checkUserSpaceRepair -1  4096 2 0       0       3 10
 checkUserSpaceRepair 400 4096 2 2048000 0       2 1
 #checkUserSpaceRepair 500 4096 2 2457600 4915200 1 2 # FIXME
 
-echo "Verity concurrent opening tests."
+echo -n "Verity concurrent opening tests:"
 prepare 8192 1024
 check_concurrent 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174
+
+echo -n "Deferred removal of device:"
+prepare 8192 1024
+$VERITYSETUP format $LOOPDEV1 $IMG_HASH --format=1 --data-block-size=512 --hash-block-size=512 --hash=sha256 --salt=$SALT >/dev/null 2>&1 || fail "Cannot format device."
+$VERITYSETUP open $LOOPDEV1 $DEV_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 || fail "Cannot activate device."
+dmsetup create $DEV_NAME2 --table "0 8 linear /dev/mapper/$DEV_NAME 0"
+[ ! -b /dev/mapper/$DEV_NAME2 ] && fail
+$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 && fail
+$VERITYSETUP status $DEV_NAME >/dev/null 2>&1 || fail
+$VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
+if [ $? -eq 0 ] ; then
+  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
+  $VERITYSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
+  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
+  $VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
+  dmsetup remove $DEV_NAME2 || fail
+  $VERITYSETUP status $DEV_NAME >/dev/null 2>&1 && fail
+  echo "[OK]"
+else
+  dmsetup remove $DEV_NAME2 >/dev/null 2>&1
+  $VERITYSETUP close $DEV_NAME >/dev/null 2>&1
+  echo "[N/A]"
+fi
 
 remove_mapping
 exit 0

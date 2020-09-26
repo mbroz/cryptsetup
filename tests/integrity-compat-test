@@ -9,7 +9,7 @@ INTSETUP_VALGRIND=../.libs/integritysetup
 INTSETUP_LIB_VALGRIND=../.libs
 
 DEV_NAME=dmc_test
-DEV_NAME_BIG=dmc_fake
+DEV_NAME2=dmc_fake
 DEV_LOOP=""
 DEV=test123.img
 DEV2=test124.img
@@ -22,7 +22,7 @@ dmremove() { # device
 
 cleanup() {
 	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
-	[ -b /dev/mapper/$DEV_NAME_BIG ] && dmremove $DEV_NAME_BIG
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmremove $DEV_NAME2
 	[ -n "$DEV_LOOP" ] && losetup -d "$DEV_LOOP"
 	DEV_LOOP=""
 	rm -f $DEV $DEV2 $KEY_FILE >/dev/null 2>&1
@@ -420,20 +420,43 @@ echo -n "Big device:"
 add_device
 DEV_LOOP=$(losetup -f $DEV --show)
 if [ -n "$DEV_LOOP" ] ; then
-dmsetup create $DEV_NAME_BIG <<EOF
+dmsetup create $DEV_NAME2 <<EOF
 0 16284 linear $DEV_LOOP 0
 16284 80000000000 zero
 EOF
-	[ ! -b /dev/mapper/$DEV_NAME_BIG ] && fail
-	$INTSETUP format -q -s 512 --no-wipe /dev/mapper/$DEV_NAME_BIG
-	$INTSETUP open /dev/mapper/$DEV_NAME_BIG $DEV_NAME || fail
-	D_SIZE=$($INTSETUP dump /dev/mapper/$DEV_NAME_BIG | grep provided_data_sectors | sed -e 's/.*provided_data_sectors\ \+//g')
+	[ ! -b /dev/mapper/$DEV_NAME2 ] && fail
+	$INTSETUP format -q -s 512 --no-wipe /dev/mapper/$DEV_NAME2
+	$INTSETUP open /dev/mapper/$DEV_NAME2 $DEV_NAME || fail
+	D_SIZE=$($INTSETUP dump /dev/mapper/$DEV_NAME2 | grep provided_data_sectors | sed -e 's/.*provided_data_sectors\ \+//g')
 	A_SIZE=$(blockdev --getsz /dev/mapper/$DEV_NAME)
 	# Compare strings (to avoid 64bit integers), not integers
 	[ -n "$A_SIZE" -a "$D_SIZE" != "$A_SIZE" ] && fail
 	echo "[OK]"
 else
 	echo "[N/A]"
+fi
+
+echo -n "Deferred removal of device:"
+add_device
+$INTSETUP format -q $DEV || fail "Cannot format device."
+$INTSETUP open $DEV $DEV_NAME || fail "Cannot activate device."
+dmsetup create $DEV_NAME2 --table "0 8 linear /dev/mapper/$DEV_NAME 0"
+[ ! -b /dev/mapper/$DEV_NAME2 ] && fail
+$INTSETUP close $DEV_NAME >/dev/null 2>&1 && fail
+$INTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
+$INTSETUP close --deferred $DEV_NAME >/dev/null 2>&1
+if [ $? -eq 0 ] ; then
+  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
+  $INTSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
+  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
+  $INTSETUP close --deferred $DEV_NAME >/dev/null 2>&1
+  dmsetup remove $DEV_NAME2 || fail
+  $INTSETUP -q status $DEV_NAME >/dev/null 2>&1 && fail
+  echo "[OK]"
+else
+  dmsetup remove $DEV_NAME2 >/dev/null 2>&1
+  $INTSETUP close $DEV_NAME >/dev/null 2>&1
+  echo "[N/A]"
 fi
 
 cleanup
