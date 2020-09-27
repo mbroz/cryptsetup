@@ -193,11 +193,10 @@ uint64_t crypt_getphysmemory_kb(void);
 
 int init_crypto(struct crypt_device *ctx);
 
-void logger(struct crypt_device *cd, int level, const char *file, int line, const char *format, ...) __attribute__ ((format (printf, 5, 6)));
-#define log_dbg(c, x...) logger(c, CRYPT_LOG_DEBUG, __FILE__, __LINE__, x)
-#define log_std(c, x...) logger(c, CRYPT_LOG_NORMAL, __FILE__, __LINE__, x)
-#define log_verbose(c, x...) logger(c, CRYPT_LOG_VERBOSE, __FILE__, __LINE__, x)
-#define log_err(c, x...) logger(c, CRYPT_LOG_ERROR, __FILE__, __LINE__, x)
+#define log_dbg(c, x...) crypt_logf(c, CRYPT_LOG_DEBUG, x)
+#define log_std(c, x...) crypt_logf(c, CRYPT_LOG_NORMAL, x)
+#define log_verbose(c, x...) crypt_logf(c, CRYPT_LOG_VERBOSE, x)
+#define log_err(c, x...) crypt_logf(c, CRYPT_LOG_ERROR, x)
 
 int crypt_get_debug_level(void);
 

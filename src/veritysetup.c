@@ -178,7 +178,7 @@ static int _activate(const char *dm_device,
 			goto out;
 		}
 		signature_size = st.st_size;
-		r = crypt_cli_read_mk(ARG_STR(OPT_ROOT_HASH_SIGNATURE_ID), &signature, signature_size);
+		r = crypt_cli_read_mk(cd, ARG_STR(OPT_ROOT_HASH_SIGNATURE_ID), &signature, signature_size);
 		if (r < 0) {
 			log_err(_("Cannot read signature file %s."), ARG_STR(OPT_ROOT_HASH_SIGNATURE_ID));
 			goto out;

@@ -215,6 +215,15 @@ void crypt_set_log_callback(struct crypt_device *cd,
  * @param msg log message
  */
 void crypt_log(struct crypt_device *cd, int level, const char *msg);
+
+/**
+ * Log function with variable arguments.
+ *
+ * @param cd crypt device handle
+ * @param level log level
+ * @param format formatted log message
+ */
+void crypt_logf(struct crypt_device *cd, int level, const char *format, ...);
 /** @} */
 
 /**

@@ -127,4 +127,10 @@ void tools_cleanup(void);
 
 #define FREE_AND_NULL(x) do { free(x); x = NULL; } while (0)
 
+/* Log */
+#define log_dbg(x...) crypt_logf(NULL, CRYPT_LOG_DEBUG, x)
+#define log_std(x...) crypt_logf(NULL, CRYPT_LOG_NORMAL, x)
+#define log_verbose(x...) crypt_logf(NULL, CRYPT_LOG_VERBOSE, x)
+#define log_err(x...) crypt_logf(NULL, CRYPT_LOG_ERROR, x)
+
 #endif /* CRYPTSETUP_H */

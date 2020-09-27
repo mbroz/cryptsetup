@@ -175,9 +175,8 @@ void crypt_log(struct crypt_device *cd, int level, const char *msg)
 		fprintf(level == CRYPT_LOG_ERROR ? stderr : stdout, "%s", msg);
 }
 
-__attribute__((format(printf, 5, 6)))
-void logger(struct crypt_device *cd, int level, const char *file,
-	    int line, const char *format, ...)
+__attribute__((format(printf, 3, 4)))
+void crypt_logf(struct crypt_device *cd, int level, const char *format, ...)
 {
 	va_list argp;
 	char target[LOG_MAX_LEN + 2];

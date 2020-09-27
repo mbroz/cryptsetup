@@ -715,7 +715,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 			rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen);
 	} else if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
 		log_dbg("Loading new key from file.");
-		r = crypt_cli_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, key_size);
+		r = crypt_cli_read_mk(cd, ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, key_size);
 	}
 
 	if (r < 0)

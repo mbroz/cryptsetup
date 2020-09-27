@@ -45,14 +45,14 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 	int r;
 
 	if (integrity_key && ARG_SET(OPT_INTEGRITY_KEY_FILE_ID)) {
-		r = crypt_cli_read_mk(ARG_STR(OPT_INTEGRITY_KEY_FILE_ID), &int_key, ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID));
+		r = crypt_cli_read_mk(NULL, ARG_STR(OPT_INTEGRITY_KEY_FILE_ID), &int_key, ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID));
 		if (r < 0)
 			return r;
 		params->integrity_key_size = ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID);
 	}
 
 	if (ARG_SET(OPT_JOURNAL_INTEGRITY_KEY_FILE_ID)) {
-		r = crypt_cli_read_mk(ARG_STR(OPT_JOURNAL_INTEGRITY_KEY_FILE_ID), &journal_integrity_key, ARG_UINT32(OPT_JOURNAL_INTEGRITY_KEY_SIZE_ID));
+		r = crypt_cli_read_mk(NULL, ARG_STR(OPT_JOURNAL_INTEGRITY_KEY_FILE_ID), &journal_integrity_key, ARG_UINT32(OPT_JOURNAL_INTEGRITY_KEY_SIZE_ID));
 		if (r < 0) {
 			crypt_safe_free(int_key);
 			return r;
@@ -62,7 +62,7 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 	}
 
 	if (ARG_SET(OPT_JOURNAL_CRYPT_KEY_FILE_ID)) {
-		r = crypt_cli_read_mk(ARG_STR(OPT_JOURNAL_CRYPT_KEY_FILE_ID), &journal_crypt_key, ARG_UINT32(OPT_JOURNAL_CRYPT_KEY_SIZE_ID));
+		r = crypt_cli_read_mk(NULL, ARG_STR(OPT_JOURNAL_CRYPT_KEY_FILE_ID), &journal_crypt_key, ARG_UINT32(OPT_JOURNAL_CRYPT_KEY_SIZE_ID));
 		if (r < 0) {
 			crypt_safe_free(int_key);
 			crypt_safe_free(journal_integrity_key);

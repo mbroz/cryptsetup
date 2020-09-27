@@ -39,8 +39,6 @@
 #include "libcryptsetup_cli.h"
 #include "cli_internal.h"
 
-#define LOG_MAX_LEN 4096
-
 /* Password reading helpers */
 static int untimed_read(int fd, char *pass, size_t maxlen)
 {
@@ -77,20 +75,20 @@ static int timed_read(int fd, char *pass, size_t maxlen, long timeout)
 #if defined ENABLE_PWQUALITY
 #include <pwquality.h>
 
-static int tools_check_pwquality(const char *password)
+static int tools_check_pwquality(struct crypt_device *cd, const char *password)
 {
 	int r;
 	void *auxerror;
 	pwquality_settings_t *pwq;
 
-	log_dbg("Checking new password using default pwquality settings.");
+	crypt_logf(cd, CRYPT_LOG_DEBUG, "Checking new password using default pwquality settings.");
 	pwq = pwquality_default_settings();
 	if (!pwq)
 		return -EINVAL;
 
 	r = pwquality_read_config(pwq, NULL, &auxerror);
 	if (r) {
-		log_err(_("Cannot check password quality: %s"),
+		crypt_logf(cd, CRYPT_LOG_ERROR, _("Cannot check password quality: %s"),
 			pwquality_strerror(NULL, 0, r, auxerror));
 		pwquality_free_settings(pwq);
 		return -EINVAL;
@@ -98,11 +96,11 @@ static int tools_check_pwquality(const char *password)
 
 	r = pwquality_check(pwq, password, NULL, NULL, &auxerror);
 	if (r < 0) {
-		log_err(_("Password quality check failed:\n %s"),
+		crypt_logf(cd, CRYPT_LOG_ERROR, _("Password quality check failed:\n %s"),
 			pwquality_strerror(NULL, 0, r, auxerror));
 		r = -EPERM;
 	} else {
-		log_dbg("New password libpwquality score is %d.", r);
+		crypt_logf(cd, CRYPT_LOG_DEBUG, "New password libpwquality score is %d.", r);
 		r = 0;
 	}
 
@@ -112,7 +110,7 @@ static int tools_check_pwquality(const char *password)
 #elif defined ENABLE_PASSWDQC
 #include <passwdqc.h>
 
-static int tools_check_pwquality(const char *password)
+static int tools_check_pwquality(struct crypt_device *cd, const char *password)
 {
 	passwdqc_params_t params;
 	char *parse_reason;
@@ -122,7 +120,7 @@ static int tools_check_pwquality(const char *password)
 	passwdqc_params_reset(&params);
 
 	if (*config && passwdqc_params_load(&params, &parse_reason, config)) {
-		log_err(_("Cannot check password quality: %s"),
+		crypt_logf(cd, CRYPT_LOG_ERROR, _("Cannot check password quality: %s"),
 			(parse_reason ? parse_reason : "Out of memory"));
 		free(parse_reason);
 		return -EINVAL;
@@ -130,7 +128,7 @@ static int tools_check_pwquality(const char *password)
 
 	check_reason = passwdqc_check(&params.qc, password, NULL, NULL);
 	if (check_reason) {
-		log_err(_("Password quality check failed: Bad passphrase (%s)"),
+		crypt_logf(cd, CRYPT_LOG_ERROR, _("Password quality check failed: Bad passphrase (%s)"),
 			check_reason);
 		return -EPERM;
 	}
@@ -138,7 +136,7 @@ static int tools_check_pwquality(const char *password)
 	return 0;
 }
 #else /* !(ENABLE_PWQUALITY || ENABLE_PASSWDQC) */
-static int tools_check_pwquality(const char *password)
+static int tools_check_pwquality(struct crypt_device *cd, const char *password)
 {
 	return 0;
 }
@@ -198,16 +196,16 @@ static int crypt_get_key_tty(const char *prompt,
 	*key = NULL;
 	*key_size = 0;
 
-	log_dbg("Interactive passphrase entry requested.");
+	crypt_logf(cd, CRYPT_LOG_DEBUG, "Interactive passphrase entry requested.");
 
 	pass = crypt_safe_alloc(key_size_max + 1);
 	if (!pass) {
-		log_err( _("Out of memory while reading passphrase."));
+		crypt_logf(cd, CRYPT_LOG_ERROR,  _("Out of memory while reading passphrase."));
 		return -ENOMEM;
 	}
 
 	if (interactive_pass(prompt, pass, key_size_max, timeout)) {
-		log_err(_("Error reading passphrase from terminal."));
+		crypt_logf(cd, CRYPT_LOG_ERROR, _("Error reading passphrase from terminal."));
 		goto out_err;
 	}
 	pass[key_size_max] = '\0';
@@ -215,19 +213,19 @@ static int crypt_get_key_tty(const char *prompt,
 	if (verify) {
 		pass_verify = crypt_safe_alloc(key_size_max);
 		if (!pass_verify) {
-			log_err(_("Out of memory while reading passphrase."));
+			crypt_logf(cd, CRYPT_LOG_ERROR, _("Out of memory while reading passphrase."));
 			r = -ENOMEM;
 			goto out_err;
 		}
 
 		if (interactive_pass(_("Verify passphrase: "),
 		    pass_verify, key_size_max, timeout)) {
-			log_err(_("Error reading passphrase from terminal."));
+			crypt_logf(cd, CRYPT_LOG_ERROR, _("Error reading passphrase from terminal."));
 			goto out_err;
 		}
 
 		if (strncmp(pass, pass_verify, key_size_max)) {
-			log_err(_("Passphrases do not match."));
+			crypt_logf(cd, CRYPT_LOG_ERROR, _("Passphrases do not match."));
 			r = -EPERM;
 			goto out_err;
 		}
@@ -268,7 +266,7 @@ int crypt_cli_get_key(const char *prompt,
 	if (tools_is_stdin(key_file)) {
 		if (isatty(STDIN_FILENO)) {
 			if (keyfile_offset) {
-				log_err(_("Cannot use offset with terminal input."));
+				crypt_logf(cd, CRYPT_LOG_ERROR, _("Cannot use offset with terminal input."));
 			} else {
 				if (!prompt && !crypt_get_device_name(cd))
 					snprintf(tmp, sizeof(tmp), _("Enter passphrase: "));
@@ -280,26 +278,26 @@ int crypt_cli_get_key(const char *prompt,
 				r = crypt_get_key_tty(prompt ?: tmp, key, key_size, timeout, verify, cd);
 			}
 		} else {
-			log_dbg("STDIN descriptor passphrase entry requested.");
+			crypt_logf(cd, CRYPT_LOG_DEBUG, "STDIN descriptor passphrase entry requested.");
 			/* No keyfile means STDIN with EOL handling (\n will end input)). */
 			r = crypt_keyfile_device_read(cd, NULL, key, key_size,
 					keyfile_offset, keyfile_size_max,
 					key_file ? 0 : CRYPT_KEYFILE_STOP_EOL);
 		}
 	} else {
-		log_dbg("File descriptor passphrase entry requested.");
+		crypt_logf(cd, CRYPT_LOG_DEBUG, "File descriptor passphrase entry requested.");
 		r = crypt_keyfile_device_read(cd, key_file, key, key_size,
 					      keyfile_offset, keyfile_size_max, 0);
 	}
 
 	/* Check pwquality for password (not keyfile) */
 	if (pwquality && !key_file && !r)
-		r = tools_check_pwquality(*key);
+		r = tools_check_pwquality(cd, *key);
 
 	return r;
 }
 
-int crypt_cli_read_mk(const char *file, char **key, size_t keysize)
+int crypt_cli_read_mk(struct crypt_device *cd, const char *file, char **key, size_t keysize)
 {
 	int fd;
 	ssize_t ret;
@@ -313,13 +311,13 @@ int crypt_cli_read_mk(const char *file, char **key, size_t keysize)
 
 	fd = open(file, O_RDONLY);
 	if (fd == -1) {
-		log_err(_("Cannot read keyfile %s."), file);
+		crypt_logf(cd, CRYPT_LOG_ERROR, _("Cannot read keyfile %s."), file);
 		goto fail;
 	}
 
 	ret = read_buffer(fd, *key, keysize);
 	if (ret < 0 || (size_t)ret != keysize) {
-		log_err(_("Cannot read %d bytes from keyfile %s."), keysize, file);
+		crypt_logf(cd, CRYPT_LOG_ERROR, _("Cannot read %d bytes from keyfile %s."), keysize, file);
 		close(fd);
 		goto fail;
 	}
@@ -416,25 +414,4 @@ bool crypt_cli_arg_set(struct crypt_cli *ctx, const char *name)
 		return false;
 
 	return arg->set;
-}
-
-__attribute__((format(printf, 5, 6)))
-void crypt_cli_logger(struct crypt_device *cd, int level, const char *file, int line,
-	     const char *format, ...)
-{
-	va_list argp;
-	char target[LOG_MAX_LEN + 2];
-
-	va_start(argp, format);
-
-	if (vsnprintf(&target[0], LOG_MAX_LEN, format, argp) > 0) {
-		/* All verbose and error messages in tools end with EOL. */
-		if (level == CRYPT_LOG_VERBOSE || level == CRYPT_LOG_ERROR || level == CRYPT_LOG_DEBUG ||
-		    level == CRYPT_LOG_DEBUG_JSON)
-			strncat(target, "\n", LOG_MAX_LEN);
-
-		crypt_log(cd, level, target);
-	}
-
-	va_end(argp);
 }
