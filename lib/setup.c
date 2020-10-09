@@ -137,6 +137,7 @@ static int _crypto_logged = 0;
 
 /* Log helper */
 static void (*_default_log)(int level, const char *msg, void *usrptr) = NULL;
+static void *_default_log_usrptr = NULL;
 static int _debug_level = 0;
 
 /* Library can do metadata locking  */
@@ -169,7 +170,7 @@ void crypt_log(struct crypt_device *cd, int level, const char *msg)
 	if (cd && cd->log)
 		cd->log(level, msg, cd->log_usrptr);
 	else if (_default_log)
-		_default_log(level, msg, NULL);
+		_default_log(level, msg, _default_log_usrptr);
 	/* Default to stdout/stderr if there is no callback. */
 	else
 		fprintf(level == CRYPT_LOG_ERROR ? stderr : stdout, "%s", msg);
@@ -550,9 +551,10 @@ void crypt_set_log_callback(struct crypt_device *cd,
 	void (*log)(int level, const char *msg, void *usrptr),
 	void *usrptr)
 {
-	if (!cd)
+	if (!cd) {
 		_default_log = log;
-	else {
+		_default_log_usrptr = usrptr;
+	} else {
 		cd->log = log;
 		cd->log_usrptr = usrptr;
 	}
