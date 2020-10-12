@@ -665,7 +665,10 @@ static int action_resize(void)
 		r = crypt_activate_by_token(cd, NULL, ARG_INT32(OPT_TOKEN_ID_ID), NULL,
 					    CRYPT_ACTIVATE_KEYRING_KEY);
 		tools_keyslot_msg(r, UNLOCKED);
-		if (r < 0 && ARG_SET(OPT_TOKEN_ONLY_ID))
+
+		if (r >= 0)
+			goto resize;
+		else if (ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
 
 		r = tools_get_key(NULL, &password, &passwordLen,
@@ -682,6 +685,7 @@ static int action_resize(void)
 		crypt_safe_free(password);
 	}
 
+resize:
 	if (ARG_UINT64(OPT_DEVICE_SIZE_ID))
 		dev_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
 	else
