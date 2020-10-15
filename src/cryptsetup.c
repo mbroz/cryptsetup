@@ -526,7 +526,6 @@ static int tcryptDump_with_volume_key(struct crypt_device *cd)
 	unsigned i;
 	int r;
 
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	if (!yesDialog(
 	    _("Header dump with volume key is sensitive information\n"
 	      "which allows access to encrypted partition without passphrase.\n"
@@ -1533,8 +1532,6 @@ static int action_luksKillSlot(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
-
 	if ((r = crypt_load(cd, luksType(device_type), NULL))) {
 		log_err(_("Device %s is not a valid LUKS device."),
 			uuid_or_device_header(NULL));
@@ -1590,8 +1587,6 @@ static int action_luksRemoveKey(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
-
 	if ((r = crypt_load(cd, luksType(device_type), NULL))) {
 		log_err(_("Device %s is not a valid LUKS device."),
 			uuid_or_device_header(NULL));
@@ -1645,8 +1640,6 @@ static int luksAddUnboundKey(void)
 
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
-
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
 		log_err(_("Device %s is not a valid LUKS device."),
@@ -1712,8 +1705,6 @@ static int action_luksAddKey(void)
 
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
-
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
 	if ((r = crypt_load(cd, luksType(device_type), NULL))) {
 		log_err(_("Device %s is not a valid LUKS device."),
@@ -1976,7 +1967,6 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	unsigned i;
 	int r;
 
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	if (!yesDialog(
 	    _("The header dump with volume key is sensitive information\n"
 	      "that allows access to encrypted partition without a passphrase.\n"
@@ -2047,7 +2037,6 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 		return -EINVAL;
 	}
 
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
 	if (!yesDialog(
 	    _("The header dump with unbound key is sensitive information.\n"
 	      "This dump should be stored encrypted in a safe place."),
@@ -2191,8 +2180,6 @@ static int action_luksBackup(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
-
 	r = crypt_header_backup(cd, NULL, ARG_STR(OPT_HEADER_BACKUP_FILE_ID));
 out:
 	crypt_free(cd);
@@ -2305,8 +2292,6 @@ static int action_luksErase(void)
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
 
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
-
 	if ((r = crypt_load(cd, luksType(device_type), NULL))) {
 		log_err(_("Device %s is not a valid LUKS device."),
 			uuid_or_device_header(NULL));
@@ -2363,8 +2348,6 @@ static int action_luksConvert(void)
 
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		return r;
-
-	crypt_set_confirm_callback(cd, yesDialog, NULL);
 
 	if ((r = crypt_load(cd, CRYPT_LUKS, NULL)) ||
 	    !(from_type = crypt_get_type(cd))) {
