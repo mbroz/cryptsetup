@@ -27,7 +27,7 @@
  * In future, read max allowed JSON size from config section.
  */
 #define LUKS2_MAX_MDA_SIZE 0x400000
-int tools_read_json_file(struct crypt_device *cd, const char *file, char **json, size_t *json_size)
+int tools_read_json_file(struct crypt_device *cd, const char *file, char **json, size_t *json_size, bool batch_mode)
 {
 	ssize_t ret;
 	int fd, block, r;
@@ -56,7 +56,7 @@ int tools_read_json_file(struct crypt_device *cd, const char *file, char **json,
 		goto out;
 	}
 
-	if (isatty(fd) && !opt_batch_mode)
+	if (isatty(fd) && !batch_mode)
 		log_std(_("Provide valid LUKS2 token JSON:\n"));
 
 	/* we expect JSON (string) */

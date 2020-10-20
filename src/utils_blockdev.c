@@ -189,23 +189,23 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 }
 
 
-static void report_partition(const char *value, const char *device)
+static void report_partition(const char *value, const char *device, bool batch_mode)
 {
-	if (opt_batch_mode)
+	if (batch_mode)
 		log_dbg("Device %s already contains a '%s' partition signature.", device, value);
 	else
 		log_std(_("WARNING: Device %s already contains a '%s' partition signature.\n"), device, value);
 }
 
-static void report_superblock(const char *value, const char *device)
+static void report_superblock(const char *value, const char *device, bool batch_mode)
 {
-	if (opt_batch_mode)
+	if (batch_mode)
 		log_dbg("Device %s already contains a '%s' superblock signature.", device, value);
 	else
 		log_std(_("WARNING: Device %s already contains a '%s' superblock signature.\n"), device, value);
 }
 
-int tools_detect_signatures(const char *device, int ignore_luks, size_t *count)
+int tools_detect_signatures(const char *device, int ignore_luks, size_t *count, bool batch_mode)
 {
 	int r;
 	size_t tmp_count;
@@ -236,9 +236,9 @@ int tools_detect_signatures(const char *device, int ignore_luks, size_t *count)
 
 	while ((pr = blk_probe(h)) < PRB_EMPTY) {
 		if (blk_is_partition(h))
-			report_partition(blk_get_partition_type(h), device);
+			report_partition(blk_get_partition_type(h), device, batch_mode);
 		else if (blk_is_superblock(h))
-			report_superblock(blk_get_superblock_type(h), device);
+			report_superblock(blk_get_superblock_type(h), device, batch_mode);
 		else {
 			log_dbg("Internal tools_detect_signatures() error.");
 			r = -EINVAL;

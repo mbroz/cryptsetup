@@ -25,12 +25,6 @@
 #include <math.h>
 #include <signal.h>
 
-int opt_verbose = 0;
-int opt_debug = 0;
-int opt_debug_json = 0;
-int opt_batch_mode = 0;
-int opt_progress_frequency = 0;
-
 /* interrupt handling */
 volatile int quit = 0;
 static int signals_blocked = 0;
@@ -77,15 +71,17 @@ void check_signal(int *r)
 		*r = -EINTR;
 }
 
-void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
+void tool_log(int level, const char *msg, void *usrptr)
 {
-	switch(level) {
+	struct tools_log_params *params = (struct tools_log_params *)usrptr;
+
+	switch (level) {
 
 	case CRYPT_LOG_NORMAL:
 		fprintf(stdout, "%s", msg);
 		break;
 	case CRYPT_LOG_VERBOSE:
-		if (opt_verbose)
+		if (params && params->verbose)
 			fprintf(stdout, "%s", msg);
 		break;
 	case CRYPT_LOG_ERROR:
@@ -93,7 +89,7 @@ void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
 		break;
 	case CRYPT_LOG_DEBUG_JSON:
 	case CRYPT_LOG_DEBUG:
-		if (opt_debug)
+		if (params && params->debug)
 			fprintf(stdout, "# %s", msg);
 		break;
 	}
@@ -101,7 +97,9 @@ void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)))
 
 void quiet_log(int level, const char *msg, void *usrptr)
 {
-	if (!opt_verbose && (level == CRYPT_LOG_ERROR || level == CRYPT_LOG_NORMAL))
+	struct tools_log_params *params = (struct tools_log_params *)usrptr;
+
+	if ((!params || !params->verbose) && (level == CRYPT_LOG_ERROR || level == CRYPT_LOG_NORMAL))
 		return;
 	tool_log(level, msg, usrptr);
 }
@@ -117,7 +115,7 @@ static int _dialog(const char *msg, void *usrptr, int default_answer)
 	if (block)
 		set_int_block(0);
 
-	if (isatty(STDIN_FILENO) && !opt_batch_mode) {
+	if (isatty(STDIN_FILENO)) {
 		log_std("\nWARNING!\n========\n");
 		log_std("%s\n\nAre you sure? (Type 'yes' in capital letters): ", msg);
 		fflush(stdout);
@@ -156,11 +154,8 @@ void show_status(int errcode)
 {
 	char *crypt_error;
 
-	if(!opt_verbose)
-		return;
-
-	if(!errcode) {
-		log_std(_("Command successful.\n"));
+	if (!errcode) {
+		log_verbose(_("Command successful."));
 		return;
 	}
 
@@ -180,7 +175,7 @@ void show_status(int errcode)
 	else
 		crypt_error = _("unknown error");
 
-	log_std(_("Command failed with code %i (%s).\n"), -errcode, crypt_error);
+	log_verbose(_("Command failed with code %i (%s)."), -errcode, crypt_error);
 }
 
 const char *uuid_or_device(const char *spec)
@@ -352,14 +347,11 @@ static double time_diff(struct timeval *start, struct timeval *end)
 
 static void tools_clear_line(void)
 {
-	if (opt_progress_frequency)
-		return;
 	/* vt100 code clear line */
 	log_std("\33[2K\r");
 }
 
-static void tools_time_progress(uint64_t device_size, uint64_t bytes, uint64_t *start_bytes,
-			 struct timeval *start_time, struct timeval *end_time)
+static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct tools_progress_params *parms)
 {
 	struct timeval now_time;
 	unsigned long long mbytes, eta;
@@ -367,36 +359,33 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, uint64_t *
 	int final = (bytes == device_size);
 	const char *eol, *ustr = "";
 
-	if (opt_batch_mode)
-		return;
-
 	gettimeofday(&now_time, NULL);
-	if (start_time->tv_sec == 0 && start_time->tv_usec == 0) {
-		*start_time = now_time;
-		*end_time = now_time;
-		*start_bytes = bytes;
+	if (parms->start_time.tv_sec == 0 && parms->start_time.tv_usec == 0) {
+		parms->start_time = now_time;
+		parms->end_time = now_time;
+		parms->start_offset = bytes;
 		return;
 	}
 
-	if (opt_progress_frequency) {
-		frequency = (double)opt_progress_frequency;
+	if (parms->frequency) {
+		frequency = (double)parms->frequency;
 		eol = "\n";
 	} else {
 		frequency = 0.5;
 		eol = "";
 	}
 
-	if (!final && time_diff(end_time, &now_time) < frequency)
+	if (!final && time_diff(&parms->end_time, &now_time) < frequency)
 		return;
 
-	*end_time = now_time;
+	parms->end_time = now_time;
 
-	tdiff = time_diff(start_time, end_time);
+	tdiff = time_diff(&parms->start_time, &parms->end_time);
 	if (!tdiff)
 		return;
 
 	mbytes = bytes  / 1024 / 1024;
-	uib = (double)(bytes - *start_bytes) / tdiff;
+	uib = (double)(bytes - parms->start_offset) / tdiff;
 
 	/* FIXME: calculate this from last minute only. */
 	eta = (unsigned long long)(device_size / uib - tdiff);
@@ -412,7 +401,8 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, uint64_t *
 		ustr = "Ki";
 	}
 
-	tools_clear_line();
+	if (!parms->frequency)
+		tools_clear_line();
 	if (final)
 		log_std("Finished, time %02llu:%02llu.%03llu, "
 			"%4llu MiB written, speed %5.1f %sB/s\n",
@@ -430,15 +420,16 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, uint64_t *
 
 int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr)
 {
-	static struct timeval start_time = {}, end_time = {};
-	static uint64_t start_offset = 0;
 	int r = 0;
+	struct tools_progress_params *parms = (struct tools_progress_params *)usrptr;
 
-	tools_time_progress(size, offset, &start_offset, &start_time, &end_time);
+	if (parms && !parms->batch_mode)
+		tools_time_progress(size, offset, parms);
 
 	check_signal(&r);
 	if (r) {
-		tools_clear_line();
+		if (!parms || !parms->frequency)
+			tools_clear_line();
 		log_err(_("\nWipe interrupted."));
 	}
 
@@ -466,15 +457,16 @@ int tools_is_stdin(const char *key_file)
 
 int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr)
 {
-	static struct timeval start_time = {}, end_time = {};
-	static uint64_t start_offset = 0;
 	int r = 0;
+	struct tools_progress_params *parms = (struct tools_progress_params *)usrptr;
 
-	tools_time_progress(size, offset, &start_offset, &start_time, &end_time);
+	if (parms && !parms->batch_mode)
+		tools_time_progress(size, offset, parms);
 
 	check_signal(&r);
 	if (r) {
-		tools_clear_line();
+		if (!parms || !parms->frequency)
+			tools_clear_line();
 		log_err(_("\nReencryption interrupted."));
 	}
 

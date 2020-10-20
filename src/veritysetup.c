@@ -26,6 +26,7 @@
 
 static const char **action_argv;
 static int action_argc;
+static struct tools_log_params log_parms;
 
 void tools_cleanup(void)
 {
@@ -462,6 +463,14 @@ static void basic_options_cb(poptContext popt_context,
 		 void *data __attribute__((unused)))
 {
 	tools_parse_arg_value(popt_context, tool_core_args[key->val].type, tool_core_args + key->val, arg, key->val, NULL);
+
+	switch (key->val) {
+	case OPT_DEBUG_ID:
+		log_parms.debug = true;
+		/* fall through */
+	case OPT_VERBOSE_ID:
+		log_parms.verbose = true;
+	}
 }
 
 int main(int argc, const char **argv)
@@ -492,7 +501,7 @@ int main(int argc, const char **argv)
 	const char *aname;
 	int r;
 
-	crypt_set_log_callback(NULL, tool_log, NULL);
+	crypt_set_log_callback(NULL, tool_log, &log_parms);
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
@@ -568,13 +577,9 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_DEBUG_ID)) {
-		ARG_SET_TRUE(OPT_VERBOSE_ID);
 		crypt_set_debug_level(CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
 	}
-
-	opt_verbose = ARG_SET(OPT_VERBOSE_ID) ? 1 : 0;
-	opt_debug = ARG_SET(OPT_DEBUG_ID) ? 1 : 0;
 
 	r = run_action(action);
 	tools_cleanup();

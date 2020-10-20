@@ -33,6 +33,7 @@
 
 static const char **action_argv;
 static int action_argc;
+static struct tools_log_params log_parms;
 
 void tools_cleanup(void)
 {
@@ -83,6 +84,10 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 	char tmp_name[64], tmp_path[128], tmp_uuid[40];
 	uuid_t tmp_uuid_bin;
 	int r;
+	struct tools_progress_params prog_parms = {
+		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+	};
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID))
 		log_std(_("Wiping device to initialize integrity checksum.\n"
@@ -105,7 +110,7 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 	/* Wipe the device */
 	set_int_handler(0);
 	r = crypt_wipe(cd, tmp_path, CRYPT_WIPE_ZERO, 0, 0, DEFAULT_WIPE_BLOCK,
-		       0, &tools_wipe_progress, NULL);
+		       0, &tools_wipe_progress, &prog_parms);
 	if (crypt_deactivate(cd, tmp_name))
 		log_err(_("Cannot deactivate temporary device %s."), tmp_path);
 	set_int_block(0);
@@ -164,18 +169,20 @@ static int action_format(int arg)
 	if (r < 0)
 		goto out;
 
-	r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
-	if (r == -1) {
-		r = -ENOMEM;
-		goto out;
+	if (!ARG_SET(OPT_BATCH_MODE_ID)) {
+		r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
+		if (r == -1) {
+			r = -ENOMEM;
+			goto out;
+		}
+
+		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+		free(msg);
+		if (r < 0)
+			goto out;
 	}
 
-	r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
-	free(msg);
-	if (r < 0)
-		goto out;
-
-	r = tools_detect_signatures(action_argv[0], 0, &signatures);
+	r = tools_detect_signatures(action_argv[0], 0, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
 	if (r < 0)
 		goto out;
 
@@ -499,6 +506,12 @@ static void basic_options_cb(poptContext popt_context,
 
 	/* special cases additional handling */
 	switch (key->val) {
+	case OPT_DEBUG_ID:
+		log_parms.debug = true;
+		/* fall through */
+	case OPT_VERBOSE_ID:
+		log_parms.verbose = true;
+		break;
 	case OPT_INTEGRITY_KEY_SIZE_ID:
 		/* fall through */
 	case OPT_JOURNAL_INTEGRITY_KEY_SIZE_ID:
@@ -539,7 +552,7 @@ int main(int argc, const char **argv)
 	const char *aname;
 	int r;
 
-	crypt_set_log_callback(NULL, tool_log, NULL);
+	crypt_set_log_callback(NULL, tool_log, &log_parms);
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
@@ -641,15 +654,9 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_DEBUG_ID)) {
-		ARG_SET_TRUE(OPT_VERBOSE_ID);
 		crypt_set_debug_level(CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
 	}
-
-	opt_verbose = ARG_SET(OPT_VERBOSE_ID) ? 1 : 0;
-	opt_debug = ARG_SET(OPT_DEBUG_ID) ? 1 : 0;
-	opt_batch_mode = ARG_SET(OPT_BATCH_MODE_ID) ? 1 : 0;
-	opt_progress_frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID);
 
 	r = run_action(action);
 	tools_cleanup();

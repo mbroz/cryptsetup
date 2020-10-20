@@ -64,12 +64,6 @@
 # define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
-extern int opt_debug;
-extern int opt_debug_json;
-extern int opt_verbose;
-extern int opt_batch_mode;
-extern int opt_progress_frequency;
-
 /* Common tools */
 void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)));
 void quiet_log(int level, const char *msg, void *usrptr);
@@ -104,13 +98,21 @@ int tools_is_stdin(const char *key_file);
 int tools_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size);
 int tools_is_cipher_null(const char *cipher);
 
+struct tools_progress_params {
+	uint32_t frequency;
+	struct timeval start_time;
+	struct timeval end_time;
+	uint64_t start_offset;
+	bool batch_mode;
+};
+
 int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr);
 int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr);
 
-int tools_read_json_file(struct crypt_device *cd, const char *file, char **json, size_t *json_size);
+int tools_read_json_file(struct crypt_device *cd, const char *file, char **json, size_t *json_size, bool batch_mode);
 int tools_write_json_file(struct crypt_device *cd, const char *file, const char *json);
 
-int tools_detect_signatures(const char *device, int ignore_luks, size_t *count);
+int tools_detect_signatures(const char *device, int ignore_luks, size_t *count, bool batch_mode);
 int tools_wipe_all_signatures(const char *path);
 
 int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
@@ -132,5 +134,10 @@ void tools_cleanup(void);
 #define log_std(x...) crypt_logf(NULL, CRYPT_LOG_NORMAL, x)
 #define log_verbose(x...) crypt_logf(NULL, CRYPT_LOG_VERBOSE, x)
 #define log_err(x...) crypt_logf(NULL, CRYPT_LOG_ERROR, x)
+
+struct tools_log_params {
+	bool verbose;
+	bool debug;
+};
 
 #endif /* CRYPTSETUP_H */

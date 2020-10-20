@@ -35,6 +35,8 @@ static const char **action_argv;
 
 static const char *set_pbkdf = NULL;
 
+static struct tools_log_params log_parms;
+
 #define MAX_SLOT 32
 #define MAX_TOKEN 32
 struct reenc_ctx {
@@ -909,6 +911,10 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			     size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2;
+	struct tools_progress_params prog_parms = {
+		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+	};
 
 	log_dbg("Reencrypting in forward direction.");
 
@@ -920,7 +926,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 	rc->resume_bytes = *bytes = rc->device_offset;
 
-	tools_reencrypt_progress(rc->device_size, *bytes, NULL);
+	tools_reencrypt_progress(rc->device_size, *bytes, &prog_parms);
 
 	if (write_log(rc) < 0)
 		return -EIO;
@@ -956,7 +962,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 		*bytes += (uint64_t)s2;
 
-		tools_reencrypt_progress(rc->device_size, *bytes, NULL);
+		tools_reencrypt_progress(rc->device_size, *bytes, &prog_parms);
 	}
 
 	return quit ? -EAGAIN : 0;
@@ -967,6 +973,10 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 {
 	ssize_t s1, s2, working_block;
 	off64_t working_offset;
+	struct tools_progress_params prog_parms = {
+		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+	};
 
 	log_dbg("Reencrypting in backward direction.");
 
@@ -979,7 +989,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		*bytes = rc->resume_bytes;
 	}
 
-	tools_reencrypt_progress(rc->device_size, *bytes, NULL);
+	tools_reencrypt_progress(rc->device_size, *bytes, &prog_parms);
 
 	if (write_log(rc) < 0)
 		return -EIO;
@@ -1027,7 +1037,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 		*bytes += (uint64_t)s2;
 
-		tools_reencrypt_progress(rc->device_size, *bytes, NULL);
+		tools_reencrypt_progress(rc->device_size, *bytes, &prog_parms);
 	}
 
 	return quit ? -EAGAIN : 0;
@@ -1593,6 +1603,12 @@ static void basic_options_cb(poptContext popt_context,
 
 	/* special cases additional handling */
 	switch (key->val) {
+	case OPT_DEBUG_ID:
+		log_parms.debug = true;
+		/* fall through */
+	case OPT_VERBOSE_ID:
+		log_parms.verbose = true;
+		break;
 	case OPT_BLOCK_SIZE_ID:
 		if (ARG_UINT32(OPT_BLOCK_SIZE_ID) < 1 || ARG_UINT32(OPT_BLOCK_SIZE_ID) > 64)
 			usage(popt_context, EXIT_FAILURE,
@@ -1643,7 +1659,7 @@ int main(int argc, const char **argv)
 	poptContext popt_context;
 	int r;
 
-	crypt_set_log_callback(NULL, tool_log, NULL);
+	crypt_set_log_callback(NULL, tool_log, &log_parms);
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
@@ -1720,15 +1736,9 @@ int main(int argc, const char **argv)
 		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_DEBUG_ID)) {
-		ARG_SET_TRUE(OPT_VERBOSE_ID);
 		crypt_set_debug_level(CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
 	}
-
-	opt_verbose = ARG_SET(OPT_VERBOSE_ID) ? 1 : 0;
-	opt_debug = ARG_SET(OPT_DEBUG_ID) ? 1 : 0;
-	opt_batch_mode = ARG_SET(OPT_BATCH_MODE_ID) ? 1 : 0;
-	opt_progress_frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID);
 
 	r = run_reencrypt(action_argv[0]);
 	tools_cleanup();
