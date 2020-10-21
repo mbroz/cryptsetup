@@ -1256,8 +1256,8 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 	/* Create header file (must contain at least one sector)? */
 	if (opt_header_device && stat(opt_header_device, &st) < 0 && errno == ENOENT) {
 		if (!opt_batch_mode &&
-		    !yesDialog("Header file does not exist, do you want to create it?",
-			    _("Operation aborted.\n")))
+		    !yesDialog(_("Header file does not exist, do you want to create it?"),
+			       _("Operation aborted.\n")))
 		    return -EPERM;
 
 		log_dbg("Creating header file.");
