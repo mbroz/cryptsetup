@@ -63,7 +63,7 @@ remove data. For a full wipe, overwrite the whole partition before
 container creation. If you do not know how to do that, the
 cryptsetup FAQ describes several options.
 
-.SH BASIC COMMANDS
+.SH BASIC ACTIONS
 The following are valid actions for all supported device types.
 
 \fIopen\fR <device> <name> \-\-type <device_type>
@@ -280,7 +280,7 @@ of reading the passphrase from a file you can
 give '-' as file name, which results in the passphrase being read
 from stdin and the safety-question being skipped.
 
-You can only call luksFormat on a LUKS device that is not mapped.
+In case the device you are going to call luksFormat on already contains a LUKS device that is mapped, you have to close the device first in order to be able to format it.
 
 To use LUKS2, specify \fI\-\-type luks2\fR.
 
@@ -837,7 +837,7 @@ If \-\-debug\-json is used, additional LUKS2 JSON data structures are printed.
 .TP
 .B "\-\-type <device-type>
 Specifies required device type, for more info
-read \fIBASIC COMMANDS\fR section.
+read \f BASIC ACTIONS\fR section.
 .TP
 .B "\-\-hash, \-h \fI<hash\-spec>\fR"
 Specifies the passphrase hash for \fIopen\fR (for plain and
@@ -1486,6 +1486,27 @@ Show short option help.
 .TP
 .B "\-\-help, \-?"
 Show help text and default parameters.
+.SH EXAMPLE
+.TP
+Example 1: Create LUKS 2 container on block device /dev/sdX.
+sudo cryptsetup --type luks2 luksFormat /dev/sdX
+.TP
+Example 2: Add an additional passphrase to key slot 5.
+sudo cryptsetup luksAddKey --key-slot 5 /dev/sdX
+.TP
+Example 3: Create LUKS header backup and save it to file.
+sudo cryptsetup luksHeaderBackup /dev/sdX --header-backup-file /var/tmp/NameOfBackupFile
+.TP
+Example 4: Open LUKS contaner on /dev/sdX and map it to sdX_crypt.
+sudo cryptsetup open /dev/sdX sdX_crypt
+.TP
+.B WARNING: The command in example 5 will erase all key slots. Your cannot use your luks container afterwards anymore unless you have a backup to restore.
+.TP
+Example 5: Erase all key slots on /dev/sdX.
+sudo cryptsetup erase /dev/sdX
+.TP
+Example 6: Restore LUKS header from backup file.
+sudo cryptsetup luksHeaderRestore /dev/sdX --header-backup-file /var/tmp/NameOfBackupFile
 .SH RETURN CODES
 Cryptsetup returns 0 on success and a non-zero value on error.
 
