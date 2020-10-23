@@ -1,5 +1,5 @@
 /*
- * Cryptsetup command line arguments list
+ * Command line arguments parsing helpers
  *
  * Copyright (C) 2020 Red Hat, Inc. All rights reserved.
  * Copyright (C) 2020 Ondrej Kozina
