@@ -152,6 +152,9 @@ static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 	/* Set IV */
 	if (iv) {
 		header = CMSG_NXTHDR(&msg, header);
+		if (!header)
+			return -EINVAL;
+
 		header->cmsg_level = SOL_ALG;
 		header->cmsg_type = ALG_SET_IV;
 		header->cmsg_len = iv_msg_size;
