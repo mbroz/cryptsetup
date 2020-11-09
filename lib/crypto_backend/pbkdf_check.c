@@ -361,8 +361,10 @@ static int crypt_pbkdf_check(const char *kdf, const char *hash,
 		ms = time_ms(&rstart, &rend);
 		if (ms) {
 			PBKDF2_temp = (double)iterations * target_ms / ms;
-			if (PBKDF2_temp > UINT32_MAX)
-				return -EINVAL;
+			if (PBKDF2_temp > UINT32_MAX) {
+				r = -EINVAL;
+				goto out;
+			}
 			*iter_secs = (uint32_t)PBKDF2_temp;
 		}
 
