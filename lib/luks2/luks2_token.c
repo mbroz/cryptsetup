@@ -351,7 +351,7 @@ static void LUKS2_token_buffer_free(struct crypt_device *cd,
 {
 	const crypt_token_handler *h = LUKS2_token_handler(cd, token);
 
-	if (h->buffer_free)
+	if (h && h->buffer_free)
 		h->buffer_free(buffer, buffer_len);
 	else {
 		crypt_safe_memzero(buffer, buffer_len);
