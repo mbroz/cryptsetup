@@ -674,6 +674,10 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			       sizeof(entry_vmk));
 
 			vmk = malloc(sizeof(struct bitlk_vmk));
+			if (!vmk) {
+				r = -ENOMEM;
+				goto out;
+			}
 			memset(vmk, 0, sizeof(struct bitlk_vmk));
 
 			guid_to_string(&entry_vmk.guid, guid_buf);
@@ -702,6 +706,10 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		/* FVEK */
 		} else if (entry_type == BITLK_ENTRY_TYPE_FVEK) {
 			params->fvek = malloc(sizeof(struct bitlk_fvek));
+			if (!params->fvek) {
+				r = -ENOMEM;
+				goto out;
+			}
 			memcpy(params->fvek->nonce,
 			       fve_entries + start + BITLK_ENTRY_HEADER_LEN,
 			       sizeof(params->fvek->nonce));
