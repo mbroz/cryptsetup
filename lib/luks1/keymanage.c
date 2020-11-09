@@ -386,6 +386,8 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 		return -EINVAL;
 
 	vk = crypt_alloc_volume_key(phdr->keyBytes, NULL);
+	if (!vk)
+		return -ENOMEM;
 
 	log_verbose(ctx, _("Repairing keyslots."));
 
