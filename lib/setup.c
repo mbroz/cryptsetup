@@ -4671,6 +4671,8 @@ int crypt_volume_key_get(struct crypt_device *cd,
 			r = 0;
 		} else
 			log_err(cd, _("Cannot retrieve root hash for verity device."));
+	} else if (isBITLK(cd->type)) {
+		r = BITLK_get_volume_key(cd, passphrase, passphrase_size, &cd->u.bitlk.params, &vk);
 	} else
 		log_err(cd, _("This operation is not supported for %s crypt device."), cd->type ?: "(none)");
 

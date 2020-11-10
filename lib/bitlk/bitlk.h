@@ -117,6 +117,12 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params);
 
 int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_metadata *params);
 
+int BITLK_get_volume_key(struct crypt_device *cd,
+			 const char *password,
+			 size_t passwordLen,
+			 const struct bitlk_metadata *params,
+			 struct volume_key **open_fvek_key);
+
 int BITLK_activate(struct crypt_device *cd,
 		   const char *name,
 		   const char *password,

@@ -589,6 +589,70 @@ out:
 	return r;
 }
 
+static int bitlkDump_with_volume_key(struct crypt_device *cd)
+{
+	char *vk = NULL, *password = NULL;
+	size_t passwordLen = 0;
+	size_t vk_size;
+	unsigned i;
+	int r;
+
+	if (!yesDialog(
+	    _("The header dump with volume key is sensitive information\n"
+	      "that allows access to encrypted partition without a passphrase.\n"
+	      "This dump should be stored encrypted in a safe place."),
+	      NULL))
+		return -EPERM;
+
+	vk_size = crypt_get_volume_key_size(cd);
+	vk = crypt_safe_alloc(vk_size);
+	if (!vk)
+		return -ENOMEM;
+
+	r = tools_get_key(NULL, &password, &passwordLen,
+			  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
+			  ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+	if (r < 0)
+		goto out;
+
+	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size,
+				 password, passwordLen);
+	tools_passphrase_msg(r);
+	check_signal(&r);
+	if (r < 0)
+		goto out;
+	tools_keyslot_msg(r, UNLOCKED);
+
+	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
+		r = tools_write_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), vk, vk_size);
+		if (r < 0)
+			goto out;
+	}
+
+	log_std("BITLK header information for %s\n", crypt_get_device_name(cd));
+	log_std("Cipher name:   \t%s\n", crypt_get_cipher(cd));
+	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
+	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
+	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
+	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
+		log_std("Key stored to file %s.\n", ARG_STR(OPT_MASTER_KEY_FILE_ID));
+		goto out;
+	}
+	log_std("MK dump:\t");
+
+	for(i = 0; i < vk_size; i++) {
+		if (i && !(i % 16))
+			log_std("\n\t\t");
+		log_std("%02hhx ", (char)vk[i]);
+	}
+	log_std("\n");
+
+out:
+	crypt_safe_free(password);
+	crypt_safe_free(vk);
+	return r;
+}
+
 static int action_bitlkDump(void)
 {
 	struct crypt_device *cd = NULL;
@@ -601,7 +665,10 @@ static int action_bitlkDump(void)
 	if (r < 0)
 		goto out;
 
-	r = crypt_dump(cd);
+	if (ARG_SET(OPT_DUMP_MASTER_KEY_ID))
+		r = bitlkDump_with_volume_key(cd);
+	else
+		r = crypt_dump(cd);
 out:
 	crypt_free(cd);
 	return r;

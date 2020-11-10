@@ -1115,45 +1115,17 @@ out:
 	return r;
 }
 
-int BITLK_activate(struct crypt_device *cd,
-		   const char *name,
-		   const char *password,
-		   size_t passwordLen,
-		   const struct bitlk_metadata *params,
-		   uint32_t flags)
+int BITLK_get_volume_key(struct crypt_device *cd,
+			 const char *password,
+			 size_t passwordLen,
+			 const struct bitlk_metadata *params,
+			 struct volume_key **open_fvek_key)
 {
 	int r = 0;
-	int i = 0;
-	int j = 0;
-	int min = 0;
-	int num_segments = 0;
-	struct crypt_dm_active_device dmd = {
-		.flags = flags,
-	};
-	struct dm_target *next_segment = NULL;
 	struct volume_key *open_vmk_key = NULL;
-	struct volume_key *open_fvek_key = NULL;
 	struct volume_key *vmk_dec_key = NULL;
 	struct volume_key *recovery_key = NULL;
 	const struct bitlk_vmk *next_vmk = NULL;
-	struct segment segments[MAX_BITLK_SEGMENTS] = {};
-	struct segment temp;
-	uint64_t next_start = 0;
-	uint64_t next_end = 0;
-	uint64_t last_segment = 0;
-	uint32_t dmt_flags;
-
-	if (!params->state) {
-		log_err(cd, _("This BITLK device is in an unsupported state and cannot be activated."));
-		r = -ENOTSUP;
-		goto out;
-	}
-
-	if (params->type != BITLK_ENCRYPTION_TYPE_NORMAL) {
-		log_err(cd, _("BITLK devices with type '%s' cannot be activated."), get_bitlk_type_string(params->type));
-		r = -ENOTSUP;
-		goto out;
-	}
 
 	next_vmk = params->vmks;
 	while (next_vmk) {
@@ -1220,7 +1192,7 @@ int BITLK_activate(struct crypt_device *cd,
 		}
 		crypt_free_volume_key(vmk_dec_key);
 
-		r = decrypt_key(cd, &open_fvek_key, params->fvek->vk, open_vmk_key,
+		r = decrypt_key(cd, open_fvek_key, params->fvek->vk, open_vmk_key,
 				params->fvek->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
 				params->fvek->nonce, BITLK_NONCE_SIZE, true);
 		if (r < 0) {
@@ -1240,6 +1212,50 @@ int BITLK_activate(struct crypt_device *cd,
 		log_dbg(cd, "No more VMKs to try.");
 		return r;
 	}
+
+	return 0;
+}
+
+int BITLK_activate(struct crypt_device *cd,
+		   const char *name,
+		   const char *password,
+		   size_t passwordLen,
+		   const struct bitlk_metadata *params,
+		   uint32_t flags)
+{
+	int r = 0;
+	int i = 0;
+	int j = 0;
+	int min = 0;
+	int num_segments = 0;
+	struct crypt_dm_active_device dmd = {
+		.flags = flags,
+	};
+	struct dm_target *next_segment = NULL;
+	struct volume_key *open_fvek_key = NULL;
+	const struct bitlk_vmk *next_vmk = NULL;
+	struct segment segments[MAX_BITLK_SEGMENTS] = {};
+	struct segment temp;
+	uint64_t next_start = 0;
+	uint64_t next_end = 0;
+	uint64_t last_segment = 0;
+	uint32_t dmt_flags;
+
+	if (!params->state) {
+		log_err(cd, _("This BITLK device is in an unsupported state and cannot be activated."));
+		r = -ENOTSUP;
+		goto out;
+	}
+
+	if (params->type != BITLK_ENCRYPTION_TYPE_NORMAL) {
+		log_err(cd, _("BITLK devices with type '%s' cannot be activated."), get_bitlk_type_string(params->type));
+		r = -ENOTSUP;
+		goto out;
+	}
+
+	r = BITLK_get_volume_key(cd, password, passwordLen, params, &open_fvek_key);
+	if (r < 0)
+		return r;
 
 	/* Password verify only */
 	if (!name) {
