@@ -6,6 +6,7 @@
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 TST_DIR=bitlk-images
 MAP=bitlktst
+DUMP_MK_FILE=bitlk-test-mk
 
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs
@@ -138,6 +139,30 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		[ "$sha256sum" = "$SHA256SUM" ] || fail " SHA256 sum check failed."
 		echo " [OK]"
 	done
+
+	# test with master key
+	rm -f $DUMP_MK_FILE >/dev/null 2>&1
+	echo -n " $file"
+	echo $PASSPHRASE | $CRYPTSETUP bitlkDump -r $file --dump-master-key --master-key-file $DUMP_MK_FILE >/dev/null 2>&1
+	ret=$?
+	[ $ret -eq 0 ] || fail " failed to dump master key"
+	$CRYPTSETUP bitlkOpen -r $file $MAP --master-key-file $DUMP_MK_FILE >/dev/null 2>&1
+	ret=$?
+	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc" ) && echo " [N/A]" && continue
+	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc-elephant" ) && echo " [N/A]" && continue
+	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "clearkey" ) && echo " [N/A]" && continue
+	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "eow" ) && echo " [N/A]" && continue
+	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "-4k.img" ) && echo " [N/A]" && continue
+	[ $ret -eq 0 ] || fail " failed to open $file using master key ($ret)"
+	$CRYPTSETUP status $MAP >/dev/null || fail
+	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
+	uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
+	sha256sum=$(sha256sum /dev/mapper/$MAP | cut -d" " -f1)
+	$CRYPTSETUP remove $MAP || fail
+	[ "$uuid" = "$UUID" ] || fail " UUID check failed."
+	[ "$sha256sum" = "$SHA256SUM" ] || fail " SHA256 sum check failed."
+	echo " [OK]"
+	rm -f $DUMP_MK_FILE >/dev/null 2>&1
 
 	# startup key test -- we need to use BEK file from the archive
 	if echo "$file" | grep -q -e "startup-key"; then
