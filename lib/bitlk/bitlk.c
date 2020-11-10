@@ -456,6 +456,9 @@ void BITLK_bitlk_vmk_free(struct bitlk_vmk *vmk)
 
 void BITLK_bitlk_metadata_free(struct bitlk_metadata *metadata)
 {
+	if (!metadata)
+		return;
+
 	free(metadata->guid);
 	if (metadata->description)
 		free(metadata->description);
