@@ -587,12 +587,12 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	switch (le16_to_cpu(fve.encryption)) {
 	/* AES-CBC with Elephant difuser */
 	case 0x8000:
-		params->key_size = 128;
+		params->key_size = 256;
 		params->cipher = "aes";
 		params->cipher_mode = "cbc-elephant";
 		break;
 	case 0x8001:
-		params->key_size = 256;
+		params->key_size = 512;
 		params->cipher = "aes";
 		params->cipher_mode = "cbc-elephant";
 		break;
@@ -609,12 +609,12 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		break;
 	/* AES-XTS */
 	case 0x8004:
-		params->key_size = 128;
+		params->key_size = 256;
 		params->cipher = "aes";
 		params->cipher_mode = "xts-plain64";
 		break;
 	case 0x8005:
-		params->key_size = 256;
+		params->key_size = 512;
 		params->cipher = "aes";
 		params->cipher_mode = "xts-plain64";
 		break;
@@ -1098,7 +1098,7 @@ static int decrypt_key(struct crypt_device *cd,
 	}
 
 	if (is_fvek && strcmp(crypt_get_cipher_mode(cd), "cbc-elephant") == 0 &&
-		crypt_get_volume_key_size(cd) == 16) {
+		crypt_get_volume_key_size(cd) == 32) {
 		/* 128bit AES-CBC with Elephant -- key size is 256 bit (2 keys) but key data is 512 bits,
 		   data: 16B CBC key, 16B empty, 16B elephant key, 16B empty */
 		memcpy(outbuf + 16 + BITLK_OPEN_KEY_METADATA_LEN,
