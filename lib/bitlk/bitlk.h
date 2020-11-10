@@ -123,12 +123,19 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 			 const struct bitlk_metadata *params,
 			 struct volume_key **open_fvek_key);
 
-int BITLK_activate(struct crypt_device *cd,
-		   const char *name,
-		   const char *password,
-		   size_t passwordLen,
-		   const struct bitlk_metadata *params,
-		   uint32_t flags);
+int BITLK_activate_by_passphrase(struct crypt_device *cd,
+				 const char *name,
+				 const char *password,
+				 size_t passwordLen,
+				 const struct bitlk_metadata *params,
+				 uint32_t flags);
+
+int BITLK_activate_by_volume_key(struct crypt_device *cd,
+				 const char *name,
+				 const char *volume_key,
+				 size_t volume_key_size,
+				 const struct bitlk_metadata *params,
+				 uint32_t flags);
 
 void BITLK_bitlk_fvek_free(struct bitlk_fvek *fvek);
 void BITLK_bitlk_vmk_free(struct bitlk_vmk *vmk);

@@ -1216,12 +1216,38 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 	return 0;
 }
 
-int BITLK_activate(struct crypt_device *cd,
-		   const char *name,
-		   const char *password,
-		   size_t passwordLen,
-		   const struct bitlk_metadata *params,
-		   uint32_t flags)
+static int _activate_check(struct crypt_device *cd,
+		           const struct bitlk_metadata *params)
+{
+	const struct bitlk_vmk *next_vmk = NULL;
+
+	if (!params->state) {
+		log_err(cd, _("This BITLK device is in an unsupported state and cannot be activated."));
+		return -ENOTSUP;
+	}
+
+	if (params->type != BITLK_ENCRYPTION_TYPE_NORMAL) {
+		log_err(cd, _("BITLK devices with type '%s' cannot be activated."), get_bitlk_type_string(params->type));
+		return -ENOTSUP;
+	}
+
+	next_vmk = params->vmks;
+	while (next_vmk) {
+		if (next_vmk->protection == BITLK_PROTECTION_CLEAR_KEY) {
+			log_err(cd, _("Activation of partially decrypted BITLK device is not supported."));
+			return -ENOTSUP;
+		}
+		next_vmk = next_vmk->next;
+	}
+
+	return 0;
+}
+
+static int _activate(struct crypt_device *cd,
+		     const char *name,
+		     struct volume_key *open_fvek_key,
+		     const struct bitlk_metadata *params,
+		     uint32_t flags)
 {
 	int r = 0;
 	int i = 0;
@@ -1232,8 +1258,6 @@ int BITLK_activate(struct crypt_device *cd,
 		.flags = flags,
 	};
 	struct dm_target *next_segment = NULL;
-	struct volume_key *open_fvek_key = NULL;
-	const struct bitlk_vmk *next_vmk = NULL;
 	struct segment segments[MAX_BITLK_SEGMENTS] = {};
 	struct segment temp;
 	uint64_t next_start = 0;
@@ -1241,44 +1265,14 @@ int BITLK_activate(struct crypt_device *cd,
 	uint64_t last_segment = 0;
 	uint32_t dmt_flags;
 
-	if (!params->state) {
-		log_err(cd, _("This BITLK device is in an unsupported state and cannot be activated."));
-		r = -ENOTSUP;
-		goto out;
-	}
-
-	if (params->type != BITLK_ENCRYPTION_TYPE_NORMAL) {
-		log_err(cd, _("BITLK devices with type '%s' cannot be activated."), get_bitlk_type_string(params->type));
-		r = -ENOTSUP;
-		goto out;
-	}
-
-	r = BITLK_get_volume_key(cd, password, passwordLen, params, &open_fvek_key);
-	if (r < 0)
+	r = _activate_check(cd, params);
+	if (r)
 		return r;
-
-	/* Password verify only */
-	if (!name) {
-		crypt_free_volume_key(open_fvek_key);
-		return r;
-	}
-
-	next_vmk = params->vmks;
-	while (next_vmk) {
-		if (next_vmk->protection == BITLK_PROTECTION_CLEAR_KEY) {
-			crypt_free_volume_key(open_fvek_key);
-			log_err(cd, _("Activation of partially decrypted BITLK device is not supported."));
-			return -ENOTSUP;
-		}
-		next_vmk = next_vmk->next;
-	}
 
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
 				0, &dmd.size, &dmd.flags);
-	if (r) {
-		crypt_free_volume_key(open_fvek_key);
+	if (r)
 		return r;
-	}
 
 	/* there will be always 4 dm-zero segments: 3x metadata, 1x FS header */
 	for (i = 0; i < 3; i++) {
@@ -1413,6 +1407,57 @@ int BITLK_activate(struct crypt_device *cd,
 	}
 out:
 	dm_targets_free(cd, &dmd);
+	return r;
+}
+
+int BITLK_activate_by_passphrase(struct crypt_device *cd,
+				 const char *name,
+				 const char *password,
+				 size_t passwordLen,
+				 const struct bitlk_metadata *params,
+				 uint32_t flags)
+{
+	int r = 0;
+	struct volume_key *open_fvek_key = NULL;
+
+	r = _activate_check(cd, params);
+	if (r)
+		return r;
+
+	r = BITLK_get_volume_key(cd, password, passwordLen, params, &open_fvek_key);
+	if (r < 0)
+		goto out;
+
+	/* Password verify only */
+	if (!name)
+		goto out;
+
+	r = _activate(cd, name, open_fvek_key, params, flags);
+out:
+	crypt_free_volume_key(open_fvek_key);
+	return r;
+}
+
+int BITLK_activate_by_volume_key(struct crypt_device *cd,
+				 const char *name,
+				 const char *volume_key,
+				 size_t volume_key_size,
+				 const struct bitlk_metadata *params,
+				 uint32_t flags)
+{
+	int r = 0;
+	struct volume_key *open_fvek_key = NULL;
+
+	r = _activate_check(cd, params);
+	if (r)
+		return r;
+
+	open_fvek_key = crypt_alloc_volume_key(volume_key_size, volume_key);
+	if (!open_fvek_key)
+		return -ENOMEM;
+
+	r = _activate(cd, name, open_fvek_key, params, flags);
+
 	crypt_free_volume_key(open_fvek_key);
 	return r;
 }

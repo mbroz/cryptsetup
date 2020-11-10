@@ -4121,8 +4121,8 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 		r = _open_and_activate_luks2(cd, keyslot, name, passphrase, passphrase_size, flags);
 		keyslot = r;
 	} else if (isBITLK(cd->type)) {
-		r = BITLK_activate(cd, name, passphrase, passphrase_size,
-				   &cd->u.bitlk.params, flags);
+		r = BITLK_activate_by_passphrase(cd, name, passphrase, passphrase_size,
+						 &cd->u.bitlk.params, flags);
 		keyslot = 0;
 	} else {
 		log_err(cd, _("Device type is not properly initialized."));
@@ -4381,6 +4381,9 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 				       cd->u.integrity.journal_crypt_key,
 				       cd->u.integrity.journal_mac_key, flags,
 				       cd->u.integrity.sb_flags);
+	} else if (isBITLK(cd->type)) {
+		r = BITLK_activate_by_volume_key(cd, name, volume_key, volume_key_size,
+						 &cd->u.bitlk.params, flags);
 	} else {
 		log_err(cd, _("Device type is not properly initialized."));
 		r = -EINVAL;
