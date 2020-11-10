@@ -280,7 +280,7 @@ of reading the passphrase from a file you can
 give '-' as file name, which results in the passphrase being read
 from stdin and the safety-question being skipped.
 
-In case the device you are going to call luksFormat on already contains a LUKS device that is mapped, you have to close the device first in order to be able to format it.
+You cannot call luksFormat on a device or filesystem that is mapped or in use, e.g. mounted filesysem, used in LVM, active RAID member etc. The device or filesystem has to be un-mounted in order to call luksFormat.
 
 To use LUKS2, specify \fI\-\-type luks2\fR.
 
