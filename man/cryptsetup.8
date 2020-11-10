@@ -771,8 +771,16 @@ Linux kernel version 5.3 and for devices using Elephant diffuser kernel 5.6.
 The \fBbitlkDump\fR command should work for all recognized BITLK devices
 and doesn't require superuser privilege.
 
-For unlocking with the \fBopen\fR a password or a recovery passphrase must
-be provided. Other unlocking methods (TPM, SmartCard) are not supported.
+For unlocking with the \fBopen\fR a password or a recovery passphrase or
+a startup key must be provided.
+
+Additionaly unlocking using master key is
+supported. You must provide BitLocker Full Volume Encryption Key (FVEK)
+using the \-\-master\-key\-file option. The key must be decrypted and
+without the header (only 128/256/512 bits of key data depending on used
+cipher and mode).
+
+Other unlocking methods (TPM, SmartCard) are not supported.
 
 .PP
 \fIopen\fR \-\-type bitlk <device> <name>
@@ -783,15 +791,19 @@ Opens the BITLK (a BitLocker-compatible) <device> and sets up
 a mapping <name>.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-readonly, \-\-test\-passphrase,
-\-\-allow-discards].
+\-\-allow\-discards \-\-master\-key\-file].
 
 .PP
 \fIbitlkDump\fR <device>
 .IP
 Dump the header information of a BITLK device.
 
+\fB<options>\fR can be [\-\-dump\-master\-key \-\-master\-key\-file].
+
+.PP
 Please note that cryptsetup does not use any Windows BitLocker code, please report
 all problems related to this compatibility extension to the cryptsetup project.
+
 .SH MISCELLANEOUS
 .PP
 \fIrepair\fR <device>
