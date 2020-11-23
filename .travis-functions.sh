@@ -102,7 +102,13 @@ function travis_install_script
 		keyutils \
 		libjson-c-dev \
 		libblkid-dev \
+		dkms \
+		linux-headers-$(uname -r) \
+		linux-modules-extra-$(uname -r) \
 		|| return
+
+	# For VeraCrypt test
+	sudo apt-get install gost-crypto-dkms
 }
 
 function travis_before_script
