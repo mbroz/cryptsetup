@@ -172,9 +172,9 @@ function _dd()
 }
 
 function write_bin_hdr_size() {
-        printf '%016x' $2 | xxd -r -p -l 16 | _dd of=$1 bs=8 count=1 seek=1 conv=notrunc
+	printf '%016x' $2 | xxd -r -p -l 16 | _dd of=$1 bs=8 count=1 seek=1 conv=notrunc
 }
 
 function write_bin_hdr_offset() {
-        printf '%016x' $2 | xxd -r -p -l 16 | _dd of=$1 bs=8 count=1 seek=32 conv=notrunc
+	printf '%016x' $2 | xxd -r -p -l 16 | _dd of=$1 bs=8 count=1 seek=32 conv=notrunc
 }

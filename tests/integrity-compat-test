@@ -102,14 +102,14 @@ kernel_param_check() # number value
 
 function valgrind_setup()
 {
-    which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
-    [ ! -f $INTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
-    export LD_LIBRARY_PATH="$INTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	[ ! -f $INTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$INTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 }
 
 function valgrind_run()
 {
-    INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${INTSETUP_VALGRIND} "$@"
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${INTSETUP_VALGRIND} "$@"
 }
 
 int_check_sum_only() # checksum
@@ -233,27 +233,27 @@ int_error_detection() # mode alg tagsize outtagsize sector_size key_file key_siz
 
 int_journal() # 1 alg, 2 tagsize, 3 sector_size, 4 watermark, 5 commit_time, 6 journal_integrity, 7 key-file, 8 key-size, 9 journal_integrity_out
 {
-    echo -n "[INTEGRITY JOURNAL:$6:${4}%:${5}ms]"
-    echo -n "[FORMAT]"
-    ARGS="--integrity $1 --journal-watermark $4 --journal-commit-time $5 --journal-integrity $6 --journal-integrity-key-file $7 --journal-integrity-key-size $8"
-    $INTSETUP format -q --tag-size $2 --sector-size $3 $ARGS $DEV || fail "Cannot format device."
+	echo -n "[INTEGRITY JOURNAL:$6:${4}%:${5}ms]"
+	echo -n "[FORMAT]"
+	ARGS="--integrity $1 --journal-watermark $4 --journal-commit-time $5 --journal-integrity $6 --journal-integrity-key-file $7 --journal-integrity-key-size $8"
+	$INTSETUP format -q --tag-size $2 --sector-size $3 $ARGS $DEV || fail "Cannot format device."
 
-    echo -n "[ACTIVATE]"
+	echo -n "[ACTIVATE]"
 
-    $INTSETUP open $DEV $DEV_NAME $ARGS || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME $ARGS || fail "Cannot activate device."
 
-    echo -n "[KEYED HASH]"
-    KEY_HEX=$(xxd -c 256 -l $8 -p $7)
-    [ -z "$KEY_HEX" ] && fail "Cannot decode key."
-    dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
+	echo -n "[KEYED HASH]"
+	KEY_HEX=$(xxd -c 256 -l $8 -p $7)
+	[ -z "$KEY_HEX" ] && fail "Cannot decode key."
+	dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
 
-    status_check "journal watermark" "${4}%"
-    status_check "journal commit time" "${5} ms"
-    status_check "journal integrity MAC" $9
+	status_check "journal watermark" "${4}%"
+	status_check "journal commit time" "${5} ms"
+	status_check "journal integrity MAC" $9
 
-    echo -n "[REMOVE]"
-    $INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
-    echo "[OK]"
+	echo -n "[REMOVE]"
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	echo "[OK]"
 }
 
 
@@ -446,17 +446,17 @@ $INTSETUP close $DEV_NAME >/dev/null 2>&1 && fail
 $INTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
 $INTSETUP close --deferred $DEV_NAME >/dev/null 2>&1
 if [ $? -eq 0 ] ; then
-  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
-  $INTSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
-  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
-  $INTSETUP close --deferred $DEV_NAME >/dev/null 2>&1
-  dmsetup remove $DEV_NAME2 || fail
-  $INTSETUP -q status $DEV_NAME >/dev/null 2>&1 && fail
-  echo "[OK]"
+	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
+	$INTSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
+	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
+	$INTSETUP close --deferred $DEV_NAME >/dev/null 2>&1
+	dmsetup remove $DEV_NAME2 || fail
+	$INTSETUP -q status $DEV_NAME >/dev/null 2>&1 && fail
+	echo "[OK]"
 else
-  dmsetup remove $DEV_NAME2 >/dev/null 2>&1
-  $INTSETUP close $DEV_NAME >/dev/null 2>&1
-  echo "[N/A]"
+	dmsetup remove $DEV_NAME2 >/dev/null 2>&1
+	$INTSETUP close $DEV_NAME >/dev/null 2>&1
+	echo "[N/A]"
 fi
 
 cleanup

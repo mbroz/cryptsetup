@@ -116,8 +116,8 @@ RUN() {
 		_fsize=$(stat -c "%s" $_dev)
 	}
 
-        case "$_res" in
-        P)
+	case "$_res" in
+	P)
 		MSG="Testing $_fn on $_type with params $@ [expecting TRUE]..."
 		$BW_UNIT $_dev $_fn $@
 		if [ $? -ne 0 ]; then
@@ -131,8 +131,8 @@ RUN() {
 		else
 			MSG="$MSG[OK]"
 		fi
-                ;;
-        F)
+		;;
+	F)
 		MSG="Testing $_fn on $_type with params $@ [expecting FALSE]..."
 		$BW_UNIT $_dev $_fn $@ 2> /dev/null
 		if [ $? -eq 0 ]; then
@@ -146,11 +146,11 @@ RUN() {
 		else
 			MSG="$MSG[OK]"
 		fi
-                ;;
-        *)
-                fail "Internal test error"
-                ;;
-        esac
+		;;
+	*)
+		fail "Internal test error"
+		;;
+	esac
 
 	trunc_file $_fsize $_dev
 }

@@ -125,15 +125,15 @@ function fips_mode()
 
 function add_scsi_device() {
 	scsi_debug_teardown $DEV
-        modprobe scsi_debug $@ delay=0
-        if [ $? -ne 0 ] ; then
-                echo "This kernel seems to not support proper scsi_debug module, test skipped."
-                exit 77
-        fi
+	modprobe scsi_debug $@ delay=0
+	if [ $? -ne 0 ] ; then
+		echo "This kernel seems to not support proper scsi_debug module, test skipped."
+		exit 77
+	fi
 
-        sleep 1
-        DEV="/dev/"$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
-        [ -b $DEV ] || fail "Cannot find $DEV."
+	sleep 1
+	DEV="/dev/"$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
 function open_crypt() # $1 pwd, $2 hdr
