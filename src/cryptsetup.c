@@ -2633,32 +2633,6 @@ static int action_token(void)
 {
 	int r;
 	struct crypt_device *cd = NULL;
-	enum { ADD = 0, REMOVE, IMPORT, EXPORT } action;
-
-	if (!strcmp(action_argv[0], "add")) {
-		if (!ARG_SET(OPT_KEY_DESCRIPTION_ID)) {
-			log_err(_("--key-description parameter is mandatory for token add action."));
-			return -EINVAL;
-		}
-		action = ADD;
-	} else if (!strcmp(action_argv[0], "remove")) {
-		if (ARG_INT32(OPT_TOKEN_ID_ID) == CRYPT_ANY_TOKEN) {
-			log_err(_("Action requires specific token. Use --token-id parameter."));
-			return -EINVAL;
-		}
-		action = REMOVE;
-	} else if (!strcmp(action_argv[0], "import")) {
-		action = IMPORT;
-	} else if (!strcmp(action_argv[0], "export")) {
-		if (ARG_INT32(OPT_TOKEN_ID_ID)== CRYPT_ANY_TOKEN) {
-			log_err(_("Action requires specific token. Use --token-id parameter."));
-			return -EINVAL;
-		}
-		action = EXPORT;
-	} else {
-		log_err(_("Invalid token operation %s."), action_argv[0]);
-		return -EINVAL;
-	}
 
 	if ((r = crypt_init(&cd, uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[1]))))
 		return r;
@@ -2670,18 +2644,16 @@ static int action_token(void)
 		return r;
 	}
 
-	if (action == ADD)
+	r = -EINVAL;
+
+	if (!strcmp(action_argv[0], "add"))
 		r = _token_add(cd); /* adds only luks2-keyring type */
-	else if (action == REMOVE)
+	else if (!strcmp(action_argv[0], "remove"))
 		r = _token_remove(cd);
-	else if (action == IMPORT)
+	else if (!strcmp(action_argv[0], "import"))
 		r = _token_import(cd);
-	else if (action == EXPORT)
+	else if (!strcmp(action_argv[0], "export"))
 		r = _token_export(cd);
-	else {
-		log_dbg("Internal token action error.");
-		r = -EINVAL;
-	}
 
 	crypt_free(cd);
 
@@ -3941,6 +3913,27 @@ int main(int argc, const char **argv)
 		tools_cleanup();
 		poptFreeContext(popt_context);
 		return 0;
+	}
+
+	/* token action specific check */
+	if (!strcmp(aname, TOKEN_ACTION)) {
+		if (strcmp(action_argv[0], "add") &&
+		    strcmp(action_argv[0], "remove") &&
+		    strcmp(action_argv[0], "import") &&
+		    strcmp(action_argv[0], "export"))
+			usage(popt_context, EXIT_FAILURE, _("Invalid token action."),
+			      poptGetInvocationName(popt_context));
+
+		if (!ARG_SET(OPT_KEY_DESCRIPTION_ID) && !strcmp(action_argv[0], "add"))
+			usage(popt_context, EXIT_FAILURE,
+			      _("--key-description parameter is mandatory for token add action."),
+			      poptGetInvocationName(popt_context));
+
+		if (ARG_INT32(OPT_TOKEN_ID_ID) == CRYPT_ANY_TOKEN &&
+		    (!strcmp(action_argv[0], "remove") || !strcmp(action_argv[0], "export")))
+			usage(popt_context, EXIT_FAILURE,
+			      _("Action requires specific token. Use --token-id parameter."),
+			      poptGetInvocationName(popt_context));
 	}
 
 	if (ARG_SET(OPT_DISABLE_KEYRING_ID))
