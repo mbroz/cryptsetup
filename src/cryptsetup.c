@@ -2993,6 +2993,11 @@ static int action_decrypt_luks2(struct crypt_device *cd)
 	};
 	size_t passwordLen;
 
+	if (!crypt_get_metadata_device_name(cd) || crypt_header_is_detached(cd) <= 0) {
+		log_err(_("LUKS2 decryption is supported with detached header device only."));
+		return -ENOTSUP;
+	}
+
 	_set_reencryption_flags(&params.flags);
 
 	r = tools_get_key(NULL, &password, &passwordLen,

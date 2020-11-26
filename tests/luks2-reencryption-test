@@ -23,6 +23,7 @@ VKEY1=vkey1
 PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
+DEV_LINK="reenc-test-link"
 
 [ -f /etc/system-fips ] && FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
@@ -97,7 +98,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$OVRDEV-err ] && dmsetup remove --retry $OVRDEV-err 2>/dev/null
 	[ -n "$LOOPDEV" ] && losetup -d $LOOPDEV
 	unset LOOPDEV
-	rm -f $IMG $IMG_HDR $KEY1 $VKEY1 $DEVBIG >/dev/null 2>&1
+	rm -f $IMG $IMG_HDR $KEY1 $VKEY1 $DEVBIG $DEV_LINK >/dev/null 2>&1
 	rmmod scsi_debug 2> /dev/null
 	scsi_debug_teardown $DEV
 }
@@ -929,6 +930,18 @@ if ! dm_delay_features; then
 	remove_mapping
 	exit 0
 fi
+
+# check tool can block some funny user ideas
+preparebig 64
+ln -s $DEV $DEV_LINK || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c serpent-xts-plain -q $FAST_PBKDF_ARGON $DEV || fail
+$CRYPTSETUP reencrypt --decrypt $DEV -q 2>/dev/null && fail
+$CRYPTSETUP reencrypt --decrypt $DEV --header $DEV -q 2>/dev/null && fail
+$CRYPTSETUP reencrypt --decrypt $DEV --header $DEV_LINK -q 2>/dev/null && fail
+open_crypt $PWD1
+$CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME -q 2>/dev/null && fail
+$CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME --header $DEV -q 2>/dev/null && fail
+$CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME --header $DEV_LINK -q 2>/dev/null && fail
 
 echo "[6] Reencryption recovery"
 # (check opt-io size optimization in reencryption code does not affect recovery)
