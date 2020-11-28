@@ -1496,11 +1496,11 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd);
 const char *crypt_get_uuid(struct crypt_device *cd);
 
 /**
- * Get path to underlaying device.
+ * Get path to underlying device.
  *
  * @param cd crypt device handle
  *
- * @return path to underlaying device name
+ * @return path to underlying device name
  *
  */
 const char *crypt_get_device_name(struct crypt_device *cd);
@@ -1510,7 +1510,7 @@ const char *crypt_get_device_name(struct crypt_device *cd);
  *
  * @param cd crypt device handle
  *
- * @return path to underlaying device name
+ * @return path to underlying device name
  *
  */
 const char *crypt_get_metadata_device_name(struct crypt_device *cd);
@@ -2364,7 +2364,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
  * Run data reencryption.
  *
  * @param cd crypt device handle
- * @param progress is a callback funtion reporting device \b size,
+ * @param progress is a callback function reporting device \b size,
  * current \b offset of reencryption and provided \b usrptr identification
  * @param usrptr progress specific data
  *

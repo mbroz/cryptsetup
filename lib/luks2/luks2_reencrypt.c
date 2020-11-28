@@ -2893,7 +2893,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	 * 1) excl close
 	 * 2) rogue dm device activation
 	 * 3) one or more dm-crypt based wrapper activation
-	 * 4) next excl open get's skipped due to 3) device from 2) remains undetected.
+	 * 4) next excl open gets skipped due to 3) device from 2) remains undetected.
 	 */
 	r = reencrypt_init_storage_wrappers(cd, hdr, rh, *vks);
 	if (r)

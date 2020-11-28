@@ -30,7 +30,7 @@ void tools_passphrase_msg(int r)
 }
 
 /*
- * Only tool that currently blocks signals explicitely is cryptsetup-reencrypt.
+ * Only tool that currently blocks signals explicitly is cryptsetup-reencrypt.
  * Leave the tools_get_key stub with signals handling here and remove it later
  * only if we find signals blocking obsolete.
  */

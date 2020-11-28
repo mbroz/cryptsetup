@@ -370,7 +370,7 @@ check_hash $PWD2 $HASH5
 check_slot 21 || fail "Only keyslot 21 expected to be enabled"
 $CRYPTSETUP luksDump $IMG | grep -q "luks2" > /dev/null || fail
 
-echo "[9] Test log I/Os on various underlaying block devices"
+echo "[9] Test log I/Os on various underlying block devices"
 echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $IMG --offset 8192 || fail
 add_scsi_device sector_size=512 dev_size_mb=32
 test_logging "[512 sector]" || fail
