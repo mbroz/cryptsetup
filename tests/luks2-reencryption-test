@@ -275,7 +275,7 @@ function prepare_linear_dev() {
 	DEV=/dev/mapper/$OVRDEV
 }
 
-function get_error_offsets() # $1 devsize, $2 minimal offset, $3 sector_size [512 if ommited], $4 max offset
+function get_error_offsets() # $1 devsize, $2 minimal offset, $3 sector_size [512 if omitted], $4 max offset
 {
 	local _devsize=$(($1*1024*2))
 	local _sector_size=${3:-512}

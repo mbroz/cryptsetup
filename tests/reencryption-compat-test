@@ -352,7 +352,7 @@ echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key $FAST_PBKDF
 check_hash $PWD1 $HASH1
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
-echo "[9] Test log I/Os on various underlaying block devices"
+echo "[9] Test log I/Os on various underlying block devices"
 prepare 8192
 echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
 add_scsi_device sector_size=512 dev_size_mb=32
