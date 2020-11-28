@@ -2407,17 +2407,15 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
  *
  * @param size size of memory in bytes
  *
- * @return pointer to allocate memory or @e NULL.
+ * @return pointer to allocated memory or @e NULL.
  */
 void *crypt_safe_alloc(size_t size);
 
 /**
- * Release safe memory, content is safely wiped
+ * Release safe memory, content is safely wiped.
  * The pointer must be allocated with @link crypt_safe_alloc @endlink
  *
  * @param data pointer to memory to be deallocated
- *
- * @return pointer to allocate memory or @e NULL.
  */
 void crypt_safe_free(void *data);
 
@@ -2427,17 +2425,15 @@ void crypt_safe_free(void *data);
  * @param data pointer to memory to be deallocated
  * @param size new size of memory in bytes
  *
- * @return pointer to allocate memory or @e NULL.
+ * @return pointer to allocated memory or @e NULL.
  */
 void *crypt_safe_realloc(void *data, size_t size);
 
 /**
  * Safe clear memory area (compile should not compile this call out).
  *
- * @param data pointer to memory to cleared
- * @param size new size of memory in bytes
- *
- * @return pointer to allocate memory or @e NULL.
+ * @param data pointer to memory to be cleared
+ * @param size size of memory in bytes
  */
 void crypt_safe_memzero(void *data, size_t size);
 
