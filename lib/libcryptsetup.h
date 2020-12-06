@@ -1558,6 +1558,21 @@ int crypt_get_volume_key_size(struct crypt_device *cd);
 int crypt_get_sector_size(struct crypt_device *cd);
 
 /**
+ * Check if initialized LUKS context uses detached header
+ * (LUKS header located on a different device than data.)
+ *
+ * @param cd crypt device handle
+ *
+ * @return @e 1 if detached header is used, @e 0 if not
+ * or negative errno value otherwise.
+ *
+ * @note This is a runtime attribute, it does not say
+ * 	 if a LUKS device requires detached header.
+ * 	 This function works only with LUKS devices.
+ */
+int crypt_header_is_detached(struct crypt_device *cd);
+
+/**
  * Get device parameters for VERITY device.
  *
  * @param cd crypt device handle

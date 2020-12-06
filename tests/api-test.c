@@ -487,6 +487,7 @@ static void AddDevicePlain(void)
 	// crypt_set_data_device
 	FAIL_(crypt_set_data_device(cd,H_DEVICE),"can't set data device for plain device");
 	NULL_(crypt_get_metadata_device_name(cd));
+	FAIL_(crypt_header_is_detached(cd), "plain has no header");
 
 	// crypt_get_type
 	OK_(strcmp(crypt_get_type(cd),CRYPT_PLAIN));
@@ -894,6 +895,7 @@ static void AddDeviceLuks(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	EQ_(0, crypt_header_is_detached(cd));
 	CRYPT_FREE(cd);
 	params.data_alignment = 0;
 	params.data_device = DEVICE_2;
@@ -908,6 +910,7 @@ static void AddDeviceLuks(void)
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, key, key_size, 0), "Device is active");
 	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_INACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	FAIL_(crypt_header_is_detached(cd), "no header for mismatched device");
 	CRYPT_FREE(cd);
 
 	params.data_device = NULL;
@@ -1215,6 +1218,7 @@ static void LuksHeaderLoad(void)
 	OK_(!crypt_get_metadata_device_name(cd));
 	EQ_(strcmp(DMDIR H_DEVICE, crypt_get_metadata_device_name(cd)), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(1, crypt_header_is_detached(cd));
 	CRYPT_FREE(cd);
 
 	// repeat with init with two devices
@@ -1225,6 +1229,7 @@ static void LuksHeaderLoad(void)
 	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
 	OK_(!crypt_get_metadata_device_name(cd));
 	EQ_(strcmp(DMDIR H_DEVICE, crypt_get_metadata_device_name(cd)), 0);
+	EQ_(1, crypt_header_is_detached(cd));
 	CRYPT_FREE(cd);
 
 	// bad header: device too small (payloadOffset > device_size)
@@ -1315,6 +1320,7 @@ static void LuksHeaderBackup(void)
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(0, crypt_header_is_detached(cd));
 	CRYPT_FREE(cd);
 
 	// exercise luksOpen using backup header in file
@@ -1324,6 +1330,7 @@ static void LuksHeaderBackup(void)
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 0, passphrase, strlen(passphrase), 0), 0);
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(1, crypt_header_is_detached(cd));
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init(&cd, BACKUP_FILE));
