@@ -76,5 +76,5 @@ For cryptsetup and LUKS related questions, please use the dm-crypt mailing list,
 
 If you want to subscribe just send an empty mail to [dm-crypt-subscribe@saout.de](mailto:dm-crypt-subscribe@saout.de).
 
-You can also browse [list archive](https://www.saout.de/pipermail/dm-crypt/) or read it through
-[web interface](https://marc.info/?l=dm-crypt).
+You can also browse [list archive](https://www.saout.de/pipermail/dm-crypt/) or read and search it through
+[web interface on lore.kernel.org](https://lore.kernel.org/dm-crypt/) or alternatively on [marc.info](https://marc.info/?l=dm-crypt).
