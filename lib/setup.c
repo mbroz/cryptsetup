@@ -774,7 +774,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 		version = 0;
 
 	if (isLUKS1(requested_type) || version == 1) {
-		if (cd->type && isLUKS2(cd->type)) {
+		if (isLUKS2(cd->type)) {
 			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
@@ -814,7 +814,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 
 		memcpy(&cd->u.luks1.hdr, &hdr, sizeof(hdr));
 	} else if (isLUKS2(requested_type) || version == 2 || version == 0) {
-		if (cd->type && isLUKS1(cd->type)) {
+		if (isLUKS1(cd->type)) {
 			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
@@ -5327,10 +5327,10 @@ crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot)
 
 int crypt_keyslot_max(const char *type)
 {
-	if (type && isLUKS1(type))
+	if (isLUKS1(type))
 		return LUKS_NUMKEYS;
 
-	if (type && isLUKS2(type))
+	if (isLUKS2(type))
 		return LUKS2_KEYSLOTS_MAX;
 
 	return -EINVAL;
