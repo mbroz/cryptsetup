@@ -1962,8 +1962,8 @@ int crypt_wipe(struct crypt_device *cd,
  * @return token count or negative errno otherwise if device
  * doesn't not support tokens.
  *
- * @note This function returns maximal token id. Real number of supported
- *       tokens for a particular device depends on usable metadata area size.
+ * @note Real number of supported tokens for a particular device depends
+ *       on usable metadata area size.
  */
 int crypt_token_max(const char *type);
 
