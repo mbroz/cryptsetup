@@ -1949,6 +1949,9 @@ static void Tokens(void)
 
 	CRYPT_FREE(cd);
 
+	EQ_(crypt_token_max(CRYPT_LUKS2), 32);
+	FAIL_(crypt_token_max(CRYPT_LUKS1), "No token support in LUKS1");
+	FAIL_(crypt_token_max(NULL), "No LUKS format specified");
 	_cleanup_dmdevices();
 }
 

@@ -1954,6 +1954,19 @@ int crypt_wipe(struct crypt_device *cd,
  * @{
  */
 
+/**
+ * Get number of tokens supported for device type.
+ *
+ * @param type crypt device type
+ *
+ * @return token count or negative errno otherwise if device
+ * doesn't not support tokens.
+ *
+ * @note This function returns maximal token id. Real number of supported
+ *       tokens for a particular device depends on usable metadata area size.
+ */
+int crypt_token_max(const char *type);
+
 /** Iterate through all tokens */
 #define CRYPT_ANY_TOKEN -1
 

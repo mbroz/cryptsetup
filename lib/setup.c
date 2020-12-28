@@ -5609,6 +5609,14 @@ crypt_token_info crypt_token_status(struct crypt_device *cd, int token, const ch
 	return LUKS2_token_status(cd, &cd->u.luks2.hdr, token, type);
 }
 
+int crypt_token_max(const char *type)
+{
+	if (isLUKS2(type))
+		return LUKS2_TOKENS_MAX;
+
+	return -EINVAL;
+}
+
 int crypt_token_luks2_keyring_get(struct crypt_device *cd,
 	int token,
 	struct crypt_token_params_luks2_keyring *params)
