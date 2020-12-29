@@ -1,4 +1,4 @@
-.TH CRYPTSETUP "8" "January 2019" "cryptsetup" "Maintenance Commands"
+.TH CRYPTSETUP "8" "December 2020" "cryptsetup" "Maintenance Commands"
 .SH NAME
 cryptsetup - manage plain dm-crypt and LUKS encrypted volumes
 .SH SYNOPSIS
@@ -280,7 +280,9 @@ of reading the passphrase from a file you can
 give '-' as file name, which results in the passphrase being read
 from stdin and the safety-question being skipped.
 
-You cannot call luksFormat on a device or filesystem that is mapped or in use, e.g. mounted filesysem, used in LVM, active RAID member etc. The device or filesystem has to be un-mounted in order to call luksFormat.
+You cannot call luksFormat on a device or filesystem that is mapped or in use,
+e.g. mounted filesysem, used in LVM, active RAID member etc.
+The device or filesystem has to be un-mounted in order to call luksFormat.
 
 To use LUKS2, specify \fI\-\-type luks2\fR.
 
@@ -723,8 +725,8 @@ passphrase and can be repeated. Note that using keyfiles is compatible
 with TCRYPT and is different from LUKS keyfile logic.
 
 If \fB\-\-\cipher\fR or  \fB\-\-hash\fR options are used, only cipher chains or
-PBKDF2 variants with the specified hash algoprithms are checked. This could speed
-up opening of the device (but also it reveals some information about the container).
+PBKDF2 variants with the specified hash algorithms are checked. This could speed
+up unlocking the device (but also it reveals some information about the container).
 
 \fBWARNING:\fR Option \fB\-\-allow\-discards\fR cannot be combined with
 option \fB\-\-tcrypt\-hidden\fR. For normal mapping, it can cause
@@ -853,8 +855,7 @@ lines are always prefixed by '#'.
 If \-\-debug\-json is used, additional LUKS2 JSON data structures are printed.
 .TP
 .B "\-\-type <device-type>
-Specifies required device type, for more info
-read \f BASIC ACTIONS\fR section.
+Specifies required device type, for more info read \fIBASIC ACTIONS\fR section.
 .TP
 .B "\-\-hash, \-h \fI<hash\-spec>\fR"
 Specifies the passphrase hash for \fIopen\fR (for plain and
@@ -1467,7 +1468,8 @@ new reencryption operation.
 Reencryption resilience mode can be one of \fIchecksum\fR, \fIjournal\fR or \fInone\fR.
 
 \fIchecksum\fR: default mode, where individual checksums of ciphertext hotzone sectors are stored,
-so the recovery process can detect which sectors where already reencrypted. It requires that the device sector write is atomic.
+so the recovery process can detect which sectors where already reencrypted.
+It requires that the device sector write is atomic.
 
 \fIjournal\fR: the hotzone is journaled in the binary area (so the data are written twice).
 
@@ -1477,7 +1479,8 @@ the reencryption is similar to old offline reencryption utility. (ctrl+c).
 The option is ignored if reencryption with datashift mode is in progress.
 .TP
 .B "\-\-resilience-hash <hash>"
-The hash algorithm used with "\-\-resilience checksum" only. The default hash is sha256. With other resilience modes, the hash parameter is ignored.
+The hash algorithm used with "\-\-resilience checksum" only.
+The default hash is sha256. With other resilience modes, the hash parameter is ignored.
 .TP
 .B "\-\-hotzone-size <size>"
 This option can be used to set an upper limit on the size of reencryption area (hotzone).
@@ -1486,17 +1489,21 @@ size may be less than specified <size> due to other limitations (free space in k
 available memory).
 .TP
 .B "\-\-reduce\-device\-size <size>"
-Initialize LUKS2 reencryption with data device size reduction (currently only \-\-encrypt variant is supported).
+Initialize LUKS2 reencryption with data device size reduction
+(currently only \-\-encrypt variant is supported).
 
-Last <size> sectors of <device> will be used to properly initialize device reencryption. That means any
-data at last <size> sectors will be lost.
+Last <size> sectors of <device> will be used to properly initialize device reencryption.
+That means any data at last <size> sectors will be lost.
 
-It could be useful if you added some space to underlying partition or logical volume (so last <size> sectors contains no data).
+It could be useful if you added some space to underlying partition or logical volume
+(so last <size> sectors contains no data).
 
-Recommended minimal size is twice the default LUKS2 header size (\-\-reduce\-device\-size 32M) for \-\-encrypt use case. Be sure to
-have enough (at least \-\-reduce\-device\-size value of free space at the end of <device>).
+Recommended minimal size is twice the default LUKS2 header size (\-\-reduce\-device\-size 32M)
+for \-\-encrypt use case. Be sure to have enough (at least \-\-reduce\-device\-size value
+	of free space at the end of <device>).
 
-WARNING: This is a destructive operation and cannot be reverted.  Use with extreme care - accidentally overwritten filesystems are usually unrecoverable.
+WARNING: This is a destructive operation and cannot be reverted.
+Use with extreme care - accidentally overwritten filesystems are usually unrecoverable.
 .TP
 .B "\-\-version"
 Show the program version.
@@ -1520,7 +1527,8 @@ sudo cryptsetup luksHeaderBackup /dev/sdX --header-backup-file /var/tmp/NameOfBa
 Example 4: Open LUKS contaner on /dev/sdX and map it to sdX_crypt.
 sudo cryptsetup open /dev/sdX sdX_crypt
 .TP
-.B WARNING: The command in example 5 will erase all key slots. Your cannot use your luks container afterwards anymore unless you have a backup to restore.
+.B WARNING: The command in example 5 will erase all key slots.
+Your cannot use your luks container afterwards anymore unless you have a backup to restore.
 .TP
 Example 5: Erase all key slots on /dev/sdX.
 sudo cryptsetup erase /dev/sdX
@@ -1769,5 +1777,6 @@ online at
 
 The cryptsetup mailing list and list archive, see FAQ entry 1.6.
 
-The LUKS on-disk format specification available at
-\fBhttps://gitlab.com/cryptsetup/cryptsetup/wikis/Specification\fR
+The LUKS version 1 on-disk format specification available at
+\fBhttps://gitlab.com/cryptsetup/cryptsetup/wikis/Specification\fR and
+LUKS version 2 at \fBhttps://gitlab.com/cryptsetup/LUKS2-docs\fR.
