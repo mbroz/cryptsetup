@@ -716,11 +716,15 @@ a mapping <name>.
 \fB<options>\fR can be [\-\-key\-file, \-\-tcrypt\-hidden,
 \-\-tcrypt\-system, \-\-tcrypt\-backup, \-\-readonly, \-\-test\-passphrase,
 \-\-allow-discards, \-\-veracrypt, \-\-veracrypt\-pim, \-\-veracrypt\-query\-pim,
-\-\-header].
+\-\-header, \-\-cipher, \-\-hash].
 
 The keyfile parameter allows a combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
 with TCRYPT and is different from LUKS keyfile logic.
+
+If \fB\-\-\cipher\fR or  \fB\-\-hash\fR options are used, only cipher chains or
+PBKDF2 variants with the specified hash algoprithms are checked. This could speed
+up opening of the device (but also it reveals some information about the container).
 
 \fBWARNING:\fR Option \fB\-\-allow\-discards\fR cannot be combined with
 option \fB\-\-tcrypt\-hidden\fR. For normal mapping, it can cause
@@ -741,7 +745,7 @@ This means that if the master key is compromised, the whole device has
 to be erased to prevent further access. Use this option carefully.
 
 \fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
-\-\-tcrypt\-hidden, \-\-tcrypt\-system, \-\-tcrypt\-backup].
+\-\-tcrypt\-hidden, \-\-tcrypt\-system, \-\-tcrypt\-backup, \-\-cipher, \-\-hash].
 
 The keyfile parameter allows a combination of file content with the
 passphrase and can be repeated.

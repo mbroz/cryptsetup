@@ -453,6 +453,8 @@ static int action_open_tcrypt(void)
 		.flags = CRYPT_TCRYPT_LEGACY_MODES |
 			 (ARG_SET(OPT_VERACRYPT_ID) ? CRYPT_TCRYPT_VERA_MODES : 0),
 		.veracrypt_pim = ARG_UINT32(OPT_VERACRYPT_PIM_ID),
+		.hash_name = ARG_STR(OPT_HASH_ID),
+		.cipher = ARG_STR(OPT_CIPHER_ID),
 	};
 	const char *activated_name;
 	uint32_t activate_flags = 0;
@@ -588,7 +590,9 @@ static int action_tcryptDump(void)
 		.keyfiles_count = keyfiles_count,
 		.flags = CRYPT_TCRYPT_LEGACY_MODES |
 			 (ARG_SET(OPT_VERACRYPT_ID) ? CRYPT_TCRYPT_VERA_MODES : 0),
-		.veracrypt_pim = ARG_UINT32(OPT_VERACRYPT_PIM_ID)
+		.veracrypt_pim = ARG_UINT32(OPT_VERACRYPT_PIM_ID),
+		.hash_name = ARG_STR(OPT_HASH_ID),
+		.cipher = ARG_STR(OPT_CIPHER_ID),
 	};
 	int r;
 	r = crypt_init_data_device(&cd, ARG_STR(OPT_HEADER_ID) ?: action_argv[0], action_argv[0]);

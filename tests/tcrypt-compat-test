@@ -111,6 +111,11 @@ for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_* $TST_DIR/sys_[tv]c_*) ; do
 	SYS_OPT=""
 	[[ $file =~ sys_.* ]] && SYS_OPT="--tcrypt-system"
 	echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $SYS_OPT $PIM_OPT $file >/dev/null || fail
+	if [[ $file =~ .*-sha512-xts-aes$ ]] ; then
+		echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $SYS_OPT $PIM_OPT -h sha512 -c aes $file >/dev/null || fail
+		echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $SYS_OPT $PIM_OPT -h xxxx $file 2>/dev/null && fail
+		echo $PASSWORD | $CRYPTSETUP tcryptDump --veracrypt $SYS_OPT $PIM_OPT -h sha512 -c xxx $file 2>/dev/null && fail
+	fi
 	echo " [OK]"
 done
 
