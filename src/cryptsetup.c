@@ -162,6 +162,11 @@ static int _set_keyslot_encryption_params(struct crypt_device *cd)
 	return crypt_keyslot_set_encryption(cd, ARG_STR(OPT_KEYSLOT_CIPHER_ID), ARG_UINT32(OPT_KEYSLOT_KEY_SIZE_ID) / 8);
 }
 
+static int _set_tries_tty(void)
+{
+	return (tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && isatty(STDIN_FILENO)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
+}
+
 static int tools_write_mk(const char *file, const char *key, int keysize)
 {
 	int fd, r = -EINVAL;
@@ -368,11 +373,9 @@ out:
 
 static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *params)
 {
-	int r, tries = ARG_UINT32(OPT_TRIES_ID), eperm = 0;
+	int r, tries, eperm = 0;
 
-	if (keyfile_stdin)
-		tries = 1;
-
+	tries = _set_tries_tty();
 	do {
 		/* TCRYPT header is encrypted, get passphrase now */
 		r = tools_get_key(NULL, CONST_CAST(char**)&params->passphrase,
@@ -518,7 +521,7 @@ static int action_open_bitlk(void)
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
 	} else {
-		tries = (tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && isatty(STDIN_FILENO)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
+		tries = _set_tries_tty();
 		do {
 			r = tools_get_key(NULL, &password, &passwordLen,
 					ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
@@ -1540,7 +1543,7 @@ static int action_open_luks(void)
 		if (r >= 0 || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
 
-		tries = (tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && isatty(STDIN_FILENO)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
+		tries = _set_tries_tty();
 		do {
 			r = tools_get_key(NULL, &password, &passwordLen,
 					ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
@@ -2243,7 +2246,7 @@ static int action_luksResume(void)
 	if ((r = crypt_load(cd, luksType(device_type), NULL)))
 		goto out;
 
-	tries = (tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && isatty(STDIN_FILENO)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
+	tries = _set_tries_tty();
 	do {
 		r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
@@ -3059,7 +3062,8 @@ static int init_passphrase(struct keyslot_passwords *kp, size_t keyslot_password
 			return -ENOENT;
 	}
 
-	retry_count = (ARG_UINT32(OPT_TRIES_ID) && !ARG_SET(OPT_KEY_FILE_ID)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
+	retry_count = _set_tries_tty();
+
 	while (retry_count--) {
 		r = tools_get_key(msg,  &password, &passwordLen, 0, 0,
 				  ARG_STR(OPT_KEY_FILE_ID), 0, 0, 0 /*pwquality*/, cd);
