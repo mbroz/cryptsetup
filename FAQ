@@ -1608,8 +1608,9 @@ A. Contributors
 
     cryptsetup -c aes-xts-plain64 luksFormat <device>
 
-  There is a potential security issue with XTS mode and large blocks. 
-  LUKS and dm-crypt always use 512B blocks and the issue does not apply.
+  There is a potential security issue with XTS mode and blocks larger
+  than 2^20 bytes or so. LUKS and dm-crypt always use smaller blocks 
+  and the issue does not apply.
 
 
   * 5.17 Is LUKS FIPS-140-2 certified?
