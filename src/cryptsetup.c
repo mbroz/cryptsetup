@@ -167,25 +167,6 @@ static int _set_tries_tty(void)
 	return (tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && isatty(STDIN_FILENO)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
 }
 
-static int tools_write_mk(const char *file, const char *key, int keysize)
-{
-	int fd, r = -EINVAL;
-
-	fd = open(file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
-	if (fd < 0) {
-		log_err(_("Cannot open keyfile %s for write."), file);
-		return r;
-	}
-
-	if (write_buffer(fd, key, keysize) == keysize)
-		r = 0;
-	else
-		log_err(_("Cannot write to keyfile %s."), file);
-
-	close(fd);
-	return r;
-}
-
 static int action_open_plain(void)
 {
 	struct crypt_device *cd = NULL, *cd1 = NULL;
@@ -515,7 +496,7 @@ static int action_open_bitlk(void)
 		} else if (!keysize)
 			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
 
-		r = crypt_cli_read_mk(cd, ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
@@ -1411,7 +1392,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 		goto out;
 
 	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = crypt_cli_read_mk(cd, ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 	}
@@ -1520,7 +1501,7 @@ static int action_open_luks(void)
 		} else if (!keysize)
 			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
 
-		r = crypt_cli_read_mk(cd, ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
@@ -1764,7 +1745,7 @@ static int luksAddUnboundKey(void)
 	}
 
 	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = crypt_cli_read_mk(cd, ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 
@@ -1836,7 +1817,7 @@ static int action_luksAddKey(void)
 		} else if (!keysize)
 			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
 
-		r = crypt_cli_read_mk(cd, ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 
@@ -3258,7 +3239,7 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 		goto err;
 
 	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = crypt_cli_read_mk(cd, ARG_STR(OPT_MASTER_KEY_FILE_ID), &vk, key_size);
+		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &vk, key_size);
 		if (r < 0)
 			goto err;
 	}

@@ -6,7 +6,6 @@ DISTCLEAN_TARGETS =
 AM_CPPFLAGS = \
 	-include config.h \
 	-I$(top_srcdir)/lib \
-	-I$(top_srcdir)/lib/cli \
         -DDATADIR=\""$(datadir)"\"              \
         -DLOCALEDIR=\""$(datadir)/locale"\"     \
         -DLIBDIR=\""$(libdir)"\"                \
@@ -37,7 +36,6 @@ include lib/crypto_backend/argon2/Makemodule.am
 endif
 include lib/crypto_backend/Makemodule.am
 include lib/Makemodule.am
-include lib/cli/Makemodule.am
 
 include src/Makemodule.am
 

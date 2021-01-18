@@ -48,8 +48,6 @@
 #include "lib/utils_blkid.h"
 
 #include "libcryptsetup.h"
-#include "libcryptsetup_cli.h"
-#include "lib/cli/cli_internal.h"
 
 #define CONST_CAST(x) (x)(uintptr_t)
 #define DEFAULT_CIPHER(type)	(DEFAULT_##type##_CIPHER "-" DEFAULT_##type##_MODE)
@@ -109,6 +107,9 @@ struct tools_progress_params {
 int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr);
 int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr);
 
+int tools_read_mk(const char *file, char **key, int keysize);
+int tools_write_mk(const char *file, const char *key, int keysize);
+
 int tools_read_json_file(struct crypt_device *cd, const char *file, char **json, size_t *json_size, bool batch_mode);
 int tools_write_json_file(struct crypt_device *cd, const char *file, const char *json);
 
@@ -118,11 +119,6 @@ int tools_wipe_all_signatures(const char *path);
 int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 		const char *data_device_path, char *name, size_t name_length);
 
-void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, struct tools_arg *arg, const char *popt_arg, int popt_val, bool(*needs_size_conv_fn)(unsigned arg_id));
-
-void tools_args_free(struct tools_arg *args, size_t args_count);
-
-void tools_check_args(const char *action, const struct tools_arg *args, size_t args_size, poptContext popt_context);
 
 /* each utility is required to implement it */
 void tools_cleanup(void);
@@ -134,6 +130,35 @@ void tools_cleanup(void);
 #define log_std(x...) crypt_logf(NULL, CRYPT_LOG_NORMAL, x)
 #define log_verbose(x...) crypt_logf(NULL, CRYPT_LOG_VERBOSE, x)
 #define log_err(x...) crypt_logf(NULL, CRYPT_LOG_ERROR, x)
+
+typedef enum {
+	CRYPT_ARG_BOOL = 0,
+	CRYPT_ARG_STRING,
+	CRYPT_ARG_INT32,
+	CRYPT_ARG_UINT32,
+	CRYPT_ARG_INT64,
+	CRYPT_ARG_UINT64
+} crypt_arg_type_info;
+
+struct tools_arg {
+	const char *name;
+	bool set;
+	crypt_arg_type_info type;
+	union {
+		char *str_value;
+		uint64_t u64_value;
+		uint32_t u32_value;
+		int32_t i32_value;
+		int64_t i64_value;
+	} u;
+	const char *actions_array[MAX_ACTIONS];
+};
+
+void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, struct tools_arg *arg, const char *popt_arg, int popt_val, bool(*needs_size_conv_fn)(unsigned arg_id));
+
+void tools_args_free(struct tools_arg *args, size_t args_count);
+
+void tools_check_args(const char *action, const struct tools_arg *args, size_t args_size, poptContext popt_context);
 
 struct tools_log_params {
 	bool verbose;
