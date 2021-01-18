@@ -291,7 +291,7 @@ int tools_read_mk(const char *file, char **key, int keysize)
 {
 	int fd;
 
-	if (!keysize || !key)
+	if (keysize <= 0 || !key)
 		return -EINVAL;
 
 	*key = crypt_safe_alloc(keysize);
@@ -320,6 +320,9 @@ fail:
 int tools_write_mk(const char *file, const char *key, int keysize)
 {
 	int fd, r = -EINVAL;
+
+	if (keysize <= 0 || !key)
+		return -EINVAL;
 
 	fd = open(file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
 	if (fd < 0) {
