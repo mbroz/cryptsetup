@@ -3,6 +3,8 @@ CRYPTSETUP_2.4 {
 		crypt_reencrypt;
 		crypt_token_max;
 		crypt_header_is_detached;
+		crypt_logf;
+		crypt_activate_by_pin_token;
 };
 
 CRYPTSETUP_2.0 {
@@ -60,7 +62,6 @@ CRYPTSETUP_2.0 {
 		crypt_token_load;
 
 		crypt_activate_by_token;
-		crypt_activate_by_pin_token;
 
 		crypt_keyslot_destroy;
 		crypt_activate_by_passphrase;
@@ -119,7 +120,6 @@ CRYPTSETUP_2.0 {
 		crypt_get_dir;
 		crypt_set_debug_level;
 		crypt_log;
-		crypt_logf;
 
 		crypt_header_backup;
 		crypt_header_restore;
