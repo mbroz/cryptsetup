@@ -5,9 +5,6 @@ dnl library version from <major>.<minor>.<release>[-<suffix>]
 LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
 LIBCRYPTSETUP_VERSION_INFO=18:0:6
 
-LIBCRYPTSETUP_CLI_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
-LIBCRYPTSETUP_CLI_VERSION_INFO=1:0:0
-
 AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR(src/cryptsetup.c)
 AC_CONFIG_MACRO_DIR([m4])
@@ -542,9 +539,6 @@ AC_SUBST([BLKID_LIBS])
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
 
-AC_SUBST([LIBCRYPTSETUP_CLI_VERSION])
-AC_SUBST([LIBCRYPTSETUP_CLI_VERSION_INFO])
-
 dnl ==========================================================================
 AC_ARG_ENABLE([dev-random],
 	AS_HELP_STRING([--enable-dev-random], [use /dev/random by default for key generation (otherwise use /dev/urandom)]))
@@ -654,7 +648,6 @@ dnl ==========================================================================
 
 AC_CONFIG_FILES([ Makefile
 lib/libcryptsetup.pc
-lib/cli/libcryptsetup_cli.pc
 po/Makefile.in
 scripts/cryptsetup.conf
 tests/Makefile
