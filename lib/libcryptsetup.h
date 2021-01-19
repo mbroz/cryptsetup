@@ -2232,15 +2232,6 @@ int crypt_token_register(const crypt_token_handler *handler);
 #define CRYPT_TOKEN_ABI_HANDLER  "cryptsetup_token_handler"
 
 /**
- * Find external library, load and register token handler
- *
- * @param name token name to register
- *
- * @return @e 0 on success or negative errno value otherwise.
- */
-int crypt_token_load(struct crypt_device *cd, const char *name);
-
-/**
  * Activate device or check key using a token.
  *
  * @param cd crypt device handle

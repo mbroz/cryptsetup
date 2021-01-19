@@ -127,17 +127,6 @@ int crypt_token_register(const crypt_token_handler *handler)
 	return 0;
 }
 
-int crypt_token_load(struct crypt_device *cd, const char *name)
-{
-	int i, r;
-
-	r = crypt_token_find_free(cd, name, &i);
-	if (r < 0)
-		return r;
-
-	return crypt_token_load_external(cd, name, &token_handlers[i]);
-}
-
 void crypt_token_unload_external_all(struct crypt_device *cd)
 {
 	int i;
