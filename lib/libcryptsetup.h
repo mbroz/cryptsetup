@@ -2214,7 +2214,6 @@ typedef struct  {
 	crypt_token_buffer_free_func buffer_free; /**< token handler buffer_free function (optional) */
 	crypt_token_validate_func validate; /**< token handler validate function (optional) */
 	crypt_token_dump_func dump; /**< token handler dump function (optional) */
-	crypt_token_open_pin_func open_pin; /**< open with passphrase function (optional) */
 } crypt_token_handler;
 
 /**
@@ -2227,9 +2226,14 @@ typedef struct  {
 int crypt_token_register(const crypt_token_handler *handler);
 
 /** ABI version for external token in libcryptsetup-token-<name>.so */
-#define CRYPT_TOKEN_ABI_VERSION1 "CRYPTSETUP_TOKEN_1.0"
+#define CRYPT_TOKEN_ABI_VERSION1    "CRYPTSETUP_TOKEN_1.0"
+
 /** ABI exported symbol for external token */
-#define CRYPT_TOKEN_ABI_HANDLER  "cryptsetup_token_handler"
+#define CRYPT_TOKEN_ABI_OPEN        "cryptsetup_token_open" /* mandatory */
+#define CRYPT_TOKEN_ABI_OPEN_PIN    "cryptsetup_token_open_pin"
+#define CRYPT_TOKEN_ABI_BUFFER_FREE "cryptsetup_token_buffer_free"
+#define CRYPT_TOKEN_ABI_VALIDATE    "cryptsetup_token_validate"
+#define CRYPT_TOKEN_ABI_DUMP        "cryptsetup_token_dump"
 
 /**
  * Activate device or check key using a token.

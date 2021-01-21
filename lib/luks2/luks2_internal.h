@@ -164,12 +164,44 @@ typedef struct  {
 	digest_dump_func   dump;
 } digest_handler;
 
-typedef struct {
-	/* public token handler */
-	const crypt_token_handler *h;
-	/* dynamic loadable plugin dlopen handle */
-	const void *dlhandle;
-} token_handler;
+int keyring_open(struct crypt_device *cd,
+	int token,
+	char **buffer,
+	size_t *buffer_len,
+	void *usrptr);
+
+void keyring_dump(struct crypt_device *cd, const char *json);
+
+int keyring_validate(struct crypt_device *cd, const char *json);
+
+struct crypt_token_handler_v2 {
+	const char *name;
+	crypt_token_open_func open;
+	crypt_token_buffer_free_func buffer_free;
+	crypt_token_validate_func validate;
+	crypt_token_dump_func dump;
+
+	/* here ends v1. Do not touch anything above */
+
+	crypt_token_open_pin_func open_pin;
+
+	void *dlhandle;
+};
+
+/*
+ * Initial sequence of structure members in union 'u' must be always
+ * identical. Version 4 must fully contain version 3 which must
+ * subsequently fully contain version 2, etc.
+ *
+ * See C standard, section 6.5.2.3, item 5.
+ */
+struct crypt_token_handler_internal {
+	uint32_t version;
+	union {
+		crypt_token_handler v1; /* deprecated public structure */
+		struct crypt_token_handler_v2 v2; /* internal helper v2 structure */
+	} u;
+};
 
 int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 			size_t keylength, uint64_t *area_offset, uint64_t *area_length);
