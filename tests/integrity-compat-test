@@ -294,7 +294,7 @@ int_mode() # alg tag_size sector_size [keyfile keysize]
 	status_check "mode" "read/write"
 	kernel_param_check 7 "J"
 
-	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 
 	echo -n "[DIRECT WRITES]"
 	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS --integrity-no-journal || fail "Cannot activate device without journal."
@@ -302,14 +302,14 @@ int_mode() # alg tag_size sector_size [keyfile keysize]
 	status_check "journal" "not active"
 	kernel_param_check 7 "D"
 
-	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 
 	echo -n "[RECOVERY MODE]"
 	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS --integrity-recovery-mode || fail "Cannot activate device in recovery mode."
 	status_check "mode" "read/write recovery"
 	kernel_param_check 7 "R"
 
-	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 
 	echo "[OK]"
 }
@@ -377,7 +377,7 @@ if [ -n "$DM_INTEGRITY_RECALC" ] ; then
 	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate || fail "Cannot activate device."
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=1M 2>/dev/null || fail "Cannot recalculate tags in-kernel"
 	int_check_sum_only 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
-	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 else
 	echo "[N/A]"
@@ -390,7 +390,7 @@ if [ -n "$DM_INTEGRITY_META" ] ; then
 	$INTSETUP open $DEV --data-device $DEV2 $DEV_NAME || fail "Cannot activate device."
 	int_check_sum_only 83ee47245398adee79bd9c0a8bc57b821e92aba10f5f9ade8a5d1fae4d8c4302
 	$INTSETUP status $DEV_NAME | grep -q 'metadata device:' || fail
-	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 else
 	echo "[N/A]"
@@ -403,7 +403,7 @@ if [ -n "$DM_INTEGRITY_BITMAP" ] ; then
 	$INTSETUP open $DEV --integrity-bitmap-mode --bitmap-sectors-per-bit 65536 --bitmap-flush-time 5000 $DEV_NAME || fail "Cannot activate device."
 	$INTSETUP status $DEV_NAME | grep -q 'bitmap 512-byte sectors per bit: 65536' || fail
 	$INTSETUP status $DEV_NAME | grep -q 'bitmap flush interval: 5000 ms' || fail
-	$INTSETUP close $DEV_NAME fail "Cannot deactivate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 	echo "Bitmap error detection tests:"
 	int_error_detection B crc32c      0  4 512
