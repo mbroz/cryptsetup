@@ -14,6 +14,7 @@ DEV_LOOP=""
 DEV=test123.img
 DEV2=test124.img
 KEY_FILE=key.img
+KEY_FILE2=key2.img
 
 dmremove() { # device
 	udevadm settle >/dev/null 2>&1
@@ -25,7 +26,7 @@ cleanup() {
 	[ -b /dev/mapper/$DEV_NAME_BIG ] && dmremove $DEV_NAME_BIG
 	[ -n "$DEV_LOOP" ] && losetup -d "$DEV_LOOP"
 	DEV_LOOP=""
-	rm -f $DEV $DEV2 $KEY_FILE >/dev/null 2>&1
+	rm -f $DEV $DEV2 $KEY_FILE $KEY_FILE2 >/dev/null 2>&1
 }
 
 fail()
@@ -60,11 +61,15 @@ function dm_integrity_features()
 	[ $VER_MIN -gt 2 ] && {
 		DM_INTEGRITY_BITMAP=1
 	}
+	[ $VER_MIN -gt 6 ] && {
+		DM_INTEGRITY_HMAC_FIX=1
+	}
 }
 
 add_device() {
 	cleanup
 	dd if=/dev/urandom of=$KEY_FILE bs=1 count=512 >/dev/null 2>&1
+	dd if=/dev/urandom of=$KEY_FILE2 bs=1 count=32 >/dev/null 2>&1
 	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
 	dd if=/dev/zero of=$DEV2 bs=1M count=32 >/dev/null 2>&1
 	sync
@@ -431,6 +436,37 @@ EOF
 	A_SIZE=$(blockdev --getsz /dev/mapper/$DEV_NAME)
 	# Compare strings (to avoid 64bit integers), not integers
 	[ -n "$A_SIZE" -a "$D_SIZE" != "$A_SIZE" ] && fail
+	echo "[OK]"
+else
+	echo "[N/A]"
+fi
+
+echo -n "Fixed HMAC and legacy flags:"
+if [ -n "$DM_INTEGRITY_HMAC_FIX" ] ; then
+	add_device
+	# only data HMAC
+	ARGS="--integrity hmac-sha256 --integrity-key-file $KEY_FILE --integrity-key-size 32"
+	$INTSETUP format -q $DEV --integrity-legacy-hmac --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate $ARGS >/dev/null 2>&1 && fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-recalculate $ARGS || fail "Cannot activate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	# New version - must fail (no journal HMAC)
+	$INTSETUP format -q $DEV --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate $ARGS  >/dev/null 2>&1 && fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-recalculate $ARGS || fail "Cannot activate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+
+	# data and journal HMAC
+	ARGS="$ARGS --journal-integrity hmac-sha256 --journal-integrity-key-file $KEY_FILE2 --journal-integrity-key-size 32"
+	$INTSETUP format -q $DEV --integrity-legacy-hmac --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate $ARGS >/dev/null 2>&1 && fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-recalculate $ARGS || fail "Cannot activate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	# New fixed version
+	$INTSETUP format -q $DEV --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
+	$INTSETUP dump $DEV | grep "flags" | grep -q "fix_hmac" || fail "Flag for HMAC not set."
+	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate $ARGS || fail "Cannot activate device."
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 else
 	echo "[N/A]"

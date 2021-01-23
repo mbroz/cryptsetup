@@ -56,6 +56,8 @@ static int opt_integrity_nojournal = 0;
 static int opt_integrity_recovery = 0;
 static int opt_integrity_bitmap = 0;
 static int opt_integrity_legacy_padding = 0;
+static int opt_integrity_legacy_hmac = 0;
+static int opt_integrity_legacy_recalculate = 0;
 static int opt_integrity_recalculate = 0;
 static int opt_allow_discards = 0;
 
@@ -254,6 +256,9 @@ static int action_format(int arg)
 	if (opt_integrity_legacy_padding)
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);
 
+	if (opt_integrity_legacy_hmac)
+		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC);
+
 	r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, &params);
 	if (r < 0) /* FIXME: call wipe signatures again */
 		goto out;
@@ -319,7 +324,7 @@ static int action_open(int arg)
 	if (opt_integrity_bitmap)
 		activate_flags |= CRYPT_ACTIVATE_NO_JOURNAL_BITMAP;
 
-	if (opt_integrity_recalculate)
+	if (opt_integrity_recalculate || opt_integrity_legacy_recalculate)
 		activate_flags |= CRYPT_ACTIVATE_RECALCULATE;
 	if (opt_allow_discards)
 		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
@@ -334,6 +339,9 @@ static int action_open(int arg)
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
 	if (r)
 		goto out;
+
+	if (opt_integrity_legacy_recalculate)
+		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC);
 
 	r = crypt_activate_by_volume_key(cd, action_argv[1], integrity_key,
 					 opt_integrity_key_size, activate_flags);
@@ -583,6 +591,9 @@ int main(int argc, const char **argv)
 		{ "integrity-bitmap-mode",      'B', POPT_ARG_NONE,  &opt_integrity_bitmap, 0, N_("Use bitmap to track changes and disable journal for integrity device"), NULL },
 		{ "integrity-recalculate",     '\0', POPT_ARG_NONE,  &opt_integrity_recalculate,  0, N_("Recalculate initial tags automatically."), NULL },
 		{ "integrity-legacy-padding",  '\0', POPT_ARG_NONE,  &opt_integrity_legacy_padding, 0, N_("Use inefficient legacy padding (old kernels)"), NULL },
+
+		{ "integrity-legacy-hmac",     '\0', POPT_ARG_NONE,  &opt_integrity_legacy_hmac, 0, N_("Do not protect superblock with HMAC (old kernels)"), NULL },
+		{ "integrity-legacy-recalculate",'\0',POPT_ARG_NONE, &opt_integrity_legacy_recalculate, 0, N_("Allow recalculating of volumes with HMAC keys (old kernels)"), NULL },
 
 		{ "allow-discards",            '\0', POPT_ARG_NONE,  &opt_allow_discards, 0, N_("Allow discards (aka TRIM) requests for device"), NULL },
 		POPT_TABLEEND
