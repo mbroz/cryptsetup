@@ -64,6 +64,8 @@
 #define OPT_INTEGRITY_KEY_FILE		"integrity-key-file"
 #define OPT_INTEGRITY_KEY_SIZE		"integrity-key-size"
 #define OPT_INTEGRITY_LEGACY_PADDING	"integrity-legacy-padding"
+#define OPT_INTEGRITY_LEGACY_HMAC	"integrity-legacy-hmac"
+#define OPT_INTEGRITY_LEGACY_RECALC	"integrity-legacy-recalculate"
 #define OPT_INTEGRITY_NO_JOURNAL	"integrity-no-journal"
 #define OPT_INTEGRITY_NO_WIPE		"integrity-no-wipe"
 #define OPT_INTEGRITY_RECALCULATE	"integrity-recalculate"

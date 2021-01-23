@@ -193,6 +193,9 @@ static int action_format(int arg)
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);
 
+	if (ARG_SET(OPT_INTEGRITY_LEGACY_HMAC_ID))
+		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC);
+
 	r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, &params);
 	if (r < 0) /* FIXME: call wipe signatures again */
 		goto out;
@@ -258,8 +261,9 @@ static int action_open(int arg)
 	if (ARG_SET(OPT_INTEGRITY_BITMAP_MODE_ID))
 		activate_flags |= CRYPT_ACTIVATE_NO_JOURNAL_BITMAP;
 
-	if (ARG_SET(OPT_INTEGRITY_RECALCULATE_ID))
+	if (ARG_SET(OPT_INTEGRITY_RECALCULATE_ID) || ARG_SET(OPT_INTEGRITY_LEGACY_RECALC_ID))
 		activate_flags |= CRYPT_ACTIVATE_RECALCULATE;
+
 	if (ARG_SET(OPT_ALLOW_DISCARDS_ID))
 		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 
@@ -273,6 +277,9 @@ static int action_open(int arg)
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
 	if (r)
 		goto out;
+
+	if (ARG_SET(OPT_INTEGRITY_LEGACY_RECALC_ID))
+		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC);
 
 	r = crypt_activate_by_volume_key(cd, action_argv[1], integrity_key,
 					 ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID), activate_flags);

@@ -47,6 +47,10 @@ ARG(OPT_INTEGRITY_KEY_SIZE, '\0', POPT_ARG_STRING, N_("The size of the data inte
 
 ARG(OPT_INTEGRITY_LEGACY_PADDING, '\0', POPT_ARG_NONE, N_("Use inefficient legacy padding (old kernels)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_INTEGRITY_LEGACY_HMAC, '\0', POPT_ARG_NONE, N_("Do not protect superblock with HMAC (old kernels)"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+ARG(OPT_INTEGRITY_LEGACY_RECALC, '\0', POPT_ARG_NONE, N_("Allow recalculating of volumes with HMAC keys (old kernels)"), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_RECALCULATE_ACTIONS)
+
 ARG(OPT_INTEGRITY_NO_JOURNAL, 'D', POPT_ARG_NONE, N_("Disable journal for integrity device"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_INTERLEAVE_SECTORS, '\0', POPT_ARG_STRING, N_("Interleave sectors"), N_("SECTORS"), CRYPT_ARG_UINT32, {}, OPT_INTERLEAVE_SECTORS_ACTIONS)

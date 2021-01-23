@@ -40,7 +40,7 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
 	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic)) ||
-	    sb->version < SB_VERSION_1 || sb->version > SB_VERSION_4) {
+	    sb->version < SB_VERSION_1 || sb->version > SB_VERSION_5) {
 		log_std(cd, "No integrity superblock detected on %s.\n",
 			device_path(device));
 		r = -EINVAL;
@@ -95,11 +95,12 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 	if (sb.version >= SB_VERSION_2 && (sb.flags & SB_FLAG_RECALCULATING))
 		log_std(cd, "recalc_sector %" PRIu64 "\n", sb.recalc_sector);
 	log_std(cd, "log2_blocks_per_bitmap %u\n", sb.log2_blocks_per_bitmap_bit);
-	log_std(cd, "flags %s%s%s%s\n",
+	log_std(cd, "flags %s%s%s%s%s\n",
 		sb.flags & SB_FLAG_HAVE_JOURNAL_MAC ? "have_journal_mac " : "",
 		sb.flags & SB_FLAG_RECALCULATING ? "recalculating " : "",
 		sb.flags & SB_FLAG_DIRTY_BITMAP ? "dirty_bitmap " : "",
-		sb.flags & SB_FLAG_FIXED_PADDING ? "fix_padding " : "");
+		sb.flags & SB_FLAG_FIXED_PADDING ? "fix_padding " : "",
+		sb.flags & SB_FLAG_FIXED_HMAC ? "fix_hmac " : "");
 
 	return 0;
 }
@@ -275,6 +276,15 @@ int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 	if (r < 0 && (sb_flags & SB_FLAG_FIXED_PADDING) && !dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
 	    !(dmi_flags & DM_INTEGRITY_FIX_PADDING_SUPPORTED)) {
 		log_err(cd, _("Kernel does not support dm-integrity fixed metadata alignment."));
+		return -ENOTSUP;
+	}
+
+	if (r < 0 && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE) &&
+	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC) &&
+	    (sb_flags & SB_FLAG_FIXED_HMAC) ?
+	    (tgt->u.integrity.vk && !tgt->u.integrity.journal_integrity_key) :
+	    (tgt->u.integrity.vk || tgt->u.integrity.journal_integrity_key)) {
+		log_err(cd, _("Kernel refuses to activate insecure recalculate option (see legacy activation options to override)."));
 		return -ENOTSUP;
 	}
 

@@ -661,6 +661,10 @@ uint32_t crypt_get_compatibility(struct crypt_device *cd);
 
 /** dm-integrity device uses less effective (legacy) padding (old kernels) */
 #define CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING (1 << 0)
+/** dm-integrity device does not protect superblock with HMAC (old kernels) */
+#define CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC (1 << 1)
+/** dm-integrity allow recalculating of volumes with HMAC keys (old kernels) */
+#define CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC (1 << 2)
 
 /**
  * Convert to new type for already existing device.
