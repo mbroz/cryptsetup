@@ -4431,7 +4431,7 @@ int crypt_activate_by_signed_key(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "%s volume %s by signed key.", name ? "Activating" : "Checking", name ?: "");
+	log_dbg(cd, "%s volume %s by %skey.", name ? "Activating" : "Checking", name ?: "", signature ? "signed " : "");
 
 	if (cd->u.verity.hdr.flags & CRYPT_VERITY_ROOT_HASH_SIGNATURE && !signature) {
 		log_err(cd, _("Root hash signature required."));
