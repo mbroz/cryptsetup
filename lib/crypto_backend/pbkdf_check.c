@@ -1,7 +1,7 @@
 /*
  * PBKDF performance check
- * Copyright (C) 2012-2020 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2020 Milan Broz
+ * Copyright (C) 2012-2021 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2021 Milan Broz
  * Copyright (C) 2016-2020 Ondrej Mosnacek
  *
  * This file is free software; you can redistribute it and/or

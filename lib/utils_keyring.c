@@ -1,8 +1,8 @@
 /*
  * kernel keyring utilities
  *
- * Copyright (C) 2016-2020 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2016-2020 Ondrej Kozina
+ * Copyright (C) 2016-2021 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2016-2021 Ondrej Kozina
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
