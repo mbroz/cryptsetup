@@ -197,7 +197,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 
 	/* Kernel always use lower-case */
 	algorithm = (char *)sb.algorithm;
-	strncpy(algorithm, params->hash_name, sizeof(sb.algorithm));
+	strncpy(algorithm, params->hash_name, sizeof(sb.algorithm)-1);
 	algorithm[sizeof(sb.algorithm)-1] = '\0';
 	_to_lower(algorithm);
 
