@@ -2206,6 +2206,16 @@ typedef int (*crypt_token_validate_func) (struct crypt_device *cd, const char *j
 typedef void (*crypt_token_dump_func) (struct crypt_device *cd, const char *json);
 
 /**
+ * Token handler version function prototype.
+ * This function is supposed to return pointer to version string information.
+ *
+ * @note The returned string is advised to contain only version.
+ *	 For example '1.0.0' or 'v1.2.3.4'.
+ *
+ */
+typedef const char * (*crypt_token_version_func) (void);
+
+/**
  * Token handler
  */
 typedef struct  {
@@ -2234,6 +2244,7 @@ int crypt_token_register(const crypt_token_handler *handler);
 #define CRYPT_TOKEN_ABI_BUFFER_FREE "cryptsetup_token_buffer_free"
 #define CRYPT_TOKEN_ABI_VALIDATE    "cryptsetup_token_validate"
 #define CRYPT_TOKEN_ABI_DUMP        "cryptsetup_token_dump"
+#define CRYPT_TOKEN_ABI_VERSION     "cryptsetup_token_version"
 
 /**
  * Activate device or check key using a token.

@@ -77,6 +77,24 @@ static bool token_validate_v1(struct crypt_device *cd, const crypt_token_handler
 	return true;
 }
 
+#if USE_EXTERNAL_TOKENS
+static bool token_validate_v2(struct crypt_device *cd, const struct crypt_token_handler_internal *h)
+{
+	if (!h)
+		return false;
+
+	if (!token_validate_v1(cd, &h->u.v1))
+		return false;
+
+	if (!h->u.v2.version) {
+		log_dbg(cd, "Token handler does not provide " CRYPT_TOKEN_ABI_VERSION " function.");
+		return false;
+	}
+
+	return true;
+}
+#endif
+
 static int
 crypt_token_load_external(struct crypt_device *cd, const char *name, struct crypt_token_handler_internal *ret)
 {
@@ -114,11 +132,18 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 	token->validate = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_VALIDATE, CRYPT_TOKEN_ABI_VERSION1);
 	token->dump = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_DUMP, CRYPT_TOKEN_ABI_VERSION1);
 	token->open_pin = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_OPEN_PIN, CRYPT_TOKEN_ABI_VERSION1);
+	token->version = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_VERSION, CRYPT_TOKEN_ABI_VERSION1);
 
-	if (!token_validate_v1(cd, &ret->u.v1)) {
+	if (!token_validate_v2(cd, ret)) {
 		r = -EINVAL;
 		goto err;
 	}
+
+	r = snprintf(buf, sizeof(buf), "%s", token->version() ?: "");
+	if (r < 0 || (size_t)r >= sizeof(buf))
+		*buf = '\0';
+
+	log_dbg(cd, "Token handler %s-%s loaded sucessfuly.", token->name, buf);
 
 	token->dlhandle = h;
 	ret->version = 2;

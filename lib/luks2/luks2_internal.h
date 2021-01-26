@@ -184,6 +184,7 @@ struct crypt_token_handler_v2 {
 	/* here ends v1. Do not touch anything above */
 
 	crypt_token_open_pin_func open_pin;
+	crypt_token_version_func version;
 
 	void *dlhandle;
 };
