@@ -23,7 +23,7 @@
 
 #include "luks2_internal.h"
 
-static int keyring_open(struct crypt_device *cd,
+int keyring_open(struct crypt_device *cd,
 				int token,
 				char **buffer,
 				size_t *buffer_len,
@@ -54,7 +54,7 @@ static int keyring_open(struct crypt_device *cd,
 	return 0;
 }
 
-static int keyring_validate(struct crypt_device *cd __attribute__((unused)),
+int keyring_validate(struct crypt_device *cd __attribute__((unused)),
 				    const char *json)
 {
 	enum json_tokener_error jerr;
@@ -92,7 +92,7 @@ out:
 	return r;
 }
 
-static void keyring_dump(struct crypt_device *cd, const char *json)
+void keyring_dump(struct crypt_device *cd, const char *json)
 {
 	enum json_tokener_error jerr;
 	json_object *jobj_token, *jobj_key;
@@ -135,10 +135,3 @@ int LUKS2_token_keyring_get(struct crypt_device *cd, struct luks2_hdr *hdr, int 
 
 	return token;
 }
-
-const crypt_token_handler keyring_handler = {
-	.name = LUKS2_TOKEN_KEYRING,
-	.open = keyring_open,
-	.validate = keyring_validate,
-	.dump = keyring_dump
-};

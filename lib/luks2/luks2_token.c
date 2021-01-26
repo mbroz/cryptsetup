@@ -25,28 +25,89 @@
 
 #include "luks2_internal.h"
 
-/* Builtin tokens */
-extern const crypt_token_handler keyring_handler;
-
-static token_handler token_handlers[LUKS2_TOKENS_MAX] = {
+static struct crypt_token_handler_internal token_handlers[LUKS2_TOKENS_MAX] = {
 	/* keyring builtin token */
 	{
-	  .h = &keyring_handler
+	  .version = 1,
+	  .u = {
+		  .v1 = { .name = LUKS2_TOKEN_KEYRING,
+			  .open = keyring_open,
+			  .validate = keyring_validate,
+			  .dump = keyring_dump }
+	       }
 	}
 };
 
+#if USE_EXTERNAL_TOKENS
+static void *token_dlvsym(struct crypt_device *cd,
+		void *handle,
+		const char *symbol,
+		const char *version)
+{
+	char *error;
+	void *sym;
+
+	log_dbg(cd, "Loading symbol %s@%s.", symbol, version);
+
+	sym = dlvsym(handle, symbol, version);
+	error = dlerror();
+
+	if (error)
+		log_dbg(cd, "Error: %s.", error);
+
+	return sym;
+}
+#endif
+
+static bool token_validate_v1(struct crypt_device *cd, const crypt_token_handler *h)
+{
+	if (!h)
+		return false;
+
+	if (!h->name) {
+		log_dbg(cd, "Token handler does not provide name attribute.");
+		return false;
+	}
+
+	if (!h->open) {
+		log_dbg(cd, "Token handler does not provide open function.");
+		return false;
+	}
+
+	return true;
+}
+
+#if USE_EXTERNAL_TOKENS
+static bool token_validate_v2(struct crypt_device *cd, const struct crypt_token_handler_internal *h)
+{
+	if (!h)
+		return false;
+
+	if (!token_validate_v1(cd, &h->u.v1))
+		return false;
+
+	if (!h->u.v2.version) {
+		log_dbg(cd, "Token handler does not provide " CRYPT_TOKEN_ABI_VERSION " function.");
+		return false;
+	}
+
+	return true;
+}
+#endif
+
 static int
-crypt_token_load_external(struct crypt_device *cd, const char *name, token_handler *ret)
+crypt_token_load_external(struct crypt_device *cd, const char *name, struct crypt_token_handler_internal *ret)
 {
 #if USE_EXTERNAL_TOKENS
-	const crypt_token_handler *token = NULL;
-	void *handle;
-	char *error;
+	struct crypt_token_handler_v2 *token;
+	void *h;
 	char buf[512];
 	int i, r;
 
 	if (!ret || !name || strlen(name) > 64)
 		return -EINVAL;
+
+	token = &ret->u.v2;
 
 	for (i = 0; name[i]; i++)
 		if (!isalnum(name[i]))
@@ -58,25 +119,42 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, token_handl
 
 	log_dbg(cd, "Trying to load %s.", buf);
 
-	handle = dlopen(buf, RTLD_LAZY);
-	if (!handle) {
+	h = dlopen(buf, RTLD_LAZY);
+	if (!h) {
 		log_dbg(NULL, "%s", dlerror());
 		return -EINVAL;
 	}
 	dlerror();
 
-	token = dlvsym(handle, CRYPT_TOKEN_ABI_HANDLER, CRYPT_TOKEN_ABI_VERSION1);
-	error = dlerror();
-	if (error) {
-		log_dbg(cd, "%s", error);
-		dlclose(handle);
-		return -EINVAL;
+	token->name = strdup(name);
+	token->open = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_OPEN, CRYPT_TOKEN_ABI_VERSION1);
+	token->buffer_free = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_BUFFER_FREE, CRYPT_TOKEN_ABI_VERSION1);
+	token->validate = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_VALIDATE, CRYPT_TOKEN_ABI_VERSION1);
+	token->dump = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_DUMP, CRYPT_TOKEN_ABI_VERSION1);
+	token->open_pin = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_OPEN_PIN, CRYPT_TOKEN_ABI_VERSION1);
+	token->version = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_VERSION, CRYPT_TOKEN_ABI_VERSION1);
+
+	if (!token_validate_v2(cd, ret)) {
+		r = -EINVAL;
+		goto err;
 	}
 
-	ret->h = token;
-	ret->dlhandle = handle;
+	r = snprintf(buf, sizeof(buf), "%s", token->version() ?: "");
+	if (r < 0 || (size_t)r >= sizeof(buf))
+		*buf = '\0';
+
+	log_dbg(cd, "Token handler %s-%s loaded sucessfuly.", token->name, buf);
+
+	token->dlhandle = h;
+	ret->version = 2;
 
 	return 0;
+err:
+	free(CONST_CAST(void *)token->name);
+	dlclose(h);
+	memset(token, 0, sizeof(*token));
+
+	return r;
 #else
 	return -ENOTSUP;
 #endif
@@ -96,8 +174,8 @@ static int crypt_token_find_free(struct crypt_device *cd, const char *name, int 
 		return -EINVAL;
 	}
 
-	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].h; i++) {
-		if (!strcmp(token_handlers[i].h->name, name)) {
+	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].u.v1.name; i++) {
+		if (!strcmp(token_handlers[i].u.v1.name, name)) {
 			log_dbg(cd, "Keyslot handler %s is already registered.", name);
 			return -EINVAL;
 		}
@@ -116,26 +194,16 @@ int crypt_token_register(const crypt_token_handler *handler)
 {
 	int i, r;
 
-	if (!handler->name || !handler->open)
+	if (!token_validate_v1(NULL, handler))
 		return -EINVAL;
 
 	r = crypt_token_find_free(NULL, handler->name, &i);
 	if (r < 0)
 		return r;
 
-	token_handlers[i].h = handler;
+	token_handlers[i].version = 1;
+	token_handlers[i].u.v1 = *handler;
 	return 0;
-}
-
-int crypt_token_load(struct crypt_device *cd, const char *name)
-{
-	int i, r;
-
-	r = crypt_token_find_free(cd, name, &i);
-	if (r < 0)
-		return r;
-
-	return crypt_token_load_external(cd, name, &token_handlers[i]);
 }
 
 void crypt_token_unload_external_all(struct crypt_device *cd)
@@ -143,24 +211,26 @@ void crypt_token_unload_external_all(struct crypt_device *cd)
 	int i;
 
 	for (i = LUKS2_TOKENS_MAX - 1; i >= 0; i--) {
-		if (!token_handlers[i].dlhandle)
+		if (token_handlers[i].version < 2)
 			continue;
 
-		log_dbg(cd, "Unloading %s token handler.", token_handlers[i].h->name);
+		log_dbg(cd, "Unloading %s token handler.", token_handlers[i].u.v2.name);
 
-		if (dlclose(CONST_CAST(void *)token_handlers[i].dlhandle))
+		free(CONST_CAST(void *)token_handlers[i].u.v2.name);
+
+		if (dlclose(CONST_CAST(void *)token_handlers[i].u.v2.dlhandle))
 			log_dbg(cd, "%s", dlerror());
 	}
 }
 
-static const crypt_token_handler
+static const void
 *LUKS2_token_handler_type(struct crypt_device *cd, const char *type)
 {
 	int i;
 
-	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].h; i++)
-		if (!strcmp(token_handlers[i].h->name, type))
-			return token_handlers[i].h;
+	for (i = 0; i < LUKS2_TOKENS_MAX && token_handlers[i].u.v1.name; i++)
+		if (!strcmp(token_handlers[i].u.v1.name, type))
+			return &token_handlers[i].u;
 
 	if (i >= LUKS2_TOKENS_MAX)
 		return NULL;
@@ -171,10 +241,10 @@ static const crypt_token_handler
 	if (crypt_token_load_external(cd, type, &token_handlers[i]))
 		return NULL;
 
-	return token_handlers[i].h;
+	return &token_handlers[i].u;
 }
 
-static const crypt_token_handler
+static const void
 *LUKS2_token_handler(struct crypt_device *cd, int token)
 {
 	struct luks2_hdr *hdr;
@@ -316,7 +386,7 @@ static int LUKS2_token_open(struct crypt_device *cd,
 	void *usrptr)
 {
 	const char *json;
-	const crypt_token_handler *h;
+	const struct crypt_token_handler_v2 *h;
 	int r;
 
 	if (!(h = LUKS2_token_handler(cd, token)))
