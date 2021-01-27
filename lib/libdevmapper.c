@@ -239,6 +239,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 6, 0, integrity_maj, integrity_min, integrity_patch))
 		_dm_flags |= DM_INTEGRITY_DISCARDS_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 7, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_FIX_HMAC_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -912,9 +915,22 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
 	}
+
 	if (tgt->u.integrity.fix_padding) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "fix_padding ");
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
+	}
+
+	if (tgt->u.integrity.fix_hmac) {
+		num_options++;
+		snprintf(feature, sizeof(feature), "fix_hmac ");
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
+	}
+
+	if (tgt->u.integrity.legacy_recalc) {
+		num_options++;
+		snprintf(feature, sizeof(feature), "legacy_recalculate ");
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 
@@ -2474,6 +2490,10 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 				*act_flags |= CRYPT_ACTIVATE_RECALCULATE;
 			} else if (!strcmp(arg, "fix_padding")) {
 				tgt->u.integrity.fix_padding = true;
+			} else if (!strcmp(arg, "fix_hmac")) {
+				tgt->u.integrity.fix_hmac = true;
+			} else if (!strcmp(arg, "legacy_recalculate")) {
+				tgt->u.integrity.legacy_recalc = true;
 			} else if (!strcmp(arg, "allow_discards")) {
 				*act_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 			} else /* unknown option */
@@ -3064,6 +3084,15 @@ int dm_integrity_target_set(struct crypt_device *cd,
 	    (dmi_flags & DM_INTEGRITY_FIX_PADDING_SUPPORTED) &&
 	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING))
 		tgt->u.integrity.fix_padding = true;
+
+	if (!dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
+	    (dmi_flags & DM_INTEGRITY_FIX_HMAC_SUPPORTED) &&
+	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC))
+		tgt->u.integrity.fix_hmac = true;
+
+	/* This flag can be backported, just try to set it always */
+	if (crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC)
+		tgt->u.integrity.legacy_recalc = true;
 
 	if (ip) {
 		tgt->u.integrity.journal_size = ip->journal_size;
