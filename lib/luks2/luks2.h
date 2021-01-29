@@ -224,6 +224,11 @@ int LUKS2_keyslot_priority_set(struct crypt_device *cd,
 	crypt_keyslot_priority priority,
 	int commit);
 
+int LUKS2_keyslot_swap(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	int keyslot2);
+
 /*
  * Generic LUKS2 token
  */

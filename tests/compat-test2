@@ -543,10 +543,10 @@ $CRYPTSETUP close $DEV_NAME || fail
 add_scsi_device dev_size_mb=32 sector_size=4096
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $DEV || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
-OLD_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/')
+OLD_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/') #'
 echo $PWD1 | $CRYPTSETUP resize $DEV_NAME -b 7 2> /dev/null && fail
 dmsetup info $DEV_NAME | grep -q SUSPENDED && fail
-NEW_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/')
+NEW_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/') #'
 test $OLD_SIZE -eq $NEW_SIZE || fail
 $CRYPTSETUP close $DEV_NAME || fail
 
@@ -594,21 +594,15 @@ echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 --key-slot
 $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 --key-slot 0 || fail
 # passphrase [1] / passphrase [1]
 echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT --key-slot 1 || fail
-# keyfile [0] / keyfile [new]
+# keyfile [0] / keyfile [new] - with LUKS2 it should stay
 $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY2 $KEY1 || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep -q "0: luks2" && fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "0: luks2" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" && fail
 # passphrase [1] / passphrase [new]
 echo -e "$PWD2\n$PWD1\n" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT $LOOPDEV || fail
-$CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" && fail
-# use all slots
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT || fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT || fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT || fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT || fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT || fail
-$CRYPTSETUP luksAddKey $LOOPDEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT || fail
-# still allows replace
-#FIXME
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" && fail
+# FIXME: test out of raw area
 #$CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 || fail
 #$CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 2>/dev/null && fail
 
