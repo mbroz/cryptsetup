@@ -670,16 +670,12 @@ int LUKS2_token_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return token;
 }
 
-int LUKS2_token_is_assigned(struct crypt_device *cd, struct luks2_hdr *hdr,
-			    int keyslot, int token)
+static int token_is_assigned(struct luks2_hdr *hdr, int keyslot, int token)
 {
 	int i;
-	json_object *jobj_token, *jobj_token_keyslots, *jobj;
+	json_object *jobj, *jobj_token_keyslots,
+		    *jobj_token = LUKS2_get_token_jobj(hdr, token);
 
-	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX || token < 0 || token >= LUKS2_TOKENS_MAX)
-		return -EINVAL;
-
-	jobj_token = LUKS2_get_token_jobj(hdr, token);
 	if (!jobj_token)
 		return -ENOENT;
 
@@ -694,6 +690,15 @@ int LUKS2_token_is_assigned(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return -ENOENT;
 }
 
+int LUKS2_token_is_assigned(struct crypt_device *cd, struct luks2_hdr *hdr,
+			    int keyslot, int token)
+{
+	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX || token < 0 || token >= LUKS2_TOKENS_MAX)
+		return -EINVAL;
+
+	return token_is_assigned(hdr, keyslot, token);
+}
+
 int LUKS2_tokens_count(struct luks2_hdr *hdr)
 {
 	json_object *jobj_tokens = LUKS2_get_tokens_jobj(hdr);
@@ -701,4 +706,29 @@ int LUKS2_tokens_count(struct luks2_hdr *hdr)
 		return -EINVAL;
 
 	return json_object_object_length(jobj_tokens);
+}
+
+int LUKS2_token_assignment_copy(struct crypt_device *cd,
+			struct luks2_hdr *hdr,
+			int keyslot_from,
+			int keyslot_to,
+			int commit)
+{
+	int i, r;
+
+	if (keyslot_from < 0 || keyslot_from >= LUKS2_KEYSLOTS_MAX || keyslot_to < 0 || keyslot_to >= LUKS2_KEYSLOTS_MAX)
+		return -EINVAL;
+
+	r = LUKS2_tokens_count(hdr);
+	if (r <= 0)
+		return r;
+
+	for (i = 0; i < LUKS2_TOKENS_MAX; i++) {
+		if (!token_is_assigned(hdr, keyslot_from, i)) {
+			if ((r = assign_one_token(cd, hdr, keyslot_to, i, 1)))
+				return r;
+		}
+	}
+
+	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
