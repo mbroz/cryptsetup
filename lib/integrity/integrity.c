@@ -281,9 +281,9 @@ int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 
 	if (r < 0 && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE) &&
 	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC) &&
-	    (sb_flags & SB_FLAG_FIXED_HMAC) ?
+	    ((sb_flags & SB_FLAG_FIXED_HMAC) ?
 	    (tgt->u.integrity.vk && !tgt->u.integrity.journal_integrity_key) :
-	    (tgt->u.integrity.vk || tgt->u.integrity.journal_integrity_key)) {
+	    (tgt->u.integrity.vk || tgt->u.integrity.journal_integrity_key))) {
 		log_err(cd, _("Kernel refuses to activate insecure recalculate option (see legacy activation options to override)."));
 		return -ENOTSUP;
 	}
