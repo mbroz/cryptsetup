@@ -1809,6 +1809,7 @@ static void Tokens(void)
 			"\"key_description\":" y ", \"some_field\":\"some_value\"}"
 
 
+	int ks;
 	const char *dummy;
 	const char *cipher = "aes";
 	const char *cipher_mode = "xts-plain64";
@@ -1952,6 +1953,13 @@ static void Tokens(void)
 	EQ_(crypt_token_is_assigned(cd, 10, 32), -EINVAL);
 	EQ_(crypt_token_is_assigned(cd, -1, -1), -EINVAL);
 	EQ_(crypt_token_is_assigned(cd, 32, 32), -EINVAL);
+
+	// test crypt_keyslot_change_by_passphrase does not erase token references
+	EQ_(crypt_keyslot_change_by_passphrase(cd, 1, 5, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE1, strlen(PASSPHRASE1)), 5);
+	OK_(crypt_token_is_assigned(cd, 10, 5));
+	ks = crypt_keyslot_change_by_passphrase(cd, 5, CRYPT_ANY_SLOT, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE1, strlen(PASSPHRASE1));
+	NOTFAIL_(ks, "Failed to change keyslot passphrase.");
+	OK_(crypt_token_is_assigned(cd, 10, ks));
 
 	CRYPT_FREE(cd);
 
