@@ -462,7 +462,7 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (keyslot == CRYPT_ANY_SLOT)
-		keyslot = LUKS2_keyslot_find_empty(hdr);
+		keyslot = LUKS2_keyslot_find_empty(cd, hdr, 0);
 
 	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX)
 		return -ENOMEM;

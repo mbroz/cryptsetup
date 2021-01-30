@@ -65,15 +65,22 @@ static const keyslot_handler
 	return LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj2));
 }
 
-int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr)
+int LUKS2_keyslot_find_empty(struct crypt_device *cd, struct luks2_hdr *hdr, size_t keylength)
 {
 	int i;
 
 	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++)
 		if (!LUKS2_get_keyslot_jobj(hdr, i))
-			return i;
+			break;
 
-	return -EINVAL;
+	if (i == LUKS2_KEYSLOTS_MAX)
+		return -EINVAL;
+
+	/* Check also there is a space for the key in keyslots area */
+	if (keylength && LUKS2_find_area_gap(cd, hdr, keylength, NULL, NULL) < 0)
+		return -ENOSPC;
+
+	return i;
 }
 
 /* Check if a keyslot is assigned to specific segment */

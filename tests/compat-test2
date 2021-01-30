@@ -588,7 +588,7 @@ dmsetup remove --retry $DEV_NAME || fail
 
 prepare "[23] ChangeKey passphrase and keyfile" wipe
 # [0]$KEY1 [1]key0
-$CRYPTSETUP -q luksFormat --type luks2 $LOOPDEV $KEY1 $FAST_PBKDF_OPT --key-slot 0 || fail
+$CRYPTSETUP -q luksFormat --type luks2 $LOOPDEV $KEY1 $FAST_PBKDF_OPT --key-slot 0 --key-size 256 --luks2-keyslots-size 256k >/dev/null || fail
 echo $PWD1 | $CRYPTSETUP luksAddKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 --key-slot 1 || fail
 # keyfile [0] / keyfile [0]
 $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 --key-slot 0 || fail
@@ -602,9 +602,10 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" && fail
 echo -e "$PWD2\n$PWD1\n" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" && fail
-# FIXME: test out of raw area
-#$CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 || fail
-#$CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 2>/dev/null && fail
+# test out of raw area, change in-place (space only for 2 keyslots)
+$CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "0: luks2" || fail
+$CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 2>/dev/null && fail
 
 prepare "[24] Keyfile limit" wipe
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEY1 --key-slot 0 -l 13 || fail

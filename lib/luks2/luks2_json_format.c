@@ -177,8 +177,11 @@ int LUKS2_find_area_gap(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	log_dbg(cd, "Found area %zu -> %zu", offset, length + offset);
 
-	*area_offset = offset;
-	*area_length = length;
+	if (area_offset)
+		*area_offset = offset;
+	if (area_length)
+		*area_length = length;
+
 	return 0;
 }
 
