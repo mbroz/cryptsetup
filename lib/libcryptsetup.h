@@ -1470,6 +1470,17 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
 int crypt_dump(struct crypt_device *cd);
 
 /**
+ * Dump JSON-formatted information about LUKS2 device
+ *
+ * @param cd crypt device handle (only LUKS2 format supported)
+ * @param json buffer with JSON, if NULL use log callback for output
+ * @param flags dump flags (reserved)
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_dump_json(struct crypt_device *cd, const char **json, uint32_t flags);
+
+/**
  * Get cipher used in device.
  *
  * @param cd crypt device handle

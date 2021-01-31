@@ -502,7 +502,10 @@ To dump unbound key (LUKS2 format only), \-\-unbound parameter, specific \-\-key
 id and proper passphrase has to be supplied, either interactively or via \-\-key\-file.
 Optional \-\-master\-key\-file parameter enables unbound keyslot dump to a file.
 
-\fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
+To dump LUKS2 JSON metadata (without basic heade information like UUID) use
+\-\-dump\-json\-metadata option.
+
+\fB<options>\fR can be [\-\-dump\-master\-key, \-\-dump\-json\-metadata, \-\-key\-file,
 \-\-keyfile\-offset, \-\-keyfile\-size, \-\-header, \-\-disable\-locks,
 \-\-master\-key\-file, \-\-type, \-\-unbound, \-\-key-slot].
 
@@ -975,6 +978,10 @@ without having to know an existing one.
 
 For \fIopen\fR this allows one to open the LUKS device
 without giving a passphrase.
+.TP
+.B "\-\-dump\-json\-metadata"
+For \fIluksDump\fR (LUKS2 only) this option prints content
+of LUKS2 header JSON metadata area.
 .TP
 .B "\-\-dump\-master\-key"
 For \fIluksDump\fR this option includes the master key in the displayed

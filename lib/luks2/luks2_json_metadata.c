@@ -1744,6 +1744,24 @@ int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr)
 	return 0;
 }
 
+int LUKS2_hdr_dump_json(struct crypt_device *cd, struct luks2_hdr *hdr, const char **json)
+{
+	const char *json_buf;
+
+	json_buf = json_object_to_json_string_ext(hdr->jobj,
+		JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_NOSLASHESCAPE);
+
+	if (!json_buf)
+		return -EINVAL;
+
+	if (json)
+		*json = json_buf;
+	else
+		crypt_log(cd, CRYPT_LOG_NORMAL, json_buf);
+
+	return 0;
+}
+
 int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic)
 {
 	int sector_size;

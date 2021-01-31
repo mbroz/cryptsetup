@@ -626,7 +626,7 @@ static void AddDeviceLuks2(void)
 	};
 	char key[128], key2[128], key3[128];
 
-	const char *passphrase = "blabla", *passphrase2 = "nsdkFI&Y#.sd";
+	const char *tmp_buf, *passphrase = "blabla", *passphrase2 = "nsdkFI&Y#.sd";
 	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
 	size_t key_size = strlen(mk_hex) / 2;
@@ -874,6 +874,14 @@ static void AddDeviceLuks2(void)
 	OK_(crypt_dump(cd));
 	OK_(!(global_lines != 0));
 	reset_log();
+
+	FAIL_(crypt_dump_json(cd, NULL, 42), "flags be used later");
+	OK_(crypt_dump_json(cd, NULL, 0));
+	OK_(!(global_lines != 0));
+	reset_log();
+	OK_(crypt_dump_json(cd, &tmp_buf, 0));
+	OK_(!tmp_buf);
+	OK_(!(strlen(tmp_buf) != 0));
 
 	FAIL_(crypt_set_uuid(cd, "blah"), "wrong UUID format");
 	OK_(crypt_set_uuid(cd, DEVICE_TEST_UUID));
