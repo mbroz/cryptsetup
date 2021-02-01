@@ -2445,7 +2445,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	reencrypt_keyslot = LUKS2_keyslot_find_empty(hdr);
+	reencrypt_keyslot = LUKS2_keyslot_find_empty(cd, hdr, 0);
 	if (reencrypt_keyslot < 0) {
 		log_err(cd, _("All key slots full."));
 		return -EINVAL;

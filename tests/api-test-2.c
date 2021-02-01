@@ -843,7 +843,7 @@ static void AddDeviceLuks2(void)
 	key[1] = ~key[1];
 	FAIL_(crypt_keyslot_add_by_volume_key(cd, 6, key, key_size, passphrase, strlen(passphrase)), "key mismatch");
 	key[1] = ~key[1];
-	EQ_(6, crypt_keyslot_add_by_volume_key(cd, 6, key, key_size, passphrase, strlen(passphrase)));
+	EQ_(6, crypt_keyslot_add_by_volume_key(cd, 6, key, key_size, passphrase2, strlen(passphrase2)));
 	EQ_(CRYPT_SLOT_ACTIVE, crypt_keyslot_status(cd, 6));
 
 	FAIL_(crypt_keyslot_destroy(cd, 8), "invalid keyslot");
@@ -853,6 +853,8 @@ static void AddDeviceLuks2(void)
 	EQ_(CRYPT_SLOT_INACTIVE, crypt_keyslot_status(cd, 7));
 	EQ_(CRYPT_SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 6));
 
+	EQ_(6, crypt_keyslot_change_by_passphrase(cd, 6, CRYPT_ANY_SLOT, passphrase2, strlen(passphrase2), passphrase, strlen(passphrase)));
+	EQ_(CRYPT_SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 6));
 	EQ_(7, crypt_keyslot_change_by_passphrase(cd, 6, 7, passphrase, strlen(passphrase), passphrase2, strlen(passphrase2)));
 	EQ_(CRYPT_SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 7));
 	EQ_(7, crypt_activate_by_passphrase(cd, NULL, 7, passphrase2, strlen(passphrase2), 0));

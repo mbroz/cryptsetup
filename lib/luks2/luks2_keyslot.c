@@ -65,15 +65,22 @@ static const keyslot_handler
 	return LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj2));
 }
 
-int LUKS2_keyslot_find_empty(struct luks2_hdr *hdr)
+int LUKS2_keyslot_find_empty(struct crypt_device *cd, struct luks2_hdr *hdr, size_t keylength)
 {
 	int i;
 
 	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++)
 		if (!LUKS2_get_keyslot_jobj(hdr, i))
-			return i;
+			break;
 
-	return -EINVAL;
+	if (i == LUKS2_KEYSLOTS_MAX)
+		return -EINVAL;
+
+	/* Check also there is a space for the key in keyslots area */
+	if (keylength && LUKS2_find_area_gap(cd, hdr, keylength, NULL, NULL) < 0)
+		return -ENOSPC;
+
+	return i;
 }
 
 /* Check if a keyslot is assigned to specific segment */
@@ -934,4 +941,41 @@ int LUKS2_find_keyslot(struct luks2_hdr *hdr, const char *type)
 	}
 
 	return -ENOENT;
+}
+
+/* assumes valid header, it does not move references in tokens/digests etc! */
+int LUKS2_keyslot_swap(struct crypt_device *cd, struct luks2_hdr *hdr,
+	int keyslot, int keyslot2)
+{
+	json_object *jobj_keyslots, *jobj_keyslot, *jobj_keyslot2;
+	int r;
+
+	if (!json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots))
+		return -EINVAL;
+
+	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
+	if (!jobj_keyslot)
+		return -EINVAL;
+
+	jobj_keyslot2 = LUKS2_get_keyslot_jobj(hdr, keyslot2);
+	if (!jobj_keyslot2)
+		return -EINVAL;
+
+	/* This transfer owner of object, no need for json_object_put */
+	json_object_get(jobj_keyslot);
+	json_object_get(jobj_keyslot2);
+
+	json_object_object_del_by_uint(jobj_keyslots, keyslot);
+	r = json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot2);
+	if (r < 0) {
+		log_dbg(cd, "Failed to swap keyslot %d.", keyslot);
+		return r;
+	}
+
+	json_object_object_del_by_uint(jobj_keyslots, keyslot2);
+	r = json_object_object_add_by_uint(jobj_keyslots, keyslot2, jobj_keyslot);
+	if (r < 0)
+		log_dbg(cd, "Failed to swap keyslot2 %d.", keyslot2);
+
+	return r;
 }

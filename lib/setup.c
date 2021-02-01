@@ -418,7 +418,7 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 		if (isLUKS1(cd->type))
 			*keyslot = LUKS_keyslot_find_empty(&cd->u.luks1.hdr);
 		else
-			*keyslot = LUKS2_keyslot_find_empty(&cd->u.luks2.hdr);
+			*keyslot = LUKS2_keyslot_find_empty(cd, &cd->u.luks2.hdr, 0);
 		if (*keyslot < 0) {
 			log_err(cd, _("All key slots full."));
 			return -EINVAL;
@@ -3415,7 +3415,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	const char *new_passphrase,
 	size_t new_passphrase_size)
 {
-	int digest = -1, r;
+	int digest = -1, r, keyslot_new_orig = keyslot_new;
 	struct luks2_keyslot_params params;
 	struct volume_key *vk = NULL;
 
@@ -3454,7 +3454,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 		if (isLUKS1(cd->type))
 			keyslot_new = LUKS_keyslot_find_empty(&cd->u.luks1.hdr);
 		else if (isLUKS2(cd->type))
-			keyslot_new = LUKS2_keyslot_find_empty(&cd->u.luks2.hdr);
+			keyslot_new = LUKS2_keyslot_find_empty(cd, &cd->u.luks2.hdr, vk->keylength);
 		if (keyslot_new < 0)
 			keyslot_new = keyslot_old;
 	}
@@ -3493,6 +3493,20 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 		r = LUKS2_keyslot_store(cd,  &cd->u.luks2.hdr,
 					keyslot_new, new_passphrase,
 					new_passphrase_size, vk, &params);
+		if (r < 0)
+			goto out;
+
+		/* Swap old & new so the final keyslot number remains */
+		if (keyslot_new_orig == CRYPT_ANY_SLOT && keyslot_old != keyslot_new) {
+			r = LUKS2_keyslot_swap(cd, &cd->u.luks2.hdr, keyslot_old, keyslot_new);
+			if (r < 0)
+				goto out;
+
+			/* Swap slot id */
+			r = keyslot_old;
+			keyslot_old = keyslot_new;
+			keyslot_new = r;
+		}
 	} else
 		r = -EINVAL;
 
