@@ -999,6 +999,7 @@ static void AddDeviceLuks(void)
 	OK_(crypt_dump(cd));
 	OK_(!(global_lines != 0));
 	reset_log();
+	FAIL_(crypt_dump_json(cd, NULL, 0), "LUKS1 not supported");
 
 	FAIL_(crypt_set_uuid(cd, "blah"), "wrong UUID format");
 	OK_(crypt_set_uuid(cd, DEVICE_TEST_UUID));

@@ -158,6 +158,7 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair);
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr);
 int LUKS2_hdr_write_force(struct crypt_device *cd, struct luks2_hdr *hdr);
 int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr);
+int LUKS2_hdr_dump_json(struct crypt_device *cd, struct luks2_hdr *hdr,	const char **json);
 
 int LUKS2_hdr_uuid(struct crypt_device *cd,
 	struct luks2_hdr *hdr,

@@ -4920,6 +4920,17 @@ int crypt_dump(struct crypt_device *cd)
 	return -EINVAL;
 }
 
+int crypt_dump_json(struct crypt_device *cd, const char **json, uint32_t flags)
+{
+	if (!cd || flags)
+		return -EINVAL;
+	if (isLUKS2(cd->type))
+		return LUKS2_hdr_dump_json(cd, &cd->u.luks2.hdr, json);
+
+	log_err(cd, _("Dump operation is not supported for this device type."));
+	return -EINVAL;
+}
+
 /* internal only */
 const char *crypt_get_cipher_spec(struct crypt_device *cd)
 {

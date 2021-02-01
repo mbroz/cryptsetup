@@ -2194,6 +2194,8 @@ static int action_luksDump(void)
 		r = luksDump_with_volume_key(cd);
 	else if (ARG_SET(OPT_UNBOUND_ID))
 		r = luksDump_with_unbound_key(cd);
+	else if (ARG_SET(OPT_DUMP_JSON_ID))
+		r = crypt_dump_json(cd, NULL, 0);
 	else
 		r = crypt_dump(cd);
 out:
