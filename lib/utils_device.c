@@ -773,10 +773,10 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 		return -ENOTSUP;
 	}
 
-	log_dbg(cd, "Allocating a free loop device.");
+	log_dbg(cd, "Allocating a free loop device (block size: %zu).", SECTOR_SIZE);
 
 	/* Keep the loop open, detached on last close. */
-	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly);
+	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly, SECTOR_SIZE);
 	if (loop_fd == -1) {
 		log_err(cd, _("Attaching loopback device failed "
 			"(loop device with autoclear flag is required)."));
@@ -794,6 +794,8 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 		free(loop_device);
 		return r;
 	}
+
+	log_dbg(cd, "Attached loop device block size is %zu bytes.", device_block_size_fd(loop_fd, NULL));
 
 	device->loop_fd = loop_fd;
 	device->file_path = file_path;

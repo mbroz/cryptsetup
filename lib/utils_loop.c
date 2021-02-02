@@ -35,6 +35,7 @@
 #include <linux/loop.h>
 
 #include "utils_loop.h"
+#include "libcryptsetup_macros.h"
 
 #define LOOP_DEV_MAJOR 7
 
@@ -48,6 +49,10 @@
 
 #ifndef LOOP_SET_CAPACITY
 #define LOOP_SET_CAPACITY 0x4C07
+#endif
+
+#ifndef LOOP_SET_BLOCK_SIZE
+#define LOOP_SET_BLOCK_SIZE 0x4C09
 #endif
 
 #ifndef LOOP_CONFIGURE
@@ -111,7 +116,7 @@ static char *crypt_loop_get_device(void)
 }
 
 int crypt_loop_attach(char **loop, const char *file, int offset,
-		      int autoclear, int *readonly)
+		      int autoclear, int *readonly, size_t blocksize)
 {
 	struct loop_config config = {0};
 	char *lo_file_name;
@@ -136,8 +141,10 @@ int crypt_loop_attach(char **loop, const char *file, int offset,
 	config.info.lo_offset = offset;
 	if (autoclear)
 		config.info.lo_flags |= LO_FLAGS_AUTOCLEAR;
+	if (blocksize > SECTOR_SIZE)
+		config.block_size = blocksize;
 
-	while (loop_fd < 0)  {
+	while (loop_fd < 0) {
 		*loop = crypt_loop_get_device();
 		if (!*loop)
 			goto out;
@@ -167,9 +174,8 @@ int crypt_loop_attach(char **loop, const char *file, int offset,
 		}
 	}
 
-	if (fallback)
-	{
-		while (loop_fd < 0)  {
+	if (fallback) {
+		while (loop_fd < 0) {
 			*loop = crypt_loop_get_device();
 			if (!*loop)
 				goto out;
@@ -187,6 +193,9 @@ int crypt_loop_attach(char **loop, const char *file, int offset,
 				loop_fd = -1;
 			}
 		}
+
+		if (blocksize > SECTOR_SIZE)
+			(void)ioctl(loop_fd, LOOP_SET_BLOCK_SIZE, (unsigned long)blocksize);
 
 		if (ioctl(loop_fd, LOOP_SET_STATUS64, &config.info) < 0) {
 			(void)ioctl(loop_fd, LOOP_CLR_FD, 0);
