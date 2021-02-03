@@ -1,0 +1,17 @@
+EXTRA_DIST += tokens/libcryptsetup-token.sym
+
+TOKENS_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
+	-Wl,--version-script=$(top_srcdir)/tokens/libcryptsetup-token.sym \
+	-version-info 0:0:0
+
+if SSHPLUGIN_TOKEN
+libcryptsetup_token_ssh_la_LDFLAGS = $(TOKENS_LDFLAGS)
+libcryptsetup_token_ssh_la_SOURCES = tokens/ssh/libcryptsetup-token-ssh.c
+libcryptsetup_token_ssh_la_LIBADD = -lssh libcryptsetup.la @JSON_C_LIBS@
+lib_LTLIBRARIES += libcryptsetup-token-ssh.la
+
+cryptsetup_ssh_SOURCES = tokens/ssh/cryptsetup-ssh.c
+cryptsetup_ssh_LDADD = libcryptsetup.la @JSON_C_LIBS@
+
+sbin_PROGRAMS += cryptsetup-ssh
+endif

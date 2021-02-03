@@ -1,0 +1,144 @@
+#!/bin/bash
+
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTSETUP_SSH=$CRYPTSETUP_PATH/cryptsetup-ssh
+IMG="ssh_test.img"
+MAP="sshtest"
+USER="sshtest"
+PASSWD="sshtest"
+LOOPDEV=$(losetup -f 2>/dev/null)
+SSH_OPTIONS="-o StrictHostKeyChecking=no"
+
+SSH_SERVER="localhost"
+SSH_PATH="/home/$USER/keyfile"
+SSH_KEY_PATH="$HOME/sshtest-key"
+
+FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+
+[ -z "$srcdir" ] && srcdir="."
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
+        losetup -d $LOOPDEV >/dev/null 2>&1
+        rm -f $IMG >/dev/null 2>&1
+}
+
+function remove_user()
+{
+        id -u $USER >/dev/null 2>&1 && userdel -r -f $USER >/dev/null 2>&1
+        rm -f $SSH_KEY_PATH "$SSH_KEY_PATH.pub" >/dev/null 2>&1
+}
+
+function create_user()
+{
+        id -u $USER >/dev/null 2>&1
+        [ $? -eq 0 ] && skip "User account $USER exists, aborting."
+        [ -f $SSH_KEY_PATH ] && skip "SSH key $SSH_KEY_PATH already exists, aborting."
+
+        useradd -m $USER -p $(openssl passwd -crypt $PASSWD) || skip "Failed to add user for SSH plugin test."
+
+        ssh-keygen -f $SSH_KEY_PATH -q -N "" >/dev/null 2>&1
+        [ $? -ne 0 ] && remove_user && skip "Failed to create SSH key."
+}
+
+function ssh_check()
+{
+        systemctl status sshd >/dev/null 2>&1 || skip "SSH server not running, skipping."
+}
+
+function bin_check()
+{
+	which $1 >/dev/null 2>&1 || skip "WARNING: test require $1 binary, test skipped."
+}
+
+function ssh_setup()
+{
+        # ssh-copy-id
+        sshpass -p $PASSWD ssh-copy-id -i $SSH_KEY_PATH $SSH_OPTIONS $USER@$SSH_SERVER >/dev/null 2>&1
+        [ $? -ne 0 ] && remove_user && skip "Failed to copy SSH key."
+
+        # try to ssh and also create keyfile
+        ssh -i $SSH_KEY_PATH $SSH_OPTIONS -o BatchMode=yes -n $USER@$SSH_SERVER -f "echo -n $PASSWD > $SSH_PATH" >/dev/null 2>&1
+        [ $? -ne 0 ] && remove_user && skip "Failed to connect using SSH."
+}
+
+function fail()
+{
+	echo "[FAILED]"
+        [ -n "$1" ] && echo "$1"
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
+	remove_mapping
+        remove_user
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 77
+}
+
+format()
+{
+	dd if=/dev/zero of=$IMG bs=1M count=32 >/dev/null 2>&1
+	sync
+	losetup $LOOPDEV $IMG
+
+	echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $LOOPDEV -q
+	[ $? -ne 0 ] && fail "Format failed."
+}
+
+check_dump()
+{
+        dump=$1
+
+        token=$(echo "$dump" | grep Tokens -A 1 | tail -1 | cut -d: -f2 | tr -d "\t\n ")
+        [ "$token" = "ssh"  ] || fail " token check from dump failed."
+
+        server=$(echo "$dump" | grep ssh_server | cut -d: -f2 | tr -d "\t\n ")
+        [ "$server" = $SSH_SERVER ] || fail " server check from dump failed."
+
+        user=$(echo "$dump" | grep ssh_user | cut -d: -f2 | tr -d "\t\n ")
+        [ "$user" = "$USER"  ] || fail " user check from dump failed."
+
+        path=$(echo "$dump" | grep ssh_path | cut -d: -f2 | tr -d "\t\n ")
+        [ "$path" = "$SSH_PATH"  ] || fail " path check from dump failed."
+
+        key_path=$(echo "$dump" | grep ssh_key_path | cut -d: -f2 | tr -d "\t\n ")
+        [ "$key_path" = "$SSH_KEY_PATH"  ] || fail " key_path check from dump failed."
+}
+
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+
+# Prevent running dangerous useradd operation by default
+[ -z "$RUN_SSH_PLUGIN_TEST" ] && skip "WARNING: Variable RUN_SSH_PLUGIN_TEST must be defined, test skipped."
+
+bin_check useradd
+bin_check ssh
+bin_check ssh-keygen
+bin_check sshpass
+
+format
+
+echo -n "Adding SSH token: "
+$CRYPTSETUP_SSH add $LOOPDEV $SSH_SERVER $USER $SSH_PATH $SSH_KEY_PATH
+[ $? -ne 0 ] && fail "Failed to add SSH token to $LOOPDEV"
+
+out=$($CRYPTSETUP luksDump $LOOPDEV)
+check_dump "$out"
+echo "[OK]"
+
+echo -n "Activating using SSH token: "
+ssh_check
+create_user
+ssh_setup
+
+$CRYPTSETUP luksOpen -r $LOOPDEV $MAP -q >/dev/null 2>&1 <&-
+[ $? -ne 0 ] && fail "Failed to open $LOOPDEV using SSH token"
+echo "[OK]"
+
+remove_mapping
+remove_user
