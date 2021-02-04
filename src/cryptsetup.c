@@ -52,8 +52,6 @@ void tools_cleanup(void)
 		free(keyfiles[--keyfiles_count]);
 
 	total_keyfiles = 0;
-
-	args_reset_default_values(tool_core_args);
 }
 
 static const char *uuid_or_device_header(const char **data_device)
