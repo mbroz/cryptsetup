@@ -904,6 +904,7 @@ static int parse_external_key_entry(struct crypt_device *cd, const char *data, i
 			*vk = crypt_alloc_volume_key(key_size, key);
 			if (*vk == NULL)
 				return -ENOMEM;
+			return 0;
 		/* optional "ExternalKey" string, we can safely ignore it */
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_STRING)
 			;
@@ -915,7 +916,8 @@ static int parse_external_key_entry(struct crypt_device *cd, const char *data, i
 		start += key_entry_size;
 	}
 
-	return 0;
+	/* if we got here we failed to parse the metadata */
+	return -EINVAL;
 }
 
 /* check if given passphrase can be a startup key (has right format) and convert it */
@@ -931,12 +933,9 @@ static int get_startup_key(struct crypt_device *cd,
 	uint16_t key_entry_size = 0;
 	uint16_t key_entry_type = 0;
 	uint16_t key_entry_value = 0;
-	int start = 0;
-	int end = 0;
-	int r = 0;
 
 	if (passwordLen < BITLK_BEK_FILE_HEADER_LEN)
-		return 0;
+		return -EPERM;
 
 	memcpy(&bek_header, password, BITLK_BEK_FILE_HEADER_LEN);
 
@@ -945,7 +944,7 @@ static int get_startup_key(struct crypt_device *cd,
 	if (strcmp(guid_buf, vmk->guid) == 0)
 		log_dbg(cd, "Found matching startup key for VMK %s", vmk->guid);
 	else
-		return 0;
+		return -EPERM;
 
 	if (bek_header.metadata_version != 1) {
 		log_err(cd, "Unsupported BEK metadata version %" PRIu32 "", bek_header.metadata_version);
@@ -957,44 +956,31 @@ static int get_startup_key(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	start = BITLK_BEK_FILE_HEADER_LEN;
-	end = bek_header.metadata_size;
-	while (end - start > 2) {
-		/* size of this entry */
-		memcpy(&key_entry_size, password + start, sizeof(key_entry_size));
-		key_entry_size = le16_to_cpu(key_entry_size);
-		if (key_entry_size < BITLK_ENTRY_HEADER_LEN) {
-			log_dbg(cd, "Unexpected metadata entry size %" PRIu16 " when parsing BEK file", key_entry_size);
-			break;
-		}
-
-		/* type and value of this entry */
-		memcpy(&key_entry_type, password + start + sizeof(key_entry_size), sizeof(key_entry_type));
-		memcpy(&key_entry_value,
-		       password + start + sizeof(key_entry_size) + sizeof(key_entry_type),
-		       sizeof(key_entry_value));
-		key_entry_type = le16_to_cpu(key_entry_type);
-		key_entry_value = le16_to_cpu(key_entry_value);
-
-		if (key_entry_type == BITLK_ENTRY_TYPE_STARTUP_KEY && key_entry_value == BITLK_ENTRY_VALUE_EXTERNAL_KEY) {
-			r = parse_external_key_entry(cd, password,
-						     start + BITLK_ENTRY_HEADER_LEN + BITLK_STARTUP_KEY_HEADER_LEN,
-						     end, su_key);
-			if (r < 0)
-				return r;
-		} else {
-			log_err(cd, _("Unexpected metadata entry found when parsing startup key."));
-			log_dbg(cd, "Entry type: %u, entry value: %u", key_entry_type, key_entry_value);
-			return -EINVAL;
-		}
-
-		start += key_entry_size;
+	/* we are expecting exactly one metadata entry starting immediately after the header */
+	memcpy(&key_entry_size, password + BITLK_BEK_FILE_HEADER_LEN, sizeof(key_entry_size));
+	key_entry_size = le16_to_cpu(key_entry_size);
+	if (key_entry_size < BITLK_ENTRY_HEADER_LEN) {
+		log_dbg(cd, "Unexpected metadata entry size %" PRIu16 " when parsing BEK file", key_entry_size);
+		return -EINVAL;
 	}
 
-	if (*su_key == NULL)
-		log_dbg(cd, "Failed to get VMK from matching BEK key file.");
+	/* type and value of this entry */
+	memcpy(&key_entry_type, password + BITLK_BEK_FILE_HEADER_LEN + sizeof(key_entry_size), sizeof(key_entry_type));
+	memcpy(&key_entry_value,
+	       password + BITLK_BEK_FILE_HEADER_LEN + sizeof(key_entry_size) + sizeof(key_entry_type),
+	       sizeof(key_entry_value));
+	key_entry_type = le16_to_cpu(key_entry_type);
+	key_entry_value = le16_to_cpu(key_entry_value);
 
-	return 0;
+	if (key_entry_type == BITLK_ENTRY_TYPE_STARTUP_KEY && key_entry_value == BITLK_ENTRY_VALUE_EXTERNAL_KEY) {
+		return parse_external_key_entry(cd, password,
+						BITLK_BEK_FILE_HEADER_LEN + BITLK_ENTRY_HEADER_LEN + BITLK_STARTUP_KEY_HEADER_LEN,
+						passwordLen, su_key);
+	} else {
+		log_err(cd, _("Unexpected metadata entry found when parsing startup key."));
+		log_dbg(cd, "Entry type: %u, entry value: %u", key_entry_type, key_entry_value);
+		return -EINVAL;
+	}
 }
 
 static int bitlk_kdf(struct crypt_device *cd,
@@ -1186,12 +1172,6 @@ int BITLK_activate(struct crypt_device *cd,
 		} else if (next_vmk->protection == BITLK_PROTECTION_STARTUP_KEY) {
 			r = get_startup_key(cd, password, passwordLen, next_vmk, &vmk_dec_key);
 			if (r) {
-				next_vmk = next_vmk->next;
-				continue;
-			}
-			if (vmk_dec_key == NULL){
-				/* r = 0 but no key -> given passphrase is not a recovery startup key */
-				r = -EPERM;
 				next_vmk = next_vmk->next;
 				continue;
 			}
