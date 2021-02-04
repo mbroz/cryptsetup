@@ -120,8 +120,8 @@ int LUKS2_token_keyring_json(char *buffer, size_t buffer_size,
 	return 0;
 }
 
-int LUKS2_token_keyring_get(struct crypt_device *cd, struct luks2_hdr *hdr, int token,
-	struct crypt_token_params_luks2_keyring *keyring_params)
+int LUKS2_token_keyring_get(struct crypt_device *cd __attribute__((unused)), struct luks2_hdr *hdr,
+	int token, struct crypt_token_params_luks2_keyring *keyring_params)
 {
 	json_object *jobj_token, *jobj;
 

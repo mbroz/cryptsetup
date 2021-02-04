@@ -2588,7 +2588,7 @@ static int _token_import(struct crypt_device *cd)
 		}
 	}
 
-	r = tools_read_json_file(cd, ARG_STR(OPT_JSON_FILE_ID), &json, &json_length, ARG_SET(OPT_BATCH_MODE_ID));
+	r = tools_read_json_file(ARG_STR(OPT_JSON_FILE_ID), &json, &json_length, ARG_SET(OPT_BATCH_MODE_ID));
 	if (r)
 		return r;
 
@@ -2624,7 +2624,7 @@ static int _token_export(struct crypt_device *cd)
 		return r;
 	}
 
-	return tools_write_json_file(cd, ARG_STR(OPT_JSON_FILE_ID), json);
+	return tools_write_json_file(ARG_STR(OPT_JSON_FILE_ID), json);
 }
 
 static int action_token(void)

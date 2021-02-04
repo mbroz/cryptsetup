@@ -316,7 +316,7 @@ void crypt_hmac_destroy(struct crypt_hmac *ctx)
 }
 
 /* RNG */
-int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
+int crypt_backend_rng(char *buffer, size_t length, int quality, int fips __attribute__((unused)))
 {
 	switch(quality) {
 	case CRYPT_RND_NORMAL:

@@ -735,7 +735,7 @@ static int luks2_keyslot_update(struct crypt_device *cd,
 	return r;
 }
 
-static void luks2_keyslot_repair(struct crypt_device *cd, json_object *jobj_keyslot)
+static void luks2_keyslot_repair(struct crypt_device *cd __attribute__((unused)), json_object *jobj_keyslot)
 {
 	const char *type;
 	json_object *jobj_kdf, *jobj_type;

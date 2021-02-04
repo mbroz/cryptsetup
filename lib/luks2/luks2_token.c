@@ -574,7 +574,7 @@ void LUKS2_token_dump(struct crypt_device *cd, int token)
 	}
 }
 
-int LUKS2_token_json_get(struct crypt_device *cd, struct luks2_hdr *hdr,
+int LUKS2_token_json_get(struct crypt_device *cd __attribute__((unused)), struct luks2_hdr *hdr,
 			   int token, const char **json)
 {
 	json_object *jobj_token;
@@ -690,7 +690,7 @@ static int token_is_assigned(struct luks2_hdr *hdr, int keyslot, int token)
 	return -ENOENT;
 }
 
-int LUKS2_token_is_assigned(struct crypt_device *cd, struct luks2_hdr *hdr,
+int LUKS2_token_is_assigned(struct crypt_device *cd __attribute__((unused)), struct luks2_hdr *hdr,
 			    int keyslot, int token)
 {
 	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX || token < 0 || token >= LUKS2_TOKENS_MAX)

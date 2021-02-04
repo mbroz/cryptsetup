@@ -973,7 +973,7 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 }
 
 static int _crypt_load_bitlk(struct crypt_device *cd,
-			     struct bitlk_metadata *params)
+			     struct bitlk_metadata *params __attribute__((unused)))
 {
 	int r;
 
@@ -5755,7 +5755,7 @@ int crypt_metadata_locking_enabled(void)
 	return _metadata_locking;
 }
 
-int crypt_metadata_locking(struct crypt_device *cd, int enable)
+int crypt_metadata_locking(struct crypt_device *cd __attribute__((unused)), int enable)
 {
 	if (enable && !_metadata_locking)
 		return -EPERM;
@@ -5969,7 +5969,7 @@ int crypt_use_keyring_for_vk(struct crypt_device *cd)
 	return (dmc_flags & DM_KERNEL_KEYRING_SUPPORTED);
 }
 
-int crypt_volume_key_keyring(struct crypt_device *cd, int enable)
+int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), int enable)
 {
 	_vk_via_keyring = enable ? 1 : 0;
 	return 0;

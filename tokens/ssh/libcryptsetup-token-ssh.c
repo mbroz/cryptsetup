@@ -221,7 +221,7 @@ static int sshplugin_public_key_auth(struct crypt_device *cd, ssh_session ssh, c
 }
 
 int cryptsetup_token_open_pin(struct crypt_device *cd, int token, const char *pin,
-	char **password, size_t *password_len, void *usrptr)
+	char **password, size_t *password_len, void *usrptr __attribute__((unused)))
 {
 	int r;
 	json_object *jobj_server, *jobj_user, *jobj_path, *jobj_token, *jobj_keypath;

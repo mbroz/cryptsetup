@@ -461,11 +461,11 @@ static int _drop_keyring_key(struct crypt_device *cd, int segment)
 }
 #endif
 
-static int test_open(struct crypt_device *cd,
-		     int token,
-		     char **buffer,
-		     size_t *buffer_len,
-		     void *usrptr)
+static int test_open(struct crypt_device *cd __attribute__((unused)),
+	int token __attribute__((unused)),
+	char **buffer,
+	size_t *buffer_len,
+	void *usrptr)
 {
 	const char *str = (const char *)usrptr;
 
@@ -477,7 +477,7 @@ static int test_open(struct crypt_device *cd,
 	return 0;
 }
 
-static int test_validate(struct crypt_device *cd, const char *json)
+static int test_validate(struct crypt_device *cd __attribute__((unused)), const char *json)
 {
 	return (strstr(json, "magic_string") == NULL);
 }
@@ -3666,7 +3666,9 @@ static void Luks2Flags(void)
 	CRYPT_FREE(cd);
 }
 
-static int test_progress(uint64_t size, uint64_t offset, void *usrptr)
+static int test_progress(uint64_t size __attribute__((unused)),
+	uint64_t offset __attribute__((unused)),
+	void *usrptr __attribute__((unused)))
 {
 	while (--test_progress_steps)
 		return 0;

@@ -229,7 +229,7 @@ uint64_t VERITY_hash_offset_block(struct crypt_params_verity *params)
 	return hash_offset / params->hash_block_size;
 }
 
-int VERITY_UUID_generate(struct crypt_device *cd, char **uuid_string)
+int VERITY_UUID_generate(struct crypt_device *cd __attribute__((unused)), char **uuid_string)
 {
 	uuid_t uuid;
 

@@ -381,7 +381,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 }
 
 /* FIXME: what if user wanted to keep original keyslots size? */
-int LUKS2_set_keyslots_size(struct crypt_device *cd,
+int LUKS2_set_keyslots_size(struct crypt_device *cd __attribute__((unused)),
 		struct luks2_hdr *hdr,
 		uint64_t data_offset)
 {

@@ -311,7 +311,8 @@ void crypt_hmac_destroy(struct crypt_hmac *ctx)
 }
 
 /* RNG */
-int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
+int crypt_backend_rng(char *buffer, size_t length,
+	int quality __attribute__((unused)), int fips __attribute__((unused)))
 {
 	if (RAND_bytes((unsigned char *)buffer, length) != 1)
 		return -EINVAL;
@@ -508,7 +509,7 @@ bool crypt_cipher_kernel_only(struct crypt_cipher *ctx)
 	return ctx->use_kernel;
 }
 
-int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
+int crypt_bitlk_decrypt_key(const void *key, size_t key_length __attribute__((unused)),
 			    const char *in, char *out, size_t length,
 			    const char *iv, size_t iv_length,
 			    const char *tag, size_t tag_length)

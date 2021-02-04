@@ -278,7 +278,7 @@ void tools_token_msg(int token, crypt_object_op op)
  * kiB|KiB|miB|MiB|giB|GiB|tiB|TiB - 1024 base
  * kb |KB |mM |MB |gB |GB |tB |TB  - 1000 base
  */
-int tools_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size)
+int tools_string_to_size(const char *s, uint64_t *size)
 {
 	char *endp = NULL;
 	size_t len;
