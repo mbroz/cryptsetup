@@ -95,7 +95,7 @@ static struct tools_arg tool_core_args[] = { { NULL, false, CRYPT_ARG_BOOL }, /*
 
 static inline void args_reset_default_values(struct tools_arg *args)
 {
-	struct tools_arg tmp[] = { { NULL, false, CRYPT_ARG_BOOL }, // UNUSED
+	static const struct tools_arg tmp[] = { { NULL, false, CRYPT_ARG_BOOL }, // UNUSED
 	#define ARG(A, B, C, D, E, F, G, H ) { A, false, F, G, H },
 	#include "cryptsetup_arg_list.h"
 	#undef ARG
