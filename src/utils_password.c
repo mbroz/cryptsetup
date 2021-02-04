@@ -60,7 +60,7 @@ static int tools_check_pwquality(const char *password)
 #elif defined ENABLE_PASSWDQC
 #include <passwdqc.h>
 
-static int tools_check_pwquality(const char *password)
+static int tools_check_passwdqc(const char *password)
 {
 	passwdqc_params_t params;
 	char *parse_reason;
@@ -85,12 +85,19 @@ static int tools_check_pwquality(const char *password)
 
 	return 0;
 }
-#else /* !(ENABLE_PWQUALITY || ENABLE_PASSWDQC) */
-static int tools_check_pwquality(const char *password)
-{
-	return 0;
-}
 #endif /* ENABLE_PWQUALITY || ENABLE_PASSWDQC */
+
+/* coverity[ +tainted_string_sanitize_content : arg-0 ] */
+static int tools_check_password(const char *password)
+{
+#if defined ENABLE_PWQUALITY
+	return tools_check_pwquality(password);
+#elif defined ENABLE_PASSWDQC
+	return tools_check_passwdqc(password);
+#else
+	return 0;
+#endif
+}
 
 /* Password reading helpers */
 static int untimed_read(int fd, char *pass, size_t maxlen)
@@ -274,7 +281,7 @@ int tools_get_key(const char *prompt,
 
 	/* Check pwquality for password (not keyfile) */
 	if (pwquality && !key_file && !r)
-		r = tools_check_pwquality(*key);
+		r = tools_check_password(*key);
 
 	return r;
 }
