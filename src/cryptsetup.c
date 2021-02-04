@@ -2393,8 +2393,10 @@ static int action_luksErase(void)
 
 	/* Safety check */
 	max = crypt_keyslot_max(crypt_get_type(cd));
-	if (max <= 0)
-		return -EINVAL;
+	if (max <= 0) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	for (i = 0; i < max; i++) {
 		ki = crypt_keyslot_status(cd, i);
