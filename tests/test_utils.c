@@ -324,7 +324,7 @@ int _system(const char *command, int warn)
 	return r;
 }
 
-static int keyring_check(void)
+static int _keyring_check(void)
 {
 #ifdef KERNEL_KEYRING
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
@@ -379,7 +379,7 @@ static void t_dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 		t_dm_crypt_flags |= T_DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED;
 	}
 
-	if (t_dm_satisfies_version(1, 18, 1, crypt_maj, crypt_min, crypt_patch) && keyring_check())
+	if (t_dm_satisfies_version(1, 18, 1, crypt_maj, crypt_min, crypt_patch) && _keyring_check())
 		t_dm_crypt_flags |= T_DM_KERNEL_KEYRING_SUPPORTED;
 }
 
