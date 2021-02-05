@@ -57,6 +57,7 @@ struct device {
 	/* cached values */
 	size_t alignment;
 	size_t block_size;
+	size_t loop_block_size;
 };
 
 static size_t device_fs_block_size_fd(int fd)
@@ -773,10 +774,11 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 		return -ENOTSUP;
 	}
 
-	log_dbg(cd, "Allocating a free loop device (block size: %zu).", SECTOR_SIZE);
+	log_dbg(cd, "Allocating a free loop device (block size: %zu).",
+		device->loop_block_size ?: SECTOR_SIZE);
 
 	/* Keep the loop open, detached on last close. */
-	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly, SECTOR_SIZE);
+	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly, device->loop_block_size);
 	if (loop_fd == -1) {
 		log_err(cd, _("Attaching loopback device failed "
 			"(loop device with autoclear flag is required)."));
@@ -1015,4 +1017,12 @@ void device_close(struct crypt_device *cd, struct device *device)
 			log_dbg(cd, "Failed to close read write fd for %s.", device_path(device));
 		device->dev_fd = -1;
 	}
+}
+
+void device_set_block_size(struct device *device, size_t size)
+{
+	if (!device)
+		return;
+
+	device->loop_block_size = size;
 }

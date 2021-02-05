@@ -641,7 +641,11 @@ static int _crypt_set_data_device(struct crypt_device *cd, const char *device)
 
 	cd->device = dev;
 
-	return crypt_check_data_device_size(cd);
+	r = crypt_check_data_device_size(cd);
+	if (!r && isLUKS2(cd->type))
+		device_set_block_size(crypt_data_device(cd), LUKS2_get_sector_size(&cd->u.luks2.hdr));
+
+	return r;
 }
 
 int crypt_set_data_device(struct crypt_device *cd, const char *device)
@@ -823,6 +827,8 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 		 * perform repair.
 		 */
 		r =  _crypt_load_luks2(cd, cd->type != NULL, repair);
+		if (!r)
+			device_set_block_size(crypt_data_device(cd), LUKS2_get_sector_size(&cd->u.luks2.hdr));
 	} else {
 		if (version > 2)
 			log_err(cd, _("Unsupported LUKS version %d."), version);
@@ -987,6 +993,8 @@ static int _crypt_load_bitlk(struct crypt_device *cd,
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_BITLK)))
 		return -ENOMEM;
+
+	device_set_block_size(crypt_data_device(cd), cd->u.bitlk.params.sector_size);
 
 	return 0;
 }
@@ -1547,6 +1555,7 @@ static int _crypt_format_plain(struct crypt_device *cd,
 			log_err(cd, _("Device size is not aligned to requested sector size."));
 			return -EINVAL;
 		}
+		device_set_block_size(crypt_data_device(cd), sector_size);
 	}
 
 	if (!(cd->type = strdup(CRYPT_PLAIN)))
@@ -1863,6 +1872,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		if (r < 0)
 			goto out;
 	}
+
+	device_set_block_size(crypt_data_device(cd), sector_size);
 
 	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr, cd->metadata_device != NULL);
 	if (r < 0) {

@@ -119,6 +119,7 @@ void device_sync(struct crypt_device *cd, struct device *device);
 int device_check_size(struct crypt_device *cd,
 		      struct device *device,
 		      uint64_t req_offset, int falloc);
+void device_set_block_size(struct device *device, size_t size);
 
 int device_open_locked(struct crypt_device *cd, struct device *device, int flags);
 int device_read_lock(struct crypt_device *cd, struct device *device);
