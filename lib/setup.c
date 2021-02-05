@@ -64,9 +64,6 @@ struct crypt_device {
 	bool memory_hard_pbkdf_lock_enabled;
 	struct crypt_lock_handle *pbkdf_memory_hard_lock;
 
-	// FIXME: private binary headers and access it properly
-	// through sub-library (LUKS1, TCRYPT)
-
 	union {
 	struct { /* used in CRYPT_LUKS1 */
 		struct luks_phdr hdr;
@@ -888,7 +885,6 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	if (r < 0)
 		return r;
 
-	//FIXME: use crypt_free
 	if (!cd->type && !(cd->type = strdup(CRYPT_VERITY))) {
 		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
 		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
@@ -4644,7 +4640,7 @@ uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd, const char
 	if (!name)
 		return 0;
 
-	/* FIXME: LUKS2 / dm-crypt does not provide this count. */
+	/* LUKS2 / dm-crypt does not provide this count. */
 	if (dm_query_device(cd, name, 0, &dmd) < 0)
 		return 0;
 

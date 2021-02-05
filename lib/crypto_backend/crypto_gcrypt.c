@@ -99,7 +99,7 @@ int crypt_backend_init(void)
 			return -ENOSYS;
 		}
 
-/* FIXME: If gcrypt compiled to support POSIX 1003.1e capabilities,
+/* If gcrypt compiled to support POSIX 1003.1e capabilities,
  * it drops all privileges during secure memory initialisation.
  * For now, the only workaround is to disable secure memory in gcrypt.
  * cryptsetup always need at least cap_sys_admin privilege for dm-ioctl

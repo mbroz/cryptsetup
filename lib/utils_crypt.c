@@ -100,8 +100,6 @@ int crypt_parse_integrity_mode(const char *s, char *integrity,
 	if (!s || !integrity)
 		return -EINVAL;
 
-	// FIXME: do not hardcode it here
-
 	/* AEAD modes */
 	if (!strcmp(s, "aead") ||
 	    !strcmp(s, "poly1305") ||

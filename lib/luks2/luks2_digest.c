@@ -254,7 +254,6 @@ int LUKS2_digest_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (r < 0)
 		return r;
 
-	// FIXME: do not write header in nothing changed
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
 
@@ -349,7 +348,6 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (r < 0)
 		return r;
 
-	// FIXME: do not write header in nothing changed
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
 

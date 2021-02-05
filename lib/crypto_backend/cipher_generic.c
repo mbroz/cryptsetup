@@ -31,7 +31,6 @@ struct cipher_alg {
 	bool wrapped_key;
 };
 
-/* FIXME: Getting block size should be dynamic from cipher backend. */
 static const struct cipher_alg cipher_algs[] = {
 	{ "cipher_null", NULL, 16, false },
 	{ "aes",         NULL, 16, false },

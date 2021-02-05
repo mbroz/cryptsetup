@@ -173,7 +173,7 @@ static int acquire_lock_handle(struct crypt_device *cd, struct device *device, s
 		h->u.bdev.devno = st.st_rdev;
 		h->mode = DEV_LOCK_BDEV;
 	} else if (S_ISREG(st.st_mode)) {
-		// FIXME: workaround for nfsv4
+		/* workaround for nfsv4 */
 		fd = open(device_path(device), O_RDWR | O_NONBLOCK | O_CLOEXEC);
 		if (fd < 0)
 			h->flock_fd = dev_fd;

@@ -387,7 +387,6 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct too
 	mbytes = bytes  / 1024 / 1024;
 	uib = (double)(bytes - parms->start_offset) / tdiff;
 
-	/* FIXME: calculate this from last minute only. */
 	eta = (unsigned long long)(device_size / uib - tdiff);
 
 	if (uib > 1073741824.0f) {

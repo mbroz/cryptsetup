@@ -2882,7 +2882,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	}
 	device_release_excl(cd, crypt_data_device(cd));
 
-	/* FIXME: There's a race for dm device activation not managed by cryptsetup.
+	/* There's a race for dm device activation not managed by cryptsetup.
 	 *
 	 * 1) excl close
 	 * 2) rogue dm device activation

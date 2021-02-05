@@ -607,7 +607,6 @@ int LUKS2_keyslot_reencrypt_create(struct crypt_device *cd,
 	if (keyslot == CRYPT_ANY_SLOT)
 		return -EINVAL;
 
-	/* FIXME: find keyslot by type */
 	h = LUKS2_keyslot_handler_type(cd, "reencrypt");
 	if (!h)
 		return -EINVAL;

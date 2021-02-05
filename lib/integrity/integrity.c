@@ -189,7 +189,7 @@ int INTEGRITY_tag_size(struct crypt_device *cd __attribute__((unused)),
 	if (!integrity || !strcmp(integrity, "none"))
 		auth_tag_size = 0;
 	else if (!strcmp(integrity, "aead"))
-		auth_tag_size = 16; //FIXME gcm- mode only
+		auth_tag_size = 16; /* gcm- mode only */
 	else if (!strcmp(integrity, "cmac(aes)"))
 		auth_tag_size = 16;
 	else if (!strcmp(integrity, "hmac(sha1)"))

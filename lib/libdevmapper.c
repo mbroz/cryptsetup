@@ -298,7 +298,6 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 
 	_dm_check_target(target_type);
 
-	/* FIXME: add support to DM so it forces crypt target module load here */
 	if (!(dmt = dm_task_create(DM_DEVICE_LIST_VERSIONS)))
 		goto out;
 
@@ -396,10 +395,7 @@ void dm_backend_exit(struct crypt_device *cd)
 	}
 }
 
-/*
- * libdevmapper is not context friendly, switch context on every DM call.
- * FIXME: this is not safe if called in parallel but neither is DM lib.
- */
+/* libdevmapper is not context friendly, switch context on every DM call. */
 static int dm_init_context(struct crypt_device *cd, dm_target_type target)
 {
 	_context = cd;

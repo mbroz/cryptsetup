@@ -663,7 +663,6 @@ int LUKS2_token_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (r < 0)
 		return r;
 
-	// FIXME: do not write header in nothing changed
 	if (commit)
 		return LUKS2_hdr_write(cd, hdr) ?: token;
 

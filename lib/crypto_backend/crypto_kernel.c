@@ -29,7 +29,6 @@
 #include <linux/if_alg.h>
 #include "crypto_backend_internal.h"
 
-/* FIXME: remove later */
 #ifndef AF_ALG
 #define AF_ALG 38
 #endif

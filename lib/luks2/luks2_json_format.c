@@ -30,7 +30,7 @@ struct area {
 
 static size_t get_area_size(size_t keylength)
 {
-	//FIXME: calculate this properly, for now it is AF_split_sectors
+	/* for now it is AF_split_sectors */
 	return size_round_up(keylength * 4000, 4096);
 }
 
@@ -380,7 +380,6 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 				 offset, length, wipe_block, NULL, NULL);
 }
 
-/* FIXME: what if user wanted to keep original keyslots size? */
 int LUKS2_set_keyslots_size(struct crypt_device *cd __attribute__((unused)),
 		struct luks2_hdr *hdr,
 		uint64_t data_offset)
