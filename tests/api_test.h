@@ -91,9 +91,9 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 
 #define CRYPT_FREE(x) do { crypt_free(x); x = NULL; } while (0)
 
-#define SECTOR_SHIFT 9L
-#define SECTOR_SIZE 512
-#define TST_LOOP_FILE_SIZE (((1<<20)*100)>>SECTOR_SHIFT)
+#define TST_SECTOR_SHIFT 9L
+#define TST_SECTOR_SIZE 512
+#define TST_LOOP_FILE_SIZE (((1 << 20) * 100) >> TST_SECTOR_SHIFT)
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 #define DIV_ROUND_UP_MODULO(n,d) (DIV_ROUND_UP(n,d)*(d))
 

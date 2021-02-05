@@ -350,7 +350,7 @@ static int _setup(void)
 	}
 	close(fd);
 	snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
-		 test_loop_file, SECTOR_SIZE, TST_LOOP_FILE_SIZE);
+		 test_loop_file, TST_SECTOR_SIZE, TST_LOOP_FILE_SIZE);
 	if (_system(cmd, 1))
 		return 1;
 
@@ -364,7 +364,7 @@ static int _setup(void)
 	}
 	close(fd);
 	snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
-		 tmp_file_1, SECTOR_SIZE, 10);
+		 tmp_file_1, TST_SECTOR_SIZE, 10);
 	if (_system(cmd, 1))
 		return 1;
 
@@ -723,7 +723,7 @@ static void AddDeviceLuks2(void)
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(t_device_size(DMDIR CDEVICE_1, &r_size_1));
-	EQ_(r_size_1, SECTOR_SIZE);
+	EQ_(r_size_1, TST_SECTOR_SIZE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
 	// restrict format only to empty context
@@ -1520,15 +1520,15 @@ static void ResizeDeviceLuks2(void)
 	OK_(crypt_resize(cd, CDEVICE_1, 0));
 	OK_(crypt_resize(cd, CDEVICE_1, 42));
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
-		EQ_(42, r_size >> SECTOR_SHIFT);
+		EQ_(42, r_size >> TST_SECTOR_SHIFT);
 	OK_(crypt_resize(cd, CDEVICE_1, 0));
 	// autodetect encrypted device area size
 	OK_(crypt_resize(cd, CDEVICE_1, 0));
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
-		EQ_(1000, r_size >> SECTOR_SHIFT);
+		EQ_(1000, r_size >> TST_SECTOR_SHIFT);
 	FAIL_(crypt_resize(cd, CDEVICE_1, 1001), "Device too small");
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
-		EQ_(1000, r_size >> SECTOR_SHIFT);
+		EQ_(1000, r_size >> TST_SECTOR_SHIFT);
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
@@ -1541,14 +1541,14 @@ static void ResizeDeviceLuks2(void)
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	OK_(crypt_resize(cd, CDEVICE_1, 666));
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
-		EQ_(666, r_size >> SECTOR_SHIFT);
+		EQ_(666, r_size >> TST_SECTOR_SHIFT);
 	// autodetect encrypted device size
 	OK_(crypt_resize(cd, CDEVICE_1, 0));
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
-		EQ_(1000, r_size >> SECTOR_SHIFT);
+		EQ_(1000, r_size >> TST_SECTOR_SHIFT);
 	FAIL_(crypt_resize(cd, CDEVICE_1, 1001), "Device too small");
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
-		EQ_(1000, r_size >> SECTOR_SHIFT);
+		EQ_(1000, r_size >> TST_SECTOR_SHIFT);
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
@@ -1581,7 +1581,7 @@ static void ResizeDeviceLuks2(void)
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 	OK_(crypt_resize(cd, CDEVICE_1, 43));
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
-		EQ_(43, r_size >> SECTOR_SHIFT);
+		EQ_(43, r_size >> TST_SECTOR_SHIFT);
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
@@ -2774,7 +2774,7 @@ static void Luks2KeyslotAdd(void)
 	};
 	struct crypt_params_luks2 params2 = {
 		.pbkdf = &pbkdf,
-		.sector_size = SECTOR_SIZE
+		.sector_size = TST_SECTOR_SIZE
 	};
 
 	crypt_decode_key(key, mk_hex, key_size);
