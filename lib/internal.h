@@ -73,7 +73,7 @@
 
 #define MOVE_REF(x, y) \
 	do { \
-		typeof (x) *_px = &(x), *_py = &(y); \
+		__typeof__(x) *_px = &(x), *_py = &(y); \
 		*_px = *_py; \
 		*_py = NULL; \
 	} while (0)
