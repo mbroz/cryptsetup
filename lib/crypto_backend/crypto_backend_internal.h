@@ -23,7 +23,6 @@
 
 #include "crypto_backend.h"
 
-#if USE_INTERNAL_PBKDF2
 /* internal PBKDF2 implementation */
 int pkcs5_pbkdf2(const char *hash,
 		 const char *P, size_t Plen,
@@ -31,7 +30,6 @@ int pkcs5_pbkdf2(const char *hash,
 		 unsigned int c,
 		 unsigned int dkLen, char *DK,
 		 unsigned int hash_block_size);
-#endif
 
 /* Argon2 implementation wrapper */
 int argon2(const char *type, const char *password, size_t password_length,
