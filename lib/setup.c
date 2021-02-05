@@ -3819,7 +3819,7 @@ static int dmcrypt_keyring_bug(void)
 
 	if (kernel_version(&kversion))
 		return 1;
-	return kversion < version(4,15,0,0);
+	return kversion < compact_version(4,15,0,0);
 }
 
 int create_or_reload_device(struct crypt_device *cd, const char *name,

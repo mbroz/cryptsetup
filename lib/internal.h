@@ -248,7 +248,7 @@ int crypt_use_keyring_for_vk(struct crypt_device *cd);
 void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *key_description, key_type_t ktype);
 void crypt_drop_keyring_key(struct crypt_device *cd, struct volume_key *vks);
 
-static inline uint64_t version(uint16_t major, uint16_t minor, uint16_t patch, uint16_t release)
+static inline uint64_t compact_version(uint16_t major, uint16_t minor, uint16_t patch, uint16_t release)
 {
 	return (uint64_t)release | ((uint64_t)patch << 16) | ((uint64_t)minor << 32) | ((uint64_t)major << 48);
 }
