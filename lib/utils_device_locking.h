@@ -22,6 +22,8 @@
 #ifndef _CRYPTSETUP_UTILS_LOCKING_H
 #define _CRYPTSETUP_UTILS_LOCKING_H
 
+#include <stdbool.h>
+
 struct crypt_device;
 struct crypt_lock_handle;
 struct device;
