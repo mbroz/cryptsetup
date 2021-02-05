@@ -46,21 +46,14 @@
 #include "lib/utils_fips.h"
 #include "lib/utils_io.h"
 #include "lib/utils_blkid.h"
+#include "lib/libcryptsetup_macros.h"
 
 #include "libcryptsetup.h"
 
-#define CONST_CAST(x) (x)(uintptr_t)
 #define DEFAULT_CIPHER(type)	(DEFAULT_##type##_CIPHER "-" DEFAULT_##type##_MODE)
-#define SECTOR_SIZE 512
-#define MAX_SECTOR_SIZE 4096
-#define ROUND_SECTOR(x) (((x) + SECTOR_SIZE - 1) / SECTOR_SIZE)
 
 #define DEFAULT_WIPE_BLOCK	1048576 /* 1 MiB */
 #define MAX_ACTIONS 16
-
-#ifndef ARRAY_SIZE
-# define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-#endif
 
 /* Common tools */
 void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)));
@@ -122,8 +115,6 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 
 /* each utility is required to implement it */
 void tools_cleanup(void);
-
-#define FREE_AND_NULL(x) do { free(x); x = NULL; } while (0)
 
 /* Log */
 #define log_dbg(x...) crypt_logf(NULL, CRYPT_LOG_DEBUG, x)
