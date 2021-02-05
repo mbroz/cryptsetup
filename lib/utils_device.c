@@ -112,6 +112,23 @@ static size_t device_block_size_fd(int fd, size_t *min_size)
 	return bsize;
 }
 
+static size_t device_block_phys_size_fd(int fd)
+{
+	struct stat st;
+	int arg;
+	size_t bsize = SECTOR_SIZE;
+
+	if (fstat(fd, &st) < 0)
+		return bsize;
+
+	if (S_ISREG(st.st_mode))
+		bsize = MAX_SECTOR_SIZE;
+	else if (ioctl(fd, BLKPBSZGET, &arg) >= 0)
+		bsize = (size_t)arg;
+
+	return bsize;
+}
+
 static size_t device_alignment_fd(int devfd)
 {
 	long alignment = DEFAULT_MEM_ALIGNMENT;
@@ -568,6 +585,42 @@ size_t device_block_size(struct crypt_device *cd, struct device *device)
 		log_dbg(cd, "Cannot get block size for device %s.", device_path(device));
 
 	return device->block_size;
+}
+
+size_t device_optimal_encryption_sector_size(struct crypt_device *cd, struct device *device)
+{
+	int fd;
+	size_t phys_block_size;
+
+	if (!device)
+		return SECTOR_SIZE;
+
+	fd = open(device->file_path ?: device->path, O_RDONLY);
+	if (fd < 0) {
+		log_dbg(cd, "Cannot get optimal encryption sector size for device %s.", device_path(device));
+		return SECTOR_SIZE;
+	}
+
+	/* cache device block size */
+	device->block_size = device_block_size_fd(fd, NULL);
+	if (!device->block_size) {
+		close(fd);
+		log_dbg(cd, "Cannot get block size for device %s.", device_path(device));
+		return SECTOR_SIZE;
+	}
+
+	if (device->block_size >= MAX_SECTOR_SIZE) {
+		close(fd);
+		return MISALIGNED(device->block_size, MAX_SECTOR_SIZE) ? SECTOR_SIZE : MAX_SECTOR_SIZE;
+	}
+
+	phys_block_size = device_block_phys_size_fd(fd);
+	close(fd);
+
+	if (device->block_size >= phys_block_size || phys_block_size <= SECTOR_SIZE || phys_block_size > MAX_SECTOR_SIZE || MISALIGNED(phys_block_size, device->block_size))
+		return device->block_size;
+
+	return phys_block_size;
 }
 
 int device_read_ahead(struct device *device, uint32_t *read_ahead)

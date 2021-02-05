@@ -1288,7 +1288,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 	struct crypt_params_luks2 params2 = {
 		.data_alignment = params1.data_alignment,
 		.data_device = params1.data_device,
-		.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: SECTOR_SIZE,
+		.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID),
 		.label = ARG_STR(OPT_LABEL_ID),
 		.subsystem = ARG_STR(OPT_SUBSYSTEM_ID)
 	};

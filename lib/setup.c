@@ -1706,12 +1706,13 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       const char *uuid,
 			       const char *volume_key,
 			       size_t volume_key_size,
-			       struct crypt_params_luks2 *params)
+			       struct crypt_params_luks2 *params,
+			       bool sector_size_autodetect)
 {
 	int r, integrity_key_size = 0;
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
 	unsigned long alignment_offset = 0;
-	unsigned int sector_size = params ? params->sector_size : SECTOR_SIZE;
+	unsigned int sector_size;
 	const char *integrity = params ? params->integrity : NULL;
 	uint64_t dev_size;
 	uint32_t dmc_flags;
@@ -1733,15 +1734,30 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (params && params->sector_size)
+		sector_size_autodetect = false;
+
+	if (sector_size_autodetect) {
+		sector_size = device_optimal_encryption_sector_size(cd, crypt_data_device(cd));
+		log_dbg(cd, "Auto-detected optimal encryption sector size for device %s is %d bytes.",
+			device_path(crypt_data_device(cd)), sector_size);
+	} else
+		sector_size = params ? params->sector_size : SECTOR_SIZE;
+
 	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
 	    NOTPOW2(sector_size)) {
 		log_err(cd, _("Unsupported encryption sector size."));
 		return -EINVAL;
 	}
 	if (sector_size != SECTOR_SIZE && !dm_flags(cd, DM_CRYPT, &dmc_flags) &&
-	    !(dmc_flags & DM_SECTOR_SIZE_SUPPORTED))
-		log_std(cd, _("WARNING: The device activation will fail, dm-crypt is missing "
-			      "support for requested encryption sector size.\n"));
+	    !(dmc_flags & DM_SECTOR_SIZE_SUPPORTED)) {
+		if (sector_size_autodetect) {
+			log_dbg(cd, "dm-crypt does not support encryption sector size option. Reverting to 512 bytes.");
+			sector_size = SECTOR_SIZE;
+		} else
+			log_std(cd, _("WARNING: The device activation will fail, dm-crypt is missing "
+				      "support for requested encryption sector size.\n"));
+	}
 
 	if (integrity) {
 		if (params->integrity_params) {
@@ -1813,6 +1829,21 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
+	r = device_size(crypt_data_device(cd), &dev_size);
+	if (r < 0)
+		goto out;
+
+	if (sector_size_autodetect) {
+		if (cd->data_offset && MISALIGNED(cd->data_offset, sector_size)) {
+			log_dbg(cd, "Data offset not alligned to sector size. Reverting to 512 bytes.");
+			sector_size = SECTOR_SIZE;
+		} else if (MISALIGNED(dev_size - (uint64_t)required_alignment - (uint64_t)alignment_offset, sector_size)) {
+			/* underflow does not affect misalignment checks */
+			log_err(cd, "Device size is not aligned to sector size. Reverting to 512 bytes.");
+			sector_size = SECTOR_SIZE;
+		}
+	}
+
 	/* FIXME: allow this later also for normal ciphers (check AF_ALG availability. */
 	if (integrity && !integrity_key_size) {
 		r = crypt_cipher_check_kernel(cipher, cipher_mode, integrity, volume_key_size);
@@ -1839,10 +1870,6 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       alignment_offset,
 			       required_alignment,
 			       cd->metadata_size, cd->keyslots_size);
-	if (r < 0)
-		goto out;
-
-	r = device_size(crypt_data_device(cd), &dev_size);
 	if (r < 0)
 		goto out;
 
@@ -2241,14 +2268,15 @@ out:
 	return r;
 }
 
-int crypt_format(struct crypt_device *cd,
+static int _crypt_format(struct crypt_device *cd,
 	const char *type,
 	const char *cipher,
 	const char *cipher_mode,
 	const char *uuid,
 	const char *volume_key,
 	size_t volume_key_size,
-	void *params)
+	void *params,
+	bool sector_size_autodetect)
 {
 	int r;
 
@@ -2276,7 +2304,7 @@ int crypt_format(struct crypt_device *cd,
 					uuid, volume_key, volume_key_size, params);
 	else if (isLUKS2(type))
 		r = _crypt_format_luks2(cd, cipher, cipher_mode,
-					uuid, volume_key, volume_key_size, params);
+					uuid, volume_key, volume_key_size, params, sector_size_autodetect);
 	else if (isLOOPAES(type))
 		r = _crypt_format_loopaes(cd, cipher, uuid, volume_key_size, params);
 	else if (isVERITY(type))
@@ -2296,6 +2324,34 @@ int crypt_format(struct crypt_device *cd,
 
 	return r;
 }
+
+int crypt_format(struct crypt_device *cd,
+	const char *type,
+	const char *cipher,
+	const char *cipher_mode,
+	const char *uuid,
+	const char *volume_key,
+	size_t volume_key_size,
+	void *params)
+{
+	return _crypt_format(cd, type, cipher, cipher_mode, uuid, volume_key, volume_key_size, params, true);
+}
+
+#if defined(__GNUC__)
+#define CRYPT_EXPORT_SYMBOL(func, maj, min) \
+	        __asm__(".symver " #func "_v" #maj "_" #min ", " #func "@CRYPTSETUP_" #maj "." #min)
+int crypt_format_v2_0(struct crypt_device *cd, const char *type, const char *cipher,
+		 const char *cipher_mode,const char *uuid, const char *volume_key,
+		 size_t volume_key_size, void *params);
+
+int crypt_format_v2_0(struct crypt_device *cd, const char *type, const char *cipher,
+		 const char *cipher_mode,const char *uuid, const char *volume_key,
+		 size_t volume_key_size, void *params)
+{
+	return _crypt_format(cd, type, cipher, cipher_mode, uuid, volume_key, volume_key_size, params, false);
+}
+CRYPT_EXPORT_SYMBOL(crypt_format, 2, 0);
+#endif
 
 int crypt_repair(struct crypt_device *cd,
 		 const char *requested_type,
