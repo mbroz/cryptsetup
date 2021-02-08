@@ -5,7 +5,7 @@ MALLOC="--malloc-fill=aa"
 FREE="--free-fill=21"
 STACK="--max-stackframe=300000"
 EXTRAS="--read-var-info=yes --show-reachable=yes"
-LOGFILE="--log-file=./valglog.$(date +%s)_${INFOSTRING}"
+LOGFILE="--log-file=./valglog.$(date +%H:%M:%S:%N)_${INFOSTRING}"
 LEAKCHECK="--leak-check=full --track-origins=yes"
 
 exec valgrind  $SUP $GETSUP $CHILD $MALLOC $FREE $STACK $EXTRAS $LOGFILE  $LEAKCHECK "$@"
