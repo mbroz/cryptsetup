@@ -23,6 +23,7 @@
 #ifndef _UTILS_CRYPT_H
 #define _UTILS_CRYPT_H
 
+#include <stdbool.h>
 #include <unistd.h>
 
 #define MAX_CIPHER_LEN		32
@@ -37,5 +38,7 @@ int crypt_parse_integrity_mode(const char *s, char *integrity,
 int crypt_parse_pbkdf(const char *s, const char **pbkdf);
 
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc);
+
+bool crypt_is_cipher_null(const char *cipher_spec);
 
 #endif /* _UTILS_CRYPT_H */

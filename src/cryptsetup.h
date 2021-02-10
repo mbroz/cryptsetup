@@ -87,7 +87,6 @@ int tools_get_key(const char *prompt,
 void tools_passphrase_msg(int r);
 int tools_is_stdin(const char *key_file);
 int tools_string_to_size(const char *s, uint64_t *size);
-int tools_is_cipher_null(const char *cipher);
 
 struct tools_progress_params {
 	uint32_t frequency;

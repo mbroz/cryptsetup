@@ -175,3 +175,10 @@ ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc)
 	*result = bytes;
 	return i;
 }
+
+bool crypt_is_cipher_null(const char *cipher_spec)
+{
+	if (!cipher_spec)
+		return false;
+	return (strstr(cipher_spec, "cipher_null") || !strcmp(cipher_spec, "null"));
+}
