@@ -1327,7 +1327,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 	}
 
 	/* Never call pwquality if using null cipher */
-	if (tools_is_cipher_null(cipher))
+	if (crypt_is_cipher_null(cipher))
 		opt_force_password = 1;
 
 	if ((r = crypt_init(&cd, header_device))) {
@@ -1725,7 +1725,7 @@ static int luksAddUnboundKey(void)
 		goto out;
 
 	/* Never call pwquality if using null cipher */
-	if (tools_is_cipher_null(crypt_get_cipher(cd)))
+	if (crypt_is_cipher_null(crypt_get_cipher(cd)))
 		opt_force_password = 1;
 
 	keysize = opt_key_size / 8;
@@ -1792,7 +1792,7 @@ static int action_luksAddKey(void)
 		goto out;
 
 	/* Never call pwquality if using null cipher */
-	if (tools_is_cipher_null(crypt_get_cipher(cd)))
+	if (crypt_is_cipher_null(crypt_get_cipher(cd)))
 		opt_force_password = 1;
 
 	keysize = crypt_get_volume_key_size(cd);
@@ -1895,7 +1895,7 @@ static int action_luksChangeKey(void)
 		goto out;
 
 	/* Never call pwquality if using null cipher */
-	if (tools_is_cipher_null(crypt_get_cipher(cd)))
+	if (crypt_is_cipher_null(crypt_get_cipher(cd)))
 		opt_force_password = 1;
 
 	r = set_pbkdf_params(cd, crypt_get_type(cd));
