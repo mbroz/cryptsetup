@@ -5177,17 +5177,17 @@ int crypt_keyslot_set_encryption(struct crypt_device *cd,
 {
 	char *tmp;
 
-	if (!cd || !cipher || ! key_size || !isLUKS2(cd->type))
+	if (!cd || !cipher || !key_size || !isLUKS2(cd->type))
 		return -EINVAL;
 
 	if (LUKS2_keyslot_cipher_incompatible(cd, cipher))
 		return -EINVAL;
 
-	tmp = strdup(cipher);
+	if (!(tmp = strdup(cipher)))
+		return -ENOMEM;
+
 	free(cd->u.luks2.keyslot_cipher);
 	cd->u.luks2.keyslot_cipher = tmp;
-	if (!cd->u.luks2.keyslot_cipher)
-		return -ENOMEM;
 	cd->u.luks2.keyslot_key_size = key_size;
 
 	return 0;
