@@ -41,7 +41,7 @@ typedef int32_t key_serial_t;
 #endif
 
 #include "api_test.h"
-#include "luks.h"
+#include "luks1/luks.h"
 #include "libcryptsetup.h"
 
 #define DMDIR "/dev/mapper/"

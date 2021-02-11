@@ -23,7 +23,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "crypto_backend.h"
+#include "crypto_backend/crypto_backend.h"
 
 #ifndef ARRAY_SIZE
 # define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))

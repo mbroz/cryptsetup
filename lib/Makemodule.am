@@ -15,15 +15,7 @@ libutils_io_la_SOURCES = \
 	lib/utils_io.c			\
 	lib/utils_io.h
 
-libcryptsetup_la_CPPFLAGS = $(AM_CPPFLAGS) \
-	-I $(top_srcdir)/lib/crypto_backend	\
-	-I $(top_srcdir)/lib/luks1		\
-	-I $(top_srcdir)/lib/luks2		\
-	-I $(top_srcdir)/lib/loopaes		\
-	-I $(top_srcdir)/lib/verity		\
-	-I $(top_srcdir)/lib/tcrypt		\
-	-I $(top_srcdir)/lib/integrity		\
-	-I $(top_srcdir)/lib/bitlk
+libcryptsetup_la_CPPFLAGS = $(AM_CPPFLAGS)
 
 libcryptsetup_la_DEPENDENCIES = libutils_io.la libcrypto_backend.la lib/libcryptsetup.sym
 
