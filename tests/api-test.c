@@ -31,7 +31,7 @@
 #include <sys/types.h>
 
 #include "api_test.h"
-#include "luks.h"
+#include "luks1/luks.h"
 #include "libcryptsetup.h"
 
 #define DMDIR "/dev/mapper/"

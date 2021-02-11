@@ -89,19 +89,19 @@ differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
 api_test_SOURCES = api-test.c api_test.h test_utils.c
 api_test_LDADD = $(LDADD) ../libcryptsetup.la
 api_test_LDFLAGS = $(AM_LDFLAGS) -static
-api_test_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib/ -I$(top_srcdir)/lib/luks1
+api_test_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
 api_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 api_test_2_SOURCES = api-test-2.c api_test.h test_utils.c
 api_test_2_LDADD = $(LDADD) ../libcryptsetup.la
 api_test_2_LDFLAGS = $(AM_LDFLAGS) -static
-api_test_2_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib/ -I$(top_srcdir)/lib/luks1
+api_test_2_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
 api_test_2_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 vectors_test_SOURCES = crypto-vectors.c
 vectors_test_LDADD = ../libcrypto_backend.la @CRYPTO_LIBS@ @LIBARGON2_LIBS@
 vectors_test_LDFLAGS = $(AM_LDFLAGS) -static
-vectors_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/crypto_backend/ @CRYPTO_CFLAGS@
+vectors_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib @CRYPTO_CFLAGS@
 vectors_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 unit_utils_io_SOURCES = unit-utils-io.c

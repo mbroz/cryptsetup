@@ -29,13 +29,13 @@
 #include <errno.h>
 
 #include "libcryptsetup.h"
-#include "luks.h"
-#include "luks2.h"
-#include "loopaes.h"
-#include "verity.h"
-#include "tcrypt.h"
-#include "integrity.h"
-#include "bitlk.h"
+#include "luks1/luks.h"
+#include "luks2/luks2.h"
+#include "loopaes/loopaes.h"
+#include "verity/verity.h"
+#include "tcrypt/tcrypt.h"
+#include "integrity/integrity.h"
+#include "bitlk/bitlk.h"
 #include "utils_device_locking.h"
 #include "internal.h"
 
