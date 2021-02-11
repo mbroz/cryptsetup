@@ -1097,6 +1097,12 @@ static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 	if (!cipher)
 		return -EINVAL;
 
+	if (crypt_is_cipher_null(cipher)) {
+		log_dbg("Keyslot %d uses cipher_null. Replacing with default encryption in new keyslot.", keyslot);
+		cipher = DEFAULT_LUKS2_KEYSLOT_CIPHER;
+		key_size = DEFAULT_LUKS2_KEYSLOT_KEYBITS / 8;
+	}
+
 	if (crypt_keyslot_set_encryption(cd, cipher, key_size))
 		return -EINVAL;
 
