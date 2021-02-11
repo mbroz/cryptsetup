@@ -2388,11 +2388,6 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 	if (!src->u.crypt.vk || !tgt->u.crypt.vk)
 		return -EINVAL;
 
-	if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->u.crypt.vk->key_description != NULL)) {
-		log_dbg(cd, "Keys in context and target device do not match.");
-		return -EINVAL;
-	}
-
 	/* CIPHER checks */
 	if (!src->u.crypt.cipher || !tgt->u.crypt.cipher)
 		return -EINVAL;
@@ -2400,6 +2395,14 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 		log_dbg(cd, "Cipher specs do not match.");
 		return -EINVAL;
 	}
+
+	if (tgt->u.crypt.vk->keylength == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
+		log_dbg(cd, "Existing device uses cipher null. Skipping key comparison.");
+	else if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->u.crypt.vk->key_description != NULL)) {
+		log_dbg(cd, "Keys in context and target device do not match.");
+		return -EINVAL;
+	}
+
 	if (crypt_strcmp(src->u.crypt.integrity, tgt->u.crypt.integrity)) {
 		log_dbg(cd, "Integrity parameters do not match.");
 		return -EINVAL;
