@@ -32,7 +32,7 @@ static const keyslot_handler *keyslot_handlers[LUKS2_KEYSLOTS_MAX] = {
 };
 
 static const keyslot_handler
-*LUKS2_keyslot_handler_type(struct crypt_device *cd, const char *type)
+*LUKS2_keyslot_handler_type(struct crypt_device *cd __attribute__((unused)), const char *type)
 {
 	int i;
 
@@ -607,7 +607,6 @@ int LUKS2_keyslot_reencrypt_create(struct crypt_device *cd,
 	if (keyslot == CRYPT_ANY_SLOT)
 		return -EINVAL;
 
-	/* FIXME: find keyslot by type */
 	h = LUKS2_keyslot_handler_type(cd, "reencrypt");
 	if (!h)
 		return -EINVAL;
@@ -776,7 +775,7 @@ int LUKS2_keyslot_dump(struct crypt_device *cd, int keyslot)
 	return h->dump(cd, keyslot);
 }
 
-crypt_keyslot_priority LUKS2_keyslot_priority_get(struct crypt_device *cd,
+crypt_keyslot_priority LUKS2_keyslot_priority_get(struct crypt_device *cd __attribute__((unused)),
 	  struct luks2_hdr *hdr, int keyslot)
 {
 	json_object *jobj_keyslot, *jobj_priority;
@@ -812,7 +811,7 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 	int keyslot,
 	uint64_t area_offset,
 	uint64_t area_length,
-	size_t volume_key_len)
+	size_t volume_key_len __attribute__((unused)))
 {
 	struct luks2_hdr *hdr;
 	json_object *jobj_keyslots, *jobj_keyslot, *jobj_area;

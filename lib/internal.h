@@ -46,37 +46,12 @@
 
 #include "libcryptsetup.h"
 
-/* to silent gcc -Wcast-qual for const cast */
-#define CONST_CAST(x) (x)(uintptr_t)
+#include "libcryptsetup_macros.h"
 
-#define SHIFT_4K		12
-#define SECTOR_SHIFT		9
-#define SECTOR_SIZE		(1 << SECTOR_SHIFT)
-#define MAX_SECTOR_SIZE		4096 /* min page size among all platforms */
-#define DEFAULT_DISK_ALIGNMENT	1048576 /* 1MiB */
-#define DEFAULT_MEM_ALIGNMENT	4096
 #define LOG_MAX_LEN		4096
 #define MAX_DM_DEPS		32
 
 #define CRYPT_SUBDEV           "SUBDEV" /* prefix for sublayered devices underneath public crypt types */
-
-#define at_least(a, b) ({ __typeof__(a) __at_least = (a); (__at_least >= (b))?__at_least:(b); })
-
-#define MISALIGNED(a, b)	((a) & ((b) - 1))
-#define MISALIGNED_4K(a)	MISALIGNED((a), 1 << SHIFT_4K)
-#define MISALIGNED_512(a)	MISALIGNED((a), 1 << SECTOR_SHIFT)
-#define NOTPOW2(a)		MISALIGNED((a), (a))
-
-#ifndef ARRAY_SIZE
-# define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-#endif
-
-#define MOVE_REF(x, y) \
-	do { \
-		typeof (x) *_px = &(x), *_py = &(y); \
-		*_px = *_py; \
-		*_py = NULL; \
-	} while (0)
 
 #ifndef O_CLOEXEC
 #define O_CLOEXEC 0
@@ -248,7 +223,7 @@ int crypt_use_keyring_for_vk(struct crypt_device *cd);
 void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *key_description, key_type_t ktype);
 void crypt_drop_keyring_key(struct crypt_device *cd, struct volume_key *vks);
 
-static inline uint64_t version(uint16_t major, uint16_t minor, uint16_t patch, uint16_t release)
+static inline uint64_t compact_version(uint16_t major, uint16_t minor, uint16_t patch, uint16_t release)
 {
 	return (uint64_t)release | ((uint64_t)patch << 16) | ((uint64_t)minor << 32) | ((uint64_t)major << 48);
 }

@@ -301,8 +301,6 @@ static int hdr_write_disk(struct crypt_device *cd,
 	log_dbg(cd, "Trying to write LUKS2 header (%zu bytes) at offset %" PRIu64 ".",
 		hdr->hdr_size, offset);
 
-	/* FIXME: read-only device silent fail? */
-
 	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd < 0)
 		return devfd == -1 ? -EINVAL : devfd;

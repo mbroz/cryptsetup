@@ -118,7 +118,7 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 	return r;
 }
 
-static int action_format(int arg)
+static int action_format(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_integrity params = {
@@ -214,7 +214,7 @@ out:
 	return r;
 }
 
-static int action_open(int arg)
+static int action_open(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_integrity params = {
@@ -291,7 +291,7 @@ out:
 	return r;
 }
 
-static int action_close(int arg)
+static int action_close(void)
 {
 	struct crypt_device *cd = NULL;
 	crypt_status_info ci;
@@ -318,7 +318,7 @@ static int action_close(int arg)
 	return r;
 }
 
-static int action_status(int arg)
+static int action_status(void)
 {
 	crypt_status_info ci;
 	struct crypt_active_device cad;
@@ -418,7 +418,7 @@ out:
 	return -EINVAL;
 }
 
-static int action_dump(int arg)
+static int action_dump(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_integrity params = {};
@@ -437,7 +437,7 @@ static int action_dump(int arg)
 
 static struct action_type {
 	const char *type;
-	int (*handler)(int);
+	int (*handler)(void);
 	int required_action_argc;
 	const char *arg_desc;
 	const char *desc;
@@ -490,7 +490,7 @@ static int run_action(struct action_type *action)
 
 	log_dbg("Running command %s.", action->type);
 
-	r = action->handler(0);
+	r = action->handler();
 
 	show_status(r);
 	return translate_errno(r);

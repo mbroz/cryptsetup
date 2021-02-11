@@ -298,7 +298,7 @@ void crypt_hmac_destroy(struct crypt_hmac *ctx)
 }
 
 /* RNG */
-int crypt_backend_rng(char *buffer, size_t length, int quality, int fips)
+int crypt_backend_rng(char *buffer, size_t length, int quality __attribute__((unused)), int fips)
 {
 	if (fips)
 		return -EINVAL;
@@ -377,7 +377,7 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 	return crypt_cipher_decrypt_kernel(&ctx->ck, in, out, length, iv, iv_length);
 }
 
-bool crypt_cipher_kernel_only(struct crypt_cipher *ctx)
+bool crypt_cipher_kernel_only(struct crypt_cipher *ctx __attribute__((unused)))
 {
 	return true;
 }

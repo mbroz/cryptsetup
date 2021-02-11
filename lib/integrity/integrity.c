@@ -120,7 +120,7 @@ int INTEGRITY_data_sectors(struct crypt_device *cd,
 	return 0;
 }
 
-int INTEGRITY_key_size(struct crypt_device *cd, const char *integrity)
+int INTEGRITY_key_size(struct crypt_device *cd __attribute__((unused)), const char *integrity)
 {
 	if (!integrity)
 		return 0;
@@ -163,7 +163,7 @@ int INTEGRITY_hash_tag_size(const char *integrity)
 	return r < 0 ? 0 : r;
 }
 
-int INTEGRITY_tag_size(struct crypt_device *cd,
+int INTEGRITY_tag_size(struct crypt_device *cd __attribute__((unused)),
 		       const char *integrity,
 		       const char *cipher,
 		       const char *cipher_mode)
@@ -189,7 +189,7 @@ int INTEGRITY_tag_size(struct crypt_device *cd,
 	if (!integrity || !strcmp(integrity, "none"))
 		auth_tag_size = 0;
 	else if (!strcmp(integrity, "aead"))
-		auth_tag_size = 16; //FIXME gcm- mode only
+		auth_tag_size = 16; /* gcm- mode only */
 	else if (!strcmp(integrity, "cmac(aes)"))
 		auth_tag_size = 16;
 	else if (!strcmp(integrity, "hmac(sha1)"))

@@ -46,21 +46,14 @@
 #include "lib/utils_fips.h"
 #include "lib/utils_io.h"
 #include "lib/utils_blkid.h"
+#include "lib/libcryptsetup_macros.h"
 
 #include "libcryptsetup.h"
 
-#define CONST_CAST(x) (x)(uintptr_t)
 #define DEFAULT_CIPHER(type)	(DEFAULT_##type##_CIPHER "-" DEFAULT_##type##_MODE)
-#define SECTOR_SIZE 512
-#define MAX_SECTOR_SIZE 4096
-#define ROUND_SECTOR(x) (((x) + SECTOR_SIZE - 1) / SECTOR_SIZE)
 
 #define DEFAULT_WIPE_BLOCK	1048576 /* 1 MiB */
 #define MAX_ACTIONS 16
-
-#ifndef ARRAY_SIZE
-# define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-#endif
 
 /* Common tools */
 void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)));
@@ -93,7 +86,7 @@ int tools_get_key(const char *prompt,
 		  struct crypt_device *cd);
 void tools_passphrase_msg(int r);
 int tools_is_stdin(const char *key_file);
-int tools_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size);
+int tools_string_to_size(const char *s, uint64_t *size);
 int tools_is_cipher_null(const char *cipher);
 
 struct tools_progress_params {
@@ -110,8 +103,8 @@ int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr);
 int tools_read_mk(const char *file, char **key, int keysize);
 int tools_write_mk(const char *file, const char *key, int keysize);
 
-int tools_read_json_file(struct crypt_device *cd, const char *file, char **json, size_t *json_size, bool batch_mode);
-int tools_write_json_file(struct crypt_device *cd, const char *file, const char *json);
+int tools_read_json_file(const char *file, char **json, size_t *json_size, bool batch_mode);
+int tools_write_json_file(const char *file, const char *json);
 
 int tools_detect_signatures(const char *device, int ignore_luks, size_t *count, bool batch_mode);
 int tools_wipe_all_signatures(const char *path);
@@ -122,8 +115,6 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 
 /* each utility is required to implement it */
 void tools_cleanup(void);
-
-#define FREE_AND_NULL(x) do { free(x); x = NULL; } while (0)
 
 /* Log */
 #define log_dbg(x...) crypt_logf(NULL, CRYPT_LOG_DEBUG, x)

@@ -318,7 +318,7 @@ int kernel_version(uint64_t *kversion)
 	}
 
 	if (!r)
-		*kversion = version(maj, min, patch, rel);
+		*kversion = compact_version(maj, min, patch, rel);
 
 	return r;
 }

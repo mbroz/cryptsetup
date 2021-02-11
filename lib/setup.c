@@ -64,9 +64,6 @@ struct crypt_device {
 	bool memory_hard_pbkdf_lock_enabled;
 	struct crypt_lock_handle *pbkdf_memory_hard_lock;
 
-	// FIXME: private binary headers and access it properly
-	// through sub-library (LUKS1, TCRYPT)
-
 	union {
 	struct { /* used in CRYPT_LUKS1 */
 		struct luks_phdr hdr;
@@ -888,7 +885,6 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	if (r < 0)
 		return r;
 
-	//FIXME: use crypt_free
 	if (!cd->type && !(cd->type = strdup(CRYPT_VERITY))) {
 		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
 		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
@@ -973,7 +969,7 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 }
 
 static int _crypt_load_bitlk(struct crypt_device *cd,
-			     struct bitlk_metadata *params)
+			     struct bitlk_metadata *params __attribute__((unused)))
 {
 	int r;
 
@@ -3819,7 +3815,7 @@ static int dmcrypt_keyring_bug(void)
 
 	if (kernel_version(&kversion))
 		return 1;
-	return kversion < version(4,15,0,0);
+	return kversion < compact_version(4,15,0,0);
 }
 
 int create_or_reload_device(struct crypt_device *cd, const char *name,
@@ -4644,7 +4640,7 @@ uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd, const char
 	if (!name)
 		return 0;
 
-	/* FIXME: LUKS2 / dm-crypt does not provide this count. */
+	/* LUKS2 / dm-crypt does not provide this count. */
 	if (dm_query_device(cd, name, 0, &dmd) < 0)
 		return 0;
 
@@ -5755,7 +5751,7 @@ int crypt_metadata_locking_enabled(void)
 	return _metadata_locking;
 }
 
-int crypt_metadata_locking(struct crypt_device *cd, int enable)
+int crypt_metadata_locking(struct crypt_device *cd __attribute__((unused)), int enable)
 {
 	if (enable && !_metadata_locking)
 		return -EPERM;
@@ -5969,7 +5965,7 @@ int crypt_use_keyring_for_vk(struct crypt_device *cd)
 	return (dmc_flags & DM_KERNEL_KEYRING_SUPPORTED);
 }
 
-int crypt_volume_key_keyring(struct crypt_device *cd, int enable)
+int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), int enable)
 {
 	_vk_via_keyring = enable ? 1 : 0;
 	return 0;

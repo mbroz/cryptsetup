@@ -278,7 +278,7 @@ void tools_token_msg(int token, crypt_object_op op)
  * kiB|KiB|miB|MiB|giB|GiB|tiB|TiB - 1024 base
  * kb |KB |mM |MB |gB |GB |tB |TB  - 1000 base
  */
-int tools_string_to_size(struct crypt_device *cd, const char *s, uint64_t *size)
+int tools_string_to_size(const char *s, uint64_t *size)
 {
 	char *endp = NULL;
 	size_t len;
@@ -387,7 +387,6 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct too
 	mbytes = bytes  / 1024 / 1024;
 	uib = (double)(bytes - parms->start_offset) / tdiff;
 
-	/* FIXME: calculate this from last minute only. */
 	eta = (unsigned long long)(device_size / uib - tdiff);
 
 	if (uib > 1073741824.0f) {

@@ -298,7 +298,6 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 
 	_dm_check_target(target_type);
 
-	/* FIXME: add support to DM so it forces crypt target module load here */
 	if (!(dmt = dm_task_create(DM_DEVICE_LIST_VERSIONS)))
 		goto out;
 
@@ -396,10 +395,7 @@ void dm_backend_exit(struct crypt_device *cd)
 	}
 }
 
-/*
- * libdevmapper is not context friendly, switch context on every DM call.
- * FIXME: this is not safe if called in parallel but neither is DM lib.
- */
+/* libdevmapper is not context friendly, switch context on every DM call. */
 static int dm_init_context(struct crypt_device *cd, dm_target_type target)
 {
 	_context = cd;
@@ -974,7 +970,7 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	return params;
 }
 
-static char *get_dm_linear_params(const struct dm_target *tgt, uint32_t flags)
+static char *get_dm_linear_params(const struct dm_target *tgt, uint32_t flags __attribute__((unused)))
 {
 	char *params;
 	int r;
@@ -995,7 +991,7 @@ static char *get_dm_linear_params(const struct dm_target *tgt, uint32_t flags)
 	return params;
 }
 
-static char *get_dm_zero_params(const struct dm_target *tgt, uint32_t flags)
+static char *get_dm_zero_params(const struct dm_target *tgt __attribute__((unused)), uint32_t flags __attribute__((unused)))
 {
 	char *params = crypt_safe_alloc(1);
 	if (!params)
@@ -1346,7 +1342,7 @@ static bool dm_device_exists(struct crypt_device *cd, const char *name)
 }
 
 static int _dm_create_device(struct crypt_device *cd, const char *name, const char *type,
-			     const char *uuid, struct crypt_dm_active_device *dmd)
+			     struct crypt_dm_active_device *dmd)
 {
 	struct dm_task *dmt = NULL;
 	struct dm_info dmi;
@@ -1659,7 +1655,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (dm_init_context(cd, dmd->segment.type))
 		return -ENOTSUP;
 
-	r = _dm_create_device(cd, name, type, dmd->uuid, dmd);
+	r = _dm_create_device(cd, name, type, dmd);
 
 	if (r < 0 && dm_flags(cd, dmd->segment.type, &dmt_flags))
 		goto out;
@@ -1667,7 +1663,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (r && (dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR || dmd->segment.type == DM_ZERO) &&
 		check_retry(cd, &dmd->flags, dmt_flags)) {
 		log_dbg(cd, "Retrying open without incompatible options.");
-		r = _dm_create_device(cd, name, type, dmd->uuid, dmd);
+		r = _dm_create_device(cd, name, type, dmd);
 	}
 
 	if (r == -EINVAL &&
@@ -2570,7 +2566,7 @@ err:
 	return r;
 }
 
-static int _dm_target_query_error(struct crypt_device *cd, struct dm_target *tgt)
+static int _dm_target_query_error(struct crypt_device *cd __attribute__((unused)), struct dm_target *tgt)
 {
 	tgt->type = DM_ERROR;
 	tgt->direction = TARGET_QUERY;
@@ -2578,7 +2574,7 @@ static int _dm_target_query_error(struct crypt_device *cd, struct dm_target *tgt
 	return 0;
 }
 
-static int _dm_target_query_zero(struct crypt_device *cd, struct dm_target *tgt)
+static int _dm_target_query_zero(struct crypt_device *cd __attribute__((unused)), struct dm_target *tgt)
 {
 	tgt->type = DM_ZERO;
 	tgt->direction = TARGET_QUERY;

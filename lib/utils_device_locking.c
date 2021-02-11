@@ -173,7 +173,7 @@ static int acquire_lock_handle(struct crypt_device *cd, struct device *device, s
 		h->u.bdev.devno = st.st_rdev;
 		h->mode = DEV_LOCK_BDEV;
 	} else if (S_ISREG(st.st_mode)) {
-		// FIXME: workaround for nfsv4
+		/* workaround for nfsv4 */
 		fd = open(device_path(device), O_RDWR | O_NONBLOCK | O_CLOEXEC);
 		if (fd < 0)
 			h->flock_fd = dev_fd;
@@ -261,7 +261,7 @@ int device_locked_readonly(struct crypt_lock_handle *h)
 	return (h && h->type == DEV_LOCK_READ);
 }
 
-static int verify_lock_handle(const char *device_path, struct crypt_lock_handle *h)
+static int verify_lock_handle(struct crypt_lock_handle *h)
 {
 	char res[PATH_MAX];
 	struct stat lck_st, res_st;
@@ -326,7 +326,7 @@ static int acquire_and_verify(struct crypt_device *cd, struct device *device, co
 		 * check whether another libcryptsetup process removed resource file before this
 		 * one managed to flock() it. See release_lock_handle() for details
 		 */
-		r = verify_lock_handle(device_path(device), h);
+		r = verify_lock_handle(h);
 		if (r < 0) {
 			if (flock(h->flock_fd, LOCK_UN))
 				log_dbg(cd, "flock on fd %d failed.", h->flock_fd);

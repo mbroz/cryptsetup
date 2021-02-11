@@ -196,7 +196,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 		PBKDF2_tmp = ((double)pbkdf->iterations * pbkdf->time_ms / 1000.);
 		if (PBKDF2_tmp > (double)UINT32_MAX)
 			return -EINVAL;
-		pbkdf->iterations = at_least((uint32_t)PBKDF2_tmp, pbkdf_limits.min_iterations);
+		pbkdf->iterations = AT_LEAST((uint32_t)PBKDF2_tmp, pbkdf_limits.min_iterations);
 	} else {
 		/* Already benchmarked */
 		if (pbkdf->iterations) {

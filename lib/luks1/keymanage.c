@@ -800,7 +800,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 
 	if (PBKDF2_temp > (double)UINT32_MAX)
 		return -EINVAL;
-	header->mkDigestIterations = at_least((uint32_t)PBKDF2_temp, LUKS_MKD_ITERATIONS_MIN);
+	header->mkDigestIterations = AT_LEAST((uint32_t)PBKDF2_temp, LUKS_MKD_ITERATIONS_MIN);
 	assert(header->mkDigestIterations);
 
 	r = crypt_pbkdf(CRYPT_KDF_PBKDF2, header->hashSpec, vk->key,vk->keylength,
@@ -874,7 +874,7 @@ int LUKS_set_key(unsigned int keyIndex,
 	 * Final iteration count is at least LUKS_SLOT_ITERATIONS_MIN
 	 */
 	hdr->keyblock[keyIndex].passwordIterations =
-		at_least(pbkdf->iterations, LUKS_SLOT_ITERATIONS_MIN);
+		AT_LEAST(pbkdf->iterations, LUKS_SLOT_ITERATIONS_MIN);
 	log_dbg(ctx, "Key slot %d use %" PRIu32 " password iterations.", keyIndex,
 		hdr->keyblock[keyIndex].passwordIterations);
 

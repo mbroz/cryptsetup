@@ -275,7 +275,7 @@ int crypt_decode_key(char *key, const char *hex, unsigned int size)
 	return 0;
 }
 
-void global_log_callback(int level, const char *msg, void *usrptr)
+void global_log_callback(int level, const char *msg, void *usrptr __attribute__((unused)))
 {
 	size_t len;
 
@@ -324,7 +324,7 @@ int _system(const char *command, int warn)
 	return r;
 }
 
-static int keyring_check(void)
+static int _keyring_check(void)
 {
 #ifdef KERNEL_KEYRING
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
@@ -379,12 +379,14 @@ static void t_dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 		t_dm_crypt_flags |= T_DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED;
 	}
 
-	if (t_dm_satisfies_version(1, 18, 1, crypt_maj, crypt_min, crypt_patch) && keyring_check())
+	if (t_dm_satisfies_version(1, 18, 1, crypt_maj, crypt_min, crypt_patch) && _keyring_check())
 		t_dm_crypt_flags |= T_DM_KERNEL_KEYRING_SUPPORTED;
 }
 
-static void t_dm_set_verity_compat(const char *dm_version, unsigned verity_maj,
-				   unsigned verity_min, unsigned verity_patch)
+static void t_dm_set_verity_compat(const char *dm_version __attribute__((unused)),
+	unsigned verity_maj,
+	unsigned verity_min,
+	unsigned verity_patch __attribute__((unused)))
 {
 	if (verity_maj > 0)
 		t_dm_crypt_flags |= T_DM_VERITY_SUPPORTED;
@@ -402,8 +404,10 @@ static void t_dm_set_verity_compat(const char *dm_version, unsigned verity_maj,
 	}
 }
 
-static void t_dm_set_integrity_compat(const char *dm_version, unsigned integrity_maj,
-				      unsigned integrity_min, unsigned integrity_patch)
+static void t_dm_set_integrity_compat(const char *dm_version __attribute__((unused)),
+	unsigned integrity_maj __attribute__((unused)),
+	unsigned integrity_min __attribute__((unused)),
+	unsigned integrity_patch __attribute__((unused)))
 {
 	if (integrity_maj > 0)
 		t_dm_crypt_flags |= T_DM_INTEGRITY_SUPPORTED;

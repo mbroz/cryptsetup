@@ -27,7 +27,7 @@
  * In future, read max allowed JSON size from config section.
  */
 #define LUKS2_MAX_MDA_SIZE 0x400000
-int tools_read_json_file(struct crypt_device *cd, const char *file, char **json, size_t *json_size, bool batch_mode)
+int tools_read_json_file(const char *file, char **json, size_t *json_size, bool batch_mode)
 {
 	ssize_t ret;
 	int fd, block, r;
@@ -88,7 +88,7 @@ out:
 	return r;
 }
 
-int tools_write_json_file(struct crypt_device *cd, const char *file, const char *json)
+int tools_write_json_file(const char *file, const char *json)
 {
 	int block, fd, r;
 	size_t json_len;

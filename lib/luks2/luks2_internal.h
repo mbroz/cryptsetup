@@ -30,8 +30,6 @@
 #include "base64.h"
 #include "luks2.h"
 
-#define UNUSED(x) (void)(x)
-
 /* override useless forward slash escape when supported by json-c */
 #ifndef JSON_C_TO_STRING_NOSLASHESCAPE
 #define JSON_C_TO_STRING_NOSLASHESCAPE 0

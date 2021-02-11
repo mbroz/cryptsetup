@@ -176,8 +176,7 @@ out_err:
 
 static int crypt_get_key_tty(const char *prompt,
 			     char **key, size_t *key_size,
-			     int timeout, int verify,
-			     struct crypt_device *cd)
+			     int timeout, int verify)
 {
 	int key_size_max = DEFAULT_PASSPHRASE_SIZE_MAX;
 	int r = -EINVAL;
@@ -261,7 +260,7 @@ int tools_get_key(const char *prompt,
 					snprintf(tmp, sizeof(tmp), _("Enter passphrase for %s: "), backing_file ?: crypt_get_device_name(cd));
 					free(backing_file);
 				}
-				r = crypt_get_key_tty(prompt ?: tmp, key, key_size, timeout, verify, cd);
+				r = crypt_get_key_tty(prompt ?: tmp, key, key_size, timeout, verify);
 			}
 		} else {
 			log_dbg("STDIN descriptor passphrase entry requested.");

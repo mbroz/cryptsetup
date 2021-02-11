@@ -21,12 +21,12 @@
 
 #include "luks2_internal.h"
 
-static int reenc_keyslot_open(struct crypt_device *cd,
-	int keyslot,
-	const char *password,
-	size_t password_len,
-	char *volume_key,
-	size_t volume_key_len)
+static int reenc_keyslot_open(struct crypt_device *cd __attribute__((unused)),
+	int keyslot __attribute__((unused)),
+	const char *password __attribute__((unused)),
+	size_t password_len __attribute__((unused)),
+	char *volume_key __attribute__((unused)),
+	size_t volume_key_len __attribute__((unused)))
 {
 	return -ENOENT;
 }
@@ -176,7 +176,8 @@ static int reenc_keyslot_store(struct crypt_device *cd,
 	return r < 0 ? r : keyslot;
 }
 
-static int reenc_keyslot_wipe(struct crypt_device *cd, int keyslot)
+static int reenc_keyslot_wipe(struct crypt_device *cd __attribute__((unused)),
+	int keyslot __attribute__((unused)))
 {
 	return 0;
 }

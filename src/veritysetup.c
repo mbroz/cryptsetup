@@ -72,7 +72,7 @@ static int _prepare_format(struct crypt_params_verity *params,
 	return 0;
 }
 
-static int action_format(int arg)
+static int action_format(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
@@ -198,7 +198,7 @@ out:
 	return r;
 }
 
-static int action_open(int arg)
+static int action_open(void)
 {
 	return _activate(action_argv[1],
 			 action_argv[0],
@@ -207,7 +207,7 @@ static int action_open(int arg)
 			 ARG_SET(OPT_ROOT_HASH_SIGNATURE_ID) ? CRYPT_VERITY_ROOT_HASH_SIGNATURE : 0);
 }
 
-static int action_verify(int arg)
+static int action_verify(void)
 {
 	return _activate(NULL,
 			 action_argv[0],
@@ -216,7 +216,7 @@ static int action_verify(int arg)
 			 CRYPT_VERITY_CHECK_HASH);
 }
 
-static int action_close(int arg)
+static int action_close(void)
 {
 	struct crypt_device *cd = NULL;
 	crypt_status_info ci;
@@ -243,7 +243,7 @@ static int action_close(int arg)
 	return r;
 }
 
-static int action_status(int arg)
+static int action_status(void)
 {
 	crypt_status_info ci;
 	struct crypt_active_device cad;
@@ -370,7 +370,7 @@ out:
 	return r;
 }
 
-static int action_dump(int arg)
+static int action_dump(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
@@ -390,7 +390,7 @@ static int action_dump(int arg)
 
 static struct action_type {
 	const char *type;
-	int (*handler)(int);
+	int (*handler)(void);
 	int required_action_argc;
 	const char *arg_desc;
 	const char *desc;
@@ -450,7 +450,7 @@ static int run_action(struct action_type *action)
 
 	log_dbg("Running command %s.", action->type);
 
-	r = action->handler(0);
+	r = action->handler();
 
 	show_status(r);
 	return translate_errno(r);
