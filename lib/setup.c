@@ -3887,6 +3887,7 @@ static int _open_and_activate(struct crypt_device *cd,
 	size_t passphrase_size,
 	uint32_t flags)
 {
+	bool use_keyring;
 	int r;
 	struct volume_key *vk = NULL;
 
@@ -3898,8 +3899,13 @@ static int _open_and_activate(struct crypt_device *cd,
 		return r;
 	keyslot = r;
 
-	if ((name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) &&
-	    crypt_use_keyring_for_vk(cd)) {
+	if (!crypt_use_keyring_for_vk(cd))
+		use_keyring = false;
+	else
+		use_keyring = ((name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
+			       (flags & CRYPT_ACTIVATE_KEYRING_KEY));
+
+	if (use_keyring) {
 		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
 				&cd->u.luks2.hdr, vk, keyslot);
 		if (r < 0)
@@ -4282,6 +4288,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	size_t volume_key_size,
 	uint32_t flags)
 {
+	bool use_keyring;
 	struct volume_key *vk = NULL;
 	int r;
 
@@ -4357,8 +4364,12 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (r > 0)
 			r = 0;
 
-		if (!r && (name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) &&
-		    crypt_use_keyring_for_vk(cd)) {
+		if (!crypt_use_keyring_for_vk(cd))
+			use_keyring = false;
+		else
+			use_keyring = (name && !crypt_is_cipher_null(crypt_get_cipher(cd))) || (flags & CRYPT_ACTIVATE_KEYRING_KEY);
+
+		if (!r && use_keyring) {
 			r = LUKS2_key_description_by_segment(cd,
 				&cd->u.luks2.hdr, vk, CRYPT_DEFAULT_SEGMENT);
 			if (!r)
