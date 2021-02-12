@@ -591,8 +591,10 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	memset(h, 0, sizeof(*h));
 
 	r = device_alloc(NULL, &h->device, device);
-	if (r < 0)
-		goto bad;
+	if (r < 0) {
+		free(h);
+		return r;
+	}
 
 	dm_backend_init(NULL);
 
@@ -600,10 +602,6 @@ int crypt_init(struct crypt_device **cd, const char *device)
 
 	*cd = h;
 	return 0;
-bad:
-	device_free(NULL, h->device);
-	free(h);
-	return r;
 }
 
 static int crypt_check_data_device_size(struct crypt_device *cd)
