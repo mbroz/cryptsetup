@@ -2046,7 +2046,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		r = device_alloc(cd, &fec_device, params->fec_device);
 		if (r < 0) {
 			r = -ENOMEM;
-			goto err;
+			goto out;
 		}
 
 		hash_blocks_size = VERITY_hash_blocks(cd, params) * params->hash_block_size;
@@ -2054,14 +2054,14 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		    (params->hash_area_offset + hash_blocks_size) > params->fec_area_offset) {
 			log_err(cd, _("Hash area overlaps with FEC area."));
 			r = -EINVAL;
-			goto err;
+			goto out;
 		}
 
 		if (device_is_identical(crypt_data_device(cd), fec_device) > 0 &&
 		    (cd->u.verity.hdr.data_size * params->data_block_size) > params->fec_area_offset) {
 			log_err(cd, _("Data area overlaps with FEC area."));
 			r = -EINVAL;
-			goto err;
+			goto out;
 		}
 	}
 
@@ -2071,7 +2071,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 
 	if (!root_hash || !hash_name || !salt) {
 		r = -ENOMEM;
-		goto err;
+		goto out;
 	}
 
 	cd->u.verity.hdr.flags = params->flags;
@@ -2095,7 +2095,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	else
 		r = crypt_random_get(cd, salt, params->salt_size, CRYPT_RND_SALT);
 	if (r)
-		goto err;
+		goto out;
 
 	if (params->flags & CRYPT_VERITY_CREATE_HASH) {
 		r = VERITY_create(cd, &cd->u.verity.hdr,
@@ -2103,7 +2103,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		if (!r && params->fec_device)
 			r = VERITY_FEC_process(cd, &cd->u.verity.hdr, cd->u.verity.fec_device, 0, NULL);
 		if (r)
-			goto err;
+			goto out;
 	}
 
 	if (!(params->flags & CRYPT_VERITY_NO_HEADER)) {
@@ -2119,7 +2119,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 					    &cd->u.verity.hdr);
 	}
 
-err:
+out:
 	if (r) {
 		device_free(cd, fec_device);
 		free(root_hash);
@@ -2176,21 +2176,21 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 							 params->journal_integrity_key);
 		if (!journal_mac_key) {
 			r = -ENOMEM;
-			goto err;
+			goto out;
 		}
 	}
 
 	if (params->integrity && !(integrity = strdup(params->integrity))) {
 		r = -ENOMEM;
-		goto err;
+		goto out;
 	}
 	if (params->journal_integrity && !(journal_integrity = strdup(params->journal_integrity))) {
 		r = -ENOMEM;
-		goto err;
+		goto out;
 	}
 	if (params->journal_crypt && !(journal_crypt = strdup(params->journal_crypt))) {
 		r = -ENOMEM;
-		goto err;
+		goto out;
 	}
 
 	integrity_tag_size = INTEGRITY_hash_tag_size(integrity);
@@ -2218,7 +2218,7 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 	if (r)
 		log_err(cd, _("Cannot format integrity for device %s."),
 			mdata_device_path(cd));
-err:
+out:
 	if (r) {
 		crypt_free_volume_key(journal_crypt_key);
 		crypt_free_volume_key(journal_mac_key);
@@ -4022,7 +4022,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 	}
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
-		goto err;
+		goto out;
 
 	ri = LUKS2_reencrypt_status(hdr);
 
@@ -4031,7 +4031,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 				keyslot, passphrase, passphrase_size, flags, &vks);
 		if (r < 0) {
 			log_err(cd, _("LUKS2 reencryption recovery failed."));
-			goto err;
+			goto out;
 		}
 		keyslot = r;
 
@@ -4048,11 +4048,11 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 
 	if (ri > CRYPT_REENCRYPT_CLEAN) {
 		r = -EINVAL;
-		goto err;
+		goto out;
 	}
 
 	if (LUKS2_get_data_size(hdr, &minimal_size, &dynamic_size))
-		goto err;
+		goto out;
 
 	if (!vks) {
 		r = _open_all_keys(cd, hdr, keyslot, passphrase, passphrase_size, flags, &vks);
@@ -4067,7 +4067,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 
 	if (r >= 0)
 		r = LUKS2_activate_multi(cd, name, vks, device_size >> SECTOR_SHIFT, flags);
-err:
+out:
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 	if (r < 0)
 		crypt_drop_keyring_key(cd, vks);
