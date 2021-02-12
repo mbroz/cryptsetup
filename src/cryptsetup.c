@@ -712,7 +712,7 @@ static int action_resize(void)
 	int r;
 	size_t passwordLen;
 	struct crypt_active_device cad;
-	uint64_t dev_size;
+	uint64_t dev_size = 0;
 	char *password = NULL;
 	struct crypt_device *cd = NULL;
 
@@ -724,6 +724,11 @@ static int action_resize(void)
 	r = crypt_get_active_device(cd, action_argv[0], &cad);
 	if (r)
 		goto out;
+
+	if (ARG_SET(OPT_DEVICE_SIZE_ID))
+		dev_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
+	else if (ARG_SET(OPT_SIZE_ID))
+		dev_size = ARG_UINT64(OPT_SIZE_ID);
 
 	if (cad.flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		if (ARG_SET(OPT_DISABLE_KEYRING_ID)) {
@@ -758,11 +763,6 @@ static int action_resize(void)
 	}
 
 resize:
-	if (ARG_UINT64(OPT_DEVICE_SIZE_ID))
-		dev_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
-	else
-		dev_size = ARG_UINT64(OPT_SIZE_ID);
-
 	if (r >= 0)
 		r = crypt_resize(cd, action_argv[0], dev_size);
 out:
