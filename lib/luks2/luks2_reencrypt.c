@@ -2238,7 +2238,7 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd, struct luks
 			if (LUKS2_digest_verify_by_digest(cd, hdr, digest_new, vk) != digest_new)
 				return -EINVAL;
 
-			if (crypt_use_keyring_for_vk(cd) &&
+			if (crypt_use_keyring_for_vk(cd) && !crypt_is_cipher_null(reencrypt_segment_cipher_new(hdr)) &&
 			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk))))
 				return r;
 		}
@@ -2254,7 +2254,7 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd, struct luks
 				r = -EINVAL;
 				goto err;
 			}
-			if (crypt_use_keyring_for_vk(cd) &&
+			if (crypt_use_keyring_for_vk(cd) && !crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr)) &&
 			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk))))
 				goto err;
 		}
@@ -2664,6 +2664,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	struct luks2_hdr *hdr;
 	struct crypt_lock_handle *reencrypt_lock;
 	struct luks2_reenc_context *rh;
+	const struct volume_key *vk;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
@@ -2729,6 +2730,19 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		if (r < 0)
 			goto err;
 		flags = dmd_target.flags;
+
+		/*
+		 * By default reencryption code aims to retain flags from existing dm device.
+		 * The keyring activation flag can not be inherited if original cipher is null.
+		 *
+		 * In this case override the flag based on decision made in reencrypt_verify_and_upload_keys
+		 * above. The code checks if new VK is eligible for keyring.
+		 */
+		vk = crypt_volume_key_by_id(*vks, LUKS2_reencrypt_digest_new(hdr));
+		if (vk && vk->key_description && crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr))) {
+			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+			dmd_source.flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+		}
 
 		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, LUKS2_get_segments_jobj(hdr), &dmd_source);
 		if (!r) {
