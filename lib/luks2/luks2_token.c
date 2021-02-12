@@ -135,10 +135,13 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 	token->version = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_VERSION, CRYPT_TOKEN_ABI_VERSION1);
 
 	if (!token_validate_v2(cd, ret)) {
-		r = -EINVAL;
-		goto err;
+		free(CONST_CAST(void *)token->name);
+		dlclose(h);
+		memset(token, 0, sizeof(*token));
+		return -EINVAL;
 	}
 
+	/* Token loaded, possible error here means only debug message fail and can be ignored */
 	r = snprintf(buf, sizeof(buf), "%s", token->version() ?: "");
 	if (r < 0 || (size_t)r >= sizeof(buf))
 		*buf = '\0';
@@ -149,12 +152,6 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 	ret->version = 2;
 
 	return 0;
-err:
-	free(CONST_CAST(void *)token->name);
-	dlclose(h);
-	memset(token, 0, sizeof(*token));
-
-	return r;
 #else
 	return -ENOTSUP;
 #endif
