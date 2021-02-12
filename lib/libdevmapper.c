@@ -1765,7 +1765,7 @@ static int dm_status_dmi(const char *name, struct dm_info *dmi,
 	int r = -EINVAL;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
-		goto out;
+		return r;
 
 	if (!dm_task_no_flush(dmt))
 		goto out;
@@ -1807,8 +1807,7 @@ out:
 	if (!r && status_line && !(*status_line = strdup(params)))
 		r = -ENOMEM;
 
-	if (dmt)
-		dm_task_destroy(dmt);
+	dm_task_destroy(dmt);
 
 	return r;
 }
@@ -2710,8 +2709,7 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 
 	r = (dmi.open_count > 0);
 out:
-	if (dmt)
-		dm_task_destroy(dmt);
+	dm_task_destroy(dmt);
 
 	if (r < 0)
 		dm_targets_free(cd, dmd);
