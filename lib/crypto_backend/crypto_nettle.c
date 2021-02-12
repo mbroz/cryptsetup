@@ -301,12 +301,16 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 
 
 	h->hash = _get_alg(name);
-	if (!h->hash)
-		goto bad;
+	if (!h->hash) {
+		free(h);
+		return -EINVAL;
+	}
 
 	h->key = malloc(key_length);
-	if (!h->key)
-		goto bad;
+	if (!h->key) {
+		free(h);
+		return -ENOMEM;
+	}
 
 	memcpy(h->key, key, key_length);
 	h->key_length = key_length;
@@ -316,9 +320,6 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 
 	*ctx = h;
 	return 0;
-bad:
-	free(h);
-	return -EINVAL;
 }
 
 static void crypt_hmac_restart(struct crypt_hmac *ctx)
