@@ -265,16 +265,12 @@ static void _dm_check_target(dm_target_type target_type)
 		return;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_GET_TARGET_VERSION)))
-		goto out;
+		return;
 
-	if (!dm_task_set_name(dmt, target_name))
-		goto out;
+	if (dm_task_set_name(dmt, target_name))
+		dm_task_run(dmt);
 
-	if (!dm_task_run(dmt))
-		goto out;
-out:
-	if (dmt)
-		dm_task_destroy(dmt);
+	dm_task_destroy(dmt);
 #endif
 }
 
@@ -1073,28 +1069,27 @@ static int _error_device(const char *name, size_t size)
 		return 0;
 
 	if (!dm_task_set_name(dmt, name))
-		goto error;
+		goto out;
 
 	if (!dm_task_add_target(dmt, UINT64_C(0), size, "error", ""))
-		goto error;
+		goto out;
 
 	if (!dm_task_set_ro(dmt))
-		goto error;
+		goto out;
 
 	if (!dm_task_no_open_count(dmt))
-		goto error;
+		goto out;
 
 	if (!dm_task_run(dmt))
-		goto error;
+		goto out;
 
 	if (_dm_resume_device(name, 0)) {
 		_dm_simple(DM_DEVICE_CLEAR, name, 0);
-		goto error;
+		goto out;
 	}
 
 	r = 1;
-
-error:
+out:
 	dm_task_destroy(dmt);
 	return r;
 }
@@ -2991,18 +2986,13 @@ int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg
 	uint64_t iv_offset, uint64_t data_offset, const char *integrity, uint32_t tag_size,
 	uint32_t sector_size)
 {
-	int r = -EINVAL;
-
-	/* free on error */
 	char *dm_integrity = NULL;
 
 	if (tag_size) {
 		/* Space for IV metadata only */
 		dm_integrity = strdup(integrity ?: "none");
-		if (!dm_integrity) {
-			r = -ENOMEM;
-			goto err;
-		}
+		if (!dm_integrity)
+			return -ENOMEM;
 	}
 
 	tgt->data_device = data_device;
@@ -3021,10 +3011,6 @@ int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg
 	tgt->u.crypt.sector_size = sector_size;
 
 	return 0;
-err:
-	free(dm_integrity);
-
-	return r;
 }
 
 int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
