@@ -220,28 +220,28 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 
 	h->hash = _get_alg(name);
 	if (!h->hash)
-		goto bad;
+		goto err;
 
 	h->slot = PK11_GetInternalKeySlot();
 	if (!h->slot)
-		goto bad;
+		goto err;
 
 	h->key = PK11_ImportSymKey(h->slot, h->hash->ck_type, PK11_OriginUnwrap,
 				   CKA_SIGN,  &keyItem, NULL);
 	if (!h->key)
-		goto bad;
+		goto err;
 
 	h->md = PK11_CreateContextBySymKey(h->hash->ck_type, CKA_SIGN, h->key,
 					   &noParams);
 	if (!h->md)
-		goto bad;
+		goto err;
 
 	if (PK11_DigestBegin(h->md) != SECSuccess)
-		goto bad;
+		goto err;
 
 	*ctx = h;
 	return 0;
-bad:
+err:
 	crypt_hmac_destroy(h);
 	return -EINVAL;
 }
