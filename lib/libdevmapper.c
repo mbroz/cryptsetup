@@ -1670,6 +1670,14 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		r = _dm_create_device(cd, name, type, dmd->uuid, dmd);
 	}
 
+	/*
+	 * Print warning if activating dm-crypt cipher_null device unless it's reencryption helper or
+	 * keyslot encryption helper device (LUKS1 cipher_null devices).
+	 */
+	if (!r && !(dmd->flags & CRYPT_ACTIVATE_PRIVATE) && single_segment(dmd) && dmd->segment.type == DM_CRYPT &&
+	    crypt_is_cipher_null(dmd->segment.u.crypt.cipher))
+		log_dbg(cd, "Activated dm-crypt device with cipher_null. Device is not encrypted.");
+
 	if (r == -EINVAL &&
 	    dmd->flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) &&
 	    !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
