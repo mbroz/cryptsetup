@@ -2598,6 +2598,7 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	struct crypt_dm_active_device tdmd, tdmdi = {};
 	struct dm_target *src, *srci, *tgt = &tdmd.segment, *tgti = &tdmdi.segment;
 	struct device *data_device = NULL;
+	bool clear = false;
 
 	if (!cd || !cd->type || !name || !iname || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
 		return -EINVAL;
@@ -2611,8 +2612,8 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	}
 
 	if (!single_segment(&tdmd) || tgt->type != DM_CRYPT || !tgt->u.crypt.tag_size) {
-		r = -ENOTSUP;
 		log_err(cd, _("Unsupported parameters on device %s."), name);
+		r = -ENOTSUP;
 		goto out;
 	}
 
@@ -2624,8 +2625,8 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	}
 
 	if (!single_segment(&tdmdi) || tgti->type != DM_INTEGRITY) {
-		r = -ENOTSUP;
 		log_err(cd, _("Unsupported parameters on device %s."), iname);
+		r = -ENOTSUP;
 		goto out;
 	}
 
@@ -2694,22 +2695,26 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 
 	if ((r = dm_reload_device(cd, name, &tdmd, 0, 0))) {
 		log_err(cd, _("Failed to reload device %s."), name);
-		goto err_clear;
+		clear = true;
+		goto out;
 	}
 
 	if ((r = dm_suspend_device(cd, name, 0))) {
 		log_err(cd, _("Failed to suspend device %s."), name);
-		goto err_clear;
+		clear = true;
+		goto out;
 	}
 
 	if ((r = dm_suspend_device(cd, iname, 0))) {
 		log_err(cd, _("Failed to suspend device %s."), iname);
-		goto err_clear;
+		clear = true;
+		goto out;
 	}
 
 	if ((r = dm_resume_device(cd, iname, act2dmflags(sdmdi->flags)))) {
 		log_err(cd, _("Failed to resume device %s."), iname);
-		goto err_clear;
+		clear = true;
+		goto out;
 	}
 
 	r = dm_resume_device(cd, name, act2dmflags(tdmd.flags));
@@ -2728,17 +2733,17 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 		log_err(cd, _("Failed to switch device %s to dm-error."), name);
 	if (dm_error_device(cd, iname))
 		log_err(cd, _("Failed to switch device %s to dm-error."), iname);
-	goto out;
-
-err_clear:
-	dm_clear_device(cd, name);
-	dm_clear_device(cd, iname);
-
-	if (dm_status_suspended(cd, name) > 0)
-		dm_resume_device(cd, name, 0);
-	if (dm_status_suspended(cd, iname) > 0)
-		dm_resume_device(cd, iname, 0);
 out:
+	if (clear) {
+		dm_clear_device(cd, name);
+		dm_clear_device(cd, iname);
+
+		if (dm_status_suspended(cd, name) > 0)
+			dm_resume_device(cd, name, 0);
+		if (dm_status_suspended(cd, iname) > 0)
+			dm_resume_device(cd, iname, 0);
+	}
+
 	dm_targets_free(cd, &tdmd);
 	dm_targets_free(cd, &tdmdi);
 	free(CONST_CAST(void*)tdmdi.uuid);
