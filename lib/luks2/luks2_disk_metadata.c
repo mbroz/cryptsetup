@@ -786,14 +786,11 @@ int LUKS2_hdr_version_unlocked(struct crypt_device *cd, const char *backup_file)
 		flags |= O_DIRECT;
 
 	devfd = open(device_path(device), flags);
-	if (devfd < 0)
-		goto err;
-
-	if ((read_lseek_blockwise(devfd, device_block_size(cd, device),
+	if (devfd != -1 && (read_lseek_blockwise(devfd, device_block_size(cd, device),
 	     device_alignment(device), &hdr, sizeof(hdr), 0) == sizeof(hdr)) &&
 	    !memcmp(hdr.magic, LUKS2_MAGIC_1ST, LUKS2_MAGIC_L))
 		r = (int)be16_to_cpu(hdr.version);
-err:
+
 	if (devfd != -1)
 		close(devfd);
 
