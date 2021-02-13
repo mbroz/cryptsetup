@@ -241,20 +241,9 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 	return 0;
 }
 
-static int VERITY_create_or_verify_hash(struct crypt_device *cd,
-	int verify,
-	int version,
-	const char *hash_name,
-	struct device *hash_device,
-	struct device *data_device,
-	size_t hash_block_size,
-	size_t data_block_size,
-	off_t data_blocks,
-	off_t hash_position,
-	char *root_hash,
-	size_t digest_size,
-	const char *salt,
-	size_t salt_size)
+static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
+	struct crypt_params_verity *params,
+	char *root_hash, size_t digest_size)
 {
 	char calculated_digest[digest_size];
 	FILE *data_file = NULL;
@@ -263,35 +252,31 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	off_t hash_level_size[VERITY_MAX_LEVELS];
 	off_t data_file_blocks;
 	off_t data_device_size = 0, hash_device_size = 0;
+	off_t hash_position = VERITY_hash_offset_block(params);
 	uint64_t dev_size;
 	int levels, i, r;
 
 	log_dbg(cd, "Hash %s %s, data device %s, data blocks %" PRIu64
 		", hash_device %s, offset %" PRIu64 ".",
-		verify ? "verification" : "creation", hash_name,
-		device_path(data_device), data_blocks,
-		device_path(hash_device), hash_position);
+		verify ? "verification" : "creation", params->hash_name,
+		device_path(crypt_data_device(cd)), params->data_size,
+		device_path(crypt_metadata_device(cd)), hash_position);
 
-	if (data_blocks < 0 || hash_position < 0) {
-		log_err(cd, _("Invalid size parameters for verity device."));
-		return -EINVAL;
-	}
-
-	if (!data_blocks) {
-		r = device_size(data_device, &dev_size);
+	if (!params->data_size) {
+		r = device_size(crypt_data_device(cd), &dev_size);
 		if (r < 0)
 			return r;
 
-		data_file_blocks = dev_size / data_block_size;
+		data_file_blocks = dev_size / params->data_block_size;
 	} else
-		data_file_blocks = data_blocks;
+		data_file_blocks = params->data_size;
 
-	if (mult_overflow(&data_device_size, data_blocks, data_block_size)) {
+	if (mult_overflow(&data_device_size, params->data_size, params->data_block_size)) {
 		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
 
-	if (hash_levels(hash_block_size, digest_size, data_file_blocks, &hash_position,
+	if (hash_levels(params->hash_block_size, digest_size, data_file_blocks, &hash_position,
 		&levels, &hash_level_block[0], &hash_level_size[0])) {
 		log_err(cd, _("Hash area overflow."));
 		return -EINVAL;
@@ -299,17 +284,17 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 
 	log_dbg(cd, "Using %d hash levels.", levels);
 
-	if (mult_overflow(&hash_device_size, hash_position, hash_block_size)) {
+	if (mult_overflow(&hash_device_size, hash_position, params->hash_block_size)) {
 		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
 
 	log_dbg(cd, "Data device size required: %" PRIu64 " bytes.",
 		data_device_size);
-	data_file = fopen(device_path(data_device), "r");
+	data_file = fopen(device_path(crypt_data_device(cd)), "r");
 	if (!data_file) {
 		log_err(cd, _("Cannot open device %s."),
-			device_path(data_device)
+			device_path(crypt_data_device(cd))
 		);
 		r = -EIO;
 		goto out;
@@ -317,10 +302,10 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 
 	log_dbg(cd, "Hash device size required: %" PRIu64 " bytes.",
 		hash_device_size);
-	hash_file = fopen(device_path(hash_device), verify ? "r" : "r+");
+	hash_file = fopen(device_path(crypt_metadata_device(cd)), verify ? "r" : "r+");
 	if (!hash_file) {
 		log_err(cd, _("Cannot open device %s."),
-			device_path(hash_device));
+			device_path(crypt_metadata_device(cd)));
 		r = -EIO;
 		goto out;
 	}
@@ -330,25 +315,25 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 	for (i = 0; i < levels; i++) {
 		if (!i) {
 			r = create_or_verify(cd, data_file, hash_file,
-						    0, data_block_size,
-						    hash_level_block[i], hash_block_size,
-						    data_file_blocks, version, hash_name, verify,
-						    calculated_digest, digest_size, salt, salt_size);
+						    0, params->data_block_size,
+						    hash_level_block[i], params->hash_block_size,
+						    data_file_blocks, params->hash_type, params->hash_name, verify,
+						    calculated_digest, digest_size, params->salt, params->salt_size);
 			if (r)
 				goto out;
 		} else {
-			hash_file_2 = fopen(device_path(hash_device), "r");
+			hash_file_2 = fopen(device_path(crypt_metadata_device(cd)), "r");
 			if (!hash_file_2) {
 				log_err(cd, _("Cannot open device %s."),
-					device_path(hash_device));
+					device_path(crypt_metadata_device(cd)));
 				r = -EIO;
 				goto out;
 			}
 			r = create_or_verify(cd, hash_file_2, hash_file,
-						    hash_level_block[i - 1], hash_block_size,
-						    hash_level_block[i], hash_block_size,
-						    hash_level_size[i - 1], version, hash_name, verify,
-						    calculated_digest, digest_size, salt, salt_size);
+						    hash_level_block[i - 1], params->hash_block_size,
+						    hash_level_block[i], params->hash_block_size,
+						    hash_level_size[i - 1], params->hash_type, params->hash_name, verify,
+						    calculated_digest, digest_size, params->salt, params->salt_size);
 			fclose(hash_file_2);
 			if (r)
 				goto out;
@@ -357,16 +342,16 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd,
 
 	if (levels)
 		r = create_or_verify(cd, hash_file, NULL,
-					    hash_level_block[levels - 1], hash_block_size,
-					    0, hash_block_size,
-					    1, version, hash_name, verify,
-					    calculated_digest, digest_size, salt, salt_size);
+					    hash_level_block[levels - 1], params->hash_block_size,
+					    0, params->hash_block_size,
+					    1, params->hash_type, params->hash_name, verify,
+					    calculated_digest, digest_size, params->salt, params->salt_size);
 	else
 		r = create_or_verify(cd, data_file, NULL,
-					    0, data_block_size,
-					    0, hash_block_size,
-					    data_file_blocks, version, hash_name, verify,
-					    calculated_digest, digest_size, salt, salt_size);
+					    0, params->data_block_size,
+					    0, params->hash_block_size,
+					    data_file_blocks, params->hash_type, params->hash_name, verify,
+					    calculated_digest, digest_size, params->salt, params->salt_size);
 out:
 	if (verify) {
 		if (r)
@@ -403,19 +388,7 @@ int VERITY_verify(struct crypt_device *cd,
 		  const char *root_hash,
 		  size_t root_hash_size)
 {
-	return VERITY_create_or_verify_hash(cd, 1,
-		verity_hdr->hash_type,
-		verity_hdr->hash_name,
-		crypt_metadata_device(cd),
-		crypt_data_device(cd),
-		verity_hdr->hash_block_size,
-		verity_hdr->data_block_size,
-		verity_hdr->data_size,
-		VERITY_hash_offset_block(verity_hdr),
-		CONST_CAST(char*)root_hash,
-		root_hash_size,
-		verity_hdr->salt,
-		verity_hdr->salt_size);
+	return VERITY_create_or_verify_hash(cd, 1, verity_hdr, CONST_CAST(char*)root_hash, root_hash_size);
 }
 
 /* Create verity hash */
@@ -433,19 +406,7 @@ int VERITY_create(struct crypt_device *cd,
 		log_err(cd, _("WARNING: Kernel cannot activate device if data "
 			      "block size exceeds page size (%u)."), pgsize);
 
-	return VERITY_create_or_verify_hash(cd, 0,
-		verity_hdr->hash_type,
-		verity_hdr->hash_name,
-		crypt_metadata_device(cd),
-		crypt_data_device(cd),
-		verity_hdr->hash_block_size,
-		verity_hdr->data_block_size,
-		verity_hdr->data_size,
-		VERITY_hash_offset_block(verity_hdr),
-		CONST_CAST(char*)root_hash,
-		root_hash_size,
-		verity_hdr->salt,
-		verity_hdr->salt_size);
+	return VERITY_create_or_verify_hash(cd, 0, verity_hdr, CONST_CAST(char*)root_hash, root_hash_size);
 }
 
 uint64_t VERITY_hash_blocks(struct crypt_device *cd, struct crypt_params_verity *params)
