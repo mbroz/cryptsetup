@@ -266,4 +266,12 @@ int crypt_compare_dm_devices(struct crypt_device *cd,
 			       const struct crypt_dm_active_device *tgt);
 static inline void *crypt_zalloc(size_t size) { return calloc(1, size); }
 
+static inline bool uint64_mult_overflow(uint64_t *u, uint64_t b, size_t size)
+{
+	*u = (uint64_t)b * size;
+	if ((uint64_t)(*u / size) != b)
+		return true;
+	return false;
+}
+
 #endif /* INTERNAL_H */
