@@ -122,9 +122,8 @@ struct dm_target {
 		const char *root_hash_sig_key_desc;
 
 		uint64_t hash_offset;	/* hash offset in blocks (not header) */
-		uint64_t hash_blocks;	/* size of hash device (in hash blocks) */
 		uint64_t fec_offset;	/* FEC offset in blocks (not header) */
-		uint64_t fec_blocks;	/* size of FEC device (in hash blocks) */
+		uint64_t fec_blocks;	/* FEC blocks covering data + hash + padding (foreign metadata)*/
 		struct crypt_params_verity *vp;
 	} verity;
 	struct {
@@ -191,8 +190,8 @@ int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg
 	uint32_t tag_size, uint32_t sector_size);
 int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
-	const char *root_hash, uint32_t root_hash_size, const char *root_hash_sig_key_desc,
-	uint64_t hash_offset_block, uint64_t hash_blocks, struct crypt_params_verity *vp);
+	const char *root_hash, uint32_t root_hash_size, const char* root_hash_sig_key_desc,
+	uint64_t hash_offset_block, uint64_t fec_blocks, struct crypt_params_verity *vp);
 int dm_integrity_target_set(struct crypt_device *cd,
 	struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *meta_device,
