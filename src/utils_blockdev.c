@@ -62,10 +62,10 @@ static int dm_prepare_uuid(const char *type, const char *uuid, char *buf, size_t
 
 /* return number of holders in general, if matched dm_uuid prefix it's returned via dm_name */
 /* negative value is error */
-static int lookup_holder_dm_name(const char *dm_uuid, size_t max_len, dev_t devno, char *dm_name, size_t dm_name_length)
+static int lookup_holder_dm_name(const char *dm_uuid, dev_t devno, char *dm_name, size_t dm_name_length)
 {
 	struct dirent *entry;
-	char dm_subpath[PATH_MAX], data_dev_dir[PATH_MAX], uuid[max_len];
+	char dm_subpath[PATH_MAX], data_dev_dir[PATH_MAX], uuid[DM_UUID_LEN];
 	ssize_t s;
 	struct stat st;
 	int dmfd, fd, len, r = 0; /* not found */
@@ -120,7 +120,7 @@ static int lookup_holder_dm_name(const char *dm_uuid, size_t max_len, dev_t devn
 		}
 
 		/* reads binary data */
-		s = read_buffer(fd, uuid, max_len - 1);
+		s = read_buffer(fd, uuid, sizeof(uuid) - 1);
 		close(fd);
 		uuid[s > 0 ? s : 0] = '\0';
 		if (!strncmp(uuid, dm_uuid, strlen(dm_uuid)))
@@ -183,7 +183,7 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 	if (!S_ISBLK(st.st_mode))
 		return -ENOTBLK;
 
-	r = lookup_holder_dm_name(dev_uuid + DM_BY_ID_PREFIX_LEN, DM_UUID_LEN,
+	r = lookup_holder_dm_name(dev_uuid + DM_BY_ID_PREFIX_LEN,
 			st.st_rdev, name, name_length);
 	return r;
 }
