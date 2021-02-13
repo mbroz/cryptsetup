@@ -251,7 +251,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 	off_t hash_level_block[VERITY_MAX_LEVELS];
 	off_t hash_level_size[VERITY_MAX_LEVELS];
 	off_t data_file_blocks;
-	off_t data_device_size = 0, hash_device_size = 0;
+	off_t data_device_offset_max = 0, hash_device_offset_max = 0;
 	off_t hash_position = VERITY_hash_offset_block(params);
 	uint64_t dev_size;
 	int levels, i, r;
@@ -271,26 +271,25 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 	} else
 		data_file_blocks = params->data_size;
 
-	if (mult_overflow(&data_device_size, params->data_size, params->data_block_size)) {
+	if (mult_overflow(&data_device_offset_max, params->data_size, params->data_block_size)) {
 		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
+	log_dbg(cd, "Data device size required: %" PRIu64 " bytes.", data_device_offset_max);
 
 	if (hash_levels(params->hash_block_size, digest_size, data_file_blocks, &hash_position,
 		&levels, &hash_level_block[0], &hash_level_size[0])) {
 		log_err(cd, _("Hash area overflow."));
 		return -EINVAL;
 	}
-
-	log_dbg(cd, "Using %d hash levels.", levels);
-
-	if (mult_overflow(&hash_device_size, hash_position, params->hash_block_size)) {
+	if (mult_overflow(&hash_device_offset_max, hash_position, params->hash_block_size)) {
 		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
+	log_dbg(cd, "Hash device size required: %" PRIu64 " bytes.",
+		hash_device_offset_max - params->hash_area_offset);
+	log_dbg(cd, "Using %d hash levels.", levels);
 
-	log_dbg(cd, "Data device size required: %" PRIu64 " bytes.",
-		data_device_size);
 	data_file = fopen(device_path(crypt_data_device(cd)), "r");
 	if (!data_file) {
 		log_err(cd, _("Cannot open device %s."),
@@ -300,8 +299,6 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 		goto out;
 	}
 
-	log_dbg(cd, "Hash device size required: %" PRIu64 " bytes.",
-		hash_device_size);
 	hash_file = fopen(device_path(crypt_metadata_device(cd)), verify ? "r" : "r+");
 	if (!hash_file) {
 		log_err(cd, _("Cannot open device %s."),
