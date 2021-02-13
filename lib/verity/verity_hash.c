@@ -89,20 +89,12 @@ out:
 	return r;
 }
 
-static int mult_overflow(off_t *u, off_t b, size_t size)
-{
-	*u = (uint64_t)b * size;
-	if ((off_t)(*u / size) != b || (off_t)*u < 0)
-		return 1;
-	return 0;
-}
-
 static int hash_levels(size_t hash_block_size, size_t digest_size,
-		       off_t data_file_blocks, off_t *hash_position, int *levels,
-		       off_t *hash_level_block, off_t *hash_level_size)
+		       uint64_t data_file_blocks, uint64_t *hash_position, int *levels,
+		       uint64_t *hash_level_block, uint64_t *hash_level_size)
 {
 	size_t hash_per_block_bits;
-	off_t s, s_shift;
+	uint64_t s, s_shift;
 	int i;
 
 	if (!digest_size)
@@ -127,11 +119,10 @@ static int hash_levels(size_t hash_block_size, size_t digest_size,
 		s_shift = (i + 1) * hash_per_block_bits;
 		if (s_shift > 63)
 			return -EINVAL;
-		s = (data_file_blocks + ((off_t)1 << s_shift) - 1) >> ((i + 1) * hash_per_block_bits);
+		s = (data_file_blocks + ((uint64_t)1 << s_shift) - 1) >> ((i + 1) * hash_per_block_bits);
 		if (hash_level_size)
 			hash_level_size[i] = s;
-		if ((*hash_position + s) < *hash_position ||
-		    (*hash_position + s) < 0)
+		if ((*hash_position + s) < *hash_position)
 			return -EINVAL;
 		*hash_position += s;
 	}
@@ -140,9 +131,9 @@ static int hash_levels(size_t hash_block_size, size_t digest_size,
 }
 
 static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
-				   off_t data_block, size_t data_block_size,
-				   off_t hash_block, size_t hash_block_size,
-				   off_t blocks, int version,
+				   uint64_t data_block, size_t data_block_size,
+				   uint64_t hash_block, size_t hash_block_size,
+				   uint64_t blocks, int version,
 				   const char *hash_name, int verify,
 				   char *calculated_digest, size_t digest_size,
 				   const char *salt, size_t salt_size)
@@ -152,14 +143,14 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 	char read_digest[digest_size];
 	size_t hash_per_block = 1 << get_bits_down(hash_block_size / digest_size);
 	size_t digest_size_full = 1 << get_bits_up(digest_size);
-	off_t blocks_to_write = (blocks + hash_per_block - 1) / hash_per_block;
-	off_t seek_rd, seek_wr;
+	uint64_t blocks_to_write = (blocks + hash_per_block - 1) / hash_per_block;
+	uint64_t seek_rd, seek_wr;
 	size_t left_bytes;
 	unsigned i;
 	int r;
 
-	if (mult_overflow(&seek_rd, data_block, data_block_size) ||
-	    mult_overflow(&seek_wr, hash_block, hash_block_size)) {
+	if (uint64_mult_overflow(&seek_rd, data_block, data_block_size) ||
+	    uint64_mult_overflow(&seek_wr, hash_block, hash_block_size)) {
 		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
@@ -248,11 +239,11 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 	char calculated_digest[digest_size];
 	FILE *data_file = NULL;
 	FILE *hash_file = NULL, *hash_file_2;
-	off_t hash_level_block[VERITY_MAX_LEVELS];
-	off_t hash_level_size[VERITY_MAX_LEVELS];
-	off_t data_file_blocks;
-	off_t data_device_offset_max = 0, hash_device_offset_max = 0;
-	off_t hash_position = VERITY_hash_offset_block(params);
+	uint64_t hash_level_block[VERITY_MAX_LEVELS];
+	uint64_t hash_level_size[VERITY_MAX_LEVELS];
+	uint64_t data_file_blocks;
+	uint64_t data_device_offset_max = 0, hash_device_offset_max = 0;
+	uint64_t hash_position = VERITY_hash_offset_block(params);
 	uint64_t dev_size;
 	int levels, i, r;
 
@@ -271,7 +262,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 	} else
 		data_file_blocks = params->data_size;
 
-	if (mult_overflow(&data_device_offset_max, params->data_size, params->data_block_size)) {
+	if (uint64_mult_overflow(&data_device_offset_max, params->data_size, params->data_block_size)) {
 		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
@@ -282,7 +273,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 		log_err(cd, _("Hash area overflow."));
 		return -EINVAL;
 	}
-	if (mult_overflow(&hash_device_offset_max, hash_position, params->hash_block_size)) {
+	if (uint64_mult_overflow(&hash_device_offset_max, hash_position, params->hash_block_size)) {
 		log_err(cd, _("Device offset overflow."));
 		return -EINVAL;
 	}
@@ -408,7 +399,7 @@ int VERITY_create(struct crypt_device *cd,
 
 uint64_t VERITY_hash_blocks(struct crypt_device *cd, struct crypt_params_verity *params)
 {
-	off_t hash_position = 0;
+	uint64_t hash_position = 0;
 	int levels = 0;
 
 	if (hash_levels(params->hash_block_size, crypt_get_volume_key_size(cd),
