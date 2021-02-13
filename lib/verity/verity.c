@@ -310,7 +310,7 @@ int VERITY_activate(struct crypt_device *cd,
 			crypt_metadata_device(cd), fec_device, root_hash,
 			root_hash_size, signature_description,
 			VERITY_hash_offset_block(verity_hdr),
-			VERITY_hash_blocks(cd, verity_hdr), verity_hdr);
+			VERITY_FEC_blocks(cd, fec_device, verity_hdr), verity_hdr);
 
 	if (r)
 		return r;

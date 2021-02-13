@@ -134,8 +134,11 @@ static int FEC_process_inputs(struct crypt_device *cd,
 
 	/* calculate the total area covered by error correction codes */
 	ctx.size = 0;
-	for (n = 0; n < ctx.ninputs; ++n)
+	for (n = 0; n < ctx.ninputs; ++n) {
+		log_dbg(cd, "FEC input %s, offset %" PRIu64 " [bytes], length %" PRIu64 " [bytes]",
+			device_path(ctx.inputs[n].device), ctx.inputs[n].start, ctx.inputs[n].count);
 		ctx.size += ctx.inputs[n].count;
+	}
 
 	/* each byte in a data block is covered by a different code */
 	ctx.blocks = FEC_div_round_up(ctx.size, ctx.block_size);
@@ -203,8 +206,7 @@ int VERITY_FEC_process(struct crypt_device *cd,
 		      struct device *fec_device, int check_fec,
 		      unsigned int *errors)
 {
-	int r;
-	int fd = -1;
+	int r = -EIO, fd = -1;
 	struct fec_input_device inputs[FEC_INPUT_DEVICES] = {
 		{
 			.device = crypt_data_device(cd),
@@ -214,7 +216,8 @@ int VERITY_FEC_process(struct crypt_device *cd,
 		},{
 			.device = crypt_metadata_device(cd),
 			.fd = -1,
-			.start = VERITY_hash_offset_block(params) * params->data_block_size
+			.start = VERITY_hash_offset_block(params) * params->data_block_size,
+			.count = (VERITY_FEC_blocks(cd, fec_device, params) - params->data_size) * params->data_block_size
 		}
 	};
 
@@ -230,7 +233,10 @@ int VERITY_FEC_process(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = -EIO;
+	if (!inputs[0].count || !inputs[1].count) {
+		log_err(cd, _("Invalid FEC segment length."));
+		return -EINVAL;
+	}
 
 	if (check_fec)
 		fd = open(device_path(fec_device), O_RDONLY);
@@ -259,15 +265,6 @@ int VERITY_FEC_process(struct crypt_device *cd,
 		goto out;
 	}
 
-	/* cover the entire hash device starting from hash_offset */
-	r = device_size(inputs[1].device, &inputs[1].count);
-	if (r) {
-		log_err(cd, _("Failed to determine size for device %s."),
-				device_path(inputs[1].device));
-		goto out;
-	}
-	inputs[1].count -= inputs[1].start;
-
 	r = FEC_process_inputs(cd, params, inputs, FEC_INPUT_DEVICES, fd, check_fec, errors);
 out:
 	if (inputs[0].fd != -1)
@@ -278,4 +275,38 @@ out:
 		close(fd);
 
 	return r;
+}
+
+uint64_t VERITY_FEC_blocks(struct crypt_device *cd,
+			   struct device *fec_device,
+			   struct crypt_params_verity *params)
+{
+	uint64_t blocks = 0;
+
+	/*
+	* FEC covers this data:
+	*     | protected data | hash area | padding (optional foreign metadata) |
+	*
+	* If hash device is in a separate image, metadata covers the whole rest of the image after hash area.
+	* If hash and FEC device is in the image, metadata ends on the FEC area offset.
+	*/
+	if (device_is_identical(crypt_metadata_device(cd), fec_device) > 0) {
+		log_dbg(cd, "FEC and hash device is the same.");
+		 blocks = params->fec_area_offset;
+	} else {
+		/* cover the entire hash device starting from hash_offset */
+		if (device_size(crypt_metadata_device(cd), &blocks)) {
+			log_err(cd, _("Failed to determine size for device %s."),
+					device_path(crypt_metadata_device(cd)));
+			return 0;
+		}
+	}
+
+	blocks /= params->data_block_size;
+	blocks -= VERITY_hash_offset_block(params);
+
+	/* Protected data */
+	blocks += params->data_size;
+
+	return blocks;
 }
