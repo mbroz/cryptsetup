@@ -26,11 +26,6 @@
 #endif
 #include <uuid/uuid.h>
 
-#define DM_UUID_LEN		129
-#define DM_BY_ID_PREFIX		"dm-uuid-"
-#define DM_BY_ID_PREFIX_LEN	8
-#define DM_UUID_PREFIX		"CRYPT-"
-#define DM_UUID_PREFIX_LEN	6
 #define UUID_LEN 37 /* 36 + \0, libuuid ... */
 
 static int dm_prepare_uuid(const char *type, const char *uuid, char *buf, size_t buflen)

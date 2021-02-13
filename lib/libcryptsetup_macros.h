@@ -56,4 +56,10 @@
 #define DEFAULT_DISK_ALIGNMENT	1048576 /* 1MiB */
 #define DEFAULT_MEM_ALIGNMENT	4096
 
+#define DM_UUID_LEN		129
+#define DM_BY_ID_PREFIX		"dm-uuid-"
+#define DM_BY_ID_PREFIX_LEN	8
+#define DM_UUID_PREFIX		"CRYPT-"
+#define DM_UUID_PREFIX_LEN	6
+
 #endif /* _LIBCRYPTSETUP_MACROS_H */
