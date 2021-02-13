@@ -274,11 +274,11 @@ static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
 				   const char *key, char *buf)
 {
 	int bs = alg->iv_size;
-	char iv[bs], iv_old[bs];
+	char iv[8], iv_old[8];
 	struct crypt_cipher *cipher = NULL;
 	int i, j, r;
 
-	assert(bs == 2*sizeof(uint32_t));
+	assert(bs == 8);
 
 	r = crypt_cipher_init(&cipher, "blowfish", "ecb",
 			      &key[alg->key_offset], alg->key_size);
@@ -380,11 +380,14 @@ static int TCRYPT_decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
 static int TCRYPT_decrypt_cbci(struct tcrypt_algs *ciphers,
 				const char *key, struct tcrypt_phdr *hdr)
 {
-	struct crypt_cipher *cipher[ciphers->chain_count];
+	struct crypt_cipher *cipher[3];
 	unsigned int bs = ciphers->cipher[0].iv_size;
-	char *buf = (char*)&hdr->e, iv[bs], iv_old[bs];
+	char *buf = (char*)&hdr->e, iv[16], iv_old[16];
 	unsigned int i, j;
 	int r = -EINVAL;
+
+	assert(ciphers->chain_count <= 3);
+	assert(bs <= 16);
 
 	TCRYPT_remove_whitening(buf, &key[8]);
 
