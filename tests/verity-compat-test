@@ -86,6 +86,30 @@ function compare_out() # $1 what, $2 expected
 	[ $OPT != $2 ] && fail "$1 differs ($2)"
 }
 
+function check_root_hash_fail()
+{
+	echo -n "Root hash check "
+	ARR=(`$VERITYSETUP format $IMG $IMG_HASH --fec-device $FEC_DEV --fec-roots 2 -h sha256`)
+	ROOT_HASH=${ARR[28]}
+	ROOT_HASH_BAD=abcdef0000000000000000000000000000000000000000000000000000000000
+
+	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH || fail
+	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 && fail
+	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD --fec-device $FEC_DEV --fec-roots 2 >/dev/null 2>&1 && fail
+
+	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH || fail
+	check_exists
+	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
+	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+
+	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 || fail
+	check_exists
+	dmsetup status $DEV_NAME | grep "verity C" >/dev/null || fail
+	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+
+	echo "[OK]"
+}
+
 function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
 {
 	if [ -z "$LOOPDEV2" ] ; then
@@ -230,14 +254,20 @@ function check_fec()
 	HASH_REPAIRED=${ARR[0]}
 
 	$VERITYSETUP close $DEV_NAME
-	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
 
 	if [ "$HASH_ORIG" != "$HASH_REPAIRED" ]; then
-		echo -n "[correction failed]"
-		return 1
-	fi
-
-	echo "[file was repaired][OK]"
+		echo -n "[kernel correction failed]"
+		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 && fail "Userspace verify should fail"
+		echo -n "[userspace verify failed]"
+		RET=1
+	else
+		echo -n "[repaired in kernel]"
+		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 || fail "Userspace verify failed"
+                echo "[userspace verify][OK]"
+                RET=0
+       fi
+	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
+       return $RET
 }
 
 function check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI option, $7 status option
@@ -390,6 +420,8 @@ SALT=e48da609055204e89ae53b655ca2216dd983cf3cb829f34f63a297d106d53e2d
 
 echo "Verity tests [separate devices]"
 prepare 8192 1024
+check_root_hash_fail
+
 check_root_hash  512 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 $SALT 1 sha256
 check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da2b3df $SALT 1 sha256
 check_root_hash 4096 e522df0f97da4febb882ac40f30b37dc0b444bf6df418929463fa25280f09d5c $SALT 1 sha256
@@ -451,6 +483,11 @@ if check_version 1 3; then
 	  [ "$RET" -eq "3" ] && break
 	  [ "$RET" -eq "0" ] || fail "FEC repair failed"
 
+	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
+
 	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
 	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 35 35 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
 	  (check_fec $IMG $IMG_HASH $FEC_DEV 512 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
@@ -468,7 +505,7 @@ checkUserSpaceRepair 400 512  2 256000  0       2 50
 checkUserSpaceRepair 500 512  2 2457600  4915200  1 1
 checkUserSpaceRepair -1  4096 2 0       0       3 10
 checkUserSpaceRepair 400 4096 2 2048000 0       2 1
-#checkUserSpaceRepair 500 4096 2 2457600 4915200 1 2 # FIXME
+checkUserSpaceRepair 500 4096 2 2457600 4915200 1 2
 
 echo -n "Verity concurrent opening tests:"
 prepare 8192 1024

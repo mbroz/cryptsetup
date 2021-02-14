@@ -727,7 +727,7 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 		snprintf(fec_features, sizeof(fec_features)-1,
 			 " use_fec_from_device %s fec_start %" PRIu64 " fec_blocks %" PRIu64 " fec_roots %" PRIu32,
 			 device_block_path(tgt->u.verity.fec_device), tgt->u.verity.fec_offset,
-			 vp->data_size + tgt->u.verity.hash_blocks, vp->fec_roots);
+			 tgt->u.verity.fec_blocks, vp->fec_roots);
 	} else
 		*fec_features = '\0';
 
@@ -3021,8 +3021,8 @@ err:
 
 int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
-	const char *root_hash, uint32_t root_hash_size, const char *root_hash_sig_key_desc,
-	uint64_t hash_offset_block, uint64_t hash_blocks, struct crypt_params_verity *vp)
+	const char *root_hash, uint32_t root_hash_size, const char* root_hash_sig_key_desc,
+	uint64_t hash_offset_block, uint64_t fec_blocks, struct crypt_params_verity *vp)
 {
 	if (!data_device || !hash_device || !vp)
 		return -EINVAL;
@@ -3040,7 +3040,7 @@ int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t se
 	tgt->u.verity.root_hash_sig_key_desc = root_hash_sig_key_desc;
 	tgt->u.verity.hash_offset = hash_offset_block;
 	tgt->u.verity.fec_offset = vp->fec_area_offset / vp->hash_block_size;
-	tgt->u.verity.hash_blocks = hash_blocks;
+	tgt->u.verity.fec_blocks = fec_blocks;
 	tgt->u.verity.vp = vp;
 
 	return 0;
