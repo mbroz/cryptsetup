@@ -2903,6 +2903,12 @@ static void Luks2KeyslotParams(void)
 	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
 	size_t key_size_ret, key_size = strlen(mk_hex) / 2, keyslot_key_size = 16;
 	uint64_t r_payload_offset;
+	const struct crypt_pbkdf_type fast_pbkdf = {
+		.type = "pbkdf2",
+		.hash = "sha256",
+		.iterations = 1000,
+		.flags = CRYPT_PBKDF_NO_BENCHMARK
+	};
 
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key2, mk_hex2, key_size);
@@ -2916,7 +2922,7 @@ static void Luks2KeyslotParams(void)
 	EQ_(key_size, 2 * keyslot_key_size);
 	/* test crypt_keyslot_add_by_key */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
 	NULL_(crypt_keyslot_get_encryption(cd, 0, &key_size_ret));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_spec));
@@ -2975,7 +2981,7 @@ static void Luks2KeyslotParams(void)
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, 7, &key_size_ret), cipher_keyslot));
 	EQ_(key_size_ret, keyslot_key_size);
 
-	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
 	EQ_(8, crypt_keyslot_change_by_passphrase(cd, 1, 8, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE, strlen(PASSPHRASE)));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, 8, &key_size_ret), cipher_spec));
 	EQ_(key_size_ret, key_size);
@@ -3004,7 +3010,7 @@ static void Luks2KeyslotParams(void)
 
 	/* LUKS1 compatible calls */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, NULL));
 	NULL_(crypt_keyslot_get_encryption(cd, 0, &key_size_ret));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_spec));
@@ -3012,6 +3018,18 @@ static void Luks2KeyslotParams(void)
 	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, 0, &key_size_ret), cipher_spec));
 	EQ_(key_size_ret, key_size);
+	CRYPT_FREE(cd);
+
+	/* LUKS2 cipher null checks */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "cipher_null", "ecb", NULL, key, key_size, NULL));
+	FAIL_(crypt_keyslot_set_encryption(cd, "null", 32), "cipher null is not allowed");
+	FAIL_(crypt_keyslot_set_encryption(cd, "cipher_null", 32), "cipher null is not allowed");
+	FAIL_(crypt_keyslot_set_encryption(cd, "cipher_null-ecb", 32), "cipher null is not allowed");
+	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)));
+	NOTNULL_(crypt_keyslot_get_encryption(cd, 0, &key_size_ret));
+	NULL_(strstr(crypt_keyslot_get_encryption(cd, 0, &key_size_ret), "null"));
 	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
