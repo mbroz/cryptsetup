@@ -1384,5 +1384,32 @@ $CRYPTSETUP luksErase -q $DEV || fail
 echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_ARGON --master-key-file $VKEY1 -s 128 $DEV || fail
 check_hash $PWD1 $HASH1
 
+echo "[24] Reencryption with initial cipher_null"
+# aka custom encryption
+prepare dev_size_mb=32
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c cipher_null-ecb --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -c aes-xts-plain64 -q $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+
+# online
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c cipher_null-ecb --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -c aes-xts-plain64 -q $FAST_PBKDF_ARGON || fail
+check_hash_dev /dev/mapper/$DEV_NAME $HASH1
+$CRYPTSETUP status $DEV_NAME | grep -q "key location: keyring" || fail
+$CRYPTSETUP close $DEV_NAME
+
+# simulate LUKS2 device with cipher_null in both keyslot and segment (it can be created only by up conversion from LUKS1)
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -s 128 -c cipher_null-ecb --offset 8192 $FAST_PBKDF2 $DEV || fail
+$CRYPTSETUP convert -q --type luks2 $DEV || fail
+wipe $PWD1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -c aes-xts-plain64 -q $FAST_PBKDF_ARGON || fail
+check_hash $PWD1 $HASH1
+# both keyslot and segment cipher must not be null
+$CRYPTSETUP luksDump $DEV | grep -q "cipher_null" && fail
+
 remove_mapping
 exit 0
