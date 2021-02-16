@@ -1419,9 +1419,9 @@ $CRYPTSETUP close $DEV_NAME
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -s 128 -c cipher_null-ecb --offset 8192 $FAST_PBKDF2 $DEV || fail
 $CRYPTSETUP convert -q --type luks2 $DEV || fail
 wipe $PWD1
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -c aes-xts-plain64 -q $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON >/dev/null || fail
 check_hash $PWD1 $HASH1
-# both keyslot and segment cipher must not be null
+# both keyslot and segment cipher must not be null after reencryption with default params
 $CRYPTSETUP luksDump $DEV | grep -q "cipher_null" && fail
 
 remove_mapping
