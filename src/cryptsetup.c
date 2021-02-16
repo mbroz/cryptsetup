@@ -3194,6 +3194,11 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 
 	_set_reencryption_flags(&params.flags);
 
+	if (!opt_cipher && crypt_is_cipher_null(crypt_get_cipher(cd))) {
+		opt_cipher = strdup(DEFAULT_CIPHER(LUKS1));
+		log_std(_("Switching data encryption cipher to %s.\n"), opt_cipher);
+	}
+
 	if (!opt_cipher) {
 		strncpy(cipher, crypt_get_cipher(cd), MAX_CIPHER_LEN - 1);
 		strncpy(mode, crypt_get_cipher_mode(cd), MAX_CIPHER_LEN - 1);
