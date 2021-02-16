@@ -2380,11 +2380,6 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 	if (!src->u.crypt.vk || !tgt->u.crypt.vk)
 		return -EINVAL;
 
-	if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->u.crypt.vk->key_description != NULL)) {
-		log_dbg(cd, "Keys in context and target device do not match.");
-		return -EINVAL;
-	}
-
 	/* CIPHER checks */
 	if (!src->u.crypt.cipher || !tgt->u.crypt.cipher)
 		return -EINVAL;
@@ -2392,6 +2387,14 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 		log_dbg(cd, "Cipher specs do not match.");
 		return -EINVAL;
 	}
+
+	if (tgt->u.crypt.vk->keylength == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
+		log_dbg(cd, "Existing device uses cipher null. Skipping key comparison.");
+	else if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->u.crypt.vk->key_description != NULL)) {
+		log_dbg(cd, "Keys in context and target device do not match.");
+		return -EINVAL;
+	}
+
 	if (crypt_strcmp(src->u.crypt.integrity, tgt->u.crypt.integrity)) {
 		log_dbg(cd, "Integrity parameters do not match.");
 		return -EINVAL;
@@ -3909,6 +3912,7 @@ static int _open_and_activate(struct crypt_device *cd,
 	size_t passphrase_size,
 	uint32_t flags)
 {
+	bool use_keyring;
 	int r;
 	struct volume_key *vk = NULL;
 
@@ -3920,8 +3924,13 @@ static int _open_and_activate(struct crypt_device *cd,
 		return r;
 	keyslot = r;
 
-	if ((name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) &&
-	    crypt_use_keyring_for_vk(cd)) {
+	if (!crypt_use_keyring_for_vk(cd))
+		use_keyring = false;
+	else
+		use_keyring = ((name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
+			       (flags & CRYPT_ACTIVATE_KEYRING_KEY));
+
+	if (use_keyring) {
 		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
 				&cd->u.luks2.hdr, vk, keyslot);
 		if (r < 0)
@@ -4304,6 +4313,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	size_t volume_key_size,
 	uint32_t flags)
 {
+	bool use_keyring;
 	struct volume_key *vk = NULL;
 	int r;
 
@@ -4379,8 +4389,12 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (r > 0)
 			r = 0;
 
-		if (!r && (name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) &&
-		    crypt_use_keyring_for_vk(cd)) {
+		if (!crypt_use_keyring_for_vk(cd))
+			use_keyring = false;
+		else
+			use_keyring = (name && !crypt_is_cipher_null(crypt_get_cipher(cd))) || (flags & CRYPT_ACTIVATE_KEYRING_KEY);
+
+		if (!r && use_keyring) {
 			r = LUKS2_key_description_by_segment(cd,
 				&cd->u.luks2.hdr, vk, CRYPT_DEFAULT_SEGMENT);
 			if (!r)
@@ -5177,17 +5191,17 @@ int crypt_keyslot_set_encryption(struct crypt_device *cd,
 {
 	char *tmp;
 
-	if (!cd || !cipher || ! key_size || !isLUKS2(cd->type))
+	if (!cd || !cipher || !key_size || !isLUKS2(cd->type))
 		return -EINVAL;
 
 	if (LUKS2_keyslot_cipher_incompatible(cd, cipher))
 		return -EINVAL;
 
-	tmp = strdup(cipher);
+	if (!(tmp = strdup(cipher)))
+		return -ENOMEM;
+
 	free(cd->u.luks2.keyslot_cipher);
 	cd->u.luks2.keyslot_cipher = tmp;
-	if (!cd->u.luks2.keyslot_cipher)
-		return -ENOMEM;
 	cd->u.luks2.keyslot_key_size = key_size;
 
 	return 0;
