@@ -654,6 +654,18 @@ function reencrypt_online_fixed_size() {
 	fi
 }
 
+function setup_luks2_env() {
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV || fail
+	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+	HAVE_KEYRING=$($CRYPTSETUP status $DEV_NAME | grep "key location: keyring")
+	if [ -n "$HAVE_KEYRING" ]; then
+		HAVE_KEYRING=1
+	else
+		HAVE_KEYRING=0
+	fi
+	$CRYPTSETUP close $DEV_NAME || fail
+}
+
 function valgrind_setup()
 {
 	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
@@ -705,9 +717,11 @@ HASH7=18a393d1a505e22ccf3e29effe3005ea8627e4c36b7cca0e53f58121f49b67e1
 # 60 MiBs of zeroes
 HASH8=cf5ac69ca412f9b3b1a8b8de27d368c5c05ed4b1b6aa40e6c38d9cbf23711342
 
+prepare dev_size_mb=32
+setup_luks2_env
+
 echo "[1] Reencryption"
 echo -n "[512 sector]"
-prepare dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
@@ -1412,7 +1426,9 @@ wipe $PWD1
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -c aes-xts-plain64 -q $FAST_PBKDF_ARGON || fail
 check_hash_dev /dev/mapper/$DEV_NAME $HASH1
-$CRYPTSETUP status $DEV_NAME | grep -q "key location: keyring" || fail
+if [ $HAVE_KEYRING -gt 0 ]; then
+	$CRYPTSETUP status $DEV_NAME | grep -q "key location: keyring" || fail
+fi
 $CRYPTSETUP close $DEV_NAME
 
 # simulate LUKS2 device with cipher_null in both keyslot and segment (it can be created only by up conversion from LUKS1)
