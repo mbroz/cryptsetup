@@ -171,8 +171,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 
 	if (isatty(fd)) {
 		log_err(cd, _("Cannot read keyfile from a terminal."));
-		r = -EINVAL;
-		goto out_err;
+		goto out;
 	}
 
 	/* If not requested otherwise, we limit input to prevent memory exhaustion */
@@ -188,7 +187,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	if (keyfile) {
 		if (stat(keyfile, &st) < 0) {
 			log_err(cd, _("Failed to stat key file."));
-			goto out_err;
+			goto out;
 		}
 		if (S_ISREG(st.st_mode)) {
 			regular_file = 1;
@@ -196,7 +195,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 
 			if (keyfile_offset > file_read_size) {
 				log_err(cd, _("Cannot seek to requested keyfile offset."));
-				goto out_err;
+				goto out;
 			}
 			file_read_size -= keyfile_offset;
 
@@ -211,13 +210,13 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	pass = crypt_safe_alloc(buflen);
 	if (!pass) {
 		log_err(cd, _("Out of memory while reading passphrase."));
-		goto out_err;
+		goto out;
 	}
 
 	/* Discard keyfile_offset bytes on input */
 	if (keyfile_offset && keyfile_seek(fd, keyfile_offset) < 0) {
 		log_err(cd, _("Cannot seek to requested keyfile offset."));
-		goto out_err;
+		goto out;
 	}
 
 	for (i = 0, newline = 0; i < key_size; i += char_read) {
@@ -227,7 +226,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 			if (!pass) {
 				log_err(cd, _("Out of memory while reading passphrase."));
 				r = -ENOMEM;
-				goto out_err;
+				goto out;
 			}
 		}
 
@@ -247,7 +246,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 		if (char_read < 0) {
 			log_err(cd, _("Error reading passphrase."));
 			r = -EPIPE;
-			goto out_err;
+			goto out;
 		}
 
 		if (char_read == 0)
@@ -264,24 +263,24 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	if (!i && !regular_file && !newline) {
 		log_err(cd, _("Nothing to read on input."));
 		r = -EPIPE;
-		goto out_err;
+		goto out;
 	}
 
 	/* Fail if we exceeded internal default (no specified size) */
 	if (unlimited_read && i == key_size) {
 		log_err(cd, _("Maximum keyfile size exceeded."));
-		goto out_err;
+		goto out;
 	}
 
 	if (!unlimited_read && i != key_size) {
 		log_err(cd, _("Cannot read requested amount of data."));
-		goto out_err;
+		goto out;
 	}
 
 	*key = pass;
 	*key_size_read = i;
 	r = 0;
-out_err:
+out:
 	if (fd != STDIN_FILENO)
 		close(fd);
 

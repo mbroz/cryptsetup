@@ -1026,18 +1026,13 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 {
 	uint64_t size;
 
-	/* No real header loaded, initialized by active device */
-	if (!hdr->d.version)
-		goto hdr_offset;
-
-	/* Mapping through whole device, not partition! */
-	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
+	if (!hdr->d.version) {
+		/* No real header loaded, initialized by active device, use default mk_offset */
+	} else if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
+		/* Mapping through whole device, not partition! */
 		if (crypt_dev_is_partition(device_path(crypt_metadata_device(cd))))
 			return 0;
-		goto hdr_offset;
-	}
-
-	if (params->mode && !strncmp(params->mode, "xts", 3)) {
+	} else if (params->mode && !strncmp(params->mode, "xts", 3)) {
 		if (hdr->d.version < 3)
 			return 1;
 
@@ -1049,17 +1044,13 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 			return (size - hdr->d.hidden_volume_size +
 				(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / SECTOR_SIZE;
 		}
-		goto hdr_offset;
-	}
-
-	if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
+	} else if (params->flags & CRYPT_TCRYPT_HIDDEN_HEADER) {
 		if (device_size(crypt_metadata_device(cd), &size) < 0)
 			return 0;
 		return (size - hdr->d.hidden_volume_size +
 			(TCRYPT_HDR_HIDDEN_OFFSET_OLD)) / SECTOR_SIZE;
 	}
 
-hdr_offset:
 	return hdr->d.mk_offset / SECTOR_SIZE;
 }
 

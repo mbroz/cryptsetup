@@ -164,15 +164,14 @@ static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 	}
 
 	len = sendmsg(ctx->opfd, &msg, 0);
-	if (len != (ssize_t)(in_length)) {
+	if (len != (ssize_t)(in_length))
 		r = -EIO;
-		goto bad;
+	else {
+		len = read(ctx->opfd, out, out_length);
+		if (len != (ssize_t)out_length)
+			r = -EIO;
 	}
 
-	len = read(ctx->opfd, out, out_length);
-	if (len != (ssize_t)out_length)
-		r = -EIO;
-bad:
 	crypt_backend_memzero(buffer, sizeof(buffer));
 	return r;
 }

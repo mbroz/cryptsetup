@@ -153,20 +153,20 @@ int crypt_random_init(struct crypt_device *ctx)
 	if(urandom_fd == -1)
 		urandom_fd = open(URANDOM_DEVICE, O_RDONLY | O_CLOEXEC);
 	if(urandom_fd == -1)
-		goto fail;
+		goto err;
 
 	/* Used for CRYPT_RND_KEY */
 	if(random_fd == -1)
 		random_fd = open(RANDOM_DEVICE, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if(random_fd == -1)
-		goto fail;
+		goto err;
 
 	if (crypt_fips_mode())
 		log_verbose(ctx, _("Running in FIPS mode."));
 
 	random_initialised = 1;
 	return 0;
-fail:
+err:
 	crypt_random_exit();
 	log_err(ctx, _("Fatal error during RNG initialisation."));
 	return -ENOSYS;

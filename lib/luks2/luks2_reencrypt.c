@@ -1782,14 +1782,14 @@ static int reencrypt_set_encrypt_segments(struct crypt_device *cd, struct luks2_
 		if (second_segment_length &&
 		    !(jobj_segment_second = json_segment_create_linear(second_segment_offset, &second_segment_length, 0))) {
 			log_dbg(cd, "Failed generate 2nd segment.");
-			goto err;
+			return r;
 		}
 	} else
 		jobj_segment_first =  json_segment_create_linear(first_segment_offset, first_segment_length ? &first_segment_length : NULL, 0);
 
 	if (!jobj_segment_first) {
 		log_dbg(cd, "Failed generate 1st segment.");
-		goto err;
+		return r;
 	}
 
 	json_object_object_add(jobj_segments, "0", jobj_segment_first);
@@ -1798,10 +1798,7 @@ static int reencrypt_set_encrypt_segments(struct crypt_device *cd, struct luks2_
 
 	r = LUKS2_digest_segment_assign(cd, hdr, CRYPT_ANY_SEGMENT, CRYPT_ANY_DIGEST, 0, 0);
 
-	if (!r)
-		r = LUKS2_segments_set(cd, hdr, jobj_segments, 0);
-err:
-	return r;
+	return r ?: LUKS2_segments_set(cd, hdr, jobj_segments, 0);
 }
 
 static int reencrypt_make_targets(struct crypt_device *cd,
@@ -1822,8 +1819,7 @@ static int reencrypt_make_targets(struct crypt_device *cd,
 		jobj = json_segments_get_segment(jobj_segments, s);
 		if (!jobj) {
 			log_dbg(cd, "Internal error. Segment %u is null.", s);
-			r = -EINVAL;
-			goto out;
+			return -EINVAL;
 		}
 
 		reenc_seg = (s == json_segments_segment_in_reencrypt(jobj_segments));
@@ -1835,16 +1831,14 @@ static int reencrypt_make_targets(struct crypt_device *cd,
 			segment_size = (size >> SECTOR_SHIFT) - segment_start;
 		if (!segment_size) {
 			log_dbg(cd, "Internal error. Wrong segment size %u", s);
-			r = -EINVAL;
-			goto out;
+			return -EINVAL;
 		}
 
 		if (!strcmp(json_segment_type(jobj), "crypt")) {
 			vk = crypt_volume_key_by_id(vks, reenc_seg ? LUKS2_reencrypt_digest_new(hdr) : LUKS2_digest_by_segment(hdr, s));
 			if (!vk) {
 				log_err(cd, _("Missing key for dm-crypt segment %u"), s);
-				r = -EINVAL;
-				goto out;
+				return -EINVAL;
 			}
 
 			if (reenc_seg)
@@ -1861,18 +1855,16 @@ static int reencrypt_make_targets(struct crypt_device *cd,
 						json_segment_get_sector_size(jobj));
 			if (r) {
 				log_err(cd, _("Failed to set dm-crypt segment."));
-				goto out;
+				return r;
 			}
 		} else if (!strcmp(json_segment_type(jobj), "linear")) {
 			r = dm_linear_target_set(result, segment_start, segment_size, reenc_seg ? hz_device : crypt_data_device(cd), segment_offset);
 			if (r) {
 				log_err(cd, _("Failed to set dm-linear segment."));
-				goto out;
+				return r;
 			}
-		} else {
-			r = -EINVAL;
-			goto out;
-		}
+		} else
+			return EINVAL;
 
 		segment_start += segment_size;
 		s++;
@@ -1880,8 +1872,6 @@ static int reencrypt_make_targets(struct crypt_device *cd,
 	}
 
 	return s;
-out:
-	return r;
 }
 
 /* GLOBAL FIXME: audit function names and parameters names */
@@ -1956,7 +1946,7 @@ static int reencrypt_replace_device(struct crypt_device *cd, const char *target,
 		return r;
 
 	if (exists && ((r = dm_query_device(cd, target, 0, &dmd_target)) < 0))
-		goto err;
+		goto out;
 
 	dmd_source.flags |= flags;
 	dmd_source.uuid = crypt_get_uuid(cd);
@@ -1966,7 +1956,7 @@ static int reencrypt_replace_device(struct crypt_device *cd, const char *target,
 			log_err(cd, _("Source and target device sizes don't match. Source %" PRIu64 ", target: %" PRIu64 "."),
 				dmd_source.size, dmd_target.size);
 			r = -EINVAL;
-			goto err;
+			goto out;
 		}
 		r = dm_reload_device(cd, target, &dmd_source, 0, 0);
 		if (!r) {
@@ -1975,7 +1965,7 @@ static int reencrypt_replace_device(struct crypt_device *cd, const char *target,
 		}
 	} else
 		r = dm_create_device(cd, target, CRYPT_SUBDEV, &dmd_source);
-err:
+out:
 	dm_targets_free(cd, &dmd_source);
 	dm_targets_free(cd, &dmd_target);
 
@@ -2040,14 +2030,14 @@ static int reencrypt_activate_hotzone_device(struct crypt_device *cd, const char
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_OK,
 				new_offset, &dmd.size, &dmd.flags);
 	if (r)
-		goto err;
+		goto out;
 
 	r = dm_linear_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd), new_offset);
 	if (r)
-		goto err;
+		goto out;
 
 	r = dm_create_device(cd, name, CRYPT_SUBDEV, &dmd);
-err:
+out:
 	dm_targets_free(cd, &dmd);
 
 	return r;
@@ -2194,7 +2184,7 @@ static int reencrypt_move_data(struct crypt_device *cd, int devfd, uint64_t data
 			buffer, buffer_len, 0);
 	if (ret < 0 || (uint64_t)ret != buffer_len) {
 		r = -EIO;
-		goto err;
+		goto out;
 	}
 
 	log_dbg(cd, "Going to write %" PRIu64 " bytes at offset %" PRIu64, buffer_len, offset);
@@ -2204,11 +2194,11 @@ static int reencrypt_move_data(struct crypt_device *cd, int devfd, uint64_t data
 			buffer, buffer_len, offset);
 	if (ret < 0 || (uint64_t)ret != buffer_len) {
 		r = -EIO;
-		goto err;
+		goto out;
 	}
 
 	r = 0;
-err:
+out:
 	memset(buffer, 0, buffer_len);
 	free(buffer);
 	return r;
@@ -2471,34 +2461,34 @@ static int reencrypt_init(struct crypt_device *cd,
 		/* in-memory only */
 		r = reencrypt_set_encrypt_segments(cd, hdr, dev_size, params->data_shift << SECTOR_SHIFT, move_first_segment, params->direction);
 		if (r)
-			goto err;
+			goto out;
 	}
 
 	r = LUKS2_keyslot_reencrypt_create(cd, hdr, reencrypt_keyslot,
 					   params);
 	if (r < 0)
-		goto err;
+		goto out;
 
 	r = reencrypt_make_backup_segments(cd, hdr, keyslot_new, _cipher, data_offset, params);
 	if (r) {
 		log_dbg(cd, "Failed to create reencryption backup device segments.");
-		goto err;
+		goto out;
 	}
 
 	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
 	if (r < 0)
-		goto err;
+		goto out;
 
 	if (name && params->mode != CRYPT_REENCRYPT_ENCRYPT) {
 		r = reencrypt_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 		if (r)
-			goto err;
+			goto out;
 
 		r = dm_query_device(cd, name, DM_ACTIVE_UUID | DM_ACTIVE_DEVICE |
 				    DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY |
 				    DM_ACTIVE_CRYPT_CIPHER, &dmd_target);
 		if (r < 0)
-			goto err;
+			goto out;
 
 		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, LUKS2_get_segments_jobj(hdr), &dmd_source);
 		if (!r) {
@@ -2512,12 +2502,12 @@ static int reencrypt_init(struct crypt_device *cd,
 		free(CONST_CAST(void*)dmd_target.uuid);
 
 		if (r)
-			goto err;
+			goto out;
 	}
 
 	if (move_first_segment && reencrypt_move_data(cd, devfd, params->data_shift << SECTOR_SHIFT)) {
 		r = -EIO;
-		goto err;
+		goto out;
 	}
 
 	/* This must be first and only write in LUKS2 metadata during _reencrypt_init */
@@ -2527,7 +2517,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		r = -EINVAL;
 	} else
 		r = reencrypt_keyslot;
-err:
+out:
 	device_release_excl(cd, crypt_data_device(cd));
 	if (r < 0)
 		crypt_load(cd, CRYPT_LUKS2, NULL);
@@ -2659,12 +2649,12 @@ static int reencrypt_lock_internal(struct crypt_device *cd, const char *uuid, st
 	if (r < 0)
 		return -ENOMEM;
 	if (r < 20) {
-		r = -EINVAL;
-		goto out;
+		free(lock_resource);
+		return -EINVAL;
 	}
 
 	r = crypt_write_lock(cd, lock_resource, false, reencrypt_lock);
-out:
+
 	free(lock_resource);
 
 	return r;
@@ -3427,21 +3417,21 @@ static int reencrypt_recovery(struct crypt_device *cd,
 
 	r = reencrypt_recover_segment(cd, hdr, rh, vks);
 	if (r < 0)
-		goto err;
+		goto out;
 
 	if ((r = reencrypt_assign_segments(cd, hdr, rh, 0, 0)))
-		goto err;
+		goto out;
 
 	r = reencrypt_context_update(cd, rh);
 	if (r) {
 		log_err(cd, _("Failed to update reencryption context."));
-		goto err;
+		goto out;
 	}
 
 	r = reencrypt_teardown_ok(cd, hdr, rh);
 	if (!r)
 		r = LUKS2_hdr_write(cd, hdr);
-err:
+out:
 	LUKS2_reencrypt_free(cd, rh);
 
 	return r;
@@ -3525,7 +3515,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new,
 			passphrase, passphrase_size, &_vks);
 	if (r < 0)
-		goto err;
+		goto out;
 	keyslot = r;
 
 	if (crypt_use_keyring_for_vk(cd))
@@ -3534,18 +3524,18 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 	while (vk) {
 		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
 		if (r < 0)
-			goto err;
+			goto out;
 		vk = crypt_volume_key_next(vk);
 	}
 
 	if (LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size, true, false))
-		goto err;
+		goto out;
 
 	r = reencrypt_recovery(cd, hdr, device_size, _vks);
 
 	if (!r && vks)
 		MOVE_REF(*vks, _vks);
-err:
+out:
 	if (r < 0)
 		crypt_drop_keyring_key(cd, _vks);
 	crypt_free_volume_key(_vks);
