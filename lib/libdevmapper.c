@@ -654,11 +654,13 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 	if (crypt_is_cipher_null(cipher_dm))
 		null_cipher = 1;
 
-	if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+	if (null_cipher)
+		hexkey = crypt_safe_alloc(2);
+	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		keystr_len = strlen(tgt->u.crypt.vk->key_description) + int_log10(tgt->u.crypt.vk->keylength) + 10;
 		hexkey = crypt_safe_alloc(keystr_len);
 	} else
-		hexkey = crypt_safe_alloc(null_cipher ? 2 : (tgt->u.crypt.vk->keylength * 2 + 1));
+		hexkey = crypt_safe_alloc(tgt->u.crypt.vk->keylength * 2 + 1);
 
 	if (!hexkey)
 		return NULL;
