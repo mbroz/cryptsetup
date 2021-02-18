@@ -1241,6 +1241,21 @@ static int strcmp_or_null(const char *str, const char *expected)
 	return !str ? 0 : strcmp(str, expected);
 }
 
+static int get_adjusted_key_size(const char *cipher_mode, uint32_t default_size_bits, int integrity_keysize)
+{
+	uint32_t keysize_bits = ARG_UINT32(OPT_KEY_SIZE_ID);
+
+#ifdef ENABLE_LUKS_ADJUST_XTS_KEYSIZE
+	if (!ARG_SET(OPT_KEY_SIZE_ID) && !strncmp(cipher_mode, "xts-", 4)) {
+		if (default_size_bits == 128)
+			keysize_bits = 256;
+		else if (default_size_bits == 256)
+			keysize_bits = 512;
+	}
+#endif
+	return (keysize_bits ?: default_size_bits) / 8 + integrity_keysize;
+}
+
 static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen)
 {
 	int r = -EINVAL, keysize, integrity_keysize = 0, fd, created = 0;
@@ -1373,15 +1388,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 			goto out;
 	}
 
-#ifdef ENABLE_LUKS_ADJUST_XTS_KEYSIZE
-	if (!ARG_SET(OPT_KEY_SIZE_ID) && !strncmp(cipher_mode, "xts-", 4)) {
-		if (DEFAULT_LUKS1_KEYBITS == 128)
-			ARG_SET_UINT32(OPT_KEY_SIZE_ID, 256);
-		else if (DEFAULT_LUKS1_KEYBITS == 256)
-			ARG_SET_UINT32(OPT_KEY_SIZE_ID, 512);
-	}
-#endif
-	keysize = (ARG_UINT32(OPT_KEY_SIZE_ID) ?: DEFAULT_LUKS1_KEYBITS) / 8 + integrity_keysize;
+	keysize = get_adjusted_key_size(cipher_mode, DEFAULT_LUKS1_KEYBITS, integrity_keysize);
 
 	if (ARG_SET(OPT_USE_RANDOM_ID))
 		crypt_set_rng_type(cd, CRYPT_RNG_RANDOM);
@@ -3201,10 +3208,8 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 	if (r)
 		return r;
 
-	if (ARG_SET(OPT_KEY_SIZE_ID))
-		key_size = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
-	else if (ARG_SET(OPT_CIPHER_ID))
-		key_size = DEFAULT_LUKS1_KEYBITS / 8;
+	if (ARG_SET(OPT_KEY_SIZE_ID) || ARG_SET(OPT_CIPHER_ID))
+		key_size = get_adjusted_key_size(mode, DEFAULT_LUKS1_KEYBITS, 0);
 	else
 		key_size = crypt_get_volume_key_size(cd);
 
