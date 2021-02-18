@@ -25,15 +25,19 @@
 
 #include "rs.h"
 
+#define MAX_NR_BUF 256
+
 int decode_rs_char(struct rs* rs, data_t* data)
 {
 	int deg_lambda, el, deg_omega, syn_error, count;
 	int i, j, r, k;
 	data_t q, tmp, num1, num2, den, discr_r;
-	/* FIXME: remove VLAs here */
-	data_t lambda[rs->nroots + 1], s[rs->nroots]; /* Err+Eras Locator poly and syndrome poly */
-	data_t b[rs->nroots + 1], t[rs->nroots + 1], omega[rs->nroots + 1];
-	data_t root[rs->nroots], reg[rs->nroots + 1], loc[rs->nroots];
+	data_t lambda[MAX_NR_BUF], s[MAX_NR_BUF]; /* Err+Eras Locator poly and syndrome poly */
+	data_t b[MAX_NR_BUF], t[MAX_NR_BUF], omega[MAX_NR_BUF];
+	data_t root[MAX_NR_BUF], reg[MAX_NR_BUF], loc[MAX_NR_BUF];
+
+	if (rs->nroots >= MAX_NR_BUF)
+		return -1;
 
 	memset(s, 0, rs->nroots * sizeof(data_t));
 	memset(b, 0, (rs->nroots + 1) * sizeof(data_t));

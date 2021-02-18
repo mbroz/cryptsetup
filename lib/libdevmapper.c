@@ -36,11 +36,6 @@
 
 #include "internal.h"
 
-#define DM_UUID_LEN		129
-#define DM_BY_ID_PREFIX		"dm-uuid-"
-#define DM_BY_ID_PREFIX_LEN	8
-#define DM_UUID_PREFIX		"CRYPT-"
-#define DM_UUID_PREFIX_LEN	6
 #define DM_CRYPT_TARGET		"crypt"
 #define DM_VERITY_TARGET	"verity"
 #define DM_INTEGRITY_TARGET	"integrity"
@@ -1244,7 +1239,7 @@ int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char 
 	r = lookup_by_disk_id(dev_uuid);
 	if (r == -ENOENT) {
 		log_dbg(cd, "Search by disk id not available. Using sysfs instead.");
-		r = lookup_by_sysfs_uuid_field(dev_uuid + DM_BY_ID_PREFIX_LEN, DM_UUID_LEN);
+		r = lookup_by_sysfs_uuid_field(dev_uuid + DM_BY_ID_PREFIX_LEN);
 	}
 
 	return r;

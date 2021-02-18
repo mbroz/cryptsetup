@@ -28,6 +28,7 @@
 #include "internal.h"
 
 #define VERITY_MAX_LEVELS	63
+#define VERITY_MAX_DIGEST_SIZE	1024
 
 static unsigned get_bits_up(size_t u)
 {
@@ -47,20 +48,30 @@ static unsigned get_bits_down(size_t u)
 
 static int verify_zero(struct crypt_device *cd, FILE *wr, size_t bytes)
 {
-	char block[bytes];
+	char *block = NULL;
 	size_t i;
+	int r;
+
+	block = malloc(bytes);
+	if (!block)
+		return -ENOMEM;
 
 	if (fread(block, bytes, 1, wr) != 1) {
 		log_dbg(cd, "EIO while reading spare area.");
-		return -EIO;
+		r = -EIO;
+		goto out;
 	}
 	for (i = 0; i < bytes; i++)
 		if (block[i]) {
 			log_err(cd, _("Spare area is not zeroed at position %" PRIu64 "."),
 				ftello(wr) - bytes);
-			return -EPERM;
+			r = -EPERM;
+			goto out;
 		}
-	return 0;
+	r = 0;
+out:
+	free(block);
+	return r;
 }
 
 static int verify_hash_block(const char *hash_name, int version,
@@ -138,9 +149,8 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 				   char *calculated_digest, size_t digest_size,
 				   const char *salt, size_t salt_size)
 {
-	char left_block[hash_block_size];
-	char data_buffer[data_block_size];
-	char read_digest[digest_size];
+	char *left_block, *data_buffer;
+	char read_digest[VERITY_MAX_DIGEST_SIZE];
 	size_t hash_per_block = 1 << get_bits_down(hash_block_size / digest_size);
 	size_t digest_size_full = 1 << get_bits_up(digest_size);
 	uint64_t blocks_to_write = (blocks + hash_per_block - 1) / hash_per_block;
@@ -148,6 +158,9 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 	size_t left_bytes;
 	unsigned i;
 	int r;
+
+	if (digest_size > sizeof(read_digest))
+		return -EINVAL;
 
 	if (uint64_mult_overflow(&seek_rd, data_block, data_block_size) ||
 	    uint64_mult_overflow(&seek_wr, hash_block, hash_block_size)) {
@@ -165,6 +178,13 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 		return -EIO;
 	}
 
+	left_block = malloc(hash_block_size);
+	data_buffer = malloc(data_block_size);
+	if (!left_block || !data_buffer) {
+		r = -ENOMEM;
+		goto out;
+	}
+
 	memset(left_block, 0, hash_block_size);
 	while (blocks_to_write--) {
 		left_bytes = hash_block_size;
@@ -174,31 +194,37 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 			blocks--;
 			if (fread(data_buffer, data_block_size, 1, rd) != 1) {
 				log_dbg(cd, "Cannot read data device block.");
-				return -EIO;
+				r = -EIO;
+				goto out;
 			}
 
 			if (verify_hash_block(hash_name, version,
 					calculated_digest, digest_size,
 					data_buffer, data_block_size,
-					salt, salt_size))
-				return -EINVAL;
+					salt, salt_size)) {
+				r = -EINVAL;
+				goto out;
+			}
 
 			if (!wr)
 				break;
 			if (verify) {
 				if (fread(read_digest, digest_size, 1, wr) != 1) {
 					log_dbg(cd, "Cannot read digest form hash device.");
-					return -EIO;
+					r = -EIO;
+					goto out;
 				}
 				if (memcmp(read_digest, calculated_digest, digest_size)) {
 					log_err(cd, _("Verification failed at position %" PRIu64 "."),
 						ftello(rd) - data_block_size);
-					return -EPERM;
+					r = -EPERM;
+					goto out;
 				}
 			} else {
 				if (fwrite(calculated_digest, digest_size, 1, wr) != 1) {
 					log_dbg(cd, "Cannot write digest to hash device.");
-					return -EIO;
+					r = -EIO;
+					goto out;
 				}
 			}
 			if (version == 0) {
@@ -208,10 +234,11 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 					if (verify) {
 						r = verify_zero(cd, wr, digest_size_full - digest_size);
 						if (r)
-							return r;
+							goto out;
 					} else if (fwrite(left_block, digest_size_full - digest_size, 1, wr) != 1) {
 						log_dbg(cd, "Cannot write spare area to hash device.");
-						return -EIO;
+						r = -EIO;
+						goto out;
 					}
 				}
 				left_bytes -= digest_size_full;
@@ -221,22 +248,26 @@ static int create_or_verify(struct crypt_device *cd, FILE *rd, FILE *wr,
 			if (verify) {
 				r = verify_zero(cd , wr, left_bytes);
 				if (r)
-					return r;
+					goto out;
 			} else if (fwrite(left_block, left_bytes, 1, wr) != 1) {
 				log_dbg(cd, "Cannot write remaining spare area to hash device.");
-				return -EIO;
+				r = -EIO;
+				goto out;
 			}
 		}
 	}
-
-	return 0;
+	r = 0;
+out:
+	free(left_block);
+	free(data_buffer);
+	return r;
 }
 
 static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 	struct crypt_params_verity *params,
 	char *root_hash, size_t digest_size)
 {
-	char calculated_digest[digest_size];
+	char calculated_digest[VERITY_MAX_DIGEST_SIZE];
 	FILE *data_file = NULL;
 	FILE *hash_file = NULL, *hash_file_2;
 	uint64_t hash_level_block[VERITY_MAX_LEVELS];
@@ -252,6 +283,9 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 		verify ? "verification" : "creation", params->hash_name,
 		device_path(crypt_data_device(cd)), params->data_size,
 		device_path(crypt_metadata_device(cd)), hash_position);
+
+	if (digest_size > sizeof(calculated_digest))
+		return -EINVAL;
 
 	if (!params->data_size) {
 		r = device_size(crypt_data_device(cd), &dev_size);
