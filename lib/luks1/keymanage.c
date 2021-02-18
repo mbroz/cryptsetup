@@ -1015,7 +1015,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 	r = LUKS_verify_volume_key(hdr, vk);
 
 	/* Allow only empty passphrase with null cipher */
-	if (!r && !strcmp(hdr->cipherName, "cipher_null") && passwordLen)
+	if (!r && crypt_is_cipher_null(hdr->cipherName) && passwordLen)
 		r = -EPERM;
 out:
 	crypt_safe_free(AfKey);
