@@ -638,7 +638,7 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 	} else
 		*features = '\0';
 
-	if (!strncmp(cipher_dm, "cipher_null-", 12))
+	if (crypt_is_cipher_null(cipher_dm))
 		null_cipher = 1;
 
 	if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
