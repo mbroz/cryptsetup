@@ -3149,10 +3149,6 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 	keyslot = r;
 
 	if (crypt_use_keyring_for_vk(cd)) {
-		if (!isLUKS2(cd->type)) {
-			r = -EINVAL;
-			goto out;
-		}
 		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
 					&cd->u.luks2.hdr, vk, keyslot);
 		if (r < 0)
@@ -3220,10 +3216,6 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 	keyslot = r;
 
 	if (crypt_use_keyring_for_vk(cd)) {
-		if (!isLUKS2(cd->type)) {
-			r = -EINVAL;
-			goto out;
-		}
 		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
 					&cd->u.luks2.hdr, vk, keyslot);
 		if (r < 0)
