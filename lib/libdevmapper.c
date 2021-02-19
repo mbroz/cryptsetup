@@ -2943,7 +2943,9 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
 		goto out;
 
-	if (vk->key_description)
+	if (!vk->keylength)
+		msg_size = 11; // key set -
+	else if (vk->key_description)
 		msg_size = strlen(vk->key_description) + int_log10(vk->keylength) + 18;
 	else
 		msg_size = vk->keylength * 2 + 10; // key set <key>
@@ -2955,7 +2957,9 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	}
 
 	strcpy(msg, "key set ");
-	if (vk->key_description)
+	if (!vk->keylength)
+		snprintf(msg + 8, msg_size - 8, "-");
+	else if (vk->key_description)
 		snprintf(msg + 8, msg_size - 8, ":%zu:logon:%s", vk->keylength, vk->key_description);
 	else
 		hex_key(&msg[8], vk->keylength, vk->key);

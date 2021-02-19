@@ -3104,9 +3104,15 @@ static int resume_by_volume_key(struct crypt_device *cd,
 		const char *name)
 {
 	int digest, r;
+	struct volume_key *zerokey = NULL;
 
-	/* LUKS2 path only */
-	if (crypt_use_keyring_for_vk(cd) && !crypt_is_cipher_null(crypt_get_cipher_spec(cd))) {
+	if (crypt_is_cipher_null(crypt_get_cipher_spec(cd))) {
+		zerokey = crypt_alloc_volume_key(0, NULL);
+		if (!zerokey)
+			return -ENOMEM;
+		vk = zerokey;
+	} else if (crypt_use_keyring_for_vk(cd)) {
+		/* LUKS2 path only */
 		digest = LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
 		if (digest < 0)
 			return -EINVAL;
@@ -3125,6 +3131,8 @@ static int resume_by_volume_key(struct crypt_device *cd,
 
 	if (r < 0)
 		crypt_drop_keyring_key(cd, vk);
+
+	crypt_free_volume_key(zerokey);
 
 	return r;
 }
