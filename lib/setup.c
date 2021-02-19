@@ -3137,7 +3137,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 
 	keyslot = r;
 
-	if (crypt_use_keyring_for_vk(cd)) {
+	if (crypt_use_keyring_for_vk(cd) && !crypt_cipher_is_null(crypt_get_cipher_spec(cd))) {
 		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
 					&cd->u.luks2.hdr, vk, keyslot);
 		if (r < 0)
@@ -3204,7 +3204,7 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 		goto out;
 	keyslot = r;
 
-	if (crypt_use_keyring_for_vk(cd)) {
+	if (crypt_use_keyring_for_vk(cd) && !crypt_cipher_is_null(crypt_get_cipher_spec(cd))) {
 		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
 					&cd->u.luks2.hdr, vk, keyslot);
 		if (r < 0)
@@ -3284,7 +3284,7 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
 		goto out;
 	r = 0;
 
-	if (crypt_use_keyring_for_vk(cd)) {
+	if (crypt_use_keyring_for_vk(cd) && !crypt_cipher_is_null(crypt_get_cipher_spec(cd))) {
 		r = LUKS2_key_description_by_segment(cd, &cd->u.luks2.hdr, vk, CRYPT_DEFAULT_SEGMENT);
 		if (!r)
 			r = crypt_volume_key_load_in_keyring(cd, vk);
