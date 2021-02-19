@@ -3109,6 +3109,37 @@ out:
 	return r;
 }
 
+/* key must be properly verified */
+static int resume_by_volume_key(struct crypt_device *cd,
+		struct volume_key *vk,
+		const char *name)
+{
+	int digest, r;
+
+	/* LUKS2 path only */
+	if (crypt_use_keyring_for_vk(cd) && !crypt_is_cipher_null(crypt_get_cipher_spec(cd))) {
+		digest = LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
+		if (digest < 0)
+			return -EINVAL;
+		r = LUKS2_volume_key_load_in_keyring_by_digest(cd,
+					&cd->u.luks2.hdr, vk, digest);
+		if (r < 0)
+			return r;
+	}
+
+	r = dm_resume_and_reinstate_key(cd, name, vk);
+
+	if (r == -ENOTSUP)
+		log_err(cd, _("Resume is not supported for device %s."), name);
+	else if (r)
+		log_err(cd, _("Error during resuming device %s."), name);
+
+	if (r < 0)
+		crypt_drop_keyring_key(cd, vk);
+
+	return r;
+}
+
 int crypt_resume_by_passphrase(struct crypt_device *cd,
 			       const char *name,
 			       int keyslot,
@@ -3144,28 +3175,13 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT, passphrase, passphrase_size, &vk);
 
 	if  (r < 0)
-		goto out;
+		return r;
 
 	keyslot = r;
 
-	if (crypt_use_keyring_for_vk(cd) && !crypt_cipher_is_null(crypt_get_cipher_spec(cd))) {
-		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
-					&cd->u.luks2.hdr, vk, keyslot);
-		if (r < 0)
-			goto out;
-	}
+	r = resume_by_volume_key(cd, vk, name);
 
-	r = dm_resume_and_reinstate_key(cd, name, vk);
-
-	if (r == -ENOTSUP)
-		log_err(cd, _("Resume is not supported for device %s."), name);
-	else if (r)
-		log_err(cd, _("Error during resuming device %s."), name);
-out:
-	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
 	crypt_free_volume_key(vk);
-
 	return r < 0 ? r : keyslot;
 }
 
@@ -3204,31 +3220,22 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 				      &passphrase_read, &passphrase_size_read,
 				      keyfile_offset, keyfile_size, 0);
 	if (r < 0)
-		goto out;
+		return r;
 
 	if (isLUKS1(cd->type))
 		r = LUKS_open_key_with_hdr(keyslot, passphrase_read, passphrase_size_read,
 					   &cd->u.luks1.hdr, &vk, cd);
 	else
 		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT, passphrase_read, passphrase_size_read, &vk);
-	if (r < 0)
-		goto out;
-	keyslot = r;
 
-	if (crypt_use_keyring_for_vk(cd) && !crypt_cipher_is_null(crypt_get_cipher_spec(cd))) {
-		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
-					&cd->u.luks2.hdr, vk, keyslot);
-		if (r < 0)
-			goto out;
-	}
-
-	r = dm_resume_and_reinstate_key(cd, name, vk);
-	if (r < 0)
-		log_err(cd, _("Error during resuming device %s."), name);
-out:
 	crypt_safe_free(passphrase_read);
 	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
+		return r;
+
+	keyslot = r;
+
+	r = resume_by_volume_key(cd, vk, name);
+
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
 }
@@ -3291,24 +3298,10 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
 		r = -EINVAL;
 	if (r == -EPERM || r == -ENOENT)
 		log_err(cd, _("Volume key does not match the volume."));
-	if  (r < 0)
-		goto out;
-	r = 0;
 
-	if (crypt_use_keyring_for_vk(cd) && !crypt_cipher_is_null(crypt_get_cipher_spec(cd))) {
-		r = LUKS2_key_description_by_segment(cd, &cd->u.luks2.hdr, vk, CRYPT_DEFAULT_SEGMENT);
-		if (!r)
-			r = crypt_volume_key_load_in_keyring(cd, vk);
-	}
-	if  (r < 0)
-		goto out;
+	if (r >= 0)
+		r = resume_by_volume_key(cd, vk, name);
 
-	r = dm_resume_and_reinstate_key(cd, name, vk);
-	if (r < 0)
-		log_err(cd, _("Error during resuming device %s."), name);
-out:
-	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
 	crypt_free_volume_key(vk);
 	return r;
 }

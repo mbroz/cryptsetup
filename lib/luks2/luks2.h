@@ -324,6 +324,8 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd,
 
 int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot);
 
+int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment);
+
 int LUKS2_digest_create(struct crypt_device *cd,
 	const char *type,
 	struct luks2_hdr *hdr,

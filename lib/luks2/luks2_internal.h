@@ -309,8 +309,6 @@ int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
 /*
  * Generic LUKS2 digest
  */
-int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment);
-
 int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int digest,
