@@ -261,7 +261,7 @@ int VERITY_activate(struct crypt_device *cd,
 {
 	uint32_t dmv_flags;
 	unsigned int fec_errors = 0;
-	int r;
+	int r, v;
 	struct crypt_dm_active_device dmd = {
 		.size = verity_hdr->data_size * verity_hdr->data_block_size / 512,
 		.flags = activation_flags,
@@ -280,14 +280,19 @@ int VERITY_activate(struct crypt_device *cd,
 		log_dbg(cd, "Verification of data in userspace required.");
 		r = VERITY_verify(cd, verity_hdr, root_hash, root_hash_size);
 
-		if (r == -EPERM && fec_device) {
+		if ((r == -EPERM || r == -EFAULT) && fec_device) {
+			v = r;
 			log_dbg(cd, "Verification failed, trying to repair with FEC device.");
 			r = VERITY_FEC_process(cd, verity_hdr, fec_device, 1, &fec_errors);
 			if (r < 0)
 				log_err(cd, _("Errors cannot be repaired with FEC device."));
-			else if (fec_errors)
+			else if (fec_errors) {
 				log_err(cd, _("Found %u repairable errors with FEC device."),
 					fec_errors);
+				/* If root hash failed, we cannot be sure it was properly repaired */
+			}
+			if (v == -EFAULT)
+				r = -EPERM;
 		}
 
 		if (r < 0)
