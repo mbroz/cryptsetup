@@ -162,6 +162,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	struct device *device = crypt_metadata_device(cd);
 	struct verity_sb sb = {};
 	ssize_t hdr_size = sizeof(struct verity_sb);
+	size_t block_size;
 	char *algorithm;
 	uuid_t uuid;
 	int r, devfd;
@@ -179,6 +180,13 @@ int VERITY_write_sb(struct crypt_device *cd,
 		log_err(cd, _("Verity device %s does not use on-disk header."),
 			device_path(device));
 		return -EINVAL;
+	}
+
+	/* Avoid possible increasing of image size - FEC could fail later because of it */
+	block_size = device_block_size(cd, device);
+	if (block_size > params->hash_block_size) {
+		device_disable_direct_io(device);
+		block_size = params->hash_block_size;
 	}
 
 	devfd = device_open(cd, device, O_RDWR);
@@ -204,7 +212,7 @@ int VERITY_write_sb(struct crypt_device *cd,
 	memcpy(sb.salt, params->salt, params->salt_size);
 	memcpy(sb.uuid, uuid, sizeof(sb.uuid));
 
-	r = write_lseek_blockwise(devfd, device_block_size(cd, device), device_alignment(device),
+	r = write_lseek_blockwise(devfd, block_size, device_alignment(device),
 				  (char*)&sb, hdr_size, sb_offset) < hdr_size ? -EIO : 0;
 	if (r)
 		log_err(cd, _("Error during update of verity header on device %s."),
