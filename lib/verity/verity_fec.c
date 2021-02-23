@@ -207,6 +207,7 @@ int VERITY_FEC_process(struct crypt_device *cd,
 		      unsigned int *errors)
 {
 	int r = -EIO, fd = -1;
+	size_t ninputs = FEC_INPUT_DEVICES;
 	struct fec_input_device inputs[FEC_INPUT_DEVICES] = {
 		{
 			.device = crypt_data_device(cd),
@@ -233,10 +234,12 @@ int VERITY_FEC_process(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (!inputs[0].count || !inputs[1].count) {
+	if (!inputs[0].count) {
 		log_err(cd, _("Invalid FEC segment length."));
 		return -EINVAL;
 	}
+	if (!inputs[1].count)
+		ninputs--;
 
 	if (check_fec)
 		fd = open(device_path(fec_device), O_RDONLY);
@@ -265,7 +268,7 @@ int VERITY_FEC_process(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = FEC_process_inputs(cd, params, inputs, FEC_INPUT_DEVICES, fd, check_fec, errors);
+	r = FEC_process_inputs(cd, params, inputs, ninputs, fd, check_fec, errors);
 out:
 	if (inputs[0].fd != -1)
 		close(inputs[0].fd);
