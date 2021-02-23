@@ -380,7 +380,7 @@ out:
 			log_err(cd, _("Verification of data area failed."));
 		else {
 			log_dbg(cd, "Verification of data area succeeded.");
-			r = memcmp(root_hash, calculated_digest, digest_size) ? -EINVAL : 0;
+			r = memcmp(root_hash, calculated_digest, digest_size) ? -EFAULT : 0;
 			if (r)
 				log_err(cd, _("Verification of root hash failed."));
 			else
