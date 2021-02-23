@@ -247,7 +247,8 @@ int LUKS2_generate_hdr(
 		/* Decrease keyslots_size due to metadata device being too small */
 		if (!device_size(crypt_metadata_device(cd), &mdev_size) &&
 		    ((keyslots_size + get_min_offset(hdr)) > mdev_size) &&
-		    device_fallocate(crypt_metadata_device(cd), keyslots_size + get_min_offset(hdr)))
+		    device_fallocate(crypt_metadata_device(cd), keyslots_size + get_min_offset(hdr)) &&
+		    (get_min_offset(hdr) <= mdev_size))
 			keyslots_size = mdev_size - get_min_offset(hdr);
 	}
 
