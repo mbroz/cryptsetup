@@ -304,7 +304,8 @@ uint64_t VERITY_FEC_blocks(struct crypt_device *cd,
 	}
 
 	blocks /= params->data_block_size;
-	blocks -= VERITY_hash_offset_block(params);
+	if (blocks)
+		blocks -= VERITY_hash_offset_block(params);
 
 	/* Protected data */
 	blocks += params->data_size;
