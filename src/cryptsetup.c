@@ -2247,12 +2247,24 @@ static int action_luksResume(void)
 	char *password = NULL;
 	size_t passwordLen;
 	int r, tries;
+	const char *req_type = luksType(device_type);
+
+	if (req_type && !isLUKS(req_type))
+		return -EINVAL;
 
 	if ((r = crypt_init_by_name_and_header(&cd, action_argv[0], uuid_or_device(ARG_STR(OPT_HEADER_ID)))))
-		goto out;
+		return r;
 
-	if ((r = crypt_load(cd, luksType(device_type), NULL)))
+	r = -EINVAL;
+	if (!isLUKS(crypt_get_type(cd))) {
+		log_err(_("%s is not active LUKS device name or header is missing."), action_argv[0]);
 		goto out;
+	}
+
+	if (req_type && strcmp(req_type, crypt_get_type(cd))) {
+		log_err(_("%s is not active %s device name."), action_argv[0], req_type);
+		goto out;
+	}
 
 	tries = _set_tries_tty();
 	do {
