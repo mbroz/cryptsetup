@@ -1210,7 +1210,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	}
 
 	/* do not try to lookup LUKS2 header in detached header mode */
-	if (!cd->metadata_device && !found) {
+	if (dmd.uuid && !cd->metadata_device && !found) {
 		while (*dep && !found) {
 			r = dm_query_device(cd, *dep, DM_ACTIVE_DEVICE, &dmdep);
 			if (r < 0)
