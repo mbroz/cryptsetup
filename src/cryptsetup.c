@@ -2807,7 +2807,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		type = crypt_get_default_type();
 
 	if (!isLUKS2(type)) {
-		log_err(_("Invalid LUKS device type."));
+		log_err(_("Encryption is supported only for LUKS2 format."));
 		return -EINVAL;
 	}
 
@@ -2827,11 +2827,6 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		if (data_shift >= 0)
 			return -EINVAL;
 		log_std(_("Adjusting --reduce-device-size value to twice the --offset %" PRIu64 " (sectors).\n"), ARG_UINT64(OPT_OFFSET_ID) * 2);
-	}
-
-	if (strncmp(type, CRYPT_LUKS2, strlen(CRYPT_LUKS2))) {
-		log_err(_("Encryption is supported only for LUKS2 format."));
-		return -EINVAL;
 	}
 
 	if (ARG_SET(OPT_UUID_ID) && uuid_parse(ARG_STR(OPT_UUID_ID), uuid) == -1) {
