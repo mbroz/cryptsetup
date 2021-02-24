@@ -1738,7 +1738,7 @@ static void TcryptTest(void)
 	const char *tcrypt_dev = "tcrypt-images/tck_5-sha512-xts-aes";
 	const char *tcrypt_dev2 = "tcrypt-images/tc_5-sha512-xts-serpent-twofish-aes";
 	size_t key_size = 64;
-	char key[key_size], key_def[key_size];
+	char key[64], key_def[64];
 	const char *key_hex =
 		"98dee64abe44bbf41d171c1f7b3e8eacda6d6b01f459097459a167f8c2872a96"
 		"3979531d1cdc18af62757cf22286f16f8583d848524f128d7594ac2082668c73";
