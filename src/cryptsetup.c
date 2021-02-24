@@ -2234,8 +2234,11 @@ static int action_luksSuspend(void)
 	int r;
 
 	r = crypt_init_by_name_and_header(&cd, action_argv[0], uuid_or_device(ARG_STR(OPT_HEADER_ID)));
-	if (!r)
+	if (!r) {
 		r = crypt_suspend(cd, action_argv[0]);
+		if (r == -ENODEV)
+			log_err(_("%s is not active %s device name."), action_argv[0], "LUKS");
+	}
 
 	crypt_free(cd);
 	return r;
