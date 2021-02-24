@@ -79,6 +79,21 @@ static const char *luksType(const char *type)
 	return CRYPT_LUKS; /* NULL */
 }
 
+static bool isLUKS1(const char *type)
+{
+	return type && !strcmp(type, CRYPT_LUKS1);
+}
+
+static bool isLUKS2(const char *type)
+{
+	return type && !strcmp(type, CRYPT_LUKS2);
+}
+
+static bool isLUKS(const char *type)
+{
+	return isLUKS2(type) || isLUKS1(type);
+}
+
 static int _verify_passphrase(int def)
 {
 	/* Batch mode switch off verify - if not overridden by -y */
@@ -152,7 +167,7 @@ static int _set_keyslot_encryption_params(struct crypt_device *cd)
 	if (!ARG_SET(OPT_KEYSLOT_KEY_SIZE_ID) && !ARG_SET(OPT_KEYSLOT_CIPHER_ID))
 		return 0;
 
-	if (!type || strcmp(type, CRYPT_LUKS2)) {
+	if (!isLUKS2(type)) {
 		log_err(_("Keyslot encryption parameters can be set only for LUKS2 device."));
 		return -EINVAL;
 	}
@@ -1190,7 +1205,7 @@ static int action_luksRepair(void)
 		r = crypt_repair(cd, luksType(device_type), NULL);
 out:
 	/* Header is ok, check if possible interrupted reencryption need repairs. */
-	if (!r && crypt_get_type(cd) && !strcmp(crypt_get_type(cd), CRYPT_LUKS2))
+	if (!r && isLUKS2(crypt_get_type(cd)))
 		r = _do_luks2_reencrypt_recovery(cd);
 
 	crypt_free(cd);
@@ -1283,9 +1298,9 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 	if (!type)
 		type = crypt_get_default_type();
 
-	if (!strcmp(type, CRYPT_LUKS2)) {
+	if (isLUKS2(type)) {
 		params = &params2;
-	} else if (!strcmp(type, CRYPT_LUKS1)) {
+	} else if (isLUKS1(type)) {
 		params = &params1;
 
 		if (ARG_UINT32(OPT_SECTOR_SIZE_ID) > SECTOR_SIZE) {
@@ -2791,7 +2806,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 	if (!type)
 		type = crypt_get_default_type();
 
-	if (strcmp(type, CRYPT_LUKS2)) {
+	if (!isLUKS2(type)) {
 		log_err(_("Invalid LUKS device type."));
 		return -EINVAL;
 	}
@@ -3332,7 +3347,7 @@ static int action_reencrypt(void)
 	if (!ARG_SET(OPT_ENCRYPT_ID) || ARG_SET(OPT_RESUME_ONLY_ID)) {
 		if (ARG_SET(OPT_ACTIVE_NAME_ID)) {
 			r = crypt_init_by_name_and_header(&cd, ARG_STR(OPT_ACTIVE_NAME_ID), ARG_STR(OPT_HEADER_ID));
-			if (r || !crypt_get_type(cd) || strcmp(crypt_get_type(cd), CRYPT_LUKS2)) {
+			if (r || !isLUKS2(crypt_get_type(cd))) {
 				log_err(_("Device %s is not a valid LUKS device."), ARG_STR(OPT_ACTIVE_NAME_ID));
 				r = -EINVAL;
 				goto out;
