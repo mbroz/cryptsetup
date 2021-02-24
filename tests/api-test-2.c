@@ -212,9 +212,9 @@ static int get_luks2_offsets(int metadata_device,
 
 	if (r_payload_offset) {
 		if (metadata_device)
-			*r_payload_offset = DIV_ROUND_UP_MODULO(default_header_size * 512, (alignpayload_sec ?: 1) * sector_size);
-		else
 			*r_payload_offset = alignpayload_sec * sector_size;
+		else
+			*r_payload_offset = DIV_ROUND_UP_MODULO(default_header_size * 512, (alignpayload_sec ?: 1) * sector_size);
 
 		*r_payload_offset /= sector_size;
 	}
@@ -541,6 +541,13 @@ static void SuspendDevice(void)
 	char key[128];
 	size_t key_size;
 	int suspend_status;
+	uint64_t r_payload_offset;
+	const struct crypt_pbkdf_type fast_pbkdf = {
+		.type = "pbkdf2",
+		.hash = "sha256",
+		.iterations = 1000,
+		.flags = CRYPT_PBKDF_NO_BENCHMARK
+	};
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
@@ -602,11 +609,31 @@ static void SuspendDevice(void)
 	FAIL_(crypt_resume_by_volume_key(cd, CDEVICE_1, key, key_size), "wrong key");
 	OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, KEY1, strlen(KEY1)));
 	OK_(crypt_resume_by_volume_key(cd, CDEVICE_1, key, key_size));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
 
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
+
+	/* Resume device with cipher_null */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "cipher_null", "ecb", NULL, key, key_size, NULL));
+	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	OK_(crypt_resume_by_volume_key(cd, CDEVICE_1, key, key_size));
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(0, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	OK_(crypt_resume_by_passphrase(cd, CDEVICE_1, 0, PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(0, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
 	_remove_keyfiles();
+	_cleanup_dmdevices();
 }
 
 static void AddDeviceLuks2(void)
@@ -645,7 +672,7 @@ static void AddDeviceLuks2(void)
 	crypt_decode_key(key3, mk_hex2, key_size);
 
 	// init test devices
-	OK_(get_luks2_offsets(1, 0, 0, &r_header_size, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_header_size - 1));
 
@@ -700,7 +727,7 @@ static void AddDeviceLuks2(void)
 	 * test limit values for backing device size
 	 */
 	params.data_alignment = OFFSET_4M;
-	OK_(get_luks2_offsets(1, params.data_alignment, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_0S, r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
 	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_payload_offset - 1));
@@ -981,7 +1008,7 @@ static void Luks2MetadataSize(void)
 	crypt_decode_key(key, mk_hex, key_size);
 
 	// init test devices
-	OK_(get_luks2_offsets(1, 0, 0, &r_header_size, NULL));
+	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, NULL));
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_header_wrong_size)); /* 7 MiBs only */
 	//default metadata sizes
@@ -1172,7 +1199,7 @@ static void Luks2HeaderRestore(void)
 
 	crypt_decode_key(key, mk_hex, key_size);
 
-	OK_(get_luks2_offsets(1, params.data_alignment, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 5000));
 
 	// do not restore header over plain device
@@ -1277,7 +1304,7 @@ static void Luks2HeaderLoad(void)
 	// hardcoded values for existing image IMAGE1
 	img_size = 8192;
 	// prepare test env
-	OK_(get_luks2_offsets(1, 0, 0, &r_header_size, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, &r_payload_offset));
 	// external header device
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	// prepared header on a device too small to contain header and payload
@@ -1408,7 +1435,7 @@ static void Luks2HeaderBackup(void)
 
 	crypt_decode_key(key, mk_hex, key_size);
 
-	OK_(get_luks2_offsets(0, params.data_alignment, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(1, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
 
 	// create LUKS device and backup the header
@@ -1504,8 +1531,8 @@ static void ResizeDeviceLuks2(void)
 	crypt_decode_key(key, mk_hex, key_size);
 
 	// prepare env
-	OK_(get_luks2_offsets(1, params.data_alignment, 0, NULL, &r_payload_offset));
-	OK_(get_luks2_offsets(1, 0, 0, &r_header_size, NULL));
+	OK_(get_luks2_offsets(0, params.data_alignment, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, NULL));
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
 	OK_(create_dmdevice_over_loop(L_DEVICE_0S, 1000));
@@ -1660,7 +1687,7 @@ static void TokenActivationByKeyring(void)
 	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
 	NOTFAIL_(kid, "Test or kernel keyring are broken.");
 
-	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
 
 	// prepare the device
@@ -1852,7 +1879,7 @@ static void Tokens(void)
 
 	FAIL_(crypt_token_register(&th_reserved), "luks2- is reserved prefix");
 
-	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
 
 	// basic token API tests
@@ -2131,7 +2158,7 @@ static void LuksConvert(void)
 	CRYPT_FREE(cd);
 
 	// should be enough for both luks1 and luks2 devices with all vk lengths
-	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
 
 	// do not allow conversion for legacy luks1 device (non-aligned keyslot offset)
@@ -2543,7 +2570,7 @@ static void Pbkdf(void)
 	if (_fips_mode)
 		return;
 
-	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
 
 	NULL_(crypt_get_pbkdf_type_params(NULL));
@@ -2788,7 +2815,7 @@ static void Luks2KeyslotAdd(void)
 		pbkdf.iterations = 1000;
 	}
 
-	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
 
 	/* test crypt_keyslot_add_by_key */
@@ -2916,7 +2943,7 @@ static void Luks2KeyslotParams(void)
 	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE, strlen(PASSPHRASE)));
 	OK_(prepare_keyfile(KEYFILE2, PASSPHRASE1, strlen(PASSPHRASE1)));
 
-	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
 
 	EQ_(key_size, 2 * keyslot_key_size);
@@ -3056,7 +3083,7 @@ static void Luks2ActivateByKeyring(void)
 	kid1 = add_key("user", KEY_DESC_TEST1, PASSPHRASE1, strlen(PASSPHRASE1), KEY_SPEC_THREAD_KEYRING);
 	NOTFAIL_(kid1, "Test or kernel keyring are broken.");
 
-	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
 
 	// prepare the device
@@ -3341,7 +3368,7 @@ static void Luks2Requirements(void)
 		OK_(crypt_activate_by_token(cd, NULL, 1, NULL, CRYPT_ACTIVATE_KEYRING_KEY));
 	}
 #endif
-	OK_(get_luks2_offsets(1, 8192, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 8192, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 2));
 	//OK_(_system("dd if=" NO_REQS_LUKS2_HEADER " of=" NO_REQS_LUKS2_HEADER " bs=4096 2>/dev/null", 1));
 	OK_(_system("dd if=" NO_REQS_LUKS2_HEADER " of=" DMDIR L_DEVICE_OK " bs=1M count=4 oflag=direct 2>/dev/null", 1));
@@ -3522,7 +3549,7 @@ static void Luks2Refresh(void)
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key1, mk_hex2, key_size);
 
-	OK_(get_luks2_offsets(1, 0, 0, NULL, &r_payload_offset));
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
 	OK_(create_dmdevice_over_loop(L_DEVICE_WRONG, r_payload_offset + 5000));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
@@ -3740,7 +3767,7 @@ static void Luks2Reencryption(void)
 		pbkdf.iterations = 1000;
 	}
 
-	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, NULL));
+	OK_(get_luks2_offsets(1, 0, 0, &r_header_size, NULL));
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_header_size + 16));
 

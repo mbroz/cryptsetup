@@ -659,6 +659,12 @@ echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksResume should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat -c null $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
+$CRYPTSETUP -q luksClose $DEV_NAME || fail
 
 prepare "[27] luksOpen with specified key slot number" wipe
 # first, let's try passphrase option
