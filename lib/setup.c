@@ -2035,7 +2035,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	} else
 		cd->u.verity.hdr.data_size = params->data_size;
 
-	if (device_is_identical(crypt_metadata_device(cd), crypt_data_device(cd)) &&
+	if (device_is_identical(crypt_metadata_device(cd), crypt_data_device(cd)) > 0 &&
 	   (cd->u.verity.hdr.data_size * params->data_block_size) > params->hash_area_offset) {
 		log_err(cd, _("Data area overlaps with hash area."));
 		return -EINVAL;
@@ -2060,14 +2060,14 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		}
 
 		hash_blocks_size = VERITY_hash_blocks(cd, params) * params->hash_block_size;
-		if (device_is_identical(crypt_metadata_device(cd), fec_device) &&
+		if (device_is_identical(crypt_metadata_device(cd), fec_device) > 0 &&
 		    (params->hash_area_offset + hash_blocks_size) > params->fec_area_offset) {
 			log_err(cd, _("Hash area overlaps with FEC area."));
 			r = -EINVAL;
 			goto err;
 		}
 
-		if (device_is_identical(crypt_data_device(cd), fec_device) &&
+		if (device_is_identical(crypt_data_device(cd), fec_device) > 0 &&
 		    (cd->u.verity.hdr.data_size * params->data_block_size) > params->fec_area_offset) {
 			log_err(cd, _("Data area overlaps with FEC area."));
 			r = -EINVAL;
@@ -2413,7 +2413,7 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (!device_is_identical(src->data_device, tgt->data_device)) {
+	if (device_is_identical(src->data_device, tgt->data_device) <= 0) {
 		log_dbg(cd, "Data devices do not match.");
 		return -EINVAL;
 	}
@@ -2467,7 +2467,7 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (!device_is_identical(src->data_device, tgt->data_device)) {
+	if (device_is_identical(src->data_device, tgt->data_device) <= 0) {
 		log_dbg(cd, "Data devices do not match.");
 		return -EINVAL;
 	}
@@ -3694,7 +3694,7 @@ static int _check_header_data_overlap(struct crypt_device *cd, const char *name)
 	if (!name || !isLUKS(cd->type))
 		return 0;
 
-	if (!device_is_identical(crypt_data_device(cd), crypt_metadata_device(cd)))
+	if (device_is_identical(crypt_data_device(cd), crypt_metadata_device(cd)) <= 0)
 		return 0;
 
 	/* FIXME: check real header size */

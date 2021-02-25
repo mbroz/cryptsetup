@@ -860,14 +860,21 @@ int device_direct_io(const struct device *device)
 	return device->o_direct;
 }
 
-static dev_t device_devno(const struct device *device)
+static int device_compare_path(const char *path1, const char *path2)
 {
-	struct stat st;
+	struct stat st_path1, st_path2;
 
-	if (stat(device->path, &st) || !S_ISBLK(st.st_mode))
-		return 0;
+	if (stat(path1, &st_path1 ) < 0 || stat(path2, &st_path2 ) < 0)
+		return -EINVAL;
 
-	return st.st_rdev;
+	if (S_ISBLK(st_path1.st_mode) && S_ISBLK(st_path2.st_mode))
+		return (st_path1.st_rdev == st_path2.st_rdev) ? 1 : 0;
+
+	if (S_ISREG(st_path1.st_mode) && S_ISREG(st_path2.st_mode))
+		return (st_path1.st_ino == st_path2.st_ino &&
+			st_path1.st_dev == st_path2.st_dev) ? 1 : 0;
+
+	return 0;
 }
 
 int device_is_identical(struct device *device1, struct device *device2)
@@ -878,15 +885,10 @@ int device_is_identical(struct device *device1, struct device *device2)
 	if (device1 == device2)
 		return 1;
 
-	if (device1->init_done && device2->init_done)
-		return (device_devno(device1) == device_devno(device2));
-	else if (device1->init_done || device2->init_done)
-		return 0;
-
 	if (!strcmp(device_path(device1), device_path(device2)))
 		return 1;
 
-	return 0;
+	return device_compare_path(device_path(device1), device_path(device2));
 }
 
 int device_is_rotational(struct device *device)
