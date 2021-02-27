@@ -75,7 +75,6 @@ struct tcrypt_phdr {
 
 struct crypt_device;
 struct crypt_params_tcrypt;
-struct crypt_dm_active_device;
 struct dm_target;
 struct volume_key;
 struct device;

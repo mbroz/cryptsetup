@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include <strings.h>
 #include "bitops.h"
 #include "crypto_backend.h"
 

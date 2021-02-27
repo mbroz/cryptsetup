@@ -26,6 +26,9 @@
 
 #include <stddef.h>
 
+struct crypt_device;
+struct volume_key;
+
 /*
  * AF_split operates on src and produces information split data in
  * dst. src is assumed to be of the length blocksize. The data stripe

@@ -24,10 +24,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
-#include <dirent.h>
 #include <errno.h>
 #include <libdevmapper.h>
-#include <linux/fs.h>
 #include <uuid/uuid.h>
 #include <sys/stat.h>
 #ifdef HAVE_SYS_SYSMACROS_H
