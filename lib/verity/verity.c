@@ -26,7 +26,6 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <netinet/in.h>
 #include <uuid/uuid.h>
 
 #include "libcryptsetup.h"
