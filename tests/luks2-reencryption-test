@@ -1495,7 +1495,7 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 4096->4096"
 
 	get_error_offsets 32 $OFFSET 4096
-	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 4096 -c aes-cbc-essiv:sha256 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 4096 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
 	check_hash $PWD1 $HASH1
 
@@ -1537,7 +1537,7 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 4096->4096"
 
 	get_error_offsets 32 $OFFSET 4096
-	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 4096 -c aes-cbc-essiv:sha256 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 4096 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
 	check_hash $PWD1 $HASH1
 
