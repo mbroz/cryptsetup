@@ -29,6 +29,7 @@
 
 struct crypt_device;
 struct device;
+struct volume_key;
 
 #define BITLK_NONCE_SIZE 12
 #define BITLK_SALT_SIZE 16

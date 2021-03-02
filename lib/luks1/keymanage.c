@@ -22,7 +22,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <netinet/in.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -473,12 +472,13 @@ static int _check_and_convert_hdr(const char *device,
 	unsigned int i;
 	char luksMagic[] = LUKS_MAGIC;
 
-	if(memcmp(hdr->magic, luksMagic, LUKS_MAGIC_L)) { /* Check magic */
+	hdr->version = be16_to_cpu(hdr->version);
+	if (memcmp(hdr->magic, luksMagic, LUKS_MAGIC_L)) { /* Check magic */
 		log_dbg(ctx, "LUKS header not detected.");
 		if (require_luks_device)
 			log_err(ctx, _("Device %s is not a valid LUKS device."), device);
 		return -EINVAL;
-	} else if((hdr->version = ntohs(hdr->version)) != 1) {	/* Convert every uint16/32_t item from network byte order */
+	} else if (hdr->version != 1) {
 		log_err(ctx, _("Unsupported LUKS version %d."), hdr->version);
 		return -EINVAL;
 	}
@@ -490,15 +490,15 @@ static int _check_and_convert_hdr(const char *device,
 	}
 
 	/* Header detected */
-	hdr->payloadOffset      = ntohl(hdr->payloadOffset);
-	hdr->keyBytes           = ntohl(hdr->keyBytes);
-	hdr->mkDigestIterations = ntohl(hdr->mkDigestIterations);
+	hdr->payloadOffset      = be32_to_cpu(hdr->payloadOffset);
+	hdr->keyBytes           = be32_to_cpu(hdr->keyBytes);
+	hdr->mkDigestIterations = be32_to_cpu(hdr->mkDigestIterations);
 
-	for(i = 0; i < LUKS_NUMKEYS; ++i) {
-		hdr->keyblock[i].active             = ntohl(hdr->keyblock[i].active);
-		hdr->keyblock[i].passwordIterations = ntohl(hdr->keyblock[i].passwordIterations);
-		hdr->keyblock[i].keyMaterialOffset  = ntohl(hdr->keyblock[i].keyMaterialOffset);
-		hdr->keyblock[i].stripes            = ntohl(hdr->keyblock[i].stripes);
+	for (i = 0; i < LUKS_NUMKEYS; ++i) {
+		hdr->keyblock[i].active             = be32_to_cpu(hdr->keyblock[i].active);
+		hdr->keyblock[i].passwordIterations = be32_to_cpu(hdr->keyblock[i].passwordIterations);
+		hdr->keyblock[i].keyMaterialOffset  = be32_to_cpu(hdr->keyblock[i].keyMaterialOffset);
+		hdr->keyblock[i].stripes            = be32_to_cpu(hdr->keyblock[i].stripes);
 	}
 
 	if (LUKS_check_keyslots(ctx, hdr))
@@ -650,15 +650,15 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 	memset(&convHdr._padding, 0, sizeof(convHdr._padding));
 
 	/* Convert every uint16/32_t item to network byte order */
-	convHdr.version            = htons(hdr->version);
-	convHdr.payloadOffset      = htonl(hdr->payloadOffset);
-	convHdr.keyBytes           = htonl(hdr->keyBytes);
-	convHdr.mkDigestIterations = htonl(hdr->mkDigestIterations);
+	convHdr.version            = cpu_to_be16(hdr->version);
+	convHdr.payloadOffset      = cpu_to_be32(hdr->payloadOffset);
+	convHdr.keyBytes           = cpu_to_be32(hdr->keyBytes);
+	convHdr.mkDigestIterations = cpu_to_be32(hdr->mkDigestIterations);
 	for(i = 0; i < LUKS_NUMKEYS; ++i) {
-		convHdr.keyblock[i].active             = htonl(hdr->keyblock[i].active);
-		convHdr.keyblock[i].passwordIterations = htonl(hdr->keyblock[i].passwordIterations);
-		convHdr.keyblock[i].keyMaterialOffset  = htonl(hdr->keyblock[i].keyMaterialOffset);
-		convHdr.keyblock[i].stripes            = htonl(hdr->keyblock[i].stripes);
+		convHdr.keyblock[i].active             = cpu_to_be32(hdr->keyblock[i].active);
+		convHdr.keyblock[i].passwordIterations = cpu_to_be32(hdr->keyblock[i].passwordIterations);
+		convHdr.keyblock[i].keyMaterialOffset  = cpu_to_be32(hdr->keyblock[i].keyMaterialOffset);
+		convHdr.keyblock[i].stripes            = cpu_to_be32(hdr->keyblock[i].stripes);
 	}
 
 	r = write_lseek_blockwise(devfd, device_block_size(ctx, device), device_alignment(device),

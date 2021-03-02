@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <sys/types.h>
 
 #include "utils_io.h"
 

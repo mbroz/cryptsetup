@@ -41,6 +41,7 @@
 #include <sys/time.h>
 
 #include "lib/nls.h"
+#include "lib/bitops.h"
 #include "lib/utils_crypt.h"
 #include "lib/utils_loop.h"
 #include "lib/utils_fips.h"

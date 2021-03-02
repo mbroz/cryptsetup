@@ -300,6 +300,9 @@ static int device_open_internal(struct crypt_device *cd, struct device *device, 
 
 int device_open(struct crypt_device *cd, struct device *device, int flags)
 {
+	if (!device)
+		return -EINVAL;
+
 	assert(!device_locked(device->lh));
 	return device_open_internal(cd, device, flags);
 }
@@ -354,6 +357,9 @@ void device_release_excl(struct crypt_device *cd, struct device *device)
 
 int device_open_locked(struct crypt_device *cd, struct device *device, int flags)
 {
+	if (!device)
+		return -EINVAL;
+
 	assert(!crypt_metadata_locking_enabled() || device_locked(device->lh));
 	return device_open_internal(cd, device, flags);
 }
@@ -589,8 +595,11 @@ int device_size(struct device *device, uint64_t *size)
 	struct stat st;
 	int devfd, r = -EINVAL;
 
+	if (!device)
+		return -EINVAL;
+
 	devfd = open(device->path, O_RDONLY);
-	if(devfd == -1)
+	if (devfd == -1)
 		return -EINVAL;
 
 	if (fstat(devfd, &st) < 0)
@@ -611,6 +620,9 @@ int device_fallocate(struct device *device, uint64_t size)
 {
 	struct stat st;
 	int devfd, r = -EINVAL;
+
+	if (!device)
+		return -EINVAL;
 
 	devfd = open(device_path(device), O_RDWR);
 	if (devfd == -1)
@@ -852,12 +864,13 @@ size_t size_round_up(size_t size, size_t block)
 
 void device_disable_direct_io(struct device *device)
 {
-	device->o_direct = 0;
+	if (device)
+		device->o_direct = 0;
 }
 
 int device_direct_io(const struct device *device)
 {
-	return device->o_direct;
+	return device ? device->o_direct : 0;
 }
 
 static int device_compare_path(const char *path1, const char *path2)
@@ -895,6 +908,9 @@ int device_is_rotational(struct device *device)
 {
 	struct stat st;
 
+	if (!device)
+		return -EINVAL;
+
 	if (stat(device_path(device), &st) < 0)
 		return -EINVAL;
 
@@ -907,6 +923,9 @@ int device_is_rotational(struct device *device)
 size_t device_alignment(struct device *device)
 {
 	int devfd;
+
+	if (!device)
+		return -EINVAL;
 
 	if (!device->alignment) {
 		devfd = open(device_path(device), O_RDONLY);
@@ -921,17 +940,18 @@ size_t device_alignment(struct device *device)
 
 void device_set_lock_handle(struct device *device, struct crypt_lock_handle *h)
 {
-	device->lh = h;
+	if (device)
+		device->lh = h;
 }
 
 struct crypt_lock_handle *device_get_lock_handle(struct device *device)
 {
-	return device->lh;
+	return device ? device->lh : NULL;
 }
 
 int device_read_lock(struct crypt_device *cd, struct device *device)
 {
-	if (!crypt_metadata_locking_enabled())
+	if (!device || !crypt_metadata_locking_enabled())
 		return 0;
 
 	if (device_read_lock_internal(cd, device))
@@ -942,7 +962,7 @@ int device_read_lock(struct crypt_device *cd, struct device *device)
 
 int device_write_lock(struct crypt_device *cd, struct device *device)
 {
-	if (!crypt_metadata_locking_enabled())
+	if (!device || !crypt_metadata_locking_enabled())
 		return 0;
 
 	assert(!device_locked(device->lh) || !device_locked_readonly(device->lh));
@@ -952,7 +972,7 @@ int device_write_lock(struct crypt_device *cd, struct device *device)
 
 void device_read_unlock(struct crypt_device *cd, struct device *device)
 {
-	if (!crypt_metadata_locking_enabled())
+	if (!device || !crypt_metadata_locking_enabled())
 		return;
 
 	assert(device_locked(device->lh));
@@ -962,7 +982,7 @@ void device_read_unlock(struct crypt_device *cd, struct device *device)
 
 void device_write_unlock(struct crypt_device *cd, struct device *device)
 {
-	if (!crypt_metadata_locking_enabled())
+	if (!device || !crypt_metadata_locking_enabled())
 		return;
 
 	assert(device_locked(device->lh) && !device_locked_readonly(device->lh));

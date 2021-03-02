@@ -17,7 +17,7 @@ cleanup() {
 	    umount -f $MNT_DIR 2>/dev/null
 	    rmdir $MNT_DIR 2>/dev/null
 	fi
-	sleep 2
+	rmmod scsi_debug 2>/dev/null
 }
 
 fail()
@@ -34,6 +34,16 @@ skip()
 	echo "TEST SKIPPED: $1"
 	cleanup
 	exit 77
+}
+
+add_device() {
+	modprobe scsi_debug $@ delay=0
+	[ $? -ne 0 ] && skip "This kernel seems to not support proper scsi_debug module."
+
+	sleep 1
+	SCSI_DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+
+	[ -b "/dev/$SCSI_DEV" ] || fail "Cannot find $SCSI_DEV."
 }
 
 function dm_crypt_features()
@@ -297,4 +307,22 @@ else
 	echo
 fi
 
+echo "[4] Disappeared device test:"
+KEY="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
+for F in LUKS1 LUKS2 BITLK TCRYPT; do
+	echo -n "$F"
+	add_device dev_size_mb=1 sector_size=512 num_tgts=1 lbpu=1
+	# Fake CRYPT UUID to force code to parse type-specific path
+	dmsetup create $DEV_NAME --uuid CRYPT-$F-$DEV_NAME --table "0 1024 crypt aes-xts-plain64 $KEY 16 /dev/$SCSI_DEV 16"
+	$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
+	echo 1 > /sys/block/$SCSI_DEV/device/delete
+	udevadm settle >/dev/null 2>&1
+	$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
+	dmsetup remove $DEV_NAME --retry || fail
+	rmmod scsi_debug
+	echo -n "[OK] "
+done
+echo
+
 cleanup
+exit 0

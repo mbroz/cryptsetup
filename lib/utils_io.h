@@ -24,6 +24,7 @@
 #ifndef _CRYPTSETUP_UTILS_IO_H
 #define _CRYPTSETUP_UTILS_IO_H
 
+#include <stddef.h>
 #include <sys/types.h>
 
 ssize_t read_buffer(int fd, void *buf, size_t length);
