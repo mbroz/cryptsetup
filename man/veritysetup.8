@@ -158,7 +158,18 @@ Use encoding data from the specified device.
 The fec device argument can be block device or file image.
 For format, if fec device path doesn't exist, it will be created as file.
 
-Note: block sizes for data and hash devices must match. Also, if the verity data_device is encrypted the fec_device should be too.
+Block sizes for data and hash devices must match.
+Also, if the verity data_device is encrypted the fec_device should be too.
+
+FEC calculation covers data, hash area, and optional foreign metadata stored on the same
+device with the hash tree (additional space after hash area).
+Size of this optional additional area protected by FEC is calculated from image sizes,
+so you must be sure that you use the same images for activation.
+
+If the hash device is in a separate image, metadata covers the whole rest of the image after the hash area.
+
+If hash and FEC device is in the image, metadata ends on the FEC area offset.
+
 .TP
 .B "\-\-fec-offset=bytes"
 This is the offset, in bytes, from the start of the FEC device to the beginning of the encoding data.
