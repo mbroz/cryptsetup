@@ -102,18 +102,41 @@ static int tools_check_password(const char *password)
 }
 
 /* Password reading helpers */
+
+static ssize_t read_tty_eol(int fd, char *pass, size_t maxlen)
+{
+	bool eol = false;
+	size_t read_size = 0;
+	ssize_t r;
+
+	do {
+		r = read(fd, pass, maxlen - read_size);
+		if ((r == -1 && errno != EINTR) || quit)
+			return -1;
+		if (r >= 0) {
+			if (!r || pass[r-1] == '\n')
+				eol = true;
+			read_size += (size_t)r;
+			pass = pass + r;
+		}
+	} while (!eol && read_size != maxlen);
+
+	return (ssize_t)read_size;
+}
+
+/* The pass buffer is zeroed and has trailing \0 already " */
 static int untimed_read(int fd, char *pass, size_t maxlen)
 {
 	ssize_t i;
 
-	i = read(fd, pass, maxlen);
+	i = read_tty_eol(fd, pass, maxlen);
 	if (i > 0) {
-		pass[i-1] = '\0';
+		if (pass[i-1] == '\n')
+			pass[i-1] = '\0';
 		i = 0;
-	} else if (i == 0) { /* EOF */
-		*pass = 0;
+	} else if (i == 0) /* empty input */
 		i = -1;
-	}
+
 	return i;
 }
 
@@ -200,10 +223,9 @@ static int crypt_get_key_tty(const char *prompt,
 		log_err(_("Error reading passphrase from terminal."));
 		goto out_err;
 	}
-	pass[key_size_max] = '\0';
 
 	if (verify) {
-		pass_verify = crypt_safe_alloc(key_size_max);
+		pass_verify = crypt_safe_alloc(key_size_max + 1);
 		if (!pass_verify) {
 			log_err(_("Out of memory while reading passphrase."));
 			r = -ENOMEM;

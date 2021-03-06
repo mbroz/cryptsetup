@@ -1023,5 +1023,41 @@ EOF
 [ $? -eq 0 ] || fail "Expect script failed."
 $CRYPTSETUP remove $DEV_NAME || fail
 
+prepare "[40] Long passphrase from TTY." wipe
+EXPECT_DEV=$(losetup $LOOPDEV | sed -e "s/.*(\(.*\))/\1/")
+
+# Password of maximal length 512 characters
+LONG_PWD=\
+"0123456789abcdef0123456789ABCDEF0123456789abcdef0123456789ABCDEF"\
+"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do "\
+"eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut e"\
+"nim ad minim veniam, quis nostrud exercitation ullamco laboris n"\
+"isi ut aliquip ex ea commodo consequat. Duis aute irure dolor in"\
+" reprehenderit in voluptate velit esse cillum dolore eu fugiat n"\
+"ulla pariatur. Excepteur sint occaecat cupidatat non proident, s"\
+"unt in culpa qui officia deserunt mollit anim id est laborum.DEF"
+
+echo -n "$LONG_PWD" >$KEYE
+
+expect_run - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout 10
+eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 $FAST_PBKDF_OPT -v $LOOPDEV
+expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
+send "YES\n"
+expect timeout abort "Enter passphrase for $EXPECT_DEV:"
+sleep 0.1
+send "$LONG_PWD\n"
+expect timeout abort "Verify passphrase:"
+sleep 0.1
+send "$LONG_PWD\n"
+expect timeout abort "Command successful."
+expect timeout abort eof
+eval spawn $CRYPTSETUP_RAW luksOpen -v $LOOPDEV --test-passphrase --key-file $KEYE
+expect timeout abort "Command successful."
+expect timeout abort eof
+EOF
+[ $? -eq 0 ] || fail "Expect script failed."
+
 remove_mapping
 exit 0
