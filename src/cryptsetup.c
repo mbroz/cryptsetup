@@ -472,7 +472,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 			unsigned long long tmp_pim_ull = 0;
 
 			r = tools_get_key(_("Enter VeraCrypt PIM: "),
-					CONST_CAST(char**)&tmp_pim_nptr,
+					&tmp_pim_nptr,
 					&tmp_pim_size, 0, 0, opt_keyfile_stdin, opt_timeout,
 					_verify_passphrase(0), 0, cd);
 			if (r < 0)
@@ -489,7 +489,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 				log_err(_("Invalid PIM value: outside of range."));
 				r = -ERANGE;
 			}
-			crypt_safe_free(CONST_CAST(char*)tmp_pim_nptr);
+			crypt_safe_free(tmp_pim_nptr);
 			if (r < 0)
 				continue;
 
