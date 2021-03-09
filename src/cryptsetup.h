@@ -24,6 +24,7 @@
 #ifndef CRYPTSETUP_H
 #define CRYPTSETUP_H
 
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
