@@ -7,38 +7,52 @@ All users of cryptsetup 2.x and later should upgrade to this version.
 Changes since version 2.3.4
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* integritysetup: support new dm-integrity HMAC recalculation kernel options.
+* Fix partial reads of passphrase from an interactive terminal.
+  Some stable kernels (5.3.11) started to return buffer from a terminal
+  in parts of maximal size 64 bytes.
+  This breaks the reading of passphrases longer than 64 characters
+  entered through an interactive terminal. The change is already fixed
+  in later kernel releases, but tools now support such partial read from
+  terminal properly.
 
-  In older kernels (since version 4.19), an attacker can force an automatic
-  recalculation of integrity tags by modifying the dm-integrity superblock.
-  This is a problem with a keyed algorithms (HMAC), where it expects nobody
-  can trigger such recalculation without the key.
+* Fix maximal length of password entered through a terminal.
+  Now the maximal interactive passphrase length is exactly
+  512 characters (not 511).
+
+* integritysetup: support new dm-integrity HMAC recalculation options.
+
+  In older kernels (since version 4.19), an attacker can force
+  an automatic recalculation of integrity tags by modifying
+  the dm-integrity superblock.
+  This is a problem with a keyed algorithms (HMAC), where it expects
+  nobody can trigger such recalculation without the key.
   (Automatic recalculation will start after the next activation.)
 
-  Note that dm-integrity in standalone mode was *not* supposed to provide
-  cryptographic data integrity protection.
-  Despite that, we try to keep the system secure if keyed algorithms are used.
+  Note that dm-integrity in standalone mode was *not* supposed
+  to provide cryptographic data integrity protection.
+  Despite that, we try to keep the system secure if keyed algorithms
+  are used.
   Thank Daniel Glöckner for the original report of this problem.
 
-  Authenticated encryption that provides data integrity protection
-  (in combination with dm-crypt and LUKS2) is not affected by this problem.
+  Authenticated encryption that provides data integrity protection (in
+  combination with dm-crypt and LUKS2) is not affected by this problem.
 
   The fix in the kernel for this problem contains two parts.
 
-  Firstly, the dm-integrity kernel module disables integrity recalculation
-  if keyed algorithms (HMAC) are used.
+  Firstly, the dm-integrity kernel module disables integrity
+  recalculation if keyed algorithms (HMAC) are used.
   This change is included in long-term stable kernels.
 
-  Secondly, since the kernel version 5.11, dm-integrity introduces modified
-  protection where a journal-integrity algorithm guards superblock; also,
-  journal sections are protected. An attacker cannot copy sectors from one
-  journal section to another, and the superblock also contains salt to prevent
-  header replacement from another device.
+  Secondly, since the kernel version 5.11, dm-integrity introduces
+  modified protection where a journal-integrity algorithm guards
+  superblock; also, journal sections are protected. An attacker cannot
+  copy sectors from one journal section to another, and the superblock
+  also contains salt to prevent header replacement from another device.
 
   If you want to protect data with HMAC, you should always also use HMAC
   for --journal-integrity. Keys can be independent.
-  If HMAC is used for data but not for the journal, the recalculation option
-  is disabled.
+  If HMAC is used for data but not for the journal, the recalculation
+  option is disabled.
 
   If you need to use (insecure) backward compatibility implementation,
   two new integritysetup options are introduced:
@@ -52,13 +66,13 @@ Changes since version 2.3.4
     CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC
   to set these through crypt_set_compatibility() call.
 
-* integritysetup: display of dm-integrity recalculating sector in dump command.
+* integritysetup: display of recalculating sector in dump command.
 
-* veritysetup: fix dm-verity FEC if stored in the same image with hashes.
+* veritysetup: fix verity FEC if stored in the same image with hashes.
 
-  Optional FEC (Forward Error Correction) data should cover the whole data
-  area, hashes (Merkle tree), and optionally additional metadata (located
-  after hash area).
+  Optional FEC (Forward Error Correction) data should cover the whole
+  data area, hashes (Merkle tree), and optionally additional metadata
+  (located after hash area).
 
   Unfortunately, if FEC data is stored in the same file as hash,
   the calculation wrongly used the whole file size, thus overlaps with
@@ -66,10 +80,10 @@ Changes since version 2.3.4
   There is no problem if the FEC image is a separate image.
 
   The problem is now fixed, introducing FEC blocks calculation as:
-    - If the hash device is in a separate image, metadata covers the whole
-      rest of the image after the hash area. (Unchanged behavior.)
-    - If hash and FEC device is in the image, metadata ends on the FEC area
-      offset.
+    - If the hash device is in a separate image, metadata covers the
+      whole rest of the image after the hash area. (Unchanged behavior.)
+    - If hash and FEC device is in the image, metadata ends on the FEC
+      area offset.
 
   Note: there is also a fix for FEC in the dm-verity kernel (on the way
   to stable kernels) that fixes error correction with larger RS roots.
@@ -77,29 +91,29 @@ Changes since version 2.3.4
 * veritysetup: run FEC repair check even if root hash fails.
 
   Note: The userspace FEC verify command reports are only informational
-  for now. Code does not check verity hash after FEC recovery in userspace.
-  The Reed-Solomon decoder can then report the possibility that it fixed data
-  even if parity is too damaged.
+  for now. Code does not check verity hash after FEC recovery in
+  userspace. The Reed-Solomon decoder can then report the possibility
+  that it fixed data even if parity is too damaged.
   This will be fixed in the next major release.
 
-* veritysetup: do not process hash image if it is empty or hash area is empty.
+* veritysetup: do not process hash image if hash area is empty.
 
-  Sometimes the device is so small that there is only a root hash needed,
-  and the hash area is not used.
-  Also, the size of the hash image is not increased for hash block alignment
-  in this case.
+  Sometimes the device is so small that there is only a root hash
+  needed, and the hash area is not used.
+  Also, the size of the hash image is not increased for hash block
+  alignment in this case.
 
-* veritysetup: always store dm-verity hash algorithm in superblock in lowercase.
+* veritysetup: store verity hash algorithm in superblock in lowercase.
 
   Otherwise, the kernel could refuse the activation of the device.
 
-* bitlk: fix a crash if the device disappears during BitLocker device scan.
+* bitlk: fix a crash if the device disappears during BitLocker scan.
 
 * bitlk: show a better error when trying to open an NTFS device.
 
   Both BitLocker version 1 and NTFS have the same signature.
-  If a user opens an NTFS device without BitLocker, it now correctly informs
-  that it is not a BITLK device.
+  If a user opens an NTFS device without BitLocker, it now correctly
+  informs that it is not a BITLK device.
 
 * bitlk: add support for startup key protected VMKs.
 
@@ -107,18 +121,20 @@ Changes since version 2.3.4
 
 * Fix LUKS1 repair code (regression since version 1.7.x).
 
-  We cannot trust possibly broken keyslots metadata in repair, so the code
-  recalculates them instead. This makes the repair code working again when
-  the master boot record signature overwrites the LUKS header.
+  We cannot trust possibly broken keyslots metadata in repair, so the
+  code recalculates them instead.
+  This makes the repair code working again when the master boot record
+  signature overwrites the LUKS header.
 
 * Fix luksKeyChange for LUKS2 with assigned tokens.
 
-  The token references are now correctly assigned to the new keyslot number.
+  The token references are now correctly assigned to the new keyslot
+  number.
 
 * Fix cryptsetup resize using LUKS2 tokens.
 
-  Code needlessly asked for passphrase even though volume key was already
-  unlocked via LUKS2 token.
+  Code needlessly asked for passphrase even though volume key was
+  already unlocked via LUKS2 token.
 
 * Print a visible error if device resize is not supported.
 
@@ -126,13 +142,14 @@ Changes since version 2.3.4
 
 * Fix default XTS mode key size in reencryption.
 
-  The same luksFormat logic (double key size because XTS uses two keys) is
-  applied in the reencryption code.
+  The same luksFormat logic (double key size because XTS uses two keys)
+  is applied in the reencryption code.
 
 * Rephrase missing locking directory warning and move it to debug level.
 
-  The system should later provide a safe transition to tempdir configuration,
-  so creating locking directory inside libcryptsetup call is safe.
+  The system should later provide a safe transition to tempdir
+  configuration, so creating locking directory inside libcryptsetup
+  call is safe.
 
 * Many fixes for the use of cipher_null (empty debug cipher).
 
@@ -140,9 +157,10 @@ Changes since version 2.3.4
   measuring performance overhead. Unfortunately, many systems started to
   use it as an "empty shell" for LUKS (to enable encryption later).
 
-  This use is very dangerous because it creates a false sense of security.
+  This use is very dangerous and it creates a false sense of security.
 
-  Anyway, to not break such systems, we try to support these configurations.
+  Anyway, to not break such systems, we try to support these
+  configurations.
   Using cipher_null in any production system is strongly discouraged!
 
   Fixes include:
@@ -154,8 +172,8 @@ Changes since version 2.3.4
      cipher_null is no longer possible to be used in keyslot encryption
      in LUKS2, it can be used only for data for debugging purposes.
 
-* Fixes for problems discovered by various static and dynamic code analyses.
+* Fixes for problems discovered by various tools for code analysis.
 
-  Fixes include a partial rework of libpopt command line option string leaks.
+  Fixes include a rework of libpopt command line option string leaks.
 
 * Various fixes to man pages.
