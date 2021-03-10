@@ -63,27 +63,32 @@ static int tools_check_pwquality(const char *password)
 static int tools_check_passwdqc(const char *password)
 {
 	passwdqc_params_t params;
-	char *parse_reason;
+	char *parse_reason = NULL;
 	const char *check_reason;
 	const char *config = PASSWDQC_CONFIG_FILE;
+	int r = -EINVAL;
 
 	passwdqc_params_reset(&params);
 
 	if (*config && passwdqc_params_load(&params, &parse_reason, config)) {
 		log_err(_("Cannot check password quality: %s"),
 			(parse_reason ? parse_reason : "Out of memory"));
-		free(parse_reason);
-		return -EINVAL;
+		goto out;
 	}
 
 	check_reason = passwdqc_check(&params.qc, password, NULL, NULL);
 	if (check_reason) {
 		log_err(_("Password quality check failed: Bad passphrase (%s)"),
 			check_reason);
-		return -EPERM;
-	}
-
-	return 0;
+		r = -EPERM;
+	} else
+		r = 0;
+out:
+#if HAVE_PASSWDQC_PARAMS_FREE
+	passwdqc_params_free(&params);
+#endif
+	free(parse_reason);
+	return r;
 }
 #endif /* ENABLE_PWQUALITY || ENABLE_PASSWDQC */
 
