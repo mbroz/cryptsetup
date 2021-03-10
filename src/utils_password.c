@@ -60,6 +60,10 @@ static int tools_check_pwquality(const char *password)
 #elif defined ENABLE_PASSWDQC
 #include <passwdqc.h>
 
+#ifndef HAVE_PASSWDQC_PARAMS_FREE
+# define passwdqc_params_free(arg)	/* empty */
+#endif
+
 static int tools_check_passwdqc(const char *password)
 {
 	passwdqc_params_t params;
@@ -73,6 +77,7 @@ static int tools_check_passwdqc(const char *password)
 		log_err(_("Cannot check password quality: %s"),
 			(parse_reason ? parse_reason : "Out of memory"));
 		free(parse_reason);
+		passwdqc_params_free(&params);
 		return -EINVAL;
 	}
 
@@ -80,9 +85,11 @@ static int tools_check_passwdqc(const char *password)
 	if (check_reason) {
 		log_err(_("Password quality check failed: Bad passphrase (%s)"),
 			check_reason);
+		passwdqc_params_free(&params);
 		return -EPERM;
 	}
 
+	passwdqc_params_free(&params);
 	return 0;
 }
 #endif /* ENABLE_PWQUALITY || ENABLE_PASSWDQC */
