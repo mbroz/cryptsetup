@@ -176,7 +176,15 @@ AC_DEFINE_UNQUOTED([PASSWDQC_CONFIG_FILE], ["$use_passwdqc_config"], [passwdqc l
 if test "x$enable_passwdqc" = "xyes"; then
 	AC_DEFINE(ENABLE_PASSWDQC, 1, [Enable password quality checking using passwdqc library])
 
-	PASSWDQC_LIBS="-lpasswdqc"
+	saved_LIBS="$LIBS"
+	AC_SEARCH_LIBS([passwdqc_check], [passwdqc])
+	case "$ac_cv_search_passwdqc_check" in
+		no) AC_MSG_ERROR([failed to find passwdqc_check]) ;;
+		-l*) PASSWDQC_LIBS="$ac_cv_search_passwdqc_check" ;;
+		*) PASSWDQC_LIBS= ;;
+	esac
+	AC_CHECK_FUNCS([passwdqc_params_free])
+	LIBS="$saved_LIBS"
 fi
 
 if test "x$enable_pwquality$enable_passwdqc" = "xyesyes"; then
