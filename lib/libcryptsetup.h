@@ -2170,7 +2170,8 @@ typedef int (*crypt_token_open_func) (
  *
  * @param cd crypt device handle
  * @param token token id
- * @param pin passphrase (or PIN) to unlock token
+ * @param pin passphrase (or PIN) to unlock token (may be binary data)
+ * @param pin_size size of @e pin
  * @param buffer returned allocated buffer with password
  * @param buffer_len length of the buffer
  * @param usrptr user data in @link crypt_activate_by_token @endlink
@@ -2179,6 +2180,7 @@ typedef int (*crypt_token_open_pin_func) (
 	struct crypt_device *cd,
 	int token,
 	const char *pin,
+	size_t pin_size,
 	char **buffer,
 	size_t *buffer_len,
 	void *usrptr);
@@ -2287,7 +2289,8 @@ int crypt_activate_by_token(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check token
  * @param token requested token to check or CRYPT_ANY_TOKEN to check all
- * @param pin passphrase (or PIN) to unlock token
+ * @param pin passphrase (or PIN) to unlock token (may be binary data)
+ * @param pin_size size of @e pin
  * @param usrptr provided identification in callback
  * @param flags activation flags
  *
@@ -2297,6 +2300,7 @@ int crypt_activate_by_pin_token(struct crypt_device *cd,
 	const char *name,
 	int token,
 	const char *pin,
+	size_t pin_size,
 	void *usrptr,
 	uint32_t flags);
 /** @} */

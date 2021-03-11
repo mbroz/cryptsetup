@@ -5596,7 +5596,7 @@ void crypt_set_luks2_reencrypt(struct crypt_device *cd, struct luks2_reencrypt *
  * Token handling
  */
 int crypt_activate_by_pin_token(struct crypt_device *cd, const char *name, int token,
-	const char *pin, void *usrptr, uint32_t flags)
+	const char *pin, size_t pin_size, void *usrptr, uint32_t flags)
 {
 	int r;
 
@@ -5613,15 +5613,15 @@ int crypt_activate_by_pin_token(struct crypt_device *cd, const char *name, int t
 		return -EINVAL;
 
 	if (token == CRYPT_ANY_TOKEN)
-		return LUKS2_token_open_and_activate_any(cd, &cd->u.luks2.hdr, name, pin, flags);
+		return LUKS2_token_open_and_activate_any(cd, &cd->u.luks2.hdr, name, pin, pin_size, flags);
 
-	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, pin, flags, usrptr);
+	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, pin, pin_size, flags, usrptr);
 }
 
 int crypt_activate_by_token(struct crypt_device *cd,
 	const char *name, int token, void *usrptr, uint32_t flags)
 {
-	return crypt_activate_by_pin_token(cd, name, token, NULL, usrptr, flags);
+	return crypt_activate_by_pin_token(cd, name, token, NULL, 0, usrptr, flags);
 }
 
 int crypt_token_json_get(struct crypt_device *cd, int token, const char **json)

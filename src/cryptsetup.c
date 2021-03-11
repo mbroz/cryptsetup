@@ -1542,7 +1542,7 @@ static int action_open_luks(void)
 			if (r < 0)
 				goto out;
 			r = crypt_activate_by_pin_token(cd, activated_name, ARG_INT32(OPT_TOKEN_ID_ID),
-							password, NULL, activate_flags);
+							password, passwordLen, NULL, activate_flags);
 			tools_keyslot_msg(r, UNLOCKED);
 		}
 

@@ -378,6 +378,7 @@ static int LUKS2_token_open(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
 	const char *pin,
+	size_t pin_size,
 	char **buffer,
 	size_t *buffer_len,
 	void *usrptr)
@@ -402,7 +403,7 @@ static int LUKS2_token_open(struct crypt_device *cd,
 	if (pin && !h->open_pin)
 		r = -ENOENT;
 	else if (pin)
-		r = h->open_pin(cd, token, pin, buffer, buffer_len, usrptr);
+		r = h->open_pin(cd, token, pin, pin_size, buffer, buffer_len, usrptr);
 	else
 		r = h->open(cd, token, buffer, buffer_len, usrptr);
 	if (r < 0)
@@ -470,6 +471,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	int token,
 	const char *name,
 	const char *pin,
+	size_t pin_size,
 	uint32_t flags,
 	void *usrptr)
 {
@@ -479,7 +481,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	size_t buffer_len;
 	struct volume_key *vk = NULL;
 
-	r = LUKS2_token_open(cd, hdr, token, pin, &buffer, &buffer_len, usrptr);
+	r = LUKS2_token_open(cd, hdr, token, pin, pin_size, &buffer, &buffer_len, usrptr);
 	if (r < 0)
 		return r;
 
@@ -520,6 +522,7 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const char *name,
 	const char *pin,
+	size_t pin_size,
 	uint32_t flags)
 {
 	char *buffer;
@@ -534,7 +537,7 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 		UNUSED(val);
 		token = atoi(slot);
 
-		r = LUKS2_token_open(cd, hdr, token, pin, &buffer, &buffer_len, NULL);
+		r = LUKS2_token_open(cd, hdr, token, pin, pin_size, &buffer, &buffer_len, NULL);
 		if (r < 0)
 			continue;
 
