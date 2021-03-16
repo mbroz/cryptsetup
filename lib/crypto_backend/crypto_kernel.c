@@ -62,6 +62,14 @@ static struct hash_alg hash_algs[] = {
 	{ "stribog256","streebog256", 32,  64 },
 	{ "stribog512","streebog512", 64,  64 },
 	{ "sm3",       "sm3",         32,  64 },
+	{ "blake2b-160","blake2b-160",20, 128 },
+	{ "blake2b-256","blake2b-256",32, 128 },
+	{ "blake2b-384","blake2b-384",48, 128 },
+	{ "blake2b-512","blake2b-512",64, 128 },
+	{ "blake2s-128","blake2s-128",16,  64 },
+	{ "blake2s-160","blake2s-160",20,  64 },
+	{ "blake2s-224","blake2s-224",28,  64 },
+	{ "blake2s-256","blake2s-256",32,  64 },
 	{ NULL,        NULL,           0,   0 }
 };
 

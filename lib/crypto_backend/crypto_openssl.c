@@ -63,6 +63,11 @@ struct crypt_cipher {
 	} u;
 };
 
+struct hash_alg {
+	const char *name;
+	const char *openssl_name;
+};
+
 /*
  * Compatible wrappers for OpenSSL < 1.1.0 and LibreSSL < 2.7.0
  */
@@ -147,11 +152,36 @@ const char *crypt_backend_version(void)
 	return openssl_backend_version();
 }
 
+static const char *crypt_hash_compat_name(const char *name)
+{
+	const char *hash_name = name;
+	int i;
+	static struct hash_alg hash_algs[] = {
+	{ "blake2b-512", "blake2b512" },
+	{ "blake2s-256", "blake2s256" },
+	{ NULL,          NULL,         }};
+
+	if (!name)
+		return NULL;
+
+	i = 0;
+	while (hash_algs[i].name) {
+		if (!strcasecmp(name, hash_algs[i].name)) {
+			hash_name =  hash_algs[i].openssl_name;
+			break;
+		}
+		i++;
+	}
+
+	return hash_name;
+}
+
 /* HASH */
 int crypt_hash_size(const char *name)
 {
-	const EVP_MD *hash_id = EVP_get_digestbyname(name);
+	const EVP_MD *hash_id;
 
+	hash_id = EVP_get_digestbyname(crypt_hash_compat_name(name));
 	if (!hash_id)
 		return -EINVAL;
 
@@ -172,7 +202,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 		return -ENOMEM;
 	}
 
-	h->hash_id = EVP_get_digestbyname(name);
+	h->hash_id = EVP_get_digestbyname(crypt_hash_compat_name(name));
 	if (!h->hash_id) {
 		EVP_MD_CTX_free(h->md);
 		free(h);
@@ -257,7 +287,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		return -ENOMEM;
 	}
 
-	h->hash_id = EVP_get_digestbyname(name);
+	h->hash_id = EVP_get_digestbyname(crypt_hash_compat_name(name));
 	if (!h->hash_id) {
 		HMAC_CTX_free(h->md);
 		free(h);
@@ -333,7 +363,7 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		return -EINVAL;
 
 	if (!strcmp(kdf, "pbkdf2")) {
-		hash_id = EVP_get_digestbyname(hash);
+		hash_id = EVP_get_digestbyname(crypt_hash_compat_name(hash));
 		if (!hash_id)
 			return -EINVAL;
 

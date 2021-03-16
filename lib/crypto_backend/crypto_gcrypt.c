@@ -51,6 +51,11 @@ struct crypt_cipher {
 	} u;
 };
 
+struct hash_alg {
+	const char *name;
+	const char *gcrypt_name;
+};
+
 /*
  * Test for wrong Whirlpool variant,
  * Ref: https://lists.gnupg.org/pipermail/gcrypt-devel/2014-January/002889.html
@@ -150,15 +155,38 @@ uint32_t crypt_backend_flags(void)
 static const char *crypt_hash_compat_name(const char *name, unsigned int *flags)
 {
 	const char *hash_name = name;
+	int i;
+	static struct hash_alg hash_algs[] = {
+	{ "blake2b-160", "blake2b_160" },
+	{ "blake2b-256", "blake2b_256" },
+	{ "blake2b-384", "blake2b_384" },
+	{ "blake2b-512", "blake2b_512" },
+	{ "blake2s-128", "blake2s_128" },
+	{ "blake2s-160", "blake2s_160" },
+	{ "blake2s-224", "blake2s_224" },
+	{ "blake2s-256", "blake2s_256" },
+	{ NULL,          NULL,         }};
+
+	if (!name)
+		return NULL;
 
 	/* "whirlpool_gcryptbug" is out shortcut to flawed whirlpool
 	 * in libgcrypt < 1.6.0 */
-	if (name && !strcasecmp(name, "whirlpool_gcryptbug")) {
+	if (!strcasecmp(name, "whirlpool_gcryptbug")) {
 #if GCRYPT_VERSION_NUMBER >= 0x010601
 		if (flags)
 			*flags |= GCRY_MD_FLAG_BUGEMU1;
 #endif
 		hash_name = "whirlpool";
+	}
+
+	i = 0;
+	while (hash_algs[i].name) {
+		if (!strcasecmp(name, hash_algs[i].name)) {
+			hash_name =  hash_algs[i].gcrypt_name;
+			break;
+		}
+		i++;
 	}
 
 	return hash_name;
