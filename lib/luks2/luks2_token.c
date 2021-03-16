@@ -93,6 +93,20 @@ static bool token_validate_v2(struct crypt_device *cd, const struct crypt_token_
 
 	return true;
 }
+
+static bool external_token_name_valid(const char *name)
+{
+	if (!*name || strlen(name) > LUKS2_TOKEN_NAME_MAX)
+		return false;
+
+	while (*name) {
+		if (!isalnum(*name) && *name != '-' && *name != '_')
+			return false;
+		name++;
+	}
+
+	return true;
+}
 #endif
 
 static int
@@ -102,16 +116,17 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 	struct crypt_token_handler_v2 *token;
 	void *h;
 	char buf[512];
-	int i, r;
+	int r;
 
-	if (!ret || !name || strlen(name) > 64)
+	if (!ret || !name)
 		return -EINVAL;
 
-	token = &ret->u.v2;
+	if (!external_token_name_valid(name)) {
+		log_dbg(cd, "External token name (%.*s) invalid.", LUKS2_TOKEN_NAME_MAX, name);
+		return -EINVAL;
+	}
 
-	for (i = 0; name[i]; i++)
-		if (!isalnum(name[i]))
-			return -EINVAL;
+	token = &ret->u.v2;
 
 	r = snprintf(buf, sizeof(buf), "libcryptsetup-token-%s.so", name);
 	if (r < 0 || (size_t)r >= sizeof(buf))
