@@ -16,7 +16,7 @@ AC_CONFIG_HEADERS([config.h:config.h.in])
 
 # For old automake use this
 #AM_INIT_AUTOMAKE(dist-xz subdir-objects)
-AM_INIT_AUTOMAKE([dist-xz 1.12 serial-tests subdir-objects])
+AM_INIT_AUTOMAKE([dist-xz 1.12 serial-tests subdir-objects foreign])
 
 if test "x$prefix" = "xNONE"; then
 	sysconfdir=/etc
