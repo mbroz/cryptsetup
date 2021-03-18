@@ -5595,13 +5595,15 @@ void crypt_set_luks2_reencrypt(struct crypt_device *cd, struct luks2_reencrypt *
 /*
  * Token handling
  */
-int crypt_activate_by_pin_token(struct crypt_device *cd, const char *name, int token,
-	const char *pin, size_t pin_size, void *usrptr, uint32_t flags)
+int crypt_activate_by_pin_token(struct crypt_device *cd, const char *name,
+	const char *type, int token, const char *pin, size_t pin_size,
+	void *usrptr, uint32_t flags)
 {
 	int r;
 
-	log_dbg(cd, "%s volume %s using token %d.",
-		name ? "Activating" : "Checking", name ?: "passphrase", token);
+	log_dbg(cd, "%s volume %s using token (%s type) %d.",
+		name ? "Activating" : "Checking", name ?: "passphrase",
+		type ?: "any", token);
 
 	if ((r = _onlyLUKS2(cd, CRYPT_CD_QUIET | CRYPT_CD_UNRESTRICTED, 0)))
 		return r;
@@ -5613,15 +5615,22 @@ int crypt_activate_by_pin_token(struct crypt_device *cd, const char *name, int t
 		return -EINVAL;
 
 	if (token == CRYPT_ANY_TOKEN)
-		return LUKS2_token_open_and_activate_any(cd, &cd->u.luks2.hdr, name, pin, pin_size, flags);
+		return LUKS2_token_open_and_activate_any(cd, &cd->u.luks2.hdr, name, type, pin, pin_size, flags, type ? usrptr : NULL);
 
-	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, pin, pin_size, flags, usrptr);
+	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, type, pin, pin_size, flags, usrptr);
 }
 
 int crypt_activate_by_token(struct crypt_device *cd,
 	const char *name, int token, void *usrptr, uint32_t flags)
 {
-	return crypt_activate_by_pin_token(cd, name, token, NULL, 0, usrptr, flags);
+	return crypt_activate_by_pin_token(cd, name, NULL, token, NULL, 0, usrptr, flags);
+}
+
+int crypt_activate_by_token_type(struct crypt_device *cd,
+	const char *name, const char *type, int token,
+	void *usrptr, uint32_t flags)
+{
+	return crypt_activate_by_pin_token(cd, name, type, token, NULL, 0, usrptr, flags);
 }
 
 int crypt_token_json_get(struct crypt_device *cd, int token, const char **json)

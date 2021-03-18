@@ -2284,10 +2284,33 @@ int crypt_activate_by_token(struct crypt_device *cd,
 	uint32_t flags);
 
 /**
+ * Activate device or check key using specific token type.
+ *
+ * @param cd crypt device handle
+ * @param name name of device to create, if @e NULL only check token
+ * @param type restrict type of token, if @e NULL all types eligible
+ * @param token requested token to check or CRYPT_ANY_TOKEN to check all
+ * @param usrptr provided identification in callback
+ * @param flags activation flags
+ *
+ * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note EAGAIN errno means that token is PIN protected and you should call
+ *       @link crypt_activate_by_pin_token @endlink with PIN
+ */
+int crypt_activate_by_token_type(struct crypt_device *cd,
+	const char *name,
+	const char *type,
+	int token,
+	void *usrptr,
+	uint32_t flags);
+
+/**
  * Activate device or check key using a token with PIN.
  *
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check token
+ * @param type restrict type of token, if @e NULL all types eligible
  * @param token requested token to check or CRYPT_ANY_TOKEN to check all
  * @param pin passphrase (or PIN) to unlock token (may be binary data)
  * @param pin_size size of @e pin
@@ -2298,6 +2321,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  */
 int crypt_activate_by_pin_token(struct crypt_device *cd,
 	const char *name,
+	const char *type,
 	int token,
 	const char *pin,
 	size_t pin_size,

@@ -485,6 +485,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
 	const char *name,
+	const char *type,
 	const char *pin,
 	size_t pin_size,
 	uint32_t flags,
@@ -494,7 +495,17 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	int keyslot, r;
 	char *buffer;
 	size_t buffer_len;
+	json_object *jobj_token, *jobj_type;
 	struct volume_key *vk = NULL;
+
+	if (type) {
+		if (!(jobj_token = LUKS2_get_token_jobj(hdr, token)))
+			return -ENOENT;
+		if (!json_object_object_get_ex(jobj_token, "type", &jobj_type))
+			return -EINVAL;
+		if (strcmp(type, json_object_get_string(jobj_type)))
+			return -ENOENT;
+	}
 
 	r = LUKS2_token_open(cd, hdr, token, pin, pin_size, &buffer, &buffer_len, usrptr);
 	if (r < 0)
@@ -536,12 +547,14 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const char *name,
+	const char *type,
 	const char *pin,
 	size_t pin_size,
-	uint32_t flags)
+	uint32_t flags,
+	void *usrptr)
 {
 	char *buffer;
-	json_object *tokens_jobj;
+	json_object *tokens_jobj, *type_jobj;
 	size_t buffer_len;
 	int keyslot, token, r = -EINVAL;
 	struct volume_key *vk = NULL;
@@ -549,10 +562,15 @@ int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	json_object_object_get_ex(hdr->jobj, "tokens", &tokens_jobj);
 
 	json_object_object_foreach(tokens_jobj, slot, val) {
-		UNUSED(val);
+		if (type) {
+			if (!json_object_object_get_ex(val, "type", &type_jobj))
+				return -EINVAL;
+			if (strcmp(type, json_object_get_string(type_jobj)))
+				continue;
+		}
 		token = atoi(slot);
 
-		r = LUKS2_token_open(cd, hdr, token, pin, pin_size, &buffer, &buffer_len, NULL);
+		r = LUKS2_token_open(cd, hdr, token, pin, pin_size, &buffer, &buffer_len, usrptr);
 		if (r < 0)
 			continue;
 
