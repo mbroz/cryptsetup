@@ -2275,7 +2275,7 @@ int crypt_token_register(const crypt_token_handler *handler);
  * @return unlocked key slot number or negative errno otherwise.
  *
  * @note EAGAIN errno means that token is PIN protected and you should call
- *       @link crypt_activate_by_pin_token @endlink with PIN
+ *       @link crypt_activate_by_token_pin @endlink with PIN
  */
 int crypt_activate_by_token(struct crypt_device *cd,
 	const char *name,
@@ -2296,7 +2296,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  * @return unlocked key slot number or negative errno otherwise.
  *
  * @note EAGAIN errno means that token is PIN protected and you should call
- *       @link crypt_activate_by_pin_token @endlink with PIN
+ *       @link crypt_activate_by_token_pin @endlink with PIN
  */
 int crypt_activate_by_token_type(struct crypt_device *cd,
 	const char *name,
@@ -2319,7 +2319,7 @@ int crypt_activate_by_token_type(struct crypt_device *cd,
  *
  * @return unlocked key slot number or negative errno otherwise.
  */
-int crypt_activate_by_pin_token(struct crypt_device *cd,
+int crypt_activate_by_token_pin(struct crypt_device *cd,
 	const char *name,
 	const char *type,
 	int token,
