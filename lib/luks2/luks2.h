@@ -44,6 +44,8 @@
 #define LUKS2_BUILTIN_TOKEN_PREFIX "luks2-"
 #define LUKS2_BUILTIN_TOKEN_PREFIX_LEN 6
 
+#define LUKS2_TOKEN_NAME_MAX 64
+
 #define LUKS2_TOKEN_KEYRING LUKS2_BUILTIN_TOKEN_PREFIX "keyring"
 
 #define LUKS2_DIGEST_MAX 8
@@ -271,15 +273,20 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
 	const char *name,
+	const char *type,
 	const char *pin,
+	size_t pin_size,
 	uint32_t flags,
 	void *usrptr);
 
 int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const char *name,
+	const char *type,
 	const char *pin,
-	uint32_t flags);
+	size_t pin_size,
+	uint32_t flags,
+	void *usrptr);
 
 int LUKS2_token_keyring_get(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
