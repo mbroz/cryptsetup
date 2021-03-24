@@ -57,6 +57,7 @@ struct device {
 	/* cached values */
 	size_t alignment;
 	size_t block_size;
+	size_t loop_block_size;
 };
 
 static size_t device_fs_block_size_fd(int fd)
@@ -107,6 +108,23 @@ static size_t device_block_size_fd(int fd, size_t *min_size)
 		/* block device must have at least one block */
 		*min_size = bsize;
 	}
+
+	return bsize;
+}
+
+static size_t device_block_phys_size_fd(int fd)
+{
+	struct stat st;
+	int arg;
+	size_t bsize = SECTOR_SIZE;
+
+	if (fstat(fd, &st) < 0)
+		return bsize;
+
+	if (S_ISREG(st.st_mode))
+		bsize = MAX_SECTOR_SIZE;
+	else if (ioctl(fd, BLKPBSZGET, &arg) >= 0)
+		bsize = (size_t)arg;
 
 	return bsize;
 }
@@ -569,6 +587,42 @@ size_t device_block_size(struct crypt_device *cd, struct device *device)
 	return device->block_size;
 }
 
+size_t device_optimal_encryption_sector_size(struct crypt_device *cd, struct device *device)
+{
+	int fd;
+	size_t phys_block_size;
+
+	if (!device)
+		return SECTOR_SIZE;
+
+	fd = open(device->file_path ?: device->path, O_RDONLY);
+	if (fd < 0) {
+		log_dbg(cd, "Cannot get optimal encryption sector size for device %s.", device_path(device));
+		return SECTOR_SIZE;
+	}
+
+	/* cache device block size */
+	device->block_size = device_block_size_fd(fd, NULL);
+	if (!device->block_size) {
+		close(fd);
+		log_dbg(cd, "Cannot get block size for device %s.", device_path(device));
+		return SECTOR_SIZE;
+	}
+
+	if (device->block_size >= MAX_SECTOR_SIZE) {
+		close(fd);
+		return MISALIGNED(device->block_size, MAX_SECTOR_SIZE) ? SECTOR_SIZE : MAX_SECTOR_SIZE;
+	}
+
+	phys_block_size = device_block_phys_size_fd(fd);
+	close(fd);
+
+	if (device->block_size >= phys_block_size || phys_block_size <= SECTOR_SIZE || phys_block_size > MAX_SECTOR_SIZE || MISALIGNED(phys_block_size, device->block_size))
+		return device->block_size;
+
+	return phys_block_size;
+}
+
 int device_read_ahead(struct device *device, uint32_t *read_ahead)
 {
 	int fd, r = 0;
@@ -773,10 +827,11 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 		return -ENOTSUP;
 	}
 
-	log_dbg(cd, "Allocating a free loop device.");
+	log_dbg(cd, "Allocating a free loop device (block size: %zu).",
+		device->loop_block_size ?: SECTOR_SIZE);
 
 	/* Keep the loop open, detached on last close. */
-	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly);
+	loop_fd = crypt_loop_attach(&loop_device, device->path, 0, 1, &readonly, device->loop_block_size);
 	if (loop_fd == -1) {
 		log_err(cd, _("Attaching loopback device failed "
 			"(loop device with autoclear flag is required)."));
@@ -794,6 +849,8 @@ static int device_internal_prepare(struct crypt_device *cd, struct device *devic
 		free(loop_device);
 		return r;
 	}
+
+	log_dbg(cd, "Attached loop device block size is %zu bytes.", device_block_size_fd(loop_fd, NULL));
 
 	device->loop_fd = loop_fd;
 	device->file_path = file_path;
@@ -1013,4 +1070,12 @@ void device_close(struct crypt_device *cd, struct device *device)
 			log_dbg(cd, "Failed to close read write fd for %s.", device_path(device));
 		device->dev_fd = -1;
 	}
+}
+
+void device_set_block_size(struct device *device, size_t size)
+{
+	if (!device)
+		return;
+
+	device->loop_block_size = size;
 }

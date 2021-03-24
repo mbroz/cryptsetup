@@ -1328,8 +1328,15 @@ action asks for passphrase to proceed further.
 .TP
 .B "\-\-sector\-size <bytes>"
 Set sector size for use with disk encryption. It must be power of two
-and in range 512 - 4096 bytes. The default is 512 bytes sectors.
-This option is available only in the LUKS2 mode.
+and in range 512 - 4096 bytes. This option is available only in the LUKS2
+or plain modes.
+
+The default for plain mode is 512 bytes. For LUKS2 devices it's established
+during luksFormat operation based on parameters provided by underlying data device.
+For native 4K block devices it's 4096 bytes. For 4K/512e (4K physical sector size
+with 512 bytes emulation) it's 4096 bytes. For drives reporting only 512 bytes
+block size it remains 512 bytes. If data device is regular file put in filesystem
+it's 4096 bytes.
 
 Note that if sector size is higher than underlying device hardware sector
 and there is not integrity protection that uses data journal, using

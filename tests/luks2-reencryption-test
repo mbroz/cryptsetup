@@ -917,7 +917,7 @@ $CRYPTSETUP close $DEV_NAME || fail
 $CRYPTSETUP close $DEV_NAME2 || fail
 
 echo "[5] Decryption with detached header"
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --sector-size 512 -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --header $IMG_HDR $DEV || fail
 check_hash_dev $DEV $HASH3
@@ -935,7 +935,7 @@ echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience checksum --header $
 check_hash_dev $DEV $HASH3
 
 # check deferred remove works as expected after decryption
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c serpent-xts-plain --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --sector-size 512 -c serpent-xts-plain --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 open_crypt $PWD1 $IMG_HDR
 dmsetup create $DEV_NAME2 --table "0 1 linear /dev/mapper/$DEV_NAME 0" || fail
 echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience checksum --header $IMG_HDR --active-name $DEV_NAME || fail

@@ -462,7 +462,7 @@ check_hash $PWD1 $HASH1
 $CRYPTSETUP -q convert --type luks2 $IMG || fail
 echo $PWD1 | $REENC $IMG -q $FAST_PBKDF_PBKDF2 || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_PBKDF2 $IMG --offset 8192 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --sector-size 512 --type luks2 $FAST_PBKDF_PBKDF2 $IMG --offset 8192 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH5
 $CRYPTSETUP -q convert --type luks1 $IMG || fail
