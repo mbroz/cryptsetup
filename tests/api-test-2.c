@@ -493,7 +493,7 @@ static void UseLuks2Device(void)
 	OK_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0), "already open");
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	FAIL_(crypt_deactivate(cd, CDEVICE_1), "no such device");
 
@@ -525,7 +525,7 @@ static void UseLuks2Device(void)
 	OK_(crypt_volume_key_verify(cd, key, key_size));
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	key[1] = ~key[1];
@@ -748,7 +748,7 @@ static void AddDeviceLuks2(void)
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	EQ_(crypt_get_data_offset(cd), r_payload_offset);
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(t_device_size(DMDIR CDEVICE_1, &r_size_1));
 	EQ_(r_size_1, SECTOR_SIZE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -788,11 +788,11 @@ static void AddDeviceLuks2(void)
 	CRYPT_FREE(cd);
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, DMDIR H_DEVICE));
 	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formatted");
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	CRYPT_FREE(cd);
 	// check active status without header
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, NULL));
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	NULL_(crypt_get_type(cd));
 	OK_(strcmp(cipher, crypt_get_cipher(cd)));
 	OK_(strcmp(cipher_mode, crypt_get_cipher_mode(cd)));
@@ -815,7 +815,7 @@ static void AddDeviceLuks2(void)
 	CRYPT_FREE(cd);
 	// there we've got uuid mismatch
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, DMDIR H_DEVICE));
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	NULL_(crypt_get_type(cd));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "Device is active");
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, key, key_size, 0), "Device is active");
@@ -831,14 +831,14 @@ static void AddDeviceLuks2(void)
 	// even with no keyslots defined it can be activated by volume key
 	OK_(crypt_volume_key_verify(cd, key, key_size));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, key, key_size, 0));
-	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 
 	// now with keyslot
 	EQ_(7, crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)));
 	EQ_(CRYPT_SLOT_ACTIVE_LAST, crypt_keyslot_status(cd, 7));
 	EQ_(7, crypt_activate_by_passphrase(cd, CDEVICE_2, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
-	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 
 	crypt_set_iteration_time(cd, 1);
@@ -1110,7 +1110,7 @@ static void UseTempVolumes(void)
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0), "not yet formatted");
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 16, NULL));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_2, NULL, 0, 0));
-	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
@@ -1196,7 +1196,7 @@ static void Luks2HeaderRestore(void)
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	FAIL_(crypt_header_restore(cd, CRYPT_PLAIN, NO_REQS_LUKS2_HEADER), "Cannot restore header to PLAIN type device");
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS2, NO_REQS_LUKS2_HEADER), "Cannot restore header over PLAIN type device");
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1317,7 +1317,7 @@ static void Luks2HeaderLoad(void)
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(!crypt_get_metadata_device_name(cd));
 	EQ_(strcmp(DMDIR H_DEVICE, crypt_get_metadata_device_name(cd)), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -1439,7 +1439,7 @@ static void Luks2HeaderBackup(void)
 	OK_(crypt_header_restore(cd, CRYPT_LUKS2, BACKUP_FILE));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1448,7 +1448,7 @@ static void Luks2HeaderBackup(void)
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 0, passphrase, strlen(passphrase), 0), 0);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1456,7 +1456,7 @@ static void Luks2HeaderBackup(void)
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 7, passphrase, strlen(passphrase), 0), 7);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1468,7 +1468,7 @@ static void Luks2HeaderBackup(void)
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 0, passphrase, strlen(passphrase), 0), 0);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1476,7 +1476,7 @@ static void Luks2HeaderBackup(void)
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_OK));
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 7, passphrase, strlen(passphrase), 0), 7);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1540,7 +1540,7 @@ static void ResizeDeviceLuks2(void)
 	FAIL_(crypt_resize(cd, CDEVICE_1, 1001), "Device too small");
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
 		EQ_(1000, r_size >> SECTOR_SHIFT);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1560,7 +1560,7 @@ static void ResizeDeviceLuks2(void)
 	FAIL_(crypt_resize(cd, CDEVICE_1, 1001), "Device too small");
 	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
 		EQ_(1000, r_size >> SECTOR_SHIFT);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -3082,7 +3082,7 @@ static void Luks2ActivateByKeyring(void)
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST0, 0, 0), 0);
 	EQ_(crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST0, 0, 0), 0);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	FAIL_(crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST0, 0, 0), "already open");
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
@@ -3090,7 +3090,7 @@ static void Luks2ActivateByKeyring(void)
 	EQ_(crypt_activate_by_keyring(cd, NULL, KEY_DESC_TEST1, 2, 0), 2);
 	FAIL_(crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST1, 1, 0), "Keyslot not assigned to volume");
 	EQ_(crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST1, 2, 0), 2);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_activate_by_keyring(cd, CDEVICE_1, KEY_DESC_TEST1, CRYPT_ANY_SLOT, 0), 2);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -3420,7 +3420,7 @@ static void Luks2Requirements(void)
 	/* crypt_resize (restricted) */
 	FAIL_((r = crypt_resize(cd, CDEVICE_1, 1)), "Unmet requirements detected");
 	EQ_(r, -ETXTBSY);
-	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 
 	/* crypt_get_active_device (unrestricted) */
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
@@ -3468,7 +3468,7 @@ static void Luks2Integrity(void)
 
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, NULL, key_size, passphrase, strlen(passphrase)), 7);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_2, 7, passphrase, strlen(passphrase) ,0), 7);
-	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
+	GE_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_2, NULL));

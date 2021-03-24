@@ -95,6 +95,14 @@ void check_equal(int line, const char *func, int64_t x, int64_t y)
 	exit(-1);
 }
 
+void check_ge_equal(int line, const char *func, int64_t x, int64_t y)
+{
+	printf("FAIL line %d [%s]: expected greater or equal values differs: %"
+		PRIi64 " < %" PRIi64 "\n", line, func, x, y);
+	_cleanup();
+	exit(-1);
+}
+
 void check_null(int line, const char *func, const void *x)
 {
 	if (x) {
