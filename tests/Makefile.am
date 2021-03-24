@@ -76,6 +76,8 @@ CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log
 clean-local:
 	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp
 
+LDADD = $(LTLIBINTL)
+
 differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
 
