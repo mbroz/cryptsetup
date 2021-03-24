@@ -61,6 +61,7 @@ void check_ok(int status, int line, const char *func);
 void check_ok_return(int status, int line, const char *func);
 void check_ko(int status, int line, const char *func);
 void check_equal(int line, const char *func, int64_t x, int64_t y);
+void check_ge_equal(int line, const char *func, int64_t x, int64_t y);
 void check_null(int line, const char *func, const void *x);
 void check_notnull(int line, const char *func, const void *x);
 void xlog(const char *msg, const char *tst, const char *func, int line, const char *txt);
@@ -78,6 +79,10 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 #define EQ_(x, y)	do { int64_t _x = (x), _y = (y); \
 			     xlog("(equal)  ", #x " == " #y, __FUNCTION__, __LINE__, NULL); \
 			     if (_x != _y) check_equal(__LINE__, __FUNCTION__, _x, _y); \
+			} while(0)
+#define GE_(x, y)	do { int64_t _x = (x), _y = (y); \
+			     xlog("(g_equal)", #x " == " #y, __FUNCTION__, __LINE__, NULL); \
+			     if (_x < _y) check_ge_equal(__LINE__, __FUNCTION__, _x, _y); \
 			} while(0)
 #define NULL_(x)	do { xlog("(null)   ", #x, __FUNCTION__, __LINE__, NULL); \
 			     check_null(__LINE__, __FUNCTION__, (x)); \
