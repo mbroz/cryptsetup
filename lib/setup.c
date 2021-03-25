@@ -1839,7 +1839,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			sector_size = SECTOR_SIZE;
 		} else if (MISALIGNED(dev_size - (uint64_t)required_alignment - (uint64_t)alignment_offset, sector_size)) {
 			/* underflow does not affect misalignment checks */
-			log_err(cd, "Device size is not aligned to sector size. Reverting to 512 bytes.");
+			log_dbg(cd, "Device size is not aligned to sector size. Reverting to 512 bytes.");
 			sector_size = SECTOR_SIZE;
 		}
 	}
