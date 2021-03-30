@@ -81,6 +81,8 @@ ARG(OPT_INTEGRITY_BITMAP_MODE, 'B', POPT_ARG_NONE, N_("Use bitmap to track chang
 
 ARG(OPT_INTEGRITY_RECALCULATE, '\0', POPT_ARG_NONE, N_("Recalculate initial tags automatically."), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_RECALCULATE_ACTIONS)
 
+ARG(OPT_INTEGRITY_RECALCULATE_RESET, '\0', POPT_ARG_NONE, N_("Reset automatic recalculate position."), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_RECALCULATE_ACTIONS)
+
 ARG(OPT_INTEGRITY_RECOVERY_MODE, 'R', POPT_ARG_NONE, N_("Recovery mode (no journal, no tag checking)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_SECTOR_SIZE, 's', POPT_ARG_STRING, N_("Sector size"), N_("bytes"), CRYPT_ARG_UINT32, { .u32_value = 512 }, OPT_SECTOR_SIZE_ACTIONS)

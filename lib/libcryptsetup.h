@@ -1122,6 +1122,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_NO_READ_WORKQUEUE (1 << 24)
 /** dm-crypt: bypass internal workqueue and process write requests synchronously. */
 #define CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE (1 << 25)
+/** dm-integrity: reset automatic recalculation */
+#define CRYPT_ACTIVATE_RECALCULATE_RESET (1 << 26)
 
 /**
  * Active device runtime attributes

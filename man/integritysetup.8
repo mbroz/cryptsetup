@@ -33,7 +33,7 @@ Open a mapping with <name> backed by device <device>.
 \fB<options>\fR can be [\-\-data\-device, \-\-batch\-mode, \-\-journal\-watermark,
 \-\-journal\-commit\-time, \-\-buffer\-sectors, \-\-integrity, \-\-integrity\-key\-size,
 \-\-integrity\-key\-file, \-\-integrity\-no\-journal, \-\-integrity\-recalculate,
-\-\-integrity\-recovery\-mode, \-\-allow\-discards]
+\-\-integrity\-recalculate-reset,\-\-integrity\-recovery\-mode, \-\-allow\-discards]
 
 .PP
 \fIclose\fR <name>
@@ -86,6 +86,12 @@ Automatically recalculate integrity tags in kernel on activation.
 The device can be used during automatic integrity recalculation but becomes fully
 integrity protected only after the background operation is finished.
 This option is available since the Linux kernel version 4.19.
+.TP
+.B "\-\-integrity\-recalculate\-reset"
+Restart recalculation from the beginning of the device.
+It can be used to change the integrity checksum function.
+Note it does not change the tag length.
+This option is available since the Linux kernel version 5.13.
 .TP
 .B "\-\-journal\-watermark PERCENT"
 Journal watermark in percents. When the size of the journal exceeds this watermark,

@@ -70,6 +70,7 @@
 #define OPT_INTEGRITY_NO_JOURNAL	"integrity-no-journal"
 #define OPT_INTEGRITY_NO_WIPE		"integrity-no-wipe"
 #define OPT_INTEGRITY_RECALCULATE	"integrity-recalculate"
+#define OPT_INTEGRITY_RECALCULATE_RESET	"integrity-recalculate-reset"
 #define OPT_INTEGRITY_RECOVERY_MODE	"integrity-recovery-mode"
 #define OPT_INTERLEAVE_SECTORS		"interleave-sectors"
 #define OPT_ITER_TIME			"iter-time"

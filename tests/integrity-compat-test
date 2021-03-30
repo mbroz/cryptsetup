@@ -64,6 +64,9 @@ function dm_integrity_features()
 	[ $VER_MIN -gt 6 ] && {
 		DM_INTEGRITY_HMAC_FIX=1
 	}
+	[ $VER_MIN -gt 7 ] && {
+		DM_INTEGRITY_RESET=1
+	}
 }
 
 add_device() {
@@ -383,7 +386,16 @@ if [ -n "$DM_INTEGRITY_RECALC" ] ; then
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=1M 2>/dev/null || fail "Cannot recalculate tags in-kernel"
 	int_check_sum_only 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
-	echo "[OK]"
+	echo -n "[OK]"
+	if [ -n "$DM_INTEGRITY_RESET" ] ; then
+		$INTSETUP open $DEV $DEV_NAME -I sha256 --integrity-recalculate-reset || fail "Cannot activate device."
+		dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=1M 2>/dev/null || fail "Cannot reset recalculate tags in-kernel"
+		int_check_sum_only 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
+		$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+		echo "[RESET OK]"
+	else
+		echo "[RESET N/A]"
+	fi
 else
 	echo "[N/A]"
 fi

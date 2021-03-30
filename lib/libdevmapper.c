@@ -235,6 +235,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 7, 0, integrity_maj, integrity_min, integrity_patch))
 		_dm_flags |= DM_INTEGRITY_FIX_HMAC_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 8, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_RESET_RECALC_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -924,6 +927,12 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	if (flags & CRYPT_ACTIVATE_RECALCULATE) {
 		num_options++;
 		snprintf(feature, sizeof(feature), "recalculate ");
+		strncat(features, feature, sizeof(features) - strlen(features) - 1);
+	}
+
+	if (flags & CRYPT_ACTIVATE_RECALCULATE_RESET) {
+		num_options++;
+		snprintf(feature, sizeof(feature), "reset_recalculate ");
 		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 	}
 
@@ -1698,6 +1707,10 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 
 	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE) &&
 	    !(dmt_flags & DM_INTEGRITY_RECALC_SUPPORTED))
+		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
+
+	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE_RESET) &&
+	    !(dmt_flags & DM_INTEGRITY_RESET_RECALC_SUPPORTED))
 		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
 
 	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
@@ -2481,6 +2494,8 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 				}
 			} else if (!strcmp(arg, "recalculate")) {
 				*act_flags |= CRYPT_ACTIVATE_RECALCULATE;
+			} else if (!strcmp(arg, "reset_recalculate")) {
+				*act_flags |= CRYPT_ACTIVATE_RECALCULATE_RESET;
 			} else if (!strcmp(arg, "fix_padding")) {
 				tgt->u.integrity.fix_padding = true;
 			} else if (!strcmp(arg, "fix_hmac")) {
