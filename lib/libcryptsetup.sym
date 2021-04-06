@@ -1,15 +1,3 @@
-CRYPTSETUP_2.4 {
-	global:
-		crypt_reencrypt;
-		crypt_token_max;
-		crypt_header_is_detached;
-		crypt_logf;
-		crypt_activate_by_token_type;
-		crypt_activate_by_token_pin;
-		crypt_dump_json;
-		crypt_format;
-};
-
 CRYPTSETUP_2.0 {
 	global:
 		crypt_init;
@@ -143,3 +131,15 @@ CRYPTSETUP_2.0 {
 	local:
 		*;
 };
+
+CRYPTSETUP_2.4 {
+	global:
+		crypt_reencrypt;
+		crypt_token_max;
+		crypt_header_is_detached;
+		crypt_logf;
+		crypt_activate_by_token_type;
+		crypt_activate_by_token_pin;
+		crypt_dump_json;
+		crypt_format;
+} CRYPTSETUP_2.0;
