@@ -2325,7 +2325,9 @@ static int _crypt_format(struct crypt_device *cd,
 	return r;
 }
 
-int crypt_format(struct crypt_device *cd,
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_format, 2, 4,
+	/* crypt_format parameters follows */
+	struct crypt_device *cd,
 	const char *type,
 	const char *cipher,
 	const char *cipher_mode,
@@ -2337,21 +2339,20 @@ int crypt_format(struct crypt_device *cd,
 	return _crypt_format(cd, type, cipher, cipher_mode, uuid, volume_key, volume_key_size, params, true);
 }
 
-#if defined(__GNUC__)
-#define CRYPT_EXPORT_SYMBOL(func, maj, min) \
-	        __asm__(".symver " #func "_v" #maj "_" #min ", " #func "@CRYPTSETUP_" #maj "." #min)
-int crypt_format_v2_0(struct crypt_device *cd, const char *type, const char *cipher,
-		 const char *cipher_mode,const char *uuid, const char *volume_key,
-		 size_t volume_key_size, void *params);
 
-int crypt_format_v2_0(struct crypt_device *cd, const char *type, const char *cipher,
-		 const char *cipher_mode,const char *uuid, const char *volume_key,
-		 size_t volume_key_size, void *params)
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_format, 2, 0,
+	/* crypt_format parameters follows */
+	struct crypt_device *cd,
+	const char *type,
+	const char *cipher,
+	const char *cipher_mode,
+	const char *uuid,
+	const char *volume_key,
+	size_t volume_key_size,
+	void *params)
 {
 	return _crypt_format(cd, type, cipher, cipher_mode, uuid, volume_key, volume_key_size, params, false);
 }
-CRYPT_EXPORT_SYMBOL(crypt_format, 2, 0);
-#endif
 
 int crypt_repair(struct crypt_device *cd,
 		 const char *requested_type,

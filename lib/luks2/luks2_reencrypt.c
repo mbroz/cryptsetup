@@ -3325,9 +3325,11 @@ static int reencrypt_teardown(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return r;
 }
 
-int crypt_reencrypt(struct crypt_device *cd,
-		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
-		    void *usrptr)
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_reencrypt, 2, 4,
+	/* crypt_reencrypt parameters follows */
+	struct crypt_device *cd,
+	int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
+	void *usrptr)
 {
 	int r;
 	crypt_reencrypt_info ri;
@@ -3388,18 +3390,13 @@ int crypt_reencrypt(struct crypt_device *cd,
 	return r;
 }
 
-#if defined(__GNUC__)
-#define CRYPT_EXPORT_SYMBOL(func, maj, min) \
-	        __asm__(".symver " #func "_v" #maj "_" #min ", " #func "@CRYPTSETUP_" #maj "." #min)
-int crypt_reencrypt_v2_0(struct crypt_device *cd,
-		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr));
-int crypt_reencrypt_v2_0(struct crypt_device *cd,
-		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_reencrypt, 2, 0,
+	/* crypt_reencrypt parameters follows */
+	struct crypt_device *cd,
+	int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
 {
 	return crypt_reencrypt(cd, progress, NULL);
 }
-CRYPT_EXPORT_SYMBOL(crypt_reencrypt, 2, 0);
-#endif
 
 static int reencrypt_recovery(struct crypt_device *cd,
 		struct luks2_hdr *hdr,

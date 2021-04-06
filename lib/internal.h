@@ -47,6 +47,7 @@
 #include "libcryptsetup.h"
 
 #include "libcryptsetup_macros.h"
+#include "libcryptsetup_symver.h"
 
 #define LOG_MAX_LEN		4096
 #define MAX_DM_DEPS		32
