@@ -1,0 +1,35 @@
+#!/bin/bash
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 2
+}
+
+function generate() {
+	local ver=
+
+	while IFS= read -r line; do
+		local len=${#line}
+
+
+		if [ "${line:0:11}" = "CRYPTSETUP_" ]; then
+			local i=12
+			while [ $i -lt $len ]; do
+				if [ "${line:$i:1}" = "{" ]; then
+					ver=${line:0:$i}
+					break
+				fi
+				i=$((i+1))
+			done
+		elif [ "${line:0:6}" = "crypt_" -a -n "$ver" ]; then
+			printf 'CHECK_SYMBOL(%s, %s)\n' $line $ver
+		fi
+	done < <(tr -d '[:blank:];' < $1)
+}
+
+test $# -ge 1 || fail "usage: $0 <symbol_file>"
+
+test -f $1 || fail "$1 is not a file."
+
+generate $1

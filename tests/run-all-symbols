@@ -1,0 +1,21 @@
+#!/bin/bash
+
+DIR=../.libs
+FILE=$DIR/libcryptsetup.so
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 77
+}
+
+test -d $DIR || fail "Directory $DIR is missing."
+test -f $FILE || skip "WARNING: Shared $FILE is missing, test skipped."
+
+./all-symbols-test $FILE $@

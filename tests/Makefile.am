@@ -19,7 +19,8 @@ TESTS = 00modules-test \
 	luks2-integrity-test \
 	vectors-test \
 	blockwise-compat \
-	bitlk-compat-test
+	bitlk-compat-test \
+	run-all-symbols
 
 if VERITYSETUP
 TESTS += verity-compat-test
@@ -77,9 +78,11 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	Makefile.localtest \
 	bitlk-compat-test \
 	bitlk-images.tar.xz \
-	ssh-plugin-test
+	ssh-plugin-test \
+	generate-symbols-list \
+	run-all-symbols
 
-CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log
+CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h
 clean-local:
 	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp
 
@@ -112,7 +115,18 @@ unit_utils_io_LDFLAGS = $(AM_LDFLAGS) -static
 unit_utils_io_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
 unit_utils_io_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
-check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io
+BUILT_SOURCES = test-symbols-list.h
+
+test-symbols-list.h: $(top_srcdir)/lib/libcryptsetup.sym generate-symbols-list
+	$(srcdir)/generate-symbols-list $(top_srcdir)/lib/libcryptsetup.sym > $(builddir)/test-symbols-list.h
+
+all_symbols_test_SOURCES = all-symbols-test.c
+nodist_all_symbols_test_SOURCES = test-symbols-list.h
+all_symbols_test.$(OBJEXT): test-symbols-list.h
+all_symbols_test_CFLAGS = -ldl
+all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
+
+check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io all-symbols-test
 
 conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz

@@ -5,7 +5,7 @@
 CPPFLAGS=-I../lib/ -I../lib/luks1 -DHAVE_DECL_DM_TASK_RETRY_REMOVE -DKERNEL_KEYRING -DHAVE_SYS_SYSMACROS_H -DNO_CRYPTSETUP_PATH
 CFLAGS=-O2 -g -Wall
 LDLIBS=-lcryptsetup -ldevmapper
-TESTS=$(wildcard *-test *-test2) api-test api-test-2
+TESTS=$(wildcard *-test *-test2) api-test api-test-2 all-symbols-test
 
 differ: differ.o
 	$(CC) -o $@ $^
@@ -16,6 +16,15 @@ api-test: api-test.o test_utils.o
 api-test-2: api-test-2.o test_utils.o
 	$(CC) -o $@ $^ $(LDLIBS)
 
+test-symbols-list.h: generate-symbols-list
+	./generate-symbols-list ../lib/libcryptsetup.sym > test-symbols-list.h
+
+all-symbols-test.o: test-symbols-list.h
+	$(CC) -D_GNU_SOURCE -c $*.c
+
+all-symbols-test: all-symbols-test.o
+	$(CC) -o $@ $^ -ldl
+
 tests: differ $(TESTS)
 	@for test in $(sort $(TESTS)); do \
 		echo [$$test]; \
@@ -25,6 +34,6 @@ tests: differ $(TESTS)
 	done;
 
 clean:
-	rm -f *.o differ api-test api-test-2
+	rm -f *.o differ api-test api-test-2 all-symbols-test test-symbols-list.h
 
 .PHONY: clean
