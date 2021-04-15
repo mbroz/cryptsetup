@@ -2276,6 +2276,12 @@ int crypt_token_register(const crypt_token_handler *handler);
  *
  * @return unlocked key slot number or negative errno otherwise.
  *
+ * @note EPERM errno means token provided passphrase successfully, but
+ *       passphrase did not unlock any keyslot associated with the token.
+ *
+ * @note ENOENT errno means no token (or subsequently assigned keyslot) was
+ * 	 eligible to unlock device.
+ *
  * @note EAGAIN errno means that token is PIN protected and you should call
  *       @link crypt_activate_by_token_pin @endlink with PIN
  */
@@ -2290,12 +2296,18 @@ int crypt_activate_by_token(struct crypt_device *cd,
  *
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check token
- * @param type restrict type of token, if @e NULL all types eligible
+ * @param type restrict type of token, if @e NULL all types are allowed
  * @param token requested token to check or CRYPT_ANY_TOKEN to check all
  * @param usrptr provided identification in callback
  * @param flags activation flags
  *
  * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note EPERM errno means token provided passphrase successfully, but
+ *       passphrase did not unlock any keyslot associated with the token.
+ *
+ * @note ENOENT errno means no token of given type (or subsequently assigned keyslot)
+ * 	 was eligible to unlock device.
  *
  * @note EAGAIN errno means that token is PIN protected and you should call
  *       @link crypt_activate_by_token_pin @endlink with PIN
@@ -2312,7 +2324,7 @@ int crypt_activate_by_token_type(struct crypt_device *cd,
  *
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check token
- * @param type restrict type of token, if @e NULL all types eligible
+ * @param type restrict type of token, if @e NULL all types are allowed
  * @param token requested token to check or CRYPT_ANY_TOKEN to check all
  * @param pin passphrase (or PIN) to unlock token (may be binary data)
  * @param pin_size size of @e pin
@@ -2320,6 +2332,13 @@ int crypt_activate_by_token_type(struct crypt_device *cd,
  * @param flags activation flags
  *
  * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note EPERM errno means pin did not match or token provided passphrase
+ *       successfully, but passphrase did not unlock any keyslot associated
+ *       with the token.
+ *
+ * @note ENOENT errno means no token (or subsequently assigned keyslot) was
+ * 	 eligible to unlock device.
  */
 int crypt_activate_by_token_pin(struct crypt_device *cd,
 	const char *name,
