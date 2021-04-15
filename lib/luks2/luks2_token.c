@@ -429,6 +429,16 @@ static int token_for_segment(struct luks2_hdr *hdr, json_object *jobj_token, int
 	return r;
 }
 
+static int translate_errno(struct crypt_device *cd, int ret_val, const char *type)
+{
+	if ((ret_val > 0 || ret_val == -EINVAL || ret_val == -ENOENT) && !is_builtin_candidate(type)) {
+		log_dbg(cd, "%s token handler returned %d. Changing to %d.", type, ret_val, -EPERM);
+		ret_val = -EPERM;
+	}
+
+	return ret_val;
+}
+
 static int LUKS2_token_open(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
@@ -467,15 +477,15 @@ static int LUKS2_token_open(struct crypt_device *cd,
 
 	if (h->validate && h->validate(cd, token_json_to_string(jobj_token))) {
 		log_dbg(cd, "Token %d (%s) validation failed.", token, h->name);
-		return -EINVAL;
+		return -ENOENT;
 	}
 
 	if (pin && !h->open_pin)
 		r = -ENOENT;
 	else if (pin)
-		r = h->open_pin(cd, token, pin, pin_size, buffer, buffer_len, usrptr);
+		r = translate_errno(cd, h->open_pin(cd, token, pin, pin_size, buffer, buffer_len, usrptr), h->name);
 	else
-		r = h->open(cd, token, buffer, buffer_len, usrptr);
+		r = translate_errno(cd, h->open(cd, token, buffer, buffer_len, usrptr), h->name);
 	if (r < 0)
 		log_dbg(cd, "Token %d (%s) open failed with %d.", token, h->name, r);
 
@@ -521,7 +531,7 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* Try to open keyslot referenced in token */
-	r = -EINVAL;
+	r = -ENOENT;
 	for (i = 0; i < (int) json_object_array_length(jobj_token_keyslots) && r < 0; i++) {
 		jobj = json_object_array_get_idx(jobj_token_keyslots, i);
 		num = atoi(json_object_get_string(jobj));
@@ -584,7 +594,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 								buffer, buffer_size, &vk);
 				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
 			}
-			if (r >= 0)
+			if (r != -ENOENT && r != -EPERM)
 				break;
 		}
 	} else
