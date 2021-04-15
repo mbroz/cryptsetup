@@ -463,16 +463,15 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 	size_t buffer_len,
 	struct volume_key **vk)
 {
-	const crypt_token_handler *h;
-	json_object *jobj_token, *jobj_token_keyslots, *jobj;
+	json_object *jobj_token, *jobj_token_keyslots, *jobj_type, *jobj;
 	unsigned int num = 0;
 	int i, r;
 
-	if (!(h = LUKS2_token_handler(cd, token)))
-		return -ENOENT;
-
 	jobj_token = LUKS2_get_token_jobj(hdr, token);
 	if (!jobj_token)
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(jobj_token, "type", &jobj_type))
 		return -EINVAL;
 
 	json_object_object_get_ex(jobj_token, "keyslots", &jobj_token_keyslots);
@@ -484,7 +483,7 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 	for (i = 0; i < (int) json_object_array_length(jobj_token_keyslots) && r < 0; i++) {
 		jobj = json_object_array_get_idx(jobj_token_keyslots, i);
 		num = atoi(json_object_get_string(jobj));
-		log_dbg(cd, "Trying to open keyslot %u with token %d (type %s).", num, token, h->name);
+		log_dbg(cd, "Trying to open keyslot %u with token %d (type %s).", num, token, json_object_get_string(jobj_type));
 		r = LUKS2_keyslot_open(cd, num, segment, buffer, buffer_len, vk);
 	}
 
