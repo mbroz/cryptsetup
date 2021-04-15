@@ -279,15 +279,6 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	uint32_t flags,
 	void *usrptr);
 
-int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	const char *name,
-	const char *type,
-	const char *pin,
-	size_t pin_size,
-	uint32_t flags,
-	void *usrptr);
-
 int LUKS2_token_keyring_get(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,

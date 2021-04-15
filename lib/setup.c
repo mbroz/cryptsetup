@@ -5682,9 +5682,6 @@ int crypt_activate_by_token_pin(struct crypt_device *cd, const char *name,
 	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
 		return -EINVAL;
 
-	if (token == CRYPT_ANY_TOKEN)
-		return LUKS2_token_open_and_activate_any(cd, &cd->u.luks2.hdr, name, type, pin, pin_size, flags, type ? usrptr : NULL);
-
 	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, type, pin, pin_size, flags, usrptr);
 }
 

@@ -389,30 +389,43 @@ crypt_token_info LUKS2_token_status(struct crypt_device *cd,
 	return is_builtin_candidate(tmp) ? CRYPT_TOKEN_INTERNAL_UNKNOWN : CRYPT_TOKEN_EXTERNAL_UNKNOWN;
 }
 
+static const char *token_json_to_string(json_object *jobj_token)
+{
+	return json_object_to_json_string_ext(jobj_token,
+		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
+}
+
 static int LUKS2_token_open(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
+	json_object *jobj_token,
+	const char *type,
 	const char *pin,
 	size_t pin_size,
 	char **buffer,
 	size_t *buffer_len,
 	void *usrptr)
 {
-	const char *json;
 	const struct crypt_token_handler_v2 *h;
+	json_object *jobj_type;
 	int r;
+
+	if (token < 0 || !jobj_token)
+		return -EINVAL;
+
+	if (type) {
+		if (!json_object_object_get_ex(jobj_token, "type", &jobj_type))
+			return -EINVAL;
+		if (strcmp(type, json_object_get_string(jobj_type)))
+			return -ENOENT;
+	}
 
 	if (!(h = LUKS2_token_handler(cd, token)))
 		return -ENOENT;
 
-	if (h->validate) {
-		if (LUKS2_token_json_get(cd, hdr, token, &json))
-			return -EINVAL;
-
-		if (h->validate(cd, json)) {
-			log_dbg(cd, "Token %d (%s) validation failed.", token, h->name);
-			return -EINVAL;
-		}
+	if (h->validate && h->validate(cd, token_json_to_string(jobj_token))) {
+		log_dbg(cd, "Token %d (%s) validation failed.", token, h->name);
+		return -EINVAL;
 	}
 
 	if (pin && !h->open_pin)
@@ -492,31 +505,45 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	void *usrptr)
 {
 	bool use_keyring;
-	int keyslot, r;
 	char *buffer;
-	size_t buffer_len;
-	json_object *jobj_token, *jobj_type;
+	size_t buffer_size;
+	json_object *jobj_tokens, *jobj_token;
+	int keyslot, r = -ENOENT;
 	struct volume_key *vk = NULL;
 
-	if (type) {
-		if (!(jobj_token = LUKS2_get_token_jobj(hdr, token)))
-			return -ENOENT;
-		if (!json_object_object_get_ex(jobj_token, "type", &jobj_type))
-			return -EINVAL;
-		if (strcmp(type, json_object_get_string(jobj_type)))
-			return -ENOENT;
-	}
+	if (token >= 0 && token < LUKS2_TOKENS_MAX) {
+		if ((jobj_token = LUKS2_get_token_jobj(hdr, token))) {
+			r = LUKS2_token_open(cd, hdr, token, jobj_token, type, pin, pin_size, &buffer, &buffer_size, usrptr);
+			if (!r) {
+				r = LUKS2_keyslot_open_by_token(cd, hdr, token,
+								(flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
+								CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
+								buffer, buffer_size, &vk);
+				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
+			}
+		}
+	} else if (token == CRYPT_ANY_TOKEN) {
+		json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens);
 
-	r = LUKS2_token_open(cd, hdr, token, pin, pin_size, &buffer, &buffer_len, usrptr);
-	if (r < 0)
-		return r;
+		/* passing usrptr for CRYPT_ANY_TOKEN does not make sense without specific type */
+		if (!type)
+			usrptr = NULL;
 
-	r = LUKS2_keyslot_open_by_token(cd, hdr, token,
-					(flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
-					CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
-					buffer, buffer_len, &vk);
-
-	LUKS2_token_buffer_free(cd, token, buffer, buffer_len);
+		json_object_object_foreach(jobj_tokens, slot, val) {
+			token = atoi(slot);
+			r = LUKS2_token_open(cd, hdr, token, val, type, pin, pin_size, &buffer, &buffer_size, usrptr);
+			if (!r) {
+				r = LUKS2_keyslot_open_by_token(cd, hdr, token,
+								(flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
+								CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
+								buffer, buffer_size, &vk);
+				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
+			}
+			if (r >= 0)
+				break;
+		}
+	} else
+		return -EINVAL;
 
 	if (r < 0)
 		return r;
@@ -530,62 +557,6 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 			       (flags & CRYPT_ACTIVATE_KEYRING_KEY));
 
 	if (use_keyring) {
-		if (!(r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd, hdr, vk, keyslot)))
-			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
-	}
-
-	if (r >= 0 && name)
-		r = LUKS2_activate(cd, name, vk, flags);
-
-	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
-	crypt_free_volume_key(vk);
-
-	return r < 0 ? r : keyslot;
-}
-
-int LUKS2_token_open_and_activate_any(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	const char *name,
-	const char *type,
-	const char *pin,
-	size_t pin_size,
-	uint32_t flags,
-	void *usrptr)
-{
-	char *buffer;
-	json_object *tokens_jobj, *type_jobj;
-	size_t buffer_len;
-	int keyslot, token, r = -EINVAL;
-	struct volume_key *vk = NULL;
-
-	json_object_object_get_ex(hdr->jobj, "tokens", &tokens_jobj);
-
-	json_object_object_foreach(tokens_jobj, slot, val) {
-		if (type) {
-			if (!json_object_object_get_ex(val, "type", &type_jobj))
-				return -EINVAL;
-			if (strcmp(type, json_object_get_string(type_jobj)))
-				continue;
-		}
-		token = atoi(slot);
-
-		r = LUKS2_token_open(cd, hdr, token, pin, pin_size, &buffer, &buffer_len, usrptr);
-		if (r < 0)
-			continue;
-
-		r = LUKS2_keyslot_open_by_token(cd, hdr, token,
-						(flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
-						CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
-						buffer, buffer_len, &vk);
-		LUKS2_token_buffer_free(cd, token, buffer, buffer_len);
-		if (r >= 0)
-			break;
-	}
-
-	keyslot = r;
-
-	if (r >= 0 && (name || (flags & CRYPT_ACTIVATE_KEYRING_KEY)) && crypt_use_keyring_for_vk(cd)) {
 		if (!(r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd, hdr, vk, keyslot)))
 			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 	}
@@ -623,8 +594,7 @@ int LUKS2_token_json_get(struct crypt_device *cd __attribute__((unused)), struct
 	if (!jobj_token)
 		return -EINVAL;
 
-	*json = json_object_to_json_string_ext(jobj_token,
-		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
+	*json = token_json_to_string(jobj_token);
 	return 0;
 }
 
