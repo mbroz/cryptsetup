@@ -395,11 +395,46 @@ static const char *token_json_to_string(json_object *jobj_token)
 		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
 }
 
+static int token_for_segment(struct luks2_hdr *hdr, json_object *jobj_token, int segment)
+{
+	json_object *jobj_array;
+	int i, len, r = -ENOENT;
+
+	if (!jobj_token)
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(jobj_token, "keyslots", &jobj_array))
+		return -EINVAL;
+
+	if (segment < 0 && segment != CRYPT_ANY_SEGMENT)
+		return -EINVAL;
+
+	/* no assigned keyslot returns -ENOENT even for CRYPT_ANY_SEGMENT */
+	len = json_object_array_length(jobj_array);
+	if (len <= 0)
+		return -ENOENT;
+
+	/* no need to check anything */
+	if (segment == CRYPT_ANY_SEGMENT)
+		return 0;
+
+	for (i = 0; i < len; i++) {
+		r = LUKS2_keyslot_for_segment(hdr,
+				atoi(json_object_get_string(json_object_array_get_idx(jobj_array, i))),
+				segment);
+		if (r != -ENOENT)
+			return r;
+	}
+
+	return r;
+}
+
 static int LUKS2_token_open(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
 	json_object *jobj_token,
 	const char *type,
+	int segment,
 	const char *pin,
 	size_t pin_size,
 	char **buffer,
@@ -418,6 +453,13 @@ static int LUKS2_token_open(struct crypt_device *cd,
 			return -EINVAL;
 		if (strcmp(type, json_object_get_string(jobj_type)))
 			return -ENOENT;
+	}
+
+	r = token_for_segment(hdr, jobj_token, segment);
+	if (r < 0) {
+		if (r == -ENOENT)
+			log_dbg(cd, "Token %d unusable for segment %d.", token, segment);
+		return r;
 	}
 
 	if (!(h = LUKS2_token_handler(cd, token)))
@@ -507,16 +549,22 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	char *buffer;
 	size_t buffer_size;
 	json_object *jobj_tokens, *jobj_token;
-	int keyslot, r = -ENOENT;
+	int keyslot, segment, r = -ENOENT;
 	struct volume_key *vk = NULL;
+
+	if (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY)
+		segment = CRYPT_ANY_SEGMENT;
+	else {
+		segment = LUKS2_get_default_segment(hdr);
+		if (segment < 0)
+			return -EINVAL;
+	}
 
 	if (token >= 0 && token < LUKS2_TOKENS_MAX) {
 		if ((jobj_token = LUKS2_get_token_jobj(hdr, token))) {
-			r = LUKS2_token_open(cd, hdr, token, jobj_token, type, pin, pin_size, &buffer, &buffer_size, usrptr);
+			r = LUKS2_token_open(cd, hdr, token, jobj_token, type, segment, pin, pin_size, &buffer, &buffer_size, usrptr);
 			if (!r) {
-				r = LUKS2_keyslot_open_by_token(cd, hdr, token,
-								(flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
-								CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
+				r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment,
 								buffer, buffer_size, &vk);
 				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
 			}
@@ -530,11 +578,9 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 
 		json_object_object_foreach(jobj_tokens, slot, val) {
 			token = atoi(slot);
-			r = LUKS2_token_open(cd, hdr, token, val, type, pin, pin_size, &buffer, &buffer_size, usrptr);
+			r = LUKS2_token_open(cd, hdr, token, val, type, segment, pin, pin_size, &buffer, &buffer_size, usrptr);
 			if (!r) {
-				r = LUKS2_keyslot_open_by_token(cd, hdr, token,
-								(flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
-								CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
+				r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment,
 								buffer, buffer_size, &vk);
 				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
 			}
