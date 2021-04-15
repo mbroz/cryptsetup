@@ -455,8 +455,8 @@ static int LUKS2_token_open(struct crypt_device *cd,
 	json_object *jobj_type;
 	int r;
 
-	if (token < 0 || !jobj_token)
-		return -EINVAL;
+	assert(token >= 0);
+	assert(jobj_token);
 
 	if (type) {
 		if (!json_object_object_get_ex(jobj_token, "type", &jobj_type))
