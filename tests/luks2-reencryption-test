@@ -943,12 +943,6 @@ $CRYPTSETUP status $DEV_NAME >/dev/null || fail
 dmsetup remove --retry $DEV_NAME2
 $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 
-if ! dm_delay_features; then
-	echo "dm-delay target is missing, skipping recovery tests."
-	remove_mapping
-	exit 0
-fi
-
 # check tool can block some funny user ideas
 preparebig 64
 ln -s $DEV $DEV_LINK || fail
@@ -960,6 +954,12 @@ open_crypt $PWD1
 $CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME -q 2>/dev/null && fail
 $CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME --header $DEV -q 2>/dev/null && fail
 $CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME --header $DEV_LINK -q 2>/dev/null && fail
+
+if ! dm_delay_features; then
+	echo "dm-delay target is missing, skipping recovery tests."
+	remove_mapping
+	exit 0
+fi
 
 echo "[6] Reencryption recovery"
 # (check opt-io size optimization in reencryption code does not affect recovery)
