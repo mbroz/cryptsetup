@@ -3160,9 +3160,9 @@ static int init_passphrase(struct keyslot_passwords *kp, size_t keyslot_password
 	return r;
 }
 
-static int _check_luks2_keyslots(struct crypt_device *cd)
+static int _check_luks2_keyslots(struct crypt_device *cd, bool new_vk)
 {
-	int i, max = crypt_keyslot_max(CRYPT_LUKS2), active = 0, unbound = 0;
+	int i, new_vk_slot = (new_vk ? 1 : 0), max = crypt_keyslot_max(CRYPT_LUKS2), active = 0, unbound = 0;
 
 	if (max < 0)
 		return max;
@@ -3184,14 +3184,17 @@ static int _check_luks2_keyslots(struct crypt_device *cd)
 		}
 	}
 
-	/* at least one keyslot for reencryption plus new volume key */
-	if (active + unbound > max - 2) {
+	/* at least one keyslot for reencryption plus new volume key (if needed) */
+	if (active + unbound + new_vk_slot + 1 > max) {
 		log_err(_("Not enough free keyslots for reencryption."));
 		return -EINVAL;
 	}
 
+	if (!new_vk)
+		return 0;
+
 	if ((ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT) &&
-            (2 * active + unbound > max - 1)) {
+            (2 * active + unbound + 1 > max)) {
 		log_err(_("Not enough free keyslots for reencryption."));
 		return -EINVAL;
 	}
@@ -3200,13 +3203,14 @@ static int _check_luks2_keyslots(struct crypt_device *cd)
 }
 
 static int fill_keyslot_passwords(struct crypt_device *cd,
-		struct keyslot_passwords *kp, size_t kp_size)
+		struct keyslot_passwords *kp, size_t kp_size,
+		bool new_vk)
 {
 	char msg[128];
 	crypt_keyslot_info ki;
 	int i, r = 0;
 
-	if (ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT && ARG_SET(OPT_KEY_FILE_ID)) {
+	if (new_vk && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT && ARG_SET(OPT_KEY_FILE_ID)) {
 		for (i = 0; (size_t)i < kp_size; i++) {
 			ki = crypt_keyslot_status(cd, i);
 			if (ki == CRYPT_SLOT_INVALID)
@@ -3224,6 +3228,9 @@ static int fill_keyslot_passwords(struct crypt_device *cd,
 			if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), i) < 0)
 				return -EINVAL;
 			r = init_passphrase(kp, kp_size, cd, msg, i);
+			/* no need to initialize all keyslots with --keep-key */
+			if (r >= 0 && !new_vk)
+				break;
 			if (r == -ENOENT)
 				r = 0;
 			if (r < 0)
@@ -3255,11 +3262,12 @@ static int assign_tokens(struct crypt_device *cd, int keyslot_old, int keyslot_n
 
 static int action_reencrypt_luks2(struct crypt_device *cd)
 {
+	bool new_vk_size, new_sector_size, new_vk;
 	size_t i, vk_size, kp_size;
 	int r, keyslot_old = CRYPT_ANY_SLOT, keyslot_new = CRYPT_ANY_SLOT, key_size;
 	char dm_name[PATH_MAX], cipher [MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN], *vk = NULL;
-	const char *active_name = NULL;
-	struct keyslot_passwords *kp;
+	const char *active_name = NULL, *new_cipher = NULL;
+	struct keyslot_passwords *kp = NULL;
 	struct crypt_params_luks2 luks2_params = {};
 	struct crypt_params_reencrypt params = {
 		.mode = CRYPT_REENCRYPT_REENCRYPT,
@@ -3274,28 +3282,36 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 
 	_set_reencryption_flags(&params.flags);
 
-	if (!ARG_SET(OPT_CIPHER_ID) && crypt_is_cipher_null(crypt_get_cipher(cd))) {
+	/* cipher */
+	if (ARG_SET(OPT_CIPHER_ID))
+		new_cipher = ARG_STR(OPT_CIPHER_ID);
+	else if (!ARG_SET(OPT_CIPHER_ID) && crypt_is_cipher_null(crypt_get_cipher(cd))) {
 		log_std(_("Switching data encryption cipher to %s.\n"), DEFAULT_CIPHER(LUKS1));
-		ARG_SET_STR(OPT_CIPHER_ID, strdup(DEFAULT_CIPHER(LUKS1)));
+		new_cipher = DEFAULT_CIPHER(LUKS1);
 	}
 
-	if (!ARG_SET(OPT_CIPHER_ID)) {
+	if (!new_cipher) {
 		strncpy(cipher, crypt_get_cipher(cd), MAX_CIPHER_LEN - 1);
 		strncpy(mode, crypt_get_cipher_mode(cd), MAX_CIPHER_LEN - 1);
 		cipher[MAX_CIPHER_LEN-1] = '\0';
 		mode[MAX_CIPHER_LEN-1] = '\0';
-	} else if ((r = crypt_parse_name_and_mode(ARG_STR(OPT_CIPHER_ID), cipher, NULL, mode))) {
-		log_err(_("No known cipher specification pattern detected."));
-		return r;
+	} else {
+		if ((r = crypt_parse_name_and_mode(new_cipher, cipher, NULL, mode))) {
+			log_err(_("No known cipher specification pattern detected."));
+			return r;
+		}
+
+		/* the segment cipher is identical with existing one */
+		if (!strcmp(cipher, crypt_get_cipher(cd)) && !strcmp(mode, crypt_get_cipher_mode(cd)))
+			new_cipher = NULL;
 	}
 
+	/* sector size */
 	luks2_params.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: (uint32_t)crypt_get_sector_size(cd);
+	new_sector_size = luks2_params.sector_size != (uint32_t)crypt_get_sector_size(cd);
 
-	r = _check_luks2_keyslots(cd);
-	if (r)
-		return r;
-
-	if (ARG_SET(OPT_KEY_SIZE_ID) || ARG_SET(OPT_CIPHER_ID))
+	/* key size */
+	if (ARG_SET(OPT_KEY_SIZE_ID) || new_cipher)
 		key_size = get_adjusted_key_size(mode, DEFAULT_LUKS1_KEYBITS, 0);
 	else
 		key_size = crypt_get_volume_key_size(cd);
@@ -3304,28 +3320,58 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 		return -EINVAL;
 	vk_size = key_size;
 
+	new_vk_size = key_size != crypt_get_volume_key_size(cd);
+
+	/* volume key */
+	new_vk = !ARG_SET(OPT_KEEP_KEY_ID);
+
+	if (new_vk && ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
+		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &vk, key_size);
+		if (r < 0)
+			goto out;
+
+		if (!crypt_activate_by_volume_key(cd, NULL, vk, key_size, 0)) {
+			/* passed key was valid volume key */
+			new_vk = false;
+			crypt_safe_free(vk);
+			vk = NULL;
+		}
+	}
+
+	if (!new_vk && !new_vk_size && !new_cipher && !new_sector_size) {
+		log_err(_("No data segment parameters changed. Reencryption aborted."));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = _check_luks2_keyslots(cd, new_vk);
+	if (r)
+		return r;
+
 	r = crypt_keyslot_max(CRYPT_LUKS2);
 	if (r < 0)
 		return r;
 	kp_size = r;
-	kp = init_keyslot_passwords(kp_size);
 
+	kp = init_keyslot_passwords(kp_size);
 	if (!kp)
 		return -ENOMEM;
 
-	r = fill_keyslot_passwords(cd, kp, kp_size);
+	r = fill_keyslot_passwords(cd, kp, kp_size, new_vk);
 	if (r)
 		goto out;
-
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &vk, key_size);
-		if (r < 0)
-			goto out;
-	}
 
 	r = -ENOENT;
 
 	for (i = 0; i < kp_size; i++) {
+		if (!new_vk) {
+			if (kp[i].password) {
+				r = keyslot_old = kp[i].new = i;
+				break;
+			}
+			continue;
+		}
+
 		if (kp[i].password && keyslot_new < 0) {
 			r = set_keyslot_params(cd, i);
 			if (r < 0)
@@ -3389,14 +3435,16 @@ static int action_reencrypt_luks2(struct crypt_device *cd)
 			cipher, mode, &params);
 out:
 	crypt_safe_free(vk);
-	for (i = 0; i < kp_size; i++) {
-		crypt_safe_free(kp[i].password);
-		if (r < 0 && kp[i].new >= 0 &&
-		    crypt_reencrypt_status(cd, NULL) == CRYPT_REENCRYPT_NONE &&
-		    crypt_keyslot_destroy(cd, kp[i].new))
-			log_dbg("Failed to remove keyslot %d with unbound key.", kp[i].new);
+	if (kp) {
+		for (i = 0; i < kp_size; i++) {
+			crypt_safe_free(kp[i].password);
+			if (r < 0 && kp[i].new >= 0 && kp[i].new != (int)i &&
+			    crypt_reencrypt_status(cd, NULL) == CRYPT_REENCRYPT_NONE &&
+			    crypt_keyslot_destroy(cd, kp[i].new))
+				log_dbg("Failed to remove keyslot %d with unbound key.", kp[i].new);
+		}
+		free(kp);
 	}
-	free(kp);
 	return r;
 }
 

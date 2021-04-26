@@ -83,6 +83,8 @@ ARG(OPT_IV_LARGE_SECTORS, '\0', POPT_ARG_NONE, N_("Use IV counted in sector size
 
 ARG(OPT_JSON_FILE, '\0', POPT_ARG_STRING, N_("Read or write the json from or to a file"), NULL, CRYPT_ARG_STRING, {}, {})
 
+ARG(OPT_KEEP_KEY, '\0', POPT_ARG_NONE, N_("Do not change volume key."), NULL, CRYPT_ARG_BOOL, {}, OPT_KEEP_KEY_ACTIONS)
+
 ARG(OPT_KEY_DESCRIPTION, '\0', POPT_ARG_STRING, N_("Key description"), NULL, CRYPT_ARG_STRING, {}, {})
 
 ARG(OPT_KEY_FILE, 'd', POPT_ARG_STRING, N_("Read the key from a file"), NULL, CRYPT_ARG_STRING, {}, {})

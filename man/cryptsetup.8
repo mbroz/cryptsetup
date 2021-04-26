@@ -1024,6 +1024,12 @@ Using /dev/random can block a long time, potentially
 forever, if not enough entropy can be harvested by
 the kernel.
 .TP
+.B "\-\-keep-key"
+Do not change volume key in \fIreencrypt\fR action.
+
+With LUKS2 it'll reuse key and change other parameters provided it is
+requested. With LUKS1 it just reencrypts the LUKS header and keyslots.
+.TP
 .B "\-\-key\-slot, \-S <0\-N>"
 For LUKS operations that add key material, this options allows you
 to specify which key slot is selected for the new key.
