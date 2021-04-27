@@ -25,6 +25,7 @@
 
 #include "cryptsetup.h"
 #include "cryptsetup_args.h"
+#include "utils_luks.h"
 
 static char *keyfiles[MAX_KEYFILES];
 static char *keyfile_stdin = NULL;
@@ -33,7 +34,7 @@ static int keyfiles_count = 0;
 static int64_t data_shift = 0;
 
 static const char *device_type = "luks";
-static const char *set_pbkdf = NULL;
+const char *set_pbkdf = NULL;
 
 static const char **action_argv;
 static int action_argc;
@@ -41,6 +42,12 @@ static const char *null_action_argv[] = {NULL, NULL};
 static int total_keyfiles = 0;
 
 static struct tools_log_params log_parms;
+
+struct tools_arg tool_core_args[] = { { NULL, false, CRYPT_ARG_BOOL }, /* leave unused due to popt library */
+#define ARG(A, B, C, D, E, F, G, H) { A, false, F, G, H },
+#include "cryptsetup_arg_list.h"
+#undef ARG
+};
 
 void tools_cleanup(void)
 {
@@ -62,93 +69,9 @@ static const char *uuid_or_device_header(const char **data_device)
 	return uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[0]);
 }
 
-static const char *luksType(const char *type)
-{
-	if (type && !strcmp(type, "luks2"))
-		return CRYPT_LUKS2;
-
-	if (type && !strcmp(type, "luks1"))
-		return CRYPT_LUKS1;
-
-	if (type && !strcmp(type, "luks"))
-		return CRYPT_LUKS; /* NULL */
-
-	if (type && *type)
-		return type;
-
-	return CRYPT_LUKS; /* NULL */
-}
-
-static bool isLUKS1(const char *type)
-{
-	return type && !strcmp(type, CRYPT_LUKS1);
-}
-
-static bool isLUKS2(const char *type)
-{
-	return type && !strcmp(type, CRYPT_LUKS2);
-}
-
 static bool isLUKS(const char *type)
 {
 	return isLUKS2(type) || isLUKS1(type);
-}
-
-static int _verify_passphrase(int def)
-{
-	/* Batch mode switch off verify - if not overridden by -y */
-	if (ARG_SET(OPT_VERIFY_PASSPHRASE_ID))
-		def = 1;
-	else if (ARG_SET(OPT_BATCH_MODE_ID))
-		def = 0;
-
-	/* Non-tty input doesn't allow verify */
-	if (def && !isatty(STDIN_FILENO)) {
-		if (ARG_SET(OPT_VERIFY_PASSPHRASE_ID))
-			log_err(_("Can't do passphrase verification on non-tty inputs."));
-		def = 0;
-	}
-
-	return def;
-}
-
-static void _set_activation_flags(uint32_t *flags)
-{
-	if (ARG_SET(OPT_READONLY_ID))
-		*flags |= CRYPT_ACTIVATE_READONLY;
-
-	if (ARG_SET(OPT_ALLOW_DISCARDS_ID))
-		*flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
-
-	if (ARG_SET(OPT_PERF_SAME_CPU_CRYPT_ID))
-		*flags |= CRYPT_ACTIVATE_SAME_CPU_CRYPT;
-
-	if (ARG_SET(OPT_PERF_SUBMIT_FROM_CRYPT_CPUS_ID))
-		*flags |= CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
-
-	if (ARG_SET(OPT_PERF_NO_READ_WORKQUEUE_ID))
-		*flags |= CRYPT_ACTIVATE_NO_READ_WORKQUEUE;
-
-	if (ARG_SET(OPT_PERF_NO_WRITE_WORKQUEUE_ID))
-		*flags |= CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE;
-
-	if (ARG_SET(OPT_INTEGRITY_NO_JOURNAL_ID))
-		*flags |= CRYPT_ACTIVATE_NO_JOURNAL;
-
-	/* In persistent mode, we use what is set on command line */
-	if (ARG_SET(OPT_PERSISTENT_ID))
-		*flags |= CRYPT_ACTIVATE_IGNORE_PERSISTENT;
-
-	/* Only for LUKS2 but ignored elsewhere */
-	if (ARG_SET(OPT_TEST_PASSPHRASE_ID))
-		*flags |= CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY;
-
-	if (ARG_SET(OPT_SERIALIZE_MEMORY_HARD_PBKDF_ID))
-		*flags |= CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF;
-
-	/* Only for plain */
-	if (ARG_SET(OPT_IV_LARGE_SECTORS_ID))
-		*flags |= CRYPT_ACTIVATE_IV_LARGE_SECTORS;
 }
 
 static void _set_reencryption_flags(uint32_t *flags)
@@ -175,11 +98,6 @@ static int _set_keyslot_encryption_params(struct crypt_device *cd)
 	return crypt_keyslot_set_encryption(cd, ARG_STR(OPT_KEYSLOT_CIPHER_ID), ARG_UINT32(OPT_KEYSLOT_KEY_SIZE_ID) / 8);
 }
 
-static int _set_tries_tty(void)
-{
-	return (tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && isatty(STDIN_FILENO)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
-}
-
 static int _try_token_pin_unlock(struct crypt_device *cd,
 				 int token_id,
 				 const char *activated_name,
@@ -203,7 +121,7 @@ static int _try_token_pin_unlock(struct crypt_device *cd,
 
 	do {
 		r = tools_get_key(msg, &pin, &pin_len, 0, 0, NULL,
-				ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+				ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 		if (r < 0)
 			break;
 
@@ -326,7 +244,7 @@ static int action_open_plain(void)
 	if (ARG_SET(OPT_SHARED_ID))
 		activate_flags |= CRYPT_ACTIVATE_SHARED;
 
-	_set_activation_flags(&activate_flags);
+	set_activation_flags(&activate_flags);
 
 	if (!tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID))) {
 		/* If no hash, key is read directly, read size is always key_size
@@ -343,7 +261,7 @@ static int action_open_plain(void)
 		r = tools_get_key(NULL, &password, &passwordLen,
 				  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), key_size_max,
 				  ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
-				  _verify_passphrase(0), 0, cd);
+				  verify_passphrase(0), 0, cd);
 		if (r < 0)
 			goto out;
 
@@ -393,7 +311,7 @@ static int action_open_loopaes(void)
 			goto out;
 	}
 
-	_set_activation_flags(&activate_flags);
+	set_activation_flags(&activate_flags);
 
 	r = crypt_activate_by_keyfile_device_offset(cd, activated_name, CRYPT_ANY_SLOT,
 		tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) ? "/dev/stdin" : ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
@@ -408,12 +326,12 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 {
 	int r, tries, eperm = 0;
 
-	tries = _set_tries_tty();
+	tries = set_tries_tty();
 	do {
 		/* TCRYPT header is encrypted, get passphrase now */
 		r = tools_get_key(NULL, CONST_CAST(char**)&params->passphrase,
 				  &params->passphrase_size, 0, 0, keyfile_stdin, ARG_UINT32(OPT_TIMEOUT_ID),
-				 _verify_passphrase(0), 0, cd);
+				 verify_passphrase(0), 0, cd);
 		if (r < 0)
 			continue;
 
@@ -426,7 +344,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 			r = tools_get_key(_("Enter VeraCrypt PIM: "),
 					&tmp_pim_nptr,
 					&tmp_pim_size, 0, 0, keyfile_stdin, ARG_UINT32(OPT_TIMEOUT_ID),
-					_verify_passphrase(0), 0, cd);
+					verify_passphrase(0), 0, cd);
 			if (r < 0)
 				continue;
 
@@ -506,7 +424,7 @@ static int action_open_tcrypt(void)
 	if (r < 0)
 		goto out;
 
-	_set_activation_flags(&activate_flags);
+	set_activation_flags(&activate_flags);
 
 	if (activated_name)
 		r = crypt_activate_by_volume_key(cd, activated_name, NULL, 0, activate_flags);
@@ -537,7 +455,7 @@ static int action_open_bitlk(void)
 		log_err(_("Device %s is not a valid BITLK device."), action_argv[0]);
 		goto out;
 	}
-	_set_activation_flags(&activate_flags);
+	set_activation_flags(&activate_flags);
 
 	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
 		keysize = crypt_get_volume_key_size(cd);
@@ -554,11 +472,11 @@ static int action_open_bitlk(void)
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
 	} else {
-		tries = _set_tries_tty();
+		tries = set_tries_tty();
 		do {
 			r = tools_get_key(NULL, &password, &passwordLen,
 					ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-					ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+					ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 			if (r < 0)
 				goto out;
 
@@ -808,7 +726,7 @@ static int action_resize(void)
 
 		r = tools_get_key(NULL, &password, &passwordLen,
 				  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-				  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+				  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 		if (r < 0)
 			goto out;
 
@@ -1115,32 +1033,6 @@ static int action_benchmark(void)
 	return r;
 }
 
-static int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
-{
-	const struct crypt_pbkdf_type *pbkdf_default;
-	struct crypt_pbkdf_type pbkdf = {};
-
-	pbkdf_default = crypt_get_pbkdf_default(dev_type);
-	if (!pbkdf_default)
-		return -EINVAL;
-
-	pbkdf.type = set_pbkdf ?: pbkdf_default->type;
-	pbkdf.hash = ARG_STR(OPT_HASH_ID) ?: pbkdf_default->hash;
-	pbkdf.time_ms = ARG_UINT32(OPT_ITER_TIME_ID) ?: pbkdf_default->time_ms;
-	if (strcmp(pbkdf.type, CRYPT_KDF_PBKDF2)) {
-		pbkdf.max_memory_kb = ARG_UINT32(OPT_PBKDF_MEMORY_ID) ?: pbkdf_default->max_memory_kb;
-		pbkdf.parallel_threads = ARG_UINT32(OPT_PBKDF_PARALLEL_ID) ?: pbkdf_default->parallel_threads;
-	}
-
-	if (ARG_SET(OPT_PBKDF_FORCE_ITERATIONS_ID)) {
-		pbkdf.iterations = ARG_UINT32(OPT_PBKDF_FORCE_ITERATIONS_ID);
-		pbkdf.time_ms = 0;
-		pbkdf.flags |= CRYPT_PBKDF_NO_BENCHMARK;
-	}
-
-	return crypt_set_pbkdf_type(cd, &pbkdf);
-}
-
 static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 {
 	const char *cipher;
@@ -1204,7 +1096,7 @@ static int _do_luks2_reencrypt_recovery(struct crypt_device *cd)
 	r = tools_get_key(_("Enter passphrase for reencryption recovery: "),
 			  &password, &passwordLen, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
 			  ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
-			  _verify_passphrase(0), 0, cd);
+			  verify_passphrase(0), 0, cd);
 	if (r < 0)
 		return r;
 
@@ -1307,22 +1199,7 @@ static int strcmp_or_null(const char *str, const char *expected)
 	return !str ? 0 : strcmp(str, expected);
 }
 
-static int get_adjusted_key_size(const char *cipher_mode, uint32_t default_size_bits, int integrity_keysize)
-{
-	uint32_t keysize_bits = ARG_UINT32(OPT_KEY_SIZE_ID);
-
-#ifdef ENABLE_LUKS_ADJUST_XTS_KEYSIZE
-	if (!ARG_SET(OPT_KEY_SIZE_ID) && !strncmp(cipher_mode, "xts-", 4)) {
-		if (default_size_bits == 128)
-			keysize_bits = 256;
-		else if (default_size_bits == 256)
-			keysize_bits = 512;
-	}
-#endif
-	return (keysize_bits ?: default_size_bits) / 8 + integrity_keysize;
-}
-
-static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen)
+int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen)
 {
 	int r = -EINVAL, keysize, integrity_keysize = 0, fd, created = 0;
 	struct stat st;
@@ -1463,7 +1340,7 @@ static int _luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+			  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 	if (r < 0)
 		goto out;
 
@@ -1525,7 +1402,7 @@ out:
 
 static int action_luksFormat(void)
 {
-	return _luksFormat(NULL, NULL, NULL);
+	return luksFormat(NULL, NULL, NULL);
 }
 
 static int action_open_luks(void)
@@ -1566,7 +1443,7 @@ static int action_open_luks(void)
 		}
 	}
 
-	_set_activation_flags(&activate_flags);
+	set_activation_flags(&activate_flags);
 
 	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
 		keysize = crypt_get_volume_key_size(cd);
@@ -1590,16 +1467,16 @@ static int action_open_luks(void)
 
 		/* Token requires PIN, but ask only if there is no password query later */
 		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
-			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), activated_name, ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags, _set_tries_tty());
+			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), activated_name, ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags, set_tries_tty());
 
 		if (r >= 0 || r == -EEXIST || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
 
-		tries = _set_tries_tty();
+		tries = set_tries_tty();
 		do {
 			r = tools_get_key(NULL, &password, &passwordLen,
 					ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-					ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+					ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 			if (r < 0)
 				goto out;
 
@@ -1639,7 +1516,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot, crypt_keyslot_i
 
 	r = tools_get_key(msg_pass, &password, &passwordLen,
 			  keyfile_offset, keyfile_size, key_file, ARG_UINT32(OPT_TIMEOUT_ID),
-			  _verify_passphrase(0), 0, cd);
+			  verify_passphrase(0), 0, cd);
 	if (r < 0)
 		goto out;
 
@@ -1749,7 +1626,7 @@ static int action_luksRemoveKey(void)
 		      &password, &passwordLen,
 		      ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
 		      ARG_UINT32(OPT_TIMEOUT_ID),
-		      _verify_passphrase(0), 0,
+		      verify_passphrase(0), 0,
 		      cd);
 	if(r < 0)
 		goto out;
@@ -1829,7 +1706,7 @@ static int luksAddUnboundKey(void)
 			  &password_new, &password_new_size,
 			  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID),
 			  new_key_file, ARG_UINT32(OPT_TIMEOUT_ID),
-			  _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+			  verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 	if (r < 0)
 		goto out;
 
@@ -1901,7 +1778,7 @@ static int action_luksAddKey(void)
 				  &password_new, &password_new_size,
 				  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID),
 				  new_key_file, ARG_UINT32(OPT_TIMEOUT_ID),
-				  _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+				  verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 		if (r < 0)
 			goto out;
 
@@ -1917,7 +1794,7 @@ static int action_luksAddKey(void)
 		r = tools_get_key(_("Enter any existing passphrase: "),
 			      &password, &password_size,
 			      ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			      ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+			      ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 
 		if (r < 0)
 			goto out;
@@ -1934,7 +1811,7 @@ static int action_luksAddKey(void)
 		r = tools_get_key(_("Enter new passphrase for key slot: "),
 				  &password_new, &password_new_size,
 				  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID), new_key_file,
-				  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+				  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 		if (r < 0)
 			goto out;
 
@@ -1985,7 +1862,7 @@ static int action_luksChangeKey(void)
 	r = tools_get_key(_("Enter passphrase to be changed: "),
 		      &password, &password_size,
 		      ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-		      ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+		      ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
 		goto out;
 
@@ -2002,7 +1879,7 @@ static int action_luksChangeKey(void)
 			  &password_new, &password_new_size,
 			  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID),
 			  new_key_file,
-			  ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+			  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 	if (r < 0)
 		goto out;
 
@@ -2051,7 +1928,7 @@ static int action_luksConvertKey(void)
 	r = tools_get_key(_("Enter passphrase for keyslot to be converted: "),
 		      &password, &password_size,
 		      ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-		      ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+		      ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
 		goto out;
 
@@ -2315,11 +2192,11 @@ static int action_luksResume(void)
 		goto out;
 	}
 
-	tries = _set_tries_tty();
+	tries = set_tries_tty();
 	do {
 		r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 		if (r < 0)
 			goto out;
 
@@ -2826,7 +2703,7 @@ static int action_reencrypt_load(struct crypt_device *cd)
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
 		return r;
 
@@ -2977,7 +2854,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		}
 	}
 
-	r = _luksFormat(cd, &password, &passwordLen);
+	r = luksFormat(cd, &password, &passwordLen);
 	if (r < 0)
 		goto out;
 
@@ -3012,7 +2889,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 	/* activate device */
 	if (action_argc > 1) {
 		activated_name = action_argv[1];
-		_set_activation_flags(&activate_flags);
+		set_activation_flags(&activate_flags);
 		r = crypt_activate_by_passphrase(*cd, activated_name, ARG_INT32(OPT_KEY_SLOT_ID), password, passwordLen, activate_flags);
 		if (r >= 0)
 			log_std(_("%s/%s is now active and ready for online encryption.\n"), crypt_get_dir(), activated_name);
@@ -3060,7 +2937,7 @@ static int action_decrypt_luks2(struct crypt_device *cd)
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
+			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
 		return r;
 
@@ -3117,7 +2994,7 @@ static int init_passphrase(struct keyslot_passwords *kp, size_t keyslot_password
 			return -ENOENT;
 	}
 
-	retry_count = _set_tries_tty();
+	retry_count = set_tries_tty();
 
 	while (retry_count--) {
 		r = tools_get_key(msg,  &password, &passwordLen, 0, 0,

@@ -89,10 +89,6 @@ OPT_UNUSED_ID = 0, /* leave unused due to popt library */
 #undef ARG
 };
 
-static struct tools_arg tool_core_args[] = { { NULL, false, CRYPT_ARG_BOOL }, /* leave unused due to popt library */
-#define ARG(A, B, C, D, E, F, G, H) { A, false, F, G, H },
-#include "cryptsetup_arg_list.h"
-#undef ARG
-};
+extern struct tools_arg tool_core_args[];
 
 #endif
