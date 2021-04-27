@@ -43,4 +43,6 @@ int get_adjusted_key_size(const char *cipher_mode, uint32_t default_size_bits, i
 
 int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen);
 
+int reencrypt(int action_argc, const char **action_argv);
+
 #endif /* UTILS_LUKS_H */
