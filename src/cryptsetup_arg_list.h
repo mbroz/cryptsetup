@@ -202,3 +202,15 @@ ARG(OPT_VERACRYPT_QUERY_PIM, '\0', POPT_ARG_NONE, N_("Query Personal Iteration M
 ARG(OPT_VERBOSE, 'v', POPT_ARG_NONE, N_("Shows more detailed error messages"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_VERIFY_PASSPHRASE, 'y', POPT_ARG_NONE, N_("Verifies the passphrase by asking for it twice"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+/* added for reencryption */
+
+ARG(OPT_BLOCK_SIZE, 'B', POPT_ARG_STRING, N_("Reencryption block size"), N_("MiB"), CRYPT_ARG_UINT32, { .u32_value = 4 }, {})
+
+ARG(OPT_NEW, 'N', POPT_ARG_NONE, N_("Create new header on not encrypted device"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+ARG(OPT_USE_DIRECTIO, '\0', POPT_ARG_NONE, N_("Use direct-io when accessing devices"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+ARG(OPT_USE_FSYNC, '\0', POPT_ARG_NONE, N_("Use fsync after each block"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+ARG(OPT_WRITE_LOG, '\0', POPT_ARG_NONE, N_("Update log file after every block"), NULL, CRYPT_ARG_BOOL, {}, {})
