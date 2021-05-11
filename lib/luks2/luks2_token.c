@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include <dlfcn.h>
 #include <assert.h>
+#include <sys/stat.h>
 
 #include "luks2_internal.h"
 
@@ -93,6 +94,7 @@ static bool token_validate_v2(struct crypt_device *cd, const struct crypt_token_
 
 	return true;
 }
+#endif
 
 static bool external_token_name_valid(const char *name)
 {
@@ -107,7 +109,6 @@ static bool external_token_name_valid(const char *name)
 
 	return true;
 }
-#endif
 
 static int
 crypt_token_load_external(struct crypt_device *cd, const char *name, struct crypt_token_handler_internal *ret)
@@ -168,6 +169,59 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 
 	return 0;
 #else
+	int r;
+	char buf[512];
+	struct stat st_buf;
+	void *h;
+	Dl_serinfo dsi, *dsi_full = NULL;
+	unsigned int i = 0;
+	static bool skip_check = false;
+
+	if (skip_check)
+		return -ENOTSUP;
+
+	if (!ret || !name)
+		return -EINVAL;
+
+	if (!external_token_name_valid(name))
+		return -EINVAL;
+
+	/* returns handle for main program */
+	h = dlopen(NULL, RTLD_LAZY);
+        if (!h) {
+		skip_check = true;
+		return -ENOTSUP;
+	}
+
+	if (dlinfo(h, RTLD_DI_SERINFOSIZE, &dsi))
+		goto out;
+
+	dsi_full = malloc(dsi.dls_size);
+	if (!dsi_full)
+		goto out;
+
+	dsi_full->dls_size = dsi.dls_size;
+	dsi_full->dls_cnt = dsi.dls_cnt;
+
+	if (dlinfo(h, RTLD_DI_SERINFO, dsi_full))
+		goto out;
+
+	while (i < dsi_full->dls_cnt) {
+		r = snprintf(buf, sizeof(buf), "%s/libcryptsetup-token-%s.so", dsi_full->dls_serpath[i++].dls_name, name);
+		if (r < 0 || (size_t)r >= sizeof(buf))
+			continue;
+		if (stat(buf, &st_buf) < 0)
+			continue;
+		if (S_ISREG(st_buf.st_mode)) {
+			log_err(cd, _("WARNING: %s plugin installed but libcryptsetup external tokens handlers are disabled."), name);
+			skip_check = true;
+			break;
+		}
+	}
+out:
+	free(dsi_full);
+	dlclose(h);
+
 	return -ENOTSUP;
 #endif
 }
