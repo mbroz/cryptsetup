@@ -38,6 +38,15 @@ static struct crypt_token_handler_internal token_handlers[LUKS2_TOKENS_MAX] = {
 	}
 };
 
+int crypt_token_external_support(void)
+{
+#if USE_EXTERNAL_TOKENS
+	return 0;
+#else
+	return -ENOTSUP;
+#endif
+}
+
 #if USE_EXTERNAL_TOKENS
 static void *token_dlvsym(struct crypt_device *cd,
 		void *handle,
