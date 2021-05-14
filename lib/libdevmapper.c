@@ -33,7 +33,7 @@
 #ifdef HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
-
+#include <assert.h>
 #include "internal.h"
 
 #define DM_UUID_LEN		129
@@ -603,11 +603,18 @@ static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char 
 	return 0;
 }
 
+static char *_uf(char *buf, size_t buf_size, const char *s, unsigned u)
+{
+	size_t r = snprintf(buf, buf_size, " %s:%u", s, u);
+	assert(r > 0 && r < buf_size);
+	return buf;
+}
+
 /* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt */
 static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 {
 	int r, max_size, null_cipher = 0, num_options = 0, keystr_len = 0;
-	char *params, *hexkey;
+	char *params = NULL, *hexkey = NULL;
 	char sector_feature[32], features[512], integrity_dm[256], cipher_dm[256];
 
 	if (!tgt)
@@ -632,22 +639,22 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		num_options++;
 	if (tgt->u.crypt.integrity)
 		num_options++;
-
-	if (tgt->u.crypt.sector_size != SECTOR_SIZE) {
+	if (tgt->u.crypt.sector_size != SECTOR_SIZE)
 		num_options++;
-		snprintf(sector_feature, sizeof(sector_feature), " sector_size:%u", tgt->u.crypt.sector_size);
-	} else
-		*sector_feature = '\0';
 
-	if (num_options) {
-		snprintf(features, sizeof(features)-1, " %d%s%s%s%s%s%s%s%s", num_options,
+	if (num_options) { /* MAX length  int32 + 15 + 15 + 23 + 18 + 19 + 17 + 13 + int32 + integrity_str */
+		r = snprintf(features, sizeof(features), " %d%s%s%s%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? " allow_discards" : "",
 		(flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? " same_cpu_crypt" : "",
 		(flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? " submit_from_crypt_cpus" : "",
 		(flags & CRYPT_ACTIVATE_NO_READ_WORKQUEUE) ? " no_read_workqueue" : "",
 		(flags & CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) ? " no_write_workqueue" : "",
 		(flags & CRYPT_ACTIVATE_IV_LARGE_SECTORS) ? " iv_large_sectors" : "",
-		sector_feature, integrity_dm);
+		(tgt->u.crypt.sector_size != SECTOR_SIZE) ?
+			_uf(sector_feature, sizeof(sector_feature), "sector_size", tgt->u.crypt.sector_size) : "",
+		integrity_dm);
+		if (r < 0 || (size_t)r >= sizeof(features))
+			goto out;
 	} else
 		*features = '\0';
 
@@ -663,16 +670,14 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		hexkey = crypt_safe_alloc(tgt->u.crypt.vk->keylength * 2 + 1);
 
 	if (!hexkey)
-		return NULL;
+		goto out;
 
 	if (null_cipher)
 		strncpy(hexkey, "-", 2);
 	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		r = snprintf(hexkey, keystr_len, ":%zu:logon:%s", tgt->u.crypt.vk->keylength, tgt->u.crypt.vk->key_description);
-		if (r < 0 || r >= keystr_len) {
-			params = NULL;
+		if (r < 0 || r >= keystr_len)
 			goto out;
-		}
 	} else
 		hex_key(hexkey, tgt->u.crypt.vk->keylength, tgt->u.crypt.vk->key);
 
@@ -699,10 +704,10 @@ out:
 /* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity */
 static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 {
-	int max_size, r, num_options = 0;
+	int max_size, max_fec_size, max_verify_size, r, num_options = 0;
 	struct crypt_params_verity *vp;
 	char *params = NULL, *hexroot = NULL, *hexsalt = NULL;
-	char features[256], fec_features[256], verity_verify_args[512+32];
+	char features[256], *fec_features = NULL, *verity_verify_args = NULL;
 
 	if (!tgt || !tgt->u.verity.vp)
 		return NULL;
@@ -728,30 +733,45 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 	if (flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE)
 		num_options++;
 
-	if (tgt->u.verity.fec_device) {
+	max_fec_size = (tgt->u.verity.fec_device ? strlen(device_block_path(tgt->u.verity.fec_device)) : 0) + 256;
+	fec_features = crypt_safe_alloc(max_fec_size);
+	if (!fec_features)
+		goto out;
+
+	if (tgt->u.verity.fec_device) {  /* MAX length 21 + path + 11 + int64 + 12 + int64 + 11 + int32 */
 		num_options += 8;
-		snprintf(fec_features, sizeof(fec_features)-1,
+		r = snprintf(fec_features, max_fec_size,
 			 " use_fec_from_device %s fec_start %" PRIu64 " fec_blocks %" PRIu64 " fec_roots %" PRIu32,
 			 device_block_path(tgt->u.verity.fec_device), tgt->u.verity.fec_offset,
 			 tgt->u.verity.fec_blocks, vp->fec_roots);
+		if (r < 0 || r >= max_fec_size)
+			goto out;
 	} else
 		*fec_features = '\0';
 
-	if (tgt->u.verity.root_hash_sig_key_desc) {
+	max_verify_size = (tgt->u.verity.root_hash_sig_key_desc ? strlen(tgt->u.verity.root_hash_sig_key_desc) : 0) + 32;
+	verity_verify_args = crypt_safe_alloc(max_verify_size);
+	if (!verity_verify_args)
+		goto out;
+	if (tgt->u.verity.root_hash_sig_key_desc) {  /* MAX length 24 + key_str */
 		num_options += 2;
-		snprintf(verity_verify_args, sizeof(verity_verify_args)-1,
+		r = snprintf(verity_verify_args, max_verify_size,
 				" root_hash_sig_key_desc %s", tgt->u.verity.root_hash_sig_key_desc);
+		if (r < 0 || r >= max_verify_size)
+			goto out;
 	} else
 		*verity_verify_args = '\0';
 
-	if (num_options)
-		snprintf(features, sizeof(features)-1, " %d%s%s%s%s%s", num_options,
+	if (num_options) {  /* MAX length int32 + 18 + 22 + 20 + 19 + 19 */
+		r = snprintf(features, sizeof(features), " %d%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? " ignore_corruption" : "",
 		(flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? " restart_on_corruption" : "",
 		(flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION) ? " panic_on_corruption" : "",
 		(flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? " ignore_zero_blocks" : "",
 		(flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? " check_at_most_once" : "");
-	else
+		if (r < 0 || (size_t)r >= sizeof(features))
+			goto out;
+	} else
 		*features = '\0';
 
 	hexroot = crypt_safe_alloc(tgt->u.verity.root_hash_size * 2 + 1);
@@ -785,12 +805,13 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 		     vp->data_size, tgt->u.verity.hash_offset,
 		     vp->hash_name, hexroot, hexsalt, features, fec_features,
 		     verity_verify_args);
-
 	if (r < 0 || r >= max_size) {
 		crypt_safe_free(params);
 		params = NULL;
 	}
 out:
+	crypt_safe_free(fec_features);
+	crypt_safe_free(verity_verify_args);
 	crypt_safe_free(hexroot);
 	crypt_safe_free(hexsalt);
 	return params;
@@ -798,162 +819,143 @@ out:
 
 static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags)
 {
-	int r, max_size, num_options = 0;
-	char *params, *hexkey, mode;
-	char features[512], feature[256];
+	int r, max_size, max_integrity, max_journal_integrity, max_journal_crypt, num_options = 0;
+	char *params_out = NULL, *params, *hexkey, mode, feature[6][32];
+	char *features, *integrity, *journal_integrity, *journal_crypt;
 
 	if (!tgt)
 		return NULL;
 
+	max_integrity = (tgt->u.integrity.integrity && tgt->u.integrity.vk ? tgt->u.integrity.vk->keylength * 2 : 0) +
+		(tgt->u.integrity.integrity ? strlen(tgt->u.integrity.integrity) : 0) + 32;
+	max_journal_integrity = (tgt->u.integrity.journal_integrity && tgt->u.integrity.journal_integrity_key ?
+		tgt->u.integrity.journal_integrity_key->keylength * 2 : 0) +
+		(tgt->u.integrity.journal_integrity ? strlen(tgt->u.integrity.journal_integrity) : 0) + 32;
+	max_journal_crypt = (tgt->u.integrity.journal_crypt && tgt->u.integrity.journal_crypt_key ?
+		tgt->u.integrity.journal_crypt_key->keylength * 2 : 0) +
+		(tgt->u.integrity.journal_crypt ? strlen(tgt->u.integrity.journal_crypt) : 0) + 32;
 	max_size = strlen(device_block_path(tgt->data_device)) +
-			(tgt->u.integrity.meta_device ? strlen(device_block_path(tgt->u.integrity.meta_device)) : 0) +
-			(tgt->u.integrity.vk ? tgt->u.integrity.vk->keylength * 2 : 0) +
-			(tgt->u.integrity.journal_integrity_key ? tgt->u.integrity.journal_integrity_key->keylength * 2 : 0) +
-			(tgt->u.integrity.journal_crypt_key ? tgt->u.integrity.journal_crypt_key->keylength * 2 : 0) +
-			(tgt->u.integrity.integrity ? strlen(tgt->u.integrity.integrity) : 0) +
-			(tgt->u.integrity.journal_integrity ? strlen(tgt->u.integrity.journal_integrity) : 0) +
-			(tgt->u.integrity.journal_crypt ? strlen(tgt->u.integrity.journal_crypt) : 0) + 128;
+		(tgt->u.integrity.meta_device ? strlen(device_block_path(tgt->u.integrity.meta_device)) : 0) +
+		max_integrity + max_journal_integrity + max_journal_crypt + 512;
 
 	params = crypt_safe_alloc(max_size);
-	if (!params)
-		return NULL;
+	features = crypt_safe_alloc(max_size);
+	integrity = crypt_safe_alloc(max_integrity);
+	journal_integrity = crypt_safe_alloc(max_journal_integrity);
+	journal_crypt = crypt_safe_alloc(max_journal_crypt);
+	if (!params || !features || !integrity || !journal_integrity || !journal_crypt)
+		goto out;
 
-	*features = '\0';
-	if (tgt->u.integrity.journal_size) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "journal_sectors:%u ",
-			 (unsigned)(tgt->u.integrity.journal_size / SECTOR_SIZE));
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-	if (tgt->u.integrity.journal_watermark) {
-		num_options++;
-		snprintf(feature, sizeof(feature),
-			 /* bitmap overloaded values */
-			 (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) ? "sectors_per_bit:%u " : "journal_watermark:%u ",
-			 tgt->u.integrity.journal_watermark);
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-	if (tgt->u.integrity.journal_commit_time) {
-		num_options++;
-		snprintf(feature, sizeof(feature),
-			 /* bitmap overloaded values */
-			 (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) ? "bitmap_flush_interval:%u " : "commit_time:%u ",
-			 tgt->u.integrity.journal_commit_time);
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-	if (tgt->u.integrity.interleave_sectors) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "interleave_sectors:%u ",
-			 tgt->u.integrity.interleave_sectors);
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-	if (tgt->u.integrity.sector_size) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "block_size:%u ",
-			 tgt->u.integrity.sector_size);
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-	if (tgt->u.integrity.buffer_sectors) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "buffer_sectors:%u ",
-			 tgt->u.integrity.buffer_sectors);
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-	if (tgt->u.integrity.integrity) {
+	if (tgt->u.integrity.integrity) { /* MAX length 16 + str_integrity +  str_key */
 		num_options++;
 
 		if (tgt->u.integrity.vk) {
 			hexkey = crypt_safe_alloc(tgt->u.integrity.vk->keylength * 2 + 1);
-			if (!hexkey) {
-				crypt_safe_free(params);
-				return NULL;
-			}
+			if (!hexkey)
+				goto out;
 			hex_key(hexkey, tgt->u.integrity.vk->keylength, tgt->u.integrity.vk->key);
 		} else
 			hexkey = NULL;
 
-		snprintf(feature, sizeof(feature), "internal_hash:%s%s%s ",
+		r = snprintf(integrity, max_integrity, " internal_hash:%s%s%s",
 			 tgt->u.integrity.integrity, hexkey ? ":" : "", hexkey ?: "");
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
+		if (r < 0 || r >= max_integrity)
+			goto out;
 	}
 
-	if (tgt->u.integrity.journal_integrity) {
+	if (tgt->u.integrity.journal_integrity) { /* MAX length 14 + str_journal_integrity + str_key */
 		num_options++;
 
 		if (tgt->u.integrity.journal_integrity_key) {
 			hexkey = crypt_safe_alloc(tgt->u.integrity.journal_integrity_key->keylength * 2 + 1);
-			if (!hexkey) {
-				crypt_safe_free(params);
-				return NULL;
-			}
+			if (!hexkey)
+				goto out;
 			hex_key(hexkey, tgt->u.integrity.journal_integrity_key->keylength,
 				tgt->u.integrity.journal_integrity_key->key);
 		} else
 			hexkey = NULL;
 
-		snprintf(feature, sizeof(feature), "journal_mac:%s%s%s ",
+		r = snprintf(journal_integrity, max_journal_integrity, " journal_mac:%s%s%s",
 			 tgt->u.integrity.journal_integrity, hexkey ? ":" : "", hexkey ?: "");
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
+		if (r < 0 || r >= max_journal_integrity)
+			goto out;
 	}
 
-	if (tgt->u.integrity.journal_crypt) {
+	if (tgt->u.integrity.journal_crypt) { /* MAX length 15 + str_journal_crypt + str_key */
 		num_options++;
 
 		if (tgt->u.integrity.journal_crypt_key) {
 			hexkey = crypt_safe_alloc(tgt->u.integrity.journal_crypt_key->keylength * 2 + 1);
-			if (!hexkey) {
-				crypt_safe_free(params);
-				return NULL;
-			}
+			if (!hexkey)
+				goto out;
 			hex_key(hexkey, tgt->u.integrity.journal_crypt_key->keylength,
 				tgt->u.integrity.journal_crypt_key->key);
 		} else
 			hexkey = NULL;
 
-		snprintf(feature, sizeof(feature), "journal_crypt:%s%s%s ",
+		r = snprintf(journal_crypt, max_journal_crypt, " journal_crypt:%s%s%s",
 			 tgt->u.integrity.journal_crypt, hexkey ? ":" : "", hexkey ?: "");
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
 		crypt_safe_free(hexkey);
+		if (r < 0 || r >= max_journal_crypt)
+			goto out;
 	}
 
-	if (tgt->u.integrity.fix_padding) {
+	if (tgt->u.integrity.journal_size)
 		num_options++;
-		snprintf(feature, sizeof(feature), "fix_padding ");
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
+	if (tgt->u.integrity.journal_watermark)
+		num_options++;
+	if (tgt->u.integrity.journal_commit_time)
+		num_options++;
+	if (tgt->u.integrity.interleave_sectors)
+		num_options++;
+	if (tgt->u.integrity.sector_size)
+		num_options++;
+	if (tgt->u.integrity.buffer_sectors)
+		num_options++;
+	if (tgt->u.integrity.fix_padding)
+		num_options++;
+	if (tgt->u.integrity.fix_hmac)
+		num_options++;
+	if (tgt->u.integrity.legacy_recalc)
+		num_options++;
+	if (tgt->u.integrity.meta_device)
+		num_options++;
+	if (flags & CRYPT_ACTIVATE_RECALCULATE)
+		num_options++;
+	if (flags & CRYPT_ACTIVATE_ALLOW_DISCARDS)
+		num_options++;
 
-	if (tgt->u.integrity.fix_hmac) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "fix_hmac ");
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-
-	if (tgt->u.integrity.legacy_recalc) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "legacy_recalculate ");
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-
-	if (flags & CRYPT_ACTIVATE_RECALCULATE) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "recalculate ");
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-
-	if (flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "allow_discards ");
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
-
-	if (tgt->u.integrity.meta_device) {
-		num_options++;
-		snprintf(feature, sizeof(feature), "meta_device:%s ",
-			 device_block_path(tgt->u.integrity.meta_device));
-		strncat(features, feature, sizeof(features) - strlen(features) - 1);
-	}
+	r = snprintf(features, max_size, "%d%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", num_options,
+		tgt->u.integrity.journal_size ? _uf(feature[0], sizeof(feature[0]), /* MAX length 17 + int32 */
+			"journal_sectors", (unsigned)(tgt->u.integrity.journal_size / SECTOR_SIZE)) : "",
+		tgt->u.integrity.journal_watermark ? _uf(feature[1], sizeof(feature[1]), /* MAX length 19 + int32 */
+			 /* bitmap overloaded values */
+			 (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) ? "sectors_per_bit" : "journal_watermark",
+			 tgt->u.integrity.journal_watermark) : "",
+		tgt->u.integrity.journal_commit_time ? _uf(feature[2], sizeof(feature[2]), /* MAX length 23 + int32 */
+			 /* bitmap overloaded values */
+			 (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) ? "bitmap_flush_interval" : "commit_time",
+			 tgt->u.integrity.journal_commit_time) : "",
+		tgt->u.integrity.interleave_sectors ? _uf(feature[3], sizeof(feature[3]), /* MAX length 20 + int32 */
+			"interleave_sectors", tgt->u.integrity.interleave_sectors) : "",
+		tgt->u.integrity.sector_size ? _uf(feature[4], sizeof(feature[4]), /* MAX length 12 + int32 */
+			"block_size", tgt->u.integrity.sector_size) : "",
+		tgt->u.integrity.buffer_sectors ? _uf(feature[5], sizeof(feature[5]), /* MAX length 16 + int32 */
+			"buffer_sectors", tgt->u.integrity.buffer_sectors) : "",
+		tgt->u.integrity.integrity ? integrity : "",
+		tgt->u.integrity.journal_integrity ? journal_integrity : "",
+		tgt->u.integrity.journal_crypt ? journal_crypt : "",
+		tgt->u.integrity.fix_padding ?  " fix_padding" : "", /* MAX length 12 */
+		tgt->u.integrity.fix_hmac ?  " fix_hmac" : "", /* MAX length 9 */
+		tgt->u.integrity.legacy_recalc ? " legacy_recalculate" : "", /* MAX length 19 */
+		flags & CRYPT_ACTIVATE_RECALCULATE ? " recalculate" : "", /* MAX length 12 */
+		flags & CRYPT_ACTIVATE_ALLOW_DISCARDS ? " allow_discards" : "", /* MAX length 15 */
+		tgt->u.integrity.meta_device ? " meta_device:" : "", /* MAX length 13 + str_device */
+		tgt->u.integrity.meta_device ? device_block_path(tgt->u.integrity.meta_device) : "");
+	if (r < 0 || r >= max_size)
+		goto out;
 
 	if (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP)
 		mode = 'B';
@@ -964,16 +966,22 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	else
 		mode = 'J';
 
-	r = snprintf(params, max_size, "%s %" PRIu64 " %d %c %d %s",
+	r = snprintf(params, max_size, "%s %" PRIu64 " %d %c %s",
 		     device_block_path(tgt->data_device), tgt->u.integrity.offset,
-		     tgt->u.integrity.tag_size, mode,
-		     num_options, *features ? features : "");
-	if (r < 0 || r >= max_size) {
-		crypt_safe_free(params);
-		params = NULL;
-	}
+		     tgt->u.integrity.tag_size, mode, features);
+	if (r < 0 || r >= max_size)
+		goto out;
 
-	return params;
+	params_out = params;
+out:
+	crypt_safe_free(features);
+	crypt_safe_free(integrity);
+	crypt_safe_free(journal_integrity);
+	crypt_safe_free(journal_crypt);
+	if (!params_out)
+		crypt_safe_free(params);
+
+	return params_out;
 }
 
 static char *get_dm_linear_params(const struct dm_target *tgt, uint32_t flags)
