@@ -68,7 +68,7 @@ function dm_integrity_features()
 
 add_device() {
 	cleanup
-	dd if=/dev/urandom of=$KEY_FILE bs=1 count=512 >/dev/null 2>&1
+	dd if=/dev/urandom of=$KEY_FILE bs=4096 count=1 >/dev/null 2>&1
 	dd if=/dev/urandom of=$KEY_FILE2 bs=1 count=32 >/dev/null 2>&1
 	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
 	dd if=/dev/zero of=$DEV2 bs=1M count=32 >/dev/null 2>&1
@@ -161,10 +161,12 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 	fi
 
 	echo -n "[INTEGRITY:$2:$4:$5]"
+	[ -n "$8" ] && echo -n "[KEYFILE:$8]"
 	echo -n "[FORMAT]"
 	$INTSETUP format --integrity-legacy-padding -q --integrity $1 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
-		if ! grep -q $1 /proc/crypto ; then
+		ALG=$(echo $1 | sed -e 's/hmac-//')
+		if ! grep -q $ALG /proc/crypto ; then
 			echo "[N/A]"
 			return
 		fi
@@ -175,6 +177,11 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 	dump_check "sector_size" $5
 	echo -n "[ACTIVATE]"
 	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
+	if [ -n "$8" ]; then
+		KEY_HEX=$(xxd -c 4096 -l $8 -p $7)
+		[ -z "$KEY_HEX" ] && fail "Cannot decode key."
+		dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
+	fi
 	status_check "tag size" $4
 	status_check "integrity" $2
 	status_check "sector size" "$5 bytes"
@@ -238,7 +245,7 @@ int_error_detection() # mode alg tagsize outtagsize sector_size key_file key_siz
 
 int_journal() # 1 alg, 2 tagsize, 3 sector_size, 4 watermark, 5 commit_time, 6 journal_integrity, 7 key-file, 8 key-size, 9 journal_integrity_out
 {
-    echo -n "[INTEGRITY JOURNAL:$6:${4}%:${5}ms]"
+    echo -n "[INTEGRITY JOURNAL:$6:${4}%:${5}ms:$8]"
     echo -n "[FORMAT]"
     ARGS="--integrity $1 --journal-watermark $4 --journal-commit-time $5 --journal-integrity $6 --journal-integrity-key-file $7 --journal-integrity-key-size $8"
     $INTSETUP format -q --tag-size $2 --sector-size $3 $ARGS $DEV || fail "Cannot format device."
@@ -248,7 +255,7 @@ int_journal() # 1 alg, 2 tagsize, 3 sector_size, 4 watermark, 5 commit_time, 6 j
     $INTSETUP open $DEV $DEV_NAME $ARGS || fail "Cannot activate device."
 
     echo -n "[KEYED HASH]"
-    KEY_HEX=$(xxd -c 256 -l $8 -p $7)
+    KEY_HEX=$(xxd -c 4096 -l $8 -p $7)
     [ -z "$KEY_HEX" ] && fail "Cannot decode key."
     dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
 
@@ -339,6 +346,7 @@ intformat sha256      sha256          0 32  512 8e5fe4119558e117bfc40e3b0f13ade3
 intformat hmac-sha256 hmac\(sha256\)  0 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11 $KEY_FILE 32
 intformat sha256      sha256          0 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4
 intformat hmac-sha256 hmac\(sha256\)  0 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4 $KEY_FILE 32
+intformat hmac-sha256 hmac\(sha256\)  0 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4 $KEY_FILE 4096
 
 echo "Error detection tests:"
 int_error_detection J crc32c  0  4  512
@@ -360,6 +368,7 @@ echo "Journal parameters tests:"
 int_journal crc32  4  512  66 1000 hmac-sha256 $KEY_FILE 32 hmac\(sha256\)
 int_journal sha256 32 4096 34 5000 hmac-sha1   $KEY_FILE 16 hmac\(sha1\)
 int_journal sha1   20 512  75 9999 hmac-sha256 $KEY_FILE 32 hmac\(sha256\)
+int_journal sha1   20 512  75 9999 hmac-sha256 $KEY_FILE 4096 hmac\(sha256\)
 
 echo "Journal encryption tests:"
 int_journal_crypt cbc-aes cbc\(aes\) $KEY_FILE 32
