@@ -25,7 +25,6 @@
 #define PACKAGE_INTEGRITY "integritysetup"
 
 #define DEFAULT_ALG_NAME "crc32c"
-#define MAX_KEY_SIZE 4096
 
 static char *opt_data_device = NULL;
 static char *opt_integrity = NULL; /* DEFAULT_ALG_NAME */
@@ -82,8 +81,8 @@ static int _read_mk(const char *file, char **key, int keysize)
 {
 	int fd;
 
-	if (keysize <= 0 || keysize > MAX_KEY_SIZE) {
-		log_err(_("Invalid key size."));
+	if (keysize <= 0 || keysize > (DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB * 1024)) {
+		log_err(_("Invalid key size. Maximum is %u bytes."), DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB * 1024);
 		return -EINVAL;
 	}
 
@@ -519,7 +518,9 @@ static void help(poptContext popt_context,
 			crypt_get_dir());
 
 		log_std(_("\nDefault compiled-in dm-integrity parameters:\n"
-			  "\tChecksum algorithm: %s\n"), DEFAULT_ALG_NAME);
+			  "\tChecksum algorithm: %s\n"
+			  "\tMaximum keyfile size: %dkB\n"),
+			  DEFAULT_ALG_NAME, DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB);
 		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
