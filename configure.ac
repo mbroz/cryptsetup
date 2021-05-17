@@ -621,7 +621,7 @@ CS_STR_WITH([loopaes-cipher], [cipher for loop-AES mode], [aes])
 CS_NUM_WITH([loopaes-keybits],[key length in bits for loop-AES mode], [256])
 
 CS_NUM_WITH([keyfile-size-maxkb],[maximum keyfile size (in KiB)], [8192])
-CS_NUM_WITH([passphrase-size-max],[maximum keyfile size (in characters)], [512])
+CS_NUM_WITH([passphrase-size-max],[maximum passphrase size (in characters)], [512])
 
 CS_STR_WITH([verity-hash],       [hash function for verity mode], [sha256])
 CS_NUM_WITH([verity-data-block], [data block size for verity mode], [4096])
