@@ -1722,10 +1722,7 @@ and for authentication). Both these keys are stored in one LUKS keyslot.
 \fBWARNING:\fR All support for authenticated modes is experimental
 and there are only some modes available for now. Note that there
 are a very few authenticated encryption algorithms that are suitable
-for disk encryption. You also cannot use CRC32 or any other non-cryptographic
-checksums (other than the special integrity mode "none"). If for some reason
-you want to have integrity control without using authentication mode, then you
-should separately configure dm-integrity independently of LUKS2.
+for disk encryption.
 
 .SH NOTES ON LOOPBACK DEVICE USE
 Cryptsetup is usually used directly on a block device (disk
