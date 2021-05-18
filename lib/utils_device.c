@@ -162,6 +162,9 @@ static int device_ready(struct crypt_device *cd, struct device *device)
 	struct stat st;
 	size_t tmp_size;
 
+	if (!device)
+		return -EINVAL;
+
 	if (device->o_direct) {
 		log_dbg(cd, "Trying to open and read device %s with direct-io.",
 			device_path(device));
@@ -216,6 +219,9 @@ static int device_ready(struct crypt_device *cd, struct device *device)
 static int _open_locked(struct crypt_device *cd, struct device *device, int flags)
 {
 	int fd;
+
+	if (!device)
+		return -EINVAL;
 
 	log_dbg(cd, "Opening locked device %s", device_path(device));
 
