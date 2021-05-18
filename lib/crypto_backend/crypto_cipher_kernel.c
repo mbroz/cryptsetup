@@ -96,11 +96,14 @@ int crypt_cipher_init_kernel(struct crypt_cipher_kernel *ctx, const char *name,
 		.salg_family = AF_ALG,
 		.salg_type = "skcipher",
 	};
+	int r;
 
 	if (!strcmp(name, "cipher_null"))
 		key_length = 0;
 
-	snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s(%s)", mode, name);
+	r = snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s(%s)", mode, name);
+	if (r < 0 || (size_t)r >= sizeof(sa.salg_name))
+		return -EINVAL;
 
 	return _crypt_cipher_init(ctx, key, key_length, 0, &sa);
 }
@@ -230,7 +233,10 @@ int crypt_cipher_check_kernel(const char *name, const char *mode,
 	}
 
 	salg_type = aead ? "aead" : "skcipher";
-	snprintf((char *)sa.salg_type, sizeof(sa.salg_type), "%s", salg_type);
+	r = snprintf((char *)sa.salg_type, sizeof(sa.salg_type), "%s", salg_type);
+	if (r < 0 || (size_t)r >= sizeof(sa.salg_name))
+		return -EINVAL;
+
 	memset(tmp_salg_name, 0, sizeof(tmp_salg_name));
 
 	/* FIXME: this is duplicating a part of devmapper backend */
@@ -243,7 +249,7 @@ int crypt_cipher_check_kernel(const char *name, const char *mode,
 	else
 		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s(%s)", real_mode, name);
 
-	if (r <= 0 || r > (int)(sizeof(sa.salg_name) - 1))
+	if (r < 0 || (size_t)r >= sizeof(tmp_salg_name))
 		return -EINVAL;
 
 	memcpy(sa.salg_name, tmp_salg_name, sizeof(sa.salg_name));

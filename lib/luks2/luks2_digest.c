@@ -219,7 +219,9 @@ static int assign_one_digest(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (!jobj_digest_keyslots)
 		return -EINVAL;
 
-	snprintf(num, sizeof(num), "%d", keyslot);
+	if (snprintf(num, sizeof(num), "%d", keyslot) < 0)
+		return -EINVAL;
+
 	if (assign) {
 		jobj1 = LUKS2_array_jobj(jobj_digest_keyslots, num);
 		if (!jobj1)
@@ -304,7 +306,9 @@ static int assign_one_segment(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (!jobj_digest_segments)
 		return -EINVAL;
 
-	snprintf(num, sizeof(num), "%d", segment);
+	if (snprintf(num, sizeof(num), "%d", segment) < 0)
+		return -EINVAL;
+
 	if (assign) {
 		jobj1 = LUKS2_array_jobj(jobj_digest_segments, num);
 		if (!jobj1)

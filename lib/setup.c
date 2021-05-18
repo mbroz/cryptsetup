@@ -1079,10 +1079,15 @@ static int _init_by_name_crypt_none(struct crypt_device *cd)
 					      _mode);
 
 	if (!r) {
-		snprintf(cd->u.none.cipher_spec, sizeof(cd->u.none.cipher_spec),
+		r = snprintf(cd->u.none.cipher_spec, sizeof(cd->u.none.cipher_spec),
 			 "%s-%s", cd->u.none.cipher, _mode);
-		cd->u.none.cipher_mode = cd->u.none.cipher_spec + strlen(cd->u.none.cipher) + 1;
-		cd->u.none.key_size = tgt->u.crypt.vk->keylength;
+		if (r < 0 || (size_t)r >= sizeof(cd->u.none.cipher_spec))
+			r = -EINVAL;
+		else {
+			cd->u.none.cipher_mode = cd->u.none.cipher_spec + strlen(cd->u.none.cipher) + 1;
+			cd->u.none.key_size = tgt->u.crypt.vk->keylength;
+			r = 0;
+		}
 	}
 
 	dm_targets_free(cd, &dmd);

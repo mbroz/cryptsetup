@@ -216,7 +216,7 @@ int LUKS2_generate_hdr(
 	struct json_object *jobj_segment, *jobj_integrity, *jobj_keyslots, *jobj_segments, *jobj_config;
 	char cipher[128];
 	uuid_t partitionUuid;
-	int digest;
+	int r, digest;
 	uint64_t mdev_size;
 
 	if (!metadata_size)
@@ -290,9 +290,11 @@ int LUKS2_generate_hdr(
 	uuid_unparse(partitionUuid, hdr->uuid);
 
 	if (*cipherMode != '\0')
-		snprintf(cipher, sizeof(cipher), "%s-%s", cipherName, cipherMode);
+		r = snprintf(cipher, sizeof(cipher), "%s-%s", cipherName, cipherMode);
 	else
-		snprintf(cipher, sizeof(cipher), "%s", cipherName);
+		r = snprintf(cipher, sizeof(cipher), "%s", cipherName);
+	if (r < 0 || (size_t)r >= sizeof(cipher))
+		return -EINVAL;
 
 	hdr->jobj = json_object_new_object();
 

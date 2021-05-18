@@ -234,8 +234,9 @@ static char *_sysfs_backing_file(const char *loop)
 	if (stat(loop, &st) || !S_ISBLK(st.st_mode))
 		return NULL;
 
-	snprintf(buf, sizeof(buf), "/sys/dev/block/%d:%d/loop/backing_file",
-		 major(st.st_rdev), minor(st.st_rdev));
+	if (snprintf(buf, sizeof(buf), "/sys/dev/block/%d:%d/loop/backing_file",
+		     major(st.st_rdev), minor(st.st_rdev)) < 0)
+		return NULL;
 
 	fd = open(buf, O_RDONLY);
 	if (fd < 0)

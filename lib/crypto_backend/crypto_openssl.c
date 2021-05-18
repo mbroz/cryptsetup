@@ -402,7 +402,7 @@ static int _cipher_init(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const 
 		key_bits /= 2;
 
 	r = snprintf(cipher_name, sizeof(cipher_name), "%s-%d-%s", name, key_bits, mode);
-	if (r < 0 || r >= (int)sizeof(cipher_name))
+	if (r < 0 || (size_t)r >= sizeof(cipher_name))
 		return -EINVAL;
 
 	type = EVP_get_cipherbyname(cipher_name);

@@ -590,9 +590,14 @@ static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char 
 
 	i = sscanf(capi, "%" CLENS "[^(](%" CLENS "[^)])", mode, cipher);
 	if (i == 2)
-		snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s-%s", cipher, mode, iv);
+		i = snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s-%s", cipher, mode, iv);
 	else
-		snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s", capi, iv);
+		i = snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s", capi, iv);
+	if (i < 0 || (size_t)i >= sizeof(dmcrypt_tmp)) {
+		free(*org_i);
+		*org_i = NULL;
+		return -EINVAL;
+	}
 
 	if (!(*org_c = strdup(dmcrypt_tmp))) {
 		free(*org_i);
@@ -1216,7 +1221,7 @@ static int dm_prepare_uuid(struct crypt_device *cd, const char *name, const char
 {
 	char *ptr, uuid2[UUID_LEN] = {0};
 	uuid_t uu;
-	unsigned i = 0;
+	int i = 0;
 
 	/* Remove '-' chars */
 	if (uuid) {
@@ -1236,9 +1241,11 @@ static int dm_prepare_uuid(struct crypt_device *cd, const char *name, const char
 		type ?: "", type ? "-" : "",
 		uuid2[0] ? uuid2 : "", uuid2[0] ? "-" : "",
 		name);
+	if (i < 0)
+		return 0;
 
 	log_dbg(cd, "DM-UUID is %s", buf);
-	if (i >= buflen)
+	if ((size_t)i >= buflen)
 		log_err(cd, _("DM-UUID for device %s was truncated."), name);
 
 	return 1;

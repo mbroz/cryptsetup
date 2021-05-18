@@ -86,7 +86,7 @@ int crypt_parse_hash_integrity_mode(const char *s, char *integrity)
 	else
 		return -EINVAL;
 
-	if (r < 0 || r == MAX_CIPHER_LEN)
+	if (r < 0 || r >= MAX_CIPHER_LEN)
 		return -EINVAL;
 
 	return 0;

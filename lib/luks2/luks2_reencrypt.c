@@ -2310,9 +2310,11 @@ static int reencrypt_init(struct crypt_device *cd,
 	}
 
 	if (!cipher_mode || *cipher_mode == '\0')
-		snprintf(_cipher, sizeof(_cipher), "%s", cipher);
+		r = snprintf(_cipher, sizeof(_cipher), "%s", cipher);
 	else
-		snprintf(_cipher, sizeof(_cipher), "%s-%s", cipher, cipher_mode);
+		r = snprintf(_cipher, sizeof(_cipher), "%s-%s", cipher, cipher_mode);
+	if (r < 0 || (size_t)r >= sizeof(_cipher))
+		return -EINVAL;
 
 	if (MISALIGNED(params->data_shift, sector_size >> SECTOR_SHIFT)) {
 		log_err(cd, _("Data shift is not aligned to requested encryption sector size (%" PRIu32 " bytes)."), sector_size);
