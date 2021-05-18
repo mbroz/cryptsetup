@@ -320,7 +320,8 @@ int LUKS2_token_create(struct crypt_device *cd,
 	if (!json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens))
 		return -EINVAL;
 
-	snprintf(num, sizeof(num), "%d", token);
+	if (snprintf(num, sizeof(num), "%d", token) < 0)
+		return -EINVAL;
 
 	/* Remove token */
 	if (!json)
@@ -678,7 +679,9 @@ static int assign_one_keyslot(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (!jobj_token_keyslots)
 		return -EINVAL;
 
-	snprintf(num, sizeof(num), "%d", keyslot);
+	if (snprintf(num, sizeof(num), "%d", keyslot) < 0)
+		return -EINVAL;
+
 	if (assign) {
 		jobj1 = LUKS2_array_jobj(jobj_token_keyslots, num);
 		if (!jobj1)

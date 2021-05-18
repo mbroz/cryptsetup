@@ -125,7 +125,7 @@ int crypt_backend_init(void)
 		.salg_type = "hash",
 		.salg_name = "sha256",
 	};
-	int tfmfd = -1, opfd = -1;
+	int r, tfmfd = -1, opfd = -1;
 
 	if (crypto_backend_initialised)
 		return 0;
@@ -133,14 +133,16 @@ int crypt_backend_init(void)
 	if (uname(&uts) == -1 || strcmp(uts.sysname, "Linux"))
 		return -EINVAL;
 
+	r = snprintf(version, sizeof(version), "%s %s kernel cryptoAPI",
+		uts.sysname, uts.release);
+	if (r < 0 || (size_t)r >= sizeof(version))
+		return -EINVAL;
+
 	if (crypt_kernel_socket_init(&sa, &tfmfd, &opfd, NULL, 0) < 0)
 		return -EINVAL;
 
 	close(tfmfd);
 	close(opfd);
-
-	snprintf(version, sizeof(version), "%s %s kernel cryptoAPI",
-		 uts.sysname, uts.release);
 
 	crypto_backend_initialised = 1;
 	return 0;
@@ -262,6 +264,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		.salg_family = AF_ALG,
 		.salg_type = "hash",
 	};
+	int r;
 
 	h = malloc(sizeof(*h));
 	if (!h)
@@ -274,8 +277,12 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	}
 	h->hash_len = ha->length;
 
-	snprintf((char *)sa.salg_name, sizeof(sa.salg_name),
+	r = snprintf((char *)sa.salg_name, sizeof(sa.salg_name),
 		 "hmac(%s)", ha->kernel_name);
+	if (r < 0 || (size_t)r >= sizeof(sa.salg_name)) {
+		free(h);
+		return -EINVAL;
+	}
 
 	if (crypt_kernel_socket_init(&sa, &h->tfmfd, &h->opfd, key, key_length) < 0) {
 		free(h);
