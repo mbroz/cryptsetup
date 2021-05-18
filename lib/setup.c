@@ -5095,6 +5095,9 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 /* INTERNAL only */
 const char *crypt_get_integrity(struct crypt_device *cd)
 {
+	if (!cd)
+		return NULL;
+
 	if (isINTEGRITY(cd->type))
 		return cd->u.integrity.params.integrity;
 
