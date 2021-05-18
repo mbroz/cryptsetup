@@ -28,8 +28,6 @@
 
 #define PACKAGE_INTEGRITY "integritysetup"
 
-#define MAX_KEY_SIZE 4096
-
 static const char **action_argv;
 static int action_argc;
 static struct tools_log_params log_parms;
@@ -473,7 +471,9 @@ static void help(poptContext popt_context,
 			crypt_get_dir());
 
 		log_std(_("\nDefault compiled-in dm-integrity parameters:\n"
-			  "\tChecksum algorithm: %s\n"), DEFAULT_ALG_NAME);
+			  "\tChecksum algorithm: %s\n"
+			  "\tMaximum keyfile size: %dkB\n"),
+			  DEFAULT_ALG_NAME, DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB);
 		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
@@ -526,8 +526,9 @@ static void basic_options_cb(poptContext popt_context,
 	case OPT_JOURNAL_INTEGRITY_KEY_SIZE_ID:
 		/* fall through */
 	case OPT_JOURNAL_CRYPT_KEY_SIZE_ID:
-		if (ARG_UINT32(key->val) > MAX_KEY_SIZE) {
-			snprintf(msg, sizeof(msg), _("Invalid --%s size."), key->longName);
+		if (ARG_UINT32(key->val) > (DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB * 1024)) {
+			snprintf(msg, sizeof(msg), _("Invalid --%s size. Maximum is %u bytes."),
+				 key->longName, DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB * 1024);
 			usage(popt_context, EXIT_FAILURE, msg,
 			      poptGetInvocationName(popt_context));
 		}
