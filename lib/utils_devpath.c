@@ -367,7 +367,9 @@ char *crypt_get_base_device(const char *dev_path)
 	if (dm_is_dm_kernel_name(devname))
 		return NULL;
 
-	snprintf(part_path, sizeof(part_path), "/dev/%s", devname);
+	if (snprintf(part_path, sizeof(part_path), "/dev/%s", devname) < 0)
+		return NULL;
+
 	return strdup(part_path);
 }
 

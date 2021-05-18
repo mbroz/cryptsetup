@@ -77,6 +77,8 @@ static struct hash_alg *_get_alg(const char *name)
 
 int crypt_backend_init(void)
 {
+	int r;
+
 	if (crypto_backend_initialised)
 		return 0;
 
@@ -84,10 +86,13 @@ int crypt_backend_init(void)
 		return -EINVAL;
 
 #if HAVE_DECL_NSS_GETVERSION
-	snprintf(version, 64, "NSS %s", NSS_GetVersion());
+	r = snprintf(version, sizeof(version), "NSS %s", NSS_GetVersion());
 #else
-	snprintf(version, 64, "NSS");
+	r = snprintf(version, sizeof(version), "NSS");
 #endif
+	if (r < 0 || (size_t)r >= sizeof(version))
+		return -EINVAL;
+
 	crypto_backend_initialised = 1;
 	return 0;
 }

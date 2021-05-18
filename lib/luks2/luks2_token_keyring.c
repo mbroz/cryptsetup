@@ -114,8 +114,12 @@ void keyring_dump(struct crypt_device *cd, const char *json)
 int LUKS2_token_keyring_json(char *buffer, size_t buffer_size,
 	const struct crypt_token_params_luks2_keyring *keyring_params)
 {
-	snprintf(buffer, buffer_size, "{ \"type\": \"%s\", \"keyslots\":[],\"key_description\":\"%s\"}",
+	int r;
+
+	r = snprintf(buffer, buffer_size, "{ \"type\": \"%s\", \"keyslots\":[],\"key_description\":\"%s\"}",
 		 LUKS2_TOKEN_KEYRING, keyring_params->key_description);
+	if (r < 0 || (size_t)r >= buffer_size)
+		return -EINVAL;
 
 	return 0;
 }

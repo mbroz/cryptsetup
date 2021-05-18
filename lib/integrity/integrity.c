@@ -330,7 +330,9 @@ int INTEGRITY_format(struct crypt_device *cd,
 	uuid_generate(tmp_uuid_bin);
 	uuid_unparse(tmp_uuid_bin, tmp_uuid);
 
-	snprintf(tmp_name, sizeof(tmp_name), "temporary-cryptsetup-%s", tmp_uuid);
+	r = snprintf(tmp_name, sizeof(tmp_name), "temporary-cryptsetup-%s", tmp_uuid);
+	if (r < 0 || (size_t)r >= sizeof(tmp_name))
+		return -EINVAL;
 
 	/* There is no data area, we can actually use fake zeroed key */
 	if (params && params->integrity_key_size)

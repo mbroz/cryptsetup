@@ -1046,8 +1046,10 @@ static int action_benchmark(void)
 				/* TRANSLATORS: The string is header of a table and must be exactly (right side) aligned. */
 				log_std(_("#     Algorithm |       Key |      Encryption |      Decryption\n"));
 
-			snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
-				 bciphers[i].cipher, bciphers[i].mode);
+			if (snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
+				     bciphers[i].cipher, bciphers[i].mode) < 0)
+				r = -EINVAL;
+
 			if (!r)
 				log_std("%15s  %9zub  %10.1f MiB/s  %10.1f MiB/s\n",
 					cipher, bciphers[i].key_size*8, enc_mbr, dec_mbr);
@@ -2875,7 +2877,10 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 	}
 
 	if (!ARG_SET(OPT_HEADER_ID)) {
-		snprintf(header_file, sizeof(header_file), "LUKS2-temp-%s.new", ARG_STR(OPT_UUID_ID));
+		r = snprintf(header_file, sizeof(header_file), "LUKS2-temp-%s.new", ARG_STR(OPT_UUID_ID));
+		if (r < 0 || (size_t)r >= sizeof(header_file))
+			return -EINVAL;
+
 		fd = open(header_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IWUSR);
 		if (fd == -1) {
 			if (errno == EEXIST)
@@ -3161,7 +3166,8 @@ static int fill_keyslot_passwords(struct crypt_device *cd,
 
 	if (ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT) {
 		for (i = 0; (size_t)i < kp_size; i++) {
-			snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), i);
+			if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), i) < 0)
+				return -EINVAL;
 			r = init_passphrase(kp, kp_size, cd, msg, i);
 			if (r == -ENOENT)
 				r = 0;
@@ -3169,7 +3175,8 @@ static int fill_keyslot_passwords(struct crypt_device *cd,
 				break;
 		}
 	} else {
-		snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %u: "), ARG_INT32(OPT_KEY_SLOT_ID));
+		if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %u: "), ARG_INT32(OPT_KEY_SLOT_ID)) < 0)
+			return -EINVAL;
 		r = init_passphrase(kp, kp_size, cd, msg, ARG_INT32(OPT_KEY_SLOT_ID));
 	}
 

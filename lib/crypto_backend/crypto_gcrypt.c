@@ -96,6 +96,8 @@ static void crypt_hash_test_whirlpool_bug(void)
 
 int crypt_backend_init(void)
 {
+	int r;
+
 	if (crypto_backend_initialised)
 		return 0;
 
@@ -125,11 +127,12 @@ int crypt_backend_init(void)
 	crypto_backend_initialised = 1;
 	crypt_hash_test_whirlpool_bug();
 
-	snprintf(version, 64, "gcrypt %s%s%s",
+	r = snprintf(version, sizeof(version), "gcrypt %s%s%s",
 		 gcry_check_version(NULL),
 		 crypto_backend_secmem ? "" : ", secmem disabled",
-		 crypto_backend_whirlpool_bug > 0 ? ", flawed whirlpool" : ""
-		);
+		 crypto_backend_whirlpool_bug > 0 ? ", flawed whirlpool" : "");
+	if (r < 0 || (size_t)r >= sizeof(version))
+		return -EINVAL;
 
 	return 0;
 }
