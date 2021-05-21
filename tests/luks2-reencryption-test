@@ -942,6 +942,17 @@ $CRYPTSETUP status $DEV_NAME >/dev/null || fail
 dmsetup remove --retry $DEV_NAME2
 $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 
+# check tool can block some funny user ideas
+preparebig 64
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c serpent-xts-plain -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV -q 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $DEV -q 2>/dev/null && fail
+open_crypt $PWD1
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME -q 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME --header $DEV -q 2>/dev/null && fail
+$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
+$CRYPTSETUP close $DEV_NAME
+
 if ! dm_delay_features; then
 	echo "dm-delay target is missing, skipping recovery tests."
 	remove_mapping
