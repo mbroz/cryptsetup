@@ -2156,6 +2156,15 @@ int crypt_token_is_assigned(struct crypt_device *cd,
  * @param buffer returned allocated buffer with password
  * @param buffer_len length of the buffer
  * @param usrptr user data in @link crypt_activate_by_token @endlink
+ *
+ * @return 0 on success (token passed LUKS2 keyslot passphrase in buffer) or
+ *         negative errno otherwise.
+ *
+ * @note Negative ENOANO errno means that token is PIN protected and caller should
+ *       use @link crypt_activate_by_token_pin @endlink with PIN provided.
+ *
+ * @note Negative EAGAIN errno means token handler requires additional hardware
+ *       not present in the system.
  */
 typedef int (*crypt_token_open_func) (
 	struct crypt_device *cd,
@@ -2177,6 +2186,15 @@ typedef int (*crypt_token_open_func) (
  * @param buffer returned allocated buffer with password
  * @param buffer_len length of the buffer
  * @param usrptr user data in @link crypt_activate_by_token @endlink
+ *
+ * @return 0 on success (token passed LUKS2 keyslot passphrase in buffer) or
+ *         negative errno otherwise.
+ *
+ * @note Negative ENOANO errno means that token is PIN protected and PIN was
+ *       missing or wrong.
+ *
+ * @note Negative EAGAIN errno means token handler requires additional hardware
+ *       not present in the system.
  */
 typedef int (*crypt_token_open_pin_func) (
 	struct crypt_device *cd,
@@ -2293,10 +2311,13 @@ void crypt_token_external_disable(void);
  *       passphrase did not unlock any keyslot associated with the token.
  *
  * @note ENOENT errno means no token (or subsequently assigned keyslot) was
- * 	 eligible to unlock device.
+ *       eligible to unlock device.
  *
- * @note EAGAIN errno means that token is PIN protected and you should call
+ * @note ENOANO errno means that token is PIN protected and you should call
  *       @link crypt_activate_by_token_pin @endlink with PIN
+ *
+ * @note Negative EAGAIN errno means token handler requires additional hardware
+ *       not present in the system.
  */
 int crypt_activate_by_token(struct crypt_device *cd,
 	const char *name,
@@ -2318,12 +2339,17 @@ int crypt_activate_by_token(struct crypt_device *cd,
  *
  * @return unlocked key slot number or negative errno otherwise.
  *
- * @note EPERM errno means pin did not match or token provided passphrase
- *       successfully, but passphrase did not unlock any keyslot associated
- *       with the token.
+ * @note EPERM errno means token provided passphrase successfully, but
+ *       passphrase did not unlock any keyslot associated with the token.
  *
  * @note ENOENT errno means no token (or subsequently assigned keyslot) was
- * 	 eligible to unlock device.
+ *       eligible to unlock device.
+ *
+ * @note ENOANO errno means that token is PIN protected and was either missing
+ *       (NULL) or wrong.
+ *
+ * @note Negative EAGAIN errno means token handler requires additional hardware
+ *       not present in the system.
  */
 int crypt_activate_by_token_pin(struct crypt_device *cd,
 	const char *name,
