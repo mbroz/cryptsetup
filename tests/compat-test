@@ -819,10 +819,12 @@ which expect >/dev/null 2>&1 || skip "WARNING: expect tool missing, interactive 
 
 prepare "[32] Interactive password retry from terminal." new
 EXPECT_DEV=$(losetup $LOOPDEV | sed -e "s/.*(\(.*\))/\1/")
+EXPECT_TIMEOUT=10
+[ -n "$VALG" ] && EXPECT_TIMEOUT=60
 
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW luksOpen -v -T 2 $LOOPDEV $DEV_NAME
 expect timeout abort "Enter passphrase for $EXPECT_DEV:"
 sleep 0.1
@@ -843,7 +845,7 @@ $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 prepare "[33] Interactive unsuccessful password retry from terminal." new
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW luksOpen -v -T 2 $LOOPDEV $DEV_NAME
 expect timeout abort "Enter passphrase for $EXPECT_DEV:"
 sleep 0.1
@@ -861,7 +863,7 @@ EOF
 prepare "[34] Interactive kill of last key slot." new
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW luksKillSlot -v $LOOPDEV 0
 expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
@@ -880,7 +882,7 @@ EOF
 prepare "[35] Interactive format of device." wipe
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 $FAST_PBKDF_OPT -v $LOOPDEV
 expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
@@ -905,7 +907,7 @@ EOF
 prepare "[36] Interactive unsuccessful format of device." new
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW erase -v $LOOPDEV
 expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
@@ -935,7 +937,7 @@ EOF
 prepare "[37] Interactive add key." new
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW luksAddKey -S 2 $FAST_PBKDF_OPT -v $LOOPDEV
 expect timeout abort "Enter any existing passphrase:"
 sleep 0.1
@@ -970,7 +972,7 @@ EOF
 prepare "[38] Interactive change key." new
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW luksChangeKey $FAST_PBKDF_OPT -v $LOOPDEV
 expect timeout abort "Enter passphrase to be changed:"
 sleep 0.1
@@ -997,7 +999,7 @@ prepare "[39] Interactive suspend and resume." new
 echo $PWD0 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW luksSuspend -v $DEV_NAME
 expect timeout abort "Command successful."
 expect timeout abort eof
@@ -1044,7 +1046,7 @@ echo -n "$LONG_PWD" >$KEYE
 
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout 10
+set timeout $EXPECT_TIMEOUT
 eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 $FAST_PBKDF_OPT -v $LOOPDEV
 expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
