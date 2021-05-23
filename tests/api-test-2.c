@@ -2560,7 +2560,7 @@ static void Pbkdf(void)
 		.size = 0
 	};
 	struct crypt_params_luks1 luks1 = {
-		.hash = "whirlpool", // test non-standard hash
+		.hash = "sha512", // test non-standard hash
 		.data_alignment = 2048,
 	};
 
