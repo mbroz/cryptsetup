@@ -724,6 +724,10 @@ The keyfile parameter allows a combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
 with TCRYPT and is different from LUKS keyfile logic.
 
+If you use \fB\-\-header\fR in combination with hidden or system options,
+the header file must contain specific headers on the same positions as the original
+encrypted container.
+
 \fBWARNING:\fR Option \fB\-\-allow\-discards\fR cannot be combined with
 option \fB\-\-tcrypt\-hidden\fR. For normal mapping, it can cause
 the \fBdestruction of hidden volume\fR (hidden volume appears as unused space
