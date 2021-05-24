@@ -731,6 +731,10 @@ If \fB\-\-\cipher\fR or  \fB\-\-hash\fR options are used, only cipher chains or
 PBKDF2 variants with the specified hash algorithms are checked. This could speed
 up unlocking the device (but also it reveals some information about the container).
 
+If you use \fB\-\-header\fR in combination with hidden or system options,
+the header file must contain specific headers on the same positions as the original
+encrypted container.
+
 \fBWARNING:\fR Option \fB\-\-allow\-discards\fR cannot be combined with
 option \fB\-\-tcrypt\-hidden\fR. For normal mapping, it can cause
 the \fBdestruction of hidden volume\fR (hidden volume appears as unused space
