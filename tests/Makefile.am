@@ -145,7 +145,7 @@ valgrind-check: api-test api-test-2 differ
 	@INFOSTRING="api-test-002" ./valg-api.sh ./api-test-2
 	@VALG=1 ./luks2-reencryption-test
 	@VALG=1 ./bitlk-compat-test
-	@VLAG=1 ./tcrypt-compat-test
+	@VALG=1 ./tcrypt-compat-test
 	@grep -l "ERROR SUMMARY: [^0] errors" valglog* || echo "No leaks detected."
 
 .PHONY: valgrind-check
