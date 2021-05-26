@@ -1033,7 +1033,7 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 		/* No real header loaded, initialized by active device, use default mk_offset */
 	} else if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
 		/* Mapping through whole device, not partition! */
-		if (crypt_dev_is_partition(device_path(crypt_metadata_device(cd))))
+		if (crypt_dev_is_partition(device_path(crypt_data_device(cd))))
 			return 0;
 	} else if (params->mode && !strncmp(params->mode, "xts", 3)) {
 		if (hdr->d.version < 3)
@@ -1071,7 +1071,7 @@ uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
 		iv_offset = hdr->d.mk_offset / SECTOR_SIZE;
 
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
-		iv_offset += crypt_dev_partition_offset(device_path(crypt_metadata_device(cd)));
+		iv_offset += crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
 
 	return iv_offset;
 }
