@@ -1028,7 +1028,7 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 
 	/* Mapping through whole device, not partition! */
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
-		if (crypt_dev_is_partition(device_path(crypt_metadata_device(cd))))
+		if (crypt_dev_is_partition(device_path(crypt_data_device(cd))))
 			return 0;
 		goto hdr_offset;
 	}
@@ -1073,7 +1073,7 @@ uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
 		iv_offset = hdr->d.mk_offset / SECTOR_SIZE;
 
 	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
-		iv_offset += crypt_dev_partition_offset(device_path(crypt_metadata_device(cd)));
+		iv_offset += crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
 
 	return iv_offset;
 }
