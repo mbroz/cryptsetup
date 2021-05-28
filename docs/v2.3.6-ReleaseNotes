@@ -1,0 +1,56 @@
+Cryptsetup 2.3.6 Release Notes
+==============================
+Stable bug-fix release with minor extensions.
+
+All users of cryptsetup 2.x and later should upgrade to this version.
+
+Changes since version 2.3.5
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* integritysetup: Fix possible dm-integrity mapping table truncation.
+
+  While integritysetup in standalone mode (no encryption) was not
+  designed to provide keyed (and cryptographically strong) data
+  integrity protection, some options can use such algorithms (HMAC).
+
+  If a key is used, it is directly sent to the kernel dm-integrity as
+  a mapping table option (no key derivation is performed).
+  For HMAC, such a key could be quite long (up to 4096 bytes in
+  integritysetup CLI).
+
+  Unfortunately, due to fixed buffers and not correctly checking string
+  truncation, some parameter combinations could cause truncation
+  of the dm-integrity mapping table.
+  In most cases, the table was rejected by the kernel.
+  The worst possible case was key truncation for HMAC options
+  (internal_hash and journal_mac dm-integrity table options).
+
+  This release fixes possible truncation and also adds more sanity
+  checks to reject truncated options.
+  Also, integritysetup now mentions maximal allowed key size
+  in --help output.
+
+  For old standalone dm-integrity devices where the key length was
+  truncated, you have to modify (shorten) --integrity-key-size
+  resp. --journal-integrity-key-size option now.
+
+  This bug is _not_ present for dm-crypt/LUKS, LUKS2 (including
+  integrity protection), or dm-verity devices; it affects only
+  standalone dm-integrity with HMAC integrity protection.
+
+* cryptsetup: Backup header can be used to activate TCRYPT device.
+  Use --header option to specify the header.
+
+* cryptsetup: Avoid LUKS2 decryption without detached header.
+  This feature will be added later and is currently not supported.
+
+* Additional fixes and workarounds for common warnings produced
+  by some static analysis tools (like gcc-11 analyzer) and additional
+  code hardening.
+
+* Fix standalone libintl detection for compiled tests.
+
+* Add Blake2b and Blake2s hash support for crypto backends.
+  Kernel and gcrypt crypto backend support all variants.
+  OpenSSL supports only Blake2b-512 and Blake2s-256.
+  Crypto backend supports kernel notation e.g. "blake2b-512".
