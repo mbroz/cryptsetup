@@ -45,7 +45,8 @@ function create_user()
 
 function ssh_check()
 {
-        systemctl status sshd >/dev/null 2>&1 || skip "SSH server not running, skipping."
+        # try to use netcat to check port 22
+        nc -zv $SSH_SERVER 22 >/dev/null 2>&1 || skip "SSH server does not seem to be running, skipping."
 }
 
 function bin_check()
@@ -116,6 +117,7 @@ check_dump()
 # Prevent running dangerous useradd operation by default
 [ -z "$RUN_SSH_PLUGIN_TEST" ] && skip "WARNING: Variable RUN_SSH_PLUGIN_TEST must be defined, test skipped."
 
+bin_check nc
 bin_check useradd
 bin_check ssh
 bin_check ssh-keygen
