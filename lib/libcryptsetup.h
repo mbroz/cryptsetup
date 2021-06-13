@@ -2256,10 +2256,16 @@ int crypt_token_register(const crypt_token_handler *handler);
 
 /**
  * Report external token handlers (plugins) support
- 
+ * 
  * @return @e 0 when enabled or negative errno value otherwise.
  */
 int crypt_token_external_support(void);
+
+/**
+ * Disable external token handlers (plugins) support
+ * If disabled, it cannot be enabled again.
+ */
+void crypt_token_external_disable(void);
 
 /** ABI version for external token in libcryptsetup-token-<name>.so */
 #define CRYPT_TOKEN_ABI_VERSION1    "CRYPTSETUP_TOKEN_1.0"

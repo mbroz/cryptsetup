@@ -43,6 +43,8 @@ ARG(OPT_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Use only specified device size (
 
 ARG(OPT_DECRYPT, '\0', POPT_ARG_NONE, N_("Decrypt LUKS2 device (remove encryption)."), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_DISABLE_EXTERNAL_TOKENS, '\0', POPT_ARG_NONE, N_("Disable loading of external LUKS2 token plugins"), NULL, CRYPT_ARG_BOOL, {}, {})
+
 ARG(OPT_DISABLE_KEYRING, '\0', POPT_ARG_NONE, N_("Disable loading volume keys via kernel keyring"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_DISABLE_LOCKS, '\0', POPT_ARG_NONE, N_("Disable locking of on-disk metadata"), NULL, CRYPT_ARG_BOOL, {}, {})

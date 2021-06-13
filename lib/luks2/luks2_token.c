@@ -25,6 +25,12 @@
 
 #include "luks2_internal.h"
 
+#if USE_EXTERNAL_TOKENS
+static bool external_tokens_enabled = true;
+#else
+static bool external_tokens_enabled = false;
+#endif
+
 static struct crypt_token_handler_internal token_handlers[LUKS2_TOKENS_MAX] = {
 	/* keyring builtin token */
 	{
@@ -38,13 +44,14 @@ static struct crypt_token_handler_internal token_handlers[LUKS2_TOKENS_MAX] = {
 	}
 };
 
+void crypt_token_external_disable(void)
+{
+	external_tokens_enabled = false;
+}
+
 int crypt_token_external_support(void)
 {
-#if USE_EXTERNAL_TOKENS
-	return 0;
-#else
-	return -ENOTSUP;
-#endif
+	return external_tokens_enabled ? 0 : -ENOTSUP;
 }
 
 #if USE_EXTERNAL_TOKENS
@@ -126,6 +133,9 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 	void *h;
 	char buf[512];
 	int r;
+
+	if (!external_tokens_enabled)
+		return -ENOTSUP;
 
 	if (!ret || !name)
 		return -EINVAL;
