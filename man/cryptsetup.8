@@ -130,7 +130,7 @@ The kernel keyring is used by default for LUKS2 devices.
 
 With LUKS2 device additional \fB<options>\fR can be [\-\-token\-id, \-\-token\-only,
 \-\-key\-slot, \-\-key\-file, \-\-keyfile\-size, \-\-keyfile\-offset, \-\-timeout,
-\-\-disable\-locks, \-\-disable\-keyring].
+\-\-disable\-external\-tokens, \-\-disable\-locks, \-\-disable\-keyring].
 
 .PP
 \fIrefresh\fR <name>
@@ -320,8 +320,8 @@ the command prompts for it interactively.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
 \-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file, \-\-token\-id,
-\-\-token\-only, \-\-disable\-keyring, \-\-disable\-locks, \-\-type, \-\-refresh,
-\-\-serialize\-memory\-hard\-pbkdf].
+\-\-token\-only, \-\-disable\-external\-tokens, \-\-disable\-keyring, \-\-disable\-locks,
+\-\-type, \-\-refresh, \-\-serialize\-memory\-hard\-pbkdf].
 .PP
 \fIluksSuspend\fR <name>
 .IP
@@ -571,7 +571,7 @@ Action \fIexport\fR writes requested token json to a file passed with \-\-json\-
 to standard output.
 
 \fB<options>\fR can be [\-\-header, \-\-token\-id, \-\-key\-slot, \-\-key\-description,
-\-\-disable\-locks, \-\-disable\-keyring, \-\-json\-file].
+\-\-disable\-external\-tokens, \-\-disable\-locks, \-\-disable\-keyring, \-\-json\-file].
 .PP
 \fIconvert\fR <device> \-\-type <format>
 .IP
@@ -1297,6 +1297,9 @@ Defers device removal in \fIclose\fR command until the last user closes it.
 .TP
 .B "\-\-cancel\-deferred"
 Removes a previously configured deferred device removal in \fIclose\fR command.
+.TP
+.B "\-\-disable\-external\-tokens"
+Disable loading of plugins for external LUKS2 tokens.
 .TP
 .B "\-\-disable\-locks"
 Disable lock protection for metadata on disk.

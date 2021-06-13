@@ -3503,6 +3503,9 @@ static void help(poptContext popt_context,
 		log_std(_("\nDefault compiled-in metadata format is %s (for luksFormat action).\n"),
 			  crypt_get_default_type());
 
+		log_std(_("\nLUKS2 external token plugin support is %s.\n"),
+			  crypt_token_external_support() ? _("disabled") : _("compiled-in"));
+
 		pbkdf_luks1 = crypt_get_pbkdf_default(CRYPT_LUKS1);
 		pbkdf_luks2 = crypt_get_pbkdf_default(CRYPT_LUKS2);
 		log_std(_("\nDefault compiled-in key and passphrase parameters:\n"
@@ -3990,6 +3993,9 @@ int main(int argc, const char **argv)
 
 	if (ARG_SET(OPT_DISABLE_KEYRING_ID))
 		(void) crypt_volume_key_keyring(NULL, 0);
+
+	if (ARG_SET(OPT_DISABLE_EXTERNAL_TOKENS_ID))
+		(void) crypt_token_external_disable();
 
 	if (ARG_SET(OPT_DISABLE_LOCKS_ID) && crypt_metadata_locking(NULL, 0)) {
 		log_std(_("Cannot disable metadata locking."));

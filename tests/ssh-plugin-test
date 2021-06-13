@@ -138,6 +138,7 @@ ssh_check
 create_user
 ssh_setup
 
+$CRYPTSETUP luksOpen --token-only --disable-external-tokens -r $LOOPDEV $MAP && fail "Tokens should be disabled"
 $CRYPTSETUP luksOpen -r $LOOPDEV $MAP -q >/dev/null 2>&1 <&-
 [ $? -ne 0 ] && fail "Failed to open $LOOPDEV using SSH token"
 echo "[OK]"
