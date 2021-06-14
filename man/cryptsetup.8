@@ -645,8 +645,7 @@ See also section 7 of the FAQ and \fBhttp://loop-aes.sourceforge.net\fR
 for more information regarding loop-AES.
 .SH TCRYPT (TrueCrypt-compatible and VeraCrypt) EXTENSION
 cryptsetup supports mapping of TrueCrypt, tcplay or VeraCrypt
-(with \fB\-\-veracrypt\fR option) encrypted partition
-using a native Linux kernel API.
+encrypted partition using a native Linux kernel API.
 Header formatting and TCRYPT header change is not supported, cryptsetup
 never changes TCRYPT header on-device.
 
@@ -663,19 +662,20 @@ Cryptsetup should recognize all header variants, except legacy cipher chains
 using LRW encryption mode with 64 bits encryption block (namely Blowfish
 in LRW mode is not recognized, this is limitation of kernel crypto API).
 
-To recognize a VeraCrypt device use the \fB\-\-veracrypt\fR option.
 VeraCrypt is just extension of TrueCrypt header with increased
 iteration count so unlocking can take quite a lot of time (in comparison
 with TCRYPT device).
 
 To open a VeraCrypt device with a custom Personal Iteration Multiplier (PIM)
-value, \fBadditionally to \-\-veracrypt \fR use either the
-\fB\-\-veracrypt\-pim=<PIM>\fR option to directly specify the PIM on the command-
-line or use \fB\-\-veracrypt\-query\-pim\fR to be prompted for the PIM.
+value, use either the \fB\-\-veracrypt\-pim=<PIM>\fR option to directly specify
+the PIM on the command- line or use \fB\-\-veracrypt\-query\-pim\fR to be
+prompted for the PIM.
 
 The PIM value affects the number of iterations applied during key derivation. Please refer to
 \fBhttps://www.veracrypt.fr/en/Personal%20Iterations%20Multiplier%20%28PIM%29.html\fR
 for more detailed information.
+
+If you need to disable VeraCrypt device support, use \fB\-\-disable\-veracrypt\fR option.
 
 \fBNOTE:\fR Activation with \fBtcryptOpen\fR is supported only for cipher chains
 using LRW or XTS encryption modes.
@@ -720,7 +720,7 @@ a mapping <name>.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-tcrypt\-hidden,
 \-\-tcrypt\-system, \-\-tcrypt\-backup, \-\-readonly, \-\-test\-passphrase,
-\-\-allow-discards, \-\-veracrypt, \-\-veracrypt\-pim, \-\-veracrypt\-query\-pim,
+\-\-allow-discards, \-\-disable\-veracrypt, \-\-veracrypt\-pim, \-\-veracrypt\-query\-pim,
 \-\-header, \-\-cipher, \-\-hash].
 
 The keyfile parameter allows a combination of file content with the
@@ -1450,8 +1450,11 @@ Specify which TrueCrypt on-disk header will be used to open the device.
 See \fITCRYPT\fR section for more info.
 .TP
 .B "\-\-veracrypt"
-Allow VeraCrypt compatible mode. Only for TCRYPT extension.
-See \fITCRYPT\fR section for more info.
+This option is ignored as VeraCrypt compatible mode is supported by default.
+.TP
+.B "\-\-disable\-veracrypt"
+This option can be used to disable VeraCrypt compatible mode (only TrueCrypt devices
+are recognized). Only for TCRYPT extension. See \fITCRYPT\fR section for more info.
 .TP
 .B "\-\-veracrypt\-pim"
 .B "\-\-veracrypt\-query\-pim"

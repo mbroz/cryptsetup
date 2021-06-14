@@ -448,7 +448,7 @@ static int action_open_tcrypt(void)
 		.keyfiles = CONST_CAST(const char **)keyfiles,
 		.keyfiles_count = keyfiles_count,
 		.flags = CRYPT_TCRYPT_LEGACY_MODES |
-			 (ARG_SET(OPT_VERACRYPT_ID) ? CRYPT_TCRYPT_VERA_MODES : 0),
+			 (ARG_SET(OPT_DISABLE_VERACRYPT_ID) ? 0 : CRYPT_TCRYPT_VERA_MODES),
 		.veracrypt_pim = ARG_UINT32(OPT_VERACRYPT_PIM_ID),
 		.hash_name = ARG_STR(OPT_HASH_ID),
 		.cipher = ARG_STR(OPT_CIPHER_ID),
@@ -586,7 +586,7 @@ static int action_tcryptDump(void)
 		.keyfiles = CONST_CAST(const char **)keyfiles,
 		.keyfiles_count = keyfiles_count,
 		.flags = CRYPT_TCRYPT_LEGACY_MODES |
-			 (ARG_SET(OPT_VERACRYPT_ID) ? CRYPT_TCRYPT_VERA_MODES : 0),
+			 (ARG_SET(OPT_DISABLE_VERACRYPT_ID) ? 0: CRYPT_TCRYPT_VERA_MODES),
 		.veracrypt_pim = ARG_UINT32(OPT_VERACRYPT_PIM_ID),
 		.hash_name = ARG_STR(OPT_HASH_ID),
 		.cipher = ARG_STR(OPT_CIPHER_ID),
@@ -3877,18 +3877,18 @@ int main(int argc, const char **argv)
 		_("Option --tcrypt-hidden cannot be combined with --allow-discards."),
 		poptGetInvocationName(popt_context));
 
-	if (ARG_SET(OPT_VERACRYPT_ID) && (!device_type || strcmp(device_type, "tcrypt")))
+	if ((ARG_SET(OPT_VERACRYPT_ID) || ARG_SET(OPT_DISABLE_VERACRYPT_ID)) && (!device_type || strcmp(device_type, "tcrypt")))
 		usage(popt_context, EXIT_FAILURE,
-		_("Option --veracrypt is supported only for TCRYPT device type."),
+		_("Option --veracrypt or --disable-veracrypt is supported only for TCRYPT device type."),
 		poptGetInvocationName(popt_context));
 
-	if (ARG_SET(OPT_VERACRYPT_PIM_ID) && !ARG_SET(OPT_VERACRYPT_ID))
+	if (ARG_SET(OPT_VERACRYPT_PIM_ID) && ARG_SET(OPT_DISABLE_VERACRYPT_ID))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --veracrypt-pim is supported only for VeraCrypt compatible devices."),
 		poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_VERACRYPT_QUERY_PIM_ID)) {
-		if (!ARG_SET(OPT_VERACRYPT_ID)) {
+		if (ARG_SET(OPT_DISABLE_VERACRYPT_ID)) {
 			usage(popt_context, EXIT_FAILURE,
 			_("Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices."),
 			poptGetInvocationName(popt_context));

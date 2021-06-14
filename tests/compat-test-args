@@ -208,12 +208,11 @@ exp_fail open DEV NAME --veracrypt
 exp_pass open DEV NAME --type tcrypt --veracrypt
 exp_pass open DEV NAME --type tcrypt --veracrypt --veracrypt-pim 1
 exp_fail open DEV NAME --type tcrypt --veracrypt --veracrypt-pim -2
-exp_fail open DEV NAME --type tcrypt --veracrypt-pim 1
-# bug
-# exp_fail open DEV NAME --type tcrypt --veracrypt --veracrypt-pim -1
-exp_fail open DEV NAME --type tcrypt --veracrypt-query-pim
-exp_fail open DEV NAME --type tcrypt --veracrypt-query-pim --veracrypt-pim 1
-exp_fail open DEV NAME --veracrypt-query-pim
+exp_fail open DEV NAME --type tcrypt --disable-veracrypt --veracrypt-pim 1
+exp_fail open DEV NAME --type tcrypt --veracrypt --veracrypt-pim -1
+exp_fail open DEV NAME --type tcrypt --disable-veracrypt --veracrypt-query-pim
+exp_fail open DEV NAME --type tcrypt --disable-veracrypt --veracrypt-query-pim --veracrypt-pim 1
+exp_fail open DEV NAME --disable-veracrypt --veracrypt-query-pim
 
 # bug
 # exp_fail open DEV NAME --priority normal
