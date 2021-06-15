@@ -2,6 +2,7 @@
  * Example of LUKS2 token storing third party metadata (EXPERIMENTAL EXAMPLE)
  *
  * Copyright (C) 2016-2021 Milan Broz <gmazyland@gmail.com>
+ * Copyright (C) 2021 Vojtech Trefny
  *
  * Use:
  *  - generate ssh example token
@@ -26,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <argp.h>
 #include <json-c/json.h>
 #include "libcryptsetup.h"
 
@@ -35,6 +37,11 @@
 
 #define l_err(cd, x...) crypt_logf(cd, CRYPT_LOG_ERROR, x)
 #define l_dbg(cd, x...) crypt_logf(cd, CRYPT_LOG_DEBUG, x)
+
+#define OPT_SSH_SERVER  1
+#define OPT_SSH_USER	2
+#define OPT_SSH_PATH	3
+#define OPT_KEY_PATH	4
 
 static int token_add(
 		const char *device,
@@ -103,20 +110,121 @@ out:
 	return r;
 }
 
-static void token_help(void)
-{
-	printf("Use parameters:\n add device server user path keypath\n");
-	exit(1);
+const char *argp_program_version = "cryptsetup-ssh " PACKAGE_VERSION;
+
+static char doc[] = "Experimental cryptsetup plugin for unlocking LUKS2 devices with token connected " \
+		    "to an SSH server\v" \
+		    "This plugin currently allows only adding a token to an existing key slot.\n\n" \
+		    "Specified SSH server must contain a key file on the specified path with " \
+		    "a passphrase for an existing key slot on the device.\n" \
+		    "Provided credentials will be used by cryptsetup to get the password when " \
+		    "opening the device using the token.\n\n" \
+		    "Note: The information provided when adding the token (SSH server address, user and paths) " \
+		    "will be stored in the LUKS2 header in plaintext.";
+
+static char args_doc[] = "<action> <device>";
+
+static struct argp_option options[] = {
+	{0,		0,		0,	  0, "Options for the 'add' action:" },
+	{"ssh-server",	OPT_SSH_SERVER, "STRING", 0, "IP address/URL of the remote server for this token" },
+	{"ssh-user",	OPT_SSH_USER, 	"STRING", 0, "Username used for the remote server" },
+	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, "Path to the key file on the remote server"},
+	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, "Path to the SSH key for connecting to the remote server" },
+	{0,		0,		0,	  0, "Generic options:" },
+	{ NULL,		0, 		0, 0, NULL }
+};
+
+struct arguments {
+	char *device;
+	char *action;
+	char *ssh_server;
+	char *ssh_user;
+	char *ssh_path;
+	char *ssh_keypath;
+};
+
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state) {
+	struct arguments *arguments = state->input;
+
+	switch (key) {
+	case OPT_SSH_SERVER:
+		arguments->ssh_server = arg;
+		break;
+	case OPT_SSH_USER:
+		arguments->ssh_user = arg;
+		break;
+	case OPT_SSH_PATH:
+		arguments->ssh_path = arg;
+		break;
+	case OPT_KEY_PATH:
+		arguments->ssh_keypath = arg;
+		break;
+	case ARGP_KEY_NO_ARGS:
+		argp_usage (state);
+	case ARGP_KEY_ARG:
+		arguments->action = arg;
+		arguments->device = state->argv[state->next];
+		state->next = state->argc;
+		break;
+	default:
+		return ARGP_ERR_UNKNOWN;
+	}
+
+	return 0;
 }
+
+static struct argp argp = { options, parse_opt, args_doc, doc };
 
 int main(int argc, char *argv[])
 {
-	// crypt_set_debug_level(CRYPT_LOG_DEBUG);
+	int ret = 0;
+	struct arguments arguments = { 0 };
 
-	/* Adding slot to device */
-	if (argc > 6 && !strcmp("add", argv[1]))
-		return token_add(argv[2], argv[3], argv[4], argv[5], argv[6]);
+	ret = argp_parse (&argp, argc, argv, 0, 0, &arguments);
+	if (ret != 0) {
+		printf("Failed to parse arguments.\n");
+		return EXIT_FAILURE;
+	}
 
-	token_help();
-	return EXIT_FAILURE;
+	if (arguments.action == NULL) {
+		printf("An action must be specified\n");
+		return EXIT_FAILURE;
+	}
+
+	if (strcmp("add", arguments.action) == 0) {
+		if (!arguments.device) {
+			printf("Device must be specified for '%s' action.\n", arguments.action);
+			return EXIT_FAILURE;
+		}
+
+		if (!arguments.ssh_server) {
+			printf("SSH server must be specified for '%s' action.\n", arguments.action);
+			return EXIT_FAILURE;
+		}
+
+		if (!arguments.ssh_user) {
+			printf("SSH user must be specified for '%s' action.\n", arguments.action);
+			return EXIT_FAILURE;
+		}
+
+		if (!arguments.ssh_path) {
+			printf("SSH path must be specified for '%s' action.\n", arguments.action);
+			return EXIT_FAILURE;
+		}
+
+		if (!arguments.ssh_keypath) {
+			printf("SSH key path must be specified for '%s' action.\n", arguments.action);
+			return EXIT_FAILURE;
+		}
+
+		return token_add(arguments.device,
+				 arguments.ssh_server,
+				 arguments.ssh_user,
+				 arguments.ssh_path,
+				 arguments.ssh_keypath);
+	} else {
+		printf("Only 'add' action is currently supported by this plugin.\n");
+		return EXIT_FAILURE;
+	}
 }
