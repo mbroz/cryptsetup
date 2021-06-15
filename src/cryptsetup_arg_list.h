@@ -49,6 +49,8 @@ ARG(OPT_DISABLE_KEYRING, '\0', POPT_ARG_NONE, N_("Disable loading volume keys vi
 
 ARG(OPT_DISABLE_LOCKS, '\0', POPT_ARG_NONE, N_("Disable locking of on-disk metadata"), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_DISABLE_VERACRYPT, '\0', POPT_ARG_NONE, N_("Do not scan for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, {})
+
 ARG(OPT_DUMP_JSON, '\0', POPT_ARG_NONE, N_("Dump info in JSON format (LUKS2 only)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_DUMP_MASTER_KEY, '\0', POPT_ARG_NONE, N_("Dump volume (master) key instead of keyslots info"), NULL, CRYPT_ARG_BOOL, {}, {})
