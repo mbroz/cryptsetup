@@ -42,6 +42,8 @@
 #define OPT_SSH_USER	2
 #define OPT_SSH_PATH	3
 #define OPT_KEY_PATH	4
+#define OPT_DEBUG	5
+#define OPT_DEBUG_JSON	6
 
 static int token_add(
 		const char *device,
@@ -131,6 +133,9 @@ static struct argp_option options[] = {
 	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, "Path to the key file on the remote server"},
 	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, "Path to the SSH key for connecting to the remote server" },
 	{0,		0,		0,	  0, "Generic options:" },
+	{"verbose",	'v',		0,	  0, "Shows more detailed error messages"},
+	{"debug",	OPT_DEBUG,	0,	  0, "Show debug messages"},
+	{"debug-json",  OPT_DEBUG_JSON, 0,	  0, "Show debug messages including JSON metadata"},
 	{ NULL,		0, 		0, 0, NULL }
 };
 
@@ -141,6 +146,9 @@ struct arguments {
 	char *ssh_user;
 	char *ssh_path;
 	char *ssh_keypath;
+	int verbose;
+	int debug;
+	int debug_json;
 };
 
 static error_t
@@ -160,6 +168,16 @@ parse_opt (int key, char *arg, struct argp_state *state) {
 	case OPT_KEY_PATH:
 		arguments->ssh_keypath = arg;
 		break;
+	case 'v':
+		arguments->verbose = 1;
+		break;
+	case OPT_DEBUG:
+		arguments->debug = 1;
+		break;
+	case OPT_DEBUG_JSON:
+		arguments->debug = 1;
+		arguments->debug_json = 1;
+		break;
 	case ARGP_KEY_NO_ARGS:
 		argp_usage (state);
 	case ARGP_KEY_ARG:
@@ -176,6 +194,33 @@ parse_opt (int key, char *arg, struct argp_state *state) {
 
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
+
+void _log(int level, const char *msg, void *usrptr)
+{
+	struct arguments *arguments = (struct arguments *)usrptr;
+
+	switch (level) {
+	case CRYPT_LOG_NORMAL:
+		fprintf(stdout, "%s", msg);
+		break;
+	case CRYPT_LOG_VERBOSE:
+		if (arguments && arguments->verbose)
+			fprintf(stdout, "%s", msg);
+		break;
+	case CRYPT_LOG_ERROR:
+		fprintf(stderr, "%s", msg);
+		break;
+	case CRYPT_LOG_DEBUG_JSON:
+		if (arguments && arguments->debug_json)
+			fprintf(stdout, "# %s", msg);
+		break;
+	case CRYPT_LOG_DEBUG:
+		if (arguments && arguments->debug)
+			fprintf(stdout, "# %s", msg);
+		break;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	int ret = 0;
@@ -186,6 +231,12 @@ int main(int argc, char *argv[])
 		printf("Failed to parse arguments.\n");
 		return EXIT_FAILURE;
 	}
+
+	crypt_set_log_callback(NULL, _log, &arguments);
+	if (arguments.debug)
+		crypt_set_debug_level(CRYPT_DEBUG_ALL);
+	if (arguments.debug_json)
+		crypt_set_debug_level(CRYPT_DEBUG_JSON);
 
 	if (arguments.action == NULL) {
 		printf("An action must be specified\n");
