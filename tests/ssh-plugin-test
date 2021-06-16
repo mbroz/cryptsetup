@@ -126,7 +126,7 @@ bin_check sshpass
 format
 
 echo -n "Adding SSH token: "
-$CRYPTSETUP_SSH add $LOOPDEV $SSH_SERVER $USER $SSH_PATH $SSH_KEY_PATH
+$CRYPTSETUP_SSH add $LOOPDEV --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH
 [ $? -ne 0 ] && fail "Failed to add SSH token to $LOOPDEV"
 
 out=$($CRYPTSETUP luksDump $LOOPDEV)
