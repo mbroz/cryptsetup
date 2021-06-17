@@ -116,11 +116,22 @@ AC_PROG_GCC_TRADITIONAL
 AC_FUNC_STRERROR_R
 
 dnl ==========================================================================
+dnl LUKS2 external tokens
 
 AC_ARG_ENABLE([external-tokens],
-	AS_HELP_STRING([--enable-external-tokens], [enable external LUKS2 tokens]))
+	AS_HELP_STRING([--disable-external-tokens], [disable external LUKS2 tokens]),
+	[], [enable_external_tokens=yes])
 if test "x$enable_external_tokens" = "xyes"; then
 	AC_DEFINE(USE_EXTERNAL_TOKENS, 1, [Use external tokens])
+fi
+
+AC_ARG_ENABLE([ssh-token],
+	AS_HELP_STRING([--disable-ssh-token], [disable LUKS2 ssh-token]),
+	[], [enable_ssh_token=yes])
+AM_CONDITIONAL(SSHPLUGIN_TOKEN, test "x$enable_ssh_token" = "xyes")
+
+if test "x$enable_ssh_token" = "xyes" -a "x$enable_external_tokens" = "xno"; then
+	AC_MSG_ERROR([Requested LUKS2 ssh-token build, but external tokens are disabled.])
 fi
 
 dnl ==========================================================================
@@ -354,10 +365,6 @@ AC_ARG_ENABLE([selinux],
 AC_ARG_ENABLE([udev],
 	AS_HELP_STRING([--disable-udev], [disable udev support]),
 	[], [enable_udev=yes])
-
-AC_ARG_ENABLE([ssh-token],
-	AS_HELP_STRING([--enable-ssh-token], [enable build of ssh-token]))
-AM_CONDITIONAL(SSHPLUGIN_TOKEN, test "x$enable_ssh_token" = "xyes")
 
 dnl Try to use pkg-config for devmapper, but fallback to old detection
 PKG_CHECK_MODULES([DEVMAPPER], [devmapper >= 1.02.03],, [
