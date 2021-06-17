@@ -179,7 +179,8 @@ parse_opt (int key, char *arg, struct argp_state *state) {
 		arguments->debug_json = 1;
 		break;
 	case ARGP_KEY_NO_ARGS:
-		argp_usage (state);
+		argp_usage(state);
+		break;
 	case ARGP_KEY_ARG:
 		arguments->action = arg;
 		arguments->device = state->argv[state->next];
