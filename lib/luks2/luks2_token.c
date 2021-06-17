@@ -69,7 +69,7 @@ static void *token_dlvsym(struct crypt_device *cd,
 	error = dlerror();
 
 	if (error)
-		log_dbg(cd, "Error: %s.", error);
+		log_dbg(cd, "%s", error);
 
 	return sym;
 }
@@ -81,12 +81,12 @@ static bool token_validate_v1(struct crypt_device *cd, const crypt_token_handler
 		return false;
 
 	if (!h->name) {
-		log_dbg(cd, "Token handler does not provide name attribute.");
+		log_dbg(cd, "Error: token handler does not provide name attribute.");
 		return false;
 	}
 
 	if (!h->open) {
-		log_dbg(cd, "Token handler does not provide open function.");
+		log_dbg(cd, "Error: token handler does not provide open function.");
 		return false;
 	}
 
@@ -103,7 +103,7 @@ static bool token_validate_v2(struct crypt_device *cd, const struct crypt_token_
 		return false;
 
 	if (!h->u.v2.version) {
-		log_dbg(cd, "Token handler does not provide " CRYPT_TOKEN_ABI_VERSION " function.");
+		log_dbg(cd, "Error: token handler does not provide " CRYPT_TOKEN_ABI_VERSION " function.");
 		return false;
 	}
 
@@ -157,7 +157,7 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 
 	h = dlopen(buf, RTLD_LAZY);
 	if (!h) {
-		log_dbg(NULL, "%s", dlerror());
+		log_dbg(cd, "%s", dlerror());
 		return -EINVAL;
 	}
 	dlerror();
