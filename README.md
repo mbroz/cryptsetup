@@ -76,11 +76,11 @@ Fo available compile options, check ``configure --help`` for more info. If you a
 
 Here is the list of packages needed for the compilation of project for particular distributions:
  * For Fedora:
-_git_, _gcc_, _make_, _autoconf_, _automake_, _gettext-devel_, _pkgconfig_, _openssl-devel_, _popt-devel_, _device-mapper-devel_, _libuuid-devel_, _json-c-devel_, _libblkid-devel_, _libargon2-devel_ (optional), _libpwquality-devel_ (optional).
-To run internal testsuite, you also need _sharutils_, _device-mapper_, _jq_, _xxd_, _expect_ and _keyutils_ packages.
+_git_, _gcc_, _make_, _autoconf_, _automake_, _gettext-devel_, _pkgconfig_, _openssl-devel_, _popt-devel_, _device-mapper-devel_, _libuuid-devel_, _json-c-devel_, _libblkid-devel_, _findutils_, _libtool_, _libssh-devel_, _libargon2-devel_ (optional), _libpwquality-devel_ (optional).
+To run internal testsuite, you also need _sharutils_, _device-mapper_, _jq_, _vim-common_, _expect_ and _keyutils_ packages.
 
  * For Debian and Ubuntu:
-_git_, _gcc_, _make_, _autoconf_, _automake_, _autopoint_, _pkg-config_, _libtool_, _gettext_, _libssl-dev_, _libdevmapper-dev_, _libpopt-dev_, _uuid-dev_, _libsepol1-dev_, _libjson-c-dev_, _libargon2-0-dev_ (optional), _libpwquality-dev_ (optional) and _libblkid-dev_.
+_git_, _gcc_, _make_, _autoconf_, _automake_, _autopoint_, _pkg-config_, _libtool_, _gettext_, _libssl-dev_, _libdevmapper-dev_, _libpopt-dev_, _uuid-dev_, _libsepol1-dev_, _libjson-c-dev_, _libssh-dev_, _libargon2-0-dev_ (optional), _libpwquality-dev_ (optional) and _libblkid-dev_.
 To run internal testsuite, you also need _sharutils_, _dmsetup_, _jq_, _xxd_, _expect_ and _keyutils_ packages.
 
 Note that the list could change as distributions evolve.
