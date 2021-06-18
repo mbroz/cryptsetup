@@ -75,9 +75,9 @@ All distributions provide cryptsetup as distro package. If you need to compile c
 Fo available compile options, check ``configure --help`` for more info. If you are using a git snapshot, you need to generate configure script with ``autogen.sh`` script.
 
 Here is the list of packages needed for the compilation of project for particular distributions:
- * For Fedora: `git gcc make autoconf automake gettext-devel pkgconfig openssl-devel popt-devel device-mapper-devel libuuid-devel json-c-devel libblkid-devel findutils libtool libssh-devel`. Optionally `libargon2-devel libpwquality-devel`. To run internal testsuite you also need `sharutils device-mapper jq vim-common expect keyutils`.
+ * For Fedora: `git gcc make autoconf automake gettext-devel pkgconfig openssl-devel popt-devel device-mapper-devel libuuid-devel json-c-devel libblkid-devel findutils libtool libssh-devel tar`. Optionally `libargon2-devel libpwquality-devel`. To run internal testsuite you also need `sharutils device-mapper jq vim-common expect keyutils netcat shadow-utils openssh-clients openssh sshpass`.
 
- * For Debian and Ubuntu: `git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev`. Optionally `libargon2-0-dev libpwquality-dev`. To run internal testsuite you also need `sharutils dmsetup jq xxd expect keyutils`
+ * For Debian and Ubuntu: `git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev tar`. Optionally `libargon2-0-dev libpwquality-dev`. To run internal testsuite you also need `sharutils dmsetup jq xxd expect keyutils netcat passwd openssh-client sshpass`
 
 Note that the list could change as distributions evolve.
 
