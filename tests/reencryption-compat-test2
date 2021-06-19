@@ -3,9 +3,8 @@
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 REENC=$CRYPTSETUP_PATH/cryptsetup-reencrypt
-FAST_PBKDF_ARGON="--pbkdf-force-iterations 4 --pbkdf-memory 32 --pbkdf-parallel 1"
+FAST_PBKDF_ARGON="--pbkdf argon2i --pbkdf-force-iterations 4 --pbkdf-memory 32 --pbkdf-parallel 1"
 FAST_PBKDF_PBKDF2="--pbkdf-force-iterations 1000 --pbkdf pbkdf2"
-DEFAULT_ARGON="argon2i"
 
 DEV_NAME=reenc9768
 DEV_NAME2=reenc1273
@@ -360,7 +359,7 @@ check_hash $PWD1 $HASH5
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "0: luks2" | grep Hash:  | sed -e 's/[[:space:]]\+Hash:\ \+//g')" = "sha512" ] || fail
 echo $PWD1 | $REENC $IMG -q --keep-key $FAST_PBKDF_ARGON
 check_hash $PWD1 $HASH5
-[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "0: luks2" | grep PBKDF:      | sed -e 's/[[:space:]]\+PBKDF:\ \+//g')" = $DEFAULT_ARGON ] || fail
+[ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "0: luks2" | grep PBKDF:      | sed -e 's/[[:space:]]\+PBKDF:\ \+//g')" = argon2i ] || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "0: luks2" | grep "Time cost" | sed -e 's/[[:space:]]\+Time\ cost:\ \+//g')" -eq 4 ] || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "0: luks2" | grep Memory      | sed -e 's/[[[:space:]]\+Memory:\ \+//g')" -eq 32 ] || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "0: luks2" | grep Threads     | sed -e 's/[[[:space:]]\+Threads:\ \+//g')" -eq 1 ] || fail
