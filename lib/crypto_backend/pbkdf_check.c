@@ -48,6 +48,7 @@ int crypt_pbkdf_get_limits(const char *kdf, struct crypt_pbkdf_limits *limits)
 		limits->min_iterations = 1000; /* recommendation in NIST SP 800-132 */
 		limits->max_iterations = UINT32_MAX;
 		limits->min_memory     = 0; /* N/A */
+		limits->min_bench_memory=0; /* N/A */
 		limits->max_memory     = 0; /* N/A */
 		limits->min_parallel   = 0; /* N/A */
 		limits->max_parallel   = 0; /* N/A */
@@ -55,7 +56,8 @@ int crypt_pbkdf_get_limits(const char *kdf, struct crypt_pbkdf_limits *limits)
 	} else if (!strcmp(kdf, "argon2i") || !strcmp(kdf, "argon2id")) {
 		limits->min_iterations = 4;
 		limits->max_iterations = UINT32_MAX;
-		limits->min_memory     = 32;
+		limits->min_memory     = 32;      /* hard limit */
+		limits->min_bench_memory=64*1024; /* 64 MiB minimum for benchmark */
 		limits->max_memory     = 4*1024*1024; /* 4GiB */
 		limits->min_parallel   = 1;
 		limits->max_parallel   = 4;
@@ -408,6 +410,7 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 {
 	struct crypt_pbkdf_limits pbkdf_limits;
 	int r = -EINVAL;
+	uint32_t min_memory;
 
 	if (!kdf || !iterations_out || !memory_out)
 		return -EINVAL;
@@ -415,6 +418,10 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 	r = crypt_pbkdf_get_limits(kdf, &pbkdf_limits);
 	if (r < 0)
 		return r;
+
+	min_memory = pbkdf_limits.min_bench_memory;
+	if (min_memory > max_memory_kb)
+		min_memory = max_memory_kb;
 
 	*memory_out = 0;
 	*iterations_out = 0;
@@ -428,7 +435,7 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 		r = crypt_argon2_check(kdf, password, password_size,
 				       salt, salt_size, volume_key_size,
 				       pbkdf_limits.min_iterations,
-				       pbkdf_limits.min_memory,
+				       min_memory,
 				       max_memory_kb,
 				       parallel_threads, time_ms, iterations_out,
 				       memory_out, progress, usrptr);
