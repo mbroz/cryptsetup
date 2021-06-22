@@ -10,6 +10,7 @@ IMG="ssh_test.img"
 MAP="sshtest"
 USER="sshtest"
 PASSWD="sshtest"
+PASSWD2="sshtest2"
 LOOPDEV=$(losetup -f 2>/dev/null)
 SSH_OPTIONS="-o StrictHostKeyChecking=no"
 
@@ -93,11 +94,15 @@ format()
 
 	echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $LOOPDEV --force-password -q
 	[ $? -ne 0 ] && fail "Format failed."
+
+        echo -e "$PASSWD\n$PASSWD2" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV -q
+	[ $? -ne 0 ] && fail "Add key failed."
 }
 
 check_dump()
 {
         dump=$1
+        keyslot=$2
 
         token=$(echo "$dump" | grep Tokens -A 1 | tail -1 | cut -d: -f2 | tr -d "\t\n ")
         [ "$token" = "ssh"  ] || fail " token check from dump failed."
@@ -113,6 +118,9 @@ check_dump()
 
         key_path=$(echo "$dump" | grep ssh_key_path | cut -d: -f2 | tr -d "\t\n ")
         [ "$key_path" = "$SSH_KEY_PATH"  ] || fail " key_path check from dump failed."
+
+        keyslot_dump=$(echo "$dump" | grep Keyslot: | cut -d: -f2 | tr -d "\t\n ")
+        [ "$keyslot_dump" = "$keyslot" ] || fail " keyslot check from dump failed."
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
@@ -138,7 +146,7 @@ $CRYPTSETUP_SSH add $LOOPDEV --ssh-server $SSH_SERVER --ssh-user $USER --ssh-pat
 [ $? -ne 0 ] && fail "Failed to add SSH token to $LOOPDEV"
 
 out=$($CRYPTSETUP luksDump $LOOPDEV)
-check_dump "$out"
+check_dump "$out" 0
 echo "[OK]"
 
 echo -n "Activating using SSH token: "
@@ -146,6 +154,18 @@ echo -n "Activating using SSH token: "
 $CRYPTSETUP luksOpen --token-only --disable-external-tokens -r $LOOPDEV $MAP && fail "Tokens should be disabled"
 $CRYPTSETUP luksOpen -r $LOOPDEV $MAP -q >/dev/null 2>&1 <&-
 [ $? -ne 0 ] && fail "Failed to open $LOOPDEV using SSH token"
+echo "[OK]"
+
+# Remove the newly added token and test adding with --key-slot
+$CRYPTSETUP token remove --token-id 0 $LOOPDEV || fail "Failed to remove token"
+
+echo -n "Adding SSH token with --key-slot: "
+
+$CRYPTSETUP_SSH add $LOOPDEV --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH --key-slot 1
+[ $? -ne 0 ] && fail "Failed to add SSH token to $LOOPDEV"
+
+out=$($CRYPTSETUP luksDump $LOOPDEV)
+check_dump "$out" 1
 echo "[OK]"
 
 remove_mapping

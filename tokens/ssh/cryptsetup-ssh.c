@@ -46,6 +46,7 @@
 #define OPT_KEY_PATH	4
 #define OPT_DEBUG	5
 #define OPT_DEBUG_JSON	6
+#define OPT_KEY_SLOT	7
 
 void tools_cleanup(void)
 {
@@ -140,6 +141,8 @@ static struct argp_option options[] = {
 	{"ssh-user",	OPT_SSH_USER, 	"STRING", 0, "Username used for the remote server" },
 	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, "Path to the key file on the remote server"},
 	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, "Path to the SSH key for connecting to the remote server" },
+	{"key-slot",	OPT_KEY_SLOT,	"NUM",	  0, "Keyslot to assing the token to. If not specified, token will "\
+						     "be assigned to the first keyslot matching provided passphrase."},
 	{0,		0,		0,	  0, "Generic options:" },
 	{"verbose",	'v',		0,	  0, "Shows more detailed error messages"},
 	{"debug",	OPT_DEBUG,	0,	  0, "Show debug messages"},
@@ -154,6 +157,7 @@ struct arguments {
 	char *ssh_user;
 	char *ssh_path;
 	char *ssh_keypath;
+	int keyslot;
 	int verbose;
 	int debug;
 	int debug_json;
@@ -175,6 +179,9 @@ parse_opt (int key, char *arg, struct argp_state *state) {
 		break;
 	case OPT_KEY_PATH:
 		arguments->ssh_keypath = arg;
+		break;
+	case OPT_KEY_SLOT:
+		arguments->keyslot = atoi(arg);
 		break;
 	case 'v':
 		arguments->verbose = 1;
@@ -230,7 +237,7 @@ void _log(int level, const char *msg, void *usrptr)
 	}
 }
 
-static int get_keyslot_for_passphrase(struct arguments *arguments, const char *pin, int *keyslot)
+static int get_keyslot_for_passphrase(struct arguments *arguments, const char *pin)
 {
 	int r = 0;
 	ssh_key pkey;
@@ -271,7 +278,7 @@ static int get_keyslot_for_passphrase(struct arguments *arguments, const char *p
 			}
 
 			/* now try again with the password */
-			r = get_keyslot_for_passphrase(arguments, ssh_pass, keyslot);
+			r = get_keyslot_for_passphrase(arguments, ssh_pass);
 
 			crypt_safe_free(ssh_pass);
 			crypt_free(cd);
@@ -323,7 +330,7 @@ static int get_keyslot_for_passphrase(struct arguments *arguments, const char *p
 		return r;
 	}
 
-	*keyslot = r;
+	arguments->keyslot = r;
 
 	crypt_safe_memzero(password, password_len);
 	free(password);
@@ -335,8 +342,8 @@ static int get_keyslot_for_passphrase(struct arguments *arguments, const char *p
 int main(int argc, char *argv[])
 {
 	int ret = 0;
-	int keyslot = 0;
 	struct arguments arguments = { 0 };
+	arguments.keyslot = CRYPT_ANY_SLOT;
 
 	ret = argp_parse (&argp, argc, argv, 0, 0, &arguments);
 	if (ret != 0) {
@@ -381,10 +388,12 @@ int main(int argc, char *argv[])
 			return EXIT_FAILURE;
 		}
 
-		ret = get_keyslot_for_passphrase(&arguments, NULL, &keyslot);
-		if (ret != 0) {
-			printf("Failed open %s using provided credentials.\n", arguments.device);
-			return EXIT_FAILURE;
+		if (arguments.keyslot == CRYPT_ANY_SLOT) {
+			ret = get_keyslot_for_passphrase(&arguments, NULL);
+			if (ret != 0) {
+				printf("Failed open %s using provided credentials.\n", arguments.device);
+				return EXIT_FAILURE;
+			}
 		}
 
 		return token_add(arguments.device,
@@ -392,7 +401,7 @@ int main(int argc, char *argv[])
 				 arguments.ssh_user,
 				 arguments.ssh_path,
 				 arguments.ssh_keypath,
-				 keyslot);
+				 arguments.keyslot);
 	} else {
 		printf("Only 'add' action is currently supported by this plugin.\n");
 		return EXIT_FAILURE;
