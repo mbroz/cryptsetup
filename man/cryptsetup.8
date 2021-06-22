@@ -1111,9 +1111,8 @@ parameter values are measured by a benchmark. The benchmark
 tries to find iteration time (\fI\-\-iter\-time\fR) with required
 memory cost \fI\-\-pbkdf\-memory\fR. If it is not possible,
 the memory cost is decreased as well.
-The parallel cost \fI\-\-pbkdf\-parallel\fR is constant, is is checked
-against available CPU cores (if not available, it is decreased) and the maximum
-parallel cost is 4.
+The parallel cost \fI\-\-pbkdf\-parallel\fR is constant and is checked
+against available CPU cores.
 
 You can see all PBKDF parameters for particular LUKS2 keyslot with
 \fIluksDump\fR command.
@@ -1125,7 +1124,19 @@ This will override the values without benchmarking.
 Note it can cause extremely long unlocking time. Use only in specific
 cases, for example, if you know that the formatted device will
 be used on some small embedded system.
-In this case, the LUKS PBKDF2 digest will be set to the minimum iteration count.
+
+\fBMINIMAL AND MAXIMAL PBKDF COSTS:\fR
+For \fBPBKDF2\fR, the minimum iteration count is 1000 and
+maximum is 4294967295 (maximum for 32bit unsigned integer).
+Memory and parallel costs are unused for PBKDF2.
+For \fBArgon2i\fR and \fBArgon2id\fR, minimum iteration count (CPU cost) is 4 and
+maximum is 4294967295 (maximum for 32bit unsigned integer).
+Minimum memory cost is 32 KiB and maximum is 4 GiB. (Limited by addresable
+memory on some CPU platforms.)
+If the memory cost parameter is benchmarked (not specified by a parameter)
+it is always in range from 64 MiB to 1 GiB.
+The parallel cost minimum is 1 and maximum 4 (if enough CPUs cores are available,
+otherwise it is decreased).
 .TP
 .B "\-\-iter\-time, \-i <number of milliseconds>"
 The number of milliseconds to spend with PBKDF passphrase processing.

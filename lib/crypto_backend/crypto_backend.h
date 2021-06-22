@@ -62,7 +62,7 @@ int crypt_backend_rng(char *buffer, size_t length, int quality, int fips);
 /* PBKDF*/
 struct crypt_pbkdf_limits {
 	uint32_t min_iterations, max_iterations;
-	uint32_t min_memory, max_memory;
+	uint32_t min_memory, max_memory, min_bench_memory;
 	uint32_t min_parallel, max_parallel;
 };
 
