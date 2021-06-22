@@ -396,12 +396,16 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		return token_add(arguments.device,
-				 arguments.ssh_server,
-				 arguments.ssh_user,
-				 arguments.ssh_path,
-				 arguments.ssh_keypath,
-				 arguments.keyslot);
+		ret = token_add(arguments.device,
+				arguments.ssh_server,
+				arguments.ssh_user,
+				arguments.ssh_path,
+				arguments.ssh_keypath,
+				arguments.keyslot);
+		if (ret < 0)
+			return EXIT_FAILURE;
+		else
+			return EXIT_SUCCESS;
 	} else {
 		printf("Only 'add' action is currently supported by this plugin.\n");
 		return EXIT_FAILURE;
