@@ -6,11 +6,13 @@ TOKENS_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
 
 if SSHPLUGIN_TOKEN
 libcryptsetup_token_ssh_la_LDFLAGS = $(TOKENS_LDFLAGS)
-libcryptsetup_token_ssh_la_SOURCES = tokens/ssh/libcryptsetup-token-ssh.c
+libcryptsetup_token_ssh_la_SOURCES = tokens/ssh/libcryptsetup-token-ssh.c \
+				     tokens/ssh/ssh-utils.c \
+				     tokens/ssh/ssh-utils.h
 libcryptsetup_token_ssh_la_LIBADD = -lssh libcryptsetup.la @JSON_C_LIBS@
 lib_LTLIBRARIES += libcryptsetup-token-ssh.la
 
-cryptsetup_ssh_SOURCES = tokens/ssh/cryptsetup-ssh.c
+cryptsetup_ssh_SOURCES = tokens/ssh/cryptsetup-ssh.c tokens/ssh/ssh-utils.h
 cryptsetup_ssh_LDADD = libcryptsetup.la @JSON_C_LIBS@
 
 sbin_PROGRAMS += cryptsetup-ssh

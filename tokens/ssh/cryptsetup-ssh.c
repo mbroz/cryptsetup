@@ -33,8 +33,6 @@
 
 #define TOKEN_NAME "ssh"
 
-#define PASSWORD_LENGTH 8192
-
 #define l_err(cd, x...) crypt_logf(cd, CRYPT_LOG_ERROR, x)
 #define l_dbg(cd, x...) crypt_logf(cd, CRYPT_LOG_DEBUG, x)
 
