@@ -44,20 +44,6 @@
 
 #define l_dbg(cd, x...) crypt_logf(cd, CRYPT_LOG_DEBUG, x)
 
-struct sshplugin_context {
-	const char *server;
-	const char *user;
-	const char *path;
-	const char *sshkey_path;
-
-	int token;
-	int keyslot;
-
-	uint8_t status;
-
-	struct crypt_cli *cli;
-};
-
 const char *cryptsetup_token_version(void)
 {
 	return TOKEN_VERSION_MAJOR "." TOKEN_VERSION_MINOR;
