@@ -129,6 +129,11 @@ bin_check sshpass
 format
 
 echo -n "Adding SSH token: "
+
+ssh_check
+create_user
+ssh_setup
+
 $CRYPTSETUP_SSH add $LOOPDEV --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH
 [ $? -ne 0 ] && fail "Failed to add SSH token to $LOOPDEV"
 
@@ -137,9 +142,6 @@ check_dump "$out"
 echo "[OK]"
 
 echo -n "Activating using SSH token: "
-ssh_check
-create_user
-ssh_setup
 
 $CRYPTSETUP luksOpen --token-only --disable-external-tokens -r $LOOPDEV $MAP && fail "Tokens should be disabled"
 $CRYPTSETUP luksOpen -r $LOOPDEV $MAP -q >/dev/null 2>&1 <&-

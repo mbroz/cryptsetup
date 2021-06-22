@@ -29,7 +29,11 @@
 #include <fcntl.h>
 #include <argp.h>
 #include <json-c/json.h>
+#include <termios.h>
+#include <stdbool.h>
 #include "libcryptsetup.h"
+#include "ssh-utils.h"
+#include "../src/cryptsetup.h"
 
 #define TOKEN_NAME "ssh"
 
@@ -43,12 +47,18 @@
 #define OPT_DEBUG	5
 #define OPT_DEBUG_JSON	6
 
+void tools_cleanup(void)
+{
+}
+
+
 static int token_add(
 		const char *device,
 		const char *server,
 		const char *user,
 		const char *path,
-		const char *keypath)
+		const char *keypath,
+		int keyslot)
 
 {
 	struct crypt_device *cd;
@@ -99,7 +109,7 @@ static int token_add(
 	}
 
 	token = r;
-	r = crypt_token_assign_keyslot(cd, token, CRYPT_ANY_SLOT);
+	r = crypt_token_assign_keyslot(cd, token, keyslot);
 	if (r != token) {
 		crypt_token_json_set(cd, token, NULL);
 		r = -EINVAL;
@@ -220,9 +230,112 @@ void _log(int level, const char *msg, void *usrptr)
 	}
 }
 
+static int get_keyslot_for_passphrase(struct arguments *arguments, const char *pin, int *keyslot)
+{
+	int r = 0;
+	ssh_key pkey;
+	ssh_session ssh;
+	char *password = NULL;
+	size_t password_len = 0;
+	struct crypt_device *cd = NULL;
+	char *ssh_pass = NULL;
+	size_t key_size = 0;
+	char *prompt = NULL;
+
+	r = crypt_init(&cd, arguments->device);
+	if (r < 0)
+		return r;
+	crypt_set_log_callback(cd, &_log, arguments);
+
+	r = ssh_pki_import_privkey_file(arguments->ssh_keypath, pin, NULL, NULL, &pkey);
+	if (r != SSH_OK) {
+		if (r == SSH_EOF) {
+			crypt_log(cd, CRYPT_LOG_ERROR, "Failed to open and import private key:\n");
+			crypt_free(cd);
+			return -EINVAL;
+		} else {
+			_log(CRYPT_LOG_ERROR, "Failed to import private key (password protected?).\n", NULL);
+			r = asprintf(&prompt, "%s@%s's password: ", arguments->ssh_user, arguments->ssh_server);
+			if (r < 0) {
+				crypt_safe_free(ssh_pass);
+				crypt_free(cd);
+				return -EINVAL;
+			}
+
+			r = tools_get_key(prompt, &ssh_pass, &key_size, 0, 0, NULL, 0, 0, 0, cd);
+			if (r < 0) {
+				free(prompt);
+				crypt_safe_free(ssh_pass);
+				crypt_free(cd);
+				return -EINVAL;
+			}
+
+			/* now try again with the password */
+			r = get_keyslot_for_passphrase(arguments, ssh_pass, keyslot);
+
+			crypt_safe_free(ssh_pass);
+			crypt_free(cd);
+			free(prompt);
+
+			return r;
+		}
+	}
+
+	ssh = sshplugin_session_init(cd, arguments->ssh_server, arguments->ssh_user);
+	if (!ssh) {
+		ssh_key_free(pkey);
+		crypt_free(cd);
+		return -EINVAL;
+	}
+
+	r = sshplugin_public_key_auth(cd, ssh, pkey);
+	ssh_key_free(pkey);
+
+	if (r != SSH_AUTH_SUCCESS) {
+		crypt_free(cd);
+		return r;
+	}
+
+	r = sshplugin_download_password(cd, ssh, arguments->ssh_path, &password, &password_len);
+	if (r < 0) {
+		ssh_disconnect(ssh);
+		ssh_free(ssh);
+		crypt_free(cd);
+		return r;
+	}
+
+	ssh_disconnect(ssh);
+	ssh_free(ssh);
+
+	r = crypt_load(cd, CRYPT_LUKS2, NULL);
+	if (r < 0) {
+		crypt_safe_memzero(password, password_len);
+		free(password);
+		crypt_free(cd);
+		return r;
+	}
+
+	r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, password, password_len, 0);
+	if (r < 0) {
+		crypt_safe_memzero(password, password_len);
+		free(password);
+		crypt_free(cd);
+		return r;
+	}
+
+	*keyslot = r;
+
+	crypt_safe_memzero(password, password_len);
+	free(password);
+	crypt_free(cd);
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int ret = 0;
+	int keyslot = 0;
 	struct arguments arguments = { 0 };
 
 	ret = argp_parse (&argp, argc, argv, 0, 0, &arguments);
@@ -268,11 +381,18 @@ int main(int argc, char *argv[])
 			return EXIT_FAILURE;
 		}
 
+		ret = get_keyslot_for_passphrase(&arguments, NULL, &keyslot);
+		if (ret != 0) {
+			printf("Failed open %s using provided credentials.\n", arguments.device);
+			return EXIT_FAILURE;
+		}
+
 		return token_add(arguments.device,
 				 arguments.ssh_server,
 				 arguments.ssh_user,
 				 arguments.ssh_path,
-				 arguments.ssh_keypath);
+				 arguments.ssh_keypath,
+				 keyslot);
 	} else {
 		printf("Only 'add' action is currently supported by this plugin.\n");
 		return EXIT_FAILURE;
