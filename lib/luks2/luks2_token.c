@@ -131,7 +131,7 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 #if USE_EXTERNAL_TOKENS
 	struct crypt_token_handler_v2 *token;
 	void *h;
-	char buf[512];
+	char buf[PATH_MAX];
 	int r;
 
 	if (!external_tokens_enabled)
@@ -147,9 +147,11 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 
 	token = &ret->u.v2;
 
-	r = snprintf(buf, sizeof(buf), "libcryptsetup-token-%s.so", name);
+	r = snprintf(buf, sizeof(buf), "%s/libcryptsetup-token-%s.so", EXTERNAL_LUKS2_TOKENS_PATH, name);
 	if (r < 0 || (size_t)r >= sizeof(buf))
 		return -EINVAL;
+
+	assert(*buf == '/');
 
 	log_dbg(cd, "Trying to load %s.", buf);
 

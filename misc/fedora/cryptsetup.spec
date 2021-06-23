@@ -77,6 +77,7 @@ can be used for offline reencryption of disk in situ.
 
 %install
 %make_install
+mkdir -p -m 0755 $RPM_BUILD_ROOT%{_libdir}/%{name}/
 rm -rf %{buildroot}%{_libdir}/*.la
 
 %find_lang cryptsetup
@@ -114,6 +115,7 @@ rm -rf %{buildroot}%{_libdir}/*.la
 %files libs -f cryptsetup.lang
 %license COPYING COPYING.LGPL
 %{_libdir}/libcryptsetup.so.*
+%dir %{_libdir}/%{name}/
 %{_tmpfilesdir}/cryptsetup.conf
 %ghost %attr(700, -, -) %dir /run/cryptsetup
 

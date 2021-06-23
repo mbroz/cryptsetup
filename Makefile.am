@@ -11,7 +11,8 @@ AM_CPPFLAGS = \
         -DLIBDIR=\""$(libdir)"\"                \
         -DPREFIX=\""$(prefix)"\"                \
         -DSYSCONFDIR=\""$(sysconfdir)"\"        \
-        -DVERSION=\""$(VERSION)"\"
+        -DVERSION=\""$(VERSION)"\"              \
+        -DEXTERNAL_LUKS2_TOKENS_PATH=\"${EXTERNAL_LUKS2_TOKENS_PATH}\"
 AM_CFLAGS = -Wall
 AM_LDFLAGS =
 
