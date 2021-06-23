@@ -1503,7 +1503,7 @@ new reencryption operation.
 Reencryption resilience mode can be one of \fIchecksum\fR, \fIjournal\fR or \fInone\fR.
 
 \fIchecksum\fR: default mode, where individual checksums of ciphertext hotzone sectors are stored,
-so the recovery process can detect which sectors where already reencrypted.
+so the recovery process can detect which sectors were already reencrypted.
 It requires that the device sector write is atomic.
 
 \fIjournal\fR: the hotzone is journaled in the binary area (so the data are written twice).
