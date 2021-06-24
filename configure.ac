@@ -657,6 +657,15 @@ test -z "$with_luks2_lock_dir_perms" && with_luks2_lock_dir_perms=0700
 DEFAULT_LUKS2_LOCK_DIR_PERMS=$with_luks2_lock_dir_perms
 AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
 
+CS_STR_WITH([luks2-external-tokens-path], [path to directory with LUKSv2 external token handlers (plugins)], [LIBDIR/cryptsetup])
+if test -n "$with_luks2_external_tokens_path"; then
+	CS_ABSPATH([${with_luks2_external_tokens_path}],[with-luks2-external-tokens-path])
+	EXTERNAL_LUKS2_TOKENS_PATH=$with_luks2_external_tokens_path
+else
+	EXTERNAL_LUKS2_TOKENS_PATH="\${libdir}/cryptsetup"
+fi
+AC_SUBST(EXTERNAL_LUKS2_TOKENS_PATH)
+
 dnl Override default LUKS format version (for cryptsetup or cryptsetup-reencrypt format actions only).
 AC_ARG_WITH([default_luks_format],
 	AS_HELP_STRING([--with-default-luks-format=FORMAT], [default LUKS format version (LUKS1/LUKS2) [LUKS2]]),
