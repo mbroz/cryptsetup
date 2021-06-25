@@ -22,6 +22,8 @@ TESTS = 00modules-test \
 	bitlk-compat-test \
 	run-all-symbols
 
+check_PROGRAMS =
+
 if VERITYSETUP
 TESTS += verity-compat-test
 endif
@@ -36,6 +38,28 @@ endif
 
 if SSHPLUGIN_TOKEN
 TESTS += ssh-plugin-test
+
+lib_fake_crypt_external_token_path_la_CPPFLAGS = $(AM_CPPFLAGS) -DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
+
+lib_fake_crypt_external_token_path_la_DEPENDENCIES = $(top_srcdir)/lib/libcryptsetup.sym
+
+lib_fake_crypt_external_token_path_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
+	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym
+
+lib_fake_crypt_external_token_path_la_CFLAGS = $(AM_CFLAGS)
+
+lib_fake_crypt_external_token_path_la_SOURCES = test_crypt_external_token_path.c
+
+lib_LTLIBRARIES = lib_fake_crypt_external_token_path.la
+
+dummy_SOURCES = dummy.c
+dummy_LDADD = $(LDADD) lib_fake_crypt_external_token_path.la
+dummy_LDFLAGS = $(AM_LDFLAGS) -static
+dummy_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
+dummy_CPPFLAGS = $(AM_CPPFLAGS)
+
+check_PROGRAMS += dummy
+
 endif
 
 EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
@@ -126,7 +150,7 @@ all_symbols_test.$(OBJEXT): test-symbols-list.h
 all_symbols_test_CFLAGS = -ldl
 all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
-check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io all-symbols-test
+check_PROGRAMS += api-test api-test-2 differ vectors-test unit-utils-io all-symbols-test
 
 conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz
