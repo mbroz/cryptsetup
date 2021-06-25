@@ -28,6 +28,11 @@
  * for all of the code used other than OpenSSL.
  */
 
+/*
+ * HMAC will be later rewritten to a new API from OpenSSL 3
+ */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include <string.h>
 #include <errno.h>
 #include <openssl/evp.h>
