@@ -2262,6 +2262,13 @@ int crypt_token_register(const crypt_token_handler *handler);
 int crypt_token_external_support(void);
 
 /**
+ * Report configured path where library searches for external token handlers
+ *
+ * @return @e absolute path when external tokens are enabled or @e NULL otherwise.
+ */
+const char *crypt_token_external_path(void);
+
+/**
  * Disable external token handlers (plugins) support
  * If disabled, it cannot be enabled again.
  */

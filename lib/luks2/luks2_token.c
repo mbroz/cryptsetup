@@ -54,6 +54,11 @@ int crypt_token_external_support(void)
 	return external_tokens_enabled ? 0 : -ENOTSUP;
 }
 
+const char *crypt_token_external_path(void)
+{
+	return external_tokens_enabled ? EXTERNAL_LUKS2_TOKENS_PATH : NULL;
+}
+
 #if USE_EXTERNAL_TOKENS
 static void *token_dlvsym(struct crypt_device *cd,
 		void *handle,
@@ -147,7 +152,7 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 
 	token = &ret->u.v2;
 
-	r = snprintf(buf, sizeof(buf), "%s/libcryptsetup-token-%s.so", EXTERNAL_LUKS2_TOKENS_PATH, name);
+	r = snprintf(buf, sizeof(buf), "%s/libcryptsetup-token-%s.so", crypt_token_external_path(), name);
 	if (r < 0 || (size_t)r >= sizeof(buf))
 		return -EINVAL;
 
