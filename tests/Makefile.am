@@ -36,6 +36,11 @@ endif
 
 if SSHPLUGIN_TOKEN
 TESTS += ssh-plugin-test
+
+ssh-plugin-test: fake_token_path.so
+
+fake_token_path.so:
+	$(CC) -shared -o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c -DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
 endif
 
 EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
@@ -80,9 +85,10 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	bitlk-images.tar.xz \
 	ssh-plugin-test \
 	generate-symbols-list \
-	run-all-symbols
+	run-all-symbols \
+	fake_token_path.c
 
-CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h
+CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so
 clean-local:
 	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp
 

@@ -1,6 +1,9 @@
 #!/bin/bash
 
-[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+[ -z "$CRUPTSETUP_PATH" ] && {
+	export LD_PRELOAD=./fake_token_path.so
+	CRYPTSETUP_PATH=".."
+}
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_SSH=$CRYPTSETUP_PATH/cryptsetup-ssh
 IMG="ssh_test.img"
@@ -88,7 +91,7 @@ format()
 	sync
 	losetup $LOOPDEV $IMG
 
-	echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $LOOPDEV -q
+	echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $LOOPDEV --force-password -q
 	[ $? -ne 0 ] && fail "Format failed."
 }
 
