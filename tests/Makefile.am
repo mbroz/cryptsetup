@@ -40,7 +40,10 @@ TESTS += ssh-plugin-test
 ssh-plugin-test: fake_token_path.so
 
 fake_token_path.so:
-	$(CC) -shared -o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c -DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
+	$(CC) $(CFLAGS) -I $(top_srcdir)/lib -fPIC -shared \
+	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
+	-o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c \
+	-DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
 endif
 
 EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
