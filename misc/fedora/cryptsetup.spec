@@ -120,7 +120,7 @@ rm -rf %{buildroot}%{_libdir}/*.la
 %ghost %attr(700, -, -) %dir /run/cryptsetup
 
 %files ssh-token
-%license COPYING
+%license COPYING COPYING.LGPL
 %{_libdir}/libcryptsetup-token-ssh.so.*
 %{_mandir}/man8/cryptsetup-ssh.8.gz
 %{_sbindir}/cryptsetup-ssh
