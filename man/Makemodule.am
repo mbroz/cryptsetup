@@ -13,3 +13,8 @@ endif
 if INTEGRITYSETUP
 man8_MANS += man/integritysetup.8
 endif
+
+if SSHPLUGIN_TOKEN
+EXTRA_DIST += man/cryptsetup-ssh.8
+man8_MANS += man/cryptsetup-ssh.8
+endif

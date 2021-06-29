@@ -122,6 +122,7 @@ rm -rf %{buildroot}%{_libdir}/*.la
 %files ssh-token
 %license COPYING
 %{_libdir}/libcryptsetup-token-ssh.so.*
+%{_mandir}/man8/cryptsetup-ssh.8.gz
 %{_sbindir}/cryptsetup-ssh
 
 %changelog

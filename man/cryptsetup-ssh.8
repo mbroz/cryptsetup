@@ -1,0 +1,84 @@
+.TH CRYPTSETUP-SSH "8" "June 2021" "cryptsetup-ssh" "Maintenance Commands"
+.SH NAME
+cryptsetup-ssh \- manage LUKS2 SSH token
+.SH SYNOPSIS
+.B cryptsetup-ssh
+\fI\,<options> <action> <action args>\/\fR
+.SH DESCRIPTION
+Experimental cryptsetup plugin for unlocking LUKS2 devices with token connected
+to an SSH server.
+
+This plugin currently allows only adding a token to an existing key slot, see \fBcryptsetup(8)\fP
+for instruction on how to remove, import or export the token.
+
+.SS Add operation
+.PP
+\fIadd\fR <options> <device>
+.IP
+Adds the SSH token to \fB<device>\fR.
+
+Specified SSH server must contain a key file on the specified path with a
+passphrase for an existing key slot on the device.
+Provided credentials will be used by cryptsetup to get the password when
+opening the device using the token.
+
+\-\-ssh\-server, \-\-ssh\-user, \-\-ssh\-keypath and -\-ssh\-path
+are required for this operation.
+
+.TP
+\fB\-\-key\-slot\fR=\fI\,NUM\/\fR
+Keyslot to assign the token to. If not specified, the token will be assigned to the first key slot
+matching provided passphrase.
+.TP
+\fB\-\-ssh\-keypath\fR=\fI\,STRING\/\fR
+Path to the SSH key for connecting to the remote server.
+.TP
+\fB\-\-ssh\-path\fR=\fI\,STRING\/\fR
+Path to the key file on the remote server.
+.TP
+\fB\-\-ssh\-server\fR=\fI\,STRING\/\fR
+IP address/URL of the remote server for this token.
+.TP
+\fB\-\-ssh\-user\fR=\fI\,STRING\/\fR
+Username used for the remote server.
+.IP
+
+.SH OPTIONS
+.TP
+\fB\-\-debug\fR
+Show debug messages
+.TP
+\fB\-\-debug\-json\fR
+Show debug messages including JSON metadata
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Shows more detailed error messages
+.TP
+\-?, \fB\-\-help\fR
+Show help
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print program version
+.PP
+
+.SH NOTES
+The information provided when adding the token (SSH server address, user and paths) will be stored in the LUKS2 header in plaintext.
+
+.SH REPORTING BUGS
+Report bugs, including ones in the documentation, on
+the cryptsetup mailing list at <dm-crypt@saout.de>
+or in the 'Issues' section on LUKS website.
+Please attach the output of the failed command with the
+\-\-debug option added.
+
+.SH COPYRIGHT
+Copyright \(co 2016-2021 Red Hat, Inc.
+.br
+Copyright \(co 2016-2021 Milan Broz
+.br
+Copyright \(co 2021 Vojtech Trefny
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+.SH SEE ALSO
+The project website at \fBhttps://gitlab.com/cryptsetup/cryptsetup\fR
