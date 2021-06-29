@@ -9,7 +9,7 @@ libcryptsetup_token_ssh_la_LDFLAGS = $(TOKENS_LDFLAGS)
 libcryptsetup_token_ssh_la_SOURCES = tokens/ssh/libcryptsetup-token-ssh.c \
 				     tokens/ssh/ssh-utils.c \
 				     tokens/ssh/ssh-utils.h
-libcryptsetup_token_ssh_la_LIBADD = -lssh libcryptsetup.la @JSON_C_LIBS@
+libcryptsetup_token_ssh_la_LIBADD = libcryptsetup.la @LIBSSH_LIBS@ @JSON_C_LIBS@
 lib_LTLIBRARIES += libcryptsetup-token-ssh.la
 
 cryptsetup_ssh_SOURCES = tokens/ssh/cryptsetup-ssh.c \
@@ -19,7 +19,7 @@ cryptsetup_ssh_SOURCES = tokens/ssh/cryptsetup-ssh.c \
 			 src/utils_password.c \
 			 lib/utils_io.c \
 			 lib/utils_loop.c
-cryptsetup_ssh_LDADD = -lssh -lm libcryptsetup.la @JSON_C_LIBS@ @POPT_LIBS@ \
+cryptsetup_ssh_LDADD = -lm libcryptsetup.la @LIBSSH_LIBS@ @JSON_C_LIBS@ @POPT_LIBS@ \
 		       @PWQUALITY_LIBS@ @PASSWDQC_LIBS@
 
 cryptsetup_ssh_CFLAGS = $(AM_CFLAGS)
