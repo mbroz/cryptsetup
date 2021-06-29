@@ -2255,13 +2255,6 @@ typedef struct  {
 int crypt_token_register(const crypt_token_handler *handler);
 
 /**
- * Report external token handlers (plugins) support
- * 
- * @return @e 0 when enabled or negative errno value otherwise.
- */
-int crypt_token_external_support(void);
-
-/**
  * Report configured path where library searches for external token handlers
  *
  * @return @e absolute path when external tokens are enabled or @e NULL otherwise.
@@ -2307,34 +2300,6 @@ void crypt_token_external_disable(void);
  */
 int crypt_activate_by_token(struct crypt_device *cd,
 	const char *name,
-	int token,
-	void *usrptr,
-	uint32_t flags);
-
-/**
- * Activate device or check key using specific token type.
- *
- * @param cd crypt device handle
- * @param name name of device to create, if @e NULL only check token
- * @param type restrict type of token, if @e NULL all types are allowed
- * @param token requested token to check or CRYPT_ANY_TOKEN to check all
- * @param usrptr provided identification in callback
- * @param flags activation flags
- *
- * @return unlocked key slot number or negative errno otherwise.
- *
- * @note EPERM errno means token provided passphrase successfully, but
- *       passphrase did not unlock any keyslot associated with the token.
- *
- * @note ENOENT errno means no token of given type (or subsequently assigned keyslot)
- * 	 was eligible to unlock device.
- *
- * @note EAGAIN errno means that token is PIN protected and you should call
- *       @link crypt_activate_by_token_pin @endlink with PIN
- */
-int crypt_activate_by_token_type(struct crypt_device *cd,
-	const char *name,
-	const char *type,
 	int token,
 	void *usrptr,
 	uint32_t flags);

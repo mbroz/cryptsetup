@@ -3475,6 +3475,8 @@ static void help(poptContext popt_context,
 		 const char *arg __attribute__((unused)),
 		 void *data __attribute__((unused)))
 {
+	const char *path;
+
 	if (key->shortName == '?') {
 		struct action_type *action;
 		const struct crypt_pbkdf_type *pbkdf_luks1, *pbkdf_luks2;
@@ -3503,8 +3505,12 @@ static void help(poptContext popt_context,
 		log_std(_("\nDefault compiled-in metadata format is %s (for luksFormat action).\n"),
 			  crypt_get_default_type());
 
-		log_std(_("\nLUKS2 external token plugin support is %s.\n"),
-			  crypt_token_external_support() ? _("disabled") : _("compiled-in"));
+		path = crypt_token_external_path();
+		if (path) {
+			log_std(_("\nLUKS2 external token plugin support is %s.\n"), _("compiled-in"));
+			log_std(_("LUKS2 external token plugin path: %s.\n"), path);
+		} else
+			log_std(_("\nLUKS2 external token plugin support is %s.\n"), _("disabled"));
 
 		pbkdf_luks1 = crypt_get_pbkdf_default(CRYPT_LUKS1);
 		pbkdf_luks2 = crypt_get_pbkdf_default(CRYPT_LUKS2);
