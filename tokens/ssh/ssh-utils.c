@@ -26,6 +26,7 @@
 #include <libssh/sftp.h>
 #include <fcntl.h>
 #include <libcryptsetup.h>
+#include "ssh-utils.h"
 
 #define KEYFILE_LENGTH_MAX 8192
 

@@ -44,6 +44,16 @@
 
 #define l_dbg(cd, x...) crypt_logf(cd, CRYPT_LOG_DEBUG, x)
 
+
+const char *cryptsetup_token_version(void);
+int cryptsetup_token_open_pin(struct crypt_device *cd, int token, const char *pin,
+	size_t pin_size, char **password, size_t *password_len, void *usrptr);
+int cryptsetup_token_open(struct crypt_device *cd, int token,
+	char **password, size_t *password_len, void *usrptr);
+void cryptsetup_token_dump(struct crypt_device *cd, const char *json);
+int cryptsetup_token_validate(struct crypt_device *cd, const char *json);
+
+
 const char *cryptsetup_token_version(void)
 {
 	return TOKEN_VERSION_MAJOR "." TOKEN_VERSION_MINOR;

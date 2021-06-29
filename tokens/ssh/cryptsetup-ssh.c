@@ -211,7 +211,7 @@ parse_opt (int key, char *arg, struct argp_state *state) {
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
 
-void _log(int level, const char *msg, void *usrptr)
+static void _log(int level, const char *msg, void *usrptr)
 {
 	struct arguments *arguments = (struct arguments *)usrptr;
 
