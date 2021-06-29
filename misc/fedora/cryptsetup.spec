@@ -109,7 +109,6 @@ rm -rf %{buildroot}%{_libdir}/*.la
 %doc docs/examples/*
 %{_includedir}/libcryptsetup.h
 %{_libdir}/libcryptsetup.so
-%{_libdir}/libcryptsetup-token-ssh.so
 %{_libdir}/pkgconfig/libcryptsetup.pc
 
 %files libs -f cryptsetup.lang
@@ -121,7 +120,7 @@ rm -rf %{buildroot}%{_libdir}/*.la
 
 %files ssh-token
 %license COPYING COPYING.LGPL
-%{_libdir}/libcryptsetup-token-ssh.so.*
+%{_libdir}/%{name}/libcryptsetup-token-ssh.so
 %{_mandir}/man8/cryptsetup-ssh.8.gz
 %{_sbindir}/cryptsetup-ssh
 

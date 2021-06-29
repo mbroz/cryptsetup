@@ -1,8 +1,7 @@
 EXTRA_DIST += tokens/libcryptsetup-token.sym
 
-TOKENS_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
-	-Wl,--version-script=$(top_srcdir)/tokens/libcryptsetup-token.sym \
-	-version-info 0:0:0
+TOKENS_LDFLAGS = $(AM_LDFLAGS) -no-undefined -avoid-version \
+	-Wl,--version-script=$(top_srcdir)/tokens/libcryptsetup-token.sym
 
 if SSHPLUGIN_TOKEN
 libcryptsetup_token_ssh_la_LDFLAGS = $(TOKENS_LDFLAGS)
