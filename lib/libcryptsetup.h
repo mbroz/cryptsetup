@@ -2255,13 +2255,6 @@ typedef struct  {
 int crypt_token_register(const crypt_token_handler *handler);
 
 /**
- * Report external token handlers (plugins) support
- * 
- * @return @e 0 when enabled or negative errno value otherwise.
- */
-int crypt_token_external_support(void);
-
-/**
  * Report configured path where library searches for external token handlers
  *
  * @return @e absolute path when external tokens are enabled or @e NULL otherwise.

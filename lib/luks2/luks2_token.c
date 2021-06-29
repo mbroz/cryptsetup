@@ -49,11 +49,6 @@ void crypt_token_external_disable(void)
 	external_tokens_enabled = false;
 }
 
-int crypt_token_external_support(void)
-{
-	return external_tokens_enabled ? 0 : -ENOTSUP;
-}
-
 const char *crypt_token_external_path(void)
 {
 	return external_tokens_enabled ? EXTERNAL_LUKS2_TOKENS_PATH : NULL;
