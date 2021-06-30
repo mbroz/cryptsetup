@@ -1,8 +1,9 @@
 EXTRA_DIST += tokens/libcryptsetup-token.sym
 
-TOKENS_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
-	-Wl,--version-script=$(top_srcdir)/tokens/libcryptsetup-token.sym \
-	-version-info 0:0:0
+TOKENS_LDFLAGS = $(AM_LDFLAGS) -no-undefined -avoid-version \
+	-Wl,--version-script=$(top_srcdir)/tokens/libcryptsetup-token.sym
+
+tokendir = ${EXTERNAL_LUKS2_TOKENS_PATH}
 
 if SSHPLUGIN_TOKEN
 libcryptsetup_token_ssh_la_LDFLAGS = $(TOKENS_LDFLAGS)
@@ -10,7 +11,7 @@ libcryptsetup_token_ssh_la_SOURCES = tokens/ssh/libcryptsetup-token-ssh.c \
 				     tokens/ssh/ssh-utils.c \
 				     tokens/ssh/ssh-utils.h
 libcryptsetup_token_ssh_la_LIBADD = libcryptsetup.la @LIBSSH_LIBS@ @JSON_C_LIBS@
-lib_LTLIBRARIES += libcryptsetup-token-ssh.la
+token_LTLIBRARIES = libcryptsetup-token-ssh.la
 
 cryptsetup_ssh_SOURCES = tokens/ssh/cryptsetup-ssh.c \
 			 tokens/ssh/ssh-utils.c \
