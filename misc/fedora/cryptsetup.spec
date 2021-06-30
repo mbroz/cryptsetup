@@ -79,6 +79,7 @@ can be used for offline reencryption of disk in situ.
 %make_install
 mkdir -p -m 0755 $RPM_BUILD_ROOT%{_libdir}/%{name}/
 rm -rf %{buildroot}%{_libdir}/*.la
+rm -rf %{buildroot}%{_libdir}/%{name}/*.la
 
 %find_lang cryptsetup
 
