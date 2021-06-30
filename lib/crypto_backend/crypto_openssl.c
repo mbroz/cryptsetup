@@ -28,12 +28,22 @@
  * for all of the code used other than OpenSSL.
  */
 
+/*
+ * HMAC will be later rewritten to a new API from OpenSSL 3
+ */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include <string.h>
 #include <errno.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include "crypto_backend_internal.h"
+#if OPENSSL_VERSION_MAJOR >= 3
+#include <openssl/provider.h>
+static OSSL_PROVIDER *ossl_legacy = NULL;
+static OSSL_PROVIDER *ossl_default = NULL;
+#endif
 
 #define CONST_CAST(x) (x)(uintptr_t)
 
@@ -79,6 +89,10 @@ static void openssl_backend_init(void)
 	OpenSSL_add_all_algorithms();
 }
 
+static void openssl_backend_exit(void)
+{
+}
+
 static const char *openssl_backend_version(void)
 {
 	return SSLeay_version(SSLEAY_VERSION);
@@ -118,6 +132,30 @@ static void HMAC_CTX_free(HMAC_CTX *md)
 #else
 static void openssl_backend_init(void)
 {
+/*
+ * OpenSSL >= 3.0.0 provides some algorithms in legacy provider
+ */
+#if OPENSSL_VERSION_MAJOR >= 3
+	OPENSSL_init_crypto(OPENSSL_INIT_NO_ATEXIT, NULL);
+	ossl_legacy  = OSSL_PROVIDER_try_load(NULL, "legacy", 0);
+	ossl_default = OSSL_PROVIDER_try_load(NULL, "default", 0);
+#endif
+}
+
+static void openssl_backend_exit(void)
+{
+#if OPENSSL_VERSION_MAJOR >= 3
+	/*
+	 * If Destructor was already called, we must not call it again
+	 */
+	if (OPENSSL_init_crypto(0, NULL) != 0) {
+		OSSL_PROVIDER_unload(ossl_legacy);
+		OSSL_PROVIDER_unload(ossl_default);
+		OPENSSL_cleanup();
+	}
+	ossl_legacy = NULL;
+	ossl_default = NULL;
+#endif
 }
 
 static const char *openssl_backend_version(void)
@@ -140,6 +178,7 @@ int crypt_backend_init(void)
 void crypt_backend_destroy(void)
 {
 	crypto_backend_initialised = 0;
+	openssl_backend_exit();
 }
 
 uint32_t crypt_backend_flags(void)
