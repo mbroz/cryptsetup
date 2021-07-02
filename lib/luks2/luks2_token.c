@@ -453,9 +453,9 @@ static int token_for_segment(struct luks2_hdr *hdr, json_object *jobj_token, int
 
 static int translate_errno(struct crypt_device *cd, int ret_val, const char *type)
 {
-	if ((ret_val > 0 || ret_val == -EINVAL || ret_val == -ENOENT) && !is_builtin_candidate(type)) {
-		log_dbg(cd, "%s token handler returned %d. Changing to %d.", type, ret_val, -EPERM);
-		ret_val = -EPERM;
+	if ((ret_val > 0 || ret_val == -EINVAL || ret_val == -EPERM) && !is_builtin_candidate(type)) {
+		log_dbg(cd, "%s token handler returned %d. Changing to %d.", type, ret_val, -ENOENT);
+		ret_val = -ENOENT;
 	}
 
 	return ret_val;
