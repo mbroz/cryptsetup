@@ -1,0 +1,273 @@
+Cryptsetup 2.4.0-rc0 Release Notes
+==================================
+Stable release candidate with new features and bug fixes.
+
+This version introduces support for external libraries
+(plugins) for handling LUKS2 token objects.
+
+Changes since version 2.3.6
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* External LUKS token plugins
+
+  A LUKS2 token is an object that can describe how to get a passphrase
+  to unlock a particular keyslot. The generic metadata format is part
+  of the LUKS2 specification.
+
+  Cryptsetup 2.4 adds the possibility to implement token handlers
+  in external libraries (possibly provided by other projects).
+
+  A token library allows cryptsetup to understand metadata and provide
+  basic operations (activate, resize, dump metadata, handle keyslots).
+
+  The library now provides an interface that automatically tries to load
+  an external library for a token object in LUKS2 metadata.
+
+  Token libraries should be installed in the cryptsetup subdirectory
+  (usually /lib*/cryptsetup). This path is configurable through
+  --with-luks2-external-tokens-path configure option.
+
+  The external plugin loading can be compiled entirely out if
+  --disable-external-tokens configure option is used. The external token
+  interface can also be disabled runtime on the command line by
+  --disable-external-tokens cryptsetup switch or by calling
+  crypt_token_external_disable() API function.
+
+  The name of the loaded token library is determined from the JSON LUKS
+  metadata token object type. For example, "ssh" token will load library
+  "libcryptsetup-token-ssh.so".
+
+  External projects can use this interface to handle specific hardware
+  without introducing additional dependencies to libcryptsetup core.
+
+  Examples of such tokens are already available for the systemd project
+  for TPM2 and FIDO2 interfaces.
+
+* Experimental SSH token
+
+  As a demonstration of the external LUKS2 token interface, a new SSH
+  token handler and cryptsetup-ssh utility is now provided and compiled
+  by default.
+
+  Crypsetup SSH token allows using remote keyfile through SSH protocol
+  (it will authenticate through SSH certificates).
+
+  You can disable the build of this token library with
+  --disable-ssh-token configure option.
+
+To configure the token metadata, you need cryptsetup-ssh utility.
+
+Activation of the device is then performed by the cryptsetup utility.
+
+Example (how to activate LUKS2 through remote keyfile):
+
+  - configure existing LUKS2 device with keyslot activated by a keyfile
+   # cryptsetup luksAddKey <device> keyfile --key-slot 2
+
+   - store that keyfile on a remote system accessible through SSH
+
+   - configure SSH to use certificate for authentication
+
+   - add a LUKS2 token with cryptsetup-ssh utility:
+   # cryptsetup-ssh add <device>1 --key-slot 2 \
+      --ssh-server test-vm \
+      --ssh-user test \
+      --ssh-path /home/test/keyfile \
+      --ssh-keypath  /home/test/.ssh/test_rsa_key
+
+  - you should see token metadata now with "cryptsetup luksDump ..."
+   ...
+   Tokens:
+   0: ssh
+        ssh_server: test-vm
+        ssh_user: test
+        ssh_path: /home/test/keyfile
+        ssh_key_path: /home/test/.ssh/test_rsa_key
+        Keyslot:    2
+
+
+  - activation now should be automatic
+  # cryptsetup open <device> test --verbose
+    SSH token initiating ssh session.
+    Key slot 2 unlocked.
+    Command successful.
+
+  - to remove a token, you can use "cryptsetup token remove" command
+  (no plugin library required)
+
+  Please note SSH token is just demonstration of plugin interface API,
+  it is an EXPERIMENTAL feature.
+
+* Default LUKS2 PBKDF is now Argon2id
+
+  Cryptsetup LUKS2 was using Argon2 while there were two versions,
+  data-independent (Argon2i) suitable for the KDF use case and
+  Argon2d (data-dependent). Later Argon2id was introduced as a new
+  mandatory algorithm.
+
+  We switched the password-based key derivation algorithms
+  following the latest version of Argon2 RFC draft
+  (https://datatracker.ietf.org/doc/draft-irtf-cfrg-argon2/) to Argon2id
+  (from Argon2i) as it is the mandatory and primary version
+  of the Argon2 algorithm.
+
+  There is no need to modify older containers; the main reason is that
+  RFC makes Argon2id the primary variant, while Argon2i subvariant is
+  only optional.
+  Argon2id provides better protection to side-channel attacks while
+  still providing protection to time-memory tradeoffs.
+
+  We will switch to OpenSSL implementation once it is available.
+  With a crystal ball as a reference, it could happen early in
+  OpenSSL 3.1 release.
+  Watch https://github.com/openssl/openssl/issues/4091.
+
+* Increase minimal memory cost for Argon2 benchmark to 64MiB.
+
+  This patch increases the benchmarking value to 64 MiB (as minimal
+  suggested values in Argon2 RFC). For compatibility reasons, we still
+  allow older limits if set by a parameter.
+
+  NOTE: Argon2 RFC draft defines suggested parameters for disk
+  encryption, but the LUKS2 approach is slightly different. We need to
+  provide platform-independent values. The values in the draft expect
+  64bit systems (suggesting using 6 GiB of RAM). In comparison, we need
+  to provide compatibility with all 32bit systems, so allocating more
+  than 4GiB memory is not an option for LUKS2.
+
+  The maximal limit in LUKS2 stays for 4 GiB, and by default LUKS2 PBKDF
+  benchmarking sets maximum to 1 GIB, preferring an increase of CPU cost
+  while running benchmark
+
+* Autodetect optimal encryption sector size on LUKS2 format.
+
+  While the support for larger encryption sectors is supported
+  for several releases, it required an additional parameter.
+
+  Code now uses automatic detection of 4096-bytes native sector devices
+  and automatically enables 4096-bytes encryption size for LUKS2.
+
+  If no setor size option is used, sector size is detected
+  automatically by cryptsetup. For libcryptsetup API, autodetection
+  happens once you specify sector_size to 0.
+
+  NOTE: crypt_format() function runs autodetection ONLY if you
+  recompile your application to the new API symbol version.
+  For backward compatibility, older applications ignore this parameter.
+
+* Use VeraCrypt option by default and add --disable-veracrypt option.
+
+  While TrueCrypt is no longer developed and supported since 2014,
+  VeraCrypt devices (a successor of TrueCrypt) are much more used today.
+
+  Default is now to support VeraCrypt format (in addition to TrueCrypt),
+  making the --veracrypt option obsolete (ignored as it is the default).
+
+  If you need to disable VeraCrypt support, use the new option
+  --disable-veracrypt.
+
+  This option increases the time to recognize wrong passwords because
+  some VeraCrypt modes use a high PBKDF2 iteration count, and the code
+  must try all variants. This could be limited by using --hash and
+  --cipher options mentioned below.
+
+* Support --hash and --cipher to limit opening time for TCRYPT type
+
+  If a user knows which particular PBKDF2 hash or cipher is used for
+  TrueCrypt/VeraCrypt container,  TCRYPT format now supports --hash and
+  --cipher option.
+
+  Note the value means substring (all cipher chains containing
+  the cipher substring are tried).
+
+  For example, you can use
+      # cryptsetup tcryptDump --hash sha512 <container>
+
+  Note: to speed up the scan, the hash option (used for PBKDF)2 matters.
+  Cipher variants are scanned very quickly.
+
+  Use with care.
+  It can reveal some sensitive attributes of the container!
+
+* Fixed default OpenSSL crypt backend support for OpenSSL3.
+
+  For OpenSSL version 3, we need to load legacy provider for older hash
+  and ciphers. For example, RIPEMD160 and Whirlpool hash algorithms are
+  no longer available by default.
+
+  NOTE: the plain format still uses RIPEMD160 for password hashing by
+  default. Changing the default would cause incompatibilities for many
+  old systems. Nevertheless, such a change will be needed very soon.
+
+* integritysetup: add integrity-recalculate-reset flag.
+
+  The new dm-integrity option in kernel 5.13 can restart recalculation
+  from the beginning of the device.
+  It can be used to change the integrity checksum function.
+
+  New integritysetup --integrity-recalculate-reset option is added to
+  integritysetup, and CRYPT_ACTIVATE_RECALCULATE_RESET flag to API.
+
+* cryptsetup: retains keyslot number in luksChangeKey for LUKS2.
+
+    In LUKS1, any change in keyslot means keyslot number change.
+
+    In LUKS2, we can retain the keyslot number.
+    Now luksKeyChange and crypt_keyslot_change_by_passphrase() API
+    retains keyslot number for LUKS2 by default.
+
+* Fix cryptsetup resize using LUKS2 tokens.
+
+  Fix a bug where cryptsetup needlessly asked for a passphrase even
+  though the volume key was already unlocked via LUKS2 token.
+
+* Add close --deferred and --cancel-deferred options.
+
+  All command-line utilities now understand deferred options for the
+  close command. Deferred close means that the device is removed
+  automagically after the last user closed the device.
+  Cancel deferred means to cancel this operation (so the device remains
+  active even if there a no longer active users).
+
+  CRYPT_DEACTIVATE_DEFERRED and CRYPT_DEACTIVATE_DEFERRED_CANCEL flags
+  are now available for API.
+
+* Rewritten command-line option parsing to avoid libpopt arguments
+  memory leaks.
+
+  Note: some distributions use patched lipopt that still leaks memory
+  inside internal code (see Debian bug 941814).
+
+* Add --test-args option.
+
+  New --test-args option can be used for syntax checking for valid
+  command-line arguments with no actions performed.
+  Note that it cannot detect unknown algorithm names and similar where
+  we need call API functions.
+
+* libcryptsetup C API extensions (see libcryptsetup.h for details)
+
+  - crypt_logf - a printf like log function
+  - crypt_dump_json - dump LUKS2 metadata in JSON format
+  - crypt_header_is_detached - check if context use detached header
+  - crypt_token_max - get maximal tokens number
+  - crypt_token_external_path - get path for plugins (or NULL)
+  - crypt_token_external_disable - disable runtime support for plugins
+  - crypt_activate_by_token_pin - activate by token with additional PIN
+  - crypt_reencrypt - fixed prototype
+
+  The token plugin library interface cosiste from there versioned
+  exported syblols (for details see header file and SSH token example):
+     cryptsetup_token_open
+     cryptsetup_token_open_pin
+     cryptsetup_token_buffer_free
+     cryptsetup_token_validate
+     cryptsetup_token_dump
+     cryptsetup_token_version
+
+ Since version 2.4 libcryptsetup uses exact symbol versioning
+ Newly introduced functions have CRYPTSETUP_2.4 namespace (the old
+ symbol always used CRYPTSETUP_2.0).
+ There is no change in soname (the library is backward compatible).
+
+ * Many fixes and additions to documentation and man pages.
