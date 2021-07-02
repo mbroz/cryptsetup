@@ -5,9 +5,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.3.3-rc0\n"
+"Project-Id-Version: cryptsetup 2.4.0-rc0\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2020-05-24 23:25+0200\n"
+"POT-Creation-Date: 2021-07-02 13:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,61 +16,62 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: lib/libdevmapper.c:399
+#: lib/libdevmapper.c:396
 msgid "Cannot initialize device-mapper, running as non-root user."
 msgstr ""
 
-#: lib/libdevmapper.c:402
+#: lib/libdevmapper.c:399
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?"
 msgstr ""
 
-#: lib/libdevmapper.c:1131
+#: lib/libdevmapper.c:1170
 msgid "Requested deferred flag is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1198
+#: lib/libdevmapper.c:1239
 #, c-format
 msgid "DM-UUID for device %s was truncated."
 msgstr ""
 
-#: lib/libdevmapper.c:1520
+#: lib/libdevmapper.c:1570
 msgid "Unknown dm target type."
 msgstr ""
 
-#: lib/libdevmapper.c:1623 lib/libdevmapper.c:1679
+#: lib/libdevmapper.c:1691 lib/libdevmapper.c:1696 lib/libdevmapper.c:1760
+#: lib/libdevmapper.c:1763
 msgid "Requested dm-crypt performance options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1630
+#: lib/libdevmapper.c:1703 lib/libdevmapper.c:1707
 msgid "Requested dm-verity data corruption handling options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1634
+#: lib/libdevmapper.c:1711
 msgid "Requested dm-verity FEC options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1638
+#: lib/libdevmapper.c:1715
 msgid "Requested data integrity options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1640
+#: lib/libdevmapper.c:1717
 msgid "Requested sector_size option is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1645
+#: lib/libdevmapper.c:1722 lib/libdevmapper.c:1726
 msgid "Requested automatic recalculation of integrity tags is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1649 lib/libdevmapper.c:1682 lib/libdevmapper.c:1685
-#: lib/luks2/luks2_json_metadata.c:2160
+#: lib/libdevmapper.c:1730 lib/libdevmapper.c:1766 lib/libdevmapper.c:1769
+#: lib/luks2/luks2_json_metadata.c:2204
 msgid "Discard/TRIM is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1653
+#: lib/libdevmapper.c:1734
 msgid "Requested dm-integrity bitmap mode is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:2607
+#: lib/libdevmapper.c:2708
 #, c-format
 msgid "Failed to query dm-%s segment."
 msgstr ""
@@ -103,60 +104,60 @@ msgstr ""
 msgid "Error reading from RNG."
 msgstr ""
 
-#: lib/setup.c:229
+#: lib/setup.c:226
 msgid "Cannot initialize crypto RNG backend."
 msgstr ""
 
-#: lib/setup.c:235
+#: lib/setup.c:232
 msgid "Cannot initialize crypto backend."
 msgstr ""
 
-#: lib/setup.c:266 lib/setup.c:2046 lib/verity/verity.c:119
+#: lib/setup.c:263 lib/setup.c:2079 lib/verity/verity.c:119
 #, c-format
 msgid "Hash algorithm %s not supported."
 msgstr ""
 
-#: lib/setup.c:269 lib/loopaes/loopaes.c:90
+#: lib/setup.c:266 lib/loopaes/loopaes.c:90
 #, c-format
 msgid "Key processing error (using hash %s)."
 msgstr ""
 
-#: lib/setup.c:335 lib/setup.c:362
+#: lib/setup.c:332 lib/setup.c:359
 msgid "Cannot determine device type. Incompatible activation of device?"
 msgstr ""
 
-#: lib/setup.c:341 lib/setup.c:3050
+#: lib/setup.c:338 lib/setup.c:3142
 msgid "This operation is supported only for LUKS device."
 msgstr ""
 
-#: lib/setup.c:368
+#: lib/setup.c:365
 msgid "This operation is supported only for LUKS2 device."
 msgstr ""
 
-#: lib/setup.c:423 lib/luks2/luks2_reencrypt.c:2345
+#: lib/setup.c:420 lib/luks2/luks2_reencrypt.c:2436
 msgid "All key slots full."
 msgstr ""
 
-#: lib/setup.c:434
+#: lib/setup.c:431
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d."
 msgstr ""
 
-#: lib/setup.c:440
+#: lib/setup.c:437
 #, c-format
 msgid "Key slot %d is full, please select another one."
 msgstr ""
 
-#: lib/setup.c:525 lib/setup.c:2824
+#: lib/setup.c:522 lib/setup.c:2900
 msgid "Device size is not aligned to device logical block size."
 msgstr ""
 
-#: lib/setup.c:624
+#: lib/setup.c:620
 #, c-format
 msgid "Header detected but device %s is too small."
 msgstr ""
 
-#: lib/setup.c:661
+#: lib/setup.c:661 lib/setup.c:2845
 msgid "This operation is not supported for this device type."
 msgstr ""
 
@@ -164,394 +165,399 @@ msgstr ""
 msgid "Illegal operation with reencryption in-progress."
 msgstr ""
 
-#: lib/setup.c:832 lib/luks1/keymanage.c:475
+#: lib/setup.c:834 lib/luks1/keymanage.c:482
 #, c-format
 msgid "Unsupported LUKS version %d."
 msgstr ""
 
-#: lib/setup.c:849 lib/setup.c:1539 lib/setup.c:1959
-msgid "Detached metadata device is not supported for this crypt type."
-msgstr ""
-
-#: lib/setup.c:1427 lib/setup.c:2544 lib/setup.c:2616 lib/setup.c:2628
-#: lib/setup.c:2777 lib/setup.c:4512
+#: lib/setup.c:1430 lib/setup.c:2610 lib/setup.c:2683 lib/setup.c:2695
+#: lib/setup.c:2853 lib/setup.c:4643
 #, c-format
 msgid "Device %s is not active."
 msgstr ""
 
-#: lib/setup.c:1444
+#: lib/setup.c:1447
 #, c-format
 msgid "Underlying device for crypt device %s disappeared."
 msgstr ""
 
-#: lib/setup.c:1524
+#: lib/setup.c:1527
 msgid "Invalid plain crypt parameters."
 msgstr ""
 
-#: lib/setup.c:1529 lib/setup.c:1949 src/integritysetup.c:74
+#: lib/setup.c:1532 lib/setup.c:1982
 msgid "Invalid key size."
 msgstr ""
 
-#: lib/setup.c:1534 lib/setup.c:1954 lib/setup.c:2157
+#: lib/setup.c:1537 lib/setup.c:1987 lib/setup.c:2190
 msgid "UUID is not supported for this crypt type."
 msgstr ""
 
-#: lib/setup.c:1549 lib/setup.c:1739 lib/luks2/luks2_reencrypt.c:2308
-#: src/cryptsetup.c:1226 src/cryptsetup.c:3923
+#: lib/setup.c:1542 lib/setup.c:1992
+msgid "Detached metadata device is not supported for this crypt type."
+msgstr ""
+
+#: lib/setup.c:1552 lib/setup.c:1754 lib/luks2/luks2_reencrypt.c:2397
+#: src/cryptsetup.c:1309 src/cryptsetup.c:3668
 msgid "Unsupported encryption sector size."
 msgstr ""
 
-#: lib/setup.c:1557 lib/setup.c:1864 lib/setup.c:2818
+#: lib/setup.c:1560 lib/setup.c:1895 lib/setup.c:2894
 msgid "Device size is not aligned to requested sector size."
 msgstr ""
 
-#: lib/setup.c:1608 lib/setup.c:1727
+#: lib/setup.c:1612 lib/setup.c:1732
 msgid "Can't format LUKS without device."
 msgstr ""
 
-#: lib/setup.c:1614 lib/setup.c:1733
+#: lib/setup.c:1618 lib/setup.c:1738
 msgid "Requested data alignment is not compatible with data offset."
 msgstr ""
 
-#: lib/setup.c:1682 lib/setup.c:1851
+#: lib/setup.c:1686 lib/setup.c:1882
 msgid "WARNING: Data offset is outside of currently available data device.\n"
 msgstr ""
 
-#: lib/setup.c:1692 lib/setup.c:1879 lib/setup.c:1900 lib/setup.c:2169
+#: lib/setup.c:1696 lib/setup.c:1912 lib/setup.c:1933 lib/setup.c:2202
 #, c-format
 msgid "Cannot wipe header on device %s."
 msgstr ""
 
-#: lib/setup.c:1744
+#: lib/setup.c:1763
 msgid ""
 "WARNING: The device activation will fail, dm-crypt is missing support for "
 "requested encryption sector size.\n"
 msgstr ""
 
-#: lib/setup.c:1766
+#: lib/setup.c:1786
 msgid "Volume key is too small for encryption with integrity extensions."
 msgstr ""
 
-#: lib/setup.c:1821
+#: lib/setup.c:1856
 #, c-format
 msgid "Cipher %s-%s (key size %zd bits) is not available."
 msgstr ""
 
-#: lib/setup.c:1854
+#: lib/setup.c:1885
 #, c-format
 msgid "WARNING: LUKS2 metadata size changed to %<PRIu64> bytes.\n"
 msgstr ""
 
-#: lib/setup.c:1858
+#: lib/setup.c:1889
 #, c-format
 msgid "WARNING: LUKS2 keyslots area size changed to %<PRIu64> bytes.\n"
 msgstr ""
 
-#: lib/setup.c:1882 lib/utils_device.c:828 lib/luks1/keyencryption.c:255
-#: lib/luks2/luks2_reencrypt.c:2356 lib/luks2/luks2_reencrypt.c:3367
+#: lib/setup.c:1915 lib/utils_device.c:909 lib/luks1/keyencryption.c:255
+#: lib/luks2/luks2_reencrypt.c:2447 lib/luks2/luks2_reencrypt.c:3486
 #, c-format
 msgid "Device %s is too small."
 msgstr ""
 
-#: lib/setup.c:1893 lib/setup.c:1919
+#: lib/setup.c:1926 lib/setup.c:1952
 #, c-format
 msgid "Cannot format device %s in use."
 msgstr ""
 
-#: lib/setup.c:1896 lib/setup.c:1922
+#: lib/setup.c:1929 lib/setup.c:1955
 #, c-format
 msgid "Cannot format device %s, permission denied."
 msgstr ""
 
-#: lib/setup.c:1908 lib/setup.c:2229
+#: lib/setup.c:1941 lib/setup.c:2262
 #, c-format
 msgid "Cannot format integrity for device %s."
 msgstr ""
 
-#: lib/setup.c:1926
+#: lib/setup.c:1959
 #, c-format
 msgid "Cannot format device %s."
 msgstr ""
 
-#: lib/setup.c:1944
+#: lib/setup.c:1977
 msgid "Can't format LOOPAES without device."
 msgstr ""
 
-#: lib/setup.c:1989
+#: lib/setup.c:2022
 msgid "Can't format VERITY without device."
 msgstr ""
 
-#: lib/setup.c:2000 lib/verity/verity.c:102
+#: lib/setup.c:2033 lib/verity/verity.c:102
 #, c-format
 msgid "Unsupported VERITY hash type %d."
 msgstr ""
 
-#: lib/setup.c:2006 lib/verity/verity.c:110
+#: lib/setup.c:2039 lib/verity/verity.c:110
 msgid "Unsupported VERITY block size."
 msgstr ""
 
-#: lib/setup.c:2011 lib/verity/verity.c:74
+#: lib/setup.c:2044 lib/verity/verity.c:74
 msgid "Unsupported VERITY hash offset."
 msgstr ""
 
-#: lib/setup.c:2016
+#: lib/setup.c:2049
 msgid "Unsupported VERITY FEC offset."
 msgstr ""
 
-#: lib/setup.c:2040
+#: lib/setup.c:2073
 msgid "Data area overlaps with hash area."
 msgstr ""
 
-#: lib/setup.c:2065
+#: lib/setup.c:2098
 msgid "Hash area overlaps with FEC area."
 msgstr ""
 
-#: lib/setup.c:2072
+#: lib/setup.c:2105
 msgid "Data area overlaps with FEC area."
 msgstr ""
 
-#: lib/setup.c:2208
+#: lib/setup.c:2241
 #, c-format
 msgid ""
 "WARNING: Requested tag size %d bytes differs from %s size output (%d "
 "bytes).\n"
 msgstr ""
 
-#: lib/setup.c:2286
+#: lib/setup.c:2320
 #, c-format
 msgid "Unknown crypt device type %s requested."
 msgstr ""
 
-#: lib/setup.c:2550 lib/setup.c:2622 lib/setup.c:2635
+#: lib/setup.c:2616 lib/setup.c:2688 lib/setup.c:2701
 #, c-format
 msgid "Unsupported parameters on device %s."
 msgstr ""
 
-#: lib/setup.c:2556 lib/setup.c:2641 lib/luks2/luks2_reencrypt.c:2408
-#: lib/luks2/luks2_reencrypt.c:2737
+#: lib/setup.c:2622 lib/setup.c:2708 lib/luks2/luks2_reencrypt.c:2499
+#: lib/luks2/luks2_reencrypt.c:2843
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr ""
 
-#: lib/setup.c:2661
+#: lib/setup.c:2728
 msgid "Crypt devices mismatch."
 msgstr ""
 
-#: lib/setup.c:2698 lib/setup.c:2703 lib/luks2/luks2_reencrypt.c:2054
-#: lib/luks2/luks2_reencrypt.c:3145
+#: lib/setup.c:2765 lib/setup.c:2770 lib/luks2/luks2_reencrypt.c:2143
+#: lib/luks2/luks2_reencrypt.c:3251
 #, c-format
 msgid "Failed to reload device %s."
 msgstr ""
 
-#: lib/setup.c:2708 lib/setup.c:2713 lib/luks2/luks2_reencrypt.c:2025
-#: lib/luks2/luks2_reencrypt.c:2032
+#: lib/setup.c:2776 lib/setup.c:2782 lib/luks2/luks2_reencrypt.c:2114
+#: lib/luks2/luks2_reencrypt.c:2121
 #, c-format
 msgid "Failed to suspend device %s."
 msgstr ""
 
-#: lib/setup.c:2718 lib/luks2/luks2_reencrypt.c:2039
-#: lib/luks2/luks2_reencrypt.c:3080 lib/luks2/luks2_reencrypt.c:3149
+#: lib/setup.c:2788 lib/luks2/luks2_reencrypt.c:2128
+#: lib/luks2/luks2_reencrypt.c:3186 lib/luks2/luks2_reencrypt.c:3255
 #, c-format
 msgid "Failed to resume device %s."
 msgstr ""
 
-#: lib/setup.c:2732
+#: lib/setup.c:2803
 #, c-format
 msgid "Fatal error while reloading device %s (on top of device %s)."
 msgstr ""
 
-#: lib/setup.c:2735 lib/setup.c:2737
+#: lib/setup.c:2806 lib/setup.c:2808
 #, c-format
 msgid "Failed to switch device %s to dm-error."
 msgstr ""
 
-#: lib/setup.c:2809
+#: lib/setup.c:2885
 msgid "Cannot resize loop device."
 msgstr ""
 
-#: lib/setup.c:2882
+#: lib/setup.c:2958
 msgid "Do you really want to change UUID of device?"
 msgstr ""
 
-#: lib/setup.c:2958
+#: lib/setup.c:3034
 msgid "Header backup file does not contain compatible LUKS header."
 msgstr ""
 
-#: lib/setup.c:3058
+#: lib/setup.c:3150
 #, c-format
 msgid "Volume %s is not active."
 msgstr ""
 
-#: lib/setup.c:3069
+#: lib/setup.c:3161
 #, c-format
 msgid "Volume %s is already suspended."
 msgstr ""
 
-#: lib/setup.c:3082
+#: lib/setup.c:3174
 #, c-format
 msgid "Suspend is not supported for device %s."
 msgstr ""
 
-#: lib/setup.c:3084
+#: lib/setup.c:3176
 #, c-format
 msgid "Error during suspending device %s."
 msgstr ""
 
-#: lib/setup.c:3117 lib/setup.c:3184 lib/setup.c:3267
-#, c-format
-msgid "Volume %s is not suspended."
-msgstr ""
-
-#: lib/setup.c:3146
+#: lib/setup.c:3212
 #, c-format
 msgid "Resume is not supported for device %s."
 msgstr ""
 
-#: lib/setup.c:3148 lib/setup.c:3216 lib/setup.c:3297
+#: lib/setup.c:3214
 #, c-format
 msgid "Error during resuming device %s."
 msgstr ""
 
-#: lib/setup.c:3282 lib/setup.c:3648 lib/setup.c:4309 lib/setup.c:4322
-#: lib/setup.c:4330 lib/setup.c:4343 lib/setup.c:4693 lib/setup.c:5839
+#: lib/setup.c:3248 lib/setup.c:3296 lib/setup.c:3366
+#, c-format
+msgid "Volume %s is not suspended."
+msgstr ""
+
+#: lib/setup.c:3381 lib/setup.c:3750 lib/setup.c:4423 lib/setup.c:4436
+#: lib/setup.c:4444 lib/setup.c:4457 lib/setup.c:4826 lib/setup.c:6004
 msgid "Volume key does not match the volume."
 msgstr ""
 
-#: lib/setup.c:3343 lib/setup.c:3531
+#: lib/setup.c:3428 lib/setup.c:3633
 msgid "Cannot add key slot, all slots disabled and no volume key provided."
 msgstr ""
 
-#: lib/setup.c:3483
+#: lib/setup.c:3585
 msgid "Failed to swap new key slot."
 msgstr ""
 
-#: lib/setup.c:3669
+#: lib/setup.c:3771
 #, c-format
 msgid "Key slot %d is invalid."
 msgstr ""
 
-#: lib/setup.c:3675 src/cryptsetup.c:1572 src/cryptsetup.c:1917
+#: lib/setup.c:3777 src/cryptsetup.c:1657 src/cryptsetup.c:1997
 #, c-format
 msgid "Keyslot %d is not active."
 msgstr ""
 
-#: lib/setup.c:3694
+#: lib/setup.c:3796
 msgid "Device header overlaps with data area."
 msgstr ""
 
-#: lib/setup.c:3981
+#: lib/setup.c:4089
 msgid "Reencryption in-progress. Cannot activate device."
 msgstr ""
 
-#: lib/setup.c:3983 lib/luks2/luks2_json_metadata.c:2243
-#: lib/luks2/luks2_reencrypt.c:2836
+#: lib/setup.c:4091 lib/luks2/luks2_json_metadata.c:2287
+#: lib/luks2/luks2_reencrypt.c:2942
 msgid "Failed to get reencryption lock."
 msgstr ""
 
-#: lib/setup.c:3996 lib/luks2/luks2_reencrypt.c:2855
+#: lib/setup.c:4104 lib/luks2/luks2_reencrypt.c:2961
 msgid "LUKS2 reencryption recovery failed."
 msgstr ""
 
-#: lib/setup.c:4127 lib/setup.c:4379
+#: lib/setup.c:4235 lib/setup.c:4500
 msgid "Device type is not properly initialized."
 msgstr ""
 
-#: lib/setup.c:4171
-#, c-format
-msgid "Cannot use device %s, name is invalid or still in use."
-msgstr ""
-
-#: lib/setup.c:4174
+#: lib/setup.c:4283
 #, c-format
 msgid "Device %s already exists."
 msgstr ""
 
-#: lib/setup.c:4296
+#: lib/setup.c:4290
+#, c-format
+msgid "Cannot use device %s, name is invalid or still in use."
+msgstr ""
+
+#: lib/setup.c:4410
 msgid "Incorrect volume key specified for plain device."
 msgstr ""
 
-#: lib/setup.c:4405
+#: lib/setup.c:4526
 msgid "Incorrect root hash specified for verity device."
 msgstr ""
 
-#: lib/setup.c:4412
+#: lib/setup.c:4533
 msgid "Root hash signature required."
 msgstr ""
 
-#: lib/setup.c:4421
+#: lib/setup.c:4542
 msgid "Kernel keyring missing: required for passing signature to kernel."
 msgstr ""
 
-#: lib/setup.c:4438 lib/setup.c:5915
+#: lib/setup.c:4559 lib/setup.c:6080
 msgid "Failed to load key in kernel keyring."
 msgstr ""
 
-#: lib/setup.c:4491 lib/setup.c:4507 lib/luks2/luks2_json_metadata.c:2296
-#: src/cryptsetup.c:2664
+#: lib/setup.c:4615
+#, c-format
+msgid "Could not cancel deferred remove from device %s."
+msgstr ""
+
+#: lib/setup.c:4622 lib/setup.c:4638 lib/luks2/luks2_json_metadata.c:2340
+#: src/cryptsetup.c:2731
 #, c-format
 msgid "Device %s is still in use."
 msgstr ""
 
-#: lib/setup.c:4516
+#: lib/setup.c:4647
 #, c-format
 msgid "Invalid device %s."
 msgstr ""
 
-#: lib/setup.c:4632
+#: lib/setup.c:4763
 msgid "Volume key buffer too small."
 msgstr ""
 
-#: lib/setup.c:4640
+#: lib/setup.c:4771
 msgid "Cannot retrieve volume key for plain device."
 msgstr ""
 
-#: lib/setup.c:4657
+#: lib/setup.c:4788
 msgid "Cannot retrieve root hash for verity device."
 msgstr ""
 
-#: lib/setup.c:4659
+#: lib/setup.c:4792
 #, c-format
 msgid "This operation is not supported for %s crypt device."
 msgstr ""
 
-#: lib/setup.c:4865
+#: lib/setup.c:4998 lib/setup.c:5009
 msgid "Dump operation is not supported for this device type."
 msgstr ""
 
-#: lib/setup.c:5190
+#: lib/setup.c:5337
 #, c-format
 msgid "Data offset is not multiple of %u bytes."
 msgstr ""
 
-#: lib/setup.c:5475
+#: lib/setup.c:5622
 #, c-format
 msgid "Cannot convert device %s which is still in use."
 msgstr ""
 
-#: lib/setup.c:5772
+#: lib/setup.c:5937
 #, c-format
 msgid "Failed to assign keyslot %u as the new volume key."
 msgstr ""
 
-#: lib/setup.c:5845
+#: lib/setup.c:6010
 msgid "Failed to initialize default LUKS2 keyslot parameters."
 msgstr ""
 
-#: lib/setup.c:5851
+#: lib/setup.c:6016
 #, c-format
 msgid "Failed to assign keyslot %d to digest."
 msgstr ""
 
-#: lib/setup.c:5982
+#: lib/setup.c:6147
 msgid "Kernel keyring is not supported by the kernel."
 msgstr ""
 
-#: lib/setup.c:5992 lib/luks2/luks2_reencrypt.c:2952
+#: lib/setup.c:6157 lib/luks2/luks2_reencrypt.c:3058
 #, c-format
 msgid "Failed to read passphrase from keyring (error %d)."
 msgstr ""
 
-#: lib/setup.c:6016
+#: lib/setup.c:6181
 msgid "Failed to acquire global memory-hard access serialization lock."
 msgstr ""
 
@@ -563,7 +569,7 @@ msgstr ""
 msgid "Cannot unlock memory."
 msgstr ""
 
-#: lib/utils.c:168 lib/tcrypt/tcrypt.c:497
+#: lib/utils.c:168 lib/tcrypt/tcrypt.c:502
 msgid "Failed to open key file."
 msgstr ""
 
@@ -571,82 +577,87 @@ msgstr ""
 msgid "Cannot read keyfile from a terminal."
 msgstr ""
 
-#: lib/utils.c:190
+#: lib/utils.c:189
 msgid "Failed to stat key file."
 msgstr ""
 
-#: lib/utils.c:198 lib/utils.c:219
+#: lib/utils.c:197 lib/utils.c:218
 msgid "Cannot seek to requested keyfile offset."
 msgstr ""
 
-#: lib/utils.c:213 lib/utils.c:228 src/utils_password.c:188
-#: src/utils_password.c:201
+#: lib/utils.c:212 lib/utils.c:227 src/utils_password.c:219
+#: src/utils_password.c:231
 msgid "Out of memory while reading passphrase."
 msgstr ""
 
-#: lib/utils.c:248
+#: lib/utils.c:247
 msgid "Error reading passphrase."
 msgstr ""
 
-#: lib/utils.c:265
+#: lib/utils.c:264
 msgid "Nothing to read on input."
 msgstr ""
 
-#: lib/utils.c:272
+#: lib/utils.c:271
 msgid "Maximum keyfile size exceeded."
 msgstr ""
 
-#: lib/utils.c:277
+#: lib/utils.c:276
 msgid "Cannot read requested amount of data."
 msgstr ""
 
-#: lib/utils_device.c:187 lib/utils_storage_wrappers.c:110
+#: lib/utils_device.c:208 lib/utils_storage_wrappers.c:110
 #: lib/luks1/keyencryption.c:91
 #, c-format
 msgid "Device %s does not exist or access denied."
 msgstr ""
 
-#: lib/utils_device.c:197
+#: lib/utils_device.c:218
 #, c-format
 msgid "Device %s is not compatible."
 msgstr ""
 
-#: lib/utils_device.c:642
+#: lib/utils_device.c:562
+#, c-format
+msgid "Ignoring bogus optimal-io size for data device (%u bytes)."
+msgstr ""
+
+#: lib/utils_device.c:720
 #, c-format
 msgid "Device %s is too small. Need at least %<PRIu64> bytes."
 msgstr ""
 
-#: lib/utils_device.c:723
+#: lib/utils_device.c:801
 #, c-format
 msgid "Cannot use device %s which is in use (already mapped or mounted)."
 msgstr ""
 
-#: lib/utils_device.c:727
+#: lib/utils_device.c:805
 #, c-format
 msgid "Cannot use device %s, permission denied."
 msgstr ""
 
-#: lib/utils_device.c:730
+#: lib/utils_device.c:808
 #, c-format
 msgid "Cannot get info about device %s."
 msgstr ""
 
-#: lib/utils_device.c:753
+#: lib/utils_device.c:831
 msgid "Cannot use a loopback device, running as non-root user."
 msgstr ""
 
-#: lib/utils_device.c:763
+#: lib/utils_device.c:842
 msgid ""
 "Attaching loopback device failed (loop device with autoclear flag is "
 "required)."
 msgstr ""
 
-#: lib/utils_device.c:809
+#: lib/utils_device.c:890
 #, c-format
 msgid "Requested offset is beyond real size of device %s."
 msgstr ""
 
-#: lib/utils_device.c:817
+#: lib/utils_device.c:898
 #, c-format
 msgid "Device %s has zero size."
 msgstr ""
@@ -723,7 +734,8 @@ msgstr ""
 
 #: lib/utils_device_locking.c:109
 #, c-format
-msgid "WARNING: Locking directory %s/%s is missing!\n"
+msgid ""
+"Locking directory %s/%s will be created with default compiled-in permissions."
 msgstr ""
 
 #: lib/utils_device_locking.c:119
@@ -732,8 +744,8 @@ msgid ""
 "Locking aborted. The locking path %s/%s is unusable (%s is not a directory)."
 msgstr ""
 
-#: lib/utils_wipe.c:184 src/cryptsetup_reencrypt.c:941
-#: src/cryptsetup_reencrypt.c:1025
+#: lib/utils_wipe.c:184 src/cryptsetup_reencrypt.c:922
+#: src/cryptsetup_reencrypt.c:1010
 msgid "Cannot seek to device offset."
 msgstr ""
 
@@ -757,9 +769,9 @@ msgstr ""
 msgid "Cipher specification should be in [cipher]-[mode]-[iv] format."
 msgstr ""
 
-#: lib/luks1/keyencryption.c:97 lib/luks1/keymanage.c:344
-#: lib/luks1/keymanage.c:635 lib/luks1/keymanage.c:1080
-#: lib/luks2/luks2_json_metadata.c:1252 lib/luks2/luks2_keyslot.c:734
+#: lib/luks1/keyencryption.c:97 lib/luks1/keymanage.c:343
+#: lib/luks1/keymanage.c:642 lib/luks1/keymanage.c:1094
+#: lib/luks2/luks2_json_metadata.c:1276 lib/luks2/luks2_keyslot.c:740
 #, c-format
 msgid "Cannot write to device %s, permission denied."
 msgstr ""
@@ -777,13 +789,13 @@ msgstr ""
 msgid "IO error while encrypting keyslot."
 msgstr ""
 
-#: lib/luks1/keyencryption.c:246 lib/luks1/keymanage.c:347
-#: lib/luks1/keymanage.c:588 lib/luks1/keymanage.c:638 lib/tcrypt/tcrypt.c:670
-#: lib/verity/verity.c:80 lib/verity/verity.c:178 lib/verity/verity_hash.c:311
-#: lib/verity/verity_hash.c:322 lib/verity/verity_hash.c:342
-#: lib/verity/verity_fec.c:241 lib/verity/verity_fec.c:253
-#: lib/verity/verity_fec.c:258 lib/luks2/luks2_json_metadata.c:1255
-#: src/cryptsetup_reencrypt.c:200 src/cryptsetup_reencrypt.c:212
+#: lib/luks1/keyencryption.c:246 lib/luks1/keymanage.c:346
+#: lib/luks1/keymanage.c:595 lib/luks1/keymanage.c:645 lib/tcrypt/tcrypt.c:677
+#: lib/verity/verity.c:80 lib/verity/verity.c:193 lib/verity/verity_hash.c:320
+#: lib/verity/verity_hash.c:329 lib/verity/verity_hash.c:349
+#: lib/verity/verity_fec.c:251 lib/verity/verity_fec.c:263
+#: lib/verity/verity_fec.c:268 lib/luks2/luks2_json_metadata.c:1279
+#: src/cryptsetup_reencrypt.c:177 src/cryptsetup_reencrypt.c:189
 #, c-format
 msgid "Cannot open device %s."
 msgstr ""
@@ -792,186 +804,186 @@ msgstr ""
 msgid "IO error while decrypting keyslot."
 msgstr ""
 
-#: lib/luks1/keymanage.c:110
+#: lib/luks1/keymanage.c:109
 #, c-format
 msgid "Device %s is too small. (LUKS1 requires at least %<PRIu64> bytes.)"
 msgstr ""
 
-#: lib/luks1/keymanage.c:131 lib/luks1/keymanage.c:139
-#: lib/luks1/keymanage.c:151 lib/luks1/keymanage.c:162
-#: lib/luks1/keymanage.c:174
+#: lib/luks1/keymanage.c:130 lib/luks1/keymanage.c:138
+#: lib/luks1/keymanage.c:150 lib/luks1/keymanage.c:161
+#: lib/luks1/keymanage.c:173
 #, c-format
 msgid "LUKS keyslot %u is invalid."
 msgstr ""
 
-#: lib/luks1/keymanage.c:228 lib/luks1/keymanage.c:472
-#: lib/luks2/luks2_json_metadata.c:1083 src/cryptsetup.c:1433
-#: src/cryptsetup.c:1559 src/cryptsetup.c:1616 src/cryptsetup.c:1672
-#: src/cryptsetup.c:1739 src/cryptsetup.c:1842 src/cryptsetup.c:1906
-#: src/cryptsetup.c:2136 src/cryptsetup.c:2331 src/cryptsetup.c:2391
-#: src/cryptsetup.c:2457 src/cryptsetup.c:2621 src/cryptsetup.c:3271
-#: src/cryptsetup.c:3280 src/cryptsetup_reencrypt.c:1388
+#: lib/luks1/keymanage.c:227 lib/luks1/keymanage.c:479
+#: lib/luks2/luks2_json_metadata.c:1107 src/cryptsetup.c:1508
+#: src/cryptsetup.c:1644 src/cryptsetup.c:1699 src/cryptsetup.c:1754
+#: src/cryptsetup.c:1819 src/cryptsetup.c:1922 src/cryptsetup.c:1986
+#: src/cryptsetup.c:2215 src/cryptsetup.c:2428 src/cryptsetup.c:2488
+#: src/cryptsetup.c:2553 src/cryptsetup.c:2687 src/cryptsetup.c:3368
+#: src/cryptsetup.c:3377 src/cryptsetup_reencrypt.c:1373
 #, c-format
 msgid "Device %s is not a valid LUKS device."
 msgstr ""
 
-#: lib/luks1/keymanage.c:246 lib/luks2/luks2_json_metadata.c:1100
+#: lib/luks1/keymanage.c:245 lib/luks2/luks2_json_metadata.c:1124
 #, c-format
 msgid "Requested header backup file %s already exists."
 msgstr ""
 
-#: lib/luks1/keymanage.c:248 lib/luks2/luks2_json_metadata.c:1102
+#: lib/luks1/keymanage.c:247 lib/luks2/luks2_json_metadata.c:1126
 #, c-format
 msgid "Cannot create header backup file %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:255 lib/luks2/luks2_json_metadata.c:1109
+#: lib/luks1/keymanage.c:254 lib/luks2/luks2_json_metadata.c:1133
 #, c-format
 msgid "Cannot write header backup file %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:286 lib/luks2/luks2_json_metadata.c:1161
+#: lib/luks1/keymanage.c:285 lib/luks2/luks2_json_metadata.c:1185
 msgid "Backup file does not contain valid LUKS header."
 msgstr ""
 
-#: lib/luks1/keymanage.c:299 lib/luks1/keymanage.c:549
-#: lib/luks2/luks2_json_metadata.c:1182
+#: lib/luks1/keymanage.c:298 lib/luks1/keymanage.c:556
+#: lib/luks2/luks2_json_metadata.c:1206
 #, c-format
 msgid "Cannot open header backup file %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:307 lib/luks2/luks2_json_metadata.c:1190
+#: lib/luks1/keymanage.c:306 lib/luks2/luks2_json_metadata.c:1214
 #, c-format
 msgid "Cannot read header backup file %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:317
+#: lib/luks1/keymanage.c:316
 msgid "Data offset or key size differs on device and backup, restore failed."
 msgstr ""
 
-#: lib/luks1/keymanage.c:325
+#: lib/luks1/keymanage.c:324
 #, c-format
 msgid "Device %s %s%s"
 msgstr ""
 
-#: lib/luks1/keymanage.c:326
+#: lib/luks1/keymanage.c:325
 msgid ""
 "does not contain LUKS header. Replacing header can destroy data on that "
 "device."
 msgstr ""
 
-#: lib/luks1/keymanage.c:327
+#: lib/luks1/keymanage.c:326
 msgid ""
 "already contains LUKS header. Replacing header will destroy existing "
 "keyslots."
 msgstr ""
 
-#: lib/luks1/keymanage.c:328 lib/luks2/luks2_json_metadata.c:1224
+#: lib/luks1/keymanage.c:327 lib/luks2/luks2_json_metadata.c:1248
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
 msgstr ""
 
-#: lib/luks1/keymanage.c:375
+#: lib/luks1/keymanage.c:374
 msgid "Non standard key size, manual repair required."
 msgstr ""
 
-#: lib/luks1/keymanage.c:380
+#: lib/luks1/keymanage.c:384
 msgid "Non standard keyslots alignment, manual repair required."
 msgstr ""
 
-#: lib/luks1/keymanage.c:390
+#: lib/luks1/keymanage.c:396
 msgid "Repairing keyslots."
 msgstr ""
 
-#: lib/luks1/keymanage.c:409
+#: lib/luks1/keymanage.c:415
 #, c-format
 msgid "Keyslot %i: offset repaired (%u -> %u)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:417
+#: lib/luks1/keymanage.c:423
 #, c-format
 msgid "Keyslot %i: stripes repaired (%u -> %u)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:426
+#: lib/luks1/keymanage.c:432
 #, c-format
 msgid "Keyslot %i: bogus partition signature."
 msgstr ""
 
-#: lib/luks1/keymanage.c:431
+#: lib/luks1/keymanage.c:437
 #, c-format
 msgid "Keyslot %i: salt wiped."
 msgstr ""
 
-#: lib/luks1/keymanage.c:448
+#: lib/luks1/keymanage.c:454
 msgid "Writing LUKS header to disk."
 msgstr ""
 
-#: lib/luks1/keymanage.c:453
+#: lib/luks1/keymanage.c:459
 msgid "Repair failed."
 msgstr ""
 
-#: lib/luks1/keymanage.c:481 lib/luks1/keymanage.c:750
+#: lib/luks1/keymanage.c:488 lib/luks1/keymanage.c:757
 #, c-format
 msgid "Requested LUKS hash %s is not supported."
 msgstr ""
 
-#: lib/luks1/keymanage.c:509 src/cryptsetup.c:1133
+#: lib/luks1/keymanage.c:516 src/cryptsetup.c:1194
 msgid "No known problems detected for LUKS header."
 msgstr ""
 
-#: lib/luks1/keymanage.c:660
+#: lib/luks1/keymanage.c:667
 #, c-format
 msgid "Error during update of LUKS header on device %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:668
+#: lib/luks1/keymanage.c:675
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:744
+#: lib/luks1/keymanage.c:751
 msgid ""
 "Data offset for LUKS header must be either 0 or higher than header size."
 msgstr ""
 
-#: lib/luks1/keymanage.c:755 lib/luks1/keymanage.c:825
-#: lib/luks2/luks2_json_format.c:283 lib/luks2/luks2_json_metadata.c:1001
-#: src/cryptsetup.c:2784
+#: lib/luks1/keymanage.c:762 lib/luks1/keymanage.c:832
+#: lib/luks2/luks2_json_format.c:287 lib/luks2/luks2_json_metadata.c:1015
+#: src/cryptsetup.c:2850
 msgid "Wrong LUKS UUID format provided."
 msgstr ""
 
-#: lib/luks1/keymanage.c:778
+#: lib/luks1/keymanage.c:785
 msgid "Cannot create LUKS header: reading random salt failed."
 msgstr ""
 
-#: lib/luks1/keymanage.c:804
+#: lib/luks1/keymanage.c:811
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:848
+#: lib/luks1/keymanage.c:855
 #, c-format
 msgid "Key slot %d active, purge first."
 msgstr ""
 
-#: lib/luks1/keymanage.c:854
+#: lib/luks1/keymanage.c:861
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?"
 msgstr ""
 
-#: lib/luks1/keymanage.c:990
+#: lib/luks1/keymanage.c:1002
 #, c-format
 msgid "Cannot open keyslot (using hash %s)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:1066
+#: lib/luks1/keymanage.c:1080
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d."
 msgstr ""
 
-#: lib/luks1/keymanage.c:1084 lib/luks2/luks2_keyslot.c:738
+#: lib/luks1/keymanage.c:1098 lib/luks2/luks2_keyslot.c:744
 #, c-format
 msgid "Cannot wipe device %s."
 msgstr ""
@@ -992,149 +1004,163 @@ msgstr ""
 msgid "Kernel does not support loop-AES compatible mapping."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:504
+#: lib/tcrypt/tcrypt.c:509
 #, c-format
 msgid "Error reading keyfile %s."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:554
+#: lib/tcrypt/tcrypt.c:559
 #, c-format
 msgid "Maximum TCRYPT passphrase length (%zu) exceeded."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:595
+#: lib/tcrypt/tcrypt.c:602
 #, c-format
 msgid "PBKDF2 hash algorithm %s not available, skipping."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:611 src/cryptsetup.c:1010
+#: lib/tcrypt/tcrypt.c:618 src/cryptsetup.c:1065
 msgid "Required kernel crypto interface not available."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:613 src/cryptsetup.c:1012
+#: lib/tcrypt/tcrypt.c:620 src/cryptsetup.c:1067
 msgid "Ensure you have algif_skcipher kernel module loaded."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:753
+#: lib/tcrypt/tcrypt.c:760
 #, c-format
 msgid "Activation is not supported for %d sector size."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:759
+#: lib/tcrypt/tcrypt.c:766
 msgid "Kernel does not support activation for this TCRYPT legacy mode."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:793
+#: lib/tcrypt/tcrypt.c:797
 #, c-format
 msgid "Activating TCRYPT system encryption for partition %s."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:871
+#: lib/tcrypt/tcrypt.c:875
 msgid "Kernel does not support TCRYPT compatible mapping."
 msgstr ""
 
-#: lib/tcrypt/tcrypt.c:1093
+#: lib/tcrypt/tcrypt.c:1088
 msgid "This function is not supported without TCRYPT header load."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:333
+#: lib/bitlk/bitlk.c:350
 #, c-format
 msgid ""
 "Unexpected metadata entry type '%u' found when parsing supported Volume "
 "Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:380
+#: lib/bitlk/bitlk.c:397
 msgid "Invalid string found when parsing Volume Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:385
+#: lib/bitlk/bitlk.c:402
 #, c-format
 msgid ""
 "Unexpected string ('%s') found when parsing supported Volume Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:399
+#: lib/bitlk/bitlk.c:419
 #, c-format
 msgid ""
 "Unexpected metadata entry value '%u' found when parsing supported Volume "
 "Master Key."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:479
+#: lib/bitlk/bitlk.c:502
 #, c-format
 msgid "Failed to read BITLK signature from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:485
-msgid "BITLK version 1 is currently not supported."
-msgstr ""
-
-#: lib/bitlk/bitlk.c:491
-msgid "Invalid or unknown boot signature for BITLK device."
-msgstr ""
-
-#: lib/bitlk/bitlk.c:503
+#: lib/bitlk/bitlk.c:514
 msgid "Invalid or unknown signature for BITLK device."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:510
+#: lib/bitlk/bitlk.c:520
+msgid "BITLK version 1 is currently not supported."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:526
+msgid "Invalid or unknown boot signature for BITLK device."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:538
 #, c-format
 msgid "Unsupported sector size %<PRIu16>."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:518
+#: lib/bitlk/bitlk.c:546
 #, c-format
 msgid "Failed to read BITLK header from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:543
+#: lib/bitlk/bitlk.c:571
 #, c-format
 msgid "Failed to read BITLK FVE metadata from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:594
+#: lib/bitlk/bitlk.c:622
 msgid "Unknown or unsupported encryption type."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:627
+#: lib/bitlk/bitlk.c:655
 #, c-format
 msgid "Failed to read BITLK metadata entries from %s."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:921
+#: lib/bitlk/bitlk.c:897
+#, c-format
+msgid "Unexpected metadata entry type '%u' found when parsing external key."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:912
+#, c-format
+msgid "Unexpected metadata entry value '%u' found when parsing external key."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:980
+msgid "Unexpected metadata entry found when parsing startup key."
+msgstr ""
+
+#: lib/bitlk/bitlk.c:1071
 msgid "This operation is not supported."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:929
-msgid "Wrong key size."
+#: lib/bitlk/bitlk.c:1079
+msgid "Unexpected key data size."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:981
+#: lib/bitlk/bitlk.c:1205
 msgid "This BITLK device is in an unsupported state and cannot be activated."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:987
+#: lib/bitlk/bitlk.c:1210
 #, c-format
 msgid "BITLK devices with type '%s' cannot be activated."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:1069
+#: lib/bitlk/bitlk.c:1217
 msgid "Activation of partially decrypted BITLK device is not supported."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:1205
+#: lib/bitlk/bitlk.c:1380
 msgid ""
 "Cannot activate device, kernel dm-crypt is missing support for BITLK IV."
 msgstr ""
 
-#: lib/bitlk/bitlk.c:1209
+#: lib/bitlk/bitlk.c:1384
 msgid ""
 "Cannot activate device, kernel dm-crypt is missing support for BITLK "
 "Elephant diffuser."
 msgstr ""
 
-#: lib/verity/verity.c:68 lib/verity/verity.c:171
+#: lib/verity/verity.c:68 lib/verity/verity.c:179
 #, c-format
 msgid "Verity device %s does not use on-disk header."
 msgstr ""
@@ -1153,81 +1179,77 @@ msgstr ""
 msgid "VERITY header corrupted."
 msgstr ""
 
-#: lib/verity/verity.c:165
+#: lib/verity/verity.c:173
 #, c-format
 msgid "Wrong VERITY UUID format provided on device %s."
 msgstr ""
 
-#: lib/verity/verity.c:198
+#: lib/verity/verity.c:217
 #, c-format
 msgid "Error during update of verity header on device %s."
 msgstr ""
 
-#: lib/verity/verity.c:256
+#: lib/verity/verity.c:275
 msgid "Root hash signature verification is not supported."
 msgstr ""
 
-#: lib/verity/verity.c:267
+#: lib/verity/verity.c:287
 msgid "Errors cannot be repaired with FEC device."
 msgstr ""
 
-#: lib/verity/verity.c:269
+#: lib/verity/verity.c:289
 #, c-format
 msgid "Found %u repairable errors with FEC device."
 msgstr ""
 
-#: lib/verity/verity.c:308
+#: lib/verity/verity.c:332
 msgid "Kernel does not support dm-verity mapping."
 msgstr ""
 
-#: lib/verity/verity.c:312
+#: lib/verity/verity.c:336
 msgid "Kernel does not support dm-verity signature option."
 msgstr ""
 
-#: lib/verity/verity.c:323
+#: lib/verity/verity.c:347
 msgid "Verity device detected corruption after activation."
 msgstr ""
 
-#: lib/verity/verity_hash.c:59
+#: lib/verity/verity_hash.c:66
 #, c-format
 msgid "Spare area is not zeroed at position %<PRIu64>."
 msgstr ""
 
-#: lib/verity/verity_hash.c:163 lib/verity/verity_hash.c:290
-#: lib/verity/verity_hash.c:303
+#: lib/verity/verity_hash.c:167 lib/verity/verity_hash.c:300
+#: lib/verity/verity_hash.c:311
 msgid "Device offset overflow."
 msgstr ""
 
-#: lib/verity/verity_hash.c:203
+#: lib/verity/verity_hash.c:218
 #, c-format
 msgid "Verification failed at position %<PRIu64>."
 msgstr ""
 
-#: lib/verity/verity_hash.c:276
-msgid "Invalid size parameters for verity device."
-msgstr ""
-
-#: lib/verity/verity_hash.c:296
+#: lib/verity/verity_hash.c:307
 msgid "Hash area overflow."
 msgstr ""
 
-#: lib/verity/verity_hash.c:373
+#: lib/verity/verity_hash.c:380
 msgid "Verification of data area failed."
 msgstr ""
 
-#: lib/verity/verity_hash.c:378
+#: lib/verity/verity_hash.c:385
 msgid "Verification of root hash failed."
 msgstr ""
 
-#: lib/verity/verity_hash.c:384
+#: lib/verity/verity_hash.c:391
 msgid "Input/output error while creating hash area."
 msgstr ""
 
-#: lib/verity/verity_hash.c:386
+#: lib/verity/verity_hash.c:393
 msgid "Creation of hash area failed."
 msgstr ""
 
-#: lib/verity/verity_hash.c:433
+#: lib/verity/verity_hash.c:428
 #, c-format
 msgid ""
 "WARNING: Kernel cannot activate device if data block size exceeds page size "
@@ -1238,186 +1260,196 @@ msgstr ""
 msgid "Failed to allocate RS context."
 msgstr ""
 
-#: lib/verity/verity_fec.c:146
+#: lib/verity/verity_fec.c:149
 msgid "Failed to allocate buffer."
 msgstr ""
 
-#: lib/verity/verity_fec.c:156
+#: lib/verity/verity_fec.c:159
 #, c-format
 msgid "Failed to read RS block %<PRIu64> byte %d."
 msgstr ""
 
-#: lib/verity/verity_fec.c:169
+#: lib/verity/verity_fec.c:172
 #, c-format
 msgid "Failed to read parity for RS block %<PRIu64>."
 msgstr ""
 
-#: lib/verity/verity_fec.c:177
+#: lib/verity/verity_fec.c:180
 #, c-format
 msgid "Failed to repair parity for block %<PRIu64>."
 msgstr ""
 
-#: lib/verity/verity_fec.c:188
+#: lib/verity/verity_fec.c:192
 #, c-format
 msgid "Failed to write parity for RS block %<PRIu64>."
 msgstr ""
 
-#: lib/verity/verity_fec.c:223
+#: lib/verity/verity_fec.c:228
 msgid "Block sizes must match for FEC."
 msgstr ""
 
-#: lib/verity/verity_fec.c:229
+#: lib/verity/verity_fec.c:234
 msgid "Invalid number of parity bytes."
 msgstr ""
 
-#: lib/verity/verity_fec.c:265
+#: lib/verity/verity_fec.c:239
+msgid "Invalid FEC segment length."
+msgstr ""
+
+#: lib/verity/verity_fec.c:303
 #, c-format
 msgid "Failed to determine size for device %s."
 msgstr ""
 
-#: lib/integrity/integrity.c:271 lib/integrity/integrity.c:343
+#: lib/integrity/integrity.c:272 lib/integrity/integrity.c:355
 msgid "Kernel does not support dm-integrity mapping."
 msgstr ""
 
-#: lib/integrity/integrity.c:277
+#: lib/integrity/integrity.c:278
 msgid "Kernel does not support dm-integrity fixed metadata alignment."
 msgstr ""
 
-#: lib/luks2/luks2_disk_metadata.c:383 lib/luks2/luks2_json_metadata.c:959
-#: lib/luks2/luks2_json_metadata.c:1244
+#: lib/integrity/integrity.c:287
+msgid ""
+"Kernel refuses to activate insecure recalculate option (see legacy "
+"activation options to override)."
+msgstr ""
+
+#: lib/luks2/luks2_disk_metadata.c:381 lib/luks2/luks2_json_metadata.c:973
+#: lib/luks2/luks2_json_metadata.c:1268
 #, c-format
 msgid "Failed to acquire write lock on device %s."
 msgstr ""
 
-#: lib/luks2/luks2_disk_metadata.c:392
+#: lib/luks2/luks2_disk_metadata.c:390
 msgid ""
 "Detected attempt for concurrent LUKS2 metadata update. Aborting operation."
 msgstr ""
 
-#: lib/luks2/luks2_disk_metadata.c:691 lib/luks2/luks2_disk_metadata.c:712
+#: lib/luks2/luks2_disk_metadata.c:689 lib/luks2/luks2_disk_metadata.c:710
 msgid ""
 "Device contains ambiguous signatures, cannot auto-recover LUKS2.\n"
 "Please run \"cryptsetup repair\" for recovery."
 msgstr ""
 
-#: lib/luks2/luks2_json_format.c:227
+#: lib/luks2/luks2_json_format.c:230
 msgid "Requested data offset is too small."
 msgstr ""
 
-#: lib/luks2/luks2_json_format.c:271
+#: lib/luks2/luks2_json_format.c:275
 #, c-format
 msgid ""
 "WARNING: keyslots area (%<PRIu64> bytes) is very small, available LUKS2 "
 "keyslot count is very limited.\n"
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:946 lib/luks2/luks2_json_metadata.c:1074
-#: lib/luks2/luks2_json_metadata.c:1150 lib/luks2/luks2_keyslot_luks2.c:92
+#: lib/luks2/luks2_json_metadata.c:960 lib/luks2/luks2_json_metadata.c:1098
+#: lib/luks2/luks2_json_metadata.c:1174 lib/luks2/luks2_keyslot_luks2.c:92
 #: lib/luks2/luks2_keyslot_luks2.c:114
 #, c-format
 msgid "Failed to acquire read lock on device %s."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1167
+#: lib/luks2/luks2_json_metadata.c:1191
 #, c-format
 msgid "Forbidden LUKS2 requirements detected in backup %s."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1208
+#: lib/luks2/luks2_json_metadata.c:1232
 msgid "Data offset differ on device and backup, restore failed."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1214
+#: lib/luks2/luks2_json_metadata.c:1238
 msgid ""
 "Binary header with keyslot areas size differ on device and backup, restore "
 "failed."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1221
+#: lib/luks2/luks2_json_metadata.c:1245
 #, c-format
 msgid "Device %s %s%s%s%s"
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1222
+#: lib/luks2/luks2_json_metadata.c:1246
 msgid ""
 "does not contain LUKS2 header. Replacing header can destroy data on that "
 "device."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1223
+#: lib/luks2/luks2_json_metadata.c:1247
 msgid ""
 "already contains LUKS2 header. Replacing header will destroy existing "
 "keyslots."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1225
+#: lib/luks2/luks2_json_metadata.c:1249
 msgid ""
 "\n"
 "WARNING: unknown LUKS2 requirements detected in real device header!\n"
 "Replacing header with backup may corrupt the data on that device!"
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1227
+#: lib/luks2/luks2_json_metadata.c:1251
 msgid ""
 "\n"
 "WARNING: Unfinished offline reencryption detected on the device!\n"
 "Replacing header with backup may corrupt data."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:1323
+#: lib/luks2/luks2_json_metadata.c:1349
 #, c-format
 msgid "Ignored unknown flag %s."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2010 lib/luks2/luks2_reencrypt.c:1746
+#: lib/luks2/luks2_json_metadata.c:2054 lib/luks2/luks2_reencrypt.c:1840
 #, c-format
 msgid "Missing key for dm-crypt segment %u"
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2022 lib/luks2/luks2_reencrypt.c:1764
+#: lib/luks2/luks2_json_metadata.c:2066 lib/luks2/luks2_reencrypt.c:1857
 msgid "Failed to set dm-crypt segment."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2028 lib/luks2/luks2_reencrypt.c:1770
+#: lib/luks2/luks2_json_metadata.c:2072 lib/luks2/luks2_reencrypt.c:1863
 msgid "Failed to set dm-linear segment."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2155
+#: lib/luks2/luks2_json_metadata.c:2199
 msgid "Unsupported device integrity configuration."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2241
+#: lib/luks2/luks2_json_metadata.c:2285
 msgid "Reencryption in-progress. Cannot deactivate device."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2252 lib/luks2/luks2_reencrypt.c:3190
+#: lib/luks2/luks2_json_metadata.c:2296 lib/luks2/luks2_reencrypt.c:3296
 #, c-format
 msgid "Failed to replace suspended device %s with dm-error target."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2332
+#: lib/luks2/luks2_json_metadata.c:2376
 msgid "Failed to read LUKS2 requirements."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2339
+#: lib/luks2/luks2_json_metadata.c:2383
 msgid "Unmet LUKS2 requirements detected."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2347
+#: lib/luks2/luks2_json_metadata.c:2391
 msgid ""
 "Operation incompatible with device marked for legacy reencryption. Aborting."
 msgstr ""
 
-#: lib/luks2/luks2_json_metadata.c:2349
+#: lib/luks2/luks2_json_metadata.c:2393
 msgid ""
 "Operation incompatible with device marked for LUKS2 reencryption. Aborting."
 msgstr ""
 
-#: lib/luks2/luks2_keyslot.c:547 lib/luks2/luks2_keyslot.c:584
+#: lib/luks2/luks2_keyslot.c:554 lib/luks2/luks2_keyslot.c:591
 msgid "Not enough available memory to open a keyslot."
 msgstr ""
 
-#: lib/luks2/luks2_keyslot.c:549 lib/luks2/luks2_keyslot.c:586
+#: lib/luks2/luks2_keyslot.c:556 lib/luks2/luks2_keyslot.c:593
 msgid "Keyslot open failed."
 msgstr ""
 
@@ -1447,7 +1479,7 @@ msgstr ""
 msgid "Unable to move keyslot area. LUKS2 keyslots area too small."
 msgstr ""
 
-#: lib/luks2/luks2_luks1_convert.c:605 lib/luks2/luks2_luks1_convert.c:887
+#: lib/luks2/luks2_luks1_convert.c:605 lib/luks2/luks2_luks1_convert.c:889
 msgid "Unable to move keyslot area."
 msgstr ""
 
@@ -1489,630 +1521,631 @@ msgstr ""
 msgid "Cannot convert to LUKS1 format - keyslot %u is not LUKS1 compatible."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:892
+#: lib/luks2/luks2_reencrypt.c:993
 #, c-format
 msgid "Hotzone size must be multiple of calculated zone alignment (%zu bytes)."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:897
+#: lib/luks2/luks2_reencrypt.c:998
 #, c-format
 msgid "Device size must be multiple of calculated zone alignment (%zu bytes)."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:941
+#: lib/luks2/luks2_reencrypt.c:1042
 #, c-format
 msgid "Unsupported resilience mode %s"
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1158 lib/luks2/luks2_reencrypt.c:1313
-#: lib/luks2/luks2_reencrypt.c:1396 lib/luks2/luks2_reencrypt.c:1430
-#: lib/luks2/luks2_reencrypt.c:3030
+#: lib/luks2/luks2_reencrypt.c:1259 lib/luks2/luks2_reencrypt.c:1414
+#: lib/luks2/luks2_reencrypt.c:1497 lib/luks2/luks2_reencrypt.c:1531
+#: lib/luks2/luks2_reencrypt.c:3136
 msgid "Failed to initialize old segment storage wrapper."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1172 lib/luks2/luks2_reencrypt.c:1291
+#: lib/luks2/luks2_reencrypt.c:1273 lib/luks2/luks2_reencrypt.c:1392
 msgid "Failed to initialize new segment storage wrapper."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1340
+#: lib/luks2/luks2_reencrypt.c:1441
 msgid "Failed to read checksums for current hotzone."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1347 lib/luks2/luks2_reencrypt.c:3038
+#: lib/luks2/luks2_reencrypt.c:1448 lib/luks2/luks2_reencrypt.c:3144
 #, c-format
 msgid "Failed to read hotzone area starting at %<PRIu64>."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1366
+#: lib/luks2/luks2_reencrypt.c:1467
 #, c-format
 msgid "Failed to decrypt sector %zu."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1372
+#: lib/luks2/luks2_reencrypt.c:1473
 #, c-format
 msgid "Failed to recover sector %zu."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1867
+#: lib/luks2/luks2_reencrypt.c:1956
 #, c-format
 msgid ""
 "Source and target device sizes don't match. Source %<PRIu64>, target: "
 "%<PRIu64>."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1965
+#: lib/luks2/luks2_reencrypt.c:2054
 #, c-format
 msgid "Failed to activate hotzone device %s."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1982
+#: lib/luks2/luks2_reencrypt.c:2071
 #, c-format
 msgid "Failed to activate overlay device %s with actual origin table."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:1989
+#: lib/luks2/luks2_reencrypt.c:2078
 #, c-format
 msgid "Failed to load new mapping for device %s."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2060
+#: lib/luks2/luks2_reencrypt.c:2149
 msgid "Failed to refresh reencryption devices stack."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2216
+#: lib/luks2/luks2_reencrypt.c:2305
 msgid "Failed to set new keyslots area size."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2318
+#: lib/luks2/luks2_reencrypt.c:2409
 #, c-format
 msgid ""
 "Data shift is not aligned to requested encryption sector size (%<PRIu32> "
 "bytes)."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2339
+#: lib/luks2/luks2_reencrypt.c:2430
 #, c-format
 msgid ""
 "Data device is not aligned to requested encryption sector size (%<PRIu32> "
 "bytes)."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2360
+#: lib/luks2/luks2_reencrypt.c:2451
 #, c-format
 msgid ""
 "Data shift (%<PRIu64> sectors) is less than future data offset (%<PRIu64> "
 "sectors)."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2366 lib/luks2/luks2_reencrypt.c:2779
-#: lib/luks2/luks2_reencrypt.c:2800
+#: lib/luks2/luks2_reencrypt.c:2457 lib/luks2/luks2_reencrypt.c:2885
+#: lib/luks2/luks2_reencrypt.c:2906
 #, c-format
 msgid "Failed to open %s in exclusive mode (already mapped or mounted)."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2534
+#: lib/luks2/luks2_reencrypt.c:2625
 msgid "Device not marked for LUKS2 reencryption."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2540 lib/luks2/luks2_reencrypt.c:3295
+#: lib/luks2/luks2_reencrypt.c:2631 lib/luks2/luks2_reencrypt.c:3413
 msgid "Failed to load LUKS2 reencryption context."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2619
+#: lib/luks2/luks2_reencrypt.c:2711
 msgid "Failed to get reencryption state."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2623
+#: lib/luks2/luks2_reencrypt.c:2715
 msgid "Device is not in reencryption."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2630
+#: lib/luks2/luks2_reencrypt.c:2722
 msgid "Reencryption process is already running."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2632
+#: lib/luks2/luks2_reencrypt.c:2724
 msgid "Failed to acquire reencryption lock."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2650
+#: lib/luks2/luks2_reencrypt.c:2742
 msgid "Cannot proceed with reencryption. Run reencryption recovery first."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2750
+#: lib/luks2/luks2_reencrypt.c:2856
 msgid "Active device size and requested reencryption size don't match."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2764
+#: lib/luks2/luks2_reencrypt.c:2870
 msgid "Illegal device size requested in reencryption parameters."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2834
+#: lib/luks2/luks2_reencrypt.c:2940
 msgid "Reencryption in-progress. Cannot perform recovery."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2906
+#: lib/luks2/luks2_reencrypt.c:3012
 msgid "LUKS2 reencryption already initialized in metadata."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:2913
+#: lib/luks2/luks2_reencrypt.c:3019
 msgid "Failed to initialize LUKS2 reencryption in metadata."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3004
+#: lib/luks2/luks2_reencrypt.c:3110
 msgid "Failed to set device segments for next reencryption hotzone."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3046
+#: lib/luks2/luks2_reencrypt.c:3152
 msgid "Failed to write reencryption resilience metadata."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3053
+#: lib/luks2/luks2_reencrypt.c:3159
 msgid "Decryption failed."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3058
+#: lib/luks2/luks2_reencrypt.c:3164
 #, c-format
 msgid "Failed to write hotzone area starting at %<PRIu64>."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3063
+#: lib/luks2/luks2_reencrypt.c:3169
 msgid "Failed to sync data."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3071
+#: lib/luks2/luks2_reencrypt.c:3177
 msgid "Failed to update metadata after current reencryption hotzone completed."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3138
+#: lib/luks2/luks2_reencrypt.c:3244
 msgid "Failed to write LUKS2 metadata."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3161
+#: lib/luks2/luks2_reencrypt.c:3267
 msgid "Failed to wipe backup segment data."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3174
+#: lib/luks2/luks2_reencrypt.c:3280
 msgid "Failed to disable reencryption requirement flag."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3182
+#: lib/luks2/luks2_reencrypt.c:3288
 #, c-format
 msgid ""
 "Fatal error while reencrypting chunk starting at %<PRIu64>, %<PRIu64> "
 "sectors long."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3191
+#: lib/luks2/luks2_reencrypt.c:3297
 msgid "Do not resume the device unless replaced with error target manually."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3240
+#: lib/luks2/luks2_reencrypt.c:3350
 msgid "Cannot proceed with reencryption. Unexpected reencryption status."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3246
+#: lib/luks2/luks2_reencrypt.c:3356
 msgid "Missing or invalid reencrypt context."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3253
+#: lib/luks2/luks2_reencrypt.c:3363
 msgid "Failed to initialize reencryption device stack."
 msgstr ""
 
-#: lib/luks2/luks2_reencrypt.c:3272 lib/luks2/luks2_reencrypt.c:3308
+#: lib/luks2/luks2_reencrypt.c:3382 lib/luks2/luks2_reencrypt.c:3426
 msgid "Failed to update reencryption context."
 msgstr ""
 
-#: lib/luks2/luks2_token.c:262
-msgid "No free token slot."
-msgstr ""
-
-#: lib/luks2/luks2_token.c:269
-#, c-format
-msgid "Failed to create builtin token %s."
-msgstr ""
-
-#: src/cryptsetup.c:164
+#: src/cryptsetup.c:108
 msgid "Can't do passphrase verification on non-tty inputs."
 msgstr ""
 
-#: src/cryptsetup.c:221
+#: src/cryptsetup.c:171
 msgid "Keyslot encryption parameters can be set only for LUKS2 device."
 msgstr ""
 
-#: src/cryptsetup.c:251 src/cryptsetup.c:959 src/cryptsetup.c:1269
-#: src/cryptsetup.c:3145 src/cryptsetup_reencrypt.c:723
-#: src/cryptsetup_reencrypt.c:793
+#: src/cryptsetup.c:206 src/cryptsetup.c:1012 src/cryptsetup.c:1352
+#: src/cryptsetup.c:3233 src/cryptsetup_reencrypt.c:700
+#: src/cryptsetup_reencrypt.c:770
 msgid "No known cipher specification pattern detected."
 msgstr ""
 
-#: src/cryptsetup.c:259
+#: src/cryptsetup.c:214
 msgid ""
 "WARNING: The --hash parameter is being ignored in plain mode with keyfile "
 "specified.\n"
 msgstr ""
 
-#: src/cryptsetup.c:267
+#: src/cryptsetup.c:222
 msgid ""
 "WARNING: The --keyfile-size option is being ignored, the read size is the "
 "same as the encryption key size.\n"
 msgstr ""
 
-#: src/cryptsetup.c:307
+#: src/cryptsetup.c:262
 #, c-format
 msgid ""
 "Detected device signature(s) on %s. Proceeding further may damage existing "
 "data."
 msgstr ""
 
-#: src/cryptsetup.c:313 src/cryptsetup.c:1090 src/cryptsetup.c:1142
-#: src/cryptsetup.c:1246 src/cryptsetup.c:1319 src/cryptsetup.c:1974
-#: src/cryptsetup.c:2682 src/cryptsetup.c:2805 src/integritysetup.c:233
+#: src/cryptsetup.c:268 src/cryptsetup.c:1152 src/cryptsetup.c:1204
+#: src/cryptsetup.c:1329 src/cryptsetup.c:1402 src/cryptsetup.c:2055
+#: src/cryptsetup.c:2751 src/cryptsetup.c:2873 src/integritysetup.c:176
 msgid "Operation aborted.\n"
 msgstr ""
 
-#: src/cryptsetup.c:381
+#: src/cryptsetup.c:336
 msgid "Option --key-file is required."
 msgstr ""
 
-#: src/cryptsetup.c:434
+#: src/cryptsetup.c:387
 msgid "Enter VeraCrypt PIM: "
 msgstr ""
 
-#: src/cryptsetup.c:443
+#: src/cryptsetup.c:396
 msgid "Invalid PIM value: parse error."
 msgstr ""
 
-#: src/cryptsetup.c:446
+#: src/cryptsetup.c:399
 msgid "Invalid PIM value: 0."
 msgstr ""
 
-#: src/cryptsetup.c:449
+#: src/cryptsetup.c:402
 msgid "Invalid PIM value: outside of range."
 msgstr ""
 
-#: src/cryptsetup.c:472
+#: src/cryptsetup.c:425
 msgid "No device header detected with this passphrase."
 msgstr ""
 
-#: src/cryptsetup.c:541
+#: src/cryptsetup.c:498
 #, c-format
 msgid "Device %s is not a valid BITLK device."
 msgstr ""
 
-#: src/cryptsetup.c:576
+#: src/cryptsetup.c:506
+msgid ""
+"Cannot determine volume key size for BITLK, please use --key-size option."
+msgstr ""
+
+#: src/cryptsetup.c:549
 msgid ""
 "Header dump with volume key is sensitive information\n"
 "which allows access to encrypted partition without passphrase.\n"
 "This dump should be always stored encrypted on safe place."
 msgstr ""
 
-#: src/cryptsetup.c:673
-#, c-format
-msgid "Device %s is still active and scheduled for deferred removal.\n"
-msgstr ""
-
-#: src/cryptsetup.c:701
-msgid ""
-"Resize of active device requires volume key in keyring but --disable-keyring "
-"option is set."
-msgstr ""
-
-#: src/cryptsetup.c:838
-msgid "Benchmark interrupted."
-msgstr ""
-
-#: src/cryptsetup.c:859
-#, c-format
-msgid "PBKDF2-%-9s     N/A\n"
-msgstr ""
-
-#: src/cryptsetup.c:861
-#, c-format
-msgid "PBKDF2-%-9s %7u iterations per second for %zu-bit key\n"
-msgstr ""
-
-#: src/cryptsetup.c:875
-#, c-format
-msgid "%-10s N/A\n"
-msgstr ""
-
-#: src/cryptsetup.c:877
-#, c-format
-msgid ""
-"%-10s %4u iterations, %5u memory, %1u parallel threads (CPUs) for %zu-bit "
-"key (requested %u ms time)\n"
-msgstr ""
-
-#: src/cryptsetup.c:901
-msgid "Result of benchmark is not reliable."
-msgstr ""
-
-#: src/cryptsetup.c:951
-msgid "# Tests are approximate using memory only (no storage IO).\n"
-msgstr ""
-
-#. TRANSLATORS: The string is header of a table and must be exactly (right side) aligned.
-#: src/cryptsetup.c:971
-#, c-format
-msgid "#%*s Algorithm |       Key |      Encryption |      Decryption\n"
-msgstr ""
-
-#: src/cryptsetup.c:975
-#, c-format
-msgid "Cipher %s (with %i bits key) is not available."
-msgstr ""
-
-#. TRANSLATORS: The string is header of a table and must be exactly (right side) aligned.
-#: src/cryptsetup.c:994
-msgid "#     Algorithm |       Key |      Encryption |      Decryption\n"
-msgstr ""
-
-#: src/cryptsetup.c:1003
-msgid "N/A"
-msgstr ""
-
-#: src/cryptsetup.c:1083
-msgid ""
-"Seems device does not require reencryption recovery.\n"
-"Do you want to proceed anyway?"
-msgstr ""
-
-#: src/cryptsetup.c:1089
-msgid "Really proceed with LUKS2 reencryption recovery?"
-msgstr ""
-
-#: src/cryptsetup.c:1098
-msgid "Enter passphrase for reencryption recovery: "
-msgstr ""
-
-#: src/cryptsetup.c:1141
-msgid "Really try to repair LUKS device header?"
-msgstr ""
-
-#: src/cryptsetup.c:1160 src/integritysetup.c:146
-msgid ""
-"Wiping device to initialize integrity checksum.\n"
-"You can interrupt this by pressing CTRL+c (rest of not wiped device will "
-"contain invalid checksum).\n"
-msgstr ""
-
-#: src/cryptsetup.c:1182 src/integritysetup.c:168
-#, c-format
-msgid "Cannot deactivate temporary device %s."
-msgstr ""
-
-#: src/cryptsetup.c:1231
-msgid "Integrity option can be used only for LUKS2 format."
-msgstr ""
-
-#: src/cryptsetup.c:1236 src/cryptsetup.c:1296
-msgid "Unsupported LUKS2 metadata size options."
-msgstr ""
-
-#: src/cryptsetup.c:1253
-#, c-format
-msgid "Cannot create header file %s."
-msgstr ""
-
-#: src/cryptsetup.c:1276 src/integritysetup.c:195 src/integritysetup.c:204
-#: src/integritysetup.c:213 src/integritysetup.c:284 src/integritysetup.c:293
-#: src/integritysetup.c:303
-msgid "No known integrity specification pattern detected."
-msgstr ""
-
-#: src/cryptsetup.c:1289
-#, c-format
-msgid "Cannot use %s as on-disk header."
-msgstr ""
-
-#: src/cryptsetup.c:1313 src/integritysetup.c:227
-#, c-format
-msgid "This will overwrite data on %s irrevocably."
-msgstr ""
-
-#: src/cryptsetup.c:1354 src/cryptsetup.c:1688 src/cryptsetup.c:1755
-#: src/cryptsetup.c:1857 src/cryptsetup.c:1923 src/cryptsetup_reencrypt.c:553
-msgid "Failed to set pbkdf parameters."
-msgstr ""
-
-#: src/cryptsetup.c:1439
-msgid "Reduced data offset is allowed only for detached LUKS header."
-msgstr ""
-
-#: src/cryptsetup.c:1450 src/cryptsetup.c:1761
-msgid ""
-"Cannot determine volume key size for LUKS without keyslots, please use --key-"
-"size option."
-msgstr ""
-
-#: src/cryptsetup.c:1488
-msgid "Device activated but cannot make flags persistent."
-msgstr ""
-
-#: src/cryptsetup.c:1569 src/cryptsetup.c:1639
-#, c-format
-msgid "Keyslot %d is selected for deletion."
-msgstr ""
-
-#: src/cryptsetup.c:1581 src/cryptsetup.c:1642
-msgid ""
-"This is the last keyslot. Device will become unusable after purging this key."
-msgstr ""
-
-#: src/cryptsetup.c:1582
-msgid "Enter any remaining passphrase: "
-msgstr ""
-
-#: src/cryptsetup.c:1583 src/cryptsetup.c:1644
-msgid "Operation aborted, the keyslot was NOT wiped.\n"
-msgstr ""
-
-#: src/cryptsetup.c:1621
-msgid "Enter passphrase to be deleted: "
-msgstr ""
-
-#: src/cryptsetup.c:1702 src/cryptsetup.c:1776 src/cryptsetup.c:1810
-msgid "Enter new passphrase for key slot: "
-msgstr ""
-
-#: src/cryptsetup.c:1793 src/cryptsetup_reencrypt.c:1343
-#, c-format
-msgid "Enter any existing passphrase: "
-msgstr ""
-
-#: src/cryptsetup.c:1861
-msgid "Enter passphrase to be changed: "
-msgstr ""
-
-#: src/cryptsetup.c:1877 src/cryptsetup_reencrypt.c:1329
-msgid "Enter new passphrase: "
-msgstr ""
-
-#: src/cryptsetup.c:1927
-msgid "Enter passphrase for keyslot to be converted: "
-msgstr ""
-
-#: src/cryptsetup.c:1951
-msgid "Only one device argument for isLuks operation is supported."
-msgstr ""
-
-#: src/cryptsetup.c:2001
+#: src/cryptsetup.c:622 src/cryptsetup.c:2081
 msgid ""
 "The header dump with volume key is sensitive information\n"
 "that allows access to encrypted partition without a passphrase.\n"
 "This dump should be stored encrypted in a safe place."
 msgstr ""
 
-#: src/cryptsetup.c:2066
+#: src/cryptsetup.c:717 src/veritysetup.c:238 src/integritysetup.c:313
+#, c-format
+msgid "Device %s is still active and scheduled for deferred removal.\n"
+msgstr ""
+
+#: src/cryptsetup.c:751
+msgid ""
+"Resize of active device requires volume key in keyring but --disable-keyring "
+"option is set."
+msgstr ""
+
+#: src/cryptsetup.c:891
+msgid "Benchmark interrupted."
+msgstr ""
+
+#: src/cryptsetup.c:912
+#, c-format
+msgid "PBKDF2-%-9s     N/A\n"
+msgstr ""
+
+#: src/cryptsetup.c:914
+#, c-format
+msgid "PBKDF2-%-9s %7u iterations per second for %zu-bit key\n"
+msgstr ""
+
+#: src/cryptsetup.c:928
+#, c-format
+msgid "%-10s N/A\n"
+msgstr ""
+
+#: src/cryptsetup.c:930
+#, c-format
+msgid ""
+"%-10s %4u iterations, %5u memory, %1u parallel threads (CPUs) for %zu-bit "
+"key (requested %u ms time)\n"
+msgstr ""
+
+#: src/cryptsetup.c:954
+msgid "Result of benchmark is not reliable."
+msgstr ""
+
+#: src/cryptsetup.c:1004
+msgid "# Tests are approximate using memory only (no storage IO).\n"
+msgstr ""
+
+#. TRANSLATORS: The string is header of a table and must be exactly (right side) aligned.
+#: src/cryptsetup.c:1024
+#, c-format
+msgid "#%*s Algorithm |       Key |      Encryption |      Decryption\n"
+msgstr ""
+
+#: src/cryptsetup.c:1028
+#, c-format
+msgid "Cipher %s (with %i bits key) is not available."
+msgstr ""
+
+#. TRANSLATORS: The string is header of a table and must be exactly (right side) aligned.
+#: src/cryptsetup.c:1047
+msgid "#     Algorithm |       Key |      Encryption |      Decryption\n"
+msgstr ""
+
+#: src/cryptsetup.c:1058
+msgid "N/A"
+msgstr ""
+
+#: src/cryptsetup.c:1145
+msgid ""
+"Seems device does not require reencryption recovery.\n"
+"Do you want to proceed anyway?"
+msgstr ""
+
+#: src/cryptsetup.c:1151
+msgid "Really proceed with LUKS2 reencryption recovery?"
+msgstr ""
+
+#: src/cryptsetup.c:1159
+msgid "Enter passphrase for reencryption recovery: "
+msgstr ""
+
+#: src/cryptsetup.c:1203
+msgid "Really try to repair LUKS device header?"
+msgstr ""
+
+#: src/cryptsetup.c:1228 src/integritysetup.c:90
+msgid ""
+"Wiping device to initialize integrity checksum.\n"
+"You can interrupt this by pressing CTRL+c (rest of not wiped device will "
+"contain invalid checksum).\n"
+msgstr ""
+
+#: src/cryptsetup.c:1250 src/integritysetup.c:112
+#, c-format
+msgid "Cannot deactivate temporary device %s."
+msgstr ""
+
+#: src/cryptsetup.c:1314
+msgid "Integrity option can be used only for LUKS2 format."
+msgstr ""
+
+#: src/cryptsetup.c:1319 src/cryptsetup.c:1379
+msgid "Unsupported LUKS2 metadata size options."
+msgstr ""
+
+#: src/cryptsetup.c:1328
+msgid "Header file does not exist, do you want to create it?"
+msgstr ""
+
+#: src/cryptsetup.c:1336
+#, c-format
+msgid "Cannot create header file %s."
+msgstr ""
+
+#: src/cryptsetup.c:1359 src/integritysetup.c:138 src/integritysetup.c:146
+#: src/integritysetup.c:155 src/integritysetup.c:230 src/integritysetup.c:238
+#: src/integritysetup.c:248
+msgid "No known integrity specification pattern detected."
+msgstr ""
+
+#: src/cryptsetup.c:1372
+#, c-format
+msgid "Cannot use %s as on-disk header."
+msgstr ""
+
+#: src/cryptsetup.c:1396 src/integritysetup.c:170
+#, c-format
+msgid "This will overwrite data on %s irrevocably."
+msgstr ""
+
+#: src/cryptsetup.c:1429 src/cryptsetup.c:1770 src/cryptsetup.c:1835
+#: src/cryptsetup.c:1937 src/cryptsetup.c:2003 src/cryptsetup_reencrypt.c:530
+msgid "Failed to set pbkdf parameters."
+msgstr ""
+
+#: src/cryptsetup.c:1514
+msgid "Reduced data offset is allowed only for detached LUKS header."
+msgstr ""
+
+#: src/cryptsetup.c:1525 src/cryptsetup.c:1841
+msgid ""
+"Cannot determine volume key size for LUKS without keyslots, please use --key-"
+"size option."
+msgstr ""
+
+#: src/cryptsetup.c:1542
+msgid "Enter token PIN:"
+msgstr ""
+
+#: src/cryptsetup.c:1575
+msgid "Device activated but cannot make flags persistent."
+msgstr ""
+
+#: src/cryptsetup.c:1654 src/cryptsetup.c:1722
+#, c-format
+msgid "Keyslot %d is selected for deletion."
+msgstr ""
+
+#: src/cryptsetup.c:1666 src/cryptsetup.c:1726
+msgid ""
+"This is the last keyslot. Device will become unusable after purging this key."
+msgstr ""
+
+#: src/cryptsetup.c:1667
+msgid "Enter any remaining passphrase: "
+msgstr ""
+
+#: src/cryptsetup.c:1668 src/cryptsetup.c:1728
+msgid "Operation aborted, the keyslot was NOT wiped.\n"
+msgstr ""
+
+#: src/cryptsetup.c:1704
+msgid "Enter passphrase to be deleted: "
+msgstr ""
+
+#: src/cryptsetup.c:1784 src/cryptsetup.c:1856 src/cryptsetup.c:1890
+msgid "Enter new passphrase for key slot: "
+msgstr ""
+
+#: src/cryptsetup.c:1873 src/cryptsetup_reencrypt.c:1328
+#, c-format
+msgid "Enter any existing passphrase: "
+msgstr ""
+
+#: src/cryptsetup.c:1941
+msgid "Enter passphrase to be changed: "
+msgstr ""
+
+#: src/cryptsetup.c:1957 src/cryptsetup_reencrypt.c:1314
+msgid "Enter new passphrase: "
+msgstr ""
+
+#: src/cryptsetup.c:2007
+msgid "Enter passphrase for keyslot to be converted: "
+msgstr ""
+
+#: src/cryptsetup.c:2031
+msgid "Only one device argument for isLuks operation is supported."
+msgstr ""
+
+#: src/cryptsetup.c:2146
 #, c-format
 msgid "Keyslot %d does not contain unbound key."
 msgstr ""
 
-#: src/cryptsetup.c:2072
+#: src/cryptsetup.c:2151
 msgid ""
 "The header dump with unbound key is sensitive information.\n"
 "This dump should be stored encrypted in a safe place."
 msgstr ""
 
-#: src/cryptsetup.c:2207 src/cryptsetup.c:2228
+#: src/cryptsetup.c:2242 src/cryptsetup.c:2270
+#, c-format
+msgid "%s is not active %s device name."
+msgstr ""
+
+#: src/cryptsetup.c:2265
+#, c-format
+msgid "%s is not active LUKS device name or header is missing."
+msgstr ""
+
+#: src/cryptsetup.c:2303 src/cryptsetup.c:2322
 msgid "Option --header-backup-file is required."
 msgstr ""
 
-#: src/cryptsetup.c:2258
+#: src/cryptsetup.c:2353
 #, c-format
 msgid "%s is not cryptsetup managed device."
 msgstr ""
 
-#: src/cryptsetup.c:2269
+#: src/cryptsetup.c:2364
 #, c-format
 msgid "Refresh is not supported for device type %s"
 msgstr ""
 
-#: src/cryptsetup.c:2311
+#: src/cryptsetup.c:2410
 #, c-format
 msgid "Unrecognized metadata device type %s."
 msgstr ""
 
-#: src/cryptsetup.c:2314
+#: src/cryptsetup.c:2412
 msgid "Command requires device and mapped name as arguments."
 msgstr ""
 
-#: src/cryptsetup.c:2336
+#: src/cryptsetup.c:2433
 #, c-format
 msgid ""
 "This operation will erase all keyslots on device %s.\n"
 "Device will become unusable after this operation."
 msgstr ""
 
-#: src/cryptsetup.c:2343
+#: src/cryptsetup.c:2440
 msgid "Operation aborted, keyslots were NOT wiped.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2380
+#: src/cryptsetup.c:2479
 msgid "Invalid LUKS type, only luks1 and luks2 are supported."
 msgstr ""
 
-#: src/cryptsetup.c:2398
+#: src/cryptsetup.c:2495
 #, c-format
 msgid "Device is already %s type."
 msgstr ""
 
-#: src/cryptsetup.c:2403
+#: src/cryptsetup.c:2502
 #, c-format
 msgid "This operation will convert %s to %s format.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2409
+#: src/cryptsetup.c:2505
 msgid "Operation aborted, device was NOT converted.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2449
+#: src/cryptsetup.c:2545
 msgid "Option --priority, --label or --subsystem is missing."
 msgstr ""
 
-#: src/cryptsetup.c:2483 src/cryptsetup.c:2516 src/cryptsetup.c:2539
+#: src/cryptsetup.c:2579 src/cryptsetup.c:2611 src/cryptsetup.c:2631
 #, c-format
 msgid "Token %d is invalid."
 msgstr ""
 
-#: src/cryptsetup.c:2486 src/cryptsetup.c:2542
+#: src/cryptsetup.c:2582 src/cryptsetup.c:2634
 #, c-format
 msgid "Token %d in use."
 msgstr ""
 
-#: src/cryptsetup.c:2493
+#: src/cryptsetup.c:2589
 #, c-format
 msgid "Failed to add luks2-keyring token %d."
 msgstr ""
 
-#: src/cryptsetup.c:2502 src/cryptsetup.c:2564
+#: src/cryptsetup.c:2597 src/cryptsetup.c:2655
 #, c-format
 msgid "Failed to assign token %d to keyslot %d."
 msgstr ""
 
-#: src/cryptsetup.c:2519
+#: src/cryptsetup.c:2614
 #, c-format
 msgid "Token %d is not in use."
 msgstr ""
 
-#: src/cryptsetup.c:2554
+#: src/cryptsetup.c:2646
 msgid "Failed to import token from file."
 msgstr ""
 
-#: src/cryptsetup.c:2579
+#: src/cryptsetup.c:2671
 #, c-format
 msgid "Failed to get token %d for export."
 msgstr ""
 
-#: src/cryptsetup.c:2594
-msgid "--key-description parameter is mandatory for token add action."
-msgstr ""
-
-#: src/cryptsetup.c:2600 src/cryptsetup.c:2608
-msgid "Action requires specific token. Use --token-id parameter."
-msgstr ""
-
-#: src/cryptsetup.c:2613
-#, c-format
-msgid "Invalid token operation %s."
-msgstr ""
-
-#: src/cryptsetup.c:2668
+#: src/cryptsetup.c:2735
 #, c-format
 msgid "Auto-detected active dm device '%s' for data device %s.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2672
+#: src/cryptsetup.c:2739
 #, c-format
 msgid "Device %s is not a block device.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2674
+#: src/cryptsetup.c:2741
 #, c-format
 msgid "Failed to auto-detect device %s holders."
 msgstr ""
 
-#: src/cryptsetup.c:2676
+#: src/cryptsetup.c:2745
 #, c-format
 msgid ""
 "Unable to decide if device %s is activated or not.\n"
@@ -2121,252 +2154,257 @@ msgid ""
 "To run reencryption in online mode, use --active-name parameter instead.\n"
 msgstr ""
 
-#: src/cryptsetup.c:2756
-msgid "Invalid LUKS device type."
+#: src/cryptsetup.c:2827
+msgid "Encryption is supported only for LUKS2 format."
 msgstr ""
 
-#: src/cryptsetup.c:2761
+#: src/cryptsetup.c:2832
 msgid ""
 "Encryption without detached header (--header) is not possible without data "
 "device size reduction (--reduce-device-size)."
 msgstr ""
 
-#: src/cryptsetup.c:2766
+#: src/cryptsetup.c:2837
 msgid ""
 "Requested data offset must be less than or equal to half of --reduce-device-"
 "size parameter."
 msgstr ""
 
-#: src/cryptsetup.c:2775
+#: src/cryptsetup.c:2846
 #, c-format
 msgid ""
 "Adjusting --reduce-device-size value to twice the --offset %<PRIu64> "
 "(sectors).\n"
 msgstr ""
 
-#: src/cryptsetup.c:2779
-msgid "Encryption is supported only for LUKS2 format."
-msgstr ""
-
-#: src/cryptsetup.c:2801
+#: src/cryptsetup.c:2869
 #, c-format
 msgid ""
 "Detected LUKS device on %s. Do you want to encrypt that LUKS device again?"
 msgstr ""
 
-#: src/cryptsetup.c:2816
+#: src/cryptsetup.c:2887
 #, c-format
 msgid "Temporary header file %s already exists. Aborting."
 msgstr ""
 
-#: src/cryptsetup.c:2818 src/cryptsetup.c:2825
+#: src/cryptsetup.c:2889 src/cryptsetup.c:2896
 #, c-format
 msgid "Cannot create temporary header file %s."
 msgstr ""
 
-#: src/cryptsetup.c:2889
+#: src/cryptsetup.c:2964
 #, c-format
 msgid "%s/%s is now active and ready for online encryption.\n"
 msgstr ""
 
-#: src/cryptsetup.c:3053 src/cryptsetup.c:3059
+#: src/cryptsetup.c:3000
+msgid "LUKS2 decryption is supported with detached header device only."
+msgstr ""
+
+#: src/cryptsetup.c:3134 src/cryptsetup.c:3140
 msgid "Not enough free keyslots for reencryption."
 msgstr ""
 
-#: src/cryptsetup.c:3079 src/cryptsetup_reencrypt.c:1294
+#: src/cryptsetup.c:3160 src/cryptsetup_reencrypt.c:1279
 msgid ""
 "Key file can be used only with --key-slot or with exactly one key slot "
 "active."
 msgstr ""
 
-#: src/cryptsetup.c:3088 src/cryptsetup_reencrypt.c:1341
-#: src/cryptsetup_reencrypt.c:1352
+#: src/cryptsetup.c:3169 src/cryptsetup_reencrypt.c:1326
+#: src/cryptsetup_reencrypt.c:1337
 #, c-format
 msgid "Enter passphrase for key slot %d: "
 msgstr ""
 
-#: src/cryptsetup.c:3096
+#: src/cryptsetup.c:3178
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr ""
 
-#: src/cryptsetup.c:3263
+#: src/cryptsetup.c:3223
+#, c-format
+msgid "Switching data encryption cipher to %s.\n"
+msgstr ""
+
+#: src/cryptsetup.c:3360
 msgid "Command requires device as argument."
 msgstr ""
 
-#: src/cryptsetup.c:3285
+#: src/cryptsetup.c:3382
 msgid ""
 "Only LUKS2 format is currently supported. Please use cryptsetup-reencrypt "
 "tool for LUKS1."
 msgstr ""
 
-#: src/cryptsetup.c:3297
+#: src/cryptsetup.c:3394
 msgid ""
 "Legacy offline reencryption already in-progress. Use cryptsetup-reencrypt "
 "utility."
 msgstr ""
 
-#: src/cryptsetup.c:3307 src/cryptsetup_reencrypt.c:178
+#: src/cryptsetup.c:3404 src/cryptsetup_reencrypt.c:155
 msgid "Reencryption of device with integrity profile is not supported."
 msgstr ""
 
-#: src/cryptsetup.c:3315
+#: src/cryptsetup.c:3412
 msgid "LUKS2 reencryption already initialized. Aborting operation."
 msgstr ""
 
-#: src/cryptsetup.c:3319
+#: src/cryptsetup.c:3416
 msgid "LUKS2 device is not in reencryption."
 msgstr ""
 
-#: src/cryptsetup.c:3346
+#: src/cryptsetup.c:3443
 msgid "<device> [--type <type>] [<name>]"
 msgstr ""
 
-#: src/cryptsetup.c:3346 src/veritysetup.c:394 src/integritysetup.c:480
+#: src/cryptsetup.c:3443 src/veritysetup.c:400 src/integritysetup.c:446
 msgid "open device as <name>"
 msgstr ""
 
-#: src/cryptsetup.c:3347 src/cryptsetup.c:3348 src/cryptsetup.c:3349
-#: src/veritysetup.c:395 src/veritysetup.c:396 src/integritysetup.c:481
-#: src/integritysetup.c:482
+#: src/cryptsetup.c:3444 src/cryptsetup.c:3445 src/cryptsetup.c:3446
+#: src/veritysetup.c:401 src/veritysetup.c:402 src/integritysetup.c:447
+#: src/integritysetup.c:448
 msgid "<name>"
 msgstr ""
 
-#: src/cryptsetup.c:3347 src/veritysetup.c:395 src/integritysetup.c:481
+#: src/cryptsetup.c:3444 src/veritysetup.c:401 src/integritysetup.c:447
 msgid "close device (remove mapping)"
 msgstr ""
 
-#: src/cryptsetup.c:3348
+#: src/cryptsetup.c:3445
 msgid "resize active device"
 msgstr ""
 
-#: src/cryptsetup.c:3349
+#: src/cryptsetup.c:3446
 msgid "show device status"
 msgstr ""
 
-#: src/cryptsetup.c:3350
+#: src/cryptsetup.c:3447
 msgid "[--cipher <cipher>]"
 msgstr ""
 
-#: src/cryptsetup.c:3350
+#: src/cryptsetup.c:3447
 msgid "benchmark cipher"
 msgstr ""
 
-#: src/cryptsetup.c:3351 src/cryptsetup.c:3352 src/cryptsetup.c:3353
-#: src/cryptsetup.c:3354 src/cryptsetup.c:3355 src/cryptsetup.c:3362
-#: src/cryptsetup.c:3363 src/cryptsetup.c:3364 src/cryptsetup.c:3365
-#: src/cryptsetup.c:3366 src/cryptsetup.c:3367 src/cryptsetup.c:3368
-#: src/cryptsetup.c:3369 src/cryptsetup.c:3370
+#: src/cryptsetup.c:3448 src/cryptsetup.c:3449 src/cryptsetup.c:3450
+#: src/cryptsetup.c:3451 src/cryptsetup.c:3452 src/cryptsetup.c:3459
+#: src/cryptsetup.c:3460 src/cryptsetup.c:3461 src/cryptsetup.c:3462
+#: src/cryptsetup.c:3463 src/cryptsetup.c:3464 src/cryptsetup.c:3465
+#: src/cryptsetup.c:3466 src/cryptsetup.c:3467
 msgid "<device>"
 msgstr ""
 
-#: src/cryptsetup.c:3351
+#: src/cryptsetup.c:3448
 msgid "try to repair on-disk metadata"
 msgstr ""
 
-#: src/cryptsetup.c:3352
+#: src/cryptsetup.c:3449
 msgid "reencrypt LUKS2 device"
 msgstr ""
 
-#: src/cryptsetup.c:3353
+#: src/cryptsetup.c:3450
 msgid "erase all keyslots (remove encryption key)"
 msgstr ""
 
-#: src/cryptsetup.c:3354
+#: src/cryptsetup.c:3451
 msgid "convert LUKS from/to LUKS2 format"
 msgstr ""
 
-#: src/cryptsetup.c:3355
+#: src/cryptsetup.c:3452
 msgid "set permanent configuration options for LUKS2"
 msgstr ""
 
-#: src/cryptsetup.c:3356 src/cryptsetup.c:3357
+#: src/cryptsetup.c:3453 src/cryptsetup.c:3454
 msgid "<device> [<new key file>]"
 msgstr ""
 
-#: src/cryptsetup.c:3356
+#: src/cryptsetup.c:3453
 msgid "formats a LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:3357
+#: src/cryptsetup.c:3454
 msgid "add key to LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:3358 src/cryptsetup.c:3359 src/cryptsetup.c:3360
+#: src/cryptsetup.c:3455 src/cryptsetup.c:3456 src/cryptsetup.c:3457
 msgid "<device> [<key file>]"
 msgstr ""
 
-#: src/cryptsetup.c:3358
+#: src/cryptsetup.c:3455
 msgid "removes supplied key or key file from LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:3359
+#: src/cryptsetup.c:3456
 msgid "changes supplied key or key file of LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:3360
+#: src/cryptsetup.c:3457
 msgid "converts a key to new pbkdf parameters"
 msgstr ""
 
-#: src/cryptsetup.c:3361
+#: src/cryptsetup.c:3458
 msgid "<device> <key slot>"
 msgstr ""
 
-#: src/cryptsetup.c:3361
+#: src/cryptsetup.c:3458
 msgid "wipes key with number <key slot> from LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:3362
+#: src/cryptsetup.c:3459
 msgid "print UUID of LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:3363
+#: src/cryptsetup.c:3460
 msgid "tests <device> for LUKS partition header"
 msgstr ""
 
-#: src/cryptsetup.c:3364
+#: src/cryptsetup.c:3461
 msgid "dump LUKS partition information"
 msgstr ""
 
-#: src/cryptsetup.c:3365
+#: src/cryptsetup.c:3462
 msgid "dump TCRYPT device information"
 msgstr ""
 
-#: src/cryptsetup.c:3366
+#: src/cryptsetup.c:3463
 msgid "dump BITLK device information"
 msgstr ""
 
-#: src/cryptsetup.c:3367
+#: src/cryptsetup.c:3464
 msgid "Suspend LUKS device and wipe key (all IOs are frozen)"
 msgstr ""
 
-#: src/cryptsetup.c:3368
+#: src/cryptsetup.c:3465
 msgid "Resume suspended LUKS device"
 msgstr ""
 
-#: src/cryptsetup.c:3369
+#: src/cryptsetup.c:3466
 msgid "Backup LUKS device header and keyslots"
 msgstr ""
 
-#: src/cryptsetup.c:3370
+#: src/cryptsetup.c:3467
 msgid "Restore LUKS device header and keyslots"
 msgstr ""
 
-#: src/cryptsetup.c:3371
+#: src/cryptsetup.c:3468
 msgid "<add|remove|import|export> <device>"
 msgstr ""
 
-#: src/cryptsetup.c:3371
+#: src/cryptsetup.c:3468
 msgid "Manipulate LUKS2 tokens"
 msgstr ""
 
-#: src/cryptsetup.c:3389 src/veritysetup.c:412 src/integritysetup.c:498
+#: src/cryptsetup.c:3488 src/veritysetup.c:418 src/integritysetup.c:464
 msgid ""
 "\n"
 "<action> is one of:\n"
 msgstr ""
 
-#: src/cryptsetup.c:3395
+#: src/cryptsetup.c:3494
 msgid ""
 "\n"
 "You can also use old <action> syntax aliases:\n"
@@ -2375,7 +2413,7 @@ msgid ""
 "bitlkClose\n"
 msgstr ""
 
-#: src/cryptsetup.c:3399
+#: src/cryptsetup.c:3498
 #, c-format
 msgid ""
 "\n"
@@ -2385,14 +2423,34 @@ msgid ""
 "<key file> optional key file for the new key for luksAddKey action\n"
 msgstr ""
 
-#: src/cryptsetup.c:3406
+#: src/cryptsetup.c:3505
 #, c-format
 msgid ""
 "\n"
 "Default compiled-in metadata format is %s (for luksFormat action).\n"
 msgstr ""
 
-#: src/cryptsetup.c:3411
+#: src/cryptsetup.c:3510 src/cryptsetup.c:3513
+#, c-format
+msgid ""
+"\n"
+"LUKS2 external token plugin support is %s.\n"
+msgstr ""
+
+#: src/cryptsetup.c:3510
+msgid "compiled-in"
+msgstr ""
+
+#: src/cryptsetup.c:3511
+#, c-format
+msgid "LUKS2 external token plugin path: %s.\n"
+msgstr ""
+
+#: src/cryptsetup.c:3513
+msgid "disabled"
+msgstr ""
+
+#: src/cryptsetup.c:3517
 #, c-format
 msgid ""
 "\n"
@@ -2404,7 +2462,7 @@ msgid ""
 "\tIteration time: %d, Memory required: %dkB, Parallel threads: %d\n"
 msgstr ""
 
-#: src/cryptsetup.c:3422
+#: src/cryptsetup.c:3528
 #, c-format
 msgid ""
 "\n"
@@ -2414,725 +2472,291 @@ msgid ""
 "\tLUKS: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
 msgstr ""
 
-#: src/cryptsetup.c:3431
+#: src/cryptsetup.c:3537
 msgid ""
 "\tLUKS: Default keysize with XTS mode (two internal keys) will be doubled.\n"
 msgstr ""
 
-#: src/cryptsetup.c:3447 src/veritysetup.c:569 src/integritysetup.c:642
+#: src/cryptsetup.c:3555 src/veritysetup.c:557 src/integritysetup.c:620
 #, c-format
 msgid "%s: requires %s as arguments"
 msgstr ""
 
-#: src/cryptsetup.c:3480 src/veritysetup.c:457 src/integritysetup.c:536
-#: src/cryptsetup_reencrypt.c:1607
+#: src/cryptsetup.c:3593 src/cryptsetup_reencrypt.c:1379
+#: src/cryptsetup_reencrypt.c:1704
+msgid "Key slot is invalid."
+msgstr ""
+
+#: src/cryptsetup.c:3620
+msgid "Device size must be multiple of 512 bytes sector."
+msgstr ""
+
+#: src/cryptsetup.c:3625
+msgid "Invalid max reencryption hotzone size specification."
+msgstr ""
+
+#: src/cryptsetup.c:3639 src/cryptsetup.c:3651 src/cryptsetup_reencrypt.c:1623
+msgid "Key size must be a multiple of 8 bits"
+msgstr ""
+
+#: src/cryptsetup.c:3656
+msgid "Maximum device reduce size is 1 GiB."
+msgstr ""
+
+#: src/cryptsetup.c:3659 src/cryptsetup_reencrypt.c:1631
+msgid "Reduce size must be multiple of 512 bytes sector."
+msgstr ""
+
+#: src/cryptsetup.c:3676
+msgid "Option --priority can be only ignore/normal/prefer."
+msgstr ""
+
+#: src/cryptsetup.c:3686 src/veritysetup.c:481 src/integritysetup.c:543
+#: src/cryptsetup_reencrypt.c:1641
 msgid "Show this help message"
 msgstr ""
 
-#: src/cryptsetup.c:3481 src/veritysetup.c:458 src/integritysetup.c:537
-#: src/cryptsetup_reencrypt.c:1608
+#: src/cryptsetup.c:3687 src/veritysetup.c:482 src/integritysetup.c:544
+#: src/cryptsetup_reencrypt.c:1642
 msgid "Display brief usage"
 msgstr ""
 
-#: src/cryptsetup.c:3482 src/veritysetup.c:459 src/integritysetup.c:538
-#: src/cryptsetup_reencrypt.c:1609
+#: src/cryptsetup.c:3688 src/veritysetup.c:483 src/integritysetup.c:545
+#: src/cryptsetup_reencrypt.c:1643
 msgid "Print package version"
 msgstr ""
 
-#: src/cryptsetup.c:3486 src/veritysetup.c:463 src/integritysetup.c:542
-#: src/cryptsetup_reencrypt.c:1613
+#: src/cryptsetup.c:3699 src/veritysetup.c:494 src/integritysetup.c:556
+#: src/cryptsetup_reencrypt.c:1654
 msgid "Help options:"
 msgstr ""
 
-#: src/cryptsetup.c:3487 src/veritysetup.c:464 src/integritysetup.c:543
-#: src/cryptsetup_reencrypt.c:1614
-msgid "Shows more detailed error messages"
-msgstr ""
-
-#: src/cryptsetup.c:3488 src/veritysetup.c:465 src/integritysetup.c:544
-#: src/cryptsetup_reencrypt.c:1615
-msgid "Show debug messages"
-msgstr ""
-
-#: src/cryptsetup.c:3489
-msgid "Show debug messages including JSON metadata"
-msgstr ""
-
-#: src/cryptsetup.c:3490 src/cryptsetup_reencrypt.c:1617
-msgid "The cipher used to encrypt the disk (see /proc/crypto)"
-msgstr ""
-
-#: src/cryptsetup.c:3491 src/cryptsetup_reencrypt.c:1619
-msgid "The hash used to create the encryption key from the passphrase"
-msgstr ""
-
-#: src/cryptsetup.c:3492
-msgid "Verifies the passphrase by asking for it twice"
-msgstr ""
-
-#: src/cryptsetup.c:3493 src/cryptsetup_reencrypt.c:1621
-msgid "Read the key from a file"
-msgstr ""
-
-#: src/cryptsetup.c:3494
-msgid "Read the volume (master) key from file."
-msgstr ""
-
-#: src/cryptsetup.c:3495
-msgid "Dump volume (master) key instead of keyslots info"
-msgstr ""
-
-#: src/cryptsetup.c:3496 src/cryptsetup_reencrypt.c:1618
-msgid "The size of the encryption key"
-msgstr ""
-
-#: src/cryptsetup.c:3496 src/cryptsetup.c:3557 src/integritysetup.c:562
-#: src/integritysetup.c:566 src/integritysetup.c:570
-#: src/cryptsetup_reencrypt.c:1618
-msgid "BITS"
-msgstr ""
-
-#: src/cryptsetup.c:3497 src/cryptsetup_reencrypt.c:1634
-msgid "Limits the read from keyfile"
-msgstr ""
-
-#: src/cryptsetup.c:3497 src/cryptsetup.c:3498 src/cryptsetup.c:3499
-#: src/cryptsetup.c:3500 src/cryptsetup.c:3503 src/cryptsetup.c:3554
-#: src/cryptsetup.c:3555 src/cryptsetup.c:3563 src/cryptsetup.c:3564
-#: src/veritysetup.c:468 src/veritysetup.c:469 src/veritysetup.c:470
-#: src/veritysetup.c:473 src/veritysetup.c:474 src/integritysetup.c:551
-#: src/integritysetup.c:557 src/integritysetup.c:558
-#: src/cryptsetup_reencrypt.c:1633 src/cryptsetup_reencrypt.c:1634
-#: src/cryptsetup_reencrypt.c:1635 src/cryptsetup_reencrypt.c:1636
-msgid "bytes"
-msgstr ""
-
-#: src/cryptsetup.c:3498 src/cryptsetup_reencrypt.c:1633
-msgid "Number of bytes to skip in keyfile"
-msgstr ""
-
-#: src/cryptsetup.c:3499
-msgid "Limits the read from newly added keyfile"
-msgstr ""
-
-#: src/cryptsetup.c:3500
-msgid "Number of bytes to skip in newly added keyfile"
-msgstr ""
-
-#: src/cryptsetup.c:3501
-msgid "Slot number for new key (default is first free)"
-msgstr ""
-
-#: src/cryptsetup.c:3502
-msgid "The size of the device"
-msgstr ""
-
-#: src/cryptsetup.c:3502 src/cryptsetup.c:3504 src/cryptsetup.c:3505
-#: src/cryptsetup.c:3511 src/integritysetup.c:552 src/integritysetup.c:559
-msgid "SECTORS"
-msgstr ""
-
-#: src/cryptsetup.c:3503 src/cryptsetup_reencrypt.c:1636
-msgid "Use only specified device size (ignore rest of device). DANGEROUS!"
-msgstr ""
-
-#: src/cryptsetup.c:3504
-msgid "The start offset in the backend device"
-msgstr ""
-
-#: src/cryptsetup.c:3505
-msgid "How many sectors of the encrypted data to skip at the beginning"
-msgstr ""
-
-#: src/cryptsetup.c:3506
-msgid "Create a readonly mapping"
-msgstr ""
-
-#: src/cryptsetup.c:3507 src/integritysetup.c:545
-#: src/cryptsetup_reencrypt.c:1624
-msgid "Do not ask for confirmation"
-msgstr ""
-
-#: src/cryptsetup.c:3508
-msgid "Timeout for interactive passphrase prompt (in seconds)"
-msgstr ""
-
-#: src/cryptsetup.c:3508 src/cryptsetup.c:3509 src/integritysetup.c:546
-#: src/cryptsetup_reencrypt.c:1625
-msgid "secs"
-msgstr ""
-
-#: src/cryptsetup.c:3509 src/integritysetup.c:546
-#: src/cryptsetup_reencrypt.c:1625
-msgid "Progress line update (in seconds)"
-msgstr ""
-
-#: src/cryptsetup.c:3510 src/cryptsetup_reencrypt.c:1626
-msgid "How often the input of the passphrase can be retried"
-msgstr ""
-
-#: src/cryptsetup.c:3511
-msgid "Align payload at <n> sector boundaries - for luksFormat"
-msgstr ""
-
-#: src/cryptsetup.c:3512
-msgid "File with LUKS header and keyslots backup"
-msgstr ""
-
-#: src/cryptsetup.c:3513 src/cryptsetup_reencrypt.c:1627
-msgid "Use /dev/random for generating volume key"
-msgstr ""
-
-#: src/cryptsetup.c:3514 src/cryptsetup_reencrypt.c:1628
-msgid "Use /dev/urandom for generating volume key"
-msgstr ""
-
-#: src/cryptsetup.c:3515
-msgid "Share device with another non-overlapping crypt segment"
-msgstr ""
-
-#: src/cryptsetup.c:3516 src/veritysetup.c:477
-msgid "UUID for device to use"
-msgstr ""
-
-#: src/cryptsetup.c:3517 src/integritysetup.c:579
-msgid "Allow discards (aka TRIM) requests for device"
-msgstr ""
-
-#: src/cryptsetup.c:3518 src/cryptsetup_reencrypt.c:1645
-msgid "Device or file with separated LUKS header"
-msgstr ""
-
-#: src/cryptsetup.c:3519
-msgid "Do not activate device, just check passphrase"
-msgstr ""
-
-#: src/cryptsetup.c:3520
-msgid "Use hidden header (hidden TCRYPT device)"
-msgstr ""
-
-#: src/cryptsetup.c:3521
-msgid "Device is system TCRYPT drive (with bootloader)"
-msgstr ""
-
-#: src/cryptsetup.c:3522
-msgid "Use backup (secondary) TCRYPT header"
-msgstr ""
-
-#: src/cryptsetup.c:3523
-msgid "Scan also for VeraCrypt compatible device"
-msgstr ""
-
-#: src/cryptsetup.c:3524
-msgid "Personal Iteration Multiplier for VeraCrypt compatible device"
-msgstr ""
-
-#: src/cryptsetup.c:3525
-msgid "Query Personal Iteration Multiplier for VeraCrypt compatible device"
-msgstr ""
-
-#: src/cryptsetup.c:3526
-msgid ""
-"Type of device metadata: luks, luks1, luks2, plain, loopaes, tcrypt, bitlk"
-msgstr ""
-
-#: src/cryptsetup.c:3527
-msgid "Disable password quality check (if enabled)"
-msgstr ""
-
-#: src/cryptsetup.c:3528
-msgid "Use dm-crypt same_cpu_crypt performance compatibility option"
-msgstr ""
-
-#: src/cryptsetup.c:3529
-msgid "Use dm-crypt submit_from_crypt_cpus performance compatibility option"
-msgstr ""
-
-#: src/cryptsetup.c:3530
-msgid "Device removal is deferred until the last user closes it"
-msgstr ""
-
-#: src/cryptsetup.c:3531
-msgid "Use global lock to serialize memory hard PBKDF (OOM workaround)"
-msgstr ""
-
-#: src/cryptsetup.c:3532
-msgid "PBKDF iteration time for LUKS (in ms)"
-msgstr ""
-
-#: src/cryptsetup.c:3532 src/cryptsetup_reencrypt.c:1623
-msgid "msecs"
-msgstr ""
-
-#: src/cryptsetup.c:3533 src/cryptsetup_reencrypt.c:1641
-msgid "PBKDF algorithm (for LUKS2): argon2i, argon2id, pbkdf2"
-msgstr ""
-
-#: src/cryptsetup.c:3534 src/cryptsetup_reencrypt.c:1642
-msgid "PBKDF memory cost limit"
-msgstr ""
-
-#: src/cryptsetup.c:3534 src/cryptsetup_reencrypt.c:1642
-msgid "kilobytes"
-msgstr ""
-
-#: src/cryptsetup.c:3535 src/cryptsetup_reencrypt.c:1643
-msgid "PBKDF parallel cost"
-msgstr ""
-
-#: src/cryptsetup.c:3535 src/cryptsetup_reencrypt.c:1643
-msgid "threads"
-msgstr ""
-
-#: src/cryptsetup.c:3536 src/cryptsetup_reencrypt.c:1644
-msgid "PBKDF iterations cost (forced, disables benchmark)"
-msgstr ""
-
-#: src/cryptsetup.c:3537
-msgid "Keyslot priority: ignore, normal, prefer"
-msgstr ""
-
-#: src/cryptsetup.c:3538
-msgid "Disable locking of on-disk metadata"
-msgstr ""
-
-#: src/cryptsetup.c:3539
-msgid "Disable loading volume keys via kernel keyring"
-msgstr ""
-
-#: src/cryptsetup.c:3540
-msgid "Data integrity algorithm (LUKS2 only)"
-msgstr ""
-
-#: src/cryptsetup.c:3541 src/integritysetup.c:573
-msgid "Disable journal for integrity device"
-msgstr ""
-
-#: src/cryptsetup.c:3542 src/integritysetup.c:547
-msgid "Do not wipe device after format"
-msgstr ""
-
-#: src/cryptsetup.c:3543 src/integritysetup.c:577
-msgid "Use inefficient legacy padding (old kernels)"
-msgstr ""
-
-#: src/cryptsetup.c:3544
-msgid "Do not ask for passphrase if activation by token fails"
-msgstr ""
-
-#: src/cryptsetup.c:3545
-msgid "Token number (default: any)"
-msgstr ""
-
-#: src/cryptsetup.c:3546
-msgid "Key description"
-msgstr ""
-
-#: src/cryptsetup.c:3547
-msgid "Encryption sector size (default: 512 bytes)"
-msgstr ""
-
-#: src/cryptsetup.c:3548
-msgid "Use IV counted in sector size (not in 512 bytes)"
-msgstr ""
-
-#: src/cryptsetup.c:3549
-msgid "Set activation flags persistent for device"
-msgstr ""
-
-#: src/cryptsetup.c:3550
-msgid "Set label for the LUKS2 device"
-msgstr ""
-
-#: src/cryptsetup.c:3551
-msgid "Set subsystem label for the LUKS2 device"
-msgstr ""
-
-#: src/cryptsetup.c:3552
-msgid "Create or dump unbound (no assigned data segment) LUKS2 keyslot"
-msgstr ""
-
-#: src/cryptsetup.c:3553
-msgid "Read or write the json from or to a file"
-msgstr ""
-
-#: src/cryptsetup.c:3554
-msgid "LUKS2 header metadata area size"
-msgstr ""
-
-#: src/cryptsetup.c:3555
-msgid "LUKS2 header keyslots area size"
-msgstr ""
-
-#: src/cryptsetup.c:3556
-msgid "Refresh (reactivate) device with new parameters"
-msgstr ""
-
-#: src/cryptsetup.c:3557
-msgid "LUKS2 keyslot: The size of the encryption key"
-msgstr ""
-
-#: src/cryptsetup.c:3558
-msgid "LUKS2 keyslot: The cipher used for keyslot encryption"
-msgstr ""
-
-#: src/cryptsetup.c:3559
-msgid "Encrypt LUKS2 device (in-place encryption)."
-msgstr ""
-
-#: src/cryptsetup.c:3560
-msgid "Decrypt LUKS2 device (remove encryption)."
-msgstr ""
-
-#: src/cryptsetup.c:3561
-msgid "Initialize LUKS2 reencryption in metadata only."
-msgstr ""
-
-#: src/cryptsetup.c:3562
-msgid "Resume initialized LUKS2 reencryption only."
-msgstr ""
-
-#: src/cryptsetup.c:3563 src/cryptsetup_reencrypt.c:1635
-msgid "Reduce data device size (move data offset). DANGEROUS!"
-msgstr ""
-
-#: src/cryptsetup.c:3564
-msgid "Maximal reencryption hotzone size."
-msgstr ""
-
-#: src/cryptsetup.c:3565
-msgid "Reencryption hotzone resilience type (checksum,journal,none)"
-msgstr ""
-
-#: src/cryptsetup.c:3566
-msgid "Reencryption hotzone checksums hash"
-msgstr ""
-
-#: src/cryptsetup.c:3567
-msgid "Override device autodetection of dm device to be reencrypted"
-msgstr ""
-
-#: src/cryptsetup.c:3583 src/veritysetup.c:499 src/integritysetup.c:595
+#: src/cryptsetup.c:3716 src/veritysetup.c:512 src/integritysetup.c:573
 msgid "[OPTION...] <action> <action-specific>"
 msgstr ""
 
-#: src/cryptsetup.c:3634 src/veritysetup.c:533 src/integritysetup.c:606
+#: src/cryptsetup.c:3725 src/veritysetup.c:521 src/integritysetup.c:584
 msgid "Argument <action> missing."
 msgstr ""
 
-#: src/cryptsetup.c:3703 src/veritysetup.c:564 src/integritysetup.c:637
+#: src/cryptsetup.c:3795 src/veritysetup.c:552 src/integritysetup.c:615
 msgid "Unknown action."
 msgstr ""
 
-#: src/cryptsetup.c:3713
+#: src/cryptsetup.c:3806
 msgid "Options --refresh and --test-passphrase are mutually exclusive."
 msgstr ""
 
-#: src/cryptsetup.c:3718
-msgid "Option --deferred is allowed only for close command."
+#: src/cryptsetup.c:3811 src/veritysetup.c:576 src/integritysetup.c:663
+msgid ""
+"Options --cancel-deferred and --deferred cannot be used at the same time."
 msgstr ""
 
-#: src/cryptsetup.c:3723
+#: src/cryptsetup.c:3817
 msgid "Option --shared is allowed only for open of plain device."
 msgstr ""
 
-#: src/cryptsetup.c:3728 src/integritysetup.c:654
-msgid "Option --allow-discards is allowed only for open operation."
-msgstr ""
-
-#: src/cryptsetup.c:3733
-msgid "Option --persistent is allowed only for open operation."
-msgstr ""
-
-#: src/cryptsetup.c:3738
-msgid ""
-"Option --serialize-memory-hard-pbkdf is allowed only for open operation."
-msgstr ""
-
-#: src/cryptsetup.c:3743
+#: src/cryptsetup.c:3822
 msgid "Option --persistent is not allowed with --test-passphrase."
 msgstr ""
 
-#: src/cryptsetup.c:3753
-msgid ""
-"Option --key-size is allowed only for luksFormat, luksAddKey,\n"
-"open and benchmark actions. To limit read from keyfile use --keyfile-"
-"size=(bytes)."
-msgstr ""
-
-#: src/cryptsetup.c:3759
-msgid "Option --integrity is allowed only for luksFormat (LUKS2)."
-msgstr ""
-
-#: src/cryptsetup.c:3764
+#: src/cryptsetup.c:3827
 msgid ""
 "Option --integrity-no-wipe can be used only for format action with integrity "
 "extension."
 msgstr ""
 
-#: src/cryptsetup.c:3770
-msgid ""
-"Options --label and --subsystem are allowed only for luksFormat and config "
-"LUKS2 operations."
-msgstr ""
-
-#: src/cryptsetup.c:3776
+#: src/cryptsetup.c:3834
 msgid ""
 "Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK "
 "devices."
 msgstr ""
 
-#: src/cryptsetup.c:3781 src/cryptsetup_reencrypt.c:1708
-msgid "Key size must be a multiple of 8 bits"
-msgstr ""
-
-#: src/cryptsetup.c:3787 src/cryptsetup_reencrypt.c:1394
-#: src/cryptsetup_reencrypt.c:1713
-msgid "Key slot is invalid."
-msgstr ""
-
-#: src/cryptsetup.c:3794
+#: src/cryptsetup.c:3846
 msgid "Option --key-file takes precedence over specified key file argument."
 msgstr ""
 
-#: src/cryptsetup.c:3801 src/veritysetup.c:576 src/integritysetup.c:663
-#: src/cryptsetup_reencrypt.c:1687
-msgid "Negative number for option not permitted."
-msgstr ""
-
-#: src/cryptsetup.c:3805
+#: src/cryptsetup.c:3852
 msgid "Only one --key-file argument is allowed."
 msgstr ""
 
-#: src/cryptsetup.c:3809 src/cryptsetup_reencrypt.c:1679
-#: src/cryptsetup_reencrypt.c:1717
+#: src/cryptsetup.c:3856 src/cryptsetup_reencrypt.c:1689
+#: src/cryptsetup_reencrypt.c:1708
 msgid "Only one of --use-[u]random options is allowed."
 msgstr ""
 
-#: src/cryptsetup.c:3813
-msgid "Option --use-[u]random is allowed only for luksFormat."
-msgstr ""
-
-#: src/cryptsetup.c:3817
-msgid "Option --uuid is allowed only for luksFormat and luksUUID."
-msgstr ""
-
-#: src/cryptsetup.c:3821
-msgid "Option --align-payload is allowed only for luksFormat."
-msgstr ""
-
-#: src/cryptsetup.c:3825
-msgid ""
-"Options --luks2-metadata-size and --opt-luks2-keyslots-size are allowed only "
-"for luksFormat with LUKS2."
-msgstr ""
-
-#: src/cryptsetup.c:3830
-msgid "Invalid LUKS2 metadata size specification."
-msgstr ""
-
-#: src/cryptsetup.c:3834
-msgid "Invalid LUKS2 keyslots size specification."
-msgstr ""
-
-#: src/cryptsetup.c:3838
+#: src/cryptsetup.c:3860
 msgid "Options --align-payload and --offset cannot be combined."
 msgstr ""
 
-#: src/cryptsetup.c:3844
+#: src/cryptsetup.c:3866
 msgid "Option --skip is supported only for open of plain and loopaes devices."
 msgstr ""
 
-#: src/cryptsetup.c:3851
+#: src/cryptsetup.c:3872
 msgid ""
-"Option --offset is supported only for open of plain and loopaes devices, "
-"luksFormat and device reencryption."
+"Option --offset with open action is only supported for plain and loopaes "
+"devices."
 msgstr ""
 
-#: src/cryptsetup.c:3857
+#: src/cryptsetup.c:3878
 msgid ""
 "Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only "
 "for TCRYPT device."
 msgstr ""
 
-#: src/cryptsetup.c:3862
+#: src/cryptsetup.c:3883
 msgid "Option --tcrypt-hidden cannot be combined with --allow-discards."
 msgstr ""
 
-#: src/cryptsetup.c:3867
-msgid "Option --veracrypt is supported only for TCRYPT device type."
+#: src/cryptsetup.c:3888
+msgid ""
+"Option --veracrypt or --disable-veracrypt is supported only for TCRYPT "
+"device type."
 msgstr ""
 
-#: src/cryptsetup.c:3873
-msgid "Invalid argument for parameter --veracrypt-pim supplied."
-msgstr ""
-
-#: src/cryptsetup.c:3877
+#: src/cryptsetup.c:3893
 msgid ""
 "Option --veracrypt-pim is supported only for VeraCrypt compatible devices."
 msgstr ""
 
-#: src/cryptsetup.c:3885
+#: src/cryptsetup.c:3899
 msgid ""
 "Option --veracrypt-query-pim is supported only for VeraCrypt compatible "
 "devices."
 msgstr ""
 
-#: src/cryptsetup.c:3889
+#: src/cryptsetup.c:3903
 msgid ""
 "The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive."
 msgstr ""
 
-#: src/cryptsetup.c:3896
-msgid "Option --priority can be only ignore/normal/prefer."
-msgstr ""
-
-#: src/cryptsetup.c:3901 src/cryptsetup.c:3939
+#: src/cryptsetup.c:3911 src/cryptsetup.c:3947
 msgid "Keyslot specification is required."
 msgstr ""
 
-#: src/cryptsetup.c:3906 src/cryptsetup_reencrypt.c:1693
+#: src/cryptsetup.c:3916 src/cryptsetup_reencrypt.c:1694
 msgid ""
 "Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/"
 "argon2id."
 msgstr ""
 
-#: src/cryptsetup.c:3911 src/cryptsetup_reencrypt.c:1698
+#: src/cryptsetup.c:3921 src/cryptsetup_reencrypt.c:1699
 msgid "PBKDF forced iterations cannot be combined with iteration time option."
 msgstr ""
 
-#: src/cryptsetup.c:3917
-msgid "Sector size option is not supported for this command."
+#: src/cryptsetup.c:3928
+msgid ""
+"Sector size option with open action is supported only for plain devices."
 msgstr ""
 
-#: src/cryptsetup.c:3929
+#: src/cryptsetup.c:3935
 msgid ""
 "Large IV sectors option is supported only for opening plain type device with "
 "sector size larger than 512 bytes."
 msgstr ""
 
-#: src/cryptsetup.c:3934
+#: src/cryptsetup.c:3941
 msgid "Key size is required with --unbound option."
 msgstr ""
 
-#: src/cryptsetup.c:3944
-msgid "Option --unbound may be used only with luksAddKey and luksDump actions."
-msgstr ""
-
-#: src/cryptsetup.c:3949
-msgid "Option --refresh may be used only with open action."
-msgstr ""
-
-#: src/cryptsetup.c:3960
-msgid "Cannot disable metadata locking."
-msgstr ""
-
-#: src/cryptsetup.c:3970
-msgid "Invalid max reencryption hotzone size specification."
-msgstr ""
-
-#: src/cryptsetup.c:3978 src/cryptsetup_reencrypt.c:1722
-#: src/cryptsetup_reencrypt.c:1727
-msgid "Invalid device size specification."
-msgstr ""
-
-#: src/cryptsetup.c:3981
-msgid "Maximum device reduce size is 1 GiB."
-msgstr ""
-
-#: src/cryptsetup.c:3984 src/cryptsetup_reencrypt.c:1733
-msgid "Reduce size must be multiple of 512 bytes sector."
-msgstr ""
-
-#: src/cryptsetup.c:3989
-msgid "Invalid data size specification."
-msgstr ""
-
-#: src/cryptsetup.c:3994
-msgid "Reduce size overflow."
-msgstr ""
-
-#: src/cryptsetup.c:3998
+#: src/cryptsetup.c:3957
 msgid "LUKS2 decryption requires option --header."
 msgstr ""
 
-#: src/cryptsetup.c:4002
-msgid "Device size must be multiple of 512 bytes sector."
-msgstr ""
-
-#: src/cryptsetup.c:4006
+#: src/cryptsetup.c:3961
 msgid "Options --reduce-device-size and --data-size cannot be combined."
 msgstr ""
 
-#: src/cryptsetup.c:4010
+#: src/cryptsetup.c:3965
 msgid "Options --device-size and --size cannot be combined."
 msgstr ""
 
-#: src/cryptsetup.c:4014
+#: src/cryptsetup.c:3969
 msgid "Options --keyslot-cipher and --keyslot-key-size must be used together."
 msgstr ""
 
-#: src/veritysetup.c:66
+#: src/cryptsetup.c:3973
+msgid "No action taken. Invoked with --test-args option.\n"
+msgstr ""
+
+#: src/cryptsetup.c:3985
+msgid "Invalid token action."
+msgstr ""
+
+#: src/cryptsetup.c:3990
+msgid "--key-description parameter is mandatory for token add action."
+msgstr ""
+
+#: src/cryptsetup.c:3996
+msgid "Action requires specific token. Use --token-id parameter."
+msgstr ""
+
+#: src/cryptsetup.c:4007
+msgid "Cannot disable metadata locking."
+msgstr ""
+
+#: src/veritysetup.c:54
 msgid "Invalid salt string specified."
 msgstr ""
 
-#: src/veritysetup.c:97
+#: src/veritysetup.c:85
 #, c-format
 msgid "Cannot create hash image %s for writing."
 msgstr ""
 
-#: src/veritysetup.c:107
+#: src/veritysetup.c:95
 #, c-format
 msgid "Cannot create FEC image %s for writing."
 msgstr ""
 
-#: src/veritysetup.c:179
+#: src/veritysetup.c:169
 msgid "Invalid root hash string specified."
 msgstr ""
 
-#: src/veritysetup.c:187
+#: src/veritysetup.c:177
 #, c-format
 msgid "Invalid signature file %s."
 msgstr ""
 
-#: src/veritysetup.c:194
+#: src/veritysetup.c:184
 #, c-format
 msgid "Cannot read signature file %s."
 msgstr ""
 
-#: src/veritysetup.c:392
+#: src/veritysetup.c:398
 msgid "<data_device> <hash_device>"
 msgstr ""
 
-#: src/veritysetup.c:392 src/integritysetup.c:479
+#: src/veritysetup.c:398 src/integritysetup.c:445
 msgid "format device"
 msgstr ""
 
-#: src/veritysetup.c:393
+#: src/veritysetup.c:399
 msgid "<data_device> <hash_device> <root_hash>"
 msgstr ""
 
-#: src/veritysetup.c:393
+#: src/veritysetup.c:399
 msgid "verify device"
 msgstr ""
 
-#: src/veritysetup.c:394
+#: src/veritysetup.c:400
 msgid "<data_device> <name> <hash_device> <root_hash>"
 msgstr ""
 
-#: src/veritysetup.c:396 src/integritysetup.c:482
+#: src/veritysetup.c:402 src/integritysetup.c:448
 msgid "show active device status"
 msgstr ""
 
-#: src/veritysetup.c:397
+#: src/veritysetup.c:403
 msgid "<hash_device>"
 msgstr ""
 
-#: src/veritysetup.c:397 src/integritysetup.c:483
+#: src/veritysetup.c:403 src/integritysetup.c:449
 msgid "show on-disk information"
 msgstr ""
 
-#: src/veritysetup.c:416
+#: src/veritysetup.c:422
 #, c-format
 msgid ""
 "\n"
@@ -3142,7 +2766,7 @@ msgid ""
 "<root_hash> hash of the root node on <hash_device>\n"
 msgstr ""
 
-#: src/veritysetup.c:423
+#: src/veritysetup.c:429
 #, c-format
 msgid ""
 "\n"
@@ -3151,130 +2775,32 @@ msgid ""
 "Hash format: %u\n"
 msgstr ""
 
-#: src/veritysetup.c:466
-msgid "Do not use verity superblock"
-msgstr ""
-
-#: src/veritysetup.c:467
-msgid "Format type (1 - normal, 0 - original Chrome OS)"
-msgstr ""
-
-#: src/veritysetup.c:467
-msgid "number"
-msgstr ""
-
-#: src/veritysetup.c:468
-msgid "Block size on the data device"
-msgstr ""
-
-#: src/veritysetup.c:469
-msgid "Block size on the hash device"
-msgstr ""
-
-#: src/veritysetup.c:470
-msgid "FEC parity bytes"
-msgstr ""
-
-#: src/veritysetup.c:471
-msgid "The number of blocks in the data file"
-msgstr ""
-
-#: src/veritysetup.c:471
-msgid "blocks"
-msgstr ""
-
-#: src/veritysetup.c:472
-msgid "Path to device with error correction data"
-msgstr ""
-
-#: src/veritysetup.c:472 src/integritysetup.c:549
-msgid "path"
-msgstr ""
-
-#: src/veritysetup.c:473
-msgid "Starting offset on the hash device"
-msgstr ""
-
-#: src/veritysetup.c:474
-msgid "Starting offset on the FEC device"
-msgstr ""
-
-#: src/veritysetup.c:475
-msgid "Hash algorithm"
-msgstr ""
-
-#: src/veritysetup.c:475
-msgid "string"
-msgstr ""
-
-#: src/veritysetup.c:476
-msgid "Salt"
-msgstr ""
-
-#: src/veritysetup.c:476
-msgid "hex string"
-msgstr ""
-
-#: src/veritysetup.c:478
-msgid "Path to root hash signature file"
-msgstr ""
-
-#: src/veritysetup.c:479
-msgid "Restart kernel if corruption is detected"
-msgstr ""
-
-#: src/veritysetup.c:480
-msgid "Ignore corruption, log it only"
-msgstr ""
-
-#: src/veritysetup.c:481
-msgid "Do not verify zeroed blocks"
-msgstr ""
-
-#: src/veritysetup.c:482
-msgid "Verify data block only the first time it is read"
-msgstr ""
-
-#: src/veritysetup.c:582
-msgid ""
-"Option --ignore-corruption, --restart-on-corruption or --ignore-zero-blocks "
-"is allowed only for open operation."
-msgstr ""
-
-#: src/veritysetup.c:587
-msgid "Option --root-hash-signature can be used only for open operation."
-msgstr ""
-
-#: src/veritysetup.c:592
+#: src/veritysetup.c:566
 msgid ""
 "Option --ignore-corruption and --restart-on-corruption cannot be used "
 "together."
 msgstr ""
 
-#: src/integritysetup.c:84 src/utils_password.c:305
-#, c-format
-msgid "Cannot read keyfile %s."
+#: src/veritysetup.c:571
+msgid ""
+"Option --panic-on-corruption and --restart-on-corruption cannot be used "
+"together."
 msgstr ""
 
-#: src/integritysetup.c:88 src/utils_password.c:310
-#, c-format
-msgid "Cannot read %d bytes from keyfile %s."
-msgstr ""
-
-#: src/integritysetup.c:254
+#: src/integritysetup.c:201
 #, c-format
 msgid "Formatted with tag size %u, internal integrity %s.\n"
 msgstr ""
 
-#: src/integritysetup.c:479 src/integritysetup.c:483
+#: src/integritysetup.c:445 src/integritysetup.c:449
 msgid "<integrity_device>"
 msgstr ""
 
-#: src/integritysetup.c:480
+#: src/integritysetup.c:446
 msgid "<integrity_device> <name>"
 msgstr ""
 
-#: src/integritysetup.c:502
+#: src/integritysetup.c:468
 #, c-format
 msgid ""
 "\n"
@@ -3282,600 +2808,398 @@ msgid ""
 "<integrity_device> is the device containing data with integrity tags\n"
 msgstr ""
 
-#: src/integritysetup.c:507
+#: src/integritysetup.c:473
 #, c-format
 msgid ""
 "\n"
 "Default compiled-in dm-integrity parameters:\n"
 "\tChecksum algorithm: %s\n"
+"\tMaximum keyfile size: %dkB\n"
 msgstr ""
 
-#: src/integritysetup.c:549
-msgid "Path to data device (if separated)"
+#: src/integritysetup.c:530
+#, c-format
+msgid "Invalid --%s size. Maximum is %u bytes."
 msgstr ""
 
-#: src/integritysetup.c:551
-msgid "Journal size"
-msgstr ""
-
-#: src/integritysetup.c:552
-msgid "Interleave sectors"
-msgstr ""
-
-#: src/integritysetup.c:553
-msgid "Journal watermark"
-msgstr ""
-
-#: src/integritysetup.c:553
-msgid "percent"
-msgstr ""
-
-#: src/integritysetup.c:554
-msgid "Journal commit time"
-msgstr ""
-
-#: src/integritysetup.c:554 src/integritysetup.c:556
-msgid "ms"
-msgstr ""
-
-#: src/integritysetup.c:555
-msgid "Number of 512-byte sectors per bit (bitmap mode)."
-msgstr ""
-
-#: src/integritysetup.c:556
-msgid "Bitmap mode flush time"
-msgstr ""
-
-#: src/integritysetup.c:557
-msgid "Tag size (per-sector)"
-msgstr ""
-
-#: src/integritysetup.c:558
-msgid "Sector size"
-msgstr ""
-
-#: src/integritysetup.c:559
-msgid "Buffers size"
-msgstr ""
-
-#: src/integritysetup.c:561
-msgid "Data integrity algorithm"
-msgstr ""
-
-#: src/integritysetup.c:562
-msgid "The size of the data integrity key"
-msgstr ""
-
-#: src/integritysetup.c:563
-msgid "Read the integrity key from a file"
-msgstr ""
-
-#: src/integritysetup.c:565
-msgid "Journal integrity algorithm"
-msgstr ""
-
-#: src/integritysetup.c:566
-msgid "The size of the journal integrity key"
-msgstr ""
-
-#: src/integritysetup.c:567
-msgid "Read the journal integrity key from a file"
-msgstr ""
-
-#: src/integritysetup.c:569
-msgid "Journal encryption algorithm"
-msgstr ""
-
-#: src/integritysetup.c:570
-msgid "The size of the journal encryption key"
-msgstr ""
-
-#: src/integritysetup.c:571
-msgid "Read the journal encryption key from a file"
-msgstr ""
-
-#: src/integritysetup.c:574
-msgid "Recovery mode (no journal, no tag checking)"
-msgstr ""
-
-#: src/integritysetup.c:575
-msgid "Use bitmap to track changes and disable journal for integrity device"
-msgstr ""
-
-#: src/integritysetup.c:576
-msgid "Recalculate initial tags automatically."
-msgstr ""
-
-#: src/integritysetup.c:649
-msgid "Option --integrity-recalculate can be used only for open action."
-msgstr ""
-
-#: src/integritysetup.c:669
-msgid ""
-"Options --journal-size, --interleave-sectors, --sector-size, --tag-size and "
-"--no-wipe can be used only for format action."
-msgstr ""
-
-#: src/integritysetup.c:675
-msgid "Invalid journal size specification."
-msgstr ""
-
-#: src/integritysetup.c:680
+#: src/integritysetup.c:628
 msgid "Both key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:683
-msgid "Integrity algorithm must be specified if integrity key is used."
-msgstr ""
-
-#: src/integritysetup.c:688
+#: src/integritysetup.c:632
 msgid "Both journal integrity key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:691
+#: src/integritysetup.c:635
 msgid ""
 "Journal integrity algorithm must be specified if journal integrity key is "
 "used."
 msgstr ""
 
-#: src/integritysetup.c:696
+#: src/integritysetup.c:639
 msgid ""
 "Both journal encryption key file and key size options must be specified."
 msgstr ""
 
-#: src/integritysetup.c:699
+#: src/integritysetup.c:642
 msgid ""
 "Journal encryption algorithm must be specified if journal encryption key is "
 "used."
 msgstr ""
 
-#: src/integritysetup.c:703
+#: src/integritysetup.c:646
 msgid "Recovery and bitmap mode options are mutually exclusive."
 msgstr ""
 
-#: src/integritysetup.c:707
+#: src/integritysetup.c:653
 msgid "Journal options cannot be used in bitmap mode."
 msgstr ""
 
-#: src/integritysetup.c:711
+#: src/integritysetup.c:658
 msgid "Bitmap options can be used only in bitmap mode."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:172
+#: src/cryptsetup_reencrypt.c:149
 msgid "Reencryption already in-progress."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:208
+#: src/cryptsetup_reencrypt.c:185
 #, c-format
 msgid "Cannot exclusively open %s, device in use."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:222 src/cryptsetup_reencrypt.c:1135
+#: src/cryptsetup_reencrypt.c:199 src/cryptsetup_reencrypt.c:1120
 msgid "Allocation of aligned memory failed."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:229
+#: src/cryptsetup_reencrypt.c:206
 #, c-format
 msgid "Cannot read device %s."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:240
+#: src/cryptsetup_reencrypt.c:217
 #, c-format
 msgid "Marking LUKS1 device %s unusable."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:244
+#: src/cryptsetup_reencrypt.c:221
 #, c-format
 msgid "Setting LUKS2 offline reencrypt flag on device %s."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:261
+#: src/cryptsetup_reencrypt.c:238
 #, c-format
 msgid "Cannot write device %s."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:309
+#: src/cryptsetup_reencrypt.c:286
 msgid "Cannot write reencryption log file."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:365
+#: src/cryptsetup_reencrypt.c:342
 msgid "Cannot read reencryption log file."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:403
+#: src/cryptsetup_reencrypt.c:380
 #, c-format
 msgid "Log file %s exists, resuming reencryption.\n"
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:452
+#: src/cryptsetup_reencrypt.c:429
 msgid "Activating temporary device using old LUKS header."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:462
+#: src/cryptsetup_reencrypt.c:439
 msgid "Activating temporary device using new LUKS header."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:472
+#: src/cryptsetup_reencrypt.c:449
 msgid "Activation of temporary devices failed."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:559
+#: src/cryptsetup_reencrypt.c:536
 msgid "Failed to set data offset."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:565
+#: src/cryptsetup_reencrypt.c:542
 msgid "Failed to set metadata size."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:573
+#: src/cryptsetup_reencrypt.c:550
 #, c-format
 msgid "New LUKS header for device %s created."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:633
+#: src/cryptsetup_reencrypt.c:610
 #, c-format
 msgid ""
 "This version of cryptsetup-reencrypt can't handle new internal token type %s."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:655
+#: src/cryptsetup_reencrypt.c:632
 msgid "Failed to read activation flags from backup header."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:659
+#: src/cryptsetup_reencrypt.c:636
 msgid "Failed to write activation flags to new header."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:663 src/cryptsetup_reencrypt.c:667
+#: src/cryptsetup_reencrypt.c:640 src/cryptsetup_reencrypt.c:644
 msgid "Failed to read requirements from backup header."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:705
+#: src/cryptsetup_reencrypt.c:682
 #, c-format
 msgid "%s header backup of device %s created."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:768
+#: src/cryptsetup_reencrypt.c:745
 msgid "Creation of LUKS backup headers failed."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:901
+#: src/cryptsetup_reencrypt.c:878
 #, c-format
 msgid "Cannot restore %s header on device %s."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:903
+#: src/cryptsetup_reencrypt.c:880
 #, c-format
 msgid "%s header on device %s restored."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1107 src/cryptsetup_reencrypt.c:1113
+#: src/cryptsetup_reencrypt.c:1092 src/cryptsetup_reencrypt.c:1098
 msgid "Cannot open temporary LUKS device."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1118 src/cryptsetup_reencrypt.c:1123
+#: src/cryptsetup_reencrypt.c:1103 src/cryptsetup_reencrypt.c:1108
 msgid "Cannot get device size."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1158
+#: src/cryptsetup_reencrypt.c:1143
 msgid "IO error during reencryption."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1189
+#: src/cryptsetup_reencrypt.c:1174
 msgid "Provided UUID is invalid."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1423
+#: src/cryptsetup_reencrypt.c:1408
 msgid "Cannot open reencryption log file."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1429
+#: src/cryptsetup_reencrypt.c:1414
 msgid ""
 "No decryption in progress, provided UUID can be used only to resume "
 "suspended decryption process."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1504
+#: src/cryptsetup_reencrypt.c:1489
 #, c-format
 msgid "Changed pbkdf parameters in keyslot %i."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1616
-msgid "Reencryption block size"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1616
-msgid "MiB"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1620
-msgid "Do not change key, no data area reencryption"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1622
-msgid "Read new volume (master) key from file"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1623
-msgid "PBKDF2 iteration time for LUKS (in ms)"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1629
-msgid "Use direct-io when accessing devices"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1630
-msgid "Use fsync after each block"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1631
-msgid "Update log file after every block"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1632
-msgid "Use only this slot (others will be disabled)"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1637
-msgid "Create new header on not encrypted device"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1638
-msgid "Permanently decrypt device (remove encryption)"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1639
-msgid "The UUID used to resume decryption"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1640
-msgid "Type of LUKS metadata: luks1, luks2"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1659
-msgid "[OPTION...] <device>"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1667
-#, c-format
-msgid "Reencryption will change: %s%s%s%s%s%s."
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1668
-msgid "volume key"
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1670
-msgid "set hash to "
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1671
-msgid ", set cipher to "
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1675
-msgid "Argument required."
-msgstr ""
-
-#: src/cryptsetup_reencrypt.c:1703
+#: src/cryptsetup_reencrypt.c:1614
 msgid ""
 "Only values between 1 MiB and 64 MiB allowed for reencryption block size."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1730
+#: src/cryptsetup_reencrypt.c:1628
 msgid "Maximum device reduce size is 64 MiB."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1737
+#: src/cryptsetup_reencrypt.c:1669
+msgid "[OPTION...] <device>"
+msgstr ""
+
+#: src/cryptsetup_reencrypt.c:1677
+#, c-format
+msgid "Reencryption will change: %s%s%s%s%s%s."
+msgstr ""
+
+#: src/cryptsetup_reencrypt.c:1678
+msgid "volume key"
+msgstr ""
+
+#: src/cryptsetup_reencrypt.c:1680
+msgid "set hash to "
+msgstr ""
+
+#: src/cryptsetup_reencrypt.c:1681
+msgid ", set cipher to "
+msgstr ""
+
+#: src/cryptsetup_reencrypt.c:1685
+msgid "Argument required."
+msgstr ""
+
+#: src/cryptsetup_reencrypt.c:1712
 msgid ""
 "Option --new must be used together with --reduce-device-size or --header."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1741
+#: src/cryptsetup_reencrypt.c:1716
 msgid ""
 "Option --keep-key can be used only with --hash, --iter-time or --pbkdf-force-"
 "iterations."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1745
+#: src/cryptsetup_reencrypt.c:1720
 msgid "Option --new cannot be used together with --decrypt."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1749
+#: src/cryptsetup_reencrypt.c:1726
 msgid "Option --decrypt is incompatible with specified parameters."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1753
+#: src/cryptsetup_reencrypt.c:1730
 msgid "Option --uuid is allowed only together with --decrypt."
 msgstr ""
 
-#: src/cryptsetup_reencrypt.c:1757
+#: src/cryptsetup_reencrypt.c:1734
 msgid "Invalid luks type. Use one of these: 'luks', 'luks1' or 'luks2'."
 msgstr ""
 
-#: src/utils_tools.c:151
+#: src/utils_tools.c:126
 msgid "Error reading response from terminal."
 msgstr ""
 
-#: src/utils_tools.c:186
-msgid "Command successful.\n"
+#: src/utils_tools.c:158
+msgid "Command successful."
 msgstr ""
 
-#: src/utils_tools.c:194
+#: src/utils_tools.c:166
 msgid "wrong or missing parameters"
 msgstr ""
 
-#: src/utils_tools.c:196
+#: src/utils_tools.c:168
 msgid "no permission or bad passphrase"
 msgstr ""
 
-#: src/utils_tools.c:198
+#: src/utils_tools.c:170
 msgid "out of memory"
 msgstr ""
 
-#: src/utils_tools.c:200
+#: src/utils_tools.c:172
 msgid "wrong device or file specified"
 msgstr ""
 
-#: src/utils_tools.c:202
+#: src/utils_tools.c:174
 msgid "device already exists or device is busy"
 msgstr ""
 
-#: src/utils_tools.c:204
+#: src/utils_tools.c:176
 msgid "unknown error"
 msgstr ""
 
-#: src/utils_tools.c:206
+#: src/utils_tools.c:178
 #, c-format
-msgid "Command failed with code %i (%s).\n"
+msgid "Command failed with code %i (%s)."
 msgstr ""
 
-#: src/utils_tools.c:283
+#: src/utils_tools.c:256
 #, c-format
 msgid "Key slot %i created."
 msgstr ""
 
-#: src/utils_tools.c:285
+#: src/utils_tools.c:258
 #, c-format
 msgid "Key slot %i unlocked."
 msgstr ""
 
-#: src/utils_tools.c:287
+#: src/utils_tools.c:260
 #, c-format
 msgid "Key slot %i removed."
 msgstr ""
 
-#: src/utils_tools.c:296
+#: src/utils_tools.c:269
 #, c-format
 msgid "Token %i created."
 msgstr ""
 
-#: src/utils_tools.c:298
+#: src/utils_tools.c:271
 #, c-format
 msgid "Token %i removed."
 msgstr ""
 
-#: src/utils_tools.c:464
+#: src/utils_tools.c:432
 msgid ""
 "\n"
 "Wipe interrupted."
 msgstr ""
 
-#: src/utils_tools.c:475
-#, c-format
-msgid "WARNING: Device %s already contains a '%s' partition signature.\n"
-msgstr ""
-
-#: src/utils_tools.c:483
-#, c-format
-msgid "WARNING: Device %s already contains a '%s' superblock signature.\n"
-msgstr ""
-
-#: src/utils_tools.c:504 src/utils_tools.c:568
-msgid "Failed to initialize device signature probes."
-msgstr ""
-
-#: src/utils_tools.c:548
-#, c-format
-msgid "Failed to stat device %s."
-msgstr ""
-
-#: src/utils_tools.c:561
-#, c-format
-msgid "Device %s is in use. Can not proceed with format operation."
-msgstr ""
-
-#: src/utils_tools.c:563
-#, c-format
-msgid "Failed to open file %s in read/write mode."
-msgstr ""
-
-#: src/utils_tools.c:577
-#, c-format
-msgid ""
-"Existing '%s' partition signature (offset: %<PRIi64> bytes) on device %s "
-"will be wiped."
-msgstr ""
-
-#: src/utils_tools.c:580
-#, c-format
-msgid ""
-"Existing '%s' superblock signature (offset: %<PRIi64> bytes) on device %s "
-"will be wiped."
-msgstr ""
-
-#: src/utils_tools.c:583
-msgid "Failed to wipe device signature."
-msgstr ""
-
-#: src/utils_tools.c:590
-#, c-format
-msgid "Failed to probe device %s for a signature."
-msgstr ""
-
-#: src/utils_tools.c:629
+#: src/utils_tools.c:461
 msgid ""
 "\n"
 "Reencryption interrupted."
 msgstr ""
 
-#: src/utils_password.c:43 src/utils_password.c:75
+#: src/utils_password.c:41 src/utils_password.c:74
 #, c-format
 msgid "Cannot check password quality: %s"
 msgstr ""
 
-#: src/utils_password.c:51
+#: src/utils_password.c:49
 #, c-format
 msgid ""
 "Password quality check failed:\n"
 " %s"
 msgstr ""
 
-#: src/utils_password.c:83
+#: src/utils_password.c:81
 #, c-format
 msgid "Password quality check failed: Bad passphrase (%s)"
 msgstr ""
 
-#: src/utils_password.c:193 src/utils_password.c:208
+#: src/utils_password.c:224 src/utils_password.c:238
 msgid "Error reading passphrase from terminal."
 msgstr ""
 
-#: src/utils_password.c:206
+#: src/utils_password.c:236
 msgid "Verify passphrase: "
 msgstr ""
 
-#: src/utils_password.c:213
+#: src/utils_password.c:243
 msgid "Passphrases do not match."
 msgstr ""
 
-#: src/utils_password.c:250
+#: src/utils_password.c:280
 msgid "Cannot use offset with terminal input."
 msgstr ""
 
-#: src/utils_password.c:253
+#: src/utils_password.c:283
 #, c-format
 msgid "Enter passphrase: "
 msgstr ""
 
-#: src/utils_password.c:256
+#: src/utils_password.c:286
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr ""
 
-#: src/utils_password.c:287
+#: src/utils_password.c:317
 msgid "No key available with this passphrase."
 msgstr ""
 
-#: src/utils_password.c:289
+#: src/utils_password.c:319
 msgid "No usable keyslot is available."
 msgstr ""
 
-#: src/utils_password.c:328
+#: src/utils_password.c:335
+#, c-format
+msgid "Cannot read keyfile %s."
+msgstr ""
+
+#: src/utils_password.c:340
+#, c-format
+msgid "Cannot read %d bytes from keyfile %s."
+msgstr ""
+
+#: src/utils_password.c:365
 #, c-format
 msgid "Cannot open keyfile %s for write."
 msgstr ""
 
-#: src/utils_password.c:335
+#: src/utils_password.c:372
 #, c-format
 msgid "Cannot write to keyfile %s."
 msgstr ""
@@ -3912,4 +3236,52 @@ msgstr ""
 
 #: src/utils_luks2.c:126
 msgid "Failed to write JSON file."
+msgstr ""
+
+#: src/utils_blockdev.c:192
+#, c-format
+msgid "WARNING: Device %s already contains a '%s' partition signature.\n"
+msgstr ""
+
+#: src/utils_blockdev.c:200
+#, c-format
+msgid "WARNING: Device %s already contains a '%s' superblock signature.\n"
+msgstr ""
+
+#: src/utils_blockdev.c:221 src/utils_blockdev.c:285
+msgid "Failed to initialize device signature probes."
+msgstr ""
+
+#: src/utils_blockdev.c:265
+#, c-format
+msgid "Failed to stat device %s."
+msgstr ""
+
+#: src/utils_blockdev.c:278
+#, c-format
+msgid "Device %s is in use. Can not proceed with format operation."
+msgstr ""
+
+#: src/utils_blockdev.c:280
+#, c-format
+msgid "Failed to open file %s in read/write mode."
+msgstr ""
+
+#: src/utils_blockdev.c:300
+msgid "Failed to wipe device signature."
+msgstr ""
+
+#: src/utils_blockdev.c:307
+#, c-format
+msgid "Failed to probe device %s for a signature."
+msgstr ""
+
+#: src/utils_args.c:65
+#, c-format
+msgid "Invalid size specification in parameter --%s."
+msgstr ""
+
+#: src/utils_args.c:121
+#, c-format
+msgid "Option --%s is not allowed with %s action."
 msgstr ""
