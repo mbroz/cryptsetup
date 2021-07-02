@@ -2318,6 +2318,12 @@ void crypt_token_external_disable(void);
  *
  * @note Negative EAGAIN errno means token handler requires additional hardware
  *       not present in the system.
+ *
+ * @note with @param token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
+ *       to unlock device using any available token. It may happen that various token handlers
+ *       return different error codes. At the end loop returns error codes in the following
+ *       order (from the most significant to the least) any negative errno except those
+ *       listed below, non negative token id (success), -ENOANO, -EAGAIN, -EPERM, -ENOENT.
  */
 int crypt_activate_by_token(struct crypt_device *cd,
 	const char *name,
@@ -2350,6 +2356,12 @@ int crypt_activate_by_token(struct crypt_device *cd,
  *
  * @note Negative EAGAIN errno means token handler requires additional hardware
  *       not present in the system.
+ *
+ * @note with @param token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
+ *       to unlock device using any available token. It may happen that various token handlers
+ *       return different error codes. At the end loop returns error codes in the following
+ *       order (from the most significant to the least) any negative errno except those
+ *       listed below, non negative token id (success), -ENOANO, -EAGAIN, -EPERM, -ENOENT.
  */
 int crypt_activate_by_token_pin(struct crypt_device *cd,
 	const char *name,

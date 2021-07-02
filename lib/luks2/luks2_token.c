@@ -529,6 +529,25 @@ static void LUKS2_token_buffer_free(struct crypt_device *cd,
 	}
 }
 
+static bool break_loop_retval(int r)
+{
+	if (r == -ENOENT || r == -EPERM || r == -EAGAIN || r == -ENOANO)
+		return false;
+	return true;
+}
+
+static void update_return_errno(int r, int *stored)
+{
+	if (*stored == -ENOANO)
+		return;
+	else if (r == -ENOANO)
+		*stored = r;
+	else if (r == -EAGAIN && *stored != -ENOANO)
+		*stored = r;
+	else if (r == -EPERM && (*stored != -ENOANO && *stored != -EAGAIN))
+		*stored = r;
+}
+
 static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
@@ -567,6 +586,37 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 	return num;
 }
 
+static int token_open_any(struct crypt_device *cd, struct luks2_hdr *hdr, const char *type, int segment, const char *pin, size_t pin_size, void *usrptr, struct volume_key **vk)
+{
+	char *buffer;
+	size_t buffer_size;
+	json_object *jobj_tokens;
+	int token, r, stored_retval = -ENOENT;
+
+	json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens);
+
+	/* passing usrptr for CRYPT_ANY_TOKEN does not make sense without specific type */
+	if (!type)
+		usrptr = NULL;
+
+	json_object_object_foreach(jobj_tokens, slot, val) {
+		token = atoi(slot);
+		r = LUKS2_token_open(cd, hdr, token, val, type, segment, pin, pin_size, &buffer, &buffer_size, usrptr);
+		if (!r) {
+			r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment,
+							buffer, buffer_size, vk);
+			LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
+		}
+
+		if (break_loop_retval(r))
+			return r;
+
+		update_return_errno(r, &stored_retval);
+	}
+
+	return stored_retval;
+}
+
 int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
@@ -580,7 +630,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	bool use_keyring;
 	char *buffer;
 	size_t buffer_size;
-	json_object *jobj_tokens, *jobj_token;
+	json_object *jobj_token;
 	int keyslot, segment, r = -ENOENT;
 	struct volume_key *vk = NULL;
 
@@ -601,29 +651,25 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
 			}
 		}
-	} else if (token == CRYPT_ANY_TOKEN) {
-		json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens);
-
-		/* passing usrptr for CRYPT_ANY_TOKEN does not make sense without specific type */
-		if (!type)
-			usrptr = NULL;
-
-		json_object_object_foreach(jobj_tokens, slot, val) {
-			token = atoi(slot);
-			r = LUKS2_token_open(cd, hdr, token, val, type, segment, pin, pin_size, &buffer, &buffer_size, usrptr);
-			if (!r) {
-				r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment,
-								buffer, buffer_size, &vk);
-				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
-			}
-			if (r != -ENOENT && r != -EPERM)
-				break;
-		}
-	} else
+	} else if (token == CRYPT_ANY_TOKEN)
+		/*
+		 * return priorities (ordered form least to most significant):
+		 * ENOENT - unusable for activation (no token handler, invalid token metadata, not assigned to volume segment, etc)
+		 * EPERM  - usable but token provided passphrase did not not unlock any assigned keyslot
+		 * EAGAIN - usable but not ready (token HW is missing)
+		 * ENOANO - ready, but token pin is wrong or missing
+		 *
+		 * success (>= 0) or any other negative errno short-circuits token activation loop
+		 * immediately
+		 */
+		r = token_open_any(cd, hdr, type, segment, pin, pin_size, usrptr, &vk);
+	else
 		return -EINVAL;
 
 	if (r < 0)
 		return r;
+
+	assert(vk);
 
 	keyslot = r;
 
