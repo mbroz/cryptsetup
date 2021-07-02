@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ -z "$CRUPTSETUP_PATH" ] && {
+[ -z "$CRYPTSETUP_PATH" ] && {
 	export LD_PRELOAD=./fake_token_path.so
 	CRYPTSETUP_PATH=".."
 }
