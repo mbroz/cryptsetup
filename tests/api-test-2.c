@@ -119,16 +119,6 @@ typedef int32_t key_serial_t;
 #define PASS7 "bbb"
 #define PASS8 "iii"
 
-/* Allow to run without config.h */
-#ifndef DEFAULT_LUKS1_HASH
-  #define DEFAULT_LUKS1_HASH "sha256"
-  #define DEFAULT_LUKS1_ITER_TIME 2000
-  #define DEFAULT_LUKS2_ITER_TIME 2000
-  #define DEFAULT_LUKS2_MEMORY_KB 1048576
-  #define DEFAULT_LUKS2_PARALLEL_THREADS 4
-  #define DEFAULT_LUKS2_PBKDF "argon2i"
-#endif
-
 static int _fips_mode = 0;
 
 static char *DEVICE_1 = NULL;
@@ -144,6 +134,14 @@ static char *test_loop_file = NULL;
 unsigned int test_progress_steps;
 
 struct crypt_device *cd = NULL, *cd2 = NULL;
+
+static const char *default_luks1_hash = NULL;
+static uint32_t default_luks1_iter_time = 0;
+
+static const char *default_luks2_pbkdf = NULL;
+static uint32_t default_luks2_iter_time = 0;
+static uint32_t default_luks2_memory_kb = 0;
+static uint32_t default_luks2_parallel_threads = 0;
 
 // Helpers
 
@@ -167,14 +165,14 @@ static uint32_t adjusted_pbkdf_memory(void)
 	uint64_t memory_kb;
 
 	if (pagesize <= 0 || pages <= 0)
-		return DEFAULT_LUKS2_MEMORY_KB;
+		return default_luks2_memory_kb;
 
 	memory_kb = pagesize / 1024 * pages / 2;
 
-	if (memory_kb < DEFAULT_LUKS2_MEMORY_KB)
+	if (memory_kb < default_luks2_memory_kb)
 		return (uint32_t)memory_kb;
 
-	return DEFAULT_LUKS2_MEMORY_KB;
+	return default_luks2_memory_kb;
 }
 
 static unsigned _min(unsigned a, unsigned b)
@@ -223,6 +221,28 @@ static int get_luks2_offsets(int metadata_device,
 		*r_header_size = default_header_size;
 
 	return 0;
+}
+
+static bool get_luks_pbkdf_defaults(void)
+{
+	const struct crypt_pbkdf_type *pbkdf_defaults = crypt_get_pbkdf_default(CRYPT_LUKS1);
+
+	if (!pbkdf_defaults)
+		return false;
+
+	default_luks1_hash = pbkdf_defaults->hash;
+	default_luks1_iter_time = pbkdf_defaults->time_ms;
+
+	pbkdf_defaults = crypt_get_pbkdf_default(CRYPT_LUKS2);
+	if (!pbkdf_defaults)
+		return false;
+
+	default_luks2_pbkdf = pbkdf_defaults->type;
+	default_luks2_iter_time = pbkdf_defaults->time_ms;
+	default_luks2_memory_kb = pbkdf_defaults->max_memory_kb;
+	default_luks2_parallel_threads = pbkdf_defaults->parallel_threads;
+
+	return true;
 }
 
 static void _remove_keyfiles(void)
@@ -412,6 +432,9 @@ static int _setup(void)
 
 	/* Use default log callback */
 	crypt_set_log_callback(NULL, &global_log_callback, NULL);
+
+	if (!get_luks_pbkdf_defaults())
+		return 1;
 
 	return 0;
 }
@@ -2541,17 +2564,17 @@ static void Pbkdf(void)
 	const char *cipher = "aes", *mode="xts-plain64";
 	struct crypt_pbkdf_type argon2 = {
 		.type = CRYPT_KDF_ARGON2I,
-		.hash = DEFAULT_LUKS1_HASH,
+		.hash = default_luks1_hash,
 		.time_ms = 6,
 		.max_memory_kb = 1024,
 		.parallel_threads = 1
 	}, pbkdf2 = {
 		.type = CRYPT_KDF_PBKDF2,
-		.hash = DEFAULT_LUKS1_HASH,
+		.hash = default_luks1_hash,
 		.time_ms = 9
 	}, bad = {
 		.type = "hamster_pbkdf",
-		.hash = DEFAULT_LUKS1_HASH
+		.hash = default_luks1_hash
 	};
 	struct crypt_params_plain params = {
 		.hash = "sha1",
@@ -2607,7 +2630,7 @@ static void Pbkdf(void)
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
 	OK_(crypt_set_pbkdf_type(cd, NULL));
 	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
-	EQ_(pbkdf->time_ms, DEFAULT_LUKS1_ITER_TIME);
+	EQ_(pbkdf->time_ms, default_luks1_iter_time);
 	CRYPT_FREE(cd);
 	// test value set in crypt_set_iteration_time() can be obtained via following crypt_get_pbkdf_type()
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
@@ -2617,7 +2640,7 @@ static void Pbkdf(void)
 	EQ_(pbkdf->time_ms, 42);
 	// test crypt_get_pbkdf_type() returns expected values for LUKSv1
 	OK_(strcmp(pbkdf->type, CRYPT_KDF_PBKDF2));
-	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
+	OK_(strcmp(pbkdf->hash, default_luks1_hash));
 	EQ_(pbkdf->max_memory_kb, 0);
 	EQ_(pbkdf->parallel_threads, 0);
 	crypt_set_iteration_time(cd, 43);
@@ -2648,11 +2671,11 @@ static void Pbkdf(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, mode, NULL, NULL, 32, NULL));
 	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
-	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
-	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
-	EQ_(pbkdf->time_ms, DEFAULT_LUKS2_ITER_TIME);
+	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
+	OK_(strcmp(pbkdf->hash, default_luks1_hash));
+	EQ_(pbkdf->time_ms, default_luks2_iter_time);
 	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
-	EQ_(pbkdf->parallel_threads, _min(cpus_online(), DEFAULT_LUKS2_PARALLEL_THREADS));
+	EQ_(pbkdf->parallel_threads, _min(cpus_online(), default_luks2_parallel_threads));
 	// set and verify argon2 type
 	OK_(crypt_set_pbkdf_type(cd, &argon2));
 	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
@@ -2673,11 +2696,11 @@ static void Pbkdf(void)
 	crypt_set_iteration_time(cd, 1); // it's supposed to override this call
 	OK_(crypt_set_pbkdf_type(cd, NULL));
 	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
-	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
-	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
-	EQ_(pbkdf->time_ms, DEFAULT_LUKS2_ITER_TIME);
+	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
+	OK_(strcmp(pbkdf->hash, default_luks1_hash));
+	EQ_(pbkdf->time_ms, default_luks2_iter_time);
 	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
-	EQ_(pbkdf->parallel_threads, _min(cpus_online(), DEFAULT_LUKS2_PARALLEL_THREADS));
+	EQ_(pbkdf->parallel_threads, _min(cpus_online(), default_luks2_parallel_threads));
 	// try to pass illegal values
 	argon2.parallel_threads = 0;
 	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Parallel threads can't be 0");
@@ -2695,7 +2718,7 @@ static void Pbkdf(void)
 	bad.hash = NULL;
 	FAIL_(crypt_set_pbkdf_type(cd, &bad), "Hash member is empty");
 	bad.type = NULL;
-	bad.hash = DEFAULT_LUKS1_HASH;
+	bad.hash = default_luks1_hash;
 	FAIL_(crypt_set_pbkdf_type(cd, &bad), "Pbkdf type member is empty");
 	bad.hash = "hamster_hash";
 	FAIL_(crypt_set_pbkdf_type(cd, &pbkdf2), "Unknown hash member");
@@ -2704,18 +2727,18 @@ static void Pbkdf(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
 	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
-	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
-	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
-	EQ_(pbkdf->time_ms, DEFAULT_LUKS2_ITER_TIME);
+	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
+	OK_(strcmp(pbkdf->hash, default_luks1_hash));
+	EQ_(pbkdf->time_ms, default_luks2_iter_time);
 	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
-	EQ_(pbkdf->parallel_threads, _min(cpus_online(), DEFAULT_LUKS2_PARALLEL_THREADS));
+	EQ_(pbkdf->parallel_threads, _min(cpus_online(), default_luks2_parallel_threads));
 	crypt_set_iteration_time(cd, 1);
 	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
-	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
-	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
+	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
+	OK_(strcmp(pbkdf->hash, default_luks1_hash));
 	EQ_(pbkdf->time_ms, 1);
 	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
-	EQ_(pbkdf->parallel_threads, _min(cpus_online(), DEFAULT_LUKS2_PARALLEL_THREADS));
+	EQ_(pbkdf->parallel_threads, _min(cpus_online(), default_luks2_parallel_threads));
 	CRYPT_FREE(cd);
 
 	// test crypt_set_pbkdf_type() overwrites invalid value set by crypt_set_iteration_time()
@@ -2766,17 +2789,17 @@ static void Pbkdf(void)
 
 	NOTNULL_(pbkdf = crypt_get_pbkdf_default(CRYPT_LUKS1));
 	OK_(strcmp(pbkdf->type, CRYPT_KDF_PBKDF2));
-	EQ_(pbkdf->time_ms, DEFAULT_LUKS1_ITER_TIME);
-	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
+	EQ_(pbkdf->time_ms, default_luks1_iter_time);
+	OK_(strcmp(pbkdf->hash, default_luks1_hash));
 	EQ_(pbkdf->max_memory_kb, 0);
 	EQ_(pbkdf->parallel_threads, 0);
 
 	NOTNULL_(pbkdf = crypt_get_pbkdf_default(CRYPT_LUKS2));
-	OK_(strcmp(pbkdf->type, DEFAULT_LUKS2_PBKDF));
-	EQ_(pbkdf->time_ms, DEFAULT_LUKS2_ITER_TIME);
-	OK_(strcmp(pbkdf->hash, DEFAULT_LUKS1_HASH));
-	EQ_(pbkdf->max_memory_kb, DEFAULT_LUKS2_MEMORY_KB);
-	EQ_(pbkdf->parallel_threads, DEFAULT_LUKS2_PARALLEL_THREADS);
+	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
+	EQ_(pbkdf->time_ms, default_luks2_iter_time);
+	OK_(strcmp(pbkdf->hash, default_luks1_hash));
+	EQ_(pbkdf->max_memory_kb, default_luks2_memory_kb);
+	EQ_(pbkdf->parallel_threads, default_luks2_parallel_threads);
 
 	NULL_(pbkdf = crypt_get_pbkdf_default(CRYPT_PLAIN));
 
@@ -3149,13 +3172,13 @@ static void Luks2Requirements(void)
 	const char *token, *json = "{\"type\":\"test_token\",\"keyslots\":[]}";
 	struct crypt_pbkdf_type argon2 = {
 		.type = CRYPT_KDF_ARGON2I,
-		.hash = DEFAULT_LUKS1_HASH,
+		.hash = default_luks1_hash,
 		.time_ms = 6,
 		.max_memory_kb = 1024,
 		.parallel_threads = 1
 	}, pbkdf2 = {
 		.type = CRYPT_KDF_PBKDF2,
-		.hash = DEFAULT_LUKS1_HASH,
+		.hash = default_luks1_hash,
 		.time_ms = 9
 	};
 	struct crypt_token_params_luks2_keyring params_get, params = {
