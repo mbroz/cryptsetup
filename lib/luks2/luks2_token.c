@@ -417,10 +417,11 @@ static const char *token_json_to_string(json_object *jobj_token)
 		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
 }
 
-static int token_for_segment(struct luks2_hdr *hdr, json_object *jobj_token, int segment)
+static int token_is_usable(struct luks2_hdr *hdr, json_object *jobj_token, int segment, crypt_keyslot_priority minimal_priority)
 {
+	crypt_keyslot_priority keyslot_priority;
 	json_object *jobj_array;
-	int i, len, r = -ENOENT;
+	int i, keyslot, len, r = -ENOENT;
 
 	if (!jobj_token)
 		return -EINVAL;
@@ -436,14 +437,17 @@ static int token_for_segment(struct luks2_hdr *hdr, json_object *jobj_token, int
 	if (len <= 0)
 		return -ENOENT;
 
-	/* no need to check anything */
-	if (segment == CRYPT_ANY_SEGMENT)
-		return 0;
-
 	for (i = 0; i < len; i++) {
-		r = LUKS2_keyslot_for_segment(hdr,
-				atoi(json_object_get_string(json_object_array_get_idx(jobj_array, i))),
-				segment);
+		keyslot = atoi(json_object_get_string(json_object_array_get_idx(jobj_array, i)));
+
+		keyslot_priority = LUKS2_keyslot_priority_get(NULL, hdr, keyslot);
+		if (keyslot_priority == CRYPT_SLOT_PRIORITY_INVALID)
+			return -EINVAL;
+
+		if (keyslot_priority < minimal_priority)
+			continue;
+
+		r = LUKS2_keyslot_for_segment(hdr, keyslot, segment);
 		if (r != -ENOENT)
 			return r;
 	}
@@ -467,6 +471,7 @@ static int LUKS2_token_open(struct crypt_device *cd,
 	json_object *jobj_token,
 	const char *type,
 	int segment,
+	crypt_keyslot_priority priority,
 	const char *pin,
 	size_t pin_size,
 	char **buffer,
@@ -479,6 +484,7 @@ static int LUKS2_token_open(struct crypt_device *cd,
 
 	assert(token >= 0);
 	assert(jobj_token);
+	assert(priority >= 0);
 
 	if (type) {
 		if (!json_object_object_get_ex(jobj_token, "type", &jobj_type))
@@ -487,10 +493,10 @@ static int LUKS2_token_open(struct crypt_device *cd,
 			return -ENOENT;
 	}
 
-	r = token_for_segment(hdr, jobj_token, segment);
+	r = token_is_usable(hdr, jobj_token, segment, priority);
 	if (r < 0) {
 		if (r == -ENOENT)
-			log_dbg(cd, "Token %d unusable for segment %d.", token, segment);
+			log_dbg(cd, "Token %d unusable for segment %d with desired keyslot priority %d.", token, segment, priority);
 		return r;
 	}
 
@@ -552,13 +558,15 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
 	int segment,
+	crypt_keyslot_priority priority,
 	const char *buffer,
 	size_t buffer_len,
 	struct volume_key **vk)
 {
+	crypt_keyslot_priority keyslot_priority;
 	json_object *jobj_token, *jobj_token_keyslots, *jobj_type, *jobj;
 	unsigned int num = 0;
-	int i, r;
+	int i, r = -ENOENT, stored_retval = -ENOENT;
 
 	jobj_token = LUKS2_get_token_jobj(hdr, token);
 	if (!jobj_token)
@@ -572,38 +580,53 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* Try to open keyslot referenced in token */
-	r = -ENOENT;
 	for (i = 0; i < (int) json_object_array_length(jobj_token_keyslots) && r < 0; i++) {
 		jobj = json_object_array_get_idx(jobj_token_keyslots, i);
 		num = atoi(json_object_get_string(jobj));
+		keyslot_priority = LUKS2_keyslot_priority_get(NULL, hdr, num);
+		if (keyslot_priority == CRYPT_SLOT_PRIORITY_INVALID)
+			return -EINVAL;
+		if (keyslot_priority < priority)
+			continue;
 		log_dbg(cd, "Trying to open keyslot %u with token %d (type %s).", num, token, json_object_get_string(jobj_type));
 		r = LUKS2_keyslot_open(cd, num, segment, buffer, buffer_len, vk);
+		/* short circuit on fatal error */
+		if (r < 0 && r != -EPERM && r != -ENOENT)
+			return r;
+		/* save -EPERM in case no other keyslot is usable */
+		if (r == -EPERM)
+			stored_retval = r;
 	}
 
 	if (r < 0)
-		return r;
+		return stored_retval;
 
 	return num;
 }
 
-static int token_open_any(struct crypt_device *cd, struct luks2_hdr *hdr, const char *type, int segment, const char *pin, size_t pin_size, void *usrptr, struct volume_key **vk)
+static int token_open_priority(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	json_object *jobj_tokens,
+	const char *type,
+	int segment,
+	crypt_keyslot_priority priority,
+	const char *pin,
+	size_t pin_size,
+	void *usrptr,
+	int *stored_retval,
+	struct volume_key **vk)
 {
 	char *buffer;
 	size_t buffer_size;
-	json_object *jobj_tokens;
-	int token, r, stored_retval = -ENOENT;
+	int token, r;
 
-	json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens);
-
-	/* passing usrptr for CRYPT_ANY_TOKEN does not make sense without specific type */
-	if (!type)
-		usrptr = NULL;
+	assert(stored_retval);
 
 	json_object_object_foreach(jobj_tokens, slot, val) {
 		token = atoi(slot);
-		r = LUKS2_token_open(cd, hdr, token, val, type, segment, pin, pin_size, &buffer, &buffer_size, usrptr);
+		r = LUKS2_token_open(cd, hdr, token, val, type, segment, priority, pin, pin_size, &buffer, &buffer_size, usrptr);
 		if (!r) {
-			r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment,
+			r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment, priority,
 							buffer, buffer_size, vk);
 			LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
 		}
@@ -611,10 +634,28 @@ static int token_open_any(struct crypt_device *cd, struct luks2_hdr *hdr, const 
 		if (break_loop_retval(r))
 			return r;
 
-		update_return_errno(r, &stored_retval);
+		update_return_errno(r, stored_retval);
 	}
 
-	return stored_retval;
+	return *stored_retval;
+}
+
+static int token_open_any(struct crypt_device *cd, struct luks2_hdr *hdr, const char *type, int segment, const char *pin, size_t pin_size, void *usrptr, struct volume_key **vk)
+{
+	json_object *jobj_tokens;
+	int r, retval = -ENOENT;
+
+	json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens);
+
+	/* passing usrptr for CRYPT_ANY_TOKEN does not make sense without specific type */
+	if (!type)
+		usrptr = NULL;
+
+	r = token_open_priority(cd, hdr, jobj_tokens, type, segment, CRYPT_SLOT_PRIORITY_PREFER, pin, pin_size, usrptr, &retval, vk);
+	if (break_loop_retval(r))
+		return r;
+
+	return token_open_priority(cd, hdr, jobj_tokens, type, segment, CRYPT_SLOT_PRIORITY_NORMAL, pin, pin_size, usrptr, &retval, vk);
 }
 
 int LUKS2_token_open_and_activate(struct crypt_device *cd,
@@ -644,9 +685,9 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 
 	if (token >= 0 && token < LUKS2_TOKENS_MAX) {
 		if ((jobj_token = LUKS2_get_token_jobj(hdr, token))) {
-			r = LUKS2_token_open(cd, hdr, token, jobj_token, type, segment, pin, pin_size, &buffer, &buffer_size, usrptr);
+			r = LUKS2_token_open(cd, hdr, token, jobj_token, type, segment, CRYPT_SLOT_PRIORITY_IGNORE,  pin, pin_size, &buffer, &buffer_size, usrptr);
 			if (!r) {
-				r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment,
+				r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment, CRYPT_SLOT_PRIORITY_IGNORE,
 								buffer, buffer_size, &vk);
 				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
 			}
