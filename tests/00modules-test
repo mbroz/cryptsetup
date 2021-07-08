@@ -30,6 +30,11 @@ pversion veritysetup
 pversion integritysetup
 pversion cryptsetup-reencrypt
 
+[ -x $CRYPTSETUP_PATH/cryptsetup ] && {
+	echo -e "Cryptsetup defaults:"
+	$CRYPTSETUP_PATH/cryptsetup --help | sed -n '/optional key file for/,$p' | tail -n +3
+}
+
 [ $(id -u) != 0 ] && exit 77
 
 modprobe dm-crypt     >/dev/null 2>&1
