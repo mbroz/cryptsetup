@@ -143,6 +143,18 @@ static uint32_t default_luks2_iter_time = 0;
 static uint32_t default_luks2_memory_kb = 0;
 static uint32_t default_luks2_parallel_threads = 0;
 
+static struct crypt_pbkdf_type min_pbkdf2 = {
+	.type = "pbkdf2",
+	.iterations = 1000,
+	.flags = CRYPT_PBKDF_NO_BENCHMARK
+}, min_argon2 = {
+	.type = "argon2id",
+	.iterations = 4,
+	.max_memory_kb = 32,
+	.parallel_threads = 1,
+	.flags = CRYPT_PBKDF_NO_BENCHMARK
+};
+
 // Helpers
 
 static unsigned cpus_online(void)
@@ -436,7 +448,20 @@ static int _setup(void)
 	if (!get_luks_pbkdf_defaults())
 		return 1;
 
+	min_pbkdf2.hash = min_argon2.hash = default_luks1_hash;
+
 	return 0;
+}
+
+static int set_fast_pbkdf(struct crypt_device *cd)
+{
+	const struct crypt_pbkdf_type *pbkdf = &min_argon2;
+
+	/* Cannot use Argon2 in FIPS */
+	if (_fips_mode)
+		pbkdf = &min_pbkdf2;
+
+	return crypt_set_pbkdf_type(cd, pbkdf);
 }
 
 #ifdef KERNEL_KEYRING
@@ -565,12 +590,6 @@ static void SuspendDevice(void)
 	size_t key_size;
 	int suspend_status;
 	uint64_t r_payload_offset;
-	const struct crypt_pbkdf_type fast_pbkdf = {
-		.type = "pbkdf2",
-		.hash = "sha256",
-		.iterations = 1000,
-		.flags = CRYPT_PBKDF_NO_BENCHMARK
-	};
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
@@ -640,7 +659,7 @@ static void SuspendDevice(void)
 
 	/* Resume device with cipher_null */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, "cipher_null", "ecb", NULL, key, key_size, NULL));
 	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
@@ -708,6 +727,7 @@ static void AddDeviceLuks2(void)
 
 	// test payload_offset = 0 for encrypted device with external header device
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	EQ_(crypt_get_data_offset(cd), 0);
 	CRYPT_FREE(cd);
@@ -717,6 +737,7 @@ static void AddDeviceLuks2(void)
 
 	// test payload_offset = 0. format() should look up alignment offset from device topology
 	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	OK_(!(crypt_get_data_offset(cd) > 0));
 	CRYPT_FREE(cd);
@@ -724,6 +745,7 @@ static void AddDeviceLuks2(void)
 	// set_data_offset has priority, alignment must be 0 or must be compatible
 	params.data_alignment = 0;
 	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_set_data_offset(cd, OFFSET_8M));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	EQ_(crypt_get_data_offset(cd), OFFSET_8M);
@@ -738,6 +760,7 @@ static void AddDeviceLuks2(void)
 
 	params.data_alignment = OFFSET_4M;
 	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(set_fast_pbkdf(cd));
 	FAIL_(crypt_set_data_offset(cd, OFFSET_2M + 1), "Not aligned to 4096"); // must be aligned to 4k
 	OK_(crypt_set_data_offset(cd, OFFSET_2M));
 	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params), "Alignment not compatible");
@@ -757,17 +780,20 @@ static void AddDeviceLuks2(void)
 
 	// 1 sector less than required
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_WRONG));
+	OK_(set_fast_pbkdf(cd));
 	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params),	"Device too small");
 	CRYPT_FREE(cd);
 
 	// 0 sectors for encrypted area
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_0S));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "Encrypted area too small");
 	CRYPT_FREE(cd);
 
 	// 1 sector for encrypted area
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	EQ_(crypt_get_data_offset(cd), r_payload_offset);
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
@@ -792,6 +818,7 @@ static void AddDeviceLuks2(void)
 
 	// generate keyslot material at the end of luks header
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	EQ_((int)key_size, crypt_get_volume_key_size(cd));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, key, key_size, passphrase, strlen(passphrase)), 7);
@@ -810,6 +837,7 @@ static void AddDeviceLuks2(void)
 
 	CRYPT_FREE(cd);
 	OK_(crypt_init_by_name_and_header(&cd, CDEVICE_1, DMDIR H_DEVICE));
+	OK_(set_fast_pbkdf(cd));
 	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params), "Context is already formatted");
 	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	CRYPT_FREE(cd);
@@ -828,6 +856,7 @@ static void AddDeviceLuks2(void)
 
 	// test uuid mismatch and _init_by_name_and_header
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	EQ_(0, crypt_header_is_detached(cd));
@@ -835,6 +864,7 @@ static void AddDeviceLuks2(void)
 	params.data_alignment = 0;
 	params.data_device = DEVICE_2;
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 	CRYPT_FREE(cd);
 	// there we've got uuid mismatch
@@ -851,6 +881,7 @@ static void AddDeviceLuks2(void)
 	params.data_device = NULL;
 
 	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, &params));
 
 	// even with no keyslots defined it can be activated by volume key
@@ -866,7 +897,6 @@ static void AddDeviceLuks2(void)
 	GE_(crypt_status(cd, CDEVICE_2), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
 
-	crypt_set_iteration_time(cd, 1);
 	EQ_(1, crypt_keyslot_add_by_volume_key(cd, 1, key, key_size, KEY1, strlen(KEY1)));
 	OK_(prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	OK_(prepare_keyfile(KEYFILE2, KEY2, strlen(KEY2)));
@@ -955,13 +985,13 @@ static void AddDeviceLuks2(void)
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
 	CRYPT_FREE(cd);
 	OK_(crypt_init(&cd, DEVICE_2));
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init(&cd, DEVICE_2));
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, key_size, NULL));
 	FAIL_(crypt_keyslot_add_by_volume_key(cd, CRYPT_ANY_SLOT, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), "VK doesn't match any digest");
 	FAIL_(crypt_keyslot_add_by_volume_key(cd, 1, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), "VK doesn't match any digest");
@@ -969,7 +999,7 @@ static void AddDeviceLuks2(void)
 
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 3, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE)), 3);
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key3, key_size, 0), "VK doesn't match any digest assigned to segment 0");
@@ -980,7 +1010,7 @@ static void AddDeviceLuks2(void)
 	 * volume key size is unknown (no active keyslots).
 	 */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	/* drop context copy of volume key */
@@ -989,6 +1019,7 @@ static void AddDeviceLuks2(void)
 	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
 	EQ_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	OK_(crypt_keyslot_destroy(cd, 0));
+	OK_(set_fast_pbkdf(cd));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	CRYPT_FREE(cd);
 
@@ -1259,7 +1290,7 @@ static void Luks2HeaderRestore(void)
 
 	// do not allow restore over LUKS1 header on device
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, NULL, 32, &luks1));
 	CRYPT_FREE(cd);
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
@@ -1666,7 +1697,7 @@ static void ResizeDeviceLuks2(void)
 	CRYPT_FREE(cd2);
 
 	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
-	crypt_set_iteration_time(cd2, 1);
+	OK_(crypt_set_pbkdf_type(cd2, &min_pbkdf2));
 	OK_(crypt_format(cd2, CRYPT_LUKS1, cipher, cipher_mode, crypt_get_uuid(cd), key, key_size, NULL));
 	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
 	FAIL_(crypt_resize(cd2, CDEVICE_1, 1), "Device got resized by wrong device context.");
@@ -1715,7 +1746,7 @@ static void TokenActivationByKeyring(void)
 
 	// prepare the device
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_token_luks2_keyring_set(cd, 3, &params), 3);
@@ -1766,7 +1797,7 @@ static void TokenActivationByKeyring(void)
 	EQ_(crypt_token_assign_keyslot(cd, 0, 0), 0);
 	EQ_(crypt_token_luks2_keyring_set(cd, 1, &params2), 1);
 	FAIL_(crypt_token_assign_keyslot(cd, 1, 1), "Keyslot 1 doesn't exist");
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	EQ_(crypt_keyslot_add_by_passphrase(cd, 1, PASSPHRASE, strlen(PASSPHRASE), PASSPHRASE1, strlen(PASSPHRASE1)), 1);
 	EQ_(crypt_token_assign_keyslot(cd, 1, 1), 1);
 	CRYPT_FREE(cd);
@@ -1804,7 +1835,7 @@ static void TokenActivationByKeyring(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	OK_(crypt_keyslot_destroy(cd, 0));
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	EQ_(crypt_keyslot_add_by_passphrase(cd, 0, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE1, strlen(PASSPHRASE1)), 0);
 	CRYPT_FREE(cd);
 
@@ -1819,7 +1850,7 @@ static void TokenActivationByKeyring(void)
 	 // 1st token being invalid (missing key in keyring)
 	 // 2nd token can activate keyslot 1 after failing to do so w/ keyslot 0 (wrong pass)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 32, PASSPHRASE1, strlen(PASSPHRASE1)), 1);
@@ -1907,7 +1938,7 @@ static void Tokens(void)
 
 	// basic token API tests
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
-	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
 	EQ_(crypt_token_status(cd, -1, NULL), CRYPT_TOKEN_INVALID);
 	EQ_(crypt_token_status(cd, 32, NULL), CRYPT_TOKEN_INVALID);
@@ -2061,7 +2092,7 @@ static void LuksConvert(void)
 
 	// prepare the device
 	OK_(crypt_init(&cd, DEVICE_1));
-	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, NULL, 32, NULL));
 	offset = crypt_get_data_offset(cd);
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
@@ -2537,8 +2568,7 @@ static void LuksConvert(void)
 	// detached LUKS1 header upconversion
 	OK_(create_dmdevice_over_loop(H_DEVICE, 2050)); // default LUKS1 header should fit there
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
-	crypt_set_iteration_time(cd, 1);
-	//OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS1, "aes", "xts-plain64", NULL, NULL, 32, &luks1));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 7);
 	FAIL_(crypt_convert(cd, CRYPT_LUKS2, NULL), "Unable to move keyslots. Not enough space.");
@@ -2546,8 +2576,7 @@ static void LuksConvert(void)
 
 	// 2050 sectors, empty file
 	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL_2));
-	//OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
-	crypt_set_iteration_time(cd, 1);
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS1, "aes", "xts-plain64", NULL, NULL, 32, &luks1));
 	EQ_(crypt_get_data_offset(cd), 0);
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 7, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 7);
@@ -2953,12 +2982,6 @@ static void Luks2KeyslotParams(void)
 	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
 	size_t key_size_ret, key_size = strlen(mk_hex) / 2, keyslot_key_size = 16;
 	uint64_t r_payload_offset;
-	const struct crypt_pbkdf_type fast_pbkdf = {
-		.type = "pbkdf2",
-		.hash = "sha256",
-		.iterations = 1000,
-		.flags = CRYPT_PBKDF_NO_BENCHMARK
-	};
 
 	crypt_decode_key(key, mk_hex, key_size);
 	crypt_decode_key(key2, mk_hex2, key_size);
@@ -2972,7 +2995,7 @@ static void Luks2KeyslotParams(void)
 	EQ_(key_size, 2 * keyslot_key_size);
 	/* test crypt_keyslot_add_by_key */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, key, key_size, NULL));
 	NULL_(crypt_keyslot_get_encryption(cd, 0, &key_size_ret));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_spec));
@@ -3031,7 +3054,7 @@ static void Luks2KeyslotParams(void)
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, 7, &key_size_ret), cipher_keyslot));
 	EQ_(key_size_ret, keyslot_key_size);
 
-	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	EQ_(8, crypt_keyslot_change_by_passphrase(cd, 1, 8, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE, strlen(PASSPHRASE)));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, 8, &key_size_ret), cipher_spec));
 	EQ_(key_size_ret, key_size);
@@ -3060,7 +3083,7 @@ static void Luks2KeyslotParams(void)
 
 	/* LUKS1 compatible calls */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, NULL));
 	NULL_(crypt_keyslot_get_encryption(cd, 0, &key_size_ret));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_spec));
@@ -3072,7 +3095,7 @@ static void Luks2KeyslotParams(void)
 
 	/* LUKS2 cipher null checks */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	OK_(crypt_set_pbkdf_type(cd, &fast_pbkdf));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
 	OK_(crypt_format(cd, CRYPT_LUKS2, "cipher_null", "ecb", NULL, key, key_size, NULL));
 	FAIL_(crypt_keyslot_set_encryption(cd, "null", 32), "cipher null is not allowed");
 	FAIL_(crypt_keyslot_set_encryption(cd, "cipher_null", 32), "cipher null is not allowed");
@@ -3111,7 +3134,7 @@ static void Luks2ActivateByKeyring(void)
 
 	// prepare the device
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	crypt_set_iteration_time(cd, 1);
+	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 32, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
@@ -3527,27 +3550,6 @@ static void Luks2Integrity(void)
 	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, key_size - 32, &params), "Wrong key size.");
 	FAIL_(crypt_format(cd, CRYPT_LUKS2, cipher, "xts-plainx", NULL, NULL, key_size, &params), "Wrong cipher.");
 	CRYPT_FREE(cd);
-}
-
-static int set_fast_pbkdf(struct crypt_device *cd)
-{
-	struct crypt_pbkdf_type pbkdf = {
-		.type = "argon2id",
-		.hash = "sha256",
-		.iterations = 4,
-		.max_memory_kb = 32,
-		.parallel_threads = 1,
-		.flags = CRYPT_PBKDF_NO_BENCHMARK
-	};
-
-	/* Cannot use Argon2 in FIPS */
-	if (_fips_mode) {
-		pbkdf.type = CRYPT_KDF_PBKDF2;
-		pbkdf.parallel_threads = 0;
-		pbkdf.max_memory_kb = 0;
-		pbkdf.iterations = 1000;
-	}
-	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 
 static int check_flag(uint32_t flags, uint32_t flag)
