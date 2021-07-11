@@ -126,6 +126,7 @@
 #define OPT_RESILIENCE_HASH		"resilience-hash"
 #define OPT_RESTART_ON_CORRUPTION	"restart-on-corruption"
 #define OPT_RESUME_ONLY			"resume-only"
+#define OPT_ROOT_HASH_FILE		"root-hash-file"
 #define OPT_ROOT_HASH_SIGNATURE		"root-hash-signature"
 #define OPT_SALT			"salt"
 #define OPT_SECTOR_SIZE			"sector-size"
