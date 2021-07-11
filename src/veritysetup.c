@@ -77,7 +77,9 @@ static int action_format(void)
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
 	uint32_t flags = CRYPT_VERITY_CREATE_HASH;
-	int r;
+	char *root_hash_bytes = NULL;
+	size_t root_hash_size;
+	int root_hash_fd = -1, i, r;
 
 	/* Try to create hash image if doesn't exist */
 	r = open(action_argv[1], O_WRONLY | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
@@ -111,11 +113,46 @@ static int action_format(void)
 		goto out;
 
 	r = crypt_format(cd, CRYPT_VERITY, NULL, NULL, ARG_STR(OPT_UUID_ID), NULL, 0, &params);
-	if (!r)
-		crypt_dump(cd);
+	if (r < 0)
+		goto out;
+
+	crypt_dump(cd);
+
+	/* Create or overwrite the root hash file */
+	if (ARG_SET(OPT_ROOT_HASH_FILE_ID)) {
+		root_hash_size = crypt_get_volume_key_size(cd);
+		root_hash_bytes = malloc(root_hash_size);
+		if (!root_hash_bytes) {
+			r = -ENOMEM;
+			goto out;
+		}
+
+		r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, root_hash_bytes, &root_hash_size, NULL, 0);
+		if (r < 0)
+			goto out;
+
+		root_hash_fd = open(ARG_STR(OPT_ROOT_HASH_FILE_ID), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+		if (root_hash_fd == -1) {
+			log_err(_("Cannot create root hash file %s for writing."), ARG_STR(OPT_ROOT_HASH_FILE_ID));
+			r = -EINVAL;
+			goto out;
+		}
+
+		for (i = 0; i < (int)root_hash_size; i++)
+			if (dprintf(root_hash_fd, "%02hhx", root_hash_bytes[i]) != 2) {
+				log_err(_("Cannot write to root hash file %s."), ARG_STR(OPT_ROOT_HASH_FILE_ID));
+				r = -EIO;
+				goto out;
+			}
+
+		log_dbg("Created root hash file %s.", ARG_STR(OPT_ROOT_HASH_FILE_ID));
+	}
 out:
 	crypt_free(cd);
 	free(CONST_CAST(char*)params.salt);
+	free(root_hash_bytes);
+	if (root_hash_fd != -1)
+		close(root_hash_fd);
 	return r;
 }
 
@@ -128,11 +165,11 @@ static int _activate(const char *dm_device,
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
 	uint32_t activate_flags = CRYPT_ACTIVATE_READONLY;
-	char *root_hash_bytes = NULL;
-	ssize_t hash_size;
+	char *root_hash_bytes = NULL, *root_hash_from_file = NULL;
+	ssize_t hash_size, hash_size_hex;
 	struct stat st;
 	char *signature = NULL;
-	int signature_size = 0, r;
+	int signature_size = 0, root_hash_fd = -1, r;
 
 	if ((r = crypt_init_data_device(&cd, hash_device, data_device)))
 		goto out;
@@ -165,6 +202,36 @@ static int _activate(const char *dm_device,
 		goto out;
 
 	hash_size = crypt_get_volume_key_size(cd);
+	hash_size_hex = 2 * hash_size;
+
+	if (!root_hash) {
+		root_hash_fd = open(ARG_STR(OPT_ROOT_HASH_FILE_ID), O_RDONLY);
+		if (root_hash_fd == -1) {
+			log_err(_("Cannot read root hash file %s."), ARG_STR(OPT_ROOT_HASH_FILE_ID));
+			goto out;
+		}
+
+		if (fstat(root_hash_fd, &st) || !S_ISREG(st.st_mode) || st.st_size < hash_size_hex) {
+			log_err(_("Invalid root hash file %s."), ARG_STR(OPT_ROOT_HASH_FILE_ID));
+			r = -EINVAL;
+			goto out;
+		}
+
+		root_hash_from_file = malloc(hash_size_hex + 1);
+		if (!root_hash_from_file) {
+			r = -ENOMEM;
+			goto out;
+		}
+
+		if (read_buffer(root_hash_fd, root_hash_from_file, hash_size_hex) != hash_size_hex) {
+			log_err(_("Cannot read root hash file %s."), root_hash_from_file);
+			goto out;
+		}
+
+		root_hash_from_file[hash_size_hex] = '\0';
+		root_hash = root_hash_from_file;
+	}
+
 	if (crypt_hex_to_bytes(root_hash, &root_hash_bytes, 0) != hash_size) {
 		log_err(_("Invalid root hash string specified."));
 		r = -EINVAL;
@@ -193,26 +260,39 @@ static int _activate(const char *dm_device,
 out:
 	crypt_safe_free(signature);
 	crypt_free(cd);
+	free(root_hash_from_file);
 	free(root_hash_bytes);
 	free(CONST_CAST(char*)params.salt);
+	if (root_hash_fd != -1)
+		close(root_hash_fd);
 	return r;
 }
 
 static int action_open(void)
 {
+	if (action_argc < 4 && !ARG_SET(OPT_ROOT_HASH_FILE_ID)) {
+		log_err(_("Command requires <root_hash> or --root-hash-file option as argument."));
+		return -EINVAL;
+	}
+
 	return _activate(action_argv[1],
 			 action_argv[0],
 			 action_argv[2],
-			 action_argv[3],
+			 ARG_SET(OPT_ROOT_HASH_FILE_ID) ? NULL : action_argv[3],
 			 ARG_SET(OPT_ROOT_HASH_SIGNATURE_ID) ? CRYPT_VERITY_ROOT_HASH_SIGNATURE : 0);
 }
 
 static int action_verify(void)
 {
+	if (action_argc < 3 && !ARG_SET(OPT_ROOT_HASH_FILE_ID)) {
+		log_err(_("Command requires <root_hash> or --root-hash-file option as argument."));
+		return -EINVAL;
+	}
+
 	return _activate(NULL,
 			 action_argv[0],
 			 action_argv[1],
-			 action_argv[2],
+			 ARG_SET(OPT_ROOT_HASH_FILE_ID) ? NULL : action_argv[2],
 			 CRYPT_VERITY_CHECK_HASH);
 }
 
@@ -396,8 +476,8 @@ static struct action_type {
 	const char *desc;
 } action_types[] = {
 	{ "format",	action_format, 2, N_("<data_device> <hash_device>"),N_("format device") },
-	{ "verify",	action_verify, 3, N_("<data_device> <hash_device> <root_hash>"),N_("verify device") },
-	{ "open",	action_open,   4, N_("<data_device> <name> <hash_device> <root_hash>"),N_("open device as <name>") },
+	{ "verify",	action_verify, 2, N_("<data_device> <hash_device> [<root_hash>]"),N_("verify device") },
+	{ "open",	action_open,   3, N_("<data_device> <name> <hash_device> [<root_hash>]"),N_("open device as <name>") },
 	{ "close",	action_close,  1, N_("<name>"),N_("close device (remove mapping)") },
 	{ "status",	action_status, 1, N_("<name>"),N_("show active device status") },
 	{ "dump",	action_dump,   1, N_("<hash_device>"),N_("show on-disk information") },

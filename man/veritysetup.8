@@ -28,9 +28,14 @@ If hash device path doesn't exist, it will be created as file.
 
 \fB<options>\fR can be [\-\-hash, \-\-no-superblock, \-\-format,
 \-\-data-block-size, \-\-hash-block-size, \-\-data-blocks, \-\-hash-offset,
-\-\-salt, \-\-uuid]
+\-\-salt, \-\-uuid, \-\-root-hash-file]
+
+If option \-\-root-hash-file is used, the root hash is stored in hex-encoded text
+format in <path>.
 .PP
 \fIopen\fR <data_device> <name> <hash_device> <root_hash>
+.br
+\fIopen\fR <data_device> <name> <hash_device> \-\-root-hash-file <path>
 .br
 \fIcreate\fR <name> <data_device> <hash_device> <root_hash>  (\fBOBSOLETE syntax\fR)
 .IP
@@ -41,12 +46,19 @@ The <root_hash> is a hexadecimal string.
 
 \fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock,
 \-\-ignore-corruption or \-\-restart-on-corruption, \-\-panic-on-corruption,
-\-\-ignore-zero-blocks, \-\-check-at-most-once, \-\-root-hash-signature]
+\-\-ignore-zero-blocks, \-\-check-at-most-once, \-\-root-hash-signature,
+\-\-root-hash-file]
+
+If option \-\-root-hash-file is used, the root hash is read from <path> instead
+of from the command line parameter. Expects hex-encoded text, without terminating
+newline.
 
 If option \-\-no-superblock is used, you have to use as the same options
 as in initial format operation.
 .PP
 \fIverify\fR <data_device> <hash_device> <root_hash>
+.br
+\fIverify\fR <data_device> <hash_device> \-\-root-hash-file <path>
 .IP
 Verifies data on data_device with use of hash blocks stored on hash_device.
 
@@ -54,7 +66,11 @@ This command performs userspace verification, no kernel device is created.
 
 The <root_hash> is a hexadecimal string.
 
-\fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock]
+If option \-\-root-hash-file is used, the root hash is read from <path> instead
+of from the command line parameter. Expects hex-encoded text, without terminating
+newline.
+
+\fB<options>\fR can be [\-\-hash-offset, \-\-no-superblock, \-\-root-hash-file]
 
 If option \-\-no-superblock is used, you have to use as the same options
 as in initial format operation.
@@ -181,6 +197,9 @@ This is the offset, in bytes, from the start of the FEC device to the beginning 
 Number of generator roots. This equals to the number of parity bytes in the encoding data.
 In RS(M, N) encoding, the number of roots is M-N. M is 255 and M-N is between 2 and 24 (including).
 .TP
+.B "\-\-root-hash-file=FILE"
+Path to file with stored root hash in hex-encoded text.
+.TP
 .B "\-\-root-hash-signature=FILE"
 Path to roothash signature file used to verify the root hash (in kernel).
 This feature requires Linux kernel version 5.4 or more recent.
@@ -207,9 +226,10 @@ Error codes are:
 Calculates and stores verification data on hash_device for the first 256 blocks (of block-size).
 If hash_device does not exist, it is created (as file image).
 
-.B "veritysetup format <data_device> <hash_device>"
+.B "veritysetup format --root-hash-file <path> <data_device> <hash_device>"
 
-Calculates and stores verification data on hash_device for the whole data_device.
+Calculates and stores verification data on hash_device for the whole data_device, and store the
+root hash as hex-encoded text in <path>.
 
 .B "veritysetup \-\-data-blocks=256 \-\-hash-offset=1052672 format <device> <device>"
 
@@ -224,6 +244,10 @@ as in the format command. The <root_hash> was calculated in format command.
 .B "veritysetup \-\-data-blocks=256 \-\-hash-offset=1052672 verify <data_device> <hash_device> <root_hash>"
 
 Verifies device without activation (in userspace).
+
+.B "veritysetup \-\-data-blocks=256 \-\-hash-offset=1052672 --root-hash-file <path> verify <data_device> <hash_device>"
+
+Verifies device without activation (in userspace). Root hash passed via a file rather than inline.
 
 .B "veritysetup \-\-fec-device=<fec_device> \-\-fec-roots=10 format <data_device> <hash_device>"
 

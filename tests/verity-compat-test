@@ -21,7 +21,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 >/dev/null 2>&1
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $IMG_HASH $DEV_OUT $FEC_DEV $IMG_TMP  >/dev/null 2>&1
+	rm -f $IMG $IMG.roothash $IMG_HASH $DEV_OUT $FEC_DEV $IMG_TMP >/dev/null 2>&1
 	LOOPDEV1=""
 	LOOPDEV2=""
 }
@@ -112,6 +112,10 @@ function check_root_hash_fail()
 
 function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
 {
+	local FORMAT_PARAMS
+	local VERIFY_PARAMS
+	local ROOT_HASH
+
 	if [ -z "$LOOPDEV2" ] ; then
 		BLOCKS=$(($6 / $1))
 		DEV_PARAMS="$LOOPDEV1 $LOOPDEV1 \
@@ -121,6 +125,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 		DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
 	fi
 
+	for root_hash_as_file in yes no; do
 	for sb in yes no; do
 	FORMAT_PARAMS="--format=$4 --data-block-size=$1 --hash-block-size=$1 --hash=$5 --salt=$3"
 	if [ $sb == yes ] ; then
@@ -129,20 +134,28 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 		FORMAT_PARAMS="$FORMAT_PARAMS --no-superblock"
 		VERIFY_PARAMS=$FORMAT_PARAMS
 	fi
+	if [ $root_hash_as_file == yes ] ; then
+		echo -n $2 > $IMG.roothash
+		FORMAT_PARAMS="$FORMAT_PARAMS --root-hash-file=$IMG.roothash"
+		VERIFY_PARAMS="$VERIFY_PARAMS --root-hash-file=$IMG.roothash"
+		ROOT_HASH=""
+	else
+		ROOT_HASH="$2"
+	fi
 
 	for fail in data hash; do
 	wipe
-	echo -n "V$4(sb=$sb) $5 block size $1: "
+	echo -n "V$4(sb=$sb root_hash_as_file=$root_hash_as_file) $5 block size $1: "
 	$VERITYSETUP format $DEV_PARAMS $FORMAT_PARAMS >$DEV_OUT || fail
 
 	echo -n "[root hash]"
 	compare_out "root hash" $2
 	compare_out "salt" "$3"
 
-	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $2 >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 || fail
 	echo -n "[verify]"
 
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $2  >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH  >>$DEV_OUT 2>&1 || fail
 	check_exists
 	echo -n "[activate]"
 
@@ -167,15 +180,16 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 		;;
 	esac
 
-	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $2 >>$DEV_OUT 2>&1 && \
+	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 && \
 		fail "userspace check for $TXT corruption"
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $2 >>$DEV_OUT 2>&1 || \
+	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 || \
 		fail "activation"
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null && \
 		fail "in-kernel check for $TXT corruption"
 	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail "deactivation"
 	echo "[$TXT corruption]"
+	done
 	done
 	done
 }
