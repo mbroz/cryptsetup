@@ -83,6 +83,10 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 /* CRC32 */
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
 
+/* Base64 */
+int crypt_base64_encode(char **out, size_t *out_length, const char *in, size_t in_length);
+int crypt_base64_decode(char **out, size_t *out_length, const char *in, size_t in_length);
+
 /* Block ciphers */
 int crypt_cipher_ivsize(const char *name, const char *mode);
 int crypt_cipher_wrapped_key(const char *name, const char *mode);
