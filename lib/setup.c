@@ -429,7 +429,7 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 	switch (ki) {
 		case CRYPT_SLOT_INVALID:
 			log_err(cd, _("Key slot %d is invalid, please select between 0 and %d."),
-				*keyslot, LUKS_NUMKEYS - 1);
+				*keyslot, crypt_keyslot_max(cd->type) - 1);
 			return -EINVAL;
 		case CRYPT_SLOT_INACTIVE:
 			break;

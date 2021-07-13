@@ -1015,7 +1015,7 @@ Using /dev/random can block a long time, potentially
 forever, if not enough entropy can be harvested by
 the kernel.
 .TP
-.B "\-\-key\-slot, \-S <0\-7>"
+.B "\-\-key\-slot, \-S <0\-N>"
 For LUKS operations that add key material, this options allows you
 to specify which key slot is selected for the new key.
 This option can be used for \fIluksFormat\fR,
@@ -1025,6 +1025,11 @@ In addition, for \fIopen\fR, this option selects a
 specific key-slot to compare the passphrase against.
 If the given passphrase would only match a different key-slot,
 the operation fails.
+
+Maximum number of key slots depends on LUKS version. LUKS1 can have
+up to 8 key slots. LUKS2 can have up to 32 key slots based on key slot
+area size and key size, but a valid key slot ID can always be between 0
+and 31 for LUKS2.
 .TP
 .B "\-\-key\-size, \-s <bits>"
 Sets key size in bits. The argument has to be a multiple of
