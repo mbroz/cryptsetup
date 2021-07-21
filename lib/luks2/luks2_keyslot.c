@@ -552,7 +552,7 @@ out:
 
 		if (r == -ENOMEM)
 			log_err(cd, _("Not enough available memory to open a keyslot."));
-		else if (r != -EPERM)
+		else if (r != -EPERM && r != -ENOENT)
 			log_err(cd, _("Keyslot open failed."));
 	}
 	return r;
@@ -589,7 +589,7 @@ int LUKS2_keyslot_open(struct crypt_device *cd,
 	if (r < 0) {
 		if (r == -ENOMEM)
 			log_err(cd, _("Not enough available memory to open a keyslot."));
-		else if (r != -EPERM)
+		else if (r != -EPERM && r != -ENOENT)
 			log_err(cd, _("Keyslot open failed."));
 	}
 
