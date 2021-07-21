@@ -2051,6 +2051,68 @@ static void Tokens(void)
 	ks = crypt_keyslot_change_by_passphrase(cd, 5, CRYPT_ANY_SLOT, PASSPHRASE1, strlen(PASSPHRASE1), PASSPHRASE1, strlen(PASSPHRASE1));
 	NOTFAIL_(ks, "Failed to change keyslot passphrase.");
 	OK_(crypt_token_is_assigned(cd, 10, ks));
+	CRYPT_FREE(cd);
+
+	// test token activation respects keyslot priorities
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+	OK_(set_fast_pbkdf(cd));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0,  NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	EQ_(crypt_keyslot_add_by_key(cd,        3,  NULL, 32, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 3);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 5,  NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 5);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 8,  NULL, 32, PASSPHRASE1, strlen(PASSPHRASE1)), 8);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 12, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 12);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 21, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 21);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 31, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 31);
+
+	OK_(crypt_keyslot_set_priority(cd, 0, CRYPT_SLOT_PRIORITY_IGNORE));
+	OK_(crypt_keyslot_set_priority(cd, 3, CRYPT_SLOT_PRIORITY_PREFER));
+	OK_(crypt_keyslot_set_priority(cd, 8, CRYPT_SLOT_PRIORITY_PREFER));
+	OK_(crypt_keyslot_set_priority(cd, 12,CRYPT_SLOT_PRIORITY_PREFER));
+
+	// expected unusable with CRYPT_ANY_TOKEN
+	EQ_(crypt_token_json_set(cd, 1, TEST_TOKEN_JSON("\"0\", \"3\"")), 1);
+
+	// expected unusable (-EPERM)
+	EQ_(crypt_token_json_set(cd, 5, TEST_TOKEN_JSON("\"8\"")), 5);
+
+	// expected unusable (-EPERM)
+	EQ_(crypt_token_json_set(cd, 4, TEST_TOKEN_JSON("\"8\", \"3\"")), 4);
+
+	// expected unusable (-ENOENT)
+	EQ_(crypt_token_json_set(cd, 6, TEST_TOKEN_JSON("\"3\"")), 6);
+
+	// expected unusable (-ENOENT)
+	EQ_(crypt_token_json_set(cd, 11, TEST_TOKEN_JSON("")), 11);
+
+	// expected to be used first with CRYPT_ANY_TOKEN (unlocks with high priority ks 12)
+	EQ_(crypt_token_json_set(cd, 20, TEST_TOKEN_JSON("\"12\", \"0\", \"3\"")), 20);
+
+	// expected usable with CRYPT_ANY_TOKEN
+	EQ_(crypt_token_json_set(cd, 8, TEST_TOKEN_JSON("\"5\", \"0\", \"3\"")), 8);
+
+	// of all tokens keyslot 12 has highest priority now
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", CRYPT_ANY_TOKEN, NULL, 0, passptr, 0), 12);
+	EQ_(crypt_activate_by_token_pin(cd, CDEVICE_1, "test_token", CRYPT_ANY_TOKEN, NULL, 0, passptr, 0), 12);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// with explicit token priority ignore may be used
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 1, NULL, 0, passptr, 0), 0);
+	EQ_(crypt_activate_by_token_pin(cd, CDEVICE_1, "test_token", 1, NULL, 0, passptr, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	EQ_(crypt_token_json_set(cd, 20, NULL), 20);
+
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", CRYPT_ANY_TOKEN, NULL, 0, passptr, 0), 5);
+
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 5, NULL, 0, passptr, 0), -EPERM);
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 4, NULL, 0, passptr, 0), -EPERM);
+
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 6, NULL, 0, passptr, 0), -ENOENT);
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 6, NULL, 0, passptr, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 3);
+
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 11, NULL, 0, passptr, 0), -ENOENT);
+	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 11, NULL, 0, passptr, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), -ENOENT);
 
 	CRYPT_FREE(cd);
 
