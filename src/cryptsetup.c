@@ -3424,7 +3424,7 @@ static int action_reencrypt(void)
 
 	if (r >= 0 && !ARG_SET(OPT_INIT_ONLY_ID)) {
 		set_int_handler(0);
-		r = crypt_reencrypt(cd, tools_reencrypt_progress, &prog_parms);
+		r = crypt_reencrypt_run(cd, tools_reencrypt_progress, &prog_parms);
 	}
 out:
 	crypt_free(cd);

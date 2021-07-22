@@ -2482,6 +2482,21 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 	const struct crypt_params_reencrypt *params);
 
 /**
+ * Legacy data reencryption function.
+ *
+ * @param cd crypt device handle
+ * @param progress is a callback function reporting device \b size,
+ * current \b offset of reencryption and provided \b usrptr identification
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @deprecated Use @link crypt_reencrypt_run @endlink instead.
+ */
+int crypt_reencrypt(struct crypt_device *cd,
+		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
+__attribute__((deprecated("Use crypt_reencrypt_run instead.")));
+
+/**
  * Run data reencryption.
  *
  * @param cd crypt device handle
@@ -2491,7 +2506,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
  *
  * @return @e 0 on success or negative errno value otherwise.
  */
-int crypt_reencrypt(struct crypt_device *cd,
+int crypt_reencrypt_run(struct crypt_device *cd,
 		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
 		    void *usrptr);
 

@@ -3883,7 +3883,7 @@ static void Luks2Reencryption(void)
 
 	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &getflags));
 	EQ_(getflags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 0);
-	FAIL_(crypt_reencrypt(cd, NULL, NULL), "Reencryption context not initialized.");
+	FAIL_(crypt_reencrypt_run(cd, NULL, NULL), "Reencryption context not initialized.");
 
 	rparams.flags &= ~CRYPT_REENCRYPT_RESUME_ONLY;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams));
@@ -3916,7 +3916,7 @@ static void Luks2Reencryption(void)
 
 	rparams.flags = 0;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams));
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 
 	/* check keyslots are reassigned to segment after reencryption */
 	EQ_(crypt_keyslot_status(cd, 0), CRYPT_SLOT_INACTIVE);
@@ -3940,10 +3940,10 @@ static void Luks2Reencryption(void)
 	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 9, 21, "aes", "xts-plain64", &rparams), "Invalid device size alignment.");
 	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &getflags));
 	EQ_(getflags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT, CRYPT_REQUIREMENT_ONLINE_REENCRYPT);
-	FAIL_(crypt_reencrypt(cd, NULL, NULL), "Reencryption context not initialized.");
+	FAIL_(crypt_reencrypt_run(cd, NULL, NULL), "Reencryption context not initialized.");
 	rparams.device_size = 16;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 9, 21, "aes", "xts-plain64", &rparams));
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &getflags));
 	EQ_(getflags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 0);
 
@@ -3977,7 +3977,7 @@ static void Luks2Reencryption(void)
 
 	rparams.hash = "sha1";
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams));
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 
 	/* FIXME: this is a bug, but not critical (data shift parameter is ignored after initialization) */
 	//rparams.data_shift = 8;
@@ -4004,7 +4004,7 @@ static void Luks2Reencryption(void)
 	FAIL_(crypt_reencrypt_init_by_passphrase(cd2, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams), "Reencryption already running.");
 	rparams.flags = 0;
 	FAIL_(crypt_reencrypt_init_by_passphrase(cd2, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams), "Reencryption already running.");
-	FAIL_(crypt_reencrypt(cd2, NULL, NULL), "Invalid reencryption context.");
+	FAIL_(crypt_reencrypt_run(cd2, NULL, NULL), "Invalid reencryption context.");
 	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &getflags));
 	EQ_(getflags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT, CRYPT_REQUIREMENT_ONLINE_REENCRYPT);
 	OK_(crypt_persistent_flags_get(cd2, CRYPT_FLAGS_REQUIREMENTS, &getflags));
@@ -4013,7 +4013,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_reencrypt_status(cd2, NULL), CRYPT_REENCRYPT_CLEAN);
 	FAIL_(crypt_activate_by_passphrase(cd2, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), "Reencryption already in progress.");
 	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), "Reencryption already in progress.");
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 	CRYPT_FREE(cd2);
 
@@ -4032,7 +4032,7 @@ static void Luks2Reencryption(void)
 
 	/* interrupt reencryption after 'test_progress_steps' */
 	test_progress_steps = 1;
-	OK_(crypt_reencrypt(cd, &test_progress, NULL));
+	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_CLEAN);
 
 	NOTFAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), "Could not activate device in reencryption.");
@@ -4051,7 +4051,7 @@ static void Luks2Reencryption(void)
 	rparams.device_size = 2;
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	NOTFAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, 1, "aes", "xts-plain64", &rparams), "Failed to initialize reencryption.");
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, PASSPHRASE, strlen(PASSPHRASE), 0), 1);
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
@@ -4124,7 +4124,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_get_data_offset(cd), 32776);
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, 1, "aes", "xts-plain64", &rparams), 2);
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
@@ -4157,7 +4157,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_get_data_offset(cd), 32760);
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 1, 0, "aes", "xts-plain64", &rparams), 2);
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
@@ -4186,7 +4186,7 @@ static void Luks2Reencryption(void)
 	EQ_(cad.size, 8);
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	EQ_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 0, 1, "aes", "xts-plain64", &rparams), 2);
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -4225,7 +4225,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_get_data_offset(cd), 8192);
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, NULL, NULL, &rparams), 0);
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
@@ -4245,7 +4245,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_get_data_offset(cd), 8192);
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, NULL, NULL, &rparams), 0);
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
@@ -4287,7 +4287,7 @@ static void Luks2Reencryption(void)
 	rparams.resilience = "none";
 	rparams.max_hotzone_size = 2048;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
@@ -4308,7 +4308,7 @@ static void Luks2Reencryption(void)
 	rparams.resilience = "none";
 	rparams.max_hotzone_size = 2048;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 
 	/* decryption with data shift */
@@ -4332,7 +4332,7 @@ static void Luks2Reencryption(void)
 	rparams.data_shift = r_header_size;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
 	EQ_(crypt_get_data_offset(cd), 0);
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	remove(BACKUP_FILE);
 	CRYPT_FREE(cd);
 
@@ -4362,7 +4362,7 @@ static void Luks2Reencryption(void)
 	rparams.data_shift = r_header_size;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_2, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
 	EQ_(crypt_get_data_offset(cd), 0);
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	remove(BACKUP_FILE);
 	OK_(t_device_size(DMDIR CDEVICE_2, &r_size_1));
 	EQ_(r_size_1, 512);
@@ -4395,7 +4395,7 @@ static void Luks2Reencryption(void)
 	rparams.luks2 = &params2;
 
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 
 	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd2, CRYPT_LUKS2, NULL));
@@ -4423,7 +4423,7 @@ static void Luks2Reencryption(void)
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
 	/* reencrypt 8 srectors of device */
 	test_progress_steps = 1;
-	OK_(crypt_reencrypt(cd, &test_progress, NULL));
+	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
 
 	/* activate another data device with same LUKS2 header (this is wrong, but we can't detect such mistake) */
 	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
@@ -4435,7 +4435,7 @@ static void Luks2Reencryption(void)
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
 	test_progress_steps = 1;
-	OK_(crypt_reencrypt(cd, &test_progress, NULL));
+	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
 
 	/* Now active mapping for second data device does not match its metadata */
 	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
@@ -4468,7 +4468,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "xts-plain64", &rparams));
 	test_progress_steps = 1;
-	OK_(crypt_reencrypt(cd, &test_progress, NULL));
+	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_CLEAN);
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
 	EQ_(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS, CRYPT_ACTIVATE_ALLOW_DISCARDS);
@@ -4477,7 +4477,7 @@ static void Luks2Reencryption(void)
 	OK_(crypt_init_by_name(&cd, CDEVICE_1));
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "xts-plain64", &rparams));
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
 	EQ_(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS, CRYPT_ACTIVATE_ALLOW_DISCARDS);
 	EQ_(cad.flags & CRYPT_ACTIVATE_KEYRING_KEY, 0);
@@ -4505,7 +4505,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_keyslot_add_by_key(cd, 9, key, key_size, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 9);
 	EQ_(crypt_keyslot_add_by_key(cd, 10, key, key_size, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_DIGEST_REUSE ), 10);
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 3, 9, "aes", "xts-plain64", &rparams));
-	OK_(crypt_reencrypt(cd, NULL, NULL));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
 	OK_(crypt_keyslot_destroy(cd, 9));
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
