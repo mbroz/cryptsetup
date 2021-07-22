@@ -1538,7 +1538,7 @@ static int action_open_luks(void)
 		tools_keyslot_msg(r, UNLOCKED);
 
 		/* Token requires PIN, but ask only there will be no password query later */
-		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -EAGAIN) {
+		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO) {
 			r = tools_get_key(_("Enter token PIN:"), &password, &passwordLen, 0, 0, NULL,
 					ARG_UINT32(OPT_TIMEOUT_ID), _verify_passphrase(0), 0, cd);
 			if (r < 0)
