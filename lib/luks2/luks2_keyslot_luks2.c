@@ -326,13 +326,6 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	keyslot_key_len = json_object_get_int(jobj2);
 
 	/*
-	 * If requested, serialize unlocking for memory-hard KDF. Usually NOOP.
-	 */
-	if (pbkdf.max_memory_kb > MIN_MEMORY_FOR_SERIALIZE_LOCK_KB)
-		try_serialize_lock = true;
-	if (try_serialize_lock && crypt_serialize_lock(cd))
-		return -EINVAL;
-	/*
 	 * Allocate derived key storage space.
 	 */
 	derived_key = crypt_alloc_volume_key(keyslot_key_len, NULL);
@@ -342,9 +335,18 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	AFEKSize = AF_split_sectors(volume_key_len, LUKS_STRIPES) * SECTOR_SIZE;
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey) {
-		crypt_free_volume_key(derived_key);
-		return -ENOMEM;
+		r = -ENOMEM;
+		goto out;
 	}
+
+	/*
+	 * If requested, serialize unlocking for memory-hard KDF. Usually NOOP.
+	 */
+	if (pbkdf.max_memory_kb > MIN_MEMORY_FOR_SERIALIZE_LOCK_KB)
+		try_serialize_lock = true;
+	if (try_serialize_lock && (r = crypt_serialize_lock(cd)))
+		goto out;
+
 	/*
 	 * Calculate derived key, decrypt keyslot content and merge it.
 	 */
@@ -367,6 +369,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	if (r == 0)
 		r = AF_merge(cd, AfKey, volume_key, volume_key_len, LUKS_STRIPES, af_hash);
 
+out:
 	crypt_free_volume_key(derived_key);
 	crypt_safe_free(AfKey);
 
