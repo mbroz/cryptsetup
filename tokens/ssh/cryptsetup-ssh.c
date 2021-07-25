@@ -105,7 +105,7 @@ static int token_add(
 
 	r = crypt_token_json_set(cd, CRYPT_ANY_TOKEN, string_token);
 	if (r < 0) {
-		l_err(cd, "Failed to write ssh token json.");
+		l_err(cd, _("Failed to write ssh token json."));
 		goto out;
 	}
 
@@ -123,30 +123,30 @@ out:
 
 const char *argp_program_version = "cryptsetup-ssh " PACKAGE_VERSION;
 
-static char doc[] = "Experimental cryptsetup plugin for unlocking LUKS2 devices with token connected " \
-		    "to an SSH server\v" \
-		    "This plugin currently allows only adding a token to an existing key slot.\n\n" \
-		    "Specified SSH server must contain a key file on the specified path with " \
-		    "a passphrase for an existing key slot on the device.\n" \
-		    "Provided credentials will be used by cryptsetup to get the password when " \
-		    "opening the device using the token.\n\n" \
-		    "Note: The information provided when adding the token (SSH server address, user and paths) " \
-		    "will be stored in the LUKS2 header in plaintext.";
+static char doc[] = N_("Experimental cryptsetup plugin for unlocking LUKS2 devices with token connected " \
+		       "to an SSH server\v" \
+		       "This plugin currently allows only adding a token to an existing key slot.\n\n" \
+		       "Specified SSH server must contain a key file on the specified path with " \
+		       "a passphrase for an existing key slot on the device.\n" \
+		       "Provided credentials will be used by cryptsetup to get the password when " \
+		       "opening the device using the token.\n\n" \
+		       "Note: The information provided when adding the token (SSH server address, user and paths) " \
+		       "will be stored in the LUKS2 header in plaintext.");
 
-static char args_doc[] = "<action> <device>";
+static char args_doc[] = N_("<action> <device>");
 
 static struct argp_option options[] = {
-	{0,		0,		0,	  0, "Options for the 'add' action:" },
-	{"ssh-server",	OPT_SSH_SERVER, "STRING", 0, "IP address/URL of the remote server for this token" },
-	{"ssh-user",	OPT_SSH_USER, 	"STRING", 0, "Username used for the remote server" },
-	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, "Path to the key file on the remote server"},
-	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, "Path to the SSH key for connecting to the remote server" },
-	{"key-slot",	OPT_KEY_SLOT,	"NUM",	  0, "Keyslot to assing the token to. If not specified, token will "\
-						     "be assigned to the first keyslot matching provided passphrase."},
-	{0,		0,		0,	  0, "Generic options:" },
-	{"verbose",	'v',		0,	  0, "Shows more detailed error messages"},
-	{"debug",	OPT_DEBUG,	0,	  0, "Show debug messages"},
-	{"debug-json",  OPT_DEBUG_JSON, 0,	  0, "Show debug messages including JSON metadata"},
+	{0,		0,		0,	  0, N_("Options for the 'add' action:")},
+	{"ssh-server",	OPT_SSH_SERVER, "STRING", 0, N_("IP address/URL of the remote server for this token")},
+	{"ssh-user",	OPT_SSH_USER, 	"STRING", 0, N_("Username used for the remote server")},
+	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, N_("Path to the key file on the remote server")},
+	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, N_("Path to the SSH key for connecting to the remote server")},
+	{"key-slot",	OPT_KEY_SLOT,	"NUM",	  0, N_("Keyslot to assing the token to. If not specified, token will "\
+						        "be assigned to the first keyslot matching provided passphrase.")},
+	{0,		0,		0,	  0, N_("Generic options:")},
+	{"verbose",	'v',		0,	  0, N_("Shows more detailed error messages")},
+	{"debug",	OPT_DEBUG,	0,	  0, N_("Show debug messages")},
+	{"debug-json",  OPT_DEBUG_JSON, 0,	  0, N_("Show debug messages including JSON metadata")},
 	{ NULL,		0, 		0, 0, NULL }
 };
 
@@ -257,12 +257,13 @@ static int get_keyslot_for_passphrase(struct arguments *arguments, const char *p
 	r = ssh_pki_import_privkey_file(arguments->ssh_keypath, pin, NULL, NULL, &pkey);
 	if (r != SSH_OK) {
 		if (r == SSH_EOF) {
-			crypt_log(cd, CRYPT_LOG_ERROR, "Failed to open and import private key:\n");
+			crypt_log(cd, CRYPT_LOG_ERROR, _("Failed to open and import private key:\n"));
 			crypt_free(cd);
 			return -EINVAL;
 		} else {
-			_log(CRYPT_LOG_ERROR, "Failed to import private key (password protected?).\n", NULL);
-			r = asprintf(&prompt, "%s@%s's password: ", arguments->ssh_user, arguments->ssh_server);
+			_log(CRYPT_LOG_ERROR, _("Failed to import private key (password protected?).\n"), NULL);
+			/* TRANSLATORS: SSH credentials prompt, e.g. "user@server's password: " */
+			r = asprintf(&prompt, _("%s@%s's password: "), arguments->ssh_user, arguments->ssh_server);
 			if (r < 0) {
 				crypt_safe_free(ssh_pass);
 				crypt_free(cd);
@@ -345,9 +346,13 @@ int main(int argc, char *argv[])
 	struct arguments arguments = { 0 };
 	arguments.keyslot = CRYPT_ANY_SLOT;
 
+	setlocale(LC_ALL, "");
+	bindtextdomain(PACKAGE, LOCALEDIR);
+	textdomain(PACKAGE);
+
 	ret = argp_parse (&argp, argc, argv, 0, 0, &arguments);
 	if (ret != 0) {
-		printf("Failed to parse arguments.\n");
+		printf(_("Failed to parse arguments.\n"));
 		return EXIT_FAILURE;
 	}
 
@@ -358,40 +363,40 @@ int main(int argc, char *argv[])
 		crypt_set_debug_level(CRYPT_DEBUG_JSON);
 
 	if (arguments.action == NULL) {
-		printf("An action must be specified\n");
+		printf(_("An action must be specified\n"));
 		return EXIT_FAILURE;
 	}
 
 	if (strcmp("add", arguments.action) == 0) {
 		if (!arguments.device) {
-			printf("Device must be specified for '%s' action.\n", arguments.action);
+			printf(_("Device must be specified for '%s' action.\n"), arguments.action);
 			return EXIT_FAILURE;
 		}
 
 		if (!arguments.ssh_server) {
-			printf("SSH server must be specified for '%s' action.\n", arguments.action);
+			printf(_("SSH server must be specified for '%s' action.\n"), arguments.action);
 			return EXIT_FAILURE;
 		}
 
 		if (!arguments.ssh_user) {
-			printf("SSH user must be specified for '%s' action.\n", arguments.action);
+			printf(_("SSH user must be specified for '%s' action.\n"), arguments.action);
 			return EXIT_FAILURE;
 		}
 
 		if (!arguments.ssh_path) {
-			printf("SSH path must be specified for '%s' action.\n", arguments.action);
+			printf(_("SSH path must be specified for '%s' action.\n"), arguments.action);
 			return EXIT_FAILURE;
 		}
 
 		if (!arguments.ssh_keypath) {
-			printf("SSH key path must be specified for '%s' action.\n", arguments.action);
+			printf(_("SSH key path must be specified for '%s' action.\n"), arguments.action);
 			return EXIT_FAILURE;
 		}
 
 		if (arguments.keyslot == CRYPT_ANY_SLOT) {
 			ret = get_keyslot_for_passphrase(&arguments, NULL);
 			if (ret != 0) {
-				printf("Failed open %s using provided credentials.\n", arguments.device);
+				printf(_("Failed open %s using provided credentials.\n"), arguments.device);
 				return EXIT_FAILURE;
 			}
 		}
@@ -407,7 +412,7 @@ int main(int argc, char *argv[])
 		else
 			return EXIT_SUCCESS;
 	} else {
-		printf("Only 'add' action is currently supported by this plugin.\n");
+		printf(_("Only 'add' action is currently supported by this plugin.\n"));
 		return EXIT_FAILURE;
 	}
 }
