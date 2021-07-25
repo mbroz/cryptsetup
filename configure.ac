@@ -402,6 +402,7 @@ AC_CHECK_DECLS([json_object_deep_copy], [], [], [#include <json-c/json.h>])
 dnl Check for libssh for SSH plugin
 if test "x$enable_ssh_token" = "xyes"; then
 	PKG_CHECK_MODULES([LIBSSH], [libssh])
+	AC_CHECK_DECLS([ssh_session_is_known_server], [], [], [#include <libssh/libssh.h>])
 fi
 
 dnl Crypto backend configuration.
