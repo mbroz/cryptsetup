@@ -123,7 +123,11 @@ ssh_session sshplugin_session_init(struct crypt_device *cd, const char *host, co
 		goto out;
 	}
 
+#if HAVE_DECL_SSH_SESSION_IS_KNOWN_SERVER
 	r = ssh_session_is_known_server(ssh);
+#else
+	r = ssh_is_server_known(ssh);
+#endif
 	if (r != SSH_SERVER_KNOWN_OK) {
 		crypt_log(cd, CRYPT_LOG_ERROR, _("Server not known: "));
 		r = SSH_AUTH_ERROR;
