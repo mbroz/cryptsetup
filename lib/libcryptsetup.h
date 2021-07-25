@@ -2494,7 +2494,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
  */
 int crypt_reencrypt(struct crypt_device *cd,
 		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
-__attribute__((deprecated("Use crypt_reencrypt_run instead.")));
+__attribute__((deprecated));
 
 /**
  * Run data reencryption.
