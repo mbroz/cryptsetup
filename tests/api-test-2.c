@@ -1900,7 +1900,7 @@ static void Tokens(void)
 			"\"key_description\":" y ", \"some_field\":\"some_value\"}"
 
 
-	int ks;
+	int ks, token_max;
 	const char *dummy;
 	const char *cipher = "aes";
 	const char *cipher_mode = "xts-plain64";
@@ -2085,8 +2085,11 @@ static void Tokens(void)
 	// expected unusable (-ENOENT)
 	EQ_(crypt_token_json_set(cd, 11, TEST_TOKEN_JSON("")), 11);
 
+	token_max = crypt_token_max(CRYPT_LUKS2) - 1;
+	GE_(token_max, 0);
+
 	// expected to be used first with CRYPT_ANY_TOKEN (unlocks with high priority ks 12)
-	EQ_(crypt_token_json_set(cd, 20, TEST_TOKEN_JSON("\"12\", \"0\", \"3\"")), 20);
+	EQ_(crypt_token_json_set(cd, token_max, TEST_TOKEN_JSON("\"12\", \"0\", \"3\"")), token_max);
 
 	// expected usable with CRYPT_ANY_TOKEN
 	EQ_(crypt_token_json_set(cd, 8, TEST_TOKEN_JSON("\"5\", \"0\", \"3\"")), 8);
@@ -2101,7 +2104,7 @@ static void Tokens(void)
 	EQ_(crypt_activate_by_token_pin(cd, CDEVICE_1, "test_token", 1, NULL, 0, passptr, 0), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
-	EQ_(crypt_token_json_set(cd, 20, NULL), 20);
+	EQ_(crypt_token_json_set(cd, token_max, NULL), token_max);
 
 	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", CRYPT_ANY_TOKEN, NULL, 0, passptr, 0), 5);
 

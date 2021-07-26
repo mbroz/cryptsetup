@@ -31,6 +31,8 @@
 # define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
+#define BITFIELD_SIZE(BF_PTR) (sizeof(*(BF_PTR)) * 8)
+
 #define MOVE_REF(x, y) \
 	do { \
 		__typeof__(x) *_px = &(x), *_py = &(y); \
