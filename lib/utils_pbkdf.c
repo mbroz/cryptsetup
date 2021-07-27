@@ -92,7 +92,7 @@ int verify_pbkdf_params(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	if (!pbkdf->type ||
+	if (!pbkdf || !pbkdf->type ||
 	    (!pbkdf->hash && !strcmp(pbkdf->type, "pbkdf2")))
 		return -EINVAL;
 
