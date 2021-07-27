@@ -129,8 +129,8 @@ to unlock a keyslot (LUKS) or to derive a volume key again (plain mode).
 The kernel keyring is used by default for LUKS2 devices.
 
 With LUKS2 device additional \fB<options>\fR can be [\-\-token\-id, \-\-token\-only,
-\-\-key\-slot, \-\-key\-file, \-\-keyfile\-size, \-\-keyfile\-offset, \-\-timeout,
-\-\-disable\-external\-tokens, \-\-disable\-locks, \-\-disable\-keyring].
+\-\-token-type, \-\-key\-slot, \-\-key\-file, \-\-keyfile\-size, \-\-keyfile\-offset,
+\-\-timeout, \-\-disable\-external\-tokens, \-\-disable\-locks, \-\-disable\-keyring].
 
 .PP
 \fIrefresh\fR <name>
@@ -320,8 +320,8 @@ the command prompts for it interactively.
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
 \-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file, \-\-token\-id,
-\-\-token\-only, \-\-disable\-external\-tokens, \-\-disable\-keyring, \-\-disable\-locks,
-\-\-type, \-\-refresh, \-\-serialize\-memory\-hard\-pbkdf].
+\-\-token\-only, \-\-token-type, \-\-disable\-external\-tokens, \-\-disable\-keyring,
+\-\-disable\-locks, \-\-type, \-\-refresh, \-\-serialize\-memory\-hard\-pbkdf].
 .PP
 \fIluksSuspend\fR <name>
 .IP
@@ -1348,6 +1348,10 @@ passphrase prompt.
 Do not proceed further with action (any of \fItoken\fR, \fIopen\fR or
 \fIresize\fR) if token activation failed. Without the option,
 action asks for passphrase to proceed further.
+.TP
+.B "\-\-token\-type"
+Restrict tokens eligible for operation to specific token type (name). Mostly
+useful when no \-\-token\-id is specified.
 .TP
 .B "\-\-sector\-size <bytes>"
 Set sector size for use with disk encryption. It must be power of two

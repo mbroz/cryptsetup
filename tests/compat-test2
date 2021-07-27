@@ -851,6 +851,14 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	$CRYPTSETUP open --token-only $LOOPDEV $DEV_NAME || fail
 	$CRYPTSETUP status $DEV_NAME > /dev/null || fail
 	$CRYPTSETUP close $DEV_NAME || fail
+
+	# check --token-type sort of works (TODO: extend tests when native systemd tokens are available)
+	echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 22 || fail
+	# this excludes keyring tokens from unlocking device
+	$CRYPTSETUP open --token-only --token-type some_type $LOOPDEV --test-passphrase && fail
+	$CRYPTSETUP open --token-only --token-type some_type $LOOPDEV $DEV_NAME && fail
+	$CRYPTSETUP status $DEV_NAME > /dev/null && fail
+
 	$CRYPTSETUP token remove --token-id 3 $LOOPDEV || fail
 	$CRYPTSETUP luksDump $LOOPDEV | grep -q -e "3: luks2-keyring" && fail
 

@@ -175,6 +175,8 @@ ARG(OPT_TOKEN_ID, '\0', POPT_ARG_STRING, N_("Token number (default: any)"), "INT
 
 ARG(OPT_TOKEN_ONLY, '\0', POPT_ARG_NONE, N_("Do not ask for passphrase if activation by token fails"), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_TOKEN_TYPE, '\0', POPT_ARG_STRING, N_("Restrict allowed token types used to retrieve LUKS2 key"), NULL, CRYPT_ARG_STRING, {}, {})
+
 ARG(OPT_TRIES, 'T', POPT_ARG_STRING, N_("How often the input of the passphrase can be retried"), "INT", CRYPT_ARG_UINT32, { .u32_value = 3 }, {})
 
 ARG(OPT_TYPE, 'M', POPT_ARG_STRING, N_("Type of device metadata: luks, luks1, luks2, plain, loopaes, tcrypt, bitlk"), NULL, CRYPT_ARG_STRING, {}, {})

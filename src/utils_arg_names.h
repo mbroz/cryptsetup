@@ -144,6 +144,7 @@
 #define OPT_TIMEOUT			"timeout"
 #define OPT_TOKEN_ID			"token-id"
 #define OPT_TOKEN_ONLY			"token-only"
+#define OPT_TOKEN_TYPE			"token-type"
 #define OPT_TRIES			"tries"
 #define OPT_TYPE			"type"
 #define OPT_UNBOUND			"unbound"
