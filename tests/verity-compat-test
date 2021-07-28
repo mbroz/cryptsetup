@@ -233,9 +233,9 @@ function check_fec()
 	if [ "${11}" == "n" ]; then
 		INDEX=24
 		echo -n "[no-superblock]"
-		PARAMS="$PARAMS --no-superblock -s=${12}"
+		PARAMS="$PARAMS --no-superblock --salt=${12}"
 	elif [ -n "${12}" ]; then
-		PARAMS="$PARAMS -s=${12}"
+		PARAMS="$PARAMS --salt=${12}"
 	fi
 
 	if [[ "$1" == "$2" && "$1" == "$3" ]]; then
