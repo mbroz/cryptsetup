@@ -37,6 +37,9 @@ skip()
 }
 
 add_device() {
+	rmmod scsi_debug 2>/dev/null
+	[ -d /sys/module/scsi_debug ] && skip "Cannot use scsi_debug module (in use or compiled-in)."
+
 	modprobe scsi_debug $@ delay=0
 	[ $? -ne 0 ] && skip "This kernel seems to not support proper scsi_debug module."
 
@@ -310,8 +313,8 @@ fi
 echo "[4] Disappeared device test:"
 KEY="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
 for F in LUKS1 LUKS2 BITLK TCRYPT; do
-	echo -n "$F"
 	add_device dev_size_mb=1 sector_size=512 num_tgts=1 lbpu=1
+	echo -n "$F"
 	# Fake CRYPT UUID to force code to parse type-specific path
 	dmsetup create $DEV_NAME --uuid CRYPT-$F-$DEV_NAME --table "0 1024 crypt aes-xts-plain64 $KEY 16 /dev/$SCSI_DEV 16"
 	$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail

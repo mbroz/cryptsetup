@@ -181,6 +181,10 @@ fi
 dm_crypt_features
 modprobe --dry-run scsi_debug || exit 77
 cleanup
+if [ -d /sys/module/scsi_debug ] ; then
+	echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
+	exit 77
+fi
 
 echo "# Create desktop-class 4K drive"
 echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=0)"

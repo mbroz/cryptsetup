@@ -163,6 +163,10 @@ fi
 dm_crypt_features
 modprobe --dry-run scsi_debug || exit 77
 cleanup
+if [ -d /sys/module/scsi_debug ] ; then
+	echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
+	exit 77
+fi
 
 add_device dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q  >/dev/null || fail
