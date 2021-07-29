@@ -56,7 +56,7 @@ function remove_mapping()
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
 	unset TEST_KEYRING
 
-	rmmod scsi_debug 2> /dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 	scsi_debug_teardown $DEV
 }
 
@@ -252,14 +252,14 @@ scsi_debug_teardown() {
 	local _tries=15;
 
 	while [ -b "$1" -a $_tries -gt 0 ]; do
-		rmmod scsi_debug 2> /dev/null
+		rmmod scsi_debug >/dev/null 2>&1
 		if [ -b "$1" ]; then
 			sleep .1
 			_tries=$((_tries-1))
 		fi
 	done
 
-	test ! -b "$1" || rmmod scsi_debug 2> /dev/null
+	test ! -b "$1" || rmmod scsi_debug >/dev/null 2>&1
 }
 
 function add_scsi_device() {
@@ -796,7 +796,7 @@ if dm_crypt_keyring_flawed; then
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	# key must not load in kernel key even when dm-crypt module is missing
-	if rmmod dm-crypt > /dev/null 2>&1; then
+	if rmmod dm-crypt >/dev/null 2>&1; then
 		echo $PWD1 | $CRYPTSETUP open $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 		$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
 		$CRYPTSETUP close $DEV_NAME || fail
@@ -808,7 +808,7 @@ if dm_crypt_keyring_support && dm_crypt_keyring_new_kernel; then
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
 
 	# check keyring support detection works as expected
-	rmmod dm-crypt > /dev/null 2>&1 || true
+	rmmod dm-crypt >/dev/null 2>&1 || true
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "keyring" || fail
 	$CRYPTSETUP close $DEV_NAME || fail

@@ -42,7 +42,7 @@ function dm_crypt_features()
 
 function del_scsi_device()
 {
-	rmmod scsi_debug 2>/dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 	sleep 2
 }
 

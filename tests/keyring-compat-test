@@ -35,7 +35,7 @@ function remove_mapping()
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
 
-	rmmod scsi_debug 2>/dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 
 	rm -f $CHKS_DMCRYPT $CHKS_KEYRING
 }
@@ -96,7 +96,7 @@ function fips_mode()
 }
 
 add_device() {
-	rmmod scsi_debug 2>/dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 	if [ -d /sys/module/scsi_debug ] ; then
 		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
 		exit 77
@@ -120,7 +120,7 @@ which dmsetup >/dev/null 2>&1 || skip "Cannot find dmsetup, test skipped"
 which keyctl >/dev/null 2>&1 || skip "Cannot find keyctl, test skipped"
 which xxd >/dev/null 2>&1 || skip "Cannot find xxd, test skipped"
 which sha1sum > /dev/null 2>&1 || skip "Cannot find sha1sum, test skipped"
-modprobe dm-crypt || fail "dm-crypt failed to load"
+modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
 dm_crypt_keyring_support || skip "dm-crypt doesn't support kernel keyring, test skipped."
 
 test_and_prepare_keyring

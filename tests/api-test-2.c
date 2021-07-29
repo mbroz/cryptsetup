@@ -430,13 +430,13 @@ static int _setup(void)
 
 	_system(" [ ! -d " CONV_DIR " ] && tar xJf " CONV_DIR ".tar.xz 2>/dev/null", 1);
 
-	if (_system("modprobe dm-crypt", 1))
+	if (_system("modprobe dm-crypt >/dev/null 2>&1", 1))
 		return 1;
 
 	if (t_dm_check_versions())
 		return 1;
 
-	_system("rmmod dm-crypt", 0);
+	_system("rmmod dm-crypt >/dev/null 2>&1", 0);
 
 	_fips_mode = fips_mode();
 	if (_debug)

@@ -17,7 +17,7 @@ cleanup() {
 	    umount -f $MNT_DIR 2>/dev/null
 	    rmdir $MNT_DIR 2>/dev/null
 	fi
-	rmmod scsi_debug 2>/dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 }
 
 fail()
@@ -37,7 +37,7 @@ skip()
 }
 
 add_device() {
-	rmmod scsi_debug 2>/dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 	[ -d /sys/module/scsi_debug ] && skip "Cannot use scsi_debug module (in use or compiled-in)."
 
 	modprobe scsi_debug $@ delay=0
@@ -51,7 +51,7 @@ add_device() {
 
 function dm_crypt_features()
 {
-	modprobe dm-crypt || fail "dm-crypt failed to load"
+	modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
 
@@ -322,7 +322,7 @@ for F in LUKS1 LUKS2 BITLK TCRYPT; do
 	udevadm settle >/dev/null 2>&1
 	$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
 	dmsetup remove $DEV_NAME --retry || fail
-	rmmod scsi_debug
+	rmmod scsi_debug >/dev/null 2>&1
 	echo -n "[OK] "
 done
 echo

@@ -53,7 +53,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME >/dev/null 2>&1
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $VK_FILE missing-file >/dev/null 2>&1
-	rmmod scsi_debug 2> /dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 	scsi_debug_teardown $DEV
 }
 
@@ -165,14 +165,14 @@ scsi_debug_teardown() {
 	local _tries=15;
 
 	while [ -b "$1" -a $_tries -gt 0 ]; do
-		rmmod scsi_debug 2> /dev/null
+		rmmod scsi_debug >/dev/null 2>&1
 		if [ -b "$1" ]; then
 			sleep .1
 			_tries=$((_tries-1))
 		fi
 	done
 
-	test ! -b "$1" || rmmod scsi_debug 2> /dev/null
+	test ! -b "$1" || rmmod scsi_debug >/dev/null 2>&1
 }
 
 function add_scsi_device() {

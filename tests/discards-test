@@ -9,7 +9,7 @@ PWD1="93R4P4pIqAH8"
 cleanup() {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	udevadm settle >/dev/null 2>&1
-	rmmod scsi_debug 2>/dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 	sleep 2
 }
 
@@ -22,7 +22,7 @@ fail()
 }
 
 add_device() {
-	rmmod scsi_debug 2>/dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 	if [ -d /sys/module/scsi_debug ] ; then
 		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
 		exit 77

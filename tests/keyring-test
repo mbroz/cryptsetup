@@ -78,7 +78,7 @@ function test_and_prepare_keyring() {
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 which dmsetup >/dev/null 2>&1 || skip "Cannot find dmsetup, test skipped"
 which keyctl >/dev/null 2>&1 || skip "Cannot find keyctl, test skipped"
-modprobe dm-crypt || fail "dm-crypt failed to load"
+modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
 dm_crypt_keyring_support || skip "dm-crypt doesn't support kernel keyring, test skipped."
 
 test_and_prepare_keyring

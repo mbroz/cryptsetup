@@ -292,8 +292,8 @@ static int _setup(void)
 	/* Prepare tcrypt images */
 	_system("tar xJf tcrypt-images.tar.xz 2>/dev/null", 1);
 
-	_system("modprobe dm-crypt", 0);
-	_system("modprobe dm-verity", 0);
+	_system("modprobe dm-crypt >/dev/null 2>&1", 0);
+	_system("modprobe dm-verity >/dev/null 2>&1", 0);
 
 	_fips_mode = fips_mode();
 	if (_debug)

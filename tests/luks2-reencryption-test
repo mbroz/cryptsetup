@@ -62,14 +62,14 @@ scsi_debug_teardown() {
 	local _tries=15;
 
 	while [ -b "$1" -a $_tries -gt 0 ]; do
-		rmmod scsi_debug 2> /dev/null
+		rmmod scsi_debug >/dev/null 2>&1
 		if [ -b "$1" ]; then
 			sleep .1
 			_tries=$((_tries-1))
 		fi
 	done
 
-	test ! -b "$1" || rmmod scsi_debug 2> /dev/null
+	test ! -b "$1" || rmmod scsi_debug >/dev/null 2>&1
 }
 
 function remove_mapping()
@@ -99,7 +99,7 @@ function remove_mapping()
 	[ -n "$LOOPDEV" ] && losetup -d $LOOPDEV
 	unset LOOPDEV
 	rm -f $IMG $IMG_HDR $KEY1 $VKEY1 $DEVBIG $DEV_LINK >/dev/null 2>&1
-	rmmod scsi_debug 2> /dev/null
+	rmmod scsi_debug >/dev/null 2>&1
 	scsi_debug_teardown $DEV
 }
 
@@ -688,7 +688,7 @@ function valgrind_run()
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 fips_mode && skip "This test cannot be run in FIPS mode."
 modprobe --dry-run scsi_debug || exit 77
-modprobe dm-crypt || fail "dm-crypt failed to load"
+modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
 modprobe dm-delay > /dev/null 2>&1
 dm_crypt_features
 
