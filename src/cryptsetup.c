@@ -792,13 +792,14 @@ static int action_resize(void)
 		}
 
 		/* try load VK in kernel keyring using token */
-		r = crypt_activate_by_token(cd, NULL, ARG_INT32(OPT_TOKEN_ID_ID), NULL,
-					    CRYPT_ACTIVATE_KEYRING_KEY);
+		r = crypt_activate_by_token_pin(cd, NULL, ARG_STR(OPT_TOKEN_TYPE_ID),
+						ARG_INT32(OPT_TOKEN_ID_ID), NULL, 0, NULL,
+						CRYPT_ACTIVATE_KEYRING_KEY);
 		tools_keyslot_msg(r, UNLOCKED);
 
 		/* Token requires PIN, but ask only if there is no password query later */
 		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
-			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), NULL, NULL, CRYPT_ACTIVATE_KEYRING_KEY, 1);
+			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), NULL, ARG_STR(OPT_TOKEN_TYPE_ID), CRYPT_ACTIVATE_KEYRING_KEY, 1);
 
 		if (r >= 0 || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
@@ -1576,12 +1577,13 @@ static int action_open_luks(void)
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
 	} else {
-		r = crypt_activate_by_token(cd, activated_name, ARG_INT32(OPT_TOKEN_ID_ID), NULL, activate_flags);
+		r = crypt_activate_by_token_pin(cd, activated_name, ARG_STR(OPT_TOKEN_TYPE_ID),
+						ARG_INT32(OPT_TOKEN_ID_ID), NULL, 0, NULL, activate_flags);
 		tools_keyslot_msg(r, UNLOCKED);
 
 		/* Token requires PIN, but ask only if there is no password query later */
 		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
-			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), activated_name, NULL, activate_flags, _set_tries_tty());
+			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), activated_name, ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags, _set_tries_tty());
 
 		if (r >= 0 || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
