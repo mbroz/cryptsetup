@@ -376,6 +376,9 @@ static int _setup(void)
 	char cmd[128];
 
 	test_loop_file = strdup(THE_LFILE_TEMPLATE);
+	if (!test_loop_file)
+		return 1;
+
 	if ((fd=mkstemp(test_loop_file)) == -1) {
 		printf("cannot create temporary file with template %s\n", test_loop_file);
 		return 1;
@@ -390,6 +393,9 @@ static int _setup(void)
 	close(fd);
 
 	tmp_file_1 = strdup(THE_LFILE_TEMPLATE);
+	if (!tmp_file_1)
+		return 1;
+
 	if ((fd=mkstemp(tmp_file_1)) == -1) {
 		printf("cannot create temporary file with template %s\n", tmp_file_1);
 		return 1;

@@ -50,7 +50,8 @@ static void test_logf(int level, const char *format, ...)
 		case LOG_DEBUG:
 			if (!_debug)
 				break;
-		case LOG_NORMAL: /* fall through */
+		/* fall through */
+		case LOG_NORMAL:
 			fprintf(stdout, "%s", target);
 			break;
 		case LOG_ERROR:
@@ -121,7 +122,6 @@ int main(int argc, char **argv)
 {
 	int i, r;
 	void *h;
-	const char *libfile = "libcryptsetup.so.12"; /* TODO import proper version */
 
 	for (i = 1; i < argc; i++) {
 		if (*argv[i] != '-')
