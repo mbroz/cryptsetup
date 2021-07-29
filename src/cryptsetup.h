@@ -72,6 +72,7 @@ int translate_errno(int r);
 typedef enum { CREATED, UNLOCKED, REMOVED  } crypt_object_op;
 void tools_keyslot_msg(int keyslot, crypt_object_op op);
 void tools_token_msg(int token, crypt_object_op op);
+void tools_token_error_msg(int error, const char *type, int token, bool pin_provided);
 
 extern volatile int quit;
 void set_int_block(int block);
