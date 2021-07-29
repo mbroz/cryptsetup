@@ -1588,7 +1588,7 @@ static int action_open_luks(void)
 		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
 			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), activated_name, ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags, _set_tries_tty());
 
-		if (r >= 0 || ARG_SET(OPT_TOKEN_ONLY_ID))
+		if (r >= 0 || r == -EEXIST || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
 
 		tries = _set_tries_tty();
