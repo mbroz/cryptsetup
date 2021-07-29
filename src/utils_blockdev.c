@@ -275,7 +275,7 @@ int tools_wipe_all_signatures(const char *path)
 	fd = open(path, flags);
 	if (fd < 0) {
 		if (errno == EBUSY)
-			log_err(_("Device %s is in use. Can not proceed with format operation."), path);
+			log_err(_("Device %s is in use. Cannot proceed with format operation."), path);
 		else
 			log_err(_("Failed to open file %s in read/write mode."), path);
 		return -EINVAL;
