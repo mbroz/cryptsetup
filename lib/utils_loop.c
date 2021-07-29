@@ -153,7 +153,7 @@ int crypt_loop_attach(char **loop, const char *file, int offset,
 		if (loop_fd < 0)
 			goto out;
 		if (ioctl(loop_fd, LOOP_CONFIGURE, &config) < 0) {
-			if (errno == EINVAL) {
+			if (errno == EINVAL || errno == ENOTTY) {
 				free(*loop);
 				*loop = NULL;
 
