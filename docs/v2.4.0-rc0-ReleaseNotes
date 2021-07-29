@@ -1,9 +1,30 @@
-Cryptsetup 2.4.0-rc0 Release Notes
+Cryptsetup 2.4.0-rc1 Release Notes
 ==================================
 Stable release candidate with new features and bug fixes.
 
 This version introduces support for external libraries
 (plugins) for handling LUKS2 token objects.
+
+Changes since version 2.4.0-rc0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Add cryptsetup --token-type parameter.
+
+  It restricts token type to the parameter value in case no specific
+  token-id is selected.
+
+* Do not retry token operations if PIN entry failed.
+
+* Respect keyslot priority with token-based activation.
+
+* veritysetup: add --root-hash-file option
+  Allow passing the root hash via a file, rather than verbatim on
+  the command line, for the open, verify, and format actions.
+
+* Add crypt_reencrypt_run superseding now deprecated crypt_reencrypt
+  API call (fixes API break in rc0 release).
+
+* Respect keyslot priority with token-based activation.
 
 Changes since version 2.3.6
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
