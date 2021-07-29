@@ -64,7 +64,7 @@ function dm_crypt_features()
 }
 
 add_device() {
-	modprobe scsi_debug $@ delay=0
+	modprobe scsi_debug $@ delay=0 >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		echo "This kernel seems to not support proper scsi_debug module, test skipped."
 		exit 77

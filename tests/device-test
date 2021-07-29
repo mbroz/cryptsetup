@@ -40,7 +40,7 @@ add_device() {
 	rmmod scsi_debug >/dev/null 2>&1
 	[ -d /sys/module/scsi_debug ] && skip "Cannot use scsi_debug module (in use or compiled-in)."
 
-	modprobe scsi_debug $@ delay=0
+	modprobe scsi_debug $@ delay=0 >/dev/null 2>&1
 	[ $? -ne 0 ] && skip "This kernel seems to not support proper scsi_debug module."
 
 	sleep 1
