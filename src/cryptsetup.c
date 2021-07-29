@@ -212,6 +212,7 @@ static int _try_token_pin_unlock(struct crypt_device *cd,
 		crypt_safe_free(pin);
 		pin = NULL;
 		tools_keyslot_msg(r, UNLOCKED);
+		tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), ARG_INT32(OPT_TOKEN_ID_ID), true);
 		check_signal(&r);
 	} while (r == -ENOANO && (--tries > 0));
 
@@ -796,6 +797,7 @@ static int action_resize(void)
 						ARG_INT32(OPT_TOKEN_ID_ID), NULL, 0, NULL,
 						CRYPT_ACTIVATE_KEYRING_KEY);
 		tools_keyslot_msg(r, UNLOCKED);
+		tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), ARG_INT32(OPT_TOKEN_ID_ID), false);
 
 		/* Token requires PIN, but ask only if there is no password query later */
 		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
@@ -1580,6 +1582,7 @@ static int action_open_luks(void)
 		r = crypt_activate_by_token_pin(cd, activated_name, ARG_STR(OPT_TOKEN_TYPE_ID),
 						ARG_INT32(OPT_TOKEN_ID_ID), NULL, 0, NULL, activate_flags);
 		tools_keyslot_msg(r, UNLOCKED);
+		tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), ARG_INT32(OPT_TOKEN_ID_ID), false);
 
 		/* Token requires PIN, but ask only if there is no password query later */
 		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)

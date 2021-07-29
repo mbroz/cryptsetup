@@ -271,6 +271,36 @@ void tools_token_msg(int token, crypt_object_op op)
 		log_verbose(_("Token %i removed."), token);
 }
 
+void tools_token_error_msg(int error, const char *type, int token, bool pin_provided)
+{
+	if (error >= 0)
+		return;
+
+	if (error == -ENOANO) {
+		if (pin_provided)
+			log_verbose(_("No token could be unlocked with this PIN."));
+		else if (token != CRYPT_ANY_TOKEN)
+			log_verbose(_("Token %i requires PIN."), token);
+		else if (type)
+			log_verbose(_("Token (type %s) requires PIN."), type);
+	} else if (error == -EPERM) {
+		if (token != CRYPT_ANY_TOKEN)
+			log_verbose(_("Token %i cannot unlock assigned keyslot(s) (wrong keyslot passphrase)."), token);
+		else if (type)
+			log_verbose(_("Token (type %s) cannot unlock assigned keyslot(s) (wrong keyslot passphrase)."), type);
+	} if (error == -EAGAIN) {
+		if (token != CRYPT_ANY_TOKEN)
+			log_verbose(_("Token %i requires additional missing resource."), token);
+		else if (type)
+			log_verbose(_("Token (type %s) requires additional missing resource."), type);
+	} if (error == -ENOENT) {
+		if (type)
+			log_verbose(_("No usable token (type %s) is available."), type);
+		else
+			log_verbose(_("No usable token is available."));
+	}
+}
+
 /*
  * Device size string parsing, suffixes:
  * s|S - 512 bytes sectors
