@@ -59,7 +59,6 @@ if [ $(id -u) != 0 ]; then
 	exit 77
 fi
 
-modprobe --dry-run scsi_debug || exit 77
 modprobe dm-crypt >/dev/null 2>&1
 if ! check_version ; then
 	echo "Probably old kernel, test skipped."

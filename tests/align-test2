@@ -37,7 +37,7 @@ skip()
 {
 	echo "TEST SKIPPED: $1"
 	cleanup
-	exit 0
+	exit 77
 }
 
 function dm_crypt_features()
@@ -161,7 +161,7 @@ if [ $(id -u) != 0 ]; then
 fi
 
 dm_crypt_features
-modprobe --dry-run scsi_debug || exit 77
+modprobe --dry-run scsi_debug >/dev/null 2>&1 || skip "This kernel seems to not support proper scsi_debug module, test skipped."
 cleanup
 if [ -d /sys/module/scsi_debug ] ; then
 	echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."

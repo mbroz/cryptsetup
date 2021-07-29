@@ -687,7 +687,7 @@ function valgrind_run()
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 fips_mode && skip "This test cannot be run in FIPS mode."
-modprobe --dry-run scsi_debug || exit 77
+modprobe --dry-run scsi_debug >/dev/null 2>&1 || skip "This kernel seems to not support proper scsi_debug module, test skipped."
 modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
 modprobe dm-delay > /dev/null 2>&1
 dm_crypt_features
