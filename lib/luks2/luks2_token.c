@@ -182,7 +182,7 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 	if (r < 0 || (size_t)r >= sizeof(buf))
 		*buf = '\0';
 
-	log_dbg(cd, "Token handler %s-%s loaded sucessfuly.", token->name, buf);
+	log_dbg(cd, "Token handler %s-%s loaded successfully.", token->name, buf);
 
 	token->dlhandle = h;
 	ret->version = 2;
