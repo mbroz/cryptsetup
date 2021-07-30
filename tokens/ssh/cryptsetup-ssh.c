@@ -141,7 +141,7 @@ static struct argp_option options[] = {
 	{"ssh-user",	OPT_SSH_USER, 	"STRING", 0, N_("Username used for the remote server")},
 	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, N_("Path to the key file on the remote server")},
 	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, N_("Path to the SSH key for connecting to the remote server")},
-	{"key-slot",	OPT_KEY_SLOT,	"NUM",	  0, N_("Keyslot to assing the token to. If not specified, token will "\
+	{"key-slot",	OPT_KEY_SLOT,	"NUM",	  0, N_("Keyslot to assign the token to. If not specified, token will "\
 						        "be assigned to the first keyslot matching provided passphrase.")},
 	{0,		0,		0,	  0, N_("Generic options:")},
 	{"verbose",	'v',		0,	  0, N_("Shows more detailed error messages")},
