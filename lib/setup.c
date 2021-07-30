@@ -1840,7 +1840,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	if (sector_size_autodetect) {
 		if (cd->data_offset && MISALIGNED(cd->data_offset, sector_size)) {
-			log_dbg(cd, "Data offset not alligned to sector size. Reverting to 512 bytes.");
+			log_dbg(cd, "Data offset not aligned to sector size. Reverting to 512 bytes.");
 			sector_size = SECTOR_SIZE;
 		} else if (MISALIGNED(dev_size - (uint64_t)required_alignment - (uint64_t)alignment_offset, sector_size)) {
 			/* underflow does not affect misalignment checks */
