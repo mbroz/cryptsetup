@@ -4957,19 +4957,52 @@ static int _luks_dump(struct crypt_device *cd)
 
 static int _verity_dump(struct crypt_device *cd)
 {
+	struct crypt_params_verity params = {};
+	uint64_t hash_offset_block, hash_blocks, fec_blocks, total_blocks;
+	const char *fec_device_path;
+
+	params.hash_area_offset = cd->u.verity.hdr.hash_area_offset;
+	params.hash_block_size = cd->u.verity.hdr.hash_block_size;
+	params.data_size = cd->u.verity.hdr.data_size;
+	params.data_block_size = cd->u.verity.hdr.data_block_size;
+
+	hash_offset_block = VERITY_hash_offset_block(&params);
+	hash_blocks = VERITY_hash_blocks(cd, &params);
+
+	total_blocks = hash_offset_block + hash_blocks;
+
+	fec_device_path = device_path(cd->u.verity.fec_device);
+	fec_blocks = VERITY_FEC_blocks(cd, cd->u.verity.fec_device, &params);
+
+	if (device_is_identical(crypt_metadata_device(cd), cd->u.verity.fec_device) > 0) {
+		/* No way to access fec_area_offset directly… Assume FEC area starts
+		 * directly after hash blocks. */
+		total_blocks += fec_blocks;
+	}
+
 	log_std(cd, "VERITY header information for %s\n", mdata_device_path(cd));
-	log_std(cd, "UUID:            \t%s\n", cd->u.verity.uuid ?: "");
-	log_std(cd, "Hash type:       \t%u\n", cd->u.verity.hdr.hash_type);
-	log_std(cd, "Data blocks:     \t%" PRIu64 "\n", cd->u.verity.hdr.data_size);
-	log_std(cd, "Data block size: \t%u\n", cd->u.verity.hdr.data_block_size);
-	log_std(cd, "Hash block size: \t%u\n", cd->u.verity.hdr.hash_block_size);
-	log_std(cd, "Hash algorithm:  \t%s\n", cd->u.verity.hdr.hash_name);
+	log_std(cd, "UUID:             \t%s\n", cd->u.verity.uuid ?: "");
+	log_std(cd, "Hash type:        \t%u\n", cd->u.verity.hdr.hash_type);
+	log_std(cd, "Data blocks:      \t%" PRIu64 "\n", cd->u.verity.hdr.data_size);
+	log_std(cd, "Data block size:  \t%u\n", cd->u.verity.hdr.data_block_size);
+	log_std(cd, "Hash blocks:      \t%" PRIu64 "\n", hash_blocks);
+	log_std(cd, "Hash block size:  \t%u\n", cd->u.verity.hdr.hash_block_size);
+	log_std(cd, "Hash algorithm:   \t%s\n", cd->u.verity.hdr.hash_name);
+	if (fec_device_path) {
+		log_std(cd, "FEC device:       \t%s\n", fec_device_path);
+		log_std(cd, "FEC blocks:       \t%" PRIu64 "\n", fec_blocks);
+	}
+
+	log_std(cd, "Hash device size: \t%" PRIu64 "\n",
+		total_blocks * cd->u.verity.hdr.hash_block_size);
+
 	log_std(cd, "Salt:            \t");
 	if (cd->u.verity.hdr.salt_size)
 		hexprint(cd, cd->u.verity.hdr.salt, cd->u.verity.hdr.salt_size, "");
 	else
 		log_std(cd, "-");
 	log_std(cd, "\n");
+
 	if (cd->u.verity.root_hash) {
 		log_std(cd, "Root hash:      \t");
 		hexprint(cd, cd->u.verity.root_hash, cd->u.verity.root_hash_size, "");
