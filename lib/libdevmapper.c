@@ -2303,16 +2303,16 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 				str = strsep(&params, " ");
 				if (!str)
 					goto err;
-				if (!root_hash_sig_key_desc) {
+				if (vp && !root_hash_sig_key_desc) {
 					root_hash_sig_key_desc = strdup(str);
 					if (!root_hash_sig_key_desc) {
 						r = -ENOMEM;
 						goto err;
 					}
+					/* not stored in params, but cannot be used without vp */
+					vp->flags |= CRYPT_VERITY_ROOT_HASH_SIGNATURE;
 				}
 				i++;
-				if (vp)
-					vp->flags |= CRYPT_VERITY_ROOT_HASH_SIGNATURE;
 			} else /* unknown option */
 				goto err;
 		}
