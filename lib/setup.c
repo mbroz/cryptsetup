@@ -37,6 +37,7 @@
 #include "tcrypt/tcrypt.h"
 #include "integrity/integrity.h"
 #include "bitlk/bitlk.h"
+#include "fvault2/fvault2.h"
 #include "utils_device_locking.h"
 #include "internal.h"
 #include "keyslot_context.h"
@@ -114,6 +115,9 @@ struct crypt_device {
 		struct bitlk_metadata params;
 		char *cipher_spec;
 	} bitlk;
+	struct { /* used in CRYPT_FVAULT2 */
+		struct fvault2_params params;
+	} fvault2;
 	struct { /* used if initialized without header by name */
 		char *active_name;
 		/* buffers, must refresh from kernel on every query */
@@ -323,6 +327,11 @@ static int isINTEGRITY(const char *type)
 static int isBITLK(const char *type)
 {
 	return (type && !strcmp(CRYPT_BITLK, type));
+}
+
+static int isFVAULT2(const char *type)
+{
+	return (type && !strcmp(CRYPT_FVAULT2, type));
 }
 
 static int _onlyLUKS(struct crypt_device *cd, uint32_t cdflags)
@@ -1008,6 +1017,24 @@ static int _crypt_load_bitlk(struct crypt_device *cd)
 	return 0;
 }
 
+static int _crypt_load_fvault2(struct crypt_device *cd)
+{
+	int r;
+
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
+	r = FVAULT2_read_metadata(cd, &cd->u.fvault2.params);
+	if (r < 0)
+		return r;
+
+	if (!cd->type && !(cd->type = strdup(CRYPT_FVAULT2)))
+		return -ENOMEM;
+
+	return 0;
+}
+
 int crypt_load(struct crypt_device *cd,
 	       const char *requested_type,
 	       void *params)
@@ -1059,6 +1086,12 @@ int crypt_load(struct crypt_device *cd,
 			return -EINVAL;
 		}
 		r = _crypt_load_bitlk(cd);
+	} else if (isFVAULT2(requested_type)) {
+		if (cd->type && !isFVAULT2(cd->type)) {
+			log_dbg(cd, "Context is already initialized to type %s", cd->type);
+			return -EINVAL;
+		}
+		r = _crypt_load_fvault2(cd);
 	} else
 		return -EINVAL;
 
@@ -1312,6 +1345,13 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			crypt_set_null_type(cd);
 			r = 0;
 		}
+	} else if (isFVAULT2(cd->type)) {
+		r = _crypt_load_fvault2(cd);
+		if (r < 0) {
+			log_dbg(cd, "FVAULT2 device header not available.");
+			crypt_set_null_type(cd);
+			r = 0;
+		}
 	}
 out:
 	dm_targets_free(cd, &dmd);
@@ -1482,6 +1522,8 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 			(*cd)->type = strdup(CRYPT_INTEGRITY);
 		else if (!strncmp(CRYPT_BITLK, dmd.uuid, sizeof(CRYPT_BITLK)-1))
 			(*cd)->type = strdup(CRYPT_BITLK);
+		else if (!strncmp(CRYPT_FVAULT2, dmd.uuid, sizeof(CRYPT_FVAULT2)-1))
+			(*cd)->type = strdup(CRYPT_FVAULT2);
 		else
 			log_dbg(NULL, "Unknown UUID set, some parameters are not set.");
 	} else
@@ -4891,6 +4933,11 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 			r = BITLK_get_volume_key(cd, passphrase, passphrase_size, &cd->u.bitlk.params, &vk);
 		if (r < 0)
 			log_err(cd, _("Cannot retrieve volume key for BITLK device."));
+	} else if (isFVAULT2(cd->type)) {
+		if (passphrase)
+			r = FVAULT2_get_volume_key(cd, passphrase, passphrase_size, &cd->u.fvault2.params, &vk);
+		if (r < 0)
+			log_err(cd, _("Cannot retrieve volume key for FVAULT2 device."));
 	} else
 		log_err(cd, _("This operation is not supported for %s crypt device."), cd->type ?: "(none)");
 
