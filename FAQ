@@ -236,6 +236,33 @@ A. Contributors
   possible compromise of your email account.
 
 
+  * 1.9 What can I do if cryptsetup is running out of memory?
+
+  Memory issues are generally related to the key derivation function.  You may
+  be able to tune usage with the options --pbkdf-memory or --pbkdf pbkdf2.
+
+
+  * 1.10 Can cryptsetup be run without root access?
+
+  Elevated privileges are required to use cryptsetup and LUKS.  Some operations
+  require root access.  There are a few features which will work without root 
+  access with the right switches but there are caveats.
+
+
+  * 1.11 What are the problems with running as non root?
+
+  The first issue is one of permissions to devices.  Generally, root or a group
+  such as disk has ownership of the storage devices.  The non root user will
+  need write access to the block device used for LUKS.
+
+  Next, file locking is managed in /run/cryptsetup.  You may use 
+  --disable-locks but cryptsetup will no longer protect you from race 
+  conditions and problems with concurrent access to the same devices.
+
+  Also, device mapper requires root access.  cryptsetup uses device mapper to 
+  manage the decrypted container.
+
+
 2. Setup
 
   * 2.1 LUKS Container Setup mini-HOWTO
