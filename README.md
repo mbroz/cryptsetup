@@ -89,7 +89,8 @@ Note that the list could change as distributions evolve.
 
 Help!
 -----
-Please always read [FAQ](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions) first.
+Please read the [FAQ](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions) and search the manuals (man page, man-page) before posting questions in the mailing list.   You will be able to ask better questions and better understand the answers.  The FAQ is online and in the source code.  The man pages are in source and should be available after installation using standard man commands.  e.g.  man cryptsetup
+
 For cryptsetup and LUKS related questions, please use the dm-crypt mailing list, [dm-crypt@saout.de](mailto:dm-crypt@saout.de).
 
 If you want to subscribe just send an empty mail to [dm-crypt-subscribe@saout.de](mailto:dm-crypt-subscribe@saout.de).
