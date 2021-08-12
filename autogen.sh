@@ -30,9 +30,9 @@ DIE=0
 }
 
 (grep "^LT_INIT" $srcdir/configure.ac >/dev/null) && {
-  (libtool --version) < /dev/null > /dev/null 2>&1 || {
+  (libtoolize --version) < /dev/null > /dev/null 2>&1 || {
     echo
-    echo "**Error**: You must have libtool installed."
+    echo "**Error**: You must have libtoolize installed."
     echo "Download the appropriate package for your distribution."
     DIE=1
   }
