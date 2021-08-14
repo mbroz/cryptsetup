@@ -36,6 +36,7 @@ endif
 
 if SSHPLUGIN_TOKEN
 TESTS += ssh-plugin-test
+endif
 
 ssh-plugin-test: fake_token_path.so
 
@@ -44,7 +45,6 @@ fake_token_path.so:
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c \
 	-DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
-endif
 
 EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	compatimage2.img.xz \
@@ -136,6 +136,8 @@ all_symbols_test_CFLAGS = -ldl
 all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io all-symbols-test
+
+check-programs: $(check_PROGRAMS) fake_token_path.so
 
 conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz
