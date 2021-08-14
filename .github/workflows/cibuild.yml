@@ -1,0 +1,28 @@
+name: Build test
+on:
+  push:
+    branches:
+      - 'master'
+      - 'wip-luks2'
+      - 'v2.3.x'
+    paths-ignore:
+      - 'docs/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - { COMPILER: "gcc", COMPILER_VERSION: "11",  RUN_SSH_PLUGIN_TEST: "1" }
+    env: ${{ matrix.env }}
+    steps:
+      - name: Repository checkout
+        uses: actions/checkout@v1
+      - name: Ubuntu setup
+        run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
+      - name: Configure & Make
+        run: .github/workflows/cibuild.sh CONFIGURE MAKE
+      - name: Check
+        run: sudo -E .github/workflows/cibuild.sh CHECK
