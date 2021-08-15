@@ -83,6 +83,7 @@ function fail()
 function skip()
 {
 	[ -n "$1" ] && echo "$1"
+	remove_mapping
 	exit 77
 }
 
