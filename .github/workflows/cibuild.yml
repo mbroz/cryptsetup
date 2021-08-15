@@ -11,6 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.repository == 'mbroz/cryptsetup'
     strategy:
       fail-fast: false
       matrix:
