@@ -21,6 +21,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
 	[ -b /dev/mapper/"$MAP"_1 ] && dmsetup remove --retry "$MAP"_1
 	[ -b /dev/mapper/"$MAP"_2 ] && dmsetup remove --retry "$MAP"_2
+	rm -rf $TST_DIR
 }
 
 function fail()
@@ -37,6 +38,7 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "Test skipped."
+	remove_mapping
 	exit 77
 }
 
@@ -166,6 +168,7 @@ done
 
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
+	remove_mapping
 	exit 0
 fi
 
@@ -202,3 +205,6 @@ for file in $(ls $TST_DIR/[tv]c_*-hidden) ; do
 	[ "$UUID" != "CAFE-BABE" ] && fail "UUID check failed."
 	echo " [OK]"
 done
+
+remove_mapping
+exit 0

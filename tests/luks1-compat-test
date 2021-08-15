@@ -17,6 +17,7 @@ KEYFILE=keyfile1
 function remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
+	rm -rf $TST_DIR
 }
 
 function fail()
@@ -33,6 +34,7 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "Test skipped."
+	remove_mapping
 	exit 77
 }
 
@@ -80,6 +82,7 @@ done
 
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
+	remove_mapping
 	exit 0
 fi
 
@@ -102,3 +105,6 @@ for file in $(ls $TST_DIR/luks1_*) ; do
 	[ "$UUID" != "DEAD-BABE" ] && fail "UUID check failed."
 	echo " [OK]"
 done
+
+remove_mapping
+exit 0

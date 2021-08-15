@@ -16,6 +16,7 @@ CRYPTSETUP_LIB_VALGRIND=../.libs
 function remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
+	rm -rf $TST_DIR
 }
 
 function fail()
@@ -32,6 +33,7 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "Test skipped."
+	remove_mapping
 	exit 77
 }
 
@@ -106,10 +108,9 @@ done
 
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
+	remove_mapping
 	exit 0
 fi
-
-remove_mapping
 
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/bitlk-*) ; do
@@ -185,3 +186,6 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 
 	fi
 done
+
+remove_mapping
+exit 0
