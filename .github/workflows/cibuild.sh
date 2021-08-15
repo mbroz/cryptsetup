@@ -15,7 +15,7 @@ for phase in "${PHASES[@]}"; do
     case $phase in
     CONFIGURE)
         opts=(
-            --enable-libargon
+            --enable-libargon2
         )
 
         sudo -E git clean -xdf
