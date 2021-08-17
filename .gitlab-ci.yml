@@ -21,6 +21,8 @@ test-mergerq-job:
   stage: test
   interruptible: true
   rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - make -j
@@ -34,6 +36,8 @@ test-main-commit-job:
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - make -j
