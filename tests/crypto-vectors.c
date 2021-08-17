@@ -1231,6 +1231,39 @@ static int cipher_iv_test(void)
 	return EXIT_SUCCESS;
 }
 
+static int check_hash(const char *hash)
+{
+	struct crypt_hash *h;
+
+	if (crypt_hash_size(hash) < 0)
+		return EXIT_FAILURE;
+
+	if (crypt_hash_init(&h, hash))
+		return EXIT_FAILURE;
+
+	crypt_hash_destroy(h);
+	return EXIT_SUCCESS;
+}
+
+static int default_alg_test(void)
+{
+	printf("Defaults: [LUKS1 hash %s] ", DEFAULT_LUKS1_HASH);
+	if (check_hash(DEFAULT_LUKS1_HASH))
+		return EXIT_FAILURE;
+
+	printf("[PLAIN hash %s] ", DEFAULT_PLAIN_HASH);
+	if (check_hash(DEFAULT_PLAIN_HASH))
+		return EXIT_FAILURE;
+
+	printf("[VERITY hash %s] ", DEFAULT_VERITY_HASH);
+	if (check_hash(DEFAULT_VERITY_HASH))
+		return EXIT_FAILURE;
+
+	printf("[OK]\n");
+
+	return EXIT_SUCCESS;
+}
+
 static void __attribute__((noreturn)) exit_test(const char *msg, int r)
 {
 	if (msg)
@@ -1267,6 +1300,9 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 
 	if (cipher_iv_test())
 		exit_test("IV test failed.", EXIT_FAILURE);
+
+	if (default_alg_test())
+		exit_test("Default compiled-in algorithms test failed.", EXIT_FAILURE);
 
 	exit_test(NULL, EXIT_SUCCESS);
 }
