@@ -132,7 +132,8 @@ test-symbols-list.h: $(top_srcdir)/lib/libcryptsetup.sym generate-symbols-list
 all_symbols_test_SOURCES = all-symbols-test.c
 nodist_all_symbols_test_SOURCES = test-symbols-list.h
 all_symbols_test.$(OBJEXT): test-symbols-list.h
-all_symbols_test_CFLAGS = -ldl
+all_symbols_test_LDFLAGS = $(AM_LDFLAGS) -ldl
+all_symbols_test_CFLAGS = $(AM_CFLAGS)
 all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io all-symbols-test
