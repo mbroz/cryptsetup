@@ -1,30 +1,9 @@
-Cryptsetup 2.4.0-rc1 Release Notes
-==================================
+Cryptsetup 2.4.0 Release Notes
+==============================
 Stable release candidate with new features and bug fixes.
 
 This version introduces support for external libraries
 (plugins) for handling LUKS2 token objects.
-
-Changes since version 2.4.0-rc0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* Add cryptsetup --token-type parameter.
-
-  It restricts token type to the parameter value in case no specific
-  token-id is selected.
-
-* Do not retry token operations if PIN entry failed.
-
-* Respect keyslot priority with token-based activation.
-
-* veritysetup: add --root-hash-file option
-  Allow passing the root hash via a file, rather than verbatim on
-  the command line, for the open, verify, and format actions.
-
-* Add crypt_reencrypt_run superseding now deprecated crypt_reencrypt
-  API call (fixes API break in rc0 release).
-
-* Respect keyslot priority with token-based activation.
 
 Changes since version 2.3.6
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -118,6 +97,15 @@ Example (how to activate LUKS2 through remote keyfile):
 
   Please note SSH token is just demonstration of plugin interface API,
   it is an EXPERIMENTAL feature.
+
+* Add cryptsetup --token-type parameter.
+
+  It restricts token type to the parameter value in case no specific
+  token-id is selected.
+
+* Do not retry token operations if PIN entry failed.
+
+* Respect keyslot priority with token-based activation.
 
 * Default LUKS2 PBKDF is now Argon2id
 
@@ -266,6 +254,10 @@ Example (how to activate LUKS2 through remote keyfile):
   Note that it cannot detect unknown algorithm names and similar where
   we need call API functions.
 
+* veritysetup: add --root-hash-file option
+  Allow passing the root hash via a file, rather than verbatim on
+  the command line, for the open, verify, and format actions.
+
 * libcryptsetup C API extensions (see libcryptsetup.h for details)
 
   - crypt_logf - a printf like log function
@@ -275,7 +267,7 @@ Example (how to activate LUKS2 through remote keyfile):
   - crypt_token_external_path - get path for plugins (or NULL)
   - crypt_token_external_disable - disable runtime support for plugins
   - crypt_activate_by_token_pin - activate by token with additional PIN
-  - crypt_reencrypt - fixed prototype
+  - crypt_reencrypt_run - fixed API for deprecated crypt_reencrypt
 
   The token plugin library interface cosists from these versioned
   exported symbols (for details see header file and SSH token example):
