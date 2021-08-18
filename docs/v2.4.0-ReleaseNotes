@@ -18,7 +18,13 @@ Changes since version 2.3.6
   in external libraries (possibly provided by other projects).
 
   A token library allows cryptsetup to understand metadata and provide
-  basic operations (activate, resize, dump metadata, handle keyslots).
+  basic operations. Currently external tokens may be used to unlock
+  keyslots for following CLI actions: open (luksOpen),
+  refresh (open --refresh), resize and dump (prints token specific
+  content).
+
+  LUKS2 devices cannot be resumed (luksResume action) via tokens yet.
+  Support for resume and other actions will be added later.
 
   The library now provides an interface that automatically tries to load
   an external library for a token object in LUKS2 metadata.
@@ -40,8 +46,14 @@ Changes since version 2.3.6
   External projects can use this interface to handle specific hardware
   without introducing additional dependencies to libcryptsetup core.
 
-  Examples of such tokens are already available for the systemd project
-  for TPM2 and FIDO2 interfaces.
+  As of cryptsetup 2.4.0 release systemd project already merged upstream
+  native cryptsetup token handler for its systemd-tpm2 LUKS2 token
+  released originally in systemd-v248. The token can be created using
+  systemd-cryptenroll utility and devices may be manipulated either by
+  systemd-cryptsetup cli or by cryptsetup for actions listed above.
+
+  Other tokens like systemd-fido2 and systemd-pkcs11 are currently
+  in-review.
 
 * Experimental SSH token
 
@@ -103,7 +115,11 @@ Example (how to activate LUKS2 through remote keyfile):
   It restricts token type to the parameter value in case no specific
   token-id is selected.
 
-* Do not retry token operations if PIN entry failed.
+* Support for token based activation with PIN.
+
+  If specific token requires PIN to unlock keyslot passphrase and
+  --token-only parameter was used cryptsetup asks for additional
+  token PIN.
 
 * Respect keyslot priority with token-based activation.
 
