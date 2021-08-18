@@ -54,3 +54,9 @@ distclean-local:
 
 clean-local:
 	-rm -rf docs/doxygen_api_docs libargon2.la
+
+install-data-local:
+	$(MKDIR_P) -m 0755 $(DESTDIR)/${EXTERNAL_LUKS2_TOKENS_PATH}
+
+uninstall-local:
+	rmdir $(DESTDIR)/${EXTERNAL_LUKS2_TOKENS_PATH} 2>/dev/null || :
