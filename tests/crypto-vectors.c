@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "crypto_backend/crypto_backend.h"
 
@@ -38,6 +40,24 @@ static void printhex(const char *s, const char *buf, size_t len)
 		printf(" %02x", (unsigned char)buf[i]);
 	printf("\n");
 	fflush(stdout);
+}
+
+static bool fips_mode(void)
+{
+	int fd;
+	char buf = 0;
+
+	fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY);
+
+	if (fd < 0)
+		return false;
+
+	if (read(fd, &buf, 1) != 1)
+		buf = '0';
+
+	close(fd);
+
+	return (buf == '1');
 }
 
 /*
@@ -1301,8 +1321,12 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 	if (cipher_iv_test())
 		exit_test("IV test failed.", EXIT_FAILURE);
 
-	if (default_alg_test())
-		exit_test("Default compiled-in algorithms test failed.", EXIT_FAILURE);
+	if (default_alg_test()) {
+		if (fips_mode())
+			printf("Default compiled-in algorithms test ignoder (FIPS mode on).", EXIT_FAILURE);
+		else
+			exit_test("Default compiled-in algorithms test failed.", EXIT_FAILURE);
+	}
 
 	exit_test(NULL, EXIT_SUCCESS);
 }
