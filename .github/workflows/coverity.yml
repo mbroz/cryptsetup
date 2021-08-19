@@ -1,0 +1,48 @@
+name: Coverity test
+on:
+  push:
+    branches:
+      - 'coverity_scan'
+    paths-ignore:
+      - 'docs/**'
+
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    if: github.repository == 'mbroz/cryptsetup'
+    steps:
+      - name: Repository checkout
+        uses: actions/checkout@v1
+      - name: Ubuntu setup
+        run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
+        env:
+          COMPILER: "gcc"
+          COMPILER_VERSION: "11"
+      - name: Install Coverity
+        run: |
+          wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$TOKEN&project=mbroz/cryptsetup" -O cov-analysis-linux64.tar.gz
+          mkdir cov-analysis-linux64
+          tar xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
+        env:
+          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+      - name: Run autoconf & configure
+        run: |
+          ./autogen.sh
+          ./configure
+      - name: Run cov-build
+        run: |
+          export PATH=`pwd`/cov-analysis-linux64/bin:$PATH
+          cov-build --dir cov-int make
+      - name: Submit to Coverity Scan
+        run: |
+          tar czvf cryptsetup.tgz cov-int
+          curl \
+            --form project=mbroz/cryptsetup \
+            --form token=$TOKEN \
+            --form email=gmazyland@gmail.com \
+            --form file=@cryptsetup.tgz \
+            --form version=trunk \
+            --form description="`./cryptsetup --version`" \
+            https://scan.coverity.com/builds?project=mbroz/cryptsetup
+        env:
+          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
