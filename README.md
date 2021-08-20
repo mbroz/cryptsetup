@@ -88,10 +88,10 @@ Help!
 Please read the following documentation before posting questions in the mailing list.   You will be able to ask better questions and better understand the answers.  
 
 * [FAQ](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions) 
-* reference documentation
+* LUKS Specifications
 * manuals (aka man page, man pages, man-page) 
 
-The FAQ is online and in the source code for the project.  The reference documentation is linked above in the Specifications section.  The man pages are in source and should be available after installation using standard man commands.  e.g.  man cryptsetup
+The FAQ is online and in the source code for the project.  The Specifications are referenced above in this document.  The man pages are in source and should be available after installation using standard man commands.  e.g.  man cryptsetup
 
 For cryptsetup and LUKS related questions, please use the dm-crypt mailing list, [dm-crypt@saout.de](mailto:dm-crypt@saout.de).  To subscribe send an empty mail to [dm-crypt-subscribe@saout.de](mailto:dm-crypt-subscribe@saout.de).
 
