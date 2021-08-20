@@ -20,6 +20,8 @@ LUKS Design
 only facilitate compatibility among distributions, but also provides secure management of multiple user passwords.  
 LUKS stores all necessary setup information in the partition header, enabling to transport or migrate data seamlessly.
 
+### Specifications
+
 Last version of the LUKS2 format specification is
 [available here](https://gitlab.com/cryptsetup/LUKS2-docs).
 
@@ -83,11 +85,18 @@ Note that the list could change as distributions evolve.
 
 Help!
 -----
-Please read the [FAQ](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions) and search the manuals (man page, man-page) before posting questions in the mailing list.   You will be able to ask better questions and better understand the answers.  The FAQ is online and in the source code.  The man pages are in source and should be available after installation using standard man commands.  e.g.  man cryptsetup
+Please read the following documentation before posting questions in the mailing list.   You will be able to ask better questions and better understand the answers.  
 
-For cryptsetup and LUKS related questions, please use the dm-crypt mailing list, [dm-crypt@saout.de](mailto:dm-crypt@saout.de).
+* [FAQ](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions) 
+* reference documentation
+* manuals (aka man page, man pages, man-page) 
 
-If you want to subscribe just send an empty mail to [dm-crypt-subscribe@saout.de](mailto:dm-crypt-subscribe@saout.de).
+The FAQ is online and in the source code for the project.  The reference documentation is linked above in the Specifications section.  The man pages are in source and should be available after installation using standard man commands.  e.g.  man cryptsetup
 
-You can also browse [list archive](https://www.saout.de/pipermail/dm-crypt/) or read and search it through
-[web interface on lore.kernel.org](https://lore.kernel.org/dm-crypt/) or alternatively on [marc.info](https://marc.info/?l=dm-crypt).
+For cryptsetup and LUKS related questions, please use the dm-crypt mailing list, [dm-crypt@saout.de](mailto:dm-crypt@saout.de).  To subscribe send an empty mail to [dm-crypt-subscribe@saout.de](mailto:dm-crypt-subscribe@saout.de).
+
+You can also browse and/or search the mailing list archives using the following resources:
+
+* [list archive](https://www.saout.de/pipermail/dm-crypt/) 
+* [web interface on lore.kernel.org](https://lore.kernel.org/dm-crypt/) 
+* [marc.info](https://marc.info/?l=dm-crypt).
