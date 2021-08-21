@@ -101,6 +101,11 @@ AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR([You need the uuid library.])])
 AC_SUBST(UUID_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
+saved_LIBS=$LIBS
+AC_SEARCH_LIBS([dlsym],[dl])
+AC_CHECK_FUNCS([dlvsym])
+LIBS=$saved_LIBS
+
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 AC_CHECK_FUNCS([posix_memalign clock_gettime posix_fallocate explicit_bzero])
 
