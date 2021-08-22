@@ -95,19 +95,17 @@ CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_toke
 clean-local:
 	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp
 
-LDADD = $(LTLIBINTL)
-
 differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
 
 api_test_SOURCES = api-test.c api_test.h test_utils.c
-api_test_LDADD = $(LDADD) ../libcryptsetup.la
+api_test_LDADD = ../libcryptsetup.la
 api_test_LDFLAGS = $(AM_LDFLAGS) -static
 api_test_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
 api_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 api_test_2_SOURCES = api-test-2.c api_test.h test_utils.c
-api_test_2_LDADD = $(LDADD) ../libcryptsetup.la
+api_test_2_LDADD = ../libcryptsetup.la
 api_test_2_LDFLAGS = $(AM_LDFLAGS) -static
 api_test_2_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
 api_test_2_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
