@@ -44,8 +44,6 @@ typedef int32_t key_serial_t;
 #include "luks1/luks.h"
 #include "libcryptsetup.h"
 
-#define DMDIR "/dev/mapper/"
-
 #define DEVICE_1_UUID "28632274-8c8a-493f-835b-da802e1c576b"
 #define DEVICE_EMPTY_name "crypt_zero"
 #define DEVICE_EMPTY DMDIR DEVICE_EMPTY_name
@@ -3844,6 +3842,7 @@ static void Luks2Reencryption(void)
 		.hash = "sha1",
 		.luks2 = &params2,
 	};
+	dev_t devno;
 
 	const char *mk_hex = "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(mk_hex) / 2;
@@ -4354,6 +4353,8 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_2, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
 	OK_(t_device_size(DMDIR CDEVICE_2, &r_size_1));
 	EQ_(r_size_1, 512);
+	// store devno for later size check
+	OK_(t_get_devno(CDEVICE_2, &devno));
 	// create placeholder device to block automatic deactivation after decryption
 	OK_(_system("dmsetup create " CDEVICE_1 " --table \"0 1 linear " DMDIR CDEVICE_2 " 0\"", 1));
 	remove(BACKUP_FILE);
@@ -4373,7 +4374,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_get_data_offset(cd), 0);
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	remove(BACKUP_FILE);
-	OK_(t_device_size(DMDIR CDEVICE_2, &r_size_1));
+	OK_(t_device_size_by_devno(devno, &r_size_1));
 	EQ_(r_size_1, 512);
 	OK_(_system("dmsetup remove " DM_RETRY CDEVICE_1 DM_NOSTDERR, 0));
 	CRYPT_FREE(cd);

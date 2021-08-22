@@ -34,8 +34,6 @@
 #include "luks1/luks.h"
 #include "libcryptsetup.h"
 
-#define DMDIR "/dev/mapper/"
-
 #define DEVICE_1_UUID "28632274-8c8a-493f-835b-da802e1c576b"
 #define DEVICE_EMPTY_name "crypt_zero"
 #define DEVICE_EMPTY DMDIR DEVICE_EMPTY_name

@@ -96,6 +96,8 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 
 #define CRYPT_FREE(x) do { crypt_free(x); x = NULL; } while (0)
 
+#define DMDIR "/dev/mapper/"
+
 #define TST_SECTOR_SHIFT 9L
 #define TST_SECTOR_SIZE 512
 #define TST_LOOP_FILE_SIZE (((1 << 20) * 100) >> TST_SECTOR_SHIFT)
@@ -123,5 +125,8 @@ int loop_device(const char *loop);
 int loop_attach(char **loop, const char *file, int offset,
 		      int autoclear, int *readonly);
 int loop_detach(const char *loop);
+
+int t_device_size_by_devno(dev_t devno, uint64_t *retval);
+int t_get_devno(const char *dev, dev_t *devno);
 
 #endif
