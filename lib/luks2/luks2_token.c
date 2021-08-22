@@ -63,9 +63,13 @@ static void *token_dlvsym(struct crypt_device *cd,
 	char *error;
 	void *sym;
 
+#ifdef HAVE_DLVSYM
 	log_dbg(cd, "Loading symbol %s@%s.", symbol, version);
-
 	sym = dlvsym(handle, symbol, version);
+#else
+	log_dbg(cd, "Loading default version of symbol %s.", symbol);
+	sym = dlsym(handle, symbol);
+#endif
 	error = dlerror();
 
 	if (error)
