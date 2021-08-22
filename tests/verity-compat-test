@@ -99,11 +99,13 @@ function check_root_hash_fail()
 
 	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH || fail
 	check_exists
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 >/dev/null 2>&1
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
 	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
 
 	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 || fail
 	check_exists
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 >/dev/null 2>&1
 	dmsetup status $DEV_NAME | grep "verity C" >/dev/null || fail
 	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
 
@@ -260,7 +262,7 @@ function check_fec()
 		return 3
 	fi
 
-	udevadm settle
+	udevadm settle > /dev/null 2>&1
 
 	dd if=/dev/mapper/$DEV_NAME of=$IMG_TMP > /dev/null 2>&1
 	ARR=(`sha256sum $IMG_TMP`)
