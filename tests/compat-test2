@@ -415,10 +415,12 @@ $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --master-key-file /dev/urandom -s 256 
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # open by UUID
-force_uevent # some systems do not update loop by-uuid
-$CRYPTSETUP luksOpen -d $KEY1 UUID=X$TEST_UUID $DEV_NAME 2>/dev/null && fail
-$CRYPTSETUP luksOpen -d $KEY1 UUID=$TEST_UUID $DEV_NAME || fail
-$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+if [ -d /dev/disk/by-uuid ] ; then
+	force_uevent # some systems do not update loop by-uuid
+	$CRYPTSETUP luksOpen -d $KEY1 UUID=X$TEST_UUID $DEV_NAME 2>/dev/null && fail
+	$CRYPTSETUP luksOpen -d $KEY1 UUID=$TEST_UUID $DEV_NAME || fail
+	$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+fi
 # empty keyfile
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
