@@ -2624,6 +2624,11 @@ static int _token_add(struct crypt_device *cd)
 		}
 	}
 
+	if (crypt_keyslot_status(cd, ARG_INT32(OPT_KEY_SLOT_ID)) == CRYPT_SLOT_INACTIVE) {
+		log_err(_("Keyslot %d is not active."), ARG_INT32(OPT_KEY_SLOT_ID));
+		return -EINVAL;
+	}
+
 	r = crypt_token_luks2_keyring_set(cd, ARG_INT32(OPT_TOKEN_ID_ID), &params);
 	if (r < 0) {
 		log_err(_("Failed to add luks2-keyring token %d."), ARG_INT32(OPT_TOKEN_ID_ID));
@@ -2674,6 +2679,11 @@ static int _token_import(struct crypt_device *cd)
 			log_err(_("Token %d in use."), ARG_INT32(OPT_TOKEN_ID_ID));
 			return -EINVAL;
 		}
+	}
+
+	if (crypt_keyslot_status(cd, ARG_INT32(OPT_KEY_SLOT_ID)) == CRYPT_SLOT_INACTIVE) {
+		log_err(_("Keyslot %d is not active."), ARG_INT32(OPT_KEY_SLOT_ID));
+		return -EINVAL;
 	}
 
 	r = tools_read_json_file(ARG_STR(OPT_JSON_FILE_ID), &json, &json_length, ARG_SET(OPT_BATCH_MODE_ID));
