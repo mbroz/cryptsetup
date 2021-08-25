@@ -68,34 +68,57 @@ static void test_logf(int level, const char *format, ...)
 #define log_std(x...) test_logf(LOG_NORMAL, x)
 #define log_err(x...) test_logf(LOG_ERROR, x)
 
-static int check_all_symbols(void *h)
+static int check_dlvsym(void *h, const char *symbol, const char *version)
+{
+#ifdef HAVE_DLVSYM
+	void *sym;
+	char *err;
+
+	log_dbg("Checking %s@%s...", symbol, version);
+	sym = dlvsym(h, symbol, version);
+	UNUSED(sym);
+	err = dlerror();
+
+	if (err) {
+		log_err("%s.", err);
+		return 1;
+	}
+
+	log_dbg("OK\n");
+#endif
+	return 0;
+}
+
+static int check_dlsym(void *h, const char *symbol)
 {
 	void *sym;
 	char *err;
+
+	log_dbg("Checking %s...", symbol);
+	sym = dlsym(h, symbol);
+	UNUSED(sym);
+	err = dlerror();
+
+	if (err) {
+		log_err("%s", err);
+		return 1;
+	}
+
+	log_dbg("OK\n");
+	return 0;
+}
+
+static int check_all_symbols(void *h)
+{
 	unsigned scount = 0;
 
-#define CHECK_SYMBOL(SYM, VER)								\
-do {											\
-	log_dbg("Checking " #SYM "@" #VER "...");					\
-	sym = dlvsym(h, #SYM, #VER);							\
-	UNUSED(sym);									\
-	err = dlerror();								\
-											\
-	if (err) {									\
-		log_err("%s.", err);							\
-		return 1;								\
-	}										\
-											\
-	log_dbg("OK\nChecking " #SYM "...");						\
-	sym = dlsym(h, #SYM);								\
-	UNUSED(sym);									\
-	err = dlerror();								\
-	if (err) {									\
-		log_err("%s", err);							\
-		return 1;								\
-	}										\
-	log_dbg("OK\n");								\
-	scount++;									\
+#define CHECK_SYMBOL(SYM, VER)			\
+do {						\
+	if (check_dlvsym(h, #SYM, #VER))	\
+		return 1;			\
+	if (check_dlsym(h, #SYM))		\
+		return 1;			\
+	scount++;				\
 } while (0);
 
 #include "test-symbols-list.h"
@@ -106,7 +129,7 @@ do {											\
 		return 1;
 	}
 
-	log_std("Performed %u symbol checks in total\n.", scount);
+	log_std("Performed %u symbol checks in total.\n", scount);
 
 	return 0;
 }

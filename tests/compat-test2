@@ -415,10 +415,12 @@ $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --master-key-file /dev/urandom -s 256 
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # open by UUID
-force_uevent # some systems do not update loop by-uuid
-$CRYPTSETUP luksOpen -d $KEY1 UUID=X$TEST_UUID $DEV_NAME 2>/dev/null && fail
-$CRYPTSETUP luksOpen -d $KEY1 UUID=$TEST_UUID $DEV_NAME || fail
-$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+if [ -d /dev/disk/by-uuid ] ; then
+	force_uevent # some systems do not update loop by-uuid
+	$CRYPTSETUP luksOpen -d $KEY1 UUID=X$TEST_UUID $DEV_NAME 2>/dev/null && fail
+	$CRYPTSETUP luksOpen -d $KEY1 UUID=$TEST_UUID $DEV_NAME || fail
+	$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+fi
 # empty keyfile
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
@@ -872,9 +874,12 @@ echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 11 --json
 echo -n "$IMPORT_TOKEN" > $TOKEN_FILE0
 $CRYPTSETUP token import $LOOPDEV --token-id 12 --json-file $TOKEN_FILE0 || fail
 $CRYPTSETUP token import $LOOPDEV --token-id 12 --json-file $TOKEN_FILE0 2>/dev/null && fail
-$CRYPTSETUP token export $LOOPDEV --token-id 10 | diff --from-file - $TOKEN_FILE0 || fail
-$CRYPTSETUP token export $LOOPDEV --token-id 11 | diff --from-file - $TOKEN_FILE0 || fail
-$CRYPTSETUP token export $LOOPDEV --token-id 12 | diff --from-file - $TOKEN_FILE0 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 10 >$TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 11 >$TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
+$CRYPTSETUP token export $LOOPDEV --token-id 12 >$TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
 $CRYPTSETUP token export $LOOPDEV --token-id 12 --json-file $TOKEN_FILE1 || fail
 diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
 $CRYPTSETUP token export $LOOPDEV --token-id 12 > $TOKEN_FILE1 || fail
@@ -1002,7 +1007,8 @@ for mda in 16 32 64 128 256 512 1024 2048 4096 ; do
 	echo $PWD4 | $CRYPTSETUP open --test-passphrase test_image_$mda || fail
 	echo $PWD3 | $CRYPTSETUP open -S9 --test-passphrase test_image_$mda || fail
 	echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import test_image_$mda --token-id 10 || fail
-	$CRYPTSETUP token export test_image_$mda --token-id 10 | diff --from-file - $TOKEN_FILE0 || fail
+	$CRYPTSETUP token export test_image_$mda --token-id 10 >$TOKEN_FILE1 || fail
+	diff $TOKEN_FILE1 $TOKEN_FILE0 || fail
 	echo -n "[OK]"
 done
 echo

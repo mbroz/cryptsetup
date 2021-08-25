@@ -94,7 +94,7 @@ function valgrind_run()
 }
 
 export LANG=C
-[ ! -d $TST_DIR ] && tar xJSf $srcdir/bitlk-images.tar.xz --no-same-owner
+[ ! -d $TST_DIR ] && tar xJSf $srcdir/bitlk-images.tar.xz --no-same-owner 2>/dev/null || skip "Incompatible tar."
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 

@@ -684,3 +684,60 @@ int loop_detach(const char *loop)
 	close(loop_fd);
 	return r;
 }
+
+int t_get_devno(const char *name, dev_t *devno)
+{
+	char path[PATH_MAX];
+	int r;
+	struct stat st;
+
+	r = snprintf(path, sizeof(path), DMDIR "%s", name);
+	if (r < 0 || (size_t)r >= sizeof(path))
+		return 1;
+
+	if (stat(path, &st) || !S_ISBLK(st.st_mode))
+		return 1;
+
+	*devno = st.st_rdev;
+
+	return 0;
+}
+
+static int _read_uint64(const char *sysfs_path, uint64_t *value)
+{
+        char tmp[64] = {0};
+        int fd, r;
+
+        if ((fd = open(sysfs_path, O_RDONLY)) < 0)
+                return 0;
+        r = read(fd, tmp, sizeof(tmp));
+        close(fd);
+
+        if (r <= 0)
+                return 0;
+
+        if (sscanf(tmp, "%" PRIu64, value) != 1)
+                return 0;
+
+        return 1;
+}
+
+static int _sysfs_get_uint64(int major, int minor, uint64_t *value, const char *attr)
+{
+        char path[PATH_MAX];
+
+        if (snprintf(path, sizeof(path), "/sys/dev/block/%d:%d/%s",
+                     major, minor, attr) < 0)
+                return 0;
+
+        return _read_uint64(path, value);
+}
+
+int t_device_size_by_devno(dev_t devno, uint64_t *retval)
+{
+	if (!_sysfs_get_uint64(major(devno), minor(devno), retval, "size"))
+		return 1;
+
+	*retval *= 512;
+	return 0;
+}

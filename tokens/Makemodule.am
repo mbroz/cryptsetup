@@ -21,7 +21,7 @@ cryptsetup_ssh_SOURCES = tokens/ssh/cryptsetup-ssh.c \
 			 lib/utils_io.c \
 			 lib/utils_loop.c
 cryptsetup_ssh_LDADD = -lm libcryptsetup.la @LIBSSH_LIBS@ @JSON_C_LIBS@ @POPT_LIBS@ \
-		       @PWQUALITY_LIBS@ @PASSWDQC_LIBS@
+		       @PWQUALITY_LIBS@ @PASSWDQC_LIBS@ @ARGP_LIBS@
 
 cryptsetup_ssh_CFLAGS = $(AM_CFLAGS)
 
