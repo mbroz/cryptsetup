@@ -1323,7 +1323,7 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 
 	if (default_alg_test()) {
 		if (fips_mode())
-			printf("Default compiled-in algorithms test ignoder (FIPS mode on).", EXIT_FAILURE);
+			printf("Default compiled-in algorithms test ignoder (FIPS mode on).");
 		else
 			exit_test("Default compiled-in algorithms test failed.", EXIT_FAILURE);
 	}
