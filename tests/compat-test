@@ -790,6 +790,12 @@ $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME >/dev/null 2>&1 && fail
 $CRYPTSETUP -q repair $LOOPDEV >/dev/null 2>&1 || fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
+# fix ecb-plain
+$CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV $KEY1 --hash sha256 -c aes-ecb || fail
+echo -n "ecb-xxx" | dd of=$LOOPDEV bs=1 seek=40 >/dev/null 2>&1
+$CRYPTSETUP -q repair $LOOPDEV >/dev/null 2>&1 || fail
+$CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
 
 prepare "[30] LUKS erase" wipe
 $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV $KEY5 --key-slot 5 || fail
