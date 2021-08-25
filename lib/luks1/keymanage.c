@@ -65,6 +65,27 @@ static void LUKS_sort_keyslots(const struct luks_phdr *hdr, int *array)
 	}
 }
 
+static int _is_not_lower(char *str, unsigned max_len)
+{
+	for(; *str && max_len; str++, max_len--)
+		if (isupper(*str))
+			return 1;
+	return 0;
+}
+
+static int _to_lower(char *str, unsigned max_len)
+{
+	int r = 0;
+
+	for(; *str && max_len; str++, max_len--)
+		if (isupper(*str)) {
+			*str = tolower(*str);
+			r = 1;
+		}
+
+	return r;
+}
+
 size_t LUKS_device_sectors(const struct luks_phdr *hdr)
 {
 	int sorted_areas[LUKS_NUMKEYS] = { 0, 1, 2, 3, 4, 5, 6, 7 };
@@ -396,6 +417,20 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 		need_write = 1;
 	}
 
+	/*
+	 * Old cryptsetup expects "sha1", gcrypt allows case insensitive names,
+	 * so always convert hash to lower case in header
+	 */
+	if (_to_lower(phdr->hashSpec, LUKS_HASHSPEC_L)) {
+		log_err(ctx, _("Cipher hash repaired to lowercase (%s)."), phdr->hashSpec);
+		if (crypt_hmac_size(phdr->hashSpec) < LUKS_DIGESTSIZE) {
+			log_err(ctx, _("Requested LUKS hash %s is not supported."), phdr->hashSpec);
+			r = -EINVAL;
+			goto out;
+		}
+		need_write = 1;
+	}
+
 	r = LUKS_check_cipher(ctx, phdr->keyBytes, phdr->cipherName, phdr->cipherMode);
 	if (r < 0)
 		return -EINVAL;
@@ -497,7 +532,7 @@ static int _check_and_convert_hdr(const char *device,
 	hdr->hashSpec[LUKS_HASHSPEC_L - 1] = '\0';
 	if (crypt_hmac_size(hdr->hashSpec) < LUKS_DIGESTSIZE) {
 		log_err(ctx, _("Requested LUKS hash %s is not supported."), hdr->hashSpec);
-		return -EINVAL;
+		r = -EINVAL;
 	}
 
 	/* Header detected */
@@ -526,6 +561,11 @@ static int _check_and_convert_hdr(const char *device,
 			r = -EINVAL;
 		}
 
+		if (_is_not_lower(hdr->hashSpec, LUKS_HASHSPEC_L)) {
+			log_err(ctx, _("LUKS hash %s is invalid."), hdr->hashSpec);
+			r = -EINVAL;
+		}
+
 		if (r == -EINVAL)
 			r = _keyslot_repair(hdr, ctx);
 		else
@@ -533,20 +573,6 @@ static int _check_and_convert_hdr(const char *device,
 	}
 
 	return r;
-}
-
-static void _to_lower(char *str, unsigned max_len)
-{
-	for(; *str && max_len; str++, max_len--)
-		if (isupper(*str))
-			*str = tolower(*str);
-}
-
-static void LUKS_fix_header_compatible(struct luks_phdr *header)
-{
-	/* Old cryptsetup expects "sha1", gcrypt allows case insensitive names,
-	 * so always convert hash to lower case in header */
-	_to_lower(header->hashSpec, LUKS_HASHSPEC_L);
 }
 
 int LUKS_read_phdr_backup(const char *backup_file,
@@ -568,11 +594,9 @@ int LUKS_read_phdr_backup(const char *backup_file,
 
 	if (read_buffer(devfd, hdr, hdr_size) < hdr_size)
 		r = -EIO;
-	else {
-		LUKS_fix_header_compatible(hdr);
+	else
 		r = _check_and_convert_hdr(backup_file, hdr,
 					   require_luks_device, 0, ctx);
-	}
 
 	close(devfd);
 	return r;
@@ -780,10 +804,9 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	strncpy(header->cipherName,cipherName,LUKS_CIPHERNAME_L-1);
 	strncpy(header->cipherMode,cipherMode,LUKS_CIPHERMODE_L-1);
 	strncpy(header->hashSpec,hashSpec,LUKS_HASHSPEC_L-1);
+	_to_lower(header->hashSpec, LUKS_HASHSPEC_L);
 
 	header->keyBytes=vk->keylength;
-
-	LUKS_fix_header_compatible(header);
 
 	log_dbg(ctx, "Generating LUKS header version %d using hash %s, %s, %s, MK %d bytes",
 		header->version, header->hashSpec ,header->cipherName, header->cipherMode,
