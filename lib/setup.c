@@ -3401,6 +3401,40 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
 	return r;
 }
 
+int crypt_resume_by_token_pin(struct crypt_device *cd, const char *name,
+	const char *type, int token, const char *pin, size_t pin_size,
+	void *usrptr)
+{
+	struct volume_key *vk = NULL;
+	int r, keyslot;
+
+	if (!name)
+		return -EINVAL;
+
+	log_dbg(cd, "Resuming volume %s by token (%s type) %d.",
+		name, type ?: "any", token);
+
+	if ((r = _onlyLUKS2(cd, CRYPT_CD_QUIET, 0)))
+		return r;
+
+	r = dm_status_suspended(cd, name);
+	if (r < 0)
+		return r;
+
+	if (!r) {
+		log_err(cd, _("Volume %s is not suspended."), name);
+		return -EINVAL;
+	}
+
+	r = LUKS2_token_unlock_volume_key(cd, &cd->u.luks2.hdr, token, type, pin, pin_size, 0, usrptr, &vk);
+	keyslot = r;
+	if (r >= 0)
+		r = resume_by_volume_key(cd, vk, name);
+
+	crypt_free_volume_key(vk);
+	return r < 0 ? r : keyslot;
+}
+
 /*
  * Keyslot manipulation
  */

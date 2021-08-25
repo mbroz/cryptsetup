@@ -899,6 +899,43 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
 	const char *name,
 	const char *volume_key,
 	size_t volume_key_size);
+/**
+ * Resume crypt device using LUKS2 token.
+ *
+ * @param cd LUKS2 crypt device handle
+ * @param name name of device to resume
+ * @param type restrict type of token, if @e NULL all types are allowed
+ * @param pin passphrase (or PIN) to unlock token (may be binary data)
+ * @param pin_size size of @e pin
+ * @param usrptr provided identification in callback
+ *
+ * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note EPERM errno means token provided passphrase successfully, but
+ *       passphrase did not unlock any keyslot associated with the token.
+ *
+ * @note ENOENT errno means no token (or subsequently assigned keyslot) was
+ *       eligible to resume LUKS2 device.
+ *
+ * @note ENOANO errno means that token is PIN protected and was either missing
+ *       (NULL) or wrong.
+ *
+ * @note Negative EAGAIN errno means token handler requires additional hardware
+ *       not present in the system to unlock keyslot.
+ *
+ * @note with @param token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
+ *       to resume device using any available token. It may happen that various token handlers
+ *       return different error codes. At the end loop returns error codes in the following
+ *       order (from the most significant to the least) any negative errno except those
+ *       listed below, non negative token id (success), -ENOANO, -EAGAIN, -EPERM, -ENOENT.
+ */
+int crypt_resume_by_token_pin(struct crypt_device *cd,
+	const char *name,
+	const char *type,
+	int token,
+	const char *pin,
+	size_t pin_size,
+	void *usrptr);
 /** @} */
 
 /**
