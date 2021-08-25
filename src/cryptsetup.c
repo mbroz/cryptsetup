@@ -1235,7 +1235,11 @@ static int action_luksRepair(void)
 	crypt_set_log_callback(cd, quiet_log, &log_parms);
 	r = crypt_load(cd, luksType(device_type), NULL);
 	crypt_set_log_callback(cd, tool_log, &log_parms);
-	if (r == 0) {
+	if (r == 0 && isLUKS2(crypt_get_type(cd))) {
+		/*
+		 * LUKS2 triggers autorepair in crypt_load() above
+		 * LUKS1 need to call crypt_repair() even if crypt_load() is ok
+		 */
 		log_verbose(_("No known problems detected for LUKS header."));
 		goto out;
 	}
