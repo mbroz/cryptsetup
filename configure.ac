@@ -100,11 +100,6 @@ AC_CHECK_LIB(uuid, uuid_clear, ,[AC_MSG_ERROR([You need the uuid library.])])
 AC_SUBST(UUID_LIBS, $LIBS)
 LIBS=$saved_LIBS
 
-saved_LIBS=$LIBS
-AC_SEARCH_LIBS([dlsym],[dl])
-AC_CHECK_FUNCS([dlvsym])
-LIBS=$saved_LIBS
-
 AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 AC_CHECK_FUNCS([posix_memalign clock_gettime posix_fallocate explicit_bzero])
 
@@ -128,6 +123,12 @@ AC_ARG_ENABLE([external-tokens],
 	[], [enable_external_tokens=yes])
 if test "x$enable_external_tokens" = "xyes"; then
 	AC_DEFINE(USE_EXTERNAL_TOKENS, 1, [Use external tokens])
+	dnl we need dynamic library loading here
+	saved_LIBS=$LIBS
+	AC_SEARCH_LIBS([dlsym],[dl])
+	AC_CHECK_FUNCS([dlvsym])
+	AC_SUBST(DL_LIBS, $LIBS)
+	LIBS=$saved_LIBS
 fi
 
 AC_ARG_ENABLE([ssh-token],
