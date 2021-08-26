@@ -2189,6 +2189,7 @@ static int action_luksResume(void)
 	char *password = NULL;
 	size_t passwordLen;
 	int r, tries;
+	struct crypt_active_device cad;
 	const char *req_type = luksType(device_type);
 
 	if (req_type && !isLUKS(req_type))
@@ -2205,6 +2206,16 @@ static int action_luksResume(void)
 
 	if (req_type && strcmp(req_type, crypt_get_type(cd))) {
 		log_err(_("%s is not active %s device name."), action_argv[0], req_type);
+		goto out;
+	}
+
+	r = crypt_get_active_device(cd, action_argv[0], &cad);
+	if (r < 0)
+		goto out;
+
+	if (!(cad.flags & CRYPT_ACTIVATE_SUSPENDED)) {
+		log_err(_("Volume %s is not suspended."), action_argv[0]);
+		r = -EINVAL;
 		goto out;
 	}
 
