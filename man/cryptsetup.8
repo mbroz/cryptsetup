@@ -341,10 +341,12 @@ the mapped device.
 \fIluksResume\fR <name>
 .IP
 Resumes a suspended device and reinstates the encryption key.
-Prompts interactively for a passphrase if \-\-key-file is not given.
+Prompts interactively for a passphrase if no token is usable
+(LUKS2 only) or \-\-key-file is not given.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-size, \-\-header,
-\-\-disable\-keyring, \-\-disable\-locks, \-\-type]
+\-\-disable\-keyring, \-\-disable\-locks, \-\-token\-id,
+\-\-token\-only, \-\-token\-type, \-\-type]
 .PP
 \fIluksAddKey\fR <device> [<key file with new key>]
 .IP
@@ -1362,14 +1364,14 @@ The \fIignored\fR priority means, that slot is never used, if not explicitly
 requested by \fI\-\-key\-slot\fR option.
 .TP
 .B "\-\-token\-id"
-Specify what token to use in actions \fItoken\fR, \fIopen\fR or \fIresize\fR.
-If omitted, all available tokens will be checked before proceeding further with
-passphrase prompt.
+Specify what token to use in actions \fItoken\fR, \fIopen\fR, \fIresize\fR or
+\fIluksResume\fR. If omitted, all available tokens will be checked before
+proceeding further with passphrase prompt.
 .TP
 .B "\-\-token\-only"
-Do not proceed further with action (any of \fItoken\fR, \fIopen\fR or
-\fIresize\fR) if token activation failed. Without the option,
-action asks for passphrase to proceed further.
+Do not proceed further with action (any of \fItoken\fR, \fIopen\fR,
+\fIresize\fR or \fIluksResume\fR) if token based keyslot unlock failed.
+Without the option, action asks for passphrase to proceed further.
 .TP
 .B "\-\-token\-type"
 Restrict tokens eligible for operation to specific token type (name). Mostly

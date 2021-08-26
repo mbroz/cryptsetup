@@ -94,7 +94,8 @@ static int _try_token_pin_unlock(struct crypt_device *cd,
 				 const char *activated_name,
 				 const char *token_type,
 				 uint32_t activate_flags,
-				 int tries)
+				 int tries,
+				 bool activation)
 {
 	size_t pin_len;
 	char msg[64], *pin = NULL;
@@ -116,8 +117,14 @@ static int _try_token_pin_unlock(struct crypt_device *cd,
 		if (r < 0)
 			break;
 
-		r = crypt_activate_by_token_pin(cd, activated_name, token_type, ARG_INT32(OPT_TOKEN_ID_ID),
-						pin, pin_len, NULL, activate_flags);
+		if (activation)
+			r = crypt_activate_by_token_pin(cd, activated_name, token_type,
+							ARG_INT32(OPT_TOKEN_ID_ID),
+							pin, pin_len, NULL, activate_flags);
+		else
+			r = crypt_resume_by_token_pin(cd, activated_name, token_type,
+						      ARG_INT32(OPT_TOKEN_ID_ID),
+						      pin, pin_len, NULL);
 		crypt_safe_free(pin);
 		pin = NULL;
 		tools_keyslot_msg(r, UNLOCKED);
@@ -710,7 +717,7 @@ static int action_resize(void)
 
 		/* Token requires PIN, but ask only if there is no password query later */
 		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
-			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), NULL, ARG_STR(OPT_TOKEN_TYPE_ID), CRYPT_ACTIVATE_KEYRING_KEY, 1);
+			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), NULL, ARG_STR(OPT_TOKEN_TYPE_ID), CRYPT_ACTIVATE_KEYRING_KEY, 1, true);
 
 		if (r >= 0 || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
@@ -1476,7 +1483,7 @@ static int action_open_luks(void)
 
 		/* Token requires PIN, but ask only if there is no password query later */
 		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
-			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), activated_name, ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags, set_tries_tty());
+			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), activated_name, ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags, set_tries_tty(), true);
 
 		if (r >= 0 || r == -EEXIST || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
@@ -2200,6 +2207,19 @@ static int action_luksResume(void)
 		log_err(_("%s is not active %s device name."), action_argv[0], req_type);
 		goto out;
 	}
+
+	/* try to resume LUKS2 device by token first */
+	r = crypt_resume_by_token_pin(cd, action_argv[0], ARG_STR(OPT_TOKEN_TYPE_ID),
+					ARG_INT32(OPT_TOKEN_ID_ID), NULL, 0, NULL);
+	tools_keyslot_msg(r, UNLOCKED);
+	tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), ARG_INT32(OPT_TOKEN_ID_ID), false);
+
+	/* Token requires PIN, but ask only if there is no password query later */
+	if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
+		r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), action_argv[0], ARG_STR(OPT_TOKEN_TYPE_ID), 0, set_tries_tty(), false);
+
+	if (r >= 0 || ARG_SET(OPT_TOKEN_ONLY_ID))
+		goto out;
 
 	tries = set_tries_tty();
 	do {
