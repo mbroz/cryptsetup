@@ -3050,8 +3050,9 @@ static int action_decrypt_luks2(struct crypt_device *cd)
 	};
 	size_t passwordLen;
 
-	if (!crypt_get_metadata_device_name(cd) || crypt_header_is_detached(cd) <= 0) {
-		log_err(_("LUKS2 decryption is supported with detached header device only."));
+	if (!crypt_get_metadata_device_name(cd) || crypt_header_is_detached(cd) <= 0 ||
+	    crypt_get_data_offset(cd) > 0) {
+		log_err(_("LUKS2 decryption is supported with detached header device only (with data offset set to 0)."));
 		return -ENOTSUP;
 	}
 

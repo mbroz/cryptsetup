@@ -961,6 +961,18 @@ echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --active-name $DEV_NAME --header $D
 $CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
 $CRYPTSETUP close $DEV_NAME
 
+# yet another funny idea
+rm -f $IMG_HDR
+$CRYPTSETUP luksHeaderBackup --header-backup-file $IMG_HDR $DEV || fail
+chmod +w $IMG_HDR || fail
+which wipefs >/dev/null 2>&1 && {
+	wipefs -a $DEV >/dev/null 2>&1  || fail
+}
+open_crypt $PWD1 $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME --decrypt --header $IMG_HDR -q 2>/dev/null && fail
+$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
+$CRYPTSETUP close $DEV_NAME || fail
+
 if ! dm_delay_features; then
 	echo "dm-delay target is missing, skipping recovery tests."
 	remove_mapping
