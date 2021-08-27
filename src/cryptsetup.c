@@ -2622,7 +2622,7 @@ static int _token_add(struct crypt_device *cd)
 		if (token_info < CRYPT_TOKEN_INACTIVE) {
 			log_err(_("Token %d is invalid."), ARG_INT32(OPT_TOKEN_ID_ID));
 			return -EINVAL;
-		} else if (token_info > CRYPT_TOKEN_INACTIVE) {
+		} else if (token_info > CRYPT_TOKEN_INACTIVE && !ARG_SET(OPT_TOKEN_REPLACE_ID)) {
 			log_err(_("Token %d in use."), ARG_INT32(OPT_TOKEN_ID_ID));
 			return -EINVAL;
 		}
@@ -2679,7 +2679,7 @@ static int _token_import(struct crypt_device *cd)
 		if (token_info < CRYPT_TOKEN_INACTIVE) {
 			log_err(_("Token %d is invalid."), ARG_INT32(OPT_TOKEN_ID_ID));
 			return -EINVAL;
-		} else if (token_info > CRYPT_TOKEN_INACTIVE) {
+		} else if (token_info > CRYPT_TOKEN_INACTIVE && !ARG_SET(OPT_TOKEN_REPLACE_ID)) {
 			log_err(_("Token %d in use."), ARG_INT32(OPT_TOKEN_ID_ID));
 			return -EINVAL;
 		}
