@@ -425,8 +425,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 		log_err(ctx, _("Cipher hash repaired to lowercase (%s)."), phdr->hashSpec);
 		if (crypt_hmac_size(phdr->hashSpec) < LUKS_DIGESTSIZE) {
 			log_err(ctx, _("Requested LUKS hash %s is not supported."), phdr->hashSpec);
-			r = -EINVAL;
-			goto out;
+			return -EINVAL;
 		}
 		need_write = 1;
 	}
