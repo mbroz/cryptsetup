@@ -1834,15 +1834,15 @@ static int reencrypt_make_targets(struct crypt_device *cd,
 			return -EINVAL;
 		}
 
+		if (reenc_seg)
+			segment_offset -= crypt_get_data_offset(cd);
+
 		if (!strcmp(json_segment_type(jobj), "crypt")) {
 			vk = crypt_volume_key_by_id(vks, reenc_seg ? LUKS2_reencrypt_digest_new(hdr) : LUKS2_digest_by_segment(hdr, s));
 			if (!vk) {
 				log_err(cd, _("Missing key for dm-crypt segment %u"), s);
 				return -EINVAL;
 			}
-
-			if (reenc_seg)
-				segment_offset -= crypt_get_data_offset(cd);
 
 			r = dm_crypt_target_set(result, segment_start, segment_size,
 						reenc_seg ? hz_device : crypt_data_device(cd),

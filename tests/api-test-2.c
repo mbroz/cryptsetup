@@ -4319,6 +4319,22 @@ static void Luks2Reencryption(void)
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 
+	/* decryption forward (online) */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	params2.data_device = NULL;
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_2, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
+	memset(&rparams, 0, sizeof(rparams));
+	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
+	rparams.direction = CRYPT_REENCRYPT_FORWARD;
+	rparams.resilience = "none";
+	rparams.max_hotzone_size = 2048;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_2, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	CRYPT_FREE(cd);
+
 	/* decryption with data shift */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	params2.data_device = NULL;
