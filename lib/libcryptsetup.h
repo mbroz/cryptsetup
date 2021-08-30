@@ -129,9 +129,10 @@ void crypt_free(struct crypt_device *cd);
  * other values mean accepted.
  *
  * @param cd crypt device handle
- * @param confirm user defined confirm callback reference
+ * @param confirm user defined confirm callback reference; use
+ *        @p msg for message for user to confirm and
+ *        @p usrptr for identification in callback
  * @param usrptr provided identification in callback
- * @param msg Message for user to confirm
  *
  * @note Current version of cryptsetup API requires confirmation for UUID change and
  *	 LUKS header restore only.
@@ -196,10 +197,11 @@ int crypt_set_data_offset(struct crypt_device *cd, uint64_t data_offset);
  * Set log function.
  *
  * @param cd crypt device handle (can be @e NULL to set default log function)
- * @param log user defined log function reference
+ * @param log user defined log function reference; use
+ *        @p level for log level,
+ *        @p msg for message, and
+ *        @p usrptr for identification in callback
  * @param usrptr provided identification in callback
- * @param level log level below (debug messages can uses other levels)
- * @param msg log message
  */
 void crypt_set_log_callback(struct crypt_device *cd,
 	void (*log)(int level, const char *msg, void *usrptr),
@@ -2285,15 +2287,20 @@ const char *crypt_token_external_path(void);
  */
 void crypt_token_external_disable(void);
 
-/** ABI version for external token in libcryptsetup-token-<name>.so */
+/** ABI version for external token in libcryptsetup-token-[name].so */
 #define CRYPT_TOKEN_ABI_VERSION1    "CRYPTSETUP_TOKEN_1.0"
 
-/** ABI exported symbol for external token */
-#define CRYPT_TOKEN_ABI_OPEN        "cryptsetup_token_open" /* mandatory */
+/** open by token - ABI exported symbol for external token (mandatory) */
+#define CRYPT_TOKEN_ABI_OPEN        "cryptsetup_token_open"
+/** open by token with PIN - ABI exported symbol for external token */
 #define CRYPT_TOKEN_ABI_OPEN_PIN    "cryptsetup_token_open_pin"
+/** deallocate callback - ABI exported symbol for external token */
 #define CRYPT_TOKEN_ABI_BUFFER_FREE "cryptsetup_token_buffer_free"
+/** validate token metadata - ABI exported symbol for external token */
 #define CRYPT_TOKEN_ABI_VALIDATE    "cryptsetup_token_validate"
+/** dump token metadata - ABI exported symbol for external token */
 #define CRYPT_TOKEN_ABI_DUMP        "cryptsetup_token_dump"
+/** token version - ABI exported symbol for external token */
 #define CRYPT_TOKEN_ABI_VERSION     "cryptsetup_token_version"
 
 /**
@@ -2319,7 +2326,7 @@ void crypt_token_external_disable(void);
  * @note Negative EAGAIN errno means token handler requires additional hardware
  *       not present in the system.
  *
- * @note with @param token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
+ * @note with @e token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
  *       to unlock device using any available token. It may happen that various token handlers
  *       return different error codes. At the end loop returns error codes in the following
  *       order (from the most significant to the least) any negative errno except those
@@ -2357,7 +2364,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  * @note Negative EAGAIN errno means token handler requires additional hardware
  *       not present in the system.
  *
- * @note with @param token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
+ * @note with @e token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
  *       to unlock device using any available token. It may happen that various token handlers
  *       return different error codes. At the end loop returns error codes in the following
  *       order (from the most significant to the least) any negative errno except those
