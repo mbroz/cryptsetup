@@ -41,8 +41,10 @@
 #include "crypto_backend_internal.h"
 #if OPENSSL_VERSION_MAJOR >= 3
 #include <openssl/provider.h>
+#include <openssl/kdf.h>
 static OSSL_PROVIDER *ossl_legacy = NULL;
 static OSSL_PROVIDER *ossl_default = NULL;
+static OSSL_LIB_CTX  *ossl_ctx = NULL;
 #endif
 
 #define CONST_CAST(x) (x)(uintptr_t)
@@ -68,6 +70,7 @@ struct crypt_cipher {
 	struct {
 		EVP_CIPHER_CTX *hd_enc;
 		EVP_CIPHER_CTX *hd_dec;
+		const EVP_CIPHER *cipher_type;
 		size_t iv_length;
 	} lib;
 	} u;
@@ -130,31 +133,41 @@ static void HMAC_CTX_free(HMAC_CTX *md)
 	free(md);
 }
 #else
-static void openssl_backend_init(void)
+static int openssl_backend_init(void)
 {
 /*
  * OpenSSL >= 3.0.0 provides some algorithms in legacy provider
  */
 #if OPENSSL_VERSION_MAJOR >= 3
-	OPENSSL_init_crypto(OPENSSL_INIT_NO_ATEXIT, NULL);
-	ossl_legacy  = OSSL_PROVIDER_try_load(NULL, "legacy", 0);
-	ossl_default = OSSL_PROVIDER_try_load(NULL, "default", 0);
+	ossl_ctx = OSSL_LIB_CTX_new();
+	if (!ossl_ctx)
+		return -EINVAL;
+
+	ossl_default = OSSL_PROVIDER_try_load(ossl_ctx, "default", 0);
+	if (!ossl_default) {
+		OSSL_LIB_CTX_free(ossl_ctx);
+		return -EINVAL;
+	}
+
+	/* Optional */
+	ossl_legacy = OSSL_PROVIDER_try_load(ossl_ctx, "legacy", 0);
 #endif
+	return 0;
 }
 
 static void openssl_backend_exit(void)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
-	/*
-	 * If Destructor was already called, we must not call it again
-	 */
-	if (OPENSSL_init_crypto(0, NULL) != 0) {
+	if (ossl_legacy)
 		OSSL_PROVIDER_unload(ossl_legacy);
+	if (ossl_default)
 		OSSL_PROVIDER_unload(ossl_default);
-		OPENSSL_cleanup();
-	}
+	if (ossl_ctx)
+		OSSL_LIB_CTX_free(ossl_ctx);
+
 	ossl_legacy = NULL;
 	ossl_default = NULL;
+	ossl_ctx = NULL;
 #endif
 }
 
@@ -169,7 +182,8 @@ int crypt_backend_init(void)
 	if (crypto_backend_initialised)
 		return 0;
 
-	openssl_backend_init();
+	if (openssl_backend_init())
+		return -EINVAL;
 
 	crypto_backend_initialised = 1;
 	return 0;
@@ -177,7 +191,14 @@ int crypt_backend_init(void)
 
 void crypt_backend_destroy(void)
 {
+	/*
+	 * If Destructor was already called, we must not call it again
+	 */
+	if (!crypto_backend_initialised)
+		return;
+
 	crypto_backend_initialised = 0;
+
 	openssl_backend_exit();
 }
 
@@ -215,16 +236,51 @@ static const char *crypt_hash_compat_name(const char *name)
 	return hash_name;
 }
 
+static const EVP_MD *hash_id_get(const char *name)
+{
+#if OPENSSL_VERSION_MAJOR >= 3
+	return EVP_MD_fetch(ossl_ctx, crypt_hash_compat_name(name), NULL);
+#else
+	return EVP_get_digestbyname(crypt_hash_compat_name(name));
+#endif
+}
+
+static void hash_id_free(const EVP_MD *hash_id)
+{
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_MD_free(CONST_CAST(EVP_MD*)hash_id);
+#endif
+}
+
+static const EVP_CIPHER *cipher_type_get(const char *name)
+{
+#if OPENSSL_VERSION_MAJOR >= 3
+	return EVP_CIPHER_fetch(ossl_ctx, name, NULL);
+#else
+	return EVP_get_cipherbyname(name);
+#endif
+}
+
+static void cipher_type_free(const EVP_CIPHER *cipher_type)
+{
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_CIPHER_free(CONST_CAST(EVP_CIPHER*)cipher_type);
+#endif
+}
+
 /* HASH */
 int crypt_hash_size(const char *name)
 {
+	int size;
 	const EVP_MD *hash_id;
 
-	hash_id = EVP_get_digestbyname(crypt_hash_compat_name(name));
+	hash_id = hash_id_get(name);
 	if (!hash_id)
 		return -EINVAL;
 
-	return EVP_MD_size(hash_id);
+	size = EVP_MD_size(hash_id);
+	hash_id_free(hash_id);
+	return size;
 }
 
 int crypt_hash_init(struct crypt_hash **ctx, const char *name)
@@ -241,7 +297,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 		return -ENOMEM;
 	}
 
-	h->hash_id = EVP_get_digestbyname(crypt_hash_compat_name(name));
+	h->hash_id = hash_id_get(name);
 	if (!h->hash_id) {
 		EVP_MD_CTX_free(h->md);
 		free(h);
@@ -249,6 +305,7 @@ int crypt_hash_init(struct crypt_hash **ctx, const char *name)
 	}
 
 	if (EVP_DigestInit_ex(h->md, h->hash_id, NULL) != 1) {
+		hash_id_free(h->hash_id);
 		EVP_MD_CTX_free(h->md);
 		free(h);
 		return -EINVAL;
@@ -300,6 +357,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 
 void crypt_hash_destroy(struct crypt_hash *ctx)
 {
+	hash_id_free(ctx->hash_id);
 	EVP_MD_CTX_free(ctx->md);
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
@@ -326,7 +384,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		return -ENOMEM;
 	}
 
-	h->hash_id = EVP_get_digestbyname(crypt_hash_compat_name(name));
+	h->hash_id = hash_id_get(name);
 	if (!h->hash_id) {
 		HMAC_CTX_free(h->md);
 		free(h);
@@ -374,6 +432,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 
 void crypt_hmac_destroy(struct crypt_hmac *ctx)
 {
+	hash_id_free(ctx->hash_id);
 	HMAC_CTX_free(ctx->md);
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
@@ -389,6 +448,67 @@ int crypt_backend_rng(char *buffer, size_t length,
 	return 0;
 }
 
+static int pbkdf2(const char *password, size_t password_length,
+		const char *salt, size_t salt_length,
+		uint32_t iterations, const char *hash, size_t key_length,
+		unsigned char *key)
+{
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_KDF_CTX *ctx;
+	EVP_KDF *pbkdf2;
+	int r;
+	OSSL_PARAM params[] = {
+		{ .key = "pass",
+		  .data_type = OSSL_PARAM_OCTET_STRING,
+		  .data = CONST_CAST(void*)password,
+		  .data_size = password_length
+		},
+		{ .key = "salt",
+		  .data_type = OSSL_PARAM_OCTET_STRING,
+		  .data = CONST_CAST(void*)salt,
+		  .data_size = salt_length
+		},
+		{ .key = "iter",
+		  .data_type = OSSL_PARAM_UNSIGNED_INTEGER,
+		  .data = &iterations,
+		  .data_size = sizeof(iterations)
+		},
+		{ .key = "digest",
+		  .data_type = OSSL_PARAM_UTF8_STRING,
+		  .data = CONST_CAST(void*)hash,
+		  .data_size = strlen(hash)
+		},
+		{ NULL, 0, NULL, 0, 0 }
+	};
+
+	pbkdf2 = EVP_KDF_fetch(ossl_ctx, "pbkdf2", NULL);
+	if (!pbkdf2)
+		return 0;
+
+	ctx = EVP_KDF_CTX_new(pbkdf2);
+	if (!ctx) {
+		EVP_KDF_free(pbkdf2);
+		return 0;
+	}
+
+	r = EVP_KDF_derive(ctx, key, key_length, params);
+
+	EVP_KDF_CTX_free(ctx);
+	EVP_KDF_free(pbkdf2);
+
+	/* _derive() returns 0 or negative value on error, 1 on success */
+	return r <= 0 ? 0 : 1;
+#else
+	const EVP_MD *hash_id = EVP_get_digestbyname(crypt_hash_compat_name(hash));
+	if (!hash_id)
+		return 0;
+
+	return PKCS5_PBKDF2_HMAC(password, (int)password_length, (const unsigned char *)salt,
+				 (int)salt_length, iterations, hash_id,
+				 (int)key_length, key);
+#endif
+}
+
 /* PBKDF */
 int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
@@ -397,19 +517,12 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		uint32_t iterations, uint32_t memory, uint32_t parallel)
 
 {
-	const EVP_MD *hash_id;
-
 	if (!kdf)
 		return -EINVAL;
 
 	if (!strcmp(kdf, "pbkdf2")) {
-		hash_id = EVP_get_digestbyname(crypt_hash_compat_name(hash));
-		if (!hash_id)
-			return -EINVAL;
-
-		if (!PKCS5_PBKDF2_HMAC(password, (int)password_length,
-		    (const unsigned char *)salt, (int)salt_length,
-	            (int)iterations, hash_id, (int)key_length, (unsigned char *)key))
+		if (!pbkdf2(password, password_length,
+		    salt, salt_length, iterations, hash, key_length, (unsigned char *)key))
 			return -EINVAL;
 		return 0;
 	} else if (!strncmp(kdf, "argon2", 6)) {
@@ -421,16 +534,19 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 }
 
 /* Block ciphers */
-static void _cipher_destroy(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec)
+static void _cipher_destroy(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const EVP_CIPHER **cipher_type)
 {
 	EVP_CIPHER_CTX_free(*hd_enc);
 	*hd_enc = NULL;
 
 	EVP_CIPHER_CTX_free(*hd_dec);
 	*hd_dec = NULL;
+
+	cipher_type_free(*cipher_type);
+	*cipher_type = NULL;
 }
 
-static int _cipher_init(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const char *name,
+static int _cipher_init(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const EVP_CIPHER **cipher_type, const char *name,
 			const char *mode, const void *key, size_t key_length, size_t *iv_length)
 {
 	char cipher_name[256];
@@ -445,31 +561,37 @@ static int _cipher_init(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const 
 	if (r < 0 || (size_t)r >= sizeof(cipher_name))
 		return -EINVAL;
 
-	type = EVP_get_cipherbyname(cipher_name);
+	type = cipher_type_get(cipher_name);
 	if (!type)
 		return -ENOENT;
 
-	if (EVP_CIPHER_key_length(type) != (int)key_length)
+	if (EVP_CIPHER_key_length(type) != (int)key_length) {
+		cipher_type_free(type);
 		return -EINVAL;
+	}
 
 	*hd_enc = EVP_CIPHER_CTX_new();
 	*hd_dec = EVP_CIPHER_CTX_new();
 	*iv_length = EVP_CIPHER_iv_length(type);
 
-	if (!*hd_enc || !*hd_dec)
+	if (!*hd_enc || !*hd_dec) {
+		cipher_type_free(type);
 		return -EINVAL;
+	}
 
 	if (EVP_EncryptInit_ex(*hd_enc, type, NULL, key, NULL) != 1 ||
 	    EVP_DecryptInit_ex(*hd_dec, type, NULL, key, NULL) != 1) {
-		_cipher_destroy(hd_enc, hd_dec);
+		_cipher_destroy(hd_enc, hd_dec, &type);
 		return -EINVAL;
 	}
 
 	if (EVP_CIPHER_CTX_set_padding(*hd_enc, 0) != 1 ||
 	    EVP_CIPHER_CTX_set_padding(*hd_dec, 0) != 1) {
-		_cipher_destroy(hd_enc, hd_dec);
+		_cipher_destroy(hd_enc, hd_dec, &type);
 		return -EINVAL;
 	}
+
+	*cipher_type = type;
 
 	return 0;
 }
@@ -484,7 +606,7 @@ int crypt_cipher_init(struct crypt_cipher **ctx, const char *name,
 	if (!h)
 		return -ENOMEM;
 
-	if (!_cipher_init(&h->u.lib.hd_enc, &h->u.lib.hd_dec, name, mode, key,
+	if (!_cipher_init(&h->u.lib.hd_enc, &h->u.lib.hd_dec, &h->u.lib.cipher_type, name, mode, key,
 			  key_length, &h->u.lib.iv_length)) {
 		h->use_kernel = false;
 		*ctx = h;
@@ -507,7 +629,7 @@ void crypt_cipher_destroy(struct crypt_cipher *ctx)
 	if (ctx->use_kernel)
 		crypt_cipher_destroy_kernel(&ctx->u.kernel);
 	else
-		_cipher_destroy(&ctx->u.lib.hd_enc, &ctx->u.lib.hd_dec);
+		_cipher_destroy(&ctx->u.lib.hd_enc, &ctx->u.lib.hd_dec, &ctx->u.lib.cipher_type);
 	free(ctx);
 }
 
