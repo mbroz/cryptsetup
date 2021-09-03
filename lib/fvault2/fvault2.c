@@ -199,6 +199,110 @@ static int _check_crc(
 }
 
 /**
+ * Unwrap an AES-wrapped key.
+ * @param[in] kek the KEK with which the key has been wrapped
+ * @param[in] kek_size the size of the KEK in bytes
+ * @param[in] key_wrapped the wrapped key
+ * @param[in] key_wrapped_size the size of the wrapped key in bytes
+ * @param[out] key_buf key an output buffer for the unwrapped key
+ * @param[in] key_buf_size the size of the output buffer in bytes
+ */
+static int _unwrap_key(
+	const void *kek,
+	size_t kek_size,
+	const void *key_wrapped,
+	size_t key_wrapped_size,
+	void *key_buf,
+	size_t key_buf_size)
+{
+	/* Algorithm and notation taken from NIST Special Publication 800-38F:
+	https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38F.pdf
+
+	This implementation supports only 128-bit KEKs and wrapped keys. */
+
+	int r = 0;
+	struct crypt_cipher *cipher = NULL;
+	void *cipher_in = NULL;
+	void *cipher_out = NULL;
+	uint64_t a;
+	uint64_t r2;
+	uint64_t r3;
+	uint64_t t;
+	uint64_t r2_prev;
+
+	if (kek_size != 16 || key_wrapped_size != 24 || key_buf_size != 16) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = crypt_cipher_init(&cipher, "aes", "ecb", kek, kek_size);
+	if (r < 0)
+		goto out;
+
+	cipher_in = malloc(16);
+	if (cipher_in == NULL) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	cipher_out = malloc(16);
+	if (cipher_out == NULL) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	/* CHAPTER 6.1, ALGORITHM 2: W^-1(C) */
+
+	/* intialize variables */
+	a = ((const uint64_t *)key_wrapped)[0]; /* A = C_1 (see step 1c) */
+	r2 = ((const uint64_t *)key_wrapped)[1]; /* R_1 = C_2 (see step 1d) */
+	r3 = ((const uint64_t *)key_wrapped)[2]; /* R_2 = C_3 (see step 1d) */
+
+	/* calculate intermediate values for each t = s, ..., 1 (see step 2),
+	where s = 6 * (n - 1) (see step 1a) */
+	for (t = 6 * (3 - 1); t > 0; t--) {
+		/* store current R2 for later assignment (see step 2c) */
+		r2_prev = r2;
+
+		/* prepare input for CIPH^{-1}_K (see steps 2a, 2b) */
+		((uint64_t *)cipher_in)[0] = a ^ cpu_to_be64(t);
+		((uint64_t *)cipher_in)[1] = r3;
+
+		/* A||R2 = CIPH^{-1}_K(...) (see steps 2a, 2b) */
+		r = crypt_cipher_decrypt(cipher, cipher_in, cipher_out, 16,
+			NULL, 0);
+		if (r < 0)
+			goto out;
+		a = ((uint64_t *)cipher_out)[0];
+		r2 = ((uint64_t *)cipher_out)[1];
+
+		/* assign previous R2 (see step 2c) */
+		r3 = r2_prev;
+	}
+
+	/* note that A||R_1||R_2 holds the result S (see step 3) */
+
+	/* CHAPTER 6.2, ALGORITHM 4: KW-AD(C) */
+
+	/* check whether MSB_{64}(S) (= A) matches ICV1 (see step 3) */
+	if (a != 0xA6A6A6A6A6A6A6A6) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	/* return LSB_{128}(S) (= R_1||R_2) (see step 4) */
+	((uint64_t *)key_buf)[0] = r2;
+	((uint64_t *)key_buf)[1] = r3;
+
+out:
+	free(cipher_in);
+	free(cipher_out);
+	if (cipher != NULL)
+		crypt_cipher_destroy(cipher);
+	return r;
+}
+
+/**
  * Search XML plist data for a property and return its value.
  * @param[in] xml a 0-terminated string containing the XML plist data
  * @param[in] prop_key a 0-terminated string with the seeked property's key
@@ -700,7 +804,73 @@ int FVAULT2_get_volume_key(
 	const struct fvault2_params *params,
 	struct volume_key **vol_key)
 {
-	return -ENOTSUP;
+	int r = 0;
+	struct volume_key *passphr_key = NULL;
+	struct volume_key *kek = NULL;
+	struct crypt_hash *hash = NULL;
+
+	*vol_key = NULL;
+
+	passphr_key = crypt_alloc_volume_key(FVAULT2_AES_KEY_SIZE, NULL);
+	if (passphr_key == NULL) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	r = crypt_pbkdf("pbkdf2", "sha256", passphr, passphr_len,
+		params->pbkdf2_salt, FVAULT2_PBKDF2_SALT_SIZE, passphr_key->key,
+		FVAULT2_AES_KEY_SIZE, params->pbkdf2_iters, 0, 0);
+	if (r < 0)
+		goto out;
+
+	kek = crypt_alloc_volume_key(FVAULT2_AES_KEY_SIZE, NULL);
+	if (kek == NULL) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	r = _unwrap_key(passphr_key->key, FVAULT2_AES_KEY_SIZE,
+		params->wrapped_kek, FVAULT2_WRAPPED_KEY_SIZE, kek->key,
+		FVAULT2_AES_KEY_SIZE);
+	if (r < 0)
+		goto out;
+
+	*vol_key = crypt_alloc_volume_key(FVAULT2_XTS_KEY_SIZE, NULL);
+	if (*vol_key == NULL) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	r = _unwrap_key(kek->key, FVAULT2_AES_KEY_SIZE, params->wrapped_vk,
+		FVAULT2_WRAPPED_KEY_SIZE, (*vol_key)->key,
+		FVAULT2_AES_KEY_SIZE);
+	if (r < 0)
+		goto out;
+
+	r = crypt_hash_init(&hash, "sha256");
+	if (r < 0)
+		goto out;
+	r = crypt_hash_write(hash, (*vol_key)->key, FVAULT2_AES_KEY_SIZE);
+	if (r < 0)
+		goto out;
+	r = crypt_hash_write(hash, params->family_uuid, FVAULT2_UUID_SIZE);
+	if (r < 0)
+		goto out;
+	r = crypt_hash_final(hash, (*vol_key)->key + FVAULT2_AES_KEY_SIZE,
+		FVAULT2_AES_KEY_SIZE);
+	if (r < 0)
+		goto out;
+
+out:
+	crypt_free_volume_key(passphr_key);
+	crypt_free_volume_key(kek);
+	if (r < 0) {
+		crypt_free_volume_key(*vol_key);
+		*vol_key = NULL;
+	}
+	if (hash != NULL)
+		crypt_hash_destroy(hash);
+	return r;
 }
 
 int FVAULT2_dump(
