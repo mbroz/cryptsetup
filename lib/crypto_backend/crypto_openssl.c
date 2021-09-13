@@ -88,7 +88,7 @@ struct hash_alg {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || \
     (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
 
-static void openssl_backend_init(void)
+static void openssl_backend_init(bool fips __attribute__((unused)))
 {
 	OpenSSL_add_all_algorithms();
 }
@@ -150,7 +150,7 @@ static void openssl_backend_exit(void)
 #endif
 }
 
-static int openssl_backend_init(void)
+static int openssl_backend_init(bool fips)
 {
 /*
  * OpenSSL >= 3.0.0 provides some algorithms in legacy provider
@@ -158,23 +158,30 @@ static int openssl_backend_init(void)
 #if OPENSSL_VERSION_MAJOR >= 3
 	int r;
 
-	ossl_ctx = OSSL_LIB_CTX_new();
-	if (!ossl_ctx)
-		return -EINVAL;
+	/*
+	 * In FIPS mode we keep default OpenSSL context & global config
+	 */
+	if (!fips) {
+		ossl_ctx = OSSL_LIB_CTX_new();
+		if (!ossl_ctx)
+			return -EINVAL;
 
-	ossl_default = OSSL_PROVIDER_try_load(ossl_ctx, "default", 0);
-	if (!ossl_default) {
-		OSSL_LIB_CTX_free(ossl_ctx);
-		return -EINVAL;
+		ossl_default = OSSL_PROVIDER_try_load(ossl_ctx, "default", 0);
+		if (!ossl_default) {
+			OSSL_LIB_CTX_free(ossl_ctx);
+			return -EINVAL;
+		}
+
+		/* Optional */
+		ossl_legacy = OSSL_PROVIDER_try_load(ossl_ctx, "legacy", 0);
 	}
 
-	/* Optional */
-	ossl_legacy = OSSL_PROVIDER_try_load(ossl_ctx, "legacy", 0);
-
-	r = snprintf(backend_version, sizeof(backend_version), "%s %s%s",
+	r = snprintf(backend_version, sizeof(backend_version), "%s %s%s%s",
 		OpenSSL_version(OPENSSL_VERSION),
 		ossl_default ? "[default]" : "",
-		ossl_legacy  ? "[legacy]" : "");
+		ossl_legacy  ? "[legacy]" : "",
+		fips  ? "[fips]" : "");
+
 	if (r < 0 || (size_t)r >= sizeof(backend_version)) {
 		openssl_backend_exit();
 		return -EINVAL;
@@ -193,12 +200,12 @@ static const char *openssl_backend_version(void)
 }
 #endif
 
-int crypt_backend_init(void)
+int crypt_backend_init(bool fips)
 {
 	if (crypto_backend_initialised)
 		return 0;
 
-	if (openssl_backend_init())
+	if (openssl_backend_init(fips))
 		return -EINVAL;
 
 	crypto_backend_initialised = 1;

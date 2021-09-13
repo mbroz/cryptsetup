@@ -94,7 +94,7 @@ static void crypt_hash_test_whirlpool_bug(void)
 		crypto_backend_whirlpool_bug = 1;
 }
 
-int crypt_backend_init(void)
+int crypt_backend_init(bool fips __attribute__((unused)))
 {
 	int r;
 

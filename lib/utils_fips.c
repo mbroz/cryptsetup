@@ -24,9 +24,9 @@
 #include "utils_fips.h"
 
 #if !ENABLE_FIPS
-int crypt_fips_mode(void) { return 0; }
+bool crypt_fips_mode(void) { return false; }
 #else
-static int kernel_fips_mode(void)
+static bool kernel_fips_mode(void)
 {
 	int fd;
 	char buf[1] = "";
@@ -36,10 +36,10 @@ static int kernel_fips_mode(void)
 		close(fd);
 	}
 
-	return (buf[0] == '1') ? 1 : 0;
+	return (buf[0] == '1');
 }
 
-int crypt_fips_mode(void)
+bool crypt_fips_mode(void)
 {
 	return kernel_fips_mode() && !access("/etc/system-fips", F_OK);
 }

@@ -117,7 +117,7 @@ static int crypt_kernel_socket_init(struct sockaddr_alg *sa, int *tfmfd, int *op
 	return 0;
 }
 
-int crypt_backend_init(void)
+int crypt_backend_init(bool fips __attribute__((unused)))
 {
 	struct utsname uts;
 	struct sockaddr_alg sa = {
