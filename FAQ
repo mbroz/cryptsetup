@@ -51,7 +51,7 @@ A. Contributors
   security model BEFORE you face such a disaster!  In particular, make
   sure you have a current header backup before doing any potentially
   dangerous operations.  The LUKS2 header should be a bit more resilient
-  as critical data starts later and is stored twice, but you can decidedly
+  as critical data starts later and is stored twice, but you can decidely
   still destroy it or a keyslot permanently by accident.
 
   DEBUG COMMANDS: While the --debug and --debug-json options should not
@@ -235,7 +235,6 @@ A. Contributors
   nothing and are sure you did not confirm, then you should look into a
   possible compromise of your email account.
 
-
   * 1.9 What can I do if cryptsetup is running out of memory?
 
   Memory issues are generally related to the key derivation function.  You may
@@ -261,7 +260,6 @@ A. Contributors
 
   Also, device mapper requires root access.  cryptsetup uses device mapper to 
   manage the decrypted container.
-
 
 2. Setup
 
@@ -426,6 +424,14 @@ A. Contributors
   it in some other way.  The PC is just not set-up for a really secure
   boot-chain (whatever some people may claim).
 
+  That said, if you want an encrypted root partition, you have to store 
+  an initrd with cryptsetup somewhere else. The traditional approach is
+  to have a separate partition under /boot for that. You can also put that 
+  initrd on a bootable memory stick, bootable CD or bootable external
+  drive as well. The kernel and Grub typically go to the same location 
+  as that initrd. A minimal example what such an initrd can look like is 
+  given in Section 9.
+  
   (2) Fully encrypted raw block device: For this, put LUKS on the raw
   device (e.g.  /dev/sdb) and put a filesystem into the LUKS container, no
   partitioning whatsoever involved.  This is very suitable for things like
@@ -845,7 +851,7 @@ A. Contributors
 
 
   * 2.20 How do I wipe only the LUKS header?
-
+ 
   This does _not_ describe an emergency wipe procedure, see Item 5.4 for
   that.  This procedure here is intended to be used when the data should
   stay intact, e.g.  when you change your LUKS container to use a detached
@@ -858,20 +864,26 @@ A. Contributors
      cryptsetup luksDump <device with LUKS container>
 
 ->   ...
-     Payload offset: <number>
+     Payload offset: <number> [of 512 byte sectors]
      ...
 
   02) Take the result number, multiply by 512 zeros and write to 
-      the start of the device, e.g. like this:
+      the start of the device, e.g. using one of the following alternatives:
 
      dd bs=512 count=<number> if=/dev/zero of=<device>
 
 
-  LUKS2:  (warning, untested!  Remember that backup?) This assumes the
+     head -c <number * 512> /dev/zero > /dev/<device>
+
+
+  LUKS2:  
+  (warning, untested!  Remember that backup?) This assumes the
   LUKS2 container uses the defaults, in particular there is only one data
-  segment.  01) Determine the data-segment offset using luksDump, same
+  segment.  
+  01) Determine the data-segment offset using luksDump, same
       as above for LUKS1:
 
+     cryptsetup luksDump <device with LUKS container>
 ->   ...  
      Data segments:
         0: crypt
@@ -881,7 +893,7 @@ A. Contributors
   02) Overwrite the stated number of bytes from the start of the device.
       Just to give yet another way to get a defined number of zeros:
 
-    head -c /dev/zero > /dev/<device>
+     head -c <number> /dev/zero > /dev/<device>
 
 
 3. Common Problems
@@ -996,7 +1008,7 @@ A. Contributors
   that is intact.
 
   In order to find out whether a key-slot is damaged one has to look for
-  "non-random looking" data in it.  There is a tool that automates this
+  "non-random looking" data in it.  There is a tool that automatizes this
   for LUKS1 in the cryptsetup distribution from version 1.6.0 onwards.  It
   is located in misc/keyslot_checker/.  Instructions how to use and how to
   interpret results are in the README file.  Note that this tool requires
@@ -1233,6 +1245,17 @@ A. Contributors
   whole idea is not compatible with fair laws.  Note that in this context,
   countries like the US or the UK are not civilized and do not have fair
   laws.
+
+  As a side-note, standards for biometrics (fingerprint, retina, 
+  vein-pattern, etc.) are often different and much lower. If you put
+  your LUKS passphrase into a device that can be unlocked using biometrics,
+  they may force a biometric sample in many countries where they could not
+  force you to give them a passphrase you solely have in your memory and
+  can claim to have forgotten if needed (it happens). If you need protection
+  on this level, make sure you know what the respective legal situation is,
+  also while traveling, and make sure you decide beforehand what you
+  will do if push comes to shove as they will definitely put you under
+  as much pressure as they can legally apply. 
 
   This means that if you have a large set of random-looking data, they can
   already lock you up.  Hidden containers (encryption hidden within
@@ -1635,9 +1658,8 @@ A. Contributors
 
     cryptsetup -c aes-xts-plain64 luksFormat <device>
 
-  There is a potential security issue with XTS mode and blocks larger
-  than 2^20 bytes or so. LUKS and dm-crypt always use smaller blocks 
-  and the issue does not apply.
+  There is a potential security issue with XTS mode and large blocks. 
+  LUKS and dm-crypt always use 512B blocks and the issue does not apply.
 
 
   * 5.17 Is LUKS FIPS-140-2 certified?
@@ -2656,7 +2678,7 @@ offset  length  name                  data type  description
   safe under these circumstances, then you have bigger problems than this
   somewhat expected behavior.
 
-  The CVE was exaggerated and should not be assigned to upstream
+  The CVE was exagerrated and should not be assigned to upstream
   cryptsetup in the first place (it is a distro specific initrd issue). 
   It was driven more by a try to make a splash for self-aggrandizement,
   than by any actual security concerns.  Ignore it.
@@ -2980,8 +3002,23 @@ offset  length  name                  data type  description
   start of the device, nothing gets stored somewhere in the middle or at 
   the end. 
   
+  * 10.12 What is a LUKS2 Token?
+
+  A LUKS2 token is an object that describes "how to get a passphrase or 
+  key" to unlock particular keyslot. A LUKS2 token is stored as json data 
+  in the LUKS2 header. The token can be related to all keyslots or a 
+  specific one. As the token is stored in JSON formay it is text by 
+  default but binary data can be encoded into it according to the JSON 
+  conventions.
+ 
+  Documentation on the last changes to LUKS2 tokens can be found in the 
+  release notes. As of version 2.4 of cryptsetup, there are significant 
+  features. The standard documentation for working with tokens is 
+  in the luks2 reference available as PDF on the project page.
+
 
 11. References and Further Reading
+
 
   * Purpose of this Section
 
