@@ -1834,15 +1834,15 @@ static int reencrypt_make_targets(struct crypt_device *cd,
 			return -EINVAL;
 		}
 
+		if (reenc_seg)
+			segment_offset -= crypt_get_data_offset(cd);
+
 		if (!strcmp(json_segment_type(jobj), "crypt")) {
 			vk = crypt_volume_key_by_id(vks, reenc_seg ? LUKS2_reencrypt_digest_new(hdr) : LUKS2_digest_by_segment(hdr, s));
 			if (!vk) {
 				log_err(cd, _("Missing key for dm-crypt segment %u"), s);
 				return -EINVAL;
 			}
-
-			if (reenc_seg)
-				segment_offset -= crypt_get_data_offset(cd);
 
 			r = dm_crypt_target_set(result, segment_start, segment_size,
 						reenc_seg ? hz_device : crypt_data_device(cd),
@@ -2249,7 +2249,11 @@ static int reencrypt_make_backup_segments(struct crypt_device *cd,
 		r = LUKS2_get_data_size(hdr, &tmp, NULL);
 		if (r)
 			goto err;
-		jobj_segment_old = json_segment_create_linear(0, tmp ? &tmp : NULL, 0);
+
+		if (params->flags & CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT)
+			jobj_segment_old = json_segment_create_linear(0, tmp ? &tmp : NULL, 0);
+		else
+			jobj_segment_old = json_segment_create_linear(data_offset, tmp ? &tmp : NULL, 0);
 	}
 
 	if (!jobj_segment_old) {
