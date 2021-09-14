@@ -2249,7 +2249,11 @@ static int reencrypt_make_backup_segments(struct crypt_device *cd,
 		r = LUKS2_get_data_size(hdr, &tmp, NULL);
 		if (r)
 			goto err;
-		jobj_segment_old = json_segment_create_linear(0, tmp ? &tmp : NULL, 0);
+
+		if (params->flags & CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT)
+			jobj_segment_old = json_segment_create_linear(0, tmp ? &tmp : NULL, 0);
+		else
+			jobj_segment_old = json_segment_create_linear(data_offset, tmp ? &tmp : NULL, 0);
 	}
 
 	if (!jobj_segment_old) {

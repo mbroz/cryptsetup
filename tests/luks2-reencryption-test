@@ -722,6 +722,8 @@ HASH6=39f7c6d38af574fe2c90ef400dfaba8ef8edccd11bdac998a3f8143a86837331
 HASH7=18a393d1a505e22ccf3e29effe3005ea8627e4c36b7cca0e53f58121f49b67e1
 # 60 MiBs of zeroes
 HASH8=cf5ac69ca412f9b3b1a8b8de27d368c5c05ed4b1b6aa40e6c38d9cbf23711342
+# 240 MiBs of zeroes (256MiBs - 16MiBs default LUKS2 header size)
+HASH9=17088b031491a37e0ee9e1025a3938f55ee94ae27653370ad2fe5b0b32e35334
 
 prepare dev_size_mb=32
 setup_luks2_env
@@ -888,6 +890,12 @@ check_hash_dev /dev/mapper/$DEV_NAME $HASH3
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP close $DEV_NAME
 check_hash $PWD1 $HASH3 $IMG_HDR
+
+# Device encryption with data offset set in detached header
+wipe_dev $DEV
+dd if=/dev/urandom of=$DEV bs=512 count=32768 >/dev/null 2>&1
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --header $IMG_HDR --offset 32768 -q $FAST_PBKDF_ARGON $DEV || fail
+check_hash $PWD1 $HASH9 $IMG_HDR
 
 # Device activation using key file
 wipe_dev $DEV
