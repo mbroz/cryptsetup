@@ -26,6 +26,9 @@
 #if !ENABLE_FIPS
 bool crypt_fips_mode(void) { return false; }
 #else
+static bool fips_checked = false;
+static bool fips_mode = false;
+
 static bool kernel_fips_mode(void)
 {
 	int fd;
@@ -41,6 +44,12 @@ static bool kernel_fips_mode(void)
 
 bool crypt_fips_mode(void)
 {
-	return kernel_fips_mode() && !access("/etc/system-fips", F_OK);
+	if (fips_checked)
+		return fips_mode;
+
+	fips_mode = kernel_fips_mode() && !access("/etc/system-fips", F_OK);
+	fips_checked = true;
+
+	return fips_mode;
 }
 #endif /* ENABLE_FIPS */
