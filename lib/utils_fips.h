@@ -21,6 +21,8 @@
 #ifndef _UTILS_FIPS_H
 #define _UTILS_FIPS_H
 
-int crypt_fips_mode(void);
+#include <stdbool.h>
+
+bool crypt_fips_mode(void);
 
 #endif /* _UTILS_FIPS_H */

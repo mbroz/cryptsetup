@@ -1301,7 +1301,7 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 		exit(77);
 	}
 
-	if (crypt_backend_init())
+	if (crypt_backend_init(fips_mode()))
 		exit_test("Crypto backend init error.", EXIT_FAILURE);
 
 	printf("Test vectors using %s crypto backend.\n", crypt_backend_version());
@@ -1323,9 +1323,9 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 
 	if (default_alg_test()) {
 		if (fips_mode())
-			printf("Default compiled-in algorithms test ignoder (FIPS mode on).");
+			printf("\nDefault compiled-in algorithms test ignored (FIPS mode on).\n");
 		else
-			exit_test("Default compiled-in algorithms test failed.", EXIT_FAILURE);
+			exit_test("\nDefault compiled-in algorithms test failed.", EXIT_FAILURE);
 	}
 
 	exit_test(NULL, EXIT_SUCCESS);

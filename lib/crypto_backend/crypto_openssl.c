@@ -45,6 +45,7 @@
 static OSSL_PROVIDER *ossl_legacy = NULL;
 static OSSL_PROVIDER *ossl_default = NULL;
 static OSSL_LIB_CTX  *ossl_ctx = NULL;
+static char backend_version[256] = "OpenSSL";
 #endif
 
 #define CONST_CAST(x) (x)(uintptr_t)
@@ -87,7 +88,7 @@ struct hash_alg {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || \
     (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
 
-static void openssl_backend_init(void)
+static void openssl_backend_init(bool fips __attribute__((unused)))
 {
 	OpenSSL_add_all_algorithms();
 }
@@ -133,28 +134,6 @@ static void HMAC_CTX_free(HMAC_CTX *md)
 	free(md);
 }
 #else
-static int openssl_backend_init(void)
-{
-/*
- * OpenSSL >= 3.0.0 provides some algorithms in legacy provider
- */
-#if OPENSSL_VERSION_MAJOR >= 3
-	ossl_ctx = OSSL_LIB_CTX_new();
-	if (!ossl_ctx)
-		return -EINVAL;
-
-	ossl_default = OSSL_PROVIDER_try_load(ossl_ctx, "default", 0);
-	if (!ossl_default) {
-		OSSL_LIB_CTX_free(ossl_ctx);
-		return -EINVAL;
-	}
-
-	/* Optional */
-	ossl_legacy = OSSL_PROVIDER_try_load(ossl_ctx, "legacy", 0);
-#endif
-	return 0;
-}
-
 static void openssl_backend_exit(void)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
@@ -171,18 +150,62 @@ static void openssl_backend_exit(void)
 #endif
 }
 
+static int openssl_backend_init(bool fips)
+{
+/*
+ * OpenSSL >= 3.0.0 provides some algorithms in legacy provider
+ */
+#if OPENSSL_VERSION_MAJOR >= 3
+	int r;
+
+	/*
+	 * In FIPS mode we keep default OpenSSL context & global config
+	 */
+	if (!fips) {
+		ossl_ctx = OSSL_LIB_CTX_new();
+		if (!ossl_ctx)
+			return -EINVAL;
+
+		ossl_default = OSSL_PROVIDER_try_load(ossl_ctx, "default", 0);
+		if (!ossl_default) {
+			OSSL_LIB_CTX_free(ossl_ctx);
+			return -EINVAL;
+		}
+
+		/* Optional */
+		ossl_legacy = OSSL_PROVIDER_try_load(ossl_ctx, "legacy", 0);
+	}
+
+	r = snprintf(backend_version, sizeof(backend_version), "%s %s%s%s",
+		OpenSSL_version(OPENSSL_VERSION),
+		ossl_default ? "[default]" : "",
+		ossl_legacy  ? "[legacy]" : "",
+		fips  ? "[fips]" : "");
+
+	if (r < 0 || (size_t)r >= sizeof(backend_version)) {
+		openssl_backend_exit();
+		return -EINVAL;
+	}
+#endif
+	return 0;
+}
+
 static const char *openssl_backend_version(void)
 {
-    return OpenSSL_version(OPENSSL_VERSION);
+#if OPENSSL_VERSION_MAJOR >= 3
+	return backend_version;
+#else
+	return OpenSSL_version(OPENSSL_VERSION);
+#endif
 }
 #endif
 
-int crypt_backend_init(void)
+int crypt_backend_init(bool fips)
 {
 	if (crypto_backend_initialised)
 		return 0;
 
-	if (openssl_backend_init())
+	if (openssl_backend_init(fips))
 		return -EINVAL;
 
 	crypto_backend_initialised = 1;
