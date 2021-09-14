@@ -168,12 +168,11 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 	echo -n "[FORMAT]"
 	$INTSETUP format --integrity-legacy-padding -q --integrity $1 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
-		ALG=$(echo $1 | sed -e 's/hmac-//')
-		if ! grep -q $ALG /proc/crypto ; then
-			echo "[N/A]"
-			return
+		if [[ $1 =~ "sha" || $1 =~ "crc" ]] ; then
+			fail "Cannot format device."
 		fi
-		fail "Cannot format device."
+		echo "[N/A]"
+		return
 	fi
 
 	dump_check "tag_size" $4
@@ -335,6 +334,7 @@ which blockdev >/dev/null || skip "Cannot find blockdev utility, test skipped."
 
 [ -n "$VALG" ] && valgrind_setup && INTSETUP=valgrind_run
 which hexdump >/dev/null 2>&1 || skip "WARNING: hexdump tool required."
+which xxd >/dev/null 2>&1 || skip "WARNING: xxd tool required."
 modprobe dm-integrity >/dev/null 2>&1
 dm_integrity_features
 
