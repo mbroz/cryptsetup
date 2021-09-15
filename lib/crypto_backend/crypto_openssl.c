@@ -88,9 +88,10 @@ struct hash_alg {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || \
     (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
 
-static void openssl_backend_init(bool fips __attribute__((unused)))
+static int openssl_backend_init(bool fips __attribute__((unused)))
 {
 	OpenSSL_add_all_algorithms();
+	return 0;
 }
 
 static void openssl_backend_exit(void)
