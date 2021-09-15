@@ -1,0 +1,47 @@
+Cryptsetup 2.4.1 Release Notes
+==============================
+Stable bug-fix release with minor extensions.
+
+All users of cryptsetup 2.4.0 should upgrade to this version.
+
+Changes since version 2.4.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix compilation for libc implementations without dlvsym().
+
+  Some alternative libc implementations (like musl) do not provide
+  versioned symbols dlvsym function. Code now fallbacks to dlsym
+  operation for dynamic LUKS2 token load.
+  It is up to maintainers to ensure that LUKS2 token plugins are
+  compiled for the supported version.
+
+* Fix compilation and tests on systems with non-standard libraries
+  (standalone argp library, external gettext library, BusyBox
+  implementations of standard tools).
+
+* Try to workaround some issues on systems without udev support.
+  NOTE: non-udev systems cannot provide all functionality for kernel
+  device-mapper, and some operations can fail.
+
+* Fixes for OpenSSL3 crypto backend (including FIPS mode).
+  Because cryptsetup still requires some hash functions implemented
+  in OpenSSL3 legacy provider, crypto backend now uses its library
+  context and tries to load both default and legacy OpenSSL3 providers.
+
+  If FIPS mode is detected, no library context is used, and it is up
+  to the OpenSSL system-wide policy to load proper providers.
+
+  NOTE: We still use some deprecated API in the OpenSSL3 backend,
+  and there are some known problems in OpenSSL 3.0.0.
+
+* Print error message when assigning a token to an inactive keyslot.
+
+* Fix offset bug in LUKS2 encryption code if --offset option was used.
+
+* Do not allow LUKS2 decryption for devices with data offset.
+  Such devices cannot be used after decryption.
+
+* Fix LUKS1 cryptsetup repair command for some specific problems.
+  Repair code can now fix wrongly used initialization vector
+  specification in ECB mode (that is insecure anyway!) and repair
+  the upper-case hash specification in the LUKS1 header.
