@@ -245,6 +245,7 @@ int crypt_token_register(const crypt_token_handler *handler)
 
 void crypt_token_unload_external_all(struct crypt_device *cd)
 {
+#if USE_EXTERNAL_TOKENS
 	int i;
 
 	for (i = LUKS2_TOKENS_MAX - 1; i >= 0; i--) {
@@ -258,6 +259,7 @@ void crypt_token_unload_external_all(struct crypt_device *cd)
 		if (dlclose(CONST_CAST(void *)token_handlers[i].u.v2.dlhandle))
 			log_dbg(cd, "%s", dlerror());
 	}
+#endif
 }
 
 static const void
