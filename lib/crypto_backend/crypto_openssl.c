@@ -44,6 +44,15 @@ static OSSL_PROVIDER *ossl_legacy = NULL;
 static OSSL_PROVIDER *ossl_default = NULL;
 static OSSL_LIB_CTX  *ossl_ctx = NULL;
 static char backend_version[256] = "OpenSSL";
+
+#define MAX_THREADS 8
+#if !HAVE_DECL_OSSL_GET_MAX_THREADS
+static int OSSL_set_max_threads(OSSL_LIB_CTX *ctx, uint64_t max_threads) { return 0; }
+static uint64_t OSSL_get_max_threads(OSSL_LIB_CTX *ctx) { return 0; }
+#else
+#include <openssl/thread.h>
+#endif
+
 #endif
 
 #define CONST_CAST(x) (x)(uintptr_t)
@@ -162,6 +171,7 @@ static int openssl_backend_init(bool fips)
  */
 #if OPENSSL_VERSION_MAJOR >= 3
 	int r;
+	bool ossl_threads = false;
 
 	/*
 	 * In FIPS mode we keep default OpenSSL context & global config
@@ -181,11 +191,16 @@ static int openssl_backend_init(bool fips)
 		ossl_legacy = OSSL_PROVIDER_try_load(ossl_ctx, "legacy", 0);
 	}
 
-	r = snprintf(backend_version, sizeof(backend_version), "%s %s%s%s",
+	if (OSSL_set_max_threads(ossl_ctx, MAX_THREADS) == 1 &&
+	    OSSL_get_max_threads(ossl_ctx) == MAX_THREADS)
+		ossl_threads = true;
+
+	r = snprintf(backend_version, sizeof(backend_version), "%s%s%s%s%s",
 		OpenSSL_version(OPENSSL_VERSION),
 		ossl_default ? "[default]" : "",
 		ossl_legacy  ? "[legacy]" : "",
-		fips  ? "[fips]" : "");
+		fips  ? "[fips]" : "",
+		ossl_threads ? "[threads]" : "");
 
 	if (r < 0 || (size_t)r >= sizeof(backend_version)) {
 		openssl_backend_exit();
@@ -593,8 +608,53 @@ static int openssl_argon2(const char *type, const char *password, size_t passwor
 	const char *salt, size_t salt_length, char *key, size_t key_length,
 	uint32_t iterations, uint32_t memory, uint32_t parallel)
 {
+#if HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION
+	EVP_KDF_CTX *ctx;
+	EVP_KDF *argon2;
+	unsigned int threads = parallel;
+	int r;
+	OSSL_PARAM params[] = {
+		OSSL_PARAM_octet_string(OSSL_KDF_PARAM_PASSWORD,
+			CONST_CAST(void*)password, password_length),
+		OSSL_PARAM_octet_string(OSSL_KDF_PARAM_SALT,
+			CONST_CAST(void*)salt, salt_length),
+		OSSL_PARAM_uint32(OSSL_KDF_PARAM_ITER, &iterations),
+		OSSL_PARAM_uint(OSSL_KDF_PARAM_THREADS, &threads),
+		OSSL_PARAM_uint32(OSSL_KDF_PARAM_ARGON2_LANES, &parallel),
+		OSSL_PARAM_uint32(OSSL_KDF_PARAM_ARGON2_MEMCOST, &memory),
+		OSSL_PARAM_END
+	};
+
+	if (OSSL_get_max_threads(ossl_ctx) == 0)
+		threads = 1;
+
+	argon2 = EVP_KDF_fetch(ossl_ctx, type, NULL);
+	if (!argon2)
+		return -EINVAL;
+
+	ctx = EVP_KDF_CTX_new(argon2);
+	if (!ctx) {
+		EVP_KDF_free(argon2);
+		return -EINVAL;;
+	}
+
+	if (EVP_KDF_CTX_set_params(ctx, params) != 1) {
+		EVP_KDF_CTX_free(ctx);
+		EVP_KDF_free(argon2);
+		return -EINVAL;
+	}
+
+	r = EVP_KDF_derive(ctx, (unsigned char*)key, key_length, NULL /*params*/);
+
+	EVP_KDF_CTX_free(ctx);
+	EVP_KDF_free(argon2);
+
+	/* _derive() returns 0 or negative value on error, 1 on success */
+	return r == 1 ? 0 : -EINVAL;
+#else
 	return argon2(type, password, password_length, salt, salt_length,
 		      key, key_length, iterations, memory, parallel);
+#endif
 }
 
 /* PBKDF */

@@ -505,6 +505,12 @@ elif get_option('crypto-backend') == 'openssl'
     crypto_backend_library = dependency('libcrypto',
         version: '>=0.9.8',
         static: enable_static)
+    conf.set10('HAVE_DECL_OSSL_GET_MAX_THREADS',
+        cc.has_header_symbol('openssl/thread.h', 'OSSL_get_max_threads',
+            dependencies: crypto_backend_library))
+    conf.set10('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION',
+        cc.has_header_symbol('openssl/core_names.h', 'OSSL_KDF_PARAM_ARGON2_VERSION',
+            dependencies: crypto_backend_library))
 elif get_option('crypto-backend') == 'nss'
     if get_option('fips')
         error('nss crypto backend is not supported with FIPS enabled')
