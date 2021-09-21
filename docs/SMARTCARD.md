@@ -48,3 +48,10 @@ Now we decrypt the LUKS container using the smartcard.  The device is specified 
   tokens/smartcard/handle-token.sh /dev/whatever 0 -n myOpenContainer
 
 This will result in a device /dev/mapper/myOpenContainer which you may use as a normal block device.
+
+# Files
+
+cryptsetup-smartcard
+tokens/smartcard/handle-token.sh
+tests/smartcard/*
+docs/SMARTCARD.md
