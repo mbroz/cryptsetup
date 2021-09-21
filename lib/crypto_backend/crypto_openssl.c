@@ -473,15 +473,14 @@ int crypt_backend_rng(char *buffer, size_t length,
 	return 0;
 }
 
-static int pbkdf2(const char *password, size_t password_length,
-		const char *salt, size_t salt_length,
-		uint32_t iterations, const char *hash, size_t key_length,
-		unsigned char *key)
+static int openssl_pbkdf2(const char *password, size_t password_length,
+	const char *salt, size_t salt_length, uint32_t iterations,
+	const char *hash, char *key, size_t key_length)
 {
+	int r;
 #if OPENSSL_VERSION_MAJOR >= 3
 	EVP_KDF_CTX *ctx;
 	EVP_KDF *pbkdf2;
-	int r;
 	OSSL_PARAM params[] = {
 		OSSL_PARAM_octet_string(OSSL_KDF_PARAM_PASSWORD,
 			CONST_CAST(void*)password, password_length),
@@ -495,30 +494,35 @@ static int pbkdf2(const char *password, size_t password_length,
 
 	pbkdf2 = EVP_KDF_fetch(ossl_ctx, "pbkdf2", NULL);
 	if (!pbkdf2)
-		return 0;
+		return -EINVAL;
 
 	ctx = EVP_KDF_CTX_new(pbkdf2);
 	if (!ctx) {
 		EVP_KDF_free(pbkdf2);
-		return 0;
+		return -EINVAL;
 	}
 
-	r = EVP_KDF_derive(ctx, key, key_length, params);
+	r = EVP_KDF_derive(ctx, (unsigned char*)key, key_length, params);
 
 	EVP_KDF_CTX_free(ctx);
 	EVP_KDF_free(pbkdf2);
-
-	/* _derive() returns 0 or negative value on error, 1 on success */
-	return r <= 0 ? 0 : 1;
 #else
 	const EVP_MD *hash_id = EVP_get_digestbyname(crypt_hash_compat_name(hash));
 	if (!hash_id)
-		return 0;
+		return -EINVAL;
 
-	return PKCS5_PBKDF2_HMAC(password, (int)password_length, (const unsigned char *)salt,
-				 (int)salt_length, iterations, hash_id,
-				 (int)key_length, key);
+	r = PKCS5_PBKDF2_HMAC(password, (int)password_length, (const unsigned char *)salt,
+		(int)salt_length, iterations, hash_id, (int)key_length, (unsigned char*) key);
 #endif
+	return r == 1 ? 0 : -EINVAL;
+}
+
+static int openssl_argon2(const char *type, const char *password, size_t password_length,
+	const char *salt, size_t salt_length, char *key, size_t key_length,
+	uint32_t iterations, uint32_t memory, uint32_t parallel)
+{
+	return argon2(type, password, password_length, salt, salt_length,
+		      key, key_length, iterations, memory, parallel);
 }
 
 /* PBKDF */
@@ -527,21 +531,16 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *salt, size_t salt_length,
 		char *key, size_t key_length,
 		uint32_t iterations, uint32_t memory, uint32_t parallel)
-
 {
 	if (!kdf)
 		return -EINVAL;
 
-	if (!strcmp(kdf, "pbkdf2")) {
-		if (!pbkdf2(password, password_length,
-		    salt, salt_length, iterations, hash, key_length, (unsigned char *)key))
-			return -EINVAL;
-		return 0;
-	} else if (!strncmp(kdf, "argon2", 6)) {
-		return argon2(kdf, password, password_length, salt, salt_length,
-			      key, key_length, iterations, memory, parallel);
-	}
-
+	if (!strcmp(kdf, "pbkdf2"))
+		return openssl_pbkdf2(password, password_length, salt, salt_length,
+				      iterations, hash, key, key_length);
+	if (!strncmp(kdf, "argon2", 6))
+		return openssl_argon2(kdf, password, password_length, salt, salt_length,
+				      key, key_length, iterations, memory, parallel);
 	return -EINVAL;
 }
 
