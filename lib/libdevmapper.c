@@ -1346,12 +1346,6 @@ err:
 	return r;
 }
 
-static bool dm_device_exists(struct crypt_device *cd, const char *name)
-{
-	int r = dm_status_device(cd, name);
-	return (r >= 0 || r == -EEXIST);
-}
-
 static int _dm_create_device(struct crypt_device *cd, const char *name, const char *type,
 			     struct crypt_dm_active_device *dmd)
 {
@@ -1402,8 +1396,11 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 		goto out;
 
 	if (!dm_task_run(dmt)) {
-		if (dm_device_exists(cd, name))
+		r = dm_status_device(cd, name);;
+		if (r >= 0)
 			r = -EEXIST;
+		if (r != -EEXIST && r != -ENODEV)
+			r = -EINVAL;
 		goto out;
 	}
 
