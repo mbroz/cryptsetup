@@ -42,6 +42,7 @@
 #if OPENSSL_VERSION_MAJOR >= 3
 #include <openssl/provider.h>
 #include <openssl/kdf.h>
+#include <openssl/core_names.h>
 static OSSL_PROVIDER *ossl_legacy = NULL;
 static OSSL_PROVIDER *ossl_default = NULL;
 static OSSL_LIB_CTX  *ossl_ctx = NULL;
@@ -482,27 +483,14 @@ static int pbkdf2(const char *password, size_t password_length,
 	EVP_KDF *pbkdf2;
 	int r;
 	OSSL_PARAM params[] = {
-		{ .key = "pass",
-		  .data_type = OSSL_PARAM_OCTET_STRING,
-		  .data = CONST_CAST(void*)password,
-		  .data_size = password_length
-		},
-		{ .key = "salt",
-		  .data_type = OSSL_PARAM_OCTET_STRING,
-		  .data = CONST_CAST(void*)salt,
-		  .data_size = salt_length
-		},
-		{ .key = "iter",
-		  .data_type = OSSL_PARAM_UNSIGNED_INTEGER,
-		  .data = &iterations,
-		  .data_size = sizeof(iterations)
-		},
-		{ .key = "digest",
-		  .data_type = OSSL_PARAM_UTF8_STRING,
-		  .data = CONST_CAST(void*)hash,
-		  .data_size = strlen(hash)
-		},
-		{ NULL, 0, NULL, 0, 0 }
+		OSSL_PARAM_octet_string(OSSL_KDF_PARAM_PASSWORD,
+			CONST_CAST(void*)password, password_length),
+		OSSL_PARAM_octet_string(OSSL_KDF_PARAM_SALT,
+			CONST_CAST(void*)salt, salt_length),
+		OSSL_PARAM_uint32(OSSL_KDF_PARAM_ITER, &iterations),
+		OSSL_PARAM_utf8_string(OSSL_KDF_PARAM_DIGEST,
+			CONST_CAST(void*)hash, strlen(hash)),
+		OSSL_PARAM_END
 	};
 
 	pbkdf2 = EVP_KDF_fetch(ossl_ctx, "pbkdf2", NULL);
