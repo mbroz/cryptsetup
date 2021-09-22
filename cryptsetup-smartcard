@@ -1,0 +1,463 @@
+#!/bin/bash
+
+# Author: JT Moree
+# License:  same as cryptsetup
+
+function cleanup() {
+    if [ "$LUKS_LEAVELOG" != "yes" ] ; then
+        if [ -f "${LOG}" ] ; then
+            rm -rf "${LOG}"
+        fi
+    else
+        echo "DEBUG ON.  Leaving behing sensitive data in '${LOG}'.  Make sure you delete it!"
+    fi
+    if [ -d "$LUKS_TEMP" ] ; then
+        rm -rf "$LUKS_TEMP"
+    fi
+}
+
+function die() {
+    cleanup
+    echo "$2" >&2
+    exit $1
+}
+
+function ctrl_c() {
+    stty "$stty_orig"    # restore terminal setting.
+    stty echo
+    die 666 "Canceled Operation"
+}
+
+function count-keyslots() {
+    count_keyslots_dev=$1
+    $FSUDO $SUDO cryptsetup luksDump $count_keyslots_dev $LOCKS | grep ': luks2' | wc -l
+    if [ "$?" != "0" ] ; then
+        die 150 "Failed to get key count!"
+    fi
+}
+
+function setup-sudo() {
+    if [ "$UID" = 0 ] ; then
+        echo "running as root"
+    elif [ -n "$LUKS_FORCE_SUDO" ] ; then
+        echo "running as non root. do we need to force SUDO on everything"
+        FSUDO="sudo"
+    else
+        echo "running as non root which will require no locking and user will need to have access to block devices."
+        SUDO="sudo"
+        LOCKS="--disable-locks"
+    fi
+}
+
+function setup-temp() {
+    if [ "$UID" = 0 ] ; then
+        LUKS_TMPFS=/run/cryptsetup
+    else
+        LUKS_TMPFS=${LUKS_TMPFS:-/run/user/${UID}/cryptsetup}
+    fi
+    mkdir -p $LUKS_TMPFS
+    LUKS_TEMP=`mktemp -d -p $LUKS_TMPFS`
+    LOG=$LUKS_TEMP.log
+}
+
+function get-passphrase() {
+    get_passphrase_file="$1"
+    get_passphrase_mode=$2
+    echo "The passphrase to decrypt the LUKS container will temporarily be stored in $get_passphrase_file. Ctrl+C to cancel"
+    if [ "$get_passphrase_mode" = 'init' ] ; then
+        echo "Enter a passphrase to initialize the LUKS container."
+    elif [ "$get_passphrase_mode" = 'add' ] ; then
+        echo "Enter an existing passphrase on the LUKS container."
+    else
+        die 154 "Invalid mode in get-passphrase"
+    fi
+    stty -echo           # turn-off echoing.
+    while [ "$get_passphrase_temp" = "" ] ; do
+        echo -n "Enter passphrase:"
+        stty_orig=$(stty -g) # save original terminal setting.
+        IFS= read -r get_passphrase_temp  # read the password
+        echo
+        #in add mode we dont need to prompt a second time
+        if [ "$get_passphrase_mode" != "add" ] ; then
+            echo -en "Enter passphrase again:"
+            IFS= read -r get_passphrase_temp2  # read the password
+            stty "$stty_orig"    # restore terminal setting.
+            echo
+            if [ "$get_passphrase_temp" != "$get_passphrase_temp2" ] ; then
+                echo "Passphrases do not match!" >&2
+                get_passphrase_temp=
+            fi
+        fi
+    done
+    echo $get_passphrase_temp > $get_passphrase_file
+    stty echo
+}
+
+function warn-user() {
+    warn_user_keyfile=$1
+    # if not in batch mode warn user that sensitive data will exist on disk/ramdisk 
+    if [ "$LUKS_BATCH" != "yes" ] ; then
+        echo "The new key will temporarily be stored in $LUKS_PRIVATE_KEY and the passphrase will be temporarily stored in $LUKS_TEMP/passphrase. Ctrl+C to cancel.  Enter to continue."
+        read FOO
+    fi
+}
+
+# encrypt specified file with gpg and ascii armor format.
+# inputs:
+#  type of encryption:  gpg|pkcs1
+#  private data
+# returns:
+#   dumps encrypted text with newlines replaced with \n
+function encrypt-secret() {
+    encrypt_key_type=$1
+    encrypt_key_private=$2
+    encrypt_key_public=$3
+    gpg --armor --default-recipient-self --trust-model=always --yes --encrypt -o "${encrypt_key_private}.asc" "$encrypt_key_private"
+    N=$'\n'
+    encrypt_key_data=`cat "${encrypt_key_private}.asc"`
+    echo -e "${encrypt_key_data//$N/\\\\n}"
+}
+
+function add-token() {
+    add_token_keyslot=$1
+    add_token_subtype=$2
+    add_token_key=$3
+    add_token_publickey=$4
+    add_token_pk_sub=
+    if [ -n "$add_token_publickey" ] ; then
+    #!!! newline or not at end of file seems to be trashing second nested double quote
+        add_token_pk_sub=", \"public\" : \"$add_token_publickey\" "
+    fi
+    if [ -n "$add_token_keyslot" ] ; then
+        add_token_keyslot_sub=" \"$add_token_keyslot\" "
+    fi
+    TOKEN='{"type":"smartcard","keyslots":[ '$add_token_keyslot_sub' ],"subtype":"'$add_token_subtype'","key":"'$add_token_key'"'$add_token_pk_sub'}'
+    echo "#######################################################" >> $LOG
+    echo "$TOKEN" >> $LOG
+    echo "#######################################################" >> $LOG
+    echo "$TOKEN | $FSUDO $SUDO cryptsetup token import $LUKS_DEV --key-slot $add_token_keyslot $LOCKS $LUKS_DEBUG" >> ${LOG}
+    echo $TOKEN | $FSUDO $SUDO cryptsetup token import $LUKS_DEV --key-slot $add_token_keyslot $LOCKS $LUKS_DEBUG
+}
+
+function create-privatekey() {
+    create_privatekey_file=$1
+    dd if=/dev/random bs=$LUKS_BS count=$LUKS_COUNT of="$create_privatekey_file" 1>/dev/null 2>/dev/null
+    if [ ! -f "$create_privatekey_file" ] ; then
+        die 177 "Failed to create private key"
+    fi
+}
+
+# create LUKS with passphrase
+function init-luks() {
+    init_luks_passphrase_dev=$1
+    init_luks_passphrase_file=$2
+    BATCH=
+    if [ "$LUKS_BATCH" = "yes" ] ; then
+        BATCH="--batch-mode"
+    fi
+    echo "$FSUDO $SUDO cryptsetup luksFormat --type luks2 $init_luks_passphrase_dev $LOCKS --key-file=$init_luks_passphrase_file $LUKS_MEM $LUKS_DEBUG $BATCH" | tee -a ${LOG}
+    #  this will run out of memory so we log output and try again if needed
+    $FSUDO $SUDO cryptsetup luksFormat --type luks2 $init_luks_passphrase_dev $LOCKS --key-file=$init_luks_passphrase_file $LUKS_MEM $LUKS_DEBUG $BATCH 2>>${LOG}
+    R=$?
+    if [ "$R" = "3" ] ; then
+        echo "Ran out of memory!" >&2
+        die 123 "Try -m OPTION?"
+    fi
+    if [ "$R" != "0" ] ; then
+        die $R "Failed to create LUKS container."
+    fi
+}
+
+#pull token from header
+#decrypt token
+#pass to luksOpen
+#close when done
+function test-decrypt() {
+    test_decrypt_name=$1
+    test_decrypt_pub=`mktemp`
+    #dump token to temp file
+    $FSUDO $SUDO cryptsetup token export $LUKS_DEV --token-id 0 $LUKS_DEBUG > $test_decrypt_pub
+    #recreate the original file format
+    cat > "${test_decrypt_pub}.asc" << 'EOF' 
+-----BEGIN PGP MESSAGE-----
+
+EOF
+    cat ${test_decrypt_pub} | jq .key | tr -d '"' >> "${test_decrypt_pub}.asc"
+    cat >> "${test_decrypt_pub}.asc" << 'EOF'
+
+-----END PGP MESSAGE-----
+EOF
+    #open luks container using gpg decrypted key
+    #check on name for dev mapper device.  if not specified use default convention
+    echo "gpg --decrypt ${test_decrypt_pub}.asc | $FSUDO $SUDO cryptsetup luksOpen $LUKS_DEV $test_decrypt_name --key-file=- $LUKS_DEBUG" | tee -a ${LOG}
+    gpg --decrypt "${test_decrypt_pub}.asc" | $FSUDO $SUDO cryptsetup luksOpen $LUKS_DEV $test_decrypt_name --key-file=- $LUKS_DEBUG
+    rm -f $test_decrypt_pub $test_decrypt_pub.asc
+    if [ "$LUKS_CLOSE_WHEN_DONE" = "yes" ] ; then
+        echo $FSUDO $SUDO cryptsetup luksClose $test_decrypt_name $LUKS_DEBUG | tee -a ${LOG}
+        $FSUDO $SUDO cryptsetup luksClose $test_decrypt_name $LUKS_DEBUG
+    else
+        echo "Leaving '$LUKS_DEV' decrypted."
+    fi
+}
+
+function add-privatekey() {
+    add_privatekey_keyfile=$1
+    add_privatekey_passphrase=$2
+    add_privatekey_keyslot=$3
+    if [ -z "$add_privatekey_keyfile" ] ; then
+        die 145 "keyfile must be specified to add-privatekey"
+    fi
+    if [ -z "$add_privatekey_passphrase" ] ; then
+        die 146 "passphrase file must be specified to add-privatekey"
+    fi
+    if [ -z "$add_privatekey_keyslot" ] ; then
+        die 147 "keyslot must be specified to add-privatekey"
+    fi
+    echo $FSUDO $SUDO cryptsetup luksAddKey $LUKS_DEV "$add_privatekey_keyfile" $LOCKS --key-file="$add_privatekey_passphrase" $LUKS_DEBUG $LUKS_MEM --key-slot $add_privatekey_keyslot | tee -a ${LOG}
+    $FSUDO $SUDO cryptsetup luksAddKey $LUKS_DEV "$add_privatekey_keyfile" $LOCKS --key-file="$add_privatekey_passphrase" $LUKS_DEBUG $LUKS_MEM --key-slot $add_privatekey_keyslot 2>>${LOG}
+    R=$?
+    if [ "$R" = "3" ] ; then
+        die "Error!  Out of memory.  Try -m option"
+    fi
+    if [ "$R" != "0" ] ; then
+        die $R "luksAddKey Failed"
+    fi
+}
+
+function check-open() {
+    check_open_dev=$1
+    # is luks device already in use ?
+    $FSUDO $SUDO cryptsetup isLuks $check_open_dev >/dev/null 2>/dev/null
+    check_open_s=$?
+    if [ "$check_open_s" = "0" ] ; then
+        check_open_uuid=$( $FSUDO $SUDO cryptsetup luksUUID $check_open_dev | tr -d -)
+        if [ -b /dev/disk/by-id/dm-uuid-*$check_open_uuid* ] ; then
+            die 667 "Error!  '$check_open_dev' is opened.  Cannot initialize it until it is closed."
+        fi
+    fi
+}
+
+function check-container() {
+    check_container_dev=$1
+    $FSUDO $SUDO cryptsetup isLuks ${check_container_dev} $LOCKS $LUKS_DEBUG 2>&1 >>${LOG}
+    R=$?
+    if [ "$R" != "0" ] ; then
+        die 166 "Error! device '${check_container_dev}' is not a luks device." 
+    fi
+
+}
+
+function sanity-checks() {
+    if [ "$MODE" = 'add' ] && [ "$LUKS_BINARY_KEY" = "no" ] && [ -z "$KEYSLOT" ] ; then
+        die 250 "Error!  -k <keyslot> is required in ADD mode with passphrase only"
+    fi
+    if [  -z "$LUKS_DEV" ] ; then
+        die 101 "Error!  No block DEVICE specified for luks container"
+    fi
+    if [ ! -b "$LUKS_DEV" ] ; then
+        "Warning.  '$LUKS_DEV' does not look like a block DEVICE"
+    fi
+    if [ "$LUKS_TEST" = "yes" ] && [ "$MODE" != "init" ] ; then
+        die 220 "Error!  test only allowd in MODE = init"
+    fi
+
+    if [ "$LUKS_BATCH" = "yes" ] && [ -z "$LUKS_PASSPHRASE_FILE" ] ; then
+        die 144 "Batch mode on (-b) but missing passphrase file (-f)"
+    fi
+
+    if [ -n "$LUKS_PASSPHRASE_FILE" ] && [ ! -f "$LUKS_PASSPHRASE_FILE" ] ; then
+        die 146 "Invalid passphrase file (-f $LUKS_PASSPHRASE_FILE"
+    fi
+}
+
+function usage() {
+    cat << 'EOF'
+cryptsetup-sc  :   Add a smartcard protected key to a LUKS container
+
+Usage:  cryptsetup-sc <device> [init|add] [options]
+
+    init vs add
+
+        * 'init' erase device before adding a passphrase and key
+        * 'add' add a key to existing LUKS2 device
+
+    -b : batch mode.  Use defaults or inputs instead of prompting.  Skip warning prompts.
+
+    -D : turn on debug for cryptsetup calls
+
+    -f <file> : this file holds the private passphrase.  required in -b batch mode
+
+    -h :  this output
+
+    -k <keyslot> : (required with -p IN ADD mode).  specify the keyslot that the passphrase is associated with
+
+    -l : leave log file (dont delete)
+
+    -L : leave container decrypted after test (only applies to 'INIT' mode).  implies -t
+
+    -m <mem>: use cryptsetup --pbkdf-memory <mem> using the specified amount
+
+    -n <name> : if specified this will be the name used for the device in /dev/mapper.  Defaults to /dev/mapper/luks-$UUID where $UUID is the UUID of the luks container.
+
+    -p : use passphrase file as the private key that is protected with smartcard instead of generating a binary key.  Default is to add a binary key with smartcard integration.
+
+    -P <public key file> : add this public key to the token
+
+    -S : use sudo for all crypsetup operations
+
+    -t : test newly created container.  (only applies to 'INIT' mode)
+
+TODO
+* allow gpg or pkcs1
+* decrypt plugin
+* check bit/size on internal luks key.  make default for this private key to be same size?
+
+EOF
+}
+
+#####################################################################
+# Setup environment variables
+LUKS_BS=${LUKS_BS:-256}
+LUKS_COUNT=${LUKS_COUNT:-1}
+LUKS_BATCH=
+LUKS_BINARY_KEY="yes"
+LUKS_CLOSE_WHEN_DONE=yes
+LUKS_DEBUG=
+LUKS_LEAVELOG=
+LUKS_MEM=
+LUKS_NAME=
+LUKS_PASSPHRASE_FILE=
+LUKS_PUB_KEY=
+LUKS_TEST=
+ENC_TYPE=gpg
+SUDO=
+FSUDO=
+LOCKS=
+MODE=
+KEYSLOT=
+
+LUKS_DEV=$1
+MODE=$2
+shift 2
+
+
+if [ "$MODE" = "-h" ] || [ "$LUKS_DEV" = "-h" ]; then
+    usage
+    exit 1
+fi
+
+while getopts "bdDf:hk:Llm:n:pP:St" opt ; do
+    case "$opt" in
+        h)  usage
+            exit 1
+            ;;
+        b)  LUKS_BATCH=yes
+            ;;
+        D)  LUKS_DEBUG=" --debug "
+            ;;
+        f)  LUKS_PASSPHRASE_FILE=${OPTARG}
+            ;;
+        k)  KEYSLOT=${OPTARG}
+            ;;
+        l)  LUKS_LEAVELOG=yes
+            ;;
+        L)  LUKS_CLOSE_WHEN_DONE="no"
+            LUKS_TEST="yes"
+            ;;
+        m)  LUKS_MEM=" --pbkdf-memory ${OPTARG} "
+            ;;
+        n)  LUKS_NAME=${OPTARG}
+            ;;
+        p)  LUKS_BINARY_KEY="no"
+            ;;
+        P)  PUBLIC_KEYFILE=${OPTARG}
+            if [ -n "$PUBLIC_KEYFILE" ] ; then
+                if [ ! -f "$PUBLIC_KEYFILE" ]; then
+                    die 160 "Error!  Invalid public key specified to add-token"
+                fi
+                if [ -z "`head -n1 $PUBLIC_KEYFILE | grep 'BEGIN PGP PUBLIC KEY BLOCK'`" ] ; then
+                    die 161 "Error!  Invalid public keyfile specified in add-token"
+                fi
+            fi
+            LUKS_PUB_KEY=`cat $PUBLIC_KEYFILE`
+            N=$'\n'
+            LUKS_PUB_KEY=`echo -e "${LUKS_PUB_KEY//$N/\\\\n}"`
+            ;;
+        S)  LUKS_FORCE_SUDO=yes
+            ;;
+        t)  LUKS_TEST="yes"
+    esac
+done
+
+sanity-checks
+trap ctrl_c INT
+setup-temp
+if [ ! -d "$LUKS_TEMP" ] ; then
+    die 101  "ERROR!  Could not create temp folder $LUKS_TEMP"
+fi
+echo "Log to $LOG"
+setup-sudo
+if [ "$MODE" = "add" ] ; then
+    echo "MODE = add" >> $LOG
+elif [ "$MODE" = "init" ] ; then
+    echo "MODE = init" >> $LOG
+    check-open "$LUKS_DEV"
+else
+    die 200 "Invalid command '$MODE'.  Use 'add' or 'init'"
+fi
+
+echo $LUKS_BATCH >> $LOG
+
+#setup vars that use temp data
+LUKS_PRIVATE_KEY=${LUKS_TEMP}/key
+warn-user $LUKS_PRIVATE_KEY
+
+#get passphrase if one is not already specified
+if [ -z "$LUKS_PASSPHRASE_FILE" ] ; then
+    LUKS_PASSPHRASE_FILE=${LUKS_TEMP}/passphrase
+    get-passphrase $LUKS_PASSPHRASE_FILE $MODE
+fi
+if [ "$MODE" = "init" ] ; then
+    #create the luks container
+    init-luks "$LUKS_DEV" "$LUKS_PASSPHRASE_FILE"
+    check-container $LUKS_DEV
+    echo "Created LUKS container on $LUKS_DEV"
+
+    if [ "$LUKS_BINARY_KEY" = "yes" ] ; then
+        #generate a binary blob and add as a new key. encrypt it
+        create-privatekey "$LUKS_PRIVATE_KEY"
+        KEYSLOT=${KEYSLOT:-1}
+        add-privatekey "$LUKS_PRIVATE_KEY" "$LUKS_PASSPHRASE_FILE" "$KEYSLOT"
+        PROTECTED_KEY=`encrypt-secret  $ENC_TYPE "${LUKS_PRIVATE_KEY}" `
+    else
+        #need to gpg encrypt the passphrase and add it to a token
+        PROTECTED_KEY=`encrypt-secret  $ENC_TYPE "$LUKS_PASSPHRASE_FILE" `
+        #set keyslot in case it is not already set
+        KEYSLOT=${KEYSLOT:-0}
+    fi
+elif [ "$MODE" = "add" ] ; then
+    check-container $LUKS_DEV
+    if [ "$LUKS_BINARY_KEY" = "yes" ] ; then
+        #generate a binary blob and add as a new key. encrypt it
+        #which keyslot will key go into?  need it for later
+        if [ -z "$KEYSLOT" ] ; then
+            KEYSLOT=`count-keyslots $LUKS_DEV`
+        fi
+        create-privatekey "$LUKS_PRIVATE_KEY"
+        add-privatekey "$LUKS_PRIVATE_KEY" "$LUKS_PASSPHRASE_FILE" "$KEYSLOT"
+        PROTECTED_KEY=`encrypt-secret  $ENC_TYPE "${LUKS_PRIVATE_KEY}" `
+    else
+        #need to gpg encrypt the passphrase and add it to a token
+        PROTECTED_KEY=`encrypt-secret  $ENC_TYPE "$LUKS_PASSPHRASE_FILE" `
+    fi
+else
+    die 300 "invalid mode $MODE"
+fi
+
+add-token "$KEYSLOT" "$ENC_TYPE" "$PROTECTED_KEY" "$LUKS_PUB_KEY"
+if [ "$LUKS_TEST" = "yes" ] ; then
+    LUKS_UUID=`$FSUDO $SUDO cryptsetup luksUUID $LUKS_DEV $LOCKS`
+    LUKS_NAME=${LUKS_NAME:-luks-${LUKS_UUID}}
+    test-decrypt $LUKS_NAME
+fi
+cleanup
