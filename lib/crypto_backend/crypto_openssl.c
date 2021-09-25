@@ -28,11 +28,6 @@
  * for all of the code used other than OpenSSL.
  */
 
-/*
- * HMAC will be later rewritten to a new API from OpenSSL 3
- */
-#define OPENSSL_SUPPRESS_DEPRECATED
-
 #include <string.h>
 #include <errno.h>
 #include <openssl/evp.h>
@@ -60,8 +55,14 @@ struct crypt_hash {
 };
 
 struct crypt_hmac {
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_MAC *mac;
+	EVP_MAC_CTX *md;
+	EVP_MAC_CTX *md_org;
+#else
 	HMAC_CTX *md;
 	const EVP_MD *hash_id;
+#endif
 	int hash_len;
 };
 
@@ -398,7 +399,39 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		    const void *key, size_t key_length)
 {
 	struct crypt_hmac *h;
+#if OPENSSL_VERSION_MAJOR >= 3
+	OSSL_PARAM params[] = {
+		OSSL_PARAM_utf8_string(OSSL_MAC_PARAM_DIGEST, CONST_CAST(void*)name, 0),
+		OSSL_PARAM_END
+	};
 
+	h = malloc(sizeof(*h));
+	if (!h)
+		return -ENOMEM;
+
+	h->mac = EVP_MAC_fetch(ossl_ctx, OSSL_MAC_NAME_HMAC, NULL);
+	if (!h->mac) {
+		free(h);
+		return -EINVAL;
+	}
+
+	h->md = EVP_MAC_CTX_new(h->mac);
+	if (!h->md) {
+		EVP_MAC_free(h->mac);
+		free(h);
+		return -ENOMEM;
+	}
+
+	if (EVP_MAC_init(h->md, key, key_length, params) != 1) {
+		EVP_MAC_CTX_free(h->md);
+		EVP_MAC_free(h->mac);
+		free(h);
+		return -EINVAL;
+	}
+
+	h->hash_len = EVP_MAC_CTX_get_mac_size(h->md);
+	h->md_org = EVP_MAC_CTX_dup(h->md);
+#else
 	h = malloc(sizeof(*h));
 	if (!h)
 		return -ENOMEM;
@@ -419,46 +452,75 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	HMAC_Init_ex(h->md, key, key_length, h->hash_id, NULL);
 
 	h->hash_len = EVP_MD_size(h->hash_id);
+#endif
 	*ctx = h;
 	return 0;
 }
 
-static void crypt_hmac_restart(struct crypt_hmac *ctx)
+static int crypt_hmac_restart(struct crypt_hmac *ctx)
 {
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_MAC_CTX_free(ctx->md);
+	ctx->md = EVP_MAC_CTX_dup(ctx->md_org);
+	if (!ctx->md)
+		return -EINVAL;
+#else
 	HMAC_Init_ex(ctx->md, NULL, 0, ctx->hash_id, NULL);
+#endif
+	return 0;
 }
 
 int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)
 {
+#if OPENSSL_VERSION_MAJOR >= 3
+	return EVP_MAC_update(ctx->md, (const unsigned char *)buffer, length) == 1 ? 0 : -EINVAL;
+#else
 	HMAC_Update(ctx->md, (const unsigned char *)buffer, length);
 	return 0;
+#endif
 }
 
 int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 {
 	unsigned char tmp[EVP_MAX_MD_SIZE];
+#if OPENSSL_VERSION_MAJOR >= 3
+	size_t tmp_len = 0;
+
+	if (length > (size_t)ctx->hash_len)
+		return -EINVAL;
+
+	if (EVP_MAC_final(ctx->md, tmp,  &tmp_len, sizeof(tmp)) != 1)
+		return -EINVAL;
+#else
 	unsigned int tmp_len = 0;
 
 	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
 	HMAC_Final(ctx->md, tmp, &tmp_len);
-
+#endif
 	memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
 
 	if (tmp_len < length)
 		return -EINVAL;
 
-	crypt_hmac_restart(ctx);
+	if (crypt_hmac_restart(ctx))
+		return -EINVAL;
 
 	return 0;
 }
 
 void crypt_hmac_destroy(struct crypt_hmac *ctx)
 {
+#if OPENSSL_VERSION_MAJOR >= 3
+	EVP_MAC_CTX_free(ctx->md);
+	EVP_MAC_CTX_free(ctx->md_org);
+	EVP_MAC_free(ctx->mac);
+#else
 	hash_id_free(ctx->hash_id);
 	HMAC_CTX_free(ctx->md);
+#endif
 	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 }
