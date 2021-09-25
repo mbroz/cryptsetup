@@ -550,7 +550,7 @@ static int openssl_pbkdf2(const char *password, size_t password_length,
 			CONST_CAST(void*)salt, salt_length),
 		OSSL_PARAM_uint32(OSSL_KDF_PARAM_ITER, &iterations),
 		OSSL_PARAM_utf8_string(OSSL_KDF_PARAM_DIGEST,
-			CONST_CAST(void*)hash, strlen(hash)),
+			CONST_CAST(void*)hash, 0),
 		OSSL_PARAM_END
 	};
 
