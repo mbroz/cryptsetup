@@ -1032,17 +1032,37 @@ static int hash_test(void)
 			if (!r)
 				r = crypt_hash_final(h, result, vector->out[j].length);
 
-			crypt_hash_destroy(h);
 
-			if (r)
+			if (r) {
+				crypt_hash_destroy(h);
 				return EXIT_FAILURE;
+			}
 
 			if (memcmp(result, vector->out[j].out, vector->out[j].length)) {
 				printf("[FAILED]\n");
 				printhex(" got", result, vector->out[j].length);
 				printhex("want", vector->out[j].out, vector->out[j].length);
+				crypt_hash_destroy(h);
 				return EXIT_FAILURE;
 			}
+
+			/*
+			 * After crypt_hash_final() the context must be reset, repeat
+			 */
+			crypt_backend_memzero(result, sizeof(result));
+			r = crypt_hash_write(h, vector->data, vector->data_length);
+			if (!r)
+				r = crypt_hash_final(h, result, vector->out[j].length);
+
+			if (r || memcmp(result, vector->out[j].out, vector->out[j].length)) {
+				printf("[FAILED (RESET CONTEXT)]\n");
+				printhex(" got", result, vector->out[j].length);
+				printhex("want", vector->out[j].out, vector->out[j].length);
+				crypt_hash_destroy(h);
+				return EXIT_FAILURE;
+			}
+
+			crypt_hash_destroy(h);
 		}
 		printf("\n");
 	}
@@ -1085,17 +1105,36 @@ static int hmac_test(void)
 			if (!r)
 				r = crypt_hmac_final(hmac, result, vector->out[j].length);
 
-			crypt_hmac_destroy(hmac);
-
-			if (r)
+			if (r) {
+				crypt_hmac_destroy(hmac);
 				return EXIT_FAILURE;
+			}
 
 			if (memcmp(result, vector->out[j].out, vector->out[j].length)) {
 				printf("[FAILED]\n");
 				printhex(" got", result, vector->out[j].length);
 				printhex("want", vector->out[j].out, vector->out[j].length);
+				crypt_hmac_destroy(hmac);
 				return EXIT_FAILURE;
 			}
+
+			/*
+			 * After crypt_hmac_final() the context must be reset, repeat
+			 */
+			crypt_backend_memzero(result, sizeof(result));
+			r = crypt_hmac_write(hmac, vector->data, vector->data_length);
+			if (!r)
+				r = crypt_hmac_final(hmac, result, vector->out[j].length);
+
+			if (r || memcmp(result, vector->out[j].out, vector->out[j].length)) {
+				printf("[FAILED (RESET CONTEXT)]\n");
+				printhex(" got", result, vector->out[j].length);
+				printhex("want", vector->out[j].out, vector->out[j].length);
+				crypt_hmac_destroy(hmac);
+				return EXIT_FAILURE;
+			}
+
+			crypt_hmac_destroy(hmac);
 		}
 		printf("\n");
 	}
