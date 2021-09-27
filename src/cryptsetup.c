@@ -4065,6 +4065,8 @@ int main(int argc, const char **argv)
 		r = run_action(action);
 	}
 
+	log_dbg("Hello. This is most useless debug message ever.");
+
 	tools_cleanup();
 	poptFreeContext(popt_context);
 	return r;
