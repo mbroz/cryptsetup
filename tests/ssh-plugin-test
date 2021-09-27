@@ -41,7 +41,7 @@ function create_user()
         [ $? -eq 0 ] && skip "User account $USER exists, aborting."
         [ -f $SSH_KEY_PATH ] && skip "SSH key $SSH_KEY_PATH already exists, aborting."
 
-        useradd -m $USER -p $(openssl passwd -crypt $PASSWD) || skip "Failed to add user for SSH plugin test."
+        useradd -m $USER -p $(openssl passwd $PASSWD) || skip "Failed to add user for SSH plugin test."
 
         ssh-keygen -f $SSH_KEY_PATH -q -N "" >/dev/null 2>&1
         [ $? -ne 0 ] && remove_user && skip "Failed to create SSH key."
@@ -142,6 +142,7 @@ bin_check useradd
 bin_check ssh
 bin_check ssh-keygen
 bin_check sshpass
+bin_check openssl
 
 format
 
