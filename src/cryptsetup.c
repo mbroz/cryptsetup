@@ -4052,6 +4052,8 @@ int main(int argc, const char **argv)
 			      poptGetInvocationName(popt_context));
 	}
 
+	log_dbg("This is also very useful message.");
+
 	if (ARG_SET(OPT_DISABLE_KEYRING_ID))
 		(void) crypt_volume_key_keyring(NULL, 0);
 
