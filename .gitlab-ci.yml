@@ -1,4 +1,7 @@
-default:
+stages:
+  - test
+
+.debian-prep:
   before_script:
     - sudo apt-get -y update --fix-missing
     - >
@@ -13,11 +16,13 @@ default:
     - ./autogen.sh
     - ./configure --enable-libargon2
 
-stages:
-  - test
-
 # Merge request: Build and run only non-root tests
-test-mergerq-job:
+test-mergerq-job-debian-noroot:
+  extends:
+    - .debian-prep
+  tags:
+    - debian
+    - noroot
   stage: test
   interruptible: true
   rules:
@@ -30,7 +35,12 @@ test-mergerq-job:
     - make check
 
 # For main branch commit, run all tests as root
-test-main-commit-job:
+test-main-commit-job-debian:
+  extends:
+    - .debian-prep
+  tags:
+    - root
+    - debian
   stage: test
   interruptible: true
   variables:
