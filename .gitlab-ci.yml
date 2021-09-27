@@ -30,24 +30,6 @@ stages:
     - ./autogen.sh
     - ./configure --enable-fips --enable-pwquality --enable-libargon2 --with-crypto_backend=openssl
 
-# Merge request: Build and run only non-root tests
-test-mergerq-job-debian-noroot:
-  extends:
-    - .debian-prep
-  tags:
-    - debian
-    - noroot
-  stage: test
-  interruptible: true
-  rules:
-    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-      when: never
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-    - make -j
-    - make -j -C tests check-programs
-    - make check
-
 # For main branch commit, run all tests as root
 test-main-commit-job-debian:
   extends:
