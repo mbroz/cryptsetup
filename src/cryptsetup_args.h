@@ -31,6 +31,7 @@
 #define CONFIG_ACTION		"config"
 #define CONVERT_ACTION		"convert"
 #define ERASE_ACTION		"erase"
+#define FVAULT2DUMP_ACTION	"fvault2Dump"
 #define ISLUKS_ACTION		"isLuks"
 #define ADDKEY_ACTION		"luksAddKey"
 #define CHANGEKEY_ACTION	"luksChangeKey"

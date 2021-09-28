@@ -878,7 +878,35 @@ int FVAULT2_dump(
 	struct device *device,
 	const struct fvault2_params *params)
 {
-	return -ENOTSUP;
+	log_std(cd, "Header information for FVAULT2 device %s.\n",
+		device_path(device));
+
+	log_std(cd, "Physical volume UUID  \t");
+	crypt_log_hex(cd, params->ph_vol_uuid, FVAULT2_UUID_SIZE, " ", 0, NULL);
+	log_std(cd, "\n");
+
+	log_std(cd, "Logical volume offset:\t%" PRIu64 " [bytes]\n",
+		params->log_vol_off);
+
+	log_std(cd, "Logical volume size:  \t%" PRIu64 " [bytes]\n",
+		params->log_vol_size);
+
+	log_std(cd, "Cipher:               \t%s\n", params->cipher);
+	log_std(cd, "Cipher mode:          \t%s\n", params->cipher_mode);
+
+	log_std(cd, "PBKDF2 iterations:    \t%" PRIu32 "\n",
+		params->pbkdf2_iters);
+
+	log_std(cd, "PBKDF2 salt:          \t");
+	crypt_log_hex(cd, params->pbkdf2_salt, FVAULT2_PBKDF2_SALT_SIZE, " ", 0,
+		NULL);
+	log_std(cd, "\n");
+
+	log_std(cd, "Family UUID:          \t");
+	crypt_log_hex(cd, params->family_uuid, FVAULT2_UUID_SIZE, " ", 0, NULL);
+	log_std(cd, "\n");
+
+	return 0;
 }
 
 int FVAULT2_activate_by_passphrase(

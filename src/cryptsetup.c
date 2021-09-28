@@ -642,6 +642,83 @@ out:
 	return r;
 }
 
+static int fvault2Dump_with_volume_key(struct crypt_device *cd)
+{
+	char *vk = NULL;
+	char *password = NULL;
+	size_t vk_size = 0;
+	size_t pass_len = 0;
+	int r = 0;
+
+	if (!ARG_SET(OPT_BATCH_MODE_ID) && !yesDialog(
+	    _("The header dump with volume key is sensitive information\n"
+	      "that allows access to encrypted partition without a passphrase.\n"
+	      "This dump should be stored encrypted in a safe place."),
+	      NULL))
+		return -EPERM;
+
+	vk_size = crypt_get_volume_key_size(cd);
+	vk = crypt_safe_alloc(vk_size);
+	if (vk == NULL)
+		return -ENOMEM;
+
+	r = tools_get_key(NULL, &password, &pass_len,
+		ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
+		ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+	if (r < 0)
+		goto out;
+
+	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size, password, pass_len);
+	tools_passphrase_msg(r);
+	check_signal(&r);
+	if (r < 0)
+		goto out;
+
+	tools_keyslot_msg(r, UNLOCKED);
+
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
+		if (r < 0)
+			goto out;
+	}
+
+	r = crypt_dump(cd);
+	if (r < 0)
+		goto out;
+
+	log_std("Volume key:       \t");
+	crypt_log_hex(cd, vk, vk_size, " ", 0, NULL);
+	log_std("\n");
+
+out:
+	crypt_safe_free(password);
+	crypt_safe_free(vk);
+	return r;
+}
+
+static int action_fvault2Dump(void)
+{
+	struct crypt_device *cd = NULL;
+	int r = 0;
+
+	r = crypt_init(&cd, action_argv[0]);
+	if (r < 0)
+		goto out;
+
+	r = crypt_load(cd, CRYPT_FVAULT2, NULL);
+	if (r < 0)
+		goto out;
+
+	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
+		r = fvault2Dump_with_volume_key(cd);
+	else
+		r = crypt_dump(cd);
+
+out:
+	crypt_free(cd);
+	return r;
+}
+
 static int action_close(void)
 {
 	struct crypt_device *cd = NULL;
@@ -3023,6 +3100,7 @@ static struct action_type {
 	{ LUKSDUMP_ACTION,	action_luksDump,	verify_luksDump,	1, N_("<device>"), N_("dump LUKS partition information") },
 	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	verify_tcryptdump,	1, N_("<device>"), N_("dump TCRYPT device information") },
 	{ BITLKDUMP_ACTION,	action_bitlkDump,	NULL,			1, N_("<device>"), N_("dump BITLK device information") },
+	{ FVAULT2DUMP_ACTION,	action_fvault2Dump,	NULL,			1, N_("<device>"), N_("dump FVAULT2 device information") },
 	{ SUSPEND_ACTION,	action_luksSuspend,	NULL,			1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen)") },
 	{ RESUME_ACTION,	action_luksResume,	NULL,			1, N_("<device>"), N_("Resume suspended LUKS device") },
 	{ HEADERBACKUP_ACTION,	action_luksBackup,	NULL,			1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
