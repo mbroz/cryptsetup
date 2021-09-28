@@ -5117,6 +5117,8 @@ int crypt_dump(struct crypt_device *cd)
 		return INTEGRITY_dump(cd, crypt_data_device(cd), 0);
 	else if (isBITLK(cd->type))
 		return BITLK_dump(cd, crypt_data_device(cd), &cd->u.bitlk.params);
+	else if (isFVAULT2(cd->type))
+		return FVAULT2_dump(cd, crypt_data_device(cd), &cd->u.fvault2.params);
 
 	log_err(cd, _("Dump operation is not supported for this device type."));
 	return -EINVAL;
@@ -5181,6 +5183,9 @@ const char *crypt_get_cipher(struct crypt_device *cd)
 	if (isBITLK(cd->type))
 		return cd->u.bitlk.params.cipher;
 
+	if (isFVAULT2(cd->type))
+		return cd->u.fvault2.params.cipher;
+
 	if (!cd->type && !_init_by_name_crypt_none(cd))
 		return cd->u.none.cipher;
 
@@ -5213,6 +5218,9 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd)
 
 	if (isBITLK(cd->type))
 		return cd->u.bitlk.params.cipher_mode;
+
+	if (isFVAULT2(cd->type))
+		return cd->u.fvault2.params.cipher_mode;
 
 	if (!cd->type && !_init_by_name_crypt_none(cd))
 		return cd->u.none.cipher_mode;
@@ -5296,6 +5304,9 @@ const char *crypt_get_uuid(struct crypt_device *cd)
 	if (isBITLK(cd->type))
 		return cd->u.bitlk.params.guid;
 
+	if (isFVAULT2(cd->type))
+		return cd->u.fvault2.params.family_uuid;
+
 	return NULL;
 }
 
@@ -5358,6 +5369,9 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 
 	if (isBITLK(cd->type))
 		return cd->u.bitlk.params.key_size / 8;
+
+	if (isFVAULT2(cd->type))
+		return cd->u.fvault2.params.key_size;
 
 	if (!cd->type && !_init_by_name_crypt_none(cd))
 		return cd->u.none.key_size;
