@@ -4324,6 +4324,10 @@ static int _activate_by_passphrase(struct crypt_device *cd,
 		r = BITLK_activate_by_passphrase(cd, name, passphrase, passphrase_size,
 						 &cd->u.bitlk.params, flags);
 		keyslot = 0;
+	} else if (isFVAULT2(cd->type)) {
+		r = FVAULT2_activate_by_passphrase(cd, name, passphrase, passphrase_size,
+			&cd->u.fvault2.params, flags);
+		keyslot = 0;
 	} else {
 		log_err(cd, _("Device type is not properly initialized."));
 		r = -EINVAL;
@@ -5556,6 +5560,9 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 
 	if (isBITLK(cd->type))
 		return cd->u.bitlk.params.volume_header_size / SECTOR_SIZE;
+
+	if (isFVAULT2(cd->type))
+		return cd->u.fvault2.params.log_vol_off / SECTOR_SIZE;
 
 	return cd->data_offset;
 }

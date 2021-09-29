@@ -719,6 +719,67 @@ out:
 	return r;
 }
 
+static int action_open_fvault2(void)
+{
+	struct crypt_device *cd = NULL;
+	const char *activated_name;
+	uint32_t activate_flags = 0;
+	int r, tries, keysize;
+	char *password = NULL;
+	char *key = NULL;
+	size_t passwordLen;
+
+	activated_name = ARG_SET(OPT_TEST_PASSPHRASE_ID) ? NULL : action_argv[1];
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	r = crypt_load(cd, CRYPT_FVAULT2, NULL);
+	if (r < 0) {
+		log_err(_("Device %s is not a valid FVAULT2 device."), action_argv[0]);
+		goto out;
+	}
+	set_activation_flags(&activate_flags);
+
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		keysize = crypt_get_volume_key_size(cd);
+		if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
+			log_err(_("Cannot determine volume key size for FVAULT2, please use --key-size option."));
+			r = -EINVAL;
+			goto out;
+		} else if (!keysize)
+			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
+		if (r < 0)
+			goto out;
+		r = crypt_activate_by_volume_key(cd, activated_name, key, keysize,
+			activate_flags);
+	} else {
+		tries = set_tries_tty();
+		do {
+			r = tools_get_key(NULL, &password, &passwordLen,
+				ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
+				ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
+				verify_passphrase(0), 0, cd);
+			if (r < 0)
+				goto out;
+
+			r = crypt_activate_by_passphrase(cd, activated_name, CRYPT_ANY_SLOT,
+				password, passwordLen, activate_flags);
+			tools_passphrase_msg(r);
+			check_signal(&r);
+			crypt_safe_free(password);
+			password = NULL;
+		} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
+	}
+out:
+	crypt_safe_free(password);
+	crypt_safe_free(key);
+	crypt_free(cd);
+	return r;
+}
+
 static int action_close(void)
 {
 	struct crypt_device *cd = NULL;
@@ -2558,6 +2619,10 @@ static int action_open(void)
 		if (action_argc < 2 && !ARG_SET(OPT_TEST_PASSPHRASE_ID))
 			goto out;
 		return action_open_bitlk();
+	} else if (!strcmp(device_type, "fvault2")) {
+		if (action_argc < 2 && !ARG_SET(OPT_TEST_PASSPHRASE_ID))
+			goto out;
+		return action_open_fvault2();
 	} else
 		r = -ENOENT;
 out:

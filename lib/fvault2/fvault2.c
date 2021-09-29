@@ -755,6 +755,54 @@ out:
 	return r;
 }
 
+/**
+ * Activate device.
+ * @param[in] cd crypt_device struct passed into FVAULT2_activate_by_*
+ * @param[in] name name of the mapped device
+ * @param[in] vol_key the pre-derived AES-XTS volume key
+ * @param[in] params logical volume decryption parameters
+ * @param[in] flags flags assigned to the crypt_dm_active_device struct
+ */
+static int _activate(
+	struct crypt_device *cd,
+	const char *name,
+	struct volume_key *vol_key,
+	const struct fvault2_params *params,
+	uint32_t flags)
+{
+	int r = 0;
+	char *cipher = NULL;
+	struct crypt_dm_active_device dm_dev = {
+		.flags = flags,
+		.size = params->log_vol_size / SECTOR_SIZE
+	};
+
+	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
+		crypt_get_data_offset(cd), &dm_dev.size, &dm_dev.flags);
+	if (r)
+		goto out;
+
+	if (asprintf(&cipher, "%s-%s", params->cipher, params->cipher_mode) < 0)
+		return r;
+
+	r = dm_crypt_target_set(&dm_dev.segment, 0, dm_dev.size,
+		crypt_data_device(cd), vol_key, cipher,
+		crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
+		crypt_get_integrity(cd), crypt_get_integrity_tag_size(cd),
+		crypt_get_sector_size(cd));
+	if (r != 0)
+		goto out;
+
+	r = dm_create_device(cd, name, CRYPT_FVAULT2, &dm_dev);
+	if (r < 0)
+		goto out;
+
+out:
+	dm_targets_free(cd, &dm_dev);
+	free(cipher);
+	return r;
+}
+
 int FVAULT2_read_metadata(
 	struct crypt_device *cd,
 	struct fvault2_params *params)
@@ -917,7 +965,22 @@ int FVAULT2_activate_by_passphrase(
 	const struct fvault2_params *params,
 	uint32_t flags)
 {
-	return -ENOTSUP;
+	int r = 0;
+	struct volume_key *vol_key = NULL;
+
+	r = FVAULT2_get_volume_key(cd, passphr, passphr_len, params,
+		&vol_key);
+	if (r < 0)
+		goto out;
+
+	if (name == NULL)
+		goto out;
+
+	r = _activate(cd, name, vol_key, params, flags);
+
+out:
+	crypt_free_volume_key(vol_key);
+	return r;
 }
 
 int FVAULT2_activate_by_volume_key(
@@ -928,5 +991,18 @@ int FVAULT2_activate_by_volume_key(
 	const struct fvault2_params *params,
 	uint32_t flags)
 {
-	return -ENOTSUP;
+	int r = 0;
+	struct volume_key *vol_key = NULL;
+
+	if (key_size != FVAULT2_XTS_KEY_SIZE)
+		return -ENOMEM;
+
+	vol_key = crypt_alloc_volume_key(FVAULT2_XTS_KEY_SIZE, key);
+	if (vol_key == NULL)
+		return -ENOMEM;
+
+	r = _activate(cd, name, vol_key, params, flags);
+
+	crypt_free_volume_key(vol_key);
+	return r;
 }
