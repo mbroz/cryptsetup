@@ -71,8 +71,7 @@ veritysetup_static_LDFLAGS = $(AM_LDFLAGS) -all-static
 veritysetup_static_LDADD =	\
 	$(veritysetup_LDADD)	\
 	@CRYPTO_STATIC_LIBS@	\
-	@DEVMAPPER_STATIC_LIBS@	\
-	@UUID_LIBS@
+	@DEVMAPPER_STATIC_LIBS@
 endif
 endif
 
@@ -109,8 +108,7 @@ integritysetup_static_LDFLAGS = $(AM_LDFLAGS) -all-static
 integritysetup_static_LDADD =	\
 	$(integritysetup_LDADD)	\
 	@CRYPTO_STATIC_LIBS@	\
-	@DEVMAPPER_STATIC_LIBS@	\
-	@UUID_LIBS@
+	@DEVMAPPER_STATIC_LIBS@
 endif
 endif
 
