@@ -1315,3 +1315,19 @@ out:
 	destroy_context(&rc);
 	return r;
 }
+
+int reencrypt_luks1_in_progress(const char *device)
+{
+	int r;
+	struct stat st;
+	struct reenc_ctx dummy = {};
+
+	if (stat(device, &st) || (size_t)st.st_size < pagesize())
+		return -EINVAL;
+
+	r = device_check(&dummy, device, CHECK_UNUSABLE);
+
+	free(dummy.device_uuid);
+
+	return r;
+}

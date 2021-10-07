@@ -777,6 +777,12 @@ static enum device_status_info load_luks(struct crypt_device **r_cd, const char 
 		if (r == -EBUSY) /* luks2 locking error (message printed by libcryptsetup) */
 			return DEVICE_INVALID;
 
+		if (!type || isLUKS1(type))
+			r = reencrypt_luks1_in_progress(uuid_or_device(header_device ?: data_device));
+
+		if (!r)
+			return DEVICE_LUKS1_UNUSABLE;
+
 		log_err(_("Device %s is not a valid %s device."),
 			uuid_or_device(header_device ?: data_device), type ?: "LUKS");
 
@@ -955,11 +961,32 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 static int encrypt(int action_argc, const char **action_argv)
 {
 	const char *type = luksType(device_type);
+	bool luks1_in_reencrypt = false;
+
+	/* explicit request for LUKS2 encryption */
+	if (ARG_SET(OPT_HEADER_ID)) {
+		luks1_in_reencrypt = reencrypt_luks1_in_progress(ARG_STR(OPT_HEADER_ID)) == 0;
+		if (luks1_in_reencrypt && isLUKS2(type)) {
+			log_err(_("Device %s already in LUKS1 reencryption."), ARG_STR(OPT_HEADER_ID));
+			return -EINVAL;
+		}
+	}
+
+	if (!luks1_in_reencrypt)
+		luks1_in_reencrypt = reencrypt_luks1_in_progress(uuid_or_device(action_argv[0])) == 0;
+
+	/* explicit request for LUKS2 encryption */
+	if (luks1_in_reencrypt && isLUKS2(type)) {
+		log_err(_("Device %s already in LUKS1 reencryption."), action_argv[0]);
+		return -EINVAL;
+	}
 
 	if (!type)
 		type = crypt_get_default_type();
 
-	if (isLUKS2(type))
+	if (isLUKS1(type) || luks1_in_reencrypt)
+		return reencrypt_luks1(action_argv[0]);
+	else if (isLUKS2(type))
 		return encrypt_luks2(action_argc, action_argv);
 
 	return -EINVAL;
@@ -979,7 +1006,10 @@ static int decrypt(int action_argc, const char **action_argv)
 
 	if (dev_st == DEVICE_LUKS2)
 		r = decrypt_luks2(cd, action_argc, action_argv);
-	else
+	else if (dev_st == DEVICE_LUKS1 || dev_st == DEVICE_LUKS1_UNUSABLE) {
+		crypt_free(cd);
+		return reencrypt_luks1(action_argv[0]);
+	} else
 		r = -EINVAL;
 
 	crypt_free(cd);
@@ -1000,7 +1030,10 @@ static int _reencrypt(int action_argc, const char **action_argv)
 
 	if (dev_st == DEVICE_LUKS2)
 		r = reencrypt_luks2(cd, action_argc, action_argv);
-	else
+	else if (dev_st == DEVICE_LUKS1 || dev_st == DEVICE_LUKS1_UNUSABLE) {
+		crypt_free(cd);
+		return reencrypt_luks1(action_argv[0]);
+	} else
 		r = -EINVAL;
 
 	crypt_free(cd);

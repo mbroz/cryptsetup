@@ -45,4 +45,8 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 
 int reencrypt(int action_argc, const char **action_argv);
 
+int reencrypt_luks1(const char *device);
+
+int reencrypt_luks1_in_progress(const char *device);
+
 #endif /* UTILS_LUKS_H */
