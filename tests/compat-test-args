@@ -264,7 +264,6 @@ exp_fail reencrypt DEV --reduce-device-size $((64*1024*1024+1))
 exp_fail reencrypt DEV --reduce-device-size -64m
 exp_pass reencrypt DEV --reduce-device-size 64m
 exp_fail reencrypt DEV --reduce-device-size 64m --device-size 100g
-exp_fail reencrypt DEV --decrypt
 # bugs
 # exp_fail open DEV --decrypt --header H
 # exp_fail open DEV --encrypt
