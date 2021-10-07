@@ -3126,10 +3126,6 @@ int main(int argc, const char **argv)
 	}
 
 	/* reencrypt action specific check */
-	if (ARG_SET(OPT_DECRYPT_ID) && !ARG_SET(OPT_HEADER_ID))
-		usage(popt_context, EXIT_FAILURE, _("LUKS2 decryption requires option --header."),
-		      poptGetInvocationName(popt_context));
-
 	if (ARG_SET(OPT_REDUCE_DEVICE_SIZE_ID) && ARG_SET(OPT_DEVICE_SIZE_ID))
 		usage(popt_context, EXIT_FAILURE, _("Options --reduce-device-size and --data-size cannot be combined."),
 		      poptGetInvocationName(popt_context));
