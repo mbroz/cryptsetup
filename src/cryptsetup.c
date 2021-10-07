@@ -2605,40 +2605,178 @@ static int action_reencrypt(void)
 	return reencrypt(action_argc, action_argv);
 }
 
+static const char *verify_tcryptdump(void)
+{
+	if ((ARG_SET(OPT_TCRYPT_HIDDEN_ID) || ARG_SET(OPT_TCRYPT_SYSTEM_ID) || ARG_SET(OPT_TCRYPT_BACKUP_ID)) && (!device_type || strcmp(device_type, "tcrypt")))
+		return _("Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device.");
+
+	if ((ARG_SET(OPT_VERACRYPT_ID) || ARG_SET(OPT_DISABLE_VERACRYPT_ID)) && (!device_type || strcmp(device_type, "tcrypt")))
+		return _("Option --veracrypt or --disable-veracrypt is supported only for TCRYPT device type.");
+
+	if (ARG_SET(OPT_VERACRYPT_PIM_ID) && ARG_SET(OPT_DISABLE_VERACRYPT_ID))
+		return _("Option --veracrypt-pim is supported only for VeraCrypt compatible devices.");
+
+	if (ARG_SET(OPT_VERACRYPT_QUERY_PIM_ID)) {
+		if (ARG_SET(OPT_DISABLE_VERACRYPT_ID))
+			return _("Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices.");
+		else if (ARG_SET(OPT_VERACRYPT_PIM_ID))
+			return _("The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive.");
+	}
+
+	return NULL;
+}
+
+static const char * verify_open(void)
+{
+	if (ARG_SET(OPT_PERSISTENT_ID) && ARG_SET(OPT_TEST_PASSPHRASE_ID))
+		return _("Option --persistent is not allowed with --test-passphrase.");
+
+	if (ARG_SET(OPT_REFRESH_ID) && ARG_SET(OPT_TEST_PASSPHRASE_ID))
+		return _("Options --refresh and --test-passphrase are mutually exclusive.");
+
+	if (ARG_SET(OPT_SHARED_ID) && strcmp_or_null(device_type, "plain"))
+		return _("Option --shared is allowed only for open of plain device.");
+
+	if (ARG_SET(OPT_SKIP_ID) && strcmp_or_null(device_type, "plain") && strcmp(device_type, "loopaes"))
+		return _("Option --skip is supported only for open of plain and loopaes devices.");
+
+	if (ARG_SET(OPT_OFFSET_ID) && strcmp_or_null(device_type, "plain") && strcmp(device_type, "loopaes"))
+		return _("Option --offset with open action is only supported for plain and loopaes devices.");
+
+	if (ARG_SET(OPT_TCRYPT_HIDDEN_ID) && ARG_SET(OPT_ALLOW_DISCARDS_ID))
+		return _("Option --tcrypt-hidden cannot be combined with --allow-discards.");
+
+	if (ARG_SET(OPT_SECTOR_SIZE_ID) &&
+	    (!device_type || strcmp(device_type, "plain")))
+		return _("Sector size option with open action is supported only for plain devices.");
+
+	if (ARG_SET(OPT_IV_LARGE_SECTORS_ID) && (!device_type || strcmp(device_type, "plain") ||
+	    ARG_UINT32(OPT_SECTOR_SIZE_ID) <= SECTOR_SIZE))
+		return _("Large IV sectors option is supported only for opening plain type device with sector size larger than 512 bytes.");
+
+	if (ARG_SET(OPT_TEST_PASSPHRASE_ID) && (!device_type ||
+	    (strncmp(device_type, "luks", 4) && strcmp(device_type, "tcrypt") && strcmp(device_type, "bitlk"))))
+		return _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK devices.");
+
+	/* "open --type tcrypt" and "tcryptDump" checks are identical */
+	return verify_tcryptdump();
+}
+
+static const char *verify_close(void)
+{
+	if (ARG_SET(OPT_CANCEL_DEFERRED_ID) && ARG_SET(OPT_DEFERRED_ID))
+		return _("Options --cancel-deferred and --deferred cannot be used at the same time.");
+
+	return NULL;
+}
+
+static const char *verify_resize(void)
+{
+	if (ARG_SET(OPT_DEVICE_SIZE_ID) && ARG_SET(OPT_SIZE_ID))
+		return _("Options --device-size and --size cannot be combined.");
+
+	return NULL;
+}
+
+static const char *verify_reencrypt(void)
+{
+	if (ARG_SET(OPT_REDUCE_DEVICE_SIZE_ID) && ARG_SET(OPT_DEVICE_SIZE_ID))
+		return _("Options --reduce-device-size and --data-size cannot be combined.");
+
+	return NULL;
+}
+
+static const char *verify_config(void)
+{
+	if (ARG_SET(OPT_PRIORITY_ID) && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT)
+		return _("Keyslot specification is required.");
+
+	return NULL;
+}
+
+static const char *verify_format(void)
+{
+	if (ARG_SET(OPT_ALIGN_PAYLOAD_ID) && ARG_SET(OPT_OFFSET_ID))
+		return _("Options --align-payload and --offset cannot be combined.");
+
+	if (ARG_SET(OPT_INTEGRITY_NO_WIPE_ID) && !ARG_SET(OPT_INTEGRITY_ID))
+		return _("Option --integrity-no-wipe can be used only for format action with integrity extension.");
+
+	if (ARG_SET(OPT_USE_RANDOM_ID) && ARG_SET(OPT_USE_URANDOM_ID))
+		return  _("Only one of --use-[u]random options is allowed.");
+
+	return NULL;
+}
+
+static const char *verify_addkey(void)
+{
+	if (ARG_SET(OPT_UNBOUND_ID) && !ARG_UINT32(OPT_KEY_SIZE_ID))
+		return _("Key size is required with --unbound option.");
+
+	return NULL;
+}
+
+static const char *verify_luksDump(void)
+{
+	if (ARG_SET(OPT_UNBOUND_ID) && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT)
+		return _("Keyslot specification is required.");
+
+	return NULL;
+}
+
+static const char *verify_token(void)
+{
+	if (strcmp(action_argv[0], "add") &&
+	    strcmp(action_argv[0], "remove") &&
+	    strcmp(action_argv[0], "import") &&
+	    strcmp(action_argv[0], "export"))
+		return _("Invalid token action.");
+
+	if (!ARG_SET(OPT_KEY_DESCRIPTION_ID) && !strcmp(action_argv[0], "add"))
+		return _("--key-description parameter is mandatory for token add action.");
+
+	if (ARG_INT32(OPT_TOKEN_ID_ID) == CRYPT_ANY_TOKEN &&
+	    (!strcmp(action_argv[0], "remove") || !strcmp(action_argv[0], "export")))
+		return _("Action requires specific token. Use --token-id parameter.");
+
+	return NULL;
+}
+
 static struct action_type {
 	const char *type;
 	int (*handler)(void);
+	const char *(*verify)(void);
 	int required_action_argc;
 	int required_memlock;
 	const char *arg_desc;
 	const char *desc;
 } action_types[] = {
-	{ OPEN_ACTION,		action_open,		1, 1, N_("<device> [--type <type>] [<name>]"),N_("open device as <name>") },
-	{ CLOSE_ACTION,		action_close,		1, 1, N_("<name>"), N_("close device (remove mapping)") },
-	{ RESIZE_ACTION,	action_resize,		1, 1, N_("<name>"), N_("resize active device") },
-	{ STATUS_ACTION,	action_status,		1, 0, N_("<name>"), N_("show device status") },
-	{ BENCHMARK_ACTION,	action_benchmark,	0, 0, N_("[--cipher <cipher>]"), N_("benchmark cipher") },
-	{ REPAIR_ACTION,	action_luksRepair,	1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
-	{ REENCRYPT_ACTION,	action_reencrypt,	0, 0, N_("<device>"), N_("reencrypt LUKS2 device") },
-	{ ERASE_ACTION,		action_luksErase,	1, 1, N_("<device>"), N_("erase all keyslots (remove encryption key)") },
-	{ CONVERT_ACTION,	action_luksConvert,	1, 1, N_("<device>"), N_("convert LUKS from/to LUKS2 format") },
-	{ CONFIG_ACTION,	action_luksConfig,	1, 1, N_("<device>"), N_("set permanent configuration options for LUKS2") },
-	{ FORMAT_ACTION,	action_luksFormat,	1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
-	{ ADDKEY_ACTION,	action_luksAddKey,	1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
-	{ REMOVEKEY_ACTION,	action_luksRemoveKey,	1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
-	{ CHANGEKEY_ACTION,	action_luksChangeKey,	1, 1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
-	{ CONVERTKEY_ACTION,	action_luksConvertKey,	1, 1, N_("<device> [<key file>]"), N_("converts a key to new pbkdf parameters") },
-	{ KILLKEY_ACTION,	action_luksKillSlot,	2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
-	{ UUID_ACTION,		action_luksUUID,	1, 0, N_("<device>"), N_("print UUID of LUKS device") },
-	{ ISLUKS_ACTION,	action_isLuks,		1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
-	{ LUKSDUMP_ACTION,	action_luksDump,	1, 1, N_("<device>"), N_("dump LUKS partition information") },
-	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	1, 1, N_("<device>"), N_("dump TCRYPT device information") },
-	{ BITLKDUMP_ACTION,	action_bitlkDump,	1, 1, N_("<device>"), N_("dump BITLK device information") },
-	{ SUSPEND_ACTION,	action_luksSuspend,	1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen)") },
-	{ RESUME_ACTION,	action_luksResume,	1, 1, N_("<device>"), N_("Resume suspended LUKS device") },
-	{ HEADERBACKUP_ACTION,	action_luksBackup,	1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
-	{ HEADERRESTORE_ACTION,	action_luksRestore,	1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
-	{ TOKEN_ACTION,		action_token,		2, 0, N_("<add|remove|import|export> <device>"), N_("Manipulate LUKS2 tokens") },
+	{ OPEN_ACTION,		action_open,		verify_open,		1, 1, N_("<device> [--type <type>] [<name>]"),N_("open device as <name>") },
+	{ CLOSE_ACTION,		action_close,		verify_close,		1, 1, N_("<name>"), N_("close device (remove mapping)") },
+	{ RESIZE_ACTION,	action_resize,		verify_resize,		1, 1, N_("<name>"), N_("resize active device") },
+	{ STATUS_ACTION,	action_status,		NULL,			1, 0, N_("<name>"), N_("show device status") },
+	{ BENCHMARK_ACTION,	action_benchmark,	NULL,			0, 0, N_("[--cipher <cipher>]"), N_("benchmark cipher") },
+	{ REPAIR_ACTION,	action_luksRepair,	NULL,			1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
+	{ REENCRYPT_ACTION,	action_reencrypt,	verify_reencrypt,	0, 0, N_("<device>"), N_("reencrypt LUKS2 device") },
+	{ ERASE_ACTION,		action_luksErase,	NULL,			1, 1, N_("<device>"), N_("erase all keyslots (remove encryption key)") },
+	{ CONVERT_ACTION,	action_luksConvert,	NULL,			1, 1, N_("<device>"), N_("convert LUKS from/to LUKS2 format") },
+	{ CONFIG_ACTION,	action_luksConfig,	verify_config,		1, 1, N_("<device>"), N_("set permanent configuration options for LUKS2") },
+	{ FORMAT_ACTION,	action_luksFormat,	verify_format,		1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
+	{ ADDKEY_ACTION,	action_luksAddKey,	verify_addkey,		1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
+	{ REMOVEKEY_ACTION,	action_luksRemoveKey,	NULL,			1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
+	{ CHANGEKEY_ACTION,	action_luksChangeKey,	NULL,			1, 1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
+	{ CONVERTKEY_ACTION,	action_luksConvertKey,	NULL,			1, 1, N_("<device> [<key file>]"), N_("converts a key to new pbkdf parameters") },
+	{ KILLKEY_ACTION,	action_luksKillSlot,	NULL,			2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
+	{ UUID_ACTION,		action_luksUUID,	NULL,			1, 0, N_("<device>"), N_("print UUID of LUKS device") },
+	{ ISLUKS_ACTION,	action_isLuks,		NULL,			1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
+	{ LUKSDUMP_ACTION,	action_luksDump,	verify_luksDump,	1, 1, N_("<device>"), N_("dump LUKS partition information") },
+	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	verify_tcryptdump,	1, 1, N_("<device>"), N_("dump TCRYPT device information") },
+	{ BITLKDUMP_ACTION,	action_bitlkDump,	NULL,			1, 1, N_("<device>"), N_("dump BITLK device information") },
+	{ SUSPEND_ACTION,	action_luksSuspend,	NULL,			1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen)") },
+	{ RESUME_ACTION,	action_luksResume,	NULL,			1, 1, N_("<device>"), N_("Resume suspended LUKS device") },
+	{ HEADERBACKUP_ACTION,	action_luksBackup,	NULL,			1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
+	{ HEADERRESTORE_ACTION,	action_luksRestore,	NULL,			1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
+	{ TOKEN_ACTION,		action_token,		verify_token,		2, 0, N_("<add|remove|import|export> <device>"), N_("Manipulate LUKS2 tokens") },
 	{}
 };
 
@@ -2751,6 +2889,13 @@ static int run_action(struct action_type *action)
 
 	show_status(r);
 	return translate_errno(r);
+}
+
+static const char *verify_action(struct action_type *action)
+{
+	log_dbg("Verifying parameters for command %s.", action->type);
+
+	return action->verify ? action->verify() : NULL;
 }
 
 static bool needs_size_conversion(unsigned arg_id)
@@ -2878,7 +3023,7 @@ int main(int argc, const char **argv)
 	};
 	poptContext popt_context;
 	struct action_type *action;
-	const char *aname;
+	const char *aname, *error_message;
 	int r;
 
 	crypt_set_log_callback(NULL, tool_log, &log_parms);
@@ -2977,39 +3122,6 @@ int main(int argc, const char **argv)
 	/* this routine short circuits to exit() on error */
 	tools_check_args(action->type, tool_core_args, ARRAY_SIZE(tool_core_args), popt_context);
 
-	if (ARG_SET(OPT_REFRESH_ID) && ARG_SET(OPT_TEST_PASSPHRASE_ID))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Options --refresh and --test-passphrase are mutually exclusive."),
-		      poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_CANCEL_DEFERRED_ID) && ARG_SET(OPT_DEFERRED_ID))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Options --cancel-deferred and --deferred cannot be used at the same time."),
-		      poptGetInvocationName(popt_context));
-
-	/* open action specific check */
-	if (ARG_SET(OPT_SHARED_ID) && strcmp_or_null(device_type, "plain"))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Option --shared is allowed only for open of plain device."),
-		      poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_PERSISTENT_ID) && ARG_SET(OPT_TEST_PASSPHRASE_ID))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Option --persistent is not allowed with --test-passphrase."),
-		      poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_INTEGRITY_NO_WIPE_ID) && !ARG_SET(OPT_INTEGRITY_ID))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Option --integrity-no-wipe"
-		        " can be used only for format action with integrity extension."),
-		      poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_TEST_PASSPHRASE_ID) && (strcmp(aname, OPEN_ACTION) || !device_type ||
-	    (strncmp(device_type, "luks", 4) && strcmp(device_type, "tcrypt") && strcmp(device_type, "bitlk"))))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK devices."),
-		      poptGetInvocationName(popt_context));
-
 	if (!strcmp(aname, KILLKEY_ACTION) && action_argc > 1) {
 		ARG_SET_INT32(OPT_KEY_SLOT_ID, atoi(action_argv[1]));
 		check_key_slot_value(popt_context);
@@ -3028,65 +3140,6 @@ int main(int argc, const char **argv)
 		usage(popt_context, EXIT_FAILURE, _("Only one --key-file argument is allowed."),
 		      poptGetInvocationName(popt_context));
 
-	if (ARG_SET(OPT_USE_RANDOM_ID) && ARG_SET(OPT_USE_URANDOM_ID))
-		usage(popt_context, EXIT_FAILURE, _("Only one of --use-[u]random options is allowed."),
-		      poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_ALIGN_PAYLOAD_ID) && ARG_SET(OPT_OFFSET_ID))
-		usage(popt_context, EXIT_FAILURE, _("Options --align-payload and --offset cannot be combined."),
-		      poptGetInvocationName(popt_context));
-
-	/* open action specific check */
-	if (ARG_SET(OPT_SKIP_ID) && strcmp_or_null(device_type, "plain") && strcmp(device_type, "loopaes"))
-		usage(popt_context, EXIT_FAILURE,
-		_("Option --skip is supported only for open of plain and loopaes devices."),
-		poptGetInvocationName(popt_context));
-
-	/* open action specific check */
-	if (ARG_SET(OPT_OFFSET_ID) && !strcmp(aname, OPEN_ACTION) && strcmp_or_null(device_type, "plain") && strcmp(device_type, "loopaes"))
-		usage(popt_context, EXIT_FAILURE,
-		_("Option --offset with open action is only supported for plain and loopaes devices."),
-		poptGetInvocationName(popt_context));
-
-	/* open action specific check */
-	if ((ARG_SET(OPT_TCRYPT_HIDDEN_ID) || ARG_SET(OPT_TCRYPT_SYSTEM_ID) || ARG_SET(OPT_TCRYPT_BACKUP_ID)) && !strcmp(aname, OPEN_ACTION) && (!device_type || strcmp(device_type, "tcrypt")))
-		usage(popt_context, EXIT_FAILURE,
-		_("Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device."),
-		poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_TCRYPT_HIDDEN_ID) && ARG_SET(OPT_ALLOW_DISCARDS_ID))
-		usage(popt_context, EXIT_FAILURE,
-		_("Option --tcrypt-hidden cannot be combined with --allow-discards."),
-		poptGetInvocationName(popt_context));
-
-	if ((ARG_SET(OPT_VERACRYPT_ID) || ARG_SET(OPT_DISABLE_VERACRYPT_ID)) && (!device_type || strcmp(device_type, "tcrypt")))
-		usage(popt_context, EXIT_FAILURE,
-		_("Option --veracrypt or --disable-veracrypt is supported only for TCRYPT device type."),
-		poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_VERACRYPT_PIM_ID) && ARG_SET(OPT_DISABLE_VERACRYPT_ID))
-		usage(popt_context, EXIT_FAILURE,
-		_("Option --veracrypt-pim is supported only for VeraCrypt compatible devices."),
-		poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_VERACRYPT_QUERY_PIM_ID)) {
-		if (ARG_SET(OPT_DISABLE_VERACRYPT_ID)) {
-			usage(popt_context, EXIT_FAILURE,
-			_("Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices."),
-			poptGetInvocationName(popt_context));
-		} else if (ARG_SET(OPT_VERACRYPT_PIM_ID)) {
-			usage(popt_context, EXIT_FAILURE,
-			_("The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive."),
-			poptGetInvocationName(popt_context));
-		}
-	}
-
-	/* config action specific check */
-	if (!strcmp(aname, CONFIG_ACTION) && ARG_SET(OPT_PRIORITY_ID) && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT)
-		usage(popt_context, EXIT_FAILURE,
-		_("Keyslot specification is required."),
-		poptGetInvocationName(popt_context));
-
 	if (ARG_SET(OPT_PBKDF_ID) && crypt_parse_pbkdf(ARG_STR(OPT_PBKDF_ID), &set_pbkdf))
 		usage(popt_context, EXIT_FAILURE,
 		_("Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id."),
@@ -3097,76 +3150,26 @@ int main(int argc, const char **argv)
 		_("PBKDF forced iterations cannot be combined with iteration time option."),
 		poptGetInvocationName(popt_context));
 
-	/* open action specific check */
-	if (ARG_SET(OPT_SECTOR_SIZE_ID) && !strcmp(aname, OPEN_ACTION) &&
-	    (!device_type || strcmp(device_type, "plain")))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Sector size option with open action is supported only for plain devices."),
-		      poptGetInvocationName(popt_context));
-
-	/* open action specific check */
-	if (ARG_SET(OPT_IV_LARGE_SECTORS_ID) && (!device_type || strcmp(device_type, "plain") ||
-	    ARG_UINT32(OPT_SECTOR_SIZE_ID) <= SECTOR_SIZE))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Large IV sectors option is supported only for opening plain type device with sector size larger than 512 bytes."),
-		      poptGetInvocationName(popt_context));
-
-	/* luksAddKey action specific check */
-	if (ARG_SET(OPT_UNBOUND_ID) && !ARG_UINT32(OPT_KEY_SIZE_ID) && !strcmp(aname, ADDKEY_ACTION))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Key size is required with --unbound option."),
-		      poptGetInvocationName(popt_context));
-
-	/* luksDump action specific check */
-	if (ARG_SET(OPT_UNBOUND_ID) && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT && !strcmp(aname, LUKSDUMP_ACTION))
-		usage(popt_context, EXIT_FAILURE,
-		      _("Keyslot specification is required."),
-		      poptGetInvocationName(popt_context));
-
 	if (ARG_SET(OPT_DEBUG_ID) || ARG_SET(OPT_DEBUG_JSON_ID)) {
 		crypt_set_debug_level(ARG_SET(OPT_DEBUG_JSON_ID)? CRYPT_DEBUG_JSON : CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
 	}
 
 	/* reencrypt action specific check */
-	if (ARG_SET(OPT_REDUCE_DEVICE_SIZE_ID) && ARG_SET(OPT_DEVICE_SIZE_ID))
-		usage(popt_context, EXIT_FAILURE, _("Options --reduce-device-size and --data-size cannot be combined."),
-		      poptGetInvocationName(popt_context));
-
-	if (ARG_SET(OPT_DEVICE_SIZE_ID) && ARG_SET(OPT_SIZE_ID))
-		usage(popt_context, EXIT_FAILURE, _("Options --device-size and --size cannot be combined."),
-		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_KEYSLOT_CIPHER_ID) != ARG_SET(OPT_KEYSLOT_KEY_SIZE_ID))
 		usage(popt_context, EXIT_FAILURE, _("Options --keyslot-cipher and --keyslot-key-size must be used together."),
 		      poptGetInvocationName(popt_context));
+
+	error_message = verify_action(action);
+	if (error_message)
+		usage(popt_context, EXIT_FAILURE, error_message, poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_TEST_ARGS_ID)) {
 		log_std(_("No action taken. Invoked with --test-args option.\n"));
 		tools_cleanup();
 		poptFreeContext(popt_context);
 		return 0;
-	}
-
-	/* token action specific check */
-	if (!strcmp(aname, TOKEN_ACTION)) {
-		if (strcmp(action_argv[0], "add") &&
-		    strcmp(action_argv[0], "remove") &&
-		    strcmp(action_argv[0], "import") &&
-		    strcmp(action_argv[0], "export"))
-			usage(popt_context, EXIT_FAILURE, _("Invalid token action."),
-			      poptGetInvocationName(popt_context));
-
-		if (!ARG_SET(OPT_KEY_DESCRIPTION_ID) && !strcmp(action_argv[0], "add"))
-			usage(popt_context, EXIT_FAILURE,
-			      _("--key-description parameter is mandatory for token add action."),
-			      poptGetInvocationName(popt_context));
-
-		if (ARG_INT32(OPT_TOKEN_ID_ID) == CRYPT_ANY_TOKEN &&
-		    (!strcmp(action_argv[0], "remove") || !strcmp(action_argv[0], "export")))
-			usage(popt_context, EXIT_FAILURE,
-			      _("Action requires specific token. Use --token-id parameter."),
-			      poptGetInvocationName(popt_context));
 	}
 
 	if (ARG_SET(OPT_DISABLE_KEYRING_ID))

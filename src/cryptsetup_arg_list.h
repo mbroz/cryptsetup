@@ -39,7 +39,7 @@ ARG(OPT_DEBUG_JSON, '\0', POPT_ARG_NONE, N_("Show debug messages including JSON 
 
 ARG(OPT_DEFERRED, '\0', POPT_ARG_NONE, N_("Device removal is deferred until the last user closes it"), NULL, CRYPT_ARG_BOOL, {}, OPT_DEFERRED_ACTIONS)
 
-ARG(OPT_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Use only specified device size (ignore rest of device). DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, {})
+ARG(OPT_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Use only specified device size (ignore rest of device). DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_DEVICE_SIZE_ACTIONS)
 
 ARG(OPT_DECRYPT, '\0', POPT_ARG_NONE, N_("Decrypt LUKS2 device (remove encryption)."), NULL, CRYPT_ARG_BOOL, {}, {})
 
@@ -49,7 +49,7 @@ ARG(OPT_DISABLE_KEYRING, '\0', POPT_ARG_NONE, N_("Disable loading volume keys vi
 
 ARG(OPT_DISABLE_LOCKS, '\0', POPT_ARG_NONE, N_("Disable locking of on-disk metadata"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_DISABLE_VERACRYPT, '\0', POPT_ARG_NONE, N_("Do not scan for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_DISABLE_VERACRYPT, '\0', POPT_ARG_NONE, N_("Do not scan for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, OPT_DISABLE_VERACRYPT_ACTIONS)
 
 ARG(OPT_DUMP_JSON, '\0', POPT_ARG_NONE, N_("Dump info in JSON format (LUKS2 only)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
@@ -75,11 +75,11 @@ ARG(OPT_INTEGRITY_LEGACY_PADDING,'\0', POPT_ARG_NONE, N_("Use inefficient legacy
 
 ARG(OPT_INTEGRITY_NO_JOURNAL, '\0', POPT_ARG_NONE, N_("Disable journal for integrity device"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_INTEGRITY_NO_WIPE, '\0', POPT_ARG_NONE, N_("Do not wipe device after format"), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_INTEGRITY_NO_WIPE, '\0', POPT_ARG_NONE, N_("Do not wipe device after format"), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_NO_WIPE_ACTIONS)
 
-ARG(OPT_ITER_TIME, 'i', POPT_ARG_STRING, N_("PBKDF iteration time for LUKS (in ms)"), N_("msecs"), CRYPT_ARG_UINT32, {}, {})
+ARG(OPT_ITER_TIME, 'i', POPT_ARG_STRING, N_("PBKDF iteration time for LUKS (in ms)"), N_("msecs"), CRYPT_ARG_UINT32, {}, OPT_ITER_TIME_ACTIONS)
 
-ARG(OPT_IV_LARGE_SECTORS, '\0', POPT_ARG_NONE, N_("Use IV counted in sector size (not in 512 bytes)"), NULL , CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_IV_LARGE_SECTORS, '\0', POPT_ARG_NONE, N_("Use IV counted in sector size (not in 512 bytes)"), NULL , CRYPT_ARG_BOOL, {}, OPT_IV_LARGE_SECTORS_ACTIONS)
 
 ARG(OPT_JSON_FILE, '\0', POPT_ARG_STRING, N_("Read or write the json from or to a file"), NULL, CRYPT_ARG_STRING, {}, {})
 
@@ -115,9 +115,9 @@ ARG(OPT_NEW_KEYFILE_SIZE, '\0', POPT_ARG_STRING, N_("Limits the read from newly 
 
 ARG(OPT_OFFSET, 'o', POPT_ARG_STRING, N_("The start offset in the backend device"), N_("SECTORS"), CRYPT_ARG_UINT64, {}, OPT_OFFSET_ACTIONS)
 
-ARG(OPT_PBKDF, '\0', POPT_ARG_STRING, N_("PBKDF algorithm (for LUKS2): argon2i, argon2id, pbkdf2"), NULL, CRYPT_ARG_STRING, {}, {})
+ARG(OPT_PBKDF, '\0', POPT_ARG_STRING, N_("PBKDF algorithm (for LUKS2): argon2i, argon2id, pbkdf2"), NULL, CRYPT_ARG_STRING, {}, OPT_PBKDF_ACTIONS)
 
-ARG(OPT_PBKDF_FORCE_ITERATIONS, '\0', POPT_ARG_STRING, N_("PBKDF iterations cost (forced, disables benchmark)"), "LONG", CRYPT_ARG_UINT32, {}, {})
+ARG(OPT_PBKDF_FORCE_ITERATIONS, '\0', POPT_ARG_STRING, N_("PBKDF iterations cost (forced, disables benchmark)"), "LONG", CRYPT_ARG_UINT32, {}, OPT_PBKDF_FORCE_ITERATIONS_ACTIONS)
 
 ARG(OPT_PBKDF_MEMORY, '\0', POPT_ARG_STRING, N_("PBKDF memory cost limit"), N_("kilobytes"), CRYPT_ARG_UINT32, { .u32_value = DEFAULT_LUKS2_MEMORY_KB }, {})
 
@@ -153,9 +153,9 @@ ARG(OPT_SECTOR_SIZE, '\0', POPT_ARG_STRING, N_("Encryption sector size (default:
 
 ARG(OPT_SERIALIZE_MEMORY_HARD_PBKDF, '\0', POPT_ARG_NONE, N_("Use global lock to serialize memory hard PBKDF (OOM workaround)"), NULL, CRYPT_ARG_BOOL, {}, OPT_SERIALIZE_MEMORY_HARD_PBKDF_ACTIONS)
 
-ARG(OPT_SHARED, '\0', POPT_ARG_NONE, N_("Share device with another non-overlapping crypt segment"), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_SHARED, '\0', POPT_ARG_NONE, N_("Share device with another non-overlapping crypt segment"), NULL, CRYPT_ARG_BOOL, {}, OPT_SHARED_ACTIONS )
 
-ARG(OPT_SIZE, 'b', POPT_ARG_STRING, N_("The size of the device"), N_("SECTORS"), CRYPT_ARG_UINT64, {}, {})
+ARG(OPT_SIZE, 'b', POPT_ARG_STRING, N_("The size of the device"), N_("SECTORS"), CRYPT_ARG_UINT64, {}, OPT_SIZE_ACTIONS)
 
 ARG(OPT_SKIP, 'p', POPT_ARG_STRING, N_("How many sectors of the encrypted data to skip at the beginning"), N_("SECTORS"), CRYPT_ARG_UINT64, {}, OPT_SKIP_ACTIONS)
 
@@ -195,7 +195,7 @@ ARG(OPT_UUID, '\0', POPT_ARG_STRING, N_("UUID for device to use"), NULL, CRYPT_A
 
 ARG(OPT_VERACRYPT, '\0', POPT_ARG_NONE, N_("Scan also for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_VERACRYPT_PIM, '\0', POPT_ARG_STRING, N_("Personal Iteration Multiplier for VeraCrypt compatible device"), "INT", CRYPT_ARG_UINT32, {}, {})
+ARG(OPT_VERACRYPT_PIM, '\0', POPT_ARG_STRING, N_("Personal Iteration Multiplier for VeraCrypt compatible device"), "INT", CRYPT_ARG_UINT32, {}, OPT_VERACRYPT_PIM_ACTIONS)
 
 ARG(OPT_VERACRYPT_QUERY_PIM, '\0', POPT_ARG_NONE, N_("Query Personal Iteration Multiplier for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, {})
 
