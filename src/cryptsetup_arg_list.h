@@ -97,9 +97,9 @@ ARG(OPT_KEYFILE_OFFSET, '\0', POPT_ARG_STRING, N_("Number of bytes to skip in ke
 
 ARG(OPT_KEYFILE_SIZE, 'l', POPT_ARG_STRING, N_("Limits the read from keyfile"), N_("bytes"), CRYPT_ARG_UINT32, {}, {})
 
-ARG(OPT_KEYSLOT_CIPHER, '\0', POPT_ARG_STRING, N_("LUKS2 keyslot: The cipher used for keyslot encryption"), NULL, CRYPT_ARG_STRING, {}, {})
+ARG(OPT_KEYSLOT_CIPHER, '\0', POPT_ARG_STRING, N_("LUKS2 keyslot: The cipher used for keyslot encryption"), NULL, CRYPT_ARG_STRING, {}, OPT_KEYSLOT_CIPHER_ACTIONS)
 
-ARG(OPT_KEYSLOT_KEY_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 keyslot: The size of the encryption key"), N_("BITS"), CRYPT_ARG_UINT32, {}, {})
+ARG(OPT_KEYSLOT_KEY_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 keyslot: The size of the encryption key"), N_("BITS"), CRYPT_ARG_UINT32, {}, OPT_KEYSLOT_KEY_SIZE_ACTIONS)
 
 ARG(OPT_LABEL, '\0', POPT_ARG_STRING, N_("Set label for the LUKS2 device"), NULL, CRYPT_ARG_STRING, {}, OPT_LABEL_ACTIONS)
 
