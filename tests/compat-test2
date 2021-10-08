@@ -974,7 +974,7 @@ echo $PWD1 | $CRYPTSETUP -q open $LOOPDEV $DEV_NAME 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q open $LOOPDEV --test-passphrase || fail
 # check we're able to change passphrase for unbound keyslot
 echo -e "$PWD2\n$PWD3" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT -S 2 $LOOPDEV || fail
-echo $PWD3 | $CRYPTSETUP open --test-passphrase $FAST_PBKDF_OPT -S 2 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP open --test-passphrase -S 2 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP -q open -S 2 $LOOPDEV $DEV_NAME 2> /dev/null && fail
 # do not allow adding keyslot by unbound keyslot
 echo -e "$PWD3\n$PWD1" | $CRYPTSETUP -q luksAddKey $LOOPDEV 2> /dev/null && fail
