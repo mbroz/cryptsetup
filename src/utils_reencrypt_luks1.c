@@ -30,11 +30,9 @@
 #define NO_UUID "cafecafe-cafe-cafe-cafe-cafecafeeeee"
 
 extern int64_t data_shift;
-extern const char *device_type;
-extern const char *set_pbkdf;
 
-#define MAX_SLOT 32
-#define MAX_TOKEN 32
+#define MAX_SLOT 8
+
 struct reenc_ctx {
 	char *device;
 	char *device_header;
@@ -53,7 +51,6 @@ struct reenc_ctx {
 	enum { REENCRYPT = 0, ENCRYPT = 1, DECRYPT = 2 } reencrypt_mode;
 
 	char header_file_org[PATH_MAX];
-	char header_file_tmp[PATH_MAX];
 	char header_file_new[PATH_MAX];
 	char log_file[PATH_MAX];
 
@@ -110,37 +107,6 @@ static const char *hdr_device(const struct reenc_ctx *rc)
 	return rc->device_header ?: rc->device;
 }
 
-static int set_reencrypt_requirement(const struct reenc_ctx *rc)
-{
-	uint32_t reqs;
-	int r = -EINVAL;
-	struct crypt_device *cd = NULL;
-	struct crypt_params_integrity ip = { 0 };
-
-	if (crypt_init(&cd, hdr_device(rc)) ||
-	    crypt_load(cd, CRYPT_LUKS2, NULL) ||
-	    crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &reqs))
-		goto out;
-
-	/* reencrypt already in-progress */
-	if (reqs & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT) {
-		log_err(_("Reencryption already in-progress."));
-		goto out;
-	}
-
-	/* raw integrity info is available since 2.0 */
-	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
-		log_err(_("Reencryption of device with integrity profile is not supported."));
-		r = -ENOTSUP;
-		goto out;
-	}
-
-	r = crypt_persistent_flags_set(cd, CRYPT_FLAGS_REQUIREMENTS, reqs | CRYPT_REQUIREMENT_OFFLINE_REENCRYPT);
-out:
-	crypt_free(cd);
-	return r;
-}
-
 /* Depends on the first two fields of LUKS1 header format, magic and version */
 static int device_check(struct reenc_ctx *rc, const char *device, header_magic set_magic)
 {
@@ -195,11 +161,6 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 		log_verbose(_("Marking LUKS1 device %s unusable."), device);
 		memcpy(buf, NOMAGIC, MAGIC_L);
 		r = 0;
-	} else if (set_magic == MAKE_UNUSABLE && version == 2) {
-		log_verbose(_("Setting LUKS2 offline reencrypt flag on device %s."), device);
-		r = set_reencrypt_requirement(rc);
-		if (!r)
-			rc->stained = 1;
 	} else if (set_magic == CHECK_UNUSABLE && version == 1) {
 		r = memcmp(buf, NOMAGIC, MAGIC_L) ? -EINVAL : 0;
 		if (!r)
@@ -401,7 +362,7 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 		return -EINVAL;
 
 	if ((r = crypt_init_data_device(&cd, rc->header_file_org, rc->device)) ||
-	    (r = crypt_load(cd, CRYPT_LUKS, NULL)))
+	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
 	log_verbose(_("Activating temporary device using old LUKS header."));
@@ -411,7 +372,7 @@ static int activate_luks_headers(struct reenc_ctx *rc)
 		goto out;
 
 	if ((r = crypt_init_data_device(&cd_new, rc->header_file_new, rc->device)) ||
-	    (r = crypt_load(cd_new, CRYPT_LUKS, NULL)))
+	    (r = crypt_load(cd_new, CRYPT_LUKS1, NULL)))
 		goto out;
 
 	log_verbose(_("Activating temporary device using new LUKS header."));
@@ -461,7 +422,6 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 			     const char *cipher, const char *cipher_mode,
 			     const char *uuid,
 			     const char *key, int key_size,
-			     const char *type,
 			     uint64_t metadata_size,
 			     uint64_t keyslots_size,
 			     void *params)
@@ -477,7 +437,7 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 	else if (ARG_SET(OPT_USE_URANDOM_ID))
 		crypt_set_rng_type(cd_new, CRYPT_RNG_URANDOM);
 
-	r = set_pbkdf_params(cd_new, type);
+	r = set_pbkdf_params(cd_new, CRYPT_LUKS1);
 	if (r) {
 		log_err(_("Failed to set pbkdf parameters."));
 		goto out;
@@ -495,13 +455,13 @@ static int create_new_header(struct reenc_ctx *rc, struct crypt_device *cd_old,
 		goto out;
 	}
 
-	r = crypt_format(cd_new, type, cipher, cipher_mode, uuid, key, key_size, params);
+	r = crypt_format(cd_new, CRYPT_LUKS1, cipher, cipher_mode, uuid, key, key_size, params);
 	check_signal(&r);
 	if (r < 0)
 		goto out;
 	log_verbose(_("New LUKS header for device %s created."), rc->device);
 
-	for (i = 0; i < crypt_keyslot_max(type); i++) {
+	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS1); i++) {
 		if (!rc->p[i].password)
 			continue;
 
@@ -517,92 +477,10 @@ out:
 	return r;
 }
 
-static int luks2_metadata_copy(struct reenc_ctx *rc)
-{
-	const char *json, *type;
-	crypt_token_info ti;
-	uint32_t flags;
-	int i, r = -EINVAL;
-	struct crypt_device *cd_old = NULL, *cd_new = NULL;
-
-	if (crypt_init(&cd_old, rc->header_file_tmp) ||
-	    crypt_load(cd_old, CRYPT_LUKS2, NULL))
-		goto out;
-
-	if (crypt_init(&cd_new, rc->header_file_new) ||
-	    crypt_load(cd_new, CRYPT_LUKS2, NULL))
-		goto out;
-
-	/*
-	 * we have to erase keyslots missing in new header so that we can
-	 * transfer tokens from old header to new one
-	 */
-	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++)
-		if (!rc->p[i].password && crypt_keyslot_status(cd_old, i) == CRYPT_SLOT_ACTIVE) {
-			r = crypt_keyslot_destroy(cd_old, i);
-			if (r < 0)
-				goto out;
-		}
-
-	for (i = 0; i < MAX_TOKEN; i++) {
-		ti = crypt_token_status(cd_old, i, &type);
-		switch (ti) {
-		case CRYPT_TOKEN_INVALID:
-			log_dbg("Internal error.");
-			r = -EINVAL;
-			goto out;
-		case CRYPT_TOKEN_INACTIVE:
-			break;
-		case CRYPT_TOKEN_INTERNAL_UNKNOWN:
-			log_err(_("This version of cryptsetup-reencrypt can't handle new internal token type %s."), type);
-			r = -EINVAL;
-			goto out;
-		case CRYPT_TOKEN_INTERNAL:
-			/* fallthrough */
-		case CRYPT_TOKEN_EXTERNAL:
-			/* fallthrough */
-		case CRYPT_TOKEN_EXTERNAL_UNKNOWN:
-			if (crypt_token_json_get(cd_old, i, &json) != i) {
-				log_dbg("Failed to get %s token (%d).", type, i);
-				r = -EINVAL;
-				goto out;
-			}
-			if (crypt_token_json_set(cd_new, i, json) != i) {
-				log_dbg("Failed to create %s token (%d).", type, i);
-				r = -EINVAL;
-				goto out;
-			}
-		}
-	}
-
-	if ((r = crypt_persistent_flags_get(cd_old, CRYPT_FLAGS_ACTIVATION, &flags))) {
-		log_err(_("Failed to read activation flags from backup header."));
-		goto out;
-	}
-	if ((r = crypt_persistent_flags_set(cd_new, CRYPT_FLAGS_ACTIVATION, flags))) {
-		log_err(_("Failed to write activation flags to new header."));
-		goto out;
-	}
-	if ((r = crypt_persistent_flags_get(cd_old, CRYPT_FLAGS_REQUIREMENTS, &flags))) {
-		log_err(_("Failed to read requirements from backup header."));
-		goto out;
-	}
-	if ((r = crypt_persistent_flags_set(cd_new, CRYPT_FLAGS_REQUIREMENTS, flags)))
-		log_err(_("Failed to read requirements from backup header."));
-out:
-	crypt_free(cd_old);
-	crypt_free(cd_new);
-	unlink(rc->header_file_tmp);
-
-	return r;
-}
-
 static int backup_luks_headers(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params = {0};
-	struct crypt_params_luks2 params2 = {0};
-	struct stat st;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char *key = NULL;
 	size_t key_size;
@@ -612,21 +490,13 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	log_dbg("Creating LUKS header backup for device %s.", hdr_device(rc));
 
 	if ((r = crypt_init(&cd, hdr_device(rc))) ||
-	    (r = crypt_load(cd, CRYPT_LUKS, NULL)))
+	    (r = crypt_load(cd, CRYPT_LUKS1, NULL)))
 		goto out;
 
-	if ((r = crypt_header_backup(cd, CRYPT_LUKS, rc->header_file_org)))
+	if ((r = crypt_header_backup(cd, CRYPT_LUKS1, rc->header_file_org)))
 		goto out;
-	if (isLUKS2(rc->type)) {
-		if ((r = crypt_header_backup(cd, CRYPT_LUKS2, rc->header_file_tmp)))
-			goto out;
-		if ((r = stat(rc->header_file_tmp, &st)))
-			goto out;
-		/* coverity[toctou] */
-		if ((r = chmod(rc->header_file_tmp, st.st_mode | S_IWUSR)))
-			goto out;
-	}
-	log_verbose(_("%s header backup of device %s created."), isLUKS2(rc->type) ? "LUKS2" : "LUKS1", rc->device);
+
+	log_verbose(_("%s header backup of device %s created."), "LUKS1", rc->device);
 
 	/* For decrypt, new header will be fake one, so we are done here. */
 	if (rc->reencrypt_mode == DECRYPT)
@@ -638,8 +508,7 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		goto out;
 
 	params.hash = ARG_STR(OPT_HASH_ID) ?: DEFAULT_LUKS1_HASH;
-	params2.data_device = params.data_device = rc->device;
-	params2.sector_size = crypt_get_sector_size(cd);
+	params.data_device = rc->device;
 
 	if (ARG_SET(OPT_CIPHER_ID)) {
 		r = crypt_parse_name_and_mode(ARG_STR(OPT_CIPHER_ID), cipher, NULL, cipher_mode);
@@ -669,22 +538,16 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 	if (r < 0)
 		goto out;
 
-	if (isLUKS2(crypt_get_type(cd)) && crypt_get_metadata_size(cd, &mdata_size, &keyslots_size))
-		goto out;
-
 	r = create_new_header(rc, cd,
 		ARG_SET(OPT_CIPHER_ID) ? cipher : crypt_get_cipher(cd),
 		ARG_SET(OPT_CIPHER_ID) ? cipher_mode : crypt_get_cipher_mode(cd),
 		crypt_get_uuid(cd),
 		key,
 		key_size,
-		rc->type,
 		mdata_size,
 		keyslots_size,
-		isLUKS2(rc->type) ? (void*)&params2 : (void*)&params);
+		(void*)&params);
 
-	if (!r && isLUKS2(rc->type))
-		r = luks2_metadata_copy(rc);
 out:
 	crypt_free(cd);
 	crypt_safe_free(key);
@@ -698,7 +561,6 @@ static int backup_fake_header(struct reenc_ctx *rc)
 {
 	struct crypt_device *cd_new = NULL;
 	struct crypt_params_luks1 params = {0};
-	struct crypt_params_luks2 params2 = {0};
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	const char *header_file_fake;
 	int r;
@@ -724,10 +586,8 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		return r;
 
 	params.hash = ARG_STR(OPT_HASH_ID) ?: DEFAULT_LUKS1_HASH;
-	params2.data_alignment = params.data_alignment = 0;
-	params2.data_device = params.data_device = rc->device;
-	params2.sector_size = crypt_get_sector_size(NULL);
-	params2.pbkdf = crypt_get_pbkdf_default(CRYPT_LUKS2);
+	params.data_alignment = 0;
+	params.data_device = rc->device;
 
 	r = crypt_init(&cd_new, header_file_fake);
 	if (r < 0)
@@ -755,16 +615,15 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	if (r < 0)
 		goto out;
 
-	params2.data_alignment = params.data_alignment = ROUND_SECTOR(ARG_UINT64(OPT_REDUCE_DEVICE_SIZE_ID));
+	params.data_alignment = ROUND_SECTOR(ARG_UINT64(OPT_REDUCE_DEVICE_SIZE_ID));
 	r = create_new_header(rc, NULL,
 		ARG_SET(OPT_CIPHER_ID) ? cipher : DEFAULT_LUKS1_CIPHER,
 		ARG_SET(OPT_CIPHER_ID) ? cipher_mode : DEFAULT_LUKS1_MODE,
 		NULL, NULL,
 		ARG_UINT32(OPT_KEY_SIZE_ID) / 8,
-		rc->type,
 		0,
 		0,
-		isLUKS2(rc->type) ? (void*)&params2 : (void*)&params);
+		(void*)&params);
 out:
 	crypt_free(cd_new);
 	return r;
@@ -798,7 +657,7 @@ static int restore_luks_header(struct reenc_ctx *rc)
 	 * For new encryption and new detached header in file just move it.
 	 * For existing file try to ensure we have preallocated space for restore.
 	 */
-	if (ARG_SET(OPT_NEW_ID) && rc->device_header) {
+	if (ARG_SET(OPT_ENCRYPT_ID) && rc->device_header) {
 		r = stat(rc->device_header, &st);
 		if (r == -1) {
 			r = rename(rc->header_file_new, rc->device_header);
@@ -816,15 +675,15 @@ static int restore_luks_header(struct reenc_ctx *rc)
 
 	r = crypt_init(&cd, hdr_device(rc));
 	if (r == 0) {
-		r = crypt_header_restore(cd, rc->type, rc->header_file_new);
+		r = crypt_header_restore(cd, CRYPT_LUKS1, rc->header_file_new);
 	}
 
 	crypt_free(cd);
 out:
 	if (r)
-		log_err(_("Cannot restore %s header on device %s."), isLUKS2(rc->type) ? "LUKS2" : "LUKS1", hdr_device(rc));
+		log_err(_("Cannot restore %s header on device %s."), "LUKS1", hdr_device(rc));
 	else {
-		log_verbose(_("%s header on device %s restored."), isLUKS2(rc->type) ? "LUKS2" : "LUKS1", hdr_device(rc));
+		log_verbose(_("%s header on device %s restored."), "LUKS1", hdr_device(rc));
 		rc->stained = 0;
 	}
 	return r;
@@ -1107,9 +966,8 @@ static int initialize_uuid(struct reenc_ctx *rc)
 
 	log_dbg("Initialising UUID.");
 
-	if (ARG_SET(OPT_NEW_ID)) {
+	if (ARG_SET(OPT_ENCRYPT_ID)) {
 		rc->device_uuid = strdup(NO_UUID);
-		rc->type = luksType(ARG_STR(OPT_TYPE_ID));
 		return 0;
 	}
 
@@ -1127,15 +985,12 @@ static int initialize_uuid(struct reenc_ctx *rc)
 	if ((r = crypt_init(&cd, hdr_device(rc))))
 		return r;
 	crypt_set_log_callback(cd, _quiet_log, NULL);
-	r = crypt_load(cd, CRYPT_LUKS, NULL);
+	r = crypt_load(cd, CRYPT_LUKS1, NULL);
 	if (!r)
 		rc->device_uuid = strdup(crypt_get_uuid(cd));
 	else
 		/* Reencryption already in progress - magic header? */
 		r = device_check(rc, hdr_device(rc), CHECK_UNUSABLE);
-
-	if (!r)
-		rc->type = isLUKS2(crypt_get_type(cd)) ? CRYPT_LUKS2 : CRYPT_LUKS1;
 
 	crypt_free(cd);
 	return r;
@@ -1263,7 +1118,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 	}
 
 	if ((r = crypt_init_data_device(&cd, device, rc->device)) ||
-	    (r = crypt_load(cd, CRYPT_LUKS, NULL))) {
+	    (r = crypt_load(cd, CRYPT_LUKS1, NULL))) {
 		crypt_free(cd);
 		return r;
 	}
@@ -1280,7 +1135,7 @@ static int initialize_passphrase(struct reenc_ctx *rc, const char *device)
 		   ARG_INT32(OPT_KEY_SLOT_ID) != CRYPT_ANY_SLOT ||
 		   rc->reencrypt_mode == DECRYPT) {
 		r = init_passphrase1(rc, cd, msg, ARG_INT32(OPT_KEY_SLOT_ID), 1, 0);
-	} else for (i = 0; i < crypt_keyslot_max(crypt_get_type(cd)); i++) {
+	} else for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS1); i++) {
 		snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), i);
 		r = init_passphrase1(rc, cd, msg, i, 1, 0);
 		if (r == -ENOENT) {
@@ -1301,12 +1156,6 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 
 	rc->log_fd = -1;
 
-	/* FIXME: replace MAX_KEYSLOT with crypt_keyslot_max(CRYPT_LUKS2) */
-	if (crypt_keyslot_max(CRYPT_LUKS2) > MAX_SLOT) {
-		log_dbg("Internal error");
-		return -EINVAL;
-	}
-
 	if (!(rc->device = strndup(device, PATH_MAX)))
 		return -ENOMEM;
 
@@ -1322,7 +1171,7 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 	}
 
 	if (ARG_INT32(OPT_KEY_SLOT_ID) != CRYPT_ANY_SLOT &&
-	    ARG_INT32(OPT_KEY_SLOT_ID) >= crypt_keyslot_max(rc->type)) {
+	    ARG_INT32(OPT_KEY_SLOT_ID) >= crypt_keyslot_max(CRYPT_LUKS1)) {
 		log_err(_("Key slot is invalid."));
 		return -EINVAL;
 	}
@@ -1336,9 +1185,6 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 		return -ENOMEM;
 	if (snprintf(rc->header_file_new, PATH_MAX,
 		     "LUKS-%s.new", rc->device_uuid) < 0)
-		return -ENOMEM;
-	if (snprintf(rc->header_file_tmp, PATH_MAX,
-		     "LUKS-%s.tmp", rc->device_uuid) < 0)
 		return -ENOMEM;
 
 	/* Paths to encrypted devices */
@@ -1370,7 +1216,7 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 			rc->device_offset = (uint64_t)~0;
 		}
 
-		if (ARG_SET(OPT_NEW_ID))
+		if (ARG_SET(OPT_ENCRYPT_ID))
 			rc->reencrypt_mode = ENCRYPT;
 		else if (ARG_SET(OPT_DECRYPT_ID))
 			rc->reencrypt_mode = DECRYPT;
@@ -1394,7 +1240,6 @@ static void destroy_context(struct reenc_ctx *rc)
 		unlink(rc->log_file);
 		unlink(rc->header_file_org);
 		unlink(rc->header_file_new);
-		unlink(rc->header_file_tmp);
 	}
 
 	for (i = 0; i < MAX_SLOT; i++)
@@ -1403,50 +1248,6 @@ static void destroy_context(struct reenc_ctx *rc)
 	free(rc->device);
 	free(rc->device_header);
 	free(rc->device_uuid);
-}
-
-static int luks2_change_pbkdf_params(struct reenc_ctx *rc)
-{
-	int i, r;
-	struct crypt_device *cd = NULL;
-
-	if ((r = initialize_passphrase(rc, hdr_device(rc))))
-		return r;
-
-	if (crypt_init(&cd, hdr_device(rc)) ||
-	    crypt_load(cd, CRYPT_LUKS2, NULL)) {
-		r = -EINVAL;
-		goto out;
-	}
-
-	if ((r = set_pbkdf_params(cd, CRYPT_LUKS2)))
-		goto out;
-
-	log_dbg("LUKS2 keyslot pbkdf params change.");
-
-	r = -EINVAL;
-
-	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++) {
-		if (!rc->p[i].password)
-			continue;
-		if ((r = crypt_keyslot_change_by_passphrase(cd, i, i,
-			rc->p[i].password, rc->p[i].passwordLen,
-			rc->p[i].password, rc->p[i].passwordLen)) < 0)
-			goto out;
-		log_verbose(_("Changed pbkdf parameters in keyslot %i."), r);
-		r = 0;
-	}
-
-	if (r)
-		goto out;
-
-	/* see create_new_header */
-	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++)
-		if (!rc->p[i].password)
-			(void)crypt_keyslot_destroy(cd, i);
-out:
-	crypt_free(cd);
-	return r;
 }
 
 int reencrypt_luks1(const char *device)
@@ -1468,12 +1269,6 @@ int reencrypt_luks1(const char *device)
 
 	if (initialize_context(&rc, device))
 		goto out;
-
-	/* short-circuit LUKS2 keyslot parameters change */
-	if (ARG_SET(OPT_KEEP_KEY_ID) && isLUKS2(rc.type)) {
-		r = luks2_change_pbkdf_params(&rc);
-		goto out;
-	}
 
 	log_dbg("Running reencryption.");
 
