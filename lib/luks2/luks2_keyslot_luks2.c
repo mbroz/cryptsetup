@@ -248,6 +248,7 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	/*
 	 * Calculate keyslot content, split and store it to keyslot area.
 	 */
+	log_dbg(cd, "Running keyslot key derivation.");
 	r = crypt_pbkdf(pbkdf.type, pbkdf.hash, password, passwordLen,
 			salt, LUKS_SALTSIZE,
 			derived_key->key, derived_key->keylength,
@@ -350,6 +351,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	/*
 	 * Calculate derived key, decrypt keyslot content and merge it.
 	 */
+	log_dbg(cd, "Running keyslot key derivation.");
 	r = crypt_pbkdf(pbkdf.type, pbkdf.hash, password, passwordLen,
 			salt, LUKS_SALTSIZE,
 			derived_key->key, derived_key->keylength,
