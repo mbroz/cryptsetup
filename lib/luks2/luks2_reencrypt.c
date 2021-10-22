@@ -825,7 +825,7 @@ static int reencrypt_offset_backward_moved(struct luks2_hdr *hdr, json_object *j
 			linear_length += LUKS2_segment_size(hdr, sg, 0);
 
 	/* all active linear segments length */
-	if (linear_length) {
+	if (linear_length && segs > 1) {
 		if (linear_length < data_shift)
 			return -EINVAL;
 		tmp = linear_length - data_shift;
@@ -1745,7 +1745,8 @@ static int reencrypt_set_encrypt_segments(struct crypt_device *cd, struct luks2_
 	int r;
 	uint64_t first_segment_offset, first_segment_length,
 		 second_segment_offset, second_segment_length,
-		 data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT;
+		 data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT,
+		 data_size = dev_size - data_shift;
 	json_object *jobj_segment_first = NULL, *jobj_segment_second = NULL, *jobj_segments;
 
 	if (dev_size < data_shift)
@@ -1760,9 +1761,14 @@ static int reencrypt_set_encrypt_segments(struct crypt_device *cd, struct luks2_
 		 * [future LUKS2 header (data shift size)][second data segment][gap (data shift size)][first data segment (data shift size)]
 		 */
 		first_segment_offset = dev_size;
-		first_segment_length = data_shift;
-		second_segment_offset = data_shift;
-		second_segment_length = dev_size - 2 * data_shift;
+		if (data_size < data_shift) {
+			first_segment_length = data_size;
+			second_segment_length = second_segment_offset = 0;
+		} else {
+			first_segment_length = data_shift;
+			second_segment_offset = data_shift;
+			second_segment_length = data_size - data_shift;
+		}
 	} else if (data_shift) {
 		first_segment_offset = data_offset;
 		first_segment_length = dev_size;
@@ -2163,17 +2169,10 @@ static int reencrypt_move_data(struct crypt_device *cd, int devfd, uint64_t data
 
 	log_dbg(cd, "Going to move data from head of data device.");
 
-	buffer_len = data_shift;
-	if (!buffer_len)
-		return -EINVAL;
-
 	offset = json_segment_get_offset(LUKS2_get_segment_jobj(hdr, 0), 0);
-
-	/* this is nonsense anyway */
-	if (buffer_len != json_segment_get_size(LUKS2_get_segment_jobj(hdr, 0), 0)) {
-		log_dbg(cd, "buffer_len %" PRIu64", segment size %" PRIu64, buffer_len, json_segment_get_size(LUKS2_get_segment_jobj(hdr, 0), 0));
+	buffer_len = json_segment_get_size(LUKS2_get_segment_jobj(hdr, 0), 0);
+	if (!buffer_len || buffer_len > data_shift)
 		return -EINVAL;
-	}
 
 	if (posix_memalign(&buffer, device_alignment(crypt_data_device(cd)), buffer_len))
 		return -ENOMEM;
@@ -2447,7 +2446,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	 * encryption initialization (or mount)
 	 */
 	if (move_first_segment) {
-		if (dev_size < 2 * (params->data_shift << SECTOR_SHIFT)) {
+		if (dev_size < (params->data_shift << SECTOR_SHIFT)) {
 			log_err(cd, _("Device %s is too small."), device_path(crypt_data_device(cd)));
 			return -EINVAL;
 		}
@@ -3484,7 +3483,7 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd, struct luks2_hdr 
 		    check_size, check_size >> SECTOR_SHIFT, real_size, real_size >> SECTOR_SHIFT,
 		    real_size - data_offset, (real_size - data_offset) >> SECTOR_SHIFT);
 
-	if (real_size < data_offset || (check_size && (real_size - data_offset) < check_size)) {
+	if (real_size < data_offset || (check_size && real_size < check_size)) {
 		log_err(cd, _("Device %s is too small."), device_path(crypt_data_device(cd)));
 		return -EINVAL;
 	}

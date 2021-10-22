@@ -152,14 +152,30 @@ function open_crypt() # $1 pwd, $2 hdr
 	fi
 }
 
+function wipe_dev_head() # $1 dev, $2 length (in MiBs)
+{
+	dd if=/dev/zero of=$1 bs=1M count=$2 conv=notrunc >/dev/null 2>&1
+}
+
 function wipe_dev() # $1 dev
 {
 	if [ -b $1 ] ; then
 		blkdiscard --zeroout $1 2>/dev/null || dd if=/dev/zero of=$1 bs=1M conv=notrunc >/dev/null 2>&1
+		if [ $# -gt 2 ]; then
+			dd if=/dev/urandom of=$1 bs=1M seek=$2 conv=notrunc >/dev/null 2>&1
+		fi
 	else
 		local size=$(stat --printf="%s" $1)
 		truncate -s 0 $1
-		truncate -s $size $1
+		if [ $# -gt 2 ]; then
+			local diff=$((size-$2*1024*1024))
+			echo "size: $size, diff: $diff"
+			truncate -s $diff $1
+			# wipe_dev_head $1 $((diff/(1024*1024)))
+			dd if=/dev/urandom of=$1 bs=1M seek=$2 size=$((diff/(1024*1024))) conv=notrunc >/dev/null 2>&1
+		else
+			truncate -s $size $1
+		fi
 	fi
 }
 
@@ -214,15 +230,16 @@ function check_hash() # $1 pwd, $2 hash, $3 hdr
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
 
+function check_hash_dev_head() # $1 dev, $2 len, $3 hash
+{
+	local hash=$(dd if=$1 bs=512 count=$2 2>/dev/null | sha256sum | cut -d' ' -f1)
+	[ $hash != "$3" ] && fail "HASH differs (expected: $3) (result $hash)"
+}
+
 function check_hash_head() # $1 pwd, $2 len, $3 hash, $4 hdr
 {
 	open_crypt $1 $4
-	if [ -n "$4" ]; then
-		echo $1 | $CRYPTSETUP resize $DEV_NAME --size $2 --header $4 || fail
-	else
-		echo $1 | $CRYPTSETUP resize $DEV_NAME --size $2 || fail
-	fi
-	check_hash_dev /dev/mapper/$DEV_NAME $3
+	check_hash_dev_head /dev/mapper/$DEV_NAME $2 $3
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
 
@@ -864,6 +881,21 @@ $CRYPTSETUP reencrypt $DEV --encrypt --init-only -c aes-cbc-essiv:sha256 -s 128 
 $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
 $CRYPTSETUP close $DEV_NAME
 echo $PWD1 | $CRYPTSETUP open $DEV --test-passphrase || fail
+
+# Small device encryption test
+preparebig 65
+# wipe only 1st MiB (final data size after encryption)
+wipe_dev $DEV 1
+check_hash_dev_head $DEV 2048 $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 64M -q $FAST_PBKDF_ARGON || fail
+check_hash_head $PWD1 2048 $HASH2
+
+wipe_dev_head $DEV 1
+check_hash_dev_head $DEV 2048 $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 64M --init-only -q $FAST_PBKDF_ARGON $DEV_NAME >/dev/null || fail
+check_hash_dev_head /dev/mapper/$DEV_NAME 2048 $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q || fail
+check_hash_dev_head /dev/mapper/$DEV_NAME 2048 $HASH2
 
 echo "[3] Encryption with detached header"
 preparebig 256

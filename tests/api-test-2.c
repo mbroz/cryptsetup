@@ -4238,7 +4238,7 @@ static void Luks2Reencryption(void)
 
 	_cleanup_dmdevices();
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
-	OK_(create_dmdevice_over_loop(L_DEVICE_OK, 12*1024*2+1));
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, 8*1024*2+1));
 
 	/* encryption with datashift and moved segment (data shift + 1 sector) */
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
@@ -4258,11 +4258,11 @@ static void Luks2Reencryption(void)
 
 	_cleanup_dmdevices();
 	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
-	OK_(create_dmdevice_over_loop(L_DEVICE_OK, 12*1024*2));
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, 2*8200));
 
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
 
-	/* encryption with datashift and moved segment (data shift + data offset > device size) */
+	/* encryption with datashift and moved segment (data shift + data offset <= device size) */
 	memset(&rparams, 0, sizeof(rparams));
 	params2.sector_size = 512;
 	params2.data_device = DMDIR L_DEVICE_OK;
