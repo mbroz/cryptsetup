@@ -35,8 +35,8 @@ test-mergerq-job-debian-noroot:
   extends:
     - .debian-prep
   tags:
-    - debian
-    - noroot
+    - libvirt
+    - debian10
   stage: test
   interruptible: true
   rules:
@@ -53,8 +53,8 @@ test-main-commit-job-debian:
   extends:
     - .debian-prep
   tags:
-    - root
-    - debian
+    - libvirt
+    - debian10
   stage: test
   interruptible: true
   variables:
@@ -74,7 +74,7 @@ test-main-commit-job-dnf:
     - .dnf-openssl-backend
   tags:
     - libvirt
-    - rawhide
+    - fedora-rawhide
   stage: test
   interruptible: true
   variables:
@@ -93,7 +93,7 @@ test-mergerq-job-dnf:
     - .dnf-openssl-backend
   tags:
     - libvirt
-    - rawhide
+    - fedora-rawhide
   stage: test
   interruptible: true
   variables:
