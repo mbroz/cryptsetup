@@ -1,0 +1,25 @@
+test-gcc-compilation:
+  image: gcc:latest
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - ./configure CFLAGS="-Wall -Werror" --enable-libargon2
+    - make -j
+
+test-gcc-Wall-script:
+  image: gcc:latest
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - export CFLAGS="-g -O0"
+    - export CC=".gitlab/ci/gcc-Wall"
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality
+    - make -j
+
+test-gcc-fanalyzer:
+  image: gcc:latest
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - ./configure CFLAGS="-Wall -Werror -fanalyzer" --enable-libargon2
+    - make -j
