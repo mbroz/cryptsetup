@@ -1,0 +1,29 @@
+.gitlab-shared-docker:
+  image: ubuntu:focal
+  tags:
+    - gitlab-org-docker
+  stage: test
+  interruptible: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script:
+    - .gitlab/ci/cibuild-setup-ubuntu.sh
+    - export CC="${COMPILER}${COMPILER_VERSION:+-$COMPILER_VERSION}"
+    - export CXX="${COMPILER}++${COMPILER_VERSION:+-$COMPILER_VERSION}"
+    - ./autogen.sh
+
+.gitlab-shared-gcc:
+  extends:
+    - .gitlab-shared-docker
+  variables:
+    COMPILER: "gcc"
+    COMPILER_VERSION: "11"
+    RUN_SSH_PLUGIN_TEST: "1"
+
+.gitlab-shared-clang:
+  extends:
+    - .gitlab-shared-docker
+  variables:
+    COMPILER: "clang"
+    COMPILER_VERSION: "13"
+    RUN_SSH_PLUGIN_TEST: "1"

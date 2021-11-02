@@ -1,0 +1,25 @@
+test-clang-compilation:
+  extends:
+    - .gitlab-shared-clang
+  script:
+    - export CFLAGS="-Wall -Werror"
+    - ./configure --enable-pwquality --enable-libargon2
+    - make -j
+
+# Clang doesn't support json output, so we cannot use the warnings filter
+# test-clang-Wall-script:
+#   extends:
+#     - .gitlab-shared-clang
+#   script:
+#     - export CFLAGS="-g -O0"
+#     - export CC=".gitlab/ci/clang-Wall"
+#     - ./configure --enable-pwquality --enable-libargon2
+#     - make -j CFLAGS="-g -O0 -Werror"
+
+test-scan-build:
+  extends:
+    - .gitlab-shared-clang
+  script:
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0" --enable-internal-sse-argon2 --enable-pwquality --enable-libargon2
+    - make clean
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -maxloop 10 make -j

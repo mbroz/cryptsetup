@@ -106,3 +106,8 @@ test-mergerq-job-dnf:
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
+
+include:
+  - local: .gitlab/ci/gitlab-shared-docker.yml
+  - local: .gitlab/ci/compilation-gcc.gitlab-ci.yml
+  - local: .gitlab/ci/compilation-clang.gitlab-ci.yml

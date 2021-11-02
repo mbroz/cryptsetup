@@ -1,0 +1,70 @@
+#!/bin/bash
+# clang -Wall plus other important warnings not included in -Wall
+
+for arg in "$@"
+do
+    case $arg in
+	-O*) Wuninitialized=-Wuninitialized;;  # only makes sense with `-O'
+    esac
+done
+
+CLANG="clang${COMPILER_VERSION:+-$COMPILER_VERSION}"
+
+#PEDANTIC="-std=gnu99"
+#PEDANTIC="-pedantic -std=gnu99"
+#PEDANTIC="-pedantic -std=gnu99 -Wno-variadic-macros"
+#CONVERSION="-Wconversion"
+
+EXTRA="-Wextra \
+ -Wsign-compare \
+ -Werror-implicit-function-declaration \
+ -Wpointer-arith \
+ -Wwrite-strings \
+ -Wswitch \
+ -Wmissing-format-attribute \
+ -Winit-self \
+ -Wdeclaration-after-statement \
+ -Wold-style-definition \
+ -Wno-missing-field-initializers \
+ -Wno-unused-parameter \
+ -Wno-attributes \
+ -Wno-long-long"
+
+exec $CLANG $PEDANTIC $CONVERSION \
+	-Wall $Wuninitialized \
+        -Wno-switch \
+	-Wdisabled-optimization \
+	-Wwrite-strings \
+	-Wpointer-arith \
+	-Wbad-function-cast \
+	-Wmissing-prototypes \
+	-Wmissing-declarations \
+	-Wstrict-prototypes \
+	-Wnested-externs \
+	-Wcomment \
+	-Winline \
+	-Wcast-align \
+	-Wcast-qual \
+	-Wredundant-decls $EXTRA \
+	"$@" 2>&1 | {
+	if [[ $USE_FILTER -eq 1 ]]; then
+		.gitlab/ci/warnings_filter.py
+	else
+		cat
+	fi
+}
+
+
+#	-fcheck-memory-usage \
+#    -Wall implies:
+#	-Wshadow
+#	-Wimplicit
+#	-Wreturn-type
+#	-Wunused
+#	-Wswitch
+#	-Wformat
+#	-Wchar-subscripts
+#	-Wparentheses
+#	-Wmissing-braces
+#	-Wtraditional
+#	-Wid-clash-31
