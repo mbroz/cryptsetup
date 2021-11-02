@@ -505,11 +505,11 @@ int device_locked_verify(struct crypt_device *cd, int dev_fd, struct crypt_lock_
 
 	/* if device handle is regular file the handle must match the lock handle */
 	if (S_ISREG(dev_st.st_mode)) {
-		log_dbg(cd, "Veryfing locked device handle (regular file)");
+		log_dbg(cd, "Verifying locked device handle (regular file)");
 		if (!same_inode(dev_st, lck_st))
 			return 1;
 	} else if (S_ISBLK(dev_st.st_mode)) {
-		log_dbg(cd, "Veryfing locked device handle (bdev)");
+		log_dbg(cd, "Verifying locked device handle (bdev)");
 		if (resource_by_devno(res, sizeof(res), dev_st.st_rdev, 1) ||
 		    stat(res, &st) ||
 		    !same_inode(lck_st, st))
