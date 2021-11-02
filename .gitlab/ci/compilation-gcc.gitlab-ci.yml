@@ -1,0 +1,24 @@
+test-gcc-compilation:
+  extends:
+    - .gitlab-shared-gcc
+  script:
+    - export CFLAGS="-Wall -Werror"
+    - ./configure --enable-pwquality --enable-libargon2
+    - make -j
+
+test-gcc-Wall-script:
+  extends:
+    - .gitlab-shared-gcc
+  script:
+    - export CFLAGS="-g -O0"
+    - export CC=".gitlab/ci/gcc-Wall"
+    - USE_FILTER=0 ./configure --enable-pwquality --enable-libargon2
+    - USE_FILTER=1 make -j CFLAGS="-g -O0 -fdiagnostics-format=json"
+
+test-gcc-fanalyzer:
+  extends:
+    - .gitlab-shared-gcc
+  script:
+    - export CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events"
+    - ./configure --enable-pwquality --enable-libargon2
+    - make -j
