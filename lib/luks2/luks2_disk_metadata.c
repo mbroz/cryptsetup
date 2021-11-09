@@ -62,8 +62,8 @@ static void log_dbg_checksum(struct crypt_device *cd,
 	int i;
 
 	for (i = 0; i < crypt_hash_size(csum_alg); i++)
-		snprintf(&csum_txt[i*2], 3, "%02hhx", (const char)csum[i]);
-	csum_txt[i*2+1] = '\0'; /* Just to be safe, sprintf should write \0 there. */
+		if (snprintf(&csum_txt[i*2], 3, "%02hhx", (const char)csum[i]) != 2)
+			return;
 
 	log_dbg(cd, "Checksum:%s (%s)", &csum_txt[0], info);
 }
