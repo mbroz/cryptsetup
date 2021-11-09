@@ -206,28 +206,28 @@ static int hdr_disk_sanity_check_pre(struct crypt_device *cd,
 	}
 
 	if (offset != be64_to_cpu(hdr->hdr_offset)) {
-		log_dbg(cd, "LUKS2 offset 0x%04x on device differs to expected offset 0x%04x.",
-			(unsigned)be64_to_cpu(hdr->hdr_offset), (unsigned)offset);
+		log_dbg(cd, "LUKS2 offset 0x%04" PRIx64 " on device differs to expected offset 0x%04" PRIx64 ".",
+			be64_to_cpu(hdr->hdr_offset), offset);
 		return -EINVAL;
 	}
 
 	hdr_size = be64_to_cpu(hdr->hdr_size);
 
 	if (hdr_size < LUKS2_HDR_16K_LEN || hdr_size > LUKS2_HDR_OFFSET_MAX) {
-		log_dbg(cd, "LUKS2 header has bogus size 0x%04x.", (unsigned)hdr_size);
+		log_dbg(cd, "LUKS2 header has bogus size 0x%04" PRIx64 ".", hdr_size);
 		return -EINVAL;
 	}
 
 	if (secondary && (offset != hdr_size)) {
-		log_dbg(cd, "LUKS2 offset 0x%04x in secondary header does not match size 0x%04x.",
-			(unsigned)offset, (unsigned)hdr_size);
+		log_dbg(cd, "LUKS2 offset 0x%04" PRIx64 " in secondary header does not match size 0x%04" PRIx64 ".",
+			offset, hdr_size);
 		return -EINVAL;
 	}
 
 	/* FIXME: sanity check checksum alg. */
 
-	log_dbg(cd, "LUKS2 header version %u of size %u bytes, checksum %s.",
-		(unsigned)be16_to_cpu(hdr->version), (unsigned)hdr_size,
+	log_dbg(cd, "LUKS2 header version %u of size %" PRIu64 " bytes, checksum %s.",
+		be16_to_cpu(hdr->version), hdr_size,
 		hdr->checksum_alg);
 
 	*hdr_json_size = hdr_size - LUKS2_HDR_BIN_LEN;
