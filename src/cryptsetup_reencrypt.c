@@ -350,7 +350,7 @@ static int parse_log(struct reenc_ctx *rc)
 		if (end) {
 			*end++ = '\0';
 			if (parse_line_log(rc, start)) {
-				log_err("Wrong log format.");
+				log_err(_("Wrong log format."));
 				return -EINVAL;
 			}
 		}
