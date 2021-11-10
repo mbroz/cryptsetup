@@ -229,6 +229,8 @@ RUN luks2-metadata-size-512k-secondary.img		"R" "Valid 512KiB metadata size in s
 RUN luks2-metadata-size-1m-secondary.img		"R" "Valid 1MiB metadata size in secondary hdr failed to validate"
 RUN luks2-metadata-size-2m-secondary.img		"R" "Valid 2MiB metadata size in secondary hdr failed to validate"
 RUN luks2-metadata-size-4m-secondary.img		"R" "Valid 4MiB metadata size in secondary hdr failed to validate"
+RUN luks2-metadata-size-invalid.img			"F" "Invalid metadata size in secondary hdr not rejected"
+RUN luks2-metadata-size-invalid-secondary.img		"F" "Invalid metadata size in secondary hdr not rejected"
 
 remove_mapping
 
