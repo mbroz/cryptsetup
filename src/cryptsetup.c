@@ -2972,7 +2972,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 		if (!ARG_SET(OPT_LUKS2_KEYSLOTS_SIZE_ID))
 			ARG_SET_UINT64(OPT_LUKS2_KEYSLOTS_SIZE_ID, -data_shift - 2 * ARG_UINT64(OPT_LUKS2_METADATA_SIZE_ID));
 		if (2 * ARG_UINT64(OPT_LUKS2_METADATA_SIZE_ID) + ARG_UINT64(OPT_LUKS2_KEYSLOTS_SIZE_ID) > (uint64_t)-data_shift) {
-			log_err("LUKS2 metadata size is larger than data shift value.");
+			log_err(_("LUKS2 metadata size is larger than data shift value."));
 			return -EINVAL;
 		}
 	}
@@ -3004,7 +3004,7 @@ static int action_encrypt_luks2(struct crypt_device **cd)
 			r = crypt_header_restore(*cd, CRYPT_LUKS2, header_file);
 
 		if (r) {
-			log_err("Failed to place new header at head of device %s.", action_argv[0]);
+			log_err(_("Failed to place new header at head of device %s."), action_argv[0]);
 			goto out;
 		}
 	}

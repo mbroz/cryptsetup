@@ -116,8 +116,9 @@ static int _dialog(const char *msg, void *usrptr, int default_answer)
 		set_int_block(0);
 
 	if (isatty(STDIN_FILENO)) {
-		log_std("\nWARNING!\n========\n");
-		log_std("%s\n\nAre you sure? (Type 'yes' in capital letters): ", msg);
+		log_std(_("\nWARNING!\n========\n"));
+		/* TRANSLATORS: User must type "YES" (in capital letters), do not translate this word. */
+		log_std(_("%s\n\nAre you sure? (Type 'yes' in capital letters): "), msg);
 		fflush(stdout);
 		if(getline(&answer, &size, stdin) == -1) {
 			r = 0;

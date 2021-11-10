@@ -3293,7 +3293,7 @@ static void reencrypt_teardown_fatal(struct crypt_device *cd, struct luks2_reenc
 		(rh->offset >> SECTOR_SHIFT) + crypt_get_data_offset(cd), rh->length >> SECTOR_SHIFT);
 
 	if (rh->online) {
-		log_err(cd, "Reencryption was run in online mode.");
+		log_err(cd, _("Online reencryption failed."));
 		if (dm_status_suspended(cd, rh->hotzone_name) > 0) {
 			log_dbg(cd, "Hotzone device %s suspended, replacing with dm-error.", rh->hotzone_name);
 			if (dm_error_device(cd, rh->hotzone_name)) {
