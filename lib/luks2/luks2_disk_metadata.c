@@ -265,17 +265,15 @@ static int hdr_read_disk(struct crypt_device *cd,
 	 * hdr_json_size is validated if this call succeeds
 	 */
 	r = hdr_disk_sanity_check_pre(cd, hdr_disk, &hdr_json_size, secondary, offset);
-	if (r < 0) {
+	if (r < 0)
 		return r;
-	}
 
 	/*
 	 * Allocate and read JSON area. Always the whole area must be read.
 	 */
 	*json_area = malloc(hdr_json_size);
-	if (!*json_area) {
+	if (!*json_area)
 		return -ENOMEM;
-	}
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), *json_area, hdr_json_size,
