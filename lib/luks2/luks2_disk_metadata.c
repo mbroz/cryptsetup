@@ -291,6 +291,8 @@ static int hdr_read_disk(struct crypt_device *cd,
 	if (hdr_checksum_check(cd, hdr_disk->checksum_alg, hdr_disk,
 				*json_area, hdr_json_size)) {
 		log_dbg(cd, "LUKS2 header checksum error (offset %" PRIu64 ").", offset);
+		free(*json_area);
+		*json_area = NULL;
 		r = -EINVAL;
 	}
 	memset(hdr_disk->csum, 0, LUKS2_CHECKSUM_L);
