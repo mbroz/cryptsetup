@@ -1243,7 +1243,7 @@ static int dm_prepare_uuid(struct crypt_device *cd, const char *name, const char
 
 int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char *type)
 {
-	int r;
+	int r_udev, r;
 	char *c;
 	char dev_uuid[DM_UUID_LEN + DM_BY_ID_PREFIX_LEN] = DM_BY_ID_PREFIX;
 
@@ -1257,13 +1257,16 @@ int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char 
 	/* cut of dm name */
 	*c = '\0';
 
+	/* Either udev or sysfs can report that device is active. */
 	r = lookup_by_disk_id(dev_uuid);
-	if (r == -ENOENT) {
-		log_dbg(cd, "Search by disk id not available. Using sysfs instead.");
-		r = lookup_by_sysfs_uuid_field(dev_uuid + DM_BY_ID_PREFIX_LEN);
-	}
+	if (r > 0)
+		return r;
 
-	return r;
+	r_udev = r;
+	if (r_udev <= 0)
+		r = lookup_by_sysfs_uuid_field(dev_uuid + DM_BY_ID_PREFIX_LEN);
+
+	return r == -ENOENT ? r_udev : r;
 }
 
 static int _add_dm_targets(struct dm_task *dmt, struct crypt_dm_active_device *dmd)
