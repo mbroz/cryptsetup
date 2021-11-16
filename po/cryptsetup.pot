@@ -5,9 +5,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.4.1\n"
+"Project-Id-Version: cryptsetup 2.4.2-rc0\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2021-09-15 09:53+0200\n"
+"POT-Creation-Date: 2021-11-16 16:52+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -33,45 +33,45 @@ msgstr ""
 msgid "DM-UUID for device %s was truncated."
 msgstr ""
 
-#: lib/libdevmapper.c:1570
+#: lib/libdevmapper.c:1567
 msgid "Unknown dm target type."
 msgstr ""
 
-#: lib/libdevmapper.c:1691 lib/libdevmapper.c:1696 lib/libdevmapper.c:1760
-#: lib/libdevmapper.c:1763
+#: lib/libdevmapper.c:1688 lib/libdevmapper.c:1693 lib/libdevmapper.c:1757
+#: lib/libdevmapper.c:1760
 msgid "Requested dm-crypt performance options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1703 lib/libdevmapper.c:1707
+#: lib/libdevmapper.c:1700 lib/libdevmapper.c:1704
 msgid "Requested dm-verity data corruption handling options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1711
+#: lib/libdevmapper.c:1708
 msgid "Requested dm-verity FEC options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1715
+#: lib/libdevmapper.c:1712
 msgid "Requested data integrity options are not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1717
+#: lib/libdevmapper.c:1714
 msgid "Requested sector_size option is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1722 lib/libdevmapper.c:1726
+#: lib/libdevmapper.c:1719 lib/libdevmapper.c:1723
 msgid "Requested automatic recalculation of integrity tags is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1730 lib/libdevmapper.c:1766 lib/libdevmapper.c:1769
+#: lib/libdevmapper.c:1727 lib/libdevmapper.c:1763 lib/libdevmapper.c:1766
 #: lib/luks2/luks2_json_metadata.c:2204
 msgid "Discard/TRIM is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:1734
+#: lib/libdevmapper.c:1731
 msgid "Requested dm-integrity bitmap mode is not supported."
 msgstr ""
 
-#: lib/libdevmapper.c:2708
+#: lib/libdevmapper.c:2705
 #, c-format
 msgid "Failed to query dm-%s segment."
 msgstr ""
@@ -1146,6 +1146,16 @@ msgstr ""
 msgid "Unexpected metadata entry value '%u' found when parsing external key."
 msgstr ""
 
+#: lib/bitlk/bitlk.c:950
+#, c-format
+msgid "Unsupported BEK metadata version %<PRIu32>"
+msgstr ""
+
+#: lib/bitlk/bitlk.c:955
+#, c-format
+msgid "Unexpected BEK metadata size %<PRIu32> does not match BEK file length"
+msgstr ""
+
 #: lib/bitlk/bitlk.c:980
 msgid "Unexpected metadata entry found when parsing startup key."
 msgstr ""
@@ -1337,18 +1347,18 @@ msgid ""
 "activation options to override)."
 msgstr ""
 
-#: lib/luks2/luks2_disk_metadata.c:381 lib/luks2/luks2_json_metadata.c:973
+#: lib/luks2/luks2_disk_metadata.c:393 lib/luks2/luks2_json_metadata.c:973
 #: lib/luks2/luks2_json_metadata.c:1268
 #, c-format
 msgid "Failed to acquire write lock on device %s."
 msgstr ""
 
-#: lib/luks2/luks2_disk_metadata.c:390
+#: lib/luks2/luks2_disk_metadata.c:402
 msgid ""
 "Detected attempt for concurrent LUKS2 metadata update. Aborting operation."
 msgstr ""
 
-#: lib/luks2/luks2_disk_metadata.c:689 lib/luks2/luks2_disk_metadata.c:710
+#: lib/luks2/luks2_disk_metadata.c:701 lib/luks2/luks2_disk_metadata.c:722
 msgid ""
 "Device contains ambiguous signatures, cannot auto-recover LUKS2.\n"
 "Please run \"cryptsetup repair\" for recovery."
@@ -1480,7 +1490,7 @@ msgstr ""
 msgid "Cannot use %s-%s cipher for keyslot encryption."
 msgstr ""
 
-#: lib/luks2/luks2_keyslot_luks2.c:483
+#: lib/luks2/luks2_keyslot_luks2.c:485
 msgid "No space for new keyslot."
 msgstr ""
 
@@ -1734,6 +1744,10 @@ msgstr ""
 msgid ""
 "Fatal error while reencrypting chunk starting at %<PRIu64>, %<PRIu64> "
 "sectors long."
+msgstr ""
+
+#: lib/luks2/luks2_reencrypt.c:3296
+msgid "Online reencryption failed."
 msgstr ""
 
 #: lib/luks2/luks2_reencrypt.c:3301
@@ -2219,6 +2233,15 @@ msgstr ""
 #: src/cryptsetup.c:2943 src/cryptsetup.c:2950
 #, c-format
 msgid "Cannot create temporary header file %s."
+msgstr ""
+
+#: src/cryptsetup.c:2975
+msgid "LUKS2 metadata size is larger than data shift value."
+msgstr ""
+
+#: src/cryptsetup.c:3007
+#, c-format
+msgid "Failed to place new header at head of device %s."
 msgstr ""
 
 #: src/cryptsetup.c:3018
@@ -2954,6 +2977,10 @@ msgstr ""
 msgid "Cannot read reencryption log file."
 msgstr ""
 
+#: src/cryptsetup_reencrypt.c:353
+msgid "Wrong log format."
+msgstr ""
+
 #: src/cryptsetup_reencrypt.c:380
 #, c-format
 msgid "Log file %s exists, resuming reencryption.\n"
@@ -3113,122 +3140,158 @@ msgstr ""
 msgid "Invalid luks type. Use one of these: 'luks', 'luks1' or 'luks2'."
 msgstr ""
 
-#: src/utils_tools.c:126
+#: src/utils_tools.c:119
+msgid ""
+"\n"
+"WARNING!\n"
+"========\n"
+msgstr ""
+
+#. TRANSLATORS: User must type "YES" (in capital letters), do not translate this word.
+#: src/utils_tools.c:121
+#, c-format
+msgid ""
+"%s\n"
+"\n"
+"Are you sure? (Type 'yes' in capital letters): "
+msgstr ""
+
+#: src/utils_tools.c:127
 msgid "Error reading response from terminal."
 msgstr ""
 
-#: src/utils_tools.c:158
+#: src/utils_tools.c:159
 msgid "Command successful."
 msgstr ""
 
-#: src/utils_tools.c:166
+#: src/utils_tools.c:167
 msgid "wrong or missing parameters"
 msgstr ""
 
-#: src/utils_tools.c:168
+#: src/utils_tools.c:169
 msgid "no permission or bad passphrase"
 msgstr ""
 
-#: src/utils_tools.c:170
+#: src/utils_tools.c:171
 msgid "out of memory"
 msgstr ""
 
-#: src/utils_tools.c:172
+#: src/utils_tools.c:173
 msgid "wrong device or file specified"
 msgstr ""
 
-#: src/utils_tools.c:174
+#: src/utils_tools.c:175
 msgid "device already exists or device is busy"
 msgstr ""
 
-#: src/utils_tools.c:176
+#: src/utils_tools.c:177
 msgid "unknown error"
 msgstr ""
 
-#: src/utils_tools.c:178
+#: src/utils_tools.c:179
 #, c-format
 msgid "Command failed with code %i (%s)."
 msgstr ""
 
-#: src/utils_tools.c:256
+#: src/utils_tools.c:257
 #, c-format
 msgid "Key slot %i created."
 msgstr ""
 
-#: src/utils_tools.c:258
+#: src/utils_tools.c:259
 #, c-format
 msgid "Key slot %i unlocked."
 msgstr ""
 
-#: src/utils_tools.c:260
+#: src/utils_tools.c:261
 #, c-format
 msgid "Key slot %i removed."
 msgstr ""
 
-#: src/utils_tools.c:269
+#: src/utils_tools.c:270
 #, c-format
 msgid "Token %i created."
 msgstr ""
 
-#: src/utils_tools.c:271
+#: src/utils_tools.c:272
 #, c-format
 msgid "Token %i removed."
 msgstr ""
 
-#: src/utils_tools.c:281
+#: src/utils_tools.c:282
 msgid "No token could be unlocked with this PIN."
 msgstr ""
 
-#: src/utils_tools.c:283
+#: src/utils_tools.c:284
 #, c-format
 msgid "Token %i requires PIN."
 msgstr ""
 
-#: src/utils_tools.c:285
+#: src/utils_tools.c:286
 #, c-format
 msgid "Token (type %s) requires PIN."
 msgstr ""
 
-#: src/utils_tools.c:288
+#: src/utils_tools.c:289
 #, c-format
 msgid "Token %i cannot unlock assigned keyslot(s) (wrong keyslot passphrase)."
 msgstr ""
 
-#: src/utils_tools.c:290
+#: src/utils_tools.c:291
 #, c-format
 msgid ""
 "Token (type %s) cannot unlock assigned keyslot(s) (wrong keyslot passphrase)."
 msgstr ""
 
-#: src/utils_tools.c:293
+#: src/utils_tools.c:294
 #, c-format
 msgid "Token %i requires additional missing resource."
 msgstr ""
 
-#: src/utils_tools.c:295
+#: src/utils_tools.c:296
 #, c-format
 msgid "Token (type %s) requires additional missing resource."
 msgstr ""
 
-#: src/utils_tools.c:298
+#: src/utils_tools.c:299
 #, c-format
 msgid "No usable token (type %s) is available."
 msgstr ""
 
-#: src/utils_tools.c:300
+#: src/utils_tools.c:301
 msgid "No usable token is available."
 msgstr ""
 
-#: src/utils_tools.c:462
+#: src/utils_tools.c:463
 msgid ""
 "\n"
 "Wipe interrupted."
 msgstr ""
 
-#: src/utils_tools.c:491
+#: src/utils_tools.c:492
 msgid ""
 "\n"
 "Reencryption interrupted."
+msgstr ""
+
+#: src/utils_tools.c:511
+#, c-format
+msgid "Cannot read keyfile %s."
+msgstr ""
+
+#: src/utils_tools.c:516
+#, c-format
+msgid "Cannot read %d bytes from keyfile %s."
+msgstr ""
+
+#: src/utils_tools.c:541
+#, c-format
+msgid "Cannot open keyfile %s for write."
+msgstr ""
+
+#: src/utils_tools.c:548
+#, c-format
+msgid "Cannot write to keyfile %s."
 msgstr ""
 
 #: src/utils_password.c:41 src/utils_password.c:74
@@ -3280,26 +3343,6 @@ msgstr ""
 
 #: src/utils_password.c:319
 msgid "No usable keyslot is available."
-msgstr ""
-
-#: src/utils_password.c:335
-#, c-format
-msgid "Cannot read keyfile %s."
-msgstr ""
-
-#: src/utils_password.c:340
-#, c-format
-msgid "Cannot read %d bytes from keyfile %s."
-msgstr ""
-
-#: src/utils_password.c:365
-#, c-format
-msgid "Cannot open keyfile %s for write."
-msgstr ""
-
-#: src/utils_password.c:372
-#, c-format
-msgid "Cannot write to keyfile %s."
 msgstr ""
 
 #: src/utils_luks2.c:47
@@ -3363,6 +3406,16 @@ msgstr ""
 #: src/utils_blockdev.c:280
 #, c-format
 msgid "Failed to open file %s in read/write mode."
+msgstr ""
+
+#: src/utils_blockdev.c:294
+#, c-format
+msgid "Existing '%s' partition signature on device %s will be wiped."
+msgstr ""
+
+#: src/utils_blockdev.c:297
+#, c-format
+msgid "Existing '%s' superblock signature on device %s will be wiped."
 msgstr ""
 
 #: src/utils_blockdev.c:300
