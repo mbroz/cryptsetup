@@ -29,10 +29,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.4.1-rc0\n"
+"Project-Id-Version: cryptsetup 2.4.2-rc0\n"
 "Report-Msgid-Bugs-To: dm-crypt@saout.de\n"
-"POT-Creation-Date: 2021-08-30 12:40+0200\n"
-"PO-Revision-Date: 2021-08-31 20:49+02:00\n"
+"POT-Creation-Date: 2021-11-11 19:08+0100\n"
+"PO-Revision-Date: 2021-11-13 14:47+01:00\n"
 "Last-Translator: Petr Pisar <petr.pisar@atlas.cz>\n"
 "Language-Team: Czech <translation-team-cs@lists.sourceforge.net>\n"
 "Language: cs\n"
@@ -59,45 +59,45 @@ msgstr "Požadovaný příznak odložení není podporován."
 msgid "DM-UUID for device %s was truncated."
 msgstr "DM-UUID pro zařízení %s bylo zkráceno."
 
-#: lib/libdevmapper.c:1570
+#: lib/libdevmapper.c:1567
 msgid "Unknown dm target type."
 msgstr "Neznámý druh cíle DM."
 
-#: lib/libdevmapper.c:1691 lib/libdevmapper.c:1696 lib/libdevmapper.c:1760
-#: lib/libdevmapper.c:1763
+#: lib/libdevmapper.c:1688 lib/libdevmapper.c:1693 lib/libdevmapper.c:1757
+#: lib/libdevmapper.c:1760
 msgid "Requested dm-crypt performance options are not supported."
 msgstr "Požadované výkonnostní volby dm-cryptu nejsou podporovány."
 
-#: lib/libdevmapper.c:1703 lib/libdevmapper.c:1707
+#: lib/libdevmapper.c:1700 lib/libdevmapper.c:1704
 msgid "Requested dm-verity data corruption handling options are not supported."
 msgstr "Požadované volby, jak zacházet s poškozením dat dm-verity, nejsou podporovány."
 
-#: lib/libdevmapper.c:1711
+#: lib/libdevmapper.c:1708
 msgid "Requested dm-verity FEC options are not supported."
 msgstr "Požadované FEC volby dm-cryptu nejsou podporovány."
 
-#: lib/libdevmapper.c:1715
+#: lib/libdevmapper.c:1712
 msgid "Requested data integrity options are not supported."
 msgstr "Požadované volby integrity dat nejsou podporovány."
 
-#: lib/libdevmapper.c:1717
+#: lib/libdevmapper.c:1714
 msgid "Requested sector_size option is not supported."
 msgstr "Požadované volby sector_size není podporována."
 
-#: lib/libdevmapper.c:1722 lib/libdevmapper.c:1726
+#: lib/libdevmapper.c:1719 lib/libdevmapper.c:1723
 msgid "Requested automatic recalculation of integrity tags is not supported."
 msgstr "Požadovaný automatický přepočet značek integrity není podporován."
 
-#: lib/libdevmapper.c:1730 lib/libdevmapper.c:1766 lib/libdevmapper.c:1769
+#: lib/libdevmapper.c:1727 lib/libdevmapper.c:1763 lib/libdevmapper.c:1766
 #: lib/luks2/luks2_json_metadata.c:2204
 msgid "Discard/TRIM is not supported."
 msgstr "Zahazování (TRIM) není podporováno."
 
-#: lib/libdevmapper.c:1734
+#: lib/libdevmapper.c:1731
 msgid "Requested dm-integrity bitmap mode is not supported."
 msgstr "Požadovaný režim bitmapy integrity DM není podporován."
 
-#: lib/libdevmapper.c:2708
+#: lib/libdevmapper.c:2705
 #, c-format
 msgid "Failed to query dm-%s segment."
 msgstr "Dotaz na část dm-%s selhal."
@@ -162,7 +162,7 @@ msgstr "Tato operace je podporována jen u zařízení LUKS."
 msgid "This operation is supported only for LUKS2 device."
 msgstr "Tato operace je podporována jen u zařízení LUKS2."
 
-#: lib/setup.c:420 lib/luks2/luks2_reencrypt.c:2436
+#: lib/setup.c:420 lib/luks2/luks2_reencrypt.c:2440
 msgid "All key slots full."
 msgstr "Všechny pozice klíčů jsou obsazeny."
 
@@ -225,7 +225,7 @@ msgstr "UUID není na šifře tohoto typu podporováno."
 msgid "Detached metadata device is not supported for this crypt type."
 msgstr "Zařízení s oddělenými metadaty není na šifře tohoto typu podporováno."
 
-#: lib/setup.c:1552 lib/setup.c:1754 lib/luks2/luks2_reencrypt.c:2397
+#: lib/setup.c:1552 lib/setup.c:1754 lib/luks2/luks2_reencrypt.c:2401
 #: src/cryptsetup.c:1358 src/cryptsetup.c:3723
 msgid "Unsupported encryption sector size."
 msgstr "Nepodporovaná velikost šifrovaného sektoru."
@@ -275,7 +275,7 @@ msgid "WARNING: LUKS2 keyslots area size changed to %<PRIu64> bytes.\n"
 msgstr "POZOR: Oblast s pozicemi klíčů pro LUKS2 změnila velikost na %<PRIu64> bajtů.\n"
 
 #: lib/setup.c:1915 lib/utils_device.c:909 lib/luks1/keyencryption.c:255
-#: lib/luks2/luks2_reencrypt.c:2447 lib/luks2/luks2_reencrypt.c:3484
+#: lib/luks2/luks2_reencrypt.c:2451 lib/luks2/luks2_reencrypt.c:3488
 #, c-format
 msgid "Device %s is too small."
 msgstr "Zařízení %s je příliš malé."
@@ -353,8 +353,8 @@ msgstr "Požadován neznámý typ šifrovaného zařízení %s."
 msgid "Unsupported parameters on device %s."
 msgstr "Nepodporované parametry na zařízení %s."
 
-#: lib/setup.c:2622 lib/setup.c:2708 lib/luks2/luks2_reencrypt.c:2499
-#: lib/luks2/luks2_reencrypt.c:2843
+#: lib/setup.c:2622 lib/setup.c:2708 lib/luks2/luks2_reencrypt.c:2503
+#: lib/luks2/luks2_reencrypt.c:2847
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr "Neodpovídající parametry an za zařízení %s."
@@ -364,7 +364,7 @@ msgid "Crypt devices mismatch."
 msgstr "Zařízení dmcryptu si neodpovídají."
 
 #: lib/setup.c:2765 lib/setup.c:2770 lib/luks2/luks2_reencrypt.c:2143
-#: lib/luks2/luks2_reencrypt.c:3251
+#: lib/luks2/luks2_reencrypt.c:3255
 #, c-format
 msgid "Failed to reload device %s."
 msgstr "Zařízení %s nebylo možné znovu zavést."
@@ -376,7 +376,7 @@ msgid "Failed to suspend device %s."
 msgstr "Zařízení %s nebylo možné pozastavit."
 
 #: lib/setup.c:2788 lib/luks2/luks2_reencrypt.c:2128
-#: lib/luks2/luks2_reencrypt.c:3186 lib/luks2/luks2_reencrypt.c:3255
+#: lib/luks2/luks2_reencrypt.c:3190 lib/luks2/luks2_reencrypt.c:3259
 #, c-format
 msgid "Failed to resume device %s."
 msgstr "Zařízení %s nebylo možné probudit."
@@ -471,11 +471,11 @@ msgid "Reencryption in-progress. Cannot activate device."
 msgstr "Přešifrování již probíhá. Zařízení nelze aktivovat."
 
 #: lib/setup.c:4091 lib/luks2/luks2_json_metadata.c:2287
-#: lib/luks2/luks2_reencrypt.c:2942
+#: lib/luks2/luks2_reencrypt.c:2946
 msgid "Failed to get reencryption lock."
 msgstr "Získání zámku pro přešifrování selhalo."
 
-#: lib/setup.c:4104 lib/luks2/luks2_reencrypt.c:2961
+#: lib/setup.c:4104 lib/luks2/luks2_reencrypt.c:2965
 msgid "LUKS2 reencryption recovery failed."
 msgstr "Obnova přešifrování LUKS2 selhalo."
 
@@ -578,7 +578,7 @@ msgstr "Přiřazení pozice klíče %d k otisku se nezdařilo."
 msgid "Kernel keyring is not supported by the kernel."
 msgstr "Jaderná klíčenka není jádrem podporována."
 
-#: lib/setup.c:6161 lib/luks2/luks2_reencrypt.c:3058
+#: lib/setup.c:6161 lib/luks2/luks2_reencrypt.c:3062
 #, c-format
 msgid "Failed to read passphrase from keyring (error %d)."
 msgstr "Čtení hesla z klíčenky selhalo (chyba %d)."
@@ -1160,6 +1160,16 @@ msgstr "Při rozboru externího klíče byla v metadatech nalezena položka ne�
 msgid "Unexpected metadata entry value '%u' found when parsing external key."
 msgstr "Při rozboru externího klíče byla v metadatech nalezena položka s nečekanou hodnotou „%u“."
 
+#: lib/bitlk/bitlk.c:950
+#, c-format
+msgid "Unsupported BEK metadata version %<PRIu32>"
+msgstr "Nepodporovaná metadata BEK verze %<PRIu32>."
+
+#: lib/bitlk/bitlk.c:955
+#, c-format
+msgid "Unexpected BEK metadata size %<PRIu32> does not match BEK file length"
+msgstr "Nečekaná velikost metadat BEK %<PRIu32> neodpovídá délce souboru BEK"
+
 #: lib/bitlk/bitlk.c:980
 msgid "Unexpected metadata entry found when parsing startup key."
 msgstr "Při rozboru startovacího klíče byla v metadatech nalezena nečekaná položka."
@@ -1347,17 +1357,17 @@ msgstr "Jádro nepodporuje drobné zarovnání metadat dm-integrity."
 msgid "Kernel refuses to activate insecure recalculate option (see legacy activation options to override)."
 msgstr "Jádro odmítá aktivovat volbu nebezpečného přepočtu (pro přebití vizte zastaralé volby aktivace)"
 
-#: lib/luks2/luks2_disk_metadata.c:381 lib/luks2/luks2_json_metadata.c:973
+#: lib/luks2/luks2_disk_metadata.c:393 lib/luks2/luks2_json_metadata.c:973
 #: lib/luks2/luks2_json_metadata.c:1268
 #, c-format
 msgid "Failed to acquire write lock on device %s."
 msgstr "Získání zámku pro zápis do zařízení %s selhalo."
 
-#: lib/luks2/luks2_disk_metadata.c:390
+#: lib/luks2/luks2_disk_metadata.c:402
 msgid "Detected attempt for concurrent LUKS2 metadata update. Aborting operation."
 msgstr "Zjištěn pokus o současnou aktualizaci metadat LUKS2. Operace se ruší."
 
-#: lib/luks2/luks2_disk_metadata.c:689 lib/luks2/luks2_disk_metadata.c:710
+#: lib/luks2/luks2_disk_metadata.c:701 lib/luks2/luks2_disk_metadata.c:722
 msgid ""
 "Device contains ambiguous signatures, cannot auto-recover LUKS2.\n"
 "Please run \"cryptsetup repair\" for recovery."
@@ -1433,7 +1443,7 @@ msgstr ""
 msgid "Ignored unknown flag %s."
 msgstr "Neznámý příznak %s ignorován."
 
-#: lib/luks2/luks2_json_metadata.c:2054 lib/luks2/luks2_reencrypt.c:1840
+#: lib/luks2/luks2_json_metadata.c:2054 lib/luks2/luks2_reencrypt.c:1843
 #, c-format
 msgid "Missing key for dm-crypt segment %u"
 msgstr "Chybí klíč pro dm-crypt část %u."
@@ -1454,7 +1464,7 @@ msgstr "Nepodporovaná konfigurace integrity zařízení."
 msgid "Reencryption in-progress. Cannot deactivate device."
 msgstr "Probíhá přešifrování. Zařízení nelze deaktivovat."
 
-#: lib/luks2/luks2_json_metadata.c:2296 lib/luks2/luks2_reencrypt.c:3296
+#: lib/luks2/luks2_json_metadata.c:2296 lib/luks2/luks2_reencrypt.c:3300
 #, c-format
 msgid "Failed to replace suspended device %s with dm-error target."
 msgstr "Výměna pozastaveného zařízení %s za cíl dm-error selhala."
@@ -1488,7 +1498,7 @@ msgstr "Otevření pozice s klíčem selhalo."
 msgid "Cannot use %s-%s cipher for keyslot encryption."
 msgstr "Šifru %s-%s nelze použít pro pozici s klíčem."
 
-#: lib/luks2/luks2_keyslot_luks2.c:483
+#: lib/luks2/luks2_keyslot_luks2.c:485
 msgid "No space for new keyslot."
 msgstr "Pro novou pozicí klíče není místo."
 
@@ -1564,7 +1574,7 @@ msgstr "Nepodporovaný režim odolnosti %s"
 
 #: lib/luks2/luks2_reencrypt.c:1259 lib/luks2/luks2_reencrypt.c:1414
 #: lib/luks2/luks2_reencrypt.c:1497 lib/luks2/luks2_reencrypt.c:1531
-#: lib/luks2/luks2_reencrypt.c:3136
+#: lib/luks2/luks2_reencrypt.c:3140
 msgid "Failed to initialize old segment storage wrapper."
 msgstr "Obálku pro starou část úložiště se nepodařilo inicializovat."
 
@@ -1576,7 +1586,7 @@ msgstr "Obálku pro novou část úložiště se nepodařilo inicializovat."
 msgid "Failed to read checksums for current hotzone."
 msgstr "Kontrolní součty pro aktuální horkou zónu se nepodařilo přečíst."
 
-#: lib/luks2/luks2_reencrypt.c:1448 lib/luks2/luks2_reencrypt.c:3144
+#: lib/luks2/luks2_reencrypt.c:1448 lib/luks2/luks2_reencrypt.c:3148
 #, c-format
 msgid "Failed to read hotzone area starting at %<PRIu64>."
 msgstr "Čtení oblasti s horkou zónou počínaje na %<PRIu64> selhalo."
@@ -1615,138 +1625,142 @@ msgstr "Zavedení nového mapování pro zařízení %s selhalo."
 msgid "Failed to refresh reencryption devices stack."
 msgstr "Zásobník zařízení k přešifrování se nepodařilo obnovit."
 
-#: lib/luks2/luks2_reencrypt.c:2305
+#: lib/luks2/luks2_reencrypt.c:2309
 msgid "Failed to set new keyslots area size."
 msgstr "Nastavení velikosti nové oblasti s pozicemi klíčů selhalo."
 
-#: lib/luks2/luks2_reencrypt.c:2409
+#: lib/luks2/luks2_reencrypt.c:2413
 #, c-format
 msgid "Data shift is not aligned to requested encryption sector size (%<PRIu32> bytes)."
 msgstr "Posun dat není zarovnán s požadovanou velikostí šifrovaného sektoru (%<PRIu32> bajtů)."
 
-#: lib/luks2/luks2_reencrypt.c:2430
+#: lib/luks2/luks2_reencrypt.c:2434
 #, c-format
 msgid "Data device is not aligned to requested encryption sector size (%<PRIu32> bytes)."
 msgstr "Zařízení s daty není zarovnáno na požadovanou velikost šifrovaného sektoru (%<PRIu32> bajtů)."
 
-#: lib/luks2/luks2_reencrypt.c:2451
+#: lib/luks2/luks2_reencrypt.c:2455
 #, c-format
 msgid "Data shift (%<PRIu64> sectors) is less than future data offset (%<PRIu64> sectors)."
 msgstr "Posun dat (%<PRIu64> sektorů) je menší než budoucí poloha dat (%<PRIu64> sektorů)."
 
-#: lib/luks2/luks2_reencrypt.c:2457 lib/luks2/luks2_reencrypt.c:2885
-#: lib/luks2/luks2_reencrypt.c:2906
+#: lib/luks2/luks2_reencrypt.c:2461 lib/luks2/luks2_reencrypt.c:2889
+#: lib/luks2/luks2_reencrypt.c:2910
 #, c-format
 msgid "Failed to open %s in exclusive mode (already mapped or mounted)."
 msgstr "Zařízení %s nebylo možné otevřít ve výlučném režimu (již namapováno nebo připojeno)."
 
-#: lib/luks2/luks2_reencrypt.c:2625
+#: lib/luks2/luks2_reencrypt.c:2629
 msgid "Device not marked for LUKS2 reencryption."
 msgstr "Zařízení není označeno pro přešifrování LUKS2."
 
-#: lib/luks2/luks2_reencrypt.c:2631 lib/luks2/luks2_reencrypt.c:3411
+#: lib/luks2/luks2_reencrypt.c:2635 lib/luks2/luks2_reencrypt.c:3415
 msgid "Failed to load LUKS2 reencryption context."
 msgstr "Načtení kontextu přešifrování LUKS2 selhalo."
 
-#: lib/luks2/luks2_reencrypt.c:2711
+#: lib/luks2/luks2_reencrypt.c:2715
 msgid "Failed to get reencryption state."
 msgstr "Stavu přešifrování se nepodařilo zjistit."
 
-#: lib/luks2/luks2_reencrypt.c:2715
+#: lib/luks2/luks2_reencrypt.c:2719
 msgid "Device is not in reencryption."
 msgstr "Zařízení se nepřešifrovává."
 
-#: lib/luks2/luks2_reencrypt.c:2722
+#: lib/luks2/luks2_reencrypt.c:2726
 msgid "Reencryption process is already running."
 msgstr "Proces přešifrování již běží."
 
-#: lib/luks2/luks2_reencrypt.c:2724
+#: lib/luks2/luks2_reencrypt.c:2728
 msgid "Failed to acquire reencryption lock."
 msgstr "Získání zámku pro přešifrování selhalo."
 
-#: lib/luks2/luks2_reencrypt.c:2742
+#: lib/luks2/luks2_reencrypt.c:2746
 msgid "Cannot proceed with reencryption. Run reencryption recovery first."
 msgstr "V přešifrování nelze pokračovat. Spusťte nejprve obnovu přešifrování."
 
-#: lib/luks2/luks2_reencrypt.c:2856
+#: lib/luks2/luks2_reencrypt.c:2860
 msgid "Active device size and requested reencryption size don't match."
 msgstr "Aktivní velikost zařízení a velikost požadovaná k přešifrování si neodpovídají."
 
-#: lib/luks2/luks2_reencrypt.c:2870
+#: lib/luks2/luks2_reencrypt.c:2874
 msgid "Illegal device size requested in reencryption parameters."
 msgstr "V parametrech přešifrování je požadována zakázaná velikost zařízení."
 
-#: lib/luks2/luks2_reencrypt.c:2940
+#: lib/luks2/luks2_reencrypt.c:2944
 msgid "Reencryption in-progress. Cannot perform recovery."
 msgstr "Probíhá přešifrování. Obnovu nelze provést."
 
-#: lib/luks2/luks2_reencrypt.c:3012
+#: lib/luks2/luks2_reencrypt.c:3016
 msgid "LUKS2 reencryption already initialized in metadata."
 msgstr "V metadatech je přešifrování LUKS2 již inicializováno."
 
-#: lib/luks2/luks2_reencrypt.c:3019
+#: lib/luks2/luks2_reencrypt.c:3023
 msgid "Failed to initialize LUKS2 reencryption in metadata."
 msgstr "Inicializace přešifrování LUKS2 v metadatech selhala."
 
-#: lib/luks2/luks2_reencrypt.c:3110
+#: lib/luks2/luks2_reencrypt.c:3114
 msgid "Failed to set device segments for next reencryption hotzone."
 msgstr "Nastavení segmentů zařízení pro další horkou zónu přešifrování selhalo."
 
-#: lib/luks2/luks2_reencrypt.c:3152
+#: lib/luks2/luks2_reencrypt.c:3156
 msgid "Failed to write reencryption resilience metadata."
 msgstr "Metadata pro odolnost při přešifrování se nepodařilo zapsat."
 
-#: lib/luks2/luks2_reencrypt.c:3159
+#: lib/luks2/luks2_reencrypt.c:3163
 msgid "Decryption failed."
 msgstr "Rozšifrování selhalo."
 
-#: lib/luks2/luks2_reencrypt.c:3164
+#: lib/luks2/luks2_reencrypt.c:3168
 #, c-format
 msgid "Failed to write hotzone area starting at %<PRIu64>."
 msgstr "Zápis oblasti s horkou zónou počínaje na %<PRIu64> selhal."
 
-#: lib/luks2/luks2_reencrypt.c:3169
+#: lib/luks2/luks2_reencrypt.c:3173
 msgid "Failed to sync data."
 msgstr "Synchronizace dat selhala."
 
-#: lib/luks2/luks2_reencrypt.c:3177
+#: lib/luks2/luks2_reencrypt.c:3181
 msgid "Failed to update metadata after current reencryption hotzone completed."
 msgstr "Po dokončení přešifrování aktuální horké zóny se nepodařilo aktualizovat metadata."
 
-#: lib/luks2/luks2_reencrypt.c:3244
+#: lib/luks2/luks2_reencrypt.c:3248
 msgid "Failed to write LUKS2 metadata."
 msgstr "Zápis metadat LUKS2 selhal."
 
-#: lib/luks2/luks2_reencrypt.c:3267
+#: lib/luks2/luks2_reencrypt.c:3271
 msgid "Failed to wipe backup segment data."
 msgstr "Vyčištění dat záložní části selhalo."
 
-#: lib/luks2/luks2_reencrypt.c:3280
+#: lib/luks2/luks2_reencrypt.c:3284
 msgid "Failed to disable reencryption requirement flag."
 msgstr "Vypnutí příznaku požadavku na přešifrování selhalo."
 
-#: lib/luks2/luks2_reencrypt.c:3288
+#: lib/luks2/luks2_reencrypt.c:3292
 #, c-format
 msgid "Fatal error while reencrypting chunk starting at %<PRIu64>, %<PRIu64> sectors long."
 msgstr "Nepřekonatelná chyba při přešifrování bloku na pozici %<PRIu64> dlouhého %<PRIu64> sektorů."
 
-#: lib/luks2/luks2_reencrypt.c:3297
+#: lib/luks2/luks2_reencrypt.c:3296
+msgid "Online reencryption failed."
+msgstr "Přešifrování za běhu selhalo."
+
+#: lib/luks2/luks2_reencrypt.c:3301
 msgid "Do not resume the device unless replaced with error target manually."
 msgstr "Zařízení neprobouzejte, dokud jej ručně nenahradíte chybovým cílem."
 
-#: lib/luks2/luks2_reencrypt.c:3349
+#: lib/luks2/luks2_reencrypt.c:3353
 msgid "Cannot proceed with reencryption. Unexpected reencryption status."
 msgstr "V přešifrování nelze pokračovat. Přešifrování se nachází v nečekaném stavu."
 
-#: lib/luks2/luks2_reencrypt.c:3355
+#: lib/luks2/luks2_reencrypt.c:3359
 msgid "Missing or invalid reencrypt context."
 msgstr "Chybějící nebo neplatný kontext přešifrování."
 
-#: lib/luks2/luks2_reencrypt.c:3362
+#: lib/luks2/luks2_reencrypt.c:3366
 msgid "Failed to initialize reencryption device stack."
 msgstr "Zásobník zařízení k přešifrování se nepodařilo inicializovat."
 
-#: lib/luks2/luks2_reencrypt.c:3381 lib/luks2/luks2_reencrypt.c:3424
+#: lib/luks2/luks2_reencrypt.c:3385 lib/luks2/luks2_reencrypt.c:3428
 msgid "Failed to update reencryption context."
 msgstr "Kontext přešifrování se nepodařilo aktualizovat."
 
@@ -2214,6 +2228,15 @@ msgstr "Dočasný soubor s hlavičkou %s již existuje. Operace se ruší."
 #, c-format
 msgid "Cannot create temporary header file %s."
 msgstr "Dočasný soubor s hlavičkou %s nelze vytvořit."
+
+#: src/cryptsetup.c:2975
+msgid "LUKS2 metadata size is larger than data shift value."
+msgstr "Velikost metadat LUKS2 je větší než hodnota posunu dat."
+
+#: src/cryptsetup.c:3007
+#, c-format
+msgid "Failed to place new header at head of device %s."
+msgstr "Umístění nové hlavičky na začátek zařízení %s selhalo."
 
 #: src/cryptsetup.c:3018
 #, c-format
@@ -2955,6 +2978,10 @@ msgstr "Nelze zapsat soubor s protokolem přešifrování."
 msgid "Cannot read reencryption log file."
 msgstr "Soubor s protokolem přešifrování nelze načíst."
 
+#: src/cryptsetup_reencrypt.c:353
+msgid "Wrong log format."
+msgstr "Chybný formát protokolu."
+
 #: src/cryptsetup_reencrypt.c:380
 #, c-format
 msgid "Log file %s exists, resuming reencryption.\n"
@@ -3107,112 +3134,134 @@ msgstr "Přepínač --uuid lze použít jen spolu s přepínačem --decrypt."
 msgid "Invalid luks type. Use one of these: 'luks', 'luks1' or 'luks2'."
 msgstr "Neplatný druh LUKS. Použijte jeden z: „luks“, „luks1“ nebo „luks2“"
 
-#: src/utils_tools.c:126
+#: src/utils_tools.c:119
+msgid ""
+"\n"
+"WARNING!\n"
+"========\n"
+msgstr ""
+"\n"
+"POZOR!\n"
+"======\n"
+
+#. TRANSLATORS: User must type "YES" (in capital letters), do not translate this word.
+#: src/utils_tools.c:121
+#, c-format
+msgid ""
+"%s\n"
+"\n"
+"Are you sure? (Type 'yes' in capital letters): "
+msgstr ""
+"%s\n"
+"\n"
+"Jste si jisti? (Napište „yes“ velkými písmeny): "
+
+#: src/utils_tools.c:127
 msgid "Error reading response from terminal."
 msgstr "Chyba při čtení odpovědi z terminálu."
 
-#: src/utils_tools.c:158
+#: src/utils_tools.c:159
 msgid "Command successful."
 msgstr "Příkaz úspěšně vykonán."
 
-#: src/utils_tools.c:166
+#: src/utils_tools.c:167
 msgid "wrong or missing parameters"
 msgstr "špatné nebo chybějící parametry"
 
-#: src/utils_tools.c:168
+#: src/utils_tools.c:169
 msgid "no permission or bad passphrase"
 msgstr "žádné oprávnění nebo chybné heslo"
 
-#: src/utils_tools.c:170
+#: src/utils_tools.c:171
 msgid "out of memory"
 msgstr "nedostatek paměti"
 
-#: src/utils_tools.c:172
+#: src/utils_tools.c:173
 msgid "wrong device or file specified"
 msgstr "zadáno špatné zařízení nebo soubor"
 
-#: src/utils_tools.c:174
+#: src/utils_tools.c:175
 msgid "device already exists or device is busy"
 msgstr "zařízení již existuje nebo zařízení je zaneprázdněno"
 
-#: src/utils_tools.c:176
+#: src/utils_tools.c:177
 msgid "unknown error"
 msgstr "neznámá chyba"
 
-#: src/utils_tools.c:178
+#: src/utils_tools.c:179
 #, c-format
 msgid "Command failed with code %i (%s)."
 msgstr "Příkaz selhal s kódem %i (%s)."
 
-#: src/utils_tools.c:256
+#: src/utils_tools.c:257
 #, c-format
 msgid "Key slot %i created."
 msgstr "Pozice klíče %i vytvořena."
 
-#: src/utils_tools.c:258
+#: src/utils_tools.c:259
 #, c-format
 msgid "Key slot %i unlocked."
 msgstr "Pozice klíče %i odemknuta."
 
-#: src/utils_tools.c:260
+#: src/utils_tools.c:261
 #, c-format
 msgid "Key slot %i removed."
 msgstr "Pozice klíče %i odemknuta."
 
-#: src/utils_tools.c:269
+#: src/utils_tools.c:270
 #, c-format
 msgid "Token %i created."
 msgstr "Token %i vytvořen."
 
-#: src/utils_tools.c:271
+#: src/utils_tools.c:272
 #, c-format
 msgid "Token %i removed."
 msgstr "Token %i se odstraněn."
 
-#: src/utils_tools.c:281
+#: src/utils_tools.c:282
 msgid "No token could be unlocked with this PIN."
 msgstr "Tímto PIN nebylo možné odemknou žádný token."
 
-#: src/utils_tools.c:283
+#: src/utils_tools.c:284
 #, c-format
 msgid "Token %i requires PIN."
 msgstr "Token %i vyžaduje PIN."
 
-#: src/utils_tools.c:285
+#: src/utils_tools.c:286
 #, c-format
 msgid "Token (type %s) requires PIN."
 msgstr "Token (druh %s) vyžaduje PIN."
 
-#: src/utils_tools.c:288
+#: src/utils_tools.c:289
 #, c-format
 msgid "Token %i cannot unlock assigned keyslot(s) (wrong keyslot passphrase)."
 msgstr "Token %i nedokáže odemknout přiřazené pozice s klíči (chybné heslo pozice)."
 
-#: src/utils_tools.c:290
+#: src/utils_tools.c:291
 #, c-format
 msgid "Token (type %s) cannot unlock assigned keyslot(s) (wrong keyslot passphrase)."
 msgstr "Token (druh %s) nedokáže odemknout přiřazené pozice s klíči (chybné heslo pozice)."
 
-#: src/utils_tools.c:293
+#: src/utils_tools.c:294
 #, c-format
 msgid "Token %i requires additional missing resource."
 msgstr "Token %i vyžaduje dodatečné chybějící zdroje."
 
-#: src/utils_tools.c:295
+#: src/utils_tools.c:296
 #, c-format
 msgid "Token (type %s) requires additional missing resource."
 msgstr "Token (druh %s) vyžaduje dodatečné chybějící zdroje."
 
-#: src/utils_tools.c:298
+#: src/utils_tools.c:299
 #, c-format
 msgid "No usable token (type %s) is available."
 msgstr "Žádný token (druhu %s) není dostupný."
 
-#: src/utils_tools.c:300
+#: src/utils_tools.c:301
 msgid "No usable token is available."
 msgstr "Není dostupný žádný použitelný token."
 
-#: src/utils_tools.c:462
+#: src/utils_tools.c:463
 msgid ""
 "\n"
 "Wipe interrupted."
@@ -3220,13 +3269,34 @@ msgstr ""
 "\n"
 "Výmaz přerušen."
 
-#: src/utils_tools.c:491
+#: src/utils_tools.c:492
 msgid ""
 "\n"
 "Reencryption interrupted."
 msgstr ""
 "\n"
 "Přešifrování přerušeno."
+
+#: src/utils_tools.c:511
+#, c-format
+msgid "Cannot read keyfile %s."
+msgstr "Soubor s klíčem %s nelze číst."
+
+# FIXME: Pluralize
+#: src/utils_tools.c:516
+#, c-format
+msgid "Cannot read %d bytes from keyfile %s."
+msgstr "Ze souboru s klíčem %2$s nelze přečíst %1$d bajtů."
+
+#: src/utils_tools.c:541
+#, c-format
+msgid "Cannot open keyfile %s for write."
+msgstr "Soubor s klíčem %s nelze otevřít pro zápis."
+
+#: src/utils_tools.c:548
+#, c-format
+msgid "Cannot write to keyfile %s."
+msgstr "Do souboru s klíčem %s nelze zapsat."
 
 #: src/utils_password.c:41 src/utils_password.c:74
 #, c-format
@@ -3280,27 +3350,6 @@ msgstr "S tímto heslem není dostupný žádný klíč."
 #: src/utils_password.c:319
 msgid "No usable keyslot is available."
 msgstr "Nejsou dostupné žádné použitelné pozice s klíči."
-
-#: src/utils_password.c:335
-#, c-format
-msgid "Cannot read keyfile %s."
-msgstr "Soubor s klíčem %s nelze číst."
-
-# FIXME: Pluralize
-#: src/utils_password.c:340
-#, c-format
-msgid "Cannot read %d bytes from keyfile %s."
-msgstr "Ze souboru s klíčem %2$s nelze přečíst %1$d bajtů."
-
-#: src/utils_password.c:365
-#, c-format
-msgid "Cannot open keyfile %s for write."
-msgstr "Soubor s klíčem %s nelze otevřít pro zápis."
-
-#: src/utils_password.c:372
-#, c-format
-msgid "Cannot write to keyfile %s."
-msgstr "Do souboru s klíčem %s nelze zapsat."
 
 #: src/utils_luks2.c:47
 #, c-format
@@ -3368,6 +3417,16 @@ msgstr "Zařízení %s se používá. K formátování nelze přikročit."
 #, c-format
 msgid "Failed to open file %s in read/write mode."
 msgstr "Soubor %s nebylo možné otevřít pro čtení i zápis."
+
+#: src/utils_blockdev.c:294
+#, c-format
+msgid "Existing '%s' partition signature on device %s will be wiped."
+msgstr "Existující vzorec oddílu „%s“ na zařízení %s bude vymazán."
+
+#: src/utils_blockdev.c:297
+#, c-format
+msgid "Existing '%s' superblock signature on device %s will be wiped."
+msgstr "Existující vzorec superbloku „%s“ na zařízení %s bude vymazán."
 
 #: src/utils_blockdev.c:300
 msgid "Failed to wipe device signature."
@@ -4082,12 +4141,6 @@ msgstr "Chyba při autentizaci veřejným klíčem: "
 
 #~ msgid "Type of LUKS metadata: luks1, luks2"
 #~ msgstr "Druh metadat LUKS: luks1, luks2"
-
-#~ msgid "Existing '%s' partition signature (offset: %<PRIi64> bytes) on device %s will be wiped."
-#~ msgstr "Existující vzorec „%s“ oddílu (poloha: %<PRIi64> bajtů) na zařízení %s bude vymazán."
-
-#~ msgid "Existing '%s' superblock signature (offset: %<PRIi64> bytes) on device %s will be wiped."
-#~ msgstr "Existující vzorec superbloku „%s“ (poloha: %<PRIi64> bajtů) na zařízení %s bude vymazán."
 
 #~ msgid "WARNING: Locking directory %s/%s is missing!\n"
 #~ msgstr "POZOR: Adresář se zámkem %s/%s chybí!\n"
