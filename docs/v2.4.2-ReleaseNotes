@@ -1,0 +1,33 @@
+Cryptsetup 2.4.2 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.4.1 should upgrade to this version.
+
+Changes since version 2.4.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix possible large memory allocation if LUKS2 header size is invalid.
+  LUKS2 code read the full header to buffer to verify the checksum.
+  The maximal supported header size now limits the memory allocation.
+
+* Fix memory corruption in debug message printing LUKS2 checksum.
+
+* veritysetup: remove link to the UUID library for the static build.
+
+* Remove link to pwquality library for integritysetup and veritysetup.
+  These tools do not read passphrases.
+
+* OpenSSL3 backend: avoid remaining deprecated calls in API.
+  Crypto backend no longer use API deprecated in OpenSSL 3.0
+
+
+* Check if kernel device-mapper create device failed in an early phase.
+  This happens when a concurrent creation of device-mapper devices
+  meets in the very early state.
+
+* Do not set compiler optimization flag for Argon2 KDF if the memory
+  wipe is implemented in libc.
+
+* Do not attempt to unload LUKS2 tokens if external tokens are disabled.
+  This allows building a static binary with  --disable-external-tokens.
