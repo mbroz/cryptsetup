@@ -12,4 +12,6 @@
     RUN_SSH_PLUGIN_TEST: "1"
   before_script:
     - .gitlab/ci/cibuild-setup-ubuntu.sh
+    - export CC="gcc${COMPILER_VERSION:+-$COMPILER_VERSION}"
+    - export CXX="g++${COMPILER_VERSION:+-$COMPILER_VERSION}"
     - ./autogen.sh

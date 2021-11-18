@@ -8,7 +8,7 @@ do
     esac
 done
 
-GCC=$(which gcc)
+GCC="gcc${COMPILER_VERSION:+-$COMPILER_VERSION}"
 
 #PEDANTIC="-std=gnu99"
 #PEDANTIC="-pedantic -std=gnu99"
