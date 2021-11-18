@@ -13,12 +13,8 @@ test-gcc-Wall-script:
     - export CFLAGS="-g -O0"
     - export CC=".gitlab/ci/gcc-Wall"
     - mv /usr/include/json-c/json.h /usr/include/json-c/json.h.orig
-    - echo '#pragma gcc diagnostic push' > /usr/include/json-c/json.h
-    - echo '#pragma gcc diagnostic ignored "-Wdeclaration-after-statement"' >> /usr/include/json-c/json.h
-    - cat /usr/include/json-c/json.h.orig >> /usr/include/json-c/json.h
-    - echo '#pragma gcc diagnostic pop' >> /usr/include/json-c/json.h
     - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2 || cat config.log
-    - make -j CFLAGS="-g -O0 -Werror"
+    - make -j CFLAGS="-g -O0 -fdiagnostics-format=json"
 
 test-gcc-fanalyzer:
   extends:
