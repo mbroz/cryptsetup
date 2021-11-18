@@ -33,7 +33,7 @@ EXTRA="-Wextra \
  -Wno-unused-parameter \
  -Wno-attributes \
  -Wno-long-long"
-
+pwd
 exec $GCC $PEDANTIC $CONVERSION \
 	-Wall $Wuninitialized \
         -Wno-switch \
@@ -50,8 +50,7 @@ exec $GCC $PEDANTIC $CONVERSION \
 	-Wcast-align \
 	-Wcast-qual \
 	-Wredundant-decls $EXTRA \
-	"$@"
-
+	"$@" 2>&1 | .gitlab/ci/warnings_filter.py
 
 #	-fcheck-memory-usage \
 #    -Wall implies:
