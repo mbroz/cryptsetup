@@ -1,21 +1,19 @@
 .gitlab-shared-docker:
+  image: ubuntu:latest
   tags:
     - gitlab-org-docker
   stage: test
   interruptible: true
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  variables:
+    COMPILER: "gcc"
+    COMPILER_VERSION: "11"
+    RUN_SSH_PLUGIN_TEST: "1"
   before_script:
     - grep -E '^deb' /etc/apt/sources.list > /etc/apt/sources.list~
     - sed -Ei 's/^deb /deb-src /' /etc/apt/sources.list~
     - cat /etc/apt/sources.list~ >> /etc/apt/sources.list
     - apt-get -y update --fix-missing
-    - >
-      apt-get -y install -y -qq  git gcc make
-      autoconf automake autopoint pkg-config libtool libtool-bin gettext
-      libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev
-      libjson-c-dev libssh-dev libblkid-dev tar libargon2-0-dev
-      libpwquality-dev sharutils dmsetup jq xxd expect keyutils
-      netcat passwd openssh-client sshpass
-    - apt-get -y build-dep cryptsetup
+    - .github/workflows/cibuild-setup-ubuntu.sh
     - ./autogen.sh
