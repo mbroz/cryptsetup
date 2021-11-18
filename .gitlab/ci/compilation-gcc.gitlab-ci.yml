@@ -11,9 +11,9 @@ test-gcc-Wall-script:
     - .gitlab-shared-docker
   script:
     - export CC=".gitlab/ci/gcc-Wall"
+    - export CFLAGS="-g -O0"
     - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2 || cat config.log
-    - export CFLAGS="-g -O0 -Werror"
-    - make -j
+    - make -j CFLAGS="-g -O0 -Werror"
 
 test-gcc-fanalyzer:
   extends:
