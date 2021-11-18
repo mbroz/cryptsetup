@@ -11,10 +11,5 @@
     COMPILER_VERSION: "11"
     RUN_SSH_PLUGIN_TEST: "1"
   before_script:
-    - grep -E '^deb' /etc/apt/sources.list > /etc/apt/sources.list~
-    - sed -Ei 's/^deb /deb-src /' /etc/apt/sources.list~
-    - cat /etc/apt/sources.list~ >> /etc/apt/sources.list
-    - apt-get -y update --fix-missing
-    - DEBIAN_FRONTEND=noninteractive apt-get -yq install lsb-core software-properties-common
-    - .github/workflows/cibuild-setup-ubuntu.sh
+    - .gitlab/ci/cibuild-setup-ubuntu.sh
     - ./autogen.sh
