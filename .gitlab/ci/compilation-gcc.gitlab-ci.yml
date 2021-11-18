@@ -3,15 +3,20 @@ test-gcc-compilation:
     - .gitlab-shared-docker
   script:
     - export CFLAGS="-Wall -Werror"
-    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2 || cat config.log
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2
     - make -j
 
 test-gcc-Wall-script:
   extends:
     - .gitlab-shared-docker
   script:
+    - export CFLAGS="-g -O0 -Werror"
     - export CC=".gitlab/ci/gcc-Wall"
-    - export CFLAGS="-g -O0"
+    - mv /usr/include/json-c/json.h /usr/include/json-c/json.h.orig
+    - echo '#pragma gcc diagnostic push' > /usr/include/json-c/json.h
+    - echo '#pragma gcc diagnostic ignored "-Wdeclaration-after-statement"' >> /usr/include/json-c/json.h
+    - cat /usr/include/json-c/json.h.orig >> /usr/include/json-c/json.h
+    - echo '#pragma gcc diagnostic pop' >> /usr/include/json-c/json.h
     - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2 || cat config.log
     - make -j CFLAGS="-g -O0 -Werror"
 
@@ -20,5 +25,5 @@ test-gcc-fanalyzer:
     - .gitlab-shared-docker
   script:
     - export CFLAGS="-Wall -Werror -fanalyzer"
-    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2 || cat config.log
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2
     - make -j
