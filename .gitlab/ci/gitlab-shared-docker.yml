@@ -15,6 +15,6 @@
     - sed -Ei 's/^deb /deb-src /' /etc/apt/sources.list~
     - cat /etc/apt/sources.list~ >> /etc/apt/sources.list
     - apt-get -y update --fix-missing
-    - DEBIAN_FRONTEND=noninteractive apt-get -yq install lsb-core
+    - DEBIAN_FRONTEND=noninteractive apt-get -yq install lsb-core software-properties-common
     - .github/workflows/cibuild-setup-ubuntu.sh
     - ./autogen.sh
