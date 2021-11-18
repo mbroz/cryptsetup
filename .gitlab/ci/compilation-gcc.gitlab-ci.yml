@@ -12,9 +12,8 @@ test-gcc-Wall-script:
   script:
     - export CFLAGS="-g -O0"
     - export CC=".gitlab/ci/gcc-Wall"
-    - mv /usr/include/json-c/json.h /usr/include/json-c/json.h.orig
-    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2 || cat config.log
-    - make -j CFLAGS="-g -O0 -fdiagnostics-format=json"
+    - USE_FILTER=0 ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2 || cat config.log
+    - USE_FILTER=1 make -j CFLAGS="-g -O0 -fdiagnostics-format=json"
 
 test-gcc-fanalyzer:
   extends:
