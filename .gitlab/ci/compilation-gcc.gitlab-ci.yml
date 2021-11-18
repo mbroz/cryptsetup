@@ -3,8 +3,7 @@ test-gcc-compilation:
     - .gitlab-shared-docker
   script:
     - export CFLAGS="-Wall -Werror"
-    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2
-    - cat config.log
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2; cat config.log
     - make -j
 
 test-gcc-Wall-script:
@@ -13,8 +12,7 @@ test-gcc-Wall-script:
   script:
     - export CFLAGS="-g -O0 -Werror"
     - export CC=".gitlab/ci/gcc-Wall"
-    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2
-    - cat config.log
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2; cat config.log
     - make -j
 
 test-gcc-fanalyzer:
@@ -22,6 +20,5 @@ test-gcc-fanalyzer:
     - .gitlab-shared-docker
   script:
     - export CFLAGS="-Wall -Werror -fanalyzer"
-    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2
-    - cat config.log
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2; cat config.log
     - make -j
