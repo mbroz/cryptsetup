@@ -1,0 +1,24 @@
+test-gcc-compilation:
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - export CFLAGS="-Wall -Werror"
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2
+    - make -j
+
+test-gcc-Wall-script:
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - export CFLAGS="-g -O0"
+    - export CC=".gitlab/ci/gcc-Wall"
+    - USE_FILTER=0 ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2 || cat config.log
+    - USE_FILTER=1 make -j CFLAGS="-g -O0 -fdiagnostics-format=json"
+
+test-gcc-fanalyzer:
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - export CFLAGS="-Wall -Werror -fanalyzer"
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality --enable-libargon2
+    - make -j

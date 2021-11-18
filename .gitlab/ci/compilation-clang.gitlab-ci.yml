@@ -1,0 +1,26 @@
+test-clang-compilation:
+  image: kernelci/clang-13
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - ./configure CFLAGS="-Wall -Werror" --enable-libargon2
+    - make -j
+
+test-clang-Wall-script:
+  image: kernelci/clang-13
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - export CFLAGS="-g -O0"
+    - export CC=".gitlab/ci/clang-Wall"
+    - ./configure --enable-cryptsetup-reencrypt --enable-pwquality
+    - make -j
+
+test-scan-build:
+  image: pmatos/scan-build
+  extends:
+    - .gitlab-shared-docker
+  script:
+    - scan-build -V ./configure CFLAGS="-g -O0" --enable-internal-sse-argon2
+    - make clean
+    - scan-build -maxloop 10 make -j

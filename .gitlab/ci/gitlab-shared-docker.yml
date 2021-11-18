@@ -1,0 +1,17 @@
+.gitlab-shared-docker:
+  image: ubuntu:latest
+  tags:
+    - gitlab-org-docker
+  stage: test
+  interruptible: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  variables:
+    COMPILER: "gcc"
+    COMPILER_VERSION: "11"
+    RUN_SSH_PLUGIN_TEST: "1"
+  before_script:
+    - .gitlab/ci/cibuild-setup-ubuntu.sh
+    - export CC="gcc${COMPILER_VERSION:+-$COMPILER_VERSION}"
+    - export CXX="g++${COMPILER_VERSION:+-$COMPILER_VERSION}"
+    - ./autogen.sh
