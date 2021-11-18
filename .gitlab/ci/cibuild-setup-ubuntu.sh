@@ -7,12 +7,11 @@ PACKAGES=(
 	gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev
 	libjson-c-dev libssh-dev libblkid-dev tar libargon2-0-dev libpwquality-dev
 	sharutils dmsetup jq xxd expect keyutils netcat passwd openssh-client sshpass
-	lsb-core software-properties-common
+	software-properties-common
 )
 
 COMPILER="${COMPILER:?}"
 COMPILER_VERSION="${COMPILER_VERSION:?}"
-RELEASE="$(lsb_release -cs)"
 
 grep -E '^deb' /etc/apt/sources.list > /etc/apt/sources.list~
 sed -Ei 's/^deb /deb-src /' /etc/apt/sources.list~
