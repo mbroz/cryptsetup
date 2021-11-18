@@ -31,3 +31,7 @@ Changes since version 2.4.1
 
 * Do not attempt to unload LUKS2 tokens if external tokens are disabled.
   This allows building a static binary with  --disable-external-tokens.
+
+* LUKS convert: also check sysfs for device activity.
+  If udev symlink is missing, code fallbacks to sysfs scan to prevent
+  data corruption for the active device.
