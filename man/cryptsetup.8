@@ -570,8 +570,12 @@ successfully imported token is also assigned to the key slot.
 Action \fIexport\fR writes requested token json to a file passed with \-\-json\-file or
 to standard output.
 
+If \-\-token\-id is used with action \fIadd\fR or action \fIimport\fR and a token with
+that ID already exists, option \-\-token\-replace can be used to replace the existing token.
+
 \fB<options>\fR can be [\-\-header, \-\-token\-id, \-\-key\-slot, \-\-key\-description,
-\-\-disable\-external\-tokens, \-\-disable\-locks, \-\-disable\-keyring, \-\-json\-file].
+\-\-disable\-external\-tokens, \-\-disable\-locks, \-\-disable\-keyring, \-\-json\-file,
+\-\-token\-replace].
 .PP
 \fIconvert\fR <device> \-\-type <format>
 .IP
@@ -996,6 +1000,11 @@ bypass the passphrases, see also option \-\-master\-key\-file.
 Read token json from a file or write token to it. See \fItoken\fR action for more
 information. \-\-json\-file=- reads json from standard input or writes it to
 standard output respectively.
+.TP
+.TP
+.B "\-\-token\-replace"
+Replace an existing token when adding or importing a token with the \-\-token\-id
+option.
 .TP
 .B "\-\-use\-random"
 .TP
