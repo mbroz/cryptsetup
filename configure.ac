@@ -1,3 +1,4 @@
+# test
 AC_PREREQ([2.67])
 AC_INIT([cryptsetup],[2.5.0-git])
 
