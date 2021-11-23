@@ -866,7 +866,7 @@ static int encrypt_luks2(int action_argc, const char **action_argv)
 			goto out;
 
 		if (!r) {
-			log_err(_("LUKS2 device is not in encryption."));
+			log_err(_("Device reencryption not in progress."));
 			r = -EINVAL;
 			goto out;
 		}
@@ -910,7 +910,7 @@ static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **
 		r = action_reencrypt_load(cd, action_argv[0]);
 	} else {
 		if (ARG_SET(OPT_RESUME_ONLY_ID)) {
-			log_err(_("LUKS2 device is not in reencryption."));
+			log_err(_("Device reencryption not in progress."));
 			return -EINVAL;
 		}
 		r = action_decrypt_luks2(cd, action_argv[0]);
@@ -944,7 +944,7 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 		r = action_reencrypt_load(cd, action_argv[0]);
 	} else {
 		if (ARG_SET(OPT_RESUME_ONLY_ID)) {
-			log_err(_("LUKS2 device is not in reencryption."));
+			log_err(_("Device reencryption not in progress."));
 			return -EINVAL;
 		}
 		r = action_reencrypt_luks2(cd, action_argv[0]);
