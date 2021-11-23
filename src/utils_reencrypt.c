@@ -473,9 +473,9 @@ static int init_passphrase(struct keyslot_passwords *kp, size_t keyslot_password
 	return r;
 }
 
-static int _check_luks2_keyslots(struct crypt_device *cd, bool new_vk)
+static int _check_luks2_keyslots(struct crypt_device *cd, bool vk_change)
 {
-	int i, new_vk_slot = (new_vk ? 1 : 0), max = crypt_keyslot_max(CRYPT_LUKS2), active = 0, unbound = 0;
+	int i, new_vk_slot = (vk_change ? 1 : 0), max = crypt_keyslot_max(CRYPT_LUKS2), active = 0, unbound = 0;
 
 	if (max < 0)
 		return max;
@@ -503,7 +503,7 @@ static int _check_luks2_keyslots(struct crypt_device *cd, bool new_vk)
 		return -EINVAL;
 	}
 
-	if (!new_vk)
+	if (!vk_change)
 		return 0;
 
 	if ((ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT) &&
@@ -517,13 +517,13 @@ static int _check_luks2_keyslots(struct crypt_device *cd, bool new_vk)
 
 static int fill_keyslot_passwords(struct crypt_device *cd,
 		struct keyslot_passwords *kp, size_t kp_size,
-		bool new_vk)
+		bool vk_change)
 {
 	char msg[128];
 	crypt_keyslot_info ki;
 	int i, r = 0;
 
-	if (new_vk && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT && ARG_SET(OPT_KEY_FILE_ID)) {
+	if (vk_change && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT && ARG_SET(OPT_KEY_FILE_ID)) {
 		for (i = 0; (size_t)i < kp_size; i++) {
 			ki = crypt_keyslot_status(cd, i);
 			if (ki == CRYPT_SLOT_INVALID)
@@ -542,7 +542,7 @@ static int fill_keyslot_passwords(struct crypt_device *cd,
 				return -EINVAL;
 			r = init_passphrase(kp, kp_size, cd, msg, i);
 			/* no need to initialize all keyslots with --keep-key */
-			if (r >= 0 && !new_vk)
+			if (r >= 0 && !vk_change)
 				break;
 			if (r == -ENOENT)
 				r = 0;
@@ -575,7 +575,7 @@ static int assign_tokens(struct crypt_device *cd, int keyslot_old, int keyslot_n
 
 static int action_reencrypt_luks2(struct crypt_device *cd, const char *data_device)
 {
-	bool new_vk_size, new_sector_size, new_vk;
+	bool vk_size_change, sector_size_change, vk_change;
 	size_t i, vk_size, kp_size;
 	int r, keyslot_old = CRYPT_ANY_SLOT, keyslot_new = CRYPT_ANY_SLOT, key_size;
 	char dm_name[PATH_MAX], cipher [MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN], *vk = NULL;
@@ -621,7 +621,7 @@ static int action_reencrypt_luks2(struct crypt_device *cd, const char *data_devi
 
 	/* sector size */
 	luks2_params.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: (uint32_t)crypt_get_sector_size(cd);
-	new_sector_size = luks2_params.sector_size != (uint32_t)crypt_get_sector_size(cd);
+	sector_size_change = luks2_params.sector_size != (uint32_t)crypt_get_sector_size(cd);
 
 	/* key size */
 	if (ARG_SET(OPT_KEY_SIZE_ID) || new_cipher)
@@ -633,31 +633,31 @@ static int action_reencrypt_luks2(struct crypt_device *cd, const char *data_devi
 		return -EINVAL;
 	vk_size = key_size;
 
-	new_vk_size = key_size != crypt_get_volume_key_size(cd);
+	vk_size_change = key_size != crypt_get_volume_key_size(cd);
 
 	/* volume key */
-	new_vk = !ARG_SET(OPT_KEEP_KEY_ID);
+	vk_change = !ARG_SET(OPT_KEEP_KEY_ID);
 
-	if (new_vk && ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
+	if (vk_change && ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
 		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &vk, key_size);
 		if (r < 0)
 			goto out;
 
 		if (!crypt_activate_by_volume_key(cd, NULL, vk, key_size, 0)) {
 			/* passed key was valid volume key */
-			new_vk = false;
+			vk_change = false;
 			crypt_safe_free(vk);
 			vk = NULL;
 		}
 	}
 
-	if (!new_vk && !new_vk_size && !new_cipher && !new_sector_size) {
+	if (!vk_change && !vk_size_change && !new_cipher && !sector_size_change) {
 		log_err(_("No data segment parameters changed. Reencryption aborted."));
 		r = -EINVAL;
 		goto out;
 	}
 
-	r = _check_luks2_keyslots(cd, new_vk);
+	r = _check_luks2_keyslots(cd, vk_change);
 	if (r)
 		return r;
 
@@ -670,14 +670,14 @@ static int action_reencrypt_luks2(struct crypt_device *cd, const char *data_devi
 	if (!kp)
 		return -ENOMEM;
 
-	r = fill_keyslot_passwords(cd, kp, kp_size, new_vk);
+	r = fill_keyslot_passwords(cd, kp, kp_size, vk_change);
 	if (r)
 		goto out;
 
 	r = -ENOENT;
 
 	for (i = 0; i < kp_size; i++) {
-		if (!new_vk) {
+		if (!vk_change) {
 			if (kp[i].password) {
 				r = keyslot_old = kp[i].new = i;
 				break;
