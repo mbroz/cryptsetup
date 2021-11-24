@@ -108,7 +108,7 @@ static const char *hdr_device(const struct reenc_ctx *rc)
 }
 
 /* Depends on the first two fields of LUKS1 header format, magic and version */
-static int device_check(struct reenc_ctx *rc, const char *device, header_magic set_magic)
+static int device_check(struct reenc_ctx *rc, const char *device, header_magic set_magic, bool exclusive)
 {
 	char *buf = NULL;
 	int r, devfd;
@@ -123,7 +123,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 	}
 
 	/* coverity[toctou] */
-	devfd = open(device, O_RDWR | (S_ISBLK(st.st_mode) ? O_EXCL : 0));
+	devfd = open(device, O_RDWR | ((S_ISBLK(st.st_mode) && exclusive) ? O_EXCL : 0));
 	if (devfd == -1) {
 		if (errno == EBUSY) {
 			log_err(_("Cannot exclusively open %s, device in use."),
@@ -990,7 +990,7 @@ static int initialize_uuid(struct reenc_ctx *rc)
 		rc->device_uuid = strdup(crypt_get_uuid(cd));
 	else
 		/* Reencryption already in progress - magic header? */
-		r = device_check(rc, hdr_device(rc), CHECK_UNUSABLE);
+		r = device_check(rc, hdr_device(rc), CHECK_UNUSABLE, true);
 
 	crypt_free(cd);
 	return r;
@@ -1162,7 +1162,7 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 	if (ARG_SET(OPT_HEADER_ID) && !(rc->device_header = strndup(ARG_STR(OPT_HEADER_ID), PATH_MAX)))
 		return -ENOMEM;
 
-	if (device_check(rc, rc->device, CHECK_OPEN) < 0)
+	if (device_check(rc, rc->device, CHECK_OPEN, true) < 0)
 		return -EINVAL;
 
 	if (initialize_uuid(rc)) {
@@ -1288,7 +1288,7 @@ int reencrypt_luks1(const char *device)
 			if (rc.reencrypt_mode == DECRYPT &&
 			    (r = backup_fake_header(&rc)))
 				goto out;
-			if ((r = device_check(&rc, hdr_device(&rc), MAKE_UNUSABLE)))
+			if ((r = device_check(&rc, hdr_device(&rc), MAKE_UNUSABLE, true)))
 				goto out;
 		}
 	} else {
@@ -1325,7 +1325,7 @@ int reencrypt_luks1_in_progress(const char *device)
 	if (stat(device, &st) || (size_t)st.st_size < pagesize())
 		return -EINVAL;
 
-	r = device_check(&dummy, device, CHECK_UNUSABLE);
+	r = device_check(&dummy, device, CHECK_UNUSABLE, false);
 
 	free(dummy.device_uuid);
 
