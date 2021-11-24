@@ -2,7 +2,8 @@
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
-REENC=$CRYPTSETUP_PATH/cryptsetup-reencrypt
+REENC_BIN=$CRYPTSETUP
+REENC="$REENC_BIN reencrypt"
 FAST_PBKDF="--pbkdf-force-iterations 1000"
 
 DEV_NAME=reenc9768
@@ -216,7 +217,7 @@ function test_logging() {
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
-[ ! -x "$REENC" ] && skip "Cannot find $REENC, test skipped."
+[ ! -x "$REENC_BIN" ] && skip "Cannot find $REENC_BIN, test skipped."
 which wipefs >/dev/null 2>&1 ||  skip "Cannot find wipefs, test skipped."
 
 # REENCRYPTION tests

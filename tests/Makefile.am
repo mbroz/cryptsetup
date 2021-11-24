@@ -20,14 +20,12 @@ TESTS = 00modules-test \
 	vectors-test \
 	blockwise-compat \
 	bitlk-compat-test \
-	run-all-symbols
+	run-all-symbols \
+	reencryption-compat-test \
+	luks2-reencryption-test
 
 if VERITYSETUP
 TESTS += verity-compat-test
-endif
-
-if REENCRYPT
-TESTS += reencryption-compat-test reencryption-compat-test2 luks2-reencryption-test
 endif
 
 if INTEGRITYSETUP

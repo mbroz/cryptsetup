@@ -967,7 +967,7 @@ sleep 0.1
 send "$PWD1\n"
 expect timeout abort "Command successful."
 expect timeout abort eof
-eval spawn $CRYPTSETUP_RAW luksOpen $FAST_PBKDF_OPT -v $LOOPDEV --test-passphrase
+eval spawn $CRYPTSETUP_RAW luksOpen -v $LOOPDEV --test-passphrase
 expect timeout abort "Enter passphrase"
 sleep 0.1
 send "$PWD1\n"
