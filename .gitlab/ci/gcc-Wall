@@ -3,9 +3,9 @@
 
 for arg in "$@"
 do
-    case $arg in
+	case $arg in
 	-O*) Wuninitialized=-Wuninitialized;;  # only makes sense with `-O'
-    esac
+	esac
 done
 
 GCC="gcc${COMPILER_VERSION:+-$COMPILER_VERSION}"
@@ -38,7 +38,7 @@ EXTRA="-Wextra \
 
 exec $GCC $PEDANTIC $CONVERSION \
 	-Wall $Wuninitialized \
-        -Wno-switch \
+	-Wno-switch \
 	-Wdisabled-optimization \
 	-Wwrite-strings \
 	-Wpointer-arith \
@@ -59,17 +59,3 @@ exec $GCC $PEDANTIC $CONVERSION \
 		cat
 	fi
 }
-
-#	-fcheck-memory-usage \
-#    -Wall implies:
-#	-Wshadow
-#	-Wimplicit
-#	-Wreturn-type
-#	-Wunused
-#	-Wswitch
-#	-Wformat
-#	-Wchar-subscripts
-#	-Wparentheses
-#	-Wmissing-braces
-#	-Wtraditional
-#	-Wid-clash-31
