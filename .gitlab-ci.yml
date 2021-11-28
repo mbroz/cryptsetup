@@ -40,8 +40,8 @@ test-mergerq-job-debian-noroot:
   stage: test
   interruptible: true
   rules:
-#   - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-#     when: never
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - make -j
@@ -99,8 +99,8 @@ test-mergerq-job-dnf:
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
-#   - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-#     when: never
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - make -j
