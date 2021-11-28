@@ -21,19 +21,19 @@ DEBIAN_FRONTEND=noninteractive apt-get -yq install software-properties-common wg
 RELEASE="$(lsb_release -cs)"
 
 if [[ $COMPILER == "gcc" ]]; then
-  # Latest gcc stack deb packages provided by
-  # https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test
-  add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  PACKAGES+=(gcc-$COMPILER_VERSION)
+	# Latest gcc stack deb packages provided by
+	# https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test
+	add-apt-repository -y ppa:ubuntu-toolchain-r/test
+	PACKAGES+=(gcc-$COMPILER_VERSION)
 elif [[ $COMPILER == "clang" ]]; then
-  wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-  add-apt-repository "deb http://apt.llvm.org/${RELEASE}/   llvm-toolchain-${RELEASE}-${COMPILER_VERSION} main"
+	wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+	add-apt-repository "deb http://apt.llvm.org/${RELEASE}/   llvm-toolchain-${RELEASE}-${COMPILER_VERSION} main"
 
-  # scan-build
-  PACKAGES+=(clang-tools-$COMPILER_VERSION clang-$COMPILER_VERSION lldb-$COMPILER_VERSION lld-$COMPILER_VERSION clangd-$COMPILER_VERSION)
-  PACKAGES+=(perl)
+	# scan-build
+	PACKAGES+=(clang-tools-$COMPILER_VERSION clang-$COMPILER_VERSION lldb-$COMPILER_VERSION lld-$COMPILER_VERSION clangd-$COMPILER_VERSION)
+	PACKAGES+=(perl)
 else
-  exit 1
+	exit 1
 fi
 
 apt-get -y update --fix-missing
@@ -42,7 +42,7 @@ apt-get -y build-dep cryptsetup
 
 echo "====================== VERSIONS ==================="
 if [[ $COMPILER == "clang" ]]; then
-  scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --help
+	scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --help
 fi
 
 ${COMPILER}-$COMPILER_VERSION -v
