@@ -73,7 +73,7 @@ NLS PO files are maintained by [TranslationProject](https://translationproject.o
 
 Required packages
 -----------------
-All distributions provide cryptsetup as distro package. If you need to compile cryptsetup youfself, some packages are required for compilation. Please always prefer distro specific build tools to manually configuring cryptsetup.
+All distributions provide cryptsetup as distro package. If you need to compile cryptsetup yourself, some packages are required for compilation. Please always prefer distro specific build tools to manually configuring cryptsetup.
 For available compile options, check ``configure --help`` for more info. If you are using a git snapshot, you need to generate a configure script with ``autogen.sh`` script.
 
 Here is the list of packages needed for the compilation of project for particular distributions:
