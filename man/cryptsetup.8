@@ -1568,7 +1568,7 @@ sudo cryptsetup luksAddKey --key-slot 5 /dev/sdX
 Example 3: Create LUKS header backup and save it to file.
 sudo cryptsetup luksHeaderBackup /dev/sdX --header-backup-file /var/tmp/NameOfBackupFile
 .TP
-Example 4: Open LUKS contaner on /dev/sdX and map it to sdX_crypt.
+Example 4: Open LUKS container on /dev/sdX and map it to sdX_crypt.
 sudo cryptsetup open /dev/sdX sdX_crypt
 .TP
 .B WARNING: The command in example 5 will erase all key slots.
