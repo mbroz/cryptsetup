@@ -51,6 +51,10 @@ function check_dump()
 	# load variables for this image from config file
 	load_vars $file
 
+	# description
+	dump_desc=$(echo "$dump" | grep Description: | cut -d: -f2 | tr -d "\t\n ")
+	[ "${dump_desc:0:7}" = "DESKTOP" -o  "${dump_desc:0:3}" = "WIN" ] || fail " Description check from dump failed."
+
 	# GUID
 	dump_guid=$(echo "$dump" | grep Version -A 1 | tail -1 | cut -d: -f2 | tr -d "\t\n ")
 	[ ! -z "$GUID" -a "$dump_guid" = "$GUID"  ] || fail " GUID check from dump failed."
