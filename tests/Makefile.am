@@ -22,7 +22,8 @@ TESTS = 00modules-test \
 	bitlk-compat-test \
 	run-all-symbols \
 	reencryption-compat-test \
-	luks2-reencryption-test
+	luks2-reencryption-test \
+	luks2-reencryption-mangle-test
 
 if VERITYSETUP
 TESTS += verity-compat-test
@@ -70,6 +71,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	reencryption-compat-test \
 	reencryption-compat-test2 \
 	luks2-reencryption-test \
+	luks2-reencryption-mangle-test \
 	tcrypt-compat-test \
 	luks1-compat-test \
 	luks2-validation-test generators \
@@ -152,6 +154,7 @@ valgrind-check: api-test api-test-2 differ
 	@INFOSTRING="api-test-000" ./valg-api.sh ./api-test
 	@INFOSTRING="api-test-002" ./valg-api.sh ./api-test-2
 	@VALG=1 ./luks2-reencryption-test
+	@VALG=1 ./luks2-reencryption-mangle-test
 	@VALG=1 ./bitlk-compat-test
 	@VALG=1 ./tcrypt-compat-test
 	@grep -l "ERROR SUMMARY: [^0] errors" valglog* || echo "No leaks detected."
