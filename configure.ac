@@ -140,6 +140,14 @@ if test "x$enable_ssh_token" = "xyes" -a "x$enable_external_tokens" = "xno"; the
 	AC_MSG_ERROR([Requested LUKS2 ssh-token build, but external tokens are disabled.])
 fi
 
+dnl LUKS2 online reencryption
+AC_ARG_ENABLE([luks2-reencryption],
+	AS_HELP_STRING([--disable-luks2-reencryption], [disable LUKS2 online reencryption extension]),
+	[], [enable_luks2_reencryption=yes])
+if test "x$enable_luks2_reencryption" = "xyes"; then
+	AC_DEFINE(USE_LUKS2_REENCRYPTION, 1, [Use LUKS2 online reencryption extension])
+fi
+
 dnl ==========================================================================
 
 AM_GNU_GETTEXT([external],[need-ngettext])

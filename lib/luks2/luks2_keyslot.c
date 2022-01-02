@@ -27,7 +27,9 @@ extern const keyslot_handler reenc_keyslot;
 
 static const keyslot_handler *keyslot_handlers[LUKS2_KEYSLOTS_MAX] = {
 	&luks2_keyslot,
+#if USE_LUKS2_REENCRYPTION
 	&reenc_keyslot,
+#endif
 	NULL
 };
 
