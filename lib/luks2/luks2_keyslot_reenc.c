@@ -230,7 +230,7 @@ static int reenc_keyslot_dump(struct crypt_device *cd, int keyslot)
 
 static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_keyslot)
 {
-	json_object *jobj_mode, *jobj_area, *jobj_type, *jobj_shift_size, *jobj_hash, *jobj_sector_size, *jobj_direction;
+	json_object *jobj_mode, *jobj_area, *jobj_type, *jobj_shift_size, *jobj_hash, *jobj_sector_size, *jobj_direction, *jobj_key_size;
 	const char *mode, *type, *direction;
 	uint32_t sector_size;
 	uint64_t shift_size;
@@ -250,11 +250,17 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 	    !json_object_object_get_ex(jobj_area, "type", &jobj_type))
 		return -EINVAL;
 
+	jobj_key_size = json_contains(cd, jobj_keyslot, "", "reencrypt keyslot", "key_size", json_type_int);
 	jobj_mode = json_contains(cd, jobj_keyslot, "", "reencrypt keyslot", "mode", json_type_string);
 	jobj_direction = json_contains(cd, jobj_keyslot, "", "reencrypt keyslot", "direction", json_type_string);
 
-	if (!jobj_mode || !jobj_direction)
+	if (!jobj_mode || !jobj_direction || !jobj_key_size)
 		return -EINVAL;
+
+	if (!validate_json_uint32(jobj_key_size) || crypt_jobj_get_uint32(jobj_key_size) != 1) {
+		log_dbg(cd, "Illegal reencrypt key size.");
+		return -EINVAL;
+	}
 
 	mode = json_object_get_string(jobj_mode);
 	type = json_object_get_string(jobj_type);
