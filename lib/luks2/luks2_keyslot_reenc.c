@@ -176,8 +176,17 @@ static int reenc_keyslot_store(struct crypt_device *cd,
 	return r < 0 ? r : keyslot;
 }
 
-static int reenc_keyslot_wipe(struct crypt_device *cd, int keyslot)
+static int reenc_keyslot_wipe(struct crypt_device *cd,
+	int keyslot)
 {
+	struct luks2_hdr *hdr;
+
+	if (!(hdr = crypt_get_hdr(cd, CRYPT_LUKS2)))
+		return -EINVAL;
+
+	/* remove reencryption verification data */
+	LUKS2_digest_assign(cd, hdr, keyslot, CRYPT_ANY_DIGEST, 0, 0);
+
 	return 0;
 }
 

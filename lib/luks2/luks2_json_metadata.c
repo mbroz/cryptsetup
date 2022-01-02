@@ -1388,24 +1388,63 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
  */
 
 /* LUKS2 library requirements */
-static const struct  {
+struct requirement_flag {
 	uint32_t flag;
+	uint32_t version;
 	const char *description;
-} requirements_flags[] = {
-	{ CRYPT_REQUIREMENT_OFFLINE_REENCRYPT, "offline-reencrypt" },
-	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, "online-reencrypt" },
-	{ 0, NULL }
 };
 
-static uint32_t get_requirement_by_name(const char *requirement)
+static const struct requirement_flag unknown_requirement_flag = { CRYPT_REQUIREMENT_UNKNOWN, 0, NULL };
+
+static const struct requirement_flag requirements_flags[] = {
+	{ CRYPT_REQUIREMENT_OFFLINE_REENCRYPT,1, "offline-reencrypt" },
+	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 2, "online-reencrypt-v2" },
+	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1, "online-reencrypt" },
+	{ 0, 0, NULL }
+};
+
+static const struct requirement_flag *get_requirement_by_name(const char *requirement)
 {
 	int i;
 
 	for (i = 0; requirements_flags[i].description; i++)
 		if (!strcmp(requirement, requirements_flags[i].description))
-			return requirements_flags[i].flag;
+			return requirements_flags + i;
 
-	return CRYPT_REQUIREMENT_UNKNOWN;
+	return &unknown_requirement_flag;
+}
+
+static const struct requirement_flag *stored_requirement_name_by_id(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t req_id)
+{
+	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
+	int i, len;
+	const struct requirement_flag *req;
+
+	assert(hdr);
+	if (!hdr)
+		return NULL;
+
+	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
+		return NULL;
+
+	if (!json_object_object_get_ex(jobj_config, "requirements", &jobj_requirements))
+		return NULL;
+
+	if (!json_object_object_get_ex(jobj_requirements, "mandatory", &jobj_mandatory))
+		return NULL;
+
+	len = (int) json_object_array_length(jobj_mandatory);
+	if (len <= 0)
+		return 0;
+
+	for (i = 0; i < len; i++) {
+		jobj = json_object_array_get_idx(jobj_mandatory, i);
+		req = get_requirement_by_name(json_object_get_string(jobj));
+		if (req->flag == req_id)
+			return req;
+	}
+
+	return NULL;
 }
 
 /*
@@ -1415,7 +1454,7 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 {
 	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
 	int i, len;
-	uint32_t req;
+	const struct requirement_flag *req;
 
 	assert(hdr);
 	if (!hdr || !reqs)
@@ -1442,8 +1481,8 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 		jobj = json_object_array_get_idx(jobj_mandatory, i);
 		req = get_requirement_by_name(json_object_get_string(jobj));
 		log_dbg(cd, "%s - %sknown", json_object_get_string(jobj),
-				        reqs_unknown(req) ? "un" : "");
-		*reqs |= req;
+				        reqs_unknown(req->flag) ? "un" : "");
+		*reqs |= req->flag;
 	}
 
 	return 0;
@@ -1453,6 +1492,8 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 {
 	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
 	int i, r = -EINVAL;
+	const struct requirement_flag *req;
+	uint32_t req_id;
 
 	if (!hdr)
 		return -EINVAL;
@@ -1462,8 +1503,14 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 		return -ENOMEM;
 
 	for (i = 0; requirements_flags[i].description; i++) {
-		if (reqs & requirements_flags[i].flag) {
-			jobj = json_object_new_string(requirements_flags[i].description);
+		req_id = reqs & requirements_flags[i].flag;
+		if (req_id) {
+			/* retain already stored version of requirement flag */
+			req = stored_requirement_name_by_id(cd, hdr, req_id);
+			if (req)
+				jobj = json_object_new_string(req->description);
+			else
+				jobj = json_object_new_string(requirements_flags[i].description);
 			if (!jobj) {
 				r = -ENOMEM;
 				goto err;
