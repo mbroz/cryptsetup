@@ -453,4 +453,8 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd,
 	bool activation,
 	bool dynamic);
 
+int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	struct volume_key *vks);
+
 #endif

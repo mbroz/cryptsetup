@@ -239,8 +239,14 @@ int LUKS2_keyslot_reencrypt_create(struct crypt_device *cd,
 	int keyslot,
 	const struct crypt_params_reencrypt *params);
 
+int LUKS2_keyslot_reencrypt_digest_create(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	struct volume_key *vks);
+
 int LUKS2_keyslot_dump(struct crypt_device *cd,
 	int keyslot);
+
+int LUKS2_keyslot_jobj_area(json_object *jobj_keyslot, uint64_t *offset, uint64_t *length);
 
 /* JSON helpers */
 uint64_t json_segment_get_offset(json_object *jobj_segment, unsigned blockwise);

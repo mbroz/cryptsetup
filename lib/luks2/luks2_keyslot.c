@@ -288,19 +288,9 @@ crypt_keyslot_info LUKS2_keyslot_info(struct luks2_hdr *hdr, int keyslot)
 	return CRYPT_SLOT_ACTIVE;
 }
 
-int LUKS2_keyslot_area(struct luks2_hdr *hdr,
-	int keyslot,
-	uint64_t *offset,
-	uint64_t *length)
+int LUKS2_keyslot_jobj_area(json_object *jobj_keyslot, uint64_t *offset, uint64_t *length)
 {
-	json_object *jobj_keyslot, *jobj_area, *jobj;
-
-	if(LUKS2_keyslot_info(hdr, keyslot) == CRYPT_SLOT_INVALID)
-		return -EINVAL;
-
-	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
-	if (!jobj_keyslot)
-		return -ENOENT;
+	json_object *jobj_area, *jobj;
 
 	if (!json_object_object_get_ex(jobj_keyslot, "area", &jobj_area))
 		return -EINVAL;
@@ -314,6 +304,23 @@ int LUKS2_keyslot_area(struct luks2_hdr *hdr,
 	*length = crypt_jobj_get_uint64(jobj);
 
 	return 0;
+}
+
+int LUKS2_keyslot_area(struct luks2_hdr *hdr,
+	int keyslot,
+	uint64_t *offset,
+	uint64_t *length)
+{
+	json_object *jobj_keyslot;
+
+	if (LUKS2_keyslot_info(hdr, keyslot) == CRYPT_SLOT_INVALID)
+		return -EINVAL;
+
+	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
+	if (!jobj_keyslot)
+		return -ENOENT;
+
+	return LUKS2_keyslot_jobj_area(jobj_keyslot, offset, length);
 }
 
 static int _open_and_verify(struct crypt_device *cd,
