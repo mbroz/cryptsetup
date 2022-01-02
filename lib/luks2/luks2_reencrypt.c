@@ -3497,7 +3497,7 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd, struct luks2_hdr 
 		return r;
 
 	log_dbg(cd, "Required minimal device size: %" PRIu64 " (%" PRIu64 " sectors)"
-		    ", real device size: %" PRIu64 " (%" PRIu64 " sectors)\n"
+		    ", real device size: %" PRIu64 " (%" PRIu64 " sectors) "
 		    "calculated device size: %" PRIu64 " (%" PRIu64 " sectors)",
 		    check_size, check_size >> SECTOR_SHIFT, real_size, real_size >> SECTOR_SHIFT,
 		    real_size - data_offset, (real_size - data_offset) >> SECTOR_SHIFT);
