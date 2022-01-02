@@ -4131,6 +4131,12 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 			keyslot = r;
 	}
 
+	if (r >= 0) {
+		r = LUKS2_reencrypt_digest_verify(cd, hdr, vks);
+		if (r < 0)
+			goto out;
+	}
+
 	log_dbg(cd, "Entering clean reencryption state mode.");
 
 	if (r >= 0)
@@ -4158,8 +4164,9 @@ static int _open_and_activate_luks2(struct crypt_device *cd,
 	uint32_t flags)
 {
 	crypt_reencrypt_info ri;
-	int r;
+	int r, rv;
 	struct luks2_hdr *hdr = &cd->u.luks2.hdr;
+	struct volume_key *vks = NULL;
 
 	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_INVALID)
@@ -4169,9 +4176,17 @@ static int _open_and_activate_luks2(struct crypt_device *cd,
 		if (name)
 			r = _open_and_activate_reencrypt_device(cd, hdr, keyslot, name, passphrase,
 					passphrase_size, flags);
-		else
+		else {
 			r = _open_all_keys(cd, hdr, keyslot, passphrase,
-					   passphrase_size, flags, NULL);
+					   passphrase_size, flags, &vks);
+			if (r < 0)
+				return r;
+
+			rv = LUKS2_reencrypt_digest_verify(cd, hdr, vks);
+			crypt_free_volume_key(vks);
+			if (rv < 0)
+				return rv;
+		}
 	} else
 		r = _open_and_activate(cd, keyslot, name, passphrase,
 				passphrase_size, flags);

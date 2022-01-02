@@ -95,6 +95,7 @@ struct luks2_reencrypt {
 static int reencrypt_keyslot_update(struct crypt_device *cd,
 	const struct luks2_reencrypt *rh)
 {
+	int r;
 	json_object *jobj_keyslot, *jobj_area, *jobj_area_type;
 	struct luks2_hdr *hdr;
 
@@ -124,7 +125,11 @@ static int reencrypt_keyslot_update(struct crypt_device *cd,
 	} else
 		log_dbg(cd, "No update of reencrypt keyslot needed.");
 
-	return 0;
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, rh->vks);
+	if (r < 0)
+		log_err(cd, "Failed to refresh reencryption verification digest.");
+
+	return r;
 }
 
 static json_object *reencrypt_segment(struct luks2_hdr *hdr, unsigned new)
@@ -2484,6 +2489,10 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, *vks);
+	if (r < 0)
+		goto out;
+
 	if (name && params->mode != CRYPT_REENCRYPT_ENCRYPT) {
 		r = reencrypt_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 		if (r)
@@ -2614,20 +2623,28 @@ static int reencrypt_context_update(struct crypt_device *cd,
 static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 		uint64_t device_size,
 		const struct crypt_params_reencrypt *params,
+		struct volume_key *vks,
 		struct luks2_reencrypt **rh)
 {
 	int r;
 	struct luks2_reencrypt *tmp = NULL;
 	crypt_reencrypt_info ri = LUKS2_reencrypt_status(hdr);
 
+	if (ri == CRYPT_REENCRYPT_NONE) {
+		log_err(cd, _("Device not marked for LUKS2 reencryption."));
+		return -EINVAL;
+	} else if (ri == CRYPT_REENCRYPT_INVALID)
+		return -EINVAL;
+
+	r = LUKS2_reencrypt_digest_verify(cd, hdr, vks);
+	if (r < 0)
+		return r;
+
 	if (ri == CRYPT_REENCRYPT_CLEAN)
 		r = reencrypt_load_clean(cd, hdr, device_size, &tmp, params);
 	else if (ri == CRYPT_REENCRYPT_CRASH)
 		r = reencrypt_load_crashed(cd, hdr, device_size, &tmp);
-	else if (ri == CRYPT_REENCRYPT_NONE) {
-		log_err(cd, _("Device not marked for LUKS2 reencryption."));
-		return -EINVAL;
-	} else
+	else
 		r = -EINVAL;
 
 	if (r < 0 || !tmp) {
@@ -2876,7 +2893,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		rparams.device_size = required_size;
 	}
 
-	r = reencrypt_load(cd, hdr, device_size, &rparams, &rh);
+	r = reencrypt_load(cd, hdr, device_size, &rparams, *vks, &rh);
 	if (r < 0 || !rh)
 		goto err;
 
@@ -3095,13 +3112,6 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		bool online)
 {
 	int r;
-
-	/* update reencrypt keyslot protection parameters in memory only */
-	r = reencrypt_keyslot_update(cd, rh);
-	if (r < 0) {
-		log_dbg(cd, "Keyslot update failed.");
-		return REENC_ERR;
-	}
 
 	/* in memory only */
 	r = reencrypt_make_segments(cd, hdr, rh, device_size);
@@ -3370,6 +3380,15 @@ int crypt_reencrypt_run(
 
 	rs = REENC_OK;
 
+	/* update reencrypt keyslot protection parameters in memory only */
+	if (!quit && (rh->device_size > rh->progress)) {
+		r = reencrypt_keyslot_update(cd, rh);
+		if (r < 0) {
+			log_dbg(cd, "Keyslot update failed.");
+			return reencrypt_teardown(cd, hdr, rh, REENC_ERR, quit, progress, usrptr);
+		}
+	}
+
 	while (!quit && (rh->device_size > rh->progress)) {
 		rs = reencrypt_step(cd, hdr, rh, rh->device_size, rh->online);
 		if (rs != REENC_OK)
@@ -3409,7 +3428,7 @@ static int reencrypt_recovery(struct crypt_device *cd,
 	int r;
 	struct luks2_reencrypt *rh = NULL;
 
-	r = reencrypt_load(cd, hdr, device_size, NULL, &rh);
+	r = reencrypt_load(cd, hdr, device_size, NULL, vks, &rh);
 	if (r < 0) {
 		log_err(cd, _("Failed to load LUKS2 reencryption context."));
 		return r;
