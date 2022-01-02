@@ -116,6 +116,7 @@ function fail()
 function skip()
 {
 	[ -n "$1" ] && echo "$1"
+	remove_mapping
 	exit 77
 }
 
@@ -750,6 +751,7 @@ echo -n "[512 sector]"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON 2>&1 | tail -1 | grep -q "not supported" && skip " No reenryption support, test skipped."
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail

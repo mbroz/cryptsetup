@@ -3805,6 +3805,7 @@ static void Luks2Flags(void)
 	CRYPT_FREE(cd);
 }
 
+#if KERNEL_KEYRING && USE_LUKS2_REENCRYPTION
 static int test_progress(uint64_t size __attribute__((unused)),
 	uint64_t offset __attribute__((unused)),
 	void *usrptr __attribute__((unused)))
@@ -3817,7 +3818,6 @@ static int test_progress(uint64_t size __attribute__((unused)),
 static void Luks2Reencryption(void)
 {
 /* reencryption currently depends on kernel keyring support */
-#if KERNEL_KEYRING
 	/* NOTES:
 	 *  - reencryption requires luks2 parameters. can we avoid it?
 	 */
@@ -4538,8 +4538,8 @@ static void Luks2Reencryption(void)
 	crypt_free(cd);
 
 	_cleanup_dmdevices();
-#endif
 }
+#endif
 
 static void Luks2Repair(void)
 {
@@ -4655,7 +4655,9 @@ int main(int argc, char *argv[])
 	RUN_(Luks2Integrity, "LUKS2 with data integrity");
 	RUN_(Luks2Refresh, "Active device table refresh");
 	RUN_(Luks2Flags, "LUKS2 persistent flags");
+#if KERNEL_KEYRING && USE_LUKS2_REENCRYPTION
 	RUN_(Luks2Reencryption, "LUKS2 reencryption");
+#endif
 	RUN_(Luks2Repair, "LUKS2 repair"); // test disables metadata locking. Run always last!
 
 	_cleanup();
