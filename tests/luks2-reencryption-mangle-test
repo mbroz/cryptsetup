@@ -1,0 +1,470 @@
+#!/bin/bash
+
+PS4='$LINENO:'
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTSETUP_RAW=$CRYPTSETUP
+
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+IMG=reenc-mangle-data
+IMG_HDR=$IMG.hdr
+IMG_JSON=$IMG.json
+KEY1=key1
+DEV_NAME=reenc3492834
+
+FAST_PBKDF2="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+CS_PWPARAMS="--disable-keyring --key-file $KEY1"
+CS_PARAMS="-q --disable-locks $CS_PWPARAMS"
+JSON_MSIZE=16384
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
+	rm -f $IMG $IMG_HDR $IMG_JSON $KEY1 >/dev/null 2>&1
+}
+
+function fail()
+{
+	local frame=0
+	[ -n "$1" ] && echo "$1"
+	echo "FAILED backtrace:"
+	while caller $frame; do	((frame++)); done
+	remove_mapping
+	exit 2
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	remove_mapping
+	exit 77
+}
+
+function bin_check()
+{
+	which $1 >/dev/null 2>&1 || skip "WARNING: test require $1 binary, test skipped."
+}
+
+function img_json_save()
+{
+	# FIXME: why --json-file cannot be used?
+	#$CRYPTSETUP luksDump --dump-json-metadata $IMG | jq -c -M | tr -d '\n' >$IMG_JSON
+	local LUKS2_JSON_SIZE=$(($JSON_MSIZE - 4096))
+	_dd if=$IMG count=$LUKS2_JSON_SIZE skip=4096 | jq -c -M | tr -d '\n' >$IMG_JSON
+}
+
+function img_json_dump()
+{
+	img_json_save
+	jq . $IMG_JSON
+}
+
+function img_hash_save()
+{
+	IMG_HASH=$(sha256sum $IMG | cut -d' ' -f 1)
+}
+
+function img_hash_unchanged()
+{
+	local IMG_HASH2=$(sha256sum $IMG | cut -d' ' -f 1)
+	[ "$IMG_HASH" != "$IMG_HASH2" ] && fail "Image changed!"
+}
+
+function img_prepare_raw() # $1 options
+{
+	remove_mapping
+
+	if [ ! -e $KEY1 ]; then
+		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
+	fi
+
+	truncate -s 32M $IMG || fail
+	$CRYPTSETUP luksFormat $FAST_PBKDF2 $CS_PARAMS --luks2-metadata-size $JSON_MSIZE $IMG $1 || fail
+}
+
+function img_prepare() # $1 options
+{
+	img_prepare_raw
+	# FIXME: resilience is not saved here (always none)?
+	$CRYPTSETUP reencrypt $IMG $CS_PARAMS -q --init-only --resilience none $1 >/dev/null 2>&1
+	[ $? -ne 0 ] && skip "Reencryption unsupported, test skipped."
+	img_json_save
+	img_hash_save
+}
+
+function _dd()
+{
+	dd $@ status=none conv=notrunc bs=1
+}
+
+# header mangle functions
+function img_update_json()
+{
+	local LUKS2_BIN1_OFFSET=448
+	local LUKS2_BIN2_OFFSET=$((LUKS2_BIN1_OFFSET + $JSON_MSIZE))
+	local LUKS2_JSON_SIZE=$(($JSON_MSIZE - 4096))
+
+	# if present jq script, mangle JSON
+	if [ -n "$1" ]; then
+		local JSON=$(cat $IMG_JSON)
+		echo $JSON | jq -M -c "$1" >$IMG_JSON || fail
+		local JSON=$(cat $IMG_JSON)
+		echo $JSON | tr -d '\n' >$IMG_JSON || fail
+	fi
+
+	# wipe JSON areas
+	_dd if=/dev/zero of=$IMG count=$LUKS2_JSON_SIZE seek=4096
+	_dd if=/dev/zero of=$IMG count=$LUKS2_JSON_SIZE seek=$(($JSON_MSIZE + 4096))
+
+	# write JSON data
+	_dd if=$IMG_JSON of=$IMG count=$LUKS2_JSON_SIZE seek=4096
+	_dd if=$IMG_JSON of=$IMG count=$LUKS2_JSON_SIZE seek=$(($JSON_MSIZE + 4096))
+
+	# erase sha256 checksums
+	_dd if=/dev/zero of=$IMG count=64 seek=$LUKS2_BIN1_OFFSET
+	_dd if=/dev/zero of=$IMG count=64 seek=$LUKS2_BIN2_OFFSET
+
+	# calculate sha256 and write chexksums
+	local SUM1_HEX=$(_dd if=$IMG count=$JSON_MSIZE | sha256sum | cut -d ' ' -f 1)
+	echo $SUM1_HEX | xxd -r -p | _dd of=$IMG seek=$LUKS2_BIN1_OFFSET count=64 || fail
+
+	local SUM2_HEX=$(_dd if=$IMG skip=$JSON_MSIZE count=$JSON_MSIZE | sha256sum | cut -d ' ' -f 1)
+	echo $SUM2_HEX | xxd -r -p | _dd of=$IMG seek=$LUKS2_BIN2_OFFSET count=64 || fail
+
+	img_hash_save
+}
+
+function img_check_ok()
+{
+	if [ $(id -u) == 0 ]; then
+		$CRYPTSETUP open $CS_PWPARAMS $IMG $DEV_NAME || fail
+		$CRYPTSETUP close $DEV_NAME || fail
+	fi
+
+	$CRYPTSETUP repair $IMG $CS_PARAMS || fail
+}
+
+function img_check_fail()
+{
+	if [ $(id -u) == 0 ]; then
+		$CRYPTSETUP open $CS_PWPARAMS $IMG $DEV_NAME 2>/dev/null && fail
+	fi
+
+	$CRYPTSETUP repair $IMG $CS_PARAMS 2>/dev/null && fail
+	img_hash_unchanged
+}
+
+function img_run_reenc_ok()
+{
+local EXPECT_TIMEOUT=5
+[ -n "$VALG" ] && EXPECT_TIMEOUT=60
+# For now, we cannot run reencryption in batch mode for non-block device. Just fake the terminal here.
+expect_run - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout $EXPECT_TIMEOUT
+eval spawn $CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS --disable-locks --resilience none
+expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
+send "YES\n"
+expect timeout abort eof
+exit
+EOF
+[ $? -eq 0 ] || fail "Expect script failed."
+}
+
+function valgrind_setup()
+{
+	bin_check valgrind
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	CRYPTSETUP=valgrind_run
+	CRYPTSETUP_RAW="./valg.sh ${CRYPTSETUP_VALGRIND}"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
+function expect_run()
+{
+        export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
+        expect "$@"
+}
+
+bin_check jq
+bin_check sha256sum
+bin_check xxd
+bin_check expect
+
+export LANG=C
+
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+
+#while false; do
+
+echo "[1] Reencryption with old flag is rejected"
+img_prepare
+img_update_json '.config.requirements.mandatory = ["online-reencryptx"]'
+img_check_fail
+img_update_json '.config.requirements.mandatory = ["online-reencrypt-v2"]'
+img_check_ok
+img_run_reenc_ok
+img_check_ok
+
+# Simulate old reencryption with no digest
+img_prepare
+img_update_json 'del(.digests."2") | .config.requirements.mandatory = ["online-reencrypt"]'
+img_check_fail
+
+# This must fail for new releases
+echo "[2] Old reencryption in-progress (journal)"
+img_prepare
+img_update_json '
+	del(.digests."2") |
+	.keyslots."2".area.type = "journal" |
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : .keyslots."2".area.size} +
+			{"flags" : ["in-reencryption"]}),
+		"1" : (.segments."0" +
+			{"offset" : ((.segments."0".offset|tonumber) +
+			(.keyslots."2".area.size|tonumber))|tostring}),
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["1","2"] |
+	.digests."1".segments = ["0","3"] |
+	.config.requirements.mandatory = ["online-reencrypt"]'
+img_check_fail
+
+echo "[3] Old reencryption in-progress (checksum)"
+img_prepare
+img_update_json '
+	del(.digests."2") |
+	.keyslots."2".area.type = "checksum" |
+	.keyslots."2".area.hash = "sha256" |
+	.keyslots."2".area.sector_size = 4096 |
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : .keyslots."2".area.size} +
+			{"flags" : ["in-reencryption"]}),
+		"1" : (.segments."0" +
+			{"offset": ((.segments."0".offset|tonumber) +
+			(.keyslots."2".area.size|tonumber))|tostring}),
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["1","2"] |
+	.digests."1".segments = ["0","3"] |
+	.config.requirements.mandatory = ["online-reencrypt"]'
+img_check_fail
+
+# Note: older tools cannot create this from commandline
+echo "[4] Old decryption in-progress (journal)"
+img_prepare
+img_update_json '
+	del(.digests."1") |
+	del(.digests."2") |
+	del(.keyslots."1") |
+	.keyslots."2".mode = "decrypt" |
+	.keyslots."2".area.type = "journal" |
+	.segments = {
+		"0" : {
+			"type" : "linear",
+			"offset" : .segments."0".offset,
+			"size" : .keyslots."2".area.size,
+			"flags" : ["in-reencryption"]
+		},
+		"1" : (.segments."0" +
+			{"offset" : ((.segments."0".offset|tonumber) +
+			(.keyslots."2".area.size|tonumber))|tostring}),
+		"2" : .segments."1",
+		"3" : {
+			"type" : "linear",
+			"offset" : .segments."0".offset,
+			"size" : "dynamic",
+			"flags" : ["backup-final"]
+		}
+	} |
+	.digests."0".segments = ["1","2"] |
+	.config.requirements.mandatory = ["online-reencrypt"]'
+img_check_fail
+
+echo "[5] Old decryption in-progress (checksum)"
+img_prepare
+img_update_json '
+	del(.digests."1") |
+	del(.digests."2") |
+	del(.keyslots."1") |
+	.keyslots."2".mode = "decrypt" |
+	.keyslots."2".area.type = "checksum" |
+	.keyslots."2".area.hash = "sha256" |
+	.keyslots."2".area.sector_size = 4096 |
+	.segments = {
+		"0" : {
+			"type" : "linear",
+			"offset" : .segments."0".offset,
+			"size" : .keyslots."2".area.size,
+			"flags" : ["in-reencryption"]
+		},
+		"1" : (.segments."0" +
+			{"offset" : ((.segments."0".offset|tonumber) +
+			(.keyslots."2".area.size|tonumber))|tostring}),
+		"2" : .segments."1",
+		"3" : {
+			"type" : "linear",
+			"offset" : .segments."0".offset,
+			"size" : "dynamic",
+			"flags" : ["backup-final"]
+		}
+	} |
+	.digests."0".segments = ["1","2"] |
+	.config.requirements.mandatory = ["online-reencrypt"]'
+img_check_fail
+
+# Note - offset is set to work with the old version (with a datashift bug)
+echo "[6] Old reencryption in-progress (datashift)"
+img_prepare
+img_update_json '
+	del(.digests."2") |
+	.keyslots."2".direction = "backward" |
+	.keyslots."2".area.type = "datashift" |
+	.keyslots."2".area.size = "4096" |
+	.keyslots."2".area.shift_size = ((1 * 1024 * 1024)|tostring) |
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : ((13 * 1024 * 1024)|tostring)}),
+		"1" : (.segments."0" +
+			{"offset" : ((30 * 1024 * 1024)|tostring)}),
+		"2" : .segments."1",
+		"3" : (.segments."2" +
+			{"offset" : ((17 * 1024 * 1024)|tostring)}),
+	} |
+	.digests."0".segments = ["0","2"] |
+	.digests."1".segments = ["1","3"] |
+	.config.requirements.mandatory = ["online-reencrypt"]'
+img_check_fail
+
+#
+# NEW metadata (with reenc digest)
+#
+echo "[7] Reencryption with various mangled metadata"
+
+# Normal situation
+img_prepare
+img_run_reenc_ok
+img_check_ok
+
+# The same in various steps.
+# Repair must validate not only metadata, but also reencryption digest.
+img_prepare
+img_update_json 'del(.digests."2")'
+img_check_fail
+
+img_prepare '--reduce-device-size 2M'
+img_update_json '.keyslots."2".area.shift_size = ((.keyslots."2".area.shift_size|tonumber / 2)|tostring)'
+img_check_fail
+
+#FIXME: cannot check with correct digest for now (--init-only does not store area type)
+img_prepare
+img_update_json '
+	.keyslots."2".area.type = "checksum" |
+	.keyslots."2".area.hash = "sha256" |
+	.keyslots."2".area.sector_size = 4096'
+img_check_fail
+
+img_prepare
+img_update_json '.keyslots."2".area.type = "journal"'
+img_check_fail
+
+img_prepare
+img_update_json '.keyslots."2".mode = "decrypt"'
+img_check_fail
+
+img_prepare
+img_update_json '.keyslots."2".direction = "backward"'
+img_check_fail
+
+# key_size must be 1
+img_prepare
+img_update_json '.keyslots."2".key_size = 16'
+img_check_fail
+
+# Mangling segments
+img_prepare
+img_update_json 'del(.segments."1")'
+img_check_fail
+
+img_prepare
+img_update_json '.segments."0".encryption = "aes-cbc-null"'
+img_check_fail
+
+img_prepare
+img_update_json '.segments."1".encryption = "aes-cbc-null"'
+img_check_fail
+
+img_prepare
+img_update_json '.segments."2".encryption = "aes-cbc-null"'
+img_check_fail
+
+# Mangling digests
+img_prepare
+img_update_json '
+	.digests."2" = .digests."0" |
+	.digests."2".keyslots = ["2"] |
+	.digests."2".segments = []'
+img_check_fail
+
+img_prepare
+img_update_json '.digests."2".iterations = 1111'
+img_check_fail
+
+# Simulate correct progress
+img_prepare
+img_update_json '
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : ((1 * 1024 * 1024)|tostring)}),
+		"1" : (.segments."0" +
+			{"offset" : ((17 * 1024 * 1024)|tostring)}),
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["1","2"] |
+	.digests."1".segments = ["0","3"]'
+img_check_ok
+
+# Mangling keyslots
+
+# Set reencrypt slot to non-ignore priority
+# This should be benign, just avoid noisy messages
+img_prepare
+img_update_json 'del(.keyslots."2".priority)'
+img_check_ok
+
+# Flags
+
+# Remove mandatory reenc flag, but keep reenc metadata
+img_prepare
+img_update_json '.config.requirements.mandatory = []'
+img_check_fail
+
+# Unknown segment flag, should be ignored
+img_prepare
+img_update_json '.segments."0".flags = ["dead-parrot"]'
+img_check_ok
+
+echo "[8] Reencryption with AEAD is not supported"
+img_prepare_raw
+img_json_save
+img_update_json '
+	.segments."0".integrity = {
+		"type" : "hmac(sha256)",
+		"journal_encryption": "none",
+		"journal_integrity": "none"
+	}'
+$CRYPTSETUP reencrypt $IMG $CS_PARAMS >/dev/null 2>&1 && fail
+
+remove_mapping
+exit 0
