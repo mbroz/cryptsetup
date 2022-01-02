@@ -1025,7 +1025,7 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 		}
 
 		if (crypt_hash_init(&rh->rp.p.csum.ch, params->hash)) {
-			log_dbg(cd, "Failed to initialize checksum resilience hash %s", params->hash);
+			log_err(cd, _("Hash algorithm %s not supported."), params->hash);
 			return -EINVAL;
 		}
 
