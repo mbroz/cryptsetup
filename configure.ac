@@ -138,6 +138,14 @@ AC_DEFUN([NO_FIPS], [
 	fi
 ])
 
+dnl LUKS2 online reencryption
+AC_ARG_ENABLE([luks2-reencryption],
+	AS_HELP_STRING([--disable-luks2-reencryption], [disable LUKS2 online reencryption extension]),
+	[], [enable_luks2_reencryption=yes])
+if test "x$enable_luks2_reencryption" = "xyes"; then
+	AC_DEFINE(USE_LUKS2_REENCRYPTION, 1, [Use LUKS2 online reencryption extension])
+fi
+
 dnl ==========================================================================
 dnl pwquality library (cryptsetup CLI only)
 AC_ARG_ENABLE([pwquality],

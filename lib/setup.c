@@ -3708,21 +3708,6 @@ out:
 	return r;
 }
 
-static int load_all_keys(struct crypt_device *cd, struct luks2_hdr *hdr, struct volume_key *vks)
-{
-	int r;
-	struct volume_key *vk = vks;
-
-	while (vk) {
-		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
-		if (r < 0)
-			return r;
-		vk = vk->next;
-	}
-
-	return 0;
-}
-
 /* See fixmes in _open_and_activate_luks2 */
 int update_reencryption_flag(struct crypt_device *cd, int enable, bool commit);
 
@@ -3762,6 +3747,22 @@ out:
 	crypt_free_volume_key(vk);
 
 	return r < 0 ? r : keyslot;
+}
+
+#if USE_LUKS2_REENCRYPTION
+static int load_all_keys(struct crypt_device *cd, struct luks2_hdr *hdr, struct volume_key *vks)
+{
+	int r;
+	struct volume_key *vk = vks;
+
+	while (vk) {
+		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
+		if (r < 0)
+			return r;
+		vk = vk->next;
+	}
+
+	return 0;
 }
 
 static int _open_all_keys(struct crypt_device *cd,
@@ -3925,6 +3926,28 @@ static int _open_and_activate_luks2(struct crypt_device *cd,
 
 	return r;
 }
+#else
+static int _open_and_activate_luks2(struct crypt_device *cd,
+	int keyslot,
+	const char *name,
+	const char *passphrase,
+	size_t passphrase_size,
+	uint32_t flags)
+{
+	crypt_reencrypt_info ri;
+
+	ri = LUKS2_reenc_status(&cd->u.luks2.hdr);
+	if (ri == CRYPT_REENCRYPT_INVALID)
+		return -EINVAL;
+
+	if (ri > CRYPT_REENCRYPT_NONE) {
+		log_err(cd, _("This operation is not supported for this device type."));
+		return -ENOTSUP;
+	}
+
+	return _open_and_activate(cd, keyslot, name, passphrase, passphrase_size, flags);
+}
+#endif
 
 static int _activate_by_passphrase(struct crypt_device *cd,
 	const char *name,

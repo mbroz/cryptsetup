@@ -22,6 +22,7 @@
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
 
+#if USE_LUKS2_REENCRYPTION
 static json_object *reencrypt_segment(struct luks2_hdr *hdr, unsigned new)
 {
 	return LUKS2_get_segment_by_flag(hdr, new ? "backup-final" : "backup-previous");
@@ -85,7 +86,7 @@ static uint64_t reencrypt_get_data_offset_old(struct luks2_hdr *hdr)
 {
 	return reencrypt_data_offset(hdr, 0);
 }
-
+#endif
 static int reencrypt_digest(struct luks2_hdr *hdr, unsigned new)
 {
 	int segment = LUKS2_get_segment_id_by_flag(hdr, new ? "backup-final" : "backup-previous");
@@ -144,7 +145,7 @@ static const char *reencrypt_resilience_hash(struct luks2_hdr *hdr)
 
 	return json_object_get_string(jobj_hash);
 }
-
+#if USE_LUKS2_REENCRYPTION
 static uint32_t reencrypt_alignment(struct luks2_hdr *hdr)
 {
 	json_object *jobj_keyslot, *jobj_area, *jobj_type, *jobj_hash, *jobj_sector_size;
@@ -560,7 +561,7 @@ static int reencrypt_make_post_segments(struct crypt_device *cd,
 
 	return rh->jobj_segs_post ? 0 : -EINVAL;
 }
-
+#endif
 static uint64_t reencrypt_data_shift(struct luks2_hdr *hdr)
 {
 	json_object *jobj_keyslot, *jobj_area, *jobj_data_shift;
@@ -666,7 +667,7 @@ void LUKS2_reenc_context_free(struct crypt_device *cd, struct luks2_reenc_contex
 	crypt_unlock_internal(cd, rh->reenc_lock);
 	free(rh);
 }
-
+#if USE_LUKS2_REENCRYPTION
 static size_t reencrypt_get_alignment(struct crypt_device *cd,
 		struct luks2_hdr *hdr)
 {
@@ -2545,7 +2546,7 @@ static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	return 0;
 }
-
+#endif
 /* internal only */
 int crypt_reencrypt_lock(struct crypt_device *cd, const char *uuid, struct crypt_lock_handle **reencrypt_lock)
 {
@@ -2587,7 +2588,7 @@ void crypt_reencrypt_unlock(struct crypt_device *cd, struct crypt_lock_handle *r
 {
 	crypt_unlock_internal(cd, reencrypt_lock);
 }
-
+#if USE_LUKS2_REENCRYPTION
 static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *hdr,
 		struct crypt_lock_handle **reencrypt_lock)
 {
@@ -2842,7 +2843,7 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 	crypt_reencrypt_unlock(cd, reencrypt_lock);
 	return r;
 }
-
+#endif
 static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *name,
 	const char *passphrase,
@@ -2853,6 +2854,7 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *cipher_mode,
 	const struct crypt_params_reencrypt *params)
 {
+#if USE_LUKS2_REENCRYPTION
 	int r;
 	crypt_reencrypt_info ri;
 	struct volume_key *vks = NULL;
@@ -2908,6 +2910,10 @@ out:
 		crypt_drop_keyring_key(cd, vks);
 	crypt_free_volume_key(vks);
 	return r < 0 ? r : LUKS2_find_keyslot(hdr, "reencrypt");
+#else
+	log_err(cd, _("This operation is not supported for this device type."));
+	return -ENOTSUP;
+#endif
 }
 
 int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
@@ -2960,6 +2966,7 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 	return reencrypt_init_by_passphrase(cd, name, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params);
 }
 
+#if USE_LUKS2_REENCRYPTION
 static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		struct luks2_reenc_context *rh,
@@ -3200,10 +3207,11 @@ static int reencrypt_teardown(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	return r;
 }
-
+#endif
 int crypt_reencrypt(struct crypt_device *cd,
 		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr))
 {
+#if USE_LUKS2_REENCRYPTION
 	int r;
 	crypt_reencrypt_info ri;
 	struct luks2_hdr *hdr;
@@ -3261,8 +3269,12 @@ int crypt_reencrypt(struct crypt_device *cd,
 
 	r = reencrypt_teardown(cd, hdr, rh, rs, quit, progress);
 	return r;
+#else
+	log_err(cd, _("This operation is not supported for this device type."));
+	return -ENOTSUP;
+#endif
 }
-
+#if USE_LUKS2_REENCRYPTION
 static int reencrypt_recovery(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		uint64_t device_size,
@@ -3298,7 +3310,7 @@ err:
 
 	return r;
 }
-
+#endif
 /*
  * use only for calculation of minimal data device size.
  * The real data offset is taken directly from segments!
@@ -3313,7 +3325,7 @@ int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 
 	return blockwise ? data_offset : data_offset << SECTOR_SHIFT;
 }
-
+#if USE_LUKS2_REENCRYPTION
 /* internal only */
 int luks2_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t check_size, uint64_t *dev_size, bool activation, bool dynamic)
 {
@@ -3403,7 +3415,7 @@ err:
 
 	return r < 0 ? r : keyslot;
 }
-
+#endif
 crypt_reencrypt_info LUKS2_reencrypt_status(struct crypt_device *cd, struct crypt_params_reencrypt *params)
 {
 	crypt_reencrypt_info ri;
