@@ -1125,6 +1125,7 @@ static int _do_luks2_reencrypt_recovery(struct crypt_device *cd)
 {
 	int r;
 	size_t passwordLen;
+	const char *msg;
 	char *password = NULL;
 	struct crypt_params_reencrypt recovery_params = {
 		.flags = CRYPT_REENCRYPT_RECOVERY
@@ -1133,12 +1134,8 @@ static int _do_luks2_reencrypt_recovery(struct crypt_device *cd)
 	crypt_reencrypt_info ri = crypt_reencrypt_status(cd, NULL);
 	switch (ri) {
 	case CRYPT_REENCRYPT_NONE:
-		/* fall through */
+		return 0;
 	case CRYPT_REENCRYPT_CLEAN:
-		r = noDialog(_("Seems device does not require reencryption recovery.\n"
-				"Do you want to proceed anyway?"), NULL);
-		if (!r)
-			return 0;
 		break;
 	case CRYPT_REENCRYPT_CRASH:
 		r = yesDialog(_("Really proceed with LUKS2 reencryption recovery?"),
@@ -1150,8 +1147,12 @@ static int _do_luks2_reencrypt_recovery(struct crypt_device *cd)
 		return -EINVAL;
 	}
 
-	r = tools_get_key(_("Enter passphrase for reencryption recovery: "),
-			  &password, &passwordLen, opt_keyfile_offset,
+	if (ri == CRYPT_REENCRYPT_CLEAN)
+		msg = _("Enter passphrase to verify reencryption metadata digest: ");
+	else
+		msg = _("Enter passphrase for reencryption recovery: ");
+
+	r = tools_get_key(msg, &password, &passwordLen, opt_keyfile_offset,
 			  opt_keyfile_size, opt_key_file, opt_timeout,
 			  _verify_passphrase(0), 0, cd);
 	if (r < 0)
@@ -1161,6 +1162,11 @@ static int _do_luks2_reencrypt_recovery(struct crypt_device *cd)
 					 password, passwordLen, 0);
 	if (r < 0)
 		goto out;
+
+	if (ri == CRYPT_REENCRYPT_CLEAN) {
+		r = 0;
+		goto out;
+	}
 
 	r = crypt_reencrypt_init_by_passphrase(cd, NULL, password, passwordLen,
 			opt_key_slot, opt_key_slot, NULL, NULL, &recovery_params);
