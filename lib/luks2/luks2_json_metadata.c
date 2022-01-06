@@ -592,6 +592,21 @@ static bool validate_segment_intervals(struct crypt_device *cd,
 	return true;
 }
 
+static int reqs_unknown(uint32_t reqs)
+{
+	return reqs & CRYPT_REQUIREMENT_UNKNOWN;
+}
+
+static int reqs_reencrypt(uint32_t reqs)
+{
+	return reqs & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT;
+}
+
+static int reqs_reencrypt_online(uint32_t reqs)
+{
+	return reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
+}
+
 static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	json_object *jobj_segments, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type, *jobj_flags, *jobj;
@@ -1137,21 +1152,6 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	crypt_safe_free(buffer);
 	return r;
-}
-
-static int reqs_unknown(uint32_t reqs)
-{
-	return reqs & CRYPT_REQUIREMENT_UNKNOWN;
-}
-
-static int reqs_reencrypt(uint32_t reqs)
-{
-	return reqs & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT;
-}
-
-static int reqs_reencrypt_online(uint32_t reqs)
-{
-	return reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
 }
 
 int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
