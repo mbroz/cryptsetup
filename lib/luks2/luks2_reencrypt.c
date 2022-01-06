@@ -3288,15 +3288,20 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 			log_dbg(cd, "Failed to set new keyslots area size.");
 		if (rh->digest_old >= 0 && rh->digest_new != rh->digest_old)
 			for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++)
-				if (LUKS2_digest_by_keyslot(hdr, i) == rh->digest_old)
-					crypt_keyslot_destroy(cd, i);
-		crypt_keyslot_destroy(cd, rh->reenc_keyslot);
+				if (LUKS2_digest_by_keyslot(hdr, i) == rh->digest_old && crypt_keyslot_destroy(cd, i))
+					log_err(cd, _("Failed to remove unused (unbound) keyslot %d."), i);
+
 		if (reencrypt_erase_backup_segments(cd, hdr))
 			log_dbg(cd, "Failed to erase backup segments");
 
-		/* do we need atomic erase? */
-		if (reencrypt_update_flag(cd, 0, true))
-			log_err(cd, _("Failed to disable reencryption requirement flag."));
+		if (reencrypt_update_flag(cd, 0, false))
+			log_dbg(cd, "Failed to disable reencryption requirement flag.");
+
+		/* metadata commit point also removing reencryption flag on-disk */
+		if (crypt_keyslot_destroy(cd, rh->reenc_keyslot)) {
+			log_err(cd, _("Failed to remove reencryption keyslot."));
+			return -EINVAL;
+		}
 	}
 
 	return 0;
