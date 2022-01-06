@@ -234,7 +234,7 @@ int LUKS2_keyslot_reencrypt_store(struct crypt_device *cd,
 	const void *buffer,
 	size_t buffer_length);
 
-int LUKS2_keyslot_reencrypt_create(struct crypt_device *cd,
+int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
 	const struct crypt_params_reencrypt *params);
