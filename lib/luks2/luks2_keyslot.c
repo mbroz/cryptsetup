@@ -605,7 +605,7 @@ int LUKS2_keyslot_open(struct crypt_device *cd,
 	return r;
 }
 
-int LUKS2_keyslot_reencrypt_create(struct crypt_device *cd,
+int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
 	const struct crypt_params_reencrypt *params)
@@ -633,9 +633,6 @@ int LUKS2_keyslot_reencrypt_create(struct crypt_device *cd,
 		log_dbg(cd, "Keyslot validation failed.");
 		return r;
 	}
-
-	if (LUKS2_hdr_validate(cd, hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
-		return -EINVAL;
 
 	return 0;
 }
