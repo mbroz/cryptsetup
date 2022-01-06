@@ -123,7 +123,7 @@ static json_object *json_segment_get_flags(json_object *jobj_segment)
 	return jobj;
 }
 
-static bool json_segment_contains_flag(json_object *jobj_segment, const char *flag_str, size_t len)
+bool json_segment_contains_flag(json_object *jobj_segment, const char *flag_str, size_t len)
 {
 	int r, i;
 	json_object *jobj, *jobj_flags = json_segment_get_flags(jobj_segment);
