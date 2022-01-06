@@ -606,6 +606,63 @@ static int reqs_reencrypt_online(uint32_t reqs)
 	return reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
 }
 
+/*
+ * Config section requirements object must be valid.
+ * Also general segments section must be validated first.
+ */
+static int validate_reencrypt_segments(struct crypt_device *cd, json_object *hdr_jobj, json_object *jobj_segments, int first_backup, int segments_count)
+{
+	json_object *jobj, *jobj_backup_previous = NULL, *jobj_backup_final = NULL;
+	uint32_t reqs;
+	int i, r;
+	struct luks2_hdr dummy = {
+		.jobj = hdr_jobj
+	};
+
+	r = LUKS2_config_get_requirements(cd, &dummy, &reqs);
+	if (r)
+		return 1;
+
+	if (reqs_reencrypt_online(reqs)) {
+		for (i = first_backup; i < segments_count; i++) {
+			jobj = json_segments_get_segment(jobj_segments, i);
+			if (!jobj)
+				return 1;
+			if (json_segment_contains_flag(jobj, "backup-final", 0))
+				jobj_backup_final = jobj;
+			else if (json_segment_contains_flag(jobj, "backup-previous", 0))
+				jobj_backup_previous = jobj;
+		}
+
+		if (!jobj_backup_final || !jobj_backup_previous) {
+			log_dbg(cd, "Backup segment is missing.");
+			return 1;
+		}
+
+		for (i = 0; i < first_backup; i++) {
+			jobj = json_segments_get_segment(jobj_segments, i);
+			if (!jobj)
+				return 1;
+
+			if (json_segment_contains_flag(jobj, "in-reencryption", 0)) {
+				if (!json_segment_cmp(jobj, jobj_backup_final)) {
+					log_dbg(cd, "Segment in reencryption does not match backup final segment.");
+					return 1;
+				}
+				continue;
+			}
+
+			if (!json_segment_cmp(jobj, jobj_backup_final) &&
+			    !json_segment_cmp(jobj, jobj_backup_previous)) {
+				log_dbg(cd, "Segment does not match neither backup final or backup previous segment.");
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	json_object *jobj_segments, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type, *jobj_flags, *jobj;
@@ -732,7 +789,7 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 		}
 	}
 
-	return 0;
+	return validate_reencrypt_segments(cd, hdr_jobj, jobj_segments, first_backup, count);
 }
 
 static uint64_t LUKS2_metadata_size_jobj(json_object *jobj)

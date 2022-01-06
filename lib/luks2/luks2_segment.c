@@ -410,3 +410,23 @@ json_object *LUKS2_get_segment_by_flag(struct luks2_hdr *hdr, const char *flag)
 
 	return jobj_segment;
 }
+
+/* compares key characteristics of both segments */
+bool json_segment_cmp(json_object *jobj_segment_1, json_object *jobj_segment_2)
+{
+	const char *type = json_segment_type(jobj_segment_1);
+	const char *type2 = json_segment_type(jobj_segment_2);
+
+	if (!type || !type2)
+		return false;
+
+	if (strcmp(type, type2))
+		return false;
+
+	if (!strcmp(type, "crypt"))
+		return (json_segment_get_sector_size(jobj_segment_1) == json_segment_get_sector_size(jobj_segment_2) &&
+			!strcmp(json_segment_get_cipher(jobj_segment_1),
+			        json_segment_get_cipher(jobj_segment_2)));
+
+	return true;
+}
