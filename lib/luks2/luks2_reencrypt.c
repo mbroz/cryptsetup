@@ -2487,7 +2487,7 @@ static int reencrypt_init(struct crypt_device *cd,
 			goto err;
 	}
 
-	r = LUKS2_keyslot_reencrypt_create(cd, hdr, reencrypt_keyslot,
+	r = LUKS2_keyslot_reencrypt_allocate(cd, hdr, reencrypt_keyslot,
 					   params);
 	if (r < 0)
 		goto err;
