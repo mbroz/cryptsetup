@@ -398,6 +398,8 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *reqs);
 int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs, bool commit);
 
+int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version);
+
 int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet);
 
 int LUKS2_key_description_by_segment(struct crypt_device *cd,

@@ -1486,6 +1486,49 @@ static const struct requirement_flag *get_requirement_by_name(const char *requir
 	return &unknown_requirement_flag;
 }
 
+int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version)
+{
+	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
+	int i, len;
+	const struct requirement_flag *req;
+
+	assert(hdr && version);
+	if (!hdr || !version)
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(jobj_config, "requirements", &jobj_requirements))
+		return -ENOENT;
+
+	if (!json_object_object_get_ex(jobj_requirements, "mandatory", &jobj_mandatory))
+		return -ENOENT;
+
+	len = (int) json_object_array_length(jobj_mandatory);
+	if (len <= 0)
+		return -ENOENT;
+
+	for (i = 0; i < len; i++) {
+		jobj = json_object_array_get_idx(jobj_mandatory, i);
+
+		/* search for requirements prefixed with "online-reencrypt" */
+		if (strncmp(json_object_get_string(jobj), "online-reencrypt", 16))
+			continue;
+
+		/* check current library is aware of the requirement */
+		req = get_requirement_by_name(json_object_get_string(jobj));
+		if (req->flag == (uint32_t)CRYPT_REQUIREMENT_UNKNOWN)
+			continue;
+
+		*version = req->version;
+
+		return 0;
+	}
+
+	return -ENOENT;
+}
+
 static const struct requirement_flag *stored_requirement_name_by_id(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t req_id)
 {
 	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
