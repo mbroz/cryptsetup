@@ -2397,6 +2397,8 @@ int crypt_activate_by_token_pin(struct crypt_device *cd,
 #define CRYPT_REENCRYPT_RESUME_ONLY        (1 << 2)
 /** Run reencryption recovery only. (in) */
 #define CRYPT_REENCRYPT_RECOVERY           (1 << 3)
+/** Reencryption requires metadata protection. (in/out) */
+#define CRYPT_REENCRYPT_REPAIR_NEEDED      (1 << 4)
 
 /**
  * Reencryption direction

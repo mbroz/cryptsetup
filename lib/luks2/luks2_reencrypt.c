@@ -2987,6 +2987,85 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 	return r;
 }
+
+static int reencrypt_repair_by_passphrase(
+		struct crypt_device *cd,
+		struct luks2_hdr *hdr,
+		int keyslot_old,
+		int keyslot_new,
+		const char *passphrase,
+		size_t passphrase_size)
+{
+	int r;
+	struct crypt_lock_handle *reencrypt_lock;
+	struct luks2_reencrypt *rh;
+	crypt_reencrypt_info ri;
+	struct volume_key *vks = NULL;
+
+	log_dbg(cd, "Loading LUKS2 reencryption context for metadata repair.");
+
+	rh = crypt_get_luks2_reencrypt(cd);
+	if (rh) {
+		LUKS2_reencrypt_free(cd, rh);
+		crypt_set_luks2_reencrypt(cd, NULL);
+		rh = NULL;
+	}
+
+	ri = LUKS2_reencrypt_status(hdr);
+	if (ri == CRYPT_REENCRYPT_INVALID)
+		return -EINVAL;
+
+	if (ri < CRYPT_REENCRYPT_CLEAN) {
+		log_err(cd, _("Device is not in reencryption."));
+		return -EINVAL;
+	}
+
+	r = LUKS2_reencrypt_lock(cd, &reencrypt_lock);
+	if (r < 0) {
+		if (r == -EBUSY)
+			log_err(cd, _("Reencryption process is already running."));
+		else
+			log_err(cd, _("Failed to acquire reencryption lock."));
+		return r;
+	}
+
+	/* With reencryption lock held, reload device context and verify metadata state */
+	r = crypt_load(cd, CRYPT_LUKS2, NULL);
+	if (r)
+		goto out;
+
+	ri = LUKS2_reencrypt_status(hdr);
+	if (ri == CRYPT_REENCRYPT_INVALID) {
+		r = -EINVAL;
+		goto out;
+	}
+	if (ri == CRYPT_REENCRYPT_NONE) {
+		r = 0;
+		goto out;
+	}
+
+	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, &vks);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, vks);
+	crypt_free_volume_key(vks);
+	vks = NULL;
+	if (r < 0)
+		goto out;
+
+	/* removes online-reencrypt flag v1 */
+	if ((r = reencrypt_update_flag(cd, 0, false)))
+		goto out;
+
+	/* adds online-reencrypt flag v2 and commits metadata */
+	r = reencrypt_update_flag(cd, 1, true);
+out:
+	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
+	crypt_free_volume_key(vks);
+	return r;
+
+}
 #endif
 static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *name,
@@ -3004,6 +3083,10 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	struct volume_key *vks = NULL;
 	uint32_t flags = params ? params->flags : 0;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+
+	/* short-circuit in reencryption metadata update and finish immediately. */
+	if (flags & CRYPT_REENCRYPT_REPAIR_NEEDED)
+		return reencrypt_repair_by_passphrase(cd, hdr, keyslot_old, keyslot_new, passphrase, passphrase_size);
 
 	/* short-circuit in recovery and finish immediately. */
 	if (flags & CRYPT_REENCRYPT_RECOVERY)
@@ -3583,10 +3666,26 @@ crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
 	struct crypt_params_reencrypt *params)
 {
 	crypt_reencrypt_info ri;
+	int digest;
+	uint32_t version;
 
 	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_NONE || ri == CRYPT_REENCRYPT_INVALID || !params)
 		return ri;
+
+	digest = LUKS2_digest_by_keyslot(hdr, LUKS2_find_keyslot(hdr, "reencrypt"));
+	if (digest < 0 && digest != -ENOENT)
+		return CRYPT_REENCRYPT_INVALID;
+
+	/*
+	 * In case there's an old "online-reencrypt" requirement or reencryption
+	 * keyslot digest is missing inform caller reencryption metadata requires repair.
+	 */
+	if (!LUKS2_config_get_reencrypt_version(hdr, &version) &&
+	    (version < 2 || digest == -ENOENT)) {
+		params->flags |= CRYPT_REENCRYPT_REPAIR_NEEDED;
+		return ri;
+	}
 
 	params->mode = reencrypt_mode(hdr);
 	params->direction = reencrypt_direction(hdr);
