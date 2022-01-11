@@ -1121,17 +1121,59 @@ static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 
-static int _do_luks2_reencrypt_recovery(struct crypt_device *cd)
+static int reencrypt_metadata_repair(struct crypt_device *cd)
+{
+	char *password;
+	size_t passwordLen;
+	int r;
+	struct crypt_params_reencrypt params = {
+		.flags = CRYPT_REENCRYPT_REPAIR_NEEDED
+	};
+
+	if (!opt_batch_mode &&
+	    !yesDialog(_("Unprotected LUKS2 reencryption metadata detected. "
+			 "Please verify the reencryption operation is desirable (see luksDump output)\n"
+			 "and continue (upgrade metadata) only if you acknowledge the operation as genuine."),
+		       _("Operation aborted.\n")))
+		return -EINVAL;
+
+	r = tools_get_key(_("Enter passphrase to protect and uppgrade reencryption metadata: "),
+			  &password, &passwordLen, opt_keyfile_offset,
+			  opt_keyfile_size, opt_key_file, opt_timeout,
+			  _verify_passphrase(0), 0, cd);
+	if (r < 0)
+		return r;
+
+	r = crypt_reencrypt_init_by_passphrase(cd, NULL, password, passwordLen,
+			opt_key_slot, opt_key_slot, NULL, NULL, &params);
+	tools_passphrase_msg(r);
+	if (r < 0)
+		goto out;
+
+	r = crypt_activate_by_passphrase(cd, NULL, opt_key_slot,
+					 password, passwordLen, 0);
+	tools_passphrase_msg(r);
+	if (r >= 0)
+		r = 0;
+
+out:
+	crypt_safe_free(password);
+	return r;
+}
+
+static int luks2_reencrypt_repair(struct crypt_device *cd)
 {
 	int r;
 	size_t passwordLen;
 	const char *msg;
 	char *password = NULL;
-	struct crypt_params_reencrypt recovery_params = {
-		.flags = CRYPT_REENCRYPT_RECOVERY
-	};
+	struct crypt_params_reencrypt params = {};
 
-	crypt_reencrypt_info ri = crypt_reencrypt_status(cd, NULL);
+	crypt_reencrypt_info ri = crypt_reencrypt_status(cd, &params);
+
+	if (params.flags & CRYPT_REENCRYPT_REPAIR_NEEDED)
+		return reencrypt_metadata_repair(cd);
+
 	switch (ri) {
 	case CRYPT_REENCRYPT_NONE:
 		return 0;
@@ -1169,7 +1211,8 @@ static int _do_luks2_reencrypt_recovery(struct crypt_device *cd)
 	}
 
 	r = crypt_reencrypt_init_by_passphrase(cd, NULL, password, passwordLen,
-			opt_key_slot, opt_key_slot, NULL, NULL, &recovery_params);
+			opt_key_slot, opt_key_slot, NULL, NULL,
+			&(struct crypt_params_reencrypt){ .flags = CRYPT_REENCRYPT_RECOVERY });
 	if (r > 0)
 		r = 0;
 out:
@@ -1204,8 +1247,9 @@ static int action_luksRepair(void)
 	if (r == 0)
 		r = crypt_repair(cd, luksType(device_type), NULL);
 skip_repair:
+	/* Header is ok, check if reencryption metadata needs repair/recovery. */
 	if (!r && crypt_get_type(cd) && !strcmp(crypt_get_type(cd), CRYPT_LUKS2))
-		r = _do_luks2_reencrypt_recovery(cd);
+		r = luks2_reencrypt_repair(cd);
 out:
 	crypt_free(cd);
 	return r;
