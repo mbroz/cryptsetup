@@ -834,6 +834,13 @@ are fixable. This command will only change the LUKS header, not
 any key-slot data. You may enforce LUKS version by adding \-\-type
 option.
 
+It also repairs (upgrades) LUKS2 reencryption metadata by adding
+metadata digest that protects it against malicious changes.
+
+If LUKS2 reencryption was interrupted in the middle of writting
+reencryption segment the repair command can be used to perform
+reencryption recovery so that reencryption can continue later.
+
 \fBWARNING:\fR Always create a binary backup of the original
 header before calling this command.
 .PP
