@@ -3949,7 +3949,7 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 		return -EINVAL;
 
 	tgt = &dmd->segment;
-	if (tgt->type != DM_CRYPT)
+	if (tgt->type != DM_CRYPT && tgt->type != DM_LINEAR)
 		return -EINVAL;
 
 	/* drop CRYPT_ACTIVATE_REFRESH flag if any device is inactive */
@@ -3963,7 +3963,8 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 		device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
 
 		r = device_block_adjust(cd, tgt->data_device, device_check,
-					tgt->u.crypt.offset, &dmd->size, &dmd->flags);
+					tgt->type == DM_CRYPT ? tgt->u.crypt.offset : tgt->u.linear.offset,
+					&dmd->size, &dmd->flags);
 		if (!r) {
 			tgt->size = dmd->size;
 			r = dm_create_device(cd, name, type, dmd);

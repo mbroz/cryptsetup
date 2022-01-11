@@ -2331,6 +2331,8 @@ int LUKS2_activate(struct crypt_device *cd,
 	struct volume_key *vk,
 	uint32_t flags)
 {
+	const char *segment_type = NULL;
+	json_object *segments;
 	int r;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	struct crypt_dm_active_device dmdi = {}, dmd = {
@@ -2341,10 +2343,21 @@ int LUKS2_activate(struct crypt_device *cd,
 	if ((r = LUKS2_unmet_requirements(cd, hdr, 0, 0)))
 		return r;
 
-	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
-			vk, crypt_get_cipher_spec(cd), crypt_get_iv_offset(cd),
-			crypt_get_data_offset(cd), crypt_get_integrity(cd) ?: "none",
-			crypt_get_integrity_tag_size(cd), crypt_get_sector_size(cd));
+	/* Check the segment type, but assume 'crypt' if we can't parse for any reason */
+	segments = LUKS2_get_segments_jobj(hdr);
+	if (segments) {
+		json_object *segment = json_segments_get_segment(segments, 0);
+		if (segment)
+			segment_type = json_segment_type(segment);
+	}
+
+	if (!segment_type || !strcmp(segment_type, "crypt"))
+		r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
+				vk, crypt_get_cipher_spec(cd), crypt_get_iv_offset(cd),
+				crypt_get_data_offset(cd), crypt_get_integrity(cd) ?: "none",
+				crypt_get_integrity_tag_size(cd), crypt_get_sector_size(cd));
+	else
+		r = dm_linear_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd), crypt_get_data_offset(cd));
 	if (r < 0)
 		return r;
 
