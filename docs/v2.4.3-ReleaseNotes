@@ -1,0 +1,101 @@
+Cryptsetup 2.4.3 Release Notes
+==============================
+Stable security bug-fix release that fixes CVE-2021-4122.
+
+All users of cryptsetup 2.4.x must upgrade to this version.
+
+Changes since version 2.4.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix possible attacks against data confidentiality through LUKS2 online
+  reencryption extension crash recovery (CVE-2021-4122).
+
+  An attacker can modify on-disk metadata to simulate decryption in
+  progress with crashed (unfinished) reencryption step and persistently
+  decrypt part of the LUKS device.
+
+  This attack requires repeated physical access to the LUKS device but
+  no knowledge of user passphrases.
+
+  The decryption step is performed after a valid user activates
+  the device with a correct passphrase and modified metadata.
+  There are no visible warnings for the user that such recovery happened
+  (except using the luksDump command). The attack can also be reversed
+  afterward (simulating crashed encryption from a plaintext) with
+  possible modification of revealed plaintext.
+
+  The size of possible decrypted data depends on configured LUKS2 header
+  size (metadata size is configurable for LUKS2).
+  With the default parameters (16 MiB LUKS2 header) and only one
+  allocated keyslot (512 bit key for AES-XTS), simulated decryption with
+  checksum resilience SHA1 (20 bytes checksum for 4096-byte blocks),
+  the maximal decrypted size can be over 3GiB.
+
+  The attack is not applicable to LUKS1 format, but the attacker can
+  update metadata in place to LUKS2 format as an additional step.
+  For such a converted LUKS2 header, the keyslot area is limited to
+  decrypted size (with SHA1 checksums) over 300 MiB.
+
+  The issue is present in all cryptsetup releases since 2.2.0.
+  Versions 1.x, 2.0.x, and 2.1.x are not affected, as these do not
+  contain LUKS2 reencryption extension.
+
+  The problem was caused by reusing a mechanism designed for actual
+  reencryption operation without reassessing the security impact for new
+  encryption and decryption operations. While the reencryption requires
+  calculating and verifying both key digests, no digest was needed to
+  initiate decryption recovery if the destination is plaintext (no
+  encryption key). Also, some metadata (like encryption cipher) is not
+  protected, and an attacker could change it. Note that LUKS2 protects
+  visible metadata only when a random change occurs. It does not protect
+  against intentional modification but such modification must not cause
+  a violation of data confidentiality.
+
+  The fix introduces additional digest protection of reencryption
+  metadata. The digest is calculated from known keys and critical
+  reencryption metadata. Now an attacker cannot create correct metadata
+  digest without knowledge of a passphrase for used keyslots.
+  For more details, see LUKS2 On-Disk Format Specification version 1.1.0.
+
+  The former reencryption operation (without the additional digest) is no
+  longer supported (reencryption with the digest is not backward
+  compatible). You need to finish in-progress reencryption before
+  updating to new packages. The alternative approach is to perform
+  a repair command from the updated package to recalculate reencryption
+  digest and fix metadata.
+  The reencryption repair operation always require a user passphrase.
+
+  WARNING: Devices with older reencryption in progress can be no longer
+  activated without performing the action mentioned above.
+
+  Encryption in progress can be detected by running the luksDump command
+  (output includes reencrypt keyslot with reencryption parameters). Also,
+  during the active reencryption, no keyslot operations are available
+  (change of passphrases, etc.).
+
+  The issue was found by Milan Broz as cryptsetup maintainer.
+
+Other changes
+~~~~~~~~~~~~~
+* Add configure option --disable-luks2-reencryption to completely disable
+  LUKS2 reencryption code.
+
+  When used, the libcryptsetup library can read metadata with
+  reencryption code, but all reencryption API calls and cryptsetup
+  reencrypt commands are disabled.
+
+  Devices with online reencryption in progress cannot be activated.
+  This option can cause some incompatibilities. Please use with care.
+
+* Improve internal metadata validation code for reencryption metadata.
+
+* Add updated documentation for LUKS2 On-Disk Format Specification
+  version 1.1.0 (with reencryption extension description and updated
+  metadata description). See docs/on-disk-format-luks2.pdf or online
+  version in https://gitlab.com/cryptsetup/LUKS2-docs repository.
+
+* Fix support for bitlk (BitLocker compatible) startup key with new
+  metadata entry introduced in Windows 11.
+
+* Fix space restriction for LUKS2 reencryption with data shift.
+  The code required more space than was needed.
