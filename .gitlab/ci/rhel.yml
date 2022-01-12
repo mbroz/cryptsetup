@@ -1,0 +1,171 @@
+.rhel-openssl-backend:
+  before_script:
+    - sudo yum -y update  > /dev/null 2>&1
+    - >
+      sudo yum -y -q  install
+      autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
+      libblkid-devel libpwquality-devel libselinux-devel libssh-devel libtool
+      libuuid-devel make popt-devel libsepol-devel nc openssh-clients passwd
+      pkgconfig sharutils sshpass tar uuid-devel vim-common device-mapper
+      expect gettext git jq keyutils openssl-devel openssl > /dev/null 2>&1
+    - sudo -E git clean -xdf
+    - ./autogen.sh
+    - ./configure --enable-fips --enable-pwquality --with-crypto_backend=openssl
+
+# non-FIPS jobs
+
+test-main-commit-rhel8:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - rhel8
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-mergerq-rhel8:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - rhel8
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-main-commit-rhel9:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - rhel9
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-mergerq-rhel9:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - rhel9
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+# FIPS jobs
+
+test-main-commit-rhel8-fips:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - rhel8-fips
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-mergerq-rhel8-fips:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - rhel8-fips
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-main-commit-rhel9-fips:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - rhel9-fips
+  stage: test
+  interruptible: true
+  allow_failure: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-mergerq-rhel9-fips:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - rhel9-fips
+  stage: test
+  interruptible: true
+  allow_failure: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check

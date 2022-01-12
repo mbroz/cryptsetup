@@ -1,0 +1,53 @@
+.centos-openssl-backend:
+  before_script:
+    - sudo dnf -y update
+    - >
+      sudo dnf -y -q  install
+      autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
+      libblkid-devel libpwquality-devel libselinux-devel libssh-devel libtool
+      libuuid-devel make popt-devel libsepol-devel nc openssh-clients passwd
+      pkgconfig sharutils sshpass tar uuid-devel vim-common device-mapper
+      expect gettext git jq keyutils openssl-devel openssl
+    - sudo -E git clean -xdf
+    - ./autogen.sh
+    - ./configure --enable-fips --enable-pwquality --with-crypto_backend=openssl
+
+# non-FIPS jobs
+
+test-main-commit-centos-stream9:
+  extends:
+    - .centos-openssl-backend
+  tags:
+    - libvirt
+    - centos-stream9
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-mergerq-centos-stream9:
+  extends:
+    - .centos-openssl-backend
+  tags:
+    - libvirt
+    - centos-stream9
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check

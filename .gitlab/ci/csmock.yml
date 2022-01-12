@@ -1,0 +1,31 @@
+test-main-commit-job-csmock:
+  tags:
+    - libvirt
+    - rhel7-csmock
+  stage: test
+  interruptible: true
+  allow_failure: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - /opt/csmock-run-script.sh
+
+test-mergerq-job-csmock:
+  tags:
+    - libvirt
+    - rhel7-csmock
+  stage: test
+  interruptible: true
+  allow_failure: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - /opt/csmock-run-script.sh  > /dev/null 2>&1
