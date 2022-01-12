@@ -69,7 +69,6 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	loopaes-test align-test discards-test mode-test password-hash-test \
 	align-test2 verity-compat-test \
 	reencryption-compat-test \
-	reencryption-compat-test2 \
 	luks2-reencryption-test \
 	luks2-reencryption-mangle-test \
 	tcrypt-compat-test \
