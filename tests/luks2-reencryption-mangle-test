@@ -49,7 +49,7 @@ function bin_check()
 function img_json_save()
 {
 	# FIXME: why --json-file cannot be used?
-	$CRYPTSETUP luksDump --dump-json-metadata $IMG | jq -c -M | tr -d '\n' >$IMG_JSON
+	$CRYPTSETUP luksDump --dump-json-metadata $IMG | jq -c -M . | tr -d '\n' >$IMG_JSON
 }
 
 function img_json_dump()
