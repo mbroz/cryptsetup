@@ -51,7 +51,7 @@ function img_json_save()
 	# FIXME: why --json-file cannot be used?
 	#$CRYPTSETUP luksDump --dump-json-metadata $IMG | jq -c -M | tr -d '\n' >$IMG_JSON
 	local LUKS2_JSON_SIZE=$(($JSON_MSIZE - 4096))
-	_dd if=$IMG count=$LUKS2_JSON_SIZE skip=4096 | jq -c -M | tr -d '\n' >$IMG_JSON
+	_dd if=$IMG count=$LUKS2_JSON_SIZE skip=4096 | jq -c -M . | tr -d '\n' >$IMG_JSON
 }
 
 function img_json_dump()
