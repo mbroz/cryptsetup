@@ -692,7 +692,7 @@ function setup_luks2_env() {
 
 function valgrind_setup()
 {
-	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
 	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 }
@@ -1007,7 +1007,7 @@ $CRYPTSETUP close $DEV_NAME
 rm -f $IMG_HDR
 $CRYPTSETUP luksHeaderBackup --header-backup-file $IMG_HDR $DEV || fail
 chmod +w $IMG_HDR || fail
-which wipefs >/dev/null 2>&1 && {
+command -v wipefs >/dev/null && {
 	wipefs -a $DEV >/dev/null 2>&1  || fail
 }
 open_crypt $PWD1 $IMG_HDR

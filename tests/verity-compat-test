@@ -303,7 +303,7 @@ function check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI
 
 function valgrind_setup()
 {
-	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $VERITYSETUP_VALGRIND ] && fail "Unable to get location of veritysetup executable."
 	export LD_LIBRARY_PATH="$VERITYSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 }

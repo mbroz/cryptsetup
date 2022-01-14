@@ -69,7 +69,7 @@ function test_kdf() # hash
 
 function test_required()
 {
-	which lsblk >/dev/null 2>&1 || skip "WARNING: lsblk tool required."
+	command -v lsblk >/dev/null || skip "WARNING: lsblk tool required."
 
 	echo "REQUIRED KDF TEST"
 	test_kdf sha256
@@ -106,7 +106,7 @@ function test_required()
 
 function valgrind_setup()
 {
-	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
 	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 }

@@ -195,7 +195,7 @@ function add_scsi_device() {
 function valgrind_setup()
 {
 	[ -n "$VALG" ] || return
-	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
 	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 	CRYPTSETUP=valgrind_run
@@ -832,7 +832,7 @@ fi
 
 # Interactive tests
 # Do not remove sleep 0.1 below, the password query flushes TTY buffer (so the code is racy).
-which expect >/dev/null 2>&1 || skip "WARNING: expect tool missing, interactive test will be skipped." 0
+command -v expect >/dev/null || skip "WARNING: expect tool missing, interactive test will be skipped." 0
 
 prepare "[32] Interactive password retry from terminal." new
 EXPECT_DEV=$(losetup $LOOPDEV | sed -e "s/.*(\(.*\))/\1/")
