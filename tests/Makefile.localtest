@@ -1,6 +1,7 @@
 #
 # Makefile to run tests with system binaries
 # USE: make -f Makefile.localtest tests CRYPTSETUP_PATH=/sbin
+#      (append TESTSUITE_NOSKIP=y to avoid treating skipped tests as success)
 #
 CPPFLAGS=-I../lib/ -I../lib/luks1 -DHAVE_DECL_DM_TASK_RETRY_REMOVE -DKERNEL_KEYRING -DHAVE_SYS_SYSMACROS_H -DNO_CRYPTSETUP_PATH
 CFLAGS=-O2 -g -Wall
@@ -29,7 +30,7 @@ tests: differ $(TESTS)
 	@for test in $(sort $(TESTS)); do \
 		echo [$$test]; \
 		./$$test; \
-		[ $$? -ne 77 -a $$? -ne 0 ] && exit 1; \
+		[ $(if $(TESTSUITE_NOSKIP),,$$? -ne 77 -a) $$? -ne 0 ] && exit 1; \
 		true; \
 	done;
 
