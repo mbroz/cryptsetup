@@ -15,8 +15,12 @@ CLANG="clang${COMPILER_VERSION:+-$COMPILER_VERSION}"
 #PEDANTIC="-pedantic -std=gnu99 -Wno-variadic-macros"
 #CONVERSION="-Wconversion"
 
-EXTRA="-Wextra \
- -Wsign-compare \
+# FIXME
+# -Wextra
+# -Wsign-compare
+# -Wcast-align
+
+EXTRA="\
  -Werror-implicit-function-declaration \
  -Wpointer-arith \
  -Wwrite-strings \
@@ -43,13 +47,6 @@ exec $CLANG $PEDANTIC $CONVERSION \
 	-Wnested-externs \
 	-Wcomment \
 	-Winline \
-	-Wcast-align \
 	-Wcast-qual \
 	-Wredundant-decls $EXTRA \
-	"$@" 2>&1 | {
-	if [[ $USE_FILTER -eq 1 ]]; then
-		.gitlab/ci/warnings_filter.py
-	else
-		cat
-	fi
-}
+	"$@"

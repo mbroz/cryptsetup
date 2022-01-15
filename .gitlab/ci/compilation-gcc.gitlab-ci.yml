@@ -12,8 +12,8 @@ test-gcc-Wall-script:
   script:
     - export CFLAGS="-g -O0"
     - export CC=".gitlab/ci/gcc-Wall"
-    - USE_FILTER=0 ./configure --enable-pwquality --enable-libargon2
-    - USE_FILTER=1 make -j CFLAGS="-g -O0 -fdiagnostics-format=json"
+    - ./configure --enable-pwquality --enable-libargon2
+    - make -j CFLAGS="-g -O0 -Werror"
 
 test-gcc-fanalyzer:
   extends:
