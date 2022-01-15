@@ -16,6 +16,8 @@ GCC="gcc${COMPILER_VERSION:+-$COMPILER_VERSION}"
 #CONVERSION="-Wconversion"
 # -Wpacked \
 
+# This does more than expected for gcc (mixed code with declarations)
+# -Wdeclaration-after-statement \
 
 EXTRA="-Wextra \
  -Wsign-compare \
@@ -27,7 +29,6 @@ EXTRA="-Wextra \
  -Wstrict-aliasing=3 \
  -Winit-self \
  -Wunsafe-loop-optimizations \
- -Wdeclaration-after-statement \
  -Wold-style-definition \
  -Wno-missing-field-initializers \
  -Wno-unused-parameter \
@@ -52,10 +53,4 @@ exec $GCC $PEDANTIC $CONVERSION \
 	-Wcast-align \
 	-Wcast-qual \
 	-Wredundant-decls $EXTRA \
-	"$@" 2>&1 | {
-	if [[ $USE_FILTER -eq 1 ]]; then
-		.gitlab/ci/warnings_filter.py
-	else
-		cat
-	fi
-}
+	"$@"
