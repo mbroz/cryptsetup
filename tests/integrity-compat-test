@@ -110,7 +110,7 @@ kernel_param_check() # number value
 
 function valgrind_setup()
 {
-	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $INTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
 	export LD_LIBRARY_PATH="$INTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 }
@@ -330,11 +330,11 @@ int_mode() # alg tag_size sector_size [keyfile keysize]
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$INTSETUP" ] && skip "Cannot find $INTSETUP, test skipped."
-which blockdev >/dev/null || skip "Cannot find blockdev utility, test skipped."
+command -v blockdev >/dev/null || skip "Cannot find blockdev utility, test skipped."
 
 [ -n "$VALG" ] && valgrind_setup && INTSETUP=valgrind_run
-which hexdump >/dev/null 2>&1 || skip "WARNING: hexdump tool required."
-which xxd >/dev/null 2>&1 || skip "WARNING: xxd tool required."
+command -v hexdump >/dev/null || skip "WARNING: hexdump tool required."
+command -v xxd >/dev/null || skip "WARNING: xxd tool required."
 modprobe dm-integrity >/dev/null 2>&1
 dm_integrity_features
 
@@ -362,7 +362,7 @@ int_error_detection J sha1    0 20 4096
 int_error_detection J sha256  0 32 512
 int_error_detection J sha256  0 32 4096
 
-which xxd >/dev/null 2>&1 || skip "WARNING: xxd tool required."
+command -v xxd >/dev/null || skip "WARNING: xxd tool required."
 int_error_detection J hmac-sha256  0 32 512 $KEY_FILE 32
 int_error_detection J hmac-sha256  0 32 4096 $KEY_FILE 32
 

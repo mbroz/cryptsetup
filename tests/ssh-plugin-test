@@ -55,7 +55,7 @@ function ssh_check()
 
 function bin_check()
 {
-	which $1 >/dev/null 2>&1 || skip "WARNING: test require $1 binary, test skipped."
+	command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
 }
 
 function ssh_setup()

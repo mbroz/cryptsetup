@@ -152,7 +152,7 @@ function check_exists()
 
 function valgrind_setup()
 {
-	which valgrind >/dev/null 2>&1 || fail "Cannot find valgrind."
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
 	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 }
@@ -217,7 +217,7 @@ function dm_crypt_sector_size_support()
 }
 
 function test_and_prepare_keyring() {
-	which keyctl > /dev/null 2>&1 || skip "Cannot find keyctl, test skipped"
+	command -v keyctl >/dev/null || skip "Cannot find keyctl, test skipped"
 	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
 	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@u" 2> /dev/null)
 	test -n "$TEST_KEYRING" || skip "Failed to create keyring in user keyring"

@@ -311,7 +311,7 @@ run_all() {
 
 [ -n "$CRYPTSETUP_PATH" ] && skip "Cannot run this test with CRYPTSETUP_PATH set."
 
-which $STRACE > /dev/null 2>&1 || unset STRACE
+command -v $STRACE >/dev/null || unset STRACE
 test -x $BW_UNIT || skip "Run \"make `basename $BW_UNIT`\" first"
 
 FAILS=0
