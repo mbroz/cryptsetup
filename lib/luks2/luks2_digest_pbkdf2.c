@@ -33,10 +33,10 @@ static int PBKDF2_digest_verify(struct crypt_device *cd,
 	char checkHashBuf[64];
 	json_object *jobj_digest, *jobj1;
 	const char *hashSpec;
-	char *mkDigest = NULL, mkDigestSalt[LUKS_SALTSIZE];
+	char *mkDigest = NULL, *mkDigestSalt = NULL;
 	unsigned int mkDigestIterations;
 	size_t len;
-	int r;
+	int r = -EINVAL;
 
 	/* This can be done only for internally linked digests */
 	jobj_digest = LUKS2_get_digest_jobj(crypt_get_hdr(cd, CRYPT_LUKS2), digest);
@@ -53,25 +53,23 @@ static int PBKDF2_digest_verify(struct crypt_device *cd,
 
 	if (!json_object_object_get_ex(jobj_digest, "salt", &jobj1))
 		return -EINVAL;
-	len = sizeof(mkDigestSalt);
-	if (!base64_decode(json_object_get_string(jobj1),
-			   json_object_get_string_len(jobj1), mkDigestSalt, &len))
-		return -EINVAL;
+	r = crypt_base64_decode(&mkDigestSalt, &len, json_object_get_string(jobj1),
+				json_object_get_string_len(jobj1));
+	if (r < 0)
+		goto out;
 	if (len != LUKS_SALTSIZE)
-		return -EINVAL;
+		goto out;
 
 	if (!json_object_object_get_ex(jobj_digest, "digest", &jobj1))
-		return -EINVAL;
-	len = 0;
-	if (!base64_decode_alloc(json_object_get_string(jobj1),
-			   json_object_get_string_len(jobj1), &mkDigest, &len))
-		return -EINVAL;
+		goto out;
+	r = crypt_base64_decode(&mkDigest, &len, json_object_get_string(jobj1),
+				json_object_get_string_len(jobj1));
+	if (r < 0)
+		goto out;
 	if (len < LUKS_DIGESTSIZE ||
 	    len > sizeof(checkHashBuf) ||
-	    (len != LUKS_DIGESTSIZE && len != (size_t)crypt_hash_size(hashSpec))) {
-		free(mkDigest);
-		return -EINVAL;
-	}
+	    (len != LUKS_DIGESTSIZE && len != (size_t)crypt_hash_size(hashSpec)))
+		goto out;
 
 	r = -EPERM;
 	if (crypt_pbkdf(CRYPT_KDF_PBKDF2, hashSpec, volume_key, volume_key_len,
@@ -83,8 +81,9 @@ static int PBKDF2_digest_verify(struct crypt_device *cd,
 		if (memcmp(checkHashBuf, mkDigest, len) == 0)
 			r = 0;
 	}
-
+out:
 	free(mkDigest);
+	free(mkDigestSalt);
 	return r;
 }
 
@@ -154,18 +153,18 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 	json_object_object_add(jobj_digest, "hash", json_object_new_string(pbkdf.hash));
 	json_object_object_add(jobj_digest, "iterations", json_object_new_int(pbkdf.iterations));
 
-	base64_encode_alloc(salt, LUKS_SALTSIZE, &base64_str);
-	if (!base64_str) {
+	r = crypt_base64_encode(&base64_str, NULL, salt, LUKS_SALTSIZE);
+	if (r < 0) {
 		json_object_put(jobj_digest);
-		return -ENOMEM;
+		return r;
 	}
 	json_object_object_add(jobj_digest, "salt", json_object_new_string(base64_str));
 	free(base64_str);
 
-	base64_encode_alloc(digest_raw, hmac_size, &base64_str);
-	if (!base64_str) {
+	r = crypt_base64_encode(&base64_str, NULL, digest_raw, hmac_size);
+	if (r < 0) {
 		json_object_put(jobj_digest);
-		return -ENOMEM;
+		return r;
 	}
 	json_object_object_add(jobj_digest, "digest", json_object_new_string(base64_str));
 	free(base64_str);

@@ -38,6 +38,7 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 	size_t base64_len;
 	struct json_object *keyslot_obj, *field, *jobj_kdf, *jobj_af, *jobj_area;
 	uint64_t offset, area_size, offs_a, offs_b, length;
+	int r;
 
 	keyslot_obj = json_object_new_object();
 	json_object_object_add(keyslot_obj, "type", json_object_new_string("luks2"));
@@ -49,13 +50,11 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 	json_object_object_add(jobj_kdf, "hash", json_object_new_string(hdr_v1->hashSpec));
 	json_object_object_add(jobj_kdf, "iterations", json_object_new_int64(hdr_v1->keyblock[keyslot].passwordIterations));
 	/* salt field */
-	base64_len = base64_encode_alloc(hdr_v1->keyblock[keyslot].passwordSalt, LUKS_SALTSIZE, &base64_str);
-	if (!base64_str) {
+	r = crypt_base64_encode(&base64_str, &base64_len, hdr_v1->keyblock[keyslot].passwordSalt, LUKS_SALTSIZE);
+	if (r < 0) {
 		json_object_put(keyslot_obj);
 		json_object_put(jobj_kdf);
-		if (!base64_len)
-			return -EINVAL;
-		return -ENOMEM;
+		return r;
 	}
 	field = json_object_new_string_len(base64_str, base64_len);
 	free(base64_str);
@@ -217,7 +216,7 @@ static int json_luks1_segments(const struct luks_phdr *hdr_v1, struct json_objec
 static int json_luks1_digest(const struct luks_phdr *hdr_v1, struct json_object **digest_object)
 {
 	char keyslot_str[2], *base64_str;
-	int ks;
+	int r, ks;
 	size_t base64_len;
 	struct json_object *digest_obj, *array, *field;
 
@@ -284,12 +283,10 @@ static int json_luks1_digest(const struct luks_phdr *hdr_v1, struct json_object 
 	json_object_object_add(digest_obj, "hash", field);
 
 	/* salt field */
-	base64_len = base64_encode_alloc(hdr_v1->mkDigestSalt, LUKS_SALTSIZE, &base64_str);
-	if (!base64_str) {
+	r = crypt_base64_encode(&base64_str, &base64_len, hdr_v1->mkDigestSalt, LUKS_SALTSIZE);
+	if (r < 0) {
 		json_object_put(digest_obj);
-		if (!base64_len)
-			return -EINVAL;
-		return -ENOMEM;
+		return r;
 	}
 
 	field = json_object_new_string_len(base64_str, base64_len);
@@ -301,12 +298,10 @@ static int json_luks1_digest(const struct luks_phdr *hdr_v1, struct json_object 
 	json_object_object_add(digest_obj, "salt", field);
 
 	/* digest field */
-	base64_len = base64_encode_alloc(hdr_v1->mkDigest, LUKS_DIGESTSIZE, &base64_str);
-	if (!base64_str) {
+	r = crypt_base64_encode(&base64_str, &base64_len, hdr_v1->mkDigest, LUKS_DIGESTSIZE);
+	if (r < 0) {
 		json_object_put(digest_obj);
-		if (!base64_len)
-			return -EINVAL;
-		return -ENOMEM;
+		return r;
 	}
 
 	field = json_object_new_string_len(base64_str, base64_len);
@@ -676,14 +671,14 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 {
 	size_t buf_size, buf_offset;
 	char cipher[LUKS_CIPHERNAME_L], cipher_mode[LUKS_CIPHERMODE_L];
-	char digest[LUKS_DIGESTSIZE], digest_salt[LUKS_SALTSIZE];
+	char *digest, *digest_salt;
 	const char *hash;
 	size_t len;
 	json_object *jobj_keyslot, *jobj_digest, *jobj_segment, *jobj_kdf, *jobj_area, *jobj1, *jobj2;
 	uint32_t key_size;
 	int i, r, last_active = 0;
 	uint64_t offset, area_length;
-	char buf[256], luksMagic[] = LUKS_MAGIC;
+	char *buf, luksMagic[] = LUKS_MAGIC;
 
 	jobj_digest  = LUKS2_get_digest_jobj(hdr2, 0);
 	if (!jobj_digest)
@@ -800,14 +795,16 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 
 		if (!json_object_object_get_ex(jobj_kdf, "salt", &jobj1))
 			continue;
-		len = sizeof(buf);
-		memset(buf, 0, len);
-		if (!base64_decode(json_object_get_string(jobj1),
-				   json_object_get_string_len(jobj1), buf, &len))
+
+		if (crypt_base64_decode(&buf, &len, json_object_get_string(jobj1),
+					json_object_get_string_len(jobj1)))
 			continue;
-		if (len > 0 && len != LUKS_SALTSIZE)
+		if (len > 0 && len != LUKS_SALTSIZE) {
+			free(buf);
 			continue;
+		}
 		memcpy(hdr1->keyblock[i].passwordSalt, buf, LUKS_SALTSIZE);
+		free(buf);
 	}
 
 	if (!jobj_keyslot) {
@@ -843,24 +840,30 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 
 	if (!json_object_object_get_ex(jobj_digest, "digest", &jobj1))
 		return -EINVAL;
-	len = sizeof(digest);
-	if (!base64_decode(json_object_get_string(jobj1),
-			   json_object_get_string_len(jobj1), digest, &len))
-		return -EINVAL;
+	r = crypt_base64_decode(&digest, &len, json_object_get_string(jobj1),
+				json_object_get_string_len(jobj1));
+	if (r < 0)
+		return r;
 	/* We can store full digest here, not only sha1 length */
-	if (len < LUKS_DIGESTSIZE)
+	if (len < LUKS_DIGESTSIZE) {
+		free(digest);
 		return -EINVAL;
+	}
 	memcpy(hdr1->mkDigest, digest, LUKS_DIGESTSIZE);
+	free(digest);
 
 	if (!json_object_object_get_ex(jobj_digest, "salt", &jobj1))
 		return -EINVAL;
-	len = sizeof(digest_salt);
-	if (!base64_decode(json_object_get_string(jobj1),
-			   json_object_get_string_len(jobj1), digest_salt, &len))
+	r = crypt_base64_decode(&digest_salt, &len, json_object_get_string(jobj1),
+				json_object_get_string_len(jobj1));
+	if (r < 0)
+		return r;
+	if (len != LUKS_SALTSIZE) {
+		free(digest_salt);
 		return -EINVAL;
-	if (len != LUKS_SALTSIZE)
-		return -EINVAL;
+	}
 	memcpy(hdr1->mkDigestSalt, digest_salt, LUKS_SALTSIZE);
+	free(digest_salt);
 
 	if (!json_object_object_get_ex(jobj_segment, "offset", &jobj1))
 		return -EINVAL;

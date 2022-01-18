@@ -40,9 +40,8 @@ void hexprint_base64(struct crypt_device *cd, json_object *jobj,
 	size_t buf_len;
 	unsigned int i;
 
-	if (!base64_decode_alloc(json_object_get_string(jobj),
-				 json_object_get_string_len(jobj),
-				 &buf, &buf_len))
+	if (crypt_base64_decode(&buf, &buf_len, json_object_get_string(jobj),
+				json_object_get_string_len(jobj)))
 		return;
 
 	for (i = 0; i < buf_len; i++) {

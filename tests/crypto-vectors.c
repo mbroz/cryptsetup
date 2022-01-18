@@ -953,6 +953,47 @@ static struct cipher_iv_test_vector cipher_iv_test_vectors[] = {
 	},
 }}};
 
+/* Base64 test vectors */
+struct base64_test_vector {
+	size_t decoded_len;
+	const char *decoded;
+	const char *encoded;
+};
+
+static struct base64_test_vector base64_test_vectors[] = {
+	{  0, "", "" },
+	{  1, "\x00", "AA==" },
+	{  1, "f", "Zg==" },
+	{  2, "fo", "Zm8=" },
+	{  3, "foo", "Zm9v" },
+	{  4, "foob", "Zm9vYg==" },
+	{  5, "fooba", "Zm9vYmE=" },
+	{  6, "foobar", "Zm9vYmFy" },
+	{ 11, "Hello world", "SGVsbG8gd29ybGQ=" },
+	{ 22, "\x36\x03\x84\xdc\x4e\x03\x46\xa0\xb5\x2d\x03"
+	      "\x6e\xd0\x56\xed\xa0\x37\x02\xac\xc6\x65\xd1",
+	      "NgOE3E4DRqC1LQNu0FbtoDcCrMZl0Q==" },
+	{  3, "***", "Kioq" },
+	{  4, "\x01\x02\x03\x04", "AQIDBA==" },
+	{  5, "\xAD\xAD\xAD\xAD\xAD", "ra2tra0=" },
+	{  5, "\xFF\xFF\xFF\xFF\xFF", "//////8=" },
+	{ 32, "\x40\xC1\x3F\xBD\x05\x4C\x72\x2A\xA3\xC2\xF2"
+	      "\x11\x73\xC0\x69\xEA\x49\x7D\x35\x29\x6B\xCC"
+	      "\x24\x65\xF6\xF9\xD0\x41\x08\x7B\xD7\xA9",
+	      "QME/vQVMciqjwvIRc8Bp6kl9NSlrzCRl9vnQQQh716k=" },
+	{  7, "\x54\x0f\xdc\xf0\x0f\xaf\x4a", "VA/c8A+vSg==" },
+	{179, "blah blah blah blah blah blah blah blah blah "
+	      "blah blah blah blah blah blah blah blah blah "
+	      "blah blah blah blah blah blah blah blah blah "
+	      "blah blah blah blah blah blah blah blah blah",
+              "YmxhaCBibGFoIGJsYWggYmxhaCBibGFoIGJsYWggYmxh"
+              "aCBibGFoIGJsYWggYmxhaCBibGFoIGJsYWggYmxhaCBi"
+              "bGFoIGJsYWggYmxhaCBibGFoIGJsYWggYmxhaCBibGFo"
+              "IGJsYWggYmxhaCBibGFoIGJsYWggYmxhaCBibGFoIGJs"
+              "YWggYmxhaCBibGFoIGJsYWggYmxhaCBibGFoIGJsYWgg"
+              "YmxhaCBibGFoIGJsYWg=" },
+};
+
 static int pbkdf_test_vectors(void)
 {
 	char result[256];
@@ -1325,6 +1366,48 @@ static int check_hash(const char *hash)
 	return EXIT_SUCCESS;
 }
 
+static int base64_test(void)
+{
+	int i;
+	char *s;
+	size_t s_len;
+
+	for (i = 0; i < ARRAY_SIZE(base64_test_vectors); i++) {
+		printf("BASE64 %02d ", i);
+		s = NULL;
+		s_len = 0;
+		if (crypt_base64_encode(&s, &s_len,
+			base64_test_vectors[i].decoded,
+			base64_test_vectors[i].decoded_len) < 0) {
+			printf("[ENCODE FAILED]\n");
+			return EXIT_FAILURE;
+		} else if (strcmp(s, base64_test_vectors[i].encoded)) {
+			printf("[ENCODE FAILED]\n");
+			free(s);
+			return EXIT_FAILURE;
+		}
+		printf("[encode]");
+		free(s);
+
+		s = NULL;
+		s_len = 0;
+		if (crypt_base64_decode(&s, &s_len,
+			base64_test_vectors[i].encoded,
+			strlen(base64_test_vectors[i].encoded)) < 0) {
+			printf("[DECODE FAILED]\n");
+			return EXIT_FAILURE;
+		} else if (s_len != base64_test_vectors[i].decoded_len ||
+			   memcmp(s, base64_test_vectors[i].decoded, s_len)) {
+			printf("[DECODE FAILED]\n");
+			return EXIT_FAILURE;
+		}
+		printf("[decode]\n");
+		free(s);
+	}
+
+	return EXIT_SUCCESS;
+}
+
 static int default_alg_test(void)
 {
 	printf("Defaults: [LUKS1 hash %s] ", DEFAULT_LUKS1_HASH);
@@ -1380,6 +1463,9 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 
 	if (cipher_iv_test())
 		exit_test("IV test failed.", EXIT_FAILURE);
+
+	if (base64_test())
+		exit_test("BASE64 test failed.", EXIT_FAILURE);
 
 	if (default_alg_test()) {
 		if (fips_mode())

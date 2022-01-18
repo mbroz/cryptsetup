@@ -27,7 +27,6 @@
 #include <json-c/json.h>
 
 #include "internal.h"
-#include "base64.h"
 #include "luks2.h"
 
 /* override useless forward slash escape when supported by json-c */
