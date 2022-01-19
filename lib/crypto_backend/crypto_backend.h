@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include <uchar.h>
 
 struct crypt_hash;
 struct crypt_hmac;
@@ -86,6 +87,10 @@ uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
 /* Base64 */
 int crypt_base64_encode(char **out, size_t *out_length, const char *in, size_t in_length);
 int crypt_base64_decode(char **out, size_t *out_length, const char *in, size_t in_length);
+
+/* UTF8/16 */
+int crypt_utf16_to_utf8(char **out, const char16_t *s, size_t length /* bytes! */);
+int crypt_utf8_to_utf16(char16_t **out, const char *s, size_t length);
 
 /* Block ciphers */
 int crypt_cipher_ivsize(const char *name, const char *mode);
