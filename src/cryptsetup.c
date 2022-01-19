@@ -1040,7 +1040,7 @@ static int reencrypt_metadata_repair(struct crypt_device *cd)
 		       _("Operation aborted.\n")))
 		return -EINVAL;
 
-	r = tools_get_key(_("Enter passphrase to protect and uppgrade reencryption metadata: "),
+	r = tools_get_key(_("Enter passphrase to protect and upgrade reencryption metadata: "),
 			  &password, &passwordLen, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
 			  ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
 			  verify_passphrase(0), 0, cd);
