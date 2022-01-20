@@ -3,7 +3,7 @@ test-clang-compilation:
     - .gitlab-shared-clang
   script:
     - export CFLAGS="-Wall -Werror"
-    - ./configure --enable-pwquality --enable-libargon2
+    - ./configure
     - make -j
 
 test-clang-Wall-script:
@@ -12,13 +12,13 @@ test-clang-Wall-script:
   script:
     - export CFLAGS="-g -O0"
     - export CC=".gitlab/ci/clang-Wall"
-    - ./configure --enable-pwquality --enable-libargon2
+    - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
 
 test-scan-build:
   extends:
     - .gitlab-shared-clang
   script:
-    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0" --enable-internal-sse-argon2 --enable-pwquality --enable-libargon2
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0"
     - make clean
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j
