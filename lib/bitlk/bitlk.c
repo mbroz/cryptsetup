@@ -329,7 +329,7 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 			string = malloc((key_entry_size - BITLK_ENTRY_HEADER_LEN) * 2 + 1);
 			if (!string)
 				return -ENOMEM;
-			r = crypt_utf16_to_utf8(&string, (const char16_t *) (data + start + BITLK_ENTRY_HEADER_LEN),
+			r = crypt_utf16_to_utf8(&string, CONST_CAST(char16_t *)(data + start + BITLK_ENTRY_HEADER_LEN),
 						     key_entry_size - BITLK_ENTRY_HEADER_LEN);
 			if (r < 0 || !string) {
 				free(string);
@@ -680,7 +680,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			description = malloc((entry_size - BITLK_ENTRY_HEADER_LEN - BITLK_ENTRY_HEADER_LEN) * 2 + 1);
 			if (!description)
 				return -ENOMEM;
-			r = crypt_utf16_to_utf8(&description, (const char16_t *) (fve_entries + start + BITLK_ENTRY_HEADER_LEN),
+			r = crypt_utf16_to_utf8(&description, CONST_CAST(char16_t *)(fve_entries + start + BITLK_ENTRY_HEADER_LEN),
 					                  entry_size - BITLK_ENTRY_HEADER_LEN);
 			if (r < 0 || !description) {
 				free(description);

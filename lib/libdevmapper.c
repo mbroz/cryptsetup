@@ -332,7 +332,7 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 						 (unsigned)target->version[1],
 						 (unsigned)target->version[2]);
 		}
-		target = (struct dm_versions *)((char *) target + target->next);
+		target = VOIDP_CAST(struct dm_versions *)((char *) target + target->next);
 	} while (last_target != target);
 
 	r = 1;

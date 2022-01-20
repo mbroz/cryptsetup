@@ -25,6 +25,9 @@
 /* to silent gcc -Wcast-qual for const cast */
 #define CONST_CAST(x) (x)(uintptr_t)
 
+/* to silent clang -Wcast-align when working with byte arrays */
+#define VOIDP_CAST(x) (x)(void*)
+
 #define UNUSED(x) (void)(x)
 
 #ifndef ARRAY_SIZE
