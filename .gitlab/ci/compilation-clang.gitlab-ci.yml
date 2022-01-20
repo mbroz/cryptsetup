@@ -21,4 +21,4 @@ test-scan-build:
   script:
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0" --enable-internal-sse-argon2 --enable-pwquality --enable-libargon2
     - make clean
-    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -maxloop 10 make -j
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j
