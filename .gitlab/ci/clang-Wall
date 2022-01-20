@@ -15,12 +15,10 @@ CLANG="clang${COMPILER_VERSION:+-$COMPILER_VERSION}"
 #PEDANTIC="-pedantic -std=gnu99 -Wno-variadic-macros"
 #CONVERSION="-Wconversion"
 
-# FIXME
-# -Wcast-align
-
 EXTRA="\
  -Wextra \
  -Wsign-compare \
+ -Wcast-align
  -Werror-implicit-function-declaration \
  -Wpointer-arith \
  -Wwrite-strings \

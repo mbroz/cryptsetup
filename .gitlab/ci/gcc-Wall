@@ -50,7 +50,7 @@ exec $GCC $PEDANTIC $CONVERSION \
 	-Wnested-externs \
 	-Wcomment \
 	-Winline \
-	-Wcast-align \
+	-Wcast-align=strict \
 	-Wcast-qual \
 	-Wredundant-decls $EXTRA \
 	"$@"
