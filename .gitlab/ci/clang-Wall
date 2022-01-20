@@ -16,11 +16,11 @@ CLANG="clang${COMPILER_VERSION:+-$COMPILER_VERSION}"
 #CONVERSION="-Wconversion"
 
 # FIXME
-# -Wextra
-# -Wsign-compare
 # -Wcast-align
 
 EXTRA="\
+ -Wextra \
+ -Wsign-compare \
  -Werror-implicit-function-declaration \
  -Wpointer-arith \
  -Wwrite-strings \
