@@ -201,13 +201,15 @@ static int action_encrypt_luks2(struct crypt_device **cd, const char *data_devic
 		return -ENOTSUP;
 	}
 
-	if (!ARG_SET(OPT_HEADER_ID) && ARG_UINT64(OPT_OFFSET_ID) && data_shift && (ARG_UINT64(OPT_OFFSET_ID) > (imaxabs(data_shift) / (2 * SECTOR_SIZE)))) {
+	if (!ARG_SET(OPT_HEADER_ID) && ARG_UINT64(OPT_OFFSET_ID) &&
+	    data_shift && (ARG_UINT64(OPT_OFFSET_ID) > (uint64_t)(imaxabs(data_shift) / (2 * SECTOR_SIZE)))) {
 		log_err(_("Requested data offset must be less than or equal to half of --reduce-device-size parameter."));
 		return -EINVAL;
 	}
 
 	/* TODO: ask user to confirm. It's useless to do data device reduction and than use smaller value */
-	if (!ARG_SET(OPT_HEADER_ID) && ARG_UINT64(OPT_OFFSET_ID) && data_shift && (ARG_UINT64(OPT_OFFSET_ID) < (imaxabs(data_shift) / (2 * SECTOR_SIZE)))) {
+	if (!ARG_SET(OPT_HEADER_ID) && ARG_UINT64(OPT_OFFSET_ID) &&
+	    data_shift && (ARG_UINT64(OPT_OFFSET_ID) < (uint64_t)(imaxabs(data_shift) / (2 * SECTOR_SIZE)))) {
 		data_shift = -(ARG_UINT64(OPT_OFFSET_ID) * 2 * SECTOR_SIZE);
 		if (data_shift >= 0)
 			return -EINVAL;
