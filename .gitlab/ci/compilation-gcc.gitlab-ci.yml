@@ -3,7 +3,7 @@ test-gcc-compilation:
     - .gitlab-shared-gcc
   script:
     - export CFLAGS="-Wall -Werror"
-    - ./configure --enable-pwquality --enable-libargon2
+    - ./configure
     - make -j
 
 test-gcc-Wall-script:
@@ -12,7 +12,7 @@ test-gcc-Wall-script:
   script:
     - export CFLAGS="-g -O0"
     - export CC=".gitlab/ci/gcc-Wall"
-    - ./configure --enable-pwquality --enable-libargon2
+    - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
 
 test-gcc-fanalyzer:
@@ -20,5 +20,5 @@ test-gcc-fanalyzer:
     - .gitlab-shared-gcc
   script:
     - export CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events"
-    - ./configure --enable-pwquality --enable-libargon2
+    - ./configure
     - make -j
