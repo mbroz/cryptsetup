@@ -115,6 +115,8 @@ int crypt_utf16_to_utf8(char **out, const char16_t *s, size_t length /* bytes! *
 	char *t;
 
 	assert(s);
+	assert(out);
+	assert(*out);
 
 	/* Input length is in bytes, i.e. the shortest possible character takes 2 bytes. Each unicode character may
 	 * take up to 4 bytes in UTF-8. Let's also account for a trailing NUL byte. */
