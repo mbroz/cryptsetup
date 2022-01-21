@@ -339,7 +339,7 @@ simple_scsi_reenc "[4096/512 sector]"
 echo "[OK]"
 
 echo "[8] Header only reencryption (hash and iteration time)"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 --hash sha1 $FAST_PBKDF $LOOPDEV1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 --hash sha512 $FAST_PBKDF $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key || fail

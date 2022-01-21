@@ -168,7 +168,7 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 	echo -n "[FORMAT]"
 	$INTSETUP format --integrity-legacy-padding -q --integrity $1 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
-		if [[ $1 =~ "sha" || $1 =~ "crc" ]] ; then
+		if [[ $1 =~ "sha2" || $1 =~ "crc" ]] ; then
 			fail "Cannot format device."
 		fi
 		echo "[N/A]"
@@ -214,7 +214,14 @@ int_error_detection() # mode alg tagsize outtagsize sector_size key_file key_siz
 
 	echo -n "[INTEGRITY:$1:$2:$4:$5]"
 	echo -n "[FORMAT]"
-	$INTSETUP format -q --integrity $2 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV $INT_MODE >/dev/null || fail "Cannot format device."
+	$INTSETUP format -q --integrity $2 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV $INT_MODE >/dev/null 2>&1
+	if [ $? -ne 0 ] ; then
+		if [[ $2 =~ "sha2" || $2 =~ "crc" ]] ; then
+			fail "Cannot format device."
+		fi
+		echo "[N/A]"
+		return
+	fi
 	echo -n "[ACTIVATE]"
 	$INTSETUP open $DEV $DEV_NAME --integrity $2 --integrity-no-journal $KEY_PARAMS $INT_MODE || fail "Cannot activate device."
 

@@ -148,7 +148,13 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	for fail in data hash; do
 	wipe
 	echo -n "V$4(sb=$sb root_hash_as_file=$root_hash_as_file) $5 block size $1: "
-	$VERITYSETUP format $DEV_PARAMS $FORMAT_PARAMS >$DEV_OUT || fail
+	$VERITYSETUP format $DEV_PARAMS $FORMAT_PARAMS >$DEV_OUT
+	if [ $? -ne 0 ] ; then
+		if [[ $1 =~ "sha2" ]] ; then
+			fail "Cannot format device."
+		fi
+		return
+	fi
 
 	echo -n "[root hash]"
 	compare_out "root hash" $2

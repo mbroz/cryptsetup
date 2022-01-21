@@ -1232,7 +1232,7 @@ static void Luks2HeaderRestore(void)
 		.sector_size = 512
 	};
 	struct crypt_params_plain pl_params = {
-		.hash = "sha1",
+		.hash = "sha256",
 		.skip = 0,
 		.offset = 0,
 		.size = 0
@@ -1242,7 +1242,7 @@ static void Luks2HeaderRestore(void)
 	};
 	uint32_t flags = 0;
 
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex = "ccadd99b16cd3d200c22d6db45d8b6630ef3d936767127347ec8a76ab992c2ea";
 	size_t key_size = strlen(mk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
@@ -1337,7 +1337,7 @@ static void Luks2HeaderLoad(void)
 		.sector_size = 512
 	};
 	struct crypt_params_plain pl_params = {
-		.hash = "sha1",
+		.hash = "sha256",
 		.skip = 0,
 		.offset = 0,
 		.size = 0
@@ -2142,7 +2142,7 @@ static void LuksConvert(void)
 		.parallel_threads = 1
 	}, pbkdf2 = {
 		.type = CRYPT_KDF_PBKDF2,
-		.hash = "sha1",
+		.hash = "sha256",
 		.time_ms = 1
 	};
 
@@ -2675,7 +2675,7 @@ static void Pbkdf(void)
 		.hash = default_luks1_hash
 	};
 	struct crypt_params_plain params = {
-		.hash = "sha1",
+		.hash = "sha256",
 		.skip = 0,
 		.offset = 0,
 		.size = 0
@@ -2874,11 +2874,11 @@ static void Pbkdf(void)
 	pbkdf2.time_ms = 9;
 	pbkdf2.hash = NULL;
 	FAIL_(crypt_set_pbkdf_type(cd, &pbkdf2), "Hash is mandatory for pbkdf2");
-	pbkdf2.hash = "sha1";
+	pbkdf2.hash = "sha256";
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
 
 	argon2.time_ms = 9;
-	argon2.hash = "sha1"; // will be ignored
+	argon2.hash = "sha256"; // will be ignored
 	OK_(crypt_set_pbkdf_type(cd, &argon2));
 	argon2.hash = NULL;
 	OK_(crypt_set_pbkdf_type(cd, &argon2));
@@ -3839,7 +3839,7 @@ static void Luks2Reencryption(void)
 	struct crypt_params_reencrypt retparams = {}, rparams = {
 		.direction = CRYPT_REENCRYPT_FORWARD,
 		.resilience = "checksum",
-		.hash = "sha1",
+		.hash = "sha256",
 		.luks2 = &params2,
 	};
 	dev_t devno;
@@ -3983,7 +3983,7 @@ static void Luks2Reencryption(void)
 	rparams.hash = "hamSter";
 	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams), "Invalid resilience hash.");
 
-	rparams.hash = "sha1";
+	rparams.hash = "sha256";
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 21, 9, "aes", "xts-plain64", &rparams));
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 

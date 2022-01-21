@@ -119,7 +119,7 @@ add_device() {
 command -v dmsetup >/dev/null || skip "Cannot find dmsetup, test skipped"
 command -v keyctl >/dev/null || skip "Cannot find keyctl, test skipped"
 command -v xxd >/dev/null || skip "Cannot find xxd, test skipped"
-command -v sha1sum >/dev/null || skip "Cannot find sha1sum, test skipped"
+command -v sha256sum >/dev/null || skip "Cannot find sha256sum, test skipped"
 modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
 dm_crypt_keyring_support || skip "dm-crypt doesn't support kernel keyring, test skipped."
 
@@ -132,23 +132,23 @@ dd if=/dev/urandom of=$DEV bs=1M count=$DEVSIZEMB oflag=direct > /dev/null 2>&1 
 #test aes cipher with xts mode, plain IV
 echo -n "Testing $CIPHER_XTS_PLAIN..."
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_XTS_PLAIN $HEXKEY_32 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
+sha256sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
 dmsetup remove --retry $NAME || fail
 load_key "$HEXKEY_32" logon  $LOGON_KEY_32_OK "$TEST_KEYRING" || fail "Cannot load 32 byte logon key type"
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_XTS_PLAIN :32:logon:$LOGON_KEY_32_OK 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
+sha256sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
 dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 # same test using message
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_XTS_PLAIN $HEXKEY_32 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
+sha256sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
 dmsetup remove --retry $NAME || fail
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_XTS_PLAIN $HEXKEY_32 0 $DEV 0" || fail
 dmsetup suspend $NAME || fail
 dmsetup message $NAME 0 key wipe || fail
 dmsetup message $NAME 0 "key set :32:logon:$LOGON_KEY_32_OK" || fail
 dmsetup resume $NAME || fail
-sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
+sha256sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
 dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 echo "OK"
@@ -156,23 +156,23 @@ echo "OK"
 #test aes cipher, xts mode, essiv IV
 echo -n "Testing $CIPHER_CBC_ESSIV..."
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_ESSIV $HEXKEY_16 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
+sha256sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
 dmsetup remove --retry $NAME || fail
 load_key "$HEXKEY_16" logon  $LOGON_KEY_16_OK "$TEST_KEYRING" || fail "Cannot load 16 byte logon key type"
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_ESSIV :16:logon:$LOGON_KEY_16_OK 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
+sha256sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
 dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 # same test using message
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_ESSIV $HEXKEY_16 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
+sha256sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
 dmsetup remove --retry $NAME || fail
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_ESSIV $HEXKEY_16 0 $DEV 0" || fail
 dmsetup suspend $NAME || fail
 dmsetup message $NAME 0 key wipe || fail
 dmsetup message $NAME 0 "key set :16:logon:$LOGON_KEY_16_OK" || fail
 dmsetup resume $NAME || fail
-sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
+sha256sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
 dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 echo "OK"
@@ -181,23 +181,23 @@ echo "OK"
 fips_mode || {
 echo -n "Testing $CIPHER_CBC_TCW..."
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW $HEXKEY_64 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
+sha256sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
 dmsetup remove --retry $NAME || fail
 load_key "$HEXKEY_64" logon  $LOGON_KEY_64_OK "$TEST_KEYRING" || fail "Cannot load 16 byte logon key type"
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW :64:logon:$LOGON_KEY_64_OK 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
+sha256sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
 dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksum mismatch (corruption)"
 # same test using message
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW $HEXKEY_64 0 $DEV 0" || fail
-sha1sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
+sha256sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail
 dmsetup remove --retry $NAME || fail
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW $HEXKEY_64 0 $DEV 0" || fail
 dmsetup suspend $NAME || fail
 dmsetup message $NAME 0 key wipe || fail
 dmsetup message $NAME 0 "key set :64:logon:$LOGON_KEY_64_OK" || fail
 dmsetup resume $NAME || fail
-sha1sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
+sha256sum /dev/mapper/$NAME > $CHKS_KEYRING || fail
 dmsetup remove --retry $NAME || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corruption)"
 echo "OK"
@@ -207,10 +207,10 @@ echo -n "Test LUKS2 key refresh..."
 echo $PWD | $CRYPTSETUP luksFormat --type luks2 --luks2-metadata-size 16k --luks2-keyslots-size 4064k --pbkdf pbkdf2 --pbkdf-force-iterations 1000 --force-password $DEV || fail
 echo $PWD | $CRYPTSETUP open $DEV $NAME || fail
 $CRYPTSETUP status $NAME | grep -q -i "location:.*keyring" || skip "LUKS2 can't use keyring. Test skipped."
-dd if=/dev/mapper/$NAME bs=1M iflag=direct status=none | sha1sum > $CHKS_KEYRING || fail
+dd if=/dev/mapper/$NAME bs=1M iflag=direct status=none | sha256sum > $CHKS_KEYRING || fail
 echo $PWD | $CRYPTSETUP refresh $NAME --disable-keyring || fail
 $CRYPTSETUP status $NAME | grep -q -i "location:.*keyring" && fail "Key is still in keyring"
-dd if=/dev/mapper/$NAME bs=1M iflag=direct status=none | sha1sum > $CHKS_DMCRYPT || fail
+dd if=/dev/mapper/$NAME bs=1M iflag=direct status=none | sha256sum > $CHKS_DMCRYPT || fail
 diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksum mismatch (corruption)"
 echo "OK"
 

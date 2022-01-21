@@ -860,7 +860,7 @@ static int action_benchmark_kdf(const char *kdf, const char *hash, size_t key_si
 			.time_ms = 1000,
 		};
 
-		r = crypt_benchmark_pbkdf(NULL, &pbkdf, "foo", 3, "bar", 3, key_size,
+		r = crypt_benchmark_pbkdf(NULL, &pbkdf, "foo", 3, "0123456789abcdef", 16, key_size,
 					&benchmark_callback, &pbkdf);
 		if (r < 0)
 			log_std(_("PBKDF2-%-9s     N/A\n"), hash);
