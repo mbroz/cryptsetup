@@ -312,7 +312,7 @@ static int _setup(void)
 static void AddDevicePlain(void)
 {
 	struct crypt_params_plain params = {
-		.hash = "sha1",
+		.hash = "sha256",
 		.skip = 0,
 		.offset = 0,
 		.size = 0
@@ -322,7 +322,7 @@ static void AddDevicePlain(void)
 
 	const char *passphrase = PASSPHRASE;
 	// hashed hex version of PASSPHRASE
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *mk_hex = "ccadd99b16cd3d200c22d6db45d8b6630ef3d936767127347ec8a76ab992c2ea";
 	size_t key_size = strlen(mk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
@@ -438,7 +438,7 @@ static void AddDevicePlain(void)
 	OK_(crypt_deactivate(cd,CDEVICE_1));
 
 	CRYPT_FREE(cd);
-	params.hash = "sha1";
+	params.hash = "sha256";
 	params.offset = 0;
 	params.size = 0;
 	params.skip = 0;
@@ -620,7 +620,7 @@ static void new_log(int level, const char *msg, void *usrptr)
 static void CallbacksTest(void)
 {
 	struct crypt_params_plain params = {
-		.hash = "sha1",
+		.hash = "sha256",
 		.skip = 0,
 		.offset = 0,
 	};
@@ -1116,7 +1116,7 @@ static void LuksHeaderRestore(void)
 		.data_alignment = 2048, // 4M, data offset will be 4096
 	};
 	struct crypt_params_plain pl_params = {
-		.hash = "sha1",
+		.hash = "sha256",
 		.skip = 0,
 		.offset = 0,
 		.size = 0
@@ -1203,7 +1203,7 @@ static void LuksHeaderLoad(void)
 		.data_alignment = 2048,
 	};
 	struct crypt_params_plain pl_params = {
-		.hash = "sha1",
+		.hash = "sha256",
 		.skip = 0,
 		.offset = 0,
 		.size = 0
