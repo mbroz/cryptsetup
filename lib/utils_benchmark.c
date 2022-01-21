@@ -184,7 +184,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 		pbkdf->parallel_threads = 0; /* N/A in PBKDF2 */
 		pbkdf->max_memory_kb = 0; /* N/A in PBKDF2 */
 
-		r = crypt_benchmark_pbkdf(cd, pbkdf, "foo", 3, "bar", 3,
+		r = crypt_benchmark_pbkdf(cd, pbkdf, "foo", 3, "01234567890abcdef", 16,
 					volume_key_size, &benchmark_callback, &u);
 		pbkdf->time_ms = ms_tmp;
 		if (r < 0) {
