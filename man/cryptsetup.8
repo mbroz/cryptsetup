@@ -1654,21 +1654,19 @@ be overwritten using \-\-keyfile-size option.
 
 
 .SH NOTES ON PASSPHRASE PROCESSING FOR LUKS
+Passphrases are read as follows:
 
-\fBFrom a terminal\fR: The passphrase is read until the
-first newline.
+\fBFrom stdin (including interactively from the Terminal)\fR:
+LUKS will read passphrases from stdin up to (excluding) the first newline or the
+compiled-in maximum size.
+This case does not apply when the \-\-key\-file=\- option is given.
+If \-\-keyfile\-size is given, it is ignored.
 
-\fBFrom stdin\fR:
-LUKS will read passphrases from stdin up to the
-first newline character or the compiled-in
-maximum key file length. If \-\-keyfile\-size is
-given, it is ignored.
-
-\fBFrom key file\fR:
-The complete keyfile is read up to the compiled-in
-maximum size. Newline characters do not terminate the
-input. The \-\-keyfile\-size option can be used to limit
-what is read.
+\fBFrom a key file\fR:
+The complete keyfile is read up to the compiled-in maximum size. A newline does
+not terminate the input.
+This case applies when the \-\-key\-file=\- option is given.
+The \-\-keyfile\-size option can be used to limit what is read.
 
 \fBPassphrase processing\fR:
 LUKS uses a PBKDF to protect against dictionary attacks and to give some
