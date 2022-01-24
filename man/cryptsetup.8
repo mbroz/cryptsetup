@@ -1654,13 +1654,9 @@ be overwritten using \-\-keyfile-size option.
 
 
 .SH NOTES ON PASSPHRASE PROCESSING FOR LUKS
-LUKS uses a PBKDF to protect against dictionary attacks
-and to give some protection to low-entropy passphrases
-(see above and the cryptsetup FAQ).
 
 \fBFrom a terminal\fR: The passphrase is read until the
-first newline and then processed by PBKDF2 without
-the newline character.
+first newline.
 
 \fBFrom stdin\fR:
 LUKS will read passphrases from stdin up to the
@@ -1675,13 +1671,19 @@ input. The \-\-keyfile\-size option can be used to limit
 what is read.
 
 \fBPassphrase processing\fR:
+LUKS uses a PBKDF to protect against dictionary attacks and to give some
+protection to low-entropy passphrases (see above and the cryptsetup FAQ).
+
 Whenever a passphrase is added to a LUKS header (luksAddKey, luksFormat),
-the user may specify how much the time the passphrase processing
-should consume. The time is used to determine the iteration count
-for PBKDF2 and higher times will offer better protection for
-low-entropy passphrases, but open will take longer to
-complete. For passphrases that have entropy higher than the
-used key length, higher iteration times will not increase security.
+the user may specify, depending on the PBKDF, how much resources the passphrase
+processing should consume.
+More required resources will offer better protection for low-entropy
+passphrases, but open will take longer to complete.
+It should be noted, that it doesn't matter if the time to open seem (too) long
+on the system of the owner, because an attacker will have the fastest available
+systems.
+For passphrases that have entropy higher than the used key length, higher
+iteration times will not increase security.
 
 The default setting of one or two seconds is sufficient for most
 practical cases. The only exception is a low-entropy
