@@ -98,6 +98,7 @@ function valgrind_run()
 }
 
 export LANG=C
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ ! -d $TST_DIR ] && tar xJSf $srcdir/bitlk-images.tar.xz --no-same-owner 2>/dev/null || skip "Incompatible tar."
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run

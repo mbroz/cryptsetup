@@ -226,6 +226,8 @@ function expect_run()
         expect "$@"
 }
 
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+
 bin_check jq
 bin_check sha256sum
 bin_check xxd

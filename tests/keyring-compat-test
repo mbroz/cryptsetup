@@ -115,6 +115,7 @@ add_device() {
 	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 command -v dmsetup >/dev/null || skip "Cannot find dmsetup, test skipped"
 command -v keyctl >/dev/null || skip "Cannot find keyctl, test skipped"

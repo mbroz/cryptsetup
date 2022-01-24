@@ -173,6 +173,7 @@ format_plain_fail() # sector size
 	fi
 }
 
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run this test, test skipped."
 	exit 77

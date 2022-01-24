@@ -25,6 +25,14 @@ function fail()
 	exit 2
 }
 
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	echo "Test skipped."
+	cleanup
+	exit 77
+}
+
 function valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
@@ -62,7 +70,7 @@ function exp_pass()
 }
 
 export LANG=C
-
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
 # initial test constructed acccording to current cryptsetup content
