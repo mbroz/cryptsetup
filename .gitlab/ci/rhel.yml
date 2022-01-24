@@ -74,6 +74,8 @@ test-main-commit-rhel8-fips:
     - sudo -E make check
 
 test-main-commit-rhel9-fips:
+  extends:
+    - .rhel-openssl-backend
   tags:
     - libvirt
     - rhel9-fips
@@ -87,8 +89,6 @@ test-main-commit-rhel9-fips:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
-    - ./autogen.sh
-    - ./configure --enable-fips --enable-pwquality --with-crypto_backend=openssl
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
