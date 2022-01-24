@@ -332,6 +332,7 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 			r = crypt_utf16_to_utf8(&string, (const char16_t *) (data + start + BITLK_ENTRY_HEADER_LEN),
 						     key_entry_size - BITLK_ENTRY_HEADER_LEN);
 			if (r < 0 || !string) {
+				free(string);
 				log_err(cd, _("Invalid string found when parsing Volume Master Key."));
 				return -EINVAL;
 			} else if ((*vmk)->name != NULL) {
@@ -682,6 +683,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			r = crypt_utf16_to_utf8(&description, (const char16_t *) (fve_entries + start + BITLK_ENTRY_HEADER_LEN),
 					                  entry_size - BITLK_ENTRY_HEADER_LEN);
 			if (r < 0 || !description) {
+				free(description);
 				BITLK_bitlk_vmk_free(vmk);
 				log_err(cd, _("Failed to convert BITLK volume description"));
 				goto out;
@@ -968,6 +970,10 @@ static int bitlk_kdf(struct crypt_device *cd,
 	if (!recovery) {
 		/* passphrase: convert to UTF-16 first, then sha256(sha256(pw)) */
 		utf16Password = crypt_safe_alloc(sizeof(char16_t) * passwordLen + 1);
+		if (!utf16Password) {
+			r = -ENOMEM;
+			goto out;
+		}
 		r = crypt_utf8_to_utf16(&utf16Password, CONST_CAST(char*)password, passwordLen);
 		if (r < 0)
 			goto out;
