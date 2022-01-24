@@ -659,16 +659,18 @@ static int action_reencrypt_luks2(struct crypt_device *cd, const char *data_devi
 
 	r = _check_luks2_keyslots(cd, vk_change);
 	if (r)
-		return r;
+		goto out;
 
 	r = crypt_keyslot_max(CRYPT_LUKS2);
 	if (r < 0)
-		return r;
+		goto out;
 	kp_size = r;
 
 	kp = init_keyslot_passwords(kp_size);
-	if (!kp)
-		return -ENOMEM;
+	if (!kp) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	r = fill_keyslot_passwords(cd, kp, kp_size, vk_change);
 	if (r)
