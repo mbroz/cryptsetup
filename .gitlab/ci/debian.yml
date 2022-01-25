@@ -1,4 +1,6 @@
 .debian-prep:
+  extends:
+    - .dump_kernel_log
   before_script:
     - sudo apt-get -y update --fix-missing
     - >

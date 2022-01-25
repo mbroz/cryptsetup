@@ -1,4 +1,6 @@
 .dnf-openssl-backend:
+  extends:
+    - .dump_kernel_log
   before_script:
     - sudo dnf -y update
     - >
