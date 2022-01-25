@@ -1,4 +1,6 @@
 test-main-commit-job-csmock:
+  extends:
+    - .dump_kernel_log
   tags:
     - libvirt
     - rhel7-csmock

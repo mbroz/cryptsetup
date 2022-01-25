@@ -1,4 +1,6 @@
 .rhel-openssl-backend:
+  extends:
+    - .dump_kernel_log
   before_script:
     - sudo yum -y update  > /dev/null 2>&1
     - >

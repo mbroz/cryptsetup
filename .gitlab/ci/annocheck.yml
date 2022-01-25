@@ -1,4 +1,6 @@
 test-main-commit-job-annocheck:
+  extends:
+    - .dump_kernel_log
   tags:
     - libvirt
     - rhel9-annocheck
