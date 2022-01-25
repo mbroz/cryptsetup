@@ -4,6 +4,7 @@ stages:
 .dump_kernel_log:
   after_script:
     - sudo dmesg > /mnt/artifacts/dmesg.log
+    - sudo journalctl > /mnt/artifacts/journalctl.log
 
 include:
   - local: .gitlab/ci/debian.yml
