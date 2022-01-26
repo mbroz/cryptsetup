@@ -151,7 +151,8 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 
 static int crypt_sector_iv_generate(struct crypt_sector_iv *ctx, uint64_t sector)
 {
-	uint64_t val;
+	uint64_t val, *u64_iv;
+	uint32_t *u32_iv;
 
 	switch (ctx->type) {
 	case IV_NONE:
@@ -161,19 +162,24 @@ static int crypt_sector_iv_generate(struct crypt_sector_iv *ctx, uint64_t sector
 		break;
 	case IV_PLAIN:
 		memset(ctx->iv, 0, ctx->iv_size);
-		*(uint32_t *)ctx->iv = cpu_to_le32(sector & 0xffffffff);
+		u32_iv = (void *)ctx->iv;
+		*u32_iv = cpu_to_le32(sector & 0xffffffff);
 		break;
 	case IV_PLAIN64:
 		memset(ctx->iv, 0, ctx->iv_size);
-		*(uint64_t *)ctx->iv = cpu_to_le64(sector);
+		u64_iv = (void *)ctx->iv;
+		*u64_iv = cpu_to_le64(sector);
 		break;
 	case IV_PLAIN64BE:
 		memset(ctx->iv, 0, ctx->iv_size);
-		*(uint64_t *)&ctx->iv[ctx->iv_size - sizeof(uint64_t)] = cpu_to_be64(sector);
+		/* iv_size is at least of size u64; usually it is 16 bytes */
+		u64_iv = (void *)&ctx->iv[ctx->iv_size - sizeof(uint64_t)];
+		*u64_iv = cpu_to_be64(sector);
 		break;
 	case IV_ESSIV:
 		memset(ctx->iv, 0, ctx->iv_size);
-		*(uint64_t *)ctx->iv = cpu_to_le64(sector);
+		u64_iv = (void *)ctx->iv;
+		*u64_iv = cpu_to_le64(sector);
 		return crypt_cipher_encrypt(ctx->cipher,
 			ctx->iv, ctx->iv, ctx->iv_size, NULL, 0);
 		break;
@@ -184,7 +190,8 @@ static int crypt_sector_iv_generate(struct crypt_sector_iv *ctx, uint64_t sector
 		break;
 	case IV_EBOIV:
 		memset(ctx->iv, 0, ctx->iv_size);
-		*(uint64_t *)ctx->iv = cpu_to_le64(sector << ctx->shift);
+		u64_iv = (void *)ctx->iv;
+		*u64_iv = cpu_to_le64(sector << ctx->shift);
 		return crypt_cipher_encrypt(ctx->cipher,
 			ctx->iv, ctx->iv, ctx->iv_size, NULL, 0);
 		break;

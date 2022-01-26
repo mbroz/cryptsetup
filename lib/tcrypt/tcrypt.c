@@ -264,8 +264,8 @@ static int TCRYPT_hdr_from_disk(struct crypt_device *cd,
  */
 static void TCRYPT_swab_le(char *buf)
 {
-	uint32_t *l = (uint32_t*)&buf[0];
-	uint32_t *r = (uint32_t*)&buf[4];
+	uint32_t *l = VOIDP_CAST(uint32_t*)&buf[0];
+	uint32_t *r = VOIDP_CAST(uint32_t*)&buf[4];
 	*l = swab32(*l);
 	*r = swab32(*r);
 }

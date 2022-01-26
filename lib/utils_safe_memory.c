@@ -67,12 +67,13 @@ void crypt_safe_free(void *data)
 {
 	struct safe_allocation *alloc;
 	volatile size_t *s;
+	void *p;
 
 	if (!data)
 		return;
 
-	alloc = (struct safe_allocation *)
-		((char *)data - offsetof(struct safe_allocation, data));
+	p = (char *)data - offsetof(struct safe_allocation, data);
+	alloc = (struct safe_allocation *)p;
 
 	crypt_safe_memzero(data, alloc->size);
 
@@ -85,13 +86,14 @@ void *crypt_safe_realloc(void *data, size_t size)
 {
 	struct safe_allocation *alloc;
 	void *new_data;
+	void *p;
 
 	new_data = crypt_safe_alloc(size);
 
 	if (new_data && data) {
 
-		alloc = (struct safe_allocation *)
-			((char *)data - offsetof(struct safe_allocation, data));
+		p = (char *)data - offsetof(struct safe_allocation, data);
+		alloc = (struct safe_allocation *)p;
 
 		if (size > alloc->size)
 			size = alloc->size;
