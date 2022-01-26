@@ -2,7 +2,6 @@
   extends:
     - .dump_kernel_log
   before_script:
-    - sudo yum -y update  > /dev/null 2>&1
     - >
       sudo yum -y -q  install
       autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
