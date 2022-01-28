@@ -42,8 +42,7 @@ static int random_fd = -1;
 #define RANDOM_DEVICE_TIMEOUT	5
 
 /* URANDOM_DEVICE access */
-static int _get_urandom(struct crypt_device *ctx __attribute__((unused)),
-			char *buf, size_t len)
+static int _get_urandom(char *buf, size_t len)
 {
 	int r;
 	size_t old_len = len;
@@ -51,7 +50,7 @@ static int _get_urandom(struct crypt_device *ctx __attribute__((unused)),
 
 	assert(urandom_fd != -1);
 
-	while(len) {
+	while (len) {
 		r = read(urandom_fd, buf, len);
 		if (r == -1 && errno != EINTR)
 			return -EINVAL;
@@ -178,13 +177,13 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 
 	switch(quality) {
 	case CRYPT_RND_NORMAL:
-		status = _get_urandom(ctx, buf, len);
+		status = _get_urandom(buf, len);
 		break;
 	case CRYPT_RND_SALT:
 		if (crypt_fips_mode())
 			status = crypt_backend_rng(buf, len, quality, 1);
 		else
-			status = _get_urandom(ctx, buf, len);
+			status = _get_urandom(buf, len);
 		break;
 	case CRYPT_RND_KEY:
 		if (crypt_fips_mode()) {
@@ -195,7 +194,7 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 				 crypt_random_default_key_rng();
 		switch (rng_type) {
 		case CRYPT_RNG_URANDOM:
-			status = _get_urandom(ctx, buf, len);
+			status = _get_urandom(buf, len);
 			break;
 		case CRYPT_RNG_RANDOM:
 			status = _get_random(ctx, buf, len);

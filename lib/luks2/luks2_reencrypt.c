@@ -2309,7 +2309,7 @@ static int reencrypt_make_backup_segments(struct crypt_device *cd,
 	/* FIXME: also check occupied space by keyslot in shrunk area */
 	if (params->direction == CRYPT_REENCRYPT_FORWARD && data_shift &&
 	    crypt_metadata_device(cd) == crypt_data_device(cd) &&
-	    LUKS2_set_keyslots_size(cd, hdr, json_segment_get_offset(reencrypt_segment_new(hdr), 0))) {
+	    LUKS2_set_keyslots_size(hdr, json_segment_get_offset(reencrypt_segment_new(hdr), 0))) {
 		log_err(cd, _("Failed to set new keyslots area size."));
 		r = -EINVAL;
 		goto err;
@@ -2332,11 +2332,11 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd, struct luks
 		if (!vk)
 			return -ENOENT;
 		else {
-			if (LUKS2_digest_verify_by_digest(cd, hdr, digest_new, vk) != digest_new)
+			if (LUKS2_digest_verify_by_digest(cd, digest_new, vk) != digest_new)
 				return -EINVAL;
 
 			if (crypt_use_keyring_for_vk(cd) && !crypt_is_cipher_null(reencrypt_segment_cipher_new(hdr)) &&
-			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk))))
+			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, crypt_volume_key_get_id(vk))))
 				return r;
 		}
 	}
@@ -2347,12 +2347,12 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd, struct luks
 			r = -ENOENT;
 			goto err;
 		} else {
-			if (LUKS2_digest_verify_by_digest(cd, hdr, digest_old, vk) != digest_old) {
+			if (LUKS2_digest_verify_by_digest(cd, digest_old, vk) != digest_old) {
 				r = -EINVAL;
 				goto err;
 			}
 			if (crypt_use_keyring_for_vk(cd) && !crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr)) &&
-			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk))))
+			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, crypt_volume_key_get_id(vk))))
 				goto err;
 		}
 	}
@@ -2976,7 +2976,7 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 
 	if (ri == CRYPT_REENCRYPT_CRASH) {
 		r = LUKS2_reencrypt_locked_recovery_by_passphrase(cd, keyslot_old, keyslot_new,
-				passphrase, passphrase_size, 0, NULL);
+				passphrase, passphrase_size, NULL);
 		if (r < 0)
 			log_err(cd, _("LUKS2 reencryption recovery failed."));
 	} else {
@@ -3367,7 +3367,7 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (finished) {
 		if (reencrypt_wipe_moved_segment(cd, rh))
 			log_err(cd, _("Failed to wipe backup segment data."));
-		if (reencrypt_get_data_offset_new(hdr) && LUKS2_set_keyslots_size(cd, hdr, reencrypt_get_data_offset_new(hdr)))
+		if (reencrypt_get_data_offset_new(hdr) && LUKS2_set_keyslots_size(hdr, reencrypt_get_data_offset_new(hdr)))
 			log_dbg(cd, "Failed to set new keyslots area size.");
 		if (rh->digest_old >= 0 && rh->digest_new != rh->digest_old)
 			for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++)
@@ -3618,7 +3618,6 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 	int keyslot_new,
 	const char *passphrase,
 	size_t passphrase_size,
-	uint32_t flags __attribute__((unused)),
 	struct volume_key **vks)
 {
 	uint64_t minimal_size, device_size;
@@ -3641,7 +3640,7 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 		vk = _vks;
 
 	while (vk) {
-		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
+		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, crypt_volume_key_get_id(vk));
 		if (r < 0)
 			goto out;
 		vk = crypt_volume_key_next(vk);

@@ -111,7 +111,6 @@ int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 }
 
 int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
-	struct luks2_hdr *hdr __attribute__((unused)),
 	int digest,
 	const struct volume_key *vk)
 {
@@ -144,7 +143,7 @@ int LUKS2_digest_verify(struct crypt_device *cd,
 
 	log_dbg(cd, "Verifying key from keyslot %d, digest %d.", keyslot, digest);
 
-	return LUKS2_digest_verify_by_digest(cd, hdr, digest, vk);
+	return LUKS2_digest_verify_by_digest(cd, digest, vk);
 }
 
 int LUKS2_digest_dump(struct crypt_device *cd, int digest)
@@ -164,7 +163,7 @@ int LUKS2_digest_any_matching(struct crypt_device *cd,
 	int digest;
 
 	for (digest = 0; digest < LUKS2_DIGEST_MAX; digest++)
-		if (LUKS2_digest_verify_by_digest(cd, hdr, digest, vk) == digest)
+		if (LUKS2_digest_verify_by_digest(cd, digest, vk) == digest)
 			return digest;
 
 	return -ENOENT;
@@ -175,7 +174,7 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	int segment,
 	const struct volume_key *vk)
 {
-	return LUKS2_digest_verify_by_digest(cd, hdr, LUKS2_digest_by_segment(hdr, segment), vk);
+	return LUKS2_digest_verify_by_digest(cd, LUKS2_digest_by_segment(hdr, segment), vk);
 }
 
 /* FIXME: segment can have more digests */
@@ -259,8 +258,7 @@ int LUKS2_digest_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
 
-static int assign_all_segments(struct crypt_device *cd __attribute__((unused)),
-			       struct luks2_hdr *hdr, int digest, int assign)
+static int assign_all_segments(struct luks2_hdr *hdr, int digest, int assign)
 {
 	json_object *jobj1, *jobj_digest, *jobj_digest_segments;
 
@@ -336,7 +334,7 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 		json_object_object_foreach(jobj_digests, key, val) {
 			UNUSED(val);
 			if (segment == CRYPT_ANY_SEGMENT)
-				r = assign_all_segments(cd, hdr, atoi(key), assign);
+				r = assign_all_segments(hdr, atoi(key), assign);
 			else
 				r = assign_one_segment(cd, hdr, segment, atoi(key), assign);
 			if (r < 0)
@@ -344,7 +342,7 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 		}
 	} else {
 		if (segment == CRYPT_ANY_SEGMENT)
-			r = assign_all_segments(cd, hdr, digest, assign);
+			r = assign_all_segments(hdr, digest, assign);
 		else
 			r = assign_one_segment(cd, hdr, segment, digest, assign);
 	}
@@ -443,7 +441,7 @@ int LUKS2_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd,
 }
 
 int LUKS2_volume_key_load_in_keyring_by_digest(struct crypt_device *cd,
-		struct luks2_hdr *hdr __attribute__((unused)), struct volume_key *vk, int digest)
+		struct volume_key *vk, int digest)
 {
 	char *desc = get_key_description_by_digest(cd, digest);
 	int r;

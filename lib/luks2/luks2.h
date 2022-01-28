@@ -217,9 +217,7 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	int keyslot,
 	int wipe_area_only);
 
-crypt_keyslot_priority LUKS2_keyslot_priority_get(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot);
+crypt_keyslot_priority LUKS2_keyslot_priority_get(struct luks2_hdr *hdr, int keyslot);
 
 int LUKS2_keyslot_priority_set(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
@@ -235,8 +233,7 @@ int LUKS2_keyslot_swap(struct crypt_device *cd,
 /*
  * Generic LUKS2 token
  */
-int LUKS2_token_json_get(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
+int LUKS2_token_json_get(struct luks2_hdr *hdr,
 	int token,
 	const char **json);
 
@@ -247,8 +244,7 @@ int LUKS2_token_assign(struct crypt_device *cd,
 	int assign,
 	int commit);
 
-int LUKS2_token_is_assigned(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
+int LUKS2_token_is_assigned(struct luks2_hdr *hdr,
 	int keyslot,
 	int token);
 
@@ -279,8 +275,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 	uint32_t flags,
 	void *usrptr);
 
-int LUKS2_token_keyring_get(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
+int LUKS2_token_keyring_get(struct luks2_hdr *hdr,
 	int token,
 	struct crypt_token_params_luks2_keyring *keyring_params);
 
@@ -410,7 +405,7 @@ int LUKS2_key_description_by_segment(struct crypt_device *cd,
 int LUKS2_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int keyslot);
 int LUKS2_volume_key_load_in_keyring_by_digest(struct crypt_device *cd,
-		struct luks2_hdr *hdr, struct volume_key *vk, int digest);
+		struct volume_key *vk, int digest);
 
 int LUKS2_luks1_to_luks2(struct crypt_device *cd,
 			 struct luks_phdr *hdr1,
@@ -427,7 +422,6 @@ int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
 	int keyslot_new,
 	const char *passphrase,
 	size_t passphrase_size,
-	uint32_t flags,
 	struct volume_key **vks);
 
 void LUKS2_reencrypt_free(struct crypt_device *cd,

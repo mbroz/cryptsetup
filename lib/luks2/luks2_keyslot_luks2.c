@@ -380,7 +380,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	}
 
 	if (r == 0)
-		r = AF_merge(cd, AfKey, volume_key, volume_key_len, LUKS_STRIPES, af_hash);
+		r = AF_merge(AfKey, volume_key, volume_key_len, LUKS_STRIPES, af_hash);
 out:
 	free(salt);
 	crypt_free_volume_key(derived_key);
@@ -751,7 +751,7 @@ static int luks2_keyslot_update(struct crypt_device *cd,
 	return r;
 }
 
-static void luks2_keyslot_repair(struct crypt_device *cd __attribute__((unused)), json_object *jobj_keyslot)
+static void luks2_keyslot_repair(json_object *jobj_keyslot)
 {
 	const char *type;
 	json_object *jobj_kdf, *jobj_type;

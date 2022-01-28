@@ -980,7 +980,7 @@ out:
 	return params_out;
 }
 
-static char *get_dm_linear_params(const struct dm_target *tgt, uint32_t flags __attribute__((unused)))
+static char *get_dm_linear_params(const struct dm_target *tgt)
 {
 	char *params;
 	int r;
@@ -1001,7 +1001,7 @@ static char *get_dm_linear_params(const struct dm_target *tgt, uint32_t flags __
 	return params;
 }
 
-static char *get_dm_zero_params(const struct dm_target *tgt __attribute__((unused)), uint32_t flags __attribute__((unused)))
+static char *get_dm_zero_params(void)
 {
 	char *params = crypt_safe_alloc(1);
 	if (!params)
@@ -1328,9 +1328,9 @@ static int _create_dm_targets_params(struct crypt_dm_active_device *dmd)
 		else if (tgt->type == DM_INTEGRITY)
 			tgt->params = get_dm_integrity_params(tgt, dmd->flags);
 		else if (tgt->type == DM_LINEAR)
-			tgt->params = get_dm_linear_params(tgt, dmd->flags);
+			tgt->params = get_dm_linear_params(tgt);
 		else if (tgt->type == DM_ZERO)
-			tgt->params = get_dm_zero_params(tgt, dmd->flags);
+			tgt->params = get_dm_zero_params();
 		else {
 			r = -ENOTSUP;
 			goto err;
@@ -2595,7 +2595,7 @@ err:
 	return r;
 }
 
-static int _dm_target_query_error(struct crypt_device *cd __attribute__((unused)), struct dm_target *tgt)
+static int _dm_target_query_error(struct dm_target *tgt)
 {
 	tgt->type = DM_ERROR;
 	tgt->direction = TARGET_QUERY;
@@ -2603,7 +2603,7 @@ static int _dm_target_query_error(struct crypt_device *cd __attribute__((unused)
 	return 0;
 }
 
-static int _dm_target_query_zero(struct crypt_device *cd __attribute__((unused)), struct dm_target *tgt)
+static int _dm_target_query_zero(struct dm_target *tgt)
 {
 	tgt->type = DM_ZERO;
 	tgt->direction = TARGET_QUERY;
@@ -2631,9 +2631,9 @@ static int dm_target_query(struct crypt_device *cd, struct dm_target *tgt, const
 	else if (!strcmp(target_type, DM_LINEAR_TARGET))
 		r = _dm_target_query_linear(cd, tgt, get_flags, params);
 	else if (!strcmp(target_type, DM_ERROR_TARGET))
-		r = _dm_target_query_error(cd, tgt);
+		r = _dm_target_query_error(tgt);
 	else if (!strcmp(target_type, DM_ZERO_TARGET))
-		r = _dm_target_query_zero(cd, tgt);
+		r = _dm_target_query_zero(tgt);
 
 	if (!r) {
 		tgt->offset = *start;

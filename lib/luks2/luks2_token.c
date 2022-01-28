@@ -446,7 +446,7 @@ static int token_is_usable(struct luks2_hdr *hdr, json_object *jobj_token, int s
 	for (i = 0; i < len; i++) {
 		keyslot = atoi(json_object_get_string(json_object_array_get_idx(jobj_array, i)));
 
-		keyslot_priority = LUKS2_keyslot_priority_get(NULL, hdr, keyslot);
+		keyslot_priority = LUKS2_keyslot_priority_get(hdr, keyslot);
 		if (keyslot_priority == CRYPT_SLOT_PRIORITY_INVALID)
 			return -EINVAL;
 
@@ -589,7 +589,7 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 	for (i = 0; i < (int) json_object_array_length(jobj_token_keyslots) && r < 0; i++) {
 		jobj = json_object_array_get_idx(jobj_token_keyslots, i);
 		num = atoi(json_object_get_string(jobj));
-		keyslot_priority = LUKS2_keyslot_priority_get(NULL, hdr, num);
+		keyslot_priority = LUKS2_keyslot_priority_get(hdr, num);
 		if (keyslot_priority == CRYPT_SLOT_PRIORITY_INVALID)
 			return -EINVAL;
 		if (keyslot_priority < priority)
@@ -779,8 +779,7 @@ void LUKS2_token_dump(struct crypt_device *cd, int token)
 	}
 }
 
-int LUKS2_token_json_get(struct crypt_device *cd __attribute__((unused)), struct luks2_hdr *hdr,
-			   int token, const char **json)
+int LUKS2_token_json_get(struct luks2_hdr *hdr, int token, const char **json)
 {
 	json_object *jobj_token;
 
@@ -895,8 +894,7 @@ static int token_is_assigned(struct luks2_hdr *hdr, int keyslot, int token)
 	return -ENOENT;
 }
 
-int LUKS2_token_is_assigned(struct crypt_device *cd __attribute__((unused)), struct luks2_hdr *hdr,
-			    int keyslot, int token)
+int LUKS2_token_is_assigned(struct luks2_hdr *hdr, int keyslot, int token)
 {
 	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX || token < 0 || token >= LUKS2_TOKENS_MAX)
 		return -EINVAL;

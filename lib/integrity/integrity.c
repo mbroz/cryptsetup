@@ -120,7 +120,7 @@ int INTEGRITY_data_sectors(struct crypt_device *cd,
 	return 0;
 }
 
-int INTEGRITY_key_size(struct crypt_device *cd __attribute__((unused)), const char *integrity)
+int INTEGRITY_key_size(const char *integrity)
 {
 	if (!integrity)
 		return 0;
@@ -163,8 +163,7 @@ int INTEGRITY_hash_tag_size(const char *integrity)
 	return r < 0 ? 0 : r;
 }
 
-int INTEGRITY_tag_size(struct crypt_device *cd __attribute__((unused)),
-		       const char *integrity,
+int INTEGRITY_tag_size(const char *integrity,
 		       const char *cipher,
 		       const char *cipher_mode)
 {

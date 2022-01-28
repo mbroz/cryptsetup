@@ -44,7 +44,7 @@ struct volume_key;
 
 int AF_split(struct crypt_device *ctx, const char *src, char *dst,
 	     size_t blocksize, unsigned int blocknumbers, const char *hash);
-int AF_merge(struct crypt_device *ctx, const char *src, char *dst, size_t blocksize,
+int AF_merge(const char *src, char *dst, size_t blocksize,
 	     unsigned int blocknumbers, const char *hash);
 size_t AF_split_sectors(size_t blocksize, unsigned int blocknumbers);
 
