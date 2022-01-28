@@ -2322,45 +2322,91 @@ err:
 	return r;
 }
 
-static int reencrypt_verify_and_upload_keys(struct crypt_device *cd, struct luks2_hdr *hdr, int digest_old, int digest_new, struct volume_key *vks)
+static int reencrypt_verify_single_key(struct crypt_device *cd, int digest, struct volume_key *vks)
 {
-	int r;
 	struct volume_key *vk;
 
-	if (digest_new >= 0) {
-		vk = crypt_volume_key_by_id(vks, digest_new);
-		if (!vk)
-			return -ENOENT;
-		else {
-			if (LUKS2_digest_verify_by_digest(cd, digest_new, vk) != digest_new)
-				return -EINVAL;
+	vk = crypt_volume_key_by_id(vks, digest);
+	if (!vk)
+		return -ENOENT;
 
-			if (crypt_use_keyring_for_vk(cd) && !crypt_is_cipher_null(reencrypt_segment_cipher_new(hdr)) &&
-			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, crypt_volume_key_get_id(vk))))
-				return r;
-		}
-	}
+	if (LUKS2_digest_verify_by_digest(cd, digest, vk) != digest)
+		return -EINVAL;
 
-	if (digest_old >= 0 && digest_old != digest_new) {
-		vk = crypt_volume_key_by_id(vks, digest_old);
-		if (!vk) {
-			r = -ENOENT;
-			goto err;
-		} else {
-			if (LUKS2_digest_verify_by_digest(cd, digest_old, vk) != digest_old) {
-				r = -EINVAL;
-				goto err;
-			}
-			if (crypt_use_keyring_for_vk(cd) && !crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr)) &&
-			    (r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, crypt_volume_key_get_id(vk))))
-				goto err;
-		}
+	return 0;
+}
+
+static int reencrypt_verify_keys(struct crypt_device *cd,
+	int digest_old,
+	int digest_new,
+	struct volume_key *vks)
+{
+	int r;
+
+	if (digest_new >= 0 && (r = reencrypt_verify_single_key(cd, digest_new, vks)))
+		return r;
+
+	if (digest_old >= 0 && (r = reencrypt_verify_single_key(cd, digest_old, vks)))
+		return r;
+
+	return 0;
+}
+
+static int reencrypt_upload_single_key(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int digest,
+	struct volume_key *vks)
+{
+	struct volume_key *vk;
+
+	vk = crypt_volume_key_by_id(vks, digest);
+	if (!vk)
+		return -EINVAL;
+
+	return LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, digest);
+}
+
+static int reencrypt_upload_keys(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int digest_old,
+	int digest_new,
+	struct volume_key *vks)
+{
+	int r;
+
+	if (!crypt_use_keyring_for_vk(cd))
+		return 0;
+
+	if (digest_new >= 0 && !crypt_is_cipher_null(reencrypt_segment_cipher_new(hdr)) &&
+	    (r = reencrypt_upload_single_key(cd, hdr, digest_new, vks)))
+		return r;
+
+	if (digest_old >= 0 && !crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr)) &&
+	    (r = reencrypt_upload_single_key(cd, hdr, digest_old, vks))) {
+		crypt_drop_keyring_key(cd, vks);
+		return r;
 	}
 
 	return 0;
-err:
-	crypt_drop_keyring_key(cd, vks);
-	return r;
+}
+
+static int reencrypt_verify_and_upload_keys(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int digest_old,
+	int digest_new,
+	struct volume_key *vks)
+{
+	int r;
+
+	r = reencrypt_verify_keys(cd, digest_old, digest_new, vks);
+	if (r)
+		return r;
+
+	r = reencrypt_upload_keys(cd, hdr, digest_old, digest_new, vks);
+	if (r)
+		return r;
+
+	return 0;
 }
 
 /* This function must be called with metadata lock held */
