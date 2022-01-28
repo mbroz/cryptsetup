@@ -402,8 +402,7 @@ static json_bool validate_intervals(struct crypt_device *cd,
 	return 1;
 }
 
-static int LUKS2_keyslot_validate(struct crypt_device *cd, json_object *hdr_jobj __attribute__((unused)),
-				  json_object *hdr_keyslot, const char *key)
+static int LUKS2_keyslot_validate(struct crypt_device *cd, json_object *hdr_keyslot, const char *key)
 {
 	json_object *jobj_key_size;
 
@@ -488,7 +487,7 @@ static int hdr_validate_keyslots(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_foreach(jobj, key, val) {
 		if (!numbered(cd, "Keyslot", key))
 			return 1;
-		if (LUKS2_keyslot_validate(cd, hdr_jobj, val, key))
+		if (LUKS2_keyslot_validate(cd, val, key))
 			return 1;
 	}
 
@@ -514,9 +513,9 @@ static int hdr_validate_tokens(struct crypt_device *cd, json_object *hdr_jobj)
 	return 0;
 }
 
-static int hdr_validate_crypt_segment(struct crypt_device *cd,
-				      json_object *jobj, const char *key, json_object *jobj_digests,
-				      uint64_t offset __attribute__((unused)), uint64_t size)
+static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj,
+				      const char *key, json_object *jobj_digests,
+				      uint64_t size)
 {
 	json_object *jobj_ivoffset, *jobj_sector_size, *jobj_integrity;
 	uint32_t sector_size;
@@ -739,7 +738,7 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 
 		/* crypt */
 		if (!strcmp(json_object_get_string(jobj_type), "crypt") &&
-		    hdr_validate_crypt_segment(cd, val, key, jobj_digests, offset, size))
+		    hdr_validate_crypt_segment(cd, val, key, jobj_digests, size))
 			return 1;
 	}
 

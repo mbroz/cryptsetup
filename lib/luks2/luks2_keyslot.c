@@ -34,7 +34,7 @@ static const keyslot_handler *keyslot_handlers[LUKS2_KEYSLOTS_MAX] = {
 };
 
 static const keyslot_handler
-*LUKS2_keyslot_handler_type(struct crypt_device *cd __attribute__((unused)), const char *type)
+*LUKS2_keyslot_handler_type(const char *type)
 {
 	int i;
 
@@ -64,7 +64,7 @@ static const keyslot_handler
 	if (!json_object_object_get_ex(jobj1, "type", &jobj2))
 		return NULL;
 
-	return LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj2));
+	return LUKS2_keyslot_handler_type(json_object_get_string(jobj2));
 }
 
 int LUKS2_keyslot_find_empty(struct crypt_device *cd, struct luks2_hdr *hdr, size_t keylength)
@@ -616,7 +616,7 @@ int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	if (keyslot == CRYPT_ANY_SLOT)
 		return -EINVAL;
 
-	h = LUKS2_keyslot_handler_type(cd, "reencrypt");
+	h = LUKS2_keyslot_handler_type("reencrypt");
 	if (!h)
 		return -EINVAL;
 
@@ -675,7 +675,7 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 
 	if (!LUKS2_get_keyslot_jobj(hdr, keyslot)) {
 		/* Try to allocate default and empty keyslot type */
-		h = LUKS2_keyslot_handler_type(cd, "luks2");
+		h = LUKS2_keyslot_handler_type("luks2");
 		if (!h)
 			return -EINVAL;
 
@@ -781,8 +781,7 @@ int LUKS2_keyslot_dump(struct crypt_device *cd, int keyslot)
 	return h->dump(cd, keyslot);
 }
 
-crypt_keyslot_priority LUKS2_keyslot_priority_get(struct crypt_device *cd __attribute__((unused)),
-	  struct luks2_hdr *hdr, int keyslot)
+crypt_keyslot_priority LUKS2_keyslot_priority_get(struct luks2_hdr *hdr, int keyslot)
 {
 	json_object *jobj_keyslot, *jobj_priority;
 
@@ -816,8 +815,7 @@ int LUKS2_keyslot_priority_set(struct crypt_device *cd, struct luks2_hdr *hdr,
 int placeholder_keyslot_alloc(struct crypt_device *cd,
 	int keyslot,
 	uint64_t area_offset,
-	uint64_t area_length,
-	size_t volume_key_len __attribute__((unused)))
+	uint64_t area_length)
 {
 	struct luks2_hdr *hdr;
 	json_object *jobj_keyslots, *jobj_keyslot, *jobj_area;
@@ -898,7 +896,7 @@ int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_foreach(jobj_keyslots, slot, val) {
 		keyslot = atoi(slot);
 		json_object_object_get_ex(val, "type", &jobj_type);
-		h = LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj_type));
+		h = LUKS2_keyslot_handler_type(json_object_get_string(jobj_type));
 		if (!h)
 			continue;
 		if (h->validate && h->validate(cd, val)) {
@@ -945,9 +943,9 @@ void LUKS2_keyslots_repair(struct crypt_device *cd, json_object *jobj_keyslots)
 		    !json_object_is_type(jobj_type, json_type_string))
 			continue;
 
-		h = LUKS2_keyslot_handler_type(cd, json_object_get_string(jobj_type));
+		h = LUKS2_keyslot_handler_type(json_object_get_string(jobj_type));
 		if (h && h->repair)
-			h->repair(cd, val);
+			h->repair(val);
 	}
 }
 

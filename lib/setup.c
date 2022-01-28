@@ -972,8 +972,7 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 	return 0;
 }
 
-static int _crypt_load_bitlk(struct crypt_device *cd,
-			     struct bitlk_metadata *params __attribute__((unused)))
+static int _crypt_load_bitlk(struct crypt_device *cd)
 {
 	int r;
 
@@ -1049,7 +1048,7 @@ int crypt_load(struct crypt_device *cd,
 			log_dbg(cd, "Context is already initialized to type %s", cd->type);
 			return -EINVAL;
 		}
-		r = _crypt_load_bitlk(cd, params);
+		r = _crypt_load_bitlk(cd);
 	} else
 		return -EINVAL;
 
@@ -1296,7 +1295,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		r = TCRYPT_init_by_name(cd, name, dmd.uuid, tgt, &cd->device,
 					&cd->u.tcrypt.params, &cd->u.tcrypt.hdr);
 	} else if (isBITLK(cd->type)) {
-		r = _crypt_load_bitlk(cd, NULL);
+		r = _crypt_load_bitlk(cd);
 		if (r < 0) {
 			log_dbg(cd, "BITLK device header not available.");
 			crypt_set_null_type(cd);
@@ -1775,13 +1774,13 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			params->integrity_params->journal_integrity)
 				return -ENOTSUP;
 		}
-		if (!INTEGRITY_tag_size(cd, integrity, cipher, cipher_mode)) {
+		if (!INTEGRITY_tag_size(integrity, cipher, cipher_mode)) {
 			if (!strcmp(integrity, "none"))
 				integrity = NULL;
 			else
 				return -EINVAL;
 		}
-		integrity_key_size = INTEGRITY_key_size(cd, integrity);
+		integrity_key_size = INTEGRITY_key_size(integrity);
 		if ((integrity_key_size < 0) || (integrity_key_size >= (int)volume_key_size)) {
 			log_err(cd, _("Volume key is too small for encryption with integrity extensions."));
 			return -EINVAL;
@@ -1860,7 +1859,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	}
 
 	if ((!integrity || integrity_key_size) && !crypt_cipher_wrapped_key(cipher, cipher_mode) &&
-	    !INTEGRITY_tag_size(cd, NULL, cipher, cipher_mode)) {
+	    !INTEGRITY_tag_size(NULL, cipher, cipher_mode)) {
 		r = LUKS_check_cipher(cd, volume_key_size - integrity_key_size,
 				      cipher, cipher_mode);
 		if (r < 0)
@@ -2154,7 +2153,7 @@ static int _crypt_format_verity(struct crypt_device *cd,
 			if (!(cd->u.verity.uuid = strdup(uuid)))
 				r = -ENOMEM;
 		} else
-			r = VERITY_UUID_generate(cd, &cd->u.verity.uuid);
+			r = VERITY_UUID_generate(&cd->u.verity.uuid);
 
 		if (!r)
 			r = VERITY_write_sb(cd, cd->u.verity.hdr.hash_area_offset,
@@ -3200,8 +3199,7 @@ static int resume_by_volume_key(struct crypt_device *cd,
 		digest = LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
 		if (digest < 0)
 			return -EINVAL;
-		r = LUKS2_volume_key_load_in_keyring_by_digest(cd,
-					&cd->u.luks2.hdr, vk, digest);
+		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, digest);
 		if (r < 0)
 			return r;
 	}
@@ -4009,7 +4007,7 @@ static int load_all_keys(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	struct volume_key *vk = vks;
 
 	while (vk) {
-		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, hdr, vk, crypt_volume_key_get_id(vk));
+		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, crypt_volume_key_get_id(vk));
 		if (r < 0)
 			return r;
 		vk = crypt_volume_key_next(vk);
@@ -4100,7 +4098,7 @@ static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
 
 	if (ri == CRYPT_REENCRYPT_CRASH) {
 		r = LUKS2_reencrypt_locked_recovery_by_passphrase(cd, keyslot,
-				keyslot, passphrase, passphrase_size, flags, &vks);
+				keyslot, passphrase, passphrase_size, &vks);
 		if (r < 0) {
 			log_err(cd, _("LUKS2 reencryption recovery failed."));
 			goto out;
@@ -5154,10 +5152,10 @@ const char *crypt_get_integrity(struct crypt_device *cd)
 int crypt_get_integrity_key_size(struct crypt_device *cd)
 {
 	if (isINTEGRITY(cd->type))
-		return INTEGRITY_key_size(cd, crypt_get_integrity(cd));
+		return INTEGRITY_key_size(crypt_get_integrity(cd));
 
 	if (isLUKS2(cd->type))
-		return INTEGRITY_key_size(cd, crypt_get_integrity(cd));
+		return INTEGRITY_key_size(crypt_get_integrity(cd));
 
 	return 0;
 }
@@ -5169,7 +5167,7 @@ int crypt_get_integrity_tag_size(struct crypt_device *cd)
 		return cd->u.integrity.params.tag_size;
 
 	if (isLUKS2(cd->type))
-		return INTEGRITY_tag_size(cd, crypt_get_integrity(cd),
+		return INTEGRITY_tag_size(crypt_get_integrity(cd),
 					  crypt_get_cipher(cd),
 					  crypt_get_cipher_mode(cd));
 	return 0;
@@ -5523,7 +5521,7 @@ crypt_keyslot_priority crypt_keyslot_get_priority(struct crypt_device *cd, int k
 		return CRYPT_SLOT_PRIORITY_INVALID;
 
 	if (isLUKS2(cd->type))
-		return LUKS2_keyslot_priority_get(cd, &cd->u.luks2.hdr, keyslot);
+		return LUKS2_keyslot_priority_get(&cd->u.luks2.hdr, keyslot);
 
 	return CRYPT_SLOT_PRIORITY_NORMAL;
 }
@@ -5615,7 +5613,7 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 
 		ip->integrity = LUKS2_get_integrity(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
 		ip->integrity_key_size = crypt_get_integrity_key_size(cd);
-		ip->tag_size = INTEGRITY_tag_size(cd, ip->integrity, crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
+		ip->tag_size = INTEGRITY_tag_size(ip->integrity, crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
 
 		ip->journal_integrity = NULL;
 		ip->journal_integrity_key_size = 0;
@@ -5753,7 +5751,7 @@ int crypt_token_json_get(struct crypt_device *cd, int token, const char **json)
 	if ((r = _onlyLUKS2(cd, CRYPT_CD_UNRESTRICTED, 0)))
 		return r;
 
-	return LUKS2_token_json_get(cd, &cd->u.luks2.hdr, token, json) ?: token;
+	return LUKS2_token_json_get(&cd->u.luks2.hdr, token, json) ?: token;
 }
 
 int crypt_token_json_set(struct crypt_device *cd, int token, const char *json)
@@ -5819,7 +5817,7 @@ int crypt_token_luks2_keyring_get(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	return LUKS2_token_keyring_get(cd, &cd->u.luks2.hdr, token, params);
+	return LUKS2_token_keyring_get(&cd->u.luks2.hdr, token, params);
 }
 
 int crypt_token_luks2_keyring_set(struct crypt_device *cd,
@@ -5871,7 +5869,7 @@ int crypt_token_is_assigned(struct crypt_device *cd, int token, int keyslot)
 	if ((r = _onlyLUKS2(cd, CRYPT_CD_QUIET | CRYPT_CD_UNRESTRICTED, 0)))
 		return r;
 
-	return LUKS2_token_is_assigned(cd, &cd->u.luks2.hdr, keyslot, token);
+	return LUKS2_token_is_assigned(&cd->u.luks2.hdr, keyslot, token);
 }
 
 /* Internal only */

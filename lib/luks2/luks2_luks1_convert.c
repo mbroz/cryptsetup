@@ -768,7 +768,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 			 * inactive keyslots. Otherwise we would allocate all
 			 * inactive luks1 keyslots over same binary keyslot area.
 			 */
-			if (placeholder_keyslot_alloc(cd, i, offset, area_length, key_size))
+			if (placeholder_keyslot_alloc(cd, i, offset, area_length))
 				return -EINVAL;
 		}
 

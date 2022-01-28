@@ -75,6 +75,6 @@ uint64_t VERITY_FEC_blocks(struct crypt_device *cd,
 			   struct device *fec_device,
 			   struct crypt_params_verity *params);
 
-int VERITY_UUID_generate(struct crypt_device *cd, char **uuid_string);
+int VERITY_UUID_generate(char **uuid_string);
 
 #endif

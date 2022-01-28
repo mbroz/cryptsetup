@@ -115,14 +115,13 @@ typedef int (*keyslot_store_func)(struct crypt_device *cd, int keyslot,
 typedef int (*keyslot_wipe_func) (struct crypt_device *cd, int keyslot);
 typedef int (*keyslot_dump_func) (struct crypt_device *cd, int keyslot);
 typedef int (*keyslot_validate_func) (struct crypt_device *cd, json_object *jobj_keyslot);
-typedef void(*keyslot_repair_func) (struct crypt_device *cd, json_object *jobj_keyslot);
+typedef void(*keyslot_repair_func) (json_object *jobj_keyslot);
 
 /* see LUKS2_luks2_to_luks1 */
 int placeholder_keyslot_alloc(struct crypt_device *cd,
 	int keyslot,
 	uint64_t area_offset,
-	uint64_t area_length,
-	size_t volume_key_len);
+	uint64_t area_length);
 
 /* validate all keyslot implementations in hdr json */
 int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj);
@@ -317,7 +316,6 @@ int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
  * Generic LUKS2 digest
  */
 int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
 	int digest,
 	const struct volume_key *vk);
 
@@ -343,8 +341,6 @@ int LUKS2_reload(struct crypt_device *cd,
 
 int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment);
 int LUKS2_find_keyslot(struct luks2_hdr *hdr, const char *type);
-int LUKS2_set_keyslots_size(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	uint64_t data_offset);
+int LUKS2_set_keyslots_size(struct luks2_hdr *hdr, uint64_t data_offset);
 
 #endif

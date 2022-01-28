@@ -789,9 +789,6 @@ int crypt_bitlk_decrypt_key(const void *key, size_t key_length __attribute__((un
 	if (EVP_DecryptInit_ex(ctx, EVP_aes_256_ccm(), NULL, NULL, NULL) != 1)
 		goto out;
 
-	//EVP_CIPHER_CTX_key_length(ctx)
-	//EVP_CIPHER_CTX_iv_length(ctx)
-
 	if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, iv_length, NULL) != 1)
 		goto out;
 	if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_TAG, tag_length, CONST_CAST(void*)tag) != 1)
