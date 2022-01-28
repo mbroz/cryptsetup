@@ -2869,19 +2869,20 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	old_ss = reencrypt_get_sector_size_old(hdr);
 	new_ss = reencrypt_get_sector_size_new(hdr);
 
-	r = reencrypt_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
+	r = reencrypt_verify_keys(cd, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 	if (r == -ENOENT) {
 		log_dbg(cd, "Keys are not ready. Unlocking all volume keys.");
 		r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
-		if (r < 0)
-			goto err;
-		r = reencrypt_verify_and_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 	}
 
 	if (r < 0)
 		goto err;
 
 	if (name) {
+		r = reencrypt_upload_keys(cd, hdr, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
+		if (r < 0)
+			goto err;
+
 		r = dm_query_device(cd, name, DM_ACTIVE_UUID | DM_ACTIVE_DEVICE |
 				    DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY |
 				    DM_ACTIVE_CRYPT_CIPHER, &dmd_target);
@@ -2893,7 +2894,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		 * By default reencryption code aims to retain flags from existing dm device.
 		 * The keyring activation flag can not be inherited if original cipher is null.
 		 *
-		 * In this case override the flag based on decision made in reencrypt_verify_and_upload_keys
+		 * In this case override the flag based on decision made in reencrypt_upload_keys
 		 * above. The code checks if new VK is eligible for keyring.
 		 */
 		vk = crypt_volume_key_by_id(*vks, LUKS2_reencrypt_digest_new(hdr));
