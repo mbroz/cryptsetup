@@ -24,31 +24,31 @@ FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 function remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
-        rm -f $IMG >/dev/null 2>&1
+	rm -f $IMG >/dev/null 2>&1
 }
 
 function remove_user()
 {
-        id -u $USER >/dev/null 2>&1 && userdel -r -f $USER >/dev/null 2>&1
-        rm -f $SSH_KEY_PATH "$SSH_KEY_PATH.pub" >/dev/null 2>&1
+	id -u $USER >/dev/null 2>&1 && userdel -r -f $USER >/dev/null 2>&1
+	rm -f $SSH_KEY_PATH "$SSH_KEY_PATH.pub" >/dev/null 2>&1
 }
 
 function create_user()
 {
-        id -u $USER >/dev/null 2>&1
-        [ $? -eq 0 ] && skip "User account $USER exists, aborting."
-        [ -f $SSH_KEY_PATH ] && skip "SSH key $SSH_KEY_PATH already exists, aborting."
+	id -u $USER >/dev/null 2>&1
+	[ $? -eq 0 ] && skip "User account $USER exists, aborting."
+	[ -f $SSH_KEY_PATH ] && skip "SSH key $SSH_KEY_PATH already exists, aborting."
 
-        useradd -m $USER -p $(openssl passwd $PASSWD) || skip "Failed to add user for SSH plugin test."
+	useradd -m $USER -p $(openssl passwd $PASSWD) || skip "Failed to add user for SSH plugin test."
 
-        ssh-keygen -f $SSH_KEY_PATH -q -N "" >/dev/null 2>&1
-        [ $? -ne 0 ] && remove_user && skip "Failed to create SSH key."
+	ssh-keygen -f $SSH_KEY_PATH -q -N "" >/dev/null 2>&1
+	[ $? -ne 0 ] && remove_user && skip "Failed to create SSH key."
 }
 
 function ssh_check()
 {
-        # try to use netcat to check port 22
-        nc -zv $SSH_SERVER 22 >/dev/null 2>&1 || skip "SSH server does not seem to be running, skipping."
+	# try to use netcat to check port 22
+	nc -zv $SSH_SERVER 22 >/dev/null 2>&1 || skip "SSH server does not seem to be running, skipping."
 }
 
 function bin_check()
@@ -58,31 +58,31 @@ function bin_check()
 
 function ssh_setup()
 {
-        # .ssh is used by ssh-copy-id for temp files so it must exist even if key is not there
-        [ -d "$HOME/.ssh" ] || mkdir -m 700 $HOME/.ssh
+	# .ssh is used by ssh-copy-id for temp files so it must exist even if key is not there
+	[ -d "$HOME/.ssh" ] || mkdir -m 700 $HOME/.ssh
 
-        # ssh-copy-id
-        sshpass -p $PASSWD ssh-copy-id -i $SSH_KEY_PATH $SSH_OPTIONS $USER@$SSH_SERVER >/dev/null 2>&1
-        [ $? -ne 0 ] && remove_user && skip "Failed to copy SSH key."
+	# ssh-copy-id
+	sshpass -p $PASSWD ssh-copy-id -i $SSH_KEY_PATH $SSH_OPTIONS $USER@$SSH_SERVER >/dev/null 2>&1
+	[ $? -ne 0 ] && remove_user && skip "Failed to copy SSH key."
 
-        # make sure /home/sshtest/.ssh and /home/sshtest/.ssh/authorized_keys have correct permissions
-        chown -R $USER:$USER /home/$USER/.ssh
-        chmod 700 /home/$USER/.ssh
-        chmod 644 /home/$USER/.ssh/authorized_keys
+	# make sure /home/sshtest/.ssh and /home/sshtest/.ssh/authorized_keys have correct permissions
+	chown -R $USER:$USER /home/$USER/.ssh
+	chmod 700 /home/$USER/.ssh
+	chmod 644 /home/$USER/.ssh/authorized_keys
 
-        # try to ssh and also create keyfile
-        ssh -i $SSH_KEY_PATH $SSH_OPTIONS -o BatchMode=yes -n $USER@$SSH_SERVER -f "echo -n $PASSWD > $SSH_PATH" >/dev/null 2>&1
-        [ $? -ne 0 ] && remove_user && skip "Failed to connect using SSH."
+	# try to ssh and also create keyfile
+	ssh -i $SSH_KEY_PATH $SSH_OPTIONS -o BatchMode=yes -n $USER@$SSH_SERVER -f "echo -n $PASSWD > $SSH_PATH" >/dev/null 2>&1
+	[ $? -ne 0 ] && remove_user && skip "Failed to connect using SSH."
 }
 
 function fail()
 {
 	echo "[FAILED]"
-        [ -n "$1" ] && echo "$1"
+	[ -n "$1" ] && echo "$1"
 	echo "FAILED backtrace:"
 	while caller $frame; do ((frame++)); done
 	remove_mapping
-        remove_user
+	remove_user
 	exit 2
 }
 
@@ -100,32 +100,32 @@ format()
 	echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $IMG --force-password -q
 	[ $? -ne 0 ] && fail "Format failed."
 
-        echo -e "$PASSWD\n$PASSWD2" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $IMG -q
+	echo -e "$PASSWD\n$PASSWD2" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $IMG -q
 	[ $? -ne 0 ] && fail "Add key failed."
 }
 
 check_dump()
 {
-        dump=$1
-        keyslot=$2
+	dump=$1
+	keyslot=$2
 
-        token=$(echo "$dump" | grep Tokens -A 1 | tail -1 | cut -d: -f2 | tr -d "\t\n ")
-        [ "$token" = "ssh"  ] || fail " token check from dump failed."
+	token=$(echo "$dump" | grep Tokens -A 1 | tail -1 | cut -d: -f2 | tr -d "\t\n ")
+	[ "$token" = "ssh"  ] || fail " token check from dump failed."
 
-        server=$(echo "$dump" | grep ssh_server | cut -d: -f2 | tr -d "\t\n ")
-        [ "$server" = $SSH_SERVER ] || fail " server check from dump failed."
+	server=$(echo "$dump" | grep ssh_server | cut -d: -f2 | tr -d "\t\n ")
+	[ "$server" = $SSH_SERVER ] || fail " server check from dump failed."
 
-        user=$(echo "$dump" | grep ssh_user | cut -d: -f2 | tr -d "\t\n ")
-        [ "$user" = "$USER"  ] || fail " user check from dump failed."
+	user=$(echo "$dump" | grep ssh_user | cut -d: -f2 | tr -d "\t\n ")
+	[ "$user" = "$USER"  ] || fail " user check from dump failed."
 
-        path=$(echo "$dump" | grep ssh_path | cut -d: -f2 | tr -d "\t\n ")
-        [ "$path" = "$SSH_PATH"  ] || fail " path check from dump failed."
+	path=$(echo "$dump" | grep ssh_path | cut -d: -f2 | tr -d "\t\n ")
+	[ "$path" = "$SSH_PATH"  ] || fail " path check from dump failed."
 
-        key_path=$(echo "$dump" | grep ssh_key_path | cut -d: -f2 | tr -d "\t\n ")
-        [ "$key_path" = "$SSH_KEY_PATH"  ] || fail " key_path check from dump failed."
+	key_path=$(echo "$dump" | grep ssh_key_path | cut -d: -f2 | tr -d "\t\n ")
+	[ "$key_path" = "$SSH_KEY_PATH"  ] || fail " key_path check from dump failed."
 
-        keyslot_dump=$(echo "$dump" | grep Keyslot: | cut -d: -f2 | tr -d "\t\n ")
-        [ "$keyslot_dump" = "$keyslot" ] || fail " keyslot check from dump failed."
+	keyslot_dump=$(echo "$dump" | grep Keyslot: | cut -d: -f2 | tr -d "\t\n ")
+	[ "$keyslot_dump" = "$keyslot" ] || fail " keyslot check from dump failed."
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
