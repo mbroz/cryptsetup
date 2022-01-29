@@ -962,7 +962,7 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 	return r;
 }
 
-static int encrypt(int action_argc, const char **action_argv)
+static int _encrypt(int action_argc, const char **action_argv)
 {
 	const char *type = luksType(device_type);
 	bool luks1_in_reencrypt = false;
@@ -996,7 +996,7 @@ static int encrypt(int action_argc, const char **action_argv)
 	return -EINVAL;
 }
 
-static int decrypt(int action_argc, const char **action_argv)
+static int _decrypt(int action_argc, const char **action_argv)
 {
 	enum device_status_info dev_st;
 	int r;
@@ -1052,9 +1052,9 @@ int reencrypt(int action_argc, const char **action_argv)
 	}
 
 	if (ARG_SET(OPT_ENCRYPT_ID))
-		return encrypt(action_argc, action_argv);
+		return _encrypt(action_argc, action_argv);
 	else if (ARG_SET(OPT_DECRYPT_ID))
-		return decrypt(action_argc, action_argv);
+		return _decrypt(action_argc, action_argv);
 	else
 		return _reencrypt(action_argc, action_argv);
 }
