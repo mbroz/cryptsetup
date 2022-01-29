@@ -11,7 +11,6 @@ MAP="sshtest"
 USER="sshtest"
 PASSWD="sshtest"
 PASSWD2="sshtest2"
-LOOPDEV=$(losetup -f 2>/dev/null)
 SSH_OPTIONS="-o StrictHostKeyChecking=no"
 
 SSH_SERVER="localhost"
@@ -25,7 +24,6 @@ FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 function remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
-        losetup -d $LOOPDEV >/dev/null 2>&1
         rm -f $IMG >/dev/null 2>&1
 }
 
@@ -98,13 +96,11 @@ function skip()
 format()
 {
 	dd if=/dev/zero of=$IMG bs=1M count=32 >/dev/null 2>&1
-	sync
-	losetup $LOOPDEV $IMG
 
-	echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $LOOPDEV --force-password -q
+	echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $IMG --force-password -q
 	[ $? -ne 0 ] && fail "Format failed."
 
-        echo -e "$PASSWD\n$PASSWD2" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV -q
+        echo -e "$PASSWD\n$PASSWD2" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $IMG -q
 	[ $? -ne 0 ] && fail "Add key failed."
 }
 
@@ -152,29 +148,29 @@ ssh_check
 create_user
 ssh_setup
 
-$CRYPTSETUP_SSH add $LOOPDEV --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH
-[ $? -ne 0 ] && fail "Failed to add SSH token to $LOOPDEV"
+$CRYPTSETUP_SSH add $IMG --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH
+[ $? -ne 0 ] && fail "Failed to add SSH token to $IMG"
 
-out=$($CRYPTSETUP luksDump $LOOPDEV)
+out=$($CRYPTSETUP luksDump $IMG)
 check_dump "$out" 0
 echo "[OK]"
 
 echo -n "Activating using SSH token: "
 
-$CRYPTSETUP luksOpen --token-only --disable-external-tokens -r $LOOPDEV $MAP && fail "Tokens should be disabled"
-$CRYPTSETUP luksOpen -r $LOOPDEV $MAP -q >/dev/null 2>&1 <&-
-[ $? -ne 0 ] && fail "Failed to open $LOOPDEV using SSH token"
+$CRYPTSETUP luksOpen --token-only --disable-external-tokens -r $IMG $MAP && fail "Tokens should be disabled"
+$CRYPTSETUP luksOpen -r $IMG $MAP -q >/dev/null 2>&1 <&-
+[ $? -ne 0 ] && fail "Failed to open $IMG using SSH token"
 echo "[OK]"
 
 # Remove the newly added token and test adding with --key-slot
-$CRYPTSETUP token remove --token-id 0 $LOOPDEV || fail "Failed to remove token"
+$CRYPTSETUP token remove --token-id 0 $IMG || fail "Failed to remove token"
 
 echo -n "Adding SSH token with --key-slot: "
 
-$CRYPTSETUP_SSH add $LOOPDEV --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH --key-slot 1
-[ $? -ne 0 ] && fail "Failed to add SSH token to $LOOPDEV"
+$CRYPTSETUP_SSH add $IMG --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH --key-slot 1
+[ $? -ne 0 ] && fail "Failed to add SSH token to $IMG"
 
-out=$($CRYPTSETUP luksDump $LOOPDEV)
+out=$($CRYPTSETUP luksDump $IMG)
 check_dump "$out" 1
 echo "[OK]"
 
