@@ -1,8 +1,8 @@
 /*
  * Example of LUKS2 ssh token handler (EXPERIMENTAL)
  *
- * Copyright (C) 2016-2021 Milan Broz <gmazyland@gmail.com>
- * Copyright (C) 2020-2021 Vojtech Trefny
+ * Copyright (C) 2016-2022 Milan Broz
+ * Copyright (C) 2020-2022 Vojtech Trefny
  *
  * Use:
  *  - generate LUKS device
