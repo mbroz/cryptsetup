@@ -3321,6 +3321,11 @@ static void Luks2Requirements(void)
 	FAIL_((r = crypt_set_label(cd, "label", "subsystem")), "Unmet requirements detected");
 	EQ_(r, -ETXTBSY);
 
+	/* crypt_get_label (unrestricted) */
+	NOTNULL_(crypt_get_label(cd));
+	/* crypt_get_subsystem (unrestricted) */
+	NOTNULL_(crypt_get_subsystem(cd));
+
 	/* crypt_repair (with current repair capabilities it's unrestricted) */
 	OK_(crypt_repair(cd, CRYPT_LUKS2, NULL));
 
