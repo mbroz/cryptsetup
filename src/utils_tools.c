@@ -369,11 +369,11 @@ int tools_string_to_size(const char *s, uint64_t *size)
 
 /* Time progress helper */
 
-/* The difference in seconds between two times in "timeval" format. */
-static double time_diff(struct timeval *start, struct timeval *end)
+/* The difference in microseconds between two times in "timeval" format. */
+static uint64_t time_diff(struct timeval *start, struct timeval *end)
 {
-	return (end->tv_sec - start->tv_sec)
-		+ (end->tv_usec - start->tv_usec) / 1E6;
+	return (end->tv_sec - start->tv_sec) * UINT64_C(1000000)
+		+ (end->tv_usec - start->tv_usec);
 }
 
 static void tools_clear_line(void)
@@ -385,8 +385,8 @@ static void tools_clear_line(void)
 static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct tools_progress_params *parms)
 {
 	struct timeval now_time;
-	unsigned long long mbytes, eta;
-	double tdiff, uib, frequency;
+	uint64_t mbytes, eta, frequency;
+	double tdiff, uib;
 	int final = (bytes == device_size);
 	const char *eol, *ustr = "";
 
@@ -399,10 +399,10 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct too
 	}
 
 	if (parms->frequency) {
-		frequency = (double)parms->frequency;
+		frequency = parms->frequency * UINT64_C(1000000);
 		eol = "\n";
 	} else {
-		frequency = 0.5;
+		frequency = 500000;
 		eol = "";
 	}
 
@@ -411,14 +411,14 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct too
 
 	parms->end_time = now_time;
 
-	tdiff = time_diff(&parms->start_time, &parms->end_time);
+	tdiff = time_diff(&parms->start_time, &parms->end_time) / 1E6;
 	if (!tdiff)
 		return;
 
 	mbytes = bytes  / 1024 / 1024;
 	uib = (double)(bytes - parms->start_offset) / tdiff;
 
-	eta = (unsigned long long)(device_size / uib - tdiff);
+	eta = (uint64_t)(device_size / uib - tdiff);
 
 	if (uib > 1073741824.0f) {
 		uib /= 1073741824.0f;
@@ -434,11 +434,11 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct too
 	if (!parms->frequency)
 		tools_clear_line();
 	if (final)
-		log_std("Finished, time %02llu:%02llu.%03llu, "
-			"%4llu MiB written, speed %5.1f %sB/s\n",
-			(unsigned long long)tdiff / 60,
-			(unsigned long long)tdiff % 60,
-			(unsigned long long)((tdiff - floor(tdiff)) * 1000.0),
+		log_std("Finished, time %02" PRIu64 ":%02" PRIu64 ".%03" PRIu64 ", "
+			"%4" PRIu64 " MiB written, speed %5.1f %sB/s\n",
+			(uint64_t)tdiff / 60,
+			(uint64_t)tdiff % 60,
+			(uint64_t)((tdiff - floor(tdiff)) * 1000.0),
 			mbytes, uib, ustr);
 	else
 		log_std("Progress: %5.1f%%, ETA %02llu:%02llu, "
