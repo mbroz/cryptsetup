@@ -67,11 +67,9 @@
  *   under CRYPT_SYMBOL_EXPORT_OLD(int, crypt_func_X, ...) macro
  */
 
-#ifdef __has_attribute
-#  if __has_attribute(symver)
-#    define _CRYPT_SYMVER(_local_sym, _public_sym, _ver_str, _maj, _min)     \
-       __attribute__((__symver__(#_public_sym _ver_str #_maj "." #_min)))
-#  endif
+#if HAVE_ATTRIBUTE_SYMVER
+#  define _CRYPT_SYMVER(_local_sym, _public_sym, _ver_str, _maj, _min)     \
+     __attribute__((__symver__(#_public_sym _ver_str #_maj "." #_min)))
 #endif
 
 #if !defined(_CRYPT_SYMVER) && defined(__GNUC__)

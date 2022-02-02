@@ -554,6 +554,17 @@ if test "x$enable_static_cryptsetup" = "xyes"; then
 	PKG_CONFIG=$saved_PKG_CONFIG
 fi
 
+dnl Check compiler support for symver function attribute
+saved_CFLAGS=$CFLAGS
+CFLAGS="-O0 -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+	void _test_sym(void);
+	__attribute__((__symver__("sym@VERSION_4.2"))) void _test_sym(void) {}
+]],
+[[ _test_sym() ]]
+)],[ AC_DEFINE([HAVE_ATTRIBUTE_SYMVER], 1, [Define to 1 to use __attribute__((symver))])])
+CFLAGS=$saved_CFLAGS
+
 AC_MSG_CHECKING([for systemd tmpfiles config directory])
 PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
 AC_MSG_RESULT([$systemd_tmpfilesdir])
