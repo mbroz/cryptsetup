@@ -5,6 +5,7 @@ stages:
   after_script:
     - sudo dmesg > /mnt/artifacts/dmesg.log
     - sudo journalctl > /mnt/artifacts/journalctl.log
+    - '[ "$(ls -A /var/coredumps)" ] && exit 1 || true'
 
 include:
   - local: .gitlab/ci/debian.yml
