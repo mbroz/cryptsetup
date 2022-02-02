@@ -118,6 +118,7 @@ check_sector_size() # $1 expected sector size
 	fi
 }
 
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 if [ $(id -u) != 0 ]; then
 	skip "You must be root to run this test, test skipped."
 fi

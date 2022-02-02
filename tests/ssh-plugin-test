@@ -128,6 +128,7 @@ check_dump()
 	[ "$keyslot_dump" = "$keyslot" ] || fail " keyslot check from dump failed."
 }
 
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 
 # Prevent running dangerous useradd operation by default

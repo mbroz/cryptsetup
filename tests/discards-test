@@ -21,6 +21,12 @@ fail()
 	exit 100
 }
 
+skip()
+{
+	[ -n "$1" ] && echo "$1"
+	exit 77
+}
+
 add_device() {
 	rmmod scsi_debug >/dev/null 2>&1
 	if [ -d /sys/module/scsi_debug ] ; then
@@ -54,6 +60,7 @@ function check_version()
 	return 1
 }
 
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run this test, test skipped."
 	exit 77
