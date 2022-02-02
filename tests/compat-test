@@ -87,7 +87,7 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
-	[ -z "$2" ] && exit $2
+	[ -n "$2" ] && exit $2
 	exit 77
 }
 

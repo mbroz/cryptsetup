@@ -37,7 +37,6 @@ function fail()
 function skip()
 {
 	[ -n "$1" ] && echo "$1"
-	echo "Test skipped."
 	remove_mapping
 	exit 77
 }
@@ -69,7 +68,7 @@ function test_kdf() # hash
 
 function test_required()
 {
-	command -v lsblk >/dev/null || skip "WARNING: lsblk tool required."
+	command -v lsblk >/dev/null || skip "lsblk tool required, test skipped."
 
 	echo "REQUIRED KDF TEST"
 	test_kdf sha256
@@ -101,7 +100,7 @@ function test_required()
 	test_one camellia xts 512 camellia
 	test_one kuznyechik xts 512 kuznyechik
 
-	ls $TST_DIR/[tv]c* >/dev/null 2>&1 || skip "No remaining images."
+	ls $TST_DIR/[tv]c* >/dev/null 2>&1 || skip "No remaining images, test skipped."
 }
 
 function valgrind_setup()
@@ -117,6 +116,7 @@ function valgrind_run()
 }
 
 export LANG=C
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ ! -d $TST_DIR ] && tar xJf $srcdir/tcrypt-images.tar.xz --no-same-owner
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run

@@ -22,10 +22,7 @@ dmremove() { # device
 }
 
 cleanup() {
-	for dev in $(dmsetup status --target crypt | sed s/\:\ .*// | grep "^$DEV_NAME"_); do
-		dmremove $dev
-		sleep 2
-	done
+	[ -b /dev/mapper/"$DEV_NAME"_tstdev ] && dmremove "$DEV_NAME"_tstdev
 	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
 	rm -f $HEADER_IMG >/dev/null 2>&1
@@ -138,6 +135,7 @@ dmcrypt()
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ -z "$LOOPDEV" ] && skip "Cannot find free loop device, test skipped."
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 
 add_device
 

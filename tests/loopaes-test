@@ -37,6 +37,7 @@ function fail()
 
 function skip()
 {
+	remove_mapping
 	[ -n "$1" ] && echo "$1"
 	exit 77
 }
@@ -143,6 +144,7 @@ function check_version()
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ -z "$LOOPDEV" ] && skip "Cannot find free loop device, test skipped."
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 command -v uuencode >/dev/null || skip "WARNING: test require uuencode binary, test skipped."
 check_version || skip "Probably old kernel, test skipped."
 
