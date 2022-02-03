@@ -4,15 +4,14 @@
     - gitlab-org-docker
   stage: test
   interruptible: true
-  rules:
-    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-      when: never
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   before_script:
     - .gitlab/ci/cibuild-setup-ubuntu.sh
     - export CC="${COMPILER}${COMPILER_VERSION:+-$COMPILER_VERSION}"
     - export CXX="${COMPILER}++${COMPILER_VERSION:+-$COMPILER_VERSION}"
     - ./autogen.sh
+  artifacts:
+    paths:
+      - config.log
 
 .gitlab-shared-gcc:
   extends:
