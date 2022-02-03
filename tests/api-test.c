@@ -604,6 +604,9 @@ static void AddDevicePlain(void)
 	FAIL_(crypt_keyslot_add_by_keyfile(cd,CRYPT_ANY_SLOT,KEYFILE1,strlen(KEY1),KEYFILE2,strlen(KEY2)),"can't add keyslot to plain device");
 	FAIL_(crypt_keyslot_destroy(cd,1),"can't manipulate keyslots on plain device");
 	EQ_(crypt_keyslot_status(cd, 0), CRYPT_SLOT_INVALID);
+	FAIL_(crypt_set_label(cd, "label", "subsystem"), "can't set labels for plain device");
+	NULL_(crypt_get_label(cd));
+	NULL_(crypt_get_subsystem(cd));
 	_remove_keyfiles();
 
 	CRYPT_FREE(cd);
@@ -1035,6 +1038,10 @@ static void AddDeviceLuks(void)
 	FAIL_(crypt_set_uuid(cd, "blah"), "wrong UUID format");
 	OK_(crypt_set_uuid(cd, DEVICE_TEST_UUID));
 	OK_(strcmp(DEVICE_TEST_UUID, crypt_get_uuid(cd)));
+
+	FAIL_(crypt_set_label(cd, "label", "subsystem"), "can't set labels for LUKS1 device");
+	NULL_(crypt_get_label(cd));
+	NULL_(crypt_get_subsystem(cd));
 
 	FAIL_(crypt_deactivate(cd, CDEVICE_2), "not active");
 	CRYPT_FREE(cd);

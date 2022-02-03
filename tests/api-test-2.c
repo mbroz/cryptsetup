@@ -3323,8 +3323,10 @@ static void Luks2Requirements(void)
 
 	/* crypt_get_label (unrestricted) */
 	NOTNULL_(crypt_get_label(cd));
+	OK_(strcmp("", crypt_get_label(cd)));
 	/* crypt_get_subsystem (unrestricted) */
 	NOTNULL_(crypt_get_subsystem(cd));
+	OK_(strcmp("", crypt_get_subsystem(cd)));
 
 	/* crypt_repair (with current repair capabilities it's unrestricted) */
 	OK_(crypt_repair(cd, CRYPT_LUKS2, NULL));
@@ -3806,6 +3808,15 @@ static void Luks2Flags(void)
 	flags = (uint32_t)~0;
 	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_ACTIVATION, &flags));
 	EQ_(flags,CRYPT_ACTIVATE_ALLOW_DISCARDS | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS);
+
+	/* label and subsystem (second label */
+	OK_(crypt_set_label(cd, "label", "subsystem"));
+	OK_(strcmp("label", crypt_get_label(cd)));
+	OK_(strcmp("subsystem", crypt_get_subsystem(cd)));
+
+	OK_(crypt_set_label(cd, NULL, NULL));
+	OK_(strcmp("", crypt_get_label(cd)));
+	OK_(strcmp("", crypt_get_subsystem(cd)));
 
 	CRYPT_FREE(cd);
 }
