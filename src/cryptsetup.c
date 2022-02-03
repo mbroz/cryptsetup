@@ -145,7 +145,6 @@ static int action_open_plain(void)
 		.hash = ARG_SET(OPT_HASH_ID) ? ARG_STR(OPT_HASH_ID) : DEFAULT_PLAIN_HASH,
 		.skip = ARG_UINT64(OPT_SKIP_ID),
 		.offset = ARG_UINT64(OPT_OFFSET_ID),
-		.size = ARG_UINT64(OPT_SIZE_ID),
 		.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: SECTOR_SIZE
 	};
 	char *password = NULL;
@@ -229,6 +228,11 @@ static int action_open_plain(void)
 		pcipher = cipher;
 		pmode = cipher_mode;
 	}
+
+	if (ARG_SET(OPT_DEVICE_SIZE_ID))
+		params.size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
+	else if (ARG_SET(OPT_SIZE_ID))
+		params.size = ARG_UINT64(OPT_SIZE_ID);
 
 	r = crypt_format(cd, CRYPT_PLAIN,
 			 pcipher, pmode,
@@ -2737,6 +2741,9 @@ static const char * verify_open(void)
 	if (ARG_SET(OPT_TEST_PASSPHRASE_ID) && (!device_type ||
 	    (strncmp(device_type, "luks", 4) && strcmp(device_type, "tcrypt") && strcmp(device_type, "bitlk"))))
 		return _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK devices.");
+
+	if (ARG_SET(OPT_DEVICE_SIZE_ID) && ARG_SET(OPT_SIZE_ID))
+		return _("Options --device-size and --size cannot be combined.");
 
 	/* "open --type tcrypt" and "tcryptDump" checks are identical */
 	return verify_tcryptdump();
