@@ -719,6 +719,24 @@ int crypt_set_label(struct crypt_device *cd,
 	const char *subsystem);
 
 /**
+ * Get the label of an existing device.
+ *
+ * @param cd crypt device handle
+ *
+ * @return label, or @e NULL otherwise
+ */
+const char *crypt_get_label(struct crypt_device *cd);
+
+/**
+ * Get the subsystem of an existing device.
+ *
+ * @param cd crypt device handle
+ *
+ * @return subsystem, or @e NULL otherwise
+ */
+const char *crypt_get_subsystem(struct crypt_device *cd);
+
+/**
  * Enable or disable loading of volume keys via kernel keyring. When set to
  * 'enabled' library loads key in kernel keyring first and pass the key
  * description to dm-crypt instead of binary key copy. If set to 'disabled'

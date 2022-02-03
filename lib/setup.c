@@ -2975,6 +2975,22 @@ int crypt_set_label(struct crypt_device *cd, const char *label, const char *subs
 	return LUKS2_hdr_labels(cd, &cd->u.luks2.hdr, label, subsystem, 1);
 }
 
+const char *crypt_get_label(struct crypt_device *cd)
+{
+	if (_onlyLUKS2(cd, CRYPT_CD_QUIET | CRYPT_CD_UNRESTRICTED, 0))
+		return NULL;
+
+	return cd->u.luks2.hdr.label;
+}
+
+const char *crypt_get_subsystem(struct crypt_device *cd)
+{
+	if (_onlyLUKS2(cd, CRYPT_CD_QUIET | CRYPT_CD_UNRESTRICTED, 0))
+		return NULL;
+
+	return cd->u.luks2.hdr.subsystem;
+}
+
 int crypt_header_backup(struct crypt_device *cd,
 			const char *requested_type,
 			const char *backup_file)
