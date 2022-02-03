@@ -23,6 +23,7 @@ test-main-commit-job-rawhide:
     - fedora-rawhide
   stage: test
   interruptible: true
+  allow_failure: true
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
@@ -42,6 +43,7 @@ test-mergerq-job-rawhide:
     - fedora-rawhide
   stage: test
   interruptible: true
+  allow_failure: true
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
