@@ -840,8 +840,7 @@ command -v expect >/dev/null || skip "WARNING: expect tool missing, interactive 
 
 prepare "[32] Interactive password retry from terminal." new
 EXPECT_DEV=$(losetup $LOOPDEV | sed -e "s/.*(\(.*\))/\1/")
-EXPECT_TIMEOUT=10
-[ -n "$VALG" ] && EXPECT_TIMEOUT=60
+EXPECT_TIMEOUT=60
 
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }

@@ -155,8 +155,7 @@ function img_check_fail()
 
 function img_run_reenc_ok()
 {
-local EXPECT_TIMEOUT=10
-[ -n "$VALG" ] && EXPECT_TIMEOUT=60
+local EXPECT_TIMEOUT=60
 # For now, we cannot run reencryption in batch mode for non-block device. Just fake the terminal here.
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
@@ -172,8 +171,7 @@ EOF
 
 function img_run_reenc_fail()
 {
-local EXPECT_TIMEOUT=10
-[ -n "$VALG" ] && EXPECT_TIMEOUT=60
+local EXPECT_TIMEOUT=60
 # For now, we cannot run reencryption in batch mode for non-block device. Just fake the terminal here.
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 42 }
