@@ -737,6 +737,8 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		return -EIO;
 
 	while (!quit && rc->device_offset < rc->device_size) {
+		if ((rc->device_size - rc->device_offset) < (uint64_t)block_size)
+			block_size = rc->device_size - rc->device_offset;
 		s1 = read_buf(fd_old, buf, block_size);
 		if (s1 < 0 || ((size_t)s1 != block_size &&
 		    (rc->device_offset + s1) != rc->device_size)) {

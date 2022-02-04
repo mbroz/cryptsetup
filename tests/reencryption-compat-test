@@ -233,17 +233,17 @@ prepare 8192
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -s 128 -c aes-cbc-plain $FAST_PBKDF --align-payload 4096 $LOOPDEV1 || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
-echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 $FAST_PBKDF || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 -c aes-xts-plain64 -h sha256 $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -q -s 256 -c aes-xts-plain64 -h sha256 $FAST_PBKDF || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $REENC $LOOPDEV1 -q --use-directio $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -q --use-directio $FAST_PBKDF || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $REENC $LOOPDEV1 -q --master-key-file /dev/urandom $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -q --master-key-file /dev/urandom $FAST_PBKDF || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $REENC $LOOPDEV1 -q -s 512 --master-key-file /dev/urandom $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -q -s 512 --master-key-file /dev/urandom $FAST_PBKDF || fail
 check_hash $PWD1 $HASH1
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
@@ -346,14 +346,14 @@ echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key || fail
 check_hash $PWD1 $HASH1
 echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --pbkdf-force-iterations 999 2>/dev/null && fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha256 --pbkdf-force-iterations 1001
+echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha256 --pbkdf-force-iterations 1001 || fail
 check_hash $PWD1 $HASH1
 [ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A1 -m1 "Key Slot 0" | grep Iterations: | sed -e 's/[[:space:]]\+Iterations:\ \+//g')" -eq 1001 ] || fail
 [ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -m1 "Hash spec:" | cut -f2)" = "sha256" ] || fail
-echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha512 $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key --hash sha512 $FAST_PBKDF || fail
 check_hash $PWD1 $HASH1
 [ "$($CRYPTSETUP luksDump $LOOPDEV1 | grep -A1 -m1 "Key Slot 0" | grep Iterations: | sed -e 's/[[:space:]]\+Iterations:\ \+//g')" -eq 1000 ] || fail
-echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key $FAST_PBKDF
+echo $PWD1 | $REENC $LOOPDEV1 -q --keep-key $FAST_PBKDF || fail
 check_hash $PWD1 $HASH1
 $CRYPTSETUP --type luks1 luksDump $LOOPDEV1 > /dev/null || fail
 
@@ -387,9 +387,9 @@ prepare 8192
 check_hash_dev $IMG $HASH4
 echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new --type luks1
 check_hash $PWD1 $HASH4 $IMG_HDR
-echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR || fail
 check_hash $PWD1 $HASH4 $IMG_HDR
-echo $PWD1 | $REENC $LOOPDEV1 -q --header $IMG_HDR --decrypt
+echo $PWD1 | $REENC $LOOPDEV1 -q --header $IMG_HDR --decrypt || fail
 check_hash_dev $IMG $HASH4
 # existing header of zero size
 cat /dev/null >$IMG_HDR
