@@ -688,22 +688,22 @@ static int token_open_any(struct crypt_device *cd, struct luks2_hdr *hdr, const 
 	return token_open_priority(cd, hdr, jobj_tokens, type, segment, CRYPT_SLOT_PRIORITY_NORMAL, pin, pin_size, usrptr, &retval, &blocked, vk);
 }
 
-int LUKS2_token_open_and_activate(struct crypt_device *cd,
+int LUKS2_token_unlock_volume_key(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
-	const char *name,
 	const char *type,
 	const char *pin,
 	size_t pin_size,
 	uint32_t flags,
-	void *usrptr)
+	void *usrptr,
+	struct volume_key **vk)
 {
-	bool use_keyring;
 	char *buffer;
 	size_t buffer_size;
 	json_object *jobj_token;
-	int keyslot, segment, r = -ENOENT;
-	struct volume_key *vk = NULL;
+	int segment, r = -ENOENT;
+
+	assert(vk);
 
 	if (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY)
 		segment = CRYPT_ANY_SEGMENT;
@@ -718,7 +718,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 			r = LUKS2_token_open(cd, hdr, token, jobj_token, type, segment, CRYPT_SLOT_PRIORITY_IGNORE,  pin, pin_size, &buffer, &buffer_size, usrptr);
 			if (!r) {
 				r = LUKS2_keyslot_open_by_token(cd, hdr, token, segment, CRYPT_SLOT_PRIORITY_IGNORE,
-								buffer, buffer_size, &vk);
+								buffer, buffer_size, vk);
 				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
 			}
 		}
@@ -733,10 +733,28 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 		 * success (>= 0) or any other negative errno short-circuits token activation loop
 		 * immediately
 		 */
-		r = token_open_any(cd, hdr, type, segment, pin, pin_size, usrptr, &vk);
+		r = token_open_any(cd, hdr, type, segment, pin, pin_size, usrptr, vk);
 	else
-		return -EINVAL;
+		r = -EINVAL;
 
+	return r;
+}
+
+int LUKS2_token_open_and_activate(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int token,
+	const char *name,
+	const char *type,
+	const char *pin,
+	size_t pin_size,
+	uint32_t flags,
+	void *usrptr)
+{
+	bool use_keyring;
+	int keyslot, r;
+	struct volume_key *vk = NULL;
+
+	r = LUKS2_token_unlock_volume_key(cd, hdr, token, type, pin, pin_size, flags, usrptr, &vk);
 	if (r < 0)
 		return r;
 

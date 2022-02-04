@@ -853,6 +853,11 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	$CRYPTSETUP open --token-only $LOOPDEV --test-passphrase || fail
 	$CRYPTSETUP open --token-only $LOOPDEV $DEV_NAME || fail
 	$CRYPTSETUP status $DEV_NAME > /dev/null || fail
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail
+	$CRYPTSETUP luksResume $DEV_NAME <&- || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" && fail
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail
+	$CRYPTSETUP luksResume $DEV_NAME --token-type luks2-keyring <&- || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 
 	# check --token-type sort of works (TODO: extend tests when native systemd tokens are available)

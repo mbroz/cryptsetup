@@ -1910,6 +1910,7 @@ static void Tokens(void)
 	const char *cipher_mode = "xts-plain64";
 	char passptr[] = PASSPHRASE;
 	char passptr1[] = PASSPHRASE1;
+	struct crypt_active_device cad;
 
 	static const crypt_token_handler th = {
 		.name = "test_token",
@@ -2121,6 +2122,13 @@ static void Tokens(void)
 	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 11, NULL, 0, passptr, 0), -ENOENT);
 	EQ_(crypt_activate_by_token_pin(cd, NULL, "test_token", 11, NULL, 0, passptr, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), -ENOENT);
 
+	// test crypt_resume_by_token_pin
+	EQ_(crypt_activate_by_token_pin(cd, CDEVICE_1, "test_token", CRYPT_ANY_TOKEN, NULL, 0, passptr, 0), 5);
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	EQ_(crypt_resume_by_token_pin(cd, CDEVICE_1, "test_token", CRYPT_ANY_TOKEN, NULL, 0, passptr), 5);
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(0, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
 	EQ_(crypt_token_max(CRYPT_LUKS2), 32);
