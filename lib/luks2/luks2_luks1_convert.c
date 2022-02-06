@@ -215,7 +215,7 @@ static int json_luks1_segments(const struct luks_phdr *hdr_v1, struct json_objec
 
 static int json_luks1_digest(const struct luks_phdr *hdr_v1, struct json_object **digest_object)
 {
-	char keyslot_str[2], *base64_str;
+	char keyslot_str[16], *base64_str;
 	int r, ks;
 	size_t base64_len;
 	struct json_object *digest_obj, *array, *field;
