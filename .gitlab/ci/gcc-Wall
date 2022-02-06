@@ -34,7 +34,9 @@ EXTRA="-Wextra \
  -Wno-unused-parameter \
  -Wno-long-long \
  -Wmaybe-uninitialized \
- -Wvla"
+ -Wvla \
+ -Wformat-overflow \
+ -Wformat-truncation"
 
 exec $GCC $PEDANTIC $CONVERSION \
 	-Wall $Wuninitialized \

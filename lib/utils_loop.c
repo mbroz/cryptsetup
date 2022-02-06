@@ -67,7 +67,7 @@ struct loop_config {
 
 static char *crypt_loop_get_device_old(void)
 {
-	char dev[20];
+	char dev[64];
 	int i, loop_fd;
 	struct loop_info64 lo64 = {0};
 
