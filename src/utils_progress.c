@@ -20,7 +20,17 @@
  */
 
 #include "cryptsetup.h"
-#include <math.h>
+
+#define MINUTES_90 UINT64_C(5400000000)   /* 90 minutes in microseconds */
+#define HOURS_36   UINT64_C(129600000000) /* 36 hours in microseconds */
+
+#define MINUTES(A) (A) / UINT64_C(60000000)    /* microseconds to minutes */
+#define SECONDS(A) (A) / UINT64_C(1000000)     /* microseconds to seconds */
+#define HOURS(A)   (A) / UINT64_C(3600000000)  /* microseconds to hours */
+#define DAYS(A)    (A) / UINT64_C(86400000000) /* microseconds to days */
+
+#define REMAIN_SECONDS(A) (SECONDS((A))) % 60
+#define REMAIN_MINUTES(A) (MINUTES((A))) % 60
 
 /* The difference in microseconds between two times in "timeval" format. */
 static uint64_t time_diff(struct timeval *start, struct timeval *end)
@@ -35,13 +45,117 @@ static void tools_clear_line(void)
 	log_std("\33[2K\r");
 }
 
+static void bytes_to_units(uint64_t *bytes, const char **units)
+{
+	if (*bytes < (UINT64_C(1) << 32)) { /* less than 4 GiBs */
+		*units = "MiB";
+		*bytes >>= 20;
+	} else if (*bytes < (UINT64_C(1) << 42)) { /* less than 4 TiBs */
+		*units = "GiB";
+		*bytes >>= 30;
+	} else if (*bytes < (UINT64_C(1) << 52)) { /* less than 4 PiBs */
+		*units = "TiB";
+		*bytes >>= 40;
+	} else if (*bytes < (UINT64_C(1) << 62)) { /* less than 4 EiBs */
+		*units = "PiB";
+		*bytes >>= 50;
+	} else {
+		*units = "EiB";
+		*bytes >>= 60;
+	}
+}
+
+static bool time_to_human_string(uint64_t usecs, char *buf, size_t buf_len)
+{
+	ssize_t r;
+
+	if (usecs < MINUTES_90)
+		r = snprintf(buf, buf_len, _("%02" PRIu64 "m%02" PRIu64 "s"), MINUTES(usecs), REMAIN_SECONDS(usecs));
+	else if (usecs < HOURS_36)
+		r = snprintf(buf, buf_len, _("%02" PRIu64 "h%02" PRIu64 "m%02" PRIu64 "s"), HOURS(usecs), REMAIN_MINUTES(usecs), REMAIN_SECONDS(usecs));
+	else
+		r = snprintf(buf, buf_len, _("%02" PRIu64 " days"), DAYS(usecs));
+
+	if (r < 0 || (size_t)r >= buf_len)
+		return false;
+
+	return true;
+}
+
+static void log_progress(uint64_t bytes, uint64_t device_size, uint64_t eta, double uib, const char *ustr, const char *eol)
+{
+	double progress;
+	int r;
+	const char *units;
+	char time[128], written[128], speed[128];
+
+	/*
+	 * TRANSLATORS: 'time' string with examples:
+	 * "12m44s"    : meaning 12 minutes 44 seconds
+	 * "26h12m44s" : meaning 26 hours 12 minutes 44 seconds
+	 * "3 days"
+	 */
+	if (!time_to_human_string(eta, time, sizeof(time)))
+		return;
+
+	progress = (double)bytes / device_size * 100.0;
+
+	bytes_to_units(&bytes, &units);
+	r = snprintf(written, sizeof(written), _("%4" PRIu64 " %s written"), bytes, units);
+	if (r < 0 || (size_t)r >= sizeof(written))
+		return;
+
+	r = snprintf(speed, sizeof(speed), _("speed %5.1f %s/s"), uib, ustr);
+	if (r < 0 || (size_t)r >= sizeof(speed))
+		return;
+
+	/*
+	 * TRANSLATORS: 'time', 'written' and 'speed' string are supposed
+	 * to get translated as well. 'eol' is always new-line or empty.
+	 * See above.
+	 */
+	log_std(_("Progress: %5.1f%%, ETA %s, %s, %s%s"),
+		progress, time, written, speed, eol);
+}
+
+static void log_progress_final(uint64_t time_spent, uint64_t bytes, double uib, const char *ustr)
+{
+	int r;
+	const char *units;
+	char time[128], written[128], speed[128];
+
+	/*
+	 * TRANSLATORS: 'time' string with examples:
+	 * "12m44s"    : meaning 12 minutes 44 seconds
+	 * "26h12m44s" : meaning 26 hours 12 minutes 44 seconds
+	 * "3 days"
+	 */
+	if (!time_to_human_string(time_spent, time, sizeof(time)))
+		return;
+
+	bytes_to_units(&bytes, &units);
+	r = snprintf(written, sizeof(written) - 1, _("%4" PRIu64 " %s written"), bytes, units);
+	if (r < 0 || (size_t)r >= sizeof(written))
+		return;
+
+	r = snprintf(speed, sizeof(speed) - 1, _("speed %5.1f %s/s"), uib, ustr);
+	if (r < 0 || (size_t)r >= sizeof(speed))
+		return;
+
+	/*
+	 * TRANSLATORS: 'time', 'written' and 'speed' string are supposed
+	 * to get translated as well. See above
+	 */
+	log_std(_("Finished, time %s, %s, %s\n"), time, written, speed);
+}
+
 static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct tools_progress_params *parms)
 {
 	struct timeval now_time;
-	uint64_t mbytes, eta, frequency;
+	uint64_t eta, frequency;
 	double tdiff, uib;
-	int final = (bytes == device_size);
-	const char *eol, *ustr = "";
+	const char *eol, *ustr;
+	bool final = (bytes == device_size);
 
 	gettimeofday(&now_time, NULL);
 	if (parms->start_time.tv_sec == 0 && parms->start_time.tv_usec == 0) {
@@ -68,36 +182,30 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct too
 	if (!tdiff)
 		return;
 
-	mbytes = bytes  / 1024 / 1024;
 	uib = (double)(bytes - parms->start_offset) / tdiff;
 
-	eta = (uint64_t)(device_size / uib - tdiff);
+	eta = (uint64_t)((device_size / uib - tdiff) * 1E6);
 
 	if (uib > 1073741824.0f) {
 		uib /= 1073741824.0f;
-		ustr = "Gi";
+		ustr = "GiB";
 	} else if (uib > 1048576.0f) {
 		uib /= 1048576.0f;
-		ustr = "Mi";
+		ustr = "MiB";
 	} else if (uib > 1024.0f) {
 		uib /= 1024.0f;
-		ustr = "Ki";
-	}
+		ustr = "KiB";
+	} else
+		ustr = "B";
 
 	if (!parms->frequency)
 		tools_clear_line();
+
 	if (final)
-		log_std("Finished, time %02" PRIu64 ":%02" PRIu64 ".%03" PRIu64 ", "
-			"%4" PRIu64 " MiB written, speed %5.1f %sB/s\n",
-			(uint64_t)tdiff / 60,
-			(uint64_t)tdiff % 60,
-			(uint64_t)((tdiff - floor(tdiff)) * 1000.0),
-			mbytes, uib, ustr);
+		log_progress_final((uint64_t)(tdiff * 1E6), bytes, uib, ustr);
 	else
-		log_std("Progress: %5.1f%%, ETA %02llu:%02llu, "
-			"%4llu MiB written, speed %5.1f %sB/s%s",
-			(double)bytes / device_size * 100,
-			eta / 60, eta % 60, mbytes, uib, ustr, eol);
+		log_progress(bytes, device_size, eta, uib, ustr, eol);
+
 	fflush(stdout);
 }
 
