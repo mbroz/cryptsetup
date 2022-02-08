@@ -58,11 +58,11 @@ function bin_check()
 
 function ssh_setup()
 {
-	# .ssh is used by ssh-copy-id for temp files so it must exist even if key is not there
-	[ -d "$HOME/.ssh" ] || mkdir -m 700 $HOME/.ssh
+	# copy the ssh key
+	[ -d "/home/$USER/.ssh" ] || mkdir /home/$USER/.ssh
+	touch /home/$USER/.ssh/authorized_keys
 
-	# ssh-copy-id
-	sshpass -p $PASSWD ssh-copy-id -i $SSH_KEY_PATH $SSH_OPTIONS $USER@$SSH_SERVER >/dev/null 2>&1
+	cat $SSH_KEY_PATH.pub >> /home/$USER/.ssh/authorized_keys
 	[ $? -ne 0 ] && remove_user && skip "Failed to copy SSH key."
 
 	# make sure /home/sshtest/.ssh and /home/sshtest/.ssh/authorized_keys have correct permissions
