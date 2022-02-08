@@ -71,7 +71,7 @@ function ssh_setup()
 	chmod 644 /home/$USER/.ssh/authorized_keys
 
 	# try to ssh and also create keyfile
-	ssh -i $SSH_KEY_PATH $SSH_OPTIONS -o BatchMode=yes -n $USER@$SSH_SERVER -f "echo -n $PASSWD > $SSH_PATH" >/dev/null 2>&1
+	ssh -i $SSH_KEY_PATH $SSH_OPTIONS -o BatchMode=yes -n $USER@$SSH_SERVER "echo -n $PASSWD > $SSH_PATH" >/dev/null 2>&1
 	[ $? -ne 0 ] && remove_user && fail "Failed to connect using SSH."
 }
 
