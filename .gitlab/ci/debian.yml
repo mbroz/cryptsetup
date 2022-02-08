@@ -23,6 +23,8 @@ test-mergerq-job-debian:
     - debian10
   stage: test
   interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
