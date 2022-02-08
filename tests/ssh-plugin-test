@@ -63,7 +63,7 @@ function ssh_setup()
 	touch /home/$USER/.ssh/authorized_keys
 
 	cat $SSH_KEY_PATH.pub >> /home/$USER/.ssh/authorized_keys
-	[ $? -ne 0 ] && remove_user && skip "Failed to copy SSH key."
+	[ $? -ne 0 ] && remove_user && fail "Failed to copy SSH key."
 
 	# make sure /home/sshtest/.ssh and /home/sshtest/.ssh/authorized_keys have correct permissions
 	chown -R $USER:$USER /home/$USER/.ssh
@@ -72,7 +72,7 @@ function ssh_setup()
 
 	# try to ssh and also create keyfile
 	ssh -i $SSH_KEY_PATH $SSH_OPTIONS -o BatchMode=yes -n $USER@$SSH_SERVER -f "echo -n $PASSWD > $SSH_PATH" >/dev/null 2>&1
-	[ $? -ne 0 ] && remove_user && skip "Failed to connect using SSH."
+	[ $? -ne 0 ] && remove_user && fail "Failed to connect using SSH."
 }
 
 function fail()
