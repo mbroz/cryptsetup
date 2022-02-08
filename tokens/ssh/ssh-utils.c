@@ -56,7 +56,7 @@ int sshplugin_download_password(struct crypt_device *cd, ssh_session ssh,
 
 	file = sftp_open(sftp, path, O_RDONLY, 0);
 	if (!file) {
-		crypt_log(cd, CRYPT_LOG_ERROR, _("Cannot create sftp session: "));
+		crypt_log(cd, CRYPT_LOG_ERROR, _("Cannot open sftp session: "));
 		r = SSH_FX_FAILURE;
 		goto out;
 	}
