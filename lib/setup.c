@@ -1741,6 +1741,16 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (params && params->sector_size)
 		sector_size_autodetect = false;
 
+	if (params && params->data_device) {
+		if (!cd->metadata_device)
+			cd->metadata_device = cd->device;
+		else
+			device_free(cd, cd->device);
+		cd->device = NULL;
+		if (device_alloc(cd, &cd->device, params->data_device) < 0)
+			return -ENOMEM;
+	}
+
 	if (sector_size_autodetect) {
 		sector_size = device_optimal_encryption_sector_size(cd, crypt_data_device(cd));
 		log_dbg(cd, "Auto-detected optimal encryption sector size for device %s is %d bytes.",
@@ -1810,16 +1820,6 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	if (r < 0)
 		return r;
-
-	if (params && params->data_device) {
-		if (!cd->metadata_device)
-			cd->metadata_device = cd->device;
-		else
-			device_free(cd, cd->device);
-		cd->device = NULL;
-		if (device_alloc(cd, &cd->device, params->data_device) < 0)
-			return -ENOMEM;
-	}
 
 	if (params && cd->metadata_device) {
 		/* For detached header the alignment is used directly as data offset */

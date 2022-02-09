@@ -5,6 +5,7 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 DEV=""
 DEV_STACKED="luks0xbabe"
 DEV_NAME="dummyalign"
+HDR="test_luks2_hdr"
 MNT_DIR="./mnt_luks"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
@@ -22,6 +23,7 @@ cleanup() {
 	sleep 1
 	rmmod scsi_debug >/dev/null 2>&1
 	sleep 1
+	rm -f $HDR 2>/dev/null
 }
 
 fail()
@@ -151,6 +153,41 @@ format_fail() # expected [forced] [encryption_sector_size]
 		echo -n "Formatting using forced sector alignment $2$_smsg (must fail)..."
 		echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $DEV -q -c aes-cbc-essiv:sha256 --align-payload=$2 --sector-size $_sec_size >/dev/null 2>&1 && fail
 	fi
+
+	echo "PASSED"
+}
+
+auto_sector() # expected device header
+{
+	local _exp=$1
+	local _dev=$2
+	local _hdr=$2
+	local _hdrstr=""
+	local _hdrmsg=""
+
+	if [ -n "$3" ]; then
+		_hdrstr="--header $3"
+		_hdr=$3
+		_hdrmsg=" detached header"
+	fi
+
+	echo -n "Formatting$_hdrmsg using optimal encryption sector size (expecting $_exp)..."
+
+	if [ -z "$DM_SECTOR_SIZE" -a $_exp -ne 512 ]; then
+		echo "SKIPPED"
+		return
+	fi
+
+	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $_hdrstr $_dev -q >/dev/null 2>&1 || fail
+
+	# check the device can be activated
+	echo $PWD1 | $CRYPTSETUP luksOpen $_hdrstr $_dev $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	SECTOR=$($CRYPTSETUP luksDump $_hdr | grep -A4 "0: crypt" | grep "sector:" | cut -d ' ' -f2)
+
+	[ -z "$SECTOR" ] && fail
+	[ $SECTOR -ne $_exp ] && fail "Expected sector size differs: expected $_exp != detected $SECTOR"
 
 	echo "PASSED"
 }
@@ -369,4 +406,28 @@ for file in $(ls img_fs_*.img.xz) ; do
 	echo $PWD2 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $MNT_DIR/luks.img --header $MNT_DIR/luks_header.img || fail
 	umount $MNT_DIR
 done
+cleanup
+
+echo "# Create classic 512B drive"
+echo "# (logical_block_size=512, physical_block_size=512, alignment_offset=0)"
+add_device dev_size_mb=32 sector_size=512 num_tgts=1
+auto_sector 512 $DEV
+auto_sector 512 $DEV $HDR
+cleanup
+echo "# Create desktop-class 4K drive"
+echo "# (logical_block_size=512, physical_block_size=4096, alignment_offset=0)"
+add_device dev_size_mb=32 sector_size=512 physblk_exp=3 num_tgts=1
+auto_sector 4096 $DEV
+auto_sector 4096 $DEV $HDR
+DEV2=$DEV
+DEV=/dev/mapper/$DEV_STACKED
+dmsetup create $DEV_STACKED --table "0 $((`blockdev --getsz $DEV2`-1)) linear $DEV2 0"
+auto_sector 512 $DEV
+auto_sector 512 $DEV $HDR
+cleanup
+echo "# Create enterprise-class 4K drive"
+echo "# (logical_block_size=4096, physical_block_size=4096, alignment_offset=0)"
+add_device dev_size_mb=32 sector_size=4096 num_tgts=1 opt_blks=64
+auto_sector 4096 $DEV
+auto_sector 4096 $DEV $HDR
 cleanup
