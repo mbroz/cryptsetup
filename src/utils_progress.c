@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <assert.h>
 #include "cryptsetup.h"
 
 #define MINUTES_90 UINT64_C(5400000000)   /* 90 minutes in microseconds */
@@ -149,38 +150,52 @@ static void log_progress_final(uint64_t time_spent, uint64_t bytes, double uib, 
 	log_std(_("Finished, time %s, %s, %s\n"), time, written, speed);
 }
 
-static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct tools_progress_params *parms)
+static bool calculate_tdiff(bool final, uint64_t bytes, struct tools_progress_params *parms, double *r_tdiff)
 {
+	uint64_t frequency;
 	struct timeval now_time;
-	uint64_t eta, frequency;
-	double tdiff, uib;
-	const char *eol, *ustr;
-	bool final = (bytes == device_size);
+
+	assert(r_tdiff);
 
 	gettimeofday(&now_time, NULL);
 	if (parms->start_time.tv_sec == 0 && parms->start_time.tv_usec == 0) {
 		parms->start_time = now_time;
 		parms->end_time = now_time;
 		parms->start_offset = bytes;
-		return;
+		return false;
 	}
 
-	if (parms->frequency) {
+	if (parms->frequency)
 		frequency = parms->frequency * UINT64_C(1000000);
-		eol = "\n";
-	} else {
+	else
 		frequency = 500000;
-		eol = "";
-	}
 
 	if (!final && time_diff(&parms->end_time, &now_time) < frequency)
-		return;
+		return false;
 
 	parms->end_time = now_time;
 
-	tdiff = time_diff(&parms->start_time, &parms->end_time) / 1E6;
-	if (!tdiff)
+	*r_tdiff = time_diff(&parms->start_time, &parms->end_time) / 1E6;
+	if (!*r_tdiff)
+		return false;
+
+	return true;
+}
+
+static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct tools_progress_params *parms)
+{
+	uint64_t eta;
+	double tdiff, uib;
+	const char *eol, *ustr;
+	bool final = (bytes == device_size);
+
+	if (!calculate_tdiff(final, bytes, parms, &tdiff))
 		return;
+
+	if (parms->frequency)
+		eol = "\n";
+	else
+		eol = "";
 
 	uib = (double)(bytes - parms->start_offset) / tdiff;
 
