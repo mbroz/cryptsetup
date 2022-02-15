@@ -96,10 +96,13 @@ struct tools_progress_params {
 	struct timeval end_time;
 	uint64_t start_offset;
 	bool batch_mode;
+	bool json_output;
 	const char *interrupt_message;
+	const char *device;
 };
 
 int tools_progress(uint64_t size, uint64_t offset, void *usrptr);
+const char *tools_get_device_name(const char *device, char **r_backing_file);
 
 int tools_read_mk(const char *file, char **key, int keysize);
 int tools_write_mk(const char *file, const char *key, int keysize);

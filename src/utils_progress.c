@@ -224,21 +224,78 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct too
 	fflush(stdout);
 }
 
+static void log_progress_json(const char *device, uint64_t bytes, uint64_t device_size, uint64_t eta, uint64_t uib, uint64_t time_spent)
+{
+	int r;
+	char json[PATH_MAX+256];
+
+	r = snprintf(json, sizeof(json) - 1,
+		     "{\"device\":\"%s\","
+		     "\"device_bytes\":\"%"	PRIu64 "\","	/* in bytes */
+		     "\"device_size\":\"%"	PRIu64 "\","	/* in bytes */
+		     "\"speed\":\"%"		PRIu64 "\","	/* in bytes per second */
+		     "\"eta_ms\":\"%"		PRIu64 "\","	/* in milliseconds */
+		     "\"time_ms\":\"%"		PRIu64 "\"}\n",	/* in milliseconds */
+		     device, bytes, device_size, uib, eta, time_spent);
+
+	if (r < 0 || (size_t)r >= sizeof(json) - 1)
+		return;
+
+	log_std(json);
+}
+
+static void tools_time_progress_json(uint64_t device_size, uint64_t bytes, struct tools_progress_params *parms)
+{
+	double tdiff, uib;
+	bool final = (bytes == device_size);
+
+	if (!calculate_tdiff(final, bytes, parms, &tdiff))
+		return;
+
+	uib = (double)(bytes - parms->start_offset) / tdiff;
+
+	log_progress_json(parms->device,
+			  bytes,
+			  device_size,
+			  final ? UINT64_C(0) : (uint64_t)((device_size / uib - tdiff) * 1E3),
+			  (uint64_t)uib,
+			  (uint64_t)(tdiff * 1E3));
+
+	fflush(stdout);
+}
+
 int tools_progress(uint64_t size, uint64_t offset, void *usrptr)
 {
 	int r = 0;
 	struct tools_progress_params *parms = (struct tools_progress_params *)usrptr;
 
-	if (parms && !parms->batch_mode)
+	if (parms && parms->json_output)
+		tools_time_progress_json(size, offset, parms);
+	else if (parms && !parms->batch_mode)
 		tools_time_progress(size, offset, parms);
 
 	check_signal(&r);
 	if (r) {
-		if (!parms || !parms->frequency)
+		if (!parms || (!parms->frequency && !parms->json_output))
 			tools_clear_line();
 		if (parms && parms->interrupt_message)
 			log_err("%s", parms->interrupt_message);
 	}
 
 	return r;
+}
+
+const char *tools_get_device_name(const char *device, char **r_backing_file)
+{
+	char *bfile;
+
+	assert(r_backing_file);
+
+	bfile = crypt_loop_backing_file(device);
+	if (bfile) {
+		*r_backing_file = bfile;
+		return bfile;
+	}
+
+	return device;
 }

@@ -717,10 +717,14 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			     size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2;
+	int r = -EIO;
+	char *backing_file = NULL;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
 		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
-		.interrupt_message = _("\nReencryption interrupted.")
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nReencryption interrupted."),
+		.device = tools_get_device_name(rc->device, &backing_file)
 	};
 
 	log_dbg("Reencrypting in forward direction.");
@@ -728,7 +732,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 	if (lseek64(fd_old, rc->device_offset, SEEK_SET) < 0 ||
 	    lseek64(fd_new, rc->device_offset, SEEK_SET) < 0) {
 		log_err(_("Cannot seek to device offset."));
-		return -EIO;
+		goto out;
 	}
 
 	rc->resume_bytes = *bytes = rc->device_offset;
@@ -736,7 +740,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 	tools_progress(rc->device_size, *bytes, &prog_parms);
 
 	if (write_log(rc) < 0)
-		return -EIO;
+		goto out;
 
 	while (!quit && rc->device_offset < rc->device_size) {
 		if ((rc->device_size - rc->device_offset) < (uint64_t)block_size)
@@ -746,7 +750,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		    (rc->device_offset + s1) != rc->device_size)) {
 			log_dbg("Read error, expecting %zu, got %zd.",
 				block_size, s1);
-			return -EIO;
+			goto out;
 		}
 
 		/* If device_size is forced, never write more than limit */
@@ -757,16 +761,16 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		if (s2 < 0) {
 			log_dbg("Write error, expecting %zu, got %zd.",
 				block_size, s2);
-			return -EIO;
+			goto out;
 		}
 
 		rc->device_offset += s1;
 		if (ARG_SET(OPT_WRITE_LOG_ID) && write_log(rc) < 0)
-			return -EIO;
+			goto out;
 
 		if (ARG_SET(OPT_USE_FSYNC_ID) && fsync(fd_new) < 0) {
 			log_dbg("Write error, fsync.");
-			return -EIO;
+			goto out;
 		}
 
 		*bytes += (uint64_t)s2;
@@ -774,7 +778,10 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		tools_progress(rc->device_size, *bytes, &prog_parms);
 	}
 
-	return quit ? -EAGAIN : 0;
+	r = 0;
+out:
+	free(backing_file);
+	return quit ? -EAGAIN : r;
 }
 
 static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
@@ -782,10 +789,14 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 {
 	ssize_t s1, s2, working_block;
 	off64_t working_offset;
+	int r = -EIO;
+	char *backing_file = NULL;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
 		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
-		.interrupt_message = _("\nReencryption interrupted.")
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nReencryption interrupted."),
+		.device = tools_get_device_name(rc->device, &backing_file)
 	};
 
 	log_dbg("Reencrypting in backward direction.");
@@ -802,7 +813,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 	tools_progress(rc->device_size, *bytes, &prog_parms);
 
 	if (write_log(rc) < 0)
-		return -EIO;
+		goto out;
 
 	/* dirty the device during ENCRYPT mode */
 	rc->stained = 1;
@@ -819,30 +830,30 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		if (lseek64(fd_old, working_offset, SEEK_SET) < 0 ||
 		    lseek64(fd_new, working_offset, SEEK_SET) < 0) {
 			log_err(_("Cannot seek to device offset."));
-			return -EIO;
+			goto out;
 		}
 
 		s1 = read_buf(fd_old, buf, working_block);
 		if (s1 < 0 || (s1 != working_block)) {
 			log_dbg("Read error, expecting %zu, got %zd.",
 				block_size, s1);
-			return -EIO;
+			goto out;
 		}
 
 		s2 = write(fd_new, buf, working_block);
 		if (s2 < 0) {
 			log_dbg("Write error, expecting %zu, got %zd.",
 				block_size, s2);
-			return -EIO;
+			goto out;
 		}
 
 		rc->device_offset -= s1;
 		if (ARG_SET(OPT_WRITE_LOG_ID) && write_log(rc) < 0)
-			return -EIO;
+			goto out;
 
 		if (ARG_SET(OPT_USE_FSYNC_ID) && fsync(fd_new) < 0) {
 			log_dbg("Write error, fsync.");
-			return -EIO;
+			goto out;
 		}
 
 		*bytes += (uint64_t)s2;
@@ -850,7 +861,10 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		tools_progress(rc->device_size, *bytes, &prog_parms);
 	}
 
-	return quit ? -EAGAIN : 0;
+	r = 0;
+out:
+	free(backing_file);
+	return quit ? -EAGAIN : r;
 }
 
 static void zero_rest_of_device(int fd, size_t block_size, void *buf,

@@ -80,11 +80,14 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 {
 	char tmp_name[64], tmp_path[128], tmp_uuid[40];
 	uuid_t tmp_uuid_bin;
-	int r;
+	int r = -EINVAL;
+	char *backing_file = NULL;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
 		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
-		.interrupt_message = _("\nWipe interrupted.")
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nWipe interrupted."),
+		.device = tools_get_device_name(crypt_get_device_name(cd), &backing_file)
 	};
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID))
@@ -96,14 +99,14 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 	uuid_generate(tmp_uuid_bin);
 	uuid_unparse(tmp_uuid_bin, tmp_uuid);
 	if (snprintf(tmp_name, sizeof(tmp_name), "temporary-cryptsetup-%s", tmp_uuid) < 0)
-		return -EINVAL;
+		goto out;
 	if (snprintf(tmp_path, sizeof(tmp_path), "%s/%s", crypt_get_dir(), tmp_name) < 0)
-		return -EINVAL;
+		goto out;
 
 	r = crypt_activate_by_volume_key(cd, tmp_name, integrity_key,
 		ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID), CRYPT_ACTIVATE_PRIVATE | CRYPT_ACTIVATE_NO_JOURNAL);
 	if (r < 0)
-		return r;
+		goto out;
 
 	/* Wipe the device */
 	set_int_handler(0);
@@ -113,6 +116,8 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 		log_err(_("Cannot deactivate temporary device %s."), tmp_path);
 	set_int_block(0);
 
+out:
+	free(backing_file);
 	return r;
 }
 

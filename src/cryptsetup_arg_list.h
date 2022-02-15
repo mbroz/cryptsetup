@@ -135,6 +135,8 @@ ARG(OPT_PERSISTENT, '\0', POPT_ARG_NONE, N_("Set activation flags persistent for
 
 ARG(OPT_PRIORITY, '\0', POPT_ARG_STRING, N_("Keyslot priority: ignore, normal, prefer"), NULL, CRYPT_ARG_STRING, {}, OPT_PRIORITY_ACTIONS)
 
+ARG(OPT_PROGRESS_JSON, '\0', POPT_ARG_NONE, N_("Print progress data in json format (suitable for machine processing)"), NULL, CRYPT_ARG_BOOL, {}, OPT_PROGRESS_JSON_ACTIONS)
+
 ARG(OPT_PROGRESS_FREQUENCY, '\0', POPT_ARG_STRING, N_("Progress line update (in seconds)"), N_("secs"), CRYPT_ARG_UINT32, {}, {})
 
 ARG(OPT_READONLY, 'r', POPT_ARG_NONE, N_("Create a readonly mapping"), NULL, CRYPT_ARG_BOOL, {}, {})

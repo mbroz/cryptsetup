@@ -118,6 +118,7 @@
 #define OPT_PERSISTENT			"persistent"
 #define OPT_PLUGIN			"plugin"
 #define OPT_PRIORITY			"priority"
+#define OPT_PROGRESS_JSON		"progress-json"
 #define OPT_PROGRESS_FREQUENCY		"progress-frequency"
 #define OPT_READONLY			"readonly"
 #define OPT_REDUCE_DEVICE_SIZE		"reduce-device-size"

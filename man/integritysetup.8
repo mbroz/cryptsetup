@@ -21,7 +21,7 @@ Formats <device> (calculates space and dm-integrity superblock and wipes the dev
 
 \fB<options>\fR can be [\-\-data\-device, \-\-batch\-mode, \-\-no\-wipe, \-\-journal\-size,
 \-\-interleave\-sectors, \-\-tag\-size, \-\-integrity, \-\-integrity\-key\-size,
-\-\-integrity\-key\-file, \-\-sector\-size, \-\-progress-frequency]
+\-\-integrity\-key\-file, \-\-sector\-size, \-\-progress\-frequency, \-\-progress\-json]
 
 .PP
 \fIopen\fR <device> <name>
@@ -71,6 +71,24 @@ Do not ask for confirmation.
 .TP
 .B "\-\-progress-frequency <seconds>"
 Print separate line every <seconds> with wipe progress.
+.TP
+.B "\-\-progress-json"
+Prints wipe progress data in json format suitable mostly for machine processing.
+It prints separate line every half second (or based on \fI\-\-progress\-frequency\fR value).
+The json output looks as follows during wipe progress (except it's compact single line):
+.EX
+{
+  "device":"/dev/sda"       // backing device or file
+  "device_bytes":"8192",    // bytes wiped so far
+  "device_size":"44040192", // total bytes to wipe
+  "speed":"126877696",      // calculated speed in bytes per second (based on progress so far)
+  "eta_ms":"2520012"        // estimated time to finish wipe in milliseconds
+  "time_ms":"5561235"       // total time spent wiping device in milliseconds
+}
+.EE
+
+Note on numbers in json output: Due to json parsers limitations all numbers are represented in a string format
+due to need of full 64bit unsigned integers.
 .TP
 .B "\-\-no\-wipe"
 Do not wipe the device after format. A device that is not initially wiped will contain invalid checksums.

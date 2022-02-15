@@ -849,12 +849,15 @@ static int luks2_reencrypt_in_progress(struct crypt_device *cd)
 static int encrypt_luks2(int action_argc, const char **action_argv)
 {
 	enum device_status_info dev_st;
-	int r = 0;
+	int r = -EINVAL;
 	struct crypt_device *cd = NULL;
+	char *backing_file = NULL;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
 		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
-		.interrupt_message = _("\nReencryption interrupted.")
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nReencryption interrupted."),
+		.device = tools_get_device_name(crypt_get_device_name(cd), &backing_file)
 	};
 
 	if (ARG_SET(OPT_RESUME_ONLY_ID)) {
@@ -864,7 +867,7 @@ static int encrypt_luks2(int action_argc, const char **action_argv)
 			dev_st = load_luks(&cd, CRYPT_LUKS2, ARG_STR(OPT_HEADER_ID), action_argv[0]);
 
 		if (dev_st != DEVICE_LUKS2)
-			return -EINVAL;
+			goto out;
 
 		r = luks2_reencrypt_in_progress(cd);
 		if (r < 0)
@@ -886,38 +889,44 @@ static int encrypt_luks2(int action_argc, const char **action_argv)
 	}
 out:
 	crypt_free(cd);
+	free(backing_file);
 
 	return r;
 }
 
 static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **action_argv)
 {
-	int r = 0;
+	int r = -EINVAL;
+	char *backing_file = NULL;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
 		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
-		.interrupt_message = _("\nReencryption interrupted.")
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nReencryption interrupted."),
+		.device = tools_get_device_name(crypt_get_device_name(cd), &backing_file)
 	};
 
 	if (!ARG_SET(OPT_HEADER_ID)) {
 		log_err(_("LUKS2 decryption requires option --header."));
-		return -EINVAL;
+		goto out;
 	}
 
 	r = luks2_reencrypt_in_progress(cd);
 	if (r < 0) /* error */
-		return r;
+		goto out;
 
 	if (r > 0) { /* in progress */
 		if (ARG_SET(OPT_INIT_ONLY_ID)) {
 			log_err(_("LUKS2 reencryption already initialized. Aborting operation."));
-			return -EINVAL;
+			r = -EINVAL;
+			goto out;
 		}
 		r = action_reencrypt_load(cd, action_argv[0]);
 	} else {
 		if (ARG_SET(OPT_RESUME_ONLY_ID)) {
 			log_err(_("Device reencryption not in progress."));
-			return -EINVAL;
+			r = -EINVAL;
+			goto out;
 		}
 		r = action_decrypt_luks2(cd, action_argv[0]);
 	}
@@ -927,32 +936,39 @@ static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **
 		r = crypt_reencrypt_run(cd, tools_progress, &prog_parms);
 	}
 
+out:
+	free(backing_file);
 	return r;
 }
 
 static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char **action_argv)
 {
 	int r;
+	char *backing_file = NULL;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
 		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
-		.interrupt_message = _("\nReencryption interrupted.")
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nReencryption interrupted."),
+		.device = tools_get_device_name(crypt_get_device_name(cd), &backing_file)
 	};
 
 	r = luks2_reencrypt_in_progress(cd);
 	if (r < 0) /* error */
-		return r;
+		goto out;
 
 	if (r > 0) { /* in progress */
 		if (ARG_SET(OPT_INIT_ONLY_ID)) {
 			log_err(_("LUKS2 reencryption already initialized. Aborting operation."));
-			return -EINVAL;
+			r = -EINVAL;
+			goto out;
 		}
 		r = action_reencrypt_load(cd, action_argv[0]);
 	} else {
 		if (ARG_SET(OPT_RESUME_ONLY_ID)) {
 			log_err(_("Device reencryption not in progress."));
-			return -EINVAL;
+			r = -EINVAL;
+			goto out;
 		}
 		r = action_reencrypt_luks2(cd, action_argv[0]);
 	}
@@ -962,6 +978,8 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 		r = crypt_reencrypt_run(cd, tools_progress, &prog_parms);
 	}
 
+out:
+	free(backing_file);
 	return r;
 }
 
