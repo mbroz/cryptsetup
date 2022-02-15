@@ -853,7 +853,8 @@ static int encrypt_luks2(int action_argc, const char **action_argv)
 	struct crypt_device *cd = NULL;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
-		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.interrupt_message = _("\nReencryption interrupted.")
 	};
 
 	if (ARG_SET(OPT_RESUME_ONLY_ID)) {
@@ -881,7 +882,7 @@ static int encrypt_luks2(int action_argc, const char **action_argv)
 
 	if (r >= 0 && !ARG_SET(OPT_INIT_ONLY_ID)) {
 		set_int_handler(0);
-		r = crypt_reencrypt_run(cd, tools_reencrypt_progress, &prog_parms);
+		r = crypt_reencrypt_run(cd, tools_progress, &prog_parms);
 	}
 out:
 	crypt_free(cd);
@@ -894,7 +895,8 @@ static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **
 	int r = 0;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
-		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.interrupt_message = _("\nReencryption interrupted.")
 	};
 
 	if (!ARG_SET(OPT_HEADER_ID)) {
@@ -922,7 +924,7 @@ static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **
 
 	if (r >= 0 && !ARG_SET(OPT_INIT_ONLY_ID)) {
 		set_int_handler(0);
-		r = crypt_reencrypt_run(cd, tools_reencrypt_progress, &prog_parms);
+		r = crypt_reencrypt_run(cd, tools_progress, &prog_parms);
 	}
 
 	return r;
@@ -933,7 +935,8 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 	int r;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
-		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.interrupt_message = _("\nReencryption interrupted.")
 	};
 
 	r = luks2_reencrypt_in_progress(cd);
@@ -956,7 +959,7 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 
 	if (r >= 0 && !ARG_SET(OPT_INIT_ONLY_ID)) {
 		set_int_handler(0);
-		r = crypt_reencrypt_run(cd, tools_reencrypt_progress, &prog_parms);
+		r = crypt_reencrypt_run(cd, tools_progress, &prog_parms);
 	}
 
 	return r;

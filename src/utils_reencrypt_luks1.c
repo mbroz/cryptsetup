@@ -719,7 +719,8 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 	ssize_t s1, s2;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
-		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.interrupt_message = _("\nReencryption interrupted.")
 	};
 
 	log_dbg("Reencrypting in forward direction.");
@@ -732,7 +733,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 	rc->resume_bytes = *bytes = rc->device_offset;
 
-	tools_reencrypt_progress(rc->device_size, *bytes, &prog_parms);
+	tools_progress(rc->device_size, *bytes, &prog_parms);
 
 	if (write_log(rc) < 0)
 		return -EIO;
@@ -770,7 +771,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 		*bytes += (uint64_t)s2;
 
-		tools_reencrypt_progress(rc->device_size, *bytes, &prog_parms);
+		tools_progress(rc->device_size, *bytes, &prog_parms);
 	}
 
 	return quit ? -EAGAIN : 0;
@@ -783,7 +784,8 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 	off64_t working_offset;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
-		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.interrupt_message = _("\nReencryption interrupted.")
 	};
 
 	log_dbg("Reencrypting in backward direction.");
@@ -797,7 +799,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		*bytes = rc->resume_bytes;
 	}
 
-	tools_reencrypt_progress(rc->device_size, *bytes, &prog_parms);
+	tools_progress(rc->device_size, *bytes, &prog_parms);
 
 	if (write_log(rc) < 0)
 		return -EIO;
@@ -845,7 +847,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 		*bytes += (uint64_t)s2;
 
-		tools_reencrypt_progress(rc->device_size, *bytes, &prog_parms);
+		tools_progress(rc->device_size, *bytes, &prog_parms);
 	}
 
 	return quit ? -EAGAIN : 0;

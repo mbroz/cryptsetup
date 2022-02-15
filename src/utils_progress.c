@@ -224,7 +224,7 @@ static void tools_time_progress(uint64_t device_size, uint64_t bytes, struct too
 	fflush(stdout);
 }
 
-int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr)
+int tools_progress(uint64_t size, uint64_t offset, void *usrptr)
 {
 	int r = 0;
 	struct tools_progress_params *parms = (struct tools_progress_params *)usrptr;
@@ -236,25 +236,8 @@ int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr)
 	if (r) {
 		if (!parms || !parms->frequency)
 			tools_clear_line();
-		log_err(_("\nWipe interrupted."));
-	}
-
-	return r;
-}
-
-int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr)
-{
-	int r = 0;
-	struct tools_progress_params *parms = (struct tools_progress_params *)usrptr;
-
-	if (parms && !parms->batch_mode)
-		tools_time_progress(size, offset, parms);
-
-	check_signal(&r);
-	if (r) {
-		if (!parms || !parms->frequency)
-			tools_clear_line();
-		log_err(_("\nReencryption interrupted."));
+		if (parms && parms->interrupt_message)
+			log_err("%s", parms->interrupt_message);
 	}
 
 	return r;

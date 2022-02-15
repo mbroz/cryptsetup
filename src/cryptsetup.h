@@ -96,10 +96,10 @@ struct tools_progress_params {
 	struct timeval end_time;
 	uint64_t start_offset;
 	bool batch_mode;
+	const char *interrupt_message;
 };
 
-int tools_wipe_progress(uint64_t size, uint64_t offset, void *usrptr);
-int tools_reencrypt_progress(uint64_t size, uint64_t offset, void *usrptr);
+int tools_progress(uint64_t size, uint64_t offset, void *usrptr);
 
 int tools_read_mk(const char *file, char **key, int keysize);
 int tools_write_mk(const char *file, const char *key, int keysize);

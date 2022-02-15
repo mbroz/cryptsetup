@@ -1182,7 +1182,8 @@ static int _wipe_data_device(struct crypt_device *cd)
 	int r;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
-		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID)
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.interrupt_message = _("\nWipe interrupted.")
 	};
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID))
@@ -1206,7 +1207,7 @@ static int _wipe_data_device(struct crypt_device *cd)
 	/* Wipe the device */
 	set_int_handler(0);
 	r = crypt_wipe(cd, tmp_path, CRYPT_WIPE_ZERO, 0, 0, DEFAULT_WIPE_BLOCK,
-		       0, &tools_wipe_progress, &prog_parms);
+		       0, &tools_progress, &prog_parms);
 	if (crypt_deactivate(cd, tmp_name))
 		log_err(_("Cannot deactivate temporary device %s."), tmp_path);
 	set_int_block(0);
