@@ -94,6 +94,12 @@ int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags);
 
 #define DM_ACTIVE_INTEGRITY_PARAMS	(1 << 9)
 
+#define DM_ACTIVE_JOURNAL_CRYPT_KEY	(1 << 10)
+#define DM_ACTIVE_JOURNAL_CRYPT_KEYSIZE	(1 << 11)
+
+#define DM_ACTIVE_JOURNAL_MAC_KEY	(1 << 12)
+#define DM_ACTIVE_JOURNAL_MAC_KEYSIZE	(1 << 13)
+
 struct dm_target {
 	dm_target_type type;
 	enum tdirection direction;
