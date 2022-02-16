@@ -2434,7 +2434,7 @@ static int _compare_device_types(struct crypt_device *cd,
 			log_dbg(cd, "Unexpected uuid prefix %s in target device.", tgt->uuid);
 			return -EINVAL;
 		}
-	} else {
+	} else if (!isINTEGRITY(cd->type)) {
 		log_dbg(cd, "Unsupported device type %s for reload.", cd->type ?: "<empty>");
 		return -ENOTSUP;
 	}
@@ -2595,13 +2595,13 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 
 	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
 				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
-				  DM_ACTIVE_CRYPT_KEY, &tdmd);
+				  DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_INTEGRITY_PARAMS | DM_ACTIVE_JOURNAL_CRYPT_KEY | DM_ACTIVE_JOURNAL_MAC_KEY, &tdmd);
 	if (r < 0) {
 		log_err(cd, _("Device %s is not active."), name);
 		return -EINVAL;
 	}
 
-	if (!single_segment(&tdmd) || tgt->type != DM_CRYPT || tgt->u.crypt.tag_size) {
+	if (!single_segment(&tdmd) || (tgt->type != DM_CRYPT && tgt->type != DM_INTEGRITY) || (tgt->type == DM_CRYPT && tgt->u.crypt.tag_size)) {
 		r = -ENOTSUP;
 		log_err(cd, _("Unsupported parameters on device %s."), name);
 		goto out;
@@ -2625,12 +2625,45 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		r = crypt_volume_key_set_description(tgt->u.crypt.vk, src->u.crypt.vk->key_description);
 		if (r)
 			goto out;
-	} else {
+	} else if (tgt->type == DM_CRYPT) {
 		crypt_free_volume_key(tgt->u.crypt.vk);
 		tgt->u.crypt.vk = crypt_alloc_volume_key(src->u.crypt.vk->keylength, src->u.crypt.vk->key);
 		if (!tgt->u.crypt.vk) {
 			r = -ENOMEM;
 			goto out;
+		}
+	} else if (tgt->type == DM_INTEGRITY) {
+		crypt_free_volume_key(tgt->u.integrity.vk);
+		tgt->u.integrity.vk = NULL;
+
+		if (src->u.integrity.vk) {
+			tgt->u.integrity.vk = crypt_alloc_volume_key(src->u.integrity.vk->keylength, src->u.integrity.vk->key);
+			if (!tgt->u.integrity.vk) {
+				r = -ENOMEM;
+				goto out;
+			}
+		}
+
+		crypt_free_volume_key(tgt->u.integrity.journal_integrity_key);
+		tgt->u.integrity.journal_integrity_key = NULL;
+
+		if (src->u.integrity.journal_integrity_key) {
+			tgt->u.integrity.journal_integrity_key = crypt_alloc_volume_key(src->u.integrity.journal_integrity_key->keylength, src->u.integrity.journal_integrity_key->key);
+			if (!tgt->u.integrity.journal_integrity_key) {
+				r = -ENOMEM;
+				goto out;
+			}
+		}
+
+		crypt_free_volume_key(tgt->u.integrity.journal_crypt_key);
+		tgt->u.integrity.journal_crypt_key = NULL;
+
+		if (src->u.integrity.journal_crypt_key) {
+			tgt->u.integrity.journal_crypt_key = crypt_alloc_volume_key(src->u.integrity.journal_crypt_key->keylength, src->u.integrity.journal_crypt_key->key);
+			if (!tgt->u.integrity.journal_crypt_key) {
+				r = -ENOMEM;
+				goto out;
+			}
 		}
 	}
 
@@ -2824,6 +2857,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 {
 	struct crypt_dm_active_device dmdq, dmd = {};
 	struct dm_target *tgt = &dmdq.segment;
+	struct crypt_params_integrity params = {};
 	int r;
 
 	/*
@@ -2842,12 +2876,12 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 
 	log_dbg(cd, "Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 
-	r = dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY, &dmdq);
+	r = dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_INTEGRITY_PARAMS | DM_ACTIVE_JOURNAL_CRYPT_KEY | DM_ACTIVE_JOURNAL_MAC_KEY, &dmdq);
 	if (r < 0) {
 		log_err(cd, _("Device %s is not active."), name);
 		return -EINVAL;
 	}
-	if (!single_segment(&dmdq) || tgt->type != DM_CRYPT) {
+	if (!single_segment(&dmdq) || (tgt->type != DM_CRYPT && tgt->type != DM_INTEGRITY)) {
 		log_dbg(cd, "Unsupported device table detected in %s.", name);
 		r = -EINVAL;
 		goto out;
@@ -2879,12 +2913,44 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 			log_err(cd, _("Cannot resize loop device."));
 	}
 
+
+	/*
+	 * Integrity device metadata are maintained by the kernel. We need to
+	 * reload the device (with the same parameters) and let the kernel
+	 * calculate the maximum size of integrity device and store it in the
+	 * superblock.
+	 */
+	if (!new_size && tgt->type == DM_INTEGRITY) {
+		dmd.size = dmdq.size;
+		dmd.flags = dmdq.flags | CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_PRIVATE;
+
+		r = crypt_get_integrity_info(cd, &params);
+		if (r)
+			goto out;
+
+		r = dm_integrity_target_set(cd, &dmd.segment, 0, dmdq.segment.size,
+				crypt_metadata_device(cd), crypt_data_device(cd),
+				crypt_get_integrity_tag_size(cd), crypt_get_data_offset(cd),
+				crypt_get_sector_size(cd), tgt->u.integrity.vk, tgt->u.integrity.journal_crypt_key, tgt->u.integrity.journal_integrity_key, &params);
+		if (r)
+			goto out;
+		r = _reload_device(cd, name, &dmd);
+		if (r)
+			goto out;
+
+		r = INTEGRITY_data_sectors(cd, crypt_metadata_device(cd),
+				crypt_get_data_offset(cd) * SECTOR_SIZE, &new_size);
+		if (r < 0)
+			return r;
+		log_dbg(cd, "Maximum integrity device size from kernel %lu", new_size);
+	}
+
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_OK,
-				crypt_get_data_offset(cd), &new_size, &dmdq.flags);
+			crypt_get_data_offset(cd), &new_size, &dmdq.flags);
 	if (r)
 		goto out;
 
-	if (MISALIGNED(new_size, tgt->u.crypt.sector_size >> SECTOR_SHIFT)) {
+	if (MISALIGNED(new_size, (tgt->type == DM_CRYPT ? tgt->u.crypt.sector_size : tgt->u.integrity.sector_size) >> SECTOR_SHIFT)) {
 		log_err(cd, _("Device size is not aligned to requested sector size."));
 		r = -EINVAL;
 		goto out;
@@ -2899,13 +2965,27 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	dmd.uuid = crypt_get_uuid(cd);
 	dmd.size = new_size;
 	dmd.flags = dmdq.flags | CRYPT_ACTIVATE_REFRESH;
-	r = dm_crypt_target_set(&dmd.segment, 0, new_size, crypt_data_device(cd),
-			tgt->u.crypt.vk, crypt_get_cipher_spec(cd),
-			crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
-			crypt_get_integrity(cd), crypt_get_integrity_tag_size(cd),
-			crypt_get_sector_size(cd));
-	if (r < 0)
-		goto out;
+
+	if (tgt->type == DM_CRYPT) {
+		r = dm_crypt_target_set(&dmd.segment, 0, new_size, crypt_data_device(cd),
+				tgt->u.crypt.vk, crypt_get_cipher_spec(cd),
+				crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
+				crypt_get_integrity(cd), crypt_get_integrity_tag_size(cd),
+				crypt_get_sector_size(cd));
+		if (r < 0)
+			goto out;
+	} else if (tgt->type == DM_INTEGRITY) {
+		r = crypt_get_integrity_info(cd, &params);
+		if (r)
+			goto out;
+
+		r = dm_integrity_target_set(cd, &dmd.segment, 0, new_size,
+				crypt_metadata_device(cd), crypt_data_device(cd),
+				crypt_get_integrity_tag_size(cd), crypt_get_data_offset(cd),
+				crypt_get_sector_size(cd), tgt->u.integrity.vk, tgt->u.integrity.journal_crypt_key, tgt->u.integrity.journal_integrity_key, &params);
+		if (r)
+			goto out;
+	}
 
 	if (new_size == dmdq.size) {
 		log_dbg(cd, "Device has already requested size %" PRIu64
