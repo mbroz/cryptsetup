@@ -122,6 +122,9 @@ static int wipe_block(struct crypt_device *cd, int devfd, crypt_wipe_pattern pat
 			return r;
 	}
 
+	if (pattern == CRYPT_WIPE_ZERO && !device_zero_out(devfd, offset, wipe_block_size))
+		return 0;
+
 	if (write_blockwise(devfd, device_block_size, alignment, sf,
 			    wipe_block_size) == (ssize_t)wipe_block_size)
 		return 0;

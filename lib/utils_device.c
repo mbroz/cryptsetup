@@ -1085,3 +1085,14 @@ void device_set_block_size(struct device *device, size_t size)
 
 	device->loop_block_size = size;
 }
+
+#ifndef BLKZEROOUT
+#define BLKZEROOUT     _IO(0x12,127)
+#endif
+
+int device_zero_out(int devfd, uint64_t offset, uint64_t length)
+{
+	uint64_t range[2] = { offset, length };
+
+	return ioctl(devfd, BLKZEROOUT, &range);
+}
