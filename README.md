@@ -98,10 +98,10 @@ The FAQ is online and in the source code for the project.  The Specifications ar
 
 ### Mailing List
 
-For cryptsetup and LUKS related questions, please use the dm-crypt mailing list, [dm-crypt@saout.de](mailto:dm-crypt@saout.de).  To subscribe send an empty mail to [dm-crypt-subscribe@saout.de](mailto:dm-crypt-subscribe@saout.de).
+For cryptsetup and LUKS related questions, please use the cryptsetup mailing list [cryptsetup@lists.linux.dev](mailto:cryptsetup@lists.linux.dev), hosted at [kernel.org subspace](https://subspace.kernel.org/lists.linux.dev.html).
+To subscribe send an empty mail to [cryptsetup+subscribe@lists.linux.dev](mailto:cryptsetup+subscribe@lists.linux.dev).
 
-You can also browse and/or search the mailing list archives using the following resources:
+You can also browse and/or search the mailing [list archive](https://lore.kernel.org/cryptsetup/).
+News (NNTP), Atom feed and git access to public inbox is available through [lore.kernel.org](https://lore.kernel.org) service.
 
-* [list archive](https://www.saout.de/pipermail/dm-crypt/) 
-* [web interface on lore.kernel.org](https://lore.kernel.org/dm-crypt/) 
-* [marc.info](https://marc.info/?l=dm-crypt).
+The former dm-crypt [list archive](https://www.saout.de/pipermail/dm-crypt/) is also available.
