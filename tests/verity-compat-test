@@ -418,12 +418,13 @@ function check_concurrent() # $1 hash
 	# Then do two concurrent opens, and check that libdevmapper did not return -EINVAL, which is
 	# not gracefully recoverable. Either could fail depending on scheduling, so just check that
 	# the libdevmapper error does not appear in either of the outputs.
-	exec {out_1}< <($VERITYSETUP create -v $DEV_NAME $DEV_PARAMS $1 2>&1)
-	exec {out_2}< <($VERITYSETUP create -v $DEV_NAME $DEV_PARAMS $1 2>&1)
+	cat /dev/null >$DEV_OUT
+	$VERITYSETUP create -v $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
+	$VERITYSETUP create -v $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
 	wait
-	cat <&${out_1} | grep -q "Command failed with code .* (wrong or missing parameters)" && fail
-	cat <&${out_2} | grep -q "Command failed with code .* (wrong or missing parameters)" && fail
+	grep -q "Command failed with code .* (wrong or missing parameters)" $DEV_OUT && fail
 	check_exists
+	rm $DEV_OUT
 	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
 
 	echo "[OK]"
