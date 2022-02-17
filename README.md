@@ -104,4 +104,4 @@ To subscribe send an empty mail to [cryptsetup+subscribe@lists.linux.dev](mailto
 You can also browse and/or search the mailing [list archive](https://lore.kernel.org/cryptsetup/).
 News (NNTP), Atom feed and git access to public inbox is available through [lore.kernel.org](https://lore.kernel.org) service.
 
-The former dm-crypt [list archive](https://www.saout.de/pipermail/dm-crypt/) is also available.
+The former dm-crypt [list archive](https://lore.kernel.org/dm-crypt/) is also available.
