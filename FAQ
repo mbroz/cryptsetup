@@ -298,6 +298,8 @@ A. Contributors
     cat /dev/zero | wcs > <target device>
 
   Plain "dd" also gives you the progress on a SIGUSR1, see its man-page.
+  The GNU "dd" command supports the "status=progress" operand that gives you
+  the progress without having to send it any signal.
 
   Be very sure you have the right target, all data will be lost!
 
@@ -845,7 +847,8 @@ A. Contributors
     cat /dev/zero | wcs > /dev/mapper/to_be_wiped
 
   Or use plain "dd", which gives you the progress when sent a SIGUSR1, see
-  the dd man page.
+  the dd man page. The GNU "dd" command supports the "status=progress" 
+  operand that gives you the progress without having to send it any signal.
 
   Remove the mapping at the end and you are done.
 
@@ -2701,7 +2704,7 @@ offset  length  name                  data type  description
   A Linux initrd is in gzip'ed cpio format. To unpack it, use something
   like this: 
 
-     md tmp; cd tmp; cat ../initrd | gunzip | cpio -id
+     mkdir tmp; cd tmp; cat ../initrd | gunzip | cpio -id
 
   After this, you have the full initrd content in tmp/
 
@@ -2826,7 +2829,7 @@ offset  length  name                  data type  description
   * 10.1 Is the cryptography of LUKS2 different?
 
   Mostly not.  The header has changed in its structure, but the
-  crytpgraphy is the same.  The one exception is that PBKDF2 has been
+  cryptography is the same.  The one exception is that PBKDF2 has been
   replaced by Argon2 to give better resilience against attacks by
   graphics cards and other hardware with lots of computing power but
   limited local memory per computing element.
