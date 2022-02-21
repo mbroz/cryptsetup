@@ -49,6 +49,11 @@ add_device() {
 	[ -b "/dev/$SCSI_DEV" ] || fail "Cannot find $SCSI_DEV."
 }
 
+add_image()
+{
+	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
+}
+
 function dm_crypt_features()
 {
 	modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
@@ -97,7 +102,7 @@ function dm_crypt_keyring_support()
 
 format() # format
 {
-	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
+	add_image
 
 	echo $PWD1 | $CRYPTSETUP luksFormat --type $1 $DEV -q  $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256
 	[ $? -ne 0 ] && fail "Format failed."
@@ -118,6 +123,12 @@ check_sector_size() # $1 expected sector size
 	fi
 }
 
+check_io()
+{
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=1M count=32 iflag=direct 2>/dev/null || fail
+	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=32 oflag=direct 2>/dev/null || fail
+}
+
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 if [ $(id -u) != 0 ]; then
 	skip "You must be root to run this test, test skipped."
@@ -130,8 +141,8 @@ dm_crypt_features
 echo "[1] Using tmpfs for image"
 DEV="$MNT_DIR/test.img"
 mount -t tmpfs none $MNT_DIR || skip "Mounting tmpfs not available."
-format luks1
 
+add_image
 echo "[2] Kernel dmcrypt performance options"
 if [ -z "$DM_PERF_CPU" ]; then
 	echo "TEST SKIPPED: dmcrypt options not available"
@@ -141,11 +152,13 @@ else
 	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
+	check_io
 	$CRYPTSETUP close $DEV_NAME || fail
 	echo -n "allow_discards "
 	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
+	check_io
 	$CRYPTSETUP close $DEV_NAME || fail
 	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME || fail
 	echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 -q $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
@@ -165,10 +178,12 @@ else
 		echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 -q $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
+		check_io
 	fi
 	$CRYPTSETUP close $DEV_NAME || fail
 	echo
 
+	format luks1
 	echo -n "LUKS: same_cpu_crypt submit_from_cpus "
 	echo -e "$PWD1" | $CRYPTSETUP open --type luks1 $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
