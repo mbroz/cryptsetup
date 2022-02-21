@@ -182,7 +182,8 @@ With <device> parameter cryptsetup looks up active <device> dm mapping.
 If no active mapping is detected, it starts offline reencryption otherwise online
 reencryption takes place.
 
-Reencryption process may be safely interrupted by a user via SIGTERM signal (ctrl+c).
+Reencryption process may be safely interrupted by a user via SIGINT signal
+(ctrl+c). Same applies to SIGTERM signal (i.e. issued by systemd during system shutdown).
 
 To resume already initialized or interrupted reencryption, just run the cryptsetup
 \fIreencrypt\fR command again to continue the reencryption operation.
@@ -192,7 +193,7 @@ option).
 
 If the reencryption process was interrupted abruptly (reencryption process crash, system crash, poweroff)
 it may require recovery. The recovery is currently run automatically on next activation (action \fIopen\fR)
-when needed.
+when needed or explicitly by user (action \fIrepair\fR).
 
 Optional parameter <new_name> takes effect only with \-\-encrypt option and it activates device <new_name>
 immediately after encryption initialization gets finished. That's useful when device needs to be ready
