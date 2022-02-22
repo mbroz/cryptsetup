@@ -1,18 +1,18 @@
 # Frequently Asked Questions Cryptsetup/LUKS
 
 # Sections
-[1. General Questions](FrequentlyAskedQuestions#1-general-questions)  
-[2. Setup](FrequentlyAskedQuestions#2-setup)  
-[3. Common Problems](FrequentlyAskedQuestions#3-common-problems)  
-[4. Troubleshooting](FrequentlyAskedQuestions#4-troubleshooting)  
-[5. Security Aspects](FrequentlyAskedQuestions#5-security-aspects)  
-[6. Backup and Data Recovery](FrequentlyAskedQuestions#6-backup-and-data-recovery)  
-[7. Interoperability with other Disk Encryption Tools](FrequentlyAskedQuestions#7-interoperability-with-other-disk-encryption-tools)  
-[8. Issues with Specific Versions of cryptsetup](FrequentlyAskedQuestions#8-issues-with-specific-versions-of-cryptsetup)  
-[9. The Initrd question](FrequentlyAskedQuestions#9-the-initrd-question)  
-[10. LUKS2 Questions](FrequentlyAskedQuestions#10-luks2-questions)  
-[11. References and Further Reading](FrequentlyAskedQuestions#11-references-and-further-reading)  
-[A. Contributors](FrequentlyAskedQuestions#a-contributors)  
+[1. General Questions](#1-general-questions)  
+[2. Setup](#2-setup)  
+[3. Common Problems](#3-common-problems)  
+[4. Troubleshooting](#4-troubleshooting)  
+[5. Security Aspects](#5-security-aspects)  
+[6. Backup and Data Recovery](#6-backup-and-data-recovery)  
+[7. Interoperability with other Disk Encryption Tools](#7-interoperability-with-other-disk-encryption-tools)  
+[8. Issues with Specific Versions of cryptsetup](#8-issues-with-specific-versions-of-cryptsetup)  
+[9. The Initrd question](#9-the-initrd-question)  
+[10. LUKS2 Questions](#10-luks2-questions)  
+[11. References and Further Reading](#11-references-and-further-reading)  
+[A. Contributors](#a-contributors)  
 
 # 1. General Questions
 
