@@ -1,4 +1,4 @@
-EXTRA_DIST = README.md COPYING.LGPL FAQ docs misc autogen.sh
+EXTRA_DIST = README.md COPYING.LGPL FAQ.md docs misc autogen.sh
 SUBDIRS = po tests
 CLEANFILES =
 DISTCLEAN_TARGETS =
