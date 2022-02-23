@@ -262,6 +262,20 @@
   Also, device mapper requires root access.  cryptsetup uses device mapper to 
   manage the decrypted container.
 
+  * **1.12 How can I report an issue in the cryptsetup project?**
+
+  Before reporting any issue, please be sure you are using the latest
+  upstream version and that you read the documentation (and this FAQ).
+
+  If you think you have discovered an issue, please report it through
+  the project issue tracker [New issue](https://gitlab.com/cryptsetup/cryptsetup/issues).
+  For a possible security issue, please use the confidential checkbox.
+
+  Please fill in all information requested in the report template
+  (specifically add debug output with all run environment data).
+  Do not trim the output; debug output does not include private data.
+
+
 # 2. Setup
 
   * **2.1 LUKS Container Setup mini-HOWTO**
