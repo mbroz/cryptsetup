@@ -1606,5 +1606,23 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	reencrypt_recover_online 4096 journal $HASH1
 fi
 
+echo "[27] Verify test passphrase mode works with reencryption metadata"
+echo $PWD1 | $CRYPTSETUP -S5 -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV || fail
+echo -e "$PWD1\n$PWD1" | $CRYPTSETUP luksAddKey --unbound -s80 -S0 $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --init-only $DEV || fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $DEV || fail
+
+echo $PWD1 | $CRYPTSETUP -q luksFormat -S5 --header $IMG_HDR --type luks2 $FAST_PBKDF_ARGON $DEV || fail
+echo -e "$PWD1\n$PWD1" | $CRYPTSETUP luksAddKey --unbound -s80 -S0 $FAST_PBKDF_ARGON $IMG_HDR || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --init-only --header $IMG_HDR $DEV || fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $IMG_HDR || fail
+
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --init-only --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $IMG_HDR || fail
+
+wipe_dev_head $DEV 1
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 8M $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $DEV || fail
+
 remove_mapping
 exit 0

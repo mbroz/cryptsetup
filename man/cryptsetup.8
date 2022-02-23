@@ -322,7 +322,8 @@ the command prompts for it interactively.
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
 \-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file, \-\-token\-id,
 \-\-token\-only, \-\-token-type, \-\-disable\-external\-tokens, \-\-disable\-keyring,
-\-\-disable\-locks, \-\-type, \-\-refresh, \-\-serialize\-memory\-hard\-pbkdf].
+\-\-disable\-locks, \-\-type, \-\-refresh, \-\-serialize\-memory\-hard\-pbkdf,
+\-\-unbound].
 .PP
 \fIluksSuspend\fR <name>
 .IP
@@ -1483,9 +1484,13 @@ aligned to page size and page-cache initiates read of a sector with invalid
 integrity tag.
 .TP
 .B "\-\-unbound"
-
 Creates new or dumps existing LUKS2 unbound keyslot. See \fIluksAddKey\fR or
 \fIluksDump\fR actions for more details.
+
+When used in \fIluksOpen\fR action (allowed only together with
+\-\-test\-passphrase parameter), it allows to test passphrase for unbound LUKS2
+keyslot. Otherwise, unbound keyslot passphrase can be tested only when specific
+keyslot is selected via \-\-key\-slot parameter.
 
 .TP
 .B "\-\-tcrypt\-hidden"

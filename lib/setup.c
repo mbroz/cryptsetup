@@ -4003,10 +4003,6 @@ out:
 	return r;
 }
 
-/* See fixmes in _open_and_activate_luks2 */
-int update_reencryption_flag(struct crypt_device *cd, int enable, bool commit);
-
-/* TODO: This function should 1:1 with pre-reencryption code */
 static int _open_and_activate(struct crypt_device *cd,
 	int keyslot,
 	const char *name,

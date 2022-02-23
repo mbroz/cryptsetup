@@ -700,7 +700,7 @@ $CRYPTSETUP luksOpen -S 5 -d $KEY1 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 # otoh it should be allowed to test for proper passphrase
 prepare "" new
 echo $PWD1 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU || fail
-echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_KEYU || fail
+echo $PWD1 | $CRYPTSETUP open --unbound --test-passphrase $HEADER_KEYU || fail
 echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 echo $PWD1 | $CRYPTSETUP open $HEADER_KEYU $DEV_NAME 2>/dev/null && fail
@@ -709,7 +709,7 @@ echo $PWD0 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU $DEV_NAME 2>/de
 $CRYPTSETUP luksKillSlot -q $HEADER_KEYU 0
 $CRYPTSETUP luksDump $HEADER_KEYU | grep -q "0: luks2" && fail
 echo $PWD1 | $CRYPTSETUP open -S1 --test-passphrase $HEADER_KEYU || fail
-echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_KEYU || fail
+echo $PWD1 | $CRYPTSETUP open --unbound --test-passphrase $HEADER_KEYU || fail
 echo $PWD1 | $CRYPTSETUP open -S1 $HEADER_KEYU $DEV_NAME 2>/dev/null && fail
 
 prepare "[28] Detached LUKS header" wipe
@@ -973,11 +973,9 @@ echo $PWD3 | $CRYPTSETUP -q luksAddKey --unbound --master-key-file /dev/urandom 
 # do not allow to replace keyslot by unbound slot
 echo $PWD1 | $CRYPTSETUP -q luksAddKey -S5 --unbound -s 32 $LOOPDEV 2>/dev/null && fail
 echo $PWD2 | $CRYPTSETUP -q open $LOOPDEV $DEV_NAME 2> /dev/null && fail
-echo $PWD2 | $CRYPTSETUP -q open $LOOPDEV --test-passphrase || fail
 echo $PWD2 | $CRYPTSETUP -q open -S2 $LOOPDEV $DEV_NAME 2> /dev/null && fail
 echo $PWD2 | $CRYPTSETUP -q open -S2 $LOOPDEV --test-passphrase || fail
 echo $PWD1 | $CRYPTSETUP -q open $LOOPDEV $DEV_NAME 2> /dev/null && fail
-echo $PWD1 | $CRYPTSETUP -q open $LOOPDEV --test-passphrase || fail
 # check we're able to change passphrase for unbound keyslot
 echo -e "$PWD2\n$PWD3" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT -S 2 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP open --test-passphrase -S 2 $LOOPDEV || fail
