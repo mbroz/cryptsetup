@@ -2527,11 +2527,6 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 	if (src->u.integrity.meta_device || tgt->u.integrity.meta_device)
 		return -ENOTSUP;
 
-	if (src->size != tgt->size) {
-		log_dbg(cd, "Device size parameters do not match.");
-		return -EINVAL;
-	}
-
 	if (device_is_identical(src->data_device, tgt->data_device) <= 0) {
 		log_dbg(cd, "Data devices do not match.");
 		return -EINVAL;
