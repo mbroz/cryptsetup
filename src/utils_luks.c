@@ -99,7 +99,8 @@ void set_activation_flags(uint32_t *flags)
 		*flags |= CRYPT_ACTIVATE_IGNORE_PERSISTENT;
 
 	/* Only for LUKS2 but ignored elsewhere */
-	if (ARG_SET(OPT_TEST_PASSPHRASE_ID))
+	if (ARG_SET(OPT_TEST_PASSPHRASE_ID) &&
+            (ARG_SET(OPT_KEY_SLOT_ID) || ARG_SET(OPT_UNBOUND_ID)))
 		*flags |= CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY;
 
 	if (ARG_SET(OPT_SERIALIZE_MEMORY_HARD_PBKDF_ID))

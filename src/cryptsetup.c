@@ -2745,6 +2745,12 @@ static const char * verify_open(void)
 	if (ARG_SET(OPT_DEVICE_SIZE_ID) && ARG_SET(OPT_SIZE_ID))
 		return _("Options --device-size and --size cannot be combined.");
 
+	if (ARG_SET(OPT_UNBOUND_ID) && device_type && strncmp(device_type, "luks", 4))
+		return _("Option --unbound is allowed only for open of luks device.");
+
+	if (ARG_SET(OPT_UNBOUND_ID) && !ARG_SET(OPT_TEST_PASSPHRASE_ID))
+		return _("Option --unbound cannot be used without --test-passphrase.");
+
 	/* "open --type tcrypt" and "tcryptDump" checks are identical */
 	return verify_tcryptdump();
 }
