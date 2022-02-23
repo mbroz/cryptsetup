@@ -264,15 +264,19 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 
 	if (digest_old >= 0) {
 		vk_old = crypt_volume_key_by_id(vks, digest_old);
-		if (!vk_old)
+		if (!vk_old) {
+			log_dbg(cd, "Key (digest id %d) required but not unlocked.", digest_old);
 			return -EINVAL;
+		}
 		data_len += blob_serialize(vk_old->key, vk_old->keylength, NULL);
 	}
 
 	if (digest_new >= 0 && digest_old != digest_new) {
 		vk_new = crypt_volume_key_by_id(vks, digest_new);
-		if (!vk_new)
+		if (!vk_new) {
+			log_dbg(cd, "Key (digest id %d) required but not unlocked.", digest_new);
 			return -EINVAL;
+		}
 		data_len += blob_serialize(vk_new->key, vk_new->keylength, NULL);
 	}
 
@@ -358,6 +362,8 @@ int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 {
 	int r, keyslot_reencrypt;
 	struct volume_key *data;
+
+	log_dbg(cd, "Verifying reencryption metadata.");
 
 	keyslot_reencrypt = LUKS2_find_keyslot(hdr, "reencrypt");
 	if (keyslot_reencrypt < 0)
