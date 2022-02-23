@@ -196,22 +196,23 @@
   list.
 
   The question of how to unsubscribe from the list does crop up sometimes. 
-  For this you need your list management URL, which is sent to you
-  initially and once at the start of each month.  Go to the URL mentioned
-  in the email and select "unsubscribe".  This page also allows you to
-  request a password reminder.
+  For this you need your list management URL 
+  https://subspace.kernel.org/lists.linux.dev.html. Go to the URL mentioned 
+  in the email and select "unsubscribe".
 
-  Alternatively, you can send an Email to dm-crypt-request@saout.de with
-  just the word "help" in the subject or message body.  Make sure to send
-  it from your list address.
+  Alternatively, you can send an empty Email to cryptsetup+help@lists.linux.dev. 
+  Make sure to send it from your list address.
 
   The mailing list archive is here:
-  https://marc.info/?l=dm-crypt
+  https://lore.kernel.org/cryptsetup/
+
+  The legacy dm-crypt mailing list archive is here:
+  https://lore.kernel.org/dm-crypt/
 
 
   * **1.8 Unsubscribe from the mailing-list**
 
-  Send mail to dm-crypt-unsubscribe@saout.de from the subscribed account. 
+  Send mail to cryptsetup+unsubscribe@lists.linux.dev from the subscribed account. 
   You will get an email with instructions.
 
   Basically, you just have to respond to it unmodified to get
@@ -228,9 +229,9 @@
   went active.  The confirmation emails from the listserver have subjects
   like these (with other numbers):
 ```
-    Subject: confirm 9964cf10.....
+    Subject: Confirm subscription to cryptsetup@lists.linux.dev
 ```
-  and are sent from dm-crypt-request@saout.de.  You should check whether
+  and are sent from cryptsetup+help@lists.linux.dev.  You should check whether
   you have anything like it in your sent email folder.  If you find
   nothing and are sure you did not confirm, then you should look into a
   possible compromise of your email account.
