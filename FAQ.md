@@ -1930,6 +1930,31 @@
   connection by the user and cryptsetup will stay true to that principle.
 
 
+ * **5.23 What is cryptsetup CVE-2021-4122?**
+
+  CVE-2021-4122 describes a possible attack against data confidentiality
+  through LUKS2 online reencryption extension crash recovery.
+
+  An attacker can modify on-disk metadata to simulate decryption in
+  progress with crashed (unfinished) reencryption step and persistently
+  decrypt part of the LUKS device.
+
+  This attack requires repeated physical access to the LUKS device but
+  no knowledge of user passphrases.
+
+  The decryption step is performed after a valid user activates
+  the device with a correct passphrase and modified metadata.
+  There are no visible warnings for the user that such recovery happened
+  (except using the luksDump command). The attack can also be reversed
+  afterward (simulating crashed encryption from a plaintext) with
+  possible modification of revealed plaintext.
+
+  The problem was fixed in cryptsetup version 2.4.3 and 2.3.7.
+
+  For more info, please see the report here:
+  https://seclists.org/oss-sec/2022/q1/34
+
+
 # 6. Backup and Data Recovery
 
 
