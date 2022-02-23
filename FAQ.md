@@ -638,6 +638,17 @@
   is encrypted.  This strongly cuts down on complexity, something very
   valuable with storage encryption.
 
+  Try to avoid so-called fake RAID (RAID configured from BIOS but handled
+  by proprietary drivers). Note that some fake RAID firmware automatically
+  writes signature on disks if enabled. This causes corruption of LUKS
+  metadata. Be sure to switch the RAID option off in BIOS if you do not
+  use it.
+
+  Another data corruption can happen if you resize (enlarge) the underlying
+  device and some remnant metadata appear near the end of the resized device
+  (like a secondary copy of the GPT table). You can use wipefs command to
+  detect and wipe such signatures.
+
 
   * **2.9 How do I read a dm-crypt key from file?**
 
