@@ -258,6 +258,10 @@ exp_fail luksAddKey DEV --unbound --key-size 0
 exp_pass luksAddKey DEV --unbound --key-size 8
 exp_pass luksDump DEV --unbound -S5
 exp_fail luksDump DEV --unbound
+exp_pass open DEV --unbound --test-passphrase
+exp_pass open DEV --unbound --test-passphrase -S5
+exp_fail open DEV --unbound NAME
+exp_fail open DEV --unbound -S5 NAME
 
 exp_fail resize NAME --refresh
 exp_fail open DEV NAME --test-passphrase --refresh
