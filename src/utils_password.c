@@ -247,6 +247,7 @@ static int crypt_get_key_tty(const char *prompt,
 	}
 
 	*key = pass;
+	/* coverity[string_null] (crypt_safe_alloc wipes string with additional \0) */
 	*key_size = strlen(pass);
 	r = 0;
 out:
