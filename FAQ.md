@@ -196,22 +196,23 @@
   list.
 
   The question of how to unsubscribe from the list does crop up sometimes. 
-  For this you need your list management URL, which is sent to you
-  initially and once at the start of each month.  Go to the URL mentioned
-  in the email and select "unsubscribe".  This page also allows you to
-  request a password reminder.
+  For this you need your list management URL 
+  https://subspace.kernel.org/lists.linux.dev.html. Go to the URL mentioned 
+  in the email and select "unsubscribe".
 
-  Alternatively, you can send an Email to dm-crypt-request@saout.de with
-  just the word "help" in the subject or message body.  Make sure to send
-  it from your list address.
+  Alternatively, you can send an empty Email to cryptsetup+help@lists.linux.dev. 
+  Make sure to send it from your list address.
 
   The mailing list archive is here:
-  https://marc.info/?l=dm-crypt
+  https://lore.kernel.org/cryptsetup/
+
+  The legacy dm-crypt mailing list archive is here:
+  https://lore.kernel.org/dm-crypt/
 
 
   * **1.8 Unsubscribe from the mailing-list**
 
-  Send mail to dm-crypt-unsubscribe@saout.de from the subscribed account. 
+  Send mail to cryptsetup+unsubscribe@lists.linux.dev from the subscribed account. 
   You will get an email with instructions.
 
   Basically, you just have to respond to it unmodified to get
@@ -228,9 +229,9 @@
   went active.  The confirmation emails from the listserver have subjects
   like these (with other numbers):
 ```
-    Subject: confirm 9964cf10.....
+    Subject: Confirm subscription to cryptsetup@lists.linux.dev
 ```
-  and are sent from dm-crypt-request@saout.de.  You should check whether
+  and are sent from cryptsetup+help@lists.linux.dev.  You should check whether
   you have anything like it in your sent email folder.  If you find
   nothing and are sure you did not confirm, then you should look into a
   possible compromise of your email account.
@@ -260,6 +261,20 @@
 
   Also, device mapper requires root access.  cryptsetup uses device mapper to 
   manage the decrypted container.
+
+  * **1.12 How can I report an issue in the cryptsetup project?**
+
+  Before reporting any issue, please be sure you are using the latest
+  upstream version and that you read the documentation (and this FAQ).
+
+  If you think you have discovered an issue, please report it through
+  the project issue tracker [New issue](https://gitlab.com/cryptsetup/cryptsetup/issues).
+  For a possible security issue, please use the confidential checkbox.
+
+  Please fill in all information requested in the report template
+  (specifically add debug output with all run environment data).
+  Do not trim the output; debug output does not include private data.
+
 
 # 2. Setup
 
@@ -637,6 +652,17 @@
   is encrypted.  This strongly cuts down on complexity, something very
   valuable with storage encryption.
 
+  Try to avoid so-called fake RAID (RAID configured from BIOS but handled
+  by proprietary drivers). Note that some fake RAID firmware automatically
+  writes signature on disks if enabled. This causes corruption of LUKS
+  metadata. Be sure to switch the RAID option off in BIOS if you do not
+  use it.
+
+  Another data corruption can happen if you resize (enlarge) the underlying
+  device and some remnant metadata appear near the end of the resized device
+  (like a secondary copy of the GPT table). You can use wipefs command to
+  detect and wipe such signatures.
+
 
   * **2.9 How do I read a dm-crypt key from file?**
 
@@ -971,6 +997,15 @@
     cryptsetup luksHeaderBackup --header-backup-file <file> <device>
     cryptsetup luksHeaderRestore --header-backup-file <file> <device>
 ```
+
+  * **3.6 I see a data corruption with the Intel QAT kernel driver; why?**
+
+  Intel QAT crypto API drivers have severe bugs that are not fixed for years.
+
+  If you see data corruption, please disable the QAT in the BIOS or avoid loading
+  kernel Intel QAT drivers (switch to software crypto implementation or AES-NI).
+
+  For more info, see posts in dm-devel list https://lore.kernel.org/dm-devel/?q=intel+qat
 
 
 # 4. Troubleshooting
@@ -1916,6 +1951,31 @@
   security software, any connection initiated to anywhere outside your
   machine should always be the result of an explicit request for such a
   connection by the user and cryptsetup will stay true to that principle.
+
+
+ * **5.23 What is cryptsetup CVE-2021-4122?**
+
+  CVE-2021-4122 describes a possible attack against data confidentiality
+  through LUKS2 online reencryption extension crash recovery.
+
+  An attacker can modify on-disk metadata to simulate decryption in
+  progress with crashed (unfinished) reencryption step and persistently
+  decrypt part of the LUKS device.
+
+  This attack requires repeated physical access to the LUKS device but
+  no knowledge of user passphrases.
+
+  The decryption step is performed after a valid user activates
+  the device with a correct passphrase and modified metadata.
+  There are no visible warnings for the user that such recovery happened
+  (except using the luksDump command). The attack can also be reversed
+  afterward (simulating crashed encryption from a plaintext) with
+  possible modification of revealed plaintext.
+
+  The problem was fixed in cryptsetup version 2.4.3 and 2.3.7.
+
+  For more info, please see the report here:
+  https://seclists.org/oss-sec/2022/q1/34
 
 
 # 6. Backup and Data Recovery
