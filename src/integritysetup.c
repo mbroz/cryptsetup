@@ -217,6 +217,58 @@ out:
 	return r;
 }
 
+static int action_resize(void)
+{
+	int r;
+	struct crypt_device *cd = NULL;
+	struct crypt_active_device cad;
+	uint64_t new_dev_size = 0;
+	uint64_t old_dev_size;
+	char path[PATH_MAX];
+
+	if (ARG_SET(OPT_DEVICE_SIZE_ID))
+		new_dev_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
+	else if (ARG_SET(OPT_SIZE_ID))
+		new_dev_size = ARG_UINT64(OPT_SIZE_ID);
+
+	r = crypt_init_by_name_and_header(&cd, action_argv[0], NULL);
+	if (r)
+		goto out;
+
+	r = crypt_get_active_device(cd, action_argv[0], &cad);
+	if (r)
+		goto out;
+	old_dev_size = cad.size;
+
+	r = snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), action_argv[0]);
+	if (r < 0)
+		goto out;
+	r = crypt_resize(cd, action_argv[0], new_dev_size);
+	if (r)
+		goto out;
+
+	if (!new_dev_size) {
+		r = crypt_get_active_device(cd, action_argv[0], &cad);
+		if (r)
+			goto out;
+		new_dev_size = cad.size;
+	}
+
+	if (new_dev_size > old_dev_size) {
+		if (ARG_SET(OPT_WIPE_ID)) {
+			log_dbg("Wiping the end of the resized device");
+			r = crypt_wipe(cd, path, CRYPT_WIPE_ZERO, old_dev_size * SECTOR_SIZE, (new_dev_size - old_dev_size) * SECTOR_SIZE, DEFAULT_WIPE_BLOCK, 0, NULL, NULL);
+		} else {
+			log_dbg("Setting recalculate flag");
+			r = crypt_activate_by_volume_key(cd, action_argv[0], NULL, 0, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_RECALCULATE);
+		}
+	}
+out:
+
+	crypt_free(cd);
+	return r;
+}
+
 static int action_open(void)
 {
 	struct crypt_device *cd = NULL;
@@ -453,6 +505,7 @@ static struct action_type {
 	{ CLOSE_ACTION,	action_close,  1, N_("<name>"),N_("close device (remove mapping)") },
 	{ STATUS_ACTION,action_status, 1, N_("<name>"),N_("show active device status") },
 	{ DUMP_ACTION,	action_dump,   1, N_("<integrity_device>"),N_("show on-disk information") },
+	{ RESIZE_ACTION,action_resize, 1, N_("<name>"), N_("resize active device") },
 	{}
 };
 
@@ -506,7 +559,7 @@ static int run_action(struct action_type *action)
 
 static bool needs_size_conversion(unsigned int arg_id)
 {
-	return arg_id == OPT_JOURNAL_SIZE_ID;
+	return (arg_id == OPT_JOURNAL_SIZE_ID || arg_id == OPT_DEVICE_SIZE_ID);
 }
 
 static void basic_options_cb(poptContext popt_context,
