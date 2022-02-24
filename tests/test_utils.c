@@ -459,7 +459,7 @@ int t_dm_check_versions(void)
 					     (unsigned)target->version[1],
 					     (unsigned)target->version[2]);
 		}
-		target = (struct dm_versions *)((char *) target + target->next);
+		target = VOIDP_CAST(struct dm_versions *)((char *) target + target->next);
 	} while (last_target != target);
 
 	r = 0;
@@ -518,7 +518,7 @@ int loop_device(const char *loop)
 
 static char *crypt_loop_get_device_old(void)
 {
-	char dev[20];
+	char dev[64];
 	int i, loop_fd;
 	struct loop_info64 lo64 = {0};
 

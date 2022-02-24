@@ -1370,7 +1370,7 @@ static int check_hash(const char *hash)
 
 static int base64_test(void)
 {
-	int i;
+	unsigned int i;
 	char *s;
 	size_t s_len;
 
