@@ -196,9 +196,12 @@ int create_dmdevice_over_loop(const char *dm_name, const uint64_t size)
 		printf("No enough space on backing loop device\n.");
 		return -2;
 	}
-	snprintf(cmd, sizeof(cmd),
-		 "dmsetup create %s --table \"0 %" PRIu64 " linear %s %" PRIu64 "\"",
-		 dm_name, size, THE_LOOP_DEV, t_dev_offset);
+	r = snprintf(cmd, sizeof(cmd),
+		     "dmsetup create %s --table \"0 %" PRIu64 " linear %s %" PRIu64 "\"",
+		     dm_name, size, THE_LOOP_DEV, t_dev_offset);
+	if (r < 0 || (size_t)r >= sizeof(cmd))
+		return -3;
+
 	if (!(r = _system(cmd, 1)))
 		t_dev_offset += size;
 	return r;

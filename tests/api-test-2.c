@@ -382,8 +382,9 @@ static int _setup(void)
 		return 1;
 	}
 	close(fd);
-	snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
-		 test_loop_file, TST_SECTOR_SIZE, TST_LOOP_FILE_SIZE);
+	if (snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
+	    test_loop_file, TST_SECTOR_SIZE, TST_LOOP_FILE_SIZE) < 0)
+		return 1;
 	if (_system(cmd, 1))
 		return 1;
 
@@ -399,8 +400,9 @@ static int _setup(void)
 		return 1;
 	}
 	close(fd);
-	snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
-		 tmp_file_1, TST_SECTOR_SIZE, 10);
+	if (snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
+	    tmp_file_1, TST_SECTOR_SIZE, 10) < 0)
+		return 1;
 	if (_system(cmd, 1))
 		return 1;
 
@@ -1189,9 +1191,9 @@ static void UseTempVolumes(void)
 
 	// Dirty checks: device without UUID
 	// we should be able to remove it but not manipulate with it
-	snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
+	GE_(snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
 		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
-		"%s 2048\"", CDEVICE_2, DEVICE_2);
+		"%s 2048\"", CDEVICE_2, DEVICE_2), 0);
 	_system(tmp, 1);
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
@@ -1199,10 +1201,10 @@ static void UseTempVolumes(void)
 	CRYPT_FREE(cd);
 
 	// Dirty checks: device with UUID but LUKS header key fingerprint must fail)
-	snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
+	GE_(snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
 		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
 		"%s 2048\" -u CRYPT-LUKS2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-ctest1",
-		 CDEVICE_2, DEVICE_2);
+		 CDEVICE_2, DEVICE_2), 0);
 	_system(tmp, 1);
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
@@ -1368,7 +1370,8 @@ static void Luks2HeaderLoad(void)
 	// prepared header on a device too small to contain header and payload
 	//OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_payload_offset - 1));
 	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, img_size - 1));
-	snprintf(cmd, sizeof(cmd), "dd if=" IMAGE1 " of=" DMDIR H_DEVICE_WRONG " bs=%" PRIu32 " count=%" PRIu64 " 2>/dev/null", params.sector_size, img_size - 1);
+	GE_(snprintf(cmd, sizeof(cmd), "dd if=" IMAGE1 " of=" DMDIR H_DEVICE_WRONG " bs=%" PRIu32
+	    " count=%" PRIu64 " 2>/dev/null", params.sector_size, img_size - 1), 0);
 	OK_(_system(cmd, 1));
 	// some device
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
@@ -4569,9 +4572,8 @@ static void Luks2Repair(void)
 {
 	char rollback[256];
 
-	snprintf(rollback, sizeof(rollback),
-		 "dd if=" IMAGE_PV_LUKS2_SEC ".bcp of=%s bs=1M 2>/dev/null",
-		 DEVICE_6);
+	GE_(snprintf(rollback, sizeof(rollback),
+	    "dd if=" IMAGE_PV_LUKS2_SEC ".bcp of=%s bs=1M 2>/dev/null", DEVICE_6), 0);
 
 	OK_(crypt_init(&cd, DEVICE_6));
 

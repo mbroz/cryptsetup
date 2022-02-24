@@ -245,8 +245,9 @@ static int _setup(void)
 		return 1;
 	}
 	close(fd);
-	snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
-		 test_loop_file, TST_SECTOR_SIZE, TST_LOOP_FILE_SIZE);
+	if (snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
+	    test_loop_file, TST_SECTOR_SIZE, TST_LOOP_FILE_SIZE) < 0)
+		return 1;
 	if (_system(cmd, 1))
 		return 1;
 
@@ -262,8 +263,9 @@ static int _setup(void)
 		return 1;
 	}
 	close(fd);
-	snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
-		 tmp_file_1, TST_SECTOR_SIZE, 10);
+	if (snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=%s bs=%d count=%d 2>/dev/null",
+	    tmp_file_1, TST_SECTOR_SIZE, 10) < 0)
+		return 1;
 	if (_system(cmd, 1))
 		return 1;
 
@@ -384,7 +386,7 @@ static void AddDevicePlain(void)
 	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, passphrase, strlen(passphrase), 0));
 	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
-	snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), CDEVICE_1);
+	GE_(snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), CDEVICE_1), 0);
 	if (t_device_size(path, &r_size) >= 0)
 		EQ_(r_size >> TST_SECTOR_SHIFT, 1);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -452,7 +454,7 @@ static void AddDevicePlain(void)
 
 	// device status check
 	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
-	snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), CDEVICE_1);
+	GE_(snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), CDEVICE_1), 0);
 	fd = open(path, O_RDONLY);
 	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_BUSY);
 	FAIL_(crypt_deactivate(cd, CDEVICE_1), "Device is busy");
@@ -1078,9 +1080,9 @@ static void UseTempVolumes(void)
 
 	// Dirty checks: device without UUID
 	// we should be able to remove it but not manipulate with it
-	snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
+	GE_(snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
 		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
-		"%s 2048\"", CDEVICE_2, DEVICE_2);
+		"%s 2048\"", CDEVICE_2, DEVICE_2), 0);
 	_system(tmp, 1);
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
@@ -1088,10 +1090,10 @@ static void UseTempVolumes(void)
 	CRYPT_FREE(cd);
 
 	// Dirty checks: device with UUID but LUKS header key fingerprint must fail)
-	snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
+	GE_(snprintf(tmp, sizeof(tmp), "dmsetup create %s --table \""
 		"0 100 crypt aes-cbc-essiv:sha256 deadbabedeadbabedeadbabedeadbabe 0 "
 		"%s 2048\" -u CRYPT-LUKS1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-ctest1",
-		 CDEVICE_2, DEVICE_2);
+		 CDEVICE_2, DEVICE_2), 0);
 	_system(tmp, 1);
 	OK_(crypt_init_by_name(&cd, CDEVICE_2));
 	OK_(crypt_deactivate(cd, CDEVICE_2));
@@ -1161,7 +1163,7 @@ static void LuksHeaderRestore(void)
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_5), "Header corrupted");
 	OK_(crypt_header_restore(cd, CRYPT_LUKS1, VALID_HEADER));
 	// wipe valid luks header
-	snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=" DMDIR L_DEVICE_OK " bs=512 count=%" PRIu64 " 2>/dev/null", r_payload_offset);
+	GE_(snprintf(cmd, sizeof(cmd), "dd if=/dev/zero of=" DMDIR L_DEVICE_OK " bs=512 count=%" PRIu64 " 2>/dev/null", r_payload_offset), 0);
 	OK_(_system(cmd, 1));
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_1), "Header corrupted");
 	FAIL_(crypt_header_restore(cd, CRYPT_LUKS1, EVL_HEADER_2), "Header corrupted");
@@ -1233,8 +1235,8 @@ static void LuksHeaderLoad(void)
 	// prepared header on a device too small to contain header and payload
 	//OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, r_payload_offset - 1));
 	OK_(create_dmdevice_over_loop(H_DEVICE_WRONG, 2050 - 1)); //FIXME
-	//snprintf(cmd, sizeof(cmd), "dd if=" EVL_HEADER_4 " of=" DMDIR H_DEVICE_WRONG " bs=512 count=%" PRIu64, r_payload_offset - 1);
-	snprintf(cmd, sizeof(cmd), "dd if=" EVL_HEADER_4 " of=" DMDIR H_DEVICE_WRONG " bs=512 count=%d 2>/dev/null", 2050 - 1);
+	//GE_(snprintf(cmd, sizeof(cmd), "dd if=" EVL_HEADER_4 " of=" DMDIR H_DEVICE_WRONG " bs=512 count=%" PRIu64, r_payload_offset - 1), 0);
+	GE_(snprintf(cmd, sizeof(cmd), "dd if=" EVL_HEADER_4 " of=" DMDIR H_DEVICE_WRONG " bs=512 count=%d 2>/dev/null", 2050 - 1), 0);
 	OK_(_system(cmd, 1));
 	// some device
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));

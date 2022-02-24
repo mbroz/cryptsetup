@@ -1303,7 +1303,9 @@ static int cipher_iv_test(void)
 			if (vector->data_length > sizeof(result))
 				return EXIT_FAILURE;
 
-			snprintf(mode_iv, sizeof(mode_iv)-2, "%s-%s", vector->cipher_mode, vector->iv_name);
+			if (snprintf(mode_iv, sizeof(mode_iv)-2, "%s-%s", vector->cipher_mode, vector->iv_name) < 0)
+				return EXIT_FAILURE;
+
 			r = crypt_storage_init(&storage, vector->out[j].sector_size, vector->cipher_name, mode_iv,
 					       vector->key, vector->key_length, vector->out[j].large_iv);
 			if (r == -ENOENT || r == -ENOTSUP) {
