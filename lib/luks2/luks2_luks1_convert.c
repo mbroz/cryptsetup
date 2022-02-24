@@ -75,7 +75,11 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 
 	/* encryption algorithm field */
 	if (*hdr_v1->cipherMode != '\0') {
-		(void) snprintf(cipher, sizeof(cipher), "%s-%s", hdr_v1->cipherName, hdr_v1->cipherMode);
+		if (snprintf(cipher, sizeof(cipher), "%s-%s", hdr_v1->cipherName, hdr_v1->cipherMode) < 0) {
+			json_object_put(keyslot_obj);
+			json_object_put(jobj_area);
+			return -EINVAL;
+		}
 		json_object_object_add(jobj_area, "encryption", json_object_new_string(cipher));
 	} else
 		json_object_object_add(jobj_area, "encryption", json_object_new_string(hdr_v1->cipherName));
@@ -169,7 +173,10 @@ static int json_luks1_segment(const struct luks_phdr *hdr_v1, struct json_object
 
 	/* cipher field */
 	if (*hdr_v1->cipherMode != '\0') {
-		(void) snprintf(cipher, sizeof(cipher), "%s-%s", hdr_v1->cipherName, hdr_v1->cipherMode);
+		if (snprintf(cipher, sizeof(cipher), "%s-%s", hdr_v1->cipherName, hdr_v1->cipherMode) < 0) {
+			json_object_put(segment_obj);
+			return -EINVAL;
+		}
 		c = cipher;
 	} else
 		c = hdr_v1->cipherName;
@@ -243,7 +250,12 @@ static int json_luks1_digest(const struct luks_phdr *hdr_v1, struct json_object 
 	for (ks = 0; ks < LUKS_NUMKEYS; ks++) {
 		if (hdr_v1->keyblock[ks].active != LUKS_KEY_ENABLED)
 			continue;
-		(void) snprintf(keyslot_str, sizeof(keyslot_str), "%d", ks);
+		if (snprintf(keyslot_str, sizeof(keyslot_str), "%d", ks) < 0) {
+			json_object_put(field);
+			json_object_put(array);
+			json_object_put(digest_obj);
+			return -EINVAL;
+		}
 
 		field = json_object_new_string(keyslot_str);
 		if (!field || json_object_array_add(array, field) < 0) {

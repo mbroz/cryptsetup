@@ -135,14 +135,14 @@ void cryptsetup_token_dump(struct crypt_device *cd, const char *json)
 	json_object_object_get_ex(jobj_token, "ssh_path",   &jobj_path);
 	json_object_object_get_ex(jobj_token, "ssh_keypath",&jobj_keypath);
 
-	snprintf(buf, sizeof(buf) - 1, "\tssh_server: %s\n\tssh_user: %s\n"
-		"\tssh_path: %s\n\tssh_key_path: %s\n",
-		json_object_get_string(jobj_server),
-		json_object_get_string(jobj_user),
-		json_object_get_string(jobj_path),
-		json_object_get_string(jobj_keypath));
+	if (snprintf(buf, sizeof(buf) - 1, "\tssh_server: %s\n\tssh_user: %s\n"
+	    "\tssh_path: %s\n\tssh_key_path: %s\n",
+	    json_object_get_string(jobj_server),
+	    json_object_get_string(jobj_user),
+	    json_object_get_string(jobj_path),
+	    json_object_get_string(jobj_keypath)) > 0)
+		crypt_log(cd, CRYPT_LOG_NORMAL, buf);
 
-	crypt_log(cd, CRYPT_LOG_NORMAL, buf);
 	json_object_put(jobj_token);
 }
 

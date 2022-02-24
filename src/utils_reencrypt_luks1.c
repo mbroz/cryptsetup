@@ -211,11 +211,12 @@ static int write_log(struct reenc_ctx *rc)
 	ssize_t r;
 
 	memset(rc->log_buf, 0, SECTOR_SIZE);
-	snprintf(rc->log_buf, SECTOR_SIZE, "# LUKS reencryption log, DO NOT EDIT OR DELETE.\n"
-		"version = %d\nUUID = %s\ndirection = %d\nmode = %d\n"
-		"offset = %" PRIu64 "\nshift = %" PRIu64 "\n# EOF\n",
-		2, rc->device_uuid, rc->reencrypt_direction, rc->reencrypt_mode,
-		rc->device_offset, rc->device_shift);
+	if (snprintf(rc->log_buf, SECTOR_SIZE, "# LUKS reencryption log, DO NOT EDIT OR DELETE.\n"
+	    "version = %d\nUUID = %s\ndirection = %d\nmode = %d\n"
+	    "offset = %" PRIu64 "\nshift = %" PRIu64 "\n# EOF\n",
+	    2, rc->device_uuid, rc->reencrypt_direction, rc->reencrypt_mode,
+	    rc->device_offset, rc->device_shift) < 0)
+		return -EINVAL;
 
 	if (lseek(rc->log_fd, 0, SEEK_SET) == -1)
 		return -EIO;

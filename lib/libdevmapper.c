@@ -2971,11 +2971,17 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	}
 
 	strcpy(msg, "key set ");
-	if (!vk->keylength)
-		snprintf(msg + 8, msg_size - 8, "-");
-	else if (vk->key_description)
-		snprintf(msg + 8, msg_size - 8, ":%zu:logon:%s", vk->keylength, vk->key_description);
-	else
+	if (!vk->keylength) {
+		if (snprintf(msg + 8, msg_size - 8, "-") < 0) {
+			r = -EINVAL;
+			goto out;
+		}
+	} else if (vk->key_description) {
+		if (snprintf(msg + 8, msg_size - 8, ":%zu:logon:%s", vk->keylength, vk->key_description) < 0) {
+			r = -EINVAL;
+			goto out;
+		}
+	} else
 		hex_key(&msg[8], vk->keylength, vk->key);
 
 	if (!_dm_message(name, msg) ||

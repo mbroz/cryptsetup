@@ -527,8 +527,9 @@ static void basic_options_cb(poptContext popt_context,
 		/* fall through */
 	case OPT_JOURNAL_CRYPT_KEY_SIZE_ID:
 		if (ARG_UINT32(key->val) > (DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB * 1024)) {
-			snprintf(msg, sizeof(msg), _("Invalid --%s size. Maximum is %u bytes."),
-				 key->longName, DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB * 1024);
+			if (snprintf(msg, sizeof(msg), _("Invalid --%s size. Maximum is %u bytes."),
+			    key->longName, DEFAULT_INTEGRITY_KEYFILE_SIZE_MAXKB * 1024) < 0)
+				msg[0] = '\0';
 			usage(popt_context, EXIT_FAILURE, msg,
 			      poptGetInvocationName(popt_context));
 		}
@@ -617,7 +618,8 @@ int main(int argc, const char **argv)
 
 	if (action_argc < action->required_action_argc) {
 		char buf[128];
-		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
+		if (snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc) < 0)
+			buf[0] ='\0';
 		usage(popt_context, EXIT_FAILURE, buf,
 		      poptGetInvocationName(popt_context));
 	}

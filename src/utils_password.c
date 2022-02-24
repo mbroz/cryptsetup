@@ -280,14 +280,18 @@ int tools_get_key(const char *prompt,
 			if (keyfile_offset) {
 				log_err(_("Cannot use offset with terminal input."));
 			} else {
+				r = 0;
 				if (!prompt && !crypt_get_device_name(cd))
-					snprintf(tmp, sizeof(tmp), _("Enter passphrase: "));
+					r = snprintf(tmp, sizeof(tmp), _("Enter passphrase: "));
 				else if (!prompt) {
 					backing_file = crypt_loop_backing_file(crypt_get_device_name(cd));
-					snprintf(tmp, sizeof(tmp), _("Enter passphrase for %s: "), backing_file ?: crypt_get_device_name(cd));
+					r = snprintf(tmp, sizeof(tmp), _("Enter passphrase for %s: "), backing_file ?: crypt_get_device_name(cd));
 					free(backing_file);
 				}
-				r = crypt_get_key_tty(prompt ?: tmp, key, key_size, timeout, verify);
+				if (r >= 0)
+					r = crypt_get_key_tty(prompt ?: tmp, key, key_size, timeout, verify);
+				else
+					r = -EINVAL;
 			}
 		} else {
 			log_dbg("STDIN descriptor passphrase entry requested.");
