@@ -54,6 +54,21 @@ Reports status for the active integrity mapping <name>.
 .IP
 Reports parameters from on-disk stored superblock.
 
+.PP
+\fIresize\fR <name>
+.IP
+Resizes an active mapping <name>.
+
+If \-\-size (in 512-bytes sectors) or \-\-device\-size are not specified,
+the size is computed from the underlying device. After resize, the
+\fBrecalculating\fR flag is set. If \-\-wipe flag is set and the size of the
+device is increased, the newly added section will be wiped.
+
+Increasing the size of integrity volumes is available since the Linux kernel
+version 5.7, shrinking should work on older kernels too.
+
+\fB<options>\fR can be [\-\-size, \-\-device\-size, \-\-wipe]
+
 .SH OPTIONS
 .TP
 .B "\-\-verbose, \-v"
@@ -92,6 +107,9 @@ due to need of full 64bit unsigned integers.
 .TP
 .B "\-\-no\-wipe"
 Do not wipe the device after format. A device that is not initially wiped will contain invalid checksums.
+.TP
+.B "\-\-wipe"
+Wipe the newly allocated area after resize to bigger size. If this flag is not set, checksums will be calculated for the data previously stored in the newly allocated area.
 .TP
 .B "\-\-journal\-size, \-j BYTES"
 Size of the journal.
