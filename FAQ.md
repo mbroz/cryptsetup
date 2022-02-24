@@ -998,6 +998,15 @@
     cryptsetup luksHeaderRestore --header-backup-file <file> <device>
 ```
 
+  * **3.6 I see a data corruption with the Intel QAT kernel driver; why?**
+
+  Intel QAT crypto API drivers have severe bugs that are not fixed for years.
+
+  If you see data corruption, please disable the QAT in the BIOS or avoid loading
+  kernel Intel QAT drivers (switch to software crypto implementation or AES-NI).
+
+  For more info, see posts in dm-devel list https://lore.kernel.org/dm-devel/?q=intel+qat
+
 
 # 4. Troubleshooting
 
