@@ -1740,7 +1740,8 @@ static void hdr_dump_keyslots(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_get_ex(hdr_jobj, "keyslots", &keyslots_jobj);
 
 	for (j = 0; j < LUKS2_KEYSLOTS_MAX; j++) {
-		(void) snprintf(slot, sizeof(slot), "%i", j);
+		if (snprintf(slot, sizeof(slot), "%i", j) < 0)
+			slot[0] = '\0';
 		json_object_object_get_ex(keyslots_jobj, slot, &val);
 		if (!val)
 			continue;
@@ -1782,7 +1783,8 @@ static void hdr_dump_tokens(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_get_ex(hdr_jobj, "tokens", &tokens_jobj);
 
 	for (j = 0; j < LUKS2_TOKENS_MAX; j++) {
-		(void) snprintf(token, sizeof(token), "%i", j);
+		if (snprintf(token, sizeof(token), "%i", j) < 0)
+			token[0] = '\0';
 		json_object_object_get_ex(tokens_jobj, token, &val);
 		if (!val)
 			continue;
@@ -1812,7 +1814,8 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_get_ex(hdr_jobj, "segments", &jobj_segments);
 
 	for (i = 0; i < LUKS2_SEGMENT_MAX; i++) {
-		(void) snprintf(segment, sizeof(segment), "%i", i);
+		if (snprintf(segment, sizeof(segment), "%i", i) < 0)
+			segment[0] = '\0';
 		if (!json_object_object_get_ex(jobj_segments, segment, &jobj_segment))
 			continue;
 
@@ -1867,7 +1870,8 @@ static void hdr_dump_digests(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_get_ex(hdr_jobj, "digests", &jobj1);
 
 	for (i = 0; i < LUKS2_DIGEST_MAX; i++) {
-		(void) snprintf(key, sizeof(key), "%i", i);
+		if (snprintf(key, sizeof(key), "%i", i) < 0)
+			key[0] = '\0';
 		json_object_object_get_ex(jobj1, key, &val);
 		if (!val)
 			continue;

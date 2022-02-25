@@ -48,9 +48,10 @@ static int dm_prepare_uuid(const char *type, const char *uuid, char *buf, size_t
 			}
 	}
 
-	snprintf(buf, buflen, DM_UUID_PREFIX "%s%s%s%s",
-		type ?: "", type ? "-" : "",
-		uuid2[0] ? uuid2 : "", uuid2[0] ? "-" : "");
+	if (snprintf(buf, buflen, DM_UUID_PREFIX "%s%s%s%s",
+	    type ?: "", type ? "-" : "",
+	    uuid2[0] ? uuid2 : "", uuid2[0] ? "-" : "") < 0)
+		return 0;
 
 	return 1;
 }

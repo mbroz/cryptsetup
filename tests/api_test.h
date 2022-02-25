@@ -96,6 +96,9 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 
 #define CRYPT_FREE(x) do { crypt_free(x); x = NULL; } while (0)
 
+/* to silent clang -Wcast-align when working with byte arrays */
+#define VOIDP_CAST(x) (x)(void*)
+
 #define DMDIR "/dev/mapper/"
 
 #define TST_SECTOR_SHIFT 9L

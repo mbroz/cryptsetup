@@ -62,7 +62,8 @@ void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, s
 		/* special size strings with units converted to integers */
 		if (needs_size_conv_fn && needs_size_conv_fn(popt_val)) {
 			if (tools_string_to_size(popt_arg, &arg->u.u64_value)) {
-				snprintf(msg, sizeof(msg), _("Invalid size specification in parameter --%s."), arg->name);
+				if (snprintf(msg, sizeof(msg), _("Invalid size specification in parameter --%s."), arg->name) < 0)
+					msg[0] = '\0';
 				usage(popt_context, EXIT_FAILURE, msg,
 				      poptGetInvocationName(popt_context));
 			}
@@ -118,7 +119,8 @@ void tools_check_args(const char *action, const struct tools_arg *args, size_t a
 			if (action_allowed(action, args[i].actions_array, MAX_ACTIONS)) {
 				continue;
 			} else {
-				(void)snprintf(msg, sizeof(msg), _("Option --%s is not allowed with %s action."), args[i].name, action);
+				if (snprintf(msg, sizeof(msg), _("Option --%s is not allowed with %s action."), args[i].name, action) < 0)
+					msg[0] = '\0';
 				usage(popt_context, EXIT_FAILURE, msg, poptGetInvocationName(popt_context));
 			}
 		}

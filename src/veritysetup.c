@@ -634,7 +634,8 @@ int main(int argc, const char **argv)
 
 	if (action_argc < action->required_action_argc) {
 		char buf[128];
-		snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc);
+		if (snprintf(buf, 128,_("%s: requires %s as arguments"), action->type, action->arg_desc) < 0)
+			buf[0] = '\0';
 		usage(popt_context, EXIT_FAILURE, buf,
 		      poptGetInvocationName(popt_context));
 	}

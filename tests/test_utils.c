@@ -196,9 +196,12 @@ int create_dmdevice_over_loop(const char *dm_name, const uint64_t size)
 		printf("No enough space on backing loop device\n.");
 		return -2;
 	}
-	snprintf(cmd, sizeof(cmd),
-		 "dmsetup create %s --table \"0 %" PRIu64 " linear %s %" PRIu64 "\"",
-		 dm_name, size, THE_LOOP_DEV, t_dev_offset);
+	r = snprintf(cmd, sizeof(cmd),
+		     "dmsetup create %s --table \"0 %" PRIu64 " linear %s %" PRIu64 "\"",
+		     dm_name, size, THE_LOOP_DEV, t_dev_offset);
+	if (r < 0 || (size_t)r >= sizeof(cmd))
+		return -3;
+
 	if (!(r = _system(cmd, 1)))
 		t_dev_offset += size;
 	return r;
@@ -456,7 +459,7 @@ int t_dm_check_versions(void)
 					     (unsigned)target->version[1],
 					     (unsigned)target->version[2]);
 		}
-		target = (struct dm_versions *)((char *) target + target->next);
+		target = VOIDP_CAST(struct dm_versions *)((char *) target + target->next);
 	} while (last_target != target);
 
 	r = 0;
@@ -515,7 +518,7 @@ int loop_device(const char *loop)
 
 static char *crypt_loop_get_device_old(void)
 {
-	char dev[20];
+	char dev[64];
 	int i, loop_fd;
 	struct loop_info64 lo64 = {0};
 

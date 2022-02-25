@@ -827,7 +827,10 @@ int TCRYPT_activate(struct crypt_device *cd,
 			strncpy(dm_name, name, sizeof(dm_name)-1);
 			dmd.flags = flags;
 		} else {
-			snprintf(dm_name, sizeof(dm_name), "%s_%d", name, i-1);
+			if (snprintf(dm_name, sizeof(dm_name), "%s_%d", name, i-1) < 0) {
+				r = -EINVAL;
+				break;
+			}
 			dmd.flags = flags | CRYPT_ACTIVATE_PRIVATE;
 		}
 
@@ -835,8 +838,10 @@ int TCRYPT_activate(struct crypt_device *cd,
 				vk->key, hdr->d.keys);
 
 		if (algs->chain_count != i) {
-			snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d",
-				 dm_get_dir(), name, i);
+			if (snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d", dm_get_dir(), name, i) < 0) {
+				r = -EINVAL;
+				break;
+			}
 			r = device_alloc(cd, &device, dm_dev_name);
 			if (r)
 				break;

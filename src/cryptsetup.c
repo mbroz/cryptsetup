@@ -2956,7 +2956,8 @@ static void help_args(struct action_type *action, poptContext popt_context)
 {
 	char buf[128];
 
-	snprintf(buf, sizeof(buf), _("%s: requires %s as arguments"), action->type, action->arg_desc);
+	if (snprintf(buf, sizeof(buf), _("%s: requires %s as arguments"), action->type, action->arg_desc) < 0)
+		buf[0] = '\0';
 	usage(popt_context, EXIT_FAILURE, buf, poptGetInvocationName(popt_context));
 }
 
