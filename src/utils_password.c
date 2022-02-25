@@ -128,14 +128,17 @@ static ssize_t read_tty_eol(int fd, char *pass, size_t maxlen)
 }
 
 /* The pass buffer is zeroed and has trailing \0 already " */
-static int untimed_read(int fd, char *pass, size_t maxlen)
+static int untimed_read(int fd, char *pass, size_t maxlen, size_t *realsize)
 {
 	ssize_t i;
 
 	i = read_tty_eol(fd, pass, maxlen);
 	if (i > 0) {
-		if (pass[i-1] == '\n')
+		if (pass[i-1] == '\n') {
 			pass[i-1] = '\0';
+			*realsize = i - 1;
+		} else
+			*realsize = i;
 		i = 0;
 	} else if (i == 0) /* empty input */
 		i = -1;
@@ -143,7 +146,7 @@ static int untimed_read(int fd, char *pass, size_t maxlen)
 	return i;
 }
 
-static int timed_read(int fd, char *pass, size_t maxlen, long timeout)
+static int timed_read(int fd, char *pass, size_t maxlen, size_t *realsize, long timeout)
 {
 	struct timeval t;
 	fd_set fds = {}; /* Just to avoid scan-build false report for FD_SET */
@@ -155,7 +158,7 @@ static int timed_read(int fd, char *pass, size_t maxlen, long timeout)
 	t.tv_usec = 0;
 
 	if (select(fd+1, &fds, NULL, NULL, &t) > 0)
-		failed = untimed_read(fd, pass, maxlen);
+		failed = untimed_read(fd, pass, maxlen, realsize);
 
 	return failed;
 }
@@ -166,6 +169,7 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 	struct termios orig, tmp;
 	int failed = -1;
 	int infd, outfd;
+	size_t realsize = 0;
 
 	if (maxlen < 1)
 		return failed;
@@ -189,12 +193,15 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 
 	tcsetattr(infd, TCSAFLUSH, &tmp);
 	if (timeout)
-		failed = timed_read(infd, pass, maxlen, timeout);
+		failed = timed_read(infd, pass, maxlen, &realsize, timeout);
 	else
-		failed = untimed_read(infd, pass, maxlen);
+		failed = untimed_read(infd, pass, maxlen, &realsize);
 	tcsetattr(infd, TCSAFLUSH, &orig);
 out:
 	if (!failed && write(outfd, "\n", 1)) {};
+
+	if (realsize == maxlen)
+		log_dbg("Read stopped at maximal interactive input length, passphrase can be trimmed.");
 
 	if (infd != STDIN_FILENO)
 		close(infd);
