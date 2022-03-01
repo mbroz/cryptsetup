@@ -3532,6 +3532,9 @@ int crypt_reencrypt_run(
 		}
 	}
 
+	if (progress && progress(rh->device_size, rh->progress, usrptr))
+		quit = true;
+
 	while (!quit && (rh->device_size > rh->progress)) {
 		rs = reencrypt_step(cd, hdr, rh, rh->device_size, rh->online);
 		if (rs != REENC_OK)
