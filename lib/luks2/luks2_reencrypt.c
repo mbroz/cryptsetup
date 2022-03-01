@@ -3524,7 +3524,7 @@ int crypt_reencrypt_run(
 	rs = REENC_OK;
 
 	/* update reencrypt keyslot protection parameters in memory only */
-	if (!quit && (rh->device_size > rh->progress)) {
+	if (rh->device_size > rh->progress) {
 		r = reencrypt_keyslot_update(cd, rh);
 		if (r < 0) {
 			log_dbg(cd, "Keyslot update failed.");
