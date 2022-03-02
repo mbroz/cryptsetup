@@ -718,8 +718,9 @@ static int action_resize(void)
 		tools_keyslot_msg(r, UNLOCKED);
 		tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), ARG_INT32(OPT_TOKEN_ID_ID), false);
 
-		/* Token requires PIN, but ask only if there is no password query later */
-		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
+		/* Token requires PIN. Ask if there is evident preference for tokens */
+		if (r == -ENOANO && (ARG_SET(OPT_TOKEN_ONLY_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) ||
+				     ARG_SET(OPT_TOKEN_ID_ID)))
 			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), NULL, ARG_STR(OPT_TOKEN_TYPE_ID), CRYPT_ACTIVATE_KEYRING_KEY, 1, true);
 
 		if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
@@ -1490,8 +1491,9 @@ static int action_open_luks(void)
 		tools_keyslot_msg(r, UNLOCKED);
 		tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), ARG_INT32(OPT_TOKEN_ID_ID), false);
 
-		/* Token requires PIN, but ask only if there is no password query later */
-		if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
+		/* Token requires PIN. Ask if there is evident preference for tokens */
+		if (r == -ENOANO && (ARG_SET(OPT_TOKEN_ONLY_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) ||
+				     ARG_SET(OPT_TOKEN_ID_ID)))
 			r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), activated_name, ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags, set_tries_tty(), true);
 
 		if (r >= 0 || r == -EEXIST || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
@@ -2234,8 +2236,9 @@ static int action_luksResume(void)
 	tools_keyslot_msg(r, UNLOCKED);
 	tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), ARG_INT32(OPT_TOKEN_ID_ID), false);
 
-	/* Token requires PIN, but ask only if there is no password query later */
-	if (ARG_SET(OPT_TOKEN_ONLY_ID) && r == -ENOANO)
+	/* Token requires PIN. Ask if there is evident preference for tokens */
+	if (r == -ENOANO && (ARG_SET(OPT_TOKEN_ONLY_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) ||
+			     ARG_SET(OPT_TOKEN_ID_ID)))
 		r = _try_token_pin_unlock(cd, ARG_INT32(OPT_TOKEN_ID_ID), action_argv[0], ARG_STR(OPT_TOKEN_TYPE_ID), 0, set_tries_tty(), false);
 
 	if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
