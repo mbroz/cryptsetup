@@ -119,16 +119,15 @@ static int _try_token_pin_unlock(struct crypt_device *cd,
 
 		if (activation)
 			r = crypt_activate_by_token_pin(cd, activated_name, token_type,
-							ARG_INT32(OPT_TOKEN_ID_ID),
-							pin, pin_len, NULL, activate_flags);
+							token_id, pin, pin_len, NULL,
+							activate_flags);
 		else
 			r = crypt_resume_by_token_pin(cd, activated_name, token_type,
-						      ARG_INT32(OPT_TOKEN_ID_ID),
-						      pin, pin_len, NULL);
+						      token_id, pin, pin_len, NULL);
 		crypt_safe_free(pin);
 		pin = NULL;
 		tools_keyslot_msg(r, UNLOCKED);
-		tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), ARG_INT32(OPT_TOKEN_ID_ID), true);
+		tools_token_error_msg(r, ARG_STR(OPT_TOKEN_TYPE_ID), token_id, true);
 		check_signal(&r);
 	} while (r == -ENOANO && (--tries > 0));
 
