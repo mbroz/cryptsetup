@@ -2523,10 +2523,6 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	/* unsupported underneath dm-crypt with auth. encryption */
-	if (src->u.integrity.meta_device || tgt->u.integrity.meta_device)
-		return -ENOTSUP;
-
 	if (device_is_identical(src->data_device, tgt->data_device) <= 0) {
 		log_dbg(cd, "Data devices do not match.");
 		return -EINVAL;
@@ -2702,6 +2698,10 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 		log_err(cd, _("Mismatching parameters on device %s."), iname);
 		goto out;
 	}
+
+	/* unsupported underneath dm-crypt with auth. encryption */
+	if (sdmdi->segment.u.integrity.meta_device || tdmdi.segment.u.integrity.meta_device)
+		return -ENOTSUP;
 
 	src = &sdmd->segment;
 	srci = &sdmdi->segment;
