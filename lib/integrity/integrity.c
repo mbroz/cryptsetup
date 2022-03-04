@@ -255,18 +255,8 @@ int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 	log_dbg(cd, "Trying to activate INTEGRITY device on top of %s, using name %s, tag size %d, provided sectors %" PRIu64".",
 		device_path(tgt->data_device), name, tgt->u.integrity.tag_size, dmd->size);
 
-	r = device_block_adjust(cd, tgt->data_device, DEV_EXCL,
-				tgt->u.integrity.offset, NULL, &dmd->flags);
-	if (r)
-		return r;
+	r = create_or_reload_device(cd, name, type, dmd);
 
-	if (tgt->u.integrity.meta_device) {
-		r = device_block_adjust(cd, tgt->u.integrity.meta_device, DEV_EXCL, 0, NULL, NULL);
-		if (r)
-			return r;
-	}
-
-	r = dm_create_device(cd, name, type, dmd);
 	if (r < 0 && (dm_flags(cd, DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
 		log_err(cd, _("Kernel does not support dm-integrity mapping."));
 		return -ENOTSUP;
@@ -298,9 +288,35 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		       struct volume_key *journal_mac_key,
 		       uint32_t flags, uint32_t sb_flags)
 {
-	struct crypt_dm_active_device dmd = {};
-	int r = INTEGRITY_create_dmd_device(cd, params, vk, journal_crypt_key,
+	struct crypt_dm_active_device dmdq, dmd = {};
+	int r;
+
+	if (flags & CRYPT_ACTIVATE_REFRESH) {
+		r = dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEYSIZE |
+					      DM_ACTIVE_CRYPT_KEY |
+					      DM_ACTIVE_INTEGRITY_PARAMS |
+					      DM_ACTIVE_JOURNAL_CRYPT_KEY |
+					      DM_ACTIVE_JOURNAL_MAC_KEY, &dmdq);
+		if (r < 0)
+			return r;
+
+		if (!vk)
+			MOVE_REF(vk, dmdq.segment.u.integrity.vk);
+
+		if (!journal_mac_key)
+			MOVE_REF(journal_mac_key, dmdq.segment.u.integrity.journal_integrity_key);
+
+		if (!journal_crypt_key)
+			MOVE_REF(journal_crypt_key, dmdq.segment.u.integrity.journal_crypt_key);
+
+		dm_targets_free(cd, &dmdq);
+	}
+
+	r = INTEGRITY_create_dmd_device(cd, params, vk, journal_crypt_key,
 					    journal_mac_key, &dmd, flags, sb_flags);
+
+	if (flags & CRYPT_ACTIVATE_REFRESH)
+		dmd.size = dmdq.size;
 
 	if (r < 0)
 		return r;

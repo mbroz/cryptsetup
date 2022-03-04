@@ -3949,7 +3949,7 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 		return -EINVAL;
 
 	tgt = &dmd->segment;
-	if (tgt->type != DM_CRYPT)
+	if (tgt->type != DM_CRYPT && tgt->type != DM_INTEGRITY)
 		return -EINVAL;
 
 	/* drop CRYPT_ACTIVATE_REFRESH flag if any device is inactive */
@@ -3960,12 +3960,27 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 	if (dmd->flags & CRYPT_ACTIVATE_REFRESH)
 		r = _reload_device(cd, name, dmd);
 	else {
-		device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
+		if (tgt->type == DM_CRYPT) {
+			device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
 
-		r = device_block_adjust(cd, tgt->data_device, device_check,
+			r = device_block_adjust(cd, tgt->data_device, device_check,
 					tgt->u.crypt.offset, &dmd->size, &dmd->flags);
-		if (!r) {
-			tgt->size = dmd->size;
+			if (!r) {
+				tgt->size = dmd->size;
+				r = dm_create_device(cd, name, type, dmd);
+			}
+		} else if (tgt->type == DM_INTEGRITY) {
+			r = device_block_adjust(cd, tgt->data_device, DEV_EXCL,
+					tgt->u.integrity.offset, NULL, &dmd->flags);
+			if (r)
+				return r;
+
+			if (tgt->u.integrity.meta_device) {
+				r = device_block_adjust(cd, tgt->u.integrity.meta_device, DEV_EXCL, 0, NULL, NULL);
+				if (r)
+					return r;
+			}
+
 			r = dm_create_device(cd, name, type, dmd);
 		}
 	}
