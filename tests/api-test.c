@@ -1852,6 +1852,7 @@ static void IntegrityTest(void)
 		.integrity = "crc32c",
 		.sector_size = 4096,
 	}, ip = {};
+	struct crypt_active_device cad;
 	int ret;
 
 	// FIXME: this should be more detailed
@@ -1894,6 +1895,13 @@ static void IntegrityTest(void)
 	EQ_(ip.tag_size, params.tag_size);
 	OK_(strcmp(ip.integrity,params.integrity));
 	OK_(strcmp(CRYPT_INTEGRITY,crypt_get_type(cd)));
+
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(cad.flags & CRYPT_ACTIVATE_RECALCULATE, 0);
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_RECALCULATE));
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(cad.flags & CRYPT_ACTIVATE_RECALCULATE, CRYPT_ACTIVATE_RECALCULATE);
+
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 }
