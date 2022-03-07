@@ -77,6 +77,8 @@ ARG(OPT_NO_WIPE, '\0', POPT_ARG_NONE, N_("Do not wipe device after format"), NUL
 
 ARG(OPT_PROGRESS_FREQUENCY, '\0', POPT_ARG_STRING, N_("Progress line update (in seconds)"), N_("secs"), CRYPT_ARG_UINT32, {}, {})
 
+ARG(OPT_PROGRESS_JSON, '\0', POPT_ARG_NONE, N_("Print wipe progress data in json format (suitable for machine processing)"), NULL, CRYPT_ARG_BOOL, {}, OPT_PROGRESS_JSON_ACTIONS)
+
 ARG(OPT_INTEGRITY_BITMAP_MODE, 'B', POPT_ARG_NONE, N_("Use bitmap to track changes and disable journal for integrity device"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_INTEGRITY_RECALCULATE, '\0', POPT_ARG_NONE, N_("Recalculate initial tags automatically."), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_RECALCULATE_ACTIONS)

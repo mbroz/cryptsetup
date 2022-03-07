@@ -3524,13 +3524,16 @@ int crypt_reencrypt_run(
 	rs = REENC_OK;
 
 	/* update reencrypt keyslot protection parameters in memory only */
-	if (!quit && (rh->device_size > rh->progress)) {
+	if (rh->device_size > rh->progress) {
 		r = reencrypt_keyslot_update(cd, rh);
 		if (r < 0) {
 			log_dbg(cd, "Keyslot update failed.");
 			return reencrypt_teardown(cd, hdr, rh, REENC_ERR, quit, progress, usrptr);
 		}
 	}
+
+	if (progress && progress(rh->device_size, rh->progress, usrptr))
+		quit = true;
 
 	while (!quit && (rh->device_size > rh->progress)) {
 		rs = reencrypt_step(cd, hdr, rh, rh->device_size, rh->online);

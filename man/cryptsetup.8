@@ -1201,6 +1201,25 @@ the passphrase verification for \fIluksFormat\fR.
 .B "\-\-progress-frequency <seconds>"
 Print separate line every <seconds> with wipe progress.
 .TP
+.B "\-\-progress-json"
+Prints progress data in json format suitable mostly for machine processing.
+It prints separate line every half second (or based on \fI\-\-progress\-frequency\fR value).
+The json output looks as follows during progress (except it's compact single line):
+
+.EX
+{
+  "device":"/dev/sda"       // backing device or file
+  "device_bytes":"8192",    // bytes of I/O so far
+  "device_size":"44040192", // total bytes of I/O to go
+  "speed":"126877696",      // calculated speed in bytes per second (based on progress so far)
+  "eta_ms":"2520012"        // estimated time to finish an operation in milliseconds
+  "time_ms":"5561235"       // total time spent in IO operation in milliseconds
+}
+.EE
+
+Note on numbers in json output: Due to json parsers limitations all numbers are represented in a string format
+due to need of full 64bit unsigned integers.
+.TP
 .B "\-\-timeout, \-t <number of seconds>"
 The number of seconds to wait before timeout on passphrase input
 via terminal. It is relevant every time a passphrase is asked,

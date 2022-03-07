@@ -4066,7 +4066,7 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, 1, "aes", "xts-plain64", &rparams), 2);
 
 	/* interrupt reencryption after 'test_progress_steps' */
-	test_progress_steps = 1;
+	test_progress_steps = 2;
 	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_CLEAN);
 
@@ -4474,8 +4474,8 @@ static void Luks2Reencryption(void)
 	rparams.flags = 0;
 	rparams.max_hotzone_size = 8;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
-	/* reencrypt 8 srectors of device */
-	test_progress_steps = 1;
+	/* reencrypt 8 sectors of device */
+	test_progress_steps = 2;
 	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
 
 	/* activate another data device with same LUKS2 header (this is wrong, but we can't detect such mistake) */
@@ -4487,7 +4487,7 @@ static void Luks2Reencryption(void)
 	/* reencrypt yet another 8 sectors of first device */
 	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
-	test_progress_steps = 1;
+	test_progress_steps = 2;
 	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
 
 	/* Now active mapping for second data device does not match its metadata */
@@ -4520,7 +4520,7 @@ static void Luks2Reencryption(void)
 	rparams.flags = 0;
 	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "xts-plain64", &rparams));
-	test_progress_steps = 1;
+	test_progress_steps = 2;
 	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_CLEAN);
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
