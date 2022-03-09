@@ -170,7 +170,6 @@ static int action_reencrypt_load(struct crypt_device *cd, const char *data_devic
 static int luks2_reencrypt_in_progress(struct crypt_device *cd)
 {
 	uint32_t flags;
-	struct crypt_params_integrity ip = { 0 };
 
 	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags))
 		return -EINVAL;
@@ -178,12 +177,6 @@ static int luks2_reencrypt_in_progress(struct crypt_device *cd)
 	if (flags & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT) {
 		log_err(_("Legacy LUKS2 reencryption is no longer supported."));
 		return -EINVAL;
-	}
-
-	/* raw integrity info is available since 2.0 */
-	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
-		log_err(_("Reencryption of device with integrity profile is not supported."));
-		return -ENOTSUP;
 	}
 
 	return flags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
@@ -846,6 +839,23 @@ static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, co
 	return DEVICE_LUKS2;
 }
 
+static bool luks2_reencrypt_eligible(struct crypt_device *cd)
+{
+	uint32_t flags;
+	struct crypt_params_integrity ip = { 0 };
+
+	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags))
+		return false;
+
+	/* raw integrity info is available since 2.0 */
+	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
+		log_err(_("Reencryption of device with integrity profile is not supported."));
+		return false;
+	}
+
+	return true;
+}
+
 static int encrypt_luks2(int action_argc, const char **action_argv)
 {
 	enum device_status_info dev_st;
@@ -928,6 +938,10 @@ static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **
 			r = -EINVAL;
 			goto out;
 		}
+
+		if (!luks2_reencrypt_eligible(cd))
+			return -EINVAL;
+
 		r = action_decrypt_luks2(cd, action_argv[0]);
 	}
 
@@ -970,6 +984,10 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 			r = -EINVAL;
 			goto out;
 		}
+
+		if (!luks2_reencrypt_eligible(cd))
+			return -EINVAL;
+
 		r = action_reencrypt_luks2(cd, action_argv[0]);
 	}
 
