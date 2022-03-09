@@ -433,6 +433,8 @@ function encrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON || fail
 	check_hash $PWD1 $3 $4
 
+	[ -f $4 ] && rm -f $4
+
 	echo "[OK]"
 }
 
@@ -463,6 +465,8 @@ function encrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 
 	$CRYPTSETUP close $DEV_NAME || fail
 
+	[ -f $4 ] && rm -f $4
+
 	echo "[OK]"
 }
 
@@ -486,6 +490,8 @@ function decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest
 	fi
 
 	check_hash_dev $DEV $3
+
+	[ -f $4 ] && rm -f $4
 
 	echo "[OK]"
 }
@@ -516,6 +522,8 @@ function decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 
 	$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 	check_hash_dev $DEV $3
+
+	[ -f $4 ] && rm -f $4
 
 	echo "[OK]"
 }
@@ -565,6 +573,7 @@ function encrypt_offline_fixed_size() {
 	wipe_dev $DEV
 	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -q $FAST_PBKDF_ARGON $DEV --header $7 --sector-size $1 --device-size $2s --resilience $4 || fail
 	check_hash_head $PWD1 $2 $3 $7
+	[ -f $7 ] && rm -f $7
 
 	# try to reencrypt device size + 1 encryption sector size
 	wipe_dev $DEV
@@ -574,12 +583,15 @@ function encrypt_offline_fixed_size() {
 
 	# misaligned reencryption size
 	if [ $_esz -gt 1 ]; then
+		[ -f $7 ] && rm -f $7
 		echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -q $FAST_PBKDF_ARGON $DEV --header $7 --sector-size $1 --init-only || fail
 		echo $PWD1 | $CRYPTSETUP reencrypt -q $DEV --header $7 --device-size $(($2+_esz-1))s --resilience $4 2>/dev/null && fail
 		$CRYPTSETUP luksDump $7 | grep -q "2: crypt" || fail
 		$CRYPTSETUP luksDump $7 | grep -q "3: crypt" && fail
 		check_hash $PWD1 $6 $7
 	fi
+
+	[ -f $7 ] && rm -f $7
 }
 
 # sector size (bytes)
@@ -905,14 +917,18 @@ wipe_dev $DEV
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
 wipe_dev $DEV
+rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --resilience journal --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
 wipe_dev $DEV
+rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c twofish-cbc-essiv:sha256 -s 128 --resilience none --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
 wipe_dev $DEV
+rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c serpent-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
+rm -f $IMG_HDR
 
 # Device activation after encryption initialization
 wipe_dev $DEV
@@ -924,12 +940,14 @@ check_hash_dev /dev/mapper/$DEV_NAME $HASH3
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP close $DEV_NAME
 check_hash $PWD1 $HASH3 $IMG_HDR
+rm -f $IMG_HDR
 
 # Device encryption with data offset set in detached header
 wipe_dev $DEV
 dd if=/dev/urandom of=$DEV bs=512 count=32768 >/dev/null 2>&1
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --header $IMG_HDR --offset 32768 -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH9 $IMG_HDR
+rm -f $IMG_HDR
 
 # Device activation using key file
 wipe_dev $DEV
@@ -1616,11 +1634,12 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat -S5 --header $IMG_HDR --type luks2 $FAST_
 echo -e "$PWD1\n$PWD1" | $CRYPTSETUP luksAddKey --unbound -s80 -S0 $FAST_PBKDF_ARGON $IMG_HDR || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --init-only --header $IMG_HDR $DEV || fail
 echo $PWD1 | $CRYPTSETUP open --test-passphrase $IMG_HDR || fail
+rm -f $IMG_HDR
+wipe_dev_head $DEV 1
 
 echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --init-only --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 echo $PWD1 | $CRYPTSETUP open --test-passphrase $IMG_HDR || fail
 
-wipe_dev_head $DEV 1
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 8M $FAST_PBKDF_ARGON $DEV || fail
 echo $PWD1 | $CRYPTSETUP open --test-passphrase $DEV || fail
 

@@ -236,12 +236,11 @@ static enum device_status_info load_luks(struct crypt_device **r_cd, const char 
 
 static int action_encrypt_luks2(struct crypt_device **cd, const char *data_device, const char *device_name)
 {
-	char *tmp;
 	const char *type;
 	int keyslot, r, fd;
 	uuid_t uuid;
 	size_t passwordLen;
-	char *msg, uuid_str[37], header_file[PATH_MAX] = { 0 }, *password = NULL;
+	char *tmp, uuid_str[37], header_file[PATH_MAX] = { 0 }, *password = NULL;
 	uint32_t activate_flags = 0;
 	const struct crypt_params_luks2 luks2_params = {
 		.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: SECTOR_SIZE
@@ -299,23 +298,6 @@ static int action_encrypt_luks2(struct crypt_device **cd, const char *data_devic
 		if (!(tmp = strdup(uuid_str)))
 			return -ENOMEM;
 		ARG_SET_STR(OPT_UUID_ID, tmp);
-	}
-
-	/* Check the data device is not LUKS device already */
-	if ((r = crypt_init(cd, data_device)))
-		return r;
-	r = crypt_load(*cd, CRYPT_LUKS, NULL);
-	crypt_free(*cd);
-	*cd = NULL;
-	if (!r && !ARG_SET(OPT_BATCH_MODE_ID)) {
-		r = asprintf(&msg, _("Detected LUKS device on %s. Do you want to encrypt that LUKS device again?"), data_device);
-		if (r == -1)
-			return -ENOMEM;
-
-		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
-		free(msg);
-		if (r < 0)
-			return r;
 	}
 
 	if (!ARG_SET(OPT_HEADER_ID)) {
@@ -1022,33 +1004,75 @@ out:
 
 static int _encrypt(int action_argc, const char **action_argv)
 {
+	enum device_status_info hdr_st, dev_st;
+	struct stat st;
 	const char *type = luksType(device_type);
-	bool luks1_in_reencrypt = false;
+	struct crypt_device *check_cd = NULL;
+
+	dev_st = load_luks(&check_cd, CRYPT_LUKS, NULL, uuid_or_device(action_argv[0]));
+	crypt_free(check_cd);
+	check_cd = NULL;
+
+	if (dev_st == DEVICE_INVALID)
+		return -EINVAL;
+
+	if (dev_st == DEVICE_LUKS2 || dev_st == DEVICE_LUKS1) {
+		log_err(_("Device %s is already LUKS device."), uuid_or_device(action_argv[0]));
+		return -EINVAL;
+	}
 
 	/* explicit request for LUKS2 encryption */
 	if (ARG_SET(OPT_HEADER_ID)) {
-		luks1_in_reencrypt = reencrypt_luks1_in_progress(ARG_STR(OPT_HEADER_ID)) == 0;
-		if (luks1_in_reencrypt && isLUKS2(type)) {
-			log_err(_("Device %s already in LUKS1 reencryption."), ARG_STR(OPT_HEADER_ID));
+		if (stat(ARG_STR(OPT_HEADER_ID), &st) < 0 && errno == ENOENT)
+			hdr_st = DEVICE_NOT_LUKS;
+		else {
+			hdr_st = load_luks(&check_cd, CRYPT_LUKS, NULL, ARG_STR(OPT_HEADER_ID));
+
+			crypt_free(check_cd);
+
+			if (hdr_st == DEVICE_INVALID)
+				return -EINVAL;
+
+			if (hdr_st == DEVICE_LUKS1_UNUSABLE && isLUKS2(type)) {
+				log_err(_("Device %s is already in LUKS1 reencryption."), ARG_STR(OPT_HEADER_ID));
+				return -EINVAL;
+			}
+
+			if (hdr_st == DEVICE_LUKS2_REENCRYPT && isLUKS1(type)) {
+				log_err(_("Device %s is already in LUKS2 reencryption."), ARG_STR(OPT_HEADER_ID));
+				return -EINVAL;
+			}
+
+			if (hdr_st == DEVICE_LUKS2 || hdr_st == DEVICE_LUKS1) {
+				log_err(_("Device %s is already LUKS device."), ARG_STR(OPT_HEADER_ID));
+				return -EINVAL;
+			}
+		}
+
+		if (dev_st == DEVICE_LUKS2_REENCRYPT || dev_st == DEVICE_LUKS1_UNUSABLE) {
+			log_err(_("Data device %s is already in LUKS reencryption."), uuid_or_device(action_argv[0]));
 			return -EINVAL;
 		}
-	}
 
-	if (!luks1_in_reencrypt)
-		luks1_in_reencrypt = reencrypt_luks1_in_progress(uuid_or_device(action_argv[0])) == 0;
+		dev_st = hdr_st;
+	} else {
+		if (dev_st == DEVICE_LUKS1_UNUSABLE && isLUKS2(type)) {
+			log_err(_("Device %s is already in LUKS1 reencryption."), ARG_STR(OPT_HEADER_ID));
+			return -EINVAL;
+		}
 
-	/* explicit request for LUKS2 encryption */
-	if (luks1_in_reencrypt && isLUKS2(type)) {
-		log_err(_("Device %s already in LUKS1 reencryption."), action_argv[0]);
-		return -EINVAL;
+		if (dev_st == DEVICE_LUKS2_REENCRYPT && isLUKS1(type)) {
+			log_err(_("Device %s already in LUKS2 reencryption."), ARG_STR(OPT_HEADER_ID));
+			return -EINVAL;
+		}
 	}
 
 	if (!type)
 		type = crypt_get_default_type();
 
-	if (isLUKS1(type) || luks1_in_reencrypt)
+	if (isLUKS1(type) || dev_st == DEVICE_LUKS1_UNUSABLE) {
 		return reencrypt_luks1(action_argv[0]);
-	else if (isLUKS2(type))
+	} else if (isLUKS2(type) || dev_st == DEVICE_LUKS2_REENCRYPT)
 		return encrypt_luks2(action_argc, action_argv);
 
 	return -EINVAL;
