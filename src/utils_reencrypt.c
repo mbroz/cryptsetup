@@ -162,6 +162,66 @@ static int action_reencrypt_load(struct crypt_device *cd, const char *data_devic
 	return r;
 }
 
+/*
+ *   1: in-progress
+ *   0: clean luks2 device
+ * < 0: error
+ */
+static int luks2_reencrypt_in_progress(struct crypt_device *cd)
+{
+	uint32_t flags;
+	struct crypt_params_integrity ip = { 0 };
+
+	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags))
+		return -EINVAL;
+
+	if (flags & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT) {
+		log_err(_("Legacy LUKS2 reencryption is no longer supported."));
+		return -EINVAL;
+	}
+
+	/* raw integrity info is available since 2.0 */
+	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
+		log_err(_("Reencryption of device with integrity profile is not supported."));
+		return -ENOTSUP;
+	}
+
+	return flags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
+}
+
+static enum device_status_info load_luks(struct crypt_device **r_cd, const char *type, const char *header_device, const char *data_device)
+{
+	int r;
+	struct crypt_device *cd;
+
+	assert(r_cd);
+	assert(data_device);
+
+	if (crypt_init_data_device(&cd, uuid_or_device(header_device ?: data_device), data_device))
+		return DEVICE_INVALID;
+
+	if ((r = crypt_load(cd, type, NULL))) {
+		crypt_free(cd);
+		if (r == -EBUSY) /* luks2 locking error (message printed by libcryptsetup) */
+			return DEVICE_INVALID;
+
+		if (!type || isLUKS1(type))
+			r = reencrypt_luks1_in_progress(uuid_or_device(header_device ?: data_device));
+
+		if (!r)
+			return DEVICE_LUKS1_UNUSABLE;
+
+		log_err(_("Device %s is not a valid %s device."),
+			uuid_or_device(header_device ?: data_device), type ?: "LUKS");
+
+		return DEVICE_INVALID;
+	}
+
+	*r_cd = cd;
+
+	return isLUKS2(crypt_get_type(cd)) ? DEVICE_LUKS2 : DEVICE_LUKS1;
+}
+
 static int action_encrypt_luks2(struct crypt_device **cd, const char *data_device, const char *device_name)
 {
 	char *tmp;
@@ -765,39 +825,6 @@ out:
 	return r;
 }
 
-static enum device_status_info load_luks(struct crypt_device **r_cd, const char *type, const char *header_device, const char *data_device)
-{
-	int r;
-	struct crypt_device *cd;
-
-	assert(r_cd);
-	assert(data_device);
-
-	if (crypt_init_data_device(&cd, uuid_or_device(header_device ?: data_device), data_device))
-		return DEVICE_INVALID;
-
-	if ((r = crypt_load(cd, type, NULL))) {
-		crypt_free(cd);
-		if (r == -EBUSY) /* luks2 locking error (message printed by libcryptsetup) */
-			return DEVICE_INVALID;
-
-		if (!type || isLUKS1(type))
-			r = reencrypt_luks1_in_progress(uuid_or_device(header_device ?: data_device));
-
-		if (!r)
-			return DEVICE_LUKS1_UNUSABLE;
-
-		log_err(_("Device %s is not a valid %s device."),
-			uuid_or_device(header_device ?: data_device), type ?: "LUKS");
-
-		return DEVICE_INVALID;
-	}
-
-	*r_cd = cd;
-
-	return isLUKS2(crypt_get_type(cd)) ? DEVICE_LUKS2 : DEVICE_LUKS1;
-}
-
 static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, const char *active_name, const char *header_device)
 {
 	int r;
@@ -817,33 +844,6 @@ static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, co
 
 	*r_cd = cd;
 	return DEVICE_LUKS2;
-}
-
-/*
- *   1: in-progress
- *   0: clean luks2 device
- * < 0: error
- */
-static int luks2_reencrypt_in_progress(struct crypt_device *cd)
-{
-	uint32_t flags;
-	struct crypt_params_integrity ip = { 0 };
-
-	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags))
-		return -EINVAL;
-
-	if (flags & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT) {
-		log_err(_("Legacy LUKS2 reencryption is no longer supported."));
-		return -EINVAL;
-	}
-
-	/* raw integrity info is available since 2.0 */
-	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
-		log_err(_("Reencryption of device with integrity profile is not supported."));
-		return -ENOTSUP;
-	}
-
-	return flags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
 }
 
 static int encrypt_luks2(int action_argc, const char **action_argv)
