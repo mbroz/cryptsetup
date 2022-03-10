@@ -1643,5 +1643,46 @@ echo $PWD1 | $CRYPTSETUP open --test-passphrase $IMG_HDR || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 8M $FAST_PBKDF_ARGON $DEV || fail
 echo $PWD1 | $CRYPTSETUP open --test-passphrase $DEV || fail
 
+echo "[28] Prevent nested encryption"
+prepare_linear_dev 32 opt_blks=64 $OPT_XFERLEN_EXP
+
+#device already LUKS2
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF2 $DEV || fail
+
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks1 --reduce-device-size 2m $FAST_PBKDF2 $DEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks1 --header $IMG_HDR $FAST_PBKDF2 $DEV 2>/dev/null && fail
+test -f $IMG_HDR && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks2 --reduce-device-size 2m $FAST_PBKDF2 $DEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks2 --header $IMG_HDR $FAST_PBKDF2 $DEV 2>/dev/null && fail
+test -f $IMG_HDR && fail
+#type mismatch
+echo $PWD1 | $CRYPTSETUP reencrypt -q --type luks1 $DEV 2>/dev/null && fail
+wipe_dev $DEV
+
+#detached header already LUKS2
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $IMG_HDR $FAST_PBKDF2 $DEV || fail
+
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks1 --header $IMG_HDR $FAST_PBKDF2 $DEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks2 --header $IMG_HDR $FAST_PBKDF2 $DEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --type luks1 --header $IMG_HDR $DEV 2>/dev/null && fail
+rm -f $IMG_HDR
+
+#data device already in reencryption
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF2 $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --init-only $FAST_PBKDF $DEV || fail
+
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks1 --header $IMG_HDR $FAST_PBKDF2 $DEV 2>/dev/null && fail
+test -f $IMG_HDR && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks2 --header $IMG_HDR $FAST_PBKDF2 $DEV 2>/dev/null && fail
+test -f $IMG_HDR && fail
+#type mismatch
+echo $PWD1 | $CRYPTSETUP reencrypt -q --type luks1 $DEV 2>/dev/null && fail
+wipe_dev $DEV
+rm -f $IMG_HDR
+
+#header in reencryption (type mismatch)
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --init-only --type luks2 --header $IMG_HDR $FAST_PBKDF2 $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks1 --header $IMG_HDR $FAST_PBKDF2 $DEV 2>/dev/null && fail
+
 remove_mapping
 exit 0

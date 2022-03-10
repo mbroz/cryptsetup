@@ -4,7 +4,7 @@
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 REENC_BIN=$CRYPTSETUP
 REENC="$REENC_BIN reencrypt"
-FAST_PBKDF="--pbkdf-force-iterations 1000"
+FAST_PBKDF="--pbkdf-force-iterations 1000 --pbkdf pbkdf2"
 
 DEV_NAME=reenc9768
 DEV_NAME2=reenc1273
@@ -397,6 +397,24 @@ echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --header $IMG_HDR --new --type luks
 check_hash $PWD1 $HASH4 $IMG_HDR
 $CRYPTSETUP isLuks $LOOPDEV1 && fail
 $CRYPTSETUP isLuks $IMG_HDR || fail
+
+echo "[12] Prevent nested encryption"
+prepare 8192
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
+
+#data device is already LUKS device (prevent nested encryption)
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks1 --reduce-device-size 1024S 2>/dev/null && fail
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks1 --header $IMG_HDR  2>/dev/null && fail
+test -f $IMG_HDR && fail
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks2 --reduce-device-size 2048S 2>/dev/null && fail
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks2 --header $IMG_HDR  2>/dev/null && fail
+test -f $IMG_HDR && fail
+
+wipe_dev $LOOPDEV1
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 --header $IMG_HDR $FAST_PBKDF $LOOPDEV1 || fail
+
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks1 --header $IMG_HDR  2>/dev/null && fail
+echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks2 --header $IMG_HDR  2>/dev/null && fail
 
 remove_mapping
 exit 0
