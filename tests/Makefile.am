@@ -135,7 +135,7 @@ all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io all-symbols-test
 
-check-programs: $(check_PROGRAMS) fake_token_path.so
+check-programs: test-symbols-list.h $(check_PROGRAMS) fake_token_path.so
 
 conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz
