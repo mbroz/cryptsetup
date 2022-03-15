@@ -88,6 +88,7 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 
 /* CRC32 */
 uint32_t crypt_crc32(uint32_t seed, const unsigned char *buf, size_t len);
+uint32_t crypt_crc32c(uint32_t seed, const unsigned char *buf, size_t len);
 
 /* Base64 */
 int crypt_base64_encode(char **out, size_t *out_length, const char *in, size_t in_length);
