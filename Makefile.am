@@ -60,3 +60,6 @@ install-data-local:
 
 uninstall-local:
 	rmdir $(DESTDIR)/${EXTERNAL_LUKS2_TOKENS_PATH} 2>/dev/null || :
+
+check-programs: libcryptsetup.la
+	$(MAKE) -C tests $@
