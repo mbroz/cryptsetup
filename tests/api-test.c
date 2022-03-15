@@ -1845,6 +1845,148 @@ static void TcryptTest(void)
 	EQ_(crypt_status(NULL, CDEVICE_1 "_1"), CRYPT_INACTIVE);
 }
 
+static void ResizeIntegrity(void)
+{
+	struct crypt_params_integrity params = {
+		.tag_size = 4,
+		.integrity = "crc32c",
+		.sector_size = 4096,
+	};
+	int ret;
+	uint64_t r_size, whole_device_size = 0;
+
+	OK_(crypt_init(&cd, DEVICE_2));
+	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
+	if (ret < 0) {
+		printf("WARNING: cannot format integrity device, skipping test.\n");
+		CRYPT_FREE(cd);
+		return;
+	}
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, 0));
+	t_device_size(DMDIR CDEVICE_1, &whole_device_size);
+	// shrink the device
+	OK_(crypt_resize(cd, CDEVICE_1, 1024 * 1024 / 512));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(1024 * 1024 / 512, r_size >> TST_SECTOR_SHIFT);
+	FAIL_(crypt_resize(cd, CDEVICE_1, 1001), "Device too small");
+	// fill the whole device again (size = 0)
+	OK_(crypt_resize(cd, CDEVICE_1, 0));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(whole_device_size, r_size);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// detached metadata
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(create_dmdevice_over_loop(H_DEVICE, 1024 * 1024 / 512));
+	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DEVICE_2));
+	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
+	if (ret < 0) {
+		printf("WARNING: cannot format integrity device, skipping test.\n");
+		CRYPT_FREE(cd);
+		return;
+	}
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, 0));
+	if (!t_device_size(DMDIR CDEVICE_1, &whole_device_size))
+		EQ_(10 * 1024 * 1024 / 512, whole_device_size >> TST_SECTOR_SHIFT);
+	// shrink the device
+	OK_(crypt_resize(cd, CDEVICE_1, 1024 * 1024 / 512));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(1024 * 1024 / 512, r_size >> TST_SECTOR_SHIFT);
+	FAIL_(crypt_resize(cd, CDEVICE_1, 1001), "Device too small");
+	// fill the whole device again (size = 0)
+	OK_(crypt_resize(cd, CDEVICE_1, 0));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(whole_device_size, r_size);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	CRYPT_FREE(cd);
+}
+
+static void ResizeIntegrityWithKey(void)
+{
+	struct crypt_params_integrity params = {
+		.tag_size = 4,
+		.integrity = "hmac(sha256)",
+		.journal_integrity = "hmac(sha256)",
+		.journal_crypt = "ctr-aes",
+		.sector_size = 4096,
+	};
+	int ret;
+	uint64_t r_size, whole_device_size = 0;
+
+	const char *key_integrity_hex = "41b06f3968ff10783edf3dd8c31d0d6e";
+	const char *key_journal_integrity_hex = "9a3f924d03ab4a3307b148f844628f59";
+	const char *key_journal_crypt_hex = "087a6943383f6c344cef03695b4f7277";
+
+	char integrity_key[128], journal_integrity_key[128], journal_crypt_key[128];
+
+	size_t integrity_key_size = strlen(key_integrity_hex) / 2;
+	size_t journal_integrity_key_size = strlen(key_journal_crypt_hex) / 2;
+	size_t journal_crypt_key_size = strlen(key_journal_crypt_hex) / 2;
+
+	crypt_decode_key(integrity_key, key_integrity_hex, integrity_key_size);
+	crypt_decode_key(journal_integrity_key, key_journal_integrity_hex, journal_integrity_key_size);
+	crypt_decode_key(journal_crypt_key, key_journal_crypt_hex, journal_crypt_key_size);
+
+	params.integrity_key_size = integrity_key_size;
+
+	params.journal_integrity_key_size = journal_integrity_key_size;
+	params.journal_integrity_key = journal_integrity_key;
+
+	params.journal_crypt_key_size = journal_crypt_key_size;
+	params.journal_crypt_key = journal_crypt_key;
+
+	OK_(crypt_init(&cd, DEVICE_2));
+	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
+	if (ret < 0) {
+		printf("WARNING: cannot format integrity device, skipping test.\n");
+		CRYPT_FREE(cd);
+		return;
+	}
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, integrity_key, integrity_key_size, 0));
+	t_device_size(DMDIR CDEVICE_1, &whole_device_size);
+	// shrink the device
+	OK_(crypt_resize(cd, CDEVICE_1, 1024*1024/512));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(1024*1024/512, r_size >> TST_SECTOR_SHIFT);
+	FAIL_(crypt_resize(cd, CDEVICE_1, 1001), "Device too small");
+	// fill the whole device again (size = 0)
+	OK_(crypt_resize(cd, CDEVICE_1, 0));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(whole_device_size, r_size);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	// detached metadata
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(create_dmdevice_over_loop(H_DEVICE, 1024 * 1024 / 512));
+	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DEVICE_2));
+	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
+	if (ret < 0) {
+		printf("WARNING: cannot format integrity device, skipping test.\n");
+		CRYPT_FREE(cd);
+		return;
+	}
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, integrity_key, integrity_key_size, 0));
+	if (!t_device_size(DMDIR CDEVICE_1, &whole_device_size))
+		EQ_(10*1024*1024/512, whole_device_size >> TST_SECTOR_SHIFT);
+	// shrink the device
+	OK_(crypt_resize(cd, CDEVICE_1, 1024*1024/512));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(1024*1024/512, r_size >> TST_SECTOR_SHIFT);
+	FAIL_(crypt_resize(cd, CDEVICE_1, 1001), "Device too small");
+	// fill the whole device again (size = 0)
+	OK_(crypt_resize(cd, CDEVICE_1, 0));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(whole_device_size, r_size);
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	CRYPT_FREE(cd);
+}
+
 static void IntegrityTest(void)
 {
 	struct crypt_params_integrity params = {
@@ -1966,6 +2108,7 @@ int main(int argc, char *argv[])
 		else if (!strcmp("--debug", argv[i]))
 			_debug = _verbose = 1;
 	}
+			_debug = _verbose = 1;
 
 	/* Handle interrupt properly */
 	sigaction(SIGINT, &sa, NULL);
@@ -1997,6 +2140,8 @@ int main(int argc, char *argv[])
 	RUN_(VerityTest, "DM verity");
 	RUN_(TcryptTest, "Tcrypt API");
 	RUN_(IntegrityTest, "Integrity API");
+	RUN_(ResizeIntegrity, "Integrity raw resize");
+	RUN_(ResizeIntegrityWithKey, "Integrity raw resize with key");
 
 	_cleanup();
 	return 0;
