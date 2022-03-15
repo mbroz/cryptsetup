@@ -261,6 +261,9 @@ static int action_resize(void)
 		} else {
 			log_dbg("Setting recalculate flag");
 			r = crypt_activate_by_volume_key(cd, action_argv[0], NULL, 0, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_RECALCULATE);
+
+			if (r == -ENOTSUP)
+				log_err(_("Setting recalculate flag is not supported, you may consider using --wipe instead."));
 		}
 	}
 out:

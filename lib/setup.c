@@ -2858,6 +2858,8 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	struct crypt_dm_active_device dmdq, dmd = {};
 	struct dm_target *tgt = &dmdq.segment;
 	struct crypt_params_integrity params = {};
+	uint32_t supported_flags = 0;
+	uint64_t old_size;
 	int r;
 
 	/*
@@ -2921,6 +2923,11 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	 * superblock.
 	 */
 	if (!new_size && tgt->type == DM_INTEGRITY) {
+		r = INTEGRITY_data_sectors(cd, crypt_metadata_device(cd),
+					   crypt_get_data_offset(cd) * SECTOR_SIZE, &old_size);
+		if (r < 0)
+			return r;
+
 		dmd.size = dmdq.size;
 		dmd.flags = dmdq.flags | CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_PRIVATE;
 
@@ -2943,6 +2950,9 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		if (r < 0)
 			return r;
 		log_dbg(cd, "Maximum integrity device size from kernel %lu", new_size);
+
+		if (old_size == new_size && new_size == dmdq.size && !dm_flags(cd, tgt->type, &supported_flags) && !(supported_flags & DM_INTEGRITY_RESIZE_SUPPORTED))
+			log_std(cd, _("WARNING: Maximum size already set or kernel doesn't support resize.\n"));
 	}
 
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_OK,
@@ -2998,6 +3008,9 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 			r = LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0, 0);
 		if (!r)
 			r = _reload_device(cd, name, &dmd);
+
+		if (r && tgt->type == DM_INTEGRITY && !dm_flags(cd, tgt->type, &supported_flags) && !(supported_flags & DM_INTEGRITY_RESIZE_SUPPORTED))
+			log_err(cd, _("Resize failed, the kernel doesn't support it."));
 	}
 out:
 	dm_targets_free(cd, &dmd);
