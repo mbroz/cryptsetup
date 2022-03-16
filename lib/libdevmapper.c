@@ -47,6 +47,7 @@ static bool _dm_ioctl_checked = false;
 static bool _dm_crypt_checked = false;
 static bool _dm_verity_checked = false;
 static bool _dm_integrity_checked = false;
+static bool _dm_zero_checked = false;
 
 static int _quiet_log = 0;
 static uint32_t _dm_flags = 0;
@@ -241,6 +242,20 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	_dm_integrity_checked = true;
 }
 
+static void _dm_set_zero_compat(struct crypt_device *cd,
+				unsigned zero_maj,
+				unsigned zero_min,
+				unsigned zero_patch)
+{
+	if (_dm_zero_checked || zero_maj == 0)
+		return;
+
+	log_dbg(cd, "Detected dm-zero version %i.%i.%i.",
+		zero_maj, zero_min, zero_patch);
+
+	_dm_zero_checked = true;
+}
+
 /* We use this for loading target module */
 static void _dm_check_target(dm_target_type target_type)
 {
@@ -278,11 +293,12 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 	unsigned dm_maj, dm_min, dm_patch;
 	int r = 0;
 
-	if ((target_type == DM_CRYPT	 && _dm_crypt_checked) ||
+	if ((target_type == DM_CRYPT     && _dm_crypt_checked) ||
 	    (target_type == DM_VERITY    && _dm_verity_checked) ||
 	    (target_type == DM_INTEGRITY && _dm_integrity_checked) ||
-	    (target_type == DM_LINEAR) || (target_type == DM_ZERO) ||
-	    (_dm_crypt_checked && _dm_verity_checked && _dm_integrity_checked))
+	    (target_type == DM_ZERO      && _dm_zero_checked) ||
+	    (target_type == DM_LINEAR) ||
+	    (_dm_crypt_checked && _dm_verity_checked && _dm_integrity_checked && _dm_zero_checked))
 		return 1;
 
 	/* Shut up DM while checking */
@@ -331,6 +347,10 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 			_dm_set_integrity_compat(cd, (unsigned)target->version[0],
 						 (unsigned)target->version[1],
 						 (unsigned)target->version[2]);
+		} else if (!strcmp(DM_ZERO_TARGET, target->name)) {
+			_dm_set_zero_compat(cd, (unsigned)target->version[0],
+					    (unsigned)target->version[1],
+					    (unsigned)target->version[2]);
 		}
 		target = VOIDP_CAST(struct dm_versions *)((char *) target + target->next);
 	} while (last_target != target);
@@ -355,13 +375,14 @@ int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags)
 	*flags = _dm_flags;
 
 	if (target == DM_UNKNOWN &&
-	    _dm_crypt_checked && _dm_verity_checked && _dm_integrity_checked)
+	    _dm_crypt_checked && _dm_verity_checked && _dm_integrity_checked && _dm_zero_checked)
 		return 0;
 
-	if ((target == DM_CRYPT	    && _dm_crypt_checked) ||
+	if ((target == DM_CRYPT     && _dm_crypt_checked) ||
 	    (target == DM_VERITY    && _dm_verity_checked) ||
 	    (target == DM_INTEGRITY && _dm_integrity_checked) ||
-	    (target == DM_LINEAR) || (target == DM_ZERO)) /* nothing to check */
+	    (target == DM_ZERO      && _dm_zero_checked) ||
+	    (target == DM_LINEAR)) /* nothing to check */
 		return 0;
 
 	return -ENODEV;
