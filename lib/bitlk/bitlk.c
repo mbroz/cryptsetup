@@ -1207,7 +1207,7 @@ static int _activate(struct crypt_device *cd,
 	uint64_t next_start = 0;
 	uint64_t next_end = 0;
 	uint64_t last_segment = 0;
-	uint32_t dmt_flags;
+	uint32_t dmt_flags = 0;
 
 	r = _activate_check(cd, params);
 	if (r)
@@ -1346,6 +1346,10 @@ static int _activate(struct crypt_device *cd,
 		}
 		if (!strcmp(params->cipher_mode, "cbc-elephant") && !(dmt_flags & DM_BITLK_ELEPHANT_SUPPORTED)) {
 			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for BITLK Elephant diffuser."));
+			r = -ENOTSUP;
+		}
+		if (dm_flags(cd, DM_ZERO, &dmt_flags) < 0) {
+			log_err(cd, _("Cannot activate device, kernel dm-zero module is missing."));
 			r = -ENOTSUP;
 		}
 	}
