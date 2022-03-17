@@ -2,7 +2,6 @@
   extends:
     - .dump_kernel_log
   before_script:
-    - sudo dnf -y update
     - >
       sudo dnf -y -q  install
       autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
