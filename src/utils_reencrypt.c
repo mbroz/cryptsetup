@@ -31,10 +31,12 @@ extern const char *device_type;
 extern const char *set_pbkdf;
 
 enum device_status_info {
-	DEVICE_LUKS2 = 0,	/* LUKS2 device in undisclosed state (in reencrypt or not) */
+	DEVICE_LUKS2 = 0,	/* LUKS2 device */
+	DEVICE_LUKS2_REENCRYPT,	/* LUKS2 device in reencryption  */
 	DEVICE_LUKS1,		/* LUKS1 device */
-	DEVICE_LUKS1_UNUSABLE,	/* LUKS1 device in-reencryption (legacy) */
-	DEVICE_INVALID		/* device is unusable */
+	DEVICE_LUKS1_UNUSABLE,	/* LUKS1 device in reencryption (legacy) */
+	DEVICE_NOT_LUKS,	/* device is not LUKS type */
+	DEVICE_INVALID		/* device is invalid */
 };
 
 static void _set_reencryption_flags(uint32_t *flags)
@@ -162,14 +164,83 @@ static int action_reencrypt_load(struct crypt_device *cd, const char *data_devic
 	return r;
 }
 
+/*
+ *   1: in-progress
+ *   0: clean luks2 device
+ * < 0: error
+ */
+static int luks2_reencrypt_in_progress(struct crypt_device *cd)
+{
+	uint32_t flags;
+
+	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags))
+		return -EINVAL;
+
+	if (flags & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT) {
+		log_err(_("Legacy LUKS2 reencryption is no longer supported."));
+		return -EINVAL;
+	}
+
+	return flags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
+}
+
+/*
+ * Returns crypt context for:
+ *   DEVICE_LUKS2
+ *   DEVICE_LUKS2_REENCRYPT
+ *   DEVICE_LUKS1
+ */
+static enum device_status_info load_luks(struct crypt_device **r_cd, const char *type, const char *header_device, const char *data_device)
+{
+	int r;
+	struct crypt_device *cd;
+
+	assert(r_cd);
+	assert(!type || isLUKS1(type) || isLUKS2(type));
+	assert(data_device);
+
+	if (crypt_init_data_device(&cd, uuid_or_device(header_device ?: data_device), data_device))
+		return DEVICE_INVALID;
+
+	/* TODO: LUKS2 load may fail when header is damaged and blkid reports ambiguous/other signatures */
+	if ((r = crypt_load(cd, type, NULL))) {
+		crypt_free(cd);
+
+		if (r == -EBUSY && (!type || isLUKS2(type))) /* luks2 locking error (message printed by libcryptsetup) */
+			return DEVICE_INVALID;
+
+		if (!type || isLUKS1(type))
+			r = reencrypt_luks1_in_progress(uuid_or_device(header_device ?: data_device));
+
+		if (!r)
+			return DEVICE_LUKS1_UNUSABLE;
+
+		return DEVICE_NOT_LUKS;
+	}
+
+	if (isLUKS2(crypt_get_type(cd))) {
+		r = luks2_reencrypt_in_progress(cd);
+		if (r < 0) {
+			crypt_free(cd);
+			return DEVICE_INVALID;
+		}
+	}
+
+	*r_cd = cd;
+
+	if (r > 0)
+		return DEVICE_LUKS2_REENCRYPT;
+
+	return isLUKS2(crypt_get_type(cd)) ? DEVICE_LUKS2 : DEVICE_LUKS1;
+}
+
 static int action_encrypt_luks2(struct crypt_device **cd, const char *data_device, const char *device_name)
 {
-	char *tmp;
 	const char *type;
 	int keyslot, r, fd;
 	uuid_t uuid;
 	size_t passwordLen;
-	char *msg, uuid_str[37], header_file[PATH_MAX] = { 0 }, *password = NULL;
+	char *tmp, uuid_str[37], header_file[PATH_MAX] = { 0 }, *password = NULL;
 	uint32_t activate_flags = 0;
 	const struct crypt_params_luks2 luks2_params = {
 		.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: SECTOR_SIZE
@@ -227,23 +298,6 @@ static int action_encrypt_luks2(struct crypt_device **cd, const char *data_devic
 		if (!(tmp = strdup(uuid_str)))
 			return -ENOMEM;
 		ARG_SET_STR(OPT_UUID_ID, tmp);
-	}
-
-	/* Check the data device is not LUKS device already */
-	if ((r = crypt_init(cd, data_device)))
-		return r;
-	r = crypt_load(*cd, CRYPT_LUKS, NULL);
-	crypt_free(*cd);
-	*cd = NULL;
-	if (!r && !ARG_SET(OPT_BATCH_MODE_ID)) {
-		r = asprintf(&msg, _("Detected LUKS device on %s. Do you want to encrypt that LUKS device again?"), data_device);
-		if (r == -1)
-			return -ENOMEM;
-
-		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
-		free(msg);
-		if (r < 0)
-			return r;
 	}
 
 	if (!ARG_SET(OPT_HEADER_ID)) {
@@ -765,43 +819,10 @@ out:
 	return r;
 }
 
-static enum device_status_info load_luks(struct crypt_device **r_cd, const char *type, const char *header_device, const char *data_device)
-{
-	int r;
-	struct crypt_device *cd;
-
-	assert(r_cd);
-	assert(data_device);
-
-	if (crypt_init_data_device(&cd, uuid_or_device(header_device ?: data_device), data_device))
-		return DEVICE_INVALID;
-
-	if ((r = crypt_load(cd, type, NULL))) {
-		crypt_free(cd);
-		if (r == -EBUSY) /* luks2 locking error (message printed by libcryptsetup) */
-			return DEVICE_INVALID;
-
-		if (!type || isLUKS1(type))
-			r = reencrypt_luks1_in_progress(uuid_or_device(header_device ?: data_device));
-
-		if (!r)
-			return DEVICE_LUKS1_UNUSABLE;
-
-		log_err(_("Device %s is not a valid %s device."),
-			uuid_or_device(header_device ?: data_device), type ?: "LUKS");
-
-		return DEVICE_INVALID;
-	}
-
-	*r_cd = cd;
-
-	return isLUKS2(crypt_get_type(cd)) ? DEVICE_LUKS2 : DEVICE_LUKS1;
-}
-
 static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, const char *active_name, const char *header_device)
 {
 	int r;
-	struct crypt_device *cd;
+	struct crypt_device *cd = NULL;
 
 	assert(r_cd);
 	assert(active_name);
@@ -812,38 +833,35 @@ static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, co
 		if (r == -EBUSY) /* luks2 locking error (message printed by libcryptsetup) */
 			return DEVICE_INVALID;
 
+		return DEVICE_NOT_LUKS;
+	}
+
+	r = luks2_reencrypt_in_progress(cd);
+	if (r < 0) {
+		crypt_free(cd);
 		return DEVICE_INVALID;
 	}
 
 	*r_cd = cd;
-	return DEVICE_LUKS2;
+
+	return !r ? DEVICE_LUKS2 : DEVICE_LUKS2_REENCRYPT;
 }
 
-/*
- *   1: in-progress
- *   0: clean luks2 device
- * < 0: error
- */
-static int luks2_reencrypt_in_progress(struct crypt_device *cd)
+static bool luks2_reencrypt_eligible(struct crypt_device *cd)
 {
 	uint32_t flags;
 	struct crypt_params_integrity ip = { 0 };
 
 	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags))
-		return -EINVAL;
-
-	if (flags & CRYPT_REQUIREMENT_OFFLINE_REENCRYPT) {
-		log_err(_("Legacy LUKS2 reencryption is no longer supported."));
-		return -EINVAL;
-	}
+		return false;
 
 	/* raw integrity info is available since 2.0 */
 	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
 		log_err(_("Reencryption of device with integrity profile is not supported."));
-		return -ENOTSUP;
+		return false;
 	}
 
-	return flags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
+	return true;
 }
 
 static int encrypt_luks2(int action_argc, const char **action_argv)
@@ -866,14 +884,7 @@ static int encrypt_luks2(int action_argc, const char **action_argv)
 		else
 			dev_st = load_luks(&cd, CRYPT_LUKS2, ARG_STR(OPT_HEADER_ID), action_argv[0]);
 
-		if (dev_st != DEVICE_LUKS2)
-			goto out;
-
-		r = luks2_reencrypt_in_progress(cd);
-		if (r < 0)
-			goto out;
-
-		if (!r) {
+		if (dev_st != DEVICE_LUKS2_REENCRYPT) {
 			log_err(_("Device reencryption not in progress."));
 			r = -EINVAL;
 			goto out;
@@ -928,6 +939,10 @@ static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **
 			r = -EINVAL;
 			goto out;
 		}
+
+		if (!luks2_reencrypt_eligible(cd))
+			return -EINVAL;
+
 		r = action_decrypt_luks2(cd, action_argv[0]);
 	}
 
@@ -970,6 +985,10 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 			r = -EINVAL;
 			goto out;
 		}
+
+		if (!luks2_reencrypt_eligible(cd))
+			return -EINVAL;
+
 		r = action_reencrypt_luks2(cd, action_argv[0]);
 	}
 
@@ -985,33 +1004,75 @@ out:
 
 static int _encrypt(int action_argc, const char **action_argv)
 {
+	enum device_status_info hdr_st, dev_st;
+	struct stat st;
 	const char *type = luksType(device_type);
-	bool luks1_in_reencrypt = false;
+	struct crypt_device *check_cd = NULL;
+
+	dev_st = load_luks(&check_cd, CRYPT_LUKS, NULL, uuid_or_device(action_argv[0]));
+	crypt_free(check_cd);
+	check_cd = NULL;
+
+	if (dev_st == DEVICE_INVALID)
+		return -EINVAL;
+
+	if (dev_st == DEVICE_LUKS2 || dev_st == DEVICE_LUKS1) {
+		log_err(_("Device %s is already LUKS device."), uuid_or_device(action_argv[0]));
+		return -EINVAL;
+	}
 
 	/* explicit request for LUKS2 encryption */
 	if (ARG_SET(OPT_HEADER_ID)) {
-		luks1_in_reencrypt = reencrypt_luks1_in_progress(ARG_STR(OPT_HEADER_ID)) == 0;
-		if (luks1_in_reencrypt && isLUKS2(type)) {
-			log_err(_("Device %s already in LUKS1 reencryption."), ARG_STR(OPT_HEADER_ID));
+		if (stat(ARG_STR(OPT_HEADER_ID), &st) < 0 && errno == ENOENT)
+			hdr_st = DEVICE_NOT_LUKS;
+		else {
+			hdr_st = load_luks(&check_cd, CRYPT_LUKS, NULL, ARG_STR(OPT_HEADER_ID));
+
+			crypt_free(check_cd);
+
+			if (hdr_st == DEVICE_INVALID)
+				return -EINVAL;
+
+			if (hdr_st == DEVICE_LUKS1_UNUSABLE && isLUKS2(type)) {
+				log_err(_("Device %s is already in LUKS1 reencryption."), ARG_STR(OPT_HEADER_ID));
+				return -EINVAL;
+			}
+
+			if (hdr_st == DEVICE_LUKS2_REENCRYPT && isLUKS1(type)) {
+				log_err(_("Device %s is already in LUKS2 reencryption."), ARG_STR(OPT_HEADER_ID));
+				return -EINVAL;
+			}
+
+			if (hdr_st == DEVICE_LUKS2 || hdr_st == DEVICE_LUKS1) {
+				log_err(_("Device %s is already LUKS device."), ARG_STR(OPT_HEADER_ID));
+				return -EINVAL;
+			}
+		}
+
+		if (dev_st == DEVICE_LUKS2_REENCRYPT || dev_st == DEVICE_LUKS1_UNUSABLE) {
+			log_err(_("Data device %s is already in LUKS reencryption."), uuid_or_device(action_argv[0]));
 			return -EINVAL;
 		}
-	}
 
-	if (!luks1_in_reencrypt)
-		luks1_in_reencrypt = reencrypt_luks1_in_progress(uuid_or_device(action_argv[0])) == 0;
+		dev_st = hdr_st;
+	} else {
+		if (dev_st == DEVICE_LUKS1_UNUSABLE && isLUKS2(type)) {
+			log_err(_("Device %s is already in LUKS1 reencryption."), ARG_STR(OPT_HEADER_ID));
+			return -EINVAL;
+		}
 
-	/* explicit request for LUKS2 encryption */
-	if (luks1_in_reencrypt && isLUKS2(type)) {
-		log_err(_("Device %s already in LUKS1 reencryption."), action_argv[0]);
-		return -EINVAL;
+		if (dev_st == DEVICE_LUKS2_REENCRYPT && isLUKS1(type)) {
+			log_err(_("Device %s already in LUKS2 reencryption."), ARG_STR(OPT_HEADER_ID));
+			return -EINVAL;
+		}
 	}
 
 	if (!type)
 		type = crypt_get_default_type();
 
-	if (isLUKS1(type) || luks1_in_reencrypt)
+	if (isLUKS1(type) || dev_st == DEVICE_LUKS1_UNUSABLE) {
 		return reencrypt_luks1(action_argv[0]);
-	else if (isLUKS2(type))
+	} else if (isLUKS2(type) || dev_st == DEVICE_LUKS2_REENCRYPT)
 		return encrypt_luks2(action_argc, action_argv);
 
 	return -EINVAL;
@@ -1029,7 +1090,7 @@ static int _decrypt(int action_argc, const char **action_argv)
 	else
 		dev_st = load_luks(&cd, type, ARG_STR(OPT_HEADER_ID), action_argv[0]);
 
-	if (dev_st == DEVICE_LUKS2)
+	if (dev_st <= DEVICE_LUKS2_REENCRYPT)
 		r = decrypt_luks2(cd, action_argc, action_argv);
 	else if (dev_st == DEVICE_LUKS1 || dev_st == DEVICE_LUKS1_UNUSABLE) {
 		crypt_free(cd);
@@ -1053,7 +1114,7 @@ static int _reencrypt(int action_argc, const char **action_argv)
 	else
 		dev_st = load_luks(&cd, type, ARG_STR(OPT_HEADER_ID), action_argv[0]);
 
-	if (dev_st == DEVICE_LUKS2)
+	if (dev_st <= DEVICE_LUKS2_REENCRYPT)
 		r = reencrypt_luks2(cd, action_argc, action_argv);
 	else if (dev_st == DEVICE_LUKS1 || dev_st == DEVICE_LUKS1_UNUSABLE) {
 		crypt_free(cd);
