@@ -2,7 +2,6 @@
   extends:
     - .dump_kernel_log
   before_script:
-    - sudo apt-get -y update --fix-missing
     - >
       sudo apt-get -y install -y -qq  git gcc make
       autoconf automake autopoint pkg-config libtool libtool-bin gettext
