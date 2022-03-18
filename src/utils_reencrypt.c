@@ -247,6 +247,17 @@ static bool luks2_reencrypt_eligible(struct crypt_device *cd)
 	return true;
 }
 
+static enum device_status_info check_luks_device(const char *device)
+{
+	enum device_status_info dev_st;
+	struct crypt_device *cd = NULL;
+
+	dev_st = load_luks(&cd, CRYPT_LUKS,  NULL, device);
+	crypt_free(cd);
+
+	return dev_st;
+}
+
 static int action_encrypt_luks2(struct crypt_device **cd, const char *data_device, const char *device_name)
 {
 	const char *type;
@@ -1005,10 +1016,7 @@ static int _encrypt(int action_argc, const char **action_argv)
 	const char *type = luksType(device_type);
 	struct crypt_device *check_cd = NULL;
 
-	dev_st = load_luks(&check_cd, CRYPT_LUKS, NULL, uuid_or_device(action_argv[0]));
-	crypt_free(check_cd);
-	check_cd = NULL;
-
+	dev_st = check_luks_device(uuid_or_device(action_argv[0]));
 	if (dev_st == DEVICE_INVALID)
 		return -EINVAL;
 
