@@ -126,7 +126,7 @@ static int _get_device_active_name(struct crypt_device *cd, const char *data_dev
 	return r;
 }
 
-static int action_reencrypt_load(struct crypt_device *cd, const char *data_device)
+static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device)
 {
 	int r;
 	size_t passwordLen;
@@ -258,7 +258,7 @@ static enum device_status_info check_luks_device(const char *device)
 	return dev_st;
 }
 
-static int action_encrypt_luks2(struct crypt_device **cd, const char *data_device, const char *device_name)
+static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device, const char *device_name)
 {
 	const char *type;
 	int keyslot, r, fd;
@@ -427,9 +427,10 @@ out:
 	return r;
 }
 
-static int action_decrypt_luks2(struct crypt_device *cd, const char *data_device)
+static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
 	int r;
+	size_t passwordLen;
 	char dm_name[PATH_MAX], *password = NULL;
 	const char *active_name = NULL;
 	struct crypt_params_reencrypt params = {
@@ -441,7 +442,6 @@ static int action_decrypt_luks2(struct crypt_device *cd, const char *data_device
 		.device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE,
 		.max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE,
 	};
-	size_t passwordLen;
 
 	if (!crypt_get_metadata_device_name(cd) || crypt_header_is_detached(cd) <= 0 ||
 	    crypt_get_data_offset(cd) > 0) {
@@ -653,7 +653,7 @@ static int assign_tokens(struct crypt_device *cd, int keyslot_old, int keyslot_n
 	return 0;
 }
 
-static int action_reencrypt_luks2(struct crypt_device *cd, const char *data_device)
+static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
 	bool vk_size_change, sector_size_change, vk_change;
 	size_t i, vk_size, kp_size;
@@ -897,9 +897,9 @@ static int encrypt_luks2(int action_argc, const char **action_argv)
 			goto out;
 		}
 
-		r = action_reencrypt_load(cd, action_argv[0]);
+		r = reencrypt_luks2_load(cd, action_argv[0]);
 	} else
-		r = action_encrypt_luks2(&cd, action_argv[0], action_argc > 1 ? action_argv[1] : NULL);
+		r = encrypt_luks2_init(&cd, action_argv[0], action_argc > 1 ? action_argv[1] : NULL);
 
 	if (r >= 0 && !ARG_SET(OPT_INIT_ONLY_ID)) {
 		set_int_handler(0);
@@ -939,7 +939,7 @@ static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **
 			r = -EINVAL;
 			goto out;
 		}
-		r = action_reencrypt_load(cd, action_argv[0]);
+		r = reencrypt_luks2_load(cd, action_argv[0]);
 	} else {
 		if (ARG_SET(OPT_RESUME_ONLY_ID)) {
 			log_err(_("Device reencryption not in progress."));
@@ -950,7 +950,7 @@ static int decrypt_luks2(struct crypt_device *cd, int action_argc, const char **
 		if (!luks2_reencrypt_eligible(cd))
 			return -EINVAL;
 
-		r = action_decrypt_luks2(cd, action_argv[0]);
+		r = decrypt_luks2_init(cd, action_argv[0]);
 	}
 
 	if (r >= 0 && !ARG_SET(OPT_INIT_ONLY_ID)) {
@@ -985,7 +985,7 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 			r = -EINVAL;
 			goto out;
 		}
-		r = action_reencrypt_load(cd, action_argv[0]);
+		r = reencrypt_luks2_load(cd, action_argv[0]);
 	} else {
 		if (ARG_SET(OPT_RESUME_ONLY_ID)) {
 			log_err(_("Device reencryption not in progress."));
@@ -996,7 +996,7 @@ static int reencrypt_luks2(struct crypt_device *cd, int action_argc, const char 
 		if (!luks2_reencrypt_eligible(cd))
 			return -EINVAL;
 
-		r = action_reencrypt_luks2(cd, action_argv[0]);
+		r = reencrypt_luks2_init(cd, action_argv[0]);
 	}
 
 	if (r >= 0 && !ARG_SET(OPT_INIT_ONLY_ID)) {
