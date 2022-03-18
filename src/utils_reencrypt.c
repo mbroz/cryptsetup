@@ -236,11 +236,7 @@ static enum device_status_info load_luks(struct crypt_device **r_cd, const char 
 
 static bool luks2_reencrypt_eligible(struct crypt_device *cd)
 {
-	uint32_t flags;
 	struct crypt_params_integrity ip = { 0 };
-
-	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags))
-		return false;
 
 	/* raw integrity info is available since 2.0 */
 	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
