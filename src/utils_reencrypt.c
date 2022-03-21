@@ -1150,15 +1150,68 @@ static int _reencrypt(int action_argc, const char **action_argv)
 
 int reencrypt(int action_argc, const char **action_argv)
 {
+	enum device_status_info dev_st;
+	int r = -EINVAL;
+	struct crypt_device *cd = NULL;
+	const char *type = luksType(device_type);
+
 	if (action_argc < 1 && (!ARG_SET(OPT_ACTIVE_NAME_ID) || ARG_SET(OPT_ENCRYPT_ID))) {
 		log_err(_("Command requires device as argument."));
-		return -EINVAL;
+		return r;
+	}
+
+	if (ARG_SET(OPT_ACTIVE_NAME_ID))
+		dev_st = load_luks2_by_name(&cd, ARG_STR(OPT_ACTIVE_NAME_ID), ARG_STR(OPT_HEADER_ID));
+	else
+		dev_st = load_luks(&cd, ARG_STR(OPT_HEADER_ID), uuid_or_device(action_argv[0]));
+
+	if (dev_st == DEVICE_INVALID)
+		return r;
+
+	if (dev_st == DEVICE_LUKS1 && isLUKS2(type)) {
+		log_err(_("Conflicting versions. Device %s is LUKS1."),
+			uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[0]));
+		goto out;
+	}
+
+	if (dev_st == DEVICE_LUKS1_UNUSABLE && isLUKS2(type)) {
+		log_err(_("Conflicting versions. Device %s is in LUKS1 reencryption."),
+			uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[0]));
+		goto out;
+	}
+
+	if (dev_st == DEVICE_LUKS2 && isLUKS1(type)) {
+		log_err(_("Conflicting versions. Device %s is LUKS2."),
+			uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[0]));
+		goto out;
+	}
+
+	if (dev_st == DEVICE_LUKS2_REENCRYPT && isLUKS1(type)) {
+		log_err(_("Conflicting versions. Device %s is in LUKS2 reencryption."),
+			uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[0]));
+		goto out;
+	}
+
+	if (dev_st == DEVICE_LUKS2_REENCRYPT && ARG_SET(OPT_INIT_ONLY_ID)) {
+		log_err(_("LUKS2 reencryption already initialized. Aborting operation."));
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (ARG_SET(OPT_RESUME_ONLY_ID) &&
+	    (dev_st == DEVICE_LUKS2 || dev_st == DEVICE_LUKS1 || dev_st == DEVICE_NOT_LUKS)) {
+		log_err(_("Device reencryption not in progress."));
+		r = -EINVAL;
+		goto out;
 	}
 
 	if (ARG_SET(OPT_ENCRYPT_ID))
-		return _encrypt(action_argc, action_argv);
+		r = _encrypt(action_argc, action_argv);
 	else if (ARG_SET(OPT_DECRYPT_ID))
-		return _decrypt(action_argc, action_argv);
+		r = _decrypt(action_argc, action_argv);
 	else
-		return _reencrypt(action_argc, action_argv);
+		r = _reencrypt(action_argc, action_argv);
+out:
+	crypt_free(cd);
+	return r;
 }
