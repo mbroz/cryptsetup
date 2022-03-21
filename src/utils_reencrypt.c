@@ -869,6 +869,24 @@ static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, co
 	return !r ? DEVICE_LUKS2 : DEVICE_LUKS2_REENCRYPT;
 }
 
+static int reencrypt_luks2_resume(struct crypt_device *cd)
+{
+	int r;
+	char *backing_file = NULL;
+	struct tools_progress_params prog_parms = {
+		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nReencryption interrupted."),
+		.device = tools_get_device_name(crypt_get_device_name(cd), &backing_file)
+	};
+
+	set_int_handler(0);
+	r = crypt_reencrypt_run(cd, tools_progress, &prog_parms);
+	free(backing_file);
+	return r;
+}
+
 static int encrypt_luks2(int action_argc, const char **action_argv)
 {
 	enum device_status_info dev_st;
