@@ -53,6 +53,7 @@ struct device {
 
 	unsigned int o_direct:1;
 	unsigned int init_done:1; /* path is bdev or loop already initialized */
+	unsigned int blkzeroout_failed:1; /* BLKZEROOUT ioctl failed during wipe */
 
 	/* cached values */
 	size_t alignment;
@@ -413,6 +414,7 @@ int device_alloc_no_check(struct device **device, const char *path)
 	dev->dev_fd = -1;
 	dev->dev_fd_excl = -1;
 	dev->o_direct = 1;
+	dev->blkzeroout_failed = 0;
 
 	*device = dev;
 	return 0;
@@ -1090,9 +1092,19 @@ void device_set_block_size(struct device *device, size_t size)
 #define BLKZEROOUT     _IO(0x12,127)
 #endif
 
-int device_zero_out(int devfd, uint64_t offset, uint64_t length)
+int device_zero_out(struct device *device, int devfd, uint64_t offset, uint64_t length)
 {
 	uint64_t range[2] = { offset, length };
+	int r;
 
-	return ioctl(devfd, BLKZEROOUT, &range);
+	r = ioctl(devfd, BLKZEROOUT, &range);
+	if (r)
+		device->blkzeroout_failed = 1;
+
+	return r;
+}
+
+int device_blkzeroout_failed(const struct device *device)
+{
+	return device ? device->blkzeroout_failed : 0;
 }
