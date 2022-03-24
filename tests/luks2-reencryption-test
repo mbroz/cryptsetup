@@ -686,6 +686,8 @@ function reencrypt_online_fixed_size() {
 		$CRYPTSETUP close $DEV_NAME || fail
 		check_hash $PWD1 $6 $7
 	fi
+
+	[ -n "$7" -a -f "$7" ] && rm -f $7
 }
 
 function setup_luks2_env() {
