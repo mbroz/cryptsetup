@@ -225,6 +225,14 @@ static int action_resize(void)
 	uint64_t new_dev_size = 0;
 	uint64_t old_dev_size;
 	char path[PATH_MAX];
+	char *backing_file = NULL;
+	struct tools_progress_params prog_parms = {
+		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nWipe interrupted."),
+		.device = tools_get_device_name(crypt_get_device_name(cd), &backing_file)
+	};
 
 	if (ARG_SET(OPT_DEVICE_SIZE_ID))
 		new_dev_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
@@ -256,8 +264,18 @@ static int action_resize(void)
 
 	if (new_dev_size > old_dev_size) {
 		if (ARG_SET(OPT_WIPE_ID)) {
-			log_dbg("Wiping the end of the resized device");
-			r = crypt_wipe(cd, path, CRYPT_WIPE_ZERO, old_dev_size * SECTOR_SIZE, (new_dev_size - old_dev_size) * SECTOR_SIZE, DEFAULT_WIPE_BLOCK, 0, NULL, NULL);
+			if (ARG_SET(OPT_BATCH_MODE_ID))
+				log_dbg("Wiping the end of the resized device");
+			else
+				log_std(_("Wiping device to initialize integrity checksum.\n"
+					"You can interrupt this by pressing CTRL+c "
+					"(rest of not wiped device will contain invalid checksum).\n"));
+
+			set_int_handler(0);
+			r = crypt_wipe(cd, path, CRYPT_WIPE_ZERO, old_dev_size * SECTOR_SIZE,
+				      (new_dev_size - old_dev_size) * SECTOR_SIZE, DEFAULT_WIPE_BLOCK,
+				      0, &tools_progress, &prog_parms);
+			set_int_block(0);
 		} else {
 			log_dbg("Setting recalculate flag");
 			r = crypt_activate_by_volume_key(cd, action_argv[0], NULL, 0, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_RECALCULATE);
@@ -267,7 +285,8 @@ static int action_resize(void)
 		}
 	}
 out:
-
+	if (backing_file)
+		free(backing_file);
 	crypt_free(cd);
 	return r;
 }
