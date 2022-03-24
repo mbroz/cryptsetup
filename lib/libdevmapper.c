@@ -2391,6 +2391,8 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 	struct device *data_device = NULL, *meta_device = NULL;
 	char *integrity = NULL, *journal_crypt = NULL, *journal_integrity = NULL;
 	struct volume_key *vk = NULL;
+	struct volume_key *journal_integrity_key = NULL;
+	struct volume_key *journal_crypt_key = NULL;
 
 	tgt->type = DM_INTEGRITY;
 	tgt->direction = TARGET_QUERY;
@@ -2520,6 +2522,28 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 						goto err;
 					}
 				}
+
+				if (str) {
+					len = crypt_hex_to_bytes(str, &str2, 1);
+					if (len < 0) {
+						r = len;
+						goto err;
+					}
+
+					r = 0;
+					if (get_flags & DM_ACTIVE_JOURNAL_CRYPT_KEY) {
+						journal_crypt_key = crypt_alloc_volume_key(len, str2);
+						if (!journal_crypt_key)
+							r = -ENOMEM;
+					} else if (get_flags & DM_ACTIVE_JOURNAL_CRYPT_KEYSIZE) {
+						journal_crypt_key = crypt_alloc_volume_key(len, NULL);
+						if (!journal_crypt_key)
+							r = -ENOMEM;
+					}
+					crypt_safe_free(str2);
+					if (r < 0)
+						goto err;
+				}
 			} else if (!strncmp(arg, "journal_mac:", 12) && !journal_integrity) {
 				str = &arg[12];
 				arg = strsep(&str, ":");
@@ -2529,6 +2553,28 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 						r = -ENOMEM;
 						goto err;
 					}
+				}
+
+				if (str) {
+					len = crypt_hex_to_bytes(str, &str2, 1);
+					if (len < 0) {
+						r = len;
+						goto err;
+					}
+
+					r = 0;
+					if (get_flags & DM_ACTIVE_JOURNAL_MAC_KEY) {
+						journal_integrity_key = crypt_alloc_volume_key(len, str2);
+						if (!journal_integrity_key)
+							r = -ENOMEM;
+					} else if (get_flags & DM_ACTIVE_JOURNAL_MAC_KEYSIZE) {
+						journal_integrity_key = crypt_alloc_volume_key(len, NULL);
+						if (!journal_integrity_key)
+							r = -ENOMEM;
+					}
+					crypt_safe_free(str2);
+					if (r < 0)
+						goto err;
 				}
 			} else if (!strcmp(arg, "recalculate")) {
 				*act_flags |= CRYPT_ACTIVATE_RECALCULATE;
@@ -2565,6 +2611,10 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 		tgt->u.integrity.journal_integrity = journal_integrity;
 	if (vk)
 		tgt->u.integrity.vk = vk;
+	if (journal_integrity_key)
+		tgt->u.integrity.journal_integrity_key = journal_integrity_key;
+	if (journal_crypt_key)
+		tgt->u.integrity.journal_crypt_key = journal_crypt_key;
 	return 0;
 err:
 	device_free(cd, data_device);

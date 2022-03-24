@@ -217,6 +217,80 @@ out:
 	return r;
 }
 
+static int action_resize(void)
+{
+	int r;
+	struct crypt_device *cd = NULL;
+	struct crypt_active_device cad;
+	uint64_t new_dev_size = 0;
+	uint64_t old_dev_size;
+	char path[PATH_MAX];
+	char *backing_file = NULL;
+	struct tools_progress_params prog_parms = {
+		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
+		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
+		.json_output = ARG_SET(OPT_PROGRESS_JSON_ID),
+		.interrupt_message = _("\nWipe interrupted."),
+		.device = tools_get_device_name(crypt_get_device_name(cd), &backing_file)
+	};
+
+	if (ARG_SET(OPT_DEVICE_SIZE_ID))
+		new_dev_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
+	else if (ARG_SET(OPT_SIZE_ID))
+		new_dev_size = ARG_UINT64(OPT_SIZE_ID);
+
+	r = crypt_init_by_name_and_header(&cd, action_argv[0], NULL);
+	if (r)
+		goto out;
+
+	r = crypt_get_active_device(cd, action_argv[0], &cad);
+	if (r)
+		goto out;
+	old_dev_size = cad.size;
+
+	r = snprintf(path, sizeof(path), "%s/%s", crypt_get_dir(), action_argv[0]);
+	if (r < 0)
+		goto out;
+	r = crypt_resize(cd, action_argv[0], new_dev_size);
+	if (r)
+		goto out;
+
+	if (!new_dev_size) {
+		r = crypt_get_active_device(cd, action_argv[0], &cad);
+		if (r)
+			goto out;
+		new_dev_size = cad.size;
+	}
+
+	if (new_dev_size > old_dev_size) {
+		if (ARG_SET(OPT_WIPE_ID)) {
+			if (ARG_SET(OPT_BATCH_MODE_ID))
+				log_dbg("Wiping the end of the resized device");
+			else
+				log_std(_("Wiping device to initialize integrity checksum.\n"
+					"You can interrupt this by pressing CTRL+c "
+					"(rest of not wiped device will contain invalid checksum).\n"));
+
+			set_int_handler(0);
+			r = crypt_wipe(cd, path, CRYPT_WIPE_ZERO, old_dev_size * SECTOR_SIZE,
+				      (new_dev_size - old_dev_size) * SECTOR_SIZE, DEFAULT_WIPE_BLOCK,
+				      0, &tools_progress, &prog_parms);
+			set_int_block(0);
+		} else {
+			log_dbg("Setting recalculate flag");
+			r = crypt_activate_by_volume_key(cd, action_argv[0], NULL, 0, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_RECALCULATE);
+
+			if (r == -ENOTSUP)
+				log_err(_("Setting recalculate flag is not supported, you may consider using --wipe instead."));
+		}
+	}
+out:
+	if (backing_file)
+		free(backing_file);
+	crypt_free(cd);
+	return r;
+}
+
 static int action_open(void)
 {
 	struct crypt_device *cd = NULL;
@@ -453,6 +527,7 @@ static struct action_type {
 	{ CLOSE_ACTION,	action_close,  1, N_("<name>"),N_("close device (remove mapping)") },
 	{ STATUS_ACTION,action_status, 1, N_("<name>"),N_("show active device status") },
 	{ DUMP_ACTION,	action_dump,   1, N_("<integrity_device>"),N_("show on-disk information") },
+	{ RESIZE_ACTION,action_resize, 1, N_("<name>"), N_("resize active device") },
 	{}
 };
 
@@ -506,7 +581,7 @@ static int run_action(struct action_type *action)
 
 static bool needs_size_conversion(unsigned int arg_id)
 {
-	return arg_id == OPT_JOURNAL_SIZE_ID;
+	return (arg_id == OPT_JOURNAL_SIZE_ID || arg_id == OPT_DEVICE_SIZE_ID);
 }
 
 static void basic_options_cb(poptContext popt_context,

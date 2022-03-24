@@ -98,6 +98,7 @@
 #define OPT_KEYSLOT_KEY_SIZE		"keyslot-key-size"
 #define OPT_NO_SUPERBLOCK		"no-superblock"
 #define OPT_NO_WIPE			"no-wipe"
+#define OPT_WIPE			"wipe"
 #define OPT_LABEL			"label"
 #define OPT_LUKS2_KEYSLOTS_SIZE		"luks2-keyslots-size"
 #define OPT_LUKS2_METADATA_SIZE		"luks2-metadata-size"
