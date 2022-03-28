@@ -702,9 +702,9 @@ static void AddDeviceLuks2(void)
 	char key[128], key2[128], key3[128];
 
 	const char *tmp_buf, *passphrase = "blabla", *passphrase2 = "nsdkFI&Y#.sd";
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *vk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size_1;
@@ -716,8 +716,8 @@ static void AddDeviceLuks2(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, mk_hex, key_size);
-	crypt_decode_key(key3, mk_hex2, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key3, vk_hex2, key_size);
 
 	// init test devices
 	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, &r_payload_offset));
@@ -1050,8 +1050,8 @@ static void Luks2MetadataSize(void)
 	char key[128], tmp[128];
 
 	const char *passphrase = "blabla";
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_header_size, default_mdata_size, default_keyslots_size, mdata_size,
@@ -1065,7 +1065,7 @@ static void Luks2MetadataSize(void)
 		pbkdf.iterations = 1000;
 	}
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	// init test devices
 	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, NULL));
@@ -1244,8 +1244,8 @@ static void Luks2HeaderRestore(void)
 	};
 	uint32_t flags = 0;
 
-	const char *mk_hex = "ccadd99b16cd3d200c22d6db45d8b6630ef3d936767127347ec8a76ab992c2ea";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "ccadd99b16cd3d200c22d6db45d8b6630ef3d936767127347ec8a76ab992c2ea";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
@@ -1257,7 +1257,7 @@ static void Luks2HeaderRestore(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	OK_(get_luks2_offsets(0, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 5000));
@@ -1346,8 +1346,8 @@ static void Luks2HeaderLoad(void)
 	};
 	char key[128], cmd[256];
 
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, img_size;
@@ -1359,7 +1359,7 @@ static void Luks2HeaderLoad(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	// hardcoded values for existing image IMAGE1
 	img_size = 8192;
@@ -1479,8 +1479,8 @@ static void Luks2HeaderBackup(void)
 	char key[128];
 	int fd, ro = O_RDONLY;
 
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
@@ -1494,7 +1494,7 @@ static void Luks2HeaderBackup(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	OK_(get_luks2_offsets(1, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
@@ -1576,8 +1576,8 @@ static void ResizeDeviceLuks2(void)
 	};
 	char key[128];
 
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size;
@@ -1589,7 +1589,7 @@ static void ResizeDeviceLuks2(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	// prepare env
 	OK_(get_luks2_offsets(0, params.data_alignment, 0, NULL, &r_payload_offset));
@@ -2919,9 +2919,9 @@ static void Luks2KeyslotAdd(void)
 {
 	char key[128], key2[128], key_ret[128];
 	const char *cipher = "aes", *cipher_mode="xts-plain64";
-	const char *mk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
-	size_t key_ret_len, key_size = strlen(mk_hex) / 2;
+	const char *vk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *vk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
+	size_t key_ret_len, key_size = strlen(vk_hex) / 2;
 	uint64_t r_payload_offset;
 	struct crypt_pbkdf_type pbkdf = {
 		.type = "argon2i",
@@ -2936,8 +2936,8 @@ static void Luks2KeyslotAdd(void)
 		.sector_size = TST_SECTOR_SIZE
 	};
 
-	crypt_decode_key(key, mk_hex, key_size);
-	crypt_decode_key(key2, mk_hex2, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key2, vk_hex2, key_size);
 
 	/* Cannot use Argon2 in FIPS */
 	if (_fips_mode) {
@@ -3058,13 +3058,13 @@ static void Luks2KeyslotParams(void)
 	char key[128], key2[128];
 	const char *cipher = "aes", *cipher_mode="xts-plain64";
 	const char *cipher_spec = "aes-xts-plain64", *cipher_keyslot = "aes-cbc-essiv:sha256";
-	const char *mk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
-	size_t key_size_ret, key_size = strlen(mk_hex) / 2, keyslot_key_size = 16;
+	const char *vk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *vk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
+	size_t key_size_ret, key_size = strlen(vk_hex) / 2, keyslot_key_size = 16;
 	uint64_t r_payload_offset;
 
-	crypt_decode_key(key, mk_hex, key_size);
-	crypt_decode_key(key2, mk_hex2, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key2, vk_hex2, key_size);
 
 	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE, strlen(PASSPHRASE)));
 	OK_(prepare_keyfile(KEYFILE2, PASSPHRASE1, strlen(PASSPHRASE1)));
@@ -3649,17 +3649,17 @@ static void Luks2Refresh(void)
 	uint64_t r_payload_offset;
 	char key[128], key1[128];
 	const char *cipher = "aes", *mode = "xts-plain64";
-	const char *mk_hex =  "bb21158c733229347bd4e681891e213d94c645be6a5b84818afe7a78a6de7a1a";
-	const char *mk_hex2 = "bb22158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex =  "bb21158c733229347bd4e681891e213d94c645be6a5b84818afe7a78a6de7a1a";
+	const char *vk_hex2 = "bb22158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
+	size_t key_size = strlen(vk_hex) / 2;
 	struct crypt_params_luks2 params = {
 		.sector_size = 512,
 		.integrity = "aead"
 	};
 	struct crypt_active_device cad = {};
 
-	crypt_decode_key(key, mk_hex, key_size);
-	crypt_decode_key(key1, mk_hex2, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key1, vk_hex2, key_size);
 
 	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
@@ -3871,11 +3871,11 @@ static void Luks2Reencryption(void)
 	};
 	dev_t devno;
 
-	const char *mk_hex = "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	char key[128];
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	/* reencryption currently depends on kernel keyring support in dm-crypt */
 	if (!t_dm_crypt_keyring_support())
