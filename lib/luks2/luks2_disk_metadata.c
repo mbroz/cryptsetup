@@ -707,7 +707,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 			memcpy(&hdr_disk2, &hdr_disk1, LUKS2_HDR_BIN_LEN);
 			r = crypt_random_get(cd, (char*)hdr_disk2.salt, sizeof(hdr_disk2.salt), CRYPT_RND_SALT);
 			if (r)
-				log_dbg(cd, "Cannot generate master salt.");
+				log_dbg(cd, "Cannot generate header salt.");
 			else {
 				hdr_from_disk(&hdr_disk1, &hdr_disk2, hdr, 0);
 				r = hdr_write_disk(cd, device, hdr, json_area1, 1);
@@ -728,7 +728,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 			memcpy(&hdr_disk1, &hdr_disk2, LUKS2_HDR_BIN_LEN);
 			r = crypt_random_get(cd, (char*)hdr_disk1.salt, sizeof(hdr_disk1.salt), CRYPT_RND_SALT);
 			if (r)
-				log_dbg(cd, "Cannot generate master salt.");
+				log_dbg(cd, "Cannot generate header salt.");
 			else {
 				hdr_from_disk(&hdr_disk2, &hdr_disk1, hdr, 1);
 				r = hdr_write_disk(cd, device, hdr, json_area2, 0);
