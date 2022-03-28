@@ -2108,7 +2108,6 @@ int main(int argc, char *argv[])
 		else if (!strcmp("--debug", argv[i]))
 			_debug = _verbose = 1;
 	}
-			_debug = _verbose = 1;
 
 	/* Handle interrupt properly */
 	sigaction(SIGINT, &sa, NULL);
