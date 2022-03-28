@@ -22,7 +22,7 @@
   This is the FAQ (Frequently Asked Questions) for cryptsetup.  It covers
   Linux disk encryption with plain dm-crypt (one passphrase, no
   management, no metadata on disk) and LUKS (multiple user keys with one
-  master key, anti-forensic features, metadata block at start of device,
+  volume key, anti-forensic features, metadata block at start of device,
   ...).  The latest version of this FAQ should usually be available at
   https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions
 
@@ -69,8 +69,8 @@
   doing encrypted backup.
 
   CLONING/IMAGING: If you clone or image a LUKS container, you make a copy
-  of the LUKS header and the master key will stay the same!  That means
-  that if you distribute an image to several machines, the same master key
+  of the LUKS header and the volume key will stay the same!  That means
+  that if you distribute an image to several machines, the same volume key
   will be used on all of them, regardless of whether you change the
   passphrases.  Do NOT do this!  If you do, a root-user on any of the
   machines with a mapped (decrypted) container or a passphrase on that
@@ -98,12 +98,12 @@
   checking for an existing LUKS header is shifted to the script.  This is
   a more general form of the previous item.
 
-  LUKS PASSPHRASE IS NOT THE MASTER KEY: The LUKS passphrase is not used
-  in deriving the master key.  It is used in decrypting a master key that
+  LUKS PASSPHRASE IS NOT THE VOLUME KEY: The LUKS passphrase is not used
+  in deriving the volume key.  It is used in decrypting a volume key that
   is randomly selected on header creation.  This means that if you create
   a new LUKS header on top of an old one with exactly the same parameters
   and exactly the same passphrase as the old one, it will still have a
-  different master key and your data will be permanently lost.
+  different volume key and your data will be permanently lost.
 
   PASSPHRASE CHARACTER SET: Some people have had difficulties with this
   when upgrading distributions.  It is highly advisable to only use the 95
@@ -534,7 +534,7 @@
   common mistakes.  Plain dm-crypt is for experts.
 
   Plain format is just that: It has no metadata on disk, reads all
-  parameters from the commandline (or the defaults), derives a master-key
+  parameters from the commandline (or the defaults), derives a volume-key
   from the passphrase and then uses that to de-/encrypt the sectors of the
   device, with a direct 1:1 mapping between encrypted and decrypted
   sectors.
@@ -572,7 +572,7 @@
   LUKS format uses a metadata header and 8 key-slot areas that are being
   placed at the beginning of the disk, see below under "What does the LUKS
   on-disk format looks like?".  The passphrases are used to decrypt a
-  single master key that is stored in the anti-forensic stripes.  LUKS2
+  single volume key that is stored in the anti-forensic stripes.  LUKS2
   adds some more flexibility.
 
   Advantages are a higher usability, automatic configuration of
@@ -704,11 +704,11 @@
 ```   
 
 
-  * **2.11 How do I read the LUKS master key from file?**
+  * **2.11 How do I read the LUKS volume key from file?**
 
   The question you should ask yourself first is why you would want to do
   this.  The only legitimate reason I can think of is if you want to have
-  two LUKS devices with the same master key.  Even then, I think it would
+  two LUKS devices with the same volume key.  Even then, I think it would
   be preferable to just use key-slots with the same passphrase, or to use
   plain dm-crypt instead.  If you really have a good reason, please tell
   me.  If I am convinced, I will add how to do this here.
@@ -811,10 +811,10 @@
   That said, as cryptsetup is under good version control and a malicious
   change should be noticed sooner or later, but it may take a while. 
   Also, the attacker model makes compromising the sources in a non-obvious
-  way pretty hard.  Sure, you could put the master-key somewhere on disk,
+  way pretty hard.  Sure, you could put the volume-key somewhere on disk,
   but that is rather obvious as soon as somebody looks as there would be
   data in an empty LUKS container in a place it should not be.  Doing this
-  in a more nefarious way, for example hiding the master-key in the salts,
+  in a more nefarious way, for example hiding the volume-key in the salts,
   would need a look at the sources to be discovered, but I think that
   somebody would find that sooner or later as well.
 
@@ -1411,8 +1411,8 @@
   If your header does not contain an intact key-slot salt, best go
   directly to the last stage ("Acceptance") and think about what to do
   now.  There is one exception that I know of: If your LUKS1 container is
-  still open, then it may be possible to extract the master key from the
-  running system.  See Item "How do I recover the master key from a mapped
+  still open, then it may be possible to extract the volume key from the
+  running system.  See Item "How do I recover the volume key from a mapped
   LUKS1 container?" in Section "Backup and Data Recovery".
 
   For LUKS2, things are both better and worse.  First, the salts are in a
@@ -1602,14 +1602,14 @@
   * **5.13 Is LUKS with default parameters less secure on a slow CPU?**
 
   Unfortunately, yes.  However the only aspect affected is the protection
-  for low-entropy passphrase or master-key.  All other security aspects
+  for low-entropy passphrase or volume-key.  All other security aspects
   are independent of CPU speed.
 
-  The master key is less critical, as you really have to work at it to
+  The volume key is less critical, as you really have to work at it to
   give it low entropy.  One possibility to mess this up is to supply the
-  master key yourself.  If that key is low-entropy, then you get what you
+  volume key yourself.  If that key is low-entropy, then you get what you
   deserve.  The other known possibility to create a LUKS container with a
-  bad master key is to use /dev/urandom for key generation in an
+  bad volume key is to use /dev/urandom for key generation in an
   entropy-starved situation (e.g.  automatic installation on an embedded
   device without network and other entropy sources or installation in a VM
   under certain circumstances).
@@ -1704,7 +1704,7 @@
   From the aspect of actual security, LUKS with default parameters should
   be as good as most things that are FIPS-140-2 certified, although you
   may want to make sure to use /dev/random (by specifying --use-random on
-  luksFormat) as randomness source for the master key to avoid being
+  luksFormat) as randomness source for the volume key to avoid being
   potentially insecure in an entropy-starved situation.
 
 
@@ -1866,7 +1866,7 @@
   set the PBKDF2 iteration count to 1 (it is > 10'000 normally), you could
   (maybe) derive a different passphrase that gives you the the same
   slot-key.  But if you have the slot-key, you can already unlock the
-  key-slot and get the master key, breaking everything.  So basically,
+  key-slot and get the volume key, breaking everything.  So basically,
   this SHA-1 vulnerability allows you to open a LUKS1 container with high
   effort when you already have it open.
 
@@ -2026,7 +2026,7 @@
   Under some circumstances (damaged header), this fails.  Then use the
   following steps in case it is LUKS1:
 
-  First determine the master-key size:
+  First determine the volume (volume) key size:
 ```
     cryptsetup luksDump <device>
 ```
@@ -2156,15 +2156,15 @@
   * **6.6 What do I need to backup if I use "decrypt_derived"?**
 
   This is a script in Debian, intended for mounting /tmp or swap with a
-  key derived from the master key of an already decrypted device.  If you
+  key derived from the volume key of an already decrypted device.  If you
   use this for an device with data that should be persistent, you need to
-  make sure you either do not lose access to that master key or have a
+  make sure you either do not lose access to that volume key or have a
   backup of the data.  If you derive from a LUKS device, a header backup
-  of that device would cover backing up the master key.  Keep in mind that
+  of that device would cover backing up the volume key.  Keep in mind that
   this does not protect against disk loss.
 
   Note: If you recreate the LUKS header of the device you derive from
-  (using luksFormat), the master key changes even if you use the same
+  (using luksFormat), the volume key changes even if you use the same
   passphrase(s) and you will not be able to decrypt the derived device
   with the new LUKS header.
 
@@ -2228,7 +2228,7 @@
   also damage the key-slots in part or in full.  See also last item.
 
 
-  * **6.10 How do I recover the master key from a mapped LUKS1 container?**
+  * **6.10 How do I recover the volume key from a mapped LUKS1 container?**
 
   Note: LUKS2 uses the kernel keyring to store keys and hence this
   procedure does not work unless you have explicitly disabled the use of
@@ -2241,26 +2241,26 @@
 
   WARNING: Things go wrong, do a full backup before trying this!
 
-  WARNING: This exposes the master key of the LUKS1 container.  Note that
-  both ways to recreate a LUKS header with the old master key described
-  below will write the master key to disk.  Unless you are sure you have
+  WARNING: This exposes the volume key of the LUKS1 container.  Note that
+  both ways to recreate a LUKS header with the old volume key described
+  below will write the volume key to disk.  Unless you are sure you have
   securely erased it afterwards, e.g.  by writing it to an encrypted
   partition, RAM disk or by erasing the filesystem you wrote it to by a
-  complete overwrite, you should change the master key afterwards. 
-  Changing the master key requires a full data backup, luksFormat and then
+  complete overwrite, you should change the volume key afterwards. 
+  Changing the volume key requires a full data backup, luksFormat and then
   restore of the backup.  Alternatively the tool cryptsetup-reencrypt from
-  the cryptsetup package can be used to change the master key (see its
+  the cryptsetup package can be used to change the volume key (see its
   man-page), but a full backup is still highly recommended.
 
   First, there is a script by Milan that automates the whole process,
-  except generating a new LUKS1 header with the old master key (it prints
+  except generating a new LUKS1 header with the old volume key (it prints
   the command for that though):
 
   https://gitlab.com/cryptsetup/cryptsetup/blob/master/misc/luks-header-from-active
 
   You can also do this manually. Here is how:
 
-  - Get the master key from the device mapper.  This is done by the
+  - Get the volume key from the device mapper.  This is done by the
   following command.  Substitute c5 for whatever you mapped to:
 ```
     # dmsetup table --target crypt --showkey /dev/mapper/c5
@@ -2271,13 +2271,13 @@
     0 7:0 4096
 ```
   The result is actually one line, wrapped here for clarity.  The long
-  hex string is the master key.
+  hex string is the volume key.
 
-  - Convert the master key to a binary file representation.  You can do
+  - Convert the volume key to a binary file representation.  You can do
   this manually, e.g.  with hexedit.  You can also use the tool "xxd"
   from vim like this:
 ```
-    echo "a1704d9....53d0d09" | xxd -r -p > <master-key-file>
+    echo "a1704d9....53d0d09" | xxd -r -p > <volume-key-file>
 ```
 
   - Do a luksFormat to create a new LUKS1 header.
@@ -2287,20 +2287,20 @@
 
   Unmap the device before you do that (luksClose). Then do
 ```
-    cryptsetup luksFormat --master-key-file=<master-key-file> <luks device>
+    cryptsetup luksFormat --volume-key-file=<volume-key-file> <luks device>
 ```
   Note that if the container was created with other than the default
   settings of the cryptsetup version you are using, you need to give
   additional parameters specifying the deviations.  If in doubt, try the
   script by Milan.  It does recover the other parameters as well.
 
-  Side note: This is the way the decrypt_derived script gets at the master
-  key.  It just omits the conversion and hashes the master key string.
+  Side note: This is the way the decrypt_derived script gets at the volume
+  key.  It just omits the conversion and hashes the volume key string.
 
   - If the header is intact and you just forgot the passphrase, just
   set a new passphrase like this:
 ```
-      cryptsetup luksAddKey --master-key-file=<master-key-file> <luks device>
+      cryptsetup luksAddKey --volume-key-file=<volume-key-file> <luks device>
 ```
   You may want to disable the old one afterwards.
 
@@ -2327,7 +2327,7 @@
 
   Header and key-slot descriptors fill the first 592 bytes.  The key-slot
   size depends on the creation parameters, namely on the number of
-  anti-forensic stripes, key material offset and master key size.
+  anti-forensic stripes, key material offset and volume key size.
 
   With the default parameters, each key-slot is a bit less than 128kiB in
   size.  Due to sector alignment of the key-slot start, that means the key
@@ -2380,7 +2380,7 @@ offset  length  name             data type  description
    104      4                               (512 bytes per sector)
 0x006c   0x04   key-bytes        uint32_t   number of bytes in key
    108      4
-0x0070   0x14   mk-digest        byte[]     master key checksum
+0x0070   0x14   mk-digest        byte[]     volume key checksum
    112     20                               calculated with PBKDF2
 0x0084   0x20   mk-digest-salt   byte[]     salt for PBKDF2 when
    132     32                               calculating mk-digest
@@ -2485,12 +2485,12 @@ offset  length  name                  data type  description
   * **6.15 Can I clone a LUKS container?**
 
   You can, but it breaks security, because the cloned container has the
-  same header and hence the same master key.  Even if you change the 
-  passphrase(s), the master key stays the same.  That means whoever has 
+  same header and hence the same volume key.  Even if you change the 
+  passphrase(s), the volume key stays the same.  That means whoever has 
   access to one of the clones can decrypt them all, completely bypassing 
   the passphrases. 
 
-  While you can use cryptsetup-reencrypt to change the master key, 
+  While you can use cryptsetup-reencrypt to change the volume key, 
   this is probably more effort than to create separate LUKS containers
   in the first place.
 
@@ -2503,7 +2503,7 @@ offset  length  name                  data type  description
 
   Note that if you need to ship (e.g.) cloned LUKS containers with a
   default passphrase, that is fine as long as each container was
-  individually created (and hence has its own master key).  In this case,
+  individually created (and hence has its own volume key).  In this case,
   changing the default passphrase will make it secure again.
 
 
@@ -2912,7 +2912,7 @@ offset  length  name                  data type  description
   password stored in a database, but there are similarities.
 
   LUKS does not store passwords on disk.  Instead, the passwords are used to
-  decrypt the master-key with it and that one is stored on disk in encrypted
+  decrypt the volume-key with it and that one is stored on disk in encrypted
   form.  If you have a good password, with, say, more than 80 bits of
   entropy, you could just put the password through a single crypto-hash (to
   turn it into something that can be used as a key) and that would be secure. 
