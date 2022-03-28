@@ -410,9 +410,9 @@ tst=$($CRYPTSETUP -q luksUUID $LOOPDEV)
 [ "$tst"x = "$TEST_UUID"x ] || fail
 
 prepare "[16] luksFormat" wipe
-echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --master-key-file /dev/urandom --type luks2 $LOOPDEV || fail
-echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --master-key-file /dev/urandom --type luks2 $LOOPDEV -d $KEY1 || fail
-$CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --master-key-file /dev/urandom -s 256 --uuid $TEST_UUID --type luks2 $LOOPDEV $KEY1 || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom --type luks2 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom --type luks2 $LOOPDEV -d $KEY1 || fail
+$CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom -s 256 --uuid $TEST_UUID --type luks2 $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -d $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # open by UUID
@@ -427,21 +427,21 @@ $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # open by volume key
-echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -s 256 --master-key-file $KEY1 --type luks2 $LOOPDEV || fail
-$CRYPTSETUP luksOpen --master-key-file /dev/urandom $LOOPDEV $DEV_NAME 2>/dev/null && fail
-$CRYPTSETUP luksOpen --master-key-file $KEY1 $LOOPDEV $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -s 256 --volume-key-file $KEY1 --type luks2 $LOOPDEV || fail
+$CRYPTSETUP luksOpen --volume-key-file /dev/urandom $LOOPDEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP luksOpen --volume-key-file $KEY1 $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 
 prepare "[17] AddKey volume key, passphrase and keyfile" wipe
-# masterkey
-echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --master-key-file /dev/zero --key-slot 3 || fail
+# volumekey
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --volume-key-file /dev/zero --key-slot 3 || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2" || fail
-echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --master-key-file /dev/zero --key-slot 4 || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --volume-key-file /dev/zero --key-slot 4 || fail
 echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 4 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "4: luks2" || fail
-echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --master-key-file /dev/null --key-slot 5 2>/dev/null && fail
-$CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --master-key-file /dev/zero --key-slot 5 $KEY1 || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --volume-key-file /dev/null --key-slot 5 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV --volume-key-file /dev/zero --key-slot 5 $KEY1 || fail
 $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 5 -d $KEY1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2" || fail
 
@@ -573,16 +573,18 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --key-size 256 $FAST_PBKDF_OPT --uuid $TE
 echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $LOOPDEV -d $KEY1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "0: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q $TEST_UUID || fail
-echo $PWDW | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP luksDump $LOOPDEV --dump-master-key | grep -q "MK dump:" || fail
-$CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key -d $KEY1 | grep -q "MK dump:" || fail
+echo $PWDW | $CRYPTSETUP luksDump $LOOPDEV --dump-volume-key 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksDump $LOOPDEV --dump-volume-key | grep -q "MK dump:" || fail
+$CRYPTSETUP luksDump -q $LOOPDEV --dump-volume-key -d $KEY1 | grep -q "MK dump:" || fail
 echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file $VK_FILE >/dev/null || fail
-echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-master-key --master-key-file $VK_FILE 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --master-key-file $VK_FILE $LOOPDEV || fail
+rm -f $VK_FILE
+echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-volume-key --volume-key-file $VK_FILE >/dev/null || fail
+echo $PWD1 | $CRYPTSETUP luksDump -q $LOOPDEV --dump-volume-key --volume-key-file $VK_FILE 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --volume-key-file $VK_FILE $LOOPDEV || fail
 # Use volume key file without keyslots
 $CRYPTSETUP luksErase -q $LOOPDEV || fail
-$CRYPTSETUP luksOpen --master-key-file $VK_FILE --key-size 256 --test-passphrase $LOOPDEV || fail
-echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --master-key-file $VK_FILE --key-size 256 $LOOPDEV || fail
+$CRYPTSETUP luksOpen --volume-key-file $VK_FILE --key-size 256 --test-passphrase $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --volume-key-file $VK_FILE --key-size 256 $LOOPDEV || fail
 echo $PWD1 | $CRYPTSETUP luksOpen --test-passphrase $LOOPDEV || fail
 
 prepare "[22] remove disappeared device" wipe
@@ -965,11 +967,11 @@ echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 16 $LOOPDEV || 
 echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 32 -S 2 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2 (unbound)" || fail
 dd if=/dev/urandom of=$KEY_FILE0 bs=64 count=1 > /dev/null 2>&1 || fail
-echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 512 -S 3 --master-key-file $KEY_FILE0 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 512 -S 3 --volume-key-file $KEY_FILE0 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" || fail
 # unbound key size is required
 echo $PWD1 | $CRYPTSETUP -q luksAddKey --unbound $LOOPDEV 2>/dev/null && fail
-echo $PWD3 | $CRYPTSETUP -q luksAddKey --unbound --master-key-file /dev/urandom $LOOPDEV 2> /dev/null && fail
+echo $PWD3 | $CRYPTSETUP -q luksAddKey --unbound --volume-key-file /dev/urandom $LOOPDEV 2> /dev/null && fail
 # do not allow to replace keyslot by unbound slot
 echo $PWD1 | $CRYPTSETUP -q luksAddKey -S5 --unbound -s 32 $LOOPDEV 2>/dev/null && fail
 echo $PWD2 | $CRYPTSETUP -q open $LOOPDEV $DEV_NAME 2> /dev/null && fail
@@ -988,14 +990,14 @@ echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP close $DEV_NAME || fail
 $CRYPTSETUP luksKillSlot -q $LOOPDEV 2
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2 (unbound)" && fail
-echo $PWD3 | $CRYPTSETUP luksDump --unbound --master-key-file $KEY_FILE1 $LOOPDEV 2> /dev/null && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 $LOOPDEV 2> /dev/null && fail
 echo $PWD3 | $CRYPTSETUP luksDump --unbound 2> /dev/null $LOOPDEV 2> /dev/null && fail
-echo $PWD3 | $CRYPTSETUP luksDump --unbound --master-key-file $KEY_FILE1 -S3 $LOOPDEV > /dev/null || fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 -S3 $LOOPDEV > /dev/null || fail
 diff $KEY_FILE0 $KEY_FILE1 || fail
-echo $PWD3 | $CRYPTSETUP luksDump --unbound --master-key-file $KEY_FILE1 -S3 $LOOPDEV 2> /dev/null && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 -S3 $LOOPDEV 2> /dev/null && fail
 diff $KEY_FILE0 $KEY_FILE1 || fail
 rm $KEY_FILE1 || fail
-echo $PWD3 | $CRYPTSETUP luksDump --unbound --master-key-file $KEY_FILE1 -S3 $LOOPDEV | grep -q "Unbound Key:" && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 -S3 $LOOPDEV | grep -q "Unbound Key:" && fail
 echo $PWD3 | $CRYPTSETUP luksDump --unbound -S3 $LOOPDEV | grep -q "Unbound Key:" || fail
 $CRYPTSETUP luksKillSlot -q $LOOPDEV 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" && fail
