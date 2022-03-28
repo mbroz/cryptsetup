@@ -531,9 +531,9 @@ static int backup_luks_headers(struct reenc_ctx *rc)
 		}
 		r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size,
 			rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen);
-	} else if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
+	} else if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		log_dbg("Loading new key from file.");
-		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, key_size);
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, key_size);
 	}
 
 	if (r < 0)

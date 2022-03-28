@@ -458,7 +458,7 @@ static int action_open_bitlk(void)
 	}
 	set_activation_flags(&activate_flags);
 
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		keysize = crypt_get_volume_key_size(cd);
 		if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
 			log_err(_("Cannot determine volume key size for BITLK, please use --key-size option."));
@@ -467,7 +467,7 @@ static int action_open_bitlk(void)
 		} else if (!keysize)
 			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
 
-		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
@@ -558,7 +558,7 @@ static int action_tcryptDump(void)
 	if (r < 0)
 		goto out;
 
-	if (ARG_SET(OPT_DUMP_MASTER_KEY_ID))
+	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
 		r = tcryptDump_with_volume_key(cd);
 	else
 		r = crypt_dump(cd);
@@ -602,8 +602,8 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 		goto out;
 	tools_keyslot_msg(r, UNLOCKED);
 
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), vk, vk_size);
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
 		if (r < 0)
 			goto out;
 	}
@@ -613,8 +613,8 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
 	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
 	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		log_std("Key stored to file %s.\n", ARG_STR(OPT_MASTER_KEY_FILE_ID));
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		log_std("Key stored to file %s.\n", ARG_STR(OPT_VOLUME_KEY_FILE_ID));
 		goto out;
 	}
 	log_std("MK dump:\t");
@@ -644,7 +644,7 @@ static int action_bitlkDump(void)
 	if (r < 0)
 		goto out;
 
-	if (ARG_SET(OPT_DUMP_MASTER_KEY_ID))
+	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
 		r = bitlkDump_with_volume_key(cd);
 	else
 		r = crypt_dump(cd);
@@ -1370,8 +1370,8 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	if (r < 0)
 		goto out;
 
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 	}
@@ -1471,7 +1471,7 @@ static int action_open_luks(void)
 
 	set_activation_flags(&activate_flags);
 
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		keysize = crypt_get_volume_key_size(cd);
 		if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
 			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
@@ -1480,7 +1480,7 @@ static int action_open_luks(void)
 		} else if (!keysize)
 			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
 
-		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
@@ -1719,8 +1719,8 @@ static int luksAddUnboundKey(void)
 		goto out;
 	}
 
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 
@@ -1784,7 +1784,7 @@ static int action_luksAddKey(void)
 		goto out;
 	}
 
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
 			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
 			r = -EINVAL;
@@ -1792,7 +1792,7 @@ static int action_luksAddKey(void)
 		} else if (!keysize)
 			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
 
-		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &key, keysize);
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
 
@@ -2051,8 +2051,8 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 		goto out;
 	tools_keyslot_msg(r, UNLOCKED);
 
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), vk, vk_size);
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
 		if (r < 0)
 			goto out;
 	}
@@ -2063,8 +2063,8 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	log_std("Payload offset:\t%d\n", (int)crypt_get_data_offset(cd));
 	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
 	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		log_std("Key stored to file %s.\n", ARG_STR(OPT_MASTER_KEY_FILE_ID));
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		log_std("Key stored to file %s.\n", ARG_STR(OPT_VOLUME_KEY_FILE_ID));
 		goto out;
 	}
 	log_std("MK dump:\t");
@@ -2123,8 +2123,8 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 		goto out;
 	tools_keyslot_msg(r, UNLOCKED);
 
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), uk, uk_size);
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), uk, uk_size);
 		if (r < 0)
 			goto out;
 	}
@@ -2133,8 +2133,8 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 	log_std("UUID:    \t%s\n", crypt_get_uuid(cd));
 	log_std("Keyslot: \t%d\n", ARG_INT32(OPT_KEY_SLOT_ID));
 	log_std("Key bits:\t%d\n", (int)uk_size * 8);
-	if (ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		log_std("Key stored to file %s.\n", ARG_STR(OPT_MASTER_KEY_FILE_ID));
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		log_std("Key stored to file %s.\n", ARG_STR(OPT_VOLUME_KEY_FILE_ID));
 		goto out;
 	}
 	log_std("Unbound Key:\t");
@@ -2165,7 +2165,7 @@ static int action_luksDump(void)
 		goto out;
 	}
 
-	if (ARG_SET(OPT_DUMP_MASTER_KEY_ID))
+	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
 		r = luksDump_with_volume_key(cd);
 	else if (ARG_SET(OPT_UNBOUND_ID))
 		r = luksDump_with_unbound_key(cd);

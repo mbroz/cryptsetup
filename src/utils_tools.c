@@ -377,7 +377,7 @@ int tools_is_stdin(const char *key_file)
 	return strcmp(key_file, "-") ? 0 : 1;
 }
 
-int tools_read_mk(const char *file, char **key, int keysize)
+int tools_read_vk(const char *file, char **key, int keysize)
 {
 	int fd = -1, r = -EINVAL;
 
