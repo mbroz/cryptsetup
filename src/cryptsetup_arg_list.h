@@ -53,7 +53,7 @@ ARG(OPT_DISABLE_VERACRYPT, '\0', POPT_ARG_NONE, N_("Do not scan for VeraCrypt co
 
 ARG(OPT_DUMP_JSON, '\0', POPT_ARG_NONE, N_("Dump info in JSON format (LUKS2 only)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_DUMP_VOLUME_KEY, '\0', POPT_ARG_NONE, N_("Dump volume (master) key instead of keyslots info"), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_DUMP_VOLUME_KEY, '\0', POPT_ARG_NONE, N_("Dump volume key instead of keyslots info"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_ENCRYPT, '\0', POPT_ARG_NONE, N_("Encrypt LUKS2 device (in-place encryption)."), NULL, CRYPT_ARG_BOOL, {}, {})
 
@@ -107,7 +107,7 @@ ARG(OPT_LUKS2_KEYSLOTS_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 header keyslots ar
 
 ARG(OPT_LUKS2_METADATA_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 header metadata area size"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_LUKS2_METADATA_SIZE_ACTIONS)
 
-ARG(OPT_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Read the volume (master) key from file."), NULL, CRYPT_ARG_STRING, {}, {})
+ARG(OPT_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Use the volume key from file."), NULL, CRYPT_ARG_STRING, {}, {})
 
 ARG(OPT_NEW_KEYFILE_OFFSET , '\0', POPT_ARG_STRING, N_("Number of bytes to skip in newly added keyfile"), N_("bytes"), CRYPT_ARG_UINT64, {}, {})
 
@@ -216,3 +216,9 @@ ARG(OPT_USE_DIRECTIO, '\0', POPT_ARG_NONE, N_("Use direct-io when accessing devi
 ARG(OPT_USE_FSYNC, '\0', POPT_ARG_NONE, N_("Use fsync after each block"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_WRITE_LOG, '\0', POPT_ARG_NONE, N_("Update log file after every block"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+/* aliases */
+
+ARG(OPT_DUMP_MASTER_KEY, '\0', POPT_ARG_NONE, N_("Alias for --dump-volume-key"), NULL, CRYPT_ARG_ALIAS, { .o.id = OPT_DUMP_VOLUME_KEY_ID}, {})
+
+ARG(OPT_MASTER_KEY_FILE, '\0', POPT_ARG_STRING, N_("Alias for --dump-volume-key-file"), NULL, CRYPT_ARG_ALIAS, { .o.id = OPT_VOLUME_KEY_FILE_ID}, {})
