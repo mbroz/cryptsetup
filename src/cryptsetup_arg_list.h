@@ -209,7 +209,7 @@ ARG(OPT_VERIFY_PASSPHRASE, 'y', POPT_ARG_NONE, N_("Verifies the passphrase by as
 
 ARG(OPT_BLOCK_SIZE, 'B', POPT_ARG_STRING, N_("Reencryption block size"), N_("MiB"), CRYPT_ARG_UINT32, { .u32_value = 4 }, {})
 
-ARG(OPT_NEW, 'N', POPT_ARG_NONE, N_("Create new header on not encrypted device"), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_NEW, 'N', POPT_ARG_NONE, N_("Create new header on not encrypted device"), NULL, CRYPT_ARG_ALIAS, { .o.id = OPT_ENCRYPT_ID }, {})
 
 ARG(OPT_USE_DIRECTIO, '\0', POPT_ARG_NONE, N_("Use direct-io when accessing devices"), NULL, CRYPT_ARG_BOOL, {}, {})
 
