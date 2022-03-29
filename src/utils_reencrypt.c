@@ -720,8 +720,8 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 	/* volume key */
 	vk_change = !ARG_SET(OPT_KEEP_KEY_ID);
 
-	if (vk_change && ARG_SET(OPT_MASTER_KEY_FILE_ID)) {
-		r = tools_read_mk(ARG_STR(OPT_MASTER_KEY_FILE_ID), &vk, key_size);
+	if (vk_change && ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &vk, key_size);
 		if (r < 0)
 			goto out;
 

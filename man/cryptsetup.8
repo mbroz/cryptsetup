@@ -201,7 +201,7 @@ as soon as possible and mounted (used) before full data area encryption is compl
 
 Action supports following additional \fB<options>\fR [\-\-encrypt, \-\-decrypt, \-\-device\-size,
 \-\-resilience, \-\-resilience-hash, \-\-hotzone-size, \-\-init\-only, \-\-resume\-only,
-\-\-reduce\-device\-size, \-\-master\-key\-file, \-\-key\-size].
+\-\-reduce\-device\-size, \-\-volume\-key\-file, \-\-key\-size].
 
 .SH PLAIN MODE
 Plain dm-crypt encrypts the device sector-by-sector with a
@@ -291,7 +291,7 @@ To use LUKS2, specify \fI\-\-type luks2\fR.
 \-\-key\-size, \-\-key\-slot,
 \-\-key\-file (takes precedence over optional second argument),
 \-\-keyfile\-offset, \-\-keyfile\-size, \-\-use\-random | \-\-use\-urandom,
-\-\-uuid, \-\-master\-key\-file, \-\-iter\-time, \-\-header,
+\-\-uuid, \-\-volume\-key\-file, \-\-iter\-time, \-\-header,
 \-\-pbkdf\-force\-iterations,
 \-\-force\-password, \-\-disable-locks].
 
@@ -320,7 +320,7 @@ the command prompts for it interactively.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-readonly, \-\-test\-passphrase,
-\-\-allow\-discards, \-\-header, \-\-key-slot, \-\-master\-key\-file, \-\-token\-id,
+\-\-allow\-discards, \-\-header, \-\-key-slot, \-\-volume\-key\-file, \-\-token\-id,
 \-\-token\-only, \-\-token-type, \-\-disable\-external\-tokens, \-\-disable\-keyring,
 \-\-disable\-locks, \-\-type, \-\-refresh, \-\-serialize\-memory\-hard\-pbkdf,
 \-\-unbound].
@@ -359,13 +359,13 @@ or read from the file given as positional argument.
 
 \fBNOTE:\fR with \-\-unbound option the action creates new unbound
 LUKS2 keyslot. The keyslot cannot be used for device activation.
-If you don't pass new key via \-\-master\-key\-file option,
+If you don't pass new key via \-\-volume\-key\-file option,
 new random key is generated. Existing passphrase for any active keyslot
 is not required.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
-\-\-new\-keyfile\-size, \-\-key\-slot, \-\-master\-key\-file,
+\-\-new\-keyfile\-size, \-\-key\-slot, \-\-volume\-key\-file,
 \-\-force\-password, \-\-header, \-\-disable\-locks,
 \-\-iter-time, \-\-pbkdf, \-\-pbkdf\-force\-iterations,
 \-\-unbound, \-\-type, \-\-keyslot\-cipher, \-\-keyslot\-key\-size].
@@ -491,29 +491,29 @@ By specifying \-\-type you may query for specific LUKS version.
 .IP
 Dump the header information of a LUKS device.
 
-If the \-\-dump\-master\-key option is used, the LUKS device master key is
-dumped instead of the keyslot info. Together with \-\-master\-key\-file option,
-master key is dumped to a file instead of standard output. Beware that the
-master key cannot be changed without reencryption and can be used to decrypt
+If the \-\-dump\-volume\-key option is used, the LUKS device volume key is
+dumped instead of the keyslot info. Together with \-\-volume\-key\-file option,
+volume key is dumped to a file instead of standard output. Beware that the
+volume key cannot be changed without reencryption and can be used to decrypt
 the data stored in the LUKS container without a passphrase and even without the
-LUKS header. This means that if the master key is compromised, the whole device
+LUKS header. This means that if the volume key is compromised, the whole device
 has to be erased or reencrypted to prevent further access. Use this option carefully.
 
-To dump the master key, a passphrase has to be supplied,
+To dump the volume key, a passphrase has to be supplied,
 either interactively or via \-\-key\-file.
 
 To dump unbound key (LUKS2 format only), \-\-unbound parameter, specific \-\-key-slot
 id and proper passphrase has to be supplied, either interactively or via \-\-key\-file.
-Optional \-\-master\-key\-file parameter enables unbound keyslot dump to a file.
+Optional \-\-volume\-key\-file parameter enables unbound keyslot dump to a file.
 
 To dump LUKS2 JSON metadata (without basic heade information like UUID) use
 \-\-dump\-json\-metadata option.
 
-\fB<options>\fR can be [\-\-dump\-master\-key, \-\-dump\-json\-metadata, \-\-key\-file,
+\fB<options>\fR can be [\-\-dump\-volume\-key, \-\-dump\-json\-metadata, \-\-key\-file,
 \-\-keyfile\-offset, \-\-keyfile\-size, \-\-header, \-\-disable\-locks,
-\-\-master\-key\-file, \-\-type, \-\-unbound, \-\-key-slot].
+\-\-volume\-key\-file, \-\-type, \-\-unbound, \-\-key-slot].
 
-\fBWARNING:\fR If \-\-dump\-master\-key is used with \-\-key\-file
+\fBWARNING:\fR If \-\-dump\-volume\-key is used with \-\-key\-file
 and the argument to \-\-key\-file is '-', no validation question
 will be asked and no warning given.
 .PP
@@ -544,7 +544,7 @@ Note: Using '-' as filename reads the header backup from a file named '-'.
 \fBWARNING:\fR Header and keyslots will be replaced, only
 the passphrases from the backup will work afterward.
 
-This command requires that the master key size and data offset
+This command requires that the volume key size and data offset
 of the LUKS header already on the device and of the header backup
 match. Alternatively, if there is no LUKS header on the device,
 the backup will also be written to it.
@@ -753,15 +753,15 @@ for outer volume so this space can be discarded).
 .IP
 Dump the header information of a TCRYPT device.
 
-If the \-\-dump\-master\-key option is used, the TCRYPT device master key
-is dumped instead of TCRYPT header info. Beware that the master key
-(or concatenated master keys if cipher chain is used)
+If the \-\-dump\-volume\-key option is used, the TCRYPT device volume key
+is dumped instead of TCRYPT header info. Beware that the volume key
+(or concatenated volume keys if cipher chain is used)
 can be used to decrypt the data stored in the TCRYPT container without
 a passphrase.
-This means that if the master key is compromised, the whole device has
+This means that if the volume key is compromised, the whole device has
 to be erased to prevent further access. Use this option carefully.
 
-\fB<options>\fR can be [\-\-dump\-master\-key, \-\-key\-file,
+\fB<options>\fR can be [\-\-dump\-volume\-key, \-\-key\-file,
 \-\-tcrypt\-hidden, \-\-tcrypt\-system, \-\-tcrypt\-backup, \-\-cipher, \-\-hash].
 
 The keyfile parameter allows a combination of file content with the
@@ -795,9 +795,9 @@ and doesn't require superuser privilege.
 For unlocking with the \fBopen\fR a password or a recovery passphrase or
 a startup key must be provided.
 
-Additionally unlocking using master key is
+Additionally unlocking using volume key is
 supported. You must provide BitLocker Full Volume Encryption Key (FVEK)
-using the \-\-master\-key\-file option. The key must be decrypted and
+using the \-\-volume\-key\-file option. The key must be decrypted and
 without the header (only 128/256/512 bits of key data depending on used
 cipher and mode).
 
@@ -812,14 +812,14 @@ Opens the BITLK (a BitLocker-compatible) <device> and sets up
 a mapping <name>.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-readonly, \-\-test\-passphrase,
-\-\-allow\-discards \-\-master\-key\-file].
+\-\-allow\-discards \-\-volume\-key\-file].
 
 .PP
 \fIbitlkDump\fR <device>
 .IP
 Dump the header information of a BITLK device.
 
-\fB<options>\fR can be [\-\-dump\-master\-key \-\-master\-key\-file].
+\fB<options>\fR can be [\-\-dump\-volume\-key \-\-volume\-key\-file].
 
 .PP
 Please note that cryptsetup does not use any Windows BitLocker code, please report
@@ -973,24 +973,24 @@ operation.
 When \-\-new\-keyfile\-offset is also given, reading starts
 after the offset.
 .TP
-.B "\-\-master\-key\-file"
-Use a master key stored in a file.
+.B "\-\-volume\-key\-file, \-\-master\-key\-file (OBSOLETE alias)"
+Use a volume key stored in a file.
 
 For \fIluksFormat\fR this
 allows creating a LUKS header with this specific
-master key. If the master key was taken from an existing
+volume key. If the volume key was taken from an existing
 LUKS header and all other parameters are the same,
 then the new header decrypts the data encrypted with the
-header the master key was taken from.
+header the volume key was taken from.
 
-Action \fIluksDump\fR together with \-\-dump\-master\-key
-option: The volume (master) key is stored in a file instead of
+Action \fIluksDump\fR together with \-\-dump\-volume\-key
+option: The volume key is stored in a file instead of
 being printed out to standard output.
 
-\fBWARNING:\fR If you create your own master key, you
+\fBWARNING:\fR If you create your own volume key, you
 need to make sure to do it right. Otherwise, you can end
 up with a low-entropy or otherwise partially predictable
-master key which will compromise security.
+volume key which will compromise security.
 
 For \fIluksAddKey\fR this allows adding a new passphrase
 without having to know an existing one.
@@ -1002,10 +1002,10 @@ without giving a passphrase.
 For \fIluksDump\fR (LUKS2 only) this option prints content
 of LUKS2 header JSON metadata area.
 .TP
-.B "\-\-dump\-master\-key"
-For \fIluksDump\fR this option includes the master key in the displayed
-information. Use with care, as the master key can be used to
-bypass the passphrases, see also option \-\-master\-key\-file.
+.B "\-\-dump\-volume\-key, \-\-dump\-master\-key (OBSOLETE alias)"
+For \fIluksDump\fR this option includes the volume key in the displayed
+information. Use with care, as the volume key can be used to
+bypass the passphrases, see also option \-\-volume\-key\-file.
 .TP
 .B "\-\-json\-file"
 Read token json from a file or write token to it. See \fItoken\fR action for more
@@ -1021,7 +1021,7 @@ option.
 .TP
 .B "\-\-use\-urandom"
 For \fIluksFormat\fR these options define which kernel random number
-generator will be used to create the master key (which is a
+generator will be used to create the volume key (which is a
 long-term key).
 
 See \fBNOTES ON RANDOM NUMBER GENERATORS\fR for more
@@ -1753,7 +1753,7 @@ There are two types of randomness cryptsetup/LUKS needs. One type
 (which always uses /dev/urandom) is used for salts, the AF splitter
 and for wiping deleted keyslots.
 
-The second type is used for the volume (master) key. You can switch
+The second type is used for the volume key. You can switch
 between using /dev/random and /dev/urandom  here, see
 \fP\-\-use\-random\fR and \fP\-\-use\-urandom\fR
 options. Using /dev/random on a system without enough entropy sources

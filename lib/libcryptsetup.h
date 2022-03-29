@@ -1363,8 +1363,8 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * @note For VERITY the volume key means root hash required for activation.
  * 	 Because kernel dm-verity is always read only, you have to provide
  * 	 CRYPT_ACTIVATE_READONLY flag always.
- * @note For TCRYPT the volume key should be always NULL and because master
- * 	 key from decrypted header is used instead.
+ * @note For TCRYPT the volume key should be always NULL
+ * 	 the key from decrypted header is used instead.
  */
 int crypt_activate_by_volume_key(struct crypt_device *cd,
 	const char *name,

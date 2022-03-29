@@ -1489,10 +1489,10 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 256 -c aes-cbc-essiv:sha2
 echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
 check_hash $PWD1 $HASH1
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -S0 $FAST_PBKDF_ARGON --master-key-file $VKEY1 -s 128 || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -S0 $FAST_PBKDF_ARGON --volume-key-file $VKEY1 -s 128 || fail
 check_hash $PWD1 $HASH1
 $CRYPTSETUP luksErase -q $DEV || fail
-echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_ARGON --master-key-file $VKEY1 -s 128 $DEV || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_ARGON --volume-key-file $VKEY1 -s 128 $DEV || fail
 check_hash $PWD1 $HASH1
 
 echo "[24] Reencryption with initial cipher_null"

@@ -41,7 +41,7 @@ To start (or continue) re-encryption for <device> use:
 \fB<options>\fR can be [\-\-batch-mode, \-\-block-size, \-\-cipher | \-\-keep-key,
 \-\-debug, \-\-device-size, \-\-hash, \-\-header, \-\-iter-time | \-\-pbkdf\-force\-iterations,
 \-\-key-file, \-\-key-size, \-\-key-slot, \-\-keyfile-offset, \-\-keyfile-size,
-\-\-master\-key\-file, \-\-tries, \-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel,
+\-\-volume\-key\-file, \-\-tries, \-\-pbkdf, \-\-pbkdf\-memory, \-\-pbkdf\-parallel,
 \-\-progress-frequency, \-\-use-directio, \-\-use-random | \-\-use-urandom, \-\-use-fsync,
 \-\-uuid, \-\-verbose, \-\-write-log]
 
@@ -152,8 +152,8 @@ Read a maximum of \fIvalue\fR bytes from the key file.
 Default is to read the whole file up to the compiled-in
 maximum.
 .TP
-.B "\-\-master\-key\-file"
-Use new volume (master) key stored in a file.
+.B "\-\-volume\-key\-file, \-\-master\-key\-file (OBSOLETE alias)"
+Use new volume key stored in a file.
 .TP
 .B "\-\-new, \-N"
 Create new header (encrypt not yet encrypted device).

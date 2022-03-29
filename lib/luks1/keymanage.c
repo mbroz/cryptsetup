@@ -817,7 +817,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
-	/* Compute master key digest */
+	/* Compute volume key digest */
 	pbkdf = crypt_get_pbkdf(ctx);
 	r = crypt_benchmark_pbkdf_internal(ctx, pbkdf, vk->keylength);
 	if (r < 0)
@@ -926,7 +926,7 @@ int LUKS_set_key(unsigned int keyIndex,
 		goto out;
 
 	/*
-	 * AF splitting, the masterkey stored in vk->key is split to AfKey
+	 * AF splitting, the volume key stored in vk->key is split to AfKey
 	 */
 	assert(vk->keylength == hdr->keyBytes);
 	AFEKSize = AF_split_sectors(vk->keylength, hdr->keyblock[keyIndex].stripes) * SECTOR_SIZE;

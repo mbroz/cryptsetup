@@ -325,14 +325,14 @@ static void AddDevicePlain(void)
 
 	const char *passphrase = PASSPHRASE;
 	// hashed hex version of PASSPHRASE
-	const char *mk_hex = "ccadd99b16cd3d200c22d6db45d8b6630ef3d936767127347ec8a76ab992c2ea";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "ccadd99b16cd3d200c22d6db45d8b6630ef3d936767127347ec8a76ab992c2ea";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 
 	uint64_t size, r_size;
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 	FAIL_(crypt_init(&cd, ""), "empty device string");
 	FAIL_(crypt_init(&cd, DEVICE_WRONG), "nonexistent device name ");
 	FAIL_(crypt_init(&cd, DEVICE_CHAR), "character device as backing device");
@@ -798,16 +798,16 @@ static void AddDeviceLuks(void)
 	char key[128], key2[128], key3[128];
 
 	const char *passphrase = "blabla", *passphrase2 = "nsdkFI&Y#.sd";
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	const char *mk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *vk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size_1;
 	struct crypt_pbkdf_type pbkdf;
 
-	crypt_decode_key(key, mk_hex, key_size);
-	crypt_decode_key(key3, mk_hex2, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key3, vk_hex2, key_size);
 
 	// init test devices
 	OK_(get_luks_offsets(1, key_size, 0, 0, &r_header_size, &r_payload_offset));
@@ -1133,13 +1133,13 @@ static void LuksHeaderRestore(void)
 	};
 	char key[128], key2[128], cmd[256];
 
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 5000));
@@ -1220,14 +1220,14 @@ static void LuksHeaderLoad(void)
 	};
 	char key[128], cmd[256];
 
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size;
 	uint64_t mdata_size, keyslots_size;
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	// prepare test env
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, &r_header_size, &r_payload_offset));
@@ -1332,15 +1332,15 @@ static void LuksHeaderBackup(void)
 	char key[128];
 	int fd, ro = O_RDONLY;
 
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
 
 	const char *passphrase = PASSPHRASE;
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
@@ -1414,13 +1414,13 @@ static void ResizeDeviceLuks(void)
 	};
 	char key[128];
 
-	const char *mk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(mk_hex) / 2;
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size;
 
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 
 	// prepare env
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
@@ -1502,7 +1502,7 @@ static void HashDevicePlain(void)
 	};
 
 	size_t key_size;
-	const char *mk_hex, *keystr;
+	const char *vk_hex, *keystr;
 	char key[256];
 
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -1515,41 +1515,41 @@ static void HashDevicePlain(void)
 
 	// hash PLAIN, exact key
 	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
-	mk_hex = "caffeecaffeecaffeecaffeecaffee88";
+	vk_hex = "caffeecaffeecaffeecaffeecaffee88";
 	key_size = 16;
-	crypt_decode_key(key, mk_hex, key_size);
+	crypt_decode_key(key, vk_hex, key_size);
 	OK_(prepare_keyfile(KEYFILE1, key, key_size));
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
-	OK_(strcmp(key, mk_hex));
+	OK_(strcmp(key, vk_hex));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	// Limit plain key
-	mk_hex = "caffeecaffeecaffeecaffeeca000000";
+	vk_hex = "caffeecaffeecaffeecaffeeca000000";
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size - 3, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
-	OK_(strcmp(key, mk_hex));
+	OK_(strcmp(key, vk_hex));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	_remove_keyfiles();
 
 	// hash PLAIN, long key
 	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
-	mk_hex = "caffeecaffeecaffeecaffeecaffee88babebabe";
+	vk_hex = "caffeecaffeecaffeecaffeecaffee88babebabe";
 	key_size = 16;
-	crypt_decode_key(key, mk_hex, key_size);
-	OK_(prepare_keyfile(KEYFILE1, key, strlen(mk_hex) / 2));
+	crypt_decode_key(key, vk_hex, key_size);
+	OK_(prepare_keyfile(KEYFILE1, key, strlen(vk_hex) / 2));
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
-	FAIL_(strcmp(key, mk_hex), "only key length used");
-	OK_(strncmp(key, mk_hex, key_size));
+	FAIL_(strcmp(key, vk_hex), "only key length used");
+	OK_(strncmp(key, vk_hex, key_size));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	// Now without explicit limit
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
-	FAIL_(strcmp(key, mk_hex), "only key length used");
-	OK_(strncmp(key, mk_hex, key_size));
+	FAIL_(strcmp(key, vk_hex), "only key length used");
+	OK_(strncmp(key, vk_hex, key_size));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1558,15 +1558,15 @@ static void HashDevicePlain(void)
 	// Handling of legacy "plain" hash (no hash)
 	params.hash = "plain";
 	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
-	mk_hex = "aabbcaffeecaffeecaffeecaffeecaff";
+	vk_hex = "aabbcaffeecaffeecaffeecaffeecaff";
 	key_size = 16;
-	crypt_decode_key(key, mk_hex, key_size);
-	OK_(prepare_keyfile(KEYFILE1, key, strlen(mk_hex) / 2));
+	crypt_decode_key(key, vk_hex, key_size);
+	OK_(prepare_keyfile(KEYFILE1, key, strlen(vk_hex) / 2));
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, &params));
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
-	OK_(strcmp(key, mk_hex));
+	OK_(strcmp(key, vk_hex));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
@@ -1578,19 +1578,19 @@ static void HashDevicePlain(void)
 	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, &params));
 
 	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
-	mk_hex = "c62e4615bd39e222572f3a1bf7c2132e";
+	vk_hex = "c62e4615bd39e222572f3a1bf7c2132e";
 	keystr = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 	key_size = strlen(keystr); // 32
 	OK_(prepare_keyfile(KEYFILE1, keystr, strlen(keystr)));
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
-	OK_(strcmp(key, mk_hex));
+	OK_(strcmp(key, vk_hex));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	// Read full keyfile
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
-	OK_(strcmp(key, mk_hex));
+	OK_(strcmp(key, vk_hex));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	_remove_keyfiles();
@@ -1600,7 +1600,7 @@ static void HashDevicePlain(void)
 	OK_(prepare_keyfile(KEYFILE1, keystr, strlen(keystr)));
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
-	OK_(strcmp(key, mk_hex));
+	OK_(strcmp(key, vk_hex));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	// Full keyfile
