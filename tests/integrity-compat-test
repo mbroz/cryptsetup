@@ -387,23 +387,23 @@ test_resize() # description detached_metadata wipe args
     fi
 
     echo -n "[SHRINK]"
-    $INTSETUP resize $wipe_flag $DEV_NAME --device-size 1MiB || fail "Failed to resize the device to 1MiB."
+    $INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 1MiB || fail "Failed to resize the device to 1MiB."
     dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after shrink."
     check_device_size $DEV_NAME $(( 1024*1024 / 512 )) "Shrinking device failed"
 
     echo -n "[FILL]"
-    $INTSETUP resize $wipe_flag $DEV_NAME --device-size 0 || fail "Failed to resize the device to maximum size."
+    $INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 0 || fail "Failed to resize the device to maximum size."
     dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after resize to maximum size."
     check_device_size $DEV_NAME $WHOLE_DISK_SIZE "Resizing disk to maximum size failed"
 
     echo -n "[EXPAND FIXED]"
     fallocate $DEV --len 64M
-    $INTSETUP resize $wipe_flag $DEV_NAME --device-size 40MiB || fail "Failed to expand the device to a fixed size."
+    $INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 40MiB || fail "Failed to expand the device to a fixed size."
     dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after expanding to a fixed size."
     check_device_size $DEV_NAME $(( 40*1024*1024 / 512 )) "Resizing disk after expanding to a fixed size failed"
 
     echo -n "[FILL]"
-    $INTSETUP resize $wipe_flag $DEV_NAME --device-size 0 >/dev/null 2>&1 || fail "Failed to resize the device to maximum size after increasing image size."
+    $INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 0 >/dev/null 2>&1 || fail "Failed to resize the device to maximum size after increasing image size."
     dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Error detection failed after increasing image size."
     CURRENT_SIZE=$(dmsetup table | grep $DEV_NAME | cut -d' ' -f 3)
     [ $CURRENT_SIZE -ge $(( 40*1024*1024 / 512 )) ] || fail "Growing integrity device failed $CURRENT_SIZE is not greater than 40MB ($(( 40*1024*1024 / 512 )) blocks)."
