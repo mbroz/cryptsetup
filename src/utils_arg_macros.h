@@ -93,4 +93,11 @@ do { \
 	tool_core_args[(X)].set = true; \
 } while (0)
 
+
+#define ARG_INIT_ALIAS(X) \
+do { \
+	assert(tool_core_args[(X)].type == CRYPT_ARG_ALIAS); \
+	tool_core_args[(X)].u.o.ptr = &tool_core_args[tool_core_args[(X)].u.o.id]; \
+} while (0)
+
 #endif

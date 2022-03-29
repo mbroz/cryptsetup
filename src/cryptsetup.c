@@ -3074,9 +3074,6 @@ static void basic_options_cb(poptContext popt_context,
 			      _("Key size must be a multiple of 8 bits"),
 			      poptGetInvocationName(popt_context));
 		break;
-	case OPT_NEW_ID:
-		ARG_SET_TRUE(OPT_ENCRYPT_ID);
-		break;
 	case OPT_REDUCE_DEVICE_SIZE_ID:
 		if (ARG_UINT64(OPT_REDUCE_DEVICE_SIZE_ID) > 1024 * 1024 * 1024)
 			usage(popt_context, EXIT_FAILURE, _("Maximum device reduce size is 1 GiB."),
@@ -3105,6 +3102,15 @@ static void basic_options_cb(poptContext popt_context,
 	}
 }
 
+static void cryptsetup_init_arg_aliases(void)
+{
+	unsigned i;
+
+	for (i = 1; i < ARRAY_SIZE(tool_core_args); i++)
+		if (tool_core_args[i].type == CRYPT_ARG_ALIAS)
+			ARG_INIT_ALIAS(i);
+}
+
 int main(int argc, const char **argv)
 {
 	static struct poptOption popt_help_options[] = {
@@ -3130,6 +3136,9 @@ int main(int argc, const char **argv)
 	struct action_type *action;
 	const char *aname, *error_message;
 	int r;
+
+	/* initialize aliases */
+	cryptsetup_init_arg_aliases();
 
 	crypt_set_log_callback(NULL, tool_log, &log_parms);
 
