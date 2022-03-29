@@ -288,7 +288,7 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		       struct volume_key *journal_mac_key,
 		       uint32_t flags, uint32_t sb_flags)
 {
-	struct crypt_dm_active_device dmdq, dmd = {};
+	struct crypt_dm_active_device dmdq = {}, dmd = {};
 	int r;
 
 	if (flags & CRYPT_ACTIVATE_REFRESH) {

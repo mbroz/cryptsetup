@@ -1,4 +1,4 @@
-test-main-commit-job-csmock:
+test-commit-job-csmock:
   extends:
     - .dump_kernel_log
   tags:
@@ -12,6 +12,6 @@ test-main-commit-job-csmock:
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/ || $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - /opt/csmock-run-script.sh

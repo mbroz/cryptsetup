@@ -2623,6 +2623,8 @@ err:
 	free(journal_crypt);
 	free(journal_integrity);
 	crypt_free_volume_key(vk);
+	crypt_free_volume_key(journal_integrity_key);
+	crypt_free_volume_key(journal_crypt_key);
 	return r;
 }
 
