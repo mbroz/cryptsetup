@@ -132,7 +132,8 @@ typedef enum {
 	CRYPT_ARG_INT32,
 	CRYPT_ARG_UINT32,
 	CRYPT_ARG_INT64,
-	CRYPT_ARG_UINT64
+	CRYPT_ARG_UINT64,
+	CRYPT_ARG_ALIAS
 } crypt_arg_type_info;
 
 struct tools_arg {
@@ -145,6 +146,10 @@ struct tools_arg {
 		uint32_t u32_value;
 		int32_t i32_value;
 		int64_t i64_value;
+		union {
+			unsigned id;
+			struct tools_arg *ptr;
+		} o;
 	} u;
 	const char *actions_array[MAX_ACTIONS];
 };

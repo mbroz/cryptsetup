@@ -75,6 +75,9 @@ void tools_parse_arg_value(poptContext popt_context, crypt_arg_type_info type, s
 			arg->u.u64_value = ull;
 		}
 		break;
+	case CRYPT_ARG_ALIAS:
+		tools_parse_arg_value(popt_context, arg->u.o.ptr->type, arg->u.o.ptr, popt_arg, arg->u.o.id, needs_size_conv_fn);
+		break;
 	default:
 		/* this signals internal tools coding mistake */
 		abort();
