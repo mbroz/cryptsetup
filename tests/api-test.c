@@ -300,6 +300,7 @@ static int _setup(void)
 
 	_system("modprobe dm-crypt >/dev/null 2>&1", 0);
 	_system("modprobe dm-verity >/dev/null 2>&1", 0);
+	_system("modprobe dm-integrity >/dev/null 2>&1", 0);
 
 	_fips_mode = fips_mode();
 	if (_debug)
