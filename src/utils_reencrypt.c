@@ -141,6 +141,7 @@ static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_d
 
 static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device)
 {
+	char *msg;
 	crypt_reencrypt_info ri;
 	int r;
 	size_t passwordLen;
@@ -180,6 +181,18 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	    strcmp(ret_params.resilience, "datashift") && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
 		log_err(_("Requested --resilience option cannot be applied to current reencryption operation."));
 		return -EINVAL;
+	}
+
+	if (!ARG_SET(OPT_BATCH_MODE_ID) && !ARG_SET(OPT_RESUME_ONLY_ID)) {
+		r = asprintf(&msg, _("Device %s is already in LUKS2 reencryption. "
+				     "Do you wish to resume previously initialised operation?"),
+			     crypt_get_metadata_device_name(cd) ?: data_device);
+		if (r < 0)
+			return -ENOMEM;
+		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+		free(msg);
+		if (r < 0)
+			return r;
 	}
 
 	r = tools_get_key(NULL, &password, &passwordLen,
