@@ -2256,7 +2256,7 @@
   except generating a new LUKS1 header with the old volume key (it prints
   the command for that though):
 
-  https://gitlab.com/cryptsetup/cryptsetup/blob/master/misc/luks-header-from-active
+  https://gitlab.com/cryptsetup/cryptsetup/blob/main/misc/luks-header-from-active
 
   You can also do this manually. Here is how:
 
