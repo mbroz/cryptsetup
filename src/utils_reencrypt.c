@@ -141,16 +141,46 @@ static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_d
 
 static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device)
 {
+	crypt_reencrypt_info ri;
 	int r;
 	size_t passwordLen;
 	char *active_name = NULL, *password = NULL;
-	struct crypt_params_reencrypt params = {
+	struct crypt_params_reencrypt ret_params, params = {
 		.resilience = ARG_STR(OPT_RESILIENCE_ID) ?: "checksum",
 		.hash = ARG_STR(OPT_RESILIENCE_HASH_ID) ?: "sha256",
 		.max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE,
 		.device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE,
 		.flags = CRYPT_REENCRYPT_RESUME_ONLY
 	};
+
+	ri = crypt_reencrypt_status(cd, &ret_params);
+	if (ri == CRYPT_REENCRYPT_CRASH)
+		log_err(_("Device requires reencryption recovery. Run repair first."));
+
+	if (ri != CRYPT_REENCRYPT_CLEAN)
+		return -EINVAL;
+
+	if (ARG_SET(OPT_ENCRYPT_ID) && ret_params.mode != CRYPT_REENCRYPT_ENCRYPT) {
+		log_err(_("Device is not in LUKS2 encryption. Conflicting option --encrypt."));
+		return -EINVAL;
+	}
+
+	if (ARG_SET(OPT_DECRYPT_ID) && ret_params.mode != CRYPT_REENCRYPT_DECRYPT) {
+		log_err(_("Device is not in LUKS2 decryption. Conflicting option --decrypt."));
+		return -EINVAL;
+	}
+
+	if (ARG_SET(OPT_RESILIENCE_ID) &&
+	    !strcmp(ret_params.resilience, "datashift") && strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+		log_err(_("Device is in reencryption using datashift resilience. Requested --resilience option cannot be applied."));
+		return -EINVAL;
+	}
+
+	if (ARG_SET(OPT_RESILIENCE_ID) &&
+	    strcmp(ret_params.resilience, "datashift") && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+		log_err(_("Requested --resilience option cannot be applied to current reencryption operation."));
+		return -EINVAL;
+	}
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
