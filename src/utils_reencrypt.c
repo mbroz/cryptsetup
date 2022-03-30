@@ -754,6 +754,7 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 		goto out;
 	}
 
+	/* coverity[overrun-call] */
 	r = fill_keyslot_passwords(cd, kp, kp_size, vk_change);
 	if (r)
 		goto out;
