@@ -153,6 +153,69 @@ static int lookup_holder_dm_name(const char *dm_uuid, dev_t devno, char *dm_name
 	return r;
 }
 
+static int lookup_holder_dm_name_by_file(const char *path, const char *dm_uuid, char *name, size_t name_length)
+{
+	char *rpath, *backing_file;
+	struct stat st;
+	unsigned int i;
+	int r, ret = 0;
+	char loopdev[13];
+
+	if (!path)
+		return -EINVAL;
+
+	rpath = realpath(path, NULL);
+	if (!rpath)
+		return -EINVAL;
+
+	log_dbg("Looking for loop devices with backing file %s.", rpath);
+
+	for (i = 0; i < 256; i++) {
+		r = snprintf(loopdev, sizeof(loopdev), "/dev/loop%u", i);
+		if (r < 0 || (size_t)r >= sizeof(loopdev)) {
+			ret = -EINVAL;
+			break;
+		}
+
+		backing_file = crypt_loop_backing_file(loopdev);
+		if (!backing_file)
+			continue;
+
+		r = strcmp(backing_file, rpath);
+		free(backing_file);
+		if (r)
+			continue;
+
+		/* /dev/loopX disappeared */
+		if (stat(loopdev, &st) || !S_ISBLK(st.st_mode))
+			continue;
+
+		r = lookup_holder_dm_name(dm_uuid, st.st_rdev, name, name_length);
+		if (r == -ENOENT)
+			continue;
+
+		if (r < 0) {
+			ret = r;
+			break;
+		}
+
+		ret += r;
+
+		/* found matching LUKS2 device mapped via loop. We have to abort */
+		if (*name != '\0') {
+			log_err(_("LUKS image %s is used by active device %s.\n"
+				  "If you want to run online reecryption, use --active-name=%s option instead."),
+				path, name, name);
+			ret = -ENOTBLK;
+			break;
+		}
+	}
+
+	free(rpath);
+
+	return ret;
+}
+
 int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 		const char *data_device_path, char *name, size_t name_length)
 {
@@ -171,13 +234,20 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 	/* cut of dm name */
 	*c = '\0';
 
-	log_dbg("Looking for any dm device with prefix: %s", dev_uuid);
-
 	if (stat(data_device_path, &st) < 0)
 		return -ENODEV;
 
-	if (!S_ISBLK(st.st_mode))
+	log_dbg("Looking for holders of %s with uuid prefix: %s", data_device_path, dev_uuid);
+
+	if (S_ISREG(st.st_mode))
+		return lookup_holder_dm_name_by_file(data_device_path,
+						     dev_uuid + DM_BY_ID_PREFIX_LEN,
+						     name, name_length);
+
+	if (!S_ISBLK(st.st_mode)) {
+		log_err(_("Device %s is not compatible."), data_device_path);
 		return -ENOTBLK;
+	}
 
 	r = lookup_holder_dm_name(dev_uuid + DM_BY_ID_PREFIX_LEN,
 			st.st_rdev, name, name_length);
