@@ -103,12 +103,12 @@ void quiet_log(int level, const char *msg, void *usrptr)
 	tool_log(level, msg, usrptr);
 }
 
-static int _dialog(const char *msg, void *usrptr, int default_answer)
+int yesDialog(const char *msg, void *usrptr)
 {
 	const char *fail_msg = (const char *)usrptr;
 	char *answer = NULL;
 	size_t size = 0;
-	int r = default_answer, block;
+	int r = 1, block;
 
 	block = tools_signals_blocked();
 	if (block)
@@ -138,16 +138,6 @@ static int _dialog(const char *msg, void *usrptr, int default_answer)
 
 	free(answer);
 	return r;
-}
-
-int yesDialog(const char *msg, void *usrptr)
-{
-	return _dialog(msg, usrptr, 1);
-}
-
-int noDialog(const char *msg, void *usrptr)
-{
-	return _dialog(msg, usrptr, 0);
 }
 
 void show_status(int errcode)
