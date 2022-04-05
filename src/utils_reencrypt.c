@@ -106,11 +106,11 @@ static int _get_device_active_name(struct crypt_device *cd, const char *data_dev
 	}
 	if (r < 0) {
 		if (r == -ENOTBLK)
-			log_std(_("Device %s is not a block device.\n"), data_device);
-		else
-			log_err(_("Failed to auto-detect device %s holders."), data_device);
+			return r;
 
-		r = -EINVAL;
+		log_err(_("Failed to auto-detect device %s holders."), data_device);
+
+		r = 0;
 		if (!ARG_SET(OPT_BATCH_MODE_ID)) {
 			r = asprintf(&msg, _("Unable to decide if device %s is activated or not.\n"
 					     "Are you sure you want to proceed with reencryption in offline mode?\n"
@@ -118,7 +118,7 @@ static int _get_device_active_name(struct crypt_device *cd, const char *data_dev
 					     "To run reencryption in online mode, use --active-name parameter instead.\n"), data_device);
 			if (r < 0)
 				return -ENOMEM;
-			r = noDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+			r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 			free(msg);
 		}
 	}
