@@ -79,32 +79,23 @@ static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 
-static int auto_detect_active_name(struct crypt_device *cd, const char *data_device, char **r_dm_name)
-{
-	int r;
-
-	r = tools_lookup_crypt_device(cd, crypt_get_type(cd), data_device, r_dm_name);
-	if (r > 0)
-		log_dbg("Device %s has %d active holders.", data_device, r);
-
-	return r;
-}
-
-static int _get_device_active_name(struct crypt_device *cd, const char *data_device, char **r_dm_name)
+static int get_active_device_name(struct crypt_device *cd, const char *data_device, char **r_active_name)
 {
 	char *msg;
 	int r;
 
 	assert(data_device);
 
-	r = auto_detect_active_name(cd, data_device, r_dm_name);
+	r = tools_lookup_crypt_device(cd, crypt_get_type(cd), data_device, r_active_name);
 	if (r > 0) {
-		if (!*r_dm_name) {
+		log_dbg("Device %s has %d active holders.", data_device, r);
+
+		if (!*r_active_name) {
 			log_err(_("Device %s is still in use."), data_device);
 			return -EINVAL;
 		}
 		if (!ARG_SET(OPT_BATCH_MODE_ID))
-			log_std(_("Auto-detected active dm device '%s' for data device %s.\n"), *r_dm_name, data_device);
+			log_std(_("Auto-detected active dm device '%s' for data device %s.\n"), *r_active_name, data_device);
 	} else if (r < 0) {
 		if (r == -ENOTBLK)
 			log_std(_("Device %s is not a block device.\n"), data_device);
@@ -123,7 +114,7 @@ static int _get_device_active_name(struct crypt_device *cd, const char *data_dev
 			free(msg);
 		}
 	} else {
-		*r_dm_name = NULL;
+		*r_active_name = NULL;
 		log_dbg("Device %s is unused. Proceeding with offline reencryption.", data_device);
 	}
 
@@ -143,7 +134,7 @@ static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_d
 	if (ARG_SET(OPT_ACTIVE_NAME_ID))
 		return (*r_active_name = strdup(ARG_STR(OPT_ACTIVE_NAME_ID))) ? 0 : -ENOMEM;
 
-	return _get_device_active_name(cd, data_device, r_active_name);
+	return get_active_device_name(cd, data_device, r_active_name);
 }
 
 static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device)
