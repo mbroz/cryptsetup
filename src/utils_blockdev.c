@@ -58,19 +58,17 @@ static int dm_prepare_uuid(const char *type, const char *uuid, char *buf, size_t
 
 /* return number of holders in general, if matched dm_uuid prefix it's returned via dm_name */
 /* negative value is error */
-static int lookup_holder_dm_name(const char *dm_uuid, dev_t devno, char *dm_name, size_t dm_name_length)
+static int lookup_holder_dm_name(const char *dm_uuid, dev_t devno, char **r_dm_name)
 {
 	struct dirent *entry;
-	char dm_subpath[PATH_MAX], data_dev_dir[PATH_MAX], uuid[DM_UUID_LEN];
+	char dm_subpath[PATH_MAX], data_dev_dir[PATH_MAX], uuid[DM_UUID_LEN], dm_name[PATH_MAX] = {};
 	ssize_t s;
 	struct stat st;
 	int dmfd, fd, len, r = 0; /* not found */
 	DIR *dir;
 
-	if (!dm_name || !dm_name_length)
+	if (!r_dm_name)
 		return -EINVAL;
-
-	*dm_name = '\0';
 
 	len = snprintf(data_dev_dir, PATH_MAX, "/sys/dev/block/%u:%u/holders", major(devno), minor(devno));
 	if (len < 0 || len >= PATH_MAX)
@@ -139,12 +137,14 @@ static int lookup_holder_dm_name(const char *dm_uuid, dev_t devno, char *dm_name
 		}
 
 		/* reads binary data */
-		s = read_buffer(fd, dm_name, dm_name_length - 1);
+		s = read_buffer(fd, dm_name, sizeof(dm_name));
 		close(fd);
 		close(dmfd);
 		if (s > 1) {
 			dm_name[s-1] = '\0';
 			log_dbg("Found dm device %s", dm_name);
+			if (!(*r_dm_name = strdup(dm_name)))
+				return -ENOMEM;
 		}
 	}
 
@@ -154,9 +154,8 @@ static int lookup_holder_dm_name(const char *dm_uuid, dev_t devno, char *dm_name
 }
 
 int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
-		const char *data_device_path, char *name, size_t name_length)
+		const char *data_device_path, char **r_name)
 {
-	int r;
 	char *c;
 	struct stat st;
 	char dev_uuid[DM_UUID_LEN + DM_BY_ID_PREFIX_LEN] = DM_BY_ID_PREFIX;
@@ -179,11 +178,8 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 	if (!S_ISBLK(st.st_mode))
 		return -ENOTBLK;
 
-	r = lookup_holder_dm_name(dev_uuid + DM_BY_ID_PREFIX_LEN,
-			st.st_rdev, name, name_length);
-	return r;
+	return lookup_holder_dm_name(dev_uuid + DM_BY_ID_PREFIX_LEN, st.st_rdev, r_name);
 }
-
 
 static void report_partition(const char *value, const char *device, bool batch_mode)
 {

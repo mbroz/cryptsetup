@@ -79,32 +79,33 @@ static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 
-static int auto_detect_active_name(struct crypt_device *cd, const char *data_device, char *dm_name, size_t dm_name_len)
+static int auto_detect_active_name(struct crypt_device *cd, const char *data_device, char **r_dm_name)
 {
 	int r;
 
-	r = tools_lookup_crypt_device(cd, crypt_get_type(cd), data_device, dm_name, dm_name_len);
+	r = tools_lookup_crypt_device(cd, crypt_get_type(cd), data_device, r_dm_name);
 	if (r > 0)
 		log_dbg("Device %s has %d active holders.", data_device, r);
 
 	return r;
 }
 
-static int _get_device_active_name(struct crypt_device *cd, const char *data_device, char *buffer, size_t buffer_size)
+static int _get_device_active_name(struct crypt_device *cd, const char *data_device, char **r_dm_name)
 {
 	char *msg;
 	int r;
 
-	r = auto_detect_active_name(cd, data_device, buffer, buffer_size);
+	assert(data_device);
+
+	r = auto_detect_active_name(cd, data_device, r_dm_name);
 	if (r > 0) {
-		if (*buffer == '\0') {
+		if (!*r_dm_name) {
 			log_err(_("Device %s is still in use."), data_device);
 			return -EINVAL;
 		}
 		if (!ARG_SET(OPT_BATCH_MODE_ID))
-			log_std(_("Auto-detected active dm device '%s' for data device %s.\n"), buffer, data_device);
-	}
-	if (r < 0) {
+			log_std(_("Auto-detected active dm device '%s' for data device %s.\n"), *r_dm_name, data_device);
+	} else if (r < 0) {
 		if (r == -ENOTBLK)
 			log_std(_("Device %s is not a block device.\n"), data_device);
 		else
@@ -121,17 +122,35 @@ static int _get_device_active_name(struct crypt_device *cd, const char *data_dev
 			r = noDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 			free(msg);
 		}
+	} else {
+		*r_dm_name = NULL;
+		log_dbg("Device %s is unused. Proceeding with offline reencryption.", data_device);
 	}
 
 	return r;
+}
+
+static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_device, char **r_active_name)
+{
+	assert(cd);
+	assert(r_active_name);
+
+	if (ARG_SET(OPT_INIT_ONLY_ID)) {
+		*r_active_name = NULL;
+		return 0;
+	}
+
+	if (ARG_SET(OPT_ACTIVE_NAME_ID))
+		return (*r_active_name = strdup(ARG_STR(OPT_ACTIVE_NAME_ID))) ? 0 : -ENOMEM;
+
+	return _get_device_active_name(cd, data_device, r_active_name);
 }
 
 static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device)
 {
 	int r;
 	size_t passwordLen;
-	char dm_name[PATH_MAX] = {}, *password = NULL;
-	const char *active_name = NULL;
+	char *active_name = NULL, *password = NULL;
 	struct crypt_params_reencrypt params = {
 		.resilience = ARG_STR(OPT_RESILIENCE_ID) ?: "checksum",
 		.hash = ARG_STR(OPT_RESILIENCE_HASH_ID) ?: "sha256",
@@ -146,20 +165,12 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (r < 0)
 		return r;
 
-	if (!ARG_SET(OPT_ACTIVE_NAME_ID)) {
-		r = _get_device_active_name(cd, data_device, dm_name, sizeof(dm_name));
-		if (r > 0)
-			active_name = dm_name;
-		if (r < 0) {
-			crypt_safe_free(password);
-			return -EINVAL;
-		}
-	} else
-		active_name = ARG_STR(OPT_ACTIVE_NAME_ID);
-
-	r = crypt_reencrypt_init_by_passphrase(cd, active_name, password, passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_KEY_SLOT_ID), NULL, NULL, &params);
+	r = reencrypt_get_active_name(cd, data_device, &active_name);
+	if (r >= 0)
+		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password, passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_KEY_SLOT_ID), NULL, NULL, &params);
 
 	crypt_safe_free(password);
+	free(active_name);
 
 	return r;
 }
@@ -427,8 +438,7 @@ static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
 	int r;
 	size_t passwordLen;
-	char dm_name[PATH_MAX], *password = NULL;
-	const char *active_name = NULL;
+	char *active_name, *password = NULL;
 	struct crypt_params_reencrypt params = {
 		.mode = CRYPT_REENCRYPT_DECRYPT,
 		.direction = data_shift > 0 ? CRYPT_REENCRYPT_FORWARD : CRYPT_REENCRYPT_BACKWARD,
@@ -456,21 +466,12 @@ static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 	if (r < 0)
 		return r;
 
-	if (!ARG_SET(OPT_ACTIVE_NAME_ID)) {
-		r = _get_device_active_name(cd, data_device, dm_name, sizeof(dm_name));
-		if (r > 0)
-			active_name = dm_name;
-		if (r < 0)
-			goto out;
-	} else
-		active_name = ARG_STR(OPT_ACTIVE_NAME_ID);
+	r = reencrypt_get_active_name(cd, data_device, &active_name);
+	if (r >= 0)
+		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password,
+				passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), CRYPT_ANY_SLOT, NULL, NULL, &params);
 
-	if (!active_name)
-		log_dbg("Device %s seems unused. Proceeding with offline operation.", data_device);
-
-	r = crypt_reencrypt_init_by_passphrase(cd, active_name, password,
-			passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), CRYPT_ANY_SLOT, NULL, NULL, &params);
-out:
+	free(active_name);
 	crypt_safe_free(password);
 	return r;
 }
@@ -657,8 +658,8 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 	bool vk_size_change, sector_size_change, vk_change;
 	size_t i, vk_size, kp_size;
 	int r, keyslot_old = CRYPT_ANY_SLOT, keyslot_new = CRYPT_ANY_SLOT, key_size;
-	char dm_name[PATH_MAX], cipher [MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN], *vk = NULL;
-	const char *active_name = NULL, *new_cipher = NULL;
+	char cipher[MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN], *vk = NULL, *active_name = NULL;
+	const char *new_cipher = NULL;
 	struct keyslot_passwords *kp = NULL;
 	struct crypt_params_luks2 luks2_params = {};
 	struct crypt_params_reencrypt params = {
@@ -816,21 +817,11 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 	if (r < 0)
 		goto out;
 
-	if (!ARG_SET(OPT_ACTIVE_NAME_ID) && !ARG_SET(OPT_INIT_ONLY_ID)) {
-		r = _get_device_active_name(cd, data_device, dm_name, sizeof(dm_name));
-		if (r > 0)
-			active_name = dm_name;
-		if (r < 0)
-			goto out;
-	} else if (ARG_SET(OPT_ACTIVE_NAME_ID))
-		active_name = ARG_STR(OPT_ACTIVE_NAME_ID);
-
-	if (!active_name && !ARG_SET(OPT_INIT_ONLY_ID))
-		log_dbg("Device %s seems unused. Proceeding with offline operation.", data_device);
-
-	r = crypt_reencrypt_init_by_passphrase(cd, active_name, kp[keyslot_old].password,
-			kp[keyslot_old].passwordLen, keyslot_old, kp[keyslot_old].new,
-			cipher, mode, &params);
+	r = reencrypt_get_active_name(cd, data_device, &active_name);
+	if (r >= 0)
+		r = crypt_reencrypt_init_by_passphrase(cd, active_name, kp[keyslot_old].password,
+				kp[keyslot_old].passwordLen, keyslot_old, kp[keyslot_old].new,
+				cipher, mode, &params);
 out:
 	crypt_safe_free(vk);
 	if (kp) {
@@ -843,6 +834,7 @@ out:
 		}
 		free(kp);
 	}
+	free(active_name);
 	return r;
 }
 

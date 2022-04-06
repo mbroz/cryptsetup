@@ -114,7 +114,7 @@ int tools_detect_signatures(const char *device, int ignore_luks, size_t *count, 
 int tools_wipe_all_signatures(const char *path);
 
 int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
-		const char *data_device_path, char *name, size_t name_length);
+		const char *data_device_path, char **r_name);
 
 
 /* each utility is required to implement it */
