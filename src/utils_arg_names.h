@@ -53,6 +53,7 @@
 #define OPT_FEC_OFFSET			"fec-offset"
 #define OPT_FEC_ROOTS			"fec-roots"
 #define OPT_FORCE_PASSWORD		"force-password"
+#define OPT_FORCE_OFFLINE_REENCRYPT	"force-offline-reencrypt"
 #define OPT_FORMAT			"format"
 #define OPT_HASH			"hash"
 #define OPT_HASH_BLOCK_SIZE		"hash-block-size"

@@ -2787,6 +2787,9 @@ static const char *verify_reencrypt(void)
 	if (isLUKS1(luksType(device_type)) && ARG_SET(OPT_ACTIVE_NAME_ID))
 		return _("Option --active-name can be set only for LUKS2 device.");
 
+	if (ARG_SET(OPT_ACTIVE_NAME_ID) && ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
+		return _("Options --active-name and --force-offline-reencrypt cannot be combined.");
+
 	return NULL;
 }
 

@@ -126,7 +126,7 @@ static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_d
 	assert(cd);
 	assert(r_active_name);
 
-	if (ARG_SET(OPT_INIT_ONLY_ID)) {
+	if (ARG_SET(OPT_INIT_ONLY_ID) || ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID)) {
 		*r_active_name = NULL;
 		return 0;
 	}
@@ -869,6 +869,9 @@ static int reencrypt_luks2_resume(struct crypt_device *cd)
 		.interrupt_message = _("\nReencryption interrupted."),
 		.device = tools_get_device_name(crypt_get_device_name(cd), &backing_file)
 	};
+
+	if (ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID) && !ARG_SET(OPT_BATCH_MODE_ID))
+		log_std(_("Resuming LUKS reencryption in forced offline mode.\n"));
 
 	set_int_handler(0);
 	r = crypt_reencrypt_run(cd, tools_progress, &prog_parms);
