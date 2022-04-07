@@ -1343,6 +1343,16 @@ with the \-\-header option. Use with care.
 Specify file with header backup for \fIluksHeaderBackup\fR or
 \fIluksHeaderRestore\fR actions.
 .TP
+.B "\-\-force\-offline\-reencrypt"
+Bypass active device auto-detection and enforce offline LUKS2 reencryption.
+
+This option is useful in case active device auto-detection on particular data
+device does not work or report errors.
+
+\fBWARNING:\fR Use with extreme caution! This may destroy data
+if the device is activated and/or actively used.
+
+.TP
 .B "\-\-force\-password"
 Do not use password quality checking for new LUKS passwords.
 

@@ -155,37 +155,12 @@ function img_check_fail()
 
 function img_run_reenc_ok()
 {
-local EXPECT_TIMEOUT=60
-# For now, we cannot run reencryption in batch mode for non-block device. Just fake the terminal here.
-expect_run - >/dev/null <<EOF
-proc abort {} { send_error "Timeout. "; exit 2 }
-set timeout $EXPECT_TIMEOUT
-eval spawn $CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS --disable-locks --resilience none
-expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
-send "YES\n"
-expect timeout abort eof
-exit
-EOF
-[ $? -eq 0 ] || fail "Expect script failed."
+	$CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS -q --disable-locks --force-offline-reencrypt --resilience none || fail
 }
 
 function img_run_reenc_fail()
 {
-local EXPECT_TIMEOUT=60
-# For now, we cannot run reencryption in batch mode for non-block device. Just fake the terminal here.
-expect_run - >/dev/null <<EOF
-proc abort {} { send_error "Timeout. "; exit 42 }
-set timeout $EXPECT_TIMEOUT
-eval spawn $CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS --disable-locks
-expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
-send "YES\n"
-expect timeout abort eof
-catch wait result
-exit [lindex \$result 3]
-EOF
-local ret=$?
-[ $ret -eq 0 ] &&  fail "Reencryption passed (should have failed)."
-[ $ret -eq 42 ] && fail "Expect script failed."
+$CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS --force-offline-reencrypt --disable-locks -q 2>/dev/null && fail "Reencryption passed (should have failed)."
 img_hash_unchanged
 }
 
@@ -218,18 +193,11 @@ function valgrind_run()
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function expect_run()
-{
-        export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
-        expect "$@"
-}
-
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 
 bin_check jq
 bin_check sha256sum
 bin_check xxd
-bin_check expect
 
 export LANG=C
 
