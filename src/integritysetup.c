@@ -185,7 +185,7 @@ static int action_format(void)
 			goto out;
 	}
 
-	r = tools_detect_signatures(action_argv[0], 0, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
+	r = tools_detect_signatures(action_argv[0], PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
 	if (r < 0)
 		goto out;
 

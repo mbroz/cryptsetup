@@ -206,7 +206,7 @@ static int action_open_plain(void)
 		/* Skip blkid scan when activating plain device with offset */
 		if (!ARG_UINT64(OPT_OFFSET_ID)) {
 			/* Print all present signatures in read-only mode */
-			r = tools_detect_signatures(action_argv[0], 0, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
+			r = tools_detect_signatures(action_argv[0], PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
 			if (r < 0)
 				goto out;
 		}
@@ -1156,7 +1156,7 @@ static int action_luksRepair(void)
 		goto out;
 	}
 
-	r = tools_detect_signatures(action_argv[0], 1, NULL, ARG_SET(OPT_BATCH_MODE_ID));
+	r = tools_detect_signatures(action_argv[0], PRB_FILTER_LUKS, NULL, ARG_SET(OPT_BATCH_MODE_ID));
 	if (r < 0)
 		goto out;
 
@@ -1340,7 +1340,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	}
 
 	/* Print all present signatures in read-only mode */
-	r = tools_detect_signatures(header_device, 0, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
+	r = tools_detect_signatures(header_device, PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
 	if (r < 0)
 		goto out;
 
