@@ -112,7 +112,8 @@ int tools_write_json_file(const char *file, const char *json);
 
 typedef enum {
 	PRB_FILTER_NONE = 0,
-	PRB_FILTER_LUKS
+	PRB_FILTER_LUKS,
+	PRB_ONLY_LUKS
 } tools_probe_filter_info;
 
 int tools_detect_signatures(const char *device, tools_probe_filter_info filter, size_t *count, bool batch_mode);

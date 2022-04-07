@@ -220,11 +220,22 @@ int tools_detect_signatures(const char *device, tools_probe_filter_info filter,
 		return -EINVAL;
 	}
 
-	blk_set_chains_for_full_print(h);
-
-	if (filter == PRB_FILTER_LUKS && blk_superblocks_filter_luks(h)) {
-		r = -EINVAL;
-		goto out;
+	switch (filter) {
+	case PRB_FILTER_LUKS:
+		if (blk_superblocks_filter_luks(h)) {
+			r = -EINVAL;
+			goto out;
+		}
+		/* fall-through */
+	case PRB_FILTER_NONE:
+		blk_set_chains_for_full_print(h);
+		break;
+	case PRB_ONLY_LUKS:
+		blk_set_chains_for_fast_detection(h);
+		if (blk_superblocks_only_luks(h)) {
+			r = -EINVAL;
+			goto out;
+		}
 	}
 
 	while ((pr = blk_probe(h)) < PRB_EMPTY) {
