@@ -158,13 +158,18 @@ function img_run_reenc_ok()
 	$CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS -q --disable-locks --force-offline-reencrypt --resilience none || fail
 }
 
+function img_run_reenc_ok_data_shift()
+{
+	$CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS -q --disable-locks --force-offline-reencrypt || fail
+}
+
 function img_run_reenc_fail()
 {
 $CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS --force-offline-reencrypt --disable-locks -q 2>/dev/null && fail "Reencryption passed (should have failed)."
 img_hash_unchanged
 }
 
-function img_check_fail_repair_ok()
+function img_check_fail_repair()
 {
 	if [ $(id -u) == 0 ]; then
 		$CRYPTSETUP open $CS_PWPARAMS $IMG $DEV_NAME 2>/dev/null && fail
@@ -176,7 +181,18 @@ function img_check_fail_repair_ok()
 	$CRYPTSETUP repair $IMG $CS_PARAMS || fail
 
 	img_check_ok
+}
+
+function img_check_fail_repair_ok()
+{
+	img_check_fail_repair
 	img_run_reenc_ok
+}
+
+function img_check_fail_repair_ok_data_shift()
+{
+	img_check_fail_repair
+	img_run_reenc_ok_data_shift
 }
 
 function valgrind_setup()
@@ -202,8 +218,6 @@ bin_check xxd
 export LANG=C
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
-
-#while false; do
 
 echo "[1] Reencryption with old flag is rejected"
 img_prepare
@@ -346,7 +360,7 @@ img_update_json '
 	.digests."0".segments = ["0","2"] |
 	.digests."1".segments = ["1","3"] |
 	.config.requirements.mandatory = ["online-reencrypt"]'
-img_check_fail_repair_ok
+img_check_fail_repair_ok_data_shift
 
 #
 # NEW metadata (with reenc digest)
