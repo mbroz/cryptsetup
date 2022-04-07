@@ -479,10 +479,8 @@ static int hdr_validate_keyslots(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	json_object *jobj;
 
-	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj)) {
-		log_dbg(cd, "Missing keyslots section.");
+	if (!(jobj = json_contains(cd, hdr_jobj, "", "JSON area", "keyslots", json_type_object)))
 		return 1;
-	}
 
 	json_object_object_foreach(jobj, key, val) {
 		if (!numbered(cd, "Keyslot", key))
@@ -498,10 +496,8 @@ static int hdr_validate_tokens(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	json_object *jobj;
 
-	if (!json_object_object_get_ex(hdr_jobj, "tokens", &jobj)) {
-		log_dbg(cd, "Missing tokens section.");
+	if (!(jobj = json_contains(cd, hdr_jobj, "", "JSON area", "tokens", json_type_object)))
 		return 1;
-	}
 
 	json_object_object_foreach(jobj, key, val) {
 		if (!numbered(cd, "Token", key))
@@ -669,10 +665,8 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 	int i, r, count, first_backup = -1;
 	struct interval *intervals = NULL;
 
-	if (!json_object_object_get_ex(hdr_jobj, "segments", &jobj_segments)) {
-		log_dbg(cd, "Missing segments section.");
+	if (!(jobj_segments = json_contains(cd, hdr_jobj, "", "JSON area", "segments", json_type_object)))
 		return 1;
-	}
 
 	count = json_object_object_length(jobj_segments);
 	if (count < 1) {
@@ -880,17 +874,15 @@ static int hdr_validate_digests(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	json_object *jarr_keys, *jarr_segs, *jobj, *jobj_keyslots, *jobj_segments;
 
-	if (!json_object_object_get_ex(hdr_jobj, "digests", &jobj)) {
-		log_dbg(cd, "Missing digests section.");
+	if (!(jobj = json_contains(cd, hdr_jobj, "", "JSON area", "digests", json_type_object)))
 		return 1;
-	}
 
 	/* keyslots are not yet validated, but we need to know digest doesn't reference missing keyslot */
-	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
+	if (!(jobj_keyslots = json_contains(cd, hdr_jobj, "", "JSON area", "keyslots", json_type_object)))
 		return 1;
 
 	/* segments are not yet validated, but we need to know digest doesn't reference missing segment */
-	if (!json_object_object_get_ex(hdr_jobj, "segments", &jobj_segments))
+	if (!(jobj_segments = json_contains(cd, hdr_jobj, "", "JSON area", "segments", json_type_object)))
 		return 1;
 
 	json_object_object_foreach(jobj, key, val) {
@@ -918,10 +910,8 @@ static int hdr_validate_config(struct crypt_device *cd, json_object *hdr_jobj)
 	int i;
 	uint64_t keyslots_size, metadata_size, segment_offset;
 
-	if (!json_object_object_get_ex(hdr_jobj, "config", &jobj_config)) {
-		log_dbg(cd, "Missing config section.");
+	if (!(jobj_config = json_contains(cd, hdr_jobj, "", "JSON area", "config", json_type_object)))
 		return 1;
-	}
 
 	if (!(jobj = json_contains(cd, jobj_config, "section", "Config", "json_size", json_type_string)) ||
 	    !json_str_to_uint64(jobj, &metadata_size))
@@ -977,10 +967,8 @@ static int hdr_validate_requirements(struct crypt_device *cd, json_object *hdr_j
 	int i;
 	json_object *jobj_config, *jobj, *jobj1;
 
-	if (!json_object_object_get_ex(hdr_jobj, "config", &jobj_config)) {
-		log_dbg(cd, "Missing config section.");
+	if (!(jobj_config = json_contains(cd, hdr_jobj, "", "JSON area", "config", json_type_object)))
 		return 1;
-	}
 
 	/* Requirements object is optional */
 	if (json_object_object_get_ex(jobj_config, "requirements", &jobj)) {
