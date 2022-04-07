@@ -44,6 +44,7 @@ void blk_set_chains_for_full_print(struct blkid_handle *h);
 void blk_set_chains_for_fast_detection(struct blkid_handle *h);
 
 int blk_superblocks_filter_luks(struct blkid_handle *h);
+int blk_superblocks_only_luks(struct blkid_handle *h);
 
 blk_probe_status blk_safeprobe(struct blkid_handle *h);
 
