@@ -210,3 +210,39 @@ function lib_cleanup()
 	rm -f $TMPDIR/*
 	rm -fd $TMPDIR
 }
+
+function lib_mangle_json_hdr0()
+{
+	local mda_sz=${1:-}
+	local jsn_sz=${2:-}
+	local kill_hdr=${3:-}
+
+	merge_bin_hdr_with_json $TMPDIR/hdr0 $TMPDIR/json0 $TMPDIR/area0 $jsn_sz
+	erase_checksum $TMPDIR/area0
+	chks0=$(calc_sha256_checksum_file $TMPDIR/area0)
+	write_checksum $chks0 $TMPDIR/area0
+	test -n "$kill_hdr" && kill_bin_hdr $TMPDIR/area0
+	write_luks2_hdr0 $TMPDIR/area0 $TGT_IMG $mda_sz
+}
+
+function lib_mangle_json_hdr1()
+{
+	local mda_sz=${1:-}
+	local jsn_sz=${2:-}
+	local kill_hdr=${3:-}
+
+	merge_bin_hdr_with_json $TMPDIR/hdr1 $TMPDIR/json1 $TMPDIR/area1 $jsn_sz
+	erase_checksum $TMPDIR/area1
+	chks1=$(calc_sha256_checksum_file $TMPDIR/area1)
+	write_checksum $chks1 $TMPDIR/area1
+	test -n "$kill_hdr" && kill_bin_hdr $TMPDIR/area1
+	write_luks2_hdr1 $TMPDIR/area1 $TGT_IMG $mda_sz
+}
+
+function lib_mangle_json_hdr0_kill_hdr1()
+{
+	lib_mangle_json_hdr0
+
+	kill_bin_hdr $TMPDIR/hdr1
+	write_luks2_hdr1 $TMPDIR/hdr1 $TGT_IMG
+}

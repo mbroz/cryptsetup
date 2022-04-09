@@ -24,24 +24,14 @@ function generate()
 	json_str=$(jq -c '.' $TMPDIR/json0)
 
 	write_luks2_json "$json_str" $TMPDIR/json0 $TEST_JSN_SIZE
+	write_luks2_json "$json_str" $TMPDIR/json1 $TEST_JSN_SIZE
 
 	write_bin_hdr_size $TMPDIR/hdr0 $TEST_MDA_SIZE_BYTES
 	write_bin_hdr_size $TMPDIR/hdr1 $TEST_MDA_SIZE_BYTES
 	write_bin_hdr_offset $TMPDIR/hdr1 $TEST_MDA_SIZE_BYTES
 
-	merge_bin_hdr_with_json $TMPDIR/hdr0 $TMPDIR/json0 $TMPDIR/area0 $TEST_JSN_SIZE
-	merge_bin_hdr_with_json $TMPDIR/hdr1 $TMPDIR/json0 $TMPDIR/area1 $TEST_JSN_SIZE
-
-	erase_checksum $TMPDIR/area0
-	chks0=$(calc_sha256_checksum_file $TMPDIR/area0)
-	write_checksum $chks0 $TMPDIR/area0
-
-	erase_checksum $TMPDIR/area1
-	chks0=$(calc_sha256_checksum_file $TMPDIR/area1)
-	write_checksum $chks0 $TMPDIR/area1
-
-	write_luks2_hdr0 $TMPDIR/area0 $TGT_IMG $TEST_MDA_SIZE
-	write_luks2_hdr1 $TMPDIR/area1 $TGT_IMG $TEST_MDA_SIZE
+	lib_mangle_json_hdr0 $TEST_MDA_SIZE $TEST_JSN_SIZE
+	lib_mangle_json_hdr1 $TEST_MDA_SIZE $TEST_JSN_SIZE
 }
 
 function check()

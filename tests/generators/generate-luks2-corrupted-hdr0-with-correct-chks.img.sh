@@ -24,11 +24,7 @@ function generate()
 
 	printf "%s" $json_new_str | _dd of=$TMPDIR/json0 bs=512 count=$LUKS2_JSON_SIZE
 
-	merge_bin_hdr_with_json $TMPDIR/hdr0 $TMPDIR/json0 $TMPDIR/area0
-	erase_checksum $TMPDIR/area0
-	chks0=$(calc_sha256_checksum_file $TMPDIR/area0)
-	write_checksum $chks0 $TMPDIR/area0
-	write_luks2_hdr0 $TMPDIR/area0 $TGT_IMG
+	lib_mangle_json_hdr0
 }
 
 function check()
