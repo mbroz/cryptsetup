@@ -44,10 +44,9 @@ function generate()
 function check()
 {
 	lib_hdr1_killed || exit 2
+	lib_hdr0_checksum || exit 2
 
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0
-	chks_res0=$(read_sha256_checksum $TGT_IMG)
-	test "$chks0" = "$chks_res0" || exit 2
 	#json_str_res0=$(< $TMPDIR/json_res0)
 	read -r json_str_res0 < $TMPDIR/json_res0
 	test ${#json_str_res0} -eq $((LUKS2_JSON_SIZE*512-1)) || exit 2

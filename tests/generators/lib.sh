@@ -197,6 +197,10 @@ function lib_prepare()
 	TGT_IMG=$1/$(test_img_name $0)
 	SRC_IMG=$2
 
+	# wipe checksums
+	CHKS0=0
+	CHKS1=0
+
 	cp $SRC_IMG $TGT_IMG
 	test -d $TMPDIR || mkdir $TMPDIR
 	read_luks2_json0 $TGT_IMG $TMPDIR/json0
@@ -219,8 +223,8 @@ function lib_mangle_json_hdr0()
 
 	merge_bin_hdr_with_json $TMPDIR/hdr0 $TMPDIR/json0 $TMPDIR/area0 $jsn_sz
 	erase_checksum $TMPDIR/area0
-	chks0=$(calc_sha256_checksum_file $TMPDIR/area0)
-	write_checksum $chks0 $TMPDIR/area0
+	CHKS0=$(calc_sha256_checksum_file $TMPDIR/area0)
+	write_checksum $CHKS0 $TMPDIR/area0
 	test -n "$kill_hdr" && kill_bin_hdr $TMPDIR/area0
 	write_luks2_hdr0 $TMPDIR/area0 $TGT_IMG $mda_sz
 }
@@ -233,8 +237,8 @@ function lib_mangle_json_hdr1()
 
 	merge_bin_hdr_with_json $TMPDIR/hdr1 $TMPDIR/json1 $TMPDIR/area1 $jsn_sz
 	erase_checksum $TMPDIR/area1
-	chks1=$(calc_sha256_checksum_file $TMPDIR/area1)
-	write_checksum $chks1 $TMPDIR/area1
+	CHKS1=$(calc_sha256_checksum_file $TMPDIR/area1)
+	write_checksum $CHKS1 $TMPDIR/area1
 	test -n "$kill_hdr" && kill_bin_hdr $TMPDIR/area1
 	write_luks2_hdr1 $TMPDIR/area1 $TGT_IMG $mda_sz
 }
@@ -263,4 +267,17 @@ function lib_hdr1_killed()
 	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1 $mda_sz
 	local str_res1=$(head -c 6 $TMPDIR/hdr_res1)
 	test "$str_res1" = "VACUUM"
+}
+
+function lib_hdr0_checksum()
+{
+	local chks_res0=$(read_sha256_checksum $TGT_IMG)
+	test "$CHKS0" = "$chks_res0"
+}
+
+function lib_hdr1_checksum()
+{
+	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1
+	local chks_res1=$(read_sha256_checksum $TMPDIR/hdr_res1)
+	test "$CHKS1" = "$chks_res1"
 }

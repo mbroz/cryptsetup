@@ -13,15 +13,14 @@
 
 function generate()
 {
-	chks=$(echo "Arbitrary chosen string: D'oh!" | calc_sha256_checksum_stdin)
-	write_checksum $chks $TMPDIR/hdr1
+	CHKS1=$(echo "Arbitrary chosen string: D'oh!" | calc_sha256_checksum_stdin)
+	write_checksum $CHKS1 $TMPDIR/hdr1
 	write_luks2_bin_hdr1 $TMPDIR/hdr1 $TGT_IMG
 }
 
 function check()
 {
-	chks_res=$(read_sha256_checksum $TMPDIR/hdr1)
-	test "$chks" = "$chks_res" || exit 2
+	lib_hdr1_checksum || exit 2
 }
 
 lib_prepare $@

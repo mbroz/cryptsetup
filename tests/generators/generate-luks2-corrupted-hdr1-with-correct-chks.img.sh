@@ -29,9 +29,8 @@ function generate()
 
 function check()
 {
-	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1
-	chks_res1=$(read_sha256_checksum $TMPDIR/hdr_res1)
-	test "$chks1" = "$chks_res1" || exit 2
+	lib_hdr1_checksum || exit 2
+
 	read_luks2_json1 $TGT_IMG $TMPDIR/json_res1
 	read -r json_str_res1 < $TMPDIR/json_res1
 	test ${#json_str_res1} -eq $((LUKS2_JSON_SIZE*512)) || exit 2

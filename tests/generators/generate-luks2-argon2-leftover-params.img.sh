@@ -29,10 +29,9 @@ function generate()
 function check()
 {
 	lib_hdr1_killed || exit 2
+	lib_hdr0_checksum || exit 2
 
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0
-	chks_res0=$(read_sha256_checksum $TGT_IMG)
-	test "$chks0" = "$chks_res0" || exit 2
 	new_obj_len=$(jq -c -M '.keyslots."1".kdf | length' $TMPDIR/json_res0)
 	test $((obj_len+2)) -eq $new_obj_len || exit 2
 }
