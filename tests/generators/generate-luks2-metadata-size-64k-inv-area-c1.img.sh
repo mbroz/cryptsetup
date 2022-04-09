@@ -47,9 +47,8 @@ function generate()
 
 function check()
 {
-	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1 $TEST_MDA_SIZE
-	local str_res1=$(head -c 6 $TMPDIR/hdr_res1)
-	test "$str_res1" = "VACUUM" || exit 2
+	lib_hdr1_killed $TEST_MDA_SIZE || exit 2
+
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0 $TEST_JSN_SIZE
 # .keyslots.7.area.offset = ( ((.config.keyslots_size | tonumber) + ($mda | tonumber) - (.keyslots.7.area.size | tonumber) + 1) | tostring ) |
 	jq -c --arg mda $((2*TEST_MDA_SIZE_BYTES)) --arg jsize $JSON_SIZE \

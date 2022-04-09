@@ -246,3 +246,21 @@ function lib_mangle_json_hdr0_kill_hdr1()
 	kill_bin_hdr $TMPDIR/hdr1
 	write_luks2_hdr1 $TMPDIR/hdr1 $TGT_IMG
 }
+
+function lib_hdr0_killed()
+{
+	local mda_sz=${1:-}
+
+	read_luks2_bin_hdr0 $TGT_IMG $TMPDIR/hdr_res0 $mda_sz
+	local str_res0=$(head -c 6 $TMPDIR/hdr_res0)
+	test "$str_res0" = "VACUUM"
+}
+
+function lib_hdr1_killed()
+{
+	local mda_sz=${1:-}
+
+	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1 $mda_sz
+	local str_res1=$(head -c 6 $TMPDIR/hdr_res1)
+	test "$str_res1" = "VACUUM"
+}

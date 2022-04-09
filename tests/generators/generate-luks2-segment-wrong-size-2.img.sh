@@ -26,9 +26,7 @@ function generate()
 
 function check()
 {
-	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1
-	local str_res1=$(head -c 6 $TMPDIR/hdr_res1)
-	test "$str_res1" = "VACUUM" || exit 2
+	lib_hdr1_killed || exit 2
 
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0
 	jq -c 'if .segments."0".size != "511"

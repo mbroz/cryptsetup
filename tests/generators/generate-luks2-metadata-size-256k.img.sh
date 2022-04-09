@@ -47,9 +47,8 @@ function generate()
 
 function check()
 {
-	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1 $TEST_MDA_SIZE
-	local str_res1=$(head -c 6 $TMPDIR/hdr_res1)
-	test "$str_res1" = "VACUUM" || exit 2
+	lib_hdr1_killed $TEST_MDA_SIZE || exit 2
+
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0 $TEST_JSN_SIZE
 	jq -c --arg koff $KEYSLOTS_OFFSET --arg jsize $JSON_SIZE \
 		'if ([.keyslots[].area.offset] | map(tonumber) | min | tostring != $koff) or
