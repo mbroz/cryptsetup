@@ -20,6 +20,10 @@ LUKS2_BIN_HDR_CHKS_LENGTH=64
 [ -z "$srcdir" ] && srcdir="."
 TMPDIR=$srcdir/tmp
 
+# to be set by individual generator
+TGT_IMG=""
+SRC_IMG=""
+
 repeat_str() {
 	printf "$1"'%.0s' $(eval "echo {1.."$(($2))"}");
 }
@@ -177,4 +181,103 @@ function write_bin_hdr_size() {
 
 function write_bin_hdr_offset() {
 	printf '%016x' $2 | xxd -r -p -l 16 | _dd of=$1 bs=8 count=1 seek=32 conv=notrunc
+}
+
+# generic header helpers
+# $TMPDIR/json0 - JSON hdr1
+# $TMPDIR/json1 - JSON hdr2
+# $TMPDIR/hdr0  - bin hdr1
+# $TMPDIR/hdr1  - bin hdr2
+
+# 1:target_dir 2:source_image
+function lib_prepare()
+{
+	test $# -eq 2 || exit 1
+
+	TGT_IMG=$1/$(test_img_name $0)
+	SRC_IMG=$2
+
+	# wipe checksums
+	CHKS0=0
+	CHKS1=0
+
+	cp $SRC_IMG $TGT_IMG
+	test -d $TMPDIR || mkdir $TMPDIR
+	read_luks2_json0 $TGT_IMG $TMPDIR/json0
+	read_luks2_json1 $TGT_IMG $TMPDIR/json1
+	read_luks2_bin_hdr0 $TGT_IMG $TMPDIR/hdr0
+	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr1
+}
+
+function lib_cleanup()
+{
+	rm -f $TMPDIR/*
+	rm -fd $TMPDIR
+}
+
+function lib_mangle_json_hdr0()
+{
+	local mda_sz=${1:-}
+	local jsn_sz=${2:-}
+	local kill_hdr=${3:-}
+
+	merge_bin_hdr_with_json $TMPDIR/hdr0 $TMPDIR/json0 $TMPDIR/area0 $jsn_sz
+	erase_checksum $TMPDIR/area0
+	CHKS0=$(calc_sha256_checksum_file $TMPDIR/area0)
+	write_checksum $CHKS0 $TMPDIR/area0
+	test -n "$kill_hdr" && kill_bin_hdr $TMPDIR/area0
+	write_luks2_hdr0 $TMPDIR/area0 $TGT_IMG $mda_sz
+}
+
+function lib_mangle_json_hdr1()
+{
+	local mda_sz=${1:-}
+	local jsn_sz=${2:-}
+	local kill_hdr=${3:-}
+
+	merge_bin_hdr_with_json $TMPDIR/hdr1 $TMPDIR/json1 $TMPDIR/area1 $jsn_sz
+	erase_checksum $TMPDIR/area1
+	CHKS1=$(calc_sha256_checksum_file $TMPDIR/area1)
+	write_checksum $CHKS1 $TMPDIR/area1
+	test -n "$kill_hdr" && kill_bin_hdr $TMPDIR/area1
+	write_luks2_hdr1 $TMPDIR/area1 $TGT_IMG $mda_sz
+}
+
+function lib_mangle_json_hdr0_kill_hdr1()
+{
+	lib_mangle_json_hdr0
+
+	kill_bin_hdr $TMPDIR/hdr1
+	write_luks2_hdr1 $TMPDIR/hdr1 $TGT_IMG
+}
+
+function lib_hdr0_killed()
+{
+	local mda_sz=${1:-}
+
+	read_luks2_bin_hdr0 $TGT_IMG $TMPDIR/hdr_res0 $mda_sz
+	local str_res0=$(head -c 6 $TMPDIR/hdr_res0)
+	test "$str_res0" = "VACUUM"
+}
+
+function lib_hdr1_killed()
+{
+	local mda_sz=${1:-}
+
+	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1 $mda_sz
+	local str_res1=$(head -c 6 $TMPDIR/hdr_res1)
+	test "$str_res1" = "VACUUM"
+}
+
+function lib_hdr0_checksum()
+{
+	local chks_res0=$(read_sha256_checksum $TGT_IMG)
+	test "$CHKS0" = "$chks_res0"
+}
+
+function lib_hdr1_checksum()
+{
+	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr_res1
+	local chks_res1=$(read_sha256_checksum $TMPDIR/hdr_res1)
+	test "$CHKS1" = "$chks_res1"
 }
