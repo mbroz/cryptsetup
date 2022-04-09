@@ -28,13 +28,7 @@ function check()
 	test "$chks1" = "$chks_res1" || exit 2
 }
 
-function cleanup()
-{
-	rm -f $TMPDIR/*
-	rm -fd $TMPDIR
-}
-
 lib_prepare $@
 generate
 check
-cleanup
+lib_cleanup

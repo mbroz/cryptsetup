@@ -71,13 +71,7 @@ function check()
 		then error("Unexpected value in result json") else empty end' $TMPDIR/json_res1 || exit 5
 }
 
-function cleanup()
-{
-	rm -f $TMPDIR/*
-	rm -fd $TMPDIR
-}
-
 lib_prepare $@
 generate
 check
-cleanup
+lib_cleanup

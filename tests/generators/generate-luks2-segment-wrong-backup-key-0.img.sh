@@ -41,13 +41,7 @@ function check()
 	       then error("Unexpected segments count") else empty end' $TMPDIR/json_res0 || exit 5
 }
 
-function cleanup()
-{
-	rm -f $TMPDIR/*
-	rm -fd $TMPDIR
-}
-
 lib_prepare $@
 generate
 check
-cleanup
+lib_cleanup

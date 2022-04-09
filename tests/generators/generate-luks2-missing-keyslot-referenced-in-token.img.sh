@@ -46,13 +46,7 @@ function check()
 	test $new_arr_len -eq 2 || exit 2
 }
 
-function cleanup()
-{
-	rm -f $TMPDIR/*
-	rm -fd $TMPDIR
-}
-
 lib_prepare $@
 generate
 check
-cleanup
+lib_cleanup

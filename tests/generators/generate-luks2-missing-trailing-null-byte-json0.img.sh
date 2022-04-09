@@ -63,13 +63,7 @@ function check()
 	test ${#json_str_res0} -eq $((LUKS2_JSON_SIZE*512)) || exit 2
 }
 
-function cleanup()
-{
-	rm -f $TMPDIR/*
-	rm -fd $TMPDIR
-}
-
 lib_prepare $@
 generate
 check
-cleanup
+lib_cleanup

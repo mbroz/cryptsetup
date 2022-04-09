@@ -204,3 +204,9 @@ function lib_prepare()
 	read_luks2_bin_hdr0 $TGT_IMG $TMPDIR/hdr0
 	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr1
 }
+
+function lib_cleanup()
+{
+	rm -f $TMPDIR/*
+	rm -fd $TMPDIR
+}
