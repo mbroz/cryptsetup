@@ -80,7 +80,9 @@ function test_load()
 		else
 			$CRYPTSETUP luksDump $_debug $IMG > /dev/null 2>&1
 		fi
-		test $? -ne 0 || return 1
+		ret=$?
+		test $ret -ne 0 || return 1
+		test $ret -ne 139 || return 1
 		;;
 	*)
 		fail "Internal test error"
@@ -232,6 +234,10 @@ RUN luks2-metadata-size-2m-secondary.img		"R" "Valid 2MiB metadata size in secon
 RUN luks2-metadata-size-4m-secondary.img		"R" "Valid 4MiB metadata size in secondary hdr failed to validate"
 RUN luks2-metadata-size-invalid.img			"F" "Invalid metadata size in secondary hdr not rejected"
 RUN luks2-metadata-size-invalid-secondary.img		"F" "Invalid metadata size in secondary hdr not rejected"
+
+echo "[7] Test top level metadata object property"
+RUN luks2-invalid-tokens.img				"F" "Invalid tokens objects not rejected"
+RUN luks2-invalid-top-objects.img			"F" "Invalid top-level objects not rejected"
 
 remove_mapping
 
