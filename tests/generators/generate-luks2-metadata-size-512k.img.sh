@@ -15,15 +15,6 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function prepare()
-{
-	cp $SRC_IMG $TGT_IMG
-	test -d $TMPDIR || mkdir $TMPDIR
-	read_luks2_json0 $TGT_IMG $TMPDIR/json0
-	read_luks2_bin_hdr0 $TGT_IMG $TMPDIR/hdr0
-	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr1
-}
-
 function generate()
 {
 	# 512KiB metadata
@@ -83,12 +74,7 @@ function cleanup()
 	rm -fd $TMPDIR
 }
 
-test $# -eq 2 || exit 1
-
-TGT_IMG=$1/$(test_img_name $0)
-SRC_IMG=$2
-
-prepare
+lib_prepare $@
 generate
 check
 cleanup

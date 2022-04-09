@@ -20,6 +20,10 @@ LUKS2_BIN_HDR_CHKS_LENGTH=64
 [ -z "$srcdir" ] && srcdir="."
 TMPDIR=$srcdir/tmp
 
+# to be set by individual generator
+TGT_IMG=""
+SRC_IMG=""
+
 repeat_str() {
 	printf "$1"'%.0s' $(eval "echo {1.."$(($2))"}");
 }
@@ -177,4 +181,26 @@ function write_bin_hdr_size() {
 
 function write_bin_hdr_offset() {
 	printf '%016x' $2 | xxd -r -p -l 16 | _dd of=$1 bs=8 count=1 seek=32 conv=notrunc
+}
+
+# generic header helpers
+# $TMPDIR/json0 - JSON hdr1
+# $TMPDIR/json1 - JSON hdr2
+# $TMPDIR/hdr0  - bin hdr1
+# $TMPDIR/hdr1  - bin hdr2
+
+# 1:target_dir 2:source_image
+function lib_prepare()
+{
+	test $# -eq 2 || exit 1
+
+	TGT_IMG=$1/$(test_img_name $0)
+	SRC_IMG=$2
+
+	cp $SRC_IMG $TGT_IMG
+	test -d $TMPDIR || mkdir $TMPDIR
+	read_luks2_json0 $TGT_IMG $TMPDIR/json0
+	read_luks2_json1 $TGT_IMG $TMPDIR/json1
+	read_luks2_bin_hdr0 $TGT_IMG $TMPDIR/hdr0
+	read_luks2_bin_hdr1 $TGT_IMG $TMPDIR/hdr1
 }
