@@ -19,6 +19,7 @@
  */
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -135,16 +136,34 @@ int blk_init_by_fd(struct blkid_handle **h, int fd)
 	return r;
 }
 
-int blk_superblocks_filter_luks(struct blkid_handle *h)
-{
-	int r = -ENOTSUP;
 #ifdef HAVE_BLKID
+static int blk_superblocks_luks(struct blkid_handle *h, bool enable)
+{
 	char luks[] = "crypto_LUKS";
 	char *luks_filter[] = {
 		luks,
 		NULL
 	};
-	r = blkid_probe_filter_superblocks_type(h->pr, BLKID_FLTR_NOTIN, luks_filter);
+	return blkid_probe_filter_superblocks_type(h->pr,
+			enable ? BLKID_FLTR_ONLYIN : BLKID_FLTR_NOTIN,
+			luks_filter);
+}
+#endif
+
+int blk_superblocks_filter_luks(struct blkid_handle *h)
+{
+	int r = -ENOTSUP;
+#ifdef HAVE_BLKID
+	r = blk_superblocks_luks(h, false);
+#endif
+	return r;
+}
+
+int blk_superblocks_only_luks(struct blkid_handle *h)
+{
+	int r = -ENOTSUP;
+#ifdef HAVE_BLKID
+	r = blk_superblocks_luks(h, true);
 #endif
 	return r;
 }

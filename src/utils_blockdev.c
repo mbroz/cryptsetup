@@ -197,7 +197,8 @@ static void report_superblock(const char *value, const char *device, bool batch_
 		log_std(_("WARNING: Device %s already contains a '%s' superblock signature.\n"), device, value);
 }
 
-int tools_detect_signatures(const char *device, int ignore_luks, size_t *count, bool batch_mode)
+int tools_detect_signatures(const char *device, tools_probe_filter_info filter,
+		size_t *count,bool batch_mode)
 {
 	int r;
 	size_t tmp_count;
@@ -219,11 +220,22 @@ int tools_detect_signatures(const char *device, int ignore_luks, size_t *count, 
 		return -EINVAL;
 	}
 
-	blk_set_chains_for_full_print(h);
-
-	if (ignore_luks && blk_superblocks_filter_luks(h)) {
-		r = -EINVAL;
-		goto out;
+	switch (filter) {
+	case PRB_FILTER_LUKS:
+		if (blk_superblocks_filter_luks(h)) {
+			r = -EINVAL;
+			goto out;
+		}
+		/* fall-through */
+	case PRB_FILTER_NONE:
+		blk_set_chains_for_full_print(h);
+		break;
+	case PRB_ONLY_LUKS:
+		blk_set_chains_for_fast_detection(h);
+		if (blk_superblocks_only_luks(h)) {
+			r = -EINVAL;
+			goto out;
+		}
 	}
 
 	while ((pr = blk_probe(h)) < PRB_EMPTY) {

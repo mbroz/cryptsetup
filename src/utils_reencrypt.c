@@ -252,7 +252,6 @@ static enum device_status_info load_luks(struct crypt_device **r_cd, const char 
 	if (crypt_init_data_device(&cd, uuid_or_device(header_device ?: data_device), data_device))
 		return DEVICE_INVALID;
 
-	/* TODO: LUKS2 load may fail when header is damaged and blkid reports ambiguous/other signatures */
 	if ((r = crypt_load(cd, CRYPT_LUKS, NULL))) {
 		crypt_free(cd);
 
@@ -924,10 +923,27 @@ static int reencrypt_luks2_resume(struct crypt_device *cd)
 	return r;
 }
 
+static int check_broken_luks_signature(const char *device)
+{
+	int r;
+	size_t count;
+
+	r = tools_detect_signatures(device, PRB_ONLY_LUKS, &count, ARG_SET(OPT_BATCH_MODE_ID));
+	if (r < 0)
+		return -EINVAL;
+	if (count) {
+		log_err(_("Device %s contains broken LUKS metadata. Aborting operation."), device);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int _encrypt(struct crypt_device *cd, const char *type, enum device_status_info dev_st, int action_argc, const char **action_argv)
 {
-	const char *data_device;
+	const char *device_ptr;
 	enum device_status_info data_dev_st;
+	struct stat st;
 	struct crypt_device *encrypt_cd = NULL;
 	int r = -EINVAL;
 
@@ -937,24 +953,37 @@ static int _encrypt(struct crypt_device *cd, const char *type, enum device_statu
 		return -EINVAL;
 	}
 
+	if (dev_st == DEVICE_NOT_LUKS &&
+	    (!ARG_SET(OPT_HEADER_ID) || !stat(ARG_STR(OPT_HEADER_ID), &st))) {
+		device_ptr = ARG_SET(OPT_HEADER_ID) ? ARG_STR(OPT_HEADER_ID) : action_argv[0];
+		r = check_broken_luks_signature(device_ptr);
+		if (r < 0)
+			return r;
+	}
+
 	/* check data device type/state */
 	if (ARG_SET(OPT_HEADER_ID)) {
-		data_device = cd ? crypt_get_device_name(cd) : action_argv[0];
-		data_dev_st = check_luks_device(data_device);
+		device_ptr = cd ? crypt_get_device_name(cd) : action_argv[0];
+		data_dev_st = check_luks_device(device_ptr);
+
 		if (data_dev_st == DEVICE_INVALID)
 			return -EINVAL;
 
 		if (data_dev_st == DEVICE_LUKS2 || data_dev_st == DEVICE_LUKS1) {
 			log_err(_("Device %s is already LUKS device. Aborting operation."),
-				data_device);
+				device_ptr);
 			return -EINVAL;
 		}
 
 		if (data_dev_st == DEVICE_LUKS2_REENCRYPT || data_dev_st == DEVICE_LUKS1_UNUSABLE) {
 			log_err(_("Device %s is already in LUKS reencryption. Aborting operation."),
-				data_device);
+				device_ptr);
 			return -EINVAL;
 		}
+
+		r = check_broken_luks_signature(device_ptr);
+		if (r < 0)
+			return r;
 	}
 
 	if (!type)

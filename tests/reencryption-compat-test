@@ -10,6 +10,7 @@ DEV_NAME=reenc9768
 DEV_NAME2=reenc1273
 IMG=reenc-data
 IMG_HDR=$IMG.hdr
+HEADER_LUKS2_PV=blkid-luks2-pv.img
 ORIG_IMG=reenc-data-orig
 KEY1=key1
 PWD1="93R4P4pIqAH8"
@@ -30,7 +31,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $IMG_HDR $ORIG_IMG $KEY1 >/dev/null 2>&1
+	rm -f $IMG $IMG_HDR $ORIG_IMG $KEY1 $HEADER_LUKS2_PV >/dev/null 2>&1
 	umount $MNT_DIR > /dev/null 2>&1
 	rmdir $MNT_DIR > /dev/null 2>&1
 	LOOPDEV1=""
@@ -415,6 +416,21 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 --header $IMG_HDR $FAST_PBKD
 
 echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks1 --header $IMG_HDR  2>/dev/null && fail
 echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks2 --header $IMG_HDR  2>/dev/null && fail
+
+echo "[13] Prevent nested encryption of broken LUKS device"
+rm -f $IMG_HDR
+wipe_dev $LOOPDEV1
+xz -dk $HEADER_LUKS2_PV.xz
+
+# broken header
+echo $PWD1 | $REENC --header $HEADER_LUKS2_PV $LOOPDEV1 -q $FAST_PBKDF --new --type luks1 2>/dev/null && fail
+$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
+# broken device
+echo $PWD1 | $REENC $HEADER_LUKS2_PV -q $FAST_PBKDF --new --type luks1 --reduce-device-size 1024S 2>/dev/null && fail
+$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
+# broken data device only
+echo $PWD1 | $REENC --header $IMG_HDR $HEADER_LUKS2_PV -q $FAST_PBKDF --new --type luks1 2>/dev/null && fail
+test -f $IMG_HDR && fail
 
 remove_mapping
 exit 0
