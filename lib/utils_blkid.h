@@ -62,4 +62,6 @@ int blk_do_wipe(struct blkid_handle *h);
 
 int blk_supported(void);
 
+unsigned blk_get_block_size(struct blkid_handle *h);
+
 #endif

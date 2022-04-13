@@ -326,3 +326,16 @@ int blk_supported(void)
 #endif
 	return r;
 }
+
+unsigned blk_get_block_size(struct blkid_handle *h)
+{
+	const char *data;
+	unsigned block_size = 0;
+#ifdef HAVE_BLKID
+	if (!blk_is_superblock(h) || !blkid_probe_has_value(h->pr, "BLOCK_SIZE") ||
+	    blkid_probe_lookup_value(h->pr, "BLOCK_SIZE", &data, NULL) ||
+	    sscanf(data, "%u", &block_size) != 1)
+		block_size = 0;
+#endif
+	return block_size;
+}
