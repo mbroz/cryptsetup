@@ -1672,7 +1672,7 @@ rm -f $IMG_HDR
 
 #data device already in reencryption
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF2 $DEV || fail
-echo $PWD1 | $CRYPTSETUP reencrypt --init-only $FAST_PBKDF $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --init-only $FAST_PBKDF_ARGON $DEV || fail
 
 echo $PWD1 | $CRYPTSETUP reencrypt -q --encrypt --type luks1 --header $IMG_HDR $FAST_PBKDF2 $DEV 2>/dev/null && fail
 test -f $IMG_HDR && fail
@@ -1715,13 +1715,13 @@ xz -dk $HEADER_LUKS2_PV.xz
 wipe_dev $DEV
 
 # broken header
-echo $PWD1 | $CRYPTSETUP reencrypt -q --header $HEADER_LUKS2_PV $DEV $FAST_PBKDF --encrypt --type luks2 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --header $HEADER_LUKS2_PV $DEV $FAST_PBKDF_ARGON --encrypt --type luks2 2>/dev/null && fail
 $CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
 # broken device
-echo $PWD1 | $CRYPTSETUP reencrypt -q $HEADER_LUKS2_PV $FAST_PBKDF --encrypt --force-offline-reencrypt --type luks2 --reduce-device-size 8m 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q $HEADER_LUKS2_PV $FAST_PBKDF_ARGON --encrypt --force-offline-reencrypt --type luks2 --reduce-device-size 8m 2>/dev/null && fail
 $CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
 # broken data device only
-echo $PWD1 | $CRYPTSETUP reencrypt -q --header $IMG_HDR $HEADER_LUKS2_PV $FAST_PBKDF --encrypt --force-offline-reencrypt --type luks2 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --header $IMG_HDR $HEADER_LUKS2_PV $FAST_PBKDF_ARGON --encrypt --force-offline-reencrypt --type luks2 2>/dev/null && fail
 test -f $IMG_HDR && fail
 
 remove_mapping
