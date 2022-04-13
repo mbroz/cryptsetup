@@ -128,11 +128,6 @@ static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_d
 	assert(cd);
 	assert(r_active_name);
 
-	if (ARG_SET(OPT_INIT_ONLY_ID) || ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID)) {
-		*r_active_name = NULL;
-		return 0;
-	}
-
 	if (ARG_SET(OPT_ACTIVE_NAME_ID))
 		return (*r_active_name = strdup(ARG_STR(OPT_ACTIVE_NAME_ID))) ? 0 : -ENOMEM;
 
@@ -201,7 +196,9 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (r < 0)
 		return r;
 
-	r = reencrypt_get_active_name(cd, data_device, &active_name);
+
+	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
+		r = reencrypt_get_active_name(cd, data_device, &active_name);
 	if (r >= 0)
 		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password, passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_KEY_SLOT_ID), NULL, NULL, &params);
 
@@ -473,7 +470,7 @@ static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
 	int r;
 	size_t passwordLen;
-	char *active_name, *password = NULL;
+	char *active_name = NULL, *password = NULL;
 	struct crypt_params_reencrypt params = {
 		.mode = CRYPT_REENCRYPT_DECRYPT,
 		.direction = data_shift > 0 ? CRYPT_REENCRYPT_FORWARD : CRYPT_REENCRYPT_BACKWARD,
@@ -501,7 +498,8 @@ static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 	if (r < 0)
 		return r;
 
-	r = reencrypt_get_active_name(cd, data_device, &active_name);
+	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID) && !ARG_SET(OPT_INIT_ONLY_ID))
+		r = reencrypt_get_active_name(cd, data_device, &active_name);
 	if (r >= 0)
 		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password,
 				passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), CRYPT_ANY_SLOT, NULL, NULL, &params);
@@ -852,7 +850,8 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 	if (r < 0)
 		goto out;
 
-	r = reencrypt_get_active_name(cd, data_device, &active_name);
+	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID) && !ARG_SET(OPT_INIT_ONLY_ID))
+		r = reencrypt_get_active_name(cd, data_device, &active_name);
 	if (r >= 0)
 		r = crypt_reencrypt_init_by_passphrase(cd, active_name, kp[keyslot_old].password,
 				kp[keyslot_old].passwordLen, keyslot_old, kp[keyslot_old].new,
