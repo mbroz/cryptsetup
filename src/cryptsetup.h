@@ -118,6 +118,8 @@ typedef enum {
 
 int tools_detect_signatures(const char *device, tools_probe_filter_info filter, size_t *count, bool batch_mode);
 int tools_wipe_all_signatures(const char *path);
+int tools_superblock_block_size(const char *device, char *sb_name,
+				size_t sb_name_len, unsigned *r_block_size);
 
 int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 		const char *data_device_path, char **r_name);

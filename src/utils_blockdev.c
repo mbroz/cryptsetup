@@ -321,3 +321,53 @@ out:
 	blk_free(h);
 	return r;
 }
+
+int tools_superblock_block_size(const char *device, char *sb_name, size_t sb_name_len, unsigned *r_block_size)
+{
+	struct blkid_handle *h;
+	const char *name;
+	int r = 0;
+
+	if (!r_block_size || !sb_name || sb_name_len < 1)
+		return -EINVAL;
+
+	if (!blk_supported()) {
+		log_dbg("Blkid support disabled.");
+		return 0;
+	}
+
+	if ((r = blk_init_by_path(&h, device))) {
+		log_err(_("Failed to initialize device signature probes."));
+		return -EINVAL;
+	}
+
+	blk_set_chains_for_superblocks(h);
+
+	switch (blk_probe(h)) {
+	case PRB_OK:
+		*r_block_size = blk_get_block_size(h);
+		if (!*r_block_size) /* same as not-found */
+			break;
+
+		if (!(name = blk_get_superblock_type(h))) {
+			r = -EINVAL;
+			break;
+		}
+
+		/* we don't mind truncating */
+		strncpy(sb_name, name, sb_name_len - 1);
+		sb_name[sb_name_len-1] = '\0';
+
+		log_dbg("Detected superblock %s on device %s (block size: %u).", sb_name, device, *r_block_size);
+		r = 1;
+		/* fall-through */
+	case PRB_EMPTY:
+		break;
+	default:
+		r = -EINVAL;
+	}
+
+	blk_free(h);
+
+	return r;
+}
