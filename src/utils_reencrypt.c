@@ -302,6 +302,40 @@ static enum device_status_info check_luks_device(const char *device)
 	return dev_st;
 }
 
+static int reencrypt_check_data_sb_block_size(const char *data_device, uint32_t new_sector_size)
+{
+	int r;
+	char sb_name[32];
+	unsigned block_size;
+
+	assert(data_device);
+
+	r = tools_superblock_block_size(data_device, sb_name, sizeof(sb_name), &block_size);
+	if (r <= 0)
+		return r;
+
+	if (new_sector_size > block_size) {
+		log_err(_("Requested --sector-size %" PRIu32 " is incompatible with %s superblock\n"
+			  "(block size: %" PRIu32 " bytes) detected on device %s."),
+			new_sector_size, sb_name, block_size, data_device);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int reencrypt_check_active_device_sb_block_size(const char *active_device, uint32_t new_sector_size)
+{
+	int r;
+	char dm_device[PATH_MAX];
+
+	r = snprintf(dm_device, sizeof(dm_device), "%s/%s", crypt_get_dir(), active_device);
+	if (r < 0 || (size_t)r >= sizeof(dm_device))
+		return -EINVAL;
+
+	return reencrypt_check_data_sb_block_size(dm_device, new_sector_size);
+}
+
 static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device, const char *device_name)
 {
 	int keyslot, r, fd;
@@ -348,6 +382,12 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 	if (ARG_SET(OPT_UUID_ID) && uuid_parse(ARG_STR(OPT_UUID_ID), uuid) == -1) {
 		log_err(_("Wrong LUKS UUID format provided."));
 		return -EINVAL;
+	}
+
+	if (ARG_SET(OPT_SECTOR_SIZE_ID)) {
+		r = reencrypt_check_data_sb_block_size(data_device, ARG_UINT32(OPT_SECTOR_SIZE_ID));
+		if (r < 0)
+			return r;
 	}
 
 	if (!ARG_SET(OPT_UUID_ID)) {
@@ -850,12 +890,28 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 	if (r < 0)
 		goto out;
 
-	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID) && !ARG_SET(OPT_INIT_ONLY_ID))
+	/*
+	 * with --init-only lookup active device only if
+	 * blkid probes are allowed and sector size change
+	 * is requested.
+	 */
+	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID) &&
+	    (!ARG_SET(OPT_INIT_ONLY_ID) || (tools_blkid_supported() && sector_size_change))) {
 		r = reencrypt_get_active_name(cd, data_device, &active_name);
-	if (r >= 0)
-		r = crypt_reencrypt_init_by_passphrase(cd, active_name, kp[keyslot_old].password,
-				kp[keyslot_old].passwordLen, keyslot_old, kp[keyslot_old].new,
-				cipher, mode, &params);
+		if (r < 0)
+			goto out;
+	}
+
+	if (sector_size_change && active_name) {
+		r = reencrypt_check_active_device_sb_block_size(active_name, luks2_params.sector_size);
+		if (r < 0)
+			goto out;
+	}
+
+	r = crypt_reencrypt_init_by_passphrase(cd,
+			ARG_SET(OPT_INIT_ONLY_ID) ? NULL : active_name,
+			kp[keyslot_old].password, kp[keyslot_old].passwordLen,
+			keyslot_old, kp[keyslot_old].new, cipher, mode, &params);
 out:
 	crypt_safe_free(vk);
 	if (kp) {

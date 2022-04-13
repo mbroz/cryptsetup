@@ -19,6 +19,7 @@ DEV_NAME2=reenc97682
 IMG=reenc-data
 IMG_HDR=$IMG.hdr
 HEADER_LUKS2_PV=blkid-luks2-pv.img
+IMG_FS=xfs_512_block_size.img
 KEY1=key1
 VKEY1=vkey1
 PWD1="93R4P4pIqAH8"
@@ -99,7 +100,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$OVRDEV-err ] && dmsetup remove --retry $OVRDEV-err 2>/dev/null
 	[ -n "$LOOPDEV" ] && losetup -d $LOOPDEV
 	unset LOOPDEV
-	rm -f $IMG $IMG_HDR $KEY1 $VKEY1 $DEVBIG $DEV_LINK $HEADER_LUKS2_PV >/dev/null 2>&1
+	rm -f $IMG $IMG_HDR $KEY1 $VKEY1 $DEVBIG $DEV_LINK $HEADER_LUKS2_PV $IMG_FS >/dev/null 2>&1
 	rmmod scsi_debug >/dev/null 2>&1
 	scsi_debug_teardown $DEV
 }
@@ -715,6 +716,11 @@ function valgrind_setup()
 function valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
+function bin_check()
+{
+	command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
@@ -1723,6 +1729,38 @@ $CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
 # broken data device only
 echo $PWD1 | $CRYPTSETUP reencrypt -q --header $IMG_HDR $HEADER_LUKS2_PV $FAST_PBKDF_ARGON --encrypt --force-offline-reencrypt --type luks2 2>/dev/null && fail
 test -f $IMG_HDR && fail
+
+echo "[31] Prevent dangerous sector size increase"
+bin_check blkid
+preparebig 64
+xz -dk $IMG_FS.xz
+blkid $IMG_FS | grep -q BLOCK_SIZE && BLKID_BLOCK_SIZE_SUPPORT=1
+if [ -n "$DM_SECTOR_SIZE" -a -n "$BLKID_BLOCK_SIZE_SUPPORT" ]; then
+	# encryption checks must work in offline mode
+	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --header $IMG_HDR $IMG_FS $FAST_PBKDF_ARGON --init-only --type luks2 2>/dev/null && fail
+	test -f $IMG_HDR && fail
+
+	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --header $IMG_HDR $IMG_FS $FAST_PBKDF_ARGON --type luks2 2>/dev/null && fail
+	test -f $IMG_HDR && fail
+
+	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --reduce-device-size 8m $IMG_FS $FAST_PBKDF_ARGON --init-only --type luks2 2>/dev/null && fail
+	$CRYPTSETUP isLuks $IMG_FS && fail
+	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --reduce-device-size 8m $IMG_FS $FAST_PBKDF_ARGON --type luks2 2>/dev/null && fail
+	$CRYPTSETUP isLuks $IMG_FS && fail
+
+	echo $PWD1 | $CRYPTSETUP luksFormat -q --sector-size 512 --type luks2 $FAST_PBKDF_ARGON $DEV || fail
+	echo $PWD1 | $CRYPTSETUP open -q $DEV $DEV_NAME || fail
+	dd if=$IMG_FS of=/dev/mapper/$DEV_NAME bs=1M >/dev/null 2>&1
+
+	echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV 2>/dev/null && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
+	echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 1024 --active-name $DEV_NAME $FAST_PBKDF_ARGON 2>/dev/null && fail
+	$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV 2>/dev/null && fail
+	$CRYPTSETUP luksDump $DEV | grep -q "sector: 512" || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q --sector-size 1024 --active-name $DEV_NAME $FAST_PBKDF_ARGON 2>/dev/null && fail
+	$CRYPTSETUP luksDump $DEV | grep -q "sector: 512" || fail
+fi
 
 remove_mapping
 exit 0
