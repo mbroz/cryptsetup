@@ -371,3 +371,8 @@ int tools_superblock_block_size(const char *device, char *sb_name, size_t sb_nam
 
 	return r;
 }
+
+bool tools_blkid_supported(void)
+{
+	return blk_supported() != 0;
+}
