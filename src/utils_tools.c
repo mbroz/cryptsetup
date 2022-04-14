@@ -432,3 +432,32 @@ int tools_write_mk(const char *file, const char *key, int keysize)
 	close(fd);
 	return r;
 }
+
+void tools_package_version(const char *name, bool use_pwlibs)
+{
+	log_std("%s %s flags: %s%s\n", name, PACKAGE_VERSION,
+#ifdef USE_UDEV
+	"UDEV "
+#endif
+#ifdef HAVE_BLKID
+	"BLKID "
+#endif
+#ifdef KERNEL_KEYRING
+	"KEYRING "
+#endif
+#ifdef ENABLE_FIPS
+	"FIPS "
+#endif
+#ifdef ENABLE_AF_ALG
+	"KERNEL_CAPI "
+#endif
+	,
+#if defined(ENABLE_PWQUALITY)
+	use_pwlibs ? "PWQUALITY " : ""
+#elif defined(ENABLE_PASSWDQC)
+	use_pwlibs ? "PASSWDQC " : ""
+#else
+	""
+#endif
+	);
+}

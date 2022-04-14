@@ -2899,8 +2899,7 @@ static void help(poptContext popt_context,
 		struct action_type *action;
 		const struct crypt_pbkdf_type *pbkdf_luks1, *pbkdf_luks2;
 
-		log_std("%s\n",PACKAGE_STRING);
-
+		tools_package_version(PACKAGE_NAME, true);
 		poptPrintHelp(popt_context, stdout, 0);
 
 		log_std(_("\n"
@@ -2958,7 +2957,7 @@ static void help(poptContext popt_context,
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else if (key->shortName == 'V') {
-		log_std("%s %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+		tools_package_version(PACKAGE_NAME, true);
 		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
