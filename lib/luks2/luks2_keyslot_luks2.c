@@ -673,9 +673,9 @@ static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 	if (!jobj_keyslot)
 		return -EINVAL;
 
-	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf) ||
-	    !json_object_object_get_ex(jobj_keyslot, "af", &jobj_af) ||
-	    !json_object_object_get_ex(jobj_keyslot, "area", &jobj_area))
+	if (!(jobj_kdf = json_contains(cd, jobj_keyslot, "", "keyslot", "kdf", json_type_object)) ||
+	    !(jobj_af = json_contains(cd, jobj_keyslot, "", "keyslot", "af", json_type_object)) ||
+	    !(jobj_area = json_contains(cd, jobj_keyslot, "", "keyslot", "area", json_type_object)))
 		return -EINVAL;
 
 	count = json_object_object_length(jobj_kdf);
@@ -700,9 +700,12 @@ static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 			return -EINVAL;
 	}
 
-	if (!json_object_object_get_ex(jobj_af, "type", &jobj1))
+	jobj1 = json_contains(cd, jobj_af, "", "af section", "type", json_type_string);
+	if (!jobj1)
 		return -EINVAL;
-	if (!strcmp(json_object_get_string(jobj1), "luks1")) {
+	type = json_object_get_string(jobj1);
+
+	if (!strcmp(type, "luks1")) {
 		if (!json_contains(cd, jobj_af, "", "luks1 af", "hash", json_type_string) ||
 		    !json_contains(cd, jobj_af, "", "luks1 af", "stripes", json_type_int))
 			return -EINVAL;
@@ -710,9 +713,12 @@ static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 		return -EINVAL;
 
 	// FIXME check numbered
-	if (!json_object_object_get_ex(jobj_area, "type", &jobj1))
+	jobj1 = json_contains(cd, jobj_area, "", "area section", "type", json_type_string);
+	if (!jobj1)
 		return -EINVAL;
-	if (!strcmp(json_object_get_string(jobj1), "raw")) {
+	type = json_object_get_string(jobj1);
+
+	if (!strcmp(type, "raw")) {
 		if (!json_contains(cd, jobj_area, "area", "raw type", "encryption", json_type_string) ||
 		    !json_contains(cd, jobj_area, "area", "raw type", "key_size", json_type_int) ||
 		    !json_contains(cd, jobj_area, "area", "raw type", "offset", json_type_string) ||
