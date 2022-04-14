@@ -706,6 +706,20 @@ function setup_luks2_env() {
 	$CRYPTSETUP close $DEV_NAME || fail
 }
 
+function check_blkid() {
+	bin_check blkid
+	xz -dkf $HEADER_LUKS2_PV.xz
+	if ! $($CRYPTSETUP --version | grep -q "BLKID"); then
+		HAVE_BLKID=0
+	elif $(blkid -p -n crypto_LUKS $HEADER_LUKS2_PV >/dev/null 2>&1); then
+		HAVE_BLKID=1
+		xz -dkf $IMG_FS.xz
+		blkid $IMG_FS | grep -q BLOCK_SIZE && BLKID_BLOCK_SIZE_SUPPORT=1
+	else
+		HAVE_BLKID=0
+	fi
+}
+
 function valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
@@ -1715,27 +1729,28 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $IMG_HDR $FAST_PBKD
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --init-only $FAST_PBKDF_ARGON || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --header $IMG_HDR $DEV -q $FAST_PBKDF_ARGON 2> /dev/null && fail
 
-echo "[30] Prevent nested encryption of broken LUKS device"
-rm -f $IMG_HDR
-xz -dk $HEADER_LUKS2_PV.xz
-wipe_dev $DEV
+check_blkid
+if [ "$HAVE_BLKID" -gt 0 ]; then
+	echo "[30] Prevent nested encryption of broken LUKS device"
+	rm -f $IMG_HDR
+	xz -dkf $HEADER_LUKS2_PV.xz
+	wipe_dev $DEV
 
-# broken header
-echo $PWD1 | $CRYPTSETUP reencrypt -q --header $HEADER_LUKS2_PV $DEV $FAST_PBKDF_ARGON --encrypt --type luks2 2>/dev/null && fail
-$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
-# broken device
-echo $PWD1 | $CRYPTSETUP reencrypt -q $HEADER_LUKS2_PV $FAST_PBKDF_ARGON --encrypt --force-offline-reencrypt --type luks2 --reduce-device-size 8m 2>/dev/null && fail
-$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
-# broken data device only
-echo $PWD1 | $CRYPTSETUP reencrypt -q --header $IMG_HDR $HEADER_LUKS2_PV $FAST_PBKDF_ARGON --encrypt --force-offline-reencrypt --type luks2 2>/dev/null && fail
-test -f $IMG_HDR && fail
+	# broken header
+	echo $PWD1 | $CRYPTSETUP reencrypt -q --header $HEADER_LUKS2_PV $DEV $FAST_PBKDF_ARGON --encrypt --type luks2 2>/dev/null && fail
+	$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
+	# broken device
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $HEADER_LUKS2_PV $FAST_PBKDF_ARGON --encrypt --force-offline-reencrypt --type luks2 --reduce-device-size 8m 2>/dev/null && fail
+	$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
+	# broken data device only
+	echo $PWD1 | $CRYPTSETUP reencrypt -q --header $IMG_HDR $HEADER_LUKS2_PV $FAST_PBKDF_ARGON --encrypt --force-offline-reencrypt --type luks2 2>/dev/null && fail
+	test -f $IMG_HDR && fail
+fi
 
-echo "[31] Prevent dangerous sector size increase"
-bin_check blkid
-preparebig 64
-xz -dk $IMG_FS.xz
-blkid $IMG_FS | grep -q BLOCK_SIZE && BLKID_BLOCK_SIZE_SUPPORT=1
 if [ -n "$DM_SECTOR_SIZE" -a -n "$BLKID_BLOCK_SIZE_SUPPORT" ]; then
+	echo "[31] Prevent dangerous sector size increase"
+	preparebig 64
+	xz -dkf $IMG_FS.xz
 	# encryption checks must work in offline mode
 	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --header $IMG_HDR $IMG_FS $FAST_PBKDF_ARGON --init-only --type luks2 2>/dev/null && fail
 	test -f $IMG_HDR && fail
