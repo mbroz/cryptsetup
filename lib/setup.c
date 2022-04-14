@@ -2949,7 +2949,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 				crypt_get_data_offset(cd) * SECTOR_SIZE, &new_size);
 		if (r < 0)
 			return r;
-		log_dbg(cd, "Maximum integrity device size from kernel %lu", new_size);
+		log_dbg(cd, "Maximum integrity device size from kernel %" PRIu64, new_size);
 
 		if (old_size == new_size && new_size == dmdq.size && !dm_flags(cd, tgt->type, &supported_flags) && !(supported_flags & DM_INTEGRITY_RESIZE_SUPPORTED))
 			log_std(cd, _("WARNING: Maximum size already set or kernel doesn't support resize.\n"));
