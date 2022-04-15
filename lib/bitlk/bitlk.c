@@ -1348,6 +1348,10 @@ static int _activate(struct crypt_device *cd,
 			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for BITLK Elephant diffuser."));
 			r = -ENOTSUP;
 		}
+		if ((dmd.flags & CRYPT_ACTIVATE_IV_LARGE_SECTORS) && !(dmt_flags & DM_SECTOR_SIZE_SUPPORTED)) {
+			log_err(cd, _("Cannot activate device, kernel dm-crypt is missing support for large sector size."));
+			r = -ENOTSUP;
+		}
 		if (dm_flags(cd, DM_ZERO, &dmt_flags) < 0) {
 			log_err(cd, _("Cannot activate device, kernel dm-zero module is missing."));
 			r = -ENOTSUP;
