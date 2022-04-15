@@ -177,7 +177,7 @@ static size_t utf8_encoded_expected_len(uint8_t c)
 static int utf8_encoded_to_unichar(const char *str, char32_t *ret_unichar)
 {
 	char32_t unichar;
-	size_t len;
+	size_t len, i;
 
 	assert(str);
 
@@ -206,7 +206,7 @@ static int utf8_encoded_to_unichar(const char *str, char32_t *ret_unichar)
 		return -EINVAL;
 	}
 
-	for (size_t i = 1; i < len; i++) {
+	for (i = 1; i < len; i++) {
 		if (((char32_t)str[i] & 0xc0) != 0x80)
 			return -EINVAL;
 
@@ -254,13 +254,14 @@ static size_t utf16_encode_unichar(char16_t *out, char32_t c)
 int crypt_utf8_to_utf16(char16_t **out, const char *s, size_t length)
 {
 	char16_t *p;
+	size_t i;
 	int r;
 
 	assert(s);
 
 	p = *out;
 
-	for (size_t i = 0; i < length;) {
+	for (i = 0; i < length;) {
 		char32_t unichar;
 		size_t e;
 
