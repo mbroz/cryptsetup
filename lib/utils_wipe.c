@@ -22,7 +22,35 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <linux/fs.h>
 #include "internal.h"
+
+/* block device zeroout ioctls, introduced in Linux kernel 3.7 */
+#ifndef BLKZEROOUT
+#define BLKZEROOUT _IO(0x12,127)
+#endif
+
+static int wipe_zeroout(struct crypt_device *cd, int devfd,
+			uint64_t offset, uint64_t length)
+{
+	static bool zeroout_available = true;
+	uint64_t range[2] = { offset, length };
+	int r;
+
+	if (!zeroout_available)
+		return -ENOTSUP;
+
+	r = ioctl(devfd, BLKZEROOUT, &range);
+	if (r < 0) {
+		log_dbg(cd, "BLKZEROOUT ioctl not available (error %i), disabling.", r);
+		zeroout_available = false;
+		return -ENOTSUP;
+	}
+
+	return 0;
+}
 
 /*
  * Wipe using Peter Gutmann method described in
@@ -93,7 +121,8 @@ static int crypt_wipe_special(struct crypt_device *cd, int fd, size_t bsize,
 
 static int wipe_block(struct crypt_device *cd, int devfd, crypt_wipe_pattern pattern,
 		      char *sf, size_t device_block_size, size_t alignment,
-		      size_t wipe_block_size, uint64_t offset, bool *need_block_init)
+		      size_t wipe_block_size, uint64_t offset, bool *need_block_init,
+		      bool blockdev)
 {
 	int r;
 
@@ -122,6 +151,16 @@ static int wipe_block(struct crypt_device *cd, int devfd, crypt_wipe_pattern pat
 			return r;
 	}
 
+	if (blockdev && pattern == CRYPT_WIPE_ZERO &&
+	    !wipe_zeroout(cd, devfd, offset, wipe_block_size)) {
+		/* zeroout ioctl does not move offset */
+		if (lseek64(devfd, offset + wipe_block_size, SEEK_SET) < 0) {
+			log_err(cd, _("Cannot seek to device offset."));
+			return -EINVAL;
+		}
+		return 0;
+	}
+
 	if (write_blockwise(devfd, device_block_size, alignment, sf,
 			    wipe_block_size) == (ssize_t)wipe_block_size)
 		return 0;
@@ -139,6 +178,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 	void *usrptr)
 {
 	int r, devfd;
+	struct stat st;
 	size_t bsize, alignment;
 	char *sf = NULL;
 	uint64_t dev_size;
@@ -162,6 +202,11 @@ int crypt_wipe_device(struct crypt_device *cd,
 		devfd = device_open(cd, device, O_RDWR);
 	if (devfd < 0)
 		return errno ? -errno : -EINVAL;
+
+	if (fstat(devfd, &st) < 0) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	if (length)
 		dev_size = offset + length;
@@ -200,10 +245,8 @@ int crypt_wipe_device(struct crypt_device *cd,
 		if ((offset + wipe_block_size) > dev_size)
 			wipe_block_size = dev_size - offset;
 
-		//log_dbg("Wipe %012" PRIu64 "-%012" PRIu64 " bytes", offset, offset + wipe_block_size);
-
 		r = wipe_block(cd, devfd, pattern, sf, bsize, alignment,
-			       wipe_block_size, offset, &need_block_init);
+			       wipe_block_size, offset, &need_block_init, S_ISBLK(st.st_mode));
 		if (r) {
 			log_err(cd,_("Device wipe error, offset %" PRIu64 "."), offset);
 			break;
