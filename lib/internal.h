@@ -213,6 +213,8 @@ int crypt_wipe_device(struct crypt_device *cd,
 	size_t wipe_block_size,
 	int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
 	void *usrptr);
+int device_zero_out(struct device *device, int devfd, uint64_t offset, uint64_t length);
+int device_blkzeroout_failed(const struct device *device);
 
 /* Internal integrity helpers */
 const char *crypt_get_integrity(struct crypt_device *cd);

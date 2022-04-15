@@ -91,7 +91,8 @@ static int crypt_wipe_special(struct crypt_device *cd, int fd, size_t bsize,
 	return 0;
 }
 
-static int wipe_block(struct crypt_device *cd, int devfd, crypt_wipe_pattern pattern,
+static int wipe_block(struct crypt_device *cd, struct device *device,
+		      int devfd, crypt_wipe_pattern pattern,
 		      char *sf, size_t device_block_size, size_t alignment,
 		      size_t wipe_block_size, uint64_t offset, bool *need_block_init)
 {
@@ -120,6 +121,14 @@ static int wipe_block(struct crypt_device *cd, int devfd, crypt_wipe_pattern pat
 
 		if (r)
 			return r;
+	}
+
+	if (pattern == CRYPT_WIPE_ZERO && !device_blkzeroout_failed(device)) {
+		r = device_zero_out(device, devfd, offset, wipe_block_size);
+		if (!r)
+			return 0;
+
+		log_dbg(cd, "BLKZEROOUT ioctl failed, falling back to normal wipe.");
 	}
 
 	if (write_blockwise(devfd, device_block_size, alignment, sf,
@@ -202,7 +211,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 
 		//log_dbg("Wipe %012" PRIu64 "-%012" PRIu64 " bytes", offset, offset + wipe_block_size);
 
-		r = wipe_block(cd, devfd, pattern, sf, bsize, alignment,
+		r = wipe_block(cd, device, devfd, pattern, sf, bsize, alignment,
 			       wipe_block_size, offset, &need_block_init);
 		if (r) {
 			log_err(cd,_("Device wipe error, offset %" PRIu64 "."), offset);
