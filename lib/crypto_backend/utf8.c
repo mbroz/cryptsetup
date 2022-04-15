@@ -30,15 +30,9 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <uchar.h>
-#include <unistd.h>
+#include <endian.h>
 
 #include "crypto_backend.h"
-#include "internal.h"
 
 static inline bool utf16_is_surrogate(char16_t c)
 {
