@@ -73,7 +73,7 @@ export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
-# initial test constructed acccording to current cryptsetup content
+# initial test constructed according to current cryptsetup content
 echo "[1] Current state"
 exp_fail resize NAME --test-passphrase
 exp_fail close NAME --test-passphrase

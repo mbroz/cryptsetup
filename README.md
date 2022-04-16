@@ -88,7 +88,7 @@ See ``./configure --help`` and use ``--disable-*`` and ``--enable-*`` options.
 
 For running the test suite that come with the project, type ``make check``.
 Note that most tests will need root user privileges and run many dangerous storage fail simulations.
-Do **not** run tests with root privilege on production systems!
+Do **not** run tests with root privilege on production systems! Some tests will need scsi_debug kernel module to be available.
 
 For more details, please refer to [automake](https://www.gnu.org/software/automake/manual/automake.html) and [autoconf](https://www.gnu.org/savannah-checkouts/gnu/autoconf/manual/autoconf.html) manuals.
 

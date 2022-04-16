@@ -1,5 +1,5 @@
 /*
- * Definitions of common constant and generic macros fo libcryptsetup
+ * Definitions of common constant and generic macros of libcryptsetup
  *
  * Copyright (C) 2009-2022 Red Hat, Inc. All rights reserved.
  * Copyright (C) 2009-2022 Milan Broz

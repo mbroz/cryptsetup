@@ -31,7 +31,7 @@
  * It's supposed to be used only with symbols that are exported in at least
  * two versions simultaneously as follows:
  *
- * - the latest version is marked with _NEW variant and oll other compatible
+ * - the latest version is marked with _NEW variant and all other compatible
  *   symbols should be marked with _OLD variant
  *
  * Examples:

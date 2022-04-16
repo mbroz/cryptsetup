@@ -132,27 +132,27 @@ cd $START_DIR
 
 echo "[1] Test basic auto-recovery"
 RUN luks2-invalid-checksum-hdr0.img "R" "Failed to recover from trivial header corruption at offset 0"
-# TODO: check epoch is incresed after recovery
+# TODO: check epoch is increased after recovery
 # TODO: check only sectors related to corrupted hdr at offset 0 are written (dmstats tool/differ.c)
 
 RUN luks2-invalid-checksum-hdr1.img "R" "Failed to recover from trivial header corruption at offset 16384"
-# TODO: check epoch is incresed after recovery
+# TODO: check epoch is increased after recovery
 # TODO: check only sectors related to corrupted hdr at offset 16384 are written (dmstats tool/differ.c)
 
 RUN luks2-invalid-checksum-both-hdrs.img "F" "Failed to recognise corrupted header beyond repair"
 
 echo "[2] Test ability to auto-correct mallformed json area"
 RUN luks2-corrupted-hdr0-with-correct-chks.img "R" "Failed to auto correct malformed json area at offset 512"
-# TODO: check epoch is incresed after recovery
+# TODO: check epoch is increased after recovery
 # TODO: check only sectors related to corrupted hdr at offset 0 are written (dmstats tool/differ.c)
 
 RUN luks2-corrupted-hdr1-with-correct-chks.img "R" "Failed to auto correct malformed json area at offset 16896"
-# TODO: check epoch is incresed after recovery
+# TODO: check epoch is increased after recovery
 # TODO: check only sectors related to corrupted hdr at offset 16384 are written (dmstats tool/differ.c)
 
 RUN luks2-correct-full-json0.img "R" "Failed to parse full and correct json area"
 # TODO: detect noop (norecovery, epoch untouched)
-# TODO: check epoch is NOT incresed after recovery of secondary header
+# TODO: check epoch is NOT increased after recovery of secondary header
 
 # these tests auto-correct json in-memory only. It'll get fixed on-disk after write operation
 RUN luks2-argon2-leftover-params.img   "R" "Failed to repair keyslot with old argon2 parameters."
