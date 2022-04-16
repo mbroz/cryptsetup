@@ -13,7 +13,6 @@ The project also includes a **veritysetup** utility used to conveniently setup
 and **integritysetup** to setup
 [DMIntegrity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMIntegrity) block integrity kernel module.
 
-
 LUKS Design
 -----------
 **LUKS** is the standard for Linux hard disk encryption. By providing a standard on-disk-format, it does not  
@@ -74,7 +73,6 @@ NLS PO files are maintained by [TranslationProject](https://translationproject.o
 Required packages
 -----------------
 All distributions provide cryptsetup as distro package. If you need to compile cryptsetup yourself, some packages are required for compilation. Please always prefer distro specific build tools to manually configuring cryptsetup.
-For available compile options, check ``configure --help`` for more info. If you are using a git snapshot, you need to generate a configure script with ``autogen.sh`` script.
 
 Here is the list of packages needed for the compilation of project for particular distributions:
  * For Fedora: `git gcc make autoconf automake gettext-devel pkgconfig openssl-devel popt-devel device-mapper-devel libuuid-devel json-c-devel libblkid-devel findutils libtool libssh-devel tar`. Optionally `libargon2-devel libpwquality-devel`. To run the internal testsuite you also need to install `sharutils device-mapper jq vim-common expect keyutils netcat shadow-utils openssh-clients openssh sshpass`.
@@ -82,6 +80,17 @@ Here is the list of packages needed for the compilation of project for particula
  * For Debian and Ubuntu: `git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev tar`. Optionally `libargon2-0-dev libpwquality-dev`. To run the internal testsuite you also need to install `sharutils dmsetup jq xxd expect keyutils netcat passwd openssh-client sshpass`
 
 Note that the list could change as the distributions evolve.
+
+Compilation
+-----------
+The cryptsetup project uses **automake** and **autoconf** system to generate all needed files for compilation. If you check it from the git snapshot, use ``./autogen.sh && ./configure && make`` to compile the project. If you use downloaded released ``*.tar.xz`` archive, the configure script is already pre-generated (no need to run ``autoconf.sh``).
+See ``./configure --help`` and use ``--disable-*`` and ``--enable-*`` options.
+
+For running the test suite that come with the project, type ``make check``.
+Note that most tests will need root user privileges and run many dangerous storage fail simulations.
+Do **not** run tests with root privilege on production systems!
+
+For more details, please refer to [automake](https://www.gnu.org/software/automake/manual/automake.html) and [autoconf](https://www.gnu.org/savannah-checkouts/gnu/autoconf/manual/autoconf.html) manuals.
 
 Help!
 -----
