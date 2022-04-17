@@ -576,7 +576,7 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 	unsigned i;
 	int r;
 
-	if (!yesDialog(
+	if (!ARG_SET(OPT_BATCH_MODE_ID) && !yesDialog(
 	    _("The header dump with volume key is sensitive information\n"
 	      "that allows access to encrypted partition without a passphrase.\n"
 	      "This dump should be stored encrypted in a safe place."),
