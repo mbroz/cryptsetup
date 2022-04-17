@@ -2621,7 +2621,7 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	else
 		sdmd->flags &= ~CRYPT_ACTIVATE_READONLY;
 
-	if (sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+	if (tgt->type == DM_CRYPT && sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		r = crypt_volume_key_set_description(tgt->u.crypt.vk, src->u.crypt.vk->key_description);
 		if (r)
 			goto out;
@@ -2637,7 +2637,8 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		tgt->u.integrity.vk = NULL;
 
 		if (src->u.integrity.vk) {
-			tgt->u.integrity.vk = crypt_alloc_volume_key(src->u.integrity.vk->keylength, src->u.integrity.vk->key);
+			tgt->u.integrity.vk = crypt_alloc_volume_key(src->u.integrity.vk->keylength,
+								     src->u.integrity.vk->key);
 			if (!tgt->u.integrity.vk) {
 				r = -ENOMEM;
 				goto out;
@@ -2648,7 +2649,9 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		tgt->u.integrity.journal_integrity_key = NULL;
 
 		if (src->u.integrity.journal_integrity_key) {
-			tgt->u.integrity.journal_integrity_key = crypt_alloc_volume_key(src->u.integrity.journal_integrity_key->keylength, src->u.integrity.journal_integrity_key->key);
+			tgt->u.integrity.journal_integrity_key =
+				crypt_alloc_volume_key(src->u.integrity.journal_integrity_key->keylength,
+						       src->u.integrity.journal_integrity_key->key);
 			if (!tgt->u.integrity.journal_integrity_key) {
 				r = -ENOMEM;
 				goto out;
@@ -2659,7 +2662,9 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		tgt->u.integrity.journal_crypt_key = NULL;
 
 		if (src->u.integrity.journal_crypt_key) {
-			tgt->u.integrity.journal_crypt_key = crypt_alloc_volume_key(src->u.integrity.journal_crypt_key->keylength, src->u.integrity.journal_crypt_key->key);
+			tgt->u.integrity.journal_crypt_key =
+				crypt_alloc_volume_key(src->u.integrity.journal_crypt_key->keylength,
+						       src->u.integrity.journal_crypt_key->key);
 			if (!tgt->u.integrity.journal_crypt_key) {
 				r = -ENOMEM;
 				goto out;
@@ -2667,8 +2672,15 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		}
 	}
 
-	r = device_block_adjust(cd, src->data_device, DEV_OK,
-				src->u.crypt.offset, &sdmd->size, NULL);
+	if (tgt->type == DM_CRYPT)
+		r = device_block_adjust(cd, src->data_device, DEV_OK,
+					src->u.crypt.offset, &sdmd->size, NULL);
+	else if (tgt->type == DM_INTEGRITY)
+		r = device_block_adjust(cd, src->data_device, DEV_OK,
+					src->u.integrity.offset, &sdmd->size, NULL);
+	else
+		r = -EINVAL;
+
 	if (r)
 		goto out;
 
