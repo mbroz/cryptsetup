@@ -25,7 +25,12 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#ifdef HAVE_UCHAR_H
 #include <uchar.h>
+#else
+#define char32_t uint32_t
+#define char16_t uint16_t
+#endif
 
 struct crypt_hash;
 struct crypt_hmac;
