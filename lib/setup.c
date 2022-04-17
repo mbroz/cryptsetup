@@ -2632,44 +2632,6 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 			r = -ENOMEM;
 			goto out;
 		}
-	} else if (tgt->type == DM_INTEGRITY) {
-		crypt_free_volume_key(tgt->u.integrity.vk);
-		tgt->u.integrity.vk = NULL;
-
-		if (src->u.integrity.vk) {
-			tgt->u.integrity.vk = crypt_alloc_volume_key(src->u.integrity.vk->keylength,
-								     src->u.integrity.vk->key);
-			if (!tgt->u.integrity.vk) {
-				r = -ENOMEM;
-				goto out;
-			}
-		}
-
-		crypt_free_volume_key(tgt->u.integrity.journal_integrity_key);
-		tgt->u.integrity.journal_integrity_key = NULL;
-
-		if (src->u.integrity.journal_integrity_key) {
-			tgt->u.integrity.journal_integrity_key =
-				crypt_alloc_volume_key(src->u.integrity.journal_integrity_key->keylength,
-						       src->u.integrity.journal_integrity_key->key);
-			if (!tgt->u.integrity.journal_integrity_key) {
-				r = -ENOMEM;
-				goto out;
-			}
-		}
-
-		crypt_free_volume_key(tgt->u.integrity.journal_crypt_key);
-		tgt->u.integrity.journal_crypt_key = NULL;
-
-		if (src->u.integrity.journal_crypt_key) {
-			tgt->u.integrity.journal_crypt_key =
-				crypt_alloc_volume_key(src->u.integrity.journal_crypt_key->keylength,
-						       src->u.integrity.journal_crypt_key->key);
-			if (!tgt->u.integrity.journal_crypt_key) {
-				r = -ENOMEM;
-				goto out;
-			}
-		}
 	}
 
 	if (tgt->type == DM_CRYPT)

@@ -300,28 +300,21 @@ int INTEGRITY_activate(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 
-		if (!vk)
-			MOVE_REF(vk, dmdq.segment.u.integrity.vk);
+		r = INTEGRITY_create_dmd_device(cd, params, vk ?: dmdq.segment.u.integrity.vk,
+						journal_crypt_key ?: dmdq.segment.u.integrity.journal_crypt_key,
+						journal_mac_key ?: dmdq.segment.u.integrity.journal_integrity_key,
+						&dmd, flags, sb_flags);
 
-		if (!journal_mac_key)
-			MOVE_REF(journal_mac_key, dmdq.segment.u.integrity.journal_integrity_key);
+		if (!r)
+			dmd.size = dmdq.size;
+	} else
+		r = INTEGRITY_create_dmd_device(cd, params, vk, journal_crypt_key,
+						journal_mac_key, &dmd, flags, sb_flags);
 
-		if (!journal_crypt_key)
-			MOVE_REF(journal_crypt_key, dmdq.segment.u.integrity.journal_crypt_key);
+	if (!r)
+		r = INTEGRITY_activate_dmd_device(cd, name, CRYPT_INTEGRITY, &dmd, sb_flags);
 
-		dm_targets_free(cd, &dmdq);
-	}
-
-	r = INTEGRITY_create_dmd_device(cd, params, vk, journal_crypt_key,
-					    journal_mac_key, &dmd, flags, sb_flags);
-
-	if (flags & CRYPT_ACTIVATE_REFRESH)
-		dmd.size = dmdq.size;
-
-	if (r < 0)
-		return r;
-
-	r = INTEGRITY_activate_dmd_device(cd, name, CRYPT_INTEGRITY, &dmd, sb_flags);
+	dm_targets_free(cd, &dmdq);
 	dm_targets_free(cd, &dmd);
 	return r;
 }
