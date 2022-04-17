@@ -1876,9 +1876,9 @@ static void ResizeIntegrity(void)
 		EQ_(whole_device_size, r_size);
 	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
 
 	// detached metadata
-	OK_(crypt_init(&cd, DEVICE_2));
 	OK_(create_dmdevice_over_loop(H_DEVICE, 1024 * 1024 / 512));
 	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DEVICE_2));
 	OK_(crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params));
@@ -1896,8 +1896,8 @@ static void ResizeIntegrity(void)
 		EQ_(whole_device_size, r_size);
 	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
-
 	CRYPT_FREE(cd);
+
 	_cleanup_dmdevices();
 }
 
@@ -1955,9 +1955,9 @@ static void ResizeIntegrityWithKey(void)
 		EQ_(whole_device_size, r_size);
 	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
 
 	// detached metadata
-	OK_(crypt_init(&cd, DEVICE_2));
 	OK_(create_dmdevice_over_loop(H_DEVICE, 1024 * 1024 / 512));
 	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DEVICE_2));
 	OK_(crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params));
@@ -1975,8 +1975,8 @@ static void ResizeIntegrityWithKey(void)
 		EQ_(whole_device_size, r_size);
 	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
-
 	CRYPT_FREE(cd);
+
 	_cleanup_dmdevices();
 }
 
