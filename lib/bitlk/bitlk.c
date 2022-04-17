@@ -969,7 +969,7 @@ static int bitlk_kdf(struct crypt_device *cd,
 
 	if (!recovery) {
 		/* passphrase: convert to UTF-16 first, then sha256(sha256(pw)) */
-		utf16Password = crypt_safe_alloc(sizeof(char16_t) * passwordLen + 1);
+		utf16Password = crypt_safe_alloc(sizeof(char16_t) * (passwordLen + 1));
 		if (!utf16Password) {
 			r = -ENOMEM;
 			goto out;
