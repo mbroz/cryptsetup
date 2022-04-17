@@ -1881,12 +1881,7 @@ static void ResizeIntegrity(void)
 	OK_(crypt_init(&cd, DEVICE_2));
 	OK_(create_dmdevice_over_loop(H_DEVICE, 1024 * 1024 / 512));
 	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DEVICE_2));
-	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
-	if (ret < 0) {
-		printf("WARNING: cannot format integrity device, skipping test.\n");
-		CRYPT_FREE(cd);
-		return;
-	}
+	OK_(crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, 0));
 	if (!t_device_size(DMDIR CDEVICE_1, &whole_device_size))
 		EQ_(10 * 1024 * 1024 / 512, whole_device_size >> TST_SECTOR_SHIFT);
@@ -1903,6 +1898,7 @@ static void ResizeIntegrity(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	CRYPT_FREE(cd);
+	_cleanup_dmdevices();
 }
 
 static void ResizeIntegrityWithKey(void)
@@ -1911,7 +1907,7 @@ static void ResizeIntegrityWithKey(void)
 		.tag_size = 4,
 		.integrity = "hmac(sha256)",
 		.journal_integrity = "hmac(sha256)",
-		.journal_crypt = "ctr-aes",
+		.journal_crypt = "cbc(aes)",
 		.sector_size = 4096,
 	};
 	int ret;
@@ -1924,7 +1920,7 @@ static void ResizeIntegrityWithKey(void)
 	char integrity_key[128], journal_integrity_key[128], journal_crypt_key[128];
 
 	size_t integrity_key_size = strlen(key_integrity_hex) / 2;
-	size_t journal_integrity_key_size = strlen(key_journal_crypt_hex) / 2;
+	size_t journal_integrity_key_size = strlen(key_journal_integrity_hex) / 2;
 	size_t journal_crypt_key_size = strlen(key_journal_crypt_hex) / 2;
 
 	crypt_decode_key(integrity_key, key_integrity_hex, integrity_key_size);
@@ -1964,12 +1960,7 @@ static void ResizeIntegrityWithKey(void)
 	OK_(crypt_init(&cd, DEVICE_2));
 	OK_(create_dmdevice_over_loop(H_DEVICE, 1024 * 1024 / 512));
 	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DEVICE_2));
-	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
-	if (ret < 0) {
-		printf("WARNING: cannot format integrity device, skipping test.\n");
-		CRYPT_FREE(cd);
-		return;
-	}
+	OK_(crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params));
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, integrity_key, integrity_key_size, 0));
 	if (!t_device_size(DMDIR CDEVICE_1, &whole_device_size))
 		EQ_(10*1024*1024/512, whole_device_size >> TST_SECTOR_SHIFT);
@@ -1986,6 +1977,7 @@ static void ResizeIntegrityWithKey(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
 	CRYPT_FREE(cd);
+	_cleanup_dmdevices();
 }
 
 static void IntegrityTest(void)
