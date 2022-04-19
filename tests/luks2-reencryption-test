@@ -889,7 +889,7 @@ wipe_dev $DEV
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 64M -q $FAST_PBKDF_ARGON > /dev/null 2>&1 && fail
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 8M --init-only -q $FAST_PBKDF_ARGON $DEV || fail
 resize_file $DEVBIG -512
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q $DEV 2> /dev/null && fail
 resize_file $DEVBIG 512
 wipe_dev $DEV
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --offset 32760 --reduce-device-size 8M -q $FAST_PBKDF_ARGON --init-only >/dev/null 2>&1 && fail
