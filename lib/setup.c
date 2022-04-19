@@ -6387,6 +6387,9 @@ void crypt_serialize_unlock(struct crypt_device *cd)
 crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 		struct crypt_params_reencrypt *params)
 {
+	if (params)
+		memset(params, 0, sizeof(*params));
+
 	if (!cd || !isLUKS2(cd->type))
 		return CRYPT_REENCRYPT_NONE;
 

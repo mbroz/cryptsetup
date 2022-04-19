@@ -3718,6 +3718,9 @@ crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
 	int digest;
 	uint32_t version;
 
+	if (params)
+		memset(params, 0, sizeof(*params));
+
 	ri = LUKS2_reencrypt_status(hdr);
 	if (ri == CRYPT_REENCRYPT_NONE || ri == CRYPT_REENCRYPT_INVALID || !params)
 		return ri;
