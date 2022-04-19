@@ -73,14 +73,20 @@ void blk_set_chains_for_full_print(struct blkid_handle *h)
 	blk_set_chains_for_wipes(h);
 }
 
+void blk_set_chains_for_superblocks(struct blkid_handle *h)
+{
+#ifdef HAVE_BLKID
+	blkid_probe_enable_superblocks(h->pr, 1);
+	blkid_probe_set_superblocks_flags(h->pr, BLKID_SUBLKS_TYPE);
+#endif
+}
+
 void blk_set_chains_for_fast_detection(struct blkid_handle *h)
 {
 #ifdef HAVE_BLKID
 	blkid_probe_enable_partitions(h->pr, 1);
 	blkid_probe_set_partitions_flags(h->pr, 0);
-
-	blkid_probe_enable_superblocks(h->pr, 1);
-	blkid_probe_set_superblocks_flags(h->pr, BLKID_SUBLKS_TYPE);
+	blk_set_chains_for_superblocks(h);
 #endif
 }
 
@@ -325,4 +331,17 @@ int blk_supported(void)
 	r = 1;
 #endif
 	return r;
+}
+
+unsigned blk_get_block_size(struct blkid_handle *h)
+{
+	const char *data;
+	unsigned block_size = 0;
+#ifdef HAVE_BLKID
+	if (!blk_is_superblock(h) || !blkid_probe_has_value(h->pr, "BLOCK_SIZE") ||
+	    blkid_probe_lookup_value(h->pr, "BLOCK_SIZE", &data, NULL) ||
+	    sscanf(data, "%u", &block_size) != 1)
+		block_size = 0;
+#endif
+	return block_size;
 }

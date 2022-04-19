@@ -41,6 +41,8 @@ void blk_set_chains_for_wipes(struct blkid_handle *h);
 
 void blk_set_chains_for_full_print(struct blkid_handle *h);
 
+void blk_set_chains_for_superblocks(struct blkid_handle *h);
+
 void blk_set_chains_for_fast_detection(struct blkid_handle *h);
 
 int blk_superblocks_filter_luks(struct blkid_handle *h);
@@ -61,5 +63,7 @@ const char *blk_get_superblock_type(struct blkid_handle *h);
 int blk_do_wipe(struct blkid_handle *h);
 
 int blk_supported(void);
+
+unsigned blk_get_block_size(struct blkid_handle *h);
 
 #endif
