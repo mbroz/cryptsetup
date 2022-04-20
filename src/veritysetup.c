@@ -493,7 +493,7 @@ static void help(poptContext popt_context,
 	struct action_type *action;
 
 	if (key->shortName == '?') {
-		log_std("%s %s\n", PACKAGE_VERITY, PACKAGE_VERSION);
+		tools_package_version(PACKAGE_VERITY, false);
 		poptPrintHelp(popt_context, stdout, 0);
 		log_std(_("\n"
 			 "<action> is one of:\n"));
@@ -516,7 +516,7 @@ static void help(poptContext popt_context,
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);
 	} else if (key->shortName == 'V') {
-		log_std("%s %s\n", PACKAGE_VERITY, PACKAGE_VERSION);
+		tools_package_version(PACKAGE_VERITY, false);
 		tools_cleanup();
 		poptFreeContext(popt_context);
 		exit(EXIT_SUCCESS);

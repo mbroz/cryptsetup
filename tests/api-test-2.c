@@ -4568,6 +4568,15 @@ static void Luks2Reencryption(void)
 }
 #endif
 
+static int _crypt_load_check(struct crypt_device *cd)
+{
+#ifdef HAVE_BLKID
+	return crypt_load(cd, CRYPT_LUKS, NULL);
+#else
+	return -ENOTSUP;
+#endif
+}
+
 static void Luks2Repair(void)
 {
 	char rollback[256];
@@ -4577,7 +4586,7 @@ static void Luks2Repair(void)
 
 	OK_(crypt_init(&cd, DEVICE_6));
 
-	FAIL_(crypt_load(cd, CRYPT_LUKS, NULL), "Ambiguous signature detected");
+	FAIL_(_crypt_load_check(cd), "Ambiguous signature detected");
 	FAIL_(crypt_repair(cd, CRYPT_LUKS1, NULL), "Not a LUKS2 device");
 
 	/* check explicit LUKS2 repair works */
@@ -4588,7 +4597,7 @@ static void Luks2Repair(void)
 
 	/* rollback */
 	OK_(_system(rollback, 1));
-	FAIL_(crypt_load(cd, CRYPT_LUKS, NULL), "Ambiguous signature detected");
+	FAIL_(_crypt_load_check(cd), "Ambiguous signature detected");
 
 	/* check repair with type detection works */
 	OK_(crypt_repair(cd, CRYPT_LUKS, NULL));
@@ -4600,7 +4609,7 @@ static void Luks2Repair(void)
 	OK_(crypt_init(&cd, DEVICE_6));
 	OK_(crypt_metadata_locking(cd, 0));
 
-	FAIL_(crypt_load(cd, CRYPT_LUKS, NULL), "Ambiguous signature detected");
+	FAIL_(_crypt_load_check(cd), "Ambiguous signature detected");
 	FAIL_(crypt_repair(cd, CRYPT_LUKS1, NULL), "Not a LUKS2 device");
 
 	/* check explicit LUKS2 repair works */
@@ -4611,7 +4620,7 @@ static void Luks2Repair(void)
 
 	/* rollback */
 	OK_(_system(rollback, 1));
-	FAIL_(crypt_load(cd, CRYPT_LUKS, NULL), "Ambiguous signature detected");
+	FAIL_(_crypt_load_check(cd), "Ambiguous signature detected");
 
 	/* check repair with type detection works */
 	OK_(crypt_repair(cd, CRYPT_LUKS, NULL));

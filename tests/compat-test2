@@ -244,6 +244,11 @@ function setup_luks2_env() {
 	else
 		HAVE_KEYRING=0
 	fi
+	if $($CRYPTSETUP --version | grep -q "BLKID"); then
+		HAVE_BLKID=1
+	else
+		HAVE_BLKID=0
+	fi
 	$CRYPTSETUP close $DEV_NAME || fail
 }
 
@@ -747,10 +752,12 @@ $CRYPTSETUP -q luksDump  $HEADER_IMG | grep -q "offset: $((512 * 131072)) \[byte
 
 prepare "[29] Repair metadata" wipe
 xz -dk $HEADER_LUKS2_PV.xz
-$CRYPTSETUP isLuks --disable-locks $HEADER_LUKS2_PV && fail
-$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
-$CRYPTSETUP isLuks --disable-locks --type luks2 $HEADER_LUKS2_PV && fail
-$CRYPTSETUP isLuks --type luks2 $HEADER_LUKS2_PV && fail
+if [ "$HAVE_BLKID" -gt 0 ]; then
+	$CRYPTSETUP isLuks --disable-locks $HEADER_LUKS2_PV && fail
+	$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
+	$CRYPTSETUP isLuks --disable-locks --type luks2 $HEADER_LUKS2_PV && fail
+	$CRYPTSETUP isLuks --type luks2 $HEADER_LUKS2_PV && fail
+fi
 $CRYPTSETUP -q repair $HEADER_LUKS2_PV || fail
 $CRYPTSETUP isLuks $HEADER_LUKS2_PV || fail
 $CRYPTSETUP isLuks --type luks2 $HEADER_LUKS2_PV || fail

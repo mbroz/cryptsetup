@@ -217,6 +217,17 @@ function test_logging() {
 	echo
 }
 
+function check_blkid() {
+	xz -dkf $HEADER_LUKS2_PV.xz
+	if ! $($CRYPTSETUP --version | grep -q "BLKID"); then
+		HAVE_BLKID=0
+	elif $(blkid -p -n crypto_LUKS $HEADER_LUKS2_PV >/dev/null 2>&1); then
+		HAVE_BLKID=1
+	else
+		HAVE_BLKID=0
+	fi
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$REENC_BIN" ] && skip "Cannot find $REENC_BIN, test skipped."
 command -v wipefs >/dev/null ||  skip "Cannot find wipefs, test skipped."
@@ -417,20 +428,22 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 --header $IMG_HDR $FAST_PBKD
 echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks1 --header $IMG_HDR  2>/dev/null && fail
 echo $PWD1 | $REENC $LOOPDEV1 -q $FAST_PBKDF --new --type luks2 --header $IMG_HDR  2>/dev/null && fail
 
-echo "[13] Prevent nested encryption of broken LUKS device"
-rm -f $IMG_HDR
-wipe_dev $LOOPDEV1
-xz -dk $HEADER_LUKS2_PV.xz
-
-# broken header
-echo $PWD1 | $REENC --header $HEADER_LUKS2_PV $LOOPDEV1 -q $FAST_PBKDF --new --type luks1 2>/dev/null && fail
-$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
-# broken device
-echo $PWD1 | $REENC $HEADER_LUKS2_PV -q $FAST_PBKDF --new --type luks1 --reduce-device-size 1024S 2>/dev/null && fail
-$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
-# broken data device only
-echo $PWD1 | $REENC --header $IMG_HDR $HEADER_LUKS2_PV -q $FAST_PBKDF --new --type luks1 2>/dev/null && fail
-test -f $IMG_HDR && fail
+check_blkid
+if [ "$HAVE_BLKID" -gt 0 ]; then
+	echo "[13] Prevent nested encryption of broken LUKS device"
+	rm -f $IMG_HDR
+	wipe_dev $LOOPDEV1
+	xz -dkf $HEADER_LUKS2_PV.xz
+	# broken header
+	echo $PWD1 | $REENC --header $HEADER_LUKS2_PV $LOOPDEV1 -q $FAST_PBKDF --new --type luks1 2>/dev/null && fail
+	$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
+	# broken device
+	echo $PWD1 | $REENC $HEADER_LUKS2_PV -q $FAST_PBKDF --new --type luks1 --reduce-device-size 1024S 2>/dev/null && fail
+	$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
+	# broken data device only
+	echo $PWD1 | $REENC --header $IMG_HDR $HEADER_LUKS2_PV -q $FAST_PBKDF --new --type luks1 2>/dev/null && fail
+	test -f $IMG_HDR && fail
+fi
 
 remove_mapping
 exit 0
