@@ -89,7 +89,7 @@ Important features
 
   Integritysetup is intended to be used for settings that require
   non-cryptographic data integrity protection with no data encryption.
-  Fo setting integrity protected encrypted devices, see disk authenticated
+  For setting integrity protected encrypted devices, see disk authenticated
   encryption below.
 
   Note that after formatting the checksums need to be initialized;
@@ -583,7 +583,7 @@ Unfinished things & TODO for next releases
   in kernel (more on this later).
   NOTE: Currently available authenticated modes (GCM, Chacha20-poly1305)
   in kernel have too small 96-bit nonces that are problematic with
-  randomly generated IVs (the collison probability is not negligible).
+  randomly generated IVs (the collision probability is not negligible).
   For the GCM, nonce collision is a fatal problem.
 
 * Authenticated encryption do not set encryption for dm-integrity journal.

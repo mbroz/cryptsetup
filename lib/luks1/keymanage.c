@@ -399,7 +399,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	/*
 	 * cryptsetup 1.0 did not align keyslots to 4k, cannot repair this one
 	 * Also we cannot trust possibly broken keyslots metadata here through LUKS_keyslots_offset().
-	 * Expect first keyslot is aligned, if not, then manual repair is neccessary.
+	 * Expect first keyslot is aligned, if not, then manual repair is necessary.
 	 */
 	if (phdr->keyblock[0].keyMaterialOffset < (LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE)) {
 		log_err(ctx, _("Non standard keyslots alignment, manual repair required."));
