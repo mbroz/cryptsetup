@@ -728,7 +728,7 @@ static int assign_tokens(struct crypt_device *cd, int keyslot_old, int keyslot_n
 
 static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
-	bool vk_size_change, sector_size_change, vk_change;
+	bool vk_size_change, sector_size_change, sector_size_increase, vk_change;
 	size_t i, vk_size, kp_size;
 	int r, keyslot_old = CRYPT_ANY_SLOT, keyslot_new = CRYPT_ANY_SLOT, key_size;
 	char cipher[MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN], *vk = NULL, *active_name = NULL;
@@ -778,6 +778,7 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 	/* sector size */
 	luks2_params.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: (uint32_t)crypt_get_sector_size(cd);
 	sector_size_change = luks2_params.sector_size != (uint32_t)crypt_get_sector_size(cd);
+	sector_size_increase = luks2_params.sector_size > (uint32_t)crypt_get_sector_size(cd);
 
 	/* key size */
 	if (ARG_SET(OPT_KEY_SIZE_ID) || new_cipher)
@@ -892,17 +893,17 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 
 	/*
 	 * with --init-only lookup active device only if
-	 * blkid probes are allowed and sector size change
+	 * blkid probes are allowed and sector size increase
 	 * is requested.
 	 */
 	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID) &&
-	    (!ARG_SET(OPT_INIT_ONLY_ID) || (tools_blkid_supported() && sector_size_change))) {
+	    (!ARG_SET(OPT_INIT_ONLY_ID) || (tools_blkid_supported() && sector_size_increase))) {
 		r = reencrypt_get_active_name(cd, data_device, &active_name);
 		if (r < 0)
 			goto out;
 	}
 
-	if (sector_size_change && active_name) {
+	if (sector_size_increase && active_name) {
 		r = reencrypt_check_active_device_sb_block_size(active_name, luks2_params.sector_size);
 		if (r < 0)
 			goto out;
