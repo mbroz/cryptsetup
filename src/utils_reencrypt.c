@@ -903,6 +903,14 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 			goto out;
 	}
 
+	if (sector_size_increase && !active_name && tools_blkid_supported() &&
+	    !ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID)) {
+		log_err(_("Encryption sector size increase on offline device is not supported.\n"
+			  "Activate the device first or use --force-offline-reencrypt option (dangerous!)."));
+		r = -EINVAL;
+		goto out;
+	}
+
 	if (sector_size_increase && active_name) {
 		r = reencrypt_check_active_device_sb_block_size(active_name, luks2_params.sector_size);
 		if (r < 0)
