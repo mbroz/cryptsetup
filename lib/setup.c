@@ -2621,7 +2621,7 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	else
 		sdmd->flags &= ~CRYPT_ACTIVATE_READONLY;
 
-	if (sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+	if (tgt->type == DM_CRYPT && sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		r = crypt_volume_key_set_description(tgt->u.crypt.vk, src->u.crypt.vk->key_description);
 		if (r)
 			goto out;
@@ -2632,43 +2632,17 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 			r = -ENOMEM;
 			goto out;
 		}
-	} else if (tgt->type == DM_INTEGRITY) {
-		crypt_free_volume_key(tgt->u.integrity.vk);
-		tgt->u.integrity.vk = NULL;
-
-		if (src->u.integrity.vk) {
-			tgt->u.integrity.vk = crypt_alloc_volume_key(src->u.integrity.vk->keylength, src->u.integrity.vk->key);
-			if (!tgt->u.integrity.vk) {
-				r = -ENOMEM;
-				goto out;
-			}
-		}
-
-		crypt_free_volume_key(tgt->u.integrity.journal_integrity_key);
-		tgt->u.integrity.journal_integrity_key = NULL;
-
-		if (src->u.integrity.journal_integrity_key) {
-			tgt->u.integrity.journal_integrity_key = crypt_alloc_volume_key(src->u.integrity.journal_integrity_key->keylength, src->u.integrity.journal_integrity_key->key);
-			if (!tgt->u.integrity.journal_integrity_key) {
-				r = -ENOMEM;
-				goto out;
-			}
-		}
-
-		crypt_free_volume_key(tgt->u.integrity.journal_crypt_key);
-		tgt->u.integrity.journal_crypt_key = NULL;
-
-		if (src->u.integrity.journal_crypt_key) {
-			tgt->u.integrity.journal_crypt_key = crypt_alloc_volume_key(src->u.integrity.journal_crypt_key->keylength, src->u.integrity.journal_crypt_key->key);
-			if (!tgt->u.integrity.journal_crypt_key) {
-				r = -ENOMEM;
-				goto out;
-			}
-		}
 	}
 
-	r = device_block_adjust(cd, src->data_device, DEV_OK,
-				src->u.crypt.offset, &sdmd->size, NULL);
+	if (tgt->type == DM_CRYPT)
+		r = device_block_adjust(cd, src->data_device, DEV_OK,
+					src->u.crypt.offset, &sdmd->size, NULL);
+	else if (tgt->type == DM_INTEGRITY)
+		r = device_block_adjust(cd, src->data_device, DEV_OK,
+					src->u.integrity.offset, &sdmd->size, NULL);
+	else
+		r = -EINVAL;
+
 	if (r)
 		goto out;
 
@@ -2949,7 +2923,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 				crypt_get_data_offset(cd) * SECTOR_SIZE, &new_size);
 		if (r < 0)
 			return r;
-		log_dbg(cd, "Maximum integrity device size from kernel %lu", new_size);
+		log_dbg(cd, "Maximum integrity device size from kernel %" PRIu64, new_size);
 
 		if (old_size == new_size && new_size == dmdq.size && !dm_flags(cd, tgt->type, &supported_flags) && !(supported_flags & DM_INTEGRITY_RESIZE_SUPPORTED))
 			log_std(cd, _("WARNING: Maximum size already set or kernel doesn't support resize.\n"));
