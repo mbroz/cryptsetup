@@ -1597,6 +1597,9 @@ static void _dm_target_free_query_path(struct crypt_device *cd, struct dm_target
 
 static void _dm_target_erase(struct crypt_device *cd, struct dm_target *tgt)
 {
+	if (tgt->direction == TARGET_EMPTY)
+		return;
+
 	if (tgt->direction == TARGET_QUERY)
 		_dm_target_free_query_path(cd, tgt);
 
