@@ -413,7 +413,7 @@ if test "x$enable_ssh_token" = "xyes"; then
 	AC_CHECK_DECLS([ssh_session_is_known_server], [], [], [#include <libssh/libssh.h>])
 	AC_CHECK_HEADER([argp.h], [], AC_MSG_ERROR([You need argp library.]))
 	saved_LIBS=$LIBS
-	AC_SEARCH_LIBS([argp_usage],[argp])
+	AC_SEARCH_LIBS([argp_parse],[argp])
 	AC_SUBST(ARGP_LIBS, $LIBS)
 	LIBS=$saved_LIBS
 fi
