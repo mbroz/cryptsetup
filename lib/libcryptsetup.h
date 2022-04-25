@@ -1486,6 +1486,10 @@ int crypt_volume_key_get(struct crypt_device *cd,
  * @param volume_key_size size of @e volume_key
  *
  * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note Negative EPERM return value means that passed volume_key
+ * 	 did not pass digest verification routine (not a valid volume
+ * 	 key).
  */
 int crypt_volume_key_verify(struct crypt_device *cd,
 	const char *volume_key,

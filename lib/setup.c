@@ -4980,10 +4980,6 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 	else
 		r = -EINVAL;
 
-
-	if (r == -EPERM)
-		log_err(cd, _("Volume key does not match the volume."));
-
 	crypt_free_volume_key(vk);
 
 	return r >= 0 ? 0 : r;

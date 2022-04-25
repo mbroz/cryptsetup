@@ -1797,6 +1797,8 @@ static int action_luksAddKey(void)
 			goto out;
 
 		r = crypt_volume_key_verify(cd, key, keysize);
+		if (r == -EPERM)
+			log_err(_("Volume key does not match the volume."));
 		check_signal(&r);
 		if (r < 0)
 			goto out;
