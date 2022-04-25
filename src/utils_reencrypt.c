@@ -800,7 +800,7 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 		if (r < 0)
 			goto out;
 
-		if (!crypt_activate_by_volume_key(cd, NULL, vk, key_size, 0)) {
+		if (!crypt_volume_key_verify(cd, vk, key_size)) {
 			/* passed key was valid volume key */
 			vk_change = false;
 			crypt_safe_free(vk);
