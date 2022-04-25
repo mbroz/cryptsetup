@@ -37,6 +37,7 @@ int crypt_parse_integrity_mode(const char *s, char *integrity,
 int crypt_parse_pbkdf(const char *s, const char **pbkdf);
 
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc);
+char *crypt_bytes_to_hex(size_t size, const char *bytes);
 
 bool crypt_is_cipher_null(const char *cipher_spec);
 

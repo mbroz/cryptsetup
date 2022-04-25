@@ -183,6 +183,11 @@ static int hex_to_bin(unsigned char ch)
 		((cu - 'A' + 11) & (unsigned)((cu - 'F' - 1) & ('A' - 1 - cu)) >> 8);
 }
 
+static char hex2asc(unsigned char c)
+{
+	return c + '0' + ((unsigned)(9 - c) >> 4 & 0x27);
+}
+
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc)
 {
 	char *bytes;
@@ -212,6 +217,32 @@ ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc)
 	}
 	*result = bytes;
 	return i;
+}
+
+char *crypt_bytes_to_hex(size_t size, const char *bytes)
+{
+	unsigned i;
+	char *hex;
+
+	if (size && !bytes)
+		return NULL;
+
+	/* Alloc adds trailing \0 */
+	if (size == 0)
+		hex = crypt_safe_alloc(2);
+	else
+		hex = crypt_safe_alloc(size * 2 + 1);
+	if (!hex)
+		return NULL;
+
+	if (size == 0)
+		hex[0] = '-';
+	else for (i = 0; i < size; i++) {
+		hex[i * 2]     = hex2asc((const unsigned char)bytes[i] >> 4);
+		hex[i * 2 + 1] = hex2asc((const unsigned char)bytes[i] & 0xf);
+	}
+
+	return hex;
 }
 
 bool crypt_is_cipher_null(const char *cipher_spec)

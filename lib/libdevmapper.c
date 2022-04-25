@@ -465,14 +465,6 @@ char *dm_device_name(const char *path)
 	return dm_device_path(NULL, major(st.st_rdev), minor(st.st_rdev));
 }
 
-static void hex_key(char *hexkey, size_t key_size, const char *key)
-{
-	unsigned i;
-
-	for(i = 0; i < key_size; i++)
-		sprintf(&hexkey[i * 2], "%02x", (unsigned char)key[i]);
-}
-
 static size_t int_log10(uint64_t x)
 {
 	uint64_t r = 0;
@@ -676,24 +668,20 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		null_cipher = 1;
 
 	if (null_cipher)
-		hexkey = crypt_safe_alloc(2);
+		hexkey = crypt_bytes_to_hex(0, NULL);
 	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		keystr_len = strlen(tgt->u.crypt.vk->key_description) + int_log10(tgt->u.crypt.vk->keylength) + 10;
 		hexkey = crypt_safe_alloc(keystr_len);
-	} else
-		hexkey = crypt_safe_alloc(tgt->u.crypt.vk->keylength * 2 + 1);
-
-	if (!hexkey)
-		goto out;
-
-	if (null_cipher)
-		strncpy(hexkey, "-", 2);
-	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+		if (!hexkey)
+			goto out;
 		r = snprintf(hexkey, keystr_len, ":%zu:logon:%s", tgt->u.crypt.vk->keylength, tgt->u.crypt.vk->key_description);
 		if (r < 0 || r >= keystr_len)
 			goto out;
 	} else
-		hex_key(hexkey, tgt->u.crypt.vk->keylength, tgt->u.crypt.vk->key);
+		hexkey = crypt_bytes_to_hex(tgt->u.crypt.vk->keylength, tgt->u.crypt.vk->key);
+
+	if (!hexkey)
+		goto out;
 
 	max_size = strlen(hexkey) + strlen(cipher_dm) +
 		   strlen(device_block_path(tgt->data_device)) +
@@ -788,18 +776,13 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 	} else
 		*features = '\0';
 
-	hexroot = crypt_safe_alloc(tgt->u.verity.root_hash_size * 2 + 1);
+	hexroot = crypt_bytes_to_hex(tgt->u.verity.root_hash_size, tgt->u.verity.root_hash);
 	if (!hexroot)
 		goto out;
-	hex_key(hexroot, tgt->u.verity.root_hash_size, tgt->u.verity.root_hash);
 
-	hexsalt = crypt_safe_alloc(vp->salt_size ? vp->salt_size * 2 + 1 : 2);
+	hexsalt = crypt_bytes_to_hex(vp->salt_size, vp->salt);
 	if (!hexsalt)
 		goto out;
-	if (vp->salt_size)
-		hex_key(hexsalt, vp->salt_size, vp->salt);
-	else
-		strncpy(hexsalt, "-", 2);
 
 	max_size = strlen(hexroot) + strlen(hexsalt) +
 		   strlen(device_block_path(tgt->data_device)) +
@@ -864,10 +847,9 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 		num_options++;
 
 		if (tgt->u.integrity.vk) {
-			hexkey = crypt_safe_alloc(tgt->u.integrity.vk->keylength * 2 + 1);
+			hexkey = crypt_bytes_to_hex(tgt->u.integrity.vk->keylength, tgt->u.integrity.vk->key);
 			if (!hexkey)
 				goto out;
-			hex_key(hexkey, tgt->u.integrity.vk->keylength, tgt->u.integrity.vk->key);
 		} else
 			hexkey = NULL;
 
@@ -882,11 +864,10 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 		num_options++;
 
 		if (tgt->u.integrity.journal_integrity_key) {
-			hexkey = crypt_safe_alloc(tgt->u.integrity.journal_integrity_key->keylength * 2 + 1);
+			hexkey = crypt_bytes_to_hex( tgt->u.integrity.journal_integrity_key->keylength,
+				tgt->u.integrity.journal_integrity_key->key);
 			if (!hexkey)
 				goto out;
-			hex_key(hexkey, tgt->u.integrity.journal_integrity_key->keylength,
-				tgt->u.integrity.journal_integrity_key->key);
 		} else
 			hexkey = NULL;
 
@@ -901,11 +882,10 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 		num_options++;
 
 		if (tgt->u.integrity.journal_crypt_key) {
-			hexkey = crypt_safe_alloc(tgt->u.integrity.journal_crypt_key->keylength * 2 + 1);
+			hexkey = crypt_bytes_to_hex(tgt->u.integrity.journal_crypt_key->keylength,
+				tgt->u.integrity.journal_crypt_key->key);
 			if (!hexkey)
 				goto out;
-			hex_key(hexkey, tgt->u.integrity.journal_crypt_key->keylength,
-				tgt->u.integrity.journal_crypt_key->key);
 		} else
 			hexkey = NULL;
 
@@ -3024,7 +3004,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 {
 	uint32_t dmt_flags;
 	int msg_size;
-	char *msg = NULL;
+	char *msg = NULL, *key = NULL;
 	int r = -ENOTSUP;
 
 	if (dm_init_context(cd, DM_CRYPT) || dm_flags(cd, DM_CRYPT, &dmt_flags))
@@ -3046,20 +3026,21 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 		goto out;
 	}
 
-	strcpy(msg, "key set ");
-	if (!vk->keylength) {
-		if (snprintf(msg + 8, msg_size - 8, "-") < 0) {
-			r = -EINVAL;
+	if (vk->key_description) {
+		r = snprintf(msg, msg_size, "key set :%zu:logon:%s", vk->keylength, vk->key_description);
+	} else  {
+		key = crypt_bytes_to_hex(vk->keylength, vk->key);
+		if (!key) {
+			r = -ENOMEM;
 			goto out;
 		}
-	} else if (vk->key_description) {
-		if (snprintf(msg + 8, msg_size - 8, ":%zu:logon:%s", vk->keylength, vk->key_description) < 0) {
-			r = -EINVAL;
-			goto out;
-		}
-	} else
-		hex_key(&msg[8], vk->keylength, vk->key);
 
+		r = snprintf(msg, msg_size, "key set %s", key);
+	}
+	if (r < 0 || r >= msg_size) {
+		r = -EINVAL;
+		goto out;
+	}
 	if (!_dm_message(name, msg) ||
 	    _dm_resume_device(name, 0)) {
 		r = -EINVAL;
@@ -3068,6 +3049,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	r = 0;
 out:
 	crypt_safe_free(msg);
+	crypt_safe_free(key);
 	dm_exit_context();
 	return r;
 }
