@@ -332,7 +332,7 @@ static int action_status(void)
 	struct stat st;
 	char *backing_file, *root_hash;
 	size_t root_hash_size;
-	unsigned i, path = 0;
+	unsigned path = 0;
 	int r = 0;
 
 	/* perhaps a path, not a dm device name */
@@ -385,8 +385,7 @@ static int action_status(void)
 		log_std("  hash name:   %s\n", vp.hash_name);
 		log_std("  salt:        ");
 		if (vp.salt_size)
-			for(i = 0; i < vp.salt_size; i++)
-				log_std("%02hhx", (const char)vp.salt[i]);
+			crypt_log_hex(NULL, vp.salt, vp.salt_size, "", 0, NULL);
 		else
 			log_std("-");
 		log_std("\n");
@@ -424,8 +423,7 @@ static int action_status(void)
 			r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, root_hash, &root_hash_size, NULL, 0);
 			if (!r) {
 				log_std("  root hash:   ");
-				for (i = 0; i < root_hash_size; i++)
-					log_std("%02hhx", (const char)root_hash[i]);
+				crypt_log_hex(NULL, root_hash, root_hash_size, "", 0, NULL);
 				log_std("\n");
 			}
 			free(root_hash);

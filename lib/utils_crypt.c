@@ -245,6 +245,21 @@ char *crypt_bytes_to_hex(size_t size, const char *bytes)
 	return hex;
 }
 
+void crypt_log_hex(struct crypt_device *cd,
+		   const char *bytes, size_t size,
+		   const char *sep, int numwrap, const char *wrapsep)
+{
+	unsigned i;
+
+	for (i = 0; i < size; i++) {
+		if (wrapsep && numwrap && i && !(i % numwrap))
+			crypt_logf(cd, CRYPT_LOG_NORMAL, wrapsep);
+		crypt_logf(cd, CRYPT_LOG_NORMAL, "%c%c%s",
+			   hex2asc((const unsigned char)bytes[i] >> 4),
+			   hex2asc((const unsigned char)bytes[i] & 0xf), sep);
+	}
+}
+
 bool crypt_is_cipher_null(const char *cipher_spec)
 {
 	if (!cipher_spec)

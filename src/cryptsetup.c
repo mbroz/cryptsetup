@@ -500,7 +500,6 @@ static int tcryptDump_with_volume_key(struct crypt_device *cd)
 {
 	char *vk = NULL;
 	size_t vk_size;
-	unsigned i;
 	int r;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !yesDialog(
@@ -525,12 +524,7 @@ static int tcryptDump_with_volume_key(struct crypt_device *cd)
 	log_std("Payload offset:\t%d\n", (int)crypt_get_data_offset(cd));
 	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
 	log_std("MK dump:\t");
-
-	for(i = 0; i < vk_size; i++) {
-		if (i && !(i % 16))
-			log_std("\n\t\t");
-		log_std("%02hhx ", (char)vk[i]);
-	}
+	crypt_log_hex(NULL, vk, vk_size, " ", 16, "\n\t\t");
 	log_std("\n");
 out:
 	crypt_safe_free(vk);
@@ -573,7 +567,6 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 	char *vk = NULL, *password = NULL;
 	size_t passwordLen = 0;
 	size_t vk_size;
-	unsigned i;
 	int r;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !yesDialog(
@@ -618,14 +611,8 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 		goto out;
 	}
 	log_std("MK dump:\t");
-
-	for(i = 0; i < vk_size; i++) {
-		if (i && !(i % 16))
-			log_std("\n\t\t");
-		log_std("%02hhx ", (char)vk[i]);
-	}
+	crypt_log_hex(NULL, vk, vk_size, " ", 16, "\n\t\t");
 	log_std("\n");
-
 out:
 	crypt_safe_free(password);
 	crypt_safe_free(vk);
@@ -2024,7 +2011,6 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	char *vk = NULL, *password = NULL;
 	size_t passwordLen = 0;
 	size_t vk_size;
-	unsigned i;
 	int r;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !yesDialog(
@@ -2070,14 +2056,8 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 		goto out;
 	}
 	log_std("MK dump:\t");
-
-	for(i = 0; i < vk_size; i++) {
-		if (i && !(i % 16))
-			log_std("\n\t\t");
-		log_std("%02hhx ", (char)vk[i]);
-	}
+	crypt_log_hex(NULL, vk, vk_size, " ", 16, "\n\t\t");
 	log_std("\n");
-
 out:
 	crypt_safe_free(password);
 	crypt_safe_free(vk);
@@ -2089,7 +2069,7 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 	crypt_keyslot_info ki;
 	char *uk = NULL, *password = NULL;
 	size_t uk_size, passwordLen = 0;
-	int i, r;
+	int r;
 
 	ki = crypt_keyslot_status(cd, ARG_INT32(OPT_KEY_SLOT_ID));
 	if (ki != CRYPT_SLOT_UNBOUND) {
@@ -2140,12 +2120,7 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 		goto out;
 	}
 	log_std("Unbound Key:\t");
-
-	for(i = 0; i < (int)uk_size; i++) {
-		if (i && !(i % 16))
-			log_std("\n\t\t");
-		log_std("%02hhx ", (char)uk[i]);
-	}
+	crypt_log_hex(NULL, uk, uk_size, " ", 16, "\n\t\t");
 	log_std("\n");
 out:
 	crypt_safe_free(password);
