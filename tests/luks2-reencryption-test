@@ -321,7 +321,7 @@ function reencrypt_recover() { # $1 sector size, $2 resilience, $3 digest, [$4 h
 	test -z "$4" || _hdr="--header $4"
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
-	echo $PWD1 | $CRYPTSETUP reencrypt $DEV $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 --force-offline-reencrypt -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
 	fix_writes $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP -q repair $DEV $_hdr || fail
@@ -540,15 +540,27 @@ function decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 function reencrypt_offline_fixed_size() {
 	local _esz=$(($1>>9))
 	local _hdr=""
+	# round-up fixed size to megabytes
+	local _mbs=$((($2>>11)+1))
 	test -z "$7" || _hdr="--header $7"
 
+	if [ -z "$7" ]; then
+		echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --offset 16384 $FAST_PBKDF_ARGON $DEV || fail
+	else
+		echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $7 $FAST_PBKDF_ARGON $DEV || fail
+	fi
+	echo $PWD1 | $CRYPTSETUP open $_hdr $DEV $DEV_NAME || fail
+	wipe_dev_head /dev/mapper/$DEV_NAME $_mbs
+	$CRYPTSETUP close $DEV_NAME || fail
+
 	# reencrypt with fixed device size
-	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV  $_hdr --sector-size $1 --device-size $2s --resilience $4 || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV  $_hdr --sector-size $1 --device-size $2s --resilience $4 --force-offline-reencrypt || fail
+
 	check_hash_head $PWD1 $2 $3 $7
 	wipe $PWD1 $7
 
 	# try to reencrypt device size + 1 encryption sector size
-	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --sector-size $1 --init-only || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --sector-size $1 --init-only --force-offline-reencrypt || fail
 	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --device-size $(($5+_esz))s --resilience $4 2>/dev/null && fail
 	check_hash $PWD1 $6 $7
 
@@ -856,7 +868,7 @@ check_hash $PWD1 $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 128 -c aes-cbc-essiv:sha256 --resilience checksum $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH2
 if [ -n "$DM_SECTOR_SIZE" ]; then
-	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON --sector-size 4096 || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON --sector-size 4096 --force-offline-reencrypt || fail
 	check_hash $PWD1 $HASH2
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal --sector-size 2048 $FAST_PBKDF_ARGON || fail
 	check_hash $PWD1 $HASH2
@@ -1352,9 +1364,6 @@ fi
 
 echo "[16] Offline reencryption with fixed device size."
 preparebig 68
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --offset 16384 $FAST_PBKDF_ARGON $DEV || fail
-wipe $PWD1
-check_hash $PWD1 $HASH8
 
 for test_ss in $TEST_SECTORS; do
 printf "sector size %4s: " $test_ss
@@ -1383,9 +1392,6 @@ done
 
 echo "[18] Offline reencryption with fixed device size (detached header)."
 preparebig 60
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
-wipe $PWD1 $IMG_HDR
-check_hash $PWD1 $HASH8 $IMG_HDR
 
 for test_ss in $TEST_SECTORS; do
 printf "sector size %4s: " $test_ss
@@ -1747,34 +1753,59 @@ if [ "$HAVE_BLKID" -gt 0 ]; then
 	test -f $IMG_HDR && fail
 fi
 
-if [ -n "$DM_SECTOR_SIZE" -a -n "$BLKID_BLOCK_SIZE_SUPPORT" ]; then
+if [ -n "$DM_SECTOR_SIZE" -a $HAVE_BLKID -gt 0 ]; then
 	echo "[31] Prevent dangerous sector size increase"
 	preparebig 64
-	xz -dkf $IMG_FS.xz
-	# encryption checks must work in offline mode
-	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --header $IMG_HDR $IMG_FS $FAST_PBKDF_ARGON --init-only --type luks2 2>/dev/null && fail
-	test -f $IMG_HDR && fail
-
-	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --header $IMG_HDR $IMG_FS $FAST_PBKDF_ARGON --type luks2 2>/dev/null && fail
-	test -f $IMG_HDR && fail
-
-	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --reduce-device-size 8m $IMG_FS $FAST_PBKDF_ARGON --init-only --type luks2 2>/dev/null && fail
-	$CRYPTSETUP isLuks $IMG_FS && fail
-	echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --reduce-device-size 8m $IMG_FS $FAST_PBKDF_ARGON --type luks2 2>/dev/null && fail
-	$CRYPTSETUP isLuks $IMG_FS && fail
-
 	echo $PWD1 | $CRYPTSETUP luksFormat -q --sector-size 512 --type luks2 $FAST_PBKDF_ARGON $DEV || fail
-	echo $PWD1 | $CRYPTSETUP open -q $DEV $DEV_NAME || fail
-	dd if=$IMG_FS of=/dev/mapper/$DEV_NAME bs=1M >/dev/null 2>&1
 
+	# block encryption sector size increase on offline device
 	echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV 2>/dev/null && fail
-	$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
-	echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 1024 --active-name $DEV_NAME $FAST_PBKDF_ARGON 2>/dev/null && fail
-	$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
+	$CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail
 	echo $PWD1 | $CRYPTSETUP reencrypt -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV 2>/dev/null && fail
-	$CRYPTSETUP luksDump $DEV | grep -q "sector: 512" || fail
-	echo $PWD1 | $CRYPTSETUP reencrypt -q --sector-size 1024 --active-name $DEV_NAME $FAST_PBKDF_ARGON 2>/dev/null && fail
-	$CRYPTSETUP luksDump $DEV | grep -q "sector: 512" || fail
+	$CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail
+	$CRYPTSETUP luksDump $DEV | grep -q "sector: 1024" && fail
+
+	# --force-offline-reencrypt can bypass the constraint
+	echo $PWD1 | $CRYPTSETUP reencrypt --force-offline-reencrypt --init-only -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV || fail
+	# resume must work
+	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV || fail
+
+	# online with no superblock is fine
+	echo $PWD1 | $CRYPTSETUP open -q $DEV $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 4096 $FAST_PBKDF_ARGON $DEV || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	# sector size decrease is ok
+	echo $PWD1 | $CRYPTSETUP luksFormat -q --sector-size 4096 --type luks2 $FAST_PBKDF_ARGON $DEV || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV || fail
+
+	if [ -n "$BLKID_BLOCK_SIZE_SUPPORT" ]; then
+		xz -dkf $IMG_FS.xz
+		# encryption checks must work in offline mode
+		echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --header $IMG_HDR $IMG_FS $FAST_PBKDF_ARGON --init-only --type luks2 2>/dev/null && fail
+		test -f $IMG_HDR && fail
+
+		echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --header $IMG_HDR $IMG_FS $FAST_PBKDF_ARGON --type luks2 2>/dev/null && fail
+		test -f $IMG_HDR && fail
+
+		echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --reduce-device-size 8m $IMG_FS $FAST_PBKDF_ARGON --init-only --type luks2 2>/dev/null && fail
+		$CRYPTSETUP isLuks $IMG_FS && fail
+		echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --reduce-device-size 8m $IMG_FS $FAST_PBKDF_ARGON --type luks2 2>/dev/null && fail
+		$CRYPTSETUP isLuks $IMG_FS && fail
+
+		echo $PWD1 | $CRYPTSETUP luksFormat -q --sector-size 512 --type luks2 $FAST_PBKDF_ARGON $DEV || fail
+		echo $PWD1 | $CRYPTSETUP open -q $DEV $DEV_NAME || fail
+		dd if=$IMG_FS of=/dev/mapper/$DEV_NAME bs=1M >/dev/null 2>&1
+
+		echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV 2>/dev/null && fail
+		$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
+		echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 1024 --active-name $DEV_NAME $FAST_PBKDF_ARGON 2>/dev/null && fail
+		$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" && fail
+		echo $PWD1 | $CRYPTSETUP reencrypt -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV 2>/dev/null && fail
+		$CRYPTSETUP luksDump $DEV | grep -q "sector: 512" || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt -q --sector-size 1024 --active-name $DEV_NAME $FAST_PBKDF_ARGON 2>/dev/null && fail
+		$CRYPTSETUP luksDump $DEV | grep -q "sector: 512" || fail
+	fi
 fi
 
 remove_mapping
