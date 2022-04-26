@@ -208,7 +208,7 @@ int LUKS2_get_default_segment(struct luks2_hdr *hdr)
 	if (s >= 0)
 		return s;
 
-	if (LUKS2_segments_count(hdr) == 1)
+	if (LUKS2_segments_count(hdr) >= 1)
 		return 0;
 
 	return -EINVAL;
@@ -1464,6 +1464,7 @@ static const struct requirement_flag unknown_requirement_flag = { CRYPT_REQUIREM
 static const struct requirement_flag requirements_flags[] = {
 	{ CRYPT_REQUIREMENT_OFFLINE_REENCRYPT,1, "offline-reencrypt" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 2, "online-reencrypt-v2" },
+	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 3, "online-reencrypt-v3" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1, "online-reencrypt" },
 	{ 0, 0, NULL }
 };

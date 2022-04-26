@@ -271,7 +271,8 @@ int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
 int LUKS2_keyslot_reencrypt_load(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
-	struct reenc_protection *rp);
+	struct reenc_protection *rp,
+	bool primary);
 
 int LUKS2_keyslot_reencrypt_digest_create(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
