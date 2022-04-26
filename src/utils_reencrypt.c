@@ -162,6 +162,8 @@ static int reencrypt_get_active_name(struct crypt_device *cd,
 static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *params,
 	char **r_hash)
 {
+	bool decrypt_datashift = false;
+
 	assert(params);
 	assert(r_hash);
 
@@ -175,21 +177,43 @@ static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *par
 		return -EINVAL;
 	}
 
-	if (ARG_SET(OPT_RESILIENCE_ID) &&
-	    !strcmp(params->resilience, "datashift") && strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
-		log_err(_("Device is in reencryption using datashift resilience. Requested --resilience option cannot be applied."));
-		return -EINVAL;
-	}
-
-	if (ARG_SET(OPT_RESILIENCE_ID) &&
-	    strcmp(params->resilience, "datashift") && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
-		log_err(_("Requested --resilience option cannot be applied to current reencryption operation."));
-		return -EINVAL;
+	if (ARG_SET(OPT_RESILIENCE_ID)) {
+		if (!strcmp(params->resilience, "datashift") &&
+		    strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+			log_err(_("Device is in reencryption using datashift resilience. "
+				  "Requested --resilience option cannot be applied."));
+			return -EINVAL;
+		}
+		if (strcmp(params->resilience, "datashift") &&
+		    !strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+			log_err(_("Requested --resilience option cannot be applied "
+				  "to current reencryption operation."));
+			return -EINVAL;
+		}
+		if (strncmp(params->resilience, "datashift-", 10) &&
+		    !strncmp(ARG_STR(OPT_RESILIENCE_ID), "datashift-", 10)) {
+			log_err(_("Requested --resilience option cannot be applied "
+				  "to current reencryption operation."));
+			return -EINVAL;
+		}
+		if (!strncmp(params->resilience, "datashift-", 10)) {
+			if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+				log_err(_("Requested --resilience option cannot be applied "
+					  "to current reencryption operation."));
+				return -EINVAL;
+			}
+			decrypt_datashift = true;
+		}
 	}
 
 	params->resilience = NULL;
 	if (ARG_SET(OPT_RESILIENCE_ID)) {
-		params->resilience = ARG_STR(OPT_RESILIENCE_ID);
+		if (decrypt_datashift && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "checksum"))
+			params->resilience = "datashift-checksum";
+		else if (decrypt_datashift && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "journal"))
+			params->resilience = "datashift-journal";
+		else
+			params->resilience = ARG_STR(OPT_RESILIENCE_ID);
 
 		/* we have to copy hash string returned by API */
 		if (params->hash && !ARG_SET(OPT_RESILIENCE_HASH_ID)) {
@@ -201,7 +225,8 @@ static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *par
 		}
 
 		/* Add default hash when switching to checksum based resilience */
-		if (!params->hash && !strcmp(params->resilience, "checksum"))
+		if (!params->hash && (!strcmp(params->resilience, "checksum") ||
+		    !strcmp(params->resilience, "datashift-checksum")))
 			params->hash = "sha256";
 
 		if (ARG_SET(OPT_RESILIENCE_HASH_ID))
@@ -598,6 +623,155 @@ static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, co
 	return !r ? DEVICE_LUKS2 : DEVICE_LUKS2_REENCRYPT;
 }
 
+static int reencrypt_restore_header(struct crypt_device **cd,
+	const char *data_device, const char *header)
+{
+	int r;
+
+	assert(cd);
+	assert(data_device);
+	assert(header);
+
+	crypt_free(*cd);
+	*cd = NULL;
+
+	log_verbose(_("Restoring original LUKS2 header."));
+
+	r = crypt_init(cd, data_device);
+	if (r < 0)
+		return r;
+
+	r = crypt_header_restore(*cd, CRYPT_LUKS2, header);
+	if (r < 0)
+		log_err(_("Original LUKS2 header restore failed."));
+
+	return r;
+}
+
+static int decrypt_luks2_datashift_init(struct crypt_device **cd,
+	const char *data_device,
+	const char *expheader)
+{
+	int fd, r;
+	size_t passwordLen;
+	struct stat hdr_st;
+	bool remove_header = false;
+	char *active_name = NULL, *password = NULL;
+	struct crypt_params_reencrypt params = {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "datashift-checksum",
+		.hash = ARG_STR(OPT_RESILIENCE_HASH_ID) ?: "sha256",
+		.data_shift = crypt_get_data_offset(*cd),
+		.device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE,
+		.max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE,
+		.flags = CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
+	};
+
+	if (ARG_SET(OPT_RESILIENCE_ID)) {
+		if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+			log_err(_("Requested --resilience option cannot be applied "
+				  "to current reencryption operation."));
+			return -EINVAL;
+		}
+
+		else if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "journal"))
+			params.resilience = "datashift-journal";
+		else
+			params.resilience = ARG_STR(OPT_RESILIENCE_ID);
+	}
+
+	r = tools_get_key(NULL, &password, &passwordLen,
+			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
+			ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
+			verify_passphrase(0), 0, *cd);
+	if (r < 0)
+		return r;
+
+	r = reencrypt_check_passphrase(*cd, ARG_INT32(OPT_KEY_SLOT_ID), password, passwordLen);
+	if (r < 0)
+		goto out;
+
+	r = crypt_header_backup(*cd, CRYPT_LUKS2, expheader);
+	if (r < 0)
+		goto out;
+
+	remove_header = true;
+
+	fd = open(expheader, O_RDONLY);
+	if (fd < 0)
+		goto out;
+
+	if (fstat(fd, &hdr_st)) {
+		close(fd);
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = fchmod(fd, hdr_st.st_mode  | S_IRUSR | S_IWUSR);
+	close(fd);
+	if (r) {
+		log_err(_("Failed to add read/wrire permissions to exported header file."));
+		r = -EINVAL;
+		goto out;
+	}
+
+	crypt_free(*cd);
+	*cd = NULL;
+
+	/* reload with exported header */
+	if (ARG_SET(OPT_ACTIVE_NAME_ID)) {
+		if (load_luks2_by_name(cd, ARG_STR(OPT_ACTIVE_NAME_ID), expheader) != DEVICE_LUKS2) {
+			r = -EINVAL;
+			goto out;
+		}
+	} else {
+		if ((r = crypt_init_data_device(cd, expheader, data_device)))
+			goto out;
+		if ((r = crypt_load(*cd, CRYPT_LUKS2, NULL)))
+			goto out;
+	}
+
+	_set_reencryption_flags(&params.flags);
+
+	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
+		r = reencrypt_get_active_name(*cd, data_device, &active_name);
+
+	if (r < 0)
+		goto out;
+
+	r = tools_wipe_all_signatures(data_device, active_name == NULL, true);
+	if (r < 0) {
+		/* if header restore fails keep original header backup */
+		if (reencrypt_restore_header(cd, data_device, expheader) < 0)
+			remove_header = false;
+		goto out;
+	}
+
+	remove_header = false;
+
+	r = crypt_reencrypt_init_by_passphrase(*cd, active_name, password,
+			passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), CRYPT_ANY_SLOT,
+			NULL, NULL, &params);
+
+	if (r < 0 && crypt_reencrypt_status(*cd, NULL) == CRYPT_REENCRYPT_NONE) {
+		/* if restore is successful we can remove header backup */
+		if (!reencrypt_restore_header(cd, data_device, expheader))
+			remove_header = true;
+	}
+out:
+	free(active_name);
+	crypt_safe_free(password);
+
+	if (r < 0 && !remove_header && !stat(expheader, &hdr_st) && S_ISREG(hdr_st.st_mode))
+		log_err(_("Reencryption initialization failed. Header backup is available in %s."),
+			expheader);
+	if (remove_header)
+		unlink(expheader);
+
+	return r;
+}
+
 static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
 	int r;
@@ -616,8 +790,8 @@ static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 	if (!luks2_reencrypt_eligible(cd))
 		return -EINVAL;
 
-	if (!crypt_get_metadata_device_name(cd) || crypt_header_is_detached(cd) <= 0 ||
-	    crypt_get_data_offset(cd) > 0) {
+	if ((!crypt_get_metadata_device_name(cd) || crypt_header_is_detached(cd) <= 0 ||
+	    crypt_get_data_offset(cd) > 0)) {
 		log_err(_("LUKS2 decryption is supported with detached header device only (with data offset set to 0)."));
 		return -ENOTSUP;
 	}
@@ -634,7 +808,7 @@ static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 	if (r < 0)
 		goto out;
 
-	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID) && !ARG_SET(OPT_INIT_ONLY_ID))
+	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
 		r = reencrypt_get_active_name(cd, data_device, &active_name);
 	if (r >= 0)
 		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password,
@@ -1144,29 +1318,48 @@ static int _encrypt(struct crypt_device *cd, const char *type, enum device_statu
 	return r;
 }
 
-static int _decrypt(struct crypt_device *cd, enum device_status_info dev_st, const char *data_device)
+static int _decrypt(struct crypt_device **cd, enum device_status_info dev_st, const char *data_device)
 {
 	int r;
+	bool export_header = false;
 
 	if (dev_st == DEVICE_LUKS1 || dev_st == DEVICE_LUKS1_UNUSABLE)
 		return reencrypt_luks1(data_device);
 
+	/* header file does not exist, try loading device type from data device */
+	if (dev_st == DEVICE_NOT_LUKS && ARG_SET(OPT_HEADER_ID)) {
+		if (ARG_SET(OPT_ACTIVE_NAME_ID))
+			dev_st = load_luks2_by_name(cd, ARG_STR(OPT_ACTIVE_NAME_ID), NULL);
+		else
+			dev_st = load_luks(cd, NULL, uuid_or_device(data_device));
+
+		if (dev_st != DEVICE_LUKS2)
+			return -EINVAL;
+
+		export_header = true;
+	}
+
 	if (dev_st == DEVICE_LUKS2_REENCRYPT) {
-		if ((r = reencrypt_luks2_load(cd, data_device)) < 0)
+		if ((r = reencrypt_luks2_load(*cd, data_device)) < 0)
 			return r;
 	} else if (dev_st == DEVICE_LUKS2) {
 		if (!ARG_SET(OPT_HEADER_ID)) {
-			log_err(_("LUKS2 decryption requires --header option ."));
+			log_err(_("LUKS2 decryption requires --header option."));
 			return -EINVAL;
 		}
 
-		r = decrypt_luks2_init(cd, data_device);
-		if (r < 0|| ARG_SET(OPT_INIT_ONLY_ID))
+		if (export_header)
+			r = decrypt_luks2_datashift_init(cd, data_device, ARG_STR(OPT_HEADER_ID));
+		else
+			r = decrypt_luks2_init(*cd, data_device);
+
+		if (r < 0 || ARG_SET(OPT_INIT_ONLY_ID))
 			return r;
-	} else
+	} else if (dev_st == DEVICE_NOT_LUKS)
 		return -EINVAL;
 
-	return reencrypt_luks2_resume(cd);
+	r = reencrypt_luks2_resume(*cd);
+	return r;
 }
 
 static int _reencrypt(struct crypt_device *cd, enum device_status_info dev_st, const char *data_device)
@@ -1248,7 +1441,7 @@ int reencrypt(int action_argc, const char **action_argv)
 	if (ARG_SET(OPT_ENCRYPT_ID))
 		r = _encrypt(cd, type, dev_st, action_argc, action_argv);
 	else if (ARG_SET(OPT_DECRYPT_ID))
-		r = _decrypt(cd, dev_st, action_argv[0]);
+		r = _decrypt(&cd, dev_st, action_argv[0]);
 	else
 		r = _reencrypt(cd, dev_st, action_argv[0]);
 
