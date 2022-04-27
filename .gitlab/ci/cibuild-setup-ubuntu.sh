@@ -42,7 +42,7 @@ apt-get -y build-dep cryptsetup
 
 echo "====================== VERSIONS ==================="
 if [[ $COMPILER == "clang" ]]; then
-	scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --help
+	echo "Using scan-build${COMPILER_VERSION:+-$COMPILER_VERSION}"
 fi
 
 ${COMPILER}-$COMPILER_VERSION -v
