@@ -12,7 +12,7 @@ test-gcc-Wall-script:
     - .gitlab-shared-gcc
   script:
     - export CFLAGS="-g -O0"
-    - export CC=".gitlab/ci/gcc-Wall"
+    - export CC="$CI_PROJECT_DIR/.gitlab/ci/gcc-Wall"
     - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
     - make -j CFLAGS="-g -O0 -Werror" check-programs

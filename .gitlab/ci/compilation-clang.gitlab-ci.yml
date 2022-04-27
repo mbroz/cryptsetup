@@ -12,7 +12,7 @@ test-clang-Wall-script:
     - .gitlab-shared-clang
   script:
     - export CFLAGS="-g -O0"
-    - export CC=".gitlab/ci/clang-Wall"
+    - export CC="$CI_PROJECT_DIR/.gitlab/ci/clang-Wall"
     - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
     - make -j CFLAGS="-g -O0 -Werror" check-programs
