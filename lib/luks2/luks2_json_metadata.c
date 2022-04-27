@@ -1917,21 +1917,25 @@ int LUKS2_hdr_dump_json(struct crypt_device *cd, struct luks2_hdr *hdr, const ch
 
 int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic)
 {
-	int sector_size;
-	json_object *jobj_segments, *jobj_size;
+	int i, len, sector_size;
+	json_object *jobj_segments, *jobj_segment, *jobj_size;
 	uint64_t tmp = 0;
 
 	if (!size || !json_object_object_get_ex(hdr->jobj, "segments", &jobj_segments))
 		return -EINVAL;
 
-	json_object_object_foreach(jobj_segments, key, val) {
-		UNUSED(key);
-		if (json_segment_is_backup(val))
-			continue;
+	len = json_object_object_length(jobj_segments);
 
-		json_object_object_get_ex(val, "size", &jobj_size);
+	for (i = 0; i < len; i++) {
+		if (!(jobj_segment = json_segments_get_segment(jobj_segments, i)))
+			return -EINVAL;
+
+		if (json_segment_is_backup(jobj_segment))
+			break;
+
+		json_object_object_get_ex(jobj_segment, "size", &jobj_size);
 		if (!strcmp(json_object_get_string(jobj_size), "dynamic")) {
-			sector_size = json_segment_get_sector_size(val);
+			sector_size = json_segment_get_sector_size(jobj_segment);
 			/* last dynamic segment must have at least one sector in size */
 			if (tmp)
 				*size = tmp + (sector_size > 0 ? sector_size : SECTOR_SIZE);

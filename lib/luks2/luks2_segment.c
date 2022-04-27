@@ -344,19 +344,11 @@ int LUKS2_segment_by_type(struct luks2_hdr *hdr, const char *type)
 int LUKS2_segment_first_unused_id(struct luks2_hdr *hdr)
 {
 	json_object *jobj_segments;
-	int id, last_id = -1;
 
 	if (!json_object_object_get_ex(hdr->jobj, "segments", &jobj_segments))
 		return -EINVAL;
 
-	json_object_object_foreach(jobj_segments, slot, val) {
-		UNUSED(val);
-		id = atoi(slot);
-		if (id > last_id)
-			last_id = id;
-	}
-
-	return last_id + 1;
+	return json_object_object_length(jobj_segments);
 }
 
 int LUKS2_segment_set_flag(json_object *jobj_segment, const char *flag)
