@@ -199,6 +199,11 @@ static int get_luks2_offsets(int metadata_device,
 	struct crypt_device *cd = NULL;
 	static uint64_t default_header_size = 0;
 
+	if (r_header_size)
+		*r_header_size = 0;
+	if (r_payload_offset)
+		*r_payload_offset = 0;
+
 	if (!default_header_size) {
 		if (crypt_init(&cd, THE_LOOP_DEV))
 			return -EINVAL;
@@ -966,8 +971,7 @@ static void AddDeviceLuks2(void)
 	OK_(!(global_lines != 0));
 	reset_log();
 	OK_(crypt_dump_json(cd, &tmp_buf, 0));
-	OK_(!tmp_buf);
-	OK_(!(strlen(tmp_buf) != 0));
+	OK_(!(tmp_buf && strlen(tmp_buf) != 0));
 
 	FAIL_(crypt_set_uuid(cd, "blah"), "wrong UUID format");
 	OK_(crypt_set_uuid(cd, DEVICE_TEST_UUID));

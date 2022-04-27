@@ -214,7 +214,6 @@ int get_key_dm(const char *name, char *buffer, unsigned int buffer_size)
 	struct dm_info dmi;
 	uint64_t start, length;
 	char *target_type, *key, *params;
-	void *next = NULL;
 	int r = -EINVAL;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_TABLE)))
@@ -228,7 +227,7 @@ int get_key_dm(const char *name, char *buffer, unsigned int buffer_size)
 	if (!dmi.exists)
 		goto out;
 
-	next = dm_get_next_target(dmt, next, &start, &length, &target_type, &params);
+	dm_get_next_target(dmt, NULL, &start, &length, &target_type, &params);
 	if (!target_type || strcmp(target_type, "crypt") != 0)
 		goto out;
 
