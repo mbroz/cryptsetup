@@ -78,7 +78,7 @@ static int PBKDF2_digest_verify(struct crypt_device *cd,
 			mkDigestIterations, 0, 0) < 0) {
 		r = -EINVAL;
 	} else {
-		if (memcmp(checkHashBuf, mkDigest, len) == 0)
+		if (crypt_backend_memeq(checkHashBuf, mkDigest, len) == 0)
 			r = 0;
 	}
 out:

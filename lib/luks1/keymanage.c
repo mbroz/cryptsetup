@@ -982,7 +982,7 @@ int LUKS_verify_volume_key(const struct luks_phdr *hdr,
 			hdr->mkDigestIterations, 0, 0) < 0)
 		return -EINVAL;
 
-	if (memcmp(checkHashBuf, hdr->mkDigest, LUKS_DIGESTSIZE))
+	if (crypt_backend_memeq(checkHashBuf, hdr->mkDigest, LUKS_DIGESTSIZE))
 		return -EPERM;
 
 	return 0;

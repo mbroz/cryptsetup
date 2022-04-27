@@ -1429,6 +1429,18 @@ static int default_alg_test(void)
 	return EXIT_SUCCESS;
 }
 
+static int memcmp_test(void)
+{
+	printf("MEMEQ ");
+	if (!crypt_backend_memeq("aaaaaaaa", "bbbbbbbb", 8))
+		return EXIT_FAILURE;
+	if (crypt_backend_memeq("aaaaaaaa", "aaaaaaaa", 8))
+		return EXIT_FAILURE;
+	printf("[OK]\n");
+
+	return EXIT_SUCCESS;
+}
+
 static void __attribute__((noreturn)) exit_test(const char *msg, int r)
 {
 	if (msg)
@@ -1468,6 +1480,9 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 
 	if (base64_test())
 		exit_test("BASE64 test failed.", EXIT_FAILURE);
+
+	if (memcmp_test())
+		exit_test("Memcmp test failed.", EXIT_FAILURE);
 
 	if (default_alg_test()) {
 		if (fips_mode())

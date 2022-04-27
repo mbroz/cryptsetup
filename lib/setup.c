@@ -2401,7 +2401,7 @@ static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only, 
 		return 1;
 
 	if (!skeyring_only && !tkeyring_only)
-		return memcmp(svk->key, tvk->key, svk->keylength);
+		return crypt_backend_memeq(svk->key, tvk->key, svk->keylength);
 
 	if (svk->key_description && tvk->key_description)
 		return strcmp(svk->key_description, tvk->key_description);
