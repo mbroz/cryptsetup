@@ -5,6 +5,7 @@ test-clang-compilation:
     - export CFLAGS="-Wall -Werror"
     - ./configure
     - make -j
+    - make -j check-programs
 
 test-clang-Wall-script:
   extends:
@@ -14,6 +15,7 @@ test-clang-Wall-script:
     - export CC=".gitlab/ci/clang-Wall"
     - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
+    - make -j CFLAGS="-g -O0 -Werror" check-programs
 
 test-scan-build:
   extends:
@@ -22,3 +24,4 @@ test-scan-build:
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0"
     - make clean
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j check-programs

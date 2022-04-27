@@ -5,6 +5,7 @@ test-gcc-compilation:
     - export CFLAGS="-Wall -Werror"
     - ./configure
     - make -j
+    - make -j check-programs
 
 test-gcc-Wall-script:
   extends:
@@ -14,6 +15,7 @@ test-gcc-Wall-script:
     - export CC=".gitlab/ci/gcc-Wall"
     - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
+    - make -j CFLAGS="-g -O0 -Werror" check-programs
 
 test-gcc-fanalyzer:
   extends:
@@ -22,3 +24,4 @@ test-gcc-fanalyzer:
     - export CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events"
     - ./configure
     - make -j
+    - make -j check-programs
