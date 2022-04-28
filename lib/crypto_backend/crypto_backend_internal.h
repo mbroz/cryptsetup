@@ -58,4 +58,18 @@ int crypt_bitlk_decrypt_key_kernel(const void *key, size_t key_length,
 				   const char *iv, size_t iv_length,
 				   const char *tag, size_t tag_length);
 
+/* Internal implementation for constant time memory comparison */
+static inline int crypt_internal_memeq(const void *m1, const void *m2, size_t n)
+{
+	const unsigned char *_m1 = (const unsigned char *) m1;
+	const unsigned char *_m2 = (const unsigned char *) m2;
+	unsigned char result = 0;
+	size_t i;
+
+	for (i = 0; i < n; i++)
+		result |= _m1[i] ^ _m2[i];
+
+	return result;
+}
+
 #endif /* _CRYPTO_BACKEND_INTERNAL_H */

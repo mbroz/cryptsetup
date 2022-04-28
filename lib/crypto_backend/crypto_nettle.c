@@ -26,6 +26,7 @@
 #include <nettle/sha3.h>
 #include <nettle/hmac.h>
 #include <nettle/pbkdf2.h>
+#include <nettle/memops.h>
 #include "crypto_backend_internal.h"
 
 #if HAVE_NETTLE_VERSION_H
@@ -445,4 +446,10 @@ int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
 {
 	return crypt_bitlk_decrypt_key_kernel(key, key_length, in, out, length,
 					      iv, iv_length, tag, tag_length);
+}
+
+int crypt_backend_memeq(const void *m1, const void *m2, size_t n)
+{
+	/* The logic is inverse to memcmp... */
+	return !memeql_sec(m1, m2, n);
 }

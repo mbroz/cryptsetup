@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
@@ -805,4 +806,9 @@ out:
 #else
 	return -ENOTSUP;
 #endif
+}
+
+int crypt_backend_memeq(const void *m1, const void *m2, size_t n)
+{
+	return CRYPTO_memcmp(m1, m2, n);
 }
