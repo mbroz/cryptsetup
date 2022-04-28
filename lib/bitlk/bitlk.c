@@ -233,14 +233,6 @@ static const char* get_bitlk_type_string(BITLKEncryptionType type)
 	}
 }
 
-/* TODO -- move to some utils file */
-static void hexprint(struct crypt_device *cd, const char *d, int n, const char *sep)
-{
-	int i;
-	for(i = 0; i < n; i++)
-		log_std(cd, "%02hhx%s", (const char)d[i], sep);
-}
-
 static uint64_t filetime_to_unixtime(uint64_t time)
 {
 	return (time - EPOCH_AS_FILETIME) / HUNDREDS_OF_NANOSECONDS;
@@ -729,7 +721,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 		log_std(cd, "\tGUID:       \t%s\n", vmk_p->guid);
 		log_std(cd, "\tProtection: \t%s\n", get_vmk_protection_string (vmk_p->protection));
 		log_std(cd, "\tSalt:       \t");
-		hexprint(cd, (const char *) vmk_p->salt, 16, "");
+		crypt_log_hex(cd, (const char *) vmk_p->salt, 16, "", 0, NULL);
 		log_std(cd, "\n");
 
 		vk_p = vmk_p->vk;

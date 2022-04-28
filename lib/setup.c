@@ -5058,13 +5058,6 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 	return CRYPT_INACTIVE;
 }
 
-static void hexprint(struct crypt_device *cd, const char *d, int n, const char *sep)
-{
-	int i;
-	for(i = 0; i < n; i++)
-		log_std(cd, "%02hhx%s", (const char)d[i], sep);
-}
-
 static int _luks_dump(struct crypt_device *cd)
 {
 	int i;
@@ -5077,12 +5070,12 @@ static int _luks_dump(struct crypt_device *cd)
 	log_std(cd, "Payload offset:\t%" PRIu32 "\n", cd->u.luks1.hdr.payloadOffset);
 	log_std(cd, "MK bits:       \t%" PRIu32 "\n", cd->u.luks1.hdr.keyBytes * 8);
 	log_std(cd, "MK digest:     \t");
-	hexprint(cd, cd->u.luks1.hdr.mkDigest, LUKS_DIGESTSIZE, " ");
+	crypt_log_hex(cd, cd->u.luks1.hdr.mkDigest, LUKS_DIGESTSIZE, " ", 0, NULL);
 	log_std(cd, "\n");
 	log_std(cd, "MK salt:       \t");
-	hexprint(cd, cd->u.luks1.hdr.mkDigestSalt, LUKS_SALTSIZE/2, " ");
+	crypt_log_hex(cd, cd->u.luks1.hdr.mkDigestSalt, LUKS_SALTSIZE/2, " ", 0, NULL);
 	log_std(cd, "\n               \t");
-	hexprint(cd, cd->u.luks1.hdr.mkDigestSalt+LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ");
+	crypt_log_hex(cd, cd->u.luks1.hdr.mkDigestSalt+LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ", 0, NULL);
 	log_std(cd, "\n");
 	log_std(cd, "MK iterations: \t%" PRIu32 "\n", cd->u.luks1.hdr.mkDigestIterations);
 	log_std(cd, "UUID:          \t%s\n\n", cd->u.luks1.hdr.uuid);
@@ -5092,11 +5085,11 @@ static int _luks_dump(struct crypt_device *cd)
 			log_std(cd, "\tIterations:         \t%" PRIu32 "\n",
 				cd->u.luks1.hdr.keyblock[i].passwordIterations);
 			log_std(cd, "\tSalt:               \t");
-			hexprint(cd, cd->u.luks1.hdr.keyblock[i].passwordSalt,
-				 LUKS_SALTSIZE/2, " ");
+			crypt_log_hex(cd, cd->u.luks1.hdr.keyblock[i].passwordSalt,
+				 LUKS_SALTSIZE/2, " ", 0, NULL);
 			log_std(cd, "\n\t                      \t");
-			hexprint(cd, cd->u.luks1.hdr.keyblock[i].passwordSalt +
-				 LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ");
+			crypt_log_hex(cd, cd->u.luks1.hdr.keyblock[i].passwordSalt +
+				 LUKS_SALTSIZE/2, LUKS_SALTSIZE/2, " ", 0, NULL);
 			log_std(cd, "\n");
 
 			log_std(cd, "\tKey material offset:\t%" PRIu32 "\n",
@@ -5121,13 +5114,13 @@ static int _verity_dump(struct crypt_device *cd)
 	log_std(cd, "Hash algorithm:  \t%s\n", cd->u.verity.hdr.hash_name);
 	log_std(cd, "Salt:            \t");
 	if (cd->u.verity.hdr.salt_size)
-		hexprint(cd, cd->u.verity.hdr.salt, cd->u.verity.hdr.salt_size, "");
+		crypt_log_hex(cd, cd->u.verity.hdr.salt, cd->u.verity.hdr.salt_size, "", 0, NULL);
 	else
 		log_std(cd, "-");
 	log_std(cd, "\n");
 	if (cd->u.verity.root_hash) {
 		log_std(cd, "Root hash:      \t");
-		hexprint(cd, cd->u.verity.root_hash, cd->u.verity.root_hash_size, "");
+		crypt_log_hex(cd, cd->u.verity.root_hash, cd->u.verity.root_hash_size, "", 0, NULL);
 		log_std(cd, "\n");
 	}
 	return 0;

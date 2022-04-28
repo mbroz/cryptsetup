@@ -25,6 +25,8 @@
 
 #include <stdbool.h>
 
+struct crypt_device;
+
 #define MAX_CIPHER_LEN		32
 #define MAX_CIPHER_LEN_STR	"31"
 #define MAX_KEYFILES		32
@@ -37,6 +39,10 @@ int crypt_parse_integrity_mode(const char *s, char *integrity,
 int crypt_parse_pbkdf(const char *s, const char **pbkdf);
 
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc);
+char *crypt_bytes_to_hex(size_t size, const char *bytes);
+void crypt_log_hex(struct crypt_device *cd,
+		   const char *bytes, size_t size,
+		   const char *sep, int numwrap, const char *wrapsep);
 
 bool crypt_is_cipher_null(const char *cipher_spec);
 

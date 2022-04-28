@@ -152,10 +152,50 @@ int crypt_parse_pbkdf(const char *s, const char **pbkdf)
 	return 0;
 }
 
+/*
+ * Thanks Mikulas Patocka for these two char converting functions.
+ *
+ * This function is used to load cryptographic keys, so it is coded in such a
+ * way that there are no conditions or memory accesses that depend on data.
+ *
+ * Explanation of the logic:
+ * (ch - '9' - 1) is negative if ch <= '9'
+ * ('0' - 1 - ch) is negative if ch >= '0'
+ * we "and" these two values, so the result is negative if ch is in the range
+ * '0' ... '9'
+ * we are only interested in the sign, so we do a shift ">> 8"; note that right
+ * shift of a negative value is implementation-defined, so we cast the
+ * value to (unsigned) before the shift --- we have 0xffffff if ch is in
+ * the range '0' ... '9', 0 otherwise
+ * we "and" this value with (ch - '0' + 1) --- we have a value 1 ... 10 if ch is
+ * in the range '0' ... '9', 0 otherwise
+ * we add this value to -1 --- we have a value 0 ... 9 if ch is in the range '0'
+ * ... '9', -1 otherwise
+ * the next line is similar to the previous one, but we need to decode both
+ * uppercase and lowercase letters, so we use (ch & 0xdf), which converts
+ * lowercase to uppercase
+ */
+static int hex_to_bin(unsigned char ch)
+{
+	unsigned char cu = ch & 0xdf;
+	return -1 +
+		((ch - '0' +  1) & (unsigned)((ch - '9' - 1) & ('0' - 1 - ch)) >> 8) +
+		((cu - 'A' + 11) & (unsigned)((cu - 'F' - 1) & ('A' - 1 - cu)) >> 8);
+}
+
+static char hex2asc(unsigned char c)
+{
+	return c + '0' + ((unsigned)(9 - c) >> 4 & 0x27);
+}
+
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc)
 {
-	char buf[3] = "xx\0", *endp, *bytes;
+	char *bytes;
 	size_t i, len;
+	int bl, bh;
+
+	if (!hex || !result)
+		return -EINVAL;
 
 	len = strlen(hex);
 	if (len % 2)
@@ -167,15 +207,57 @@ ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc)
 		return -ENOMEM;
 
 	for (i = 0; i < len; i++) {
-		memcpy(buf, &hex[i * 2], 2);
-		bytes[i] = strtoul(buf, &endp, 16);
-		if (endp != &buf[2]) {
+		bh = hex_to_bin(hex[i * 2]);
+		bl = hex_to_bin(hex[i * 2 + 1]);
+		if (bh == -1 || bl == -1) {
 			safe_alloc ? crypt_safe_free(bytes) : free(bytes);
 			return -EINVAL;
 		}
+		bytes[i] = (bh << 4) | bl;
 	}
 	*result = bytes;
 	return i;
+}
+
+char *crypt_bytes_to_hex(size_t size, const char *bytes)
+{
+	unsigned i;
+	char *hex;
+
+	if (size && !bytes)
+		return NULL;
+
+	/* Alloc adds trailing \0 */
+	if (size == 0)
+		hex = crypt_safe_alloc(2);
+	else
+		hex = crypt_safe_alloc(size * 2 + 1);
+	if (!hex)
+		return NULL;
+
+	if (size == 0)
+		hex[0] = '-';
+	else for (i = 0; i < size; i++) {
+		hex[i * 2]     = hex2asc((const unsigned char)bytes[i] >> 4);
+		hex[i * 2 + 1] = hex2asc((const unsigned char)bytes[i] & 0xf);
+	}
+
+	return hex;
+}
+
+void crypt_log_hex(struct crypt_device *cd,
+		   const char *bytes, size_t size,
+		   const char *sep, int numwrap, const char *wrapsep)
+{
+	unsigned i;
+
+	for (i = 0; i < size; i++) {
+		if (wrapsep && numwrap && i && !(i % numwrap))
+			crypt_logf(cd, CRYPT_LOG_NORMAL, wrapsep);
+		crypt_logf(cd, CRYPT_LOG_NORMAL, "%c%c%s",
+			   hex2asc((const unsigned char)bytes[i] >> 4),
+			   hex2asc((const unsigned char)bytes[i] & 0xf), sep);
+	}
 }
 
 bool crypt_is_cipher_null(const char *cipher_spec)
