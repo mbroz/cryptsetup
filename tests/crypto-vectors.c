@@ -994,6 +994,32 @@ static struct base64_test_vector base64_test_vectors[] = {
               "YmxhaCBibGFoIGJsYWg=" },
 };
 
+/* UTF8 to UTF16LE test vectors */
+struct utf8_16_test_vector {
+	size_t len8;
+	size_t len16;
+	const char *utf8;
+	const char *utf16;
+};
+
+static struct utf8_16_test_vector utf8_16_test_vectors[] = {
+	{  1,  2, "a", "\x61\x00" },
+	{ 16, 32, "0123456789abcdef",
+	"\x30\x00\x31\x00\x32\x00\x33\x00\x34\x00\x35\x00\x36\x00\x37\x00"
+	"\x38\x00\x39\x00\x61\x00\x62\x00\x63\x00\x64\x00\x65\x00\x66\x00" },
+	{ 77, 78,
+	"\xf2\xa4\xa5\x94\x49\xf2\xa1\x98\x98\xd8\x8a\xe1\xb4\x88\xea\xa7"
+	"\xaa\xde\x95\xe2\x85\xb1\xe7\xb1\x9a\xf2\xb5\xa1\xae\x37\x2d\xd0"
+	"\xa9\xe1\x9a\x9c\xe8\xb0\xb7\xc8\x95\x0a\xf3\xaa\x92\xba\xf2\x83"
+	"\xb0\x99\xf0\x9b\xbe\x8f\x4f\xc8\x86\x30\xe7\xab\xa0\xda\xb9\xd8"
+	"\x89\xd8\xbc\xd7\x8a\xd9\xbc\xc3\x8f\x33\x62\xda\xb7",
+	"\x52\xda\x54\xdd\x49\x00\x45\xda\x18\xde\x0a\x06\x08\x1d\xea\xa9"
+	"\x95\x07\x71\x21\x5a\x7c\x96\xda\x6e\xdc\x37\x00\x2d\x00\x29\x04"
+	"\x9c\x16\x37\x8c\x15\x02\x0a\x00\x69\xdb\xba\xdc\xcf\xd9\x19\xdc"
+	"\x2f\xd8\x8f\xdf\x4f\x00\x06\x02\x30\x00\xe0\x7a\xb9\x06\x09\x06"
+	"\x3c\x06\xca\x05\x7c\x06\xcf\x00\x33\x00\x62\x00\xb7\x06" },
+};
+
 static int pbkdf_test_vectors(void)
 {
 	char result[256];
@@ -1410,6 +1436,41 @@ static int base64_test(void)
 	return EXIT_SUCCESS;
 }
 
+static int utf8_16_test(void)
+{
+	unsigned int i;
+	char s8[128], *s;
+	char16_t c16[256], s16[256], *su;
+
+	for (i = 0; i < ARRAY_SIZE(utf8_16_test_vectors); i++) {
+		printf("UTF8/16 %02d ", i);
+		crypt_backend_memzero(s16, sizeof(s16));
+		su = &s16[0];
+		if (crypt_utf8_to_utf16(&su, utf8_16_test_vectors[i].utf8,
+					utf8_16_test_vectors[i].len8) < 0 ||
+			memcmp(utf8_16_test_vectors[i].utf16, s16,
+			       utf8_16_test_vectors[i].len16)) {
+			printf("[UTF8_TO_UTF16 FAILED]\n");
+			return EXIT_FAILURE;
+		}
+		printf("[UTF8_TO_UTF16]");
+
+		crypt_backend_memzero(s8, sizeof(s8));
+		s = &s8[0];
+		memcpy(c16, utf8_16_test_vectors[i].utf16, utf8_16_test_vectors[i].len16);
+		if (crypt_utf16_to_utf8(&s, c16, utf8_16_test_vectors[i].len16) < 0 ||
+			utf8_16_test_vectors[i].len8 != strlen(s8) ||
+			memcmp(utf8_16_test_vectors[i].utf8, s8,
+			       utf8_16_test_vectors[i].len8)) {
+			printf("[UTF16_TO_UTF8 FAILED]\n");
+			return EXIT_FAILURE;
+		}
+		printf("[UTF16_TO_UTF8]\n");
+	}
+
+	return EXIT_SUCCESS;
+}
+
 static int default_alg_test(void)
 {
 	printf("Defaults: [LUKS1 hash %s] ", DEFAULT_LUKS1_HASH);
@@ -1483,6 +1544,9 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 
 	if (memcmp_test())
 		exit_test("Memcmp test failed.", EXIT_FAILURE);
+
+	if (utf8_16_test())
+		exit_test("UTF8/16 test failed.", EXIT_FAILURE);
 
 	if (default_alg_test()) {
 		if (fips_mode())
