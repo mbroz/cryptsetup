@@ -243,8 +243,7 @@ LUKS can manage multiple passphrases that can be individually revoked
 or changed and that can be securely scrubbed from persistent
 media due to the use of anti-forensic stripes. Passphrases
 are protected against brute-force and dictionary
-attacks by PBKDF2, which implements hash iteration and salting
-in one function.
+attacks by Password-Based Key Derivation Function (PBKDF).
 
 LUKS2 is a new version of header format that allows additional
 extensions like different PBKDF algorithm or authenticated encryption.
@@ -417,10 +416,10 @@ inaccessible.
 .PP
 \fIluksConvertKey\fR <device>
 .IP
-Converts an existing LUKS2 keyslot to new pbkdf parameters. The
+Converts an existing LUKS2 keyslot to new PBKDF parameters. The
 passphrase for keyslot to be converted must be supplied interactively
 or via \-\-key\-file. If no \-\-pbkdf parameters are specified LUKS2
-default pbkdf values will apply.
+default PBKDF values will apply.
 
 If a keyslot is specified (via \-\-key\-slot), the passphrase for that
 keyslot must be given. If no keyslot is specified and there is still
@@ -1126,7 +1125,7 @@ The PBKDF can be: \fIpbkdf2\fR (for PBKDF2 according to RFC2898),
 (see https://www.cryptolux.org/index.php/Argon2 for more info).
 
 For LUKS1, only PBKDF2 is accepted (no need to use this option).
-The default PBKDF2 for LUKS2 is set during compilation time
+The default PBKDF for LUKS2 is set during compilation time
 and is available in \fIcryptsetup \-\-help\fR output.
 
 A PBKDF is used for increasing dictionary and brute-force attack cost
@@ -1693,9 +1692,9 @@ be overwritten using \-\-keyfile-size option.
 
 
 .SH NOTES ON PASSPHRASE PROCESSING FOR LUKS
-LUKS uses PBKDF2 to protect against dictionary attacks
+LUKS uses PBKDF to protect against dictionary attacks
 and to give some protection to low-entropy passphrases
-(see RFC 2898 and the cryptsetup FAQ).
+(see cryptsetup FAQ).
 
 \fBFrom a terminal\fR: The passphrase is read until the
 first newline and then processed by PBKDF2 without
