@@ -41,6 +41,7 @@ struct reenc_protection {
 		size_t block_size;
 	} csum;
 	struct {
+		uint64_t data_shift;
 	} ds;
 	} p;
 };
@@ -50,7 +51,6 @@ struct luks2_reencrypt {
 	uint64_t offset;
 	uint64_t progress;
 	uint64_t length;
-	uint64_t data_shift;
 	uint64_t device_size;
 	bool online;
 	bool fixed_length;
@@ -92,6 +92,11 @@ struct luks2_reencrypt {
 	struct crypt_lock_handle *reenc_lock;
 };
 #if USE_LUKS2_REENCRYPTION
+static uint64_t data_shift_value(struct reenc_protection *rp)
+{
+	return rp->type == REENC_PROTECTION_DATASHIFT ? rp->p.ds.data_shift : 0;
+}
+
 static int reencrypt_keyslot_update(struct crypt_device *cd,
 	const struct luks2_reencrypt *rh)
 {
@@ -568,7 +573,7 @@ static json_object *reencrypt_make_hot_segments_forward(struct crypt_device *cd,
 
 	if (tmp < device_size) {
 		fixed_length = device_size - tmp;
-		jobj_old_seg = reencrypt_make_segment_old(cd, hdr, rh, data_offset + rh->data_shift, rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
+		jobj_old_seg = reencrypt_make_segment_old(cd, hdr, rh, data_offset + data_shift_value(&rh->rp), rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
 		if (!jobj_old_seg)
 			goto err;
 		json_object_object_add_by_uint(jobj_segs_hot, sg, jobj_old_seg);
@@ -631,7 +636,7 @@ static int reencrypt_make_hot_segments(struct crypt_device *cd,
 	rh->jobj_segs_hot = NULL;
 
 	if (rh->mode == CRYPT_REENCRYPT_ENCRYPT && rh->direction == CRYPT_REENCRYPT_BACKWARD &&
-	    rh->data_shift && rh->jobj_segment_moved) {
+	    rh->rp.type == REENC_PROTECTION_DATASHIFT && rh->jobj_segment_moved) {
 		log_dbg(cd, "Calculating hot segments for encryption with data move.");
 		rh->jobj_segs_hot = reencrypt_make_hot_segments_encrypt_shift(hdr, rh, data_offset);
 	} else if (rh->direction == CRYPT_REENCRYPT_FORWARD) {
@@ -653,7 +658,7 @@ static int reencrypt_make_post_segments(struct crypt_device *cd,
 	rh->jobj_segs_post = NULL;
 
 	if (rh->mode == CRYPT_REENCRYPT_ENCRYPT && rh->direction == CRYPT_REENCRYPT_BACKWARD &&
-	    rh->data_shift && rh->jobj_segment_moved) {
+	    rh->rp.type == REENC_PROTECTION_DATASHIFT && rh->jobj_segment_moved) {
 		log_dbg(cd, "Calculating post segments for encryption with data move.");
 		rh->jobj_segs_post = _enc_create_segments_shift_after(rh, data_offset);
 	} else if (rh->direction == CRYPT_REENCRYPT_FORWARD) {
@@ -938,7 +943,7 @@ static uint64_t reencrypt_length(struct crypt_device *cd,
 	else if (rh->rp.type == REENC_PROTECTION_CHECKSUM)
 		length = (keyslot_area_length / rh->rp.p.csum.hash_size) * rh->rp.p.csum.block_size;
 	else if (rh->rp.type == REENC_PROTECTION_DATASHIFT)
-		return reencrypt_data_shift(hdr);
+		return rh->rp.p.ds.data_shift;
 	else
 		length = keyslot_area_length;
 
@@ -1011,7 +1016,7 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 	if (!strcmp(params->resilience, "datashift")) {
 		log_dbg(cd, "Initializing reencryption context with data_shift resilience.");
 		rh->rp.type = REENC_PROTECTION_DATASHIFT;
-		rh->data_shift = reencrypt_data_shift(hdr);
+		rh->rp.p.ds.data_shift = reencrypt_data_shift(hdr);
 	} else if (!strcmp(params->resilience, "journal")) {
 		log_dbg(cd, "Initializing reencryption context with journal resilience.");
 		rh->rp.type = REENC_PROTECTION_JOURNAL;
@@ -1087,7 +1092,7 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 	log_dbg(cd, "backup-final digest id: %d", rh->digest_new);
 	log_dbg(cd, "reencrypt length: %" PRIu64, rh->length);
 	log_dbg(cd, "reencrypt offset: %" PRIu64, rh->offset);
-	log_dbg(cd, "reencrypt shift: %s%" PRIu64, (rh->data_shift && rh->direction == CRYPT_REENCRYPT_BACKWARD ? "-" : ""), rh->data_shift);
+	log_dbg(cd, "reencrypt shift: %s%" PRIu64, (rh->rp.type == REENC_PROTECTION_DATASHIFT && rh->direction == CRYPT_REENCRYPT_BACKWARD ? "-" : ""), data_shift_value(&rh->rp));
 	log_dbg(cd, "reencrypt alignment: %zu", alignment);
 	log_dbg(cd, "reencrypt progress: %" PRIu64, rh->progress);
 
@@ -1098,8 +1103,8 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 
 static size_t reencrypt_buffer_length(struct luks2_reencrypt *rh)
 {
-	if (rh->data_shift)
-		return rh->data_shift;
+	if (rh->rp.type == REENC_PROTECTION_DATASHIFT)
+		return data_shift_value(&rh->rp);
 	return rh->length;
 }
 
@@ -1533,7 +1538,7 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 					reencrypt_segment_cipher_old(hdr), NULL, 0);
 		} else
 			r = crypt_storage_wrapper_init(cd, &cw1, crypt_data_device(cd),
-					data_offset + rh->offset - rh->data_shift, 0, 0,
+					data_offset + rh->offset - data_shift_value(&rh->rp), 0, 0,
 					reencrypt_segment_cipher_old(hdr), NULL, 0);
 		if (r) {
 			log_err(cd, _("Failed to initialize old segment storage wrapper."));
@@ -2637,15 +2642,15 @@ static int reencrypt_context_update(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (rh->direction == CRYPT_REENCRYPT_BACKWARD) {
-		if (rh->data_shift && rh->mode == CRYPT_REENCRYPT_ENCRYPT) {
+		if (rh->rp.type == REENC_PROTECTION_DATASHIFT && rh->mode == CRYPT_REENCRYPT_ENCRYPT) {
 			if (rh->offset)
-				rh->offset -= rh->data_shift;
-			if (rh->offset && (rh->offset < rh->data_shift)) {
+				rh->offset -= data_shift_value(&rh->rp);
+			if (rh->offset && (rh->offset < data_shift_value(&rh->rp))) {
 				rh->length = rh->offset;
-				rh->offset = rh->data_shift;
+				rh->offset = data_shift_value(&rh->rp);
 			}
 			if (!rh->offset)
-				rh->length = rh->data_shift;
+				rh->length = data_shift_value(&rh->rp);
 		} else {
 			if (rh->offset < rh->length)
 				rh->length = rh->offset;
@@ -3275,7 +3280,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	log_dbg(cd, "Reencrypting chunk starting at offset: %" PRIu64 ", size :%" PRIu64 ".", rh->offset, rh->length);
 	log_dbg(cd, "data_offset: %" PRIu64, crypt_get_data_offset(cd) << SECTOR_SHIFT);
 
-	if (!rh->offset && rh->mode == CRYPT_REENCRYPT_ENCRYPT && rh->data_shift &&
+	if (!rh->offset && rh->mode == CRYPT_REENCRYPT_ENCRYPT && rh->rp.type == REENC_PROTECTION_DATASHIFT &&
 	    rh->jobj_segment_moved) {
 		crypt_storage_wrapper_destroy(rh->cw1);
 		log_dbg(cd, "Reinitializing old segment storage wrapper for moved segment.");
