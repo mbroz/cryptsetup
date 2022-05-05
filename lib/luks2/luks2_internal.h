@@ -146,8 +146,6 @@ struct reenc_protection {
 
 	union {
 	struct {
-	} none;
-	struct {
 		char hash[LUKS2_CHECKSUM_ALG_L];
 		struct crypt_hash *ch;
 		size_t hash_size;
