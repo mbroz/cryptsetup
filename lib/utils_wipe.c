@@ -282,6 +282,10 @@ int crypt_wipe(struct crypt_device *cd,
 	if (!cd)
 		return -EINVAL;
 
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
 	if (!dev_path)
 		device = crypt_data_device(cd);
 	else {
@@ -292,6 +296,8 @@ int crypt_wipe(struct crypt_device *cd,
 		if (flags & CRYPT_WIPE_NO_DIRECT_IO)
 			device_disable_direct_io(device);
 	}
+	if (!device)
+		return -EINVAL;
 
 	if (!wipe_block_size)
 		wipe_block_size = 1024*1024;
