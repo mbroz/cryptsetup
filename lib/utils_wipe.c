@@ -135,12 +135,8 @@ static int wipe_block(struct crypt_device *cd, int devfd, crypt_wipe_pattern pat
 			memset(sf, 0, wipe_block_size);
 			*need_block_init = false;
 			r = 0;
-		} else if (pattern == CRYPT_WIPE_RANDOM) {
-			r = crypt_random_get(cd, sf, wipe_block_size,
-					     CRYPT_RND_NORMAL) ? -EIO : 0;
-			*need_block_init = true;
-		} else if (pattern == CRYPT_WIPE_ENCRYPTED_ZERO) {
-			// FIXME
+		} else if (pattern == CRYPT_WIPE_RANDOM ||
+			   pattern == CRYPT_WIPE_ENCRYPTED_ZERO) {
 			r = crypt_random_get(cd, sf, wipe_block_size,
 					     CRYPT_RND_NORMAL) ? -EIO : 0;
 			*need_block_init = true;

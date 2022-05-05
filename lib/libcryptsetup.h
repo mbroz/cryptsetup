@@ -1996,7 +1996,7 @@ int crypt_keyfile_read(struct crypt_device *cd,
 typedef enum {
 	CRYPT_WIPE_ZERO,           /**< Fill with zeroes */
 	CRYPT_WIPE_RANDOM,         /**< Use RNG to fill data */
-	CRYPT_WIPE_ENCRYPTED_ZERO, /**< Add encryption and fill with zeroes as plaintext */
+	CRYPT_WIPE_ENCRYPTED_ZERO, /**< Obsolete, same as CRYPT_WIPE_RANDOM */
 	CRYPT_WIPE_SPECIAL,        /**< Compatibility only, do not use (Gutmann method) */
 } crypt_wipe_pattern;
 
