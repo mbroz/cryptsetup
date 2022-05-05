@@ -1,0 +1,164 @@
+#!/bin/bash
+
+WIPE_UNIT=./unit-wipe
+FILE=./wipe_localfile
+FILE_RAND=./wipe_random_localfile
+MB_BYTES=$((1024*1024))
+DEVSIZEMB=8
+DEVSIZE=$((DEVSIZEMB*$MB_BYTES))
+
+HASH_EMPTY=2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74
+
+function cleanup() {
+	rm -f $FILE $FILE_RAND 2> /dev/null
+	sleep 1
+	rmmod scsi_debug >/dev/null 2>&1
+}
+
+function fail()
+{
+	if [ -n "$1" ] ; then echo "FAIL $1" ; else echo "FAIL" ; fi
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
+	cleanup
+	exit 100
+}
+
+function skip()
+{
+	echo "TEST SKIPPED: $1"
+	cleanup
+	exit 0
+}
+
+function add_device()
+{
+	rmmod scsi_debug >/dev/null 2>&1
+	if [ -d /sys/module/scsi_debug ] ; then
+		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
+		exit 77
+	fi
+	modprobe scsi_debug dev_size_mb=$DEVSIZEMB num_tgts=1 delay=0 >/dev/null 2>&1
+	if [ $? -ne 0 ] ; then
+		echo "This kernel seems to not support proper scsi_debug module, test skipped."
+		exit 77
+	fi
+	DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+	DEV="/dev/$DEV"
+	[ -b $DEV ] || fail "Cannot find $DEV."
+}
+
+function check_hash() # $1 dev, $2 hash
+{
+	local HASH=$(sha256sum $1 | cut -d' ' -f 1)
+	[ $HASH == "$2" ]
+}
+
+function init_hash_dd() # $1 dev, $dev orig
+{
+	dd if=/dev/urandom of=$2 bs=1M count=$DEVSIZEMB conv=notrunc 2> /dev/null
+	dd if=$2 of=$1 bs=1M conv=notrunc 2> /dev/null
+	HASH_0=$(sha256sum $1 | cut -d' ' -f 1)
+	# second MB wiped
+	dd if=/dev/zero of=$1 bs=1M seek=1 count=1 conv=notrunc 2> /dev/null
+	HASH_1=$(sha256sum $1 | cut -d' ' -f 1)
+	# 4,5,6 MB wiped
+	dd if=/dev/zero of=$1 bs=1M seek=4 count=3 conv=notrunc 2> /dev/null
+	HASH_2=$(sha256sum $1 | cut -d' ' -f 1)
+	dd if=$2 of=$1 bs=1M conv=notrunc 2> /dev/null
+}
+
+function add_file()
+{
+	dd if=/dev/zero of=$FILE      bs=1M count=$DEVSIZEMB 2> /dev/null || fial
+	dd if=/dev/zero of=$FILE_RAND bs=1M count=$DEVSIZEMB 2> /dev/null || fail
+	check_hash $FILE $HASH_EMPTY || fail
+	check_hash $FILE_RAND $HASH_EMPTY || fail
+}
+
+function test_wipe_full() # $1 dev, $2 block size, [$3 flags]
+{
+	# wipe random and back to zero
+	$WIPE_UNIT $1 random 0 $DEVSIZE $2 $3 || fail
+	check_hash $1 $HASH_EMPTY && fail "Failed random wipe"
+	$WIPE_UNIT $1 zero 0 $DEVSIZE $2 $3 || fail
+	check_hash $1 $HASH_EMPTY || fail "Failed zero wipe"
+}
+
+# wipe MB blocks, with zero, random and special and back to original
+function test_wipe_blocks() # $1 dev $2 block sizem [$3 flags]
+{
+	init_hash_dd $1 $FILE_RAND
+	check_hash $1 $HASH_0 || fail
+
+	$WIPE_UNIT $1 zero    $((1*$MB_BYTES)) $((1*$MB_BYTES)) $2 $3 || fail
+	check_hash $1 $HASH_1 || fail
+	$WIPE_UNIT $1 random  $((1*$MB_BYTES)) $((1*$MB_BYTES)) $2 $3 || fail
+	check_hash $1 $HASH_1 && fail
+	$WIPE_UNIT $1 special $((1*$MB_BYTES)) $((1*$MB_BYTES)) $2 $3 || fail
+	check_hash $1 $HASH_1 && fail
+	$WIPE_UNIT $1 zero    $((1*$MB_BYTES)) $((1*$MB_BYTES)) $2 $3 || fail
+	check_hash $1 $HASH_1 || fail
+
+	$WIPE_UNIT $1 zero    $((4*$MB_BYTES)) $((3*$MB_BYTES)) $2 $3 || fail
+	check_hash $1 $HASH_2 || fail
+	$WIPE_UNIT $1 random  $((4*$MB_BYTES)) $((3*$MB_BYTES)) $2 $3 || fail
+	check_hash $1 $HASH_2 && fail
+	$WIPE_UNIT $1 special $((4*$MB_BYTES)) $((3*$MB_BYTES)) $2 $3 || fail
+	check_hash $1 $HASH_2 && fail
+	$WIPE_UNIT $1 zero    $((4*$MB_BYTES)) $((3*$MB_BYTES)) $2 $3 || fail
+	check_hash $1 $HASH_2 || fail
+}
+
+[ -n "$CRYPTSETUP_PATH" ] && skip "Cannot run this test with CRYPTSETUP_PATH set."
+
+test -x $WIPE_UNIT || skip "Run \"make `basename $WIPE_UNIT`\" first"
+
+cleanup
+add_file
+
+echo -n "[1] Wipe full file "
+for bs in 0 $MB_BYTES $((4*$MB_BYTES)); do
+	echo -n [$bs/DIO]
+	test_wipe_full $FILE $bs
+	echo -n [$bs]
+	test_wipe_full $FILE $bs no-dio
+done
+echo "[OK]"
+
+echo -n "[2] Wipe blocks in file "
+for bs in 0 $MB_BYTES $((4*$MB_BYTES)); do
+	echo -n [$bs/DIO]
+	test_wipe_blocks $FILE $bs
+	echo -n [$bs]
+	test_wipe_blocks $FILE $bs no-dio
+done
+echo "[OK]"
+
+[ $(id -u) -eq 0 ] || {
+	echo "WARNING: You must be root to run remaining tests."
+	cleanup
+	exit 0
+}
+
+add_device
+
+echo -n "[3] Wipe full block device "
+for bs in 0 $MB_BYTES $((4*$MB_BYTES)); do
+	echo -n [$bs/DIO]
+	test_wipe_full $DEV $bs
+	echo -n [$bs]
+	test_wipe_full $DEV $bs no-dio
+done
+echo "[OK]"
+
+echo -n "[4] Wipe blocks in block device "
+for bs in 0 $MB_BYTES $((4*$MB_BYTES)); do
+	echo -n [$bs/DIO]
+	test_wipe_blocks $DEV $bs
+	echo -n [$bs]
+	test_wipe_blocks $DEV $bs no-dio
+done
+echo "[OK]"
+
+cleanup

@@ -2041,6 +2041,25 @@ static void IntegrityTest(void)
 	CRYPT_FREE(cd);
 }
 
+static void WipeTest(void)
+{
+	OK_(crypt_init(&cd, NULL));
+	FAIL_(crypt_wipe(cd, NULL, CRYPT_WIPE_ZERO, 0, 4096, 0, 0, NULL, NULL), "No device");
+	FAIL_(crypt_wipe(cd, DEVICE_WRONG, CRYPT_WIPE_ZERO, 0, 4096, 0, 0, NULL, NULL), "Wrong device");
+	OK_(crypt_wipe(cd, DEVICE_1, CRYPT_WIPE_ZERO, 0, 4096, 0, 0, NULL, NULL));
+	OK_(crypt_wipe(cd, DEVICE_1, CRYPT_WIPE_RANDOM, 0, 4096, 0, 0, NULL, NULL));
+	OK_(crypt_wipe(cd, DEVICE_1, CRYPT_WIPE_RANDOM, 0, 4096, 0, CRYPT_WIPE_NO_DIRECT_IO, NULL, NULL));
+	CRYPT_FREE(cd);
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_wipe(cd, NULL, CRYPT_WIPE_ZERO, 0, 4096, 0, 0, NULL, NULL));
+	OK_(crypt_wipe(cd, NULL, CRYPT_WIPE_RANDOM, 0, 4096, TST_SECTOR_SIZE, 0, NULL, NULL));
+	FAIL_(crypt_wipe(cd, NULL, CRYPT_WIPE_RANDOM, 0, 4096, TST_SECTOR_SIZE-1, 0, NULL, NULL), "Sector size");
+	FAIL_(crypt_wipe(cd, NULL, CRYPT_WIPE_RANDOM, 0, 4096 - 1, 0, 0, NULL, NULL), "Length size not aligned");
+	FAIL_(crypt_wipe(cd, NULL, CRYPT_WIPE_RANDOM, 1, 4096, 0, 0, NULL, NULL), "Offset not aligned");
+	CRYPT_FREE(cd);
+}
+
 // Check that gcrypt is properly initialised in format
 static void NonFIPSAlg(void)
 {
@@ -2134,6 +2153,7 @@ int main(int argc, char *argv[])
 	RUN_(IntegrityTest, "Integrity API");
 	RUN_(ResizeIntegrity, "Integrity raw resize");
 	RUN_(ResizeIntegrityWithKey, "Integrity raw resize with key");
+	RUN_(WipeTest, "Wipe device");
 
 	_cleanup();
 	return 0;
