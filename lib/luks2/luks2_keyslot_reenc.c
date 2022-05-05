@@ -42,6 +42,9 @@ int reenc_keyslot_alloc(struct crypt_device *cd,
 
 	log_dbg(cd, "Allocating reencrypt keyslot %d.", keyslot);
 
+	if (!params || params->direction > CRYPT_REENCRYPT_BACKWARD)
+		return -EINVAL;
+
 	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX)
 		return -ENOMEM;
 
@@ -64,6 +67,11 @@ int reenc_keyslot_alloc(struct crypt_device *cd,
 		return -ENOMEM;
 
 	jobj_area = json_object_new_object();
+	if (!jobj_area) {
+		json_object_put(jobj_keyslot);
+		return -ENOMEM;
+	}
+	json_object_object_add(jobj_keyslot, "area", jobj_area);
 
 	if (params->data_shift) {
 		json_object_object_add(jobj_area, "type", json_object_new_string("datashift"));
@@ -80,12 +88,8 @@ int reenc_keyslot_alloc(struct crypt_device *cd,
 	json_object_object_add(jobj_keyslot, "mode", json_object_new_string(crypt_reencrypt_mode_to_str(params->mode)));
 	if (params->direction == CRYPT_REENCRYPT_FORWARD)
 		json_object_object_add(jobj_keyslot, "direction", json_object_new_string("forward"));
-	else if (params->direction == CRYPT_REENCRYPT_BACKWARD)
-		json_object_object_add(jobj_keyslot, "direction", json_object_new_string("backward"));
 	else
-		return -EINVAL;
-
-	json_object_object_add(jobj_keyslot, "area", jobj_area);
+		json_object_object_add(jobj_keyslot, "direction", json_object_new_string("backward"));
 
 	json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
 	if (LUKS2_check_json_size(cd, hdr)) {
