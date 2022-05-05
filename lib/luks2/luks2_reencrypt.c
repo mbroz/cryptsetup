@@ -22,30 +22,6 @@
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
 
-struct reenc_protection {
-	enum { REENC_PROTECTION_NONE = 0, /* none should be 0 always */
-	       REENC_PROTECTION_CHECKSUM,
-	       REENC_PROTECTION_JOURNAL,
-               REENC_PROTECTION_DATASHIFT } type;
-
-	union {
-	struct {
-	} none;
-	struct {
-		char hash[LUKS2_CHECKSUM_ALG_L]; // or include luks.h
-		struct crypt_hash *ch;
-		size_t hash_size;
-		/* buffer for checksums */
-		void *checksums;
-		size_t checksums_len;
-		size_t block_size;
-	} csum;
-	struct {
-		uint64_t data_shift;
-	} ds;
-	} p;
-};
-
 struct luks2_reencrypt {
 	/* reencryption window attributes */
 	uint64_t offset;
