@@ -254,6 +254,12 @@ int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	const struct crypt_params_reencrypt *params,
 	size_t alignment);
 
+int LUKS2_keyslot_reencrypt_update_needed(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const struct crypt_params_reencrypt *params,
+	size_t alignment);
+
 int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,

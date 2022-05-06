@@ -2722,7 +2722,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		struct volume_key **vks,
 		const struct crypt_params_reencrypt *params)
 {
-	int r, old_ss, new_ss;
+	int r, old_ss, new_ss, reencrypt_slot;
 	struct luks2_hdr *hdr;
 	struct crypt_lock_handle *reencrypt_lock;
 	struct luks2_reencrypt *rh;
@@ -2759,6 +2759,12 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	r = reencrypt_lock_and_verify(cd, hdr, &reencrypt_lock);
 	if (r)
 		return r;
+
+	reencrypt_slot = LUKS2_find_keyslot(hdr, "reencrypt");
+	if (reencrypt_slot < 0) {
+		r = -EINVAL;
+		goto err;
+	}
 
 	/* From now on we hold reencryption lock */
 
@@ -2849,13 +2855,13 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		}
 	}
 
-	if (params && params->resilience) {
-		alignment = reencrypt_get_alignment(cd, hdr);
+	alignment = reencrypt_get_alignment(cd, hdr);
 
-		r = LUKS2_keyslot_reencrypt_update(cd, hdr, LUKS2_find_keyslot(hdr, "reencrypt"), params, alignment, *vks);
-		if (r < 0)
-			goto err;
-	}
+	r = LUKS2_keyslot_reencrypt_update_needed(cd, hdr, reencrypt_slot, params, alignment);
+	if (r > 0) /* metadata update needed */
+		r = LUKS2_keyslot_reencrypt_update(cd, hdr, reencrypt_slot, params, alignment, *vks);
+	if (r < 0)
+		goto err;
 
 	r = reencrypt_load(cd, hdr, device_size, max_hotzone_size, required_size, *vks, &rh);
 	if (r < 0 || !rh)

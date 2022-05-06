@@ -355,6 +355,51 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 	return 0;
 }
 
+static int reenc_keyslot_update_needed(struct crypt_device *cd,
+	json_object *jobj_keyslot,
+	const struct crypt_params_reencrypt *params,
+	size_t alignment)
+{
+	const char *type;
+	json_object *jobj_area, *jobj_type, *jobj;
+
+	if (!json_object_object_get_ex(jobj_keyslot, "area", &jobj_area) ||
+	    !json_object_object_get_ex(jobj_area, "type", &jobj_type) ||
+	    !(type = json_object_get_string(jobj_type)))
+		return -EINVAL;
+
+	/*
+	 * If no resilience mode change is requested and effective
+	 * resilience mode is 'checksum' then check alignment matches
+	 * stored checksum block size.
+	 */
+	if (!params || !params->resilience) {
+		if (!strcmp(json_object_get_string(jobj_type), "checksum"))
+			return (json_object_object_get_ex(jobj_area, "sector_size", &jobj) ||
+				alignment != crypt_jobj_get_uint32(jobj));
+		return 0;
+	}
+
+	if (strcmp(params->resilience, type))
+		return 1;
+
+	if (!strcmp(type, "checksum")) {
+		if (!params->hash)
+			return -EINVAL;
+		return (!json_object_object_get_ex(jobj_area, "hash", &jobj) ||
+			strcmp(json_object_get_string(jobj), params->hash) ||
+			!json_object_object_get_ex(jobj_area, "sector_size", &jobj) ||
+			crypt_jobj_get_uint32(jobj) != alignment);
+	} else if (!strcmp(type, "datashift")) {
+		if (!json_object_object_get_ex(jobj_area, "shift_size", &jobj))
+			return -EINVAL;
+		return ((params->data_shift << SECTOR_SHIFT) != crypt_jobj_get_uint64(jobj));
+	}
+
+	/* nothing to compare with 'none' and 'journal' */
+	return 0;
+}
+
 static int load_checksum_protection(struct crypt_device *cd,
 	json_object *jobj_area,
 	uint64_t area_length,
@@ -530,6 +575,27 @@ int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	}
 
 	return 0;
+}
+
+int LUKS2_keyslot_reencrypt_update_needed(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const struct crypt_params_reencrypt *params,
+	size_t alignment)
+{
+	int r;
+	json_object *jobj_type, *jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
+
+	if (!jobj_keyslot ||
+	    !json_object_object_get_ex(jobj_keyslot, "type", &jobj_type) ||
+	    strcmp(json_object_get_string(jobj_type), "reencrypt"))
+		return -EINVAL;
+
+	r = reenc_keyslot_update_needed(cd, jobj_keyslot, params, alignment);
+	if (!r)
+		log_dbg(cd, "No update of reencrypt keyslot needed.");
+
+	return r;
 }
 
 int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
