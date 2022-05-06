@@ -2416,7 +2416,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
 	};
 
-	if (!params || params->mode > CRYPT_REENCRYPT_DECRYPT)
+	if (!params || !params->resilience || params->mode > CRYPT_REENCRYPT_DECRYPT)
 		return -EINVAL;
 
 	if (params->mode != CRYPT_REENCRYPT_DECRYPT &&
