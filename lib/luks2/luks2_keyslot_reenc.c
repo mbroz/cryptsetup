@@ -31,7 +31,7 @@ static int reenc_keyslot_open(struct crypt_device *cd __attribute__((unused)),
 	return -ENOENT;
 }
 
-int reenc_keyslot_alloc(struct crypt_device *cd,
+static int reenc_keyslot_alloc(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
 	const struct crypt_params_reencrypt *params)
@@ -305,6 +305,33 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 			log_dbg(cd, "Shift size field has to be aligned to sector size: %" PRIu32, SECTOR_SIZE);
 			return -EINVAL;
 		}
+	}
+
+	return 0;
+}
+
+int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const struct crypt_params_reencrypt *params)
+{
+	int r;
+
+	if (keyslot == CRYPT_ANY_SLOT)
+		return -EINVAL;
+
+	r = reenc_keyslot_alloc(cd, hdr, keyslot, params);
+	if (r < 0)
+		return r;
+
+	r = LUKS2_keyslot_priority_set(cd, hdr, keyslot, CRYPT_SLOT_PRIORITY_IGNORE, 0);
+	if (r < 0)
+		return r;
+
+	r = reenc_keyslot_validate(cd, LUKS2_get_keyslot_jobj(hdr, keyslot));
+	if (r) {
+		log_dbg(cd, "Keyslot validation failed.");
+		return r;
 	}
 
 	return 0;

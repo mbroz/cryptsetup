@@ -160,12 +160,6 @@ struct reenc_protection {
 	} p;
 };
 
-/* can not fit prototype alloc function */
-int reenc_keyslot_alloc(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot,
-	const struct crypt_params_reencrypt *params);
-
 /**
  * LUKS2 digest handlers (EXPERIMENTAL)
  */

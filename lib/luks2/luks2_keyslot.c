@@ -605,38 +605,6 @@ int LUKS2_keyslot_open(struct crypt_device *cd,
 	return r;
 }
 
-int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot,
-	const struct crypt_params_reencrypt *params)
-{
-	const keyslot_handler *h;
-	int r;
-
-	if (keyslot == CRYPT_ANY_SLOT)
-		return -EINVAL;
-
-	h = LUKS2_keyslot_handler_type("reencrypt");
-	if (!h)
-		return -EINVAL;
-
-	r = reenc_keyslot_alloc(cd, hdr, keyslot, params);
-	if (r < 0)
-		return r;
-
-	r = LUKS2_keyslot_priority_set(cd, hdr, keyslot, CRYPT_SLOT_PRIORITY_IGNORE, 0);
-	if (r < 0)
-		return r;
-
-	r = h->validate(cd, LUKS2_get_keyslot_jobj(hdr, keyslot));
-	if (r) {
-		log_dbg(cd, "Keyslot validation failed.");
-		return r;
-	}
-
-	return 0;
-}
-
 int LUKS2_keyslot_reencrypt_store(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
