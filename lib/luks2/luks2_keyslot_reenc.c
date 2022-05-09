@@ -544,7 +544,20 @@ static int reenc_keyslot_update(struct crypt_device *cd,
 	if (!jobj_area_new)
 		return -EINVAL;
 
+	/* increase refcount for validation purposes */
+	json_object_get(jobj_area);
+
 	json_object_object_add(jobj_keyslot, "area", jobj_area_new);
+
+	r = reenc_keyslot_validate(cd, jobj_keyslot);
+	if (r) {
+		/* replace invalid object with previous valid one */
+		json_object_object_add(jobj_keyslot, "area", jobj_area);
+		return -EINVAL;
+	}
+
+	/* previous area object is no longer needed */
+	json_object_put(jobj_area);
 
 	return 0;
 }
