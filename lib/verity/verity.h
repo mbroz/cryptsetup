@@ -77,4 +77,9 @@ uint64_t VERITY_FEC_blocks(struct crypt_device *cd,
 
 int VERITY_UUID_generate(char **uuid_string);
 
+int VERITY_dump(struct crypt_device *cd,
+		struct crypt_params_verity *verity_hdr,
+		const char *root_hash,
+		unsigned int root_hash_size);
+
 #endif

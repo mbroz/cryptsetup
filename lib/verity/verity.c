@@ -351,3 +351,31 @@ out:
 	dm_targets_free(cd, &dmd);
 	return r;
 }
+
+int VERITY_dump(struct crypt_device *cd,
+		struct crypt_params_verity *verity_hdr,
+		const char *root_hash,
+		unsigned int root_hash_size)
+{
+	log_std(cd, "VERITY header information for %s\n", device_path(crypt_metadata_device(cd)));
+	log_std(cd, "UUID:            \t%s\n", crypt_get_uuid(cd) ?: "");
+	log_std(cd, "Hash type:       \t%u\n", verity_hdr->hash_type);
+	log_std(cd, "Data blocks:     \t%" PRIu64 "\n", verity_hdr->data_size);
+	log_std(cd, "Data block size: \t%u\n", verity_hdr->data_block_size);
+	log_std(cd, "Hash block size: \t%u\n", verity_hdr->hash_block_size);
+	log_std(cd, "Hash algorithm:  \t%s\n", verity_hdr->hash_name);
+	log_std(cd, "Salt:            \t");
+	if (verity_hdr->salt_size)
+		crypt_log_hex(cd, verity_hdr->salt, verity_hdr->salt_size, "", 0, NULL);
+	else
+		log_std(cd, "-");
+	log_std(cd, "\n");
+
+	if (root_hash) {
+		log_std(cd, "Root hash:      \t");
+		crypt_log_hex(cd, root_hash, root_hash_size, "", 0, NULL);
+		log_std(cd, "\n");
+	}
+
+	return 0;
+}

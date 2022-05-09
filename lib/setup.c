@@ -5106,29 +5106,6 @@ static int _luks_dump(struct crypt_device *cd)
 	return 0;
 }
 
-static int _verity_dump(struct crypt_device *cd)
-{
-	log_std(cd, "VERITY header information for %s\n", mdata_device_path(cd));
-	log_std(cd, "UUID:            \t%s\n", cd->u.verity.uuid ?: "");
-	log_std(cd, "Hash type:       \t%u\n", cd->u.verity.hdr.hash_type);
-	log_std(cd, "Data blocks:     \t%" PRIu64 "\n", cd->u.verity.hdr.data_size);
-	log_std(cd, "Data block size: \t%u\n", cd->u.verity.hdr.data_block_size);
-	log_std(cd, "Hash block size: \t%u\n", cd->u.verity.hdr.hash_block_size);
-	log_std(cd, "Hash algorithm:  \t%s\n", cd->u.verity.hdr.hash_name);
-	log_std(cd, "Salt:            \t");
-	if (cd->u.verity.hdr.salt_size)
-		crypt_log_hex(cd, cd->u.verity.hdr.salt, cd->u.verity.hdr.salt_size, "", 0, NULL);
-	else
-		log_std(cd, "-");
-	log_std(cd, "\n");
-	if (cd->u.verity.root_hash) {
-		log_std(cd, "Root hash:      \t");
-		crypt_log_hex(cd, cd->u.verity.root_hash, cd->u.verity.root_hash_size, "", 0, NULL);
-		log_std(cd, "\n");
-	}
-	return 0;
-}
-
 int crypt_dump(struct crypt_device *cd)
 {
 	if (!cd)
@@ -5138,7 +5115,8 @@ int crypt_dump(struct crypt_device *cd)
 	else if (isLUKS2(cd->type))
 		return LUKS2_hdr_dump(cd, &cd->u.luks2.hdr);
 	else if (isVERITY(cd->type))
-		return _verity_dump(cd);
+		return VERITY_dump(cd, &cd->u.verity.hdr,
+				   cd->u.verity.root_hash, cd->u.verity.root_hash_size);
 	else if (isTCRYPT(cd->type))
 		return TCRYPT_dump(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 	else if (isINTEGRITY(cd->type))
