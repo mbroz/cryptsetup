@@ -89,8 +89,7 @@ function compare_out() # $1 what, $2 expected
 function check_root_hash_fail()
 {
 	echo -n "Root hash check "
-	ARR=(`$VERITYSETUP format $IMG $IMG_HASH --fec-device $FEC_DEV --fec-roots 2 -h sha256`)
-	ROOT_HASH=${ARR[28]}
+	ROOT_HASH=$($VERITYSETUP format $IMG $IMG_HASH --fec-device $FEC_DEV --fec-roots 2 -h sha256 | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
 	ROOT_HASH_BAD=abcdef0000000000000000000000000000000000000000000000000000000000
 
 	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH || fail
@@ -249,16 +248,12 @@ function check_fec()
 	if [[ "$1" == "$2" && "$1" == "$3" ]]; then
 		echo -n "[one_device_test]"
 		dd if=/dev/zero of=$IMG_TMP bs=$4 count=$5  > /dev/null 2>&1
-		ARR=(`sha256sum $IMG_TMP`)
-		HASH_ORIG=${ARR[0]}
+		HASH_ORIG=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
 	else
-		ARR=(`sha256sum $1`)
-		HASH_ORIG=${ARR[0]}
+		HASH_ORIG=$(sha256sum $1 | cut -d' ' -f 1)
 	fi
 
-	ARR=(`$VERITYSETUP format $1 $2 --fec-device=$3 $PARAMS`)
-	SALT=${ARR[$INDEX]}
-	ROOT_HASH=${ARR[$(($INDEX+3))]}
+	ROOT_HASH=$($VERITYSETUP format $1 $2 --fec-device=$3 $PARAMS | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
 
 	corrupt_device $1 $(($5 * $4)) ${10}
 
@@ -271,9 +266,7 @@ function check_fec()
 	udevadm settle > /dev/null 2>&1
 
 	dd if=/dev/mapper/$DEV_NAME of=$IMG_TMP > /dev/null 2>&1
-	ARR=(`sha256sum $IMG_TMP`)
-
-	HASH_REPAIRED=${ARR[0]}
+	HASH_REPAIRED=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
 
 	$VERITYSETUP close $DEV_NAME
 
@@ -386,8 +379,7 @@ function checkUserSpaceRepair()
 
 	echo -n "[nroots::$3]"
 
-	ARR=(`$VERITYSETUP format $IMG $HASH_DEV --fec-device $FEC $PARAMS --salt=$DEV_SALT --uuid=$DEV_UUID`)
-	ROOT_HASH=${ARR[28]}
+	ROOT_HASH=$($VERITYSETUP format $IMG $HASH_DEV --fec-device $FEC $PARAMS --salt=$DEV_SALT --uuid=$DEV_UUID | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
 
 	echo -n "[Errors can be corrected]"
 	corrupt_device $IMG $(($BS*$COUNT)) $7

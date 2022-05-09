@@ -459,6 +459,9 @@ static int action_dump(void)
 
 	params.hash_area_offset = ARG_UINT64(OPT_HASH_OFFSET_ID);
 	params.fec_area_offset = ARG_UINT64(OPT_FEC_OFFSET_ID);
+	params.fec_device = ARG_STR(OPT_FEC_DEVICE_ID);
+	params.fec_roots = ARG_UINT32(OPT_FEC_ROOTS_ID);
+
 	r = crypt_load(cd, CRYPT_VERITY, &params);
 	if (!r)
 		crypt_dump(cd);

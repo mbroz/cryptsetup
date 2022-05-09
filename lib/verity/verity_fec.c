@@ -202,6 +202,22 @@ out:
 	return r;
 }
 
+static int VERITY_FEC_validate(struct crypt_device *cd, struct crypt_params_verity *params)
+{
+	if (params->data_block_size != params->hash_block_size) {
+		log_err(cd, _("Block sizes must match for FEC."));
+		return -EINVAL;
+	}
+
+	if (params->fec_roots > FEC_RSM - FEC_MIN_RSN ||
+		params->fec_roots < FEC_RSM - FEC_MAX_RSN) {
+		log_err(cd, _("Invalid number of parity bytes."));
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 int VERITY_FEC_process(struct crypt_device *cd,
 		      struct crypt_params_verity *params,
 		      struct device *fec_device, int check_fec,
@@ -224,16 +240,9 @@ int VERITY_FEC_process(struct crypt_device *cd,
 	};
 
 	/* validate parameters */
-	if (params->data_block_size != params->hash_block_size) {
-		log_err(cd, _("Block sizes must match for FEC."));
-		return -EINVAL;
-	}
-
-	if (params->fec_roots > FEC_RSM - FEC_MIN_RSN ||
-		params->fec_roots < FEC_RSM - FEC_MAX_RSN) {
-		log_err(cd, _("Invalid number of parity bytes."));
-		return -EINVAL;
-	}
+	r = VERITY_FEC_validate(cd, params);
+	if (r < 0)
+		return r;
 
 	if (!inputs[0].count) {
 		log_err(cd, _("Invalid FEC segment length."));
@@ -281,11 +290,15 @@ out:
 	return r;
 }
 
+/* All blocks that are covered by FEC */
 uint64_t VERITY_FEC_blocks(struct crypt_device *cd,
 			   struct device *fec_device,
 			   struct crypt_params_verity *params)
 {
 	uint64_t blocks = 0;
+
+	if (!fec_device || VERITY_FEC_validate(cd, params) < 0)
+		return 0;
 
 	/*
 	* FEC covers this data:
@@ -314,4 +327,10 @@ uint64_t VERITY_FEC_blocks(struct crypt_device *cd,
 	blocks += params->data_size;
 
 	return blocks;
+}
+
+/* Blocks needed to store FEC data, blocks must be validated/calculated by VERITY_FEC_blocks() */
+uint64_t VERITY_FEC_RS_blocks(uint64_t blocks, uint32_t roots)
+{
+	return FEC_div_round_up(blocks, FEC_RSM - roots) * roots;
 }
