@@ -5116,7 +5116,8 @@ int crypt_dump(struct crypt_device *cd)
 		return LUKS2_hdr_dump(cd, &cd->u.luks2.hdr);
 	else if (isVERITY(cd->type))
 		return VERITY_dump(cd, &cd->u.verity.hdr,
-				   cd->u.verity.root_hash, cd->u.verity.root_hash_size);
+				   cd->u.verity.root_hash, cd->u.verity.root_hash_size,
+				   cd->u.verity.fec_device);
 	else if (isTCRYPT(cd->type))
 		return TCRYPT_dump(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 	else if (isINTEGRITY(cd->type))
