@@ -123,7 +123,7 @@ unit_utils_io_LDFLAGS = $(AM_LDFLAGS) -static
 unit_utils_io_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
 unit_utils_io_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
-unit_utils_crypt_test_SOURCES = unit-utils-crypt.c $(top_srcdir)/lib/utils_crypt.c $(top_srcdir)/lib/utils_crypt.h
+unit_utils_crypt_test_SOURCES = unit-utils-crypt.c ../lib/utils_crypt.c ../lib/utils_crypt.h
 unit_utils_crypt_test_LDADD = ../libcryptsetup.la
 unit_utils_crypt_test_LDFLAGS = $(AM_LDFLAGS) -static
 unit_utils_crypt_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
