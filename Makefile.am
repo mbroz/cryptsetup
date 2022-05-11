@@ -14,7 +14,16 @@ AM_CPPFLAGS = \
         -DVERSION=\""$(VERSION)"\"              \
         -DEXTERNAL_LUKS2_TOKENS_PATH=\"${EXTERNAL_LUKS2_TOKENS_PATH}\"
 AM_CFLAGS = -Wall
+AM_CXXFLAGS = -Wall
 AM_LDFLAGS =
+
+if ENABLE_FUZZ_TARGETS
+SUBDIRS += tests/fuzz
+
+AM_CFLAGS += -fsanitize=fuzzer-no-link
+AM_CXXFLAGS += -fsanitize=fuzzer-no-link
+AM_LDFLAGS += -fsanitize=fuzzer-no-link
+endif
 
 LDADD = $(LTLIBINTL)
 
@@ -64,3 +73,8 @@ uninstall-local:
 
 check-programs: libcryptsetup.la
 	$(MAKE) -C tests $@
+
+if ENABLE_FUZZ_TARGETS
+fuzz-targets: libcryptsetup.la libcrypto_backend.la
+	$(MAKE) -C tests/fuzz $@
+endif
