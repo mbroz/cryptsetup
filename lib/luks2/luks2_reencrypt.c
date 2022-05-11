@@ -842,8 +842,7 @@ static int reencrypt_offset(struct luks2_hdr *hdr,
 }
 
 static uint64_t reencrypt_length(struct crypt_device *cd,
-		struct luks2_hdr *hdr,
-		struct luks2_reencrypt *rh,
+		struct reenc_protection *rp,
 		uint64_t keyslot_area_length,
 		uint64_t length_max,
 		size_t alignment)
@@ -851,12 +850,12 @@ static uint64_t reencrypt_length(struct crypt_device *cd,
 	unsigned long dummy, optimal_alignment;
 	uint64_t length, soft_mem_limit;
 
-	if (rh->rp.type == REENC_PROTECTION_NONE)
+	if (rp->type == REENC_PROTECTION_NONE)
 		length = length_max ?: LUKS2_DEFAULT_NONE_REENCRYPTION_LENGTH;
-	else if (rh->rp.type == REENC_PROTECTION_CHECKSUM)
-		length = (keyslot_area_length / rh->rp.p.csum.hash_size) * rh->rp.p.csum.block_size;
-	else if (rh->rp.type == REENC_PROTECTION_DATASHIFT)
-		return rh->rp.p.ds.data_shift;
+	else if (rp->type == REENC_PROTECTION_CHECKSUM)
+		length = (keyslot_area_length / rp->p.csum.hash_size) * rp->p.csum.block_size;
+	else if (rp->type == REENC_PROTECTION_DATASHIFT)
+		return rp->p.ds.data_shift;
 	else
 		length = keyslot_area_length;
 
@@ -942,7 +941,7 @@ static int reencrypt_context_init(struct crypt_device *cd,
 	} else
 		rh->fixed_length = false;
 
-	rh->length = reencrypt_length(cd, hdr, rh, area_length, max_hotzone_size << SECTOR_SHIFT, alignment);
+	rh->length = reencrypt_length(cd, &rh->rp, area_length, max_hotzone_size << SECTOR_SHIFT, alignment);
 	if (!rh->length) {
 		log_dbg(cd, "Invalid reencryption length.");
 		return -EINVAL;
