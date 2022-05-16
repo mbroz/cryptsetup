@@ -31,10 +31,45 @@ static int reenc_keyslot_open(struct crypt_device *cd __attribute__((unused)),
 	return -ENOENT;
 }
 
+static json_object *reencrypt_keyslot_area_jobj(struct crypt_device *cd,
+		const struct crypt_params_reencrypt *params,
+		size_t alignment,
+		uint64_t area_offset,
+		uint64_t area_length)
+{
+	json_object *jobj_area = json_object_new_object();
+
+	if (!jobj_area || !params || !params->resilience)
+		return NULL;
+
+	json_object_object_add(jobj_area, "offset", crypt_jobj_new_uint64(area_offset));
+	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
+	json_object_object_add(jobj_area, "type", json_object_new_string(params->resilience));
+
+	if (!strcmp(params->resilience, "checksum")) {
+		log_dbg(cd, "Setting reencrypt keyslot for checksum protection.");
+		json_object_object_add(jobj_area, "hash", json_object_new_string(params->hash));
+		json_object_object_add(jobj_area, "sector_size", json_object_new_int64(alignment));
+	} else if (!strcmp(params->resilience, "journal")) {
+		log_dbg(cd, "Setting reencrypt keyslot for journal protection.");
+	} else if (!strcmp(params->resilience, "none")) {
+		log_dbg(cd, "Setting reencrypt keyslot for none protection.");
+	} else if (!strcmp(params->resilience, "datashift")) {
+		log_dbg(cd, "Setting reencrypt keyslot for datashift protection.");
+		json_object_object_add(jobj_area, "shift_size", crypt_jobj_new_uint64(params->data_shift << SECTOR_SHIFT));
+	} else {
+		json_object_put(jobj_area);
+		return NULL;
+	}
+
+	return jobj_area;
+}
+
 static int reenc_keyslot_alloc(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
-	const struct crypt_params_reencrypt *params)
+	const struct crypt_params_reencrypt *params,
+	size_t alignment)
 {
 	int r;
 	json_object *jobj_keyslots, *jobj_keyslot, *jobj_area;
@@ -42,7 +77,7 @@ static int reenc_keyslot_alloc(struct crypt_device *cd,
 
 	log_dbg(cd, "Allocating reencrypt keyslot %d.", keyslot);
 
-	if (!params || params->direction > CRYPT_REENCRYPT_BACKWARD)
+	if (!params || !params->resilience || params->direction > CRYPT_REENCRYPT_BACKWARD)
 		return -EINVAL;
 
 	if (keyslot < 0 || keyslot >= LUKS2_KEYSLOTS_MAX)
@@ -52,7 +87,7 @@ static int reenc_keyslot_alloc(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* encryption doesn't require area (we shift data and backup will be available) */
-	if (!params->data_shift) {
+	if (strcmp(params->resilience, "datashift")) {
 		r = LUKS2_find_area_max_gap(cd, hdr, &area_offset, &area_length);
 		if (r < 0)
 			return r;
@@ -62,26 +97,16 @@ static int reenc_keyslot_alloc(struct crypt_device *cd,
 			return r;
 	}
 
-	jobj_keyslot = json_object_new_object();
-	if (!jobj_keyslot)
-		return -ENOMEM;
+	jobj_area = reencrypt_keyslot_area_jobj(cd, params, alignment, area_offset, area_length);
+	if (!jobj_area)
+		return -EINVAL;
 
-	jobj_area = json_object_new_object();
-	if (!jobj_area) {
-		json_object_put(jobj_keyslot);
+	jobj_keyslot = json_object_new_object();
+	if (!jobj_keyslot) {
+		json_object_put(jobj_area);
 		return -ENOMEM;
 	}
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
-
-	if (params->data_shift) {
-		json_object_object_add(jobj_area, "type", json_object_new_string("datashift"));
-		json_object_object_add(jobj_area, "shift_size", crypt_jobj_new_uint64(params->data_shift << SECTOR_SHIFT));
-	} else
-		/* except data shift protection, initial setting is irrelevant. Type can be changed during reencryption */
-		json_object_object_add(jobj_area, "type", json_object_new_string("none"));
-
-	json_object_object_add(jobj_area, "offset", crypt_jobj_new_uint64(area_offset));
-	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
 
 	json_object_object_add(jobj_keyslot, "type", json_object_new_string("reencrypt"));
 	json_object_object_add(jobj_keyslot, "key_size", json_object_new_int(1)); /* useless but mandatory */
@@ -313,14 +338,15 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
-	const struct crypt_params_reencrypt *params)
+	const struct crypt_params_reencrypt *params,
+	size_t alignment)
 {
 	int r;
 
 	if (keyslot == CRYPT_ANY_SLOT)
 		return -EINVAL;
 
-	r = reenc_keyslot_alloc(cd, hdr, keyslot, params);
+	r = reenc_keyslot_alloc(cd, hdr, keyslot, params, alignment);
 	if (r < 0)
 		return r;
 

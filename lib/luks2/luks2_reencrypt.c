@@ -2393,6 +2393,41 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd,
 	return 0;
 }
 
+static int reencrypt_verify_resilience_params(struct crypt_device *cd,
+		const struct crypt_params_reencrypt *params)
+{
+	struct crypt_hash *ch;
+
+	if (!params || !params->resilience)
+		return 0;
+
+	if (!strcmp(params->resilience, "journal"))
+		return 0;
+	else if (!strcmp(params->resilience, "none"))
+		return 0;
+	else if (!strcmp(params->resilience, "datashift")) {
+		return params->data_shift ? 0 : -EINVAL;
+	} else if (!strcmp(params->resilience, "checksum")) {
+		if (!params->hash || strlen(params->hash) > (LUKS2_CHECKSUM_ALG_L - 1))
+			return -EINVAL;
+
+		if (crypt_hash_size(params->hash) <= 0)
+			return -EINVAL;
+
+		if (crypt_hash_init(&ch, params->hash)) {
+			log_err(cd, _("Hash algorithm %s is not available."), params->hash);
+			return -EINVAL;
+		}
+		/* We just check for alg availability */
+		crypt_hash_destroy(ch);
+	} else {
+		log_err(cd, _("Unsupported resilience mode %s"), params->resilience);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 /* This function must be called with metadata lock held */
 static int reencrypt_init(struct crypt_device *cd,
 		const char *name,
@@ -2504,16 +2539,20 @@ static int reencrypt_init(struct crypt_device *cd,
 			goto out;
 	}
 
-	r = LUKS2_keyslot_reencrypt_allocate(cd, hdr, reencrypt_keyslot,
-					   params);
-	if (r < 0)
-		goto out;
-
 	r = reencrypt_make_backup_segments(cd, hdr, keyslot_new, _cipher, data_offset, params);
 	if (r) {
 		log_dbg(cd, "Failed to create reencryption backup device segments.");
 		goto out;
 	}
+
+	r = reencrypt_verify_resilience_params(cd, params);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_keyslot_reencrypt_allocate(cd, hdr, reencrypt_keyslot, params,
+			reencrypt_get_alignment(cd, hdr));
+	if (r < 0)
+		goto out;
 
 	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
 	if (r < 0)
