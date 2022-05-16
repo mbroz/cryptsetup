@@ -2427,7 +2427,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	tgt = &dmd->segment;
 
 	/* TODO: We have LUKS2 dependencies now */
-	if (hdr && single_segment(dmd) && tgt->type == DM_CRYPT && crypt_get_integrity_tag_size(cd))
+	if (single_segment(dmd) && tgt->type == DM_CRYPT && tgt->u.crypt.tag_size)
 		namei = device_dm_name(tgt->data_device);
 
 	r = dm_device_deps(cd, name, deps_uuid_prefix, deps, ARRAY_SIZE(deps));
