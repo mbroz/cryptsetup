@@ -49,11 +49,13 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
-		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
-	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic)) ||
-	    sb->version < SB_VERSION_1 || sb->version > SB_VERSION_5) {
-		log_std(cd, "No integrity superblock detected on %s.\n",
-			device_path(device));
+	    device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
+	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic))) {
+		log_err(cd, _("No kernel dm-integrity metadata detected on %s."), device_path(device));
+		r = -EINVAL;
+	} else if (sb->version < SB_VERSION_1 || sb->version > SB_VERSION_5) {
+		log_err(cd, _("Incompatible kernel dm-integrity metadata (version %u) detected on %s."),
+			sb->version, device_path(device));
 		r = -EINVAL;
 	} else {
 		sb->integrity_tag_size = le16toh(sb->integrity_tag_size);
