@@ -73,46 +73,6 @@ static uint64_t data_shift_value(struct reenc_protection *rp)
 	return rp->type == REENC_PROTECTION_DATASHIFT ? rp->p.ds.data_shift : 0;
 }
 
-static int reencrypt_keyslot_update(struct crypt_device *cd,
-	const struct luks2_reencrypt *rh)
-{
-	int r;
-	json_object *jobj_keyslot, *jobj_area, *jobj_area_type;
-	struct luks2_hdr *hdr;
-
-	if (!(hdr = crypt_get_hdr(cd, CRYPT_LUKS2)))
-		return -EINVAL;
-
-	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, rh->reenc_keyslot);
-	if (!jobj_keyslot)
-		return -EINVAL;
-
-	json_object_object_get_ex(jobj_keyslot, "area", &jobj_area);
-	json_object_object_get_ex(jobj_area, "type", &jobj_area_type);
-
-	if (rh->rp.type == REENC_PROTECTION_CHECKSUM) {
-		log_dbg(cd, "Updating reencrypt keyslot for checksum protection.");
-		json_object_object_add(jobj_area, "type", json_object_new_string("checksum"));
-		json_object_object_add(jobj_area, "hash", json_object_new_string(rh->rp.p.csum.hash));
-		json_object_object_add(jobj_area, "sector_size", json_object_new_int64(rh->rp.p.csum.block_size));
-	} else if (rh->rp.type == REENC_PROTECTION_NONE) {
-		log_dbg(cd, "Updating reencrypt keyslot for none protection.");
-		json_object_object_add(jobj_area, "type", json_object_new_string("none"));
-		json_object_object_del(jobj_area, "hash");
-	} else if (rh->rp.type == REENC_PROTECTION_JOURNAL) {
-		log_dbg(cd, "Updating reencrypt keyslot for journal protection.");
-		json_object_object_add(jobj_area, "type", json_object_new_string("journal"));
-		json_object_object_del(jobj_area, "hash");
-	} else
-		log_dbg(cd, "No update of reencrypt keyslot needed.");
-
-	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, rh->vks);
-	if (r < 0)
-		log_err(cd, "Failed to refresh reencryption verification digest.");
-
-	return r;
-}
-
 static json_object *reencrypt_segment(struct luks2_hdr *hdr, unsigned new)
 {
 	return LUKS2_get_segment_by_flag(hdr, new ? "backup-final" : "backup-previous");
@@ -236,29 +196,6 @@ static const char *reencrypt_resilience_hash(struct luks2_hdr *hdr)
 	return json_object_get_string(jobj_hash);
 }
 #if USE_LUKS2_REENCRYPTION
-static uint32_t reencrypt_alignment(struct luks2_hdr *hdr)
-{
-	json_object *jobj_keyslot, *jobj_area, *jobj_type, *jobj_hash, *jobj_sector_size;
-	int ks = LUKS2_find_keyslot(hdr, "reencrypt");
-
-	if (ks < 0)
-		return 0;
-
-	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, ks);
-
-	json_object_object_get_ex(jobj_keyslot, "area", &jobj_area);
-	if (!json_object_object_get_ex(jobj_area, "type", &jobj_type))
-		return 0;
-	if (strcmp(json_object_get_string(jobj_type), "checksum"))
-		return 0;
-	if (!json_object_object_get_ex(jobj_area, "hash", &jobj_hash))
-		return 0;
-	if (!json_object_object_get_ex(jobj_area, "sector_size", &jobj_sector_size))
-		return 0;
-
-	return crypt_jobj_get_uint32(jobj_sector_size);
-}
-
 static json_object *_enc_create_segments_shift_after(struct luks2_reencrypt *rh, uint64_t data_offset)
 {
 	int reenc_seg, i = 0;
@@ -955,7 +892,12 @@ static uint64_t reencrypt_length(struct crypt_device *cd,
 	return length;
 }
 
-static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reencrypt *rh, uint64_t device_size, const struct crypt_params_reencrypt *params)
+static int reencrypt_context_init(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	struct luks2_reencrypt *rh,
+	uint64_t device_size,
+	uint64_t max_hotzone_size,
+	uint64_t fixed_device_size)
 {
 	int r;
 	size_t alignment;
@@ -969,77 +911,38 @@ static int reencrypt_context_init(struct crypt_device *cd, struct luks2_hdr *hdr
 
 	rh->mode = reencrypt_mode(hdr);
 
-	alignment = reencrypt_get_alignment(cd, hdr);
+	rh->direction = reencrypt_direction(hdr);
+
+	r = LUKS2_keyslot_reencrypt_load(cd, hdr, rh->reenc_keyslot, &rh->rp);
+	if (r < 0)
+		return r;
+
+	if (rh->rp.type == REENC_PROTECTION_CHECKSUM)
+		alignment = rh->rp.p.csum.block_size;
+	else
+		alignment = reencrypt_get_alignment(cd, hdr);
+
 	if (!alignment)
 		return -EINVAL;
 
-	log_dbg(cd, "Hotzone size: %" PRIu64 ", device size: %" PRIu64 ", alignment: %zu.",
-		params->max_hotzone_size << SECTOR_SHIFT,
-		params->device_size << SECTOR_SHIFT, alignment);
-
-	if ((params->max_hotzone_size << SECTOR_SHIFT) % alignment) {
+	if ((max_hotzone_size << SECTOR_SHIFT) % alignment) {
 		log_err(cd, _("Hotzone size must be multiple of calculated zone alignment (%zu bytes)."), alignment);
 		return -EINVAL;
 	}
 
-	if ((params->device_size << SECTOR_SHIFT) % alignment) {
+	if ((fixed_device_size << SECTOR_SHIFT) % alignment) {
 		log_err(cd, _("Device size must be multiple of calculated zone alignment (%zu bytes)."), alignment);
 		return -EINVAL;
 	}
 
-	rh->direction = reencrypt_direction(hdr);
-
-	if (!strcmp(params->resilience, "datashift")) {
-		log_dbg(cd, "Initializing reencryption context with data_shift resilience.");
-		rh->rp.type = REENC_PROTECTION_DATASHIFT;
-		rh->rp.p.ds.data_shift = reencrypt_data_shift(hdr);
-	} else if (!strcmp(params->resilience, "journal")) {
-		log_dbg(cd, "Initializing reencryption context with journal resilience.");
-		rh->rp.type = REENC_PROTECTION_JOURNAL;
-	} else if (!strcmp(params->resilience, "checksum")) {
-		log_dbg(cd, "Initializing reencryption context with checksum resilience.");
-		rh->rp.type = REENC_PROTECTION_CHECKSUM;
-
-		r = snprintf(rh->rp.p.csum.hash,
-			sizeof(rh->rp.p.csum.hash), "%s", params->hash);
-		if (r < 0 || (size_t)r >= sizeof(rh->rp.p.csum.hash)) {
-			log_dbg(cd, "Invalid hash parameter");
-			return -EINVAL;
-		}
-
-		if (crypt_hash_init(&rh->rp.p.csum.ch, params->hash)) {
-			log_err(cd, _("Hash algorithm %s not supported."), params->hash);
-			return -EINVAL;
-		}
-
-		r = crypt_hash_size(params->hash);
-		if (r < 1) {
-			log_dbg(cd, "Invalid hash size");
-			return -EINVAL;
-		}
-		rh->rp.p.csum.hash_size = r;
-		rh->rp.p.csum.block_size = alignment;
-
-		rh->rp.p.csum.checksums_len = area_length;
-		if (posix_memalign(&rh->rp.p.csum.checksums, device_alignment(crypt_metadata_device(cd)),
-				   rh->rp.p.csum.checksums_len))
-			return -ENOMEM;
-	} else if (!strcmp(params->resilience, "none")) {
-		log_dbg(cd, "Initializing reencryption context with none resilience.");
-		rh->rp.type = REENC_PROTECTION_NONE;
-	} else {
-		log_err(cd, _("Unsupported resilience mode %s"), params->resilience);
-		return -EINVAL;
-	}
-
-	if (params->device_size) {
+	if (fixed_device_size) {
 		log_dbg(cd, "Switching reencryption to fixed size mode.");
-		device_size = params->device_size << SECTOR_SHIFT;
+		device_size = fixed_device_size << SECTOR_SHIFT;
 		rh->fixed_length = true;
 	} else
 		rh->fixed_length = false;
 
-	rh->length = reencrypt_length(cd, hdr, rh, area_length, params->max_hotzone_size << SECTOR_SHIFT, alignment);
+	rh->length = reencrypt_length(cd, hdr, rh, area_length, max_hotzone_size << SECTOR_SHIFT, alignment);
 	if (!rh->length) {
 		log_dbg(cd, "Invalid reencryption length.");
 		return -EINVAL;
@@ -1087,34 +990,19 @@ static size_t reencrypt_buffer_length(struct luks2_reencrypt *rh)
 static int reencrypt_load_clean(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	uint64_t device_size,
-	struct luks2_reencrypt **rh,
-	const struct crypt_params_reencrypt *params)
+	uint64_t max_hotzone_size,
+	uint64_t fixed_device_size,
+	struct luks2_reencrypt **rh)
 {
 	int r;
-	const struct crypt_params_reencrypt hdr_reenc_params = {
-		.resilience = reencrypt_resilience_type(hdr),
-		.hash = reencrypt_resilience_hash(hdr),
-		.device_size = params ? params->device_size : 0
-	};
 	struct luks2_reencrypt *tmp = crypt_zalloc(sizeof (*tmp));
 
 	if (!tmp)
 		return -ENOMEM;
 
-	r = -EINVAL;
-	if (!hdr_reenc_params.resilience)
-		goto err;
+	log_dbg(cd, "Loading stored reencryption context.");
 
-	/* skip context update if data shift is detected in header */
-	if (!strcmp(hdr_reenc_params.resilience, "datashift"))
-		params = NULL;
-
-	log_dbg(cd, "Initializing reencryption context (%s).", params ? "update" : "load");
-
-	if (!params || !params->resilience)
-		params = &hdr_reenc_params;
-
-	r = reencrypt_context_init(cd, hdr, tmp, device_size, params);
+	r = reencrypt_context_init(cd, hdr, tmp, device_size, max_hotzone_size, fixed_device_size);
 	if (r)
 		goto err;
 
@@ -1189,17 +1077,18 @@ static int reencrypt_load_crashed(struct crypt_device *cd,
 	struct luks2_hdr *hdr, uint64_t device_size, struct luks2_reencrypt **rh)
 {
 	bool dynamic;
-	uint64_t minimal_size;
+	uint64_t required_device_size;
 	int r, reenc_seg;
-	struct crypt_params_reencrypt params = {};
 
-	if (LUKS2_get_data_size(hdr, &minimal_size, &dynamic))
+	if (LUKS2_get_data_size(hdr, &required_device_size, &dynamic))
 		return -EINVAL;
 
-	if (!dynamic)
-		params.device_size = minimal_size >> SECTOR_SHIFT;
+	if (dynamic)
+		required_device_size = 0;
+	else
+		required_device_size >>= SECTOR_SHIFT;
 
-	r = reencrypt_load_clean(cd, hdr, device_size, rh, &params);
+	r = reencrypt_load_clean(cd, hdr, device_size, 0, required_device_size, rh);
 
 	if (!r) {
 		reenc_seg = json_segments_segment_in_reencrypt(LUKS2_get_segments_jobj(hdr));
@@ -1207,15 +1096,6 @@ static int reencrypt_load_crashed(struct crypt_device *cd,
 			r = -EINVAL;
 		else
 			(*rh)->length = LUKS2_segment_size(hdr, reenc_seg, 0);
-	}
-
-	if (!r && ((*rh)->rp.type == REENC_PROTECTION_CHECKSUM)) {
-		/* we have to override calculated alignment with value stored in mda */
-		(*rh)->rp.p.csum.block_size = reencrypt_alignment(hdr);
-		if (!(*rh)->rp.p.csum.block_size) {
-			log_dbg(cd, "Failed to get read resilience sector_size from metadata.");
-			r = -EINVAL;
-		}
 	}
 
 	if (!r)
@@ -2691,7 +2571,8 @@ static int reencrypt_context_update(struct crypt_device *cd,
 
 static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 		uint64_t device_size,
-		const struct crypt_params_reencrypt *params,
+		uint64_t max_hotzone_size,
+		uint64_t required_device_size,
 		struct volume_key *vks,
 		struct luks2_reencrypt **rh)
 {
@@ -2710,7 +2591,7 @@ static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 		return r;
 
 	if (ri == CRYPT_REENCRYPT_CLEAN)
-		r = reencrypt_load_clean(cd, hdr, device_size, &tmp, params);
+		r = reencrypt_load_clean(cd, hdr, device_size, max_hotzone_size, required_device_size, &tmp);
 	else if (ri == CRYPT_REENCRYPT_CRASH)
 		r = reencrypt_load_crashed(cd, hdr, device_size, &tmp);
 	else
@@ -2846,21 +2727,25 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	struct crypt_lock_handle *reencrypt_lock;
 	struct luks2_reencrypt *rh;
 	const struct volume_key *vk;
+	size_t alignment;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
 	};
-	uint64_t minimal_size, device_size, mapping_size = 0, required_size = 0;
+	uint64_t minimal_size, device_size, mapping_size = 0, required_size = 0,
+		 max_hotzone_size = 0;
 	bool dynamic;
-	struct crypt_params_reencrypt rparams = {};
 	uint32_t flags = 0;
 
-	if (params) {
-		rparams = *params;
-		required_size = params->device_size;
-	}
-
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
+
+	if (params) {
+		required_size = params->device_size;
+		max_hotzone_size = params->max_hotzone_size;
+		r = reencrypt_verify_resilience_params(cd, params);
+		if (r < 0)
+			return r;
+	}
 
 	rh = crypt_get_luks2_reencrypt(cd);
 	if (rh) {
@@ -2962,10 +2847,17 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 			log_err(cd, _("Illegal device size requested in reencryption parameters."));
 			goto err;
 		}
-		rparams.device_size = required_size;
 	}
 
-	r = reencrypt_load(cd, hdr, device_size, &rparams, *vks, &rh);
+	if (params && params->resilience) {
+		alignment = reencrypt_get_alignment(cd, hdr);
+
+		r = LUKS2_keyslot_reencrypt_update(cd, hdr, LUKS2_find_keyslot(hdr, "reencrypt"), params, alignment, *vks);
+		if (r < 0)
+			goto err;
+	}
+
+	r = reencrypt_load(cd, hdr, device_size, max_hotzone_size, required_size, *vks, &rh);
 	if (r < 0 || !rh)
 		goto err;
 
@@ -3548,15 +3440,6 @@ int crypt_reencrypt_run(
 
 	rs = REENC_OK;
 
-	/* update reencrypt keyslot protection parameters in memory only */
-	if (rh->device_size > rh->progress) {
-		r = reencrypt_keyslot_update(cd, rh);
-		if (r < 0) {
-			log_dbg(cd, "Keyslot update failed.");
-			return reencrypt_teardown(cd, hdr, rh, REENC_ERR, quit, progress, usrptr);
-		}
-	}
-
 	if (progress && progress(rh->device_size, rh->progress, usrptr))
 		quit = true;
 
@@ -3603,7 +3486,7 @@ static int reencrypt_recovery(struct crypt_device *cd,
 	int r;
 	struct luks2_reencrypt *rh = NULL;
 
-	r = reencrypt_load(cd, hdr, device_size, NULL, vks, &rh);
+	r = reencrypt_load(cd, hdr, device_size, 0, 0, vks, &rh);
 	if (r < 0) {
 		log_err(cd, _("Failed to load LUKS2 reencryption context."));
 		return r;

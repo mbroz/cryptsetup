@@ -65,6 +65,26 @@ static json_object *reencrypt_keyslot_area_jobj(struct crypt_device *cd,
 	return jobj_area;
 }
 
+static json_object *reencrypt_keyslot_area_jobj_update_block_size(struct crypt_device *cd,
+		json_object *jobj_area, size_t alignment)
+{
+	json_object *jobj_type, *jobj_area_new = NULL;
+
+	if (!jobj_area ||
+	    !json_object_object_get_ex(jobj_area, "type", &jobj_type) ||
+	    strcmp(json_object_get_string(jobj_type), "checksum"))
+		return NULL;
+
+	if (json_object_copy(jobj_area, &jobj_area_new))
+		return NULL;
+
+	log_dbg(cd, "Updating reencrypt resilience checksum block size.");
+
+	json_object_object_add(jobj_area_new, "sector_size", json_object_new_int64(alignment));
+
+	return jobj_area_new;
+}
+
 static int reenc_keyslot_alloc(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
@@ -335,6 +355,155 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 	return 0;
 }
 
+static int load_checksum_protection(struct crypt_device *cd,
+	json_object *jobj_area,
+	uint64_t area_length,
+	struct reenc_protection *rp)
+{
+	int r;
+	json_object *jobj_hash, *jobj_block_size;
+
+	if (!jobj_area || !rp ||
+	    !json_object_object_get_ex(jobj_area, "hash", &jobj_hash) ||
+	    !json_object_object_get_ex(jobj_area, "sector_size", &jobj_block_size))
+		return -EINVAL;
+
+	r = snprintf(rp->p.csum.hash, sizeof(rp->p.csum.hash), "%s", json_object_get_string(jobj_hash));
+	if (r < 0 || (size_t)r >= sizeof(rp->p.csum.hash))
+		return -EINVAL;
+
+	if (crypt_hash_init(&rp->p.csum.ch, rp->p.csum.hash)) {
+		log_err(cd, _("Hash algorithm %s is not available."), rp->p.csum.hash);
+		return -EINVAL;
+	}
+
+	r = crypt_hash_size(rp->p.csum.hash);
+	if (r <= 0) {
+		crypt_hash_destroy(rp->p.csum.ch);
+		rp->p.csum.ch = NULL;
+		log_dbg(cd, "Invalid hash size");
+		return -EINVAL;
+	}
+
+	rp->p.csum.hash_size = r;
+	rp->p.csum.block_size = crypt_jobj_get_uint32(jobj_block_size);
+	rp->p.csum.checksums_len = area_length;
+
+	if (posix_memalign(&rp->p.csum.checksums, device_alignment(crypt_metadata_device(cd)),
+			   rp->p.csum.checksums_len)) {
+		crypt_hash_destroy(rp->p.csum.ch);
+		rp->p.csum.ch = NULL;
+		return -ENOMEM;
+	}
+
+	rp->type = REENC_PROTECTION_CHECKSUM;
+	return 0;
+}
+
+static int reenc_keyslot_load_resilience(struct crypt_device *cd,
+	json_object *jobj_keyslot,
+	struct reenc_protection *rp)
+{
+	const char *type;
+	int r;
+	json_object *jobj_area, *jobj_type, *jobj;
+	uint64_t dummy, area_length;
+
+	if (!rp || !json_object_object_get_ex(jobj_keyslot, "area", &jobj_area) ||
+	    !json_object_object_get_ex(jobj_area, "type", &jobj_type))
+		return -EINVAL;
+
+	r = LUKS2_keyslot_jobj_area(jobj_keyslot, &dummy, &area_length);
+	if (r < 0)
+		return r;
+
+	type = json_object_get_string(jobj_type);
+	if (!type)
+		return -EINVAL;
+
+	if (!strcmp(type, "checksum")) {
+		log_dbg(cd, "Initializing checksum resilience mode.");
+		return load_checksum_protection(cd, jobj_area, area_length, rp);
+	} else if (!strcmp(type, "journal")) {
+		log_dbg(cd, "Initializing journal resilience mode.");
+		rp->type = REENC_PROTECTION_JOURNAL;
+	} else if (!strcmp(type, "none")) {
+		log_dbg(cd, "Initializing none resilience mode.");
+		rp->type = REENC_PROTECTION_NONE;
+	} else if (!strcmp(type, "datashift")) {
+		log_dbg(cd, "Initializing datashift resilience mode.");
+		if (!json_object_object_get_ex(jobj_area, "shift_size", &jobj))
+			return -EINVAL;
+		rp->type = REENC_PROTECTION_DATASHIFT;
+		rp->p.ds.data_shift = crypt_jobj_get_uint64(jobj);
+	} else
+		return -EINVAL;
+
+	return 0;
+}
+
+static bool reenc_keyslot_update_is_valid(struct crypt_device *cd,
+	json_object *jobj_area,
+	const struct crypt_params_reencrypt *params)
+{
+	const char *type;
+	json_object *jobj_type, *jobj;
+
+	if (!json_object_object_get_ex(jobj_area, "type", &jobj_type) ||
+	    !(type = json_object_get_string(jobj_type)))
+		return false;
+
+	/* do not allow switch to/away from datashift resilience type */
+	if ((strcmp(params->resilience, "datashift") && !strcmp(type, "datashift")) ||
+	    (!strcmp(params->resilience, "datashift") && strcmp(type, "datashift")))
+		return false;
+
+	/* datashift value is also immutable */
+	if (!strcmp(type, "datashift")) {
+		if (!json_object_object_get_ex(jobj_area, "shift_size", &jobj))
+			return false;
+		return (params->data_shift << SECTOR_SHIFT) == crypt_jobj_get_uint64(jobj);
+	}
+
+	return true;
+}
+
+static int reenc_keyslot_update(struct crypt_device *cd,
+	json_object *jobj_keyslot,
+	const struct crypt_params_reencrypt *params,
+	size_t alignment)
+{
+	int r;
+	json_object *jobj_area, *jobj_area_new;
+	uint64_t area_offset, area_length;
+
+	if (!json_object_object_get_ex(jobj_keyslot, "area", &jobj_area))
+		return -EINVAL;
+
+	r = LUKS2_keyslot_jobj_area(jobj_keyslot, &area_offset, &area_length);
+	if (r < 0)
+		return r;
+
+	if (!params || !params->resilience)
+		jobj_area_new = reencrypt_keyslot_area_jobj_update_block_size(cd, jobj_area, alignment);
+	else {
+		if (!reenc_keyslot_update_is_valid(cd, jobj_area, params)) {
+			log_err(cd, _("Invalid reencryption resilience mode change requested."));
+			return -EINVAL;
+		}
+
+		jobj_area_new = reencrypt_keyslot_area_jobj(cd, params, alignment,
+							    area_offset, area_length);
+	}
+
+	if (!jobj_area_new)
+		return -EINVAL;
+
+	json_object_object_add(jobj_keyslot, "area", jobj_area_new);
+
+	return 0;
+}
+
 int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
@@ -361,6 +530,52 @@ int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	}
 
 	return 0;
+}
+
+int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const struct crypt_params_reencrypt *params,
+	size_t alignment,
+	struct volume_key *vks)
+{
+	int r;
+	json_object *jobj_type, *jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
+
+	if (!jobj_keyslot ||
+	    !json_object_object_get_ex(jobj_keyslot, "type", &jobj_type) ||
+	    strcmp(json_object_get_string(jobj_type), "reencrypt"))
+		return -EINVAL;
+
+	/* verify existing reencryption metadata before updating */
+	r = LUKS2_reencrypt_digest_verify(cd, hdr, vks);
+	if (r < 0)
+		return r;
+
+	r = reenc_keyslot_update(cd, jobj_keyslot, params, alignment);
+	if (r < 0)
+		return r;
+
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, vks);
+	if (r < 0)
+		log_err(cd, "Failed to refresh reencryption verification digest.");
+
+	return r;
+}
+
+int LUKS2_keyslot_reencrypt_load(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	struct reenc_protection *rp)
+{
+	json_object *jobj_type, *jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
+
+	if (!jobj_keyslot ||
+	    !json_object_object_get_ex(jobj_keyslot, "type", &jobj_type) ||
+	    strcmp(json_object_get_string(jobj_type), "reencrypt"))
+		return -EINVAL;
+
+	return reenc_keyslot_load_resilience(cd, jobj_keyslot, rp);
 }
 
 const keyslot_handler reenc_keyslot = {
