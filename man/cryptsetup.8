@@ -362,13 +362,20 @@ If you don't pass new key via \-\-volume\-key\-file option,
 new random key is generated. Existing passphrase for any active keyslot
 is not required.
 
+\fBNOTE:\fR some parameters are effective only if used with LUKS2
+format that supports per-keyslot parameters.
+For LUKS1, PBKDF type and hash algorithm is always the same for all
+keyslots.
+
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
 \-\-new\-keyfile\-size, \-\-key\-slot, \-\-volume\-key\-file,
-\-\-force\-password, \-\-header, \-\-disable\-locks,
-\-\-iter-time, \-\-pbkdf, \-\-pbkdf\-force\-iterations,
-\-\-unbound, \-\-type, \-\-keyslot\-cipher, \-\-keyslot\-key\-size].
+\-\-force\-password, \-\-hash, \-\-header, \-\-disable\-locks,
+\-\-iter-time, \-\-pbkdf, \-\-pbkdf\-force\-iterations, \-\-pbkdf\-memory,
+\-\-pbkdf\-parallel, \-\-unbound, \-\-type, \-\-keyslot\-cipher,
+\-\-keyslot\-key\-size].
 .PP
+
 \fIluksRemoveKey\fR <device> [<key file with passphrase to be removed>]
 .IP
 Removes the supplied passphrase from the LUKS device. The
@@ -407,12 +414,17 @@ during this operation can cause the overwrite to fail after
 the old passphrase has been wiped and make the LUKS container
 inaccessible.
 
+\fBNOTE:\fR some parameters are effective only if used with LUKS2
+format that supports per-keyslot parameters.
+For LUKS1, PBKDF type and hash algorithm is always the same for all
+keyslots.
+
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
 \-\-keyfile\-size, \-\-new\-keyfile\-offset,
-\-\-iter-time, \-\-pbkdf, \-\-pbkdf\-force\-iterations,
-\-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password, \-\-header,
-\-\-disable\-locks, \-\-type, \-\-keyslot\-cipher, \-\-keyslot\-key\-size].
-.PP
+\-\-iter-time, \-\-pbkdf, \-\-pbkdf\-force\-iterations, \-\-pbkdf\-memory,
+\-\-pbkdf\-parallel, \-\-new\-keyfile\-size, \-\-key\-slot, \-\-force\-password,
+\-\-hash, \-\-header, \-\-disable\-locks, \-\-type, \-\-keyslot\-cipher,
+\-\-keyslot\-key\-size].
 .PP
 \fIluksConvertKey\fR <device>
 .IP
@@ -433,7 +445,7 @@ this operation can cause the overwrite to fail after the old
 parameters have been wiped and make the LUKS container inaccessible.
 
 \fB<options>\fR can be [\-\-key\-file, \-\-keyfile\-offset,
-\-\-keyfile\-size, \-\-key\-slot, \-\-header, \-\-disable\-locks,
+\-\-keyfile\-size, \-\-key\-slot, \-\-hash, \-\-header, \-\-disable\-locks,
 \-\-iter-time, \-\-pbkdf, \-\-pbkdf\-force\-iterations,
 \-\-pbkdf\-memory, \-\-pbkdf\-parallel,
 \-\-keyslot\-cipher, \-\-keyslot\-key\-size].
