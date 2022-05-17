@@ -24,12 +24,37 @@
 #include "../luks1/luks.h"
 #include "../luks1/af.h"
 
+/* This differs from LUKS_check_cipher() that it does not check dm-crypt fallback. */
 int LUKS2_check_cipher(struct crypt_device *cd,
 		      size_t keylength,
 		      const char *cipher,
 		      const char *cipher_mode)
 {
-	return LUKS_check_cipher(cd, keylength, cipher, cipher_mode);
+	int r;
+	struct crypt_storage *s;
+	char buf[SECTOR_SIZE], *empty_key;
+
+	log_dbg(cd, "Checking if cipher %s-%s is usable (storage wrapper).", cipher, cipher_mode);
+
+	empty_key = crypt_safe_alloc(keylength);
+	if (!empty_key)
+		return -ENOMEM;
+
+	/* No need to get KEY quality random but it must avoid known weak keys. */
+	r = crypt_random_get(cd, empty_key, keylength, CRYPT_RND_NORMAL);
+	if (r < 0)
+		goto out;
+
+	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, empty_key, keylength, false);
+	if (r < 0)
+		goto out;
+
+	r = crypt_storage_decrypt(s, 0, sizeof(buf), buf);
+	crypt_storage_destroy(s);
+out:
+	crypt_safe_free(empty_key);
+	crypt_safe_memzero(buf, sizeof(buf));
+	return r;
 }
 
 static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struct json_object **keyslot_object)
@@ -539,6 +564,12 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 
 	if (LUKS_keyslots_offset(hdr1) != (LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE)) {
 		log_dbg(cd, "Unsupported keyslots material offset: %zu.", LUKS_keyslots_offset(hdr1));
+		return -EINVAL;
+	}
+
+	if (LUKS2_check_cipher(cd, hdr1->keyBytes, hdr1->cipherName, hdr1->cipherMode)) {
+		log_err(cd, _("Unable to use cipher specification %s-%s for LUKS2."),
+			hdr1->cipherName, hdr1->cipherMode);
 		return -EINVAL;
 	}
 
