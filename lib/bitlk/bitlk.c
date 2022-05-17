@@ -430,8 +430,8 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	/* read and check the signature */
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 		device_alignment(device), &sig, sizeof(sig), 0) != sizeof(sig)) {
-		log_err(cd, _("Failed to read BITLK signature from %s."), device_path(device));
-		r = -EINVAL;
+		log_dbg(cd, "Failed to read BITLK signature from %s.", device_path(device));
+		r = -EIO;
 		goto out;
 	}
 
@@ -442,7 +442,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		params->togo = true;
 		fve_offset = BITLK_HEADER_METADATA_OFFSET_TOGO;
 	} else {
-		log_err(cd, _("Invalid or unknown signature for BITLK device."));
+		log_dbg(cd, "Invalid or unknown signature for BITLK device.");
 		r = -EINVAL;
 		goto out;
 	}

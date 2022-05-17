@@ -192,6 +192,9 @@ static int _activate(const char *dm_device,
 		params.fec_device = ARG_STR(OPT_FEC_DEVICE_ID);
 		params.fec_roots = ARG_UINT32(OPT_FEC_ROOTS_ID);
 		r = crypt_load(cd, CRYPT_VERITY, &params);
+		if (r)
+			log_err(_("Device %s is not a valid VERITY device."), hash_device);
+
 	} else {
 		r = _prepare_format(&params, data_device, flags | CRYPT_VERITY_NO_HEADER);
 		if (r < 0)
@@ -465,6 +468,9 @@ static int action_dump(void)
 	r = crypt_load(cd, CRYPT_VERITY, &params);
 	if (!r)
 		crypt_dump(cd);
+	else
+		log_err(_("Device %s is not a valid VERITY device."), action_argv[0]);
+
 	crypt_free(cd);
 	return r;
 }

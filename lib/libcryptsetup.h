@@ -767,7 +767,8 @@ int crypt_volume_key_keyring(struct crypt_device *cd, int enable);
  * @post In case LUKS header is read successfully but payload device is too small
  * error is returned and device type in context is set to @e NULL
  *
- * @note Note that in current version load works only for LUKS and VERITY device type.
+ * @note Note that load works only for device types with on-disk metadata.
+ * @note Function does not print visible error message if metadata is not present.
  *
  */
 int crypt_load(struct crypt_device *cd,

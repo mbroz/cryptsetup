@@ -628,8 +628,10 @@ static int action_bitlkDump(void)
 		goto out;
 
 	r = crypt_load(cd, CRYPT_BITLK, NULL);
-	if (r < 0)
+	if (r < 0) {
+		log_err(_("Device %s is not a valid BITLK device."), action_argv[0]);
 		goto out;
+	}
 
 	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
 		r = bitlkDump_with_volume_key(cd);

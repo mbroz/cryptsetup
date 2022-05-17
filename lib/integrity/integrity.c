@@ -51,7 +51,7 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 	    device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
 	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic))) {
-		log_err(cd, _("No kernel dm-integrity metadata detected on %s."), device_path(device));
+		log_dbg(cd, "No kernel dm-integrity metadata detected on %s.", device_path(device));
 		r = -EINVAL;
 	} else if (sb->version < SB_VERSION_1 || sb->version > SB_VERSION_5) {
 		log_err(cd, _("Incompatible kernel dm-integrity metadata (version %u) detected on %s."),

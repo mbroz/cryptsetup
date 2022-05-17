@@ -752,7 +752,7 @@ static void _luks2_reload(struct crypt_device *cd)
 }
 
 static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
-			    int require_header, int repair)
+			    bool quiet, bool repair)
 {
 	char *cipher_spec;
 	struct luks_phdr hdr = {};
@@ -784,7 +784,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 				return r;
 		}
 
-		r = LUKS_read_phdr(&hdr, require_header, repair, cd);
+		r = LUKS_read_phdr(&hdr, !quiet, repair, cd);
 		if (r)
 			goto out;
 
@@ -829,6 +829,8 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 		r =  _crypt_load_luks2(cd, cd->type != NULL, repair);
 		if (!r)
 			device_set_block_size(crypt_data_device(cd), LUKS2_get_sector_size(&cd->u.luks2.hdr));
+		else if (!quiet)
+			log_err(cd, _("Device %s is not a valid LUKS device."), mdata_device_path(cd));
 	} else {
 		if (version > 2)
 			log_err(cd, _("Unsupported LUKS version %d."), version);
@@ -1024,7 +1026,7 @@ int crypt_load(struct crypt_device *cd,
 			return -EINVAL;
 		}
 
-		r = _crypt_load_luks(cd, requested_type, 1, 0);
+		r = _crypt_load_luks(cd, requested_type, true, false);
 	} else if (isVERITY(requested_type)) {
 		if (cd->type && !isVERITY(cd->type)) {
 			log_dbg(cd, "Context is already initialized to type %s", cd->type);
@@ -1268,7 +1270,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		cd->u.loopaes.key_size = tgt->u.crypt.vk->keylength / key_nums;
 	} else if (isLUKS1(cd->type) || isLUKS2(cd->type)) {
 		if (crypt_metadata_device(cd)) {
-			r = _crypt_load_luks(cd, cd->type, 0, 0);
+			r = _crypt_load_luks(cd, cd->type, true, false);
 			if (r < 0) {
 				log_dbg(cd, "LUKS device header does not match active device.");
 				crypt_set_null_type(cd);
@@ -2377,7 +2379,7 @@ int crypt_repair(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* Load with repair */
-	r = _crypt_load_luks(cd, requested_type, 1, 1);
+	r = _crypt_load_luks(cd, requested_type, false, true);
 	if (r < 0)
 		return r;
 
@@ -3066,7 +3068,7 @@ int crypt_header_backup(struct crypt_device *cd,
 		return -EINVAL;
 
 	/* Load with repair */
-	r = _crypt_load_luks(cd, requested_type, 1, 0);
+	r = _crypt_load_luks(cd, requested_type, false, false);
 	if (r < 0)
 		return r;
 
@@ -3132,7 +3134,7 @@ int crypt_header_restore(struct crypt_device *cd,
 		r = -EINVAL;
 
 	if (!r)
-		r = _crypt_load_luks(cd, version == 1 ? CRYPT_LUKS1 : CRYPT_LUKS2, 1, 1);
+		r = _crypt_load_luks(cd, version == 1 ? CRYPT_LUKS1 : CRYPT_LUKS2, false, true);
 
 	return r;
 }

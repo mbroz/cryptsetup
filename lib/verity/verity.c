@@ -87,8 +87,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 		return -EIO;
 
 	if (memcmp(sb.signature, VERITY_SIGNATURE, sizeof(sb.signature))) {
-		log_err(cd, _("Device %s is not a valid VERITY device."),
-			device_path(device));
+		log_dbg(cd, "No VERITY signature detected.");
 		return -EINVAL;
 	}
 
