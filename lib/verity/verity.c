@@ -112,6 +112,10 @@ int VERITY_read_sb(struct crypt_device *cd,
 	}
 	params->data_size = le64_to_cpu(sb.data_blocks);
 
+	/* Update block size to be used for loop devices */
+	device_set_block_size(crypt_metadata_device(cd), params->hash_block_size);
+	device_set_block_size(crypt_data_device(cd), params->data_block_size);
+
 	params->hash_name = strndup((const char*)sb.algorithm, sizeof(sb.algorithm));
 	if (!params->hash_name)
 		return -ENOMEM;
