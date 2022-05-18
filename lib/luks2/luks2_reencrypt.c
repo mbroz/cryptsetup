@@ -2854,8 +2854,10 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 
 	/* From now on we hold reencryption lock */
 
-	if (LUKS2_get_data_size(hdr, &minimal_size, &dynamic))
-		return -EINVAL;
+	if (LUKS2_get_data_size(hdr, &minimal_size, &dynamic)) {
+		r = -EINVAL;
+		goto err;
+	}
 
 	/* some configurations provides fixed device size */
 	r = LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size, false, dynamic);
