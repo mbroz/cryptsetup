@@ -3158,7 +3158,7 @@ void crypt_free(struct crypt_device *cd)
 	if (!cd)
 		return;
 
-	log_dbg(cd, "Releasing crypt device %s context.", mdata_device_path(cd));
+	log_dbg(cd, "Releasing crypt device %s context.", mdata_device_path(cd) ?: "empty");
 
 	dm_backend_exit(cd);
 	crypt_free_volume_key(cd->volume_key);

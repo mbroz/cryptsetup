@@ -22,6 +22,7 @@ TESTS = 00modules-test \
 	bitlk-compat-test \
 	run-all-symbols \
 	unit-utils-crypt-test \
+	unit-wipe-test \
 	reencryption-compat-test \
 	luks2-reencryption-test \
 	luks2-reencryption-mangle-test
@@ -129,6 +130,12 @@ unit_utils_crypt_test_LDFLAGS = $(AM_LDFLAGS) -static
 unit_utils_crypt_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
 unit_utils_crypt_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
+unit_wipe_SOURCES = unit-wipe.c
+unit_wipe_LDADD = ../libcryptsetup.la
+unit_wipe_LDFLAGS = $(AM_LDFLAGS) -static
+unit_wipe_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
+unit_wipe_CPPFLAGS = $(AM_CPPFLAGS)
+
 BUILT_SOURCES = test-symbols-list.h
 
 test-symbols-list.h: $(top_srcdir)/lib/libcryptsetup.sym generate-symbols-list
@@ -141,7 +148,7 @@ all_symbols_test_LDFLAGS = $(AM_LDFLAGS) -ldl
 all_symbols_test_CFLAGS = $(AM_CFLAGS)
 all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
-check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io unit-utils-crypt-test all-symbols-test
+check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io unit-utils-crypt-test unit-wipe all-symbols-test
 
 check-programs: test-symbols-list.h $(check_PROGRAMS) fake_token_path.so
 
