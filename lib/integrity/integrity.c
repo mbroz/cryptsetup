@@ -154,6 +154,9 @@ int INTEGRITY_hash_tag_size(const char *integrity)
 	if (!strcmp(integrity, "crc32") || !strcmp(integrity, "crc32c"))
 		return 4;
 
+	if (!strcmp(integrity, "xxhash64"))
+		return 8;
+
 	r = sscanf(integrity, "hmac(%" MAX_CIPHER_LEN_STR "[^)]s", hash);
 	if (r == 1)
 		r = crypt_hash_size(hash);

@@ -431,6 +431,7 @@ intformat blake2s-256 blake2s-256    32 32  512 8e5fe4119558e117bfc40e3b0f13ade3
 intformat blake2b-256 blake2b-256    32 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
 intformat crc32c      crc32c          0  4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
 intformat crc32       crc32           0  4  512 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
+intformat xxhash64    xxhash64        0  8  512 6ff6bb889a8485f1fb26aa82671ff5da64f60381fc469e31d7be6094241eee09
 intformat sha1        sha1            0 20  512 6eedd6344dab8875cd185fcd6565dfc869ab36bc57e577f40c685290b1fa7fe7
 intformat sha1        sha1           16 16 4096 e152ec88227b539cd9cafd8bdb587a1072d720cd6bcebe1398d4136c9e7f337b
 intformat sha256      sha256          0 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
@@ -440,15 +441,17 @@ intformat hmac-sha256 hmac\(sha256\)  0 32 4096 33f7dfa5163ca9f740383fb8b0919574
 intformat hmac-sha256 hmac\(sha256\)  0 32 4096 33f7dfa5163ca9f740383fb8b0919574e38a7b20a94a4170fde4238196b7c4b4 $KEY_FILE 4096
 
 echo "Error detection tests:"
-int_error_detection J crc32c  0  4  512
-int_error_detection J crc32c  0  4  4096
-int_error_detection J crc32   0  4  512
-int_error_detection J crc32   0  4  4096
-int_error_detection J sha1    0 20 512
-int_error_detection J sha1   16 16 512
-int_error_detection J sha1    0 20 4096
-int_error_detection J sha256  0 32 512
-int_error_detection J sha256  0 32 4096
+int_error_detection J crc32c   0  4  512
+int_error_detection J crc32c   0  4 4096
+int_error_detection J crc32    0  4  512
+int_error_detection J crc32    0  4 4096
+int_error_detection J xxhash64 0  8  512
+int_error_detection J xxhash64 0  8 4096
+int_error_detection J sha1     0 20  512
+int_error_detection J sha1    16 16  512
+int_error_detection J sha1     0 20 4096
+int_error_detection J sha256   0 32  512
+int_error_detection J sha256   0 32 4096
 
 command -v xxd >/dev/null || skip "WARNING: xxd tool required."
 int_error_detection J hmac-sha256  0 32 512 $KEY_FILE 32

@@ -161,7 +161,7 @@ be larger, but there could be less I/Os issued.
 .TP
 .B "\-\-integrity, \-I ALGORITHM"
 Use internal integrity calculation (standalone mode).
-The integrity algorithm can be CRC (crc32c/crc32) or hash function (sha1, sha256).
+The integrity algorithm can be CRC (crc32c/crc32), non-cryptographic hash function (xxhash64) or hash function (sha1, sha256).
 
 For HMAC (hmac-sha256) you have also to specify an integrity key and its size.
 .TP
