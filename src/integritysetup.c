@@ -173,7 +173,12 @@ static int action_format(void)
 		goto out;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID)) {
-		r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
+		if (ARG_SET(OPT_DATA_DEVICE_ID) && !ARG_SET(OPT_NO_WIPE_ID))
+			r = asprintf(&msg, _("This will overwrite data on %s and %s irrevocably.\n"
+			"To preserve data device use --no-wipe option (and then activate with --integrity-recalculate)."),
+			action_argv[0], ARG_STR(OPT_DATA_DEVICE_ID));
+		else
+			r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
 		if (r == -1) {
 			r = -ENOMEM;
 			goto out;
