@@ -512,6 +512,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			le16_to_cpu(fve.curr_state), le16_to_cpu(fve.next_state));
 	}
 
+	params->volume_size = le64_to_cpu(fve.volume_size);
 	params->metadata_version = le16_to_cpu(fve.fve_version);
 	fve_metadata_size = le32_to_cpu(fve.metadata_size);
 
@@ -703,6 +704,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 	log_std(cd, "Version:      \t%u\n", params->metadata_version);
 	log_std(cd, "GUID:         \t%s\n", params->guid);
 	log_std(cd, "Sector size:  \t%u [bytes]\n", params->sector_size);
+	log_std(cd, "Volume size:  \t%" PRIu64 " [bytes]\n", params->volume_size);
 	log_std(cd, "Created:      \t%s", ctime((time_t *)&(params->creation_time)));
 	log_std(cd, "Description:  \t%s\n", params->description);
 	log_std(cd, "Cipher name:  \t%s\n", params->cipher);
