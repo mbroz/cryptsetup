@@ -110,6 +110,45 @@ int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 	return -ENOENT;
 }
 
+static int LUKS2_verify_pinned_digest(struct crypt_device *cd,
+		int digest) {
+	json_object *jobj_digest, *jobj_digest_value;
+	char *mkDigest = NULL;
+	size_t len;
+	const struct digest_pin *p;
+	int r;
+
+	p = crypt_get_digest_pin(cd);
+	if (!p->digest)
+		return 0;
+
+	jobj_digest = LUKS2_get_digest_jobj(crypt_get_hdr(cd, CRYPT_LUKS2), digest);
+	if (!jobj_digest)
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(jobj_digest, "digest", &jobj_digest_value))
+		return -EINVAL;
+
+	r = crypt_base64_decode(&mkDigest, &len, json_object_get_string(jobj_digest_value),
+				json_object_get_string_len(jobj_digest_value));
+	if (r < 0)
+		goto out;
+
+	r = -EPERM;
+	if (p->digest_size != len)
+		goto out;
+	/* we don't need to use constant-time comparisons here
+	 * because the digest isn't secret */
+	if (memcmp(mkDigest, p->digest, len))
+		goto out;
+
+	r = 0;
+
+out:
+	free(mkDigest);
+	return r;
+}
+
 int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
 	int digest,
 	const struct volume_key *vk)
@@ -120,6 +159,13 @@ int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
 	h = LUKS2_digest_handler(cd, digest);
 	if (!h)
 		return -EINVAL;
+
+	r = LUKS2_verify_pinned_digest(cd, digest);
+	if (r) {
+		log_dbg(cd, "Checking digest %d (%s) against pinned digest failed with %d.",
+				digest, h->name, r);
+		return r;
+	}
 
 	r = h->verify(cd, digest, vk->key, vk->keylength);
 	if (r < 0) {

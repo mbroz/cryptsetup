@@ -69,6 +69,11 @@ struct volume_key {
 	char key[];
 };
 
+struct digest_pin {
+	char *digest;
+	size_t digest_size;
+};
+
 struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key);
 struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength);
 void crypt_free_volume_key(struct volume_key *vk);
@@ -78,6 +83,7 @@ int crypt_volume_key_get_id(const struct volume_key *vk);
 void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk);
 struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
+const struct digest_pin *crypt_get_digest_pin(struct crypt_device *cd);
 
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd);
 int init_pbkdf_type(struct crypt_device *cd,

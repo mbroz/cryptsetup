@@ -936,6 +936,19 @@ int crypt_resume_by_token_pin(struct crypt_device *cd,
 	const char *pin,
 	size_t pin_size,
 	void *usrptr);
+/**
+ * Pin a specific volume key digest. LUKS2 only. Once this is set, unlocking
+ * keyslots whose digests do not match the given value will fail.
+ *
+ * @param cd LUKS2 crypt device handle
+ * @param digest binary value of the digest to pin
+ * @param digest_size length in bytes of @e digest
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_pin_volume_key(struct crypt_device *cd,
+	const char *digest,
+	const size_t digest_size);
 /** @} */
 
 /**
