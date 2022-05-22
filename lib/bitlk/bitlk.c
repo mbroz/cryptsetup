@@ -1212,6 +1212,11 @@ static int _activate(struct crypt_device *cd,
 	if (r)
 		return r;
 
+	if (dmd.size * SECTOR_SIZE != params->volume_size)
+		log_std(cd, _("WARNING: BitLocker volume size %" PRIu64 " does not match the underlying device size %" PRIu64 ""),
+			params->volume_size,
+			dmd.size * SECTOR_SIZE);
+
 	/* there will be always 4 dm-zero segments: 3x metadata, 1x FS header */
 	for (i = 0; i < 3; i++) {
 		segments[num_segments].offset = params->metadata_offset[i] / SECTOR_SIZE;
