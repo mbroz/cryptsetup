@@ -5245,13 +5245,15 @@ const char *crypt_get_integrity(struct crypt_device *cd)
 /* INTERNAL only */
 int crypt_get_integrity_key_size(struct crypt_device *cd)
 {
+	int key_size = 0;
+
 	if (isINTEGRITY(cd->type))
-		return INTEGRITY_key_size(crypt_get_integrity(cd));
+		key_size = INTEGRITY_key_size(crypt_get_integrity(cd));
 
 	if (isLUKS2(cd->type))
-		return INTEGRITY_key_size(crypt_get_integrity(cd));
+		key_size = INTEGRITY_key_size(crypt_get_integrity(cd));
 
-	return 0;
+	return key_size > 0 ? key_size : 0;
 }
 
 /* INTERNAL only */

@@ -2007,6 +2007,7 @@ static void IntegrityTest(void)
 	EQ_(ip.interleave_sectors, params.interleave_sectors);
 	EQ_(ip.journal_size, params.journal_size);
 	EQ_(ip.journal_watermark, params.journal_watermark);
+	EQ_(ip.integrity_key_size, 0);
 	OK_(strcmp(ip.integrity,params.integrity));
 	FAIL_(crypt_set_uuid(cd,DEVICE_1_UUID),"can't set uuid to integrity device");
 	CRYPT_FREE(cd);
