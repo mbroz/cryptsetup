@@ -631,7 +631,7 @@ int main(int argc, const char **argv)
 		{ NULL,    '\0', POPT_ARG_CALLBACK, basic_options_cb, 0, NULL, NULL },
 #define ARG(A, B, C, D, E, F, G, H) { A, B, C, NULL, A ## _ID, D, E },
 #include "integritysetup_arg_list.h"
-#undef arg
+#undef ARG
 		POPT_TABLEEND
 	};
 	static struct poptOption popt_options[] = {
