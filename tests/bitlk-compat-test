@@ -51,6 +51,10 @@ function check_dump()
 	# load variables for this image from config file
 	load_vars $file
 
+	# volume size
+	dump_size=$(echo "$dump" | grep "Volume size:" | cut -d: -f2 | tr -d "\t\n ")
+	[ "$dump_size" = "104857600[bytes]" -o "$dump_size" = "134217728[bytes]"  ] || fail " volume size check from dump failed."
+
 	# description
 	dump_desc=$(echo "$dump" | grep Description: | cut -d: -f2 | tr -d "\t\n ")
 	[ "${dump_desc:0:7}" = "DESKTOP" -o  "${dump_desc:0:3}" = "WIN" ] || fail " Description check from dump failed."

@@ -512,6 +512,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			le16_to_cpu(fve.curr_state), le16_to_cpu(fve.next_state));
 	}
 
+	params->volume_size = le64_to_cpu(fve.volume_size);
 	params->metadata_version = le16_to_cpu(fve.fve_version);
 	fve_metadata_size = le32_to_cpu(fve.metadata_size);
 
@@ -703,6 +704,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 	log_std(cd, "Version:      \t%u\n", params->metadata_version);
 	log_std(cd, "GUID:         \t%s\n", params->guid);
 	log_std(cd, "Sector size:  \t%u [bytes]\n", params->sector_size);
+	log_std(cd, "Volume size:  \t%" PRIu64 " [bytes]\n", params->volume_size);
 	log_std(cd, "Created:      \t%s", ctime((time_t *)&(params->creation_time)));
 	log_std(cd, "Description:  \t%s\n", params->description);
 	log_std(cd, "Cipher name:  \t%s\n", params->cipher);
@@ -1209,6 +1211,11 @@ static int _activate(struct crypt_device *cd,
 				0, &dmd.size, &dmd.flags);
 	if (r)
 		return r;
+
+	if (dmd.size * SECTOR_SIZE != params->volume_size)
+		log_std(cd, _("WARNING: BitLocker volume size %" PRIu64 " does not match the underlying device size %" PRIu64 ""),
+			params->volume_size,
+			dmd.size * SECTOR_SIZE);
 
 	/* there will be always 4 dm-zero segments: 3x metadata, 1x FS header */
 	for (i = 0; i < 3; i++) {
