@@ -1,0 +1,30 @@
+= cryptsetup-close(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_CLOSE:
+
+== Name
+
+cryptsetup-close - removes the existing mapping <name> (and the associated key)
+
+== SYNOPSIS
+
+*cryptsetup _close_ [<options>] <name>*
+
+== DESCRIPTION
+
+Removes the existing mapping <name> and wipes the key from kernel
+memory.
+
+For backward compatibility, there are *close* command aliases: *remove*,
+*plainClose*, *luksClose*, *loopaesClose*, *tcryptClose* (all behave
+exactly the same, device type is determined automatically from the active
+device).
+
+*<options>* can be [--deferred] or [--cancel-deferred]
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

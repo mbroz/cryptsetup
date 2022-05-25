@@ -1,0 +1,41 @@
+= cryptsetup-luksConvertKey(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_LUKSCONVERTKEY:
+
+== Name
+
+cryptsetup-luksConvertKey - converts an existing LUKS2 keyslot to new PBKDF parameters
+
+== SYNOPSIS
+
+*cryptsetup _luksConvertKey_ [<options>] <device>*
+
+== DESCRIPTION
+
+Converts an existing LUKS2 keyslot to new PBKDF parameters. The
+passphrase for keyslot to be converted must be supplied interactively or
+via --key-file. If no --pbkdf parameters are specified LUKS2 default
+PBKDF values will apply.
+
+If a keyslot is specified (via --key-slot), the passphrase for that
+keyslot must be given. If no keyslot is specified and there is still a
+free keyslot, then the new parameters will be put into a free keyslot
+before the keyslot containing the old parameters is purged. If there is
+no free keyslot, then the keyslot with the old parameters is overwritten
+directly.
+
+*WARNING:* If a keyslot is overwritten, a media failure during this
+operation can cause the overwrite to fail after the old parameters have
+been wiped and make the LUKS container inaccessible.
+
+*<options>* can be [--key-file, --keyfile-offset, --keyfile-size,
+--key-slot, --hash, --header, --disable-locks, --iter-time, --pbkdf,
+--pbkdf-force-iterations, --pbkdf-memory, --pbkdf-parallel,
+--keyslot-cipher, --keyslot-key-size].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

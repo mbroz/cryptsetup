@@ -1,0 +1,26 @@
+= cryptsetup-isLuks(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_ISLUKS:
+
+== Name
+
+cryptsetup-isLuks - check if a device is a LUKS device
+
+== SYNOPSIS
+
+*cryptsetup _isLuks_ [<options>] <device>*
+
+== DESCRIPTION
+
+Returns true, if <device> is a LUKS device, false otherwise. Use option
+-v to get human-readable feedback. 'Command successful.' means the
+device is a LUKS device.
+
+By specifying --type you may query for specific LUKS version.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

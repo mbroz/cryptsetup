@@ -1,16 +1,139 @@
-EXTRA_DIST += man/cryptsetup.8 man/integritysetup.8 man/veritysetup.8 man/cryptsetup-reencrypt.8
+ADOCFILES = \
+	man/common_options.adoc \
+	man/common_footer.adoc \
+	man/cryptsetup.8.adoc \
+	man/cryptsetup-open.8.adoc \
+	man/cryptsetup-close.8.adoc \
+	man/cryptsetup-reencrypt.8.adoc \
+	man/cryptsetup-status.8.adoc \
+	man/cryptsetup-resize.8.adoc \
+	man/cryptsetup-refresh.8.adoc \
+	man/cryptsetup-luksFormat.8.adoc \
+	man/cryptsetup-luksSuspend.8.adoc \
+	man/cryptsetup-luksResume.8.adoc \
+	man/cryptsetup-luksAddKey.8.adoc \
+	man/cryptsetup-luksRemoveKey.8.adoc \
+	man/cryptsetup-luksConvertKey.8.adoc \
+	man/cryptsetup-luksKillSlot.8.adoc \
+	man/cryptsetup-luksChangeKey.8.adoc \
+	man/cryptsetup-erase.8.adoc \
+	man/cryptsetup-luksUUID.8.adoc \
+	man/cryptsetup-isLuks.8.adoc \
+	man/cryptsetup-luksDump.8.adoc \
+	man/cryptsetup-luksHeaderBackup.8.adoc \
+	man/cryptsetup-luksHeaderRestore.8.adoc \
+	man/cryptsetup-token.8.adoc \
+	man/cryptsetup-convert.8.adoc \
+	man/cryptsetup-config.8.adoc \
+	man/cryptsetup-tcryptDump.8.adoc \
+	man/cryptsetup-bitlkDump.8.adoc \
+	man/cryptsetup-repair.8.adoc \
+	man/cryptsetup-benchmark.8.adoc \
+	man/cryptsetup-ssh.8.adoc \
+	man/veritysetup.8.adoc \
+	man/integritysetup.8.adoc
 
-man8_MANS += man/cryptsetup.8 man/cryptsetup-reencrypt.8
+dist_noinst_DATA += $(ADOCFILES)
 
+CRYPTSETUP_MANPAGES = \
+	man/cryptsetup.8 \
+	man/cryptsetup-open.8 \
+	man/cryptsetup-close.8 \
+	man/cryptsetup-reencrypt.8 \
+	man/cryptsetup-status.8 \
+	man/cryptsetup-resize.8 \
+	man/cryptsetup-refresh.8 \
+	man/cryptsetup-luksFormat.8 \
+	man/cryptsetup-luksSuspend.8 \
+	man/cryptsetup-luksResume.8 \
+	man/cryptsetup-luksAddKey.8 \
+	man/cryptsetup-luksRemoveKey.8 \
+	man/cryptsetup-luksConvertKey.8 \
+	man/cryptsetup-luksKillSlot.8 \
+	man/cryptsetup-luksChangeKey.8 \
+	man/cryptsetup-erase.8 \
+	man/cryptsetup-luksUUID.8 \
+	man/cryptsetup-isLuks.8 \
+	man/cryptsetup-luksDump.8 \
+	man/cryptsetup-luksHeaderBackup.8 \
+	man/cryptsetup-luksHeaderRestore.8 \
+	man/cryptsetup-token.8 \
+	man/cryptsetup-convert.8 \
+	man/cryptsetup-config.8 \
+	man/cryptsetup-tcryptDump.8 \
+	man/cryptsetup-bitlkDump.8 \
+	man/cryptsetup-repair.8 \
+	man/cryptsetup-benchmark.8
+
+CRYPTSETUP_MANLINKS = \
+	man/cryptsetup-create.8 \
+	man/cryptsetup-plainOpen.8 \
+	man/cryptsetup-luksOpen.8 \
+	man/cryptsetup-loopaesOpen.8 \
+	man/cryptsetup-tcryptOpen.8 \
+	man/cryptsetup-bitlkOpen.8 \
+	man/cryptsetup-luksErase.8
+
+VERITYSETUP_MANPAGES = man/veritysetup.8
+INTEGRITYSETUP_MANPAGES = man/integritysetup.8
+SSHPLUGIN_MANPAGES = man/cryptsetup-ssh.8
+
+MANPAGES_ALL = \
+	$(CRYPTSETUP_MANPAGES) \
+	$(CRYPTSETUP_MANLINKS) \
+	$(VERITYSETUP_MANPAGES) \
+	$(INTEGRITYSETUP_MANPAGES) \
+	$(SSHPLUGIN_MANPAGES)
+
+MANPAGES =
+MANLINKS =
+
+if CRYPTSETUP
+MANPAGES += $(CRYPTSETUP_MANPAGES)
+MANLINKS += $(CRYPTSETUP_MANLINKS)
+endif
 if VERITYSETUP
-man8_MANS += man/veritysetup.8
+MANPAGES += $(VERITYSETUP_MANPAGES)
 endif
-
 if INTEGRITYSETUP
-man8_MANS += man/integritysetup.8
+MANPAGES += $(INTEGRITYSETUP_MANPAGES)
+endif
+if SSHPLUGIN_TOKEN
+MANPAGES += $(SSHPLUGIN_MANPAGES)
 endif
 
-if SSHPLUGIN_TOKEN
-EXTRA_DIST += man/cryptsetup-ssh.8
-man8_MANS += man/cryptsetup-ssh.8
+if ENABLE_ASCIIDOC
+EXTRA_DIST += $(MANPAGES_ALL)
+man8_MANS += $(MANPAGES) $(MANLINKS)
+
+SUFFIXES = .8.adoc .8
+.8.adoc.8:
+	$(AM_V_GEN) test -f ./$@ || \
+	$(ASCIIDOCTOR) -b manpage \
+		-a 'release-version=$(VERSION)' \
+		--base-dir=$(abs_srcdir) \
+		--destination-dir $(abs_builddir)/man $<
+
+$(MANLINKS): $(MANPAGES)
+gen-man: $(man8_MANS)
+
+gen-man-dist:
+	@list=`find -name *.adoc -not -path "*/man/common_*" | sed -e 's/\.adoc//g'`; \
+	missing=`for p in $$list; do test -f $$p || echo $$p; done`; \
+	if test -n "$$missing"; then \
+		$(MAKE) $(AM_MAKEFLAGS) $$missing; \
+	fi;
+
+# !ENABLE_ASCIIDOC
+else
+
+if HAVE_MANPAGES
+EXTRA_DIST += $(MANPAGES_ALL)
+man8_MANS += $(MANPAGES) $(MANLINKS)
 endif
+
+gen-man:
+gen-man-dist:
+endif
+
+dist-hook: gen-man-dist

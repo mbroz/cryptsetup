@@ -1,0 +1,38 @@
+= cryptsetup-repair(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_REPAIR:
+
+== Name
+
+cryptsetup-repair - repair the device metadata
+
+== SYNOPSIS
+
+*cryptsetup _repair_ [<options>] <device>*
+
+== DESCRIPTION
+
+Tries to repair the device metadata if possible. Currently supported
+only for LUKS device type.
+
+This command is useful to fix some known benign LUKS metadata header
+corruptions. Only basic corruptions of unused keyslot are fixable. This
+command will only change the LUKS header, not any key-slot data. You may
+enforce LUKS version by adding --type option.
+
+It also repairs (upgrades) LUKS2 reencryption metadata by adding
+a metadata digest that protects it against malicious changes.
+
+If LUKS2 reencryption was interrupted in the middle of writing
+reencryption segment the repair command can be used to perform
+reencryption recovery so that reencryption can continue later.
+
+*WARNING:* Always create a binary backup of the original header before
+calling this command.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

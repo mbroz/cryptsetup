@@ -1,0 +1,37 @@
+= cryptsetup-convert(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_CONVERT:
+
+== Name
+
+cryptsetup-convert - converts the device between LUKS1 and LUKS2 format
+
+== SYNOPSIS
+
+*cryptsetup _convert_ --type <format> [<options>] <device>*
+
+== DESCRIPTION
+
+Converts the device between LUKS1 and LUKS2 format (if possible). The
+conversion will not be performed if there is an additional LUKS2 feature
+or LUKS1 has unsupported header size.
+
+Conversion (both directions) must be performed on inactive device. There
+must not be active dm-crypt mapping established for LUKS header
+requested for conversion.
+
+The *--type* option is mandatory with the following accepted values: _luks1_ or
+_luks2_.
+
+*WARNING:* The _convert_ action can destroy the LUKS header in the case
+of a crash during conversion or if a media error occurs. Always create a
+header backup before performing this operation!
+
+*<options>* can be [--header, --type].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

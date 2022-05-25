@@ -1,0 +1,26 @@
+= cryptsetup-erase(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_ERASE:
+
+== Name
+
+cryptsetup-erase, cryptsetup-luksErase - erase all keyslots
+
+== SYNOPSIS
+
+*cryptsetup  _erase_ [<options>] <device>* +
+*cryptsetup _luksErase_ [<options>] <device>*
+
+== DESCRIPTION
+
+Erase all keyslots and make the LUKS container permanently inaccessible.
+You do not need to provide any password for this operation.
+
+*WARNING:* This operation is irreversible.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

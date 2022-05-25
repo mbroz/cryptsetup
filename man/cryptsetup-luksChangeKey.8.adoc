@@ -1,0 +1,46 @@
+= cryptsetup-luksChangeKey(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_LUKSCHANGEKEY:
+
+== Name
+
+cryptsetup-luksChangeKey - change an existing passphrase
+
+== SYNOPSIS
+
+*cryptsetup _luksChangeKey_ [<options>] <device> [<new key file>]*
+
+== DESCRIPTION
+
+Changes an existing passphrase. The passphrase to be changed must be
+supplied interactively or via --key-file. The new passphrase can be
+supplied interactively or in a file given as the positional argument.
+
+If a key-slot is specified (via --key-slot), the passphrase for that
+key-slot must be given and the new passphrase will overwrite the
+specified key-slot. If no key-slot is specified and there is still a
+free key-slot, then the new passphrase will be put into a free key-slot
+before the key-slot containing the old passphrase is purged. If there is
+no free key-slot, then the key-slot with the old passphrase is
+overwritten directly.
+
+*WARNING:* If a key-slot is overwritten, a media failure during this
+operation can cause the overwrite to fail after the old passphrase has
+been wiped and make the LUKS container inaccessible.
+
+*NOTE:* some parameters are effective only if used with LUKS2 format
+that supports per-keyslot parameters. For LUKS1, PBKDF type and hash
+algorithm is always the same for all keyslots.
+
+*<options>* can be [--key-file, --keyfile-offset, --keyfile-size,
+--new-keyfile-offset, --iter-time, --pbkdf, --pbkdf-force-iterations,
+--pbkdf-memory, --pbkdf-parallel, --new-keyfile-size, --key-slot,
+--force-password, --hash, --header, --disable-locks, --type,
+--keyslot-cipher, --keyslot-key-size].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

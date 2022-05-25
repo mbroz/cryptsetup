@@ -27,6 +27,7 @@ sbin_PROGRAMS =
 man8_MANS =
 tmpfilesd_DATA =
 pkgconfig_DATA =
+dist_noinst_DATA =
 
 include man/Makemodule.am
 
@@ -46,7 +47,7 @@ ACLOCAL_AMFLAGS = -I m4
 DISTCHECK_CONFIGURE_FLAGS = 	\
 	--with-tmpfilesdir=$$dc_install_base/usr/lib/tmpfiles.d \
 	--enable-internal-argon2 --enable-internal-sse-argon2 \
-	--enable-external-tokens --enable-ssh-token
+	--enable-external-tokens --enable-ssh-token --enable-asciidoc
 
 distclean-local:
 	-find . -name \*~ -o -name \*.orig -o -name \*.rej | xargs rm -f

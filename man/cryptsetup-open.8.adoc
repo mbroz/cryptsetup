@@ -1,0 +1,144 @@
+= cryptsetup-open(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_OPEN:
+
+== Name
+
+cryptsetup-open, cryptsetup-create, cryptsetup-plainOpen, cryptsetup-luksOpen, cryptsetup-loopaesOpen, cryptsetup-tcryptOpen, cryptsetup-bitlkOpen - open an encrypted device and create a mapping with a specified name
+
+== SYNOPSIS
+
+*cryptsetup _open_ --type <device_type> [<options>] <device> <name>*
+
+== DESCRIPTION
+Opens (creates a mapping with) <name> backed by device <device>.
+
+Device type can be _plain_, _luks_ (default), _luks1_, _luks2_,
+_loopaes_ or _tcrypt_.
+
+For backward compatibility there are *open* command aliases:
+
+*create* (argument-order <name> <device>): open --type plain +
+*plainOpen*: open --type plain +
+*luksOpen*: open --type luks +
+*loopaesOpen*: open --type loopaes +
+*tcryptOpen*: open --type tcrypt +
+*bitlkOpen*: open --type bitlk
+
+*<options>* are type specific and are described below for individual
+device types. For *create*, the order of the <name> and <device> options
+is inverted for historical reasons, all other aliases use the standard
+*<device> <name>* order.
+
+=== PLAIN
+*open --type plain <device> <name>* +
+plainOpen <device> <name> (*old syntax*) +
+create <name> <device> (*OBSOLETE syntax*)
+
+Opens (creates a mapping with) <name> backed by device <device>.
+
+*<options>* can be [--hash, --cipher, --verify-passphrase,
+--sector-size, --key-file, --keyfile-offset, --key-size, --offset,
+--skip, --device-size, --size, --readonly, --shared, --allow-discards,
+--refresh]
+
+Example: 'cryptsetup open --type plain /dev/sda10 e1' maps the raw
+encrypted device /dev/sda10 to the mapped (decrypted) device
+/dev/mapper/e1, which can then be mounted, fsck-ed or have a filesystem
+created on it.
+
+=== LUKS
+*open --type luks <device> <name>* +
+luksOpen <device> <name> (*old syntax*)
+
+Opens the LUKS device <device> and sets up a mapping <name> after
+successful verification of the supplied passphrase.
+
+First, the passphrase is searched in LUKS tokens. If it's not found in
+any token and also the passphrase is not supplied via --key-file, the
+command prompts for it interactively.
+
+*<options>* can be [--key-file, --keyfile-offset, --keyfile-size,
+--readonly, --test-passphrase, --allow-discards, --header, --key-slot,
+--volume-key-file, --token-id, --token-only, --token-type,
+--disable-external-tokens, --disable-keyring, --disable-locks, --type,
+--refresh, --serialize-memory-hard-pbkdf, --unbound].
+
+=== loopAES
+*open --type loopaes <device> <name> --key-file <keyfile>* +
+loopaesOpen <device> <name> --key-file <keyfile> (*old syntax*)
+
+Opens the loop-AES <device> and sets up a mapping <name>.
+
+If the key file is encrypted with GnuPG, then you have to use
+--key-file=- and decrypt it before use, e.g., like this: +
+gpg --decrypt <keyfile> | cryptsetup loopaesOpen --key-file=- <device>
+<name>
+
+*WARNING:* The loop-AES extension cannot use the direct input of the key
+file on the real terminal because the keys are separated by end-of-line and
+only part of the multi-key file would be read. +
+If you need it in script, just use the pipe redirection: +
+echo $keyfile | cryptsetup loopaesOpen --key-file=- <device> <name>
+
+Use *--keyfile-size* to specify the proper key length if needed.
+
+Use *--offset* to specify device offset. Note that the units need to be
+specified in number of 512 byte sectors.
+
+Use *--skip* to specify the IV offset. If the original device used an
+offset and but did not use it in IV sector calculations, you have to
+explicitly use *--skip 0* in addition to the offset parameter.
+
+Use *--hash* to override the default hash function for passphrase
+hashing (otherwise it is detected according to key size).
+
+*<options>* can be [--key-file, --key-size, --offset, --skip, --hash,
+--readonly, --allow-discards, --refresh].
+
+=== TrueCrypt and VeraCrypt
+*open --type tcrypt <device> <name>* +
+tcryptOpen <device> <name> (*old syntax*)
+
+Opens the TCRYPT (TrueCrypt and VeraCrypt compatible) <device> and sets
+up a mapping <name>.
+
+*<options>* can be [--key-file, --tcrypt-hidden, --tcrypt-system,
+--tcrypt-backup, --readonly, --test-passphrase, --allow-discards,
+--disable-veracrypt, --veracrypt-pim, --veracrypt-query-pim, --header,
+--cipher, --hash].
+
+The keyfile parameter allows a combination of file content with the
+passphrase and can be repeated. Note that using keyfiles is compatible
+with TCRYPT and is different from LUKS keyfile logic.
+
+If *--cipher* or *--hash* options are used, only cipher chains or PBKDF2
+variants with the specified hash algorithms are checked. This could
+speed up unlocking the device (but also it reveals some information
+about the container).
+
+If you use *--header* in combination with hidden or system options, the
+header file must contain specific headers on the same positions as the
+original encrypted container.
+
+*WARNING:* Option *--allow-discards* cannot be combined with option
+*--tcrypt-hidden*. For normal mapping, it can cause the *destruction of
+hidden volume* (hidden volume appears as unused space for outer volume
+so this space can be discarded).
+
+=== BitLocker
+*open --type bitlk <device> <name>* +
+bitlkOpen <device> <name> (*old syntax*)
+
+Opens the BITLK (a BitLocker compatible) <device> and sets up a mapping
+<name>.
+
+*<options>* can be [--key-file, --readonly, --test-passphrase,
+--allow-discards --volume-key-file].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

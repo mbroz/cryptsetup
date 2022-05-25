@@ -1,0 +1,30 @@
+= cryptsetup-config(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_CONFIG:
+
+== Name
+
+cryptsetup-config - set permanent configuration options (store to LUKS header)
+
+== SYNOPSIS
+
+*cryptsetup _config_ <options> <device>*
+
+== DESCRIPTION
+
+Set permanent configuration options (store to LUKS header). The _config_
+command is supported only for LUKS2.
+
+The permanent options can be _--priority_ to set priority (normal,
+prefer, ignore) for keyslot (specified by _--key-slot_) or _--label_ and
+_--subsystem_.
+
+*<options>* can be [--priority, --label, --subsystem, --key-slot,
+--header].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

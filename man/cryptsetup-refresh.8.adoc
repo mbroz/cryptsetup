@@ -1,0 +1,49 @@
+= cryptsetup-refresh(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_REFRESH:
+
+== Name
+
+cryptsetup-refresh - refresh parameters of an active mapping
+
+== SYNOPSIS
+
+*cryptsetup _refresh_ [<options>] <name>*
+
+== DESCRIPTION
+
+Refreshes parameters of active mapping <name>.
+
+Updates parameters of active device <name> without the need to deactivate
+the device (and umount filesystem). Currently, it supports parameters
+refresh on following devices: LUKS1, LUKS2 (including authenticated
+encryption), plain crypt and loop-AES.
+
+Mandatory parameters are identical to those of an open action for
+the respective device type.
+
+You may change following parameters on all devices
+--perf-same_cpu_crypt, --perf-submit_from_crypt_cpus,
+--perf-no_read_workqueue, --perf-no_write_workqueue and
+--allow-discards.
+
+Refreshing the device without any optional parameter will refresh the device
+with default setting (respective to device type).
+
+*LUKS2 only:*
+
+The --integrity-no-journal parameter affects only LUKS2 devices with
+the underlying dm-integrity device.
+
+Adding option --persistent stores any combination of device parameters
+above in LUKS2 metadata (only after successful refresh operation).
+
+The --disable-keyring parameter refreshes a device with volume key passed in
+dm-crypt driver.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

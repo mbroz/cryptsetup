@@ -1,0 +1,42 @@
+= cryptsetup-resize(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_RESIZE:
+
+== Name
+
+cryptsetup-resize - resize an active mapping
+
+== SYNOPSIS
+
+*cryptsetup _resize_ [<options>] <name>*
+
+== DESCRIPTION
+
+Resizes an active mapping <name>.
+
+If --size (in 512-bytes sectors) or --device-size are not specified, the
+size is computed from the underlying device. For LUKS it is the size of
+the underlying device without the area reserved for LUKS header (see
+data payload offset in *luksDump* command). For plain crypt device, the
+whole device size is used.
+
+Note that this does not change the raw device geometry, it just changes
+how many sectors of the raw device are represented in the mapped device.
+
+If cryptsetup detected volume key for active device loaded in kernel
+keyring service, resize action would first try to retrieve the key using
+a token. Only if it failed, it'd ask for a passphrase to unlock a
+keyslot (LUKS) or to derive a volume key again (plain mode). The kernel
+keyring is used by default for LUKS2 devices.
+
+With LUKS2 device additional *<options>* can be [--token-id,
+--token-only, --token-type, --key-slot, --key-file, --keyfile-size,
+--keyfile-offset, --timeout, --disable-external-tokens, --disable-locks,
+--disable-keyring].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]
