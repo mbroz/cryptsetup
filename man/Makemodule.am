@@ -1,16 +1,131 @@
-EXTRA_DIST += man/cryptsetup.8 man/integritysetup.8 man/veritysetup.8 man/cryptsetup-reencrypt.8
+ADOCFILES_COMMON = man/common/cryptsetup_options.adoc \
+	man/common/footer.adoc
 
-man8_MANS += man/cryptsetup.8 man/cryptsetup-reencrypt.8
+dist_noinst_DATA = $(ADOCFILES_COMMON) \
+	man/cryptsetup.8.adoc \
+	man/cryptsetup-open.8.adoc \
+	man/cryptsetup-close.8.adoc \
+	man/cryptsetup-reencrypt.8.adoc \
+	man/cryptsetup-status.8.adoc \
+	man/cryptsetup-resize.8.adoc \
+	man/cryptsetup-refresh.8.adoc \
+	man/cryptsetup-luksFormat.8.adoc \
+	man/cryptsetup-luksSuspend.8.adoc \
+	man/cryptsetup-luksResume.8.adoc \
+	man/cryptsetup-luksAddKey.8.adoc \
+	man/cryptsetup-luksRemoveKey.8.adoc \
+	man/cryptsetup-luksConvertKey.8.adoc \
+	man/cryptsetup-luksKillSlot.8.adoc \
+	man/cryptsetup-luksChangeKey.8.adoc \
+	man/cryptsetup-erase.8.adoc \
+	man/cryptsetup-luksUUID.8.adoc \
+	man/cryptsetup-isLuks.8.adoc \
+	man/cryptsetup-luksDump.8.adoc \
+	man/cryptsetup-luksHeaderBackup.8.adoc \
+	man/cryptsetup-luksHeaderRestore.8.adoc \
+	man/cryptsetup-token.8.adoc \
+	man/cryptsetup-convert.8.adoc \
+	man/cryptsetup-config.8.adoc \
+	man/cryptsetup-tcryptDump.8.adoc \
+	man/cryptsetup-bitlkDump.8.adoc \
+	man/cryptsetup-repair.8.adoc \
+	man/cryptsetup-benchmark.8.adoc
+
+MANPAGES = man/cryptsetup.8 \
+	man/cryptsetup-open.8 \
+	man/cryptsetup-close.8 \
+	man/cryptsetup-reencrypt.8 \
+	man/cryptsetup-status.8 \
+	man/cryptsetup-resize.8 \
+	man/cryptsetup-refresh.8 \
+	man/cryptsetup-luksFormat.8 \
+	man/cryptsetup-luksSuspend.8 \
+	man/cryptsetup-luksResume.8 \
+	man/cryptsetup-luksAddKey.8 \
+	man/cryptsetup-luksRemoveKey.8 \
+	man/cryptsetup-luksConvertKey.8 \
+	man/cryptsetup-luksKillSlot.8 \
+	man/cryptsetup-luksChangeKey.8 \
+	man/cryptsetup-erase.8 \
+	man/cryptsetup-luksUUID.8 \
+	man/cryptsetup-isLuks.8 \
+	man/cryptsetup-luksDump.8 \
+	man/cryptsetup-luksHeaderBackup.8 \
+	man/cryptsetup-luksHeaderRestore.8 \
+	man/cryptsetup-token.8 \
+	man/cryptsetup-convert.8 \
+	man/cryptsetup-config.8 \
+	man/cryptsetup-tcryptDump.8 \
+	man/cryptsetup-bitlkDump.8 \
+	man/cryptsetup-repair.8 \
+	man/cryptsetup-benchmark.8
+
+MANLINKS = man/cryptsetup-create.8 \
+	man/cryptsetup-plainOpen.8 \
+	man/cryptsetup-luksOpen.8 \
+	man/cryptsetup-loopaesOpen.8 \
+	man/cryptsetup-tcryptOpen.8 \
+	man/cryptsetup-bitlkOpen.8 \
+	man/cryptsetup-luksErase.8
 
 if VERITYSETUP
-man8_MANS += man/veritysetup.8
+dist_noinst_DATA += man/veritysetup.8.adoc
+MANPAGES += man/veritysetup.8
 endif
 
 if INTEGRITYSETUP
-man8_MANS += man/integritysetup.8
+dist_noinst_DATA += man/integritysetup.8.adoc
+MANPAGES += man/integritysetup.8
 endif
 
 if SSHPLUGIN_TOKEN
-EXTRA_DIST += man/cryptsetup-ssh.8
-man8_MANS += man/cryptsetup-ssh.8
+dist_noinst_DATA += man/cryptsetup-ssh.8.adoc
+MANPAGES += man/cryptsetup-ssh.8
 endif
+
+if ENABLE_ASCIIDOC
+EXTRA_DIST += $(ADOCFILES_COMMON) $(MANPAGES) $(MANLINKS)
+man8_MANS += $(MANPAGES) $(MANLINKS)
+
+$(MANPAGES): $(ADOCFILES_COMMON)
+
+asciidoc_man_cmd = $(ASCIIDOCTOR) \
+	-b manpage \
+	-a 'release-version=$(VERSION)'
+
+SUFFIXES = .1.adoc .3.adoc .5.adoc .8.adoc .1 .3 .5 .8
+.1.adoc.1 .3.adoc.3 .5.adoc.5 .8.adoc.8:
+	$(AM_V_GEN) test -f ./$@ || \
+		$(MKDIR_P) $$(dirname $@) && \
+		$(asciidoc_man_cmd) --base-dir=$(abs_srcdir) \
+				    --destination-dir $(abs_builddir)/$$(dirname $@) $<
+
+$(MANLINKS): $(MANPAGES)
+gen-man: $(man8_MANS)
+
+# Standard "make" follows BUILD_* macros from ./configure, and in this case, it
+# ignores man pages for disabled tools, but for distribution tarball, we need
+# to generate all man-pages (to avoid dependence on asciidoc). [kzak Jan-2022]
+gen-man-dist:
+	@list=`find -name *.adoc -not -path "*/man/common/*" | sed -e 's/\.adoc//g'`; \
+	missing=`for p in $$list; do test -f $$p || echo $$p; done`; \
+	if test -n "$$missing"; then \
+		$(MAKE) $(AM_MAKEFLAGS) $$missing; \
+	fi;
+
+
+# !ENABLE_ASCIIDOC
+else
+
+if HAVE_MANPAGES
+EXTRA_DIST += $(ADOCFILES_COMMON) $(MANPAGES) $(MANLINKS)
+man8_MANS += $(MANPAGES) $(MANLINKS)
+endif
+
+gen-man:
+gen-man-dist:
+endif
+
+dist-hook: gen-man-dist
+
+CLEANFILES += $(MANPAGES) $(MANLINKS)
