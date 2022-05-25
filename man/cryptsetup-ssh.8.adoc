@@ -1,0 +1,80 @@
+= cryptsetup-ssh(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup-ssh {release-version}
+:man-linkstyle: pass:[blue R < >]
+
+== NAME
+
+cryptsetup-ssh - manage LUKS2 SSH token
+
+== SYNOPSIS
+
+*cryptsetup-ssh <action> [<options>] <action args>*
+
+== DESCRIPTION
+
+Experimental cryptsetup plugin for unlocking LUKS2 devices with token
+connected to an SSH server.
+
+This plugin currently allows only adding a token to an existing key
+slot. See *cryptsetup(8)* for instructions on how to remove, import or
+export the token.
+
+=== Add operation
+
+*add <options> <device>*
+
+Adds the SSH token to *<device>*.
+
+The specified SSH server must contain a key file on the specified path with
+a passphrase for an existing key slot on the device. Provided
+credentials will be used by cryptsetup to get the password when opening
+the device using the token.
+
+Options --ssh-server, --ssh-user, --ssh-keypath and --ssh-path are
+required for this operation.
+
+== OPTIONS
+
+**--key-slot**=_NUM_::
+Keyslot to assign the token to. If not specified, the token will be
+assigned to the first key slot matching provided passphrase.
+
+**--ssh-keypath**=_STRING_::
+Path to the SSH key for connecting to the remote server.
+
+**--ssh-path**=_STRING_::
+Path to the key file on the remote server.
+
+**--ssh-server**=_STRING_::
+IP address/URL of the remote server for this token.
+
+**--ssh-user**=_STRING_::
+Username used for the remote server.
+
+*--debug*::
+Show debug messages
+
+*--debug-json*::
+Show debug messages including JSON metadata
+
+*--verbose, -v*::
+Shows more detailed error messages
+
+*--help, -?*::
+Show help
+
+*--version, -V*::
+Print program version
+
+== NOTES
+
+The information provided when adding the token (SSH server address, user
+and paths) will be stored in the LUKS2 header in plaintext.
+
+== AUTHORS
+
+The cryptsetup-ssh tool is written by Vojtech Trefny.
+
+include::man/common_footer.adoc[]

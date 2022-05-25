@@ -1,0 +1,24 @@
+= cryptsetup-bitlkDump(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_BITLKDUMP:
+
+== Name
+
+cryptsetup-bitlkDump - dump the header information of a BITLK (BitLocker compatible) device
+
+== SYNOPSIS
+
+*cryptsetup _bitlkDump_ [<options>] <device>*
+
+== DESCRIPTION
+
+Dump the header information of a BITLK (BitLocker compatible) device.
+
+*<options>* can be [--dump-volume-key --volume-key-file].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

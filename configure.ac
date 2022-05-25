@@ -53,6 +53,27 @@ AS_VAR_IF([$1], [""], [$5], [$4])
 ])
 ])
 dnl ==========================================================================
+dnl AsciiDoc manual pages
+
+AC_ARG_ENABLE([asciidoc],
+	AS_HELP_STRING([--disable-asciidoc], [do not generate man pages from asciidoc]),
+	[], [enable_asciidoc=yes]
+)
+
+AC_PATH_PROG([ASCIIDOCTOR], [asciidoctor])
+if test "x$enable_asciidoc" = xyes -a "x$ASCIIDOCTOR" = x; then
+	AC_MSG_ERROR([Building man pages requires asciidoctor installed.])
+fi
+AM_CONDITIONAL([ENABLE_ASCIIDOC], [test "x$enable_asciidoc" = xyes])
+
+have_manpages=no
+AS_IF([test -f "$srcdir/man/cryptsetup-open.8"], [
+	AC_MSG_NOTICE([re-use already generated man-pages.])
+	have_manpages=yes]
+)
+AM_CONDITIONAL([HAVE_MANPAGES], [test "x$have_manpages" = xyes])
+
+dnl ==========================================================================
 
 AC_C_RESTRICT
 

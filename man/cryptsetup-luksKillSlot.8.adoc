@@ -1,0 +1,40 @@
+= cryptsetup-luksKillSlot(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_LUKSKILLSLOT:
+
+== Name
+
+cryptsetup-luksKillSlot - wipe a key-slot from the LUKS device
+
+== SYNOPSIS
+
+*cryptsetup _luksKillSlot_ [<options>] <device> <key slot number>*
+
+== DESCRIPTION
+
+Wipe the key-slot number <key slot> from the LUKS device. Except running
+in batch-mode (-q) a remaining passphrase must be supplied, either
+interactively or via --key-file. This command can remove the last
+remaining key-slot, but requires an interactive confirmation when doing
+so. Removing the last passphrase makes a LUKS container permanently
+inaccessible.
+
+*<options>* can be [--key-file, --keyfile-offset, --keyfile-size,
+--header, --disable-locks, --type].
+
+*WARNING:* If you read the passphrase from stdin (without further
+argument or with '-' as an argument to --key-file), batch-mode (-q) will
+be implicitly switched on and no warning will be given when you remove
+the last remaining passphrase from a LUKS container. Removing the last
+passphrase makes the LUKS container permanently inaccessible.
+
+*NOTE:* If there is no passphrase provided (on stdin or through
+--key-file argument) and batch-mode (-q) is active, the key-slot is
+removed without any other warning.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

@@ -1,0 +1,33 @@
+= cryptsetup-luksSuspend(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_LUKSSUSPEND:
+
+== Name
+
+cryptsetup-luksSuspend - suspends an active device and wipes the key
+
+== SYNOPSIS
+
+*cryptsetup _luksSuspend_ [<options>] <name>*
+
+== DESCRIPTION
+
+Suspends an active device (all IO operations will block and accesses to
+the device will wait indefinitely) and wipes the encryption key from
+kernel memory. Needs kernel 2.6.19 or later.
+
+After this operation, you have to use _luksResume_ to reinstate the
+encryption key and unblock the device or _close_ to remove the mapped
+device.
+
+*WARNING:* Never suspend the device on which the cryptsetup binary
+resides.
+
+*<options>* can be [--header, --disable-locks].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

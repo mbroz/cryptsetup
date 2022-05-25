@@ -1,0 +1,33 @@
+= cryptsetup-luksRemoveKey(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_LUKSREMOVEKEY:
+
+== Name
+
+cryptsetup-luksRemoveKey - remove the supplied passphrase from the LUKS device
+
+== SYNOPSIS
+
+*cryptsetup _luksRemoveKey_ [<options>] <device> [<key file with passphrase to be removed>]*
+
+== DESCRIPTION
+
+Removes the supplied passphrase from the LUKS device. The passphrase to
+be removed can be specified interactively, as the positional argument or
+via --key-file.
+
+*<options>* can be [--key-file, --keyfile-offset, --keyfile-size,
+--header, --disable-locks, --type]
+
+*WARNING:* If you read the passphrase from stdin (without further
+argument or with '-' as an argument to --key-file), batch-mode (-q) will
+be implicitly switched on and no warning will be given when you remove
+the last remaining passphrase from a LUKS container. Removing the last
+passphrase makes the LUKS container permanently inaccessible.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

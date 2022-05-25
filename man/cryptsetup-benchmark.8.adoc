@@ -1,0 +1,37 @@
+= cryptsetup-benchmark(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_BENCHMARK:
+
+== Name
+
+cryptsetup-benchmark - benchmarks ciphers and KDF
+
+== SYNOPSIS
+
+*cryptsetup _benchmark_ [<options>]*
+
+== DESCRIPTION
+
+Benchmarks ciphers and KDF (key derivation function). Without
+parameters, it tries to measure few common configurations.
+
+To benchmark other ciphers or modes, you need to specify *--cipher* and
+*--key-size* options or *--hash* for KDF test.
+
+*NOTE:* This benchmark uses memory only and is only informative. You
+cannot directly predict real storage encryption speed from it.
+
+For testing block ciphers, this benchmark requires kernel userspace
+crypto API to be available (introduced in Linux kernel 2.6.38). If you
+are configuring kernel yourself, enable "User-space interface for
+symmetric key cipher algorithms" in "Cryptographic API" section
+(CRYPTO_USER_API_SKCIPHER .config option).
+
+*<options>* can be [--cipher, --key-size, --hash].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

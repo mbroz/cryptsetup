@@ -1,0 +1,33 @@
+= cryptsetup-luksHeaderRestore(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_LUKSHEADERRESTORE:
+
+== Name
+
+cryptsetup-luksHeaderRestore - restore a binary backup of the LUKS header and keyslot area
+
+== SYNOPSIS
+
+*cryptsetup _luksHeaderRestore_ --header-backup-file <file> [<options>] <device>*
+
+== DESCRIPTION
+
+Restores a binary backup of the LUKS header and keyslot area from the
+specified file. +
+Note: Using '-' as filename reads the header backup from a file named
+'-'.
+
+*WARNING:* Header and keyslots will be replaced, only the passphrases
+from the backup will work afterward.
+
+This command requires that the volume key size and data offset of the
+LUKS header already on the device and of the header backup match.
+Alternatively, if there is no LUKS header on the device, the backup will
+also be written to it.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

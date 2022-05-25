@@ -1,0 +1,35 @@
+= cryptsetup-tcryptDump(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_TCRYPTDUMP:
+
+== Name
+
+cryptsetup-tcryptDump - dump the header information of a TCRYPT (TrueCrypt or VeraCrypt compatible) device
+
+== SYNOPSIS
+
+*cryptsetup _tcryptDump_ [<options>] <device>*
+
+== DESCRIPTION
+
+Dump the header information of a TCRYPT (TrueCrypt or VeraCrypt compatible) device.
+
+If the --dump-volume-key option is used, the TCRYPT device volume key is
+dumped instead of TCRYPT header info. Beware that the volume key (or
+concatenated volume keys if cipher chain is used) can be used to decrypt
+the data stored in the TCRYPT container without a passphrase. This means
+that if the volume key is compromised, the whole device has to be erased
+to prevent further access. Use this option carefully.
+
+*<options>* can be [--dump-volume-key, --key-file, --tcrypt-hidden,
+--tcrypt-system, --tcrypt-backup, --cipher, --hash].
+
+The keyfile parameter allows a combination of file content with the
+passphrase and can be repeated.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

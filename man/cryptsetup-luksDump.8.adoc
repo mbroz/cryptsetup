@@ -1,0 +1,50 @@
+= cryptsetup-luksDump(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_LUKSDUMP:
+
+== Name
+
+cryptsetup-luksDump - dump the header information of a LUKS device
+
+== SYNOPSIS
+
+*cryptsetup _luksDump_ [<options>] <device>*
+
+== DESCRIPTION
+
+Dump the header information of a LUKS device.
+
+If the --dump-volume-key option is used, the LUKS device volume key is
+dumped instead of the keyslot info. Together with the --volume-key-file
+option, volume key is dumped to a file instead of standard output.
+Beware that the volume key cannot be changed without reencryption and
+can be used to decrypt the data stored in the LUKS container without a
+passphrase and even without the LUKS header. This means that if the
+volume key is compromised, the whole device has to be erased or
+reencrypted to prevent further access. Use this option carefully.
+
+To dump the volume key, a passphrase has to be supplied, either
+interactively or via --key-file.
+
+To dump unbound key (LUKS2 format only), --unbound parameter, specific
+--key-slot id and proper passphrase has to be supplied, either
+interactively or via --key-file. Optional --volume-key-file parameter
+enables unbound keyslot dump to a file.
+
+To dump LUKS2 JSON metadata (without basic heade information like UUID)
+use --dump-json-metadata option.
+
+*<options>* can be [--dump-volume-key, --dump-json-metadata, --key-file,
+--keyfile-offset, --keyfile-size, --header, --disable-locks,
+--volume-key-file, --type, --unbound, --key-slot].
+
+*WARNING:* If --dump-volume-key is used with --key-file and the argument
+to --key-file is '-', no validation question will be asked and no
+warning given.
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]
