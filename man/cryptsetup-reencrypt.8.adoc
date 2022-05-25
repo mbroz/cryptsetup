@@ -1,0 +1,60 @@
+= cryptsetup-reencrypt(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_REENCRYPT:
+
+== Name
+
+cryptsetup-reencrypt - manage plain dm-crypt and LUKS encrypted volumes
+
+== SYNOPSIS
+
+*cryptsetup <options> _reencrypt_ <device> or --active-name <name> [<new_name>]*
+
+== DESCRIPTION
+
+Run resilient reencryption (LUKS2 device only).
+
+There are 3 basic modes of operation:
+
+* device reencryption (_reencrypt_)
+* device encryption (_reencrypt_ --encrypt)
+* device decryption (_reencrypt_ --decrypt)
+
+<device> or --active-name <name> is mandatory parameter.
+
+With <device> parameter cryptsetup looks up active <device> dm mapping.
+If no active mapping is detected, it starts offline reencryption
+otherwise online reencryption takes place.
+
+Reencryption process may be safely interrupted by a user via SIGINT
+signal (ctrl+c). Same applies to SIGTERM signal (i.e. issued by systemd
+during system shutdown).
+
+To resume already initialized or interrupted reencryption, just run the
+cryptsetup _reencrypt_ command again to continue the reencryption
+operation. Reencryption may be resumed with different --resilience or
+--hotzone-size unless implicit datashift resilience mode is used
+(reencrypt --encrypt with --reduce-device-size option).
+
+If the reencryption process was interrupted abruptly (reencryption
+process crash, system crash, poweroff) it may require recovery. The
+recovery is currently run automatically on next activation (action
+_open_) when needed or explicitly by user (action _repair_).
+
+Optional parameter <new_name> takes effect only with --encrypt option
+and it activates device <new_name> immediately after encryption
+initialization gets finished. That's useful when device needs to be
+ready as soon as possible and mounted (used) before full data area
+encryption is completed.
+
+Action supports following additional *<options>* [--encrypt, --decrypt,
+--device-size, --resilience, --resilience-hash, --hotzone-size,
+--init-only, --resume-only, --reduce-device-size, --volume-key-file,
+--key-size].
+
+include::man/common/cryptsetup_options.adoc[]
+include::man/common/footer.adoc[]
