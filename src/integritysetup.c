@@ -360,8 +360,10 @@ static int action_open(void)
 		goto out;
 
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
-	if (r)
+	if (r) {
+		log_err(_("Device %s is not a valid INTEGRITY device."), action_argv[0]);
 		goto out;
+	}
 
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_RECALC_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC);
@@ -515,6 +517,8 @@ static int action_dump(void)
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
 	if (!r)
 		crypt_dump(cd);
+	else
+		log_err(_("Device %s is not a valid INTEGRITY device."), action_argv[0]);
 
 	crypt_free(cd);
 	return r;

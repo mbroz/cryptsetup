@@ -628,8 +628,10 @@ static int action_bitlkDump(void)
 		goto out;
 
 	r = crypt_load(cd, CRYPT_BITLK, NULL);
-	if (r < 0)
+	if (r < 0) {
+		log_err(_("Device %s is not a valid BITLK device."), action_argv[0]);
 		goto out;
+	}
 
 	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
 		r = bitlkDump_with_volume_key(cd);
@@ -1686,7 +1688,7 @@ static int luksAddUnboundKey(void)
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
+		log_err(_("Device %s is not a valid LUKS2 device."),
 			uuid_or_device_header(NULL));
 		goto out;
 	}
@@ -1920,7 +1922,7 @@ static int action_luksConvertKey(void)
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
+		log_err(_("Device %s is not a valid LUKS2 device."),
 			uuid_or_device_header(NULL));
 		goto out;
 	}
@@ -2500,7 +2502,7 @@ static int action_luksConfig(void)
 		return r;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
+		log_err(_("Device %s is not a valid LUKS2 device."),
 			uuid_or_device_header(NULL));
 		goto out;
 	}
@@ -2644,7 +2646,7 @@ static int action_token(void)
 		return r;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
+		log_err(_("Device %s is not a valid LUKS2 device."),
 			uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[1]));
 		crypt_free(cd);
 		return r;
