@@ -652,7 +652,7 @@ static int action_close(void)
 	if (ARG_SET(OPT_CANCEL_DEFERRED_ID))
 		flags |= CRYPT_DEACTIVATE_DEFERRED_CANCEL;
 
-	r = crypt_init_by_name(&cd, action_argv[0]);
+	r = crypt_init_by_name_and_header(&cd, action_argv[0], ARG_STR(OPT_HEADER_ID));
 	if (r == 0)
 		r = crypt_deactivate_by_name(cd, action_argv[0], flags);
 
