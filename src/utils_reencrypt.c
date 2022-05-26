@@ -141,42 +141,49 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	int r;
 	size_t passwordLen;
 	char *active_name = NULL, *password = NULL;
-	struct crypt_params_reencrypt ret_params, params = {
-		.resilience = ARG_STR(OPT_RESILIENCE_ID) ?: "checksum",
-		.hash = ARG_STR(OPT_RESILIENCE_HASH_ID) ?: "sha256",
-		.max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE,
-		.device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE,
-		.flags = CRYPT_REENCRYPT_RESUME_ONLY
-	};
+	struct crypt_params_reencrypt params;
 
-	ri = crypt_reencrypt_status(cd, &ret_params);
+	ri = crypt_reencrypt_status(cd, &params);
 	if (ri == CRYPT_REENCRYPT_CRASH)
 		log_err(_("Device requires reencryption recovery. Run repair first."));
 
 	if (ri != CRYPT_REENCRYPT_CLEAN)
 		return -EINVAL;
 
-	if (ARG_SET(OPT_ENCRYPT_ID) && ret_params.mode != CRYPT_REENCRYPT_ENCRYPT) {
+	if (ARG_SET(OPT_ENCRYPT_ID) && params.mode != CRYPT_REENCRYPT_ENCRYPT) {
 		log_err(_("Device is not in LUKS2 encryption. Conflicting option --encrypt."));
 		return -EINVAL;
 	}
 
-	if (ARG_SET(OPT_DECRYPT_ID) && ret_params.mode != CRYPT_REENCRYPT_DECRYPT) {
+	if (ARG_SET(OPT_DECRYPT_ID) && params.mode != CRYPT_REENCRYPT_DECRYPT) {
 		log_err(_("Device is not in LUKS2 decryption. Conflicting option --decrypt."));
 		return -EINVAL;
 	}
 
 	if (ARG_SET(OPT_RESILIENCE_ID) &&
-	    !strcmp(ret_params.resilience, "datashift") && strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+	    !strcmp(params.resilience, "datashift") && strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
 		log_err(_("Device is in reencryption using datashift resilience. Requested --resilience option cannot be applied."));
 		return -EINVAL;
 	}
 
 	if (ARG_SET(OPT_RESILIENCE_ID) &&
-	    strcmp(ret_params.resilience, "datashift") && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+	    strcmp(params.resilience, "datashift") && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
 		log_err(_("Requested --resilience option cannot be applied to current reencryption operation."));
 		return -EINVAL;
 	}
+
+	params.resilience = NULL;
+	if (ARG_SET(OPT_RESILIENCE_ID)) {
+		params.resilience = ARG_STR(OPT_RESILIENCE_ID);
+		if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "checksum"))
+			params.hash = "sha256";
+		if (ARG_SET(OPT_RESILIENCE_HASH_ID))
+			params.hash = ARG_STR(OPT_RESILIENCE_HASH_ID);
+	}
+
+	params.max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE;
+	params.device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
+	params.flags = CRYPT_REENCRYPT_RESUME_ONLY;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !ARG_SET(OPT_RESUME_ONLY_ID)) {
 		r = asprintf(&msg, _("Device %s is already in LUKS2 reencryption. "
