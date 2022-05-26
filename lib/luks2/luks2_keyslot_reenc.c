@@ -558,7 +558,7 @@ int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
 
 	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, vks);
 	if (r < 0)
-		log_err(cd, "Failed to refresh reencryption verification digest.");
+		log_err(cd, _("Failed to refresh reencryption verification digest."));
 
 	return r;
 }
