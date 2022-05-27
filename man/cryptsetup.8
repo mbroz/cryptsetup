@@ -322,7 +322,7 @@ the command prompts for it interactively.
 \-\-allow\-discards, \-\-header, \-\-key-slot, \-\-volume\-key\-file, \-\-token\-id,
 \-\-token\-only, \-\-token-type, \-\-disable\-external\-tokens, \-\-disable\-keyring,
 \-\-disable\-locks, \-\-type, \-\-refresh, \-\-serialize\-memory\-hard\-pbkdf,
-\-\-unbound].
+\-\-unbound, \-\-pin-volume-key].
 .PP
 \fIluksSuspend\fR <name>
 .IP
@@ -1618,6 +1618,11 @@ for \-\-encrypt use case. Be sure to have enough (at least \-\-reduce\-device\-s
 
 WARNING: This is a destructive operation and cannot be reverted.
 Use with extreme care - accidentally overwritten filesystems are usually unrecoverable.
+.TP
+.B "\-\-pin-volume-key \fI<digest-hex>\fR"
+"Pin" the given volume key digest (as a hexadecimal string). Unlocking the volume key will succeed only if the digest used to check the volume key matches the value given here. (LUKS2 only)
+
+\fI<digest-hex>\fR can be found by running \fIluksDump\fR on the LUKS2 device.
 .TP
 .B "\-\-version"
 Show the program version.
