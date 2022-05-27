@@ -111,7 +111,8 @@ int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 }
 
 static int LUKS2_verify_pinned_digest(struct crypt_device *cd,
-		int digest) {
+	int digest)
+{
 	json_object *jobj_digest, *jobj_digest_value;
 	char *mkDigest = NULL;
 	size_t len;

@@ -120,7 +120,7 @@
 #define OPT_PERF_SAME_CPU_CRYPT		"perf-same_cpu_crypt"
 #define OPT_PERF_SUBMIT_FROM_CRYPT_CPUS	"perf-submit_from_crypt_cpus"
 #define OPT_PERSISTENT			"persistent"
-#define OPT_PIN_VOLUME_KEY			"pin-volume-key"
+#define OPT_PIN_VOLUME_KEY		"pin-volume-key"
 #define OPT_PLUGIN			"plugin"
 #define OPT_PRIORITY			"priority"
 #define OPT_PROGRESS_JSON		"progress-json"
