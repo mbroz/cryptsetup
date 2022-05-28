@@ -73,8 +73,10 @@ static int token_add(
 		return r;
 
 	r = crypt_load(cd, CRYPT_LUKS2, NULL);
-	if (r)
+	if (r) {
+		l_err(cd, _("Device %s is not a valid LUKS device."), device);
 		goto out;
+	}
 
 	r = -EINVAL;
 	jobj = json_object_new_object();

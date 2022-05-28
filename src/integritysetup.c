@@ -173,7 +173,12 @@ static int action_format(void)
 		goto out;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID)) {
-		r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
+		if (ARG_SET(OPT_DATA_DEVICE_ID) && !ARG_SET(OPT_NO_WIPE_ID))
+			r = asprintf(&msg, _("This will overwrite data on %s and %s irrevocably.\n"
+			"To preserve data device use --no-wipe option (and then activate with --integrity-recalculate)."),
+			action_argv[0], ARG_STR(OPT_DATA_DEVICE_ID));
+		else
+			r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), action_argv[0]);
 		if (r == -1) {
 			r = -ENOMEM;
 			goto out;
@@ -355,8 +360,10 @@ static int action_open(void)
 		goto out;
 
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
-	if (r)
+	if (r) {
+		log_err(_("Device %s is not a valid INTEGRITY device."), action_argv[0]);
 		goto out;
+	}
 
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_RECALC_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC);
@@ -510,6 +517,8 @@ static int action_dump(void)
 	r = crypt_load(cd, CRYPT_INTEGRITY, &params);
 	if (!r)
 		crypt_dump(cd);
+	else
+		log_err(_("Device %s is not a valid INTEGRITY device."), action_argv[0]);
 
 	crypt_free(cd);
 	return r;
@@ -631,7 +640,7 @@ int main(int argc, const char **argv)
 		{ NULL,    '\0', POPT_ARG_CALLBACK, basic_options_cb, 0, NULL, NULL },
 #define ARG(A, B, C, D, E, F, G, H) { A, B, C, NULL, A ## _ID, D, E },
 #include "integritysetup_arg_list.h"
-#undef arg
+#undef ARG
 		POPT_TABLEEND
 	};
 	static struct poptOption popt_options[] = {

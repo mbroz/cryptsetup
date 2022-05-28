@@ -27,6 +27,17 @@
 #include "integrity.h"
 #include "internal.h"
 
+/* For LUKS2, integrity metadata are on DATA device even for detached header! */
+static struct device *INTEGRITY_metadata_device(struct crypt_device *cd)
+{
+	const char *type = crypt_get_type(cd);
+
+	if (type && !strcmp(type, CRYPT_LUKS2))
+		return crypt_data_device(cd);
+
+	return crypt_metadata_device(cd);
+}
+
 static int INTEGRITY_read_superblock(struct crypt_device *cd,
 				     struct device *device,
 				     uint64_t offset, struct superblock *sb)
@@ -38,11 +49,13 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
-		device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
-	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic)) ||
-	    sb->version < SB_VERSION_1 || sb->version > SB_VERSION_5) {
-		log_std(cd, "No integrity superblock detected on %s.\n",
-			device_path(device));
+	    device_alignment(device), sb, sizeof(*sb), offset) != sizeof(*sb) ||
+	    memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic))) {
+		log_dbg(cd, "No kernel dm-integrity metadata detected on %s.", device_path(device));
+		r = -EINVAL;
+	} else if (sb->version < SB_VERSION_1 || sb->version > SB_VERSION_5) {
+		log_err(cd, _("Incompatible kernel dm-integrity metadata (version %u) detected on %s."),
+			sb->version, device_path(device));
 		r = -EINVAL;
 	} else {
 		sb->integrity_tag_size = le16toh(sb->integrity_tag_size);
@@ -63,7 +76,7 @@ int INTEGRITY_read_sb(struct crypt_device *cd,
 	struct superblock sb;
 	int r;
 
-	r = INTEGRITY_read_superblock(cd, crypt_metadata_device(cd), 0, &sb);
+	r = INTEGRITY_read_superblock(cd, INTEGRITY_metadata_device(cd), 0, &sb);
 	if (r)
 		return r;
 
@@ -154,6 +167,9 @@ int INTEGRITY_hash_tag_size(const char *integrity)
 	if (!strcmp(integrity, "crc32") || !strcmp(integrity, "crc32c"))
 		return 4;
 
+	if (!strcmp(integrity, "xxhash64"))
+		return 8;
+
 	r = sscanf(integrity, "hmac(%" MAX_CIPHER_LEN_STR "[^)]s", hash);
 	if (r == 1)
 		r = crypt_hash_size(hash);
@@ -227,13 +243,13 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 	if (sb_flags & SB_FLAG_RECALCULATING)
 		dmd->flags |= CRYPT_ACTIVATE_RECALCULATE;
 
-	r = INTEGRITY_data_sectors(cd, crypt_metadata_device(cd),
+	r = INTEGRITY_data_sectors(cd, INTEGRITY_metadata_device(cd),
 				   crypt_get_data_offset(cd) * SECTOR_SIZE, &dmd->size);
 	if (r < 0)
 		return r;
 
 	return dm_integrity_target_set(cd, &dmd->segment, 0, dmd->size,
-			crypt_metadata_device(cd), crypt_data_device(cd),
+			INTEGRITY_metadata_device(cd), crypt_data_device(cd),
 			crypt_get_integrity_tag_size(cd), crypt_get_data_offset(cd),
 			crypt_get_sector_size(cd), vk, journal_crypt_key,
 			journal_mac_key, params);
@@ -346,7 +362,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 	if (params && params->integrity_key_size)
 		vk = crypt_alloc_volume_key(params->integrity_key_size, NULL);
 
-	r = dm_integrity_target_set(cd, tgt, 0, dmdi.size, crypt_metadata_device(cd),
+	r = dm_integrity_target_set(cd, tgt, 0, dmdi.size, INTEGRITY_metadata_device(cd),
 			crypt_data_device(cd), crypt_get_integrity_tag_size(cd),
 			crypt_get_data_offset(cd), crypt_get_sector_size(cd), vk,
 			journal_crypt_key, journal_mac_key, params);

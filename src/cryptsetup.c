@@ -629,8 +629,10 @@ static int action_bitlkDump(void)
 		goto out;
 
 	r = crypt_load(cd, CRYPT_BITLK, NULL);
-	if (r < 0)
+	if (r < 0) {
+		log_err(_("Device %s is not a valid BITLK device."), action_argv[0]);
 		goto out;
+	}
 
 	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
 		r = bitlkDump_with_volume_key(cd);
@@ -653,7 +655,7 @@ static int action_close(void)
 	if (ARG_SET(OPT_CANCEL_DEFERRED_ID))
 		flags |= CRYPT_DEACTIVATE_DEFERRED_CANCEL;
 
-	r = crypt_init_by_name(&cd, action_argv[0]);
+	r = crypt_init_by_name_and_header(&cd, action_argv[0], ARG_STR(OPT_HEADER_ID));
 	if (r == 0)
 		r = crypt_deactivate_by_name(cd, action_argv[0], flags);
 
@@ -1700,7 +1702,7 @@ static int luksAddUnboundKey(void)
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
+		log_err(_("Device %s is not a valid LUKS2 device."),
 			uuid_or_device_header(NULL));
 		goto out;
 	}
@@ -1934,7 +1936,7 @@ static int action_luksConvertKey(void)
 		goto out;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
+		log_err(_("Device %s is not a valid LUKS2 device."),
 			uuid_or_device_header(NULL));
 		goto out;
 	}
@@ -2514,7 +2516,7 @@ static int action_luksConfig(void)
 		return r;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
+		log_err(_("Device %s is not a valid LUKS2 device."),
 			uuid_or_device_header(NULL));
 		goto out;
 	}
@@ -2658,7 +2660,7 @@ static int action_token(void)
 		return r;
 
 	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
-		log_err(_("Device %s is not a valid LUKS device."),
+		log_err(_("Device %s is not a valid LUKS2 device."),
 			uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[1]));
 		crypt_free(cd);
 		return r;
@@ -3120,7 +3122,7 @@ int main(int argc, const char **argv)
 		{ NULL,    '\0', POPT_ARG_CALLBACK, basic_options_cb, 0, NULL, NULL },
 #define ARG(A, B, C, D, E, F, G, H) { A, B, C, NULL, A ## _ID, D, E },
 #include "cryptsetup_arg_list.h"
-#undef arg
+#undef ARG
 		POPT_TABLEEND
 	};
 	static struct poptOption popt_options[] = {

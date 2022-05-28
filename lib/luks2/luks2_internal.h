@@ -138,11 +138,27 @@ typedef struct  {
 	keyslot_repair_func repair;
 } keyslot_handler;
 
-/* can not fit prototype alloc function */
-int reenc_keyslot_alloc(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot,
-	const struct crypt_params_reencrypt *params);
+struct reenc_protection {
+	enum { REENC_PROTECTION_NONE = 0, /* none should be 0 always */
+	       REENC_PROTECTION_CHECKSUM,
+	       REENC_PROTECTION_JOURNAL,
+	       REENC_PROTECTION_DATASHIFT } type;
+
+	union {
+	struct {
+		char hash[LUKS2_CHECKSUM_ALG_L];
+		struct crypt_hash *ch;
+		size_t hash_size;
+		/* buffer for checksums */
+		void *checksums;
+		size_t checksums_len;
+		size_t block_size;
+	} csum;
+	struct {
+		uint64_t data_shift;
+	} ds;
+	} p;
+};
 
 /**
  * LUKS2 digest handlers (EXPERIMENTAL)
@@ -235,7 +251,26 @@ int LUKS2_keyslot_reencrypt_store(struct crypt_device *cd,
 int LUKS2_keyslot_reencrypt_allocate(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
-	const struct crypt_params_reencrypt *params);
+	const struct crypt_params_reencrypt *params,
+	size_t alignment);
+
+int LUKS2_keyslot_reencrypt_update_needed(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const struct crypt_params_reencrypt *params,
+	size_t alignment);
+
+int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	const struct crypt_params_reencrypt *params,
+	size_t alignment,
+	struct volume_key *vks);
+
+int LUKS2_keyslot_reencrypt_load(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	int keyslot,
+	struct reenc_protection *rp);
 
 int LUKS2_keyslot_reencrypt_digest_create(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
