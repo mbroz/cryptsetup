@@ -434,13 +434,6 @@ static int load_checksum_protection(struct crypt_device *cd,
 	rp->p.csum.block_size = crypt_jobj_get_uint32(jobj_block_size);
 	rp->p.csum.checksums_len = area_length;
 
-	if (posix_memalign(&rp->p.csum.checksums, device_alignment(crypt_metadata_device(cd)),
-			   rp->p.csum.checksums_len)) {
-		crypt_hash_destroy(rp->p.csum.ch);
-		rp->p.csum.ch = NULL;
-		return -ENOMEM;
-	}
-
 	rp->type = REENC_PROTECTION_CHECKSUM;
 	return 0;
 }

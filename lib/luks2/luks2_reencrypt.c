@@ -1227,6 +1227,24 @@ static int reencrypt_update_flag(struct crypt_device *cd, int enable, bool commi
 	return LUKS2_config_set_requirements(cd, hdr, reqs, commit);
 }
 
+static int reencrypt_hotzone_protect_ready(struct crypt_device *cd,
+	struct reenc_protection *rp)
+{
+	assert(rp);
+
+	if (rp->type != REENC_PROTECTION_CHECKSUM)
+		return 0;
+
+	if (!rp->p.csum.checksums) {
+		log_dbg(cd, "Allocating buffer for storing resilience checksums.");
+		if (posix_memalign(&rp->p.csum.checksums, device_alignment(crypt_metadata_device(cd)),
+				   rp->p.csum.checksums_len))
+			return -ENOMEM;
+	}
+
+	return 0;
+}
+
 static int reencrypt_recover_segment(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	struct luks2_reencrypt *rh,
@@ -1251,6 +1269,12 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 
 	if (rseg < 0 || rh->length < 512)
 		return -EINVAL;
+
+	r = reencrypt_hotzone_protect_ready(cd, rp);
+	if (r) {
+		log_err(cd, _("Failed to initialize hotzone protection."));
+		return -EINVAL;
+	}
 
 	vk_new = crypt_volume_key_by_id(vks, rh->digest_new);
 	if (!vk_new && rh->mode != CRYPT_REENCRYPT_DECRYPT)
@@ -3224,6 +3248,12 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 			log_err(cd, _("Failed to initialize old segment storage wrapper."));
 			return REENC_ROLLBACK;
 		}
+	}
+
+	r = reencrypt_hotzone_protect_ready(cd, rp);
+	if (r) {
+		log_err(cd, _("Failed to initialize hotzone protection."));
+		return REENC_ROLLBACK;
 	}
 
 	if (online) {
