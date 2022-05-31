@@ -646,22 +646,29 @@ static crypt_reencrypt_direction_info reencrypt_direction(struct luks2_hdr *hdr)
 
 typedef enum { REENC_OK = 0, REENC_ERR, REENC_ROLLBACK, REENC_FATAL } reenc_status_t;
 
+static void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp)
+{
+	if (!rp || rp->type != REENC_PROTECTION_CHECKSUM)
+		return;
+
+	if (rp->p.csum.ch) {
+		crypt_hash_destroy(rp->p.csum.ch);
+		rp->p.csum.ch = NULL;
+	}
+
+	if (rp->p.csum.checksums) {
+		memset(rp->p.csum.checksums, 0, rp->p.csum.checksums_len);
+		free(rp->p.csum.checksums);
+		rp->p.csum.checksums = NULL;
+	}
+}
+
 void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reencrypt *rh)
 {
 	if (!rh)
 		return;
 
-	if (rh->rp.type == REENC_PROTECTION_CHECKSUM) {
-		if (rh->rp.p.csum.ch) {
-			crypt_hash_destroy(rh->rp.p.csum.ch);
-			rh->rp.p.csum.ch = NULL;
-		}
-		if (rh->rp.p.csum.checksums) {
-			memset(rh->rp.p.csum.checksums, 0, rh->rp.p.csum.checksums_len);
-			free(rh->rp.p.csum.checksums);
-			rh->rp.p.csum.checksums = NULL;
-		}
-	}
+	LUKS2_reencrypt_protection_erase(&rh->rp);
 
 	json_object_put(rh->jobj_segs_hot);
 	rh->jobj_segs_hot = NULL;
