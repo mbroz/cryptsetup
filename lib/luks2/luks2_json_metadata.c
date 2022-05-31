@@ -1473,9 +1473,27 @@ static const struct requirement_flag *get_requirement_by_name(const char *requir
 	return &unknown_requirement_flag;
 }
 
+static json_object *mandatory_requirements_jobj(struct luks2_hdr *hdr)
+{
+	json_object *jobj_config, *jobj_requirements, *jobj_mandatory;
+
+	assert(hdr);
+
+	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
+		return NULL;
+
+	if (!json_object_object_get_ex(jobj_config, "requirements", &jobj_requirements))
+		return NULL;
+
+	if (!json_object_object_get_ex(jobj_requirements, "mandatory", &jobj_mandatory))
+		return NULL;
+
+	return jobj_mandatory;
+}
+
 int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version)
 {
-	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
+	json_object *jobj_mandatory, *jobj;
 	int i, len;
 	const struct requirement_flag *req;
 
@@ -1483,13 +1501,8 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version)
 	if (!hdr || !version)
 		return -EINVAL;
 
-	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
-		return -EINVAL;
-
-	if (!json_object_object_get_ex(jobj_config, "requirements", &jobj_requirements))
-		return -ENOENT;
-
-	if (!json_object_object_get_ex(jobj_requirements, "mandatory", &jobj_mandatory))
+	jobj_mandatory = mandatory_requirements_jobj(hdr);
+	if (!jobj_mandatory)
 		return -ENOENT;
 
 	len = (int) json_object_array_length(jobj_mandatory);
@@ -1518,7 +1531,7 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version)
 
 static const struct requirement_flag *stored_requirement_name_by_id(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t req_id)
 {
-	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
+	json_object *jobj_mandatory, *jobj;
 	int i, len;
 	const struct requirement_flag *req;
 
@@ -1526,18 +1539,13 @@ static const struct requirement_flag *stored_requirement_name_by_id(struct crypt
 	if (!hdr)
 		return NULL;
 
-	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
-		return NULL;
-
-	if (!json_object_object_get_ex(jobj_config, "requirements", &jobj_requirements))
-		return NULL;
-
-	if (!json_object_object_get_ex(jobj_requirements, "mandatory", &jobj_mandatory))
+	jobj_mandatory = mandatory_requirements_jobj(hdr);
+	if (!jobj_mandatory)
 		return NULL;
 
 	len = (int) json_object_array_length(jobj_mandatory);
 	if (len <= 0)
-		return 0;
+		return NULL;
 
 	for (i = 0; i < len; i++) {
 		jobj = json_object_array_get_idx(jobj_mandatory, i);
@@ -1554,7 +1562,7 @@ static const struct requirement_flag *stored_requirement_name_by_id(struct crypt
  */
 int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *reqs)
 {
-	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
+	json_object *jobj_mandatory, *jobj;
 	int i, len;
 	const struct requirement_flag *req;
 
@@ -1564,13 +1572,8 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 
 	*reqs = 0;
 
-	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
-		return 0;
-
-	if (!json_object_object_get_ex(jobj_config, "requirements", &jobj_requirements))
-		return 0;
-
-	if (!json_object_object_get_ex(jobj_requirements, "mandatory", &jobj_mandatory))
+	jobj_mandatory = mandatory_requirements_jobj(hdr);
+	if (!jobj_mandatory)
 		return 0;
 
 	len = (int) json_object_array_length(jobj_mandatory);
