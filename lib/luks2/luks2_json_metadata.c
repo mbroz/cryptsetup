@@ -1659,6 +1659,94 @@ err:
 	return r;
 }
 
+static json_object *LUKS2_get_mandatory_requirements_filtered_jobj(struct luks2_hdr *hdr,
+	uint32_t filter_req_ids)
+{
+	int i, len;
+	const struct requirement_flag *req;
+	json_object *jobj_mandatory, *jobj_mandatory_filtered, *jobj;
+
+	jobj_mandatory_filtered = json_object_new_array();
+	if (!jobj_mandatory_filtered)
+		return NULL;
+
+	jobj_mandatory = mandatory_requirements_jobj(hdr);
+	if (!jobj_mandatory)
+		return jobj_mandatory_filtered;
+
+	len = (int) json_object_array_length(jobj_mandatory);
+
+	for (i = 0; i < len; i++) {
+		jobj = json_object_array_get_idx(jobj_mandatory, i);
+		req = get_requirement_by_name(json_object_get_string(jobj));
+		if (req->flag == CRYPT_REQUIREMENT_UNKNOWN || req->flag & filter_req_ids)
+			continue;
+		json_object_array_add(jobj_mandatory_filtered,
+			json_object_new_string(req->description));
+	}
+
+	return jobj_mandatory_filtered;
+}
+
+/*
+ * The function looks for specific version of requirement id.
+ * If it can't be fulfilled function fails.
+ */
+int LUKS2_config_set_requirement_version(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	uint32_t req_id,
+	uint32_t req_version,
+	bool commit)
+{
+	json_object *jobj_config, *jobj_requirements, *jobj_mandatory;
+	const struct requirement_flag *req;
+	int r = -EINVAL;
+
+	if (!hdr || req_id == CRYPT_REQUIREMENT_UNKNOWN)
+		return -EINVAL;
+
+	req = requirements_flags;
+
+	while (req->description) {
+		/* we have a match */
+		if (req->flag == req_id && req->version == req_version)
+			break;
+		req++;
+	}
+
+	if (!req->description)
+		return -EINVAL;
+
+	/*
+	 * Creates copy of mandatory requirements set without specific requirement
+	 * (no matter the version) we want to set.
+	 */
+	jobj_mandatory = LUKS2_get_mandatory_requirements_filtered_jobj(hdr, req_id);
+	if (!jobj_mandatory)
+		return -ENOMEM;
+
+	json_object_array_add(jobj_mandatory, json_object_new_string(req->description));
+
+	if (!json_object_object_get_ex(hdr->jobj, "config", &jobj_config))
+		goto err;
+
+	if (!json_object_object_get_ex(jobj_config, "requirements", &jobj_requirements)) {
+		jobj_requirements = json_object_new_object();
+		if (!jobj_requirements) {
+			r = -ENOMEM;
+			goto err;
+		}
+		json_object_object_add(jobj_config, "requirements", jobj_requirements);
+	}
+
+	json_object_object_add(jobj_requirements, "mandatory", jobj_mandatory);
+
+	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
+err:
+	json_object_put(jobj_mandatory);
+	return r;
+}
+
 /*
  * Header dump
  */

@@ -405,6 +405,7 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
  */
 int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *reqs);
 int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs, bool commit);
+int LUKS2_config_set_requirement_version(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t req_id, uint32_t req_version, bool commit);
 
 int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version);
 
