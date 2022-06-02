@@ -2313,6 +2313,7 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd,
 static int reencrypt_verify_resilience_params(struct crypt_device *cd,
 		const struct crypt_params_reencrypt *params)
 {
+	size_t len;
 	struct crypt_hash *ch;
 
 	if (!params || !params->resilience)
@@ -2325,7 +2326,11 @@ static int reencrypt_verify_resilience_params(struct crypt_device *cd,
 	else if (!strcmp(params->resilience, "datashift")) {
 		return params->data_shift ? 0 : -EINVAL;
 	} else if (!strcmp(params->resilience, "checksum")) {
-		if (!params->hash || strlen(params->hash) > (LUKS2_CHECKSUM_ALG_L - 1))
+		if (!params->hash)
+			return -EINVAL;
+
+		len = strlen(params->hash);
+		if (!len || len > (LUKS2_CHECKSUM_ALG_L - 1))
 			return -EINVAL;
 
 		if (crypt_hash_size(params->hash) <= 0)
@@ -2780,12 +2785,13 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
 
+	r = reencrypt_verify_resilience_params(cd, params);
+	if (r < 0)
+		return r;
+
 	if (params) {
 		required_size = params->device_size;
 		max_hotzone_size = params->max_hotzone_size;
-		r = reencrypt_verify_resilience_params(cd, params);
-		if (r < 0)
-			return r;
 	}
 
 	rh = crypt_get_luks2_reencrypt(cd);
