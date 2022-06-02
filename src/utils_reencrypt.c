@@ -134,9 +134,11 @@ static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_d
 	return get_active_device_name(cd, data_device, r_active_name);
 }
 
-static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *params)
+static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *params,
+	char **r_hash)
 {
 	assert(params);
+	assert(r_hash);
 
 	if (ARG_SET(OPT_ENCRYPT_ID) && params->mode != CRYPT_REENCRYPT_ENCRYPT) {
 		log_err(_("Device is not in LUKS2 encryption. Conflicting option --encrypt."));
@@ -163,7 +165,18 @@ static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *par
 	params->resilience = NULL;
 	if (ARG_SET(OPT_RESILIENCE_ID)) {
 		params->resilience = ARG_STR(OPT_RESILIENCE_ID);
-		if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "checksum"))
+
+		/* we have to copy hash string returned by API */
+		if (params->hash && !ARG_SET(OPT_RESILIENCE_HASH_ID)) {
+			/* r_hash owns the memory. Freed by caller */
+			*r_hash = strdup(params->hash);
+			if (!*r_hash)
+				return -ENOMEM;
+			params->hash = *r_hash;
+		}
+
+		/* Add default hash when switching to checksum based resilience */
+		if (!params->hash && !strcmp(params->resilience, "checksum"))
 			params->hash = "sha256";
 
 		if (ARG_SET(OPT_RESILIENCE_HASH_ID))
@@ -183,7 +196,7 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	crypt_reencrypt_info ri;
 	int r;
 	size_t passwordLen;
-	char *active_name = NULL, *password = NULL;
+	char *active_name = NULL, *hash = NULL, *password = NULL;
 	struct crypt_params_reencrypt params = {};
 
 	ri = crypt_reencrypt_status(cd, &params);
@@ -193,7 +206,7 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (ri != CRYPT_REENCRYPT_CLEAN)
 		return -EINVAL;
 
-	r = reencrypt_verify_and_update_params(&params);
+	r = reencrypt_verify_and_update_params(&params, &hash);
 	if (r < 0)
 		return r;
 
@@ -201,19 +214,21 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 		r = asprintf(&msg, _("Device %s is already in LUKS2 reencryption. "
 				     "Do you wish to resume previously initialised operation?"),
 			     crypt_get_metadata_device_name(cd) ?: data_device);
-		if (r < 0)
-			return -ENOMEM;
+		if (r < 0) {
+			r = -ENOMEM;
+			goto out;
+		}
 		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 		free(msg);
 		if (r < 0)
-			return r;
+			goto out;
 	}
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
 			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
-		return r;
+		goto out;
 
 
 	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
@@ -221,6 +236,8 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (r >= 0)
 		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password, passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_KEY_SLOT_ID), NULL, NULL, &params);
 
+out:
+	free(hash);
 	crypt_safe_free(password);
 	free(active_name);
 
