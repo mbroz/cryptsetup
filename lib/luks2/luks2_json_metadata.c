@@ -513,6 +513,7 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 				      const char *key, json_object *jobj_digests,
 				      uint64_t size)
 {
+	int r;
 	json_object *jobj_ivoffset, *jobj_sector_size, *jobj_integrity;
 	uint32_t sector_size;
 	uint64_t ivoffset;
@@ -555,7 +556,12 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 		return 1;
 	}
 
-	return !segment_has_digest(key, jobj_digests);
+	r = segment_has_digest(key, jobj_digests);
+
+	if (!r)
+		log_dbg(cd, "Crypt segment %s not assigned to key digest.", key);
+
+	return !r;
 }
 
 static bool validate_segment_intervals(struct crypt_device *cd,
