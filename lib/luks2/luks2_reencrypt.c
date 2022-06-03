@@ -1229,6 +1229,9 @@ static int reencrypt_hotzone_protect_ready(struct crypt_device *cd,
 {
 	assert(rp);
 
+	if (rp->type == REENC_PROTECTION_NOT_SET)
+		return -EINVAL;
+
 	if (rp->type != REENC_PROTECTION_CHECKSUM)
 		return 0;
 
