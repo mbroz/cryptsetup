@@ -351,7 +351,7 @@ int device_open_excl(struct crypt_device *cd, struct device *device, int flags)
 		else {
 			/* open(2) with O_EXCL (w/o O_CREAT) on regular file is undefined behaviour according to man page */
 			/* coverity[toctou] */
-			device->dev_fd_excl = open(path, O_RDONLY | O_EXCL);
+			device->dev_fd_excl = open(path, O_RDONLY | O_EXCL); /* lgtm[cpp/toctou-race-condition] */
 			if (device->dev_fd_excl < 0)
 				return errno == EBUSY ? -EBUSY : device->dev_fd_excl;
 			if (fstat(device->dev_fd_excl, &st) || !S_ISBLK(st.st_mode)) {

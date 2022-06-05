@@ -281,7 +281,7 @@ int tools_wipe_all_signatures(const char *path)
 
 	/* better than opening regular file with O_EXCL (undefined) */
 	/* coverity[toctou] */
-	fd = open(path, flags);
+	fd = open(path, flags); /* lgtm[cpp/toctou-race-condition] */
 	if (fd < 0) {
 		if (errno == EBUSY)
 			log_err(_("Device %s is in use. Cannot proceed with format operation."), path);

@@ -241,7 +241,7 @@ static void log_progress_json(const char *device, uint64_t bytes, uint64_t devic
 	if (r < 0 || (size_t)r >= sizeof(json) - 1)
 		return;
 
-	log_std(json);
+	log_std("%s", json);
 }
 
 static void tools_time_progress_json(uint64_t device_size, uint64_t bytes, struct tools_progress_params *parms)
