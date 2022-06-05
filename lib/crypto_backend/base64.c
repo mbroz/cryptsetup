@@ -270,7 +270,7 @@ err:
 	free(buf);
 
 	/* Ignore other errors in crypt_backend */
-	if (r < 0 && r != -ENOMEM)
+	if (r != -ENOMEM)
 		r = -EINVAL;
 
 	return r;
