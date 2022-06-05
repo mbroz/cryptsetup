@@ -1264,8 +1264,7 @@ int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char 
 		return r;
 
 	r_udev = r;
-	if (r_udev <= 0)
-		r = lookup_by_sysfs_uuid_field(dev_uuid + DM_BY_ID_PREFIX_LEN);
+	r = lookup_by_sysfs_uuid_field(dev_uuid + DM_BY_ID_PREFIX_LEN);
 
 	return r == -ENOENT ? r_udev : r;
 }
