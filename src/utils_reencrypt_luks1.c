@@ -123,7 +123,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 	}
 
 	/* coverity[toctou] */
-	devfd = open(device, O_RDWR | ((S_ISBLK(st.st_mode) && exclusive) ? O_EXCL : 0));
+	devfd = open(device, O_RDWR | ((S_ISBLK(st.st_mode) && exclusive) ? O_EXCL : 0)); /* lgtm[cpp/toctou-race-condition] */
 	if (devfd == -1) {
 		if (errno == EBUSY) {
 			log_err(_("Cannot exclusively open %s, device in use."),

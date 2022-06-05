@@ -229,7 +229,7 @@ static void release_lock_handle(struct crypt_device *cd, struct crypt_lock_handl
 	    !stat(res, &buf_b) && /* does path file still exist? */
 	    same_inode(buf_a, buf_b)) { /* is it same id as the one referenced by fd? */
 		/* coverity[toctou] */
-		if (unlink(res)) /* yes? unlink the file */
+		if (unlink(res)) /* yes? unlink the file. lgtm[cpp/toctou-race-condition] */
 			log_dbg(cd, "Failed to unlink resource file: %s", res);
 	}
 
@@ -240,7 +240,7 @@ static void release_lock_handle(struct crypt_device *cd, struct crypt_lock_handl
 	    !stat(res, &buf_b) && /* does path file still exist? */
 	    same_inode(buf_a, buf_b)) { /* is it same id as the one referenced by fd? */
 		/* coverity[toctou] */
-		if (unlink(res)) /* yes? unlink the file */
+		if (unlink(res)) /* yes? unlink the file. lgtm[cpp/toctou-race-condition] */
 			log_dbg(cd, "Failed to unlink resource file: %s", res);
 	}
 
