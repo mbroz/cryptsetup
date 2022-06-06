@@ -1235,14 +1235,19 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 	struct volume_key *vk_old, *vk_new;
 	size_t count, s;
 	ssize_t read, w;
-	unsigned resilience;
+	struct reenc_protection *rp;
+	int devfd, r, new_sector_size, old_sector_size, rseg;
 	uint64_t area_offset, area_length, area_length_read, crash_iv_offset,
 		 data_offset = crypt_get_data_offset(cd) << SECTOR_SHIFT;
-	int devfd, r, new_sector_size, old_sector_size, rseg = json_segments_segment_in_reencrypt(rh->jobj_segs_hot);
 	char *checksum_tmp = NULL, *data_buffer = NULL;
 	struct crypt_storage_wrapper *cw1 = NULL, *cw2 = NULL;
 
-	resilience = rh->rp.type;
+	assert(hdr);
+	assert(rh);
+	assert(vks);
+
+	rp = &rh->rp;
+	rseg = json_segments_segment_in_reencrypt(rh->jobj_segs_hot);
 
 	if (rseg < 0 || rh->length < 512)
 		return -EINVAL;
@@ -1280,7 +1285,7 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 		goto out;
 	}
 
-	switch (resilience) {
+	switch (rp->type) {
 	case  REENC_PROTECTION_CHECKSUM:
 		log_dbg(cd, "Checksums based recovery.");
 
@@ -1292,15 +1297,15 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 			goto out;
 		}
 
-		count = rh->length / rh->rp.p.csum.block_size;
-		area_length_read = count * rh->rp.p.csum.hash_size;
+		count = rh->length / rp->p.csum.block_size;
+		area_length_read = count * rp->p.csum.hash_size;
 		if (area_length_read > area_length) {
 			log_dbg(cd, "Internal error in calculated area_length.");
 			r = -EINVAL;
 			goto out;
 		}
 
-		checksum_tmp = malloc(rh->rp.p.csum.hash_size);
+		checksum_tmp = malloc(rp->p.csum.hash_size);
 		if (!checksum_tmp) {
 			r = -ENOMEM;
 			goto out;
@@ -1313,7 +1318,7 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 
 		/* read old data checksums */
 		read = read_lseek_blockwise(devfd, device_block_size(cd, crypt_metadata_device(cd)),
-					device_alignment(crypt_metadata_device(cd)), rh->rp.p.csum.checksums, area_length_read, area_offset);
+					device_alignment(crypt_metadata_device(cd)), rp->p.csum.checksums, area_length_read, area_offset);
 		if (read < 0 || (size_t)read != area_length_read) {
 			log_err(cd, _("Failed to read checksums for current hotzone."));
 			r = -EINVAL;
@@ -1328,25 +1333,25 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 		}
 
 		for (s = 0; s < count; s++) {
-			if (crypt_hash_write(rh->rp.p.csum.ch, data_buffer + (s * rh->rp.p.csum.block_size), rh->rp.p.csum.block_size)) {
+			if (crypt_hash_write(rp->p.csum.ch, data_buffer + (s * rp->p.csum.block_size), rp->p.csum.block_size)) {
 				log_dbg(cd, "Failed to write hash.");
 				r = EINVAL;
 				goto out;
 			}
-			if (crypt_hash_final(rh->rp.p.csum.ch, checksum_tmp, rh->rp.p.csum.hash_size)) {
+			if (crypt_hash_final(rp->p.csum.ch, checksum_tmp, rp->p.csum.hash_size)) {
 				log_dbg(cd, "Failed to finalize hash.");
 				r = EINVAL;
 				goto out;
 			}
-			if (!memcmp(checksum_tmp, (char *)rh->rp.p.csum.checksums + (s * rh->rp.p.csum.hash_size), rh->rp.p.csum.hash_size)) {
-				log_dbg(cd, "Sector %zu (size %zu, offset %zu) needs recovery", s, rh->rp.p.csum.block_size, s * rh->rp.p.csum.block_size);
-				if (crypt_storage_wrapper_decrypt(cw1, s * rh->rp.p.csum.block_size, data_buffer + (s * rh->rp.p.csum.block_size), rh->rp.p.csum.block_size)) {
+			if (!memcmp(checksum_tmp, (char *)rp->p.csum.checksums + (s * rp->p.csum.hash_size), rp->p.csum.hash_size)) {
+				log_dbg(cd, "Sector %zu (size %zu, offset %zu) needs recovery", s, rp->p.csum.block_size, s * rp->p.csum.block_size);
+				if (crypt_storage_wrapper_decrypt(cw1, s * rp->p.csum.block_size, data_buffer + (s * rp->p.csum.block_size), rp->p.csum.block_size)) {
 					log_err(cd, _("Failed to decrypt sector %zu."), s);
 					r = -EINVAL;
 					goto out;
 				}
-				w = crypt_storage_wrapper_encrypt_write(cw2, s * rh->rp.p.csum.block_size, data_buffer + (s * rh->rp.p.csum.block_size), rh->rp.p.csum.block_size);
-				if (w < 0 || (size_t)w != rh->rp.p.csum.block_size) {
+				w = crypt_storage_wrapper_encrypt_write(cw2, s * rp->p.csum.block_size, data_buffer + (s * rp->p.csum.block_size), rp->p.csum.block_size);
+				if (w < 0 || (size_t)w != rp->p.csum.block_size) {
 					log_err(cd, _("Failed to recover sector %zu."), s);
 					r = -EINVAL;
 					goto out;
@@ -1402,7 +1407,7 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 					reencrypt_segment_cipher_old(hdr), NULL, 0);
 		} else
 			r = crypt_storage_wrapper_init(cd, &cw1, crypt_data_device(cd),
-					data_offset + rh->offset - data_shift_value(&rh->rp), 0, 0,
+					data_offset + rh->offset - data_shift_value(rp), 0, 0,
 					reencrypt_segment_cipher_old(hdr), NULL, 0);
 		if (r) {
 			log_err(cd, _("Failed to initialize old segment storage wrapper."));
