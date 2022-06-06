@@ -3183,6 +3183,12 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		bool online)
 {
 	int r;
+	struct reenc_protection *rp;
+
+	assert(hdr);
+	assert(rh);
+
+	rp = &rh->rp;
 
 	/* in memory only */
 	r = reencrypt_make_segments(cd, hdr, rh, device_size);
@@ -3198,7 +3204,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	log_dbg(cd, "Reencrypting chunk starting at offset: %" PRIu64 ", size :%" PRIu64 ".", rh->offset, rh->length);
 	log_dbg(cd, "data_offset: %" PRIu64, crypt_get_data_offset(cd) << SECTOR_SHIFT);
 
-	if (!rh->offset && rh->mode == CRYPT_REENCRYPT_ENCRYPT && rh->rp.type == REENC_PROTECTION_DATASHIFT &&
+	if (!rh->offset && rh->mode == CRYPT_REENCRYPT_ENCRYPT && rp->type == REENC_PROTECTION_DATASHIFT &&
 	    rh->jobj_segment_moved) {
 		crypt_storage_wrapper_destroy(rh->cw1);
 		log_dbg(cd, "Reinitializing old segment storage wrapper for moved segment.");
@@ -3230,7 +3236,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	}
 
 	/* metadata commit point */
-	r = reencrypt_hotzone_protect_final(cd, hdr, rh->reenc_keyslot, &rh->rp, rh->reenc_buffer, rh->read);
+	r = reencrypt_hotzone_protect_final(cd, hdr, rh->reenc_keyslot, rp, rh->reenc_buffer, rh->read);
 	if (r < 0) {
 		/* severity normal */
 		log_err(cd, _("Failed to write reencryption resilience metadata."));
@@ -3249,13 +3255,13 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		return REENC_FATAL;
 	}
 
-	if (rh->rp.type != REENC_PROTECTION_NONE && crypt_storage_wrapper_datasync(rh->cw2)) {
+	if (rp->type != REENC_PROTECTION_NONE && crypt_storage_wrapper_datasync(rh->cw2)) {
 		log_err(cd, _("Failed to sync data."));
 		return REENC_FATAL;
 	}
 
 	/* metadata commit safe point */
-	r = reencrypt_assign_segments(cd, hdr, rh, 0, rh->rp.type != REENC_PROTECTION_NONE);
+	r = reencrypt_assign_segments(cd, hdr, rh, 0, rp->type != REENC_PROTECTION_NONE);
 	if (r) {
 		/* severity fatal */
 		log_err(cd, _("Failed to update metadata after current reencryption hotzone completed."));
