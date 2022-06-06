@@ -3189,13 +3189,6 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		return REENC_ERR;
 	}
 
-	if (online) {
-		r = reencrypt_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name, rh->vks, rh->device_size, rh->flags);
-		/* Teardown overlay devices with dm-error. None bio shall pass! */
-		if (r != REENC_OK)
-			return r;
-	}
-
 	log_dbg(cd, "Reencrypting chunk starting at offset: %" PRIu64 ", size :%" PRIu64 ".", rh->offset, rh->length);
 	log_dbg(cd, "data_offset: %" PRIu64, crypt_get_data_offset(cd) << SECTOR_SHIFT);
 
@@ -3214,6 +3207,13 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 			log_err(cd, _("Failed to initialize old segment storage wrapper."));
 			return REENC_ROLLBACK;
 		}
+	}
+
+	if (online) {
+		r = reencrypt_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name, rh->vks, rh->device_size, rh->flags);
+		/* Teardown overlay devices with dm-error. None bio shall pass! */
+		if (r != REENC_OK)
+			return r;
 	}
 
 	rh->read = crypt_storage_wrapper_read(rh->cw1, rh->offset, rh->reenc_buffer, rh->length);
