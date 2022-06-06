@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <assert.h>
+
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
 
@@ -2495,35 +2497,39 @@ out:
 }
 
 static int reencrypt_hotzone_protect_final(struct crypt_device *cd,
-	struct luks2_hdr *hdr, struct luks2_reencrypt *rh,
+	struct luks2_hdr *hdr, int reencrypt_keyslot,
+	const struct reenc_protection *rp,
 	const void *buffer, size_t buffer_len)
 {
 	const void *pbuffer;
 	size_t data_offset, len;
 	int r;
 
-	if (rh->rp.type == REENC_PROTECTION_NONE)
+	assert(hdr);
+	assert(rp);
+
+	if (rp->type == REENC_PROTECTION_NONE)
 		return 0;
 
-	if (rh->rp.type == REENC_PROTECTION_CHECKSUM) {
+	if (rp->type == REENC_PROTECTION_CHECKSUM) {
 		log_dbg(cd, "Checksums hotzone resilience.");
 
-		for (data_offset = 0, len = 0; data_offset < buffer_len; data_offset += rh->rp.p.csum.block_size, len += rh->rp.p.csum.hash_size) {
-			if (crypt_hash_write(rh->rp.p.csum.ch, (const char *)buffer + data_offset, rh->rp.p.csum.block_size)) {
+		for (data_offset = 0, len = 0; data_offset < buffer_len; data_offset += rp->p.csum.block_size, len += rp->p.csum.hash_size) {
+			if (crypt_hash_write(rp->p.csum.ch, (const char *)buffer + data_offset, rp->p.csum.block_size)) {
 				log_dbg(cd, "Failed to hash sector at offset %zu.", data_offset);
 				return -EINVAL;
 			}
-			if (crypt_hash_final(rh->rp.p.csum.ch, (char *)rh->rp.p.csum.checksums + len, rh->rp.p.csum.hash_size)) {
+			if (crypt_hash_final(rp->p.csum.ch, (char *)rp->p.csum.checksums + len, rp->p.csum.hash_size)) {
 				log_dbg(cd, "Failed to finalize hash.");
 				return -EINVAL;
 			}
 		}
-		pbuffer = rh->rp.p.csum.checksums;
-	} else if (rh->rp.type == REENC_PROTECTION_JOURNAL) {
+		pbuffer = rp->p.csum.checksums;
+	} else if (rp->type == REENC_PROTECTION_JOURNAL) {
 		log_dbg(cd, "Journal hotzone resilience.");
 		len = buffer_len;
 		pbuffer = buffer;
-	} else if (rh->rp.type == REENC_PROTECTION_DATASHIFT) {
+	} else if (rp->type == REENC_PROTECTION_DATASHIFT) {
 		log_dbg(cd, "Data shift hotzone resilience.");
 		return LUKS2_hdr_write(cd, hdr);
 	} else
@@ -2531,7 +2537,7 @@ static int reencrypt_hotzone_protect_final(struct crypt_device *cd,
 
 	log_dbg(cd, "Going to store %zu bytes in reencrypt keyslot.", len);
 
-	r = LUKS2_keyslot_reencrypt_store(cd, hdr, rh->reenc_keyslot, pbuffer, len);
+	r = LUKS2_keyslot_reencrypt_store(cd, hdr, reencrypt_keyslot, pbuffer, len);
 
 	return r > 0 ? 0 : r;
 }
@@ -3224,7 +3230,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	}
 
 	/* metadata commit point */
-	r = reencrypt_hotzone_protect_final(cd, hdr, rh, rh->reenc_buffer, rh->read);
+	r = reencrypt_hotzone_protect_final(cd, hdr, rh->reenc_keyslot, &rh->rp, rh->reenc_buffer, rh->read);
 	if (r < 0) {
 		/* severity normal */
 		log_err(cd, _("Failed to write reencryption resilience metadata."));
