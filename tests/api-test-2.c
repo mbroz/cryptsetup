@@ -3383,7 +3383,7 @@ static void Luks2Requirements(void)
 
 	/* crypt_persistent_flasgs_get (unrestricted) */
 	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &flags));
-	EQ_(flags, (uint32_t) CRYPT_REQUIREMENT_UNKNOWN);
+	EQ_(flags, CRYPT_REQUIREMENT_UNKNOWN);
 
 	/* crypt_activate_by_passphrase (restricted for activation only) */
 	FAIL_((r = crypt_activate_by_passphrase(cd, CDEVICE_1, 0, "aaa", 3, 0)), "Unmet requirements detected");
@@ -3820,7 +3820,7 @@ static void Luks2Flags(void)
 
 	flags = CRYPT_ACTIVATE_ALLOW_DISCARDS | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS;
 	OK_(crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, flags));
-	flags = (uint32_t)~0;
+	flags = ~UINT32_C(0);
 	OK_(crypt_persistent_flags_get(cd, CRYPT_FLAGS_ACTIVATION, &flags));
 	EQ_(flags,CRYPT_ACTIVATE_ALLOW_DISCARDS | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS);
 

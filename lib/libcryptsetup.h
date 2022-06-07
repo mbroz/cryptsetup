@@ -271,9 +271,9 @@ struct crypt_pbkdf_type {
 };
 
 /** Iteration time set by crypt_set_iteration_time(), for compatibility only. */
-#define CRYPT_PBKDF_ITER_TIME_SET   (1 << 0)
+#define CRYPT_PBKDF_ITER_TIME_SET   (UINT32_C(1) << 0)
 /** Never run benchmarks, use pre-set value or defaults. */
-#define CRYPT_PBKDF_NO_BENCHMARK    (1 << 1)
+#define CRYPT_PBKDF_NO_BENCHMARK    (UINT32_C(1) << 1)
 
 /** PBKDF2 according to RFC2898, LUKS1 legacy */
 #define CRYPT_KDF_PBKDF2   "pbkdf2"
@@ -513,13 +513,13 @@ struct crypt_params_verity {
 };
 
 /** No on-disk header (only hashes) */
-#define CRYPT_VERITY_NO_HEADER   (1 << 0)
+#define CRYPT_VERITY_NO_HEADER   (UINT32_C(1) << 0)
 /** Verity hash in userspace before activation */
-#define CRYPT_VERITY_CHECK_HASH  (1 << 1)
+#define CRYPT_VERITY_CHECK_HASH  (UINT32_C(1) << 1)
 /** Create hash - format hash device */
-#define CRYPT_VERITY_CREATE_HASH (1 << 2)
+#define CRYPT_VERITY_CREATE_HASH (UINT32_C(1) << 2)
 /** Root hash signature required for activation */
-#define CRYPT_VERITY_ROOT_HASH_SIGNATURE (1 << 3)
+#define CRYPT_VERITY_ROOT_HASH_SIGNATURE (UINT32_C(1) << 3)
 
 /**
  *
@@ -542,18 +542,18 @@ struct crypt_params_tcrypt {
 };
 
 /** Include legacy modes when scanning for header */
-#define CRYPT_TCRYPT_LEGACY_MODES    (1 << 0)
+#define CRYPT_TCRYPT_LEGACY_MODES    (UINT32_C(1) << 0)
 /** Try to load hidden header (describing hidden device) */
-#define CRYPT_TCRYPT_HIDDEN_HEADER   (1 << 1)
+#define CRYPT_TCRYPT_HIDDEN_HEADER   (UINT32_C(1) << 1)
 /** Try to load backup header */
-#define CRYPT_TCRYPT_BACKUP_HEADER   (1 << 2)
+#define CRYPT_TCRYPT_BACKUP_HEADER   (UINT32_C(1) << 2)
 /** Device contains encrypted system (with boot loader) */
-#define CRYPT_TCRYPT_SYSTEM_HEADER   (1 << 3)
+#define CRYPT_TCRYPT_SYSTEM_HEADER   (UINT32_C(1) << 3)
 /** Include VeraCrypt modes when scanning for header,
  *  all other TCRYPT flags applies as well.
  *  VeraCrypt device is reported as TCRYPT type.
  */
-#define CRYPT_TCRYPT_VERA_MODES      (1 << 4)
+#define CRYPT_TCRYPT_VERA_MODES      (UINT32_C(1) << 4)
 
 /**
  *
@@ -662,11 +662,11 @@ void crypt_set_compatibility(struct crypt_device *cd, uint32_t flags);
 uint32_t crypt_get_compatibility(struct crypt_device *cd);
 
 /** dm-integrity device uses less effective (legacy) padding (old kernels) */
-#define CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING (1 << 0)
+#define CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING (UINT32_C(1) << 0)
 /** dm-integrity device does not protect superblock with HMAC (old kernels) */
-#define CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC (1 << 1)
+#define CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC (UINT32_C(1) << 1)
 /** dm-integrity allow recalculating of volumes with HMAC keys (old kernels) */
-#define CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC (1 << 2)
+#define CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC (UINT32_C(1) << 2)
 
 /**
  * Convert to new type for already existing device.
@@ -1061,13 +1061,13 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	size_t passphrase_size);
 
 /** create keyslot with volume key not associated with current dm-crypt segment */
-#define CRYPT_VOLUME_KEY_NO_SEGMENT (1 << 0)
+#define CRYPT_VOLUME_KEY_NO_SEGMENT (UINT32_C(1) << 0)
 
 /** create keyslot with new volume key and assign it to current dm-crypt segment */
-#define CRYPT_VOLUME_KEY_SET (1 << 1)
+#define CRYPT_VOLUME_KEY_SET (UINT32_C(1) << 1)
 
 /** Assign key to first matching digest before creating new digest */
-#define CRYPT_VOLUME_KEY_DIGEST_REUSE (1 << 2)
+#define CRYPT_VOLUME_KEY_DIGEST_REUSE (UINT32_C(1) << 2)
 
 /**
  * Add key slot using provided key.
@@ -1129,59 +1129,59 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
  */
 
 /** device is read only */
-#define CRYPT_ACTIVATE_READONLY (1 << 0)
+#define CRYPT_ACTIVATE_READONLY (UINT32_C(1) << 0)
 /** only reported for device without uuid */
-#define CRYPT_ACTIVATE_NO_UUID  (1 << 1)
+#define CRYPT_ACTIVATE_NO_UUID  (UINT32_C(1) << 1)
 /** activate even if cannot grant exclusive access (DANGEROUS) */
-#define CRYPT_ACTIVATE_SHARED   (1 << 2)
+#define CRYPT_ACTIVATE_SHARED   (UINT32_C(1) << 2)
 /** enable discards aka TRIM */
-#define CRYPT_ACTIVATE_ALLOW_DISCARDS (1 << 3)
+#define CRYPT_ACTIVATE_ALLOW_DISCARDS (UINT32_C(1) << 3)
 /** skip global udev rules in activation ("private device"), input only */
-#define CRYPT_ACTIVATE_PRIVATE (1 << 4)
+#define CRYPT_ACTIVATE_PRIVATE (UINT32_C(1) << 4)
 /** corruption detected (verity), output only */
-#define CRYPT_ACTIVATE_CORRUPTED (1 << 5)
+#define CRYPT_ACTIVATE_CORRUPTED (UINT32_C(1) << 5)
 /** use same_cpu_crypt option for dm-crypt */
-#define CRYPT_ACTIVATE_SAME_CPU_CRYPT (1 << 6)
+#define CRYPT_ACTIVATE_SAME_CPU_CRYPT (UINT32_C(1) << 6)
 /** use submit_from_crypt_cpus for dm-crypt */
-#define CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS (1 << 7)
+#define CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS (UINT32_C(1) << 7)
 /** dm-verity: ignore_corruption flag - ignore corruption, log it only */
-#define CRYPT_ACTIVATE_IGNORE_CORRUPTION (1 << 8)
+#define CRYPT_ACTIVATE_IGNORE_CORRUPTION (UINT32_C(1) << 8)
 /** dm-verity: restart_on_corruption flag - restart kernel on corruption */
-#define CRYPT_ACTIVATE_RESTART_ON_CORRUPTION (1 << 9)
+#define CRYPT_ACTIVATE_RESTART_ON_CORRUPTION (UINT32_C(1) << 9)
 /** dm-verity: ignore_zero_blocks - do not verify zero blocks */
-#define CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS (1 << 10)
+#define CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS (UINT32_C(1) << 10)
 /** key loaded in kernel keyring instead directly in dm-crypt */
-#define CRYPT_ACTIVATE_KEYRING_KEY (1 << 11)
+#define CRYPT_ACTIVATE_KEYRING_KEY (UINT32_C(1) << 11)
 /** dm-integrity: direct writes, do not use journal */
-#define CRYPT_ACTIVATE_NO_JOURNAL (1 << 12)
+#define CRYPT_ACTIVATE_NO_JOURNAL (UINT32_C(1) << 12)
 /** dm-integrity: recovery mode - no journal, no integrity checks */
-#define CRYPT_ACTIVATE_RECOVERY (1 << 13)
+#define CRYPT_ACTIVATE_RECOVERY (UINT32_C(1) << 13)
 /** ignore persistently stored flags */
-#define CRYPT_ACTIVATE_IGNORE_PERSISTENT (1 << 14)
+#define CRYPT_ACTIVATE_IGNORE_PERSISTENT (UINT32_C(1) << 14)
 /** dm-verity: check_at_most_once - check data blocks only the first time */
-#define CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE (1 << 15)
+#define CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE (UINT32_C(1) << 15)
 /** allow activation check including unbound keyslots (keyslots without segments) */
-#define CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY (1 << 16)
+#define CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY (UINT32_C(1) << 16)
 /** dm-integrity: activate automatic recalculation */
-#define CRYPT_ACTIVATE_RECALCULATE (1 << 17)
+#define CRYPT_ACTIVATE_RECALCULATE (UINT32_C(1) << 17)
 /** reactivate existing and update flags, input only */
-#define CRYPT_ACTIVATE_REFRESH	(1 << 18)
+#define CRYPT_ACTIVATE_REFRESH	(UINT32_C(1) << 18)
 /** Use global lock to serialize memory hard KDF on activation (OOM workaround) */
-#define CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF (1 << 19)
+#define CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF (UINT32_C(1) << 19)
 /** dm-integrity: direct writes, use bitmap to track dirty sectors */
-#define CRYPT_ACTIVATE_NO_JOURNAL_BITMAP (1 << 20)
+#define CRYPT_ACTIVATE_NO_JOURNAL_BITMAP (UINT32_C(1) << 20)
 /** device is suspended (key should be wiped from memory), output only */
-#define CRYPT_ACTIVATE_SUSPENDED (1 << 21)
+#define CRYPT_ACTIVATE_SUSPENDED (UINT32_C(1) << 21)
 /** use IV sector counted in sector_size instead of default 512 bytes sectors */
-#define CRYPT_ACTIVATE_IV_LARGE_SECTORS (1 << 22)
+#define CRYPT_ACTIVATE_IV_LARGE_SECTORS (UINT32_C(1) << 22)
 /** dm-verity: panic_on_corruption flag - panic kernel on corruption */
-#define CRYPT_ACTIVATE_PANIC_ON_CORRUPTION (1 << 23)
+#define CRYPT_ACTIVATE_PANIC_ON_CORRUPTION (UINT32_C(1) << 23)
 /** dm-crypt: bypass internal workqueue and process read requests synchronously. */
-#define CRYPT_ACTIVATE_NO_READ_WORKQUEUE (1 << 24)
+#define CRYPT_ACTIVATE_NO_READ_WORKQUEUE (UINT32_C(1) << 24)
 /** dm-crypt: bypass internal workqueue and process write requests synchronously. */
-#define CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE (1 << 25)
+#define CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE (UINT32_C(1) << 25)
 /** dm-integrity: reset automatic recalculation */
-#define CRYPT_ACTIVATE_RECALCULATE_RESET (1 << 26)
+#define CRYPT_ACTIVATE_RECALCULATE_RESET (UINT32_C(1) << 26)
 
 /**
  * Active device runtime attributes
@@ -1230,11 +1230,11 @@ uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd,
  * LUKS2 header requirements
  */
 /** Unfinished offline reencryption */
-#define CRYPT_REQUIREMENT_OFFLINE_REENCRYPT	(1 << 0)
+#define CRYPT_REQUIREMENT_OFFLINE_REENCRYPT	(UINT32_C(1) << 0)
 /** Online reencryption in-progress */
-#define CRYPT_REQUIREMENT_ONLINE_REENCRYPT	(1 << 1)
+#define CRYPT_REQUIREMENT_ONLINE_REENCRYPT	(UINT32_C(1) << 1)
 /** unknown requirement in header (output only) */
-#define CRYPT_REQUIREMENT_UNKNOWN		(1 << 31)
+#define CRYPT_REQUIREMENT_UNKNOWN		(UINT32_C(1) << 31)
 
 /**
  * Persistent flags type
@@ -1421,11 +1421,11 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 	uint32_t flags);
 
 /** lazy deactivation - remove once last user releases it */
-#define CRYPT_DEACTIVATE_DEFERRED (1 << 0)
+#define CRYPT_DEACTIVATE_DEFERRED (UINT32_C(1) << 0)
 /** force deactivation - if the device is busy, it is replaced by error device */
-#define CRYPT_DEACTIVATE_FORCE    (1 << 1)
+#define CRYPT_DEACTIVATE_FORCE    (UINT32_C(1) << 1)
 /** if set, remove lazy deactivation */
-#define CRYPT_DEACTIVATE_DEFERRED_CANCEL (1 << 2)
+#define CRYPT_DEACTIVATE_DEFERRED_CANCEL (UINT32_C(1) << 2)
 
 /**
  * Deactivate crypt device. This function tries to remove active device-mapper
@@ -1983,7 +1983,7 @@ int crypt_keyfile_read(struct crypt_device *cd,
 	uint32_t flags);
 
 /** Read key only to the first end of line (\\n). */
-#define CRYPT_KEYFILE_STOP_EOL   (1 << 0)
+#define CRYPT_KEYFILE_STOP_EOL   (UINT32_C(1) << 0)
 /** @} */
 
 /**
@@ -2033,7 +2033,7 @@ int crypt_wipe(struct crypt_device *cd,
 );
 
 /** Use direct-io */
-#define CRYPT_WIPE_NO_DIRECT_IO (1 << 0)
+#define CRYPT_WIPE_NO_DIRECT_IO (UINT32_C(1) << 0)
 /** @} */
 
 /**
@@ -2450,15 +2450,15 @@ int crypt_activate_by_token_pin(struct crypt_device *cd,
  */
 
 /** Initialize reencryption metadata but do not run reencryption yet. (in) */
-#define CRYPT_REENCRYPT_INITIALIZE_ONLY    (1 << 0)
+#define CRYPT_REENCRYPT_INITIALIZE_ONLY    (UINT32_C(1) << 0)
 /** Move the first segment, used only with data shift. (in/out) */
-#define CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT (1 << 1)
+#define CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT (UINT32_C(1) << 1)
 /** Resume already initialized reencryption only. (in) */
-#define CRYPT_REENCRYPT_RESUME_ONLY        (1 << 2)
+#define CRYPT_REENCRYPT_RESUME_ONLY        (UINT32_C(1) << 2)
 /** Run reencryption recovery only. (in) */
-#define CRYPT_REENCRYPT_RECOVERY           (1 << 3)
+#define CRYPT_REENCRYPT_RECOVERY           (UINT32_C(1) << 3)
 /** Reencryption requires metadata protection. (in/out) */
-#define CRYPT_REENCRYPT_REPAIR_NEEDED      (1 << 4)
+#define CRYPT_REENCRYPT_REPAIR_NEEDED      (UINT32_C(1) << 4)
 
 /**
  * Reencryption direction
