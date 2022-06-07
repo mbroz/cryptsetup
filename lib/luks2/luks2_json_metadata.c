@@ -1505,7 +1505,7 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version)
 
 		/* check current library is aware of the requirement */
 		req = get_requirement_by_name(json_object_get_string(jobj));
-		if (req->flag == (uint32_t)CRYPT_REQUIREMENT_UNKNOWN)
+		if (req->flag == CRYPT_REQUIREMENT_UNKNOWN)
 			continue;
 
 		*version = req->version;
