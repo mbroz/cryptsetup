@@ -1209,21 +1209,13 @@ static int reencrypt_update_flag(struct crypt_device *cd, uint32_t version,
 	uint32_t reqs;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 
-	if (LUKS2_config_get_requirements(cd, hdr, &reqs))
-		return -EINVAL;
-
-	/* nothing to do */
-	if (enable && (reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT))
-		return -EINVAL;
-
-	/* nothing to do */
-	if (!enable && !(reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT))
-		return -EINVAL;
-
 	if (enable) {
 		log_dbg(cd, "Going to store reencryption requirement flag (version: %u).", version);
 		return LUKS2_config_set_requirement_version(cd, hdr, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, version, commit);
 	}
+
+	if (LUKS2_config_get_requirements(cd, hdr, &reqs))
+		return -EINVAL;
 
 	reqs &= ~CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
 
@@ -3076,11 +3068,7 @@ static int reencrypt_repair_by_passphrase(
 	if (r < 0)
 		goto out;
 
-	/* removes online-reencrypt flag v1 */
-	if ((r = reencrypt_update_flag(cd, 0, false, false)))
-		goto out;
-
-	/* adds online-reencrypt flag v2 and commits metadata */
+	/* replaces old online-reencrypt flag with updated version and commits metadata */
 	r = reencrypt_update_flag(cd, LUKS2_REENCRYPT_REQ_VERSION, true, true);
 out:
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
