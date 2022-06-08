@@ -657,7 +657,7 @@ static void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp)
 	}
 
 	if (rp->p.csum.checksums) {
-		memset(rp->p.csum.checksums, 0, rp->p.csum.checksums_len);
+		crypt_safe_memzero(rp->p.csum.checksums, rp->p.csum.checksums_len);
 		free(rp->p.csum.checksums);
 		rp->p.csum.checksums = NULL;
 	}
@@ -2073,7 +2073,7 @@ static int reencrypt_move_data(struct crypt_device *cd, int devfd, uint64_t data
 
 	r = 0;
 out:
-	memset(buffer, 0, buffer_len);
+	crypt_safe_memzero(buffer, buffer_len);
 	free(buffer);
 	return r;
 }
