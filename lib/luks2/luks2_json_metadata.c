@@ -1497,9 +1497,8 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version)
 	int i, len;
 	const struct requirement_flag *req;
 
-	assert(hdr && version);
-	if (!hdr || !version)
-		return -EINVAL;
+	assert(hdr);
+	assert(version);
 
 	jobj_mandatory = mandatory_requirements_jobj(hdr);
 	if (!jobj_mandatory)
@@ -1536,8 +1535,6 @@ static const struct requirement_flag *stored_requirement_name_by_id(struct crypt
 	const struct requirement_flag *req;
 
 	assert(hdr);
-	if (!hdr)
-		return NULL;
 
 	jobj_mandatory = mandatory_requirements_jobj(hdr);
 	if (!jobj_mandatory)
@@ -1567,8 +1564,7 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 	const struct requirement_flag *req;
 
 	assert(hdr);
-	if (!hdr || !reqs)
-		return -EINVAL;
+	assert(reqs);
 
 	*reqs = 0;
 
