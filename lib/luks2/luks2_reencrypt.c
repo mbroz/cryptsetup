@@ -2400,7 +2400,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (MISALIGNED(params->data_shift, sector_size >> SECTOR_SHIFT)) {
-		log_err(cd, _("Data shift is not aligned to requested encryption sector size (%" PRIu32 " bytes)."), sector_size);
+		log_err(cd, _("Data shift value is not aligned to encryption sector size (%" PRIu32 " bytes)."), sector_size);
 		return -EINVAL;
 	}
 
