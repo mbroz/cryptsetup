@@ -103,15 +103,17 @@ const char *json_segment_get_cipher(json_object *jobj_segment)
 	return json_object_get_string(jobj);
 }
 
-int json_segment_get_sector_size(json_object *jobj_segment)
+uint32_t json_segment_get_sector_size(json_object *jobj_segment)
 {
 	json_object *jobj;
+	int i;
 
 	if (!jobj_segment ||
             !json_object_object_get_ex(jobj_segment, "sector_size", &jobj))
-		return 0;
+		return SECTOR_SIZE;
 
-	return json_object_get_int(jobj);
+	i = json_object_get_int(jobj);
+	return i < 0 ? SECTOR_SIZE : i;
 }
 
 static json_object *json_segment_get_flags(json_object *jobj_segment)

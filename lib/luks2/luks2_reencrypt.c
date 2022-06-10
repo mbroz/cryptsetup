@@ -102,12 +102,12 @@ static const char *reencrypt_segment_cipher_old(struct luks2_hdr *hdr)
 	return json_segment_get_cipher(reencrypt_segment(hdr, 0));
 }
 
-static int reencrypt_get_sector_size_new(struct luks2_hdr *hdr)
+static uint32_t reencrypt_get_sector_size_new(struct luks2_hdr *hdr)
 {
 	return json_segment_get_sector_size(reencrypt_segment(hdr, 1));
 }
 
-static int reencrypt_get_sector_size_old(struct luks2_hdr *hdr)
+static uint32_t reencrypt_get_sector_size_old(struct luks2_hdr *hdr)
 {
 	return json_segment_get_sector_size(reencrypt_segment(hdr, 0));
 }
@@ -705,15 +705,14 @@ void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reencrypt *rh)
 static size_t reencrypt_get_alignment(struct crypt_device *cd,
 		struct luks2_hdr *hdr)
 {
-	int ss;
-	size_t alignment = device_block_size(cd, crypt_data_device(cd));
+	size_t ss, alignment = device_block_size(cd, crypt_data_device(cd));
 
 	ss = reencrypt_get_sector_size_old(hdr);
-	if (ss > 0 && (size_t)ss > alignment)
+	if (ss > alignment)
 		alignment = ss;
 	ss = reencrypt_get_sector_size_new(hdr);
-	if (ss > 0 && (size_t)ss > alignment)
-		alignment = (size_t)ss;
+	if (ss > alignment)
+		alignment = ss;
 
 	return alignment;
 }
@@ -2768,12 +2767,13 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		struct volume_key **vks,
 		const struct crypt_params_reencrypt *params)
 {
-	int r, old_ss, new_ss, reencrypt_slot;
+	int r, reencrypt_slot;
 	struct luks2_hdr *hdr;
 	struct crypt_lock_handle *reencrypt_lock;
 	struct luks2_reencrypt *rh;
 	const struct volume_key *vk;
 	size_t alignment;
+	uint32_t old_ss, new_ss;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
