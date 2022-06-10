@@ -19,8 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <assert.h>
+
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
+
+#define LUKS2_REENCRYPT_REQ_VERSION 2
 
 struct luks2_reencrypt {
 	/* reencryption window attributes */
@@ -646,22 +650,29 @@ static crypt_reencrypt_direction_info reencrypt_direction(struct luks2_hdr *hdr)
 
 typedef enum { REENC_OK = 0, REENC_ERR, REENC_ROLLBACK, REENC_FATAL } reenc_status_t;
 
+static void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp)
+{
+	if (!rp || rp->type != REENC_PROTECTION_CHECKSUM)
+		return;
+
+	if (rp->p.csum.ch) {
+		crypt_hash_destroy(rp->p.csum.ch);
+		rp->p.csum.ch = NULL;
+	}
+
+	if (rp->p.csum.checksums) {
+		crypt_safe_memzero(rp->p.csum.checksums, rp->p.csum.checksums_len);
+		free(rp->p.csum.checksums);
+		rp->p.csum.checksums = NULL;
+	}
+}
+
 void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reencrypt *rh)
 {
 	if (!rh)
 		return;
 
-	if (rh->rp.type == REENC_PROTECTION_CHECKSUM) {
-		if (rh->rp.p.csum.ch) {
-			crypt_hash_destroy(rh->rp.p.csum.ch);
-			rh->rp.p.csum.ch = NULL;
-		}
-		if (rh->rp.p.csum.checksums) {
-			memset(rh->rp.p.csum.checksums, 0, rh->rp.p.csum.checksums_len);
-			free(rh->rp.p.csum.checksums);
-			rh->rp.p.csum.checksums = NULL;
-		}
-	}
+	LUKS2_reencrypt_protection_erase(&rh->rp);
 
 	json_object_put(rh->jobj_segs_hot);
 	rh->jobj_segs_hot = NULL;
@@ -842,8 +853,7 @@ static int reencrypt_offset(struct luks2_hdr *hdr,
 }
 
 static uint64_t reencrypt_length(struct crypt_device *cd,
-		struct luks2_hdr *hdr,
-		struct luks2_reencrypt *rh,
+		struct reenc_protection *rp,
 		uint64_t keyslot_area_length,
 		uint64_t length_max,
 		size_t alignment)
@@ -851,12 +861,12 @@ static uint64_t reencrypt_length(struct crypt_device *cd,
 	unsigned long dummy, optimal_alignment;
 	uint64_t length, soft_mem_limit;
 
-	if (rh->rp.type == REENC_PROTECTION_NONE)
+	if (rp->type == REENC_PROTECTION_NONE)
 		length = length_max ?: LUKS2_DEFAULT_NONE_REENCRYPTION_LENGTH;
-	else if (rh->rp.type == REENC_PROTECTION_CHECKSUM)
-		length = (keyslot_area_length / rh->rp.p.csum.hash_size) * rh->rp.p.csum.block_size;
-	else if (rh->rp.type == REENC_PROTECTION_DATASHIFT)
-		return rh->rp.p.ds.data_shift;
+	else if (rp->type == REENC_PROTECTION_CHECKSUM)
+		length = (keyslot_area_length / rp->p.csum.hash_size) * rp->p.csum.block_size;
+	else if (rp->type == REENC_PROTECTION_DATASHIFT)
+		return rp->p.ds.data_shift;
 	else
 		length = keyslot_area_length;
 
@@ -942,7 +952,7 @@ static int reencrypt_context_init(struct crypt_device *cd,
 	} else
 		rh->fixed_length = false;
 
-	rh->length = reencrypt_length(cd, hdr, rh, area_length, max_hotzone_size << SECTOR_SHIFT, alignment);
+	rh->length = reencrypt_length(cd, &rh->rp, area_length, max_hotzone_size << SECTOR_SHIFT, alignment);
 	if (!rh->length) {
 		log_dbg(cd, "Invalid reencryption length.");
 		return -EINVAL;
@@ -1193,30 +1203,46 @@ static int modify_offset(uint64_t *offset, uint64_t data_shift, crypt_reencrypt_
 	return r;
 }
 
-static int reencrypt_update_flag(struct crypt_device *cd, int enable, bool commit)
+static int reencrypt_update_flag(struct crypt_device *cd, uint32_t version,
+	bool enable, bool commit)
 {
 	uint32_t reqs;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 
+	if (enable) {
+		log_dbg(cd, "Going to store reencryption requirement flag (version: %u).", version);
+		return LUKS2_config_set_requirement_version(cd, hdr, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, version, commit);
+	}
+
 	if (LUKS2_config_get_requirements(cd, hdr, &reqs))
 		return -EINVAL;
 
-	/* nothing to do */
-	if (enable && (reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT))
-		return -EINVAL;
+	reqs &= ~CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
 
-	/* nothing to do */
-	if (!enable && !(reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT))
-		return -EINVAL;
-
-	if (enable)
-		reqs |= CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
-	else
-		reqs &= ~CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
-
-	log_dbg(cd, "Going to %s reencryption requirement flag.", enable ? "store" : "wipe");
+	log_dbg(cd, "Going to wipe reencryption requirement flag.");
 
 	return LUKS2_config_set_requirements(cd, hdr, reqs, commit);
+}
+
+static int reencrypt_hotzone_protect_ready(struct crypt_device *cd,
+	struct reenc_protection *rp)
+{
+	assert(rp);
+
+	if (rp->type == REENC_PROTECTION_NOT_SET)
+		return -EINVAL;
+
+	if (rp->type != REENC_PROTECTION_CHECKSUM)
+		return 0;
+
+	if (!rp->p.csum.checksums) {
+		log_dbg(cd, "Allocating buffer for storing resilience checksums.");
+		if (posix_memalign(&rp->p.csum.checksums, device_alignment(crypt_metadata_device(cd)),
+				   rp->p.csum.checksums_len))
+			return -ENOMEM;
+	}
+
+	return 0;
 }
 
 static int reencrypt_recover_segment(struct crypt_device *cd,
@@ -1227,17 +1253,28 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 	struct volume_key *vk_old, *vk_new;
 	size_t count, s;
 	ssize_t read, w;
-	unsigned resilience;
+	struct reenc_protection *rp;
+	int devfd, r, new_sector_size, old_sector_size, rseg;
 	uint64_t area_offset, area_length, area_length_read, crash_iv_offset,
 		 data_offset = crypt_get_data_offset(cd) << SECTOR_SHIFT;
-	int devfd, r, new_sector_size, old_sector_size, rseg = json_segments_segment_in_reencrypt(rh->jobj_segs_hot);
 	char *checksum_tmp = NULL, *data_buffer = NULL;
 	struct crypt_storage_wrapper *cw1 = NULL, *cw2 = NULL;
 
-	resilience = rh->rp.type;
+	assert(hdr);
+	assert(rh);
+	assert(vks);
+
+	rp = &rh->rp;
+	rseg = json_segments_segment_in_reencrypt(rh->jobj_segs_hot);
 
 	if (rseg < 0 || rh->length < 512)
 		return -EINVAL;
+
+	r = reencrypt_hotzone_protect_ready(cd, rp);
+	if (r) {
+		log_err(cd, _("Failed to initialize hotzone protection."));
+		return -EINVAL;
+	}
 
 	vk_new = crypt_volume_key_by_id(vks, rh->digest_new);
 	if (!vk_new && rh->mode != CRYPT_REENCRYPT_DECRYPT)
@@ -1272,7 +1309,7 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 		goto out;
 	}
 
-	switch (resilience) {
+	switch (rp->type) {
 	case  REENC_PROTECTION_CHECKSUM:
 		log_dbg(cd, "Checksums based recovery.");
 
@@ -1284,15 +1321,15 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 			goto out;
 		}
 
-		count = rh->length / rh->rp.p.csum.block_size;
-		area_length_read = count * rh->rp.p.csum.hash_size;
+		count = rh->length / rp->p.csum.block_size;
+		area_length_read = count * rp->p.csum.hash_size;
 		if (area_length_read > area_length) {
 			log_dbg(cd, "Internal error in calculated area_length.");
 			r = -EINVAL;
 			goto out;
 		}
 
-		checksum_tmp = malloc(rh->rp.p.csum.hash_size);
+		checksum_tmp = malloc(rp->p.csum.hash_size);
 		if (!checksum_tmp) {
 			r = -ENOMEM;
 			goto out;
@@ -1305,7 +1342,7 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 
 		/* read old data checksums */
 		read = read_lseek_blockwise(devfd, device_block_size(cd, crypt_metadata_device(cd)),
-					device_alignment(crypt_metadata_device(cd)), rh->rp.p.csum.checksums, area_length_read, area_offset);
+					device_alignment(crypt_metadata_device(cd)), rp->p.csum.checksums, area_length_read, area_offset);
 		if (read < 0 || (size_t)read != area_length_read) {
 			log_err(cd, _("Failed to read checksums for current hotzone."));
 			r = -EINVAL;
@@ -1320,25 +1357,25 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 		}
 
 		for (s = 0; s < count; s++) {
-			if (crypt_hash_write(rh->rp.p.csum.ch, data_buffer + (s * rh->rp.p.csum.block_size), rh->rp.p.csum.block_size)) {
+			if (crypt_hash_write(rp->p.csum.ch, data_buffer + (s * rp->p.csum.block_size), rp->p.csum.block_size)) {
 				log_dbg(cd, "Failed to write hash.");
 				r = EINVAL;
 				goto out;
 			}
-			if (crypt_hash_final(rh->rp.p.csum.ch, checksum_tmp, rh->rp.p.csum.hash_size)) {
+			if (crypt_hash_final(rp->p.csum.ch, checksum_tmp, rp->p.csum.hash_size)) {
 				log_dbg(cd, "Failed to finalize hash.");
 				r = EINVAL;
 				goto out;
 			}
-			if (!memcmp(checksum_tmp, (char *)rh->rp.p.csum.checksums + (s * rh->rp.p.csum.hash_size), rh->rp.p.csum.hash_size)) {
-				log_dbg(cd, "Sector %zu (size %zu, offset %zu) needs recovery", s, rh->rp.p.csum.block_size, s * rh->rp.p.csum.block_size);
-				if (crypt_storage_wrapper_decrypt(cw1, s * rh->rp.p.csum.block_size, data_buffer + (s * rh->rp.p.csum.block_size), rh->rp.p.csum.block_size)) {
+			if (!memcmp(checksum_tmp, (char *)rp->p.csum.checksums + (s * rp->p.csum.hash_size), rp->p.csum.hash_size)) {
+				log_dbg(cd, "Sector %zu (size %zu, offset %zu) needs recovery", s, rp->p.csum.block_size, s * rp->p.csum.block_size);
+				if (crypt_storage_wrapper_decrypt(cw1, s * rp->p.csum.block_size, data_buffer + (s * rp->p.csum.block_size), rp->p.csum.block_size)) {
 					log_err(cd, _("Failed to decrypt sector %zu."), s);
 					r = -EINVAL;
 					goto out;
 				}
-				w = crypt_storage_wrapper_encrypt_write(cw2, s * rh->rp.p.csum.block_size, data_buffer + (s * rh->rp.p.csum.block_size), rh->rp.p.csum.block_size);
-				if (w < 0 || (size_t)w != rh->rp.p.csum.block_size) {
+				w = crypt_storage_wrapper_encrypt_write(cw2, s * rp->p.csum.block_size, data_buffer + (s * rp->p.csum.block_size), rp->p.csum.block_size);
+				if (w < 0 || (size_t)w != rp->p.csum.block_size) {
 					log_err(cd, _("Failed to recover sector %zu."), s);
 					r = -EINVAL;
 					goto out;
@@ -1394,7 +1431,7 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 					reencrypt_segment_cipher_old(hdr), NULL, 0);
 		} else
 			r = crypt_storage_wrapper_init(cd, &cw1, crypt_data_device(cd),
-					data_offset + rh->offset - data_shift_value(&rh->rp), 0, 0,
+					data_offset + rh->offset - data_shift_value(rp), 0, 0,
 					reencrypt_segment_cipher_old(hdr), NULL, 0);
 		if (r) {
 			log_err(cd, _("Failed to initialize old segment storage wrapper."));
@@ -2067,7 +2104,7 @@ static int reencrypt_move_data(struct crypt_device *cd, int devfd, uint64_t data
 
 	r = 0;
 out:
-	memset(buffer, 0, buffer_len);
+	crypt_safe_memzero(buffer, buffer_len);
 	free(buffer);
 	return r;
 }
@@ -2276,6 +2313,7 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd,
 static int reencrypt_verify_resilience_params(struct crypt_device *cd,
 		const struct crypt_params_reencrypt *params)
 {
+	size_t len;
 	struct crypt_hash *ch;
 
 	if (!params || !params->resilience)
@@ -2288,7 +2326,11 @@ static int reencrypt_verify_resilience_params(struct crypt_device *cd,
 	else if (!strcmp(params->resilience, "datashift")) {
 		return params->data_shift ? 0 : -EINVAL;
 	} else if (!strcmp(params->resilience, "checksum")) {
-		if (!params->hash || strlen(params->hash) > (LUKS2_CHECKSUM_ALG_L - 1))
+		if (!params->hash)
+			return -EINVAL;
+
+		len = strlen(params->hash);
+		if (!len || len > (LUKS2_CHECKSUM_ALG_L - 1))
 			return -EINVAL;
 
 		if (crypt_hash_size(params->hash) <= 0)
@@ -2474,7 +2516,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	}
 
 	/* This must be first and only write in LUKS2 metadata during _reencrypt_init */
-	r = reencrypt_update_flag(cd, 1, true);
+	r = reencrypt_update_flag(cd, LUKS2_REENCRYPT_REQ_VERSION, true, true);
 	if (r) {
 		log_dbg(cd, "Failed to set online-reencryption requirement.");
 		r = -EINVAL;
@@ -2489,35 +2531,39 @@ out:
 }
 
 static int reencrypt_hotzone_protect_final(struct crypt_device *cd,
-	struct luks2_hdr *hdr, struct luks2_reencrypt *rh,
+	struct luks2_hdr *hdr, int reencrypt_keyslot,
+	const struct reenc_protection *rp,
 	const void *buffer, size_t buffer_len)
 {
 	const void *pbuffer;
 	size_t data_offset, len;
 	int r;
 
-	if (rh->rp.type == REENC_PROTECTION_NONE)
+	assert(hdr);
+	assert(rp);
+
+	if (rp->type == REENC_PROTECTION_NONE)
 		return 0;
 
-	if (rh->rp.type == REENC_PROTECTION_CHECKSUM) {
+	if (rp->type == REENC_PROTECTION_CHECKSUM) {
 		log_dbg(cd, "Checksums hotzone resilience.");
 
-		for (data_offset = 0, len = 0; data_offset < buffer_len; data_offset += rh->rp.p.csum.block_size, len += rh->rp.p.csum.hash_size) {
-			if (crypt_hash_write(rh->rp.p.csum.ch, (const char *)buffer + data_offset, rh->rp.p.csum.block_size)) {
+		for (data_offset = 0, len = 0; data_offset < buffer_len; data_offset += rp->p.csum.block_size, len += rp->p.csum.hash_size) {
+			if (crypt_hash_write(rp->p.csum.ch, (const char *)buffer + data_offset, rp->p.csum.block_size)) {
 				log_dbg(cd, "Failed to hash sector at offset %zu.", data_offset);
 				return -EINVAL;
 			}
-			if (crypt_hash_final(rh->rp.p.csum.ch, (char *)rh->rp.p.csum.checksums + len, rh->rp.p.csum.hash_size)) {
+			if (crypt_hash_final(rp->p.csum.ch, (char *)rp->p.csum.checksums + len, rp->p.csum.hash_size)) {
 				log_dbg(cd, "Failed to finalize hash.");
 				return -EINVAL;
 			}
 		}
-		pbuffer = rh->rp.p.csum.checksums;
-	} else if (rh->rp.type == REENC_PROTECTION_JOURNAL) {
+		pbuffer = rp->p.csum.checksums;
+	} else if (rp->type == REENC_PROTECTION_JOURNAL) {
 		log_dbg(cd, "Journal hotzone resilience.");
 		len = buffer_len;
 		pbuffer = buffer;
-	} else if (rh->rp.type == REENC_PROTECTION_DATASHIFT) {
+	} else if (rp->type == REENC_PROTECTION_DATASHIFT) {
 		log_dbg(cd, "Data shift hotzone resilience.");
 		return LUKS2_hdr_write(cd, hdr);
 	} else
@@ -2525,7 +2571,7 @@ static int reencrypt_hotzone_protect_final(struct crypt_device *cd,
 
 	log_dbg(cd, "Going to store %zu bytes in reencrypt keyslot.", len);
 
-	r = LUKS2_keyslot_reencrypt_store(cd, hdr, rh->reenc_keyslot, pbuffer, len);
+	r = LUKS2_keyslot_reencrypt_store(cd, hdr, reencrypt_keyslot, pbuffer, len);
 
 	return r > 0 ? 0 : r;
 }
@@ -2739,12 +2785,13 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
 
+	r = reencrypt_verify_resilience_params(cd, params);
+	if (r < 0)
+		return r;
+
 	if (params) {
 		required_size = params->device_size;
 		max_hotzone_size = params->max_hotzone_size;
-		r = reencrypt_verify_resilience_params(cd, params);
-		if (r < 0)
-			return r;
 	}
 
 	rh = crypt_get_luks2_reencrypt(cd);
@@ -3024,12 +3071,8 @@ static int reencrypt_repair_by_passphrase(
 	if (r < 0)
 		goto out;
 
-	/* removes online-reencrypt flag v1 */
-	if ((r = reencrypt_update_flag(cd, 0, false)))
-		goto out;
-
-	/* adds online-reencrypt flag v2 and commits metadata */
-	r = reencrypt_update_flag(cd, 1, true);
+	/* replaces old online-reencrypt flag with updated version and commits metadata */
+	r = reencrypt_update_flag(cd, LUKS2_REENCRYPT_REQ_VERSION, true, true);
 out:
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 	crypt_free_volume_key(vks);
@@ -3171,6 +3214,12 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		bool online)
 {
 	int r;
+	struct reenc_protection *rp;
+
+	assert(hdr);
+	assert(rh);
+
+	rp = &rh->rp;
 
 	/* in memory only */
 	r = reencrypt_make_segments(cd, hdr, rh, device_size);
@@ -3183,17 +3232,10 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		return REENC_ERR;
 	}
 
-	if (online) {
-		r = reencrypt_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name, rh->vks, rh->device_size, rh->flags);
-		/* Teardown overlay devices with dm-error. None bio shall pass! */
-		if (r != REENC_OK)
-			return r;
-	}
-
 	log_dbg(cd, "Reencrypting chunk starting at offset: %" PRIu64 ", size :%" PRIu64 ".", rh->offset, rh->length);
 	log_dbg(cd, "data_offset: %" PRIu64, crypt_get_data_offset(cd) << SECTOR_SHIFT);
 
-	if (!rh->offset && rh->mode == CRYPT_REENCRYPT_ENCRYPT && rh->rp.type == REENC_PROTECTION_DATASHIFT &&
+	if (!rh->offset && rh->mode == CRYPT_REENCRYPT_ENCRYPT && rp->type == REENC_PROTECTION_DATASHIFT &&
 	    rh->jobj_segment_moved) {
 		crypt_storage_wrapper_destroy(rh->cw1);
 		log_dbg(cd, "Reinitializing old segment storage wrapper for moved segment.");
@@ -3210,6 +3252,19 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		}
 	}
 
+	r = reencrypt_hotzone_protect_ready(cd, rp);
+	if (r) {
+		log_err(cd, _("Failed to initialize hotzone protection."));
+		return REENC_ROLLBACK;
+	}
+
+	if (online) {
+		r = reencrypt_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name, rh->vks, rh->device_size, rh->flags);
+		/* Teardown overlay devices with dm-error. None bio shall pass! */
+		if (r != REENC_OK)
+			return r;
+	}
+
 	rh->read = crypt_storage_wrapper_read(rh->cw1, rh->offset, rh->reenc_buffer, rh->length);
 	if (rh->read < 0) {
 		/* severity normal */
@@ -3218,7 +3273,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	}
 
 	/* metadata commit point */
-	r = reencrypt_hotzone_protect_final(cd, hdr, rh, rh->reenc_buffer, rh->read);
+	r = reencrypt_hotzone_protect_final(cd, hdr, rh->reenc_keyslot, rp, rh->reenc_buffer, rh->read);
 	if (r < 0) {
 		/* severity normal */
 		log_err(cd, _("Failed to write reencryption resilience metadata."));
@@ -3237,13 +3292,13 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		return REENC_FATAL;
 	}
 
-	if (rh->rp.type != REENC_PROTECTION_NONE && crypt_storage_wrapper_datasync(rh->cw2)) {
+	if (rp->type != REENC_PROTECTION_NONE && crypt_storage_wrapper_datasync(rh->cw2)) {
 		log_err(cd, _("Failed to sync data."));
 		return REENC_FATAL;
 	}
 
 	/* metadata commit safe point */
-	r = reencrypt_assign_segments(cd, hdr, rh, 0, rh->rp.type != REENC_PROTECTION_NONE);
+	r = reencrypt_assign_segments(cd, hdr, rh, 0, rp->type != REENC_PROTECTION_NONE);
 	if (r) {
 		/* severity fatal */
 		log_err(cd, _("Failed to update metadata after current reencryption hotzone completed."));
@@ -3347,7 +3402,7 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 		if (reencrypt_erase_backup_segments(cd, hdr))
 			log_dbg(cd, "Failed to erase backup segments");
 
-		if (reencrypt_update_flag(cd, 0, false))
+		if (reencrypt_update_flag(cd, 0, false, false))
 			log_dbg(cd, "Failed to disable reencryption requirement flag.");
 
 		/* metadata commit point also removing reencryption flag on-disk */

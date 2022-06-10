@@ -134,14 +134,70 @@ static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_d
 	return get_active_device_name(cd, data_device, r_active_name);
 }
 
+static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *params,
+	char **r_hash)
+{
+	assert(params);
+	assert(r_hash);
+
+	if (ARG_SET(OPT_ENCRYPT_ID) && params->mode != CRYPT_REENCRYPT_ENCRYPT) {
+		log_err(_("Device is not in LUKS2 encryption. Conflicting option --encrypt."));
+		return -EINVAL;
+	}
+
+	if (ARG_SET(OPT_DECRYPT_ID) && params->mode != CRYPT_REENCRYPT_DECRYPT) {
+		log_err(_("Device is not in LUKS2 decryption. Conflicting option --decrypt."));
+		return -EINVAL;
+	}
+
+	if (ARG_SET(OPT_RESILIENCE_ID) &&
+	    !strcmp(params->resilience, "datashift") && strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+		log_err(_("Device is in reencryption using datashift resilience. Requested --resilience option cannot be applied."));
+		return -EINVAL;
+	}
+
+	if (ARG_SET(OPT_RESILIENCE_ID) &&
+	    strcmp(params->resilience, "datashift") && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
+		log_err(_("Requested --resilience option cannot be applied to current reencryption operation."));
+		return -EINVAL;
+	}
+
+	params->resilience = NULL;
+	if (ARG_SET(OPT_RESILIENCE_ID)) {
+		params->resilience = ARG_STR(OPT_RESILIENCE_ID);
+
+		/* we have to copy hash string returned by API */
+		if (params->hash && !ARG_SET(OPT_RESILIENCE_HASH_ID)) {
+			/* r_hash owns the memory. Freed by caller */
+			*r_hash = strdup(params->hash);
+			if (!*r_hash)
+				return -ENOMEM;
+			params->hash = *r_hash;
+		}
+
+		/* Add default hash when switching to checksum based resilience */
+		if (!params->hash && !strcmp(params->resilience, "checksum"))
+			params->hash = "sha256";
+
+		if (ARG_SET(OPT_RESILIENCE_HASH_ID))
+			params->hash = ARG_STR(OPT_RESILIENCE_HASH_ID);
+	}
+
+	params->max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE;
+	params->device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
+	params->flags = CRYPT_REENCRYPT_RESUME_ONLY;
+
+	return 0;
+}
+
 static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device)
 {
 	char *msg;
 	crypt_reencrypt_info ri;
 	int r;
 	size_t passwordLen;
-	char *active_name = NULL, *password = NULL;
-	struct crypt_params_reencrypt params;
+	char *active_name = NULL, *hash = NULL, *password = NULL;
+	struct crypt_params_reencrypt params = {};
 
 	ri = crypt_reencrypt_status(cd, &params);
 	if (ri == CRYPT_REENCRYPT_CRASH)
@@ -150,58 +206,29 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (ri != CRYPT_REENCRYPT_CLEAN)
 		return -EINVAL;
 
-	if (ARG_SET(OPT_ENCRYPT_ID) && params.mode != CRYPT_REENCRYPT_ENCRYPT) {
-		log_err(_("Device is not in LUKS2 encryption. Conflicting option --encrypt."));
-		return -EINVAL;
-	}
-
-	if (ARG_SET(OPT_DECRYPT_ID) && params.mode != CRYPT_REENCRYPT_DECRYPT) {
-		log_err(_("Device is not in LUKS2 decryption. Conflicting option --decrypt."));
-		return -EINVAL;
-	}
-
-	if (ARG_SET(OPT_RESILIENCE_ID) &&
-	    !strcmp(params.resilience, "datashift") && strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
-		log_err(_("Device is in reencryption using datashift resilience. Requested --resilience option cannot be applied."));
-		return -EINVAL;
-	}
-
-	if (ARG_SET(OPT_RESILIENCE_ID) &&
-	    strcmp(params.resilience, "datashift") && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
-		log_err(_("Requested --resilience option cannot be applied to current reencryption operation."));
-		return -EINVAL;
-	}
-
-	params.resilience = NULL;
-	if (ARG_SET(OPT_RESILIENCE_ID)) {
-		params.resilience = ARG_STR(OPT_RESILIENCE_ID);
-		if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "checksum"))
-			params.hash = "sha256";
-		if (ARG_SET(OPT_RESILIENCE_HASH_ID))
-			params.hash = ARG_STR(OPT_RESILIENCE_HASH_ID);
-	}
-
-	params.max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE;
-	params.device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
-	params.flags = CRYPT_REENCRYPT_RESUME_ONLY;
+	r = reencrypt_verify_and_update_params(&params, &hash);
+	if (r < 0)
+		return r;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !ARG_SET(OPT_RESUME_ONLY_ID)) {
 		r = asprintf(&msg, _("Device %s is already in LUKS2 reencryption. "
 				     "Do you wish to resume previously initialised operation?"),
 			     crypt_get_metadata_device_name(cd) ?: data_device);
-		if (r < 0)
-			return -ENOMEM;
+		if (r < 0) {
+			r = -ENOMEM;
+			goto out;
+		}
 		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 		free(msg);
 		if (r < 0)
-			return r;
+			goto out;
 	}
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
 			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
-		return r;
+		goto out;
 
 
 	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
@@ -209,6 +236,8 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (r >= 0)
 		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password, passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_KEY_SLOT_ID), NULL, NULL, &params);
 
+out:
+	free(hash);
 	crypt_safe_free(password);
 	free(active_name);
 
