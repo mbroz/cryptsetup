@@ -2310,7 +2310,8 @@ static int reencrypt_verify_and_upload_keys(struct crypt_device *cd,
 }
 
 static int reencrypt_verify_resilience_params(struct crypt_device *cd,
-		const struct crypt_params_reencrypt *params)
+		const struct crypt_params_reencrypt *params,
+		uint32_t sector_size)
 {
 	size_t len;
 	struct crypt_hash *ch;
@@ -2323,7 +2324,13 @@ static int reencrypt_verify_resilience_params(struct crypt_device *cd,
 	else if (!strcmp(params->resilience, "none"))
 		return 0;
 	else if (!strcmp(params->resilience, "datashift")) {
-		return params->data_shift ? 0 : -EINVAL;
+		if (!params->data_shift)
+			return -EINVAL;
+		if (MISALIGNED(params->data_shift, sector_size >> SECTOR_SHIFT)) {
+			log_err(cd, _("Data shift value is not aligned to encryption sector size (%" PRIu32 " bytes)."), sector_size);
+			return -EINVAL;
+		}
+		return 0;
 	} else if (!strcmp(params->resilience, "checksum")) {
 		if (!params->hash)
 			return -EINVAL;
@@ -2399,11 +2406,6 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r < 0 || (size_t)r >= sizeof(_cipher))
 		return -EINVAL;
 
-	if (MISALIGNED(params->data_shift, sector_size >> SECTOR_SHIFT)) {
-		log_err(cd, _("Data shift value is not aligned to encryption sector size (%" PRIu32 " bytes)."), sector_size);
-		return -EINVAL;
-	}
-
 	data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT;
 
 	r = device_check_access(cd, crypt_data_device(cd), DEV_OK);
@@ -2466,7 +2468,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = reencrypt_verify_resilience_params(cd, params);
+	r = reencrypt_verify_resilience_params(cd, params, sector_size);
 	if (r < 0)
 		goto out;
 
@@ -2783,9 +2785,15 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	bool dynamic;
 	uint32_t flags = 0;
 
+	assert(cd);
+
+	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+	if (!hdr)
+		return -EINVAL;
+
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
 
-	r = reencrypt_verify_resilience_params(cd, params);
+	r = reencrypt_verify_resilience_params(cd, params, LUKS2_get_sector_size(hdr));
 	if (r < 0)
 		return r;
 
@@ -2800,8 +2808,6 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		crypt_set_luks2_reencrypt(cd, NULL);
 		rh = NULL;
 	}
-
-	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 
 	r = reencrypt_lock_and_verify(cd, hdr, &reencrypt_lock);
 	if (r)
