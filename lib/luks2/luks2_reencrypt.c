@@ -2371,13 +2371,16 @@ static int reencrypt_init(struct crypt_device *cd,
 {
 	bool move_first_segment;
 	char _cipher[128];
-	uint32_t sector_size;
+	uint32_t check_sector_size, new_sector_size, old_sector_size;
 	int r, reencrypt_keyslot, devfd = -1;
 	uint64_t data_offset, dev_size = 0;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
 	};
+
+	assert(cd);
+	assert(hdr);
 
 	if (!params || !params->resilience || params->mode > CRYPT_REENCRYPT_DECRYPT)
 		return -EINVAL;
@@ -2391,13 +2394,17 @@ static int reencrypt_init(struct crypt_device *cd,
 
 	move_first_segment = (params->flags & CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT);
 
+	old_sector_size = LUKS2_get_sector_size(hdr);
+
 	/* implicit sector size 512 for decryption */
-	sector_size = params->luks2 ? params->luks2->sector_size : SECTOR_SIZE;
-	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
-	    NOTPOW2(sector_size)) {
+	new_sector_size = params->luks2 ? params->luks2->sector_size : SECTOR_SIZE;
+	if (new_sector_size < SECTOR_SIZE || new_sector_size > MAX_SECTOR_SIZE ||
+	    NOTPOW2(new_sector_size)) {
 		log_err(cd, _("Unsupported encryption sector size."));
 		return -EINVAL;
 	}
+	/* check the larger encryption sector size only */
+	check_sector_size = new_sector_size > old_sector_size ? new_sector_size : old_sector_size;
 
 	if (!cipher_mode || *cipher_mode == '\0')
 		r = snprintf(_cipher, sizeof(_cipher), "%s", cipher);
@@ -2422,8 +2429,8 @@ static int reencrypt_init(struct crypt_device *cd,
 
 	dev_size -= data_offset;
 
-	if (MISALIGNED(dev_size, sector_size)) {
-		log_err(cd, _("Data device is not aligned to requested encryption sector size (%" PRIu32 " bytes)."), sector_size);
+	if (MISALIGNED(dev_size, check_sector_size)) {
+		log_err(cd, _("Data device is not aligned to encryption sector size (%" PRIu32 " bytes)."), check_sector_size);
 		return -EINVAL;
 	}
 
@@ -2468,7 +2475,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = reencrypt_verify_resilience_params(cd, params, sector_size);
+	r = reencrypt_verify_resilience_params(cd, params, check_sector_size);
 	if (r < 0)
 		goto out;
 
@@ -2775,7 +2782,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	struct luks2_reencrypt *rh;
 	const struct volume_key *vk;
 	size_t alignment;
-	uint32_t old_ss, new_ss;
+	uint32_t old_ss, new_ss, sector_size;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
@@ -2793,7 +2800,12 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
 
-	r = reencrypt_verify_resilience_params(cd, params, LUKS2_get_sector_size(hdr));
+
+	old_ss = reencrypt_get_sector_size_old(hdr);
+	new_ss = reencrypt_get_sector_size_new(hdr);
+	sector_size = new_ss > old_ss ? new_ss : old_ss;
+
+	r = reencrypt_verify_resilience_params(cd, params, sector_size);
 	if (r < 0)
 		return r;
 
@@ -2834,9 +2846,6 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	}
 
 	minimal_size >>= SECTOR_SHIFT;
-
-	old_ss = reencrypt_get_sector_size_old(hdr);
-	new_ss = reencrypt_get_sector_size_new(hdr);
 
 	r = reencrypt_verify_keys(cd, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 	if (r == -ENOENT) {
