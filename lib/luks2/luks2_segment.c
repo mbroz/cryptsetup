@@ -109,7 +109,7 @@ int json_segment_get_sector_size(json_object *jobj_segment)
 
 	if (!jobj_segment ||
             !json_object_object_get_ex(jobj_segment, "sector_size", &jobj))
-		return -1;
+		return 0;
 
 	return json_object_get_int(jobj);
 }
