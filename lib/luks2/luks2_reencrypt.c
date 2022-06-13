@@ -2429,6 +2429,14 @@ static int reencrypt_init(struct crypt_device *cd,
 
 	data_size -= data_offset;
 
+	if (params->device_size) {
+		if ((params->device_size << SECTOR_SHIFT) > data_size) {
+			log_err(cd, _("Reduced data size is larger than real device size."));
+			return -EINVAL;
+		} else
+			data_size = params->device_size << SECTOR_SHIFT;
+	}
+
 	if (MISALIGNED(data_size, check_sector_size)) {
 		log_err(cd, _("Data device is not aligned to encryption sector size (%" PRIu32 " bytes)."), check_sector_size);
 		return -EINVAL;
