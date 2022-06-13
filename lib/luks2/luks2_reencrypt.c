@@ -2373,7 +2373,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	char _cipher[128];
 	uint32_t check_sector_size, new_sector_size, old_sector_size;
 	int r, reencrypt_keyslot, devfd = -1;
-	uint64_t data_offset, dev_size = 0;
+	uint64_t data_offset, data_size = 0;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
@@ -2423,13 +2423,13 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	r = device_size(crypt_data_device(cd), &dev_size);
+	r = device_size(crypt_data_device(cd), &data_size);
 	if (r)
 		return r;
 
-	dev_size -= data_offset;
+	data_size -= data_offset;
 
-	if (MISALIGNED(dev_size, check_sector_size)) {
+	if (MISALIGNED(data_size, check_sector_size)) {
 		log_err(cd, _("Data device is not aligned to encryption sector size (%" PRIu32 " bytes)."), check_sector_size);
 		return -EINVAL;
 	}
@@ -2446,7 +2446,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	 * encryption initialization (or mount)
 	 */
 	if (move_first_segment) {
-		if (dev_size < (params->data_shift << SECTOR_SHIFT)) {
+		if (data_size < (params->data_shift << SECTOR_SHIFT)) {
 			log_err(cd, _("Device %s is too small."), device_path(crypt_data_device(cd)));
 			return -EINVAL;
 		}
@@ -2464,7 +2464,7 @@ static int reencrypt_init(struct crypt_device *cd,
 
 	if (params->mode == CRYPT_REENCRYPT_ENCRYPT) {
 		/* in-memory only */
-		r = reencrypt_set_encrypt_segments(cd, hdr, dev_size, params->data_shift << SECTOR_SHIFT, move_first_segment, params->direction);
+		r = reencrypt_set_encrypt_segments(cd, hdr, data_size, params->data_shift << SECTOR_SHIFT, move_first_segment, params->direction);
 		if (r)
 			goto out;
 	}
