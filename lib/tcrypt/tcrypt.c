@@ -588,7 +588,6 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 				    (tcrypt_kdf[i].veracrypt_pim_mult * params->veracrypt_pim);
 		} else
 			iterations = tcrypt_kdf[i].iterations;
-
 		/* Derive header key */
 		log_dbg(cd, "TCRYPT: trying KDF: %s-%s-%d%s.",
 			tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations,
@@ -601,6 +600,8 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		if (r < 0) {
 			log_verbose(cd, _("PBKDF2 hash algorithm %s not available, skipping."),
 				      tcrypt_kdf[i].hash);
+			skipped++;
+			r = -EPERM;
 			continue;
 		}
 
@@ -609,16 +610,18 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		if (r == -ENOENT) {
 			skipped++;
 			r = -EPERM;
+			continue;
 		}
 		if (r != -EPERM)
 			break;
 	}
 
-	if ((r < 0 && r != -EPERM && skipped && skipped == i) || r == -ENOTSUP) {
+	if ((r < 0 && skipped && skipped == i) || r == -ENOTSUP) {
 		log_err(cd, _("Required kernel crypto interface not available."));
 #ifdef ENABLE_AF_ALG
 		log_err(cd, _("Ensure you have algif_skcipher kernel module loaded."));
 #endif
+		r = -ENOTSUP;
 	}
 	if (r < 0)
 		goto out;
