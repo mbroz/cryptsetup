@@ -2790,7 +2790,7 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	struct luks2_reencrypt *rh;
 	const struct volume_key *vk;
 	size_t alignment;
-	uint32_t old_ss, new_ss, sector_size;
+	uint32_t old_sector_size, new_sector_size, sector_size;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
@@ -2809,9 +2809,9 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
 
 
-	old_ss = reencrypt_get_sector_size_old(hdr);
-	new_ss = reencrypt_get_sector_size_new(hdr);
-	sector_size = new_ss > old_ss ? new_ss : old_ss;
+	old_sector_size = reencrypt_get_sector_size_old(hdr);
+	new_sector_size = reencrypt_get_sector_size_new(hdr);
+	sector_size = new_sector_size > old_sector_size ? new_sector_size : old_sector_size;
 
 	r = reencrypt_verify_resilience_params(cd, params, sector_size);
 	if (r < 0)
@@ -2918,8 +2918,8 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 		if ((minimal_size && (required_size < minimal_size)) ||
 		    (required_size > (device_size >> SECTOR_SHIFT)) ||
 		    (!dynamic && (required_size != minimal_size)) ||
-		    (old_ss > 0 && MISALIGNED(required_size, old_ss >> SECTOR_SHIFT)) ||
-		    (new_ss > 0 && MISALIGNED(required_size, new_ss >> SECTOR_SHIFT))) {
+		    (old_sector_size > 0 && MISALIGNED(required_size, old_sector_size >> SECTOR_SHIFT)) ||
+		    (new_sector_size > 0 && MISALIGNED(required_size, new_sector_size >> SECTOR_SHIFT))) {
 			log_err(cd, _("Illegal device size requested in reencryption parameters."));
 			goto err;
 		}

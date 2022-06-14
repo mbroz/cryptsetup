@@ -1365,26 +1365,26 @@ fi
 echo "[16] Offline reencryption with fixed device size."
 preparebig 68
 
-for test_ss in $TEST_SECTORS; do
-printf "sector size %4s: " $test_ss
+for test_sector_size in $TEST_SECTORS; do
+printf "sector size %4s: " $test_sector_size
 for test_res in checksum journal none; do
 	echo -n "[$test_res]"
-	reencrypt_offline_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8
-	reencrypt_offline_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8
-	reencrypt_offline_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8
+	reencrypt_offline_fixed_size $test_sector_size 2048		$HASH2 $test_res $((60*1024*2)) $HASH8
+	reencrypt_offline_fixed_size $test_sector_size $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8
+	reencrypt_offline_fixed_size $test_sector_size $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8
 	echo -n "[OK]"
 done
 echo ""
 done
 
 echo "[17] Online reencryption with fixed device size."
-for test_ss in $TEST_SECTORS; do
-printf "sector size %4s: " $test_ss
+for test_sector_size in $TEST_SECTORS; do
+printf "sector size %4s: " $test_sector_size
 for test_res in checksum journal none; do
 	echo -n "[$test_res]"
-	reencrypt_online_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8
-	reencrypt_online_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8
-	reencrypt_online_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8
+	reencrypt_online_fixed_size $test_sector_size 2048		$HASH2 $test_res $((60*1024*2)) $HASH8
+	reencrypt_online_fixed_size $test_sector_size $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8
+	reencrypt_online_fixed_size $test_sector_size $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8
 	echo -n "[OK]"
 done
 echo ""
@@ -1393,39 +1393,39 @@ done
 echo "[18] Offline reencryption with fixed device size (detached header)."
 preparebig 60
 
-for test_ss in $TEST_SECTORS; do
-printf "sector size %4s: " $test_ss
+for test_sector_size in $TEST_SECTORS; do
+printf "sector size %4s: " $test_sector_size
 for test_res in checksum journal none; do
 	echo -n "[$test_res]"
-	reencrypt_offline_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
-	reencrypt_offline_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
-	reencrypt_offline_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_offline_fixed_size $test_sector_size 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_offline_fixed_size $test_sector_size $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_offline_fixed_size $test_sector_size $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
 	echo -n "[OK]"
 done
 echo ""
 done
 
 echo "[19] Online reencryption with fixed device size (detached header)."
-for test_ss in $TEST_SECTORS; do
-printf "sector size %4s: " $test_ss
+for test_sector_size in $TEST_SECTORS; do
+printf "sector size %4s: " $test_sector_size
 for test_res in checksum journal none; do
 	echo -n "[$test_res]"
-	reencrypt_online_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
-	reencrypt_online_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
-	reencrypt_online_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_online_fixed_size $test_sector_size 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_online_fixed_size $test_sector_size $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	reencrypt_online_fixed_size $test_sector_size $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
 	echo -n "[OK]"
 done
 echo ""
 done
 
 echo "[20] Offline encryption with fixed device size (detached header)."
-for test_ss in $TEST_SECTORS; do
-printf "sector size %4s: " $test_ss
+for test_sector_size in $TEST_SECTORS; do
+printf "sector size %4s: " $test_sector_size
 for test_res in checksum journal none; do
 	echo -n "[$test_res]"
-	encrypt_offline_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
-	encrypt_offline_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
-	encrypt_offline_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	encrypt_offline_fixed_size $test_sector_size 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	encrypt_offline_fixed_size $test_sector_size $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	encrypt_offline_fixed_size $test_sector_size $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
 	echo -n "[OK]"
 done
 echo ""
@@ -1433,13 +1433,13 @@ done
 
 echo "[21] Offline decryption with fixed device size (detached header)."
 prepare_linear_dev 60
-for test_ss in $TEST_SECTORS; do
-printf "sector size %4s: " $test_ss
+for test_sector_size in $TEST_SECTORS; do
+printf "sector size %4s: " $test_sector_size
 for test_res in checksum journal none; do
 	echo -n "[$test_res]"
-	decrypt_offline_fixed_size $test_ss 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
-	decrypt_offline_fixed_size $test_ss $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
-	decrypt_offline_fixed_size $test_ss $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	decrypt_offline_fixed_size $test_sector_size 2048		$HASH2 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	decrypt_offline_fixed_size $test_sector_size $((28*1024*2))	$HASH1 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
+	decrypt_offline_fixed_size $test_sector_size $((31*1024*2))	$HASH7 $test_res $((60*1024*2)) $HASH8 $IMG_HDR
 	echo -n "[OK]"
 done
 echo ""
