@@ -1080,5 +1080,14 @@ for cipher in $CIPHERS ; do
 done
 echo
 
+prepare "[43] LUKS2 key pinning tests" wipe
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $LOOPDEV $FAST_PBKDF_OPT 2>/dev/null || fail
+PIN_DIGEST="$($CRYPTSETUP -q luksDump $LOOPDEV | sed -n '/Digest:/{N;s/Digest://;s/\s//g;p;q}')"
+echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME --test-passphrase --pin-volume-key "$PIN_DIGEST" 2>/dev/null || fail
+# easy way of mutating the last byte to something it's guaranteed not to already be
+printf -v replacement "%x" $((255 - 0x${PIN_DIGEST:(-2)}))
+echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME --test-passphrase --pin-volume-key "${PIN_DIGEST%??}" 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME --test-passphrase --pin-volume-key "${PIN_DIGEST%??}$replacement" 2>/dev/null && fail
+
 remove_mapping
 exit 0

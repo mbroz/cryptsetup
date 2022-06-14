@@ -76,6 +76,7 @@ struct crypt_device {
 		char *keyslot_cipher;
 		unsigned int keyslot_key_size;
 		struct luks2_reencrypt *rh;
+		struct digest_pin digest_pin;
 	} luks2;
 	struct { /* used in CRYPT_PLAIN */
 		struct crypt_params_plain hdr;
@@ -1120,6 +1121,7 @@ static void crypt_free_type(struct crypt_device *cd)
 		LUKS2_reencrypt_free(cd, cd->u.luks2.rh);
 		LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
 		free(cd->u.luks2.keyslot_cipher);
+		free(cd->u.luks2.digest_pin.digest);
 	} else if (isLUKS1(cd->type)) {
 		free(cd->u.luks1.cipher_spec);
 	} else if (isLOOPAES(cd->type)) {
@@ -3497,6 +3499,38 @@ int crypt_resume_by_token_pin(struct crypt_device *cd, const char *name,
 
 	crypt_free_volume_key(vk);
 	return r < 0 ? r : keyslot;
+}
+
+int crypt_pin_volume_key(struct crypt_device *cd,
+	const char *digest,
+	const size_t digest_size)
+{
+	int r;
+	char *new_digest = NULL;
+
+	if (!digest || digest_size <= 0)
+		return -EINVAL;
+
+	log_dbg(cd, "Pinning volume key.");
+
+	if ((r = onlyLUKS2(cd)))
+		return r;
+
+	new_digest = malloc(digest_size);
+	if (!new_digest)
+		return -ENOMEM;
+
+	memcpy(new_digest, digest, digest_size);
+	free(cd->u.luks2.digest_pin.digest);
+	cd->u.luks2.digest_pin.digest = new_digest;
+	cd->u.luks2.digest_pin.digest_size = digest_size;
+	return r;
+}
+
+/* internal only */
+const struct digest_pin *crypt_get_digest_pin(struct crypt_device *cd)
+{
+	return &cd->u.luks2.digest_pin;
 }
 
 /*

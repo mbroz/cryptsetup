@@ -63,6 +63,9 @@ typedef int32_t key_serial_t;
 #define NO_REQS_LUKS2_HEADER "luks2_header_requirements_free"
 #define BACKUP_FILE "csetup_backup_file"
 #define IMAGE1 "compatimage2.img"
+#define IMAGE1_DIGEST "\x87\xd2\x3d\x60\x84\x7c\x1c\xe7\xc0\x68\x81\x28\x8e\x2a\x44\x2b\xaf\x26\x08\xe9\x14\x99\x88\xfe\xdf\x53\xdd\x31\xa8\x72\x75\x19"
+#define IMAGE1_WRONG_DIGEST "\x87\xd2\x3d\x60\x84\x7c\x1c\xe7\xc0\x68\x81\x28\x8e\x2a\x44\x2b\xaf\x26\x08\xe9\x14\x99\x88\xfe\xdf\x53\xdd\x31\xa8\x72\x75\x1d"
+#define IMAGE1_DIGEST_LEN 32
 #define IMAGE_EMPTY "empty.img"
 #define IMAGE_EMPTY_SMALL "empty_small.img"
 #define IMAGE_EMPTY_SMALL_2 "empty_small2.img"
@@ -590,6 +593,16 @@ static void UseLuks2Device(void)
 	key[1] = ~key[1];
 	FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
+
+	key[1] = ~key[1];
+	OK_(crypt_pin_volume_key(cd, IMAGE1_DIGEST, IMAGE1_DIGEST_LEN));
+	OK_(crypt_volume_key_verify(cd, key, key_size));
+	OK_(crypt_pin_volume_key(cd, IMAGE1_WRONG_DIGEST, IMAGE1_DIGEST_LEN));
+	FAIL_(crypt_volume_key_verify(cd, key, key_size), "pinned digest mismatch");
+	OK_(crypt_pin_volume_key(cd, IMAGE1_DIGEST, IMAGE1_DIGEST_LEN - 1));
+	FAIL_(crypt_volume_key_verify(cd, key, key_size), "pinned digest length mismatch");
+	FAIL_(crypt_pin_volume_key(cd, NULL, IMAGE1_DIGEST_LEN), "null pinned digest");
+	FAIL_(crypt_pin_volume_key(cd, IMAGE1_DIGEST, 0), "empty pinned digest");
 
 	CRYPT_FREE(cd);
 }

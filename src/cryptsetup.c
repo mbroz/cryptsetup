@@ -26,6 +26,7 @@
 #include "cryptsetup.h"
 #include "cryptsetup_args.h"
 #include "utils_luks.h"
+#include "utils_crypt.h"
 
 static char *keyfiles[MAX_KEYFILES];
 static char *keyfile_stdin = NULL;
@@ -1428,7 +1429,8 @@ static int action_open_luks(void)
 	char *key = NULL;
 	uint32_t activate_flags = 0;
 	int r, keysize, tries;
-	char *password = NULL;
+	char *password = NULL, *pin_vk_digest = NULL;
+	ssize_t pin_vk_digest_len;
 	size_t passwordLen;
 
 	if (ARG_SET(OPT_REFRESH_ID)) {
@@ -1459,6 +1461,17 @@ static int action_open_luks(void)
 	}
 
 	set_activation_flags(&activate_flags);
+
+	if (ARG_SET(OPT_PIN_VOLUME_KEY_ID)) {
+		pin_vk_digest_len = crypt_hex_to_bytes(ARG_STR(OPT_PIN_VOLUME_KEY_ID), &pin_vk_digest, 0);
+		if (pin_vk_digest_len < 0) {
+			r = pin_vk_digest_len;
+			goto out;
+		}
+		r = crypt_pin_volume_key(cd, pin_vk_digest, pin_vk_digest_len);
+		if (r < 0)
+			goto out;
+	}
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		keysize = crypt_get_volume_key_size(cd);
@@ -1513,6 +1526,7 @@ out:
 
 	crypt_safe_free(key);
 	crypt_safe_free(password);
+	free(pin_vk_digest);
 	crypt_free(cd);
 	return r;
 }
@@ -2737,6 +2751,9 @@ static const char * verify_open(void)
 
 	if (ARG_SET(OPT_UNBOUND_ID) && !ARG_SET(OPT_TEST_PASSPHRASE_ID))
 		return _("Option --unbound cannot be used without --test-passphrase.");
+
+	if (isLUKS1(luksType(device_type)) && ARG_SET(OPT_PIN_VOLUME_KEY_ID))
+		return _("Option --pin-volume-key can be set only for LUKS2 device.");
 
 	/* "open --type tcrypt" and "tcryptDump" checks are identical */
 	return verify_tcryptdump();

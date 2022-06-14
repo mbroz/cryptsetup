@@ -295,5 +295,9 @@ exp_pass luksFormat DEV NAME --keyslot-cipher ks --keyslot-key-size 32
 # exp_fail open DEV NAME --keyslot-cipher ks --keyslot-key-size 32
 # exp_fail luksFormat --type luks1 DEV NAME --keyslot-cipher ks --keyslot-key-size 32
 
+exp_pass open --type luks DEV NAME --pin-volume-key x
+exp_pass open --type luks2 DEV NAME --pin-volume-key x
+exp_fail open --type luks1 DEV NAME --pin-volume-key x
+
 cleanup
 exit 0

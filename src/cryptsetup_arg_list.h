@@ -135,6 +135,8 @@ ARG(OPT_PERF_SUBMIT_FROM_CRYPT_CPUS, '\0', POPT_ARG_NONE, N_("Use dm-crypt submi
 
 ARG(OPT_PERSISTENT, '\0', POPT_ARG_NONE, N_("Set activation flags persistent for device"), NULL, CRYPT_ARG_BOOL, {}, OPT_PERSISTENT_ACTIONS)
 
+ARG(OPT_PIN_VOLUME_KEY, '\0', POPT_ARG_STRING, N_("Require this digest to be chosen when unlocking the volume key (LUKS2 only)"), NULL, CRYPT_ARG_STRING, {}, OPT_PIN_VOLUME_KEY_ACTIONS)
+
 ARG(OPT_PRIORITY, '\0', POPT_ARG_STRING, N_("Keyslot priority: ignore, normal, prefer"), NULL, CRYPT_ARG_STRING, {}, OPT_PRIORITY_ACTIONS)
 
 ARG(OPT_PROGRESS_JSON, '\0', POPT_ARG_NONE, N_("Print progress data in json format (suitable for machine processing)"), NULL, CRYPT_ARG_BOOL, {}, OPT_PROGRESS_JSON_ACTIONS)
