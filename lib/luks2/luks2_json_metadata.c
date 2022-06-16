@@ -376,6 +376,7 @@ static json_bool segment_has_digest(const char *segment_name, json_object *jobj_
 	return 0;
 }
 
+
 static json_bool validate_intervals(struct crypt_device *cd,
 				    int length, const struct interval *ix,
 				    uint64_t metadata_size, uint64_t keyslots_area_end)
@@ -393,6 +394,11 @@ static json_bool validate_intervals(struct crypt_device *cd,
 			return 0;
 		}
 
+		if (ix[i].offset > (UINT64_MAX - ix[i].length)) {
+			log_dbg(cd, "Interval offset+length overflow.");
+			return 0;
+		}
+
 		if ((ix[i].offset + ix[i].length) > keyslots_area_end) {
 			log_dbg(cd, "Area [%" PRIu64 ", %" PRIu64 "] overflows binary keyslots area (ends at offset: %" PRIu64 ").",
 				ix[i].offset, ix[i].offset + ix[i].length, keyslots_area_end);
@@ -402,6 +408,12 @@ static json_bool validate_intervals(struct crypt_device *cd,
 		for (j = 0; j < length; j++) {
 			if (i == j)
 				continue;
+
+			if (ix[j].offset > (UINT64_MAX - ix[j].length)) {
+				log_dbg(cd, "Interval offset+length overflow.");
+				return 0;
+			}
+
 			if ((ix[i].offset >= ix[j].offset) && (ix[i].offset < (ix[j].offset + ix[j].length))) {
 				log_dbg(cd, "Overlapping areas [%" PRIu64 ",%" PRIu64 "] and [%" PRIu64 ",%" PRIu64 "].",
 					ix[i].offset, ix[i].offset + ix[i].length,
@@ -592,6 +604,12 @@ static bool validate_segment_intervals(struct crypt_device *cd,
 		for (j = 0; j < length; j++) {
 			if (i == j)
 				continue;
+
+			if (ix[j].length != UINT64_MAX && ix[j].offset > (UINT64_MAX - ix[j].length)) {
+				log_dbg(cd, "Interval offset+length overflow.");
+				return false;
+			}
+
 			if ((ix[i].offset >= ix[j].offset) && (ix[j].length == UINT64_MAX || (ix[i].offset < (ix[j].offset + ix[j].length)))) {
 				log_dbg(cd, "Overlapping segments [%" PRIu64 ",%" PRIu64 "]%s and [%" PRIu64 ",%" PRIu64 "]%s.",
 					ix[i].offset, ix[i].offset + ix[i].length, ix[i].length == UINT64_MAX ? "(dynamic)" : "",
