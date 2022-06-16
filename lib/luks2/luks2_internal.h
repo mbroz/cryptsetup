@@ -72,7 +72,7 @@ void JSON_DBG(struct crypt_device *cd, json_object *jobj, const char *desc);
  */
 
 /* validation helper */
-json_bool validate_json_uint32(json_object *jobj);
+bool validate_json_uint32(json_object *jobj);
 json_object *json_contains(struct crypt_device *cd, json_object *jobj, const char *name,
 			   const char *section, const char *key, json_type type);
 json_object *json_contains_string(struct crypt_device *cd, json_object *jobj,
