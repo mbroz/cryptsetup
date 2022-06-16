@@ -240,6 +240,7 @@ echo "[7] Test invalid metadata object property"
 RUN luks2-invalid-tokens.img				"F" "Invalid tokens objects not rejected"
 RUN luks2-invalid-top-objects.img			"F" "Invalid top-level objects not rejected"
 RUN luks2-keyslot-invalid-area.img			"F" "Invalid keyslot area object not rejected"
+RUN luks2-keyslot-invalid-area-size.img			"F" "Invalid keyslot area size that can overflow not rejected"
 RUN luks2-keyslot-invalid-objects.img			"F" "Invalid keyslot objects not rejected"
 RUN luks2-keyslot-invalid-af.img			"F" "Invalid keyslot objects types not rejected"
 
