@@ -542,6 +542,35 @@ out:
 	return r;
 }
 
+static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, const char *active_name, const char *header_device)
+{
+	int r;
+	struct crypt_device *cd;
+
+	assert(r_cd);
+	assert(active_name);
+
+	r = crypt_init_by_name_and_header(&cd, active_name, header_device);
+	if (r)
+		return DEVICE_INVALID;
+
+	if (!isLUKS2(crypt_get_type(cd))) {
+		log_err(_("Active device %s is not LUKS2."), active_name);
+		crypt_free(cd);
+		return DEVICE_INVALID;
+	}
+
+	r = luks2_reencrypt_in_progress(cd);
+	if (r < 0) {
+		crypt_free(cd);
+		return DEVICE_INVALID;
+	}
+
+	*r_cd = cd;
+
+	return !r ? DEVICE_LUKS2 : DEVICE_LUKS2_REENCRYPT;
+}
+
 static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
 	int r;
@@ -971,35 +1000,6 @@ out:
 	}
 	free(active_name);
 	return r;
-}
-
-static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, const char *active_name, const char *header_device)
-{
-	int r;
-	struct crypt_device *cd;
-
-	assert(r_cd);
-	assert(active_name);
-
-	r = crypt_init_by_name_and_header(&cd, active_name, header_device);
-	if (r)
-		return DEVICE_INVALID;
-
-	if (!isLUKS2(crypt_get_type(cd))) {
-		log_err(_("Active device %s is not LUKS2."), active_name);
-		crypt_free(cd);
-		return DEVICE_INVALID;
-	}
-
-	r = luks2_reencrypt_in_progress(cd);
-	if (r < 0) {
-		crypt_free(cd);
-		return DEVICE_INVALID;
-	}
-
-	*r_cd = cd;
-
-	return !r ? DEVICE_LUKS2 : DEVICE_LUKS2_REENCRYPT;
 }
 
 static int reencrypt_luks2_resume(struct crypt_device *cd)
