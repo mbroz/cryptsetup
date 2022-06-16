@@ -708,15 +708,22 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 		    !(jobj_size =   json_contains_string(cd, val, key, "Segment", "size")))
 			return 1;
 
-		if (!numbered(cd, "offset", json_object_get_string(jobj_offset)) ||
-		    !json_str_to_uint64(jobj_offset, &offset))
+		if (!numbered(cd, "offset", json_object_get_string(jobj_offset)))
 			return 1;
+
+		if (!json_str_to_uint64(jobj_offset, &offset)) {
+			log_dbg(cd, "Illegal segment offset value.");
+			return 1;
+		}
 
 		/* size "dynamic" means whole device starting at 'offset' */
 		if (strcmp(json_object_get_string(jobj_size), "dynamic")) {
-			if (!numbered(cd, "size", json_object_get_string(jobj_size)) ||
-			    !json_str_to_uint64(jobj_size, &size) || !size)
+			if (!numbered(cd, "size", json_object_get_string(jobj_size)))
 				return 1;
+			if (!json_str_to_uint64(jobj_size, &size) || !size) {
+				log_dbg(cd, "Illegal segment size value.");
+				return 1;
+			}
 		} else
 			size = 0;
 
@@ -871,6 +878,7 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 		/* rule out values > UINT64_MAX */
 		if (!json_str_to_uint64(jobj_offset, &intervals[i].offset) ||
 		    !json_str_to_uint64(jobj_length, &intervals[i].length)) {
+			log_dbg(cd, "Illegal keyslot area values.");
 			free(intervals);
 			return 1;
 		}
@@ -933,17 +941,23 @@ static int hdr_validate_config(struct crypt_device *cd, json_object *hdr_jobj)
 	if (!(jobj_config = json_contains(cd, hdr_jobj, "", "JSON area", "config", json_type_object)))
 		return 1;
 
-	if (!(jobj = json_contains_string(cd, jobj_config, "section", "Config", "json_size")) ||
-	    !json_str_to_uint64(jobj, &metadata_size))
+	if (!(jobj = json_contains_string(cd, jobj_config, "section", "Config", "json_size")))
 		return 1;
+	if (!json_str_to_uint64(jobj, &metadata_size)) {
+		log_dbg(cd, "Illegal config json_size value.");
+		return 1;
+	}
 
 	/* single metadata instance is assembled from json area size plus
 	 * binary header size */
 	metadata_size += LUKS2_HDR_BIN_LEN;
 
-	if (!(jobj = json_contains_string(cd, jobj_config, "section", "Config", "keyslots_size")) ||
-	    !json_str_to_uint64(jobj, &keyslots_size))
+	if (!(jobj = json_contains_string(cd, jobj_config, "section", "Config", "keyslots_size")))
 		return 1;
+	if(!json_str_to_uint64(jobj, &keyslots_size)) {
+		log_dbg(cd, "Illegal config keyslot_size value.");
+		return 1;
+	}
 
 	if (LUKS2_check_metadata_area_size(metadata_size)) {
 		log_dbg(cd, "Unsupported LUKS2 header size (%" PRIu64 ").", metadata_size);
