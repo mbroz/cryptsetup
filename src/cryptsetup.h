@@ -118,7 +118,7 @@ typedef enum {
 } tools_probe_filter_info;
 
 int tools_detect_signatures(const char *device, tools_probe_filter_info filter, size_t *count, bool batch_mode);
-int tools_wipe_all_signatures(const char *path);
+int tools_wipe_all_signatures(const char *path, bool exclusive, bool only_luks);
 int tools_superblock_block_size(const char *device, char *sb_name,
 				size_t sb_name_len, unsigned *r_block_size);
 bool tools_blkid_supported(void);

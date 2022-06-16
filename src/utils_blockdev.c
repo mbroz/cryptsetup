@@ -258,7 +258,7 @@ out:
 	return r;
 }
 
-int tools_wipe_all_signatures(const char *path)
+int tools_wipe_all_signatures(const char *path, bool exclusive, bool only_luks)
 {
 	int fd, flags, r;
 	blk_probe_status pr;
@@ -276,7 +276,7 @@ int tools_wipe_all_signatures(const char *path)
 	}
 
 	flags = O_RDWR;
-	if (S_ISBLK(st.st_mode))
+	if (S_ISBLK(st.st_mode) && exclusive)
 		flags |= O_EXCL;
 
 	/* better than opening regular file with O_EXCL (undefined) */
@@ -284,7 +284,7 @@ int tools_wipe_all_signatures(const char *path)
 	fd = open(path, flags); /* lgtm[cpp/toctou-race-condition] */
 	if (fd < 0) {
 		if (errno == EBUSY)
-			log_err(_("Device %s is in use. Cannot proceed with format operation."), path);
+			log_err(_("Cannot exclusively open %s, device in use."), path);
 		else
 			log_err(_("Failed to open file %s in read/write mode."), path);
 		return -EINVAL;
@@ -297,6 +297,10 @@ int tools_wipe_all_signatures(const char *path)
 	}
 
 	blk_set_chains_for_wipes(h);
+	if (only_luks && (r = blk_superblocks_only_luks(h))) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	while ((pr = blk_probe(h)) < PRB_EMPTY) {
 		if (blk_is_partition(h))

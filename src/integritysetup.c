@@ -195,7 +195,7 @@ static int action_format(void)
 		goto out;
 
 	/* Signature candidates found */
-	if (signatures && ((r =	tools_wipe_all_signatures(action_argv[0])) < 0))
+	if (signatures && ((r = tools_wipe_all_signatures(action_argv[0], true, false)) < 0))
 		goto out;
 
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
