@@ -2459,20 +2459,25 @@ static int reencrypt_init(struct crypt_device *cd,
 			return -EINVAL;
 		}
 		if (params->data_shift < LUKS2_get_data_offset(hdr)) {
-			log_err(cd, _("Data shift (%" PRIu64 " sectors) is less than future data offset (%" PRIu64 " sectors)."), params->data_shift, LUKS2_get_data_offset(hdr));
+			log_err(cd, _("Data shift (%" PRIu64 " sectors) is less than future data offset (%" PRIu64 " sectors)."),
+				params->data_shift, LUKS2_get_data_offset(hdr));
 			return -EINVAL;
 		}
 		devfd = device_open_excl(cd, crypt_data_device(cd), O_RDWR);
 		if (devfd < 0) {
 			if (devfd == -EBUSY)
-				log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."), device_path(crypt_data_device(cd)));
+				log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."),
+					device_path(crypt_data_device(cd)));
 			return -EINVAL;
 		}
 	}
 
 	if (params->mode == CRYPT_REENCRYPT_ENCRYPT) {
 		/* in-memory only */
-		r = reencrypt_set_encrypt_segments(cd, hdr, data_size, params->data_shift << SECTOR_SHIFT, move_first_segment, params->direction);
+		r = reencrypt_set_encrypt_segments(cd, hdr, data_size,
+						   params->data_shift << SECTOR_SHIFT,
+						   move_first_segment,
+						   params->direction);
 		if (r)
 			goto out;
 	}

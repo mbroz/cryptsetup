@@ -59,7 +59,8 @@ static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 		return -EINVAL;
 
 	if (crypt_is_cipher_null(cipher)) {
-		log_dbg("Keyslot %d uses cipher_null. Replacing with default encryption in new keyslot.", keyslot);
+		log_dbg("Keyslot %d uses cipher_null. "
+			"Replacing with default encryption in new keyslot.", keyslot);
 		cipher = DEFAULT_LUKS2_KEYSLOT_CIPHER;
 		key_size = DEFAULT_LUKS2_KEYSLOT_KEYBITS / 8;
 	}
@@ -68,7 +69,8 @@ static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 		return -EINVAL;
 
 	/* if requested any of those just reinitialize context pbkdf */
-	if (set_pbkdf || ARG_SET(OPT_HASH_ID) || ARG_SET(OPT_PBKDF_FORCE_ITERATIONS_ID) || ARG_SET(OPT_ITER_TIME_ID))
+	if (set_pbkdf || ARG_SET(OPT_HASH_ID) || ARG_SET(OPT_PBKDF_FORCE_ITERATIONS_ID) ||
+	    ARG_SET(OPT_ITER_TIME_ID))
 		return set_pbkdf_params(cd, CRYPT_LUKS2);
 
 	if (crypt_keyslot_get_pbkdf(cd, keyslot, &pbkdf))
@@ -79,7 +81,9 @@ static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 
-static int get_active_device_name(struct crypt_device *cd, const char *data_device, char **r_active_name)
+static int get_active_device_name(struct crypt_device *cd,
+	const char *data_device,
+	char **r_active_name)
 {
 	char *msg;
 	int r;
@@ -95,7 +99,8 @@ static int get_active_device_name(struct crypt_device *cd, const char *data_devi
 			return -EINVAL;
 		}
 		if (!ARG_SET(OPT_BATCH_MODE_ID))
-			log_std(_("Auto-detected active dm device '%s' for data device %s.\n"), *r_active_name, data_device);
+			log_std(_("Auto-detected active dm device '%s' for data device %s.\n"),
+				*r_active_name, data_device);
 	} else if (r < 0) {
 		if (r != -ENOTBLK) {
 			log_err(_("Failed to auto-detect device %s holders."), data_device);
@@ -123,7 +128,9 @@ static int get_active_device_name(struct crypt_device *cd, const char *data_devi
 	return r;
 }
 
-static int reencrypt_get_active_name(struct crypt_device *cd, const char *data_device, char **r_active_name)
+static int reencrypt_get_active_name(struct crypt_device *cd,
+	const char *data_device,
+	char **r_active_name)
 {
 	assert(cd);
 	assert(r_active_name);
@@ -225,8 +232,9 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	}
 
 	r = tools_get_key(NULL, &password, &passwordLen,
-			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
+			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
+			ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
+			verify_passphrase(0), 0, cd);
 	if (r < 0)
 		goto out;
 
@@ -234,7 +242,9 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
 		r = reencrypt_get_active_name(cd, data_device, &active_name);
 	if (r >= 0)
-		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password, passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_KEY_SLOT_ID), NULL, NULL, &params);
+		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password,
+				passwordLen, ARG_INT32(OPT_KEY_SLOT_ID),
+				ARG_INT32(OPT_KEY_SLOT_ID), NULL, NULL, &params);
 
 out:
 	free(hash);
@@ -270,7 +280,9 @@ static int luks2_reencrypt_in_progress(struct crypt_device *cd)
  *   DEVICE_LUKS2_REENCRYPT
  *   DEVICE_LUKS1
  */
-static enum device_status_info load_luks(struct crypt_device **r_cd, const char *header_device, const char *data_device)
+static enum device_status_info load_luks(struct crypt_device **r_cd,
+	const char *header_device,
+	const char *data_device)
 {
 	int r;
 	struct crypt_device *cd;
