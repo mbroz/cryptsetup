@@ -309,7 +309,7 @@ int tools_wipe_all_signatures(const char *path, bool exclusive, bool only_luks)
 		if (blk_is_superblock(h))
 			log_verbose(_("Existing '%s' superblock signature on device %s will be wiped."),
 				    blk_get_superblock_type(h), path);
-		if (blk_do_wipe(h)) {
+		if (blk_do_wipe(h) || fsync(fd)) {
 			log_err(_("Failed to wipe device signature."));
 			r = -EINVAL;
 			goto out;
