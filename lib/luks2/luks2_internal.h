@@ -75,6 +75,8 @@ void JSON_DBG(struct crypt_device *cd, json_object *jobj, const char *desc);
 json_bool validate_json_uint32(json_object *jobj);
 json_object *json_contains(struct crypt_device *cd, json_object *jobj, const char *name,
 			   const char *section, const char *key, json_type type);
+json_object *json_contains_string(struct crypt_device *cd, json_object *jobj,
+				  const char *name, const char *section, const char *key);
 
 int LUKS2_hdr_validate(struct crypt_device *cd, json_object *hdr_jobj, uint64_t json_size);
 int LUKS2_check_json_size(struct crypt_device *cd, const struct luks2_hdr *hdr);

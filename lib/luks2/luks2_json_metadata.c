@@ -292,6 +292,20 @@ json_object *json_contains(struct crypt_device *cd, json_object *jobj, const cha
 	return sobj;
 }
 
+json_object *json_contains_string(struct crypt_device *cd, json_object *jobj,
+				  const char *name, const char *section, const char *key)
+{
+	json_object *sobj = json_contains(cd, jobj, name, section, key, json_type_string);
+
+	if (!sobj)
+		return NULL;
+
+	if (strlen(json_object_get_string(sobj)) < 1)
+		return NULL;
+
+	return sobj;
+}
+
 json_bool validate_json_uint32(json_object *jobj)
 {
 	int64_t tmp;
@@ -406,7 +420,7 @@ static int LUKS2_keyslot_validate(struct crypt_device *cd, json_object *hdr_keys
 {
 	json_object *jobj_key_size;
 
-	if (!json_contains(cd, hdr_keyslot, key, "Keyslot", "type", json_type_string))
+	if (!json_contains_string(cd, hdr_keyslot, key, "Keyslot", "type"))
 		return 1;
 	if (!(jobj_key_size = json_contains(cd, hdr_keyslot, key, "Keyslot", "key_size", json_type_int)))
 		return 1;
@@ -430,7 +444,7 @@ int LUKS2_token_validate(struct crypt_device *cd,
 	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
 		return 1;
 
-	if (!json_contains(cd, jobj_token, key, "Token", "type", json_type_string))
+	if (!json_contains_string(cd, jobj_token, key, "Token", "type"))
 		return 1;
 
 	jarr = json_contains(cd, jobj_token, key, "Token", "keyslots", json_type_array);
@@ -518,17 +532,17 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 	uint32_t sector_size;
 	uint64_t ivoffset;
 
-	if (!(jobj_ivoffset = json_contains(cd, jobj, key, "Segment", "iv_tweak", json_type_string)) ||
-	    !json_contains(cd, jobj, key, "Segment", "encryption", json_type_string) ||
+	if (!(jobj_ivoffset = json_contains_string(cd, jobj, key, "Segment", "iv_tweak")) ||
+	    !json_contains_string(cd, jobj, key, "Segment", "encryption") ||
 	    !(jobj_sector_size = json_contains(cd, jobj, key, "Segment", "sector_size", json_type_int)))
 		return 1;
 
 	/* integrity */
 	if (json_object_object_get_ex(jobj, "integrity", &jobj_integrity)) {
 		if (!json_contains(cd, jobj, key, "Segment", "integrity", json_type_object) ||
-		    !json_contains(cd, jobj_integrity, key, "Segment integrity", "type", json_type_string) ||
-		    !json_contains(cd, jobj_integrity, key, "Segment integrity", "journal_encryption", json_type_string) ||
-		    !json_contains(cd, jobj_integrity, key, "Segment integrity", "journal_integrity", json_type_string))
+		    !json_contains_string(cd, jobj_integrity, key, "Segment integrity", "type") ||
+		    !json_contains_string(cd, jobj_integrity, key, "Segment integrity", "journal_encryption") ||
+		    !json_contains_string(cd, jobj_integrity, key, "Segment integrity", "journal_integrity"))
 			return 1;
 	}
 
@@ -689,9 +703,9 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 			return 1;
 
 		/* those fields are mandatory for all segment types */
-		if (!(jobj_type =   json_contains(cd, val, key, "Segment", "type",   json_type_string)) ||
-		    !(jobj_offset = json_contains(cd, val, key, "Segment", "offset", json_type_string)) ||
-		    !(jobj_size =   json_contains(cd, val, key, "Segment", "size",   json_type_string)))
+		if (!(jobj_type =   json_contains_string(cd, val, key, "Segment", "type")) ||
+		    !(jobj_offset = json_contains_string(cd, val, key, "Segment", "offset")) ||
+		    !(jobj_size =   json_contains_string(cd, val, key, "Segment", "size")))
 			return 1;
 
 		if (!numbered(cd, "offset", json_object_get_string(jobj_offset)) ||
@@ -845,9 +859,9 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 	json_object_object_foreach(jobj_keyslots, key, val) {
 
 		if (!(jobj_area = json_contains(cd, val, key, "Keyslot", "area", json_type_object)) ||
-		    !json_contains(cd, jobj_area, key, "Keyslot area", "type", json_type_string) ||
-		    !(jobj_offset = json_contains(cd, jobj_area, key, "Keyslot", "offset", json_type_string)) ||
-		    !(jobj_length = json_contains(cd, jobj_area, key, "Keyslot", "size", json_type_string)) ||
+		    !json_contains_string(cd, jobj_area, key, "Keyslot area", "type") ||
+		    !(jobj_offset = json_contains_string(cd, jobj_area, key, "Keyslot", "offset")) ||
+		    !(jobj_length = json_contains_string(cd, jobj_area, key, "Keyslot", "size")) ||
 		    !numbered(cd, "offset", json_object_get_string(jobj_offset)) ||
 		    !numbered(cd, "size", json_object_get_string(jobj_length))) {
 			free(intervals);
@@ -895,7 +909,7 @@ static int hdr_validate_digests(struct crypt_device *cd, json_object *hdr_jobj)
 		if (!numbered(cd, "Digest", key))
 			return 1;
 
-		if (!json_contains(cd, val, key, "Digest", "type", json_type_string) ||
+		if (!json_contains_string(cd, val, key, "Digest", "type") ||
 		    !(jarr_keys = json_contains(cd, val, key, "Digest", "keyslots", json_type_array)) ||
 		    !(jarr_segs = json_contains(cd, val, key, "Digest", "segments", json_type_array)))
 			return 1;
@@ -919,7 +933,7 @@ static int hdr_validate_config(struct crypt_device *cd, json_object *hdr_jobj)
 	if (!(jobj_config = json_contains(cd, hdr_jobj, "", "JSON area", "config", json_type_object)))
 		return 1;
 
-	if (!(jobj = json_contains(cd, jobj_config, "section", "Config", "json_size", json_type_string)) ||
+	if (!(jobj = json_contains_string(cd, jobj_config, "section", "Config", "json_size")) ||
 	    !json_str_to_uint64(jobj, &metadata_size))
 		return 1;
 
@@ -927,7 +941,7 @@ static int hdr_validate_config(struct crypt_device *cd, json_object *hdr_jobj)
 	 * binary header size */
 	metadata_size += LUKS2_HDR_BIN_LEN;
 
-	if (!(jobj = json_contains(cd, jobj_config, "section", "Config", "keyslots_size", json_type_string)) ||
+	if (!(jobj = json_contains_string(cd, jobj_config, "section", "Config", "keyslots_size")) ||
 	    !json_str_to_uint64(jobj, &keyslots_size))
 		return 1;
 

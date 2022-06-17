@@ -680,49 +680,49 @@ static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 
 	count = json_object_object_length(jobj_kdf);
 
-	jobj1 = json_contains(cd, jobj_kdf, "", "kdf section", "type", json_type_string);
+	jobj1 = json_contains_string(cd, jobj_kdf, "", "kdf section", "type");
 	if (!jobj1)
 		return -EINVAL;
 	type = json_object_get_string(jobj1);
 
 	if (!strcmp(type, CRYPT_KDF_PBKDF2)) {
 		if (count != 4 || /* type, salt, hash, iterations only */
-		    !json_contains(cd, jobj_kdf, "kdf type", type, "hash", json_type_string) ||
+		    !json_contains_string(cd, jobj_kdf, "kdf type", type, "hash") ||
 		    !json_contains(cd, jobj_kdf, "kdf type", type, "iterations", json_type_int) ||
-		    !json_contains(cd, jobj_kdf, "kdf type", type, "salt", json_type_string))
+		    !json_contains_string(cd, jobj_kdf, "kdf type", type, "salt"))
 			return -EINVAL;
 	} else if (!strcmp(type, CRYPT_KDF_ARGON2I) || !strcmp(type, CRYPT_KDF_ARGON2ID)) {
 		if (count != 5 || /* type, salt, time, memory, cpus only */
 		    !json_contains(cd, jobj_kdf, "kdf type", type, "time", json_type_int) ||
 		    !json_contains(cd, jobj_kdf, "kdf type", type, "memory", json_type_int) ||
 		    !json_contains(cd, jobj_kdf, "kdf type", type, "cpus", json_type_int) ||
-		    !json_contains(cd, jobj_kdf, "kdf type", type, "salt", json_type_string))
+		    !json_contains_string(cd, jobj_kdf, "kdf type", type, "salt"))
 			return -EINVAL;
 	}
 
-	jobj1 = json_contains(cd, jobj_af, "", "af section", "type", json_type_string);
+	jobj1 = json_contains_string(cd, jobj_af, "", "af section", "type");
 	if (!jobj1)
 		return -EINVAL;
 	type = json_object_get_string(jobj1);
 
 	if (!strcmp(type, "luks1")) {
-		if (!json_contains(cd, jobj_af, "", "luks1 af", "hash", json_type_string) ||
+		if (!json_contains_string(cd, jobj_af, "", "luks1 af", "hash") ||
 		    !json_contains(cd, jobj_af, "", "luks1 af", "stripes", json_type_int))
 			return -EINVAL;
 	} else
 		return -EINVAL;
 
 	// FIXME check numbered
-	jobj1 = json_contains(cd, jobj_area, "", "area section", "type", json_type_string);
+	jobj1 = json_contains_string(cd, jobj_area, "", "area section", "type");
 	if (!jobj1)
 		return -EINVAL;
 	type = json_object_get_string(jobj1);
 
 	if (!strcmp(type, "raw")) {
-		if (!json_contains(cd, jobj_area, "area", "raw type", "encryption", json_type_string) ||
+		if (!json_contains_string(cd, jobj_area, "area", "raw type", "encryption") ||
 		    !json_contains(cd, jobj_area, "area", "raw type", "key_size", json_type_int) ||
-		    !json_contains(cd, jobj_area, "area", "raw type", "offset", json_type_string) ||
-		    !json_contains(cd, jobj_area, "area", "raw type", "size", json_type_string))
+		    !json_contains_string(cd, jobj_area, "area", "raw type", "offset") ||
+		    !json_contains_string(cd, jobj_area, "area", "raw type", "size"))
 			return -EINVAL;
 	} else
 		return -EINVAL;
