@@ -1372,7 +1372,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	}
 
 	/* Signature candidates found */
-	if (signatures && ((r =	tools_wipe_all_signatures(header_device)) < 0))
+	if (signatures && ((r = tools_wipe_all_signatures(header_device, true, false)) < 0))
 		goto out;
 
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
@@ -1392,7 +1392,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 					    key, keysize,
 					    password, passwordLen);
 	if (r < 0) {
-		(void) tools_wipe_all_signatures(header_device);
+		(void) tools_wipe_all_signatures(header_device, true, false);
 		goto out;
 	}
 	tools_keyslot_msg(r, CREATED);

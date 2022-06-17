@@ -2451,7 +2451,8 @@ int crypt_activate_by_token_pin(struct crypt_device *cd,
 
 /** Initialize reencryption metadata but do not run reencryption yet. (in) */
 #define CRYPT_REENCRYPT_INITIALIZE_ONLY    (UINT32_C(1) << 0)
-/** Move the first segment, used only with data shift. (in/out) */
+/** Move the first segment, used only with datashift resilience mode
+ *  and subvariants. (in/out) */
 #define CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT (UINT32_C(1) << 1)
 /** Resume already initialized reencryption only. (in) */
 #define CRYPT_REENCRYPT_RESUME_ONLY        (UINT32_C(1) << 2)
@@ -2483,10 +2484,15 @@ typedef enum {
 struct crypt_params_reencrypt {
 	crypt_reencrypt_mode_info mode;           /**< Reencryption mode, immutable after first init. */
 	crypt_reencrypt_direction_info direction; /**< Reencryption direction, immutable after first init. */
-	const char *resilience;                   /**< Resilience mode: "none", "checksum", "journal" or "shift" (only "shift" is immutable after init) */
+	const char *resilience;                   /**< Resilience mode: "none", "checksum", "journal", "datashift",
+						       "datashift-checksum" or "datashift-journal".
+						       "datashift" mode is immutable, "datashift-" subvariant can be only
+						       changed to other "datashift-" subvariant */
 	const char *hash;                         /**< Used hash for "checksum" resilience type, ignored otherwise. */
-	uint64_t data_shift;                      /**< Used in "shift" mode, must be non-zero, immutable after first init. */
-	uint64_t max_hotzone_size;                /**< Exact hotzone size for "none" mode. Maximum hotzone size for "checksum" and "journal" modes. */
+	uint64_t data_shift;                      /**< Used in "datashift" mode (and subvariants), must be non-zero,
+						       immutable after first init. */
+	uint64_t max_hotzone_size;                /**< Maximum hotzone size (may be lowered by library). For "datashift-" subvariants
+						       it is used to set size of moved segment (decryption only). */
 	uint64_t device_size;			  /**< Reencrypt only initial part of the data device. */
 	const struct crypt_params_luks2 *luks2;   /**< LUKS2 parameters for the final reencryption volume.*/
 	uint32_t flags;                           /**< Reencryption flags. */

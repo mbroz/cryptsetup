@@ -271,7 +271,8 @@ int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
 int LUKS2_keyslot_reencrypt_load(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
-	struct reenc_protection *rp);
+	struct reenc_protection *rp,
+	bool primary);
 
 int LUKS2_keyslot_reencrypt_digest_create(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
@@ -288,7 +289,7 @@ const char *json_segment_type(json_object *jobj_segment);
 uint64_t json_segment_get_iv_offset(json_object *jobj_segment);
 uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise);
 const char *json_segment_get_cipher(json_object *jobj_segment);
-int json_segment_get_sector_size(json_object *jobj_segment);
+uint32_t json_segment_get_sector_size(json_object *jobj_segment);
 bool json_segment_is_backup(json_object *jobj_segment);
 json_object *json_segments_get_segment(json_object *jobj_segments, int segment);
 unsigned json_segments_count(json_object *jobj_segments);

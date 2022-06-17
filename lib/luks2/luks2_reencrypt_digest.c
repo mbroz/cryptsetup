@@ -231,8 +231,22 @@ static size_t reenc_keyslot_serialize(struct luks2_hdr *hdr, uint8_t *buffer)
 		{ JU32, jobj_area,    "sector_size" },
 		{}
 	};
+	struct jtype j_datashift_checksum[] = {
+		{ JSTR, jobj_keyslot, "mode" },
+		{ JSTR, jobj_keyslot, "direction" },
+		{ JSTR, jobj_area,    "type" },
+		{ JU64, jobj_area,    "offset" },
+		{ JU64, jobj_area,    "size" },
+		{ JSTR, jobj_area,    "hash" },
+		{ JU32, jobj_area,    "sector_size" },
+		{ JU64, jobj_area,    "shift_size" },
+		{}
+	};
 
-	if (!strcmp(area_type, "datashift"))
+	if (!strcmp(area_type, "datashift-checksum"))
+		return srs(j_datashift_checksum, buffer);
+	else if (!strcmp(area_type, "datashift") ||
+		 !strcmp(area_type, "datashift-journal"))
 		return srs(j_datashift, buffer);
 	else if (!strcmp(area_type, "checksum"))
 		return srs(j_checksum, buffer);

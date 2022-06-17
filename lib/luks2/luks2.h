@@ -64,6 +64,7 @@
 
 struct device;
 struct luks2_reencrypt;
+struct reenc_protection;
 struct crypt_lock_handle;
 struct crypt_dm_active_device;
 struct luks_phdr; /* LUKS1 for conversion */
@@ -377,7 +378,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 
 uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr);
 int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic);
-int LUKS2_get_sector_size(struct luks2_hdr *hdr);
+uint32_t LUKS2_get_sector_size(struct luks2_hdr *hdr);
 const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment);
 const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment);
 int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
@@ -463,5 +464,13 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd,
 int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	struct volume_key *vks);
+
+int LUKS2_reencrypt_max_hotzone_size(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct reenc_protection *rp,
+	int reencrypt_keyslot,
+	uint64_t *r_length);
+
+void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp);
 
 #endif

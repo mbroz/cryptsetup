@@ -208,7 +208,7 @@ int LUKS2_get_default_segment(struct luks2_hdr *hdr)
 	if (s >= 0)
 		return s;
 
-	if (LUKS2_segments_count(hdr) == 1)
+	if (LUKS2_segments_count(hdr) >= 1)
 		return 0;
 
 	return -EINVAL;
@@ -1464,6 +1464,7 @@ static const struct requirement_flag unknown_requirement_flag = { CRYPT_REQUIREM
 static const struct requirement_flag requirements_flags[] = {
 	{ CRYPT_REQUIREMENT_OFFLINE_REENCRYPT,1, "offline-reencrypt" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 2, "online-reencrypt-v2" },
+	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 3, "online-reencrypt-v3" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1, "online-reencrypt" },
 	{ 0, 0, NULL }
 };
@@ -2235,15 +2236,9 @@ int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment)
 	return -1;
 }
 
-int LUKS2_get_sector_size(struct luks2_hdr *hdr)
+uint32_t LUKS2_get_sector_size(struct luks2_hdr *hdr)
 {
-	json_object *jobj_segment;
-
-	jobj_segment = LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT);
-	if (!jobj_segment)
-		return SECTOR_SIZE;
-
-	return json_segment_get_sector_size(jobj_segment) ?: SECTOR_SIZE;
+	return json_segment_get_sector_size(LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT));
 }
 
 int LUKS2_assembly_multisegment_dmd(struct crypt_device *cd,
