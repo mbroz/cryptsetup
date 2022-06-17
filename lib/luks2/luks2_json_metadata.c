@@ -382,6 +382,7 @@ static bool validate_intervals(struct crypt_device *cd,
 	int j, i = 0;
 
 	while (i < length) {
+		/* Offset cannot be inside primary or secondary JSON area */
 		if (ix[i].offset < 2 * metadata_size) {
 			log_dbg(cd, "Illegal area offset: %" PRIu64 ".", ix[i].offset);
 			return false;
