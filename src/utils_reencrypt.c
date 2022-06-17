@@ -48,6 +48,24 @@ static void _set_reencryption_flags(uint32_t *flags)
 		*flags |= CRYPT_REENCRYPT_RESUME_ONLY;
 }
 
+static int reencrypt_check_passphrase(struct crypt_device *cd,
+	int keyslot,
+	const char *passphrase,
+	size_t passphrase_len)
+{
+	int r;
+
+	assert(cd);
+
+	r = crypt_activate_by_passphrase(cd, NULL, keyslot,
+					 passphrase, passphrase_len, 0);
+	check_signal(&r);
+	tools_passphrase_msg(r);
+	tools_keyslot_msg(r, UNLOCKED);
+
+	return r;
+}
+
 static int set_keyslot_params(struct crypt_device *cd, int keyslot)
 {
 	const char *cipher;
@@ -238,19 +256,16 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (r < 0)
 		goto out;
 
-
 	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
 		r = reencrypt_get_active_name(cd, data_device, &active_name);
 	if (r >= 0)
 		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password,
 				passwordLen, ARG_INT32(OPT_KEY_SLOT_ID),
 				ARG_INT32(OPT_KEY_SLOT_ID), NULL, NULL, &params);
-
 out:
 	free(hash);
 	crypt_safe_free(password);
 	free(active_name);
-
 	return r;
 }
 
@@ -615,12 +630,17 @@ static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 	if (r < 0)
 		return r;
 
+	r = reencrypt_check_passphrase(cd, ARG_INT32(OPT_KEY_SLOT_ID), password, passwordLen);
+	if (r < 0)
+		goto out;
+
 	if (!ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID) && !ARG_SET(OPT_INIT_ONLY_ID))
 		r = reencrypt_get_active_name(cd, data_device, &active_name);
 	if (r >= 0)
 		r = crypt_reencrypt_init_by_passphrase(cd, active_name, password,
 				passwordLen, ARG_INT32(OPT_KEY_SLOT_ID), CRYPT_ANY_SLOT, NULL, NULL, &params);
 
+out:
 	free(active_name);
 	crypt_safe_free(password);
 	return r;
