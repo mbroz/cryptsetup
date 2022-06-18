@@ -411,10 +411,7 @@ bool json_segment_cmp(json_object *jobj_segment_1, json_object *jobj_segment_2)
 	const char *type = json_segment_type(jobj_segment_1);
 	const char *type2 = json_segment_type(jobj_segment_2);
 
-	if (!type || !type2)
-		return false;
-
-	if (strcmp(type, type2))
+	if (!type || !type2 || strcmp(type, type2))
 		return false;
 
 	if (!strcmp(type, "crypt"))
