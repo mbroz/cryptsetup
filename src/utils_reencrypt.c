@@ -711,7 +711,7 @@ static int decrypt_luks2_datashift_init(struct crypt_device **cd,
 	r = fchmod(fd, hdr_st.st_mode  | S_IRUSR | S_IWUSR);
 	close(fd);
 	if (r) {
-		log_err(_("Failed to add read/wrire permissions to exported header file."));
+		log_err(_("Failed to add read/write permissions to exported header file."));
 		r = -EINVAL;
 		goto out;
 	}
