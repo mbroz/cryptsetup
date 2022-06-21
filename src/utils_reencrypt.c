@@ -598,9 +598,13 @@ static enum device_status_info load_luks2_by_name(struct crypt_device **r_cd, co
 {
 	int r;
 	struct crypt_device *cd;
+	struct stat st;
 
 	assert(r_cd);
 	assert(active_name);
+
+	if (header_device && stat(header_device, &st) < 0 && errno == ENOENT)
+		return DEVICE_NOT_LUKS;
 
 	r = crypt_init_by_name_and_header(&cd, active_name, header_device);
 	if (r)
@@ -1321,20 +1325,31 @@ static int _encrypt(struct crypt_device *cd, const char *type, enum device_statu
 static int _decrypt(struct crypt_device **cd, enum device_status_info dev_st, const char *data_device)
 {
 	int r;
+	struct stat st;
 	bool export_header = false;
+
+	assert(cd);
 
 	if (dev_st == DEVICE_LUKS1 || dev_st == DEVICE_LUKS1_UNUSABLE)
 		return reencrypt_luks1(data_device);
 
 	/* header file does not exist, try loading device type from data device */
-	if (dev_st == DEVICE_NOT_LUKS && ARG_SET(OPT_HEADER_ID)) {
+	if (dev_st == DEVICE_NOT_LUKS && ARG_SET(OPT_HEADER_ID) &&
+	    (stat(ARG_STR(OPT_HEADER_ID), &st) < 0) && errno == ENOENT) {
 		if (ARG_SET(OPT_ACTIVE_NAME_ID))
 			dev_st = load_luks2_by_name(cd, ARG_STR(OPT_ACTIVE_NAME_ID), NULL);
 		else
 			dev_st = load_luks(cd, NULL, uuid_or_device(data_device));
 
-		if (dev_st != DEVICE_LUKS2)
+		/*
+		 * If data device is not LUKS2 report 'header is missing' error
+		 * message user would get originally.
+		 */
+		if (dev_st != DEVICE_LUKS2) {
+			log_err(_("Device %s does not exist or access denied."),
+				ARG_STR(OPT_HEADER_ID));
 			return -EINVAL;
+		}
 
 		export_header = true;
 	}
@@ -1355,8 +1370,11 @@ static int _decrypt(struct crypt_device **cd, enum device_status_info dev_st, co
 
 		if (r < 0 || ARG_SET(OPT_INIT_ONLY_ID))
 			return r;
-	} else if (dev_st == DEVICE_NOT_LUKS)
+	} else if (dev_st == DEVICE_NOT_LUKS) {
+		log_err(_("Device %s is not a valid LUKS device."),
+			ARG_STR(OPT_HEADER_ID) ?: uuid_or_device(data_device));
 		return -EINVAL;
+	}
 
 	r = reencrypt_luks2_resume(*cd);
 	return r;
