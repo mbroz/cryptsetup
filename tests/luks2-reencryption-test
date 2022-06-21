@@ -903,7 +903,6 @@ echo -n "[OK][4096 sector]"
 prepare sector_size=4096 dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
@@ -926,7 +925,6 @@ echo -n "[OK][4096/512 sector]"
 prepare sector_size=512 physblk_exp=3 dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
@@ -972,7 +970,6 @@ check_hash_dev $DEV $HASH4
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON || fail
 check_hash_head $PWD1 $((56*1024*2)) $HASH5
 wipe_dev $DEV
-check_hash_dev $DEV $HASH4
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c twofish-cbc-essiv:sha256 -s 128 --reduce-device-size 21M -q $FAST_PBKDF_ARGON || fail
 check_hash_head $PWD1 $((43*1024*2)) $HASH6
 wipe_dev $DEV
@@ -1025,7 +1022,6 @@ echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 64M -q $F
 check_hash_head $PWD1 2048 $HASH2
 
 wipe_dev_head $DEV 1
-check_hash_dev_head $DEV 2048 $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 64M --init-only -q $FAST_PBKDF_ARGON $DEV_NAME >/dev/null || fail
 check_hash_dev_head /dev/mapper/$DEV_NAME 2048 $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q || fail
@@ -1170,7 +1166,6 @@ echo "sector size 512->512"
 get_error_offsets 32 $OFFSET
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover 512 checksum $HASH1
@@ -1182,13 +1177,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 32 $OFFSET 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover 4096 checksum $HASH1
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 	reencrypt_recover 4096 journal $HASH1
 
 	echo "sector size 4096->4096"
@@ -1196,7 +1189,6 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 32 $OFFSET 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 --sector-size 4096 -c aes-cbc-essiv:sha256 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover 4096 checksum $HASH1
@@ -1210,7 +1202,6 @@ echo "sector size 512->512"
 get_error_offsets 32 $OFFSET
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover_online 512 checksum $HASH1
@@ -1222,13 +1213,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 32 $OFFSET 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH1
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 	reencrypt_recover_online 4096 journal $HASH1
 
 	echo "sector size 4096->4096"
@@ -1236,7 +1225,6 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 32 $OFFSET 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 --sector-size 4096 -c aes-cbc-essiv:sha256 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH1
@@ -1263,13 +1251,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 31 0 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1 $IMG_HDR
-	check_hash $PWD1 $HASH7 $IMG_HDR
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover 4096 checksum $HASH7 $IMG_HDR
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1 $IMG_HDR
-	check_hash $PWD1 $HASH7 $IMG_HDR
 	reencrypt_recover 4096 journal $HASH7 $IMG_HDR
 
 	echo "sector size 4096->4096"
@@ -1277,7 +1263,6 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 31 0 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 4096 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1 $IMG_HDR
-	check_hash $PWD1 $HASH7 $IMG_HDR
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover 4096 checksum $HASH7 $IMG_HDR
@@ -1291,7 +1276,6 @@ echo "sector size 512->512"
 get_error_offsets 31 0
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1 $IMG_HDR
-check_hash $PWD1 $HASH7 $IMG_HDR
 
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover_online 512 checksum $HASH7 $IMG_HDR
@@ -1303,13 +1287,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 31 0 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1 $IMG_HDR
-	check_hash $PWD1 $HASH7 $IMG_HDR
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH7 $IMG_HDR
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1 $IMG_HDR
-	check_hash $PWD1 $HASH7 $IMG_HDR
 	reencrypt_recover_online 4096 journal $HASH7 $IMG_HDR
 
 	echo "sector size 4096->4096"
@@ -1317,7 +1299,6 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 31 0 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 4096 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1 $IMG_HDR
-	check_hash $PWD1 $HASH7 $IMG_HDR
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH7 $IMG_HDR
@@ -1536,7 +1517,6 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --offset 32768 $FAST_PBKDF_A
 echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF2 $DEV || fail
 echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH2
 
 echo -e "$PWD1\n$PWD2\n$PWD3" | $CRYPTSETUP reencrypt $DEV -q || fail
 check_hash $PWD1 $HASH2
@@ -1600,7 +1580,6 @@ prepare dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 256 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
 echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -S0 $FAST_PBKDF_ARGON --volume-key-file $VKEY1 -s 128 || fail
 check_hash $PWD1 $HASH1
 $CRYPTSETUP luksErase -q $DEV || fail
@@ -1612,7 +1591,6 @@ echo "[24] Reencryption with initial cipher_null"
 prepare dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c cipher_null-ecb --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -c aes-xts-plain64 -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
 
@@ -1661,7 +1639,6 @@ echo "sector size 512->512"
 get_error_offsets 32 $OFFSET
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover 512 checksum $HASH1
@@ -1675,13 +1652,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 32 $OFFSET 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover 4096 checksum $HASH1
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 	reencrypt_recover 4096 journal $HASH1
 
 	echo "sector size 4096->4096"
@@ -1689,7 +1664,6 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 32 $OFFSET 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 4096 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover 4096 checksum $HASH1
@@ -1703,7 +1677,6 @@ echo "sector size 512->512"
 get_error_offsets 32 $OFFSET
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 -c null --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover_online 512 checksum $HASH1
@@ -1717,13 +1690,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 32 $OFFSET 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH1
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 	reencrypt_recover_online 4096 journal $HASH1
 
 	echo "sector size 4096->4096"
@@ -1731,7 +1702,6 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	get_error_offsets 32 $OFFSET 4096
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c null --sector-size 4096 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
-	check_hash $PWD1 $HASH1
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH1
@@ -1900,7 +1870,6 @@ OFFSET=8192
 # offline decryption with shift
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
 check_hash_dev_head $DEV 57344 $HASH1
 # FIXME: Should not reencryption remove it automatically?
@@ -1910,7 +1879,6 @@ rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 wipe_dev /dev/mapper/$DEV_NAME
-check_hash_dev /dev/mapper/$DEV_NAME $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
 check_hash_dev_head $DEV 57344 $HASH1
 # FIXME: Should not reencryption remove it automatically?
@@ -1919,7 +1887,6 @@ rm -f $IMG_HDR
 # offline decryption (separate initialization and decryption steps)
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --init-only || fail
 check_hash $PWD1 $HASH1 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
@@ -1931,7 +1898,6 @@ rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 wipe_dev /dev/mapper/$DEV_NAME
-check_hash_dev /dev/mapper/$DEV_NAME $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --init-only || fail
 check_hash_dev /dev/mapper/$DEV_NAME $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
@@ -1951,7 +1917,6 @@ rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 32768 || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 wipe_dev /dev/mapper/$DEV_NAME
-check_hash_dev /dev/mapper/$DEV_NAME $HASH10
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
 check_hash_dev_head $DEV 32768 $HASH10
 # FIXME: Should not reencryption remove it automatically?
@@ -1959,7 +1924,6 @@ rm -f $IMG_HDR
 
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 32768 || fail
 wipe $PWD1
-check_hash $PWD1 $HASH10
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --init-only || fail
 check_hash $PWD1 $HASH10 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
@@ -1970,7 +1934,6 @@ rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 32768 || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 wipe_dev /dev/mapper/$DEV_NAME
-check_hash_dev /dev/mapper/$DEV_NAME $HASH10
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --init-only || fail
 check_hash_dev /dev/mapper/$DEV_NAME $HASH10
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
@@ -1982,7 +1945,6 @@ rm -f $IMG_HDR
 prepare dev_size_mb=5
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -S5 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
 wipe $PWD1
-check_hash $PWD1 $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
 check_hash_dev_head $DEV 2048 $HASH2
 # FIXME: Should not reencryption remove it automatically?
@@ -1991,7 +1953,6 @@ rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -S5 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 wipe_dev /dev/mapper/$DEV_NAME
-check_hash_dev /dev/mapper/$DEV_NAME $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
 check_hash_dev_head $DEV 2048 $HASH2
 
@@ -2005,7 +1966,6 @@ echo "sector size 512"
 get_error_offsets 32 $OFFSET 512 $((32-1024*2-$OFFSET))
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH1
 
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 echo -n "resilience:"
@@ -2129,7 +2089,6 @@ prepare_linear_dev 512
 
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset 1015808 --luks2-keyslots-size 16M $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH10
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --header $IMG_HDR $DEV -q || fail
 check_hash_dev_head $DEV $((16*1024*2)) $HASH10
 rm -f $IMG_HDR
@@ -2143,7 +2102,6 @@ rm -f $IMG_HDR
 
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset 1046528 --luks2-keyslots-size 16M $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-check_hash $PWD1 $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --header $IMG_HDR $DEV -q || fail
 check_hash_dev_head $DEV 2048 $HASH2
 rm -f $IMG_HDR
