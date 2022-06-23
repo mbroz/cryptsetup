@@ -752,6 +752,11 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return -EINVAL;
 	}
 
+	if (json_segments_count(LUKS2_get_segments_jobj(hdr2)) != 1) {
+		log_err(cd, _("Cannot convert to LUKS1 format - device uses more segments."));
+		return -EINVAL;
+	}
+
 	r = LUKS2_tokens_count(hdr2);
 	if (r < 0)
 		return r;
