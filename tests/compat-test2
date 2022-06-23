@@ -801,6 +801,18 @@ $CRYPTSETUP -q convert --type luks2 $LOOPDEV || fail
 $CRYPTSETUP isLuks --type luks2 $LOOPDEV || fail
 $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 0 -d $KEY5 || fail
 
+# keyslot 1 area offset is higher than keyslot 0 area
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --key-slot 0 $LOOPDEV || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_OPT --key-slot 1 $LOOPDEV || fail
+echo -e "$PWD1\n$PWD1" | $CRYPTSETUP -q luksChangeKey $FAST_PBKDF_OPT $LOOPDEV || fail
+# convert to LUKS1 and back; LUKS1 does not store length, only offset
+$CRYPTSETUP -q convert --type luks1 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q open --test-passphrase $LOOPDEV || fail
+echo $PWD2 | $CRYPTSETUP -q open --test-passphrase $LOOPDEV || fail
+$CRYPTSETUP -q convert --type luks2 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q open --test-passphrase $LOOPDEV || fail
+echo $PWD2 | $CRYPTSETUP -q open --test-passphrase $LOOPDEV || fail
+
 if dm_crypt_keyring_flawed; then
 	prepare "[32a] LUKS2 keyring dm-crypt bug" wipe
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG || fail
