@@ -616,6 +616,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 
 	/* check future LUKS2 metadata before moving keyslots area */
 	if (LUKS2_hdr_validate(cd, hdr2->jobj, hdr2->hdr_size - LUKS2_HDR_BIN_LEN)) {
+		log_err(cd, _("Cannot convert to LUKS2 format - invalid metadata."));
 		r = -EINVAL;
 		goto out;
 	}
