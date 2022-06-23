@@ -62,7 +62,7 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 	char *base64_str, cipher[LUKS_CIPHERNAME_L+LUKS_CIPHERMODE_L];
 	size_t base64_len;
 	struct json_object *keyslot_obj, *field, *jobj_kdf, *jobj_af, *jobj_area;
-	uint64_t offset, area_size, offs_a, offs_b, length;
+	uint64_t offset, area_size, length;
 	int r;
 
 	keyslot_obj = json_object_new_object();
@@ -110,14 +110,12 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 		json_object_object_add(jobj_area, "encryption", json_object_new_string(hdr_v1->cipherName));
 
 	/* area */
-	if (LUKS_keyslot_area(hdr_v1, 0, &offs_a, &length) ||
-	    LUKS_keyslot_area(hdr_v1, 1, &offs_b, &length) ||
-	    LUKS_keyslot_area(hdr_v1, keyslot, &offset, &length)) {
+	if (LUKS_keyslot_area(hdr_v1, keyslot, &offset, &length)) {
 		json_object_put(keyslot_obj);
 		json_object_put(jobj_area);
 		return -EINVAL;
 	}
-	area_size = offs_b - offs_a;
+	area_size = size_round_up(length, 4096);
 	json_object_object_add(jobj_area, "key_size", json_object_new_int(hdr_v1->keyBytes));
 	json_object_object_add(jobj_area, "offset", crypt_jobj_new_uint64(offset));
 	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_size));
