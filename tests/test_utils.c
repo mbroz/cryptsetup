@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -161,6 +162,20 @@ int t_device_size(const char *device, uint64_t *size)
 	return r;
 }
 
+int t_set_readahead(const char *device, unsigned value)
+{
+	int devfd, r = 0;
+
+	devfd = open(device, O_RDONLY);
+	if(devfd == -1)
+		return -EINVAL;
+
+	if (ioctl(devfd, BLKRASET, value) < 0)
+		r = -EINVAL;
+	close(devfd);
+	return r;
+}
+
 int fips_mode(void)
 {
 	int fd;
@@ -205,6 +220,139 @@ int create_dmdevice_over_loop(const char *dm_name, const uint64_t size)
 	if (!(r = _system(cmd, 1)))
 		t_dev_offset += size;
 	return r;
+}
+
+__attribute__((format(printf, 3, 4)))
+static int _snprintf(char **r_ptr, size_t *r_remains, const char *format, ...)
+{
+	int len;
+	va_list argp;
+
+	assert(r_remains);
+	assert(r_ptr);
+
+	va_start(argp, format);
+
+	len = vsnprintf(*r_ptr, *r_remains, format, argp);
+	if (len < 0 || (size_t)len >= *r_remains)
+		return -EINVAL;
+
+	*r_ptr += len;
+	*r_remains -= len;
+
+	va_end(argp);
+
+	return 0;
+}
+
+int dmdevice_error_io(const char *dm_name,
+	const char *dm_device,
+	const char *error_device,
+	uint64_t data_offset,
+	uint64_t offset,
+	uint64_t length,
+	error_io_info ei)
+{
+	char str[256], cmd[384];
+	int r;
+	uint64_t dev_size;
+	size_t remains;
+	char *ptr;
+
+	if (t_device_size(dm_device, &dev_size) < 0 || !length)
+		return -1;
+
+	dev_size >>= TST_SECTOR_SHIFT;
+
+	if (dev_size <= offset)
+		return -1;
+
+	if (ei == ERR_REMOVE) {
+		r = snprintf(cmd, sizeof(cmd),
+			     "dmsetup load %s --table \"0 %" PRIu64 " linear %s %" PRIu64 "\"",
+			     dm_name, dev_size, THE_LOOP_DEV, data_offset);
+		if (r < 0 || (size_t)r >= sizeof(str))
+			return -3;
+
+		if ((r = _system(cmd, 1)))
+			return r;
+
+		r = snprintf(cmd, sizeof(cmd), "dmsetup resume %s", dm_name);
+		if (r < 0 || (size_t)r >= sizeof(cmd))
+			return -3;
+
+		return _system(cmd, 1);
+	}
+
+	if ((dev_size - offset) < length) {
+		printf("Not enough space on target device\n.");
+		return -2;
+	}
+
+	remains = sizeof(str);
+	ptr = str;
+
+	if (offset) {
+		r = _snprintf(&ptr, &remains,
+			     "0 %" PRIu64 " linear %s %" PRIu64 "\n",
+			     offset, THE_LOOP_DEV, data_offset);
+		if (r < 0)
+			return r;
+	}
+	r = _snprintf(&ptr, &remains, "%" PRIu64 " %" PRIu64 " delay ",
+		      offset, length);
+	if (r < 0)
+		return r;
+
+	if (ei == ERR_RW || ei == ERR_RD) {
+		r = _snprintf(&ptr, &remains, "%s 0 0",
+			     error_device);
+		if (r < 0)
+			return r;
+		if (ei == ERR_RD) {
+			r = _snprintf(&ptr, &remains, " %s %" PRIu64 " 0",
+				     THE_LOOP_DEV, data_offset + offset);
+			if (r < 0)
+				return r;
+		}
+	} else if (ei == ERR_WR) {
+		r = _snprintf(&ptr, &remains, "%s %" PRIu64 " 0 %s 0 0",
+			     THE_LOOP_DEV, data_offset + offset, error_device);
+		if (r < 0)
+			return r;
+	}
+
+	if (dev_size > (offset + length)) {
+		r = _snprintf(&ptr, &remains,
+			     "\n%" PRIu64 " %" PRIu64 " linear %s %" PRIu64,
+			     offset + length, dev_size - offset - length, THE_LOOP_DEV,
+			     data_offset + offset + length);
+		if (r < 0)
+			return r;
+	}
+
+	/*
+	 * Hello darkness, my old friend...
+	 *
+	 * On few old distributions there's issue with
+	 * processing multiline tables via dmsetup load --table.
+	 * This workaround passes on all systems we run tests on.
+	 */
+	r = snprintf(cmd, sizeof(cmd), "dmsetup load %s <<EOF\n%s\nEOF", dm_name, str);
+	if (r < 0 || (size_t)r >= sizeof(cmd))
+		return -3;
+
+	if ((r = _system(cmd, 1)))
+		return r;
+
+	r = snprintf(cmd, sizeof(cmd), "dmsetup resume %s", dm_name);
+	if (r < 0 || (size_t)r >= sizeof(cmd))
+		return -3;
+
+	if ((r = _system(cmd, 1)))
+		return r;
+
+	return t_set_readahead(dm_device, 0);
 }
 
 // Get key from kernel dm mapping table using dm-ioctl
