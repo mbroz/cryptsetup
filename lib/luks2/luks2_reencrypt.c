@@ -2748,11 +2748,9 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 	data_shift = params->data_shift << SECTOR_SHIFT;
 
 	/*
-	 * We must perform data move with exclusive open data device
-	 * to exclude another cryptsetup process to colide with
-	 * encryption initialization (or mount)
+	 * In offline mode we must perform data move with exclusively opened data
+	 * device in order to exclude LUKS2 decryption process and filesystem mount.
 	 */
-
 	if (name)
 		devfd = device_open(cd, crypt_data_device(cd), O_RDWR);
 	else
