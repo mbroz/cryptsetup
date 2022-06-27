@@ -2353,6 +2353,8 @@ static int reencrypt_move_data(struct crypt_device *cd,
 			device_alignment(crypt_data_device(cd)),
 			buffer, buffer_len, read_offset);
 	if (ret < 0 || (uint64_t)ret != buffer_len) {
+		log_dbg(cd, "Failed to read data at offset %" PRIu64 " (size: %zu)",
+			read_offset, buffer_len);
 		r = -EIO;
 		goto out;
 	}
@@ -2364,6 +2366,8 @@ static int reencrypt_move_data(struct crypt_device *cd,
 			device_alignment(crypt_data_device(cd)),
 			buffer, buffer_len, offset);
 	if (ret < 0 || (uint64_t)ret != buffer_len) {
+		log_dbg(cd, "Failed to write data at offset %" PRIu64 " (size: %zu)",
+			offset, buffer_len);
 		r = -EIO;
 		goto out;
 	}
