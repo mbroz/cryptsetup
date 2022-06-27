@@ -2734,7 +2734,11 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 	assert(hdr);
 	assert(params);
 	assert(params->resilience);
+	assert(params->data_shift);
 	assert(vks);
+
+	if (!data_offset)
+		return -EINVAL;
 
 	if (params->max_hotzone_size > params->data_shift) {
 		log_err(cd, _("Moved segment size can not be greater than data shift value."));
