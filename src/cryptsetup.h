@@ -44,7 +44,6 @@
 #include "lib/bitops.h"
 #include "lib/utils_crypt.h"
 #include "lib/utils_loop.h"
-#include "lib/utils_fips.h"
 #include "lib/utils_io.h"
 #include "lib/utils_blkid.h"
 #include "lib/libcryptsetup_macros.h"

@@ -812,3 +812,29 @@ int crypt_backend_memeq(const void *m1, const void *m2, size_t n)
 {
 	return CRYPTO_memcmp(m1, m2, n);
 }
+
+#if !ENABLE_FIPS
+bool crypt_fips_mode(void) { return false; }
+#else
+static bool openssl_fips_mode(void)
+{
+#if OPENSSL_VERSION_MAJOR >= 3
+	return EVP_default_properties_is_fips_enabled(NULL);
+#else
+	return FIPS_mode();
+#endif
+}
+
+bool crypt_fips_mode(void)
+{
+	static bool fips_mode = false, fips_checked = false;
+
+	if (fips_checked)
+		return fips_mode;
+
+	fips_mode = openssl_fips_mode();
+	fips_checked = true;
+
+	return fips_mode;
+}
+#endif /* ENABLE FIPS */

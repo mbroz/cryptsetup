@@ -152,4 +152,7 @@ static inline void crypt_backend_memzero(void *s, size_t n)
 /* Memcmp helper (memcmp in constant time) */
 int crypt_backend_memeq(const void *m1, const void *m2, size_t n);
 
+/* crypto backend running in FIPS mode */
+bool crypt_fips_mode(void);
+
 #endif /* _CRYPTO_BACKEND_H */

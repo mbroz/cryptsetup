@@ -42,7 +42,7 @@ FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 TEST_UUID="12345678-1234-1234-1234-123456789abc"
 
 LOOPDEV=$(losetup -f 2>/dev/null)
-[ -f /etc/system-fips ] && FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
 function remove_mapping()
 {
