@@ -8,9 +8,9 @@
       sudo apk add
       lvm2-dev openssl1.1-compat-dev popt-dev util-linux-dev json-c-dev
       argon2-dev device-mapper which sharutils gettext gettext-dev automake
-      autoconf libtool build-base keyutils tar jq expect git
+      autoconf libtool build-base keyutils tar jq expect git asciidoctor
     - ./autogen.sh
-    - ./configure --prefix=/usr --libdir=/lib --sbindir=/sbin --disable-static --enable-libargon2 --with-crypto_backend=openssl --disable-external-tokens --disable-ssh-token
+    - ./configure --prefix=/usr --libdir=/lib --sbindir=/sbin --disable-static --enable-libargon2 --with-crypto_backend=openssl --disable-external-tokens --disable-ssh-token --enable-asciidoc
 
 test-main-commit-job-alpinelinux:
   extends:
