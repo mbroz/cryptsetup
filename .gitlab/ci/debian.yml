@@ -8,11 +8,11 @@
       libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev
       libjson-c-dev libssh-dev libblkid-dev tar libargon2-0-dev
       libpwquality-dev sharutils dmsetup jq xxd expect keyutils
-      netcat passwd openssh-client sshpass
+      netcat passwd openssh-client sshpass asciidoctor
     - sudo apt-get -y build-dep cryptsetup
     - sudo -E git clean -xdf
     - ./autogen.sh
-    - ./configure --enable-libargon2
+    - ./configure --enable-libargon2 --enable-asciidoc
 
 test-mergerq-job-debian:
   extends:

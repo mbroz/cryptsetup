@@ -7,6 +7,7 @@ PACKAGES=(
 	gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev
 	libjson-c-dev libssh-dev libblkid-dev tar libargon2-0-dev libpwquality-dev
 	sharutils dmsetup jq xxd expect keyutils netcat passwd openssh-client sshpass
+	asciidoctor
 )
 
 COMPILER="${COMPILER:?}"

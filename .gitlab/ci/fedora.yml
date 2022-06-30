@@ -9,10 +9,10 @@
       libssh-devel libtool libuuid-devel make popt-devel
       libsepol-devel.x86_64 netcat openssh-clients passwd pkgconfig sharutils
       sshpass tar uuid-devel vim-common device-mapper expect gettext git jq
-      keyutils openssl-devel openssl
+      keyutils openssl-devel openssl asciidoctor
     - sudo -E git clean -xdf
     - ./autogen.sh
-    - ./configure --enable-fips --enable-pwquality --enable-libargon2 --with-crypto_backend=openssl
+    - ./configure --enable-fips --enable-pwquality --enable-libargon2 --with-crypto_backend=openssl --enable-asciidoc
 
 test-main-commit-job-rawhide:
   extends:
