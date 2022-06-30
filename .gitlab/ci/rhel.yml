@@ -8,10 +8,11 @@
       libblkid-devel libpwquality-devel libselinux-devel libssh-devel libtool
       libuuid-devel make popt-devel libsepol-devel nc openssh-clients passwd
       pkgconfig sharutils sshpass tar uuid-devel vim-common device-mapper
-      expect gettext git jq keyutils openssl-devel openssl > /dev/null 2>&1
+      expect gettext git jq keyutils openssl-devel openssl gem > /dev/null 2>&1
+    - sudo gem install asciidoctor
     - sudo -E git clean -xdf
     - ./autogen.sh
-    - ./configure --enable-fips --enable-pwquality --with-crypto_backend=openssl
+    - ./configure --enable-fips --enable-pwquality --with-crypto_backend=openssl --enable-asciidoc
 
 # non-FIPS jobs
 
