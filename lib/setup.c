@@ -6339,7 +6339,10 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 	if (params)
 		memset(params, 0, sizeof(*params));
 
-	if (!cd || !isLUKS2(cd->type))
+	if (!cd || !isLUKS(cd->type))
+		return CRYPT_REENCRYPT_INVALID;
+
+	if (isLUKS1(cd->type))
 		return CRYPT_REENCRYPT_NONE;
 
 	if (_onlyLUKS2(cd, CRYPT_CD_QUIET, CRYPT_REQUIREMENT_ONLINE_REENCRYPT))

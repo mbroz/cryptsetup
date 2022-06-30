@@ -414,6 +414,9 @@ static int _setup(void)
 	_system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"", 1);
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
 
+	if (t_set_readahead(DEVICE_ERROR, 0))
+		printf("cannot set read ahead on device %s\n", DEVICE_ERROR);
+
 	_system(" [ ! -e " IMAGE1 " ] && xz -dk " IMAGE1 ".xz", 1);
 	fd = loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
 	close(fd);
@@ -4566,7 +4569,78 @@ static void Luks2Reencryption(void)
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
 	OK_(crypt_keyslot_destroy(cd, 9));
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
-	crypt_free(cd);
+	CRYPT_FREE(cd);
+
+	_cleanup_dmdevices();
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, 2 * r_header_size));
+	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
+
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "datashift-checksum",
+		.hash = "sha256",
+		.data_shift = r_header_size,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY | CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
+	};
+
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(set_fast_pbkdf(cd));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, NULL));
+	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(crypt_header_backup(cd, CRYPT_LUKS2, BACKUP_FILE));
+	CRYPT_FREE(cd);
+
+	params2.data_device = DMDIR L_DEVICE_OK;
+	params2.sector_size = 512;
+
+	/* create detached LUKS2 header (with data_offset == 0) */
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
+	EQ_(crypt_get_data_offset(cd), 0);
+	OK_(set_fast_pbkdf(cd));
+	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)));
+	CRYPT_FREE(cd);
+
+	/* initiate LUKS2 decryption with datashift on bogus LUKS2 header (data_offset == 0) */
+	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Illegal data offset");
+	/* reencryption must not initalize */
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	CRYPT_FREE(cd);
+	/* original data device must stay untouched */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	CRYPT_FREE(cd);
+
+	OK_(chmod(BACKUP_FILE, S_IRUSR|S_IWUSR));
+	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+
+	/* simulate read error at first segment beyond data offset*/
+	OK_(dmdevice_error_io(L_DEVICE_OK, DMDIR L_DEVICE_OK, DEVICE_ERROR, 0, r_header_size, 8, ERR_RD));
+
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Could not read first data segment");
+	CRYPT_FREE(cd);
+
+	/* Device must not be in reencryption */
+	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+
+	/* simulate write error in original LUKS2 header area */
+	OK_(dmdevice_error_io(L_DEVICE_OK, DMDIR L_DEVICE_OK, DEVICE_ERROR, 0, 0, 8, ERR_WR));
+
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Could not write first data segment");
+	CRYPT_FREE(cd);
+
+	/* Device must not be in reencryption */
+	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
 }

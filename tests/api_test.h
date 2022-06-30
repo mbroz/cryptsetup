@@ -38,6 +38,7 @@ int t_dm_check_versions(void);
 int t_dm_crypt_keyring_support(void);
 int t_dm_crypt_cpu_switch_support(void);
 int t_dm_crypt_discard_support(void);
+int t_set_readahead(const char *device, unsigned value);
 
 int fips_mode(void);
 
@@ -131,5 +132,15 @@ int loop_detach(const char *loop);
 
 int t_device_size_by_devno(dev_t devno, uint64_t *retval);
 int t_get_devno(const char *dev, dev_t *devno);
+
+typedef enum { ERR_RD = 0, ERR_WR, ERR_RW, ERR_REMOVE } error_io_info;
+
+int dmdevice_error_io(const char *dm_name,
+	const char *dm_device,
+	const char *error_device,
+	uint64_t data_offset,
+	uint64_t offset,
+	uint64_t length,
+	error_io_info ei);
 
 #endif

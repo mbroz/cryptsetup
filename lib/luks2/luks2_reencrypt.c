@@ -2353,6 +2353,8 @@ static int reencrypt_move_data(struct crypt_device *cd,
 			device_alignment(crypt_data_device(cd)),
 			buffer, buffer_len, read_offset);
 	if (ret < 0 || (uint64_t)ret != buffer_len) {
+		log_dbg(cd, "Failed to read data at offset %" PRIu64 " (size: %zu)",
+			read_offset, buffer_len);
 		r = -EIO;
 		goto out;
 	}
@@ -2364,6 +2366,8 @@ static int reencrypt_move_data(struct crypt_device *cd,
 			device_alignment(crypt_data_device(cd)),
 			buffer, buffer_len, offset);
 	if (ret < 0 || (uint64_t)ret != buffer_len) {
+		log_dbg(cd, "Failed to write data at offset %" PRIu64 " (size: %zu)",
+			offset, buffer_len);
 		r = -EIO;
 		goto out;
 	}
@@ -2730,7 +2734,11 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 	assert(hdr);
 	assert(params);
 	assert(params->resilience);
+	assert(params->data_shift);
 	assert(vks);
+
+	if (!data_offset)
+		return -EINVAL;
 
 	if (params->max_hotzone_size > params->data_shift) {
 		log_err(cd, _("Moved segment size can not be greater than data shift value."));
@@ -2740,11 +2748,9 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 	data_shift = params->data_shift << SECTOR_SHIFT;
 
 	/*
-	 * We must perform data move with exclusive open data device
-	 * to exclude another cryptsetup process to colide with
-	 * encryption initialization (or mount)
+	 * In offline mode we must perform data move with exclusively opened data
+	 * device in order to exclude LUKS2 decryption process and filesystem mount.
 	 */
-
 	if (name)
 		devfd = device_open(cd, crypt_data_device(cd), O_RDWR);
 	else
