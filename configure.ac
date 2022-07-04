@@ -56,126 +56,21 @@ AS_VAR_IF([$1], [""], [$5], [$4])
 dnl ==========================================================================
 dnl AsciiDoc manual pages
 
-dnl If needed, define the m4_ifblank and m4_ifnblank macros from autoconf 2.64
-dnl This allows us to run with earlier Autoconfs as well.
-dnl
-dnl m4_ifblank(COND, [IF-BLANK], [IF-TEXT])
-dnl m4_ifnblank(COND, [IF-TEXT], [IF-BLANK])
-dnl ----------------------------------------
-dnl If COND is empty, or consists only of blanks (space, tab, newline),
-dnl then expand IF-BLANK, otherwise expand IF-TEXT.  This differs from
-dnl m4_ifval only if COND has just whitespace, but it helps optimize in
-dnl spite of users who mistakenly leave trailing space after what they
-dnl thought was an empty argument:
-dnl   macro(
-dnl         []
-dnl        )
-dnl
-dnl Writing one macro in terms of the other causes extra overhead, so
-dnl we inline both definitions.
-ifdef([m4_ifblank],[],[
-m4_define([m4_ifblank],
-[m4_if(m4_translit([[$1]],  [ ][	][
-]), [], [$2], [$3])])])
-
-ifdef([m4_ifnblank],[],[
-m4_define([m4_ifnblank],
-[m4_if(m4_translit([[$1]],  [ ][	][
-]), [], [$3], [$2])])])
-
-dnl UL_DEFAULT_ENABLE(NAME, ENABLE_STATE)
-dnl
-dnl Initializes $enable_<name>  variable according to ENABLE_STATE. The default
-dnl setting is possible to override by global $ul_default_estate.
-dnl
-AC_DEFUN([UL_DEFAULT_ENABLE], [
-  m4_define([suffix], $1)
-  if test "x$ul_default_estate" != x; then
-    enable_[]suffix=$ul_default_estate
-  else
-    enable_[]suffix=$2
-  fi
-])
-
-dnl UL_BUILD_INIT(NAME, [ENABLE_STATE], [VARSUFFIX = $1])
-dnl
-dnl Initializes $build_<name>  variable according to $enable_<name>. If
-dnl $enable_<name> is undefined then ENABLE_STATE is used and $enable_<name> is
-dnl set to ENABLE_STATE.
-dnl
-dnl The default <name> for $build_ and $enable_ could be overwrited by option $3.
-dnl
-AC_DEFUN([UL_BUILD_INIT], [
-  m4_define([suffix], m4_default([$3],$1))
-  m4_ifblank([$2],
-[if test "x$enable_[]suffix" = xno; then
-   build_[]suffix=no
-else
-   build_[]suffix=yes
-fi],
-[if test "x$ul_default_estate" != x; then
-  enable_[]suffix=$ul_default_estate
-  build_[]suffix=yes
-  if test "x$ul_default_estate" = xno; then
-    build_[]suffix=no
-  fi
-else[]
-  ifelse(
-      [$2], [check],[
-  build_[]suffix=yes
-  enable_[]suffix=check],
-      [$2], [yes],[
-  build_[]suffix=yes
-  enable_[]suffix=yes],
-      [$2], [no], [
-  build_[]suffix=no
-  enable_[]suffix=no])
-fi])
-])
-
-dnl UL_REQUIRES_PROGRAM(NAME, PROGVAR, PROGRAM, DESC, [VARSUFFIX=$1])
-dnl
-dnl Modifies $build_<name> variable according to $enable_<name> and
-dnl ability compile AC_PATH_PROG().
-dnl
-dnl The <desc> is description used for warning/error dnl message (e.g. "foo support").
-dnl
-dnl The default <name> for $build_ and $enable_ could be overwrited by option $5.
-AC_DEFUN([UL_REQUIRES_PROGRAM], [
-  m4_define([suffix], m4_default([$5],$1))
-
-  if test "x$[build_]suffix" != xno; then
-
-    AC_PATH_PROG([$2], [$3])
-
-    case $[enable_]suffix:x$$2 in #(
-    no:*)
-      [build_]suffix=no ;;
-    yes:x)
-      AC_MSG_ERROR([$1 selected, but required $3 not available]);;
-    yes:x*)
-      [build_]suffix=yes ;;
-    check:x)
-      AC_MSG_WARN([$3 not found; not building $4])
-      [build_]suffix=no ;;
-    check:x*)
-      [build_]suffix=yes ;;
-    esac
-  fi
-])
-
 AC_ARG_ENABLE([asciidoc],
-  AS_HELP_STRING([--disable-asciidoc], [do not generate man pages from asciidoc]),
-  [], [UL_DEFAULT_ENABLE([asciidoc], [check])]
+	AS_HELP_STRING([--disable-asciidoc], [do not generate man pages from asciidoc]),
+	[], [enable_asciidoc=yes]
 )
-UL_BUILD_INIT([asciidoc])
-UL_REQUIRES_PROGRAM([asciidoc], [ASCIIDOCTOR], [asciidoctor], [man pages])
-AM_CONDITIONAL([ENABLE_ASCIIDOC], [test "x$build_asciidoc" = xyes])
+
+AC_PATH_PROG([ASCIIDOCTOR], [asciidoctor])
+if test "x$enable_asciidoc" = xyes -a "x$ASCIIDOCTOR" = x; then
+	AC_MSG_ERROR([Building man pages requires asciidoctor installed.])
+fi
+AM_CONDITIONAL([ENABLE_ASCIIDOC], [test "x$enable_asciidoc" = xyes])
 
 have_manpages=no
 AS_IF([test -f "$srcdir/man/cryptsetup-open.8"], [
-   AC_MSG_NOTICE([re-use already generated man-pages.])
-   have_manpages=yes]
+	AC_MSG_NOTICE([re-use already generated man-pages.])
+	have_manpages=yes]
 )
 AM_CONDITIONAL([HAVE_MANPAGES], [test "x$have_manpages" = xyes])
 
