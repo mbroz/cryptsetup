@@ -1,0 +1,28 @@
+= cryptsetup-bitlkDump(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS: 
+:ACTION_BITLKDUMP:
+
+== Name
+
+cryptsetup-bitlkDump - dump the header information of a BITLK device
+
+== SYNOPSIS
+
+*cryptsetup <options> _bitlkDump_ <device>*
+
+== DESCRIPTION
+
+Dump the header information of a BITLK device.
+
+Please note that cryptsetup does not use any Windows BitLocker code,
+please report all problems related to this compatibility extension to
+the cryptsetup project.
+
+*<options>* can be [--dump-volume-key --volume-key-file].
+
+include::man/common/cryptsetup_options.adoc[]
+include::man/common/footer.adoc[]
