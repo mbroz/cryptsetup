@@ -215,9 +215,9 @@ function expect_run()
 }
 
 export LANG=C
-valgrind_setup
 
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+valgrind_setup
 
 # LUKS non-root-tests
 if [ $(id -u) != 0 ]; then
