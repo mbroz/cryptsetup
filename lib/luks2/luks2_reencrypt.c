@@ -3711,8 +3711,10 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 		r = LUKS2_check_cipher(cd, r, cipher, cipher_mode);
-		if (r < 0)
+		if (r < 0) {
+			log_err(cd, _("Unable to use cipher specification %s-%s for LUKS2."), cipher, cipher_mode);
 			return r;
+		}
 	}
 
 	r = LUKS2_device_write_lock(cd, hdr, crypt_metadata_device(cd));
