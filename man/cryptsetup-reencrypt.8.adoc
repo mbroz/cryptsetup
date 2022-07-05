@@ -123,7 +123,7 @@ or kernel failures during reencryption (you can lose your data in this case).
 
 *ALWAYS BE SURE YOU HAVE RELIABLE BACKUP BEFORE USING THIS ACTION ON LUKS1 DEVICE.*
 
-include::man/common/cryptsetup_options.adoc[]
+include::man/common_options.adoc[]
 
 == LUKS2 ENCRYPTION EXAMPLES
 *NOTE*: You may drop *--type luks2* option as long as LUKS2 format is
@@ -167,4 +167,4 @@ Resume interrupted LUKS2 decryption:
 
 *cryptsetup reencrypt --resume-only --header luks2-hdr-file /dev/encrypted_device*
 
-include::man/common/footer.adoc[]
+include::man/common_footer.adoc[]
