@@ -2850,15 +2850,18 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 
 		dmd_source.size = dmd_target.size;
 		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, LUKS2_get_segments_jobj(hdr), &dmd_source);
+		if (!r) {
+			r = dm_reload_device(cd, name, &dmd_source, dmd_target.flags, 0);
+			if (r)
+				log_err(cd, _("Failed to reload device %s."), name);
+			else
+				clear_table = true;
+		}
+
+		dm_targets_free(cd, &dmd_source);
+
 		if (r)
 			goto out;
-
-		r = dm_reload_device(cd, name, &dmd_source, dmd_target.flags, 0);
-		if (r) {
-			log_err(cd, _("Failed to reload device %s."), name);
-			goto out;
-		}
-		clear_table = true;
 	}
 
 	if (name) {
