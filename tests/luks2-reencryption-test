@@ -878,6 +878,13 @@ HASH10=080acf35a507ac9849cfcba47dc2ad83e01b75663a516279c8b9d243b719643e
 prepare dev_size_mb=32
 setup_luks2_env
 
+# Check that we can use other ciphers than AES in userspace backend.
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c twofish-xts-plain64 $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON 2>/dev/null || skip "Cannot use Twofish cipher, test skipped"
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c serpent-xts-plain64 $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON 2>/dev/null || skip "Cannot use Serpent cipher, test skipped."
+wipe_dev $DEV
+
 echo "[1] Reencryption"
 echo -n "[512 sector]"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
