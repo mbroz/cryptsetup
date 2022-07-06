@@ -27,6 +27,7 @@ sbin_PROGRAMS =
 man8_MANS =
 tmpfilesd_DATA =
 pkgconfig_DATA =
+dist_noinst_DATA =
 
 include man/Makemodule.am
 
