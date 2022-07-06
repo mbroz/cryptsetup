@@ -1,7 +1,6 @@
-ADOCFILES_COMMON = man/common/cryptsetup_options.adoc \
-	man/common/footer.adoc
-
-dist_noinst_DATA = $(ADOCFILES_COMMON) \
+ADOCFILES = \
+	man/common_options.adoc \
+	man/common_footer.adoc \
 	man/cryptsetup.8.adoc \
 	man/cryptsetup-open.8.adoc \
 	man/cryptsetup-close.8.adoc \
@@ -29,9 +28,19 @@ dist_noinst_DATA = $(ADOCFILES_COMMON) \
 	man/cryptsetup-tcryptDump.8.adoc \
 	man/cryptsetup-bitlkDump.8.adoc \
 	man/cryptsetup-repair.8.adoc \
-	man/cryptsetup-benchmark.8.adoc
+	man/cryptsetup-benchmark.8.adoc \
+	man/cryptsetup-ssh.8.adoc \
+	man/veritysetup.8.adoc \
+	man/integritysetup.8.adoc
 
-MANPAGES = man/cryptsetup.8 \
+dist_noinst_DATA += $(ADOCFILES)
+
+MANPAGES =
+MANLINKS =
+
+if CRYPTSETUP
+MANPAGES += \
+	man/cryptsetup.8 \
 	man/cryptsetup-open.8 \
 	man/cryptsetup-close.8 \
 	man/cryptsetup-reencrypt.8 \
@@ -60,66 +69,56 @@ MANPAGES = man/cryptsetup.8 \
 	man/cryptsetup-repair.8 \
 	man/cryptsetup-benchmark.8
 
-MANLINKS = man/cryptsetup-create.8 \
+MANLINKS += \
+	man/cryptsetup-create.8 \
 	man/cryptsetup-plainOpen.8 \
 	man/cryptsetup-luksOpen.8 \
 	man/cryptsetup-loopaesOpen.8 \
 	man/cryptsetup-tcryptOpen.8 \
 	man/cryptsetup-bitlkOpen.8 \
 	man/cryptsetup-luksErase.8
+endif
 
 if VERITYSETUP
-dist_noinst_DATA += man/veritysetup.8.adoc
 MANPAGES += man/veritysetup.8
 endif
 
 if INTEGRITYSETUP
-dist_noinst_DATA += man/integritysetup.8.adoc
 MANPAGES += man/integritysetup.8
 endif
 
 if SSHPLUGIN_TOKEN
-dist_noinst_DATA += man/cryptsetup-ssh.8.adoc
 MANPAGES += man/cryptsetup-ssh.8
 endif
 
 if ENABLE_ASCIIDOC
-EXTRA_DIST += $(ADOCFILES_COMMON) $(MANPAGES) $(MANLINKS)
-man8_MANS += $(MANPAGES) $(MANLINKS)
+EXTRA_DIST += $(MANPAGES) $(MANLINKS)
+man8_MANS  += $(MANPAGES) $(MANLINKS)
 
-$(MANPAGES): $(ADOCFILES_COMMON)
-
-asciidoc_man_cmd = $(ASCIIDOCTOR) \
-	-b manpage \
-	-a 'release-version=$(VERSION)'
-
-SUFFIXES = .1.adoc .3.adoc .5.adoc .8.adoc .1 .3 .5 .8
-.1.adoc.1 .3.adoc.3 .5.adoc.5 .8.adoc.8:
+SUFFIXES = .8.adoc .8
+.8.adoc.8:
 	$(AM_V_GEN) test -f ./$@ || \
-		$(MKDIR_P) $$(dirname $@) && \
-		$(asciidoc_man_cmd) --base-dir=$(abs_srcdir) \
-				    --destination-dir $(abs_builddir)/$$(dirname $@) $<
+	$(ASCIIDOCTOR) -b manpage \
+		-a 'release-version=$(VERSION)' \
+		--base-dir=$(abs_srcdir) \
+		--destination-dir $(abs_builddir)/man $<
 
 $(MANLINKS): $(MANPAGES)
 gen-man: $(man8_MANS)
 
-# Standard "make" follows BUILD_* macros from ./configure, and in this case, it
-# ignores man pages for disabled tools, but for distribution tarball, we need
-# to generate all man-pages (to avoid dependence on asciidoc). [kzak Jan-2022]
 gen-man-dist:
-	@list=`find -name *.adoc -not -path "*/man/common/*" | sed -e 's/\.adoc//g'`; \
+	@list=`find -name *.adoc -not -path "*/man/common_*" | sed -e 's/\.adoc//g'`; \
 	missing=`for p in $$list; do test -f $$p || echo $$p; done`; \
 	if test -n "$$missing"; then \
 		$(MAKE) $(AM_MAKEFLAGS) $$missing; \
 	fi;
 
-
 # !ENABLE_ASCIIDOC
 else
 
 if HAVE_MANPAGES
-EXTRA_DIST += $(ADOCFILES_COMMON) $(MANPAGES) $(MANLINKS)
-man8_MANS += $(MANPAGES) $(MANLINKS)
+EXTRA_DIST += $(MANPAGES) $(MANLINKS)
+man8_MANS  += $(MANPAGES) $(MANLINKS)
 endif
 
 gen-man:

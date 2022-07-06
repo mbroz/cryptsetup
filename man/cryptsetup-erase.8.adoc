@@ -12,8 +12,8 @@ cryptsetup-erase, cryptsetup-luksErase - erase all keyslots
 
 == SYNOPSIS
 
-*cryptsetup <options> _erase_ <device>* +
-*cryptsetup <options> _luksErase_ <device>*
+*cryptsetup  _erase_ [<options>] <device>* +
+*cryptsetup _luksErase_ [<options>] <device>*
 
 == DESCRIPTION
 
@@ -22,5 +22,5 @@ You do not need to provide any password for this operation.
 
 *WARNING:* This operation is irreversible.
 
-include::man/common/cryptsetup_options.adoc[]
-include::man/common/footer.adoc[]
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

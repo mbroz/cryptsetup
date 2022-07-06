@@ -12,7 +12,7 @@ cryptsetup-luksFormat - initialize a LUKS partition and set the initial passphra
 
 == SYNOPSIS
 
-*cryptsetup <options> _luksFormat_ <device> [<key file>]*
+*cryptsetup _luksFormat_ [<options>] <device> [<key file>]*
 
 == DESCRIPTION
 
@@ -46,5 +46,5 @@ For LUKS2, additional *<options>* can be [--integrity,
 all data the old container permanently irretrievable unless you have a
 header backup.
 
-include::man/common/cryptsetup_options.adoc[]
-include::man/common/footer.adoc[]
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

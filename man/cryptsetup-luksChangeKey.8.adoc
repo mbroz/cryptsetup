@@ -12,7 +12,7 @@ cryptsetup-luksChangeKey - change an existing passphrase
 
 == SYNOPSIS
 
-*cryptsetup <options> _luksChangeKey_ <device> [<new key file>]*
+*cryptsetup _luksChangeKey_ [<options>] <device> [<new key file>]*
 
 == DESCRIPTION
 
@@ -42,5 +42,5 @@ algorithm is always the same for all keyslots.
 --force-password, --hash, --header, --disable-locks, --type,
 --keyslot-cipher, --keyslot-key-size].
 
-include::man/common/cryptsetup_options.adoc[]
-include::man/common/footer.adoc[]
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

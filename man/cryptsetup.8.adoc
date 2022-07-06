@@ -10,7 +10,7 @@ cryptsetup - manage plain dm-crypt and LUKS encrypted volumes
 
 == SYNOPSIS
 
-*cryptsetup <options> <action> <action args>*
+*cryptsetup <action> [<options>] <action args>*
 
 == DESCRIPTION
 
@@ -24,7 +24,7 @@ In addition, cryptsetup provides limited support for the use of loop-AES
 volumes, TrueCrypt, VeraCrypt and BitLocker compatible volumes.
 
 For more information about specific cryptsetup action see
-*cryptsetup-<action_name>*(8), where *<action_name>* is the name of the
+*cryptsetup-<action>*(8), where *<action>* is the name of the
 cryptsetup action.
 
 == PLAIN DM-CRYPT OR LUKS?
@@ -301,7 +301,7 @@ ____
 See also section 7 of the FAQ and *http://loop-aes.sourceforge.net* for
 more information regarding loop-AES.
 
-== TCRYPT (TrueCrypt-compatible and VeraCrypt) EXTENSION
+== TCRYPT (TrueCrypt and VeraCrypt compatible) EXTENSION
 
 cryptsetup supports mapping of TrueCrypt, tcplay or VeraCrypt encrypted
 partition using a native Linux kernel API. Header formatting and TCRYPT
@@ -385,21 +385,19 @@ Dump the header information of a TCRYPT device.
 See *cryptsetup-tcryptDump*(8).
 ____
 
-See also *https://en.wikipedia.org/wiki/TrueCrypt* for more information
-regarding TrueCrypt.
+See also https://en.wikipedia.org/wiki/TrueCrypt[*TrueCrypt*] and
+https://en.wikipedia.org/wiki/VeraCrypt[*VeraCrypt*] pages for more information.
 
-Please note that cryptsetup does not use TrueCrypt code, please report
-all problems related to this compatibility extension to the cryptsetup
+Please note that cryptsetup does not use TrueCrypt or VeraCrypt code, please
+report all problems related to this compatibility extension to the cryptsetup
 project.
 
-== BITLK (Windows BitLocker-compatible) EXTENSION (EXPERIMENTAL)
+== BITLK (Windows BitLocker compatible) EXTENSION
 
 cryptsetup supports mapping of BitLocker and BitLocker to Go encrypted
 partition using a native Linux kernel API. Header formatting and BITLK
 header changes are not supported, cryptsetup never changes BITLK header
 on-device.
-
-*WARNING:* This extension is EXPERIMENTAL.
 
 BITLK extension requires kernel userspace crypto API to be available
 (for details see TCRYPT section).
@@ -671,19 +669,11 @@ _/run/cryptsetup_). The locking directory should be created with the
 proper security context by the distribution during the boot-up phase.
 Only LUKS2 uses locks, other formats do not use this mechanism.
 
-== DEPRECATED ACTIONS
+== LUKS ON-DISK FORMAT SPECIFICATION
 
-The _reload_ action is no longer supported. Please use _dmsetup(8)_ if
-you need to directly manipulate with the device mapping table.
-
-The _luksDelKey_ was replaced with _luksKillSlot_.
-
-== REPORTING BUGS
-
-Report bugs, including ones in the documentation, on the cryptsetup
-mailing list at <<cryptsetup@lists.linux.dev>> or in the 'Issues' section
-on LUKS website. Please attach the output of the failed command with the
---debug option added.
+For LUKS on-disk metadata specification see
+https://gitlab.com/cryptsetup/cryptsetup/wikis/Specification[*LUKS1*] and
+https://gitlab.com/cryptsetup/LUKS2-docs[*LUKS2*].
 
 == AUTHORS
 
@@ -693,29 +683,4 @@ Fruhwirth <<clemens@endorphin.org>>. +
 Man page extensions by Milan Broz <<gmazyland@gmail.com>>. +
 Man page rewrite and extension by Arno Wagner <<arno@wagner.name>>.
 
-== COPYRIGHT
-
-Copyright (C) 2004 Jana Saout +
-Copyright (C) 2004-2006 Clemens Fruhwirth +
-Copyright (C) 2012-2014 Arno Wagner +
-Copyright (C) 2009-2022 Red Hat, Inc. +
-Copyright (C) 2009-2022 Milan Broz
-
-This is free software; see the source for copying conditions. There is
-NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
-PURPOSE.
-
-== SEE ALSO
-
-*cryptsetup-<action_name>*(8) (*<action_name>* is the name of the *cryptsetup* action), *integritysetup*(8) and *veritysetup*(8)
-
-The LUKS website at *https://gitlab.com/cryptsetup/cryptsetup/*
-
-The cryptsetup FAQ, contained in the distribution package and online at
-*https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions*
-
-The cryptsetup mailing list and list archive, see FAQ entry 1.6.
-
-The LUKS version 1 on-disk format specification available at
-*https://gitlab.com/cryptsetup/cryptsetup/wikis/Specification* and LUKS
-version 2 at *https://gitlab.com/cryptsetup/LUKS2-docs*.
+include::man/common_footer.adoc[]

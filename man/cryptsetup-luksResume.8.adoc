@@ -12,7 +12,7 @@ cryptsetup-luksResume - resume a suspended device and reinstate the key
 
 == SYNOPSIS
 
-*cryptsetup <options> _luksResume_ <name>*
+*cryptsetup _luksResume_ [<options>] <name>*
 
 == DESCRIPTION
 
@@ -24,5 +24,5 @@ interactively for a passphrase if no token is usable (LUKS2 only) or
 --disable-keyring, --disable-locks, --token-id, --token-only,
 --token-type, --type]
 
-include::man/common/cryptsetup_options.adoc[]
-include::man/common/footer.adoc[]
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

@@ -12,7 +12,7 @@ cryptsetup-luksAddKey - add a new passphrase
 
 == SYNOPSIS
 
-*cryptsetup <options> _luksAddKey_ <device> [<key file with new key>]*
+*cryptsetup _luksAddKey_ [<options>] <device> [<key file with new key>]*
 
 == DESCRIPTION
 
@@ -36,5 +36,5 @@ algorithm is always the same for all keyslots.
 --pbkdf, --pbkdf-force-iterations, --pbkdf-memory, --pbkdf-parallel,
 --unbound, --type, --keyslot-cipher, --keyslot-key-size].
 
-include::man/common/cryptsetup_options.adoc[]
-include::man/common/footer.adoc[]
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

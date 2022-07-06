@@ -12,7 +12,7 @@ cryptsetup-luksConvertKey - converts an existing LUKS2 keyslot to new PBKDF para
 
 == SYNOPSIS
 
-*cryptsetup <options> _luksConvertKey_ <device>*
+*cryptsetup _luksConvertKey_ [<options>] <device>*
 
 == DESCRIPTION
 
@@ -37,5 +37,5 @@ been wiped and make the LUKS container inaccessible.
 --pbkdf-force-iterations, --pbkdf-memory, --pbkdf-parallel,
 --keyslot-cipher, --keyslot-key-size].
 
-include::man/common/cryptsetup_options.adoc[]
-include::man/common/footer.adoc[]
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

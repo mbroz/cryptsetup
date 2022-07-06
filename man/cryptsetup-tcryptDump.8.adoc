@@ -8,15 +8,15 @@
 
 == Name
 
-cryptsetup-tcryptDump - dump the header information of a TCRYPT device
+cryptsetup-tcryptDump - dump the header information of a TCRYPT (TrueCrypt or VeraCrypt compatible) device
 
 == SYNOPSIS
 
-*cryptsetup <options> _tcryptDump_ <device>*
+*cryptsetup _tcryptDump_ [<options>] <device>*
 
 == DESCRIPTION
 
-Dump the header information of a TCRYPT device.
+Dump the header information of a TCRYPT (TrueCrypt or VeraCrypt compatible) device.
 
 If the --dump-volume-key option is used, the TCRYPT device volume key is
 dumped instead of TCRYPT header info. Beware that the volume key (or
@@ -31,5 +31,5 @@ to prevent further access. Use this option carefully.
 The keyfile parameter allows a combination of file content with the
 passphrase and can be repeated.
 
-include::man/common/cryptsetup_options.adoc[]
-include::man/common/footer.adoc[]
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

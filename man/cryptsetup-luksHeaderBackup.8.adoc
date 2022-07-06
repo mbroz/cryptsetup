@@ -12,7 +12,7 @@ cryptsetup-luksHeaderBackup - store a binary backup of the LUKS header and keysl
 
 == SYNOPSIS
 
-*cryptsetup <options> _luksHeaderBackup_ <device> --header-backup-file <file>*
+*cryptsetup _luksHeaderBackup_ --header-backup-file <file> [<options>] <device> *
 
 == DESCRIPTION
 
@@ -29,5 +29,5 @@ erase all header backups in addition or overwrite the encrypted data
 area as well. The second option is less secure, as some sectors can
 survive, e.g. due to defect management.
 
-include::man/common/cryptsetup_options.adoc[]
-include::man/common/footer.adoc[]
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]
