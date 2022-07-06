@@ -301,7 +301,7 @@ ____
 See also section 7 of the FAQ and *http://loop-aes.sourceforge.net* for
 more information regarding loop-AES.
 
-== TCRYPT (TrueCrypt-compatible and VeraCrypt) EXTENSION
+== TCRYPT (TrueCrypt and VeraCrypt compatible) EXTENSION
 
 cryptsetup supports mapping of TrueCrypt, tcplay or VeraCrypt encrypted
 partition using a native Linux kernel API. Header formatting and TCRYPT
@@ -385,21 +385,19 @@ Dump the header information of a TCRYPT device.
 See *cryptsetup-tcryptDump*(8).
 ____
 
-See also *https://en.wikipedia.org/wiki/TrueCrypt* for more information
-regarding TrueCrypt.
+See also https://en.wikipedia.org/wiki/TrueCrypt[*TrueCrypt*] and
+https://en.wikipedia.org/wiki/VeraCrypt[*VeraCrypt*] pages for more information.
 
-Please note that cryptsetup does not use TrueCrypt code, please report
-all problems related to this compatibility extension to the cryptsetup
+Please note that cryptsetup does not use TrueCrypt or VeraCrypt code, please
+report all problems related to this compatibility extension to the cryptsetup
 project.
 
-== BITLK (Windows BitLocker-compatible) EXTENSION (EXPERIMENTAL)
+== BITLK (Windows BitLocker compatible) EXTENSION
 
 cryptsetup supports mapping of BitLocker and BitLocker to Go encrypted
 partition using a native Linux kernel API. Header formatting and BITLK
 header changes are not supported, cryptsetup never changes BITLK header
 on-device.
-
-*WARNING:* This extension is EXPERIMENTAL.
 
 BITLK extension requires kernel userspace crypto API to be available
 (for details see TCRYPT section).
