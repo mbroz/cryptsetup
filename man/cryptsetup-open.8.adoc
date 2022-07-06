@@ -103,8 +103,8 @@ ____
 _open_ --type tcrypt <device> <name> +
 _tcryptOpen_ <device> <name> (*old syntax*)
 ____
-Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up a mapping
-<name>.
+Opens the TCRYPT (a TrueCrypt an VeraCrypt compatible) <device> and sets
+up a mapping <name>.
 
 *<options>* can be [--key-file, --tcrypt-hidden, --tcrypt-system,
 --tcrypt-backup, --readonly, --test-passphrase, --allow-discards,
@@ -133,17 +133,12 @@ ____
 _open_ --type bitlk <device> <name> +
 _bitlkOpen_ <device> <name> (*old syntax*)
 ____
-Opens the BITLK (a BitLocker-compatible) <device> and sets up a mapping
+Opens the BITLK (a BitLocker compatible) <device> and sets up a mapping
 <name>.
-
-Please note that cryptsetup does not use any Windows BitLocker code,
-please report all problems related to this compatibility extension to
-the cryptsetup project.
 
 *<options>* can be [--key-file, --readonly, --test-passphrase,
 --allow-discards --volume-key-file].
 ____
-
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

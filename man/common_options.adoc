@@ -195,9 +195,11 @@ ifdef::ACTION_REENCRYPT[]
 Use (set) new volume key stored in a file.
 endif::[]
 +
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
 *WARNING:* If you create your own volume key, you need to make sure to
 do it right. Otherwise, you can end up with a low-entropy or otherwise
 partially predictable volume key which will compromise security.
+endif::[]
 endif::[]
 
 ifdef::ALL_OPTIONS,ACTION_LUKSDUMP[]
