@@ -1,8 +1,6 @@
-ADOCFILES_COMMON = \
+ADOCFILES = \
 	man/common_options.adoc \
-	man/common_footer.adoc
-
-dist_noinst_DATA = $(ADOCFILES_COMMON) \
+	man/common_footer.adoc \
 	man/cryptsetup.8.adoc \
 	man/cryptsetup-open.8.adoc \
 	man/cryptsetup-close.8.adoc \
@@ -30,9 +28,19 @@ dist_noinst_DATA = $(ADOCFILES_COMMON) \
 	man/cryptsetup-tcryptDump.8.adoc \
 	man/cryptsetup-bitlkDump.8.adoc \
 	man/cryptsetup-repair.8.adoc \
-	man/cryptsetup-benchmark.8.adoc
+	man/cryptsetup-benchmark.8.adoc \
+	man/cryptsetup-ssh.8.adoc \
+	man/veritysetup.8.adoc \
+	man/integritysetup.8.adoc
 
-MANPAGES = man/cryptsetup.8 \
+dist_noinst_DATA += $(ADOCFILES)
+
+MANPAGES =
+MANLINKS =
+
+if CRYPTSETUP
+MANPAGES += \
+	man/cryptsetup.8 \
 	man/cryptsetup-open.8 \
 	man/cryptsetup-close.8 \
 	man/cryptsetup-reencrypt.8 \
@@ -61,34 +69,31 @@ MANPAGES = man/cryptsetup.8 \
 	man/cryptsetup-repair.8 \
 	man/cryptsetup-benchmark.8
 
-MANLINKS = man/cryptsetup-create.8 \
+MANLINKS += \
+	man/cryptsetup-create.8 \
 	man/cryptsetup-plainOpen.8 \
 	man/cryptsetup-luksOpen.8 \
 	man/cryptsetup-loopaesOpen.8 \
 	man/cryptsetup-tcryptOpen.8 \
 	man/cryptsetup-bitlkOpen.8 \
 	man/cryptsetup-luksErase.8
+endif
 
 if VERITYSETUP
-dist_noinst_DATA += man/veritysetup.8.adoc
 MANPAGES += man/veritysetup.8
 endif
 
 if INTEGRITYSETUP
-dist_noinst_DATA += man/integritysetup.8.adoc
 MANPAGES += man/integritysetup.8
 endif
 
 if SSHPLUGIN_TOKEN
-dist_noinst_DATA += man/cryptsetup-ssh.8.adoc
 MANPAGES += man/cryptsetup-ssh.8
 endif
 
 if ENABLE_ASCIIDOC
-EXTRA_DIST += $(ADOCFILES_COMMON) $(MANPAGES) $(MANLINKS)
-man8_MANS += $(MANPAGES) $(MANLINKS)
-
-$(MANPAGES): $(ADOCFILES_COMMON)
+EXTRA_DIST += $(MANPAGES) $(MANLINKS)
+man8_MANS  += $(MANPAGES) $(MANLINKS)
 
 SUFFIXES = .8.adoc .8
 .8.adoc.8:
@@ -108,13 +113,12 @@ gen-man-dist:
 		$(MAKE) $(AM_MAKEFLAGS) $$missing; \
 	fi;
 
-
 # !ENABLE_ASCIIDOC
 else
 
 if HAVE_MANPAGES
-EXTRA_DIST += $(ADOCFILES_COMMON) $(MANPAGES) $(MANLINKS)
-man8_MANS += $(MANPAGES) $(MANLINKS)
+EXTRA_DIST += $(MANPAGES) $(MANLINKS)
+man8_MANS  += $(MANPAGES) $(MANLINKS)
 endif
 
 gen-man:
