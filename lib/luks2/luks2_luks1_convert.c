@@ -49,6 +49,7 @@ int LUKS2_check_cipher(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
+	memset(buf, 0, sizeof(buf));
 	r = crypt_storage_decrypt(s, 0, sizeof(buf), buf);
 	crypt_storage_destroy(s);
 out:
