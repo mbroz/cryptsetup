@@ -4641,7 +4641,86 @@ static void Luks2Reencryption(void)
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
 	CRYPT_FREE(cd);
+	remove(BACKUP_FILE);
 
+	/* remove error mapping */
+	OK_(dmdevice_error_io(L_DEVICE_OK, DMDIR L_DEVICE_OK, DEVICE_ERROR, 0, 0, 8, ERR_REMOVE));
+
+	/* test various bogus reencryption resilience parameters */
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "checksum", /* should have been datashift-checksum */
+		.hash = "sha256",
+		.data_shift = r_header_size,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY | CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
+	};
+
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(set_fast_pbkdf(cd));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, NULL));
+	EQ_(0, crypt_keyslot_add_by_volume_key(cd, 0, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(crypt_header_backup(cd, CRYPT_LUKS2, BACKUP_FILE));
+	CRYPT_FREE(cd);
+
+	OK_(chmod(BACKUP_FILE, S_IRUSR|S_IWUSR));
+	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+
+	/* decryption on device with data offset and no datashift subvariant mode */
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Invalid reencryption params");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+
+	rparams.resilience = "journal"; /* should have been datashift-journal */
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Invalid reencryption params");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "datashift-checksum",
+		.hash = "sha256",
+		.data_shift = 0, /* must be non zero */
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY | CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
+	};
+
+	/* datashift = 0 */
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Invalid reencryption params");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+
+	rparams.resilience = "datashift-journal";
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Invalid reencryption params");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+
+	rparams.resilience = "datashift"; /* datashift only is not supported in decryption mode with moved segment */
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Invalid reencryption params");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+
+	CRYPT_FREE(cd);
+
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(set_fast_pbkdf(cd));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 21, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 21);
+
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_REENCRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "datashift-checksum",
+		.hash = "sha256",
+		.data_shift = r_header_size,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
+	};
+
+	/* regular reencryption must not accept datashift subvariants */
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Invalid reencryption params");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+
+	rparams.resilience = "datashift-journal";
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Invalid reencryption params");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+
+	CRYPT_FREE(cd);
 	_cleanup_dmdevices();
 }
 #endif
