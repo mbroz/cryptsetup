@@ -62,6 +62,13 @@
 /* 1 GiB */
 #define LUKS2_REENCRYPT_MAX_HOTZONE_LENGTH 0x40000000
 
+/* supported reencryption requirement versions */
+#define LUKS2_REENCRYPT_REQ_VERSION         UINT8_C(2)
+#define LUKS2_DECRYPT_DATASHIFT_REQ_VERSION UINT8_C(3)
+
+/* see reencrypt_assembly_verification_data() in luks2_reencrypt_digest.c */
+/*	LUKS2_REENCRYPT_MAX_VERSION         UINT8_C(207) */
+
 struct device;
 struct luks2_reencrypt;
 struct reenc_protection;

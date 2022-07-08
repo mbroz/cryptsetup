@@ -24,9 +24,6 @@
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
 
-#define LUKS2_REENCRYPT_REQ_VERSION 2
-#define LUKS2_DECRYPT_DATASHIFT_REQ_VERSION 3
-
 struct luks2_reencrypt {
 	/* reencryption window attributes */
 	uint64_t offset;
@@ -2810,7 +2807,7 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, *vks);
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, LUKS2_DECRYPT_DATASHIFT_REQ_VERSION, *vks);
 	if (r < 0)
 		goto out;
 
@@ -3055,7 +3052,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, *vks);
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, LUKS2_REENCRYPT_REQ_VERSION, *vks);
 	if (r < 0)
 		goto out;
 
@@ -3652,16 +3649,6 @@ static int reencrypt_repair_by_passphrase(
 		goto out;
 	}
 
-	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, &vks);
-	if (r < 0)
-		goto out;
-
-	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, vks);
-	crypt_free_volume_key(vks);
-	vks = NULL;
-	if (r < 0)
-		goto out;
-
 	resilience = reencrypt_resilience_type(hdr);
 	if (!resilience) {
 		r = -EINVAL;
@@ -3674,6 +3661,16 @@ static int reencrypt_repair_by_passphrase(
 		requirement_version = LUKS2_DECRYPT_DATASHIFT_REQ_VERSION;
 	else
 		requirement_version = LUKS2_REENCRYPT_REQ_VERSION;
+
+	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, &vks);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, requirement_version, vks);
+	crypt_free_volume_key(vks);
+	vks = NULL;
+	if (r < 0)
+		goto out;
 
 	/* replaces old online-reencrypt flag with updated version and commits metadata */
 	r = reencrypt_update_flag(cd, requirement_version, true, true);

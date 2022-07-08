@@ -265,12 +265,18 @@ static size_t blob_serialize(void *blob, size_t length, uint8_t *buffer)
 static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	struct volume_key *vks,
+	uint8_t version,
 	struct volume_key **verification_data)
 {
 	uint8_t *ptr;
 	int digest_new, digest_old;
 	struct volume_key *data = NULL, *vk_old = NULL, *vk_new = NULL;
 	size_t keyslot_data_len, segments_data_len, data_len = 2;
+
+	/*
+	 * This works up to (including) version v207.
+	 */
+	assert(version < (UINT8_MAX - 0x2F));
 
 	/* Keys - calculate length */
 	digest_new = LUKS2_reencrypt_digest_new(hdr);
@@ -313,9 +319,8 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 
 	ptr = (uint8_t*)data->key;
 
-	/* v2 */
 	*ptr++ = 0x76;
-	*ptr++ = 0x32;
+	*ptr++ = 0x30 + version;
 
 	if (vk_old)
 		ptr += blob_serialize(vk_old->key, vk_old->keylength, ptr);
@@ -343,6 +348,7 @@ bad:
 
 int LUKS2_keyslot_reencrypt_digest_create(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
+	uint8_t version,
 	struct volume_key *vks)
 {
 	int digest_reencrypt, keyslot_reencrypt, r;
@@ -352,7 +358,7 @@ int LUKS2_keyslot_reencrypt_digest_create(struct crypt_device *cd,
 	if (keyslot_reencrypt < 0)
 		return keyslot_reencrypt;
 
-	r = reencrypt_assembly_verification_data(cd, hdr, vks, &data);
+	r = reencrypt_assembly_verification_data(cd, hdr, vks, version, &data);
 	if (r < 0)
 		return r;
 
@@ -376,6 +382,7 @@ int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 {
 	int r, keyslot_reencrypt;
 	struct volume_key *data;
+	uint8_t version;
 
 	log_dbg(cd, "Verifying reencryption metadata.");
 
@@ -383,7 +390,10 @@ int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 	if (keyslot_reencrypt < 0)
 		return keyslot_reencrypt;
 
-	r = reencrypt_assembly_verification_data(cd, hdr, vks, &data);
+	if (LUKS2_config_get_reencrypt_version(hdr, &version))
+		return -EINVAL;
+
+	r = reencrypt_assembly_verification_data(cd, hdr, vks, version, &data);
 	if (r < 0)
 		return r;
 
