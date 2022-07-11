@@ -35,11 +35,7 @@ ADOCFILES = \
 
 dist_noinst_DATA += $(ADOCFILES)
 
-MANPAGES =
-MANLINKS =
-
-if CRYPTSETUP
-MANPAGES += \
+CRYPTSETUP_MANPAGES = \
 	man/cryptsetup.8 \
 	man/cryptsetup-open.8 \
 	man/cryptsetup-close.8 \
@@ -69,7 +65,7 @@ MANPAGES += \
 	man/cryptsetup-repair.8 \
 	man/cryptsetup-benchmark.8
 
-MANLINKS += \
+CRYPTSETUP_MANLINKS = \
 	man/cryptsetup-create.8 \
 	man/cryptsetup-plainOpen.8 \
 	man/cryptsetup-luksOpen.8 \
@@ -77,23 +73,38 @@ MANLINKS += \
 	man/cryptsetup-tcryptOpen.8 \
 	man/cryptsetup-bitlkOpen.8 \
 	man/cryptsetup-luksErase.8
-endif
 
+VERITYSETUP_MANPAGES = man/veritysetup.8
+INTEGRITYSETUP_MANPAGES = man/integritysetup.8
+SSHPLUGIN_MANPAGES = man/cryptsetup-ssh.8
+
+MANPAGES_ALL = \
+	$(CRYPTSETUP_MANPAGES) \
+	$(CRYPTSETUP_MANLINKS) \
+	$(VERITYSETUP_MANPAGES) \
+	$(INTEGRITYSETUP_MANPAGES) \
+	$(SSHPLUGIN_MANPAGES)
+
+MANPAGES =
+MANLINKS =
+
+if CRYPTSETUP
+MANPAGES += $(CRYPTSETUP_MANPAGES)
+MANLINKS += $(CRYPTSETUP_MANLINKS)
+endif
 if VERITYSETUP
-MANPAGES += man/veritysetup.8
+MANPAGES += $(VERITYSETUP_MANPAGES)
 endif
-
 if INTEGRITYSETUP
-MANPAGES += man/integritysetup.8
+MANPAGES += $(INTEGRITYSETUP_MANPAGES)
 endif
-
 if SSHPLUGIN_TOKEN
-MANPAGES += man/cryptsetup-ssh.8
+MANPAGES += $(SSHPLUGIN_MANPAGES)
 endif
 
 if ENABLE_ASCIIDOC
-EXTRA_DIST += $(MANPAGES) $(MANLINKS)
-man8_MANS  += $(MANPAGES) $(MANLINKS)
+EXTRA_DIST += $(MANPAGES_ALL)
+man8_MANS += $(MANPAGES) $(MANLINKS)
 
 SUFFIXES = .8.adoc .8
 .8.adoc.8:
@@ -117,8 +128,8 @@ gen-man-dist:
 else
 
 if HAVE_MANPAGES
-EXTRA_DIST += $(MANPAGES) $(MANLINKS)
-man8_MANS  += $(MANPAGES) $(MANLINKS)
+EXTRA_DIST += $(MANPAGES_ALL)
+man8_MANS += $(MANPAGES) $(MANLINKS)
 endif
 
 gen-man:
@@ -126,5 +137,3 @@ gen-man-dist:
 endif
 
 dist-hook: gen-man-dist
-
-CLEANFILES += $(MANPAGES) $(MANLINKS)
