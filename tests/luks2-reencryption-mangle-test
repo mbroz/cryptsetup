@@ -9,6 +9,7 @@ CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs
 IMG=reenc-mangle-data
 IMG_HDR=$IMG.hdr
+IMG_HDR_BCP=$IMG_HDR.bcp
 IMG_JSON=$IMG.json
 KEY1=key1
 DEV_NAME=reenc3492834
@@ -21,7 +22,7 @@ JSON_MSIZE=16384
 function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
-	rm -f $IMG $IMG_HDR $IMG_JSON $KEY1 >/dev/null 2>&1
+	rm -f $IMG $IMG_HDR $IMG_HDR_BCP $IMG_JSON $KEY1 >/dev/null 2>&1
 }
 
 function fail()
@@ -48,8 +49,10 @@ function bin_check()
 
 function img_json_save()
 {
+	local _hdr=$IMG
+	[ -z "$1" ] || _hdr="$1"
 	# FIXME: why --json-file cannot be used?
-	$CRYPTSETUP luksDump --dump-json-metadata $IMG | jq -c -M . | tr -d '\n' >$IMG_JSON
+	$CRYPTSETUP luksDump --dump-json-metadata $_hdr | jq -c -M . | tr -d '\n' >$IMG_JSON
 }
 
 function img_json_dump()
@@ -98,6 +101,7 @@ function _dd()
 # header mangle functions
 function img_update_json()
 {
+	local _hdr="$IMG"
 	local LUKS2_BIN1_OFFSET=448
 	local LUKS2_BIN2_OFFSET=$((LUKS2_BIN1_OFFSET + $JSON_MSIZE))
 	local LUKS2_JSON_SIZE=$(($JSON_MSIZE - 4096))
@@ -110,24 +114,26 @@ function img_update_json()
 		echo $JSON | tr -d '\n' >$IMG_JSON || fail
 	fi
 
+	[ -z "$2" ] || _hdr="$2"
+
 	# wipe JSON areas
-	_dd if=/dev/zero of=$IMG count=$LUKS2_JSON_SIZE seek=4096
-	_dd if=/dev/zero of=$IMG count=$LUKS2_JSON_SIZE seek=$(($JSON_MSIZE + 4096))
+	_dd if=/dev/zero of=$_hdr count=$LUKS2_JSON_SIZE seek=4096
+	_dd if=/dev/zero of=$_hdr count=$LUKS2_JSON_SIZE seek=$(($JSON_MSIZE + 4096))
 
 	# write JSON data
-	_dd if=$IMG_JSON of=$IMG count=$LUKS2_JSON_SIZE seek=4096
-	_dd if=$IMG_JSON of=$IMG count=$LUKS2_JSON_SIZE seek=$(($JSON_MSIZE + 4096))
+	_dd if=$IMG_JSON of=$_hdr count=$LUKS2_JSON_SIZE seek=4096
+	_dd if=$IMG_JSON of=$_hdr count=$LUKS2_JSON_SIZE seek=$(($JSON_MSIZE + 4096))
 
 	# erase sha256 checksums
-	_dd if=/dev/zero of=$IMG count=64 seek=$LUKS2_BIN1_OFFSET
-	_dd if=/dev/zero of=$IMG count=64 seek=$LUKS2_BIN2_OFFSET
+	_dd if=/dev/zero of=$_hdr count=64 seek=$LUKS2_BIN1_OFFSET
+	_dd if=/dev/zero of=$_hdr count=64 seek=$LUKS2_BIN2_OFFSET
 
 	# calculate sha256 and write chexksums
-	local SUM1_HEX=$(_dd if=$IMG count=$JSON_MSIZE | sha256sum | cut -d ' ' -f 1)
-	echo $SUM1_HEX | xxd -r -p | _dd of=$IMG seek=$LUKS2_BIN1_OFFSET count=64 || fail
+	local SUM1_HEX=$(_dd if=$_hdr count=$JSON_MSIZE | sha256sum | cut -d ' ' -f 1)
+	echo $SUM1_HEX | xxd -r -p | _dd of=$_hdr seek=$LUKS2_BIN1_OFFSET count=64 || fail
 
-	local SUM2_HEX=$(_dd if=$IMG skip=$JSON_MSIZE count=$JSON_MSIZE | sha256sum | cut -d ' ' -f 1)
-	echo $SUM2_HEX | xxd -r -p | _dd of=$IMG seek=$LUKS2_BIN2_OFFSET count=64 || fail
+	local SUM2_HEX=$(_dd if=$_hdr skip=$JSON_MSIZE count=$JSON_MSIZE | sha256sum | cut -d ' ' -f 1)
+	echo $SUM2_HEX | xxd -r -p | _dd of=$_hdr seek=$LUKS2_BIN2_OFFSET count=64 || fail
 
 	img_hash_save
 }
@@ -504,6 +510,38 @@ img_update_json '
 		"journal_integrity": "none"
 	}'
 $CRYPTSETUP reencrypt $IMG $CS_PARAMS >/dev/null 2>&1 && fail
+
+echo "[9] Decryption with datashift"
+img_prepare_raw
+$CRYPTSETUP reencrypt $CS_PARAMS --decrypt --init-only --force-offline-reencrypt --resilience checksum --header $IMG_HDR $IMG || fail
+cp $IMG_HDR $IMG_HDR_BCP
+
+# change hash
+img_json_save $IMG_HDR_BCP
+img_update_json '.keyslots."1".area.hash = "sha12345"' $IMG_HDR
+$CRYPTSETUP reencrypt --header $IMG_HDR $IMG $CS_PARAMS --force-offline-reencrypt 2>/dev/null && fail
+
+# change sector size
+img_json_save $IMG_HDR_BCP
+img_update_json '.keyslots."1".area.sector_size = 1024' $IMG_HDR
+$CRYPTSETUP reencrypt --header $IMG_HDR $IMG $CS_PARAMS --force-offline-reencrypt 2>/dev/null && fail
+
+# replace with new resilience mode
+img_json_save $IMG_HDR_BCP
+img_update_json 'del(.keyslots."1".area.hash) |
+		 del(.keyslots."1".sector_size) |
+		 .keyslots."1".area.type = "datashift-journal"' $IMG_HDR
+$CRYPTSETUP reencrypt --header $IMG_HDR $IMG $CS_PARAMS --force-offline-reencrypt 2>/dev/null && fail
+
+# downgrade reencryption requirement
+img_json_save $IMG_HDR_BCP
+img_update_json '.config.requirements.mandatory = ["online-reencrypt-v2"]' $IMG_HDR
+$CRYPTSETUP reencrypt --header $IMG_HDR $IMG $CS_PARAMS --force-offline-reencrypt 2>/dev/null && fail
+
+# change datashift value
+img_json_save $IMG_HDR_BCP
+img_update_json '.keyslots."1".area.shift_size = (((.keyslots."1".area.shift_size | tonumber) - 4096) | tostring)' $IMG_HDR
+$CRYPTSETUP reencrypt --header $IMG_HDR $IMG $CS_PARAMS --force-offline-reencrypt 2>/dev/null && fail
 
 remove_mapping
 exit 0
