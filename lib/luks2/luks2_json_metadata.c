@@ -1579,6 +1579,29 @@ static json_object *mandatory_requirements_jobj(struct luks2_hdr *hdr)
 	return jobj_mandatory;
 }
 
+bool LUKS2_reencrypt_requirement_candidate(struct luks2_hdr *hdr)
+{
+	json_object *jobj_mandatory;
+	int i, len;
+
+	assert(hdr);
+
+	jobj_mandatory = mandatory_requirements_jobj(hdr);
+	if (!jobj_mandatory)
+		return false;
+
+	len = (int) json_object_array_length(jobj_mandatory);
+	if (len <= 0)
+		return false;
+
+	for (i = 0; i < len; i++) {
+		if (reencrypt_candidate_flag(json_object_get_string(json_object_array_get_idx(jobj_mandatory, i))))
+			return true;
+	}
+
+	return false;
+}
+
 int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
 {
 	json_object *jobj_mandatory, *jobj;

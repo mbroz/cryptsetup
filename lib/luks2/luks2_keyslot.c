@@ -886,7 +886,7 @@ int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 		return -EINVAL;
 	}
 
-	if (!(reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT) && reencrypt_count) {
+	if (reencrypt_count && !LUKS2_reencrypt_requirement_candidate(&dummy)) {
 		log_dbg(cd, "Missing reencryption requirement flag.");
 		return -EINVAL;
 	}
