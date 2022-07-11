@@ -1799,21 +1799,44 @@ echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --init-only $FAST_PBKDF_ARGON || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 4M $DEV -q $FAST_PBKDF_ARGON 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV -q $FAST_PBKDF_ARGON 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience datashift 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience datashift-checksum 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience datashift-journal 2> /dev/null && fail
 wipe_dev_head $DEV 1
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 16M $DEV -q $FAST_PBKDF_ARGON 2> /dev/null || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV -q $FAST_PBKDF_ARGON 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience journal 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience datashift-checksum 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience datashift-journal 2> /dev/null && fail
 wipe_dev_head $DEV 1
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $IMG_HDR $FAST_PBKDF2 $DEV || fail
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --header $IMG_HDR --init-only $FAST_PBKDF_ARGON || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --header $IMG_HDR $DEV -q $FAST_PBKDF_ARGON 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --header $IMG_HDR $DEV -q $FAST_PBKDF_ARGON 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --header $IMG_HDR --resilience datashift-checksum 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --header $IMG_HDR --resilience datashift-journal 2>/dev/null && fail
 rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --encrypt --header $IMG_HDR --init-only $FAST_PBKDF_ARGON || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --header $IMG_HDR $DEV -q $FAST_PBKDF_ARGON 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $IMG_HDR $FAST_PBKDF2 $DEV || fail
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --init-only $FAST_PBKDF_ARGON || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --header $IMG_HDR $DEV -q $FAST_PBKDF_ARGON 2> /dev/null && fail
+rm -f $IMG_HDR
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF2 $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --init-only $FAST_PBKDF_ARGON --resilience datashift 2> /dev/null && fail
+test -f $IMG_HDR && fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --init-only $FAST_PBKDF_ARGON --resilience none 2> /dev/null && fail
+test -f $IMG_HDR && fail
+$CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail
+# FIXME: There's a bug in --hotzone-size parameter when initializing decryption with datashift
+#echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --init-only $FAST_PBKDF_ARGON --resilience checksum --hotzone-size 4m || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --init-only $FAST_PBKDF_ARGON --resilience checksum || fail
+$CRYPTSETUP isLuks $DEV -q && fail
+# $CRYPTSETUP luksDump $IMG_HDR
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --resilience datashift 2> /dev/null && fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --resilience none 2> /dev/null && fail
+# FIXME: (see above)
+#echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --resilience journal || fail
+rm -f $IMG_HDR
 
 check_blkid
 if [ "$HAVE_BLKID" -gt 0 ]; then
