@@ -163,11 +163,40 @@ static int reencrypt_get_active_name(struct crypt_device *cd,
 	return get_active_device_name(cd, data_device, r_active_name);
 }
 
+static int decrypt_verify_and_set_params(struct crypt_params_reencrypt *params)
+{
+	const char *resilience;
+
+	assert(params);
+
+	if (!ARG_SET(OPT_RESILIENCE_ID))
+		return 0;
+
+	resilience = ARG_STR(OPT_RESILIENCE_ID);
+
+	if (!strcmp(resilience, "datashift") ||
+	    !strcmp(resilience, "none")) {
+		log_err(_("Requested --resilience option cannot be applied "
+			  "to current reencryption operation."));
+		return -EINVAL;
+	} else if (!strcmp(resilience, "journal"))
+		params->resilience = "datashift-journal";
+	else if (!strcmp(resilience, "checksum"))
+		params->resilience = "datashift-checksum";
+	else if (!strcmp(resilience, "datashift-checksum") ||
+		 !strcmp(resilience, "datashift-journal"))
+		params->resilience = resilience;
+	else {
+		log_err(_("Unsupported resilience mode %s"), resilience);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *params,
 	char **r_hash)
 {
-	bool decrypt_datashift = false;
-
 	assert(params);
 	assert(r_hash);
 
@@ -194,29 +223,16 @@ static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *par
 				  "to current reencryption operation."));
 			return -EINVAL;
 		}
-		if (strncmp(params->resilience, "datashift-", 10) &&
-		    !strncmp(ARG_STR(OPT_RESILIENCE_ID), "datashift-", 10)) {
+
+		if (!strncmp(params->resilience, "datashift-", 10)) {
+			/* decryption with datashift in progress */
+			if (decrypt_verify_and_set_params(params))
+				return -EINVAL;
+		} else if (!strncmp(ARG_STR(OPT_RESILIENCE_ID), "datashift-", 10)) {
 			log_err(_("Requested --resilience option cannot be applied "
 				  "to current reencryption operation."));
 			return -EINVAL;
-		}
-		if (!strncmp(params->resilience, "datashift-", 10)) {
-			if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
-				log_err(_("Requested --resilience option cannot be applied "
-					  "to current reencryption operation."));
-				return -EINVAL;
-			}
-			decrypt_datashift = true;
-		}
-	}
-
-	params->resilience = NULL;
-	if (ARG_SET(OPT_RESILIENCE_ID)) {
-		if (decrypt_datashift && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "checksum"))
-			params->resilience = "datashift-checksum";
-		else if (decrypt_datashift && !strcmp(ARG_STR(OPT_RESILIENCE_ID), "journal"))
-			params->resilience = "datashift-journal";
-		else
+		} else
 			params->resilience = ARG_STR(OPT_RESILIENCE_ID);
 
 		/* we have to copy hash string returned by API */
@@ -229,13 +245,15 @@ static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *par
 		}
 
 		/* Add default hash when switching to checksum based resilience */
-		if (!params->hash && (!strcmp(params->resilience, "checksum") ||
+		if (!params->hash && !ARG_SET(OPT_RESILIENCE_HASH_ID) &&
+		    (!strcmp(params->resilience, "checksum") ||
 		    !strcmp(params->resilience, "datashift-checksum")))
 			params->hash = "sha256";
 
 		if (ARG_SET(OPT_RESILIENCE_HASH_ID))
 			params->hash = ARG_STR(OPT_RESILIENCE_HASH_ID);
-	}
+	} else
+		params->resilience = NULL;
 
 	params->max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE;
 	params->device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE;
@@ -676,18 +694,8 @@ static int decrypt_luks2_datashift_init(struct crypt_device **cd,
 		.flags = CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
 	};
 
-	if (ARG_SET(OPT_RESILIENCE_ID)) {
-		if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "datashift")) {
-			log_err(_("Requested --resilience option cannot be applied "
-				  "to current reencryption operation."));
-			return -EINVAL;
-		}
-
-		else if (!strcmp(ARG_STR(OPT_RESILIENCE_ID), "journal"))
-			params.resilience = "datashift-journal";
-		else
-			params.resilience = ARG_STR(OPT_RESILIENCE_ID);
-	}
+	if ((r = decrypt_verify_and_set_params(&params)))
+		return r;
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
