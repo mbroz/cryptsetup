@@ -84,7 +84,6 @@ function img_prepare_raw() # $1 options
 function img_prepare() # $1 options
 {
 	img_prepare_raw
-	# FIXME: resilience is not saved here (always none)?
 	$CRYPTSETUP reencrypt $IMG $CS_PARAMS -q --init-only --resilience none $1 >/dev/null 2>&1
 	[ $? -ne 0 ] && skip "Reencryption unsupported, test skipped."
 	img_json_save
@@ -141,6 +140,12 @@ function img_check_ok()
 	fi
 
 	$CRYPTSETUP repair $IMG $CS_PARAMS || fail
+}
+
+function img_check_dump_ok()
+{
+	$CRYPTSETUP luksDump $IMG >/dev/null || fail
+	img_check_fail
 }
 
 function img_check_fail()
@@ -232,6 +237,25 @@ img_check_ok
 img_prepare
 img_update_json 'del(.digests."2") | .config.requirements.mandatory = ["online-reencrypt"]'
 img_check_fail_repair_ok
+
+# Simulate future version of reencrypt flag (should pass luksDump)
+img_prepare
+img_update_json '.config.requirements.mandatory = ["online-reencrypt-v999"]'
+img_check_dump_ok
+
+# Multiple reencrypt requirement flags makes LUKS2 invalid
+img_prepare
+img_update_json '.config.requirements.mandatory = .config.requirements.mandatory + ["online-reencrypt-v999"]'
+img_check_fail
+
+img_prepare
+img_update_json '.config.requirements.mandatory = .config.requirements.mandatory + ["online-reencrypt"]'
+img_check_fail
+
+# just regular unknown requirement
+img_prepare
+img_update_json '.config.requirements.mandatory = .config.requirements.mandatory + ["online-reencrypt-v3X"]'
+img_check_dump_ok
 
 # This must fail for new releases
 echo "[2] Old reencryption in-progress (journal)"
@@ -382,7 +406,6 @@ img_prepare '--reduce-device-size 2M'
 img_update_json '.keyslots."2".area.shift_size = ((.keyslots."2".area.shift_size|tonumber / 2)|tostring)'
 img_check_fail
 
-#FIXME: cannot check with correct digest for now (--init-only does not store area type)
 img_prepare
 img_update_json '
 	.keyslots."2".area.type = "checksum" |
