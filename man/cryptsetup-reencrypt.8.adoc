@@ -46,6 +46,8 @@ cryptsetup-luksFormat man page for more details). See *cryptsetup-luksFormat*(8)
 treated as unencrypted -- there are no quarantees of confidentiality as
 part of the device contains plaintext.
 
+*ALWAYS BE SURE YOU HAVE RELIABLE BACKUP BEFORE USING THIS ACTION ON LUKS DEVICE.*
+
 *<options>* can be [--batch-mode,
 --block-size,
 --cipher,
@@ -121,13 +123,14 @@ filesystem).
 *WARNING*: The LUKS1 reencryption code is not resistant to hardware
 or kernel failures during reencryption (you can lose your data in this case).
 
-*ALWAYS BE SURE YOU HAVE RELIABLE BACKUP BEFORE USING THIS ACTION ON LUKS1 DEVICE.*
-
 include::man/common_options.adoc[]
 
-== LUKS2 ENCRYPTION EXAMPLES
+== EXAMPLES
+
 *NOTE*: You may drop *--type luks2* option as long as LUKS2 format is
 default.
+
+=== LUKS2 ENCRYPTION EXAMPLES
 
 Encrypt LUKS2 device (in-place). Make sure last 32 MiB on _/dev/plaintext_
 is unused (e.g.: does not contain filesystem data):
@@ -147,13 +150,13 @@ Resume online encryption on device initialized in example above:
 *cryptsetup reencrypt --resume-only /dev/plaintext_device* or
 *cryptsetup reencrypt --active-name my_future_luks_device*
 
-== LUKS2 REENCRYPTION EXAMPLES
+=== LUKS2 REENCRYPTION EXAMPLES
 
 Reencrypt LUKS2 device (refresh volume key only):
 
 *cryptsetup reencrypt /dev/encrypted_device*
 
-== LUKS2 DECRYPTION EXAMPLES
+=== LUKS2 DECRYPTION EXAMPLES
 
 Decrypt LUKS2 device with header put in head of data device (header file does not exist):
 

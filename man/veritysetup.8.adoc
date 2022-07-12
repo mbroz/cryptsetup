@@ -110,13 +110,6 @@ Reports parameters of verity device from on-disk stored superblock.
 
 == OPTIONS
 
-*--verbose, -v*::
-Print more information on command execution.
-
-*--debug*::
-Run in debug mode with full diagnostic logs. Debug output lines are
-always prefixed by '#'.
-
 *--no-superblock*::
 Create or use dm-verity without permanent on-disk superblock.
 
@@ -181,9 +174,6 @@ tampering. This option is available since Linux kernel version 4.17.
 *--hash=hash*::
 Hash algorithm for dm-verity. For default see --help option.
 
-*--version*::
-Show the program version.
-
 *--fec-device=fec_device*::
 Use forward error correction (FEC) to recover from corruption if hash
 verification fails. Use encoding data from the specified device.
@@ -219,7 +209,7 @@ M-N. M is 255 and M-N is between 2 and 24 (including).
 Path to file with stored root hash in hex-encoded text.
 
 *--root-hash-signature=FILE*::
-Path to roothash signature file used to verify the root hash (in
+Path to root hash signature file used to verify the root hash (in
 kernel). This feature requires Linux kernel version 5.4 or more
 recent.
 
@@ -230,6 +220,25 @@ it.
 *--cancel-deferred*::
 Removes a previously configured deferred device removal in *close*
 command.
+
+*--verbose, -v*::
+Print more information on command execution.
+
+*--debug*::
+Run in debug mode with full diagnostic logs. Debug output lines are
+always prefixed by *#*.
+
+*--version, -V*::
+Show the program version.
+
+*--batch-mode, -q*::
+Do not ask for confirmation.
+
+*--usage*::
+Show short option help.
+
+*--help, -?*::
+Show help text and default parameters.
 
 == RETURN CODES
 

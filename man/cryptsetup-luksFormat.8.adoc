@@ -25,7 +25,7 @@ that for both forms of reading the passphrase from a file you can give
 and the safety-question being skipped.
 
 You cannot call luksFormat on a device or filesystem that is mapped or
-in use, e.g. mounted filesysem, used in LVM, active RAID member etc. The
+in use, e.g., mounted filesystem, used in LVM, active RAID member, etc. The
 device or filesystem has to be un-mounted in order to call luksFormat.
 
 To use LUKS2, specify _--type luks2_.
@@ -43,7 +43,7 @@ For LUKS2, additional *<options>* can be [--integrity,
 --keyslot-key-size].
 
 *WARNING:* Doing a luksFormat on an existing LUKS container will make
-all data the old container permanently irretrievable unless you have a
+all data in the old container permanently irretrievable unless you have a
 header backup.
 
 include::man/common_options.adoc[]

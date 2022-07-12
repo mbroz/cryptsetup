@@ -29,7 +29,7 @@ how many sectors of the raw device are represented in the mapped device.
 
 If cryptsetup detected volume key for active device loaded in kernel
 keyring service, resize action would first try to retrieve the key using
-a token and only if it failed it'd ask for a passphrase to unlock a
+a token. Only if it failed, it'd ask for a passphrase to unlock a
 keyslot (LUKS) or to derive a volume key again (plain mode). The kernel
 keyring is used by default for LUKS2 devices.
 
