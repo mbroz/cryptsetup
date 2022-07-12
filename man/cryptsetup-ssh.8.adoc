@@ -23,8 +23,8 @@ export the token.
 
 === Add operation
 
-_add_ <options> <device>
-____
+*add <options> <device>*
+
 Adds the SSH token to *<device>*.
 
 Specified SSH server must contain a key file on the specified path with
@@ -32,9 +32,10 @@ a passphrase for an existing key slot on the device. Provided
 credentials will be used by cryptsetup to get the password when opening
 the device using the token.
 
---ssh-server, --ssh-user, --ssh-keypath and --ssh-path are required for
-this operation.
-____
+Options --ssh-server, --ssh-user, --ssh-keypath and --ssh-path are
+required for this operation.
+
+== OPTIONS
 
 **--key-slot**=_NUM_::
 Keyslot to assign the token to. If not specified, the token will be
@@ -52,8 +53,6 @@ IP address/URL of the remote server for this token.
 **--ssh-user**=_STRING_::
 Username used for the remote server.
 
-== OPTIONS
-
 *--debug*::
 Show debug messages
 
@@ -63,7 +62,7 @@ Show debug messages including JSON metadata
 *-v*, *--verbose*::
 Shows more detailed error messages
 
--?, *--help*::
+*-?*, *--help*::
 Show help
 
 *-V*, *--version*::
