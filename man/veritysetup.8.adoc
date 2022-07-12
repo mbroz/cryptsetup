@@ -22,11 +22,13 @@ checking of block devices using kernel crypto API.
 
 The dm-verity devices are always read-only.
 
+== BASIC ACTIONS
+
 Veritysetup supports these operations:
 
-_format_ <data_device> <hash_device>
+=== FORMAT
+*format <data_device> <hash_device>*
 
-____
 Calculates and permanently stores hash verification data for
 data_device. Hash area can be located on the same device after data if
 specified by --hash-offset option.
@@ -43,14 +45,12 @@ hash device path doesn't exist, it will be created as file.
 
 If option --root-hash-file is used, the root hash is stored in
 hex-encoded text format in <path>.
-____
 
-_open_ <data_device> <name> <hash_device> <root_hash> +
-_open_ <data_device> <name> <hash_device> --root-hash-file <path> +
-_create_ <name> <data_device> <hash_device> <root_hash> (*OBSOLETE
-syntax*)
+=== OPEN
+*open <data_device> <name> <hash_device> <root_hash>* +
+*open <data_device> <name> <hash_device> --root-hash-file <path>* +
+create <name> <data_device> <hash_device> <root_hash> (*OBSOLETE syntax*)
 
-____
 Creates a mapping with <name> backed by device <data_device> and using
 <hash_device> for in-kernel verification.
 
@@ -66,12 +66,11 @@ without terminating newline.
 
 If option --no-superblock is used, you have to use as the same options
 as in initial format operation.
-____
 
-_verify_ <data_device> <hash_device> <root_hash> +
-_verify_ <data_device> <hash_device> --root-hash-file <path>
+=== VERIFY
+*verify <data_device> <hash_device> <root_hash>* +
+*verify <data_device> <hash_device> --root-hash-file <path>*
 
-____
 Verifies data on data_device with use of hash blocks stored on
 hash_device.
 
@@ -88,32 +87,26 @@ without terminating newline.
 
 If option --no-superblock is used, you have to use as the same options
 as in initial format operation.
-____
 
-_close_ <name>
+=== CLOSE
+*close <name>* +
+remove <name> (*OBSOLETE syntax*)
 
-____
 Removes existing mapping <name>.
 
-For backward compatibility there is *remove* command alias for *close*
-command.
-
 *<options>* can be [--deferred] or [--cancel-deferred]
-____
 
-_status_ <name>
+=== STATUS
+*status <name>*
 
-____
 Reports status for the active verity mapping <name>.
-____
 
-_dump_ <hash_device>
+=== DUMP
+*dump <hash_device>*
 
-____
 Reports parameters of verity device from on-disk stored superblock.
 
 *<options>* can be [--hash-offset]
-____
 
 == OPTIONS
 
@@ -231,25 +224,19 @@ kernel). This feature requires Linux kernel version 5.4 or more
 recent.
 
 *--deferred*::
-Defers device removal in _close_ command until the last user closes
+Defers device removal in *close* command until the last user closes
 it.
 
 *--cancel-deferred*::
-Removes a previously configured deferred device removal in _close_
+Removes a previously configured deferred device removal in *close*
 command.
 
 == RETURN CODES
 
-Veritysetup returns 0 on success and a non-zero value on error.
+Veritysetup returns *0* on success and a non-zero value on error.
 
-Error codes are:
-____
-    1 wrong parameters
-    2 no permission
-    3 out of memory
-    4 wrong device specified
-    5 device already exists or device is busy.
-____
+Error codes are: *1* wrong parameters, *2* no permission, *3* out of memory,
+*4* wrong device specified, *5* device already exists or device is busy.
 
 == EXAMPLES
 
@@ -304,8 +291,8 @@ https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity[*DMVerity*] page.
 The first implementation of veritysetup was written by Chrome OS
 authors.
 
-This version is based on verification code written by Mikulas Patocka
-<<mpatocka@redhat.com>> and rewritten for libcryptsetup by Milan Broz
-<<gmazyland@gmail.com>>.
+This version is based on verification code written by
+mailto:mpatocka@redhat.com[Mikulas Patocka] and rewritten for libcryptsetup
+by mailto:gmazyland@gmail.com[Milan Broz].
 
 include::man/common_footer.adoc[]

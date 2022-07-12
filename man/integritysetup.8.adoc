@@ -23,11 +23,13 @@ data integrity field per-sector. You can use this additional field
 directly with integritysetup utility, or indirectly (for authenticated
 encryption) through cryptsetup.
 
+== BASIC ACTIONS
+
 Integritysetup supports these operations:
 
-_format_ <device>
+=== FORMAT
+*format <device>*
 
-____
 Formats <device> (calculates space and dm-integrity superblock and wipes
 the device).
 
@@ -35,12 +37,11 @@ the device).
 --journal-size, --interleave-sectors, --tag-size, --integrity,
 --integrity-key-size, --integrity-key-file, --sector-size,
 --progress-frequency, --progress-json]
-____
 
-_open_ <device> <name> +
-_create_ <name> <device> (*OBSOLETE syntax*)
+=== OPEN
+*open <device> <name>* +
+create <name> <device> (*OBSOLETE syntax*)
 
-____
 Open a mapping with <name> backed by device <device>.
 
 *<options>* can be [--data-device, --batch-mode, --journal-watermark,
@@ -49,34 +50,28 @@ Open a mapping with <name> backed by device <device>.
 --integrity-recalculate,
 --integrity-recalculate-reset,--integrity-recovery-mode,
 --allow-discards]
-____
 
-_close_ <name>
+=== CLOSE
+*close <name>* +
+remove <name> (*OBSOLETE syntax*)
 
-____
 Removes existing mapping <name>.
 
-For backward compatibility, there is *remove* command alias for the
-*close* command.
-
 *<options>* can be [--deferred] or [--cancel-deferred]
-____
 
-_status_ <name>
+=== STATUS
+*status <name>*
 
-____
 Reports status for the active integrity mapping <name>.
-____
 
-_dump_ <device>
+=== DUMP
+*dump <device>*
 
-____
 Reports parameters from on-disk stored superblock.
-____
 
-_resize_ <name>
+=== RESIZE
+*resize <name>*
 
-____
 Resizes an active mapping <name>.
 
 If --size (in 512-bytes sectors) or --device-size are not specified, the
@@ -88,7 +83,6 @@ Increasing the size of integrity volumes is available since the Linux
 kernel version 5.7, shrinking should work on older kernels too.
 
 *<options>* can be [--size, --device-size, --wipe]
-____
 
 == OPTIONS
 
@@ -111,7 +105,7 @@ Print separate line every <seconds> with wipe progress.
 *--progress-json*::
 Prints wipe progress data in json format suitable mostly for machine
 processing. It prints separate line every half second (or based on
-_--progress-frequency_ value). The json output looks as follows during
+--progress-frequency value). The json output looks as follows during
 wipe progress (except it's compact single line):
 +
 ....
@@ -262,11 +256,11 @@ Allow the use of discard (TRIM) requests for the device. This option
 is available since the Linux kernel version 5.7.
 
 *--deferred*::
-Defers device removal in _close_ command until the last user closes
+Defers device removal in *close* command until the last user closes
 it.
 
 *--cancel-deferred*::
-Removes a previously configured deferred device removal in _close_
+Removes a previously configured deferred device removal in *close*
 command.
 
 The dm-integrity target is available since Linux kernel version 4.12.
@@ -294,16 +288,10 @@ offset in superblock is not protected).
 
 == RETURN CODES
 
-Integritysetup returns 0 on success and a non-zero value on error.
+Integritysetup returns *0* on success and a non-zero value on error.
 
-Error codes are:
-____
-    1 wrong parameters
-    2 no permission
-    3 out of memory
-    4 wrong device specified
-    5 device already exists, or device is busy.
-____
+Error codes are: *1* wrong parameters, *2* no permission, *3* out of memory,
+*4* wrong device specified, *5* device already exists or device is busy.
 
 == EXAMPLES
 
@@ -336,6 +324,6 @@ https://gitlab.com/cryptsetup/cryptsetup/wikis/DMIntegrity[*DMIntegrity*] page.
 
 == AUTHORS
 
-The integritysetup tool is written by Milan Broz <<gmazyland@gmail.com>>.
+The integritysetup tool is written by mailto:gmazyland@gmail.com[Milan Broz].
 
 include::man/common_footer.adoc[]
