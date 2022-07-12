@@ -259,7 +259,7 @@ it is requested.
 Reencrypt only the LUKS1 header and keyslots. Skips data in-place reencryption.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONFIG[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN[]
 *--key-slot, -S <0-N>*::
 For LUKS operations that add key material, this options allows you to
 specify which key slot is selected for the new key. This option can be
@@ -274,7 +274,7 @@ size and key size, but a valid key slot ID can always be between 0 and
 31 for LUKS2.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_BENCHMARK,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_BENCHMARK,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSADDKEY[]
 *--key-size, -s* _bits_::
 Sets key size in _bits_. The argument has to be a multiple of 8. The
 possible key-sizes are limited by the cipher and mode used.
@@ -301,7 +301,7 @@ ifdef::ACTION_OPEN,ACTION_RESIZE[]
 Set the size of the device in sectors of 512 bytes.
 endif::[]
 
-ifdef::ACTION_OPEN[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT[]
 *--offset, -o <number of 512 byte sectors>*::
 Start offset in the backend device in 512-byte sectors. This option is
 only relevant for the _open_ action with plain or loopaes device types
@@ -358,7 +358,7 @@ _open --type plain_ action. Use --offset, --size and --skip to specify
 the mapped area.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK[]
 *--pbkdf <PBKDF spec>*::
 Set Password-Based Key Derivation Function (PBKDF) algorithm for LUKS
 keyslot. The PBKDF can be: _pbkdf2_ (for PBKDF2 according to RFC2898),
@@ -407,7 +407,7 @@ cost minimum is 1 and maximum 4 (if enough CPUs cores are available,
 otherwise it is decreased).
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK[]
 *--iter-time, -i <number of milliseconds>*::
 ifndef::ACTION_REENCRYPT[]
 The number of milliseconds to spend with PBKDF passphrase processing.
@@ -881,14 +881,14 @@ This option is ignored as VeraCrypt compatible mode is supported by
 default.
 endif::[]
 
-ifdef::ACTION_OPEN[]
+ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 *--disable-veracrypt*::
 This option can be used to disable VeraCrypt compatible mode (only
 TrueCrypt devices are recognized). Only for TCRYPT extension. See
 _TCRYPT_ section in *cryptsetup*(8) for more info.
 endif::[]
 
-ifdef::ACTION_OPEN[]
+ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 *--veracrypt-pim*::
 *--veracrypt-query-pim* Use a custom Personal Iteration Multiplier (PIM) for
 VeraCrypt device. See _TCRYPT_ section in *cryptsetup*(8) for more info.
