@@ -24,9 +24,6 @@
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
 
-#define LUKS2_REENCRYPT_REQ_VERSION 2
-#define LUKS2_DECRYPT_DATASHIFT_REQ_VERSION 3
-
 struct luks2_reencrypt {
 	/* reencryption window attributes */
 	uint64_t offset;
@@ -1387,7 +1384,7 @@ static int modify_offset(uint64_t *offset, uint64_t data_shift, crypt_reencrypt_
 	return r;
 }
 
-static int reencrypt_update_flag(struct crypt_device *cd, uint32_t version,
+static int reencrypt_update_flag(struct crypt_device *cd, uint8_t version,
 	bool enable, bool commit)
 {
 	uint32_t reqs;
@@ -2810,7 +2807,7 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, *vks);
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, LUKS2_DECRYPT_DATASHIFT_REQ_VERSION, *vks);
 	if (r < 0)
 		goto out;
 
@@ -3055,7 +3052,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, *vks);
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, LUKS2_REENCRYPT_REQ_VERSION, *vks);
 	if (r < 0)
 		goto out;
 
@@ -3606,7 +3603,7 @@ static int reencrypt_repair_by_passphrase(
 	struct crypt_lock_handle *reencrypt_lock;
 	struct luks2_reencrypt *rh;
 	crypt_reencrypt_info ri;
-	uint32_t requirement_version;
+	uint8_t requirement_version;
 	const char *resilience;
 	struct volume_key *vks = NULL;
 
@@ -3652,16 +3649,6 @@ static int reencrypt_repair_by_passphrase(
 		goto out;
 	}
 
-	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, &vks);
-	if (r < 0)
-		goto out;
-
-	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, vks);
-	crypt_free_volume_key(vks);
-	vks = NULL;
-	if (r < 0)
-		goto out;
-
 	resilience = reencrypt_resilience_type(hdr);
 	if (!resilience) {
 		r = -EINVAL;
@@ -3674,6 +3661,16 @@ static int reencrypt_repair_by_passphrase(
 		requirement_version = LUKS2_DECRYPT_DATASHIFT_REQ_VERSION;
 	else
 		requirement_version = LUKS2_REENCRYPT_REQ_VERSION;
+
+	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, &vks);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, requirement_version, vks);
+	crypt_free_volume_key(vks);
+	vks = NULL;
+	if (r < 0)
+		goto out;
 
 	/* replaces old online-reencrypt flag with updated version and commits metadata */
 	r = reencrypt_update_flag(cd, requirement_version, true, true);
@@ -4317,7 +4314,7 @@ crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
 {
 	crypt_reencrypt_info ri;
 	int digest;
-	uint32_t version;
+	uint8_t version;
 
 	if (params)
 		memset(params, 0, sizeof(*params));

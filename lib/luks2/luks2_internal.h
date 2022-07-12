@@ -278,6 +278,7 @@ int LUKS2_keyslot_reencrypt_load(struct crypt_device *cd,
 
 int LUKS2_keyslot_reencrypt_digest_create(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
+	uint8_t version,
 	struct volume_key *vks);
 
 int LUKS2_keyslot_dump(struct crypt_device *cd,

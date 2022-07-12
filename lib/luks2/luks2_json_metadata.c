@@ -1013,10 +1013,36 @@ static int hdr_validate_config(struct crypt_device *cd, json_object *hdr_jobj)
 	return 0;
 }
 
+static bool reencrypt_candidate_flag(const char *flag)
+{
+	const char *ptr;
+
+	assert(flag);
+
+	if (!strcmp(flag, "online-reencrypt"))
+		return true;
+
+	if (strncmp(flag, "online-reencrypt-v", 18))
+		return false;
+
+	ptr = flag + 18;
+	if (!*ptr)
+		return false;
+
+	while (*ptr) {
+		if (!isdigit(*ptr))
+			return false;
+		ptr++;
+	}
+
+	return true;
+}
+
 static int hdr_validate_requirements(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	int i;
 	json_object *jobj_config, *jobj, *jobj1;
+	unsigned online_reencrypt_flag = 0;
 
 	if (!(jobj_config = json_contains(cd, hdr_jobj, "", "JSON area", "config", json_type_object)))
 		return 1;
@@ -1032,10 +1058,20 @@ static int hdr_validate_requirements(struct crypt_device *cd, json_object *hdr_j
 				return 1;
 
 			/* All array members must be strings */
-			for (i = 0; i < (int) json_object_array_length(jobj1); i++)
+			for (i = 0; i < (int) json_object_array_length(jobj1); i++) {
 				if (!json_object_is_type(json_object_array_get_idx(jobj1, i), json_type_string))
 					return 1;
+
+				if (reencrypt_candidate_flag(json_object_get_string(json_object_array_get_idx(jobj1, i))))
+					online_reencrypt_flag++;
+
+			}
 		}
+	}
+
+	if (online_reencrypt_flag > 1) {
+		log_dbg(cd, "Multiple online reencryption requirement flags detected.");
+		return 1;
 	}
 
 	return 0;
@@ -1500,7 +1536,7 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 /* LUKS2 library requirements */
 struct requirement_flag {
 	uint32_t flag;
-	uint32_t version;
+	uint8_t version;
 	const char *description;
 };
 
@@ -1543,7 +1579,30 @@ static json_object *mandatory_requirements_jobj(struct luks2_hdr *hdr)
 	return jobj_mandatory;
 }
 
-int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version)
+bool LUKS2_reencrypt_requirement_candidate(struct luks2_hdr *hdr)
+{
+	json_object *jobj_mandatory;
+	int i, len;
+
+	assert(hdr);
+
+	jobj_mandatory = mandatory_requirements_jobj(hdr);
+	if (!jobj_mandatory)
+		return false;
+
+	len = (int) json_object_array_length(jobj_mandatory);
+	if (len <= 0)
+		return false;
+
+	for (i = 0; i < len; i++) {
+		if (reencrypt_candidate_flag(json_object_get_string(json_object_array_get_idx(jobj_mandatory, i))))
+			return true;
+	}
+
+	return false;
+}
+
+int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
 {
 	json_object *jobj_mandatory, *jobj;
 	int i, len;
@@ -1747,7 +1806,7 @@ static json_object *LUKS2_get_mandatory_requirements_filtered_jobj(struct luks2_
 int LUKS2_config_set_requirement_version(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	uint32_t req_id,
-	uint32_t req_version,
+	uint8_t req_version,
 	bool commit)
 {
 	json_object *jobj_config, *jobj_requirements, *jobj_mandatory;

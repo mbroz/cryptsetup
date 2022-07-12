@@ -676,6 +676,7 @@ int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
 	struct volume_key *vks)
 {
 	int r;
+	uint8_t version;
 	uint64_t max_size, moved_segment_size;
 	json_object *jobj_type, *jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
 	struct reenc_protection check_rp = {};
@@ -683,6 +684,9 @@ int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
 	if (!jobj_keyslot ||
 	    !json_object_object_get_ex(jobj_keyslot, "type", &jobj_type) ||
 	    strcmp(json_object_get_string(jobj_type), "reencrypt"))
+		return -EINVAL;
+
+	if (LUKS2_config_get_reencrypt_version(hdr, &version))
 		return -EINVAL;
 
 	/* verify existing reencryption metadata before updating */
@@ -715,7 +719,7 @@ int LUKS2_keyslot_reencrypt_update(struct crypt_device *cd,
 		}
 	}
 
-	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, vks);
+	r = LUKS2_keyslot_reencrypt_digest_create(cd, hdr, version, vks);
 	if (r < 0)
 		log_err(cd, _("Failed to refresh reencryption verification digest."));
 
