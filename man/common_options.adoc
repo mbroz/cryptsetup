@@ -104,7 +104,7 @@ Set the cipher specification string for data segment and keyslots.
 endif::[]
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--verify-passphrase, -y*::
 When interactively asking for a passphrase, ask for it twice and
 complain if both inputs do not match. Advised when creating a regular
@@ -259,11 +259,11 @@ it is requested.
 Reencrypt only the LUKS1 header and keyslots. Skips data in-place reencryption.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN,ACTION_REENCRYPT[]
 *--key-slot, -S <0-N>*::
 For LUKS operations that add key material, this options allows you to
-specify which key slot is selected for the new key. This option can be
-used for _luksFormat_, and _luksAddKey_. +
+specify which key slot is selected for the new key.
++
 In addition, for _open_, this option selects a specific key-slot to
 compare the passphrase against. If the given passphrase would only
 match a different key-slot, the operation fails.
@@ -301,11 +301,11 @@ ifdef::ACTION_OPEN,ACTION_RESIZE[]
 Set the size of the device in sectors of 512 bytes.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--offset, -o <number of 512 byte sectors>*::
 Start offset in the backend device in 512-byte sectors. This option is
-only relevant for the _open_ action with plain or loopaes device types
-or for LUKS devices in _luksFormat_.
+only relevant for the _open_ action with plain or loopaes device types and for
+LUKS devices in _luksFormat_ and _reencrypt_.
 +
 For LUKS, the --offset option sets the data offset (payload) of data
 device and must be be aligned to 4096-byte sectors (must be multiple of
@@ -421,7 +421,7 @@ new LUKS header.
 endif::[]
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
 *--pbkdf-memory <number>*::
 Set the memory cost for PBKDF (for Argon2i/id the number represents
 kilobytes). Note that it is maximal value, PBKDF benchmark or
@@ -429,14 +429,14 @@ available physical memory can decrease it. This option is not
 available for PBKDF2.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
 *--pbkdf-parallel <number>*::
 Set the parallel cost for PBKDF (number of threads, up to 4). Note
 that it is maximal value, it is decreased automatically if CPU online
 count is lower. This option is not available for PBKDF2.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
 *--pbkdf-force-iterations <num>*::
 Avoid PBKDF benchmark and set time cost (iterations) directly. It can
 be used for LUKS/LUKS2 device only. See _--pbkdf_ option for more
@@ -482,17 +482,16 @@ does not input a passphrase, e.g. during boot. The default is a value
 of 0 seconds, which means to wait forever.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_REENCRYPT[]
 *--tries, -T*::
 How often the input of the passphrase shall be retried. This option is
 relevant every time a passphrase is asked, for example for _open_,
-_luksFormat_ or _luksAddKey_. The default is 3 tries.
+_luksFormat_, _luksAddKey_ or _reencrypt_. The default is 3 tries.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--align-payload <number of 512 byte sectors>*::
-Align payload at a boundary of _value_ 512-byte sectors. This option
-is relevant for _luksFormat_.
+Align payload at a boundary of _value_ 512-byte sectors.
 +
 If not specified, cryptsetup tries to use the topology info provided by
 the kernel for the underlying device to get the optimal alignment. If
@@ -582,7 +581,7 @@ Do not activate the device, just verify passphrase. The device mapping name is
 not mandatory if this option is used.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_STATUS,ACTOION_REENCRYPT,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONVERT,ACTION_CONFIG[]
+ifdef::ACTION_OPEN,ACTION_STATUS,ACTOION_REENCRYPT,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONVERT,ACTION_CONFIG,ACTION_REENCRYPT[]
 *--header <device or file storing the LUKS header>*::
 Use a detached (separated) metadata device or file where the LUKS
 header is stored. This option allows one to store ciphertext and LUKS
@@ -638,12 +637,11 @@ data device does not work or report errors.
 is activated and/or actively used.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
 *--force-password*::
 Do not use password quality checking for new LUKS passwords.
 +
-This option applies only to _luksFormat_, _luksAddKey_ and
-_luksChangeKey_ and is ignored if cryptsetup is built without password
+This option is ignored if cryptsetup is built without password
 quality checking support.
 +
 For more info about password quality check, see the manual page for
@@ -667,7 +665,7 @@ ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_TOKEN[]
 Disable loading of plugins for external LUKS2 tokens.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_REENCRYPT[]
 *--disable-locks*::
 Disable lock protection for metadata on disk. This option is valid
 only for LUKS2 and ignored for other formats.
@@ -677,7 +675,7 @@ restricted environment where locking is impossible to perform (where
 /run directory cannot be used).
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_REFRESH,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_TOKEN[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_REFRESH,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_REENCRYPT[]
 *--disable-keyring*::
 Do not load volume key in kernel keyring and store it directly in the
 dm-crypt target instead. This option is supported only for the LUKS2
@@ -788,7 +786,7 @@ Refreshes an active device with new set of parameters. See
 *cryptsetup-refresh*(8) for more details.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_CONFIG[]
+ifdef::ACTION_LUKSFORMAT,ACTION_CONFIG,ACTION_REENCRYPT[]
 *--label <LABEL>*::
 *--subsystem <SUBSYSTEM>* Set label and subsystem description for
 LUKS2 device. The label and subsystem are optional fields and can be later used
@@ -796,7 +794,7 @@ in udev scripts for triggering user actions once device marked by these labels
 is detected.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--integrity <integrity algorithm>*::
 Specify integrity algorithm to be used for authenticated disk
 encryption in LUKS2.
@@ -810,7 +808,7 @@ option).
 For more info, see _AUTHENTICATED DISK ENCRYPTION_ section in *cryptsetup*(8).
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--luks2-metadata-size <size>*::
 This option can be used to enlarge the LUKS2 metadata (JSON) area. The
 size includes 4096 bytes for binary metadata (usable JSON area is
@@ -819,7 +817,7 @@ these values are valid: 16, 32, 64, 128, 256, 512, 1024, 2048 and 4096
 kB The <size> can be specified with unit suffix (for example 128k).
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--luks2-keyslots-size <size>*::
 This option can be used to set specific size of the LUKS2 binary
 keyslot area (key material is encrypted there). The value must be
@@ -827,13 +825,13 @@ aligned to multiple of 4096 bytes with maximum size 128MB. The <size>
 can be specified with unit suffix (for example 128k).
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
 *--keyslot-cipher <cipher-spec>*::
 This option can be used to set specific cipher encryption for the
 LUKS2 keyslot area.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
 *--keyslot-key-size <bits>*::
 This option can be used to set specific key size for the LUKS2 keyslot
 area.
@@ -847,7 +845,7 @@ power fail can cause non-atomic write and data corruption. Use only if
 journalling is performed on a different storage layer.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--integrity-no-wipe*::
 Skip wiping of device authentication (integrity) tags. If you skip
 this step, sectors will report invalid integrity tag until an
